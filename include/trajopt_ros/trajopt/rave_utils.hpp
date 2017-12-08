@@ -1,7 +1,7 @@
 #pragma once
 #include <openrave/openrave.h>
 #include <trajopt_ros/utils/macros.h>
-#include "openrave_userdata_utils.hpp"
+#include <trajopt_ros/utils/openrave_userdata_utils.hpp>
 namespace trajopt {
 
 

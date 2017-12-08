@@ -1,9 +1,10 @@
-#include "rave_utils.hpp"
-using namespace OpenRAVE;
+#include <trajopt_ros/trajopt/rave_utils.hpp>
 #include <boost/foreach.hpp>
-#include "utils/logging.hpp"
+#include <trajopt_ros/utils/logging.hpp>
 #include <Eigen/Core>
-#include "typedefs.hpp"
+#include <trajopt_ros/trajopt/typedefs.hpp>
+
+using namespace OpenRAVE;
 using namespace std;
 namespace trajopt {
 

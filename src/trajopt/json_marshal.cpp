@@ -1,5 +1,5 @@
 #include <trajopt_ros/trajopt/json_marshal.hpp>
-#include <trajopt_ros/json/json.h>
+#include <jsoncpp/json/json.h>
 #include <stdexcept>
 using namespace Json;
 using namespace std;

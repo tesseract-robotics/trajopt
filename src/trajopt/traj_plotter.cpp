@@ -1,7 +1,7 @@
 #include <trajopt_ros/trajopt/traj_plotter.hpp>
 #include <trajopt_ros/utils/eigen_conversions.hpp>
 #include <boost/foreach.hpp>
-#include "osgviewer/osgviewer.hpp"
+#include <trajopt_ros/osgviewer/osgviewer.hpp>
 #include <iostream>
 using namespace OpenRAVE;
 using namespace std;

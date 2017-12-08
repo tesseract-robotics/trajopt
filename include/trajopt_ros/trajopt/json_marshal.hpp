@@ -1,5 +1,5 @@
 #pragma once
-#include <trajopt_ros/json/json.h>
+#include <jsoncpp/json/json.h>
 #include <trajopt_ros/utils/macros.h>
 #include <vector>
 #include <boost/format.hpp>

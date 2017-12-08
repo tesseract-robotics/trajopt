@@ -1,4 +1,5 @@
 #pragma once
+#include <iostream>
 
 // Generic helper definitions for shared library support
 #if defined _WIN32 || defined __CYGWIN__

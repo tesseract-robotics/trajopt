@@ -1,9 +1,9 @@
-#include "trajopt/plot_callback.hpp"
-#include "trajopt/common.hpp"
-#include "osgviewer/osgviewer.hpp"
-#include "utils/eigen_conversions.hpp"
+#include <trajopt_ros/trajopt/plot_callback.hpp>
+#include <trajopt_ros/trajopt/common.hpp>
+#include <trajopt_ros/trajopt/problem_description.hpp>
+#include <trajopt_ros/utils/eigen_conversions.hpp>
+#include <trajopt_ros/osgviewer/osgviewer.hpp>
 #include <boost/foreach.hpp>
-#include "trajopt/problem_description.hpp"
 #include <set>
 using namespace OpenRAVE;
 using namespace util;

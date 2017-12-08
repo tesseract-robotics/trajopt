@@ -2,7 +2,7 @@
 #include <trajopt_ros/utils/eigen_conversions.hpp>
 #include <trajopt_ros/utils/stl_to_string.hpp>
 #include <trajopt_ros/utils/logging.hpp>
-#include <trajopt_ros/openrave_userdata_utils.hpp>
+#include <trajopt_ros/utils/openrave_userdata_utils.hpp>
 #include <btBulletCollisionCommon.h>
 #include <BulletCollision/CollisionShapes/btShapeHull.h>
 #include <BulletCollision/CollisionDispatch/btConvexConvexAlgorithm.h>

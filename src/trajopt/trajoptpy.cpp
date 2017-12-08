@@ -1,11 +1,11 @@
 #include <boost/python.hpp>
-#include "trajopt/collision_checker.hpp"
-#include "trajopt/problem_description.hpp"
+#include <trajopt_ros/trajopt/collision_checker.hpp>
+#include <trajopt_ros/trajopt/problem_description.hpp>
 #include "osgviewer/osgviewer.hpp"
 #include <boost/foreach.hpp>
-#include "macros.h"
-#include "sco/modeling_utils.hpp"
-#include "numpy_utils.hpp"
+#include <trajopt_ros/utils/macros.h>
+#include <trajopt_ros/sco/modeling_utils.hpp>
+#include <trajopt_ros/trajopt/numpy_utils.hpp>
 using namespace trajopt;
 using namespace Eigen;
 using namespace OpenRAVE;
