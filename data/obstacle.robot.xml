@@ -1,0 +1,10 @@
+<Robot name="obstacle">
+  <KinBody>
+    <Body type="static" name="obstacle">
+      <Geom type="box">
+        <extents> 0.1 0.1 0.1 </extents>
+        <diffuseColor>0.8 0 0</diffuseColor>
+      </Geom>
+    </Body>
+  </KinBody>
+</Robot>

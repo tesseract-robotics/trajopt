@@ -1,0 +1,8 @@
+import openravepy
+env = openravepy.Environment()
+openravepy.RaveLoadPlugin("/Users/joschu/build/trajopt/lib/libtrajoptplugin.dylib")
+prob=openravepy.RaveCreateModule(env, "MyModule")
+env.AddModule(prob,args="")
+prob.SendCommand("numbodies")
+env.Load("/Users/joschu/Desktop/pr2-beta-static.dae")
+prob.SendCommand("numbodies")

@@ -1,0 +1,15 @@
+{
+  "basic_info" : {
+    "manip": "leftarm",
+    "num_timesteps" : 10,
+    "interpolation" : "cubic_spline"    
+  }, 
+  "constraints" : [
+    {"name" : "point_normal",
+      "type" : "point_normal",
+      "params" : {
+        "timestep" : "END",
+        "xyz" : [0.1, 0.2, 0.3],
+        "normal" : [0.6, 0.8, 0.0]
+      }
+    }, 

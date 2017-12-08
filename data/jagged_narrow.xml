@@ -1,0 +1,31 @@
+<Environment>
+<KinBody name="passage">
+<Body type="static">
+
+<Geom type="box">
+<extents>.5 .5 .5</extents>
+<translation>0 0 0</translation>
+</Geom>
+<Geom type="box">
+<extents>.5 .5 .5</extents>
+<translation>1 1 0</translation>
+</Geom>
+<Geom type="box">
+<extents>.5 .5 .5</extents>
+<translation>1 -2 0</translation>
+</Geom>
+<Geom type="box">
+<extents>.5 .5 .5</extents>
+<translation>2 -1 0</translation>
+</Geom>
+<Geom type="box">
+<extents>.5 .5 .5</extents>
+<translation>3 0 0</translation>
+</Geom>
+
+
+</Body>
+</KinBody>
+<Robot name="carbot" file="carbot.xml">  
+</Robot>
+</Environment>

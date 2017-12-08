@@ -1,0 +1,42 @@
+{
+  "basic_info" : {
+    "manip": "leftarm",
+    "num_timesteps" : 10,
+    "interpolation" : "cubic_spline"    
+  }, 
+  "constraints" : [
+    {"name" : "point_normal",
+      "type" : "point_normal",
+      "params" : {
+        "timestep" : "END",
+        "xyz" : [0.1, 0.2, 0.3],
+        "normal" : [0.6, 0.8, 0.0]
+      }
+    }, 
+    {
+      "name" : "no_collisions",
+      "type" : "no_collisions",
+      "params" : {
+        "timestep" :"ALL",
+        "allowed_collisions" : "gripper"
+      }
+    }
+  ], 
+  "costs" : [
+    {
+      "name" : "waypoint_cart_1",
+      "params" : {
+        "timestep" : "3",
+        "xyz" : [0.1, 0.2, 0.3],
+        "quat" : [0.6, 0.8, 0.0, 0.0]
+      }
+    }
+  ], 
+  "COMMENT_initialization" : [
+    [1,2,3], 
+    [4,5,6]
+  ], 
+  "COMMENT_initialization" : "use_RRT", 
+  "COMMENT_initialization" : "straight_line_joint_space", 
+  "COMMENT_initialization" : "polyline_random_middle_waypoint"
+}

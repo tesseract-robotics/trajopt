@@ -1,0 +1,33 @@
+{
+  "basic_info" : {
+    "manip": "leftarm",
+    "num_timesteps" : 10,
+  }, 
+  "constraints" : [
+  ], 
+  "costs" : [
+    {"name" : "point_normal",
+      "type" : "point_normal",
+      "params" : {
+        "timestep" : "END",
+        "dir_local" : [1.0, 0.0, 1.0],
+        "dir_world" : [1.0, 0.0, 0.0]
+      }
+    }, 
+    {
+      "name" : "joint_vel",
+      "params" : {
+        "timestep" : "3",
+        "xyz" : [0.1, 0.2, 0.3],
+        "quat" : [0.6, 0.8, 0.0, 0.0]
+      }
+    }
+  ], 
+  "COMMENT_initialization" : [
+    [1,2,3], 
+    [4,5,6]
+  ], 
+  "COMMENT_initialization" : "use_RRT", 
+  "COMMENT_initialization" : "straight_line_joint_space", 
+  "COMMENT_initialization" : "polyline_random_middle_waypoint"
+}

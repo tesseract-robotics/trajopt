@@ -1,0 +1,17 @@
+<Robot name="boxbot">
+<KinBody>
+  <Body name="boxlink" type="dynamic">
+    <Translation>0 0 0</Translation>
+    <!--rotation of the body specified as a rotation axis. First three numbers are the axis.-->
+    <Mass type="mimicgeom">
+      <density>1</density>
+    </Mass>
+ 
+    <Geom type="box">
+      <Extents>.5 .25 .25</Extents>
+			<render>/home/joschu/Downloads/L200-VRML/L200-VRML2.wrl</render>
+   	</Geom>
+
+ </Body>
+</KinBody>
+</Robot>

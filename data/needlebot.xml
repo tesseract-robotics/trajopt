@@ -1,0 +1,22 @@
+<Robot name="boxbot">
+<KinBody>
+  <Body name="needlelink" type="dynamic">
+    <Translation>0 0 0</Translation>
+    <!--rotation of the body specified as a rotation axis. First three numbers are the axis.-->
+    <Mass type="mimicgeom">
+      <density>1</density>
+    </Mass>
+ 
+    <Geom type="cylinder">
+      <radius>.01</radius>
+      <height>.1</height>
+      <translation>-.05</translation>
+      <rotationaxis>0 0 1 90</rotationaxis>
+   	</Geom>
+    <Geom type="sphere">
+      <translation>0 0 0</translation>
+      <radius>.01</radius>
+   	</Geom>
+ </Body>
+</KinBody>
+</Robot>
