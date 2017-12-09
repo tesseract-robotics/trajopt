@@ -14,7 +14,7 @@
 #include <osg/BlendFunc>
 #include <osg/io_utils>
 #include <iostream>
-#include <osg/CameraNode>
+#include <osg/Camera>
 #include <osgDB/WriteFile>
 #include <osgDB/ReadFile>
 #include <trajopt_ros/utils/logging.hpp>
@@ -235,14 +235,14 @@ void AddLights(osg::Group* group) {
 
 
 // http://forum.openscenegraph.org/viewtopic.php?t=7214
-class SnapImageDrawCallback : public osg::CameraNode::DrawCallback {
+class SnapImageDrawCallback : public osg::Camera::DrawCallback {
 public:
   SnapImageDrawCallback() { _snapImageOnNextFrame = false; }
   void setFileName(const std::string& filename) { _filename = filename; }
   const std::string& getFileName() const { return _filename; }
   void setSnapImageOnNextFrame(bool flag) { _snapImageOnNextFrame = flag; }
   bool getSnapImageOnNextFrame() const { return _snapImageOnNextFrame; }
-  virtual void operator () (const osg::CameraNode& camera) const {
+  virtual void operator () (const osg::Camera& camera) const {
     if (!_snapImageOnNextFrame) return;
     int x,y,width,height;
     x = camera.getViewport()->x();

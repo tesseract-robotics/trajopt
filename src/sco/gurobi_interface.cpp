@@ -1,18 +1,18 @@
-#include "solver_interface.hpp"
-#include "gurobi_interface.hpp"
-#include "utils/logging.hpp"
+#include <trajopt_ros/sco/solver_interface.hpp>
+#include <trajopt_ros/sco/gurobi_interface.hpp>
+#include <trajopt_ros/utils/logging.hpp>
 extern "C" {
 #include "gurobi_c.h"
 }
 #include <boost/foreach.hpp>
-#include "sco_common.hpp"
+#include <trajopt_ros/sco/sco_common.hpp>
 #include <map>
 #include <utility>
-#include "macros.h"
+#include <trajopt_ros/utils/macros.h>
 #include <sstream>
 #include <stdexcept>
 #include <iostream>
-#include "utils/stl_to_string.hpp"
+#include <trajopt_ros/utils/stl_to_string.hpp>
 
 using namespace std;
 

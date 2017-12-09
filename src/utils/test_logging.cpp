@@ -1,4 +1,4 @@
-#include "logging.hpp"
+#include <trajopt_ros/utils/logging.hpp>
 
 int main() {
   LOG_FATAL("fatal");

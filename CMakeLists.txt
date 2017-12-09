@@ -15,18 +15,21 @@ find_package(Eigen3 REQUIRED)
 find_package(Boost COMPONENTS system python thread program_options REQUIRED)
 find_package(OpenRAVE REQUIRED)
 
+link_directories(/usr/local/lib)
+link_directories(/usr/local/lib64)
+
 set(OpenRAVE_BOTH_LIBRARIES ${OpenRAVE_LIBRARIES} ${OpenRAVE_CORE_LIBRARIES})
 set(BULLET_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/ext/bullet/src)
 set(BULLET_LIBRARIES BulletCollision LinearMath)
 set(JSON_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/ext/json/include)
 
 # Required for OSGViewer
-find_package( OpenThreads )
-find_package( osg )
-find_package( osgDB )
-find_package( osgUtil )
-find_package( osgViewer )
-find_package( osgGA )
+#find_package( OpenThreads )
+#find_package( osg )
+#find_package( osgDB )
+#find_package( osgUtil )
+#find_package( osgViewer )
+#find_package( osgGA )
 
 add_subdirectory(ext)
 
@@ -69,8 +72,8 @@ if (NOT APPLE)
 endif()
 
 catkin_package(
-#  INCLUDE_DIRS include
-  LIBRARIES sco utils
+  INCLUDE_DIRS include
+  LIBRARIES sco utils trajopt
 #  CATKIN_DEPENDS roscpp
 #  DEPENDS system_lib
 )
@@ -84,6 +87,7 @@ include_directories(
   ${BULLET_INCLUDE_DIRS}
   ${OpenRAVE_INCLUDE_DIRS}
   ${OSG_INCLUDE_DIRS}
+  ${GTEST_INCLUDE_DIRS}
 )
 
 if (HAVE_BPMPD)
@@ -95,7 +99,7 @@ if (HAVE_BPMPD)
         set(BPMPD_LIBRARY "${CMAKE_SOURCE_DIR}/3rdpartylib/bpmpd_linux32.a")
   endif()
 
-  target_link_libraries(bpmpd_caller ${BPMPD_LIBRARY})
+  target_link_libraries(bpmpd_caller ${BPMPD_LIBRARY} ${catkin_LIBRARIES})
   list(APPEND SCO_SOURCE_FILES src/sco/bpmpd_interface.cpp)
   set_property(SOURCE src/sco/bpmpd_interface.cpp APPEND PROPERTY COMPILE_DEFINITIONS BPMPD_CALLER="\\\"${CMAKE_BINARY_DIR}/bin/bpmpd_caller\\\"")
 
@@ -112,7 +116,7 @@ if (GUROBI_FOUND)
 endif(GUROBI_FOUND)
 
 add_library(utils ${UTILS_SOURCE_FILES})
-target_link_libraries(utils ${Boost_PROGRAM_OPTIONS_LIBRARY})
+target_link_libraries(utils ${Boost_PROGRAM_OPTIONS_LIBRARY} ${catkin_LIBRARIES})
 
 add_library(sco ${SCO_SOURCE_FILES})
 
@@ -124,29 +128,55 @@ if (HAVE_BPMPD)
   list(APPEND SCO_LINK_LIBS ${BPMPD_LIBRARY})
 endif()
 
-target_link_libraries(sco ${SCO_LINK_LIBS})
+target_link_libraries(sco
+    utils
+    ${BPMPD_LIBRARY}
+    ${catkin_LIBRARIES}
+    )
 
 set(OSG_LIBRARIES osg osgViewer OpenThreads osgDB osgGA osgUtil osgText)
 add_library(osgviewer src/osgviewer/osgviewer.cpp src/osgviewer/robot_ui.cpp)
-target_link_libraries(osgviewer ${OSG_LIBRARIES} ${OpenRAVE_BOTH_LIBRARIES} ${Boost_SYSTEM_LIBRARY} utils)
+target_link_libraries(osgviewer ${OSG_LIBRARIES} ${OpenRAVE_BOTH_LIBRARIES} ${Boost_SYSTEM_LIBRARY} utils ${catkin_LIBRARIES})
 
 add_library(trajopt ${TRAJOPT_SOURCE_FILES})
 #target_link_libraries(trajopt ${Boost_SYSTEM_LIBRARY} sco utils json osgviewer)
-target_link_libraries(trajopt ${OpenRAVE_BOTH_LIBRARIES} ${Boost_SYSTEM_LIBRARY} sco utils json osgviewer)
+target_link_libraries(trajopt ${OpenRAVE_BOTH_LIBRARIES} ${Boost_SYSTEM_LIBRARY} sco utils json osgviewer ${catkin_LIBRARIES})
 
 
-## Add gtest based cpp test target and link libraries
-set(SCO_TEST_SOURCE
+### Add gtest based cpp test target and link libraries
+#set(SCO_TEST_SOURCE
+#  test/sco/unit.cpp
+#  test/sco/small-problems-unit.cpp
+#  test/sco/solver-interface-unit.cpp
+#)
+#add_definitions(-DDATA_DIR="${CMAKE_SOURCE_DIR}/data")
+
+#catkin_add_gtest(sco-unit ${SCO_TEST_SOURCE})
+#if(TARGET sco-unit)
+#    target_link_libraries(sco-unit sco)
+#endif()
+include_directories(${GTEST_INCLUDE_DIRS})
+add_definitions(-DDATA_DIR="${CMAKE_SOURCE_DIR}/data")
+
+set(test_srcs
   test/sco/unit.cpp
   test/sco/small-problems-unit.cpp
   test/sco/solver-interface-unit.cpp
 )
-add_definitions(-DDATA_DIR="${CMAKE_SOURCE_DIR}/data")
 
-catkin_add_gtest(sco-unit ${SCO_TEST_SOURCE})
-if(TARGET sco-unit)
-    target_link_libraries(sco-unit ${PROJECT_NAME})
-endif()
+add_executable(sco-unit
+  ${test_srcs}
+)
+
+target_link_libraries(sco-unit
+  sco
+  gtest
+  gtest_main
+  ${SCO_LINK_LIBS}
+  ${catkin_LIBRARIES}
+)
+
+add_test(sco-unit ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/sco-unit)
 
 
 #catkin_add_gtest(collision-checker-unit test/trajopt/collision-checker-unit.cpp)
