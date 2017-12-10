@@ -1,5 +1,5 @@
 #pragma once
-#include "expr_ops.hpp"
+#include <trajopt_ros/sco/expr_ops.hpp>
 
 namespace sco {
 

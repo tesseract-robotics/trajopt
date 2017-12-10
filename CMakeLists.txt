@@ -15,21 +15,15 @@ find_package(Eigen3 REQUIRED)
 find_package(Boost COMPONENTS system python thread program_options REQUIRED)
 find_package(OpenRAVE REQUIRED)
 
-link_directories(/usr/local/lib)
-link_directories(/usr/local/lib64)
+link_directories(
+    /usr/local/lib
+    /usr/local/lib64
+)
 
 set(OpenRAVE_BOTH_LIBRARIES ${OpenRAVE_LIBRARIES} ${OpenRAVE_CORE_LIBRARIES})
 set(BULLET_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/ext/bullet/src)
 set(BULLET_LIBRARIES BulletCollision LinearMath)
 set(JSON_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/ext/json/include)
-
-# Required for OSGViewer
-#find_package( OpenThreads )
-#find_package( osg )
-#find_package( osgDB )
-#find_package( osgUtil )
-#find_package( osgViewer )
-#find_package( osgGA )
 
 add_subdirectory(ext)
 
@@ -68,7 +62,7 @@ set(TRAJOPT_SOURCE_FILES
 
 if (NOT APPLE)
   set (HAVE_BPMPD TRUE)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fvisibility=hidden")
+#  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fvisibility=hidden")
 endif()
 
 catkin_package(
@@ -86,8 +80,7 @@ include_directories(
   ${JSON_INCLUDE_DIRS}
   ${BULLET_INCLUDE_DIRS}
   ${OpenRAVE_INCLUDE_DIRS}
-  ${OSG_INCLUDE_DIRS}
-  ${GTEST_INCLUDE_DIRS}
+#  ${OSG_INCLUDE_DIRS}
 )
 
 if (HAVE_BPMPD)
@@ -99,13 +92,14 @@ if (HAVE_BPMPD)
         set(BPMPD_LIBRARY "${CMAKE_SOURCE_DIR}/3rdpartylib/bpmpd_linux32.a")
   endif()
 
-  target_link_libraries(bpmpd_caller ${BPMPD_LIBRARY} ${catkin_LIBRARIES})
+  target_link_libraries(bpmpd_caller ${BPMPD_LIBRARY})
   list(APPEND SCO_SOURCE_FILES src/sco/bpmpd_interface.cpp)
-  set_property(SOURCE src/sco/bpmpd_interface.cpp APPEND PROPERTY COMPILE_DEFINITIONS BPMPD_CALLER="\\\"${CMAKE_BINARY_DIR}/bin/bpmpd_caller\\\"")
+  set_property(SOURCE src/sco/bpmpd_interface.cpp APPEND PROPERTY COMPILE_DEFINITIONS BPMPD_CALLER="\\\"${CATKIN_DEVEL_PREFIX}/lib/trajopt_ros/bpmpd_caller\\\"")
 
-  set(BPMPD_WORKING_DIR ${CMAKE_CURRENT_BINARY_DIR})
+  #TODO: Levi check if this is correct.
+  set(BPMPD_WORKING_DIR "${CATKIN_DEVEL_PREFIX}/lib/trajopt_ros/")
   set_property(SOURCE src/sco/bpmpd_caller.cpp APPEND PROPERTY COMPILE_DEFINITIONS BPMPD_WORKING_DIR="${BPMPD_WORKING_DIR}")
-  file(COPY src/sco/bpmpd.par DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+  file(COPY src/sco/bpmpd.par DESTINATION ${BPMPD_WORKING_DIR})
 
   set_property(SOURCE src/sco/solver_interface.cpp APPEND PROPERTY COMPILE_DEFINITIONS HAVE_BPMPD )
 endif()
@@ -116,9 +110,10 @@ if (GUROBI_FOUND)
 endif(GUROBI_FOUND)
 
 add_library(utils ${UTILS_SOURCE_FILES})
-target_link_libraries(utils ${Boost_PROGRAM_OPTIONS_LIBRARY} ${catkin_LIBRARIES})
+target_link_libraries(utils ${Boost_PROGRAM_OPTIONS_LIBRARY})
 
 add_library(sco ${SCO_SOURCE_FILES})
+
 
 set (SCO_LINK_LIBS utils)
 if (GUROBI_FOUND)
@@ -128,89 +123,52 @@ if (HAVE_BPMPD)
   list(APPEND SCO_LINK_LIBS ${BPMPD_LIBRARY})
 endif()
 
-target_link_libraries(sco
-    utils
-    ${BPMPD_LIBRARY}
-    ${catkin_LIBRARIES}
-    )
+target_link_libraries(sco ${catkin_LIBRARIES} ${SCO_LINK_LIBS})
+#target_link_libraries(sco utils)
 
 set(OSG_LIBRARIES osg osgViewer OpenThreads osgDB osgGA osgUtil osgText)
 add_library(osgviewer src/osgviewer/osgviewer.cpp src/osgviewer/robot_ui.cpp)
-target_link_libraries(osgviewer ${OSG_LIBRARIES} ${OpenRAVE_BOTH_LIBRARIES} ${Boost_SYSTEM_LIBRARY} utils ${catkin_LIBRARIES})
+target_link_libraries(osgviewer ${OSG_LIBRARIES} ${OpenRAVE_BOTH_LIBRARIES} ${Boost_SYSTEM_LIBRARY} utils )
 
 add_library(trajopt ${TRAJOPT_SOURCE_FILES})
 #target_link_libraries(trajopt ${Boost_SYSTEM_LIBRARY} sco utils json osgviewer)
-target_link_libraries(trajopt ${OpenRAVE_BOTH_LIBRARIES} ${Boost_SYSTEM_LIBRARY} sco utils json osgviewer ${catkin_LIBRARIES})
+target_link_libraries(trajopt ${OpenRAVE_BOTH_LIBRARIES} ${Boost_SYSTEM_LIBRARY} sco utils json osgviewer)
 
 
-### Add gtest based cpp test target and link libraries
-#set(SCO_TEST_SOURCE
-#  test/sco/unit.cpp
-#  test/sco/small-problems-unit.cpp
-#  test/sco/solver-interface-unit.cpp
-#)
-#add_definitions(-DDATA_DIR="${CMAKE_SOURCE_DIR}/data")
+if (CATKIN_ENABLE_TESTING)
+    include_directories(test)
+    ### Add gtest based cpp test target and link libraries
+    set(SCO_TEST_SOURCE
+      test/sco/unit.cpp
+      test/sco/small-problems-unit.cpp
+      test/sco/solver-interface-unit.cpp
+    )
+    add_definitions(-DDATA_DIR="${CMAKE_SOURCE_DIR}/data")
 
-#catkin_add_gtest(sco-unit ${SCO_TEST_SOURCE})
-#if(TARGET sco-unit)
-#    target_link_libraries(sco-unit sco)
-#endif()
-include_directories(${GTEST_INCLUDE_DIRS})
-add_definitions(-DDATA_DIR="${CMAKE_SOURCE_DIR}/data")
+    catkin_add_gtest(sco-unit ${SCO_TEST_SOURCE})
+    target_link_libraries(sco-unit sco)
 
-set(test_srcs
-  test/sco/unit.cpp
-  test/sco/small-problems-unit.cpp
-  test/sco/solver-interface-unit.cpp
-)
+    catkin_add_gtest(collision-checker-unit test/trajopt/collision-checker-unit.cpp)
+    target_link_libraries(collision-checker-unit trajopt ${Boost_SYSTEM_LIBRARY})
 
-add_executable(sco-unit
-  ${test_srcs}
-)
+    catkin_add_gtest(planning-unit test/trajopt/planning-unit.cpp)
+    target_link_libraries(planning-unit trajopt ${Boost_SYSTEM_LIBRARY} ${Boost_PROGRAM_OPTIONS_LIBRARY} osgviewer)
 
-target_link_libraries(sco-unit
-  sco
-  gtest
-  gtest_main
-  ${SCO_LINK_LIBS}
-  ${catkin_LIBRARIES}
-)
+    catkin_add_gtest(render-collision-test test/trajopt/render_collision_test.cpp)
+    target_link_libraries(render-collision-test trajopt ${Boost_SYSTEM_LIBRARY} osgviewer)
 
-add_test(sco-unit ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/sco-unit)
+    catkin_add_gtest(cast-cost-unit test/trajopt/cast-cost-unit.cpp)
+    target_link_libraries(cast-cost-unit trajopt ${Boost_SYSTEM_LIBRARY} ${Boost_PROGRAM_OPTIONS_LIBRARY} osgviewer)
 
+    catkin_add_gtest(viewer_experiment test/osgviewer/viewer_experiment.cpp)
+    target_link_libraries(viewer_experiment ${OpenRAVE_BOTH_LIBRARIES} ${Boost_SYSTEM_LIBRARY} osgviewer)
 
-#catkin_add_gtest(collision-checker-unit test/trajopt/collision-checker-unit.cpp)
-#if(TARGET collision-checker-unit)
-#    target_link_libraries(collision-checker-unit ${PROJECT_NAME})
-#endif()
+    catkin_add_gtest(osg_expt test/osgviewer/osg_expt.cpp)
+    target_link_libraries(osg_expt ${OSG_LIBRARIES})
 
-#catkin_add_gtest(planning-unit test/trajopt/planning-unit.cpp)
-#if(TARGET planning-unit)
-#    target_link_libraries(planning-unit ${PROJECT_NAME})
-#endif()
+    catkin_add_gtest(robotui_expt test/osgviewer/robotui_expt.cpp)
+    target_link_libraries(robotui_expt ${OpenRAVE_BOTH_LIBRARIES} ${Boost_SYSTEM_LIBRARY} osgviewer)
 
-#catkin_add_gtest(render-collision-test test/trajopt/render_collision_test.cpp)
-#if(TARGET render-collision-test)
-#    target_link_libraries(render-collision-test ${PROJECT_NAME})
-#endif()
-
-#catkin_add_gtest(cast-cost-unit test/trajopt/cast-cost-unit.cpp)
-#if(TARGET cast-cost-unit)
-#    target_link_libraries(cast-cost-unit ${PROJECT_NAME})
-#endif()
-
-#add_executable(viewer_experiment viewer_experiment.cpp)
-#target_link_libraries(viewer_experiment ${OpenRAVE_BOTH_LIBRARIES} ${Boost_SYSTEM_LIBRARY} osgviewer)
-
-#add_executable(osg_expt osg_expt.cpp)
-#target_link_libraries(osg_expt ${OSG_LIBRARIES})
-
-#add_executable(robotui_expt robotui_expt.cpp)
-#target_link_libraries(robotui_expt ${OpenRAVE_BOTH_LIBRARIES} ${Boost_SYSTEM_LIBRARY} osgviewer)
-
-# include_directories(${EIGEN_INCLUDE_DIRS})
-# add_executable(sim_kinect_expt sim_kinect_expt.cpp ../sim_kinect.cpp)
-# target_link_libraries(sim_kinect_expt ${OpenRAVE_BOTH_LIBRARIES} ${Boost_SYSTEM_LIBRARY} osgviewer)
-
-#add_executable(test_osgviewer_text test_osgviewer_text.cpp)
-#target_link_libraries(test_osgviewer_text osgviewer)
+    catkin_add_gtest(test_osgviewer_text test/osgviewer/test_osgviewer_text.cpp)
+    target_link_libraries(test_osgviewer_text osgviewer)
+endif()

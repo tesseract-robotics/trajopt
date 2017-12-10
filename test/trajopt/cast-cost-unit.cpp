@@ -1,22 +1,22 @@
 #include <gtest/gtest.h>
 #include <openrave-core.h>
 #include <openrave/openrave.h>
-#include "trajopt/collision_checker.hpp"
-#include "utils/stl_to_string.hpp"
-#include "trajopt/common.hpp"
-#include "trajopt/problem_description.hpp"
-#include "sco/optimizers.hpp"
-#include "trajopt/rave_utils.hpp"
-#include "osgviewer/osgviewer.hpp"
+#include <trajopt_ros/trajopt/collision_checker.hpp>
+#include <trajopt_ros/utils/stl_to_string.hpp>
+#include <trajopt_ros/trajopt/common.hpp>
+#include <trajopt_ros/trajopt/problem_description.hpp>
+#include <trajopt_ros/sco/optimizers.hpp>
+#include <trajopt_ros/trajopt/rave_utils.hpp>
+#include <trajopt_ros/osgviewer/osgviewer.hpp>
 #include <ctime>
-#include "utils/eigen_conversions.hpp"
-#include "utils/clock.hpp"
+#include <trajopt_ros/utils/eigen_conversions.hpp>
+#include <trajopt_ros/utils/clock.hpp>
 #include <boost/foreach.hpp>
 #include <boost/assign.hpp>
-#include "utils/config.hpp"
-#include "trajopt/plot_callback.hpp"
-#include "trajopt_test_utils.hpp"
-#include "trajopt/collision_terms.hpp"
+#include <trajopt_ros/utils/config.hpp>
+#include <trajopt_ros/trajopt/plot_callback.hpp>
+#include <trajopt/trajopt_test_utils.hpp>
+#include <trajopt_ros/trajopt/collision_terms.hpp>
 using namespace trajopt;
 using namespace std;
 using namespace OpenRAVE;

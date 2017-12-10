@@ -1,5 +1,5 @@
 #pragma once
-#include "osgviewer.hpp"
+#include <trajopt_ros/osgviewer/osgviewer.hpp>
 
 class TRAJOPT_API ManipulatorControl {
 public:

@@ -5,7 +5,7 @@ using namespace std;
 using namespace boost::assign;
 using namespace Json;
 #include <boost/shared_ptr.hpp>
-#include "trajopt/problem_description.hpp"
+#include <trajopt_ros/trajopt/problem_description.hpp>
 #include <gtest/gtest.h>
 using namespace trajopt;
 #ifdef __CDT_PARSER__

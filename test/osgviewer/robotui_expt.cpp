@@ -1,5 +1,5 @@
-#include "osgviewer/osgviewer.hpp"
-#include "osgviewer/robot_ui.hpp"
+#include <trajopt_ros/osgviewer/osgviewer.hpp>
+#include <trajopt_ros/osgviewer/robot_ui.hpp>
 #include <openrave-core.h>
 using namespace OpenRAVE;
 using namespace std;

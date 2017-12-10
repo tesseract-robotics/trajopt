@@ -1,7 +1,7 @@
 #pragma once
 
-#include "sco_fwd.hpp"
-#include "solver_interface.hpp"
+#include <trajopt_ros/sco/sco_fwd.hpp>
+#include <trajopt_ros/sco/solver_interface.hpp>
 
 namespace sco {
 

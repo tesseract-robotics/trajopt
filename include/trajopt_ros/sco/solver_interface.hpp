@@ -2,7 +2,7 @@
 #include <boost/shared_ptr.hpp>
 #include <vector>
 #include <string>
-#include "sco_fwd.hpp"
+#include <trajopt_ros/sco/sco_fwd.hpp>
 #include <iosfwd>
 #include <limits>
 /**

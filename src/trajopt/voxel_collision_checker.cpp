@@ -1,7 +1,7 @@
 /// NOT YET IMPLEMENTED, BUT PLANNED FOR THE FUTURE...
 
-#include "trajopt/collision_checker.hpp"
-#include "boost/multi_array.hpp"
+#include <trajopt_ros/trajopt/collision_checker.hpp>
+#include <boost/multi_array.hpp>
 #include <cassert>
 
 typedef boost::multi_array<float, 3> array_type;
@@ -24,7 +24,6 @@ public:
   static boost::shared_ptr<CollisionChecker> GetOrCreate(OR::EnvironmentBase& env);
 };
 
-}
 
 /**
 Approximate each link as a union of spheres

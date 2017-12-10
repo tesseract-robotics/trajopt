@@ -1,4 +1,4 @@
-#include "osgviewer/osgviewer.hpp"
+#include <trajopt_ros/osgviewer/osgviewer.hpp>
 #include <openrave-core.h>
 using namespace OpenRAVE;
 using namespace std;

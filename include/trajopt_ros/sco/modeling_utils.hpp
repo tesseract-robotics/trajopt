@@ -1,7 +1,7 @@
 #pragma once
-#include "modeling.hpp"
-#include "num_diff.hpp"
-#include "sco_common.hpp"
+#include <trajopt_ros/sco/modeling.hpp>
+#include <trajopt_ros/sco/num_diff.hpp>
+#include <trajopt_ros/sco/sco_common.hpp>
 /**
 @file modeling_utils.hpp
 @brief Build problem from user-defined functions

@@ -1,8 +1,8 @@
 #include <gtest/gtest.h>
 #include <openrave-core.h>
-#include "trajopt/collision_checker.hpp"
-#include "utils/stl_to_string.hpp"
-#include "utils/eigen_conversions.hpp"
+#include <trajopt_ros/trajopt/collision_checker.hpp>
+#include <trajopt_ros/utils/stl_to_string.hpp>
+#include <trajopt_ros/utils/eigen_conversions.hpp>
 using namespace OpenRAVE;
 using namespace std;
 using namespace trajopt;
