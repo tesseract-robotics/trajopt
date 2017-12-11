@@ -4,9 +4,6 @@ project(trajopt_ros)
 ## Compile as C++11, supported in ROS Kinetic and newer
 # add_compile_options(-std=c++11)
 
-## Find catkin macros and libraries
-## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
-## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   roscpp
 )
@@ -114,7 +111,6 @@ target_link_libraries(utils ${Boost_PROGRAM_OPTIONS_LIBRARY})
 
 add_library(sco ${SCO_SOURCE_FILES})
 
-
 set (SCO_LINK_LIBS utils)
 if (GUROBI_FOUND)
   list(APPEND SCO_LINK_LIBS ${GUROBI_LIBRARIES})
@@ -124,7 +120,6 @@ if (HAVE_BPMPD)
 endif()
 
 target_link_libraries(sco ${catkin_LIBRARIES} ${SCO_LINK_LIBS})
-#target_link_libraries(sco utils)
 
 set(OSG_LIBRARIES osg osgViewer OpenThreads osgDB osgGA osgUtil osgText)
 add_library(osgviewer src/osgviewer/osgviewer.cpp src/osgviewer/robot_ui.cpp)
@@ -136,39 +131,40 @@ target_link_libraries(trajopt ${OpenRAVE_BOTH_LIBRARIES} ${Boost_SYSTEM_LIBRARY}
 
 
 if (CATKIN_ENABLE_TESTING)
-    include_directories(test)
-    ### Add gtest based cpp test target and link libraries
-    set(SCO_TEST_SOURCE
-      test/sco/unit.cpp
-      test/sco/small-problems-unit.cpp
-      test/sco/solver-interface-unit.cpp
-    )
-    add_definitions(-DDATA_DIR="${CMAKE_SOURCE_DIR}/data")
+  include_directories(test)
+  add_definitions(-DDATA_DIR="${CMAKE_SOURCE_DIR}/data")
 
-    catkin_add_gtest(sco-unit ${SCO_TEST_SOURCE})
-    target_link_libraries(sco-unit sco)
+  set(SCO_TEST_SOURCE
+    test/sco/unit.cpp
+    test/sco/small-problems-unit.cpp
+    test/sco/solver-interface-unit.cpp
+  )
 
-    catkin_add_gtest(collision-checker-unit test/trajopt/collision-checker-unit.cpp)
-    target_link_libraries(collision-checker-unit trajopt ${Boost_SYSTEM_LIBRARY})
 
-    catkin_add_gtest(planning-unit test/trajopt/planning-unit.cpp)
-    target_link_libraries(planning-unit trajopt ${Boost_SYSTEM_LIBRARY} ${Boost_PROGRAM_OPTIONS_LIBRARY} osgviewer)
+  catkin_add_gtest(sco-unit ${SCO_TEST_SOURCE})
+  target_link_libraries(sco-unit sco)
 
-    catkin_add_gtest(render-collision-test test/trajopt/render_collision_test.cpp)
-    target_link_libraries(render-collision-test trajopt ${Boost_SYSTEM_LIBRARY} osgviewer)
+  catkin_add_gtest(collision-checker-unit test/trajopt/collision-checker-unit.cpp)
+  target_link_libraries(collision-checker-unit trajopt ${Boost_SYSTEM_LIBRARY})
 
-    catkin_add_gtest(cast-cost-unit test/trajopt/cast-cost-unit.cpp)
-    target_link_libraries(cast-cost-unit trajopt ${Boost_SYSTEM_LIBRARY} ${Boost_PROGRAM_OPTIONS_LIBRARY} osgviewer)
+  catkin_add_gtest(planning-unit test/trajopt/planning-unit.cpp)
+  target_link_libraries(planning-unit trajopt ${Boost_SYSTEM_LIBRARY} ${Boost_PROGRAM_OPTIONS_LIBRARY} osgviewer)
 
-    catkin_add_gtest(viewer_experiment test/osgviewer/viewer_experiment.cpp)
-    target_link_libraries(viewer_experiment ${OpenRAVE_BOTH_LIBRARIES} ${Boost_SYSTEM_LIBRARY} osgviewer)
+  catkin_add_gtest(render-collision-test test/trajopt/render_collision_test.cpp)
+  target_link_libraries(render-collision-test trajopt ${Boost_SYSTEM_LIBRARY} osgviewer)
 
-    catkin_add_gtest(osg_expt test/osgviewer/osg_expt.cpp)
-    target_link_libraries(osg_expt ${OSG_LIBRARIES})
+  catkin_add_gtest(cast-cost-unit test/trajopt/cast-cost-unit.cpp)
+  target_link_libraries(cast-cost-unit trajopt ${Boost_SYSTEM_LIBRARY} ${Boost_PROGRAM_OPTIONS_LIBRARY} osgviewer)
 
-    catkin_add_gtest(robotui_expt test/osgviewer/robotui_expt.cpp)
-    target_link_libraries(robotui_expt ${OpenRAVE_BOTH_LIBRARIES} ${Boost_SYSTEM_LIBRARY} osgviewer)
+  catkin_add_gtest(viewer_experiment test/osgviewer/viewer_experiment.cpp)
+  target_link_libraries(viewer_experiment ${OpenRAVE_BOTH_LIBRARIES} ${Boost_SYSTEM_LIBRARY} osgviewer)
 
-    catkin_add_gtest(test_osgviewer_text test/osgviewer/test_osgviewer_text.cpp)
-    target_link_libraries(test_osgviewer_text osgviewer)
+  catkin_add_gtest(osg_expt test/osgviewer/osg_expt.cpp)
+  target_link_libraries(osg_expt ${OSG_LIBRARIES})
+
+  catkin_add_gtest(robotui_expt test/osgviewer/robotui_expt.cpp)
+  target_link_libraries(robotui_expt ${OpenRAVE_BOTH_LIBRARIES} ${Boost_SYSTEM_LIBRARY} osgviewer)
+
+  catkin_add_gtest(test_osgviewer_text test/osgviewer/test_osgviewer_text.cpp)
+  target_link_libraries(test_osgviewer_text osgviewer)
 endif()
