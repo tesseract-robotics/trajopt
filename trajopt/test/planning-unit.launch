@@ -1,0 +1,5 @@
+<?xml version="1.0"?>
+<launch>
+  <include file="$(find constrained_ik)/test/resources/load_ur10.launch" />
+  <test test-name="trajopt-planning-unit" pkg="trajopt" type="trajopt-planning-unit" />
+</launch>

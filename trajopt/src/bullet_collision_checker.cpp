@@ -541,7 +541,7 @@ void BulletCollisionChecker::AddKinBody(const OR::KinBodyPtr& body) {
 
   trajopt::SetUserData(*body, "bt", cd);
   
-  bool useTrimesh = trajopt::GetUserData(*body, "bt_use_trimesh");
+  bool useTrimesh = static_cast<bool>(trajopt::GetUserData(*body, "bt_use_trimesh"));
   BOOST_FOREACH(const OR::KinBody::LinkPtr& link, links) {
     if (link->GetGeometries().size() > 0) {
       COWPtr new_cow = CollisionObjectFromLink(link, useTrimesh); 

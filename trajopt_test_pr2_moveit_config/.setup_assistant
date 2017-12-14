@@ -1,0 +1,10 @@
+moveit_setup_assistant_config:
+  URDF:
+    package: trajopt_test_support
+    relative_path: urdf/arm_around_table.urdf
+  SRDF:
+    relative_path: config/pr2.srdf
+  CONFIG:
+    author_name: Levi Armstrong
+    author_email: levi.armstrong@gmail.com
+    generated_timestamp: 1513200421
