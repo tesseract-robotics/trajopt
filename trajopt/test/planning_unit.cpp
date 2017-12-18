@@ -1,12 +1,9 @@
 #include <gtest/gtest.h>
-#include <openrave-core.h>
-#include <openrave/openrave.h>
 #include <trajopt/collision_checker.hpp>
 #include <trajopt_utils/stl_to_string.hpp>
 #include <trajopt/common.hpp>
 #include <trajopt/problem_description.hpp>
 #include <trajopt_sco/optimizers.hpp>
-#include <trajopt/rave_utils.hpp>
 #include <trajopt_osgviewer/osgviewer.hpp>
 #include <ctime>
 #include <trajopt_utils/eigen_conversions.hpp>
@@ -73,12 +70,13 @@ public:
 
 //}
 
-//TEST_F(PlanningTest, arm_around_table) {
-//  RAVELOG_DEBUG("TEST\n");
+TEST_F(PlanningTest, arm_around_table)
+{
+  ROS_DEBUG("TEST\n");
 
 //  RobotBasePtr pr2 = GetRobot(*env);
 
-//  ProblemConstructionInfo pci(env);
+  ProblemConstructionInfo pci(planning_scene_);
 //  Json::Value root = readJsonFile(string(DATA_DIR) + "/arm_around_table.json");
 //  pci.fromJson(root);
 //  pci.rad->SetDOFValues(toDblVec(pci.init_info.data.row(0)));
@@ -104,13 +102,13 @@ public:
 //  ASSERT_EQ(collisions.size(), 0);
 
 
-//}
+}
 
 
 int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
-  ros::init(argc, argv, "trajopt-planning-unit");
+  ros::init(argc, argv, "trajopt_planning_unit");
   ros::NodeHandle nh;
   return RUN_ALL_TESTS();
 }

@@ -3,9 +3,6 @@
 #include <trajopt/kinematic_terms.hpp>
 #include <trajopt/trajectory_costs.hpp>
 #include <trajopt/collision_terms.hpp>
-#include <trajopt/rave_utils.hpp>
-#include <trajopt/rave_utils.hpp>
-#include <trajopt/traj_plotter.hpp>
 #include <trajopt_utils/eigen_conversions.hpp>
 #include <trajopt_utils/eigen_slicing.hpp>
 #include <trajopt_utils/logging.hpp>
@@ -57,31 +54,31 @@ void RegisterMakers() {
   gRegisteredMakers = true;
 }
 
-RobotAndDOFPtr RADFromName(const string& name, RobotBasePtr robot) {
-  if (name == "active") {
-    return RobotAndDOFPtr(new RobotAndDOF(robot, robot->GetActiveDOFIndices(), robot->GetAffineDOF(), robot->GetAffineRotationAxis()));
-  }
-  vector<int> dof_inds;
-  int affinedofs = 0;
-  Vector rotationaxis(0,0,1);
-  vector<string> components;
-  boost::split(components, name, boost::is_any_of("+"));
-  for (int i=0; i < components.size(); ++i) {
-    std::string& component = components[i];
-    if (RobotBase::ManipulatorPtr manip = GetManipulatorByName(*robot, component)) {
-      vector<int> inds = manip->GetArmIndices();
-      dof_inds.insert(dof_inds.end(), inds.begin(), inds.end());
-    }
-    else if (component == "base") {
-      affinedofs |= DOF_X | DOF_Y | DOF_RotationAxis;
-    }
-    else if (KinBody::JointPtr joint = robot->GetJoint(component)) {
-      dof_inds.push_back(joint->GetDOFIndex());
-    }
-    else PRINT_AND_THROW( boost::format("error in reading manip description: %s must be a manipulator, link, or 'base'")%component );
-  }
-  return RobotAndDOFPtr(new RobotAndDOF(robot, dof_inds, affinedofs, rotationaxis));
-}
+//RobotAndDOFPtr RADFromName(const string& name, RobotBasePtr robot) {
+//  if (name == "active") {
+//    return RobotAndDOFPtr(new RobotAndDOF(robot, robot->GetActiveDOFIndices(), robot->GetAffineDOF(), robot->GetAffineRotationAxis()));
+//  }
+//  vector<int> dof_inds;
+//  int affinedofs = 0;
+//  Vector rotationaxis(0,0,1);
+//  vector<string> components;
+//  boost::split(components, name, boost::is_any_of("+"));
+//  for (int i=0; i < components.size(); ++i) {
+//    std::string& component = components[i];
+//    if (RobotBase::ManipulatorPtr manip = GetManipulatorByName(*robot, component)) {
+//      vector<int> inds = manip->GetArmIndices();
+//      dof_inds.insert(dof_inds.end(), inds.begin(), inds.end());
+//    }
+//    else if (component == "base") {
+//      affinedofs |= DOF_X | DOF_Y | DOF_RotationAxis;
+//    }
+//    else if (KinBody::JointPtr joint = robot->GetJoint(component)) {
+//      dof_inds.push_back(joint->GetDOFIndex());
+//    }
+//    else PRINT_AND_THROW( boost::format("error in reading manip description: %s must be a manipulator, link, or 'base'")%component );
+//  }
+//  return RobotAndDOFPtr(new RobotAndDOF(robot, dof_inds, affinedofs, rotationaxis));
+//}
 
 
 #if 0
@@ -169,10 +166,20 @@ void InitInfo::fromJson(const Json::Value& v) {
   string type_str;
   childFromJson(v, type_str, "type");
   int n_steps = gPCI->basic_info.n_steps;
-  int n_dof = gPCI->rad->GetDOF();
+  int n_dof = gPCI->kin->numJoints();
+
+  // TODO: This should be getting this from the planning request.
+  const std::vector<std::string> joint_names= gPCI->kin->getJointModelGroup()->getActiveJointModelNames();
+  Eigen::VectorXd start_pos(n_dof);
+
+  for(auto j = 0u; j < joint_names.size(); j++)
+  {
+    start_pos(j) = gPCI->planning_scene->getCurrentState().getVariablePosition(joint_names[j]);
+  }
 
   if (type_str == "stationary") {
-    data = toVectorXd(gPCI->rad->GetDOFValues()).transpose().replicate(n_steps, 1);
+//    data = toVectorXd(gPCI->rad->GetDOFValues()).transpose().replicate(n_steps, 1);
+    data = start_pos.transpose().replicate(n_steps, 1);
   }
   else if (type_str == "given_traj") {
     FAIL_IF_FALSE(v.isMember("data"));
@@ -195,9 +202,8 @@ void InitInfo::fromJson(const Json::Value& v) {
       PRINT_AND_THROW(boost::format("wrong number of dof values in initialization. expected %i got %j")%n_dof%endpoint.size());
     }
     data = TrajArray(n_steps, n_dof);
-    DblVec start = gPCI->rad->GetDOFValues();
     for (int idof = 0; idof < n_dof; ++idof) {
-      data.col(idof) = VectorXd::LinSpaced(n_steps, start[idof], endpoint[idof]);
+      data.col(idof) = VectorXd::LinSpaced(n_steps, start_pos[idof], endpoint[idof]);
     }
   }
 
@@ -206,14 +212,12 @@ void InitInfo::fromJson(const Json::Value& v) {
 void ProblemConstructionInfo::fromJson(const Value& v) {
   childFromJson(v, basic_info, "basic_info");
 
-  RobotBasePtr robot = (basic_info.robot=="") ? GetRobot(*env) : GetRobotByName(*env, basic_info.robot);
-  if (!robot) {
-    PRINT_AND_THROW("couldn't get robot");
+  if (!planning_scene->getRobotModel()->hasJointModelGroup(basic_info.manip))
+  {
+    ROS_ERROR_STREAM("Move group does not exist: " << basic_info.manip);
   }
-  rad = RADFromName(basic_info.manip, robot);
-  if (!rad) {
-    PRINT_AND_THROW( boost::format("couldn't get manip %s")%basic_info.manip );
-  }
+  kin.reset();
+  kin->init(planning_scene->getRobotModel()->getJointModelGroup(basic_info.manip));
 
   gPCI = this;
   gReadingCosts=true;
@@ -242,7 +246,7 @@ TrajOptResult::TrajOptResult(OptResults& opt, TrajOptProb& prob) :
 }
 
 TrajOptResultPtr OptimizeProblem(TrajOptProbPtr prob, bool plot) {
-  Configuration::SaverPtr saver = prob->GetRAD()->Save();
+  //Configuration::SaverPtr saver = prob->GetRAD()->Save(); //LEVI
   BasicTrustRegionSQP opt(prob);
   opt.max_iter_ = 40;
   opt.min_approx_improve_frac_ = .001;
@@ -261,8 +265,8 @@ TrajOptProbPtr ConstructProblem(const ProblemConstructionInfo& pci) {
   const BasicInfo& bi = pci.basic_info;
   int n_steps = bi.n_steps;
 
-  TrajOptProbPtr prob(new TrajOptProb(n_steps, pci.rad));
-  int n_dof = prob->m_rad->GetDOF();
+  TrajOptProbPtr prob(new TrajOptProb(n_steps, pci));
+  int n_dof = prob->GetKin()->numJoints();
 
   DblVec cur_dofvals = prob->m_rad->GetDOFValues();
 
@@ -295,23 +299,20 @@ TrajOptProbPtr ConstructProblem(const ProblemConstructionInfo& pci) {
   return prob;
 
 }
-TrajOptProbPtr ConstructProblem(const Json::Value& root, OpenRAVE::EnvironmentBasePtr env) {
-  ProblemConstructionInfo pci(env);
+TrajOptProbPtr ConstructProblem(const Json::Value& root, PlanningScenePtr planning_scene) {
+  ProblemConstructionInfo pci(planning_scene);
   pci.fromJson(root);
   return ConstructProblem(pci);
 }
 
 
-TrajOptProb::TrajOptProb(int n_steps, ConfigurationPtr rad) : m_rad(rad) {  
-  DblVec lower, upper;
-  m_rad->GetDOFLimits(lower, upper);
-  int n_dof = m_rad->GetDOF();
-  // put optimization joint limits a little inside robot joint limits
-  // so numerical derivs work
-  #if OPENRAVE_VERSION_MINOR <= 8
-  for (int i=0; i < n_dof; ++i) lower[i] += 1e-4;
-  for (int i=0; i < n_dof; ++i) upper[i] -= 1e-4;
-  #endif
+TrajOptProb::TrajOptProb(int n_steps, const ProblemConstructionInfo &pci) : kin(pci.kin), planning_scene(pci.planning_scene) {
+
+  Eigen::MatrixXd limits = kin->getLimits();
+  int n_dof = kin->numJoints();
+  Eigen::VectorXd lower, upper;
+  lower = limits.col(0);
+  upper = limits.col(1);
 
   vector<double> vlower, vupper;
   vector<string> names;
@@ -324,23 +325,11 @@ TrajOptProb::TrajOptProb(int n_steps, ConfigurationPtr rad) : m_rad(rad) {
   }
   VarVector trajvarvec = createVariables(names, vlower, vupper);
   m_traj_vars = VarArray(n_steps, n_dof, trajvarvec.data());
-
-  m_trajplotter.reset(new TrajPlotter(m_rad->GetEnv(), m_rad, m_traj_vars));
-
 }
 
 
 TrajOptProb::TrajOptProb() {
 }
-
-void SetupPlotting(TrajOptProb& prob, Optimizer& opt) {
-  TrajPlotterPtr plotter = prob.GetPlotter();
-  plotter->Add(prob.getCosts());
-  plotter->Add(prob.getConstraints());
-  opt.addCallback(boost::bind(&TrajPlotter::OptimizerCallback, *plotter, _1, _2));
-}
-
-
 
 void PoseCostInfo::fromJson(const Value& v) {
   FAIL_IF_FALSE(v.isMember("params"));
@@ -353,8 +342,9 @@ void PoseCostInfo::fromJson(const Value& v) {
 
   string linkstr;
   childFromJson(params, linkstr, "link");
-  link = GetLinkMaybeAttached(gPCI->rad->GetRobot(), linkstr);
-  if (!link) {
+  std::vector<std::string> link_names;
+  gPCI->kin->getLinkNames(link_names);
+  if (std::find(link_names.begin(), link_names.end(),linkstr)==link_names.end()) {
     PRINT_AND_THROW(boost::format("invalid link name: %s")%linkstr);
   }
 
@@ -371,10 +361,6 @@ void PoseCostInfo::hatch(TrajOptProb& prob) {
   else if (term_type == TT_CNT) {
     prob.addConstraint(ConstraintPtr(new ConstraintFromFunc(f, prob.GetVarRow(timestep), concat(rot_coeffs, pos_coeffs), EQ, name)));
   }
-
-  prob.GetPlotter()->Add(PlotterPtr(new CartPoseErrorPlotter(f, prob.GetVarRow(timestep))));
-  prob.GetPlotter()->AddLink(link);
-
 }
 
 
@@ -386,7 +372,7 @@ void JointPosCostInfo::fromJson(const Value& v) {
   childFromJson(params, coeffs, "coeffs");
   if (coeffs.size() == 1) coeffs = DblVec(n_steps, coeffs[0]);
 
-  int n_dof = gPCI->rad->GetDOF();
+  int n_dof = gPCI->kin->numJoints();
   if (vals.size() != n_dof) {
     PRINT_AND_THROW( boost::format("wrong number of dof vals. expected %i got %i")%n_dof%vals.size());
   }
@@ -415,8 +401,9 @@ void CartVelCntInfo::fromJson(const Value& v) {
 
   string linkstr;
   childFromJson(params, linkstr, "link");
-  link = gPCI->rad->GetRobot()->GetLink(linkstr);
-  if (!link) {
+  std::vector<std::string> link_names;
+  gPCI->kin->getLinkNames(link_names);
+  if (std::find(link_names.begin(), link_names.end(),linkstr)==link_names.end()) {
     PRINT_AND_THROW( boost::format("invalid link name: %s")%linkstr);
   }
   
@@ -440,7 +427,7 @@ void JointVelCostInfo::fromJson(const Value& v) {
   const Value& params = v["params"];
 
   childFromJson(params, coeffs,"coeffs");
-  int n_dof = gPCI->rad->GetDOF();
+  int n_dof = gPCI->kin->numJoints();
   if (coeffs.size() == 1) coeffs = DblVec(n_dof, coeffs[0]);
   else if (coeffs.size() != n_dof) {
     PRINT_AND_THROW( boost::format("wrong number of coeffs. expected %i got %i")%n_dof%coeffs.size());
@@ -463,7 +450,7 @@ void JointVelConstraintInfo::fromJson(const Value& v) {
   const Value& params = v["params"];
   
   int n_steps = gPCI->basic_info.n_steps;  
-  int n_dof = gPCI->rad->GetDOF();  
+  int n_dof = gPCI->kin->numJoints();
   childFromJson(params, vals, "vals");
   childFromJson(params, first_step, "first_step", 0);
   childFromJson(params, last_step, "last_step", n_steps-1);
@@ -542,11 +529,6 @@ void CollisionCostInfo::hatch(TrajOptProb& prob) {
       }
     }
   }
-
-
-
-  CollisionCheckerPtr cc = CollisionChecker::GetOrCreate(*prob.GetEnv());
-  cc->SetContactDistance(*std::max_element(dist_pen.begin(), dist_pen.end()) + .04);
 }
 
 
@@ -557,7 +539,7 @@ void JointConstraintInfo::fromJson(const Value& v) {
   const Value& params = v["params"];
   childFromJson(params, vals, "vals");
 
-  int n_dof = gPCI->rad->GetDOF();
+  int n_dof = gPCI->kin->numJoints();
   if (vals.size() != n_dof) {
     PRINT_AND_THROW( boost::format("wrong number of dof vals. expected %i got %i")%n_dof%vals.size());
   }

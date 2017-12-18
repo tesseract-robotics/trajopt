@@ -1,4 +1,3 @@
-#include <trajopt/plot_callback.hpp>
 #include <trajopt/common.hpp>
 #include <trajopt/problem_description.hpp>
 #include <trajopt_utils/eigen_conversions.hpp>

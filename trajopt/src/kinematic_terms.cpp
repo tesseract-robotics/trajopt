@@ -1,7 +1,6 @@
 #include <trajopt_sco/expr_ops.hpp>
 #include <trajopt_sco/modeling_utils.hpp>
 #include <trajopt/kinematic_terms.hpp>
-#include <trajopt/rave_utils.hpp>
 #include <trajopt/utils.hpp>
 #include <trajopt_utils/eigen_conversions.hpp>
 #include <trajopt_utils/eigen_slicing.hpp>
@@ -26,9 +25,6 @@ Vector3d rotVec(const Matrix3d& m) {
   return Vector3d(q.x(), q.y(), q.z());
 }
 #endif
-inline Vector3d rotVec(const OpenRAVE::Vector& q) {
-  return Vector3d(q[1], q[2], q[3]);
-}
 
 #if 0
 VectorXd concat(const VectorXd& a, const VectorXd& b) {
@@ -59,11 +55,12 @@ namespace trajopt {
   
   
 VectorXd CartPoseErrCalculator::operator()(const VectorXd& dof_vals) const {
-  manip_->SetDOFValues(toDblVec(dof_vals));
-  OR::Transform newpose = link_->GetTransform();
+  Affine3d new_pose;
+  manip_->calcFwdKin(dof_vals, new_pose, link_);
 
-  OR::Transform pose_err = pose_inv_ * newpose;
-  VectorXd err = concat(rotVec(pose_err.rot), toVector3d(pose_err.trans));
+  Affine3d pose_err = pose_inv_ * new_pose;
+  Quaterniond q(pose_err.rotation());
+  VectorXd err = concat(VectorXd(q.x(), q.y(), q.z()), pose_err.translation());
   return err;  
 }
 
@@ -77,14 +74,17 @@ CartPoseConstraint::CartPoseConstraint(const VarVector& vars, const OR::Transfor
 {}
 #endif
 
-void CartPoseErrorPlotter::Plot(const DblVec& x, OR::EnvironmentBase& env, std::vector<OR::GraphHandlePtr>& handles) {
+void CartPoseErrorPlotter::Plot(const DblVec& x) {
   CartPoseErrCalculator* calc = static_cast<CartPoseErrCalculator*>(m_calc.get());
-  DblVec dof_vals = getDblVec(x, m_vars);
-  calc->manip_->SetDOFValues(dof_vals);
-  OR::Transform target = calc->pose_inv_.inverse(), cur = calc->link_->GetTransform();
-  PlotAxes(env, cur, .05,  handles);
-  PlotAxes(env, target, .05,  handles);
-  handles.push_back(env.drawarrow(cur.trans, target.trans, .005, OR::Vector(1,0,1,1)));
+  VectorXd dof_vals = getVec(x, m_vars);
+  Affine3d cur_pose;
+  calc->manip_->calcFwdKin(dof_vals, cur_pose, calc->link_);
+
+  Affine3d target = calc->pose_inv_.inverse();
+  // TODO: Levi add ros plotter, publish markers
+//  PlotAxes(env, cur, .05,  handles);
+//  PlotAxes(env, target, .05,  handles);
+//  handles.push_back(env.drawarrow(cur.trans, target.trans, .005, OR::Vector(1,0,1,1)));
 }
 
 
@@ -107,30 +107,36 @@ struct CartPositionErrCalculator {
 #endif
 
 MatrixXd CartVelJacCalculator::operator()(const VectorXd& dof_vals) const {
-  int n_dof = manip_->GetDOF();
+  int n_dof = manip_->numJoints();
   MatrixXd out(6, 2*n_dof);
-  manip_->SetDOFValues(toDblVec(dof_vals.topRows(n_dof)));
-  OR::Transform pose0 = link_->GetTransform();
-  MatrixXd jac0 = manip_->PositionJacobian(link_->GetIndex(), pose0.trans);
-  manip_->SetDOFValues(toDblVec(dof_vals.bottomRows(n_dof)));
-  OR::Transform pose1 = link_->GetTransform();
-  MatrixXd jac1 = manip_->PositionJacobian(link_->GetIndex(), pose1.trans);
-  out.block(0,0,3,n_dof) = -jac0;
-  out.block(0,n_dof,3,n_dof) = jac1;
-  out.block(3,0,3,n_dof) = jac0;
-  out.block(3,n_dof,3,n_dof) = -jac1;
+
+//  Affine3d pose0;
+//  manip_->calcFwdKin(dof_vals.topRows(n_dof), pose0, link_);
+  MatrixXd jac0;
+  manip_->calcJacobian(dof_vals.topRows(n_dof), jac0, link_);
+
+//  Affine3d pose1;
+//  manip_->calcFwdKin(dof_vals.bottomRows(n_dof), pose1, link_);
+  MatrixXd jac1;
+  manip_->calcJacobian(dof_vals.bottomRows(n_dof), jac1, link_);
+  out.block(0,0,3,n_dof) = -jac0.topRows(3);
+  out.block(0,n_dof,3,n_dof) = jac1.topRows(3);
+  out.block(3,0,3,n_dof) = jac0.topRows(3);
+  out.block(3,n_dof,3,n_dof) = -jac1.topRows(3);
   return out;
 }
 
 VectorXd CartVelCalculator::operator()(const VectorXd& dof_vals) const {
-  int n_dof = manip_->GetDOF();
-  manip_->SetDOFValues(toDblVec(dof_vals.topRows(n_dof)));
-  OR::Transform pose0 = link_->GetTransform();
-  manip_->SetDOFValues(toDblVec(dof_vals.bottomRows(n_dof)));
-  OR::Transform pose1 = link_->GetTransform();
+  int n_dof = manip_->numJoints();
+  Affine3d pose0;
+  manip_->calcFwdKin(dof_vals.topRows(n_dof), pose0, link_);
+
+  Affine3d pose1;
+  manip_->calcFwdKin(dof_vals.bottomRows(n_dof), pose1, link_);
+
   VectorXd out(6);
-  out.topRows(3) = toVector3d(pose1.trans - pose0.trans - OR::Vector(limit_,limit_,limit_));
-  out.bottomRows(3) = toVector3d( - pose1.trans + pose0.trans - OR::Vector(limit_, limit_, limit_));
+  out.topRows(3) = (pose1.translation() - pose0.translation() - Vector3d(limit_, limit_, limit_));
+  out.bottomRows(3) = (pose0.translation() - pose1.translation() - Vector3d(limit_, limit_, limit_));
   return out;
 }
 

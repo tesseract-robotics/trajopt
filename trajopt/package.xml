@@ -9,6 +9,7 @@
 
   <buildtool_depend>catkin</buildtool_depend>
   <test_depend>gtest</test_depend>
+  <test_depend>rostest</test_depend>
   <depend>trajopt_sco</depend>
   <depend>trajopt_utils</depend>
   <depend>trajopt_ext</depend>
@@ -17,7 +18,6 @@
   <depend>urdf</depend>
   <depend>moveit_core</depend>
   <depend>moveit_ros_planning</depend>
-  <depend>constrained_ik</depend>
   <!-- The export tag contains other, unspecified, tags -->
   <export>
     <!-- Other tools can request additional information be placed here -->

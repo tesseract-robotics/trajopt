@@ -29,13 +29,14 @@ public:
 
 
 struct CartPoseErrCalculator : public VectorOfVector {
-  OR::Transform pose_inv_;
-  ConfigurationPtr manip_;
-  OR::KinBody::LinkPtr link_;
-  CartPoseErrCalculator(const OR::Transform& pose, ConfigurationPtr manip, OR::KinBody::LinkPtr link) :
+  Eigen::Affine3d pose_inv_;
+  BasicKinPtr manip_;
+  std::string link_;
+  CartPoseErrCalculator(const Eigen::Affine3d& pose, BasicKinPtr manip, std::string link) :
     pose_inv_(pose.inverse()),
     manip_(manip),
     link_(link) {}
+
   VectorXd operator()(const VectorXd& dof_vals) const;
 };
 
@@ -43,25 +44,25 @@ struct CartPoseErrorPlotter : public Plotter {
   boost::shared_ptr<void> m_calc; //actually points to a CartPoseErrCalculator = CartPoseCost::f_
   VarVector m_vars;
   CartPoseErrorPlotter(boost::shared_ptr<void> calc, const VarVector& vars) : m_calc(calc), m_vars(vars) {}
-  void Plot(const DblVec& x, OR::EnvironmentBase& env, std::vector<OR::GraphHandlePtr>& handles);
+  void Plot(const DblVec& x);
 };
 
 
 struct CartVelJacCalculator : MatrixOfVector {
-  ConfigurationPtr manip_;
-  KinBody::LinkPtr link_;
+  BasicKinPtr manip_;
+  std::string link_;
   double limit_;
-  CartVelJacCalculator(ConfigurationPtr manip, KinBody::LinkPtr link, double limit) :
+  CartVelJacCalculator(BasicKinPtr manip, std::string link, double limit) :
     manip_(manip), link_(link), limit_(limit) {}
 
   MatrixXd operator()(const VectorXd& dof_vals) const;
 };
 
 struct CartVelCalculator : VectorOfVector {
-  ConfigurationPtr manip_;
-  KinBody::LinkPtr link_;
+  BasicKinPtr manip_;
+  std::string link_;
   double limit_;
-  CartVelCalculator(ConfigurationPtr manip, KinBody::LinkPtr link, double limit) :
+  CartVelCalculator(BasicKinPtr manip, std::string link, double limit) :
     manip_(manip), link_(link), limit_(limit) {}
 
   VectorXd operator()(const VectorXd& dof_vals) const;

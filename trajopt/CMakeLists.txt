@@ -13,7 +13,6 @@ find_package(catkin REQUIRED COMPONENTS
   urdf
   moveit_core
   moveit_ros_planning
-  constrained_ik
 )
 
 find_package(Eigen3 REQUIRED)
@@ -29,19 +28,14 @@ set(OpenRAVE_BOTH_LIBRARIES ${OpenRAVE_LIBRARIES} ${OpenRAVE_CORE_LIBRARIES})
 set(BULLET_LIBRARIES BulletCollision LinearMath)
 
 set(TRAJOPT_SOURCE_FILES
-    src/traj_plotter.cpp
     src/trajectory_costs.cpp
     src/kinematic_terms.cpp
     src/collision_terms.cpp
     src/json_marshal.cpp
     src/problem_description.cpp
-    src/bullet_collision_checker.cpp
-    src/configuration_space.cpp
     src/utils.cpp
-    src/rave_utils.cpp
-    src/collision_checker.cpp
     src/plot_callback.cpp
-    src/bullet_unity.cpp
+    src/ros_kin.cpp
 )
 
 catkin_package(
@@ -56,7 +50,6 @@ catkin_package(
     urdf
     moveit_core
     moveit_ros_planning
-    constrained_ik
 #  DEPENDS system_lib
 )
 
@@ -80,8 +73,8 @@ include_directories(test)
 if (CATKIN_ENABLE_TESTING)
   find_package(rostest REQUIRED)
 
-  add_rostest_gtest(${PROJECT_NAME}-planning-unit test/planning-unit.launch test/planning-unit.cpp)
-  target_link_libraries(${PROJECT_NAME}-planning-unit ${PROJECT_NAME} ${Boost_SYSTEM_LIBRARY} ${Boost_PROGRAM_OPTIONS_LIBRARY} ${catkin_LIBRARIES})
+  add_rostest_gtest(${PROJECT_NAME}_planning_unit test/planning_unit.launch test/planning_unit.cpp)
+  target_link_libraries(${PROJECT_NAME}_planning_unit ${PROJECT_NAME} ${Boost_SYSTEM_LIBRARY} ${Boost_PROGRAM_OPTIONS_LIBRARY} ${catkin_LIBRARIES})
 endif()
 
 #if (CATKIN_ENABLE_TESTING)

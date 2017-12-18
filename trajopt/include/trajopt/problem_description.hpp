@@ -1,9 +1,10 @@
 #pragma once
 #include <trajopt/common.hpp>
 #include <trajopt/json_marshal.hpp>
-#include <trajopt/traj_plotter.hpp>
 #include <boost/function.hpp>
 #include <boost/shared_ptr.hpp>
+#include <moveit/planning_scene/planning_scene.h>
+#include <trajopt/basic_kin.h>
 
 
 namespace sco{struct OptResults;}
@@ -12,6 +13,7 @@ namespace trajopt {
 
 using namespace json_marshal;
 using namespace Json;
+
 typedef Json::Value TrajOptRequest;
 typedef Json::Value TrajOptResponse;
 using std::string;
@@ -25,7 +27,7 @@ struct TrajOptResult;
 typedef boost::shared_ptr<TrajOptResult> TrajOptResultPtr;
 
 TrajOptProbPtr TRAJOPT_API ConstructProblem(const ProblemConstructionInfo&);
-TrajOptProbPtr TRAJOPT_API ConstructProblem(const Json::Value&, OpenRAVE::EnvironmentBasePtr env);
+TrajOptProbPtr TRAJOPT_API ConstructProblem(const Json::Value&, PlanningScenePtr planning_scene);
 TrajOptResultPtr TRAJOPT_API OptimizeProblem(TrajOptProbPtr, bool plot);
 
 enum TermType {
@@ -47,7 +49,7 @@ enum TermType {
 class TRAJOPT_API TrajOptProb : public OptProb {
 public:
   TrajOptProb();
-  TrajOptProb(int n_steps, ConfigurationPtr rad);
+  TrajOptProb(int n_steps,const ProblemConstructionInfo &pci);
   ~TrajOptProb() {}
   VarVector GetVarRow(int i) {
     return m_traj_vars.row(i);
@@ -60,21 +62,19 @@ public:
   }
   int GetNumSteps() {return m_traj_vars.rows();}
   int GetNumDOF() {return m_traj_vars.cols();}
-  ConfigurationPtr GetRAD() {return m_rad;}
-  OR::EnvironmentBasePtr GetEnv() {return m_rad->GetEnv();}
+  BasicKinPtr GetKin() {return kin;}
+  PlanningScenePtr GetEnv() {return planning_scene;}
 
   void SetInitTraj(const TrajArray& x) {m_init_traj = x;}
   TrajArray GetInitTraj() {return m_init_traj;}
-
-  TrajPlotterPtr GetPlotter() {return m_trajplotter;}
 
   friend TrajOptProbPtr ConstructProblem(const ProblemConstructionInfo&);
 
 private:
   VarArray m_traj_vars;
-  ConfigurationPtr m_rad;
+  BasicKinPtr kin;
+  PlanningScenePtr planning_scene;
   TrajArray m_init_traj;
-  TrajPlotterPtr m_trajplotter;
 };
 
 void TRAJOPT_API SetupPlotting(TrajOptProb& prob, Optimizer& opt);
@@ -151,10 +151,10 @@ public:
   vector<TermInfoPtr> cnt_infos;
   InitInfo init_info;
 
-  OR::EnvironmentBasePtr env;
-  RobotAndDOFPtr rad;
+  PlanningScenePtr planning_scene;
+  BasicKinPtr kin;
 
-  ProblemConstructionInfo(OR::EnvironmentBasePtr _env) : env(_env) {}
+  ProblemConstructionInfo(planning_scene::PlanningScenePtr planning_scene) : planning_scene(planning_scene) {}
   void fromJson(const Value& v);
 };
 
@@ -169,7 +169,7 @@ struct PoseCostInfo : public TermInfo, public MakesCost, public MakesConstraint 
   Vector4d wxyz;
   Vector3d pos_coeffs, rot_coeffs;
   // double coeff;
-  KinBody::LinkPtr link;
+  std::string link; //LEVI This may need to be moveit LinkModel
   void fromJson(const Value& v);
   void hatch(TrajOptProb& prob);
   DEFINE_CREATE(PoseCostInfo);
@@ -201,7 +201,7 @@ struct JointPosCostInfo : public TermInfo, public MakesCost {
  */
 struct CartVelCntInfo : public TermInfo, public MakesConstraint {
   int first_step, last_step;
-  KinBody::LinkPtr link;
+  std::string link; //LEVI This may need to be moveit LinkModel
   double max_displacement;
   void fromJson(const Value& v);
   void hatch(TrajOptProb& prob);

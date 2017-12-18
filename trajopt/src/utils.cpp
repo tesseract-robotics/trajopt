@@ -14,6 +14,7 @@ TrajArray getTraj(const DblVec& x, const VarArray& vars) {
   }
   return out;
 }
+
 TrajArray getTraj(const DblVec& x, const AffArray& arr) {
   MatrixXd out(arr.rows(), arr.cols());
   for (int i=0; i < arr.rows(); ++i) {
@@ -23,14 +24,6 @@ TrajArray getTraj(const DblVec& x, const AffArray& arr) {
   }
   return out;
 }
-
-
-Eigen::Matrix3d toRot(const OR::Vector& rq) {
-  Eigen::Affine3d T;
-  T = Eigen::Quaterniond(rq[0], rq[1], rq[2], rq[3]);
-  return T.rotation();
-}
-
 
 void AddVarArrays(OptProb& prob, int rows, const vector<int>& cols, const vector<string>& name_prefix, const vector<VarArray*>& newvars) {
   int n_arr = name_prefix.size();
