@@ -30,12 +30,13 @@ set(BULLET_LIBRARIES BulletCollision LinearMath)
 set(TRAJOPT_SOURCE_FILES
     src/trajectory_costs.cpp
     src/kinematic_terms.cpp
-    src/collision_terms.cpp
+#    src/collision_terms.cpp
     src/json_marshal.cpp
     src/problem_description.cpp
     src/utils.cpp
-    src/plot_callback.cpp
+    #src/plot_callback.cpp
     src/ros_kin.cpp
+    src/ros_env.cpp
 )
 
 catkin_package(
@@ -71,6 +72,7 @@ include_directories(test)
 #target_link_libraries(${PROJECT_NAME}-planning-unit ${PROJECT_NAME} gtest gtest_main ${Boost_SYSTEM_LIBRARY} ${Boost_PROGRAM_OPTIONS_LIBRARY} ${catkin_LIBRARIES})
 
 if (CATKIN_ENABLE_TESTING)
+  add_definitions(-DDATA_DIR="${CMAKE_SOURCE_DIR}/data")
   find_package(rostest REQUIRED)
 
   add_rostest_gtest(${PROJECT_NAME}_planning_unit test/planning_unit.launch test/planning_unit.cpp)

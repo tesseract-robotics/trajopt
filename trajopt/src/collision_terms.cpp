@@ -95,8 +95,8 @@ void CollisionEvaluator::GetCollisionsCached(const DblVec& x, vector<Collision>&
   }
 }
 
-SingleTimestepCollisionEvaluator::SingleTimestepCollisionEvaluator(BasicKinPtr manip, BasicCollPtr coll, const VarVector& vars) :
-  CollisionEvaluator(manip, coll), m_vars(vars)
+SingleTimestepCollisionEvaluator::SingleTimestepCollisionEvaluator(BasicKinPtr manip, BasicEnvPtr env, const VarVector& vars) :
+  CollisionEvaluator(manip, env), m_vars(vars)
 {
   vector<KinBody::LinkPtr> links;
   vector<int> inds;
@@ -130,8 +130,8 @@ void SingleTimestepCollisionEvaluator::CalcDistExpressions(const DblVec& x, vect
 
 ////////////////////////////////////////
 
-CastCollisionEvaluator::CastCollisionEvaluator(BasicKinPtr manip, BasicCollPtr coll, const VarVector& vars0, const VarVector& vars1) :
-  CollisionEvaluator(manip, coll), m_vars0(vars0),m_vars1(vars1)
+CastCollisionEvaluator::CastCollisionEvaluator(BasicKinPtr manip, BasicEnvPtr env, const VarVector& vars0, const VarVector& vars1) :
+  CollisionEvaluator(manip, env), m_vars0(vars0),m_vars1(vars1)
 {
   vector<KinBody::LinkPtr> links;
   vector<int> inds;
@@ -181,12 +181,12 @@ void PlotCollisions(const std::vector<Collision>& collisions, double safe_dist) 
   }
 }
 
-CollisionCost::CollisionCost(double dist_pen, double coeff, BasicKinPtr manip, BasicCollPtr coll, const VarVector& vars) :
+CollisionCost::CollisionCost(double dist_pen, double coeff, BasicKinPtr manip, BasicEnvPtr env, const VarVector& vars) :
     Cost("collision"),
     m_calc(new SingleTimestepCollisionEvaluator(manip, coll, vars)), m_dist_pen(dist_pen), m_coeff(coeff)
 {}
 
-CollisionCost::CollisionCost(double dist_pen, double coeff, BasicKinPtr manip, BasicCollPtr coll, const VarVector& vars0, const VarVector& vars1) :
+CollisionCost::CollisionCost(double dist_pen, double coeff, BasicKinPtr manip, BasicEnvPtr env, const VarVector& vars0, const VarVector& vars1) :
     Cost("cast_collision"),
     m_calc(new CastCollisionEvaluator(manip, coll, vars0, vars1)), m_dist_pen(dist_pen), m_coeff(coeff)
 {}
@@ -218,13 +218,13 @@ void CollisionCost::Plot(const DblVec& x) {
 
 // ALMOST EXACTLY COPIED FROM CollisionCost
 
-CollisionConstraint::CollisionConstraint(double dist_pen, double coeff, BasicKinPtr manip, BasicCollPtr coll, const VarVector& vars) :
+CollisionConstraint::CollisionConstraint(double dist_pen, double coeff, BasicKinPtr manip, BasicEnvPtr env, const VarVector& vars) :
     m_calc(new SingleTimestepCollisionEvaluator(manip, coll, vars)), m_dist_pen(dist_pen), m_coeff(coeff)
 {
   name_="collision";
 }
 
-CollisionConstraint::CollisionConstraint(double dist_pen, double coeff, BasicKinPtr manip, BasicCollPtr coll, const VarVector& vars0, const VarVector& vars1) :
+CollisionConstraint::CollisionConstraint(double dist_pen, double coeff, BasicKinPtr manip, BasicEnvPtr env, const VarVector& vars0, const VarVector& vars1) :
     m_calc(new CastCollisionEvaluator(manip, coll, vars0, vars1)), m_dist_pen(dist_pen), m_coeff(coeff)
 {
   name_="collision";

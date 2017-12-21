@@ -17,21 +17,18 @@ namespace trajopt
  * Typically, just wrappers around the equivalent KDL calls.
  *
  */
-class ROSKin : public BasicKin
+class TRAJOPT_API ROSKin : public BasicKin
 {
 public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-  ROSKin() : group_(NULL) {}
+  ROSKin() : BasicKin(), initialized_(false), group_(NULL) {}
 
   bool calcFwdKin(const Eigen::VectorXd &joint_angles, Eigen::Affine3d &pose) const;
 
   bool calcFwdKin(const Eigen::VectorXd &joint_angles, Eigen::Affine3d &pose, const std::string &link_name) const;
 
-  bool calcFwdKin(const Eigen::VectorXd &joint_angles,
-                  const std::string &base,
-                  const std::string &tip,
-                  Eigen::Affine3d &pose) const;
+  bool calcFwdKin(const Eigen::VectorXd &joint_angles, const std::string &base, const std::string &tip, Eigen::Affine3d &pose) const;
 
   bool calcJacobian(const Eigen::VectorXd &joint_angles, Eigen::MatrixXd &jacobian) const;
 
@@ -41,9 +38,9 @@ public:
 
   bool getJointNames(std::vector<std::string> &names) const;
 
-  Eigen::MatrixXd getLimits() const { return joint_limits_; }
-
   bool getLinkNames(std::vector<std::string> &names) const;
+
+  Eigen::MatrixXd getLimits() const { return joint_limits_; }
 
   /**
    * @brief Initializes ROSKin
@@ -52,6 +49,12 @@ public:
    * @return True if init() completes successfully
    */
   bool init(const moveit::core::JointModelGroup* group);
+
+  /**
+   * @brief Checks if BasicKin is initialized (init() has been run: urdf model loaded, etc.)
+   * @return True if init() has completed successfully
+   */
+  bool checkInitialized() const { return initialized_; }
 
   /**
    * @brief Get the name of the kinematic group
@@ -73,9 +76,11 @@ public:
    */
   bool getSubChain(const std::string link_name, KDL::Chain &chain) const;
 
-  std::string getRobotBaseLinkName() const { return base_name_; }
+  std::string getBaseLinkName() const { return base_name_; }
 
-  std::string getRobotTipLinkName() const { return tip_name_; }
+  std::string getTipLinkName() const { return tip_name_; }
+
+  std::string getName() const { return group_->getName(); }
 
   /**
    * @brief Assigns values from another ROSKin to this

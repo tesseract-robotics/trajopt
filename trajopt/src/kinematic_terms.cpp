@@ -60,7 +60,7 @@ VectorXd CartPoseErrCalculator::operator()(const VectorXd& dof_vals) const {
 
   Affine3d pose_err = pose_inv_ * new_pose;
   Quaterniond q(pose_err.rotation());
-  VectorXd err = concat(VectorXd(q.x(), q.y(), q.z()), pose_err.translation());
+  VectorXd err = concat(Vector3d(q.x(), q.y(), q.z()), pose_err.translation());
   return err;  
 }
 

@@ -30,22 +30,17 @@
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include <trajopt/common.hpp>
+#include <trajopt/basic_kin.h>
 
 namespace trajopt
 {
 
-class TRAJOPT_API BasicColl
+class TRAJOPT_API BasicEnv
 {
 public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-  BasicColl() : initialized_(false) {}
-
-  /**
-   * @brief Initializes BasicColl
-   * @return True if init() completes successfully
-   */
-  virtual bool init() = 0;
+  BasicEnv() {}
 
   /**
    * @brief calcDistances Should return distance information for all active links
@@ -73,12 +68,35 @@ public:
    */
   virtual void calcCollisions(const Eigen::VectorXd &joint_angles, const std::vector<std::string> &link_names) = 0;
 
-private:
-  bool initialized_; /**< Identifies if the object has been initialized */
+  /**
+   * @brief getCurrentJointValues Get the current state of the manipulator
+   * @return A vector of joint values
+   */
+  virtual Eigen::VectorXd getCurrentJointValues(std::string manipulator_name) const = 0;
+
+//  /**
+//   * @brief getCurrentJointValues Get the current state of all joints
+//   * @return A vector of joint values
+//   */
+//  virtual Eigen::VectorXd getCurrentJointValues() const = 0;
+
+  /**
+   * @brief hasManipulator Check if a manipulator exist in the environment
+   * @param manipulator_name Name of the manipulator
+   * @return True if it exists otherwise false
+   */
+  virtual bool hasManipulator(std::string manipulator_name) const = 0;
+
+  /**
+   * @brief getManipulatorKin Get a kinematic object for the provided manipulator name.
+   * @param manipulator_name Name of the manipulator
+   * @return BasicKinPtr
+   */
+  virtual BasicKinPtr getManipulatorKin(std::string manipulator_name) const = 0;
 
 }; // class BasicColl
 
-typedef boost::shared_ptr<BasicColl> BasicCollPtr;
+typedef boost::shared_ptr<BasicEnv> BasicEnvPtr;
 } // namespace trajopt
 
 #endif // BASIC_COLL_H

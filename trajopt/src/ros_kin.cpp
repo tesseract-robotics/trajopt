@@ -69,7 +69,7 @@ bool ROSKin::calcFwdKin(const Eigen::VectorXd &joint_angles, Eigen::Affine3d &po
   if (!checkJoints(joint_angles)) return false;
 
   int link_num = getLinkNum(link_name);
-  return calcFwdKinHelper(joint_angles, pose, link_num < 0 ? -1 : link_num + 1);/*root=0, link1=1, therefore add +1 to link num*/
+  return calcFwdKinHelper(joint_angles, pose, link_num < 0 ? -1 : link_num + 1);
 }
 
 bool ROSKin::calcFwdKin(const Eigen::VectorXd &joint_angles,
@@ -121,7 +121,7 @@ bool ROSKin::calcJacobianHelper(const Eigen::VectorXd &joint_angles, Eigen::Matr
   return true;
 }
 
-bool ROSKin::calcJacobian(const VectorXd &joint_angles, MatrixXd &jacobian) const
+bool ROSKin::calcJacobian(const Eigen::VectorXd &joint_angles, Eigen::MatrixXd &jacobian) const
 {
   if (!checkInitialized()) return false;
   if (!checkJoints(joint_angles)) return false;
@@ -135,10 +135,10 @@ bool ROSKin::calcJacobian(const Eigen::VectorXd &joint_angles, Eigen::MatrixXd &
   if (!checkJoints(joint_angles)) return false;
 
   int link_num = getLinkNum(link_name);
-  return calcJacobianHelper(joint_angles, jacobian, link_num < 0 ? -1 : link_num + 1); /*root=0, link1=1, therefore add +1 to link num*/
+  return calcJacobianHelper(joint_angles, jacobian, link_num < 0 ? -1 : link_num + 1);
 }
 
-bool ROSKin::checkJoints(const VectorXd &vec) const
+bool ROSKin::checkJoints(const Eigen::VectorXd &vec) const
 {
   if (vec.size() != robot_chain_.getNrOfJoints())
   {
@@ -147,15 +147,15 @@ bool ROSKin::checkJoints(const VectorXd &vec) const
     return false;
   }
 
-  bool jnt_bounds_ok = true;
   for (int i=0; i<vec.size(); ++i)
+  {
     if ( (vec[i] < joint_limits_(i,0)) || (vec(i) > joint_limits_(i,1)) )
     {
-      ROS_ERROR("Joint %d is out-of-range (%g < %g < %g)",
-                i, joint_limits_(i,0), vec(i), joint_limits_(i,1));
-      jnt_bounds_ok = false;
+      ROS_ERROR("Joint %s is out-of-range (%g < %g < %g)",
+                joint_list_[i].c_str(), joint_limits_(i,0), vec(i), joint_limits_(i,1));
+      return false;
     }
-  if (jnt_bounds_ok == false) return false;
+  }
 
   return true;
 }
@@ -189,7 +189,7 @@ int ROSKin::getJointNum(const std::string &joint_name) const
     {
         return it-joint_list_.begin();
     }
-    return it-joint_list_.begin()+1;
+    return -1;
 }
 
 int ROSKin::getLinkNum(const std::string &link_name) const
@@ -199,7 +199,7 @@ int ROSKin::getLinkNum(const std::string &link_name) const
     {
         return it-link_list_.begin();
     }
-    return it-link_list_.begin()+1;
+    return -1;
 }
 
 bool ROSKin::init(const moveit::core::JointModelGroup* group)
@@ -250,6 +250,14 @@ bool ROSKin::init(const moveit::core::JointModelGroup* group)
     joint_list_[j] = jnt.getName();
     joint_limits_(j,0) = urdf->getJoint(jnt.getName())->limits->lower;
     joint_limits_(j,1) = urdf->getJoint(jnt.getName())->limits->upper;
+
+    // Need to set limits for continuous joints. TODO: This may not be required by the optization library but may be nice to have
+    if (urdf->getJoint(jnt.getName())->type == urdf::Joint::CONTINUOUS && std::abs(joint_limits_(j,0) - joint_limits_(j,1)) <= std::numeric_limits<float>::epsilon())
+    {
+      joint_limits_(j,0) = -4 * M_PI;
+      joint_limits_(j,1) = +4 * M_PI;
+    }
+
     j++;
   }
 

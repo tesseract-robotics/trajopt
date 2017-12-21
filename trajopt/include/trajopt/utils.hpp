@@ -1,6 +1,5 @@
 #pragma once
 #include <trajopt/typedefs.hpp>
-#include <openrave/openrave.h>
 
 namespace trajopt {
 

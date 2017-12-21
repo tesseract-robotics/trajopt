@@ -1,7 +1,7 @@
 {
   "basic_info" : {
     "n_steps" : 1,
-    "manip" : "leftarm",
+    "manip" : "left_arm",
     "start_fixed" : false
   },
   "costs" : [

@@ -1,0 +1,137 @@
+[ RUN      ] PlanningTest.numerical_ik1
+2017-12-19 22:19:23,948 openrave [WARN] [kinbody.cpp:1524 KinBody::SetDOFValues] dof 12 value is not in limits 0.000000e+00<1.150000e-02
+2017-12-19 22:19:23,948 openrave [WARN] [kinbody.cpp:1535 KinBody::SetDOFValues] dof 18 value is not in limits 0.000000e+00<-1.500001e-01
+2017-12-19 22:19:23,948 openrave [WARN] [kinbody.cpp:1535 KinBody::SetDOFValues] dof 20 value is not in limits 0.000000e+00<-1.000000e-01
+2017-12-19 22:19:23,948 openrave [WARN] [kinbody.cpp:1535 KinBody::SetDOFValues] dof 30 value is not in limits 0.000000e+00<-1.500001e-01
+2017-12-19 22:19:23,948 openrave [WARN] [kinbody.cpp:1535 KinBody::SetDOFValues] dof 32 value is not in limits 0.000000e+00<-1.000000e-01
+[INFO] iteration 1
+[INFO]  
+                |   oldexact |    dapprox |     dexact |      ratio
+          COSTS | -------------------------------------------------
+           pose |  1.817e+01 |  1.269e+00 |  1.348e+00 |  1.062e+00
+          TOTAL |  1.817e+01 |  1.269e+00 |  1.348e+00 |  1.062e+00
+[INFO] expanded trust region. new box size: 0.1500
+[INFO] iteration 2
+[INFO]  
+                |   oldexact |    dapprox |     dexact |      ratio
+          COSTS | -------------------------------------------------
+           pose |  1.682e+01 |  1.043e+00 |  1.155e+00 |  1.108e+00
+          TOTAL |  1.682e+01 |  1.043e+00 |  1.155e+00 |  1.108e+00
+[INFO] expanded trust region. new box size: 0.2250
+[INFO] iteration 3
+[INFO]  
+                |   oldexact |    dapprox |     dexact |      ratio
+          COSTS | -------------------------------------------------
+           pose |  1.566e+01 |  1.204e+00 |  6.984e-01 |  5.803e-01
+          TOTAL |  1.566e+01 |  1.204e+00 |  6.984e-01 |  5.803e-01
+[INFO] expanded trust region. new box size: 0.3375
+[INFO] iteration 4
+[INFO]  
+                |   oldexact |    dapprox |     dexact |      ratio
+          COSTS | -------------------------------------------------
+           pose |  1.497e+01 |  2.224e+00 |  1.234e+00 |  5.546e-01
+          TOTAL |  1.497e+01 |  2.224e+00 |  1.234e+00 |  5.546e-01
+[INFO] expanded trust region. new box size: 0.5063
+[INFO] iteration 5
+[INFO]  
+                |   oldexact |    dapprox |     dexact |      ratio
+          COSTS | -------------------------------------------------
+           pose |  1.373e+01 |  5.229e+00 |  3.048e+00 |  5.830e-01
+          TOTAL |  1.373e+01 |  5.229e+00 |  3.048e+00 |  5.830e-01
+[INFO] expanded trust region. new box size: 0.7594
+[INFO] iteration 6
+[INFO]  
+                |   oldexact |    dapprox |     dexact |      ratio
+          COSTS | -------------------------------------------------
+           pose |  1.068e+01 |  6.885e+00 |  4.494e+00 |  6.527e-01
+          TOTAL |  1.068e+01 |  6.885e+00 |  4.494e+00 |  6.527e-01
+[INFO] expanded trust region. new box size: 1.1391
+[INFO] iteration 7
+[INFO]  
+                |   oldexact |    dapprox |     dexact |      ratio
+          COSTS | -------------------------------------------------
+           pose |  6.189e+00 |  5.520e+00 |  1.680e+00 |  3.044e-01
+          TOTAL |  6.189e+00 |  5.520e+00 |  1.680e+00 |  3.044e-01
+[INFO] expanded trust region. new box size: 1.7086
+[INFO] iteration 8
+[INFO]  
+                |   oldexact |    dapprox |     dexact |      ratio
+          COSTS | -------------------------------------------------
+           pose |  4.509e+00 |  4.367e+00 | -1.019e+01 | -2.334e+00
+          TOTAL |  4.509e+00 |  4.367e+00 | -1.019e+01 | -2.334e+00
+[INFO] shrunk trust region. new box size: 0.1709
+[INFO]  
+                |   oldexact |    dapprox |     dexact |      ratio
+          COSTS | -------------------------------------------------
+           pose |  4.509e+00 |  3.964e+00 |  3.847e+00 |  9.705e-01
+          TOTAL |  4.509e+00 |  3.964e+00 |  3.847e+00 |  9.705e-01
+[INFO] expanded trust region. new box size: 0.2563
+[INFO] iteration 9
+[INFO]  
+                |   oldexact |    dapprox |     dexact |      ratio
+          COSTS | -------------------------------------------------
+           pose |  6.619e-01 |  6.047e-01 |  4.221e-01 |  6.980e-01
+          TOTAL |  6.619e-01 |  6.047e-01 |  4.221e-01 |  6.980e-01
+[INFO] expanded trust region. new box size: 0.3844
+[INFO] iteration 10
+[INFO]  
+                |   oldexact |    dapprox |     dexact |      ratio
+          COSTS | -------------------------------------------------
+           pose |  2.398e-01 |  2.220e-01 | -4.387e-01 | -1.976e+00
+          TOTAL |  2.398e-01 |  2.220e-01 | -4.387e-01 | -1.976e+00
+[INFO] shrunk trust region. new box size: 0.0384
+[INFO]  
+                |   oldexact |    dapprox |     dexact |      ratio
+          COSTS | -------------------------------------------------
+           pose |  2.398e-01 |  1.645e-01 |  1.550e-01 |  9.419e-01
+          TOTAL |  2.398e-01 |  1.645e-01 |  1.550e-01 |  9.419e-01
+[INFO] expanded trust region. new box size: 0.0577
+[INFO] iteration 11
+[INFO]  
+                |   oldexact |    dapprox |     dexact |      ratio
+          COSTS | -------------------------------------------------
+           pose |  8.484e-02 |  1.354e-02 |  4.098e-03 |  3.027e-01
+          TOTAL |  8.484e-02 |  1.354e-02 |  4.098e-03 |  3.027e-01
+[INFO] expanded trust region. new box size: 0.0865
+[INFO] iteration 12
+[INFO]  
+                |   oldexact |    dapprox |     dexact |      ratio
+          COSTS | -------------------------------------------------
+           pose |  8.074e-02 |  9.255e-03 | -1.239e-02 | -1.339e+00
+          TOTAL |  8.074e-02 |  9.255e-03 | -1.239e-02 | -1.339e+00
+[INFO] shrunk trust region. new box size: 0.0086
+[INFO]  
+                |   oldexact |    dapprox |     dexact |      ratio
+          COSTS | -------------------------------------------------
+           pose |  8.074e-02 |  7.508e-03 |  7.219e-03 |  9.615e-01
+          TOTAL |  8.074e-02 |  7.508e-03 |  7.219e-03 |  9.615e-01
+[INFO] expanded trust region. new box size: 0.0130
+[INFO] iteration 13
+[INFO]  
+                |   oldexact |    dapprox |     dexact |      ratio
+          COSTS | -------------------------------------------------
+           pose |  7.352e-02 |  3.848e-04 | -8.816e-05 | -2.291e-01
+          TOTAL |  7.352e-02 |  3.848e-04 | -8.816e-05 | -2.291e-01
+[INFO] shrunk trust region. new box size: 0.0013
+[INFO]  
+                |   oldexact |    dapprox |     dexact |      ratio
+          COSTS | -------------------------------------------------
+           pose |  7.352e-02 |  2.550e-04 |  2.502e-04 |  9.810e-01
+          TOTAL |  7.352e-02 |  2.550e-04 |  2.502e-04 |  9.810e-01
+[INFO] expanded trust region. new box size: 0.0019
+[INFO] iteration 14
+[INFO]  
+                |   oldexact |    dapprox |     dexact |      ratio
+          COSTS | -------------------------------------------------
+           pose |  7.327e-02 |  2.220e-05 |  1.135e-05 |  5.113e-01
+          TOTAL |  7.327e-02 |  2.220e-05 |  1.135e-05 |  5.113e-01
+[INFO] converged because improvement was small (2.220e-05 < 1.000e-04)
+[INFO] 
+==================
+Optimization results:
+status: CONVERGED
+cost values: (0.0732683)
+constraint violations: ()
+n func evals: 19
+n qp solves: 18
+

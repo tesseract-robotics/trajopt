@@ -36,13 +36,18 @@
 namespace trajopt
 {
 
-/** @brief Basic low-level kinematics functions. */
+/**
+ * @brief Basic low-level kinematics functions.
+ *
+ * All data should be returned or provided relative to the base link of the kinematic chain.
+ *
+ */
 class TRAJOPT_API BasicKin
 {
 public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-  BasicKin() : initialized_(false) {}
+  BasicKin() {}
 
   /**
    * @brief Calculates tool pose of robot chain
@@ -90,12 +95,6 @@ public:
   virtual bool calcJacobian(const Eigen::VectorXd &joint_angles, Eigen::MatrixXd &jacobian, const std::string &link_name) const = 0;
 
   /**
-   * @brief Checks if BasicKin is initialized (init() has been run: urdf model loaded, etc.)
-   * @return True if init() has completed successfully
-   */
-  virtual bool checkInitialized() const { return initialized_; }
-
-  /**
    * @brief Check for consistency in # and limits of joints
    * @param vec Vector of joint values
    * @return True if size of vec matches # of robot joints and all joints are within limits
@@ -110,12 +109,6 @@ public:
   virtual bool getJointNames(std::vector<std::string> &names) const = 0;
 
   /**
-   * @brief Getter for joint_limits_
-   * @return Matrix of joint limits
-   */
-  virtual Eigen::MatrixXd getLimits() const = 0;
-
-  /**
    * @brief Get list of link names for robot
    * @param names Output vector of names, copied from link_list_ created in init()
    * @return True if BasicKin has been successfully initialized
@@ -123,10 +116,10 @@ public:
   virtual bool getLinkNames(std::vector<std::string> &names) const = 0;
 
   /**
-   * @brief Initializes BasicKin
-   * @return True if init() completes successfully
+   * @brief Getter for joint_limits_
+   * @return Matrix of joint limits
    */
-  virtual bool init() = 0;
+  virtual Eigen::MatrixXd getLimits() const = 0;
 
   /**
    * @brief Number of joints in robot
@@ -135,17 +128,13 @@ public:
   virtual unsigned int numJoints() const = 0;
 
   /** @brief getter for the robot base link name */
-  virtual std::string getRobotBaseLinkName() const = 0;
+  virtual std::string getBaseLinkName() const = 0;
 
   /** @brief getter for the robot tip link name */
-  virtual std::string getRobotTipLinkName() const = 0;
+  virtual std::string getTipLinkName() const = 0;
 
-  /**
-   * @brief Assigns values from another BasicKin to this
-   * @param rhs Input BasicKin object to copy from
-   * @return reference to this BasicKin object
-   */
-  virtual BasicKin& operator=(const BasicKin& rhs) = 0;
+  /** @brief Name of the maniputlator */
+  virtual std::string getName() const = 0;
 
   /**
    * @brief Solve equation Ax=b for x
@@ -234,10 +223,6 @@ public:
     P = V * inv_Sv.asDiagonal() * U.transpose();
     return true;
   }
-
-private:
-  bool initialized_; /**< Identifies if the object has been initialized */
-
 }; // class BasicKin
 
 typedef boost::shared_ptr<BasicKin> BasicKinPtr;

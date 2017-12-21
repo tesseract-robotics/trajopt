@@ -11,6 +11,9 @@
 #include <trajopt_sco/optimizers.hpp>
 #include <boost/foreach.hpp>
 #include <boost/algorithm/string.hpp>
+
+#include <trajopt/ros_kin.h>
+
 using namespace Json;
 using namespace std;
 using namespace OpenRAVE;
@@ -45,7 +48,7 @@ void RegisterMakers() {
   TermInfo::RegisterMaker("pose", &PoseCostInfo::create);
   TermInfo::RegisterMaker("joint_pos", &JointPosCostInfo::create);
   TermInfo::RegisterMaker("joint_vel", &JointVelCostInfo::create);
-  TermInfo::RegisterMaker("collision", &CollisionCostInfo::create);
+//  TermInfo::RegisterMaker("collision", &CollisionCostInfo::create); TODO: Levi Fix
 
   TermInfo::RegisterMaker("joint", &JointConstraintInfo::create);
   TermInfo::RegisterMaker("cart_vel", &CartVelCntInfo::create);
@@ -167,15 +170,7 @@ void InitInfo::fromJson(const Json::Value& v) {
   childFromJson(v, type_str, "type");
   int n_steps = gPCI->basic_info.n_steps;
   int n_dof = gPCI->kin->numJoints();
-
-  // TODO: This should be getting this from the planning request.
-  const std::vector<std::string> joint_names= gPCI->kin->getJointModelGroup()->getActiveJointModelNames();
-  Eigen::VectorXd start_pos(n_dof);
-
-  for(auto j = 0u; j < joint_names.size(); j++)
-  {
-    start_pos(j) = gPCI->planning_scene->getCurrentState().getVariablePosition(joint_names[j]);
-  }
+  Eigen::VectorXd start_pos = gPCI->env->getCurrentJointValues(gPCI->kin->getName());
 
   if (type_str == "stationary") {
 //    data = toVectorXd(gPCI->rad->GetDOFValues()).transpose().replicate(n_steps, 1);
@@ -212,12 +207,11 @@ void InitInfo::fromJson(const Json::Value& v) {
 void ProblemConstructionInfo::fromJson(const Value& v) {
   childFromJson(v, basic_info, "basic_info");
 
-  if (!planning_scene->getRobotModel()->hasJointModelGroup(basic_info.manip))
+  if (!env->hasManipulator(basic_info.manip))
   {
-    ROS_ERROR_STREAM("Move group does not exist: " << basic_info.manip);
+    PRINT_AND_THROW(boost::format("Manipulator does not exist: %s")%basic_info.manip);
   }
-  kin.reset();
-  kin->init(planning_scene->getRobotModel()->getJointModelGroup(basic_info.manip));
+  kin = env->getManipulatorKin(basic_info.manip);
 
   gPCI = this;
   gReadingCosts=true;
@@ -252,9 +246,9 @@ TrajOptResultPtr OptimizeProblem(TrajOptProbPtr prob, bool plot) {
   opt.min_approx_improve_frac_ = .001;
   opt.improve_ratio_threshold_ = .2;
   opt.merit_error_coeff_ = 20;
-  if (plot) {
-    SetupPlotting(*prob, opt);
-  }
+//  if (plot) { TODO: Levi Fix
+//    SetupPlotting(*prob, opt);
+//  }
   opt.initialize(trajToDblVec(prob->GetInitTraj()));
   opt.optimize();
   return TrajOptResultPtr(new TrajOptResult(opt.results(), *prob));
@@ -268,10 +262,10 @@ TrajOptProbPtr ConstructProblem(const ProblemConstructionInfo& pci) {
   TrajOptProbPtr prob(new TrajOptProb(n_steps, pci));
   int n_dof = prob->GetKin()->numJoints();
 
-  DblVec cur_dofvals = prob->m_rad->GetDOFValues();
+  VectorXd cur_dofvals = prob->GetEnv()->getCurrentJointValues(prob->GetKin()->getName());
 
   if (bi.start_fixed) {
-    if (pci.init_info.data.rows() > 0 && !allClose(toVectorXd(cur_dofvals), pci.init_info.data.row(0))) {
+    if (pci.init_info.data.rows() > 0 && !allClose(cur_dofvals, pci.init_info.data.row(0))) {
       PRINT_AND_THROW( "robot dof values don't match initialization. I don't know what you want me to use for the dof values");
     }
     for (int j=0; j < n_dof; ++j) {
@@ -299,17 +293,18 @@ TrajOptProbPtr ConstructProblem(const ProblemConstructionInfo& pci) {
   return prob;
 
 }
-TrajOptProbPtr ConstructProblem(const Json::Value& root, PlanningScenePtr planning_scene) {
-  ProblemConstructionInfo pci(planning_scene);
+
+TrajOptProbPtr ConstructProblem(const Json::Value& root, BasicEnvPtr env) {
+  ProblemConstructionInfo pci(env);
   pci.fromJson(root);
   return ConstructProblem(pci);
 }
 
 
-TrajOptProb::TrajOptProb(int n_steps, const ProblemConstructionInfo &pci) : kin(pci.kin), planning_scene(pci.planning_scene) {
+TrajOptProb::TrajOptProb(int n_steps, const ProblemConstructionInfo &pci) : m_kin(pci.kin), m_env(pci.env) {
 
-  Eigen::MatrixXd limits = kin->getLimits();
-  int n_dof = kin->numJoints();
+  Eigen::MatrixXd limits = m_kin->getLimits();
+  int n_dof = m_kin->numJoints();
   Eigen::VectorXd lower, upper;
   lower = limits.col(0);
   upper = limits.col(1);
@@ -339,13 +334,11 @@ void PoseCostInfo::fromJson(const Value& v) {
   childFromJson(params, wxyz,"wxyz");
   childFromJson(params, pos_coeffs,"pos_coeffs", (Vector3d)Vector3d::Ones());
   childFromJson(params, rot_coeffs,"rot_coeffs", (Vector3d)Vector3d::Ones());
-
-  string linkstr;
-  childFromJson(params, linkstr, "link");
+  childFromJson(params, link, "link");
   std::vector<std::string> link_names;
   gPCI->kin->getLinkNames(link_names);
-  if (std::find(link_names.begin(), link_names.end(),linkstr)==link_names.end()) {
-    PRINT_AND_THROW(boost::format("invalid link name: %s")%linkstr);
+  if (std::find(link_names.begin(), link_names.end(),link)==link_names.end()) {
+    PRINT_AND_THROW(boost::format("invalid link name: %s")%link);
   }
 
   const char* all_fields[] = {"timestep", "xyz", "wxyz", "pos_coeffs", "rot_coeffs","link"};
@@ -353,8 +346,13 @@ void PoseCostInfo::fromJson(const Value& v) {
 
 }
 
-void PoseCostInfo::hatch(TrajOptProb& prob) {
-  VectorOfVectorPtr f(new CartPoseErrCalculator(toRaveTransform(wxyz, xyz), prob.GetRAD(), link));
+void PoseCostInfo::hatch(TrajOptProb& prob)
+{
+  Eigen::Affine3d input_pose;
+  Eigen::Quaterniond q(wxyz(0), wxyz(1), wxyz(2), wxyz(3));
+  input_pose.linear() = q.matrix();
+  input_pose.translation() = xyz;
+  VectorOfVectorPtr f(new CartPoseErrCalculator(input_pose, prob.GetKin(), link));
   if (term_type == TT_COST) {
     prob.addCost(CostPtr(new CostFromErrFunc(f, prob.GetVarRow(timestep), concat(rot_coeffs, pos_coeffs), ABS, name)));
   }
@@ -399,12 +397,11 @@ void CartVelCntInfo::fromJson(const Value& v) {
   FAIL_IF_FALSE((first_step >= 0) && (first_step <= gPCI->basic_info.n_steps-1) && (first_step < last_step));
   FAIL_IF_FALSE((last_step > 0) && (last_step <= gPCI->basic_info.n_steps-1));
 
-  string linkstr;
-  childFromJson(params, linkstr, "link");
+  childFromJson(params, link, "link");
   std::vector<std::string> link_names;
   gPCI->kin->getLinkNames(link_names);
-  if (std::find(link_names.begin(), link_names.end(),linkstr)==link_names.end()) {
-    PRINT_AND_THROW( boost::format("invalid link name: %s")%linkstr);
+  if (std::find(link_names.begin(), link_names.end(), link)==link_names.end()) {
+    PRINT_AND_THROW( boost::format("invalid link name: %s")%link);
   }
   
   const char* all_fields[] = {"first_step", "last_step", "max_displacement","link"};
@@ -416,8 +413,8 @@ void CartVelCntInfo::fromJson(const Value& v) {
 void CartVelCntInfo::hatch(TrajOptProb& prob) {
   for (int iStep = first_step; iStep < last_step; ++iStep) {
     prob.addConstraint(ConstraintPtr(new ConstraintFromFunc(
-      VectorOfVectorPtr(new CartVelCalculator(prob.GetRAD(), link, max_displacement)),
-       MatrixOfVectorPtr(new CartVelJacCalculator(prob.GetRAD(), link, max_displacement)), 
+      VectorOfVectorPtr(new CartVelCalculator(prob.GetKin(), link, max_displacement)),
+       MatrixOfVectorPtr(new CartVelJacCalculator(prob.GetKin(), link, max_displacement)),
       concat(prob.GetVarRow(iStep), prob.GetVarRow(iStep+1)), VectorXd::Ones(0), INEQ, "CartVel")));     
   }
 }
@@ -472,64 +469,64 @@ void JointVelConstraintInfo::hatch(TrajOptProb& prob) {
   }
 }
 
-void CollisionCostInfo::fromJson(const Value& v) {
-  FAIL_IF_FALSE(v.isMember("params"));
-  const Value& params = v["params"];
+//void CollisionCostInfo::fromJson(const Value& v) {
+//  FAIL_IF_FALSE(v.isMember("params"));
+//  const Value& params = v["params"];
 
-  int n_steps = gPCI->basic_info.n_steps;
-  childFromJson(params, continuous, "continuous", true);
-  childFromJson(params, first_step, "first_step", 0);
-  childFromJson(params, last_step, "last_step", n_steps-1);
-  childFromJson(params, gap, "gap", 1);
-  FAIL_IF_FALSE( gap >= 0 );
-  FAIL_IF_FALSE((first_step >= 0) && (first_step < n_steps));
-  FAIL_IF_FALSE((last_step >= first_step) && (last_step < n_steps));
-  childFromJson(params, coeffs, "coeffs");
-  int n_terms = last_step - first_step + 1;
-  if (coeffs.size() == 1) coeffs = DblVec(n_terms, coeffs[0]);
-  else if (coeffs.size() != n_terms) {
-    PRINT_AND_THROW (boost::format("wrong size: coeffs. expected %i got %i")%n_terms%coeffs.size());
-  }
-  childFromJson(params, dist_pen,"dist_pen");
-  if (dist_pen.size() == 1) dist_pen = DblVec(n_terms, dist_pen[0]);
-  else if (dist_pen.size() != n_terms) {
-    PRINT_AND_THROW(boost::format("wrong size: dist_pen. expected %i got %i")%n_terms%dist_pen.size());
-  }
+//  int n_steps = gPCI->basic_info.n_steps;
+//  childFromJson(params, continuous, "continuous", true);
+//  childFromJson(params, first_step, "first_step", 0);
+//  childFromJson(params, last_step, "last_step", n_steps-1);
+//  childFromJson(params, gap, "gap", 1);
+//  FAIL_IF_FALSE( gap >= 0 );
+//  FAIL_IF_FALSE((first_step >= 0) && (first_step < n_steps));
+//  FAIL_IF_FALSE((last_step >= first_step) && (last_step < n_steps));
+//  childFromJson(params, coeffs, "coeffs");
+//  int n_terms = last_step - first_step + 1;
+//  if (coeffs.size() == 1) coeffs = DblVec(n_terms, coeffs[0]);
+//  else if (coeffs.size() != n_terms) {
+//    PRINT_AND_THROW (boost::format("wrong size: coeffs. expected %i got %i")%n_terms%coeffs.size());
+//  }
+//  childFromJson(params, dist_pen,"dist_pen");
+//  if (dist_pen.size() == 1) dist_pen = DblVec(n_terms, dist_pen[0]);
+//  else if (dist_pen.size() != n_terms) {
+//    PRINT_AND_THROW(boost::format("wrong size: dist_pen. expected %i got %i")%n_terms%dist_pen.size());
+//  }
   
-  const char* all_fields[] = {"continuous", "first_step", "last_step", "gap", "coeffs", "dist_pen"};
-  ensure_only_members(params, all_fields, sizeof(all_fields)/sizeof(char*));  
+//  const char* all_fields[] = {"continuous", "first_step", "last_step", "gap", "coeffs", "dist_pen"};
+//  ensure_only_members(params, all_fields, sizeof(all_fields)/sizeof(char*));
   
-}
-void CollisionCostInfo::hatch(TrajOptProb& prob) {
-  if (term_type == TT_COST) {
-    if (continuous) {
-      for (int i=first_step; i <= last_step - gap; ++i) {
-        prob.addCost(CostPtr(new CollisionCost(dist_pen[i-first_step], coeffs[i-first_step], prob.GetRAD(), prob.GetVarRow(i), prob.GetVarRow(i+gap))));
-        prob.getCosts().back()->setName( (boost::format("%s_%i")%name%i).str() );
-      }
-    }
-    else {
-      for (int i=first_step; i <= last_step; ++i) {
-        prob.addCost(CostPtr(new CollisionCost(dist_pen[i-first_step], coeffs[i-first_step], prob.GetRAD(), prob.GetVarRow(i))));
-        prob.getCosts().back()->setName( (boost::format("%s_%i")%name%i).str() );
-      }
-    }
-  }
-  else { // ALMOST COPIED
-    if (continuous) {
-      for (int i=first_step; i < last_step; ++i) {
-        prob.addIneqConstraint(ConstraintPtr(new CollisionConstraint(dist_pen[i-first_step], coeffs[i-first_step], prob.GetRAD(), prob.GetVarRow(i), prob.GetVarRow(i+1))));
-        prob.getIneqConstraints().back()->setName( (boost::format("%s_%i")%name%i).str() );
-      }
-    }
-    else {
-      for (int i=first_step; i <= last_step; ++i) {
-        prob.addIneqConstraint(ConstraintPtr(new CollisionConstraint(dist_pen[i-first_step], coeffs[i-first_step], prob.GetRAD(), prob.GetVarRow(i))));
-        prob.getIneqConstraints().back()->setName( (boost::format("%s_%i")%name%i).str() );
-      }
-    }
-  }
-}
+//}
+//void CollisionCostInfo::hatch(TrajOptProb& prob) {
+//  if (term_type == TT_COST) {
+//    if (continuous) {
+//      for (int i=first_step; i <= last_step - gap; ++i) {
+//        prob.addCost(CostPtr(new CollisionCost(dist_pen[i-first_step], coeffs[i-first_step], prob.GetKin(), prob.GetEnv(), prob.GetVarRow(i), prob.GetVarRow(i+gap))));
+//        prob.getCosts().back()->setName( (boost::format("%s_%i")%name%i).str() );
+//      }
+//    }
+//    else {
+//      for (int i=first_step; i <= last_step; ++i) {
+//        prob.addCost(CostPtr(new CollisionCost(dist_pen[i-first_step], coeffs[i-first_step], prob.GetKin(), prob.GetEnv(), prob.GetVarRow(i))));
+//        prob.getCosts().back()->setName( (boost::format("%s_%i")%name%i).str() );
+//      }
+//    }
+//  }
+//  else { // ALMOST COPIED
+//    if (continuous) {
+//      for (int i=first_step; i < last_step; ++i) {
+//        prob.addIneqConstraint(ConstraintPtr(new CollisionConstraint(dist_pen[i-first_step], coeffs[i-first_step], prob.GetKin(), prob.GetEnv(), prob.GetVarRow(i), prob.GetVarRow(i+1))));
+//        prob.getIneqConstraints().back()->setName( (boost::format("%s_%i")%name%i).str() );
+//      }
+//    }
+//    else {
+//      for (int i=first_step; i <= last_step; ++i) {
+//        prob.addIneqConstraint(ConstraintPtr(new CollisionConstraint(dist_pen[i-first_step], coeffs[i-first_step], prob.GetKin(), prob.GetEnv(), prob.GetVarRow(i))));
+//        prob.getIneqConstraints().back()->setName( (boost::format("%s_%i")%name%i).str() );
+//      }
+//    }
+//  }
+//} TODO: Levi Fix
 
 
 
