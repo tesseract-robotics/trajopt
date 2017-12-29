@@ -16,7 +16,6 @@
 
 using namespace Json;
 using namespace std;
-using namespace OpenRAVE;
 using namespace trajopt;
 using namespace util;
 
@@ -48,7 +47,7 @@ void RegisterMakers() {
   TermInfo::RegisterMaker("pose", &PoseCostInfo::create);
   TermInfo::RegisterMaker("joint_pos", &JointPosCostInfo::create);
   TermInfo::RegisterMaker("joint_vel", &JointVelCostInfo::create);
-//  TermInfo::RegisterMaker("collision", &CollisionCostInfo::create); TODO: Levi Fix
+  TermInfo::RegisterMaker("collision", &CollisionCostInfo::create);
 
   TermInfo::RegisterMaker("joint", &JointConstraintInfo::create);
   TermInfo::RegisterMaker("cart_vel", &CartVelCntInfo::create);
@@ -92,23 +91,28 @@ BoolVec toMask(const VectorXd& x) {
 }
 #endif
 
-bool allClose(const VectorXd& a, const VectorXd& b) {
+bool allClose(const VectorXd& a, const VectorXd& b)
+{
   return (a-b).array().abs().maxCoeff() < 1e-4;
 }
 
 }
 
-namespace Json { //funny thing with two-phase lookup
+namespace Json //funny thing with two-phase lookup
+{
 
-void fromJson(const Json::Value& v, Vector3d& x) {
+void fromJson(const Json::Value& v, Vector3d& x)
+{
   vector<double> vx;
   fromJsonArray(v, vx, 3);
   x = Vector3d(vx[0], vx[1], vx[2]);
 }
-void fromJson(const Json::Value& v, Vector4d& x) {
+
+void fromJson(const Json::Value& v, Vector4d& x)
+{
   vector<double> vx;
   fromJsonArray(v, vx, 4);
-    x = Vector4d(vx[0], vx[1], vx[2], vx[3]);
+  x = Vector4d(vx[0], vx[1], vx[2], vx[3]);
 }
 
 }
@@ -117,7 +121,8 @@ namespace trajopt {
 
 TRAJOPT_API ProblemConstructionInfo* gPCI;
 
-void BasicInfo::fromJson(const Json::Value& v) {
+void BasicInfo::fromJson(const Json::Value& v)
+{
   childFromJson(v, start_fixed, "start_fixed", true);
   childFromJson(v, n_steps, "n_steps");
   childFromJson(v, manip, "manip");
@@ -129,7 +134,8 @@ void BasicInfo::fromJson(const Json::Value& v) {
 
 ////
 bool gReadingCosts=false, gReadingConstraints=false;
-void fromJson(const Json::Value& v, TermInfoPtr& term) {
+void fromJson(const Json::Value& v, TermInfoPtr& term)
+{
   string type;
   childFromJson(v, type, "type");
   LOG_DEBUG("reading term: %s", type.c_str());
@@ -150,22 +156,25 @@ void fromJson(const Json::Value& v, TermInfoPtr& term) {
 }
 
 std::map<string, TermInfo::MakerFunc> TermInfo::name2maker;
-void TermInfo::RegisterMaker(const std::string& type, MakerFunc f) {
+void TermInfo::RegisterMaker(const std::string& type, MakerFunc f)
+{
   name2maker[type] = f;
 }
 
-TermInfoPtr TermInfo::fromName(const string& type) {
+TermInfoPtr TermInfo::fromName(const string& type)
+{
   if (!gRegisteredMakers) RegisterMakers();
   if (name2maker.find(type) != name2maker.end()) {
     return (*name2maker[type])();
   }
   else {
-    RAVELOG_ERROR("There is no cost of type %s\n", type.c_str());
+    //RAVELOG_ERROR("There is no cost of type %s\n", type.c_str());
     return TermInfoPtr();
   }
 }
 
-void InitInfo::fromJson(const Json::Value& v) {
+void InitInfo::fromJson(const Json::Value& v)
+{
   string type_str;
   childFromJson(v, type_str, "type");
   int n_steps = gPCI->basic_info.n_steps;
@@ -201,10 +210,10 @@ void InitInfo::fromJson(const Json::Value& v) {
       data.col(idof) = VectorXd::LinSpaced(n_steps, start_pos[idof], endpoint[idof]);
     }
   }
-
 }
 
-void ProblemConstructionInfo::fromJson(const Value& v) {
+void ProblemConstructionInfo::fromJson(const Value& v)
+{
   childFromJson(v, basic_info, "basic_info");
 
   if (!env->hasManipulator(basic_info.manip))
@@ -229,7 +238,8 @@ void ProblemConstructionInfo::fromJson(const Value& v) {
 
 TrajOptResult::TrajOptResult(OptResults& opt, TrajOptProb& prob) :
   cost_vals(opt.cost_vals),
-  cnt_viols(opt.cnt_viols) {
+  cnt_viols(opt.cnt_viols)
+{
   BOOST_FOREACH(const CostPtr& cost, prob.getCosts()) {
     cost_names.push_back(cost->name());
   }
@@ -239,7 +249,8 @@ TrajOptResult::TrajOptResult(OptResults& opt, TrajOptProb& prob) :
   traj = getTraj(opt.x, prob.GetVars());
 }
 
-TrajOptResultPtr OptimizeProblem(TrajOptProbPtr prob, bool plot) {
+TrajOptResultPtr OptimizeProblem(TrajOptProbPtr prob, bool plot)
+{
   //Configuration::SaverPtr saver = prob->GetRAD()->Save(); //LEVI
   BasicTrustRegionSQP opt(prob);
   opt.max_iter_ = 40;
@@ -254,8 +265,8 @@ TrajOptResultPtr OptimizeProblem(TrajOptProbPtr prob, bool plot) {
   return TrajOptResultPtr(new TrajOptResult(opt.results(), *prob));
 }
 
-TrajOptProbPtr ConstructProblem(const ProblemConstructionInfo& pci) {
-
+TrajOptProbPtr ConstructProblem(const ProblemConstructionInfo& pci)
+{
   const BasicInfo& bi = pci.basic_info;
   int n_steps = bi.n_steps;
 
@@ -294,14 +305,16 @@ TrajOptProbPtr ConstructProblem(const ProblemConstructionInfo& pci) {
 
 }
 
-TrajOptProbPtr ConstructProblem(const Json::Value& root, BasicEnvPtr env) {
+TrajOptProbPtr ConstructProblem(const Json::Value& root, BasicEnvPtr env)
+{
   ProblemConstructionInfo pci(env);
   pci.fromJson(root);
   return ConstructProblem(pci);
 }
 
 
-TrajOptProb::TrajOptProb(int n_steps, const ProblemConstructionInfo &pci) : m_kin(pci.kin), m_env(pci.env) {
+TrajOptProb::TrajOptProb(int n_steps, const ProblemConstructionInfo &pci) : m_kin(pci.kin), m_env(pci.env)
+{
 
   Eigen::MatrixXd limits = m_kin->getLimits();
   int n_dof = m_kin->numJoints();
@@ -323,10 +336,10 @@ TrajOptProb::TrajOptProb(int n_steps, const ProblemConstructionInfo &pci) : m_ki
 }
 
 
-TrajOptProb::TrajOptProb() {
-}
+TrajOptProb::TrajOptProb() {}
 
-void PoseCostInfo::fromJson(const Value& v) {
+void PoseCostInfo::fromJson(const Value& v)
+{
   FAIL_IF_FALSE(v.isMember("params"));
   const Value& params = v["params"];  
   childFromJson(params, timestep, "timestep", gPCI->basic_info.n_steps-1);
@@ -352,7 +365,7 @@ void PoseCostInfo::hatch(TrajOptProb& prob)
   Eigen::Quaterniond q(wxyz(0), wxyz(1), wxyz(2), wxyz(3));
   input_pose.linear() = q.matrix();
   input_pose.translation() = xyz;
-  VectorOfVectorPtr f(new CartPoseErrCalculator(input_pose, prob.GetKin(), link));
+  VectorOfVectorPtr f(new CartPoseErrCalculator(input_pose, prob.GetKin(), prob.GetEnv(), link));
   if (term_type == TT_COST) {
     prob.addCost(CostPtr(new CostFromErrFunc(f, prob.GetVarRow(timestep), concat(rot_coeffs, pos_coeffs), ABS, name)));
   }
@@ -362,7 +375,8 @@ void PoseCostInfo::hatch(TrajOptProb& prob)
 }
 
 
-void JointPosCostInfo::fromJson(const Value& v) {
+void JointPosCostInfo::fromJson(const Value& v)
+{
   FAIL_IF_FALSE(v.isMember("params"));
   int n_steps = gPCI->basic_info.n_steps;
   const Value& params = v["params"];
@@ -378,16 +392,17 @@ void JointPosCostInfo::fromJson(const Value& v) {
   
   const char* all_fields[] = {"vals", "coeffs", "timestep"};
   ensure_only_members(params, all_fields, sizeof(all_fields)/sizeof(char*));
-  
-  
 }
-void JointPosCostInfo::hatch(TrajOptProb& prob) {
+
+void JointPosCostInfo::hatch(TrajOptProb& prob)
+{
   prob.addCost(CostPtr(new JointPosCost(prob.GetVarRow(timestep), toVectorXd(vals), toVectorXd(coeffs))));
   prob.getCosts().back()->setName(name);  
 }
 
 
-void CartVelCntInfo::fromJson(const Value& v) {
+void CartVelCntInfo::fromJson(const Value& v)
+{
   FAIL_IF_FALSE(v.isMember("params"));
   const Value& params = v["params"];
   childFromJson(params, first_step, "first_step");
@@ -406,20 +421,20 @@ void CartVelCntInfo::fromJson(const Value& v) {
   
   const char* all_fields[] = {"first_step", "last_step", "max_displacement","link"};
   ensure_only_members(params, all_fields, sizeof(all_fields)/sizeof(char*));
-  
-  
 }
 
-void CartVelCntInfo::hatch(TrajOptProb& prob) {
+void CartVelCntInfo::hatch(TrajOptProb& prob)
+{
   for (int iStep = first_step; iStep < last_step; ++iStep) {
     prob.addConstraint(ConstraintPtr(new ConstraintFromFunc(
-      VectorOfVectorPtr(new CartVelCalculator(prob.GetKin(), link, max_displacement)),
-       MatrixOfVectorPtr(new CartVelJacCalculator(prob.GetKin(), link, max_displacement)),
+      VectorOfVectorPtr(new CartVelCalculator(prob.GetKin(), prob.GetEnv(), link, max_displacement)),
+       MatrixOfVectorPtr(new CartVelJacCalculator(prob.GetKin(), prob.GetEnv(), link, max_displacement)),
       concat(prob.GetVarRow(iStep), prob.GetVarRow(iStep+1)), VectorXd::Ones(0), INEQ, "CartVel")));     
   }
 }
 
-void JointVelCostInfo::fromJson(const Value& v) {
+void JointVelCostInfo::fromJson(const Value& v)
+{
   FAIL_IF_FALSE(v.isMember("params"));
   const Value& params = v["params"];
 
@@ -432,17 +447,17 @@ void JointVelCostInfo::fromJson(const Value& v) {
   
   const char* all_fields[] = {"coeffs"};
   ensure_only_members(params, all_fields, sizeof(all_fields)/sizeof(char*));
-  
-  
 }
 
-void JointVelCostInfo::hatch(TrajOptProb& prob) {
+void JointVelCostInfo::hatch(TrajOptProb& prob)
+{
   prob.addCost(CostPtr(new JointVelCost(prob.GetVars(), toVectorXd(coeffs))));
   prob.getCosts().back()->setName(name);
 }
 
 
-void JointVelConstraintInfo::fromJson(const Value& v) {
+void JointVelConstraintInfo::fromJson(const Value& v)
+{
   FAIL_IF_FALSE(v.isMember("params"));
   const Value& params = v["params"];
   
@@ -459,7 +474,9 @@ void JointVelConstraintInfo::fromJson(const Value& v) {
   ensure_only_members(params, all_fields, sizeof(all_fields)/sizeof(char*));  
   
 }
-void JointVelConstraintInfo::hatch(TrajOptProb& prob) {
+
+void JointVelConstraintInfo::hatch(TrajOptProb& prob)
+{
   for (int i = first_step; i <= last_step-1; ++i) {
     for (int j=0; j < vals.size(); ++j)  {
       AffExpr vel = prob.GetVar(i+1,j) -  prob.GetVar(i,j);
@@ -469,64 +486,66 @@ void JointVelConstraintInfo::hatch(TrajOptProb& prob) {
   }
 }
 
-//void CollisionCostInfo::fromJson(const Value& v) {
-//  FAIL_IF_FALSE(v.isMember("params"));
-//  const Value& params = v["params"];
+void CollisionCostInfo::fromJson(const Value& v)
+{
+  FAIL_IF_FALSE(v.isMember("params"));
+  const Value& params = v["params"];
 
-//  int n_steps = gPCI->basic_info.n_steps;
-//  childFromJson(params, continuous, "continuous", true);
-//  childFromJson(params, first_step, "first_step", 0);
-//  childFromJson(params, last_step, "last_step", n_steps-1);
-//  childFromJson(params, gap, "gap", 1);
-//  FAIL_IF_FALSE( gap >= 0 );
-//  FAIL_IF_FALSE((first_step >= 0) && (first_step < n_steps));
-//  FAIL_IF_FALSE((last_step >= first_step) && (last_step < n_steps));
-//  childFromJson(params, coeffs, "coeffs");
-//  int n_terms = last_step - first_step + 1;
-//  if (coeffs.size() == 1) coeffs = DblVec(n_terms, coeffs[0]);
-//  else if (coeffs.size() != n_terms) {
-//    PRINT_AND_THROW (boost::format("wrong size: coeffs. expected %i got %i")%n_terms%coeffs.size());
-//  }
-//  childFromJson(params, dist_pen,"dist_pen");
-//  if (dist_pen.size() == 1) dist_pen = DblVec(n_terms, dist_pen[0]);
-//  else if (dist_pen.size() != n_terms) {
-//    PRINT_AND_THROW(boost::format("wrong size: dist_pen. expected %i got %i")%n_terms%dist_pen.size());
-//  }
+  int n_steps = gPCI->basic_info.n_steps;
+  childFromJson(params, continuous, "continuous", true);
+  childFromJson(params, first_step, "first_step", 0);
+  childFromJson(params, last_step, "last_step", n_steps-1);
+  childFromJson(params, gap, "gap", 1);
+  FAIL_IF_FALSE( gap >= 0 );
+  FAIL_IF_FALSE((first_step >= 0) && (first_step < n_steps));
+  FAIL_IF_FALSE((last_step >= first_step) && (last_step < n_steps));
+  childFromJson(params, coeffs, "coeffs");
+  int n_terms = last_step - first_step + 1;
+  if (coeffs.size() == 1) coeffs = DblVec(n_terms, coeffs[0]);
+  else if (coeffs.size() != n_terms) {
+    PRINT_AND_THROW (boost::format("wrong size: coeffs. expected %i got %i")%n_terms%coeffs.size());
+  }
+  childFromJson(params, dist_pen,"dist_pen");
+  if (dist_pen.size() == 1) dist_pen = DblVec(n_terms, dist_pen[0]);
+  else if (dist_pen.size() != n_terms) {
+    PRINT_AND_THROW(boost::format("wrong size: dist_pen. expected %i got %i")%n_terms%dist_pen.size());
+  }
   
-//  const char* all_fields[] = {"continuous", "first_step", "last_step", "gap", "coeffs", "dist_pen"};
-//  ensure_only_members(params, all_fields, sizeof(all_fields)/sizeof(char*));
-  
-//}
-//void CollisionCostInfo::hatch(TrajOptProb& prob) {
-//  if (term_type == TT_COST) {
-//    if (continuous) {
-//      for (int i=first_step; i <= last_step - gap; ++i) {
-//        prob.addCost(CostPtr(new CollisionCost(dist_pen[i-first_step], coeffs[i-first_step], prob.GetKin(), prob.GetEnv(), prob.GetVarRow(i), prob.GetVarRow(i+gap))));
-//        prob.getCosts().back()->setName( (boost::format("%s_%i")%name%i).str() );
-//      }
-//    }
-//    else {
-//      for (int i=first_step; i <= last_step; ++i) {
-//        prob.addCost(CostPtr(new CollisionCost(dist_pen[i-first_step], coeffs[i-first_step], prob.GetKin(), prob.GetEnv(), prob.GetVarRow(i))));
-//        prob.getCosts().back()->setName( (boost::format("%s_%i")%name%i).str() );
-//      }
-//    }
-//  }
-//  else { // ALMOST COPIED
-//    if (continuous) {
-//      for (int i=first_step; i < last_step; ++i) {
-//        prob.addIneqConstraint(ConstraintPtr(new CollisionConstraint(dist_pen[i-first_step], coeffs[i-first_step], prob.GetKin(), prob.GetEnv(), prob.GetVarRow(i), prob.GetVarRow(i+1))));
-//        prob.getIneqConstraints().back()->setName( (boost::format("%s_%i")%name%i).str() );
-//      }
-//    }
-//    else {
-//      for (int i=first_step; i <= last_step; ++i) {
-//        prob.addIneqConstraint(ConstraintPtr(new CollisionConstraint(dist_pen[i-first_step], coeffs[i-first_step], prob.GetKin(), prob.GetEnv(), prob.GetVarRow(i))));
-//        prob.getIneqConstraints().back()->setName( (boost::format("%s_%i")%name%i).str() );
-//      }
-//    }
-//  }
-//} TODO: Levi Fix
+  const char* all_fields[] = {"continuous", "first_step", "last_step", "gap", "coeffs", "dist_pen"};
+  ensure_only_members(params, all_fields, sizeof(all_fields)/sizeof(char*));
+}
+
+void CollisionCostInfo::hatch(TrajOptProb& prob)
+{
+  if (term_type == TT_COST) {
+    if (continuous) {
+      for (int i=first_step; i <= last_step - gap; ++i) {
+        prob.addCost(CostPtr(new CollisionCost(dist_pen[i-first_step], coeffs[i-first_step], prob.GetKin(), prob.GetEnv(), prob.GetVarRow(i), prob.GetVarRow(i+gap))));
+        prob.getCosts().back()->setName( (boost::format("%s_%i")%name%i).str() );
+      }
+    }
+    else {
+      for (int i=first_step; i <= last_step; ++i) {
+        prob.addCost(CostPtr(new CollisionCost(dist_pen[i-first_step], coeffs[i-first_step], prob.GetKin(), prob.GetEnv(), prob.GetVarRow(i))));
+        prob.getCosts().back()->setName( (boost::format("%s_%i")%name%i).str() );
+      }
+    }
+  }
+  else { // ALMOST COPIED
+    if (continuous) {
+      for (int i=first_step; i < last_step; ++i) {
+        prob.addIneqConstraint(ConstraintPtr(new CollisionConstraint(dist_pen[i-first_step], coeffs[i-first_step], prob.GetKin(), prob.GetEnv(), prob.GetVarRow(i), prob.GetVarRow(i+1))));
+        prob.getIneqConstraints().back()->setName( (boost::format("%s_%i")%name%i).str() );
+      }
+    }
+    else {
+      for (int i=first_step; i <= last_step; ++i) {
+        prob.addIneqConstraint(ConstraintPtr(new CollisionConstraint(dist_pen[i-first_step], coeffs[i-first_step], prob.GetKin(), prob.GetEnv(), prob.GetVarRow(i))));
+        prob.getIneqConstraints().back()->setName( (boost::format("%s_%i")%name%i).str() );
+      }
+    }
+  }
+}
 
 
 

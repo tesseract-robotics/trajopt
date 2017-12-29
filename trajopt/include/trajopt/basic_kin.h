@@ -51,48 +51,52 @@ public:
 
   /**
    * @brief Calculates tool pose of robot chain
-   * @param joint_angles Vector of joint angles (size must match number of joints in robot chain)
    * @param pose Transform of end-of-tip relative to root
+   * @param change_base The trans from desired frame to the base frame of the manipulator.
+   * @param joint_angles Vector of joint angles (size must match number of joints in robot chain)
    * @return True if calculation successful, False if anything is wrong (including uninitialized BasicKin)
    */
-  virtual bool calcFwdKin(const Eigen::VectorXd &joint_angles, Eigen::Affine3d &pose) const = 0;
+  virtual bool calcFwdKin(Eigen::Affine3d &pose, const Eigen::Affine3d change_base, const Eigen::VectorXd &joint_angles) const = 0;
 
   /**
    * @brief Calculates pose for a given link
-   * @param joint_angles Vector of joint angles (size must match number of joints in robot chain)
    * @param pose Transform of link relative to root
+   * @param change_base The trans from desired frame to the base frame of the manipulator.
+   * @param joint_angles Vector of joint angles (size must match number of joints in robot chain)
    * @param link_name Name of link to calculate pose
    * @return True if calculation successful, False if anything is wrong (including uninitialized BasicKin)
    */
-  virtual bool calcFwdKin(const Eigen::VectorXd &joint_angles, Eigen::Affine3d &pose, const std::string &link_name) const = 0;
-
-  /**
-   * @brief Creates chain and calculates tool pose relative to root
-   * New chain is not stored permanently, but subchain_fk_solver_ is updated
-   * @param joint_angles Vector of joint angles (size must match number of joints in chain)
-   * @param base Name of base link for new chain
-   * @param tip Name of tip link for new chain
-   * @param pose Transform of end-of-tip relative to base
-   * @return True if calculation successful, False if anything is wrong (including uninitialized BasicKin)
-   */
-  virtual bool calcFwdKin(const Eigen::VectorXd &joint_angles, const std::string &base, const std::string &tip, Eigen::Affine3d &pose) const = 0;
+  virtual bool calcFwdKin(Eigen::Affine3d &pose , const Eigen::Affine3d change_base, const Eigen::VectorXd &joint_angles, const std::string &link_name) const = 0;
 
   /**
    * @brief Calculated jacobian of robot given joint angles
-   * @param joint_angles Input vector of joint angles
    * @param jacobian Output jacobian
+   * @param change_base The trans from desired frame to the base frame of the manipulator.
+   * @param joint_angles Input vector of joint angles
    * @return True if calculation successful, False if anything is wrong (including uninitialized BasicKin)
    */
-  virtual bool calcJacobian(const Eigen::VectorXd &joint_angles, Eigen::MatrixXd &jacobian) const = 0;
+  virtual bool calcJacobian(Eigen::MatrixXd &jacobian, const Eigen::Affine3d change_base, const Eigen::VectorXd &joint_angles) const = 0;
 
   /**
    * @brief Calculated jacobian at a link given joint angles
-   * @param joint_angles Input vector of joint angles
    * @param jacobian Output jacobian for a given link
+   * @param change_base The trans from desired frame to the base frame of the manipulator.
+   * @param joint_angles Input vector of joint angles
    * @param link_name Name of link to calculate jacobian
    * @return True if calculation successful, False if anything is wrong (including uninitialized BasicKin)
    */
-  virtual bool calcJacobian(const Eigen::VectorXd &joint_angles, Eigen::MatrixXd &jacobian, const std::string &link_name) const = 0;
+  virtual bool calcJacobian(Eigen::MatrixXd &jacobian, const Eigen::Affine3d change_base, const Eigen::VectorXd &joint_angles, const std::string &link_name) const = 0;
+
+  /**
+   * @brief Calculated jacobian at a link given joint angles
+   * @param jacobian Output jacobian for a given link
+   * @param change_base The trans from desired frame to the base frame of the manipulator.
+   * @param joint_angles Input vector of joint angles
+   * @param link_name Name of link to calculate jacobian
+   * @param link_point Point in the link_name frame for which to calculate the jacobian about
+   * @return True if calculation successful, False if anything is wrong (including uninitialized BasicKin)
+   */
+  virtual bool calcJacobian(Eigen::MatrixXd &jacobian, const Eigen::Affine3d change_base, const Eigen::VectorXd &joint_angles, const std::string &link_name, const Eigen::Vector3d link_point) const = 0;
 
   /**
    * @brief Check for consistency in # and limits of joints
@@ -114,6 +118,13 @@ public:
    * @return True if BasicKin has been successfully initialized
    */
   virtual bool getLinkNames(std::vector<std::string> &names) const = 0;
+
+  /**
+   * @brief Get list of link names for robot that have geometry
+   * @param names Output vector of names, copied from link_list_with_geom_ created in init()
+   * @return True if BasicKin has been successfully initialized
+   */
+  virtual bool getLinkNamesWithGeometry(std::vector<std::string> &names) const = 0;
 
   /**
    * @brief Getter for joint_limits_

@@ -24,21 +24,23 @@ public:
 
   ROSKin() : BasicKin(), initialized_(false), group_(NULL) {}
 
-  bool calcFwdKin(const Eigen::VectorXd &joint_angles, Eigen::Affine3d &pose) const;
+  bool calcFwdKin(Eigen::Affine3d &pose, const Eigen::Affine3d change_base, const Eigen::VectorXd &joint_angles) const;
 
-  bool calcFwdKin(const Eigen::VectorXd &joint_angles, Eigen::Affine3d &pose, const std::string &link_name) const;
+  bool calcFwdKin(Eigen::Affine3d &pose, const Eigen::Affine3d change_base, const Eigen::VectorXd &joint_angles, const std::string &link_name) const;
 
-  bool calcFwdKin(const Eigen::VectorXd &joint_angles, const std::string &base, const std::string &tip, Eigen::Affine3d &pose) const;
+  bool calcJacobian(Eigen::MatrixXd &jacobian, const Eigen::Affine3d change_base, const Eigen::VectorXd &joint_angles) const;
 
-  bool calcJacobian(const Eigen::VectorXd &joint_angles, Eigen::MatrixXd &jacobian) const;
+  bool calcJacobian(Eigen::MatrixXd &jacobian, const Eigen::Affine3d change_base, const Eigen::VectorXd &joint_angles, const std::string &link_name) const;
 
-  bool calcJacobian(const Eigen::VectorXd &joint_angles, Eigen::MatrixXd &jacobian, const std::string &link_name) const;
+  bool calcJacobian(Eigen::MatrixXd &jacobian, const Eigen::Affine3d change_base, const Eigen::VectorXd &joint_angles, const std::string &link_name, const Eigen::Vector3d link_point) const;
 
   bool checkJoints(const Eigen::VectorXd &vec) const;
 
   bool getJointNames(std::vector<std::string> &names) const;
 
   bool getLinkNames(std::vector<std::string> &names) const;
+
+  bool getLinkNamesWithGeometry(std::vector<std::string> &names) const;
 
   Eigen::MatrixXd getLimits() const { return joint_limits_; }
 
@@ -97,6 +99,13 @@ public:
   static void KDLToEigen(const KDL::Frame &frame, Eigen::Affine3d &transform);
 
   /**
+   * @brief Convert Eigen::Affine3d to KDL::Frame
+   * @param transform Input Eigen transform (Affine3d)
+   * @param frame Output KDL Frame
+   */
+  static void EigenToKDL(const Eigen::Affine3d &transform, KDL::Frame &frame);
+
+  /**
    * @brief Convert KDL::Jacobian to Eigen::Matrix
    * @param jacobian Input KDL Jacobian
    * @param matrix Output Eigen MatrixXd
@@ -119,29 +128,20 @@ private:
   std::string tip_name_;                                         /**< Link name of last kink in the kinematic chain */
   std::vector<std::string> joint_list_;                          /**< List of joint names */
   std::vector<std::string> link_list_;                           /**< List of link names */
+  std::vector<std::string> link_list_with_geom_;                 /**< List of link names with geometry */
+  std::map<std::string, int> link_name_too_joint_index_;         /**< A map from link name to joint index */
   Eigen::Matrix<double, Eigen::Dynamic, 2> joint_limits_;        /**< Joint limits */
   boost::scoped_ptr<KDL::ChainFkSolverPos_recursive> fk_solver_; /**< KDL Forward Kinematic Solver */
   boost::scoped_ptr<KDL::ChainJntToJacSolver> jac_solver_;       /**< KDL Jacobian Solver */
 
   /** @brief calcFwdKin helper function */
-  bool calcFwdKinHelper(const Eigen::VectorXd &joint_angles, Eigen::Affine3d &pose, int segment_num=-1) const;
+  bool calcFwdKinHelper(Eigen::Affine3d &pose, const Eigen::Affine3d change_base, const Eigen::VectorXd &joint_angles, int segment_num=-1) const;
 
   /** @brief calcJacobian helper function */
-  bool calcJacobianHelper(const Eigen::VectorXd &joint_angles, Eigen::MatrixXd &jacobian, int segment_num=-1) const;
+  bool calcJacobianHelper(KDL::Jacobian &jacobian, const Eigen::Affine3d change_base, const Eigen::VectorXd &joint_angles, int segment_num=-1) const;
 
-  /**
-   * @brief Get joint number of given joint in initialized robot
-   * @param joint_name Input name of joint
-   * @return joint index if joint_name part of joint_list_, n+1 otherwise
-   */
-  int getJointNum(const std::string &joint_name) const;
-
-  /**
-   * @brief Get link number of given joint in initialized robot
-   * @param link_name Input name of link
-   * @return link index if link_name part of link_list_, l+1 otherwise
-   */
-  int getLinkNum(const std::string &link_name) const;
+  /** @brief Get the parent joint index for a link */
+  int getLinkParentJointIndex(const std::string &link_name) const;
 
 }; // class BasicKin
 

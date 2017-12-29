@@ -9,7 +9,7 @@
 #include <trajopt_utils/logging.hpp>
 #include <boost/foreach.hpp>
 #include <boost/functional/hash.hpp>
-using namespace OpenRAVE;
+
 using namespace sco;
 using namespace util;
 using namespace std;
@@ -77,120 +77,195 @@ namespace trajopt {
 //  }
 //}
 
-inline size_t hash(const DblVec& x) {
-  return boost::hash_range(x.begin(), x.end());
-}
+//inline size_t hash(const DblVec& x) {
+//  return boost::hash_range(x.begin(), x.end());
+//}
 
-void CollisionEvaluator::GetCollisionsCached(const DblVec& x, vector<Collision>& collisions) {
-  double key = hash(getDblVec(x, GetVars()));
-  vector<Collision>* it = m_cache.get(key);
-  if (it != NULL) {
-    LOG_DEBUG("using cached collision check\n");
-    collisions = *it;
-  }
-  else {
-    LOG_DEBUG("not using cached collision check\n");
-    CalcCollisions(x, collisions);
-    m_cache.put(key, collisions);
-  }
-}
+//void CollisionEvaluator::GetCollisionsCached(const DblVec& x, vector<Collision>& collisions) {
+//  double key = hash(getDblVec(x, GetVars()));
+//  vector<Collision>* it = m_cache.get(key);
+//  if (it != NULL) {
+//    LOG_DEBUG("using cached collision check\n");
+//    collisions = *it;
+//  }
+//  else {
+//    LOG_DEBUG("not using cached collision check\n");
+//    CalcCollisions(x, collisions);
+//    m_cache.put(key, collisions);
+//  }
+//}
 
 SingleTimestepCollisionEvaluator::SingleTimestepCollisionEvaluator(BasicKinPtr manip, BasicEnvPtr env, const VarVector& vars) :
-  CollisionEvaluator(manip, env), m_vars(vars)
+  CollisionEvaluator(manip, env), m_vars(vars) {}
+
+
+void SingleTimestepCollisionEvaluator::CalcCollisions(const DblVec& x)
 {
-  vector<KinBody::LinkPtr> links;
-  vector<int> inds;
-  rad->GetAffectedLinks(m_links, true, inds);
-  for (int i=0; i < m_links.size(); ++i) {
-    m_link2ind[m_links[i].get()] = inds[i];
+  VectorXd dofvals = getVec(x, m_vars);
+  std::vector<std::string> link_names, joint_names;
+  manip_->getLinkNamesWithGeometry(link_names);
+  manip_->getJointNames(joint_names);
+  env_->calcCollisions(joint_names, dofvals, link_names);
+}
+
+void SingleTimestepCollisionEvaluator::CalcDists(const DblVec& x, DblVec& dists)
+{
+  VectorXd dofvals = getVec(x, m_vars);
+  std::vector<std::string> link_names, joint_names;
+  manip_->getLinkNamesWithGeometry(link_names);
+  manip_->getJointNames(joint_names);
+
+  std::vector<BasicEnv::DistanceResult> dist_results;
+  env_->calcDistances(joint_names, dofvals, link_names, dist_results);
+
+  dists.reserve(dist_results.size());
+  for (auto i = 0; i < dist_results.size(); ++i)
+  {
+    if (dist_results[i].valid)
+    {
+      dists.push_back(dist_results[i].distance);
+    }
   }
-  // TODO add argument
 }
 
 
-void SingleTimestepCollisionEvaluator::CalcCollisions(const DblVec& x) {
-  DblVec dofvals = getDblVec(x, m_vars);
-  m_rad->SetDOFValues(dofvals);
-  m_cc->LinksVsAll(m_links, collisions, m_filterMask);
-}
+void SingleTimestepCollisionEvaluator::CalcDistExpressions(const DblVec& x, vector<AffExpr>& exprs)
+{
+  VectorXd dofvals = getVec(x, m_vars);
+  std::vector<std::string> link_names, joint_names;
+  manip_->getLinkNamesWithGeometry(link_names);
+  manip_->getJointNames(joint_names);
 
-void SingleTimestepCollisionEvaluator::CalcDists(const DblVec& x, DblVec& dists) {
-  vector<Collision> collisions;
-  GetCollisionsCached(x, collisions);
-  CollisionsToDistances(collisions, m_link2ind, dists);
-}
+  std::vector<BasicEnv::DistanceResult> dist_results;
+  env_->calcDistances(joint_names, dofvals, link_names, dist_results);
 
+  // All collision data is in world corrdinate system. This provides the transfrom
+  // for converting data between world frame and manipulator frame.
+  Eigen::Affine3d change_base = env_->getLinkTransform(manip_->getBaseLinkName()).inverse();
 
-void SingleTimestepCollisionEvaluator::CalcDistExpressions(const DblVec& x, vector<AffExpr>& exprs) {
-  vector<Collision> collisions;
-  GetCollisionsCached(x, collisions);
-  DblVec dofvals = getDblVec(x, m_vars);
-  CollisionsToDistanceExpressions(collisions, *m_rad, m_link2ind, m_vars, dofvals, exprs, false);
+  exprs.clear();
+  exprs.reserve(dist_results.size());
+  for (auto i = 0; i < dist_results.size(); ++i)
+  {
+    BasicEnv::DistanceResult &res = dist_results[i];
+    if (!res.valid)
+    {
+      continue;
+    }
+
+    AffExpr dist(res.distance);
+
+    std::vector<std::string>::const_iterator itA = std::find(link_names.begin(), link_names.end(), res.link_name[0]);
+    if (itA != link_names.end())
+    {
+      MatrixXd jac;
+      VectorXd dist_grad;
+      manip_->calcJacobian(jac, change_base, dofvals, res.link_name[0], res.nearest_point[0]);
+      Vector3d v = (res.nearest_point[0] - res.nearest_point[1]); //.normalized();
+      if (res.distance > 0.0)
+      {
+        dist_grad = v.transpose() * jac.topRows(3);
+      }
+      else
+      {
+        dist_grad = -v.transpose() * jac.topRows(3);
+      }
+      exprInc(dist, varDot(dist_grad, m_vars));
+      exprInc(dist, -dist_grad.dot(dofvals));
+    }
+
+//    std::vector<std::string>::const_iterator itB = std::find(link_names.begin(), link_names.end(), res.link_name[1]);
+//    if (itB != link_names.end())
+//    {
+//      MatrixXd jac;
+//      VectorXd dist_grad;
+//      manip_->calcJacobian(jac, change_base, dofvals, res.link_name[1], res.nearest_point[1]);
+//      if (res.distance > 0.0)
+//      {
+//        dist_grad = (res.nearest_point[1] - res.nearest_point[0]).normalized().transpose()*jac.topRows(3);
+//      }
+//      else
+//      {
+//        dist_grad = (res.nearest_point[0] - res.nearest_point[1]).normalized().transpose()*jac.topRows(3);
+//      }
+//      exprInc(dist, varDot(dist_grad, m_vars));
+//      exprInc(dist, -dist_grad.dot(dofvals));
+//    }
+
+    if (itA != link_names.end()) // || itB != link_names.end())
+    {
+      exprs.push_back(dist);
+    }
+  }
+
+ LOG_DEBUG("%ld distance expressions\n", exprs.size());
 }
 
 ////////////////////////////////////////
 
-CastCollisionEvaluator::CastCollisionEvaluator(BasicKinPtr manip, BasicEnvPtr env, const VarVector& vars0, const VarVector& vars1) :
-  CollisionEvaluator(manip, env), m_vars0(vars0),m_vars1(vars1)
-{
-  vector<KinBody::LinkPtr> links;
-  vector<int> inds;
-  rad->GetAffectedLinks(m_links, true, inds);
-  for (int i=0; i < m_links.size(); ++i) {
-    m_link2ind[m_links[i].get()] = inds[i];
-  }
-}
+//CastCollisionEvaluator::CastCollisionEvaluator(BasicKinPtr manip, BasicEnvPtr env, const VarVector& vars0, const VarVector& vars1) :
+//  CollisionEvaluator(manip, env), m_vars0(vars0),m_vars1(vars1)
+//{
+//  vector<KinBody::LinkPtr> links;
+//  vector<int> inds;
+//  rad->GetAffectedLinks(m_links, true, inds);
+//  for (int i=0; i < m_links.size(); ++i) {
+//    m_link2ind[m_links[i].get()] = inds[i];
+//  }
+//}
 
-void CastCollisionEvaluator::CalcCollisions(const DblVec& x) {
-  DblVec dofvals0 = getDblVec(x, m_vars0);
-  DblVec dofvals1 = getDblVec(x, m_vars1);
-  m_rad->SetDOFValues(dofvals0);
-  m_cc->CastVsAll(*m_rad, m_links, dofvals0, dofvals1, collisions);
-}
-void CastCollisionEvaluator::CalcDistExpressions(const DblVec& x, vector<AffExpr>& exprs) {
-  vector<Collision> collisions;
-  GetCollisionsCached(x, collisions);
-  DblVec dofvals0 = getDblVec(x, m_vars0);
-  DblVec dofvals1 = getDblVec(x, m_vars1);
-  CollisionsToDistanceExpressions(collisions, *m_rad, m_link2ind, m_vars0, m_vars1, dofvals0, dofvals1, exprs);
-}
-void CastCollisionEvaluator::CalcDists(const DblVec& x, DblVec& dists) {
-  vector<Collision> collisions;
-  GetCollisionsCached(x, collisions);
-  CollisionsToDistances(collisions, m_link2ind, dists);
-}
+//void CastCollisionEvaluator::CalcCollisions(const DblVec& x) {
+//  DblVec dofvals0 = getDblVec(x, m_vars0);
+//  DblVec dofvals1 = getDblVec(x, m_vars1);
+//  m_rad->SetDOFValues(dofvals0);
+//  m_cc->CastVsAll(*m_rad, m_links, dofvals0, dofvals1, collisions);
+//}
+//void CastCollisionEvaluator::CalcDistExpressions(const DblVec& x, vector<AffExpr>& exprs) {
+//  vector<Collision> collisions;
+//  GetCollisionsCached(x, collisions);
+//  DblVec dofvals0 = getDblVec(x, m_vars0);
+//  DblVec dofvals1 = getDblVec(x, m_vars1);
+//  CollisionsToDistanceExpressions(collisions, *m_rad, m_link2ind, m_vars0, m_vars1, dofvals0, dofvals1, exprs);
+//}
+//void CastCollisionEvaluator::CalcDists(const DblVec& x, DblVec& dists) {
+//  vector<Collision> collisions;
+//  GetCollisionsCached(x, collisions);
+//  CollisionsToDistances(collisions, m_link2ind, dists);
+//}
 
 
 //////////////////////////////////////////
 
 
 
-typedef OpenRAVE::RaveVector<float> RaveVectorf;
 
-void PlotCollisions(const std::vector<Collision>& collisions, double safe_dist) {
-  BOOST_FOREACH(const Collision& col, collisions) {
-    RaveVectorf color;
-    if (col.distance < 0) color = RaveVectorf(1,0,0,1);
-    else if (col.distance < safe_dist) color = RaveVectorf(1,1,0,1);
-    else color = RaveVectorf(0,1,0,1);
-    if (col.cctype == CCType_Between) {
-      handles.push_back(env.drawarrow(col.ptB, col.ptB1, .002, RaveVectorf(0,0,0,1)));
-    }
-    OR::Vector ptB = (col.cctype == CCType_Between)  ? ((1-col.time)* col.ptB +col.time*col.ptB1) : col.ptB;
-    handles.push_back(env.drawarrow(col.ptA, ptB, .0025, color));
-  }
-}
+//void PlotCollisions(const std::vector<Collision>& collisions, double safe_dist) {
+//  BOOST_FOREACH(const Collision& col, collisions) {
+//    RaveVectorf color;
+//    if (col.distance < 0) color = RaveVectorf(1,0,0,1);
+//    else if (col.distance < safe_dist) color = RaveVectorf(1,1,0,1);
+//    else color = RaveVectorf(0,1,0,1);
+//    if (col.cctype == CCType_Between) {
+//      handles.push_back(env.drawarrow(col.ptB, col.ptB1, .002, RaveVectorf(0,0,0,1)));
+//    }
+//    OR::Vector ptB = (col.cctype == CCType_Between)  ? ((1-col.time)* col.ptB +col.time*col.ptB1) : col.ptB;
+//    handles.push_back(env.drawarrow(col.ptA, ptB, .0025, color));
+//  }
+//}
 
 CollisionCost::CollisionCost(double dist_pen, double coeff, BasicKinPtr manip, BasicEnvPtr env, const VarVector& vars) :
     Cost("collision"),
-    m_calc(new SingleTimestepCollisionEvaluator(manip, coll, vars)), m_dist_pen(dist_pen), m_coeff(coeff)
+    m_calc(new SingleTimestepCollisionEvaluator(manip, env, vars)), m_dist_pen(dist_pen), m_coeff(coeff)
 {}
 
 CollisionCost::CollisionCost(double dist_pen, double coeff, BasicKinPtr manip, BasicEnvPtr env, const VarVector& vars0, const VarVector& vars1) :
-    Cost("cast_collision"),
-    m_calc(new CastCollisionEvaluator(manip, coll, vars0, vars1)), m_dist_pen(dist_pen), m_coeff(coeff)
-{}
-ConvexObjectivePtr CollisionCost::convex(const vector<double>& x, Model* model) {
+    Cost("cast_collision") //, m_calc(new CastCollisionEvaluator(manip, env, vars0, vars1)), m_dist_pen(dist_pen), m_coeff(coeff)
+{
+  ROS_ERROR("CastCollisionEvaluator is not currently implemented within ros");
+}
+
+ConvexObjectivePtr CollisionCost::convex(const vector<double>& x, Model* model)
+{
   ConvexObjectivePtr out(new ConvexObjective(model));
   vector<AffExpr> exprs;
   m_calc->CalcDistExpressions(x, exprs);
@@ -200,7 +275,9 @@ ConvexObjectivePtr CollisionCost::convex(const vector<double>& x, Model* model) 
   }
   return out;
 }
-double CollisionCost::value(const vector<double>& x) {
+
+double CollisionCost::value(const vector<double>& x)
+{
   DblVec dists;
   m_calc->CalcDists(x, dists);
   double out = 0;
@@ -210,25 +287,27 @@ double CollisionCost::value(const vector<double>& x) {
   return out;
 }
 
-void CollisionCost::Plot(const DblVec& x) {
-  vector<Collision> collisions;
-  m_calc->GetCollisionsCached(x, collisions);
-  PlotCollisions(collisions, env, handles, m_dist_pen);
+void CollisionCost::Plot(const DblVec& x)
+{
+//  vector<Collision> collisions;
+//  m_calc->GetCollisionsCached(x, collisions);
+//  PlotCollisions(collisions, env, handles, m_dist_pen);
 }
 
 // ALMOST EXACTLY COPIED FROM CollisionCost
 
 CollisionConstraint::CollisionConstraint(double dist_pen, double coeff, BasicKinPtr manip, BasicEnvPtr env, const VarVector& vars) :
-    m_calc(new SingleTimestepCollisionEvaluator(manip, coll, vars)), m_dist_pen(dist_pen), m_coeff(coeff)
+    m_calc(new SingleTimestepCollisionEvaluator(manip, env, vars)), m_dist_pen(dist_pen), m_coeff(coeff)
 {
   name_="collision";
 }
 
-CollisionConstraint::CollisionConstraint(double dist_pen, double coeff, BasicKinPtr manip, BasicEnvPtr env, const VarVector& vars0, const VarVector& vars1) :
-    m_calc(new CastCollisionEvaluator(manip, coll, vars0, vars1)), m_dist_pen(dist_pen), m_coeff(coeff)
+CollisionConstraint::CollisionConstraint(double dist_pen, double coeff, BasicKinPtr manip, BasicEnvPtr env, const VarVector& vars0, const VarVector& vars1) //: m_calc(new CastCollisionEvaluator(manip, env, vars0, vars1)), m_dist_pen(dist_pen), m_coeff(coeff)
 {
   name_="collision";
+  ROS_ERROR("CastCollisionEvaluator is not currently implemented within ros");
 }
+
 ConvexConstraintsPtr CollisionConstraint::convex(const vector<double>& x, Model* model) {
   ConvexConstraintsPtr out(new ConvexConstraints(model));
   vector<AffExpr> exprs;
@@ -239,6 +318,7 @@ ConvexConstraintsPtr CollisionConstraint::convex(const vector<double>& x, Model*
   }
   return out;
 }
+
 DblVec CollisionConstraint::value(const vector<double>& x) {
   DblVec dists;
   m_calc->CalcDists(x, dists);

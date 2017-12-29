@@ -5,7 +5,9 @@
 #include <trajopt_sco/sco_fwd.hpp>
 #include <trajopt/common.hpp>
 #include <Eigen/Core>
-#include <openrave/openrave.h>
+#include <trajopt/basic_kin.h>
+#include <trajopt/basic_env.h>
+
 namespace trajopt {
 
 using namespace sco;
@@ -31,10 +33,12 @@ public:
 struct CartPoseErrCalculator : public VectorOfVector {
   Eigen::Affine3d pose_inv_;
   BasicKinPtr manip_;
+  BasicEnvPtr env_;
   std::string link_;
-  CartPoseErrCalculator(const Eigen::Affine3d& pose, BasicKinPtr manip, std::string link) :
+  CartPoseErrCalculator(const Eigen::Affine3d& pose, BasicKinPtr manip, BasicEnvPtr env, std::string link) :
     pose_inv_(pose.inverse()),
     manip_(manip),
+    env_(env),
     link_(link) {}
 
   VectorXd operator()(const VectorXd& dof_vals) const;
@@ -50,20 +54,28 @@ struct CartPoseErrorPlotter : public Plotter {
 
 struct CartVelJacCalculator : MatrixOfVector {
   BasicKinPtr manip_;
+  BasicEnvPtr env_;
   std::string link_;
   double limit_;
-  CartVelJacCalculator(BasicKinPtr manip, std::string link, double limit) :
-    manip_(manip), link_(link), limit_(limit) {}
+  CartVelJacCalculator(BasicKinPtr manip, BasicEnvPtr env, std::string link, double limit) :
+    manip_(manip),
+    env_(env),
+    link_(link),
+    limit_(limit) {}
 
   MatrixXd operator()(const VectorXd& dof_vals) const;
 };
 
 struct CartVelCalculator : VectorOfVector {
   BasicKinPtr manip_;
+  BasicEnvPtr env_;
   std::string link_;
   double limit_;
-  CartVelCalculator(BasicKinPtr manip, std::string link, double limit) :
-    manip_(manip), link_(link), limit_(limit) {}
+  CartVelCalculator(BasicKinPtr manip, BasicEnvPtr env, std::string link, double limit) :
+    manip_(manip),
+    env_(env),
+    link_(link),
+    limit_(limit) {}
 
   VectorXd operator()(const VectorXd& dof_vals) const;
 };

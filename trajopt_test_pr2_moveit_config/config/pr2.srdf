@@ -63,6 +63,27 @@
         <joint name="r_wrist_flex_joint" value="-0.1" />
         <joint name="r_wrist_roll_joint" value="0" />
     </group_state>
+    <group_state name="right_start" group="right_arm">
+        <joint name="r_shoulder_pan_joint" value="-1.832" />
+        <joint name="r_shoulder_lift_joint" value="-0.332" />
+        <joint name="r_upper_arm_roll_joint" value="-1.011" />
+        <joint name="r_elbow_flex_joint" value="-1.437" />
+        <joint name="r_forearm_roll_joint" value="-1.1" />
+        <joint name="r_wrist_flex_joint" value="-1.926" />
+        <joint name="r_wrist_roll_joint" value="3.074" />
+    </group_state>
+    <group_state name="right_goal" group="right_arm">
+        <joint name="r_shoulder_pan_joint" value="0.062" />
+        <joint name="r_shoulder_lift_joint" value="1.287" />
+        <joint name="r_upper_arm_roll_joint" value="0.1" />
+        <joint name="r_elbow_flex_joint" value="-1.554" />
+        <joint name="r_forearm_roll_joint" value="-3.011" />
+        <joint name="r_wrist_flex_joint" value="-0.268" />
+        <joint name="r_wrist_roll_joint" value="2.988" />
+    </group_state>
+    <group_state name="torso_home" group="torso">
+        <joint name="torso_lift_joint" value="0" />
+    </group_state>
     <!--END EFFECTOR: Purpose: Represent information about an end effector.-->
     <end_effector name="left_eef" parent_link="l_wrist_roll_link" group="left_gripper" />
     <end_effector name="right_eef" parent_link="r_wrist_roll_link" group="right_gripper" />

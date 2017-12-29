@@ -9,7 +9,6 @@
 #include <trajopt_utils/macros.h>
 
 #include <moveit/planning_scene/planning_scene.h>
-#include <trajopt/basic_kin.h>
 
 namespace trajopt {
 

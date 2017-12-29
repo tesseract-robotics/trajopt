@@ -40,59 +40,62 @@ class TRAJOPT_API BasicEnv
 public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-  BasicEnv() {}
+  struct DistanceResult
+  {
+    double distance;
+    std::string link_name[2];
+    Vector3d nearest_point[2];
+    bool valid;
 
-  /**
-   * @brief calcDistances Should return distance information for all active links
-   * @param joint_angles Vector of joint angles (size must match number of joints in robot chain)
-   */
-  virtual void calcDistances(const Eigen::VectorXd &joint_angles) = 0;
+    DistanceResult() : distance(std::numeric_limits<double>::max()), valid(false) {}
+  };
+
+  BasicEnv() {}
 
   /**
    * @brief calcDistances Should return distance information for all links in list link_names
    * @param joint_angles Vector of joint angles (size must match number of joints in robot chain)
    * @param link_names Name of the links to calculate distance data for.
    */
-  virtual void calcDistances(const Eigen::VectorXd &joint_angles, const std::vector<std::string> &link_names) = 0;
-
-  /**
-   * @brief calcCollisions Should return collision information for all active links
-   * @param joint_angles Vector of joint angles (size must match number of joints in robot chain)
-   */
-  virtual void calcCollisions(const Eigen::VectorXd &joint_angles) = 0;
+  virtual void calcDistances(const std::vector<std::string> &joint_names, const Eigen::VectorXd &joint_angles, const std::vector<std::string> &link_names, std::vector<DistanceResult> &dists) = 0;
 
   /**
    * @brief calcCollisions Should return collision information for all links in list link_names
    * @param joint_angles Vector of joint angles (size must match number of joints in robot chain)
    * @param link_names Name of the links to calculate collision data for.
    */
-  virtual void calcCollisions(const Eigen::VectorXd &joint_angles, const std::vector<std::string> &link_names) = 0;
+  virtual void calcCollisions(const std::vector<std::string> &joint_names, const Eigen::VectorXd &joint_angles, const std::vector<std::string> &link_names) = 0;
 
   /**
    * @brief getCurrentJointValues Get the current state of the manipulator
    * @return A vector of joint values
    */
-  virtual Eigen::VectorXd getCurrentJointValues(std::string manipulator_name) const = 0;
+  virtual Eigen::VectorXd getCurrentJointValues(const std::string &manipulator_name) const = 0;
 
-//  /**
-//   * @brief getCurrentJointValues Get the current state of all joints
-//   * @return A vector of joint values
-//   */
-//  virtual Eigen::VectorXd getCurrentJointValues() const = 0;
+  /**
+   * @brief getCurrentJointValues Get the current state of all joints
+   * @return A vector of joint values
+   */
+  virtual Eigen::VectorXd getCurrentJointValues() const = 0;
+
+  /** @brief Get the transform corresponding to the link.
+   *  @return Tranform and is identity when no transform is available.
+   */
+  virtual Eigen::Affine3d getLinkTransform(const std::string &link_name) const = 0;
 
   /**
    * @brief hasManipulator Check if a manipulator exist in the environment
    * @param manipulator_name Name of the manipulator
    * @return True if it exists otherwise false
    */
-  virtual bool hasManipulator(std::string manipulator_name) const = 0;
+  virtual bool hasManipulator(const std::string &manipulator_name) const = 0;
 
   /**
    * @brief getManipulatorKin Get a kinematic object for the provided manipulator name.
    * @param manipulator_name Name of the manipulator
    * @return BasicKinPtr
    */
-  virtual BasicKinPtr getManipulatorKin(std::string manipulator_name) const = 0;
+  virtual BasicKinPtr getManipulatorKin(const std::string &manipulator_name) const = 0;
 
 }; // class BasicColl
 

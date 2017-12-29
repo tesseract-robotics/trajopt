@@ -55,8 +55,9 @@ namespace trajopt {
   
   
 VectorXd CartPoseErrCalculator::operator()(const VectorXd& dof_vals) const {
-  Affine3d new_pose;
-  manip_->calcFwdKin(dof_vals, new_pose, link_);
+  Affine3d new_pose, change_base;
+  change_base = env_->getLinkTransform(manip_->getBaseLinkName());
+  manip_->calcFwdKin(new_pose, change_base, dof_vals, link_);
 
   Affine3d pose_err = pose_inv_ * new_pose;
   Quaterniond q(pose_err.rotation());
@@ -77,8 +78,9 @@ CartPoseConstraint::CartPoseConstraint(const VarVector& vars, const OR::Transfor
 void CartPoseErrorPlotter::Plot(const DblVec& x) {
   CartPoseErrCalculator* calc = static_cast<CartPoseErrCalculator*>(m_calc.get());
   VectorXd dof_vals = getVec(x, m_vars);
-  Affine3d cur_pose;
-  calc->manip_->calcFwdKin(dof_vals, cur_pose, calc->link_);
+  Affine3d cur_pose, change_base;
+  change_base = calc->env_->getLinkTransform(calc->manip_->getBaseLinkName());
+  calc->manip_->calcFwdKin(cur_pose, change_base, dof_vals, calc->link_);
 
   Affine3d target = calc->pose_inv_.inverse();
   // TODO: Levi add ros plotter, publish markers
@@ -110,15 +112,13 @@ MatrixXd CartVelJacCalculator::operator()(const VectorXd& dof_vals) const {
   int n_dof = manip_->numJoints();
   MatrixXd out(6, 2*n_dof);
 
-//  Affine3d pose0;
-//  manip_->calcFwdKin(dof_vals.topRows(n_dof), pose0, link_);
-  MatrixXd jac0;
-  manip_->calcJacobian(dof_vals.topRows(n_dof), jac0, link_);
+  Affine3d change_base = env_->getLinkTransform(manip_->getBaseLinkName());
 
-//  Affine3d pose1;
-//  manip_->calcFwdKin(dof_vals.bottomRows(n_dof), pose1, link_);
+  MatrixXd jac0;
+  manip_->calcJacobian(jac0, change_base, dof_vals.topRows(n_dof), link_);
+
   MatrixXd jac1;
-  manip_->calcJacobian(dof_vals.bottomRows(n_dof), jac1, link_);
+  manip_->calcJacobian(jac1, change_base, dof_vals.bottomRows(n_dof), link_);
   out.block(0,0,3,n_dof) = -jac0.topRows(3);
   out.block(0,n_dof,3,n_dof) = jac1.topRows(3);
   out.block(3,0,3,n_dof) = jac0.topRows(3);
@@ -128,11 +128,13 @@ MatrixXd CartVelJacCalculator::operator()(const VectorXd& dof_vals) const {
 
 VectorXd CartVelCalculator::operator()(const VectorXd& dof_vals) const {
   int n_dof = manip_->numJoints();
-  Affine3d pose0;
-  manip_->calcFwdKin(dof_vals.topRows(n_dof), pose0, link_);
+  Affine3d pose0, change_base;
+  change_base = env_->getLinkTransform(manip_->getBaseLinkName());
+
+  manip_->calcFwdKin(pose0, change_base, dof_vals.topRows(n_dof), link_);
 
   Affine3d pose1;
-  manip_->calcFwdKin(dof_vals.bottomRows(n_dof), pose1, link_);
+  manip_->calcFwdKin(pose1, change_base, dof_vals.bottomRows(n_dof), link_);
 
   VectorXd out(6);
   out.topRows(3) = (pose1.translation() - pose0.translation() - Vector3d(limit_, limit_, limit_));

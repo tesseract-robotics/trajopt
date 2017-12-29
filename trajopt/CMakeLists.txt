@@ -13,6 +13,7 @@ find_package(catkin REQUIRED COMPONENTS
   urdf
   moveit_core
   moveit_ros_planning
+  industrial_collision_detection
 )
 
 find_package(Eigen3 REQUIRED)
@@ -30,7 +31,7 @@ set(BULLET_LIBRARIES BulletCollision LinearMath)
 set(TRAJOPT_SOURCE_FILES
     src/trajectory_costs.cpp
     src/kinematic_terms.cpp
-#    src/collision_terms.cpp
+    src/collision_terms.cpp
     src/json_marshal.cpp
     src/problem_description.cpp
     src/utils.cpp
@@ -51,6 +52,7 @@ catkin_package(
     urdf
     moveit_core
     moveit_ros_planning
+    industrial_collision_detection
 #  DEPENDS system_lib
 )
 

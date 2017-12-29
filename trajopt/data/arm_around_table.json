@@ -1,7 +1,7 @@
 {
   "basic_info" : {
     "n_steps" : 10,
-    "manip" : "rightarm",
+    "manip" : "right_arm",
     "start_fixed" : true
   },
   "costs" : [
@@ -15,7 +15,8 @@
     "type" : "collision",
     "params" : {
       "coeffs" : [20],
-      "dist_pen" : [0.025]
+      "dist_pen" : [0.025],
+      "continuous" : false
     }
   }
   ],
