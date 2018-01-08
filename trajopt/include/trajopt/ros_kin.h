@@ -129,10 +129,10 @@ private:
   std::vector<std::string> joint_list_;                          /**< List of joint names */
   std::vector<std::string> link_list_;                           /**< List of link names */
   std::vector<std::string> link_list_with_geom_;                 /**< List of link names with geometry */
-  std::map<std::string, int> link_name_too_joint_index_;         /**< A map from link name to joint index */
   Eigen::Matrix<double, Eigen::Dynamic, 2> joint_limits_;        /**< Joint limits */
   boost::scoped_ptr<KDL::ChainFkSolverPos_recursive> fk_solver_; /**< KDL Forward Kinematic Solver */
   boost::scoped_ptr<KDL::ChainJntToJacSolver> jac_solver_;       /**< KDL Jacobian Solver */
+  std::map<std::string, int> link_name_too_segment_index_;       /**< A map from link name to kdl chain segment numer */
 
   /** @brief calcFwdKin helper function */
   bool calcFwdKinHelper(Eigen::Affine3d &pose, const Eigen::Affine3d change_base, const Eigen::VectorXd &joint_angles, int segment_num=-1) const;
@@ -141,7 +141,7 @@ private:
   bool calcJacobianHelper(KDL::Jacobian &jacobian, const Eigen::Affine3d change_base, const Eigen::VectorXd &joint_angles, int segment_num=-1) const;
 
   /** @brief Get the parent joint index for a link */
-  int getLinkParentJointIndex(const std::string &link_name) const;
+//  int getLinkParentJointIndex(const std::string &link_name) const;
 
 }; // class BasicKin
 

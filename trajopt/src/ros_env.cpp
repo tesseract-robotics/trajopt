@@ -124,7 +124,7 @@ BasicKinPtr ROSEnv::getManipulatorKin(const std::string &manipulator_name) const
   return manip;
 }
 
-void ROSEnv::plotTrajectory(const std::string &name, const std::vector<std::string> &joint_names, const TrajArray &traj) const
+void ROSEnv::plotTrajectory(const std::string &name, const std::vector<std::string> &joint_names, const TrajArray &traj)
 {
   moveit_msgs::DisplayTrajectory msg;
   moveit_msgs::RobotTrajectory rt;
@@ -142,10 +142,11 @@ void ROSEnv::plotTrajectory(const std::string &name, const std::vector<std::stri
   msg.trajectory.push_back(rt);
   moveit::core::robotStateToRobotStateMsg(env_->getCurrentState(), msg.trajectory_start);
   trajectory_pub_.publish(msg);
+  ros::spinOnce();
   plotWaitForInput();
 }
 
-void ROSEnv::plotCollisions(const std::vector<std::string> &link_names, const std::vector<DistanceResult> &dist_results) const
+void ROSEnv::plotCollisions(const std::vector<std::string> &link_names, const std::vector<DistanceResult> &dist_results)
 {
   visualization_msgs::MarkerArray msg;
   for (int i = 0; i < dist_results.size(); ++i)
@@ -155,7 +156,7 @@ void ROSEnv::plotCollisions(const std::vector<std::string> &link_names, const st
     marker.header.frame_id = env_->getPlanningFrame();
     marker.header.stamp = ros::Time::now();
     marker.ns = "trajopt";
-    marker.id = i;
+    marker.id = ++marker_counter_;
     marker.type = visualization_msgs::Marker::ARROW;
     marker.action = visualization_msgs::Marker::ADD;
 
@@ -183,6 +184,7 @@ void ROSEnv::plotCollisions(const std::vector<std::string> &link_names, const st
     rot.col(1) = y;
     rot.col(2) = z;
     Eigen::Quaterniond q(rot);
+    q.normalize();
     marker.pose.orientation.x = q.x();
     marker.pose.orientation.y = q.y();
     marker.pose.orientation.z = q.z();
@@ -239,12 +241,14 @@ void ROSEnv::plotCollisions(const std::vector<std::string> &link_names, const st
   if (dist_results.size() > 0)
   {
     collisions_pub_.publish(msg);
+    ros::spinOnce();
   }
 }
 
-void ROSEnv::plotClear() const
+void ROSEnv::plotClear()
 {
   // Remove old arrows
+  marker_counter_ = 0;
   visualization_msgs::MarkerArray msg;
   visualization_msgs::Marker marker;
   marker.header.frame_id = env_->getPlanningFrame();
@@ -255,9 +259,10 @@ void ROSEnv::plotClear() const
   marker.action = visualization_msgs::Marker::DELETEALL;
   msg.markers.push_back(marker);
   collisions_pub_.publish(msg);
+  ros::spinOnce();
 }
 
-void ROSEnv::plotWaitForInput() const
+void ROSEnv::plotWaitForInput()
 {
   ROS_ERROR("Hit enter key to step optimization!");
   std::cin.ignore(std::numeric_limits<std::streamsize>::max(),'\n');

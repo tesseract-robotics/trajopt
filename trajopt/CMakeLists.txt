@@ -13,6 +13,7 @@ find_package(catkin REQUIRED COMPONENTS
   urdf
   moveit_core
   moveit_ros_planning
+  pluginlib
 )
 
 find_package(Eigen3 REQUIRED)
@@ -51,6 +52,7 @@ catkin_package(
     urdf
     moveit_core
     moveit_ros_planning
+    pluginlib
 #  DEPENDS system_lib
 )
 
@@ -73,6 +75,9 @@ add_library(moveit_collision_detection_bullet
 )
 
 target_link_libraries(moveit_collision_detection_bullet ${catkin_LIBRARIES} ${console_bridge_LIBRARIES} ${urdfdom_LIBRARIES} ${urdfdom_headers_LIBRARIES} ${Boost_LIBRARIES})
+
+add_library(moveit_collision_detection_bullet_plugin src/moveit/collision_detector_allocator_bullet.cpp)
+target_link_libraries(moveit_collision_detection_bullet_plugin moveit_collision_detection_bullet ${catkin_LIBRARIES})
 
 if (CATKIN_ENABLE_TESTING)
   include_directories(test)

@@ -32,8 +32,6 @@ void PlotCosts(BasicKinPtr manip, BasicEnvPtr env, vector<CostPtr>& costs, vecto
   env->plotTrajectory(manip->getName(), joint_names, traj);
 }
 
-
-
 Optimizer::Callback PlotCallback(TrajOptProb& prob) {
 
   vector<ConstraintPtr> cnts = prob.getConstraints();

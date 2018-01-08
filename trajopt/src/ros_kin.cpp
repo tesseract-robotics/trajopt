@@ -31,6 +31,7 @@
 #include <kdl_parser/kdl_parser.hpp>
 #include <moveit/robot_model/robot_model.h>
 #include <urdf/model.h>
+#include <kdl/segment.hpp>
 
 namespace trajopt
 {
@@ -52,7 +53,7 @@ bool ROSKin::calcFwdKinHelper(Eigen::Affine3d &pose, const Eigen::Affine3d chang
   }
 
   KDLToEigen(kdl_pose, pose);
-  pose = change_base * pose;
+  pose = change_base.inverse() * pose;
 
   return true;
 }
@@ -70,8 +71,10 @@ bool ROSKin::calcFwdKin(Eigen::Affine3d &pose, const Eigen::Affine3d change_base
   if (!checkInitialized()) return false;
   if (!checkJoints(joint_angles)) return false;
 
-  int joint_index = getLinkParentJointIndex(link_name);
-  return calcFwdKinHelper(pose, change_base, joint_angles, joint_index < 0 ? -1 : joint_index + 1);
+  int segment_nr = link_name_too_segment_index_.at(link_name);
+  return calcFwdKinHelper(pose, change_base, joint_angles, segment_nr);
+//  int joint_index = getLinkParentJointIndex(link_name);
+//  return calcFwdKinHelper(pose, change_base, joint_angles, joint_index < 0 ? -1 : joint_index + 1);
 }
 
 bool ROSKin::calcJacobianHelper(KDL::Jacobian &jacobian, const Eigen::Affine3d change_base, const Eigen::VectorXd &joint_angles, int segment_num) const
@@ -119,9 +122,9 @@ bool ROSKin::calcJacobian(Eigen::MatrixXd &jacobian, const Eigen::Affine3d chang
   if (!checkInitialized()) return false;
   if (!checkJoints(joint_angles)) return false;
 
-  int joint_index = getLinkParentJointIndex(link_name);
+  int segment_nr = link_name_too_segment_index_.at(link_name);
   KDL::Jacobian kdl_jacobian;
-  if (calcJacobianHelper(kdl_jacobian, change_base, joint_angles, joint_index < 0 ? -1 : joint_index + 1))
+  if (calcJacobianHelper(kdl_jacobian, change_base, joint_angles, segment_nr))
   {
     KDLToEigen(kdl_jacobian, jacobian);
     return true;
@@ -130,6 +133,18 @@ bool ROSKin::calcJacobian(Eigen::MatrixXd &jacobian, const Eigen::Affine3d chang
   {
     return false;
   }
+
+//  int joint_index = getLinkParentJointIndex(link_name);
+//  KDL::Jacobian kdl_jacobian;
+//  if (calcJacobianHelper(kdl_jacobian, change_base, joint_angles, joint_index < 0 ? -1 : joint_index + 1))
+//  {
+//    KDLToEigen(kdl_jacobian, jacobian);
+//    return true;
+//  }
+//  else
+//  {
+//    return false;
+//  }
 }
 
 bool ROSKin::calcJacobian(Eigen::MatrixXd &jacobian, const Eigen::Affine3d change_base, const Eigen::VectorXd &joint_angles, const std::string &link_name, const Eigen::Vector3d link_point) const
@@ -137,11 +152,19 @@ bool ROSKin::calcJacobian(Eigen::MatrixXd &jacobian, const Eigen::Affine3d chang
   if (!checkInitialized()) return false;
   if (!checkJoints(joint_angles)) return false;
 
-  int joint_index = getLinkParentJointIndex(link_name);
+  int segment_nr = link_name_too_segment_index_.at(link_name);
   KDL::Jacobian kdl_jacobian;
-  if (calcJacobianHelper(kdl_jacobian, change_base, joint_angles, joint_index < 0 ? -1 : joint_index + 1))
+  if (calcJacobianHelper(kdl_jacobian, change_base, joint_angles, segment_nr))
   {
-    KDL::Vector pt(link_point(0), link_point(1), link_point(2));
+    // When changing ref point you must provide a vector from the current ref point
+    // to the new ref point. This is why the forward kin calculation is required, but
+    // need to figure out if there is a more direct way to get this information from KDL.
+    Eigen::Affine3d refFrame;
+    calcFwdKinHelper(refFrame, change_base, joint_angles, segment_nr);
+
+    Eigen::VectorXd refPoint = refFrame.translation();
+
+    KDL::Vector pt(link_point(0) - refPoint(0), link_point(1) - refPoint(1), link_point(2) - refPoint(2));
     kdl_jacobian.changeRefPoint(pt);
     KDLToEigen(kdl_jacobian, jacobian);
     return true;
@@ -150,6 +173,20 @@ bool ROSKin::calcJacobian(Eigen::MatrixXd &jacobian, const Eigen::Affine3d chang
   {
     return false;
   }
+
+//  int joint_index = getLinkParentJointIndex(link_name);
+//  KDL::Jacobian kdl_jacobian;
+//  if (calcJacobianHelper(kdl_jacobian, change_base, joint_angles, joint_index < 0 ? -1 : joint_index + 1))
+//  {
+//    KDL::Vector pt(link_point(0), link_point(1), link_point(2));
+//    kdl_jacobian.changeRefPoint(pt);
+//    KDLToEigen(kdl_jacobian, jacobian);
+//    return true;
+//  }
+//  else
+//  {
+//    return false;
+//  }
 }
 
 bool ROSKin::checkJoints(const Eigen::VectorXd &vec) const
@@ -207,26 +244,26 @@ bool ROSKin::getLinkNamesWithGeometry(std::vector<std::string> &names) const
     return true;
 }
 
-int ROSKin::getLinkParentJointIndex(const std::string &link_name) const
-{
-  std::vector<std::string>::const_iterator it_link = find(link_list_.begin(), link_list_.end(), link_name);
-  if (it_link == link_list_.end())
-  {
-    ROS_ERROR_STREAM("Unable to find link: " << link_name);
-    return -1;
-  }
-  return link_name_too_joint_index_.at(link_name);
-
-
-
-//  std::string joint_name = group_->getUpdatedLinkModels()[index]->getParentJointModel()->getName();
-//  std::vector<std::string>::const_iterator it = find(joint_list_.begin(), joint_list_.end(), joint_name);
-//  if (it != joint_list_.end())
+//int ROSKin::getLinkParentJointIndex(const std::string &link_name) const
+//{
+//  std::vector<std::string>::const_iterator it_link = find(link_list_.begin(), link_list_.end(), link_name);
+//  if (it_link == link_list_.end())
 //  {
-//    return it-joint_list_.begin();
+//    ROS_ERROR_STREAM("Unable to find link: " << link_name);
+//    return -1;
 //  }
-//  return -1;
-}
+//  return link_name_too_joint_index_.at(link_name);
+
+
+
+////  std::string joint_name = group_->getUpdatedLinkModels()[index]->getParentJointModel()->getName();
+////  std::vector<std::string>::const_iterator it = find(joint_list_.begin(), joint_list_.end(), joint_name);
+////  if (it != joint_list_.end())
+////  {
+////    return it-joint_list_.begin();
+////  }
+////  return -1;
+//}
 
 bool ROSKin::init(const moveit::core::JointModelGroup* group)
 {
@@ -261,8 +298,26 @@ bool ROSKin::init(const moveit::core::JointModelGroup* group)
     return false;
   }
 
+  std::map<std::string, int> link_name_too_segment_index;
+  for (auto i=0; i < robot_chain_.getNrOfSegments(); ++i)
+  {
+    const KDL::Segment &s = robot_chain_.getSegment(i);
+    link_name_too_segment_index[s.getName()] = i;
+//    if (i == (robot_chain_.getNrOfSegments() - 1))
+//    {
+//      link_name_too_segment_index[s.getName()] = -1;
+//    }
+//    else
+//    {
+//      link_name_too_segment_index[s.getName()] = i + 1;
+//    }
+  }
+
   joint_list_.resize(robot_chain_.getNrOfJoints());
   joint_limits_.resize(robot_chain_.getNrOfJoints(), 2);
+  std::vector<int> joint_too_segment;
+  joint_too_segment.resize(robot_chain_.getNrOfJoints());
+  joint_too_segment.back() = -1;
 
   link_list_ = group->getUpdatedLinkModelNames();
   link_list_with_geom_ = group->getUpdatedLinkModelsWithGeometryNames();
@@ -276,6 +331,10 @@ bool ROSKin::init(const moveit::core::JointModelGroup* group)
     joint_list_[j] = jnt.getName();
     joint_limits_(j,0) = urdf->getJoint(jnt.getName())->limits->lower;
     joint_limits_(j,1) = urdf->getJoint(jnt.getName())->limits->upper;
+    if (j > 0)
+    {
+      joint_too_segment[j - 1] = i;
+    }
 
     // Need to set limits for continuous joints. TODO: This may not be required by the optization library but may be nice to have
     if (urdf->getJoint(jnt.getName())->type == urdf::Joint::CONTINUOUS && std::abs(joint_limits_(j,0) - joint_limits_(j,1)) <= std::numeric_limits<float>::epsilon())
@@ -288,25 +347,47 @@ bool ROSKin::init(const moveit::core::JointModelGroup* group)
   }
 
   for (int i=0; i<link_list_.size(); ++i)
-  {
-    bool found = false;
-    const moveit::core::LinkModel *link_model = group->getParentModel().getLinkModel(link_list_[i]);
-    while(!found)
     {
-      std::string joint_name = link_model->getParentJointModel()->getName();
-      std::vector<std::string>::const_iterator it = find(joint_list_.begin(), joint_list_.end(), joint_name);
-      if (it != joint_list_.end())
+      bool found = false;
+      const moveit::core::LinkModel *link_model = group->getParentModel().getLinkModel(link_list_[i]);
+      while(!found)
       {
-        int joint_index = it-joint_list_.begin();
-        link_name_too_joint_index_[link_list_[i]] = joint_index;
-        found = true;
-      }
-      else
-      {
-        link_model = link_model->getParentLinkModel();
+        std::string joint_name = link_model->getParentJointModel()->getName();
+        std::vector<std::string>::const_iterator it = std::find(joint_list_.begin(), joint_list_.end(), joint_name);
+        if (it != joint_list_.end())
+        {
+          int joint_index = it-joint_list_.begin();
+          link_name_too_segment_index_[link_list_[i]] = joint_too_segment[joint_index];
+          found = true;
+        }
+        else
+        {
+          link_model = link_model->getParentLinkModel();
+        }
       }
     }
-  }
+
+//  for (int i=0; i<link_list_.size(); ++i)
+//  {
+//    bool found = false;
+////    const moveit::core::LinkModel *link_model = group->getParentModel().getLinkModel(link_list_[i]);
+//    std::string link_name = link_list_[i];
+//    while(!found)
+//    {
+////      std::string joint_name = link_model->getParentJointModel()->getName();
+////      std::vector<std::string>::const_iterator it = find(joint_list_.begin(), joint_list_.end(), joint_name);
+//      auto it = link_name_too_segment_index.find(link_name);
+//      if (it != link_name_too_segment_index.end())
+//      {
+//        link_name_too_segment_index_[link_list_[i]] = it->second;
+//        found = true;
+//      }
+//      else
+//      {
+//        link_name = group->getParentModel().getLinkModel(link_name)->getParentLinkModel()->getName();
+//      }
+//    }
+//  }
 
   fk_solver_.reset(new KDL::ChainFkSolverPos_recursive(robot_chain_));
   jac_solver_.reset(new KDL::ChainJntToJacSolver(robot_chain_));
@@ -377,6 +458,7 @@ ROSKin& ROSKin::operator=(const ROSKin& rhs)
   group_ = rhs.group_;
   base_name_ = rhs.base_name_;
   tip_name_ = rhs.tip_name_;
+  link_name_too_segment_index_ = rhs.link_name_too_segment_index_;
 
   return *this;
 }

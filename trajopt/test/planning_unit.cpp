@@ -14,6 +14,7 @@
 #include <trajopt/ros_kin.h>
 #include <trajopt/ros_env.h>
 #include <trajopt/plot_callback.hpp>
+#include <trajopt_utils/logging.hpp>
 
 #include <ros/ros.h>
 #include <moveit/robot_model_loader/robot_model_loader.h>
@@ -48,10 +49,10 @@ public:
     val.push_back(0);
     rs.setJointPositions("torso_lift_joint", val);
 
-//    //Now assign collision detection plugin
-//    collision_detection::CollisionPluginLoader cd_loader;
-//    std::string class_name = "IndustrialFCL";
-//    ASSERT_TRUE(cd_loader.activate(class_name, planning_scene_, true));
+    //Now assign collision detection plugin
+    collision_detection::CollisionPluginLoader cd_loader;
+    std::string class_name = "BULLET";
+    ASSERT_TRUE(cd_loader.activate(class_name, planning_scene_, true));
 
     ASSERT_TRUE(env_->init(planning_scene_));
   }
@@ -111,6 +112,7 @@ TEST_F(PlanningTest, arm_around_table)
   ipos["r_wrist_roll_joint"] = 3.074;
   rs.setVariablePositions(ipos);
 
+  gLogLevel = util::LevelDebug;
   TrajOptProbPtr prob = ConstructProblem(root, env_);
   ASSERT_TRUE(!!prob);
 

@@ -165,7 +165,7 @@ void SingleTimestepCollisionEvaluator::CalcDistExpressions(const DblVec& x, vect
       MatrixXd jac;
       VectorXd dist_grad;
       manip_->calcJacobian(jac, change_base, dofvals, res.link_names[0], res.nearest_points[0]);
-      dist_grad = res.normal.transpose() * jac.topRows(3);
+      dist_grad = -res.normal.transpose() * jac.topRows(3);
 
       exprInc(dist, varDot(dist_grad, m_vars));
       exprInc(dist, -dist_grad.dot(dofvals));
@@ -177,12 +177,12 @@ void SingleTimestepCollisionEvaluator::CalcDistExpressions(const DblVec& x, vect
       MatrixXd jac;
       VectorXd dist_grad;
       manip_->calcJacobian(jac, change_base, dofvals, res.link_names[1], res.nearest_points[1]);
-      dist_grad = -res.normal.transpose() * jac.topRows(3);
+      dist_grad = res.normal.transpose() * jac.topRows(3);
       exprInc(dist, varDot(dist_grad, m_vars));
       exprInc(dist, -dist_grad.dot(dofvals));
     }
 
-    if (itA != link_names.end()) // || itB != link_names.end())
+    if (itA != link_names.end() || itB != link_names.end())
     {
       exprs.push_back(dist);
     }

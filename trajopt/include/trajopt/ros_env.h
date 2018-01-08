@@ -40,13 +40,13 @@ public:
 
   void enablePlotting(bool enable) { plotting_ = enable; }
 
-  void plotTrajectory(const std::string &name, const std::vector<std::string> &joint_names, const TrajArray &traj) const;
+  void plotTrajectory(const std::string &name, const std::vector<std::string> &joint_names, const TrajArray &traj);
 
-  void plotCollisions(const std::vector<std::string> &link_names, const std::vector<BasicEnv::DistanceResult> &dist_results) const;
+  void plotCollisions(const std::vector<std::string> &link_names, const std::vector<BasicEnv::DistanceResult> &dist_results);
 
-  void plotClear() const;
+  void plotClear();
 
-  void plotWaitForInput() const;
+  void plotWaitForInput();
 
 private:
   bool initialized_; /**< Identifies if the object has been initialized */
@@ -55,6 +55,7 @@ private:
   collision_detection::CollisionWorldConstPtr collision_world_; /**< Pointer to the collision world, some constraints require it */
 
   bool plotting_;                 /**< Enable plotting */
+  int marker_counter_;            /**< Counter when plotting */
   ros::Publisher trajectory_pub_; /**< Trajectory publisher */
   ros::Publisher collisions_pub_; /**< Collision Data publisher */
 

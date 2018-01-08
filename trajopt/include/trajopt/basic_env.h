@@ -104,9 +104,9 @@ public:
    * @brief plotTrajectory Plot a trajectory
    * @param traj
    */
-  virtual void plotTrajectory(const std::string &name, const std::vector<std::string> &joint_names, const TrajArray &traj) const = 0;
+  virtual void plotTrajectory(const std::string &name, const std::vector<std::string> &joint_names, const TrajArray &traj) = 0;
 
-  virtual void plotCollisions(const std::vector<std::string> &link_names, const std::vector<BasicEnv::DistanceResult> &dist_results) const = 0;
+  virtual void plotCollisions(const std::vector<std::string> &link_names, const std::vector<BasicEnv::DistanceResult> &dist_results) = 0;
 
 //  virtual void plotArrow(const std::string &name, const Eigen::Vector3d &arrow, double scale) const = 0;
 
@@ -116,9 +116,9 @@ public:
    * @brief This is called at the start of the plotting for each iteration
    *        to clear previous iteration graphics if neccessary.
    */
-  virtual void plotClear() const = 0;
+  virtual void plotClear() = 0;
 
-  virtual void plotWaitForInput() const = 0;
+  virtual void plotWaitForInput() = 0;
 
 
 

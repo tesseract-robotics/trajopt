@@ -52,7 +52,7 @@ public:
   /**
    * @brief Calculates tool pose of robot chain
    * @param pose Transform of end-of-tip relative to root
-   * @param change_base The trans from desired frame to the base frame of the manipulator.
+   * @param change_base The transform from the base frame of the manipulator to the desired frame.
    * @param joint_angles Vector of joint angles (size must match number of joints in robot chain)
    * @return True if calculation successful, False if anything is wrong (including uninitialized BasicKin)
    */
@@ -61,7 +61,7 @@ public:
   /**
    * @brief Calculates pose for a given link
    * @param pose Transform of link relative to root
-   * @param change_base The trans from desired frame to the base frame of the manipulator.
+   * @param change_base The transform from the base frame of the manipulator to the desired frame.
    * @param joint_angles Vector of joint angles (size must match number of joints in robot chain)
    * @param link_name Name of link to calculate pose
    * @return True if calculation successful, False if anything is wrong (including uninitialized BasicKin)
@@ -71,7 +71,7 @@ public:
   /**
    * @brief Calculated jacobian of robot given joint angles
    * @param jacobian Output jacobian
-   * @param change_base The trans from desired frame to the base frame of the manipulator.
+   * @param change_base The transform from the base frame of the manipulator to the desired frame.
    * @param joint_angles Input vector of joint angles
    * @return True if calculation successful, False if anything is wrong (including uninitialized BasicKin)
    */
@@ -80,7 +80,7 @@ public:
   /**
    * @brief Calculated jacobian at a link given joint angles
    * @param jacobian Output jacobian for a given link
-   * @param change_base The trans from desired frame to the base frame of the manipulator.
+   * @param change_base The transform from the base frame of the manipulator to the desired frame.
    * @param joint_angles Input vector of joint angles
    * @param link_name Name of link to calculate jacobian
    * @return True if calculation successful, False if anything is wrong (including uninitialized BasicKin)
@@ -90,7 +90,7 @@ public:
   /**
    * @brief Calculated jacobian at a link given joint angles
    * @param jacobian Output jacobian for a given link
-   * @param change_base The trans from desired frame to the base frame of the manipulator.
+   * @param change_base The transform from the base frame of the manipulator to the desired frame.
    * @param joint_angles Input vector of joint angles
    * @param link_name Name of link to calculate jacobian
    * @param link_point Point in the link_name frame for which to calculate the jacobian about
