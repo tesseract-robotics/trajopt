@@ -1,55 +1,47 @@
 #include <trajopt/common.hpp>
 #include <trajopt/problem_description.hpp>
 #include <trajopt_utils/eigen_conversions.hpp>
-#include <trajopt_osgviewer/osgviewer.hpp>
+#include <trajopt/basic_kin.h>
+#include <trajopt/basic_env.h>
+#include <trajopt/plot_callback.hpp>
 #include <boost/foreach.hpp>
 #include <set>
-using namespace OpenRAVE;
+
 using namespace util;
 using namespace std;
 namespace trajopt {
 
+void PlotCosts(BasicKinPtr manip, BasicEnvPtr env, vector<CostPtr>& costs, vector<ConstraintPtr>& cnts, const VarArray& vars, const DblVec& x)
+{
+  env->plotClear();
 
-
-void PlotTraj(OSGViewer& viewer, Configuration& rad, const TrajArray& x, vector<GraphHandlePtr>& handles) {
-  vector<KinBodyPtr> bodies = rad.GetBodies();
-  for (int i=0; i < x.rows(); ++i) {
-    rad.SetDOFValues(toDblVec(x.row(i)));
-    BOOST_FOREACH(const KinBodyPtr& body, bodies) {
-      handles.push_back(viewer.PlotKinBody(body));
-      SetTransparency(handles.back(), .35);
-    }
-  }
-}
-
-void PlotCosts(OSGViewer& viewer, vector<CostPtr>& costs, vector<ConstraintPtr>& cnts, Configuration& rad, const VarArray& vars, const DblVec& x) {
-  vector<GraphHandlePtr> handles;
-  handles.clear();
   BOOST_FOREACH(CostPtr& cost, costs) {
     if (Plotter* plotter = dynamic_cast<Plotter*>(cost.get())) {
-      plotter->Plot(x, *rad.GetEnv(), handles);
+      plotter->Plot(x);
     }
   }
   BOOST_FOREACH(ConstraintPtr& cnt, cnts) {
     if (Plotter* plotter = dynamic_cast<Plotter*>(cnt.get())) {
-      plotter->Plot(x, *rad.GetEnv(), handles);
+      plotter->Plot(x);
     }
   }
   TrajArray traj = getTraj(x, vars);
-  PlotTraj(viewer, rad, traj, handles);
-  viewer.Idle();
-  rad.SetDOFValues(toDblVec(traj.row(traj.rows()-1)));
+  std::vector<std::string> joint_names;
+  manip->getJointNames(joint_names);
+
+  env->plotTrajectory(manip->getName(), joint_names, traj);
 }
 
 
 
 Optimizer::Callback PlotCallback(TrajOptProb& prob) {
-  OSGViewerPtr viewer = OSGViewer::GetOrCreate(prob.GetEnv());
+
   vector<ConstraintPtr> cnts = prob.getConstraints();
-  return boost::bind(&PlotCosts, boost::ref(*viewer),
+  return boost::bind(&PlotCosts,
+                      prob.GetKin(),
+                      prob.GetEnv(),
                       boost::ref(prob.getCosts()),
                       cnts,
-                      boost::ref(*prob.GetRAD()),
                       boost::ref(prob.GetVars()),
                       _2);
 }

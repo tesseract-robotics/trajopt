@@ -4,8 +4,8 @@
 #include <trajopt/basic_env.h>
 #include <trajopt/ros_kin.h>
 #include <moveit/planning_scene/planning_scene.h>
-#include <industrial_collision_detection/collision_detection/collision_robot_industrial.h>
-#include <industrial_collision_detection/collision_detection/collision_world_industrial.h>
+#include <moveit/collision_detection/collision_robot.h>
+#include <moveit/collision_detection/collision_world.h>
 
 namespace trajopt {
 
@@ -16,19 +16,7 @@ public:
 
   ROSEnv() : BasicEnv(), initialized_(false) {}
 
-  bool init(PlanningScenePtr planning_scene)
-  {
-    env_ = planning_scene;
-    initialized_ = planning_scene? true : false;
-
-    if (initialized_)
-    {
-      collision_robot_ = std::static_pointer_cast<const collision_detection::CollisionRobotIndustrial>(planning_scene->getCollisionRobot());
-      collision_world_ = std::static_pointer_cast<const collision_detection::CollisionWorldIndustrial>(planning_scene->getCollisionWorld());
-    }
-
-    return initialized_;
-  }
+  bool init(PlanningScenePtr planning_scene);
 
   /**
    * @brief Checks if BasicKin is initialized (init() has been run: urdf model loaded, etc.)
@@ -50,11 +38,25 @@ public:
 
   BasicKinPtr getManipulatorKin(const std::string &manipulator_name) const;
 
+  void enablePlotting(bool enable) { plotting_ = enable; }
+
+  void plotTrajectory(const std::string &name, const std::vector<std::string> &joint_names, const TrajArray &traj) const;
+
+  void plotCollisions(const std::vector<std::string> &link_names, const std::vector<BasicEnv::DistanceResult> &dist_results) const;
+
+  void plotClear() const;
+
+  void plotWaitForInput() const;
+
 private:
   bool initialized_; /**< Identifies if the object has been initialized */
   PlanningScenePtr env_;
-  collision_detection::CollisionRobotIndustrialConstPtr collision_robot_; /**< Pointer to the collision robot, some constraints require it */
-  collision_detection::CollisionWorldIndustrialConstPtr collision_world_; /**< Pointer to the collision world, some constraints require it */
+  collision_detection::CollisionRobotConstPtr collision_robot_; /**< Pointer to the collision robot, some constraints require it */
+  collision_detection::CollisionWorldConstPtr collision_world_; /**< Pointer to the collision world, some constraints require it */
+
+  bool plotting_;                 /**< Enable plotting */
+  ros::Publisher trajectory_pub_; /**< Trajectory publisher */
+  ros::Publisher collisions_pub_; /**< Collision Data publisher */
 
   std::set<const robot_model::LinkModel*> getLinkModels(const std::vector<std::string> &link_names) const;
 

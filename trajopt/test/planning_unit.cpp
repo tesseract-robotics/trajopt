@@ -13,6 +13,7 @@
 #include <trajopt_test_utils.hpp>
 #include <trajopt/ros_kin.h>
 #include <trajopt/ros_env.h>
+#include <trajopt/plot_callback.hpp>
 
 #include <ros/ros.h>
 #include <moveit/robot_model_loader/robot_model_loader.h>
@@ -47,10 +48,10 @@ public:
     val.push_back(0);
     rs.setJointPositions("torso_lift_joint", val);
 
-    //Now assign collision detection plugin
-    collision_detection::CollisionPluginLoader cd_loader;
-    std::string class_name = "IndustrialFCL";
-    ASSERT_TRUE(cd_loader.activate(class_name, planning_scene_, true));
+//    //Now assign collision detection plugin
+//    collision_detection::CollisionPluginLoader cd_loader;
+//    std::string class_name = "IndustrialFCL";
+//    ASSERT_TRUE(cd_loader.activate(class_name, planning_scene_, true));
 
     ASSERT_TRUE(env_->init(planning_scene_));
   }
@@ -115,6 +116,8 @@ TEST_F(PlanningTest, arm_around_table)
 
   BasicTrustRegionSQP opt(prob);
   ROS_ERROR_STREAM("DOF: " << prob->GetNumDOF());
+  opt.addCallback(PlotCallback(*prob));
+
 //  TrajPlotter plotter(env, pci.rad, prob->GetVars());
 //  if (plotting) {
 //    plotter.Add(prob->getCosts());

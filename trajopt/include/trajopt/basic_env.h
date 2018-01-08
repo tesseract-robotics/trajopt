@@ -43,8 +43,9 @@ public:
   struct DistanceResult
   {
     double distance;
-    std::string link_name[2];
-    Vector3d nearest_point[2];
+    std::string link_names[2];
+    Vector3d nearest_points[2];
+    Vector3d normal;
     bool valid;
 
     DistanceResult() : distance(std::numeric_limits<double>::max()), valid(false) {}
@@ -96,6 +97,30 @@ public:
    * @return BasicKinPtr
    */
   virtual BasicKinPtr getManipulatorKin(const std::string &manipulator_name) const = 0;
+
+  virtual void enablePlotting(bool enable) = 0;
+
+  /**
+   * @brief plotTrajectory Plot a trajectory
+   * @param traj
+   */
+  virtual void plotTrajectory(const std::string &name, const std::vector<std::string> &joint_names, const TrajArray &traj) const = 0;
+
+  virtual void plotCollisions(const std::vector<std::string> &link_names, const std::vector<BasicEnv::DistanceResult> &dist_results) const = 0;
+
+//  virtual void plotArrow(const std::string &name, const Eigen::Vector3d &arrow, double scale) const = 0;
+
+//  virtual void plotAxis(const std::string &name, const Eigen::Affine3d &axis, double scale) const = 0;
+
+  /**
+   * @brief This is called at the start of the plotting for each iteration
+   *        to clear previous iteration graphics if neccessary.
+   */
+  virtual void plotClear() const = 0;
+
+  virtual void plotWaitForInput() const = 0;
+
+
 
 }; // class BasicColl
 

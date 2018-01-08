@@ -88,7 +88,7 @@
   </link>
 
   <joint name="table_joint" type="fixed">
-     <origin xyz="0.75 0 .635" rpy="0 0 0"/>
+     <origin xyz="1.1 0 .625" rpy="0 0 0"/>
      <parent link="base_footprint"/>
      <child link="table_link"/>
   </joint>

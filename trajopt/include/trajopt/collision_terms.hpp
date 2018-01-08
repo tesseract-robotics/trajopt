@@ -16,8 +16,12 @@ struct CollisionEvaluator
   virtual ~CollisionEvaluator() {}
   virtual void CalcDistExpressions(const DblVec& x, vector<AffExpr>& exprs) = 0;
   virtual void CalcDists(const DblVec& x, DblVec& exprs) = 0;
-  virtual void CalcCollisions(const DblVec& x) = 0;
+  virtual void CalcCollisions(const DblVec& x, std::vector<BasicEnv::DistanceResult> &dist_results) = 0;
+  void GetCollisionsCached(const DblVec& x, std::vector<BasicEnv::DistanceResult> &);
+  void Plot(const DblVec& x);
   virtual VarVector GetVars()=0;
+
+  Cache<size_t, std::vector<BasicEnv::DistanceResult>, 10> m_cache;
 
 protected:
   BasicEnvPtr env_;
@@ -45,7 +49,7 @@ public:
    * Same as CalcDistExpressions, but just the distances--not the expressions
    */
   void CalcDists(const DblVec& x, DblVec& exprs);
-  void CalcCollisions(const DblVec& x);
+  void CalcCollisions(const DblVec& x, std::vector<BasicEnv::DistanceResult> &dist_results);
   VarVector GetVars() {return m_vars;}
 
 private:

@@ -13,7 +13,6 @@ find_package(catkin REQUIRED COMPONENTS
   urdf
   moveit_core
   moveit_ros_planning
-  industrial_collision_detection
 )
 
 find_package(Eigen3 REQUIRED)
@@ -35,7 +34,7 @@ set(TRAJOPT_SOURCE_FILES
     src/json_marshal.cpp
     src/problem_description.cpp
     src/utils.cpp
-    #src/plot_callback.cpp
+    src/plot_callback.cpp
     src/ros_kin.cpp
     src/ros_env.cpp
 )
@@ -52,7 +51,6 @@ catkin_package(
     urdf
     moveit_core
     moveit_ros_planning
-    industrial_collision_detection
 #  DEPENDS system_lib
 )
 
@@ -68,12 +66,16 @@ add_library(${PROJECT_NAME} ${TRAJOPT_SOURCE_FILES})
 #target_link_libraries(trajopt ${Boost_SYSTEM_LIBRARY} sco utils json osgviewer)
 target_link_libraries(${PROJECT_NAME} ${OpenRAVE_BOTH_LIBRARIES} ${Boost_SYSTEM_LIBRARY} ${catkin_LIBRARIES})
 
-include_directories(test)
-#add_definitions(-DDATA_DIR="${CMAKE_SOURCE_DIR}/data")
-#add_executable(${PROJECT_NAME}-planning-unit test/planning-unit.cpp)
-#target_link_libraries(${PROJECT_NAME}-planning-unit ${PROJECT_NAME} gtest gtest_main ${Boost_SYSTEM_LIBRARY} ${Boost_PROGRAM_OPTIONS_LIBRARY} ${catkin_LIBRARIES})
+add_library(moveit_collision_detection_bullet
+  src/moveit/collision_common.cpp
+  src/moveit/collision_robot_bullet.cpp
+  src/moveit/collision_world_bullet.cpp
+)
+
+target_link_libraries(moveit_collision_detection_bullet ${catkin_LIBRARIES} ${console_bridge_LIBRARIES} ${urdfdom_LIBRARIES} ${urdfdom_headers_LIBRARIES} ${Boost_LIBRARIES})
 
 if (CATKIN_ENABLE_TESTING)
+  include_directories(test)
   add_definitions(-DDATA_DIR="${CMAKE_SOURCE_DIR}/data")
   find_package(rostest REQUIRED)
 
