@@ -29,13 +29,14 @@ using namespace boost::assign;
 
 
 const std::string ROBOT_DESCRIPTION_PARAM = "robot_description"; /**< Default ROS parameter for robot description */
+bool plotting = false; /**< Enable plotting */
 
 class PlanningTest : public testing::TestWithParam<const char*> {
 public:
   robot_model_loader::RobotModelLoaderPtr loader_;  /**< Used to load the robot model */
-  moveit::core::RobotModelPtr robot_model_; /**< Robot model */
+  moveit::core::RobotModelPtr robot_model_;         /**< Robot model */
   planning_scene::PlanningScenePtr planning_scene_; /**< Planning scene for the current robot model */
-  ROSEnvPtr env_; /**< Trajopt Basic Environment */
+  ROSEnvPtr env_;                                   /**< Trajopt Basic Environment */
 
   virtual void SetUp()
   {
@@ -91,14 +92,6 @@ TEST_F(PlanningTest, arm_around_table)
 {
   ROS_DEBUG("TEST\n");
 
-//  RobotBasePtr pr2 = GetRobot(*env);
-
-//  ProblemConstructionInfo pci(planning_scene_);
-//  Json::Value root = readJsonFile(string(DATA_DIR) + "/arm_around_table.json");
-//  pci.fromJson(root);
-//  pci.rad->SetDOFValues(toDblVec(pci.init_info.data.row(0)));
-//  TrajOptProbPtr prob = ConstructProblem(pci);
-//  ASSERT_TRUE(!!prob);
   Json::Value root = readJsonFile(string(DATA_DIR) + "/arm_around_table.json");
   robot_state::RobotState &rs = planning_scene_->getCurrentStateNonConst();;
   std::map<std::string, double> ipos;
@@ -112,20 +105,17 @@ TEST_F(PlanningTest, arm_around_table)
   ipos["r_wrist_roll_joint"] = 3.074;
   rs.setVariablePositions(ipos);
 
-  gLogLevel = util::LevelDebug;
+  gLogLevel = util::LevelInfo;
   TrajOptProbPtr prob = ConstructProblem(root, env_);
   ASSERT_TRUE(!!prob);
 
   BasicTrustRegionSQP opt(prob);
   ROS_ERROR_STREAM("DOF: " << prob->GetNumDOF());
-  opt.addCallback(PlotCallback(*prob));
+  if (plotting)
+  {
+    opt.addCallback(PlotCallback(*prob));
+  }
 
-//  TrajPlotter plotter(env, pci.rad, prob->GetVars());
-//  if (plotting) {
-//    plotter.Add(prob->getCosts());
-//    if (plotting) opt.addCallback(boost::bind(&TrajPlotter::OptimizerCallback, boost::ref(plotter), _1, _2));
-//    plotter.AddLink(pr2->GetLink("r_gripper_tool_frame"));
-//  }
   opt.initialize(trajToDblVec(prob->GetInitTraj()));
   double tStart = GetClock();
   opt.optimize();
@@ -142,6 +132,8 @@ int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
   ros::init(argc, argv, "trajopt_planning_unit");
-  ros::NodeHandle nh;
+  ros::NodeHandle pnh("~");
+
+  pnh.param("plotting", plotting, false);
   return RUN_ALL_TESTS();
 }
