@@ -65,7 +65,59 @@ void ROSEnv::calcDistances(const std::vector<std::string> &joint_names, const Ei
     d.nearest_points[1] = it->second.nearest_points[1];
     d.normal = it->second.normal;
 
+    if ((d.nearest_points[0].array().isNaN()).all() || (d.nearest_points[1].array().isNaN()).all() || (d.normal.array().isNaN()).all())
+      d.valid = false;
+
     dists.push_back(d);
+
+  }
+}
+
+void ROSEnv::calcDistances(const std::vector<std::string> &joint_names, const Eigen::VectorXd &joint_angles1, const Eigen::VectorXd &joint_angles2, const std::vector<std::string> &link_names, std::vector<DistanceResult> &dists)
+{
+  collision_detection::DistanceRequest distance_req;
+  collision_detection::DistanceResult distance_res;
+
+  distance_req.enable_nearest_points = true;
+  distance_req.enable_signed_distance = true;
+  distance_req.global = false;
+  std::set<const moveit::core::LinkModel *> list = getLinkModels(link_names);
+  distance_req.active_components_only = &list;
+  distance_req.distance_threshold = 0.075; // Same as original trajopt dist_pen + 0.04
+  distance_req.acm = &env_->getAllowedCollisionMatrix();
+
+  robot_state::RobotState state1 = env_->getCurrentState();
+  robot_state::RobotState state2 = env_->getCurrentState();
+  int i = 0;
+  for(auto const& joint_name: joint_names)
+  {
+    state1.setVariablePosition(joint_name, joint_angles1(i));
+    state2.setVariablePosition(joint_name, joint_angles2(i));
+    ++i;
+  }
+  state1.update();
+  state2.update();
+
+  collision_robot_->distanceSelf(distance_req, distance_res, state1, state2);
+  collision_world_->distanceRobot(distance_req, distance_res, *collision_robot_, state1, state2);
+
+  dists.reserve(link_names.size());
+  for (collision_detection::DistanceMap::iterator it = distance_res.distances.begin(); it!=distance_res.distances.end(); ++it)
+  {
+    DistanceResult d;
+    d.distance = it->second.distance;
+    d.valid = true;
+    d.link_names[0] = it->second.link_names[0];
+    d.link_names[1] = it->second.link_names[1];
+    d.nearest_points[0] = it->second.nearest_points[0];
+    d.nearest_points[1] = it->second.nearest_points[1];
+    d.normal = it->second.normal;
+
+    if ((d.nearest_points[0].array().isNaN()).all() || (d.nearest_points[1].array().isNaN()).all() || (d.normal.array().isNaN()).all())
+      d.valid = false;
+
+    dists.push_back(d);
+
   }
 }
 
@@ -82,6 +134,11 @@ std::set<const moveit::core::LinkModel *> ROSEnv::getLinkModels(const std::vecto
 }
 
 void ROSEnv::calcCollisions(const std::vector<std::string> &joint_names, const Eigen::VectorXd &joint_angles, const std::vector<std::string> &link_names)
+{
+
+}
+
+void ROSEnv::calcCollisions(const std::vector<std::string> &joint_names, const Eigen::VectorXd &joint_angles1, const Eigen::VectorXd &joint_angles2, const std::vector<std::string> &link_names)
 {
 
 }
@@ -152,6 +209,10 @@ void ROSEnv::plotCollisions(const std::vector<std::string> &link_names, const st
   for (int i = 0; i < dist_results.size(); ++i)
   {
     const DistanceResult &dist = dist_results[i];
+
+    if (!dist.valid)
+      continue;
+
     visualization_msgs::Marker marker;
     marker.header.frame_id = env_->getPlanningFrame();
     marker.header.stamp = ros::Time::now();

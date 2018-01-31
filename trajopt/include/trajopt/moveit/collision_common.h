@@ -47,6 +47,13 @@
 
 namespace collision_detection
 {
+#define METERS
+
+const float BULLET_MARGIN = 0;
+const float BULLET_SUPPORT_FUNC_TOLERANCE = .01 METERS;
+const float BULLET_LENGTH_TOLERANCE = .001 METERS;
+const float BULLET_EPSILON = 1e-3;
+
 
 inline
 btVector3 convertEigenToBt(const Eigen::Vector3d& v)
@@ -78,6 +85,9 @@ public:
   CollisionObjectWrapper(const robot_model::LinkModel* link) : m_link(link), m_index(-1) {}
   std::vector<boost::shared_ptr<void>> m_data;
   const robot_model::LinkModel* m_link;
+  short int	m_collisionFilterGroup;
+  short int	m_collisionFilterMask;
+
   int m_index; // index into collision matrix
   template<class T>
   void manage(T* t) { // manage memory of this object
@@ -118,7 +128,11 @@ struct CollisionCollector : public btCollisionWorld::ContactResultCallback
   bool m_verbose;
 
   CollisionCollector(std::vector<collision_detection::DistanceResultsData>& collisions, const COWPtr cow, const AllowedCollisionMatrix* acm, bool verbose = false) :
-    m_collisions(collisions), m_cow(cow), m_acm(acm), m_verbose(verbose) {}
+    m_collisions(collisions), m_cow(cow), m_acm(acm), m_verbose(verbose)
+  {
+    m_collisionFilterGroup = cow->m_collisionFilterGroup;
+    m_collisionFilterMask = cow->m_collisionFilterMask;
+  }
 
   virtual btScalar addSingleResult(btManifoldPoint& cp, const btCollisionObjectWrapper* colObj0Wrap,int partId0,int index0, const btCollisionObjectWrapper* colObj1Wrap,int partId1,int index1)
   {
@@ -229,6 +243,192 @@ private:
   }
 };
 
+
+struct CastHullShape : public btConvexShape
+{
+public:
+  const btConvexShape* m_shape;
+  btTransform m_t01, m_t10; // T_0_1 = T_w_0^-1 * T_w_1
+
+  CastHullShape(const btConvexShape* shape, const btTransform& t01) : m_shape(shape), m_t01(t01)
+  {
+    m_shapeType = CUSTOM_CONVEX_SHAPE_TYPE;
+  }
+
+  btVector3 localGetSupportingVertex(const btVector3& vec) const override
+  {
+    btVector3 sv0 = m_shape->localGetSupportingVertex(vec);
+    btVector3 sv1 = m_t01*m_shape->localGetSupportingVertex(vec*m_t01.getBasis());
+    return (vec.dot(sv0) > vec.dot(sv1)) ? sv0 : sv1;
+  }
+
+  //notice that the vectors should be unit length
+  void batchedUnitVectorGetSupportingVertexWithoutMargin(const btVector3* vectors,btVector3* supportVerticesOut,int numVectors) const override
+  {
+    throw std::runtime_error("not implemented");
+  }
+
+  ///getAabb's default implementation is brute force, expected derived classes to implement a fast dedicated version
+  void getAabb(const btTransform& t_w0,btVector3& aabbMin,btVector3& aabbMax) const override
+  {
+    m_shape->getAabb(t_w0, aabbMin, aabbMax);
+    btVector3 min1, max1;
+    m_shape->getAabb(t_w0*m_t01, min1, max1 );
+    aabbMin.setMin(min1);
+    aabbMax.setMax(max1);
+  }
+
+  virtual void getAabbSlow(const btTransform& t,btVector3& aabbMin,btVector3& aabbMax) const override
+  {
+    throw std::runtime_error("shouldn't happen");
+  }
+
+  virtual void setLocalScaling(const btVector3& scaling) override {}
+
+  virtual const btVector3& getLocalScaling() const override
+  {
+    static btVector3 out(1,1,1);
+    return out;
+  }
+
+  virtual void setMargin(btScalar margin) override {}
+
+  virtual btScalar getMargin() const override {return 0;}
+
+  virtual int getNumPreferredPenetrationDirections() const override { return 0; }
+
+  virtual void getPreferredPenetrationDirection(int index, btVector3& penetrationVector) const override { throw std::runtime_error("not implemented"); }
+
+  virtual void calculateLocalInertia(btScalar, btVector3&) const { throw std::runtime_error("not implemented"); }
+
+  virtual const char* getName() const { return "CastHull"; }
+
+  virtual btVector3 localGetSupportingVertexWithoutMargin(const btVector3& v) const {return localGetSupportingVertex(v);}
+
+};
+
+
+inline void GetAverageSupport(const btConvexShape* shape, const btVector3& localNormal, float& outsupport, btVector3& outpt)
+{
+  btVector3 ptSum(0,0,0);
+  float ptCount = 0;
+  float maxSupport=-1000;
+
+  const btPolyhedralConvexShape* pshape = dynamic_cast<const btPolyhedralConvexShape*>(shape);
+  if (pshape)
+  {
+    int nPts = pshape->getNumVertices();
+
+    for (int i=0; i < nPts; ++i) {
+      btVector3 pt;
+      pshape->getVertex(i, pt);
+
+      float sup  = pt.dot(localNormal);
+      if (sup > maxSupport + BULLET_EPSILON)
+      {
+        ptCount=1;
+        ptSum = pt;
+        maxSupport = sup;
+      }
+      else if (sup < maxSupport - BULLET_EPSILON)
+      {
+      }
+      else
+      {
+        ptCount += 1;
+        ptSum += pt;
+      }
+    }
+    outsupport = maxSupport;
+    outpt = ptSum / ptCount;
+  }
+  else
+  {
+    outpt = shape->localGetSupportingVertexWithoutMargin(localNormal);
+    outsupport = localNormal.dot(outpt);
+  }
+}
+
+struct CastCollisionCollector : public CollisionCollector
+{
+  CastCollisionCollector(std::vector<collision_detection::DistanceResultsData>& collisions, const COWPtr cow, const AllowedCollisionMatrix* acm, bool verbose = false) :
+  CollisionCollector(collisions, cow, acm, verbose) {}
+  virtual btScalar addSingleResult(btManifoldPoint& cp, const btCollisionObjectWrapper* colObj0Wrap,int partId0,int index0, const btCollisionObjectWrapper* colObj1Wrap,int partId1,int index1)
+  {
+    // call base class func
+    float retval = CollisionCollector::addSingleResult(cp, colObj0Wrap,partId0,index0, colObj1Wrap,partId1,index1);
+
+    // if contact was added
+    if (retval == 1)
+    {
+      bool castShapeIsFirst = (colObj0Wrap->getCollisionObject() == m_cow.get());
+      btVector3 normalWorldFromCast = -(castShapeIsFirst ? 1 : -1) * cp.m_normalWorldOnB;
+      const CastHullShape* shape = dynamic_cast<const CastHullShape*>((castShapeIsFirst ? colObj0Wrap : colObj1Wrap)->getCollisionObject()->getCollisionShape());
+      assert(!!shape);
+      btTransform tfWorld0 = m_cow->getWorldTransform();
+      btTransform tfWorld1 = m_cow->getWorldTransform() * shape->m_t01;
+      btVector3 normalLocal0 = normalWorldFromCast * tfWorld0.getBasis();
+      btVector3 normalLocal1 = normalWorldFromCast * tfWorld1.getBasis();
+
+      collision_detection::DistanceResultsData& col = m_collisions.back();
+
+      if (castShapeIsFirst)
+      {
+        std::swap(col.nearest_points[0], col.nearest_points[1]);
+        std::swap(col.link_names[0], col.link_names[1]);
+        col.normal *= -1;
+      }
+
+      btVector3 ptLocal0;
+      float localsup0;
+      GetAverageSupport(shape->m_shape, normalLocal0, localsup0, ptLocal0);
+      btVector3 ptWorld0 = tfWorld0 * ptLocal0;
+      btVector3 ptLocal1;
+      float localsup1;
+      GetAverageSupport(shape->m_shape, normalLocal1, localsup1, ptLocal1);
+      btVector3 ptWorld1 = tfWorld1 * ptLocal1;
+
+      float sup0 = normalWorldFromCast.dot(ptWorld0);
+      float sup1 = normalWorldFromCast.dot(ptWorld1);
+
+      // TODO: this section is potentially problematic. think hard about the math
+      if (sup0 - sup1 > BULLET_SUPPORT_FUNC_TOLERANCE)
+      {
+        col.cc_time = 0;
+        col.cc_type = CCType_Time0;
+      }
+      else if (sup1 - sup0 > BULLET_SUPPORT_FUNC_TOLERANCE)
+      {
+        col.cc_time = 1;
+        col.cc_type = CCType_Time1;
+      }
+      else
+      {
+        const btVector3& ptOnCast = castShapeIsFirst ? cp.m_positionWorldOnA : cp.m_positionWorldOnB;
+        float l0c = (ptOnCast - ptWorld0).length(),
+              l1c = (ptOnCast - ptWorld1).length();
+
+        col.nearest_points[1] = convertBtToEigen(ptWorld0);
+        col.cc_nearest_point = convertBtToEigen(ptWorld1);
+        col.cc_type = CCType_Between;
+
+        if ( l0c + l1c < BULLET_LENGTH_TOLERANCE)
+        {
+          col.cc_time = .5;
+        }
+        else
+        {
+          col.cc_time = l0c/(l0c + l1c);
+        }
+
+      }
+
+    }
+    return retval;
+  }
+};
+
+
 struct BulletManager
 {
   btCollisionWorld* m_world;
@@ -257,16 +457,15 @@ struct BulletManager
     delete m_coll_config;
   }
 
-  void contactTest(const robot_model::LinkModel* link, std::vector<collision_detection::DistanceResultsData>& collisions, short filterMask)
+  void contactTest(const robot_model::LinkModel* link, std::vector<collision_detection::DistanceResultsData>& collisions)
   {
     COWPtr cow = m_link2cow[link];
-    contactTest(cow, collisions, filterMask);
+    contactTest(cow, collisions);
   }
 
-  void contactTest(const COWPtr cow, std::vector<collision_detection::DistanceResultsData>& collisions, short filterMask)
+  void contactTest(const COWPtr cow, std::vector<collision_detection::DistanceResultsData>& collisions)
   {
     CollisionCollector cc(collisions, cow, m_acm);
-    cc.m_collisionFilterMask = filterMask;
     m_world->contactTest(cow.get(), cc);
   }
 

@@ -56,19 +56,18 @@ private:
   VarVector m_vars;
 };
 
-//struct CastCollisionEvaluator : public CollisionEvaluator {
-//public:
-//  CastCollisionEvaluator(BasicKinPtr manip, BasicEnvPtr env, const VarVector& vars0, const VarVector& vars1);
-//  void CalcDistExpressions(const DblVec& x, vector<AffExpr>& exprs);
-//  void CalcDists(const DblVec& x, DblVec& exprs);
-//  void CalcCollisions(const DblVec& x);
-//  VarVector GetVars() {return concat(m_vars0, m_vars1);}
+struct CastCollisionEvaluator : public CollisionEvaluator {
+public:
+  CastCollisionEvaluator(BasicKinPtr manip, BasicEnvPtr env, const VarVector& vars0, const VarVector& vars1);
+  void CalcDistExpressions(const DblVec& x, vector<AffExpr>& exprs);
+  void CalcDists(const DblVec& x, DblVec& exprs);
+  void CalcCollisions(const DblVec& x);
+  VarVector GetVars() {return concat(m_vars0, m_vars1);}
   
-
-//private:
-//  VarVector m_vars0;
-//  VarVector m_vars1;
-//};
+private:
+  VarVector m_vars0;
+  VarVector m_vars1;
+};
 
 class TRAJOPT_API CollisionCost : public Cost, public Plotter {
 public:

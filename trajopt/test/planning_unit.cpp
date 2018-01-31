@@ -3,7 +3,6 @@
 #include <trajopt/common.hpp>
 #include <trajopt/problem_description.hpp>
 #include <trajopt_sco/optimizers.hpp>
-#include <trajopt_osgviewer/osgviewer.hpp>
 #include <ctime>
 #include <trajopt_utils/eigen_conversions.hpp>
 #include <trajopt_utils/clock.hpp>
@@ -23,7 +22,6 @@
 
 using namespace trajopt;
 using namespace std;
-using namespace OpenRAVE;
 using namespace util;
 using namespace boost::assign;
 
@@ -92,7 +90,8 @@ TEST_F(PlanningTest, arm_around_table)
 {
   ROS_DEBUG("TEST\n");
 
-  Json::Value root = readJsonFile(string(DATA_DIR) + "/arm_around_table.json");
+//  Json::Value root = readJsonFile(string(DATA_DIR) + "/arm_around_table.json");
+  Json::Value root = readJsonFile(string(DATA_DIR) + "/arm_around_table_continuous.json");
   robot_state::RobotState &rs = planning_scene_->getCurrentStateNonConst();;
   std::map<std::string, double> ipos;
   ipos["torso_lift_joint"] = 0;

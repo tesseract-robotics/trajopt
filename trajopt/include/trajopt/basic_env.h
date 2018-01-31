@@ -54,18 +54,34 @@ public:
   BasicEnv() {}
 
   /**
-   * @brief calcDistances Should return distance information for all links in list link_names
+   * @brief calcDistances Should return distance information for all links in list link_names (Discrete Check)
    * @param joint_angles Vector of joint angles (size must match number of joints in robot chain)
    * @param link_names Name of the links to calculate distance data for.
    */
   virtual void calcDistances(const std::vector<std::string> &joint_names, const Eigen::VectorXd &joint_angles, const std::vector<std::string> &link_names, std::vector<DistanceResult> &dists) = 0;
 
   /**
-   * @brief calcCollisions Should return collision information for all links in list link_names
+   * @brief calcDistances Should return distance information for all links in list link_names (Continuous Check)
+   * @param joint_angles1 Vector of joint angles at the start (size must match number of joints in robot chain)
+   * @param joint_angles2 Vector of joint angles at the end   (size must match number of joints in robot chain)
+   * @param link_names Name of the links to calculate distance data for.
+   */
+  virtual void calcDistances(const std::vector<std::string> &joint_names, const Eigen::VectorXd &joint_angles1, const Eigen::VectorXd &joint_angles2, const std::vector<std::string> &link_names, std::vector<DistanceResult> &dists) = 0;
+
+  /**
+   * @brief calcCollisions Should return collision information for all links in list link_names (Discrete Check)
    * @param joint_angles Vector of joint angles (size must match number of joints in robot chain)
    * @param link_names Name of the links to calculate collision data for.
    */
   virtual void calcCollisions(const std::vector<std::string> &joint_names, const Eigen::VectorXd &joint_angles, const std::vector<std::string> &link_names) = 0;
+
+  /**
+   * @brief calcCollisions Should return collision information for all links in list link_names (Continuous Check)
+   * @param joint_angles1 Vector of joint angles at the start (size must match number of joints in robot chain)
+   * @param joint_angles2 Vector of joint angles at the end   (size must match number of joints in robot chain)
+   * @param link_names Name of the links to calculate collision data for.
+   */
+  virtual void calcCollisions(const std::vector<std::string> &joint_names, const Eigen::VectorXd &joint_angles1, const Eigen::VectorXd &joint_angles2, const std::vector<std::string> &link_names) = 0;
 
   /**
    * @brief getCurrentJointValues Get the current state of the manipulator
@@ -98,6 +114,10 @@ public:
    */
   virtual BasicKinPtr getManipulatorKin(const std::string &manipulator_name) const = 0;
 
+  /**
+   * @brief enablePlotting Endicate if data should be plotted/published
+   * @param enable
+   */
   virtual void enablePlotting(bool enable) = 0;
 
   /**
@@ -106,6 +126,11 @@ public:
    */
   virtual void plotTrajectory(const std::string &name, const std::vector<std::string> &joint_names, const TrajArray &traj) = 0;
 
+  /**
+   * @brief plotCollisions Plot the collision results data
+   * @param link_names List of link names for which to plot data
+   * @param dist_results The collision results data
+   */
   virtual void plotCollisions(const std::vector<std::string> &link_names, const std::vector<BasicEnv::DistanceResult> &dist_results) = 0;
 
 //  virtual void plotArrow(const std::string &name, const Eigen::Vector3d &arrow, double scale) const = 0;
@@ -118,6 +143,7 @@ public:
    */
   virtual void plotClear() = 0;
 
+  /** @brief plotWaitForInput Pause code and wait for enter key in terminal*/
   virtual void plotWaitForInput() = 0;
 
 

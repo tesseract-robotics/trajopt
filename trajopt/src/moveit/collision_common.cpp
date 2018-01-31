@@ -37,6 +37,7 @@
 #include <trajopt/moveit/collision_common.h>
 #include <geometric_shapes/shapes.h>
 #include <BulletCollision/CollisionShapes/btShapeHull.h>
+#include <BulletCollision/Gimpact/btGImpactShape.h>
 #include <BulletCollision/CollisionDispatch/btConvexConvexAlgorithm.h>
 #include <boost/thread/mutex.hpp>
 #include <memory>
@@ -197,6 +198,42 @@ COWPtr CollisionObjectFromLink(const robot_model::LinkModel* link, bool useTrime
 
   return cow;
 }
+
+////////// Continuous collisions ////////////////////////
+
+
+//std::vector<btTransform> rightMultiplyAll(const std::vector<btTransform>& xs, const btTransform& y) {
+//  std::vector<btTransform> out(xs.size());
+//  for (int i=0; i < xs.size(); ++i) out[i] = xs[i]*y;
+//  return out;
+//}
+
+
+//}
+
+//void ContinuousCheckShape(btCollisionShape* shape, const std::vector<btTransform>& transforms,
+//    KinBody::Link* link, btCollisionWorld* world, std::vector<collision_detection::DistanceResultsData>& collisions) {
+//  if (btConvexShape* convex = dynamic_cast<btConvexShape*>(shape)) {
+//    for (int i=0; i < transforms.size()-1; ++i) {
+//      btCollisionWorld::ClosestConvexResultCallback ccc(btVector3(NAN, NAN, NAN), btVector3(NAN, NAN, NAN));
+//      ccc.m_collisionFilterMask = KinBodyFilter;
+//      world->convexSweepTest(convex, transforms[i], transforms[i+1], ccc, 0);
+//      if (ccc.hasHit()) {
+//        collisions.push_back(Collision(link, getLink(ccc.m_hitCollisionObject),
+//            toOR(ccc.m_hitPointWorld), toOR(ccc.m_hitPointWorld), toOR(ccc.m_hitNormalWorld), 0, 1, i+ccc.m_closestHitFraction));
+//      }
+//    }
+//  }
+//  else if (btCompoundShape* compound = dynamic_cast<btCompoundShape*>(shape)) {
+//    for (int i = 0; i < compound->getNumChildShapes(); ++i) {
+//      ContinuousCheckShape(compound->getChildShape(i), rightMultiplyAll(transforms, compound->getChildTransform(i)),  link, world, collisions);
+//    }
+//  }
+//  else {
+//    throw std::runtime_error("I can only continuous collision check convex shapes and compound shapes made of convex shapes");
+//  }
+
+//}
 
 
 //bool collisionCallback(fcl::CollisionObject* o1, fcl::CollisionObject* o2, void* data)
