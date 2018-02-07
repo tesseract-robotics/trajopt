@@ -83,10 +83,15 @@ public:
   virtual void distanceRobot(const DistanceRequest& req, DistanceResult& res, const CollisionRobot& robot,
                              const robot_state::RobotState& state) const override;
 
+  virtual void distanceRobot(const DistanceRequest& req, DistanceResult& res, const CollisionRobot& robot,
+                             const robot_state::RobotState& state1, const robot_state::RobotState& state2) const override;
+
   virtual void distanceWorld(const DistanceRequest& req, DistanceResult& res,
                              const CollisionWorld& world) const override;
 
   virtual void setWorld(const WorldPtr& world);
+
+  void SetContactDistance(double dist) {m_contactDistance = dist;}
 
 protected:
   void checkWorldCollisionHelper(const CollisionRequest& req, CollisionResult& res, const CollisionWorld& other_world,
@@ -109,6 +114,7 @@ private:
   void initialize();
   void notifyObjectChange(const ObjectConstPtr& obj, World::Action action);
   World::ObserverHandle observer_handle_;
+  double m_contactDistance;
 };
 }
 

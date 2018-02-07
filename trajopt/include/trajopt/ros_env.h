@@ -24,13 +24,15 @@ public:
    */
   bool checkInitialized() const { return initialized_; }
 
-  void calcDistances(const std::vector<std::string> &joint_names, const Eigen::VectorXd &joint_angles, const std::vector<std::string> &link_names, std::vector<DistanceResult> &dists);
+  void calcDistancesDiscrete(const BasicEnv::DistanceRequest &req, std::vector<DistanceResult> &dists);
 
-  void calcDistances(const std::vector<std::string> &joint_names, const Eigen::VectorXd &joint_angles1, const Eigen::VectorXd &joint_angles2, const std::vector<std::string> &link_names, std::vector<DistanceResult> &dists);
+  void calcDistancesContinuous(const BasicEnv::DistanceRequest &req, std::vector<DistanceResult> &dists);
 
-  void calcCollisions(const std::vector<std::string> &joint_names, const Eigen::VectorXd &joint_angles, const std::vector<std::string> &link_names);
+  void calcCollisionsDiscrete(const BasicEnv::DistanceRequest &req, std::vector<DistanceResult> &collisions);
 
-  void calcCollisions(const std::vector<std::string> &joint_names, const Eigen::VectorXd &joint_angles1, const Eigen::VectorXd &joint_angles2, const std::vector<std::string> &link_names);
+  void calcCollisionsContinuous(const BasicEnv::DistanceRequest &req, std::vector<DistanceResult> &collisions);
+
+  bool continuousCollisionCheckTrajectory(const std::vector<std::string> &joint_names, const std::vector<std::string> &link_names, const TrajArray& traj, std::vector<DistanceResult>& collisions);
 
   Eigen::VectorXd getCurrentJointValues(const std::string &manipulator_name) const;
 
@@ -46,14 +48,16 @@ public:
 
   void plotTrajectory(const std::string &name, const std::vector<std::string> &joint_names, const TrajArray &traj);
 
-  void plotCollisions(const std::vector<std::string> &link_names, const std::vector<BasicEnv::DistanceResult> &dist_results);
+  void plotCollisions(const std::vector<std::string> &link_names, const std::vector<BasicEnv::DistanceResult> &dist_results, double safe_dist);
+
+  void plotArrow(const Eigen::Vector3d &pt1, const Eigen::Vector3d &pt2, const Eigen::Vector4d &rgba, double scale);
 
   void plotClear();
 
   void plotWaitForInput();
 
 private:
-  bool initialized_; /**< Identifies if the object has been initialized */
+  bool initialized_;        /**< Identifies if the object has been initialized */
   PlanningScenePtr env_;
   collision_detection::CollisionRobotConstPtr collision_robot_; /**< Pointer to the collision robot, some constraints require it */
   collision_detection::CollisionWorldConstPtr collision_world_; /**< Pointer to the collision world, some constraints require it */
@@ -64,6 +68,10 @@ private:
   ros::Publisher collisions_pub_; /**< Collision Data publisher */
 
   std::set<const robot_model::LinkModel*> getLinkModels(const std::vector<std::string> &link_names) const;
+
+  visualization_msgs::Marker getMarkerArrowMsg(const Eigen::Vector3d &pt1, const Eigen::Vector3d &pt2, const Eigen::Vector4d &rgba, double scale);
+
+  std::string getManipulatorName(const std::vector<std::string> &joint_names) const;
 
 };
 typedef boost::shared_ptr<ROSEnv> ROSEnvPtr;

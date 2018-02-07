@@ -53,7 +53,7 @@ bool ROSKin::calcFwdKinHelper(Eigen::Affine3d &pose, const Eigen::Affine3d chang
   }
 
   KDLToEigen(kdl_pose, pose);
-  pose = change_base.inverse() * pose;
+  pose = change_base * pose;
 
   return true;
 }

@@ -12,7 +12,7 @@ namespace trajopt
 
 struct CollisionEvaluator
 {
-  CollisionEvaluator(BasicKinPtr manip, BasicEnvPtr env) : manip_(manip), env_(env) {}
+  CollisionEvaluator(BasicKinPtr manip, BasicEnvPtr env, double contact_distance) : manip_(manip), env_(env), contact_distance_(contact_distance) {}
   virtual ~CollisionEvaluator() {}
   virtual void CalcDistExpressions(const DblVec& x, vector<AffExpr>& exprs) = 0;
   virtual void CalcDists(const DblVec& x, DblVec& exprs) = 0;
@@ -21,11 +21,14 @@ struct CollisionEvaluator
   void Plot(const DblVec& x);
   virtual VarVector GetVars()=0;
 
+  const double& getContactDistance() const {return contact_distance_;}
+
   Cache<size_t, std::vector<BasicEnv::DistanceResult>, 10> m_cache;
 
 protected:
   BasicEnvPtr env_;
   BasicKinPtr manip_;
+  double contact_distance_;
 
 private:
   CollisionEvaluator() {}
@@ -37,7 +40,7 @@ typedef boost::shared_ptr<CollisionEvaluator> CollisionEvaluatorPtr;
 struct SingleTimestepCollisionEvaluator : public CollisionEvaluator
 {
 public:
-  SingleTimestepCollisionEvaluator(BasicKinPtr manip, BasicEnvPtr env, const VarVector& vars);
+  SingleTimestepCollisionEvaluator(BasicKinPtr manip, BasicEnvPtr env, double contact_distance, const VarVector& vars);
   /**
   @brief linearize all contact distances in terms of robot dofs
   ;
@@ -58,10 +61,10 @@ private:
 
 struct CastCollisionEvaluator : public CollisionEvaluator {
 public:
-  CastCollisionEvaluator(BasicKinPtr manip, BasicEnvPtr env, const VarVector& vars0, const VarVector& vars1);
+  CastCollisionEvaluator(BasicKinPtr manip, BasicEnvPtr env, double contact_distance, const VarVector& vars0, const VarVector& vars1);
   void CalcDistExpressions(const DblVec& x, vector<AffExpr>& exprs);
   void CalcDists(const DblVec& x, DblVec& exprs);
-  void CalcCollisions(const DblVec& x);
+  void CalcCollisions(const DblVec& x, std::vector<BasicEnv::DistanceResult> &dist_results);
   VarVector GetVars() {return concat(m_vars0, m_vars1);}
   
 private:
@@ -81,7 +84,6 @@ public:
   VarVector getVars() {return m_calc->GetVars();}
 private:
   CollisionEvaluatorPtr m_calc;
-  double m_dist_pen;
   double m_coeff;
 };
 
@@ -97,7 +99,6 @@ public:
   VarVector getVars() {return m_calc->GetVars();}
 private:
   CollisionEvaluatorPtr m_calc;
-  double m_dist_pen;
   double m_coeff;
 };
 

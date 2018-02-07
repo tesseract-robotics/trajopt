@@ -36,10 +36,15 @@
 
 #include <trajopt/moveit/collision_robot_bullet.h>
 
+const double BULLET_DEFAULT_CONTACT_DISTANCE = 0.05;
+const bool   BULLET_DEFAULT_USE_ORIGINAL_CAST = false;
+
 collision_detection::CollisionRobotBullet::CollisionRobotBullet(const robot_model::RobotModelConstPtr& model, double padding, double scale)
   : CollisionRobot(model, padding, scale)
 {
-  m_contactDistance = 0.05;
+  ros::NodeHandle nh("~");
+
+  nh.param<bool>("bullet/use_original_cast", m_use_original_cast, BULLET_DEFAULT_USE_ORIGINAL_CAST);
 
   const std::vector<const robot_model::LinkModel*>& links = robot_model_->getLinkModelsWithCollisionGeometry();
   // we keep the same order of objects as what RobotState *::getLinkState() returns
@@ -50,17 +55,10 @@ collision_detection::CollisionRobotBullet::CollisionRobotBullet(const robot_mode
     {
       useTrimesh = false;
 
-      // TODO: Need to figure out how to determine if a link is rigidly fix to the world
-      // This is added to test the planning unit test
-//      if (link->getName() == "table_link")
-//      {
-//        useTrimesh = true;
-//      }
-
       COWPtr new_cow = CollisionObjectFromLink(link, useTrimesh);
       if (new_cow)
       {
-        new_cow->setContactProcessingThreshold(m_contactDistance);
+        new_cow->setContactProcessingThreshold(BULLET_DEFAULT_USE_ORIGINAL_CAST);
         m_link2cow[link] = new_cow;
         logDebug("Added collision object for link %s", link->getName().c_str());
       }
@@ -75,7 +73,7 @@ collision_detection::CollisionRobotBullet::CollisionRobotBullet(const robot_mode
 collision_detection::CollisionRobotBullet::CollisionRobotBullet(const CollisionRobotBullet& other) : CollisionRobot(other)
 {
   m_link2cow = other.m_link2cow;
-  m_contactDistance = other.m_contactDistance;
+  m_use_original_cast = other.m_use_original_cast;
 }
 
 //void collision_detection::CollisionRobotBullet::getAttachedBodyObjects(const robot_state::AttachedBody* ab,
@@ -90,12 +88,14 @@ collision_detection::CollisionRobotBullet::CollisionRobotBullet(const CollisionR
 //  }
 //}
 
-void collision_detection::CollisionRobotBullet::constructBulletObject(BulletManager& manager, const robot_state::RobotState& state, const std::set<const robot_model::LinkModel*> *active_links) const
+void collision_detection::CollisionRobotBullet::constructBulletObject(BulletManager& manager, const robot_state::RobotState& state, const std::set<const robot_model::LinkModel*> *active_links, bool continuous) const
 {
 
   for (std::pair<const robot_model::LinkModel*, COWConstPtr> element : m_link2cow)
   {
     COWPtr new_cow(new COW(*(element.second.get())));
+    assert(new_cow->getCollisionShape());
+
     manager.m_link2cow[element.first] = new_cow;
 
     Eigen::Affine3d tf = state.getGlobalLinkTransform(element.first);
@@ -109,7 +109,7 @@ void collision_detection::CollisionRobotBullet::constructBulletObject(BulletMana
     }
     else
     {
-      new_cow->m_collisionFilterMask = btBroadphaseProxy::StaticFilter | btBroadphaseProxy::KinematicFilter;
+      (continuous) ? (new_cow->m_collisionFilterMask = btBroadphaseProxy::StaticFilter) : (new_cow->m_collisionFilterMask = btBroadphaseProxy::StaticFilter | btBroadphaseProxy::KinematicFilter);
     }
 
     manager.m_world->addCollisionObject(new_cow.get(), new_cow->m_collisionFilterGroup, new_cow->m_collisionFilterMask);
@@ -136,7 +136,7 @@ void collision_detection::CollisionRobotBullet::constructBulletObject(BulletMana
 //  }
 
   // TODO: This should probably be moved
-  manager.setContactDistance(0.05);
+  manager.finalize();
 }
 
 void collision_detection::CollisionRobotBullet::constructBulletObject(BulletManager& manager,
@@ -146,55 +146,77 @@ void collision_detection::CollisionRobotBullet::constructBulletObject(BulletMana
 {
   for (std::pair<const robot_model::LinkModel*, COWConstPtr> element : m_link2cow)
   {
-    COWPtr new_cow(new COW(element.second->m_link));
-    new_cow->m_index = element.second->m_index;
-
-    if (const btConvexShape* convex = dynamic_cast<const btConvexShape*>(element.second->getCollisionShape()))
-    {
-      Eigen::Affine3d tf1 = state1.getGlobalLinkTransform(element.first);
-      Eigen::Affine3d tf2 = state2.getGlobalLinkTransform(element.first);
-
-      CastHullShape* shape = new CastHullShape(convex, convertEigenToBt(tf1.inverse() * tf2));
-
-      new_cow->manage(shape);
-      new_cow->setCollisionShape(shape);
-      new_cow->setWorldTransform(convertEigenToBt(tf1));
-    }
-    else if (const btCompoundShape* compound = dynamic_cast<const btCompoundShape*>(new_cow->getCollisionShape()))
-    {
-      Eigen::Affine3d tf1 = state1.getGlobalLinkTransform(element.first);
-      Eigen::Affine3d tf2 = state2.getGlobalLinkTransform(element.first);
-
-      btCompoundShape* new_compound = new btCompoundShape(/*dynamicAABBtree=*/false);
-      new_cow->manage(new_compound);
-      new_compound->setMargin(BULLET_MARGIN); //margin: compound. seems to have no effect when positive but has an effect when negative
-      new_cow->setCollisionShape(new_compound);
-      new_cow->setWorldTransform(convertEigenToBt(tf1));
-
-      for (int i = 0; i < compound->getNumChildShapes(); ++i)
-      {
-        btCollisionShape* subshape = new CastHullShape(static_cast<const btConvexShape*>(compound->getChildShape(i)), convertEigenToBt(tf1.inverse() * tf2));
-        if (subshape != NULL)
-        {
-          new_cow->manage(subshape);
-          subshape->setMargin(BULLET_MARGIN);
-          btTransform geomTrans = compound->getChildTransform(i);
-          new_compound->addChildShape(geomTrans, subshape);
-        }
-      }
-    }
-    else
-    {
-      CONSOLE_BRIDGE_logError("I can only continuous collision check convex shapes and compound shapes made of convex shapes");
-    }
+    COWPtr new_cow(new COW(*(element.second.get())));
+//    COWPtr new_cow(new COW(element.second->m_link));
+//    new_cow->m_index = element.second->m_index;
 
     new_cow->m_collisionFilterGroup = (active_links && (active_links->find(element.first) == active_links->end())) ? btBroadphaseProxy::StaticFilter : btBroadphaseProxy::KinematicFilter;
+
     if (new_cow->m_collisionFilterGroup == btBroadphaseProxy::StaticFilter)
     {
+      btTransform tf1 = convertEigenToBt(state1.getGlobalLinkTransform(element.first));
+
+      new_cow->setWorldTransform(tf1);
       new_cow->m_collisionFilterMask = btBroadphaseProxy::KinematicFilter;
     }
     else
     {
+      if (btBroadphaseProxy::isConvex(new_cow->getCollisionShape()->getShapeType()))
+      {
+        btConvexShape* convex = static_cast<btConvexShape*>(new_cow->getCollisionShape());
+        assert(convex != NULL);
+
+        btTransform tf1 = convertEigenToBt(state1.getGlobalLinkTransform(element.first));
+        btTransform tf2 = convertEigenToBt(state2.getGlobalLinkTransform(element.first));
+
+        CastHullShape* shape = new CastHullShape(convex, tf1.inverseTimes(tf2));
+        assert(shape != NULL);
+
+        new_cow->manage(shape);
+        new_cow->setCollisionShape(shape);
+        new_cow->setWorldTransform(tf1);
+      }
+      else if (btBroadphaseProxy::isCompound(new_cow->getCollisionShape()->getShapeType()))
+      {
+        btCompoundShape* compound = static_cast<btCompoundShape*>(new_cow->getCollisionShape());
+        Eigen::Affine3d tf1 = state1.getGlobalLinkTransform(element.first);
+        Eigen::Affine3d tf2 = state2.getGlobalLinkTransform(element.first);
+
+        btCompoundShape* new_compound = new btCompoundShape(/*dynamicAABBtree=*/false);
+
+        for (int i = 0; i < compound->getNumChildShapes(); ++i)
+        {
+          btConvexShape* convex = static_cast<btConvexShape*>(compound->getChildShape(i));
+          assert(convex != NULL);
+
+          btTransform geomTrans = compound->getChildTransform(i);
+          btTransform child_tf1 = convertEigenToBt(tf1) * geomTrans;
+          btTransform child_tf2 = convertEigenToBt(tf2) * geomTrans;
+
+          Eigen::Affine3d tmp = tf1.inverse() * tf2;
+          btTransform tmp2 = child_tf1.inverseTimes(child_tf2);
+
+          btCollisionShape* subshape = new CastHullShape(convex, child_tf1.inverseTimes(child_tf2));
+          assert(subshape != NULL);
+
+          if (subshape != NULL)
+          {
+            new_cow->manage(subshape);
+            subshape->setMargin(BULLET_MARGIN);
+            new_compound->addChildShape(geomTrans, subshape);
+          }
+        }
+
+        new_compound->setMargin(BULLET_MARGIN); //margin: compound. seems to have no effect when positive but has an effect when negative
+        new_cow->manage(new_compound);
+        new_cow->setCollisionShape(new_compound);
+        new_cow->setWorldTransform(convertEigenToBt(tf1));
+      }
+      else
+      {
+        CONSOLE_BRIDGE_logError("I can only continuous collision check convex shapes and compound shapes made of convex shapes");
+      }
+
       new_cow->m_collisionFilterMask = btBroadphaseProxy::StaticFilter;
     }
 
@@ -223,7 +245,7 @@ void collision_detection::CollisionRobotBullet::constructBulletObject(BulletMana
 //  }
 
   // TODO: This should probably be moved
-  manager.setContactDistance(0.05);
+  manager.finalize();
 }
 
 void collision_detection::CollisionRobotBullet::checkSelfCollision(const CollisionRequest& req, CollisionResult& res,
@@ -258,32 +280,31 @@ void collision_detection::CollisionRobotBullet::checkSelfCollisionHelper(const C
                                                                          const robot_state::RobotState& state,
                                                                          const AllowedCollisionMatrix* acm) const
 {
-  BulletManager manager(acm);
+  BulletManager manager(0.0);
   DistanceRequest dreq;
+  std::vector<collision_detection::DistanceResultsData> collisions;
 
   dreq.group_name = req.group_name;
   dreq.acm = acm;
   dreq.enableGroup(getRobotModel());
 
-  manager.setContactDistance(0.0);
   constructBulletObject(manager, state, dreq.active_components_only);
 
-  std::vector<collision_detection::DistanceResultsData> collisions;
   if (dreq.active_components_only->size() > 0)
   {
     for (auto element: *dreq.active_components_only)
     {
-      manager.contactTest(element, collisions);
+      COWPtr cow = manager.m_link2cow[element];
+      manager.contactDiscreteTest(cow, acm, collisions);
     }
   }
   else
   {
     for (auto element: manager.m_link2cow)
     {
-      manager.contactTest(element.second, collisions);
+      manager.contactDiscreteTest(element.second, acm, collisions);
     }
   }
-
 
   if (!collisions.empty())
   {
@@ -317,32 +338,35 @@ void collision_detection::CollisionRobotBullet::checkSelfCollisionHelper(const C
                                                                          const robot_state::RobotState& state1, const robot_state::RobotState& state2,
                                                                          const AllowedCollisionMatrix* acm) const
 {
-  BulletManager manager(acm);
+  BulletManager manager(0.0);
+  std::vector<collision_detection::DistanceResultsData> collisions;
   DistanceRequest dreq;
 
   dreq.group_name = req.group_name;
   dreq.acm = acm;
   dreq.enableGroup(getRobotModel());
 
-  manager.setContactDistance(0.0);
-  constructBulletObject(manager, state1, state2, dreq.active_components_only);
+  constructBulletObject(manager, state1, dreq.active_components_only, true);
 
-  std::vector<collision_detection::DistanceResultsData> collisions;
   if (dreq.active_components_only->size() > 0)
   {
     for (auto element: *dreq.active_components_only)
     {
-      manager.contactTest(element, collisions);
+      Eigen::Affine3d tf1 = state1.getGlobalLinkTransform(element);
+      Eigen::Affine3d tf2 = state2.getGlobalLinkTransform(element);
+      COWPtr cow = manager.m_link2cow[element];
+      manager.convexSweepTest(cow, convertEigenToBt(tf1), convertEigenToBt(tf2), acm, collisions);
     }
   }
   else
   {
     for (auto element: manager.m_link2cow)
     {
-      manager.contactTest(element.second, collisions);
+      Eigen::Affine3d tf1 = state1.getGlobalLinkTransform(element.first);
+      Eigen::Affine3d tf2 = state2.getGlobalLinkTransform(element.first);
+      manager.convexSweepTest(element.second, convertEigenToBt(tf1), convertEigenToBt(tf2), acm, collisions);
     }
   }
-
 
   if (!collisions.empty())
   {
@@ -357,13 +381,14 @@ void collision_detection::CollisionRobotBullet::checkSelfCollisionHelper(const C
 
       c.depth = collision.distance;
       c.normal = collision.normal;
+      c.pos = collision.nearest_points[0];
+
       c.body_name_1 = collision.link_names[0];
       c.body_name_2 = collision.link_names[1];
 
       // TODO: This needs to be update for attached objects.
       c.body_type_1 = BodyTypes::ROBOT_LINK;
       c.body_type_2 = BodyTypes::ROBOT_LINK;
-
 
       res.contacts[pc].push_back(c);
       res.contact_count++;
@@ -444,7 +469,7 @@ void collision_detection::CollisionRobotBullet::checkOtherCollisionHelper(const 
 
 void collision_detection::CollisionRobotBullet::updatedPaddingOrScaling(const std::vector<std::string>& links)
 {
-   CONSOLE_BRIDGE_logError("Bullet updatedPaddingOrScaling implemented");
+   CONSOLE_BRIDGE_logError("Bullet updatedPaddingOrScaling not implemented");
 
 //  std::size_t index;
 //  for (const auto& link : links)
@@ -506,22 +531,24 @@ void collision_detection::CollisionRobotBullet::distanceSelf(const DistanceReque
 void collision_detection::CollisionRobotBullet::distanceSelfHelper(const DistanceRequest& req, DistanceResult& res,
                                                                    const robot_state::RobotState& state) const
 {
-  BulletManager manager(req.acm);
+  BulletManager manager(req.distance_threshold);
+  std::vector<collision_detection::DistanceResultsData> collisions;
+
   constructBulletObject(manager, state, req.active_components_only);
 
-  std::vector<collision_detection::DistanceResultsData> collisions;
   if (req.active_components_only->size() > 0)
   {
     for (auto element: *req.active_components_only)
     {
-      manager.contactTest(element, collisions);
+      COWPtr cow = manager.m_link2cow[element];
+      manager.contactDiscreteTest(cow, req.acm, collisions);
     }
   }
   else
   {
     for (auto element: manager.m_link2cow)
     {
-      manager.contactTest(element.second, collisions);
+      manager.contactDiscreteTest(element.second, req.acm, collisions);
     }
   }
 
@@ -560,22 +587,84 @@ void collision_detection::CollisionRobotBullet::distanceSelfHelper(const Distanc
 void collision_detection::CollisionRobotBullet::distanceSelfHelper(const DistanceRequest& req, DistanceResult& res,
                                                                    const robot_state::RobotState& state1, const robot_state::RobotState& state2) const
 {
-  BulletManager manager(req.acm);
+  BulletManager manager(req.distance_threshold);
+  std::vector<collision_detection::DistanceResultsData> collisions;
+
   constructBulletObject(manager, state1, state2, req.active_components_only);
 
-  std::vector<collision_detection::DistanceResultsData> collisions;
   if (req.active_components_only->size() > 0)
   {
     for (auto element: *req.active_components_only)
     {
-      manager.contactTest(element, collisions);
+      COWPtr cow = manager.m_link2cow[element];
+      manager.contactCastTest(cow, req.acm, collisions);
     }
   }
   else
   {
     for (auto element: manager.m_link2cow)
     {
-      manager.contactTest(element.second, collisions);
+      manager.contactCastTest(element.second, req.acm, collisions);
+    }
+  }
+
+  for (auto collision: collisions)
+  {
+    if (collision.distance < res.minimum_distance.distance)
+    {
+      res.minimum_distance = collision;
+    }
+
+    if (collision.distance <= 0.0)
+    {
+      res.collision = true;
+    }
+
+    if (req.active_components_only->size() > 0)
+    {
+      if (req.active_components_only->find(state1.getLinkModel(collision.link_names[0])) != req.active_components_only->end())
+      {
+        res.distances[collision.link_names[0]] = collision;
+      }
+
+      if (req.active_components_only->find(state1.getLinkModel(collision.link_names[1])) != req.active_components_only->end())
+      {
+        res.distances[collision.link_names[1]] = collision;
+      }
+    }
+    else
+    {
+      res.distances[collision.link_names[0]] = collision;
+      res.distances[collision.link_names[1]] = collision;
+    }
+  }
+}
+
+void collision_detection::CollisionRobotBullet::distanceSelfHelperOriginal(const DistanceRequest& req, DistanceResult& res,
+                                                                           const robot_state::RobotState& state1, const robot_state::RobotState& state2) const
+{
+  BulletManager manager(req.distance_threshold);
+  std::vector<collision_detection::DistanceResultsData> collisions;
+
+  constructBulletObject(manager, state1, req.active_components_only, true);
+
+  if (req.active_components_only->size() > 0)
+  {
+    for (auto element: *req.active_components_only)
+    {
+      btTransform tf1 = convertEigenToBt(state1.getGlobalLinkTransform(element));
+      btTransform tf2 = convertEigenToBt(state2.getGlobalLinkTransform(element));
+
+      manager.contactCastTestOriginal(element, tf1, tf2, req.acm, collisions);
+    }
+  }
+  else
+  {
+    for (auto element: manager.m_link2cow)
+    {
+      btTransform tf1 = convertEigenToBt(state1.getGlobalLinkTransform(element.first));
+      btTransform tf2 = convertEigenToBt(state2.getGlobalLinkTransform(element.first));
+      manager.contactCastTestOriginal(element.first, tf1, tf2, req.acm, collisions);
     }
   }
 

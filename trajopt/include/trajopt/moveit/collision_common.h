@@ -120,86 +120,42 @@ inline void nearCallback(btBroadphasePair& collisionPair,
 //  }
 }
 
-struct CollisionCollector : public btCollisionWorld::ContactResultCallback
+inline bool isCollisionAllowed(const COW* cow0, const COW* cow1, const AllowedCollisionMatrix* acm, bool verbose = false)
 {
-  std::vector<collision_detection::DistanceResultsData>& m_collisions;
-  const COWPtr m_cow;
-  const AllowedCollisionMatrix* m_acm;
-  bool m_verbose;
+  const robot_model::LinkModel* linkA = cow0->m_link;
+  const robot_model::LinkModel* linkB = cow1->m_link;
 
-  CollisionCollector(std::vector<collision_detection::DistanceResultsData>& collisions, const COWPtr cow, const AllowedCollisionMatrix* acm, bool verbose = false) :
-    m_collisions(collisions), m_cow(cow), m_acm(acm), m_verbose(verbose)
+  assert(linkA != linkB);
+
+  // use the collision matrix (if any) to avoid certain collision checks
+  DecideContactFn dcf;
+  bool always_allow_collision = false;
+  if (acm)
   {
-    m_collisionFilterGroup = cow->m_collisionFilterGroup;
-    m_collisionFilterMask = cow->m_collisionFilterMask;
-  }
-
-  virtual btScalar addSingleResult(btManifoldPoint& cp, const btCollisionObjectWrapper* colObj0Wrap,int partId0,int index0, const btCollisionObjectWrapper* colObj1Wrap,int partId1,int index1)
-  {
-    if (cp.m_distance1 > 0.075) return 0;
-    const robot_model::LinkModel* linkA = getLink(colObj0Wrap->getCollisionObject());
-    const robot_model::LinkModel* linkB = getLink(colObj1Wrap->getCollisionObject());
-    collision_detection::DistanceResultsData contact;
-    contact.link_names[0] = linkA->getName();
-    contact.link_names[1] = linkB->getName();
-    contact.nearest_points[0] = convertBtToEigen(cp.m_positionWorldOnA);
-    contact.nearest_points[1] = convertBtToEigen(cp.m_positionWorldOnB);
-    contact.distance = cp.m_distance1;
-    contact.normal = convertBtToEigen(-1 * cp.m_normalWorldOnB);
-    contact.hasNearestPoints = true;
-    m_collisions.push_back(contact);
-
-    CONSOLE_BRIDGE_logDebug("CollisionCollector: adding collision %s-%s (%.4f)", linkA->getName().c_str(), linkB->getName().c_str(), cp.m_distance1);
-    return 1;
-  }
-  bool needsCollision(btBroadphaseProxy* proxy0) const
-  {
-    bool check1 = (proxy0->m_collisionFilterGroup & m_collisionFilterMask);
-    bool check2 = (m_collisionFilterGroup & proxy0->m_collisionFilterMask);
-    bool check3 = canCollide(m_cow.get(), static_cast<CollisionObjectWrapper*>(proxy0->m_clientObject));
-
-    return check1 && check2 && check3;
-
-//    return (proxy0->m_collisionFilterGroup & m_collisionFilterMask)
-//        && (m_collisionFilterGroup & proxy0->m_collisionFilterMask)
-//        && canCollide(m_cow.get(), static_cast<CollisionObjectWrapper*>(proxy0->m_clientObject));
-  }
-
-private:
-  bool canCollide(const COW* cow0, const COW* cow1) const
-  {
-    const robot_model::LinkModel* linkA = cow0->m_link;
-    const robot_model::LinkModel* linkB = cow1->m_link;
-
-    // use the collision matrix (if any) to avoid certain collision checks
-    DecideContactFn dcf;
-    bool always_allow_collision = false;
-    if (m_acm)
+    AllowedCollision::Type type;
+    bool found = acm->getAllowedCollision(linkA->getName(), linkB->getName(), type);
+    if (found)
     {
-      AllowedCollision::Type type;
-      bool found = m_acm->getAllowedCollision(linkA->getName(), linkB->getName(), type);
-      if (found)
+      // if we have an entry in the collision matrix, we read it
+      if (type == AllowedCollision::ALWAYS)
       {
-        // if we have an entry in the collision matrix, we read it
-        if (type == AllowedCollision::ALWAYS)
+        always_allow_collision = true;
+        if (verbose)
         {
-          always_allow_collision = true;
-          if (m_verbose)
-          {
-            CONSOLE_BRIDGE_logDebug(
-                "Collision between '%s' and '%s' is always allowed. No contacts are computed.",
-                linkA->getName().c_str(), linkB->getName().c_str());
-          }
-        }
-        else if (type == AllowedCollision::CONDITIONAL)
-        {
-          m_acm->getAllowedCollision(linkA->getName(), linkB->getName(), dcf);
-          if (m_verbose)
-            CONSOLE_BRIDGE_logDebug("Collision between '%s' and '%s' is conditionally allowed", linkA->getName().c_str(),
-                                    linkB->getName().c_str());
+          CONSOLE_BRIDGE_logDebug(
+              "Collision between '%s' and '%s' is always allowed. No contacts are computed.",
+              linkA->getName().c_str(), linkB->getName().c_str());
         }
       }
+      else if (type == AllowedCollision::CONDITIONAL)
+      {
+        acm->getAllowedCollision(linkA->getName(), linkB->getName(), dcf);
+        if (verbose)
+          CONSOLE_BRIDGE_logDebug("Collision between '%s' and '%s' is conditionally allowed", linkA->getName().c_str(),
+                                  linkB->getName().c_str());
+      }
     }
+  }
 
 //    // check if a link is touching an attached object
 //    if (cd1->type == BodyTypes::ROBOT_LINK && cd2->type == BodyTypes::ROBOT_ATTACHED)
@@ -231,26 +187,123 @@ private:
 //        always_allow_collision = true;
 //    }
 
-    // if collisions are always allowed, we are done
-    if (always_allow_collision)
-      return false;
+  // if collisions are always allowed, we are done
+  if (always_allow_collision)
+    return false;
 
-    if (m_verbose)
-      CONSOLE_BRIDGE_logDebug("Actually checking collisions between %s and %s", linkA->getName().c_str(),
-                              linkB->getName().c_str());
+  if (verbose)
+    CONSOLE_BRIDGE_logDebug("Actually checking collisions between %s and %s", linkA->getName().c_str(),
+                            linkB->getName().c_str());
 
-    return true;
+  return true;
+}
+
+struct CollisionCollector : public btCollisionWorld::ContactResultCallback
+{
+  std::vector<collision_detection::DistanceResultsData>& m_collisions;
+  const COWPtr m_cow;
+  const AllowedCollisionMatrix* m_acm;
+  double m_contact_distance;
+
+  bool m_verbose;
+
+  CollisionCollector(std::vector<collision_detection::DistanceResultsData>& collisions, const COWPtr cow, const AllowedCollisionMatrix* acm, double contact_distance, bool verbose = false) :
+    m_collisions(collisions), m_cow(cow), m_acm(acm), m_contact_distance(contact_distance), m_verbose(verbose)
+  {
+    m_collisionFilterGroup = cow->m_collisionFilterGroup;
+    m_collisionFilterMask = cow->m_collisionFilterMask;
+  }
+
+  virtual btScalar addSingleResult(btManifoldPoint& cp, const btCollisionObjectWrapper* colObj0Wrap,int partId0,int index0, const btCollisionObjectWrapper* colObj1Wrap,int partId1,int index1)
+  {
+    if (cp.m_distance1 > m_contact_distance) return 0;
+    const robot_model::LinkModel* linkA = getLink(colObj0Wrap->getCollisionObject());
+    const robot_model::LinkModel* linkB = getLink(colObj1Wrap->getCollisionObject());
+    collision_detection::DistanceResultsData contact;
+    contact.link_names[0] = linkA->getName();
+    contact.link_names[1] = linkB->getName();
+    contact.nearest_points[0] = convertBtToEigen(cp.m_positionWorldOnA);
+    contact.nearest_points[1] = convertBtToEigen(cp.m_positionWorldOnB);
+    contact.distance = cp.m_distance1;
+    contact.normal = convertBtToEigen(-1 * cp.m_normalWorldOnB);
+    m_collisions.push_back(contact);
+
+    CONSOLE_BRIDGE_logDebug("CollisionCollector: adding collision %s-%s (%.4f)", linkA->getName().c_str(), linkB->getName().c_str(), cp.m_distance1);
+    return 1;
+  }
+  bool needsCollision(btBroadphaseProxy* proxy0) const
+  {
+//    bool check1 = (proxy0->m_collisionFilterGroup & m_collisionFilterMask);
+//    bool check2 = (m_collisionFilterGroup & proxy0->m_collisionFilterMask);
+//    bool check3 = canCollide(m_cow.get(), static_cast<CollisionObjectWrapper*>(proxy0->m_clientObject));
+
+
+//    return check1 && check2 && check3;
+
+    return (proxy0->m_collisionFilterGroup & m_collisionFilterMask)
+        && (m_collisionFilterGroup & proxy0->m_collisionFilterMask)
+        && isCollisionAllowed(m_cow.get(), static_cast<CollisionObjectWrapper*>(proxy0->m_clientObject), m_acm, m_verbose);
   }
 };
+
+struct SweepCollisionCollector : public btCollisionWorld::ClosestConvexResultCallback
+{
+  std::vector<collision_detection::DistanceResultsData>& m_collisions;
+  const COWPtr m_cow;
+  const AllowedCollisionMatrix* m_acm;
+  bool m_verbose;
+
+  SweepCollisionCollector(std::vector<collision_detection::DistanceResultsData>& collisions, const COWPtr cow, const AllowedCollisionMatrix* acm, bool verbose = false) :
+    ClosestConvexResultCallback(btVector3(NAN, NAN, NAN), btVector3(NAN, NAN, NAN)), m_collisions(collisions), m_cow(cow), m_acm(acm), m_verbose(verbose)
+  {
+    m_collisionFilterGroup = cow->m_collisionFilterGroup;
+    m_collisionFilterMask = cow->m_collisionFilterMask;
+  }
+
+  virtual btScalar addSingleResult(btCollisionWorld::LocalConvexResult& convexResult, bool normalInWorldSpace)
+  {
+    ClosestConvexResultCallback::addSingleResult(convexResult, normalInWorldSpace);
+
+    const robot_model::LinkModel* linkA = getLink(m_cow.get());
+    const robot_model::LinkModel* linkB = getLink(m_hitCollisionObject);
+    collision_detection::DistanceResultsData contact;
+    contact.link_names[0] = linkA->getName();
+    contact.link_names[1] = linkB->getName();
+    contact.nearest_points[0] = convertBtToEigen(m_hitPointWorld);
+    contact.nearest_points[1] = convertBtToEigen(m_hitPointWorld);
+    contact.distance = 0;
+    contact.normal = convertBtToEigen(-1 * m_hitNormalWorld);
+    contact.cc_time = m_collisions.size() + m_closestHitFraction;
+    m_collisions.push_back(contact);
+
+    CONSOLE_BRIDGE_logDebug("CollisionCollector: adding collision %s-%s (%.4f)", linkA->getName().c_str(), linkB->getName().c_str(), contact.distance);
+    return 1;
+  }
+
+  bool needsCollision(btBroadphaseProxy* proxy0) const
+  {
+//    bool check1 = (proxy0->m_collisionFilterGroup & m_collisionFilterMask);
+//    bool check2 = (m_collisionFilterGroup & proxy0->m_collisionFilterMask);
+//    bool check3 = canCollide(m_cow.get(), static_cast<CollisionObjectWrapper*>(proxy0->m_clientObject));
+
+
+//    return check1 && check2 && check3;
+
+    return (proxy0->m_collisionFilterGroup & m_collisionFilterMask)
+        && (m_collisionFilterGroup & proxy0->m_collisionFilterMask)
+        && isCollisionAllowed(m_cow.get(), static_cast<CollisionObjectWrapper*>(proxy0->m_clientObject), m_acm, m_verbose);
+  }
+};
+
 
 
 struct CastHullShape : public btConvexShape
 {
 public:
-  const btConvexShape* m_shape;
+  btConvexShape* m_shape;
   btTransform m_t01, m_t10; // T_0_1 = T_w_0^-1 * T_w_1
 
-  CastHullShape(const btConvexShape* shape, const btTransform& t01) : m_shape(shape), m_t01(t01)
+  CastHullShape(btConvexShape* shape, const btTransform& t01) : m_shape(shape), m_t01(t01)
   {
     m_shapeType = CUSTOM_CONVEX_SHAPE_TYPE;
   }
@@ -363,6 +416,110 @@ struct CastCollisionCollector : public CollisionCollector
     {
       bool castShapeIsFirst = (colObj0Wrap->getCollisionObject() == m_cow.get());
       btVector3 normalWorldFromCast = -(castShapeIsFirst ? 1 : -1) * cp.m_normalWorldOnB;
+      const btCollisionObjectWrapper* firstColObjWrap = (castShapeIsFirst ? colObj0Wrap : colObj1Wrap);
+      int shapeIndex = (castShapeIsFirst ? index0 : index1);
+
+      collision_detection::DistanceResultsData& col = m_collisions.back();
+      if (castShapeIsFirst)
+      {
+        std::swap(col.nearest_points[0], col.nearest_points[1]);
+        std::swap(col.link_names[0], col.link_names[1]);
+        col.normal *= -1;
+      }
+
+      btTransform tfWorld0, tfWorld1;
+      const CastHullShape* shape;
+      if (btBroadphaseProxy::isConvex(firstColObjWrap->getCollisionObject()->getCollisionShape()->getShapeType()))
+      {
+        shape = static_cast<const CastHullShape*>(firstColObjWrap->getCollisionObject()->getCollisionShape());
+        tfWorld0 = m_cow->getWorldTransform();
+        tfWorld1 = m_cow->getWorldTransform() * shape->m_t01;
+      }
+      else if (btBroadphaseProxy::isCompound(firstColObjWrap->getCollisionObject()->getCollisionShape()->getShapeType()))
+      {
+        const btCompoundShape* compound = static_cast<const btCompoundShape*>(firstColObjWrap->getCollisionObject()->getCollisionShape());
+        shape = static_cast<const CastHullShape*>(compound->getChildShape(shapeIndex));
+        tfWorld0 = m_cow->getWorldTransform() *  compound->getChildTransform(shapeIndex);
+        tfWorld1 = tfWorld0 * shape->m_t01;
+      }
+      else
+      {
+        throw std::runtime_error("I can only continuous collision check convex shapes and compound shapes made of convex shapes");
+      }
+      assert(!!shape);
+
+      btVector3 normalLocal0 = normalWorldFromCast * tfWorld0.getBasis();
+      btVector3 normalLocal1 = normalWorldFromCast * tfWorld1.getBasis();
+
+      btVector3 ptLocal0;
+      float localsup0;
+      GetAverageSupport(shape->m_shape, normalLocal0, localsup0, ptLocal0);
+      btVector3 ptWorld0 = tfWorld0 * ptLocal0;
+      btVector3 ptLocal1;
+      float localsup1;
+      GetAverageSupport(shape->m_shape, normalLocal1, localsup1, ptLocal1);
+      btVector3 ptWorld1 = tfWorld1 * ptLocal1;
+
+      float sup0 = normalWorldFromCast.dot(ptWorld0);
+      float sup1 = normalWorldFromCast.dot(ptWorld1);
+
+      // TODO: this section is potentially problematic. think hard about the math
+      if (sup0 - sup1 > BULLET_SUPPORT_FUNC_TOLERANCE)
+      {
+        col.cc_time = 0;
+        col.cc_type = CCType_Time0;
+      }
+      else if (sup1 - sup0 > BULLET_SUPPORT_FUNC_TOLERANCE)
+      {
+        col.cc_time = 1;
+        col.cc_type = CCType_Time1;
+      }
+      else
+      {
+        const btVector3& ptOnCast = castShapeIsFirst ? cp.m_positionWorldOnA : cp.m_positionWorldOnB;
+        float l0c = (ptOnCast - ptWorld0).length(),
+              l1c = (ptOnCast - ptWorld1).length();
+
+        Eigen::Vector3d diff = convertBtToEigen(ptWorld0) - col.nearest_points[1];
+        double distDiff = diff.norm();
+
+        // DEBUG: Store the original contact point for debug, remove after integration and testing and uncommnet: col.cc_nearest_points[0] = col.nearest_points[1];
+        col.cc_nearest_points[0] = col.nearest_points[1];
+        col.nearest_points[1] = convertBtToEigen(ptWorld0);
+//        col.cc_nearest_points[0] = col.nearest_points[1];
+        col.cc_nearest_points[1] = convertBtToEigen(ptWorld1);
+        col.cc_type = CCType_Between;
+
+        if ( l0c + l1c < BULLET_LENGTH_TOLERANCE)
+        {
+          col.cc_time = .5;
+        }
+        else
+        {
+          col.cc_time = l0c/(l0c + l1c);
+        }
+
+      }
+
+    }
+    return retval;
+  }
+};
+
+struct CastCollisionCollectorOriginal : public CollisionCollector
+{
+  CastCollisionCollectorOriginal(std::vector<collision_detection::DistanceResultsData>& collisions, const COWPtr cow, const AllowedCollisionMatrix* acm, bool verbose = false) :
+  CollisionCollector(collisions, cow, acm, verbose) {}
+  virtual btScalar addSingleResult(btManifoldPoint& cp, const btCollisionObjectWrapper* colObj0Wrap,int partId0,int index0, const btCollisionObjectWrapper* colObj1Wrap,int partId1,int index1)
+  {
+    // call base class func
+    float retval = CollisionCollector::addSingleResult(cp, colObj0Wrap,partId0,index0, colObj1Wrap,partId1,index1);
+
+    // if contact was added
+    if (retval == 1)
+    {
+      bool castShapeIsFirst = (colObj0Wrap->getCollisionObject() == m_cow.get());
+      btVector3 normalWorldFromCast = -(castShapeIsFirst ? 1 : -1) * cp.m_normalWorldOnB;
       const CastHullShape* shape = dynamic_cast<const CastHullShape*>((castShapeIsFirst ? colObj0Wrap : colObj1Wrap)->getCollisionObject()->getCollisionShape());
       assert(!!shape);
       btTransform tfWorld0 = m_cow->getWorldTransform();
@@ -409,7 +566,8 @@ struct CastCollisionCollector : public CollisionCollector
               l1c = (ptOnCast - ptWorld1).length();
 
         col.nearest_points[1] = convertBtToEigen(ptWorld0);
-        col.cc_nearest_point = convertBtToEigen(ptWorld1);
+        col.cc_nearest_points[0] = col.nearest_points[1];
+        col.cc_nearest_points[1] = convertBtToEigen(ptWorld1);
         col.cc_type = CCType_Between;
 
         if ( l0c + l1c < BULLET_LENGTH_TOLERANCE)
@@ -428,7 +586,6 @@ struct CastCollisionCollector : public CollisionCollector
   }
 };
 
-
 struct BulletManager
 {
   btCollisionWorld* m_world;
@@ -437,8 +594,7 @@ struct BulletManager
   btCollisionConfiguration* m_coll_config;
   Link2Cow m_link2cow;
 
-
-  BulletManager(const AllowedCollisionMatrix* acm) : m_acm(acm)
+  BulletManager(double contact_distance)
   {
     m_coll_config = new btDefaultCollisionConfiguration();
     m_dispatcher = new btCollisionDispatcher(m_coll_config);
@@ -447,6 +603,7 @@ struct BulletManager
     m_dispatcher->registerCollisionCreateFunc(BOX_SHAPE_PROXYTYPE,BOX_SHAPE_PROXYTYPE,
     m_coll_config->getCollisionAlgorithmCreateFunc(CONVEX_SHAPE_PROXYTYPE, CONVEX_SHAPE_PROXYTYPE));
     m_dispatcher->setNearCallback(&nearCallback);
+    m_contact_distance = contact_distance;
   }
 
   ~BulletManager()
@@ -457,33 +614,105 @@ struct BulletManager
     delete m_coll_config;
   }
 
-  void contactTest(const robot_model::LinkModel* link, std::vector<collision_detection::DistanceResultsData>& collisions)
+  void contactDiscreteTest(const COWPtr cow, const AllowedCollisionMatrix *acm, std::vector<collision_detection::DistanceResultsData>& collisions)
   {
-    COWPtr cow = m_link2cow[link];
-    contactTest(cow, collisions);
-  }
-
-  void contactTest(const COWPtr cow, std::vector<collision_detection::DistanceResultsData>& collisions)
-  {
-    CollisionCollector cc(collisions, cow, m_acm);
+    CollisionCollector cc(collisions, cow, acm, m_contact_distance);
     m_world->contactTest(cow.get(), cc);
   }
 
-  void setContactDistance(float dist) {
-    CONSOLE_BRIDGE_logDebug("setting contact distance to %.2f", dist);
-    SHAPE_EXPANSION = btVector3(1,1,1) * dist;
-    gContactBreakingThreshold = 2.001 * dist; // wtf. when I set it to 2.0 there are no contacts with distance > 0
+  void contactCastTest(const COWPtr cow, const AllowedCollisionMatrix *acm, std::vector<collision_detection::DistanceResultsData>& collisions)
+  {
+    CastCollisionCollector cc(collisions, cow, acm, m_contact_distance);
+    m_world->contactTest(cow.get(), cc);
+  }
+
+  void contactCastTestOriginal(const robot_model::LinkModel* link, const btTransform &tf1, const btTransform &tf2,  const AllowedCollisionMatrix *acm, std::vector<collision_detection::DistanceResultsData>& collisions)
+  {
+    COWPtr cow = m_link2cow[link];
+    convexCastTestHelper(cow, cow->getCollisionShape(), tf1, tf2, acm, collisions);
+  }
+
+  void convexSweepTest(const COWPtr cow, const btTransform &tf1, const btTransform &tf2, const AllowedCollisionMatrix *acm, std::vector<collision_detection::DistanceResultsData>& collisions)
+  {
+    SweepCollisionCollector cc(collisions, cow, acm);
+    convexSweepTestHelper(cow->getCollisionShape(), tf1, tf2, cc);
+  }
+
+  void finalize()
+  {
+    CONSOLE_BRIDGE_logDebug("setting contact distance to %.2f", m_contact_distance);
+    SHAPE_EXPANSION = btVector3(1,1,1) * m_contact_distance;
+    gContactBreakingThreshold = 2.001 * m_contact_distance; // wtf. when I set it to 2.0 there are no contacts with distance > 0
     btCollisionObjectArray& objs = m_world->getCollisionObjectArray();
     for (int i=0; i < objs.size(); ++i)
     {
-      objs[i]->setContactProcessingThreshold(dist);
+      objs[i]->setContactProcessingThreshold(m_contact_distance);
     }
     btCollisionDispatcher* dispatcher = static_cast<btCollisionDispatcher*>(m_world->getDispatcher());
     dispatcher->setDispatcherFlags(dispatcher->getDispatcherFlags() & ~btCollisionDispatcher::CD_USE_RELATIVE_CONTACT_BREAKING_THRESHOLD);
   }
 
+  double getContactDistance() const
+  {
+    return m_contact_distance;
+  }
+
 private:
-  const AllowedCollisionMatrix* m_acm;
+
+  double m_contact_distance;
+
+  void convexCastTestHelper(collision_detection::COWPtr cow, btCollisionShape* shape, const btTransform& tf0, const btTransform& tf1,
+                            const collision_detection::AllowedCollisionMatrix *acm, std::vector<collision_detection::DistanceResultsData>& collisions)
+  {
+    if (btBroadphaseProxy::isConvex(shape->getShapeType()))
+    {
+      btConvexShape* convex = dynamic_cast<btConvexShape*>(shape);
+
+      collision_detection::CastHullShape* shape = new collision_detection::CastHullShape(convex, tf0.inverseTimes(tf1));
+      collision_detection::COWPtr obj(new collision_detection::COW(cow->m_link));
+      obj->setCollisionShape(shape);
+      obj->setWorldTransform(tf0);
+      obj->m_index = cow->m_index;
+      obj->m_collisionFilterGroup = cow->m_collisionFilterGroup;
+      obj->m_collisionFilterMask = cow->m_collisionFilterMask;
+
+      collision_detection::CastCollisionCollectorOriginal cc(collisions, obj, acm);
+      m_world->contactTest(obj.get(), cc);
+
+      delete shape;
+    }
+    else if (btCompoundShape* compound = dynamic_cast<btCompoundShape*>(shape))
+    {
+      for (int i = 0; i < compound->getNumChildShapes(); ++i)
+      {
+        convexCastTestHelper(cow, compound->getChildShape(i), tf0*compound->getChildTransform(i), tf1*compound->getChildTransform(i), acm, collisions);
+      }
+    }
+    else {
+      throw std::runtime_error("I can only continuous collision check convex shapes and compound shapes made of convex shapes");
+    }
+  }
+
+  void convexSweepTestHelper(const btCollisionShape* shape, const btTransform &tf1, const btTransform &tf2, btCollisionWorld::ConvexResultCallback &cc)
+  {
+    if (btBroadphaseProxy::isConvex(shape->getShapeType()))
+    {
+      const btConvexShape* convex = static_cast<const btConvexShape*>(shape);
+      m_world->convexSweepTest(convex, tf1, tf2, cc, 0);
+    }
+    else if (btBroadphaseProxy::isCompound(shape->getShapeType()))
+    {
+      const btCompoundShape* compound = static_cast<const btCompoundShape*>(shape);
+      for (int i = 0; i < compound->getNumChildShapes(); ++i)
+      {
+        convexSweepTestHelper(compound->getChildShape(i), tf1 * compound->getChildTransform(i), tf1 * compound->getChildTransform(i), cc);
+      }
+    }
+    else
+    {
+      throw std::runtime_error("I can only continuous collision check convex shapes and compound shapes made of convex shapes");
+    }
+  }
 };
 
 btCollisionShape* createShapePrimitive(const shapes::ShapeConstPtr& geom, bool useTrimesh, CollisionObjectWrapper* cow);

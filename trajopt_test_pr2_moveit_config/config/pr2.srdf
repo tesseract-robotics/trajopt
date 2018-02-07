@@ -212,6 +212,7 @@
     <disable_collisions link1="base_link" link2="r_upper_arm_roll_link" reason="Never" />
     <disable_collisions link1="base_link" link2="r_elbow_flex_link" reason="Never" />
     <disable_collisions link1="base_link" link2="r_forearm_roll_link" reason="Never" />
+    <disable_collisions link1="base_link" link2="r_forearm_link" reason="Never" />
     <disable_collisions link1="base_link" link2="table_link" reason="Never" />
     <disable_collisions link1="base_link" link2="torso_lift_link" reason="Adjacent" />
     <disable_collisions link1="bl_caster_l_wheel_link" link2="bl_caster_r_wheel_link" reason="Never" />

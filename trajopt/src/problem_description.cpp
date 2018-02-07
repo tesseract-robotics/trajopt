@@ -547,9 +547,6 @@ void CollisionCostInfo::hatch(TrajOptProb& prob)
   }
 }
 
-
-
-
 void JointConstraintInfo::fromJson(const Value& v) {
   FAIL_IF_FALSE(v.isMember("params"));
   const Value& params = v["params"];

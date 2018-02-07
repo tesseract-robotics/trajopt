@@ -95,7 +95,7 @@ void collision_detection::CollisionWorldBullet::checkRobotCollision(const Collis
                                                                  const robot_state::RobotState& state1,
                                                                  const robot_state::RobotState& state2) const
 {
-  CONSOLE_BRIDGE_logError("FCL continuous collision checking not yet implemented");
+  CONSOLE_BRIDGE_logError("Bullet continuous collision checking not yet implemented");
 }
 
 void collision_detection::CollisionWorldBullet::checkRobotCollision(const CollisionRequest& req, CollisionResult& res,
@@ -104,7 +104,7 @@ void collision_detection::CollisionWorldBullet::checkRobotCollision(const Collis
                                                                  const robot_state::RobotState& state2,
                                                                  const AllowedCollisionMatrix& acm) const
 {
-  CONSOLE_BRIDGE_logError("FCL continuous collision checking not yet implemented");
+  CONSOLE_BRIDGE_logError("Bullet continuous collision checking not yet implemented");
 }
 
 void collision_detection::CollisionWorldBullet::checkRobotCollisionHelper(const CollisionRequest& req,
@@ -314,6 +314,15 @@ void collision_detection::CollisionWorldBullet::distanceRobot(const DistanceRequ
                                                            const robot_state::RobotState& state) const
 {
   distanceRobotHelper(req, res, robot, state);
+}
+
+void collision_detection::CollisionWorldBullet::distanceRobot(const DistanceRequest& req, DistanceResult& res,
+                                                           const CollisionRobot& robot,
+                                                           const robot_state::RobotState& state1,
+                                                           const robot_state::RobotState& state2) const
+{
+  CONSOLE_BRIDGE_logError("Bullet collision world distance robot continuous checking not yet implemented");
+//  distanceRobotHelper(req, res, robot, state1, state2);
 }
 
 double collision_detection::CollisionWorldBullet::distanceWorld(const CollisionWorld& world, bool verbose) const

@@ -46,42 +46,79 @@ public:
     std::string link_names[2];
     Vector3d nearest_points[2];
     Vector3d normal;
+    Vector3d cc_nearest_points[2];
+    double cc_time;
+    collision_detection::ContinouseCollisionType cc_type;
     bool valid;
 
-    DistanceResult() : distance(std::numeric_limits<double>::max()), valid(false) {}
+    DistanceResult() { clear(); }
+
+    /// Clear structure data
+    void clear()
+    {
+      distance = std::numeric_limits<double>::max();
+      nearest_points[0].setZero();
+      nearest_points[1].setZero();
+      link_names[0] = "";
+      link_names[1] = "";
+      normal.setZero();
+      cc_nearest_points[0].setZero();
+      cc_nearest_points[1].setZero();
+      cc_time = -1;
+      cc_type = collision_detection::CCType_None;
+    }
+  };
+
+  struct DistanceRequest
+  {
+    double contact_distance;              /**< The maximum distance between two objects for which distance data should be calculated */
+    std::vector<std::string> joint_names; /**< Vector of joint names (size must match number of joints in robot chain) */
+    std::vector<std::string> link_names;  /**< Name of the links to calculate distance data for. */
+    Eigen::VectorXd joint_angles1;        /**< Vector of joint angles (size must match number of joints in robot chain) */
+    Eigen::VectorXd joint_angles2;        /**< Vector of joint angles (size must match number of joints in robot chain) */
+
+    DistanceRequest() : contact_distance(0.0) {}
   };
 
   BasicEnv() {}
 
   /**
-   * @brief calcDistances Should return distance information for all links in list link_names (Discrete Check)
-   * @param joint_angles Vector of joint angles (size must match number of joints in robot chain)
-   * @param link_names Name of the links to calculate distance data for.
+   * @brief calcDistances Should return distance information for all links in list req.link_names (Discrete Check)
+   * @param req   The distance request information.
+   * @param dists A list of distance results.
    */
-  virtual void calcDistances(const std::vector<std::string> &joint_names, const Eigen::VectorXd &joint_angles, const std::vector<std::string> &link_names, std::vector<DistanceResult> &dists) = 0;
+  virtual void calcDistancesDiscrete(const DistanceRequest &req, std::vector<DistanceResult> &dists) = 0;
 
   /**
    * @brief calcDistances Should return distance information for all links in list link_names (Continuous Check)
-   * @param joint_angles1 Vector of joint angles at the start (size must match number of joints in robot chain)
-   * @param joint_angles2 Vector of joint angles at the end   (size must match number of joints in robot chain)
-   * @param link_names Name of the links to calculate distance data for.
+   * @param req   The distance request information.
+   * @param dists A list of distance results.
    */
-  virtual void calcDistances(const std::vector<std::string> &joint_names, const Eigen::VectorXd &joint_angles1, const Eigen::VectorXd &joint_angles2, const std::vector<std::string> &link_names, std::vector<DistanceResult> &dists) = 0;
+  virtual void calcDistancesContinuous(const DistanceRequest &req, std::vector<DistanceResult> &dists) = 0;
 
   /**
    * @brief calcCollisions Should return collision information for all links in list link_names (Discrete Check)
-   * @param joint_angles Vector of joint angles (size must match number of joints in robot chain)
-   * @param link_names Name of the links to calculate collision data for.
+   * @param req   The distance request information.
+   * @param dists A list of distance results.
    */
-  virtual void calcCollisions(const std::vector<std::string> &joint_names, const Eigen::VectorXd &joint_angles, const std::vector<std::string> &link_names) = 0;
+  virtual void calcCollisionsDiscrete(const DistanceRequest &req, std::vector<DistanceResult> &collisions) = 0;
 
   /**
    * @brief calcCollisions Should return collision information for all links in list link_names (Continuous Check)
-   * @param joint_angles1 Vector of joint angles at the start (size must match number of joints in robot chain)
-   * @param joint_angles2 Vector of joint angles at the end   (size must match number of joints in robot chain)
-   * @param link_names Name of the links to calculate collision data for.
+   * @param req   The distance request information.
+   * @param dists A list of distance results.
    */
-  virtual void calcCollisions(const std::vector<std::string> &joint_names, const Eigen::VectorXd &joint_angles1, const Eigen::VectorXd &joint_angles2, const std::vector<std::string> &link_names) = 0;
+  virtual void calcCollisionsContinuous(const DistanceRequest &req, std::vector<DistanceResult> &collisions) = 0;
+
+  /**
+   * @brief continuousCollisionCheckTrajectory Should perform a contuous collision check over the trajectory
+   * @param joint_names JointNames corresponding to the values in traj (must be in same order)
+   * @param link_names Name of the links to calculate collision data for.
+   * @param traj The joint values at each time step
+   * @param collisions The return collision data.
+   * @return True if collision was found, otherwise false.
+   */
+  virtual bool continuousCollisionCheckTrajectory(const std::vector<std::string> &joint_names, const std::vector<std::string> &link_names, const TrajArray& traj, std::vector<DistanceResult>& collisions) = 0;
 
   /**
    * @brief getCurrentJointValues Get the current state of the manipulator
@@ -131,9 +168,9 @@ public:
    * @param link_names List of link names for which to plot data
    * @param dist_results The collision results data
    */
-  virtual void plotCollisions(const std::vector<std::string> &link_names, const std::vector<BasicEnv::DistanceResult> &dist_results) = 0;
+  virtual void plotCollisions(const std::vector<std::string> &link_names, const std::vector<BasicEnv::DistanceResult> &dist_results, double safe_dist) = 0;
 
-//  virtual void plotArrow(const std::string &name, const Eigen::Vector3d &arrow, double scale) const = 0;
+  virtual void plotArrow(const Eigen::Vector3d &pt1, const Eigen::Vector3d &pt2, const Eigen::Vector4d &rgba, double scale) = 0;
 
 //  virtual void plotAxis(const std::string &name, const Eigen::Affine3d &axis, double scale) const = 0;
 
