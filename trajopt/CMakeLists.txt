@@ -8,7 +8,6 @@ find_package(catkin REQUIRED COMPONENTS
   trajopt_sco
   trajopt_utils
   trajopt_ext
-  trajopt_osgviewer
   roscpp
   urdf
   moveit_core
@@ -47,7 +46,6 @@ catkin_package(
     trajopt_sco
     trajopt_utils
     trajopt_ext
-    trajopt_osgviewer
     roscpp
     urdf
     moveit_core

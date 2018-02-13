@@ -13,7 +13,6 @@
   <depend>trajopt_sco</depend>
   <depend>trajopt_utils</depend>
   <depend>trajopt_ext</depend>
-  <depend>trajopt_osgviewer</depend>
   <depend>roscpp</depend>
   <depend>urdf</depend>
   <depend>moveit_core</depend>
