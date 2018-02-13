@@ -54,13 +54,15 @@ public:
     ASSERT_TRUE(cd_loader.activate(class_name, planning_scene_, true));
 
     ASSERT_TRUE(env_->init(planning_scene_));
+
+    gLogLevel = util::LevelError;
   }
 };
 
 
 TEST_F(PlanningTest, numerical_ik1)
 {
-  ROS_INFO("PlanningTest, numerical_ik1");
+  ROS_DEBUG("PlanningTest, numerical_ik1");
   Json::Value root = readJsonFile(string(DATA_DIR) + "/numerical_ik1.json");
 
   TrajOptProbPtr prob = ConstructProblem(root, env_);
@@ -72,18 +74,18 @@ TEST_F(PlanningTest, numerical_ik1)
     opt.addCallback(PlotCallback(*prob));
   }
 
-  ROS_INFO_STREAM("DOF: " << prob->GetNumDOF());
+  ROS_DEBUG_STREAM("DOF: " << prob->GetNumDOF());
   opt.initialize(DblVec(prob->GetNumDOF(), 0));
   double tStart = GetClock();
-  ROS_INFO_STREAM("Size: " << opt.x().size());
-  ROS_INFO_STREAM("Initial Vars: " << toVectorXd(opt.x()).transpose());
+  ROS_DEBUG_STREAM("Size: " << opt.x().size());
+  ROS_DEBUG_STREAM("Initial Vars: " << toVectorXd(opt.x()).transpose());
   Eigen::Affine3d initial_pose, final_pose, change_base;
   change_base = prob->GetEnv()->getLinkTransform(prob->GetKin()->getBaseLinkName());
   prob->GetKin()->calcFwdKin(initial_pose, change_base, toVectorXd(opt.x()));
 
-  ROS_INFO_STREAM("Initial Position: " << initial_pose.translation().transpose());
+  ROS_DEBUG_STREAM("Initial Position: " << initial_pose.translation().transpose());
   OptStatus status = opt.optimize();
-  ROS_INFO_STREAM("Status: " << sco::statusToString(status));
+  ROS_DEBUG_STREAM("Status: " << sco::statusToString(status));
   prob->GetKin()->calcFwdKin(final_pose, change_base, toVectorXd(opt.x()));
 
   Eigen::Affine3d goal;
@@ -92,14 +94,14 @@ TEST_F(PlanningTest, numerical_ik1)
 
   assert(goal.isApprox(final_pose, 1e-8));
 
-  ROS_INFO_STREAM("Final Position: " << final_pose.translation().transpose());
-  ROS_INFO_STREAM("Final Vars: " << toVectorXd(opt.x()).transpose());
-  ROS_INFO("planning time: %.3f", GetClock()-tStart);
+  ROS_DEBUG_STREAM("Final Position: " << final_pose.translation().transpose());
+  ROS_DEBUG_STREAM("Final Vars: " << toVectorXd(opt.x()).transpose());
+  ROS_DEBUG("planning time: %.3f", GetClock()-tStart);
 }
 
 TEST_F(PlanningTest, arm_around_table)
 {
-  ROS_INFO("PlanningTest, arm_around_table");
+  ROS_DEBUG("PlanningTest, arm_around_table");
 
   Json::Value root = readJsonFile(string(DATA_DIR) + "/arm_around_table.json");
   robot_state::RobotState &rs = planning_scene_->getCurrentStateNonConst();;
@@ -114,7 +116,6 @@ TEST_F(PlanningTest, arm_around_table)
   ipos["r_wrist_roll_joint"] = 3.074;
   rs.setVariablePositions(ipos);
 
-  gLogLevel = util::LevelInfo;
   TrajOptProbPtr prob = ConstructProblem(root, env_);
   ASSERT_TRUE(!!prob);
 
@@ -124,11 +125,11 @@ TEST_F(PlanningTest, arm_around_table)
   prob->GetKin()->getLinkNamesWithGeometry(link_names);
 
   env_->continuousCollisionCheckTrajectory(joint_names, link_names, prob->GetInitTraj(), collisions);
-  ROS_INFO("Initial trajector number of continuous collisions: %i\n", collisions.size());
+  ROS_DEBUG("Initial trajector number of continuous collisions: %i\n", collisions.size());
   ASSERT_NE(collisions.size(), 0);
 
   BasicTrustRegionSQP opt(prob);
-  ROS_INFO_STREAM("DOF: " << prob->GetNumDOF());
+  ROS_DEBUG_STREAM("DOF: " << prob->GetNumDOF());
   if (plotting)
   {
     opt.addCallback(PlotCallback(*prob));
@@ -137,7 +138,7 @@ TEST_F(PlanningTest, arm_around_table)
   opt.initialize(trajToDblVec(prob->GetInitTraj()));
   double tStart = GetClock();
   opt.optimize();
-  ROS_INFO("planning time: %.3f", GetClock()-tStart);
+  ROS_DEBUG("planning time: %.3f", GetClock()-tStart);
 
   if (plotting)
   {
@@ -146,7 +147,7 @@ TEST_F(PlanningTest, arm_around_table)
 
   collisions.clear();
   env_->continuousCollisionCheckTrajectory(joint_names, link_names, getTraj(opt.x(), prob->GetVars()), collisions);
-  ROS_INFO("Final trajectory number of continuous collisions: %i\n", collisions.size());
+  ROS_DEBUG("Final trajectory number of continuous collisions: %i\n", collisions.size());
   ASSERT_EQ(collisions.size(), 0);
 }
 

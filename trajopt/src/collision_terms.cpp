@@ -16,7 +16,6 @@ using namespace std;
 
 namespace trajopt {
 
-
 void CollisionsToDistances(const std::vector<BasicEnv::DistanceResult> &dist_results, DblVec& dists)
 {
   dists.clear();
@@ -65,7 +64,7 @@ void CollisionsToDistanceExpressions(const std::vector<BasicEnv::DistanceResult>
 
     AffExpr dist(res.distance);
 
-    DebugPrintInfo(res, i==0);
+    //DebugPrintInfo(res, i==0);
 
     std::vector<std::string>::const_iterator itA = std::find(link_names.begin(), link_names.end(), res.link_names[0]);
     if (itA != link_names.end())
