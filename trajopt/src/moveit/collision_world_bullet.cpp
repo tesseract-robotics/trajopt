@@ -37,6 +37,25 @@
 #include <trajopt/moveit/collision_world_bullet.h>
 #include <boost/bind.hpp>
 
+void collision_detection::CollisionWorldBullet::constructBulletObject(BulletManager& manager, bool allow_static2static) const
+{
+
+  for (std::pair<std::string, COWConstPtr> element : m_link2cow)
+  {
+    COWPtr new_cow(new COW(*(element.second.get())));
+    assert(new_cow->getCollisionShape());
+
+    manager.m_link2cow[element.first] = new_cow;
+    new_cow->setWorldTransform(element.second->getWorldTransform());
+
+    (allow_static2static) ? new_cow->m_collisionFilterMask = btBroadphaseProxy::KinematicFilter | btBroadphaseProxy::StaticFilter : new_cow->m_collisionFilterMask = btBroadphaseProxy::KinematicFilter;
+
+    manager.m_world->addCollisionObject(new_cow.get(), new_cow->m_collisionFilterGroup, new_cow->m_collisionFilterMask);
+  }
+
+  manager.finalize();
+}
+
 collision_detection::CollisionWorldBullet::CollisionWorldBullet() : CollisionWorld()
 {
   // request notifications about changes to new world
@@ -68,152 +87,202 @@ collision_detection::CollisionWorldBullet::~CollisionWorldBullet()
 }
 
 void collision_detection::CollisionWorldBullet::checkRobotCollision(const CollisionRequest& req, CollisionResult& res,
-                                                                 const CollisionRobot& robot,
-                                                                 const robot_state::RobotState& state) const
+                                                                    const CollisionRobot& robot,
+                                                                    const robot_state::RobotState& state) const
 {
   checkRobotCollisionHelper(req, res, robot, state, nullptr);
 }
 
 void collision_detection::CollisionWorldBullet::checkRobotCollision(const CollisionRequest& req, CollisionResult& res,
-                                                                 const CollisionRobot& robot,
-                                                                 const robot_state::RobotState& state,
-                                                                 const AllowedCollisionMatrix& acm) const
+                                                                    const CollisionRobot& robot,
+                                                                    const robot_state::RobotState& state,
+                                                                    const AllowedCollisionMatrix& acm) const
 {
   checkRobotCollisionHelper(req, res, robot, state, &acm);
 }
 
 void collision_detection::CollisionWorldBullet::checkRobotCollision(const CollisionRequest& req, CollisionResult& res,
-                                                                 const CollisionRobot& robot,
-                                                                 const robot_state::RobotState& state1,
-                                                                 const robot_state::RobotState& state2) const
+                                                                    const CollisionRobot& robot,
+                                                                    const robot_state::RobotState& state1,
+                                                                    const robot_state::RobotState& state2) const
 {
-  CONSOLE_BRIDGE_logError("Bullet continuous collision checking not yet implemented");
+  checkRobotCollisionHelper(req, res, robot, state1, state2, nullptr);
 }
 
 void collision_detection::CollisionWorldBullet::checkRobotCollision(const CollisionRequest& req, CollisionResult& res,
-                                                                 const CollisionRobot& robot,
-                                                                 const robot_state::RobotState& state1,
-                                                                 const robot_state::RobotState& state2,
-                                                                 const AllowedCollisionMatrix& acm) const
+                                                                    const CollisionRobot& robot,
+                                                                    const robot_state::RobotState& state1,
+                                                                    const robot_state::RobotState& state2,
+                                                                    const AllowedCollisionMatrix& acm) const
 {
-  CONSOLE_BRIDGE_logError("Bullet continuous collision checking not yet implemented");
+  checkRobotCollisionHelper(req, res, robot, state1, state2, &acm);
 }
 
 void collision_detection::CollisionWorldBullet::checkRobotCollisionHelper(const CollisionRequest& req,
-                                                                       CollisionResult& res,
-                                                                       const CollisionRobot& robot,
-                                                                       const robot_state::RobotState& state,
-                                                                       const AllowedCollisionMatrix* acm) const
+                                                                          CollisionResult& res,
+                                                                          const CollisionRobot& robot,
+                                                                          const robot_state::RobotState& state,
+                                                                          const AllowedCollisionMatrix* acm) const
 {
-  CONSOLE_BRIDGE_logError("Bullet collision world collision robot checking not yet implemented");
+  const CollisionRobotBullet& robot_bullet = dynamic_cast<const CollisionRobotBullet&>(robot);
+  std::vector<collision_detection::DistanceResultsData> collisions;
+  BulletManagerPtr manager;
+  DistanceRequest dreq; // This is required to get active links
 
-//  const CollisionRobotFCL& robot_fcl = dynamic_cast<const CollisionRobotFCL&>(robot);
-//  FCLObject fcl_obj;
-//  robot_fcl.constructFCLObject(state, fcl_obj);
+  // Right now it will get distance information within 1.0 meter
+  // Need to figure out the best way to expose this or see if bullet
+  // has a true distance request.
+  if (req.distance)
+  {
+    manager.reset(new BulletManager(1.0));
+  }
+  else
+  {
+    manager.reset(new BulletManager(0.0));
+  }
 
-//  CollisionData cd(&req, &res, acm);
-//  cd.enableGroup(robot.getRobotModel());
-//  for (std::size_t i = 0; !cd.done_ && i < fcl_obj.collision_objects_.size(); ++i)
-//    manager_->collide(fcl_obj.collision_objects_[i].get(), &cd, &collisionCallback);
+  dreq.group_name = req.group_name;
+  dreq.acm = acm;
+  dreq.enableGroup(robot_bullet.getRobotModel());
 
-//  if (req.distance)
-//  {
-//    DistanceRequest dreq;
-//    DistanceResult dres;
+  robot_bullet.constructBulletObject(*manager, state, dreq.active_components_only, false);
+  constructBulletObject(*manager, false);
+  manager->finalize();
 
-//    dreq.group_name = req.group_name;
-//    dreq.acm = acm;
-//    dreq.enableGroup(robot.getRobotModel());
-//    distanceRobotHelper(dreq, dres, robot, state);
-//    res.distance = dres.minimum_distance.distance;
-//  }
+  if (dreq.active_components_only->size() > 0)
+  {
+    for (auto element: *dreq.active_components_only)
+    {
+      COWPtr cow = manager->m_link2cow[element->getName()];
+      manager->contactDiscreteTest(cow, acm, collisions);
+    }
+  }
+  else
+  {
+    for (auto element: manager->m_link2cow)
+    {
+      manager->contactDiscreteTest(element.second, acm, collisions);
+    }
+  }
+
+  convertBulletCollisions(res, collisions);
+}
+
+void collision_detection::CollisionWorldBullet::checkRobotCollisionHelper(const CollisionRequest& req, CollisionResult& res,
+                                                                          const CollisionRobot& robot,
+                                                                          const robot_state::RobotState& state1,
+                                                                          const robot_state::RobotState& state2,
+                                                                          const AllowedCollisionMatrix* acm) const
+{
+  const CollisionRobotBullet& robot_bullet = dynamic_cast<const CollisionRobotBullet&>(robot);
+  BulletManagerPtr manager;
+  std::vector<collision_detection::DistanceResultsData> collisions;
+  DistanceRequest dreq;
+
+  // Right now it will get distance information within 1.0 meter
+  // Need to figure out the best way to expose this or see if bullet
+  // has a true distance request.
+  if (req.distance)
+  {
+    manager.reset(new BulletManager(1.0));
+  }
+  else
+  {
+    manager.reset(new BulletManager(0.0));
+  }
+
+  dreq.group_name = req.group_name;
+  dreq.acm = acm;
+  dreq.enableGroup(robot_bullet.getRobotModel());
+
+  robot_bullet.constructBulletObject(*manager, state1, dreq.active_components_only, true);
+  constructBulletObject(*manager, false);
+  manager->finalize();
+
+  if (dreq.active_components_only->size() > 0)
+  {
+    for (auto element: *dreq.active_components_only)
+    {
+      Eigen::Affine3d tf1 = state1.getGlobalLinkTransform(element);
+      Eigen::Affine3d tf2 = state2.getGlobalLinkTransform(element);
+      COWPtr cow = manager->m_link2cow[element->getName()];
+      manager->convexSweepTest(cow, convertEigenToBt(tf1), convertEigenToBt(tf2), acm, collisions);
+    }
+  }
+  else
+  {
+    for (auto element: manager->m_link2cow)
+    {
+      Eigen::Affine3d tf1 = state1.getGlobalLinkTransform(element.first);
+      Eigen::Affine3d tf2 = state2.getGlobalLinkTransform(element.first);
+      manager->convexSweepTest(element.second, convertEigenToBt(tf1), convertEigenToBt(tf2), acm, collisions);
+    }
+  }
+
+  convertBulletCollisions(res, collisions);
 }
 
 void collision_detection::CollisionWorldBullet::checkWorldCollision(const CollisionRequest& req, CollisionResult& res,
-                                                                 const CollisionWorld& other_world) const
+                                                                    const CollisionWorld& other_world) const
 {
   checkWorldCollisionHelper(req, res, other_world, nullptr);
 }
 
 void collision_detection::CollisionWorldBullet::checkWorldCollision(const CollisionRequest& req, CollisionResult& res,
-                                                                 const CollisionWorld& other_world,
-                                                                 const AllowedCollisionMatrix& acm) const
+                                                                    const CollisionWorld& other_world,
+                                                                    const AllowedCollisionMatrix& acm) const
 {
   checkWorldCollisionHelper(req, res, other_world, &acm);
 }
 
 void collision_detection::CollisionWorldBullet::checkWorldCollisionHelper(const CollisionRequest& req,
-                                                                       CollisionResult& res,
-                                                                       const CollisionWorld& other_world,
-                                                                       const AllowedCollisionMatrix* acm) const
+                                                                          CollisionResult& res,
+                                                                          const CollisionWorld& other_world,
+                                                                          const AllowedCollisionMatrix* acm) const
 {
-  CONSOLE_BRIDGE_logError("Bullet collision world collision world checking not yet implemented");
+  const CollisionWorldBullet& other_bullet_world = dynamic_cast<const CollisionWorldBullet&>(other_world);
+  BulletManagerPtr manager;
+  std::vector<collision_detection::DistanceResultsData> collisions;
 
-//  const CollisionWorldBullet& other_fcl_world = dynamic_cast<const CollisionWorldBullet&>(other_world);
-//  CollisionData cd(&req, &res, acm);
-//  manager_->collide(other_fcl_world.manager_.get(), &cd, &collisionCallback);
+  // Right now it will get distance information within 1.0 meter
+  // Need to figure out the best way to expose this or see if bullet
+  // has a true distance request.
+  if (req.distance)
+  {
+    manager.reset(new BulletManager(1.0));
+  }
+  else
+  {
+    manager.reset(new BulletManager(0.0));
+  }
 
-//  if (req.distance)
-//  {
-//    DistanceRequest dreq;
-//    DistanceResult dres;
+  other_bullet_world.constructBulletObject(*manager, true);
+  constructBulletObject(*manager, true);
+  manager->finalize();
 
-//    dreq.group_name = req.group_name;
-//    dreq.acm = acm;
-//    distanceWorldHelper(dreq, dres, other_world);
-//    res.distance = dres.minimum_distance.distance;
-//  }
+  for (auto element: manager->m_link2cow)
+  {
+    manager->contactDiscreteTest(element.second, acm, collisions);
+  }
+
+  convertBulletCollisions(res, collisions);
 }
 
-//void collision_detection::CollisionWorldBullet::constructFCLObject(const World::Object* obj, FCLObject& fcl_obj) const
-//{
-//  for (std::size_t i = 0; i < obj->shapes_.size(); ++i)
-//  {
-//    FCLGeometryConstPtr g = createCollisionGeometry(obj->shapes_[i], obj);
-//    if (g)
-//    {
-//      auto co = new fcl::CollisionObject(g->collision_geometry_, transform2fcl(obj->shape_poses_[i]));
-//      fcl_obj.collision_objects_.push_back(FCLCollisionObjectPtr(co));
-//      fcl_obj.collision_geometry_.push_back(g);
-//    }
-//  }
-//}
-
-//void collision_detection::CollisionWorldBullet::updateFCLObject(const std::string& id)
-//{
-  // TODO: Levi
-
-//  // remove FCL objects that correspond to this object
-//  auto jt = fcl_objs_.find(id);
-//  if (jt != fcl_objs_.end())
-//  {
-//    jt->second.unregisterFrom(manager_.get());
-//    jt->second.clear();
-//  }
-
-//  // check to see if we have this object
-//  auto it = getWorld()->find(id);
-//  if (it != getWorld()->end())
-//  {
-//    // construct FCL objects that correspond to this object
-//    if (jt != fcl_objs_.end())
-//    {
-//      constructFCLObject(it->second.get(), jt->second);
-//      jt->second.registerTo(manager_.get());
-//    }
-//    else
-//    {
-//      constructFCLObject(it->second.get(), fcl_objs_[id]);
-//      fcl_objs_[id].registerTo(manager_.get());
-//    }
-//  }
-//  else
-//  {
-//    if (jt != fcl_objs_.end())
-//      fcl_objs_.erase(jt);
-//  }
-
-//}
+void collision_detection::CollisionWorldBullet::updateBulletObject(const std::string& id)
+{
+  // check to see if we have this object
+  auto it = getWorld()->find(id);
+  if (it != getWorld()->end())
+  {
+    m_link2cow[id] = COWPtr(new COW(it->second.get()));
+  }
+  else
+  {
+    auto jt = m_link2cow.find(id);
+    if (jt != m_link2cow.end())
+      m_link2cow.erase(jt);
+  }
+}
 
 void collision_detection::CollisionWorldBullet::setWorld(const WorldPtr& world)
 {
@@ -239,40 +308,86 @@ void collision_detection::CollisionWorldBullet::notifyObjectChange(const ObjectC
 {
   if (action == World::DESTROY)
   {
-    // TODO: Levi
-//    auto it = fcl_objs_.find(obj->id_);
-//    if (it != fcl_objs_.end())
-//    {
-//      it->second.unregisterFrom(manager_.get());
-//      it->second.clear();
-//      fcl_objs_.erase(it);
-//    }
-//    cleanCollisionGeometryCache();
+    auto it = m_link2cow.find(obj->id_);
+    if (it != m_link2cow.end())
+    {
+      m_link2cow.erase(it);
+    }
   }
   else
   {
-//    updateFCLObject(obj->id_); TODO: Levi
+    updateBulletObject(obj->id_);
 //    if (action & (World::DESTROY | World::REMOVE_SHAPE))
 //      cleanCollisionGeometryCache();
   }
 }
 
 void collision_detection::CollisionWorldBullet::distanceRobotHelper(const DistanceRequest& req, DistanceResult& res,
-                                                                 const CollisionRobot& robot,
-                                                                 const robot_state::RobotState& state) const
+                                                                    const CollisionRobot& robot,
+                                                                    const robot_state::RobotState& state) const
 {
-  CONSOLE_BRIDGE_logError("Bullet collision world distance robot checking not yet implemented");
-//  const CollisionRobotFCL& robot_fcl = dynamic_cast<const CollisionRobotFCL&>(robot);
-//  FCLObject fcl_obj;
-//  robot_fcl.constructFCLObject(state, fcl_obj);
+  const CollisionRobotBullet& robot_bullet = dynamic_cast<const CollisionRobotBullet&>(robot);
+  BulletManager manager(req.distance_threshold);
+  std::vector<collision_detection::DistanceResultsData> collisions;
 
-//  DistanceData drd(&req, &res);
-//  for (std::size_t i = 0; !drd.done && i < fcl_obj.collision_objects_.size(); ++i)
-//    manager_->distance(fcl_obj.collision_objects_[i].get(), &drd, &distanceDetailedCallback);
+  robot_bullet.constructBulletObject(manager, state, req.active_components_only);
+  constructBulletObject(manager, false);
+  manager.finalize();
+
+  if (req.active_components_only->size() > 0)
+  {
+    for (auto element: *req.active_components_only)
+    {
+      COWPtr cow = manager.m_link2cow[element->getName()];
+      manager.contactDiscreteTest(cow, req.acm, collisions);
+    }
+  }
+  else
+  {
+    for (auto element: manager.m_link2cow)
+    {
+      manager.contactDiscreteTest(element.second, req.acm, collisions);
+    }
+  }
+
+  convertBulletCollisions(res, collisions, state, req.active_components_only);
 }
 
+void collision_detection::CollisionWorldBullet::distanceRobotHelper(const DistanceRequest& req, DistanceResult& res,
+                                                                    const CollisionRobot& robot,
+                                                                    const robot_state::RobotState& state1,
+                                                                    const robot_state::RobotState& state2) const
+{
+  const CollisionRobotBullet& robot_bullet = dynamic_cast<const CollisionRobotBullet&>(robot);
+  BulletManager manager(req.distance_threshold);
+  std::vector<collision_detection::DistanceResultsData> collisions;
+
+  robot_bullet.constructBulletObject(manager, state1, state2, req.active_components_only);
+  constructBulletObject(manager, false);
+  manager.finalize();
+
+  if (req.active_components_only->size() > 0)
+  {
+    for (auto element: *req.active_components_only)
+    {
+      COWPtr cow = manager.m_link2cow[element->getName()];
+      manager.contactCastTest(cow, req.acm, collisions);
+    }
+  }
+  else
+  {
+    for (auto element: manager.m_link2cow)
+    {
+      manager.contactCastTest(element.second, req.acm, collisions);
+    }
+  }
+
+  convertBulletCollisions(res, collisions, state1, req.active_components_only);
+}
+
+
 double collision_detection::CollisionWorldBullet::distanceRobot(const CollisionRobot& robot,
-                                                             const robot_state::RobotState& state, bool verbose) const
+                                                                const robot_state::RobotState& state, bool verbose) const
 {
   DistanceRequest dreq;
   DistanceResult dres;
@@ -285,8 +400,8 @@ double collision_detection::CollisionWorldBullet::distanceRobot(const CollisionR
 }
 
 double collision_detection::CollisionWorldBullet::distanceRobot(const CollisionRobot& robot,
-                                                             const robot_state::RobotState& state,
-                                                             const AllowedCollisionMatrix& acm, bool verbose) const
+                                                                const robot_state::RobotState& state,
+                                                                const AllowedCollisionMatrix& acm, bool verbose) const
 {
   DistanceRequest dreq;
   DistanceResult dres;
@@ -300,19 +415,18 @@ double collision_detection::CollisionWorldBullet::distanceRobot(const CollisionR
 }
 
 void collision_detection::CollisionWorldBullet::distanceRobot(const DistanceRequest& req, DistanceResult& res,
-                                                           const CollisionRobot& robot,
-                                                           const robot_state::RobotState& state) const
+                                                              const CollisionRobot& robot,
+                                                              const robot_state::RobotState& state) const
 {
   distanceRobotHelper(req, res, robot, state);
 }
 
 void collision_detection::CollisionWorldBullet::distanceRobot(const DistanceRequest& req, DistanceResult& res,
-                                                           const CollisionRobot& robot,
-                                                           const robot_state::RobotState& state1,
-                                                           const robot_state::RobotState& state2) const
+                                                              const CollisionRobot& robot,
+                                                              const robot_state::RobotState& state1,
+                                                              const robot_state::RobotState& state2) const
 {
-  CONSOLE_BRIDGE_logError("Bullet collision world distance robot continuous checking not yet implemented");
-//  distanceRobotHelper(req, res, robot, state1, state2);
+  distanceRobotHelper(req, res, robot, state1, state2);
 }
 
 double collision_detection::CollisionWorldBullet::distanceWorld(const CollisionWorld& world, bool verbose) const
@@ -327,7 +441,7 @@ double collision_detection::CollisionWorldBullet::distanceWorld(const CollisionW
 }
 
 double collision_detection::CollisionWorldBullet::distanceWorld(const CollisionWorld& world,
-                                                             const AllowedCollisionMatrix& acm, bool verbose) const
+                                                                const AllowedCollisionMatrix& acm, bool verbose) const
 {
   DistanceRequest dreq;
   DistanceResult dres;
@@ -340,16 +454,26 @@ double collision_detection::CollisionWorldBullet::distanceWorld(const CollisionW
 }
 
 void collision_detection::CollisionWorldBullet::distanceWorld(const DistanceRequest& req, DistanceResult& res,
-                                                           const CollisionWorld& world) const
+                                                              const CollisionWorld& world) const
 {
   distanceWorldHelper(req, res, world);
 }
 
 void collision_detection::CollisionWorldBullet::distanceWorldHelper(const DistanceRequest& req, DistanceResult& res,
-                                                                 const CollisionWorld& world) const
+                                                                    const CollisionWorld& world) const
 {
-  CONSOLE_BRIDGE_logError("Bullet collision world distance world checking not yet implemented");
-//  const CollisionWorldBullet& other_fcl_world = dynamic_cast<const CollisionWorldBullet&>(world);
-//  DistanceData drd(&req, &res);
-//  manager_->distance(other_fcl_world.manager_.get(), &drd, &distanceDetailedCallback);
+  const CollisionWorldBullet& other_bullet_world = dynamic_cast<const CollisionWorldBullet&>(world);
+  BulletManager manager(req.distance_threshold);
+  std::vector<collision_detection::DistanceResultsData> collisions;
+
+  other_bullet_world.constructBulletObject(manager, true);
+  constructBulletObject(manager, true);
+  manager.finalize();
+
+  for (auto element: manager.m_link2cow)
+  {
+    manager.contactDiscreteTest(element.second, req.acm, collisions);
+  }
+
+  convertBulletCollisions(res, collisions);
 }

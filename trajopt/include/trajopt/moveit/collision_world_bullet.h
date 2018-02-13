@@ -94,25 +94,29 @@ public:
 protected:
   void checkWorldCollisionHelper(const CollisionRequest& req, CollisionResult& res, const CollisionWorld& other_world,
                                  const AllowedCollisionMatrix* acm) const;
+
   void checkRobotCollisionHelper(const CollisionRequest& req, CollisionResult& res, const CollisionRobot& robot,
                                  const robot_state::RobotState& state, const AllowedCollisionMatrix* acm) const;
+  void checkRobotCollisionHelper(const CollisionRequest& req, CollisionResult& res, const CollisionRobot& robot,
+                                 const robot_state::RobotState& state1, const robot_state::RobotState& state2,
+                                 const AllowedCollisionMatrix* acm) const;
 
   void distanceRobotHelper(const DistanceRequest& req, DistanceResult& res, const CollisionRobot& robot,
                            const robot_state::RobotState& state) const;
+  void distanceRobotHelper(const DistanceRequest& req, DistanceResult& res, const CollisionRobot& robot,
+                           const robot_state::RobotState& state1, const robot_state::RobotState& state2) const;
 
   void distanceWorldHelper(const DistanceRequest& req, DistanceResult& res, const CollisionWorld& world) const;
 
-//  void constructFCLObject(const World::Object* obj, FCLObject& fcl_obj) const;
-//  void updateFCLObject(const std::string& id);
+  void constructBulletObject(BulletManager& manager, bool allow_static2static = false) const;
+  void updateBulletObject(const std::string& id);
 
-//  std::unique_ptr<fcl::BroadPhaseCollisionManager> manager_;
-//  std::map<std::string, FCLObject> fcl_objs_;
+  Link2ConstCow m_link2cow;
 
 private:
   void initialize();
   void notifyObjectChange(const ObjectConstPtr& obj, World::Action action);
   World::ObserverHandle observer_handle_;
-  Link2ConstCow m_link2cow;
 
 };
 }

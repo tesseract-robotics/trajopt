@@ -80,84 +80,105 @@ btTransform convertEigenToBt(const Eigen::Affine3d& t)
   return btTransform(convertEigenToBt(q), convertEigenToBt(t.translation()));
 }
 
-//struct CollisionGeometryData
-//{
-//  CollisionGeometryData(const robot_model::LinkModel* link, int index) : type(BodyTypes::ROBOT_LINK), shape_index(index)
-//  {
-//    ptr.link = link;
-//  }
+inline
+void convertBulletCollisions(collision_detection::DistanceResult &moveit_dr,
+                             const std::vector<collision_detection::DistanceResultsData> &collisions,
+                             const robot_state::RobotState &state,
+                             const std::set<const robot_model::LinkModel*>* active_components_only)
+{
+  for (auto collision: collisions)
+  {
+    if (collision.distance < moveit_dr.minimum_distance.distance)
+    {
+      moveit_dr.minimum_distance = collision;
+    }
 
-//  CollisionGeometryData(const robot_state::AttachedBody* ab, int index)
-//    : type(BodyTypes::ROBOT_ATTACHED), shape_index(index)
-//  {
-//    ptr.ab = ab;
-//  }
+    if (collision.distance <= 0.0)
+    {
+      moveit_dr.collision = true;
+    }
 
-//  CollisionGeometryData(const World::Object* obj, int index) : type(BodyTypes::WORLD_OBJECT), shape_index(index)
-//  {
-//    ptr.obj = obj;
-//  }
+    if (active_components_only->size() > 0)
+    {
+      if (active_components_only->find(state.getLinkModel(collision.link_names[0])) != active_components_only->end())
+      {
+        moveit_dr.distances[collision.link_names[0]] = collision;
+      }
 
-//  const std::string& getID() const
-//  {
-//    switch (type)
-//    {
-//      case BodyTypes::ROBOT_LINK:
-//        return ptr.link->getName();
-//      case BodyTypes::ROBOT_ATTACHED:
-//        return ptr.ab->getName();
-//      default:
-//        break;
-//    }
-//    return ptr.obj->id_;
-//  }
+      if (active_components_only->find(state.getLinkModel(collision.link_names[1])) != active_components_only->end())
+      {
+        moveit_dr.distances[collision.link_names[1]] = collision;
+      }
+    }
+    else
+    {
+      moveit_dr.distances[collision.link_names[0]] = collision;
+      moveit_dr.distances[collision.link_names[1]] = collision;
+    }
+  }
+}
 
-//  std::string getTypeString() const
-//  {
-//    switch (type)
-//    {
-//      case BodyTypes::ROBOT_LINK:
-//        return "Robot link";
-//      case BodyTypes::ROBOT_ATTACHED:
-//        return "Robot attached";
-//      default:
-//        break;
-//    }
-//    return "Object";
-//  }
+inline
+void convertBulletCollisions(collision_detection::DistanceResult &moveit_dr,
+                             const std::vector<collision_detection::DistanceResultsData> &collisions)
+{
+  for (auto collision: collisions)
+  {
+    if (collision.distance < moveit_dr.minimum_distance.distance)
+    {
+      moveit_dr.minimum_distance = collision;
+    }
 
-//  /** \brief Check if two CollisionGeometryData objects point to the same source object */
-//  bool sameObject(const CollisionGeometryData& other) const
-//  {
-//    return type == other.type && ptr.raw == other.ptr.raw;
-//  }
+    if (collision.distance <= 0.0)
+    {
+      moveit_dr.collision = true;
+    }
 
-//  BodyType type;
-//  union
-//  {
-//    const robot_model::LinkModel* link;
-//    const robot_state::AttachedBody* ab;
-//    const World::Object* obj;
-//    const void* raw;
-//  } ptr;
-//};
+    moveit_dr.distances[collision.link_names[0]] = collision;
+    moveit_dr.distances[collision.link_names[1]] = collision;
+  }
+}
+
+inline
+void convertBulletCollisions(collision_detection::CollisionResult &moveit_cr,
+                             const std::vector<collision_detection::DistanceResultsData> &collisions)
+{
+  if (!collisions.empty())
+  {
+    for (auto collision: collisions)
+    {
+      if (collision.distance <= 0.0)
+      {
+        moveit_cr.collision = true;
+        collision_detection::Contact c;
+        const std::pair<std::string, std::string>& pc = collision.link_names[0] < collision.link_names[1] ?
+                                                            std::make_pair(collision.link_names[0], collision.link_names[1]) :
+                                                            std::make_pair(collision.link_names[1], collision.link_names[0]);
+        c.depth = collision.distance;
+        c.normal = collision.normal;
+        c.body_name_1 = collision.link_names[0];
+        c.body_name_2 = collision.link_names[1];
+
+        // TODO: This needs to be update for attached objects.
+        c.body_type_1 = BodyTypes::ROBOT_LINK;
+        c.body_type_2 = BodyTypes::ROBOT_LINK;
+
+
+        moveit_cr.contacts[pc].push_back(c);
+        moveit_cr.contact_count++;
+      }
+    }
+  }
+}
+
 
 class CollisionObjectWrapper : public btCollisionObject {
 public:
-  CollisionObjectWrapper(const robot_model::LinkModel* link) : m_type(BodyTypes::ROBOT_LINK), m_index(-1)
-  {
-    ptr.m_link = link;
-  }
+  CollisionObjectWrapper(const robot_model::LinkModel* link);
 
-  CollisionObjectWrapper(const robot_state::AttachedBody* ab) : m_type(BodyTypes::ROBOT_ATTACHED), m_index(-1)
-  {
-    ptr.m_ab = ab;
-  }
+  CollisionObjectWrapper(const robot_state::AttachedBody* ab);
 
-  CollisionObjectWrapper(const World::Object* obj) : m_type(BodyTypes::WORLD_OBJECT), m_index(-1)
-  {
-    ptr.m_obj = obj;
-  }
+  CollisionObjectWrapper(const World::Object* obj);
 
   std::vector<boost::shared_ptr<void>> m_data;
 
@@ -237,14 +258,20 @@ public:
   }
 
   template<class T>
-  void manage(T* t) { // manage memory of this object
+  void manage(T* t)
+  { // manage memory of this object
     m_data.push_back(boost::shared_ptr<T>(t));
   }
   template<class T>
-  void manage(boost::shared_ptr<T> t) {
+  void manage(boost::shared_ptr<T> t)
+  {
     m_data.push_back(t);
   }
+
+private:
+  void initialize(const std::vector<shapes::ShapeConstPtr> &shapes, const EigenSTL::vector_Affine3d &transforms);
 };
+
 typedef CollisionObjectWrapper COW;
 typedef boost::shared_ptr<CollisionObjectWrapper> COWPtr;
 typedef boost::shared_ptr<const CollisionObjectWrapper> COWConstPtr;
@@ -370,13 +397,6 @@ struct CollisionCollector : public btCollisionWorld::ContactResultCallback
   }
   bool needsCollision(btBroadphaseProxy* proxy0) const
   {
-//    bool check1 = (proxy0->m_collisionFilterGroup & m_collisionFilterMask);
-//    bool check2 = (m_collisionFilterGroup & proxy0->m_collisionFilterMask);
-//    bool check3 = canCollide(m_cow.get(), static_cast<CollisionObjectWrapper*>(proxy0->m_clientObject));
-
-
-//    return check1 && check2 && check3;
-
     return (proxy0->m_collisionFilterGroup & m_collisionFilterMask)
         && (m_collisionFilterGroup & proxy0->m_collisionFilterMask)
         && isCollisionAllowed(m_cow.get(), static_cast<CollisionObjectWrapper*>(proxy0->m_clientObject), m_acm, m_verbose);
@@ -417,13 +437,6 @@ struct SweepCollisionCollector : public btCollisionWorld::ClosestConvexResultCal
 
   bool needsCollision(btBroadphaseProxy* proxy0) const
   {
-//    bool check1 = (proxy0->m_collisionFilterGroup & m_collisionFilterMask);
-//    bool check2 = (m_collisionFilterGroup & proxy0->m_collisionFilterMask);
-//    bool check3 = canCollide(m_cow.get(), static_cast<CollisionObjectWrapper*>(proxy0->m_clientObject));
-
-
-//    return check1 && check2 && check3;
-
     return (proxy0->m_collisionFilterGroup & m_collisionFilterMask)
         && (m_collisionFilterGroup & proxy0->m_collisionFilterMask)
         && isCollisionAllowed(m_cow.get(), static_cast<CollisionObjectWrapper*>(proxy0->m_clientObject), m_acm, m_verbose);
@@ -739,6 +752,7 @@ struct BulletManager
     m_coll_config->getCollisionAlgorithmCreateFunc(CONVEX_SHAPE_PROXYTYPE, CONVEX_SHAPE_PROXYTYPE));
     m_dispatcher->setNearCallback(&nearCallback);
     m_contact_distance = contact_distance;
+    m_finalized = false;
   }
 
   ~BulletManager()
@@ -751,24 +765,28 @@ struct BulletManager
 
   void contactDiscreteTest(const COWPtr cow, const AllowedCollisionMatrix *acm, std::vector<collision_detection::DistanceResultsData>& collisions)
   {
+    assert(m_finalized);
     CollisionCollector cc(collisions, cow, acm, m_contact_distance);
     m_world->contactTest(cow.get(), cc);
   }
 
   void contactCastTest(const COWPtr cow, const AllowedCollisionMatrix *acm, std::vector<collision_detection::DistanceResultsData>& collisions)
   {
+    assert(m_finalized);
     CastCollisionCollector cc(collisions, cow, acm, m_contact_distance);
     m_world->contactTest(cow.get(), cc);
   }
 
   void contactCastTestOriginal(const std::string &link_name, const btTransform &tf1, const btTransform &tf2,  const AllowedCollisionMatrix *acm, std::vector<collision_detection::DistanceResultsData>& collisions)
   {
+    assert(m_finalized);
     COWPtr cow = m_link2cow[link_name];
     convexCastTestHelper(cow, cow->getCollisionShape(), tf1, tf2, acm, collisions);
   }
 
   void convexSweepTest(const COWPtr cow, const btTransform &tf1, const btTransform &tf2, const AllowedCollisionMatrix *acm, std::vector<collision_detection::DistanceResultsData>& collisions)
   {
+    assert(m_finalized);
     SweepCollisionCollector cc(collisions, cow, acm);
     convexSweepTestHelper(cow->getCollisionShape(), tf1, tf2, cc);
   }
@@ -785,6 +803,8 @@ struct BulletManager
     }
     btCollisionDispatcher* dispatcher = static_cast<btCollisionDispatcher*>(m_world->getDispatcher());
     dispatcher->setDispatcherFlags(dispatcher->getDispatcherFlags() & ~btCollisionDispatcher::CD_USE_RELATIVE_CONTACT_BREAKING_THRESHOLD);
+
+    m_finalized = true;
   }
 
   double getContactDistance() const
@@ -795,6 +815,7 @@ struct BulletManager
 private:
 
   double m_contact_distance;
+  bool m_finalized;
 
   void convexCastTestHelper(collision_detection::COWPtr cow, btCollisionShape* shape, const btTransform& tf0, const btTransform& tf1,
                             const collision_detection::AllowedCollisionMatrix *acm, std::vector<collision_detection::DistanceResultsData>& collisions)

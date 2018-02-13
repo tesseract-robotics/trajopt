@@ -48,14 +48,11 @@ collision_detection::CollisionRobotBullet::CollisionRobotBullet(const robot_mode
 
   const std::vector<const robot_model::LinkModel*>& links = robot_model_->getLinkModelsWithCollisionGeometry();
   // we keep the same order of objects as what RobotState *::getLinkState() returns
-  bool useTrimesh;
   for (auto link : links)
   {
     if (link->getShapes().size() > 0)
     {
-      useTrimesh = false;
-
-      COWPtr new_cow = CollisionObjectFromLink(link, useTrimesh);
+      COWPtr new_cow(new COW(link));
       if (new_cow)
       {
         new_cow->setContactProcessingThreshold(BULLET_DEFAULT_USE_ORIGINAL_CAST);
@@ -136,7 +133,6 @@ void collision_detection::CollisionRobotBullet::constructBulletObject(BulletMana
 //  }
 
   // TODO: This should probably be moved
-  manager.finalize();
 }
 
 void collision_detection::CollisionRobotBullet::constructBulletObject(BulletManager& manager,
@@ -245,7 +241,6 @@ void collision_detection::CollisionRobotBullet::constructBulletObject(BulletMana
 //  }
 
   // TODO: This should probably be moved
-  manager.finalize();
 }
 
 void collision_detection::CollisionRobotBullet::checkSelfCollision(const CollisionRequest& req, CollisionResult& res,
@@ -289,6 +284,7 @@ void collision_detection::CollisionRobotBullet::checkSelfCollisionHelper(const C
   dreq.enableGroup(getRobotModel());
 
   constructBulletObject(manager, state, dreq.active_components_only);
+  manager.finalize();
 
   if (dreq.active_components_only->size() > 0)
   {
@@ -306,32 +302,7 @@ void collision_detection::CollisionRobotBullet::checkSelfCollisionHelper(const C
     }
   }
 
-  if (!collisions.empty())
-  {
-    res.collision = true;
-
-    for (auto collision: collisions)
-    {
-      collision_detection::Contact c;
-      const std::pair<std::string, std::string>& pc = collision.link_names[0] < collision.link_names[1] ?
-                                                          std::make_pair(collision.link_names[0], collision.link_names[1]) :
-                                                          std::make_pair(collision.link_names[1], collision.link_names[0]);
-
-      c.depth = collision.distance;
-      c.normal = collision.normal;
-      c.body_name_1 = collision.link_names[0];
-      c.body_name_2 = collision.link_names[1];
-
-      // TODO: This needs to be update for attached objects.
-      c.body_type_1 = BodyTypes::ROBOT_LINK;
-      c.body_type_2 = BodyTypes::ROBOT_LINK;
-
-
-      res.contacts[pc].push_back(c);
-      res.contact_count++;
-    }
-  }
-
+  convertBulletCollisions(res, collisions);
 }
 
 void collision_detection::CollisionRobotBullet::checkSelfCollisionHelper(const CollisionRequest& req, CollisionResult& res,
@@ -347,6 +318,7 @@ void collision_detection::CollisionRobotBullet::checkSelfCollisionHelper(const C
   dreq.enableGroup(getRobotModel());
 
   constructBulletObject(manager, state1, dreq.active_components_only, true);
+  manager.finalize();
 
   if (dreq.active_components_only->size() > 0)
   {
@@ -368,32 +340,7 @@ void collision_detection::CollisionRobotBullet::checkSelfCollisionHelper(const C
     }
   }
 
-  if (!collisions.empty())
-  {
-    res.collision = true;
-
-    for (auto collision: collisions)
-    {
-      collision_detection::Contact c;
-      const std::pair<std::string, std::string>& pc = collision.link_names[0] < collision.link_names[1] ?
-                                                          std::make_pair(collision.link_names[0], collision.link_names[1]) :
-                                                          std::make_pair(collision.link_names[1], collision.link_names[0]);
-
-      c.depth = collision.distance;
-      c.normal = collision.normal;
-      c.pos = collision.nearest_points[0];
-
-      c.body_name_1 = collision.link_names[0];
-      c.body_name_2 = collision.link_names[1];
-
-      // TODO: This needs to be update for attached objects.
-      c.body_type_1 = BodyTypes::ROBOT_LINK;
-      c.body_type_2 = BodyTypes::ROBOT_LINK;
-
-      res.contacts[pc].push_back(c);
-      res.contact_count++;
-    }
-  }
+  convertBulletCollisions(res, collisions);
 }
 
 void collision_detection::CollisionRobotBullet::checkOtherCollision(const CollisionRequest& req, CollisionResult& res,
@@ -535,6 +482,7 @@ void collision_detection::CollisionRobotBullet::distanceSelfHelper(const Distanc
   std::vector<collision_detection::DistanceResultsData> collisions;
 
   constructBulletObject(manager, state, req.active_components_only);
+  manager.finalize();
 
   if (req.active_components_only->size() > 0)
   {
@@ -552,36 +500,7 @@ void collision_detection::CollisionRobotBullet::distanceSelfHelper(const Distanc
     }
   }
 
-  for (auto collision: collisions)
-  {
-    if (collision.distance < res.minimum_distance.distance)
-    {
-      res.minimum_distance = collision;
-    }
-
-    if (collision.distance <= 0.0)
-    {
-      res.collision = true;
-    }
-
-    if (req.active_components_only->size() > 0)
-    {
-      if (req.active_components_only->find(state.getLinkModel(collision.link_names[0])) != req.active_components_only->end())
-      {
-        res.distances[collision.link_names[0]] = collision;
-      }
-
-      if (req.active_components_only->find(state.getLinkModel(collision.link_names[1])) != req.active_components_only->end())
-      {
-        res.distances[collision.link_names[1]] = collision;
-      }
-    }
-    else
-    {
-      res.distances[collision.link_names[0]] = collision;
-      res.distances[collision.link_names[1]] = collision;
-    }
-  }
+  convertBulletCollisions(res, collisions, state, req.active_components_only);
 }
 
 void collision_detection::CollisionRobotBullet::distanceSelfHelper(const DistanceRequest& req, DistanceResult& res,
@@ -591,6 +510,7 @@ void collision_detection::CollisionRobotBullet::distanceSelfHelper(const Distanc
   std::vector<collision_detection::DistanceResultsData> collisions;
 
   constructBulletObject(manager, state1, state2, req.active_components_only);
+  manager.finalize();
 
   if (req.active_components_only->size() > 0)
   {
@@ -608,36 +528,7 @@ void collision_detection::CollisionRobotBullet::distanceSelfHelper(const Distanc
     }
   }
 
-  for (auto collision: collisions)
-  {
-    if (collision.distance < res.minimum_distance.distance)
-    {
-      res.minimum_distance = collision;
-    }
-
-    if (collision.distance <= 0.0)
-    {
-      res.collision = true;
-    }
-
-    if (req.active_components_only->size() > 0)
-    {
-      if (req.active_components_only->find(state1.getLinkModel(collision.link_names[0])) != req.active_components_only->end())
-      {
-        res.distances[collision.link_names[0]] = collision;
-      }
-
-      if (req.active_components_only->find(state1.getLinkModel(collision.link_names[1])) != req.active_components_only->end())
-      {
-        res.distances[collision.link_names[1]] = collision;
-      }
-    }
-    else
-    {
-      res.distances[collision.link_names[0]] = collision;
-      res.distances[collision.link_names[1]] = collision;
-    }
-  }
+  convertBulletCollisions(res, collisions, state1, req.active_components_only);
 }
 
 void collision_detection::CollisionRobotBullet::distanceSelfHelperOriginal(const DistanceRequest& req, DistanceResult& res,
@@ -647,6 +538,7 @@ void collision_detection::CollisionRobotBullet::distanceSelfHelperOriginal(const
   std::vector<collision_detection::DistanceResultsData> collisions;
 
   constructBulletObject(manager, state1, req.active_components_only, true);
+  manager.finalize();
 
   if (req.active_components_only->size() > 0)
   {
@@ -668,36 +560,7 @@ void collision_detection::CollisionRobotBullet::distanceSelfHelperOriginal(const
     }
   }
 
-  for (auto collision: collisions)
-  {
-    if (collision.distance < res.minimum_distance.distance)
-    {
-      res.minimum_distance = collision;
-    }
-
-    if (collision.distance <= 0.0)
-    {
-      res.collision = true;
-    }
-
-    if (req.active_components_only->size() > 0)
-    {
-      if (req.active_components_only->find(state1.getLinkModel(collision.link_names[0])) != req.active_components_only->end())
-      {
-        res.distances[collision.link_names[0]] = collision;
-      }
-
-      if (req.active_components_only->find(state1.getLinkModel(collision.link_names[1])) != req.active_components_only->end())
-      {
-        res.distances[collision.link_names[1]] = collision;
-      }
-    }
-    else
-    {
-      res.distances[collision.link_names[0]] = collision;
-      res.distances[collision.link_names[1]] = collision;
-    }
-  }
+  convertBulletCollisions(res, collisions, state1, req.active_components_only);
 }
 
 double collision_detection::CollisionRobotBullet::distanceOther(const robot_state::RobotState& state,
