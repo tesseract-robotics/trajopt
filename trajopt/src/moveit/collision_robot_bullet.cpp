@@ -59,7 +59,7 @@ collision_detection::CollisionRobotBullet::CollisionRobotBullet(const robot_mode
       if (new_cow)
       {
         new_cow->setContactProcessingThreshold(BULLET_DEFAULT_USE_ORIGINAL_CAST);
-        m_link2cow[link] = new_cow;
+        m_link2cow[new_cow->getID()] = new_cow;
         logDebug("Added collision object for link %s", link->getName().c_str());
       }
       else
@@ -91,7 +91,7 @@ collision_detection::CollisionRobotBullet::CollisionRobotBullet(const CollisionR
 void collision_detection::CollisionRobotBullet::constructBulletObject(BulletManager& manager, const robot_state::RobotState& state, const std::set<const robot_model::LinkModel*> *active_links, bool continuous) const
 {
 
-  for (std::pair<const robot_model::LinkModel*, COWConstPtr> element : m_link2cow)
+  for (std::pair<std::string, COWConstPtr> element : m_link2cow)
   {
     COWPtr new_cow(new COW(*(element.second.get())));
     assert(new_cow->getCollisionShape());
@@ -102,7 +102,7 @@ void collision_detection::CollisionRobotBullet::constructBulletObject(BulletMana
     new_cow->setWorldTransform(convertEigenToBt(tf));
 
     // For descrete checks we can check static to kinematic and kinematic to kinematic
-    new_cow->m_collisionFilterGroup = (active_links && (active_links->find(element.first) == active_links->end())) ? btBroadphaseProxy::StaticFilter : btBroadphaseProxy::KinematicFilter;
+    new_cow->m_collisionFilterGroup = (active_links && (std::find_if(active_links->begin(), active_links->end(), [&](const robot_model::LinkModel* link) { return link->getName() == element.first; }) == active_links->end())) ? btBroadphaseProxy::StaticFilter : btBroadphaseProxy::KinematicFilter;
     if (new_cow->m_collisionFilterGroup == btBroadphaseProxy::StaticFilter)
     {
       new_cow->m_collisionFilterMask = btBroadphaseProxy::KinematicFilter;
@@ -144,13 +144,13 @@ void collision_detection::CollisionRobotBullet::constructBulletObject(BulletMana
                                                                       const robot_state::RobotState& state2,
                                                                       const std::set<const robot_model::LinkModel*> *active_links) const
 {
-  for (std::pair<const robot_model::LinkModel*, COWConstPtr> element : m_link2cow)
+  for (std::pair<std::string, COWConstPtr> element : m_link2cow)
   {
     COWPtr new_cow(new COW(*(element.second.get())));
 //    COWPtr new_cow(new COW(element.second->m_link));
 //    new_cow->m_index = element.second->m_index;
 
-    new_cow->m_collisionFilterGroup = (active_links && (active_links->find(element.first) == active_links->end())) ? btBroadphaseProxy::StaticFilter : btBroadphaseProxy::KinematicFilter;
+    new_cow->m_collisionFilterGroup = (active_links && (std::find_if(active_links->begin(), active_links->end(), [&](const robot_model::LinkModel* link) { return link->getName() == element.first; }) == active_links->end())) ? btBroadphaseProxy::StaticFilter : btBroadphaseProxy::KinematicFilter;
 
     if (new_cow->m_collisionFilterGroup == btBroadphaseProxy::StaticFilter)
     {
@@ -294,7 +294,7 @@ void collision_detection::CollisionRobotBullet::checkSelfCollisionHelper(const C
   {
     for (auto element: *dreq.active_components_only)
     {
-      COWPtr cow = manager.m_link2cow[element];
+      COWPtr cow = manager.m_link2cow[element->getName()];
       manager.contactDiscreteTest(cow, acm, collisions);
     }
   }
@@ -354,7 +354,7 @@ void collision_detection::CollisionRobotBullet::checkSelfCollisionHelper(const C
     {
       Eigen::Affine3d tf1 = state1.getGlobalLinkTransform(element);
       Eigen::Affine3d tf2 = state2.getGlobalLinkTransform(element);
-      COWPtr cow = manager.m_link2cow[element];
+      COWPtr cow = manager.m_link2cow[element->getName()];
       manager.convexSweepTest(cow, convertEigenToBt(tf1), convertEigenToBt(tf2), acm, collisions);
     }
   }
@@ -540,7 +540,7 @@ void collision_detection::CollisionRobotBullet::distanceSelfHelper(const Distanc
   {
     for (auto element: *req.active_components_only)
     {
-      COWPtr cow = manager.m_link2cow[element];
+      COWPtr cow = manager.m_link2cow[element->getName()];
       manager.contactDiscreteTest(cow, req.acm, collisions);
     }
   }
@@ -596,7 +596,7 @@ void collision_detection::CollisionRobotBullet::distanceSelfHelper(const Distanc
   {
     for (auto element: *req.active_components_only)
     {
-      COWPtr cow = manager.m_link2cow[element];
+      COWPtr cow = manager.m_link2cow[element->getName()];
       manager.contactCastTest(cow, req.acm, collisions);
     }
   }
@@ -655,7 +655,7 @@ void collision_detection::CollisionRobotBullet::distanceSelfHelperOriginal(const
       btTransform tf1 = convertEigenToBt(state1.getGlobalLinkTransform(element));
       btTransform tf2 = convertEigenToBt(state2.getGlobalLinkTransform(element));
 
-      manager.contactCastTestOriginal(element, tf1, tf2, req.acm, collisions);
+      manager.contactCastTestOriginal(element->getName(), tf1, tf2, req.acm, collisions);
     }
   }
   else

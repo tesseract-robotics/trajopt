@@ -80,15 +80,162 @@ btTransform convertEigenToBt(const Eigen::Affine3d& t)
   return btTransform(convertEigenToBt(q), convertEigenToBt(t.translation()));
 }
 
+//struct CollisionGeometryData
+//{
+//  CollisionGeometryData(const robot_model::LinkModel* link, int index) : type(BodyTypes::ROBOT_LINK), shape_index(index)
+//  {
+//    ptr.link = link;
+//  }
+
+//  CollisionGeometryData(const robot_state::AttachedBody* ab, int index)
+//    : type(BodyTypes::ROBOT_ATTACHED), shape_index(index)
+//  {
+//    ptr.ab = ab;
+//  }
+
+//  CollisionGeometryData(const World::Object* obj, int index) : type(BodyTypes::WORLD_OBJECT), shape_index(index)
+//  {
+//    ptr.obj = obj;
+//  }
+
+//  const std::string& getID() const
+//  {
+//    switch (type)
+//    {
+//      case BodyTypes::ROBOT_LINK:
+//        return ptr.link->getName();
+//      case BodyTypes::ROBOT_ATTACHED:
+//        return ptr.ab->getName();
+//      default:
+//        break;
+//    }
+//    return ptr.obj->id_;
+//  }
+
+//  std::string getTypeString() const
+//  {
+//    switch (type)
+//    {
+//      case BodyTypes::ROBOT_LINK:
+//        return "Robot link";
+//      case BodyTypes::ROBOT_ATTACHED:
+//        return "Robot attached";
+//      default:
+//        break;
+//    }
+//    return "Object";
+//  }
+
+//  /** \brief Check if two CollisionGeometryData objects point to the same source object */
+//  bool sameObject(const CollisionGeometryData& other) const
+//  {
+//    return type == other.type && ptr.raw == other.ptr.raw;
+//  }
+
+//  BodyType type;
+//  union
+//  {
+//    const robot_model::LinkModel* link;
+//    const robot_state::AttachedBody* ab;
+//    const World::Object* obj;
+//    const void* raw;
+//  } ptr;
+//};
+
 class CollisionObjectWrapper : public btCollisionObject {
 public:
-  CollisionObjectWrapper(const robot_model::LinkModel* link) : m_link(link), m_index(-1) {}
+  CollisionObjectWrapper(const robot_model::LinkModel* link) : m_type(BodyTypes::ROBOT_LINK), m_index(-1)
+  {
+    ptr.m_link = link;
+  }
+
+  CollisionObjectWrapper(const robot_state::AttachedBody* ab) : m_type(BodyTypes::ROBOT_ATTACHED), m_index(-1)
+  {
+    ptr.m_ab = ab;
+  }
+
+  CollisionObjectWrapper(const World::Object* obj) : m_type(BodyTypes::WORLD_OBJECT), m_index(-1)
+  {
+    ptr.m_obj = obj;
+  }
+
   std::vector<boost::shared_ptr<void>> m_data;
-  const robot_model::LinkModel* m_link;
+
   short int	m_collisionFilterGroup;
   short int	m_collisionFilterMask;
 
   int m_index; // index into collision matrix
+  BodyType m_type;
+  union
+  {
+    const robot_model::LinkModel* m_link;
+    const robot_state::AttachedBody* m_ab;
+    const World::Object* m_obj;
+    const void* raw;
+  } ptr;
+
+  const std::string& getID() const
+  {
+    switch (m_type)
+    {
+      case BodyTypes::ROBOT_LINK:
+        return ptr.m_link->getName();
+      case BodyTypes::ROBOT_ATTACHED:
+        return ptr.m_ab->getName();
+      default:
+        break;
+    }
+    return ptr.m_obj->id_;
+  }
+
+  std::string getTypeString() const
+  {
+    switch (m_type)
+    {
+      case BodyTypes::ROBOT_LINK:
+        return "Robot link";
+      case BodyTypes::ROBOT_ATTACHED:
+        return "Robot attached";
+      default:
+        break;
+    }
+    return "Object";
+  }
+
+  boost::shared_ptr<CollisionObjectWrapper> clone()
+  {
+    switch (m_type)
+    {
+      case BodyTypes::ROBOT_LINK:
+      {
+        boost::shared_ptr<CollisionObjectWrapper> cow(new CollisionObjectWrapper(ptr.m_link));
+        cow->m_collisionFilterGroup = m_collisionFilterGroup;
+        cow->m_collisionFilterMask = m_collisionFilterMask;
+        return cow;
+      }
+      case BodyTypes::ROBOT_ATTACHED:
+      {
+        boost::shared_ptr<CollisionObjectWrapper> cow(new CollisionObjectWrapper(ptr.m_ab));
+        cow->m_collisionFilterGroup = m_collisionFilterGroup;
+        cow->m_collisionFilterMask = m_collisionFilterMask;
+        return cow;
+      }
+      default:
+      {
+        boost::shared_ptr<CollisionObjectWrapper> cow(new CollisionObjectWrapper(ptr.m_obj));
+        cow->m_collisionFilterGroup = m_collisionFilterGroup;
+        cow->m_collisionFilterMask = m_collisionFilterMask;
+        return cow;
+      }
+    }
+  }
+
+  /** \brief Check if two CollisionGeometryData objects point to the same source object */
+  bool sameObject(const CollisionObjectWrapper& other) const
+  {
+    return m_type == other.m_type && ptr.raw == other.ptr.raw;
+  }
+
   template<class T>
   void manage(T* t) { // manage memory of this object
     m_data.push_back(boost::shared_ptr<T>(t));
@@ -101,11 +248,11 @@ public:
 typedef CollisionObjectWrapper COW;
 typedef boost::shared_ptr<CollisionObjectWrapper> COWPtr;
 typedef boost::shared_ptr<const CollisionObjectWrapper> COWConstPtr;
-typedef std::map<const robot_model::LinkModel*, COWPtr> Link2Cow;
-typedef std::map<const robot_model::LinkModel*, COWConstPtr> Link2ConstCow;
+typedef std::map<std::string, COWPtr> Link2Cow;
+typedef std::map<std::string, COWConstPtr> Link2ConstCow;
 
-inline const robot_model::LinkModel* getLink(const btCollisionObject* o) {
-  return static_cast<const CollisionObjectWrapper*>(o)->m_link;
+inline const std::string getCollisionObjectID(const btCollisionObject* o) {
+  return static_cast<const CollisionObjectWrapper*>(o)->getID();
 }
 
 inline void nearCallback(btBroadphasePair& collisionPair,
@@ -122,10 +269,11 @@ inline void nearCallback(btBroadphasePair& collisionPair,
 
 inline bool isCollisionAllowed(const COW* cow0, const COW* cow1, const AllowedCollisionMatrix* acm, bool verbose = false)
 {
-  const robot_model::LinkModel* linkA = cow0->m_link;
-  const robot_model::LinkModel* linkB = cow1->m_link;
 
-  assert(linkA != linkB);
+  if (cow0->sameObject(*cow1))
+  {
+    return false;
+  }
 
   // use the collision matrix (if any) to avoid certain collision checks
   DecideContactFn dcf;
@@ -133,7 +281,7 @@ inline bool isCollisionAllowed(const COW* cow0, const COW* cow1, const AllowedCo
   if (acm)
   {
     AllowedCollision::Type type;
-    bool found = acm->getAllowedCollision(linkA->getName(), linkB->getName(), type);
+    bool found = acm->getAllowedCollision(cow0->getID(), cow1->getID(), type);
     if (found)
     {
       // if we have an entry in the collision matrix, we read it
@@ -144,15 +292,15 @@ inline bool isCollisionAllowed(const COW* cow0, const COW* cow1, const AllowedCo
         {
           CONSOLE_BRIDGE_logDebug(
               "Collision between '%s' and '%s' is always allowed. No contacts are computed.",
-              linkA->getName().c_str(), linkB->getName().c_str());
+              cow0->getID().c_str(), cow1->getID().c_str());
         }
       }
       else if (type == AllowedCollision::CONDITIONAL)
       {
-        acm->getAllowedCollision(linkA->getName(), linkB->getName(), dcf);
+        acm->getAllowedCollision(cow0->getID(), cow1->getID(), dcf);
         if (verbose)
-          CONSOLE_BRIDGE_logDebug("Collision between '%s' and '%s' is conditionally allowed", linkA->getName().c_str(),
-                                  linkB->getName().c_str());
+          CONSOLE_BRIDGE_logDebug("Collision between '%s' and '%s' is conditionally allowed", cow0->getID().c_str(),
+                                  cow1->getID().c_str());
       }
     }
   }
@@ -192,8 +340,8 @@ inline bool isCollisionAllowed(const COW* cow0, const COW* cow1, const AllowedCo
     return false;
 
   if (verbose)
-    CONSOLE_BRIDGE_logDebug("Actually checking collisions between %s and %s", linkA->getName().c_str(),
-                            linkB->getName().c_str());
+    CONSOLE_BRIDGE_logDebug("Actually checking collisions between %s and %s", cow0->getID().c_str(),
+                            cow1->getID().c_str());
 
   return true;
 }
@@ -217,18 +365,17 @@ struct CollisionCollector : public btCollisionWorld::ContactResultCallback
   virtual btScalar addSingleResult(btManifoldPoint& cp, const btCollisionObjectWrapper* colObj0Wrap,int partId0,int index0, const btCollisionObjectWrapper* colObj1Wrap,int partId1,int index1)
   {
     if (cp.m_distance1 > m_contact_distance) return 0;
-    const robot_model::LinkModel* linkA = getLink(colObj0Wrap->getCollisionObject());
-    const robot_model::LinkModel* linkB = getLink(colObj1Wrap->getCollisionObject());
+
     collision_detection::DistanceResultsData contact;
-    contact.link_names[0] = linkA->getName();
-    contact.link_names[1] = linkB->getName();
+    contact.link_names[0] = getCollisionObjectID(colObj0Wrap->getCollisionObject());
+    contact.link_names[1] = getCollisionObjectID(colObj1Wrap->getCollisionObject());
     contact.nearest_points[0] = convertBtToEigen(cp.m_positionWorldOnA);
     contact.nearest_points[1] = convertBtToEigen(cp.m_positionWorldOnB);
     contact.distance = cp.m_distance1;
     contact.normal = convertBtToEigen(-1 * cp.m_normalWorldOnB);
     m_collisions.push_back(contact);
 
-    CONSOLE_BRIDGE_logDebug("CollisionCollector: adding collision %s-%s (%.4f)", linkA->getName().c_str(), linkB->getName().c_str(), cp.m_distance1);
+    CONSOLE_BRIDGE_logDebug("CollisionCollector: adding collision %s-%s (%.4f)", contact.link_names[0].c_str(), contact.link_names[1].c_str(), cp.m_distance1);
     return 1;
   }
   bool needsCollision(btBroadphaseProxy* proxy0) const
@@ -264,11 +411,9 @@ struct SweepCollisionCollector : public btCollisionWorld::ClosestConvexResultCal
   {
     ClosestConvexResultCallback::addSingleResult(convexResult, normalInWorldSpace);
 
-    const robot_model::LinkModel* linkA = getLink(m_cow.get());
-    const robot_model::LinkModel* linkB = getLink(m_hitCollisionObject);
     collision_detection::DistanceResultsData contact;
-    contact.link_names[0] = linkA->getName();
-    contact.link_names[1] = linkB->getName();
+    contact.link_names[0] = getCollisionObjectID(m_cow.get());
+    contact.link_names[1] = getCollisionObjectID(m_hitCollisionObject);
     contact.nearest_points[0] = convertBtToEigen(m_hitPointWorld);
     contact.nearest_points[1] = convertBtToEigen(m_hitPointWorld);
     contact.distance = 0;
@@ -276,7 +421,7 @@ struct SweepCollisionCollector : public btCollisionWorld::ClosestConvexResultCal
     contact.cc_time = m_collisions.size() + m_closestHitFraction;
     m_collisions.push_back(contact);
 
-    CONSOLE_BRIDGE_logDebug("CollisionCollector: adding collision %s-%s (%.4f)", linkA->getName().c_str(), linkB->getName().c_str(), contact.distance);
+    CONSOLE_BRIDGE_logDebug("CollisionCollector: adding collision %s-%s (%.4f)", contact.link_names[0].c_str(), contact.link_names[1].c_str(), contact.distance);
     return 1;
   }
 
@@ -626,9 +771,9 @@ struct BulletManager
     m_world->contactTest(cow.get(), cc);
   }
 
-  void contactCastTestOriginal(const robot_model::LinkModel* link, const btTransform &tf1, const btTransform &tf2,  const AllowedCollisionMatrix *acm, std::vector<collision_detection::DistanceResultsData>& collisions)
+  void contactCastTestOriginal(const std::string &link_name, const btTransform &tf1, const btTransform &tf2,  const AllowedCollisionMatrix *acm, std::vector<collision_detection::DistanceResultsData>& collisions)
   {
-    COWPtr cow = m_link2cow[link];
+    COWPtr cow = m_link2cow[link_name];
     convexCastTestHelper(cow, cow->getCollisionShape(), tf1, tf2, acm, collisions);
   }
 
@@ -669,12 +814,9 @@ private:
       btConvexShape* convex = dynamic_cast<btConvexShape*>(shape);
 
       collision_detection::CastHullShape* shape = new collision_detection::CastHullShape(convex, tf0.inverseTimes(tf1));
-      collision_detection::COWPtr obj(new collision_detection::COW(cow->m_link));
+      collision_detection::COWPtr obj = cow->clone();
       obj->setCollisionShape(shape);
       obj->setWorldTransform(tf0);
-      obj->m_index = cow->m_index;
-      obj->m_collisionFilterGroup = cow->m_collisionFilterGroup;
-      obj->m_collisionFilterMask = cow->m_collisionFilterMask;
 
       collision_detection::CastCollisionCollectorOriginal cc(collisions, obj, acm);
       m_world->contactTest(obj.get(), cc);
@@ -714,6 +856,7 @@ private:
     }
   }
 };
+typedef boost::shared_ptr<BulletManager> BulletManagerPtr;
 
 btCollisionShape* createShapePrimitive(const shapes::ShapeConstPtr& geom, bool useTrimesh, CollisionObjectWrapper* cow);
 COWPtr CollisionObjectFromLink(const robot_model::LinkModel* link, bool useTrimesh);

@@ -39,17 +39,14 @@
 
 collision_detection::CollisionWorldBullet::CollisionWorldBullet() : CollisionWorld()
 {
-//  auto m = new fcl::DynamicAABBTreeCollisionManager();
-//  manager_.reset(m);
-
   // request notifications about changes to new world
   observer_handle_ = getWorld()->addObserver(boost::bind(&CollisionWorldBullet::notifyObjectChange, this, _1, _2));
 }
 
 collision_detection::CollisionWorldBullet::CollisionWorldBullet(const WorldPtr& world) : CollisionWorld(world)
 {
-//  auto m = new fcl::DynamicAABBTreeCollisionManager();
-//  manager_.reset(m);
+  //TODO: Need to loop through objects and add them
+  m_link2cow.clear();
 
   // request notifications about changes to new world
   observer_handle_ = getWorld()->addObserver(boost::bind(&CollisionWorldBullet::notifyObjectChange, this, _1, _2));
@@ -59,12 +56,7 @@ collision_detection::CollisionWorldBullet::CollisionWorldBullet(const WorldPtr& 
 collision_detection::CollisionWorldBullet::CollisionWorldBullet(const CollisionWorldBullet& other, const WorldPtr& world)
   : CollisionWorld(other, world)
 {
-//  auto m = new fcl::DynamicAABBTreeCollisionManager();
-//  manager_.reset(m);
-
-//  fcl_objs_ = other.fcl_objs_;
-//  for (auto& fcl_obj : fcl_objs_)
-//    fcl_obj.second.registerTo(manager_.get());
+  m_link2cow = other.m_link2cow;
 
   // request notifications about changes to new world
   observer_handle_ = getWorld()->addObserver(boost::bind(&CollisionWorldBullet::notifyObjectChange, this, _1, _2));
@@ -232,9 +224,7 @@ void collision_detection::CollisionWorldBullet::setWorld(const WorldPtr& world)
   getWorld()->removeObserver(observer_handle_);
 
   // clear out objects from old world
-//  manager_->clear(); TODO: Levi
-//  fcl_objs_.clear(); TODO: Levi
-//  cleanCollisionGeometryCache();
+  m_link2cow.clear();
 
   CollisionWorld::setWorld(world);
 

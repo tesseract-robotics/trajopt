@@ -91,8 +91,6 @@ public:
 
   virtual void setWorld(const WorldPtr& world);
 
-  void SetContactDistance(double dist) {m_contactDistance = dist;}
-
 protected:
   void checkWorldCollisionHelper(const CollisionRequest& req, CollisionResult& res, const CollisionWorld& other_world,
                                  const AllowedCollisionMatrix* acm) const;
@@ -114,7 +112,8 @@ private:
   void initialize();
   void notifyObjectChange(const ObjectConstPtr& obj, World::Action action);
   World::ObserverHandle observer_handle_;
-  double m_contactDistance;
+  Link2ConstCow m_link2cow;
+
 };
 }
 
