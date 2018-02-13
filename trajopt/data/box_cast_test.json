@@ -1,7 +1,7 @@
 {
   "basic_info" : {
     "n_steps" : 3,
-    "manip" : "active",
+    "manip" : "manipulator",
     "start_fixed" : true
   },
   "costs" : [

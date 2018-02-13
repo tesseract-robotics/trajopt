@@ -9,11 +9,13 @@
 #include <boost/foreach.hpp>
 #include <boost/assign.hpp>
 #include <trajopt_utils/config.hpp>
+#include <trajopt/plot_callback.hpp>
 #include <trajopt_test_utils.hpp>
+#include <trajopt/collision_terms.hpp>
+#include <trajopt_utils/logging.hpp>
+
 #include <trajopt/ros_kin.h>
 #include <trajopt/ros_env.h>
-#include <trajopt/plot_callback.hpp>
-#include <trajopt_utils/logging.hpp>
 
 #include <ros/ros.h>
 #include <moveit/robot_model_loader/robot_model_loader.h>
@@ -25,11 +27,10 @@ using namespace std;
 using namespace util;
 using namespace boost::assign;
 
-
 const std::string ROBOT_DESCRIPTION_PARAM = "robot_description"; /**< Default ROS parameter for robot description */
-bool plotting = false; /**< Enable plotting */
+bool plotting=false;
 
-class PlanningTest : public testing::TestWithParam<const char*> {
+class CastTest : public testing::TestWithParam<const char*> {
 public:
   robot_model_loader::RobotModelLoaderPtr loader_;  /**< Used to load the robot model */
   moveit::core::RobotModelPtr robot_model_;         /**< Robot model */
@@ -43,10 +44,6 @@ public:
     env_ = ROSEnvPtr(new ROSEnv);
     ASSERT_TRUE(robot_model_ != nullptr);
     ASSERT_NO_THROW(planning_scene_.reset(new planning_scene::PlanningScene(robot_model_)));
-    robot_state::RobotState &rs = planning_scene_->getCurrentStateNonConst();
-    std::vector<double> val;
-    val.push_back(0);
-    rs.setJointPositions("torso_lift_joint", val);
 
     //Now assign collision detection plugin
     collision_detection::CollisionPluginLoader cd_loader;
@@ -55,65 +52,18 @@ public:
 
     ASSERT_TRUE(env_->init(planning_scene_));
 
-    gLogLevel = util::LevelError;
+    gLogLevel = util::LevelInfo;
   }
 };
 
+TEST_F(CastTest, boxes) {
+  ROS_DEBUG("CastTest, boxes");
+  Json::Value root = readJsonFile(string(DATA_DIR) + "/box_cast_test.json");
 
-TEST_F(PlanningTest, numerical_ik1)
-{
-  ROS_DEBUG("PlanningTest, numerical_ik1");
-  Json::Value root = readJsonFile(string(DATA_DIR) + "/numerical_ik1.json");
-
-  TrajOptProbPtr prob = ConstructProblem(root, env_);
-  ASSERT_TRUE(!!prob);
-
-  BasicTrustRegionSQP opt(prob);
-  if (plotting)
-  {
-    opt.addCallback(PlotCallback(*prob));
-  }
-
-  ROS_DEBUG_STREAM("DOF: " << prob->GetNumDOF());
-  opt.initialize(DblVec(prob->GetNumDOF(), 0));
-  double tStart = GetClock();
-  ROS_DEBUG_STREAM("Size: " << opt.x().size());
-  ROS_DEBUG_STREAM("Initial Vars: " << toVectorXd(opt.x()).transpose());
-  Eigen::Affine3d initial_pose, final_pose, change_base;
-  change_base = prob->GetEnv()->getLinkTransform(prob->GetKin()->getBaseLinkName());
-  prob->GetKin()->calcFwdKin(initial_pose, change_base, toVectorXd(opt.x()));
-
-  ROS_DEBUG_STREAM("Initial Position: " << initial_pose.translation().transpose());
-  OptStatus status = opt.optimize();
-  ROS_DEBUG_STREAM("Status: " << sco::statusToString(status));
-  prob->GetKin()->calcFwdKin(final_pose, change_base, toVectorXd(opt.x()));
-
-  Eigen::Affine3d goal;
-  goal.translation() << 0.4, 0, 0.8;
-  goal.linear() = Eigen::Quaterniond(0, 0, 1, 0).toRotationMatrix();
-
-  assert(goal.isApprox(final_pose, 1e-8));
-
-  ROS_DEBUG_STREAM("Final Position: " << final_pose.translation().transpose());
-  ROS_DEBUG_STREAM("Final Vars: " << toVectorXd(opt.x()).transpose());
-  ROS_DEBUG("planning time: %.3f", GetClock()-tStart);
-}
-
-TEST_F(PlanningTest, arm_around_table)
-{
-  ROS_DEBUG("PlanningTest, arm_around_table");
-
-  Json::Value root = readJsonFile(string(DATA_DIR) + "/arm_around_table.json");
   robot_state::RobotState &rs = planning_scene_->getCurrentStateNonConst();
   std::map<std::string, double> ipos;
-  ipos["torso_lift_joint"] = 0;
-  ipos["r_shoulder_pan_joint"] = -1.832;
-  ipos["r_shoulder_lift_joint"] = -0.332;
-  ipos["r_upper_arm_roll_joint"] = -1.011;
-  ipos["r_elbow_flex_joint"] = -1.437;
-  ipos["r_forearm_roll_joint"] = -1.1;
-  ipos["r_wrist_flex_joint"] = -1.926;
-  ipos["r_wrist_roll_joint"] = 3.074;
+  ipos["boxbot_x_joint"] = -1.9;
+  ipos["boxbot_y_joint"] = 0;
   rs.setVariablePositions(ipos);
 
   TrajOptProbPtr prob = ConstructProblem(root, env_);
@@ -129,21 +79,11 @@ TEST_F(PlanningTest, arm_around_table)
   ASSERT_NE(collisions.size(), 0);
 
   BasicTrustRegionSQP opt(prob);
-  ROS_DEBUG_STREAM("DOF: " << prob->GetNumDOF());
-  if (plotting)
-  {
-    opt.addCallback(PlotCallback(*prob));
-  }
-
+  if (plotting) opt.addCallback(PlotCallback(*prob));
   opt.initialize(trajToDblVec(prob->GetInitTraj()));
-  double tStart = GetClock();
   opt.optimize();
-  ROS_DEBUG("planning time: %.3f", GetClock()-tStart);
 
-  if (plotting)
-  {
-    prob->GetEnv()->plotClear();
-  }
+  if (plotting) prob->GetEnv()->plotClear();
 
   collisions.clear();
   env_->continuousCollisionCheckTrajectory(joint_names, link_names, getTraj(opt.x(), prob->GetVars()), collisions);
@@ -151,11 +91,10 @@ TEST_F(PlanningTest, arm_around_table)
   ASSERT_EQ(collisions.size(), 0);
 }
 
-
 int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
-  ros::init(argc, argv, "trajopt_planning_unit");
+  ros::init(argc, argv, "trajopt_cast_cost_unit");
   ros::NodeHandle pnh("~");
 
   pnh.param("plotting", plotting, false);
