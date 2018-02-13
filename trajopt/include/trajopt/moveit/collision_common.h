@@ -269,15 +269,13 @@ inline void nearCallback(btBroadphasePair& collisionPair,
 
 inline bool isCollisionAllowed(const COW* cow0, const COW* cow1, const AllowedCollisionMatrix* acm, bool verbose = false)
 {
-
+  // do not distance check geoms part of the same object / link / attached body
   if (cow0->sameObject(*cow1))
-  {
     return false;
-  }
 
   // use the collision matrix (if any) to avoid certain collision checks
   DecideContactFn dcf;
-  bool always_allow_collision = false;
+  bool always_in_collision = false;
   if (acm)
   {
     AllowedCollision::Type type;
@@ -287,7 +285,7 @@ inline bool isCollisionAllowed(const COW* cow0, const COW* cow1, const AllowedCo
       // if we have an entry in the collision matrix, we read it
       if (type == AllowedCollision::ALWAYS)
       {
-        always_allow_collision = true;
+        always_in_collision = true;
         if (verbose)
         {
           CONSOLE_BRIDGE_logDebug(
@@ -305,45 +303,37 @@ inline bool isCollisionAllowed(const COW* cow0, const COW* cow1, const AllowedCo
     }
   }
 
-//    // check if a link is touching an attached object
-//    if (cd1->type == BodyTypes::ROBOT_LINK && cd2->type == BodyTypes::ROBOT_ATTACHED)
-//    {
-//      const std::set<std::string>& tl = cd2->ptr.ab->getTouchLinks();
-//      if (tl.find(cd1->getID()) != tl.end())
-//      {
-//        always_allow_collision = true;
-//        if (cdata->req_->verbose)
-//          CONSOLE_BRIDGE_logDebug("Robot link '%s' is allowed to touch attached object '%s'. No contacts are computed.",
-//                                  cd1->getID().c_str(), cd2->getID().c_str());
-//      }
-//    }
-//    else if (cd2->type == BodyTypes::ROBOT_LINK && cd1->type == BodyTypes::ROBOT_ATTACHED)
-//    {
-//      const std::set<std::string>& tl = cd1->ptr.ab->getTouchLinks();
-//      if (tl.find(cd2->getID()) != tl.end())
-//      {
-//        always_allow_collision = true;
-//        if (cdata->req_->verbose)
-//          CONSOLE_BRIDGE_logDebug("Robot link '%s' is allowed to touch attached object '%s'. No contacts are computed.",
-//                                  cd2->getID().c_str(), cd1->getID().c_str());
-//      }
-//    }
-//    // bodies attached to the same link should not collide
-//    if (cd1->type == BodyTypes::ROBOT_ATTACHED && cd2->type == BodyTypes::ROBOT_ATTACHED)
-//    {
-//      if (cd1->ptr.ab->getAttachedLink() == cd2->ptr.ab->getAttachedLink())
-//        always_allow_collision = true;
-//    }
+  // check if a link is touching an attached object
+  if (cow0->m_type == BodyTypes::ROBOT_LINK && cow1->m_type == BodyTypes::ROBOT_ATTACHED)
+  {
+    const std::set<std::string>& tl = cow1->ptr.m_ab->getTouchLinks();
+    if (tl.find(cow0->getID()) != tl.end())
+    {
+      always_in_collision = true;
+      if (verbose)
+        logDebug("Robot link '%s' is allowed to touch attached object '%s'. No contacts are computed.",
+                 cow0->getID().c_str(), cow1->getID().c_str());
+    }
+  }
+  else
+  {
+    if (cow1->m_type == BodyTypes::ROBOT_LINK && cow0->m_type == BodyTypes::ROBOT_ATTACHED)
+    {
+      const std::set<std::string>& tl = cow0->ptr.m_ab->getTouchLinks();
+      if (tl.find(cow1->getID()) != tl.end())
+      {
+        always_in_collision = true;
+        if (verbose)
+          logDebug("Robot link '%s' is allowed to touch attached object '%s'. No contacts are computed.",
+                   cow1->getID().c_str(), cow0->getID().c_str());
+      }
+    }
+  }
 
-  // if collisions are always allowed, we are done
-  if (always_allow_collision)
-    return false;
+  if (verbose && !always_in_collision)
+    logDebug("Actually checking collisions between %s and %s", cow0->getID().c_str(), cow1->getID().c_str());
 
-  if (verbose)
-    CONSOLE_BRIDGE_logDebug("Actually checking collisions between %s and %s", cow0->getID().c_str(),
-                            cow1->getID().c_str());
-
-  return true;
+  return !always_in_collision;
 }
 
 struct CollisionCollector : public btCollisionWorld::ContactResultCallback
