@@ -5,7 +5,7 @@
   <arg name="robot_description" default="robot_description"/>
 
   <!-- Load universal robot description format (URDF) -->
-  <param name="$(arg robot_description)" textfile="$(find trajopt_test_support)/urdf/boxbot.urdf"/>
+  <param name="$(arg robot_description)" command="$(find xacro)/xacro --inorder '$(find trajopt_test_support)/urdf/boxbot.xacro'" />
 
   <!-- The semantic description that corresponds to the URDF -->
   <param name="$(arg robot_description)_semantic" textfile="$(find trajopt_test_support)/srdf/boxbot.srdf" />
@@ -19,5 +19,8 @@
   <group ns="$(arg robot_description)_kinematics">
     <rosparam command="load" file="$(find trajopt_test_support)/config/boxbot_kinematics.yaml"/>
   </group>
+
+  <!-- If needed, broadcast static tf for robot root -->
+  <node pkg="tf" type="static_transform_publisher" name="virtual_joint_broadcaster_0" args="0 0 0 0 0 0 world base_link 100" />
 
 </launch>

@@ -88,7 +88,7 @@
     <end_effector name="left_eef" parent_link="l_wrist_roll_link" group="left_gripper" />
     <end_effector name="right_eef" parent_link="r_wrist_roll_link" group="right_gripper" />
     <!--VIRTUAL JOINT: Purpose: this element defines a virtual joint between a robot link and an external frame of reference (considered fixed with respect to the robot)-->
-    <virtual_joint name="world_joint" type="planar" parent_frame="odom_combine" child_link="base_footprint" />
+    <virtual_joint name="world_joint" type="planar" parent_frame="world" child_link="base_footprint" />
     <!--PASSIVE JOINT: Purpose: this element is used to mark joints that are not actuated-->
     <passive_joint name="world_joint" />
     <!--DISABLE COLLISIONS: By default it is assumed that any link of the robot could potentially come into collision with any other link in the robot. This tag disables collision checking between a specified pair of links. -->

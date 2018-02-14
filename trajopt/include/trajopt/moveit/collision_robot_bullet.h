@@ -107,10 +107,10 @@ public:
 protected:
   virtual void updatedPaddingOrScaling(const std::vector<std::string>& links);
 
-  void constructBulletObject(BulletManager &manager, const robot_state::RobotState& state, const std::set<const moveit::core::LinkModel *> *active_links, bool continuous = false) const;
+  void constructBulletObject(Link2Cow &collision_objects, double contact_distance, const robot_state::RobotState& state, const std::set<const moveit::core::LinkModel *> *active_links, bool continuous = false) const;
 
   // Used for cast continuous distance checking
-  void constructBulletObject(BulletManager &manager, const robot_state::RobotState& state1, const robot_state::RobotState& state2, const std::set<const moveit::core::LinkModel *> *active_links) const;
+  void constructBulletObject(Link2Cow &collision_objects, double contact_distance, const robot_state::RobotState& state1, const robot_state::RobotState& state2, const std::set<const moveit::core::LinkModel *> *active_links) const;
 
   void checkSelfCollisionHelper(const CollisionRequest& req, CollisionResult& res,
                                 const robot_state::RobotState& state,

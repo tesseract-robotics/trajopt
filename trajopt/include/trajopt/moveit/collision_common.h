@@ -100,12 +100,12 @@ void convertBulletCollisions(collision_detection::DistanceResult &moveit_dr,
 
     if (active_components_only->size() > 0)
     {
-      if (active_components_only->find(state.getLinkModel(collision.link_names[0])) != active_components_only->end())
+      if (collision.body_types[0] != BodyType::WORLD_OBJECT && active_components_only->find(state.getLinkModel(collision.link_names[0])) != active_components_only->end())
       {
         moveit_dr.distances[collision.link_names[0]] = collision;
       }
 
-      if (active_components_only->find(state.getLinkModel(collision.link_names[1])) != active_components_only->end())
+      if (collision.body_types[1] != BodyType::WORLD_OBJECT && active_components_only->find(state.getLinkModel(collision.link_names[1])) != active_components_only->end())
       {
         moveit_dr.distances[collision.link_names[1]] = collision;
       }
@@ -278,10 +278,6 @@ typedef boost::shared_ptr<const CollisionObjectWrapper> COWConstPtr;
 typedef std::map<std::string, COWPtr> Link2Cow;
 typedef std::map<std::string, COWConstPtr> Link2ConstCow;
 
-inline const std::string getCollisionObjectID(const btCollisionObject* o) {
-  return static_cast<const CollisionObjectWrapper*>(o)->getID();
-}
-
 inline void nearCallback(btBroadphasePair& collisionPair,
     btCollisionDispatcher& dispatcher, const btDispatcherInfo& dispatchInfo)
 {
@@ -383,11 +379,16 @@ struct CollisionCollector : public btCollisionWorld::ContactResultCallback
   {
     if (cp.m_distance1 > m_contact_distance) return 0;
 
+    const CollisionObjectWrapper* cd0 = static_cast<const CollisionObjectWrapper*>(colObj0Wrap->getCollisionObject());
+    const CollisionObjectWrapper* cd1 = static_cast<const CollisionObjectWrapper*>(colObj1Wrap->getCollisionObject());
+
     collision_detection::DistanceResultsData contact;
-    contact.link_names[0] = getCollisionObjectID(colObj0Wrap->getCollisionObject());
-    contact.link_names[1] = getCollisionObjectID(colObj1Wrap->getCollisionObject());
+    contact.link_names[0] = cd0->getID();
+    contact.link_names[1] = cd1->getID();
     contact.nearest_points[0] = convertBtToEigen(cp.m_positionWorldOnA);
     contact.nearest_points[1] = convertBtToEigen(cp.m_positionWorldOnB);
+    contact.body_types[0] = cd0->m_type;
+    contact.body_types[1] = cd1->m_type;
     contact.distance = cp.m_distance1;
     contact.normal = convertBtToEigen(-1 * cp.m_normalWorldOnB);
     m_collisions.push_back(contact);
@@ -395,6 +396,7 @@ struct CollisionCollector : public btCollisionWorld::ContactResultCallback
     CONSOLE_BRIDGE_logDebug("CollisionCollector: adding collision %s-%s (%.4f)", contact.link_names[0].c_str(), contact.link_names[1].c_str(), cp.m_distance1);
     return 1;
   }
+
   bool needsCollision(btBroadphaseProxy* proxy0) const
   {
     return (proxy0->m_collisionFilterGroup & m_collisionFilterMask)
@@ -421,11 +423,16 @@ struct SweepCollisionCollector : public btCollisionWorld::ClosestConvexResultCal
   {
     ClosestConvexResultCallback::addSingleResult(convexResult, normalInWorldSpace);
 
+    const CollisionObjectWrapper* cd0 = static_cast<const CollisionObjectWrapper*>(m_cow.get());
+    const CollisionObjectWrapper* cd1 = static_cast<const CollisionObjectWrapper*>(m_hitCollisionObject);
+
     collision_detection::DistanceResultsData contact;
-    contact.link_names[0] = getCollisionObjectID(m_cow.get());
-    contact.link_names[1] = getCollisionObjectID(m_hitCollisionObject);
+    contact.link_names[0] = cd0->getID();
+    contact.link_names[1] = cd1->getID();
     contact.nearest_points[0] = convertBtToEigen(m_hitPointWorld);
     contact.nearest_points[1] = convertBtToEigen(m_hitPointWorld);
+    contact.body_types[0] = cd0->m_type;
+    contact.body_types[1] = cd1->m_type;
     contact.distance = 0;
     contact.normal = convertBtToEigen(-1 * m_hitNormalWorld);
     contact.cc_time = m_collisions.size() + m_closestHitFraction;
@@ -572,6 +579,7 @@ struct CastCollisionCollector : public CollisionCollector
       {
         std::swap(col.nearest_points[0], col.nearest_points[1]);
         std::swap(col.link_names[0], col.link_names[1]);
+        std::swap(col.body_types[0], col.body_types[1]);
         col.normal *= -1;
       }
 
@@ -628,6 +636,7 @@ struct CastCollisionCollector : public CollisionCollector
         float l0c = (ptOnCast - ptWorld0).length(),
               l1c = (ptOnCast - ptWorld1).length();
 
+        // DEBUG: SHould be removed
         Eigen::Vector3d diff = convertBtToEigen(ptWorld0) - col.nearest_points[1];
         double distDiff = diff.norm();
 
@@ -681,6 +690,7 @@ struct CastCollisionCollectorOriginal : public CollisionCollector
       {
         std::swap(col.nearest_points[0], col.nearest_points[1]);
         std::swap(col.link_names[0], col.link_names[1]);
+        std::swap(col.body_types[0], col.body_types[1]);
         col.normal *= -1;
       }
 
@@ -742,7 +752,7 @@ struct BulletManager
   btCollisionConfiguration* m_coll_config;
   Link2Cow m_link2cow;
 
-  BulletManager(double contact_distance)
+  BulletManager()
   {
     m_coll_config = new btDefaultCollisionConfiguration();
     m_dispatcher = new btCollisionDispatcher(m_coll_config);
@@ -751,8 +761,9 @@ struct BulletManager
     m_dispatcher->registerCollisionCreateFunc(BOX_SHAPE_PROXYTYPE,BOX_SHAPE_PROXYTYPE,
     m_coll_config->getCollisionAlgorithmCreateFunc(CONVEX_SHAPE_PROXYTYPE, CONVEX_SHAPE_PROXYTYPE));
     m_dispatcher->setNearCallback(&nearCallback);
-    m_contact_distance = contact_distance;
-    m_finalized = false;
+
+    btCollisionDispatcher* dispatcher = static_cast<btCollisionDispatcher*>(m_world->getDispatcher());
+    dispatcher->setDispatcherFlags(dispatcher->getDispatcherFlags() & ~btCollisionDispatcher::CD_USE_RELATIVE_CONTACT_BREAKING_THRESHOLD);
   }
 
   ~BulletManager()
@@ -763,59 +774,39 @@ struct BulletManager
     delete m_coll_config;
   }
 
+  void processCollisionObjects()
+  {
+    for (auto element : m_link2cow)
+    {
+      m_world->addCollisionObject(element.second.get(), element.second->m_collisionFilterGroup, element.second->m_collisionFilterMask);
+    }
+  }
+
   void contactDiscreteTest(const COWPtr cow, const AllowedCollisionMatrix *acm, std::vector<collision_detection::DistanceResultsData>& collisions)
   {
-    assert(m_finalized);
-    CollisionCollector cc(collisions, cow, acm, m_contact_distance);
+    CollisionCollector cc(collisions, cow, acm, cow->getContactProcessingThreshold());
     m_world->contactTest(cow.get(), cc);
   }
 
   void contactCastTest(const COWPtr cow, const AllowedCollisionMatrix *acm, std::vector<collision_detection::DistanceResultsData>& collisions)
   {
-    assert(m_finalized);
-    CastCollisionCollector cc(collisions, cow, acm, m_contact_distance);
+    CastCollisionCollector cc(collisions, cow, acm, cow->getContactProcessingThreshold());
     m_world->contactTest(cow.get(), cc);
   }
 
   void contactCastTestOriginal(const std::string &link_name, const btTransform &tf1, const btTransform &tf2,  const AllowedCollisionMatrix *acm, std::vector<collision_detection::DistanceResultsData>& collisions)
   {
-    assert(m_finalized);
     COWPtr cow = m_link2cow[link_name];
     convexCastTestHelper(cow, cow->getCollisionShape(), tf1, tf2, acm, collisions);
   }
 
   void convexSweepTest(const COWPtr cow, const btTransform &tf1, const btTransform &tf2, const AllowedCollisionMatrix *acm, std::vector<collision_detection::DistanceResultsData>& collisions)
   {
-    assert(m_finalized);
     SweepCollisionCollector cc(collisions, cow, acm);
     convexSweepTestHelper(cow->getCollisionShape(), tf1, tf2, cc);
   }
 
-  void finalize()
-  {
-    CONSOLE_BRIDGE_logDebug("setting contact distance to %.2f", m_contact_distance);
-    SHAPE_EXPANSION = btVector3(1,1,1) * m_contact_distance;
-    gContactBreakingThreshold = 2.001 * m_contact_distance; // wtf. when I set it to 2.0 there are no contacts with distance > 0
-    btCollisionObjectArray& objs = m_world->getCollisionObjectArray();
-    for (int i=0; i < objs.size(); ++i)
-    {
-      objs[i]->setContactProcessingThreshold(m_contact_distance);
-    }
-    btCollisionDispatcher* dispatcher = static_cast<btCollisionDispatcher*>(m_world->getDispatcher());
-    dispatcher->setDispatcherFlags(dispatcher->getDispatcherFlags() & ~btCollisionDispatcher::CD_USE_RELATIVE_CONTACT_BREAKING_THRESHOLD);
-
-    m_finalized = true;
-  }
-
-  double getContactDistance() const
-  {
-    return m_contact_distance;
-  }
-
 private:
-
-  double m_contact_distance;
-  bool m_finalized;
 
   void convexCastTestHelper(collision_detection::COWPtr cow, btCollisionShape* shape, const btTransform& tf0, const btTransform& tf1,
                             const collision_detection::AllowedCollisionMatrix *acm, std::vector<collision_detection::DistanceResultsData>& collisions)
@@ -872,6 +863,16 @@ typedef boost::shared_ptr<BulletManager> BulletManagerPtr;
 btCollisionShape* createShapePrimitive(const shapes::ShapeConstPtr& geom, bool useTrimesh, CollisionObjectWrapper* cow);
 COWPtr CollisionObjectFromLink(const robot_model::LinkModel* link, bool useTrimesh);
 
+inline
+void setContactDistance(COWPtr cow, double contact_distance)
+{
+  SHAPE_EXPANSION = btVector3(1,1,1) * contact_distance;
+  gContactBreakingThreshold = 2.001 * contact_distance; // wtf. when I set it to 2.0 there are no contacts with distance > 0
+  cow->setContactProcessingThreshold(contact_distance);
 }
+
+}
+
+
 
 #endif

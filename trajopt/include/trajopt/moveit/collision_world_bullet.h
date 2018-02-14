@@ -108,7 +108,7 @@ protected:
 
   void distanceWorldHelper(const DistanceRequest& req, DistanceResult& res, const CollisionWorld& world) const;
 
-  void constructBulletObject(BulletManager& manager, bool allow_static2static = false) const;
+  void constructBulletObject(Link2Cow &collision_objects, double contact_distance, bool allow_static2static = false) const;
   void updateBulletObject(const std::string& id);
 
   Link2ConstCow m_link2cow;
