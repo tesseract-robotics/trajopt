@@ -100,12 +100,21 @@ void convertBulletCollisions(collision_detection::DistanceResult &moveit_dr,
 
     if (active_components_only->size() > 0)
     {
-      if (collision.body_types[0] != BodyType::WORLD_OBJECT && active_components_only->find(state.getLinkModel(collision.link_names[0])) != active_components_only->end())
+      if (collision.body_types[0] == BodyType::ROBOT_LINK && active_components_only->find(state.getLinkModel(collision.link_names[0])) != active_components_only->end())
+      {
+        moveit_dr.distances[collision.link_names[0]] = collision;
+      }
+      else if (collision.body_types[0] == BodyType::ROBOT_ATTACHED && active_components_only->find(state.getAttachedBody(collision.link_names[0])->getAttachedLink()) != active_components_only->end())
       {
         moveit_dr.distances[collision.link_names[0]] = collision;
       }
 
-      if (collision.body_types[1] != BodyType::WORLD_OBJECT && active_components_only->find(state.getLinkModel(collision.link_names[1])) != active_components_only->end())
+
+      if (collision.body_types[1] == BodyType::ROBOT_LINK && active_components_only->find(state.getLinkModel(collision.link_names[1])) != active_components_only->end())
+      {
+        moveit_dr.distances[collision.link_names[1]] = collision;
+      }
+      else if (collision.body_types[1] == BodyType::ROBOT_ATTACHED && active_components_only->find(state.getAttachedBody(collision.link_names[1])->getAttachedLink()) != active_components_only->end())
       {
         moveit_dr.distances[collision.link_names[1]] = collision;
       }
@@ -195,6 +204,10 @@ public:
     const void* raw;
   } ptr;
 
+  /**
+   * @brief getID Returns the ID which is key when storing in link2cow
+   * @return Collision object ID
+   */
   const std::string& getID() const
   {
     switch (m_type)
@@ -251,7 +264,7 @@ public:
     }
   }
 
-  /** \brief Check if two CollisionGeometryData objects point to the same source object */
+  /** \brief Check if two CollisionObjectWrapper objects point to the same source object */
   bool sameObject(const CollisionObjectWrapper& other) const
   {
     return m_type == other.m_type && ptr.raw == other.ptr.raw;

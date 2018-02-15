@@ -338,10 +338,18 @@ void collision_detection::CollisionRobotBullet::checkSelfCollisionHelper(const C
 
   if (dreq.active_components_only->size() > 0)
   {
-    for (auto element: *dreq.active_components_only)
+    for (auto element : *dreq.active_components_only)
     {
       COWPtr cow = manager.m_link2cow[element->getName()];
       manager.contactDiscreteTest(cow, acm, collisions);
+
+      std::vector<const robot_state::AttachedBody*> ab;
+      state.getAttachedBodies(ab, element);
+      for(auto& body : ab)
+      {
+        COWPtr cow = manager.m_link2cow[body->getName()];
+        manager.contactDiscreteTest(cow, acm, collisions);
+      }
     }
   }
   else
@@ -381,20 +389,39 @@ void collision_detection::CollisionRobotBullet::checkSelfCollisionHelper(const C
 
   if (dreq.active_components_only->size() > 0)
   {
-    for (auto element: *dreq.active_components_only)
+    for (auto element : *dreq.active_components_only)
     {
       Eigen::Affine3d tf1 = state1.getGlobalLinkTransform(element);
       Eigen::Affine3d tf2 = state2.getGlobalLinkTransform(element);
       COWPtr cow = manager.m_link2cow[element->getName()];
       manager.convexSweepTest(cow, convertEigenToBt(tf1), convertEigenToBt(tf2), acm, collisions);
+
+      std::vector<const robot_state::AttachedBody*> ab;
+      state1.getAttachedBodies(ab, element);
+      for(auto& body : ab)
+      {
+        COWPtr cow = manager.m_link2cow[body->getName()];
+        manager.convexSweepTest(cow, convertEigenToBt(tf1), convertEigenToBt(tf2), acm, collisions);
+      }
     }
   }
   else
   {
-    for (auto element: manager.m_link2cow)
+    for (auto element : manager.m_link2cow)
     {
-      Eigen::Affine3d tf1 = state1.getGlobalLinkTransform(element.first);
-      Eigen::Affine3d tf2 = state2.getGlobalLinkTransform(element.first);
+      std::string link_name;
+      if (element.second->m_type == BodyTypes::ROBOT_ATTACHED)
+      {
+        link_name = element.second->ptr.m_ab->getAttachedLinkName();
+      }
+      else
+      {
+        link_name = element.second->getID();
+      }
+
+      Eigen::Affine3d tf1 = state1.getGlobalLinkTransform(link_name);
+      Eigen::Affine3d tf2 = state2.getGlobalLinkTransform(link_name);
+
       manager.convexSweepTest(element.second, convertEigenToBt(tf1), convertEigenToBt(tf2), acm, collisions);
     }
   }
@@ -478,6 +505,14 @@ void collision_detection::CollisionRobotBullet::checkOtherCollisionHelper(const 
     {
       COWPtr cow = robot_objects[element->getName()];
       other_robot_manager.contactDiscreteTest(cow, acm, collisions);
+
+      std::vector<const robot_state::AttachedBody*> ab;
+      state.getAttachedBodies(ab, element);
+      for(auto& body : ab)
+      {
+        COWPtr cow = robot_objects[body->getName()];
+        other_robot_manager.contactDiscreteTest(cow, acm, collisions);
+      }
     }
   }
   else
@@ -547,6 +582,14 @@ void collision_detection::CollisionRobotBullet::distanceSelfHelper(const Distanc
     {
       COWPtr cow = manager.m_link2cow[element->getName()];
       manager.contactDiscreteTest(cow, req.acm, collisions);
+
+      std::vector<const robot_state::AttachedBody*> ab;
+      state.getAttachedBodies(ab, element);
+      for(auto& body : ab)
+      {
+        COWPtr cow = manager.m_link2cow[body->getName()];
+        manager.contactDiscreteTest(cow, req.acm, collisions);
+      }
     }
   }
   else
@@ -575,6 +618,14 @@ void collision_detection::CollisionRobotBullet::distanceSelfHelper(const Distanc
     {
       COWPtr cow = manager.m_link2cow[element->getName()];
       manager.contactCastTest(cow, req.acm, collisions);
+
+      std::vector<const robot_state::AttachedBody*> ab;
+      state1.getAttachedBodies(ab, element);
+      for(auto& body : ab)
+      {
+        COWPtr cow = manager.m_link2cow[body->getName()];
+        manager.contactCastTest(cow, req.acm, collisions);
+      }
     }
   }
   else
@@ -605,6 +656,13 @@ void collision_detection::CollisionRobotBullet::distanceSelfHelperOriginal(const
       btTransform tf2 = convertEigenToBt(state2.getGlobalLinkTransform(element));
 
       manager.contactCastTestOriginal(element->getName(), tf1, tf2, req.acm, collisions);
+
+      std::vector<const robot_state::AttachedBody*> ab;
+      state1.getAttachedBodies(ab, element);
+      for(auto& body : ab)
+      {
+        manager.contactCastTestOriginal(body->getName(), tf1, tf2, req.acm, collisions);
+      }
     }
   }
   else
@@ -677,6 +735,14 @@ void collision_detection::CollisionRobotBullet::distanceOtherHelper(const Distan
     {
       COWPtr cow = robot_objects[element->getName()];
       other_robot_manager.contactDiscreteTest(cow, req.acm, collisions);
+
+      std::vector<const robot_state::AttachedBody*> ab;
+      state.getAttachedBodies(ab, element);
+      for(auto& body : ab)
+      {
+        COWPtr cow = robot_objects[body->getName()];
+        other_robot_manager.contactDiscreteTest(cow, req.acm, collisions);
+      }
     }
   }
   else

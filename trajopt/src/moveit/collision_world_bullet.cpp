@@ -152,6 +152,14 @@ void collision_detection::CollisionWorldBullet::checkRobotCollisionHelper(const 
     {
       COWPtr cow = robot_collision_objects[element->getName()];
       manager.contactDiscreteTest(cow, acm, collisions);
+
+      std::vector<const robot_state::AttachedBody*> ab;
+      state.getAttachedBodies(ab, element);
+      for(auto& body : ab)
+      {
+        COWPtr cow = robot_collision_objects[body->getName()];
+        manager.contactDiscreteTest(cow, acm, collisions);
+      }
     }
   }
   else
@@ -199,18 +207,36 @@ void collision_detection::CollisionWorldBullet::checkRobotCollisionHelper(const 
   {
     for (auto element : *dreq.active_components_only)
     {
-      Eigen::Affine3d tf1 = state1.getGlobalLinkTransform(element);
-      Eigen::Affine3d tf2 = state2.getGlobalLinkTransform(element);
+      btTransform tf1 = convertEigenToBt(state1.getGlobalLinkTransform(element));
+      btTransform tf2 = convertEigenToBt(state2.getGlobalLinkTransform(element));
       COWPtr cow = robot_collision_objects[element->getName()];
-      manager.convexSweepTest(cow, convertEigenToBt(tf1), convertEigenToBt(tf2), acm, collisions);
+      manager.convexSweepTest(cow, tf1, tf2, acm, collisions);
+
+      std::vector<const robot_state::AttachedBody*> ab;
+      state1.getAttachedBodies(ab, element);
+      for(auto& body : ab)
+      {
+        COWPtr cow = robot_collision_objects[body->getName()];
+        manager.convexSweepTest(cow, tf1, tf2, acm, collisions);
+      }
     }
   }
   else
   {
     for (auto element : robot_collision_objects)
     {
-      Eigen::Affine3d tf1 = state1.getGlobalLinkTransform(element.first);
-      Eigen::Affine3d tf2 = state2.getGlobalLinkTransform(element.first);
+      std::string link_name;
+      if (element.second->m_type == BodyTypes::ROBOT_ATTACHED)
+      {
+        link_name = element.second->ptr.m_ab->getAttachedLinkName();
+      }
+      else
+      {
+        link_name = element.second->getID();
+      }
+
+      Eigen::Affine3d tf1 = state1.getGlobalLinkTransform(link_name);
+      Eigen::Affine3d tf2 = state2.getGlobalLinkTransform(link_name);
       manager.convexSweepTest(element.second, convertEigenToBt(tf1), convertEigenToBt(tf2), acm, collisions);
     }
   }
@@ -335,6 +361,14 @@ void collision_detection::CollisionWorldBullet::distanceRobotHelper(const Distan
     {
       COWPtr cow = robot_collision_objects[element->getName()];
       manager.contactDiscreteTest(cow, req.acm, collisions);
+
+      std::vector<const robot_state::AttachedBody*> ab;
+      state.getAttachedBodies(ab, element);
+      for(auto& body : ab)
+      {
+        COWPtr cow = robot_collision_objects[body->getName()];
+        manager.contactDiscreteTest(cow, req.acm, collisions);
+      }
     }
   }
   else
@@ -369,6 +403,14 @@ void collision_detection::CollisionWorldBullet::distanceRobotHelper(const Distan
     {
       COWPtr cow = robot_collision_objects[element->getName()];
       manager.contactCastTest(cow, req.acm, collisions);
+
+      std::vector<const robot_state::AttachedBody*> ab;
+      state1.getAttachedBodies(ab, element);
+      for(auto& body : ab)
+      {
+        COWPtr cow = robot_collision_objects[body->getName()];
+        manager.contactCastTest(cow, req.acm, collisions);
+      }
     }
   }
   else

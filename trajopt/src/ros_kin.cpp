@@ -71,6 +71,8 @@ bool ROSKin::calcFwdKin(Eigen::Affine3d &pose, const Eigen::Affine3d change_base
   if (!checkInitialized()) return false;
   if (!checkJoints(joint_angles)) return false;
 
+  assert(link_name_too_segment_index_.find(link_name) != link_name_too_segment_index_.end());
+
   int segment_nr = link_name_too_segment_index_.at(link_name);
   return calcFwdKinHelper(pose, change_base, joint_angles, segment_nr);
 //  int joint_index = getLinkParentJointIndex(link_name);
@@ -122,6 +124,8 @@ bool ROSKin::calcJacobian(Eigen::MatrixXd &jacobian, const Eigen::Affine3d chang
   if (!checkInitialized()) return false;
   if (!checkJoints(joint_angles)) return false;
 
+  assert(link_name_too_segment_index_.find(link_name) != link_name_too_segment_index_.end());
+
   int segment_nr = link_name_too_segment_index_.at(link_name);
   KDL::Jacobian kdl_jacobian;
   if (calcJacobianHelper(kdl_jacobian, change_base, joint_angles, segment_nr))
@@ -151,6 +155,8 @@ bool ROSKin::calcJacobian(Eigen::MatrixXd &jacobian, const Eigen::Affine3d chang
 {
   if (!checkInitialized()) return false;
   if (!checkJoints(joint_angles)) return false;
+
+  assert(link_name_too_segment_index_.find(link_name) != link_name_too_segment_index_.end());
 
   int segment_nr = link_name_too_segment_index_.at(link_name);
   KDL::Jacobian kdl_jacobian;
