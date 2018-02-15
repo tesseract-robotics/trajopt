@@ -36,7 +36,6 @@
 
 #include <trajopt/moveit/collision_robot_bullet.h>
 
-const double BULLET_DEFAULT_CONTACT_DISTANCE = 0.05;
 const bool   BULLET_DEFAULT_USE_ORIGINAL_CAST = false;
 
 collision_detection::CollisionRobotBullet::CollisionRobotBullet(const robot_model::RobotModelConstPtr& model, double padding, double scale)
@@ -331,7 +330,7 @@ void collision_detection::CollisionRobotBullet::checkSelfCollisionHelper(const C
   double contact_distance = 0.0;
   if (req.distance)
   {
-    contact_distance = 1.0;
+    contact_distance = BULLET_DEFAULT_CONTACT_DISTANCE;
   }
 
   constructBulletObject(manager.m_link2cow, contact_distance, state, dreq.active_components_only);
@@ -427,7 +426,7 @@ void collision_detection::CollisionRobotBullet::checkOtherCollision(const Collis
                                                                     const robot_state::RobotState& other_state1,
                                                                     const robot_state::RobotState& other_state2) const
 {
-  checkOtherCollision(req, res, state1, state2, other_robot, other_state1, other_state2, nullptr);
+  CONSOLE_BRIDGE_logError("Bullet continuous collision checking not yet implemented for robot to robot.");
 }
 
 void collision_detection::CollisionRobotBullet::checkOtherCollision(const CollisionRequest& req, CollisionResult& res,
@@ -464,7 +463,7 @@ void collision_detection::CollisionRobotBullet::checkOtherCollisionHelper(const 
   double contact_distance = 0.0;
   if (req.distance)
   {
-    contact_distance = 1.0;
+    contact_distance = BULLET_DEFAULT_CONTACT_DISTANCE;
   }
 
   other_bullet_robot.constructBulletObject(other_robot_manager.m_link2cow, contact_distance, other_state, nullptr);
@@ -503,6 +502,7 @@ double collision_detection::CollisionRobotBullet::distanceSelf(const robot_state
   DistanceResult dres;
 
   dreq.enableGroup(getRobotModel());
+  dreq.distance_threshold = BULLET_DEFAULT_CONTACT_DISTANCE;
   distanceSelfHelper(dreq, dres, state);
   return dres.minimum_distance.distance;
 }
@@ -514,6 +514,7 @@ double collision_detection::CollisionRobotBullet::distanceSelf(const robot_state
   DistanceResult dres;
 
   dreq.acm = &acm;
+  dreq.distance_threshold = BULLET_DEFAULT_CONTACT_DISTANCE;
   dreq.enableGroup(getRobotModel());
   distanceSelfHelper(dreq, dres, state);
   return dres.minimum_distance.distance;
@@ -627,6 +628,7 @@ double collision_detection::CollisionRobotBullet::distanceOther(const robot_stat
   DistanceResult dres;
 
   dreq.enableGroup(getRobotModel());
+  dreq.distance_threshold = BULLET_DEFAULT_CONTACT_DISTANCE;
   distanceOtherHelper(dreq, dres, state, other_robot, other_state);
   return dres.minimum_distance.distance;
 }
@@ -640,6 +642,7 @@ double collision_detection::CollisionRobotBullet::distanceOther(const robot_stat
   DistanceResult dres;
 
   dreq.acm = &acm;
+  dreq.distance_threshold = BULLET_DEFAULT_CONTACT_DISTANCE;
   dreq.enableGroup(getRobotModel());
   distanceOtherHelper(dreq, dres, state, other_robot, other_state);
   return dres.minimum_distance.distance;

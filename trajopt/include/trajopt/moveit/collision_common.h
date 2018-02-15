@@ -53,7 +53,7 @@ const float BULLET_MARGIN = 0;
 const float BULLET_SUPPORT_FUNC_TOLERANCE = .01 METERS;
 const float BULLET_LENGTH_TOLERANCE = .001 METERS;
 const float BULLET_EPSILON = 1e-3;
-
+const double BULLET_DEFAULT_CONTACT_DISTANCE = 0.05;
 
 inline
 btVector3 convertEigenToBt(const Eigen::Vector3d& v)

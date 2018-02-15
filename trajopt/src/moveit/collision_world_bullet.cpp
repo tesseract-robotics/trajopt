@@ -134,7 +134,7 @@ void collision_detection::CollisionWorldBullet::checkRobotCollisionHelper(const 
   double contact_distance = 0.0;
   if (req.distance)
   {
-    contact_distance = 1.0;
+    contact_distance = BULLET_DEFAULT_CONTACT_DISTANCE;
   }
 
   dreq.group_name = req.group_name;
@@ -183,7 +183,7 @@ void collision_detection::CollisionWorldBullet::checkRobotCollisionHelper(const 
   double contact_distance = 0.0;
   if (req.distance)
   {
-    contact_distance = 1.0;
+    contact_distance = BULLET_DEFAULT_CONTACT_DISTANCE;
   }
 
   dreq.group_name = req.group_name;
@@ -247,7 +247,7 @@ void collision_detection::CollisionWorldBullet::checkWorldCollisionHelper(const 
   double contact_distance = 0.0;
   if (req.distance)
   {
-    contact_distance = 1.0;
+    contact_distance = BULLET_DEFAULT_CONTACT_DISTANCE;
   }
 
   other_bullet_world.constructBulletObject(other_world_objects, contact_distance, true);
@@ -390,6 +390,7 @@ double collision_detection::CollisionWorldBullet::distanceRobot(const CollisionR
   DistanceResult dres;
 
   dreq.verbose = verbose;
+  dreq.distance_threshold = BULLET_DEFAULT_CONTACT_DISTANCE;
   dreq.enableGroup(robot.getRobotModel());
   distanceRobotHelper(dreq, dres, robot, state);
 
@@ -404,6 +405,7 @@ double collision_detection::CollisionWorldBullet::distanceRobot(const CollisionR
   DistanceResult dres;
 
   dreq.acm = &acm;
+  dreq.distance_threshold = BULLET_DEFAULT_CONTACT_DISTANCE;
   dreq.verbose = verbose;
   dreq.enableGroup(robot.getRobotModel());
   distanceRobotHelper(dreq, dres, robot, state);
@@ -432,6 +434,7 @@ double collision_detection::CollisionWorldBullet::distanceWorld(const CollisionW
   DistanceResult dres;
 
   dreq.verbose = verbose;
+  dreq.distance_threshold = BULLET_DEFAULT_CONTACT_DISTANCE;
   distanceWorldHelper(dreq, dres, world);
 
   return dres.minimum_distance.distance;
@@ -444,6 +447,7 @@ double collision_detection::CollisionWorldBullet::distanceWorld(const CollisionW
   DistanceResult dres;
 
   dreq.acm = &acm;
+  dreq.distance_threshold = BULLET_DEFAULT_CONTACT_DISTANCE;
   dreq.verbose = verbose;
   distanceWorldHelper(dreq, dres, world);
 
