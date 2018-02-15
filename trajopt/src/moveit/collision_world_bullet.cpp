@@ -238,6 +238,7 @@ void collision_detection::CollisionWorldBullet::checkWorldCollisionHelper(const 
 {
   const CollisionWorldBullet& other_bullet_world = dynamic_cast<const CollisionWorldBullet&>(other_world);
   BulletManager manager;
+  Link2Cow other_world_objects;
   std::vector<collision_detection::DistanceResultsData> collisions;
 
   // Right now it will get distance information within 1.0 meter
@@ -249,11 +250,12 @@ void collision_detection::CollisionWorldBullet::checkWorldCollisionHelper(const 
     contact_distance = 1.0;
   }
 
-  other_bullet_world.constructBulletObject(manager.m_link2cow, contact_distance, true);
+  other_bullet_world.constructBulletObject(other_world_objects, contact_distance, true);
+
   constructBulletObject(manager.m_link2cow, contact_distance, true);
   manager.processCollisionObjects();
 
-  for (auto element: manager.m_link2cow)
+  for (auto element: other_world_objects)
   {
     manager.contactDiscreteTest(element.second, acm, collisions);
   }
@@ -459,13 +461,15 @@ void collision_detection::CollisionWorldBullet::distanceWorldHelper(const Distan
 {
   const CollisionWorldBullet& other_bullet_world = dynamic_cast<const CollisionWorldBullet&>(world);
   BulletManager manager;
+  Link2Cow other_world_objects;
   std::vector<collision_detection::DistanceResultsData> collisions;
 
-  other_bullet_world.constructBulletObject(manager.m_link2cow, req.distance_threshold, true);
+  other_bullet_world.constructBulletObject(other_world_objects, req.distance_threshold, true);
+
   constructBulletObject(manager.m_link2cow, req.distance_threshold, true);
   manager.processCollisionObjects();
 
-  for (auto element: manager.m_link2cow)
+  for (auto element: other_world_objects)
   {
     manager.contactDiscreteTest(element.second, req.acm, collisions);
   }

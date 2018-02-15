@@ -325,7 +325,16 @@ void collision_detection::CollisionRobotBullet::checkSelfCollisionHelper(const C
   dreq.acm = acm;
   dreq.enableGroup(getRobotModel());
 
-  constructBulletObject(manager.m_link2cow, 0.0, state, dreq.active_components_only);
+  // Right now it will get distance information within 1.0 meter
+  // Need to figure out the best way to expose this or see if bullet
+  // has a true distance request.
+  double contact_distance = 0.0;
+  if (req.distance)
+  {
+    contact_distance = 1.0;
+  }
+
+  constructBulletObject(manager.m_link2cow, contact_distance, state, dreq.active_components_only);
   manager.processCollisionObjects();
 
   if (dreq.active_components_only->size() > 0)
@@ -359,7 +368,16 @@ void collision_detection::CollisionRobotBullet::checkSelfCollisionHelper(const C
   dreq.acm = acm;
   dreq.enableGroup(getRobotModel());
 
-  constructBulletObject(manager.m_link2cow, 0.0, state1, dreq.active_components_only, true);
+  // Right now it will get distance information within 1.0 meter
+  // Need to figure out the best way to expose this or see if bullet
+  // has a true distance request.
+  double contact_distance = 0.0;
+  if (req.distance)
+  {
+    contact_distance = 1.0;
+  }
+
+  constructBulletObject(manager.m_link2cow, contact_distance, state1, dreq.active_components_only, true);
   manager.processCollisionObjects();
 
   if (dreq.active_components_only->size() > 0)
@@ -409,7 +427,7 @@ void collision_detection::CollisionRobotBullet::checkOtherCollision(const Collis
                                                                     const robot_state::RobotState& other_state1,
                                                                     const robot_state::RobotState& other_state2) const
 {
-  CONSOLE_BRIDGE_logError("Bullet continuous collision checking not yet implemented");
+  checkOtherCollision(req, res, state1, state2, other_robot, other_state1, other_state2, nullptr);
 }
 
 void collision_detection::CollisionRobotBullet::checkOtherCollision(const CollisionRequest& req, CollisionResult& res,
@@ -420,7 +438,7 @@ void collision_detection::CollisionRobotBullet::checkOtherCollision(const Collis
                                                                     const robot_state::RobotState& other_state2,
                                                                     const AllowedCollisionMatrix& acm) const
 {
-  CONSOLE_BRIDGE_logError("Bullet continuous collision checking not yet implemented");
+  CONSOLE_BRIDGE_logError("Bullet continuous collision checking not yet implemented for robot to robot.");
 }
 
 void collision_detection::CollisionRobotBullet::checkOtherCollisionHelper(const CollisionRequest& req,
@@ -430,57 +448,53 @@ void collision_detection::CollisionRobotBullet::checkOtherCollisionHelper(const 
                                                                           const robot_state::RobotState& other_state,
                                                                           const AllowedCollisionMatrix* acm) const
 {
-  CONSOLE_BRIDGE_logError("Bullet collision other checking not yet implemented");
-//  FCLManager manager;
-//  allocSelfCollisionBroadPhase(state, manager);
+  const CollisionRobotBullet& other_bullet_robot = dynamic_cast<const CollisionRobotBullet&>(other_robot);
+  BulletManager other_robot_manager;
+  Link2Cow robot_objects;
+  std::vector<collision_detection::DistanceResultsData> collisions;
+  DistanceRequest dreq;
 
-//  const CollisionRobotFCL& fcl_rob = dynamic_cast<const CollisionRobotFCL&>(other_robot);
-//  FCLObject other_fcl_obj;
-//  fcl_rob.constructFCLObject(other_state, other_fcl_obj);
+  dreq.group_name = req.group_name;
+  dreq.acm = acm;
+  dreq.enableGroup(getRobotModel());
 
-//  CollisionData cd(&req, &res, acm);
-//  cd.enableGroup(getRobotModel());
-//  for (std::size_t i = 0; !cd.done_ && i < other_fcl_obj.collision_objects_.size(); ++i)
-//    manager.manager_->collide(other_fcl_obj.collision_objects_[i].get(), &cd, &collisionCallback);
+  // Right now it will get distance information within 1.0 meter
+  // Need to figure out the best way to expose this or see if bullet
+  // has a true distance request.
+  double contact_distance = 0.0;
+  if (req.distance)
+  {
+    contact_distance = 1.0;
+  }
 
-//  if (req.distance)
-//  {
-//    DistanceRequest dreq;
-//    DistanceResult dres;
+  other_bullet_robot.constructBulletObject(other_robot_manager.m_link2cow, contact_distance, other_state, nullptr);
+  other_robot_manager.processCollisionObjects();
 
-//    dreq.group_name = req.group_name;
-//    dreq.acm = acm;
-//    dreq.enableGroup(getRobotModel());
-//    distanceOtherHelper(dreq, dres, state, other_robot, other_state);
-//    res.distance = dres.minimum_distance.distance;
-//  }
+  constructBulletObject(robot_objects, contact_distance, state, dreq.active_components_only);
+
+
+  if (dreq.active_components_only->size() > 0)
+  {
+    for (auto element : *dreq.active_components_only)
+    {
+      COWPtr cow = robot_objects[element->getName()];
+      other_robot_manager.contactDiscreteTest(cow, acm, collisions);
+    }
+  }
+  else
+  {
+    for (auto element : robot_objects)
+    {
+      other_robot_manager.contactDiscreteTest(element.second, acm, collisions);
+    }
+  }
+
+  convertBulletCollisions(res, collisions);
 }
 
 void collision_detection::CollisionRobotBullet::updatedPaddingOrScaling(const std::vector<std::string>& links)
 {
    CONSOLE_BRIDGE_logError("Bullet updatedPaddingOrScaling not implemented");
-
-//  std::size_t index;
-//  for (const auto& link : links)
-//  {
-//    const robot_model::LinkModel* lmodel = robot_model_->getLinkModel(link);
-//    if (lmodel)
-//    {
-//      for (std::size_t j = 0; j < lmodel->getShapes().size(); ++j)
-//      {
-//        FCLGeometryConstPtr g = createCollisionGeometry(lmodel->getShapes()[j], getLinkScale(lmodel->getName()),
-//                                                        getLinkPadding(lmodel->getName()), lmodel, j);
-//        if (g)
-//        {
-//          index = lmodel->getFirstCollisionBodyTransformIndex() + j;
-//          geoms_[index] = g;
-//          fcl_objs_[index] = FCLCollisionObjectConstPtr(new fcl::CollisionObject(g->collision_geometry_));
-//        }
-//      }
-//    }
-//    else
-//      CONSOLE_BRIDGE_logError("Updating padding or scaling for unknown link: '%s'", link.c_str());
-//  }
 }
 
 double collision_detection::CollisionRobotBullet::distanceSelf(const robot_state::RobotState& state) const
@@ -644,15 +658,31 @@ void collision_detection::CollisionRobotBullet::distanceOtherHelper(const Distan
                                                                     const CollisionRobot& other_robot,
                                                                     const robot_state::RobotState& other_state) const
 {
-  CONSOLE_BRIDGE_logError("Bullet distance other checking not yet implemented");
-//  FCLManager manager;
-//  allocSelfCollisionBroadPhase(state, manager);
+  const CollisionRobotBullet& other_bullet_robot = dynamic_cast<const CollisionRobotBullet&>(other_robot);
+  BulletManager other_robot_manager;
+  Link2Cow robot_objects;
+  std::vector<collision_detection::DistanceResultsData> collisions;
 
-//  const CollisionRobotFCL& fcl_rob = dynamic_cast<const CollisionRobotFCL&>(other_robot);
-//  FCLObject other_fcl_obj;
-//  fcl_rob.constructFCLObject(other_state, other_fcl_obj);
+  other_bullet_robot.constructBulletObject(other_robot_manager.m_link2cow, req.distance_threshold, other_state, nullptr);
+  other_robot_manager.processCollisionObjects();
 
-//  DistanceData drd(&req, &res);
-//  for (std::size_t i = 0; !drd.done && i < other_fcl_obj.collision_objects_.size(); ++i)
-//    manager.manager_->distance(other_fcl_obj.collision_objects_[i].get(), &drd, &distanceDetailedCallback);
+  constructBulletObject(robot_objects, req.distance_threshold, state, req.active_components_only);
+
+  if (req.active_components_only->size() > 0)
+  {
+    for (auto element : *req.active_components_only)
+    {
+      COWPtr cow = robot_objects[element->getName()];
+      other_robot_manager.contactDiscreteTest(cow, req.acm, collisions);
+    }
+  }
+  else
+  {
+    for (auto element : robot_objects)
+    {
+      other_robot_manager.contactDiscreteTest(element.second, req.acm, collisions);
+    }
+  }
+
+  convertBulletCollisions(res, collisions);
 }
