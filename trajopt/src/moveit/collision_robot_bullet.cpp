@@ -73,18 +73,6 @@ collision_detection::CollisionRobotBullet::CollisionRobotBullet(const CollisionR
   m_use_original_cast = other.m_use_original_cast;
 }
 
-//void collision_detection::CollisionRobotBullet::getAttachedBodyObjects(const robot_state::AttachedBody* ab,
-//                                                                       std::vector<FCLGeometryConstPtr>& geoms) const
-//{
-//  const std::vector<shapes::ShapeConstPtr>& shapes = ab->getShapes();
-//  for (std::size_t i = 0; i < shapes.size(); ++i)
-//  {
-//    FCLGeometryConstPtr co = createCollisionGeometry(shapes[i], ab, i);
-//    if (co)
-//      geoms.push_back(co);
-//  }
-//}
-
 void collision_detection::CollisionRobotBullet::constructBulletObject(Link2Cow &collision_objects, double contact_distance, const robot_state::RobotState& state, const std::set<const robot_model::LinkModel*> *active_links, bool continuous) const
 {
 
@@ -111,27 +99,30 @@ void collision_detection::CollisionRobotBullet::constructBulletObject(Link2Cow &
     collision_objects[element.first] = new_cow;
   }
 
-//  // TODO: Implement a method for caching fcl::CollisionObject's for robot_state::AttachedBody's
-//  std::vector<const robot_state::AttachedBody*> ab;
-//  state.getAttachedBodies(ab);
-//  for (auto& body : ab)
-//  {
-//    std::vector<FCLGeometryConstPtr> objs;
-//    getAttachedBodyObjects(body, objs);
-//    const EigenSTL::vector_Affine3d& ab_t = body->getGlobalCollisionBodyTransforms();
-//    for (std::size_t k = 0; k < objs.size(); ++k)
-//      if (objs[k]->collision_geometry_)
-//      {
-//        transform2fcl(ab_t[k], fcl_tf);
-//        fcl_obj.collision_objects_.push_back(
-//            FCLCollisionObjectPtr(new fcl::CollisionObject(objs[k]->collision_geometry_, fcl_tf)));
-//        // we copy the shared ptr to the CollisionGeometryData, as this is not stored by the class itself,
-//        // and would be destroyed when objs goes out of scope.
-//        fcl_obj.collision_geometry_.push_back(objs[k]);
-//      }
-//  }
+  // TODO: Implement a method for caching fcl::CollisionObject's for robot_state::AttachedBody's
+  std::vector<const robot_state::AttachedBody*> ab;
+  state.getAttachedBodies(ab);
+  for (auto& body : ab)
+  {
+    COWPtr new_cow(new COW(body));
 
-  // TODO: This should probably be moved
+    btTransform tf = convertEigenToBt(state.getGlobalLinkTransform(body->getAttachedLinkName()));
+    new_cow->setWorldTransform(tf);
+
+    // For descrete checks we can check static to kinematic and kinematic to kinematic
+    new_cow->m_collisionFilterGroup = (active_links && (std::find_if(active_links->begin(), active_links->end(), [&](const robot_model::LinkModel* link) { return link->getName() == body->getAttachedLinkName(); }) == active_links->end())) ? btBroadphaseProxy::StaticFilter : btBroadphaseProxy::KinematicFilter;
+    if (new_cow->m_collisionFilterGroup == btBroadphaseProxy::StaticFilter)
+    {
+      new_cow->m_collisionFilterMask = btBroadphaseProxy::KinematicFilter;
+    }
+    else
+    {
+      (continuous) ? (new_cow->m_collisionFilterMask = btBroadphaseProxy::StaticFilter) : (new_cow->m_collisionFilterMask = btBroadphaseProxy::StaticFilter | btBroadphaseProxy::KinematicFilter);
+    }
+
+    setContactDistance(new_cow, contact_distance);
+    collision_objects[new_cow->getID()] = new_cow;
+  }
 }
 
 void collision_detection::CollisionRobotBullet::constructBulletObject(Link2Cow& collision_objects,
@@ -143,8 +134,6 @@ void collision_detection::CollisionRobotBullet::constructBulletObject(Link2Cow& 
   for (std::pair<std::string, COWConstPtr> element : m_link2cow)
   {
     COWPtr new_cow(new COW(*(element.second.get())));
-//    COWPtr new_cow(new COW(element.second->m_link));
-//    new_cow->m_index = element.second->m_index;
 
     new_cow->m_collisionFilterGroup = (active_links && (std::find_if(active_links->begin(), active_links->end(), [&](const robot_model::LinkModel* link) { return link->getName() == element.first; }) == active_links->end())) ? btBroadphaseProxy::StaticFilter : btBroadphaseProxy::KinematicFilter;
 
@@ -189,9 +178,6 @@ void collision_detection::CollisionRobotBullet::constructBulletObject(Link2Cow& 
           btTransform child_tf1 = convertEigenToBt(tf1) * geomTrans;
           btTransform child_tf2 = convertEigenToBt(tf2) * geomTrans;
 
-          Eigen::Affine3d tmp = tf1.inverse() * tf2;
-          btTransform tmp2 = child_tf1.inverseTimes(child_tf2);
-
           btCollisionShape* subshape = new CastHullShape(convex, child_tf1.inverseTimes(child_tf2));
           assert(subshape != NULL);
 
@@ -220,27 +206,83 @@ void collision_detection::CollisionRobotBullet::constructBulletObject(Link2Cow& 
     collision_objects[element.first] = new_cow;
   }
 
-//  // TODO: Implement a method for caching fcl::CollisionObject's for robot_state::AttachedBody's
-//  std::vector<const robot_state::AttachedBody*> ab;
-//  state.getAttachedBodies(ab);
-//  for (auto& body : ab)
-//  {
-//    std::vector<FCLGeometryConstPtr> objs;
-//    getAttachedBodyObjects(body, objs);
-//    const EigenSTL::vector_Affine3d& ab_t = body->getGlobalCollisionBodyTransforms();
-//    for (std::size_t k = 0; k < objs.size(); ++k)
-//      if (objs[k]->collision_geometry_)
-//      {
-//        transform2fcl(ab_t[k], fcl_tf);
-//        fcl_obj.collision_objects_.push_back(
-//            FCLCollisionObjectPtr(new fcl::CollisionObject(objs[k]->collision_geometry_, fcl_tf)));
-//        // we copy the shared ptr to the CollisionGeometryData, as this is not stored by the class itself,
-//        // and would be destroyed when objs goes out of scope.
-//        fcl_obj.collision_geometry_.push_back(objs[k]);
-//      }
-//  }
+  std::vector<const robot_state::AttachedBody*> ab;
+  state1.getAttachedBodies(ab);
+  for (auto& body : ab)
+  {
+    COWPtr new_cow(new COW(body));
 
-  // TODO: This should probably be moved
+    new_cow->m_collisionFilterGroup = (active_links && (std::find_if(active_links->begin(), active_links->end(), [&](const robot_model::LinkModel* link) { return link->getName() == body->getAttachedLinkName(); }) == active_links->end())) ? btBroadphaseProxy::StaticFilter : btBroadphaseProxy::KinematicFilter;
+
+    if (new_cow->m_collisionFilterGroup == btBroadphaseProxy::StaticFilter)
+    {
+      btTransform tf = convertEigenToBt(state1.getGlobalLinkTransform(body->getAttachedLinkName()));
+
+      new_cow->setWorldTransform(tf);
+      new_cow->m_collisionFilterMask = btBroadphaseProxy::KinematicFilter;
+    }
+    else
+    {
+      if (btBroadphaseProxy::isConvex(new_cow->getCollisionShape()->getShapeType()))
+      {
+        btConvexShape* convex = static_cast<btConvexShape*>(new_cow->getCollisionShape());
+        assert(convex != NULL);
+
+        btTransform tf1 = convertEigenToBt(state1.getGlobalLinkTransform(body->getAttachedLinkName()));
+        btTransform tf2 = convertEigenToBt(state2.getGlobalLinkTransform(body->getAttachedLinkName()));
+
+        CastHullShape* shape = new CastHullShape(convex, tf1.inverseTimes(tf2));
+        assert(shape != NULL);
+
+        new_cow->manage(shape);
+        new_cow->setCollisionShape(shape);
+        new_cow->setWorldTransform(tf1);
+      }
+      else if (btBroadphaseProxy::isCompound(new_cow->getCollisionShape()->getShapeType()))
+      {
+        btCompoundShape* compound = static_cast<btCompoundShape*>(new_cow->getCollisionShape());
+        Eigen::Affine3d tf1 = state1.getGlobalLinkTransform(body->getAttachedLinkName());
+        Eigen::Affine3d tf2 = state2.getGlobalLinkTransform(body->getAttachedLinkName());
+
+        btCompoundShape* new_compound = new btCompoundShape(/*dynamicAABBtree=*/false);
+
+        for (int i = 0; i < compound->getNumChildShapes(); ++i)
+        {
+          btConvexShape* convex = static_cast<btConvexShape*>(compound->getChildShape(i));
+          assert(convex != NULL);
+
+          btTransform geomTrans = compound->getChildTransform(i);
+          btTransform child_tf1 = convertEigenToBt(tf1) * geomTrans;
+          btTransform child_tf2 = convertEigenToBt(tf2) * geomTrans;
+
+          btCollisionShape* subshape = new CastHullShape(convex, child_tf1.inverseTimes(child_tf2));
+          assert(subshape != NULL);
+
+          if (subshape != NULL)
+          {
+            new_cow->manage(subshape);
+            subshape->setMargin(BULLET_MARGIN);
+            new_compound->addChildShape(geomTrans, subshape);
+          }
+        }
+
+        new_compound->setMargin(BULLET_MARGIN); //margin: compound. seems to have no effect when positive but has an effect when negative
+        new_cow->manage(new_compound);
+        new_cow->setCollisionShape(new_compound);
+        new_cow->setWorldTransform(convertEigenToBt(tf1));
+      }
+      else
+      {
+        CONSOLE_BRIDGE_logError("I can only continuous collision check convex shapes and compound shapes made of convex shapes");
+      }
+
+      new_cow->m_collisionFilterMask = btBroadphaseProxy::StaticFilter;
+    }
+
+    setContactDistance(new_cow, contact_distance);
+    collision_objects[new_cow->getID()] = new_cow;
+  }
+
 }
 
 void collision_detection::CollisionRobotBullet::checkSelfCollision(const CollisionRequest& req, CollisionResult& res,
