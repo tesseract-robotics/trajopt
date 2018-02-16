@@ -40,8 +40,6 @@ public:
 
   bool getLinkNames(std::vector<std::string> &names) const;
 
-  bool getLinkNamesWithGeometry(std::vector<std::string> &names) const;
-
   Eigen::MatrixXd getLimits() const { return joint_limits_; }
 
   /**
@@ -128,7 +126,7 @@ private:
   std::string tip_name_;                                         /**< Link name of last kink in the kinematic chain */
   std::vector<std::string> joint_list_;                          /**< List of joint names */
   std::vector<std::string> link_list_;                           /**< List of link names */
-  std::vector<std::string> link_list_with_geom_;                 /**< List of link names with geometry */
+//  std::vector<std::string> link_list_with_geom_;                 /**< List of link names with geometry */
   Eigen::Matrix<double, Eigen::Dynamic, 2> joint_limits_;        /**< Joint limits */
   boost::scoped_ptr<KDL::ChainFkSolverPos_recursive> fk_solver_; /**< KDL Forward Kinematic Solver */
   boost::scoped_ptr<KDL::ChainJntToJacSolver> jac_solver_;       /**< KDL Jacobian Solver */

@@ -236,6 +236,20 @@ public:
     return "Object";
   }
 
+  const std::string& getLinkName() const
+  {
+    switch (m_type)
+    {
+      case BodyTypes::ROBOT_LINK:
+        return ptr.m_link->getName();
+      case BodyTypes::ROBOT_ATTACHED:
+        return ptr.m_ab->getAttachedLinkName();
+      default:
+        break;
+    }
+    return ptr.m_obj->id_;
+  }
+
   boost::shared_ptr<CollisionObjectWrapper> clone()
   {
     switch (m_type)

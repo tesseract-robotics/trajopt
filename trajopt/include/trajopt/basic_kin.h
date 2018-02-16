@@ -113,18 +113,11 @@ public:
   virtual bool getJointNames(std::vector<std::string> &names) const = 0;
 
   /**
-   * @brief Get list of link names for robot
+   * @brief Get list of all link names (with and without geometry) for robot
    * @param names Output vector of names, copied from link_list_ created in init()
    * @return True if BasicKin has been successfully initialized
    */
   virtual bool getLinkNames(std::vector<std::string> &names) const = 0;
-
-  /**
-   * @brief Get list of link names for robot that have geometry
-   * @param names Output vector of names, copied from link_list_with_geom_ created in init()
-   * @return True if BasicKin has been successfully initialized
-   */
-  virtual bool getLinkNamesWithGeometry(std::vector<std::string> &names) const = 0;
 
   /**
    * @brief Getter for joint_limits_

@@ -72,7 +72,7 @@ collision_detection::CollisionRobotBullet::CollisionRobotBullet(const CollisionR
   m_use_original_cast = other.m_use_original_cast;
 }
 
-void collision_detection::CollisionRobotBullet::constructBulletObject(Link2Cow &collision_objects, double contact_distance, const robot_state::RobotState& state, const std::set<const robot_model::LinkModel*> *active_links, bool continuous) const
+void collision_detection::CollisionRobotBullet::constructBulletObject(Link2Cow &collision_objects, std::vector<std::string> &active_objects, double contact_distance, const robot_state::RobotState& state, const std::set<const robot_model::LinkModel*> *active_links, bool continuous) const
 {
 
   for (std::pair<std::string, COWConstPtr> element : m_link2cow)
@@ -91,6 +91,7 @@ void collision_detection::CollisionRobotBullet::constructBulletObject(Link2Cow &
     }
     else
     {
+      active_objects.push_back(element.first);
       (continuous) ? (new_cow->m_collisionFilterMask = btBroadphaseProxy::StaticFilter) : (new_cow->m_collisionFilterMask = btBroadphaseProxy::StaticFilter | btBroadphaseProxy::KinematicFilter);
     }
 
@@ -116,6 +117,7 @@ void collision_detection::CollisionRobotBullet::constructBulletObject(Link2Cow &
     }
     else
     {
+      active_objects.push_back(new_cow->getID());
       (continuous) ? (new_cow->m_collisionFilterMask = btBroadphaseProxy::StaticFilter) : (new_cow->m_collisionFilterMask = btBroadphaseProxy::StaticFilter | btBroadphaseProxy::KinematicFilter);
     }
 
@@ -125,6 +127,7 @@ void collision_detection::CollisionRobotBullet::constructBulletObject(Link2Cow &
 }
 
 void collision_detection::CollisionRobotBullet::constructBulletObject(Link2Cow& collision_objects,
+                                                                      std::vector<std::string> &active_objects,
                                                                       double contact_distance,
                                                                       const robot_state::RobotState& state1,
                                                                       const robot_state::RobotState& state2,
@@ -145,6 +148,8 @@ void collision_detection::CollisionRobotBullet::constructBulletObject(Link2Cow& 
     }
     else
     {
+      active_objects.push_back(element.first);
+
       if (btBroadphaseProxy::isConvex(new_cow->getCollisionShape()->getShapeType()))
       {
         btConvexShape* convex = static_cast<btConvexShape*>(new_cow->getCollisionShape());
@@ -222,6 +227,8 @@ void collision_detection::CollisionRobotBullet::constructBulletObject(Link2Cow& 
     }
     else
     {
+      active_objects.push_back(new_cow->getID());
+
       if (btBroadphaseProxy::isConvex(new_cow->getCollisionShape()->getShapeType()))
       {
         btConvexShape* convex = static_cast<btConvexShape*>(new_cow->getCollisionShape());
@@ -333,31 +340,16 @@ void collision_detection::CollisionRobotBullet::checkSelfCollisionHelper(const C
     contact_distance = BULLET_DEFAULT_CONTACT_DISTANCE;
   }
 
-  constructBulletObject(manager.m_link2cow, contact_distance, state, dreq.active_components_only);
+  std::vector<std::string> active_objects;
+  constructBulletObject(manager.m_link2cow, active_objects, contact_distance, state, dreq.active_components_only);
   manager.processCollisionObjects();
 
-  if (dreq.active_components_only->size() > 0)
+  for (auto& obj : active_objects)
   {
-    for (auto element : *dreq.active_components_only)
-    {
-      COWPtr cow = manager.m_link2cow[element->getName()];
-      manager.contactDiscreteTest(cow, acm, collisions);
+    COWPtr cow = manager.m_link2cow[obj];
+    assert(cow);
 
-      std::vector<const robot_state::AttachedBody*> ab;
-      state.getAttachedBodies(ab, element);
-      for(auto& body : ab)
-      {
-        COWPtr cow = manager.m_link2cow[body->getName()];
-        manager.contactDiscreteTest(cow, acm, collisions);
-      }
-    }
-  }
-  else
-  {
-    for (auto element: manager.m_link2cow)
-    {
-      manager.contactDiscreteTest(element.second, acm, collisions);
-    }
+    manager.contactDiscreteTest(cow, acm, collisions);
   }
 
   convertBulletCollisions(res, collisions);
@@ -384,46 +376,18 @@ void collision_detection::CollisionRobotBullet::checkSelfCollisionHelper(const C
     contact_distance = 1.0;
   }
 
-  constructBulletObject(manager.m_link2cow, contact_distance, state1, dreq.active_components_only, true);
+  std::vector<std::string> active_objects;
+  constructBulletObject(manager.m_link2cow, active_objects, contact_distance, state1, dreq.active_components_only, true);
   manager.processCollisionObjects();
 
-  if (dreq.active_components_only->size() > 0)
+  for (auto& obj : active_objects)
   {
-    for (auto element : *dreq.active_components_only)
-    {
-      Eigen::Affine3d tf1 = state1.getGlobalLinkTransform(element);
-      Eigen::Affine3d tf2 = state2.getGlobalLinkTransform(element);
-      COWPtr cow = manager.m_link2cow[element->getName()];
-      manager.convexSweepTest(cow, convertEigenToBt(tf1), convertEigenToBt(tf2), acm, collisions);
+    COWPtr cow = manager.m_link2cow[obj];
+    assert(cow);
 
-      std::vector<const robot_state::AttachedBody*> ab;
-      state1.getAttachedBodies(ab, element);
-      for(auto& body : ab)
-      {
-        COWPtr cow = manager.m_link2cow[body->getName()];
-        manager.convexSweepTest(cow, convertEigenToBt(tf1), convertEigenToBt(tf2), acm, collisions);
-      }
-    }
-  }
-  else
-  {
-    for (auto element : manager.m_link2cow)
-    {
-      std::string link_name;
-      if (element.second->m_type == BodyTypes::ROBOT_ATTACHED)
-      {
-        link_name = element.second->ptr.m_ab->getAttachedLinkName();
-      }
-      else
-      {
-        link_name = element.second->getID();
-      }
-
-      Eigen::Affine3d tf1 = state1.getGlobalLinkTransform(link_name);
-      Eigen::Affine3d tf2 = state2.getGlobalLinkTransform(link_name);
-
-      manager.convexSweepTest(element.second, convertEigenToBt(tf1), convertEigenToBt(tf2), acm, collisions);
-    }
+    Eigen::Affine3d tf1 = state1.getGlobalLinkTransform(cow->getLinkName());
+    Eigen::Affine3d tf2 = state2.getGlobalLinkTransform(cow->getLinkName());
+    manager.convexSweepTest(cow, convertEigenToBt(tf1), convertEigenToBt(tf2), acm, collisions);
   }
 
   convertBulletCollisions(res, collisions);
@@ -493,34 +457,18 @@ void collision_detection::CollisionRobotBullet::checkOtherCollisionHelper(const 
     contact_distance = BULLET_DEFAULT_CONTACT_DISTANCE;
   }
 
-  other_bullet_robot.constructBulletObject(other_robot_manager.m_link2cow, contact_distance, other_state, nullptr);
+  std::vector<std::string> active_objects, other_active_objects;
+  other_bullet_robot.constructBulletObject(other_robot_manager.m_link2cow, other_active_objects, contact_distance, other_state, nullptr);
   other_robot_manager.processCollisionObjects();
 
-  constructBulletObject(robot_objects, contact_distance, state, dreq.active_components_only);
+  constructBulletObject(robot_objects, active_objects, contact_distance, state, dreq.active_components_only);
 
-
-  if (dreq.active_components_only->size() > 0)
+  for (auto& obj : active_objects)
   {
-    for (auto element : *dreq.active_components_only)
-    {
-      COWPtr cow = robot_objects[element->getName()];
-      other_robot_manager.contactDiscreteTest(cow, acm, collisions);
+    COWPtr cow = robot_objects[obj];
+    assert(cow);
 
-      std::vector<const robot_state::AttachedBody*> ab;
-      state.getAttachedBodies(ab, element);
-      for(auto& body : ab)
-      {
-        COWPtr cow = robot_objects[body->getName()];
-        other_robot_manager.contactDiscreteTest(cow, acm, collisions);
-      }
-    }
-  }
-  else
-  {
-    for (auto element : robot_objects)
-    {
-      other_robot_manager.contactDiscreteTest(element.second, acm, collisions);
-    }
+    other_robot_manager.contactDiscreteTest(cow, acm, collisions);
   }
 
   convertBulletCollisions(res, collisions);
@@ -573,31 +521,16 @@ void collision_detection::CollisionRobotBullet::distanceSelfHelper(const Distanc
   BulletManager manager;
   std::vector<collision_detection::DistanceResultsData> collisions;
 
-  constructBulletObject(manager.m_link2cow, req.distance_threshold, state, req.active_components_only);
+  std::vector<std::string> active_objects;
+  constructBulletObject(manager.m_link2cow, active_objects, req.distance_threshold, state, req.active_components_only);
   manager.processCollisionObjects();
 
-  if (req.active_components_only->size() > 0)
+  for (auto& obj : active_objects)
   {
-    for (auto element: *req.active_components_only)
-    {
-      COWPtr cow = manager.m_link2cow[element->getName()];
-      manager.contactDiscreteTest(cow, req.acm, collisions);
+    COWPtr cow = manager.m_link2cow[obj];
+    assert(cow);
 
-      std::vector<const robot_state::AttachedBody*> ab;
-      state.getAttachedBodies(ab, element);
-      for(auto& body : ab)
-      {
-        COWPtr cow = manager.m_link2cow[body->getName()];
-        manager.contactDiscreteTest(cow, req.acm, collisions);
-      }
-    }
-  }
-  else
-  {
-    for (auto element: manager.m_link2cow)
-    {
-      manager.contactDiscreteTest(element.second, req.acm, collisions);
-    }
+    manager.contactDiscreteTest(cow, req.acm, collisions);
   }
 
   convertBulletCollisions(res, collisions, state, req.active_components_only);
@@ -609,31 +542,16 @@ void collision_detection::CollisionRobotBullet::distanceSelfHelper(const Distanc
   BulletManager manager;
   std::vector<collision_detection::DistanceResultsData> collisions;
 
-  constructBulletObject(manager.m_link2cow, req.distance_threshold, state1, state2, req.active_components_only);
+  std::vector<std::string> active_objects;
+  constructBulletObject(manager.m_link2cow, active_objects, req.distance_threshold, state1, state2, req.active_components_only);
   manager.processCollisionObjects();
 
-  if (req.active_components_only->size() > 0)
+  for (auto& obj : active_objects)
   {
-    for (auto element: *req.active_components_only)
-    {
-      COWPtr cow = manager.m_link2cow[element->getName()];
-      manager.contactCastTest(cow, req.acm, collisions);
+    COWPtr cow = manager.m_link2cow[obj];
+    assert(cow);
 
-      std::vector<const robot_state::AttachedBody*> ab;
-      state1.getAttachedBodies(ab, element);
-      for(auto& body : ab)
-      {
-        COWPtr cow = manager.m_link2cow[body->getName()];
-        manager.contactCastTest(cow, req.acm, collisions);
-      }
-    }
-  }
-  else
-  {
-    for (auto element: manager.m_link2cow)
-    {
-      manager.contactCastTest(element.second, req.acm, collisions);
-    }
+    manager.contactCastTest(cow, req.acm, collisions);
   }
 
   convertBulletCollisions(res, collisions, state1, req.active_components_only);
@@ -645,34 +563,18 @@ void collision_detection::CollisionRobotBullet::distanceSelfHelperOriginal(const
   BulletManager manager;
   std::vector<collision_detection::DistanceResultsData> collisions;
 
-  constructBulletObject(manager.m_link2cow, req.distance_threshold, state1, req.active_components_only, true);
+  std::vector<std::string> active_objects;
+  constructBulletObject(manager.m_link2cow, active_objects, req.distance_threshold, state1, req.active_components_only, true);
   manager.processCollisionObjects();
 
-  if (req.active_components_only->size() > 0)
+  for (auto& obj : active_objects)
   {
-    for (auto element: *req.active_components_only)
-    {
-      btTransform tf1 = convertEigenToBt(state1.getGlobalLinkTransform(element));
-      btTransform tf2 = convertEigenToBt(state2.getGlobalLinkTransform(element));
+    COWPtr cow = manager.m_link2cow[obj];
+    assert(cow);
 
-      manager.contactCastTestOriginal(element->getName(), tf1, tf2, req.acm, collisions);
-
-      std::vector<const robot_state::AttachedBody*> ab;
-      state1.getAttachedBodies(ab, element);
-      for(auto& body : ab)
-      {
-        manager.contactCastTestOriginal(body->getName(), tf1, tf2, req.acm, collisions);
-      }
-    }
-  }
-  else
-  {
-    for (auto element: manager.m_link2cow)
-    {
-      btTransform tf1 = convertEigenToBt(state1.getGlobalLinkTransform(element.first));
-      btTransform tf2 = convertEigenToBt(state2.getGlobalLinkTransform(element.first));
-      manager.contactCastTestOriginal(element.first, tf1, tf2, req.acm, collisions);
-    }
+    btTransform tf1 = convertEigenToBt(state1.getGlobalLinkTransform(cow->getLinkName()));
+    btTransform tf2 = convertEigenToBt(state2.getGlobalLinkTransform(cow->getLinkName()));
+    manager.contactCastTestOriginal(obj, tf1, tf2, req.acm, collisions);
   }
 
   convertBulletCollisions(res, collisions, state1, req.active_components_only);
@@ -724,33 +626,18 @@ void collision_detection::CollisionRobotBullet::distanceOtherHelper(const Distan
   Link2Cow robot_objects;
   std::vector<collision_detection::DistanceResultsData> collisions;
 
-  other_bullet_robot.constructBulletObject(other_robot_manager.m_link2cow, req.distance_threshold, other_state, nullptr);
+  std::vector<std::string> active_objects, other_active_objects;
+  other_bullet_robot.constructBulletObject(other_robot_manager.m_link2cow, other_active_objects, req.distance_threshold, other_state, nullptr);
   other_robot_manager.processCollisionObjects();
 
-  constructBulletObject(robot_objects, req.distance_threshold, state, req.active_components_only);
+  constructBulletObject(robot_objects, active_objects, req.distance_threshold, state, req.active_components_only);
 
-  if (req.active_components_only->size() > 0)
+  for (auto& obj : active_objects)
   {
-    for (auto element : *req.active_components_only)
-    {
-      COWPtr cow = robot_objects[element->getName()];
-      other_robot_manager.contactDiscreteTest(cow, req.acm, collisions);
+    COWPtr cow = robot_objects[obj];
+    assert(cow);
 
-      std::vector<const robot_state::AttachedBody*> ab;
-      state.getAttachedBodies(ab, element);
-      for(auto& body : ab)
-      {
-        COWPtr cow = robot_objects[body->getName()];
-        other_robot_manager.contactDiscreteTest(cow, req.acm, collisions);
-      }
-    }
-  }
-  else
-  {
-    for (auto element : robot_objects)
-    {
-      other_robot_manager.contactDiscreteTest(element.second, req.acm, collisions);
-    }
+    other_robot_manager.contactDiscreteTest(cow, req.acm, collisions);
   }
 
   convertBulletCollisions(res, collisions);

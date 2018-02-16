@@ -122,7 +122,7 @@ TEST_F(PlanningTest, arm_around_table)
   std::vector<trajopt::BasicEnv::DistanceResult> collisions;
   std::vector<std::string> joint_names, link_names;
   prob->GetKin()->getJointNames(joint_names);
-  prob->GetKin()->getLinkNamesWithGeometry(link_names);
+  prob->GetKin()->getLinkNames(link_names);
 
   env_->continuousCollisionCheckTrajectory(joint_names, link_names, prob->GetInitTraj(), collisions);
   ROS_DEBUG("Initial trajector number of continuous collisions: %i\n", collisions.size());

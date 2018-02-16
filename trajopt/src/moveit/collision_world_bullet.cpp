@@ -141,33 +141,18 @@ void collision_detection::CollisionWorldBullet::checkRobotCollisionHelper(const 
   dreq.acm = acm;
   dreq.enableGroup(robot_bullet.getRobotModel());
 
-  robot_bullet.constructBulletObject(robot_collision_objects, contact_distance, state, dreq.active_components_only, false);
+  std::vector<std::string> robot_active_objects;
+  robot_bullet.constructBulletObject(robot_collision_objects, robot_active_objects, contact_distance, state, dreq.active_components_only, false);
 
   constructBulletObject(manager.m_link2cow, contact_distance, false);
   manager.processCollisionObjects();
 
-  if (dreq.active_components_only->size() > 0)
+  for (auto& obj : robot_active_objects)
   {
-    for (auto element : *dreq.active_components_only)
-    {
-      COWPtr cow = robot_collision_objects[element->getName()];
-      manager.contactDiscreteTest(cow, acm, collisions);
+    COWPtr cow = robot_collision_objects[obj];
+    assert(cow);
 
-      std::vector<const robot_state::AttachedBody*> ab;
-      state.getAttachedBodies(ab, element);
-      for(auto& body : ab)
-      {
-        COWPtr cow = robot_collision_objects[body->getName()];
-        manager.contactDiscreteTest(cow, acm, collisions);
-      }
-    }
-  }
-  else
-  {
-    for (auto element : robot_collision_objects)
-    {
-      manager.contactDiscreteTest(element.second, acm, collisions);
-    }
+    manager.contactDiscreteTest(cow, acm, collisions);
   }
 
   convertBulletCollisions(res, collisions);
@@ -198,47 +183,21 @@ void collision_detection::CollisionWorldBullet::checkRobotCollisionHelper(const 
   dreq.acm = acm;
   dreq.enableGroup(robot_bullet.getRobotModel());
 
-  robot_bullet.constructBulletObject(robot_collision_objects, contact_distance, state1, dreq.active_components_only, true);
+  std::vector<std::string> robot_active_objects;
+  robot_bullet.constructBulletObject(robot_collision_objects, robot_active_objects, contact_distance, state1, dreq.active_components_only, true);
 
   constructBulletObject(manager.m_link2cow, contact_distance, false);
   manager.processCollisionObjects();
 
-  if (dreq.active_components_only->size() > 0)
+  for (auto& obj : robot_active_objects)
   {
-    for (auto element : *dreq.active_components_only)
-    {
-      btTransform tf1 = convertEigenToBt(state1.getGlobalLinkTransform(element));
-      btTransform tf2 = convertEigenToBt(state2.getGlobalLinkTransform(element));
-      COWPtr cow = robot_collision_objects[element->getName()];
-      manager.convexSweepTest(cow, tf1, tf2, acm, collisions);
+    COWPtr cow = robot_collision_objects[obj];
+    assert(cow);
 
-      std::vector<const robot_state::AttachedBody*> ab;
-      state1.getAttachedBodies(ab, element);
-      for(auto& body : ab)
-      {
-        COWPtr cow = robot_collision_objects[body->getName()];
-        manager.convexSweepTest(cow, tf1, tf2, acm, collisions);
-      }
-    }
-  }
-  else
-  {
-    for (auto element : robot_collision_objects)
-    {
-      std::string link_name;
-      if (element.second->m_type == BodyTypes::ROBOT_ATTACHED)
-      {
-        link_name = element.second->ptr.m_ab->getAttachedLinkName();
-      }
-      else
-      {
-        link_name = element.second->getID();
-      }
+    btTransform tf1 = convertEigenToBt(state1.getGlobalLinkTransform(cow->getLinkName()));
+    btTransform tf2 = convertEigenToBt(state2.getGlobalLinkTransform(cow->getLinkName()));
 
-      Eigen::Affine3d tf1 = state1.getGlobalLinkTransform(link_name);
-      Eigen::Affine3d tf2 = state2.getGlobalLinkTransform(link_name);
-      manager.convexSweepTest(element.second, convertEigenToBt(tf1), convertEigenToBt(tf2), acm, collisions);
-    }
+    manager.convexSweepTest(cow, tf1, tf2, acm, collisions);
   }
 
   convertBulletCollisions(res, collisions);
@@ -350,33 +309,18 @@ void collision_detection::CollisionWorldBullet::distanceRobotHelper(const Distan
   Link2Cow robot_collision_objects;
   std::vector<collision_detection::DistanceResultsData> collisions;
 
-  robot_bullet.constructBulletObject(robot_collision_objects, req.distance_threshold, state, req.active_components_only);
+  std::vector<std::string> robot_active_objects;
+  robot_bullet.constructBulletObject(robot_collision_objects, robot_active_objects, req.distance_threshold, state, req.active_components_only);
 
   constructBulletObject(manager.m_link2cow, req.distance_threshold, false);
   manager.processCollisionObjects();
 
-  if (req.active_components_only->size() > 0)
+  for (auto& obj : robot_active_objects)
   {
-    for (auto element : *req.active_components_only)
-    {
-      COWPtr cow = robot_collision_objects[element->getName()];
-      manager.contactDiscreteTest(cow, req.acm, collisions);
+    COWPtr cow = robot_collision_objects[obj];
+    assert(cow);
 
-      std::vector<const robot_state::AttachedBody*> ab;
-      state.getAttachedBodies(ab, element);
-      for(auto& body : ab)
-      {
-        COWPtr cow = robot_collision_objects[body->getName()];
-        manager.contactDiscreteTest(cow, req.acm, collisions);
-      }
-    }
-  }
-  else
-  {
-    for (auto element : robot_collision_objects)
-    {
-      manager.contactDiscreteTest(element.second, req.acm, collisions);
-    }
+    manager.contactDiscreteTest(cow, req.acm, collisions);
   }
 
   convertBulletCollisions(res, collisions, state, req.active_components_only);
@@ -392,33 +336,18 @@ void collision_detection::CollisionWorldBullet::distanceRobotHelper(const Distan
   Link2Cow robot_collision_objects;
   std::vector<collision_detection::DistanceResultsData> collisions;
 
-  robot_bullet.constructBulletObject(robot_collision_objects, req.distance_threshold, state1, state2, req.active_components_only);
+  std::vector<std::string> robot_active_objects;
+  robot_bullet.constructBulletObject(robot_collision_objects, robot_active_objects, req.distance_threshold, state1, state2, req.active_components_only);
 
   constructBulletObject(manager.m_link2cow, req.distance_threshold, false);
   manager.processCollisionObjects();
 
-  if (req.active_components_only->size() > 0)
+  for (auto& obj : robot_active_objects)
   {
-    for (auto element : *req.active_components_only)
-    {
-      COWPtr cow = robot_collision_objects[element->getName()];
-      manager.contactCastTest(cow, req.acm, collisions);
+    COWPtr cow = robot_collision_objects[obj];
+    assert(cow);
 
-      std::vector<const robot_state::AttachedBody*> ab;
-      state1.getAttachedBodies(ab, element);
-      for(auto& body : ab)
-      {
-        COWPtr cow = robot_collision_objects[body->getName()];
-        manager.contactCastTest(cow, req.acm, collisions);
-      }
-    }
-  }
-  else
-  {
-    for (auto element : robot_collision_objects)
-    {
-      manager.contactCastTest(element.second, req.acm, collisions);
-    }
+    manager.contactCastTest(cow, req.acm, collisions);
   }
 
   convertBulletCollisions(res, collisions, state1, req.active_components_only);

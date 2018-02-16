@@ -46,7 +46,7 @@ void CollisionsToDistanceExpressions(const std::vector<BasicEnv::DistanceResult>
 {
   VectorXd dofvals = getVec(x, vars);
   std::vector<std::string> link_names;
-  manip->getLinkNamesWithGeometry(link_names);
+  manip->getLinkNames(link_names);
 
   // All collision data is in world corrdinate system. This provides the transfrom
   // for converting data between world frame and manipulator frame.
@@ -144,7 +144,7 @@ void CollisionEvaluator::Plot(const DblVec& x)
   std::vector<BasicEnv::DistanceResult> dist_results;
   GetCollisionsCached(x, dist_results);
   std::vector<std::string> link_names;
-  manip_->getLinkNamesWithGeometry(link_names);
+  manip_->getLinkNames(link_names);
   env_->plotCollisions(link_names, dist_results, contact_distance_);
 }
 
@@ -157,7 +157,7 @@ void SingleTimestepCollisionEvaluator::CalcCollisions(const DblVec& x, std::vect
   BasicEnv::DistanceRequest req;
 
   req.joint_angles1 = getVec(x, m_vars);
-  manip_->getLinkNamesWithGeometry(req.link_names);
+  manip_->getLinkNames(req.link_names);
   manip_->getJointNames(req.joint_names);
   req.contact_distance = contact_distance_ + 0.04; // The original implementation added a margin of 0.04
 
@@ -189,7 +189,7 @@ CastCollisionEvaluator::CastCollisionEvaluator(BasicKinPtr manip, BasicEnvPtr en
 void CastCollisionEvaluator::CalcCollisions(const DblVec& x, std::vector<BasicEnv::DistanceResult> &dist_results)
 {
   BasicEnv::DistanceRequest req;
-  manip_->getLinkNamesWithGeometry(req.link_names);
+  manip_->getLinkNames(req.link_names);
   manip_->getJointNames(req.joint_names);
   req.joint_angles1 = getVec(x, m_vars0);
   req.joint_angles2 = getVec(x, m_vars1);

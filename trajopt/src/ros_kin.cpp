@@ -239,17 +239,6 @@ bool ROSKin::getLinkNames(std::vector<std::string> &names) const
     return true;
 }
 
-bool ROSKin::getLinkNamesWithGeometry(std::vector<std::string> &names) const
-{
-    if (!checkInitialized())
-    {
-        ROS_ERROR("Kinematics must be initialized before retrieving link names");
-        return false;
-    }
-    names = link_list_with_geom_;
-    return true;
-}
-
 //int ROSKin::getLinkParentJointIndex(const std::string &link_name) const
 //{
 //  std::vector<std::string>::const_iterator it_link = find(link_list_.begin(), link_list_.end(), link_name);
@@ -326,7 +315,7 @@ bool ROSKin::init(const moveit::core::JointModelGroup* group)
   joint_too_segment.back() = -1;
 
   link_list_ = group->getUpdatedLinkModelNames();
-  link_list_with_geom_ = group->getUpdatedLinkModelsWithGeometryNames();
+//  link_list_with_geom_ = group->getUpdatedLinkModelsWithGeometryNames();
 
   for (int i=0, j=0; i<robot_chain_.getNrOfSegments(); ++i)
   {
