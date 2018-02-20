@@ -55,41 +55,111 @@ public:
 
     ASSERT_TRUE(env_->init(planning_scene_));
 
-    moveit_msgs::AttachedCollisionObject box_attached;
-    geometry_msgs::Pose box_pose;
-    shape_msgs::SolidPrimitive box;
-
-    box.type = shape_msgs::SolidPrimitive::BOX;
-    box.dimensions.resize(3);
-    box.dimensions[0] = 0.25;
-    box.dimensions[1] = 0.25;
-    box.dimensions[2] = 0.25;
-
-    box_pose.position.x = 0.5;
-    box_pose.position.y = -0.5;
-    box_pose.position.z = 0;
-    box_pose.orientation.x = 0;
-    box_pose.orientation.y = 0;
-    box_pose.orientation.z = 0;
-    box_pose.orientation.w = 1;
-
-    box_attached.link_name = "boxbot_link";
-    box_attached.object.header.frame_id = "boxbot_link";
-    box_attached.object.header.stamp = ros::Time::now();
-
-    box_attached.object.id = "box_attached";
-    box_attached.object.operation = moveit_msgs::CollisionObject::ADD;
-    box_attached.object.primitives.push_back(box);
-    box_attached.object.primitive_poses.push_back(box_pose);
-
-    planning_scene_->processAttachedCollisionObjectMsg(box_attached);
-
     gLogLevel = util::LevelInfo;
   }
 };
 
-TEST_F(CastAttachedTest, boxes) {
-  ROS_DEBUG("CastTest, boxes");
+TEST_F(CastAttachedTest, LinkWithGeom)
+{
+  ROS_DEBUG("CastTest, LinkWithGeom");
+
+  // Attach object to link with Geom
+  moveit_msgs::AttachedCollisionObject box_attached;
+  geometry_msgs::Pose box_pose;
+  shape_msgs::SolidPrimitive box;
+
+  box.type = shape_msgs::SolidPrimitive::BOX;
+  box.dimensions.resize(3);
+  box.dimensions[0] = 0.25;
+  box.dimensions[1] = 0.25;
+  box.dimensions[2] = 0.25;
+
+  box_pose.position.x = 0.5;
+  box_pose.position.y = -0.5;
+  box_pose.position.z = 0;
+  box_pose.orientation.x = 0;
+  box_pose.orientation.y = 0;
+  box_pose.orientation.z = 0;
+  box_pose.orientation.w = 1;
+
+  box_attached.link_name = "boxbot_link";
+  box_attached.object.header.frame_id = "boxbot_link";
+  box_attached.object.header.stamp = ros::Time::now();
+
+  box_attached.object.id = "box_attached";
+  box_attached.object.operation = moveit_msgs::CollisionObject::ADD;
+  box_attached.object.primitives.push_back(box);
+  box_attached.object.primitive_poses.push_back(box_pose);
+
+  planning_scene_->processAttachedCollisionObjectMsg(box_attached);
+
+  Json::Value root = readJsonFile(string(DATA_DIR) + "/box_cast_test.json");
+
+  robot_state::RobotState &rs = planning_scene_->getCurrentStateNonConst();
+  std::map<std::string, double> ipos;
+  ipos["boxbot_x_joint"] = -1.9;
+  ipos["boxbot_y_joint"] = 0;
+  rs.setVariablePositions(ipos);
+
+  TrajOptProbPtr prob = ConstructProblem(root, env_);
+  ASSERT_TRUE(!!prob);
+
+  std::vector<trajopt::BasicEnv::DistanceResult> collisions;
+  std::vector<std::string> joint_names, link_names;
+  prob->GetKin()->getJointNames(joint_names);
+  prob->GetKin()->getLinkNames(link_names);
+
+  env_->continuousCollisionCheckTrajectory(joint_names, link_names, prob->GetInitTraj(), collisions);
+  ROS_DEBUG("Initial trajector number of continuous collisions: %i\n", collisions.size());
+  ASSERT_NE(collisions.size(), 0);
+
+  BasicTrustRegionSQP opt(prob);
+  if (plotting) opt.addCallback(PlotCallback(*prob));
+  opt.initialize(trajToDblVec(prob->GetInitTraj()));
+  opt.optimize();
+
+  if (plotting) prob->GetEnv()->plotClear();
+
+  collisions.clear();
+  env_->continuousCollisionCheckTrajectory(joint_names, link_names, getTraj(opt.x(), prob->GetVars()), collisions);
+  ROS_DEBUG("Final trajectory number of continuous collisions: %i\n", collisions.size());
+  ASSERT_EQ(collisions.size(), 0);
+}
+
+TEST_F(CastAttachedTest, LinkWithoutGeom)
+{
+  ROS_DEBUG("CastTest, LinkWithGeom");
+
+  // Attach object to link with Geom
+  moveit_msgs::AttachedCollisionObject box_attached;
+  geometry_msgs::Pose box_pose;
+  shape_msgs::SolidPrimitive box;
+
+  box.type = shape_msgs::SolidPrimitive::BOX;
+  box.dimensions.resize(3);
+  box.dimensions[0] = 0.25;
+  box.dimensions[1] = 0.25;
+  box.dimensions[2] = 0.25;
+
+  box_pose.position.x = 0;
+  box_pose.position.y = 0;
+  box_pose.position.z = 0;
+  box_pose.orientation.x = 0;
+  box_pose.orientation.y = 0;
+  box_pose.orientation.z = 0;
+  box_pose.orientation.w = 1;
+
+  box_attached.link_name = "no_geom_link";
+  box_attached.object.header.frame_id = "no_geom_link";
+  box_attached.object.header.stamp = ros::Time::now();
+
+  box_attached.object.id = "box_attached";
+  box_attached.object.operation = moveit_msgs::CollisionObject::ADD;
+  box_attached.object.primitives.push_back(box);
+  box_attached.object.primitive_poses.push_back(box_pose);
+
+  planning_scene_->processAttachedCollisionObjectMsg(box_attached);
+
   Json::Value root = readJsonFile(string(DATA_DIR) + "/box_cast_test.json");
 
   robot_state::RobotState &rs = planning_scene_->getCurrentStateNonConst();

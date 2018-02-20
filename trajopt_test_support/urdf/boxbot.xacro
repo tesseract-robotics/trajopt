@@ -13,4 +13,11 @@
     <child link="test_base_link"/>
   </joint>
 
+  <link name="no_geom_link"/>
+  <joint name="no_geom_joint" type="fixed">
+    <origin rpy="0 0 0" xyz="0.5 -0.5 0"/>
+    <parent link="boxbot_link"/>
+    <child link="no_geom_link"/>
+  </joint>
+
 </robot>
