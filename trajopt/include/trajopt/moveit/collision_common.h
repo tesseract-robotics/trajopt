@@ -86,6 +86,7 @@ void convertBulletCollisions(collision_detection::DistanceResult &moveit_dr,
                              const robot_state::RobotState &state,
                              const std::set<const robot_model::LinkModel*>* active_components_only)
 {
+  bool update;
   for (auto collision: collisions)
   {
     if (collision.distance < moveit_dr.minimum_distance.distance)
@@ -100,23 +101,54 @@ void convertBulletCollisions(collision_detection::DistanceResult &moveit_dr,
 
     if (active_components_only->size() > 0)
     {
+      update = false;
       if (collision.body_types[0] == BodyType::ROBOT_LINK && active_components_only->find(state.getLinkModel(collision.link_names[0])) != active_components_only->end())
       {
-        moveit_dr.distances[collision.link_names[0]] = collision;
+        update = true;
       }
       else if (collision.body_types[0] == BodyType::ROBOT_ATTACHED && active_components_only->find(state.getAttachedBody(collision.link_names[0])->getAttachedLink()) != active_components_only->end())
       {
-        moveit_dr.distances[collision.link_names[0]] = collision;
+        update = true;
       }
 
+      if (update)
+      {
+        if (moveit_dr.distances.find(collision.link_names[0]) != moveit_dr.distances.end())
+        {
+          if (collision.distance <  moveit_dr.distances[collision.link_names[0]].distance)
+          {
+            moveit_dr.distances[collision.link_names[0]] = collision;
+          }
+        }
+        else
+        {
+          moveit_dr.distances[collision.link_names[0]] = collision;
+        }
+      }
 
+      update = false;
       if (collision.body_types[1] == BodyType::ROBOT_LINK && active_components_only->find(state.getLinkModel(collision.link_names[1])) != active_components_only->end())
       {
-        moveit_dr.distances[collision.link_names[1]] = collision;
+        update = true;
       }
       else if (collision.body_types[1] == BodyType::ROBOT_ATTACHED && active_components_only->find(state.getAttachedBody(collision.link_names[1])->getAttachedLink()) != active_components_only->end())
       {
-        moveit_dr.distances[collision.link_names[1]] = collision;
+        update = true;
+      }
+
+      if (update)
+      {
+        if (moveit_dr.distances.find(collision.link_names[1]) != moveit_dr.distances.end())
+        {
+          if (collision.distance <  moveit_dr.distances[collision.link_names[1]].distance)
+          {
+            moveit_dr.distances[collision.link_names[1]] = collision;
+          }
+        }
+        else
+        {
+          moveit_dr.distances[collision.link_names[1]] = collision;
+        }
       }
     }
     else

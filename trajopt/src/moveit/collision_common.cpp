@@ -41,6 +41,7 @@
 #include <BulletCollision/CollisionDispatch/btConvexConvexAlgorithm.h>
 #include <boost/thread/mutex.hpp>
 #include <memory>
+#include <octomap/octomap.h>
 
 namespace collision_detection
 {
@@ -56,26 +57,26 @@ btCollisionShape* createShapePrimitive(const shapes::ShapeConstPtr& geom, bool u
   {
     const shapes::Box* s = static_cast<const shapes::Box*>(geom.get());
     const double* size = s->size;
-    subshape = new btBoxShape(btVector3(size[0]/2, size[1]/2, size[2]/2));
-    break;
+    btCollisionShape* subshape = new btBoxShape(btVector3(size[0]/2, size[1]/2, size[2]/2));
+    return subshape;
   }
   case shapes::SPHERE:
   {
     const shapes::Sphere* s = static_cast<const shapes::Sphere*>(geom.get());
-    subshape = new btSphereShape(s->radius);
-    break;
+    btCollisionShape* subshape = new btSphereShape(s->radius);
+    return subshape;
   }
   case shapes::CYLINDER:
   {
     const shapes::Cylinder* s = static_cast<const shapes::Cylinder*>(geom.get());
-    subshape = new btCylinderShapeZ(btVector3(s->radius, s->radius, s->length / 2));
-    break;
+    btCollisionShape* subshape = new btCylinderShapeZ(btVector3(s->radius, s->radius, s->length / 2));
+    return subshape;
   }
   case shapes::CONE:
   {
     const shapes::Cone* s = static_cast<const shapes::Cone*>(geom.get());
-    subshape = new btConeShapeZ(s->radius, s->length);
-    break;
+    btCollisionShape* subshape = new btConeShapeZ(s->radius, s->length);
+    return subshape;
   }
   case shapes::MESH:
   {
@@ -101,6 +102,7 @@ btCollisionShape* createShapePrimitive(const shapes::ShapeConstPtr& geom, bool u
       {
         subshape = new btBvhTriangleMeshShape(ptrimesh.get(), true);
         cow->manage(ptrimesh);
+        return subshape;
       }
       else
       {
@@ -126,31 +128,54 @@ btCollisionShape* createShapePrimitive(const shapes::ShapeConstPtr& geom, bool u
           useShapeHull = false;
         }
 
-        btConvexHullShape *convexShape = new btConvexHullShape();
-        subshape = convexShape;
+        btConvexHullShape *subshape = new btConvexHullShape();
         if (useShapeHull)
         {
           for (int i = 0; i < shapeHull.numVertices(); ++i)
-            convexShape->addPoint(shapeHull.getVertexPointer()[i]);
-          break;
+          {
+            subshape->addPoint(shapeHull.getVertexPointer()[i]);
+          }
         }
         else
         {
           for (int i = 0; i < mesh->vertex_count; ++i)
           {
-            convexShape->addPoint(btVector3(mesh->vertices[3 * i], mesh->vertices[3 * i + 1], mesh->vertices[3 * i + 2]));
+            subshape->addPoint(btVector3(mesh->vertices[3 * i], mesh->vertices[3 * i + 1], mesh->vertices[3 * i + 2]));
           }
-          break;
         }
+        return subshape;
       }
     }
     break;
   }
-  default:
-    assert(0 && "unrecognized collision shape type");
-    break;
+  case shapes::OCTREE:
+  {
+    const shapes::OcTree* g = static_cast<const shapes::OcTree*>(geom.get());
+    btCompoundShape* subshape = new btCompoundShape(/*dynamicAABBtree=*/false);
+    double occupancy_threshold = g->octree->getOccupancyThres();
+
+    for(auto it = g->octree->begin(g->octree->getTreeDepth()), end = g->octree->end(); it != end; ++it)
+    {
+      if(it->getOccupancy() >= occupancy_threshold)
+      {
+        double size = it.getSize();
+        btTransform geomTrans;
+        geomTrans.setIdentity();
+        geomTrans.setOrigin(btVector3(it.getX(), it.getY(), it.getZ()));
+        btBoxShape* childshape = new btBoxShape(btVector3(size/2, size/2, size/2));
+        childshape->setMargin(BULLET_MARGIN);
+        cow->manage(childshape);
+
+        subshape->addChildShape(geomTrans, childshape);
+      }
+    }
+    return subshape;
   }
-  return subshape;
+  default:
+    CONSOLE_BRIDGE_logError("This shape type (%d) is not supported using BULLET yet", (int)geom->type);
+    return nullptr;
+  }
+
 }
 
 CollisionObjectWrapper::CollisionObjectWrapper(const robot_model::LinkModel* link) : m_type(BodyTypes::ROBOT_LINK), m_index(-1)

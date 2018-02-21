@@ -24,6 +24,14 @@
 
 #include <geometric_shapes/shapes.h>
 #include <geometric_shapes/shape_operations.h>
+#include <octomap_msgs/OctomapWithPose.h>
+#include <octomap_msgs/conversions.h>
+#include <octomap_ros/conversions.h>
+#include <pcl/point_cloud.h>
+#include <pcl/point_types.h>
+#include <sensor_msgs/PointCloud2.h>
+#include <sensor_msgs/point_cloud_conversion.h>
+#include <pcl_conversions/pcl_conversions.h>
 
 using namespace trajopt;
 using namespace std;
@@ -33,7 +41,7 @@ using namespace boost::assign;
 const std::string ROBOT_DESCRIPTION_PARAM = "robot_description"; /**< Default ROS parameter for robot description */
 bool plotting=false;
 
-class CastWorldTest : public testing::TestWithParam<const char*> {
+class CastOctomapTest : public testing::TestWithParam<const char*> {
 public:
   ros::NodeHandle nh_;
   robot_model_loader::RobotModelLoaderPtr loader_;  /**< Used to load the robot model */
@@ -56,33 +64,42 @@ public:
 
     ASSERT_TRUE(env_->init(planning_scene_));
 
-    moveit_msgs::CollisionObject box_world;
-    geometry_msgs::Pose box_pose;
-    shape_msgs::SolidPrimitive box;
+    pcl::PointCloud<pcl::PointXYZ> full_cloud;
+    double delta = 0.05;
+    int length = (1/delta);
 
-    box.type = shape_msgs::SolidPrimitive::BOX;
-    box.dimensions.resize(3);
-    box.dimensions[0] = 1.0;
-    box.dimensions[1] = 1.0;
-    box.dimensions[2] = 1.0;
+    for (int x = 0; x < length; ++x)
+      for (int y = 0; y < length; ++y)
+        for (int z = 0; z < length; ++z)
+          full_cloud.push_back(pcl::PointXYZ(-0.5 + x*delta, -0.5 + y*delta, -0.5 + z*delta));
 
-    box_pose.position.x = 0;
-    box_pose.position.y = 0;
-    box_pose.position.z = 0;
-    box_pose.orientation.x = 0;
-    box_pose.orientation.y = 0;
-    box_pose.orientation.z = 0;
-    box_pose.orientation.w = 1;
+    sensor_msgs::PointCloud2 pointcloud_msg;
+    pcl::toROSMsg(full_cloud, pointcloud_msg);
 
-    box_world.header.frame_id = "base_link";
-    box_world.header.stamp = ros::Time::now();
+    octomap::Pointcloud octomap_data;
+    octomap_msgs::OctomapWithPose octomap_world;
+    geometry_msgs::Pose octomap_pose;
+    octomap::pointCloud2ToOctomap(pointcloud_msg, octomap_data);
+    octomap::OcTree octree(2*delta);
+    octree.insertPointCloud(octomap_data, octomap::point3d(0,0,0));
 
-    box_world.id = "box_world";
-    box_world.operation = moveit_msgs::CollisionObject::ADD;
-    box_world.primitives.push_back(box);
-    box_world.primitive_poses.push_back(box_pose);
+    octomap_msgs::fullMapToMsg(octree, octomap_world.octomap);
+    octomap_world.octomap.header.frame_id = "base_link";
+    octomap_world.octomap.header.stamp = ros::Time::now();
 
-    planning_scene_->processCollisionObjectMsg(box_world);
+    octomap_pose.position.x = 0;
+    octomap_pose.position.y = 0;
+    octomap_pose.position.z = 0;
+    octomap_pose.orientation.x = 0;
+    octomap_pose.orientation.y = 0;
+    octomap_pose.orientation.z = 0;
+    octomap_pose.orientation.w = 1;
+
+    octomap_world.header.frame_id = "base_link";
+    octomap_world.header.stamp = ros::Time::now();
+    octomap_world.origin = octomap_pose;
+
+    planning_scene_->processOctomapMsg(octomap_world);
 
     ros::Publisher planning_scene_diff_publisher = nh_.advertise<moveit_msgs::PlanningScene>("/trajopt/planning_scene", 1, true);
 
@@ -95,7 +112,7 @@ public:
   }
 };
 
-TEST_F(CastWorldTest, boxes) {
+TEST_F(CastOctomapTest, boxes) {
   ROS_DEBUG("CastTest, boxes");
   Json::Value root = readJsonFile(string(DATA_DIR) + "/box_cast_test.json");
 
@@ -133,7 +150,7 @@ TEST_F(CastWorldTest, boxes) {
 int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
-  ros::init(argc, argv, "trajopt_cast_cost_world_unit");
+  ros::init(argc, argv, "trajopt_cast_cost_octomap_unit");
   ros::NodeHandle pnh("~");
 
   pnh.param("plotting", plotting, false);

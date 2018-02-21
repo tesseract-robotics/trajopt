@@ -9,6 +9,7 @@ Panels:
         - /Trajectory1
         - /MarkerArray1
         - /PlanningScene1
+        - /PlanningScene1/Scene Robot1
       Splitter Ratio: 0.5
     Tree Height: 843
   - Class: rviz/Selection
@@ -102,7 +103,7 @@ Visualization Manager:
       Enabled: true
       Move Group Namespace: ""
       Name: PlanningScene
-      Planning Scene Topic: move_group/monitored_planning_scene
+      Planning Scene Topic: /trajopt/planning_scene
       Robot Description: robot_description
       Scene Geometry:
         Scene Alpha: 0.899999976
@@ -138,7 +139,7 @@ Visualization Manager:
             Show Trail: false
         Robot Alpha: 1
         Show Robot Collision: false
-        Show Robot Visual: true
+        Show Robot Visual: false
       Value: true
   Enabled: true
   Global Options:
@@ -165,25 +166,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 12.5439997
+      Distance: 8.17539978
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.0599999987
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 0.0639279112
-        Y: 1.18338466
-        Z: -0.680591106
+        X: -0.453398734
+        Y: 0.473420203
+        Z: 0.339512408
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.0500000007
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.00999999978
-      Pitch: 0.98039788
+      Pitch: 0.644797266
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 0.975397825
+      Yaw: 0.865402639
     Saved: ~
 Window Geometry:
   Displays:
