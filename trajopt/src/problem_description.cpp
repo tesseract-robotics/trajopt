@@ -181,32 +181,39 @@ void InitInfo::fromJson(const Json::Value& v)
   int n_dof = gPCI->kin->numJoints();
   Eigen::VectorXd start_pos = gPCI->env->getCurrentJointValues(gPCI->kin->getName());
 
-  if (type_str == "stationary") {
+  if (type_str == "stationary")
+  {
 //    data = toVectorXd(gPCI->rad->GetDOFValues()).transpose().replicate(n_steps, 1);
     data = start_pos.transpose().replicate(n_steps, 1);
   }
-  else if (type_str == "given_traj") {
+  else if (type_str == "given_traj")
+  {
     FAIL_IF_FALSE(v.isMember("data"));
     const Value& vdata = v["data"];
-    if (vdata.size() != n_steps) {
+    if (vdata.size() != n_steps)
+    {
       PRINT_AND_THROW("given initialization traj has wrong length");
     }
     data.resize(n_steps, n_dof);
-    for (int i=0; i < n_steps; ++i) {
+    for (int i=0; i < n_steps; ++i)
+    {
       DblVec row;
       fromJsonArray(vdata[i], row, n_dof);
       data.row(i) = toVectorXd(row);
     }
   }
-  else if (type_str == "straight_line") {
+  else if (type_str == "straight_line")
+  {
     FAIL_IF_FALSE(v.isMember("endpoint"));
     DblVec endpoint;
     childFromJson(v, endpoint, "endpoint");
-    if (endpoint.size() != n_dof) {
+    if (endpoint.size() != n_dof)
+    {
       PRINT_AND_THROW(boost::format("wrong number of dof values in initialization. expected %i got %j")%n_dof%endpoint.size());
     }
     data = TrajArray(n_steps, n_dof);
-    for (int idof = 0; idof < n_dof; ++idof) {
+    for (int idof = 0; idof < n_dof; ++idof)
+    {
       data.col(idof) = VectorXd::LinSpaced(n_steps, start_pos[idof], endpoint[idof]);
     }
   }

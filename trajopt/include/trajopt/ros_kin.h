@@ -54,7 +54,15 @@ public:
    * @brief Checks if BasicKin is initialized (init() has been run: urdf model loaded, etc.)
    * @return True if init() has completed successfully
    */
-  bool checkInitialized() const { return initialized_; }
+  bool checkInitialized() const
+  {
+    if (!initialized_)
+    {
+      ROS_ERROR("Kinematics has not been initialized!");
+    }
+
+    return initialized_;
+  }
 
   /**
    * @brief Get the name of the kinematic group

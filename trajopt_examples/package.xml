@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>trajopt_examples</name>
+  <version>0.1.0</version>
+  <description>This package contains examples related to this trajopt_ros repository.</description>
+
+  <maintainer email="Armstrong@todo.todo">Levi Armstrong</maintainer>
+  <license>Apache 2.0</license>
+  <author >Levi Armstrong</author>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <build_depend>roscpp</build_depend>
+  <build_export_depend>roscpp</build_export_depend>
+  <exec_depend>roscpp</exec_depend>
+
+  <depend>trajopt</depend>
+  <exec_depend>motoman_sia20d_support</exec_depend>
+  <exec_depend>motoman_sia20d_moveit_config</exec_depend>
+
+  <!-- The export tag contains other, unspecified, tags -->
+  <export>
+    <!-- Other tools can request additional information be placed here -->
+
+  </export>
+</package>

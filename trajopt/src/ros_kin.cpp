@@ -60,17 +60,16 @@ bool ROSKin::calcFwdKinHelper(Eigen::Affine3d &pose, const Eigen::Affine3d chang
 
 bool ROSKin::calcFwdKin(Eigen::Affine3d &pose, const Eigen::Affine3d change_base, const Eigen::VectorXd &joint_angles) const
 {
-  if (!checkInitialized()) return false;
-  if (!checkJoints(joint_angles)) return false;
+  assert(checkInitialized());
+  assert(checkJoints(joint_angles));
 
   return calcFwdKinHelper(pose, change_base, joint_angles);
 }
 
 bool ROSKin::calcFwdKin(Eigen::Affine3d &pose, const Eigen::Affine3d change_base, const Eigen::VectorXd &joint_angles, const std::string &link_name) const
 {
-  if (!checkInitialized()) return false;
-  if (!checkJoints(joint_angles)) return false;
-
+  assert(checkInitialized());
+  assert(checkJoints(joint_angles));
   assert(link_name_too_segment_index_.find(link_name) != link_name_too_segment_index_.end());
 
   int segment_nr = link_name_too_segment_index_.at(link_name);
@@ -104,8 +103,8 @@ bool ROSKin::calcJacobianHelper(KDL::Jacobian &jacobian, const Eigen::Affine3d c
 
 bool ROSKin::calcJacobian(Eigen::MatrixXd &jacobian, const Eigen::Affine3d change_base, const Eigen::VectorXd &joint_angles) const
 {
-  if (!checkInitialized()) return false;
-  if (!checkJoints(joint_angles)) return false;
+  assert(checkInitialized());
+  assert(checkJoints(joint_angles));
 
   KDL::Jacobian kdl_jacobian;
   if (calcJacobianHelper(kdl_jacobian, change_base, joint_angles))
@@ -121,8 +120,8 @@ bool ROSKin::calcJacobian(Eigen::MatrixXd &jacobian, const Eigen::Affine3d chang
 
 bool ROSKin::calcJacobian(Eigen::MatrixXd &jacobian, const Eigen::Affine3d change_base, const Eigen::VectorXd &joint_angles, const std::string &link_name) const
 {
-  if (!checkInitialized()) return false;
-  if (!checkJoints(joint_angles)) return false;
+  assert(checkInitialized());
+  assert(checkJoints(joint_angles));
 
   assert(link_name_too_segment_index_.find(link_name) != link_name_too_segment_index_.end());
 
@@ -153,9 +152,8 @@ bool ROSKin::calcJacobian(Eigen::MatrixXd &jacobian, const Eigen::Affine3d chang
 
 bool ROSKin::calcJacobian(Eigen::MatrixXd &jacobian, const Eigen::Affine3d change_base, const Eigen::VectorXd &joint_angles, const std::string &link_name, const Eigen::Vector3d link_point) const
 {
-  if (!checkInitialized()) return false;
-  if (!checkJoints(joint_angles)) return false;
-
+  assert(checkInitialized());
+  assert(checkJoints(joint_angles));
   assert(link_name_too_segment_index_.find(link_name) != link_name_too_segment_index_.end());
 
   int segment_nr = link_name_too_segment_index_.at(link_name);
@@ -208,9 +206,8 @@ bool ROSKin::checkJoints(const Eigen::VectorXd &vec) const
   {
     if ( (vec[i] < joint_limits_(i,0)) || (vec(i) > joint_limits_(i,1)) )
     {
-      ROS_ERROR("Joint %s is out-of-range (%g < %g < %g)",
+      ROS_WARN("Joint %s is out-of-range (%g < %g < %g)",
                 joint_list_[i].c_str(), joint_limits_(i,0), vec(i), joint_limits_(i,1));
-      return false;
     }
   }
 
@@ -219,22 +216,16 @@ bool ROSKin::checkJoints(const Eigen::VectorXd &vec) const
 
 bool ROSKin::getJointNames(std::vector<std::string> &names) const
 {
-    if (!checkInitialized())
-    {
-        ROS_ERROR("Kinematics must be initialized before retrieving joint names");
-        return false;
-    }
+    assert(checkInitialized());
+
     names = joint_list_;
     return true;
 }
 
 bool ROSKin::getLinkNames(std::vector<std::string> &names) const
 {
-    if (!checkInitialized())
-    {
-        ROS_ERROR("Kinematics must be initialized before retrieving link names");
-        return false;
-    }
+    assert(checkInitialized());
+
     names = link_list_;
     return true;
 }
