@@ -7,8 +7,8 @@ project(trajopt_ext)
 find_package(catkin REQUIRED COMPONENTS)
 
 catkin_package(
-  INCLUDE_DIRS ext/json/include ext/bullet/src
-  LIBRARIES json BulletCollision LinearMath
+  INCLUDE_DIRS ext/bullet/src
+  LIBRARIES BulletCollision LinearMath
 #  CATKIN_DEPENDS roscpp
 #  DEPENDS system_lib
 )

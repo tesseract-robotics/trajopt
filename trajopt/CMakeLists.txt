@@ -19,6 +19,9 @@ find_package(Eigen3 REQUIRED)
 find_package(Boost COMPONENTS system python thread program_options REQUIRED)
 find_package(octomap REQUIRED)
 
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(JSONCPP jsoncpp)
+
 link_directories(
     /usr/local/lib
     /usr/local/lib64
@@ -43,6 +46,7 @@ catkin_package(
   LIBRARIES
     ${PROJECT_NAME}
     ${OCTOMAP_LIBRARIES}
+    ${JSONCPP_LIBRARIES}
   CATKIN_DEPENDS
     trajopt_sco
     trajopt_utils
@@ -61,11 +65,12 @@ include_directories(
   ${EIGEN3_INCLUDE_DIRS}
   ${Boost_INCLUDE_DIRS}
   ${OCTOMAP_INCLUDE_DIRS}
+  ${JSONCPP_INCLUDE_DIRS}
 )
 
 add_library(${PROJECT_NAME} ${TRAJOPT_SOURCE_FILES})
 #target_link_libraries(trajopt ${Boost_SYSTEM_LIBRARY} sco utils json osgviewer)
-target_link_libraries(${PROJECT_NAME} ${OCTOMAP_LIBRARIES} ${Boost_SYSTEM_LIBRARY} ${catkin_LIBRARIES})
+target_link_libraries(${PROJECT_NAME} ${OCTOMAP_LIBRARIES} ${Boost_SYSTEM_LIBRARY} ${JSONCPP_LIBRARIES} ${catkin_LIBRARIES})
 
 add_library(moveit_collision_detection_bullet
   src/moveit/collision_common.cpp
