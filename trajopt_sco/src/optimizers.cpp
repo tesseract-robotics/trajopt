@@ -148,32 +148,27 @@ void Optimizer::initialize(const vector<double>& x) {
   results_.x = x;
 }
 
+BasicTrustRegionSQPParameters::BasicTrustRegionSQPParameters()
+{
+  improve_ratio_threshold = 0.25;
+  min_trust_box_size = 1e-4;
+  min_approx_improve = 1e-4;
+  min_approx_improve_frac = -INFINITY;
+  max_iter = 50;
+  trust_shrink_ratio = 0.1;
+  trust_expand_ratio = 1.5;
+  cnt_tolerance = 1e-4;
+  max_merit_coeff_increases = 5;
+  merit_coeff_increase_ratio = 10;
+  max_time = INFINITY;
+  merit_error_coeff = 10;
+  trust_box_size = 1e-1;
+}
+
 BasicTrustRegionSQP::BasicTrustRegionSQP() {
-  initParameters();
 }
 BasicTrustRegionSQP::BasicTrustRegionSQP(OptProbPtr prob) {
-  initParameters();
   setProblem(prob);
-}
-
-void BasicTrustRegionSQP::initParameters() {
-
-  improve_ratio_threshold_ = .25;
-  min_trust_box_size_ = 1e-4;
-  min_approx_improve_= 1e-4;
-  min_approx_improve_frac_ = -INFINITY;
-  max_iter_ = 50;
-  trust_shrink_ratio_=.1;
-  trust_expand_ratio_ = 1.5;
-  cnt_tolerance_ = 1e-4;
-  max_merit_coeff_increases_ = 5;
-  merit_coeff_increase_ratio_ = 10;
-  max_time_ = INFINITY;
-
-  merit_error_coeff_ = 10;
-  trust_box_size_ = 1e-1;
-
-
 }
 
 void BasicTrustRegionSQP::setProblem(OptProbPtr prob) {
@@ -182,7 +177,7 @@ void BasicTrustRegionSQP::setProblem(OptProbPtr prob) {
 }
 
 void BasicTrustRegionSQP::adjustTrustRegion(double ratio) {
-  trust_box_size_ *= ratio;
+  param_.trust_box_size *= ratio;
 }
 void BasicTrustRegionSQP::setTrustBoxConstraints(const DblVec& x) {
   vector<Var>& vars = prob_->getVars();
@@ -190,8 +185,8 @@ void BasicTrustRegionSQP::setTrustBoxConstraints(const DblVec& x) {
   DblVec& lb=prob_->getLowerBounds(), ub=prob_->getUpperBounds();
   DblVec lbtrust(x.size()), ubtrust(x.size());
   for (size_t i=0; i < x.size(); ++i) {
-    lbtrust[i] = fmax(x[i] - trust_box_size_, lb[i]);
-    ubtrust[i] = fmin(x[i] + trust_box_size_, ub[i]);
+    lbtrust[i] = fmax(x[i] - param_.trust_box_size, lb[i]);
+    ubtrust[i] = fmin(x[i] + param_.trust_box_size, ub[i]);
   }
   model_->setVarBounds(vars, lbtrust, ubtrust);
 }
@@ -235,7 +230,7 @@ OptStatus BasicTrustRegionSQP::optimize() {
 
   OptStatus retval = INVALID;
 
-  for (int merit_increases=0; merit_increases < max_merit_coeff_increases_; ++merit_increases) { /* merit adjustment loop */
+  for (int merit_increases=0; merit_increases < param_.max_merit_coeff_increases; ++merit_increases) { /* merit adjustment loop */
     for (int iter=1; ; ++iter) { /* sqp loop */
       callCallbacks(x_);
 
@@ -263,7 +258,7 @@ OptStatus BasicTrustRegionSQP::optimize() {
 
       vector<ConvexObjectivePtr> cost_models = convexifyCosts(prob_->getCosts(),x_, model_.get());
       vector<ConvexConstraintsPtr> cnt_models = convexifyConstraints(constraints, x_, model_.get());
-      vector<ConvexObjectivePtr> cnt_cost_models = cntsToCosts(cnt_models, merit_error_coeff_, model_.get());
+      vector<ConvexObjectivePtr> cnt_cost_models = cntsToCosts(cnt_models, param_.merit_error_coeff, model_.get());
       model_->update();
       BOOST_FOREACH(ConvexObjectivePtr& cost, cost_models)cost->addConstraintsToModel();
       BOOST_FOREACH(ConvexObjectivePtr& cost, cnt_cost_models)cost->addConstraintsToModel();
@@ -284,7 +279,7 @@ OptStatus BasicTrustRegionSQP::optimize() {
 //      LOG_DEBUG("model costs %s should equalcosts  %s", printer(model_cost_vals), printer(cost_vals));
 //    }
 
-      while (trust_box_size_ >= min_trust_box_size_) {
+      while (param_.trust_box_size >= param_.min_trust_box_size) {
 
         setTrustBoxConstraints(x_);
         CvxOptStatus status = model_->optimize();
@@ -307,7 +302,7 @@ OptStatus BasicTrustRegionSQP::optimize() {
         if (GetLogLevel() >= util::LevelDebug) {
           DblVec cnt_costs1 = evaluateModelCosts(cnt_cost_models, model_var_vals);
           DblVec cnt_costs2 = model_cnt_viols;
-          for (int i=0; i < cnt_costs2.size(); ++i) cnt_costs2[i] *= merit_error_coeff_;
+          for (int i=0; i < cnt_costs2.size(); ++i) cnt_costs2[i] *= param_.merit_error_coeff;
           LOG_DEBUG("SHOULD BE ALMOST THE SAME: %s ?= %s", CSTR(cnt_costs1), CSTR(cnt_costs2) );
           // not exactly the same because cnt_costs1 is based on aux variables, but they might not be at EXACTLY the right value
         }
@@ -316,9 +311,9 @@ OptStatus BasicTrustRegionSQP::optimize() {
         DblVec new_cnt_viols = evaluateConstraintViols(constraints, new_x);
         ++results_.n_func_evals;
 
-        double old_merit = vecSum(results_.cost_vals) + merit_error_coeff_ * vecSum(results_.cnt_viols);
-        double model_merit = vecSum(model_cost_vals) + merit_error_coeff_ * vecSum(model_cnt_viols);
-        double new_merit = vecSum(new_cost_vals) + merit_error_coeff_ * vecSum(new_cnt_viols);
+        double old_merit = vecSum(results_.cost_vals) + param_.merit_error_coeff * vecSum(results_.cnt_viols);
+        double model_merit = vecSum(model_cost_vals) + param_.merit_error_coeff * vecSum(model_cnt_viols);
+        double new_merit = vecSum(new_cost_vals) + param_.merit_error_coeff * vecSum(new_cnt_viols);
         double approx_merit_improve = old_merit - model_merit;
         double exact_merit_improve = old_merit - new_merit;
         double merit_improve_ratio = exact_merit_improve / approx_merit_improve;
@@ -327,44 +322,44 @@ OptStatus BasicTrustRegionSQP::optimize() {
           LOG_INFO(" ");
           printCostInfo(results_.cost_vals, model_cost_vals, new_cost_vals,
                         results_.cnt_viols, model_cnt_viols, new_cnt_viols, cost_names,
-                        cnt_names, merit_error_coeff_);
+                        cnt_names, param_.merit_error_coeff);
           printf("%15s | %10.3e | %10.3e | %10.3e | %10.3e\n", "TOTAL", old_merit, approx_merit_improve, exact_merit_improve, merit_improve_ratio);
         }
 
         if (approx_merit_improve < -1e-5) {
           LOG_ERROR("approximate merit function got worse (%.3e). (convexification is probably wrong to zeroth order)", approx_merit_improve);
         }
-        if (approx_merit_improve < min_approx_improve_) {
-          LOG_INFO("converged because improvement was small (%.3e < %.3e)", approx_merit_improve, min_approx_improve_);
+        if (approx_merit_improve < param_.min_approx_improve) {
+          LOG_INFO("converged because improvement was small (%.3e < %.3e)", approx_merit_improve, param_.min_approx_improve);
           retval = OPT_CONVERGED;
           goto penaltyadjustment;
         }
-        if (approx_merit_improve / old_merit < min_approx_improve_frac_) {
+        if (approx_merit_improve / old_merit < param_.min_approx_improve_frac) {
           LOG_INFO(
               "converged because improvement ratio was small (%.3e < %.3e)",
-              approx_merit_improve/old_merit, min_approx_improve_frac_);
+              approx_merit_improve/old_merit, param_.min_approx_improve_frac);
           retval = OPT_CONVERGED;
           goto penaltyadjustment;
         } 
-        else if (exact_merit_improve < 0 || merit_improve_ratio < improve_ratio_threshold_) {
-          adjustTrustRegion(trust_shrink_ratio_);
+        else if (exact_merit_improve < 0 || merit_improve_ratio < param_.improve_ratio_threshold) {
+          adjustTrustRegion(param_.trust_shrink_ratio);
           LOG_INFO("shrunk trust region. new box size: %.4f",
-              trust_box_size_);
+              param_.trust_box_size);
         } else {
           x_ = new_x;
           results_.cost_vals = new_cost_vals;
           results_.cnt_viols = new_cnt_viols;
-          adjustTrustRegion(trust_expand_ratio_);
-          LOG_INFO("expanded trust region. new box size: %.4f",trust_box_size_);
+          adjustTrustRegion(param_.trust_expand_ratio);
+          LOG_INFO("expanded trust region. new box size: %.4f",param_.trust_box_size);
           break;
         }
       }
 
-      if (trust_box_size_ < min_trust_box_size_) {
+      if (param_.trust_box_size < param_.min_trust_box_size) {
         LOG_INFO("converged because trust region is tiny");
         retval = OPT_CONVERGED;
         goto penaltyadjustment;
-      } else if (iter >= max_iter_) {
+      } else if (iter >= param_.max_iter) {
         LOG_INFO("iteration limit");
         retval = OPT_SCO_ITERATION_LIMIT;
         goto cleanup;
@@ -372,14 +367,14 @@ OptStatus BasicTrustRegionSQP::optimize() {
     }
 
     penaltyadjustment:
-    if (results_.cnt_viols.empty() || vecMax(results_.cnt_viols) < cnt_tolerance_) {
-      if (results_.cnt_viols.size() > 0) LOG_INFO("woo-hoo! constraints are satisfied (to tolerance %.2e)", cnt_tolerance_);
+    if (results_.cnt_viols.empty() || vecMax(results_.cnt_viols) < param_.cnt_tolerance) {
+      if (results_.cnt_viols.size() > 0) LOG_INFO("woo-hoo! constraints are satisfied (to tolerance %.2e)", param_.cnt_tolerance);
       goto cleanup;
     }
     else {
       LOG_INFO("not all constraints are satisfied. increasing penalties");
-      merit_error_coeff_ *= merit_coeff_increase_ratio_;
-      trust_box_size_ = fmax(trust_box_size_, min_trust_box_size_ / trust_shrink_ratio_ * 1.5);
+      param_.merit_error_coeff *= param_.merit_coeff_increase_ratio;
+      param_.trust_box_size = fmax(param_.trust_box_size, param_.min_trust_box_size / param_.trust_shrink_ratio * 1.5);
     }
 
 

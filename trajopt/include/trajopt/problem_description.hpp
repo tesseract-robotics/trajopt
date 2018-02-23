@@ -5,6 +5,7 @@
 #include <boost/shared_ptr.hpp>
 #include <trajopt/basic_kin.h>
 #include <trajopt/basic_env.h>
+#include <trajopt_sco/optimizers.hpp>
 
 
 namespace sco{struct OptResults;}
@@ -79,14 +80,16 @@ private:
 
 //void TRAJOPT_API SetupPlotting(TrajOptProb& prob, Optimizer& opt); TODO: Levi Fix
 
-struct TRAJOPT_API TrajOptResult {
+struct TRAJOPT_API TrajOptResult
+{
   vector<string> cost_names, cnt_names;
   vector<double> cost_vals, cnt_viols;
   TrajArray traj;
   TrajOptResult(OptResults& opt, TrajOptProb& prob);
 };
 
-struct BasicInfo  {
+struct BasicInfo
+{
   bool start_fixed;
   int n_steps;
   string manip;
@@ -144,6 +147,7 @@ This object holds all the data that's read from the JSON document
 struct TRAJOPT_API ProblemConstructionInfo {
 public:
   BasicInfo basic_info;
+  sco::BasicTrustRegionSQPParameters opt_info;
   vector<TermInfoPtr> cost_infos;
   vector<TermInfoPtr> cnt_infos;
   InitInfo init_info;
@@ -156,6 +160,7 @@ public:
 
 private:
   void readBasicInfo(const Value& v);
+  void readOptInfo(const Value& v);
   void readCosts(const Value& v);
   void readConstraints(const Value& v);
   void readInitInfo(const Value& v);

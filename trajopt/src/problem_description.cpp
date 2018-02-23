@@ -8,7 +8,6 @@
 #include <trajopt_utils/logging.hpp>
 #include <trajopt_sco/expr_ops.hpp>
 #include <trajopt_sco/expr_op_overloads.hpp>
-#include <trajopt_sco/optimizers.hpp>
 #include <boost/foreach.hpp>
 #include <boost/algorithm/string.hpp>
 
@@ -129,6 +128,23 @@ void ProblemConstructionInfo::readBasicInfo(const Value &v)
   // TODO: optimization parameters, etc?
 }
 
+void ProblemConstructionInfo::readOptInfo(const Value& v)
+{
+  childFromJson(v, opt_info.improve_ratio_threshold, "improve_ratio_threshold", opt_info.improve_ratio_threshold);
+  childFromJson(v, opt_info.min_trust_box_size, "min_trust_box_size", opt_info.min_trust_box_size);
+  childFromJson(v, opt_info.min_approx_improve, "min_approx_improve", opt_info.min_approx_improve);
+  childFromJson(v, opt_info.min_approx_improve_frac, "min_approx_improve_frac", opt_info.min_approx_improve_frac);
+  childFromJson(v, opt_info.max_iter, "max_iter", opt_info.max_iter);
+  childFromJson(v, opt_info.trust_shrink_ratio, "trust_shrink_ratio", opt_info.trust_shrink_ratio);
+  childFromJson(v, opt_info.trust_expand_ratio, "trust_expand_ratio", opt_info.trust_expand_ratio);
+  childFromJson(v, opt_info.cnt_tolerance, "cnt_tolerance", opt_info.cnt_tolerance);
+  childFromJson(v, opt_info.max_merit_coeff_increases, "max_merit_coeff_increases", opt_info.max_merit_coeff_increases);
+  childFromJson(v, opt_info.merit_coeff_increase_ratio, "merit_coeff_increase_ratio", opt_info.merit_coeff_increase_ratio);
+  childFromJson(v, opt_info.max_time, "max_time", opt_info.max_time);
+  childFromJson(v, opt_info.merit_error_coeff, "merit_error_coeff", opt_info.merit_error_coeff);
+  childFromJson(v, opt_info.trust_box_size, "trust_box_size", opt_info.trust_box_size);
+}
+
 void ProblemConstructionInfo::readCosts(const Value &v)
 {
   cost_infos.clear();
@@ -229,6 +245,11 @@ void ProblemConstructionInfo::fromJson(const Value& v)
     PRINT_AND_THROW("Json missing required section basic_info!");
   }
 
+  if (v.isMember("opt_info"))
+  {
+    readOptInfo(v["opt_info"]);
+  }
+
   if (!env->hasManipulator(basic_info.manip))
   {
     PRINT_AND_THROW(boost::format("Manipulator does not exist: %s")%basic_info.manip);
@@ -263,12 +284,12 @@ TrajOptResult::TrajOptResult(OptResults& opt, TrajOptProb& prob) :
 
 TrajOptResultPtr OptimizeProblem(TrajOptProbPtr prob, bool plot)
 {
-  //Configuration::SaverPtr saver = prob->GetRAD()->Save(); //LEVI
   BasicTrustRegionSQP opt(prob);
-  opt.max_iter_ = 40;
-  opt.min_approx_improve_frac_ = .001;
-  opt.improve_ratio_threshold_ = .2;
-  opt.merit_error_coeff_ = 20;
+  BasicTrustRegionSQPParameters &param = opt.getParameters();
+  param.max_iter = 40;
+  param.min_approx_improve_frac = .001;
+  param.improve_ratio_threshold = .2;
+  param.merit_error_coeff = 20;
 //  if (plot) { TODO: Levi Fix
 //    SetupPlotting(*prob, opt);
 //  }
