@@ -4,23 +4,69 @@
 using namespace Json;
 using namespace std;
 
-namespace json_marshal {
+namespace json_marshal
+{
 
-#define IMPLEMENT_READ_PRIMITIVE(T, jsonT, cvtFunc)\
-    void fromJson(const Json::Value& v, T& ref) {\
-  try {\
-    ref = v.cvtFunc();\
-  }\
-  catch (const std::runtime_error&) {\
-    PRINT_AND_THROW( boost::format("expected: %s, got %s")%(#T)%(v) );\
-  }}
+void fromJson(const Json::Value& v, bool& ref)
+{
+  try
+  {
+    ref = v.asBool();
+  }
+  catch (const std::runtime_error&)
+  {
+    PRINT_AND_THROW(boost::format("expected: %s, got %s")%("bool")%(v));
+  }
+}
 
+void fromJson(const Json::Value& v, int& ref)
+{
+  try
+  {
+    ref = v.asInt();
+  }
+  catch (const std::runtime_error&)
+  {
+    PRINT_AND_THROW(boost::format("expected: %s, got %s")%("int")%(v));
+  }
+}
 
-IMPLEMENT_READ_PRIMITIVE(bool, boolValue, asBool)
-IMPLEMENT_READ_PRIMITIVE(int, intValue, asInt)
-IMPLEMENT_READ_PRIMITIVE(double, realValue, asDouble)
-IMPLEMENT_READ_PRIMITIVE(string, stringValue, asString)
+void fromJson(const Json::Value& v, double& ref)
+{
+  try
+  {
+    ref = v.asDouble();
+  }
+  catch (const std::runtime_error&)
+  {
+    PRINT_AND_THROW(boost::format("expected: %s, got %s")%("double")%(v));
+  }
+}
 
+void fromJson(const Json::Value& v, std::string& ref)
+{
+  try
+  {
+    ref = v.asString();
+  }
+  catch (const std::runtime_error&)
+  {
+    PRINT_AND_THROW(boost::format("expected: %s, got %s")%("string")%(v));
+  }
+}
 
+void fromJson(const Json::Value& v, Eigen::Vector3d& ref)
+{
+  vector<double> vx;
+  fromJsonArray(v, vx, 3);
+  ref = Eigen::Vector3d(vx[0], vx[1], vx[2]);
+}
+
+void fromJson(const Json::Value& v, Eigen::Vector4d& ref)
+{
+  vector<double> vx;
+  fromJsonArray(v, vx, 4);
+  ref = Eigen::Vector4d(vx[0], vx[1], vx[2], vx[3]);
+}
 
 }

@@ -98,62 +98,8 @@ bool allClose(const VectorXd& a, const VectorXd& b)
 
 }
 
-namespace Json //funny thing with two-phase lookup
+namespace trajopt
 {
-
-void fromJson(const Json::Value& v, Vector3d& x)
-{
-  vector<double> vx;
-  fromJsonArray(v, vx, 3);
-  x = Vector3d(vx[0], vx[1], vx[2]);
-}
-
-void fromJson(const Json::Value& v, Vector4d& x)
-{
-  vector<double> vx;
-  fromJsonArray(v, vx, 4);
-  x = Vector4d(vx[0], vx[1], vx[2], vx[3]);
-}
-
-}
-
-namespace trajopt {
-
-TRAJOPT_API ProblemConstructionInfo* gPCI;
-
-void BasicInfo::fromJson(const Json::Value& v)
-{
-  childFromJson(v, start_fixed, "start_fixed", true);
-  childFromJson(v, n_steps, "n_steps");
-  childFromJson(v, manip, "manip");
-  childFromJson(v, robot, "robot", string(""));
-  childFromJson(v, dofs_fixed, "dofs_fixed", IntVec());
-  // TODO: optimization parameters, etc?
-}
-
-
-////
-bool gReadingCosts=false, gReadingConstraints=false;
-void fromJson(const Json::Value& v, TermInfoPtr& term)
-{
-  string type;
-  childFromJson(v, type, "type");
-  LOG_DEBUG("reading term: %s", type.c_str());
-  term = TermInfo::fromName(type);
-  if (gReadingCosts) {
-    if (!term) PRINT_AND_THROW( boost::format("failed to construct cost named %s")%type );    
-    if (!dynamic_cast<MakesCost*>(term.get())) PRINT_AND_THROW( boost::format("%s is only a constraint, but you listed it as a cost")%type) ;
-    term->term_type = TT_COST;
-  }
-  else if (gReadingConstraints) {
-    if (!term) PRINT_AND_THROW( boost::format("failed to construct constraint named %s")%type );        
-    if (!dynamic_cast<MakesConstraint*>(term.get())) PRINT_AND_THROW( boost::format("%s is only a cost, but you listed it as a constraint")%type);
-    term->term_type = TT_CNT;
-  }
-  else assert(0 && "shouldnt happen");
-  term->fromJson(v);
-  childFromJson(v, term->name, "name", type);
-}
 
 std::map<string, TermInfo::MakerFunc> TermInfo::name2maker;
 void TermInfo::RegisterMaker(const std::string& type, MakerFunc f)
@@ -173,18 +119,71 @@ TermInfoPtr TermInfo::fromName(const string& type)
   }
 }
 
-void InitInfo::fromJson(const Json::Value& v)
+void ProblemConstructionInfo::readBasicInfo(const Value &v)
+{
+  childFromJson(v, basic_info.start_fixed, "start_fixed", true);
+  childFromJson(v, basic_info.n_steps, "n_steps");
+  childFromJson(v, basic_info.manip, "manip");
+  childFromJson(v, basic_info.robot, "robot", string(""));
+  childFromJson(v, basic_info.dofs_fixed, "dofs_fixed", IntVec());
+  // TODO: optimization parameters, etc?
+}
+
+void ProblemConstructionInfo::readCosts(const Value &v)
+{
+  cost_infos.clear();
+  cost_infos.reserve(v.size());
+  for (Json::Value::const_iterator it = v.begin(); it != v.end(); ++it)
+  {
+    string type;
+    childFromJson(*it, type, "type");
+    LOG_DEBUG("reading term: %s", type.c_str());
+    TermInfoPtr term = TermInfo::fromName(type);
+
+    if (!term) PRINT_AND_THROW( boost::format("failed to construct cost named %s")%type );
+    if (!dynamic_cast<MakesCost*>(term.get())) PRINT_AND_THROW( boost::format("%s is only a constraint, but you listed it as a cost")%type) ;
+    term->term_type = TT_COST;
+
+    term->fromJson(*this, *it);
+    childFromJson(*it, term->name, "name", type);
+
+    cost_infos.push_back(term);
+  }
+}
+
+void ProblemConstructionInfo::readConstraints(const Value &v)
+{
+  cnt_infos.clear();
+  cnt_infos.reserve(v.size());
+  for (Json::Value::const_iterator it = v.begin(); it != v.end(); ++it)
+  {
+    string type;
+    childFromJson(*it, type, "type");
+    LOG_DEBUG("reading term: %s", type.c_str());
+    TermInfoPtr term = TermInfo::fromName(type);
+
+    if (!term) PRINT_AND_THROW( boost::format("failed to construct constraint named %s")%type );
+    if (!dynamic_cast<MakesConstraint*>(term.get())) PRINT_AND_THROW( boost::format("%s is only a cost, but you listed it as a constraint")%type);
+    term->term_type = TT_CNT;
+
+    term->fromJson(*this, *it);
+    childFromJson(*it, term->name, "name", type);
+
+    cnt_infos.push_back(term);
+  }
+}
+
+void ProblemConstructionInfo::readInitInfo(const Value &v)
 {
   string type_str;
   childFromJson(v, type_str, "type");
-  int n_steps = gPCI->basic_info.n_steps;
-  int n_dof = gPCI->kin->numJoints();
-  Eigen::VectorXd start_pos = gPCI->env->getCurrentJointValues(gPCI->kin->getName());
+  int n_steps = basic_info.n_steps;
+  int n_dof = kin->numJoints();
+  Eigen::VectorXd start_pos = env->getCurrentJointValues(kin->getName());
 
   if (type_str == "stationary")
   {
-//    data = toVectorXd(gPCI->rad->GetDOFValues()).transpose().replicate(n_steps, 1);
-    data = start_pos.transpose().replicate(n_steps, 1);
+    init_info.data = start_pos.transpose().replicate(n_steps, 1);
   }
   else if (type_str == "given_traj")
   {
@@ -194,12 +193,12 @@ void InitInfo::fromJson(const Json::Value& v)
     {
       PRINT_AND_THROW("given initialization traj has wrong length");
     }
-    data.resize(n_steps, n_dof);
+    init_info.data.resize(n_steps, n_dof);
     for (int i=0; i < n_steps; ++i)
     {
       DblVec row;
       fromJsonArray(vdata[i], row, n_dof);
-      data.row(i) = toVectorXd(row);
+      init_info.data.row(i) = toVectorXd(row);
     }
   }
   else if (type_str == "straight_line")
@@ -211,17 +210,24 @@ void InitInfo::fromJson(const Json::Value& v)
     {
       PRINT_AND_THROW(boost::format("wrong number of dof values in initialization. expected %i got %j")%n_dof%endpoint.size());
     }
-    data = TrajArray(n_steps, n_dof);
+    init_info.data = TrajArray(n_steps, n_dof);
     for (int idof = 0; idof < n_dof; ++idof)
     {
-      data.col(idof) = VectorXd::LinSpaced(n_steps, start_pos[idof], endpoint[idof]);
+      init_info.data.col(idof) = VectorXd::LinSpaced(n_steps, start_pos[idof], endpoint[idof]);
     }
   }
 }
 
 void ProblemConstructionInfo::fromJson(const Value& v)
 {
-  childFromJson(v, basic_info, "basic_info");
+  if (v.isMember("basic_info"))
+  {
+    readBasicInfo(v["basic_info"]);
+  }
+  else
+  {
+    PRINT_AND_THROW("Json missing required section basic_info!");
+  }
 
   if (!env->hasManipulator(basic_info.manip))
   {
@@ -229,18 +235,17 @@ void ProblemConstructionInfo::fromJson(const Value& v)
   }
   kin = env->getManipulatorKin(basic_info.manip);
 
-  gPCI = this;
-  gReadingCosts=true;
-  gReadingConstraints=false;
-  if (v.isMember("costs")) fromJsonArray(v["costs"], cost_infos);
-  gReadingCosts=false;
-  gReadingConstraints=true;
-  if (v.isMember("constraints")) fromJsonArray(v["constraints"], cnt_infos);
-  gReadingConstraints=false;
+  if (v.isMember("costs")) readCosts(v["costs"]);
+  if (v.isMember("constraints")) readConstraints(v["constraints"]);
 
-  childFromJson(v, init_info, "init_info");
-  gPCI = NULL;
-
+  if (v.isMember("init_info"))
+  {
+    readInitInfo(v["init_info"]);
+  }
+  else
+  {
+    PRINT_AND_THROW("Json missing required section init_info!");
+  }
 }
 
 TrajOptResult::TrajOptResult(OptResults& opt, TrajOptProb& prob) :
@@ -345,18 +350,18 @@ TrajOptProb::TrajOptProb(int n_steps, const ProblemConstructionInfo &pci) : m_ki
 
 TrajOptProb::TrajOptProb() {}
 
-void PoseCostInfo::fromJson(const Value& v)
+void PoseCostInfo::fromJson(ProblemConstructionInfo &pci, const Value& v)
 {
   FAIL_IF_FALSE(v.isMember("params"));
   const Value& params = v["params"];  
-  childFromJson(params, timestep, "timestep", gPCI->basic_info.n_steps-1);
+  childFromJson(params, timestep, "timestep", pci.basic_info.n_steps-1);
   childFromJson(params, xyz,"xyz");
   childFromJson(params, wxyz,"wxyz");
   childFromJson(params, pos_coeffs,"pos_coeffs", (Vector3d)Vector3d::Ones());
   childFromJson(params, rot_coeffs,"rot_coeffs", (Vector3d)Vector3d::Ones());
   childFromJson(params, link, "link");
   std::vector<std::string> link_names;
-  gPCI->kin->getLinkNames(link_names);
+  pci.kin->getLinkNames(link_names);
   if (std::find(link_names.begin(), link_names.end(),link)==link_names.end()) {
     PRINT_AND_THROW(boost::format("invalid link name: %s")%link);
   }
@@ -382,20 +387,20 @@ void PoseCostInfo::hatch(TrajOptProb& prob)
 }
 
 
-void JointPosCostInfo::fromJson(const Value& v)
+void JointPosCostInfo::fromJson(ProblemConstructionInfo &pci, const Value& v)
 {
   FAIL_IF_FALSE(v.isMember("params"));
-  int n_steps = gPCI->basic_info.n_steps;
+  int n_steps = pci.basic_info.n_steps;
   const Value& params = v["params"];
   childFromJson(params, vals, "vals");
   childFromJson(params, coeffs, "coeffs");
   if (coeffs.size() == 1) coeffs = DblVec(n_steps, coeffs[0]);
 
-  int n_dof = gPCI->kin->numJoints();
+  int n_dof = pci.kin->numJoints();
   if (vals.size() != n_dof) {
     PRINT_AND_THROW( boost::format("wrong number of dof vals. expected %i got %i")%n_dof%vals.size());
   }
-  childFromJson(params, timestep, "timestep", gPCI->basic_info.n_steps-1);
+  childFromJson(params, timestep, "timestep", pci.basic_info.n_steps-1);
   
   const char* all_fields[] = {"vals", "coeffs", "timestep"};
   ensure_only_members(params, all_fields, sizeof(all_fields)/sizeof(char*));
@@ -408,7 +413,7 @@ void JointPosCostInfo::hatch(TrajOptProb& prob)
 }
 
 
-void CartVelCntInfo::fromJson(const Value& v)
+void CartVelCntInfo::fromJson(ProblemConstructionInfo &pci, const Value& v)
 {
   FAIL_IF_FALSE(v.isMember("params"));
   const Value& params = v["params"];
@@ -416,12 +421,12 @@ void CartVelCntInfo::fromJson(const Value& v)
   childFromJson(params, last_step, "last_step");
   childFromJson(params, max_displacement,"max_displacement");
 
-  FAIL_IF_FALSE((first_step >= 0) && (first_step <= gPCI->basic_info.n_steps-1) && (first_step < last_step));
-  FAIL_IF_FALSE((last_step > 0) && (last_step <= gPCI->basic_info.n_steps-1));
+  FAIL_IF_FALSE((first_step >= 0) && (first_step <= pci.basic_info.n_steps-1) && (first_step < last_step));
+  FAIL_IF_FALSE((last_step > 0) && (last_step <= pci.basic_info.n_steps-1));
 
   childFromJson(params, link, "link");
   std::vector<std::string> link_names;
-  gPCI->kin->getLinkNames(link_names);
+  pci.kin->getLinkNames(link_names);
   if (std::find(link_names.begin(), link_names.end(), link)==link_names.end()) {
     PRINT_AND_THROW( boost::format("invalid link name: %s")%link);
   }
@@ -440,13 +445,13 @@ void CartVelCntInfo::hatch(TrajOptProb& prob)
   }
 }
 
-void JointVelCostInfo::fromJson(const Value& v)
+void JointVelCostInfo::fromJson(ProblemConstructionInfo &pci, const Value& v)
 {
   FAIL_IF_FALSE(v.isMember("params"));
   const Value& params = v["params"];
 
   childFromJson(params, coeffs,"coeffs");
-  int n_dof = gPCI->kin->numJoints();
+  int n_dof = pci.kin->numJoints();
   if (coeffs.size() == 1) coeffs = DblVec(n_dof, coeffs[0]);
   else if (coeffs.size() != n_dof) {
     PRINT_AND_THROW( boost::format("wrong number of coeffs. expected %i got %i")%n_dof%coeffs.size());
@@ -463,13 +468,13 @@ void JointVelCostInfo::hatch(TrajOptProb& prob)
 }
 
 
-void JointVelConstraintInfo::fromJson(const Value& v)
+void JointVelConstraintInfo::fromJson(ProblemConstructionInfo &pci, const Value& v)
 {
   FAIL_IF_FALSE(v.isMember("params"));
   const Value& params = v["params"];
   
-  int n_steps = gPCI->basic_info.n_steps;  
-  int n_dof = gPCI->kin->numJoints();
+  int n_steps = pci.basic_info.n_steps;
+  int n_dof = pci.kin->numJoints();
   childFromJson(params, vals, "vals");
   childFromJson(params, first_step, "first_step", 0);
   childFromJson(params, last_step, "last_step", n_steps-1);
@@ -493,12 +498,12 @@ void JointVelConstraintInfo::hatch(TrajOptProb& prob)
   }
 }
 
-void CollisionCostInfo::fromJson(const Value& v)
+void CollisionCostInfo::fromJson(ProblemConstructionInfo &pci, const Value& v)
 {
   FAIL_IF_FALSE(v.isMember("params"));
   const Value& params = v["params"];
 
-  int n_steps = gPCI->basic_info.n_steps;
+  int n_steps = pci.basic_info.n_steps;
   childFromJson(params, continuous, "continuous", true);
   childFromJson(params, first_step, "first_step", 0);
   childFromJson(params, last_step, "last_step", n_steps-1);
@@ -554,16 +559,16 @@ void CollisionCostInfo::hatch(TrajOptProb& prob)
   }
 }
 
-void JointConstraintInfo::fromJson(const Value& v) {
+void JointConstraintInfo::fromJson(ProblemConstructionInfo &pci, const Value& v) {
   FAIL_IF_FALSE(v.isMember("params"));
   const Value& params = v["params"];
   childFromJson(params, vals, "vals");
 
-  int n_dof = gPCI->kin->numJoints();
+  int n_dof = pci.kin->numJoints();
   if (vals.size() != n_dof) {
     PRINT_AND_THROW( boost::format("wrong number of dof vals. expected %i got %i")%n_dof%vals.size());
   }
-  childFromJson(params, timestep, "timestep", gPCI->basic_info.n_steps-1);
+  childFromJson(params, timestep, "timestep", pci.basic_info.n_steps-1);
   
   const char* all_fields[] = {"vals", "timestep"};
   ensure_only_members(params, all_fields, sizeof(all_fields)/sizeof(char*));  

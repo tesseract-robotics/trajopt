@@ -40,7 +40,7 @@ enum TermType {
     TermInfoPtr out(new classname());\
     return out;\
   }
-  
+
 
 /**
  * Holds all the data for a trajectory optimization problem
@@ -92,7 +92,6 @@ struct BasicInfo  {
   string manip;
   string robot; // optional
   IntVec dofs_fixed; // optional
-  void fromJson(const Json::Value& v);
 };
 
 /**
@@ -105,7 +104,6 @@ struct InitInfo {
   };
   Type type;
   TrajArray data;
-  void fromJson(const Json::Value& v);
 };
 
 
@@ -122,9 +120,9 @@ struct TRAJOPT_API TermInfo  {
 
   string name; // xxx is this used?
   TermType term_type;
-  virtual void fromJson(const Json::Value& v)=0;
+  virtual void fromJson(ProblemConstructionInfo &pci, const Json::Value& v)=0;
   virtual void hatch(TrajOptProb& prob) = 0;
-  
+
 
   static TermInfoPtr fromName(const string& type);
 
@@ -139,7 +137,6 @@ struct TRAJOPT_API TermInfo  {
 private:
   static std::map<string, MakerFunc> name2maker;
 };
-// void fromJson(const Json::Value& v, TermInfoPtr&);
 
 /**
 This object holds all the data that's read from the JSON document
@@ -156,6 +153,12 @@ public:
 
   ProblemConstructionInfo(BasicEnvPtr env) : env(env) {}
   void fromJson(const Value& v);
+
+private:
+  void readBasicInfo(const Value& v);
+  void readCosts(const Value& v);
+  void readConstraints(const Value& v);
+  void readInitInfo(const Value& v);
 };
 
 /**
@@ -170,7 +173,7 @@ struct PoseCostInfo : public TermInfo, public MakesCost, public MakesConstraint 
   Vector3d pos_coeffs, rot_coeffs;
   // double coeff;
   std::string link; //LEVI This may need to be moveit LinkModel
-  void fromJson(const Value& v);
+  void fromJson(ProblemConstructionInfo &pci, const Value& v);
   void hatch(TrajOptProb& prob);
   DEFINE_CREATE(PoseCostInfo);
 };
@@ -187,7 +190,7 @@ struct PoseCostInfo : public TermInfo, public MakesCost, public MakesConstraint 
 struct JointPosCostInfo : public TermInfo, public MakesCost {
   DblVec vals, coeffs;
   int timestep;
-  void fromJson(const Value& v);
+  void fromJson(ProblemConstructionInfo &pci, const Value& v);
   void hatch(TrajOptProb& prob);
   DEFINE_CREATE(JointPosCostInfo)
 };
@@ -203,7 +206,7 @@ struct CartVelCntInfo : public TermInfo, public MakesConstraint {
   int first_step, last_step;
   std::string link; //LEVI This may need to be moveit LinkModel
   double max_displacement;
-  void fromJson(const Value& v);
+  void fromJson(ProblemConstructionInfo &pci, const Value& v);
   void hatch(TrajOptProb& prob);
   DEFINE_CREATE(CartVelCntInfo)
 };
@@ -218,7 +221,7 @@ where j indexes over DOF, and \f$c_j\f$ are the coeffs.
 */
 struct JointVelCostInfo : public TermInfo, public MakesCost {
   DblVec coeffs;
-  void fromJson(const Value& v);
+  void fromJson(ProblemConstructionInfo &pci, const Value& v);
   void hatch(TrajOptProb& prob);
   DEFINE_CREATE(JointVelCostInfo)
 };
@@ -226,7 +229,7 @@ struct JointVelCostInfo : public TermInfo, public MakesCost {
 struct JointVelConstraintInfo : public TermInfo, public MakesConstraint {
   DblVec vals;
   int first_step, last_step;
-  void fromJson(const Value& v);
+  void fromJson(ProblemConstructionInfo &pci, const Value& v);
   void hatch(TrajOptProb& prob);
   DEFINE_CREATE(JointVelConstraintInfo)
 };
@@ -252,7 +255,7 @@ struct CollisionCostInfo : public TermInfo, public MakesCost {
   bool continuous;
   /// for continuous-time penalty, use swept-shape between timesteps t and t+gap (gap=1 by default)
   int gap;
-  void fromJson(const Value& v);
+  void fromJson(ProblemConstructionInfo &pci, const Value& v);
   void hatch(TrajOptProb& prob);
   DEFINE_CREATE(CollisionCostInfo)
 };
@@ -267,7 +270,7 @@ struct JointConstraintInfo : public TermInfo, public MakesConstraint {
   DblVec vals;
   /// which timestep. default = n_timesteps - 1
   int timestep;
-  void fromJson(const Value& v);
+  void fromJson(ProblemConstructionInfo &pci, const Value& v);
   void hatch(TrajOptProb& prob);
   DEFINE_CREATE(JointConstraintInfo)
 };
