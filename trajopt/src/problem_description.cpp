@@ -3,6 +3,7 @@
 #include <trajopt/kinematic_terms.hpp>
 #include <trajopt/trajectory_costs.hpp>
 #include <trajopt/collision_terms.hpp>
+#include <trajopt/plot_callback.hpp>
 #include <trajopt_utils/eigen_conversions.hpp>
 #include <trajopt_utils/eigen_slicing.hpp>
 #include <trajopt_utils/logging.hpp>
@@ -290,9 +291,7 @@ TrajOptResultPtr OptimizeProblem(TrajOptProbPtr prob, bool plot)
   param.min_approx_improve_frac = .001;
   param.improve_ratio_threshold = .2;
   param.merit_error_coeff = 20;
-//  if (plot) { TODO: Levi Fix
-//    SetupPlotting(*prob, opt);
-//  }
+  if (plot) opt.addCallback(PlotCallback(*prob));
   opt.initialize(trajToDblVec(prob->GetInitTraj()));
   opt.optimize();
   return TrajOptResultPtr(new TrajOptResult(opt.results(), *prob));

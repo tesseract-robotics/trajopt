@@ -84,9 +84,9 @@ void CartPoseErrorPlotter::Plot(const DblVec& x) {
 
   Affine3d target = calc->pose_inv_.inverse();
   // TODO: Levi add ros plotter, publish markers
-//  PlotAxes(env, cur, .05,  handles);
-//  PlotAxes(env, target, .05,  handles);
-//  handles.push_back(env.drawarrow(cur.trans, target.trans, .005, OR::Vector(1,0,1,1)));
+  calc->env_->plotAxis(cur_pose, 0.05);
+  calc->env_->plotAxis(target, 0.05);
+  calc->env_->plotArrow(cur_pose.translation(), target.translation(), Eigen::Vector4d(1, 0, 1, 1), 0.005);
 }
 
 
