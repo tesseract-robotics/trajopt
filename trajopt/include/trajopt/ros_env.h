@@ -52,6 +52,8 @@ public:
 
   void plotArrow(const Eigen::Vector3d &pt1, const Eigen::Vector3d &pt2, const Eigen::Vector4d &rgba, double scale);
 
+  void plotAxis(const Eigen::Affine3d &axis, double scale);
+
   void plotClear();
 
   void plotWaitForInput();
@@ -66,10 +68,14 @@ private:
   int marker_counter_;            /**< Counter when plotting */
   ros::Publisher trajectory_pub_; /**< Trajectory publisher */
   ros::Publisher collisions_pub_; /**< Collision Data publisher */
+  ros::Publisher arrows_pub_;     /**< Used for publishing arrow markers */
+  ros::Publisher axes_pub_;       /**< Used for publishing axis markers */
 
   std::set<const robot_model::LinkModel*> getLinkModels(const std::vector<std::string> &link_names) const;
 
   visualization_msgs::Marker getMarkerArrowMsg(const Eigen::Vector3d &pt1, const Eigen::Vector3d &pt2, const Eigen::Vector4d &rgba, double scale);
+
+  visualization_msgs::Marker getMarkerCylinderMsg(const Eigen::Vector3d &pt1, const Eigen::Vector3d &pt2, const Eigen::Vector4d &rgba, double scale);
 
   std::string getManipulatorName(const std::vector<std::string> &joint_names) const;
 

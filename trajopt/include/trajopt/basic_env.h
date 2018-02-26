@@ -170,9 +170,21 @@ public:
    */
   virtual void plotCollisions(const std::vector<std::string> &link_names, const std::vector<BasicEnv::DistanceResult> &dist_results, double safe_dist) = 0;
 
+  /**
+   * @brief plotArrow Plot arrow defined by two points
+   * @param pt1 Start position of the arrow
+   * @param pt2 Final position of the arrow
+   * @param rgba Color of the arrow
+   * @param scale The size of the arrow (related to diameter)
+   */
   virtual void plotArrow(const Eigen::Vector3d &pt1, const Eigen::Vector3d &pt2, const Eigen::Vector4d &rgba, double scale) = 0;
 
-//  virtual void plotAxis(const std::string &name, const Eigen::Affine3d &axis, double scale) const = 0;
+  /**
+   * @brief plotAxis Plat axis
+   * @param axis The axis
+   * @param scale The size of the axis
+   */
+  virtual void plotAxis(const Eigen::Affine3d &axis, double scale) = 0;
 
   /**
    * @brief This is called at the start of the plotting for each iteration

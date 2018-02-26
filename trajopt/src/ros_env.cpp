@@ -25,6 +25,8 @@ bool ROSEnv::init(PlanningScenePtr planning_scene)
 
   trajectory_pub_ = nh.advertise<moveit_msgs::DisplayTrajectory>("/trajopt/display_planned_path", 1, true);
   collisions_pub_ = nh.advertise<visualization_msgs::MarkerArray>("/trajopt/display_collisions", 1, true);
+  arrows_pub_ = nh.advertise<visualization_msgs::MarkerArray>("/trajopt/display_arrows", 1, true);
+  axes_pub_ = nh.advertise<visualization_msgs::MarkerArray>("/trajopt/display_axes", 1, true);
   return initialized_;
 }
 
@@ -463,11 +465,67 @@ visualization_msgs::Marker ROSEnv::getMarkerArrowMsg(const Eigen::Vector3d &pt1,
   return marker;
 }
 
+visualization_msgs::Marker ROSEnv::getMarkerCylinderMsg(const Eigen::Vector3d &pt1, const Eigen::Vector3d &pt2, const Eigen::Vector4d &rgba, double scale)
+{
+  visualization_msgs::Marker marker;
+  marker.header.frame_id = env_->getPlanningFrame();
+  marker.header.stamp = ros::Time::now();
+  marker.ns = "trajopt";
+  marker.id = ++marker_counter_;
+  marker.type = visualization_msgs::Marker::CYLINDER;
+  marker.action = visualization_msgs::Marker::ADD;
+
+  Eigen::Vector3d x, y, z;
+  x = (pt2 - pt1).normalized();
+  marker.pose.position.x = pt1(0);
+  marker.pose.position.y = pt1(1);
+  marker.pose.position.z = pt1(2);
+
+  y = x.unitOrthogonal();
+  z = (x.cross(y)).normalized();
+  Eigen::Matrix3d rot;
+  rot.col(0) = x;
+  rot.col(1) = y;
+  rot.col(2) = z;
+  Eigen::Quaterniond q(rot);
+  q.normalize();
+  marker.pose.orientation.x = q.x();
+  marker.pose.orientation.y = q.y();
+  marker.pose.orientation.z = q.z();
+  marker.pose.orientation.w = q.w();
+
+  double length = std::abs((pt2 - pt1).norm());
+  marker.scale.x = scale * length/20.0;
+  marker.scale.y = scale * length/20.0;
+  marker.scale.z = scale * length;
+
+  marker.color.r = rgba(0);
+  marker.color.g = rgba(1);
+  marker.color.b = rgba(2);
+  marker.color.a = rgba(3);
+
+  return marker;
+}
+
 void ROSEnv::plotArrow(const Eigen::Vector3d &pt1, const Eigen::Vector3d &pt2, const Eigen::Vector4d &rgba, double scale)
 {
   visualization_msgs::MarkerArray msg;
   msg.markers.push_back(getMarkerArrowMsg(pt1, pt2, rgba, scale));
-  collisions_pub_.publish(msg);
+  arrows_pub_.publish(msg);
+}
+
+void ROSEnv::plotAxis(const Eigen::Affine3d &axis, double scale)
+{
+  visualization_msgs::MarkerArray msg;
+  Eigen::Vector3d x_axis = axis.matrix().block<3, 1>(0, 0);
+  Eigen::Vector3d y_axis = axis.matrix().block<3, 1>(0, 1);
+  Eigen::Vector3d z_axis = axis.matrix().block<3, 1>(0, 2);
+  Eigen::Vector3d position = axis.matrix().block<3, 1>(0, 3);
+
+  msg.markers.push_back(getMarkerCylinderMsg(position, position + 0.1 * x_axis, Eigen::Vector4d(1, 0, 0, 1), scale));
+  msg.markers.push_back(getMarkerCylinderMsg(position, position + 0.1 * y_axis, Eigen::Vector4d(0, 1, 0, 1), scale));
+  msg.markers.push_back(getMarkerCylinderMsg(position, position + 0.1 * z_axis, Eigen::Vector4d(0, 0, 1, 1), scale));
+  axes_pub_.publish(msg);
 }
 
 void ROSEnv::plotCollisions(const std::vector<std::string> &link_names, const std::vector<DistanceResult> &dist_results, double safe_dist)
@@ -544,6 +602,8 @@ void ROSEnv::plotClear()
   marker.action = visualization_msgs::Marker::DELETEALL;
   msg.markers.push_back(marker);
   collisions_pub_.publish(msg);
+  arrows_pub_.publish(msg);
+  axes_pub_.publish(msg);
 
   ros::Duration(0.5).sleep();
 }
