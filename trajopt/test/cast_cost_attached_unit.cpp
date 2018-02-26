@@ -110,7 +110,7 @@ TEST_F(CastAttachedTest, LinkWithGeom)
   prob->GetKin()->getLinkNames(link_names);
 
   env_->continuousCollisionCheckTrajectory(joint_names, link_names, prob->GetInitTraj(), collisions);
-  ROS_DEBUG("Initial trajector number of continuous collisions: %i\n", collisions.size());
+  ROS_DEBUG("Initial trajector number of continuous collisions: %lui\n", collisions.size());
   ASSERT_NE(collisions.size(), 0);
 
   BasicTrustRegionSQP opt(prob);
@@ -122,7 +122,7 @@ TEST_F(CastAttachedTest, LinkWithGeom)
 
   collisions.clear();
   env_->continuousCollisionCheckTrajectory(joint_names, link_names, getTraj(opt.x(), prob->GetVars()), collisions);
-  ROS_DEBUG("Final trajectory number of continuous collisions: %i\n", collisions.size());
+  ROS_DEBUG("Final trajectory number of continuous collisions: %lui\n", collisions.size());
   ASSERT_EQ(collisions.size(), 0);
 }
 
@@ -177,7 +177,7 @@ TEST_F(CastAttachedTest, LinkWithoutGeom)
   prob->GetKin()->getLinkNames(link_names);
 
   env_->continuousCollisionCheckTrajectory(joint_names, link_names, prob->GetInitTraj(), collisions);
-  ROS_DEBUG("Initial trajector number of continuous collisions: %i\n", collisions.size());
+  ROS_DEBUG("Initial trajector number of continuous collisions: %lui\n", collisions.size());
   ASSERT_NE(collisions.size(), 0);
 
   BasicTrustRegionSQP opt(prob);
@@ -189,7 +189,7 @@ TEST_F(CastAttachedTest, LinkWithoutGeom)
 
   collisions.clear();
   env_->continuousCollisionCheckTrajectory(joint_names, link_names, getTraj(opt.x(), prob->GetVars()), collisions);
-  ROS_DEBUG("Final trajectory number of continuous collisions: %i\n", collisions.size());
+  ROS_DEBUG("Final trajectory number of continuous collisions: %lui\n", collisions.size());
   ASSERT_EQ(collisions.size(), 0);
 }
 

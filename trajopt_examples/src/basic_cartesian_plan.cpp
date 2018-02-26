@@ -162,7 +162,7 @@ int main(int argc, char** argv)
   prob->GetKin()->getLinkNames(link_names);
 
   env_->continuousCollisionCheckTrajectory(joint_names, link_names, prob->GetInitTraj(), collisions);
-  ROS_INFO("Initial trajector number of continuous collisions: %i\n", collisions.size());
+  ROS_INFO("Initial trajector number of continuous collisions: %lui\n", collisions.size());
 
   BasicTrustRegionSQP opt(prob);
   if (plotting_)
@@ -182,6 +182,6 @@ int main(int argc, char** argv)
 
   collisions.clear();
   env_->continuousCollisionCheckTrajectory(joint_names, link_names, getTraj(opt.x(), prob->GetVars()), collisions);
-  ROS_INFO("Final trajectory number of continuous collisions: %i\n", collisions.size());
+  ROS_INFO("Final trajectory number of continuous collisions: %lui\n", collisions.size());
 
 }

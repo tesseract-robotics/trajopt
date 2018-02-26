@@ -87,28 +87,28 @@ public:
    * @param req   The distance request information.
    * @param dists A list of distance results.
    */
-  virtual void calcDistancesDiscrete(const DistanceRequest &req, std::vector<DistanceResult> &dists) = 0;
+  virtual void calcDistancesDiscrete(const DistanceRequest &req, std::vector<DistanceResult> &dists) const = 0;
 
   /**
    * @brief calcDistances Should return distance information for all links in list link_names (Continuous Check)
    * @param req   The distance request information.
    * @param dists A list of distance results.
    */
-  virtual void calcDistancesContinuous(const DistanceRequest &req, std::vector<DistanceResult> &dists) = 0;
+  virtual void calcDistancesContinuous(const DistanceRequest &req, std::vector<DistanceResult> &dists) const = 0;
 
   /**
    * @brief calcCollisions Should return collision information for all links in list link_names (Discrete Check)
    * @param req   The distance request information.
    * @param dists A list of distance results.
    */
-  virtual void calcCollisionsDiscrete(const DistanceRequest &req, std::vector<DistanceResult> &collisions) = 0;
+  virtual void calcCollisionsDiscrete(const DistanceRequest &req, std::vector<DistanceResult> &collisions) const = 0;
 
   /**
    * @brief calcCollisions Should return collision information for all links in list link_names (Continuous Check)
    * @param req   The distance request information.
    * @param dists A list of distance results.
    */
-  virtual void calcCollisionsContinuous(const DistanceRequest &req, std::vector<DistanceResult> &collisions) = 0;
+  virtual void calcCollisionsContinuous(const DistanceRequest &req, std::vector<DistanceResult> &collisions) const = 0;
 
   /**
    * @brief continuousCollisionCheckTrajectory Should perform a contuous collision check over the trajectory
@@ -118,7 +118,7 @@ public:
    * @param collisions The return collision data.
    * @return True if collision was found, otherwise false.
    */
-  virtual bool continuousCollisionCheckTrajectory(const std::vector<std::string> &joint_names, const std::vector<std::string> &link_names, const TrajArray& traj, std::vector<DistanceResult>& collisions) = 0;
+  virtual bool continuousCollisionCheckTrajectory(const std::vector<std::string> &joint_names, const std::vector<std::string> &link_names, const TrajArray& traj, std::vector<DistanceResult>& collisions) const = 0;
 
   /**
    * @brief getCurrentJointValues Get the current state of the manipulator

@@ -24,15 +24,15 @@ public:
    */
   bool checkInitialized() const { return initialized_; }
 
-  void calcDistancesDiscrete(const BasicEnv::DistanceRequest &req, std::vector<DistanceResult> &dists);
+  void calcDistancesDiscrete(const BasicEnv::DistanceRequest &req, std::vector<DistanceResult> &dists) const;
 
-  void calcDistancesContinuous(const BasicEnv::DistanceRequest &req, std::vector<DistanceResult> &dists);
+  void calcDistancesContinuous(const BasicEnv::DistanceRequest &req, std::vector<DistanceResult> &dists) const;
 
-  void calcCollisionsDiscrete(const BasicEnv::DistanceRequest &req, std::vector<DistanceResult> &collisions);
+  void calcCollisionsDiscrete(const BasicEnv::DistanceRequest &req, std::vector<DistanceResult> &collisions) const;
 
-  void calcCollisionsContinuous(const BasicEnv::DistanceRequest &req, std::vector<DistanceResult> &collisions);
+  void calcCollisionsContinuous(const BasicEnv::DistanceRequest &req, std::vector<DistanceResult> &collisions) const;
 
-  bool continuousCollisionCheckTrajectory(const std::vector<std::string> &joint_names, const std::vector<std::string> &link_names, const TrajArray& traj, std::vector<DistanceResult>& collisions);
+  bool continuousCollisionCheckTrajectory(const std::vector<std::string> &joint_names, const std::vector<std::string> &link_names, const TrajArray& traj, std::vector<DistanceResult>& collisions) const;
 
   Eigen::VectorXd getCurrentJointValues(const std::string &manipulator_name) const;
 

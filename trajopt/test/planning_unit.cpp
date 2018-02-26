@@ -125,7 +125,7 @@ TEST_F(PlanningTest, arm_around_table)
   prob->GetKin()->getLinkNames(link_names);
 
   env_->continuousCollisionCheckTrajectory(joint_names, link_names, prob->GetInitTraj(), collisions);
-  ROS_DEBUG("Initial trajector number of continuous collisions: %i\n", collisions.size());
+  ROS_DEBUG("Initial trajector number of continuous collisions: %lui\n", collisions.size());
   ASSERT_NE(collisions.size(), 0);
 
   BasicTrustRegionSQP opt(prob);
@@ -147,7 +147,7 @@ TEST_F(PlanningTest, arm_around_table)
 
   collisions.clear();
   env_->continuousCollisionCheckTrajectory(joint_names, link_names, getTraj(opt.x(), prob->GetVars()), collisions);
-  ROS_DEBUG("Final trajectory number of continuous collisions: %i\n", collisions.size());
+  ROS_DEBUG("Final trajectory number of continuous collisions: %lui\n", collisions.size());
   ASSERT_EQ(collisions.size(), 0);
 }
 

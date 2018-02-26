@@ -28,7 +28,7 @@ bool ROSEnv::init(PlanningScenePtr planning_scene)
   return initialized_;
 }
 
-void ROSEnv::calcDistancesDiscrete(const DistanceRequest &req, std::vector<DistanceResult> &dists)
+void ROSEnv::calcDistancesDiscrete(const DistanceRequest &req, std::vector<DistanceResult> &dists) const
 {
   collision_detection::DistanceRequest distance_req;
   collision_detection::DistanceResult distance_res;
@@ -92,7 +92,7 @@ void ROSEnv::calcDistancesDiscrete(const DistanceRequest &req, std::vector<Dista
   }
 }
 
-void ROSEnv::calcDistancesContinuous(const DistanceRequest &req, std::vector<DistanceResult> &dists)
+void ROSEnv::calcDistancesContinuous(const DistanceRequest &req, std::vector<DistanceResult> &dists) const
 {
   collision_detection::DistanceRequest distance_req;
   collision_detection::DistanceResult distance_res;
@@ -179,7 +179,7 @@ std::set<const moveit::core::LinkModel *> ROSEnv::getLinkModels(const std::vecto
   return list;
 }
 
-void ROSEnv::calcCollisionsDiscrete(const DistanceRequest &req, std::vector<DistanceResult> &collisions)
+void ROSEnv::calcCollisionsDiscrete(const DistanceRequest &req, std::vector<DistanceResult> &collisions) const
 {
   collision_detection::CollisionRequest collision_req;
   collision_detection::CollisionResult collisione_res;
@@ -236,7 +236,7 @@ void ROSEnv::calcCollisionsDiscrete(const DistanceRequest &req, std::vector<Dist
   }
 }
 
-void ROSEnv::calcCollisionsContinuous(const DistanceRequest &req, std::vector<DistanceResult> &collisions)
+void ROSEnv::calcCollisionsContinuous(const DistanceRequest &req, std::vector<DistanceResult> &collisions) const
 {
   collision_detection::CollisionRequest collision_req;
   collision_detection::CollisionResult collisione_res;
@@ -302,7 +302,7 @@ void ROSEnv::calcCollisionsContinuous(const DistanceRequest &req, std::vector<Di
   }
 }
 
-bool ROSEnv::continuousCollisionCheckTrajectory(const std::vector<std::string> &joint_names, const std::vector<std::string> &link_names, const TrajArray& traj, std::vector<DistanceResult>& collisions)
+bool ROSEnv::continuousCollisionCheckTrajectory(const std::vector<std::string> &joint_names, const std::vector<std::string> &link_names, const TrajArray& traj, std::vector<DistanceResult>& collisions) const
 {
   BasicEnv::DistanceRequest req;
   req.joint_names = joint_names;
