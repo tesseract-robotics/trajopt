@@ -52,7 +52,7 @@ TrajOptProbPtr cppMethod()
   // Populate Basic Info
   pci.basic_info.n_steps = steps_;
   pci.basic_info.manip = "manipulator";
-  pci.basic_info.start_fixed = true;
+  pci.basic_info.start_fixed = false;
 
   // Create Kinematic Object
   pci.kin = pci.env->getManipulatorKin(pci.basic_info.manip);
@@ -61,7 +61,11 @@ TrajOptProbPtr cppMethod()
   Eigen::VectorXd start_pos = pci.env->getCurrentJointValues(pci.kin->getName());
   Eigen::VectorXd end_pos;
   end_pos.resize(pci.kin->numJoints());
-  end_pos << 0.31297900054740824, 0.3438092395172626, -0.08737074861461333, -1.7013907661586933, 3.108546365902569, 1.0978251174654596, 0.4103184384295187;
+  end_pos << 0.4, 0.2762, 0.0, -1.3348, 0.0, 1.4959, 0.0;
+
+  Eigen::Affine3d sp;
+  pci.kin->calcFwdKin(sp, Eigen::Affine3d::Identity(), start_pos, "tool0");
+  ROS_INFO_STREAM("" << sp.matrix());
 
   pci.init_info.type = InitInfo::GIVEN_TRAJ;
   pci.init_info.data = TrajArray(steps_, pci.kin->numJoints());
@@ -97,9 +101,9 @@ TrajOptProbPtr cppMethod()
     pose->name = "waypoint_cart_" + std::to_string(i);
     pose->link = "tool0";
     pose->timestep = i;
-    pose->xyz = Eigen::Vector3d(0.5, -0.2 + delta * i, 0.5);
+    pose->xyz = Eigen::Vector3d(0.5, -0.2 + delta * i, 0.62);
     pose->wxyz = Eigen::Vector4d(0.0, 0.0, 1.0, 0.0);
-    if (i == (pci.basic_info.n_steps - 1))
+    if (i == (pci.basic_info.n_steps - 1) || i == 0)
     {
       pose->pos_coeffs = Eigen::Vector3d(10, 10, 10);
       pose->rot_coeffs = Eigen::Vector3d(10, 10, 10);
@@ -152,7 +156,7 @@ int main(int argc, char** argv)
 
   sphere_pose.position.x = 0.5;
   sphere_pose.position.y = 0;
-  sphere_pose.position.z = 0.45;
+  sphere_pose.position.z = 0.55;
   sphere_pose.orientation.x = 0;
   sphere_pose.orientation.y = 0;
   sphere_pose.orientation.z = 0;
@@ -183,17 +187,17 @@ int main(int argc, char** argv)
   // Set the robot initial state
   robot_state::RobotState &rs = planning_scene_->getCurrentStateNonConst();
   std::map<std::string, double> ipos;
-  ipos["joint_s"] = -0.31297900054740824;
-  ipos["joint_l"] = 0.3438092395172626;
-  ipos["joint_e"] = -0.08737074861461333;
-  ipos["joint_u"] = -1.7013907661586933;
-  ipos["joint_r"] = 3.108546365902569;
-  ipos["joint_b"] = 1.0978251174654596;
-  ipos["joint_t"] = 0.4103184384295187;
+  ipos["joint_a1"] = -0.4;
+  ipos["joint_a2"] = 0.2762;
+  ipos["joint_a3"] = 0.0;
+  ipos["joint_a4"] = -1.3348;
+  ipos["joint_a5"] = 0.0;
+  ipos["joint_a6"] = 1.4959;
+  ipos["joint_a7"] = 0.0;
   rs.setVariablePositions(ipos);
 
   // Set Log Level
-  gLogLevel = util::LevelError;
+  gLogLevel = util::LevelInfo;
 
   // Setup Problem
   TrajOptProbPtr prob;

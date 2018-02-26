@@ -14,8 +14,6 @@
   <exec_depend>roscpp</exec_depend>
 
   <depend>trajopt</depend>
-  <exec_depend>motoman_sia20d_support</exec_depend>
-  <exec_depend>motoman_sia20d_moveit_config</exec_depend>
 
   <!-- The export tag contains other, unspecified, tags -->
   <export>

@@ -91,7 +91,7 @@ TrajOptProbPtr cppMethod()
     pose->name = "waypoint_cart_" + std::to_string(i);
     pose->link = "tool0";
     pose->timestep = i;
-    pose->xyz = Eigen::Vector3d(0.5, -0.2 + delta * i, 0.5);
+    pose->xyz = Eigen::Vector3d(0.5, -0.2 + delta * i, 0.62);
     pose->wxyz = Eigen::Vector4d(0.0, 0.0, 1.0, 0.0);
     pose->pos_coeffs = Eigen::Vector3d(10, 10, 10);
     pose->rot_coeffs = Eigen::Vector3d(10, 10, 10);
@@ -134,13 +134,13 @@ int main(int argc, char** argv)
   // Set the robot initial state
   robot_state::RobotState &rs = planning_scene_->getCurrentStateNonConst();
   std::map<std::string, double> ipos;
-  ipos["joint_s"] = -0.31297900054740824;
-  ipos["joint_l"] = 0.3438092395172626;
-  ipos["joint_e"] = -0.08737074861461333;
-  ipos["joint_u"] = -1.7013907661586933;
-  ipos["joint_r"] = 3.108546365902569;
-  ipos["joint_b"] = 1.0978251174654596;
-  ipos["joint_t"] = 0.4103184384295187;
+  ipos["joint_a1"] = -0.4;
+  ipos["joint_a2"] = 0.2762;
+  ipos["joint_a3"] = 0.0;
+  ipos["joint_a4"] = -1.3348;
+  ipos["joint_a5"] = 0.0;
+  ipos["joint_a6"] = 1.4959;
+  ipos["joint_a7"] = 0.0;
   rs.setVariablePositions(ipos);
 
   // Set Log Level
