@@ -13,23 +13,6 @@ namespace trajopt {
 using namespace sco;
 typedef BasicArray<Var> VarArray;
 
-#if 0
-void makeTrajVariablesAndBounds(int n_steps, const RobotAndDOF& manip, OptProb& prob_out, VarArray& vars_out);
-
-class FKFunc {
-public:
-  virtual OpenRAVE::Transform operator()(const VectorXd& x) const = 0;
-  virtual ~FKFunc() {}
-};
-
-class FKPositionJacobian {
-public:
-  virtual Eigen::MatrixXd operator()(const VectorXd& x) const = 0;
-  virtual ~FKPositionJacobian() {}
-};
-#endif
-
-
 struct CartPoseErrCalculator : public VectorOfVector {
   Eigen::Affine3d pose_inv_;
   BasicKinPtr manip_;
@@ -79,24 +62,5 @@ struct CartVelCalculator : VectorOfVector {
 
   VectorXd operator()(const VectorXd& dof_vals) const;
 };
-
-#if 0
-class CartPoseCost : public CostFromErrFunc {
-public:
-  CartPoseCost(const VarVector& vars, const OR::Transform& pose, RobotAndDOFPtr manip, KinBody::LinkPtr link, const VectorXd& coeffs);
-};
-
-class CartPoseConstraint : public ConstraintFromFunc {
-public:
-  CartPoseConstraint(const VarVector& vars, const OR::Transform& pose, RobotAndDOFPtr manip, KinBody::LinkPtr link, const VectorXd& coeffs);
-};
-
-class CartVelConstraint : public ConstraintFromFunc {
-public:
-  CartVelConstraint(const VarVector& step0vars, const VarVector& step1vars, RobotAndDOFPtr manip, KinBody::LinkPtr link, double distlimit);
-};
-#endif
-
-
 
 }
