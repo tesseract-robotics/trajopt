@@ -52,21 +52,27 @@ TrajOptProbPtr cppMethod()
   // Populate Basic Info
   pci.basic_info.n_steps = steps_;
   pci.basic_info.manip = "manipulator";
-  pci.basic_info.start_fixed = false;
-//  pci.basic_info.dofs_fixed
+  pci.basic_info.start_fixed = true;
 
   // Create Kinematic Object
   pci.kin = pci.env->getManipulatorKin(pci.basic_info.manip);
 
   // Populate Init Info
   Eigen::VectorXd start_pos = pci.env->getCurrentJointValues(pci.kin->getName());
+  Eigen::VectorXd end_pos;
+  end_pos.resize(pci.kin->numJoints());
+  end_pos << 0.31297900054740824, 0.3438092395172626, -0.08737074861461333, -1.7013907661586933, 3.108546365902569, 1.0978251174654596, 0.4103184384295187;
 
-  pci.init_info.type = InitInfo::STATIONARY;
-  pci.init_info.data = start_pos.transpose().replicate(pci.basic_info.n_steps, 1);
+  pci.init_info.type = InitInfo::GIVEN_TRAJ;
+  pci.init_info.data = TrajArray(steps_, pci.kin->numJoints());
+  for (int idof = 0; idof < pci.kin->numJoints(); ++idof)
+  {
+    pci.init_info.data.col(idof) = VectorXd::LinSpaced(steps_, start_pos[idof], end_pos[idof]);
+  }
 
   // Populate Cost Info
   boost::shared_ptr<JointVelCostInfo> jv = boost::shared_ptr<JointVelCostInfo>(new JointVelCostInfo);
-  jv->coeffs = std::vector<double>(7, 5.0);
+  jv->coeffs = std::vector<double>(7, 1.0);
   jv->name = "joint_vel";
   jv->term_type = TT_COST;
   pci.cost_infos.push_back(jv);
@@ -93,8 +99,16 @@ TrajOptProbPtr cppMethod()
     pose->timestep = i;
     pose->xyz = Eigen::Vector3d(0.5, -0.2 + delta * i, 0.5);
     pose->wxyz = Eigen::Vector4d(0.0, 0.0, 1.0, 0.0);
-    pose->pos_coeffs = Eigen::Vector3d(10, 10, 10);
-    pose->rot_coeffs = Eigen::Vector3d(10, 10, 10);
+    if (i == (pci.basic_info.n_steps - 1))
+    {
+      pose->pos_coeffs = Eigen::Vector3d(10, 10, 10);
+      pose->rot_coeffs = Eigen::Vector3d(10, 10, 10);
+    }
+    else
+    {
+      pose->pos_coeffs = Eigen::Vector3d(0, 0, 0);
+      pose->rot_coeffs = Eigen::Vector3d(10, 10, 0);
+    }
     pci.cnt_infos.push_back(pose);
   }
 
@@ -104,8 +118,9 @@ TrajOptProbPtr cppMethod()
 
 int main(int argc, char** argv)
 {
-  ros::init(argc, argv, "basic_cartesian_plan");
+  ros::init(argc, argv, "glass_up_right_plan");
   ros::NodeHandle pnh("~");
+  ros::NodeHandle nh;
 
   // Initial setup
   loader_.reset(new robot_model_loader::RobotModelLoader(ROBOT_DESCRIPTION_PARAM));
@@ -125,6 +140,40 @@ int main(int argc, char** argv)
 
   success = env_->init(planning_scene_);
   assert(success);
+
+  // Add sphere
+  moveit_msgs::CollisionObject sphere_world;
+  geometry_msgs::Pose sphere_pose;
+  shape_msgs::SolidPrimitive sphere;
+
+  sphere.type = shape_msgs::SolidPrimitive::SPHERE;
+  sphere.dimensions.resize(1);
+  sphere.dimensions[0] = 0.15;
+
+  sphere_pose.position.x = 0.5;
+  sphere_pose.position.y = 0;
+  sphere_pose.position.z = 0.45;
+  sphere_pose.orientation.x = 0;
+  sphere_pose.orientation.y = 0;
+  sphere_pose.orientation.z = 0;
+  sphere_pose.orientation.w = 1;
+
+  sphere_world.header.frame_id = "base_link";
+  sphere_world.header.stamp = ros::Time::now();
+
+  sphere_world.id = "box_world";
+  sphere_world.operation = moveit_msgs::CollisionObject::ADD;
+  sphere_world.primitives.push_back(sphere);
+  sphere_world.primitive_poses.push_back(sphere_pose);
+
+  planning_scene_->processCollisionObjectMsg(sphere_world);
+
+  ros::Publisher planning_scene_diff_publisher = nh.advertise<moveit_msgs::PlanningScene>("/trajopt/planning_scene", 1, true);
+
+  moveit_msgs::PlanningScene msg;
+  planning_scene_->getPlanningSceneMsg(msg);
+  planning_scene_diff_publisher.publish(msg);
+  ros::Duration(0.25).sleep();
 
   // Get ROS Parameters
   pnh.param("plotting", plotting_, plotting_);

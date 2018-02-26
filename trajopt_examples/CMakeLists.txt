@@ -23,3 +23,6 @@ include_directories(
 
 add_executable(${PROJECT_NAME}_basic_cartesian_plan src/basic_cartesian_plan.cpp)
 target_link_libraries(${PROJECT_NAME}_basic_cartesian_plan ${catkin_LIBRARIES})
+
+add_executable(${PROJECT_NAME}_glass_up_right_plan src/glass_up_right_plan.cpp)
+target_link_libraries(${PROJECT_NAME}_glass_up_right_plan ${catkin_LIBRARIES})

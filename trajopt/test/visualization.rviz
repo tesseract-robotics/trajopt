@@ -62,20 +62,51 @@ Visualization Manager:
         Expand Link Details: false
         Expand Tree: false
         Link Tree Style: Links in Alphabetic Order
+        base:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
         base_link:
           Alpha: 1
           Show Axes: false
           Show Trail: false
-        boxbot_link:
+          Value: true
+        link_b:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        boxbot_linkX:
+        link_e:
           Alpha: 1
           Show Axes: false
           Show Trail: false
-        boxbot_linkY:
+          Value: true
+        link_l:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        link_r:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        link_s:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        link_t:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        link_u:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        tool0:
           Alpha: 1
           Show Axes: false
           Show Trail: false
@@ -96,11 +127,11 @@ Visualization Manager:
       Marker Topic: /trajopt/display_collisions
       Name: MarkerArray
       Namespaces:
-        trajopt: true
+        {}
       Queue Size: 100
       Value: true
     - Class: moveit_rviz_plugin/PlanningScene
-      Enabled: true
+      Enabled: false
       Move Group Namespace: ""
       Name: PlanningScene
       Planning Scene Topic: /trajopt/planning_scene
@@ -120,27 +151,58 @@ Visualization Manager:
           Expand Link Details: false
           Expand Tree: false
           Link Tree Style: Links in Alphabetic Order
+          base:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
           base_link:
             Alpha: 1
             Show Axes: false
             Show Trail: false
-          boxbot_link:
+            Value: true
+          link_b:
             Alpha: 1
             Show Axes: false
             Show Trail: false
             Value: true
-          boxbot_linkX:
+          link_e:
             Alpha: 1
             Show Axes: false
             Show Trail: false
-          boxbot_linkY:
+            Value: true
+          link_l:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+            Value: true
+          link_r:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+            Value: true
+          link_s:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+            Value: true
+          link_t:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+            Value: true
+          link_u:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+            Value: true
+          tool0:
             Alpha: 1
             Show Axes: false
             Show Trail: false
         Robot Alpha: 1
         Show Robot Collision: false
         Show Robot Visual: false
-      Value: true
+      Value: false
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
@@ -181,10 +243,10 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.00999999978
-      Pitch: 0.644797266
+      Pitch: 0.314797252
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 0.865402639
+      Yaw: 0.715402603
     Saved: ~
 Window Geometry:
   Displays:
