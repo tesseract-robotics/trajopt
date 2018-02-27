@@ -71,37 +71,37 @@ Visualization Manager:
           Show Axes: false
           Show Trail: false
           Value: true
-        link_b:
+        link_1:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        link_e:
+        link_2:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        link_l:
+        link_3:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        link_r:
+        link_4:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        link_s:
+        link_5:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        link_t:
+        link_6:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        link_u:
+        link_7:
           Alpha: 1
           Show Axes: false
           Show Trail: false
@@ -112,7 +112,7 @@ Visualization Manager:
           Show Trail: false
       Loop Animation: false
       Name: Trajectory
-      Robot Alpha: 0.5
+      Robot Alpha: 1
       Robot Color: 150; 50; 150
       Robot Description: robot_description
       Show Robot Collision: false
@@ -151,54 +151,6 @@ Visualization Manager:
           Expand Link Details: false
           Expand Tree: false
           Link Tree Style: Links in Alphabetic Order
-          base:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-          base_link:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-            Value: true
-          link_b:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-            Value: true
-          link_e:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-            Value: true
-          link_l:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-            Value: true
-          link_r:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-            Value: true
-          link_s:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-            Value: true
-          link_t:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-            Value: true
-          link_u:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-            Value: true
-          tool0:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
         Robot Alpha: 1
         Show Robot Collision: false
         Show Robot Visual: false
@@ -228,25 +180,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 8.17539978
+      Distance: 1.2302537
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.0599999987
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: -0.453398734
-        Y: 0.473420203
-        Z: 0.339512408
+        X: 0.188496798
+        Y: 0.0588911772
+        Z: 0.559074342
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.0500000007
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.00999999978
-      Pitch: 0.314797252
+      Pitch: 0.0397970788
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 0.715402603
+      Yaw: 5.40856695
     Saved: ~
 Window Geometry:
   Displays:
