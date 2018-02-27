@@ -63,10 +63,6 @@ TrajOptProbPtr cppMethod()
   end_pos.resize(pci.kin->numJoints());
   end_pos << 0.4, 0.2762, 0.0, -1.3348, 0.0, 1.4959, 0.0;
 
-  Eigen::Affine3d sp;
-  pci.kin->calcFwdKin(sp, Eigen::Affine3d::Identity(), start_pos, "tool0");
-  ROS_INFO_STREAM("" << sp.matrix());
-
   pci.init_info.type = InitInfo::GIVEN_TRAJ;
   pci.init_info.data = TrajArray(steps_, pci.kin->numJoints());
   for (int idof = 0; idof < pci.kin->numJoints(); ++idof)
