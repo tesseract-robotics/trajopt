@@ -176,11 +176,15 @@ struct PoseCostInfo : public TermInfo, public MakesCost, public MakesConstraint 
   Vector3d xyz;
   Vector4d wxyz;
   Vector3d pos_coeffs, rot_coeffs;
-  // double coeff;
-  std::string link; //LEVI This may need to be moveit LinkModel
+
+  std::string link;
+  Eigen::Affine3d tcp;
+
+  PoseCostInfo();
+
   void fromJson(ProblemConstructionInfo &pci, const Value& v);
   void hatch(TrajOptProb& prob);
-  DEFINE_CREATE(PoseCostInfo);
+  DEFINE_CREATE(PoseCostInfo)
 };
 
 

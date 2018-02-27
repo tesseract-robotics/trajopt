@@ -370,23 +370,40 @@ TrajOptProb::TrajOptProb(int n_steps, const ProblemConstructionInfo &pci) : m_ki
 
 TrajOptProb::TrajOptProb() {}
 
+PoseCostInfo::PoseCostInfo()
+{
+  pos_coeffs = Vector3d::Ones();
+  rot_coeffs = Vector3d::Ones();
+  tcp.setIdentity();
+}
+
 void PoseCostInfo::fromJson(ProblemConstructionInfo &pci, const Value& v)
 {
   FAIL_IF_FALSE(v.isMember("params"));
+  Vector3d tcp_xyz = Vector3d::Zero();
+  Vector4d tcp_wxyz = Vector4d(1, 0, 0, 0);
+
   const Value& params = v["params"];  
   childFromJson(params, timestep, "timestep", pci.basic_info.n_steps-1);
   childFromJson(params, xyz,"xyz");
   childFromJson(params, wxyz,"wxyz");
-  childFromJson(params, pos_coeffs,"pos_coeffs", (Vector3d)Vector3d::Ones());
-  childFromJson(params, rot_coeffs,"rot_coeffs", (Vector3d)Vector3d::Ones());
+  childFromJson(params, pos_coeffs, "pos_coeffs", (Vector3d)Vector3d::Ones());
+  childFromJson(params, rot_coeffs, "rot_coeffs", (Vector3d)Vector3d::Ones());
   childFromJson(params, link, "link");
+  childFromJson(params, tcp_xyz, "tcp_xyz", (Vector3d)Vector3d::Zero());
+  childFromJson(params, tcp_wxyz, "tcp_wxyz", (Vector4d)Vector4d(1, 0, 0, 0));
+
+  Eigen::Quaterniond q(tcp_wxyz(0), tcp_wxyz(1), tcp_wxyz(2), tcp_wxyz(3));
+  tcp.linear() = q.matrix();
+  tcp.translation() = tcp_xyz;
+
   std::vector<std::string> link_names;
   pci.kin->getLinkNames(link_names);
   if (std::find(link_names.begin(), link_names.end(),link)==link_names.end()) {
     PRINT_AND_THROW(boost::format("invalid link name: %s")%link);
   }
 
-  const char* all_fields[] = {"timestep", "xyz", "wxyz", "pos_coeffs", "rot_coeffs","link"};
+  const char* all_fields[] = {"timestep", "xyz", "wxyz", "pos_coeffs", "rot_coeffs", "link", "tcp_xyz", "tcp_wxyz"};
   ensure_only_members(params, all_fields, sizeof(all_fields)/sizeof(char*));
 
 }
@@ -397,7 +414,8 @@ void PoseCostInfo::hatch(TrajOptProb& prob)
   Eigen::Quaterniond q(wxyz(0), wxyz(1), wxyz(2), wxyz(3));
   input_pose.linear() = q.matrix();
   input_pose.translation() = xyz;
-  VectorOfVectorPtr f(new CartPoseErrCalculator(input_pose, prob.GetKin(), prob.GetEnv(), link));
+
+  VectorOfVectorPtr f(new CartPoseErrCalculator(input_pose, prob.GetKin(), prob.GetEnv(), link, tcp));
   if (term_type == TT_COST) {
     prob.addCost(CostPtr(new CostFromErrFunc(f, prob.GetVarRow(timestep), concat(rot_coeffs, pos_coeffs), ABS, name)));
   }
