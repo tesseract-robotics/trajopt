@@ -7,10 +7,13 @@ project(trajopt_ext)
 find_package(catkin REQUIRED COMPONENTS)
 
 catkin_package(
-  INCLUDE_DIRS bullet/src
-  LIBRARIES BulletCollision LinearMath
+  INCLUDE_DIRS bullet/src bullet/Extras vhacd/public
+  LIBRARIES BulletCollision LinearMath ConvexDecomposition HACD vhacd
 #  CATKIN_DEPENDS roscpp
 #  DEPENDS system_lib
 )
 
 add_subdirectory(bullet)
+
+set(CMAKE_COMMON_INC "${CMAKE_SOURCE_DIR}/vhacd/scripts/cmake_common.cmake")
+add_subdirectory(vhacd)

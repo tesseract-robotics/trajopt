@@ -367,9 +367,8 @@ ENDIF(MSVC)
 
 
 #OPTION(BUILD_EXTRAS "Set when you want to build the extras" OFF)
-IF(BUILD_EXTRAS)
-  SUBDIRS(Extras)
-ENDIF(BUILD_EXTRAS)
+SUBDIRS(Extras)
+
 
 #Maya Dynamica plugin is moved to http://dynamica.googlecode.com
 
