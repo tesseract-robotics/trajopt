@@ -35,13 +35,15 @@ void ROSEnv::calcDistancesDiscrete(const DistanceRequest &req, std::vector<Dista
   collision_detection::DistanceRequest distance_req;
   collision_detection::DistanceResult distance_res;
 
+  distance_req.group_name = getManipulatorName(req.joint_names);
   distance_req.enable_nearest_points = true;
   distance_req.enable_signed_distance = true;
-  distance_req.global_minimum_only = false;
+  distance_req.type = collision_detection::DistanceRequestType::ALL;
   std::set<const moveit::core::LinkModel *> list = getLinkModels(req.link_names);
   distance_req.active_components_only = &list;
   distance_req.distance_threshold = req.contact_distance;
   distance_req.acm = &env_->getAllowedCollisionMatrix();
+  distance_req.max_contacts_per_body = 50;
 
   robot_state::RobotState state = env_->getCurrentState();
   int i = 0;
@@ -56,41 +58,43 @@ void ROSEnv::calcDistancesDiscrete(const DistanceRequest &req, std::vector<Dista
   collision_world_->distanceRobot(distance_req, distance_res, *collision_robot_, state);
 
   dists.reserve(req.link_names.size());
-  for (collision_detection::DistanceMap::iterator it = distance_res.distances.begin(); it!=distance_res.distances.end(); ++it)
+  for (collision_detection::DistanceMap::iterator pair = distance_res.distances.begin(); pair != distance_res.distances.end(); ++pair)
   {
-    DistanceResult d;
-    d.distance = it->second.distance;
-    d.valid = true;
-
-    // Note: for trajopt RosEnv is only aware of links in the urdf so if attached link set link name to parent link name
-    if (it->second.body_types[0] == collision_detection::BodyTypes::ROBOT_ATTACHED)
+    for (auto it = pair->second.begin(); it != pair->second.end(); ++it)
     {
-      d.link_names[0] = state.getAttachedBody(it->second.link_names[0])->getAttachedLinkName();
+      DistanceResult d;
+      d.distance = it->distance;
+      d.valid = true;
+
+      // Note: for trajopt RosEnv is only aware of links in the urdf so if attached link set link name to parent link name
+      if (it->body_types[0] == collision_detection::BodyTypes::ROBOT_ATTACHED)
+      {
+        d.link_names[0] = state.getAttachedBody(it->link_names[0])->getAttachedLinkName();
+      }
+      else
+      {
+        d.link_names[0] = it->link_names[0];
+      }
+
+      // Note: for trajopt RosEnv is only aware of links in the urdf so if attached link set link name to parent link name
+      if (it->body_types[1] == collision_detection::BodyTypes::ROBOT_ATTACHED)
+      {
+        d.link_names[1] = state.getAttachedBody(it->link_names[1])->getAttachedLinkName();
+      }
+      else
+      {
+        d.link_names[1] = it->link_names[1];
+      }
+
+      d.nearest_points[0] = it->nearest_points[0];
+      d.nearest_points[1] = it->nearest_points[1];
+      d.normal = it->normal;
+
+      if ((d.nearest_points[0].array().isNaN()).all() || (d.nearest_points[1].array().isNaN()).all() || (d.normal.array().isNaN()).all())
+        d.valid = false;
+
+      dists.push_back(d);
     }
-    else
-    {
-      d.link_names[0] = it->second.link_names[0];
-    }
-
-    // Note: for trajopt RosEnv is only aware of links in the urdf so if attached link set link name to parent link name
-    if (it->second.body_types[1] == collision_detection::BodyTypes::ROBOT_ATTACHED)
-    {
-      d.link_names[1] = state.getAttachedBody(it->second.link_names[1])->getAttachedLinkName();
-    }
-    else
-    {
-      d.link_names[1] = it->second.link_names[1];
-    }
-
-    d.nearest_points[0] = it->second.nearest_points[0];
-    d.nearest_points[1] = it->second.nearest_points[1];
-    d.normal = it->second.normal;
-
-    if ((d.nearest_points[0].array().isNaN()).all() || (d.nearest_points[1].array().isNaN()).all() || (d.normal.array().isNaN()).all())
-      d.valid = false;
-
-    dists.push_back(d);
-
   }
 }
 
@@ -99,13 +103,16 @@ void ROSEnv::calcDistancesContinuous(const DistanceRequest &req, std::vector<Dis
   collision_detection::DistanceRequest distance_req;
   collision_detection::DistanceResult distance_res;
 
+  distance_req.group_name = getManipulatorName(req.joint_names);
   distance_req.enable_nearest_points = true;
   distance_req.enable_signed_distance = true;
-  distance_req.global_minimum_only = false;
+  distance_req.compute_gradient = true;
+  distance_req.type = collision_detection::DistanceRequestType::ALL;
   std::set<const moveit::core::LinkModel *> list = getLinkModels(req.link_names);
   distance_req.active_components_only = &list;
   distance_req.distance_threshold = req.contact_distance;
   distance_req.acm = &env_->getAllowedCollisionMatrix();
+  distance_req.max_contacts_per_body = 50;
 
   robot_state::RobotState state1 = env_->getCurrentState();
   robot_state::RobotState state2 = env_->getCurrentState();
@@ -123,49 +130,50 @@ void ROSEnv::calcDistancesContinuous(const DistanceRequest &req, std::vector<Dis
   collision_world_->distanceRobot(distance_req, distance_res, *collision_robot_, state1, state2);
 
   dists.reserve(req.link_names.size());
-  for (collision_detection::DistanceMap::iterator it = distance_res.distances.begin(); it!=distance_res.distances.end(); ++it)
+  for (collision_detection::DistanceMap::iterator pair = distance_res.distances.begin(); pair != distance_res.distances.end(); ++pair)
   {
-    DistanceResult d;
-    d.distance = it->second.distance;
-    d.valid = true;
-
-    // Note: for trajopt RosEnv is only aware of links in the urdf so if attached link set link name to parent link name
-    if (it->second.body_types[0] == collision_detection::BodyTypes::ROBOT_ATTACHED)
+    for (auto it = pair->second.begin(); it != pair->second.end(); ++it)
     {
-      d.link_names[0] = state1.getAttachedBody(it->second.link_names[0])->getAttachedLinkName();
+      DistanceResult d;
+      d.distance = it->distance;
+      d.valid = true;
+
+      // Note: for trajopt RosEnv is only aware of links in the urdf so if attached link set link name to parent link name
+      if (it->body_types[0] == collision_detection::BodyTypes::ROBOT_ATTACHED)
+      {
+        d.link_names[0] = state1.getAttachedBody(it->link_names[0])->getAttachedLinkName();
+      }
+      else
+      {
+        d.link_names[0] = it->link_names[0];
+      }
+
+      // Note: for trajopt RosEnv is only aware of links in the urdf so if attached link set link name to parent link name
+      if (it->body_types[1] == collision_detection::BodyTypes::ROBOT_ATTACHED)
+      {
+        d.link_names[1] = state1.getAttachedBody(it->link_names[1])->getAttachedLinkName();
+      }
+      else
+      {
+        d.link_names[1] = it->link_names[1];
+      }
+
+      d.nearest_points[0] = it->nearest_points[0];
+      d.nearest_points[1] = it->nearest_points[1];
+      d.normal = it->normal;
+      d.cc_type = it->cc_type;
+      d.cc_nearest_points[0] = it->cc_nearest_points[0];
+      d.cc_nearest_points[1] = it->cc_nearest_points[1];
+      d.cc_time = it->cc_time;
+
+      if ((d.nearest_points[0].array().isNaN()).all() || (d.nearest_points[1].array().isNaN()).all() || (d.normal.array().isNaN()).all())
+        d.valid = false;
+
+      if (d.cc_type != collision_detection::CCType_None && ((d.cc_nearest_points[0].array().isNaN()).all() || (d.cc_nearest_points[1].array().isNaN()).all()))
+        d.valid = false;
+
+      dists.push_back(d);
     }
-    else
-    {
-      d.link_names[0] = it->second.link_names[0];
-    }
-
-    // Note: for trajopt RosEnv is only aware of links in the urdf so if attached link set link name to parent link name
-    if (it->second.body_types[1] == collision_detection::BodyTypes::ROBOT_ATTACHED)
-    {
-      d.link_names[1] = state1.getAttachedBody(it->second.link_names[1])->getAttachedLinkName();
-    }
-    else
-    {
-      d.link_names[1] = it->second.link_names[1];
-    }
-
-    d.nearest_points[0] = it->second.nearest_points[0];
-    d.nearest_points[1] = it->second.nearest_points[1];
-    d.normal = it->second.normal;
-    d.cc_type = it->second.cc_type;
-    d.cc_nearest_points[0] = it->second.cc_nearest_points[0];
-    d.cc_nearest_points[1] = it->second.cc_nearest_points[1];
-    d.cc_time = it->second.cc_time;
-
-    if ((d.nearest_points[0].array().isNaN()).all() || (d.nearest_points[1].array().isNaN()).all() || (d.normal.array().isNaN()).all())
-      d.valid = false;
-
-    if (d.cc_type != collision_detection::CCType_None && ((d.cc_nearest_points[0].array().isNaN()).all() || (d.cc_nearest_points[1].array().isNaN()).all()))
-      d.valid = false;
-
-
-    dists.push_back(d);
-
   }
 }
 
@@ -183,125 +191,12 @@ std::set<const moveit::core::LinkModel *> ROSEnv::getLinkModels(const std::vecto
 
 void ROSEnv::calcCollisionsDiscrete(const DistanceRequest &req, std::vector<DistanceResult> &collisions) const
 {
-  collision_detection::CollisionRequest collision_req;
-  collision_detection::CollisionResult collisione_res;
-
-  collision_req.group_name = getManipulatorName(req.joint_names);
-
-  robot_state::RobotState state = env_->getCurrentState();
-  int i = 0;
-  for(auto const& joint_name: req.joint_names)
-  {
-    state.setVariablePosition(joint_name, req.joint_angles1(i));
-    ++i;
-  }
-  state.update();
-
-  collision_robot_->checkSelfCollision(collision_req, collisione_res, state, env_->getAllowedCollisionMatrix());
-  collision_world_->checkRobotCollision(collision_req, collisione_res, *collision_robot_, state, env_->getAllowedCollisionMatrix());
-
-  collisions.reserve(req.link_names.size());
-  for (collision_detection::CollisionResult::ContactMap::iterator it = collisione_res.contacts.begin(); it!=collisione_res.contacts.end(); ++it)
-  {
-    DistanceResult d;
-    d.distance = it->second[0].depth;
-    d.valid = true;
-
-    // Note: for trajopt RosEnv is only aware of links in the urdf so if attached link set link name to parent link name
-    if (it->second[0].body_type_1 == collision_detection::BodyTypes::ROBOT_ATTACHED)
-    {
-      d.link_names[0] = state.getAttachedBody(it->second[0].body_name_1)->getAttachedLinkName();
-    }
-    else
-    {
-      d.link_names[0] = it->second[0].body_name_1;
-    }
-
-    // Note: for trajopt RosEnv is only aware of links in the urdf so if attached link set link name to parent link name
-    if (it->second[0].body_type_2 == collision_detection::BodyTypes::ROBOT_ATTACHED)
-    {
-      d.link_names[1] = state.getAttachedBody(it->second[0].body_name_2)->getAttachedLinkName();
-    }
-    else
-    {
-      d.link_names[1] = it->second[0].body_name_2;
-    }
-
-    d.nearest_points[0] = it->second[0].pos;
-    d.nearest_points[1] = it->second[0].pos;
-    d.normal = it->second[0].normal;
-
-    if ((d.nearest_points[0].array().isNaN()).all() || (d.nearest_points[1].array().isNaN()).all() || (d.normal.array().isNaN()).all())
-      d.valid = false;
-
-    collisions.push_back(d);
-  }
+  calcDistancesDiscrete(req, collisions);
 }
 
 void ROSEnv::calcCollisionsContinuous(const DistanceRequest &req, std::vector<DistanceResult> &collisions) const
 {
-  collision_detection::CollisionRequest collision_req;
-  collision_detection::CollisionResult collisione_res;
-
-  collision_req.group_name = getManipulatorName(req.joint_names);
-
-  robot_state::RobotState state1 = env_->getCurrentState();
-  robot_state::RobotState state2 = env_->getCurrentState();
-  int i = 0;
-  for(auto const& joint_name: req.joint_names)
-  {
-    state1.setVariablePosition(joint_name, req.joint_angles1(i));
-    state2.setVariablePosition(joint_name, req.joint_angles2(i));
-    ++i;
-  }
-  state1.update();
-  state2.update();
-
-  collision_robot_->checkSelfCollision(collision_req, collisione_res, state1, state2, env_->getAllowedCollisionMatrix());
-  collision_world_->checkRobotCollision(collision_req, collisione_res, *collision_robot_, state1, state2, env_->getAllowedCollisionMatrix());
-
-  collisions.reserve(req.link_names.size());
-  for (collision_detection::CollisionResult::ContactMap::iterator it = collisione_res.contacts.begin(); it!=collisione_res.contacts.end(); ++it)
-  {
-    DistanceResult d;
-    d.distance = it->second[0].depth;
-    d.valid = true;
-
-    // Note: for trajopt RosEnv is only aware of links in the urdf so if attached link set link name to parent link name
-    if (it->second[0].body_type_1 == collision_detection::BodyTypes::ROBOT_ATTACHED)
-    {
-      d.link_names[0] = state1.getAttachedBody(it->second[0].body_name_1)->getAttachedLinkName();
-    }
-    else
-    {
-      d.link_names[0] = it->second[0].body_name_1;
-    }
-
-    // Note: for trajopt RosEnv is only aware of links in the urdf so if attached link set link name to parent link name
-    if (it->second[0].body_type_2 == collision_detection::BodyTypes::ROBOT_ATTACHED)
-    {
-      d.link_names[1] = state1.getAttachedBody(it->second[0].body_name_2)->getAttachedLinkName();
-    }
-    else
-    {
-      d.link_names[1] = it->second[0].body_name_2;
-    }
-
-    d.nearest_points[0] = it->second[0].pos;
-    d.nearest_points[1] = it->second[0].pos;
-    d.normal = it->second[0].normal;
-
-//    d.cc_type = it->second.cc_type;
-    d.cc_nearest_points[0] = it->second[0].pos;
-    d.cc_nearest_points[1] = it->second[0].pos;
-//    d.cc_time = it->second.cc_time;
-
-    if (d.cc_type != collision_detection::CCType_None && ((d.cc_nearest_points[0].array().isNaN()).all() || (d.cc_nearest_points[1].array().isNaN()).all()))
-      d.valid = false;
-
-
-    collisions.push_back(d);
-  }
+  calcDistancesContinuous(req, collisions);
 }
 
 bool ROSEnv::continuousCollisionCheckTrajectory(const std::vector<std::string> &joint_names, const std::vector<std::string> &link_names, const TrajArray& traj, std::vector<DistanceResult>& collisions) const
@@ -436,31 +331,6 @@ visualization_msgs::Marker ROSEnv::getMarkerArrowMsg(const Eigen::Vector3d &pt1,
   marker.color.g = rgba(1);
   marker.color.b = rgba(2);
   marker.color.a = rgba(3);
-
-  //    A Recently accepted PR in rviz has broken the use of start and end point
-  //    geometry_msgs::Point start_pt, end_pt;
-  //    start_pt.x = dist.nearest_points[1](0);
-  //    start_pt.y = dist.nearest_points[1](1);
-  //    start_pt.z = dist.nearest_points[1](2);
-
-  //    end_pt.x = dist.nearest_points[0](0);
-  //    end_pt.y = dist.nearest_points[0](1);
-  //    end_pt.z = dist.nearest_points[0](2);
-
-  //    auto it = std::find(link_names.begin(), link_names.end(), dist.link_names[0]);
-  //    if (it != link_names.end())
-  //    {
-  //      marker.points.push_back(start_pt);
-  //      marker.points.push_back(end_pt);
-  //    }
-  //    else
-  //    {
-  //      marker.points.push_back(end_pt);
-  //      marker.points.push_back(start_pt);
-  //    }
-  //    marker.scale.x = 0.05;
-  //    marker.scale.y = 0.01;
-  //    marker.scale.z = 0;
 
   return marker;
 }

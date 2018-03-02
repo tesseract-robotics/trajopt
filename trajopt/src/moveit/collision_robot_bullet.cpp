@@ -325,11 +325,12 @@ void collision_detection::CollisionRobotBullet::checkSelfCollisionHelper(const C
 {
   BulletManager manager;
   DistanceRequest dreq;
-  std::vector<collision_detection::DistanceResultsData> collisions;
+  DistanceResult dres;
 
   dreq.group_name = req.group_name;
   dreq.acm = acm;
   dreq.enableGroup(getRobotModel());
+  dreq.enable_signed_distance = false;
 
   // Right now it will get distance information within 1.0 meter
   // Need to figure out the best way to expose this or see if bullet
@@ -344,12 +345,15 @@ void collision_detection::CollisionRobotBullet::checkSelfCollisionHelper(const C
   constructBulletObject(manager.m_link2cow, active_objects, contact_distance, state, dreq.active_components_only);
   manager.processCollisionObjects();
 
+  BulletDistanceData collisions(&dreq, &dres);
   for (auto& obj : active_objects)
   {
     COWPtr cow = manager.m_link2cow[obj];
     assert(cow);
 
-    manager.contactDiscreteTest(cow, acm, collisions);
+    manager.contactDiscreteTest(cow, collisions);
+
+    if (collisions.done) break;
   }
 
   convertBulletCollisions(res, collisions);
@@ -360,12 +364,13 @@ void collision_detection::CollisionRobotBullet::checkSelfCollisionHelper(const C
                                                                          const AllowedCollisionMatrix* acm) const
 {
   BulletManager manager;
-  std::vector<collision_detection::DistanceResultsData> collisions;
   DistanceRequest dreq;
+  DistanceResult dres;
 
   dreq.group_name = req.group_name;
   dreq.acm = acm;
   dreq.enableGroup(getRobotModel());
+  dreq.enable_signed_distance = false;
 
   // Right now it will get distance information within 1.0 meter
   // Need to figure out the best way to expose this or see if bullet
@@ -380,6 +385,7 @@ void collision_detection::CollisionRobotBullet::checkSelfCollisionHelper(const C
   constructBulletObject(manager.m_link2cow, active_objects, contact_distance, state1, dreq.active_components_only, true);
   manager.processCollisionObjects();
 
+  BulletDistanceData collisions(&dreq, &dres);
   for (auto& obj : active_objects)
   {
     COWPtr cow = manager.m_link2cow[obj];
@@ -387,7 +393,9 @@ void collision_detection::CollisionRobotBullet::checkSelfCollisionHelper(const C
 
     Eigen::Affine3d tf1 = state1.getGlobalLinkTransform(cow->getLinkName());
     Eigen::Affine3d tf2 = state2.getGlobalLinkTransform(cow->getLinkName());
-    manager.convexSweepTest(cow, convertEigenToBt(tf1), convertEigenToBt(tf2), acm, collisions);
+    manager.convexSweepTest(cow, convertEigenToBt(tf1), convertEigenToBt(tf2), collisions);
+
+    if (collisions.done) break;
   }
 
   convertBulletCollisions(res, collisions);
@@ -441,12 +449,13 @@ void collision_detection::CollisionRobotBullet::checkOtherCollisionHelper(const 
   const CollisionRobotBullet& other_bullet_robot = dynamic_cast<const CollisionRobotBullet&>(other_robot);
   BulletManager other_robot_manager;
   Link2Cow robot_objects;
-  std::vector<collision_detection::DistanceResultsData> collisions;
   DistanceRequest dreq;
+  DistanceResult dres;
 
   dreq.group_name = req.group_name;
   dreq.acm = acm;
   dreq.enableGroup(getRobotModel());
+  dreq.enable_signed_distance = false;
 
   // Right now it will get distance information within 1.0 meter
   // Need to figure out the best way to expose this or see if bullet
@@ -463,12 +472,15 @@ void collision_detection::CollisionRobotBullet::checkOtherCollisionHelper(const 
 
   constructBulletObject(robot_objects, active_objects, contact_distance, state, dreq.active_components_only);
 
+  BulletDistanceData collisions(&dreq, &dres);
   for (auto& obj : active_objects)
   {
     COWPtr cow = robot_objects[obj];
     assert(cow);
 
-    other_robot_manager.contactDiscreteTest(cow, acm, collisions);
+    other_robot_manager.contactDiscreteTest(cow, collisions);
+
+    if (collisions.done) break;
   }
 
   convertBulletCollisions(res, collisions);
@@ -487,6 +499,7 @@ double collision_detection::CollisionRobotBullet::distanceSelf(const robot_state
   dreq.enableGroup(getRobotModel());
   dreq.distance_threshold = BULLET_DEFAULT_CONTACT_DISTANCE;
   distanceSelfHelper(dreq, dres, state);
+  dreq.enable_signed_distance = true;
   return dres.minimum_distance.distance;
 }
 
@@ -499,6 +512,7 @@ double collision_detection::CollisionRobotBullet::distanceSelf(const robot_state
   dreq.acm = &acm;
   dreq.distance_threshold = BULLET_DEFAULT_CONTACT_DISTANCE;
   dreq.enableGroup(getRobotModel());
+  dreq.enable_signed_distance = true;
   distanceSelfHelper(dreq, dres, state);
   return dres.minimum_distance.distance;
 }
@@ -519,7 +533,7 @@ void collision_detection::CollisionRobotBullet::distanceSelfHelper(const Distanc
                                                                    const robot_state::RobotState& state) const
 {
   BulletManager manager;
-  std::vector<collision_detection::DistanceResultsData> collisions;
+  BulletDistanceData collisions(&req, &res);
 
   std::vector<std::string> active_objects;
   constructBulletObject(manager.m_link2cow, active_objects, req.distance_threshold, state, req.active_components_only);
@@ -530,17 +544,17 @@ void collision_detection::CollisionRobotBullet::distanceSelfHelper(const Distanc
     COWPtr cow = manager.m_link2cow[obj];
     assert(cow);
 
-    manager.contactDiscreteTest(cow, req.acm, collisions);
-  }
+    manager.contactDiscreteTest(cow, collisions);
 
-  convertBulletCollisions(res, collisions, state, req.active_components_only);
+    if (collisions.done) break;
+  }
 }
 
 void collision_detection::CollisionRobotBullet::distanceSelfHelper(const DistanceRequest& req, DistanceResult& res,
                                                                    const robot_state::RobotState& state1, const robot_state::RobotState& state2) const
 {
   BulletManager manager;
-  std::vector<collision_detection::DistanceResultsData> collisions;
+  BulletDistanceData collisions(&req, &res);
 
   std::vector<std::string> active_objects;
   constructBulletObject(manager.m_link2cow, active_objects, req.distance_threshold, state1, state2, req.active_components_only);
@@ -551,17 +565,17 @@ void collision_detection::CollisionRobotBullet::distanceSelfHelper(const Distanc
     COWPtr cow = manager.m_link2cow[obj];
     assert(cow);
 
-    manager.contactCastTest(cow, req.acm, collisions);
-  }
+    manager.contactCastTest(cow, collisions);
 
-  convertBulletCollisions(res, collisions, state1, req.active_components_only);
+    if (collisions.done) break;
+  }
 }
 
 void collision_detection::CollisionRobotBullet::distanceSelfHelperOriginal(const DistanceRequest& req, DistanceResult& res,
                                                                            const robot_state::RobotState& state1, const robot_state::RobotState& state2) const
 {
   BulletManager manager;
-  std::vector<collision_detection::DistanceResultsData> collisions;
+  BulletDistanceData collisions(&req, &res);
 
   std::vector<std::string> active_objects;
   constructBulletObject(manager.m_link2cow, active_objects, req.distance_threshold, state1, req.active_components_only, true);
@@ -574,10 +588,10 @@ void collision_detection::CollisionRobotBullet::distanceSelfHelperOriginal(const
 
     btTransform tf1 = convertEigenToBt(state1.getGlobalLinkTransform(cow->getLinkName()));
     btTransform tf2 = convertEigenToBt(state2.getGlobalLinkTransform(cow->getLinkName()));
-    manager.contactCastTestOriginal(obj, tf1, tf2, req.acm, collisions);
-  }
+    manager.contactCastTestOriginal(obj, tf1, tf2, collisions);
 
-  convertBulletCollisions(res, collisions, state1, req.active_components_only);
+    if (collisions.done) break;
+  }
 }
 
 double collision_detection::CollisionRobotBullet::distanceOther(const robot_state::RobotState& state,
@@ -589,6 +603,7 @@ double collision_detection::CollisionRobotBullet::distanceOther(const robot_stat
 
   dreq.enableGroup(getRobotModel());
   dreq.distance_threshold = BULLET_DEFAULT_CONTACT_DISTANCE;
+  dreq.enable_signed_distance = true;
   distanceOtherHelper(dreq, dres, state, other_robot, other_state);
   return dres.minimum_distance.distance;
 }
@@ -604,6 +619,7 @@ double collision_detection::CollisionRobotBullet::distanceOther(const robot_stat
   dreq.acm = &acm;
   dreq.distance_threshold = BULLET_DEFAULT_CONTACT_DISTANCE;
   dreq.enableGroup(getRobotModel());
+  dreq.enable_signed_distance = true;
   distanceOtherHelper(dreq, dres, state, other_robot, other_state);
   return dres.minimum_distance.distance;
 }
@@ -624,7 +640,7 @@ void collision_detection::CollisionRobotBullet::distanceOtherHelper(const Distan
   const CollisionRobotBullet& other_bullet_robot = dynamic_cast<const CollisionRobotBullet&>(other_robot);
   BulletManager other_robot_manager;
   Link2Cow robot_objects;
-  std::vector<collision_detection::DistanceResultsData> collisions;
+  BulletDistanceData collisions(&req, &res);
 
   std::vector<std::string> active_objects, other_active_objects;
   other_bullet_robot.constructBulletObject(other_robot_manager.m_link2cow, other_active_objects, req.distance_threshold, other_state, nullptr);
@@ -637,8 +653,8 @@ void collision_detection::CollisionRobotBullet::distanceOtherHelper(const Distan
     COWPtr cow = robot_objects[obj];
     assert(cow);
 
-    other_robot_manager.contactDiscreteTest(cow, req.acm, collisions);
-  }
+    other_robot_manager.contactDiscreteTest(cow, collisions);
 
-  convertBulletCollisions(res, collisions);
+    if (collisions.done) break;
+  }
 }
