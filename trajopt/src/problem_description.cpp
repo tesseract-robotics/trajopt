@@ -255,7 +255,7 @@ void ProblemConstructionInfo::fromJson(const Value& v)
   {
     PRINT_AND_THROW(boost::format("Manipulator does not exist: %s")%basic_info.manip);
   }
-  kin = env->getManipulatorKin(basic_info.manip);
+  kin = env->getManipulator(basic_info.manip);
 
   if (v.isMember("costs")) readCosts(v["costs"]);
   if (v.isMember("constraints")) readConstraints(v["constraints"]);

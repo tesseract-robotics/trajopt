@@ -55,7 +55,7 @@ TrajOptProbPtr cppMethod()
   pci.basic_info.start_fixed = false;
 
   // Create Kinematic Object
-  pci.kin = pci.env->getManipulatorKin(pci.basic_info.manip);
+  pci.kin = pci.env->getManipulator(pci.basic_info.manip);
 
   // Populate Init Info
   Eigen::VectorXd start_pos = pci.env->getCurrentJointValues(pci.kin->getName());

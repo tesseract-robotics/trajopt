@@ -325,7 +325,7 @@ bool ROSEnv::hasManipulator(const std::string &manipulator_name) const
   return env_->getRobotModel()->hasJointModelGroup(manipulator_name);
 }
 
-BasicKinPtr ROSEnv::getManipulatorKin(const std::string &manipulator_name) const
+BasicKinPtr ROSEnv::getManipulator(const std::string &manipulator_name) const
 {
   ROSKinPtr manip(new ROSKin());
   manip->init(env_->getRobotModel()->getJointModelGroup(manipulator_name));

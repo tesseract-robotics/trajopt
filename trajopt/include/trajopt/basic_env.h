@@ -161,7 +161,7 @@ public:
    * @param manipulator_name Name of the manipulator
    * @return BasicKinPtr
    */
-  virtual BasicKinPtr getManipulatorKin(const std::string &manipulator_name) const = 0;
+  virtual BasicKinPtr getManipulator(const std::string &manipulator_name) const = 0;
 
   /**
    * @brief enablePlotting Endicate if data should be plotted/published

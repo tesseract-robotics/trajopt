@@ -44,7 +44,7 @@ public:
 
   bool hasManipulator(const std::string &manipulator_name) const;
 
-  BasicKinPtr getManipulatorKin(const std::string &manipulator_name) const;
+  BasicKinPtr getManipulator(const std::string &manipulator_name) const;
 
   void enablePlotting(bool enable) { plotting_ = enable; }
 
