@@ -111,7 +111,8 @@ public:
   virtual void calcCollisionsContinuous(const DistanceRequest &req, std::vector<DistanceResult> &collisions) const = 0;
 
   /**
-   * @brief continuousCollisionCheckTrajectory Should perform a contuous collision check over the trajectory
+   * @brief continuousCollisionCheckTrajectory Should perform a continuous collision check over the trajectory
+   * and return every collision contact
    * @param joint_names JointNames corresponding to the values in traj (must be in same order)
    * @param link_names Name of the links to calculate collision data for.
    * @param traj The joint values at each time step
@@ -119,6 +120,17 @@ public:
    * @return True if collision was found, otherwise false.
    */
   virtual bool continuousCollisionCheckTrajectory(const std::vector<std::string> &joint_names, const std::vector<std::string> &link_names, const TrajArray& traj, std::vector<DistanceResult>& collisions) const = 0;
+
+  /**
+   * @brief continuousCollisionCheckTrajectory Should perform a continuous collision check over the trajectory
+   * and stop on first collision.
+   * @param joint_names JointNames corresponding to the values in traj (must be in same order)
+   * @param link_names Name of the links to calculate collision data for.
+   * @param traj The joint values at each time step
+   * @param collision The return collision data.
+   * @return True if collision was found, otherwise false.
+   */
+  virtual bool continuousCollisionCheckTrajectory(const std::vector<std::string> &joint_names, const std::vector<std::string> &link_names, const TrajArray& traj, DistanceResult collision) const = 0;
 
   /**
    * @brief getCurrentJointValues Get the current state of the manipulator

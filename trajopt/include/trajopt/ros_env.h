@@ -34,6 +34,8 @@ public:
 
   bool continuousCollisionCheckTrajectory(const std::vector<std::string> &joint_names, const std::vector<std::string> &link_names, const TrajArray& traj, std::vector<DistanceResult>& collisions) const;
 
+  bool continuousCollisionCheckTrajectory(const std::vector<std::string> &joint_names, const std::vector<std::string> &link_names, const TrajArray& traj, DistanceResult collision) const;
+
   Eigen::VectorXd getCurrentJointValues(const std::string &manipulator_name) const;
 
   Eigen::VectorXd getCurrentJointValues() const;
