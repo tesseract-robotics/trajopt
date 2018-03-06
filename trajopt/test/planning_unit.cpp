@@ -10,7 +10,7 @@
 #include <boost/assign.hpp>
 #include <trajopt_utils/config.hpp>
 #include <trajopt_test_utils.hpp>
-#include <trajopt/ros_kin.h>
+#include <trajopt/ros_kin_chain.h>
 #include <trajopt/ros_env.h>
 #include <trajopt/plot_callback.hpp>
 #include <trajopt_utils/logging.hpp>

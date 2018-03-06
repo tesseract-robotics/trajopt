@@ -3,7 +3,7 @@
 #include <moveit/robot_model_loader/robot_model_loader.h>
 #include <moveit/collision_plugin_loader/collision_plugin_loader.h>
 #include <trajopt/ros_env.h>
-#include <trajopt/ros_kin.h>
+#include <trajopt/ros_kin_chain.h>
 #include <trajopt/problem_description.hpp>
 #include <trajopt/plot_callback.hpp>
 
@@ -106,22 +106,34 @@ TrajOptProbPtr cppMethod()
 
 
   // Populate Cost Info
-  boost::shared_ptr<JointVelCostInfo> jv = boost::shared_ptr<JointVelCostInfo>(new JointVelCostInfo);
-  jv->coeffs = std::vector<double>(7, 1.0);
-  jv->name = "joint_vel";
-  jv->term_type = TT_COST;
-  pci.cost_infos.push_back(jv);
+  boost::shared_ptr<JointVelCostInfo> joint_vel = boost::shared_ptr<JointVelCostInfo>(new JointVelCostInfo);
+  joint_vel->coeffs = std::vector<double>(7, 1.0);
+  joint_vel->name = "joint_vel";
+  joint_vel->term_type = TT_COST;
+  pci.cost_infos.push_back(joint_vel);
 
-  boost::shared_ptr<CollisionCostInfo> collision = boost::shared_ptr<CollisionCostInfo>(new CollisionCostInfo);
-  collision->name = "collision";
-  collision->term_type = TT_COST;
-  collision->continuous = false;
-  collision->first_step = 0;
-  collision->last_step = pci.basic_info.n_steps - 1;
-  collision->gap = 1;
-  collision->coeffs = DblVec(pci.basic_info.n_steps, 20.0);
-  collision->dist_pen = DblVec(pci.basic_info.n_steps, 0.02);
-  pci.cost_infos.push_back(collision);
+  boost::shared_ptr<JointAccCostInfo> joint_acc = boost::shared_ptr<JointAccCostInfo>(new JointAccCostInfo);
+  joint_acc->coeffs = std::vector<double>(7, 2.0);
+  joint_acc->name = "joint_acc";
+  joint_acc->term_type = TT_COST;
+  pci.cost_infos.push_back(joint_acc);
+
+  boost::shared_ptr<JointJerkCostInfo> joint_jerk = boost::shared_ptr<JointJerkCostInfo>(new JointJerkCostInfo);
+  joint_jerk->coeffs = std::vector<double>(7, 5.0);
+  joint_jerk->name = "joint_jerk";
+  joint_jerk->term_type = TT_COST;
+  pci.cost_infos.push_back(joint_jerk);
+
+//  boost::shared_ptr<CollisionCostInfo> collision = boost::shared_ptr<CollisionCostInfo>(new CollisionCostInfo);
+//  collision->name = "collision";
+//  collision->term_type = TT_COST;
+//  collision->continuous = false;
+//  collision->first_step = 0;
+//  collision->last_step = pci.basic_info.n_steps - 1;
+//  collision->gap = 1;
+//  collision->coeffs = DblVec(pci.basic_info.n_steps, 20.0);
+//  collision->dist_pen = DblVec(pci.basic_info.n_steps, 0.02);
+//  pci.cost_infos.push_back(collision);
 
   // Populate Constraints
   Eigen::Affine3d grinder_frame = env_->getLinkTransform("grinder_frame");

@@ -3,7 +3,7 @@
 #include <moveit/robot_model_loader/robot_model_loader.h>
 #include <moveit/collision_plugin_loader/collision_plugin_loader.h>
 #include <trajopt/ros_env.h>
-#include <trajopt/ros_kin.h>
+#include <trajopt/ros_kin_chain.h>
 #include <trajopt/problem_description.hpp>
 #include <trajopt/plot_callback.hpp>
 

@@ -37,7 +37,7 @@ set(TRAJOPT_SOURCE_FILES
     src/problem_description.cpp
     src/utils.cpp
     src/plot_callback.cpp
-    src/ros_kin.cpp
+    src/ros_kin_chain.cpp
     src/ros_env.cpp
 )
 

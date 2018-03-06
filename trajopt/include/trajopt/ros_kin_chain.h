@@ -17,12 +17,12 @@ namespace trajopt
  * Typically, just wrappers around the equivalent KDL calls.
  *
  */
-class TRAJOPT_API ROSKin : public BasicKin
+class TRAJOPT_API ROSKinChain : public BasicKin
 {
 public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-  ROSKin() : BasicKin(), initialized_(false), group_(NULL) {}
+  ROSKinChain() : BasicKin(), initialized_(false), group_(NULL) {}
 
   bool calcFwdKin(Eigen::Affine3d &pose, const Eigen::Affine3d change_base, const Eigen::VectorXd &joint_angles) const;
 
@@ -76,14 +76,6 @@ public:
    */
   unsigned int numJoints() const { return robot_chain_.getNrOfJoints(); }
 
-  /**
-   * @brief Get a subchain of the kinematic group
-   * @param link_name Name of final link in chain
-   * @param chain Output kinematic chain
-   * @return True if the subchain was successfully created
-   */
-  bool getSubChain(const std::string link_name, KDL::Chain &chain) const;
-
   std::string getBaseLinkName() const { return base_name_; }
 
   std::string getTipLinkName() const { return tip_name_; }
@@ -95,7 +87,7 @@ public:
    * @param rhs Input ROSKin object to copy from
    * @return reference to this ROSKin object
    */
-  ROSKin& operator=(const ROSKin& rhs);
+  ROSKinChain& operator=(const ROSKinChain& rhs);
 
   /**
    * @brief Convert KDL::Frame to Eigen::Affine3d
@@ -151,6 +143,6 @@ private:
 
 }; // class BasicKin
 
-typedef boost::shared_ptr<ROSKin> ROSKinPtr;
+typedef boost::shared_ptr<ROSKinChain> ROSKinChainPtr;
 }
 #endif // ROS_KIN_H

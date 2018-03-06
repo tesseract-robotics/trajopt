@@ -25,7 +25,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "trajopt/ros_kin.h"
+#include "trajopt/ros_kin_chain.h"
 #include <ros/ros.h>
 #include <eigen_conversions/eigen_kdl.h>
 #include <kdl_parser/kdl_parser.hpp>
@@ -39,7 +39,7 @@ namespace trajopt
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
 
-bool ROSKin::calcFwdKinHelper(Eigen::Affine3d &pose, const Eigen::Affine3d change_base, const Eigen::VectorXd &joint_angles, int segment_num) const
+bool ROSKinChain::calcFwdKinHelper(Eigen::Affine3d &pose, const Eigen::Affine3d change_base, const Eigen::VectorXd &joint_angles, int segment_num) const
 {
   KDL::JntArray kdl_joints;
   EigenToKDL(joint_angles, kdl_joints);
@@ -58,7 +58,7 @@ bool ROSKin::calcFwdKinHelper(Eigen::Affine3d &pose, const Eigen::Affine3d chang
   return true;
 }
 
-bool ROSKin::calcFwdKin(Eigen::Affine3d &pose, const Eigen::Affine3d change_base, const Eigen::VectorXd &joint_angles) const
+bool ROSKinChain::calcFwdKin(Eigen::Affine3d &pose, const Eigen::Affine3d change_base, const Eigen::VectorXd &joint_angles) const
 {
   assert(checkInitialized());
   assert(checkJoints(joint_angles));
@@ -66,7 +66,7 @@ bool ROSKin::calcFwdKin(Eigen::Affine3d &pose, const Eigen::Affine3d change_base
   return calcFwdKinHelper(pose, change_base, joint_angles);
 }
 
-bool ROSKin::calcFwdKin(Eigen::Affine3d &pose, const Eigen::Affine3d change_base, const Eigen::VectorXd &joint_angles, const std::string &link_name) const
+bool ROSKinChain::calcFwdKin(Eigen::Affine3d &pose, const Eigen::Affine3d change_base, const Eigen::VectorXd &joint_angles, const std::string &link_name) const
 {
   assert(checkInitialized());
   assert(checkJoints(joint_angles));
@@ -78,7 +78,7 @@ bool ROSKin::calcFwdKin(Eigen::Affine3d &pose, const Eigen::Affine3d change_base
 //  return calcFwdKinHelper(pose, change_base, joint_angles, joint_index < 0 ? -1 : joint_index + 1);
 }
 
-bool ROSKin::calcJacobianHelper(KDL::Jacobian &jacobian, const Eigen::Affine3d change_base, const Eigen::VectorXd &joint_angles, int segment_num) const
+bool ROSKinChain::calcJacobianHelper(KDL::Jacobian &jacobian, const Eigen::Affine3d change_base, const Eigen::VectorXd &joint_angles, int segment_num) const
 {
   KDL::JntArray kdl_joints;
   EigenToKDL(joint_angles, kdl_joints);
@@ -101,7 +101,7 @@ bool ROSKin::calcJacobianHelper(KDL::Jacobian &jacobian, const Eigen::Affine3d c
   return true;
 }
 
-bool ROSKin::calcJacobian(Eigen::MatrixXd &jacobian, const Eigen::Affine3d change_base, const Eigen::VectorXd &joint_angles) const
+bool ROSKinChain::calcJacobian(Eigen::MatrixXd &jacobian, const Eigen::Affine3d change_base, const Eigen::VectorXd &joint_angles) const
 {
   assert(checkInitialized());
   assert(checkJoints(joint_angles));
@@ -118,7 +118,7 @@ bool ROSKin::calcJacobian(Eigen::MatrixXd &jacobian, const Eigen::Affine3d chang
   }
 }
 
-bool ROSKin::calcJacobian(Eigen::MatrixXd &jacobian, const Eigen::Affine3d change_base, const Eigen::VectorXd &joint_angles, const std::string &link_name) const
+bool ROSKinChain::calcJacobian(Eigen::MatrixXd &jacobian, const Eigen::Affine3d change_base, const Eigen::VectorXd &joint_angles, const std::string &link_name) const
 {
   assert(checkInitialized());
   assert(checkJoints(joint_angles));
@@ -150,7 +150,7 @@ bool ROSKin::calcJacobian(Eigen::MatrixXd &jacobian, const Eigen::Affine3d chang
 //  }
 }
 
-bool ROSKin::calcJacobian(Eigen::MatrixXd &jacobian, const Eigen::Affine3d change_base, const Eigen::VectorXd &joint_angles, const std::string &link_name, const Eigen::Vector3d link_point) const
+bool ROSKinChain::calcJacobian(Eigen::MatrixXd &jacobian, const Eigen::Affine3d change_base, const Eigen::VectorXd &joint_angles, const std::string &link_name, const Eigen::Vector3d link_point) const
 {
   assert(checkInitialized());
   assert(checkJoints(joint_angles));
@@ -193,7 +193,7 @@ bool ROSKin::calcJacobian(Eigen::MatrixXd &jacobian, const Eigen::Affine3d chang
 //  }
 }
 
-bool ROSKin::checkJoints(const Eigen::VectorXd &vec) const
+bool ROSKinChain::checkJoints(const Eigen::VectorXd &vec) const
 {
   if (vec.size() != robot_chain_.getNrOfJoints())
   {
@@ -214,7 +214,7 @@ bool ROSKin::checkJoints(const Eigen::VectorXd &vec) const
   return true;
 }
 
-bool ROSKin::getJointNames(std::vector<std::string> &names) const
+bool ROSKinChain::getJointNames(std::vector<std::string> &names) const
 {
     assert(checkInitialized());
 
@@ -222,7 +222,7 @@ bool ROSKin::getJointNames(std::vector<std::string> &names) const
     return true;
 }
 
-bool ROSKin::getLinkNames(std::vector<std::string> &names) const
+bool ROSKinChain::getLinkNames(std::vector<std::string> &names) const
 {
     assert(checkInitialized());
 
@@ -251,7 +251,7 @@ bool ROSKin::getLinkNames(std::vector<std::string> &names) const
 ////  return -1;
 //}
 
-bool ROSKin::init(const moveit::core::JointModelGroup* group)
+bool ROSKinChain::init(const moveit::core::JointModelGroup* group)
 {
   initialized_ = false;
 
@@ -384,7 +384,7 @@ bool ROSKin::init(const moveit::core::JointModelGroup* group)
   return true;
 }
 
-void ROSKin::KDLToEigen(const KDL::Frame &frame, Eigen::Affine3d &transform)
+void ROSKinChain::KDLToEigen(const KDL::Frame &frame, Eigen::Affine3d &transform)
 {
   transform.setIdentity();
 
@@ -397,7 +397,7 @@ void ROSKin::KDLToEigen(const KDL::Frame &frame, Eigen::Affine3d &transform)
     transform(i/3, i%3) = frame.M.data[i];
 }
 
-void ROSKin::EigenToKDL(const Eigen::Affine3d &transform, KDL::Frame &frame)
+void ROSKinChain::EigenToKDL(const Eigen::Affine3d &transform, KDL::Frame &frame)
 {
   frame.Identity();
 
@@ -408,7 +408,7 @@ void ROSKin::EigenToKDL(const Eigen::Affine3d &transform, KDL::Frame &frame)
     frame.M.data[i] = transform(i/3, i%3);
 }
 
-void ROSKin::KDLToEigen(const KDL::Jacobian &jacobian, Eigen::MatrixXd &matrix)
+void ROSKinChain::KDLToEigen(const KDL::Jacobian &jacobian, Eigen::MatrixXd &matrix)
 {
   matrix.resize(jacobian.rows(), jacobian.columns());
 
@@ -417,21 +417,7 @@ void ROSKin::KDLToEigen(const KDL::Jacobian &jacobian, Eigen::MatrixXd &matrix)
       matrix(i,j) = jacobian(i,j);
 }
 
-bool ROSKin::getSubChain(const std::string link_name, KDL::Chain &chain) const
-{
-  if (!kdl_tree_.getChain(base_name_, link_name, chain))
-  {
-    ROS_ERROR_STREAM("Failed to initialize KDL between URDF links: '" <<
-                     base_name_ << "' and '" << link_name <<"'");
-    return false;
-  }
-  else
-  {
-    return true;
-  }
-}
-
-ROSKin& ROSKin::operator=(const ROSKin& rhs)
+ROSKinChain& ROSKinChain::operator=(const ROSKinChain& rhs)
 {
   initialized_  = rhs.initialized_;
   robot_chain_  = rhs.robot_chain_;

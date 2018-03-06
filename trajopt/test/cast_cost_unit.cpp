@@ -14,7 +14,7 @@
 #include <trajopt/collision_terms.hpp>
 #include <trajopt_utils/logging.hpp>
 
-#include <trajopt/ros_kin.h>
+#include <trajopt/ros_kin_chain.h>
 #include <trajopt/ros_env.h>
 
 #include <ros/ros.h>

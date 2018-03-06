@@ -1,4 +1,5 @@
 #include "trajopt/ros_env.h"
+#include "trajopt/ros_kin_chain.h"
 #include <moveit/collision_detection/collision_common.h>
 #include <moveit_msgs/DisplayTrajectory.h>
 #include <moveit/robot_state/conversions.h>
@@ -327,7 +328,7 @@ bool ROSEnv::hasManipulator(const std::string &manipulator_name) const
 
 BasicKinPtr ROSEnv::getManipulator(const std::string &manipulator_name) const
 {
-  ROSKinPtr manip(new ROSKin());
+  ROSKinChainPtr manip(new ROSKinChain());
   manip->init(env_->getRobotModel()->getJointModelGroup(manipulator_name));
   return manip;
 }

@@ -65,16 +65,14 @@ ConvexObjectivePtr JointVelCost::convex(const vector<double>& x, Model* model) {
   return out;
 }
 
-
-
 JointAccCost::JointAccCost(const VarArray& vars, const VectorXd& coeffs) :
     Cost("JointAcc"), vars_(vars), coeffs_(coeffs) {
   for (int i=0; i < vars.rows()-2; ++i) {
     for (int j=0; j < vars.cols(); ++j) {
       AffExpr acc;
-      exprInc(acc, exprMult(vars(i,j), -1));
-      exprInc(acc, exprMult(vars(i+1,j), 2));
-      exprInc(acc, exprMult(vars(i+2,j), -1));
+      exprInc(acc, exprMult(vars(i,j), 1.0));
+      exprInc(acc, exprMult(vars(i+1,j), -2.0));
+      exprInc(acc, exprMult(vars(i+2,j), 1.0));
       exprInc(expr_, exprMult(exprSquare(acc), coeffs_[j]));
     }
   }
@@ -84,6 +82,30 @@ double JointAccCost::value(const vector<double>& xvec) {
   return (diffAxis0(diffAxis0(traj)).array().square().matrix() * coeffs_.asDiagonal()).sum();
 }
 ConvexObjectivePtr JointAccCost::convex(const vector<double>& x, Model* model) {
+  ConvexObjectivePtr out(new ConvexObjective(model));
+  out->addQuadExpr(expr_);
+  return out;
+}
+
+JointJerkCost::JointJerkCost(const VarArray& vars, const VectorXd& coeffs) :
+    Cost("JointJerk"), vars_(vars), coeffs_(coeffs) {
+  for (int i=0; i < vars.rows()-4; ++i) {
+    for (int j=0; j < vars.cols(); ++j) {
+      AffExpr acc;
+      exprInc(acc, exprMult(vars(i,j), -1.0/2.0));
+      exprInc(acc, exprMult(vars(i+1,j), 1.0));
+      exprInc(acc, exprMult(vars(i+2,j), 0.0));
+      exprInc(acc, exprMult(vars(i+3,j), -1.0));
+      exprInc(acc, exprMult(vars(i+4,j), 1.0/2.0));
+      exprInc(expr_, exprMult(exprSquare(acc), coeffs_[j]));
+    }
+  }
+}
+double JointJerkCost::value(const vector<double>& xvec) {
+  MatrixXd traj = getTraj(xvec, vars_);
+  return (diffAxis0(diffAxis0(traj)).array().square().matrix() * coeffs_.asDiagonal()).sum();
+}
+ConvexObjectivePtr JointJerkCost::convex(const vector<double>& x, Model* model) {
   ConvexObjectivePtr out(new ConvexObjective(model));
   out->addQuadExpr(expr_);
   return out;

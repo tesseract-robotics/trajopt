@@ -8,7 +8,7 @@ find_package(catkin REQUIRED COMPONENTS)
 
 catkin_package(
   INCLUDE_DIRS bullet/src bullet/Extras vhacd/public
-  LIBRARIES BulletCollision LinearMath ConvexDecomposition HACD vhacd
+  LIBRARIES BulletCollision BulletDynamics LinearMath ConvexDecomposition HACD vhacd
 #  CATKIN_DEPENDS roscpp
 #  DEPENDS system_lib
 )

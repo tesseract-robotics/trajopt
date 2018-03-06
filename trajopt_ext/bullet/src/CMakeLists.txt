@@ -1,4 +1,4 @@
-SUBDIRS(  BulletCollision LinearMath )
+SUBDIRS(BulletCollision BulletDynamics LinearMath )
 
 IF(BUILD_MULTITHREADING)
 	SUBDIRS(MiniCL BulletMultiThreaded)

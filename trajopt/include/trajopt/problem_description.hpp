@@ -243,6 +243,20 @@ struct JointVelConstraintInfo : public TermInfo, public MakesConstraint {
   DEFINE_CREATE(JointVelConstraintInfo)
 };
 
+struct JointAccCostInfo : public TermInfo, public MakesCost {
+  DblVec coeffs;
+  void fromJson(ProblemConstructionInfo &pci, const Value& v);
+  void hatch(TrajOptProb& prob);
+  DEFINE_CREATE(JointAccCostInfo)
+};
+
+struct JointJerkCostInfo : public TermInfo, public MakesCost {
+  DblVec coeffs;
+  void fromJson(ProblemConstructionInfo &pci, const Value& v);
+  void hatch(TrajOptProb& prob);
+  DEFINE_CREATE(JointJerkCostInfo)
+};
+
 /**
 \brief %Collision penalty
 

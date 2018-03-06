@@ -2,7 +2,6 @@
 #define ROS_COLL_H
 #include <trajopt/common.hpp>
 #include <trajopt/basic_env.h>
-#include <trajopt/ros_kin.h>
 #include <moveit/planning_scene/planning_scene.h>
 #include <moveit/collision_detection/collision_robot.h>
 #include <moveit/collision_detection/collision_world.h>
