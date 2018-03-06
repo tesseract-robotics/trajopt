@@ -39,7 +39,12 @@ void ROSEnv::calcDistancesDiscrete(const DistanceRequest &req, std::vector<Dista
   distance_req.group_name = getManipulatorName(req.joint_names);
   distance_req.enable_nearest_points = true;
   distance_req.enable_signed_distance = true;
-  distance_req.type = collision_detection::DistanceRequestType::ALL;
+
+  if (req.type == DistanceRequestType::SINGLE)
+    distance_req.type = collision_detection::DistanceRequestType::SINGLE;
+  else
+    distance_req.type = collision_detection::DistanceRequestType::ALL;
+
   std::set<const moveit::core::LinkModel *> list = getLinkModels(req.link_names);
   distance_req.active_components_only = &list;
   distance_req.distance_threshold = req.contact_distance;
@@ -108,7 +113,12 @@ void ROSEnv::calcDistancesContinuous(const DistanceRequest &req, std::vector<Dis
   distance_req.enable_nearest_points = true;
   distance_req.enable_signed_distance = true;
   distance_req.compute_gradient = true;
-  distance_req.type = collision_detection::DistanceRequestType::ALL;
+
+  if (req.type == DistanceRequestType::SINGLE)
+    distance_req.type = collision_detection::DistanceRequestType::SINGLE;
+  else
+    distance_req.type = collision_detection::DistanceRequestType::ALL;
+
   std::set<const moveit::core::LinkModel *> list = getLinkModels(req.link_names);
   distance_req.active_components_only = &list;
   distance_req.distance_threshold = req.contact_distance;

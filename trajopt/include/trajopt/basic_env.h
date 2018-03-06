@@ -69,15 +69,22 @@ public:
     }
   };
 
+  enum DistanceRequestType
+  {
+    SINGLE, /**< Return the global minimum for a pair of objects */
+    ALL     /**< Return all contacts for a pair of objects */
+  };
+
   struct DistanceRequest
   {
+    DistanceRequestType type;             /**< The type of distance request */
     double contact_distance;              /**< The maximum distance between two objects for which distance data should be calculated */
     std::vector<std::string> joint_names; /**< Vector of joint names (size must match number of joints in robot chain) */
     std::vector<std::string> link_names;  /**< Name of the links to calculate distance data for. */
     Eigen::VectorXd joint_angles1;        /**< Vector of joint angles (size must match number of joints in robot chain) */
     Eigen::VectorXd joint_angles2;        /**< Vector of joint angles (size must match number of joints in robot chain) */
 
-    DistanceRequest() : contact_distance(0.0) {}
+    DistanceRequest() : type(SINGLE), contact_distance(0.0) {}
   };
 
   BasicEnv() {}
