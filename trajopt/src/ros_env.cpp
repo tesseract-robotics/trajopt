@@ -366,8 +366,6 @@ void ROSEnv::plotTrajectory(const std::string &name, const std::vector<std::stri
   msg.trajectory.push_back(rt);
   moveit::core::robotStateToRobotStateMsg(env_->getCurrentState(), msg.trajectory_start);
   trajectory_pub_.publish(msg);
-
-  plotWaitForInput();
 }
 
 visualization_msgs::Marker ROSEnv::getMarkerArrowMsg(const Eigen::Vector3d &pt1, const Eigen::Vector3d &pt2, const Eigen::Vector4d &rgba, double scale)

@@ -30,6 +30,7 @@ void PlotCosts(BasicKinPtr manip, BasicEnvPtr env, vector<CostPtr>& costs, vecto
   manip->getJointNames(joint_names);
 
   env->plotTrajectory(manip->getName(), joint_names, traj);
+  env->plotWaitForInput();
 }
 
 Optimizer::Callback PlotCallback(TrajOptProb& prob) {
