@@ -80,7 +80,7 @@ static EigenSTL::vector_Affine3d makePuzzleToolPoses()
   return path;
 }
 
-TrajOptProbPtr cppMethod()
+ProblemConstructionInfo cppMethod()
 {
   ProblemConstructionInfo pci(env_);
 
@@ -92,6 +92,8 @@ TrajOptProbPtr cppMethod()
   pci.basic_info.start_fixed = false;
 
   pci.opt_info.max_iter = 200;
+  pci.opt_info.min_approx_improve = 1e-3;
+  pci.opt_info.min_trust_box_size = 1e-3;
 
   // Create Kinematic Object
   pci.kin = pci.env->getManipulator(pci.basic_info.manip);
@@ -152,13 +154,13 @@ TrajOptProbPtr cppMethod()
     pose->timestep = i;
     pose->xyz = stationary_xyz;
     pose->wxyz = stationary_wxyz;
-    pose->pos_coeffs = Eigen::Vector3d(5, 5, 5);
-    pose->rot_coeffs = Eigen::Vector3d(5, 5, 0);
+    pose->pos_coeffs = Eigen::Vector3d(10, 10, 10);
+    pose->rot_coeffs = Eigen::Vector3d(10, 10, 0);
 
     pci.cnt_infos.push_back(pose);
   }
 
-  return ConstructProblem(pci);
+  return pci;
 }
 
 
@@ -203,10 +205,11 @@ int main(int argc, char** argv)
   rs.setVariablePositions(ipos);
 
   // Set Log Level
-  gLogLevel = util::LevelInfo;
+  gLogLevel = util::LevelError;
 
   // Setup Problem
-  TrajOptProbPtr prob = cppMethod();
+  ProblemConstructionInfo pci = cppMethod();
+  TrajOptProbPtr prob = ConstructProblem(pci);
 
   // Solve Trajectory
   ROS_INFO("puzzle piece plan");
@@ -220,6 +223,7 @@ int main(int argc, char** argv)
   ROS_INFO("Initial trajector number of continuous collisions: %lui\n", collisions.size());
 
   BasicTrustRegionSQP opt(prob);
+  opt.setParameters(pci.opt_info);
   if (plotting_)
   {
     opt.addCallback(PlotCallback(*prob));
@@ -227,8 +231,8 @@ int main(int argc, char** argv)
 
   opt.initialize(trajToDblVec(prob->GetInitTraj()));
   ros::Time tStart = ros::Time::now();
-  opt.optimize();
-  ROS_INFO("planning time: %.3f", (ros::Time::now() - tStart).toSec());
+  sco::OptStatus status = opt.optimize();
+  ROS_INFO("Optimization Status: %s, Planning time: %.3f", sco::statusToString(status).c_str(), (ros::Time::now() - tStart).toSec());
 
   if (plotting_)
   {
