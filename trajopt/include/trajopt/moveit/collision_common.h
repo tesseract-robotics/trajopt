@@ -405,7 +405,7 @@ collision_detection::DistanceResultsData* processResult(BulletDistanceData& cdat
       }
       else if (cdata.req->type == DistanceRequestType::SINGLE)
       {
-        if (dr[0].distance < contact.distance)
+        if (contact.distance < dr[0].distance)
         {
           dr[0] = contact;
           return &(dr[0]);
