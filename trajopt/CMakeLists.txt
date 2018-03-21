@@ -56,7 +56,9 @@ catkin_package(
     moveit_core
     moveit_ros_planning
     pluginlib
-#  DEPENDS system_lib
+  DEPENDS
+    EIGEN3
+    Boost
 )
 
 include_directories(
