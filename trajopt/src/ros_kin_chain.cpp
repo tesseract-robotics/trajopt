@@ -29,7 +29,6 @@
 #include <ros/ros.h>
 #include <eigen_conversions/eigen_kdl.h>
 #include <kdl_parser/kdl_parser.hpp>
-#include <moveit/robot_model/robot_model.h>
 #include <urdf/model.h>
 #include <kdl/segment.hpp>
 
@@ -136,18 +135,6 @@ bool ROSKinChain::calcJacobian(Eigen::MatrixXd &jacobian, const Eigen::Affine3d 
   {
     return false;
   }
-
-//  int joint_index = getLinkParentJointIndex(link_name);
-//  KDL::Jacobian kdl_jacobian;
-//  if (calcJacobianHelper(kdl_jacobian, change_base, joint_angles, joint_index < 0 ? -1 : joint_index + 1))
-//  {
-//    KDLToEigen(kdl_jacobian, jacobian);
-//    return true;
-//  }
-//  else
-//  {
-//    return false;
-//  }
 }
 
 bool ROSKinChain::calcJacobian(Eigen::MatrixXd &jacobian, const Eigen::Affine3d change_base, const Eigen::VectorXd &joint_angles, const std::string &link_name, const Eigen::Vector3d link_point) const
@@ -230,48 +217,42 @@ bool ROSKinChain::getLinkNames(std::vector<std::string> &names) const
     return true;
 }
 
-//int ROSKin::getLinkParentJointIndex(const std::string &link_name) const
-//{
-//  std::vector<std::string>::const_iterator it_link = find(link_list_.begin(), link_list_.end(), link_name);
-//  if (it_link == link_list_.end())
-//  {
-//    ROS_ERROR_STREAM("Unable to find link: " << link_name);
-//    return -1;
-//  }
-//  return link_name_too_joint_index_.at(link_name);
+void ROSKinChain::addChildrenRecursive(const urdf::LinkConstSharedPtr urdf_link, const std::string &next_chain_segment)
+{
+  // recursively build child links
+  link_list_.push_back(urdf_link->name);
+  for (std::size_t i = 0; i < urdf_link->child_links.size(); ++i)
+  {
+    // Don't process the next chain link
+    if (urdf_link->child_links[i]->name != next_chain_segment)
+    {
+      addChildrenRecursive(urdf_link->child_links[i], next_chain_segment);
+    }
+  }
+}
 
-
-
-////  std::string joint_name = group_->getUpdatedLinkModels()[index]->getParentJointModel()->getName();
-////  std::vector<std::string>::const_iterator it = find(joint_list_.begin(), joint_list_.end(), joint_name);
-////  if (it != joint_list_.end())
-////  {
-////    return it-joint_list_.begin();
-////  }
-////  return -1;
-//}
-
-bool ROSKinChain::init(const moveit::core::JointModelGroup* group)
+bool ROSKinChain::init(const urdf::ModelInterfaceConstSharedPtr model, const std::string& base_link, const std::string& tip_link, const std::string name)
 {
   initialized_ = false;
 
-  if(group == NULL)
+  if(model == nullptr)
   {
-    ROS_ERROR_STREAM("Null pointer to JointModelGroup");
+    ROS_ERROR_STREAM("Null pointer to URDF Model");
     return false;
   }
 
-  const boost::shared_ptr<const urdf::ModelInterface> urdf = group->getParentModel().getURDF();
-  base_name_ = group->getLinkModels().front()->getParentLinkModel()->getName();
-  tip_name_ = group->getLinkModels().back()->getName();
+  model_ = model;
+  base_name_ = base_link;
+  tip_name_ = tip_link;
+  name_ = name;
 
-  if (!urdf->getRoot())
+  if (!model_->getRoot())
   {
     ROS_ERROR("Invalid URDF in ROSKin::init call");
     return false;
   }
 
-  if (!kdl_parser::treeFromUrdfModel(*urdf, kdl_tree_))
+  if (!kdl_parser::treeFromUrdfModel(*model_, kdl_tree_))
   {
     ROS_ERROR("Failed to initialize KDL from URDF model");
     return false;
@@ -284,46 +265,33 @@ bool ROSKinChain::init(const moveit::core::JointModelGroup* group)
     return false;
   }
 
-  std::map<std::string, int> link_name_too_segment_index;
-  for (auto i=0; i < robot_chain_.getNrOfSegments(); ++i)
-  {
-    const KDL::Segment &s = robot_chain_.getSegment(i);
-    link_name_too_segment_index[s.getName()] = i;
-//    if (i == (robot_chain_.getNrOfSegments() - 1))
-//    {
-//      link_name_too_segment_index[s.getName()] = -1;
-//    }
-//    else
-//    {
-//      link_name_too_segment_index[s.getName()] = i + 1;
-//    }
-  }
-
   joint_list_.resize(robot_chain_.getNrOfJoints());
   joint_limits_.resize(robot_chain_.getNrOfJoints(), 2);
   std::vector<int> joint_too_segment;
   joint_too_segment.resize(robot_chain_.getNrOfJoints());
   joint_too_segment.back() = -1;
 
-  link_list_ = group->getUpdatedLinkModelNames();
-//  link_list_with_geom_ = group->getUpdatedLinkModelsWithGeometryNames();
-
   for (int i=0, j=0; i<robot_chain_.getNrOfSegments(); ++i)
   {
     const KDL::Segment &seg = robot_chain_.getSegment(i);
     const KDL::Joint   &jnt = seg.getJoint();
+
+    if (i != (robot_chain_.getNrOfSegments() - 1))
+      addChildrenRecursive(model_->getLink(seg.getName()), robot_chain_.getSegment(i + 1).getName());
+    else
+      addChildrenRecursive(model_->getLink(seg.getName()), seg.getName());
+
     if (jnt.getType() == KDL::Joint::None) continue;
 
     joint_list_[j] = jnt.getName();
-    joint_limits_(j,0) = urdf->getJoint(jnt.getName())->limits->lower;
-    joint_limits_(j,1) = urdf->getJoint(jnt.getName())->limits->upper;
+    urdf::JointConstSharedPtr joint = model_->getJoint(jnt.getName());
+    joint_limits_(j,0) = joint->limits->lower;
+    joint_limits_(j,1) = joint->limits->upper;
     if (j > 0)
-    {
       joint_too_segment[j - 1] = i;
-    }
 
     // Need to set limits for continuous joints. TODO: This may not be required by the optization library but may be nice to have
-    if (urdf->getJoint(jnt.getName())->type == urdf::Joint::CONTINUOUS && std::abs(joint_limits_(j,0) - joint_limits_(j,1)) <= std::numeric_limits<float>::epsilon())
+    if (joint->type == urdf::Joint::CONTINUOUS && std::abs(joint_limits_(j,0) - joint_limits_(j,1)) <= std::numeric_limits<float>::epsilon())
     {
       joint_limits_(j,0) = -4 * M_PI;
       joint_limits_(j,1) = +4 * M_PI;
@@ -333,55 +301,31 @@ bool ROSKinChain::init(const moveit::core::JointModelGroup* group)
   }
 
   for (int i=0; i<link_list_.size(); ++i)
+  {
+    bool found = false;
+    urdf::LinkConstSharedPtr link_model = model_->getLink(link_list_[i]);
+    while(!found)
     {
-      bool found = false;
-      const moveit::core::LinkModel *link_model = group->getParentModel().getLinkModel(link_list_[i]);
-      while(!found)
+      std::string joint_name = link_model->parent_joint->name;
+      std::vector<std::string>::const_iterator it = std::find(joint_list_.begin(), joint_list_.end(), joint_name);
+      if (it != joint_list_.end())
       {
-        std::string joint_name = link_model->getParentJointModel()->getName();
-        std::vector<std::string>::const_iterator it = std::find(joint_list_.begin(), joint_list_.end(), joint_name);
-        if (it != joint_list_.end())
-        {
-          int joint_index = it-joint_list_.begin();
-          link_name_too_segment_index_[link_list_[i]] = joint_too_segment[joint_index];
-          found = true;
-        }
-        else
-        {
-          link_model = link_model->getParentLinkModel();
-        }
+        int joint_index = it-joint_list_.begin();
+        link_name_too_segment_index_[link_list_[i]] = joint_too_segment[joint_index];
+        found = true;
+      }
+      else
+      {
+        link_model = link_model->getParent();
       }
     }
-
-//  for (int i=0; i<link_list_.size(); ++i)
-//  {
-//    bool found = false;
-////    const moveit::core::LinkModel *link_model = group->getParentModel().getLinkModel(link_list_[i]);
-//    std::string link_name = link_list_[i];
-//    while(!found)
-//    {
-////      std::string joint_name = link_model->getParentJointModel()->getName();
-////      std::vector<std::string>::const_iterator it = find(joint_list_.begin(), joint_list_.end(), joint_name);
-//      auto it = link_name_too_segment_index.find(link_name);
-//      if (it != link_name_too_segment_index.end())
-//      {
-//        link_name_too_segment_index_[link_list_[i]] = it->second;
-//        found = true;
-//      }
-//      else
-//      {
-//        link_name = group->getParentModel().getLinkModel(link_name)->getParentLinkModel()->getName();
-//      }
-//    }
-//  }
+  }
 
   fk_solver_.reset(new KDL::ChainFkSolverPos_recursive(robot_chain_));
   jac_solver_.reset(new KDL::ChainJntToJacSolver(robot_chain_));
 
   initialized_ = true;
-  group_ = group;
-
-  return true;
+  return initialized_;
 }
 
 void ROSKinChain::KDLToEigen(const KDL::Frame &frame, Eigen::Affine3d &transform)
@@ -427,7 +371,7 @@ ROSKinChain& ROSKinChain::operator=(const ROSKinChain& rhs)
   link_list_ = rhs.link_list_;
   fk_solver_.reset(new KDL::ChainFkSolverPos_recursive(robot_chain_));
   jac_solver_.reset(new KDL::ChainJntToJacSolver(robot_chain_));
-  group_ = rhs.group_;
+  model_ = rhs.model_;
   base_name_ = rhs.base_name_;
   tip_name_ = rhs.tip_name_;
   link_name_too_segment_index_ = rhs.link_name_too_segment_index_;

@@ -6,7 +6,7 @@
 #include <kdl/chainfksolverpos_recursive.hpp>
 #include <kdl/chainjnttojacsolver.hpp>
 #include <boost/scoped_ptr.hpp>
-#include <moveit/robot_model/joint_model_group.h>
+#include <urdf_model/model.h>
 
 namespace trajopt
 {
@@ -22,7 +22,7 @@ class TRAJOPT_API ROSKinChain : public BasicKin
 public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-  ROSKinChain() : BasicKin(), initialized_(false), group_(NULL) {}
+  ROSKinChain() : BasicKin(), initialized_(false) {}
 
   bool calcFwdKin(Eigen::Affine3d &pose, const Eigen::Affine3d change_base, const Eigen::VectorXd &joint_angles) const;
 
@@ -42,13 +42,25 @@ public:
 
   Eigen::MatrixXd getLimits() const { return joint_limits_; }
 
+
   /**
    * @brief Initializes ROSKin
    * Creates KDL::Chain from urdf::Model, populates joint_list_, joint_limits_, and link_list_
-   * @param group Input kinematic joint model group
+   * @param model The urdf model
    * @return True if init() completes successfully
    */
-  bool init(const moveit::core::JointModelGroup* group);
+
+  /**
+   * @brief Initializes ROSKin
+   * Creates KDL::Chain from urdf::Model, populates joint_list_, joint_limits_, and link_list_
+   * @param model The urdf model
+   * @param base_link The name of the base link for the kinematic chain
+   * @param tip_link The name of the tip link for the kinematic chain
+   * @param name The name of the kinematic chain
+   * @return True if init() completes successfully
+   */
+  bool init(const urdf::ModelInterfaceConstSharedPtr model, const std::string &base_link, const std::string &tip_link, const std::string name);
+
 
   /**
    * @brief Checks if BasicKin is initialized (init() has been run: urdf model loaded, etc.)
@@ -64,11 +76,8 @@ public:
     return initialized_;
   }
 
-  /**
-   * @brief Get the name of the kinematic group
-   * @return string with the group name
-   */
-  const moveit::core::JointModelGroup* getJointModelGroup() const {return group_;}
+  /** @brief Get the URDF model */
+  const urdf::ModelInterfaceConstSharedPtr getURDF() const {return model_;}
 
   /**
    * @brief Number of joints in robot
@@ -76,11 +85,14 @@ public:
    */
   unsigned int numJoints() const { return robot_chain_.getNrOfJoints(); }
 
+  /** @brief Get the base link name */
   std::string getBaseLinkName() const { return base_name_; }
 
+  /** @brief Get the tip link name */
   std::string getTipLinkName() const { return tip_name_; }
 
-  std::string getName() const { return group_->getName(); }
+  /** @brief Get the name of the kinematic chain */
+  std::string getName() const { return name_; }
 
   /**
    * @brief Assigns values from another ROSKin to this
@@ -119,14 +131,14 @@ public:
 
 private:
   bool initialized_;                                             /**< Identifies if the object has been initialized */
-  const moveit::core::JointModelGroup* group_;                   /**< Move group */
+  urdf::ModelInterfaceConstSharedPtr model_;                     /**< URDF MODEL */
   KDL::Chain  robot_chain_;                                      /**< KDL Chain object */
   KDL::Tree   kdl_tree_;                                         /**< KDL tree object */
   std::string base_name_;                                        /**< Link name of first link in the kinematic chain */
   std::string tip_name_;                                         /**< Link name of last kink in the kinematic chain */
+  std::string name_;                                             /**< Name of the kinematic chain */
   std::vector<std::string> joint_list_;                          /**< List of joint names */
   std::vector<std::string> link_list_;                           /**< List of link names */
-//  std::vector<std::string> link_list_with_geom_;                 /**< List of link names with geometry */
   Eigen::Matrix<double, Eigen::Dynamic, 2> joint_limits_;        /**< Joint limits */
   boost::scoped_ptr<KDL::ChainFkSolverPos_recursive> fk_solver_; /**< KDL Forward Kinematic Solver */
   boost::scoped_ptr<KDL::ChainJntToJacSolver> jac_solver_;       /**< KDL Jacobian Solver */
@@ -138,8 +150,7 @@ private:
   /** @brief calcJacobian helper function */
   bool calcJacobianHelper(KDL::Jacobian &jacobian, const Eigen::Affine3d change_base, const Eigen::VectorXd &joint_angles, int segment_num=-1) const;
 
-  /** @brief Get the parent joint index for a link */
-//  int getLinkParentJointIndex(const std::string &link_name) const;
+  void addChildrenRecursive(const urdf::LinkConstSharedPtr urdf_link, const std::string &next_chain_segment);
 
 }; // class BasicKin
 

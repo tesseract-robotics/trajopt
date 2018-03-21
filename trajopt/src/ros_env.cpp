@@ -339,7 +339,8 @@ bool ROSEnv::hasManipulator(const std::string &manipulator_name) const
 BasicKinPtr ROSEnv::getManipulator(const std::string &manipulator_name) const
 {
   ROSKinChainPtr manip(new ROSKinChain());
-  manip->init(env_->getRobotModel()->getJointModelGroup(manipulator_name));
+  auto jmg = env_->getRobotModel()->getJointModelGroup(manipulator_name);
+  manip->init(env_->getRobotModel()->getURDF(), jmg->getLinkModels().front()->getParentLinkModel()->getName(), jmg->getLinkModels().back()->getName(), manipulator_name);
   return manip;
 }
 
