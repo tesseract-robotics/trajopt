@@ -1,0 +1,52 @@
+<?xml version="1.0" ?>
+<robot name="puzzle_piece_workcell" xmlns:xacro="http://wiki.ros.org/xacro">
+  <xacro:include filename="$(find trajopt_examples)/urdf/lbr_iiwa_14_r820_macro.xacro" />
+
+  <!-- This contains the macro "ses_part_macro" that places the clip wrt the tool tip -->
+  <xacro:include filename="$(find trajopt_examples)/urdf/puzzle_mount.xacro" />
+  <xacro:include filename="$(find trajopt_examples)/urdf/grinder.xacro" />
+
+  <link name="world"/>
+
+  <link name="table">
+    <visual>
+      <geometry>
+        <box size="1.0 1.0 0.05"/>
+      </geometry>
+    </visual>
+    <collision>
+      <geometry>
+        <box size="1.0 1.0 0.05"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <xacro:kuka_lbr_iiwa_14_r820 prefix=""/>
+  <xacro:grinder prefix=""/>
+  <xacro:puzzle_piece prefix=""/>
+
+  <joint name="world_to_table" type="fixed">
+    <parent link="world"/>
+    <child link="table"/>
+    <origin xyz="0 0 0.5" rpy="0 0 0"/>
+  </joint>
+
+  <joint name="world_to_grinder" type="fixed">
+    <parent link="world"/>
+    <child link="grinder_frame"/>
+    <origin xyz="0.35 -0.35 0.7" rpy="0 3.14159 0"/>
+  </joint>
+
+  <joint name="table_to_robot" type="fixed">
+    <parent link="table"/>
+    <child link="base_link"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+
+  <joint name="robot_tool" type="fixed">
+    <parent link="tool0"/>
+    <child link="ee_mount"/>
+    <origin xyz="0 0 0" rpy="1.5708 0 0"/>
+  </joint>
+
+</robot>

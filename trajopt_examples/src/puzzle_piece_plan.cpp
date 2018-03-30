@@ -1,14 +1,12 @@
 #include <ros/ros.h>
-#include <moveit/planning_scene/planning_scene.h>
-#include <moveit/robot_model_loader/robot_model_loader.h>
-#include <moveit/collision_plugin_loader/collision_plugin_loader.h>
-#include <trajopt/ros_env.h>
-#include <trajopt/ros_kin_chain.h>
+#include <trajopt_scene/bullet_env.h>
+#include <trajopt_scene/kdl_chain_kin.h>
 #include <trajopt/problem_description.hpp>
 #include <trajopt/plot_callback.hpp>
-
 #include <trajopt_utils/logging.hpp>
 #include <trajopt_utils/config.hpp>
+#include <urdf_parser/urdf_parser.h>
+#include <srdfdom/model.h>
 
 // For loading the pose file from a local package
 #include <ros/package.h>
@@ -17,13 +15,12 @@
 using namespace trajopt;
 
 const std::string ROBOT_DESCRIPTION_PARAM = "robot_description"; /**< Default ROS parameter for robot description */
+const std::string ROBOT_SEMANTIC_PARAM = "robot_description_semantic"; /**< Default ROS parameter for robot description */
 
 bool plotting_ = false;
-robot_model_loader::RobotModelLoaderPtr loader_;  /**< Used to load the robot model */
-moveit::core::RobotModelPtr robot_model_;         /**< Robot model */
-planning_scene::PlanningScenePtr planning_scene_; /**< Planning scene for the current robot model */
-ROSEnvPtr env_;                                   /**< Trajopt Basic Environment */
-
+urdf::ModelInterfaceSharedPtr model_;  /**< URDF Model */
+srdf::ModelSharedPtr srdf_model_;      /**< SRDF Model */
+trajopt_scene::BulletEnvPtr env_;   /**< Trajopt Basic Environment */
 
 static EigenSTL::vector_Affine3d makePuzzleToolPoses()
 {
@@ -171,30 +168,25 @@ int main(int argc, char** argv)
   ros::NodeHandle nh;
 
   // Initial setup
-  loader_.reset(new robot_model_loader::RobotModelLoader(ROBOT_DESCRIPTION_PARAM));
-  robot_model_ = loader_->getModel();
-  env_ = ROSEnvPtr(new ROSEnv);
-  planning_scene_.reset(new planning_scene::PlanningScene(robot_model_));
-  assert(robot_model_ != nullptr);
-  assert(planning_scene_ != nullptr);
+  std::string urdf_xml_string, srdf_xml_string;
+  nh.getParam(ROBOT_DESCRIPTION_PARAM, urdf_xml_string);
+  nh.getParam(ROBOT_SEMANTIC_PARAM, srdf_xml_string);
 
-  // Now assign collision detection plugin
-  bool success;
-  collision_detection::CollisionPluginLoader cd_loader;
-  std::string class_name = "BULLET";
+  srdf_model_ = srdf::ModelSharedPtr(new srdf::Model);
+  srdf_model_->initString(*model_, srdf_xml_string);
+  model_ = urdf::parseURDF(urdf_xml_string);
+  env_ = trajopt_scene::BulletEnvPtr(new trajopt_scene::BulletEnv);
+  assert(model_ != nullptr);
+  assert(env_ != nullptr);
 
-  success = cd_loader.activate(class_name, planning_scene_, true);
-  assert(success);
-
-  success = env_->init(planning_scene_);
+  bool success = env_->init(model_, srdf_model_);
   assert(success);
 
   // Get ROS Parameters
   pnh.param("plotting", plotting_, plotting_);
 
   // Set the robot initial state
-  robot_state::RobotState &rs = planning_scene_->getCurrentStateNonConst();
-  std::map<std::string, double> ipos;
+  std::map<const std::string, double> ipos;
   ipos["joint_a1"] = -0.785398;
   ipos["joint_a2"] = 0.4;
   ipos["joint_a3"] = 0.0;
@@ -202,7 +194,7 @@ int main(int argc, char** argv)
   ipos["joint_a5"] = 0.0;
   ipos["joint_a6"] = 1.0;
   ipos["joint_a7"] = 0.0;
-  rs.setVariablePositions(ipos);
+  env_->setState(ipos);
 
   // Set Log Level
   gLogLevel = util::LevelError;
@@ -214,10 +206,9 @@ int main(int argc, char** argv)
   // Solve Trajectory
   ROS_INFO("puzzle piece plan");
 
-  std::vector<trajopt::BasicEnv::DistanceResult> collisions;
-  std::vector<std::string> joint_names, link_names;
-  prob->GetKin()->getJointNames(joint_names);
-  prob->GetKin()->getLinkNames(link_names);
+  trajopt_scene::DistanceResultVector collisions;
+  const std::vector<std::string>& joint_names = prob->GetKin()->getJointNames();
+  const std::vector<std::string>& link_names = prob->GetKin()->getLinkNames();
 
   env_->continuousCollisionCheckTrajectory(joint_names, link_names, prob->GetInitTraj(), collisions);
   ROS_INFO("Initial trajector number of continuous collisions: %lui\n", collisions.size());

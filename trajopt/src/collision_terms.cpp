@@ -16,7 +16,7 @@ using namespace std;
 
 namespace trajopt {
 
-void CollisionsToDistances(const std::vector<BasicEnv::DistanceResult> &dist_results, DblVec& dists)
+void CollisionsToDistances(const trajopt_scene::DistanceResultVector &dist_results, DblVec& dists)
 {
   dists.clear();
   dists.reserve(dist_results.size());
@@ -29,7 +29,7 @@ void CollisionsToDistances(const std::vector<BasicEnv::DistanceResult> &dist_res
   }
 }
 
-void DebugPrintInfo(const BasicEnv::DistanceResult &res, bool header = false)
+void DebugPrintInfo(const trajopt_scene::DistanceResult &res, bool header = false)
 {
   if (header)
   {
@@ -39,14 +39,14 @@ void DebugPrintInfo(const BasicEnv::DistanceResult &res, bool header = false)
   std::printf("DistanceResult| %30s | %30s | %6.3f | %6.3f, %6.3f, %6.3f | %6.3f, %6.3f, %6.3f | %6.3f, %6.3f, %6.3f | %7.3f | %6.3f, %6.3f, %6.3f | %6.3f, %6.3f, %6.3f |\n", res.link_names[0].c_str(), res.link_names[1].c_str(), res.distance, res.normal(0), res.normal(1), res.normal(2), res.nearest_points[0](0), res.nearest_points[0](1), res.nearest_points[0](2), res.nearest_points[1](0), res.nearest_points[1](1), res.nearest_points[1](2), res.cc_time, res.cc_nearest_points[0](0), res.cc_nearest_points[0](1), res.cc_nearest_points[0](2), res.cc_nearest_points[1](0), res.cc_nearest_points[1](1), res.cc_nearest_points[1](2));
 }
 
-void CollisionsToDistanceExpressions(const std::vector<BasicEnv::DistanceResult> &dist_results,
-                                     const BasicEnvPtr env, const BasicKinPtr manip,
+void CollisionsToDistanceExpressions(const trajopt_scene::DistanceResultVector &dist_results,
+                                     const trajopt_scene::BasicEnvPtr env,
+                                     const trajopt_scene::BasicKinConstPtr manip,
                                      const VarVector& vars, const DblVec& x,
                                      vector<AffExpr>& exprs, bool isTimestep1)
 {
   VectorXd dofvals = getVec(x, vars);
-  std::vector<std::string> link_names;
-  manip->getLinkNames(link_names);
+  const std::vector<std::string>& link_names = manip->getLinkNames();
 
   // All collision data is in world corrdinate system. This provides the transfrom
   // for converting data between world frame and manipulator frame.
@@ -56,7 +56,7 @@ void CollisionsToDistanceExpressions(const std::vector<BasicEnv::DistanceResult>
   exprs.reserve(dist_results.size());
   for (auto i = 0; i < dist_results.size(); ++i)
   {
-    const BasicEnv::DistanceResult &res = dist_results[i];
+    const trajopt_scene::DistanceResult &res = dist_results[i];
     if (!res.valid)
     {
       continue;
@@ -83,7 +83,7 @@ void CollisionsToDistanceExpressions(const std::vector<BasicEnv::DistanceResult>
     {
       MatrixXd jac;
       VectorXd dist_grad;
-      manip->calcJacobian(jac, change_base, dofvals, res.link_names[1], (isTimestep1 && (res.cc_type == collision_detection::CCType_Between)) ? res.cc_nearest_points[1] : res.nearest_points[1]);
+      manip->calcJacobian(jac, change_base, dofvals, res.link_names[1], (isTimestep1 && (res.cc_type == trajopt_scene::ContinouseCollisionType::CCType_Between)) ? res.cc_nearest_points[1] : res.nearest_points[1]);
       dist_grad = res.normal.transpose() * jac.topRows(3);
       exprInc(dist, varDot(dist_grad, vars));
       exprInc(dist, -dist_grad.dot(dofvals));
@@ -96,8 +96,9 @@ void CollisionsToDistanceExpressions(const std::vector<BasicEnv::DistanceResult>
   }
 }
 
-void CollisionsToDistanceExpressions(const std::vector<BasicEnv::DistanceResult> &dist_results,
-                                     const BasicEnvPtr env, const BasicKinPtr manip,
+void CollisionsToDistanceExpressions(const trajopt_scene::DistanceResultVector &dist_results,
+                                     const trajopt_scene::BasicEnvPtr env,
+                                     const trajopt_scene::BasicKinConstPtr manip,
                                      const VarVector& vars0, const VarVector& vars1, const DblVec& x,
                                      vector<AffExpr>& exprs)
 {
@@ -122,10 +123,10 @@ inline size_t hash(const DblVec& x)
   return boost::hash_range(x.begin(), x.end());
 }
 
-void CollisionEvaluator::GetCollisionsCached(const DblVec& x, std::vector<BasicEnv::DistanceResult> &dist_results)
+void CollisionEvaluator::GetCollisionsCached(const DblVec& x, trajopt_scene::DistanceResultVector &dist_results)
 {
   double key = hash(getDblVec(x, GetVars()));
-  std::vector<BasicEnv::DistanceResult>* it = m_cache.get(key);
+  trajopt_scene::DistanceResultVector* it = m_cache.get(key);
   if (it != NULL)
   {
     LOG_DEBUG("using cached collision check\n");
@@ -141,39 +142,39 @@ void CollisionEvaluator::GetCollisionsCached(const DblVec& x, std::vector<BasicE
 
 void CollisionEvaluator::Plot(const DblVec& x)
 {
-  std::vector<BasicEnv::DistanceResult> dist_results;
+  trajopt_scene::DistanceResultVector dist_results;
   GetCollisionsCached(x, dist_results);
-  std::vector<std::string> link_names;
-  manip_->getLinkNames(link_names);
+  const std::vector<std::string>& link_names = manip_->getLinkNames();;
   env_->plotCollisions(link_names, dist_results, contact_distance_);
 }
 
-SingleTimestepCollisionEvaluator::SingleTimestepCollisionEvaluator(BasicKinPtr manip, BasicEnvPtr env, double contact_distance, const VarVector& vars) :
+SingleTimestepCollisionEvaluator::SingleTimestepCollisionEvaluator(trajopt_scene::BasicKinConstPtr manip, trajopt_scene::BasicEnvPtr env, double contact_distance, const VarVector& vars) :
   CollisionEvaluator(manip, env, contact_distance), m_vars(vars) {}
 
 
-void SingleTimestepCollisionEvaluator::CalcCollisions(const DblVec& x, std::vector<BasicEnv::DistanceResult> &dist_results)
+void SingleTimestepCollisionEvaluator::CalcCollisions(const DblVec& x, trajopt_scene::DistanceResultVector &dist_results)
 {
-  BasicEnv::DistanceRequest req;
+  trajopt_scene::DistanceRequest req;
 
   req.joint_angles1 = getVec(x, m_vars);
-  manip_->getLinkNames(req.link_names);
-  manip_->getJointNames(req.joint_names);
+  req.link_names = manip_->getLinkNames();
+  req.joint_names = manip_->getJointNames();
   req.contact_distance = contact_distance_ + 0.04; // The original implementation added a margin of 0.04
+  req.acm = env_->getAllowedCollisions();
 
   env_->calcDistancesDiscrete(req, dist_results);
 }
 
 void SingleTimestepCollisionEvaluator::CalcDists(const DblVec& x, DblVec& dists)
 {
-  std::vector<BasicEnv::DistanceResult> dist_results;
+  trajopt_scene::DistanceResultVector dist_results;
   GetCollisionsCached(x, dist_results);
   CollisionsToDistances(dist_results, dists);
 }
 
 void SingleTimestepCollisionEvaluator::CalcDistExpressions(const DblVec& x, vector<AffExpr>& exprs)
 {
-  std::vector<BasicEnv::DistanceResult> dist_results;
+  trajopt_scene::DistanceResultVector dist_results;
   GetCollisionsCached(x, dist_results);
   CollisionsToDistanceExpressions(dist_results, env_, manip_, m_vars, x, exprs, false);
 
@@ -182,29 +183,30 @@ void SingleTimestepCollisionEvaluator::CalcDistExpressions(const DblVec& x, vect
 
 ////////////////////////////////////////
 
-CastCollisionEvaluator::CastCollisionEvaluator(BasicKinPtr manip, BasicEnvPtr env, double contact_distance, const VarVector& vars0, const VarVector& vars1) :
+CastCollisionEvaluator::CastCollisionEvaluator(trajopt_scene::BasicKinConstPtr manip, trajopt_scene::BasicEnvPtr env, double contact_distance, const VarVector& vars0, const VarVector& vars1) :
   CollisionEvaluator(manip, env, contact_distance), m_vars0(vars0),m_vars1(vars1)
 {}
 
-void CastCollisionEvaluator::CalcCollisions(const DblVec& x, std::vector<BasicEnv::DistanceResult> &dist_results)
+void CastCollisionEvaluator::CalcCollisions(const DblVec& x, trajopt_scene::DistanceResultVector &dist_results)
 {
-  BasicEnv::DistanceRequest req;
-  manip_->getLinkNames(req.link_names);
-  manip_->getJointNames(req.joint_names);
+  trajopt_scene::DistanceRequest req;
+  req.link_names = manip_->getLinkNames();
+  req.joint_names = manip_->getJointNames();
   req.joint_angles1 = getVec(x, m_vars0);
   req.joint_angles2 = getVec(x, m_vars1);
   req.contact_distance = contact_distance_ + 0.04; // The original implementation added a margin of 0.04
+  req.acm = env_->getAllowedCollisions();
 
   env_->calcDistancesContinuous(req, dist_results);
 }
 void CastCollisionEvaluator::CalcDistExpressions(const DblVec& x, vector<AffExpr>& exprs) {
-  std::vector<BasicEnv::DistanceResult> dist_results;
+  trajopt_scene::DistanceResultVector dist_results;
   GetCollisionsCached(x, dist_results);
   CollisionsToDistanceExpressions(dist_results, env_, manip_, m_vars0, m_vars1, x, exprs);
 }
 void CastCollisionEvaluator::CalcDists(const DblVec& x, DblVec& dists)
 {
-  std::vector<BasicEnv::DistanceResult> dist_results;
+  trajopt_scene::DistanceResultVector dist_results;
   GetCollisionsCached(x, dist_results);
   CollisionsToDistances(dist_results, dists);
 }
@@ -213,12 +215,12 @@ void CastCollisionEvaluator::CalcDists(const DblVec& x, DblVec& dists)
 //////////////////////////////////////////
 
 
-CollisionCost::CollisionCost(double dist_pen, double coeff, BasicKinPtr manip, BasicEnvPtr env, const VarVector& vars) :
+CollisionCost::CollisionCost(double dist_pen, double coeff, trajopt_scene::BasicKinConstPtr manip, trajopt_scene::BasicEnvPtr env, const VarVector& vars) :
     Cost("collision"),
     m_calc(new SingleTimestepCollisionEvaluator(manip, env, dist_pen, vars)), m_coeff(coeff)
 {}
 
-CollisionCost::CollisionCost(double dist_pen, double coeff, BasicKinPtr manip, BasicEnvPtr env, const VarVector& vars0, const VarVector& vars1) :
+CollisionCost::CollisionCost(double dist_pen, double coeff, trajopt_scene::BasicKinConstPtr manip, trajopt_scene::BasicEnvPtr env, const VarVector& vars0, const VarVector& vars1) :
     Cost("cast_collision"),
     m_calc(new CastCollisionEvaluator(manip, env, dist_pen, vars0, vars1)), m_coeff(coeff)
 {}
@@ -253,13 +255,13 @@ void CollisionCost::Plot(const DblVec& x)
 
 // ALMOST EXACTLY COPIED FROM CollisionCost
 
-CollisionConstraint::CollisionConstraint(double dist_pen, double coeff, BasicKinPtr manip, BasicEnvPtr env, const VarVector& vars) :
+CollisionConstraint::CollisionConstraint(double dist_pen, double coeff, trajopt_scene::BasicKinConstPtr manip, trajopt_scene::BasicEnvPtr env, const VarVector& vars) :
     m_calc(new SingleTimestepCollisionEvaluator(manip, env, dist_pen, vars)), m_coeff(coeff)
 {
   name_="collision";
 }
 
-CollisionConstraint::CollisionConstraint(double dist_pen, double coeff, BasicKinPtr manip, BasicEnvPtr env, const VarVector& vars0, const VarVector& vars1) :
+CollisionConstraint::CollisionConstraint(double dist_pen, double coeff, trajopt_scene::BasicKinConstPtr manip, trajopt_scene::BasicEnvPtr env, const VarVector& vars0, const VarVector& vars1) :
   m_calc(new CastCollisionEvaluator(manip, env, dist_pen, vars0, vars1)), m_coeff(coeff)
 {
   name_="collision";

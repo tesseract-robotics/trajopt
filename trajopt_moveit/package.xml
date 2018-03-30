@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>trajopt_moveit</name>
+  <version>0.1.0</version>
+  <description>The trajopt_moveit package</description>
+  <maintainer email="Armstrong@todo.todo">Levi Armstrong</maintainer>
+  <license>BSD</license>
+  <author>Levi Armstrong</author>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <depend>roscpp</depend>
+  <depend>trajopt</depend>
+  <depend>trajopt_ext</depend>
+  <depend>urdf</depend>
+  <depend>moveit_core</depend>
+  <depend>moveit_ros_planning</depend>
+  <depend>pluginlib</depend>
+
+  <test_depend>gtest</test_depend>
+  <test_depend>rostest</test_depend>
+
+
+  <!-- The export tag contains other, unspecified, tags -->
+  <export>
+    <moveit_core plugin="${prefix}/moveit_collision_detection_bullet_plugin_description.xml"/>
+  </export>
+</package>

@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>trajopt_scene</name>
+  <version>0.1.0</version>
+  <description>The trajopt_scene package</description>
+  <maintainer email="Armstrong@todo.todo">Levi Armstrong</maintainer>
+  <license>BSD</license>
+  <author >Levi Armstrong</author>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <depend>roscpp</depend>
+  <depend>urdf</depend>
+  <depend>srdfdom</depend>
+  <depend>geometric_shapes</depend>
+  <depend>trajopt_ext</depend>
+  <depend>kdl_parser</depend>
+
+  <!-- The export tag contains other, unspecified, tags -->
+  <export>
+    <!-- Other tools can request additional information be placed here -->
+
+  </export>
+</package>

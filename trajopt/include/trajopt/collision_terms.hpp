@@ -3,8 +3,8 @@
 #include <trajopt_sco/modeling.hpp>
 #include <trajopt_sco/sco_fwd.hpp>
 #include <trajopt/cache.hxx>
-#include <trajopt/basic_env.h>
-#include <trajopt/basic_kin.h>
+#include <trajopt_scene/basic_env.h>
+#include <trajopt_scene/basic_kin.h>
 
 namespace trajopt
 {
@@ -12,22 +12,22 @@ namespace trajopt
 
 struct CollisionEvaluator
 {
-  CollisionEvaluator(BasicKinPtr manip, BasicEnvPtr env, double contact_distance) : manip_(manip), env_(env), contact_distance_(contact_distance) {}
+  CollisionEvaluator(trajopt_scene::BasicKinConstPtr manip, trajopt_scene::BasicEnvPtr env, double contact_distance) : manip_(manip), env_(env), contact_distance_(contact_distance) {}
   virtual ~CollisionEvaluator() {}
   virtual void CalcDistExpressions(const DblVec& x, vector<AffExpr>& exprs) = 0;
   virtual void CalcDists(const DblVec& x, DblVec& exprs) = 0;
-  virtual void CalcCollisions(const DblVec& x, std::vector<BasicEnv::DistanceResult> &dist_results) = 0;
-  void GetCollisionsCached(const DblVec& x, std::vector<BasicEnv::DistanceResult> &);
+  virtual void CalcCollisions(const DblVec& x, trajopt_scene::DistanceResultVector &dist_results) = 0;
+  void GetCollisionsCached(const DblVec& x, trajopt_scene::DistanceResultVector &);
   void Plot(const DblVec& x);
   virtual VarVector GetVars()=0;
 
   const double& getContactDistance() const {return contact_distance_;}
 
-  Cache<size_t, std::vector<BasicEnv::DistanceResult>, 10> m_cache;
+  Cache<size_t, trajopt_scene::DistanceResultVector, 10> m_cache;
 
 protected:
-  BasicEnvPtr env_;
-  BasicKinPtr manip_;
+  trajopt_scene::BasicEnvPtr env_;
+  trajopt_scene::BasicKinConstPtr manip_;
   double contact_distance_;
 
 private:
@@ -40,7 +40,7 @@ typedef boost::shared_ptr<CollisionEvaluator> CollisionEvaluatorPtr;
 struct SingleTimestepCollisionEvaluator : public CollisionEvaluator
 {
 public:
-  SingleTimestepCollisionEvaluator(BasicKinPtr manip, BasicEnvPtr env, double contact_distance, const VarVector& vars);
+  SingleTimestepCollisionEvaluator(trajopt_scene::BasicKinConstPtr manip, trajopt_scene::BasicEnvPtr env, double contact_distance, const VarVector& vars);
   /**
   @brief linearize all contact distances in terms of robot dofs
   ;
@@ -52,7 +52,7 @@ public:
    * Same as CalcDistExpressions, but just the distances--not the expressions
    */
   void CalcDists(const DblVec& x, DblVec& exprs);
-  void CalcCollisions(const DblVec& x, std::vector<BasicEnv::DistanceResult> &dist_results);
+  void CalcCollisions(const DblVec& x, trajopt_scene::DistanceResultVector &dist_results);
   VarVector GetVars() {return m_vars;}
 
 private:
@@ -61,10 +61,10 @@ private:
 
 struct CastCollisionEvaluator : public CollisionEvaluator {
 public:
-  CastCollisionEvaluator(BasicKinPtr manip, BasicEnvPtr env, double contact_distance, const VarVector& vars0, const VarVector& vars1);
+  CastCollisionEvaluator(trajopt_scene::BasicKinConstPtr manip, trajopt_scene::BasicEnvPtr env, double contact_distance, const VarVector& vars0, const VarVector& vars1);
   void CalcDistExpressions(const DblVec& x, vector<AffExpr>& exprs);
   void CalcDists(const DblVec& x, DblVec& exprs);
-  void CalcCollisions(const DblVec& x, std::vector<BasicEnv::DistanceResult> &dist_results);
+  void CalcCollisions(const DblVec& x, trajopt_scene::DistanceResultVector &dist_results);
   VarVector GetVars() {return concat(m_vars0, m_vars1);}
   
 private:
@@ -75,9 +75,9 @@ private:
 class TRAJOPT_API CollisionCost : public Cost, public Plotter {
 public:
   /* constructor for single timestep */
-  CollisionCost(double dist_pen, double coeff, BasicKinPtr manip, BasicEnvPtr env, const VarVector& vars);
+  CollisionCost(double dist_pen, double coeff, trajopt_scene::BasicKinConstPtr manip, trajopt_scene::BasicEnvPtr env, const VarVector& vars);
   /* constructor for cast cost */
-  CollisionCost(double dist_pen, double coeff, BasicKinPtr manip, BasicEnvPtr env, const VarVector& vars0, const VarVector& vars1);
+  CollisionCost(double dist_pen, double coeff, trajopt_scene::BasicKinConstPtr manip, trajopt_scene::BasicEnvPtr env, const VarVector& vars0, const VarVector& vars1);
   virtual ConvexObjectivePtr convex(const vector<double>& x, Model* model);
   virtual double value(const vector<double>&);
   void Plot(const DblVec& x);
@@ -90,9 +90,9 @@ private:
 class TRAJOPT_API CollisionConstraint : public IneqConstraint {
 public:
   /* constructor for single timestep */
-  CollisionConstraint(double dist_pen, double coeff, BasicKinPtr manip, BasicEnvPtr env, const VarVector& vars);
+  CollisionConstraint(double dist_pen, double coeff, trajopt_scene::BasicKinConstPtr manip, trajopt_scene::BasicEnvPtr env, const VarVector& vars);
   /* constructor for cast cost */
-  CollisionConstraint(double dist_pen, double coeff,BasicKinPtr manip, BasicEnvPtr env, const VarVector& vars0, const VarVector& vars1);
+  CollisionConstraint(double dist_pen, double coeff, trajopt_scene::BasicKinConstPtr manip, trajopt_scene::BasicEnvPtr env, const VarVector& vars0, const VarVector& vars1);
   virtual ConvexConstraintsPtr convex(const vector<double>& x, Model* model);
   virtual DblVec value(const vector<double>&);
   void Plot(const DblVec& x);

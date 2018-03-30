@@ -1,8 +1,8 @@
 #include <trajopt/common.hpp>
 #include <trajopt/problem_description.hpp>
 #include <trajopt_utils/eigen_conversions.hpp>
-#include <trajopt/basic_kin.h>
-#include <trajopt/basic_env.h>
+#include <trajopt_scene/basic_kin.h>
+#include <trajopt_scene/basic_env.h>
 #include <trajopt/plot_callback.hpp>
 #include <boost/foreach.hpp>
 #include <set>
@@ -11,7 +11,7 @@ using namespace util;
 using namespace std;
 namespace trajopt {
 
-void PlotCosts(BasicKinPtr manip, BasicEnvPtr env, vector<CostPtr>& costs, vector<ConstraintPtr>& cnts, const VarArray& vars, const DblVec& x)
+void PlotCosts(trajopt_scene::BasicKinConstPtr manip, trajopt_scene::BasicEnvPtr env, vector<CostPtr>& costs, vector<ConstraintPtr>& cnts, const VarArray& vars, const DblVec& x)
 {
   env->plotClear();
 
@@ -26,8 +26,7 @@ void PlotCosts(BasicKinPtr manip, BasicEnvPtr env, vector<CostPtr>& costs, vecto
     }
   }
   TrajArray traj = getTraj(x, vars);
-  std::vector<std::string> joint_names;
-  manip->getJointNames(joint_names);
+  const std::vector<std::string>& joint_names = manip->getJointNames();
 
   env->plotTrajectory(manip->getName(), joint_names, traj);
   env->plotWaitForInput();

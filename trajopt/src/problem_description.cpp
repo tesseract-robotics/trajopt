@@ -9,10 +9,9 @@
 #include <trajopt_utils/logging.hpp>
 #include <trajopt_sco/expr_ops.hpp>
 #include <trajopt_sco/expr_op_overloads.hpp>
+#include <trajopt_scene/kdl_chain_kin.h>
 #include <boost/foreach.hpp>
 #include <boost/algorithm/string.hpp>
-
-#include <trajopt/ros_kin_chain.h>
 
 using namespace Json;
 using namespace std;
@@ -339,7 +338,7 @@ TrajOptProbPtr ConstructProblem(const ProblemConstructionInfo& pci)
 
 }
 
-TrajOptProbPtr ConstructProblem(const Json::Value& root, BasicEnvPtr env)
+TrajOptProbPtr ConstructProblem(const Json::Value& root, trajopt_scene::BasicEnvPtr env)
 {
   ProblemConstructionInfo pci(env);
   pci.fromJson(root);
@@ -350,7 +349,7 @@ TrajOptProbPtr ConstructProblem(const Json::Value& root, BasicEnvPtr env)
 TrajOptProb::TrajOptProb(int n_steps, const ProblemConstructionInfo &pci) : m_kin(pci.kin), m_env(pci.env)
 {
 
-  Eigen::MatrixXd limits = m_kin->getLimits();
+  const Eigen::MatrixXd& limits = m_kin->getLimits();
   int n_dof = m_kin->numJoints();
   Eigen::VectorXd lower, upper;
   lower = limits.col(0);
@@ -399,8 +398,7 @@ void PoseCostInfo::fromJson(ProblemConstructionInfo &pci, const Value& v)
   tcp.linear() = q.matrix();
   tcp.translation() = tcp_xyz;
 
-  std::vector<std::string> link_names;
-  pci.kin->getLinkNames(link_names);
+  const std::vector<std::string>& link_names = pci.kin->getLinkNames();
   if (std::find(link_names.begin(), link_names.end(),link)==link_names.end()) {
     PRINT_AND_THROW(boost::format("invalid link name: %s")%link);
   }
@@ -465,8 +463,7 @@ void CartVelCntInfo::fromJson(ProblemConstructionInfo &pci, const Value& v)
   FAIL_IF_FALSE((last_step > 0) && (last_step <= pci.basic_info.n_steps-1));
 
   childFromJson(params, link, "link");
-  std::vector<std::string> link_names;
-  pci.kin->getLinkNames(link_names);
+  const std::vector<std::string>& link_names = pci.kin->getLinkNames();
   if (std::find(link_names.begin(), link_names.end(), link)==link_names.end()) {
     PRINT_AND_THROW( boost::format("invalid link name: %s")%link);
   }

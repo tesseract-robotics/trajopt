@@ -13,17 +13,14 @@
 #include <trajopt_test_utils.hpp>
 #include <trajopt/collision_terms.hpp>
 #include <trajopt_utils/logging.hpp>
-
-#include <trajopt/ros_kin_chain.h>
-#include <trajopt/ros_env.h>
+#include <trajopt_scene/kdl_chain_kin.h>
+#include <trajopt_scene/bullet_env.h>
 
 #include <ros/ros.h>
-#include <moveit/robot_model_loader/robot_model_loader.h>
-#include <moveit/robot_model/joint_model_group.h>
-#include <moveit/collision_plugin_loader/collision_plugin_loader.h>
-
 #include <geometric_shapes/shapes.h>
 #include <geometric_shapes/shape_operations.h>
+#include <urdf_parser/urdf_parser.h>
+#include <srdfdom/model.h>
 
 using namespace trajopt;
 using namespace std;
@@ -31,29 +28,64 @@ using namespace util;
 using namespace boost::assign;
 
 const std::string ROBOT_DESCRIPTION_PARAM = "robot_description"; /**< Default ROS parameter for robot description */
+const std::string ROBOT_SEMANTIC_PARAM = "robot_description_semantic"; /**< Default ROS parameter for robot description */
 bool plotting=false;
 
 class CastAttachedTest : public testing::TestWithParam<const char*> {
 public:
-  robot_model_loader::RobotModelLoaderPtr loader_;  /**< Used to load the robot model */
-  moveit::core::RobotModelPtr robot_model_;         /**< Robot model */
-  planning_scene::PlanningScenePtr planning_scene_; /**< Planning scene for the current robot model */
-  ROSEnvPtr env_;                                   /**< Trajopt Basic Environment */
+  ros::NodeHandle nh_;
+  urdf::ModelInterfaceSharedPtr model_;  /**< URDF Model */
+  srdf::ModelSharedPtr srdf_model_;      /**< SRDF Model */
+  trajopt_scene::BulletEnvPtr env_;   /**< Trajopt Basic Environment */
 
   virtual void SetUp()
   {
-    loader_.reset(new robot_model_loader::RobotModelLoader(ROBOT_DESCRIPTION_PARAM));
-    robot_model_ = loader_->getModel();
-    env_ = ROSEnvPtr(new ROSEnv);
-    ASSERT_TRUE(robot_model_ != nullptr);
-    ASSERT_NO_THROW(planning_scene_.reset(new planning_scene::PlanningScene(robot_model_)));
+    std::string urdf_xml_string, srdf_xml_string;
+    nh_.getParam(ROBOT_DESCRIPTION_PARAM, urdf_xml_string);
+    nh_.getParam(ROBOT_SEMANTIC_PARAM, srdf_xml_string);
+    model_ = urdf::parseURDF(urdf_xml_string);
 
-    //Now assign collision detection plugin
-    collision_detection::CollisionPluginLoader cd_loader;
-    std::string class_name = "BULLET";
-    ASSERT_TRUE(cd_loader.activate(class_name, planning_scene_, true));
+    srdf_model_ = srdf::ModelSharedPtr(new srdf::Model);
+    srdf_model_->initString(*model_, srdf_xml_string);
+    env_ = trajopt_scene::BulletEnvPtr(new trajopt_scene::BulletEnv);
+    assert(model_ != nullptr);
+    assert(env_ != nullptr);
 
-    ASSERT_TRUE(env_->init(planning_scene_));
+    bool success = env_->init(model_, srdf_model_);
+    assert(success);
+
+    // Next add objects that can be attached/detached to the scene
+    trajopt_scene::AttachableObjectPtr obj1(new trajopt_scene::AttachableObject());
+    trajopt_scene::AttachableObjectPtr obj2(new trajopt_scene::AttachableObject());
+    shapes::Box* box = new shapes::Box();
+    Eigen::Affine3d box_pose;
+
+    box->size[0] = 0.25;
+    box->size[1] = 0.25;
+    box->size[2] = 0.25;
+
+    box_pose.setIdentity();
+    box_pose.translation() = Eigen::Vector3d(0.5, -0.5, 0);
+
+    obj1->name = "box_attached";
+    obj1->shapes.push_back(shapes::ShapeConstPtr(box));
+    obj1->shapes_trans.push_back(box_pose);
+    env_->addAttachableObject(obj1);
+
+    shapes::Box* box2 = new shapes::Box();
+    Eigen::Affine3d box_pose2;
+
+    box2->size[0] = 0.25;
+    box2->size[1] = 0.25;
+    box2->size[2] = 0.25;
+
+    box_pose2.setIdentity();
+    box_pose2.translation() = Eigen::Vector3d(0, 0, 0);
+
+    obj2->name = "box_attached2";
+    obj2->shapes.push_back(shapes::ShapeConstPtr(box2));
+    obj2->shapes_trans.push_back(box_pose2);
+    env_->addAttachableObject(obj2);
 
     gLogLevel = util::LevelInfo;
   }
@@ -63,51 +95,26 @@ TEST_F(CastAttachedTest, LinkWithGeom)
 {
   ROS_DEBUG("CastTest, LinkWithGeom");
 
-  // Attach object to link with Geom
-  moveit_msgs::AttachedCollisionObject box_attached;
-  geometry_msgs::Pose box_pose;
-  shape_msgs::SolidPrimitive box;
+  trajopt_scene::AttachedBodyInfo attached_body;
+  attached_body.name = "attached_body";
+  attached_body.object_name = "box_attached";
+  attached_body.parent_link_name = "boxbot_link";
 
-  box.type = shape_msgs::SolidPrimitive::BOX;
-  box.dimensions.resize(3);
-  box.dimensions[0] = 0.25;
-  box.dimensions[1] = 0.25;
-  box.dimensions[2] = 0.25;
-
-  box_pose.position.x = 0.5;
-  box_pose.position.y = -0.5;
-  box_pose.position.z = 0;
-  box_pose.orientation.x = 0;
-  box_pose.orientation.y = 0;
-  box_pose.orientation.z = 0;
-  box_pose.orientation.w = 1;
-
-  box_attached.link_name = "boxbot_link";
-  box_attached.object.header.frame_id = "boxbot_link";
-  box_attached.object.header.stamp = ros::Time::now();
-
-  box_attached.object.id = "box_attached";
-  box_attached.object.operation = moveit_msgs::CollisionObject::ADD;
-  box_attached.object.primitives.push_back(box);
-  box_attached.object.primitive_poses.push_back(box_pose);
-
-  planning_scene_->processAttachedCollisionObjectMsg(box_attached);
+  env_->attachBody(attached_body);
 
   Json::Value root = readJsonFile(string(DATA_DIR) + "/box_cast_test.json");
 
-  robot_state::RobotState &rs = planning_scene_->getCurrentStateNonConst();
-  std::map<std::string, double> ipos;
+  std::map<const std::string, double> ipos;
   ipos["boxbot_x_joint"] = -1.9;
   ipos["boxbot_y_joint"] = 0;
-  rs.setVariablePositions(ipos);
+  env_->setState(ipos);
 
   TrajOptProbPtr prob = ConstructProblem(root, env_);
   ASSERT_TRUE(!!prob);
 
-  std::vector<trajopt::BasicEnv::DistanceResult> collisions;
-  std::vector<std::string> joint_names, link_names;
-  prob->GetKin()->getJointNames(joint_names);
-  prob->GetKin()->getLinkNames(link_names);
+  trajopt_scene::DistanceResultVector collisions;
+  const std::vector<std::string>& joint_names = prob->GetKin()->getJointNames();
+  const std::vector<std::string>& link_names = prob->GetKin()->getLinkNames();
 
   env_->continuousCollisionCheckTrajectory(joint_names, link_names, prob->GetInitTraj(), collisions);
   ROS_DEBUG("Initial trajector number of continuous collisions: %lui\n", collisions.size());
@@ -130,51 +137,26 @@ TEST_F(CastAttachedTest, LinkWithoutGeom)
 {
   ROS_DEBUG("CastTest, LinkWithGeom");
 
-  // Attach object to link with Geom
-  moveit_msgs::AttachedCollisionObject box_attached;
-  geometry_msgs::Pose box_pose;
-  shape_msgs::SolidPrimitive box;
+  trajopt_scene::AttachedBodyInfo attached_body;
+  attached_body.name = "attached_body";
+  attached_body.object_name = "box_attached2";
+  attached_body.parent_link_name = "no_geom_link";
 
-  box.type = shape_msgs::SolidPrimitive::BOX;
-  box.dimensions.resize(3);
-  box.dimensions[0] = 0.25;
-  box.dimensions[1] = 0.25;
-  box.dimensions[2] = 0.25;
-
-  box_pose.position.x = 0;
-  box_pose.position.y = 0;
-  box_pose.position.z = 0;
-  box_pose.orientation.x = 0;
-  box_pose.orientation.y = 0;
-  box_pose.orientation.z = 0;
-  box_pose.orientation.w = 1;
-
-  box_attached.link_name = "no_geom_link";
-  box_attached.object.header.frame_id = "no_geom_link";
-  box_attached.object.header.stamp = ros::Time::now();
-
-  box_attached.object.id = "box_attached";
-  box_attached.object.operation = moveit_msgs::CollisionObject::ADD;
-  box_attached.object.primitives.push_back(box);
-  box_attached.object.primitive_poses.push_back(box_pose);
-
-  planning_scene_->processAttachedCollisionObjectMsg(box_attached);
+  env_->attachBody(attached_body);
 
   Json::Value root = readJsonFile(string(DATA_DIR) + "/box_cast_test.json");
 
-  robot_state::RobotState &rs = planning_scene_->getCurrentStateNonConst();
-  std::map<std::string, double> ipos;
+  std::map<const std::string, double> ipos;
   ipos["boxbot_x_joint"] = -1.9;
   ipos["boxbot_y_joint"] = 0;
-  rs.setVariablePositions(ipos);
+  env_->setState(ipos);
 
   TrajOptProbPtr prob = ConstructProblem(root, env_);
   ASSERT_TRUE(!!prob);
 
-  std::vector<trajopt::BasicEnv::DistanceResult> collisions;
-  std::vector<std::string> joint_names, link_names;
-  prob->GetKin()->getJointNames(joint_names);
-  prob->GetKin()->getLinkNames(link_names);
+  trajopt_scene::DistanceResultVector collisions;
+  const std::vector<std::string>& joint_names = prob->GetKin()->getJointNames();
+  const std::vector<std::string>& link_names = prob->GetKin()->getLinkNames();
 
   env_->continuousCollisionCheckTrajectory(joint_names, link_names, prob->GetInitTraj(), collisions);
   ROS_DEBUG("Initial trajector number of continuous collisions: %lui\n", collisions.size());

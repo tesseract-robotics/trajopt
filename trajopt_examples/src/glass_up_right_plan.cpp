@@ -1,31 +1,26 @@
 #include <ros/ros.h>
-#include <moveit/planning_scene/planning_scene.h>
-#include <moveit/robot_model_loader/robot_model_loader.h>
-#include <moveit/collision_plugin_loader/collision_plugin_loader.h>
-#include <trajopt/ros_env.h>
-#include <trajopt/ros_kin_chain.h>
+#include <trajopt_scene/bullet_env.h>
+#include <trajopt_scene/kdl_chain_kin.h>
 #include <trajopt/problem_description.hpp>
 #include <trajopt/plot_callback.hpp>
-
 #include <trajopt_utils/logging.hpp>
 #include <trajopt_utils/config.hpp>
-
-
+#include <urdf_parser/urdf_parser.h>
 #include <jsoncpp/json/json.h>
+#include <srdfdom/model.h>
 
 using namespace trajopt;
 
 const std::string ROBOT_DESCRIPTION_PARAM = "robot_description"; /**< Default ROS parameter for robot description */
+const std::string ROBOT_SEMANTIC_PARAM = "robot_description_semantic"; /**< Default ROS parameter for robot description */
 const std::string TRAJOPT_DESCRIPTION_PARAM = "trajopt_description"; /**< Default ROS parameter for trajopt description */
 
 bool plotting_ = false;
 int steps_ = 5;
 std::string method_ = "json";
-robot_model_loader::RobotModelLoaderPtr loader_;  /**< Used to load the robot model */
-moveit::core::RobotModelPtr robot_model_;         /**< Robot model */
-planning_scene::PlanningScenePtr planning_scene_; /**< Planning scene for the current robot model */
-ROSEnvPtr env_;                                   /**< Trajopt Basic Environment */
-
+urdf::ModelInterfaceSharedPtr model_;  /**< URDF Model */
+srdf::ModelSharedPtr srdf_model_;      /**< SRDF Model */
+trajopt_scene::BulletEnvPtr env_;   /**< Trajopt Basic Environment */
 
 TrajOptProbPtr jsonMethod()
 {
@@ -123,57 +118,41 @@ int main(int argc, char** argv)
   ros::NodeHandle nh;
 
   // Initial setup
-  loader_.reset(new robot_model_loader::RobotModelLoader(ROBOT_DESCRIPTION_PARAM));
-  robot_model_ = loader_->getModel();
-  env_ = ROSEnvPtr(new ROSEnv);
-  planning_scene_.reset(new planning_scene::PlanningScene(robot_model_));
-  assert(robot_model_ != nullptr);
-  assert(planning_scene_ != nullptr);
+  std::string urdf_xml_string, srdf_xml_string;
+  nh.getParam(ROBOT_DESCRIPTION_PARAM, urdf_xml_string);
+  nh.getParam(ROBOT_SEMANTIC_PARAM, srdf_xml_string);
+  model_ = urdf::parseURDF(urdf_xml_string);
 
-  // Now assign collision detection plugin
-  bool success;
-  collision_detection::CollisionPluginLoader cd_loader;
-  std::string class_name = "BULLET";
+  srdf_model_ = srdf::ModelSharedPtr(new srdf::Model);
+  srdf_model_->initString(*model_, srdf_xml_string);
+  env_ = trajopt_scene::BulletEnvPtr(new trajopt_scene::BulletEnv);
+  assert(model_ != nullptr);
+  assert(env_ != nullptr);
 
-  success = cd_loader.activate(class_name, planning_scene_, true);
-  assert(success);
-
-  success = env_->init(planning_scene_);
+  bool success = env_->init(model_, srdf_model_);
   assert(success);
 
   // Add sphere
-  moveit_msgs::CollisionObject sphere_world;
-  geometry_msgs::Pose sphere_pose;
-  shape_msgs::SolidPrimitive sphere;
+  trajopt_scene::AttachableObjectPtr obj(new trajopt_scene::AttachableObject());
+  shapes::Sphere* sphere = new shapes::Sphere();
+  Eigen::Affine3d sphere_pose;
 
-  sphere.type = shape_msgs::SolidPrimitive::SPHERE;
-  sphere.dimensions.resize(1);
-  sphere.dimensions[0] = 0.15;
+  sphere->radius = 0.15;
 
-  sphere_pose.position.x = 0.5;
-  sphere_pose.position.y = 0;
-  sphere_pose.position.z = 0.55;
-  sphere_pose.orientation.x = 0;
-  sphere_pose.orientation.y = 0;
-  sphere_pose.orientation.z = 0;
-  sphere_pose.orientation.w = 1;
+  sphere_pose.setIdentity();
+  sphere_pose.translation() = Eigen::Vector3d(0.5, 0, 0.55);
 
-  sphere_world.header.frame_id = "base_link";
-  sphere_world.header.stamp = ros::Time::now();
+  obj->name = "sphere_attached";
+  obj->shapes.push_back(shapes::ShapeConstPtr(sphere));
+  obj->shapes_trans.push_back(sphere_pose);
+  env_->addAttachableObject(obj);
 
-  sphere_world.id = "box_world";
-  sphere_world.operation = moveit_msgs::CollisionObject::ADD;
-  sphere_world.primitives.push_back(sphere);
-  sphere_world.primitive_poses.push_back(sphere_pose);
+  trajopt_scene::AttachedBodyInfo attached_body;
+  attached_body.name = "attached_body";
+  attached_body.object_name = "sphere_attached";
+  attached_body.parent_link_name = "base_link";
 
-  planning_scene_->processCollisionObjectMsg(sphere_world);
-
-  ros::Publisher planning_scene_diff_publisher = nh.advertise<moveit_msgs::PlanningScene>("/trajopt/planning_scene", 1, true);
-
-  moveit_msgs::PlanningScene msg;
-  planning_scene_->getPlanningSceneMsg(msg);
-  planning_scene_diff_publisher.publish(msg);
-  ros::Duration(0.25).sleep();
+  env_->attachBody(attached_body);
 
   // Get ROS Parameters
   pnh.param("plotting", plotting_, plotting_);
@@ -181,8 +160,7 @@ int main(int argc, char** argv)
   pnh.param<int>("steps", steps_, steps_);
 
   // Set the robot initial state
-  robot_state::RobotState &rs = planning_scene_->getCurrentStateNonConst();
-  std::map<std::string, double> ipos;
+  std::map<const std::string, double> ipos;
   ipos["joint_a1"] = -0.4;
   ipos["joint_a2"] = 0.2762;
   ipos["joint_a3"] = 0.0;
@@ -190,7 +168,7 @@ int main(int argc, char** argv)
   ipos["joint_a5"] = 0.0;
   ipos["joint_a6"] = 1.4959;
   ipos["joint_a7"] = 0.0;
-  rs.setVariablePositions(ipos);
+  env_->setState(ipos);
 
   // Set Log Level
   gLogLevel = util::LevelInfo;
@@ -205,10 +183,9 @@ int main(int argc, char** argv)
   // Solve Trajectory
   ROS_INFO("basic cartesian plan example");
 
-  std::vector<trajopt::BasicEnv::DistanceResult> collisions;
-  std::vector<std::string> joint_names, link_names;
-  prob->GetKin()->getJointNames(joint_names);
-  prob->GetKin()->getLinkNames(link_names);
+  trajopt_scene::DistanceResultVector collisions;
+  const std::vector<std::string>& joint_names = prob->GetKin()->getJointNames();
+  const std::vector<std::string>& link_names = prob->GetKin()->getLinkNames();
 
   env_->continuousCollisionCheckTrajectory(joint_names, link_names, prob->GetInitTraj(), collisions);
   ROS_INFO("Initial trajector number of continuous collisions: %lui\n", collisions.size());

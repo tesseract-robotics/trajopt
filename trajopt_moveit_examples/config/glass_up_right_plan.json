@@ -1,0 +1,100 @@
+{
+  "basic_info" :
+  {
+    "n_steps" : 5,
+    "manip" : "manipulator",
+    "start_fixed" : false
+  },
+  "costs" :
+  [
+    {
+      "type" : "joint_vel",
+      "params":
+      {
+        "coeffs" : [1]
+      }
+    },
+    {
+      "type" : "collision",
+      "params" :
+      {
+        "coeffs" : [20],
+        "dist_pen" : [0.025],
+        "continuous" : false
+      }
+    }
+  ],
+  "constraints" :
+  [
+    {
+      "name" : "waypoint_cart_1",
+      "type" : "pose",
+      "params" :
+      {
+        "timestep" : 0,
+        "xyz" : [0.5, -0.2, 0.62],
+        "wxyz" : [0.0, 0.0, 1.0, 0.0],
+        "link" : "tool0",
+        "pos_coeffs" : [10, 10, 10],
+        "rot_coeffs" : [10, 10, 10]
+      }
+    },
+    {
+      "name" : "waypoint_cart_2",
+      "type" : "pose",
+      "params" :
+      {
+        "timestep" : 1,
+        "xyz" : [0.5, -0.1, 0.62],
+        "wxyz" : [0.0, 0.0, 1.0, 0.0],
+        "link" : "tool0",
+        "pos_coeffs" : [0, 0, 0],
+        "rot_coeffs" : [10, 10, 0]
+      }
+    },
+    {
+      "name" : "waypoint_cart_3",
+      "type" : "pose",
+      "params" :
+      {
+        "timestep" : 2,
+        "xyz" : [0.5, 0.0, 0.62],
+        "wxyz" : [0.0, 0.0, 1.0, 0.0],
+        "link" : "tool0",
+        "pos_coeffs" : [0, 0, 0],
+        "rot_coeffs" : [10, 10, 0]
+      }
+    },
+    {
+      "name" : "waypoint_cart_4",
+      "type" : "pose",
+      "params" :
+      {
+        "timestep" : 3,
+        "xyz" : [0.5, 0.1, 0.62],
+        "wxyz" : [0.0, 0.0, 1.0, 0.0],
+        "link" : "tool0",
+        "pos_coeffs" : [0, 0, 0],
+        "rot_coeffs" : [10, 10, 0]
+      }
+    },
+    {
+      "name" : "waypoint_cart_5",
+      "type" : "pose",
+      "params" :
+      {
+        "timestep" : 4,
+        "xyz" : [0.5, 0.2, 0.62],
+        "wxyz" : [0.0, 0.0, 1.0, 0.0],
+        "link" : "tool0",
+        "pos_coeffs" : [10, 10, 10],
+        "rot_coeffs" : [10, 10, 0]
+      }
+    }
+  ],
+  "init_info" :
+  {
+    "type" : "straight_line",
+    "endpoint" : [0.4, 0.2762, 0.0, -1.3348, 0.0, 1.4959, 0.0]
+  }
+}

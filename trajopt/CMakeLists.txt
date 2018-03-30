@@ -7,17 +7,12 @@ add_compile_options(-std=c++11)
 find_package(catkin REQUIRED COMPONENTS
   trajopt_sco
   trajopt_utils
-  trajopt_ext
+  trajopt_scene
   roscpp
-  urdf
-  moveit_core
-  moveit_ros_planning
-  pluginlib
 )
 
 find_package(Eigen3 REQUIRED)
 find_package(Boost COMPONENTS system python thread program_options REQUIRED)
-find_package(octomap REQUIRED)
 
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(JSONCPP jsoncpp)
@@ -27,8 +22,6 @@ link_directories(
     /usr/local/lib64
 )
 
-set(BULLET_LIBRARIES BulletCollision LinearMath)
-
 set(TRAJOPT_SOURCE_FILES
     src/trajectory_costs.cpp
     src/kinematic_terms.cpp
@@ -37,25 +30,18 @@ set(TRAJOPT_SOURCE_FILES
     src/problem_description.cpp
     src/utils.cpp
     src/plot_callback.cpp
-    src/ros_kin_chain.cpp
-    src/ros_env.cpp
 )
 
 catkin_package(
   INCLUDE_DIRS include
   LIBRARIES
     ${PROJECT_NAME}
-    ${OCTOMAP_LIBRARIES}
     ${JSONCPP_LIBRARIES}
   CATKIN_DEPENDS
     trajopt_sco
     trajopt_utils
-    trajopt_ext
+    trajopt_scene
     roscpp
-    urdf
-    moveit_core
-    moveit_ros_planning
-    pluginlib
   DEPENDS
     EIGEN3
     Boost
@@ -66,24 +52,11 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
   ${EIGEN3_INCLUDE_DIRS}
   ${Boost_INCLUDE_DIRS}
-  ${OCTOMAP_INCLUDE_DIRS}
   ${JSONCPP_INCLUDE_DIRS}
 )
 
 add_library(${PROJECT_NAME} ${TRAJOPT_SOURCE_FILES})
-#target_link_libraries(trajopt ${Boost_SYSTEM_LIBRARY} sco utils json osgviewer)
-target_link_libraries(${PROJECT_NAME} ${OCTOMAP_LIBRARIES} ${Boost_SYSTEM_LIBRARY} ${JSONCPP_LIBRARIES} ${catkin_LIBRARIES})
-
-add_library(moveit_collision_detection_bullet
-  src/moveit/collision_common.cpp
-  src/moveit/collision_robot_bullet.cpp
-  src/moveit/collision_world_bullet.cpp
-)
-
-target_link_libraries(moveit_collision_detection_bullet ${catkin_LIBRARIES} ${console_bridge_LIBRARIES} ${urdfdom_LIBRARIES} ${urdfdom_headers_LIBRARIES} ${Boost_LIBRARIES} ${OCTOMAP_LIBRARIES})
-
-add_library(moveit_collision_detection_bullet_plugin src/moveit/collision_detector_allocator_bullet.cpp)
-target_link_libraries(moveit_collision_detection_bullet_plugin moveit_collision_detection_bullet ${catkin_LIBRARIES})
+target_link_libraries(${PROJECT_NAME} ${Boost_SYSTEM_LIBRARY} ${JSONCPP_LIBRARIES} ${catkin_LIBRARIES})
 
 if (CATKIN_ENABLE_TESTING)
 
