@@ -101,6 +101,7 @@ TEST_F(CastAttachedTest, LinkWithGeom)
   attached_body.parent_link_name = "boxbot_link";
 
   env_->attachBody(attached_body);
+  env_->updateVisualization();
 
   Json::Value root = readJsonFile(string(DATA_DIR) + "/box_cast_test.json");
 
@@ -143,6 +144,7 @@ TEST_F(CastAttachedTest, LinkWithoutGeom)
   attached_body.parent_link_name = "no_geom_link";
 
   env_->attachBody(attached_body);
+  env_->updateVisualization();
 
   Json::Value root = readJsonFile(string(DATA_DIR) + "/box_cast_test.json");
 

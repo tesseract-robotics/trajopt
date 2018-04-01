@@ -105,6 +105,7 @@ TEST_F(CastOctomapTest, boxes) {
   attached_body.parent_link_name = "base_link";
 
   env_->attachBody(attached_body);
+  env_->updateVisualization();
 
   Json::Value root = readJsonFile(string(DATA_DIR) + "/box_cast_test.json");
 

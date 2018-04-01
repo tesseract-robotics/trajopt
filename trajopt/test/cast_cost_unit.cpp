@@ -65,6 +65,7 @@ TEST_F(CastTest, boxes) {
   ipos["boxbot_x_joint"] = -1.9;
   ipos["boxbot_y_joint"] = 0;
   env_->setState(ipos);
+  env_->updateVisualization();
 
   TrajOptProbPtr prob = ConstructProblem(root, env_);
   ASSERT_TRUE(!!prob);

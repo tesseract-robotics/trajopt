@@ -11,6 +11,7 @@
 #include <srdfdom/model.h>
 #include <visualization_msgs/Marker.h>
 #include <visualization_msgs/MarkerArray.h>
+#include <moveit_msgs/DisplayRobotState.h>
 
 namespace trajopt_scene
 {
@@ -130,12 +131,14 @@ private:
 
   bool plotting_;                                         /**< Enable plotting */
   int marker_counter_;                                    /**< Counter when plotting */
-  ros::Publisher scene_pub_;                              /**< Trajectory publisher */
+  ros::Publisher scene_pub_;                              /**< Scene publisher */
   ros::Publisher trajectory_pub_;                         /**< Trajectory publisher */
   ros::Publisher collisions_pub_;                         /**< Collision Data publisher */
   ros::Publisher arrows_pub_;                             /**< Used for publishing arrow markers */
   ros::Publisher axes_pub_;                               /**< Used for publishing axis markers */
 
+
+  moveit_msgs::RobotStatePtr getRobotStateMsg() const;
 
   void calculateTransforms(std::map<const std::string, Eigen::Affine3d> &transforms, const KDL::JntArray& q_in, const KDL::SegmentMap::const_iterator& it, const Eigen::Affine3d& parent_frame) const;
 

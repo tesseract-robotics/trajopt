@@ -1,8 +1,11 @@
 #include "trajopt_scene/bullet_env.h"
 #include "trajopt_scene/kdl_chain_kin.h"
 #include <moveit_msgs/DisplayTrajectory.h>
+#include <geometric_shapes/shape_operations.h>
+#include <eigen_conversions/eigen_msg.h>
 #include <iostream>
 #include <limits>
+#include <octomap/octomap.h>
 
 namespace trajopt_scene
 {
@@ -102,7 +105,7 @@ bool BulletEnv::init(const urdf::ModelInterfaceConstSharedPtr urdf_model, const 
     }
   }
 
-  scene_pub_ = nh.advertise<moveit_msgs::RobotState>("/trajopt/scene", 1, true);
+  scene_pub_ = nh.advertise<moveit_msgs::DisplayRobotState>("/trajopt/scene", 1, true);
   trajectory_pub_ = nh.advertise<moveit_msgs::DisplayTrajectory>("/trajopt/display_planned_path", 1, true);
   collisions_pub_ = nh.advertise<visualization_msgs::MarkerArray>("/trajopt/display_collisions", 1, true);
   arrows_pub_ = nh.advertise<visualization_msgs::MarkerArray>("/trajopt/display_arrows", 1, true);
@@ -765,17 +768,113 @@ void BulletEnv::constructBulletObject(Link2Cow& collision_objects,
   }
 }
 
+moveit_msgs::RobotStatePtr BulletEnv::getRobotStateMsg() const
+{
+  moveit_msgs::RobotStatePtr msg(new moveit_msgs::RobotState());
+  msg->is_diff = false;
+  msg->joint_state.name.reserve(current_state_->joints.size());
+  msg->joint_state.position.reserve(current_state_->joints.size());
+  for (const auto& joint : current_state_->joints)
+  {
+    msg->joint_state.name.push_back(joint.first);
+    msg->joint_state.position.push_back(joint.second);
+  }
+
+  for (const auto& body : attached_bodies_)
+  {
+    moveit_msgs::AttachedCollisionObject obj;
+    obj.link_name = body.second->info.parent_link_name;
+    obj.touch_links = body.second->info.touch_links;
+
+    obj.object.id = body.second->obj->name;
+    obj.object.header.frame_id = body.second->info.parent_link_name;
+    obj.object.header.stamp = ros::Time::now();
+
+    for (auto i = 0; i < body.second->obj->shapes.size(); ++i)
+    {
+      const auto geom = body.second->obj->shapes[i];
+      const auto geom_pose = body.second->obj->shapes_trans[i];
+      if (geom->type == shapes::OCTREE)
+      {
+        const shapes::OcTree* g = static_cast<const shapes::OcTree*>(geom.get());
+        double occupancy_threshold = g->octree->getOccupancyThres();
+
+        for(auto it = g->octree->begin(g->octree->getTreeDepth()), end = g->octree->end(); it != end; ++it)
+        {
+          if(it->getOccupancy() >= occupancy_threshold)
+          {
+            double size = it.getSize();
+            shape_msgs::SolidPrimitive s;
+            s.type = shape_msgs::SolidPrimitive::BOX;
+            s.dimensions.resize(3);
+            s.dimensions[shape_msgs::SolidPrimitive::BOX_X] = size;
+            s.dimensions[shape_msgs::SolidPrimitive::BOX_Y] = size;
+            s.dimensions[shape_msgs::SolidPrimitive::BOX_Z] = size;
+            obj.object.primitives.push_back(s);
+
+            Eigen::Affine3d trans, final_trans;
+            trans.setIdentity();
+            trans.translation() = Eigen::Vector3d(it.getX(), it.getY(), it.getZ());
+            final_trans = geom_pose * trans;
+
+            geometry_msgs::Pose pose;
+            tf::poseEigenToMsg(final_trans, pose);
+            obj.object.primitive_poses.push_back(pose);
+          }
+        }
+      }
+      else if (geom->type == shapes::MESH)
+      {
+        shapes::ShapeMsg s;
+        shapes::constructMsgFromShape(geom.get(), s);
+
+        obj.object.meshes.push_back(boost::get<shape_msgs::Mesh>(s));
+
+        geometry_msgs::Pose pose;
+        tf::poseEigenToMsg(geom_pose, pose);
+        obj.object.mesh_poses.push_back(pose);
+      }
+      else if (geom->type == shapes::PLANE)
+      {
+        shapes::ShapeMsg s;
+        shapes::constructMsgFromShape(geom.get(), s);
+        obj.object.planes.push_back(boost::get<shape_msgs::Plane>(s));
+
+        geometry_msgs::Pose pose;
+        tf::poseEigenToMsg(geom_pose, pose);
+        obj.object.plane_poses.push_back(pose);
+      }
+      else //SolidPrimitive
+      {
+        shapes::ShapeMsg s;
+        shapes::constructMsgFromShape(geom.get(), s);
+        obj.object.primitives.push_back(boost::get<shape_msgs::SolidPrimitive>(s));
+
+        geometry_msgs::Pose pose;
+        tf::poseEigenToMsg(geom_pose, pose);
+        obj.object.primitive_poses.push_back(pose);
+      }
+    }
+    msg->attached_collision_objects.push_back(obj);
+  }
+  return msg;
+}
+
 void BulletEnv::updateVisualization() const
 {
-//  moveit_msgs::RobotState msg;
-//  msg.joint_state.
-//  scene_pub_
+  moveit_msgs::DisplayRobotState msg;
+
+  msg.state = *getRobotStateMsg();
+  scene_pub_.publish(msg);
 }
 
 void BulletEnv::plotTrajectory(const std::string &name, const std::vector<std::string> &joint_names, const TrajArray &traj)
 {
   moveit_msgs::DisplayTrajectory msg;
   moveit_msgs::RobotTrajectory rt;
+
+  // Set the Robot State so attached objects show up
+  msg.trajectory_start = *getRobotStateMsg();
 
   // Initialze the whole traject with the current state.
   rt.joint_trajectory.joint_names.resize(joint_to_qnr_.size());

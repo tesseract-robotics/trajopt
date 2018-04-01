@@ -123,7 +123,7 @@ public:
    * @brief Getter for joint_limits_
    * @return Matrix of joint limits
    */
-  virtual const Eigen::MatrixXd& getLimits() const = 0;
+  virtual const Eigen::MatrixX2d& getLimits() const = 0;
 
   /**
    * @brief Number of joints in robot

@@ -207,10 +207,15 @@ const std::vector<std::string>& KDLChainKin::getJointNames() const
     return joint_list_;
 }
 
-const std::vector<std::string> &KDLChainKin::getLinkNames() const
+const std::vector<std::string>& KDLChainKin::getLinkNames() const
 {
     assert(checkInitialized());
     return link_list_;
+}
+
+const Eigen::MatrixX2d &KDLChainKin::getLimits() const
+{
+  return joint_limits_;
 }
 
 void KDLChainKin::addChildrenRecursive(const urdf::LinkConstSharedPtr urdf_link, const std::string &next_chain_segment)

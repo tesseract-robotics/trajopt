@@ -14,6 +14,7 @@ find_package(catkin REQUIRED COMPONENTS
   srdfdom
   geometric_shapes
   kdl_parser
+  eigen_conversions
 )
 
 find_package(Eigen3 REQUIRED)
@@ -37,6 +38,7 @@ catkin_package(
     srdfdom
     geometric_shapes
     kdl_parser
+    eigen_conversions
   DEPENDS
     EIGEN3
     Boost

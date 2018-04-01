@@ -66,6 +66,7 @@ TEST_F(PlanningTest, numerical_ik1)
   ROS_DEBUG("PlanningTest, numerical_ik1");
   Json::Value root = readJsonFile(string(DATA_DIR) + "/numerical_ik1.json");
 
+  env_->updateVisualization();
   TrajOptProbPtr prob = ConstructProblem(root, env_);
   ASSERT_TRUE(!!prob);
 
@@ -116,6 +117,7 @@ TEST_F(PlanningTest, arm_around_table)
   ipos["r_wrist_flex_joint"] = -1.926;
   ipos["r_wrist_roll_joint"] = 3.074;
   env_->setState(ipos);
+  env_->updateVisualization();
 
   TrajOptProbPtr prob = ConstructProblem(root, env_);
   ASSERT_TRUE(!!prob);

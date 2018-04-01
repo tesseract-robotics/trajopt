@@ -40,7 +40,7 @@ public:
 
   const std::vector<std::string>& getLinkNames() const;
 
-  const Eigen::MatrixXd& getLimits() const { return joint_limits_; }
+  const Eigen::MatrixX2d& getLimits() const;
 
   /**
    * @brief Initializes ROSKin
@@ -131,7 +131,7 @@ private:
   std::string name_;                                             /**< Name of the kinematic chain */
   std::vector<std::string> joint_list_;                          /**< List of joint names */
   std::vector<std::string> link_list_;                           /**< List of link names */
-  Eigen::Matrix<double, Eigen::Dynamic, 2> joint_limits_;        /**< Joint limits */
+  Eigen::MatrixX2d joint_limits_;                                /**< Joint limits */
   boost::scoped_ptr<KDL::ChainFkSolverPos_recursive> fk_solver_; /**< KDL Forward Kinematic Solver */
   boost::scoped_ptr<KDL::ChainJntToJacSolver> jac_solver_;       /**< KDL Jacobian Solver */
   std::map<std::string, int> link_name_too_segment_index_;       /**< A map from link name to kdl chain segment numer */

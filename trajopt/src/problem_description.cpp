@@ -349,7 +349,7 @@ TrajOptProbPtr ConstructProblem(const Json::Value& root, trajopt_scene::BasicEnv
 TrajOptProb::TrajOptProb(int n_steps, const ProblemConstructionInfo &pci) : m_kin(pci.kin), m_env(pci.env)
 {
 
-  const Eigen::MatrixXd& limits = m_kin->getLimits();
+  const Eigen::MatrixX2d& limits = m_kin->getLimits();
   int n_dof = m_kin->numJoints();
   Eigen::VectorXd lower, upper;
   lower = limits.col(0);
