@@ -105,7 +105,7 @@ TEST_F(CastAttachedTest, LinkWithGeom)
 
   Json::Value root = readJsonFile(string(DATA_DIR) + "/box_cast_test.json");
 
-  std::map<const std::string, double> ipos;
+  std::map<std::string, double> ipos;
   ipos["boxbot_x_joint"] = -1.9;
   ipos["boxbot_y_joint"] = 0;
   env_->setState(ipos);
@@ -148,7 +148,7 @@ TEST_F(CastAttachedTest, LinkWithoutGeom)
 
   Json::Value root = readJsonFile(string(DATA_DIR) + "/box_cast_test.json");
 
-  std::map<const std::string, double> ipos;
+  std::map<std::string, double> ipos;
   ipos["boxbot_x_joint"] = -1.9;
   ipos["boxbot_y_joint"] = 0;
   env_->setState(ipos);

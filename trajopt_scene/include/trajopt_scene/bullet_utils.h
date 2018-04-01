@@ -69,7 +69,7 @@ typedef boost::shared_ptr<AttachedBody> AttachedBodyPtr;
 typedef boost::shared_ptr<const AttachedBody> AttachedBodyConstPtr;
 
 /// Destance query results information
-typedef std::map<const std::pair<std::string, std::string>, DistanceResultVector> BulletDistanceMap;
+typedef std::map<std::pair<std::string, std::string>, DistanceResultVector> BulletDistanceMap;
 struct BulletDistanceData
 {
   BulletDistanceData(const DistanceRequest* req, BulletDistanceMap* res) : req(req), res(res), done(false)

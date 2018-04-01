@@ -52,7 +52,7 @@ public:
     bool success = env_->init(model_, srdf_model_);
     assert(success);
 
-    std::map<const std::string, double> ipos;
+    std::map<std::string, double> ipos;
     ipos["torso_lift_joint"] = 0.0;
     env_->setState(ipos);
 
@@ -107,7 +107,7 @@ TEST_F(PlanningTest, arm_around_table)
 
   Json::Value root = readJsonFile(string(DATA_DIR) + "/arm_around_table.json");
 
-  std::map<const std::string, double> ipos;
+  std::map<std::string, double> ipos;
   ipos["torso_lift_joint"] = 0;
   ipos["r_shoulder_pan_joint"] = -1.832;
   ipos["r_shoulder_lift_joint"] = -0.332;

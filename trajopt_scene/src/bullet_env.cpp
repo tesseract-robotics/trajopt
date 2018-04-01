@@ -316,7 +316,7 @@ bool BulletEnv::continuousCollisionCheckTrajectory(const std::vector<std::string
   return found;
 }
 
-void BulletEnv::setState(const std::map<const std::string, double> &joints)
+void BulletEnv::setState(const std::map<std::string, double> &joints)
 {
   current_state_->joints.insert(joints.begin(), joints.end());
 
@@ -345,7 +345,7 @@ void BulletEnv::setState(const std::vector<std::string> &joint_names, const Eige
   calculateTransforms(current_state_->transforms, kdl_jnt_array_, kdl_tree_->getRootSegment(), Eigen::Affine3d::Identity());
 }
 
-EnvStatePtr BulletEnv::getState(const std::map<const std::string, double> &joints) const
+EnvStatePtr BulletEnv::getState(const std::map<std::string, double> &joints) const
 {
   EnvStatePtr state(new EnvState(*current_state_));
   KDL::JntArray jnt_array = kdl_jnt_array_;
@@ -402,7 +402,7 @@ Eigen::VectorXd BulletEnv::getCurrentJointValues(const std::string &manipulator_
 
 Eigen::VectorXd BulletEnv::getCurrentJointValues() const
 {
-  const std::map<const std::string, double>& jv = current_state_->joints;
+  const std::map<std::string, double>& jv = current_state_->joints;
   Eigen::VectorXd start_pos(jv.size());
   int j = 0;
 
@@ -539,7 +539,7 @@ bool BulletEnv::setJointValuesHelper(KDL::JntArray &q, const std::string &joint_
   }
 }
 
-void BulletEnv::calculateTransforms(std::map<const std::string, Eigen::Affine3d> &transforms, const KDL::JntArray& q_in, const KDL::SegmentMap::const_iterator& it, const Eigen::Affine3d& parent_frame) const
+void BulletEnv::calculateTransforms(std::map<std::string, Eigen::Affine3d> &transforms, const KDL::JntArray& q_in, const KDL::SegmentMap::const_iterator& it, const Eigen::Affine3d& parent_frame) const
 {
   if (it != kdl_tree_->getSegments().end())
   {

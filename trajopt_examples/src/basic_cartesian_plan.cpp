@@ -124,7 +124,7 @@ int main(int argc, char** argv)
   pnh.param<int>("steps", steps_, steps_);
 
   // Set the robot initial state
-  std::map<const std::string, double> ipos;
+  std::map<std::string, double> ipos;
   ipos["joint_a1"] = -0.4;
   ipos["joint_a2"] = 0.2762;
   ipos["joint_a3"] = 0.0;

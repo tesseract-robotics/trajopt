@@ -134,8 +134,8 @@ typedef std::vector<DistanceResult> DistanceResultVector;
 /** @brief This holds a state of the environment */
 struct EnvState
 {
-  std::map<const std::string, double> joints;
-  std::map<const std::string, Eigen::Affine3d> transforms;
+  std::map<std::string, double> joints;
+  std::map<std::string, Eigen::Affine3d> transforms;
 };
 typedef boost::shared_ptr<EnvState> EnvStatePtr;
 typedef boost::shared_ptr<const EnvState> EnvStateConstPtr;
@@ -199,7 +199,7 @@ public:
   virtual bool continuousCollisionCheckTrajectory(const std::vector<std::string> &joint_names, const std::vector<std::string> &link_names, const TrajArray& traj, DistanceResult& collision) const = 0;
 
   /** @brief Set the current state of the environment */
-  virtual void setState(const std::map<const std::string, double> &joints) = 0;
+  virtual void setState(const std::map<std::string, double> &joints) = 0;
   virtual void setState(const std::vector<std::string> &joint_names, const Eigen::VectorXd &joint_values) = 0;
 
   /** @brief Get the current state of the environment */
@@ -213,7 +213,7 @@ public:
    * @param joints A map of joint names to joint values to change.
    * @return A the state of the environment
    */
-  virtual EnvStatePtr getState(const std::map<const std::string, double> &joints) const = 0;
+  virtual EnvStatePtr getState(const std::map<std::string, double> &joints) const = 0;
   virtual EnvStatePtr getState(const std::vector<std::string> &joint_names, const Eigen::VectorXd &joint_values) const = 0;
 
   /**
