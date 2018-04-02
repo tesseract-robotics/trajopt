@@ -60,14 +60,14 @@ target_link_libraries(${PROJECT_NAME} ${Boost_SYSTEM_LIBRARY} ${JSONCPP_LIBRARIE
 
 if (CATKIN_ENABLE_TESTING)
 
-  add_definitions(-DDATA_DIR="${CMAKE_SOURCE_DIR}/data")
   find_package(rostest REQUIRED)
-  find_package(catkin REQUIRED COMPONENTS octomap_ros)
+  find_package(catkin REQUIRED COMPONENTS octomap_ros trajopt_test_support roslib)
   find_package(PCL REQUIRED COMPONENTS core features filters io segmentation surface)
 
   include_directories(
     test
     ${PCL_INCLUDE_DIRS}
+    ${catkin_INCLUDE_DIRS}
   )
 
   add_rostest_gtest(${PROJECT_NAME}_planning_unit test/planning_unit.launch test/planning_unit.cpp)

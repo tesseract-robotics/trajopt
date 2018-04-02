@@ -19,6 +19,7 @@
 #include <moveit/robot_model_loader/robot_model_loader.h>
 #include <moveit/robot_model/joint_model_group.h>
 #include <moveit/collision_plugin_loader/collision_plugin_loader.h>
+#include <ros/package.h>
 
 using namespace trajopt;
 using namespace std;
@@ -63,7 +64,9 @@ public:
 TEST_F(PlanningTest, numerical_ik1)
 {
   ROS_DEBUG("PlanningTest, numerical_ik1");
-  Json::Value root = readJsonFile(string(DATA_DIR) + "/numerical_ik1.json");
+
+  std::string package_path = ros::package::getPath("trajopt_test_support");
+  Json::Value root = readJsonFile(package_path + "/config/numerical_ik1.json");
 
   TrajOptProbPtr prob = ConstructProblem(root, env_);
   ASSERT_TRUE(!!prob);
@@ -103,7 +106,8 @@ TEST_F(PlanningTest, arm_around_table)
 {
   ROS_DEBUG("PlanningTest, arm_around_table");
 
-  Json::Value root = readJsonFile(string(DATA_DIR) + "/arm_around_table.json");
+  std::string package_path = ros::package::getPath("trajopt_test_support");
+  Json::Value root = readJsonFile(package_path + "/config/arm_around_table.json");
   robot_state::RobotState &rs = planning_scene_->getCurrentStateNonConst();
   std::map<std::string, double> ipos;
   ipos["torso_lift_joint"] = 0;

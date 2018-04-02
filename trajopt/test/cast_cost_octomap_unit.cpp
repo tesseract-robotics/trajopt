@@ -30,6 +30,7 @@
 #include <pcl_conversions/pcl_conversions.h>
 #include <urdf_parser/urdf_parser.h>
 #include <srdfdom/model.h>
+#include <ros/package.h>
 
 using namespace trajopt;
 using namespace std;
@@ -107,7 +108,8 @@ TEST_F(CastOctomapTest, boxes) {
   env_->attachBody(attached_body);
   env_->updateVisualization();
 
-  Json::Value root = readJsonFile(string(DATA_DIR) + "/box_cast_test.json");
+  std::string package_path = ros::package::getPath("trajopt_test_support");
+  Json::Value root = readJsonFile(package_path + "/config/box_cast_test.json");
 
   std::map<std::string, double> ipos;
   ipos["boxbot_x_joint"] = -1.9;

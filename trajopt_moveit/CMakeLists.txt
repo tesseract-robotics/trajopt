@@ -82,9 +82,8 @@ target_link_libraries(moveit_collision_detection_bullet_plugin moveit_collision_
 
 if (CATKIN_ENABLE_TESTING)
 
-  add_definitions(-DDATA_DIR="${CMAKE_SOURCE_DIR}/data")
   find_package(rostest REQUIRED)
-  find_package(catkin REQUIRED COMPONENTS octomap_ros)
+  find_package(catkin REQUIRED COMPONENTS octomap_ros trajopt_test_support roslib)
   find_package(PCL REQUIRED COMPONENTS core features filters io segmentation surface)
 
   include_directories(

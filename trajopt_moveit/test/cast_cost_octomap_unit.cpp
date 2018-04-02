@@ -21,6 +21,7 @@
 #include <moveit/robot_model_loader/robot_model_loader.h>
 #include <moveit/robot_model/joint_model_group.h>
 #include <moveit/collision_plugin_loader/collision_plugin_loader.h>
+#include <ros/package.h>
 
 #include <geometric_shapes/shapes.h>
 #include <geometric_shapes/shape_operations.h>
@@ -114,7 +115,9 @@ public:
 
 TEST_F(CastOctomapTest, boxes) {
   ROS_DEBUG("CastTest, boxes");
-  Json::Value root = readJsonFile(string(DATA_DIR) + "/box_cast_test.json");
+
+  std::string package_path = ros::package::getPath("trajopt_test_support");
+  Json::Value root = readJsonFile(package_path + "/config/box_cast_test.json");
 
   robot_state::RobotState &rs = planning_scene_->getCurrentStateNonConst();
   std::map<std::string, double> ipos;

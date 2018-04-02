@@ -123,16 +123,16 @@ ProblemConstructionInfo cppMethod()
   joint_jerk->term_type = TT_COST;
   pci.cost_infos.push_back(joint_jerk);
 
-//  boost::shared_ptr<CollisionCostInfo> collision = boost::shared_ptr<CollisionCostInfo>(new CollisionCostInfo);
-//  collision->name = "collision";
-//  collision->term_type = TT_COST;
-//  collision->continuous = false;
-//  collision->first_step = 0;
-//  collision->last_step = pci.basic_info.n_steps - 1;
-//  collision->gap = 1;
-//  collision->coeffs = DblVec(pci.basic_info.n_steps, 20.0);
-//  collision->dist_pen = DblVec(pci.basic_info.n_steps, 0.02);
-//  pci.cost_infos.push_back(collision);
+  boost::shared_ptr<CollisionCostInfo> collision = boost::shared_ptr<CollisionCostInfo>(new CollisionCostInfo);
+  collision->name = "collision";
+  collision->term_type = TT_COST;
+  collision->continuous = false;
+  collision->first_step = 0;
+  collision->last_step = pci.basic_info.n_steps - 1;
+  collision->gap = 1;
+  collision->coeffs = DblVec(pci.basic_info.n_steps, 20.0);
+  collision->dist_pen = DblVec(pci.basic_info.n_steps, 0.02);
+  pci.cost_infos.push_back(collision);
 
   // Populate Constraints
   Eigen::Affine3d grinder_frame = env_->getLinkTransform("grinder_frame");
@@ -172,9 +172,9 @@ int main(int argc, char** argv)
   nh.getParam(ROBOT_DESCRIPTION_PARAM, urdf_xml_string);
   nh.getParam(ROBOT_SEMANTIC_PARAM, srdf_xml_string);
 
+  model_ = urdf::parseURDF(urdf_xml_string);
   srdf_model_ = srdf::ModelSharedPtr(new srdf::Model);
   srdf_model_->initString(*model_, srdf_xml_string);
-  model_ = urdf::parseURDF(urdf_xml_string);
   env_ = trajopt_scene::BulletEnvPtr(new trajopt_scene::BulletEnv);
   assert(model_ != nullptr);
   assert(env_ != nullptr);
