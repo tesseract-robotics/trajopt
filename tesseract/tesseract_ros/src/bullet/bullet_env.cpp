@@ -105,7 +105,7 @@ bool BulletEnv::init(const urdf::ModelInterfaceConstSharedPtr urdf_model, const 
     // Populate allowed collision matrix
     for (const auto& pair: srdf_model_->getDisabledCollisionPairs())
     {
-      addAllowedCollision(pair.link1_, pair.link2_, pair.reason_);
+      allowed_collision_matrix_->addAllowedCollision(pair.link1_, pair.link2_, pair.reason_);
     }
   }
 
@@ -273,7 +273,7 @@ bool BulletEnv::continuousCollisionCheckTrajectory(const std::vector<std::string
   req.type = DistanceRequestType::SINGLE;
   req.joint_names = joint_names;
   req.link_names = link_names;
-  req.acm = getAllowedCollisions();
+  req.acm = getAllowedCollisionMatrix();
 
   DistanceResultVector collisions;
   for (int iStep = 0; iStep < traj.rows() - 1; ++iStep)
@@ -296,7 +296,7 @@ bool BulletEnv::continuousCollisionCheckTrajectory(const std::vector<std::string
   req.type = DistanceRequestType::ALL;
   req.joint_names = joint_names;
   req.link_names = link_names;
-  req.acm = getAllowedCollisions();
+  req.acm = getAllowedCollisionMatrix();
 
   bool found = false;
   for (int iStep = 0; iStep < traj.rows() - 1; ++iStep)

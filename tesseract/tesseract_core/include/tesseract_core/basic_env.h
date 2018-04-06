@@ -38,21 +38,13 @@ namespace tesseract
 {
 
 typedef Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> TrajArray;
-typedef std::pair<std::string, std::string> ObjectPairKey;
-typedef std::map<ObjectPairKey, std::string> AllowedCollisionMatrix;
+
+struct AllowedCollisionMatrix
+{
+  virtual bool isCollisionAllowed(const std::string& obj1, const std::string& obj2) const = 0;
+};
 typedef boost::shared_ptr<AllowedCollisionMatrix> AllowedCollisionMatrixPtr;
 typedef boost::shared_ptr<const AllowedCollisionMatrix> AllowedCollisionMatrixConstPtr;
-
-/**
- * @brief Get a key for two object to search the collision matrix
- * @param obj1 First collision object name
- * @param obj2 Second collision object name
- * @return The collision pair key
- */
-static ObjectPairKey getObjectPairKey(const std::string &obj1, const std::string &obj2)
-{
-  return obj1 < obj2 ? std::make_pair(obj1, obj2) : std::make_pair(obj2, obj1);
-}
 
 namespace BodyTypes
 {
@@ -151,7 +143,7 @@ class BasicEnv
 public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-  BasicEnv() : allowed_collision_matrix_(new AllowedCollisionMatrix()) {}
+  BasicEnv() {}
 
   /**
    * @brief calcDistances Should return distance information for all links in list req.link_names (Discrete Check)
@@ -244,7 +236,6 @@ public:
    */
   virtual Eigen::Affine3d getLinkTransform(const std::string &link_name) const = 0;
 
-
   /**
    * @brief hasManipulator Check if a manipulator exist in the environment
    * @param manipulator_name Name of the manipulator
@@ -258,6 +249,9 @@ public:
    * @return BasicKinPtr
    */
   virtual BasicKinConstPtr getManipulator(const std::string &manipulator_name) const = 0;
+
+  /** @brief Get the allowed collision matrix */
+  virtual AllowedCollisionMatrixConstPtr getAllowedCollisionMatrix() const = 0;
 
   /** @brief Plot the current scene */
   virtual void updateVisualization() const = 0;
@@ -306,41 +300,6 @@ public:
 
   /** @brief plotWaitForInput Pause code and wait for enter key in terminal*/
   virtual void plotWaitForInput() = 0;
-
-  /////////////////////////
-  // Implemented Methods //
-  /////////////////////////
-
-  /**
-   * @brief Disable collision between two collision objects
-   * @param obj1 Collision object name
-   * @param obj2 Collision object name
-   * @param reason The reason for disabling collison
-   */
-  virtual void addAllowedCollision(const std::string &obj1, const std::string &obj2, const std::string &reason)
-  {
-    allowed_collision_matrix_->insert(std::make_pair(getObjectPairKey(obj1, obj2), reason));
-  }
-
-  /**
-   * @brief Remove disabled collision pair from allowed collision matrix
-   * @param obj1 Collision object name
-   * @param obj2 Collision object name
-   */
-  virtual void removeAllowedCollision(const std::string &obj1, const std::string &obj2)
-  {
-    allowed_collision_matrix_->erase(getObjectPairKey(obj1, obj2));
-  }
-
-  /** @brief Get the allowed collision matrix */
-  virtual AllowedCollisionMatrixConstPtr getAllowedCollisions() const
-  {
-    return allowed_collision_matrix_;
-  }
-
-protected:
-  AllowedCollisionMatrixPtr allowed_collision_matrix_; /**< The allowed collision matrix used during collision checking */
-
 
 }; // class BasicColl
 

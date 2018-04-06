@@ -42,6 +42,18 @@ btTransform convertEigenToBt(const Eigen::Affine3d& t)
   return btTransform(convertEigenToBt(q), convertEigenToBt(t.translation()));
 }
 
+typedef std::pair<std::string, std::string> ObjectPairKey;
+/**
+ * @brief Get a key for two object to search the collision matrix
+ * @param obj1 First collision object name
+ * @param obj2 Second collision object name
+ * @return The collision pair key
+ */
+static ObjectPairKey getObjectPairKey(const std::string &obj1, const std::string &obj2)
+{
+  return obj1 < obj2 ? std::make_pair(obj1, obj2) : std::make_pair(obj2, obj1);
+}
+
 /// Destance query results information
 typedef std::map<std::pair<std::string, std::string>, DistanceResultVector> BulletDistanceMap;
 struct BulletDistanceData
@@ -166,18 +178,12 @@ inline bool isCollisionAllowed(const COW* cow0, const COW* cow1, const AllowedCo
     return false;
 
   bool always_in_collision = false;
-  if (acm != nullptr)
+  if (acm != nullptr && acm->isCollisionAllowed(cow0->getID(), cow1->getID()))
   {
-    ObjectPairKey pc = getObjectPairKey(cow0->getID(), cow1->getID());
-
-    const auto& it = acm->find(pc);
-    if (it != acm->end())
+    always_in_collision = true;
+    if (verbose)
     {
-      always_in_collision = true;
-      if (verbose)
-      {
-        ROS_DEBUG("Collision between '%s' and '%s' is always allowed. No contacts are computed.", cow0->getID().c_str(), cow1->getID().c_str());
-      }
+      ROS_DEBUG("Collision between '%s' and '%s' is always allowed. No contacts are computed.", cow0->getID().c_str(), cow1->getID().c_str());
     }
   }
 

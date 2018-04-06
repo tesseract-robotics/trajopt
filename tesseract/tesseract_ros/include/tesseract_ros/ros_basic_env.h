@@ -34,9 +34,46 @@
 #include <geometric_shapes/shape_operations.h>
 #include <tesseract_core/basic_env.h>
 #include <map>
+#include <unordered_map>
 
 namespace tesseract
 {
+
+struct ROSAllowedCollisionMatrix : public AllowedCollisionMatrix
+{
+  /**
+   * @brief Disable collision between two collision objects
+   * @param obj1 Collision object name
+   * @param obj2 Collision object name
+   * @param reason The reason for disabling collison
+   */
+  virtual void addAllowedCollision(const std::string &obj1, const std::string &obj2, const std::string &reason)
+  {
+    lookup_table_[obj1 + obj2] = reason;
+    lookup_table_[obj2 + obj1] = reason;
+  }
+
+  /**
+   * @brief Remove disabled collision pair from allowed collision matrix
+   * @param obj1 Collision object name
+   * @param obj2 Collision object name
+   */
+  virtual void removeAllowedCollision(const std::string &obj1, const std::string &obj2)
+  {
+    lookup_table_.erase(obj1 + obj2);
+    lookup_table_.erase(obj2 + obj1);
+  }
+
+  bool isCollisionAllowed(const std::string &obj1, const std::string &obj2) const
+  {
+    return (lookup_table_.find(obj1 + obj2) != lookup_table_.end());
+  }
+
+private:
+  std::unordered_map<std::string, std::string> lookup_table_;
+};
+typedef boost::shared_ptr<ROSAllowedCollisionMatrix> ROSAllowedCollisionMatrixPtr;
+typedef boost::shared_ptr<const ROSAllowedCollisionMatrix> ROSAllowedCollisionMatrixConstPtr;
 
 struct AttachedBodyInfo
 {
@@ -68,7 +105,7 @@ class ROSBasicEnv : public BasicEnv
 public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-  ROSBasicEnv() {}
+  ROSBasicEnv() : allowed_collision_matrix_(new ROSAllowedCollisionMatrix()) {}
 
   /**
    * @brief A a manipulator as a kinematic chain
@@ -106,6 +143,24 @@ public:
    * @param name The name given to the Attached Body when attached
    */
   virtual void detachBody(const std::string &name) = 0;
+
+  /////////////////////////
+  // Implemented Methods //
+  /////////////////////////
+
+  AllowedCollisionMatrixConstPtr getAllowedCollisionMatrix() const
+  {
+    return allowed_collision_matrix_;
+  }
+
+  /** @brief Get the allowed collision matrix non const */
+  virtual ROSAllowedCollisionMatrixPtr getAllowedCollisionMatrixNonConst() const
+  {
+    return allowed_collision_matrix_;
+  }
+
+protected:
+  ROSAllowedCollisionMatrixPtr allowed_collision_matrix_; /**< The allowed collision matrix used during collision checking */
 
 }; // class ROSBasicEnv
 

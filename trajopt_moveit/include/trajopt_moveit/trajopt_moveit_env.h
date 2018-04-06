@@ -79,6 +79,12 @@ public:
 
   tesseract::BasicKinConstPtr getManipulator(const std::string &manipulator_name) const;
 
+  tesseract::AllowedCollisionMatrixConstPtr getAllowedCollisionMatrix() const
+  {
+    ROS_WARN("The getAllowedCollisions method is not implemented because moveit has its own allowed collision matrix");
+    return nullptr;
+  }
+
   void updateVisualization() const
   {
     ROS_WARN("The updateVisualization method is not implemented because moveit has its own visualization update");
