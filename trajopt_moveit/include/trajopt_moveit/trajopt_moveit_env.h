@@ -63,9 +63,14 @@ public:
     return nullptr;
   }
 
+  std::vector<std::string> getJointNames() const
+  {
+    return env_->getCurrentState().getVariableNames();
+  }
+
   Eigen::VectorXd getCurrentJointValues(const std::string &manipulator_name) const;
 
-  Eigen::VectorXd getCurrentJointValues() const;
+  std::vector<std::string> getLinkNames() const;
 
   Eigen::Affine3d getLinkTransform(const std::string& link_name) const;
 
@@ -82,7 +87,7 @@ public:
 
   void plotTrajectory(const std::string &name, const std::vector<std::string> &joint_names, const trajopt_scene::TrajArray &traj);
 
-  void plotCollisions(const std::vector<std::string> &link_names, const trajopt_scene::DistanceResultVector &dist_results, double safe_dist);
+  void plotCollisions(const std::vector<std::string> &link_names, const trajopt_scene::DistanceResultVector &dist_results, const Eigen::VectorXd &safety_distances);
 
   void plotArrow(const Eigen::Vector3d &pt1, const Eigen::Vector3d &pt2, const Eigen::Vector4d &rgba, double scale);
 

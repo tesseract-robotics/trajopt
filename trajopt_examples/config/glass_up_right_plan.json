@@ -20,7 +20,22 @@
       {
         "coeffs" : [20],
         "dist_pen" : [0.025],
-        "continuous" : false
+        "continuous" : false,
+        "pairs" :
+        [
+          {
+             "link" : "base_link",
+             "pair" : ["link_5"],
+             "coeffs" : [10],
+             "dist_pen" : [0.05]
+          },
+          {
+             "link" : "link_3",
+             "pair" : ["link_5", "link_6"],
+             "coeffs" : [10],
+             "dist_pen" : [0.01]
+          }
+        ]
       }
     }
   ],

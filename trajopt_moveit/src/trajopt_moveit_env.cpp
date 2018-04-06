@@ -71,25 +71,33 @@ void TrajOptMoveItEnv::calcDistancesDiscrete(const trajopt_scene::DistanceReques
       trajopt_scene::DistanceResult d;
       d.distance = it->distance;
       d.valid = true;
+      d.link_names[0] = it->link_names[0];
+      d.link_names[1] = it->link_names[1];
+      d.body_types[0] = trajopt_scene::BodyTypes::ROBOT_LINK;
+      d.body_types[1] = trajopt_scene::BodyTypes::ROBOT_LINK;
 
       // Note: for trajopt TrajOptMoveItEnv is only aware of links in the urdf so if attached link set link name to parent link name
       if (it->body_types[0] == collision_detection::BodyTypes::ROBOT_ATTACHED)
       {
-        d.link_names[0] = state.getAttachedBody(it->link_names[0])->getAttachedLinkName();
+        d.body_types[0] = trajopt_scene::BodyTypes::ROBOT_ATTACHED;
+        d.attached_link_names[0] = state.getAttachedBody(d.link_names[0])->getAttachedLinkName();
       }
-      else
+      else if (it->body_types[0] == collision_detection::BodyTypes::WORLD_OBJECT)
       {
-        d.link_names[0] = it->link_names[0];
+        d.body_types[0] = trajopt_scene::BodyTypes::ROBOT_ATTACHED;
+        d.attached_link_names[0] = env_->getPlanningFrame();
       }
 
       // Note: for trajopt TrajOptMoveItEnv is only aware of links in the urdf so if attached link set link name to parent link name
       if (it->body_types[1] == collision_detection::BodyTypes::ROBOT_ATTACHED)
       {
-        d.link_names[1] = state.getAttachedBody(it->link_names[1])->getAttachedLinkName();
+        d.body_types[1] = trajopt_scene::BodyTypes::ROBOT_ATTACHED;
+        d.attached_link_names[1] = state.getAttachedBody(d.link_names[1])->getAttachedLinkName();
       }
-      else
+      else if (it->body_types[1] == collision_detection::BodyTypes::WORLD_OBJECT)
       {
-        d.link_names[1] = it->link_names[1];
+        d.body_types[1] = trajopt_scene::BodyTypes::ROBOT_ATTACHED;
+        d.attached_link_names[1] = env_->getPlanningFrame();
       }
 
       d.nearest_points[0] = it->nearest_points[0];
@@ -335,11 +343,23 @@ Eigen::VectorXd TrajOptMoveItEnv::getCurrentJointValues(const std::string &manip
   return start_pos;
 }
 
-Eigen::VectorXd TrajOptMoveItEnv::getCurrentJointValues() const
+std::vector<std::string> TrajOptMoveItEnv::getLinkNames() const
 {
-  const double* vars = env_->getCurrentState().getVariablePositions();
-  Eigen::Map<const Eigen::VectorXd> vect(vars, env_->getCurrentState().getVariableCount());
-  return vect;
+  std::vector<std::string> object_names;
+  const std::vector<std::string>& robot_links = env_->getRobotModel()->getLinkModelNames();
+  const std::vector<std::string>& world_links = env_->getWorld()->getObjectIds();
+
+  std::vector<const moveit::core::AttachedBody*> bodies;
+  env_->getCurrentState().getAttachedBodies(bodies);
+
+  object_names.reserve(robot_links.size() + world_links.size() + bodies.size());
+  object_names.insert(object_names.end(), robot_links.begin(), robot_links.end());
+  object_names.insert(object_names.end(), world_links.begin(), world_links.end());
+  for (const auto& body : bodies)
+  {
+    object_names.push_back(body->getName());
+  }
+  return object_names;
 }
 
 Eigen::Affine3d TrajOptMoveItEnv::getLinkTransform(const std::string& link_name) const
@@ -499,12 +519,13 @@ void TrajOptMoveItEnv::plotAxis(const Eigen::Affine3d &axis, double scale)
   axes_pub_.publish(msg);
 }
 
-void TrajOptMoveItEnv::plotCollisions(const std::vector<std::string> &link_names, const trajopt_scene::DistanceResultVector &dist_results, double safe_dist)
+void TrajOptMoveItEnv::plotCollisions(const std::vector<std::string> &link_names, const trajopt_scene::DistanceResultVector &dist_results, const Eigen::VectorXd &safety_distances)
 {
   visualization_msgs::MarkerArray msg;
   for (int i = 0; i < dist_results.size(); ++i)
   {
     const trajopt_scene::DistanceResult &dist = dist_results[i];
+    const double& safety_distance = safety_distances[i];
 
     if (!dist.valid)
       continue;
@@ -514,7 +535,7 @@ void TrajOptMoveItEnv::plotCollisions(const std::vector<std::string> &link_names
     {
       rgba << 1.0, 0.0, 0.0, 1.0;
     }
-    else if (dist.distance < safe_dist)
+    else if (dist.distance < safety_distance)
     {
       rgba << 1.0, 1.0, 0.0, 1.0;
     }

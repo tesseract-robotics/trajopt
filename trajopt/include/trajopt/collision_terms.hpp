@@ -12,7 +12,7 @@ namespace trajopt
 
 struct CollisionEvaluator
 {
-  CollisionEvaluator(trajopt_scene::BasicKinConstPtr manip, trajopt_scene::BasicEnvPtr env, double contact_distance) : manip_(manip), env_(env), contact_distance_(contact_distance) {}
+  CollisionEvaluator(trajopt_scene::BasicKinConstPtr manip, trajopt_scene::BasicEnvPtr env, SafetyMarginDataConstPtr safety_margin_data) : manip_(manip), env_(env), safety_margin_data_(safety_margin_data) {}
   virtual ~CollisionEvaluator() {}
   virtual void CalcDistExpressions(const DblVec& x, vector<AffExpr>& exprs) = 0;
   virtual void CalcDists(const DblVec& x, DblVec& exprs) = 0;
@@ -21,14 +21,14 @@ struct CollisionEvaluator
   void Plot(const DblVec& x);
   virtual VarVector GetVars()=0;
 
-  const double& getContactDistance() const {return contact_distance_;}
+  const SafetyMarginDataConstPtr getSafetyMarginData() const { return safety_margin_data_; }
 
   Cache<size_t, trajopt_scene::DistanceResultVector, 10> m_cache;
 
 protected:
   trajopt_scene::BasicEnvPtr env_;
   trajopt_scene::BasicKinConstPtr manip_;
-  double contact_distance_;
+  SafetyMarginDataConstPtr safety_margin_data_;
 
 private:
   CollisionEvaluator() {}
@@ -40,7 +40,7 @@ typedef boost::shared_ptr<CollisionEvaluator> CollisionEvaluatorPtr;
 struct SingleTimestepCollisionEvaluator : public CollisionEvaluator
 {
 public:
-  SingleTimestepCollisionEvaluator(trajopt_scene::BasicKinConstPtr manip, trajopt_scene::BasicEnvPtr env, double contact_distance, const VarVector& vars);
+  SingleTimestepCollisionEvaluator(trajopt_scene::BasicKinConstPtr manip, trajopt_scene::BasicEnvPtr env, SafetyMarginDataConstPtr safety_margin_data, const VarVector& vars);
   /**
   @brief linearize all contact distances in terms of robot dofs
   ;
@@ -61,7 +61,7 @@ private:
 
 struct CastCollisionEvaluator : public CollisionEvaluator {
 public:
-  CastCollisionEvaluator(trajopt_scene::BasicKinConstPtr manip, trajopt_scene::BasicEnvPtr env, double contact_distance, const VarVector& vars0, const VarVector& vars1);
+  CastCollisionEvaluator(trajopt_scene::BasicKinConstPtr manip, trajopt_scene::BasicEnvPtr env, SafetyMarginDataConstPtr safety_margin_data, const VarVector& vars0, const VarVector& vars1);
   void CalcDistExpressions(const DblVec& x, vector<AffExpr>& exprs);
   void CalcDists(const DblVec& x, DblVec& exprs);
   void CalcCollisions(const DblVec& x, trajopt_scene::DistanceResultVector &dist_results);
@@ -75,31 +75,29 @@ private:
 class TRAJOPT_API CollisionCost : public Cost, public Plotter {
 public:
   /* constructor for single timestep */
-  CollisionCost(double dist_pen, double coeff, trajopt_scene::BasicKinConstPtr manip, trajopt_scene::BasicEnvPtr env, const VarVector& vars);
+  CollisionCost(trajopt_scene::BasicKinConstPtr manip, trajopt_scene::BasicEnvPtr env, SafetyMarginDataConstPtr safety_margin_data, const VarVector& vars);
   /* constructor for cast cost */
-  CollisionCost(double dist_pen, double coeff, trajopt_scene::BasicKinConstPtr manip, trajopt_scene::BasicEnvPtr env, const VarVector& vars0, const VarVector& vars1);
+  CollisionCost(trajopt_scene::BasicKinConstPtr manip, trajopt_scene::BasicEnvPtr env, SafetyMarginDataConstPtr safety_margin_data, const VarVector& vars0, const VarVector& vars1);
   virtual ConvexObjectivePtr convex(const vector<double>& x, Model* model);
   virtual double value(const vector<double>&);
   void Plot(const DblVec& x);
   VarVector getVars() {return m_calc->GetVars();}
 private:
   CollisionEvaluatorPtr m_calc;
-  double m_coeff;
 };
 
 class TRAJOPT_API CollisionConstraint : public IneqConstraint {
 public:
   /* constructor for single timestep */
-  CollisionConstraint(double dist_pen, double coeff, trajopt_scene::BasicKinConstPtr manip, trajopt_scene::BasicEnvPtr env, const VarVector& vars);
+  CollisionConstraint(trajopt_scene::BasicKinConstPtr manip, trajopt_scene::BasicEnvPtr env, SafetyMarginDataConstPtr safety_margin_data, const VarVector& vars);
   /* constructor for cast cost */
-  CollisionConstraint(double dist_pen, double coeff, trajopt_scene::BasicKinConstPtr manip, trajopt_scene::BasicEnvPtr env, const VarVector& vars0, const VarVector& vars1);
+  CollisionConstraint(trajopt_scene::BasicKinConstPtr manip, trajopt_scene::BasicEnvPtr env, SafetyMarginDataConstPtr safety_margin_data, const VarVector& vars0, const VarVector& vars1);
   virtual ConvexConstraintsPtr convex(const vector<double>& x, Model* model);
   virtual DblVec value(const vector<double>&);
   void Plot(const DblVec& x);
   VarVector getVars() {return m_calc->GetVars();}
 private:
   CollisionEvaluatorPtr m_calc;
-  double m_coeff;
 };
 
 }

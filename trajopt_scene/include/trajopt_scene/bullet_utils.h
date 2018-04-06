@@ -128,14 +128,6 @@ public:
       return "Robot link";
   }
 
-  const std::string& getLinkName() const
-  {
-    if (m_type == BodyType::ROBOT_ATTACHED)
-      return ptr.m_ab->info.parent_link_name;
-    else
-      return ptr.m_link->name;
-  }
-
   boost::shared_ptr<CollisionObjectWrapper> clone()
   {
     if (m_type == BodyType::ROBOT_ATTACHED)
@@ -202,7 +194,7 @@ inline bool isCollisionAllowed(const COW* cow0, const COW* cow1, const AllowedCo
   bool always_in_collision = false;
   if (acm != nullptr)
   {
-    std::pair<std::string, std::string> pc = getObjectPairKey(cow0->getID(), cow1->getID());
+    ObjectPairKey pc = getObjectPairKey(cow0->getID(), cow1->getID());
 
     const auto& it = acm->find(pc);
     if (it != acm->end())
@@ -219,7 +211,7 @@ inline bool isCollisionAllowed(const COW* cow0, const COW* cow1, const AllowedCo
   if (cow0->m_type == BodyType::ROBOT_LINK && cow1->m_type == BodyType::ROBOT_ATTACHED)
   {
     const std::vector<std::string>& tl = cow1->ptr.m_ab->info.touch_links;
-    if (std::find(tl.begin(), tl.end(), cow0->getID()) != tl.end())
+    if (std::find(tl.begin(), tl.end(), cow0->getID()) != tl.end() || cow0->ptr.m_link->name == cow1->ptr.m_ab->info.parent_link_name)
     {
       always_in_collision = true;
       if (verbose)
@@ -232,7 +224,7 @@ inline bool isCollisionAllowed(const COW* cow0, const COW* cow1, const AllowedCo
     if (cow1->m_type == BodyType::ROBOT_LINK && cow0->m_type == BodyType::ROBOT_ATTACHED)
     {
       const std::vector<std::string>& tl = cow0->ptr.m_ab->info.touch_links;
-      if (std::find(tl.begin(), tl.end(), cow1->getID()) != tl.end())
+      if (std::find(tl.begin(), tl.end(), cow1->getID()) != tl.end() || cow1->ptr.m_link->name == cow0->ptr.m_ab->info.parent_link_name)
       {
         always_in_collision = true;
         if (verbose)
@@ -308,7 +300,7 @@ struct CollisionCollector : public btCollisionWorld::ContactResultCallback
     const CollisionObjectWrapper* cd0 = static_cast<const CollisionObjectWrapper*>(colObj0Wrap->getCollisionObject());
     const CollisionObjectWrapper* cd1 = static_cast<const CollisionObjectWrapper*>(colObj1Wrap->getCollisionObject());
 
-    std::pair<std::string, std::string> pc = getObjectPairKey(cd0->getID(), cd1->getID());
+    ObjectPairKey pc = getObjectPairKey(cd0->getID(), cd1->getID());
 
     const auto& it = m_collisions.res->find(pc);
     bool found = (it != m_collisions.res->end());
@@ -368,7 +360,7 @@ struct SweepCollisionCollector : public btCollisionWorld::ClosestConvexResultCal
     const CollisionObjectWrapper* cd0 = static_cast<const CollisionObjectWrapper*>(m_cow.get());
     const CollisionObjectWrapper* cd1 = static_cast<const CollisionObjectWrapper*>(m_hitCollisionObject);
 
-    std::pair<std::string, std::string> pc = getObjectPairKey(cd0->getID(), cd1->getID());
+    ObjectPairKey pc = getObjectPairKey(cd0->getID(), cd1->getID());
 
     BulletDistanceMap::iterator it = m_collisions.res->find(pc);
     bool found = it != m_collisions.res->end();

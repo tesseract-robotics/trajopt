@@ -268,16 +268,20 @@ Distrete-time penalty:
 Continuous-time penalty: same, except you consider swept-out shaps of robot links. Currently self-collisions are not included.
 
 */
-struct CollisionCostInfo : public TermInfo, public MakesCost {
+struct CollisionCostInfo : public TermInfo, public MakesCost
+{
   /// first_step and last_step are inclusive
   int first_step, last_step;
-  /// coeffs.size() = num_timesteps
-  DblVec coeffs;
-  /// safety margin: contacts with distance < dist_pen are penalized
-  DblVec dist_pen;
+
+  /// Indicate if continuous collision checking should be used.
   bool continuous;
+
   /// for continuous-time penalty, use swept-shape between timesteps t and t+gap (gap=1 by default)
   int gap;
+
+  /// Contains distance penalization data: Safety Margin, Coeff used during optimization, etc.
+  std::vector<SafetyMarginDataPtr> info;
+
   void fromJson(ProblemConstructionInfo &pci, const Value& v);
   void hatch(TrajOptProb& prob);
   DEFINE_CREATE(CollisionCostInfo)

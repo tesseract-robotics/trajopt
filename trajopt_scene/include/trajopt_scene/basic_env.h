@@ -37,7 +37,8 @@ namespace trajopt_scene
 {
 
 typedef Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> TrajArray;
-typedef std::map<std::pair<std::string, std::string>, std::string> AllowedCollisionMatrix;
+typedef std::pair<std::string, std::string> ObjectPairKey;
+typedef std::map<ObjectPairKey, std::string> AllowedCollisionMatrix;
 typedef boost::shared_ptr<AllowedCollisionMatrix> AllowedCollisionMatrixPtr;
 typedef boost::shared_ptr<const AllowedCollisionMatrix> AllowedCollisionMatrixConstPtr;
 
@@ -47,7 +48,7 @@ typedef boost::shared_ptr<const AllowedCollisionMatrix> AllowedCollisionMatrixCo
  * @param obj2 Second collision object name
  * @return The collision pair key
  */
-static std::pair<std::string, std::string> getObjectPairKey(const std::string &obj1, const std::string &obj2)
+static ObjectPairKey getObjectPairKey(const std::string &obj1, const std::string &obj2)
 {
   return obj1 < obj2 ? std::make_pair(obj1, obj2) : std::make_pair(obj2, obj1);
 }
@@ -101,8 +102,9 @@ struct DistanceRequest
 struct DistanceResult
 {
   double distance;
-  std::string link_names[2];
   BodyType body_types[2];
+  std::string link_names[2];
+  std::string attached_link_names[2];
   Eigen::Vector3d nearest_points[2];
   Eigen::Vector3d normal;
   Eigen::Vector3d cc_nearest_points[2];
@@ -217,21 +219,28 @@ public:
   virtual EnvStatePtr getState(const std::vector<std::string> &joint_names, const Eigen::VectorXd &joint_values) const = 0;
 
   /**
+   * @brief Get a vector of joint names in the environment
+   * @return A vector of joint names
+   */
+  virtual std::vector<std::string> getJointNames() const = 0;
+
+  /**
    * @brief getCurrentJointValues Get the current state of the manipulator
    * @return A vector of joint values
    */
   virtual Eigen::VectorXd getCurrentJointValues(const std::string &manipulator_name) const = 0;
 
   /**
-   * @brief getCurrentJointValues Get the current state of all joints
-   * @return A vector of joint values
+   * @brief Get a vector of link names in the environment
+   * @return A vector of link names
    */
-  virtual Eigen::VectorXd getCurrentJointValues() const = 0;
+  virtual std::vector<std::string> getLinkNames() const = 0;
 
   /** @brief Get the transform corresponding to the link.
    *  @return Tranform and is identity when no transform is available.
    */
   virtual Eigen::Affine3d getLinkTransform(const std::string &link_name) const = 0;
+
 
   /**
    * @brief hasManipulator Check if a manipulator exist in the environment
@@ -266,8 +275,9 @@ public:
    * @brief plotCollisions Plot the collision results data
    * @param link_names List of link names for which to plot data
    * @param dist_results The collision results data
+   * @param safety_distance Vector of safety Distance corresponding to dist_results (Must be in the same order and length).
    */
-  virtual void plotCollisions(const std::vector<std::string> &link_names, const DistanceResultVector &dist_results, double safe_dist) = 0;
+  virtual void plotCollisions(const std::vector<std::string> &link_names, const DistanceResultVector &dist_results, const Eigen::VectorXd& safety_distances) = 0;
 
   /**
    * @brief plotArrow Plot arrow defined by two points

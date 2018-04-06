@@ -52,11 +52,17 @@ public:
   EnvStatePtr getState(const std::map<std::string, double> &joints) const;
   EnvStatePtr getState(const std::vector<std::string> &joint_names, const Eigen::VectorXd &joint_values) const;
 
+  std::vector<std::string> getJointNames() const { return joint_names_; }
+
   Eigen::VectorXd getCurrentJointValues(const std::string &manipulator_name) const;
 
-  Eigen::VectorXd getCurrentJointValues() const;
+  std::vector<std::string> getLinkNames() const { return link_names_; }
 
   Eigen::Affine3d getLinkTransform(const std::string& link_name) const;
+
+  bool hasManipulator(const std::string &manipulator_name) const;
+
+  BasicKinConstPtr getManipulator(const std::string &manipulator_name) const;
 
   /**
    * @brief A a manipulator as a kinematic chain
@@ -66,10 +72,6 @@ public:
    * @return true if successfully created, otherwise false.
    */
   virtual bool addManipulator(const std::string &base_link, const std::string &tip_link, const std::string &manipulator_name);
-
-  bool hasManipulator(const std::string &manipulator_name) const;
-
-  BasicKinConstPtr getManipulator(const std::string &manipulator_name) const;
 
   /**
    * @brief Add object so it may be attached/detached.
@@ -105,7 +107,7 @@ public:
 
   void plotTrajectory(const std::string &name, const std::vector<std::string> &joint_names, const TrajArray &traj);
 
-  void plotCollisions(const std::vector<std::string> &link_names, const DistanceResultVector &dist_results, double safe_dist);
+  void plotCollisions(const std::vector<std::string> &link_names, const DistanceResultVector &dist_results, const Eigen::VectorXd& safety_distances);
 
   void plotArrow(const Eigen::Vector3d &pt1, const Eigen::Vector3d &pt2, const Eigen::Vector4d &rgba, double scale);
 
@@ -120,14 +122,15 @@ private:
   urdf::ModelInterfaceConstSharedPtr model_;                           /**< URDF MODEL */
   srdf::ModelConstSharedPtr srdf_model_;                               /**< SRDF MODEL */
   boost::shared_ptr<const KDL::Tree> kdl_tree_;                        /**< KDL tree object */
-  Link2ConstCow robot_link2cow_;                                       /**< URDF Collision objects */
-  Link2Cow attached_link2cow_;                                         /**< Collision objects not part of the URDF */
+  Link2ConstCow link2cow_;                                             /**< Collision objects */
   EnvStatePtr current_state_;                                          /**< Current state of the robot */
   std::map<std::string, unsigned int> joint_to_qnr_;                   /**< Map between joint name and kdl q index */
   KDL::JntArray kdl_jnt_array_;                                        /**< The kdl joint array */
   std::map<std::string, AttachedBodyConstPtr> attached_bodies_;        /**< A map of attached bodies */
   std::map<std::string, AttachableObjectConstPtr> attachable_objects_; /**< A map of objects that can be attached/detached from environment */
   std::map<std::string, BasicKinConstPtr> manipulators_;               /**< A map of manipulator names to kinematics object */
+  std::vector<std::string> link_names_;                                /**< A vector of link names */
+  std::vector<std::string> joint_names_;                               /**< A vector of joint names */
 
   bool plotting_;                                         /**< Enable plotting */
   int marker_counter_;                                    /**< Counter when plotting */
@@ -141,6 +144,7 @@ private:
   moveit_msgs::RobotStatePtr getRobotStateMsg() const;
 
   void calculateTransforms(std::map<std::string, Eigen::Affine3d> &transforms, const KDL::JntArray& q_in, const KDL::SegmentMap::const_iterator& it, const Eigen::Affine3d& parent_frame) const;
+  void calculateTransformsHelper(std::map<std::string, Eigen::Affine3d> &transforms, const KDL::JntArray& q_in, const KDL::SegmentMap::const_iterator& it, const Eigen::Affine3d& parent_frame) const;
 
   bool setJointValuesHelper(KDL::JntArray &q, const std::string &joint_name, const double &joint_value) const;
 

@@ -47,15 +47,17 @@ bool BulletEnv::init(const urdf::ModelInterfaceConstSharedPtr urdf_model, const 
 
   if (initialized_)
   {
+    link_names_.reserve(urdf_model->links_.size());
     for (auto& link : urdf_model->links_)
     {
+      link_names_.push_back(link.second->name);
       if (link.second->collision_array.size() > 0)
       {
         COWPtr new_cow(new COW(link.second.get()));
         if (new_cow)
         {
           setContactDistance(new_cow, BULLET_DEFAULT_CONTACT_DISTANCE);
-          robot_link2cow_[new_cow->getID()] = new_cow;
+          link2cow_[new_cow->getID()] = new_cow;
           ROS_DEBUG("Added collision object for link %s", link.second->name.c_str());
         }
         else
@@ -67,12 +69,14 @@ bool BulletEnv::init(const urdf::ModelInterfaceConstSharedPtr urdf_model, const 
 
     current_state_ = EnvStatePtr(new EnvState());
     kdl_jnt_array_.resize(kdl_tree_->getNrOfJoints());
+    joint_names_.resize(kdl_tree_->getNrOfJoints());
     int j = 0;
     for (const auto& seg : kdl_tree_->getSegments())
     {
       const KDL::Joint &jnt = seg.second.segment.getJoint();
 
       if (jnt.getType() == KDL::Joint::None) continue;
+      joint_names_[j] = jnt.getName();
       joint_to_qnr_.insert(std::make_pair(jnt.getName(), seg.second.q_nr));
       kdl_jnt_array_(seg.second.q_nr) = 0.0;
       current_state_->joints.insert(std::make_pair(jnt.getName(), 0.0));
@@ -209,26 +213,18 @@ void BulletEnv::calcDistancesContinuous(const DistanceRequest &req, DistanceResu
       DistanceResult d;
       d.distance = it->distance;
       d.valid = true;
+      d.body_types[0] = it->body_types[0];
+      d.body_types[1] = it->body_types[1];
+      d.link_names[0] = it->link_names[0];
+      d.link_names[1] = it->link_names[1];
 
-      // Note: for trajopt ROSBulletEnv is only aware of links in the urdf so if attached link set link name to parent link name
-      if (it->body_types[0] == BodyType::ROBOT_ATTACHED)
-      {
-        d.link_names[0] = getAttachedBody(it->link_names[0])->info.parent_link_name;
-      }
-      else
-      {
-        d.link_names[0] = it->link_names[0];
-      }
+      // Note: The kinematic library is only aware of links in the urdf so if attached link set the attached link name
+      if (d.body_types[0] == BodyType::ROBOT_ATTACHED)
+        d.attached_link_names[0] = getAttachedBody(d.link_names[0])->info.parent_link_name;
 
-      // Note: for trajopt ROSBulletEnv is only aware of links in the urdf so if attached link set link name to parent link name
-      if (it->body_types[1] == BodyType::ROBOT_ATTACHED)
-      {
-        d.link_names[1] = getAttachedBody(it->link_names[1])->info.parent_link_name;
-      }
-      else
-      {
-        d.link_names[1] = it->link_names[1];
-      }
+      // Note: The kinematic library is only aware of links in the urdf so if attached link set the attached link name
+      if (d.body_types[1] == BodyType::ROBOT_ATTACHED)
+        d.attached_link_names[1] = getAttachedBody(d.link_names[1])->info.parent_link_name;
 
       d.nearest_points[0] = it->nearest_points[0];
       d.nearest_points[1] = it->nearest_points[1];
@@ -400,21 +396,6 @@ Eigen::VectorXd BulletEnv::getCurrentJointValues(const std::string &manipulator_
   return Eigen::VectorXd();
 }
 
-Eigen::VectorXd BulletEnv::getCurrentJointValues() const
-{
-  const std::map<std::string, double>& jv = current_state_->joints;
-  Eigen::VectorXd start_pos(jv.size());
-  int j = 0;
-
-  for (const auto& joint : jv)
-  {
-    start_pos(j) = joint.second;
-    j++;
-  }
-
-  return start_pos;
-}
-
 Eigen::Affine3d BulletEnv::getLinkTransform(const std::string& link_name) const
 {
   return current_state_->transforms[link_name];
@@ -499,6 +480,13 @@ void BulletEnv::attachBody(const AttachedBodyInfo &attached_body_info)
     return;
   }
 
+  if (std::find(link_names_.begin(), link_names_.end(), attached_body_info.name) != link_names_.end())
+  {
+    ROS_ERROR("Tried to attached body %s with the same name as an existing link!", attached_body_info.name.c_str());
+    return;
+  }
+
+  link_names_.push_back(attached_body_info.name);
   AttachedBodyPtr attached_body(new AttachedBody());
   attached_body->info = attached_body_info;
   attached_body->obj = obj->second;
@@ -509,7 +497,7 @@ void BulletEnv::attachBody(const AttachedBodyInfo &attached_body_info)
   if (new_cow)
   {
     setContactDistance(new_cow, BULLET_DEFAULT_CONTACT_DISTANCE);
-    attached_link2cow_[new_cow->getID()] = new_cow;
+    link2cow_[new_cow->getID()] = new_cow;
     ROS_DEBUG("Added collision object for attached body %s", attached_body_info.name.c_str());
   }
   else
@@ -520,8 +508,12 @@ void BulletEnv::attachBody(const AttachedBodyInfo &attached_body_info)
 
 void BulletEnv::detachBody(const std::string &name)
 {
-  attached_bodies_.erase(name);
-  attached_link2cow_.erase(name);
+  if (attached_bodies_.find(name) != attached_bodies_.end())
+  {
+    attached_bodies_.erase(name);
+    link2cow_.erase(name);
+    link_names_.erase(std::remove(link_names_.begin(), link_names_.end(), name), link_names_.end());
+  }
 }
 
 bool BulletEnv::setJointValuesHelper(KDL::JntArray &q, const std::string &joint_name, const double &joint_value) const
@@ -539,7 +531,7 @@ bool BulletEnv::setJointValuesHelper(KDL::JntArray &q, const std::string &joint_
   }
 }
 
-void BulletEnv::calculateTransforms(std::map<std::string, Eigen::Affine3d> &transforms, const KDL::JntArray& q_in, const KDL::SegmentMap::const_iterator& it, const Eigen::Affine3d& parent_frame) const
+void BulletEnv::calculateTransformsHelper(std::map<std::string, Eigen::Affine3d> &transforms, const KDL::JntArray& q_in, const KDL::SegmentMap::const_iterator& it, const Eigen::Affine3d& parent_frame) const
 {
   if (it != kdl_tree_->getSegments().end())
   {
@@ -553,15 +545,26 @@ void BulletEnv::calculateTransforms(std::map<std::string, Eigen::Affine3d> &tran
 
     for (auto& child: current_element.children)
     {
-      calculateTransforms(transforms, q_in, child, global_frame);
+      calculateTransformsHelper(transforms, q_in, child, global_frame);
     }
+  }
+}
+
+void BulletEnv::calculateTransforms(std::map<std::string, Eigen::Affine3d> &transforms, const KDL::JntArray& q_in, const KDL::SegmentMap::const_iterator& it, const Eigen::Affine3d& parent_frame) const
+{
+  calculateTransformsHelper(transforms, q_in, it, parent_frame);
+
+  // update attached objects location
+  for (const auto& attached : attached_bodies_)
+  {
+    transforms[attached.first] = transforms[attached.second->info.parent_link_name];
   }
 }
 
 void BulletEnv::constructBulletObject(Link2Cow &collision_objects, std::vector<std::string> &active_objects, double contact_distance, const EnvStateConstPtr state, const std::vector<std::string> &active_links, bool continuous) const
 {
 
-  for (std::pair<std::string, COWConstPtr> element : robot_link2cow_)
+  for (std::pair<std::string, COWConstPtr> element : link2cow_)
   {
     COWPtr new_cow(new COW(*(element.second.get())));
     assert(new_cow->getCollisionShape());
@@ -569,31 +572,17 @@ void BulletEnv::constructBulletObject(Link2Cow &collision_objects, std::vector<s
     new_cow->setWorldTransform(convertEigenToBt(state->transforms.find(element.first)->second));
 
     // For descrete checks we can check static to kinematic and kinematic to kinematic
-    new_cow->m_collisionFilterGroup = (!active_links.empty() && (std::find_if(active_links.begin(), active_links.end(), [&](std::string link) { return link == element.first; }) == active_links.end())) ? btBroadphaseProxy::StaticFilter : btBroadphaseProxy::KinematicFilter;
-    if (new_cow->m_collisionFilterGroup == btBroadphaseProxy::StaticFilter)
+    new_cow->m_collisionFilterGroup = btBroadphaseProxy::KinematicFilter;
+    if (!active_links.empty())
     {
-      new_cow->m_collisionFilterMask = btBroadphaseProxy::KinematicFilter;
+      bool check1 = (std::find_if(active_links.begin(), active_links.end(), [&](std::string link) { return link == element.first; }) == active_links.end());
+      bool check2 = (element.second->m_type == BodyType::ROBOT_ATTACHED) ? (std::find_if(active_links.begin(), active_links.end(), [&](std::string link) { return link == element.second->ptr.m_ab->info.parent_link_name; }) == active_links.end()) : true;
+      if (check1 && check2)
+      {
+        new_cow->m_collisionFilterGroup = btBroadphaseProxy::StaticFilter;
+      }
     }
-    else
-    {
-      active_objects.push_back(element.first);
-      (continuous) ? (new_cow->m_collisionFilterMask = btBroadphaseProxy::StaticFilter) : (new_cow->m_collisionFilterMask = btBroadphaseProxy::StaticFilter | btBroadphaseProxy::KinematicFilter);
-    }
 
-    setContactDistance(new_cow, contact_distance);
-    collision_objects[element.first] = new_cow;
-  }
-
-  for (std::pair<std::string, COWConstPtr> element : attached_link2cow_)
-  {
-    COWPtr new_cow(new COW(*(element.second.get())));
-    assert(new_cow->getCollisionShape());
-
-    const std::string &parent_link_name = element.second->ptr.m_ab->info.parent_link_name;
-    new_cow->setWorldTransform(convertEigenToBt(state->transforms.find(parent_link_name)->second));
-
-    // For descrete checks we can check static to kinematic and kinematic to kinematic
-    new_cow->m_collisionFilterGroup = (!active_links.empty() && (std::find_if(active_links.begin(), active_links.end(), [&](std::string link) { return link == parent_link_name; }) == active_links.end())) ? btBroadphaseProxy::StaticFilter : btBroadphaseProxy::KinematicFilter;
     if (new_cow->m_collisionFilterGroup == btBroadphaseProxy::StaticFilter)
     {
       new_cow->m_collisionFilterMask = btBroadphaseProxy::KinematicFilter;
@@ -616,11 +605,20 @@ void BulletEnv::constructBulletObject(Link2Cow& collision_objects,
                                          const EnvStateConstPtr state2,
                                          const std::vector<std::string> &active_links) const
 {
-  for (std::pair<std::string, COWConstPtr> element : robot_link2cow_)
+  for (std::pair<std::string, COWConstPtr> element : link2cow_)
   {
     COWPtr new_cow(new COW(*(element.second.get())));
 
-    new_cow->m_collisionFilterGroup = (!active_links.empty() && (std::find_if(active_links.begin(), active_links.end(), [&](std::string link) { return link == element.first; }) == active_links.end())) ? btBroadphaseProxy::StaticFilter : btBroadphaseProxy::KinematicFilter;
+    new_cow->m_collisionFilterGroup = btBroadphaseProxy::KinematicFilter;
+    if (!active_links.empty())
+    {
+      bool check1 = (std::find_if(active_links.begin(), active_links.end(), [&](std::string link) { return link == element.first; }) == active_links.end());
+      bool check2 = (element.second->m_type == BodyType::ROBOT_ATTACHED) ? (std::find_if(active_links.begin(), active_links.end(), [&](std::string link) { return link == element.second->ptr.m_ab->info.parent_link_name; }) == active_links.end()) : true;
+      if (check1 && check2)
+      {
+        new_cow->m_collisionFilterGroup = btBroadphaseProxy::StaticFilter;
+      }
+    }
 
     if (new_cow->m_collisionFilterGroup == btBroadphaseProxy::StaticFilter)
     {
@@ -651,82 +649,6 @@ void BulletEnv::constructBulletObject(Link2Cow& collision_objects,
         btCompoundShape* compound = static_cast<btCompoundShape*>(new_cow->getCollisionShape());
         const Eigen::Affine3d &tf1 = state1->transforms.find(element.first)->second;
         const Eigen::Affine3d &tf2 = state2->transforms.find(element.first)->second;
-
-        btCompoundShape* new_compound = new btCompoundShape(/*dynamicAABBtree=*/false);
-
-        for (int i = 0; i < compound->getNumChildShapes(); ++i)
-        {
-          btConvexShape* convex = static_cast<btConvexShape*>(compound->getChildShape(i));
-          assert(convex != NULL);
-
-          btTransform geomTrans = compound->getChildTransform(i);
-          btTransform child_tf1 = convertEigenToBt(tf1) * geomTrans;
-          btTransform child_tf2 = convertEigenToBt(tf2) * geomTrans;
-
-          btCollisionShape* subshape = new CastHullShape(convex, child_tf1.inverseTimes(child_tf2));
-          assert(subshape != NULL);
-
-          if (subshape != NULL)
-          {
-            new_cow->manage(subshape);
-            subshape->setMargin(BULLET_MARGIN);
-            new_compound->addChildShape(geomTrans, subshape);
-          }
-        }
-
-        new_compound->setMargin(BULLET_MARGIN); //margin: compound. seems to have no effect when positive but has an effect when negative
-        new_cow->manage(new_compound);
-        new_cow->setCollisionShape(new_compound);
-        new_cow->setWorldTransform(convertEigenToBt(tf1));
-      }
-      else
-      {
-        ROS_ERROR("I can only continuous collision check convex shapes and compound shapes made of convex shapes");
-      }
-
-      new_cow->m_collisionFilterMask = btBroadphaseProxy::StaticFilter;
-    }
-
-    setContactDistance(new_cow, contact_distance);
-    collision_objects[element.first] = new_cow;
-  }
-
-  for (std::pair<std::string, COWConstPtr> element : attached_link2cow_)
-  {
-    COWPtr new_cow(new COW(*(element.second.get())));
-
-    const std::string &parent_link_name = element.second->ptr.m_ab->info.parent_link_name;
-    new_cow->m_collisionFilterGroup = (!active_links.empty() && (std::find_if(active_links.begin(), active_links.end(), [&](std::string link) { return link == parent_link_name; }) == active_links.end())) ? btBroadphaseProxy::StaticFilter : btBroadphaseProxy::KinematicFilter;
-
-    if (new_cow->m_collisionFilterGroup == btBroadphaseProxy::StaticFilter)
-    {
-      new_cow->setWorldTransform(convertEigenToBt(state1->transforms.find(parent_link_name)->second));
-      new_cow->m_collisionFilterMask = btBroadphaseProxy::KinematicFilter;
-    }
-    else
-    {
-      active_objects.push_back(element.first);
-
-      if (btBroadphaseProxy::isConvex(new_cow->getCollisionShape()->getShapeType()))
-      {
-        btConvexShape* convex = static_cast<btConvexShape*>(new_cow->getCollisionShape());
-        assert(convex != NULL);
-
-        btTransform tf1 = convertEigenToBt(state1->transforms.find(parent_link_name)->second);
-        btTransform tf2 = convertEigenToBt(state2->transforms.find(parent_link_name)->second);
-
-        CastHullShape* shape = new CastHullShape(convex, tf1.inverseTimes(tf2));
-        assert(shape != NULL);
-
-        new_cow->manage(shape);
-        new_cow->setCollisionShape(shape);
-        new_cow->setWorldTransform(tf1);
-      }
-      else if (btBroadphaseProxy::isCompound(new_cow->getCollisionShape()->getShapeType()))
-      {
-        btCompoundShape* compound = static_cast<btCompoundShape*>(new_cow->getCollisionShape());
-        const Eigen::Affine3d &tf1 = state1->transforms.find(parent_link_name)->second;
-        const Eigen::Affine3d &tf2 = state2->transforms.find(parent_link_name)->second;
 
         btCompoundShape* new_compound = new btCompoundShape(/*dynamicAABBtree=*/false);
 
@@ -1011,12 +933,13 @@ void BulletEnv::plotAxis(const Eigen::Affine3d &axis, double scale)
   axes_pub_.publish(msg);
 }
 
-void BulletEnv::plotCollisions(const std::vector<std::string> &link_names, const DistanceResultVector &dist_results, double safe_dist)
+void BulletEnv::plotCollisions(const std::vector<std::string> &link_names, const DistanceResultVector &dist_results, const Eigen::VectorXd &safety_distances)
 {
   visualization_msgs::MarkerArray msg;
   for (int i = 0; i < dist_results.size(); ++i)
   {
     const DistanceResult &dist = dist_results[i];
+    const double& safety_distance = safety_distances[i];
 
     if (!dist.valid)
       continue;
@@ -1026,7 +949,7 @@ void BulletEnv::plotCollisions(const std::vector<std::string> &link_names, const
     {
       rgba << 1.0, 0.0, 0.0, 1.0;
     }
-    else if (dist.distance < safe_dist)
+    else if (dist.distance < safety_distance)
     {
       rgba << 1.0, 1.0, 0.0, 1.0;
     }

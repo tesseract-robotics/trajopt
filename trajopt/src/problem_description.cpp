@@ -592,6 +592,8 @@ void CollisionCostInfo::fromJson(ProblemConstructionInfo &pci, const Value& v)
   FAIL_IF_FALSE( gap >= 0 );
   FAIL_IF_FALSE((first_step >= 0) && (first_step < n_steps));
   FAIL_IF_FALSE((last_step >= first_step) && (last_step < n_steps));
+
+  DblVec coeffs, dist_pen;
   childFromJson(params, coeffs, "coeffs");
   int n_terms = last_step - first_step + 1;
   if (coeffs.size() == 1) coeffs = DblVec(n_terms, coeffs[0]);
@@ -603,8 +605,69 @@ void CollisionCostInfo::fromJson(ProblemConstructionInfo &pci, const Value& v)
   else if (dist_pen.size() != n_terms) {
     PRINT_AND_THROW(boost::format("wrong size: dist_pen. expected %i got %i")%n_terms%dist_pen.size());
   }
+
+  // Create Contact Distance Data for each timestep
+  info.reserve(n_terms);
+  for (int i=first_step; i <= last_step; ++i)
+  {
+    SafetyMarginDataPtr data(new SafetyMarginData(dist_pen[i-first_step], coeffs[i-first_step]));
+    info.push_back(data);
+  }
+
+  // Check if data was set for individual pairs
+  if (params.isMember("pairs"))
+  {
+    const Value& pairs = params["pairs"];
+    for (Json::Value::const_iterator it = pairs.begin(); it != pairs.end(); ++it)
+    {
+      FAIL_IF_FALSE(it->isMember("link"));
+      std::string link;
+      childFromJson(*it, link, "link");
+
+      FAIL_IF_FALSE(it->isMember("pair"));
+      std::vector<std::string> pair;
+      childFromJson(*it, pair, "pair");
+
+      if (pair.size() == 0)
+      {
+        PRINT_AND_THROW (boost::format("wrong size: pair. expected > 0 got %i")%pair.size());
+      }
+
+      DblVec pair_coeffs;
+      childFromJson(*it, pair_coeffs, "coeffs");
+      if (pair_coeffs.size() == 1)
+      {
+        pair_coeffs = DblVec(n_terms, pair_coeffs[0]);
+      }
+      else if (pair_coeffs.size() != n_terms)
+      {
+        PRINT_AND_THROW (boost::format("wrong size: coeffs. expected %i got %i")%n_terms%pair_coeffs.size());
+      }
+
+      DblVec pair_dist_pen;
+      childFromJson(*it, pair_dist_pen, "dist_pen");
+      if (pair_dist_pen.size() == 1)
+      {
+        pair_dist_pen = DblVec(n_terms, pair_dist_pen[0]);
+      }
+      else if (pair_dist_pen.size() != n_terms)
+      {
+        PRINT_AND_THROW (boost::format("wrong size: dist_pen. expected %i got %i")%n_terms%pair_dist_pen.size());
+      }
+
+      for (auto i = first_step; i <= last_step; ++i)
+      {
+        auto index = i-first_step;
+        SafetyMarginDataPtr& data = info[index];
+        for (auto j = 0; j < pair.size(); ++j)
+        {
+          data->SetPairSafetyMarginData(link, pair[j], pair_dist_pen[index], pair_coeffs[index]);
+        }
+      }
+    }
+  }
   
-  const char* all_fields[] = {"continuous", "first_step", "last_step", "gap", "coeffs", "dist_pen"};
+  const char* all_fields[] = {"continuous", "first_step", "last_step", "gap", "coeffs", "dist_pen", "pairs"};
   ensure_only_members(params, all_fields, sizeof(all_fields)/sizeof(char*));
 }
 
@@ -612,28 +675,32 @@ void CollisionCostInfo::hatch(TrajOptProb& prob)
 {
   if (term_type == TT_COST) {
     if (continuous) {
-      for (int i=first_step; i <= last_step - gap; ++i) {
-        prob.addCost(CostPtr(new CollisionCost(dist_pen[i-first_step], coeffs[i-first_step], prob.GetKin(), prob.GetEnv(), prob.GetVarRow(i), prob.GetVarRow(i+gap))));
+      for (int i=first_step; i <= last_step - gap; ++i)
+      {
+        prob.addCost(CostPtr(new CollisionCost(prob.GetKin(), prob.GetEnv(), info[i-first_step], prob.GetVarRow(i), prob.GetVarRow(i+gap))));
         prob.getCosts().back()->setName( (boost::format("%s_%i")%name%i).str() );
       }
     }
     else {
-      for (int i=first_step; i <= last_step; ++i) {
-        prob.addCost(CostPtr(new CollisionCost(dist_pen[i-first_step], coeffs[i-first_step], prob.GetKin(), prob.GetEnv(), prob.GetVarRow(i))));
+      for (int i=first_step; i <= last_step; ++i)
+      {
+        prob.addCost(CostPtr(new CollisionCost(prob.GetKin(), prob.GetEnv(), info[i-first_step], prob.GetVarRow(i))));
         prob.getCosts().back()->setName( (boost::format("%s_%i")%name%i).str() );
       }
     }
   }
   else { // ALMOST COPIED
     if (continuous) {
-      for (int i=first_step; i < last_step; ++i) {
-        prob.addIneqConstraint(ConstraintPtr(new CollisionConstraint(dist_pen[i-first_step], coeffs[i-first_step], prob.GetKin(), prob.GetEnv(), prob.GetVarRow(i), prob.GetVarRow(i+1))));
+      for (int i=first_step; i < last_step; ++i)
+      {
+        prob.addIneqConstraint(ConstraintPtr(new CollisionConstraint(prob.GetKin(), prob.GetEnv(), info[i-first_step], prob.GetVarRow(i), prob.GetVarRow(i+1))));
         prob.getIneqConstraints().back()->setName( (boost::format("%s_%i")%name%i).str() );
       }
     }
     else {
-      for (int i=first_step; i <= last_step; ++i) {
-        prob.addIneqConstraint(ConstraintPtr(new CollisionConstraint(dist_pen[i-first_step], coeffs[i-first_step], prob.GetKin(), prob.GetEnv(), prob.GetVarRow(i))));
+      for (int i=first_step; i <= last_step; ++i)
+      {
+        prob.addIneqConstraint(ConstraintPtr(new CollisionConstraint(prob.GetKin(), prob.GetEnv(), info[i-first_step], prob.GetVarRow(i))));
         prob.getIneqConstraints().back()->setName( (boost::format("%s_%i")%name%i).str() );
       }
     }
