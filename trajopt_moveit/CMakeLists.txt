@@ -11,6 +11,7 @@ find_package(catkin REQUIRED COMPONENTS
   moveit_core
   moveit_ros_planning
   pluginlib
+  tesseract_ros
 )
 
 find_package(Eigen3 REQUIRED)
@@ -42,6 +43,7 @@ catkin_package(
     moveit_core
     moveit_ros_planning
     pluginlib
+    tesseract_ros
   DEPENDS
     EIGEN3
     Boost

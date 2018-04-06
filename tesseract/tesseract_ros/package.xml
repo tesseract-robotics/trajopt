@@ -1,10 +1,10 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>trajopt_scene</name>
+  <name>tesseract_ros</name>
   <version>0.1.0</version>
-  <description>The trajopt_scene package</description>
-  <maintainer email="Armstrong@todo.todo">Levi Armstrong</maintainer>
-  <license>BSD</license>
+  <description>The tesseract_ros package</description>
+  <maintainer email="levi.armstrong@swri.org">Levi Armstrong</maintainer>
+  <license>Apache 2.0</license>
   <author >Levi Armstrong</author>
 
   <buildtool_depend>catkin</buildtool_depend>
@@ -15,6 +15,7 @@
   <depend>trajopt_ext</depend>
   <depend>kdl_parser</depend>
   <depend>eigen_conversions</depend>
+  <depend>tesseract_core</depend>
 
   <!-- The export tag contains other, unspecified, tags -->
   <export>

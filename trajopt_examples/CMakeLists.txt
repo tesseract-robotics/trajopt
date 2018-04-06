@@ -8,6 +8,7 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   roslib
   trajopt
+  tesseract_ros
 )
 
 catkin_package(

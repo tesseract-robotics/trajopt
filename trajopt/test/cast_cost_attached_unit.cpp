@@ -13,8 +13,8 @@
 #include <trajopt_test_utils.hpp>
 #include <trajopt/collision_terms.hpp>
 #include <trajopt_utils/logging.hpp>
-#include <trajopt_scene/kdl_chain_kin.h>
-#include <trajopt_scene/bullet_env.h>
+#include <tesseract_ros/kdl/kdl_chain_kin.h>
+#include <tesseract_ros/bullet/bullet_env.h>
 
 #include <ros/ros.h>
 #include <geometric_shapes/shapes.h>
@@ -37,7 +37,7 @@ public:
   ros::NodeHandle nh_;
   urdf::ModelInterfaceSharedPtr model_;  /**< URDF Model */
   srdf::ModelSharedPtr srdf_model_;      /**< SRDF Model */
-  trajopt_scene::BulletEnvPtr env_;   /**< Trajopt Basic Environment */
+  tesseract::BulletEnvPtr env_;   /**< Trajopt Basic Environment */
 
   virtual void SetUp()
   {
@@ -48,7 +48,7 @@ public:
 
     srdf_model_ = srdf::ModelSharedPtr(new srdf::Model);
     srdf_model_->initString(*model_, srdf_xml_string);
-    env_ = trajopt_scene::BulletEnvPtr(new trajopt_scene::BulletEnv);
+    env_ = tesseract::BulletEnvPtr(new tesseract::BulletEnv);
     assert(model_ != nullptr);
     assert(env_ != nullptr);
 
@@ -56,8 +56,8 @@ public:
     assert(success);
 
     // Next add objects that can be attached/detached to the scene
-    trajopt_scene::AttachableObjectPtr obj1(new trajopt_scene::AttachableObject());
-    trajopt_scene::AttachableObjectPtr obj2(new trajopt_scene::AttachableObject());
+    tesseract::AttachableObjectPtr obj1(new tesseract::AttachableObject());
+    tesseract::AttachableObjectPtr obj2(new tesseract::AttachableObject());
     shapes::Box* box = new shapes::Box();
     Eigen::Affine3d box_pose;
 
@@ -96,7 +96,7 @@ TEST_F(CastAttachedTest, LinkWithGeom)
 {
   ROS_DEBUG("CastTest, LinkWithGeom");
 
-  trajopt_scene::AttachedBodyInfo attached_body;
+  tesseract::AttachedBodyInfo attached_body;
   attached_body.name = "attached_body";
   attached_body.object_name = "box_attached";
   attached_body.parent_link_name = "boxbot_link";
@@ -115,7 +115,7 @@ TEST_F(CastAttachedTest, LinkWithGeom)
   TrajOptProbPtr prob = ConstructProblem(root, env_);
   ASSERT_TRUE(!!prob);
 
-  trajopt_scene::DistanceResultVector collisions;
+  tesseract::DistanceResultVector collisions;
   const std::vector<std::string>& joint_names = prob->GetKin()->getJointNames();
   const std::vector<std::string>& link_names = prob->GetKin()->getLinkNames();
 
@@ -140,7 +140,7 @@ TEST_F(CastAttachedTest, LinkWithoutGeom)
 {
   ROS_DEBUG("CastTest, LinkWithGeom");
 
-  trajopt_scene::AttachedBodyInfo attached_body;
+  tesseract::AttachedBodyInfo attached_body;
   attached_body.name = "attached_body";
   attached_body.object_name = "box_attached2";
   attached_body.parent_link_name = "no_geom_link";
@@ -159,7 +159,7 @@ TEST_F(CastAttachedTest, LinkWithoutGeom)
   TrajOptProbPtr prob = ConstructProblem(root, env_);
   ASSERT_TRUE(!!prob);
 
-  trajopt_scene::DistanceResultVector collisions;
+  tesseract::DistanceResultVector collisions;
   const std::vector<std::string>& joint_names = prob->GetKin()->getJointNames();
   const std::vector<std::string>& link_names = prob->GetKin()->getLinkNames();
 

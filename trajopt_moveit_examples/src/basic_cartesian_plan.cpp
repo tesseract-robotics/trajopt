@@ -3,7 +3,7 @@
 #include <moveit/robot_model_loader/robot_model_loader.h>
 #include <moveit/collision_plugin_loader/collision_plugin_loader.h>
 #include <trajopt_moveit/trajopt_moveit_env.h>
-#include <trajopt_scene/kdl_chain_kin.h>
+#include <tesseract_ros/kdl/kdl_chain_kin.h>
 #include <trajopt/problem_description.hpp>
 #include <trajopt/plot_callback.hpp>
 
@@ -155,7 +155,7 @@ int main(int argc, char** argv)
   // Solve Trajectory
   ROS_INFO("basic cartesian plan example");
 
-  trajopt_scene::DistanceResultVector collisions;
+  tesseract::DistanceResultVector collisions;
   const std::vector<std::string>& joint_names = prob->GetKin()->getJointNames();
   const std::vector<std::string>& link_names = prob->GetKin()->getLinkNames();
 

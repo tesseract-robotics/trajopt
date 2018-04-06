@@ -14,7 +14,8 @@
   <depend>urdf</depend>
   <depend>moveit_core</depend>
   <depend>moveit_ros_planning</depend>
-  <depend>pluginlib</depend>
+  <depend>pluginlib</depend>tesseract
+  <depend>tesseract_ros</depend>
 
   <test_depend>gtest</test_depend>
   <test_depend>rostest</test_depend>

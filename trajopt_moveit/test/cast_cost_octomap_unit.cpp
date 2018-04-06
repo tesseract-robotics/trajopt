@@ -14,7 +14,7 @@
 #include <trajopt/collision_terms.hpp>
 #include <trajopt_utils/logging.hpp>
 
-#include <trajopt_scene/kdl_chain_kin.h>
+#include <tesseract_ros/kdl/kdl_chain_kin.h>
 #include <trajopt_moveit/trajopt_moveit_env.h>
 
 #include <ros/ros.h>
@@ -128,7 +128,7 @@ TEST_F(CastOctomapTest, boxes) {
   TrajOptProbPtr prob = ConstructProblem(root, env_);
   ASSERT_TRUE(!!prob);
 
-  trajopt_scene::DistanceResultVector collisions;
+  tesseract::DistanceResultVector collisions;
   const std::vector<std::string>& joint_names = prob->GetKin()->getJointNames();
   const std::vector<std::string>& link_names = prob->GetKin()->getLinkNames();
 

@@ -1,8 +1,8 @@
 #include <trajopt/common.hpp>
 #include <trajopt/problem_description.hpp>
 #include <trajopt_utils/eigen_conversions.hpp>
-#include <trajopt_scene/basic_kin.h>
-#include <trajopt_scene/basic_env.h>
+#include <tesseract_core/basic_kin.h>
+#include <tesseract_core/basic_env.h>
 #include <trajopt/plot_callback.hpp>
 #include <boost/foreach.hpp>
 #include <set>
@@ -11,7 +11,7 @@ using namespace util;
 using namespace std;
 namespace trajopt {
 
-void PlotCosts(trajopt_scene::BasicKinConstPtr manip, trajopt_scene::BasicEnvPtr env, vector<CostPtr>& costs, vector<ConstraintPtr>& cnts, const VarArray& vars, const DblVec& x)
+void PlotCosts(tesseract::BasicKinConstPtr manip, tesseract::BasicEnvPtr env, vector<CostPtr>& costs, vector<ConstraintPtr>& cnts, const VarArray& vars, const DblVec& x)
 {
   env->plotClear();
 

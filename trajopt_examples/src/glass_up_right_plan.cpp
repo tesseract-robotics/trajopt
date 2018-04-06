@@ -1,6 +1,6 @@
 #include <ros/ros.h>
-#include <trajopt_scene/bullet_env.h>
-#include <trajopt_scene/kdl_chain_kin.h>
+#include <tesseract_ros/bullet/bullet_env.h>
+#include <tesseract_ros/kdl/kdl_chain_kin.h>
 #include <trajopt/problem_description.hpp>
 #include <trajopt/plot_callback.hpp>
 #include <trajopt_utils/logging.hpp>
@@ -20,7 +20,7 @@ int steps_ = 5;
 std::string method_ = "json";
 urdf::ModelInterfaceSharedPtr model_;  /**< URDF Model */
 srdf::ModelSharedPtr srdf_model_;      /**< SRDF Model */
-trajopt_scene::BulletEnvPtr env_;   /**< Trajopt Basic Environment */
+tesseract::BulletEnvPtr env_;   /**< Trajopt Basic Environment */
 
 TrajOptProbPtr jsonMethod()
 {
@@ -130,7 +130,7 @@ int main(int argc, char** argv)
 
   srdf_model_ = srdf::ModelSharedPtr(new srdf::Model);
   srdf_model_->initString(*model_, srdf_xml_string);
-  env_ = trajopt_scene::BulletEnvPtr(new trajopt_scene::BulletEnv);
+  env_ = tesseract::BulletEnvPtr(new tesseract::BulletEnv);
   assert(model_ != nullptr);
   assert(env_ != nullptr);
 
@@ -138,7 +138,7 @@ int main(int argc, char** argv)
   assert(success);
 
   // Add sphere
-  trajopt_scene::AttachableObjectPtr obj(new trajopt_scene::AttachableObject());
+  tesseract::AttachableObjectPtr obj(new tesseract::AttachableObject());
   shapes::Sphere* sphere = new shapes::Sphere();
   Eigen::Affine3d sphere_pose;
 
@@ -152,7 +152,7 @@ int main(int argc, char** argv)
   obj->shapes_trans.push_back(sphere_pose);
   env_->addAttachableObject(obj);
 
-  trajopt_scene::AttachedBodyInfo attached_body;
+  tesseract::AttachedBodyInfo attached_body;
   attached_body.name = "attached_body";
   attached_body.object_name = "sphere_attached";
   attached_body.parent_link_name = "base_link";
@@ -188,7 +188,7 @@ int main(int argc, char** argv)
   // Solve Trajectory
   ROS_INFO("basic cartesian plan example");
 
-  trajopt_scene::DistanceResultVector collisions;
+  tesseract::DistanceResultVector collisions;
   const std::vector<std::string>& joint_names = prob->GetKin()->getJointNames();
   const std::vector<std::string>& link_names = prob->GetKin()->getLinkNames();
 

@@ -14,8 +14,8 @@
 #include <trajopt/collision_terms.hpp>
 #include <trajopt_utils/logging.hpp>
 
-#include <trajopt_scene/kdl_chain_kin.h>
-#include <trajopt_scene/bullet_env.h>
+#include <tesseract_ros/kdl/kdl_chain_kin.h>
+#include <tesseract_ros/bullet/bullet_env.h>
 
 #include <ros/ros.h>
 #include <urdf_parser/urdf_parser.h>
@@ -36,7 +36,7 @@ public:
   ros::NodeHandle nh_;
   urdf::ModelInterfaceSharedPtr model_;  /**< URDF Model */
   srdf::ModelSharedPtr srdf_model_;      /**< SRDF Model */
-  trajopt_scene::BulletEnvPtr env_;   /**< Trajopt Basic Environment */
+  tesseract::BulletEnvPtr env_;   /**< Trajopt Basic Environment */
 
   virtual void SetUp()
   {
@@ -47,7 +47,7 @@ public:
 
     srdf_model_ = srdf::ModelSharedPtr(new srdf::Model);
     srdf_model_->initString(*model_, srdf_xml_string);
-    env_ = trajopt_scene::BulletEnvPtr(new trajopt_scene::BulletEnv);
+    env_ = tesseract::BulletEnvPtr(new tesseract::BulletEnv);
     assert(model_ != nullptr);
     assert(env_ != nullptr);
 
@@ -73,7 +73,7 @@ TEST_F(CastTest, boxes) {
   TrajOptProbPtr prob = ConstructProblem(root, env_);
   ASSERT_TRUE(!!prob);
 
-  trajopt_scene::DistanceResultVector collisions;
+  tesseract::DistanceResultVector collisions;
   const std::vector<std::string>& joint_names = prob->GetKin()->getJointNames();
   const std::vector<std::string>& link_names = prob->GetKin()->getLinkNames();
 

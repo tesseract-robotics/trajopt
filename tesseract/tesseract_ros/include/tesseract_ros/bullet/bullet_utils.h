@@ -1,14 +1,13 @@
-#ifndef ROS_BULLET_UTILS_H
-#define ROS_BULLET_UTILS_H
+#ifndef TESSERACT_ROS_BULLET_UTILS_H
+#define TESSERACT_ROS_BULLET_UTILS_H
 
-//#include "trajopt_scene/common.hpp"
-#include "trajopt_scene/basic_env.h"
+#include "tesseract_ros/ros_basic_env.h"
 #include <geometric_shapes/mesh_operations.h>
 #include <urdf_model/link.h>
 #include <ros/console.h>
 #include <btBulletCollisionCommon.h>
 
-namespace trajopt_scene
+namespace tesseract
 {
 #define METERS
 
@@ -42,31 +41,6 @@ btTransform convertEigenToBt(const Eigen::Affine3d& t)
   Eigen::Quaterniond q(t.rotation());
   return btTransform(convertEigenToBt(q), convertEigenToBt(t.translation()));
 }
-
-struct AttachedBodyInfo
-{
-  std::string name;
-  std::string parent_link_name;
-  std::string object_name;
-  std::vector<std::string> touch_links;
-};
-
-struct AttachableObject
-{
-  std::string name;
-  std::vector<shapes::ShapeConstPtr> shapes;
-  EigenSTL::vector_Affine3d shapes_trans;
-};
-typedef boost::shared_ptr<AttachableObject> AttachableObjectPtr;
-typedef boost::shared_ptr<const AttachableObject> AttachableObjectConstPtr;
-
-struct AttachedBody
-{
-   AttachedBodyInfo info;
-   AttachableObjectConstPtr obj;
-};
-typedef boost::shared_ptr<AttachedBody> AttachedBodyPtr;
-typedef boost::shared_ptr<const AttachedBody> AttachedBodyConstPtr;
 
 /// Destance query results information
 typedef std::map<std::pair<std::string, std::string>, DistanceResultVector> BulletDistanceMap;
@@ -957,4 +931,4 @@ inline Eigen::Affine3d urdfPose2Affine3d(const urdf::Pose& pose)
 }
 
 }
-#endif // ROS_BULLET_UTILS_H
+#endif // TESSERACT_ROS_BULLET_UTILS_H

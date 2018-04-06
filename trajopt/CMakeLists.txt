@@ -7,7 +7,7 @@ add_compile_options(-std=c++11)
 find_package(catkin REQUIRED COMPONENTS
   trajopt_sco
   trajopt_utils
-  trajopt_scene
+  tesseract_core
   roscpp
 )
 
@@ -40,7 +40,7 @@ catkin_package(
   CATKIN_DEPENDS
     trajopt_sco
     trajopt_utils
-    trajopt_scene
+    tesseract_core
     roscpp
   DEPENDS
     EIGEN3
@@ -61,7 +61,7 @@ target_link_libraries(${PROJECT_NAME} ${Boost_SYSTEM_LIBRARY} ${JSONCPP_LIBRARIE
 if (CATKIN_ENABLE_TESTING)
 
   find_package(rostest REQUIRED)
-  find_package(catkin REQUIRED COMPONENTS octomap_ros trajopt_test_support roslib)
+  find_package(catkin REQUIRED COMPONENTS tesseract_ros octomap_ros trajopt_test_support roslib)
   find_package(PCL REQUIRED COMPONENTS core features filters io segmentation surface)
 
   include_directories(

@@ -3,8 +3,8 @@
 #include <trajopt/json_marshal.hpp>
 #include <boost/function.hpp>
 #include <boost/shared_ptr.hpp>
-#include <trajopt_scene/basic_kin.h>
-#include <trajopt_scene/basic_env.h>
+#include <tesseract_core/basic_kin.h>
+#include <tesseract_core/basic_env.h>
 #include <trajopt_sco/optimizers.hpp>
 
 
@@ -28,7 +28,7 @@ struct TrajOptResult;
 typedef boost::shared_ptr<TrajOptResult> TrajOptResultPtr;
 
 TrajOptProbPtr TRAJOPT_API ConstructProblem(const ProblemConstructionInfo&);
-TrajOptProbPtr TRAJOPT_API ConstructProblem(const Json::Value&, trajopt_scene::BasicEnvPtr env);
+TrajOptProbPtr TRAJOPT_API ConstructProblem(const Json::Value&, tesseract::BasicEnvPtr env);
 TrajOptResultPtr TRAJOPT_API OptimizeProblem(TrajOptProbPtr, bool plot);
 
 enum TermType {
@@ -63,8 +63,8 @@ public:
   }
   int GetNumSteps() {return m_traj_vars.rows();}
   int GetNumDOF() {return m_traj_vars.cols();}
-  trajopt_scene::BasicKinConstPtr GetKin() {return m_kin;}
-  trajopt_scene::BasicEnvPtr GetEnv() {return m_env;}
+  tesseract::BasicKinConstPtr GetKin() {return m_kin;}
+  tesseract::BasicEnvPtr GetEnv() {return m_env;}
 
   void SetInitTraj(const TrajArray& x) {m_init_traj = x;}
   TrajArray GetInitTraj() {return m_init_traj;}
@@ -73,8 +73,8 @@ public:
 
 private:
   VarArray m_traj_vars;
-  trajopt_scene::BasicKinConstPtr m_kin;
-  trajopt_scene::BasicEnvPtr m_env;
+  tesseract::BasicKinConstPtr m_kin;
+  tesseract::BasicEnvPtr m_env;
   TrajArray m_init_traj;
 };
 
@@ -152,10 +152,10 @@ public:
   vector<TermInfoPtr> cnt_infos;
   InitInfo init_info;
 
-  trajopt_scene::BasicEnvPtr env;
-  trajopt_scene::BasicKinConstPtr kin;
+  tesseract::BasicEnvPtr env;
+  tesseract::BasicKinConstPtr kin;
 
-  ProblemConstructionInfo(trajopt_scene::BasicEnvPtr env) : env(env) {}
+  ProblemConstructionInfo(tesseract::BasicEnvPtr env) : env(env) {}
   void fromJson(const Value& v);
 
 private:

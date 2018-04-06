@@ -1,5 +1,3 @@
-#ifndef BASIC_COLL_H
-#define BASIC_COLL_H
 /**
  * @file basic_env.h
  * @brief Basic low-level environment with collision and distance functions.
@@ -25,15 +23,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#ifndef BASIC_ENV_H
+#define BASIC_ENV_H
+
 #include <vector>
 #include <string>
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include <boost/shared_ptr.hpp>
-#include <trajopt_scene/basic_kin.h>
+#include <tesseract_core/basic_kin.h>
 #include <map>
 
-namespace trajopt_scene
+namespace tesseract
 {
 
 typedef Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> TrajArray;
@@ -122,6 +123,8 @@ struct DistanceResult
     nearest_points[1].setZero();
     link_names[0] = "";
     link_names[1] = "";
+    attached_link_names[0] = "";
+    attached_link_names[1] = "";
     body_types[0] = BodyType::ROBOT_LINK;
     body_types[1] = BodyType::ROBOT_LINK;
     normal.setZero();
@@ -343,6 +346,7 @@ protected:
 
 typedef boost::shared_ptr<BasicEnv> BasicEnvPtr;
 typedef boost::shared_ptr<const BasicEnv> BasicEnvConstPtr;
-} // namespace trajopt_scene
+
+} //namespace tesseract
 
 #endif // BASIC_COLL_H

@@ -1,5 +1,5 @@
 #include "trajopt_moveit/trajopt_moveit_env.h"
-#include <trajopt_scene/kdl_chain_kin.h>
+#include <tesseract_ros/kdl/kdl_chain_kin.h>
 #include <moveit/collision_detection/collision_common.h>
 #include <moveit_msgs/DisplayTrajectory.h>
 #include <moveit/robot_state/conversions.h>
@@ -31,7 +31,7 @@ bool TrajOptMoveItEnv::init(planning_scene::PlanningScenePtr planning_scene)
   return initialized_;
 }
 
-void TrajOptMoveItEnv::calcDistancesDiscrete(const trajopt_scene::DistanceRequest &req, trajopt_scene::DistanceResultVector &dists) const
+void TrajOptMoveItEnv::calcDistancesDiscrete(const tesseract::DistanceRequest &req, tesseract::DistanceResultVector &dists) const
 {
   collision_detection::DistanceRequest distance_req;
   collision_detection::DistanceResult distance_res;
@@ -40,7 +40,7 @@ void TrajOptMoveItEnv::calcDistancesDiscrete(const trajopt_scene::DistanceReques
   distance_req.enable_nearest_points = true;
   distance_req.enable_signed_distance = true;
 
-  if (req.type == trajopt_scene::DistanceRequestType::SINGLE)
+  if (req.type == tesseract::DistanceRequestType::SINGLE)
     distance_req.type = collision_detection::DistanceRequestType::SINGLE;
   else
     distance_req.type = collision_detection::DistanceRequestType::ALL;
@@ -68,35 +68,35 @@ void TrajOptMoveItEnv::calcDistancesDiscrete(const trajopt_scene::DistanceReques
   {
     for (auto it = pair->second.begin(); it != pair->second.end(); ++it)
     {
-      trajopt_scene::DistanceResult d;
+      tesseract::DistanceResult d;
       d.distance = it->distance;
       d.valid = true;
       d.link_names[0] = it->link_names[0];
       d.link_names[1] = it->link_names[1];
-      d.body_types[0] = trajopt_scene::BodyTypes::ROBOT_LINK;
-      d.body_types[1] = trajopt_scene::BodyTypes::ROBOT_LINK;
+      d.body_types[0] = tesseract::BodyTypes::ROBOT_LINK;
+      d.body_types[1] = tesseract::BodyTypes::ROBOT_LINK;
 
       // Note: for trajopt TrajOptMoveItEnv is only aware of links in the urdf so if attached link set link name to parent link name
       if (it->body_types[0] == collision_detection::BodyTypes::ROBOT_ATTACHED)
       {
-        d.body_types[0] = trajopt_scene::BodyTypes::ROBOT_ATTACHED;
+        d.body_types[0] = tesseract::BodyTypes::ROBOT_ATTACHED;
         d.attached_link_names[0] = state.getAttachedBody(d.link_names[0])->getAttachedLinkName();
       }
       else if (it->body_types[0] == collision_detection::BodyTypes::WORLD_OBJECT)
       {
-        d.body_types[0] = trajopt_scene::BodyTypes::ROBOT_ATTACHED;
+        d.body_types[0] = tesseract::BodyTypes::ROBOT_ATTACHED;
         d.attached_link_names[0] = env_->getPlanningFrame();
       }
 
       // Note: for trajopt TrajOptMoveItEnv is only aware of links in the urdf so if attached link set link name to parent link name
       if (it->body_types[1] == collision_detection::BodyTypes::ROBOT_ATTACHED)
       {
-        d.body_types[1] = trajopt_scene::BodyTypes::ROBOT_ATTACHED;
+        d.body_types[1] = tesseract::BodyTypes::ROBOT_ATTACHED;
         d.attached_link_names[1] = state.getAttachedBody(d.link_names[1])->getAttachedLinkName();
       }
       else if (it->body_types[1] == collision_detection::BodyTypes::WORLD_OBJECT)
       {
-        d.body_types[1] = trajopt_scene::BodyTypes::ROBOT_ATTACHED;
+        d.body_types[1] = tesseract::BodyTypes::ROBOT_ATTACHED;
         d.attached_link_names[1] = env_->getPlanningFrame();
       }
 
@@ -112,7 +112,7 @@ void TrajOptMoveItEnv::calcDistancesDiscrete(const trajopt_scene::DistanceReques
   }
 }
 
-void TrajOptMoveItEnv::calcDistancesContinuous(const trajopt_scene::DistanceRequest &req, trajopt_scene::DistanceResultVector &dists) const
+void TrajOptMoveItEnv::calcDistancesContinuous(const tesseract::DistanceRequest &req, tesseract::DistanceResultVector &dists) const
 {
   collision_detection::DistanceRequest distance_req;
   collision_detection::DistanceResult distance_res;
@@ -122,7 +122,7 @@ void TrajOptMoveItEnv::calcDistancesContinuous(const trajopt_scene::DistanceRequ
   distance_req.enable_signed_distance = true;
   distance_req.compute_gradient = true;
 
-  if (req.type == trajopt_scene::DistanceRequestType::SINGLE)
+  if (req.type == tesseract::DistanceRequestType::SINGLE)
     distance_req.type = collision_detection::DistanceRequestType::SINGLE;
   else
     distance_req.type = collision_detection::DistanceRequestType::ALL;
@@ -153,7 +153,7 @@ void TrajOptMoveItEnv::calcDistancesContinuous(const trajopt_scene::DistanceRequ
   {
     for (auto it = pair->second.begin(); it != pair->second.end(); ++it)
     {
-      trajopt_scene::DistanceResult d;
+      tesseract::DistanceResult d;
       d.distance = it->distance;
       d.valid = true;
 
@@ -184,16 +184,16 @@ void TrajOptMoveItEnv::calcDistancesContinuous(const trajopt_scene::DistanceRequ
       switch(it->cc_type)
       {
         case collision_detection::ContinouseCollisionType::CCType_Between :
-          d.cc_type = trajopt_scene::ContinouseCollisionType::CCType_Between;
+          d.cc_type = tesseract::ContinouseCollisionType::CCType_Between;
           break;
         case collision_detection::ContinouseCollisionType::CCType_Time0 :
-          d.cc_type = trajopt_scene::ContinouseCollisionType::CCType_Time0;
+          d.cc_type = tesseract::ContinouseCollisionType::CCType_Time0;
           break;
         case collision_detection::ContinouseCollisionType::CCType_Time1 :
-          d.cc_type = trajopt_scene::ContinouseCollisionType::CCType_Time1;
+          d.cc_type = tesseract::ContinouseCollisionType::CCType_Time1;
           break;
         default:
-          d.cc_type = trajopt_scene::ContinouseCollisionType::CCType_None;
+          d.cc_type = tesseract::ContinouseCollisionType::CCType_None;
           break;
       }
 
@@ -204,7 +204,7 @@ void TrajOptMoveItEnv::calcDistancesContinuous(const trajopt_scene::DistanceRequ
       if ((d.nearest_points[0].array().isNaN()).all() || (d.nearest_points[1].array().isNaN()).all() || (d.normal.array().isNaN()).all())
         d.valid = false;
 
-      if (d.cc_type != trajopt_scene::ContinouseCollisionType::CCType_None && ((d.cc_nearest_points[0].array().isNaN()).all() || (d.cc_nearest_points[1].array().isNaN()).all()))
+      if (d.cc_type != tesseract::ContinouseCollisionType::CCType_None && ((d.cc_nearest_points[0].array().isNaN()).all() || (d.cc_nearest_points[1].array().isNaN()).all()))
         d.valid = false;
 
       dists.push_back(d);
@@ -224,19 +224,19 @@ std::set<const moveit::core::LinkModel *> TrajOptMoveItEnv::getLinkModels(const 
   return list;
 }
 
-void TrajOptMoveItEnv::calcCollisionsDiscrete(const trajopt_scene::DistanceRequest &req, trajopt_scene::DistanceResultVector &collisions) const
+void TrajOptMoveItEnv::calcCollisionsDiscrete(const tesseract::DistanceRequest &req, tesseract::DistanceResultVector &collisions) const
 {
   calcDistancesDiscrete(req, collisions);
 }
 
-void TrajOptMoveItEnv::calcCollisionsContinuous(const trajopt_scene::DistanceRequest &req, trajopt_scene::DistanceResultVector &collisions) const
+void TrajOptMoveItEnv::calcCollisionsContinuous(const tesseract::DistanceRequest &req, tesseract::DistanceResultVector &collisions) const
 {
   calcDistancesContinuous(req, collisions);
 }
 
-bool TrajOptMoveItEnv::continuousCollisionCheckTrajectory(const std::vector<std::string> &joint_names, const std::vector<std::string> &link_names, const trajopt_scene::TrajArray& traj, trajopt_scene::DistanceResultVector& collisions) const
+bool TrajOptMoveItEnv::continuousCollisionCheckTrajectory(const std::vector<std::string> &joint_names, const std::vector<std::string> &link_names, const tesseract::TrajArray& traj, tesseract::DistanceResultVector& collisions) const
 {
-  trajopt_scene::DistanceRequest req;
+  tesseract::DistanceRequest req;
   req.joint_names = joint_names;
   req.link_names = link_names;
 
@@ -254,12 +254,12 @@ bool TrajOptMoveItEnv::continuousCollisionCheckTrajectory(const std::vector<std:
   return found;
 }
 
-bool TrajOptMoveItEnv::continuousCollisionCheckTrajectory(const std::vector<std::string> &joint_names, const std::vector<std::string> &link_names, const trajopt_scene::TrajArray& traj, trajopt_scene::DistanceResult &collision) const
+bool TrajOptMoveItEnv::continuousCollisionCheckTrajectory(const std::vector<std::string> &joint_names, const std::vector<std::string> &link_names, const tesseract::TrajArray& traj, tesseract::DistanceResult &collision) const
 {
-  trajopt_scene::DistanceRequest req;
+  tesseract::DistanceRequest req;
   req.joint_names = joint_names;
   req.link_names = link_names;
-  trajopt_scene::DistanceResultVector collisions;
+  tesseract::DistanceResultVector collisions;
 
   for (int iStep = 0; iStep < traj.rows() - 1; ++iStep)
   {
@@ -320,7 +320,7 @@ bool TrajOptMoveItEnv::continuousCollisionCheckTrajectory(const std::vector<std:
       collision.cc_nearest_points[1] = contact.pos;
   //    collision.cc_time = it->second.cc_time;
 
-      if (collision.cc_type != trajopt_scene::ContinouseCollisionType::CCType_None && ((collision.cc_nearest_points[0].array().isNaN()).all() || (collision.cc_nearest_points[1].array().isNaN()).all()))
+      if (collision.cc_type != tesseract::ContinouseCollisionType::CCType_None && ((collision.cc_nearest_points[0].array().isNaN()).all() || (collision.cc_nearest_points[1].array().isNaN()).all()))
         collision.valid = false;
 
       return true;
@@ -372,9 +372,9 @@ bool TrajOptMoveItEnv::hasManipulator(const std::string &manipulator_name) const
   return env_->getRobotModel()->hasJointModelGroup(manipulator_name);
 }
 
-trajopt_scene::BasicKinConstPtr TrajOptMoveItEnv::getManipulator(const std::string &manipulator_name) const
+tesseract::BasicKinConstPtr TrajOptMoveItEnv::getManipulator(const std::string &manipulator_name) const
 {
-  trajopt_scene::KDLChainKinPtr manip(new trajopt_scene::KDLChainKin());
+  tesseract::KDLChainKinPtr manip(new tesseract::KDLChainKin());
   auto jmg = env_->getRobotModel()->getJointModelGroup(manipulator_name);
   manip->init(env_->getRobotModel()->getURDF(), jmg->getLinkModels().front()->getParentLinkModel()->getName(), jmg->getLinkModels().back()->getName(), manipulator_name);
   return manip;
@@ -395,7 +395,7 @@ std::string TrajOptMoveItEnv::getManipulatorName(const std::vector<std::string> 
   return "";
 }
 
-void TrajOptMoveItEnv::plotTrajectory(const std::string &name, const std::vector<std::string> &joint_names, const trajopt_scene::TrajArray &traj)
+void TrajOptMoveItEnv::plotTrajectory(const std::string &name, const std::vector<std::string> &joint_names, const tesseract::TrajArray &traj)
 {
   moveit_msgs::DisplayTrajectory msg;
   moveit_msgs::RobotTrajectory rt;
@@ -519,12 +519,12 @@ void TrajOptMoveItEnv::plotAxis(const Eigen::Affine3d &axis, double scale)
   axes_pub_.publish(msg);
 }
 
-void TrajOptMoveItEnv::plotCollisions(const std::vector<std::string> &link_names, const trajopt_scene::DistanceResultVector &dist_results, const Eigen::VectorXd &safety_distances)
+void TrajOptMoveItEnv::plotCollisions(const std::vector<std::string> &link_names, const tesseract::DistanceResultVector &dist_results, const Eigen::VectorXd &safety_distances)
 {
   visualization_msgs::MarkerArray msg;
   for (int i = 0; i < dist_results.size(); ++i)
   {
-    const trajopt_scene::DistanceResult &dist = dist_results[i];
+    const tesseract::DistanceResult &dist = dist_results[i];
     const double& safety_distance = safety_distances[i];
 
     if (!dist.valid)
@@ -555,7 +555,7 @@ void TrajOptMoveItEnv::plotCollisions(const std::vector<std::string> &link_names
       ptB = dist.nearest_points[0];
     }
 
-    if(dist.cc_type == trajopt_scene::ContinouseCollisionType::CCType_Between)
+    if(dist.cc_type == tesseract::ContinouseCollisionType::CCType_Between)
     {
       Eigen::Vector4d cc_rgba;
       cc_rgba << 0.0, 0.0, 0.0, 1.0;

@@ -2,8 +2,8 @@
  * @file basic_kin.h
  * @brief Basic low-level kinematics functions.
  *
- * @author dsolomon
- * @date Sep 15, 2013
+ * @author Levi Armstrong
+ * @date April 15, 2018
  * @version TODO
  * @bug No known bugs
  *
@@ -33,7 +33,7 @@
 #include <iostream>
 #include <boost/shared_ptr.hpp>
 
-namespace trajopt_scene
+namespace tesseract
 {
 
 /**
@@ -231,7 +231,7 @@ public:
 
 typedef boost::shared_ptr<BasicKin> BasicKinPtr;
 typedef boost::shared_ptr<const BasicKin> BasicKinConstPtr;
-} // namespace trajopt
+} // namespace tesseract
 
 #endif // BASIC_KIN_H
 

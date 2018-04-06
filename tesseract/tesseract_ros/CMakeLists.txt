@@ -1,13 +1,10 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(trajopt_scene)
+project(tesseract_ros)
 
-## Compile as C++11, supported in ROS Kinetic and newer
 add_compile_options(-std=c++11)
 
-## Find catkin macros and libraries
-## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
-## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
+  tesseract_core
   trajopt_ext
   roscpp
   urdf
@@ -32,6 +29,7 @@ catkin_package(
     ${OCTOMAP_LIBRARIES}
     ${orocos_kdl_LIBRARIES}
   CATKIN_DEPENDS
+    tesseract_core
     trajopt_ext
     roscpp
     urdf
@@ -56,14 +54,14 @@ include_directories(
 )
 
 add_library(${PROJECT_NAME}_kdl
-  src/kdl_chain_kin.cpp
+  src/kdl/kdl_chain_kin.cpp
 )
 
 target_link_libraries(${PROJECT_NAME}_kdl ${catkin_LIBRARIES} ${urdfdom_LIBRARIES} ${urdfdom_headers_LIBRARIES} ${Boost_LIBRARIES} ${orocos_kdl_LIBRARIES})
 
 add_library(${PROJECT_NAME}_bullet
-  src/bullet_env.cpp
-  src/bullet_utils.cpp
+  src/bullet/bullet_env.cpp
+  src/bullet/bullet_utils.cpp
 )
 
 target_link_libraries(${PROJECT_NAME}_bullet ${PROJECT_NAME}_kdl ${catkin_LIBRARIES} ${urdfdom_LIBRARIES} ${urdfdom_headers_LIBRARIES} ${Boost_LIBRARIES} ${OCTOMAP_LIBRARIES} ${orocos_kdl_LIBRARIES})
@@ -109,5 +107,4 @@ install(DIRECTORY include/${PROJECT_NAME}/
 #  add_rostest_gtest(${PROJECT_NAME}_cast_cost_octomap_unit test/cast_cost_octomap_unit.launch test/cast_cost_octomap_unit.cpp)
 #  target_link_libraries(${PROJECT_NAME}_cast_cost_octomap_unit ${PROJECT_NAME} ${Boost_SYSTEM_LIBRARY} ${Boost_PROGRAM_OPTIONS_LIBRARY} ${PCL_LIBRARIES} ${catkin_LIBRARIES})
 #endif()
-
 

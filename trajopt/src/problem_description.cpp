@@ -9,7 +9,7 @@
 #include <trajopt_utils/logging.hpp>
 #include <trajopt_sco/expr_ops.hpp>
 #include <trajopt_sco/expr_op_overloads.hpp>
-#include <trajopt_scene/kdl_chain_kin.h>
+#include <tesseract_core/basic_kin.h>
 #include <boost/foreach.hpp>
 #include <boost/algorithm/string.hpp>
 
@@ -338,7 +338,7 @@ TrajOptProbPtr ConstructProblem(const ProblemConstructionInfo& pci)
 
 }
 
-TrajOptProbPtr ConstructProblem(const Json::Value& root, trajopt_scene::BasicEnvPtr env)
+TrajOptProbPtr ConstructProblem(const Json::Value& root, tesseract::BasicEnvPtr env)
 {
   ProblemConstructionInfo pci(env);
   pci.fromJson(root);

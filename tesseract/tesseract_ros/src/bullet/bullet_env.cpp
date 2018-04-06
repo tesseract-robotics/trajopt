@@ -1,5 +1,5 @@
-#include "trajopt_scene/bullet_env.h"
-#include "trajopt_scene/kdl_chain_kin.h"
+#include "tesseract_ros/bullet/bullet_env.h"
+#include "tesseract_ros/kdl/kdl_chain_kin.h"
 #include <moveit_msgs/DisplayTrajectory.h>
 #include <geometric_shapes/shape_operations.h>
 #include <eigen_conversions/eigen_msg.h>
@@ -7,7 +7,7 @@
 #include <limits>
 #include <octomap/octomap.h>
 
-namespace trajopt_scene
+namespace tesseract
 {
 
 using Eigen::MatrixXd;

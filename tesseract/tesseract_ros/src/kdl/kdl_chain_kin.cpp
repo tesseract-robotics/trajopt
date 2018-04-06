@@ -25,14 +25,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "trajopt_scene/kdl_chain_kin.h"
+#include "tesseract_ros/kdl/kdl_chain_kin.h"
 #include <ros/ros.h>
 #include <eigen_conversions/eigen_kdl.h>
 #include <kdl_parser/kdl_parser.hpp>
 #include <urdf/model.h>
 #include <kdl/segment.hpp>
 
-namespace trajopt_scene
+namespace tesseract
 {
 
 using Eigen::MatrixXd;

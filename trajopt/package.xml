@@ -10,12 +10,13 @@
   <depend>trajopt_sco</depend>
   <depend>trajopt_ext</depend>
   <depend>trajopt_utils</depend>
-  <depend>trajopt_scene</depend>
+  <depend>tesseract_core</depend>
   <depend>roscpp</depend>
 
   <test_depend>gtest</test_depend>
   <test_depend>rostest</test_depend>
   <test_depend>roslib</test_depend>
+  <test_depend>tesseract_ros</test_depend>
   <!-- The export tag contains other, unspecified, tags -->
   <export>
 

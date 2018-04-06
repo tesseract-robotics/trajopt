@@ -1,6 +1,7 @@
-#ifndef ROS_KIN_H
-#define ROS_KIN_H
-#include <trajopt_scene/basic_kin.h>
+#ifndef TESSERACT_ROS_KDL_CHAIN_KIN_H
+#define TESSERACT_ROS_KDL_CHAIN_KIN_H
+
+#include "tesseract_ros/ros_basic_kin.h"
 #include <kdl/tree.hpp>
 #include <kdl/chain.hpp>
 #include <kdl/chainfksolverpos_recursive.hpp>
@@ -8,7 +9,7 @@
 #include <boost/scoped_ptr.hpp>
 #include <urdf/model.h>
 
-namespace trajopt_scene
+namespace tesseract
 {
 
 /**
@@ -17,12 +18,12 @@ namespace trajopt_scene
  * Typically, just wrappers around the equivalent KDL calls.
  *
  */
-class KDLChainKin : public BasicKin
+class KDLChainKin : public ROSBasicKin
 {
 public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-  KDLChainKin() : BasicKin(), initialized_(false) {}
+  KDLChainKin() : ROSBasicKin(), initialized_(false) {}
 
   bool calcFwdKin(Eigen::Affine3d &pose, const Eigen::Affine3d change_base, const Eigen::VectorXd &joint_angles) const;
 
@@ -144,9 +145,9 @@ private:
 
   void addChildrenRecursive(const urdf::LinkConstSharedPtr urdf_link, const std::string &next_chain_segment);
 
-}; // class BasicKin
+}; // class KDLChainKin
 
 typedef boost::shared_ptr<KDLChainKin> KDLChainKinPtr;
 typedef boost::shared_ptr<const KDLChainKin> KDLChainKinConstPtr;
 }
-#endif // ROS_KIN_H
+#endif // TESSERACT_ROS_KDL_CHAIN_KIN_H

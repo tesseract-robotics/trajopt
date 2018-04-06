@@ -1,4 +1,4 @@
-#include "trajopt_scene/bullet_utils.h"
+#include "tesseract_ros/bullet/bullet_utils.h"
 #include <geometric_shapes/shapes.h>
 #include <BulletCollision/CollisionShapes/btShapeHull.h>
 #include <BulletCollision/Gimpact/btGImpactShape.h>
@@ -8,7 +8,7 @@
 #include <octomap/octomap.h>
 #include <ros/console.h>
 
-namespace trajopt_scene
+namespace tesseract
 {
 
 btCollisionShape* createShapePrimitive(const shapes::ShapeConstPtr& geom, bool useTrimesh, CollisionObjectWrapper* cow)

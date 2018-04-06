@@ -1,14 +1,15 @@
 #ifndef ROS_COLL_H
 #define ROS_COLL_H
 
-#include <trajopt_scene/basic_env.h>
+#include <tesseract_core/basic_env.h>
 #include <moveit/planning_scene/planning_scene.h>
 #include <moveit/collision_detection/collision_robot.h>
 #include <moveit/collision_detection/collision_world.h>
 
-namespace trajopt_moveit {
+namespace trajopt_moveit
+{
 
-class TrajOptMoveItEnv : public trajopt_scene::BasicEnv
+class TrajOptMoveItEnv : public tesseract::BasicEnv
 {
 public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -23,19 +24,19 @@ public:
    */
   bool checkInitialized() const { return initialized_; }
 
-  void calcDistancesDiscrete(const trajopt_scene::DistanceRequest &req, trajopt_scene::DistanceResultVector &dists) const;
+  void calcDistancesDiscrete(const tesseract::DistanceRequest &req, tesseract::DistanceResultVector &dists) const;
 
-  void calcDistancesContinuous(const trajopt_scene::DistanceRequest &req, trajopt_scene::DistanceResultVector &dists) const;
+  void calcDistancesContinuous(const tesseract::DistanceRequest &req, tesseract::DistanceResultVector &dists) const;
 
-  void calcCollisionsDiscrete(const trajopt_scene::DistanceRequest &req, trajopt_scene::DistanceResultVector &collisions) const;
+  void calcCollisionsDiscrete(const tesseract::DistanceRequest &req, tesseract::DistanceResultVector &collisions) const;
 
-  void calcCollisionsContinuous(const trajopt_scene::DistanceRequest &req, trajopt_scene::DistanceResultVector &collisions) const;
+  void calcCollisionsContinuous(const tesseract::DistanceRequest &req, tesseract::DistanceResultVector &collisions) const;
 
-  bool continuousCollisionCheckTrajectory(const std::vector<std::string> &joint_names, const std::vector<std::string> &link_names, const trajopt_scene::TrajArray& traj, trajopt_scene::DistanceResultVector& collisions) const;
+  bool continuousCollisionCheckTrajectory(const std::vector<std::string> &joint_names, const std::vector<std::string> &link_names, const tesseract::TrajArray& traj, tesseract::DistanceResultVector& collisions) const;
 
-  bool continuousCollisionCheckTrajectory(const std::vector<std::string> &joint_names, const std::vector<std::string> &link_names, const trajopt_scene::TrajArray& traj, trajopt_scene::DistanceResult &collision) const;
+  bool continuousCollisionCheckTrajectory(const std::vector<std::string> &joint_names, const std::vector<std::string> &link_names, const tesseract::TrajArray& traj, tesseract::DistanceResult &collision) const;
 
-  const trajopt_scene::EnvStateConstPtr getState() const
+  const tesseract::EnvStateConstPtr getState() const
   {
     ROS_WARN("The getState method is not implemented because moveit has its own state representation");
     return nullptr;
@@ -51,13 +52,13 @@ public:
     ROS_WARN("The setState method is not implemented because moveit has its own state representation");
   }
 
-  trajopt_scene::EnvStatePtr getState(const std::map<std::string, double> &joints) const
+  tesseract::EnvStatePtr getState(const std::map<std::string, double> &joints) const
   {
     ROS_WARN("The getState method is not implemented because moveit has its own state representation");
     return nullptr;
   }
 
-  trajopt_scene::EnvStatePtr getState(const std::vector<std::string> &joint_names, const Eigen::VectorXd &joint_values) const
+  tesseract::EnvStatePtr getState(const std::vector<std::string> &joint_names, const Eigen::VectorXd &joint_values) const
   {
     ROS_WARN("The getState method is not implemented because moveit has its own state representation");
     return nullptr;
@@ -76,7 +77,7 @@ public:
 
   bool hasManipulator(const std::string &manipulator_name) const;
 
-  trajopt_scene::BasicKinConstPtr getManipulator(const std::string &manipulator_name) const;
+  tesseract::BasicKinConstPtr getManipulator(const std::string &manipulator_name) const;
 
   void updateVisualization() const
   {
@@ -85,9 +86,9 @@ public:
 
   void enablePlotting(bool enable) { plotting_ = enable; }
 
-  void plotTrajectory(const std::string &name, const std::vector<std::string> &joint_names, const trajopt_scene::TrajArray &traj);
+  void plotTrajectory(const std::string &name, const std::vector<std::string> &joint_names, const tesseract::TrajArray &traj);
 
-  void plotCollisions(const std::vector<std::string> &link_names, const trajopt_scene::DistanceResultVector &dist_results, const Eigen::VectorXd &safety_distances);
+  void plotCollisions(const std::vector<std::string> &link_names, const tesseract::DistanceResultVector &dist_results, const Eigen::VectorXd &safety_distances);
 
   void plotArrow(const Eigen::Vector3d &pt1, const Eigen::Vector3d &pt2, const Eigen::Vector4d &rgba, double scale);
 

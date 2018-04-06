@@ -1,7 +1,7 @@
-#ifndef ROS_BULLET_ENV_H
-#define ROS_BULLET_ENV_H
+#ifndef TESSERACT_ROS_BULLET_ENV_H
+#define TESSERACT_ROS_BULLET_ENV_H
 
-#include <trajopt_scene/bullet_utils.h>
+#include <tesseract_ros/bullet/bullet_utils.h>
 #include <kdl/tree.hpp>
 #include <kdl_parser/kdl_parser.hpp>
 #include <kdl/jntarray.hpp>
@@ -13,15 +13,15 @@
 #include <visualization_msgs/MarkerArray.h>
 #include <moveit_msgs/DisplayRobotState.h>
 
-namespace trajopt_scene
+namespace tesseract
 {
 
-class BulletEnv : public BasicEnv
+class BulletEnv : public ROSBasicEnv
 {
 public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-  BulletEnv() : BasicEnv(), initialized_(false) {}
+  BulletEnv() : ROSBasicEnv(), initialized_(false) {}
 
   bool init(const urdf::ModelInterfaceConstSharedPtr urdf_model);
   bool init(const urdf::ModelInterfaceConstSharedPtr urdf_model, const srdf::ModelConstSharedPtr srdf_model);
@@ -64,42 +64,15 @@ public:
 
   BasicKinConstPtr getManipulator(const std::string &manipulator_name) const;
 
-  /**
-   * @brief A a manipulator as a kinematic chain
-   * @param base_link The base link of the chain
-   * @param tip_link The tip link of the chain
-   * @param name The name of the manipulator. This must be unique.
-   * @return true if successfully created, otherwise false.
-   */
-  virtual bool addManipulator(const std::string &base_link, const std::string &tip_link, const std::string &manipulator_name);
+  bool addManipulator(const std::string &base_link, const std::string &tip_link, const std::string &manipulator_name);
 
-  /**
-   * @brief Add object so it may be attached/detached.
-   *
-   * This object is not part of the environment until attached to a link.
-   *
-   * @param attachable_object The object information
-   */
-  virtual void addAttachableObject(const AttachableObjectConstPtr &attachable_object);
+  void addAttachableObject(const AttachableObjectConstPtr &attachable_object);
 
-  /**
-   * @brief Get object attached to the manipulator or world
-   * @param name The name of the object
-   * @return AttachedBody
-   */
-  virtual const AttachedBodyConstPtr getAttachedBody(const std::string& name) const;
+  const AttachedBodyConstPtr getAttachedBody(const std::string& name) const;
 
-  /**
-   * @brief Attached an attachable object to the environment
-   * @param attached_body Information of attaching creating the attached body
-   */
-  virtual void attachBody(const AttachedBodyInfo &attached_body_info);
+  void attachBody(const AttachedBodyInfo &attached_body_info);
 
-  /**
-   * @brief Detach an attachable object from the environment
-   * @param name The name given to the Attached Body when attached
-   */
-  virtual void detachBody(const std::string &name);
+  void detachBody(const std::string &name);
 
   void updateVisualization() const;
 
@@ -163,4 +136,4 @@ typedef boost::shared_ptr<BulletEnv> BulletEnvPtr;
 typedef boost::shared_ptr<const BulletEnv> BulletEnvConstPtr;
 }
 
-#endif // ROS_BULLET_ENV_H
+#endif // TESSERACT_ROS_BULLET_ENV_H
