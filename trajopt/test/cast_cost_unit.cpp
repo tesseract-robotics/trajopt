@@ -64,7 +64,7 @@ TEST_F(CastTest, boxes) {
   std::string package_path = ros::package::getPath("trajopt_test_support");
   Json::Value root = readJsonFile(package_path + "/config/box_cast_test.json");
 
-  std::map<std::string, double> ipos;
+  std::unordered_map<std::string, double> ipos;
   ipos["boxbot_x_joint"] = -1.9;
   ipos["boxbot_y_joint"] = 0;
   env_->setState(ipos);

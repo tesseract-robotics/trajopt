@@ -42,7 +42,7 @@ public:
     return nullptr;
   }
 
-  void setState(const std::map<std::string, double> &joints)
+  void setState(const std::unordered_map<std::string, double> &joints)
   {
     ROS_WARN("The setState method is not implemented because moveit has its own state representation");
   }
@@ -52,7 +52,7 @@ public:
     ROS_WARN("The setState method is not implemented because moveit has its own state representation");
   }
 
-  tesseract::EnvStatePtr getState(const std::map<std::string, double> &joints) const
+  tesseract::EnvStatePtr getState(const std::unordered_map<std::string, double> &joints) const
   {
     ROS_WARN("The getState method is not implemented because moveit has its own state representation");
     return nullptr;

@@ -185,7 +185,7 @@ int main(int argc, char** argv)
   pnh.param("plotting", plotting_, plotting_);
 
   // Set the robot initial state
-  std::map<std::string, double> ipos;
+  std::unordered_map<std::string, double> ipos;
   ipos["joint_a1"] = -0.785398;
   ipos["joint_a2"] = 0.4;
   ipos["joint_a3"] = 0.0;

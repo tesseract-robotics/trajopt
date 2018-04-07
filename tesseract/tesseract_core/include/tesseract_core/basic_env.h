@@ -32,16 +32,23 @@
 #include <Eigen/Geometry>
 #include <boost/shared_ptr.hpp>
 #include <tesseract_core/basic_kin.h>
-#include <map>
+#include <unordered_map>
 
 namespace tesseract
 {
 
 typedef Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> TrajArray;
 
+
 struct AllowedCollisionMatrix
 {
-  virtual bool isCollisionAllowed(const std::string& obj1, const std::string& obj2) const = 0;
+  /**
+   * @brief This checks if two links are allowed to be in collision
+   * @param link_name1 First link name
+   * @param link_name2 Second link anme
+   * @return True if allowed to be in collision, otherwise false
+   */
+  virtual bool isCollisionAllowed(const std::string& link_name1, const std::string& link_name2) const = 0;
 };
 typedef boost::shared_ptr<AllowedCollisionMatrix> AllowedCollisionMatrixPtr;
 typedef boost::shared_ptr<const AllowedCollisionMatrix> AllowedCollisionMatrixConstPtr;
@@ -131,8 +138,8 @@ typedef std::vector<DistanceResult> DistanceResultVector;
 /** @brief This holds a state of the environment */
 struct EnvState
 {
-  std::map<std::string, double> joints;
-  std::map<std::string, Eigen::Affine3d> transforms;
+  std::unordered_map<std::string, double> joints;
+  std::unordered_map<std::string, Eigen::Affine3d> transforms;
 };
 typedef boost::shared_ptr<EnvState> EnvStatePtr;
 typedef boost::shared_ptr<const EnvState> EnvStateConstPtr;
@@ -196,7 +203,7 @@ public:
   virtual bool continuousCollisionCheckTrajectory(const std::vector<std::string> &joint_names, const std::vector<std::string> &link_names, const TrajArray& traj, DistanceResult& collision) const = 0;
 
   /** @brief Set the current state of the environment */
-  virtual void setState(const std::map<std::string, double> &joints) = 0;
+  virtual void setState(const std::unordered_map<std::string, double> &joints) = 0;
   virtual void setState(const std::vector<std::string> &joint_names, const Eigen::VectorXd &joint_values) = 0;
 
   /** @brief Get the current state of the environment */
@@ -210,7 +217,7 @@ public:
    * @param joints A map of joint names to joint values to change.
    * @return A the state of the environment
    */
-  virtual EnvStatePtr getState(const std::map<std::string, double> &joints) const = 0;
+  virtual EnvStatePtr getState(const std::unordered_map<std::string, double> &joints) const = 0;
   virtual EnvStatePtr getState(const std::vector<std::string> &joint_names, const Eigen::VectorXd &joint_values) const = 0;
 
   /**

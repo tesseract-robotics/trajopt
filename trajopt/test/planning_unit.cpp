@@ -53,7 +53,7 @@ public:
     bool success = env_->init(model_, srdf_model_);
     assert(success);
 
-    std::map<std::string, double> ipos;
+    std::unordered_map<std::string, double> ipos;
     ipos["torso_lift_joint"] = 0.0;
     env_->setState(ipos);
 
@@ -111,7 +111,7 @@ TEST_F(PlanningTest, arm_around_table)
   std::string package_path = ros::package::getPath("trajopt_test_support");
   Json::Value root = readJsonFile(package_path + "/config/arm_around_table.json");
 
-  std::map<std::string, double> ipos;
+  std::unordered_map<std::string, double> ipos;
   ipos["torso_lift_joint"] = 0;
   ipos["r_shoulder_pan_joint"] = -1.832;
   ipos["r_shoulder_lift_joint"] = -0.332;

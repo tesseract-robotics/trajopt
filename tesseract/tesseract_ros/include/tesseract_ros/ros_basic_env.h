@@ -47,10 +47,10 @@ struct ROSAllowedCollisionMatrix : public AllowedCollisionMatrix
    * @param obj2 Collision object name
    * @param reason The reason for disabling collison
    */
-  virtual void addAllowedCollision(const std::string &obj1, const std::string &obj2, const std::string &reason)
+  virtual void addAllowedCollision(const std::string &link_name1, const std::string &link_name2, const std::string &reason)
   {
-    lookup_table_[obj1 + obj2] = reason;
-    lookup_table_[obj2 + obj1] = reason;
+    lookup_table_[link_name1 + link_name2] = reason;
+    lookup_table_[link_name2 + link_name1] = reason;
   }
 
   /**
@@ -58,15 +58,15 @@ struct ROSAllowedCollisionMatrix : public AllowedCollisionMatrix
    * @param obj1 Collision object name
    * @param obj2 Collision object name
    */
-  virtual void removeAllowedCollision(const std::string &obj1, const std::string &obj2)
+  virtual void removeAllowedCollision(const std::string &link_name1, const std::string &link_name2)
   {
-    lookup_table_.erase(obj1 + obj2);
-    lookup_table_.erase(obj2 + obj1);
+    lookup_table_.erase(link_name1 + link_name2);
+    lookup_table_.erase(link_name2 + link_name1);
   }
 
-  bool isCollisionAllowed(const std::string &obj1, const std::string &obj2) const
+  bool isCollisionAllowed(const std::string &link_name1, const std::string &link_name2) const
   {
-    return (lookup_table_.find(obj1 + obj2) != lookup_table_.end());
+    return (lookup_table_.find(link_name1 + link_name2) != lookup_table_.end());
   }
 
 private:

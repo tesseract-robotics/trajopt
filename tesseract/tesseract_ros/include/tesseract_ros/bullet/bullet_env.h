@@ -46,10 +46,10 @@ public:
 
   const EnvStateConstPtr getState() const {return current_state_; }
 
-  void setState(const std::map<std::string, double> &joints);
+  void setState(const std::unordered_map<std::string, double> &joints);
   void setState(const std::vector<std::string> &joint_names, const Eigen::VectorXd &joint_values);
 
-  EnvStatePtr getState(const std::map<std::string, double> &joints) const;
+  EnvStatePtr getState(const std::unordered_map<std::string, double> &joints) const;
   EnvStatePtr getState(const std::vector<std::string> &joint_names, const Eigen::VectorXd &joint_values) const;
 
   std::vector<std::string> getJointNames() const { return joint_names_; }
@@ -91,19 +91,19 @@ public:
   void plotWaitForInput();
 
 private:
-  bool initialized_;                                                   /**< Identifies if the object has been initialized */
-  urdf::ModelInterfaceConstSharedPtr model_;                           /**< URDF MODEL */
-  srdf::ModelConstSharedPtr srdf_model_;                               /**< SRDF MODEL */
-  boost::shared_ptr<const KDL::Tree> kdl_tree_;                        /**< KDL tree object */
-  Link2ConstCow link2cow_;                                             /**< Collision objects */
-  EnvStatePtr current_state_;                                          /**< Current state of the robot */
-  std::map<std::string, unsigned int> joint_to_qnr_;                   /**< Map between joint name and kdl q index */
-  KDL::JntArray kdl_jnt_array_;                                        /**< The kdl joint array */
-  std::map<std::string, AttachedBodyConstPtr> attached_bodies_;        /**< A map of attached bodies */
-  std::map<std::string, AttachableObjectConstPtr> attachable_objects_; /**< A map of objects that can be attached/detached from environment */
-  std::map<std::string, BasicKinConstPtr> manipulators_;               /**< A map of manipulator names to kinematics object */
-  std::vector<std::string> link_names_;                                /**< A vector of link names */
-  std::vector<std::string> joint_names_;                               /**< A vector of joint names */
+  bool initialized_;                                                             /**< Identifies if the object has been initialized */
+  urdf::ModelInterfaceConstSharedPtr model_;                                     /**< URDF MODEL */
+  srdf::ModelConstSharedPtr srdf_model_;                                         /**< SRDF MODEL */
+  boost::shared_ptr<const KDL::Tree> kdl_tree_;                                  /**< KDL tree object */
+  Link2ConstCow link2cow_;                                                       /**< Collision objects */
+  EnvStatePtr current_state_;                                                    /**< Current state of the robot */
+  std::unordered_map<std::string, unsigned int> joint_to_qnr_;                   /**< Map between joint name and kdl q index */
+  KDL::JntArray kdl_jnt_array_;                                                  /**< The kdl joint array */
+  std::unordered_map<std::string, AttachedBodyConstPtr> attached_bodies_;        /**< A map of attached bodies */
+  std::unordered_map<std::string, AttachableObjectConstPtr> attachable_objects_; /**< A map of objects that can be attached/detached from environment */
+  std::unordered_map<std::string, BasicKinConstPtr> manipulators_;               /**< A map of manipulator names to kinematics object */
+  std::vector<std::string> link_names_;                                          /**< A vector of link names */
+  std::vector<std::string> joint_names_;                                         /**< A vector of joint names */
 
   bool plotting_;                                         /**< Enable plotting */
   int marker_counter_;                                    /**< Counter when plotting */
@@ -116,8 +116,8 @@ private:
 
   moveit_msgs::RobotStatePtr getRobotStateMsg() const;
 
-  void calculateTransforms(std::map<std::string, Eigen::Affine3d> &transforms, const KDL::JntArray& q_in, const KDL::SegmentMap::const_iterator& it, const Eigen::Affine3d& parent_frame) const;
-  void calculateTransformsHelper(std::map<std::string, Eigen::Affine3d> &transforms, const KDL::JntArray& q_in, const KDL::SegmentMap::const_iterator& it, const Eigen::Affine3d& parent_frame) const;
+  void calculateTransforms(std::unordered_map<std::string, Eigen::Affine3d> &transforms, const KDL::JntArray& q_in, const KDL::SegmentMap::const_iterator& it, const Eigen::Affine3d& parent_frame) const;
+  void calculateTransformsHelper(std::unordered_map<std::string, Eigen::Affine3d> &transforms, const KDL::JntArray& q_in, const KDL::SegmentMap::const_iterator& it, const Eigen::Affine3d& parent_frame) const;
 
   bool setJointValuesHelper(KDL::JntArray &q, const std::string &joint_name, const double &joint_value) const;
 
