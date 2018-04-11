@@ -71,6 +71,8 @@ public:
 
   Eigen::VectorXd getCurrentJointValues(const std::string &manipulator_name) const;
 
+  const std::string& getRootLinkName() const { return env_->getPlanningFrame(); }
+
   std::vector<std::string> getLinkNames() const;
 
   Eigen::Affine3d getLinkTransform(const std::string& link_name) const;

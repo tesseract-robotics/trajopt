@@ -39,7 +39,6 @@ namespace tesseract
 
 typedef Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> TrajArray;
 
-
 struct AllowedCollisionMatrix
 {
   /**
@@ -231,6 +230,12 @@ public:
    * @return A vector of joint values
    */
   virtual Eigen::VectorXd getCurrentJointValues(const std::string &manipulator_name) const = 0;
+
+  /**
+   * @brief Get the root link name
+   * @return String
+   */
+  virtual const std::string& getRootLinkName() const = 0;
 
   /**
    * @brief Get a vector of link names in the environment

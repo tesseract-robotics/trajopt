@@ -5,6 +5,7 @@ add_compile_options(-std=c++11)
 
 find_package(catkin REQUIRED COMPONENTS
   tesseract_core
+  tesseract_msgs
   trajopt_ext
   roscpp
   urdf
@@ -30,6 +31,7 @@ catkin_package(
     ${orocos_kdl_LIBRARIES}
   CATKIN_DEPENDS
     tesseract_core
+    tesseract_msgs
     trajopt_ext
     roscpp
     urdf

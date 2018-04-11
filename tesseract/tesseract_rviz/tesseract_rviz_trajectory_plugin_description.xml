@@ -1,0 +1,7 @@
+<library path="libtesseract_rviz_trajectory_plugin">
+  <class name="tesseract_rviz/TesseractTrajectory" type="tesseract_rviz::TesseractTrajectoryDisplay" base_class_type="rviz::Display">
+    <description>
+      Displays a tesseract environment state.
+    </description>
+  </class>
+</library>

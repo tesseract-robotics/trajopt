@@ -35,8 +35,13 @@
 #include <tesseract_core/basic_env.h>
 #include <map>
 #include <unordered_map>
+#include <urdf/model.h>
+#include <srdfdom/model.h>
 
 namespace tesseract
+{
+
+namespace tesseract_ros
 {
 
 struct ROSAllowedCollisionMatrix : public AllowedCollisionMatrix
@@ -75,30 +80,48 @@ private:
 typedef boost::shared_ptr<ROSAllowedCollisionMatrix> ROSAllowedCollisionMatrixPtr;
 typedef boost::shared_ptr<const ROSAllowedCollisionMatrix> ROSAllowedCollisionMatrixConstPtr;
 
+/**< @brief Information on how the object is attached to the environment */
 struct AttachedBodyInfo
 {
-  std::string name;
-  std::string parent_link_name;
-  std::string object_name;
-  std::vector<std::string> touch_links;
+  std::string name;                     /**< @brief The name of the attached body (must be unique) */
+  std::string parent_link_name;         /**< @brief The name of the link to attach the body */
+  std::string object_name;              /**< @brief The name of the AttachableObject being used */
+  std::vector<std::string> touch_links; /**< @brief The names of links which the attached body is allowed to be in contact with */
 };
 
+/** @brief Contains geometry data for an attachable object */
+struct AttachableObjectGeometry
+{
+  std::vector<shapes::ShapeConstPtr> shapes;  /**< @brief The shape */
+  EigenSTL::vector_Affine3d shape_poses;      /**< @brief The pose of the shape */
+  EigenSTL::vector_Vector4d shape_colors;     /**< @brief (Optional) The shape color (R, G, B, A) */
+};
+
+/** @brief Contains data about an attachable object */
 struct AttachableObject
 {
-  std::string name;
-  std::vector<shapes::ShapeConstPtr> shapes;
-  EigenSTL::vector_Affine3d shapes_trans;
+  std::string name;                   /**< @brief The name of the attachable object */
+  AttachableObjectGeometry visual;    /**< @brief The objects visual geometry */
+  AttachableObjectGeometry collision; /**< @brief The objects collision geometry */
 };
 typedef boost::shared_ptr<AttachableObject> AttachableObjectPtr;
 typedef boost::shared_ptr<const AttachableObject> AttachableObjectConstPtr;
 
+/** @brief Contains data representing an attached body */
 struct AttachedBody
 {
-   AttachedBodyInfo info;
-   AttachableObjectConstPtr obj;
+   AttachedBodyInfo info;        /**< @brief Information on how the object is attached to the environment */
+   AttachableObjectConstPtr obj; /**< @brief The attached bodies object data */
 };
 typedef boost::shared_ptr<AttachedBody> AttachedBodyPtr;
 typedef boost::shared_ptr<const AttachedBody> AttachedBodyConstPtr;
+
+/** @brief ObjectColorMap Stores Object color in a 4d vector as RGBA*/
+typedef std::unordered_map<std::string, std_msgs::ColorRGBA> ObjectColorMap;
+typedef boost::shared_ptr<ObjectColorMap> ObjectColorMapPtr;
+typedef boost::shared_ptr<const ObjectColorMap> ObjectColorMapConstPtr;
+typedef std::unordered_map<std::string, AttachedBodyConstPtr> AttachedBodyConstPtrMap;
+typedef std::unordered_map<std::string, AttachableObjectConstPtr> AttachableObjectConstPtrMap;
 
 class ROSBasicEnv : public BasicEnv
 {
@@ -123,14 +146,38 @@ public:
    *
    * @param attachable_object The object information
    */
-  virtual void addAttachableObject(const AttachableObjectConstPtr &attachable_object) = 0;
+  virtual void addAttachableObject(const AttachableObjectConstPtr attachable_object) = 0;
 
   /**
-   * @brief Get object attached to the manipulator or world
-   * @param name The name of the object
+   * @brief Remove object from list of available objects to be attached
+   *
+   * This will not remove any bodies using the object.
+   *
+   * @param name The name of the object to be removed
+   */
+  virtual void removeAttachableObject(const std::string& name) = 0;
+
+  /**
+   * @brief Get a map of available attachable objects
+   * @return A map of attachable objects
+   */
+  virtual const AttachableObjectConstPtrMap& getAttachableObjects() const = 0;
+
+  /** @brief This will remove all attachable objects */
+  virtual void clearAttachableObjects() = 0;
+
+  /**
+   * @brief Get attached body
+   * @param name The name of the body
    * @return AttachedBody
    */
   virtual const AttachedBodyConstPtr getAttachedBody(const std::string& name) const = 0;
+
+  /**
+   * @brief Get all attached bodies
+   * @return A map of attached bodies
+   */
+  virtual const AttachedBodyConstPtrMap& getAttachedBodies() const = 0;
 
   /**
    * @brief Attached an attachable object to the environment
@@ -143,6 +190,16 @@ public:
    * @param name The name given to the Attached Body when attached
    */
   virtual void detachBody(const std::string &name) = 0;
+
+  /** @brief This will detach all bodies */
+  virtual void clearAttachedBodies() = 0;
+
+  /** @brief Get a map of object names to colors */
+  virtual ObjectColorMapConstPtr getKnownObjectColors() const = 0;
+
+  virtual const urdf::ModelInterfaceConstSharedPtr getURDF() const = 0;
+
+  virtual const srdf::ModelConstSharedPtr getSRDF() const = 0;
 
   /////////////////////////
   // Implemented Methods //
@@ -167,6 +224,7 @@ protected:
 typedef boost::shared_ptr<ROSBasicEnv> ROSBasicEnvPtr;
 typedef boost::shared_ptr<const ROSBasicEnv> ROSBasicEnvConstPtr;
 
+} //namespace tesseract_ros
 } //namespace tesseract
 
 #endif // ROS_BASIC_ENV_H

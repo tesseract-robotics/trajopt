@@ -374,7 +374,7 @@ bool TrajOptMoveItEnv::hasManipulator(const std::string &manipulator_name) const
 
 tesseract::BasicKinConstPtr TrajOptMoveItEnv::getManipulator(const std::string &manipulator_name) const
 {
-  tesseract::KDLChainKinPtr manip(new tesseract::KDLChainKin());
+  tesseract::tesseract_ros::KDLChainKinPtr manip(new tesseract::tesseract_ros::KDLChainKin());
   auto jmg = env_->getRobotModel()->getJointModelGroup(manipulator_name);
   manip->init(env_->getRobotModel()->getURDF(), jmg->getLinkModels().front()->getParentLinkModel()->getName(), jmg->getLinkModels().back()->getName(), manipulator_name);
   return manip;

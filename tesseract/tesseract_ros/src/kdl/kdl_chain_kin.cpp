@@ -34,6 +34,8 @@
 
 namespace tesseract
 {
+namespace tesseract_ros
+{
 
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
@@ -380,6 +382,7 @@ KDLChainKin& KDLChainKin::operator=(const KDLChainKin& rhs)
   return *this;
 }
 
+}
 } // namespace trajopt
 
 

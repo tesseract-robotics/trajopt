@@ -36,6 +36,8 @@
 
 namespace tesseract
 {
+namespace tesseract_ros
+{
 
 /**
  * @brief Basic low-level kinematics functions.
@@ -55,6 +57,7 @@ public:
 
 typedef boost::shared_ptr<ROSBasicKin> ROSBasicKinPtr;
 typedef boost::shared_ptr<const ROSBasicKin> ROSBasicKinConstPtr;
+} // namespace tesseract_ros
 } // namespace trajopt
 
 #endif // BASIC_KIN_H

@@ -26,6 +26,7 @@ using namespace trajopt;
 using namespace std;
 using namespace util;
 using namespace boost::assign;
+using namespace tesseract;
 
 const std::string ROBOT_DESCRIPTION_PARAM = "robot_description"; /**< Default ROS parameter for robot description */
 const std::string ROBOT_SEMANTIC_PARAM = "robot_description_semantic"; /**< Default ROS parameter for robot description */
@@ -36,7 +37,7 @@ public:
   ros::NodeHandle nh_;
   urdf::ModelInterfaceSharedPtr model_;  /**< URDF Model */
   srdf::ModelSharedPtr srdf_model_;      /**< SRDF Model */
-  tesseract::BulletEnvPtr env_;   /**< Trajopt Basic Environment */
+  tesseract_ros::BulletEnvPtr env_;      /**< Trajopt Basic Environment */
 
   virtual void SetUp()
   {
@@ -47,7 +48,7 @@ public:
 
     srdf_model_ = srdf::ModelSharedPtr(new srdf::Model);
     srdf_model_->initString(*model_, srdf_xml_string);
-    env_ = tesseract::BulletEnvPtr(new tesseract::BulletEnv);
+    env_ = tesseract_ros::BulletEnvPtr(new tesseract_ros::BulletEnv);
     assert(model_ != nullptr);
     assert(env_ != nullptr);
 

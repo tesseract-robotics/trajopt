@@ -11,9 +11,11 @@
 #include <srdfdom/model.h>
 #include <visualization_msgs/Marker.h>
 #include <visualization_msgs/MarkerArray.h>
-#include <moveit_msgs/DisplayRobotState.h>
+#include <boost/thread/mutex.hpp>
 
 namespace tesseract
+{
+namespace tesseract_ros
 {
 
 class BulletEnv : public ROSBasicEnv
@@ -56,6 +58,8 @@ public:
 
   Eigen::VectorXd getCurrentJointValues(const std::string &manipulator_name) const;
 
+  const std::string& getRootLinkName() const { return kdl_tree_->getRootSegment()->second.segment.getName(); }
+
   std::vector<std::string> getLinkNames() const { return link_names_; }
 
   Eigen::Affine3d getLinkTransform(const std::string& link_name) const;
@@ -66,13 +70,29 @@ public:
 
   bool addManipulator(const std::string &base_link, const std::string &tip_link, const std::string &manipulator_name);
 
-  void addAttachableObject(const AttachableObjectConstPtr &attachable_object);
+  ObjectColorMapConstPtr getKnownObjectColors() const { return object_colors_; }
+
+  void addAttachableObject(const AttachableObjectConstPtr attachable_object);
+
+  void removeAttachableObject(const std::string& name);
+
+  const AttachableObjectConstPtrMap& getAttachableObjects() const { return attachable_objects_; }
+
+  void clearAttachableObjects();
 
   const AttachedBodyConstPtr getAttachedBody(const std::string& name) const;
+
+  const AttachedBodyConstPtrMap& getAttachedBodies() const { return attached_bodies_; }
 
   void attachBody(const AttachedBodyInfo &attached_body_info);
 
   void detachBody(const std::string &name);
+
+  void clearAttachedBodies();
+
+  const urdf::ModelInterfaceConstSharedPtr getURDF() const { return model_; }
+
+  const srdf::ModelConstSharedPtr getSRDF() const { return srdf_model_; }
 
   void updateVisualization() const;
 
@@ -91,19 +111,21 @@ public:
   void plotWaitForInput();
 
 private:
-  bool initialized_;                                                             /**< Identifies if the object has been initialized */
-  urdf::ModelInterfaceConstSharedPtr model_;                                     /**< URDF MODEL */
-  srdf::ModelConstSharedPtr srdf_model_;                                         /**< SRDF MODEL */
-  boost::shared_ptr<const KDL::Tree> kdl_tree_;                                  /**< KDL tree object */
-  Link2ConstCow link2cow_;                                                       /**< Collision objects */
-  EnvStatePtr current_state_;                                                    /**< Current state of the robot */
-  std::unordered_map<std::string, unsigned int> joint_to_qnr_;                   /**< Map between joint name and kdl q index */
-  KDL::JntArray kdl_jnt_array_;                                                  /**< The kdl joint array */
-  std::unordered_map<std::string, AttachedBodyConstPtr> attached_bodies_;        /**< A map of attached bodies */
-  std::unordered_map<std::string, AttachableObjectConstPtr> attachable_objects_; /**< A map of objects that can be attached/detached from environment */
-  std::unordered_map<std::string, BasicKinConstPtr> manipulators_;               /**< A map of manipulator names to kinematics object */
-  std::vector<std::string> link_names_;                                          /**< A vector of link names */
-  std::vector<std::string> joint_names_;                                         /**< A vector of joint names */
+  bool initialized_;                                                /**< Identifies if the object has been initialized */
+  urdf::ModelInterfaceConstSharedPtr model_;                        /**< URDF MODEL */
+  srdf::ModelConstSharedPtr srdf_model_;                            /**< SRDF MODEL */
+  boost::shared_ptr<const KDL::Tree> kdl_tree_;                     /**< KDL tree object */
+  Link2ConstCow link2cow_;                                          /**< Collision objects */
+  EnvStatePtr current_state_;                                       /**< Current state of the robot */
+  std::unordered_map<std::string, unsigned int> joint_to_qnr_;      /**< Map between joint name and kdl q index */
+  KDL::JntArray kdl_jnt_array_;                                     /**< The kdl joint array */
+  AttachedBodyConstPtrMap attached_bodies_;                         /**< A map of attached bodies */
+  AttachableObjectConstPtrMap attachable_objects_;                  /**< A map of objects that can be attached/detached from environment */
+  std::unordered_map<std::string, BasicKinConstPtr> manipulators_;  /**< A map of manipulator names to kinematics object */
+  std::vector<std::string> link_names_;                             /**< A vector of link names */
+  std::vector<std::string> joint_names_;                            /**< A vector of joint names */
+  ObjectColorMapConstPtr object_colors_;                            /**< A map of objects to color */
+  boost::mutex modify_env_mutex_;
 
   bool plotting_;                                         /**< Enable plotting */
   int marker_counter_;                                    /**< Counter when plotting */
@@ -112,9 +134,6 @@ private:
   ros::Publisher collisions_pub_;                         /**< Collision Data publisher */
   ros::Publisher arrows_pub_;                             /**< Used for publishing arrow markers */
   ros::Publisher axes_pub_;                               /**< Used for publishing axis markers */
-
-
-  moveit_msgs::RobotStatePtr getRobotStateMsg() const;
 
   void calculateTransforms(std::unordered_map<std::string, Eigen::Affine3d> &transforms, const KDL::JntArray& q_in, const KDL::SegmentMap::const_iterator& it, const Eigen::Affine3d& parent_frame) const;
   void calculateTransformsHelper(std::unordered_map<std::string, Eigen::Affine3d> &transforms, const KDL::JntArray& q_in, const KDL::SegmentMap::const_iterator& it, const Eigen::Affine3d& parent_frame) const;
@@ -134,6 +153,7 @@ private:
 };
 typedef boost::shared_ptr<BulletEnv> BulletEnvPtr;
 typedef boost::shared_ptr<const BulletEnv> BulletEnvConstPtr;
+}
 }
 
 #endif // TESSERACT_ROS_BULLET_ENV_H

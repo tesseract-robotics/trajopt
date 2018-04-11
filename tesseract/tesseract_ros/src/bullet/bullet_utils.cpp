@@ -10,6 +10,8 @@
 
 namespace tesseract
 {
+namespace tesseract_ros
+{
 
 btCollisionShape* createShapePrimitive(const shapes::ShapeConstPtr& geom, bool useTrimesh, CollisionObjectWrapper* cow)
 {
@@ -172,9 +174,9 @@ CollisionObjectWrapper::CollisionObjectWrapper(const AttachedBody* ab) : m_type(
 {
   ptr.m_ab = ab;
 
-  if (ptr.m_ab->obj->shapes.empty()) return;
+  if (ptr.m_ab->obj->collision.shapes.empty()) return;
 
-  initialize(ptr.m_ab->obj->shapes, ptr.m_ab->obj->shapes_trans);
+  initialize(ptr.m_ab->obj->collision.shapes, ptr.m_ab->obj->collision.shape_poses);
 }
 
 void CollisionObjectWrapper::initialize(const std::vector<shapes::ShapeConstPtr> &shapes, const EigenSTL::vector_Affine3d &transforms)
@@ -212,4 +214,5 @@ void CollisionObjectWrapper::initialize(const std::vector<shapes::ShapeConstPtr>
   setWorldTransform(trans);
 }
 
+}
 }

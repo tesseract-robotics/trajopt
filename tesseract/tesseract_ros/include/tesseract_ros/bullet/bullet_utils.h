@@ -9,6 +9,8 @@
 
 namespace tesseract
 {
+namespace tesseract_ros
+{
 #define METERS
 
 const float BULLET_MARGIN = 0;
@@ -936,5 +938,6 @@ inline Eigen::Affine3d urdfPose2Affine3d(const urdf::Pose& pose)
   return af;
 }
 
+}
 }
 #endif // TESSERACT_ROS_BULLET_UTILS_H

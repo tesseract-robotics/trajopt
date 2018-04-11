@@ -10,6 +10,7 @@
 #include <srdfdom/model.h>
 
 using namespace trajopt;
+using namespace tesseract;
 
 const std::string ROBOT_DESCRIPTION_PARAM = "robot_description"; /**< Default ROS parameter for robot description */
 const std::string ROBOT_SEMANTIC_PARAM = "robot_description_semantic"; /**< Default ROS parameter for robot description */
@@ -18,9 +19,9 @@ const std::string TRAJOPT_DESCRIPTION_PARAM = "trajopt_description"; /**< Defaul
 bool plotting_ = false;
 int steps_ = 5;
 std::string method_ = "json";
-urdf::ModelInterfaceSharedPtr model_;  /**< URDF Model */
-srdf::ModelSharedPtr srdf_model_;      /**< SRDF Model */
-tesseract::BulletEnvPtr env_;   /**< Trajopt Basic Environment */
+urdf::ModelInterfaceSharedPtr model_; /**< URDF Model */
+srdf::ModelSharedPtr srdf_model_;     /**< SRDF Model */
+tesseract_ros::BulletEnvPtr env_;     /**< Trajopt Basic Environment */
 
 TrajOptProbPtr jsonMethod()
 {
@@ -130,7 +131,7 @@ int main(int argc, char** argv)
 
   srdf_model_ = srdf::ModelSharedPtr(new srdf::Model);
   srdf_model_->initString(*model_, srdf_xml_string);
-  env_ = tesseract::BulletEnvPtr(new tesseract::BulletEnv);
+  env_ = tesseract_ros::BulletEnvPtr(new tesseract_ros::BulletEnv);
   assert(model_ != nullptr);
   assert(env_ != nullptr);
 
@@ -138,8 +139,8 @@ int main(int argc, char** argv)
   assert(success);
 
   // Add sphere
-  tesseract::AttachableObjectPtr obj(new tesseract::AttachableObject());
-  shapes::Sphere* sphere = new shapes::Sphere();
+  tesseract_ros::AttachableObjectPtr obj(new tesseract_ros::AttachableObject());
+  std::shared_ptr<shapes::Sphere> sphere(new shapes::Sphere());
   Eigen::Affine3d sphere_pose;
 
   sphere->radius = 0.15;
@@ -148,11 +149,14 @@ int main(int argc, char** argv)
   sphere_pose.translation() = Eigen::Vector3d(0.5, 0, 0.55);
 
   obj->name = "sphere_attached";
-  obj->shapes.push_back(shapes::ShapeConstPtr(sphere));
-  obj->shapes_trans.push_back(sphere_pose);
+  obj->visual.shapes.push_back(sphere);
+  obj->visual.shape_poses.push_back(sphere_pose);
+  obj->collision.shapes.push_back(sphere);
+  obj->collision.shape_poses.push_back(sphere_pose);
+
   env_->addAttachableObject(obj);
 
-  tesseract::AttachedBodyInfo attached_body;
+  tesseract_ros::AttachedBodyInfo attached_body;
   attached_body.name = "attached_body";
   attached_body.object_name = "sphere_attached";
   attached_body.parent_link_name = "base_link";
@@ -174,6 +178,8 @@ int main(int argc, char** argv)
   ipos["joint_a6"] = 1.4959;
   ipos["joint_a7"] = 0.0;
   env_->setState(ipos);
+
+  env_->updateVisualization();
 
   // Set Log Level
   gLogLevel = util::LevelInfo;

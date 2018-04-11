@@ -11,6 +11,8 @@
 
 namespace tesseract
 {
+namespace tesseract_ros
+{
 
 /**
  * @brief ROS kinematics functions.
@@ -149,5 +151,6 @@ private:
 
 typedef boost::shared_ptr<KDLChainKin> KDLChainKinPtr;
 typedef boost::shared_ptr<const KDLChainKin> KDLChainKinConstPtr;
+}
 }
 #endif // TESSERACT_ROS_KDL_CHAIN_KIN_H

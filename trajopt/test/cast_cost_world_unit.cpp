@@ -29,6 +29,7 @@ using namespace trajopt;
 using namespace std;
 using namespace util;
 using namespace boost::assign;
+using namespace tesseract;
 
 const std::string ROBOT_DESCRIPTION_PARAM = "robot_description"; /**< Default ROS parameter for robot description */
 const std::string ROBOT_SEMANTIC_PARAM = "robot_description_semantic"; /**< Default ROS parameter for robot description */
@@ -39,7 +40,7 @@ public:
   ros::NodeHandle nh_;
   urdf::ModelInterfaceSharedPtr model_;  /**< URDF Model */
   srdf::ModelSharedPtr srdf_model_;      /**< SRDF Model */
-  tesseract::BulletEnvPtr env_;   /**< Trajopt Basic Environment */
+  tesseract_ros::BulletEnvPtr env_;   /**< Trajopt Basic Environment */
 
   virtual void SetUp()
   {
@@ -50,7 +51,7 @@ public:
 
     srdf_model_ = srdf::ModelSharedPtr(new srdf::Model);
     srdf_model_->initString(*model_, srdf_xml_string);
-    env_ = tesseract::BulletEnvPtr(new tesseract::BulletEnv);
+    env_ = tesseract_ros::BulletEnvPtr(new tesseract_ros::BulletEnv);
     assert(model_ != nullptr);
     assert(env_ != nullptr);
 
@@ -58,7 +59,7 @@ public:
     assert(success);
 
     // Next add objects that can be attached/detached to the scene
-    tesseract::AttachableObjectPtr obj(new tesseract::AttachableObject());
+    tesseract_ros::AttachableObjectPtr obj(new tesseract_ros::AttachableObject());
     shapes::Box* box = new shapes::Box();
     Eigen::Affine3d box_pose;
 
@@ -81,7 +82,7 @@ public:
 TEST_F(CastWorldTest, boxes) {
   ROS_DEBUG("CastTest, boxes");
 
-  tesseract::AttachedBodyInfo attached_body;
+  tesseract_ros::AttachedBodyInfo attached_body;
   attached_body.name = "attached_body";
   attached_body.object_name = "box_world";
   attached_body.parent_link_name = "base_link";

@@ -1,5 +1,8 @@
 #include "tesseract_ros/bullet/bullet_env.h"
 #include "tesseract_ros/kdl/kdl_chain_kin.h"
+#include "tesseract_ros/ros_tesseract_utils.h"
+#include <tesseract_msgs/TesseractState.h>
+#include <tesseract_msgs/Trajectory.h>
 #include <moveit_msgs/DisplayTrajectory.h>
 #include <geometric_shapes/shape_operations.h>
 #include <eigen_conversions/eigen_msg.h>
@@ -8,6 +11,8 @@
 #include <octomap/octomap.h>
 
 namespace tesseract
+{
+namespace tesseract_ros
 {
 
 using Eigen::MatrixXd;
@@ -62,7 +67,7 @@ bool BulletEnv::init(const urdf::ModelInterfaceConstSharedPtr urdf_model, const 
         }
         else
         {
-          ROS_WARN("ignoring link %s", link.second->name.c_str());
+          ROS_DEBUG("ignoring link %s", link.second->name.c_str());
         }
       }
     }
@@ -109,8 +114,8 @@ bool BulletEnv::init(const urdf::ModelInterfaceConstSharedPtr urdf_model, const 
     }
   }
 
-  scene_pub_ = nh.advertise<moveit_msgs::DisplayRobotState>("/trajopt/scene", 1, true);
-  trajectory_pub_ = nh.advertise<moveit_msgs::DisplayTrajectory>("/trajopt/display_planned_path", 1, true);
+  scene_pub_ = nh.advertise<tesseract_msgs::TesseractState>("/trajopt/display_tesseract_state", 1, true);
+  trajectory_pub_ = nh.advertise<tesseract_msgs::Trajectory>("/trajopt/display_tesseract_trajectory", 1, true);
   collisions_pub_ = nh.advertise<visualization_msgs::MarkerArray>("/trajopt/display_collisions", 1, true);
   arrows_pub_ = nh.advertise<visualization_msgs::MarkerArray>("/trajopt/display_arrows", 1, true);
   axes_pub_ = nh.advertise<visualization_msgs::MarkerArray>("/trajopt/display_axes", 1, true);
@@ -314,6 +319,8 @@ bool BulletEnv::continuousCollisionCheckTrajectory(const std::vector<std::string
 
 void BulletEnv::setState(const std::unordered_map<std::string, double> &joints)
 {
+  boost::mutex::scoped_lock(modify_env_mutex_);
+
   current_state_->joints.insert(joints.begin(), joints.end());
 
   for (auto& joint : joints)
@@ -329,6 +336,7 @@ void BulletEnv::setState(const std::unordered_map<std::string, double> &joints)
 
 void BulletEnv::setState(const std::vector<std::string> &joint_names, const Eigen::VectorXd &joint_values)
 {
+  boost::mutex::scoped_lock(modify_env_mutex_);
 
   for (auto i = 0; i < joint_names.size(); ++i)
   {
@@ -403,6 +411,8 @@ Eigen::Affine3d BulletEnv::getLinkTransform(const std::string& link_name) const
 
 bool BulletEnv::addManipulator(const std::string &base_link, const std::string &tip_link, const std::string &manipulator_name)
 {
+  boost::mutex::scoped_lock(modify_env_mutex_);
+
   if (!hasManipulator(manipulator_name))
   {
     KDLChainKinPtr manip(new KDLChainKin());
@@ -442,16 +452,31 @@ std::string BulletEnv::getManipulatorName(const std::vector<std::string> &joint_
   return "";
 }
 
-void BulletEnv::addAttachableObject(const AttachableObjectConstPtr &attachable_object)
+void BulletEnv::addAttachableObject(const AttachableObjectConstPtr attachable_object)
 {
+  boost::mutex::scoped_lock(modify_env_mutex_);
+
   const auto object = attachable_objects_.find(attachable_object->name);
   if (object != attachable_objects_.end())
-  {
-    ROS_ERROR("Tried to add attachable object %s which which already exists!", attachable_object->name.c_str());
-    return;
-  }
+    ROS_DEBUG("Replacing attachable object %s!", attachable_object->name.c_str());
 
-  attachable_objects_.insert(std::make_pair(attachable_object->name, attachable_object));
+  attachable_objects_[attachable_object->name] = attachable_object;
+}
+
+void BulletEnv::removeAttachableObject(const std::string& name)
+{
+  boost::mutex::scoped_lock(modify_env_mutex_);
+
+  if (attachable_objects_.find(name) != attachable_objects_.end())
+  {
+    attachable_objects_.erase(name);
+  }
+}
+
+void BulletEnv::clearAttachableObjects()
+{
+  boost::mutex::scoped_lock(modify_env_mutex_);
+  attachable_objects_.clear();
 }
 
 const AttachedBodyConstPtr BulletEnv::getAttachedBody(const std::string& name) const
@@ -465,24 +490,26 @@ const AttachedBodyConstPtr BulletEnv::getAttachedBody(const std::string& name) c
 
 void BulletEnv::attachBody(const AttachedBodyInfo &attached_body_info)
 {
+  boost::mutex::scoped_lock(modify_env_mutex_);
+
   const auto body_info = attached_bodies_.find(attached_body_info.name);
   const auto obj = attachable_objects_.find(attached_body_info.object_name);
 
   if (body_info != attached_bodies_.end())
   {
-    ROS_ERROR("Tried to attached body %s which is already attached!", attached_body_info.name.c_str());
+    ROS_DEBUG("Tried to attached body %s which is already attached!", attached_body_info.name.c_str());
     return;
   }
 
   if (obj == attachable_objects_.end())
   {
-    ROS_ERROR("Tried to attached body %s with object %s which does not exist!", attached_body_info.name.c_str(), attached_body_info.object_name.c_str());
+    ROS_DEBUG("Tried to attached body %s with object %s which does not exist!", attached_body_info.name.c_str(), attached_body_info.object_name.c_str());
     return;
   }
 
   if (std::find(link_names_.begin(), link_names_.end(), attached_body_info.name) != link_names_.end())
   {
-    ROS_ERROR("Tried to attached body %s with the same name as an existing link!", attached_body_info.name.c_str());
+    ROS_DEBUG("Tried to attached body %s with the same name as an existing link!", attached_body_info.name.c_str());
     return;
   }
 
@@ -502,18 +529,33 @@ void BulletEnv::attachBody(const AttachedBodyInfo &attached_body_info)
   }
   else
   {
-    ROS_WARN("Error creating attached body %s", attached_body_info.name.c_str());
+    ROS_ERROR("Error creating attached body %s", attached_body_info.name.c_str());
   }
 }
 
 void BulletEnv::detachBody(const std::string &name)
 {
+  boost::mutex::scoped_lock(modify_env_mutex_);
+
   if (attached_bodies_.find(name) != attached_bodies_.end())
   {
     attached_bodies_.erase(name);
     link2cow_.erase(name);
     link_names_.erase(std::remove(link_names_.begin(), link_names_.end(), name), link_names_.end());
   }
+}
+
+void BulletEnv::clearAttachedBodies()
+{
+  boost::mutex::scoped_lock(modify_env_mutex_);
+
+  for (const auto& body : attached_bodies_)
+  {
+    std::string name = body.second->info.name;
+    link2cow_.erase(name);
+    link_names_.erase(std::remove(link_names_.begin(), link_names_.end(), name), link_names_.end());
+  }
+  attached_bodies_.clear();
 }
 
 bool BulletEnv::setJointValuesHelper(KDL::JntArray &q, const std::string &joint_name, const double &joint_value) const
@@ -690,117 +732,119 @@ void BulletEnv::constructBulletObject(Link2Cow& collision_objects,
   }
 }
 
-moveit_msgs::RobotStatePtr BulletEnv::getRobotStateMsg() const
-{
-  moveit_msgs::RobotStatePtr msg(new moveit_msgs::RobotState());
-  msg->is_diff = false;
-  msg->joint_state.name.reserve(current_state_->joints.size());
-  msg->joint_state.position.reserve(current_state_->joints.size());
-  for (const auto& joint : current_state_->joints)
-  {
-    msg->joint_state.name.push_back(joint.first);
-    msg->joint_state.position.push_back(joint.second);
-  }
+//moveit_msgs::RobotStatePtr BulletEnv::getRobotStateMsg() const
+//{
+//  moveit_msgs::RobotStatePtr msg(new moveit_msgs::RobotState());
+//  msg->is_diff = false;
+//  msg->joint_state.name.reserve(current_state_->joints.size());
+//  msg->joint_state.position.reserve(current_state_->joints.size());
+//  for (const auto& joint : current_state_->joints)
+//  {
+//    msg->joint_state.name.push_back(joint.first);
+//    msg->joint_state.position.push_back(joint.second);
+//  }
 
-  for (const auto& body : attached_bodies_)
-  {
-    moveit_msgs::AttachedCollisionObject obj;
-    obj.link_name = body.second->info.parent_link_name;
-    obj.touch_links = body.second->info.touch_links;
+//  for (const auto& body : attached_bodies_)
+//  {
+//    moveit_msgs::AttachedCollisionObject obj;
+//    obj.link_name = body.second->info.parent_link_name;
+//    obj.touch_links = body.second->info.touch_links;
 
-    obj.object.id = body.second->obj->name;
-    obj.object.header.frame_id = body.second->info.parent_link_name;
-    obj.object.header.stamp = ros::Time::now();
+//    obj.object.id = body.second->obj->name;
+//    obj.object.header.frame_id = body.second->info.parent_link_name;
+//    obj.object.header.stamp = ros::Time::now();
 
-    for (auto i = 0; i < body.second->obj->shapes.size(); ++i)
-    {
-      const auto geom = body.second->obj->shapes[i];
-      const auto geom_pose = body.second->obj->shapes_trans[i];
-      if (geom->type == shapes::OCTREE)
-      {
-        const shapes::OcTree* g = static_cast<const shapes::OcTree*>(geom.get());
-        double occupancy_threshold = g->octree->getOccupancyThres();
+//    for (auto i = 0; i < body.second->obj->shapes.size(); ++i)
+//    {
+//      const auto geom = body.second->obj->shapes[i];
+//      const auto geom_pose = body.second->obj->shapes_trans[i];
+//      if (geom->type == shapes::OCTREE)
+//      {
+//        const shapes::OcTree* g = static_cast<const shapes::OcTree*>(geom.get());
+//        double occupancy_threshold = g->octree->getOccupancyThres();
 
-        for(auto it = g->octree->begin(g->octree->getTreeDepth()), end = g->octree->end(); it != end; ++it)
-        {
-          if(it->getOccupancy() >= occupancy_threshold)
-          {
-            double size = it.getSize();
-            shape_msgs::SolidPrimitive s;
-            s.type = shape_msgs::SolidPrimitive::BOX;
-            s.dimensions.resize(3);
-            s.dimensions[shape_msgs::SolidPrimitive::BOX_X] = size;
-            s.dimensions[shape_msgs::SolidPrimitive::BOX_Y] = size;
-            s.dimensions[shape_msgs::SolidPrimitive::BOX_Z] = size;
-            obj.object.primitives.push_back(s);
+//        for(auto it = g->octree->begin(g->octree->getTreeDepth()), end = g->octree->end(); it != end; ++it)
+//        {
+//          if(it->getOccupancy() >= occupancy_threshold)
+//          {
+//            double size = it.getSize();
+//            shape_msgs::SolidPrimitive s;
+//            s.type = shape_msgs::SolidPrimitive::BOX;
+//            s.dimensions.resize(3);
+//            s.dimensions[shape_msgs::SolidPrimitive::BOX_X] = size;
+//            s.dimensions[shape_msgs::SolidPrimitive::BOX_Y] = size;
+//            s.dimensions[shape_msgs::SolidPrimitive::BOX_Z] = size;
+//            obj.object.primitives.push_back(s);
 
-            Eigen::Affine3d trans, final_trans;
-            trans.setIdentity();
-            trans.translation() = Eigen::Vector3d(it.getX(), it.getY(), it.getZ());
-            final_trans = geom_pose * trans;
+//            Eigen::Affine3d trans, final_trans;
+//            trans.setIdentity();
+//            trans.translation() = Eigen::Vector3d(it.getX(), it.getY(), it.getZ());
+//            final_trans = geom_pose * trans;
 
-            geometry_msgs::Pose pose;
-            tf::poseEigenToMsg(final_trans, pose);
-            obj.object.primitive_poses.push_back(pose);
-          }
-        }
-      }
-      else if (geom->type == shapes::MESH)
-      {
-        shapes::ShapeMsg s;
-        shapes::constructMsgFromShape(geom.get(), s);
+//            geometry_msgs::Pose pose;
+//            tf::poseEigenToMsg(final_trans, pose);
+//            obj.object.primitive_poses.push_back(pose);
+//          }
+//        }
+//      }
+//      else if (geom->type == shapes::MESH)
+//      {
+//        shapes::ShapeMsg s;
+//        shapes::constructMsgFromShape(geom.get(), s);
 
-        obj.object.meshes.push_back(boost::get<shape_msgs::Mesh>(s));
+//        obj.object.meshes.push_back(boost::get<shape_msgs::Mesh>(s));
 
-        geometry_msgs::Pose pose;
-        tf::poseEigenToMsg(geom_pose, pose);
-        obj.object.mesh_poses.push_back(pose);
-      }
-      else if (geom->type == shapes::PLANE)
-      {
-        shapes::ShapeMsg s;
-        shapes::constructMsgFromShape(geom.get(), s);
-        obj.object.planes.push_back(boost::get<shape_msgs::Plane>(s));
+//        geometry_msgs::Pose pose;
+//        tf::poseEigenToMsg(geom_pose, pose);
+//        obj.object.mesh_poses.push_back(pose);
+//      }
+//      else if (geom->type == shapes::PLANE)
+//      {
+//        shapes::ShapeMsg s;
+//        shapes::constructMsgFromShape(geom.get(), s);
+//        obj.object.planes.push_back(boost::get<shape_msgs::Plane>(s));
 
-        geometry_msgs::Pose pose;
-        tf::poseEigenToMsg(geom_pose, pose);
-        obj.object.plane_poses.push_back(pose);
-      }
-      else //SolidPrimitive
-      {
-        shapes::ShapeMsg s;
-        shapes::constructMsgFromShape(geom.get(), s);
-        obj.object.primitives.push_back(boost::get<shape_msgs::SolidPrimitive>(s));
+//        geometry_msgs::Pose pose;
+//        tf::poseEigenToMsg(geom_pose, pose);
+//        obj.object.plane_poses.push_back(pose);
+//      }
+//      else //SolidPrimitive
+//      {
+//        shapes::ShapeMsg s;
+//        shapes::constructMsgFromShape(geom.get(), s);
+//        obj.object.primitives.push_back(boost::get<shape_msgs::SolidPrimitive>(s));
 
-        geometry_msgs::Pose pose;
-        tf::poseEigenToMsg(geom_pose, pose);
-        obj.object.primitive_poses.push_back(pose);
-      }
-    }
-    msg->attached_collision_objects.push_back(obj);
-  }
-  return msg;
-}
+//        geometry_msgs::Pose pose;
+//        tf::poseEigenToMsg(geom_pose, pose);
+//        obj.object.primitive_poses.push_back(pose);
+//      }
+//    }
+//    msg->attached_collision_objects.push_back(obj);
+//  }
+//  return msg;
+//}
 
 void BulletEnv::updateVisualization() const
 {
-  moveit_msgs::DisplayRobotState msg;
+  tesseract_msgs::TesseractState msg;
+  tesseract_ros::tesseractToTesseractStateMsg(msg, *this);
 
-  msg.state = *getRobotStateMsg();
   scene_pub_.publish(msg);
 }
 
 void BulletEnv::plotTrajectory(const std::string &name, const std::vector<std::string> &joint_names, const TrajArray &traj)
 {
-  moveit_msgs::DisplayTrajectory msg;
-  moveit_msgs::RobotTrajectory rt;
+  tesseract_msgs::Trajectory msg;
+
+  // Set the model id
+  msg.model_id = getURDF()->getName();
 
   // Set the Robot State so attached objects show up
-  msg.trajectory_start = *getRobotStateMsg();
+  tesseract_ros::tesseractToTesseractStateMsg(msg.trajectory_start, *this);
 
   // Initialze the whole traject with the current state.
-  rt.joint_trajectory.joint_names.resize(joint_to_qnr_.size());
-  rt.joint_trajectory.points.resize(traj.rows());
+  msg.joint_trajectory.joint_names.resize(joint_to_qnr_.size());
+  msg.joint_trajectory.points.resize(traj.rows());
   for (int i = 0; i < traj.rows(); ++i)
   {
     trajectory_msgs::JointTrajectoryPoint jtp;
@@ -809,12 +853,12 @@ void BulletEnv::plotTrajectory(const std::string &name, const std::vector<std::s
     {
       if (i == 0)
       {
-        rt.joint_trajectory.joint_names[it.second] = it.first;
+        msg.joint_trajectory.joint_names[it.second] = it.first;
       }
       jtp.positions[it.second] = kdl_jnt_array_(it.second);
     }
     jtp.time_from_start = ros::Duration(i);
-    rt.joint_trajectory.points[i] = jtp;
+    msg.joint_trajectory.points[i] = jtp;
   }
 
   // Update only the joints which were provided.
@@ -822,10 +866,9 @@ void BulletEnv::plotTrajectory(const std::string &name, const std::vector<std::s
   {
     for (int j = 0; j < traj.cols(); ++j)
     {
-      rt.joint_trajectory.points[i].positions[joint_to_qnr_[joint_names[j]]] = traj(i, j);
+      msg.joint_trajectory.points[i].positions[joint_to_qnr_[joint_names[j]]] = traj(i, j);
     }
   }
-  msg.trajectory.push_back(rt);
   trajectory_pub_.publish(msg);
 }
 
@@ -1020,4 +1063,5 @@ void BulletEnv::plotWaitForInput()
   std::cin.ignore(std::numeric_limits<std::streamsize>::max(),'\n');
 }
 
+}
 }

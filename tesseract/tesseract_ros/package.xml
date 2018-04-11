@@ -16,6 +16,7 @@
   <depend>kdl_parser</depend>
   <depend>eigen_conversions</depend>
   <depend>tesseract_core</depend>
+  <depend>tesseract_msgs</depend>
 
   <!-- The export tag contains other, unspecified, tags -->
   <export>
