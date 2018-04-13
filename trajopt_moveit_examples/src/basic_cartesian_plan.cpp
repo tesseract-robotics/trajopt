@@ -143,7 +143,7 @@ int main(int argc, char** argv)
   rs.setVariablePositions(ipos);
 
   // Set Log Level
-  gLogLevel = util::LevelError;
+  gLogLevel = util::LevelInfo;
 
   // Setup Problem
   TrajOptProbPtr prob;

@@ -135,7 +135,7 @@ int main(int argc, char** argv)
   env_->setState(ipos);
 
   // Set Log Level
-  gLogLevel = util::LevelError;
+  gLogLevel = util::LevelInfo;
 
   // Setup Problem
   TrajOptProbPtr prob;

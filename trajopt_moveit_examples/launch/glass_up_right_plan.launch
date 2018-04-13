@@ -4,6 +4,7 @@
   <!-- The name of the parameter under which the URDF is loaded -->
   <arg name="robot_description" default="robot_description"/>
   <arg name="trajopt_description" default="trajopt_description"/>
+  <arg name="plotting" default="true"/>
 
   <!-- Load universal robot description format (URDF) -->
   <param name="$(arg trajopt_description)" textfile="$(find trajopt_examples)/config/glass_up_right_plan.json"/>
@@ -26,4 +27,8 @@
 
   <!-- If needed, broadcast static tf for robot root -->
   <node pkg="tf" type="static_transform_publisher" name="virtual_joint_broadcaster_0" args="0 0 0 0 0 0 world base_link 100" />
+
+  <node pkg="trajopt_moveit_examples" type="trajopt_moveit_examples_glass_up_right_plan" name="trajopt_moveit_examples_glass_up_right_plan">
+    <param name="plotting" type="bool" value="$(arg plotting)"/>
+  </node>
 </launch>
