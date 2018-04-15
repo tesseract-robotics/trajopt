@@ -115,7 +115,7 @@ TEST_F(CastWorldTest, boxes) {
   TrajOptProbPtr prob = ConstructProblem(root, env_);
   ASSERT_TRUE(!!prob);
 
-  tesseract::DistanceResultVector collisions;
+  tesseract::ContactResultVector collisions;
   const std::vector<std::string>& joint_names = prob->GetKin()->getJointNames();
   const std::vector<std::string>& link_names = prob->GetKin()->getLinkNames();
 

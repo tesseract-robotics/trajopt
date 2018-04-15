@@ -47,28 +47,28 @@ public:
    * @param req   The distance request information.
    * @param dists A list of distance results.
    */
-  virtual void calcDistancesDiscrete(const DistanceRequest &req, DistanceResultVector &dists) const = 0;
+  virtual void calcDistancesDiscrete(const ContactRequest &req, ContactResultVector &dists) const = 0;
 
   /**
    * @brief calcDistances Should return distance information for all links in list link_names (Continuous Check)
    * @param req   The distance request information.
    * @param dists A list of distance results.
    */
-  virtual void calcDistancesContinuous(const DistanceRequest &req, DistanceResultVector &dists) const = 0;
+  virtual void calcDistancesContinuous(const ContactRequest &req, ContactResultVector &dists) const = 0;
 
   /**
    * @brief calcCollisions Should return collision information for all links in list link_names (Discrete Check)
    * @param req   The distance request information.
    * @param dists A list of distance results.
    */
-  virtual void calcCollisionsDiscrete(const DistanceRequest &req, DistanceResultVector &collisions) const = 0;
+  virtual void calcCollisionsDiscrete(const ContactRequest &req, ContactResultVector &collisions) const = 0;
 
   /**
    * @brief calcCollisions Should return collision information for all links in list link_names (Continuous Check)
    * @param req   The distance request information.
    * @param dists A list of distance results.
    */
-  virtual void calcCollisionsContinuous(const DistanceRequest &req, DistanceResultVector &collisions) const = 0;
+  virtual void calcCollisionsContinuous(const ContactRequest &req, ContactResultVector &collisions) const = 0;
 
   /**
    * @brief continuousCollisionCheckTrajectory Should perform a continuous collision check over the trajectory
@@ -79,7 +79,7 @@ public:
    * @param collisions The return collision data.
    * @return True if collision was found, otherwise false.
    */
-  virtual bool continuousCollisionCheckTrajectory(const std::vector<std::string> &joint_names, const std::vector<std::string> &link_names, const TrajArray& traj, DistanceResultVector& collisions) const = 0;
+  virtual bool continuousCollisionCheckTrajectory(const std::vector<std::string> &joint_names, const std::vector<std::string> &link_names, const TrajArray& traj, ContactResultVector& collisions) const = 0;
 
   /**
    * @brief continuousCollisionCheckTrajectory Should perform a continuous collision check over the trajectory
@@ -90,7 +90,7 @@ public:
    * @param collision The return collision data.
    * @return True if collision was found, otherwise false.
    */
-  virtual bool continuousCollisionCheckTrajectory(const std::vector<std::string> &joint_names, const std::vector<std::string> &link_names, const TrajArray& traj, DistanceResult& collision) const = 0;
+  virtual bool continuousCollisionCheckTrajectory(const std::vector<std::string> &joint_names, const std::vector<std::string> &link_names, const TrajArray& traj, ContactResult& collision) const = 0;
 
   /**
    * @brief Get a vector of joint names in the environment

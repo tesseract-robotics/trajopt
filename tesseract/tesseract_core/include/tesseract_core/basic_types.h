@@ -48,7 +48,7 @@ enum ContinouseCollisionType
 }
 typedef ContinouseCollisionTypes::ContinouseCollisionType ContinouseCollisionType;
 
-namespace DistanceRequestTypes
+namespace ContactRequestTypes
 {
 enum DistanceRequestType
 {
@@ -57,11 +57,11 @@ enum DistanceRequestType
   LIMITED /**< Return limited set of contacts for a pair of objects */
 };
 }
-typedef DistanceRequestTypes::DistanceRequestType DistanceRequestType;
+typedef ContactRequestTypes::DistanceRequestType ContactRequestType;
 
-struct DistanceRequest
+struct ContactRequest
 {
-  DistanceRequestType type;             /**< The type of distance request */
+  ContactRequestType type;             /**< The type of distance request */
   double contact_distance;              /**< The maximum distance between two objects for which distance data should be calculated */
   std::vector<std::string> joint_names; /**< Vector of joint names (size must match number of joints in robot chain) */
   std::vector<std::string> link_names;  /**< Name of the links to calculate distance data for. */
@@ -69,10 +69,10 @@ struct DistanceRequest
   Eigen::VectorXd joint_angles2;        /**< Vector of joint angles (size must match number of joints in robot chain/tree) */
   AllowedCollisionMatrixConstPtr acm;   /**< The allowed collision matrix */
 
-  DistanceRequest() : type(DistanceRequestType::SINGLE), contact_distance(0.0) {}
+  ContactRequest() : type(ContactRequestType::SINGLE), contact_distance(0.0) {}
 };
 
-struct DistanceResult
+struct ContactResult
 {
   double distance;
   BodyType body_types[2];
@@ -85,7 +85,7 @@ struct DistanceResult
   ContinouseCollisionType cc_type;
   bool valid;
 
-  DistanceResult() { clear(); }
+  ContactResult() { clear(); }
 
   /// Clear structure data
   void clear()
@@ -106,7 +106,7 @@ struct DistanceResult
     cc_type = ContinouseCollisionType::CCType_None;
   }
 };
-typedef std::vector<DistanceResult> DistanceResultVector;
+typedef std::vector<ContactResult> ContactResultVector;
 
 }
 

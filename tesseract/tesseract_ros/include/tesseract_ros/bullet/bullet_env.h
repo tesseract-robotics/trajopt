@@ -32,17 +32,17 @@ public:
    */
   bool checkInitialized() const { return initialized_; }
 
-  void calcDistancesDiscrete(const DistanceRequest &req, DistanceResultVector &dists) const;
+  void calcDistancesDiscrete(const ContactRequest &req, ContactResultVector &dists) const;
 
-  void calcDistancesContinuous(const DistanceRequest &req, DistanceResultVector &dists) const;
+  void calcDistancesContinuous(const ContactRequest &req, ContactResultVector &dists) const;
 
-  void calcCollisionsDiscrete(const DistanceRequest &req, DistanceResultVector &collisions) const;
+  void calcCollisionsDiscrete(const ContactRequest &req, ContactResultVector &collisions) const;
 
-  void calcCollisionsContinuous(const DistanceRequest &req, DistanceResultVector &collisions) const;
+  void calcCollisionsContinuous(const ContactRequest &req, ContactResultVector &collisions) const;
 
-  bool continuousCollisionCheckTrajectory(const std::vector<std::string> &joint_names, const std::vector<std::string> &link_names, const TrajArray& traj, DistanceResultVector& collisions) const;
+  bool continuousCollisionCheckTrajectory(const std::vector<std::string> &joint_names, const std::vector<std::string> &link_names, const TrajArray& traj, ContactResultVector& collisions) const;
 
-  bool continuousCollisionCheckTrajectory(const std::vector<std::string> &joint_names, const std::vector<std::string> &link_names, const TrajArray& traj, DistanceResult& collision) const;
+  bool continuousCollisionCheckTrajectory(const std::vector<std::string> &joint_names, const std::vector<std::string> &link_names, const TrajArray& traj, ContactResult& collision) const;
 
   const EnvStateConstPtr getState() const {return current_state_; }
 

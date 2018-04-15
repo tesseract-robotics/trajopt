@@ -24,17 +24,17 @@ public:
    */
   bool checkInitialized() const { return initialized_; }
 
-  void calcDistancesDiscrete(const tesseract::DistanceRequest &req, tesseract::DistanceResultVector &dists) const;
+  void calcDistancesDiscrete(const tesseract::ContactRequest &req, tesseract::ContactResultVector &dists) const;
 
-  void calcDistancesContinuous(const tesseract::DistanceRequest &req, tesseract::DistanceResultVector &dists) const;
+  void calcDistancesContinuous(const tesseract::ContactRequest &req, tesseract::ContactResultVector &dists) const;
 
-  void calcCollisionsDiscrete(const tesseract::DistanceRequest &req, tesseract::DistanceResultVector &collisions) const;
+  void calcCollisionsDiscrete(const tesseract::ContactRequest &req, tesseract::ContactResultVector &collisions) const;
 
-  void calcCollisionsContinuous(const tesseract::DistanceRequest &req, tesseract::DistanceResultVector &collisions) const;
+  void calcCollisionsContinuous(const tesseract::ContactRequest &req, tesseract::ContactResultVector &collisions) const;
 
-  bool continuousCollisionCheckTrajectory(const std::vector<std::string> &joint_names, const std::vector<std::string> &link_names, const tesseract::TrajArray& traj, tesseract::DistanceResultVector& collisions) const;
+  bool continuousCollisionCheckTrajectory(const std::vector<std::string> &joint_names, const std::vector<std::string> &link_names, const tesseract::TrajArray& traj, tesseract::ContactResultVector& collisions) const;
 
-  bool continuousCollisionCheckTrajectory(const std::vector<std::string> &joint_names, const std::vector<std::string> &link_names, const tesseract::TrajArray& traj, tesseract::DistanceResult &collision) const;
+  bool continuousCollisionCheckTrajectory(const std::vector<std::string> &joint_names, const std::vector<std::string> &link_names, const tesseract::TrajArray& traj, tesseract::ContactResult &collision) const;
 
   std::vector<std::string> getJointNames() const { return env_->getCurrentState().getVariableNames(); }
 

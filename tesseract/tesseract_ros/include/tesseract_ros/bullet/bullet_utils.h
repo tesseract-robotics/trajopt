@@ -57,15 +57,15 @@ static ObjectPairKey getObjectPairKey(const std::string &obj1, const std::string
 }
 
 /// Destance query results information
-typedef std::map<std::pair<std::string, std::string>, DistanceResultVector> BulletDistanceMap;
+typedef std::map<std::pair<std::string, std::string>, ContactResultVector> BulletDistanceMap;
 struct BulletDistanceData
 {
-  BulletDistanceData(const DistanceRequest* req, BulletDistanceMap* res) : req(req), res(res), done(false)
+  BulletDistanceData(const ContactRequest* req, BulletDistanceMap* res) : req(req), res(res), done(false)
   {
   }
 
   /// Distance query request information
-  const DistanceRequest* req;
+  const ContactRequest* req;
 
   /// Destance query results information
   BulletDistanceMap* res;
@@ -223,24 +223,24 @@ inline bool isCollisionAllowed(const COW* cow0, const COW* cow1, const AllowedCo
 }
 
 inline
-DistanceResult* processResult(BulletDistanceData& cdata, DistanceResult &contact, const std::pair<std::string, std::string>& key, bool found)
+ContactResult* processResult(BulletDistanceData& cdata, ContactResult &contact, const std::pair<std::string, std::string>& key, bool found)
 {
   if (!found)
   {
-    DistanceResultVector data;
+    ContactResultVector data;
     data.reserve(100); // TODO: Need better way to initialize this
     data.emplace_back(contact);
     return &(cdata.res->insert(std::make_pair(key, data)).first->second.back());
   }
   else
   {
-    DistanceResultVector &dr = cdata.res->at(key);
-    if (cdata.req->type == DistanceRequestType::ALL)
+    ContactResultVector &dr = cdata.res->at(key);
+    if (cdata.req->type == ContactRequestType::ALL)
     {
       dr.emplace_back(contact);
       return &(dr.back());
     }
-    else if (cdata.req->type == DistanceRequestType::SINGLE)
+    else if (cdata.req->type == ContactRequestType::SINGLE)
     {
       if (contact.distance < dr[0].distance)
       {
@@ -296,7 +296,7 @@ struct CollisionCollector : public btCollisionWorld::ContactResultCallback
 
 //    }
 
-    DistanceResult contact;
+    ContactResult contact;
     contact.link_names[0] = cd0->getID();
     contact.link_names[1] = cd1->getID();
     contact.nearest_points[0] = convertBtToEigen(cp.m_positionWorldOnA);
@@ -355,7 +355,7 @@ struct SweepCollisionCollector : public btCollisionWorld::ClosestConvexResultCal
 //          return 0;
     }
 
-    DistanceResult contact;
+    ContactResult contact;
     contact.link_names[0] = cd0->getID();
     contact.link_names[1] = cd1->getID();
     contact.nearest_points[0] = convertBtToEigen(m_hitPointWorld);
@@ -527,7 +527,7 @@ struct CastCollisionCollector : public btCollisionWorld::ContactResultCallback
 //          return 0;
 //    }
 
-    DistanceResult contact;
+    ContactResult contact;
     contact.link_names[0] = cd0->getID();
     contact.link_names[1] = cd1->getID();
     contact.nearest_points[0] = convertBtToEigen(cp.m_positionWorldOnA);
@@ -537,7 +537,7 @@ struct CastCollisionCollector : public btCollisionWorld::ContactResultCallback
     contact.distance = cp.m_distance1;
     contact.normal = convertBtToEigen(-1 * cp.m_normalWorldOnB);
 
-    DistanceResult* col = processResult(m_collisions, contact, pc, found);
+    ContactResult* col = processResult(m_collisions, contact, pc, found);
     if (!col)
     {
       return 0;
@@ -678,7 +678,7 @@ struct CastCollisionCollectorOriginal : public btCollisionWorld::ContactResultCa
 //          return 0;
 //    }
 
-    DistanceResult contact;
+    ContactResult contact;
     contact.link_names[0] = cd0->getID();
     contact.link_names[1] = cd1->getID();
     contact.nearest_points[0] = convertBtToEigen(cp.m_positionWorldOnA);
@@ -688,7 +688,7 @@ struct CastCollisionCollectorOriginal : public btCollisionWorld::ContactResultCa
     contact.distance = cp.m_distance1;
     contact.normal = convertBtToEigen(-1 * cp.m_normalWorldOnB);
 
-    DistanceResult* col = processResult(m_collisions, contact, pc, found);
+    ContactResult* col = processResult(m_collisions, contact, pc, found);
     if (!col)
     {
       return 0;

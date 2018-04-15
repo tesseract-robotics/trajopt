@@ -23,7 +23,7 @@ public:
    * @param dist_results The collision results data
    * @param safety_distance Vector of safety Distance corresponding to dist_results (Must be in the same order and length).
    */
-  virtual void plotContactResults(const std::vector<std::string> &link_names, const DistanceResultVector &dist_results, const Eigen::VectorXd& safety_distances) = 0;
+  virtual void plotContactResults(const std::vector<std::string> &link_names, const ContactResultVector &dist_results, const Eigen::VectorXd& safety_distances) = 0;
 
   /**
    * @brief Plot arrow defined by two points

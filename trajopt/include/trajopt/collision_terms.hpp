@@ -16,14 +16,14 @@ struct CollisionEvaluator
   virtual ~CollisionEvaluator() {}
   virtual void CalcDistExpressions(const DblVec& x, vector<AffExpr>& exprs) = 0;
   virtual void CalcDists(const DblVec& x, DblVec& exprs) = 0;
-  virtual void CalcCollisions(const DblVec& x, tesseract::DistanceResultVector &dist_results) = 0;
-  void GetCollisionsCached(const DblVec& x, tesseract::DistanceResultVector &);
+  virtual void CalcCollisions(const DblVec& x, tesseract::ContactResultVector &dist_results) = 0;
+  void GetCollisionsCached(const DblVec& x, tesseract::ContactResultVector &);
   void Plot(const tesseract::BasicPlottingPtr plotter, const DblVec& x);
   virtual VarVector GetVars()=0;
 
   const SafetyMarginDataConstPtr getSafetyMarginData() const { return safety_margin_data_; }
 
-  Cache<size_t, tesseract::DistanceResultVector, 10> m_cache;
+  Cache<size_t, tesseract::ContactResultVector, 10> m_cache;
 
 protected:
   tesseract::BasicEnvConstPtr env_;
@@ -52,7 +52,7 @@ public:
    * Same as CalcDistExpressions, but just the distances--not the expressions
    */
   void CalcDists(const DblVec& x, DblVec& exprs);
-  void CalcCollisions(const DblVec& x, tesseract::DistanceResultVector &dist_results);
+  void CalcCollisions(const DblVec& x, tesseract::ContactResultVector &dist_results);
   VarVector GetVars() {return m_vars;}
 
 private:
@@ -64,7 +64,7 @@ public:
   CastCollisionEvaluator(tesseract::BasicKinConstPtr manip, tesseract::BasicEnvConstPtr env, SafetyMarginDataConstPtr safety_margin_data, const VarVector& vars0, const VarVector& vars1);
   void CalcDistExpressions(const DblVec& x, vector<AffExpr>& exprs);
   void CalcDists(const DblVec& x, DblVec& exprs);
-  void CalcCollisions(const DblVec& x, tesseract::DistanceResultVector &dist_results);
+  void CalcCollisions(const DblVec& x, tesseract::ContactResultVector &dist_results);
   VarVector GetVars() {return concat(m_vars0, m_vars1);}
   
 private:

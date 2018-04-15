@@ -159,7 +159,7 @@ int main(int argc, char** argv)
   // Solve Trajectory
   ROS_INFO("basic cartesian plan example");
 
-  tesseract::DistanceResultVector collisions;
+  tesseract::ContactResultVector collisions;
   const std::vector<std::string>& joint_names = prob->GetKin()->getJointNames();
   const std::vector<std::string>& link_names = prob->GetKin()->getLinkNames();
 

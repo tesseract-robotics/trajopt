@@ -24,7 +24,7 @@ bool TrajOptMoveItEnv::init(planning_scene::PlanningScenePtr planning_scene)
   return initialized_;
 }
 
-void TrajOptMoveItEnv::calcDistancesDiscrete(const tesseract::DistanceRequest &req, tesseract::DistanceResultVector &dists) const
+void TrajOptMoveItEnv::calcDistancesDiscrete(const tesseract::ContactRequest &req, tesseract::ContactResultVector &dists) const
 {
   collision_detection::DistanceRequest distance_req;
   collision_detection::DistanceResult distance_res;
@@ -33,7 +33,7 @@ void TrajOptMoveItEnv::calcDistancesDiscrete(const tesseract::DistanceRequest &r
   distance_req.enable_nearest_points = true;
   distance_req.enable_signed_distance = true;
 
-  if (req.type == tesseract::DistanceRequestType::SINGLE)
+  if (req.type == tesseract::ContactRequestType::SINGLE)
     distance_req.type = collision_detection::DistanceRequestType::SINGLE;
   else
     distance_req.type = collision_detection::DistanceRequestType::ALL;
@@ -61,7 +61,7 @@ void TrajOptMoveItEnv::calcDistancesDiscrete(const tesseract::DistanceRequest &r
   {
     for (auto it = pair->second.begin(); it != pair->second.end(); ++it)
     {
-      tesseract::DistanceResult d;
+      tesseract::ContactResult d;
       d.distance = it->distance;
       d.valid = true;
       d.link_names[0] = it->link_names[0];
@@ -105,7 +105,7 @@ void TrajOptMoveItEnv::calcDistancesDiscrete(const tesseract::DistanceRequest &r
   }
 }
 
-void TrajOptMoveItEnv::calcDistancesContinuous(const tesseract::DistanceRequest &req, tesseract::DistanceResultVector &dists) const
+void TrajOptMoveItEnv::calcDistancesContinuous(const tesseract::ContactRequest &req, tesseract::ContactResultVector &dists) const
 {
   collision_detection::DistanceRequest distance_req;
   collision_detection::DistanceResult distance_res;
@@ -115,7 +115,7 @@ void TrajOptMoveItEnv::calcDistancesContinuous(const tesseract::DistanceRequest 
   distance_req.enable_signed_distance = true;
   distance_req.compute_gradient = true;
 
-  if (req.type == tesseract::DistanceRequestType::SINGLE)
+  if (req.type == tesseract::ContactRequestType::SINGLE)
     distance_req.type = collision_detection::DistanceRequestType::SINGLE;
   else
     distance_req.type = collision_detection::DistanceRequestType::ALL;
@@ -146,7 +146,7 @@ void TrajOptMoveItEnv::calcDistancesContinuous(const tesseract::DistanceRequest 
   {
     for (auto it = pair->second.begin(); it != pair->second.end(); ++it)
     {
-      tesseract::DistanceResult d;
+      tesseract::ContactResult d;
       d.distance = it->distance;
       d.valid = true;
 
@@ -217,19 +217,19 @@ std::set<const moveit::core::LinkModel *> TrajOptMoveItEnv::getLinkModels(const 
   return list;
 }
 
-void TrajOptMoveItEnv::calcCollisionsDiscrete(const tesseract::DistanceRequest &req, tesseract::DistanceResultVector &collisions) const
+void TrajOptMoveItEnv::calcCollisionsDiscrete(const tesseract::ContactRequest &req, tesseract::ContactResultVector &collisions) const
 {
   calcDistancesDiscrete(req, collisions);
 }
 
-void TrajOptMoveItEnv::calcCollisionsContinuous(const tesseract::DistanceRequest &req, tesseract::DistanceResultVector &collisions) const
+void TrajOptMoveItEnv::calcCollisionsContinuous(const tesseract::ContactRequest &req, tesseract::ContactResultVector &collisions) const
 {
   calcDistancesContinuous(req, collisions);
 }
 
-bool TrajOptMoveItEnv::continuousCollisionCheckTrajectory(const std::vector<std::string> &joint_names, const std::vector<std::string> &link_names, const tesseract::TrajArray& traj, tesseract::DistanceResultVector& collisions) const
+bool TrajOptMoveItEnv::continuousCollisionCheckTrajectory(const std::vector<std::string> &joint_names, const std::vector<std::string> &link_names, const tesseract::TrajArray& traj, tesseract::ContactResultVector& collisions) const
 {
-  tesseract::DistanceRequest req;
+  tesseract::ContactRequest req;
   req.joint_names = joint_names;
   req.link_names = link_names;
 
@@ -247,12 +247,12 @@ bool TrajOptMoveItEnv::continuousCollisionCheckTrajectory(const std::vector<std:
   return found;
 }
 
-bool TrajOptMoveItEnv::continuousCollisionCheckTrajectory(const std::vector<std::string> &joint_names, const std::vector<std::string> &link_names, const tesseract::TrajArray& traj, tesseract::DistanceResult &collision) const
+bool TrajOptMoveItEnv::continuousCollisionCheckTrajectory(const std::vector<std::string> &joint_names, const std::vector<std::string> &link_names, const tesseract::TrajArray& traj, tesseract::ContactResult &collision) const
 {
-  tesseract::DistanceRequest req;
+  tesseract::ContactRequest req;
   req.joint_names = joint_names;
   req.link_names = link_names;
-  tesseract::DistanceResultVector collisions;
+  tesseract::ContactResultVector collisions;
 
   for (int iStep = 0; iStep < traj.rows() - 1; ++iStep)
   {

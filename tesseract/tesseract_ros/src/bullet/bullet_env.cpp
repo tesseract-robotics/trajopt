@@ -114,7 +114,7 @@ bool BulletEnv::init(const urdf::ModelInterfaceConstSharedPtr urdf_model, const 
   return initialized_;
 }
 
-void BulletEnv::calcDistancesDiscrete(const DistanceRequest &req, DistanceResultVector &dists) const
+void BulletEnv::calcDistancesDiscrete(const ContactRequest &req, ContactResultVector &dists) const
 {
   BulletManager manager;
   BulletDistanceMap res;
@@ -142,7 +142,7 @@ void BulletEnv::calcDistancesDiscrete(const DistanceRequest &req, DistanceResult
   {
     for (auto it = pair->second.begin(); it != pair->second.end(); ++it)
     {
-      DistanceResult d;
+      ContactResult d;
       d.distance = it->distance;
       d.valid = true;
 
@@ -178,7 +178,7 @@ void BulletEnv::calcDistancesDiscrete(const DistanceRequest &req, DistanceResult
   }
 }
 
-void BulletEnv::calcDistancesContinuous(const DistanceRequest &req, DistanceResultVector &dists) const
+void BulletEnv::calcDistancesContinuous(const ContactRequest &req, ContactResultVector &dists) const
 {
   BulletManager manager;
   BulletDistanceMap res;
@@ -207,7 +207,7 @@ void BulletEnv::calcDistancesContinuous(const DistanceRequest &req, DistanceResu
   {
     for (auto it = pair->second.begin(); it != pair->second.end(); ++it)
     {
-      DistanceResult d;
+      ContactResult d;
       d.distance = it->distance;
       d.valid = true;
       d.body_types[0] = it->body_types[0];
@@ -254,25 +254,25 @@ void BulletEnv::calcDistancesContinuous(const DistanceRequest &req, DistanceResu
 //  return list;
 //}
 
-void BulletEnv::calcCollisionsDiscrete(const DistanceRequest &req, std::vector<DistanceResult> &collisions) const
+void BulletEnv::calcCollisionsDiscrete(const ContactRequest &req, std::vector<ContactResult> &collisions) const
 {
   calcDistancesDiscrete(req, collisions);
 }
 
-void BulletEnv::calcCollisionsContinuous(const DistanceRequest &req, std::vector<DistanceResult> &collisions) const
+void BulletEnv::calcCollisionsContinuous(const ContactRequest &req, std::vector<ContactResult> &collisions) const
 {
   calcDistancesContinuous(req, collisions);
 }
 
-bool BulletEnv::continuousCollisionCheckTrajectory(const std::vector<std::string> &joint_names, const std::vector<std::string> &link_names, const TrajArray &traj, DistanceResult& collision) const
+bool BulletEnv::continuousCollisionCheckTrajectory(const std::vector<std::string> &joint_names, const std::vector<std::string> &link_names, const TrajArray &traj, ContactResult& collision) const
 {
-  DistanceRequest req;
-  req.type = DistanceRequestType::SINGLE;
+  ContactRequest req;
+  req.type = ContactRequestType::SINGLE;
   req.joint_names = joint_names;
   req.link_names = link_names;
   req.acm = getAllowedCollisionMatrix();
 
-  DistanceResultVector collisions;
+  ContactResultVector collisions;
   for (int iStep = 0; iStep < traj.rows() - 1; ++iStep)
   {
     req.joint_angles1 = traj.row(iStep);
@@ -287,10 +287,10 @@ bool BulletEnv::continuousCollisionCheckTrajectory(const std::vector<std::string
   return false;
 }
 
-bool BulletEnv::continuousCollisionCheckTrajectory(const std::vector<std::string> &joint_names, const std::vector<std::string> &link_names, const TrajArray& traj, DistanceResultVector& collisions) const
+bool BulletEnv::continuousCollisionCheckTrajectory(const std::vector<std::string> &joint_names, const std::vector<std::string> &link_names, const TrajArray& traj, ContactResultVector& collisions) const
 {
-  DistanceRequest req;
-  req.type = DistanceRequestType::ALL;
+  ContactRequest req;
+  req.type = ContactRequestType::ALL;
   req.joint_names = joint_names;
   req.link_names = link_names;
   req.acm = getAllowedCollisionMatrix();
