@@ -322,6 +322,19 @@ bool TrajOptMoveItEnv::continuousCollisionCheckTrajectory(const std::vector<std:
   return false;
 }
 
+Eigen::VectorXd TrajOptMoveItEnv::getCurrentJointValues() const
+{
+  const std::vector<std::string>& joint_names = env_->getCurrentState().getVariableNames();
+  Eigen::VectorXd start_pos(joint_names.size());
+
+  for(auto j = 0u; j < joint_names.size(); ++j)
+  {
+    start_pos(j) = env_->getCurrentState().getVariablePosition(joint_names[j]);
+  }
+
+  return start_pos;
+}
+
 Eigen::VectorXd TrajOptMoveItEnv::getCurrentJointValues(const std::string &manipulator_name) const
 {
 
@@ -353,6 +366,18 @@ std::vector<std::string> TrajOptMoveItEnv::getLinkNames() const
     object_names.push_back(body->getName());
   }
   return object_names;
+}
+
+tesseract::vector_Affine3d TrajOptMoveItEnv::getLinkTransforms() const
+{
+  std::vector<std::string> link_names = getLinkNames();
+  tesseract::vector_Affine3d link_tfs;
+  link_tfs.resize(link_names.size());
+  for (const auto& link_name : link_names)
+  {
+    link_tfs.push_back(env_->getFrameTransform(link_name));
+  }
+  return link_tfs;
 }
 
 Eigen::Affine3d TrajOptMoveItEnv::getLinkTransform(const std::string& link_name) const

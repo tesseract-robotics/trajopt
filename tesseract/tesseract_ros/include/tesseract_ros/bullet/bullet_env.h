@@ -54,11 +54,15 @@ public:
 
   std::vector<std::string> getJointNames() const { return joint_names_; }
 
+  Eigen::VectorXd getCurrentJointValues() const;
+
   Eigen::VectorXd getCurrentJointValues(const std::string &manipulator_name) const;
 
   const std::string& getRootLinkName() const { return kdl_tree_->getRootSegment()->second.segment.getName(); }
 
   std::vector<std::string> getLinkNames() const { return link_names_; }
+
+  vector_Affine3d getLinkTransforms() const;
 
   Eigen::Affine3d getLinkTransform(const std::string& link_name) const;
 

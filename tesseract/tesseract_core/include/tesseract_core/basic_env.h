@@ -99,7 +99,19 @@ public:
   virtual std::vector<std::string> getJointNames() const = 0;
 
   /**
-   * @brief getCurrentJointValues Get the current state of the manipulator
+   * @brief Get the current state of the environment
+   *
+   * Order should be the same as getJointNames()
+   *
+   * @return A vector of joint values
+   */
+  virtual Eigen::VectorXd getCurrentJointValues() const = 0;
+
+  /**
+   * @brief Get the current state of the manipulator
+   *
+   * Order should be the same as BasicKin.getJointNames()
+   *
    * @return A vector of joint values
    */
   virtual Eigen::VectorXd getCurrentJointValues(const std::string &manipulator_name) const = 0;
@@ -116,8 +128,18 @@ public:
    */
   virtual std::vector<std::string> getLinkNames() const = 0;
 
-  /** @brief Get the transform corresponding to the link.
-   *  @return Tranform and is identity when no transform is available.
+  /**
+   * @brief Get all of the links transforms
+   *
+   * Order should be the same as getLinkNames()
+   *
+   * @return Get a vector of transforms for all links in the environment.
+   */
+  virtual vector_Affine3d getLinkTransforms() const = 0;
+
+  /**
+   * @brief Get the transform corresponding to the link.
+   * @return Transform and is identity when no transform is available.
    */
   virtual Eigen::Affine3d getLinkTransform(const std::string &link_name) const = 0;
 

@@ -3,6 +3,7 @@
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
+#include <Eigen/StdVector>
 #include <boost/shared_ptr.hpp>
 #include <unordered_map>
 #include <vector>
@@ -11,6 +12,7 @@ namespace tesseract
 {
 
 typedef Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> TrajArray;
+typedef std::vector<Eigen::Affine3d, Eigen::aligned_allocator<Eigen::Affine3d> > vector_Affine3d;
 
 struct AllowedCollisionMatrix
 {

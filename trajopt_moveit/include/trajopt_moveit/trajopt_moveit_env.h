@@ -38,11 +38,15 @@ public:
 
   std::vector<std::string> getJointNames() const { return env_->getCurrentState().getVariableNames(); }
 
+  Eigen::VectorXd getCurrentJointValues() const;
+
   Eigen::VectorXd getCurrentJointValues(const std::string &manipulator_name) const;
 
   const std::string& getRootLinkName() const { return env_->getPlanningFrame(); }
 
   std::vector<std::string> getLinkNames() const;
+
+  tesseract::vector_Affine3d getLinkTransforms() const;
 
   Eigen::Affine3d getLinkTransform(const std::string& link_name) const;
 

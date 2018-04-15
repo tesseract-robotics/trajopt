@@ -377,6 +377,17 @@ EnvStatePtr BulletEnv::getState(const std::vector<std::string> &joint_names, con
   return state;
 }
 
+Eigen::VectorXd BulletEnv::getCurrentJointValues() const
+{
+  Eigen::VectorXd jv;
+  jv.resize(joint_names_.size());
+  for(auto j = 0u; j < joint_names_.size(); ++j)
+  {
+    jv(j)= current_state_->joints[joint_names_[j]];
+  }
+  return jv;
+}
+
 Eigen::VectorXd BulletEnv::getCurrentJointValues(const std::string &manipulator_name) const
 {
   auto it = manipulators_.find(manipulator_name);
@@ -394,6 +405,17 @@ Eigen::VectorXd BulletEnv::getCurrentJointValues(const std::string &manipulator_
   }
 
   return Eigen::VectorXd();
+}
+
+vector_Affine3d BulletEnv::getLinkTransforms() const
+{
+  vector_Affine3d link_tfs;
+  link_tfs.resize(link_names_.size());
+  for (const auto& link_name : link_names_);
+  {
+    link_tfs.push_back(current_state_->transforms[link_name]);
+  }
+  return link_tfs;
 }
 
 Eigen::Affine3d BulletEnv::getLinkTransform(const std::string& link_name) const
