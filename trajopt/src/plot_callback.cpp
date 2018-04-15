@@ -5,39 +5,44 @@
 #include <tesseract_core/basic_env.h>
 #include <trajopt/plot_callback.hpp>
 #include <boost/foreach.hpp>
+#include <boost/bind.hpp>
 #include <set>
 
 using namespace util;
 using namespace std;
-namespace trajopt {
-
-void PlotCosts(tesseract::BasicKinConstPtr manip, tesseract::BasicEnvPtr env, vector<CostPtr>& costs, vector<ConstraintPtr>& cnts, const VarArray& vars, const DblVec& x)
+namespace trajopt
 {
-  env->plotClear();
 
-  BOOST_FOREACH(CostPtr& cost, costs) {
-    if (Plotter* plotter = dynamic_cast<Plotter*>(cost.get())) {
-      plotter->Plot(x);
+void PlotCosts(const tesseract::BasicPlottingPtr plotter, const std::vector<std::string>& joint_names, vector<CostPtr>& costs, vector<ConstraintPtr>& cnts, const VarArray& vars, const DblVec& x)
+{
+  plotter->clear();
+
+  BOOST_FOREACH(CostPtr& cost, costs)
+  {
+    if (Plotter* plt = dynamic_cast<Plotter*>(cost.get()))
+    {
+      plt->Plot(plotter, x);
     }
   }
-  BOOST_FOREACH(ConstraintPtr& cnt, cnts) {
-    if (Plotter* plotter = dynamic_cast<Plotter*>(cnt.get())) {
-      plotter->Plot(x);
+  BOOST_FOREACH(ConstraintPtr& cnt, cnts)
+  {
+    if (Plotter* plt = dynamic_cast<Plotter*>(cnt.get()))
+    {
+      plt->Plot(plotter, x);
     }
   }
-  TrajArray traj = getTraj(x, vars);
-  const std::vector<std::string>& joint_names = manip->getJointNames();
 
-  env->plotTrajectory(manip->getName(), joint_names, traj);
-  env->plotWaitForInput();
+  plotter->plotTrajectory(joint_names, getTraj(x, vars));
+  plotter->waitForInput();
 }
 
-Optimizer::Callback PlotCallback(TrajOptProb& prob) {
+Optimizer::Callback PlotCallback(TrajOptProb& prob, const tesseract::BasicPlottingPtr plotter)
+{
 
   vector<ConstraintPtr> cnts = prob.getConstraints();
   return boost::bind(&PlotCosts,
-                      prob.GetKin(),
-                      prob.GetEnv(),
+                      plotter,
+                      prob.GetKin()->getJointNames(),
                       boost::ref(prob.getCosts()),
                       cnts,
                       boost::ref(prob.GetVars()),

@@ -36,38 +36,7 @@ public:
 
   bool continuousCollisionCheckTrajectory(const std::vector<std::string> &joint_names, const std::vector<std::string> &link_names, const tesseract::TrajArray& traj, tesseract::DistanceResult &collision) const;
 
-  const tesseract::EnvStateConstPtr getState() const
-  {
-    ROS_WARN("The getState method is not implemented because moveit has its own state representation");
-    return nullptr;
-  }
-
-  void setState(const std::unordered_map<std::string, double> &joints)
-  {
-    ROS_WARN("The setState method is not implemented because moveit has its own state representation");
-  }
-
-  void setState(const std::vector<std::string> &joint_names, const Eigen::VectorXd &joint_values)
-  {
-    ROS_WARN("The setState method is not implemented because moveit has its own state representation");
-  }
-
-  tesseract::EnvStatePtr getState(const std::unordered_map<std::string, double> &joints) const
-  {
-    ROS_WARN("The getState method is not implemented because moveit has its own state representation");
-    return nullptr;
-  }
-
-  tesseract::EnvStatePtr getState(const std::vector<std::string> &joint_names, const Eigen::VectorXd &joint_values) const
-  {
-    ROS_WARN("The getState method is not implemented because moveit has its own state representation");
-    return nullptr;
-  }
-
-  std::vector<std::string> getJointNames() const
-  {
-    return env_->getCurrentState().getVariableNames();
-  }
+  std::vector<std::string> getJointNames() const { return env_->getCurrentState().getVariableNames(); }
 
   Eigen::VectorXd getCurrentJointValues(const std::string &manipulator_name) const;
 
@@ -87,48 +56,19 @@ public:
     return nullptr;
   }
 
-  void updateVisualization() const
-  {
-    ROS_WARN("The updateVisualization method is not implemented because moveit has its own visualization update");
-  }
-
-  void enablePlotting(bool enable) { plotting_ = enable; }
-
-  void plotTrajectory(const std::string &name, const std::vector<std::string> &joint_names, const tesseract::TrajArray &traj);
-
-  void plotCollisions(const std::vector<std::string> &link_names, const tesseract::DistanceResultVector &dist_results, const Eigen::VectorXd &safety_distances);
-
-  void plotArrow(const Eigen::Vector3d &pt1, const Eigen::Vector3d &pt2, const Eigen::Vector4d &rgba, double scale);
-
-  void plotAxis(const Eigen::Affine3d &axis, double scale);
-
-  void plotClear();
-
-  void plotWaitForInput();
-
 private:
   bool initialized_;        /**< Identifies if the object has been initialized */
   planning_scene::PlanningScenePtr env_;
   collision_detection::CollisionRobotConstPtr collision_robot_; /**< Pointer to the collision robot, some constraints require it */
   collision_detection::CollisionWorldConstPtr collision_world_; /**< Pointer to the collision world, some constraints require it */
 
-  bool plotting_;                 /**< Enable plotting */
-  int marker_counter_;            /**< Counter when plotting */
-  ros::Publisher trajectory_pub_; /**< Trajectory publisher */
-  ros::Publisher collisions_pub_; /**< Collision Data publisher */
-  ros::Publisher arrows_pub_;     /**< Used for publishing arrow markers */
-  ros::Publisher axes_pub_;       /**< Used for publishing axis markers */
-
   std::set<const robot_model::LinkModel*> getLinkModels(const std::vector<std::string> &link_names) const;
-
-  visualization_msgs::Marker getMarkerArrowMsg(const Eigen::Vector3d &pt1, const Eigen::Vector3d &pt2, const Eigen::Vector4d &rgba, double scale);
-
-  visualization_msgs::Marker getMarkerCylinderMsg(const Eigen::Vector3d &pt1, const Eigen::Vector3d &pt2, const Eigen::Vector4d &rgba, double scale);
 
   std::string getManipulatorName(const std::vector<std::string> &joint_names) const;
 
 };
 typedef boost::shared_ptr<TrajOptMoveItEnv> TrajOptMoveItEnvPtr;
+typedef boost::shared_ptr<const TrajOptMoveItEnv> TrajOptMoveItEnvConstPtr;
 }
 
 #endif // ROS_COLL_H

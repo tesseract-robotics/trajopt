@@ -28,10 +28,11 @@ struct TrajOptResult;
 typedef boost::shared_ptr<TrajOptResult> TrajOptResultPtr;
 
 TrajOptProbPtr TRAJOPT_API ConstructProblem(const ProblemConstructionInfo&);
-TrajOptProbPtr TRAJOPT_API ConstructProblem(const Json::Value&, tesseract::BasicEnvPtr env);
-TrajOptResultPtr TRAJOPT_API OptimizeProblem(TrajOptProbPtr, bool plot);
+TrajOptProbPtr TRAJOPT_API ConstructProblem(const Json::Value&, tesseract::BasicEnvConstPtr env);
+TrajOptResultPtr TRAJOPT_API OptimizeProblem(TrajOptProbPtr, const tesseract::BasicPlottingPtr plotter = nullptr);
 
-enum TermType {
+enum TermType
+{
   TT_COST,
   TT_CNT
 };
@@ -47,24 +48,20 @@ enum TermType {
  * Holds all the data for a trajectory optimization problem
  * so you can modify it programmatically, e.g. add your own costs
  */
-class TRAJOPT_API TrajOptProb : public OptProb {
+class TRAJOPT_API TrajOptProb : public OptProb
+{
 public:
   TrajOptProb();
   TrajOptProb(int n_steps,const ProblemConstructionInfo &pci);
   ~TrajOptProb() {}
-  VarVector GetVarRow(int i) {
-    return m_traj_vars.row(i);
-  }
-  Var& GetVar(int i, int j) {
-    return m_traj_vars.at(i,j);
-  }
-  VarArray& GetVars() {
-    return m_traj_vars;
-  }
+
+  VarVector GetVarRow(int i) { return m_traj_vars.row(i); }
+  Var& GetVar(int i, int j) { return m_traj_vars.at(i,j); }
+  VarArray& GetVars() { return m_traj_vars;}
   int GetNumSteps() {return m_traj_vars.rows();}
   int GetNumDOF() {return m_traj_vars.cols();}
   tesseract::BasicKinConstPtr GetKin() {return m_kin;}
-  tesseract::BasicEnvPtr GetEnv() {return m_env;}
+  tesseract::BasicEnvConstPtr GetEnv() {return m_env;}
 
   void SetInitTraj(const TrajArray& x) {m_init_traj = x;}
   TrajArray GetInitTraj() {return m_init_traj;}
@@ -74,7 +71,7 @@ public:
 private:
   VarArray m_traj_vars;
   tesseract::BasicKinConstPtr m_kin;
-  tesseract::BasicEnvPtr m_env;
+  tesseract::BasicEnvConstPtr m_env;
   TrajArray m_init_traj;
 };
 
@@ -100,8 +97,10 @@ struct BasicInfo
 /**
 Initialization info read from json
 */
-struct InitInfo {
-  enum Type {
+struct InitInfo
+{
+  enum Type
+  {
     STATIONARY,
     GIVEN_TRAJ,
   };
@@ -110,10 +109,8 @@ struct InitInfo {
 };
 
 
-struct TRAJOPT_API MakesCost {
-};
-struct TRAJOPT_API MakesConstraint {
-};
+struct TRAJOPT_API MakesCost {};
+struct TRAJOPT_API MakesConstraint {};
 
 /**
 When cost or constraint element of JSON doc is read, one of these guys gets constructed to hold the parameters.
@@ -144,7 +141,8 @@ private:
 /**
 This object holds all the data that's read from the JSON document
 */
-struct TRAJOPT_API ProblemConstructionInfo {
+struct TRAJOPT_API ProblemConstructionInfo
+{
 public:
   BasicInfo basic_info;
   sco::BasicTrustRegionSQPParameters opt_info;
@@ -152,10 +150,10 @@ public:
   vector<TermInfoPtr> cnt_infos;
   InitInfo init_info;
 
-  tesseract::BasicEnvPtr env;
+  tesseract::BasicEnvConstPtr env;
   tesseract::BasicKinConstPtr kin;
 
-  ProblemConstructionInfo(tesseract::BasicEnvPtr env) : env(env) {}
+  ProblemConstructionInfo(tesseract::BasicEnvConstPtr env) : env(env) {}
   void fromJson(const Value& v);
 
 private:

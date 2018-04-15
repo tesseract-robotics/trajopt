@@ -26,15 +26,8 @@
 #ifndef ROS_BASIC_ENV_H
 #define ROS_BASIC_ENV_H
 
-#include <vector>
-#include <string>
-#include <Eigen/Core>
-#include <Eigen/Geometry>
-#include <boost/shared_ptr.hpp>
-#include <geometric_shapes/shape_operations.h>
+#include <tesseract_ros/ros_basic_types.h>
 #include <tesseract_core/basic_env.h>
-#include <map>
-#include <unordered_map>
 #include <urdf/model.h>
 #include <srdfdom/model.h>
 
@@ -80,55 +73,30 @@ private:
 typedef boost::shared_ptr<ROSAllowedCollisionMatrix> ROSAllowedCollisionMatrixPtr;
 typedef boost::shared_ptr<const ROSAllowedCollisionMatrix> ROSAllowedCollisionMatrixConstPtr;
 
-/**< @brief Information on how the object is attached to the environment */
-struct AttachedBodyInfo
-{
-  std::string name;                     /**< @brief The name of the attached body (must be unique) */
-  std::string parent_link_name;         /**< @brief The name of the link to attach the body */
-  std::string object_name;              /**< @brief The name of the AttachableObject being used */
-  std::vector<std::string> touch_links; /**< @brief The names of links which the attached body is allowed to be in contact with */
-};
-
-/** @brief Contains geometry data for an attachable object */
-struct AttachableObjectGeometry
-{
-  std::vector<shapes::ShapeConstPtr> shapes;  /**< @brief The shape */
-  EigenSTL::vector_Affine3d shape_poses;      /**< @brief The pose of the shape */
-  EigenSTL::vector_Vector4d shape_colors;     /**< @brief (Optional) The shape color (R, G, B, A) */
-};
-
-/** @brief Contains data about an attachable object */
-struct AttachableObject
-{
-  std::string name;                   /**< @brief The name of the attachable object */
-  AttachableObjectGeometry visual;    /**< @brief The objects visual geometry */
-  AttachableObjectGeometry collision; /**< @brief The objects collision geometry */
-};
-typedef boost::shared_ptr<AttachableObject> AttachableObjectPtr;
-typedef boost::shared_ptr<const AttachableObject> AttachableObjectConstPtr;
-
-/** @brief Contains data representing an attached body */
-struct AttachedBody
-{
-   AttachedBodyInfo info;        /**< @brief Information on how the object is attached to the environment */
-   AttachableObjectConstPtr obj; /**< @brief The attached bodies object data */
-};
-typedef boost::shared_ptr<AttachedBody> AttachedBodyPtr;
-typedef boost::shared_ptr<const AttachedBody> AttachedBodyConstPtr;
-
-/** @brief ObjectColorMap Stores Object color in a 4d vector as RGBA*/
-typedef std::unordered_map<std::string, std_msgs::ColorRGBA> ObjectColorMap;
-typedef boost::shared_ptr<ObjectColorMap> ObjectColorMapPtr;
-typedef boost::shared_ptr<const ObjectColorMap> ObjectColorMapConstPtr;
-typedef std::unordered_map<std::string, AttachedBodyConstPtr> AttachedBodyConstPtrMap;
-typedef std::unordered_map<std::string, AttachableObjectConstPtr> AttachableObjectConstPtrMap;
-
 class ROSBasicEnv : public BasicEnv
 {
 public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
   ROSBasicEnv() : allowed_collision_matrix_(new ROSAllowedCollisionMatrix()) {}
+
+  /** @brief Set the current state of the environment */
+  virtual void setState(const std::unordered_map<std::string, double> &joints) = 0;
+  virtual void setState(const std::vector<std::string> &joint_names, const Eigen::VectorXd &joint_values) = 0;
+
+  /** @brief Get the current state of the environment */
+  virtual const EnvStateConstPtr getState() const = 0;
+
+  /**
+   * @brief Get the state of the environment for a given set or subset of joint values.
+   *
+   * This does not change the internal state of the environment.
+   *
+   * @param joints A map of joint names to joint values to change.
+   * @return A the state of the environment
+   */
+  virtual EnvStatePtr getState(const std::unordered_map<std::string, double> &joints) const = 0;
+  virtual EnvStatePtr getState(const std::vector<std::string> &joint_names, const Eigen::VectorXd &joint_values) const = 0;
 
   /**
    * @brief A a manipulator as a kinematic chain

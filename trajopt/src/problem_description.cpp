@@ -284,7 +284,7 @@ TrajOptResult::TrajOptResult(OptResults& opt, TrajOptProb& prob) :
   traj = getTraj(opt.x, prob.GetVars());
 }
 
-TrajOptResultPtr OptimizeProblem(TrajOptProbPtr prob, bool plot)
+TrajOptResultPtr OptimizeProblem(TrajOptProbPtr prob, const tesseract::BasicPlottingPtr plotter)
 {
   BasicTrustRegionSQP opt(prob);
   BasicTrustRegionSQPParameters &param = opt.getParameters();
@@ -292,7 +292,7 @@ TrajOptResultPtr OptimizeProblem(TrajOptProbPtr prob, bool plot)
   param.min_approx_improve_frac = .001;
   param.improve_ratio_threshold = .2;
   param.merit_error_coeff = 20;
-  if (plot) opt.addCallback(PlotCallback(*prob));
+  if (plotter) opt.addCallback(PlotCallback(*prob, plotter));
   opt.initialize(trajToDblVec(prob->GetInitTraj()));
   opt.optimize();
   return TrajOptResultPtr(new TrajOptResult(opt.results(), *prob));
@@ -338,7 +338,7 @@ TrajOptProbPtr ConstructProblem(const ProblemConstructionInfo& pci)
 
 }
 
-TrajOptProbPtr ConstructProblem(const Json::Value& root, tesseract::BasicEnvPtr env)
+TrajOptProbPtr ConstructProblem(const Json::Value& root, tesseract::BasicEnvConstPtr env)
 {
   ProblemConstructionInfo pci(env);
   pci.fromJson(root);

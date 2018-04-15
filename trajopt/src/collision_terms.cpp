@@ -40,7 +40,7 @@ void DebugPrintInfo(const tesseract::DistanceResult &res, bool header = false)
 }
 
 void CollisionsToDistanceExpressions(const tesseract::DistanceResultVector &dist_results,
-                                     const tesseract::BasicEnvPtr env,
+                                     const tesseract::BasicEnvConstPtr env,
                                      const tesseract::BasicKinConstPtr manip,
                                      const VarVector& vars, const DblVec& x,
                                      vector<AffExpr>& exprs, bool isTimestep1)
@@ -104,7 +104,7 @@ void CollisionsToDistanceExpressions(const tesseract::DistanceResultVector &dist
 }
 
 void CollisionsToDistanceExpressions(const tesseract::DistanceResultVector &dist_results,
-                                     const tesseract::BasicEnvPtr env,
+                                     const tesseract::BasicEnvConstPtr env,
                                      const tesseract::BasicKinConstPtr manip,
                                      const VarVector& vars0, const VarVector& vars1, const DblVec& x,
                                      vector<AffExpr>& exprs)
@@ -147,7 +147,7 @@ void CollisionEvaluator::GetCollisionsCached(const DblVec& x, tesseract::Distanc
   }
 }
 
-void CollisionEvaluator::Plot(const DblVec& x)
+void CollisionEvaluator::Plot(const tesseract::BasicPlottingPtr plotter, const DblVec& x)
 {
   tesseract::DistanceResultVector dist_results;
   GetCollisionsCached(x, dist_results);
@@ -160,10 +160,10 @@ void CollisionEvaluator::Plot(const DblVec& x)
     safety_distance[i] = data[0];
   }
 
-  env_->plotCollisions(link_names, dist_results, safety_distance);
+  plotter->plotContactResults(link_names, dist_results, safety_distance);
 }
 
-SingleTimestepCollisionEvaluator::SingleTimestepCollisionEvaluator(tesseract::BasicKinConstPtr manip, tesseract::BasicEnvPtr env, SafetyMarginDataConstPtr safety_margin_data, const VarVector& vars) :
+SingleTimestepCollisionEvaluator::SingleTimestepCollisionEvaluator(tesseract::BasicKinConstPtr manip, tesseract::BasicEnvConstPtr env, SafetyMarginDataConstPtr safety_margin_data, const VarVector& vars) :
   CollisionEvaluator(manip, env, safety_margin_data), m_vars(vars) {}
 
 
@@ -198,7 +198,7 @@ void SingleTimestepCollisionEvaluator::CalcDistExpressions(const DblVec& x, vect
 
 ////////////////////////////////////////
 
-CastCollisionEvaluator::CastCollisionEvaluator(tesseract::BasicKinConstPtr manip, tesseract::BasicEnvPtr env, SafetyMarginDataConstPtr safety_margin_data, const VarVector& vars0, const VarVector& vars1) :
+CastCollisionEvaluator::CastCollisionEvaluator(tesseract::BasicKinConstPtr manip, tesseract::BasicEnvConstPtr env, SafetyMarginDataConstPtr safety_margin_data, const VarVector& vars0, const VarVector& vars1) :
   CollisionEvaluator(manip, env, safety_margin_data), m_vars0(vars0),m_vars1(vars1)
 {}
 
@@ -230,12 +230,12 @@ void CastCollisionEvaluator::CalcDists(const DblVec& x, DblVec& dists)
 //////////////////////////////////////////
 
 
-CollisionCost::CollisionCost(tesseract::BasicKinConstPtr manip, tesseract::BasicEnvPtr env, SafetyMarginDataConstPtr safety_margin_data, const VarVector& vars) :
+CollisionCost::CollisionCost(tesseract::BasicKinConstPtr manip, tesseract::BasicEnvConstPtr env, SafetyMarginDataConstPtr safety_margin_data, const VarVector& vars) :
     Cost("collision"),
     m_calc(new SingleTimestepCollisionEvaluator(manip, env, safety_margin_data, vars))
 {}
 
-CollisionCost::CollisionCost(tesseract::BasicKinConstPtr manip, tesseract::BasicEnvPtr env, SafetyMarginDataConstPtr safety_margin_data, const VarVector& vars0, const VarVector& vars1) :
+CollisionCost::CollisionCost(tesseract::BasicKinConstPtr manip, tesseract::BasicEnvConstPtr env, SafetyMarginDataConstPtr safety_margin_data, const VarVector& vars0, const VarVector& vars1) :
     Cost("cast_collision"),
     m_calc(new CastCollisionEvaluator(manip, env, safety_margin_data, vars0, vars1))
 {}
@@ -274,24 +274,23 @@ double CollisionCost::value(const vector<double>& x)
   return out;
 }
 
-void CollisionCost::Plot(const DblVec& x)
+void CollisionCost::Plot(const tesseract::BasicPlottingPtr plotter, const DblVec& x)
 {
-  m_calc->Plot(x);
+  m_calc->Plot(plotter, x);
 }
 
 // ALMOST EXACTLY COPIED FROM CollisionCost
 
-CollisionConstraint::CollisionConstraint(tesseract::BasicKinConstPtr manip, tesseract::BasicEnvPtr env, SafetyMarginDataConstPtr safety_margin_data, const VarVector& vars) :
+CollisionConstraint::CollisionConstraint(tesseract::BasicKinConstPtr manip, tesseract::BasicEnvConstPtr env, SafetyMarginDataConstPtr safety_margin_data, const VarVector& vars) :
     m_calc(new SingleTimestepCollisionEvaluator(manip, env, safety_margin_data, vars))
 {
   name_="collision";
 }
 
-CollisionConstraint::CollisionConstraint(tesseract::BasicKinConstPtr manip, tesseract::BasicEnvPtr env, SafetyMarginDataConstPtr safety_margin_data, const VarVector& vars0, const VarVector& vars1) :
+CollisionConstraint::CollisionConstraint(tesseract::BasicKinConstPtr manip, tesseract::BasicEnvConstPtr env, SafetyMarginDataConstPtr safety_margin_data, const VarVector& vars0, const VarVector& vars1) :
   m_calc(new CastCollisionEvaluator(manip, env, safety_margin_data, vars0, vars1))
 {
   name_="collision";
-  ROS_ERROR("CastCollisionEvaluator is not currently implemented within ros");
 }
 
 ConvexConstraintsPtr CollisionConstraint::convex(const vector<double>& x, Model* model) {

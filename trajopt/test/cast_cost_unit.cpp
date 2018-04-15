@@ -16,6 +16,7 @@
 
 #include <tesseract_ros/kdl/kdl_chain_kin.h>
 #include <tesseract_ros/bullet/bullet_env.h>
+#include <tesseract_ros/ros_basic_plotting.h>
 
 #include <ros/ros.h>
 #include <urdf_parser/urdf_parser.h>
@@ -35,25 +36,29 @@ bool plotting=false;
 class CastTest : public testing::TestWithParam<const char*> {
 public:
   ros::NodeHandle nh_;
-  urdf::ModelInterfaceSharedPtr model_;  /**< URDF Model */
-  srdf::ModelSharedPtr srdf_model_;      /**< SRDF Model */
-  tesseract_ros::BulletEnvPtr env_;      /**< Trajopt Basic Environment */
+  urdf::ModelInterfaceSharedPtr urdf_model_;   /**< URDF Model */
+  srdf::ModelSharedPtr srdf_model_;            /**< SRDF Model */
+  tesseract_ros::BulletEnvPtr env_;            /**< Trajopt Basic Environment */
+  tesseract_ros::ROSBasicPlottingPtr plotter_; /**< Trajopt Plotter */
 
   virtual void SetUp()
   {
     std::string urdf_xml_string, srdf_xml_string;
     nh_.getParam(ROBOT_DESCRIPTION_PARAM, urdf_xml_string);
     nh_.getParam(ROBOT_SEMANTIC_PARAM, srdf_xml_string);
-    model_ = urdf::parseURDF(urdf_xml_string);
+    urdf_model_ = urdf::parseURDF(urdf_xml_string);
 
     srdf_model_ = srdf::ModelSharedPtr(new srdf::Model);
-    srdf_model_->initString(*model_, srdf_xml_string);
+    srdf_model_->initString(*urdf_model_, srdf_xml_string);
     env_ = tesseract_ros::BulletEnvPtr(new tesseract_ros::BulletEnv);
-    assert(model_ != nullptr);
+    assert(urdf_model_ != nullptr);
     assert(env_ != nullptr);
 
-    bool success = env_->init(model_, srdf_model_);
+    bool success = env_->init(urdf_model_, srdf_model_);
     assert(success);
+
+    // Create plotting tool
+    plotter_.reset(new tesseract_ros::ROSBasicPlotting(env_));
 
     gLogLevel = util::LevelInfo;
   }
@@ -69,7 +74,8 @@ TEST_F(CastTest, boxes) {
   ipos["boxbot_x_joint"] = -1.9;
   ipos["boxbot_y_joint"] = 0;
   env_->setState(ipos);
-  env_->updateVisualization();
+
+  plotter_->plotScene();
 
   TrajOptProbPtr prob = ConstructProblem(root, env_);
   ASSERT_TRUE(!!prob);
@@ -83,11 +89,11 @@ TEST_F(CastTest, boxes) {
   ASSERT_NE(collisions.size(), 0);
 
   BasicTrustRegionSQP opt(prob);
-  if (plotting) opt.addCallback(PlotCallback(*prob));
+  if (plotting) opt.addCallback(PlotCallback(*prob, plotter_));
   opt.initialize(trajToDblVec(prob->GetInitTraj()));
   opt.optimize();
 
-  if (plotting) prob->GetEnv()->plotClear();
+  if (plotting) plotter_->clear();
 
   collisions.clear();
   env_->continuousCollisionCheckTrajectory(joint_names, link_names, getTraj(opt.x(), prob->GetVars()), collisions);

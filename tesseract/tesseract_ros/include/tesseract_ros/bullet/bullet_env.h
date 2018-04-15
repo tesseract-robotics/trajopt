@@ -9,8 +9,6 @@
 #include <ros/publisher.h>
 #include <urdf/model.h>
 #include <srdfdom/model.h>
-#include <visualization_msgs/Marker.h>
-#include <visualization_msgs/MarkerArray.h>
 #include <boost/thread/mutex.hpp>
 
 namespace tesseract
@@ -94,22 +92,6 @@ public:
 
   const srdf::ModelConstSharedPtr getSRDF() const { return srdf_model_; }
 
-  void updateVisualization() const;
-
-  void enablePlotting(bool enable) { plotting_ = enable; }
-
-  void plotTrajectory(const std::string &name, const std::vector<std::string> &joint_names, const TrajArray &traj);
-
-  void plotCollisions(const std::vector<std::string> &link_names, const DistanceResultVector &dist_results, const Eigen::VectorXd& safety_distances);
-
-  void plotArrow(const Eigen::Vector3d &pt1, const Eigen::Vector3d &pt2, const Eigen::Vector4d &rgba, double scale);
-
-  void plotAxis(const Eigen::Affine3d &axis, double scale);
-
-  void plotClear();
-
-  void plotWaitForInput();
-
 private:
   bool initialized_;                                                /**< Identifies if the object has been initialized */
   urdf::ModelInterfaceConstSharedPtr model_;                        /**< URDF MODEL */
@@ -127,22 +109,10 @@ private:
   ObjectColorMapConstPtr object_colors_;                            /**< A map of objects to color */
   boost::mutex modify_env_mutex_;
 
-  bool plotting_;                                         /**< Enable plotting */
-  int marker_counter_;                                    /**< Counter when plotting */
-  ros::Publisher scene_pub_;                              /**< Scene publisher */
-  ros::Publisher trajectory_pub_;                         /**< Trajectory publisher */
-  ros::Publisher collisions_pub_;                         /**< Collision Data publisher */
-  ros::Publisher arrows_pub_;                             /**< Used for publishing arrow markers */
-  ros::Publisher axes_pub_;                               /**< Used for publishing axis markers */
-
   void calculateTransforms(std::unordered_map<std::string, Eigen::Affine3d> &transforms, const KDL::JntArray& q_in, const KDL::SegmentMap::const_iterator& it, const Eigen::Affine3d& parent_frame) const;
   void calculateTransformsHelper(std::unordered_map<std::string, Eigen::Affine3d> &transforms, const KDL::JntArray& q_in, const KDL::SegmentMap::const_iterator& it, const Eigen::Affine3d& parent_frame) const;
 
   bool setJointValuesHelper(KDL::JntArray &q, const std::string &joint_name, const double &joint_value) const;
-
-  visualization_msgs::Marker getMarkerArrowMsg(const Eigen::Vector3d &pt1, const Eigen::Vector3d &pt2, const Eigen::Vector4d &rgba, double scale);
-
-  visualization_msgs::Marker getMarkerCylinderMsg(const Eigen::Vector3d &pt1, const Eigen::Vector3d &pt2, const Eigen::Vector4d &rgba, double scale);
 
   std::string getManipulatorName(const std::vector<std::string> &joint_names) const;
 

@@ -63,7 +63,7 @@ void SceneRender::clear()
 }
 
 void SceneRender::render(const tesseract::tesseract_ros::ROSBasicEnvConstPtr env,
-                         const tesseract::EnvStateConstPtr state,
+                         const tesseract::tesseract_ros::EnvStateConstPtr state,
                          const rviz::Color& default_env_color,
                          const rviz::Color& default_attached_color,
                          OctreeVoxelRenderMode octree_voxel_rendering,

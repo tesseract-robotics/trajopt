@@ -15,6 +15,7 @@
 #include <trajopt_utils/logging.hpp>
 #include <tesseract_ros/kdl/kdl_chain_kin.h>
 #include <tesseract_ros/bullet/bullet_env.h>
+#include <tesseract_ros/ros_basic_plotting.h>
 
 #include <ros/ros.h>
 #include <geometric_shapes/shapes.h>
@@ -36,30 +37,34 @@ bool plotting=false;
 class CastAttachedTest : public testing::TestWithParam<const char*> {
 public:
   ros::NodeHandle nh_;
-  urdf::ModelInterfaceSharedPtr model_;  /**< URDF Model */
-  srdf::ModelSharedPtr srdf_model_;      /**< SRDF Model */
-  tesseract_ros::BulletEnvPtr env_;   /**< Trajopt Basic Environment */
+  urdf::ModelInterfaceSharedPtr urdf_model_;   /**< URDF Model */
+  srdf::ModelSharedPtr srdf_model_;            /**< SRDF Model */
+  tesseract_ros::BulletEnvPtr env_;            /**< Trajopt Basic Environment */
+  tesseract_ros::ROSBasicPlottingPtr plotter_; /**< Trajopt Plotter */
 
   virtual void SetUp()
   {
     std::string urdf_xml_string, srdf_xml_string;
     nh_.getParam(ROBOT_DESCRIPTION_PARAM, urdf_xml_string);
     nh_.getParam(ROBOT_SEMANTIC_PARAM, srdf_xml_string);
-    model_ = urdf::parseURDF(urdf_xml_string);
+    urdf_model_ = urdf::parseURDF(urdf_xml_string);
 
     srdf_model_ = srdf::ModelSharedPtr(new srdf::Model);
-    srdf_model_->initString(*model_, srdf_xml_string);
+    srdf_model_->initString(*urdf_model_, srdf_xml_string);
     env_ = tesseract_ros::BulletEnvPtr(new tesseract_ros::BulletEnv);
-    assert(model_ != nullptr);
+    assert(urdf_model_ != nullptr);
     assert(env_ != nullptr);
 
-    bool success = env_->init(model_, srdf_model_);
+    bool success = env_->init(urdf_model_, srdf_model_);
     assert(success);
+
+    // Create plotting tool
+    plotter_.reset(new tesseract_ros::ROSBasicPlotting(env_));
 
     // Next add objects that can be attached/detached to the scene
     tesseract_ros::AttachableObjectPtr obj1(new tesseract_ros::AttachableObject());
     tesseract_ros::AttachableObjectPtr obj2(new tesseract_ros::AttachableObject());
-    shapes::Box* box = new shapes::Box();
+    std::shared_ptr<shapes::Box> box(new shapes::Box());
     Eigen::Affine3d box_pose;
 
     box->size[0] = 0.25;
@@ -70,11 +75,13 @@ public:
     box_pose.translation() = Eigen::Vector3d(0.5, -0.5, 0);
 
     obj1->name = "box_attached";
-    obj1->shapes.push_back(shapes::ShapeConstPtr(box));
-    obj1->shapes_trans.push_back(box_pose);
+    obj1->visual.shapes.push_back(box);
+    obj1->visual.shape_poses.push_back(box_pose);
+    obj1->collision.shapes.push_back(box);
+    obj1->collision.shape_poses.push_back(box_pose);
     env_->addAttachableObject(obj1);
 
-    shapes::Box* box2 = new shapes::Box();
+    std::shared_ptr<shapes::Box> box2(new shapes::Box());
     Eigen::Affine3d box_pose2;
 
     box2->size[0] = 0.25;
@@ -85,8 +92,10 @@ public:
     box_pose2.translation() = Eigen::Vector3d(0, 0, 0);
 
     obj2->name = "box_attached2";
-    obj2->shapes.push_back(shapes::ShapeConstPtr(box2));
-    obj2->shapes_trans.push_back(box_pose2);
+    obj2->visual.shapes.push_back(box2);
+    obj2->visual.shape_poses.push_back(box_pose2);
+    obj2->collision.shapes.push_back(box2);
+    obj2->collision.shape_poses.push_back(box_pose2);
     env_->addAttachableObject(obj2);
 
     gLogLevel = util::LevelInfo;
@@ -103,7 +112,6 @@ TEST_F(CastAttachedTest, LinkWithGeom)
   attached_body.parent_link_name = "boxbot_link";
 
   env_->attachBody(attached_body);
-  env_->updateVisualization();
 
   std::string package_path = ros::package::getPath("trajopt_test_support");
   Json::Value root = readJsonFile(package_path + "/config/box_cast_test.json");
@@ -112,6 +120,8 @@ TEST_F(CastAttachedTest, LinkWithGeom)
   ipos["boxbot_x_joint"] = -1.9;
   ipos["boxbot_y_joint"] = 0;
   env_->setState(ipos);
+
+  plotter_->plotScene();
 
   TrajOptProbPtr prob = ConstructProblem(root, env_);
   ASSERT_TRUE(!!prob);
@@ -125,11 +135,11 @@ TEST_F(CastAttachedTest, LinkWithGeom)
   ASSERT_NE(collisions.size(), 0);
 
   BasicTrustRegionSQP opt(prob);
-  if (plotting) opt.addCallback(PlotCallback(*prob));
+  if (plotting) opt.addCallback(PlotCallback(*prob, plotter_));
   opt.initialize(trajToDblVec(prob->GetInitTraj()));
   opt.optimize();
 
-  if (plotting) prob->GetEnv()->plotClear();
+  if (plotting) plotter_->clear();
 
   collisions.clear();
   env_->continuousCollisionCheckTrajectory(joint_names, link_names, getTraj(opt.x(), prob->GetVars()), collisions);
@@ -147,7 +157,6 @@ TEST_F(CastAttachedTest, LinkWithoutGeom)
   attached_body.parent_link_name = "no_geom_link";
 
   env_->attachBody(attached_body);
-  env_->updateVisualization();
 
   std::string package_path = ros::package::getPath("trajopt_test_support");
   Json::Value root = readJsonFile(package_path + "/config/box_cast_test.json");
@@ -156,6 +165,8 @@ TEST_F(CastAttachedTest, LinkWithoutGeom)
   ipos["boxbot_x_joint"] = -1.9;
   ipos["boxbot_y_joint"] = 0;
   env_->setState(ipos);
+
+  plotter_->plotScene();
 
   TrajOptProbPtr prob = ConstructProblem(root, env_);
   ASSERT_TRUE(!!prob);
@@ -169,11 +180,11 @@ TEST_F(CastAttachedTest, LinkWithoutGeom)
   ASSERT_NE(collisions.size(), 0);
 
   BasicTrustRegionSQP opt(prob);
-  if (plotting) opt.addCallback(PlotCallback(*prob));
+  if (plotting) opt.addCallback(PlotCallback(*prob, plotter_));
   opt.initialize(trajToDblVec(prob->GetInitTraj()));
   opt.optimize();
 
-  if (plotting) prob->GetEnv()->plotClear();
+  if (plotting) plotter_->clear();
 
   collisions.clear();
   env_->continuousCollisionCheckTrajectory(joint_names, link_names, getTraj(opt.x(), prob->GetVars()), collisions);

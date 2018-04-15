@@ -73,7 +73,7 @@ public:
   }
 
   void render(const tesseract::tesseract_ros::ROSBasicEnvConstPtr env,
-              const tesseract::EnvStateConstPtr state,
+              const tesseract::tesseract_ros::EnvStateConstPtr state,
               const rviz::Color& default_scene_color,
               const rviz::Color& default_attached_color,
               OctreeVoxelRenderMode voxel_render_mode,

@@ -38,7 +38,7 @@
 #define TESSERACT_RVIZ_LINK_UPDATER
 
 #include <rviz/robot/link_updater.h>
-#include <tesseract_core/basic_env.h>
+#include <tesseract_ros/ros_basic_env.h>
 
 namespace tesseract_rviz
 {
@@ -46,7 +46,7 @@ namespace tesseract_rviz
 class LinkUpdater : public rviz::LinkUpdater
 {
 public:
-  LinkUpdater(const tesseract::EnvStateConstPtr state) : state_(state)
+  LinkUpdater(const tesseract::tesseract_ros::EnvStateConstPtr state) : state_(state)
   {
   }
 
@@ -57,7 +57,7 @@ public:
                                  Ogre::Quaternion& collision_orientation) const;
 
 private:
-  tesseract::EnvStateConstPtr state_;
+  tesseract::tesseract_ros::EnvStateConstPtr state_;
 };
 }
 

@@ -16,6 +16,7 @@
 
 #include <tesseract_ros/kdl/kdl_chain_kin.h>
 #include <trajopt_moveit/trajopt_moveit_env.h>
+#include <trajopt_moveit/trajopt_moveit_plotting.h>
 
 #include <ros/ros.h>
 #include <moveit/robot_model_loader/robot_model_loader.h>
@@ -40,6 +41,7 @@ public:
   moveit::core::RobotModelPtr robot_model_;         /**< Robot model */
   planning_scene::PlanningScenePtr planning_scene_; /**< Planning scene for the current robot model */
   trajopt_moveit::TrajOptMoveItEnvPtr env_;         /**< Trajopt Basic Environment */
+  trajopt_moveit::TrajoptMoveItPlottingPtr plotter_;/**< Trajopt Plotter */
 
   virtual void SetUp()
   {
@@ -55,6 +57,8 @@ public:
     ASSERT_TRUE(cd_loader.activate(class_name, planning_scene_, true));
 
     ASSERT_TRUE(env_->init(planning_scene_));
+
+    plotter_.reset(new trajopt_moveit::TrajoptMoveItPlotting(planning_scene_));
 
     gLogLevel = util::LevelInfo;
   }
@@ -115,11 +119,11 @@ TEST_F(CastAttachedTest, LinkWithGeom)
   ASSERT_NE(collisions.size(), 0);
 
   BasicTrustRegionSQP opt(prob);
-  if (plotting) opt.addCallback(PlotCallback(*prob));
+  if (plotting) opt.addCallback(PlotCallback(*prob, plotter_));
   opt.initialize(trajToDblVec(prob->GetInitTraj()));
   opt.optimize();
 
-  if (plotting) prob->GetEnv()->plotClear();
+  if (plotting) plotter_->clear();
 
   collisions.clear();
   env_->continuousCollisionCheckTrajectory(joint_names, link_names, getTraj(opt.x(), prob->GetVars()), collisions);
@@ -182,11 +186,11 @@ TEST_F(CastAttachedTest, LinkWithoutGeom)
   ASSERT_NE(collisions.size(), 0);
 
   BasicTrustRegionSQP opt(prob);
-  if (plotting) opt.addCallback(PlotCallback(*prob));
+  if (plotting) opt.addCallback(PlotCallback(*prob, plotter_));
   opt.initialize(trajToDblVec(prob->GetInitTraj()));
   opt.optimize();
 
-  if (plotting) prob->GetEnv()->plotClear();
+  if (plotting) plotter_->clear();
 
   collisions.clear();
   env_->continuousCollisionCheckTrajectory(joint_names, link_names, getTraj(opt.x(), prob->GetVars()), collisions);

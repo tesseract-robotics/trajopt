@@ -1,6 +1,8 @@
 #include <trajopt/utils.hpp>
 #include <trajopt_sco/solver_interface.hpp>
 #include <Eigen/Geometry>
+#include <boost/format.hpp>
+
 using namespace Eigen;
 
 namespace trajopt {

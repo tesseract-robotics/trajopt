@@ -159,4 +159,4 @@ void TesseractTrajectoryDisplay::changedURDFDescription()
     loadEnv();
 }
 
-}  // namespace moveit_rviz_plugin
+}  // namespace tesseract_rviz

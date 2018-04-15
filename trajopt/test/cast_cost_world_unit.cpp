@@ -16,6 +16,7 @@
 
 #include <tesseract_ros/kdl/kdl_chain_kin.h>
 #include <tesseract_ros/bullet/bullet_env.h>
+#include <tesseract_ros/ros_basic_plotting.h>
 
 #include <ros/ros.h>
 #include <urdf_parser/urdf_parser.h>
@@ -38,29 +39,33 @@ bool plotting=false;
 class CastWorldTest : public testing::TestWithParam<const char*> {
 public:
   ros::NodeHandle nh_;
-  urdf::ModelInterfaceSharedPtr model_;  /**< URDF Model */
-  srdf::ModelSharedPtr srdf_model_;      /**< SRDF Model */
-  tesseract_ros::BulletEnvPtr env_;   /**< Trajopt Basic Environment */
+  urdf::ModelInterfaceSharedPtr urdf_model_;   /**< URDF Model */
+  srdf::ModelSharedPtr srdf_model_;            /**< SRDF Model */
+  tesseract_ros::BulletEnvPtr env_;            /**< Trajopt Basic Environment */
+  tesseract_ros::ROSBasicPlottingPtr plotter_; /**< Trajopt Plotter */
 
   virtual void SetUp()
   {
     std::string urdf_xml_string, srdf_xml_string;
     nh_.getParam(ROBOT_DESCRIPTION_PARAM, urdf_xml_string);
     nh_.getParam(ROBOT_SEMANTIC_PARAM, srdf_xml_string);
-    model_ = urdf::parseURDF(urdf_xml_string);
+    urdf_model_ = urdf::parseURDF(urdf_xml_string);
 
     srdf_model_ = srdf::ModelSharedPtr(new srdf::Model);
-    srdf_model_->initString(*model_, srdf_xml_string);
+    srdf_model_->initString(*urdf_model_, srdf_xml_string);
     env_ = tesseract_ros::BulletEnvPtr(new tesseract_ros::BulletEnv);
-    assert(model_ != nullptr);
+    assert(urdf_model_ != nullptr);
     assert(env_ != nullptr);
 
-    bool success = env_->init(model_, srdf_model_);
+    bool success = env_->init(urdf_model_, srdf_model_);
     assert(success);
+
+    // Create plotting tool
+    plotter_.reset(new tesseract_ros::ROSBasicPlotting(env_));
 
     // Next add objects that can be attached/detached to the scene
     tesseract_ros::AttachableObjectPtr obj(new tesseract_ros::AttachableObject());
-    shapes::Box* box = new shapes::Box();
+    std::shared_ptr<shapes::Box> box(new shapes::Box());
     Eigen::Affine3d box_pose;
 
     box->size[0] = 1.0;
@@ -71,8 +76,10 @@ public:
     box_pose.translation() = Eigen::Vector3d(0, 0, 0);
 
     obj->name = "box_world";
-    obj->shapes.push_back(shapes::ShapeConstPtr(box));
-    obj->shapes_trans.push_back(box_pose);
+    obj->visual.shapes.push_back(box);
+    obj->visual.shape_poses.push_back(box_pose);
+    obj->collision.shapes.push_back(box);
+    obj->collision.shape_poses.push_back(box_pose);
     env_->addAttachableObject(obj);
 
     gLogLevel = util::LevelInfo;
@@ -96,7 +103,8 @@ TEST_F(CastWorldTest, boxes) {
   ipos["boxbot_x_joint"] = -1.9;
   ipos["boxbot_y_joint"] = 0;
   env_->setState(ipos);
-  env_->updateVisualization();
+
+  plotter_->plotScene();
 
   TrajOptProbPtr prob = ConstructProblem(root, env_);
   ASSERT_TRUE(!!prob);
@@ -110,11 +118,11 @@ TEST_F(CastWorldTest, boxes) {
   ASSERT_NE(collisions.size(), 0);
 
   BasicTrustRegionSQP opt(prob);
-  if (plotting) opt.addCallback(PlotCallback(*prob));
+  if (plotting) opt.addCallback(PlotCallback(*prob, plotter_));
   opt.initialize(trajToDblVec(prob->GetInitTraj()));
   opt.optimize();
 
-  if (plotting) prob->GetEnv()->plotClear();
+  if (plotting) plotter_->clear();
 
   collisions.clear();
   env_->continuousCollisionCheckTrajectory(joint_names, link_names, getTraj(opt.x(), prob->GetVars()), collisions);

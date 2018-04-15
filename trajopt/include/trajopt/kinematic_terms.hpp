@@ -17,10 +17,10 @@ struct CartPoseErrCalculator : public VectorOfVector
 {
   Eigen::Affine3d pose_inv_;
   tesseract::BasicKinConstPtr manip_;
-  tesseract::BasicEnvPtr env_;
+  tesseract::BasicEnvConstPtr env_;
   std::string link_;
   Eigen::Affine3d tcp_;
-  CartPoseErrCalculator(const Eigen::Affine3d& pose, tesseract::BasicKinConstPtr manip, tesseract::BasicEnvPtr env, std::string link, Eigen::Affine3d tcp = Eigen::Affine3d::Identity()) :
+  CartPoseErrCalculator(const Eigen::Affine3d& pose, tesseract::BasicKinConstPtr manip, tesseract::BasicEnvConstPtr env, std::string link, Eigen::Affine3d tcp = Eigen::Affine3d::Identity()) :
     pose_inv_(pose.inverse()),
     manip_(manip),
     env_(env),
@@ -35,18 +35,18 @@ struct CartPoseErrorPlotter : public Plotter
   boost::shared_ptr<void> m_calc; //actually points to a CartPoseErrCalculator = CartPoseCost::f_
   VarVector m_vars;
   CartPoseErrorPlotter(boost::shared_ptr<void> calc, const VarVector& vars) : m_calc(calc), m_vars(vars) {}
-  void Plot(const DblVec& x);
+  void Plot(const tesseract::BasicPlottingPtr plotter, const DblVec& x);
 };
 
 
 struct CartVelJacCalculator : MatrixOfVector
 {
   tesseract::BasicKinConstPtr manip_;
-  tesseract::BasicEnvPtr env_;
+  tesseract::BasicEnvConstPtr env_;
   std::string link_;
   double limit_;
   Eigen::Affine3d tcp_;
-  CartVelJacCalculator(tesseract::BasicKinConstPtr manip, tesseract::BasicEnvPtr env, std::string link, double limit, Eigen::Affine3d tcp = Eigen::Affine3d::Identity()) :
+  CartVelJacCalculator(tesseract::BasicKinConstPtr manip, tesseract::BasicEnvConstPtr env, std::string link, double limit, Eigen::Affine3d tcp = Eigen::Affine3d::Identity()) :
     manip_(manip),
     env_(env),
     link_(link),
@@ -59,11 +59,11 @@ struct CartVelJacCalculator : MatrixOfVector
 struct CartVelCalculator : VectorOfVector
 {
   tesseract::BasicKinConstPtr manip_;
-  tesseract::BasicEnvPtr env_;
+  tesseract::BasicEnvConstPtr env_;
   std::string link_;
   double limit_;
   Eigen::Affine3d tcp_;
-  CartVelCalculator(tesseract::BasicKinConstPtr manip, tesseract::BasicEnvPtr env, std::string link, double limit, Eigen::Affine3d tcp = Eigen::Affine3d::Identity()) :
+  CartVelCalculator(tesseract::BasicKinConstPtr manip, tesseract::BasicEnvConstPtr env, std::string link, double limit, Eigen::Affine3d tcp = Eigen::Affine3d::Identity()) :
     manip_(manip),
     env_(env),
     link_(link),

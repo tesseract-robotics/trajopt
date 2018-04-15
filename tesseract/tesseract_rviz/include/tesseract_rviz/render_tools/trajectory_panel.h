@@ -92,6 +92,6 @@ protected:
   int last_way_point_;
 };
 
-}  // namespace moveit_rviz_plugin
+}  // namespace tesseract_rviz
 
 #endif //TESSERACT_RVIZ_TRAJECTORY_PANEL

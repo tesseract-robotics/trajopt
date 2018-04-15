@@ -369,7 +369,7 @@ void attachedBodyInfoMsgToAttachedBodyInfo(tesseract_ros::AttachedBodyInfo& ab_i
 }
 
 static inline
-void tesseractEnvStateToJointStateMsg(sensor_msgs::JointState& joint_state, const tesseract::EnvState& state)
+void tesseractEnvStateToJointStateMsg(sensor_msgs::JointState& joint_state, const tesseract_ros::EnvState& state)
 {
   for (const auto& joint : state.joints)
   {
@@ -379,7 +379,7 @@ void tesseractEnvStateToJointStateMsg(sensor_msgs::JointState& joint_state, cons
 }
 
 static inline
-void tesseractEnvStateToJointStateMsg(const sensor_msgs::JointStatePtr joint_state, const tesseract::EnvState& state)
+void tesseractEnvStateToJointStateMsg(const sensor_msgs::JointStatePtr joint_state, const tesseract_ros::EnvState& state)
 {
   tesseractEnvStateToJointStateMsg(*joint_state, state);
 }

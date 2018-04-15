@@ -75,7 +75,8 @@ CartPoseConstraint::CartPoseConstraint(const VarVector& vars, const OR::Transfor
 {}
 #endif
 
-void CartPoseErrorPlotter::Plot(const DblVec& x) {
+void CartPoseErrorPlotter::Plot(const tesseract::BasicPlottingPtr plotter, const DblVec& x)
+{
   CartPoseErrCalculator* calc = static_cast<CartPoseErrCalculator*>(m_calc.get());
   VectorXd dof_vals = getVec(x, m_vars);
   Affine3d cur_pose, change_base;
@@ -86,9 +87,9 @@ void CartPoseErrorPlotter::Plot(const DblVec& x) {
 
   Affine3d target = calc->pose_inv_.inverse();
 
-  calc->env_->plotAxis(cur_pose, 0.05);
-  calc->env_->plotAxis(target, 0.05);
-  calc->env_->plotArrow(cur_pose.translation(), target.translation(), Eigen::Vector4d(1, 0, 1, 1), 0.005);
+  plotter->plotAxis(cur_pose, 0.05);
+  plotter->plotAxis(target, 0.05);
+  plotter->plotArrow(cur_pose.translation(), target.translation(), Eigen::Vector4d(1, 0, 1, 1), 0.005);
 }
 
 

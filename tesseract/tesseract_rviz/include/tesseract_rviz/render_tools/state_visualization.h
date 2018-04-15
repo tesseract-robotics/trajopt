@@ -58,14 +58,14 @@ public:
   void clear();
 
   void update(const tesseract::tesseract_ros::ROSBasicEnvConstPtr env,
-              const tesseract::EnvStateConstPtr state);
+              const tesseract::tesseract_ros::EnvStateConstPtr state);
 
   void update(const tesseract::tesseract_ros::ROSBasicEnvConstPtr env,
-              const tesseract::EnvStateConstPtr state,
+              const tesseract::tesseract_ros::EnvStateConstPtr state,
               const std_msgs::ColorRGBA& default_attached_object_color);
 
   void update(const tesseract::tesseract_ros::ROSBasicEnvConstPtr env,
-              const tesseract::EnvStateConstPtr state,
+              const tesseract::tesseract_ros::EnvStateConstPtr state,
               const std_msgs::ColorRGBA& default_attached_object_color,
               const tesseract::tesseract_ros::ObjectColorMapConstPtr color_map);
 
@@ -105,7 +105,7 @@ public:
 
 private:
   void updateHelper(const tesseract::tesseract_ros::ROSBasicEnvConstPtr env,
-                    const tesseract::EnvStateConstPtr state,
+                    const tesseract::tesseract_ros::EnvStateConstPtr state,
                     const std_msgs::ColorRGBA& default_attached_object_color,
                     const tesseract::tesseract_ros::ObjectColorMapConstPtr color_map);
   rviz::Robot robot_;

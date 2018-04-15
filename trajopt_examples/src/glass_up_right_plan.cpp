@@ -1,4 +1,5 @@
 #include <ros/ros.h>
+#include <tesseract_ros/ros_basic_plotting.h>
 #include <tesseract_ros/bullet/bullet_env.h>
 #include <tesseract_ros/kdl/kdl_chain_kin.h>
 #include <trajopt/problem_description.hpp>
@@ -19,9 +20,9 @@ const std::string TRAJOPT_DESCRIPTION_PARAM = "trajopt_description"; /**< Defaul
 bool plotting_ = false;
 int steps_ = 5;
 std::string method_ = "json";
-urdf::ModelInterfaceSharedPtr model_; /**< URDF Model */
-srdf::ModelSharedPtr srdf_model_;     /**< SRDF Model */
-tesseract_ros::BulletEnvPtr env_;     /**< Trajopt Basic Environment */
+urdf::ModelInterfaceSharedPtr urdf_model_; /**< URDF Model */
+srdf::ModelSharedPtr srdf_model_;          /**< SRDF Model */
+tesseract_ros::BulletEnvPtr env_;          /**< Trajopt Basic Environment */
 
 TrajOptProbPtr jsonMethod()
 {
@@ -127,16 +128,19 @@ int main(int argc, char** argv)
   std::string urdf_xml_string, srdf_xml_string;
   nh.getParam(ROBOT_DESCRIPTION_PARAM, urdf_xml_string);
   nh.getParam(ROBOT_SEMANTIC_PARAM, srdf_xml_string);
-  model_ = urdf::parseURDF(urdf_xml_string);
+  urdf_model_ = urdf::parseURDF(urdf_xml_string);
 
   srdf_model_ = srdf::ModelSharedPtr(new srdf::Model);
-  srdf_model_->initString(*model_, srdf_xml_string);
+  srdf_model_->initString(*urdf_model_, srdf_xml_string);
   env_ = tesseract_ros::BulletEnvPtr(new tesseract_ros::BulletEnv);
-  assert(model_ != nullptr);
+  assert(urdf_model_ != nullptr);
   assert(env_ != nullptr);
 
-  bool success = env_->init(model_, srdf_model_);
+  bool success = env_->init(urdf_model_, srdf_model_);
   assert(success);
+
+  // Create Plotting tool
+  tesseract_ros::ROSBasicPlottingPtr plotter(new tesseract_ros::ROSBasicPlotting(env_));
 
   // Add sphere
   tesseract_ros::AttachableObjectPtr obj(new tesseract_ros::AttachableObject());
@@ -179,7 +183,7 @@ int main(int argc, char** argv)
   ipos["joint_a7"] = 0.0;
   env_->setState(ipos);
 
-  env_->updateVisualization();
+  plotter->plotScene();
 
   // Set Log Level
   gLogLevel = util::LevelInfo;
@@ -204,7 +208,7 @@ int main(int argc, char** argv)
   BasicTrustRegionSQP opt(prob);
   if (plotting_)
   {
-    opt.addCallback(PlotCallback(*prob));
+    opt.addCallback(PlotCallback(*prob, plotter));
   }
 
   opt.initialize(trajToDblVec(prob->GetInitTraj()));
@@ -214,7 +218,7 @@ int main(int argc, char** argv)
 
   if (plotting_)
   {
-    prob->GetEnv()->plotClear();
+    plotter->clear();
   }
 
   collisions.clear();

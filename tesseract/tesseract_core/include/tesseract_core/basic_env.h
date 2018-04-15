@@ -28,121 +28,12 @@
 
 #include <vector>
 #include <string>
-#include <Eigen/Core>
-#include <Eigen/Geometry>
-#include <boost/shared_ptr.hpp>
+#include <tesseract_core/basic_types.h>
 #include <tesseract_core/basic_kin.h>
-#include <unordered_map>
+
 
 namespace tesseract
 {
-
-typedef Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> TrajArray;
-
-struct AllowedCollisionMatrix
-{
-  /**
-   * @brief This checks if two links are allowed to be in collision
-   * @param link_name1 First link name
-   * @param link_name2 Second link anme
-   * @return True if allowed to be in collision, otherwise false
-   */
-  virtual bool isCollisionAllowed(const std::string& link_name1, const std::string& link_name2) const = 0;
-};
-typedef boost::shared_ptr<AllowedCollisionMatrix> AllowedCollisionMatrixPtr;
-typedef boost::shared_ptr<const AllowedCollisionMatrix> AllowedCollisionMatrixConstPtr;
-
-namespace BodyTypes
-{
-enum BodyType
-{
-  ROBOT_LINK,     /**< @brief These are links at the creation of the environment */
-  ROBOT_ATTACHED  /**< @brief These are links that are added after initial creation */
-};
-}
-typedef BodyTypes::BodyType BodyType;
-
-namespace ContinouseCollisionTypes
-{
-enum ContinouseCollisionType
-{
-  CCType_None,
-  CCType_Time0,
-  CCType_Time1,
-  CCType_Between
-};
-}
-typedef ContinouseCollisionTypes::ContinouseCollisionType ContinouseCollisionType;
-
-namespace DistanceRequestTypes
-{
-enum DistanceRequestType
-{
-  SINGLE, /**< Return the global minimum for a pair of objects */
-  ALL  ,  /**< Return all contacts for a pair of objects */
-  LIMITED /**< Return limited set of contacts for a pair of objects */
-};
-}
-typedef DistanceRequestTypes::DistanceRequestType DistanceRequestType;
-
-struct DistanceRequest
-{
-  DistanceRequestType type;             /**< The type of distance request */
-  double contact_distance;              /**< The maximum distance between two objects for which distance data should be calculated */
-  std::vector<std::string> joint_names; /**< Vector of joint names (size must match number of joints in robot chain) */
-  std::vector<std::string> link_names;  /**< Name of the links to calculate distance data for. */
-  Eigen::VectorXd joint_angles1;        /**< Vector of joint angles (size must match number of joints in robot chain/tree) */
-  Eigen::VectorXd joint_angles2;        /**< Vector of joint angles (size must match number of joints in robot chain/tree) */
-  AllowedCollisionMatrixConstPtr acm;   /**< The allowed collision matrix */
-
-  DistanceRequest() : type(DistanceRequestType::SINGLE), contact_distance(0.0) {}
-};
-
-struct DistanceResult
-{
-  double distance;
-  BodyType body_types[2];
-  std::string link_names[2];
-  std::string attached_link_names[2];
-  Eigen::Vector3d nearest_points[2];
-  Eigen::Vector3d normal;
-  Eigen::Vector3d cc_nearest_points[2];
-  double cc_time;
-  ContinouseCollisionType cc_type;
-  bool valid;
-
-  DistanceResult() { clear(); }
-
-  /// Clear structure data
-  void clear()
-  {
-    distance = std::numeric_limits<double>::max();
-    nearest_points[0].setZero();
-    nearest_points[1].setZero();
-    link_names[0] = "";
-    link_names[1] = "";
-    attached_link_names[0] = "";
-    attached_link_names[1] = "";
-    body_types[0] = BodyType::ROBOT_LINK;
-    body_types[1] = BodyType::ROBOT_LINK;
-    normal.setZero();
-    cc_nearest_points[0].setZero();
-    cc_nearest_points[1].setZero();
-    cc_time = -1;
-    cc_type = ContinouseCollisionType::CCType_None;
-  }
-};
-typedef std::vector<DistanceResult> DistanceResultVector;
-
-/** @brief This holds a state of the environment */
-struct EnvState
-{
-  std::unordered_map<std::string, double> joints;
-  std::unordered_map<std::string, Eigen::Affine3d> transforms;
-};
-typedef boost::shared_ptr<EnvState> EnvStatePtr;
-typedef boost::shared_ptr<const EnvState> EnvStateConstPtr;
-
 
 class BasicEnv
 {
@@ -201,24 +92,6 @@ public:
    */
   virtual bool continuousCollisionCheckTrajectory(const std::vector<std::string> &joint_names, const std::vector<std::string> &link_names, const TrajArray& traj, DistanceResult& collision) const = 0;
 
-  /** @brief Set the current state of the environment */
-  virtual void setState(const std::unordered_map<std::string, double> &joints) = 0;
-  virtual void setState(const std::vector<std::string> &joint_names, const Eigen::VectorXd &joint_values) = 0;
-
-  /** @brief Get the current state of the environment */
-  virtual const EnvStateConstPtr getState() const = 0;
-
-  /**
-   * @brief Get the state of the environment for a given set or subset of joint values.
-   *
-   * This does not change the internal state of the environment.
-   *
-   * @param joints A map of joint names to joint values to change.
-   * @return A the state of the environment
-   */
-  virtual EnvStatePtr getState(const std::unordered_map<std::string, double> &joints) const = 0;
-  virtual EnvStatePtr getState(const std::vector<std::string> &joint_names, const Eigen::VectorXd &joint_values) const = 0;
-
   /**
    * @brief Get a vector of joint names in the environment
    * @return A vector of joint names
@@ -264,54 +137,6 @@ public:
 
   /** @brief Get the allowed collision matrix */
   virtual AllowedCollisionMatrixConstPtr getAllowedCollisionMatrix() const = 0;
-
-  /** @brief Plot the current scene */
-  virtual void updateVisualization() const = 0;
-
-  /**
-   * @brief enablePlotting Endicate if data should be plotted/published
-   * @param enable
-   */
-  virtual void enablePlotting(bool enable) = 0;
-
-  /**
-   * @brief plotTrajectory Plot a trajectory
-   * @param traj
-   */
-  virtual void plotTrajectory(const std::string &name, const std::vector<std::string> &joint_names, const TrajArray &traj) = 0;
-
-  /**
-   * @brief plotCollisions Plot the collision results data
-   * @param link_names List of link names for which to plot data
-   * @param dist_results The collision results data
-   * @param safety_distance Vector of safety Distance corresponding to dist_results (Must be in the same order and length).
-   */
-  virtual void plotCollisions(const std::vector<std::string> &link_names, const DistanceResultVector &dist_results, const Eigen::VectorXd& safety_distances) = 0;
-
-  /**
-   * @brief plotArrow Plot arrow defined by two points
-   * @param pt1 Start position of the arrow
-   * @param pt2 Final position of the arrow
-   * @param rgba Color of the arrow
-   * @param scale The size of the arrow (related to diameter)
-   */
-  virtual void plotArrow(const Eigen::Vector3d &pt1, const Eigen::Vector3d &pt2, const Eigen::Vector4d &rgba, double scale) = 0;
-
-  /**
-   * @brief plotAxis Plat axis
-   * @param axis The axis
-   * @param scale The size of the axis
-   */
-  virtual void plotAxis(const Eigen::Affine3d &axis, double scale) = 0;
-
-  /**
-   * @brief This is called at the start of the plotting for each iteration
-   *        to clear previous iteration graphics if neccessary.
-   */
-  virtual void plotClear() = 0;
-
-  /** @brief plotWaitForInput Pause code and wait for enter key in terminal*/
-  virtual void plotWaitForInput() = 0;
 
 }; // class BasicColl
 

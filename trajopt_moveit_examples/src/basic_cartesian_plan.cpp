@@ -3,6 +3,7 @@
 #include <moveit/robot_model_loader/robot_model_loader.h>
 #include <moveit/collision_plugin_loader/collision_plugin_loader.h>
 #include <trajopt_moveit/trajopt_moveit_env.h>
+#include <trajopt_moveit/trajopt_moveit_plotting.h>
 #include <tesseract_ros/kdl/kdl_chain_kin.h>
 #include <trajopt/problem_description.hpp>
 #include <trajopt/plot_callback.hpp>
@@ -125,6 +126,9 @@ int main(int argc, char** argv)
   success = env_->init(planning_scene_);
   assert(success);
 
+  // Create plotting tool
+  trajopt_moveit::TrajoptMoveItPlottingPtr plotter(new trajopt_moveit::TrajoptMoveItPlotting(planning_scene_));
+
   // Get ROS Parameters
   pnh.param("plotting", plotting_, plotting_);
   pnh.param<std::string>("method", method_, method_);
@@ -165,7 +169,7 @@ int main(int argc, char** argv)
   BasicTrustRegionSQP opt(prob);
   if (plotting_)
   {
-    opt.addCallback(PlotCallback(*prob));
+    opt.addCallback(PlotCallback(*prob, plotter));
   }
 
   opt.initialize(trajToDblVec(prob->GetInitTraj()));
@@ -175,7 +179,7 @@ int main(int argc, char** argv)
 
   if (plotting_)
   {
-    prob->GetEnv()->plotClear();
+    plotter->clear();
   }
 
   collisions.clear();

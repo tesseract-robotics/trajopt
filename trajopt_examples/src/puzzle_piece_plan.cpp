@@ -1,4 +1,5 @@
 #include <ros/ros.h>
+#include <tesseract_ros/ros_basic_plotting.h>
 #include <tesseract_ros/bullet/bullet_env.h>
 #include <tesseract_ros/kdl/kdl_chain_kin.h>
 #include <trajopt/problem_description.hpp>
@@ -19,9 +20,9 @@ const std::string ROBOT_DESCRIPTION_PARAM = "robot_description"; /**< Default RO
 const std::string ROBOT_SEMANTIC_PARAM = "robot_description_semantic"; /**< Default ROS parameter for robot description */
 
 bool plotting_ = false;
-urdf::ModelInterfaceSharedPtr model_;  /**< URDF Model */
-srdf::ModelSharedPtr srdf_model_;      /**< SRDF Model */
-tesseract_ros::BulletEnvPtr env_;      /**< Trajopt Basic Environment */
+urdf::ModelInterfaceSharedPtr urdf_model_;  /**< URDF Model */
+srdf::ModelSharedPtr srdf_model_;           /**< SRDF Model */
+tesseract_ros::BulletEnvPtr env_;           /**< Trajopt Basic Environment */
 
 static EigenSTL::vector_Affine3d makePuzzleToolPoses()
 {
@@ -172,15 +173,18 @@ int main(int argc, char** argv)
   nh.getParam(ROBOT_DESCRIPTION_PARAM, urdf_xml_string);
   nh.getParam(ROBOT_SEMANTIC_PARAM, srdf_xml_string);
 
-  model_ = urdf::parseURDF(urdf_xml_string);
+  urdf_model_ = urdf::parseURDF(urdf_xml_string);
   srdf_model_ = srdf::ModelSharedPtr(new srdf::Model);
-  srdf_model_->initString(*model_, srdf_xml_string);
+  srdf_model_->initString(*urdf_model_, srdf_xml_string);
   env_ = tesseract_ros::BulletEnvPtr(new tesseract_ros::BulletEnv);
-  assert(model_ != nullptr);
+  assert(urdf_model_ != nullptr);
   assert(env_ != nullptr);
 
-  bool success = env_->init(model_, srdf_model_);
+  bool success = env_->init(urdf_model_, srdf_model_);
   assert(success);
+
+  // Create plotting tool
+  tesseract_ros::ROSBasicPlottingPtr plotter(new tesseract_ros::ROSBasicPlotting(env_));
 
   // Get ROS Parameters
   pnh.param("plotting", plotting_, plotting_);
@@ -195,6 +199,8 @@ int main(int argc, char** argv)
   ipos["joint_a6"] = 1.0;
   ipos["joint_a7"] = 0.0;
   env_->setState(ipos);
+
+  plotter->plotScene();
 
   // Set Log Level
   gLogLevel = util::LevelInfo;
@@ -217,7 +223,7 @@ int main(int argc, char** argv)
   opt.setParameters(pci.opt_info);
   if (plotting_)
   {
-    opt.addCallback(PlotCallback(*prob));
+    opt.addCallback(PlotCallback(*prob, plotter));
   }
 
   opt.initialize(trajToDblVec(prob->GetInitTraj()));
@@ -227,11 +233,11 @@ int main(int argc, char** argv)
 
   if (plotting_)
   {
-    prob->GetEnv()->plotClear();
+    plotter->clear();
   }
 
   // Plot the final trajectory
-  env_->plotTrajectory("", joint_names, getTraj(opt.x(), prob->GetVars()));
+  plotter->plotTrajectory(joint_names, getTraj(opt.x(), prob->GetVars()));
 
   collisions.clear();
   env_->continuousCollisionCheckTrajectory(joint_names, link_names, getTraj(opt.x(), prob->GetVars()), collisions);

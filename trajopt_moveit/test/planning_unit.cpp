@@ -12,6 +12,7 @@
 #include <trajopt_test_utils.hpp>
 #include <tesseract_ros/kdl/kdl_chain_kin.h>
 #include <trajopt_moveit/trajopt_moveit_env.h>
+#include <trajopt_moveit/trajopt_moveit_plotting.h>
 #include <trajopt/plot_callback.hpp>
 #include <trajopt_utils/logging.hpp>
 
@@ -36,6 +37,7 @@ public:
   moveit::core::RobotModelPtr robot_model_;         /**< Robot model */
   planning_scene::PlanningScenePtr planning_scene_; /**< Planning scene for the current robot model */
   trajopt_moveit::TrajOptMoveItEnvPtr env_;         /**< Trajopt Basic Environment */
+  trajopt_moveit::TrajoptMoveItPlottingPtr plotter_;/**< Trajopt Plotter */
 
   virtual void SetUp()
   {
@@ -56,6 +58,8 @@ public:
 
     ASSERT_TRUE(env_->init(planning_scene_));
 
+    plotter_.reset(new trajopt_moveit::TrajoptMoveItPlotting(planning_scene_));
+
     gLogLevel = util::LevelError;
   }
 };
@@ -74,7 +78,7 @@ TEST_F(PlanningTest, numerical_ik1)
   BasicTrustRegionSQP opt(prob);
   if (plotting)
   {
-    opt.addCallback(PlotCallback(*prob));
+    opt.addCallback(PlotCallback(*prob, plotter_));
   }
 
   ROS_DEBUG_STREAM("DOF: " << prob->GetNumDOF());
@@ -135,7 +139,7 @@ TEST_F(PlanningTest, arm_around_table)
   ROS_DEBUG_STREAM("DOF: " << prob->GetNumDOF());
   if (plotting)
   {
-    opt.addCallback(PlotCallback(*prob));
+    opt.addCallback(PlotCallback(*prob, plotter_));
   }
 
   opt.initialize(trajToDblVec(prob->GetInitTraj()));
@@ -145,7 +149,7 @@ TEST_F(PlanningTest, arm_around_table)
 
   if (plotting)
   {
-    prob->GetEnv()->plotClear();
+    plotter_->clear();
   }
 
   collisions.clear();

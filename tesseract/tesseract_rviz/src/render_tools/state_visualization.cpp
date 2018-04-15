@@ -85,20 +85,20 @@ void StateVisualization::setDefaultAttachedObjectColor(const std_msgs::ColorRGBA
 }
 
 void StateVisualization::update(const tesseract::tesseract_ros::ROSBasicEnvConstPtr env,
-                                const tesseract::EnvStateConstPtr state)
+                                const tesseract::tesseract_ros::EnvStateConstPtr state)
 {
   updateHelper(env, state, default_attached_object_color_, NULL);
 }
 
 void StateVisualization::update(const tesseract::tesseract_ros::ROSBasicEnvConstPtr env,
-                                const tesseract::EnvStateConstPtr state,
+                                const tesseract::tesseract_ros::EnvStateConstPtr state,
                                 const std_msgs::ColorRGBA& default_attached_object_color)
 {
   updateHelper(env, state, default_attached_object_color, NULL);
 }
 
 void StateVisualization::update(const tesseract::tesseract_ros::ROSBasicEnvConstPtr env,
-                                const tesseract::EnvStateConstPtr state,
+                                const tesseract::tesseract_ros::EnvStateConstPtr state,
                                 const std_msgs::ColorRGBA& default_attached_object_color,
                                 const tesseract::tesseract_ros::ObjectColorMapConstPtr color_map)
 {
@@ -106,7 +106,7 @@ void StateVisualization::update(const tesseract::tesseract_ros::ROSBasicEnvConst
 }
 
 void StateVisualization::updateHelper(const tesseract::tesseract_ros::ROSBasicEnvConstPtr env,
-                                      const tesseract::EnvStateConstPtr state,
+                                      const tesseract::tesseract_ros::EnvStateConstPtr state,
                                       const std_msgs::ColorRGBA& default_attached_object_color,
                                       const tesseract::tesseract_ros::ObjectColorMapConstPtr color_map)
 {
@@ -118,20 +118,10 @@ void StateVisualization::updateHelper(const tesseract::tesseract_ros::ROSBasicEn
   {
     std_msgs::ColorRGBA color = default_attached_object_color;
     float alpha = robot_.getAlpha();
-    bool use_color_map = false;
-    if (color_map)
-    {
-      std::unordered_map<std::string, std_msgs::ColorRGBA>::const_iterator it = color_map->find(body.second->info.name);
-      if (it != color_map->end())
-      {  // render attached bodies with a color that is a bit different
-        color.r = std::max(1.0f, it->second.r * 1.05f);
-        color.g = std::max(1.0f, it->second.g * 1.05f);
-        color.b = std::max(1.0f, it->second.b * 1.05f);
-        alpha = color.a = it->second.a;
-        use_color_map = true;
-      }
-    }
+    std::unordered_map<std::string, tesseract_ros::ObjectColor>::const_iterator it;
 
+    if (color_map)
+      it = color_map->find(body.second->info.name);
 
     const Eigen::Affine3d &link_tf = state->transforms.at(body.second->info.name);
     const EigenSTL::vector_Affine3d& ab_visual_pose = body.second->obj->visual.shape_poses;
@@ -139,7 +129,14 @@ void StateVisualization::updateHelper(const tesseract::tesseract_ros::ROSBasicEn
     const EigenSTL::vector_Vector4d& ab_visual_colors = body.second->obj->visual.shape_colors;
     for (std::size_t j = 0; j < ab_visual_shapes.size(); ++j)
     {
-      if (!use_color_map && !ab_visual_colors.empty())
+      if (color_map && (it != color_map->end()))
+      {
+        color.r = it->second.visual[j](0);
+        color.g = it->second.visual[j](1);
+        color.b = it->second.visual[j](2);
+        alpha = color.a = it->second.visual[j](3);
+      }
+      else if (!ab_visual_colors.empty())
       {
         color.r = ab_visual_colors[j](0);
         color.g = ab_visual_colors[j](1);
@@ -158,7 +155,14 @@ void StateVisualization::updateHelper(const tesseract::tesseract_ros::ROSBasicEn
     const EigenSTL::vector_Vector4d& ab_collision_colors = body.second->obj->collision.shape_colors;
     for (std::size_t j = 0; j < ab_collision_shapes.size(); ++j)
     {
-      if (!use_color_map && !ab_collision_colors.empty())
+      if (color_map && (it != color_map->end()))
+      {
+        color.r = it->second.collision[j](0);
+        color.g = it->second.collision[j](1);
+        color.b = it->second.collision[j](2);
+        alpha = color.a = it->second.collision[j](3);
+      }
+      else if (!ab_collision_colors.empty())
       {
         color.r = ab_collision_colors[j](0);
         color.g = ab_collision_colors[j](1);
