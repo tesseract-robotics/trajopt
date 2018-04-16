@@ -3,8 +3,10 @@
   <name>trajopt</name>
   <version>0.1.0</version>
   <description>The trajopt package</description>
-  <maintainer email="larmstrong@todo.todo">larmstrong</maintainer>
+  <maintainer email="levi.armstrong@swri.org">Levi Armstrong</maintainer>
   <license>BSD</license>
+  <author>Levi Armstrong</author>
+  <author>John Schulman</author>
 
   <buildtool_depend>catkin</buildtool_depend>
   <depend>trajopt_sco</depend>

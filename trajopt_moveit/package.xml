@@ -3,9 +3,10 @@
   <name>trajopt_moveit</name>
   <version>0.1.0</version>
   <description>The trajopt_moveit package</description>
-  <maintainer email="Armstrong@todo.todo">Levi Armstrong</maintainer>
+  <maintainer email="levi.armstrong@swri.org">Levi Armstrong</maintainer>
   <license>BSD</license>
   <author>Levi Armstrong</author>
+  <author>John Schulman</author>
 
   <buildtool_depend>catkin</buildtool_depend>
   <depend>roscpp</depend>

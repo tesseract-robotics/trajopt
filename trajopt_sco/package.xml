@@ -3,7 +3,7 @@
   <name>trajopt_sco</name>
   <version>0.1.0</version>
   <description>The trajopt_sco package</description>
-  <maintainer email="larmstrong@todo.todo">larmstrong</maintainer>
+  <maintainer email="levi.armstrong@swri.org">Levi Armstrong</maintainer>
   <license>BSD</license>
 
   <buildtool_depend>catkin</buildtool_depend>

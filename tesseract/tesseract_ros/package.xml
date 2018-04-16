@@ -5,7 +5,9 @@
   <description>The tesseract_ros package</description>
   <maintainer email="levi.armstrong@swri.org">Levi Armstrong</maintainer>
   <license>Apache 2.0</license>
-  <author >Levi Armstrong</author>
+  <license>BSD</license>
+  <author>Levi Armstrong</author>
+  <author>John Schulman</author>
 
   <buildtool_depend>catkin</buildtool_depend>
   <depend>roscpp</depend>

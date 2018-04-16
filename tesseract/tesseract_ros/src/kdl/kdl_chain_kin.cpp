@@ -1,15 +1,13 @@
 /**
- * @file ros_kin.cpp
- * @brief ROS implementation of kinematics functions.
+ * @file kdl_chain_kin.cpp
+ * @brief Tesseract ROS KDL Chain kinematics implementation.
  *
- * Typically, just wrappers around the equivalent KDL calls.
- *
- * @author dsolomon
- * @date Sep 15, 2013
+ * @author Levi Armstrong
+ * @date Dec 18, 2017
  * @version TODO
  * @bug No known bugs
  *
- * @copyright Copyright (c) 2013, Southwest Research Institute
+ * @copyright Copyright (c) 2017, Southwest Research Institute
  *
  * @par License
  * Software License Agreement (Apache License)

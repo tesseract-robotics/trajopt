@@ -4,7 +4,7 @@
   <version>0.1.0</version>
   <description>The tesseract_rviz package</description>
   <maintainer email="Armstrong@todo.todo">Levi Armstrong</maintainer>
-  <license>Apache 2.0</license>
+  <license>BSD</license>
   <author >Levi Armstrong</author>
 
   <buildtool_depend>catkin</buildtool_depend>

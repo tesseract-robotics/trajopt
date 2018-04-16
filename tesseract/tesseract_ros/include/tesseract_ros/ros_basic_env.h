@@ -1,6 +1,6 @@
 /**
- * @file basic_env.h
- * @brief Basic low-level environment with collision and distance functions.
+ * @file ros_basic_env.h
+ * @brief Tesseract ROS Basic low-level environment with collision and distance functions.
  *
  * @author Levi Armstrong
  * @date Dec 18, 2017
@@ -23,8 +23,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef ROS_BASIC_ENV_H
-#define ROS_BASIC_ENV_H
+#ifndef TESSERACT_ROS_BASIC_ENV_H
+#define TESSERACT_ROS_BASIC_ENV_H
 
 #include <tesseract_ros/ros_basic_types.h>
 #include <tesseract_core/basic_env.h>
@@ -195,4 +195,4 @@ typedef boost::shared_ptr<const ROSBasicEnv> ROSBasicEnvConstPtr;
 } //namespace tesseract_ros
 } //namespace tesseract
 
-#endif // ROS_BASIC_ENV_H
+#endif // TESSERACT_ROS_BASIC_ENV_H

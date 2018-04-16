@@ -23,8 +23,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef BASIC_ENV_H
-#define BASIC_ENV_H
+#ifndef TESSERACT_CORE_BASIC_ENV_H
+#define TESSERACT_CORE_BASIC_ENV_H
 
 #include <vector>
 #include <string>
@@ -167,4 +167,4 @@ typedef boost::shared_ptr<const BasicEnv> BasicEnvConstPtr;
 
 } //namespace tesseract
 
-#endif // BASIC_COLL_H
+#endif // TESSERACT_CORE_BASIC_ENV_H

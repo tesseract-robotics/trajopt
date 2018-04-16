@@ -4,7 +4,7 @@
   <version>0.1.0</version>
   <description>This package contains examples related to this trajopt_ros repository.</description>
 
-  <maintainer email="Armstrong@todo.todo">Levi Armstrong</maintainer>
+  <maintainer email="levi.armstrong@swri.org">Levi Armstrong</maintainer>
   <license>Apache 2.0</license>
   <author >Levi Armstrong</author>
 

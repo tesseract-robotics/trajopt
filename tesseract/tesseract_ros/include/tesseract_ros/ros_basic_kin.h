@@ -1,6 +1,6 @@
 /**
  * @file ros_basic_kin.h
- * @brief Basic low-level kinematics functions.
+ * @brief Tesseract ROS Basic low-level kinematics functions.
  *
  * @author Levi Armstrong
  * @date April 15, 2018
@@ -23,8 +23,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef ROS_BASIC_KIN_H
-#define ROS_BASIC_KIN_H
+#ifndef TESSERACT_ROS_BASIC_KIN_H
+#define TESSERACT_ROS_BASIC_KIN_H
 
 #include <tesseract_core/basic_kin.h>
 #include <vector>
@@ -60,5 +60,5 @@ typedef boost::shared_ptr<const ROSBasicKin> ROSBasicKinConstPtr;
 } // namespace tesseract_ros
 } // namespace trajopt
 
-#endif // BASIC_KIN_H
+#endif // TESSERACT_ROS_BASIC_KIN_H
 

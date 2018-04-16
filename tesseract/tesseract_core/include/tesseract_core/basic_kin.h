@@ -23,8 +23,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef BASIC_KIN_H
-#define BASIC_KIN_H
+#ifndef TESSERACT_CORE_BASIC_KIN_H
+#define TESSERACT_CORE_BASIC_KIN_H
 
 #include <vector>
 #include <string>
@@ -233,5 +233,5 @@ typedef boost::shared_ptr<BasicKin> BasicKinPtr;
 typedef boost::shared_ptr<const BasicKin> BasicKinConstPtr;
 } // namespace tesseract
 
-#endif // BASIC_KIN_H
+#endif // TESSERACT_CORE_BASIC_KIN_H
 

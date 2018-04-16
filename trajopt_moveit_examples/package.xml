@@ -3,10 +3,9 @@
   <name>trajopt_moveit_examples</name>
   <version>0.1.0</version>
   <description>This package contains examples related to this trajopt_ros repository using moveit.</description>
-
-  <maintainer email="Armstrong@todo.todo">Levi Armstrong</maintainer>
+  <maintainer email="levi.armstrong@swri.org">Levi Armstrong</maintainer>
   <license>Apache 2.0</license>
-  <author >Levi Armstrong</author>
+  <author>Levi Armstrong</author>
 
   <buildtool_depend>catkin</buildtool_depend>
   <depend>roscpp</depend>
