@@ -37,66 +37,27 @@ namespace tesseract
 namespace tesseract_ros
 {
 
-struct ROSAllowedCollisionMatrix : public AllowedCollisionMatrix
-{
-  /**
-   * @brief Disable collision between two collision objects
-   * @param obj1 Collision object name
-   * @param obj2 Collision object name
-   * @param reason The reason for disabling collison
-   */
-  virtual void addAllowedCollision(const std::string &link_name1, const std::string &link_name2, const std::string &reason)
-  {
-    lookup_table_[link_name1 + link_name2] = reason;
-    lookup_table_[link_name2 + link_name1] = reason;
-  }
-
-  /**
-   * @brief Remove disabled collision pair from allowed collision matrix
-   * @param obj1 Collision object name
-   * @param obj2 Collision object name
-   */
-  virtual void removeAllowedCollision(const std::string &link_name1, const std::string &link_name2)
-  {
-    lookup_table_.erase(link_name1 + link_name2);
-    lookup_table_.erase(link_name2 + link_name1);
-  }
-
-  bool isCollisionAllowed(const std::string &link_name1, const std::string &link_name2) const
-  {
-    return (lookup_table_.find(link_name1 + link_name2) != lookup_table_.end());
-  }
-
-private:
-  std::unordered_map<std::string, std::string> lookup_table_;
-};
-typedef boost::shared_ptr<ROSAllowedCollisionMatrix> ROSAllowedCollisionMatrixPtr;
-typedef boost::shared_ptr<const ROSAllowedCollisionMatrix> ROSAllowedCollisionMatrixConstPtr;
-
-class ROSBasicEnv : public BasicEnv
+class ROSEnvBase
 {
 public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-  ROSBasicEnv() : allowed_collision_matrix_(new ROSAllowedCollisionMatrix()) {}
+  virtual bool init(const urdf::ModelInterfaceConstSharedPtr urdf_model) = 0;
+  virtual bool init(const urdf::ModelInterfaceConstSharedPtr urdf_model, const srdf::ModelConstSharedPtr srdf_model) = 0;
+
+  /**
+   * @brief Checks if BasicKin is initialized (init() has been run: urdf model loaded, etc.)
+   * @return True if init() has completed successfully
+   */
+  virtual bool checkInitialized() const = 0;
 
   /** @brief Set the current state of the environment */
   virtual void setState(const std::unordered_map<std::string, double> &joints) = 0;
+  virtual void setState(const std::vector<std::string> &joint_names, const std::vector<double> &joint_values) = 0;
   virtual void setState(const std::vector<std::string> &joint_names, const Eigen::VectorXd &joint_values) = 0;
 
   /** @brief Get the current state of the environment */
-  virtual const EnvStateConstPtr getState() const = 0;
-
-  /**
-   * @brief Get the state of the environment for a given set or subset of joint values.
-   *
-   * This does not change the internal state of the environment.
-   *
-   * @param joints A map of joint names to joint values to change.
-   * @return A the state of the environment
-   */
-  virtual EnvStatePtr getState(const std::unordered_map<std::string, double> &joints) const = 0;
-  virtual EnvStatePtr getState(const std::vector<std::string> &joint_names, const Eigen::VectorXd &joint_values) const = 0;
+  virtual EnvStateConstPtr getState() const = 0;
 
   /**
    * @brief A a manipulator as a kinematic chain
@@ -169,28 +130,43 @@ public:
 
   virtual const srdf::ModelConstSharedPtr getSRDF() const = 0;
 
-  /////////////////////////
-  // Implemented Methods //
-  /////////////////////////
-
-  AllowedCollisionMatrixConstPtr getAllowedCollisionMatrix() const
-  {
-    return allowed_collision_matrix_;
-  }
-
   /** @brief Get the allowed collision matrix non const */
-  virtual ROSAllowedCollisionMatrixPtr getAllowedCollisionMatrixNonConst() const
-  {
-    return allowed_collision_matrix_;
-  }
+  virtual ROSAllowedCollisionMatrixPtr getAllowedCollisionMatrixNonConst() const = 0;
+};
+typedef boost::shared_ptr<ROSEnvBase> ROSEnvBasePtr;
+typedef boost::shared_ptr<const ROSEnvBase> ROSEnvBaseConstPtr;
 
-protected:
-  ROSAllowedCollisionMatrixPtr allowed_collision_matrix_; /**< The allowed collision matrix used during collision checking */
+class ROSBasicEnv : public ROSEnvBase, public BasicEnv
+{
+public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
+  using ROSEnvBase::getState;
+
+  /**
+   * @brief Get the state of the environment for a given set or subset of joint values.
+   *
+   * This does not change the internal state of the environment.
+   *
+   * @param joints A map of joint names to joint values to change.
+   * @return A the state of the environment
+   */
+  virtual EnvStatePtr getState(const std::unordered_map<std::string, double> &joints) const = 0;
+  virtual EnvStatePtr getState(const std::vector<std::string> &joint_names, const std::vector<double> &joint_values) const = 0;
+  virtual EnvStatePtr getState(const std::vector<std::string> &joint_names, const Eigen::VectorXd &joint_values) const = 0;
 
 }; // class ROSBasicEnv
-
 typedef boost::shared_ptr<ROSBasicEnv> ROSBasicEnvPtr;
 typedef boost::shared_ptr<const ROSBasicEnv> ROSBasicEnvConstPtr;
+
+class ROSBasicEnvSingleton : public ROSEnvBase, public BasicEnvSingleton
+{
+public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
+}; // class ROSBasicEnvSingleton
+typedef boost::shared_ptr<ROSBasicEnvSingleton> ROSBasicEnvSingletonPtr;
+typedef boost::shared_ptr<const ROSBasicEnvSingleton>ROSBasicEnvSingletonConstPtr;
 
 } //namespace tesseract_ros
 } //namespace tesseract

@@ -23,6 +23,14 @@ add_message_files(
     TesseractState.msg
     ObjectColor.msg
     Trajectory.msg
+    ContactResult.msg
+    ContactResultVector.msg
+)
+
+add_service_files(
+  DIRECTORY srv
+  FILES
+    ModifyTesseractEnv.srv
 )
 
 generate_messages(

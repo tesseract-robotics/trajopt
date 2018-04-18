@@ -37,4 +37,4 @@
 #include <class_loader/class_loader.h>
 #include <tesseract_rviz/tesseract_scene_plugin/tesseract_scene_display.h>
 
-CLASS_LOADER_REGISTER_CLASS(tesseract_rvis::TesseractSceneDisplay, rviz::Display)
+CLASS_LOADER_REGISTER_CLASS(tesseract_rviz::TesseractSceneDisplay, rviz::Display)

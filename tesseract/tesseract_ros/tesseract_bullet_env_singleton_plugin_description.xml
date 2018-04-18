@@ -1,0 +1,7 @@
+<library path="libtesseract_ros_bullet_singleton_plugin">
+  <class name="tesseract_ros/BulletEnvSingleton" type="tesseract::tesseract_ros::BulletEnvSingleton" base_class_type="tesseract::tesseract_ros::ROSBasicEnvSingleton">
+    <description>
+      Bullet Singleton implementation of the tesseract environment.
+    </description>
+  </class>
+</library>

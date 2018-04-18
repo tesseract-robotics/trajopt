@@ -102,12 +102,12 @@ static ObjectPairKey getObjectPairKey(const std::string &obj1, const std::string
 typedef std::map<std::pair<std::string, std::string>, ContactResultVector> BulletDistanceMap;
 struct BulletDistanceData
 {
-  BulletDistanceData(const ContactRequest* req, BulletDistanceMap* res) : req(req), res(res), done(false)
+  BulletDistanceData(const ContactRequestBase* req, BulletDistanceMap* res) : req(req), res(res), done(false)
   {
   }
 
   /// Distance query request information
-  const ContactRequest* req;
+  const ContactRequestBase* req;
 
   /// Destance query results information
   BulletDistanceMap* res;
@@ -839,21 +839,31 @@ struct BulletManager
     delete m_coll_config;
   }
 
+  void addCollisionObject(COWPtr& cow)
+  {
+    m_world->addCollisionObject(cow.get(), cow->m_collisionFilterGroup, cow->m_collisionFilterMask);
+  }
+
+  void removeCollisionObject(COWPtr& cow)
+  {
+    m_world->removeCollisionObject(cow.get());
+  }
+
   void processCollisionObjects()
   {
-    for (auto element : m_link2cow)
+    for (auto& element : m_link2cow)
     {
-      m_world->addCollisionObject(element.second.get(), element.second->m_collisionFilterGroup, element.second->m_collisionFilterMask);
+      addCollisionObject(element.second);
     }
   }
 
-  void contactDiscreteTest(const COWPtr cow, BulletDistanceData& collisions)
+  void contactDiscreteTest(const COWPtr& cow, BulletDistanceData& collisions)
   {
     CollisionCollector cc(collisions, cow, cow->getContactProcessingThreshold());
     m_world->contactTest(cow.get(), cc);
   }
 
-  void contactCastTest(const COWPtr cow, BulletDistanceData& collisions)
+  void contactCastTest(const COWPtr& cow, BulletDistanceData& collisions)
   {
     CastCollisionCollector cc(collisions, cow, cow->getContactProcessingThreshold());
     m_world->contactTest(cow.get(), cc);
@@ -865,7 +875,7 @@ struct BulletManager
     convexCastTestHelper(cow, cow->getCollisionShape(), tf1, tf2, collisions);
   }
 
-  void convexSweepTest(const COWPtr cow, const btTransform &tf1, const btTransform &tf2, BulletDistanceData& collisions)
+  void convexSweepTest(const COWPtr& cow, const btTransform &tf1, const btTransform &tf2, BulletDistanceData& collisions)
   {
     SweepCollisionCollector cc(collisions, cow);
     convexSweepTestHelper(cow->getCollisionShape(), tf1, tf2, cc);
@@ -873,7 +883,7 @@ struct BulletManager
 
 private:
 
-  void convexCastTestHelper(COWPtr cow, btCollisionShape* shape, const btTransform& tf0, const btTransform& tf1, BulletDistanceData& collisions)
+  void convexCastTestHelper(COWPtr& cow, btCollisionShape* shape, const btTransform& tf0, const btTransform& tf1, BulletDistanceData& collisions)
   {
     if (btBroadphaseProxy::isConvex(shape->getShapeType()))
     {
@@ -928,7 +938,7 @@ btCollisionShape* createShapePrimitive(const shapes::ShapeConstPtr& geom, bool u
 COWPtr CollisionObjectFromLink(const urdf::Link* link, bool useTrimesh);
 
 inline
-void setContactDistance(COWPtr cow, double contact_distance)
+void setContactDistance(COWPtr& cow, double contact_distance)
 {
   SHAPE_EXPANSION = btVector3(1,1,1) * contact_distance;
   gContactBreakingThreshold = 2.001 * contact_distance; // wtf. when I set it to 2.0 there are no contacts with distance > 0

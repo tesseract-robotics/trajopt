@@ -368,6 +368,21 @@ void BulletEnv::setState(const std::unordered_map<std::string, double> &joints)
   calculateTransforms(current_state_->transforms, kdl_jnt_array_, kdl_tree_->getRootSegment(), Eigen::Affine3d::Identity());
 }
 
+void BulletEnv::setState(const std::vector<std::string> &joint_names, const std::vector<double> &joint_values)
+{
+  boost::mutex::scoped_lock(modify_env_mutex_);
+
+  for (auto i = 0; i < joint_names.size(); ++i)
+  {
+    if (setJointValuesHelper(kdl_jnt_array_, joint_names[i], joint_values[i]))
+    {
+      current_state_->joints[joint_names[i]] = joint_values[i];
+    }
+  }
+
+  calculateTransforms(current_state_->transforms, kdl_jnt_array_, kdl_tree_->getRootSegment(), Eigen::Affine3d::Identity());
+}
+
 void BulletEnv::setState(const std::vector<std::string> &joint_names, const Eigen::VectorXd &joint_values)
 {
   boost::mutex::scoped_lock(modify_env_mutex_);
@@ -393,6 +408,24 @@ EnvStatePtr BulletEnv::getState(const std::unordered_map<std::string, double> &j
     if (setJointValuesHelper(jnt_array, joint.first, joint.second))
     {
       state->joints[joint.first] = joint.second;
+    }
+  }
+
+  calculateTransforms(state->transforms, jnt_array, kdl_tree_->getRootSegment(), Eigen::Affine3d::Identity());
+
+  return state;
+}
+
+EnvStatePtr BulletEnv::getState(const std::vector<std::string> &joint_names, const std::vector<double> &joint_values) const
+{
+  EnvStatePtr state(new EnvState(*current_state_));
+  KDL::JntArray jnt_array = kdl_jnt_array_;
+
+  for (auto i = 0; i < joint_names.size(); ++i)
+  {
+    if (setJointValuesHelper(jnt_array, joint_names[i], joint_values[i]))
+    {
+      state->joints[joint_names[i]] = joint_values[i];
     }
   }
 

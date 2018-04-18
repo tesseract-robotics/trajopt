@@ -27,6 +27,7 @@
 #define TESSERACT_ROS_UTILS_H
 
 #include <tesseract_msgs/TesseractState.h>
+#include <tesseract_msgs/ContactResultVector.h>
 #include <tesseract_ros/ros_basic_env.h>
 #include <octomap_msgs/conversions.h>
 #include <eigen_conversions/eigen_msg.h>
@@ -219,7 +220,7 @@ void attachableObjectToAttachableObjectMsg(tesseract_msgs::AttachableObject& ao_
 }
 
 static inline
-void attachableObjectToAttachableObjectMsg(const tesseract_msgs::AttachableObjectPtr ao_msg, const tesseract_ros::AttachableObject& ao)
+void attachableObjectToAttachableObjectMsg(tesseract_msgs::AttachableObjectPtr ao_msg, const tesseract_ros::AttachableObject& ao)
 {
   attachableObjectToAttachableObjectMsg(*ao_msg, ao);
 }
@@ -363,7 +364,7 @@ void attachableObjectMsgToAttachableObject(tesseract_ros::AttachableObject& ao, 
 }
 
 static inline
-void attachableObjectMsgToAttachableObject(const tesseract_ros::AttachableObjectPtr ao, const tesseract_msgs::AttachableObject& ao_msg)
+void attachableObjectMsgToAttachableObject(tesseract_ros::AttachableObjectPtr ao, const tesseract_msgs::AttachableObject& ao_msg)
 {
   attachableObjectMsgToAttachableObject(*ao, ao_msg);
 }
@@ -379,7 +380,7 @@ void attachedBodyToAttachedBodyInfoMsg(tesseract_msgs::AttachedBodyInfo& ab_info
 }
 
 static inline
-void attachedBodyToAttachedBodyInfoMsg(const tesseract_msgs::AttachedBodyInfoPtr ab_info_msg, const tesseract_ros::AttachedBody& ab)
+void attachedBodyToAttachedBodyInfoMsg(tesseract_msgs::AttachedBodyInfoPtr ab_info_msg, const tesseract_ros::AttachedBody& ab)
 {
   attachedBodyToAttachedBodyInfoMsg(*ab_info_msg, ab);
 }
@@ -404,7 +405,7 @@ void tesseractEnvStateToJointStateMsg(sensor_msgs::JointState& joint_state, cons
 }
 
 static inline
-void tesseractEnvStateToJointStateMsg(const sensor_msgs::JointStatePtr joint_state, const tesseract_ros::EnvState& state)
+void tesseractEnvStateToJointStateMsg(sensor_msgs::JointStatePtr joint_state, const tesseract_ros::EnvState& state)
 {
   tesseractEnvStateToJointStateMsg(*joint_state, state);
 }
@@ -426,18 +427,20 @@ void tesseractToTesseractStateMsg(tesseract_msgs::TesseractState& state_msg, con
     state_msg.attached_bodies.push_back(ab_msg);
   }
 
-  tesseractEnvStateToJointStateMsg(state_msg.joint_state, *env.getState());
+  EnvStateConstPtr state = env.getState();
+  tesseractEnvStateToJointStateMsg(state_msg.joint_state, *state);
 }
 
 static inline
-void tesseractToTesseractStateMsg(const tesseract_msgs::TesseractStatePtr state_msg, const tesseract_ros::ROSBasicEnv& env)
+void tesseractToTesseractStateMsg(tesseract_msgs::TesseractStatePtr state_msg, const tesseract_ros::ROSBasicEnv& env)
 {
   tesseractToTesseractStateMsg(*state_msg, env);
 }
 
 static inline
-void processTesseractStateMsg(tesseract_ros::ROSBasicEnv& env, const tesseract_msgs::TesseractState& state_msg)
+bool processTesseractStateMsg(tesseract_ros::ROSEnvBase& env, const tesseract_msgs::TesseractState& state_msg)
 {
+  bool success = true;
   for (const auto& ao_msg : state_msg.attachable_objects)
   {
     if (ao_msg.operation == tesseract_msgs::AttachableObject::REMOVE)
@@ -453,6 +456,7 @@ void processTesseractStateMsg(tesseract_ros::ROSBasicEnv& env, const tesseract_m
     else if (ao_msg.operation == tesseract_msgs::AttachableObject::APPEND)
     {
       ROS_ERROR("AttachableObject APPEND operation currently not implemented.");
+      success = false;
     }
   }
 
@@ -471,6 +475,7 @@ void processTesseractStateMsg(tesseract_ros::ROSBasicEnv& env, const tesseract_m
     else if (ab_msg.operation == tesseract_msgs::AttachedBodyInfo::MOVE)
     {
       ROS_ERROR("AttachedBody MOVE operation currently not implemented.");
+      success = false;
     }
   }
 
@@ -480,12 +485,66 @@ void processTesseractStateMsg(tesseract_ros::ROSBasicEnv& env, const tesseract_m
     joints[state_msg.joint_state.name[i]] =  state_msg.joint_state.position[i];
   }
   env.setState(joints);
+
+  return success;
 }
 
 static inline
-void processTesseractStateMsg(const tesseract_ros::ROSBasicEnvPtr env, const tesseract_msgs::TesseractState& state_msg)
+bool processTesseractStateMsg(tesseract_ros::ROSEnvBasePtr env, const tesseract_msgs::TesseractState& state_msg)
 {
-  processTesseractStateMsg(*env, state_msg);
+  return processTesseractStateMsg(*env, state_msg);
+}
+
+static inline
+void tesseractContactResultToContactResultMsg(tesseract_msgs::ContactResult& contact_result_msg, const tesseract::ContactResult& contact_result)
+{
+  contact_result_msg.distance = contact_result.distance;
+  contact_result_msg.link_names[0] = contact_result.link_names[0];
+  contact_result_msg.link_names[1] = contact_result.link_names[1];
+  contact_result_msg.attached_link_names[0] = contact_result.attached_link_names[0];
+  contact_result_msg.attached_link_names[1] = contact_result.attached_link_names[1];
+  contact_result_msg.normal.x = contact_result.normal[0];
+  contact_result_msg.normal.y = contact_result.normal[1];
+  contact_result_msg.normal.z = contact_result.normal[2];
+  contact_result_msg.nearest_points[0].x = contact_result.nearest_points[0][0];
+  contact_result_msg.nearest_points[0].y = contact_result.nearest_points[0][1];
+  contact_result_msg.nearest_points[0].z = contact_result.nearest_points[0][2];
+  contact_result_msg.nearest_points[1].x = contact_result.nearest_points[1][0];
+  contact_result_msg.nearest_points[1].y = contact_result.nearest_points[1][1];
+  contact_result_msg.nearest_points[1].z = contact_result.nearest_points[1][2];
+  contact_result_msg.cc_time = contact_result.cc_time;
+  contact_result_msg.cc_nearest_points[0].x = contact_result.cc_nearest_points[0][0];
+  contact_result_msg.cc_nearest_points[0].y = contact_result.cc_nearest_points[0][1];
+  contact_result_msg.cc_nearest_points[0].z = contact_result.cc_nearest_points[0][2];
+  contact_result_msg.cc_nearest_points[1].x = contact_result.cc_nearest_points[1][0];
+  contact_result_msg.cc_nearest_points[1].y = contact_result.cc_nearest_points[1][1];
+  contact_result_msg.cc_nearest_points[1].z = contact_result.cc_nearest_points[1][2];
+  contact_result_msg.valid = contact_result.valid;
+
+  if (contact_result.body_types[0] == BodyTypes::ROBOT_ATTACHED)
+    contact_result_msg.body_types[0] = 1;
+  else
+    contact_result_msg.body_types[0] = 0;
+
+  if (contact_result.body_types[1] == BodyTypes::ROBOT_ATTACHED)
+    contact_result_msg.body_types[1] = 1;
+  else
+    contact_result_msg.body_types[1] = 0;
+
+  if (contact_result.cc_type == ContinouseCollisionTypes::CCType_Time0)
+    contact_result_msg.cc_type = 1;
+  else if (contact_result.cc_type == ContinouseCollisionTypes::CCType_Time1)
+    contact_result_msg.cc_type = 2;
+  else if (contact_result.cc_type == ContinouseCollisionTypes::CCType_Between)
+    contact_result_msg.cc_type = 3;
+  else
+    contact_result_msg.cc_type = 0;
+}
+
+static inline
+void tesseractContactResultToContactResultMsg(tesseract_msgs::ContactResultPtr contact_result_msg, const tesseract::ContactResult& contact_result)
+{
+  tesseractContactResultToContactResultMsg(*contact_result_msg, contact_result);
 }
 
 }

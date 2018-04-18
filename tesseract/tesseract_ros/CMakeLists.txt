@@ -13,6 +13,7 @@ find_package(catkin REQUIRED COMPONENTS
   geometric_shapes
   kdl_parser
   eigen_conversions
+  pluginlib
 )
 
 find_package(Eigen3 REQUIRED)
@@ -39,6 +40,7 @@ catkin_package(
     geometric_shapes
     kdl_parser
     eigen_conversions
+    pluginlib
   DEPENDS
     EIGEN3
     Boost
@@ -63,10 +65,21 @@ target_link_libraries(${PROJECT_NAME}_kdl ${catkin_LIBRARIES} ${urdfdom_LIBRARIE
 
 add_library(${PROJECT_NAME}_bullet
   src/bullet/bullet_env.cpp
+  src/bullet/bullet_env_singleton.cpp
   src/bullet/bullet_utils.cpp
 )
 
 target_link_libraries(${PROJECT_NAME}_bullet ${PROJECT_NAME}_kdl ${catkin_LIBRARIES} ${urdfdom_LIBRARIES} ${urdfdom_headers_LIBRARIES} ${Boost_LIBRARIES} ${OCTOMAP_LIBRARIES} ${orocos_kdl_LIBRARIES})
+
+add_library(${PROJECT_NAME}_bullet_plugin src/plugins/bullet_env_plugin.cpp)
+target_link_libraries(${PROJECT_NAME}_bullet_plugin ${PROJECT_NAME}_bullet ${catkin_LIBRARIES})
+
+add_library(${PROJECT_NAME}_bullet_singleton_plugin src/plugins/bullet_env_singleton_plugin.cpp)
+target_link_libraries(${PROJECT_NAME}_bullet_singleton_plugin ${PROJECT_NAME}_bullet ${catkin_LIBRARIES})
+
+# Tesseract ROS Nodes
+add_executable(${PROJECT_NAME}_contact_monitoring_node src/contact_monitoring.cpp)
+target_link_libraries(${PROJECT_NAME}_contact_monitoring_node ${catkin_LIBRARIES})
 
 # Mark executables and/or libraries for installation
 install(TARGETS ${PROJECT_NAME}_bullet ${PROJECT_NAME}_kdl

@@ -40,10 +40,10 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-#ifndef TESSERACT_ROS_BULLET_ENV_H
-#define TESSERACT_ROS_BULLET_ENV_H
-
+#ifndef TESSERACT_ROS_BULLET_ENV_SINGLETON_H
+#define TESSERACT_ROS_BULLET_ENV_SINGLETON_H
 #include <tesseract_ros/bullet/bullet_utils.h>
+#include <tesseract_ros/ros_basic_env.h>
 #include <kdl/tree.hpp>
 #include <kdl_parser/kdl_parser.hpp>
 #include <kdl/jntarray.hpp>
@@ -58,12 +58,12 @@ namespace tesseract
 namespace tesseract_ros
 {
 
-class BulletEnv : public ROSBasicEnv
+class BulletEnvSingleton : public ROSBasicEnvSingleton
 {
 public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-  BulletEnv() : ROSBasicEnv(), initialized_(false), allowed_collision_matrix_(new ROSAllowedCollisionMatrix()) {}
+  BulletEnvSingleton() : ROSBasicEnvSingleton(), initialized_(false), allowed_collision_matrix_(new ROSAllowedCollisionMatrix()) {}
 
   bool init(const urdf::ModelInterfaceConstSharedPtr urdf_model);
   bool init(const urdf::ModelInterfaceConstSharedPtr urdf_model, const srdf::ModelConstSharedPtr srdf_model);
@@ -74,27 +74,19 @@ public:
    */
   bool checkInitialized() const { return initialized_; }
 
-  void calcDistancesDiscrete(const ContactRequest &req, ContactResultVector &dists) const;
+  void setContactRequest(const ContactRequestBase &req);
 
-  void calcDistancesContinuous(const ContactRequest &req, ContactResultVector &dists) const;
+  const ContactRequestBase& getContactRequest() const { return request_; }
 
-  void calcCollisionsDiscrete(const ContactRequest &req, ContactResultVector &collisions) const;
+  void calcDistancesDiscrete(ContactResultVector &dists);
 
-  void calcCollisionsContinuous(const ContactRequest &req, ContactResultVector &collisions) const;
-
-  bool continuousCollisionCheckTrajectory(const std::vector<std::string> &joint_names, const std::vector<std::string> &link_names, const TrajArray& traj, ContactResultVector& collisions) const;
-
-  bool continuousCollisionCheckTrajectory(const std::vector<std::string> &joint_names, const std::vector<std::string> &link_names, const TrajArray& traj, ContactResult& collision) const;
+  void calcCollisionsDiscrete(ContactResultVector &collisions);
 
   EnvStateConstPtr getState() const { return current_state_; }
 
   void setState(const std::unordered_map<std::string, double> &joints);
   void setState(const std::vector<std::string> &joint_names, const std::vector<double> &joint_values);
   void setState(const std::vector<std::string> &joint_names, const Eigen::VectorXd &joint_values);
-
-  EnvStatePtr getState(const std::unordered_map<std::string, double> &joints) const;
-  EnvStatePtr getState(const std::vector<std::string> &joint_names, const std::vector<double> &joint_values) const;
-  EnvStatePtr getState(const std::vector<std::string> &joint_names, const Eigen::VectorXd &joint_values) const;
 
   std::vector<std::string> getJointNames() const { return joint_names_; }
 
@@ -149,7 +141,9 @@ private:
   urdf::ModelInterfaceConstSharedPtr model_;                        /**< URDF MODEL */
   srdf::ModelConstSharedPtr srdf_model_;                            /**< SRDF MODEL */
   boost::shared_ptr<const KDL::Tree> kdl_tree_;                     /**< KDL tree object */
-  Link2ConstCow link2cow_;                                          /**< Collision objects */
+  BulletManager manager_;                                           /**< Collision object manager */
+  ContactRequestBase request_;                                      /**< Contact request information */
+  std::vector<std::string> active_objects_;                          /**< A list of active objects ot check for contact */
   EnvStatePtr current_state_;                                       /**< Current state of the robot */
   std::unordered_map<std::string, unsigned int> joint_to_qnr_;      /**< Map between joint name and kdl q index */
   KDL::JntArray kdl_jnt_array_;                                     /**< The kdl joint array */
@@ -160,7 +154,6 @@ private:
   std::vector<std::string> joint_names_;                            /**< A vector of joint names */
   ObjectColorMapConstPtr object_colors_;                            /**< A map of objects to color */
   ROSAllowedCollisionMatrixPtr allowed_collision_matrix_;           /**< The allowed collision matrix used during collision checking */
-  boost::mutex modify_env_mutex_;
 
   void calculateTransforms(std::unordered_map<std::string, Eigen::Affine3d> &transforms, const KDL::JntArray& q_in, const KDL::SegmentMap::const_iterator& it, const Eigen::Affine3d& parent_frame) const;
   void calculateTransformsHelper(std::unordered_map<std::string, Eigen::Affine3d> &transforms, const KDL::JntArray& q_in, const KDL::SegmentMap::const_iterator& it, const Eigen::Affine3d& parent_frame) const;
@@ -169,14 +162,12 @@ private:
 
   std::string getManipulatorName(const std::vector<std::string> &joint_names) const;
 
-  void constructBulletObject(Link2Cow &collision_objects, std::vector<std::string> &active_objects, double contact_distance, const EnvStateConstPtr state, const std::vector<std::string> &active_links, bool continuous = false) const;
-
-  void constructBulletObject(Link2Cow &collision_objects, std::vector<std::string> &active_objects, double contact_distance, const EnvStateConstPtr state1, const EnvStateConstPtr state2, const std::vector<std::string> &active_links) const;
+  void updateBulletObjects();
 
 };
-typedef boost::shared_ptr<BulletEnv> BulletEnvPtr;
-typedef boost::shared_ptr<const BulletEnv> BulletEnvConstPtr;
+typedef boost::shared_ptr<BulletEnvSingleton> BulletEnvSingletonPtr;
+typedef boost::shared_ptr<const BulletEnvSingleton> BulletEnvSingletonConstPtr;
 }
 }
 
-#endif // TESSERACT_ROS_BULLET_ENV_H
+#endif // TESSERACT_ROS_BULLET_ENV_SINGLETON_H

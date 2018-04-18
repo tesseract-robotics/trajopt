@@ -33,12 +33,49 @@
 #include <Eigen/Geometry>
 #include <boost/shared_ptr.hpp>
 #include <geometric_shapes/shape_operations.h>
+#include <tesseract_core/basic_types.h>
 
 namespace tesseract
 {
 
 namespace tesseract_ros
 {
+
+struct ROSAllowedCollisionMatrix : public AllowedCollisionMatrix
+{
+  /**
+   * @brief Disable collision between two collision objects
+   * @param obj1 Collision object name
+   * @param obj2 Collision object name
+   * @param reason The reason for disabling collison
+   */
+  virtual void addAllowedCollision(const std::string &link_name1, const std::string &link_name2, const std::string &reason)
+  {
+    lookup_table_[link_name1 + link_name2] = reason;
+    lookup_table_[link_name2 + link_name1] = reason;
+  }
+
+  /**
+   * @brief Remove disabled collision pair from allowed collision matrix
+   * @param obj1 Collision object name
+   * @param obj2 Collision object name
+   */
+  virtual void removeAllowedCollision(const std::string &link_name1, const std::string &link_name2)
+  {
+    lookup_table_.erase(link_name1 + link_name2);
+    lookup_table_.erase(link_name2 + link_name1);
+  }
+
+  bool isCollisionAllowed(const std::string &link_name1, const std::string &link_name2) const
+  {
+    return (lookup_table_.find(link_name1 + link_name2) != lookup_table_.end());
+  }
+
+private:
+  std::unordered_map<std::string, std::string> lookup_table_;
+};
+typedef boost::shared_ptr<ROSAllowedCollisionMatrix> ROSAllowedCollisionMatrixPtr;
+typedef boost::shared_ptr<const ROSAllowedCollisionMatrix> ROSAllowedCollisionMatrixConstPtr;
 
 /** @brief This holds a state of the environment */
 struct EnvState

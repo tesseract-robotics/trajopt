@@ -86,17 +86,23 @@ enum DistanceRequestType
 }
 typedef ContactRequestTypes::DistanceRequestType ContactRequestType;
 
-struct ContactRequest
+struct ContactRequestBase
 {
-  ContactRequestType type;             /**< The type of distance request */
+  ContactRequestType type;              /**< The type of request */
   double contact_distance;              /**< The maximum distance between two objects for which distance data should be calculated */
-  std::vector<std::string> joint_names; /**< Vector of joint names (size must match number of joints in robot chain) */
   std::vector<std::string> link_names;  /**< Name of the links to calculate distance data for. */
-  Eigen::VectorXd joint_angles1;        /**< Vector of joint angles (size must match number of joints in robot chain/tree) */
-  Eigen::VectorXd joint_angles2;        /**< Vector of joint angles (size must match number of joints in robot chain/tree) */
   AllowedCollisionMatrixConstPtr acm;   /**< The allowed collision matrix */
 
-  ContactRequest() : type(ContactRequestType::SINGLE), contact_distance(0.0) {}
+  ContactRequestBase() : type(ContactRequestType::SINGLE), contact_distance(0.0) {}
+};
+
+struct ContactRequest : public ContactRequestBase
+{
+  std::vector<std::string> joint_names; /**< Vector of joint names (size must match number of joints in robot chain) */
+  Eigen::VectorXd joint_angles1;        /**< Vector of joint angles (size must match number of joints in robot chain/tree) */
+  Eigen::VectorXd joint_angles2;        /**< Vector of joint angles (size must match number of joints in robot chain/tree) */
+
+  ContactRequest() : ContactRequestBase() {}
 };
 
 struct ContactResult
