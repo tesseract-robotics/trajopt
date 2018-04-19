@@ -35,7 +35,7 @@ private:
 
 };
 
-typedef boost::shared_ptr<CollisionEvaluator> CollisionEvaluatorPtr;
+typedef std::shared_ptr<CollisionEvaluator> CollisionEvaluatorPtr;
 
 struct SingleTimestepCollisionEvaluator : public CollisionEvaluator
 {

@@ -6,7 +6,6 @@
 #include <trajopt_utils/logging.hpp>
 #include <trajopt_utils/stl_to_string.hpp>
 #include <cmath>
-#include <boost/assign/list_of.hpp>
 #include <boost/format.hpp>
 #include <iostream>
 #include <gtest/gtest.h>

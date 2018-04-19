@@ -74,8 +74,8 @@ private:
   std::string getManipulatorName(const std::vector<std::string> &joint_names) const;
 
 };
-typedef boost::shared_ptr<TrajOptMoveItEnv> TrajOptMoveItEnvPtr;
-typedef boost::shared_ptr<const TrajOptMoveItEnv> TrajOptMoveItEnvConstPtr;
+typedef std::shared_ptr<TrajOptMoveItEnv> TrajOptMoveItEnvPtr;
+typedef std::shared_ptr<const TrajOptMoveItEnv> TrajOptMoveItEnvConstPtr;
 }
 
 #endif // ROS_COLL_H

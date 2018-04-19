@@ -31,7 +31,6 @@
 #include <vector>
 #include <Eigen/Core>
 #include <Eigen/Geometry>
-#include <boost/shared_ptr.hpp>
 #include <geometric_shapes/shape_operations.h>
 #include <tesseract_core/basic_types.h>
 
@@ -74,8 +73,8 @@ struct ROSAllowedCollisionMatrix : public AllowedCollisionMatrix
 private:
   std::unordered_map<std::string, std::string> lookup_table_;
 };
-typedef boost::shared_ptr<ROSAllowedCollisionMatrix> ROSAllowedCollisionMatrixPtr;
-typedef boost::shared_ptr<const ROSAllowedCollisionMatrix> ROSAllowedCollisionMatrixConstPtr;
+typedef std::shared_ptr<ROSAllowedCollisionMatrix> ROSAllowedCollisionMatrixPtr;
+typedef std::shared_ptr<const ROSAllowedCollisionMatrix> ROSAllowedCollisionMatrixConstPtr;
 
 /** @brief This holds a state of the environment */
 struct EnvState
@@ -83,8 +82,8 @@ struct EnvState
   std::unordered_map<std::string, double> joints;
   std::unordered_map<std::string, Eigen::Affine3d> transforms;
 };
-typedef boost::shared_ptr<EnvState> EnvStatePtr;
-typedef boost::shared_ptr<const EnvState> EnvStateConstPtr;
+typedef std::shared_ptr<EnvState> EnvStatePtr;
+typedef std::shared_ptr<const EnvState> EnvStateConstPtr;
 
 /**< @brief Information on how the object is attached to the environment */
 struct AttachedBodyInfo
@@ -110,8 +109,8 @@ struct AttachableObject
   AttachableObjectGeometry visual;    /**< @brief The objects visual geometry */
   AttachableObjectGeometry collision; /**< @brief The objects collision geometry */
 };
-typedef boost::shared_ptr<AttachableObject> AttachableObjectPtr;
-typedef boost::shared_ptr<const AttachableObject> AttachableObjectConstPtr;
+typedef std::shared_ptr<AttachableObject> AttachableObjectPtr;
+typedef std::shared_ptr<const AttachableObject> AttachableObjectConstPtr;
 
 /** @brief Contains data representing an attached body */
 struct AttachedBody
@@ -119,8 +118,8 @@ struct AttachedBody
    AttachedBodyInfo info;        /**< @brief Information on how the object is attached to the environment */
    AttachableObjectConstPtr obj; /**< @brief The attached bodies object data */
 };
-typedef boost::shared_ptr<AttachedBody> AttachedBodyPtr;
-typedef boost::shared_ptr<const AttachedBody> AttachedBodyConstPtr;
+typedef std::shared_ptr<AttachedBody> AttachedBodyPtr;
+typedef std::shared_ptr<const AttachedBody> AttachedBodyConstPtr;
 
 /** @brief ObjectColorMap Stores Object color in a 4d vector as RGBA*/
 struct ObjectColor
@@ -129,8 +128,8 @@ struct ObjectColor
   EigenSTL::vector_Vector4d collision;
 };
 typedef std::unordered_map<std::string, ObjectColor> ObjectColorMap;
-typedef boost::shared_ptr<ObjectColorMap> ObjectColorMapPtr;
-typedef boost::shared_ptr<const ObjectColorMap> ObjectColorMapConstPtr;
+typedef std::shared_ptr<ObjectColorMap> ObjectColorMapPtr;
+typedef std::shared_ptr<const ObjectColorMap> ObjectColorMapConstPtr;
 typedef std::unordered_map<std::string, AttachedBodyConstPtr> AttachedBodyConstPtrMap;
 typedef std::unordered_map<std::string, AttachableObjectConstPtr> AttachableObjectConstPtrMap;
 }

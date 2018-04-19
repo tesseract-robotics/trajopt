@@ -311,8 +311,8 @@ private:
     return marker;
   }
 };
-typedef boost::shared_ptr<ROSBasicPlotting> ROSBasicPlottingPtr;
-typedef boost::shared_ptr<const ROSBasicPlotting> ROSBasicPlottingConstPtr;
+typedef std::shared_ptr<ROSBasicPlotting> ROSBasicPlottingPtr;
+typedef std::shared_ptr<const ROSBasicPlotting> ROSBasicPlottingConstPtr;
 }
 }
 #endif // TESSERACT_ROS_BASIC_PLOTTING_H

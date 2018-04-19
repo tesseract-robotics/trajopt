@@ -10,9 +10,6 @@ find_package(catkin REQUIRED COMPONENTS
   trajopt
 )
 
-## System dependencies are found with CMake's conventions
-# find_package(Boost REQUIRED COMPONENTS system)
-
 catkin_package(
   INCLUDE_DIRS include
   LIBRARIES tesseract_ros_trajopt_planner

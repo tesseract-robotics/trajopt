@@ -51,7 +51,6 @@
 #include <ros/publisher.h>
 #include <urdf/model.h>
 #include <srdfdom/model.h>
-#include <boost/thread/mutex.hpp>
 
 namespace tesseract
 {
@@ -142,10 +141,10 @@ private:
   bool initialized_;                                                /**< Identifies if the object has been initialized */
   urdf::ModelInterfaceConstSharedPtr urdf_model_;                        /**< URDF MODEL */
   srdf::ModelConstSharedPtr srdf_model_;                            /**< SRDF MODEL */
-  boost::shared_ptr<const KDL::Tree> kdl_tree_;                     /**< KDL tree object */
+  std::shared_ptr<const KDL::Tree> kdl_tree_;                       /**< KDL tree object */
   BulletManager manager_;                                           /**< Collision object manager */
   ContactRequestBase request_;                                      /**< Contact request information */
-  std::vector<std::string> active_objects_;                          /**< A list of active objects ot check for contact */
+  std::vector<std::string> active_objects_;                         /**< A list of active objects ot check for contact */
   EnvStatePtr current_state_;                                       /**< Current state of the robot */
   std::unordered_map<std::string, unsigned int> joint_to_qnr_;      /**< Map between joint name and kdl q index */
   KDL::JntArray kdl_jnt_array_;                                     /**< The kdl joint array */
@@ -168,8 +167,8 @@ private:
   void updateBulletObjects();
 
 };
-typedef boost::shared_ptr<BulletEnvSingleton> BulletEnvSingletonPtr;
-typedef boost::shared_ptr<const BulletEnvSingleton> BulletEnvSingletonConstPtr;
+typedef std::shared_ptr<BulletEnvSingleton> BulletEnvSingletonPtr;
+typedef std::shared_ptr<const BulletEnvSingleton> BulletEnvSingletonConstPtr;
 }
 }
 

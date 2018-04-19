@@ -93,13 +93,13 @@ TrajOptProbPtr cppMethod()
   }
 
   // Populate Cost Info
-  boost::shared_ptr<JointVelCostInfo> jv = boost::shared_ptr<JointVelCostInfo>(new JointVelCostInfo);
+  std::shared_ptr<JointVelCostInfo> jv = std::shared_ptr<JointVelCostInfo>(new JointVelCostInfo);
   jv->coeffs = std::vector<double>(7, 1.0);
   jv->name = "joint_vel";
   jv->term_type = TT_COST;
   pci.cost_infos.push_back(jv);
 
-  boost::shared_ptr<CollisionCostInfo> collision = boost::shared_ptr<CollisionCostInfo>(new CollisionCostInfo);
+  std::shared_ptr<CollisionCostInfo> collision = std::shared_ptr<CollisionCostInfo>(new CollisionCostInfo);
   collision->name = "collision";
   collision->term_type = TT_COST;
   collision->continuous = false;
@@ -119,7 +119,7 @@ TrajOptProbPtr cppMethod()
   double delta = 0.5/pci.basic_info.n_steps;
   for (auto i = 0; i < pci.basic_info.n_steps; ++i)
   {
-    boost::shared_ptr<PoseCostInfo> pose = boost::shared_ptr<PoseCostInfo>(new PoseCostInfo);
+    std::shared_ptr<PoseCostInfo> pose = std::shared_ptr<PoseCostInfo>(new PoseCostInfo);
     pose->term_type = TT_CNT;
     pose->name = "waypoint_cart_" + std::to_string(i);
     pose->link = "tool0";

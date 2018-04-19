@@ -10,7 +10,6 @@
 #include <trajopt_sco/expr_ops.hpp>
 #include <trajopt_sco/expr_op_overloads.hpp>
 #include <tesseract_core/basic_kin.h>
-#include <boost/foreach.hpp>
 #include <boost/algorithm/string.hpp>
 
 using namespace Json;
@@ -275,12 +274,16 @@ TrajOptResult::TrajOptResult(OptResults& opt, TrajOptProb& prob) :
   cost_vals(opt.cost_vals),
   cnt_viols(opt.cnt_viols)
 {
-  BOOST_FOREACH(const CostPtr& cost, prob.getCosts()) {
+  for (const CostPtr& cost : prob.getCosts())
+  {
     cost_names.push_back(cost->name());
   }
-  BOOST_FOREACH(const ConstraintPtr& cnt, prob.getConstraints()) {
+
+  for(const ConstraintPtr& cnt : prob.getConstraints())
+  {
     cnt_names.push_back(cnt->name());
   }
+
   traj = getTraj(opt.x, prob.GetVars());
 }
 
@@ -318,17 +321,22 @@ TrajOptProbPtr ConstructProblem(const ProblemConstructionInfo& pci)
   }
 
   if (!bi.dofs_fixed.empty()) {
-    BOOST_FOREACH(const int& dof_ind, bi.dofs_fixed) {
-      for (int i=1; i < prob->GetNumSteps(); ++i) {
+    for (const int& dof_ind : bi.dofs_fixed)
+    {
+      for (int i=1; i < prob->GetNumSteps(); ++i)
+      {
         prob->addLinearConstraint(exprSub(AffExpr(prob->m_traj_vars(i,dof_ind)), AffExpr(prob->m_traj_vars(0,dof_ind))), EQ);
       }
     }
   }
 
-  BOOST_FOREACH(const TermInfoPtr& ci, pci.cost_infos) {
+  for (const TermInfoPtr& ci : pci.cost_infos)
+  {
     ci->hatch(*prob);
   }
-  BOOST_FOREACH(const TermInfoPtr& ci, pci.cnt_infos) {
+
+  for (const TermInfoPtr& ci : pci.cnt_infos)
+  {
     ci->hatch(*prob);
   }
 

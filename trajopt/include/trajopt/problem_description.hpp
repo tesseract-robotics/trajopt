@@ -2,7 +2,6 @@
 #include <trajopt/common.hpp>
 #include <trajopt/json_marshal.hpp>
 #include <boost/function.hpp>
-#include <boost/shared_ptr.hpp>
 #include <tesseract_core/basic_kin.h>
 #include <tesseract_core/basic_env.h>
 #include <trajopt_sco/optimizers.hpp>
@@ -20,12 +19,12 @@ typedef Json::Value TrajOptResponse;
 using std::string;
 
 struct TermInfo;
-typedef boost::shared_ptr<TermInfo> TermInfoPtr;
+typedef std::shared_ptr<TermInfo> TermInfoPtr;
 class TrajOptProb;
-typedef boost::shared_ptr<TrajOptProb> TrajOptProbPtr;
+typedef std::shared_ptr<TrajOptProb> TrajOptProbPtr;
 struct ProblemConstructionInfo;
 struct TrajOptResult;
-typedef boost::shared_ptr<TrajOptResult> TrajOptResultPtr;
+typedef std::shared_ptr<TrajOptResult> TrajOptResultPtr;
 
 TrajOptProbPtr TRAJOPT_API ConstructProblem(const ProblemConstructionInfo&);
 TrajOptProbPtr TRAJOPT_API ConstructProblem(const Json::Value&, tesseract::BasicEnvConstPtr env);

@@ -81,7 +81,7 @@ btCollisionShape* createShapePrimitive(const shapes::ShapeConstPtr& geom, bool u
   case shapes::MESH:
   {
     const shapes::Mesh* mesh = static_cast<const shapes::Mesh*>(geom.get());
-    boost::shared_ptr<btTriangleMesh> ptrimesh(new btTriangleMesh());
+    std::shared_ptr<btTriangleMesh> ptrimesh(new btTriangleMesh());
     if (mesh->vertex_count > 0 && mesh->triangle_count > 0)
     {
       for (unsigned int i = 0; i < mesh->triangle_count; ++i)

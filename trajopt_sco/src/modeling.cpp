@@ -4,7 +4,6 @@
 #include <trajopt_sco/sco_common.hpp>
 #include <trajopt_utils/macros.h>
 #include <boost/format.hpp>
-#include <boost/foreach.hpp>
 #include <cstdio>
 #include <iostream>
 #include <sstream>
@@ -63,10 +62,10 @@ void ConvexObjective::addMax(const AffExprVector& ev) {
 
 void ConvexObjective::addConstraintsToModel() {
   cnts_.reserve(eqs_.size() + ineqs_.size());
-  BOOST_FOREACH(const AffExpr& aff, eqs_) {
+  for (const AffExpr& aff : eqs_) {
     cnts_.push_back(model_->addEqCnt(aff, ""));
   }
-  BOOST_FOREACH(const AffExpr& aff, ineqs_) {
+  for (const AffExpr& aff : ineqs_) {
     cnts_.push_back(model_->addIneqCnt(aff, ""));
   }
 }
@@ -90,10 +89,10 @@ void ConvexConstraints::addIneqCnt(const AffExpr& aff) {
 
 void ConvexConstraints::addConstraintsToModel() {
   cnts_.reserve(eqs_.size() + ineqs_.size());
-  BOOST_FOREACH(const AffExpr& aff, eqs_) {
+  for (const AffExpr& aff : eqs_) {
     cnts_.push_back(model_->addEqCnt(aff, ""));
   }
-  BOOST_FOREACH(const AffExpr& aff, ineqs_) {
+  for (const AffExpr& aff : ineqs_) {
     cnts_.push_back(model_->addIneqCnt(aff, ""));
   }
 }
@@ -106,8 +105,8 @@ void ConvexConstraints::removeFromModel() {
 vector<double> ConvexConstraints::violations(const vector<double>& x) {
   DblVec out;
   out.reserve(eqs_.size() + ineqs_.size());
-  BOOST_FOREACH(const AffExpr& aff, eqs_) out.push_back(fabs(aff.value(x.data())));
-  BOOST_FOREACH(const AffExpr& aff, ineqs_) out.push_back(pospart(aff.value(x.data())));
+  for (const AffExpr& aff : eqs_) out.push_back(fabs(aff.value(x.data())));
+  for (const AffExpr& aff : ineqs_) out.push_back(pospart(aff.value(x.data())));
   return out;
 }
 double ConvexConstraints::violation(const vector<double>& x) {

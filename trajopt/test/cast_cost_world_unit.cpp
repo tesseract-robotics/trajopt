@@ -6,8 +6,6 @@
 #include <ctime>
 #include <trajopt_utils/eigen_conversions.hpp>
 #include <trajopt_utils/clock.hpp>
-#include <boost/foreach.hpp>
-#include <boost/assign.hpp>
 #include <trajopt_utils/config.hpp>
 #include <trajopt/plot_callback.hpp>
 #include <trajopt_test_utils.hpp>
@@ -29,7 +27,6 @@
 using namespace trajopt;
 using namespace std;
 using namespace util;
-using namespace boost::assign;
 using namespace tesseract;
 
 const std::string ROBOT_DESCRIPTION_PARAM = "robot_description"; /**< Default ROS parameter for robot description */

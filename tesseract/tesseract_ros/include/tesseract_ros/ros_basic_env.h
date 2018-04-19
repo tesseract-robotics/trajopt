@@ -133,8 +133,8 @@ public:
   /** @brief Get the allowed collision matrix non const */
   virtual ROSAllowedCollisionMatrixPtr getAllowedCollisionMatrixNonConst() const = 0;
 };
-typedef boost::shared_ptr<ROSEnvBase> ROSEnvBasePtr;
-typedef boost::shared_ptr<const ROSEnvBase> ROSEnvBaseConstPtr;
+typedef std::shared_ptr<ROSEnvBase> ROSEnvBasePtr;
+typedef std::shared_ptr<const ROSEnvBase> ROSEnvBaseConstPtr;
 
 class ROSBasicEnv : public ROSEnvBase, public BasicEnv
 {
@@ -156,8 +156,8 @@ public:
   virtual EnvStatePtr getState(const std::vector<std::string> &joint_names, const Eigen::VectorXd &joint_values) const = 0;
 
 }; // class ROSBasicEnv
-typedef boost::shared_ptr<ROSBasicEnv> ROSBasicEnvPtr;
-typedef boost::shared_ptr<const ROSBasicEnv> ROSBasicEnvConstPtr;
+typedef std::shared_ptr<ROSBasicEnv> ROSBasicEnvPtr;
+typedef std::shared_ptr<const ROSBasicEnv> ROSBasicEnvConstPtr;
 
 class ROSBasicEnvSingleton : public ROSEnvBase, public BasicEnvSingleton
 {
@@ -165,8 +165,8 @@ public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
 }; // class ROSBasicEnvSingleton
-typedef boost::shared_ptr<ROSBasicEnvSingleton> ROSBasicEnvSingletonPtr;
-typedef boost::shared_ptr<const ROSBasicEnvSingleton>ROSBasicEnvSingletonConstPtr;
+typedef std::shared_ptr<ROSBasicEnvSingleton> ROSBasicEnvSingletonPtr;
+typedef std::shared_ptr<const ROSBasicEnvSingleton>ROSBasicEnvSingletonConstPtr;
 
 } //namespace tesseract_ros
 } //namespace tesseract

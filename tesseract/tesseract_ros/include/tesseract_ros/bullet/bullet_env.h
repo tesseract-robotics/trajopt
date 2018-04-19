@@ -51,7 +51,6 @@
 #include <ros/publisher.h>
 #include <urdf/model.h>
 #include <srdfdom/model.h>
-#include <boost/thread/mutex.hpp>
 
 namespace tesseract
 {
@@ -150,7 +149,7 @@ private:
   bool initialized_;                                                /**< Identifies if the object has been initialized */
   urdf::ModelInterfaceConstSharedPtr urdf_model_;                        /**< URDF MODEL */
   srdf::ModelConstSharedPtr srdf_model_;                            /**< SRDF MODEL */
-  boost::shared_ptr<const KDL::Tree> kdl_tree_;                     /**< KDL tree object */
+  std::shared_ptr<const KDL::Tree> kdl_tree_;                     /**< KDL tree object */
   Link2ConstCow link2cow_;                                          /**< Collision objects */
   EnvStatePtr current_state_;                                       /**< Current state of the robot */
   std::unordered_map<std::string, unsigned int> joint_to_qnr_;      /**< Map between joint name and kdl q index */
@@ -163,7 +162,6 @@ private:
   std::vector<std::string> active_link_names_;                      /**< A vector of active link names */
   ObjectColorMapConstPtr object_colors_;                            /**< A map of objects to color */
   ROSAllowedCollisionMatrixPtr allowed_collision_matrix_;           /**< The allowed collision matrix used during collision checking */
-  boost::mutex modify_env_mutex_;
 
   void calculateTransforms(std::unordered_map<std::string, Eigen::Affine3d> &transforms, const KDL::JntArray& q_in, const KDL::SegmentMap::const_iterator& it, const Eigen::Affine3d& parent_frame) const;
   void calculateTransformsHelper(std::unordered_map<std::string, Eigen::Affine3d> &transforms, const KDL::JntArray& q_in, const KDL::SegmentMap::const_iterator& it, const Eigen::Affine3d& parent_frame) const;
@@ -177,8 +175,8 @@ private:
   void constructBulletObject(Link2Cow &collision_objects, std::vector<std::string> &active_objects, double contact_distance, const EnvStateConstPtr state1, const EnvStateConstPtr state2, const std::vector<std::string> &active_links) const;
 
 };
-typedef boost::shared_ptr<BulletEnv> BulletEnvPtr;
-typedef boost::shared_ptr<const BulletEnv> BulletEnvConstPtr;
+typedef std::shared_ptr<BulletEnv> BulletEnvPtr;
+typedef std::shared_ptr<const BulletEnv> BulletEnvConstPtr;
 }
 }
 

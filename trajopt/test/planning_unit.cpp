@@ -6,8 +6,6 @@
 #include <ctime>
 #include <trajopt_utils/eigen_conversions.hpp>
 #include <trajopt_utils/clock.hpp>
-#include <boost/foreach.hpp>
-#include <boost/assign.hpp>
 #include <trajopt_utils/config.hpp>
 #include <trajopt_test_utils.hpp>
 #include <tesseract_ros/kdl/kdl_chain_kin.h>
@@ -24,7 +22,6 @@
 using namespace trajopt;
 using namespace std;
 using namespace util;
-using namespace boost::assign;
 using namespace tesseract;
 
 

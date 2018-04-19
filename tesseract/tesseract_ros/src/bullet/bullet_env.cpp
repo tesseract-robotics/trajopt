@@ -86,7 +86,7 @@ bool BulletEnv::init(const urdf::ModelInterfaceConstSharedPtr urdf_model, const 
     ROS_ERROR("Failed to initialize KDL from URDF model");
     return initialized_;
   }
-  kdl_tree_ = boost::shared_ptr<KDL::Tree>(kdl_tree);
+  kdl_tree_ = std::shared_ptr<KDL::Tree>(kdl_tree);
   initialized_ = true;
 
   if (initialized_)
@@ -356,8 +356,6 @@ bool BulletEnv::continuousCollisionCheckTrajectory(const std::vector<std::string
 
 void BulletEnv::setState(const std::unordered_map<std::string, double> &joints)
 {
-  boost::mutex::scoped_lock(modify_env_mutex_);
-
   current_state_->joints.insert(joints.begin(), joints.end());
 
   for (auto& joint : joints)
@@ -373,8 +371,6 @@ void BulletEnv::setState(const std::unordered_map<std::string, double> &joints)
 
 void BulletEnv::setState(const std::vector<std::string> &joint_names, const std::vector<double> &joint_values)
 {
-  boost::mutex::scoped_lock(modify_env_mutex_);
-
   for (auto i = 0; i < joint_names.size(); ++i)
   {
     if (setJointValuesHelper(kdl_jnt_array_, joint_names[i], joint_values[i]))
@@ -388,8 +384,6 @@ void BulletEnv::setState(const std::vector<std::string> &joint_names, const std:
 
 void BulletEnv::setState(const std::vector<std::string> &joint_names, const Eigen::VectorXd &joint_values)
 {
-  boost::mutex::scoped_lock(modify_env_mutex_);
-
   for (auto i = 0; i < joint_names.size(); ++i)
   {
     if (setJointValuesHelper(kdl_jnt_array_, joint_names[i], joint_values[i]))
@@ -503,8 +497,6 @@ Eigen::Affine3d BulletEnv::getLinkTransform(const std::string& link_name) const
 
 bool BulletEnv::addManipulator(const std::string &base_link, const std::string &tip_link, const std::string &manipulator_name)
 {
-  boost::mutex::scoped_lock(modify_env_mutex_);
-
   if (!hasManipulator(manipulator_name))
   {
     KDLChainKinPtr manip(new KDLChainKin());
@@ -546,8 +538,6 @@ std::string BulletEnv::getManipulatorName(const std::vector<std::string> &joint_
 
 void BulletEnv::addAttachableObject(const AttachableObjectConstPtr attachable_object)
 {
-  boost::mutex::scoped_lock(modify_env_mutex_);
-
   const auto object = attachable_objects_.find(attachable_object->name);
   if (object != attachable_objects_.end())
     ROS_DEBUG("Replacing attachable object %s!", attachable_object->name.c_str());
@@ -557,8 +547,6 @@ void BulletEnv::addAttachableObject(const AttachableObjectConstPtr attachable_ob
 
 void BulletEnv::removeAttachableObject(const std::string& name)
 {
-  boost::mutex::scoped_lock(modify_env_mutex_);
-
   if (attachable_objects_.find(name) != attachable_objects_.end())
   {
     attachable_objects_.erase(name);
@@ -567,7 +555,6 @@ void BulletEnv::removeAttachableObject(const std::string& name)
 
 void BulletEnv::clearAttachableObjects()
 {
-  boost::mutex::scoped_lock(modify_env_mutex_);
   attachable_objects_.clear();
 }
 
@@ -582,8 +569,6 @@ const AttachedBodyConstPtr BulletEnv::getAttachedBody(const std::string& name) c
 
 void BulletEnv::attachBody(const AttachedBodyInfo &attached_body_info)
 {
-  boost::mutex::scoped_lock(modify_env_mutex_);
-
   const auto body_info = attached_bodies_.find(attached_body_info.name);
   const auto obj = attachable_objects_.find(attached_body_info.object_name);
 
@@ -632,8 +617,6 @@ void BulletEnv::attachBody(const AttachedBodyInfo &attached_body_info)
 
 void BulletEnv::detachBody(const std::string &name)
 {
-  boost::mutex::scoped_lock(modify_env_mutex_);
-
   if (attached_bodies_.find(name) != attached_bodies_.end())
   {
     attached_bodies_.erase(name);
@@ -645,8 +628,6 @@ void BulletEnv::detachBody(const std::string &name)
 
 void BulletEnv::clearAttachedBodies()
 {
-  boost::mutex::scoped_lock(modify_env_mutex_);
-
   for (const auto& body : attached_bodies_)
   {
     std::string name = body.second->info.name;

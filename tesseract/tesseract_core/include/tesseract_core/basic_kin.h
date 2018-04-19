@@ -31,7 +31,7 @@
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include <iostream>
-#include <boost/shared_ptr.hpp>
+#include <memory>
 
 namespace tesseract
 {
@@ -229,8 +229,8 @@ public:
   }
 }; // class BasicKin
 
-typedef boost::shared_ptr<BasicKin> BasicKinPtr;
-typedef boost::shared_ptr<const BasicKin> BasicKinConstPtr;
+typedef std::shared_ptr<BasicKin> BasicKinPtr;
+typedef std::shared_ptr<const BasicKin> BasicKinConstPtr;
 } // namespace tesseract
 
 #endif // TESSERACT_CORE_BASIC_KIN_H

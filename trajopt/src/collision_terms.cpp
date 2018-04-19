@@ -7,7 +7,6 @@
 #include <trajopt_utils/eigen_conversions.hpp>
 #include <trajopt_utils/stl_to_string.hpp>
 #include <trajopt_utils/logging.hpp>
-#include <boost/foreach.hpp>
 #include <boost/functional/hash.hpp>
 
 using namespace sco;

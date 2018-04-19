@@ -21,7 +21,7 @@ ros::Publisher contact_results_pub;
 ros::ServiceServer modify_env_service;
 ContactResultVector contacts;
 tesseract_msgs::ContactResultVector contacts_msg;
-boost::shared_ptr<pluginlib::ClassLoader<ROSBasicEnvSingleton> > env_loader;
+std::shared_ptr<pluginlib::ClassLoader<ROSBasicEnvSingleton> > env_loader;
 boost::mutex modify_mutex;
 
 void callbackJointState(const sensor_msgs::JointState::ConstPtr& msg)

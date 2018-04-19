@@ -12,7 +12,6 @@
 #include <assert.h>
 #include <cstddef>
 #include <VHACD.h>
-#include <boost/filesystem.hpp>
 
 using namespace VHACD;
 using namespace std;

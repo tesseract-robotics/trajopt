@@ -8,7 +8,6 @@
 #include <trajopt_utils/macros.h>
 #include <cmath>
 #include <cstdio>
-#include <boost/foreach.hpp>
 #include <boost/format.hpp>
 
 using namespace std;
@@ -118,12 +117,15 @@ void printCostInfo(const vector<double>& old_cost_vals, const vector<double>& mo
 // todo: use different coeffs for each constraint
 vector<ConvexObjectivePtr> cntsToCosts(const vector<ConvexConstraintsPtr>& cnts, double err_coeff, Model* model) {
   vector<ConvexObjectivePtr> out;
-  BOOST_FOREACH(const ConvexConstraintsPtr& cnt, cnts) {
+  for (const ConvexConstraintsPtr& cnt : cnts)
+  {
     ConvexObjectivePtr obj(new ConvexObjective(model));
-    BOOST_FOREACH(const AffExpr& aff, cnt->eqs_) {
+    for (const AffExpr& aff : cnt->eqs_)
+    {
       obj->addAbs(aff, err_coeff);
     }
-    BOOST_FOREACH(const AffExpr& aff, cnt->ineqs_) {
+    for (const AffExpr& aff : cnt->ineqs_)
+    {
       obj->addHinge(aff, err_coeff);
     }
     out.push_back(obj);
@@ -201,7 +203,7 @@ struct MultiCritFilter {
   vector<DblVec> errvecs;
   double improvement(const DblVec& errvec) {
     double leastImprovement=INFINITY;
-    BOOST_FOREACH(const DblVec& olderrvec, errvecs) {
+    for (const DblVec& olderrvec : errvecs) {
       double improvement=0;
       for (int i=0; i < errvec.size(); ++i) improvement += pospart(olderrvec[i] - errvec[i]);
       leastImprovement = fmin(leastImprovement, improvement);
@@ -260,20 +262,19 @@ OptStatus BasicTrustRegionSQP::optimize() {
       vector<ConvexConstraintsPtr> cnt_models = convexifyConstraints(constraints, x_, model_.get());
       vector<ConvexObjectivePtr> cnt_cost_models = cntsToCosts(cnt_models, param_.merit_error_coeff, model_.get());
       model_->update();
-      BOOST_FOREACH(ConvexObjectivePtr& cost, cost_models)cost->addConstraintsToModel();
-      BOOST_FOREACH(ConvexObjectivePtr& cost, cnt_cost_models)cost->addConstraintsToModel();
+      for (ConvexObjectivePtr& cost : cost_models) cost->addConstraintsToModel();
+      for (ConvexObjectivePtr& cost : cnt_cost_models) cost->addConstraintsToModel();
       model_->update();
       QuadExpr objective;
-      BOOST_FOREACH(ConvexObjectivePtr& co, cost_models)exprInc(objective, co->quad_);
-      BOOST_FOREACH(ConvexObjectivePtr& co, cnt_cost_models){
-        exprInc(objective, co->quad_);
-      }
+      for (ConvexObjectivePtr& co : cost_models) exprInc(objective, co->quad_);
+      for (ConvexObjectivePtr& co : cnt_cost_models) exprInc(objective, co->quad_);
+
 //    objective = cleanupExpr(objective);
       model_->setObjective(objective);
 
 //    if (logging::filter() >= IPI_LEVEL_DEBUG) {
 //      DblVec model_cost_vals;
-//      BOOST_FOREACH(ConvexObjectivePtr& cost, cost_models) {
+//      for (ConvexObjectivePtr& cost : cost_models) {
 //        model_cost_vals.push_back(cost->value(x));
 //      }
 //      LOG_DEBUG("model costs %s should equalcosts  %s", printer(model_cost_vals), printer(cost_vals));

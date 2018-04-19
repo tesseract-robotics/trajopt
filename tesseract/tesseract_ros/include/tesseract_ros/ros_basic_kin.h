@@ -32,7 +32,6 @@
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include <iostream>
-#include <boost/shared_ptr.hpp>
 
 namespace tesseract
 {
@@ -55,8 +54,8 @@ public:
 
 }; // class BasicKin
 
-typedef boost::shared_ptr<ROSBasicKin> ROSBasicKinPtr;
-typedef boost::shared_ptr<const ROSBasicKin> ROSBasicKinConstPtr;
+typedef std::shared_ptr<ROSBasicKin> ROSBasicKinPtr;
+typedef std::shared_ptr<const ROSBasicKin> ROSBasicKinConstPtr;
 } // namespace tesseract_ros
 } // namespace trajopt
 

@@ -1,7 +1,7 @@
 #pragma once
 #include <boost/function.hpp>
 #include <Eigen/Dense>
-#include <boost/shared_ptr.hpp>
+#include <memory>
 /*
  * Numerical derivatives
  */
@@ -13,9 +13,9 @@ using Eigen::MatrixXd;
 class ScalarOfVector;
 class VectorOfVector;
 class MatrixOfVector;
-typedef boost::shared_ptr<ScalarOfVector> ScalarOfVectorPtr;
-typedef boost::shared_ptr<VectorOfVector> VectorOfVectorPtr;
-typedef boost::shared_ptr<MatrixOfVector> MatrixOfVectorPtr;
+typedef std::shared_ptr<ScalarOfVector> ScalarOfVectorPtr;
+typedef std::shared_ptr<VectorOfVector> VectorOfVectorPtr;
+typedef std::shared_ptr<MatrixOfVector> MatrixOfVectorPtr;
 
 class ScalarOfVector {
 public:

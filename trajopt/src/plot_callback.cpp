@@ -4,7 +4,6 @@
 #include <tesseract_core/basic_kin.h>
 #include <tesseract_core/basic_env.h>
 #include <trajopt/plot_callback.hpp>
-#include <boost/foreach.hpp>
 #include <boost/bind.hpp>
 #include <set>
 
@@ -17,14 +16,15 @@ void PlotCosts(const tesseract::BasicPlottingPtr plotter, const std::vector<std:
 {
   plotter->clear();
 
-  BOOST_FOREACH(CostPtr& cost, costs)
+  for (CostPtr& cost : costs)
   {
     if (Plotter* plt = dynamic_cast<Plotter*>(cost.get()))
     {
       plt->Plot(plotter, x);
     }
   }
-  BOOST_FOREACH(ConstraintPtr& cnt, cnts)
+
+  for (ConstraintPtr& cnt : cnts)
   {
     if (Plotter* plt = dynamic_cast<Plotter*>(cnt.get()))
     {

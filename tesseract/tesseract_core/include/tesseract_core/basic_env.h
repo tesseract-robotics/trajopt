@@ -116,8 +116,8 @@ public:
 
 }; // class BasicEnvBase
 
-typedef boost::shared_ptr<EnvBase> EnvBasePtr;
-typedef boost::shared_ptr<const EnvBase> EnvBaseConstPtr;
+typedef std::shared_ptr<EnvBase> EnvBasePtr;
+typedef std::shared_ptr<const EnvBase> EnvBaseConstPtr;
 
 class BasicEnv : public EnvBase
 {
@@ -175,8 +175,8 @@ public:
   virtual bool continuousCollisionCheckTrajectory(const std::vector<std::string> &joint_names, const std::vector<std::string> &link_names, const TrajArray& traj, ContactResult& collision) const = 0;
 
 }; // class BasicEnv
-typedef boost::shared_ptr<BasicEnv> BasicEnvPtr;
-typedef boost::shared_ptr<const BasicEnv> BasicEnvConstPtr;
+typedef std::shared_ptr<BasicEnv> BasicEnvPtr;
+typedef std::shared_ptr<const BasicEnv> BasicEnvConstPtr;
 
 /**
  * @brief This should keep a single copy of environment and provide a way to update its state.
@@ -214,8 +214,8 @@ public:
   virtual void calcCollisionsDiscrete(ContactResultVector &collisions) = 0;
 
 };// class BasicEnvSingleton
-typedef boost::shared_ptr<BasicEnvSingleton> BasicEnvSingletonPtr;
-typedef boost::shared_ptr<const BasicEnvSingleton> BasicEnvSingletonConstPtr;
+typedef std::shared_ptr<BasicEnvSingleton> BasicEnvSingletonPtr;
+typedef std::shared_ptr<const BasicEnvSingleton> BasicEnvSingletonConstPtr;
 
 } //namespace tesseract
 

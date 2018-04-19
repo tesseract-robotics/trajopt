@@ -29,9 +29,9 @@
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include <Eigen/StdVector>
-#include <boost/shared_ptr.hpp>
 #include <unordered_map>
 #include <vector>
+#include <memory>
 
 namespace tesseract
 {
@@ -49,8 +49,8 @@ struct AllowedCollisionMatrix
    */
   virtual bool isCollisionAllowed(const std::string& link_name1, const std::string& link_name2) const = 0;
 };
-typedef boost::shared_ptr<AllowedCollisionMatrix> AllowedCollisionMatrixPtr;
-typedef boost::shared_ptr<const AllowedCollisionMatrix> AllowedCollisionMatrixConstPtr;
+typedef std::shared_ptr<AllowedCollisionMatrix> AllowedCollisionMatrixPtr;
+typedef std::shared_ptr<const AllowedCollisionMatrix> AllowedCollisionMatrixConstPtr;
 
 
 namespace BodyTypes

@@ -4,7 +4,6 @@
 extern "C" {
 #include "gurobi_c.h"
 }
-#include <boost/foreach.hpp>
 #include <trajopt_ros/sco/sco_common.hpp>
 #include <map>
 #include <utility>
@@ -233,7 +232,7 @@ void GurobiModel::update() {
 
   {
   int inew = 0;
-  BOOST_FOREACH(const Var& var, m_vars) {
+  for (const Var& var : m_vars) {
     if (!var.var_rep->removed) {
       m_vars[inew] = var;
       var.var_rep->index = inew;
@@ -245,7 +244,7 @@ void GurobiModel::update() {
   }
   {
   int inew = 0;
-  BOOST_FOREACH(const Cnt& cnt, m_cnts) {
+  for (const Cnt& cnt : m_cnts) {
     if (!cnt.cnt_rep->removed) {
       m_cnts[inew] = cnt;
       cnt.cnt_rep->index = inew;

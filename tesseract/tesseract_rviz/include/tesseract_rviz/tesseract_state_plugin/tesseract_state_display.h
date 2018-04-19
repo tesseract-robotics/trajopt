@@ -147,8 +147,8 @@ protected:
   rviz::BoolProperty* enable_attached_visual_visible_;
   rviz::BoolProperty* enable_attached_collision_visible_;
 };
-typedef boost::shared_ptr<TesseractStateDisplay> TesseractStateDisplayPtr;
-typedef boost::shared_ptr<const TesseractStateDisplay> TesseractStateDisplayConstPtr;
+typedef std::shared_ptr<TesseractStateDisplay> TesseractStateDisplayPtr;
+typedef std::shared_ptr<const TesseractStateDisplay> TesseractStateDisplayConstPtr;
 
 }  // namespace tesseract_rviz
 

@@ -124,7 +124,7 @@ public:
 
   CollisionObjectWrapper(const AttachedBody* ab);
 
-  std::vector<boost::shared_ptr<void>> m_data;
+  std::vector<std::shared_ptr<void>> m_data;
 
   short int	m_collisionFilterGroup;
   short int	m_collisionFilterMask;
@@ -158,18 +158,18 @@ public:
       return "Robot link";
   }
 
-  boost::shared_ptr<CollisionObjectWrapper> clone()
+  std::shared_ptr<CollisionObjectWrapper> clone()
   {
     if (m_type == BodyType::ROBOT_ATTACHED)
     {
-      boost::shared_ptr<CollisionObjectWrapper> cow(new CollisionObjectWrapper(ptr.m_ab));
+      std::shared_ptr<CollisionObjectWrapper> cow(new CollisionObjectWrapper(ptr.m_ab));
       cow->m_collisionFilterGroup = m_collisionFilterGroup;
       cow->m_collisionFilterMask = m_collisionFilterMask;
       return cow;
     }
     else
     {
-      boost::shared_ptr<CollisionObjectWrapper> cow(new CollisionObjectWrapper(ptr.m_link));
+      std::shared_ptr<CollisionObjectWrapper> cow(new CollisionObjectWrapper(ptr.m_link));
       cow->m_collisionFilterGroup = m_collisionFilterGroup;
       cow->m_collisionFilterMask = m_collisionFilterMask;
       return cow;
@@ -185,10 +185,10 @@ public:
   template<class T>
   void manage(T* t)
   { // manage memory of this object
-    m_data.push_back(boost::shared_ptr<T>(t));
+    m_data.push_back(std::shared_ptr<T>(t));
   }
   template<class T>
-  void manage(boost::shared_ptr<T> t)
+  void manage(std::shared_ptr<T> t)
   {
     m_data.push_back(t);
   }
@@ -198,8 +198,8 @@ private:
 };
 
 typedef CollisionObjectWrapper COW;
-typedef boost::shared_ptr<CollisionObjectWrapper> COWPtr;
-typedef boost::shared_ptr<const CollisionObjectWrapper> COWConstPtr;
+typedef std::shared_ptr<CollisionObjectWrapper> COWPtr;
+typedef std::shared_ptr<const CollisionObjectWrapper> COWConstPtr;
 typedef std::map<std::string, COWPtr> Link2Cow;
 typedef std::map<std::string, COWConstPtr> Link2ConstCow;
 
@@ -932,7 +932,7 @@ private:
     }
   }
 };
-typedef boost::shared_ptr<BulletManager> BulletManagerPtr;
+typedef std::shared_ptr<BulletManager> BulletManagerPtr;
 
 btCollisionShape* createShapePrimitive(const shapes::ShapeConstPtr& geom, bool useTrimesh, CollisionObjectWrapper* cow);
 COWPtr CollisionObjectFromLink(const urdf::Link* link, bool useTrimesh);

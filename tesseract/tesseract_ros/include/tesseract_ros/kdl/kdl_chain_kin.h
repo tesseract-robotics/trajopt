@@ -31,7 +31,6 @@
 #include <kdl/chain.hpp>
 #include <kdl/chainfksolverpos_recursive.hpp>
 #include <kdl/chainjnttojacsolver.hpp>
-#include <boost/scoped_ptr.hpp>
 #include <urdf/model.h>
 
 namespace tesseract
@@ -160,8 +159,8 @@ private:
   std::vector<std::string> joint_list_;                          /**< List of joint names */
   std::vector<std::string> link_list_;                           /**< List of link names */
   Eigen::MatrixX2d joint_limits_;                                /**< Joint limits */
-  boost::scoped_ptr<KDL::ChainFkSolverPos_recursive> fk_solver_; /**< KDL Forward Kinematic Solver */
-  boost::scoped_ptr<KDL::ChainJntToJacSolver> jac_solver_;       /**< KDL Jacobian Solver */
+  std::unique_ptr<KDL::ChainFkSolverPos_recursive> fk_solver_;   /**< KDL Forward Kinematic Solver */
+  std::unique_ptr<KDL::ChainJntToJacSolver> jac_solver_;         /**< KDL Jacobian Solver */
   std::map<std::string, int> link_name_too_segment_index_;       /**< A map from link name to kdl chain segment numer */
 
   /** @brief calcFwdKin helper function */
@@ -174,8 +173,8 @@ private:
 
 }; // class KDLChainKin
 
-typedef boost::shared_ptr<KDLChainKin> KDLChainKinPtr;
-typedef boost::shared_ptr<const KDLChainKin> KDLChainKinConstPtr;
+typedef std::shared_ptr<KDLChainKin> KDLChainKinPtr;
+typedef std::shared_ptr<const KDLChainKin> KDLChainKinConstPtr;
 }
 }
 #endif // TESSERACT_ROS_KDL_CHAIN_KIN_H

@@ -3,9 +3,9 @@
 #include <trajopt_utils/macros.h>
 #include <vector>
 #include <Eigen/Eigen>
-#include <boost/format.hpp>
 #include <string>
 #include <sstream>
+#include <boost/format.hpp>
 
 namespace json_marshal {
 

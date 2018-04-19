@@ -8,7 +8,6 @@ find_package(catkin REQUIRED)
 
 ## System dependencies are found with CMake's conventions
 find_package(Eigen3 REQUIRED)
-find_package(Boost COMPONENTS system REQUIRED)
 
 catkin_package(
   INCLUDE_DIRS include
@@ -16,14 +15,12 @@ catkin_package(
   #CATKIN_DEPENDS
   DEPENDS
     EIGEN3
-    Boost
 )
 
 include_directories(
   include
   ${catkin_INCLUDE_DIRS}
   ${EIGEN3_INCLUDE_DIRS}
-  ${Boost_INCLUDE_DIRS}
 )
 
 # Mark cpp header files for installation

@@ -245,8 +245,8 @@ private:
     return marker;
   }
 };
-typedef boost::shared_ptr<TrajoptMoveItPlotting> TrajoptMoveItPlottingPtr;
-typedef boost::shared_ptr<const TrajoptMoveItPlotting> TrajoptMoveItPlottingConstPtr;
+typedef std::shared_ptr<TrajoptMoveItPlotting> TrajoptMoveItPlottingPtr;
+typedef std::shared_ptr<const TrajoptMoveItPlotting> TrajoptMoveItPlottingConstPtr;
 }
 
 #endif // TRAJOPT_MOVEIT_PLOTTER_H

@@ -2,7 +2,6 @@
 #include <vector>
 #include <map>
 #include <Eigen/Core>
-#include <boost/shared_ptr.hpp>
 
 #include <trajopt_sco/modeling.hpp>
 #include <trajopt_utils/basic_array.hpp>
@@ -40,6 +39,6 @@ public:
   virtual void Plot(const tesseract::BasicPlottingPtr plotter, const DblVec& x) = 0;
   virtual ~Plotter() {}
 };
-typedef boost::shared_ptr<Plotter> PlotterPtr;
+typedef std::shared_ptr<Plotter> PlotterPtr;
 
 }

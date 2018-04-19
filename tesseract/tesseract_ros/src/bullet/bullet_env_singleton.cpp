@@ -85,7 +85,7 @@ bool BulletEnvSingleton::init(const urdf::ModelInterfaceConstSharedPtr urdf_mode
     ROS_ERROR("Failed to initialize KDL from URDF model");
     return initialized_;
   }
-  kdl_tree_ = boost::shared_ptr<KDL::Tree>(kdl_tree);
+  kdl_tree_ = std::shared_ptr<KDL::Tree>(kdl_tree);
   initialized_ = true;
 
   if (initialized_)

@@ -75,8 +75,8 @@ public:
   /** @brief Pause code and wait for enter key in terminal*/
   virtual void waitForInput() = 0;
 };
-typedef boost::shared_ptr<BasicPlotting> BasicPlottingPtr;
-typedef boost::shared_ptr<const BasicPlotting> BasicPlottingConstPtr;
+typedef std::shared_ptr<BasicPlotting> BasicPlottingPtr;
+typedef std::shared_ptr<const BasicPlotting> BasicPlottingConstPtr;
 
 }
 

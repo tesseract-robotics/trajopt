@@ -17,7 +17,7 @@ find_package(catkin REQUIRED COMPONENTS
 )
 
 find_package(Eigen3 REQUIRED)
-find_package(Boost COMPONENTS system python thread program_options REQUIRED)
+find_package(Boost COMPONENTS system thread REQUIRED)
 find_package(octomap REQUIRED)
 find_package(orocos_kdl REQUIRED)
 

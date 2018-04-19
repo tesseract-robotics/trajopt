@@ -32,9 +32,9 @@ struct CartPoseErrCalculator : public VectorOfVector
 
 struct CartPoseErrorPlotter : public Plotter
 {
-  boost::shared_ptr<void> m_calc; //actually points to a CartPoseErrCalculator = CartPoseCost::f_
+  std::shared_ptr<void> m_calc; //actually points to a CartPoseErrCalculator = CartPoseCost::f_
   VarVector m_vars;
-  CartPoseErrorPlotter(boost::shared_ptr<void> calc, const VarVector& vars) : m_calc(calc), m_vars(vars) {}
+  CartPoseErrorPlotter(std::shared_ptr<void> calc, const VarVector& vars) : m_calc(calc), m_vars(vars) {}
   void Plot(const tesseract::BasicPlottingPtr plotter, const DblVec& x);
 };
 
