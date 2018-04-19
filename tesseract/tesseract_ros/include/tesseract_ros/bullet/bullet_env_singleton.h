@@ -98,6 +98,8 @@ public:
 
   std::vector<std::string> getLinkNames() const { return link_names_; }
 
+  std::vector<std::string> getActiveLinkNames() const { return active_link_names_; }
+
   vector_Affine3d getLinkTransforms() const;
 
   Eigen::Affine3d getLinkTransform(const std::string& link_name) const;
@@ -128,7 +130,7 @@ public:
 
   void clearAttachedBodies();
 
-  const urdf::ModelInterfaceConstSharedPtr getURDF() const { return model_; }
+  const urdf::ModelInterfaceConstSharedPtr getURDF() const { return urdf_model_; }
 
   const srdf::ModelConstSharedPtr getSRDF() const { return srdf_model_; }
 
@@ -138,7 +140,7 @@ public:
 
 private:
   bool initialized_;                                                /**< Identifies if the object has been initialized */
-  urdf::ModelInterfaceConstSharedPtr model_;                        /**< URDF MODEL */
+  urdf::ModelInterfaceConstSharedPtr urdf_model_;                        /**< URDF MODEL */
   srdf::ModelConstSharedPtr srdf_model_;                            /**< SRDF MODEL */
   boost::shared_ptr<const KDL::Tree> kdl_tree_;                     /**< KDL tree object */
   BulletManager manager_;                                           /**< Collision object manager */
@@ -152,6 +154,7 @@ private:
   std::unordered_map<std::string, BasicKinConstPtr> manipulators_;  /**< A map of manipulator names to kinematics object */
   std::vector<std::string> link_names_;                             /**< A vector of link names */
   std::vector<std::string> joint_names_;                            /**< A vector of joint names */
+  std::vector<std::string> active_link_names_;                      /**< A vector of active link names */
   ObjectColorMapConstPtr object_colors_;                            /**< A map of objects to color */
   ROSAllowedCollisionMatrixPtr allowed_collision_matrix_;           /**< The allowed collision matrix used during collision checking */
 

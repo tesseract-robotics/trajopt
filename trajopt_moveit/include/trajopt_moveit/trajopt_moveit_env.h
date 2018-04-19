@@ -46,6 +46,8 @@ public:
 
   std::vector<std::string> getLinkNames() const;
 
+  std::vector<std::string> getActiveLinkNames() const;
+
   tesseract::vector_Affine3d getLinkTransforms() const;
 
   Eigen::Affine3d getLinkTransform(const std::string& link_name) const;
@@ -63,6 +65,7 @@ public:
 private:
   bool initialized_;        /**< Identifies if the object has been initialized */
   planning_scene::PlanningScenePtr env_;
+  std::vector<std::string> urdf_active_link_names_;             /**< A vector of active link names */
   collision_detection::CollisionRobotConstPtr collision_robot_; /**< Pointer to the collision robot, some constraints require it */
   collision_detection::CollisionWorldConstPtr collision_world_; /**< Pointer to the collision world, some constraints require it */
 

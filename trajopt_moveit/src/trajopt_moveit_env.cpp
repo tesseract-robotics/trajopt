@@ -1,4 +1,5 @@
 #include "trajopt_moveit/trajopt_moveit_env.h"
+#include <tesseract_ros/ros_tesseract_utils.h>
 #include <tesseract_ros/kdl/kdl_chain_kin.h>
 #include <moveit/collision_detection/collision_common.h>
 #include <iostream>
@@ -20,6 +21,9 @@ bool TrajOptMoveItEnv::init(planning_scene::PlanningScenePtr planning_scene)
     collision_robot_ = planning_scene->getCollisionRobot();
     collision_world_ = planning_scene->getCollisionWorld();
   }
+
+  // Now get the active link names
+  tesseract::tesseract_ros::getActiveLinkNamesRecursive(urdf_active_link_names_, env_->getRobotModel()->getURDF()->getRoot(), false);
 
   return initialized_;
 }
@@ -366,6 +370,24 @@ std::vector<std::string> TrajOptMoveItEnv::getLinkNames() const
     object_names.push_back(body->getName());
   }
   return object_names;
+}
+
+std::vector<std::string> TrajOptMoveItEnv::getActiveLinkNames() const
+{
+  std::vector<std::string> active_link_names = urdf_active_link_names_;
+
+  std::vector<const moveit::core::AttachedBody*> bodies;
+  env_->getCurrentState().getAttachedBodies(bodies);
+
+  for (const auto& body : bodies)
+  {
+    if (std::find(urdf_active_link_names_.begin(), urdf_active_link_names_.end(), body->getAttachedLinkName()) != urdf_active_link_names_.end())
+    {
+      active_link_names.push_back(body->getName());
+    }
+  }
+
+  return active_link_names;
 }
 
 tesseract::vector_Affine3d TrajOptMoveItEnv::getLinkTransforms() const

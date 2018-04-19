@@ -547,6 +547,23 @@ void tesseractContactResultToContactResultMsg(tesseract_msgs::ContactResultPtr c
   tesseractContactResultToContactResultMsg(*contact_result_msg, contact_result);
 }
 
+static inline
+void getActiveLinkNamesRecursive(std::vector<std::string>& active_links, const urdf::LinkConstSharedPtr urdf_link, bool active)
+{
+  // recursively get all active links
+  if (active)
+    active_links.push_back(urdf_link->name);
+
+  for (std::size_t i = 0; i < urdf_link->child_links.size(); ++i)
+  {
+    if ((!active) && (urdf_link->parent_joint->type != urdf::Joint::FIXED))
+      getActiveLinkNamesRecursive(active_links, urdf_link->child_links[i], true);
+    else
+      getActiveLinkNamesRecursive(active_links, urdf_link->child_links[i], active);
+  }
+}
+
+
 }
 }
 #endif // TESSERACT_ROS_UTILS_H

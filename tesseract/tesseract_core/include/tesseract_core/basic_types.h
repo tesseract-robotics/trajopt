@@ -100,7 +100,7 @@ struct ContactRequest : public ContactRequestBase
 {
   std::vector<std::string> joint_names; /**< Vector of joint names (size must match number of joints in robot chain) */
   Eigen::VectorXd joint_angles1;        /**< Vector of joint angles (size must match number of joints in robot chain/tree) */
-  Eigen::VectorXd joint_angles2;        /**< Vector of joint angles (size must match number of joints in robot chain/tree) */
+  Eigen::VectorXd joint_angles2;        /**< Vector of joint angles used for continuous checking (size must match number of joints in robot chain/tree) */
 
   ContactRequest() : ContactRequestBase() {}
 };

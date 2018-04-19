@@ -77,6 +77,12 @@ public:
   virtual std::vector<std::string> getLinkNames() const = 0;
 
   /**
+   * @brief Get a vector of active link names in the environment
+   * @return A vector of active link names
+   */
+  virtual std::vector<std::string> getActiveLinkNames() const = 0;
+
+  /**
    * @brief Get all of the links transforms
    *
    * Order should be the same as getLinkNames()

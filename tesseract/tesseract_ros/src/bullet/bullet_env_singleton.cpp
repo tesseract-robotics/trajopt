@@ -65,22 +65,22 @@ bool BulletEnvSingleton::init(const urdf::ModelInterfaceConstSharedPtr urdf_mode
 bool BulletEnvSingleton::init(const urdf::ModelInterfaceConstSharedPtr urdf_model, const srdf::ModelConstSharedPtr srdf_model)
 {
   initialized_ = false;
-  model_ = urdf_model;
+  urdf_model_ = urdf_model;
 
-  if(model_ == nullptr)
+  if(urdf_model_ == nullptr)
   {
     ROS_ERROR_STREAM("Null pointer to URDF Model");
     return initialized_;
   }
 
-  if (!model_->getRoot())
+  if (!urdf_model_->getRoot())
   {
     ROS_ERROR("Invalid URDF in ROSBulletEnvSingleton::init call");
     return initialized_;
   }
 
   KDL::Tree *kdl_tree = new KDL::Tree();
-  if (!kdl_parser::treeFromUrdfModel(*model_, *kdl_tree))
+  if (!kdl_parser::treeFromUrdfModel(*urdf_model_, *kdl_tree))
   {
     ROS_ERROR("Failed to initialize KDL from URDF model");
     return initialized_;
@@ -139,7 +139,7 @@ bool BulletEnvSingleton::init(const urdf::ModelInterfaceConstSharedPtr urdf_mode
       for (const auto& chain: group.chains_)
       {
         KDLChainKinPtr manip(new KDLChainKin());
-        manip->init(model_, chain.first, chain.second, group.name_);
+        manip->init(urdf_model_, chain.first, chain.second, group.name_);
         manipulators_.insert(std::make_pair(group.name_, manip));
       }
     }
@@ -158,6 +158,8 @@ bool BulletEnvSingleton::init(const urdf::ModelInterfaceConstSharedPtr urdf_mode
   request_.link_names = link_names_;
 
   updateBulletObjects();
+
+  getActiveLinkNamesRecursive(active_link_names_, urdf_model_->getRoot(), false);
 
   return initialized_;
 }
@@ -327,7 +329,7 @@ bool BulletEnvSingleton::addManipulator(const std::string &base_link, const std:
   if (!hasManipulator(manipulator_name))
   {
     KDLChainKinPtr manip(new KDLChainKin());
-    manip->init(model_, base_link, tip_link, manipulator_name);
+    manip->init(urdf_model_, base_link, tip_link, manipulator_name);
 
     manipulators_.insert(std::make_pair(manipulator_name, manip));
     return true;
@@ -418,6 +420,11 @@ void BulletEnvSingleton::attachBody(const AttachedBodyInfo &attached_body_info)
   }
 
   link_names_.push_back(attached_body_info.name);
+  if (std::find(active_link_names_.begin(), active_link_names_.end(), attached_body_info.parent_link_name) != active_link_names_.end())
+  {
+    active_link_names_.push_back(attached_body_info.name);
+  }
+
   AttachedBodyPtr attached_body(new AttachedBody());
   attached_body->info = attached_body_info;
   attached_body->obj = obj->second;
@@ -448,6 +455,7 @@ void BulletEnvSingleton::detachBody(const std::string &name)
     attached_bodies_.erase(name);
     manager_.m_link2cow.erase(name);
     link_names_.erase(std::remove(link_names_.begin(), link_names_.end(), name), link_names_.end());
+    active_link_names_.erase(std::remove(active_link_names_.begin(), active_link_names_.end(), name), active_link_names_.end());
 
     updateBulletObjects();
   }
@@ -461,6 +469,7 @@ void BulletEnvSingleton::clearAttachedBodies()
     manager_.removeCollisionObject(manager_.m_link2cow[name]);
     manager_.m_link2cow.erase(name);
     link_names_.erase(std::remove(link_names_.begin(), link_names_.end(), name), link_names_.end());
+    active_link_names_.erase(std::remove(active_link_names_.begin(), active_link_names_.end(), name), active_link_names_.end());
   }
   attached_bodies_.clear();
   updateBulletObjects();
