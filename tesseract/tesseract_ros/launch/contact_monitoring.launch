@@ -4,6 +4,10 @@
   <!-- The name of the parameter under which the URDF is loaded -->
   <arg name="robot_description" default="robot_description"/>
   <arg name="plugin" default="tesseract_ros/BulletEnvSingleton"/>
+  <arg name="monitor_links" default=""/>
+  <arg name="contact_distance"/>
+
+
   <arg name="rate" default="200"/>
   <arg name="use_gui" default="false"/>
 
@@ -21,6 +25,8 @@
   <node pkg="tesseract_ros" type="tesseract_ros_contact_monitoring_node" name="tesseract_contact_monitoring">
     <param name="robot_description" type="string" value="$(arg robot_description)"/>
     <param name="plugin" type="string" value="$(arg plugin)"/>
+    <param name="contact_distance" value="$(arg contact_distance)"/>
+    <param name="monitor_links" value="$(arg monitor_links)"/>
   </node>
 
 </launch>

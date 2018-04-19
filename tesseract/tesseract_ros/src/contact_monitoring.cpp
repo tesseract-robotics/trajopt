@@ -13,6 +13,7 @@ using namespace tesseract::tesseract_ros;
 
 const std::string ROBOT_DESCRIPTION_PARAM = "robot_description"; /**< Default ROS parameter for robot description */
 const std::string TESSERACT_ENV_SINGLETON_PLUGIN_PARAM = "tesseract_ros/BulletEnvSingleton";
+const double DEFAULT_CONTACT_DISTANCE = 0.1;
 
 ROSBasicEnvSingletonPtr env;
 ros::Subscriber joint_states_sub;
@@ -21,9 +22,11 @@ ros::ServiceServer modify_env_service;
 ContactResultVector contacts;
 tesseract_msgs::ContactResultVector contacts_msg;
 boost::shared_ptr<pluginlib::ClassLoader<ROSBasicEnvSingleton> > env_loader;
+boost::mutex modify_mutex;
 
 void callbackJointState(const sensor_msgs::JointState::ConstPtr& msg)
 {
+  boost::mutex::scoped_lock(modify_mutex);
   contacts.clear();
   contacts_msg.constacts.clear();
 
@@ -42,6 +45,7 @@ void callbackJointState(const sensor_msgs::JointState::ConstPtr& msg)
 
 bool callbackModifyTesseractEnv(tesseract_msgs::ModifyTesseractEnvRequest& request, tesseract_msgs::ModifyTesseractEnvResponse& response)
 {
+  boost::mutex::scoped_lock(modify_mutex);
   response.success = processTesseractStateMsg(*env, request.state);
 }
 
@@ -50,13 +54,14 @@ int main(int argc, char** argv)
   ros::init(argc, argv, "tesseract_contact_monitoring");
   ros::NodeHandle nh;
   ros::NodeHandle pnh("~");
-  urdf::ModelInterfaceSharedPtr urdf_model; /**< URDF Model */
-  srdf::ModelSharedPtr srdf_model;          /**< SRDF Model */
+  urdf::ModelInterfaceSharedPtr urdf_model;
+  srdf::ModelSharedPtr srdf_model;
   std::string robot_description;
   std::string plugin;
 
   pnh.param<std::string>("robot_description", robot_description, ROBOT_DESCRIPTION_PARAM);
   pnh.param<std::string>("plugin", plugin, TESSERACT_ENV_SINGLETON_PLUGIN_PARAM);
+
 
   env_loader.reset(new pluginlib::ClassLoader<ROSBasicEnvSingleton>("tesseract_ros", "tesseract::tesseract_ros::ROSBasicEnvSingleton"));
   env.reset(env_loader->createUnmanagedInstance(plugin));
@@ -85,6 +90,17 @@ int main(int argc, char** argv)
     ROS_ERROR("Failed to initialize environment.");
     return 0;
   }
+
+  // Setup request information
+  ContactRequestBase req;
+  req.acm = env->getAllowedCollisionMatrix();
+  pnh.param<double>("contact_distance", req.contact_distance, DEFAULT_CONTACT_DISTANCE);
+  pnh.getParam("monitor_links", req.link_names);
+  if (req.link_names.empty())
+    req.link_names = env->getLinkNames();
+
+  req.type = ContactRequestTypes::ALL;
+  env->setContactRequest(req);
 
   joint_states_sub = nh.subscribe("joint_states", 1, &callbackJointState);
   contact_results_pub = pnh.advertise<tesseract_msgs::ContactResultVector>("contact_results", 1, true);
