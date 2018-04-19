@@ -14,7 +14,6 @@
 
 using namespace util;
 using namespace std;
-using namespace boost::assign;
 using namespace sco;
 using namespace Eigen;
 

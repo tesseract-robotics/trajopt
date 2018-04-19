@@ -1,7 +1,6 @@
 #pragma once
 #include <trajopt/common.hpp>
 #include <trajopt/json_marshal.hpp>
-#include <boost/function.hpp>
 #include <tesseract_core/basic_kin.h>
 #include <tesseract_core/basic_env.h>
 #include <trajopt_sco/optimizers.hpp>

@@ -1,7 +1,7 @@
 #pragma once
 #include <string>
 #include <trajopt_sco/modeling.hpp>
-#include <boost/function.hpp>
+#include <functional>
 /*
  * Algorithms for non-convex, constrained optimization
  */
@@ -62,7 +62,7 @@ public:
   vector<double>& x() {return results_.x;}
   OptResults& results() {return results_;}
 
-  typedef boost::function<void(OptProb*, DblVec&)> Callback;
+  typedef std::function<void(OptProb*, DblVec&)> Callback;
   void addCallback(const Callback& f); // called before each iteration
 protected:
   vector<Callback> callbacks_;

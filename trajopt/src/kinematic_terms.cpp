@@ -6,7 +6,6 @@
 #include <trajopt_utils/eigen_slicing.hpp>
 #include <trajopt_utils/logging.hpp>
 #include <trajopt_utils/stl_to_string.hpp>
-#include <boost/bind.hpp>
 #include <boost/format.hpp>
 #include <Eigen/Geometry>
 #include <iostream>

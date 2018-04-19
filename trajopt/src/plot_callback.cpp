@@ -4,7 +4,7 @@
 #include <tesseract_core/basic_kin.h>
 #include <tesseract_core/basic_env.h>
 #include <trajopt/plot_callback.hpp>
-#include <boost/bind.hpp>
+#include <functional>
 #include <set>
 
 using namespace util;
@@ -40,13 +40,13 @@ Optimizer::Callback PlotCallback(TrajOptProb& prob, const tesseract::BasicPlotti
 {
 
   vector<ConstraintPtr> cnts = prob.getConstraints();
-  return boost::bind(&PlotCosts,
-                      plotter,
-                      prob.GetKin()->getJointNames(),
-                      boost::ref(prob.getCosts()),
-                      cnts,
-                      boost::ref(prob.GetVars()),
-                      _2);
+  return std::bind(&PlotCosts,
+                   plotter,
+                   prob.GetKin()->getJointNames(),
+                   std::ref(prob.getCosts()),
+                   cnts,
+                   std::ref(prob.GetVars()),
+                   std::placeholders::_2);
 }
 
 }
