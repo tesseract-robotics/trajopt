@@ -552,17 +552,24 @@ void getActiveLinkNamesRecursive(std::vector<std::string>& active_links, const u
 {
   // recursively get all active links
   if (active)
-    active_links.push_back(urdf_link->name);
-
-  for (std::size_t i = 0; i < urdf_link->child_links.size(); ++i)
   {
-    if ((!active) && (urdf_link->parent_joint->type != urdf::Joint::FIXED))
-      getActiveLinkNamesRecursive(active_links, urdf_link->child_links[i], true);
-    else
+    active_links.push_back(urdf_link->name);
+    for (std::size_t i = 0; i < urdf_link->child_links.size(); ++i)
+    {
       getActiveLinkNamesRecursive(active_links, urdf_link->child_links[i], active);
+    }
+  }
+  else
+  {
+    for (std::size_t i = 0; i < urdf_link->child_links.size(); ++i)
+    {
+      if ((urdf_link->parent_joint) && (urdf_link->parent_joint->type != urdf::Joint::FIXED))
+        getActiveLinkNamesRecursive(active_links, urdf_link->child_links[i], true);
+      else
+        getActiveLinkNamesRecursive(active_links, urdf_link->child_links[i], active);
+    }
   }
 }
-
 
 }
 }
