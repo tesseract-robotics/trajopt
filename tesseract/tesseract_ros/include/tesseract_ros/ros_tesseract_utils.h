@@ -41,6 +41,24 @@ namespace tesseract_ros
 {
 
 static inline
+bool isMsgEmpty(const sensor_msgs::JointState& msg)
+{
+  return msg.name.empty() &&
+         msg.position.empty() &&
+         msg.velocity.empty() &&
+         msg.effort.empty();
+}
+
+static inline
+bool isMsgEmpty(const sensor_msgs::MultiDOFJointState& msg)
+{
+  return msg.joint_names.empty() &&
+         msg.transforms.empty() &&
+         msg.twist.empty() &&
+         msg.wrench.empty();
+}
+
+static inline
 void attachableObjectToAttachableObjectMsg(tesseract_msgs::AttachableObject& ao_msg, const tesseract_ros::AttachableObject& ao)
 {
   ao_msg.operation = tesseract_msgs::AttachableObject::ADD;
@@ -380,7 +398,23 @@ void attachedBodyToAttachedBodyInfoMsg(tesseract_msgs::AttachedBodyInfo& ab_info
 }
 
 static inline
+void attachedBodyToAttachedBodyInfoMsg(tesseract_msgs::AttachedBodyInfo& ab_info_msg, const tesseract_ros::AttachedBodyInfo& ab)
+{
+  ab_info_msg.operation = tesseract_msgs::AttachedBodyInfo::ADD;
+  ab_info_msg.name = ab.name;
+  ab_info_msg.object_name = ab.object_name;
+  ab_info_msg.parent_link_name = ab.parent_link_name;
+  ab_info_msg.touch_links = ab.touch_links;
+}
+
+static inline
 void attachedBodyToAttachedBodyInfoMsg(tesseract_msgs::AttachedBodyInfoPtr ab_info_msg, const tesseract_ros::AttachedBody& ab)
+{
+  attachedBodyToAttachedBodyInfoMsg(*ab_info_msg, ab);
+}
+
+static inline
+void attachedBodyToAttachedBodyInfoMsg(tesseract_msgs::AttachedBodyInfoPtr ab_info_msg, const tesseract_ros::AttachedBodyInfo& ab)
 {
   attachedBodyToAttachedBodyInfoMsg(*ab_info_msg, ab);
 }
@@ -397,6 +431,7 @@ void attachedBodyInfoMsgToAttachedBodyInfo(tesseract_ros::AttachedBodyInfo& ab_i
 static inline
 void tesseractEnvStateToJointStateMsg(sensor_msgs::JointState& joint_state, const tesseract_ros::EnvState& state)
 {
+  joint_state.header.stamp = ros::Time::now();
   for (const auto& joint : state.joints)
   {
     joint_state.name.push_back(joint.first);
@@ -413,6 +448,10 @@ void tesseractEnvStateToJointStateMsg(sensor_msgs::JointStatePtr joint_state, co
 static inline
 void tesseractToTesseractStateMsg(tesseract_msgs::TesseractState& state_msg, const tesseract_ros::ROSBasicEnv& env)
 {
+  state_msg.name = env.getName();
+  state_msg.urdf_name = env.getURDF()->getName();
+  state_msg.is_diff = false;
+
   for (const auto& ao : env.getAttachableObjects())
   {
     tesseract_msgs::AttachableObject ao_msg;
@@ -438,53 +477,94 @@ void tesseractToTesseractStateMsg(tesseract_msgs::TesseractStatePtr state_msg, c
 }
 
 static inline
+bool processAttachableObjectMsg(tesseract_ros::ROSEnvBase& env, const tesseract_msgs::AttachableObject& ao_msg)
+{
+  if (ao_msg.operation == tesseract_msgs::AttachableObject::REMOVE)
+  {
+    env.removeAttachableObject(ao_msg.name);
+  }
+  else if (ao_msg.operation == tesseract_msgs::AttachableObject::ADD)
+  {
+    tesseract_ros::AttachableObjectPtr ao(new tesseract_ros::AttachableObject());
+    attachableObjectMsgToAttachableObject(ao, ao_msg);
+    env.addAttachableObject(ao);
+  }
+  else if (ao_msg.operation == tesseract_msgs::AttachableObject::APPEND)
+  {
+    ROS_ERROR("AttachableObject APPEND operation currently not implemented.");
+    return false;
+  }
+
+  return true;
+}
+
+static inline
+bool processAttachableObjectMsg(tesseract_ros::ROSEnvBasePtr env, const tesseract_msgs::AttachableObject& ao_msg)
+{
+  return processAttachableObjectMsg(*env, ao_msg);
+}
+
+static inline
+bool processAttachedBodyInfoMsg(tesseract_ros::ROSEnvBase& env, const tesseract_msgs::AttachedBodyInfo& ab_msg)
+{
+  if (ab_msg.operation == tesseract_msgs::AttachedBodyInfo::REMOVE)
+  {
+    env.detachBody(ab_msg.name);
+  }
+  else if (ab_msg.operation == tesseract_msgs::AttachedBodyInfo::ADD)
+  {
+    tesseract_ros::AttachedBodyInfo ab_info;
+    tesseract_ros::attachedBodyInfoMsgToAttachedBodyInfo(ab_info, ab_msg);
+    env.attachBody(ab_info);
+  }
+  else if (ab_msg.operation == tesseract_msgs::AttachedBodyInfo::MOVE)
+  {
+    ROS_ERROR("AttachedBody MOVE operation currently not implemented.");
+    return false;
+  }
+
+  return true;
+}
+
+static inline
+bool processAttachedBodyInfoMsg(tesseract_ros::ROSEnvBasePtr env, const tesseract_msgs::AttachedBodyInfo& ab_msg)
+{
+  return processAttachedBodyInfoMsg(*env, ab_msg);
+}
+
+static inline
 bool processTesseractStateMsg(tesseract_ros::ROSEnvBase& env, const tesseract_msgs::TesseractState& state_msg)
 {
   bool success = true;
+
+  if (!state_msg.is_diff)
+  {
+    env.clearAttachedBodies();
+    env.clearAttachableObjects();
+    env.clearKnownObjectColors();
+  }
+
+  if (!isMsgEmpty(state_msg.joint_state))
+  {
+    std::unordered_map<std::string, double> joints;
+    for (auto i = 0; i < state_msg.joint_state.name.size(); ++i)
+    {
+      joints[state_msg.joint_state.name[i]] = state_msg.joint_state.position[i];
+    }
+    env.setState(joints);
+  }
+
   for (const auto& ao_msg : state_msg.attachable_objects)
   {
-    if (ao_msg.operation == tesseract_msgs::AttachableObject::REMOVE)
-    {
-      env.removeAttachableObject(ao_msg.name);
-    }
-    else if (ao_msg.operation == tesseract_msgs::AttachableObject::ADD)
-    {
-      tesseract_ros::AttachableObjectPtr ao(new tesseract_ros::AttachableObject());
-      attachableObjectMsgToAttachableObject(ao, ao_msg);
-      env.addAttachableObject(ao);
-    }
-    else if (ao_msg.operation == tesseract_msgs::AttachableObject::APPEND)
-    {
-      ROS_ERROR("AttachableObject APPEND operation currently not implemented.");
+    if (!processAttachableObjectMsg(env, ao_msg))
       success = false;
-    }
   }
 
   for (const auto& ab_msg : state_msg.attached_bodies)
   {
-    if (ab_msg.operation == tesseract_msgs::AttachedBodyInfo::REMOVE)
-    {
-      env.detachBody(ab_msg.name);
-    }
-    else if (ab_msg.operation == tesseract_msgs::AttachedBodyInfo::ADD)
-    {
-      tesseract_ros::AttachedBodyInfo ab_info;
-      tesseract_ros::attachedBodyInfoMsgToAttachedBodyInfo(ab_info, ab_msg);
-      env.attachBody(ab_info);
-    }
-    else if (ab_msg.operation == tesseract_msgs::AttachedBodyInfo::MOVE)
-    {
-      ROS_ERROR("AttachedBody MOVE operation currently not implemented.");
+    if (!processAttachedBodyInfoMsg(env, ab_msg))
       success = false;
-    }
   }
-
-  std::unordered_map<std::string, double> joints;
-  for (auto i = 0; i < state_msg.joint_state.name.size(); ++i)
-  {
-    joints[state_msg.joint_state.name[i]] =  state_msg.joint_state.position[i];
-  }
-  env.setState(joints);
 
   return success;
 }

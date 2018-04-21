@@ -23,7 +23,7 @@
 
   <!-- The export tag contains other, unspecified, tags -->
   <export>
+    <tesseract_ros plugin="${prefix}/tesseract_bullet_env_plugin_description.xml"/>
     <tesseract_ros plugin="${prefix}/tesseract_bullet_env_singleton_plugin_description.xml"/>
-
   </export>
 </package>

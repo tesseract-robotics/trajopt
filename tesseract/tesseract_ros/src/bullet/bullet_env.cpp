@@ -67,6 +67,7 @@ bool BulletEnv::init(const urdf::ModelInterfaceConstSharedPtr urdf_model, const 
   ros::NodeHandle nh;
   initialized_ = false;
   urdf_model_ = urdf_model;
+  object_colors_ = ObjectColorMapPtr(new ObjectColorMap());
 
   if(urdf_model_ == nullptr)
   {
@@ -602,6 +603,9 @@ void BulletEnv::attachBody(const AttachedBodyInfo &attached_body_info)
 
   attached_bodies_.insert(std::make_pair(attached_body_info.name, attached_body));
   auto it = attached_bodies_.find(attached_body_info.name);
+
+  calculateTransforms(current_state_->transforms, kdl_jnt_array_, kdl_tree_->getRootSegment(), Eigen::Affine3d::Identity());
+
   COWPtr new_cow(new COW(it->second.get()));
   if (new_cow)
   {
@@ -613,6 +617,7 @@ void BulletEnv::attachBody(const AttachedBodyInfo &attached_body_info)
   {
     ROS_ERROR("Error creating attached body %s", attached_body_info.name.c_str());
   }
+
 }
 
 void BulletEnv::detachBody(const std::string &name)
@@ -623,6 +628,7 @@ void BulletEnv::detachBody(const std::string &name)
     link2cow_.erase(name);
     link_names_.erase(std::remove(link_names_.begin(), link_names_.end(), name), link_names_.end());
     active_link_names_.erase(std::remove(active_link_names_.begin(), active_link_names_.end(), name), active_link_names_.end());
+    current_state_->transforms.erase(name);
   }
 }
 
@@ -634,6 +640,7 @@ void BulletEnv::clearAttachedBodies()
     link2cow_.erase(name);
     link_names_.erase(std::remove(link_names_.begin(), link_names_.end(), name), link_names_.end());
     active_link_names_.erase(std::remove(active_link_names_.begin(), active_link_names_.end(), name), active_link_names_.end());
+    current_state_->transforms.erase(name);
   }
   attached_bodies_.clear();
 }

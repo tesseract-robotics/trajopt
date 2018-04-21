@@ -1,3 +1,9 @@
+# Environment Name
+string name
+
+# URDF Name
+string urdf_name
+
 # This message contains information about the state, i.e. the positions of its joints and links
 sensor_msgs/JointState joint_state
 

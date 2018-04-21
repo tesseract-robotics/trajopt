@@ -45,6 +45,15 @@ public:
   virtual bool init(const urdf::ModelInterfaceConstSharedPtr urdf_model) = 0;
   virtual bool init(const urdf::ModelInterfaceConstSharedPtr urdf_model, const srdf::ModelConstSharedPtr srdf_model) = 0;
 
+  /** @brief Give the environment a name */
+  virtual void setName(const std::string& name) = 0;
+
+  /** @brief Get the name of the environment
+   *
+   * This may be empty, if so check urdf name
+   */
+  virtual const std::string& getName() const = 0;
+
   /**
    * @brief Checks if BasicKin is initialized (init() has been run: urdf model loaded, etc.)
    * @return True if init() has completed successfully
@@ -126,6 +135,9 @@ public:
   /** @brief Get a map of object names to colors */
   virtual ObjectColorMapConstPtr getKnownObjectColors() const = 0;
 
+  /** @brief Clear all known object colors */
+  virtual void clearKnownObjectColors() = 0;
+
   virtual const urdf::ModelInterfaceConstSharedPtr getURDF() const = 0;
 
   virtual const srdf::ModelConstSharedPtr getSRDF() const = 0;
@@ -135,6 +147,8 @@ public:
 };
 typedef std::shared_ptr<ROSEnvBase> ROSEnvBasePtr;
 typedef std::shared_ptr<const ROSEnvBase> ROSEnvBaseConstPtr;
+
+//const std::string ROSBasicEnv::DEFAULT_ENVIRONMENT_NAME = "(noname)";
 
 class ROSBasicEnv : public ROSEnvBase, public BasicEnv
 {

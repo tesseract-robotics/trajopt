@@ -77,10 +77,6 @@ target_link_libraries(${PROJECT_NAME}_bullet_plugin ${PROJECT_NAME}_bullet ${cat
 add_library(${PROJECT_NAME}_bullet_singleton_plugin src/plugins/bullet_env_singleton_plugin.cpp)
 target_link_libraries(${PROJECT_NAME}_bullet_singleton_plugin ${PROJECT_NAME}_bullet ${catkin_LIBRARIES})
 
-# Tesseract ROS Nodes
-add_executable(${PROJECT_NAME}_contact_monitoring_node src/contact_monitoring.cpp)
-target_link_libraries(${PROJECT_NAME}_contact_monitoring_node ${catkin_LIBRARIES})
-
 # Mark executables and/or libraries for installation
 install(TARGETS ${PROJECT_NAME}_bullet ${PROJECT_NAME}_kdl
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}

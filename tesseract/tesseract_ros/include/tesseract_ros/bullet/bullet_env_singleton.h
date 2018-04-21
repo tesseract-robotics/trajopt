@@ -67,10 +67,10 @@ public:
   bool init(const urdf::ModelInterfaceConstSharedPtr urdf_model);
   bool init(const urdf::ModelInterfaceConstSharedPtr urdf_model, const srdf::ModelConstSharedPtr srdf_model);
 
-  /**
-   * @brief Checks if BasicKin is initialized (init() has been run: urdf model loaded, etc.)
-   * @return True if init() has completed successfully
-   */
+  void setName(const std::string& name) { name_ = name; }
+
+  const std::string& getName() const { return name_; }
+
   bool checkInitialized() const { return initialized_; }
 
   void setContactRequest(const ContactRequestBase &req);
@@ -111,6 +111,8 @@ public:
 
   ObjectColorMapConstPtr getKnownObjectColors() const { return object_colors_; }
 
+  void clearKnownObjectColors() { object_colors_->clear(); }
+
   void addAttachableObject(const AttachableObjectConstPtr attachable_object);
 
   void removeAttachableObject(const std::string& name);
@@ -139,7 +141,8 @@ public:
 
 private:
   bool initialized_;                                                /**< Identifies if the object has been initialized */
-  urdf::ModelInterfaceConstSharedPtr urdf_model_;                        /**< URDF MODEL */
+  std::string name_;                                                /**< Name of the environment (may be empty) */
+  urdf::ModelInterfaceConstSharedPtr urdf_model_;                   /**< URDF MODEL */
   srdf::ModelConstSharedPtr srdf_model_;                            /**< SRDF MODEL */
   std::shared_ptr<const KDL::Tree> kdl_tree_;                       /**< KDL tree object */
   BulletManager manager_;                                           /**< Collision object manager */
@@ -154,7 +157,7 @@ private:
   std::vector<std::string> link_names_;                             /**< A vector of link names */
   std::vector<std::string> joint_names_;                            /**< A vector of joint names */
   std::vector<std::string> active_link_names_;                      /**< A vector of active link names */
-  ObjectColorMapConstPtr object_colors_;                            /**< A map of objects to color */
+  ObjectColorMapPtr object_colors_;                                 /**< A map of objects to color */
   ROSAllowedCollisionMatrixPtr allowed_collision_matrix_;           /**< The allowed collision matrix used during collision checking */
 
   void calculateTransforms(std::unordered_map<std::string, Eigen::Affine3d> &transforms, const KDL::JntArray& q_in, const KDL::SegmentMap::const_iterator& it, const Eigen::Affine3d& parent_frame) const;

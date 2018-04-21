@@ -31,7 +31,6 @@
 #include <tesseract_core/basic_types.h>
 #include <tesseract_core/basic_kin.h>
 
-
 namespace tesseract
 {
 
