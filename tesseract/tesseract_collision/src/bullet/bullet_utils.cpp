@@ -40,7 +40,7 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-#include "tesseract_ros/bullet/bullet_utils.h"
+#include "tesseract_collision/bullet/bullet_utils.h"
 #include <geometric_shapes/shapes.h>
 #include <BulletCollision/CollisionShapes/btShapeHull.h>
 #include <BulletCollision/Gimpact/btGImpactShape.h>
@@ -51,8 +51,6 @@
 #include <ros/console.h>
 
 namespace tesseract
-{
-namespace tesseract_ros
 {
 
 btCollisionShape* createShapePrimitive(const shapes::ShapeConstPtr& geom, bool useTrimesh, CollisionObjectWrapper* cow)
@@ -187,46 +185,12 @@ btCollisionShape* createShapePrimitive(const shapes::ShapeConstPtr& geom, bool u
 
 }
 
-CollisionObjectWrapper::CollisionObjectWrapper(const urdf::Link* link) : m_type(BodyType::ROBOT_LINK), m_index(-1)
-{
-  ptr.m_link = link;
-  const std::vector<urdf::CollisionSharedPtr>& col_array =
-        link->collision_array.empty() ? std::vector<urdf::CollisionSharedPtr>(1, link->collision) : link->collision_array;
-
-  std::vector<shapes::ShapeConstPtr> shapes;
-  EigenSTL::vector_Affine3d poses;
-
-  for (std::size_t i = 0; i < col_array.size(); ++i)
-  {
-    if (col_array[i] && col_array[i]->geometry)
-    {
-      shapes::ShapeConstPtr s = constructShape(col_array[i]->geometry.get());
-      if (s)
-      {
-        shapes.push_back(s);
-        poses.push_back(urdfPose2Affine3d(col_array[i]->origin));
-      }
-    }
-  }
-
-  initialize(shapes, poses);
-}
-
-CollisionObjectWrapper::CollisionObjectWrapper(const AttachedBody* ab) : m_type(BodyType::ROBOT_ATTACHED), m_index(-1)
-{
-  ptr.m_ab = ab;
-
-  if (ptr.m_ab->obj->collision.shapes.empty()) return;
-
-  initialize(ptr.m_ab->obj->collision.shapes, ptr.m_ab->obj->collision.shape_poses);
-}
-
-void CollisionObjectWrapper::initialize(const std::vector<shapes::ShapeConstPtr> &shapes, const EigenSTL::vector_Affine3d &transforms)
+CollisionObjectWrapper::CollisionObjectWrapper(const std::string& name, const int& type_id, const std::vector<shapes::ShapeConstPtr> &shapes, const EigenSTL::vector_Affine3d &shape_poses) : m_name(name), m_type_id(type_id), m_shapes(shapes), m_shape_poses(shape_poses), m_index(-1)
 {
   bool useTrimesh = false;
-  if (shapes.size() == 1 && transforms[0].matrix().isIdentity())
+  if (shapes.size() == 1 && m_shape_poses[0].matrix().isIdentity())
   {
-    btCollisionShape* shape = createShapePrimitive(shapes[0], useTrimesh, this);
+    btCollisionShape* shape = createShapePrimitive(m_shapes[0], useTrimesh, this);
     shape->setMargin(BULLET_MARGIN);
     manage(shape);
     setCollisionShape(shape);
@@ -238,14 +202,14 @@ void CollisionObjectWrapper::initialize(const std::vector<shapes::ShapeConstPtr>
     compound->setMargin(BULLET_MARGIN); //margin: compound. seems to have no effect when positive but has an effect when negative
     setCollisionShape(compound);
 
-    for (std::size_t j = 0; j < shapes.size(); ++j)
+    for (std::size_t j = 0; j < m_shapes.size(); ++j)
     {
-      btCollisionShape* subshape = createShapePrimitive(shapes[j], useTrimesh, this);
+      btCollisionShape* subshape = createShapePrimitive(m_shapes[j], useTrimesh, this);
       if (subshape != NULL)
       {
         manage(subshape);
         subshape->setMargin(BULLET_MARGIN);
-        btTransform geomTrans = convertEigenToBt(transforms[j]);
+        btTransform geomTrans = convertEigenToBt(m_shape_poses[j]);
         compound->addChildShape(geomTrans, subshape);
       }
     }
@@ -256,5 +220,4 @@ void CollisionObjectWrapper::initialize(const std::vector<shapes::ShapeConstPtr>
   setWorldTransform(trans);
 }
 
-}
 }

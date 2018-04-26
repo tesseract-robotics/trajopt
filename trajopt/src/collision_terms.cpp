@@ -20,12 +20,7 @@ void CollisionsToDistances(const tesseract::ContactResultVector &dist_results, D
   dists.clear();
   dists.reserve(dist_results.size());
   for (auto i = 0; i < dist_results.size(); ++i)
-  {
-    if (dist_results[i].valid)
-    {
-      dists.push_back(dist_results[i].distance);
-    }
-  }
+    dists.push_back(dist_results[i].distance);
 }
 
 void DebugPrintInfo(const tesseract::ContactResult &res, bool header = false)
@@ -56,40 +51,27 @@ void CollisionsToDistanceExpressions(const tesseract::ContactResultVector &dist_
   for (auto i = 0; i < dist_results.size(); ++i)
   {
     const tesseract::ContactResult &res = dist_results[i];
-    if (!res.valid)
-    {
-      continue;
-    }
 
     AffExpr dist(res.distance);
 
-    //DebugPrintInfo(res, i==0);
-    std::string link_name = res.link_names[0];
-    if (res.body_types[0] == tesseract::BodyType::ROBOT_ATTACHED)
-      link_name = res.attached_link_names[0];
-
-    std::vector<std::string>::const_iterator itA = std::find(link_names.begin(), link_names.end(), link_name);
+    std::vector<std::string>::const_iterator itA = std::find(link_names.begin(), link_names.end(), res.link_names[0]);
     if (itA != link_names.end())
     {
       MatrixXd jac;
       VectorXd dist_grad;
-      manip->calcJacobian(jac, change_base, dofvals, link_name, res.nearest_points[0]);
+      manip->calcJacobian(jac, change_base, dofvals, res.link_names[0], res.nearest_points[0]);
       dist_grad = -res.normal.transpose() * jac.topRows(3);
 
       exprInc(dist, varDot(dist_grad, vars));
       exprInc(dist, -dist_grad.dot(dofvals));
     }
 
-    link_name = res.link_names[1];
-    if (res.body_types[1] == tesseract::BodyType::ROBOT_ATTACHED)
-      link_name = res.attached_link_names[1];
-
-    std::vector<std::string>::const_iterator itB = std::find(link_names.begin(), link_names.end(), link_name);
+    std::vector<std::string>::const_iterator itB = std::find(link_names.begin(), link_names.end(), res.link_names[1]);
     if (itB != link_names.end())
     {
       MatrixXd jac;
       VectorXd dist_grad;
-      manip->calcJacobian(jac, change_base, dofvals, link_name, (isTimestep1 && (res.cc_type == tesseract::ContinouseCollisionType::CCType_Between)) ? res.cc_nearest_points[1] : res.nearest_points[1]);
+      manip->calcJacobian(jac, change_base, dofvals, res.link_names[1], (isTimestep1 && (res.cc_type == tesseract::ContinouseCollisionType::CCType_Between)) ? res.cc_nearest_points[1] : res.nearest_points[1]);
       dist_grad = res.normal.transpose() * jac.topRows(3);
       exprInc(dist, varDot(dist_grad, vars));
       exprInc(dist, -dist_grad.dot(dofvals));
@@ -170,13 +152,13 @@ void SingleTimestepCollisionEvaluator::CalcCollisions(const DblVec& x, tesseract
 {
   tesseract::ContactRequest req;
 
-  req.joint_angles1 = getVec(x, m_vars);
   req.link_names = manip_->getLinkNames();
-  req.joint_names = manip_->getJointNames();
   req.contact_distance = safety_margin_data_->getMaxSafetyMargin() + 0.04; // The original implementation added a margin of 0.04
-  req.acm = env_->getAllowedCollisionMatrix();
+  req.isContactAllowed = env_->getIsContactAllowedFn();
 
-  env_->calcDistancesDiscrete(req, dist_results);
+  tesseract::ContactResultMap contacts;
+  env_->calcDistancesDiscrete(req, manip_->getJointNames(), getVec(x, m_vars), contacts);
+  tesseract::moveContactResultsMapToContactResultsVector(contacts, dist_results);
 }
 
 void SingleTimestepCollisionEvaluator::CalcDists(const DblVec& x, DblVec& dists)
@@ -205,13 +187,12 @@ void CastCollisionEvaluator::CalcCollisions(const DblVec& x, tesseract::ContactR
 {
   tesseract::ContactRequest req;
   req.link_names = manip_->getLinkNames();
-  req.joint_names = manip_->getJointNames();
-  req.joint_angles1 = getVec(x, m_vars0);
-  req.joint_angles2 = getVec(x, m_vars1);
   req.contact_distance = safety_margin_data_->getMaxSafetyMargin() + 0.04; // The original implementation added a margin of 0.04
-  req.acm = env_->getAllowedCollisionMatrix();
+  req.isContactAllowed = env_->getIsContactAllowedFn();
 
-  env_->calcDistancesContinuous(req, dist_results);
+  tesseract::ContactResultMap contacts;
+  env_->calcDistancesContinuous(req, manip_->getJointNames(), getVec(x, m_vars0), getVec(x, m_vars1), contacts);
+  tesseract::moveContactResultsMapToContactResultsVector(contacts, dist_results);
 }
 void CastCollisionEvaluator::CalcDistExpressions(const DblVec& x, vector<AffExpr>& exprs) {
   tesseract::ContactResultVector dist_results;

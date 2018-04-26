@@ -6,7 +6,7 @@ add_compile_options(-std=c++11)
 find_package(catkin REQUIRED COMPONENTS
   tesseract_core
   tesseract_msgs
-  trajopt_ext
+  tesseract_collision
   roscpp
   urdf
   srdfdom
@@ -21,19 +21,16 @@ find_package(Boost COMPONENTS system thread REQUIRED)
 find_package(octomap REQUIRED)
 find_package(orocos_kdl REQUIRED)
 
-set(BULLET_LIBRARIES BulletCollision LinearMath)
-
 catkin_package(
   INCLUDE_DIRS include
   LIBRARIES
-    ${PROJECT_NAME}_bullet
     ${PROJECT_NAME}_kdl
     ${OCTOMAP_LIBRARIES}
     ${orocos_kdl_LIBRARIES}
   CATKIN_DEPENDS
     tesseract_core
     tesseract_msgs
-    trajopt_ext
+    tesseract_collision
     roscpp
     urdf
     srdfdom
@@ -59,26 +56,13 @@ include_directories(
 
 add_library(${PROJECT_NAME}_kdl
   src/kdl/kdl_chain_kin.cpp
+  src/kdl/kdl_env.cpp
 )
 
-target_link_libraries(${PROJECT_NAME}_kdl ${catkin_LIBRARIES} ${urdfdom_LIBRARIES} ${urdfdom_headers_LIBRARIES} ${Boost_LIBRARIES} ${orocos_kdl_LIBRARIES})
-
-add_library(${PROJECT_NAME}_bullet
-  src/bullet/bullet_env.cpp
-  src/bullet/bullet_env_singleton.cpp
-  src/bullet/bullet_utils.cpp
-)
-
-target_link_libraries(${PROJECT_NAME}_bullet ${PROJECT_NAME}_kdl ${catkin_LIBRARIES} ${urdfdom_LIBRARIES} ${urdfdom_headers_LIBRARIES} ${Boost_LIBRARIES} ${OCTOMAP_LIBRARIES} ${orocos_kdl_LIBRARIES})
-
-add_library(${PROJECT_NAME}_bullet_plugin src/plugins/bullet_env_plugin.cpp)
-target_link_libraries(${PROJECT_NAME}_bullet_plugin ${PROJECT_NAME}_bullet ${catkin_LIBRARIES})
-
-add_library(${PROJECT_NAME}_bullet_singleton_plugin src/plugins/bullet_env_singleton_plugin.cpp)
-target_link_libraries(${PROJECT_NAME}_bullet_singleton_plugin ${PROJECT_NAME}_bullet ${catkin_LIBRARIES})
+target_link_libraries(${PROJECT_NAME}_kdl ${catkin_LIBRARIES} ${urdfdom_LIBRARIES} ${urdfdom_headers_LIBRARIES} ${Boost_LIBRARIES} ${OCTOMAP_LIBRARIES} ${orocos_kdl_LIBRARIES})
 
 # Mark executables and/or libraries for installation
-install(TARGETS ${PROJECT_NAME}_bullet ${PROJECT_NAME}_kdl
+install(TARGETS ${PROJECT_NAME}_kdl
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}

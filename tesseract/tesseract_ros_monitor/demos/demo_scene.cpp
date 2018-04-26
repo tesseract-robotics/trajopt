@@ -35,7 +35,6 @@
 /* Author: Ioan Sucan */
 
 #include <tesseract_msgs/TesseractState.h>
-#include <tesseract_ros/ros_basic_types.h>
 #include <tesseract_ros/ros_tesseract_utils.h>
 #include <geometric_shapes/solid_primitive_dims.h>
 
@@ -50,7 +49,7 @@ void sendSphere()
   msg.is_diff = true;
 
   // Add sphere
-  tesseract_ros::AttachableObject obj;
+  AttachableObject obj;
   std::shared_ptr<shapes::Sphere> sphere(new shapes::Sphere());
   Eigen::Affine3d sphere_pose;
 
@@ -70,13 +69,12 @@ void sendSphere()
   ao_msg.operation = tesseract_msgs::AttachableObject::ADD;
   msg.attachable_objects.push_back(ao_msg);
 
-  tesseract_ros::AttachedBodyInfo attached_body;
-  attached_body.name = "attached_body";
+  AttachedBodyInfo attached_body;
   attached_body.object_name = "sphere_attached";
   attached_body.parent_link_name = "base_link";
 
   tesseract_msgs::AttachedBodyInfo ab_info_msg;
-  tesseract_ros::attachedBodyToAttachedBodyInfoMsg(ab_info_msg, attached_body);
+  tesseract_ros::attachedBodyInfoToAttachedBodyInfoMsg(ab_info_msg, attached_body);
   ab_info_msg.operation = tesseract_msgs::AttachableObject::ADD;
   msg.attached_bodies.push_back(ab_info_msg);
 

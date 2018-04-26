@@ -123,17 +123,17 @@ public:
 
   /** @brief Get the current state
    *  @return Returns the current state */
-  tesseract_ros::EnvStatePtr getCurrentState() const;
+  EnvStatePtr getCurrentState() const;
 
   /** @brief Set the state \e upd to the current state maintained by this class. */
-  void setToCurrentState(tesseract_ros::EnvState& upd) const;
+  void setToCurrentState(EnvState& upd) const;
 
   /** @brief Get the time stamp for the current state */
   ros::Time getCurrentStateTime() const;
 
   /** @brief Get the current state and its time stamp
    *  @return Returns a pair of the current state and its time stamp */
-  std::pair<tesseract_ros::EnvStatePtr, ros::Time> getCurrentStateAndTime() const;
+  std::pair<EnvStatePtr, ros::Time> getCurrentStateAndTime() const;
 
   /** @brief Get the current state values as a map from joint names to joint state values
    *  @return Returns the map from joint names to joint state values*/
@@ -196,7 +196,7 @@ private:
 
   ros::NodeHandle nh_;
   tesseract_ros::ROSBasicEnvConstPtr env_;
-  tesseract_ros::EnvState state_;
+  EnvState state_;
   std::map<std::string, ros::Time> joint_time_;
   bool state_monitor_started_;
   bool copy_dynamics_;  // Copy velocity and effort from joint_state

@@ -29,36 +29,76 @@
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include <Eigen/StdVector>
+#include <geometric_shapes/shapes.h>
 #include <unordered_map>
 #include <vector>
 #include <memory>
+#include <functional>
+#include <eigen_stl_containers/eigen_stl_containers.h>
 
 namespace tesseract
 {
 
 typedef Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> TrajArray;
 typedef std::vector<Eigen::Affine3d, Eigen::aligned_allocator<Eigen::Affine3d> > vector_Affine3d;
+typedef std::map<std::string, Eigen::Affine3d> TransformMap;
 
 struct AllowedCollisionMatrix
 {
+  /**
+   * @brief Disable collision between two collision objects
+   * @param obj1 Collision object name
+   * @param obj2 Collision object name
+   * @param reason The reason for disabling collison
+   */
+  virtual void addAllowedCollision(const std::string &link_name1, const std::string &link_name2, const std::string &reason)
+  {
+    lookup_table_[link_name1 + link_name2] = reason;
+    lookup_table_[link_name2 + link_name1] = reason;
+  }
+
+  /**
+   * @brief Remove disabled collision pair from allowed collision matrix
+   * @param obj1 Collision object name
+   * @param obj2 Collision object name
+   */
+  virtual void removeAllowedCollision(const std::string &link_name1, const std::string &link_name2)
+  {
+    lookup_table_.erase(link_name1 + link_name2);
+    lookup_table_.erase(link_name2 + link_name1);
+  }
+
   /**
    * @brief This checks if two links are allowed to be in collision
    * @param link_name1 First link name
    * @param link_name2 Second link anme
    * @return True if allowed to be in collision, otherwise false
    */
-  virtual bool isCollisionAllowed(const std::string& link_name1, const std::string& link_name2) const = 0;
+  virtual bool isCollisionAllowed(const std::string &link_name1, const std::string &link_name2) const
+  {
+    return (lookup_table_.find(link_name1 + link_name2) != lookup_table_.end());
+  }
+
+private:
+  std::unordered_map<std::string, std::string> lookup_table_;
 };
 typedef std::shared_ptr<AllowedCollisionMatrix> AllowedCollisionMatrixPtr;
 typedef std::shared_ptr<const AllowedCollisionMatrix> AllowedCollisionMatrixConstPtr;
 
 
+/**
+ * @brief Should return true if contact allowed, otherwise false.
+ *
+ * Also the order of strings should not matter, the function should handled by the function.
+ */
+typedef std::function<bool(const std::string&, const std::string&)> IsContactAllowedFn;
+
 namespace BodyTypes
 {
 enum BodyType
 {
-  ROBOT_LINK,     /**< @brief These are links at the creation of the environment */
-  ROBOT_ATTACHED  /**< @brief These are links that are added after initial creation */
+  ROBOT_LINK = 0,     /**< @brief These are links at the creation of the environment */
+  ROBOT_ATTACHED = 1  /**< @brief These are links that are added after initial creation */
 };
 }
 typedef BodyTypes::BodyType BodyType;
@@ -77,46 +117,36 @@ typedef ContinouseCollisionTypes::ContinouseCollisionType ContinouseCollisionTyp
 
 namespace ContactRequestTypes
 {
-enum DistanceRequestType
+enum ContactRequestType
 {
   SINGLE, /**< Return the global minimum for a pair of objects */
   ALL  ,  /**< Return all contacts for a pair of objects */
   LIMITED /**< Return limited set of contacts for a pair of objects */
 };
 }
-typedef ContactRequestTypes::DistanceRequestType ContactRequestType;
+typedef ContactRequestTypes::ContactRequestType ContactRequestType;
 
-struct ContactRequestBase
+/** @brief The ContactRequest struct */
+struct ContactRequest
 {
-  ContactRequestType type;              /**< The type of request */
-  double contact_distance;              /**< The maximum distance between two objects for which distance data should be calculated */
-  std::vector<std::string> link_names;  /**< Name of the links to calculate distance data for. */
-  AllowedCollisionMatrixConstPtr acm;   /**< The allowed collision matrix */
+  ContactRequestType type;             /**< The type of request */
+  double contact_distance;             /**< The maximum distance between two objects for which distance data should be calculated */
+  std::vector<std::string> link_names; /**< Name of the links to calculate distance data for. */
+  IsContactAllowedFn isContactAllowed; /**< The allowed collision matrix */
 
-  ContactRequestBase() : type(ContactRequestType::SINGLE), contact_distance(0.0) {}
-};
-
-struct ContactRequest : public ContactRequestBase
-{
-  std::vector<std::string> joint_names; /**< Vector of joint names (size must match number of joints in robot chain) */
-  Eigen::VectorXd joint_angles1;        /**< Vector of joint angles (size must match number of joints in robot chain/tree) */
-  Eigen::VectorXd joint_angles2;        /**< Vector of joint angles used for continuous checking (size must match number of joints in robot chain/tree) */
-
-  ContactRequest() : ContactRequestBase() {}
+  ContactRequest() : type(ContactRequestType::SINGLE), contact_distance(0.0) {}
 };
 
 struct ContactResult
 {
   double distance;
-  BodyType body_types[2];
+  int type_id[2];
   std::string link_names[2];
-  std::string attached_link_names[2];
   Eigen::Vector3d nearest_points[2];
   Eigen::Vector3d normal;
   Eigen::Vector3d cc_nearest_points[2];
   double cc_time;
   ContinouseCollisionType cc_type;
-  bool valid;
 
   ContactResult() { clear(); }
 
@@ -128,10 +158,8 @@ struct ContactResult
     nearest_points[1].setZero();
     link_names[0] = "";
     link_names[1] = "";
-    attached_link_names[0] = "";
-    attached_link_names[1] = "";
-    body_types[0] = BodyType::ROBOT_LINK;
-    body_types[1] = BodyType::ROBOT_LINK;
+    type_id[0] = 0;
+    type_id[1] = 0;
     normal.setZero();
     cc_nearest_points[0].setZero();
     cc_nearest_points[1].setZero();
@@ -140,6 +168,76 @@ struct ContactResult
   }
 };
 typedef std::vector<ContactResult> ContactResultVector;
+typedef std::map<std::pair<std::string, std::string>, ContactResultVector> ContactResultMap;
+
+static inline
+void moveContactResultsMapToContactResultsVector(ContactResultMap& contact_map, ContactResultVector &contact_vector)
+{
+  std::size_t size = 0;
+  for (const auto& contact : contact_map)
+    size += contact.second.size();
+
+  contact_vector.reserve(size);
+  for (auto& contact : contact_map)
+    std::move(contact.second.begin(), contact.second.end(), std::back_inserter(contact_vector));
+}
+
+/** @brief This holds a state of the environment */
+struct EnvState
+{
+  std::unordered_map<std::string, double> joints;
+  TransformMap transforms;
+};
+typedef std::shared_ptr<EnvState> EnvStatePtr;
+typedef std::shared_ptr<const EnvState> EnvStateConstPtr;
+
+/**< @brief Information on how the object is attached to the environment */
+struct AttachedBodyInfo
+{
+  std::string object_name;              /**< @brief The name of the AttachableObject being used */
+  std::string parent_link_name;         /**< @brief The name of the link to attach the body */
+  Eigen::Affine3d transform;            /**< @brief The transform between parent link and object */
+  std::vector<std::string> touch_links; /**< @brief The names of links which the attached body is allowed to be in contact with */
+};
+
+/** @brief Contains geometry data for an attachable object */
+struct AttachableObjectGeometry
+{
+  std::vector<shapes::ShapeConstPtr> shapes;  /**< @brief The shape */
+  EigenSTL::vector_Affine3d shape_poses;      /**< @brief The pose of the shape */
+  EigenSTL::vector_Vector4d shape_colors;     /**< @brief (Optional) The shape color (R, G, B, A) */
+};
+
+/** @brief Contains data about an attachable object */
+struct AttachableObject
+{
+  std::string name;                   /**< @brief The name of the attachable object (aka. link name and must be unique) */
+  AttachableObjectGeometry visual;    /**< @brief The objects visual geometry */
+  AttachableObjectGeometry collision; /**< @brief The objects collision geometry */
+};
+typedef std::shared_ptr<AttachableObject> AttachableObjectPtr;
+typedef std::shared_ptr<const AttachableObject> AttachableObjectConstPtr;
+
+///** @brief Contains data representing an attached body */
+//struct AttachedBody
+//{
+//   AttachedBodyInfo info;        /**< @brief Information on how the object is attached to the environment */
+//   AttachableObjectConstPtr obj; /**< @brief The attached bodies object data */
+//};
+//typedef std::shared_ptr<AttachedBody> AttachedBodyPtr;
+//typedef std::shared_ptr<const AttachedBody> AttachedBodyConstPtr;
+
+/** @brief ObjectColorMap Stores Object color in a 4d vector as RGBA*/
+struct ObjectColor
+{
+  EigenSTL::vector_Vector4d visual;
+  EigenSTL::vector_Vector4d collision;
+};
+typedef std::unordered_map<std::string, ObjectColor> ObjectColorMap;
+typedef std::shared_ptr<ObjectColorMap> ObjectColorMapPtr;
+typedef std::shared_ptr<const ObjectColorMap> ObjectColorMapConstPtr;
+typedef std::unordered_map<std::string, AttachedBodyInfo> AttachedBodyInfoMap;
+typedef std::unordered_map<std::string, AttachableObjectConstPtr> AttachableObjectConstPtrMap;
 
 }
 

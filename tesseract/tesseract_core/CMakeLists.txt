@@ -4,7 +4,7 @@ project(tesseract_core)
 ## Compile as C++11, supported in ROS Kinetic and newer
 add_compile_options(-std=c++11)
 
-find_package(catkin REQUIRED)
+find_package(catkin REQUIRED geometric_shapes eigen_stl_containers)
 
 ## System dependencies are found with CMake's conventions
 find_package(Eigen3 REQUIRED)
@@ -12,7 +12,9 @@ find_package(Eigen3 REQUIRED)
 catkin_package(
   INCLUDE_DIRS include
   #LIBRARIES
-  #CATKIN_DEPENDS
+  CATKIN_DEPENDS
+    geometric_shapes
+    eigen_stl_containers
   DEPENDS
     EIGEN3
 )

@@ -1,0 +1,7 @@
+<library path="libtesseract_collision_bullet_plugin">
+  <class name="tesseract_collision/BulletContactChecker" type="tesseract::BulletContactChecker" base_class_type="tesseract::ContactCheckerBase">
+    <description>
+      Bullet implementation of the tesseract contact checker.
+    </description>
+  </class>
+</library>

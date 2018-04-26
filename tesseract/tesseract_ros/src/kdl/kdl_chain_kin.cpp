@@ -329,6 +329,55 @@ bool KDLChainKin::init(const urdf::ModelInterfaceConstSharedPtr model, const std
   return initialized_;
 }
 
+void KDLChainKin::addAttachedLink(const std::string &link_name, const std::string &parent_link_name)
+{
+  auto check = std::find(link_list_.begin(), link_list_.end(), link_name);
+
+  if (check != link_list_.end())
+  {
+    ROS_WARN("Tried add attached link to manipulator that already exists!");
+    return;
+  }
+
+  auto it = link_name_too_segment_index_.find(parent_link_name);
+  if (it != link_name_too_segment_index_.end())
+  {
+    int i = it->second;
+    link_name_too_segment_index_[link_name] = i;
+    attached_link_list_.push_back(link_name);
+    link_list_.push_back(link_name);
+  }
+  else
+  {
+    ROS_WARN("Tried add attached link to manipulator, but parent link is not associated with this manipulator!");
+  }
+}
+
+void KDLChainKin::removeAttachedLink(const std::string &link_name)
+{
+  auto check = std::find(attached_link_list_.begin(), attached_link_list_.end(), link_name);
+  if (check != attached_link_list_.end())
+  {
+    attached_link_list_.erase(std::remove(attached_link_list_.begin(), attached_link_list_.end(), link_name), attached_link_list_.end());
+    link_list_.erase(std::remove(link_list_.begin(), link_list_.end(), link_name), link_list_.end());
+    link_name_too_segment_index_.erase(link_name);
+  }
+  else
+  {
+    ROS_WARN("Tried to remove attached link from manipulator which is not attached!");
+  }
+}
+
+void KDLChainKin::clearAttachedLinks()
+{
+  for (const auto& al : attached_link_list_)
+  {
+    link_list_.erase(std::remove(link_list_.begin(), link_list_.end(), al), link_list_.end());
+    link_name_too_segment_index_.erase(al);
+  }
+  attached_link_list_.clear();
+}
+
 void KDLChainKin::KDLToEigen(const KDL::Frame &frame, Eigen::Affine3d &transform)
 {
   transform.setIdentity();
@@ -376,6 +425,7 @@ KDLChainKin& KDLChainKin::operator=(const KDLChainKin& rhs)
   base_name_ = rhs.base_name_;
   tip_name_ = rhs.tip_name_;
   link_name_too_segment_index_ = rhs.link_name_too_segment_index_;
+  attached_link_list_ = rhs.attached_link_list_;
 
   return *this;
 }

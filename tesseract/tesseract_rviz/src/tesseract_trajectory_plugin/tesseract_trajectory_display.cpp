@@ -37,7 +37,7 @@
 */
 
 #include <tesseract_rviz/tesseract_trajectory_plugin/tesseract_trajectory_display.h>
-#include <tesseract_ros/bullet/bullet_env.h>
+#include <tesseract_ros/kdl/kdl_env.h>
 #include <urdf_parser/urdf_parser.h>
 #include <rviz/properties/string_property.h>
 
@@ -90,7 +90,7 @@ void TesseractTrajectoryDisplay::loadEnv()
       srdf::ModelSharedPtr srdf_model = srdf::ModelSharedPtr(new srdf::Model);
       srdf_model->initString(*urdf_model, srdf_xml_string);
 
-      tesseract_ros::BulletEnvPtr env = tesseract_ros::BulletEnvPtr(new tesseract_ros::BulletEnv);
+      tesseract_ros::KDLEnvPtr env = tesseract_ros::KDLEnvPtr(new tesseract_ros::KDLEnv);
       assert(env != nullptr);
 
       bool success = env->init(urdf_model, srdf_model);

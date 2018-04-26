@@ -141,6 +141,22 @@ public:
   virtual const std::string& getName() const = 0;
 
   /**
+   * @brief This is used to keep the internal data updated when links are attached in the environment
+   * @param link_name Name of link being attached
+   * @param parent_link_name The name of the link that link_name is attaching too.
+   */
+  virtual void addAttachedLink(const std::string &link_name, const std::string &parent_link_name) = 0;
+
+  /**
+   * @brief This is used to keep the interanl data updated when links are detached in the environment
+   * @param link_name The name of the attached link
+   */
+  virtual void removeAttachedLink(const std::string &link_name) = 0;
+
+  /** @brief Clear all attached links from manipulator */
+  virtual void clearAttachedLinks() = 0;
+
+  /**
    * @brief Solve equation Ax=b for x
    * Use this SVD to compute A+ (pseudoinverse of A). Weighting still TBD.
    * @param A Input matrix (represents Jacobian)

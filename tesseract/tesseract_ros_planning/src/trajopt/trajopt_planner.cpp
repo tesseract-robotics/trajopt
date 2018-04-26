@@ -63,13 +63,16 @@ namespace tesseract_ros
     opt.optimize();
     ROS_INFO("planning time: %.3f", (ros::Time::now() - tStart).toSec());
 
-    tesseract::ContactResultVector collisions;
+    tesseract::ContactResultMap collisions;
     const std::vector<std::string>& joint_names = prob->GetKin()->getJointNames();
     const std::vector<std::string>& link_names = prob->GetKin()->getLinkNames();
 
     collisions.clear();
     request_.env->continuousCollisionCheckTrajectory(joint_names, link_names, getTraj(opt.x(), prob->GetVars()), collisions);
-    ROS_INFO("Final trajectory number of continuous collisions: %lui\n", collisions.size());
+
+    tesseract::ContactResultVector collision_vector;
+    tesseract::moveContactResultsMapToContactResultsVector(collisions, collision_vector);
+    ROS_INFO("Final trajectory number of continuous collisions: %lui\n", collision_vector.size());
   }
 
   bool terminate()

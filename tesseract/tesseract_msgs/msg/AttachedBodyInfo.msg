@@ -1,11 +1,8 @@
-# the name of the body(link)
-string name
+# The attachable object name
+string object_name
 
 # The body will be attached with a fixed joint to this link
 string parent_link_name
-
-# the attachable object name
-string object_name
 
 # The set of links that the attached body is allowed to touch
 # by default - the link_name is already considered by default

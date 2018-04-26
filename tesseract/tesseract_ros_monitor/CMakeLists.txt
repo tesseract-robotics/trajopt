@@ -10,6 +10,7 @@ add_compile_options(-std=c++11)
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   tesseract_ros
+  tesseract_collision
   tesseract_msgs
 )
 
@@ -19,6 +20,7 @@ catkin_package(
   CATKIN_DEPENDS
     roscpp
     tesseract_ros
+    tesseract_collision
     tesseract_msgs
 #  DEPENDS system_lib
 )

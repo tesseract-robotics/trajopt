@@ -79,7 +79,8 @@ private:
 
   std::vector<std::unique_ptr<rviz::Shape> > scene_visual_shapes_;
   std::vector<std::unique_ptr<rviz::Shape> > scene_collision_shapes_;
-  std::vector<OcTreeRenderPtr> octree_voxel_grids_;
+  std::vector<OcTreeRenderPtr> scene_visual_octree_;
+  std::vector<OcTreeRenderPtr> scene_collision_octree_;
 };
 typedef std::shared_ptr<RenderShapes> RenderShapesPtr;
 typedef std::shared_ptr<const RenderShapes> RenderShapesConstPtr;

@@ -113,6 +113,12 @@ public:
   /** @brief Get the name of the kinematic chain */
   const std::string& getName() const { return name_; }
 
+  void addAttachedLink(const std::string &link_name, const std::string &parent_link_name);
+
+  void removeAttachedLink(const std::string &link_name);
+
+  void clearAttachedLinks();
+
   /**
    * @brief Assigns values from another ROSKin to this
    * @param rhs Input ROSKin object to copy from
@@ -162,6 +168,7 @@ private:
   std::unique_ptr<KDL::ChainFkSolverPos_recursive> fk_solver_;   /**< KDL Forward Kinematic Solver */
   std::unique_ptr<KDL::ChainJntToJacSolver> jac_solver_;         /**< KDL Jacobian Solver */
   std::map<std::string, int> link_name_too_segment_index_;       /**< A map from link name to kdl chain segment numer */
+  std::vector<std::string> attached_link_list_;                  /**< A list of attached link names */
 
   /** @brief calcFwdKin helper function */
   bool calcFwdKinHelper(Eigen::Affine3d &pose, const Eigen::Affine3d change_base, const Eigen::VectorXd &joint_angles, int segment_num=-1) const;

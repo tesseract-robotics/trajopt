@@ -119,9 +119,6 @@ public:
       const ContactResult &dist = dist_results[i];
       const double& safety_distance = safety_distances[i];
 
-      if (!dist.valid)
-        continue;
-
       Eigen::Vector4d rgba;
       if (dist.distance < 0)
       {

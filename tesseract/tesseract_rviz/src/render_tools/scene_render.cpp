@@ -63,7 +63,7 @@ void SceneRender::clear()
 }
 
 void SceneRender::render(const tesseract::tesseract_ros::ROSBasicEnvConstPtr env,
-                         const tesseract::tesseract_ros::EnvStateConstPtr state,
+                         const tesseract::EnvStateConstPtr state,
                          const rviz::Color& default_env_color,
                          const rviz::Color& default_attached_color,
                          OctreeVoxelRenderMode octree_voxel_rendering,
@@ -81,7 +81,7 @@ void SceneRender::render(const tesseract::tesseract_ros::ROSBasicEnvConstPtr env
     color.g = default_attached_color.g_;
     color.b = default_attached_color.b_;
     color.a = 1.0f;
-    tesseract_ros::ObjectColorMapConstPtr color_map = env->getKnownObjectColors();
+    ObjectColorMapConstPtr color_map = env->getKnownObjectColors();
     state_->update(env, state, color, color_map);
   }
 }

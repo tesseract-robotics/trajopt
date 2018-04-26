@@ -19,11 +19,11 @@
   <depend>eigen_conversions</depend>
   <depend>tesseract_core</depend>
   <depend>tesseract_msgs</depend>
+  <depend>tesseract_collision</depend>
   <depend>pluginlib</depend>
 
   <!-- The export tag contains other, unspecified, tags -->
   <export>
-    <tesseract_ros plugin="${prefix}/tesseract_bullet_env_plugin_description.xml"/>
-    <tesseract_ros plugin="${prefix}/tesseract_bullet_env_singleton_plugin_description.xml"/>
+
   </export>
 </package>

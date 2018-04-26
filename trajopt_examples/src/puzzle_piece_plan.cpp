@@ -25,7 +25,7 @@
  */
 #include <ros/ros.h>
 #include <tesseract_ros/ros_basic_plotting.h>
-#include <tesseract_ros/bullet/bullet_env.h>
+#include <tesseract_ros/kdl/kdl_env.h>
 #include <tesseract_ros/kdl/kdl_chain_kin.h>
 #include <trajopt/problem_description.hpp>
 #include <trajopt/plot_callback.hpp>
@@ -47,7 +47,7 @@ const std::string ROBOT_SEMANTIC_PARAM = "robot_description_semantic"; /**< Defa
 bool plotting_ = false;
 urdf::ModelInterfaceSharedPtr urdf_model_;  /**< URDF Model */
 srdf::ModelSharedPtr srdf_model_;           /**< SRDF Model */
-tesseract_ros::BulletEnvPtr env_;           /**< Trajopt Basic Environment */
+tesseract_ros::KDLEnvPtr env_;           /**< Trajopt Basic Environment */
 
 static EigenSTL::vector_Affine3d makePuzzleToolPoses()
 {
@@ -201,7 +201,7 @@ int main(int argc, char** argv)
   urdf_model_ = urdf::parseURDF(urdf_xml_string);
   srdf_model_ = srdf::ModelSharedPtr(new srdf::Model);
   srdf_model_->initString(*urdf_model_, srdf_xml_string);
-  env_ = tesseract_ros::BulletEnvPtr(new tesseract_ros::BulletEnv);
+  env_ = tesseract_ros::KDLEnvPtr(new tesseract_ros::KDLEnv);
   assert(urdf_model_ != nullptr);
   assert(env_ != nullptr);
 
@@ -237,12 +237,15 @@ int main(int argc, char** argv)
   // Solve Trajectory
   ROS_INFO("puzzle piece plan");
 
-  tesseract::ContactResultVector collisions;
+  tesseract::ContactResultMap collisions;
   const std::vector<std::string>& joint_names = prob->GetKin()->getJointNames();
   const std::vector<std::string>& link_names = prob->GetKin()->getLinkNames();
 
   env_->continuousCollisionCheckTrajectory(joint_names, link_names, prob->GetInitTraj(), collisions);
-  ROS_INFO("Initial trajector number of continuous collisions: %lui\n", collisions.size());
+
+  tesseract::ContactResultVector collision_vector;
+  tesseract::moveContactResultsMapToContactResultsVector(collisions, collision_vector);
+  ROS_INFO("Initial trajector number of continuous collisions: %lui\n", collision_vector.size());
 
   BasicTrustRegionSQP opt(prob);
   opt.setParameters(pci.opt_info);

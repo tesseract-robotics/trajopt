@@ -11,6 +11,8 @@
   <author >Levi Armstrong</author>
 
   <buildtool_depend>catkin</buildtool_depend>
+  <depend>geometric_shapes</depend>
+  <depend>eigen_stl_containers</depend>
 
   <!-- The export tag contains other, unspecified, tags -->
   <export>

@@ -40,19 +40,17 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-#ifndef TESSERACT_ROS_BULLET_UTILS_H
-#define TESSERACT_ROS_BULLET_UTILS_H
+#ifndef TESSERACT_COLLISION_BULLET_UTILS_H
+#define TESSERACT_COLLISION_BULLET_UTILS_H
 
-#include "tesseract_ros/ros_basic_env.h"
+#include <tesseract_core/basic_types.h>
 #include <geometric_shapes/mesh_operations.h>
-#include <urdf_model/link.h>
 #include <ros/console.h>
 #include <btBulletCollisionCommon.h>
 
 namespace tesseract
 {
-namespace tesseract_ros
-{
+
 #define METERS
 
 const float BULLET_MARGIN = 0;
@@ -99,18 +97,17 @@ static ObjectPairKey getObjectPairKey(const std::string &obj1, const std::string
 }
 
 /// Destance query results information
-typedef std::map<std::pair<std::string, std::string>, ContactResultVector> BulletDistanceMap;
 struct BulletDistanceData
 {
-  BulletDistanceData(const ContactRequestBase* req, BulletDistanceMap* res) : req(req), res(res), done(false)
+  BulletDistanceData(const ContactRequest* req, ContactResultMap* res) : req(req), res(res), done(false)
   {
   }
 
   /// Distance query request information
-  const ContactRequestBase* req;
+  const ContactRequest* req;
 
   /// Destance query results information
-  BulletDistanceMap* res;
+  ContactResultMap* res;
 
   /// Indicate if search is finished
   bool done;
@@ -120,66 +117,23 @@ struct BulletDistanceData
 class CollisionObjectWrapper : public btCollisionObject
 {
 public:
-  CollisionObjectWrapper(const urdf::Link* link);
-
-  CollisionObjectWrapper(const AttachedBody* ab);
-
-  std::vector<std::shared_ptr<void>> m_data;
+  CollisionObjectWrapper(const std::string& name, const int& type_id, const std::vector<shapes::ShapeConstPtr> &shapes, const EigenSTL::vector_Affine3d &shape_poses);
 
   short int	m_collisionFilterGroup;
   short int	m_collisionFilterMask;
-
-  int m_index; // index into collision matrix
-  BodyType m_type;
-  union
-  {
-    const urdf::Link* m_link;
-    const AttachedBody* m_ab;
-    const void* raw;
-  } ptr;
-
+  bool m_enabled;
   /**
    * @brief getID Returns the ID which is key when storing in link2cow
    * @return Collision object ID
    */
-  const std::string& getID() const
-  {
-    if (m_type == BodyType::ROBOT_ATTACHED)
-      return ptr.m_ab->info.name;
-    else
-      return ptr.m_link->name;
-  }
+  const std::string& getName() const { return m_name; }
 
-  std::string getTypeString() const
-  {
-    if (m_type == BodyType::ROBOT_ATTACHED)
-      return "Robot attached";
-    else
-      return "Robot link";
-  }
-
-  std::shared_ptr<CollisionObjectWrapper> clone()
-  {
-    if (m_type == BodyType::ROBOT_ATTACHED)
-    {
-      std::shared_ptr<CollisionObjectWrapper> cow(new CollisionObjectWrapper(ptr.m_ab));
-      cow->m_collisionFilterGroup = m_collisionFilterGroup;
-      cow->m_collisionFilterMask = m_collisionFilterMask;
-      return cow;
-    }
-    else
-    {
-      std::shared_ptr<CollisionObjectWrapper> cow(new CollisionObjectWrapper(ptr.m_link));
-      cow->m_collisionFilterGroup = m_collisionFilterGroup;
-      cow->m_collisionFilterMask = m_collisionFilterMask;
-      return cow;
-    }
-  }
+  const int& getTypeID() const { return m_type_id; }
 
   /** \brief Check if two CollisionObjectWrapper objects point to the same source object */
   bool sameObject(const CollisionObjectWrapper& other) const
   {
-    return m_type == other.m_type && ptr.raw == other.ptr.raw;
+    return m_name == other.m_name && m_type_id == other.m_type_id && &m_shapes == &(other.m_shapes) && &m_shape_poses == &(other.m_shape_poses);
   }
 
   template<class T>
@@ -193,8 +147,15 @@ public:
     m_data.push_back(t);
   }
 
-private:
-  void initialize(const std::vector<shapes::ShapeConstPtr> &shapes, const EigenSTL::vector_Affine3d &transforms);
+protected:
+
+  int m_index;        // index into collision matrix
+  int m_type_id;      // user defined type id
+  std::string m_name; // name of the collision object
+  const std::vector<shapes::ShapeConstPtr>& m_shapes;
+  const EigenSTL::vector_Affine3d& m_shape_poses;
+
+  std::vector<std::shared_ptr<void>> m_data;
 };
 
 typedef CollisionObjectWrapper COW;
@@ -215,53 +176,53 @@ inline void nearCallback(btBroadphasePair& collisionPair,
 //  }
 }
 
-inline bool isCollisionAllowed(const COW* cow0, const COW* cow1, const AllowedCollisionMatrixConstPtr acm, bool verbose = false)
+inline bool isCollisionAllowed(const COW* cow0, const COW* cow1, const IsContactAllowedFn acm, bool verbose = false)
 {
   // do not distance check geoms part of the same object / link / attached body
   if (cow0->sameObject(*cow1))
     return false;
 
-  bool always_in_collision = false;
-  if (acm != nullptr && acm->isCollisionAllowed(cow0->getID(), cow1->getID()))
+  if (acm != nullptr && acm(cow0->getName(), cow1->getName()))
   {
-    always_in_collision = true;
+
     if (verbose)
     {
-      ROS_DEBUG("Collision between '%s' and '%s' is always allowed. No contacts are computed.", cow0->getID().c_str(), cow1->getID().c_str());
+      ROS_DEBUG("Collision between '%s' and '%s' is always allowed. No contacts are computed.", cow0->getName().c_str(), cow1->getName().c_str());
     }
+    return false;
   }
 
-  // check if a link is touching an attached object
-  if (cow0->m_type == BodyType::ROBOT_LINK && cow1->m_type == BodyType::ROBOT_ATTACHED)
-  {
-    const std::vector<std::string>& tl = cow1->ptr.m_ab->info.touch_links;
-    if (std::find(tl.begin(), tl.end(), cow0->getID()) != tl.end() || cow0->ptr.m_link->name == cow1->ptr.m_ab->info.parent_link_name)
-    {
-      always_in_collision = true;
-      if (verbose)
-        ROS_DEBUG("Robot link '%s' is allowed to touch attached object '%s'. No contacts are computed.",
-                  cow0->getID().c_str(), cow1->getID().c_str());
-    }
-  }
-  else
-  {
-    if (cow1->m_type == BodyType::ROBOT_LINK && cow0->m_type == BodyType::ROBOT_ATTACHED)
-    {
-      const std::vector<std::string>& tl = cow0->ptr.m_ab->info.touch_links;
-      if (std::find(tl.begin(), tl.end(), cow1->getID()) != tl.end() || cow1->ptr.m_link->name == cow0->ptr.m_ab->info.parent_link_name)
-      {
-        always_in_collision = true;
-        if (verbose)
-          ROS_DEBUG("Robot link '%s' is allowed to touch attached object '%s'. No contacts are computed.",
-                    cow1->getID().c_str(), cow0->getID().c_str());
-      }
-    }
-  }
+//  // check if a link is touching an attached object
+//  if (cow0->m_type == BodyType::ROBOT_LINK && cow1->m_type == BodyType::ROBOT_ATTACHED)
+//  {
+//    const std::vector<std::string>& tl = cow1->ptr.m_ab->info.touch_links;
+//    if (std::find(tl.begin(), tl.end(), cow0->getID()) != tl.end() || cow0->ptr.m_link->name == cow1->ptr.m_ab->info.parent_link_name)
+//    {
+//      always_in_collision = true;
+//      if (verbose)
+//        ROS_DEBUG("Robot link '%s' is allowed to touch attached object '%s'. No contacts are computed.",
+//                  cow0->getID().c_str(), cow1->getID().c_str());
+//    }
+//  }
+//  else
+//  {
+//    if (cow1->m_type == BodyType::ROBOT_LINK && cow0->m_type == BodyType::ROBOT_ATTACHED)
+//    {
+//      const std::vector<std::string>& tl = cow0->ptr.m_ab->info.touch_links;
+//      if (std::find(tl.begin(), tl.end(), cow1->getID()) != tl.end() || cow1->ptr.m_link->name == cow0->ptr.m_ab->info.parent_link_name)
+//      {
+//        always_in_collision = true;
+//        if (verbose)
+//          ROS_DEBUG("Robot link '%s' is allowed to touch attached object '%s'. No contacts are computed.",
+//                    cow1->getID().c_str(), cow0->getID().c_str());
+//      }
+//    }
+//  }
 
-  if (verbose && !always_in_collision)
-    ROS_DEBUG("Actually checking collisions between %s and %s", cow0->getID().c_str(), cow1->getID().c_str());
+  if (verbose)
+    ROS_DEBUG("Actually checking collisions between %s and %s", cow0->getName().c_str(), cow1->getName().c_str());
 
-  return !always_in_collision;
+  return true;
 }
 
 inline
@@ -324,7 +285,7 @@ struct CollisionCollector : public btCollisionWorld::ContactResultCallback
     const CollisionObjectWrapper* cd0 = static_cast<const CollisionObjectWrapper*>(colObj0Wrap->getCollisionObject());
     const CollisionObjectWrapper* cd1 = static_cast<const CollisionObjectWrapper*>(colObj1Wrap->getCollisionObject());
 
-    ObjectPairKey pc = getObjectPairKey(cd0->getID(), cd1->getID());
+    ObjectPairKey pc = getObjectPairKey(cd0->getName(), cd1->getName());
 
     const auto& it = m_collisions.res->find(pc);
     bool found = (it != m_collisions.res->end());
@@ -339,12 +300,12 @@ struct CollisionCollector : public btCollisionWorld::ContactResultCallback
 //    }
 
     ContactResult contact;
-    contact.link_names[0] = cd0->getID();
-    contact.link_names[1] = cd1->getID();
+    contact.link_names[0] = cd0->getName();
+    contact.link_names[1] = cd1->getName();
     contact.nearest_points[0] = convertBtToEigen(cp.m_positionWorldOnA);
     contact.nearest_points[1] = convertBtToEigen(cp.m_positionWorldOnB);
-    contact.body_types[0] = cd0->m_type;
-    contact.body_types[1] = cd1->m_type;
+    contact.type_id[0] = cd0->getTypeID();
+    contact.type_id[1] = cd1->getTypeID();
     contact.distance = cp.m_distance1;
     contact.normal = convertBtToEigen(-1 * cp.m_normalWorldOnB);
 
@@ -360,7 +321,7 @@ struct CollisionCollector : public btCollisionWorld::ContactResultCallback
   {
     return (proxy0->m_collisionFilterGroup & m_collisionFilterMask)
         && (m_collisionFilterGroup & proxy0->m_collisionFilterMask)
-        && isCollisionAllowed(m_cow.get(), static_cast<CollisionObjectWrapper*>(proxy0->m_clientObject), m_collisions.req->acm, m_verbose);
+        && isCollisionAllowed(m_cow.get(), static_cast<CollisionObjectWrapper*>(proxy0->m_clientObject), m_collisions.req->isContactAllowed, m_verbose);
   }
 };
 
@@ -384,9 +345,9 @@ struct SweepCollisionCollector : public btCollisionWorld::ClosestConvexResultCal
     const CollisionObjectWrapper* cd0 = static_cast<const CollisionObjectWrapper*>(m_cow.get());
     const CollisionObjectWrapper* cd1 = static_cast<const CollisionObjectWrapper*>(m_hitCollisionObject);
 
-    ObjectPairKey pc = getObjectPairKey(cd0->getID(), cd1->getID());
+    ObjectPairKey pc = getObjectPairKey(cd0->getName(), cd1->getName());
 
-    BulletDistanceMap::iterator it = m_collisions.res->find(pc);
+    ContactResultMap::iterator it = m_collisions.res->find(pc);
     bool found = it != m_collisions.res->end();
 
     size_t l = 0;
@@ -398,12 +359,12 @@ struct SweepCollisionCollector : public btCollisionWorld::ClosestConvexResultCal
     }
 
     ContactResult contact;
-    contact.link_names[0] = cd0->getID();
-    contact.link_names[1] = cd1->getID();
+    contact.link_names[0] = cd0->getName();
+    contact.link_names[1] = cd1->getName();
     contact.nearest_points[0] = convertBtToEigen(m_hitPointWorld);
     contact.nearest_points[1] = convertBtToEigen(m_hitPointWorld);
-    contact.body_types[0] = cd0->m_type;
-    contact.body_types[1] = cd1->m_type;
+    contact.type_id[0] = cd0->getTypeID();
+    contact.type_id[1] = cd1->getTypeID();
     contact.distance = 0;
     contact.normal = convertBtToEigen(-1 * m_hitNormalWorld);
     contact.cc_time = l + m_closestHitFraction;
@@ -420,7 +381,7 @@ struct SweepCollisionCollector : public btCollisionWorld::ClosestConvexResultCal
   {
     return (proxy0->m_collisionFilterGroup & m_collisionFilterMask)
         && (m_collisionFilterGroup & proxy0->m_collisionFilterMask)
-        && isCollisionAllowed(m_cow.get(), static_cast<CollisionObjectWrapper*>(proxy0->m_clientObject), m_collisions.req->acm, m_verbose);
+        && isCollisionAllowed(m_cow.get(), static_cast<CollisionObjectWrapper*>(proxy0->m_clientObject), m_collisions.req->isContactAllowed, m_verbose);
   }
 };
 
@@ -554,11 +515,11 @@ struct CastCollisionCollector : public btCollisionWorld::ContactResultCallback
     const CollisionObjectWrapper* cd0 = static_cast<const CollisionObjectWrapper*>(colObj0Wrap->getCollisionObject());
     const CollisionObjectWrapper* cd1 = static_cast<const CollisionObjectWrapper*>(colObj1Wrap->getCollisionObject());
 
-    const std::pair<std::string, std::string>& pc = cd0->getID() < cd1->getID() ?
-                                                        std::make_pair(cd0->getID(), cd1->getID()) :
-                                                        std::make_pair(cd1->getID(), cd0->getID());
+    const std::pair<std::string, std::string>& pc = cd0->getName() < cd1->getName() ?
+                                                        std::make_pair(cd0->getName(), cd1->getName()) :
+                                                        std::make_pair(cd1->getName(), cd0->getName());
 
-    BulletDistanceMap::iterator it = m_collisions.res->find(pc);
+    ContactResultMap::iterator it = m_collisions.res->find(pc);
     bool found = it != m_collisions.res->end();
 
 //    size_t l = 0;
@@ -570,12 +531,12 @@ struct CastCollisionCollector : public btCollisionWorld::ContactResultCallback
 //    }
 
     ContactResult contact;
-    contact.link_names[0] = cd0->getID();
-    contact.link_names[1] = cd1->getID();
+    contact.link_names[0] = cd0->getName();
+    contact.link_names[1] = cd1->getName();
     contact.nearest_points[0] = convertBtToEigen(cp.m_positionWorldOnA);
     contact.nearest_points[1] = convertBtToEigen(cp.m_positionWorldOnB);
-    contact.body_types[0] = cd0->m_type;
-    contact.body_types[1] = cd1->m_type;
+    contact.type_id[0] = cd0->getTypeID();
+    contact.type_id[1] = cd1->getTypeID();
     contact.distance = cp.m_distance1;
     contact.normal = convertBtToEigen(-1 * cp.m_normalWorldOnB);
 
@@ -594,7 +555,7 @@ struct CastCollisionCollector : public btCollisionWorld::ContactResultCallback
     {
       std::swap(col->nearest_points[0], col->nearest_points[1]);
       std::swap(col->link_names[0], col->link_names[1]);
-      std::swap(col->body_types[0], col->body_types[1]);
+      std::swap(col->type_id[0], col->type_id[1]);
       col->normal *= -1;
     }
 
@@ -679,7 +640,7 @@ struct CastCollisionCollector : public btCollisionWorld::ContactResultCallback
   {
     return (proxy0->m_collisionFilterGroup & m_collisionFilterMask)
         && (m_collisionFilterGroup & proxy0->m_collisionFilterMask)
-        && isCollisionAllowed(m_cow.get(), static_cast<CollisionObjectWrapper*>(proxy0->m_clientObject), m_collisions.req->acm, m_verbose);
+        && isCollisionAllowed(m_cow.get(), static_cast<CollisionObjectWrapper*>(proxy0->m_clientObject), m_collisions.req->isContactAllowed, m_verbose);
   }
 };
 
@@ -705,11 +666,11 @@ struct CastCollisionCollectorOriginal : public btCollisionWorld::ContactResultCa
     const CollisionObjectWrapper* cd0 = static_cast<const CollisionObjectWrapper*>(colObj0Wrap->getCollisionObject());
     const CollisionObjectWrapper* cd1 = static_cast<const CollisionObjectWrapper*>(colObj1Wrap->getCollisionObject());
 
-    const std::pair<std::string, std::string>& pc = cd0->getID() < cd1->getID() ?
-                                                        std::make_pair(cd0->getID(), cd1->getID()) :
-                                                        std::make_pair(cd1->getID(), cd0->getID());
+    const std::pair<std::string, std::string>& pc = cd0->getName() < cd1->getName() ?
+                                                        std::make_pair(cd0->getName(), cd1->getName()) :
+                                                        std::make_pair(cd1->getName(), cd0->getName());
 
-    BulletDistanceMap::iterator it = m_collisions.res->find(pc);
+    ContactResultMap::iterator it = m_collisions.res->find(pc);
     bool found = it != m_collisions.res->end();
 
 //    size_t l = 0;
@@ -721,12 +682,12 @@ struct CastCollisionCollectorOriginal : public btCollisionWorld::ContactResultCa
 //    }
 
     ContactResult contact;
-    contact.link_names[0] = cd0->getID();
-    contact.link_names[1] = cd1->getID();
+    contact.link_names[0] = cd0->getName();
+    contact.link_names[1] = cd1->getName();
     contact.nearest_points[0] = convertBtToEigen(cp.m_positionWorldOnA);
     contact.nearest_points[1] = convertBtToEigen(cp.m_positionWorldOnB);
-    contact.body_types[0] = cd0->m_type;
-    contact.body_types[1] = cd1->m_type;
+    contact.type_id[0] = cd0->getTypeID();
+    contact.type_id[1] = cd1->getTypeID();
     contact.distance = cp.m_distance1;
     contact.normal = convertBtToEigen(-1 * cp.m_normalWorldOnB);
 
@@ -749,7 +710,7 @@ struct CastCollisionCollectorOriginal : public btCollisionWorld::ContactResultCa
     {
       std::swap(col->nearest_points[0], col->nearest_points[1]);
       std::swap(col->link_names[0], col->link_names[1]);
-      std::swap(col->body_types[0], col->body_types[1]);
+      std::swap(col->type_id[0], col->type_id[1]);
       col->normal *= -1;
     }
 
@@ -805,7 +766,7 @@ struct CastCollisionCollectorOriginal : public btCollisionWorld::ContactResultCa
   {
     return (proxy0->m_collisionFilterGroup & m_collisionFilterMask)
         && (m_collisionFilterGroup & proxy0->m_collisionFilterMask)
-        && isCollisionAllowed(m_cow.get(), static_cast<CollisionObjectWrapper*>(proxy0->m_clientObject), m_collisions.req->acm, m_verbose);
+        && isCollisionAllowed(m_cow.get(), static_cast<CollisionObjectWrapper*>(proxy0->m_clientObject), m_collisions.req->isContactAllowed, m_verbose);
   }
 };
 
@@ -890,7 +851,7 @@ private:
       btConvexShape* convex = dynamic_cast<btConvexShape*>(shape);
 
       CastHullShape* shape = new CastHullShape(convex, tf0.inverseTimes(tf1));
-      COWPtr obj = cow->clone();
+      COWPtr obj(new COW(*cow));
       obj->setCollisionShape(shape);
       obj->setWorldTransform(tf0);
 
@@ -935,7 +896,6 @@ private:
 typedef std::shared_ptr<BulletManager> BulletManagerPtr;
 
 btCollisionShape* createShapePrimitive(const shapes::ShapeConstPtr& geom, bool useTrimesh, CollisionObjectWrapper* cow);
-COWPtr CollisionObjectFromLink(const urdf::Link* link, bool useTrimesh);
 
 inline
 void setContactDistance(COWPtr& cow, double contact_distance)
@@ -945,51 +905,6 @@ void setContactDistance(COWPtr& cow, double contact_distance)
   cow->setContactProcessingThreshold(contact_distance);
 }
 
-inline
-shapes::ShapePtr constructShape(const urdf::Geometry* geom)
-{
-  shapes::Shape* result = NULL;
-  switch (geom->type)
-  {
-    case urdf::Geometry::SPHERE:
-      result = new shapes::Sphere(static_cast<const urdf::Sphere*>(geom)->radius);
-      break;
-    case urdf::Geometry::BOX:
-    {
-      urdf::Vector3 dim = static_cast<const urdf::Box*>(geom)->dim;
-      result = new shapes::Box(dim.x, dim.y, dim.z);
-    }
-    break;
-    case urdf::Geometry::CYLINDER:
-      result = new shapes::Cylinder(static_cast<const urdf::Cylinder*>(geom)->radius,
-                                    static_cast<const urdf::Cylinder*>(geom)->length);
-      break;
-    case urdf::Geometry::MESH:
-    {
-      const urdf::Mesh* mesh = static_cast<const urdf::Mesh*>(geom);
-      if (!mesh->filename.empty())
-      {
-        Eigen::Vector3d scale(mesh->scale.x, mesh->scale.y, mesh->scale.z);
-        shapes::Mesh* m = shapes::createMeshFromResource(mesh->filename, scale);
-        result = m;
-      }
-    }
-    break;
-    default:
-      ROS_ERROR("Unknown geometry type: %d", (int)geom->type);
-      break;
-  }
-
-  return shapes::ShapePtr(result);
 }
 
-inline Eigen::Affine3d urdfPose2Affine3d(const urdf::Pose& pose)
-{
-  Eigen::Quaterniond q(pose.rotation.w, pose.rotation.x, pose.rotation.y, pose.rotation.z);
-  Eigen::Affine3d af(Eigen::Translation3d(pose.position.x, pose.position.y, pose.position.z) * q.toRotationMatrix());
-  return af;
-}
-
-}
-}
-#endif // TESSERACT_ROS_BULLET_UTILS_H
+#endif // TESSERACT_COLLISION_BULLET_UTILS_H

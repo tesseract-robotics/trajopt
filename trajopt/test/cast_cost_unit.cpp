@@ -13,7 +13,7 @@
 #include <trajopt_utils/logging.hpp>
 
 #include <tesseract_ros/kdl/kdl_chain_kin.h>
-#include <tesseract_ros/bullet/bullet_env.h>
+#include <tesseract_ros/kdl/kdl_env.h>
 #include <tesseract_ros/ros_basic_plotting.h>
 
 #include <ros/ros.h>
@@ -35,7 +35,7 @@ public:
   ros::NodeHandle nh_;
   urdf::ModelInterfaceSharedPtr urdf_model_;   /**< URDF Model */
   srdf::ModelSharedPtr srdf_model_;            /**< SRDF Model */
-  tesseract_ros::BulletEnvPtr env_;            /**< Trajopt Basic Environment */
+  tesseract_ros::KDLEnvPtr env_;            /**< Trajopt Basic Environment */
   tesseract_ros::ROSBasicPlottingPtr plotter_; /**< Trajopt Plotter */
 
   virtual void SetUp()
@@ -47,7 +47,7 @@ public:
 
     srdf_model_ = srdf::ModelSharedPtr(new srdf::Model);
     srdf_model_->initString(*urdf_model_, srdf_xml_string);
-    env_ = tesseract_ros::BulletEnvPtr(new tesseract_ros::BulletEnv);
+    env_ = tesseract_ros::KDLEnvPtr(new tesseract_ros::KDLEnv);
     assert(urdf_model_ != nullptr);
     assert(env_ != nullptr);
 
@@ -77,7 +77,7 @@ TEST_F(CastTest, boxes) {
   TrajOptProbPtr prob = ConstructProblem(root, env_);
   ASSERT_TRUE(!!prob);
 
-  tesseract::ContactResultVector collisions;
+  tesseract::ContactResultMap collisions;
   const std::vector<std::string>& joint_names = prob->GetKin()->getJointNames();
   const std::vector<std::string>& link_names = prob->GetKin()->getLinkNames();
 

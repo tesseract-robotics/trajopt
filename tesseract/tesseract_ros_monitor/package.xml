@@ -12,6 +12,7 @@
   <build_export_depend>roscpp</build_export_depend>
   <exec_depend>roscpp</exec_depend>
   <depend>tesseract_ros</depend>
+  <depend>tesseract_collision</depend>
   <depend>tesseract_msgs</depend>
 
 

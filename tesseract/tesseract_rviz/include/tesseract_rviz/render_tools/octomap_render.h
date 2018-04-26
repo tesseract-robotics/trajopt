@@ -75,6 +75,11 @@ public:
                Ogre::SceneNode* parent_node);
   virtual ~OcTreeRender();
 
+  void setVisible(bool visible)
+  {
+    scene_node_->setVisible(visible);
+  }
+
 private:
   void setColor(double z_pos, double min_z, double max_z, double color_factor, rviz::PointCloud::Point* point);
   void setProbColor(double prob, rviz::PointCloud::Point* point);

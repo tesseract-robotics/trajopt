@@ -1,5 +1,6 @@
 #include <ros/ros.h>
-#include <tesseract_ros/ros_basic_env.h>
+#include <tesseract_ros/kdl/kdl_env.h>
+#include <tesseract_collision/contact_checker_base.h>
 #include <tesseract_msgs/ContactResultVector.h>
 #include <tesseract_msgs/ModifyTesseractEnv.h>
 #include <tesseract_ros/ros_tesseract_utils.h>
@@ -12,16 +13,15 @@ using namespace tesseract;
 using namespace tesseract::tesseract_ros;
 
 const std::string ROBOT_DESCRIPTION_PARAM = "robot_description"; /**< Default ROS parameter for robot description */
-const std::string TESSERACT_ENV_SINGLETON_PLUGIN_PARAM = "tesseract_ros/BulletEnvSingleton";
+
 const double DEFAULT_CONTACT_DISTANCE = 0.1;
 
-ROSBasicEnvSingletonPtr env;
+KDLEnvPtr env;
 ros::Subscriber joint_states_sub;
 ros::Publisher contact_results_pub;
 ros::ServiceServer modify_env_service;
-ContactResultVector contacts;
+ContactResultMap contacts;
 tesseract_msgs::ContactResultVector contacts_msg;
-std::shared_ptr<pluginlib::ClassLoader<ROSBasicEnvSingleton> > env_loader;
 boost::mutex modify_mutex;
 
 void callbackJointState(const sensor_msgs::JointState::ConstPtr& msg)
@@ -33,8 +33,10 @@ void callbackJointState(const sensor_msgs::JointState::ConstPtr& msg)
   env->setState(msg->name, msg->position);
   env->calcDistancesDiscrete(contacts);
 
-  contacts_msg.constacts.reserve(contacts.size());
-  for (const auto& contact : contacts)
+  ContactResultVector contacts_vector;
+  tesseract::moveContactResultsMapToContactResultsVector(contacts, contacts_vector);
+  contacts_msg.constacts.reserve(contacts_vector.size());
+  for (const auto& contact : contacts_vector)
   {
    tesseract_msgs::ContactResult msg;
    tesseractContactResultToContactResultMsg(msg, contact);
@@ -59,16 +61,13 @@ int main(int argc, char** argv)
   std::string robot_description;
   std::string plugin;
 
+  env.reset(new KDLEnv());
+
   pnh.param<std::string>("robot_description", robot_description, ROBOT_DESCRIPTION_PARAM);
-  pnh.param<std::string>("plugin", plugin, TESSERACT_ENV_SINGLETON_PLUGIN_PARAM);
-
-
-  env_loader.reset(new pluginlib::ClassLoader<ROSBasicEnvSingleton>("tesseract_ros", "tesseract::tesseract_ros::ROSBasicEnvSingleton"));
-  env.reset(env_loader->createUnmanagedInstance(plugin));
-  if (env == nullptr)
+  if (pnh.hasParam("plugin"))
   {
-    ROS_ERROR("Failed to load tesseract environment plugin: %s.", plugin.c_str());
-    return 0;
+    pnh.getParam("plugin", plugin);
+    env->loadContactCheckerPlugin(plugin);
   }
 
   // Initial setup
@@ -92,8 +91,8 @@ int main(int argc, char** argv)
   }
 
   // Setup request information
-  ContactRequestBase req;
-  req.acm = env->getAllowedCollisionMatrix();
+  ContactRequest req;
+  req.isContactAllowed = env->getIsContactAllowedFn();
   pnh.param<double>("contact_distance", req.contact_distance, DEFAULT_CONTACT_DISTANCE);
   pnh.getParam("monitor_links", req.link_names);
   if (req.link_names.empty())

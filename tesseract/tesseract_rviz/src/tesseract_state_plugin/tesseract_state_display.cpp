@@ -35,7 +35,7 @@
 /* Author: Ioan Sucan */
 
 #include <tesseract_rviz/tesseract_state_plugin/tesseract_state_display.h>
-#include <tesseract_ros/bullet/bullet_env.h>
+#include <tesseract_ros/kdl/kdl_env.h>
 #include <tesseract_ros/ros_tesseract_utils.h>
 
 #include <urdf_parser/urdf_parser.h>
@@ -397,7 +397,7 @@ void TesseractStateDisplay::loadURDFModel()
       srdf::ModelSharedPtr srdf_model = srdf::ModelSharedPtr(new srdf::Model);
       srdf_model->initString(*urdf_model, srdf_xml_string);
 
-      tesseract_ros::BulletEnvPtr env = tesseract_ros::BulletEnvPtr(new tesseract_ros::BulletEnv);
+      tesseract_ros::KDLEnvPtr env = tesseract_ros::KDLEnvPtr(new tesseract_ros::KDLEnv);
       assert(env != nullptr);
 
       bool success = env->init(urdf_model, srdf_model);

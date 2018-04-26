@@ -69,7 +69,8 @@ void RenderShapes::clear()
 {
   scene_visual_shapes_.clear();
   scene_collision_shapes_.clear();
-  octree_voxel_grids_.clear();
+  scene_visual_octree_.clear();
+  scene_collision_octree_.clear();
 }
 
 void RenderShapes::setVisualVisible(bool visibility)
@@ -77,6 +78,11 @@ void RenderShapes::setVisualVisible(bool visibility)
   for (int i = 0; i < scene_visual_shapes_.size(); ++i)
   {
     scene_visual_shapes_[i]->getRootNode()->setVisible(visibility);
+  }
+
+  for (int i = 0; i < scene_visual_octree_.size(); ++i)
+  {
+    scene_visual_octree_[i]->setVisible(visibility);
   }
 }
 
@@ -86,6 +92,12 @@ void RenderShapes::setCollisionVisible(bool visibility)
   {
     scene_collision_shapes_[i]->getRootNode()->setVisible(visibility);
   }
+
+  for (int i = 0; i < scene_collision_octree_.size(); ++i)
+  {
+    scene_collision_octree_[i]->setVisible(visibility);
+  }
+
 }
 
 void RenderShapes::renderShape(Ogre::SceneNode* node, const shapes::Shape* s, const Eigen::Affine3d& p,
@@ -172,7 +184,10 @@ void RenderShapes::renderShape(Ogre::SceneNode* node, const shapes::Shape* s, co
       OcTreeRenderPtr octree(new OcTreeRender(static_cast<const shapes::OcTree*>(s)->octree, octree_voxel_rendering,
                                               octree_color_mode, 0u, context_->getSceneManager(), node));
 
-      octree_voxel_grids_.push_back(octree);
+      if (isCollisionShape)
+        scene_collision_octree_.emplace_back(octree);
+      else
+        scene_visual_octree_.emplace_back(octree);
     }
     break;
 

@@ -40,6 +40,7 @@
 #include "tesseract_rviz/render_tools/octomap_render.h"
 #include "tesseract_rviz/render_tools/render_shapes.h"
 #include <tesseract_ros/ros_basic_env.h>
+#include <std_msgs/ColorRGBA.h>
 #include <rviz/robot/robot.h>
 #include <memory>
 
@@ -58,16 +59,16 @@ public:
   void clear();
 
   void update(const tesseract::tesseract_ros::ROSBasicEnvConstPtr env,
-              const tesseract::tesseract_ros::EnvStateConstPtr state);
+              const tesseract::EnvStateConstPtr state);
 
   void update(const tesseract::tesseract_ros::ROSBasicEnvConstPtr env,
-              const tesseract::tesseract_ros::EnvStateConstPtr state,
+              const tesseract::EnvStateConstPtr state,
               const std_msgs::ColorRGBA& default_attached_object_color);
 
   void update(const tesseract::tesseract_ros::ROSBasicEnvConstPtr env,
-              const tesseract::tesseract_ros::EnvStateConstPtr state,
+              const tesseract::EnvStateConstPtr state,
               const std_msgs::ColorRGBA& default_attached_object_color,
-              const tesseract::tesseract_ros::ObjectColorMapConstPtr color_map);
+              const tesseract::ObjectColorMapConstPtr color_map);
 
   void setDefaultAttachedObjectColor(const std_msgs::ColorRGBA& default_attached_object_color);
 
@@ -105,9 +106,9 @@ public:
 
 private:
   void updateHelper(const tesseract::tesseract_ros::ROSBasicEnvConstPtr env,
-                    const tesseract::tesseract_ros::EnvStateConstPtr state,
+                    const tesseract::EnvStateConstPtr state,
                     const std_msgs::ColorRGBA& default_attached_object_color,
-                    const tesseract::tesseract_ros::ObjectColorMapConstPtr color_map);
+                    const tesseract::ObjectColorMapConstPtr color_map);
   rviz::Robot robot_;
   RenderShapesPtr render_shapes_;
   std_msgs::ColorRGBA default_attached_object_color_;

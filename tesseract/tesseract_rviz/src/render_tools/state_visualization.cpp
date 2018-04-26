@@ -85,48 +85,51 @@ void StateVisualization::setDefaultAttachedObjectColor(const std_msgs::ColorRGBA
 }
 
 void StateVisualization::update(const tesseract::tesseract_ros::ROSBasicEnvConstPtr env,
-                                const tesseract::tesseract_ros::EnvStateConstPtr state)
+                                const tesseract::EnvStateConstPtr state)
 {
   updateHelper(env, state, default_attached_object_color_, NULL);
 }
 
 void StateVisualization::update(const tesseract::tesseract_ros::ROSBasicEnvConstPtr env,
-                                const tesseract::tesseract_ros::EnvStateConstPtr state,
+                                const tesseract::EnvStateConstPtr state,
                                 const std_msgs::ColorRGBA& default_attached_object_color)
 {
   updateHelper(env, state, default_attached_object_color, NULL);
 }
 
 void StateVisualization::update(const tesseract::tesseract_ros::ROSBasicEnvConstPtr env,
-                                const tesseract::tesseract_ros::EnvStateConstPtr state,
+                                const tesseract::EnvStateConstPtr state,
                                 const std_msgs::ColorRGBA& default_attached_object_color,
-                                const tesseract::tesseract_ros::ObjectColorMapConstPtr color_map)
+                                const tesseract::ObjectColorMapConstPtr color_map)
 {
   updateHelper(env, state, default_attached_object_color, color_map);
 }
 
 void StateVisualization::updateHelper(const tesseract::tesseract_ros::ROSBasicEnvConstPtr env,
-                                      const tesseract::tesseract_ros::EnvStateConstPtr state,
+                                      const tesseract::EnvStateConstPtr state,
                                       const std_msgs::ColorRGBA& default_attached_object_color,
-                                      const tesseract::tesseract_ros::ObjectColorMapConstPtr color_map)
+                                      const tesseract::ObjectColorMapConstPtr color_map)
 {
   robot_.update(LinkUpdater(state));
   render_shapes_->clear();
 
-  const tesseract_ros::AttachedBodyConstPtrMap& attached_bodies = env->getAttachedBodies();
+  const AttachedBodyInfoMap& attached_bodies = env->getAttachedBodies();
+  const auto& attachable_objects = env->getAttachableObjects();
   for (const auto &body : attached_bodies)
   {
+    const auto& ao = attachable_objects.at(body.second.object_name);
+
     std_msgs::ColorRGBA color = default_attached_object_color;
     float alpha = robot_.getAlpha();
-    std::unordered_map<std::string, tesseract_ros::ObjectColor>::const_iterator it;
+    std::unordered_map<std::string, ObjectColor>::const_iterator it;
 
     if (color_map)
-      it = color_map->find(body.second->info.name);
+      it = color_map->find(ao->name);
 
-    const Eigen::Affine3d &link_tf = state->transforms.at(body.second->info.name);
-    const EigenSTL::vector_Affine3d& ab_visual_pose = body.second->obj->visual.shape_poses;
-    const std::vector<shapes::ShapeConstPtr>& ab_visual_shapes = body.second->obj->visual.shapes;
-    const EigenSTL::vector_Vector4d& ab_visual_colors = body.second->obj->visual.shape_colors;
+    const Eigen::Affine3d &link_tf = state->transforms.at(ao->name);
+    const EigenSTL::vector_Affine3d& ab_visual_pose = ao->visual.shape_poses;
+    const std::vector<shapes::ShapeConstPtr>& ab_visual_shapes = ao->visual.shapes;
+    const EigenSTL::vector_Vector4d& ab_visual_colors = ao->visual.shape_colors;
     for (std::size_t j = 0; j < ab_visual_shapes.size(); ++j)
     {
       if (color_map && (it != color_map->end()))
@@ -150,9 +153,9 @@ void StateVisualization::updateHelper(const tesseract::tesseract_ros::ROSBasicEn
 
     }
 
-    const EigenSTL::vector_Affine3d& ab_collision_pose = body.second->obj->collision.shape_poses;
-    const std::vector<shapes::ShapeConstPtr>& ab_collision_shapes = body.second->obj->collision.shapes;
-    const EigenSTL::vector_Vector4d& ab_collision_colors = body.second->obj->collision.shape_colors;
+    const EigenSTL::vector_Affine3d& ab_collision_pose = ao->collision.shape_poses;
+    const std::vector<shapes::ShapeConstPtr>& ab_collision_shapes = ao->collision.shapes;
+    const EigenSTL::vector_Vector4d& ab_collision_colors = ao->collision.shape_colors;
     for (std::size_t j = 0; j < ab_collision_shapes.size(); ++j)
     {
       if (color_map && (it != color_map->end()))
@@ -200,6 +203,7 @@ void StateVisualization::setCollisionVisible(bool visible)
 {
   collision_visible_ = visible;
   robot_.setCollisionVisible(visible);
+
 }
 
 void StateVisualization::setAttachedVisualVisible(bool visible)
