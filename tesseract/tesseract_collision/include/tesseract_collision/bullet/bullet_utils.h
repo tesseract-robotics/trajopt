@@ -900,7 +900,6 @@ btCollisionShape* createShapePrimitive(const shapes::ShapeConstPtr& geom, bool u
 inline
 void setContactDistance(COWPtr& cow, double contact_distance)
 {
-  SHAPE_EXPANSION = btVector3(1,1,1) * contact_distance;
   gContactBreakingThreshold = 2.001 * contact_distance; // wtf. when I set it to 2.0 there are no contacts with distance > 0
   cow->setContactProcessingThreshold(contact_distance);
 }

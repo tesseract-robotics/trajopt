@@ -12,7 +12,6 @@ SET(LinearMath_SRCS
 	btQuickprof.cpp
 	btSerializer.cpp
 	btVector3.cpp
-	btAabbUtil2.cpp
 )
 
 SET(LinearMath_HDRS

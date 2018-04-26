@@ -21,8 +21,6 @@ subject to the following restrictions:
 #include "btVector3.h"
 #include "btMinMax.h"
 
-extern btVector3 SHAPE_EXPANSION;
-
 SIMD_FORCE_INLINE void AabbExpand (btVector3& aabbMin,
 								   btVector3& aabbMax,
 								   const btVector3& expansionMin,
@@ -181,7 +179,7 @@ SIMD_FORCE_INLINE bool btRayAabb(const btVector3& rayFrom,
 
 SIMD_FORCE_INLINE	void btTransformAabb(const btVector3& halfExtents, btScalar margin,const btTransform& t,btVector3& aabbMinOut,btVector3& aabbMaxOut)
 {
-	btVector3 halfExtentsWithMargin = halfExtents+btVector3(margin,margin,margin) + SHAPE_EXPANSION;
+  btVector3 halfExtentsWithMargin = halfExtents+btVector3(margin,margin,margin);
 	btMatrix3x3 abs_b = t.getBasis().absolute();  
 	btVector3 center = t.getOrigin();
     btVector3 extent = halfExtentsWithMargin.dot3( abs_b[0], abs_b[1], abs_b[2] );
@@ -196,7 +194,7 @@ SIMD_FORCE_INLINE	void btTransformAabb(const btVector3& localAabbMin,const btVec
 		btAssert(localAabbMin.getY() <= localAabbMax.getY());
 		btAssert(localAabbMin.getZ() <= localAabbMax.getZ());
 		btVector3 localHalfExtents = btScalar(0.5)*(localAabbMax-localAabbMin);
-		localHalfExtents+=btVector3(margin,margin,margin) + SHAPE_EXPANSION;
+    localHalfExtents+=btVector3(margin,margin,margin);
 
 		btVector3 localCenter = btScalar(0.5)*(localAabbMax+localAabbMin);
 		btMatrix3x3 abs_b = trans.getBasis().absolute();  

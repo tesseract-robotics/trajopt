@@ -302,10 +302,9 @@ int dBoxBox2 (const btVector3& p1, const dMatrix3 R1,
   // the smallest depth normal so far. otherwise normalR is 0 and normalC is
   // set to a vector relative to body 1. invert_normal is 1 if the sign of
   // the normal should be flipped.
-  extern btVector3 SHAPE_EXPANSION;
 #define TST(expr1,expr2,norm,cc) \
   s2 = btFabs(expr1) - (expr2); \
-  if (s2 > SHAPE_EXPANSION.x()) return 0; \
+  if (s2 > 0) return 0; \
   if (s2 > s) { \
     s = s2; \
     normalR = norm; \
@@ -332,7 +331,7 @@ int dBoxBox2 (const btVector3& p1, const dMatrix3 R1,
 #undef TST
 #define TST(expr1,expr2,n1,n2,n3,cc) \
   s2 = btFabs(expr1) - (expr2); \
-  if (s2 > SHAPE_EXPANSION.x()) return 0; \
+  if (s2 > SIMD_EPSILON) return 0; \
   l = btSqrt((n1)*(n1) + (n2)*(n2) + (n3)*(n3)); \
   if (l > SIMD_EPSILON) { \
     s2 /= l; \
