@@ -1,0 +1,3 @@
+[submodule "trajopt_ext/bullet3"]
+	path = trajopt_ext/bullet3
+	url = https://github.com/Levi-Armstrong/bullet3.git
