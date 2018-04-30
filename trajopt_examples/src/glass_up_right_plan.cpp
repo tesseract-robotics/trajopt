@@ -182,6 +182,7 @@ int main(int argc, char** argv)
   obj->visual.shape_poses.push_back(sphere_pose);
   obj->collision.shapes.push_back(sphere);
   obj->collision.shape_poses.push_back(sphere_pose);
+  obj->collision.collision_object_types.push_back(CollisionObjectType::UseShapeType);
 
   env_->addAttachableObject(obj);
 
