@@ -6,14 +6,23 @@ project(trajopt_ext)
 
 find_package(catkin REQUIRED COMPONENTS)
 
+#catkin_package(
+#  INCLUDE_DIRS bullet/src bullet/Extras vhacd/public
+#  LIBRARIES BulletCollision BulletDynamics BulletMultiThreaded LinearMath ConvexDecomposition HACD vhacd
+##  CATKIN_DEPENDS roscpp
+##  DEPENDS system_lib
+#)
+
+#add_subdirectory(bullet)
+
 catkin_package(
-  INCLUDE_DIRS bullet/src bullet/Extras vhacd/public
+  INCLUDE_DIRS bullet3/src bullet3/Extras vhacd/public
   LIBRARIES BulletCollision BulletDynamics LinearMath ConvexDecomposition HACD vhacd
 #  CATKIN_DEPENDS roscpp
 #  DEPENDS system_lib
 )
 
-add_subdirectory(bullet)
+add_subdirectory(bullet3)
 
 set(CMAKE_COMMON_INC "${CMAKE_SOURCE_DIR}/vhacd/scripts/cmake_common.cmake")
 add_subdirectory(vhacd)

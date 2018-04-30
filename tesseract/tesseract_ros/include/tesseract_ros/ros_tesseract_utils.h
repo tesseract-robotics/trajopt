@@ -33,6 +33,7 @@
 #include <geometric_shapes/shape_messages.h>
 #include <geometric_shapes/shapes.h>
 #include <geometric_shapes/shape_operations.h>
+#include <std_msgs/Int32.h>
 #include <octomap_msgs/conversions.h>
 #include <eigen_conversions/eigen_msg.h>
 #include <ros/console.h>
@@ -176,6 +177,10 @@ void attachableObjectToAttachableObjectMsg(tesseract_msgs::AttachableObject& ao_
         color.a = ao.collision.shape_colors[i](3);
         ao_msg.collision.mesh_colors.push_back(color);
       }
+
+      std_msgs::Int32 cot;
+      cot.data = ao.collision.collision_object_types[i];
+      ao_msg.collision.mesh_collision_object_types.push_back(cot);
     }
     else if (ao.collision.shapes[i]->type == shapes::OCTREE)
     {
@@ -197,6 +202,10 @@ void attachableObjectToAttachableObjectMsg(tesseract_msgs::AttachableObject& ao_
         color.a = ao.collision.shape_colors[i](3);
         ao_msg.collision.octomap_colors.push_back(color);
       }
+
+      std_msgs::Int32 cot;
+      cot.data = ao.collision.collision_object_types[i];
+      ao_msg.collision.octomap_collision_object_types.push_back(cot);
     }
     else if (ao.collision.shapes[i]->type == shapes::PLANE)
     {
@@ -217,6 +226,10 @@ void attachableObjectToAttachableObjectMsg(tesseract_msgs::AttachableObject& ao_
         color.a = ao.collision.shape_colors[i](3);
         ao_msg.collision.plane_colors.push_back(color);
       }
+
+      std_msgs::Int32 cot;
+      cot.data = ao.collision.collision_object_types[i];
+      ao_msg.collision.plane_collision_object_types.push_back(cot);
     }
     else
     {
@@ -237,6 +250,10 @@ void attachableObjectToAttachableObjectMsg(tesseract_msgs::AttachableObject& ao_
         color.a = ao.collision.shape_colors[i](3);
         ao_msg.collision.primitive_colors.push_back(color);
       }
+
+      std_msgs::Int32 cot;
+      cot.data = ao.collision.collision_object_types[i];
+      ao_msg.collision.primitive_collision_object_types.push_back(cot);
     }
   }
 }
@@ -333,6 +350,8 @@ void attachableObjectMsgToAttachableObject(AttachableObject& ao, const tesseract
       const std_msgs::ColorRGBA& c = ao_msg.collision.primitive_colors[i];
       ao.collision.shape_colors.push_back(Eigen::Vector4d(c.r, c.g, c.b, c.a));
     }
+
+    ao.collision.collision_object_types.push_back((CollisionObjectType)ao_msg.collision.primitive_collision_object_types[i].data);
   }
 
   for (auto i = 0; i < ao_msg.collision.meshes.size(); ++i)
@@ -349,6 +368,8 @@ void attachableObjectMsgToAttachableObject(AttachableObject& ao, const tesseract
       const std_msgs::ColorRGBA& c = ao_msg.collision.mesh_colors[i];
       ao.collision.shape_colors.push_back(Eigen::Vector4d(c.r, c.g, c.b, c.a));
     }
+
+    ao.collision.collision_object_types.push_back((CollisionObjectType)ao_msg.collision.mesh_collision_object_types[i].data);
   }
 
   for (auto i = 0; i < ao_msg.collision.planes.size(); ++i)
@@ -365,6 +386,8 @@ void attachableObjectMsgToAttachableObject(AttachableObject& ao, const tesseract
       const std_msgs::ColorRGBA& c = ao_msg.collision.plane_colors[i];
       ao.collision.shape_colors.push_back(Eigen::Vector4d(c.r, c.g, c.b, c.a));
     }
+
+    ao.collision.collision_object_types.push_back((CollisionObjectType)ao_msg.collision.plane_collision_object_types[i].data);
   }
 
   for (auto i = 0; i < ao_msg.collision.octomaps.size(); ++i)
@@ -382,6 +405,8 @@ void attachableObjectMsgToAttachableObject(AttachableObject& ao, const tesseract
       const std_msgs::ColorRGBA& c = ao_msg.collision.octomap_colors[i];
       ao.collision.shape_colors.push_back(Eigen::Vector4d(c.r, c.g, c.b, c.a));
     }
+
+    ao.collision.collision_object_types.push_back((CollisionObjectType)ao_msg.collision.octomap_collision_object_types[i].data);
   }
 }
 

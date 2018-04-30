@@ -127,7 +127,7 @@ void BulletContactChecker::calcCollisionsContinuous(const ContactRequest &req, c
   calcDistancesContinuous(req, transforms1, transforms2, contacts);
 }
 
-bool BulletContactChecker::addObject(const std::string &name, const int &type_id, const std::vector<shapes::ShapeConstPtr> &shapes, const EigenSTL::vector_Affine3d &shape_poses, bool enabled)
+bool BulletContactChecker::addObject(const std::string &name, const int &mask_id, const std::vector<shapes::ShapeConstPtr> &shapes, const EigenSTL::vector_Affine3d &shape_poses, const CollisionObjectTypeVector &collision_object_types, bool enabled)
 {
   // dont add object that does not have geometry
   if (shapes.empty() || shape_poses.empty())
@@ -136,7 +136,7 @@ bool BulletContactChecker::addObject(const std::string &name, const int &type_id
     return false;
   }
 
-  COWPtr new_cow(new COW(name, type_id, shapes, shape_poses));
+  COWPtr new_cow(new COW(name, mask_id, shapes, shape_poses, collision_object_types));
 
   if (new_cow)
   {

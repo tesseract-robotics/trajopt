@@ -117,7 +117,7 @@ struct BulletDistanceData
 class CollisionObjectWrapper : public btCollisionObject
 {
 public:
-  CollisionObjectWrapper(const std::string& name, const int& type_id, const std::vector<shapes::ShapeConstPtr> &shapes, const EigenSTL::vector_Affine3d &shape_poses);
+  CollisionObjectWrapper(const std::string& name, const int& type_id, const std::vector<shapes::ShapeConstPtr> &shapes, const EigenSTL::vector_Affine3d &shape_poses, const CollisionObjectTypeVector& collision_object_types);
 
   short int	m_collisionFilterGroup;
   short int	m_collisionFilterMask;
@@ -154,6 +154,7 @@ protected:
   std::string m_name; // name of the collision object
   const std::vector<shapes::ShapeConstPtr>& m_shapes;
   const EigenSTL::vector_Affine3d& m_shape_poses;
+  const CollisionObjectTypeVector& m_collision_object_types;
 
   std::vector<std::shared_ptr<void>> m_data;
 };
@@ -191,33 +192,6 @@ inline bool isCollisionAllowed(const COW* cow0, const COW* cow1, const IsContact
     }
     return false;
   }
-
-//  // check if a link is touching an attached object
-//  if (cow0->m_type == BodyType::ROBOT_LINK && cow1->m_type == BodyType::ROBOT_ATTACHED)
-//  {
-//    const std::vector<std::string>& tl = cow1->ptr.m_ab->info.touch_links;
-//    if (std::find(tl.begin(), tl.end(), cow0->getID()) != tl.end() || cow0->ptr.m_link->name == cow1->ptr.m_ab->info.parent_link_name)
-//    {
-//      always_in_collision = true;
-//      if (verbose)
-//        ROS_DEBUG("Robot link '%s' is allowed to touch attached object '%s'. No contacts are computed.",
-//                  cow0->getID().c_str(), cow1->getID().c_str());
-//    }
-//  }
-//  else
-//  {
-//    if (cow1->m_type == BodyType::ROBOT_LINK && cow0->m_type == BodyType::ROBOT_ATTACHED)
-//    {
-//      const std::vector<std::string>& tl = cow0->ptr.m_ab->info.touch_links;
-//      if (std::find(tl.begin(), tl.end(), cow1->getID()) != tl.end() || cow1->ptr.m_link->name == cow0->ptr.m_ab->info.parent_link_name)
-//      {
-//        always_in_collision = true;
-//        if (verbose)
-//          ROS_DEBUG("Robot link '%s' is allowed to touch attached object '%s'. No contacts are computed.",
-//                    cow1->getID().c_str(), cow0->getID().c_str());
-//      }
-//    }
-//  }
 
   if (verbose)
     ROS_DEBUG("Actually checking collisions between %s and %s", cow0->getName().c_str(), cow1->getName().c_str());
@@ -895,7 +869,7 @@ private:
 };
 typedef std::shared_ptr<BulletManager> BulletManagerPtr;
 
-btCollisionShape* createShapePrimitive(const shapes::ShapeConstPtr& geom, bool useTrimesh, CollisionObjectWrapper* cow);
+btCollisionShape* createShapePrimitive(const shapes::ShapeConstPtr& geom, const CollisionObjectType &collision_object_type, CollisionObjectWrapper* cow);
 
 inline
 void setContactDistance(COWPtr& cow, double contact_distance)

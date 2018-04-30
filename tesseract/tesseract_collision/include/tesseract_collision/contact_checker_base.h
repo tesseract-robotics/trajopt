@@ -74,13 +74,20 @@ public:
 
   /**
    * @brief Add a object to the checker
-   * @param name        The name of the object, must be unique.
-   * @param type_id     User defined type id which gets stored in the results structure.
-   * @param shapes      A vector of shapes that make up the collision object.
-   * @param shape_poses A vector of poses for each shape, must be same length as shapes
+   * @param name            The name of the object, must be unique.
+   * @param mask_id         User defined id which gets stored in the results structure.
+   * @param shapes          A vector of shapes that make up the collision object.
+   * @param shape_poses     A vector of poses for each shape, must be same length as shapes
+   * @param shape_types     A vector of shape types for encode the collision object. If the vector is of length 1 it is used for all shapes.
+   * @param conversion_mode A int identifying a conversion mode for the object. (ex. convert meshes to convex_hulls)
    * @return true if successfully added, otherwise false.
    */
-  virtual bool addObject(const std::string& name, const int& type_id, const std::vector<shapes::ShapeConstPtr>& shapes, const EigenSTL::vector_Affine3d& shape_poses, bool enabled = true) = 0;
+  virtual bool addObject(const std::string& name,
+                         const int& mask_id,
+                         const std::vector<shapes::ShapeConstPtr>& shapes,
+                         const EigenSTL::vector_Affine3d& shape_poses,
+                         const CollisionObjectTypeVector& collision_object_types,
+                         bool enabled = true) = 0;
 
   /**
    * @brief Remove an object from the checker

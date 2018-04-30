@@ -70,7 +70,12 @@ public:
 
   void calcCollisionsContinuous(const ContactRequest &req, const TransformMap& transforms1, const TransformMap& transforms2, ContactResultMap &contacts) const override;
 
-  bool addObject(const std::string& name, const int& type_id, const std::vector<shapes::ShapeConstPtr>& shapes, const EigenSTL::vector_Affine3d& shape_poses, bool enabled = true) override;
+  bool addObject(const std::string& name,
+                 const int& mask_id,
+                 const std::vector<shapes::ShapeConstPtr>& shapes,
+                 const EigenSTL::vector_Affine3d& shape_poses,
+                 const CollisionObjectTypeVector& collision_object_types,
+                 bool enabled = true) override;
 
   bool removeObject(const std::string& name) override;
 

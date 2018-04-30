@@ -76,6 +76,7 @@ public:
     obj1->visual.shape_poses.push_back(box_pose);
     obj1->collision.shapes.push_back(box);
     obj1->collision.shape_poses.push_back(box_pose);
+    obj1->collision.collision_object_types.push_back(CollisionObjectType::UseShapeType);
     env_->addAttachableObject(obj1);
 
     std::shared_ptr<shapes::Box> box2(new shapes::Box());
@@ -93,6 +94,7 @@ public:
     obj2->visual.shape_poses.push_back(box_pose2);
     obj2->collision.shapes.push_back(box2);
     obj2->collision.shape_poses.push_back(box_pose2);
+    obj2->collision.collision_object_types.push_back(CollisionObjectType::UseShapeType);
     env_->addAttachableObject(obj2);
 
     gLogLevel = util::LevelInfo;

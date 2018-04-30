@@ -85,13 +85,27 @@ private:
 typedef std::shared_ptr<AllowedCollisionMatrix> AllowedCollisionMatrixPtr;
 typedef std::shared_ptr<const AllowedCollisionMatrix> AllowedCollisionMatrixConstPtr;
 
-
 /**
  * @brief Should return true if contact allowed, otherwise false.
  *
  * Also the order of strings should not matter, the function should handled by the function.
  */
 typedef std::function<bool(const std::string&, const std::string&)> IsContactAllowedFn;
+
+namespace CollisionObjectTypes
+{
+enum CollisionObjectType
+{
+  UseShapeType = 0,        /**< @brief Infer the type from the type specified in the shapes::Shape class */
+
+  // These convert the meshes to custom collision objects
+  ConvexHull = 1,  /**< @brief Use the mesh in shapes::Shape but make it a convex hulls collision object. (if not convex it will be converted) */
+  MultiSphere = 2, /**< @brief Use the mesh and represent it by multiple spheres collision object */
+  SDF = 3          /**< @brief Use the mesh and rpresent it by a signed distance fields collision object */
+};
+}
+typedef CollisionObjectTypes::CollisionObjectType CollisionObjectType;
+typedef std::vector<CollisionObjectType> CollisionObjectTypeVector;
 
 namespace BodyTypes
 {
@@ -200,20 +214,26 @@ struct AttachedBodyInfo
   std::vector<std::string> touch_links; /**< @brief The names of links which the attached body is allowed to be in contact with */
 };
 
-/** @brief Contains geometry data for an attachable object */
-struct AttachableObjectGeometry
+/** @brief Contains visual geometry data */
+struct VisualObjectGeometry
 {
   std::vector<shapes::ShapeConstPtr> shapes;  /**< @brief The shape */
   EigenSTL::vector_Affine3d shape_poses;      /**< @brief The pose of the shape */
   EigenSTL::vector_Vector4d shape_colors;     /**< @brief (Optional) The shape color (R, G, B, A) */
 };
 
+/** @brief Contains visual geometry data */
+struct CollisionObjectGeometry : public VisualObjectGeometry
+{
+  CollisionObjectTypeVector collision_object_types;      /**< @brief The collision object type. This is used by the collision libraries */
+};
+
 /** @brief Contains data about an attachable object */
 struct AttachableObject
 {
   std::string name;                   /**< @brief The name of the attachable object (aka. link name and must be unique) */
-  AttachableObjectGeometry visual;    /**< @brief The objects visual geometry */
-  AttachableObjectGeometry collision; /**< @brief The objects collision geometry */
+  VisualObjectGeometry visual;        /**< @brief The objects visual geometry */
+  CollisionObjectGeometry collision;  /**< @brief The objects collision geometry */
 };
 typedef std::shared_ptr<AttachableObject> AttachableObjectPtr;
 typedef std::shared_ptr<const AttachableObject> AttachableObjectConstPtr;

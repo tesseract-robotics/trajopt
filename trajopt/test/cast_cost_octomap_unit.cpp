@@ -94,6 +94,7 @@ public:
     obj->name = "octomap_attached";
     obj->collision.shapes.push_back(shapes::ShapeConstPtr(octomap_world));
     obj->collision.shape_poses.push_back(octomap_pose);
+    obj->collision.collision_object_types.push_back(CollisionObjectType::UseShapeType);
     env_->addAttachableObject(obj);
 
     gLogLevel = util::LevelInfo;

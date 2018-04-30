@@ -2,10 +2,10 @@
 string name
 
 # the objects visual geometry
-AttachableObjectGeometry visual
+VisualGeometry visual
 
 # the objects collision geometry
-AttachableObjectGeometry collision
+CollisionGeometry collision
 
 # The weight of the attached object, if known
 geometry_msgs/Inertia inertia

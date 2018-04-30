@@ -77,6 +77,7 @@ public:
     obj->visual.shape_poses.push_back(box_pose);
     obj->collision.shapes.push_back(box);
     obj->collision.shape_poses.push_back(box_pose);
+    obj->collision.collision_object_types.push_back(CollisionObjectType::UseShapeType);
     env_->addAttachableObject(obj);
 
     gLogLevel = util::LevelInfo;

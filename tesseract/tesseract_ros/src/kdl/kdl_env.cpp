@@ -426,7 +426,7 @@ void KDLEnv::addAttachableObject(const AttachableObjectConstPtr attachable_objec
   attachable_objects_[attachable_object->name] = attachable_object;
 
   // Add the object to the contact checker
-  contact_checker_->addObject(attachable_object->name, BodyTypes::ROBOT_ATTACHED, attachable_object->collision.shapes, attachable_object->collision.shape_poses, false);
+  contact_checker_->addObject(attachable_object->name, BodyTypes::ROBOT_ATTACHED, attachable_object->collision.shapes, attachable_object->collision.shape_poses, attachable_object->collision.collision_object_types, false);
 }
 
 void KDLEnv::removeAttachableObject(const std::string& name)
@@ -638,7 +638,8 @@ void KDLEnv::loadContactCheckerPlugin(const std::string& plugin)
               link.second->collision_array.empty() ? std::vector<urdf::CollisionSharedPtr>(1, link.second->collision) : link.second->collision_array;
 
         std::vector<shapes::ShapeConstPtr> shapes;
-        EigenSTL::vector_Affine3d poses;
+        EigenSTL::vector_Affine3d shape_poses;
+        CollisionObjectTypeVector collision_object_types;
 
         for (std::size_t i = 0; i < col_array.size(); ++i)
         {
@@ -648,17 +649,24 @@ void KDLEnv::loadContactCheckerPlugin(const std::string& plugin)
             if (s)
             {
               shapes.push_back(s);
-              poses.push_back(urdfPose2Affine3d(col_array[i]->origin));
+              shape_poses.push_back(urdfPose2Affine3d(col_array[i]->origin));
+
+              // TODO: Need to encode this in the srdf
+              if (s->type == shapes::MESH)
+                collision_object_types.push_back(CollisionObjectType::ConvexHull);
+              else
+                collision_object_types.push_back(CollisionObjectType::UseShapeType);
+
             }
           }
         }
-        contact_checker_->addObject(link.second->name, BodyType::ROBOT_LINK, shapes, poses);
+        contact_checker_->addObject(link.second->name, BodyType::ROBOT_LINK, shapes, shape_poses, collision_object_types, true);
       }
     }
 
     // Add attachable collision object to the contact checker in a disabled state
     for (const auto& ao : attachable_objects_)
-      contact_checker_->addObject(ao.second->name, BodyTypes::ROBOT_ATTACHED, ao.second->collision.shapes, ao.second->collision.shape_poses, false);
+      contact_checker_->addObject(ao.second->name, BodyTypes::ROBOT_ATTACHED, ao.second->collision.shapes, ao.second->collision.shape_poses, ao.second->collision.collision_object_types, false);
 
     // Enable the attached objects in the contact checker
     for (const auto& ab : attached_bodies_)

@@ -19,7 +19,8 @@ add_message_files(
   FILES
     AttachableObject.msg
     AttachedBodyInfo.msg
-    AttachableObjectGeometry.msg
+    VisualGeometry.msg
+    CollisionGeometry.msg
     TesseractState.msg
     ObjectColor.msg
     Trajectory.msg
