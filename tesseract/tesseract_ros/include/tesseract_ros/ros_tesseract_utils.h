@@ -422,6 +422,7 @@ void attachedBodyInfoToAttachedBodyInfoMsg(tesseract_msgs::AttachedBodyInfo& ab_
   ab_info_msg.operation = tesseract_msgs::AttachedBodyInfo::ADD;
   ab_info_msg.object_name = ab_info.object_name;
   ab_info_msg.parent_link_name = ab_info.parent_link_name;
+  tf::poseEigenToMsg(ab_info.transform, ab_info_msg.transform);
   ab_info_msg.touch_links = ab_info.touch_links;
 }
 
@@ -436,6 +437,7 @@ void attachedBodyInfoMsgToAttachedBodyInfo(AttachedBodyInfo& ab_info, const tess
 {
   ab_info.object_name = body.object_name;
   ab_info.parent_link_name = body.parent_link_name;
+  tf::poseMsgToEigen(body.transform, ab_info.transform);
   ab_info.touch_links = body.touch_links;
 }
 

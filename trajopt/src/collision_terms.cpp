@@ -155,6 +155,7 @@ void SingleTimestepCollisionEvaluator::CalcCollisions(const DblVec& x, tesseract
   req.link_names = manip_->getLinkNames();
   req.contact_distance = safety_margin_data_->getMaxSafetyMargin() + 0.04; // The original implementation added a margin of 0.04
   req.isContactAllowed = env_->getIsContactAllowedFn();
+  req.type = tesseract::ContactRequestTypes::SINGLE;
 
   tesseract::ContactResultMap contacts;
   env_->calcDistancesDiscrete(req, manip_->getJointNames(), getVec(x, m_vars), contacts);
@@ -189,6 +190,7 @@ void CastCollisionEvaluator::CalcCollisions(const DblVec& x, tesseract::ContactR
   req.link_names = manip_->getLinkNames();
   req.contact_distance = safety_margin_data_->getMaxSafetyMargin() + 0.04; // The original implementation added a margin of 0.04
   req.isContactAllowed = env_->getIsContactAllowedFn();
+  req.type = tesseract::ContactRequestTypes::SINGLE;
 
   tesseract::ContactResultMap contacts;
   env_->calcDistancesContinuous(req, manip_->getJointNames(), getVec(x, m_vars0), getVec(x, m_vars1), contacts);

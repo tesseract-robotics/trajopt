@@ -309,18 +309,25 @@ TrajOptProbPtr ConstructProblem(const ProblemConstructionInfo& pci)
   TrajOptProbPtr prob(new TrajOptProb(n_steps, pci));
   int n_dof = prob->GetKin()->numJoints();
 
-  VectorXd cur_dofvals = prob->GetEnv()->getCurrentJointValues(prob->GetKin()->getName());
-
   if (bi.start_fixed) {
-    if (pci.init_info.data.rows() > 0 && !allClose(cur_dofvals, pci.init_info.data.row(0))) {
+    if (pci.init_info.data.rows() < 1)
+    {
+      PRINT_AND_THROW( "Initial trajectory must contain at least the start state.");
+    }
+
+    if (pci.init_info.data.cols() != n_dof)
+    {
       PRINT_AND_THROW( "robot dof values don't match initialization. I don't know what you want me to use for the dof values");
     }
-    for (int j=0; j < n_dof; ++j) {
-      prob->addLinearConstraint(exprSub(AffExpr(prob->m_traj_vars(0,j)), cur_dofvals[j]), EQ);
+
+    for (int j=0; j < n_dof; ++j)
+    {
+      prob->addLinearConstraint(exprSub(AffExpr(prob->m_traj_vars(0,j)), pci.init_info.data(0, j)), EQ);
     }
   }
 
-  if (!bi.dofs_fixed.empty()) {
+  if (!bi.dofs_fixed.empty())
+  {
     for (const int& dof_ind : bi.dofs_fixed)
     {
       for (int i=1; i < prob->GetNumSteps(); ++i)

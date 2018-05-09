@@ -485,10 +485,6 @@ void KDLEnv::attachBody(const AttachedBodyInfo &attached_body_info)
     active_link_names_.push_back(attached_body_info.object_name);
   }
 
-//  AttachedBodyPtr attached_body(new AttachedBody());
-//  attached_body->info = attached_body_info;
-//  attached_body->obj = obj->second;
-
   attached_bodies_.insert(std::make_pair(attached_body_info.object_name, attached_body_info));
   contact_checker_->enableObject(attached_body_info.object_name);
 
@@ -586,7 +582,7 @@ void KDLEnv::calculateTransforms(TransformMap &transforms, const KDL::JntArray& 
   // update attached objects location
   for (const auto& attached : attached_bodies_)
   {
-    transforms[attached.first] = transforms[attached.second.parent_link_name];
+    transforms[attached.first] = transforms[attached.second.parent_link_name] * attached.second.transform;
   }
 }
 

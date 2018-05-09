@@ -31,3 +31,6 @@ target_link_libraries(${PROJECT_NAME}_glass_up_right_plan ${catkin_LIBRARIES})
 
 add_executable(${PROJECT_NAME}_puzzle_piece_plan src/puzzle_piece_plan.cpp)
 target_link_libraries(${PROJECT_NAME}_puzzle_piece_plan ${catkin_LIBRARIES})
+
+add_executable(${PROJECT_NAME}_car_seat_demo src/car_seat_demo.cpp)
+target_link_libraries(${PROJECT_NAME}_car_seat_demo ${catkin_LIBRARIES})
