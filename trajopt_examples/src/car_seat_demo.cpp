@@ -18,7 +18,6 @@ const std::string ROBOT_SEMANTIC_PARAM = "robot_description_semantic"; /**< Defa
 const std::string TRAJOPT_DESCRIPTION_PARAM = "trajopt_description"; /**< Default ROS parameter for trajopt description */
 
 bool plotting_ = false;
-int steps_ = 5;
 std::string method_ = "json";
 urdf::ModelInterfaceSharedPtr urdf_model_; /**< URDF Model */
 srdf::ModelSharedPtr srdf_model_;          /**< SRDF Model */
@@ -186,7 +185,7 @@ std::shared_ptr<ProblemConstructionInfo> cppMethod(const std::string &start, con
   std::shared_ptr<ProblemConstructionInfo> pci(new ProblemConstructionInfo(env_));
 
   // Populate Basic Info
-  pci->basic_info.n_steps = 30;
+  pci->basic_info.n_steps = 50;
   pci->basic_info.manip = "manipulator";
   pci->basic_info.start_fixed = true;
 
@@ -228,11 +227,11 @@ std::shared_ptr<ProblemConstructionInfo> cppMethod(const std::string &start, con
   std::shared_ptr<CollisionCostInfo> collision = std::shared_ptr<CollisionCostInfo>(new CollisionCostInfo);
   collision->name = "collision";
   collision->term_type = TT_COST;
-  collision->continuous = false;
+  collision->continuous = true;
   collision->first_step = 0;
-  collision->last_step = pci->basic_info.n_steps - 2;
+  collision->last_step = pci->basic_info.n_steps - 1;
   collision->gap = 1;
-  collision->info = createSafetyMarginDataVector(pci->basic_info.n_steps, 0.025, 20);
+  collision->info = createSafetyMarginDataVector(pci->basic_info.n_steps, 0.05, 40);
   pci->cost_infos.push_back(collision);
 
   // Create place pose constraint
@@ -286,6 +285,7 @@ int main(int argc, char** argv)
   env_->setState(saved_positions_["Home"]);
 
   // Plot the scene
+  plotter->plotScene();
   plotter->plotScene();
 
   // Set Log Level

@@ -73,8 +73,8 @@ public:
     contact_checker_loader_.reset(new ContactCheckerBasePluginLoader("tesseract_collision", "tesseract::ContactCheckerBase"));
   }
 
-  bool init(const urdf::ModelInterfaceConstSharedPtr urdf_model) override;
-  bool init(const urdf::ModelInterfaceConstSharedPtr urdf_model, const srdf::ModelConstSharedPtr srdf_model) override;
+  bool init(urdf::ModelInterfaceConstSharedPtr urdf_model) override;
+  bool init(urdf::ModelInterfaceConstSharedPtr urdf_model, srdf::ModelConstSharedPtr srdf_model) override;
 
   void setName(const std::string& name) override { name_ = name; }
 
@@ -168,9 +168,9 @@ public:
 
   void clearAttachedBodies() override;
 
-  const urdf::ModelInterfaceConstSharedPtr getURDF() const override { return urdf_model_; }
+  urdf::ModelInterfaceConstSharedPtr getURDF() const override { return urdf_model_; }
 
-  const srdf::ModelConstSharedPtr getSRDF() const override { return srdf_model_; }
+  srdf::ModelConstSharedPtr getSRDF() const override { return srdf_model_; }
 
   AllowedCollisionMatrixConstPtr getAllowedCollisionMatrix() const override { return allowed_collision_matrix_; }
 

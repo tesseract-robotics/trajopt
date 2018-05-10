@@ -188,9 +188,9 @@
             <material name="gray"/>
           </visual>
           <collision>
-            <origin rpy = "0 0 0" xyz="-2.900 0 0.156"/>
+            <origin rpy = "0 0 0" xyz="-2.900 -1 0.125"/>
             <geometry>
-              <box size="6.300 0.722 0.312"/>
+              <box size="6.300 2.722 0.25"/>
             </geometry>
             <material name="yellow"/>
           </collision>

@@ -38,11 +38,11 @@
 #include "tesseract_rviz/tesseract_scene_plugin/tesseract_scene_display.h"
 #include "tesseract_rviz/render_tools/state_visualization.h"
 #include "tesseract_rviz/render_tools/octomap_render.h"
+#include "tesseract_rviz/render_tools/env/robot.h"
+#include "tesseract_rviz/render_tools/env/robot_link.h"
+
 
 #include <rviz/visualization_manager.h>
-#include <rviz/robot/robot.h>
-#include <rviz/robot/robot_link.h>
-
 #include <rviz/properties/property.h>
 #include <rviz/properties/string_property.h>
 #include <rviz/properties/bool_property.h>
@@ -413,7 +413,7 @@ void TesseractSceneDisplay::changedSceneEnabled()
     planning_scene_render_->getGeometryNode()->setVisible(scene_enabled_property_->getBool());
 }
 
-void TesseractSceneDisplay::setGroupColor(rviz::Robot* robot, const std::string& group_name, const QColor& color)
+void TesseractSceneDisplay::setGroupColor(Robot* robot, const std::string& group_name, const QColor& color)
 {
   if (getRobotModel())
   {
@@ -427,7 +427,7 @@ void TesseractSceneDisplay::setGroupColor(rviz::Robot* robot, const std::string&
   }
 }
 
-void TesseractSceneDisplay::unsetAllColors(rviz::Robot* robot)
+void TesseractSceneDisplay::unsetAllColors(Robot* robot)
 {
   if (getRobotModel())
   {
@@ -463,18 +463,18 @@ void TesseractSceneDisplay::unsetLinkColor(const std::string& link_name)
     unsetLinkColor(&planning_scene_robot_->getRobot(), link_name);
 }
 
-void TesseractSceneDisplay::setLinkColor(rviz::Robot* robot, const std::string& link_name, const QColor& color)
+void TesseractSceneDisplay::setLinkColor(Robot* robot, const std::string& link_name, const QColor& color)
 {
-  rviz::RobotLink* link = robot->getLink(link_name);
+  RobotLink* link = robot->getLink(link_name);
 
   // Check if link exists
   if (link)
     link->setColor(color.redF(), color.greenF(), color.blueF());
 }
 
-void TesseractSceneDisplay::unsetLinkColor(rviz::Robot* robot, const std::string& link_name)
+void TesseractSceneDisplay::unsetLinkColor(Robot* robot, const std::string& link_name)
 {
-  rviz::RobotLink* link = robot->getLink(link_name);
+  RobotLink* link = robot->getLink(link_name);
 
   // Check if link exists
   if (link)

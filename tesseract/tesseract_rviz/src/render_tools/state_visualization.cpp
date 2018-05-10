@@ -36,7 +36,6 @@
 
 #include "tesseract_rviz/render_tools/state_visualization.h"
 #include "tesseract_rviz/render_tools/link_updater.h"
-#include "tesseract_rviz/render_tools/render_shapes.h"
 #include <QApplication>
 
 namespace tesseract_rviz
@@ -46,36 +45,29 @@ using namespace tesseract;
 StateVisualization::StateVisualization(Ogre::SceneNode* root_node, rviz::DisplayContext* context,
                                        const std::string& name, rviz::Property* parent_property)
   : robot_(root_node, context, name, parent_property)
-  , octree_voxel_render_mode_(OCTOMAP_OCCUPIED_VOXELS)
-  , octree_voxel_color_mode_(OCTOMAP_Z_AXIS_COLOR)
   , visible_(true)
   , visual_visible_(true)
   , collision_visible_(false)
-  , attached_visual_visible_(true)
-  , attached_collision_visible_(false)
 {
   default_attached_object_color_.r = 0.0f;
   default_attached_object_color_.g = 0.7f;
   default_attached_object_color_.b = 0.0f;
   default_attached_object_color_.a = 1.0f;
-  render_shapes_.reset(new RenderShapes(context));
 }
 
-void StateVisualization::load(const urdf::ModelInterface& descr, bool visual, bool collision)
+void StateVisualization::load(urdf::ModelInterfaceConstSharedPtr urdf, bool visual, bool collision, bool show_active, bool show_static)
 {
   // clear previously loaded model
   clear();
 
-  robot_.load(descr, visual, collision);
+  robot_.load(urdf, visual, collision, show_active, show_static);
   robot_.setVisualVisible(visual_visible_);
   robot_.setCollisionVisible(collision_visible_);
   robot_.setVisible(visible_);
-  QApplication::processEvents();
 }
 
 void StateVisualization::clear()
 {
-  render_shapes_->clear();
   robot_.clear();
 }
 
@@ -110,81 +102,31 @@ void StateVisualization::updateHelper(const tesseract::tesseract_ros::ROSBasicEn
                                       const std_msgs::ColorRGBA& default_attached_object_color,
                                       const tesseract::ObjectColorMapConstPtr color_map)
 {
-  robot_.update(LinkUpdater(state));
-  render_shapes_->clear();
-
   const AttachedBodyInfoMap& attached_bodies = env->getAttachedBodies();
   const auto& attachable_objects = env->getAttachableObjects();
-  for (const auto &body : attached_bodies)
+
+  // Need to remove links that no longer exist
+  for (const auto& ab : attached_bodies_)
   {
-    const auto& ao = attachable_objects.at(body.second.object_name);
-
-    std_msgs::ColorRGBA color = default_attached_object_color;
-    float alpha = robot_.getAlpha();
-    std::unordered_map<std::string, ObjectColor>::const_iterator it;
-
-    if (color_map)
-      it = color_map->find(ao->name);
-
-    const Eigen::Affine3d &link_tf = state->transforms.at(ao->name);
-    const EigenSTL::vector_Affine3d& ab_visual_pose = ao->visual.shape_poses;
-    const std::vector<shapes::ShapeConstPtr>& ab_visual_shapes = ao->visual.shapes;
-    const EigenSTL::vector_Vector4d& ab_visual_colors = ao->visual.shape_colors;
-    for (std::size_t j = 0; j < ab_visual_shapes.size(); ++j)
-    {
-      if (color_map && (it != color_map->end()))
-      {
-        color.r = it->second.visual[j](0);
-        color.g = it->second.visual[j](1);
-        color.b = it->second.visual[j](2);
-        alpha = color.a = it->second.visual[j](3);
-      }
-      else if (!ab_visual_colors.empty())
-      {
-        color.r = ab_visual_colors[j](0);
-        color.g = ab_visual_colors[j](1);
-        color.b = ab_visual_colors[j](2);
-        alpha = color.a = ab_visual_colors[j](3);
-      }
-
-      rviz::Color rcolor(color.r, color.g, color.b);
-      render_shapes_->renderShape(robot_.getVisualNode(), ab_visual_shapes[j].get(), link_tf * ab_visual_pose[j], octree_voxel_render_mode_,
-                                  octree_voxel_color_mode_, rcolor, alpha, false);
-
-    }
-
-    const EigenSTL::vector_Affine3d& ab_collision_pose = ao->collision.shape_poses;
-    const std::vector<shapes::ShapeConstPtr>& ab_collision_shapes = ao->collision.shapes;
-    const EigenSTL::vector_Vector4d& ab_collision_colors = ao->collision.shape_colors;
-    for (std::size_t j = 0; j < ab_collision_shapes.size(); ++j)
-    {
-      if (color_map && (it != color_map->end()))
-      {
-        color.r = it->second.collision[j](0);
-        color.g = it->second.collision[j](1);
-        color.b = it->second.collision[j](2);
-        alpha = color.a = it->second.collision[j](3);
-      }
-      else if (!ab_collision_colors.empty())
-      {
-        color.r = ab_collision_colors[j](0);
-        color.g = ab_collision_colors[j](1);
-        color.b = ab_collision_colors[j](2);
-        alpha = color.a = ab_collision_colors[j](3);
-      }
-
-      rviz::Color rcolor(color.r, color.g, color.b);
-      render_shapes_->renderShape(robot_.getCollisionNode(), ab_collision_shapes[j].get(), link_tf * ab_collision_pose[j], octree_voxel_render_mode_,
-                                  octree_voxel_color_mode_, rcolor, alpha, true);
-    }
+    const auto it = attached_bodies.find(ab.second.object_name);
+    if (it == attached_bodies.end())
+      robot_.detachBody(ab.second.object_name);
   }
 
+  for (const auto &ab : attached_bodies)
+  {
+    const auto it = attached_bodies_.find(ab.second.object_name);
+    if (it == attached_bodies_.end()) // Add body if it does not already exist
+    {
+      const auto& ao = attachable_objects.at(ab.second.object_name);
+      robot_.attachBody(*ao, ab.second);
+    }
+  }
+  attached_bodies_ = attached_bodies;
+  robot_.update(LinkUpdater(state));
   robot_.setVisualVisible(visual_visible_);
   robot_.setCollisionVisible(collision_visible_);
   robot_.setVisible(visible_);
-
-  render_shapes_->setVisualVisible(attached_visual_visible_);
-  render_shapes_->setCollisionVisible(attached_collision_visible_);
 }
 
 void StateVisualization::setVisible(bool visible)
@@ -203,19 +145,6 @@ void StateVisualization::setCollisionVisible(bool visible)
 {
   collision_visible_ = visible;
   robot_.setCollisionVisible(visible);
-
-}
-
-void StateVisualization::setAttachedVisualVisible(bool visible)
-{
-  attached_visual_visible_ = visible;
-  render_shapes_->setVisualVisible(visible);
-}
-
-void StateVisualization::setAttachedCollisionVisible(bool visible)
-{
-  attached_collision_visible_ = visible;
-  render_shapes_->setCollisionVisible(visible);
 }
 
 void StateVisualization::setAlpha(float alpha)

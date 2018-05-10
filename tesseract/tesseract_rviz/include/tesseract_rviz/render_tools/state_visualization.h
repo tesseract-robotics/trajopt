@@ -37,11 +37,9 @@
 #ifndef TESSERACT_RVIZ_STATE_VISUALIZATION
 #define TESSERACT_RVIZ_STATE_VISUALIZATION
 
-#include "tesseract_rviz/render_tools/octomap_render.h"
-#include "tesseract_rviz/render_tools/render_shapes.h"
+#include "tesseract_rviz/render_tools/env/robot.h"
 #include <tesseract_ros/ros_basic_env.h>
 #include <std_msgs/ColorRGBA.h>
-#include <rviz/robot/robot.h>
 #include <memory>
 
 namespace tesseract_rviz
@@ -53,9 +51,9 @@ class StateVisualization
 public:
   StateVisualization(Ogre::SceneNode* root_node, rviz::DisplayContext* context, const std::string& name, rviz::Property* parent_property);
 
-  rviz::Robot& getRobot() { return robot_; }
+  Robot& getRobot() { return robot_; }
 
-  void load(const urdf::ModelInterface& descr, bool visual = true, bool collision = true);
+  void load(urdf::ModelInterfaceConstSharedPtr urdf, bool visual = true, bool collision = true, bool show_active = true, bool show_static = true);
   void clear();
 
   void update(const tesseract::tesseract_ros::ROSBasicEnvConstPtr env,
@@ -90,18 +88,6 @@ public:
    */
   void setCollisionVisible(bool visible);
 
-  /**
-   * \brief Set whether the visual meshes of the attached objects should be visible
-   * @param visible Whether the visual meshes of the robot should be visible
-   */
-  void setAttachedVisualVisible(bool visible);
-
-  /**
-   * \brief Set whether the collision meshes/primitives of the attached objects should be visible
-   * @param visible Whether the collision meshes/primitives should be visible
-   */
-  void setAttachedCollisionVisible(bool visible);
-
   void setAlpha(float alpha);
 
 private:
@@ -109,17 +95,14 @@ private:
                     const tesseract::EnvStateConstPtr state,
                     const std_msgs::ColorRGBA& default_attached_object_color,
                     const tesseract::ObjectColorMapConstPtr color_map);
-  rviz::Robot robot_;
-  RenderShapesPtr render_shapes_;
+
+  Robot robot_;
+  tesseract::AttachedBodyInfoMap attached_bodies_;
   std_msgs::ColorRGBA default_attached_object_color_;
-  OctreeVoxelRenderMode octree_voxel_render_mode_;
-  OctreeVoxelColorMode octree_voxel_color_mode_;
 
   bool visible_;
   bool visual_visible_;
   bool collision_visible_;
-  bool attached_visual_visible_;
-  bool attached_collision_visible_;
 };
 typedef std::shared_ptr<StateVisualization> StateVisualizationPtr;
 typedef std::shared_ptr<const StateVisualization> StateVisualizationConstPtr;

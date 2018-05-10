@@ -35,6 +35,13 @@
 #include <jsoncpp/json/json.h>
 #include <srdfdom/model.h>
 
+#include <octomap_ros/conversions.h>
+#include <pcl/point_cloud.h>
+#include <pcl/point_types.h>
+#include <sensor_msgs/PointCloud2.h>
+#include <sensor_msgs/point_cloud_conversion.h>
+#include <pcl_conversions/pcl_conversions.h>
+
 using namespace trajopt;
 using namespace tesseract;
 
@@ -142,6 +149,42 @@ int main(int argc, char** argv)
 
   bool success = env_->init(urdf_model_, srdf_model_);
   assert(success);
+
+  pcl::PointCloud<pcl::PointXYZ> full_cloud;
+  double delta = 0.05;
+  int length = (1/delta);
+
+  for (int x = 0; x < length; ++x)
+    for (int y = 0; y < length; ++y)
+      for (int z = 0; z < length; ++z)
+        full_cloud.push_back(pcl::PointXYZ(-0.5 + x*delta, -0.5 + y*delta, -0.5 + z*delta));
+
+  sensor_msgs::PointCloud2 pointcloud_msg;
+  pcl::toROSMsg(full_cloud, pointcloud_msg);
+
+  octomap::Pointcloud octomap_data;
+  octomap::pointCloud2ToOctomap(pointcloud_msg, octomap_data);
+  octomap::OcTree* octree = new octomap::OcTree(2*delta);
+  octree->insertPointCloud(octomap_data, octomap::point3d(0,0,0));
+
+  AttachableObjectPtr obj(new AttachableObject());
+  shapes::OcTree* octomap_world = new shapes::OcTree(std::shared_ptr<const octomap::OcTree>(octree));
+  Eigen::Affine3d octomap_pose;
+
+  octomap_pose.setIdentity();
+  octomap_pose.translation() = Eigen::Vector3d(1, 0, 0);
+
+  obj->name = "octomap_attached";
+  obj->collision.shapes.push_back(shapes::ShapeConstPtr(octomap_world));
+  obj->collision.shape_poses.push_back(octomap_pose);
+  obj->collision.collision_object_types.push_back(CollisionObjectType::UseShapeType);
+  env_->addAttachableObject(obj);
+
+  AttachedBodyInfo attached_body;
+  attached_body.object_name = "octomap_attached";
+  attached_body.parent_link_name = "base_link";
+  attached_body.transform = Eigen::Affine3d::Identity();
+  env_->attachBody(attached_body);
 
   // Create plotting tool
   tesseract_ros::ROSBasicPlottingPtr plotter(new tesseract_ros::ROSBasicPlotting(env_));

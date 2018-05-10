@@ -94,14 +94,20 @@ include_directories(
 )
 
 # Rviz Render Tools
-qt_wrap_cpp(${PROJECT_NAME}_render_tools_cpp_MOCS include/tesseract_rviz/render_tools/trajectory_visualization.h include/tesseract_rviz/render_tools/trajectory_panel.h)
+qt_wrap_cpp(${PROJECT_NAME}_render_tools_cpp_MOCS
+  include/tesseract_rviz/render_tools/trajectory_visualization.h
+  include/tesseract_rviz/render_tools/trajectory_panel.h
+  include/tesseract_rviz/render_tools/env/robot.h
+  include/tesseract_rviz/render_tools/env/robot_link.h
+  include/tesseract_rviz/render_tools/env/robot_joint.h
+  )
 
 add_library(${PROJECT_NAME}_render_tools
-  src/render_tools/render_shapes.cpp
+  src/render_tools/env/robot.cpp
+  src/render_tools/env/robot_joint.cpp
+  src/render_tools/env/robot_link.cpp
   src/render_tools/state_visualization.cpp
-  src/render_tools/scene_render.cpp
   src/render_tools/link_updater.cpp
-  src/render_tools/octomap_render.cpp
   src/render_tools/trajectory_visualization.cpp
   src/render_tools/trajectory_panel.cpp
   ${${PROJECT_NAME}_render_tools_cpp_MOCS}

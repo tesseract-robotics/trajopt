@@ -9,7 +9,10 @@ find_package(catkin REQUIRED COMPONENTS
   roslib
   trajopt
   tesseract_ros
+  octomap_ros
 )
+
+find_package(PCL REQUIRED COMPONENTS core features filters io segmentation surface)
 
 catkin_package(
 #  INCLUDE_DIRS include
@@ -20,11 +23,12 @@ catkin_package(
 
 include_directories(
 # include
+  ${PCL_INCLUDE_DIRS}
   ${catkin_INCLUDE_DIRS}
 )
 
 add_executable(${PROJECT_NAME}_basic_cartesian_plan src/basic_cartesian_plan.cpp)
-target_link_libraries(${PROJECT_NAME}_basic_cartesian_plan ${catkin_LIBRARIES})
+target_link_libraries(${PROJECT_NAME}_basic_cartesian_plan ${PCL_LIBRARIES} ${catkin_LIBRARIES} )
 
 add_executable(${PROJECT_NAME}_glass_up_right_plan src/glass_up_right_plan.cpp)
 target_link_libraries(${PROJECT_NAME}_glass_up_right_plan ${catkin_LIBRARIES})

@@ -39,6 +39,7 @@
 
 #include <rviz/display.h>
 #include <rviz/panel_dock_widget.h>
+#include <boost/thread/mutex.hpp>
 
 #ifndef Q_MOC_RUN
 #include <tesseract_rviz/render_tools/state_visualization.h>
@@ -49,7 +50,6 @@
 
 namespace rviz
 {
-class Robot;
 class Shape;
 class Property;
 class IntProperty;
@@ -58,12 +58,14 @@ class BoolProperty;
 class FloatProperty;
 class RosTopicProperty;
 class EditableEnumProperty;
+class EnumProperty;
 class ColorProperty;
 class MovableText;
 }
 
 namespace tesseract_rviz
 {
+class Robot;
 
 class TrajectoryVisualization : public QObject
 {
@@ -101,16 +103,13 @@ private Q_SLOTS:
    */
   void changedDisplayPathVisualEnabled();
   void changedDisplayPathCollisionEnabled();
-  void changedDisplayPathAttachedVisualEnabled();
-  void changedDisplayPathAttachedCollisionEnabled();
-  void changedRobotPathAlpha();
-  void changedLoopDisplay();
-  void changedShowTrail();
+  void changedPathAlpha();
+  void changedDisplayMode();
   void changedTrailStepSize();
   void changedTrajectoryTopic();
   void changedStateDisplayTime();
-  void changedRobotColor();
-  void enabledRobotColor();
+  void changedColor();
+  void enabledColor();
   void trajectorySliderPanelVisibilityChange(bool enable);
 
 protected:
@@ -120,17 +119,20 @@ protected:
   void incomingDisplayTrajectory(const tesseract_msgs::Trajectory::ConstPtr& msg);
   float getStateDisplayTime();
   void clearTrajectoryTrail();
+  void createTrajectoryTrail();
 
   // Handles actually drawing the robot along motion plans
-  StateVisualizationPtr display_path_robot_;
+  StateVisualizationPtr display_path_;
 
   // Handle colouring of robot
-  void setRobotColor(rviz::Robot* robot, const QColor& color);
-  void unsetRobotColor(rviz::Robot* robot);
+  void setColor(Robot* robot, const QColor& color);
+  void unsetColor(Robot* robot);
 
   tesseract_msgs::TrajectoryPtr displaying_trajectory_message_;
   tesseract_msgs::TrajectoryPtr trajectory_message_to_display_;
   std::vector<tesseract_rviz::StateVisualizationPtr> trajectory_trail_;
+  tesseract_rviz::StateVisualizationPtr trajectory_static_;
+
   ros::Subscriber trajectory_topic_sub_;
   bool animating_path_;
   bool drop_displaying_trajectory_;
@@ -152,16 +154,13 @@ protected:
   // Properties
   rviz::BoolProperty* display_path_visual_enabled_property_;
   rviz::BoolProperty* display_path_collision_enabled_property_;
-  rviz::BoolProperty* display_path_attached_visual_enabled_property_;
-  rviz::BoolProperty* display_path_attached_collision_enabled_property_;
   rviz::EditableEnumProperty* state_display_time_property_;
   rviz::RosTopicProperty* trajectory_topic_property_;
-  rviz::FloatProperty* robot_path_alpha_property_;
-  rviz::BoolProperty* loop_display_property_;
-  rviz::BoolProperty* trail_display_property_;
+  rviz::FloatProperty* path_alpha_property_;
+  rviz::EnumProperty* display_mode_property_;
   rviz::BoolProperty* interrupt_display_property_;
-  rviz::ColorProperty* robot_color_property_;
-  rviz::BoolProperty* enable_robot_color_property_;
+  rviz::ColorProperty* default_color_property_;
+  rviz::BoolProperty* enable_default_color_property_;
   rviz::IntProperty* trail_step_size_property_;
 };
 typedef std::shared_ptr<TrajectoryVisualization> TrajectoryVisualizationPtr;

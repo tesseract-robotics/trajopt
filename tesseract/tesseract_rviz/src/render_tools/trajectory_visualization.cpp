@@ -38,7 +38,8 @@
 #include "tesseract_rviz/render_tools/link_updater.h"
 #include "tesseract_rviz/render_tools/state_visualization.h"
 #include "tesseract_ros/ros_tesseract_utils.h"
-#include <rviz/robot/robot.h>
+#include "tesseract_rviz/render_tools/env/robot.h"
+#include "tesseract_rviz/render_tools/env/robot_link.h"
 
 #include <boost/algorithm/string.hpp>
 #include <boost/algorithm/string/replace.hpp>
@@ -50,8 +51,8 @@
 #include <rviz/properties/float_property.h>
 #include <rviz/properties/ros_topic_property.h>
 #include <rviz/properties/editable_enum_property.h>
+#include <rviz/properties/enum_property.h>
 #include <rviz/properties/color_property.h>
-#include <rviz/robot/robot_link.h>
 #include <rviz/display_context.h>
 #include <rviz/window_manager_interface.h>
 
@@ -74,29 +75,22 @@ TrajectoryVisualization::TrajectoryVisualization(rviz::Property* widget, rviz::D
                                  SLOT(changedTrajectoryTopic()), this);
 
   display_path_visual_enabled_property_ =
-      new rviz::BoolProperty("Show Robot Visual", true, "Indicates whether the geometry of the robot as defined for "
-                                                        "visualisation purposes should be displayed",
+      new rviz::BoolProperty("Show Visual", true, "Whether to display the visual representation of the path.",
                              widget, SLOT(changedDisplayPathVisualEnabled()), this);
 
   display_path_collision_enabled_property_ =
-      new rviz::BoolProperty("Show Robot Collision", false, "Indicates whether the geometry of the robot as defined "
-                                                            "for collision detection purposes should be displayed",
+      new rviz::BoolProperty("Show Collision", false, "Whether to display the collision representation of the path.",
                              widget, SLOT(changedDisplayPathCollisionEnabled()), this);
 
-  display_path_attached_visual_enabled_property_ =
-      new rviz::BoolProperty("Show Attached Visual", true, "Indicates whether the geometry of the attached objects as defined for "
-                                                           "visualisation purposes should be displayed",
-                             widget, SLOT(changedDisplayPathAttachedVisualEnabled()), this);
+  path_alpha_property_ = new rviz::FloatProperty("Alpha", 0.5f, "Specifies the alpha for links with geometry",
+                                                       widget, SLOT(changedPathAlpha()), this);
+  path_alpha_property_->setMin(0.0);
+  path_alpha_property_->setMax(1.0);
 
-  display_path_attached_collision_enabled_property_ =
-      new rviz::BoolProperty("Show Attached Collision", false, "Indicates whether the geometry of the attached objects as defined "
-                                                               "for collision detection purposes should be displayed",
-                             widget, SLOT(changedDisplayPathAttachedCollisionEnabled()), this);
-
-  robot_path_alpha_property_ = new rviz::FloatProperty("Robot Alpha", 0.5f, "Specifies the alpha for the robot links",
-                                                       widget, SLOT(changedRobotPathAlpha()), this);
-  robot_path_alpha_property_->setMin(0.0);
-  robot_path_alpha_property_->setMax(1.0);
+  display_mode_property_ = new rviz::EnumProperty("Display Mode", "Loop", "How to display the trajectoy.", widget, SLOT(changedDisplayMode()), this);
+  display_mode_property_->addOptionStd("Single", 0);
+  display_mode_property_->addOptionStd("Loop", 1);
+  display_mode_property_->addOptionStd("Trail", 2);
 
   state_display_time_property_ = new rviz::EditableEnumProperty("State Display Time", "0.05 s",
                                                                 "The amount of wall-time to wait in between displaying "
@@ -107,13 +101,6 @@ TrajectoryVisualization::TrajectoryVisualization(rviz::Property* widget, rviz::D
   state_display_time_property_->addOptionStd("0.1 s");
   state_display_time_property_->addOptionStd("0.5 s");
 
-  loop_display_property_ = new rviz::BoolProperty("Loop Animation", false, "Indicates whether the last received path "
-                                                                           "is to be animated in a loop",
-                                                  widget, SLOT(changedLoopDisplay()), this);
-
-  trail_display_property_ =
-      new rviz::BoolProperty("Show Trail", false, "Show a path trail", widget, SLOT(changedShowTrail()), this);
-
   trail_step_size_property_ = new rviz::IntProperty("Trail Step Size", 1, "Specifies the step size of the samples "
                                                                           "shown in the trajectory trail.",
                                                     widget, SLOT(changedTrailStepSize()), this);
@@ -123,11 +110,11 @@ TrajectoryVisualization::TrajectoryVisualization(rviz::Property* widget, rviz::D
       "Interrupt Display", false,
       "Immediately show newly planned trajectory, interrupting the currently displayed one.", widget);
 
-  robot_color_property_ = new rviz::ColorProperty(
-      "Robot Color", QColor(150, 50, 150), "The color of the animated robot", widget, SLOT(changedRobotColor()), this);
+  default_color_property_ = new rviz::ColorProperty(
+      "Robot Color", QColor(150, 50, 150), "The color of the animated robot", widget, SLOT(changedColor()), this);
 
-  enable_robot_color_property_ = new rviz::BoolProperty(
-      "Color Enabled", false, "Specifies whether robot coloring is enabled", widget, SLOT(enabledRobotColor()), this);
+  enable_default_color_property_ = new rviz::BoolProperty(
+      "Color Enabled", false, "Specifies whether custom coloring is enabled", widget, SLOT(enabledColor()), this);
 }
 
 TrajectoryVisualization::~TrajectoryVisualization()
@@ -136,7 +123,7 @@ TrajectoryVisualization::~TrajectoryVisualization()
   trajectory_message_to_display_.reset();
   displaying_trajectory_message_.reset();
 
-  display_path_robot_.reset();
+  display_path_.reset();
   if (trajectory_slider_dock_panel_)
     delete trajectory_slider_dock_panel_;
 }
@@ -150,13 +137,11 @@ void TrajectoryVisualization::onInitialize(Ogre::SceneNode* scene_node,
   context_ = context;
   update_nh_ = update_nh;
 
-  // Load trajectory robot
-  display_path_robot_.reset(new StateVisualization(scene_node_, context_, "Planned Path", widget_));
-  display_path_robot_->setVisualVisible(display_path_visual_enabled_property_->getBool());
-  display_path_robot_->setCollisionVisible(display_path_collision_enabled_property_->getBool());
-  display_path_robot_->setVisible(false);
-  display_path_robot_->setAttachedVisualVisible(display_path_attached_visual_enabled_property_->getBool());
-  display_path_robot_->setAttachedCollisionVisible(display_path_attached_collision_enabled_property_->getBool());
+  // Load trajectory
+  display_path_.reset(new StateVisualization(scene_node_, context_, "Planned Path", widget_));
+  display_path_->setVisualVisible(display_path_visual_enabled_property_->getBool());
+  display_path_->setCollisionVisible(display_path_collision_enabled_property_->getBool());
+  display_path_->setVisible(false);
 
   rviz::WindowManagerInterface* window_context = context_->getWindowManager();
   if (window_context)
@@ -188,9 +173,9 @@ void TrajectoryVisualization::onEnvLoaded(tesseract::tesseract_ros::ROSBasicEnvP
     return;
   }
 
-  // Load rviz robot
-  display_path_robot_->load(*env_->getURDF());
-  enabledRobotColor();  // force-refresh to account for saved display configuration
+  // Load rviz environment
+  display_path_->load(env_->getURDF());
+  enabledColor();  // force-refresh to account for saved display configuration
 }
 
 void TrajectoryVisualization::reset()
@@ -200,30 +185,22 @@ void TrajectoryVisualization::reset()
   displaying_trajectory_message_.reset();
   animating_path_ = false;
 
-  display_path_robot_->setVisualVisible(display_path_visual_enabled_property_->getBool());
-  display_path_robot_->setCollisionVisible(display_path_collision_enabled_property_->getBool());
-  display_path_robot_->setAttachedVisualVisible(display_path_attached_visual_enabled_property_->getBool());
-  display_path_robot_->setAttachedCollisionVisible(display_path_attached_collision_enabled_property_->getBool());
-  display_path_robot_->setVisible(false);
+  display_path_->setVisualVisible(display_path_visual_enabled_property_->getBool());
+  display_path_->setCollisionVisible(display_path_collision_enabled_property_->getBool());
+  display_path_->setVisible(false);
 }
 
 void TrajectoryVisualization::clearTrajectoryTrail()
 {
+  trajectory_static_.reset();
   trajectory_trail_.clear();
 }
 
-void TrajectoryVisualization::changedLoopDisplay()
-{
-  display_path_robot_->setVisible(display_->isEnabled() && displaying_trajectory_message_ && animating_path_);
-  if (loop_display_property_->getBool() && trajectory_slider_panel_)
-    trajectory_slider_panel_->pauseButton(false);
-}
-
-void TrajectoryVisualization::changedShowTrail()
+void TrajectoryVisualization::createTrajectoryTrail()
 {
   clearTrajectoryTrail();
 
-  if (!trail_display_property_->getBool())
+  if (display_mode_property_->getOptionInt() != 2)
     return;
 
   tesseract_msgs::TrajectoryPtr t = trajectory_message_to_display_;
@@ -232,6 +209,20 @@ void TrajectoryVisualization::changedShowTrail()
   if (!t)
     return;
 
+  // Add static trajectory geometry
+  trajectory_static_ = tesseract_rviz::StateVisualizationPtr(new tesseract_rviz::StateVisualization(scene_node_, context_, "Trail Static", nullptr));
+  trajectory_static_->load(env_->getURDF(), true, true, false, true);
+  trajectory_static_->setVisualVisible(display_path_visual_enabled_property_->getBool());
+  trajectory_static_->setCollisionVisible(display_path_collision_enabled_property_->getBool());
+  trajectory_static_->setAlpha(path_alpha_property_->getFloat());
+  trajectory_static_->update(env_, env_->getState());
+
+  if (enable_default_color_property_->getBool())
+    setColor(&trajectory_static_->getRobot(), default_color_property_->getColor());
+
+  trajectory_static_->setVisible(display_->isEnabled() && !animating_path_);
+
+
   int stepsize = trail_step_size_property_->getInt();
   // always include last trajectory point
   std::size_t num_waypoints = t->joint_trajectory.points.size();
@@ -239,13 +230,11 @@ void TrajectoryVisualization::changedShowTrail()
   for (std::size_t i = 0; i < trajectory_trail_.size(); i++)
   {
     int waypoint_i = std::min(i * stepsize, num_waypoints - 1);  // limit to last trajectory point
-    tesseract_rviz::StateVisualizationPtr state(new tesseract_rviz::StateVisualization(scene_node_, context_, "Trail Robot " + std::to_string(i), NULL));
-    state->load(*env_->getURDF());
+    tesseract_rviz::StateVisualizationPtr state(new tesseract_rviz::StateVisualization(scene_node_, context_, "Path Trail " + std::to_string(i), nullptr));
+    state->load(env_->getURDF(), true, true, true, false);
     state->setVisualVisible(display_path_visual_enabled_property_->getBool());
     state->setCollisionVisible(display_path_collision_enabled_property_->getBool());
-    state->setAttachedVisualVisible(display_path_attached_visual_enabled_property_->getBool());
-    state->setAttachedCollisionVisible(display_path_attached_collision_enabled_property_->getBool());
-    state->setAlpha(robot_path_alpha_property_->getFloat());
+    state->setAlpha(path_alpha_property_->getFloat());
 
     std::unordered_map<std::string, double> joints;
     for (auto j = 0; j < t->joint_trajectory.joint_names.size(); ++j)
@@ -254,25 +243,54 @@ void TrajectoryVisualization::changedShowTrail()
     }
 
     state->update(env_, env_->getState(joints));
-    if (enable_robot_color_property_->getBool())
-      setRobotColor(&state->getRobot(), robot_color_property_->getColor());
+    if (enable_default_color_property_->getBool())
+      setColor(&state->getRobot(), default_color_property_->getColor());
 
     state->setVisible(display_->isEnabled() && (!animating_path_ || waypoint_i <= current_state_));
     trajectory_trail_[i] = state;
   }
 }
 
-void TrajectoryVisualization::changedTrailStepSize()
+void TrajectoryVisualization::changedDisplayMode()
 {
-  if (trail_display_property_->getBool())
-    changedShowTrail();
+  if (display_mode_property_->getOptionInt() == 1)
+  {
+    if (display_->isEnabled() && displaying_trajectory_message_ && animating_path_)
+    {
+      display_path_->setVisible(true);
+    }
+    else
+    {
+      clearTrajectoryTrail();
+      display_path_->setVisible(false);
+    }
+
+    if (trajectory_slider_panel_)
+      trajectory_slider_panel_->pauseButton(false);
+  }
+  else if (display_mode_property_->getOptionInt() == 2)
+  {
+    createTrajectoryTrail();
+  }
 }
 
-void TrajectoryVisualization::changedRobotPathAlpha()
+void TrajectoryVisualization::changedTrailStepSize()
 {
-  display_path_robot_->setAlpha(robot_path_alpha_property_->getFloat());
+  if (display_mode_property_->getOptionInt() == 2)
+  {
+    createTrajectoryTrail();
+  }
+}
+
+void TrajectoryVisualization::changedPathAlpha()
+{
+  display_path_->setAlpha(path_alpha_property_->getFloat());
+
+  if (trajectory_static_)
+    trajectory_static_->setAlpha(path_alpha_property_->getFloat());
+
   for (std::size_t i = 0; i < trajectory_trail_.size(); ++i)
-    trajectory_trail_[i]->setAlpha(robot_path_alpha_property_->getFloat());
+    trajectory_trail_[i]->setAlpha(path_alpha_property_->getFloat());
 }
 
 void TrajectoryVisualization::changedTrajectoryTopic()
@@ -280,7 +298,7 @@ void TrajectoryVisualization::changedTrajectoryTopic()
   trajectory_topic_sub_.shutdown();
   if (!trajectory_topic_property_->getStdString().empty())
   {
-    trajectory_topic_sub_ = update_nh_.subscribe(trajectory_topic_property_->getStdString(), 2,
+    trajectory_topic_sub_ = update_nh_.subscribe(trajectory_topic_property_->getStdString(), 5,
                                                  &TrajectoryVisualization::incomingDisplayTrajectory, this);
   }
 }
@@ -293,8 +311,12 @@ void TrajectoryVisualization::changedDisplayPathVisualEnabled()
 {
   if (display_->isEnabled())
   {
-    display_path_robot_->setVisualVisible(display_path_visual_enabled_property_->getBool());
-    display_path_robot_->setVisible(display_->isEnabled() && displaying_trajectory_message_ && animating_path_);
+    display_path_->setVisualVisible(display_path_visual_enabled_property_->getBool());
+    display_path_->setVisible(display_->isEnabled() && displaying_trajectory_message_ && animating_path_);
+
+    if (trajectory_static_)
+      trajectory_static_->setVisualVisible(display_path_visual_enabled_property_->getBool());
+
     for (std::size_t i = 0; i < trajectory_trail_.size(); ++i)
       trajectory_trail_[i]->setVisualVisible(display_path_visual_enabled_property_->getBool());
   }
@@ -304,49 +326,37 @@ void TrajectoryVisualization::changedDisplayPathCollisionEnabled()
 {
   if (display_->isEnabled())
   {
-    display_path_robot_->setCollisionVisible(display_path_collision_enabled_property_->getBool());
-    display_path_robot_->setVisible(display_->isEnabled() && displaying_trajectory_message_ && animating_path_);
+    display_path_->setCollisionVisible(display_path_collision_enabled_property_->getBool());
+    display_path_->setVisible(display_->isEnabled() && displaying_trajectory_message_ && animating_path_);
+
+    if (trajectory_static_)
+      trajectory_static_->setCollisionVisible(display_path_collision_enabled_property_->getBool());
+
     for (std::size_t i = 0; i < trajectory_trail_.size(); ++i)
       trajectory_trail_[i]->setCollisionVisible(display_path_collision_enabled_property_->getBool());
   }
 }
 
-void TrajectoryVisualization::changedDisplayPathAttachedVisualEnabled()
-{
-  if (display_->isEnabled())
-  {
-    display_path_robot_->setAttachedVisualVisible(display_path_attached_visual_enabled_property_->getBool());
-    for (std::size_t i = 0; i < trajectory_trail_.size(); ++i)
-      trajectory_trail_[i]->setAttachedVisualVisible(display_path_attached_visual_enabled_property_->getBool());
-  }
-}
-
-void TrajectoryVisualization::changedDisplayPathAttachedCollisionEnabled()
-{
-  if (display_->isEnabled())
-  {
-    display_path_robot_->setAttachedCollisionVisible(display_path_attached_collision_enabled_property_->getBool());
-    for (std::size_t i = 0; i < trajectory_trail_.size(); ++i)
-      trajectory_trail_[i]->setAttachedCollisionVisible(display_path_attached_collision_enabled_property_->getBool());
-  }
-}
-
 void TrajectoryVisualization::onEnable()
-{
-  changedRobotPathAlpha();  // set alpha property
+{  
+  changedPathAlpha();  // set alpha property
 
-  display_path_robot_->setVisualVisible(display_path_visual_enabled_property_->getBool());
-  display_path_robot_->setCollisionVisible(display_path_collision_enabled_property_->getBool());
-  display_path_robot_->setVisible(displaying_trajectory_message_ && animating_path_);
-  display_path_robot_->setAttachedVisualVisible(display_path_attached_visual_enabled_property_->getBool());
-  display_path_robot_->setAttachedCollisionVisible(display_path_attached_collision_enabled_property_->getBool());
+  display_path_->setVisualVisible(display_path_visual_enabled_property_->getBool());
+  display_path_->setCollisionVisible(display_path_collision_enabled_property_->getBool());
+  display_path_->setVisible(displaying_trajectory_message_ && animating_path_);
+
+  if (trajectory_static_)
+  {
+    trajectory_static_->setVisualVisible(display_path_visual_enabled_property_->getBool());
+    trajectory_static_->setCollisionVisible(display_path_collision_enabled_property_->getBool());
+    trajectory_static_->setVisible(true);
+  }
+
   for (std::size_t i = 0; i < trajectory_trail_.size(); ++i)
   {
     trajectory_trail_[i]->setVisualVisible(display_path_visual_enabled_property_->getBool());
     trajectory_trail_[i]->setCollisionVisible(display_path_collision_enabled_property_->getBool());
     trajectory_trail_[i]->setVisible(true);
-    trajectory_trail_[i]->setAttachedVisualVisible(display_path_attached_visual_enabled_property_->getBool());
-    trajectory_trail_[i]->setAttachedCollisionVisible(display_path_attached_collision_enabled_property_->getBool());
   }
 
   changedTrajectoryTopic();  // load topic at startup if default used
@@ -354,11 +364,17 @@ void TrajectoryVisualization::onEnable()
 
 void TrajectoryVisualization::onDisable()
 {
-  display_path_robot_->setVisible(false);
+  display_path_->setVisible(false);
+
+  if (trajectory_static_)
+    trajectory_static_->setVisible(false);
+
   for (std::size_t i = 0; i < trajectory_trail_.size(); ++i)
     trajectory_trail_[i]->setVisible(false);
+
   displaying_trajectory_message_.reset();
   animating_path_ = false;
+
   if (trajectory_slider_panel_)
     trajectory_slider_panel_->onDisable();
 }
@@ -405,26 +421,27 @@ void TrajectoryVisualization::update(float wall_dt, float ros_dt)
   {
     animating_path_ = false;
     displaying_trajectory_message_.reset();
-    display_path_robot_->setVisible(false);
+    display_path_->setVisible(false);
     trajectory_slider_panel_->update(0);
     drop_displaying_trajectory_ = false;
   }
+
   if (!animating_path_)
   {  // finished last animation?
-    boost::mutex::scoped_lock lock(update_trajectory_message_);
 
+    boost::mutex::scoped_lock lock(update_trajectory_message_);
     // new trajectory available to display?
     if (trajectory_message_to_display_ && !trajectory_message_to_display_->joint_trajectory.points.empty())
     {
       animating_path_ = true;
       displaying_trajectory_message_ = trajectory_message_to_display_;
-      changedShowTrail();
+      createTrajectoryTrail();
       if (trajectory_slider_panel_)
         trajectory_slider_panel_->update(trajectory_message_to_display_->joint_trajectory.points.size());
     }
     else if (displaying_trajectory_message_)
     {
-      if (loop_display_property_->getBool())
+      if (display_mode_property_->getOptionInt() == 1)
       {  // do loop? -> start over too
         animating_path_ = true;
       }
@@ -439,7 +456,7 @@ void TrajectoryVisualization::update(float wall_dt, float ros_dt)
             joints[displaying_trajectory_message_->joint_trajectory.joint_names[j]] = displaying_trajectory_message_->joint_trajectory.points[waypoint].positions[j];
           }
 
-          display_path_robot_->update(env_, env_->getState(joints));
+          display_path_->update(env_, env_->getState(joints));
         }
         else
           animating_path_ = true;
@@ -458,8 +475,8 @@ void TrajectoryVisualization::update(float wall_dt, float ros_dt)
         joints[displaying_trajectory_message_->joint_trajectory.joint_names[j]] = displaying_trajectory_message_->joint_trajectory.points[0].positions[j];
       }
 
-      display_path_robot_->update(env_, env_->getState(joints));
-      display_path_robot_->setVisible(display_->isEnabled());
+      display_path_->update(env_, env_->getState(joints));
+      display_path_->setVisible(display_->isEnabled());
       if (trajectory_slider_panel_)
         trajectory_slider_panel_->setSliderPosition(0);
     }
@@ -498,7 +515,11 @@ void TrajectoryVisualization::update(float wall_dt, float ros_dt)
           joints[displaying_trajectory_message_->joint_trajectory.joint_names[j]] = displaying_trajectory_message_->joint_trajectory.points[current_state_].positions[j];
         }
 
-        display_path_robot_->update(env_, env_->getState(joints));
+        display_path_->update(env_, env_->getState(joints));
+
+        if (trajectory_static_)
+          trajectory_static_->setVisible(true);
+
         for (std::size_t i = 0; i < trajectory_trail_.size(); ++i)
           trajectory_trail_[i]->setVisible(
               std::min(waypoint_count - 1, static_cast<int>(i) * trail_step_size_property_->getInt()) <=
@@ -507,8 +528,8 @@ void TrajectoryVisualization::update(float wall_dt, float ros_dt)
       else
       {
         animating_path_ = false;  // animation finished
-        display_path_robot_->setVisible(loop_display_property_->getBool());
-        if (!loop_display_property_->getBool() && trajectory_slider_panel_)
+        display_path_->setVisible(display_mode_property_->getOptionInt() != 2);
+        if ((display_mode_property_->getOptionInt() != 1) && trajectory_slider_panel_)
           trajectory_slider_panel_->pauseButton(true);
       }
       current_state_time_ = 0.0f;
@@ -530,43 +551,67 @@ void TrajectoryVisualization::incomingDisplayTrajectory(const tesseract_msgs::Tr
     ROS_WARN("Received a trajectory to display for model '%s' but model '%s' was expected", msg->model_id.c_str(),
              env_->getURDF()->getName().c_str());
 
-  trajectory_message_to_display_.reset();
-
   // Setup environment
   tesseract_ros::processTesseractStateMsg(env_, msg->trajectory_start);
 
   if (!msg->joint_trajectory.points.empty())
   {
-    boost::mutex::scoped_lock lock(update_trajectory_message_);
-    trajectory_message_to_display_ = tesseract_msgs::TrajectoryPtr(new tesseract_msgs::Trajectory(*msg));
-    if (interrupt_display_property_->getBool())
-      interruptCurrentDisplay();
+    bool joints_equal = true;
+    if (trajectory_message_to_display_)
+    {
+      if ((trajectory_message_to_display_->joint_trajectory.points.size() == msg->joint_trajectory.points.size()) && (trajectory_message_to_display_->joint_trajectory.joint_names.size() == msg->joint_trajectory.joint_names.size()))
+      {
+        for (auto i = 0; i < msg->joint_trajectory.points.size(); ++i)
+        {
+          for (auto j = 0; j < msg->joint_trajectory.joint_names.size(); ++j)
+          {
+            double delta = msg->joint_trajectory.points[i].positions[j] - trajectory_message_to_display_->joint_trajectory.points[i].positions[j];
+            joints_equal &= (std::abs(delta) < std::numeric_limits<double>::epsilon());
+          }
+        }
+      }
+      else
+      {
+        joints_equal = false;
+      }
+    }
+
+    trajectory_message_to_display_.reset();
+    if (!msg->joint_trajectory.points.empty() || !joints_equal)
+    {
+      boost::mutex::scoped_lock lock(update_trajectory_message_);
+      trajectory_message_to_display_.reset(new tesseract_msgs::Trajectory(*msg));
+      if (interrupt_display_property_->getBool())
+        interruptCurrentDisplay();
+    }
   }
-
-
-}
-
-void TrajectoryVisualization::changedRobotColor()
-{
-  if (enable_robot_color_property_->getBool())
-    setRobotColor(&(display_path_robot_->getRobot()), robot_color_property_->getColor());
-}
-
-void TrajectoryVisualization::enabledRobotColor()
-{
-  if (enable_robot_color_property_->getBool())
-    setRobotColor(&(display_path_robot_->getRobot()), robot_color_property_->getColor());
   else
-    unsetRobotColor(&(display_path_robot_->getRobot()));
+  {
+    trajectory_message_to_display_.reset();
+  }
 }
 
-void TrajectoryVisualization::unsetRobotColor(rviz::Robot* robot)
+void TrajectoryVisualization::changedColor()
+{
+  if (enable_default_color_property_->getBool())
+    setColor(&(display_path_->getRobot()), default_color_property_->getColor());
+}
+
+void TrajectoryVisualization::enabledColor()
+{
+  if (enable_default_color_property_->getBool())
+    setColor(&(display_path_->getRobot()), default_color_property_->getColor());
+  else
+    unsetColor(&(display_path_->getRobot()));
+}
+
+void TrajectoryVisualization::unsetColor(Robot* robot)
 {
   for (auto& link : robot->getLinks())
     link.second->unsetColor();
 }
 
-void TrajectoryVisualization::setRobotColor(rviz::Robot* robot, const QColor& color)
+void TrajectoryVisualization::setColor(Robot* robot, const QColor& color)
 {
   for (auto& link : robot->getLinks())
     robot->getLink(link.first)->setColor(color.redF(), color.greenF(), color.blueF());

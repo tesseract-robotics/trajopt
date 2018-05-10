@@ -53,7 +53,6 @@ class SceneNode;
 
 namespace rviz
 {
-class Robot;
 class Property;
 class StringProperty;
 class BoolProperty;
@@ -65,6 +64,8 @@ class EnumProperty;
 
 namespace tesseract_rviz
 {
+class Robot;
+
 class TesseractSceneDisplay : public rviz::Display
 {
   Q_OBJECT
@@ -157,11 +158,11 @@ protected:
   void executeMainLoopJobs();
   void sceneMonitorReceivedUpdate(planning_scene_monitor::PlanningSceneMonitor::SceneUpdateType update_type);
   void renderPlanningScene();
-  void setLinkColor(rviz::Robot* robot, const std::string& link_name, const QColor& color);
-  void unsetLinkColor(rviz::Robot* robot, const std::string& link_name);
-  void setGroupColor(rviz::Robot* robot, const std::string& group_name, const QColor& color);
-  void unsetGroupColor(rviz::Robot* robot, const std::string& group_name);
-  void unsetAllColors(rviz::Robot* robot);
+  void setLinkColor(Robot* robot, const std::string& link_name, const QColor& color);
+  void unsetLinkColor(Robot* robot, const std::string& link_name);
+  void setGroupColor(Robot* robot, const std::string& group_name, const QColor& color);
+  void unsetGroupColor(Robot* robot, const std::string& group_name);
+  void unsetAllColors(Robot* robot);
 
   // overrides from Display
   virtual void onInitialize();

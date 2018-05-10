@@ -60,12 +60,12 @@ namespace tesseract_ros
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
 
-bool KDLEnv::init(const urdf::ModelInterfaceConstSharedPtr urdf_model)
+bool KDLEnv::init(urdf::ModelInterfaceConstSharedPtr urdf_model)
 {
   init(urdf_model, nullptr);
 }
 
-bool KDLEnv::init(const urdf::ModelInterfaceConstSharedPtr urdf_model, const srdf::ModelConstSharedPtr srdf_model)
+bool KDLEnv::init(urdf::ModelInterfaceConstSharedPtr urdf_model, srdf::ModelConstSharedPtr srdf_model)
 {
   ros::NodeHandle nh;
   initialized_ = false;

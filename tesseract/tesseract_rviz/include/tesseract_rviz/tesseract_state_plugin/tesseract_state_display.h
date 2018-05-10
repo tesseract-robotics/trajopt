@@ -53,7 +53,6 @@ class SceneNode;
 
 namespace rviz
 {
-class Robot;
 class StringProperty;
 class BoolProperty;
 class FloatProperty;
@@ -64,6 +63,7 @@ class ColorProperty;
 namespace tesseract_rviz
 {
 class StateVisualization;
+class Robot;
 
 class TesseractStateDisplay : public rviz::Display
 {
@@ -97,8 +97,6 @@ private Q_SLOTS:
   void changedEnableLinkHighlight();
   void changedEnableVisualVisible();
   void changedEnableCollisionVisible();
-  void changedEnableAttachedVisualVisible();
-  void changedEnableAttachedCollisionVisible();
   void changedAllLinks();
 
 protected:
@@ -110,8 +108,8 @@ protected:
   void calculateOffsetPosition();
 
   void setLinkColor(const tesseract_msgs::TesseractState::_object_colors_type& link_colors);
-  void setLinkColor(rviz::Robot* robot, const std::string& link_name, const QColor& color);
-  void unsetLinkColor(rviz::Robot* robot, const std::string& link_name);
+  void setLinkColor(Robot* robot, const std::string& link_name, const QColor& color);
+  void unsetLinkColor(Robot* robot, const std::string& link_name);
 
   void newTesseractStateCallback(const tesseract_msgs::TesseractStateConstPtr state);
 
@@ -138,14 +136,12 @@ protected:
   rviz::StringProperty* urdf_description_property_;
   rviz::StringProperty* root_link_name_property_;
   rviz::RosTopicProperty* tesseract_state_topic_property_;
-  rviz::FloatProperty* urdf_alpha_property_;
+  rviz::FloatProperty* alpha_property_;
   rviz::ColorProperty* attached_body_color_property_;
   rviz::BoolProperty* enable_link_highlight_;
   rviz::BoolProperty* enable_visual_visible_;
   rviz::BoolProperty* enable_collision_visible_;
   rviz::BoolProperty* show_all_links_;
-  rviz::BoolProperty* enable_attached_visual_visible_;
-  rviz::BoolProperty* enable_attached_collision_visible_;
 };
 typedef std::shared_ptr<TesseractStateDisplay> TesseractStateDisplayPtr;
 typedef std::shared_ptr<const TesseractStateDisplay> TesseractStateDisplayConstPtr;

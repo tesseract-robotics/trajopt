@@ -35,15 +35,14 @@
 /* Author: Ioan Sucan */
 
 #include <tesseract_rviz/tesseract_state_plugin/tesseract_state_display.h>
+#include <tesseract_rviz/render_tools/env/robot.h>
+#include <tesseract_rviz/render_tools/env/robot_link.h>
 #include <tesseract_ros/kdl/kdl_env.h>
 #include <tesseract_ros/ros_tesseract_utils.h>
 
 #include <urdf_parser/urdf_parser.h>
 
 #include <rviz/visualization_manager.h>
-#include <rviz/robot/robot.h>
-#include <rviz/robot/robot_link.h>
-
 #include <rviz/properties/property.h>
 #include <rviz/properties/string_property.h>
 #include <rviz/properties/bool_property.h>
@@ -77,14 +76,14 @@ TesseractStateDisplay::TesseractStateDisplay() : Display(), update_state_(false)
       this);
 
   // Planning scene category -------------------------------------------------------------------------------------------
-  root_link_name_property_ = new rviz::StringProperty("Robot Root Link", "", "Shows the name of the root link for the robot model", this,
+  root_link_name_property_ = new rviz::StringProperty("Root Link", "", "Shows the name of the root link for the urdf", this,
                                SLOT(changedRootLinkName()), this);
   root_link_name_property_->setReadOnly(true);
 
-  urdf_alpha_property_ = new rviz::FloatProperty("URDF Alpha", 1.0f, "Specifies the alpha for the urdf links", this,
+  alpha_property_ = new rviz::FloatProperty("Alpha", 1.0f, "Specifies the alpha for the links with geometry", this,
                                                   SLOT(changedURDFSceneAlpha()), this);
-  urdf_alpha_property_->setMin(0.0);
-  urdf_alpha_property_->setMax(1.0);
+  alpha_property_->setMin(0.0);
+  alpha_property_->setMax(1.0);
 
   attached_body_color_property_ =
       new rviz::ColorProperty("Attached Body Color", QColor(150, 50, 150), "The color for the attached bodies", this,
@@ -94,19 +93,12 @@ TesseractStateDisplay::TesseractStateDisplay() : Display(), update_state_(false)
       new rviz::BoolProperty("Show Highlights", true, "Specifies whether link highlighting is enabled", this,
                              SLOT(changedEnableLinkHighlight()), this);
   enable_visual_visible_ =
-      new rviz::BoolProperty("Show Robot Visual", true, "Whether to display the visual representation of the robot.", this,
+      new rviz::BoolProperty("Show Visual", true, "Whether to display the visual representation of the environment.", this,
                              SLOT(changedEnableVisualVisible()), this);
 
-  enable_collision_visible_ = new rviz::BoolProperty("Show Robot Collision", false,
-                                                     "Whether to display the collision representation of the robot.",
+  enable_collision_visible_ = new rviz::BoolProperty("Show Collision", false,
+                                                     "Whether to display the collision representation of the environment.",
                                                      this, SLOT(changedEnableCollisionVisible()), this);
-  enable_attached_visual_visible_ =
-      new rviz::BoolProperty("Show Attached Visual", true, "Whether to display the visual representation of the attached objects.", this,
-                             SLOT(changedEnableAttachedVisualVisible()), this);
-
-  enable_attached_collision_visible_ = new rviz::BoolProperty("Show Attached Collision", false,
-                                                     "Whether to display the collision representation of the attached objects.",
-                                                     this, SLOT(changedEnableAttachedCollisionVisible()), this);
 
   show_all_links_ = new rviz::BoolProperty("Show All Links", true, "Toggle all links visibility on or off.", this,
                                            SLOT(changedAllLinks()), this);
@@ -127,8 +119,6 @@ void TesseractStateDisplay::onInitialize()
   state_.reset(new StateVisualization(scene_node_, context_, "Tesseract State", this));
   changedEnableVisualVisible();
   changedEnableCollisionVisible();
-  changedEnableAttachedVisualVisible();
-  changedEnableAttachedCollisionVisible();
   state_->setVisible(false);
 }
 
@@ -155,21 +145,21 @@ void TesseractStateDisplay::changedAllLinks()
 
 void TesseractStateDisplay::setHighlightedLink(const std::string& link_name, const std_msgs::ColorRGBA& color)
 {
-  rviz::RobotLink* link = state_->getRobot().getLink(link_name);
+  RobotLink* link = state_->getRobot().getLink(link_name);
   if (link)
   {
     link->setColor(color.r, color.g, color.b);
-    link->setRobotAlpha(color.a * urdf_alpha_property_->getFloat());
+    link->setRobotAlpha(color.a * alpha_property_->getFloat());
   }
 }
 
 void TesseractStateDisplay::unsetHighlightedLink(const std::string& link_name)
 {
-  rviz::RobotLink* link = state_->getRobot().getLink(link_name);
+  RobotLink* link = state_->getRobot().getLink(link_name);
   if (link)
   {
     link->unsetColor();
-    link->setRobotAlpha(urdf_alpha_property_->getFloat());
+    link->setRobotAlpha(alpha_property_->getFloat());
   }
 }
 
@@ -199,16 +189,6 @@ void TesseractStateDisplay::changedEnableVisualVisible()
 void TesseractStateDisplay::changedEnableCollisionVisible()
 {
   state_->setCollisionVisible(enable_collision_visible_->getBool());
-}
-
-void TesseractStateDisplay::changedEnableAttachedVisualVisible()
-{
-  state_->setAttachedVisualVisible(enable_attached_visual_visible_->getBool());
-}
-
-void TesseractStateDisplay::changedEnableAttachedCollisionVisible()
-{
-  state_->setAttachedCollisionVisible(enable_attached_collision_visible_->getBool());
 }
 
 static bool operator!=(const std_msgs::ColorRGBA& a, const std_msgs::ColorRGBA& b)
@@ -279,7 +259,7 @@ void TesseractStateDisplay::changedAttachedBodyColor()
     color_msg.r = color.redF();
     color_msg.g = color.greenF();
     color_msg.b = color.blueF();
-    color_msg.a = urdf_alpha_property_->getFloat();
+    color_msg.a = alpha_property_->getFloat();
     state_->setDefaultAttachedObjectColor(color_msg);
     update_state_ = true;
   }
@@ -299,13 +279,13 @@ void TesseractStateDisplay::changedURDFSceneAlpha()
 {
   if (state_)
   {
-    state_->setAlpha(urdf_alpha_property_->getFloat());
+    state_->setAlpha(alpha_property_->getFloat());
     QColor color = attached_body_color_property_->getColor();
     std_msgs::ColorRGBA color_msg;
     color_msg.r = color.redF();
     color_msg.g = color.greenF();
     color_msg.b = color.blueF();
-    color_msg.a = urdf_alpha_property_->getFloat();
+    color_msg.a = alpha_property_->getFloat();
     state_->setDefaultAttachedObjectColor(color_msg);
     update_state_ = true;
   }
@@ -353,18 +333,18 @@ void TesseractStateDisplay::unsetLinkColor(const std::string& link_name)
   unsetLinkColor(&state_->getRobot(), link_name);
 }
 
-void TesseractStateDisplay::setLinkColor(rviz::Robot* robot, const std::string& link_name, const QColor& color)
+void TesseractStateDisplay::setLinkColor(Robot* robot, const std::string& link_name, const QColor& color)
 {
-  rviz::RobotLink* link = robot->getLink(link_name);
+  RobotLink* link = robot->getLink(link_name);
 
   // Check if link exists
   if (link)
     link->setColor(color.redF(), color.greenF(), color.blueF());
 }
 
-void TesseractStateDisplay::unsetLinkColor(rviz::Robot* robot, const std::string& link_name)
+void TesseractStateDisplay::unsetLinkColor(Robot* robot, const std::string& link_name)
 {
-  rviz::RobotLink* link = robot->getLink(link_name);
+  RobotLink* link = robot->getLink(link_name);
 
   // Check if link exists
   if (link)
@@ -406,7 +386,7 @@ void TesseractStateDisplay::loadURDFModel()
       if (success)
       {
         env_ = env;
-        state_->load(*env_->getURDF());
+        state_->load(env_->getURDF());
         bool oldState = root_link_name_property_->blockSignals(true);
         root_link_name_property_->setStdString(env_->getRootLinkName());
         root_link_name_property_->blockSignals(oldState);
@@ -415,8 +395,6 @@ void TesseractStateDisplay::loadURDFModel()
 
         changedEnableVisualVisible();
         changedEnableCollisionVisible();
-        changedEnableAttachedVisualVisible();
-        changedEnableAttachedCollisionVisible();
         state_->setVisible(true);
       }
       else

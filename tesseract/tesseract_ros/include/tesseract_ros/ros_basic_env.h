@@ -41,14 +41,14 @@ class ROSBasicEnv : public BasicEnv
 public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-  virtual bool init(const urdf::ModelInterfaceConstSharedPtr urdf_model) = 0;
-  virtual bool init(const urdf::ModelInterfaceConstSharedPtr urdf_model, const srdf::ModelConstSharedPtr srdf_model) = 0;
+  virtual bool init(urdf::ModelInterfaceConstSharedPtr urdf_model) = 0;
+  virtual bool init(urdf::ModelInterfaceConstSharedPtr urdf_model, srdf::ModelConstSharedPtr srdf_model) = 0;
 
   virtual bool checkInitialized() const = 0;
 
-  virtual const urdf::ModelInterfaceConstSharedPtr getURDF() const = 0;
+  virtual urdf::ModelInterfaceConstSharedPtr getURDF() const = 0;
 
-  virtual const srdf::ModelConstSharedPtr getSRDF() const = 0;
+  virtual srdf::ModelConstSharedPtr getSRDF() const = 0;
 
   virtual void loadContactCheckerPlugin(const std::string& plugin) = 0;
 

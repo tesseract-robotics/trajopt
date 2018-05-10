@@ -16,7 +16,7 @@
     <!--VIRTUAL JOINT: Purpose: this element defines a virtual joint between a robot link and an external frame of reference (considered fixed with respect to the robot)-->
     <virtual_joint name="world" type="fixed" parent_frame="world_frame" child_link="world" />
     <!--DISABLE COLLISIONS: By default it is assumed that any link of the robot could potentially come into collision with any other link in the robot. This tag disables collision checking between a specified pair of links. -->
-<!--    <disable_collisions link1="base_link" link2="car" reason="Never" />-->
+    <disable_collisions link1="base_link" link2="car" reason="Never" />
     <disable_collisions link1="base_link" link2="carriage" reason="Adjacent" />
     <disable_collisions link1="base_link" link2="cell_logo" reason="Never" />
     <disable_collisions link1="base_link" link2="conveyor" reason="Never" />
@@ -25,13 +25,13 @@
     <disable_collisions link1="base_link" link2="link_l" reason="Never" />
     <disable_collisions link1="base_link" link2="link_s" reason="Adjacent" />
     <disable_collisions link1="base_link" link2="rail" reason="Default" />
-    <!--<disable_collisions link1="car" link2="carriage" reason="Never" />
+    <disable_collisions link1="car" link2="carriage" reason="Never" />
     <disable_collisions link1="car" link2="cell_logo" reason="Adjacent" />
     <disable_collisions link1="car" link2="conveyor" reason="Adjacent" />
     <disable_collisions link1="car" link2="fence" reason="Adjacent" />
     <disable_collisions link1="car" link2="link_l" reason="Never" />
     <disable_collisions link1="car" link2="link_s" reason="Never" />
-    <disable_collisions link1="car" link2="rail" reason="Adjacent" />-->
+    <disable_collisions link1="car" link2="rail" reason="Adjacent" />
     <disable_collisions link1="carriage" link2="cell_logo" reason="Never" />
     <disable_collisions link1="carriage" link2="conveyor" reason="Default" />
     <disable_collisions link1="carriage" link2="fence" reason="Never" />

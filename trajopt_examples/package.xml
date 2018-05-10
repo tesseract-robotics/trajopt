@@ -15,6 +15,7 @@
   <depend>roslib</depend>
   <depend>trajopt</depend>tesseract
   <depend>tesseract_ros</depend>
+  <depend>octomap_ros</depend>
 
   <!-- The export tag contains other, unspecified, tags -->
   <export>
