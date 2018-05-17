@@ -207,7 +207,7 @@ void ProblemConstructionInfo::readInitInfo(const Value &v)
   {
     FAIL_IF_FALSE(v.isMember("data"));
     const Value& vdata = v["data"];
-    if (vdata.size() != n_steps)
+    if (static_cast<int>(vdata.size()) != n_steps)
     {
       PRINT_AND_THROW("given initialization traj has wrong length");
     }
@@ -224,7 +224,7 @@ void ProblemConstructionInfo::readInitInfo(const Value &v)
     FAIL_IF_FALSE(v.isMember("endpoint"));
     DblVec endpoint;
     childFromJson(v, endpoint, "endpoint");
-    if (endpoint.size() != n_dof)
+    if (static_cast<int>(endpoint.size()) != n_dof)
     {
       PRINT_AND_THROW(boost::format("wrong number of dof values in initialization. expected %i got %j")%n_dof%endpoint.size());
     }
@@ -376,7 +376,7 @@ TrajOptProb::TrajOptProb(int n_steps, const ProblemConstructionInfo &pci) : m_ki
   for (int i=0; i < n_steps; ++i) {
     vlower.insert(vlower.end(), lower.data(), lower.data()+lower.size());
     vupper.insert(vupper.end(), upper.data(), upper.data()+upper.size());
-    for (unsigned j=0; j < n_dof; ++j) {
+    for (int j=0; j < n_dof; ++j) {
       names.push_back( (boost::format("j_%i_%i")%i%j).str() );
     }
   }
@@ -450,7 +450,7 @@ void JointPosCostInfo::fromJson(ProblemConstructionInfo &pci, const Value& v)
   childFromJson(params, coeffs, "coeffs");
   if (coeffs.size() == 1) coeffs = DblVec(n_steps, coeffs[0]);
 
-  int n_dof = pci.kin->numJoints();
+  unsigned n_dof = pci.kin->numJoints();
   if (vals.size() != n_dof) {
     PRINT_AND_THROW( boost::format("wrong number of dof vals. expected %i got %i")%n_dof%vals.size());
   }
@@ -504,7 +504,7 @@ void JointVelCostInfo::fromJson(ProblemConstructionInfo &pci, const Value& v)
   const Value& params = v["params"];
 
   childFromJson(params, coeffs,"coeffs");
-  int n_dof = pci.kin->numJoints();
+  unsigned n_dof = pci.kin->numJoints();
   if (coeffs.size() == 1) coeffs = DblVec(n_dof, coeffs[0]);
   else if (coeffs.size() != n_dof) {
     PRINT_AND_THROW( boost::format("wrong number of coeffs. expected %i got %i")%n_dof%coeffs.size());
@@ -526,7 +526,7 @@ void JointAccCostInfo::fromJson(ProblemConstructionInfo &pci, const Value& v)
   const Value& params = v["params"];
 
   childFromJson(params, coeffs,"coeffs");
-  int n_dof = pci.kin->numJoints();
+  unsigned n_dof = pci.kin->numJoints();
   if (coeffs.size() == 1) coeffs = DblVec(n_dof, coeffs[0]);
   else if (coeffs.size() != n_dof) {
     PRINT_AND_THROW( boost::format("wrong number of coeffs. expected %i got %i")%n_dof%coeffs.size());
@@ -548,7 +548,7 @@ void JointJerkCostInfo::fromJson(ProblemConstructionInfo &pci, const Value& v)
   const Value& params = v["params"];
 
   childFromJson(params, coeffs,"coeffs");
-  int n_dof = pci.kin->numJoints();
+  unsigned n_dof = pci.kin->numJoints();
   if (coeffs.size() == 1) coeffs = DblVec(n_dof, coeffs[0]);
   else if (coeffs.size() != n_dof) {
     PRINT_AND_THROW( boost::format("wrong number of coeffs. expected %i got %i")%n_dof%coeffs.size());
@@ -571,7 +571,7 @@ void JointVelConstraintInfo::fromJson(ProblemConstructionInfo &pci, const Value&
   const Value& params = v["params"];
   
   int n_steps = pci.basic_info.n_steps;
-  int n_dof = pci.kin->numJoints();
+  unsigned n_dof = pci.kin->numJoints();
   childFromJson(params, vals, "vals");
   childFromJson(params, first_step, "first_step", 0);
   childFromJson(params, last_step, "last_step", n_steps-1);
@@ -587,7 +587,7 @@ void JointVelConstraintInfo::fromJson(ProblemConstructionInfo &pci, const Value&
 void JointVelConstraintInfo::hatch(TrajOptProb& prob)
 {
   for (int i = first_step; i <= last_step-1; ++i) {
-    for (int j=0; j < vals.size(); ++j)  {
+    for (std::size_t j=0; j < vals.size(); ++j)  {
       AffExpr vel = prob.GetVar(i+1,j) -  prob.GetVar(i,j);
       prob.addLinearConstraint(vel - vals[j], INEQ);
       prob.addLinearConstraint(-vel - vals[j], INEQ);
@@ -613,12 +613,12 @@ void CollisionCostInfo::fromJson(ProblemConstructionInfo &pci, const Value& v)
   childFromJson(params, coeffs, "coeffs");
   int n_terms = last_step - first_step + 1;
   if (coeffs.size() == 1) coeffs = DblVec(n_terms, coeffs[0]);
-  else if (coeffs.size() != n_terms) {
+  else if (static_cast<int>(coeffs.size()) != n_terms) {
     PRINT_AND_THROW (boost::format("wrong size: coeffs. expected %i got %i")%n_terms%coeffs.size());
   }
   childFromJson(params, dist_pen,"dist_pen");
   if (dist_pen.size() == 1) dist_pen = DblVec(n_terms, dist_pen[0]);
-  else if (dist_pen.size() != n_terms) {
+  else if (static_cast<int>(dist_pen.size()) != n_terms) {
     PRINT_AND_THROW(boost::format("wrong size: dist_pen. expected %i got %i")%n_terms%dist_pen.size());
   }
 
@@ -655,7 +655,7 @@ void CollisionCostInfo::fromJson(ProblemConstructionInfo &pci, const Value& v)
       {
         pair_coeffs = DblVec(n_terms, pair_coeffs[0]);
       }
-      else if (pair_coeffs.size() != n_terms)
+      else if (static_cast<int>(pair_coeffs.size()) != n_terms)
       {
         PRINT_AND_THROW (boost::format("wrong size: coeffs. expected %i got %i")%n_terms%pair_coeffs.size());
       }
@@ -666,7 +666,7 @@ void CollisionCostInfo::fromJson(ProblemConstructionInfo &pci, const Value& v)
       {
         pair_dist_pen = DblVec(n_terms, pair_dist_pen[0]);
       }
-      else if (pair_dist_pen.size() != n_terms)
+      else if (static_cast<int>(pair_dist_pen.size()) != n_terms)
       {
         PRINT_AND_THROW (boost::format("wrong size: dist_pen. expected %i got %i")%n_terms%pair_dist_pen.size());
       }
@@ -675,7 +675,7 @@ void CollisionCostInfo::fromJson(ProblemConstructionInfo &pci, const Value& v)
       {
         auto index = i-first_step;
         SafetyMarginDataPtr& data = info[index];
-        for (auto j = 0; j < pair.size(); ++j)
+        for (auto j = 0u; j < pair.size(); ++j)
         {
           data->SetPairSafetyMarginData(link, pair[j], pair_dist_pen[index], pair_coeffs[index]);
         }
@@ -729,7 +729,7 @@ void JointConstraintInfo::fromJson(ProblemConstructionInfo &pci, const Value& v)
   childFromJson(params, vals, "vals");
 
   int n_dof = pci.kin->numJoints();
-  if (vals.size() != n_dof) {
+  if (static_cast<int>(vals.size()) != n_dof) {
     PRINT_AND_THROW( boost::format("wrong number of dof vals. expected %i got %i")%n_dof%vals.size());
   }
   childFromJson(params, timestep, "timestep", pci.basic_info.n_steps-1);

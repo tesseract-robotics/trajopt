@@ -11,12 +11,12 @@ typedef vector<unsigned char> BoolVec;
 
 inline double vecSum(const DblVec& v) {
   double out = 0;
-  for (int i=0; i < v.size(); ++i) out += v[i];
+  for (unsigned i=0; i < v.size(); ++i) out += v[i];
   return out;
 }
 inline double vecAbsSum(const DblVec& v) {
   double out = 0;
-  for (int i=0; i < v.size(); ++i) out += fabs(v[i]);
+  for (unsigned i=0; i < v.size(); ++i) out += fabs(v[i]);
   return out;
 }
 inline double pospart(double x) {
@@ -27,7 +27,7 @@ inline double sq(double x) {
 }
 inline double vecHingeSum(const DblVec& v) {
   double out = 0;
-  for (int i=0; i < v.size(); ++i) out += pospart(v[i]);
+  for (unsigned i=0; i < v.size(); ++i) out += pospart(v[i]);
   return out;
 }
 inline double vecMax(const DblVec& v) {
@@ -36,7 +36,7 @@ inline double vecMax(const DblVec& v) {
 inline double vecDot(const DblVec& a, const DblVec& b) {
   assert(a.size() == b.size());
   double out=0;
-  for (int i=0; i < a.size(); ++i) out += a[i]*b[i];
+  for (unsigned  i=0; i < a.size(); ++i) out += a[i]*b[i];
   return out;
 }
 

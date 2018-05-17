@@ -12,7 +12,7 @@ namespace trajopt
 
 struct CollisionEvaluator
 {
-  CollisionEvaluator(tesseract::BasicKinConstPtr manip, tesseract::BasicEnvConstPtr env, SafetyMarginDataConstPtr safety_margin_data) : manip_(manip), env_(env), safety_margin_data_(safety_margin_data) {}
+  CollisionEvaluator(tesseract::BasicKinConstPtr manip, tesseract::BasicEnvConstPtr env, SafetyMarginDataConstPtr safety_margin_data) : env_(env), manip_(manip), safety_margin_data_(safety_margin_data) {}
   virtual ~CollisionEvaluator() {}
   virtual void CalcDistExpressions(const DblVec& x, vector<AffExpr>& exprs) = 0;
   virtual void CalcDists(const DblVec& x, DblVec& exprs) = 0;

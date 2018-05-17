@@ -173,7 +173,7 @@ void BulletContactChecker::setObjectsTransform(const std::string& name, const Ei
 void BulletContactChecker::setObjectsTransform(const std::vector<std::string>& names, const EigenSTL::vector_Affine3d& poses)
 {
   assert(names.size() == poses.size());
-  for (auto i = 0; i < names.size(); ++i)
+  for (auto i = 0u; i < names.size(); ++i)
     setObjectsTransform(names[i], poses[i]);
 }
 

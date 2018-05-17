@@ -12,11 +12,11 @@ namespace sco {
 // multiplication
 inline void exprScale(AffExpr& v, double a) {
   v.constant *= a;
-  for (int i=0; i < v.coeffs.size(); ++i) v.coeffs[i] *= a;
+  for (unsigned i=0; i < v.coeffs.size(); ++i) v.coeffs[i] *= a;
 }
 inline void exprScale(QuadExpr& q, double a) {
   exprScale(q.affexpr, a);
-  for (int i=0; i < q.coeffs.size(); ++i) q.coeffs[i] *= a;
+  for (unsigned i=0; i < q.coeffs.size(); ++i) q.coeffs[i] *= a;
 }
 
 // addition
