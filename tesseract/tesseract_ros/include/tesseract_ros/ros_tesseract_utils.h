@@ -70,7 +70,7 @@ void attachableObjectToAttachableObjectMsg(tesseract_msgs::AttachableObject& ao_
   ao_msg.name = ao.name;
 
   // Visual Geometry
-  for (auto i = 0; i < ao.visual.shapes.size(); ++i)
+  for (auto i = 0u; i < ao.visual.shapes.size(); ++i)
   {
     if (ao.visual.shapes[i]->type == shapes::MESH)
     {
@@ -156,7 +156,7 @@ void attachableObjectToAttachableObjectMsg(tesseract_msgs::AttachableObject& ao_
   }
 
   // Collision Geometry
-  for (auto i = 0; i < ao.collision.shapes.size(); ++i)
+  for (auto i = 0u; i < ao.collision.shapes.size(); ++i)
   {
     if (ao.collision.shapes[i]->type == shapes::MESH)
     {
@@ -270,7 +270,7 @@ void attachableObjectMsgToAttachableObject(AttachableObject& ao, const tesseract
   ao.name = ao_msg.name;
 
   // Visual Geometry
-  for (auto i = 0; i < ao_msg.visual.primitives.size(); ++i)
+  for (auto i = 0u; i < ao_msg.visual.primitives.size(); ++i)
   {
     shapes::ShapePtr shape(shapes::constructShapeFromMsg(ao_msg.visual.primitives[i]));
     ao.visual.shapes.push_back(shape);
@@ -286,7 +286,7 @@ void attachableObjectMsgToAttachableObject(AttachableObject& ao, const tesseract
     }
   }
 
-  for (auto i = 0; i < ao_msg.visual.meshes.size(); ++i)
+  for (auto i = 0u; i < ao_msg.visual.meshes.size(); ++i)
   {
     shapes::ShapePtr shape(shapes::constructShapeFromMsg(ao_msg.visual.meshes[i]));
     ao.visual.shapes.push_back(shape);
@@ -302,7 +302,7 @@ void attachableObjectMsgToAttachableObject(AttachableObject& ao, const tesseract
     }
   }
 
-  for (auto i = 0; i < ao_msg.visual.planes.size(); ++i)
+  for (auto i = 0u; i < ao_msg.visual.planes.size(); ++i)
   {
     shapes::ShapePtr shape(shapes::constructShapeFromMsg(ao_msg.visual.planes[i]));
     ao.visual.shapes.push_back(shape);
@@ -318,7 +318,7 @@ void attachableObjectMsgToAttachableObject(AttachableObject& ao, const tesseract
     }
   }
 
-  for (auto i = 0; i < ao_msg.visual.octomaps.size(); ++i)
+  for (auto i = 0u; i < ao_msg.visual.octomaps.size(); ++i)
   {
     std::shared_ptr<octomap::OcTree> om(static_cast<octomap::OcTree*>(octomap_msgs::msgToMap(ao_msg.visual.octomaps[i])));
     shapes::ShapePtr shape(new shapes::OcTree(om));
@@ -336,7 +336,7 @@ void attachableObjectMsgToAttachableObject(AttachableObject& ao, const tesseract
   }
 
   // Collision Geometry
-  for (auto i = 0; i < ao_msg.collision.primitives.size(); ++i)
+  for (auto i = 0u; i < ao_msg.collision.primitives.size(); ++i)
   {
     shapes::ShapePtr shape(shapes::constructShapeFromMsg(ao_msg.collision.primitives[i]));
     ao.collision.shapes.push_back(shape);
@@ -354,7 +354,7 @@ void attachableObjectMsgToAttachableObject(AttachableObject& ao, const tesseract
     ao.collision.collision_object_types.push_back((CollisionObjectType)ao_msg.collision.primitive_collision_object_types[i].data);
   }
 
-  for (auto i = 0; i < ao_msg.collision.meshes.size(); ++i)
+  for (auto i = 0u; i < ao_msg.collision.meshes.size(); ++i)
   {
     shapes::ShapePtr shape(shapes::constructShapeFromMsg(ao_msg.collision.meshes[i]));
     ao.collision.shapes.push_back(shape);
@@ -372,7 +372,7 @@ void attachableObjectMsgToAttachableObject(AttachableObject& ao, const tesseract
     ao.collision.collision_object_types.push_back((CollisionObjectType)ao_msg.collision.mesh_collision_object_types[i].data);
   }
 
-  for (auto i = 0; i < ao_msg.collision.planes.size(); ++i)
+  for (auto i = 0u; i < ao_msg.collision.planes.size(); ++i)
   {
     shapes::ShapePtr shape(shapes::constructShapeFromMsg(ao_msg.collision.planes[i]));
     ao.collision.shapes.push_back(shape);
@@ -390,7 +390,7 @@ void attachableObjectMsgToAttachableObject(AttachableObject& ao, const tesseract
     ao.collision.collision_object_types.push_back((CollisionObjectType)ao_msg.collision.plane_collision_object_types[i].data);
   }
 
-  for (auto i = 0; i < ao_msg.collision.octomaps.size(); ++i)
+  for (auto i = 0u; i < ao_msg.collision.octomaps.size(); ++i)
   {
     std::shared_ptr<octomap::OcTree> om(static_cast<octomap::OcTree*>(octomap_msgs::msgToMap(ao_msg.collision.octomaps[i])));
     shapes::ShapePtr shape(new shapes::OcTree(om));
@@ -560,7 +560,7 @@ bool processTesseractStateMsg(tesseract_ros::ROSBasicEnv& env, const tesseract_m
   if (!isMsgEmpty(state_msg.joint_state))
   {
     std::unordered_map<std::string, double> joints;
-    for (auto i = 0; i < state_msg.joint_state.name.size(); ++i)
+    for (auto i = 0u; i < state_msg.joint_state.name.size(); ++i)
     {
       joints[state_msg.joint_state.name[i]] = state_msg.joint_state.position[i];
     }

@@ -39,7 +39,7 @@ namespace tesseract
 namespace tesseract_ros
 {
 
-  bool TrajoptPlanner::solve(PlannerResponse& res)
+  bool TrajoptPlanner::solve(PlannerResponse&)
   {
     Json::Value root;
     Json::Reader reader;
@@ -53,7 +53,7 @@ namespace tesseract_ros
     }
     else
     {
-      ROS_FATAL("Invalid config format: %s. Only json format is currently support for this planner.");
+      ROS_FATAL("Invalid config format: %s. Only json format is currently support for this planner.", request_.config_format.c_str());
     }
 
     TrajOptProbPtr prob = ConstructProblem(root, request_.env);
@@ -73,11 +73,12 @@ namespace tesseract_ros
     tesseract::ContactResultVector collision_vector;
     tesseract::moveContactResultsMapToContactResultsVector(collisions, collision_vector);
     ROS_INFO("Final trajectory number of continuous collisions: %lui\n", collision_vector.size());
+    return true;
   }
 
   bool terminate()
   {
-
+    return false;
   }
 
   void clear()
