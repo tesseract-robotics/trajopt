@@ -69,19 +69,21 @@ int main(int argc, char** argv)
   env->init(urdf_model, srdf_model);
   addSphere(*env);
 
-
+  // A tesseract plotter makes generating and publishing visualization messages easy
   tesseract::tesseract_ros::ROSBasicPlottingPtr plotter = std::make_shared<tesseract::tesseract_ros::ROSBasicPlotting>(env);
 
-  // Create a planning context
+  // Step 3: Create a planning context for OMPL - this sets up the OMPL state environment for your given chain
   tesseract_ros_planning::ChainOmplInterface ompl_context (env, "manipulator");
-  // Create an OMPL planner
+
+  // Step 4: Create an OMPL planner that we want to use
   ompl::base::PlannerPtr planner (new ompl::geometric::RRTConnect(ompl_context.spaceInformation()));
 
-  // Create a goal
+  // Step 5: Create a start and terminal state for the robot to move between
   tesseract_ros_planning::OmplPlanParameters params;
   std::vector<double> start {-1.2, 0.5, 0.0, -1.3348, 0.0, 1.4959, 0.0};
   std::vector<double> goal = {1.2, 0.2762, 0.0, -1.3348, 0.0, 1.4959, 0.0};
 
+  // Step 6: Call plan. This returns an optional which is set if the plan succeeded
   auto maybe_path = ompl_context.plan(planner, start, goal, params);
 
   // Plot results
@@ -96,5 +98,6 @@ int main(int argc, char** argv)
     ROS_WARN_STREAM("Planning failed");
   }
 
+  ROS_INFO("Waiting for user shutdown");
   ros::spin();
 }
