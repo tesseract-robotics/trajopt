@@ -208,6 +208,8 @@ typedef std::shared_ptr<const EnvState> EnvStateConstPtr;
 /**< @brief Information on how the object is attached to the environment */
 struct AttachedBodyInfo
 {
+  AttachedBodyInfo() : transform(Eigen::Affine3d::Identity()) {}
+
   std::string object_name;              /**< @brief The name of the AttachableObject being used */
   std::string parent_link_name;         /**< @brief The name of the link to attach the body */
   Eigen::Affine3d transform;            /**< @brief The transform between parent link and object */
@@ -237,15 +239,6 @@ struct AttachableObject
 };
 typedef std::shared_ptr<AttachableObject> AttachableObjectPtr;
 typedef std::shared_ptr<const AttachableObject> AttachableObjectConstPtr;
-
-///** @brief Contains data representing an attached body */
-//struct AttachedBody
-//{
-//   AttachedBodyInfo info;        /**< @brief Information on how the object is attached to the environment */
-//   AttachableObjectConstPtr obj; /**< @brief The attached bodies object data */
-//};
-//typedef std::shared_ptr<AttachedBody> AttachedBodyPtr;
-//typedef std::shared_ptr<const AttachedBody> AttachedBodyConstPtr;
 
 /** @brief ObjectColorMap Stores Object color in a 4d vector as RGBA*/
 struct ObjectColor
