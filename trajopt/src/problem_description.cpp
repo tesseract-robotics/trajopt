@@ -28,13 +28,14 @@ void ensure_only_members(const Value& v, const char** fields, int nvalid) {
   for (Json::ValueConstIterator it = v.begin(); it != v.end(); ++it) {
     bool valid = false;
     for (int j=0; j < nvalid; ++j) {
-      if ( strcmp(it.memberName(), fields[j]) == 0) {
+      JSONCPP_STRING member_name = it.name();
+      if (strcmp(member_name.c_str(), fields[j]) == 0) {
         valid = true;
         break;
       }
     }
     if (!valid) {
-      PRINT_AND_THROW( boost::format("invalid field found: %s")%it.memberName());
+      PRINT_AND_THROW( boost::format("invalid field found: %1")%it.name());
     }
   } 
 }
