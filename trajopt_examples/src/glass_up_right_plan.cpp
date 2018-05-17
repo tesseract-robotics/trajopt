@@ -189,6 +189,8 @@ int main(int argc, char** argv)
   AttachedBodyInfo attached_body;
   attached_body.object_name = "sphere_attached";
   attached_body.parent_link_name = "base_link";
+  attached_body.transform.setIdentity();
+//  attached_body.touch_links = {}; // This element enables the attached body to collide with other links
 
   env_->attachBody(attached_body);
 
