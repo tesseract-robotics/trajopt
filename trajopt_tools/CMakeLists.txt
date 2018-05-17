@@ -16,7 +16,7 @@ find_package(catkin REQUIRED COMPONENTS
 # )
 
 catkin_package(
-  INCLUDE_DIRS include
+  INCLUDE_DIRS
 #  LIBRARIES
   CATKIN_DEPENDS roscpp trajopt_ext
 #  DEPENDS system_lib
@@ -29,7 +29,6 @@ catkin_package(
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 include_directories(
-  include
   ${catkin_INCLUDE_DIRS}
 )
 
