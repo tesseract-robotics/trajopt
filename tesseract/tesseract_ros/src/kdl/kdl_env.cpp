@@ -613,7 +613,7 @@ bool KDLEnv::defaultIsContactAllowedFn(const std::string& link_name1, const std:
 
 void KDLEnv::loadContactCheckerPlugin(const std::string& plugin)
 {
-  ContactCheckerBasePtr temp(contact_checker_loader_->createUnmanagedInstance(plugin));
+  ContactCheckerBasePtr temp = contact_checker_loader_->createUniqueInstance(plugin);
   if (temp != nullptr)
   {
     contact_checker_ = temp;
