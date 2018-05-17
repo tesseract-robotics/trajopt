@@ -177,26 +177,26 @@ inline void nearCallback(btBroadphasePair& collisionPair,
 //  }
 }
 
-inline bool isCollisionAllowed(const COW* cow0, const COW* cow1, const IsContactAllowedFn acm, bool verbose = false)
+inline bool isContactAllowed(const COW* cow0, const COW* cow1, const IsContactAllowedFn acm, bool verbose = false)
 {
   // do not distance check geoms part of the same object / link / attached body
   if (cow0->sameObject(*cow1))
-    return false;
+    return true;
 
   if (acm != nullptr && acm(cow0->getName(), cow1->getName()))
   {
 
     if (verbose)
     {
-      ROS_DEBUG("Collision between '%s' and '%s' is always allowed. No contacts are computed.", cow0->getName().c_str(), cow1->getName().c_str());
+      ROS_DEBUG("Collision between '%s' and '%s' is allowed. No contacts are computed.", cow0->getName().c_str(), cow1->getName().c_str());
     }
-    return false;
+    return true;
   }
 
   if (verbose)
     ROS_DEBUG("Actually checking collisions between %s and %s", cow0->getName().c_str(), cow1->getName().c_str());
 
-  return true;
+  return false;
 }
 
 inline
@@ -295,7 +295,7 @@ struct CollisionCollector : public btCollisionWorld::ContactResultCallback
   {
     return (proxy0->m_collisionFilterGroup & m_collisionFilterMask)
         && (m_collisionFilterGroup & proxy0->m_collisionFilterMask)
-        && isCollisionAllowed(m_cow.get(), static_cast<CollisionObjectWrapper*>(proxy0->m_clientObject), m_collisions.req->isContactAllowed, m_verbose);
+        && !isContactAllowed(m_cow.get(), static_cast<CollisionObjectWrapper*>(proxy0->m_clientObject), m_collisions.req->isContactAllowed, m_verbose);
   }
 };
 
@@ -355,7 +355,7 @@ struct SweepCollisionCollector : public btCollisionWorld::ClosestConvexResultCal
   {
     return (proxy0->m_collisionFilterGroup & m_collisionFilterMask)
         && (m_collisionFilterGroup & proxy0->m_collisionFilterMask)
-        && isCollisionAllowed(m_cow.get(), static_cast<CollisionObjectWrapper*>(proxy0->m_clientObject), m_collisions.req->isContactAllowed, m_verbose);
+        && !isContactAllowed(m_cow.get(), static_cast<CollisionObjectWrapper*>(proxy0->m_clientObject), m_collisions.req->isContactAllowed, m_verbose);
   }
 };
 
@@ -614,7 +614,7 @@ struct CastCollisionCollector : public btCollisionWorld::ContactResultCallback
   {
     return (proxy0->m_collisionFilterGroup & m_collisionFilterMask)
         && (m_collisionFilterGroup & proxy0->m_collisionFilterMask)
-        && isCollisionAllowed(m_cow.get(), static_cast<CollisionObjectWrapper*>(proxy0->m_clientObject), m_collisions.req->isContactAllowed, m_verbose);
+        && !isContactAllowed(m_cow.get(), static_cast<CollisionObjectWrapper*>(proxy0->m_clientObject), m_collisions.req->isContactAllowed, m_verbose);
   }
 };
 
@@ -740,7 +740,7 @@ struct CastCollisionCollectorOriginal : public btCollisionWorld::ContactResultCa
   {
     return (proxy0->m_collisionFilterGroup & m_collisionFilterMask)
         && (m_collisionFilterGroup & proxy0->m_collisionFilterMask)
-        && isCollisionAllowed(m_cow.get(), static_cast<CollisionObjectWrapper*>(proxy0->m_clientObject), m_collisions.req->isContactAllowed, m_verbose);
+        && !isContactAllowed(m_cow.get(), static_cast<CollisionObjectWrapper*>(proxy0->m_clientObject), m_collisions.req->isContactAllowed, m_verbose);
   }
 };
 
