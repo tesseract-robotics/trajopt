@@ -233,7 +233,6 @@ btCollisionShape* createShapePrimitive(const shapes::ShapeConstPtr& geom, const 
 
 CollisionObjectWrapper::CollisionObjectWrapper(const std::string& name, const int& type_id, const std::vector<shapes::ShapeConstPtr> &shapes, const EigenSTL::vector_Affine3d &shape_poses, const CollisionObjectTypeVector &collision_object_types)
   :
-    m_index(-1),
     m_type_id(type_id),
     m_name(name),
     m_shapes(shapes),
