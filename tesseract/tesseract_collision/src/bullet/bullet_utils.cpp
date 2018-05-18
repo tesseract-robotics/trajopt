@@ -231,7 +231,7 @@ btCollisionShape* createShapePrimitive(const shapes::ShapeConstPtr& geom, const 
   return nullptr;
 }
 
-CollisionObjectWrapper::CollisionObjectWrapper(const std::string& name, const int& type_id, const std::vector<shapes::ShapeConstPtr> &shapes, const EigenSTL::vector_Affine3d &shape_poses, const CollisionObjectTypeVector &collision_object_types) : m_name(name), m_type_id(type_id), m_shapes(shapes), m_shape_poses(shape_poses), m_index(-1), m_collision_object_types(collision_object_types)
+CollisionObjectWrapper::CollisionObjectWrapper(const std::string& name, const int& type_id, const std::vector<shapes::ShapeConstPtr> &shapes, const EigenSTL::vector_Affine3d &shape_poses, const CollisionObjectTypeVector &collision_object_types) : m_name(name), m_type_id(type_id), m_shapes(shapes), m_shape_poses(shape_poses), m_collision_object_types(collision_object_types)
 {
   if (shapes.size() == 1 && m_shape_poses[0].matrix().isIdentity())
   {
@@ -263,6 +263,10 @@ CollisionObjectWrapper::CollisionObjectWrapper(const std::string& name, const in
   btTransform trans;
   trans.setIdentity();
   setWorldTransform(trans);
+}
+
+CollisionObjectWrapper::CollisionObjectWrapper(const std::string& name, const int& type_id, const std::vector<shapes::ShapeConstPtr> &shapes, const EigenSTL::vector_Affine3d &shape_poses, const CollisionObjectTypeVector &collision_object_types, const std::vector<std::shared_ptr<void>>& data) : m_name(name), m_type_id(type_id), m_shapes(shapes), m_shape_poses(shape_poses), m_collision_object_types(collision_object_types), m_data(data)
+{
 }
 
 }

@@ -99,9 +99,9 @@ private:
   ContactRequest request_;                  /**< Active request to be used for methods that don't require a request */
   std::vector<std::string> active_objects_; /**< A list of active objects ot check for contact */
 
-  void constructBulletObject(Link2Cow &collision_objects, std::vector<std::string> &active_objects, double contact_distance, const TransformMap& transforms, const std::vector<std::string> &active_links, bool continuous = false) const;
+  void constructBulletObject(BulletManager &manager, std::vector<std::string> &active_objects, double contact_distance, const TransformMap& transforms, const std::vector<std::string> &active_links, bool continuous = false) const;
 
-  void constructBulletObject(Link2Cow &collision_objects, std::vector<std::string> &active_objects, double contact_distance, const TransformMap& transforms1, const TransformMap& transforms2, const std::vector<std::string> &active_links) const;
+  void constructBulletObject(BulletManager &manager, std::vector<std::string> &active_objects, double contact_distance, const TransformMap& transforms1, const TransformMap& transforms2, const std::vector<std::string> &active_links) const;
 
 };
 typedef std::shared_ptr<BulletContactChecker> BulletContactCheckerPtr;

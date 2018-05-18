@@ -248,6 +248,7 @@ void KDLEnv::setState(const std::unordered_map<std::string, double> &joints)
   }
 
   calculateTransforms(current_state_->transforms, kdl_jnt_array_, kdl_tree_->getRootSegment(), Eigen::Affine3d::Identity());
+  contact_checker_->setObjectsTransform(current_state_->transforms);
 }
 
 void KDLEnv::setState(const std::vector<std::string> &joint_names, const std::vector<double> &joint_values)
@@ -261,6 +262,7 @@ void KDLEnv::setState(const std::vector<std::string> &joint_names, const std::ve
   }
 
   calculateTransforms(current_state_->transforms, kdl_jnt_array_, kdl_tree_->getRootSegment(), Eigen::Affine3d::Identity());
+  contact_checker_->setObjectsTransform(current_state_->transforms);
 }
 
 void KDLEnv::setState(const std::vector<std::string> &joint_names, const Eigen::VectorXd &joint_values)
@@ -274,6 +276,7 @@ void KDLEnv::setState(const std::vector<std::string> &joint_names, const Eigen::
   }
 
   calculateTransforms(current_state_->transforms, kdl_jnt_array_, kdl_tree_->getRootSegment(), Eigen::Affine3d::Identity());
+  contact_checker_->setObjectsTransform(current_state_->transforms);
 }
 
 EnvStatePtr KDLEnv::getState(const std::unordered_map<std::string, double> &joints) const

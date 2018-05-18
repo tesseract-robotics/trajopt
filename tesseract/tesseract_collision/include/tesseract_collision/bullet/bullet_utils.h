@@ -122,10 +122,7 @@ public:
   short int	m_collisionFilterGroup;
   short int	m_collisionFilterMask;
   bool m_enabled;
-  /**
-   * @brief getID Returns the ID which is key when storing in link2cow
-   * @return Collision object ID
-   */
+
   const std::string& getName() const { return m_name; }
 
   const int& getTypeID() const { return m_type_id; }
@@ -134,6 +131,17 @@ public:
   bool sameObject(const CollisionObjectWrapper& other) const
   {
     return m_name == other.m_name && m_type_id == other.m_type_id && &m_shapes == &(other.m_shapes) && &m_shape_poses == &(other.m_shape_poses);
+  }
+
+  std::shared_ptr<CollisionObjectWrapper> clone()
+  {
+    std::shared_ptr<CollisionObjectWrapper> clone_cow(new CollisionObjectWrapper(m_name, m_type_id, m_shapes, m_shape_poses, m_collision_object_types, m_data));
+    clone_cow->setCollisionShape(getCollisionShape());
+    clone_cow->setWorldTransform(getWorldTransform());
+    clone_cow->m_collisionFilterGroup = m_collisionFilterGroup;
+    clone_cow->m_collisionFilterMask = m_collisionFilterMask;
+    clone_cow->m_enabled = m_enabled;
+    return clone_cow;
   }
 
   template<class T>
@@ -148,8 +156,13 @@ public:
   }
 
 protected:
+  CollisionObjectWrapper(const std::string& name,
+                         const int& type_id,
+                         const std::vector<shapes::ShapeConstPtr>& shapes,
+                         const EigenSTL::vector_Affine3d& shape_poses,
+                         const CollisionObjectTypeVector& collision_object_types,
+                         const std::vector<std::shared_ptr<void>>& data);
 
-  int m_index;        // index into collision matrix
   int m_type_id;      // user defined type id
   std::string m_name; // name of the collision object
   const std::vector<shapes::ShapeConstPtr>& m_shapes;
@@ -746,12 +759,6 @@ struct CastCollisionCollectorOriginal : public btCollisionWorld::ContactResultCa
 
 struct BulletManager
 {
-  btCollisionWorld* m_world;
-  btBroadphaseInterface* m_broadphase;
-  btCollisionDispatcher* m_dispatcher;
-  btCollisionConfiguration* m_coll_config;
-  Link2Cow m_link2cow;
-
   BulletManager()
   {
     m_coll_config = new btDefaultCollisionConfiguration();
@@ -774,32 +781,91 @@ struct BulletManager
     delete m_coll_config;
   }
 
+  COWPtr cloneCollisionObject(const std::string& name) const
+  {
+    auto it = m_link2cow.find(name);
+    if (it != m_link2cow.end())
+      return it->second->clone();
+
+    return nullptr;
+  }
+
+  const COWPtr& getCollisionObject(const std::string& name)
+  {
+    assert(m_link2cow.find(name) != m_link2cow.end());
+    return m_link2cow[name];
+  }
+
+  Link2Cow& getCollisionObjects()
+  {
+    return m_link2cow;
+  }
+
   void addCollisionObject(COWPtr& cow)
   {
+    m_link2cow[cow->getName()] = cow;
     m_world->addCollisionObject(cow.get(), cow->m_collisionFilterGroup, cow->m_collisionFilterMask);
   }
 
-  void removeCollisionObject(COWPtr& cow)
+  bool removeCollisionObject(const std::string& name)
   {
-    m_world->removeCollisionObject(cow.get());
+    auto it = m_link2cow.find(name);
+    if (it != m_link2cow.end())
+    {
+      m_world->removeCollisionObject(it->second.get());
+      m_link2cow.erase(name);
+      return true;
+    }
+    return false;
   }
 
-  void processCollisionObjects()
+  bool enableCollisionObject(const std::string& name)
   {
-    for (auto& element : m_link2cow)
+    auto it = m_link2cow.find(name);
+    if (it != m_link2cow.end())
     {
-      addCollisionObject(element.second);
+      it->second->m_enabled = true;
+      return true;
     }
+    return false;
+  }
+
+  bool disableCollisionObject(const std::string& name)
+  {
+    auto it = m_link2cow.find(name);
+    if (it != m_link2cow.end())
+    {
+      it->second->m_enabled = false;
+      return true;
+    }
+    return false;
+  }
+
+  bool setCollisionObjectsTransform(const std::string& name, const Eigen::Affine3d& pose)
+  {
+    // TODO: Find a way to remove this check. Need to store information in Tesseract EnvState indicating transforms with geometry
+    auto it = m_link2cow.find(name);
+    if (it != m_link2cow.end())
+    {
+      it->second->setWorldTransform(convertEigenToBt(pose));
+      m_world->updateSingleAabb(it->second.get());
+      return true;
+    }
+    return false;
   }
 
   void contactDiscreteTest(const COWPtr& cow, BulletDistanceData& collisions)
   {
+    assert(cow->getBroadphaseHandle()->m_collisionFilterGroup == cow->m_collisionFilterGroup);
+    assert(cow->getBroadphaseHandle()->m_collisionFilterMask == cow->m_collisionFilterMask);
     CollisionCollector cc(collisions, cow, cow->getContactProcessingThreshold());
     m_world->contactTest(cow.get(), cc);
   }
 
   void contactCastTest(const COWPtr& cow, BulletDistanceData& collisions)
   {
+    assert(cow->getBroadphaseHandle()->m_collisionFilterGroup == cow->m_collisionFilterGroup);
+    assert(cow->getBroadphaseHandle()->m_collisionFilterMask == cow->m_collisionFilterMask);
     CastCollisionCollector cc(collisions, cow, cow->getContactProcessingThreshold());
     m_world->contactTest(cow.get(), cc);
   }
@@ -817,6 +883,11 @@ struct BulletManager
   }
 
 private:
+  btCollisionWorld* m_world;
+  btBroadphaseInterface* m_broadphase;
+  btCollisionDispatcher* m_dispatcher;
+  btCollisionConfiguration* m_coll_config;
+  Link2Cow m_link2cow;
 
   void convexCastTestHelper(COWPtr& cow, btCollisionShape* shape, const btTransform& tf0, const btTransform& tf1, BulletDistanceData& collisions)
   {
@@ -825,7 +896,7 @@ private:
       btConvexShape* convex = dynamic_cast<btConvexShape*>(shape);
 
       CastHullShape* shape = new CastHullShape(convex, tf0.inverseTimes(tf1));
-      COWPtr obj(new COW(*cow));
+      COWPtr obj = cow->clone();
       obj->setCollisionShape(shape);
       obj->setWorldTransform(tf0);
 

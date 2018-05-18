@@ -19,9 +19,11 @@ const double DEFAULT_CONTACT_DISTANCE = 0.1;
 KDLEnvPtr env;
 ros::Subscriber joint_states_sub;
 ros::Publisher contact_results_pub;
+ros::Publisher environment_pub;
 ros::ServiceServer modify_env_service;
 ContactResultMap contacts;
 tesseract_msgs::ContactResultVector contacts_msg;
+bool publish_environment;
 boost::mutex modify_mutex;
 
 void callbackJointState(const sensor_msgs::JointState::ConstPtr& msg)
@@ -32,6 +34,13 @@ void callbackJointState(const sensor_msgs::JointState::ConstPtr& msg)
 
   env->setState(msg->name, msg->position);
   env->calcDistancesDiscrete(contacts);
+
+  if (publish_environment)
+  {
+    tesseract_msgs::TesseractState state_msg;
+    tesseract_ros::tesseractToTesseractStateMsg(state_msg, *env);
+    environment_pub.publish(state_msg);
+  }
 
   ContactResultVector contacts_vector;
   tesseract::moveContactResultsMapToContactResultsVector(contacts, contacts_vector);
@@ -64,6 +73,7 @@ int main(int argc, char** argv)
   env.reset(new KDLEnv());
 
   pnh.param<std::string>("robot_description", robot_description, ROBOT_DESCRIPTION_PARAM);
+  pnh.param<bool>("publish_environment", publish_environment, false);
   if (pnh.hasParam("plugin"))
   {
     pnh.getParam("plugin", plugin);
@@ -104,6 +114,9 @@ int main(int argc, char** argv)
   joint_states_sub = nh.subscribe("joint_states", 1, &callbackJointState);
   contact_results_pub = pnh.advertise<tesseract_msgs::ContactResultVector>("contact_results", 1, true);
   modify_env_service = pnh.advertiseService<tesseract_msgs::ModifyTesseractEnvRequest, tesseract_msgs::ModifyTesseractEnvResponse>("modify_tesseract_env", &callbackModifyTesseractEnv);
+
+  if (publish_environment)
+    environment_pub = pnh.advertise<tesseract_msgs::TesseractState>("tesseract", 100, false);
 
   ros::spin();
 

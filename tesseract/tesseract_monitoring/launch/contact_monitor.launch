@@ -3,12 +3,12 @@
   <!-- By default we do not overwrite the URDF. Change the following to true to change the default behavior -->
   <!-- The name of the parameter under which the URDF is loaded -->
   <arg name="robot_description" default="robot_description"/>
-  <arg name="plugin" default="tesseract_ros/BulletEnvSingleton"/>
+  <arg name="plugin" default="tesseract_collision/BulletContactChecker"/>
   <arg name="monitor_links" default=""/>
+  <arg name="debug" default="false"/>
   <arg name="contact_distance"/>
 
   <arg name="rate" default="200"/>
-  <arg name="use_gui" default="false"/>
 
   <!-- Load universal robot description format (URDF) -->
   <param name="$(arg robot_description)" command="$(find xacro)/xacro --inorder '$(find trajopt_examples)/urdf/lbr_iiwa_14_r820.xacro'" />
@@ -18,14 +18,15 @@
 
   <node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher">
     <param name="rate" value="$(arg rate)"/>
-    <param name="use_gui" value="$(arg use_gui)" />
+    <param name="use_gui" value="$(arg debug)" />
   </node>
 
-  <node pkg="tesseract_ros_monitor" type="tesseract_ros_monitor_contacts_node" name="tesseract_contact_monitoring">
+  <node pkg="tesseract_monitoring" type="tesseract_monitoring_contacts_node" name="tesseract_monitoring_contacts">
     <param name="robot_description" type="string" value="$(arg robot_description)"/>
     <param name="plugin" type="string" value="$(arg plugin)"/>
     <param name="contact_distance" value="$(arg contact_distance)"/>
     <param name="monitor_links" value="$(arg monitor_links)"/>
+    <param name="publish_environment" value="$(arg debug)"/>
   </node>
 
 </launch>

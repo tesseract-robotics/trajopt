@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>tesseract_ros_monitor</name>
+  <name>tesseract_monitoring</name>
   <version>0.1.0</version>
-  <description>The tesseract_ros_monitor package</description>
+  <description>The tesseract_monitoring package</description>
   <maintainer email="levi.armstrong@swri.org">Levi Armstrong</maintainer>
   <license>Apache 2.0</license>
   <author >Levi Armstrong</author>
