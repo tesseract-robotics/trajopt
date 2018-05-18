@@ -19,7 +19,7 @@ void CollisionsToDistances(const tesseract::ContactResultVector &dist_results, D
 {
   dists.clear();
   dists.reserve(dist_results.size());
-  for (auto i = 0; i < dist_results.size(); ++i)
+  for (auto i = 0u; i < dist_results.size(); ++i)
     dists.push_back(dist_results[i].distance);
 }
 
@@ -48,7 +48,7 @@ void CollisionsToDistanceExpressions(const tesseract::ContactResultVector &dist_
 
   exprs.clear();
   exprs.reserve(dist_results.size());
-  for (auto i = 0; i < dist_results.size(); ++i)
+  for (auto i = 0u; i < dist_results.size(); ++i)
   {
     const tesseract::ContactResult &res = dist_results[i];
 
@@ -95,7 +95,7 @@ void CollisionsToDistanceExpressions(const tesseract::ContactResultVector &dist_
   CollisionsToDistanceExpressions(dist_results, env, manip, vars1, x, exprs1, true);
 
   exprs.resize(exprs0.size());
-  for (int i=0; i < exprs0.size(); ++i)
+  for (std::size_t i=0; i < exprs0.size(); ++i)
   {
     exprScale(exprs0[i], (1-dist_results[i].cc_time));
     exprScale(exprs1[i], dist_results[i].cc_time);
@@ -135,7 +135,7 @@ void CollisionEvaluator::Plot(const tesseract::BasicPlottingPtr plotter, const D
   const std::vector<std::string>& link_names = manip_->getLinkNames();
 
   Eigen::VectorXd safety_distance(dist_results.size());
-  for (auto i = 0; i < dist_results.size(); ++i)
+  for (auto i = 0u; i < dist_results.size(); ++i)
   {
     const Eigen::Vector2d& data = getSafetyMarginData()->getPairSafetyMarginData(dist_results[i].link_names[0], dist_results[i].link_names[1]);
     safety_distance[i] = data[0];
@@ -230,7 +230,7 @@ ConvexObjectivePtr CollisionCost::convex(const vector<double>& x, Model* model)
 
   tesseract::ContactResultVector dist_results;
   m_calc->GetCollisionsCached(x, dist_results);
-  for (int i=0; i < exprs.size(); ++i)
+  for (std::size_t i=0; i < exprs.size(); ++i)
   {
     const Eigen::Vector2d& data = m_calc->getSafetyMarginData()->getPairSafetyMarginData(dist_results[i].link_names[0], dist_results[i].link_names[1]);
 
@@ -248,7 +248,7 @@ double CollisionCost::value(const vector<double>& x)
   tesseract::ContactResultVector dist_results;
   m_calc->GetCollisionsCached(x, dist_results);
   double out = 0;
-  for (int i=0; i < dists.size(); ++i)
+  for (std::size_t i=0; i < dists.size(); ++i)
   {
     const Eigen::Vector2d& data = m_calc->getSafetyMarginData()->getPairSafetyMarginData(dist_results[i].link_names[0], dist_results[i].link_names[1]);
     out += pospart(data[0] - dists[i]) * data[1];
@@ -282,7 +282,7 @@ ConvexConstraintsPtr CollisionConstraint::convex(const vector<double>& x, Model*
 
   tesseract::ContactResultVector dist_results;
   m_calc->GetCollisionsCached(x, dist_results);
-  for (int i=0; i < exprs.size(); ++i)
+  for (std::size_t i=0; i < exprs.size(); ++i)
   {
     const Eigen::Vector2d& data = m_calc->getSafetyMarginData()->getPairSafetyMarginData(dist_results[i].link_names[0], dist_results[i].link_names[1]);
 
@@ -299,7 +299,7 @@ DblVec CollisionConstraint::value(const vector<double>& x) {
   tesseract::ContactResultVector dist_results;
   m_calc->GetCollisionsCached(x, dist_results);
   DblVec out(dists.size());
-  for (int i=0; i < dists.size(); ++i)
+  for (std::size_t i=0; i < dists.size(); ++i)
   {
     const Eigen::Vector2d& data = m_calc->getSafetyMarginData()->getPairSafetyMarginData(dist_results[i].link_names[0], dist_results[i].link_names[1]);
 

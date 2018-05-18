@@ -62,7 +62,7 @@ using Eigen::VectorXd;
 
 bool KDLEnv::init(urdf::ModelInterfaceConstSharedPtr urdf_model)
 {
-  init(urdf_model, nullptr);
+  return init(urdf_model, nullptr);
 }
 
 bool KDLEnv::init(urdf::ModelInterfaceConstSharedPtr urdf_model, srdf::ModelConstSharedPtr srdf_model)
@@ -253,7 +253,7 @@ void KDLEnv::setState(const std::unordered_map<std::string, double> &joints)
 
 void KDLEnv::setState(const std::vector<std::string> &joint_names, const std::vector<double> &joint_values)
 {
-  for (auto i = 0; i < joint_names.size(); ++i)
+  for (auto i = 0u; i < joint_names.size(); ++i)
   {
     if (setJointValuesHelper(kdl_jnt_array_, joint_names[i], joint_values[i]))
     {
@@ -267,7 +267,7 @@ void KDLEnv::setState(const std::vector<std::string> &joint_names, const std::ve
 
 void KDLEnv::setState(const std::vector<std::string> &joint_names, const Eigen::VectorXd &joint_values)
 {
-  for (auto i = 0; i < joint_names.size(); ++i)
+  for (auto i = 0u; i < joint_names.size(); ++i)
   {
     if (setJointValuesHelper(kdl_jnt_array_, joint_names[i], joint_values[i]))
     {
@@ -302,7 +302,7 @@ EnvStatePtr KDLEnv::getState(const std::vector<std::string> &joint_names, const 
   EnvStatePtr state(new EnvState(*current_state_));
   KDL::JntArray jnt_array = kdl_jnt_array_;
 
-  for (auto i = 0; i < joint_names.size(); ++i)
+  for (auto i = 0u; i < joint_names.size(); ++i)
   {
     if (setJointValuesHelper(jnt_array, joint_names[i], joint_values[i]))
     {
@@ -320,7 +320,7 @@ EnvStatePtr KDLEnv::getState(const std::vector<std::string> &joint_names, const 
   EnvStatePtr state(new EnvState(*current_state_));
   KDL::JntArray jnt_array = kdl_jnt_array_;
 
-  for (auto i = 0; i < joint_names.size(); ++i)
+  for (auto i = 0u; i < joint_names.size(); ++i)
   {
     if (setJointValuesHelper(jnt_array, joint_names[i], joint_values[i]))
     {
@@ -612,6 +612,8 @@ bool KDLEnv::defaultIsContactAllowedFn(const std::string& link_name1, const std:
     if (std::find(tl.begin(), tl.end(), link_name2) != tl.end() || link_name2 == it1->second.parent_link_name)
       return true;
   }
+
+  return false;
 }
 
 void KDLEnv::loadContactCheckerPlugin(const std::string& plugin)

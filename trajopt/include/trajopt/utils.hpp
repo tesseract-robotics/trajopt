@@ -110,7 +110,7 @@ typedef std::shared_ptr<const SafetyMarginData> SafetyMarginDataConstPtr;
  * @param default_safety_margin_coeff Default safety margin coeff
  * @return A vector of Safety Margin Data
  */
-static std::vector<SafetyMarginDataPtr> createSafetyMarginDataVector(int num_elements, const double& default_safety_margin, const double& default_safety_margin_coeff)
+inline std::vector<SafetyMarginDataPtr> createSafetyMarginDataVector(int num_elements, const double& default_safety_margin, const double& default_safety_margin_coeff)
 {
   std::vector<SafetyMarginDataPtr> info;
   info.reserve(num_elements);

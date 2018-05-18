@@ -26,7 +26,7 @@ namespace trajopt {
 
 JointPosCost::JointPosCost(const VarVector& vars, const VectorXd& vals, const VectorXd& coeffs) :
     Cost("JointPos"), vars_(vars), vals_(vals), coeffs_(coeffs) {
-    for (int i=0; i < vars.size(); ++i) {
+    for (std::size_t i=0; i < vars.size(); ++i) {
       if (coeffs[i] > 0) {
         AffExpr diff = exprSub(AffExpr(vars[i]), AffExpr(vals[i]));
         exprInc(expr_, exprMult(exprSquare(diff), coeffs[i]));

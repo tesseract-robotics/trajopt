@@ -600,8 +600,8 @@ struct CastCollisionCollector : public btCollisionWorld::ContactResultCallback
             l1c = (ptOnCast - ptWorld1).length();
 
       // DEBUG: SHould be removed
-      Eigen::Vector3d diff = convertBtToEigen(ptWorld0) - col->nearest_points[1];
-      double distDiff = diff.norm();
+//      Eigen::Vector3d diff = convertBtToEigen(ptWorld0) - col->nearest_points[1];
+//      double distDiff = diff.norm();
 
       // DEBUG: Store the original contact point for debug, remove after integration and testing and uncommnet: col->cc_nearest_points[0] = col->nearest_points[1];
       col->cc_nearest_points[0] = col->nearest_points[1];
