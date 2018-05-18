@@ -1,7 +1,7 @@
 #include "tesseract_ros_planning/ompl/chain_ompl_interface.h"
 #include <ompl/base/spaces/RealVectorStateSpace.h>
 
-tesseract_ros_planning::ChainOmplInterface::ChainOmplInterface(tesseract::tesseract_ros::ROSBasicEnvConstPtr environment, const std::string &manipulator_name)
+tesseract_ros_planning::ChainOmplInterface::ChainOmplInterface(tesseract::BasicEnvConstPtr environment, const std::string &manipulator_name)
   : env_(std::move(environment))
 {
   if (!env_->hasManipulator(manipulator_name))

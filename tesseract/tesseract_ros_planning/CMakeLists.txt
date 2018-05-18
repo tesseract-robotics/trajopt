@@ -42,6 +42,7 @@ target_link_libraries(tesseract_ros_trajopt_planner
 add_library(${PROJECT_NAME}_ompl
   src/ompl/chain_ompl_interface.cpp
   src/ompl/conversions.cpp
+  src/ompl/continuous_motion_validator.cpp
 )
 
 add_dependencies(${PROJECT_NAME}_ompl ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})

@@ -16,12 +16,17 @@ struct OmplPlanParameters
 class ChainOmplInterface
 {
 public:
-  ChainOmplInterface(tesseract::tesseract_ros::ROSBasicEnvConstPtr environment, const std::string& manipulator_name);
+  ChainOmplInterface(tesseract::BasicEnvConstPtr environment, const std::string& manipulator_name);
 
   boost::optional<ompl::geometric::PathGeometric> plan(ompl::base::PlannerPtr planner, const std::vector<double>& from,
                                                        const std::vector<double>& to, const OmplPlanParameters& params);
 
   ompl::base::SpaceInformationPtr spaceInformation();
+
+  void setMotionValidator(ompl::base::MotionValidatorPtr mv)
+  {
+    ss_->getSpaceInformation()->setMotionValidator(std::move(mv));
+  }
 
 
 private:
@@ -31,7 +36,7 @@ private:
 
 private:
   ompl::geometric::SimpleSetupPtr ss_;
-  tesseract::tesseract_ros::ROSBasicEnvConstPtr env_;
+  tesseract::BasicEnvConstPtr env_;
   tesseract::IsContactAllowedFn contact_fn_;
   std::vector<std::string> joint_names_;
   std::vector<std::string> link_names_;

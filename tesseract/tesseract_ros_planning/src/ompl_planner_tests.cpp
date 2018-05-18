@@ -14,30 +14,32 @@
 #include <urdf_parser/urdf_parser.h>
 #include <ompl/base/spaces/RealVectorStateSpace.h>
 
+#include <tesseract_ros_planning/ompl/continuous_motion_validator.h>
+
 #include <functional>
 
-static void addSphere(tesseract::tesseract_ros::ROSBasicEnv& env)
+static void addBox(tesseract::tesseract_ros::ROSBasicEnv& env)
 {
   // Add sphere
   using namespace tesseract;
   tesseract::AttachableObjectPtr obj (new tesseract::AttachableObject());
-  std::shared_ptr<shapes::Box> sphere (new shapes::Box(0.5, 0.5, 0.5));
+  std::shared_ptr<shapes::Box> box (new shapes::Box(0.5, 0.001, 0.5));
 
-  Eigen::Affine3d sphere_pose;
-  sphere_pose.setIdentity();
-  sphere_pose.translation() = Eigen::Vector3d(0.5, 0, 0.55);
+  Eigen::Affine3d box_pose;
+  box_pose.setIdentity();
+  box_pose.translation() = Eigen::Vector3d(0.4, 0, 0.55);
 
-  obj->name = "sphere_attached";
-  obj->visual.shapes.push_back(sphere);
-  obj->visual.shape_poses.push_back(sphere_pose);
-  obj->collision.shapes.push_back(sphere);
-  obj->collision.shape_poses.push_back(sphere_pose);
+  obj->name = "box_attached";
+  obj->visual.shapes.push_back(box);
+  obj->visual.shape_poses.push_back(box_pose);
+  obj->collision.shapes.push_back(box);
+  obj->collision.shape_poses.push_back(box_pose);
   obj->collision.collision_object_types.push_back(CollisionObjectType::UseShapeType);
 
   env.addAttachableObject(obj);
 
   tesseract::AttachedBodyInfo attached_body;
-  attached_body.object_name = "sphere_attached";
+  attached_body.object_name = "box_attached";
   attached_body.parent_link_name = "base_link";
   attached_body.transform.setIdentity();
 
@@ -67,13 +69,17 @@ int main(int argc, char** argv)
   // Step 2: Create a "tesseract" environment
   tesseract::tesseract_ros::KDLEnvPtr env (new tesseract::tesseract_ros::KDLEnv);
   env->init(urdf_model, srdf_model);
-  addSphere(*env);
+  addBox(*env);
 
   // A tesseract plotter makes generating and publishing visualization messages easy
   tesseract::tesseract_ros::ROSBasicPlottingPtr plotter = std::make_shared<tesseract::tesseract_ros::ROSBasicPlotting>(env);
 
   // Step 3: Create a planning context for OMPL - this sets up the OMPL state environment for your given chain
   tesseract_ros_planning::ChainOmplInterface ompl_context (env, "manipulator");
+
+  ompl::base::MotionValidatorPtr mv (
+        new tesseract_ros_planning::ContinuousMotionValidator(ompl_context.spaceInformation(), env, "manipulator"));
+  ompl_context.setMotionValidator(mv);
 
   // Step 4: Create an OMPL planner that we want to use
   ompl::base::PlannerPtr planner (new ompl::geometric::RRTConnect(ompl_context.spaceInformation()));
