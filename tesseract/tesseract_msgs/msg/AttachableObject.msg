@@ -16,8 +16,5 @@ byte ADD=0
 # Removes the object (everything that matches the specified id)
 byte REMOVE=1
 
-# Append to an object that already exists. If the does not exist, it is added.
-byte APPEND=2
-
 # Operation to be performed
 byte operation

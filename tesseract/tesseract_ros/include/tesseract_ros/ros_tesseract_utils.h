@@ -502,9 +502,9 @@ bool processAttachableObjectMsg(tesseract_ros::ROSBasicEnv& env, const tesseract
     attachableObjectMsgToAttachableObject(ao, ao_msg);
     env.addAttachableObject(ao);
   }
-  else if (ao_msg.operation == tesseract_msgs::AttachableObject::APPEND)
+  else
   {
-    ROS_ERROR("AttachableObject APPEND operation currently not implemented.");
+    ROS_ERROR("AttachableObject, Unknown operation.");
     return false;
   }
 
