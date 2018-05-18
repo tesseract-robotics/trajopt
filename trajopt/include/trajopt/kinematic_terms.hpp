@@ -5,85 +5,72 @@
 #include <trajopt_sco/sco_fwd.hpp>
 #include <trajopt/common.hpp>
 #include <Eigen/Core>
-#include <openrave/openrave.h>
+#include <tesseract_core/basic_kin.h>
+#include <tesseract_core/basic_env.h>
+
 namespace trajopt {
 
 using namespace sco;
 typedef BasicArray<Var> VarArray;
 
-#if 0
-void makeTrajVariablesAndBounds(int n_steps, const RobotAndDOF& manip, OptProb& prob_out, VarArray& vars_out);
-
-class FKFunc {
-public:
-  virtual OpenRAVE::Transform operator()(const VectorXd& x) const = 0;
-  virtual ~FKFunc() {}
-};
-
-class FKPositionJacobian {
-public:
-  virtual Eigen::MatrixXd operator()(const VectorXd& x) const = 0;
-  virtual ~FKPositionJacobian() {}
-};
-#endif
-
-
-struct CartPoseErrCalculator : public VectorOfVector {
-  OR::Transform pose_inv_;
-  ConfigurationPtr manip_;
-  OR::KinBody::LinkPtr link_;
-  CartPoseErrCalculator(const OR::Transform& pose, ConfigurationPtr manip, OR::KinBody::LinkPtr link) :
+struct CartPoseErrCalculator : public VectorOfVector
+{
+  Eigen::Affine3d pose_inv_;
+  tesseract::BasicKinConstPtr manip_;
+  tesseract::BasicEnvConstPtr env_;
+  std::string link_;
+  Eigen::Affine3d tcp_;
+  CartPoseErrCalculator(const Eigen::Affine3d& pose, tesseract::BasicKinConstPtr manip, tesseract::BasicEnvConstPtr env, std::string link, Eigen::Affine3d tcp = Eigen::Affine3d::Identity()) :
     pose_inv_(pose.inverse()),
     manip_(manip),
-    link_(link) {}
+    env_(env),
+    link_(link),
+    tcp_(tcp) {}
+
   VectorXd operator()(const VectorXd& dof_vals) const;
 };
 
-struct CartPoseErrorPlotter : public Plotter {
-  boost::shared_ptr<void> m_calc; //actually points to a CartPoseErrCalculator = CartPoseCost::f_
+struct CartPoseErrorPlotter : public Plotter
+{
+  std::shared_ptr<void> m_calc; //actually points to a CartPoseErrCalculator = CartPoseCost::f_
   VarVector m_vars;
-  CartPoseErrorPlotter(boost::shared_ptr<void> calc, const VarVector& vars) : m_calc(calc), m_vars(vars) {}
-  void Plot(const DblVec& x, OR::EnvironmentBase& env, std::vector<OR::GraphHandlePtr>& handles);
+  CartPoseErrorPlotter(std::shared_ptr<void> calc, const VarVector& vars) : m_calc(calc), m_vars(vars) {}
+  void Plot(const tesseract::BasicPlottingPtr plotter, const DblVec& x);
 };
 
 
-struct CartVelJacCalculator : MatrixOfVector {
-  ConfigurationPtr manip_;
-  KinBody::LinkPtr link_;
+struct CartVelJacCalculator : MatrixOfVector
+{
+  tesseract::BasicKinConstPtr manip_;
+  tesseract::BasicEnvConstPtr env_;
+  std::string link_;
   double limit_;
-  CartVelJacCalculator(ConfigurationPtr manip, KinBody::LinkPtr link, double limit) :
-    manip_(manip), link_(link), limit_(limit) {}
+  Eigen::Affine3d tcp_;
+  CartVelJacCalculator(tesseract::BasicKinConstPtr manip, tesseract::BasicEnvConstPtr env, std::string link, double limit, Eigen::Affine3d tcp = Eigen::Affine3d::Identity()) :
+    manip_(manip),
+    env_(env),
+    link_(link),
+    limit_(limit),
+    tcp_(tcp) {}
 
   MatrixXd operator()(const VectorXd& dof_vals) const;
 };
 
-struct CartVelCalculator : VectorOfVector {
-  ConfigurationPtr manip_;
-  KinBody::LinkPtr link_;
+struct CartVelCalculator : VectorOfVector
+{
+  tesseract::BasicKinConstPtr manip_;
+  tesseract::BasicEnvConstPtr env_;
+  std::string link_;
   double limit_;
-  CartVelCalculator(ConfigurationPtr manip, KinBody::LinkPtr link, double limit) :
-    manip_(manip), link_(link), limit_(limit) {}
+  Eigen::Affine3d tcp_;
+  CartVelCalculator(tesseract::BasicKinConstPtr manip, tesseract::BasicEnvConstPtr env, std::string link, double limit, Eigen::Affine3d tcp = Eigen::Affine3d::Identity()) :
+    manip_(manip),
+    env_(env),
+    link_(link),
+    limit_(limit),
+    tcp_(tcp) {}
 
   VectorXd operator()(const VectorXd& dof_vals) const;
 };
-
-#if 0
-class CartPoseCost : public CostFromErrFunc {
-public:
-  CartPoseCost(const VarVector& vars, const OR::Transform& pose, RobotAndDOFPtr manip, KinBody::LinkPtr link, const VectorXd& coeffs);
-};
-
-class CartPoseConstraint : public ConstraintFromFunc {
-public:
-  CartPoseConstraint(const VarVector& vars, const OR::Transform& pose, RobotAndDOFPtr manip, KinBody::LinkPtr link, const VectorXd& coeffs);
-};
-
-class CartVelConstraint : public ConstraintFromFunc {
-public:
-  CartVelConstraint(const VarVector& step0vars, const VarVector& step1vars, RobotAndDOFPtr manip, KinBody::LinkPtr link, double distlimit);
-};
-#endif
-
-
 
 }

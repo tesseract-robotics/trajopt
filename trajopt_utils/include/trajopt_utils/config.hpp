@@ -4,7 +4,7 @@
 #include <string>
 #include <iostream>
 #include <boost/program_options.hpp>
-#include <boost/shared_ptr.hpp>
+#include <memory>
 #include <trajopt_utils/stl_to_string.hpp>
 
 namespace util {
@@ -19,7 +19,7 @@ struct ParameterBase {
   virtual void addToBoost(po::options_description&) = 0;
   virtual ~ParameterBase() {}
 };
-typedef boost::shared_ptr<ParameterBase> ParameterBasePtr;
+typedef std::shared_ptr<ParameterBase> ParameterBasePtr;
 
 template <typename T>
 struct ParameterVec : ParameterBase {

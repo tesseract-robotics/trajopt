@@ -1,0 +1,5 @@
+<?xml version="1.0"?>
+<launch>
+  <include file="$(find trajopt_test_support)/launch/load_boxbot.launch" />
+  <test test-name="trajopt_cast_cost_attached_unit" pkg="trajopt" type="trajopt_cast_cost_attached_unit" />
+</launch>

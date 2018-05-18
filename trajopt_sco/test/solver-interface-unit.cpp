@@ -4,7 +4,6 @@
 #include <trajopt_utils/stl_to_string.hpp>
 #include <gtest/gtest.h>
 #include <cstdio>
-#include <boost/foreach.hpp>
 #include <iostream>
 
 using namespace std;

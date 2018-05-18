@@ -2,7 +2,6 @@
 #include <trajopt_utils/logging.hpp>
 #include <trajopt_utils/stl_to_string.hpp>
 #include <trajopt_sco/bpmpd_io.hpp>
-#include <boost/foreach.hpp>
 #include <cmath>
 #include <fstream>
 #include <signal.h>

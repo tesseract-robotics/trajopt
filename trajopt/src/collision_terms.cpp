@@ -1,6 +1,4 @@
 #include <trajopt/collision_terms.hpp>
-#include <trajopt/collision_checker.hpp>
-#include <trajopt/rave_utils.hpp>
 #include <trajopt/utils.hpp>
 #include <trajopt_sco/expr_vec_ops.hpp>
 #include <trajopt_sco/expr_ops.hpp>
@@ -9,69 +7,98 @@
 #include <trajopt_utils/eigen_conversions.hpp>
 #include <trajopt_utils/stl_to_string.hpp>
 #include <trajopt_utils/logging.hpp>
-#include <boost/foreach.hpp>
 #include <boost/functional/hash.hpp>
-using namespace OpenRAVE;
+
 using namespace sco;
 using namespace util;
 using namespace std;
 
 namespace trajopt {
 
-
-void CollisionsToDistances(const vector<Collision>& collisions, const Link2Int& m_link2ind,
-    DblVec& dists) {
-  // Note: this checking (that the links are in the list we care about) is probably unnecessary
-  // since we're using LinksVsAll
+void CollisionsToDistances(const tesseract::ContactResultVector &dist_results, DblVec& dists)
+{
   dists.clear();
-  dists.reserve(collisions.size());
-  BOOST_FOREACH(const Collision& col, collisions) {
-    Link2Int::const_iterator itA = m_link2ind.find(col.linkA);
-    Link2Int::const_iterator itB = m_link2ind.find(col.linkB);
-    if (itA != m_link2ind.end() || itB != m_link2ind.end()) {
-      dists.push_back(col.distance);
-    }
-  }
+  dists.reserve(dist_results.size());
+  for (auto i = 0; i < dist_results.size(); ++i)
+    dists.push_back(dist_results[i].distance);
 }
 
-void CollisionsToDistanceExpressions(const vector<Collision>& collisions, Configuration& rad,
-    const Link2Int& link2ind, const VarVector& vars, const DblVec& dofvals, vector<AffExpr>& exprs, bool isTimestep1) {
+void DebugPrintInfo(const tesseract::ContactResult &res, bool header = false)
+{
+  if (header)
+  {
+    std::printf("\n");
+    std::printf("DistanceResult| %30s | %30s | %6s | %6s, %6s, %6s | %6s, %6s, %6s | %6s, %6s, %6s | %7s | %6s, %6s, %6s | %6s, %6s, %6s |\n", "LINK A", "LINK B", "DIST", "Nx", "Ny", "Nz", "PAx", "PAy", "PAz", "PBx", "PBy", "PBz", "CC TIME", "CPAx", "CPAy", "CPAz", "CPBx", "CPBy", "CPBz");
+  }
+  std::printf("DistanceResult| %30s | %30s | %6.3f | %6.3f, %6.3f, %6.3f | %6.3f, %6.3f, %6.3f | %6.3f, %6.3f, %6.3f | %7.3f | %6.3f, %6.3f, %6.3f | %6.3f, %6.3f, %6.3f |\n", res.link_names[0].c_str(), res.link_names[1].c_str(), res.distance, res.normal(0), res.normal(1), res.normal(2), res.nearest_points[0](0), res.nearest_points[0](1), res.nearest_points[0](2), res.nearest_points[1](0), res.nearest_points[1](1), res.nearest_points[1](2), res.cc_time, res.cc_nearest_points[0](0), res.cc_nearest_points[0](1), res.cc_nearest_points[0](2), res.cc_nearest_points[1](0), res.cc_nearest_points[1](1), res.cc_nearest_points[1](2));
+}
+
+void CollisionsToDistanceExpressions(const tesseract::ContactResultVector &dist_results,
+                                     const tesseract::BasicEnvConstPtr env,
+                                     const tesseract::BasicKinConstPtr manip,
+                                     const VarVector& vars, const DblVec& x,
+                                     vector<AffExpr>& exprs, bool isTimestep1)
+{
+  VectorXd dofvals = getVec(x, vars);
+  const std::vector<std::string>& link_names = manip->getLinkNames();
+
+  // All collision data is in world corrdinate system. This provides the transfrom
+  // for converting data between world frame and manipulator frame.
+  Eigen::Affine3d change_base = env->getLinkTransform(manip->getBaseLinkName());
 
   exprs.clear();
-  exprs.reserve(collisions.size());
-  rad.SetDOFValues(dofvals); // since we'll be calculating jacobians
-  BOOST_FOREACH(const Collision& col, collisions) {
-    AffExpr dist(col.distance);
-    Link2Int::const_iterator itA = link2ind.find(col.linkA);
-    if (itA != link2ind.end()) {
-      VectorXd dist_grad = toVector3d(col.normalB2A).transpose()*rad.PositionJacobian(itA->second, col.ptA);
+  exprs.reserve(dist_results.size());
+  for (auto i = 0; i < dist_results.size(); ++i)
+  {
+    const tesseract::ContactResult &res = dist_results[i];
+
+    AffExpr dist(res.distance);
+
+    std::vector<std::string>::const_iterator itA = std::find(link_names.begin(), link_names.end(), res.link_names[0]);
+    if (itA != link_names.end())
+    {
+      MatrixXd jac;
+      VectorXd dist_grad;
+      manip->calcJacobian(jac, change_base, dofvals, res.link_names[0], res.nearest_points[0]);
+      dist_grad = -res.normal.transpose() * jac.topRows(3);
+
       exprInc(dist, varDot(dist_grad, vars));
-      exprInc(dist, -dist_grad.dot(toVectorXd(dofvals)));
+      exprInc(dist, -dist_grad.dot(dofvals));
     }
-    Link2Int::const_iterator itB = link2ind.find(col.linkB);
-    if (itB != link2ind.end()) {
-      VectorXd dist_grad = -toVector3d(col.normalB2A).transpose()*rad.PositionJacobian(itB->second, (isTimestep1 && (col.cctype == CCType_Between)) ? col.ptB1 : col.ptB);
+
+    std::vector<std::string>::const_iterator itB = std::find(link_names.begin(), link_names.end(), res.link_names[1]);
+    if (itB != link_names.end())
+    {
+      MatrixXd jac;
+      VectorXd dist_grad;
+      manip->calcJacobian(jac, change_base, dofvals, res.link_names[1], (isTimestep1 && (res.cc_type == tesseract::ContinouseCollisionType::CCType_Between)) ? res.cc_nearest_points[1] : res.nearest_points[1]);
+      dist_grad = res.normal.transpose() * jac.topRows(3);
       exprInc(dist, varDot(dist_grad, vars));
-      exprInc(dist, -dist_grad.dot(toVectorXd(dofvals)));
+      exprInc(dist, -dist_grad.dot(dofvals));
     }
-    if (itA != link2ind.end() || itB != link2ind.end()) {
+
+    if (itA != link_names.end() || itB != link_names.end())
+    {
       exprs.push_back(dist);
     }
   }
-  LOG_DEBUG("%ld distance expressions\n", exprs.size());
 }
 
-void CollisionsToDistanceExpressions(const vector<Collision>& collisions, Configuration& rad, const Link2Int& link2ind,
-    const VarVector& vars0, const VarVector& vars1, const DblVec& vals0, const DblVec& vals1,
-    vector<AffExpr>& exprs) {
+void CollisionsToDistanceExpressions(const tesseract::ContactResultVector &dist_results,
+                                     const tesseract::BasicEnvConstPtr env,
+                                     const tesseract::BasicKinConstPtr manip,
+                                     const VarVector& vars0, const VarVector& vars1, const DblVec& x,
+                                     vector<AffExpr>& exprs)
+{
   vector<AffExpr> exprs0, exprs1;
-  CollisionsToDistanceExpressions(collisions, rad, link2ind, vars0, vals0, exprs0, false);
-  CollisionsToDistanceExpressions(collisions, rad, link2ind, vars1, vals1, exprs1,true);
+  CollisionsToDistanceExpressions(dist_results, env, manip, vars0, x, exprs0, false);
+  CollisionsToDistanceExpressions(dist_results, env, manip, vars1, x, exprs1, true);
 
   exprs.resize(exprs0.size());
-  for (int i=0; i < exprs0.size(); ++i) {
-    exprScale(exprs0[i], (1-collisions[i].time));
-    exprScale(exprs1[i], collisions[i].time);
+  for (int i=0; i < exprs0.size(); ++i)
+  {
+    exprScale(exprs0[i], (1-dist_results[i].cc_time));
+    exprScale(exprs1[i], dist_results[i].cc_time);
     exprs[i] = AffExpr(0);
     exprInc(exprs[i], exprs0[i]);
     exprInc(exprs[i], exprs1[i]);
@@ -79,184 +106,204 @@ void CollisionsToDistanceExpressions(const vector<Collision>& collisions, Config
   }
 }
 
-inline size_t hash(const DblVec& x) {
+inline size_t hash(const DblVec& x)
+{
   return boost::hash_range(x.begin(), x.end());
 }
 
-void CollisionEvaluator::GetCollisionsCached(const DblVec& x, vector<Collision>& collisions) {
-  double key = hash(getDblVec(x, GetVars()));
-  vector<Collision>* it = m_cache.get(key);
-  if (it != NULL) {
+void CollisionEvaluator::GetCollisionsCached(const DblVec& x, tesseract::ContactResultVector &dist_results)
+{
+  size_t key = hash(getDblVec(x, GetVars()));
+  tesseract::ContactResultVector* it = m_cache.get(key);
+  if (it != NULL)
+  {
     LOG_DEBUG("using cached collision check\n");
-    collisions = *it;
+    dist_results = *it;
   }
-  else {
+  else
+  {
     LOG_DEBUG("not using cached collision check\n");
-    CalcCollisions(x, collisions);
-    m_cache.put(key, collisions);
+    CalcCollisions(x, dist_results);
+    m_cache.put(key, dist_results);
   }
 }
 
-SingleTimestepCollisionEvaluator::SingleTimestepCollisionEvaluator(ConfigurationPtr rad, const VarVector& vars) :
-  m_env(rad->GetEnv()),
-  m_cc(CollisionChecker::GetOrCreate(*m_env)),
-  m_rad(rad),
-  m_vars(vars),
-  m_link2ind(),
-  m_links(),
-  m_filterMask(-1) {
-  vector<KinBody::LinkPtr> links;
-  vector<int> inds;
-  rad->GetAffectedLinks(m_links, true, inds);
-  for (int i=0; i < m_links.size(); ++i) {
-    m_link2ind[m_links[i].get()] = inds[i];
+void CollisionEvaluator::Plot(const tesseract::BasicPlottingPtr plotter, const DblVec& x)
+{
+  tesseract::ContactResultVector dist_results;
+  GetCollisionsCached(x, dist_results);
+  const std::vector<std::string>& link_names = manip_->getLinkNames();
+
+  Eigen::VectorXd safety_distance(dist_results.size());
+  for (auto i = 0; i < dist_results.size(); ++i)
+  {
+    const Eigen::Vector2d& data = getSafetyMarginData()->getPairSafetyMarginData(dist_results[i].link_names[0], dist_results[i].link_names[1]);
+    safety_distance[i] = data[0];
   }
-  // TODO add argument
+
+  plotter->plotContactResults(link_names, dist_results, safety_distance);
 }
 
+SingleTimestepCollisionEvaluator::SingleTimestepCollisionEvaluator(tesseract::BasicKinConstPtr manip, tesseract::BasicEnvConstPtr env, SafetyMarginDataConstPtr safety_margin_data, const VarVector& vars) :
+  CollisionEvaluator(manip, env, safety_margin_data), m_vars(vars) {}
 
-void SingleTimestepCollisionEvaluator::CalcCollisions(const DblVec& x, vector<Collision>& collisions) {
-  DblVec dofvals = getDblVec(x, m_vars);
-  m_rad->SetDOFValues(dofvals);
-  m_cc->LinksVsAll(m_links, collisions, m_filterMask);
+
+void SingleTimestepCollisionEvaluator::CalcCollisions(const DblVec& x, tesseract::ContactResultVector &dist_results)
+{
+  tesseract::ContactRequest req;
+
+  req.link_names = manip_->getLinkNames();
+  req.contact_distance = safety_margin_data_->getMaxSafetyMargin() + 0.04; // The original implementation added a margin of 0.04
+  req.isContactAllowed = env_->getIsContactAllowedFn();
+  req.type = tesseract::ContactRequestTypes::ALL;
+
+  tesseract::ContactResultMap contacts;
+  env_->calcDistancesDiscrete(req, manip_->getJointNames(), getVec(x, m_vars), contacts);
+  tesseract::moveContactResultsMapToContactResultsVector(contacts, dist_results);
 }
 
-void SingleTimestepCollisionEvaluator::CalcDists(const DblVec& x, DblVec& dists) {
-  vector<Collision> collisions;
-  GetCollisionsCached(x, collisions);
-  CollisionsToDistances(collisions, m_link2ind, dists);
+void SingleTimestepCollisionEvaluator::CalcDists(const DblVec& x, DblVec& dists)
+{
+  tesseract::ContactResultVector dist_results;
+  GetCollisionsCached(x, dist_results);
+  CollisionsToDistances(dist_results, dists);
 }
 
+void SingleTimestepCollisionEvaluator::CalcDistExpressions(const DblVec& x, vector<AffExpr>& exprs)
+{
+  tesseract::ContactResultVector dist_results;
+  GetCollisionsCached(x, dist_results);
+  CollisionsToDistanceExpressions(dist_results, env_, manip_, m_vars, x, exprs, false);
 
-void SingleTimestepCollisionEvaluator::CalcDistExpressions(const DblVec& x, vector<AffExpr>& exprs) {
-  vector<Collision> collisions;
-  GetCollisionsCached(x, collisions);
-  DblVec dofvals = getDblVec(x, m_vars);
-  CollisionsToDistanceExpressions(collisions, *m_rad, m_link2ind, m_vars, dofvals, exprs, false);
+  LOG_DEBUG("%ld distance expressions\n", exprs.size());
 }
 
 ////////////////////////////////////////
 
-CastCollisionEvaluator::CastCollisionEvaluator(ConfigurationPtr rad, const VarVector& vars0, const VarVector& vars1) :
-  m_env(rad->GetEnv()),
-  m_cc(CollisionChecker::GetOrCreate(*m_env)),
-  m_rad(rad),
-  m_vars0(vars0),
-  m_vars1(vars1),
-  m_link2ind(),
-  m_links() {
-  vector<KinBody::LinkPtr> links;
-  vector<int> inds;
-  rad->GetAffectedLinks(m_links, true, inds);
-  for (int i=0; i < m_links.size(); ++i) {
-    m_link2ind[m_links[i].get()] = inds[i];
-  }
-}
+CastCollisionEvaluator::CastCollisionEvaluator(tesseract::BasicKinConstPtr manip, tesseract::BasicEnvConstPtr env, SafetyMarginDataConstPtr safety_margin_data, const VarVector& vars0, const VarVector& vars1) :
+  CollisionEvaluator(manip, env, safety_margin_data), m_vars0(vars0),m_vars1(vars1)
+{}
 
-void CastCollisionEvaluator::CalcCollisions(const DblVec& x, vector<Collision>& collisions) {
-  DblVec dofvals0 = getDblVec(x, m_vars0);
-  DblVec dofvals1 = getDblVec(x, m_vars1);
-  m_rad->SetDOFValues(dofvals0);
-  m_cc->CastVsAll(*m_rad, m_links, dofvals0, dofvals1, collisions);
+void CastCollisionEvaluator::CalcCollisions(const DblVec& x, tesseract::ContactResultVector &dist_results)
+{
+  tesseract::ContactRequest req;
+  req.link_names = manip_->getLinkNames();
+  req.contact_distance = safety_margin_data_->getMaxSafetyMargin() + 0.04; // The original implementation added a margin of 0.04
+  req.isContactAllowed = env_->getIsContactAllowedFn();
+  req.type = tesseract::ContactRequestTypes::ALL;
+
+  tesseract::ContactResultMap contacts;
+  env_->calcDistancesContinuous(req, manip_->getJointNames(), getVec(x, m_vars0), getVec(x, m_vars1), contacts);
+  tesseract::moveContactResultsMapToContactResultsVector(contacts, dist_results);
 }
 void CastCollisionEvaluator::CalcDistExpressions(const DblVec& x, vector<AffExpr>& exprs) {
-  vector<Collision> collisions;
-  GetCollisionsCached(x, collisions);
-  DblVec dofvals0 = getDblVec(x, m_vars0);
-  DblVec dofvals1 = getDblVec(x, m_vars1);
-  CollisionsToDistanceExpressions(collisions, *m_rad, m_link2ind, m_vars0, m_vars1, dofvals0, dofvals1, exprs);
+  tesseract::ContactResultVector dist_results;
+  GetCollisionsCached(x, dist_results);
+  CollisionsToDistanceExpressions(dist_results, env_, manip_, m_vars0, m_vars1, x, exprs);
 }
-void CastCollisionEvaluator::CalcDists(const DblVec& x, DblVec& dists) {
-  vector<Collision> collisions;
-  GetCollisionsCached(x, collisions);
-  CollisionsToDistances(collisions, m_link2ind, dists);
+void CastCollisionEvaluator::CalcDists(const DblVec& x, DblVec& dists)
+{
+  tesseract::ContactResultVector dist_results;
+  GetCollisionsCached(x, dist_results);
+  CollisionsToDistances(dist_results, dists);
 }
 
 
 //////////////////////////////////////////
 
 
-
-typedef OpenRAVE::RaveVector<float> RaveVectorf;
-
-void PlotCollisions(const std::vector<Collision>& collisions, OR::EnvironmentBase& env, vector<OR::GraphHandlePtr>& handles, double safe_dist) {
-  BOOST_FOREACH(const Collision& col, collisions) {
-    RaveVectorf color;
-    if (col.distance < 0) color = RaveVectorf(1,0,0,1);
-    else if (col.distance < safe_dist) color = RaveVectorf(1,1,0,1);
-    else color = RaveVectorf(0,1,0,1);
-    if (col.cctype == CCType_Between) {
-      handles.push_back(env.drawarrow(col.ptB, col.ptB1, .002, RaveVectorf(0,0,0,1)));
-    }
-    OR::Vector ptB = (col.cctype == CCType_Between)  ? ((1-col.time)* col.ptB +col.time*col.ptB1) : col.ptB;
-    handles.push_back(env.drawarrow(col.ptA, ptB, .0025, color));
-  }
-}
-
-CollisionCost::CollisionCost(double dist_pen, double coeff, ConfigurationPtr rad, const VarVector& vars) :
+CollisionCost::CollisionCost(tesseract::BasicKinConstPtr manip, tesseract::BasicEnvConstPtr env, SafetyMarginDataConstPtr safety_margin_data, const VarVector& vars) :
     Cost("collision"),
-    m_calc(new SingleTimestepCollisionEvaluator(rad, vars)), m_dist_pen(dist_pen), m_coeff(coeff)
+    m_calc(new SingleTimestepCollisionEvaluator(manip, env, safety_margin_data, vars))
 {}
 
-CollisionCost::CollisionCost(double dist_pen, double coeff, ConfigurationPtr rad, const VarVector& vars0, const VarVector& vars1) :
+CollisionCost::CollisionCost(tesseract::BasicKinConstPtr manip, tesseract::BasicEnvConstPtr env, SafetyMarginDataConstPtr safety_margin_data, const VarVector& vars0, const VarVector& vars1) :
     Cost("cast_collision"),
-    m_calc(new CastCollisionEvaluator(rad, vars0, vars1)), m_dist_pen(dist_pen), m_coeff(coeff)
+    m_calc(new CastCollisionEvaluator(manip, env, safety_margin_data, vars0, vars1))
 {}
-ConvexObjectivePtr CollisionCost::convex(const vector<double>& x, Model* model) {
+
+ConvexObjectivePtr CollisionCost::convex(const vector<double>& x, Model* model)
+{
   ConvexObjectivePtr out(new ConvexObjective(model));
   vector<AffExpr> exprs;
   m_calc->CalcDistExpressions(x, exprs);
-  for (int i=0; i < exprs.size(); ++i) {
-    AffExpr viol = exprSub(AffExpr(m_dist_pen), exprs[i]);
-    out->addHinge(viol, m_coeff);
-  }
-  return out;
-}
-double CollisionCost::value(const vector<double>& x) {
-  DblVec dists;
-  m_calc->CalcDists(x, dists);
-  double out = 0;
-  for (int i=0; i < dists.size(); ++i) {
-    out += pospart(m_dist_pen - dists[i]) * m_coeff;
+
+  tesseract::ContactResultVector dist_results;
+  m_calc->GetCollisionsCached(x, dist_results);
+  for (int i=0; i < exprs.size(); ++i)
+  {
+    const Eigen::Vector2d& data = m_calc->getSafetyMarginData()->getPairSafetyMarginData(dist_results[i].link_names[0], dist_results[i].link_names[1]);
+
+    AffExpr viol = exprSub(AffExpr(data[0]), exprs[i]);
+    out->addHinge(viol, data[1]);
   }
   return out;
 }
 
-void CollisionCost::Plot(const DblVec& x, OR::EnvironmentBase& env, std::vector<OR::GraphHandlePtr>& handles) {
-  vector<Collision> collisions;
-  m_calc->GetCollisionsCached(x, collisions);
-  PlotCollisions(collisions, env, handles, m_dist_pen);
+double CollisionCost::value(const vector<double>& x)
+{
+  DblVec dists;
+  m_calc->CalcDists(x, dists);
+
+  tesseract::ContactResultVector dist_results;
+  m_calc->GetCollisionsCached(x, dist_results);
+  double out = 0;
+  for (int i=0; i < dists.size(); ++i)
+  {
+    const Eigen::Vector2d& data = m_calc->getSafetyMarginData()->getPairSafetyMarginData(dist_results[i].link_names[0], dist_results[i].link_names[1]);
+    out += pospart(data[0] - dists[i]) * data[1];
+  }
+  return out;
+}
+
+void CollisionCost::Plot(const tesseract::BasicPlottingPtr plotter, const DblVec& x)
+{
+  m_calc->Plot(plotter, x);
 }
 
 // ALMOST EXACTLY COPIED FROM CollisionCost
 
-CollisionConstraint::CollisionConstraint(double dist_pen, double coeff, ConfigurationPtr rad, const VarVector& vars) :
-    m_calc(new SingleTimestepCollisionEvaluator(rad, vars)), m_dist_pen(dist_pen), m_coeff(coeff)
+CollisionConstraint::CollisionConstraint(tesseract::BasicKinConstPtr manip, tesseract::BasicEnvConstPtr env, SafetyMarginDataConstPtr safety_margin_data, const VarVector& vars) :
+    m_calc(new SingleTimestepCollisionEvaluator(manip, env, safety_margin_data, vars))
 {
   name_="collision";
 }
 
-CollisionConstraint::CollisionConstraint(double dist_pen, double coeff, ConfigurationPtr rad, const VarVector& vars0, const VarVector& vars1) :
-    m_calc(new CastCollisionEvaluator(rad, vars0, vars1)), m_dist_pen(dist_pen), m_coeff(coeff)
+CollisionConstraint::CollisionConstraint(tesseract::BasicKinConstPtr manip, tesseract::BasicEnvConstPtr env, SafetyMarginDataConstPtr safety_margin_data, const VarVector& vars0, const VarVector& vars1) :
+  m_calc(new CastCollisionEvaluator(manip, env, safety_margin_data, vars0, vars1))
 {
   name_="collision";
 }
+
 ConvexConstraintsPtr CollisionConstraint::convex(const vector<double>& x, Model* model) {
   ConvexConstraintsPtr out(new ConvexConstraints(model));
   vector<AffExpr> exprs;
   m_calc->CalcDistExpressions(x, exprs);
-  for (int i=0; i < exprs.size(); ++i) {
-    AffExpr viol = exprSub(AffExpr(m_dist_pen), exprs[i]);
-    out->addIneqCnt(exprMult(viol,m_coeff));
+
+  tesseract::ContactResultVector dist_results;
+  m_calc->GetCollisionsCached(x, dist_results);
+  for (int i=0; i < exprs.size(); ++i)
+  {
+    const Eigen::Vector2d& data = m_calc->getSafetyMarginData()->getPairSafetyMarginData(dist_results[i].link_names[0], dist_results[i].link_names[1]);
+
+    AffExpr viol = exprSub(AffExpr(data[0]), exprs[i]);
+    out->addIneqCnt(exprMult(viol, data[1]));
   }
   return out;
 }
+
 DblVec CollisionConstraint::value(const vector<double>& x) {
   DblVec dists;
   m_calc->CalcDists(x, dists);
+
+  tesseract::ContactResultVector dist_results;
+  m_calc->GetCollisionsCached(x, dist_results);
   DblVec out(dists.size());
-  for (int i=0; i < dists.size(); ++i) {
-    out[i] = pospart(m_dist_pen - dists[i]) * m_coeff;
+  for (int i=0; i < dists.size(); ++i)
+  {
+    const Eigen::Vector2d& data = m_calc->getSafetyMarginData()->getPairSafetyMarginData(dist_results[i].link_names[0], dist_results[i].link_names[1]);
+
+    out[i] = pospart(data[0] - dists[i]) * data[1];
   }
   return out;
 }

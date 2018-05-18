@@ -1,10 +1,10 @@
 #pragma once
-#include <boost/shared_ptr.hpp>
 #include <vector>
 #include <string>
 #include <trajopt_sco/sco_fwd.hpp>
 #include <iosfwd>
 #include <limits>
+#include <cassert>
 /**
 @file solver_interface.hpp
 @brief Interface to convex solvers

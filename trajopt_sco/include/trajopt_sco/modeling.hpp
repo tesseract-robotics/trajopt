@@ -8,7 +8,6 @@
  */
 
 #include <vector>
-#include <boost/shared_ptr.hpp>
 #include <trajopt_sco/sco_fwd.hpp>
 #include <trajopt_sco/solver_interface.hpp>
 

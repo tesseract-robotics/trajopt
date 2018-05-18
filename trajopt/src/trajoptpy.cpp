@@ -2,7 +2,6 @@
 #include <trajopt_ros/trajopt/collision_checker.hpp>
 #include <trajopt_ros/trajopt/problem_description.hpp>
 #include <trajopt_ros/osgviewer/osgviewer.hpp>
-#include <boost/foreach.hpp>
 #include <trajopt_ros/utils/macros.h>
 #include <trajopt_ros/sco/modeling_utils.hpp>
 #include <trajopt_ros/trajopt/numpy_utils.hpp>

@@ -1,0 +1,53 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://wiki.ros.org/xacro">
+  <xacro:macro name="puzzle_piece" params="prefix">
+    <link name="${prefix}ee_mount" />
+
+    <!-- link "ee_base" and connected joints-->
+    <link name="${prefix}ee_base" >
+      <visual>
+        <geometry>
+          <mesh filename="package://trajopt_examples/meshes/puzzle_piece/puzzle_mount.stl" />
+        </geometry>>
+      </visual>
+      <collision>
+        <geometry>
+          <mesh filename="package://trajopt_examples/meshes/puzzle_piece/puzzle_mount.stl" />
+        </geometry>
+      </collision>
+    </link>
+
+    <joint name="${prefix}ee_mount-ee_base" type="fixed" >
+      <parent link="${prefix}ee_mount" />
+      <child link="${prefix}ee_base" />
+      <origin xyz="0 0 0" rpy="0 0 0" />
+    </joint>
+
+    <!-- tool1 is the point that parts connect to the tool -->
+    <link name="${prefix}tool1" />
+    <joint name="${prefix}ee_base-tool1" type="fixed" >
+      <parent link="${prefix}ee_base" />
+      <child link="${prefix}tool1" />
+      <origin xyz="-0.0083 0.0541 0.0143" rpy="0.523599 -0.523599 0" />
+    </joint>
+
+    <link name="${prefix}part" >
+      <visual>
+        <geometry>
+          <mesh filename="package://trajopt_examples/meshes/puzzle_piece/puzzle_bent.dae" />
+        </geometry>
+      </visual>
+      <collision>
+        <geometry>
+          <mesh filename="package://trajopt_examples/meshes/puzzle_piece/puzzle_bent.dae" />
+        </geometry>
+      </collision>
+    </link>
+
+    <joint name="${prefix}tool1-part" type="fixed" >
+      <parent link="${prefix}tool1" />
+      <child link="${prefix}part" />
+      <origin xyz="0.0110 0.0030 -0.0379" rpy="0 -0.2618 0" />
+    </joint>
+  </xacro:macro>
+</robot>

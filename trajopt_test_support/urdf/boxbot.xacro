@@ -1,0 +1,23 @@
+<?xml version="1.0" ?>
+<robot name="boxbot" xmlns:xacro="http://ros.org/wiki/xacro">
+  <xacro:include filename="$(find trajopt_test_support)/urdf/boxbot_macro.xacro"/>
+  <xacro:include filename="$(find trajopt_test_support)/urdf/box_1m_macro.xacro"/>
+
+  <xacro:boxbot prefix=""/>
+
+  <xacro:box_1m prefix="test_"/>
+
+  <joint name="attach_box_joint" type="fixed">
+    <origin rpy="0 0 0" xyz="0 0 0"/>
+    <parent link="base_link"/>
+    <child link="test_base_link"/>
+  </joint>
+
+  <link name="no_geom_link"/>
+  <joint name="no_geom_joint" type="fixed">
+    <origin rpy="0 0 0" xyz="0.5 -0.5 0"/>
+    <parent link="boxbot_link"/>
+    <child link="no_geom_link"/>
+  </joint>
+
+</robot>

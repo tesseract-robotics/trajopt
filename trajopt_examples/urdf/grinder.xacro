@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://wiki.ros.org/xacro">
+  <xacro:macro name="grinder" params="prefix">
+    <link name="${prefix}grinder_frame">
+      <visual>
+       <origin xyz="0 0 0" rpy="0 3.14159 0" />
+        <geometry>
+          <mesh filename="package://trajopt_examples/meshes/puzzle_piece/grinder_visual.dae" />
+        </geometry>
+      </visual>
+      <collision>
+        <origin xyz="0 0 0" rpy="0 3.14159 0" />
+        <geometry>
+          <mesh filename="package://trajopt_examples/meshes/puzzle_piece/grinder_collision.dae" />
+        </geometry>
+      </collision>
+    </link>
+  </xacro:macro>
+ </robot>

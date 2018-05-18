@@ -1,0 +1,46 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://ros.org/wiki/xacro">
+<xacro:macro name="boxbot" params="prefix">
+
+  <link name="${prefix}base_link"/>
+  <link name="${prefix}boxbot_linkX"/>
+  <link name="${prefix}boxbot_linkY"/>
+
+  <link name="${prefix}boxbot_link">
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <box size="1 1 1" />
+      </geometry>
+    </visual>
+    <collision>
+      <geometry>
+        <box size="1 1 1" />
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="${prefix}boxbot_x_joint" type="prismatic">
+    <origin rpy="0 0 0" xyz="0 0 0"/>
+    <parent link="${prefix}base_link"/>
+    <child link="${prefix}boxbot_linkX"/>
+    <axis xyz="1 0 0"/>
+    <limit effort="0" lower="-20.0" upper="20.0" velocity="2.0"/>
+  </joint>
+
+  <joint name="${prefix}boxbot_y_joint" type="prismatic">
+    <origin rpy="0 0 0" xyz="0 0 0"/>
+    <parent link="${prefix}boxbot_linkX"/>
+    <child link="${prefix}boxbot_linkY"/>
+    <axis xyz="0 1 0"/>
+    <limit effort="0" lower="-20.0" upper="20.0" velocity="2.0"/>
+  </joint>
+
+  <joint name="${prefix}boxbot_joint" type="fixed">
+    <origin rpy="0 0 0" xyz="0 0 0"/>
+    <parent link="${prefix}boxbot_linkY"/>
+    <child link="${prefix}boxbot_link"/>
+  </joint>
+
+</xacro:macro>
+</robot>

@@ -1,0 +1,7 @@
+<?xml version="1.0" ?>
+<robot name="boxbot">
+    <group name="manipulator">
+        <chain base_link="base_link" tip_link="boxbot_link" />
+    </group>
+    <virtual_joint name="world_joint" type="fixed" parent_frame="world" child_link="base_link" />
+</robot>

@@ -1,0 +1,7 @@
+<?xml version="1.0" ?>
+<robot name="car_seat_demo" xmlns:xacro="http://ros.org/wiki/xacro">
+    <xacro:include filename="$(find motoman_sia20d_support)/urdf/sia20d_macro.xacro"/>
+    <xacro:motoman_sia20d prefix=""/>
+    <xacro:include filename="$(find trajopt_examples)/urdf/car_seat_demo_macro.xacro"/>
+    <xacro:car_seat_demo prefix=""/>
+</robot>

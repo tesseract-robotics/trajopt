@@ -1,0 +1,7 @@
+<library path="libmoveit_collision_detection_bullet_plugin">
+  <class name="BULLET" type="collision_detection::CollisionBulletPluginLoader" base_class_type="collision_detection::CollisionPlugin">
+    <description>
+      A implementation of an bullet for collision detection.
+    </description>
+  </class>
+</library>

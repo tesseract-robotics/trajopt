@@ -1,0 +1,35 @@
+<?xml version="1.0"?>
+<launch>
+  <!-- By default we do not overwrite the URDF. Change the following to true to change the default behavior -->
+  <!-- The name of the parameter under which the URDF is loaded -->
+  <arg name="robot_description" default="robot_description"/>
+  <arg name="trajopt_description" default="trajopt_description"/>
+  <arg name="plotting" default="true"/>
+
+  <!-- Load universal robot description format (URDF) -->
+  <param name="$(arg trajopt_description)" textfile="$(find trajopt_examples)/config/basic_cartesian_plan.json"/>
+
+  <!-- Load universal robot description format (URDF) -->
+  <param name="$(arg robot_description)" command="$(find xacro)/xacro --inorder '$(find trajopt_examples)/urdf/lbr_iiwa_14_r820.xacro'" />
+
+  <!-- The semantic description that corresponds to the URDF -->
+  <param name="$(arg robot_description)_semantic" textfile="$(find trajopt_examples)/config/kuka_lbr_iiwa_14_r820.srdf" />
+
+  <!-- Load updated joint limits (override information from URDF) -->
+  <group ns="$(arg robot_description)_planning">
+    <rosparam command="load" file="$(find trajopt_examples)/config/joint_limits.yaml"/>
+  </group>
+
+  <!-- Load default settings for kinematics; these settings are overridden by settings in a node's namespace -->
+  <group ns="$(arg robot_description)_kinematics">
+    <rosparam command="load" file="$(find trajopt_examples)/config/kinematics.yaml"/>
+  </group>
+
+  <!-- If needed, broadcast static tf for robot root -->
+  <node pkg="tf" type="static_transform_publisher" name="virtual_joint_broadcaster_0" args="0 0 0 0 0 0 world base_link 100" />
+
+  <node pkg="trajopt_moveit_examples" type="trajopt_moveit_examples_basic_cartesian_plan" name="trajopt_moveit_examples_basic_cartesian_plan">
+    <param name="plotting" type="bool" value="$(arg plotting)"/>
+  </node>
+
+</launch>

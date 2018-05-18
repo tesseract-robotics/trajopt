@@ -1,0 +1,318 @@
+<?xml version="1.0" ?>
+<robot xmlns:xacro="http://ros.org/wiki/xacro">
+    <xacro:macro name="car_seat_demo" params="prefix">
+        <link name="${prefix}world"/>
+        <link name="${prefix}car">
+          <visual>
+            <origin rpy="0 0 0" xyz="0 0 0"/>
+            <geometry>
+              <mesh filename="package://trajopt_examples/meshes/car_seat/visual/car.dae"/>
+            </geometry>
+            <material name="gray">
+              <color rgba="0.5 0.5 0.5 1"/>
+            </material>
+          </visual>
+          <collision>
+            <geometry>
+              <mesh filename="package://trajopt_examples/meshes/car_seat/collision/car_1.stl"/>
+            </geometry>
+          </collision>
+          <collision>
+            <geometry>
+              <mesh filename="package://trajopt_examples/meshes/car_seat/collision/car_2.stl"/>
+            </geometry>
+          </collision>
+          <collision>
+            <geometry>
+              <mesh filename="package://trajopt_examples/meshes/car_seat/collision/car_3.stl"/>
+            </geometry>
+          </collision>
+          <collision>
+            <geometry>
+              <mesh filename="package://trajopt_examples/meshes/car_seat/collision/car_4.stl"/>
+            </geometry>
+          </collision>
+          <collision>
+            <geometry>
+              <mesh filename="package://trajopt_examples/meshes/car_seat/collision/car_5.stl"/>
+            </geometry>
+          </collision>
+          <collision>
+            <geometry>
+              <mesh filename="package://trajopt_examples/meshes/car_seat/collision/car_6.stl"/>
+            </geometry>
+          </collision>
+          <collision>
+            <geometry>
+              <mesh filename="package://trajopt_examples/meshes/car_seat/collision/car_7.stl"/>
+            </geometry>
+          </collision>
+          <collision>
+            <geometry>
+              <mesh filename="package://trajopt_examples/meshes/car_seat/collision/car_8.stl"/>
+            </geometry>
+          </collision>
+          <collision>
+            <geometry>
+              <mesh filename="package://trajopt_examples/meshes/car_seat/collision/car_9.stl"/>
+            </geometry>
+          </collision>
+          <collision>
+            <geometry>
+              <mesh filename="package://trajopt_examples/meshes/car_seat/collision/car_10.stl"/>
+            </geometry>
+          </collision>
+          <collision>
+            <geometry>
+              <mesh filename="package://trajopt_examples/meshes/car_seat/collision/car_11.stl"/>
+            </geometry>
+          </collision>
+          <collision>
+            <geometry>
+              <mesh filename="package://trajopt_examples/meshes/car_seat/collision/car_12.stl"/>
+            </geometry>
+          </collision>
+          <collision>
+            <geometry>
+              <mesh filename="package://trajopt_examples/meshes/car_seat/collision/car_13.stl"/>
+            </geometry>
+          </collision>
+          <collision>
+            <geometry>
+              <mesh filename="package://trajopt_examples/meshes/car_seat/collision/car_14.stl"/>
+            </geometry>
+          </collision>
+          <collision>
+            <geometry>
+              <mesh filename="package://trajopt_examples/meshes/car_seat/collision/car_15.stl"/>
+            </geometry>
+          </collision>
+          <collision>
+            <geometry>
+              <mesh filename="package://trajopt_examples/meshes/car_seat/collision/car_16.stl"/>
+            </geometry>
+          </collision>
+          <collision>
+            <geometry>
+              <mesh filename="package://trajopt_examples/meshes/car_seat/collision/car_17.stl"/>
+            </geometry>
+          </collision>
+          <collision>
+            <geometry>
+              <mesh filename="package://trajopt_examples/meshes/car_seat/collision/car_18.stl"/>
+            </geometry>
+          </collision>
+          <collision>
+            <geometry>
+              <mesh filename="package://trajopt_examples/meshes/car_seat/collision/car_19.stl"/>
+            </geometry>
+          </collision>
+          <collision>
+            <geometry>
+              <mesh filename="package://trajopt_examples/meshes/car_seat/collision/car_20.stl"/>
+            </geometry>
+          </collision>
+          <collision>
+            <geometry>
+              <mesh filename="package://trajopt_examples/meshes/car_seat/collision/car_21.stl"/>
+            </geometry>
+          </collision>
+          <collision>
+            <geometry>
+              <mesh filename="package://trajopt_examples/meshes/car_seat/collision/car_22.stl"/>
+            </geometry>
+          </collision>
+          <collision>
+            <geometry>
+              <mesh filename="package://trajopt_examples/meshes/car_seat/collision/car_23.stl"/>
+            </geometry>
+          </collision>
+          <collision>
+            <geometry>
+              <mesh filename="package://trajopt_examples/meshes/car_seat/collision/car_24.stl"/>
+            </geometry>
+          </collision>
+        </link>
+        <link name="${prefix}fence">
+          <visual>
+            <origin rpy="0 0 0" xyz="0 0 0"/>
+            <geometry>
+              <mesh filename="package://trajopt_examples/meshes/car_seat/visual/fence_structure.dae"/>
+            </geometry>
+            <material name="gray"/>
+          </visual>
+          <visual>
+            <origin rpy="0 0 0" xyz="0 0 0"/>
+            <geometry>
+              <mesh filename="package://trajopt_examples/meshes/car_seat/visual/fence_mesh.dae"/>
+            </geometry>
+            <material name="gray"/>
+          </visual>
+          <collision>
+            <origin rpy="0 0 0" xyz="-2.42 -2.250 0.86"/>
+            <geometry>
+              <box size="8.840 0.040 1.720"/>
+            </geometry>
+            <material name="yellow"/>
+          </collision>
+        </link>
+        <link name="${prefix}conveyor">
+          <visual>
+            <origin rpy="0 0 0" xyz="0 0 0"/>
+            <geometry>
+              <mesh filename="package://trajopt_examples/meshes/car_seat/visual/conveyor.dae"/>
+            </geometry>
+            <material name="gray"/>
+          </visual>
+          <collision>
+            <origin rpy="0 0 0" xyz="0 0 0.215"/>
+            <geometry>
+              <box size="2.995 1.320 0.430"/>
+            </geometry>
+            <material name="yellow"/>
+          </collision>
+        </link>
+        <link name="${prefix}rail">
+          <visual>
+            <origin rpy="0 0 0" xyz="0 0 0"/>
+            <geometry>
+              <mesh filename="package://trajopt_examples/meshes/car_seat/visual/rail_structure.dae"/>
+            </geometry>
+            <material name="gray"/>
+          </visual>
+          <visual>
+            <origin rpy="0 0 0" xyz="0 0 0"/>
+            <geometry>
+              <mesh filename="package://trajopt_examples/meshes/car_seat/visual/rail_feet.dae"/>
+            </geometry>
+            <material name="gray"/>
+          </visual>
+          <collision>
+            <origin rpy = "0 0 0" xyz="-2.900 -1 0.125"/>
+            <geometry>
+              <box size="6.300 2.722 0.25"/>
+            </geometry>
+            <material name="yellow"/>
+          </collision>
+        </link>
+        <link name="${prefix}carriage">
+          <visual>
+            <origin rpy="0 0 0" xyz="0 0 0"/>
+            <geometry>
+              <mesh filename="package://trajopt_examples/meshes/car_seat/visual/carriage_plate.stl"/>
+            </geometry>
+            <material name="gray"/>
+          </visual>
+          <collision>
+            <origin rpy="0 0 0" xyz="-0.5 0 0.025"/>
+            <geometry>
+              <box size="1 0.722 0.050"/>
+            </geometry>
+            <material name="yellow"/>
+          </collision>
+        </link>
+        <link name="${prefix}end_effector">
+          <visual>
+            <origin rpy="0 0 0" xyz="0 0 0"/>
+            <geometry>
+              <mesh filename="package://trajopt_examples/meshes/car_seat/visual/end_effector_simple.stl"/>
+            </geometry>
+            <material name="gray"/>
+          </visual>
+          <collision>
+            <origin ryp="0 0 0" xyz="0 0 0"/>
+            <geometry>
+              <mesh filename="package://trajopt_examples/meshes/car_seat/visual/end_effector_simple.stl"/>
+            </geometry>
+            <material name="yellow"/>
+          </collision>
+        </link>
+        <!--<link name="${prefix}seat">
+          <visual>
+            <origin rpy="0 0 0" xyz="0 0 0"/>
+            <geometry>
+              <mesh scale="0.9 0.9 0.9" filename="package://trajopt_examples/meshes/car_seat/visual/seat.dae"/>
+            </geometry>
+            <material name="gray"/>
+          </visual>
+          <collision>
+            <origin ryp="0 0 0" xyz="0 0 0"/>
+            <geometry>
+              <mesh scale="0.9 0.9 0.9" filename="package://trajopt_examples/meshes/car_seat/collision/seat.stl"/>
+            </geometry>
+            <material name="yellow"/>
+          </collision>
+        </link>-->
+        <link name="cell_logo">
+          <visual>
+            <origin rpy="0 0 0" xyz="0 0 0"/>
+            <geometry>
+              <box size="3 0.01 1.3125"/>
+            </geometry>
+            <material name="white">
+              <color rgba="1.0 1.0 1.0 1.0"/>
+            </material>
+          </visual>
+          <visual>
+            <origin xyz="-0.25 0.011 0.05" rpy="1.570796 0 3.14159"/>
+            <geometry>
+              <mesh filename="package://trajopt_examples/meshes/car_seat/visual/ros_logo_solid.dae" scale="3 3 1.5"/>
+            </geometry>
+          </visual>
+          <collision>
+            <origin rpy="0 0 0" xyz="0 0 0"/>
+            <geometry>
+              <box size="3 0.011 1.3125"/>
+            </geometry>
+          </collision>
+        </link>
+
+        <joint name="${prefix}car_world" type="fixed">
+          <origin rpy="0 0 0" xyz="0 -0.2 0"/>
+          <parent link="${prefix}world"/>
+          <child link="${prefix}car"/>
+        </joint>
+        <joint name="${prefix}fence_world" type="fixed">
+          <origin rpy="0 0 0" xyz="2.5 0 0"/>
+          <parent link="${prefix}world"/>
+          <child link="${prefix}fence"/>
+        </joint>
+        <joint name="${prefix}conveyor_world" type="fixed">
+          <origin rpy="0 0 0" xyz="1.5 2.15 0"/>
+          <parent link="${prefix}world"/>
+          <child link="${prefix}conveyor"/>
+        </joint>
+        <joint name="${prefix}rail_world" type ="fixed">
+          <origin rpy="0 0 0" xyz="3 1.2 0"/>
+          <parent link="${prefix}world"/>
+          <child link="${prefix}rail"/>
+        </joint>
+        <joint name="${prefix}carriage_rail" type="prismatic">
+          <origin rpy="0 0 0" xyz="0 0 0"/>
+          <parent link="${prefix}rail"/>
+          <child link="${prefix}carriage"/>
+          <axis xyz="-1 0 0"/>
+          <limit effort="0" lower="0" upper="5" velocity="0.5"/>
+        </joint>
+        <joint name="${prefix}robot_carriage" type="fixed">
+          <origin rpy="0 0 -1.570796" xyz="-0.2 0 0.25"/>
+          <parent link="${prefix}carriage"/>
+          <child link="${prefix}base_link"/>
+        </joint>
+        <joint name="${prefix}robot_end_effector" type="fixed">
+          <origin rpy="3.14159 -1.5707963 0" xyz="0 0 0"/>
+          <parent link="tool0"/>
+          <child link="end_effector"/>
+        </joint>
+        <!--<joint name="${prefix}end_effector_seat" type="fixed">
+          <origin rpy="0 0.29 1.57" xyz="0.14 -0.1 -0.46"/>
+          <parent link="end_effector"/>
+          <child link="seat"/>
+        </joint>-->
+        <joint name="${prefix}logo_world" type="fixed">
+          <origin rpy="0 0 0" xyz="2 -2.22 1.05"/>
+          <parent link="world"/>
+          <child link="cell_logo"/>
+        </joint>
+    </xacro:macro>
+</robot>

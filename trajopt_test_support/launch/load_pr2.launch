@@ -1,0 +1,26 @@
+<?xml version="1.0"?>
+<launch>
+  <!-- By default we do not overwrite the URDF. Change the following to true to change the default behavior -->
+  <!-- The name of the parameter under which the URDF is loaded -->
+  <arg name="robot_description" default="robot_description"/>
+
+  <!-- Load universal robot description format (URDF) -->
+  <param name="$(arg robot_description)" textfile="$(find trajopt_test_support)/urdf/pr2.urdf"/>
+
+  <!-- The semantic description that corresponds to the URDF -->
+  <param name="$(arg robot_description)_semantic" textfile="$(find trajopt_test_support)/srdf/pr2.srdf" />
+
+  <!-- Load updated joint limits (override information from URDF) -->
+  <group ns="$(arg robot_description)_planning">
+    <rosparam command="load" file="$(find trajopt_test_support)/config/pr2_joint_limits.yaml"/>
+  </group>
+
+  <!-- Load default settings for kinematics; these settings are overridden by settings in a node's namespace -->
+  <group ns="$(arg robot_description)_kinematics">
+    <rosparam command="load" file="$(find trajopt_test_support)/config/pr2_kinematics.yaml"/>
+  </group>
+
+  <!-- If needed, broadcast static tf for robot root -->
+  <node pkg="tf" type="static_transform_publisher" name="virtual_joint_broadcaster_0" args="0 0 0 0 0 0 world base_footprint 100" />
+
+</launch>

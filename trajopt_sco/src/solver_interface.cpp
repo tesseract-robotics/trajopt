@@ -4,7 +4,6 @@
 #include <boost/format.hpp>
 #include <sstream>
 #include <map>
-#include <boost/foreach.hpp>
 using namespace std;
 
 namespace sco {
@@ -29,7 +28,7 @@ void simplify2(vector<int>& inds, vector<double>& vals) {
   inds.resize(ind2val.size());
   vals.resize(ind2val.size());
   int i_new = 0;
-  BOOST_FOREACH(Int2Double::value_type& iv, ind2val) {
+  for (Int2Double::value_type& iv : ind2val) {
     inds[i_new] = iv.first;
     vals[i_new] = iv.second;
     ++i_new;

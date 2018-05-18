@@ -3,19 +3,24 @@
   <name>trajopt</name>
   <version>0.1.0</version>
   <description>The trajopt package</description>
-  <maintainer email="larmstrong@todo.todo">larmstrong</maintainer>
+  <maintainer email="levi.armstrong@swri.org">Levi Armstrong</maintainer>
   <license>BSD</license>
-
+  <author>Levi Armstrong</author>
+  <author>John Schulman</author>
 
   <buildtool_depend>catkin</buildtool_depend>
   <depend>trajopt_sco</depend>
-  <depend>trajopt_utils</depend>
   <depend>trajopt_ext</depend>
-  <depend>trajopt_osgviewer</depend>
+  <depend>trajopt_utils</depend>
+  <depend>tesseract_core</depend>
+  <depend>roscpp</depend>
 
+  <test_depend>gtest</test_depend>
+  <test_depend>rostest</test_depend>
+  <test_depend>roslib</test_depend>
+  <test_depend>tesseract_ros</test_depend>
   <!-- The export tag contains other, unspecified, tags -->
   <export>
-    <!-- Other tools can request additional information be placed here -->
 
   </export>
 </package>
