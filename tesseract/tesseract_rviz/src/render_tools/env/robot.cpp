@@ -32,6 +32,10 @@
 #include "tesseract_rviz/render_tools/env/robot.h"
 #include "tesseract_rviz/render_tools/env/robot_link.h"
 #include "tesseract_rviz/render_tools/env/robot_joint.h"
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wall"
+#pragma GCC diagnostic ignored "-Wunused-parameter"
 #include <rviz/properties/property.h>
 #include <rviz/properties/enum_property.h>
 #include <rviz/properties/bool_property.h>
@@ -40,6 +44,7 @@
 #include <rviz/ogre_helpers/object.h>
 #include <rviz/ogre_helpers/shape.h>
 #include <rviz/ogre_helpers/axes.h>
+#pragma GCC diagnostic pop
 
 #include <urdf_model/model.h>
 
@@ -62,10 +67,10 @@ Robot::Robot( Ogre::SceneNode* root_node, rviz::DisplayContext* context, const s
   , visual_visible_( true )
   , collision_visible_( false )
   , context_( context )
-  , name_( name )
   , doing_set_checkbox_( false )
   , robot_loaded_( false )
   , inChangedEnableAllLinks( false )
+  , name_( name )
 {
   root_visual_node_ = root_node->createChildSceneNode();
   root_collision_node_ = root_node->createChildSceneNode();

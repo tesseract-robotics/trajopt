@@ -43,13 +43,13 @@ void ser(int fp,  vector<T>& x,  SerMode mode) {
   switch (mode) {
     case SER: {
       int n = write(fp, x.data(), sizeof(T)*size);
-      assert (n == sizeof(T)*size);      
+      assert (static_cast<unsigned>(n) == sizeof(T)*size);
       break;
     }
     case DESER: {
       x.resize(size);
       int n = read(fp, x.data(), sizeof(T)*size);    
-      assert (n == sizeof(T)*size);            
+      assert (static_cast<unsigned>(n) == sizeof(T)*size);
       break;
     }
   }

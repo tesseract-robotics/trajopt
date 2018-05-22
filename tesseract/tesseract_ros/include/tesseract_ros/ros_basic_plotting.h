@@ -114,7 +114,7 @@ public:
   void plotContactResults(const std::vector<std::string> &link_names, const ContactResultVector &dist_results, const Eigen::VectorXd& safety_distances)
   {
     visualization_msgs::MarkerArray msg;
-    for (int i = 0; i < dist_results.size(); ++i)
+    for (unsigned i = 0; i < dist_results.size(); ++i)
     {
       const ContactResult &dist = dist_results[i];
       const double& safety_distance = safety_distances[i];

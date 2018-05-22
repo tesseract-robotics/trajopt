@@ -22,9 +22,9 @@ public:
   virtual ~BPMPDModel();
   
   Var addVar(const string& name);
-  Cnt addEqCnt(const AffExpr&, const string& name);
-  Cnt addIneqCnt(const AffExpr&, const string& name);
-  Cnt addIneqCnt(const QuadExpr&, const string& name);
+  Cnt addEqCnt(const AffExpr&, const string& /*name*/);
+  Cnt addIneqCnt(const AffExpr&, const string& /*name*/);
+  Cnt addIneqCnt(const QuadExpr&, const string& /*name*/);
   void removeVars(const VarVector& vars);
   void removeCnts(const vector<Cnt>& cnts);
 
@@ -34,7 +34,7 @@ public:
   virtual CvxOptStatus optimize();  
   virtual void setObjective(const AffExpr&);
   virtual void setObjective(const QuadExpr&);
-  virtual void writeToFile(const string& fname);
+  virtual void writeToFile(const string& /*fname*/);
   virtual VarVector getVars() const;
   
 };

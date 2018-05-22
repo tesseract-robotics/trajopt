@@ -1,8 +1,7 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(tesseract_rviz)
 
-## Compile as C++11, supported in ROS Kinetic and newer
-add_compile_options(-std=c++11)
+add_compile_options(-std=c++11 -Wall -Wextra)
 
 find_package(catkin REQUIRED COMPONENTS
   roscpp
@@ -23,7 +22,7 @@ find_package(Boost REQUIRED thread date_time system filesystem)
 # Ogre
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(OGRE OGRE)
-link_directories( ${OGRE_LIBRARY_DIRS} )
+link_directories(${OGRE_LIBRARY_DIRS} )
 
 find_package(Eigen3 REQUIRED)
 
@@ -87,10 +86,10 @@ catkin_package(
 include_directories(
   include
   ${catkin_INCLUDE_DIRS}
-  ${Boost_INCLUDE_DIRS}
-  ${EIGEN3_INCLUDE_DIRS}
-  ${QT_INCLUDE_DIR}
-  ${OGRE_INCLUDE_DIRS}
+  SYSTEM ${Boost_INCLUDE_DIRS}
+  SYSTEM ${EIGEN3_INCLUDE_DIRS}
+  SYSTEM ${QT_INCLUDE_DIR}
+  SYSTEM ${OGRE_INCLUDE_DIRS}
 )
 
 # Rviz Render Tools

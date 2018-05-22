@@ -87,7 +87,7 @@ TrajOptProbPtr cppMethod()
 
   pci.init_info.type = InitInfo::GIVEN_TRAJ;
   pci.init_info.data = TrajArray(steps_, pci.kin->numJoints());
-  for (int idof = 0; idof < pci.kin->numJoints(); ++idof)
+  for (unsigned idof = 0; idof < pci.kin->numJoints(); ++idof)
   {
     pci.init_info.data.col(idof) = VectorXd::LinSpaced(steps_, start_pos[idof], end_pos[idof]);
   }

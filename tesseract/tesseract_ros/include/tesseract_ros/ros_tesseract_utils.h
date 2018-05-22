@@ -26,6 +26,12 @@
 #ifndef TESSERACT_ROS_UTILS_H
 #define TESSERACT_ROS_UTILS_H
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wall"
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+#include <octomap_msgs/conversions.h>
+#pragma GCC diagnostic pop
+
 #include <tesseract_msgs/TesseractState.h>
 #include <tesseract_msgs/ContactResultVector.h>
 #include <tesseract_ros/ros_basic_env.h>
@@ -34,7 +40,6 @@
 #include <geometric_shapes/shapes.h>
 #include <geometric_shapes/shape_operations.h>
 #include <std_msgs/Int32.h>
-#include <octomap_msgs/conversions.h>
 #include <eigen_conversions/eigen_msg.h>
 #include <ros/console.h>
 

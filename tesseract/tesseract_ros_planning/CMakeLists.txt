@@ -26,7 +26,7 @@ catkin_package(
 include_directories(
   include
   ${catkin_INCLUDE_DIRS}
-  ${OMPL_INCLUDE_DIRS}
+  SYSTEM ${OMPL_INCLUDE_DIRS}
 )
 
 # Trajopt Planner

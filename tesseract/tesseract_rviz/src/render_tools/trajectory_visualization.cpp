@@ -60,8 +60,8 @@ namespace tesseract_rviz
 {
 using namespace tesseract;
 TrajectoryVisualization::TrajectoryVisualization(rviz::Property* widget, rviz::Display* display)
-  : display_(display)
-  , widget_(widget)
+  : widget_(widget)
+  , display_(display)
   , animating_path_(false)
   , drop_displaying_trajectory_(false)
   , current_state_(-1)
@@ -237,7 +237,7 @@ void TrajectoryVisualization::createTrajectoryTrail()
     state->setAlpha(path_alpha_property_->getFloat());
 
     std::unordered_map<std::string, double> joints;
-    for (auto j = 0; j < t->joint_trajectory.joint_names.size(); ++j)
+    for (unsigned j = 0; j < t->joint_trajectory.joint_names.size(); ++j)
     {
       joints[t->joint_trajectory.joint_names[j]] = t->joint_trajectory.points[waypoint_i].positions[j];
     }
@@ -415,7 +415,7 @@ void TrajectoryVisualization::dropTrajectory()
   drop_displaying_trajectory_ = true;
 }
 
-void TrajectoryVisualization::update(float wall_dt, float ros_dt)
+void TrajectoryVisualization::update(float wall_dt, float /*ros_dt*/)
 {
   if (drop_displaying_trajectory_)
   {
@@ -447,11 +447,11 @@ void TrajectoryVisualization::update(float wall_dt, float ros_dt)
       }
       else if (trajectory_slider_panel_ && trajectory_slider_panel_->isVisible())
       {
-        if (trajectory_slider_panel_->getSliderPosition() == displaying_trajectory_message_->joint_trajectory.points.size() - 1)
+        if (static_cast<unsigned>(trajectory_slider_panel_->getSliderPosition()) == displaying_trajectory_message_->joint_trajectory.points.size() - 1)
         {  // show the last waypoint if the slider is enabled
           std::size_t waypoint = displaying_trajectory_message_->joint_trajectory.points.size() - 1;
           std::unordered_map<std::string, double> joints;
-          for (auto j = 0; j < displaying_trajectory_message_->joint_trajectory.joint_names.size(); ++j)
+          for (unsigned j = 0; j < displaying_trajectory_message_->joint_trajectory.joint_names.size(); ++j)
           {
             joints[displaying_trajectory_message_->joint_trajectory.joint_names[j]] = displaying_trajectory_message_->joint_trajectory.points[waypoint].positions[j];
           }
@@ -470,7 +470,7 @@ void TrajectoryVisualization::update(float wall_dt, float ros_dt)
       current_state_time_ = std::numeric_limits<float>::infinity();
 
       std::unordered_map<std::string, double> joints;
-      for (auto j = 0; j < displaying_trajectory_message_->joint_trajectory.joint_names.size(); ++j)
+      for (unsigned j = 0; j < displaying_trajectory_message_->joint_trajectory.joint_names.size(); ++j)
       {
         joints[displaying_trajectory_message_->joint_trajectory.joint_names[j]] = displaying_trajectory_message_->joint_trajectory.points[0].positions[j];
       }
@@ -504,13 +504,13 @@ void TrajectoryVisualization::update(float wall_dt, float ros_dt)
       else
         ++current_state_;
       int waypoint_count = displaying_trajectory_message_->joint_trajectory.points.size();
-      if ((std::size_t)current_state_ < waypoint_count)
+      if (current_state_ < waypoint_count)
       {
         if (trajectory_slider_panel_)
           trajectory_slider_panel_->setSliderPosition(current_state_);
 
         std::unordered_map<std::string, double> joints;
-        for (auto j = 0; j < displaying_trajectory_message_->joint_trajectory.joint_names.size(); ++j)
+        for (unsigned j = 0; j < displaying_trajectory_message_->joint_trajectory.joint_names.size(); ++j)
         {
           joints[displaying_trajectory_message_->joint_trajectory.joint_names[j]] = displaying_trajectory_message_->joint_trajectory.points[current_state_].positions[j];
         }
@@ -561,9 +561,9 @@ void TrajectoryVisualization::incomingDisplayTrajectory(const tesseract_msgs::Tr
     {
       if ((trajectory_message_to_display_->joint_trajectory.points.size() == msg->joint_trajectory.points.size()) && (trajectory_message_to_display_->joint_trajectory.joint_names.size() == msg->joint_trajectory.joint_names.size()))
       {
-        for (auto i = 0; i < msg->joint_trajectory.points.size(); ++i)
+        for (unsigned i = 0; i < msg->joint_trajectory.points.size(); ++i)
         {
-          for (auto j = 0; j < msg->joint_trajectory.joint_names.size(); ++j)
+          for (unsigned j = 0; j < msg->joint_trajectory.joint_names.size(); ++j)
           {
             double delta = msg->joint_trajectory.points[i].positions[j] - trajectory_message_to_display_->joint_trajectory.points[i].positions[j];
             joints_equal &= (std::abs(delta) < std::numeric_limits<double>::epsilon());

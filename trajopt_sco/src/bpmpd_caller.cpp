@@ -13,7 +13,7 @@ extern "C" {
          double *, double *, double *, int *, double *, int *, double *, int *);  
 }
 
-int main(int argc, char** argv) {
+int main(int /*argc*/, char** /*argv*/) {
   string working_dir = BPMPD_WORKING_DIR;
   int err = chdir(working_dir.c_str());  
   if (err != 0) {

@@ -93,8 +93,8 @@ public:
 private:
   void updateHelper(const tesseract::tesseract_ros::ROSBasicEnvConstPtr env,
                     const tesseract::EnvStateConstPtr state,
-                    const std_msgs::ColorRGBA& default_attached_object_color,
-                    const tesseract::ObjectColorMapConstPtr color_map);
+                    const std_msgs::ColorRGBA& /*default_attached_object_color*/,
+                    const tesseract::ObjectColorMapConstPtr /*color_map*/);
 
   Robot robot_;
   tesseract::AttachedBodyInfoMap attached_bodies_;

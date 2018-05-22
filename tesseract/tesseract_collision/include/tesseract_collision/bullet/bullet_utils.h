@@ -43,10 +43,15 @@
 #ifndef TESSERACT_COLLISION_BULLET_UTILS_H
 #define TESSERACT_COLLISION_BULLET_UTILS_H
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wall"
+#pragma GCC diagnostic ignored "-Wint-to-pointer-cast"
+#include <btBulletCollisionCommon.h>
+#pragma GCC diagnostic pop
+
 #include <tesseract_core/basic_types.h>
 #include <geometric_shapes/mesh_operations.h>
 #include <ros/console.h>
-#include <btBulletCollisionCommon.h>
 
 namespace tesseract
 {
@@ -163,8 +168,8 @@ protected:
                          const CollisionObjectTypeVector& collision_object_types,
                          const std::vector<std::shared_ptr<void>>& data);
 
-  int m_type_id;      // user defined type id
   std::string m_name; // name of the collision object
+  int m_type_id;      // user defined type id
   const std::vector<shapes::ShapeConstPtr>& m_shapes;
   const EigenSTL::vector_Affine3d& m_shape_poses;
   const CollisionObjectTypeVector& m_collision_object_types;
@@ -178,8 +183,8 @@ typedef std::shared_ptr<const CollisionObjectWrapper> COWConstPtr;
 typedef std::map<std::string, COWPtr> Link2Cow;
 typedef std::map<std::string, COWConstPtr> Link2ConstCow;
 
-inline void nearCallback(btBroadphasePair& collisionPair,
-    btCollisionDispatcher& dispatcher, const btDispatcherInfo& dispatchInfo)
+inline void nearCallback(btBroadphasePair& /*collisionPair*/,
+    btCollisionDispatcher& /*dispatcher*/, const btDispatcherInfo& /*dispatchInfo*/)
 {
     ROS_ERROR("error");
 //  // only used for AllVsAll
@@ -265,7 +270,7 @@ struct CollisionCollector : public btCollisionWorld::ContactResultCallback
     m_collisionFilterMask = cow->m_collisionFilterMask;
   }
 
-  virtual btScalar addSingleResult(btManifoldPoint& cp, const btCollisionObjectWrapper* colObj0Wrap,int partId0,int index0, const btCollisionObjectWrapper* colObj1Wrap,int partId1,int index1)
+  virtual btScalar addSingleResult(btManifoldPoint& cp, const btCollisionObjectWrapper* colObj0Wrap,int /*partId0*/,int /*index0*/, const btCollisionObjectWrapper* colObj1Wrap,int /*partId1*/,int /*index1*/)
   {
     if (cp.m_distance1 > m_contact_distance) return 0;
 
@@ -393,7 +398,7 @@ public:
   }
 
   //notice that the vectors should be unit length
-  void batchedUnitVectorGetSupportingVertexWithoutMargin(const btVector3* vectors,btVector3* supportVerticesOut,int numVectors) const override
+  void batchedUnitVectorGetSupportingVertexWithoutMargin(const btVector3* /*vectors*/,btVector3* /*supportVerticesOut*/,int /*numVectors*/) const override
   {
     throw std::runtime_error("not implemented");
   }
@@ -408,12 +413,12 @@ public:
     aabbMax.setMax(max1);
   }
 
-  virtual void getAabbSlow(const btTransform& t,btVector3& aabbMin,btVector3& aabbMax) const override
+  virtual void getAabbSlow(const btTransform& /*t*/,btVector3& /*aabbMin*/,btVector3& /*aabbMax*/) const override
   {
     throw std::runtime_error("shouldn't happen");
   }
 
-  virtual void setLocalScaling(const btVector3& scaling) override {}
+  virtual void setLocalScaling(const btVector3& /*scaling*/) override {}
 
   virtual const btVector3& getLocalScaling() const override
   {
@@ -421,13 +426,13 @@ public:
     return out;
   }
 
-  virtual void setMargin(btScalar margin) override {}
+  virtual void setMargin(btScalar /*margin*/) override {}
 
   virtual btScalar getMargin() const override {return 0;}
 
   virtual int getNumPreferredPenetrationDirections() const override { return 0; }
 
-  virtual void getPreferredPenetrationDirection(int index, btVector3& penetrationVector) const override { throw std::runtime_error("not implemented"); }
+  virtual void getPreferredPenetrationDirection(int /*index*/, btVector3& /*penetrationVector*/) const override { throw std::runtime_error("not implemented"); }
 
   virtual void calculateLocalInertia(btScalar, btVector3&) const { throw std::runtime_error("not implemented"); }
 
@@ -495,7 +500,7 @@ struct CastCollisionCollector : public btCollisionWorld::ContactResultCallback
     m_collisionFilterMask = cow->m_collisionFilterMask;
   }
 
-  virtual btScalar addSingleResult(btManifoldPoint& cp, const btCollisionObjectWrapper* colObj0Wrap,int partId0,int index0, const btCollisionObjectWrapper* colObj1Wrap,int partId1,int index1)
+  virtual btScalar addSingleResult(btManifoldPoint& cp, const btCollisionObjectWrapper* colObj0Wrap,int /*partId0*/,int index0, const btCollisionObjectWrapper* colObj1Wrap,int /*partId1*/,int index1)
   {
     if (cp.m_distance1 > m_contact_distance) return 0;
 
@@ -646,7 +651,7 @@ struct CastCollisionCollectorOriginal : public btCollisionWorld::ContactResultCa
     m_collisionFilterMask = cow->m_collisionFilterMask;
   }
 
-  virtual btScalar addSingleResult(btManifoldPoint& cp, const btCollisionObjectWrapper* colObj0Wrap,int partId0,int index0, const btCollisionObjectWrapper* colObj1Wrap,int partId1,int index1)
+  virtual btScalar addSingleResult(btManifoldPoint& cp, const btCollisionObjectWrapper* colObj0Wrap,int /*partId0*/,int /*index0*/, const btCollisionObjectWrapper* colObj1Wrap,int /*partId1*/,int /*index1*/)
   {
     if (cp.m_distance1 > m_contact_distance) return 0;
 

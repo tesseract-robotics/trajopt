@@ -57,33 +57,6 @@ void RegisterMakers() {
   gRegisteredMakers = true;
 }
 
-//RobotAndDOFPtr RADFromName(const string& name, RobotBasePtr robot) {
-//  if (name == "active") {
-//    return RobotAndDOFPtr(new RobotAndDOF(robot, robot->GetActiveDOFIndices(), robot->GetAffineDOF(), robot->GetAffineRotationAxis()));
-//  }
-//  vector<int> dof_inds;
-//  int affinedofs = 0;
-//  Vector rotationaxis(0,0,1);
-//  vector<string> components;
-//  boost::split(components, name, boost::is_any_of("+"));
-//  for (int i=0; i < components.size(); ++i) {
-//    std::string& component = components[i];
-//    if (RobotBase::ManipulatorPtr manip = GetManipulatorByName(*robot, component)) {
-//      vector<int> inds = manip->GetArmIndices();
-//      dof_inds.insert(dof_inds.end(), inds.begin(), inds.end());
-//    }
-//    else if (component == "base") {
-//      affinedofs |= DOF_X | DOF_Y | DOF_RotationAxis;
-//    }
-//    else if (KinBody::JointPtr joint = robot->GetJoint(component)) {
-//      dof_inds.push_back(joint->GetDOFIndex());
-//    }
-//    else PRINT_AND_THROW( boost::format("error in reading manip description: %s must be a manipulator, link, or 'base'")%component );
-//  }
-//  return RobotAndDOFPtr(new RobotAndDOF(robot, dof_inds, affinedofs, rotationaxis));
-//}
-
-
 #if 0
 BoolVec toMask(const VectorXd& x) {
   BoolVec out(x.size());
@@ -91,11 +64,6 @@ BoolVec toMask(const VectorXd& x) {
   return out;
 }
 #endif
-
-bool allClose(const VectorXd& a, const VectorXd& b)
-{
-  return (a-b).array().abs().maxCoeff() < 1e-4;
-}
 
 }
 

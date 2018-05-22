@@ -40,11 +40,16 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-#include "tesseract_collision/bullet/bullet_utils.h"
-#include <geometric_shapes/shapes.h>
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wall"
+#pragma GCC diagnostic ignored "-Wint-to-pointer-cast"
 #include <BulletCollision/CollisionShapes/btShapeHull.h>
 #include <BulletCollision/Gimpact/btGImpactShape.h>
 #include <BulletCollision/CollisionDispatch/btConvexConvexAlgorithm.h>
+#pragma GCC diagnostic pop
+
+#include "tesseract_collision/bullet/bullet_utils.h"
+#include <geometric_shapes/shapes.h>
 #include <boost/thread/mutex.hpp>
 #include <memory>
 #include <octomap/octomap.h>
@@ -146,7 +151,7 @@ btCollisionShape* createShapePrimitive(const shapes::ShapeConstPtr& geom, const 
           }
           else
           {
-            for (int i = 0u; i < mesh->vertex_count; ++i)
+            for (unsigned i = 0u; i < mesh->vertex_count; ++i)
             {
               subshape->addPoint(btVector3(mesh->vertices[3 * i], mesh->vertices[3 * i + 1], mesh->vertices[3 * i + 2]));
             }
@@ -233,8 +238,8 @@ btCollisionShape* createShapePrimitive(const shapes::ShapeConstPtr& geom, const 
 
 CollisionObjectWrapper::CollisionObjectWrapper(const std::string& name, const int& type_id, const std::vector<shapes::ShapeConstPtr> &shapes, const EigenSTL::vector_Affine3d &shape_poses, const CollisionObjectTypeVector &collision_object_types)
   :
-    m_type_id(type_id),
     m_name(name),
+    m_type_id(type_id),
     m_shapes(shapes),
     m_shape_poses(shape_poses),
     m_collision_object_types(collision_object_types)

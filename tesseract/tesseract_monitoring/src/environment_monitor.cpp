@@ -149,7 +149,7 @@ EnvironmentMonitor::~EnvironmentMonitor()
   srdf_model_.reset();
 }
 
-void EnvironmentMonitor::initialize(const urdf::ModelInterfaceConstSharedPtr& urdf_model, const srdf::ModelConstSharedPtr& srdf_model)
+void EnvironmentMonitor::initialize(const urdf::ModelInterfaceConstSharedPtr& urdf_model, const srdf::ModelConstSharedPtr& /*srdf_model*/)
 {
   enforce_next_state_update_ = false;
 
@@ -335,7 +335,7 @@ void EnvironmentMonitor::triggerEnvironmentUpdateEvent(EnvironmentUpdateType upd
 
 bool EnvironmentMonitor::requestEnvironmentState(const std::string& service_name)
 {
-  ROS_ERROR("tesseract environment request environment state is currently not implemented");
+  ROS_ERROR("tesseract environment request environment state is currently not implemented, %s", service_name.c_str());
 
 //  // use global namespace for service
 //  ros::ServiceClient client = ros::NodeHandle().serviceClient<moveit_msgs::GetPlanningScene>(service_name);
@@ -629,7 +629,7 @@ void EnvironmentMonitor::onStateUpdate(const sensor_msgs::JointStateConstPtr& /*
     updateEnvironmentWithCurrentState();
 }
 
-void EnvironmentMonitor::stateUpdateTimerCallback(const ros::WallTimerEvent& event)
+void EnvironmentMonitor::stateUpdateTimerCallback(const ros::WallTimerEvent& /*event*/)
 {
   if (state_update_pending_)
   {

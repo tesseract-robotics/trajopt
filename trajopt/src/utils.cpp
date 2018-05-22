@@ -29,7 +29,7 @@ TrajArray getTraj(const DblVec& x, const AffArray& arr) {
 
 void AddVarArrays(OptProb& prob, int rows, const vector<int>& cols, const vector<string>& name_prefix, const vector<VarArray*>& newvars) {
   int n_arr = name_prefix.size();
-  assert(n_arr == newvars.size());
+  assert(static_cast<unsigned>(n_arr) == newvars.size());
 
   vector<MatrixXi> index(n_arr);
   for (int i=0; i < n_arr; ++i) {

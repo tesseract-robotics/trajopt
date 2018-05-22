@@ -30,7 +30,11 @@
 #ifndef TESSERACT_RVIZ_ROBOT_H_
 #define TESSERACT_RVIZ_ROBOT_H_
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wall"
+#pragma GCC diagnostic ignored "-Wunused-parameter"
 #include <rviz/robot/link_updater.h>
+#pragma GCC diagnostic pop
 
 #include <string>
 #include <map>
@@ -178,6 +182,8 @@ public:
   class LinkFactory
   {
   public:
+    virtual ~LinkFactory() {}
+
     virtual RobotLink* createLink( Robot* robot,
                                    const urdf::LinkConstSharedPtr& link,
                                    const std::string& parent_joint_name,
@@ -196,6 +202,7 @@ public:
     virtual RobotJoint* createJoint( Robot* robot,
                                      const std::string &name,
                                      const tesseract::AttachedBodyInfo& ab);
+
   };
 
   /** Call this before load() to subclass the RobotLink or RobotJoint class used in the link property.

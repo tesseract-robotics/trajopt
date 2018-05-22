@@ -206,7 +206,7 @@ protected:
 template <typename VecType>
 inline void setVec(DblVec& x, const VarVector& vars, const VecType& vals) {
   assert(vars.size() == vals.size());
-  for (int i = 0; i < vars.size(); ++i) {
+  for (unsigned i = 0; i < vars.size(); ++i) {
     x[vars[i].var_rep->index] = vals[i];
   }
 }

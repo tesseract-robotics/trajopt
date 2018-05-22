@@ -99,8 +99,8 @@ void StateVisualization::update(const tesseract::tesseract_ros::ROSBasicEnvConst
 
 void StateVisualization::updateHelper(const tesseract::tesseract_ros::ROSBasicEnvConstPtr env,
                                       const tesseract::EnvStateConstPtr state,
-                                      const std_msgs::ColorRGBA& default_attached_object_color,
-                                      const tesseract::ObjectColorMapConstPtr color_map)
+                                      const std_msgs::ColorRGBA& /*default_attached_object_color*/,
+                                      const tesseract::ObjectColorMapConstPtr /*color_map*/)
 {
   const AttachedBodyInfoMap& attached_bodies = env->getAttachedBodies();
   const auto& attachable_objects = env->getAttachableObjects();
