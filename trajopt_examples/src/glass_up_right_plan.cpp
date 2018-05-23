@@ -246,6 +246,17 @@ int main(int argc, char** argv)
   opt.optimize();
   ROS_INFO("planning time: %.3f", (ros::Time::now() - tStart).toSec());
 
+  double d = 0;
+  TrajArray traj = getTraj(opt.x(), prob->GetVars());
+  for (unsigned i=1; i < traj.rows(); ++i)
+  {
+    for (unsigned j=0; j < traj.cols(); ++j)
+    {
+      d+=std::abs(traj(i, j) - traj(i-1, j));
+    }
+  }
+  ROS_ERROR("trajectory norm: %.3f", d);
+
   if (plotting_)
   {
     plotter->clear();
