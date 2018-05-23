@@ -23,7 +23,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <tesseract_ros_planning/trajopt/trajopt_planner.h>
+#include <tesseract_planning/trajopt/trajopt_planner.h>
 #include <trajopt/problem_description.hpp>
 #include <trajopt/plot_callback.hpp>
 #include <trajopt_utils/logging.hpp>
@@ -36,7 +36,7 @@ using namespace trajopt;
 namespace tesseract
 {
 
-namespace tesseract_ros
+namespace tesseract_planning
 {
 
   bool TrajoptPlanner::solve(PlannerResponse&)

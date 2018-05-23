@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(tesseract_ros_planning)
+project(tesseract_planning)
 
 add_compile_options(-std=c++11 -Wall -Wextra)
 
@@ -30,11 +30,11 @@ include_directories(
 )
 
 # Trajopt Planner
-add_library(tesseract_ros_trajopt_planner
+add_library(${PROJECT_NAME}_trajopt
   src/trajopt/trajopt_planner.cpp
 )
 
-target_link_libraries(tesseract_ros_trajopt_planner
+target_link_libraries(${PROJECT_NAME}_trajopt
   ${catkin_LIBRARIES}
 )
 
@@ -68,7 +68,7 @@ target_link_libraries(${PROJECT_NAME}_ompl_test
 ## Install ##
 #############
 
-install(TARGETS ${PROJECT_NAME}_ompl
+install(TARGETS ${PROJECT_NAME}_ompl ${PROJECT_NAME}_trajopt
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}

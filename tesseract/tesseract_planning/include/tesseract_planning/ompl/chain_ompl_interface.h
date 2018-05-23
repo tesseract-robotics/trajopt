@@ -1,10 +1,13 @@
-#ifndef TESSERACT_ROS_PLANNING_CHAIN_OMPL_INTERFACE_H
-#define TESSERACT_ROS_PLANNING_CHAIN_OMPL_INTERFACE_H
+#ifndef TESSERACT_PLANNING_CHAIN_OMPL_INTERFACE_H
+#define TESSERACT_PLANNING_CHAIN_OMPL_INTERFACE_H
 
 #include <ompl/geometric/SimpleSetup.h>
 #include <tesseract_ros/kdl/kdl_env.h>
 
-namespace tesseract_ros_planning
+namespace tesseract
+{
+
+namespace tesseract_planning
 {
 
 struct OmplPlanParameters
@@ -42,6 +45,7 @@ private:
   std::vector<std::string> link_names_;
 };
 
+}
 }
 
 #endif

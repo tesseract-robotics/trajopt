@@ -23,15 +23,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef TESSERACT_ROS_BASIC_PLANNER_H
-#define TESSERACT_ROS_BASIC_PLANNER_H
-#include <tesseract_ros_planning/basic_planner_types.h>
+#ifndef TESSERACT_PLANNING_BASIC_PLANNER_H
+#define TESSERACT_PLANNING_BASIC_PLANNER_H
+#include <tesseract_planning/basic_planner_types.h>
 #include <unordered_map>
 
 namespace tesseract
 {
 
-namespace tesseract_ros
+namespace tesseract_planning
 {
 
 class BasicPlanner

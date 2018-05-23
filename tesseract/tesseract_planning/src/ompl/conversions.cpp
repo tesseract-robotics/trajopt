@@ -1,7 +1,7 @@
-#include "tesseract_ros_planning/ompl/conversions.h"
+#include "tesseract_planning/ompl/conversions.h"
 #include <ompl/base/spaces/RealVectorStateSpace.h>
 
-tesseract::TrajArray tesseract_ros_planning::toTrajArray(const ompl::geometric::PathGeometric &path)
+tesseract::TrajArray tesseract::tesseract_planning::toTrajArray(const ompl::geometric::PathGeometric &path)
 {
   const auto n_points = path.getStateCount();
   const auto dof = path.getSpaceInformation()->getStateDimension();

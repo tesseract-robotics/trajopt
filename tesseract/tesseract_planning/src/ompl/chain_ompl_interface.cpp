@@ -1,7 +1,13 @@
-#include "tesseract_ros_planning/ompl/chain_ompl_interface.h"
+#include "tesseract_planning/ompl/chain_ompl_interface.h"
 #include <ompl/base/spaces/RealVectorStateSpace.h>
 
-tesseract_ros_planning::ChainOmplInterface::ChainOmplInterface(tesseract::BasicEnvConstPtr environment, const std::string &manipulator_name)
+namespace tesseract
+{
+
+namespace tesseract_planning
+{
+
+ChainOmplInterface::ChainOmplInterface(tesseract::BasicEnvConstPtr environment, const std::string &manipulator_name)
   : env_(std::move(environment))
 {
   if (!env_->hasManipulator(manipulator_name))
@@ -32,9 +38,9 @@ tesseract_ros_planning::ChainOmplInterface::ChainOmplInterface(tesseract::BasicE
 }
 
 boost::optional<ompl::geometric::PathGeometric>
-tesseract_ros_planning::ChainOmplInterface::plan(ompl::base::PlannerPtr planner, const std::vector<double> &from,
+ChainOmplInterface::plan(ompl::base::PlannerPtr planner, const std::vector<double> &from,
                                                  const std::vector<double> &to,
-                                                 const tesseract_ros_planning::OmplPlanParameters &params)
+                                                 const OmplPlanParameters &params)
 {
   ss_->setPlanner(planner);
   planner->clear();
@@ -68,12 +74,12 @@ tesseract_ros_planning::ChainOmplInterface::plan(ompl::base::PlannerPtr planner,
   }
 }
 
-ompl::base::SpaceInformationPtr tesseract_ros_planning::ChainOmplInterface::spaceInformation()
+ompl::base::SpaceInformationPtr ChainOmplInterface::spaceInformation()
 {
   return ss_->getSpaceInformation();
 }
 
-bool tesseract_ros_planning::ChainOmplInterface::isStateValid(const ompl::base::State *state) const
+bool ChainOmplInterface::isStateValid(const ompl::base::State *state) const
 {
   const ompl::base::RealVectorStateSpace::StateType* s = state->as<ompl::base::RealVectorStateSpace::StateType>();
   const auto dof = joint_names_.size();
@@ -90,7 +96,10 @@ bool tesseract_ros_planning::ChainOmplInterface::isStateValid(const ompl::base::
   return contact_map.empty();
 }
 
-bool tesseract_ros_planning::ChainOmplInterface::isContactAllowed(const std::string &a, const std::string &b) const
+bool ChainOmplInterface::isContactAllowed(const std::string &a, const std::string &b) const
 {
   return env_->getAllowedCollisionMatrix()->isCollisionAllowed(a, b);
+}
+
+}
 }
