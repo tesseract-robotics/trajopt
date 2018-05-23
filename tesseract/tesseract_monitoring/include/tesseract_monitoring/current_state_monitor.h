@@ -34,8 +34,8 @@
 
 /* Author: Ioan Sucan */
 
-#ifndef TESSERACT_ROS_MONITOR_CURRENT_STATE_H
-#define TESSERACT_ROS_MONITOR_CURRENT_STATE_H
+#ifndef TESSERACT_MONITORING_CURRENT_STATE_H
+#define TESSERACT_MONITORING_CURRENT_STATE_H
 
 #include <ros/ros.h>
 #include <sensor_msgs/JointState.h>
@@ -49,12 +49,8 @@
 namespace tesseract
 {
 
-namespace tesseract_ros
+namespace tesseract_monitoring
 {
-
-namespace tesseract_ros_monitor
-{
-
 
 typedef std::function<void(const sensor_msgs::JointStateConstPtr& joint_state)> JointStateUpdateCallback;
 
@@ -75,7 +71,7 @@ public:
    *  @param tf A pointer to the tf transformer to use
    *  @param nh A ros::NodeHandle to pass node specific options
    */
-  CurrentStateMonitor(const ROSBasicEnvConstPtr &env, ros::NodeHandle nh);
+  CurrentStateMonitor(const tesseract_ros::ROSBasicEnvConstPtr &env, ros::NodeHandle nh);
 
   ~CurrentStateMonitor();
 
@@ -213,7 +209,6 @@ private:
 typedef std::shared_ptr<CurrentStateMonitor> CurrentStateMonitorPtr;
 typedef std::shared_ptr<const CurrentStateMonitor> CurrentStateMonitorConstPtr;
 
-}
 }
 }
 #endif

@@ -34,12 +34,14 @@
 
 /* Author: Ioan Sucan */
 
-#include <tesseract_ros_monitor/current_state_monitor.h>
+#include <tesseract_monitoring/current_state_monitor.h>
 #include <limits>
 
-using namespace tesseract;
-using namespace tesseract::tesseract_ros;
-using namespace tesseract::tesseract_ros::tesseract_ros_monitor;
+namespace tesseract
+{
+
+namespace tesseract_monitoring
+{
 
 CurrentStateMonitor::CurrentStateMonitor(const tesseract_ros::ROSBasicEnvConstPtr& env)
   : CurrentStateMonitor(env, ros::NodeHandle())
@@ -348,4 +350,6 @@ void CurrentStateMonitor::jointStateCallback(const sensor_msgs::JointStateConstP
 
   // notify waitForCurrentState() *after* potential update callbacks
   state_update_condition_.notify_all();
+}
+}
 }

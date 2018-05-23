@@ -1,27 +1,29 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(tesseract_monitoring)
 
-# Compile as C++11, supported in ROS Kinetic and newer
 add_compile_options(-std=c++11 -Wall -Wextra)
 
-## Find catkin macros and libraries
-## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
-## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   tesseract_ros
   tesseract_collision
   tesseract_msgs
+  dynamic_reconfigure
+)
+
+generate_dynamic_reconfigure_options(
+  cfg/EnvironmentMonitorDynamicReconfigure.cfg
 )
 
 catkin_package(
   INCLUDE_DIRS include
-#  LIBRARIES tesseract_ros_monitor
+  LIBRARIES ${PROJECT_NAME}_environment
   CATKIN_DEPENDS
     roscpp
     tesseract_ros
     tesseract_collision
     tesseract_msgs
+    dynamic_reconfigure
 #  DEPENDS system_lib
 )
 
@@ -41,6 +43,7 @@ add_library(${PROJECT_NAME}_environment
 target_link_libraries(${PROJECT_NAME}_environment
   ${catkin_LIBRARIES}
   ${Boost_LIBRARIES})
+add_dependencies(${PROJECT_NAME}_environment ${PROJECT_NAME}_gencfg)
 
 add_executable(demo_scene demos/demo_scene.cpp)
 target_link_libraries(demo_scene ${PROJECT_NAME}_environment ${catkin_LIBRARIES})
