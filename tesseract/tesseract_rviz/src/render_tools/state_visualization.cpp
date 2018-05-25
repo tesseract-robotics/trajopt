@@ -36,6 +36,7 @@
 
 #include "tesseract_rviz/render_tools/state_visualization.h"
 #include "tesseract_rviz/render_tools/link_updater.h"
+#include <tesseract_ros/ros_tesseract_utils.h>
 #include <QApplication>
 
 namespace tesseract_rviz
@@ -106,13 +107,6 @@ void StateVisualization::updateHelper(const tesseract::tesseract_ros::ROSBasicEn
   const auto& attachable_objects = env->getAttachableObjects();
 
   // Need to remove links that no longer exist
-  for (const auto& ab : attached_bodies_)
-  {
-    const auto it = attached_bodies.find(ab.second.object_name);
-    if (it == attached_bodies.end())
-      robot_.detachBody(ab.second.object_name);
-  }
-
   for (const auto &ab : attached_bodies)
   {
     const auto it = attached_bodies_.find(ab.second.object_name);
@@ -121,8 +115,20 @@ void StateVisualization::updateHelper(const tesseract::tesseract_ros::ROSBasicEn
       const auto& ao = attachable_objects.at(ab.second.object_name);
       robot_.attachBody(*ao, ab.second);
     }
+    else
+    {
+      const auto& ao = attachable_objects.at(ab.second.object_name);
+      const auto& ao_prev = attachable_objects_.at(ab.second.object_name);
+      if (!tesseract_ros::isIdentical(*ao, *ao_prev))
+      {
+        robot_.detachBody(ab.second.object_name);
+        robot_.attachBody(*ao, ab.second);
+      }
+    }
   }
+
   attached_bodies_ = attached_bodies;
+  attachable_objects_ = attachable_objects;
   robot_.update(LinkUpdater(state));
   robot_.setVisualVisible(visual_visible_);
   robot_.setCollisionVisible(collision_visible_);
