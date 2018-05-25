@@ -1,7 +1,7 @@
 #pragma once
-#include <vector>
-#include <map>
 #include <Eigen/Core>
+#include <map>
+#include <vector>
 
 #include <trajopt_sco/modeling.hpp>
 #include <trajopt_utils/basic_array.hpp>
@@ -11,7 +11,6 @@
 
 namespace trajopt
 {
-
 using std::vector;
 using std::map;
 using namespace sco;
@@ -32,7 +31,8 @@ using Eigen::VectorXd;
 using Eigen::MatrixXd;
 using Eigen::Matrix3d;
 
-/** @brief Interface for objects that know how to plot themselves given solution vector x */
+/** @brief Interface for objects that know how to plot themselves given solution
+ * vector x */
 class Plotter
 {
 public:
@@ -40,5 +40,4 @@ public:
   virtual ~Plotter() {}
 };
 typedef std::shared_ptr<Plotter> PlotterPtr;
-
 }

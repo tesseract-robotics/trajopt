@@ -6,10 +6,8 @@
 
 namespace tesseract
 {
-
 namespace tesseract_planning
 {
-
 struct OmplPlanParameters
 {
   double planning_time = 5.0;
@@ -21,8 +19,10 @@ class ChainOmplInterface
 public:
   ChainOmplInterface(tesseract::BasicEnvConstPtr environment, const std::string& manipulator_name);
 
-  boost::optional<ompl::geometric::PathGeometric> plan(ompl::base::PlannerPtr planner, const std::vector<double>& from,
-                                                       const std::vector<double>& to, const OmplPlanParameters& params);
+  boost::optional<ompl::geometric::PathGeometric> plan(ompl::base::PlannerPtr planner,
+                                                       const std::vector<double>& from,
+                                                       const std::vector<double>& to,
+                                                       const OmplPlanParameters& params);
 
   ompl::base::SpaceInformationPtr spaceInformation();
 
@@ -30,7 +30,6 @@ public:
   {
     ss_->getSpaceInformation()->setMotionValidator(std::move(mv));
   }
-
 
 private:
   bool isStateValid(const ompl::base::State* state) const;
@@ -44,7 +43,6 @@ private:
   std::vector<std::string> joint_names_;
   std::vector<std::string> link_names_;
 };
-
 }
 }
 

@@ -23,31 +23,33 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <ros/ros.h>
-#include <tesseract_ros/ros_basic_plotting.h>
-#include <tesseract_ros/kdl/kdl_env.h>
-#include <tesseract_ros/kdl/kdl_chain_kin.h>
-#include <trajopt/problem_description.hpp>
-#include <trajopt/plot_callback.hpp>
-#include <trajopt_utils/logging.hpp>
-#include <trajopt_utils/config.hpp>
-#include <urdf_parser/urdf_parser.h>
 #include <jsoncpp/json/json.h>
+#include <ros/ros.h>
 #include <srdfdom/model.h>
+#include <tesseract_ros/kdl/kdl_chain_kin.h>
+#include <tesseract_ros/kdl/kdl_env.h>
+#include <tesseract_ros/ros_basic_plotting.h>
+#include <trajopt/plot_callback.hpp>
+#include <trajopt/problem_description.hpp>
+#include <trajopt_utils/config.hpp>
+#include <trajopt_utils/logging.hpp>
+#include <urdf_parser/urdf_parser.h>
 
 using namespace trajopt;
 using namespace tesseract;
 
 const std::string ROBOT_DESCRIPTION_PARAM = "robot_description"; /**< Default ROS parameter for robot description */
-const std::string ROBOT_SEMANTIC_PARAM = "robot_description_semantic"; /**< Default ROS parameter for robot description */
-const std::string TRAJOPT_DESCRIPTION_PARAM = "trajopt_description"; /**< Default ROS parameter for trajopt description */
+const std::string ROBOT_SEMANTIC_PARAM = "robot_description_semantic"; /**< Default ROS parameter for robot
+                                                                          description */
+const std::string TRAJOPT_DESCRIPTION_PARAM =
+    "trajopt_description"; /**< Default ROS parameter for trajopt description */
 
 bool plotting_ = false;
 int steps_ = 5;
 std::string method_ = "json";
 urdf::ModelInterfaceSharedPtr urdf_model_; /**< URDF Model */
 srdf::ModelSharedPtr srdf_model_;          /**< SRDF Model */
-tesseract_ros::KDLEnvPtr env_;          /**< Trajopt Basic Environment */
+tesseract_ros::KDLEnvPtr env_;             /**< Trajopt Basic Environment */
 
 TrajOptProbPtr jsonMethod()
 {
@@ -116,7 +118,7 @@ TrajOptProbPtr cppMethod()
   pci.cost_infos.push_back(collision);
 
   // Populate Constraints
-  double delta = 0.5/pci.basic_info.n_steps;
+  double delta = 0.5 / pci.basic_info.n_steps;
   for (auto i = 0; i < pci.basic_info.n_steps; ++i)
   {
     std::shared_ptr<PoseCostInfo> pose = std::shared_ptr<PoseCostInfo>(new PoseCostInfo);
@@ -141,7 +143,6 @@ TrajOptProbPtr cppMethod()
 
   return ConstructProblem(pci);
 }
-
 
 int main(int argc, char** argv)
 {
@@ -190,7 +191,8 @@ int main(int argc, char** argv)
   attached_body.object_name = "sphere_attached";
   attached_body.parent_link_name = "base_link";
   attached_body.transform.setIdentity();
-//  attached_body.touch_links = {}; // This element enables the attached body to collide with other links
+  //  attached_body.touch_links = {}; // This element enables the attached body
+  //  to collide with other links
 
   env_->attachBody(attached_body);
 
@@ -248,11 +250,11 @@ int main(int argc, char** argv)
 
   double d = 0;
   TrajArray traj = getTraj(opt.x(), prob->GetVars());
-  for (unsigned i=1; i < traj.rows(); ++i)
+  for (unsigned i = 1; i < traj.rows(); ++i)
   {
-    for (unsigned j=0; j < traj.cols(); ++j)
+    for (unsigned j = 0; j < traj.cols(); ++j)
     {
-      d+=std::abs(traj(i, j) - traj(i-1, j));
+      d += std::abs(traj(i, j) - traj(i - 1, j));
     }
   }
   ROS_ERROR("trajectory norm: %.3f", d);
@@ -265,5 +267,4 @@ int main(int argc, char** argv)
   collisions.clear();
   env_->continuousCollisionCheckTrajectory(joint_names, link_names, getTraj(opt.x(), prob->GetVars()), collisions);
   ROS_INFO("Final trajectory number of continuous collisions: %lui\n", collisions.size());
-
 }

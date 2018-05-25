@@ -43,132 +43,118 @@
 #include <eigen_conversions/eigen_msg.h>
 #include <ros/console.h>
 
-
 namespace tesseract
 {
-
 namespace tesseract_ros
 {
-
-static inline
-bool isMsgEmpty(const sensor_msgs::JointState& msg)
+static inline bool isMsgEmpty(const sensor_msgs::JointState& msg)
 {
-  return msg.name.empty() &&
-         msg.position.empty() &&
-         msg.velocity.empty() &&
-         msg.effort.empty();
+  return msg.name.empty() && msg.position.empty() && msg.velocity.empty() && msg.effort.empty();
 }
 
-static inline
-bool isMsgEmpty(const sensor_msgs::MultiDOFJointState& msg)
+static inline bool isMsgEmpty(const sensor_msgs::MultiDOFJointState& msg)
 {
-  return msg.joint_names.empty() &&
-         msg.transforms.empty() &&
-         msg.twist.empty() &&
-         msg.wrench.empty();
+  return msg.joint_names.empty() && msg.transforms.empty() && msg.twist.empty() && msg.wrench.empty();
 }
 
-static inline
-bool isIdentical(const shapes::Shape& shape1, const shapes::Shape& shape2)
+static inline bool isIdentical(const shapes::Shape& shape1, const shapes::Shape& shape2)
 {
   if (shape1.type != shape2.type)
     return false;
 
   switch (shape1.type)
   {
-  case shapes::BOX:
-  {
-    const shapes::Box& s1 = static_cast<const shapes::Box&>(shape1);
-    const shapes::Box& s2 = static_cast<const shapes::Box&>(shape2);
+    case shapes::BOX:
+    {
+      const shapes::Box& s1 = static_cast<const shapes::Box&>(shape1);
+      const shapes::Box& s2 = static_cast<const shapes::Box&>(shape2);
 
-    for (unsigned i = 0; i < 3; ++i)
-      if (std::abs(s1.size[i]-s2.size[i]) > std::numeric_limits<double>::epsilon())
+      for (unsigned i = 0; i < 3; ++i)
+        if (std::abs(s1.size[i] - s2.size[i]) > std::numeric_limits<double>::epsilon())
+          return false;
+
+      break;
+    }
+    case shapes::SPHERE:
+    {
+      const shapes::Sphere& s1 = static_cast<const shapes::Sphere&>(shape1);
+      const shapes::Sphere& s2 = static_cast<const shapes::Sphere&>(shape2);
+
+      if (std::abs(s1.radius - s2.radius) > std::numeric_limits<double>::epsilon())
         return false;
 
-    break;
-  }
-  case shapes::SPHERE:
-  {
-    const shapes::Sphere& s1 = static_cast<const shapes::Sphere&>(shape1);
-    const shapes::Sphere& s2 = static_cast<const shapes::Sphere&>(shape2);
+      break;
+    }
+    case shapes::CYLINDER:
+    {
+      const shapes::Cylinder& s1 = static_cast<const shapes::Cylinder&>(shape1);
+      const shapes::Cylinder& s2 = static_cast<const shapes::Cylinder&>(shape2);
 
-    if (std::abs(s1.radius-s2.radius) > std::numeric_limits<double>::epsilon())
+      if (std::abs(s1.radius - s2.radius) > std::numeric_limits<double>::epsilon())
+        return false;
+
+      if (std::abs(s1.length - s2.length) > std::numeric_limits<double>::epsilon())
+        return false;
+
+      break;
+    }
+    case shapes::CONE:
+    {
+      const shapes::Cone& s1 = static_cast<const shapes::Cone&>(shape1);
+      const shapes::Cone& s2 = static_cast<const shapes::Cone&>(shape2);
+
+      if (std::abs(s1.radius - s2.radius) > std::numeric_limits<double>::epsilon())
+        return false;
+
+      if (std::abs(s1.length - s2.length) > std::numeric_limits<double>::epsilon())
+        return false;
+
+      break;
+    }
+    case shapes::MESH:
+    {
+      const shapes::Mesh& s1 = static_cast<const shapes::Mesh&>(shape1);
+      const shapes::Mesh& s2 = static_cast<const shapes::Mesh&>(shape2);
+
+      if (s1.vertex_count != s2.vertex_count)
+        return false;
+
+      if (s1.triangle_count != s2.triangle_count)
+        return false;
+
+      break;
+    }
+    case shapes::OCTREE:
+    {
+      const shapes::OcTree& s1 = static_cast<const shapes::OcTree&>(shape1);
+      const shapes::OcTree& s2 = static_cast<const shapes::OcTree&>(shape2);
+
+      if (s1.octree->getTreeType() != s2.octree->getTreeType())
+        return false;
+
+      if (s1.octree->size() != s2.octree->size())
+        return false;
+
+      if (s1.octree->getTreeDepth() != s2.octree->getTreeDepth())
+        return false;
+
+      if (s1.octree->memoryUsage() != s2.octree->memoryUsage())
+        return false;
+
+      if (s1.octree->memoryFullGrid() != s2.octree->memoryFullGrid())
+        return false;
+
+      break;
+    }
+    default:
+      ROS_ERROR("This geometric shape type (%d) is not supported", static_cast<int>(shape1.type));
       return false;
-
-    break;
-  }
-  case shapes::CYLINDER:
-  {
-    const shapes::Cylinder& s1 = static_cast<const shapes::Cylinder&>(shape1);
-    const shapes::Cylinder& s2 = static_cast<const shapes::Cylinder&>(shape2);
-
-    if (std::abs(s1.radius-s2.radius) > std::numeric_limits<double>::epsilon())
-      return false;
-
-    if (std::abs(s1.length-s2.length) > std::numeric_limits<double>::epsilon())
-      return false;
-
-    break;
-  }
-  case shapes::CONE:
-  {
-    const shapes::Cone& s1 = static_cast<const shapes::Cone&>(shape1);
-    const shapes::Cone& s2 = static_cast<const shapes::Cone&>(shape2);
-
-    if (std::abs(s1.radius-s2.radius) > std::numeric_limits<double>::epsilon())
-      return false;
-
-    if (std::abs(s1.length-s2.length) > std::numeric_limits<double>::epsilon())
-      return false;
-
-    break;
-  }
-  case shapes::MESH:
-  {
-    const shapes::Mesh& s1 = static_cast<const shapes::Mesh&>(shape1);
-    const shapes::Mesh& s2 = static_cast<const shapes::Mesh&>(shape2);
-
-    if (s1.vertex_count != s2.vertex_count)
-      return false;
-
-    if (s1.triangle_count != s2.triangle_count)
-      return false;
-
-    break;
-  }
-  case shapes::OCTREE:
-  {
-    const shapes::OcTree& s1 = static_cast<const shapes::OcTree&>(shape1);
-    const shapes::OcTree& s2 = static_cast<const shapes::OcTree&>(shape2);
-
-
-    if (s1.octree->getTreeType() != s2.octree->getTreeType())
-      return false;
-
-    if (s1.octree->size() != s2.octree->size())
-      return false;
-
-    if (s1.octree->getTreeDepth() != s2.octree->getTreeDepth())
-      return false;
-
-    if (s1.octree->memoryUsage() != s2.octree->memoryUsage())
-      return false;
-
-    if (s1.octree->memoryFullGrid() != s2.octree->memoryFullGrid())
-      return false;
-
-    break;
-  }
-  default:
-    ROS_ERROR("This geometric shape type (%d) is not supported", static_cast<int>(shape1.type));
-    return false;
   }
 
   return true;
 }
 
-static inline
-bool isIdentical(const AttachableObject& ao1, const AttachableObject& ao2)
+static inline bool isIdentical(const AttachableObject& ao1, const AttachableObject& ao2)
 {
   if (ao1.name != ao2.name)
     return false;
@@ -193,11 +179,11 @@ bool isIdentical(const AttachableObject& ao1, const AttachableObject& ao2)
   {
     for (unsigned j = 0; j < 4; ++j)
     {
-      if (std::abs(ao1.collision.shape_colors[i][j] - ao2.collision.shape_colors[i][j]) > std::numeric_limits<double>::epsilon())
+      if (std::abs(ao1.collision.shape_colors[i][j] - ao2.collision.shape_colors[i][j]) >
+          std::numeric_limits<double>::epsilon())
         return false;
     }
   }
-
 
   // Check Visual
   if (ao1.visual.shapes.size() != ao2.visual.shapes.size())
@@ -216,7 +202,8 @@ bool isIdentical(const AttachableObject& ao1, const AttachableObject& ao2)
   {
     for (unsigned j = 0; j < 4; ++j)
     {
-      if (std::abs(ao1.visual.shape_colors[i][j] - ao2.visual.shape_colors[i][j]) > std::numeric_limits<double>::epsilon())
+      if (std::abs(ao1.visual.shape_colors[i][j] - ao2.visual.shape_colors[i][j]) >
+          std::numeric_limits<double>::epsilon())
         return false;
     }
   }
@@ -224,8 +211,8 @@ bool isIdentical(const AttachableObject& ao1, const AttachableObject& ao2)
   return true;
 }
 
-static inline
-void attachableObjectToAttachableObjectMsg(tesseract_msgs::AttachableObject& ao_msg, const AttachableObject& ao)
+static inline void attachableObjectToAttachableObjectMsg(tesseract_msgs::AttachableObject& ao_msg,
+                                                         const AttachableObject& ao)
 {
   ao_msg.operation = tesseract_msgs::AttachableObject::ADD;
   ao_msg.name = ao.name;
@@ -419,14 +406,14 @@ void attachableObjectToAttachableObjectMsg(tesseract_msgs::AttachableObject& ao_
   }
 }
 
-static inline
-void attachableObjectToAttachableObjectMsg(tesseract_msgs::AttachableObjectPtr ao_msg, const AttachableObject& ao)
+static inline void attachableObjectToAttachableObjectMsg(tesseract_msgs::AttachableObjectPtr ao_msg,
+                                                         const AttachableObject& ao)
 {
   attachableObjectToAttachableObjectMsg(*ao_msg, ao);
 }
 
-static inline
-void attachableObjectMsgToAttachableObject(AttachableObject& ao, const tesseract_msgs::AttachableObject& ao_msg)
+static inline void attachableObjectMsgToAttachableObject(AttachableObject& ao,
+                                                         const tesseract_msgs::AttachableObject& ao_msg)
 {
   ao.name = ao_msg.name;
 
@@ -481,7 +468,8 @@ void attachableObjectMsgToAttachableObject(AttachableObject& ao, const tesseract
 
   for (auto i = 0u; i < ao_msg.visual.octomaps.size(); ++i)
   {
-    std::shared_ptr<octomap::OcTree> om(static_cast<octomap::OcTree*>(octomap_msgs::msgToMap(ao_msg.visual.octomaps[i])));
+    std::shared_ptr<octomap::OcTree> om(
+        static_cast<octomap::OcTree*>(octomap_msgs::msgToMap(ao_msg.visual.octomaps[i])));
     shapes::ShapePtr shape(new shapes::OcTree(om));
     ao.visual.shapes.push_back(shape);
 
@@ -512,7 +500,8 @@ void attachableObjectMsgToAttachableObject(AttachableObject& ao, const tesseract
       ao.collision.shape_colors.push_back(Eigen::Vector4d(c.r, c.g, c.b, c.a));
     }
 
-    ao.collision.collision_object_types.push_back((CollisionObjectType)ao_msg.collision.primitive_collision_object_types[i].data);
+    ao.collision.collision_object_types.push_back(
+        (CollisionObjectType)ao_msg.collision.primitive_collision_object_types[i].data);
   }
 
   for (auto i = 0u; i < ao_msg.collision.meshes.size(); ++i)
@@ -530,7 +519,8 @@ void attachableObjectMsgToAttachableObject(AttachableObject& ao, const tesseract
       ao.collision.shape_colors.push_back(Eigen::Vector4d(c.r, c.g, c.b, c.a));
     }
 
-    ao.collision.collision_object_types.push_back((CollisionObjectType)ao_msg.collision.mesh_collision_object_types[i].data);
+    ao.collision.collision_object_types.push_back(
+        (CollisionObjectType)ao_msg.collision.mesh_collision_object_types[i].data);
   }
 
   for (auto i = 0u; i < ao_msg.collision.planes.size(); ++i)
@@ -548,12 +538,14 @@ void attachableObjectMsgToAttachableObject(AttachableObject& ao, const tesseract
       ao.collision.shape_colors.push_back(Eigen::Vector4d(c.r, c.g, c.b, c.a));
     }
 
-    ao.collision.collision_object_types.push_back((CollisionObjectType)ao_msg.collision.plane_collision_object_types[i].data);
+    ao.collision.collision_object_types.push_back(
+        (CollisionObjectType)ao_msg.collision.plane_collision_object_types[i].data);
   }
 
   for (auto i = 0u; i < ao_msg.collision.octomaps.size(); ++i)
   {
-    std::shared_ptr<octomap::OcTree> om(static_cast<octomap::OcTree*>(octomap_msgs::msgToMap(ao_msg.collision.octomaps[i])));
+    std::shared_ptr<octomap::OcTree> om(
+        static_cast<octomap::OcTree*>(octomap_msgs::msgToMap(ao_msg.collision.octomaps[i])));
     shapes::ShapePtr shape(new shapes::OcTree(om));
     ao.collision.shapes.push_back(shape);
 
@@ -567,18 +559,19 @@ void attachableObjectMsgToAttachableObject(AttachableObject& ao, const tesseract
       ao.collision.shape_colors.push_back(Eigen::Vector4d(c.r, c.g, c.b, c.a));
     }
 
-    ao.collision.collision_object_types.push_back((CollisionObjectType)ao_msg.collision.octomap_collision_object_types[i].data);
+    ao.collision.collision_object_types.push_back(
+        (CollisionObjectType)ao_msg.collision.octomap_collision_object_types[i].data);
   }
 }
 
-static inline
-void attachableObjectMsgToAttachableObject(AttachableObjectPtr ao, const tesseract_msgs::AttachableObject& ao_msg)
+static inline void attachableObjectMsgToAttachableObject(AttachableObjectPtr ao,
+                                                         const tesseract_msgs::AttachableObject& ao_msg)
 {
   attachableObjectMsgToAttachableObject(*ao, ao_msg);
 }
 
-static inline
-void attachedBodyInfoToAttachedBodyInfoMsg(tesseract_msgs::AttachedBodyInfo& ab_info_msg, const AttachedBodyInfo& ab_info)
+static inline void attachedBodyInfoToAttachedBodyInfoMsg(tesseract_msgs::AttachedBodyInfo& ab_info_msg,
+                                                         const AttachedBodyInfo& ab_info)
 {
   ab_info_msg.operation = tesseract_msgs::AttachedBodyInfo::ADD;
   ab_info_msg.object_name = ab_info.object_name;
@@ -587,14 +580,14 @@ void attachedBodyInfoToAttachedBodyInfoMsg(tesseract_msgs::AttachedBodyInfo& ab_
   ab_info_msg.touch_links = ab_info.touch_links;
 }
 
-static inline
-void attachedBodyInfoToAttachedBodyInfoMsg(tesseract_msgs::AttachedBodyInfoPtr ab_info_msg, const AttachedBodyInfo& ab_info)
+static inline void attachedBodyInfoToAttachedBodyInfoMsg(tesseract_msgs::AttachedBodyInfoPtr ab_info_msg,
+                                                         const AttachedBodyInfo& ab_info)
 {
   attachedBodyInfoToAttachedBodyInfoMsg(*ab_info_msg, ab_info);
 }
 
-static inline
-void attachedBodyInfoMsgToAttachedBodyInfo(AttachedBodyInfo& ab_info, const tesseract_msgs::AttachedBodyInfo& body)
+static inline void attachedBodyInfoMsgToAttachedBodyInfo(AttachedBodyInfo& ab_info,
+                                                         const tesseract_msgs::AttachedBodyInfo& body)
 {
   ab_info.object_name = body.object_name;
   ab_info.parent_link_name = body.parent_link_name;
@@ -602,8 +595,7 @@ void attachedBodyInfoMsgToAttachedBodyInfo(AttachedBodyInfo& ab_info, const tess
   ab_info.touch_links = body.touch_links;
 }
 
-static inline
-void tesseractEnvStateToJointStateMsg(sensor_msgs::JointState& joint_state, const EnvState& state)
+static inline void tesseractEnvStateToJointStateMsg(sensor_msgs::JointState& joint_state, const EnvState& state)
 {
   joint_state.header.stamp = ros::Time::now();
   for (const auto& joint : state.joints)
@@ -613,14 +605,13 @@ void tesseractEnvStateToJointStateMsg(sensor_msgs::JointState& joint_state, cons
   }
 }
 
-static inline
-void tesseractEnvStateToJointStateMsg(sensor_msgs::JointStatePtr joint_state, const EnvState& state)
+static inline void tesseractEnvStateToJointStateMsg(sensor_msgs::JointStatePtr joint_state, const EnvState& state)
 {
   tesseractEnvStateToJointStateMsg(*joint_state, state);
 }
 
-static inline
-void tesseractToTesseractStateMsg(tesseract_msgs::TesseractState& state_msg, const tesseract_ros::ROSBasicEnv& env)
+static inline void tesseractToTesseractStateMsg(tesseract_msgs::TesseractState& state_msg,
+                                                const tesseract_ros::ROSBasicEnv& env)
 {
   state_msg.name = env.getName();
   state_msg.urdf_name = env.getURDF()->getName();
@@ -644,14 +635,14 @@ void tesseractToTesseractStateMsg(tesseract_msgs::TesseractState& state_msg, con
   tesseractEnvStateToJointStateMsg(state_msg.joint_state, *state);
 }
 
-static inline
-void tesseractToTesseractStateMsg(tesseract_msgs::TesseractStatePtr state_msg, const tesseract_ros::ROSBasicEnv& env)
+static inline void tesseractToTesseractStateMsg(tesseract_msgs::TesseractStatePtr state_msg,
+                                                const tesseract_ros::ROSBasicEnv& env)
 {
   tesseractToTesseractStateMsg(*state_msg, env);
 }
 
-static inline
-bool processAttachableObjectMsg(tesseract_ros::ROSBasicEnv& env, const tesseract_msgs::AttachableObject& ao_msg)
+static inline bool processAttachableObjectMsg(tesseract_ros::ROSBasicEnv& env,
+                                              const tesseract_msgs::AttachableObject& ao_msg)
 {
   if (ao_msg.operation == tesseract_msgs::AttachableObject::REMOVE)
   {
@@ -672,14 +663,14 @@ bool processAttachableObjectMsg(tesseract_ros::ROSBasicEnv& env, const tesseract
   return true;
 }
 
-static inline
-bool processAttachableObjectMsg(tesseract_ros::ROSBasicEnvPtr env, const tesseract_msgs::AttachableObject& ao_msg)
+static inline bool processAttachableObjectMsg(tesseract_ros::ROSBasicEnvPtr env,
+                                              const tesseract_msgs::AttachableObject& ao_msg)
 {
   return processAttachableObjectMsg(*env, ao_msg);
 }
 
-static inline
-bool processAttachedBodyInfoMsg(tesseract_ros::ROSBasicEnv& env, const tesseract_msgs::AttachedBodyInfo& ab_msg)
+static inline bool processAttachedBodyInfoMsg(tesseract_ros::ROSBasicEnv& env,
+                                              const tesseract_msgs::AttachedBodyInfo& ab_msg)
 {
   if (ab_msg.operation == tesseract_msgs::AttachedBodyInfo::REMOVE)
   {
@@ -700,14 +691,14 @@ bool processAttachedBodyInfoMsg(tesseract_ros::ROSBasicEnv& env, const tesseract
   return true;
 }
 
-static inline
-bool processAttachedBodyInfoMsg(tesseract_ros::ROSBasicEnvPtr env, const tesseract_msgs::AttachedBodyInfo& ab_msg)
+static inline bool processAttachedBodyInfoMsg(tesseract_ros::ROSBasicEnvPtr env,
+                                              const tesseract_msgs::AttachedBodyInfo& ab_msg)
 {
   return processAttachedBodyInfoMsg(*env, ab_msg);
 }
 
-static inline
-bool processTesseractStateMsg(tesseract_ros::ROSBasicEnv& env, const tesseract_msgs::TesseractState& state_msg)
+static inline bool processTesseractStateMsg(tesseract_ros::ROSBasicEnv& env,
+                                            const tesseract_msgs::TesseractState& state_msg)
 {
   bool success = true;
 
@@ -743,14 +734,14 @@ bool processTesseractStateMsg(tesseract_ros::ROSBasicEnv& env, const tesseract_m
   return success;
 }
 
-static inline
-bool processTesseractStateMsg(tesseract_ros::ROSBasicEnvPtr env, const tesseract_msgs::TesseractState& state_msg)
+static inline bool processTesseractStateMsg(tesseract_ros::ROSBasicEnvPtr env,
+                                            const tesseract_msgs::TesseractState& state_msg)
 {
   return processTesseractStateMsg(*env, state_msg);
 }
 
-static inline
-void tesseractContactResultToContactResultMsg(tesseract_msgs::ContactResult& contact_result_msg, const tesseract::ContactResult& contact_result)
+static inline void tesseractContactResultToContactResultMsg(tesseract_msgs::ContactResult& contact_result_msg,
+                                                            const tesseract::ContactResult& contact_result)
 {
   contact_result_msg.distance = contact_result.distance;
   contact_result_msg.link_names[0] = contact_result.link_names[0];
@@ -773,7 +764,7 @@ void tesseractContactResultToContactResultMsg(tesseract_msgs::ContactResult& con
   contact_result_msg.cc_nearest_points[1].z = contact_result.cc_nearest_points[1][2];
 
   contact_result_msg.type_id[0] = contact_result.type_id[0];
-  contact_result_msg.type_id[1] = contact_result.type_id[1] ;
+  contact_result_msg.type_id[1] = contact_result.type_id[1];
 
   if (contact_result.cc_type == ContinouseCollisionTypes::CCType_Time0)
     contact_result_msg.cc_type = 1;
@@ -785,14 +776,15 @@ void tesseractContactResultToContactResultMsg(tesseract_msgs::ContactResult& con
     contact_result_msg.cc_type = 0;
 }
 
-static inline
-void tesseractContactResultToContactResultMsg(tesseract_msgs::ContactResultPtr contact_result_msg, const tesseract::ContactResult& contact_result)
+static inline void tesseractContactResultToContactResultMsg(tesseract_msgs::ContactResultPtr contact_result_msg,
+                                                            const tesseract::ContactResult& contact_result)
 {
   tesseractContactResultToContactResultMsg(*contact_result_msg, contact_result);
 }
 
-static inline
-void getActiveLinkNamesRecursive(std::vector<std::string>& active_links, const urdf::LinkConstSharedPtr urdf_link, bool active)
+static inline void getActiveLinkNamesRecursive(std::vector<std::string>& active_links,
+                                               const urdf::LinkConstSharedPtr urdf_link,
+                                               bool active)
 {
   // recursively get all active links
   if (active)
@@ -815,8 +807,7 @@ void getActiveLinkNamesRecursive(std::vector<std::string>& active_links, const u
   }
 }
 
-inline
-shapes::ShapePtr constructShape(const urdf::Geometry* geom)
+inline shapes::ShapePtr constructShape(const urdf::Geometry* geom)
 {
   shapes::Shape* result = NULL;
   switch (geom->type)
@@ -859,7 +850,6 @@ inline Eigen::Affine3d urdfPose2Affine3d(const urdf::Pose& pose)
   Eigen::Affine3d af(Eigen::Translation3d(pose.position.x, pose.position.y, pose.position.z) * q.toRotationMatrix());
   return af;
 }
-
 }
 }
-#endif // TESSERACT_ROS_UTILS_H
+#endif  // TESSERACT_ROS_UTILS_H

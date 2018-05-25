@@ -186,7 +186,7 @@ protected:
   Ogre::SceneNode* tesseract_scene_node_;  ///< displays planning scene with everything in it
 
   // render the tesseract environment
-  StateVisualizationPtr state_; //planning_scene_robot_;
+  StateVisualizationPtr state_;  // planning_scene_robot_;
   SceneRenderPtr tesseract_scene_render_;
 
   bool tesseract_scene_needs_render_;
@@ -213,4 +213,4 @@ protected:
 
 }  // namespace tesseract_rviz
 
-#endif //TESSERACT_RVIZ_TESSERACT_SCENE_DISPLAY_PLUGIN
+#endif  // TESSERACT_RVIZ_TESSERACT_SCENE_DISPLAY_PLUGIN

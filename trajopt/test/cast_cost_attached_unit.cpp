@@ -1,26 +1,26 @@
-#include <gtest/gtest.h>
-#include <trajopt_utils/stl_to_string.hpp>
-#include <trajopt/common.hpp>
-#include <trajopt/problem_description.hpp>
-#include <trajopt_sco/optimizers.hpp>
 #include <ctime>
-#include <trajopt_utils/eigen_conversions.hpp>
-#include <trajopt_utils/clock.hpp>
-#include <trajopt_utils/config.hpp>
-#include <trajopt/plot_callback.hpp>
-#include <trajopt_test_utils.hpp>
-#include <trajopt/collision_terms.hpp>
-#include <trajopt_utils/logging.hpp>
+#include <gtest/gtest.h>
 #include <tesseract_ros/kdl/kdl_chain_kin.h>
 #include <tesseract_ros/kdl/kdl_env.h>
 #include <tesseract_ros/ros_basic_plotting.h>
+#include <trajopt/collision_terms.hpp>
+#include <trajopt/common.hpp>
+#include <trajopt/plot_callback.hpp>
+#include <trajopt/problem_description.hpp>
+#include <trajopt_sco/optimizers.hpp>
+#include <trajopt_test_utils.hpp>
+#include <trajopt_utils/clock.hpp>
+#include <trajopt_utils/config.hpp>
+#include <trajopt_utils/eigen_conversions.hpp>
+#include <trajopt_utils/logging.hpp>
+#include <trajopt_utils/stl_to_string.hpp>
 
-#include <ros/ros.h>
-#include <geometric_shapes/shapes.h>
 #include <geometric_shapes/shape_operations.h>
-#include <urdf_parser/urdf_parser.h>
-#include <srdfdom/model.h>
+#include <geometric_shapes/shapes.h>
 #include <ros/package.h>
+#include <ros/ros.h>
+#include <srdfdom/model.h>
+#include <urdf_parser/urdf_parser.h>
 
 using namespace trajopt;
 using namespace std;
@@ -28,15 +28,17 @@ using namespace util;
 using namespace tesseract;
 
 const std::string ROBOT_DESCRIPTION_PARAM = "robot_description"; /**< Default ROS parameter for robot description */
-const std::string ROBOT_SEMANTIC_PARAM = "robot_description_semantic"; /**< Default ROS parameter for robot description */
-bool plotting=false;
+const std::string ROBOT_SEMANTIC_PARAM = "robot_description_semantic"; /**< Default ROS parameter for robot
+                                                                          description */
+bool plotting = false;
 
-class CastAttachedTest : public testing::TestWithParam<const char*> {
+class CastAttachedTest : public testing::TestWithParam<const char*>
+{
 public:
   ros::NodeHandle nh_;
   urdf::ModelInterfaceSharedPtr urdf_model_;   /**< URDF Model */
   srdf::ModelSharedPtr srdf_model_;            /**< SRDF Model */
-  tesseract_ros::KDLEnvPtr env_;            /**< Trajopt Basic Environment */
+  tesseract_ros::KDLEnvPtr env_;               /**< Trajopt Basic Environment */
   tesseract_ros::ROSBasicPlottingPtr plotter_; /**< Trajopt Plotter */
 
   virtual void SetUp()
@@ -133,11 +135,13 @@ TEST_F(CastAttachedTest, LinkWithGeom)
   ASSERT_NE(collisions.size(), 0);
 
   BasicTrustRegionSQP opt(prob);
-  if (plotting) opt.addCallback(PlotCallback(*prob, plotter_));
+  if (plotting)
+    opt.addCallback(PlotCallback(*prob, plotter_));
   opt.initialize(trajToDblVec(prob->GetInitTraj()));
   opt.optimize();
 
-  if (plotting) plotter_->clear();
+  if (plotting)
+    plotter_->clear();
 
   collisions.clear();
   env_->continuousCollisionCheckTrajectory(joint_names, link_names, getTraj(opt.x(), prob->GetVars()), collisions);
@@ -177,11 +181,13 @@ TEST_F(CastAttachedTest, LinkWithoutGeom)
   ASSERT_NE(collisions.size(), 0);
 
   BasicTrustRegionSQP opt(prob);
-  if (plotting) opt.addCallback(PlotCallback(*prob, plotter_));
+  if (plotting)
+    opt.addCallback(PlotCallback(*prob, plotter_));
   opt.initialize(trajToDblVec(prob->GetInitTraj()));
   opt.optimize();
 
-  if (plotting) plotter_->clear();
+  if (plotting)
+    plotter_->clear();
 
   collisions.clear();
   env_->continuousCollisionCheckTrajectory(joint_names, link_names, getTraj(opt.x(), prob->GetVars()), collisions);

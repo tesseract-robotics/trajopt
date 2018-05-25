@@ -23,26 +23,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <ros/ros.h>
+#include <moveit/collision_plugin_loader/collision_plugin_loader.h>
 #include <moveit/planning_scene/planning_scene.h>
 #include <moveit/robot_model_loader/robot_model_loader.h>
-#include <moveit/collision_plugin_loader/collision_plugin_loader.h>
+#include <ros/ros.h>
+#include <tesseract_ros/kdl/kdl_chain_kin.h>
+#include <trajopt/plot_callback.hpp>
+#include <trajopt/problem_description.hpp>
 #include <trajopt_moveit/trajopt_moveit_env.h>
 #include <trajopt_moveit/trajopt_moveit_plotting.h>
-#include <tesseract_ros/kdl/kdl_chain_kin.h>
-#include <trajopt/problem_description.hpp>
-#include <trajopt/plot_callback.hpp>
 
-#include <trajopt_utils/logging.hpp>
 #include <trajopt_utils/config.hpp>
-
+#include <trajopt_utils/logging.hpp>
 
 #include <jsoncpp/json/json.h>
 
 using namespace trajopt;
 
 const std::string ROBOT_DESCRIPTION_PARAM = "robot_description"; /**< Default ROS parameter for robot description */
-const std::string TRAJOPT_DESCRIPTION_PARAM = "trajopt_description"; /**< Default ROS parameter for trajopt description */
+const std::string TRAJOPT_DESCRIPTION_PARAM =
+    "trajopt_description"; /**< Default ROS parameter for trajopt description */
 
 bool plotting_ = false;
 int steps_ = 5;
@@ -51,7 +51,6 @@ robot_model_loader::RobotModelLoaderPtr loader_;  /**< Used to load the robot mo
 moveit::core::RobotModelPtr robot_model_;         /**< Robot model */
 planning_scene::PlanningScenePtr planning_scene_; /**< Planning scene for the current robot model */
 trajopt_moveit::TrajOptMoveItEnvPtr env_;         /**< Trajopt Basic Environment */
-
 
 TrajOptProbPtr jsonMethod()
 {
@@ -79,7 +78,7 @@ TrajOptProbPtr cppMethod()
   pci.basic_info.n_steps = steps_;
   pci.basic_info.manip = "manipulator";
   pci.basic_info.start_fixed = false;
-//  pci.basic_info.dofs_fixed
+  //  pci.basic_info.dofs_fixed
 
   // Create Kinematic Object
   pci.kin = pci.env->getManipulator(pci.basic_info.manip);
@@ -108,7 +107,7 @@ TrajOptProbPtr cppMethod()
   pci.cost_infos.push_back(collision);
 
   // Populate Constraints
-  double delta = 0.5/pci.basic_info.n_steps;
+  double delta = 0.5 / pci.basic_info.n_steps;
   for (auto i = 0; i < pci.basic_info.n_steps; ++i)
   {
     std::shared_ptr<PoseCostInfo> pose = std::shared_ptr<PoseCostInfo>(new PoseCostInfo);
@@ -125,7 +124,6 @@ TrajOptProbPtr cppMethod()
 
   return ConstructProblem(pci);
 }
-
 
 int main(int argc, char** argv)
 {
@@ -160,7 +158,7 @@ int main(int argc, char** argv)
   pnh.param<int>("steps", steps_, steps_);
 
   // Set the robot initial state
-  robot_state::RobotState &rs = planning_scene_->getCurrentStateNonConst();
+  robot_state::RobotState& rs = planning_scene_->getCurrentStateNonConst();
   std::map<std::string, double> ipos;
   ipos["joint_a1"] = -0.4;
   ipos["joint_a2"] = 0.2762;
@@ -210,5 +208,4 @@ int main(int argc, char** argv)
   collisions.clear();
   env_->continuousCollisionCheckTrajectory(joint_names, link_names, getTraj(opt.x(), prob->GetVars()), collisions);
   ROS_INFO("Final trajectory number of continuous collisions: %lui\n", collisions.size());
-
 }

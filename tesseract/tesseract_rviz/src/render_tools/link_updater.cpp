@@ -34,9 +34,9 @@
 
 /* Author: Ioan Sucan */
 
-#include <tesseract_rviz/render_tools/link_updater.h>
 #include <OgreQuaternion.h>
 #include <OgreVector3.h>
+#include <tesseract_rviz/render_tools/link_updater.h>
 
 bool tesseract_rviz::LinkUpdater::getLinkTransforms(const std::string& link_name,
                                                     Ogre::Vector3& visual_position,
@@ -54,8 +54,10 @@ bool tesseract_rviz::LinkUpdater::getLinkTransforms(const std::string& link_name
   const Eigen::Vector3d& robot_visual_position = transform.translation();
   Eigen::Quaterniond robot_visual_orientation(transform.rotation());
   visual_position = Ogre::Vector3(robot_visual_position.x(), robot_visual_position.y(), robot_visual_position.z());
-  visual_orientation = Ogre::Quaternion(robot_visual_orientation.w(), robot_visual_orientation.x(),
-                                        robot_visual_orientation.y(), robot_visual_orientation.z());
+  visual_orientation = Ogre::Quaternion(robot_visual_orientation.w(),
+                                        robot_visual_orientation.x(),
+                                        robot_visual_orientation.y(),
+                                        robot_visual_orientation.z());
   collision_position = visual_position;
   collision_orientation = visual_orientation;
 

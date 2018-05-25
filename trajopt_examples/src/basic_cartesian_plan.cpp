@@ -23,38 +23,40 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <ros/ros.h>
-#include <tesseract_ros/ros_basic_plotting.h>
-#include <tesseract_ros/kdl/kdl_env.h>
-#include <tesseract_ros/kdl/kdl_chain_kin.h>
-#include <trajopt/problem_description.hpp>
-#include <trajopt/plot_callback.hpp>
-#include <trajopt_utils/logging.hpp>
-#include <trajopt_utils/config.hpp>
-#include <urdf_parser/urdf_parser.h>
 #include <jsoncpp/json/json.h>
+#include <ros/ros.h>
 #include <srdfdom/model.h>
+#include <tesseract_ros/kdl/kdl_chain_kin.h>
+#include <tesseract_ros/kdl/kdl_env.h>
+#include <tesseract_ros/ros_basic_plotting.h>
+#include <trajopt/plot_callback.hpp>
+#include <trajopt/problem_description.hpp>
+#include <trajopt_utils/config.hpp>
+#include <trajopt_utils/logging.hpp>
+#include <urdf_parser/urdf_parser.h>
 
 #include <octomap_ros/conversions.h>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
+#include <pcl_conversions/pcl_conversions.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <sensor_msgs/point_cloud_conversion.h>
-#include <pcl_conversions/pcl_conversions.h>
 
 using namespace trajopt;
 using namespace tesseract;
 
 const std::string ROBOT_DESCRIPTION_PARAM = "robot_description"; /**< Default ROS parameter for robot description */
-const std::string ROBOT_SEMANTIC_PARAM = "robot_description_semantic"; /**< Default ROS parameter for robot description */
-const std::string TRAJOPT_DESCRIPTION_PARAM = "trajopt_description"; /**< Default ROS parameter for trajopt description */
+const std::string ROBOT_SEMANTIC_PARAM = "robot_description_semantic"; /**< Default ROS parameter for robot
+                                                                          description */
+const std::string TRAJOPT_DESCRIPTION_PARAM =
+    "trajopt_description"; /**< Default ROS parameter for trajopt description */
 
 bool plotting_ = false;
 int steps_ = 5;
 std::string method_ = "json";
-urdf::ModelInterfaceSharedPtr urdf_model_;  /**< URDF Model */
-srdf::ModelSharedPtr srdf_model_;           /**< SRDF Model */
-tesseract_ros::KDLEnvPtr env_;           /**< Trajopt Basic Environment */
+urdf::ModelInterfaceSharedPtr urdf_model_; /**< URDF Model */
+srdf::ModelSharedPtr srdf_model_;          /**< SRDF Model */
+tesseract_ros::KDLEnvPtr env_;             /**< Trajopt Basic Environment */
 
 TrajOptProbPtr jsonMethod()
 {
@@ -82,7 +84,7 @@ TrajOptProbPtr cppMethod()
   pci.basic_info.n_steps = steps_;
   pci.basic_info.manip = "manipulator";
   pci.basic_info.start_fixed = false;
-//  pci.basic_info.dofs_fixed
+  //  pci.basic_info.dofs_fixed
 
   // Create Kinematic Object
   pci.kin = pci.env->getManipulator(pci.basic_info.manip);
@@ -110,7 +112,7 @@ TrajOptProbPtr cppMethod()
   collision->info = createSafetyMarginDataVector(pci.basic_info.n_steps, 0.025, 20);
 
   // Populate Constraints
-  double delta = 0.5/pci.basic_info.n_steps;
+  double delta = 0.5 / pci.basic_info.n_steps;
   for (auto i = 0; i < pci.basic_info.n_steps; ++i)
   {
     std::shared_ptr<PoseCostInfo> pose = std::shared_ptr<PoseCostInfo>(new PoseCostInfo);
@@ -127,7 +129,6 @@ TrajOptProbPtr cppMethod()
 
   return ConstructProblem(pci);
 }
-
 
 int main(int argc, char** argv)
 {
@@ -152,20 +153,20 @@ int main(int argc, char** argv)
 
   pcl::PointCloud<pcl::PointXYZ> full_cloud;
   double delta = 0.05;
-  int length = (1/delta);
+  int length = (1 / delta);
 
   for (int x = 0; x < length; ++x)
     for (int y = 0; y < length; ++y)
       for (int z = 0; z < length; ++z)
-        full_cloud.push_back(pcl::PointXYZ(-0.5 + x*delta, -0.5 + y*delta, -0.5 + z*delta));
+        full_cloud.push_back(pcl::PointXYZ(-0.5 + x * delta, -0.5 + y * delta, -0.5 + z * delta));
 
   sensor_msgs::PointCloud2 pointcloud_msg;
   pcl::toROSMsg(full_cloud, pointcloud_msg);
 
   octomap::Pointcloud octomap_data;
   octomap::pointCloud2ToOctomap(pointcloud_msg, octomap_data);
-  octomap::OcTree* octree = new octomap::OcTree(2*delta);
-  octree->insertPointCloud(octomap_data, octomap::point3d(0,0,0));
+  octomap::OcTree* octree = new octomap::OcTree(2 * delta);
+  octree->insertPointCloud(octomap_data, octomap::point3d(0, 0, 0));
 
   AttachableObjectPtr obj(new AttachableObject());
   shapes::OcTree* octomap_world = new shapes::OcTree(std::shared_ptr<const octomap::OcTree>(octree));
@@ -250,5 +251,4 @@ int main(int argc, char** argv)
   collisions.clear();
   env_->continuousCollisionCheckTrajectory(joint_names, link_names, getTraj(opt.x(), prob->GetVars()), collisions);
   ROS_INFO("Final trajectory number of continuous collisions: %lui\n", collisions.size());
-
 }

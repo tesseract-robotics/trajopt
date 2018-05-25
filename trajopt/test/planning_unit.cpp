@@ -1,40 +1,41 @@
-#include <gtest/gtest.h>
-#include <trajopt_utils/stl_to_string.hpp>
-#include <trajopt/common.hpp>
-#include <trajopt/problem_description.hpp>
-#include <trajopt_sco/optimizers.hpp>
 #include <ctime>
-#include <trajopt_utils/eigen_conversions.hpp>
-#include <trajopt_utils/clock.hpp>
-#include <trajopt_utils/config.hpp>
-#include <trajopt_test_utils.hpp>
+#include <gtest/gtest.h>
 #include <tesseract_ros/kdl/kdl_chain_kin.h>
 #include <tesseract_ros/kdl/kdl_env.h>
 #include <tesseract_ros/ros_basic_plotting.h>
+#include <trajopt/common.hpp>
 #include <trajopt/plot_callback.hpp>
+#include <trajopt/problem_description.hpp>
+#include <trajopt_sco/optimizers.hpp>
+#include <trajopt_test_utils.hpp>
+#include <trajopt_utils/clock.hpp>
+#include <trajopt_utils/config.hpp>
+#include <trajopt_utils/eigen_conversions.hpp>
 #include <trajopt_utils/logging.hpp>
+#include <trajopt_utils/stl_to_string.hpp>
 
-#include <ros/ros.h>
-#include <urdf_parser/urdf_parser.h>
-#include <srdfdom/model.h>
 #include <ros/package.h>
+#include <ros/ros.h>
+#include <srdfdom/model.h>
+#include <urdf_parser/urdf_parser.h>
 
 using namespace trajopt;
 using namespace std;
 using namespace util;
 using namespace tesseract;
 
-
 const std::string ROBOT_DESCRIPTION_PARAM = "robot_description"; /**< Default ROS parameter for robot description */
-const std::string ROBOT_SEMANTIC_PARAM = "robot_description_semantic"; /**< Default ROS parameter for robot description */
-bool plotting = false; /**< Enable plotting */
+const std::string ROBOT_SEMANTIC_PARAM = "robot_description_semantic"; /**< Default ROS parameter for robot
+                                                                          description */
+bool plotting = false;                                                 /**< Enable plotting */
 
-class PlanningTest : public testing::TestWithParam<const char*> {
+class PlanningTest : public testing::TestWithParam<const char*>
+{
 public:
   ros::NodeHandle nh_;
   urdf::ModelInterfaceSharedPtr urdf_model_;   /**< URDF Model */
   srdf::ModelSharedPtr srdf_model_;            /**< SRDF Model */
-  tesseract_ros::KDLEnvPtr env_;            /**< Trajopt Basic Environment */
+  tesseract_ros::KDLEnvPtr env_;               /**< Trajopt Basic Environment */
   tesseract_ros::ROSBasicPlottingPtr plotter_; /**< Trajopt Plotter */
 
   virtual void SetUp()
@@ -63,7 +64,6 @@ public:
     gLogLevel = util::LevelInfo;
   }
 };
-
 
 TEST_F(PlanningTest, numerical_ik1)
 {
@@ -105,7 +105,7 @@ TEST_F(PlanningTest, numerical_ik1)
 
   ROS_DEBUG_STREAM("Final Position: " << final_pose.translation().transpose());
   ROS_DEBUG_STREAM("Final Vars: " << toVectorXd(opt.x()).transpose());
-  ROS_DEBUG("planning time: %.3f", GetClock()-tStart);
+  ROS_DEBUG("planning time: %.3f", GetClock() - tStart);
 }
 
 TEST_F(PlanningTest, arm_around_table)
@@ -149,15 +149,15 @@ TEST_F(PlanningTest, arm_around_table)
   opt.initialize(trajToDblVec(prob->GetInitTraj()));
   double tStart = GetClock();
   opt.optimize();
-  ROS_DEBUG("planning time: %.3f", GetClock()-tStart);
+  ROS_DEBUG("planning time: %.3f", GetClock() - tStart);
 
   double d = 0;
   TrajArray traj = getTraj(opt.x(), prob->GetVars());
-  for (unsigned i=1; i < traj.rows(); ++i)
+  for (unsigned i = 1; i < traj.rows(); ++i)
   {
-    for (unsigned j=0; j < traj.cols(); ++j)
+    for (unsigned j = 0; j < traj.cols(); ++j)
     {
-      d+=std::abs(traj(i, j) - traj(i-1, j));
+      d += std::abs(traj(i, j) - traj(i - 1, j));
     }
   }
   ROS_INFO("trajectory norm: %.3f", d);
@@ -172,7 +172,6 @@ TEST_F(PlanningTest, arm_around_table)
   ROS_DEBUG("Final trajectory number of continuous collisions: %lui\n", collisions.size());
   ASSERT_EQ(collisions.size(), 0);
 }
-
 
 int main(int argc, char** argv)
 {

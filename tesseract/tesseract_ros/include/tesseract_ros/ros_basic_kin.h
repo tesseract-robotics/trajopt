@@ -37,7 +37,6 @@ namespace tesseract
 {
 namespace tesseract_ros
 {
-
 /**
  * @brief Basic low-level kinematics functions.
  *
@@ -50,14 +49,11 @@ public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
   ROSBasicKin() {}
-
-
-}; // class BasicKin
+};  // class BasicKin
 
 typedef std::shared_ptr<ROSBasicKin> ROSBasicKinPtr;
 typedef std::shared_ptr<const ROSBasicKin> ROSBasicKinConstPtr;
-} // namespace tesseract_ros
-} // namespace trajopt
+}  // namespace tesseract_ros
+}  // namespace trajopt
 
-#endif // TESSERACT_ROS_BASIC_KIN_H
-
+#endif  // TESSERACT_ROS_BASIC_KIN_H

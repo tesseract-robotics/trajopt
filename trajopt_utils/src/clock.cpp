@@ -1,10 +1,9 @@
-#include <trajopt_utils/clock.hpp>
 #include <sys/time.h>
 #include <time.h>
+#include <trajopt_utils/clock.hpp>
 
-
-namespace util {
-
+namespace util
+{
 static long unsigned int startTime = 0;
 
 /*
@@ -15,22 +14,23 @@ static long unsigned int startTime = 0;
  * functions in the kernel).
  */
 // time in units of seconds since some time in the past
-void StartClock() {
-    //determine start time
-    struct timeval startTimeStruct;
+void StartClock()
+{
+  // determine start time
+  struct timeval startTimeStruct;
   gettimeofday(&startTimeStruct, NULL);
-  startTime = startTimeStruct.tv_sec*(long unsigned int)(1e6) + startTimeStruct.tv_usec;
+  startTime = startTimeStruct.tv_sec * (long unsigned int)(1e6) + startTimeStruct.tv_usec;
 }
 
 /*
  * Returns the current time since the call to StartClock();
  */
-double GetClock() {
-    struct timeval startTimeStruct; unsigned long int curTime;
-    gettimeofday(&startTimeStruct, NULL);
-    curTime = startTimeStruct.tv_sec*(long unsigned int)(1e6) + startTimeStruct.tv_usec;
-    return (1e-6) * (curTime - startTime);
+double GetClock()
+{
+  struct timeval startTimeStruct;
+  unsigned long int curTime;
+  gettimeofday(&startTimeStruct, NULL);
+  curTime = startTimeStruct.tv_sec * (long unsigned int)(1e6) + startTimeStruct.tv_usec;
+  return (1e-6) * (curTime - startTime);
 }
-
-
 }

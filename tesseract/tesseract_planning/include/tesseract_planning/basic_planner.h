@@ -30,29 +30,22 @@
 
 namespace tesseract
 {
-
 namespace tesseract_planning
 {
-
 class BasicPlanner
 {
 public:
   /** @brief Construct a basic planner */
   BasicPlanner() {}
-
   virtual ~BasicPlanner();
 
   /** @brief Get the name of this planner */
   const std::string& getName() const { return name_; }
-
   /** @brief Get the planner request */
   const PlannerRequest& getRequest() const { return request_; }
-
   /** @brief Set the planner request for this context */
   void setRequest(const PlannerRequest& request) { request_ = request; }
-
   const StatusCodeMap& getAvailableStatusCodes() const { return status_code_map_; }
-
   /** @brief Solve the planner request problem */
   virtual bool solve(PlannerResponse& res) = 0;
 
@@ -66,13 +59,10 @@ public:
   virtual void clear() = 0;
 
 protected:
-
   std::string name_;              /**< @brief The name of this planner */
   PlannerRequest request_;        /**< @brief The planner request information */
   StatusCodeMap status_code_map_; /**< @brief A map of error codes to description */
-
-
 };
 }
 }
-#endif // TESSERACT_ROS_BASIC_PLANNER_H
+#endif  // TESSERACT_ROS_BASIC_PLANNER_H

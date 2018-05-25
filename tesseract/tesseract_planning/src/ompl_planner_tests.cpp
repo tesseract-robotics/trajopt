@@ -4,15 +4,16 @@
 #include "tesseract_planning/ompl/conversions.h"
 
 #include <ompl/geometric/planners/rrt/RRTConnect.h>
-//#include <ompl/geometric/planners/prm/PRM.h>    // These are other options for planners
+//#include <ompl/geometric/planners/prm/PRM.h>    // These are other options for
+// planners
 //#include <ompl/geometric/planners/prm/PRMstar.h>
 //#include <ompl/geometric/planners/prm/LazyPRMstar.h>
 //#include <ompl/geometric/planners/prm/SPARS.h>
 
+#include <ompl/base/spaces/RealVectorStateSpace.h>
 #include <tesseract_ros/kdl/kdl_env.h>
 #include <tesseract_ros/ros_basic_plotting.h>
 #include <urdf_parser/urdf_parser.h>
-#include <ompl/base/spaces/RealVectorStateSpace.h>
 
 #include <tesseract_planning/ompl/continuous_motion_validator.h>
 
@@ -22,8 +23,8 @@ static void addBox(tesseract::tesseract_ros::ROSBasicEnv& env)
 {
   // Add sphere
   using namespace tesseract;
-  tesseract::AttachableObjectPtr obj (new tesseract::AttachableObject());
-  std::shared_ptr<shapes::Box> box (new shapes::Box(0.5, 0.001, 0.5));
+  tesseract::AttachableObjectPtr obj(new tesseract::AttachableObject());
+  std::shared_ptr<shapes::Box> box(new shapes::Box(0.5, 0.001, 0.5));
 
   Eigen::Affine3d box_pose;
   box_pose.setIdentity();
@@ -53,7 +54,8 @@ int main(int argc, char** argv)
 
   // Step 1: Load the damn robot description
   const std::string ROBOT_DESCRIPTION_PARAM = "robot_description"; /**< Default ROS parameter for robot description */
-  const std::string ROBOT_SEMANTIC_PARAM = "robot_description_semantic"; /**< Default ROS parameter for robot description */
+  const std::string ROBOT_SEMANTIC_PARAM = "robot_description_semantic"; /**< Default ROS parameter for robot
+                                                                            description */
 
   std::string urdf_xml_string, srdf_xml_string;
   nh.getParam(ROBOT_DESCRIPTION_PARAM, urdf_xml_string);
@@ -67,29 +69,33 @@ int main(int argc, char** argv)
   srdf_model->initString(*urdf_model, srdf_xml_string);
 
   // Step 2: Create a "tesseract" environment
-  tesseract::tesseract_ros::KDLEnvPtr env (new tesseract::tesseract_ros::KDLEnv);
+  tesseract::tesseract_ros::KDLEnvPtr env(new tesseract::tesseract_ros::KDLEnv);
   env->init(urdf_model, srdf_model);
   addBox(*env);
 
-  // A tesseract plotter makes generating and publishing visualization messages easy
-  tesseract::tesseract_ros::ROSBasicPlottingPtr plotter = std::make_shared<tesseract::tesseract_ros::ROSBasicPlotting>(env);
+  // A tesseract plotter makes generating and publishing visualization messages
+  // easy
+  tesseract::tesseract_ros::ROSBasicPlottingPtr plotter =
+      std::make_shared<tesseract::tesseract_ros::ROSBasicPlotting>(env);
 
-  // Step 3: Create a planning context for OMPL - this sets up the OMPL state environment for your given chain
-  tesseract::tesseract_planning::ChainOmplInterface ompl_context (env, "manipulator");
+  // Step 3: Create a planning context for OMPL - this sets up the OMPL state
+  // environment for your given chain
+  tesseract::tesseract_planning::ChainOmplInterface ompl_context(env, "manipulator");
 
-  ompl::base::MotionValidatorPtr mv (
-        new tesseract::tesseract_planning::ContinuousMotionValidator(ompl_context.spaceInformation(), env, "manipulator"));
+  ompl::base::MotionValidatorPtr mv(new tesseract::tesseract_planning::ContinuousMotionValidator(
+      ompl_context.spaceInformation(), env, "manipulator"));
   ompl_context.setMotionValidator(mv);
 
   // Step 4: Create an OMPL planner that we want to use
-  ompl::base::PlannerPtr planner (new ompl::geometric::RRTConnect(ompl_context.spaceInformation()));
+  ompl::base::PlannerPtr planner(new ompl::geometric::RRTConnect(ompl_context.spaceInformation()));
 
   // Step 5: Create a start and terminal state for the robot to move between
   tesseract::tesseract_planning::OmplPlanParameters params;
-  std::vector<double> start {-1.2, 0.5, 0.0, -1.3348, 0.0, 1.4959, 0.0};
-  std::vector<double> goal = {1.2, 0.2762, 0.0, -1.3348, 0.0, 1.4959, 0.0};
+  std::vector<double> start{ -1.2, 0.5, 0.0, -1.3348, 0.0, 1.4959, 0.0 };
+  std::vector<double> goal = { 1.2, 0.2762, 0.0, -1.3348, 0.0, 1.4959, 0.0 };
 
-  // Step 6: Call plan. This returns an optional which is set if the plan succeeded
+  // Step 6: Call plan. This returns an optional which is set if the plan
+  // succeeded
   auto maybe_path = ompl_context.plan(planner, start, goal, params);
 
   // Plot results

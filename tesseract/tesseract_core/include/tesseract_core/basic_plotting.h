@@ -30,25 +30,26 @@
 
 namespace tesseract
 {
-
 /** @brief The BasicPlotting class */
 class BasicPlotting
 {
 public:
-
   /**
    * @brief Plot a trajectory
    * @param traj
    */
-  virtual void plotTrajectory(const std::vector<std::string> &joint_names, const TrajArray &traj) = 0;
+  virtual void plotTrajectory(const std::vector<std::string>& joint_names, const TrajArray& traj) = 0;
 
   /**
    * @brief Plot the collision results data
    * @param link_names List of link names for which to plot data
    * @param dist_results The collision results data
-   * @param safety_distance Vector of safety Distance corresponding to dist_results (Must be in the same order and length).
+   * @param safety_distance Vector of safety Distance corresponding to dist_results (Must be in the same order and
+   * length).
    */
-  virtual void plotContactResults(const std::vector<std::string> &link_names, const ContactResultVector &dist_results, const Eigen::VectorXd& safety_distances) = 0;
+  virtual void plotContactResults(const std::vector<std::string>& link_names,
+                                  const ContactResultVector& dist_results,
+                                  const Eigen::VectorXd& safety_distances) = 0;
 
   /**
    * @brief Plot arrow defined by two points
@@ -57,14 +58,15 @@ public:
    * @param rgba Color of the arrow
    * @param scale The size of the arrow (related to diameter)
    */
-  virtual void plotArrow(const Eigen::Vector3d &pt1, const Eigen::Vector3d &pt2, const Eigen::Vector4d &rgba, double scale) = 0;
+  virtual void
+  plotArrow(const Eigen::Vector3d& pt1, const Eigen::Vector3d& pt2, const Eigen::Vector4d& rgba, double scale) = 0;
 
   /**
    * @brief Plot axis
    * @param axis The axis
    * @param scale The size of the axis
    */
-  virtual void plotAxis(const Eigen::Affine3d &axis, double scale) = 0;
+  virtual void plotAxis(const Eigen::Affine3d& axis, double scale) = 0;
 
   /**
    * @brief This is called at the start of the plotting for each iteration
@@ -77,7 +79,6 @@ public:
 };
 typedef std::shared_ptr<BasicPlotting> BasicPlottingPtr;
 typedef std::shared_ptr<const BasicPlotting> BasicPlottingConstPtr;
-
 }
 
-#endif // TESSERACT_CORE_BASIC_PLOTTER_H
+#endif  // TESSERACT_CORE_BASIC_PLOTTER_H

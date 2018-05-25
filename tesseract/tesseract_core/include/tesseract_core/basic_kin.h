@@ -35,7 +35,6 @@
 
 namespace tesseract
 {
-
 /**
  * @brief Basic low-level kinematics functions.
  *
@@ -48,7 +47,6 @@ public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
   BasicKin() {}
-
   /**
    * @brief Calculates tool pose of robot chain
    * @param pose Transform of end-of-tip relative to root
@@ -56,7 +54,9 @@ public:
    * @param joint_angles Vector of joint angles (size must match number of joints in robot chain)
    * @return True if calculation successful, False if anything is wrong (including uninitialized BasicKin)
    */
-  virtual bool calcFwdKin(Eigen::Affine3d &pose, const Eigen::Affine3d change_base, const Eigen::VectorXd &joint_angles) const = 0;
+  virtual bool calcFwdKin(Eigen::Affine3d& pose,
+                          const Eigen::Affine3d change_base,
+                          const Eigen::VectorXd& joint_angles) const = 0;
 
   /**
    * @brief Calculates pose for a given link
@@ -66,7 +66,10 @@ public:
    * @param link_name Name of link to calculate pose
    * @return True if calculation successful, False if anything is wrong (including uninitialized BasicKin)
    */
-  virtual bool calcFwdKin(Eigen::Affine3d &pose , const Eigen::Affine3d change_base, const Eigen::VectorXd &joint_angles, const std::string &link_name) const = 0;
+  virtual bool calcFwdKin(Eigen::Affine3d& pose,
+                          const Eigen::Affine3d change_base,
+                          const Eigen::VectorXd& joint_angles,
+                          const std::string& link_name) const = 0;
 
   /**
    * @brief Calculated jacobian of robot given joint angles
@@ -75,7 +78,9 @@ public:
    * @param joint_angles Input vector of joint angles
    * @return True if calculation successful, False if anything is wrong (including uninitialized BasicKin)
    */
-  virtual bool calcJacobian(Eigen::MatrixXd &jacobian, const Eigen::Affine3d change_base, const Eigen::VectorXd &joint_angles) const = 0;
+  virtual bool calcJacobian(Eigen::MatrixXd& jacobian,
+                            const Eigen::Affine3d change_base,
+                            const Eigen::VectorXd& joint_angles) const = 0;
 
   /**
    * @brief Calculated jacobian at a link given joint angles
@@ -85,7 +90,10 @@ public:
    * @param link_name Name of link to calculate jacobian
    * @return True if calculation successful, False if anything is wrong (including uninitialized BasicKin)
    */
-  virtual bool calcJacobian(Eigen::MatrixXd &jacobian, const Eigen::Affine3d change_base, const Eigen::VectorXd &joint_angles, const std::string &link_name) const = 0;
+  virtual bool calcJacobian(Eigen::MatrixXd& jacobian,
+                            const Eigen::Affine3d change_base,
+                            const Eigen::VectorXd& joint_angles,
+                            const std::string& link_name) const = 0;
 
   /**
    * @brief Calculated jacobian at a link given joint angles
@@ -96,14 +104,18 @@ public:
    * @param link_point Point in the link_name frame for which to calculate the jacobian about
    * @return True if calculation successful, False if anything is wrong (including uninitialized BasicKin)
    */
-  virtual bool calcJacobian(Eigen::MatrixXd &jacobian, const Eigen::Affine3d change_base, const Eigen::VectorXd &joint_angles, const std::string &link_name, const Eigen::Vector3d link_point) const = 0;
+  virtual bool calcJacobian(Eigen::MatrixXd& jacobian,
+                            const Eigen::Affine3d change_base,
+                            const Eigen::VectorXd& joint_angles,
+                            const std::string& link_name,
+                            const Eigen::Vector3d link_point) const = 0;
 
   /**
    * @brief Check for consistency in # and limits of joints
    * @param vec Vector of joint values
    * @return True if size of vec matches # of robot joints and all joints are within limits
    */
-  virtual bool checkJoints(const Eigen::VectorXd &vec) const = 0;
+  virtual bool checkJoints(const Eigen::VectorXd& vec) const = 0;
 
   /**
    * @brief Get list of joint names for robot
@@ -145,13 +157,13 @@ public:
    * @param link_name Name of link being attached
    * @param parent_link_name The name of the link that link_name is attaching too.
    */
-  virtual void addAttachedLink(const std::string &link_name, const std::string &parent_link_name) = 0;
+  virtual void addAttachedLink(const std::string& link_name, const std::string& parent_link_name) = 0;
 
   /**
    * @brief This is used to keep the interanl data updated when links are detached in the environment
    * @param link_name The name of the attached link
    */
-  virtual void removeAttachedLink(const std::string &link_name) = 0;
+  virtual void removeAttachedLink(const std::string& link_name) = 0;
 
   /** @brief Clear all attached links from manipulator */
   virtual void clearAttachedLinks() = 0;
@@ -164,40 +176,41 @@ public:
    * @param x Output vector (represents joint values)
    * @return True if solver completes properly
    */
-  static bool solvePInv(const Eigen::MatrixXd &A, const Eigen::VectorXd &b, Eigen::VectorXd &x)
+  static bool solvePInv(const Eigen::MatrixXd& A, const Eigen::VectorXd& b, Eigen::VectorXd& x)
   {
     const double eps = 0.00001;  // TODO: Turn into class member var
     const double lambda = 0.01;  // TODO: Turn into class member var
 
-    if ( (A.rows() == 0) || (A.cols() == 0) )
+    if ((A.rows() == 0) || (A.cols() == 0))
     {
       std::cerr << "Empty matrices not supported in solvePinv()";
       return false;
     }
 
-    if ( A.rows() != b.size() )
+    if (A.rows() != b.size())
     {
       std::cerr << "Matrix size mismatch: A(" << A.rows() << "," << A.cols() << "), b(" << b.size() << ")";
       return false;
     }
 
-    //Calculate A+ (pseudoinverse of A) = V S+ U*, where U* is Hermition of U (just transpose if all values of U are real)
-    //in order to solve Ax=b -> x*=A+ b
+    // Calculate A+ (pseudoinverse of A) = V S+ U*, where U* is Hermition of U (just transpose if all values of U are
+    // real)
+    // in order to solve Ax=b -> x*=A+ b
     Eigen::JacobiSVD<Eigen::MatrixXd> svd(A, Eigen::ComputeThinU | Eigen::ComputeThinV);
-    const Eigen::MatrixXd &U = svd.matrixU();
-    const Eigen::VectorXd &Sv = svd.singularValues();
-    const Eigen::MatrixXd &V = svd.matrixV();
+    const Eigen::MatrixXd& U = svd.matrixU();
+    const Eigen::VectorXd& Sv = svd.singularValues();
+    const Eigen::MatrixXd& V = svd.matrixV();
 
     // calculate the reciprocal of Singular-Values
     // damp inverse with lambda so that inverse doesn't oscillate near solution
     size_t nSv = Sv.size();
     Eigen::VectorXd inv_Sv(nSv);
-    for(size_t i=0; i<nSv; ++i)
+    for (size_t i = 0; i < nSv; ++i)
     {
       if (fabs(Sv(i)) > eps)
-        inv_Sv(i) = 1/Sv(i);
+        inv_Sv(i) = 1 / Sv(i);
       else
-        inv_Sv(i) = Sv(i) / (Sv(i)*Sv(i) + lambda*lambda);
+        inv_Sv(i) = Sv(i) / (Sv(i) * Sv(i) + lambda * lambda);
     }
     x = V * inv_Sv.asDiagonal() * U.transpose() * b;
     return true;
@@ -212,42 +225,43 @@ public:
    * @param lambda Damping factor
    * @return True if Pseudoinverse completes properly
    */
-  static bool dampedPInv(const Eigen::MatrixXd &A, Eigen::MatrixXd &P, const double eps = 0.011, const double lambda = 0.01)
+  static bool
+  dampedPInv(const Eigen::MatrixXd& A, Eigen::MatrixXd& P, const double eps = 0.011, const double lambda = 0.01)
   {
-    if ( (A.rows() == 0) || (A.cols() == 0) )
+    if ((A.rows() == 0) || (A.cols() == 0))
     {
       std::cerr << "Empty matrices not supported in dampedPInv()";
       return false;
     }
 
-    //Calculate A+ (pseudoinverse of A) = V S+ U*, where U* is Hermition of U (just transpose if all values of U are real)
-    //in order to solve Ax=b -> x*=A+ b
+    // Calculate A+ (pseudoinverse of A) = V S+ U*, where U* is Hermition of U (just transpose if all values of U are
+    // real)
+    // in order to solve Ax=b -> x*=A+ b
     Eigen::JacobiSVD<Eigen::MatrixXd> svd(A, Eigen::ComputeThinU | Eigen::ComputeThinV);
-    const Eigen::MatrixXd &U = svd.matrixU();
-    const Eigen::VectorXd &Sv = svd.singularValues();
-    const Eigen::MatrixXd &V = svd.matrixV();
+    const Eigen::MatrixXd& U = svd.matrixU();
+    const Eigen::VectorXd& Sv = svd.singularValues();
+    const Eigen::MatrixXd& V = svd.matrixV();
 
     // calculate the reciprocal of Singular-Values
     // damp inverse with lambda so that inverse doesn't oscillate near solution
     size_t nSv = Sv.size();
     Eigen::VectorXd inv_Sv(nSv);
-    for(size_t i=0; i<nSv; ++i)
+    for (size_t i = 0; i < nSv; ++i)
     {
       if (fabs(Sv(i)) > eps)
-        inv_Sv(i) = 1/Sv(i);
+        inv_Sv(i) = 1 / Sv(i);
       else
       {
-        inv_Sv(i) = Sv(i) / (Sv(i)*Sv(i) + lambda*lambda);
+        inv_Sv(i) = Sv(i) / (Sv(i) * Sv(i) + lambda * lambda);
       }
     }
     P = V * inv_Sv.asDiagonal() * U.transpose();
     return true;
   }
-}; // class BasicKin
+};  // class BasicKin
 
 typedef std::shared_ptr<BasicKin> BasicKinPtr;
 typedef std::shared_ptr<const BasicKin> BasicKinConstPtr;
-} // namespace tesseract
+}  // namespace tesseract
 
-#endif // TESSERACT_CORE_BASIC_KIN_H
-
+#endif  // TESSERACT_CORE_BASIC_KIN_H

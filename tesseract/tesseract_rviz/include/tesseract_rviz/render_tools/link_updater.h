@@ -51,10 +51,7 @@ namespace tesseract_rviz
 class LinkUpdater : public rviz::LinkUpdater
 {
 public:
-  LinkUpdater(const tesseract::EnvStateConstPtr state) : state_(state)
-  {
-  }
-
+  LinkUpdater(const tesseract::EnvStateConstPtr state) : state_(state) {}
   virtual bool getLinkTransforms(const std::string& link_name,
                                  Ogre::Vector3& visual_position,
                                  Ogre::Quaternion& visual_orientation,
@@ -66,4 +63,4 @@ private:
 };
 }
 
-#endif //TESSERACT_RVIZ_LINK_UPDATER
+#endif  // TESSERACT_RVIZ_LINK_UPDATER

@@ -1,23 +1,22 @@
-#include <trajopt_sco/expr_ops.hpp>
-#include <trajopt_sco/modeling_utils.hpp>
+#include <Eigen/Geometry>
+#include <boost/format.hpp>
+#include <iostream>
 #include <trajopt/kinematic_terms.hpp>
 #include <trajopt/utils.hpp>
+#include <trajopt_sco/expr_ops.hpp>
+#include <trajopt_sco/modeling_utils.hpp>
 #include <trajopt_utils/eigen_conversions.hpp>
 #include <trajopt_utils/eigen_slicing.hpp>
 #include <trajopt_utils/logging.hpp>
 #include <trajopt_utils/stl_to_string.hpp>
-#include <boost/format.hpp>
-#include <Eigen/Geometry>
-#include <iostream>
 
 using namespace std;
 using namespace sco;
 using namespace Eigen;
 using namespace util;
 
-
-namespace {
-  
+namespace
+{
 #if 0
 Vector3d rotVec(const Matrix3d& m) {
   Quaterniond q; q = m;
@@ -42,18 +41,17 @@ vector<T> concat(const vector<T>& a, const vector<T>& b) {
   return out;
 }
 #endif
-
 }
 
-namespace trajopt {
-
-
-// CostPtr ConstructCost(VectorOfVectorPtr err_calc, const VarVector& vars, const VectorXd& coeffs, PenaltyType type, const string& name) {
+namespace trajopt
+{
+// CostPtr ConstructCost(VectorOfVectorPtr err_calc, const VarVector& vars,
+// const VectorXd& coeffs, PenaltyType type, const string& name) {
 //   return CostPtr(new CostFromErrFunc(err_calc), vars, coeffs, type, name);
 // }
-  
-  
-VectorXd CartPoseErrCalculator::operator()(const VectorXd& dof_vals) const {
+
+VectorXd CartPoseErrCalculator::operator()(const VectorXd& dof_vals) const
+{
   Affine3d new_pose, change_base;
   change_base = env_->getLinkTransform(manip_->getBaseLinkName());
   manip_->calcFwdKin(new_pose, change_base, dof_vals, link_);
@@ -61,7 +59,7 @@ VectorXd CartPoseErrCalculator::operator()(const VectorXd& dof_vals) const {
   Affine3d pose_err = pose_inv_ * (new_pose * tcp_);
   Quaterniond q(pose_err.rotation());
   VectorXd err = concat(Vector3d(q.x(), q.y(), q.z()), pose_err.translation());
-  return err;  
+  return err;
 }
 
 #if 0
@@ -91,7 +89,6 @@ void CartPoseErrorPlotter::Plot(const tesseract::BasicPlottingPtr plotter, const
   plotter->plotArrow(cur_pose.translation(), target.translation(), Eigen::Vector4d(1, 0, 1, 1), 0.005);
 }
 
-
 #if 0
 struct CartPositionErrCalculator {
   Vector3d pt_world_;
@@ -110,9 +107,10 @@ struct CartPositionErrCalculator {
 };
 #endif
 
-MatrixXd CartVelJacCalculator::operator()(const VectorXd& dof_vals) const {
+MatrixXd CartVelJacCalculator::operator()(const VectorXd& dof_vals) const
+{
   int n_dof = manip_->numJoints();
-  MatrixXd out(6, 2*n_dof);
+  MatrixXd out(6, 2 * n_dof);
 
   Affine3d change_base = env_->getLinkTransform(manip_->getBaseLinkName());
 
@@ -129,14 +127,15 @@ MatrixXd CartVelJacCalculator::operator()(const VectorXd& dof_vals) const {
     manip_->calcJacobian(jac1, change_base, dof_vals.bottomRows(n_dof), link_, tcp_.translation());
   }
 
-  out.block(0,0,3,n_dof) = -jac0.topRows(3);
-  out.block(0,n_dof,3,n_dof) = jac1.topRows(3);
-  out.block(3,0,3,n_dof) = jac0.topRows(3);
-  out.block(3,n_dof,3,n_dof) = -jac1.topRows(3);
+  out.block(0, 0, 3, n_dof) = -jac0.topRows(3);
+  out.block(0, n_dof, 3, n_dof) = jac1.topRows(3);
+  out.block(3, 0, 3, n_dof) = jac0.topRows(3);
+  out.block(3, n_dof, 3, n_dof) = -jac1.topRows(3);
   return out;
 }
 
-VectorXd CartVelCalculator::operator()(const VectorXd& dof_vals) const {
+VectorXd CartVelCalculator::operator()(const VectorXd& dof_vals) const
+{
   int n_dof = manip_->numJoints();
   Affine3d pose0, pose1, change_base;
   change_base = env_->getLinkTransform(manip_->getBaseLinkName());
@@ -152,7 +151,6 @@ VectorXd CartVelCalculator::operator()(const VectorXd& dof_vals) const {
   out.bottomRows(3) = (pose0.translation() - pose1.translation() - Vector3d(limit_, limit_, limit_));
   return out;
 }
-
 
 #if 0
 CartVelConstraint::CartVelConstraint(const VarVector& step0vars, const VarVector& step1vars, RobotAndDOFPtr manip, KinBody::LinkPtr link, double distlimit) :

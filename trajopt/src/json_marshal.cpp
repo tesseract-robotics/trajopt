@@ -1,12 +1,11 @@
-#include <trajopt/json_marshal.hpp>
 #include <jsoncpp/json/json.h>
 #include <stdexcept>
+#include <trajopt/json_marshal.hpp>
 using namespace Json;
 using namespace std;
 
 namespace json_marshal
 {
-
 void fromJson(const Json::Value& v, bool& ref)
 {
   try
@@ -15,7 +14,7 @@ void fromJson(const Json::Value& v, bool& ref)
   }
   catch (const std::runtime_error&)
   {
-    PRINT_AND_THROW(boost::format("expected: %s, got %s")%("bool")%(v));
+    PRINT_AND_THROW(boost::format("expected: %s, got %s") % ("bool") % (v));
   }
 }
 
@@ -27,7 +26,7 @@ void fromJson(const Json::Value& v, int& ref)
   }
   catch (const std::runtime_error&)
   {
-    PRINT_AND_THROW(boost::format("expected: %s, got %s")%("int")%(v));
+    PRINT_AND_THROW(boost::format("expected: %s, got %s") % ("int") % (v));
   }
 }
 
@@ -39,7 +38,7 @@ void fromJson(const Json::Value& v, double& ref)
   }
   catch (const std::runtime_error&)
   {
-    PRINT_AND_THROW(boost::format("expected: %s, got %s")%("double")%(v));
+    PRINT_AND_THROW(boost::format("expected: %s, got %s") % ("double") % (v));
   }
 }
 
@@ -51,7 +50,7 @@ void fromJson(const Json::Value& v, std::string& ref)
   }
   catch (const std::runtime_error&)
   {
-    PRINT_AND_THROW(boost::format("expected: %s, got %s")%("string")%(v));
+    PRINT_AND_THROW(boost::format("expected: %s, got %s") % ("string") % (v));
   }
 }
 
@@ -68,5 +67,4 @@ void fromJson(const Json::Value& v, Eigen::Vector4d& ref)
   fromJsonArray(v, vx, 4);
   ref = Eigen::Vector4d(vx[0], vx[1], vx[2], vx[3]);
 }
-
 }

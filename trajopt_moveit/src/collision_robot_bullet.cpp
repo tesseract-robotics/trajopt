@@ -36,9 +36,11 @@
 
 #include <trajopt_moveit/collision_robot_bullet.h>
 
-const bool   BULLET_DEFAULT_USE_ORIGINAL_CAST = false;
+const bool BULLET_DEFAULT_USE_ORIGINAL_CAST = false;
 
-collision_detection::CollisionRobotBullet::CollisionRobotBullet(const robot_model::RobotModelConstPtr& model, double padding, double scale)
+collision_detection::CollisionRobotBullet::CollisionRobotBullet(const robot_model::RobotModelConstPtr& model,
+                                                                double padding,
+                                                                double scale)
   : CollisionRobot(model, padding, scale)
 {
   ros::NodeHandle nh("~");
@@ -46,7 +48,8 @@ collision_detection::CollisionRobotBullet::CollisionRobotBullet(const robot_mode
   nh.param<bool>("bullet/use_original_cast", m_use_original_cast, BULLET_DEFAULT_USE_ORIGINAL_CAST);
 
   const std::vector<const robot_model::LinkModel*>& links = robot_model_->getLinkModelsWithCollisionGeometry();
-  // we keep the same order of objects as what RobotState *::getLinkState() returns
+  // we keep the same order of objects as what RobotState *::getLinkState()
+  // returns
   for (auto link : links)
   {
     if (link->getShapes().size() > 0)
@@ -66,15 +69,21 @@ collision_detection::CollisionRobotBullet::CollisionRobotBullet(const robot_mode
   }
 }
 
-collision_detection::CollisionRobotBullet::CollisionRobotBullet(const CollisionRobotBullet& other) : CollisionRobot(other)
+collision_detection::CollisionRobotBullet::CollisionRobotBullet(const CollisionRobotBullet& other)
+  : CollisionRobot(other)
 {
   m_link2cow = other.m_link2cow;
   m_use_original_cast = other.m_use_original_cast;
 }
 
-void collision_detection::CollisionRobotBullet::constructBulletObject(Link2Cow &collision_objects, std::vector<std::string> &active_objects, double contact_distance, const robot_state::RobotState& state, const std::set<const robot_model::LinkModel*> *active_links, bool continuous) const
+void collision_detection::CollisionRobotBullet::constructBulletObject(
+    Link2Cow& collision_objects,
+    std::vector<std::string>& active_objects,
+    double contact_distance,
+    const robot_state::RobotState& state,
+    const std::set<const robot_model::LinkModel*>* active_links,
+    bool continuous) const
 {
-
   for (std::pair<std::string, COWConstPtr> element : m_link2cow)
   {
     COWPtr new_cow(new COW(*(element.second.get())));
@@ -83,8 +92,15 @@ void collision_detection::CollisionRobotBullet::constructBulletObject(Link2Cow &
     Eigen::Affine3d tf = state.getGlobalLinkTransform(element.first);
     new_cow->setWorldTransform(convertEigenToBt(tf));
 
-    // For descrete checks we can check static to kinematic and kinematic to kinematic
-    new_cow->m_collisionFilterGroup = (active_links && (std::find_if(active_links->begin(), active_links->end(), [&](const robot_model::LinkModel* link) { return link->getName() == element.first; }) == active_links->end())) ? btBroadphaseProxy::StaticFilter : btBroadphaseProxy::KinematicFilter;
+    // For descrete checks we can check static to kinematic and kinematic to
+    // kinematic
+    new_cow->m_collisionFilterGroup = (active_links && (std::find_if(active_links->begin(),
+                                                                     active_links->end(),
+                                                                     [&](const robot_model::LinkModel* link) {
+                                                                       return link->getName() == element.first;
+                                                                     }) == active_links->end())) ?
+                                          btBroadphaseProxy::StaticFilter :
+                                          btBroadphaseProxy::KinematicFilter;
     if (new_cow->m_collisionFilterGroup == btBroadphaseProxy::StaticFilter)
     {
       new_cow->m_collisionFilterMask = btBroadphaseProxy::KinematicFilter;
@@ -92,14 +108,17 @@ void collision_detection::CollisionRobotBullet::constructBulletObject(Link2Cow &
     else
     {
       active_objects.push_back(element.first);
-      (continuous) ? (new_cow->m_collisionFilterMask = btBroadphaseProxy::StaticFilter) : (new_cow->m_collisionFilterMask = btBroadphaseProxy::StaticFilter | btBroadphaseProxy::KinematicFilter);
+      (continuous) ?
+          (new_cow->m_collisionFilterMask = btBroadphaseProxy::StaticFilter) :
+          (new_cow->m_collisionFilterMask = btBroadphaseProxy::StaticFilter | btBroadphaseProxy::KinematicFilter);
     }
 
     setContactDistance(new_cow, contact_distance);
     collision_objects[element.first] = new_cow;
   }
 
-  // TODO: Implement a method for caching fcl::CollisionObject's for robot_state::AttachedBody's
+  // TODO: Implement a method for caching fcl::CollisionObject's for
+  // robot_state::AttachedBody's
   std::vector<const robot_state::AttachedBody*> ab;
   state.getAttachedBodies(ab);
   for (auto& body : ab)
@@ -109,8 +128,16 @@ void collision_detection::CollisionRobotBullet::constructBulletObject(Link2Cow &
     btTransform tf = convertEigenToBt(state.getGlobalLinkTransform(body->getAttachedLinkName()));
     new_cow->setWorldTransform(tf);
 
-    // For descrete checks we can check static to kinematic and kinematic to kinematic
-    new_cow->m_collisionFilterGroup = (active_links && (std::find_if(active_links->begin(), active_links->end(), [&](const robot_model::LinkModel* link) { return link->getName() == body->getAttachedLinkName(); }) == active_links->end())) ? btBroadphaseProxy::StaticFilter : btBroadphaseProxy::KinematicFilter;
+    // For descrete checks we can check static to kinematic and kinematic to
+    // kinematic
+    new_cow->m_collisionFilterGroup =
+        (active_links && (std::find_if(active_links->begin(),
+                                       active_links->end(),
+                                       [&](const robot_model::LinkModel* link) {
+                                         return link->getName() == body->getAttachedLinkName();
+                                       }) == active_links->end())) ?
+            btBroadphaseProxy::StaticFilter :
+            btBroadphaseProxy::KinematicFilter;
     if (new_cow->m_collisionFilterGroup == btBroadphaseProxy::StaticFilter)
     {
       new_cow->m_collisionFilterMask = btBroadphaseProxy::KinematicFilter;
@@ -118,7 +145,9 @@ void collision_detection::CollisionRobotBullet::constructBulletObject(Link2Cow &
     else
     {
       active_objects.push_back(new_cow->getID());
-      (continuous) ? (new_cow->m_collisionFilterMask = btBroadphaseProxy::StaticFilter) : (new_cow->m_collisionFilterMask = btBroadphaseProxy::StaticFilter | btBroadphaseProxy::KinematicFilter);
+      (continuous) ?
+          (new_cow->m_collisionFilterMask = btBroadphaseProxy::StaticFilter) :
+          (new_cow->m_collisionFilterMask = btBroadphaseProxy::StaticFilter | btBroadphaseProxy::KinematicFilter);
     }
 
     setContactDistance(new_cow, contact_distance);
@@ -126,18 +155,25 @@ void collision_detection::CollisionRobotBullet::constructBulletObject(Link2Cow &
   }
 }
 
-void collision_detection::CollisionRobotBullet::constructBulletObject(Link2Cow& collision_objects,
-                                                                      std::vector<std::string> &active_objects,
-                                                                      double contact_distance,
-                                                                      const robot_state::RobotState& state1,
-                                                                      const robot_state::RobotState& state2,
-                                                                      const std::set<const robot_model::LinkModel*> *active_links) const
+void collision_detection::CollisionRobotBullet::constructBulletObject(
+    Link2Cow& collision_objects,
+    std::vector<std::string>& active_objects,
+    double contact_distance,
+    const robot_state::RobotState& state1,
+    const robot_state::RobotState& state2,
+    const std::set<const robot_model::LinkModel*>* active_links) const
 {
   for (std::pair<std::string, COWConstPtr> element : m_link2cow)
   {
     COWPtr new_cow(new COW(*(element.second.get())));
 
-    new_cow->m_collisionFilterGroup = (active_links && (std::find_if(active_links->begin(), active_links->end(), [&](const robot_model::LinkModel* link) { return link->getName() == element.first; }) == active_links->end())) ? btBroadphaseProxy::StaticFilter : btBroadphaseProxy::KinematicFilter;
+    new_cow->m_collisionFilterGroup = (active_links && (std::find_if(active_links->begin(),
+                                                                     active_links->end(),
+                                                                     [&](const robot_model::LinkModel* link) {
+                                                                       return link->getName() == element.first;
+                                                                     }) == active_links->end())) ?
+                                          btBroadphaseProxy::StaticFilter :
+                                          btBroadphaseProxy::KinematicFilter;
 
     if (new_cow->m_collisionFilterGroup == btBroadphaseProxy::StaticFilter)
     {
@@ -193,14 +229,19 @@ void collision_detection::CollisionRobotBullet::constructBulletObject(Link2Cow& 
           }
         }
 
-        new_compound->setMargin(BULLET_MARGIN); //margin: compound. seems to have no effect when positive but has an effect when negative
+        new_compound->setMargin(BULLET_MARGIN);  // margin: compound. seems to
+                                                 // have no effect when positive
+                                                 // but has an effect when
+                                                 // negative
         new_cow->manage(new_compound);
         new_cow->setCollisionShape(new_compound);
         new_cow->setWorldTransform(convertEigenToBt(tf1));
       }
       else
       {
-        CONSOLE_BRIDGE_logError("I can only continuous collision check convex shapes and compound shapes made of convex shapes");
+        CONSOLE_BRIDGE_logError("I can only continuous collision check convex "
+                                "shapes and compound shapes made of convex "
+                                "shapes");
       }
 
       new_cow->m_collisionFilterMask = btBroadphaseProxy::StaticFilter;
@@ -216,7 +257,14 @@ void collision_detection::CollisionRobotBullet::constructBulletObject(Link2Cow& 
   {
     COWPtr new_cow(new COW(body));
 
-    new_cow->m_collisionFilterGroup = (active_links && (std::find_if(active_links->begin(), active_links->end(), [&](const robot_model::LinkModel* link) { return link->getName() == body->getAttachedLinkName(); }) == active_links->end())) ? btBroadphaseProxy::StaticFilter : btBroadphaseProxy::KinematicFilter;
+    new_cow->m_collisionFilterGroup =
+        (active_links && (std::find_if(active_links->begin(),
+                                       active_links->end(),
+                                       [&](const robot_model::LinkModel* link) {
+                                         return link->getName() == body->getAttachedLinkName();
+                                       }) == active_links->end())) ?
+            btBroadphaseProxy::StaticFilter :
+            btBroadphaseProxy::KinematicFilter;
 
     if (new_cow->m_collisionFilterGroup == btBroadphaseProxy::StaticFilter)
     {
@@ -272,14 +320,19 @@ void collision_detection::CollisionRobotBullet::constructBulletObject(Link2Cow& 
           }
         }
 
-        new_compound->setMargin(BULLET_MARGIN); //margin: compound. seems to have no effect when positive but has an effect when negative
+        new_compound->setMargin(BULLET_MARGIN);  // margin: compound. seems to
+                                                 // have no effect when positive
+                                                 // but has an effect when
+                                                 // negative
         new_cow->manage(new_compound);
         new_cow->setCollisionShape(new_compound);
         new_cow->setWorldTransform(convertEigenToBt(tf1));
       }
       else
       {
-        CONSOLE_BRIDGE_logError("I can only continuous collision check convex shapes and compound shapes made of convex shapes");
+        CONSOLE_BRIDGE_logError("I can only continuous collision check convex "
+                                "shapes and compound shapes made of convex "
+                                "shapes");
       }
 
       new_cow->m_collisionFilterMask = btBroadphaseProxy::StaticFilter;
@@ -288,38 +341,42 @@ void collision_detection::CollisionRobotBullet::constructBulletObject(Link2Cow& 
     setContactDistance(new_cow, contact_distance);
     collision_objects[new_cow->getID()] = new_cow;
   }
-
 }
 
-void collision_detection::CollisionRobotBullet::checkSelfCollision(const CollisionRequest& req, CollisionResult& res,
+void collision_detection::CollisionRobotBullet::checkSelfCollision(const CollisionRequest& req,
+                                                                   CollisionResult& res,
                                                                    const robot_state::RobotState& state) const
 {
   checkSelfCollisionHelper(req, res, state, nullptr);
 }
 
-void collision_detection::CollisionRobotBullet::checkSelfCollision(const CollisionRequest& req, CollisionResult& res,
+void collision_detection::CollisionRobotBullet::checkSelfCollision(const CollisionRequest& req,
+                                                                   CollisionResult& res,
                                                                    const robot_state::RobotState& state,
                                                                    const AllowedCollisionMatrix& acm) const
 {
   checkSelfCollisionHelper(req, res, state, &acm);
 }
 
-void collision_detection::CollisionRobotBullet::checkSelfCollision(const CollisionRequest& req, CollisionResult& res,
+void collision_detection::CollisionRobotBullet::checkSelfCollision(const CollisionRequest& req,
+                                                                   CollisionResult& res,
                                                                    const robot_state::RobotState& state1,
                                                                    const robot_state::RobotState& state2) const
 {
   checkSelfCollisionHelper(req, res, state1, state2, nullptr);
 }
 
-void collision_detection::CollisionRobotBullet::checkSelfCollision(const CollisionRequest& req, CollisionResult& res,
-                                                                const robot_state::RobotState& state1,
-                                                                const robot_state::RobotState& state2,
-                                                                const AllowedCollisionMatrix& acm) const
+void collision_detection::CollisionRobotBullet::checkSelfCollision(const CollisionRequest& req,
+                                                                   CollisionResult& res,
+                                                                   const robot_state::RobotState& state1,
+                                                                   const robot_state::RobotState& state2,
+                                                                   const AllowedCollisionMatrix& acm) const
 {
   checkSelfCollisionHelper(req, res, state1, state2, &acm);
 }
 
-void collision_detection::CollisionRobotBullet::checkSelfCollisionHelper(const CollisionRequest& req, CollisionResult& res,
+void collision_detection::CollisionRobotBullet::checkSelfCollisionHelper(const CollisionRequest& req,
+                                                                         CollisionResult& res,
                                                                          const robot_state::RobotState& state,
                                                                          const AllowedCollisionMatrix* acm) const
 {
@@ -353,14 +410,17 @@ void collision_detection::CollisionRobotBullet::checkSelfCollisionHelper(const C
 
     manager.contactDiscreteTest(cow, collisions);
 
-    if (collisions.done) break;
+    if (collisions.done)
+      break;
   }
 
   convertBulletCollisions(res, collisions);
 }
 
-void collision_detection::CollisionRobotBullet::checkSelfCollisionHelper(const CollisionRequest& req, CollisionResult& res,
-                                                                         const robot_state::RobotState& state1, const robot_state::RobotState& state2,
+void collision_detection::CollisionRobotBullet::checkSelfCollisionHelper(const CollisionRequest& req,
+                                                                         CollisionResult& res,
+                                                                         const robot_state::RobotState& state1,
+                                                                         const robot_state::RobotState& state2,
                                                                          const AllowedCollisionMatrix* acm) const
 {
   BulletManager manager;
@@ -382,7 +442,8 @@ void collision_detection::CollisionRobotBullet::checkSelfCollisionHelper(const C
   }
 
   std::vector<std::string> active_objects;
-  constructBulletObject(manager.m_link2cow, active_objects, contact_distance, state1, dreq.active_components_only, true);
+  constructBulletObject(
+      manager.m_link2cow, active_objects, contact_distance, state1, dreq.active_components_only, true);
   manager.processCollisionObjects();
 
   BulletDistanceData collisions(&dreq, &dres);
@@ -395,13 +456,15 @@ void collision_detection::CollisionRobotBullet::checkSelfCollisionHelper(const C
     Eigen::Affine3d tf2 = state2.getGlobalLinkTransform(cow->getLinkName());
     manager.convexSweepTest(cow, convertEigenToBt(tf1), convertEigenToBt(tf2), collisions);
 
-    if (collisions.done) break;
+    if (collisions.done)
+      break;
   }
 
   convertBulletCollisions(res, collisions);
 }
 
-void collision_detection::CollisionRobotBullet::checkOtherCollision(const CollisionRequest& req, CollisionResult& res,
+void collision_detection::CollisionRobotBullet::checkOtherCollision(const CollisionRequest& req,
+                                                                    CollisionResult& res,
                                                                     const robot_state::RobotState& state,
                                                                     const CollisionRobot& other_robot,
                                                                     const robot_state::RobotState& other_state) const
@@ -409,7 +472,8 @@ void collision_detection::CollisionRobotBullet::checkOtherCollision(const Collis
   checkOtherCollisionHelper(req, res, state, other_robot, other_state, nullptr);
 }
 
-void collision_detection::CollisionRobotBullet::checkOtherCollision(const CollisionRequest& req, CollisionResult& res,
+void collision_detection::CollisionRobotBullet::checkOtherCollision(const CollisionRequest& req,
+                                                                    CollisionResult& res,
                                                                     const robot_state::RobotState& state,
                                                                     const CollisionRobot& other_robot,
                                                                     const robot_state::RobotState& other_state,
@@ -418,17 +482,20 @@ void collision_detection::CollisionRobotBullet::checkOtherCollision(const Collis
   checkOtherCollisionHelper(req, res, state, other_robot, other_state, &acm);
 }
 
-void collision_detection::CollisionRobotBullet::checkOtherCollision(const CollisionRequest& req, CollisionResult& res,
+void collision_detection::CollisionRobotBullet::checkOtherCollision(const CollisionRequest& req,
+                                                                    CollisionResult& res,
                                                                     const robot_state::RobotState& state1,
                                                                     const robot_state::RobotState& state2,
                                                                     const CollisionRobot& other_robot,
                                                                     const robot_state::RobotState& other_state1,
                                                                     const robot_state::RobotState& other_state2) const
 {
-  CONSOLE_BRIDGE_logError("Bullet continuous collision checking not yet implemented for robot to robot.");
+  CONSOLE_BRIDGE_logError("Bullet continuous collision checking not yet "
+                          "implemented for robot to robot.");
 }
 
-void collision_detection::CollisionRobotBullet::checkOtherCollision(const CollisionRequest& req, CollisionResult& res,
+void collision_detection::CollisionRobotBullet::checkOtherCollision(const CollisionRequest& req,
+                                                                    CollisionResult& res,
                                                                     const robot_state::RobotState& state1,
                                                                     const robot_state::RobotState& state2,
                                                                     const CollisionRobot& other_robot,
@@ -436,7 +503,8 @@ void collision_detection::CollisionRobotBullet::checkOtherCollision(const Collis
                                                                     const robot_state::RobotState& other_state2,
                                                                     const AllowedCollisionMatrix& acm) const
 {
-  CONSOLE_BRIDGE_logError("Bullet continuous collision checking not yet implemented for robot to robot.");
+  CONSOLE_BRIDGE_logError("Bullet continuous collision checking not yet "
+                          "implemented for robot to robot.");
 }
 
 void collision_detection::CollisionRobotBullet::checkOtherCollisionHelper(const CollisionRequest& req,
@@ -467,7 +535,8 @@ void collision_detection::CollisionRobotBullet::checkOtherCollisionHelper(const 
   }
 
   std::vector<std::string> active_objects, other_active_objects;
-  other_bullet_robot.constructBulletObject(other_robot_manager.m_link2cow, other_active_objects, contact_distance, other_state, nullptr);
+  other_bullet_robot.constructBulletObject(
+      other_robot_manager.m_link2cow, other_active_objects, contact_distance, other_state, nullptr);
   other_robot_manager.processCollisionObjects();
 
   constructBulletObject(robot_objects, active_objects, contact_distance, state, dreq.active_components_only);
@@ -480,7 +549,8 @@ void collision_detection::CollisionRobotBullet::checkOtherCollisionHelper(const 
 
     other_robot_manager.contactDiscreteTest(cow, collisions);
 
-    if (collisions.done) break;
+    if (collisions.done)
+      break;
   }
 
   convertBulletCollisions(res, collisions);
@@ -488,7 +558,7 @@ void collision_detection::CollisionRobotBullet::checkOtherCollisionHelper(const 
 
 void collision_detection::CollisionRobotBullet::updatedPaddingOrScaling(const std::vector<std::string>& links)
 {
-   CONSOLE_BRIDGE_logError("Bullet updatedPaddingOrScaling not implemented");
+  CONSOLE_BRIDGE_logError("Bullet updatedPaddingOrScaling not implemented");
 }
 
 double collision_detection::CollisionRobotBullet::distanceSelf(const robot_state::RobotState& state) const
@@ -504,7 +574,7 @@ double collision_detection::CollisionRobotBullet::distanceSelf(const robot_state
 }
 
 double collision_detection::CollisionRobotBullet::distanceSelf(const robot_state::RobotState& state,
-                                                            const AllowedCollisionMatrix& acm) const
+                                                               const AllowedCollisionMatrix& acm) const
 {
   DistanceRequest dreq;
   DistanceResult dres;
@@ -517,19 +587,23 @@ double collision_detection::CollisionRobotBullet::distanceSelf(const robot_state
   return dres.minimum_distance.distance;
 }
 
-void collision_detection::CollisionRobotBullet::distanceSelf(const DistanceRequest& req, DistanceResult& res,
+void collision_detection::CollisionRobotBullet::distanceSelf(const DistanceRequest& req,
+                                                             DistanceResult& res,
                                                              const robot_state::RobotState& state) const
 {
   distanceSelfHelper(req, res, state);
 }
 
-void collision_detection::CollisionRobotBullet::distanceSelf(const DistanceRequest& req, DistanceResult& res,
-                                                             const robot_state::RobotState& state1, const robot_state::RobotState& state2) const
+void collision_detection::CollisionRobotBullet::distanceSelf(const DistanceRequest& req,
+                                                             DistanceResult& res,
+                                                             const robot_state::RobotState& state1,
+                                                             const robot_state::RobotState& state2) const
 {
   distanceSelfHelper(req, res, state1, state2);
 }
 
-void collision_detection::CollisionRobotBullet::distanceSelfHelper(const DistanceRequest& req, DistanceResult& res,
+void collision_detection::CollisionRobotBullet::distanceSelfHelper(const DistanceRequest& req,
+                                                                   DistanceResult& res,
                                                                    const robot_state::RobotState& state) const
 {
   BulletManager manager;
@@ -546,18 +620,22 @@ void collision_detection::CollisionRobotBullet::distanceSelfHelper(const Distanc
 
     manager.contactDiscreteTest(cow, collisions);
 
-    if (collisions.done) break;
+    if (collisions.done)
+      break;
   }
 }
 
-void collision_detection::CollisionRobotBullet::distanceSelfHelper(const DistanceRequest& req, DistanceResult& res,
-                                                                   const robot_state::RobotState& state1, const robot_state::RobotState& state2) const
+void collision_detection::CollisionRobotBullet::distanceSelfHelper(const DistanceRequest& req,
+                                                                   DistanceResult& res,
+                                                                   const robot_state::RobotState& state1,
+                                                                   const robot_state::RobotState& state2) const
 {
   BulletManager manager;
   BulletDistanceData collisions(&req, &res);
 
   std::vector<std::string> active_objects;
-  constructBulletObject(manager.m_link2cow, active_objects, req.distance_threshold, state1, state2, req.active_components_only);
+  constructBulletObject(
+      manager.m_link2cow, active_objects, req.distance_threshold, state1, state2, req.active_components_only);
   manager.processCollisionObjects();
 
   for (auto& obj : active_objects)
@@ -567,18 +645,22 @@ void collision_detection::CollisionRobotBullet::distanceSelfHelper(const Distanc
 
     manager.contactCastTest(cow, collisions);
 
-    if (collisions.done) break;
+    if (collisions.done)
+      break;
   }
 }
 
-void collision_detection::CollisionRobotBullet::distanceSelfHelperOriginal(const DistanceRequest& req, DistanceResult& res,
-                                                                           const robot_state::RobotState& state1, const robot_state::RobotState& state2) const
+void collision_detection::CollisionRobotBullet::distanceSelfHelperOriginal(const DistanceRequest& req,
+                                                                           DistanceResult& res,
+                                                                           const robot_state::RobotState& state1,
+                                                                           const robot_state::RobotState& state2) const
 {
   BulletManager manager;
   BulletDistanceData collisions(&req, &res);
 
   std::vector<std::string> active_objects;
-  constructBulletObject(manager.m_link2cow, active_objects, req.distance_threshold, state1, req.active_components_only, true);
+  constructBulletObject(
+      manager.m_link2cow, active_objects, req.distance_threshold, state1, req.active_components_only, true);
   manager.processCollisionObjects();
 
   for (auto& obj : active_objects)
@@ -590,7 +672,8 @@ void collision_detection::CollisionRobotBullet::distanceSelfHelperOriginal(const
     btTransform tf2 = convertEigenToBt(state2.getGlobalLinkTransform(cow->getLinkName()));
     manager.contactCastTestOriginal(obj, tf1, tf2, collisions);
 
-    if (collisions.done) break;
+    if (collisions.done)
+      break;
   }
 }
 
@@ -624,7 +707,8 @@ double collision_detection::CollisionRobotBullet::distanceOther(const robot_stat
   return dres.minimum_distance.distance;
 }
 
-void collision_detection::CollisionRobotBullet::distanceOther(const DistanceRequest& req, DistanceResult& res,
+void collision_detection::CollisionRobotBullet::distanceOther(const DistanceRequest& req,
+                                                              DistanceResult& res,
                                                               const robot_state::RobotState& state,
                                                               const CollisionRobot& other_robot,
                                                               const robot_state::RobotState& other_state) const
@@ -632,7 +716,8 @@ void collision_detection::CollisionRobotBullet::distanceOther(const DistanceRequ
   distanceOtherHelper(req, res, state, other_robot, other_state);
 }
 
-void collision_detection::CollisionRobotBullet::distanceOtherHelper(const DistanceRequest& req, DistanceResult& res,
+void collision_detection::CollisionRobotBullet::distanceOtherHelper(const DistanceRequest& req,
+                                                                    DistanceResult& res,
                                                                     const robot_state::RobotState& state,
                                                                     const CollisionRobot& other_robot,
                                                                     const robot_state::RobotState& other_state) const
@@ -643,7 +728,8 @@ void collision_detection::CollisionRobotBullet::distanceOtherHelper(const Distan
   BulletDistanceData collisions(&req, &res);
 
   std::vector<std::string> active_objects, other_active_objects;
-  other_bullet_robot.constructBulletObject(other_robot_manager.m_link2cow, other_active_objects, req.distance_threshold, other_state, nullptr);
+  other_bullet_robot.constructBulletObject(
+      other_robot_manager.m_link2cow, other_active_objects, req.distance_threshold, other_state, nullptr);
   other_robot_manager.processCollisionObjects();
 
   constructBulletObject(robot_objects, active_objects, req.distance_threshold, state, req.active_components_only);
@@ -655,6 +741,7 @@ void collision_detection::CollisionRobotBullet::distanceOtherHelper(const Distan
 
     other_robot_manager.contactDiscreteTest(cow, collisions);
 
-    if (collisions.done) break;
+    if (collisions.done)
+      break;
   }
 }

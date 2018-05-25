@@ -34,26 +34,26 @@
 
 /* Author: Ioan Sucan */
 
-#include <tesseract_rviz/tesseract_state_plugin/tesseract_state_display.h>
-#include <tesseract_rviz/render_tools/env/robot.h>
-#include <tesseract_rviz/render_tools/env/robot_link.h>
 #include <tesseract_ros/kdl/kdl_env.h>
 #include <tesseract_ros/ros_tesseract_utils.h>
+#include <tesseract_rviz/render_tools/env/robot.h>
+#include <tesseract_rviz/render_tools/env/robot_link.h>
+#include <tesseract_rviz/tesseract_state_plugin/tesseract_state_display.h>
 
 #include <urdf_parser/urdf_parser.h>
 
-#include <rviz/visualization_manager.h>
-#include <rviz/properties/property.h>
-#include <rviz/properties/string_property.h>
-#include <rviz/properties/bool_property.h>
-#include <rviz/properties/float_property.h>
-#include <rviz/properties/ros_topic_property.h>
-#include <rviz/properties/color_property.h>
-#include <rviz/display_context.h>
-#include <rviz/frame_manager.h>
-#include <tf/transform_listener.h>
 #include <eigen_conversions/eigen_msg.h>
 #include <octomap_msgs/conversions.h>
+#include <rviz/display_context.h>
+#include <rviz/frame_manager.h>
+#include <rviz/properties/bool_property.h>
+#include <rviz/properties/color_property.h>
+#include <rviz/properties/float_property.h>
+#include <rviz/properties/property.h>
+#include <rviz/properties/ros_topic_property.h>
+#include <rviz/properties/string_property.h>
+#include <rviz/visualization_manager.h>
+#include <tf/transform_listener.h>
 
 #include <OgreSceneManager.h>
 #include <OgreSceneNode.h>
@@ -66,53 +66,71 @@ using namespace tesseract;
 // ******************************************************************************************
 TesseractStateDisplay::TesseractStateDisplay() : Display(), update_state_(false), load_env_(false)
 {
-  urdf_description_property_ = new rviz::StringProperty(
-      "URDF Description", "robot_description", "The name of the ROS parameter where the URDF for the robot is loaded",
-      this, SLOT(changedURDFDescription()), this);
+  urdf_description_property_ =
+      new rviz::StringProperty("URDF Description",
+                               "robot_description",
+                               "The name of the ROS parameter where the URDF for the robot is loaded",
+                               this,
+                               SLOT(changedURDFDescription()),
+                               this);
 
-  tesseract_state_topic_property_ = new rviz::RosTopicProperty(
-      "Tesseract State Topic", "display_tesseract_state", ros::message_traits::datatype<tesseract_msgs::TesseractState>(),
-      "The topic on which the tesseract_msgs::TesseractState messages are received", this, SLOT(changedTesseractStateTopic()),
-      this);
+  tesseract_state_topic_property_ =
+      new rviz::RosTopicProperty("Tesseract State Topic",
+                                 "display_tesseract_state",
+                                 ros::message_traits::datatype<tesseract_msgs::TesseractState>(),
+                                 "The topic on which the tesseract_msgs::TesseractState messages are "
+                                 "received",
+                                 this,
+                                 SLOT(changedTesseractStateTopic()),
+                                 this);
 
-  // Planning scene category -------------------------------------------------------------------------------------------
-  root_link_name_property_ = new rviz::StringProperty("Root Link", "", "Shows the name of the root link for the urdf", this,
-                               SLOT(changedRootLinkName()), this);
+  // Planning scene category
+  // -------------------------------------------------------------------------------------------
+  root_link_name_property_ = new rviz::StringProperty(
+      "Root Link", "", "Shows the name of the root link for the urdf", this, SLOT(changedRootLinkName()), this);
   root_link_name_property_->setReadOnly(true);
 
-  alpha_property_ = new rviz::FloatProperty("Alpha", 1.0f, "Specifies the alpha for the links with geometry", this,
-                                                  SLOT(changedURDFSceneAlpha()), this);
+  alpha_property_ = new rviz::FloatProperty(
+      "Alpha", 1.0f, "Specifies the alpha for the links with geometry", this, SLOT(changedURDFSceneAlpha()), this);
   alpha_property_->setMin(0.0);
   alpha_property_->setMax(1.0);
 
-  attached_body_color_property_ =
-      new rviz::ColorProperty("Attached Body Color", QColor(150, 50, 150), "The color for the attached bodies", this,
-                              SLOT(changedAttachedBodyColor()), this);
+  attached_body_color_property_ = new rviz::ColorProperty("Attached Body Color",
+                                                          QColor(150, 50, 150),
+                                                          "The color for the attached bodies",
+                                                          this,
+                                                          SLOT(changedAttachedBodyColor()),
+                                                          this);
 
-  enable_link_highlight_ =
-      new rviz::BoolProperty("Show Highlights", true, "Specifies whether link highlighting is enabled", this,
-                             SLOT(changedEnableLinkHighlight()), this);
-  enable_visual_visible_ =
-      new rviz::BoolProperty("Show Visual", true, "Whether to display the visual representation of the environment.", this,
-                             SLOT(changedEnableVisualVisible()), this);
+  enable_link_highlight_ = new rviz::BoolProperty("Show Highlights",
+                                                  true,
+                                                  "Specifies whether link highlighting is enabled",
+                                                  this,
+                                                  SLOT(changedEnableLinkHighlight()),
+                                                  this);
+  enable_visual_visible_ = new rviz::BoolProperty("Show Visual",
+                                                  true,
+                                                  "Whether to display the visual representation of the environment.",
+                                                  this,
+                                                  SLOT(changedEnableVisualVisible()),
+                                                  this);
 
-  enable_collision_visible_ = new rviz::BoolProperty("Show Collision", false,
-                                                     "Whether to display the collision representation of the environment.",
-                                                     this, SLOT(changedEnableCollisionVisible()), this);
+  enable_collision_visible_ = new rviz::BoolProperty("Show Collision",
+                                                     false,
+                                                     "Whether to display the collision "
+                                                     "representation of the environment.",
+                                                     this,
+                                                     SLOT(changedEnableCollisionVisible()),
+                                                     this);
 
-  show_all_links_ = new rviz::BoolProperty("Show All Links", true, "Toggle all links visibility on or off.", this,
-                                           SLOT(changedAllLinks()), this);
-
-
+  show_all_links_ = new rviz::BoolProperty(
+      "Show All Links", true, "Toggle all links visibility on or off.", this, SLOT(changedAllLinks()), this);
 }
 
 // ******************************************************************************************
 // Deconstructor
 // ******************************************************************************************
-TesseractStateDisplay::~TesseractStateDisplay()
-{
-}
-
+TesseractStateDisplay::~TesseractStateDisplay() {}
 void TesseractStateDisplay::onInitialize()
 {
   Display::onInitialize();
@@ -125,7 +143,7 @@ void TesseractStateDisplay::onInitialize()
 void TesseractStateDisplay::reset()
 {
   state_->clear();
-//  rdf_loader_.reset();
+  //  rdf_loader_.reset();
   Display::reset();
 
   loadURDFModel();
@@ -196,13 +214,16 @@ static bool operator!=(const std_msgs::ColorRGBA& a, const std_msgs::ColorRGBA& 
   return a.r != b.r || a.g != b.g || a.b != b.b || a.a != b.a;
 }
 
-void TesseractStateDisplay::setHighlightedLinks(const tesseract_msgs::TesseractState::_highlight_links_type& highlight_links)
+void TesseractStateDisplay::setHighlightedLinks(
+    const tesseract_msgs::TesseractState::_highlight_links_type& highlight_links)
 {
   if (highlight_links.empty() && highlights_.empty())
     return;
 
   std::map<std::string, std_msgs::ColorRGBA> highlights;
-  for (tesseract_msgs::TesseractState::_highlight_links_type::const_iterator it = highlight_links.begin(); it != highlight_links.end(); ++it)
+  for (tesseract_msgs::TesseractState::_highlight_links_type::const_iterator it = highlight_links.begin();
+       it != highlight_links.end();
+       ++it)
   {
     highlights[it->name] = it->visual[0];
   }
@@ -271,10 +292,7 @@ void TesseractStateDisplay::changedURDFDescription()
     reset();
 }
 
-void TesseractStateDisplay::changedRootLinkName()
-{
-}
-
+void TesseractStateDisplay::changedRootLinkName() {}
 void TesseractStateDisplay::changedURDFSceneAlpha()
 {
   if (state_)
@@ -296,11 +314,11 @@ void TesseractStateDisplay::changedTesseractStateTopic()
   tesseract_state_subscriber_.shutdown();
 
   // reset model to default state, we don't want to show previous messages
-//  current_state_ = nullptr;
+  //  current_state_ = nullptr;
   update_state_ = true;
 
-  tesseract_state_subscriber_ = nh_.subscribe(tesseract_state_topic_property_->getStdString(), 10,
-                                              &TesseractStateDisplay::newTesseractStateCallback, this);
+  tesseract_state_subscriber_ = nh_.subscribe(
+      tesseract_state_topic_property_->getStdString(), 10, &TesseractStateDisplay::newTesseractStateCallback, this);
 }
 
 void TesseractStateDisplay::newTesseractStateCallback(const tesseract_msgs::TesseractStateConstPtr state_msg)
@@ -317,7 +335,9 @@ void TesseractStateDisplay::newTesseractStateCallback(const tesseract_msgs::Tess
 
 void TesseractStateDisplay::setLinkColor(const tesseract_msgs::TesseractState::_object_colors_type& link_colors)
 {
-  for (tesseract_msgs::TesseractState::_object_colors_type::const_iterator it = link_colors.begin(); it != link_colors.end(); ++it)
+  for (tesseract_msgs::TesseractState::_object_colors_type::const_iterator it = link_colors.begin();
+       it != link_colors.end();
+       ++it)
   {
     setLinkColor(it->name, QColor(it->visual[0].r, it->visual[0].g, it->visual[0].b));
   }
@@ -372,7 +392,6 @@ void TesseractStateDisplay::loadURDFModel()
     urdf::ModelInterfaceSharedPtr urdf_model = urdf::parseURDF(urdf_xml_string);
     if (urdf_model != nullptr)
     {
-
       // Load SRDF model (Not required)
       srdf::ModelSharedPtr srdf_model = srdf::ModelSharedPtr(new srdf::Model);
       srdf_model->initString(*urdf_model, srdf_xml_string);

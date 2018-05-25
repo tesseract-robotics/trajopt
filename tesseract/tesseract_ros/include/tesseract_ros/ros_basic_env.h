@@ -32,10 +32,8 @@
 
 namespace tesseract
 {
-
 namespace tesseract_ros
 {
-
 class ROSBasicEnv : public BasicEnv
 {
 public:
@@ -52,11 +50,11 @@ public:
 
   virtual void loadContactCheckerPlugin(const std::string& plugin) = 0;
 
-}; // class ROSBasicEnv
+};  // class ROSBasicEnv
 typedef std::shared_ptr<ROSBasicEnv> ROSBasicEnvPtr;
 typedef std::shared_ptr<const ROSBasicEnv> ROSBasicEnvConstPtr;
 
-} //namespace tesseract_ros
-} //namespace tesseract
+}  // namespace tesseract_ros
+}  // namespace tesseract
 
-#endif // TESSERACT_ROS_BASIC_ENV_H
+#endif  // TESSERACT_ROS_BASIC_ENV_H

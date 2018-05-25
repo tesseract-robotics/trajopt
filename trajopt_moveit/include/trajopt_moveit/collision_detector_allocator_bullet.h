@@ -45,8 +45,9 @@
 namespace collision_detection
 {
 /** \brief An allocator for Bullet collision detectors */
-class CollisionDetectorAllocatorBullet
-    : public CollisionDetectorAllocatorTemplate<CollisionWorldBullet, CollisionRobotBullet, CollisionDetectorAllocatorBullet>
+class CollisionDetectorAllocatorBullet : public CollisionDetectorAllocatorTemplate<CollisionWorldBullet,
+                                                                                   CollisionRobotBullet,
+                                                                                   CollisionDetectorAllocatorBullet>
 {
 public:
   static const std::string NAME_;  // defined in collision_world_bullet.cpp
@@ -55,11 +56,11 @@ public:
 /**
    * @brief The Industrial FCL based Collision Plugin
    */
-  class CollisionBulletPluginLoader : public CollisionPlugin
-  {
-  public:
-      virtual bool initialize(const planning_scene::PlanningScenePtr& scene, bool exclusive) const;
-  };
+class CollisionBulletPluginLoader : public CollisionPlugin
+{
+public:
+  virtual bool initialize(const planning_scene::PlanningScenePtr& scene, bool exclusive) const;
+};
 }
 
 #endif

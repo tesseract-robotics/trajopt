@@ -48,10 +48,8 @@
 
 namespace tesseract
 {
-
 namespace tesseract_monitoring
 {
-
 typedef std::function<void(const sensor_msgs::JointStateConstPtr& joint_state)> JointStateUpdateCallback;
 
 /** @class CurrentStateMonitor
@@ -71,7 +69,7 @@ public:
    *  @param tf A pointer to the tf transformer to use
    *  @param nh A ros::NodeHandle to pass node specific options
    */
-  CurrentStateMonitor(const tesseract_ros::ROSBasicEnvConstPtr &env, ros::NodeHandle nh);
+  CurrentStateMonitor(const tesseract_ros::ROSBasicEnvConstPtr& env, ros::NodeHandle nh);
 
   ~CurrentStateMonitor();
 
@@ -89,7 +87,6 @@ public:
 
   /** @brief Get the RobotModel for which we are monitoring state */
   const tesseract_ros::ROSBasicEnvConstPtr& getEnvironment() const { return env_; }
-
   /** @brief Get the name of the topic being monitored. Returns an empty string if the monitor is inactive. */
   std::string getMonitoredTopic() const;
 
@@ -149,11 +146,7 @@ public:
   bool waitForCompleteState(const std::string& manip, double wait_time) const;
 
   /** @brief Get the time point when the monitor was started */
-  const ros::Time& getMonitorStartTime() const
-  {
-    return monitor_start_time_;
-  }
-
+  const ros::Time& getMonitorStartTime() const { return monitor_start_time_; }
   /** @brief Add a function that will be called whenever the joint state is updated*/
   void addUpdateCallback(const JointStateUpdateCallback& fn);
 
@@ -164,28 +157,16 @@ public:
    *  if the difference is less than a specified value (labeled the "allowed bounds error").
    *  This value can be set using this function.
    *  @param error The specified value for the "allowed bounds error". The default is machine precision. */
-  void setBoundsError(double error)
-  {
-    error_ = (error > 0) ? error : -error;
-  }
-
+  void setBoundsError(double error) { error_ = (error > 0) ? error : -error; }
   /** @brief When a joint value is received to be out of bounds, it is changed slightly to fit within bounds,
    *  if the difference is less than a specified value (labeled the "allowed bounds error").
    *  @return The stored value for the "allowed bounds error"
    */
-  double getBoundsError() const
-  {
-    return error_;
-  }
-
+  double getBoundsError() const { return error_; }
   /** @brief Allow the joint_state arrrays velocity and effort to be copied into the robot state
    *  this is useful in some but not all applications
    */
-  void enableCopyDynamics(bool enabled)
-  {
-    copy_dynamics_ = enabled;
-  }
-
+  void enableCopyDynamics(bool enabled) { copy_dynamics_ = enabled; }
 private:
   void jointStateCallback(const sensor_msgs::JointStateConstPtr& joint_state);
   bool isPassiveOrMimicDOF(const std::string& dof) const;
@@ -208,7 +189,6 @@ private:
 };
 typedef std::shared_ptr<CurrentStateMonitor> CurrentStateMonitorPtr;
 typedef std::shared_ptr<const CurrentStateMonitor> CurrentStateMonitorConstPtr;
-
 }
 }
 #endif

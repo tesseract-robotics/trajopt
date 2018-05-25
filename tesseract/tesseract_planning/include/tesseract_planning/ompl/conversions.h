@@ -8,9 +8,7 @@ namespace tesseract
 {
 namespace tesseract_planning
 {
-
 tesseract::TrajArray toTrajArray(const ompl::geometric::PathGeometric& path);
-
 }
 }
 

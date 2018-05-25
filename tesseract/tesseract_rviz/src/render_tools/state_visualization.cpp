@@ -36,19 +36,18 @@
 
 #include "tesseract_rviz/render_tools/state_visualization.h"
 #include "tesseract_rviz/render_tools/link_updater.h"
-#include <tesseract_ros/ros_tesseract_utils.h>
 #include <QApplication>
+#include <tesseract_ros/ros_tesseract_utils.h>
 
 namespace tesseract_rviz
 {
 using namespace tesseract;
 
-StateVisualization::StateVisualization(Ogre::SceneNode* root_node, rviz::DisplayContext* context,
-                                       const std::string& name, rviz::Property* parent_property)
-  : robot_(root_node, context, name, parent_property)
-  , visible_(true)
-  , visual_visible_(true)
-  , collision_visible_(false)
+StateVisualization::StateVisualization(Ogre::SceneNode* root_node,
+                                       rviz::DisplayContext* context,
+                                       const std::string& name,
+                                       rviz::Property* parent_property)
+  : robot_(root_node, context, name, parent_property), visible_(true), visual_visible_(true), collision_visible_(false)
 {
   default_attached_object_color_.r = 0.0f;
   default_attached_object_color_.g = 0.7f;
@@ -56,7 +55,11 @@ StateVisualization::StateVisualization(Ogre::SceneNode* root_node, rviz::Display
   default_attached_object_color_.a = 1.0f;
 }
 
-void StateVisualization::load(urdf::ModelInterfaceConstSharedPtr urdf, bool visual, bool collision, bool show_active, bool show_static)
+void StateVisualization::load(urdf::ModelInterfaceConstSharedPtr urdf,
+                              bool visual,
+                              bool collision,
+                              bool show_active,
+                              bool show_static)
 {
   // clear previously loaded model
   clear();
@@ -67,11 +70,7 @@ void StateVisualization::load(urdf::ModelInterfaceConstSharedPtr urdf, bool visu
   robot_.setVisible(visible_);
 }
 
-void StateVisualization::clear()
-{
-  robot_.clear();
-}
-
+void StateVisualization::clear() { robot_.clear(); }
 void StateVisualization::setDefaultAttachedObjectColor(const std_msgs::ColorRGBA& default_attached_object_color)
 {
   default_attached_object_color_ = default_attached_object_color;
@@ -107,10 +106,10 @@ void StateVisualization::updateHelper(const tesseract::tesseract_ros::ROSBasicEn
   const auto& attachable_objects = env->getAttachableObjects();
 
   // Need to remove links that no longer exist
-  for (const auto &ab : attached_bodies)
+  for (const auto& ab : attached_bodies)
   {
     const auto it = attached_bodies_.find(ab.second.object_name);
-    if (it == attached_bodies_.end()) // Add body if it does not already exist
+    if (it == attached_bodies_.end())  // Add body if it does not already exist
     {
       const auto& ao = attachable_objects.at(ab.second.object_name);
       robot_.attachBody(*ao, ab.second);
@@ -153,8 +152,5 @@ void StateVisualization::setCollisionVisible(bool visible)
   robot_.setCollisionVisible(visible);
 }
 
-void StateVisualization::setAlpha(float alpha)
-{
-  robot_.setAlpha(alpha);
-}
+void StateVisualization::setAlpha(float alpha) { robot_.setAlpha(alpha); }
 }

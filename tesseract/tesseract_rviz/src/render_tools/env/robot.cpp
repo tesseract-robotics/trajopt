@@ -27,50 +27,52 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "tesseract_rviz/render_tools/env/robot.h"
+#include "tesseract_rviz/render_tools/env/robot_joint.h"
+#include "tesseract_rviz/render_tools/env/robot_link.h"
 #include <tesseract_core/basic_types.h>
 #include <tesseract_ros/ros_tesseract_utils.h>
-#include "tesseract_rviz/render_tools/env/robot.h"
-#include "tesseract_rviz/render_tools/env/robot_link.h"
-#include "tesseract_rviz/render_tools/env/robot_joint.h"
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wall"
 #pragma GCC diagnostic ignored "-Wunused-parameter"
-#include <rviz/properties/property.h>
-#include <rviz/properties/enum_property.h>
-#include <rviz/properties/bool_property.h>
 #include <rviz/display_context.h>
+#include <rviz/properties/bool_property.h>
+#include <rviz/properties/enum_property.h>
+#include <rviz/properties/property.h>
 
+#include <rviz/ogre_helpers/axes.h>
 #include <rviz/ogre_helpers/object.h>
 #include <rviz/ogre_helpers/shape.h>
-#include <rviz/ogre_helpers/axes.h>
 #pragma GCC diagnostic pop
 
 #include <urdf_model/model.h>
 
-#include <OgreSceneNode.h>
-#include <OgreSceneManager.h>
 #include <OgreEntity.h>
-#include <OgreMaterialManager.h>
 #include <OgreMaterial.h>
+#include <OgreMaterialManager.h>
 #include <OgreResourceGroupManager.h>
+#include <OgreSceneManager.h>
+#include <OgreSceneNode.h>
 
-#include <ros/console.h>
 #include <ros/assert.h>
+#include <ros/console.h>
 
 namespace tesseract_rviz
 {
-
-Robot::Robot( Ogre::SceneNode* root_node, rviz::DisplayContext* context, const std::string& name, rviz::Property* parent_property )
-  : scene_manager_( context->getSceneManager() )
-  , visible_( true )
-  , visual_visible_( true )
-  , collision_visible_( false )
-  , context_( context )
-  , doing_set_checkbox_( false )
-  , robot_loaded_( false )
-  , inChangedEnableAllLinks( false )
-  , name_( name )
+Robot::Robot(Ogre::SceneNode* root_node,
+             rviz::DisplayContext* context,
+             const std::string& name,
+             rviz::Property* parent_property)
+  : scene_manager_(context->getSceneManager())
+  , visible_(true)
+  , visual_visible_(true)
+  , collision_visible_(false)
+  , context_(context)
+  , doing_set_checkbox_(false)
+  , robot_loaded_(false)
+  , inChangedEnableAllLinks(false)
+  , name_(name)
 {
   root_visual_node_ = root_node->createChildSceneNode();
   root_collision_node_ = root_node->createChildSceneNode();
@@ -78,62 +80,46 @@ Robot::Robot( Ogre::SceneNode* root_node, rviz::DisplayContext* context, const s
 
   link_factory_ = new LinkFactory();
 
-  setVisualVisible( visual_visible_ );
-  setCollisionVisible( collision_visible_ );
+  setVisualVisible(visual_visible_);
+  setCollisionVisible(collision_visible_);
   setAlpha(1.0f);
 
-  link_tree_ = new rviz::Property( "Links", QVariant(), "", parent_property );
-  link_tree_->hide(); // hide until loaded
+  link_tree_ = new rviz::Property("Links", QVariant(), "", parent_property);
+  link_tree_->hide();  // hide until loaded
 
   link_tree_style_ = new rviz::EnumProperty(
-                            "Link Tree Style",
-                            "",
-                            "How the list of links is displayed",
-                            link_tree_,
-                            SLOT( changedLinkTreeStyle() ),
-                            this );
+      "Link Tree Style", "", "How the list of links is displayed", link_tree_, SLOT(changedLinkTreeStyle()), this);
   initLinkTreeStyle();
-  expand_tree_= new rviz::BoolProperty(
-                            "Expand Tree",
-                            false,
-                            "Expand or collapse link tree",
-                            link_tree_,
-                            SLOT( changedExpandTree() ),
-                            this );
-  expand_link_details_ = new rviz::BoolProperty(
-                            "Expand Link Details",
-                            false,
-                            "Expand link details (sub properties) to see all info for all links.",
-                            link_tree_,
-                            SLOT( changedExpandLinkDetails() ),
-                            this );
-  expand_joint_details_ = new rviz::BoolProperty(
-                            "Expand Joint Details",
-                            false,
-                            "Expand joint details (sub properties) to see all info for all joints.",
-                            link_tree_,
-                            SLOT( changedExpandJointDetails() ),
-                            this );
+  expand_tree_ = new rviz::BoolProperty(
+      "Expand Tree", false, "Expand or collapse link tree", link_tree_, SLOT(changedExpandTree()), this);
+  expand_link_details_ = new rviz::BoolProperty("Expand Link Details",
+                                                false,
+                                                "Expand link details (sub properties) to see all info for all links.",
+                                                link_tree_,
+                                                SLOT(changedExpandLinkDetails()),
+                                                this);
+  expand_joint_details_ = new rviz::BoolProperty("Expand Joint Details",
+                                                 false,
+                                                 "Expand joint details (sub properties) "
+                                                 "to see all info for all joints.",
+                                                 link_tree_,
+                                                 SLOT(changedExpandJointDetails()),
+                                                 this);
   enable_all_links_ = new rviz::BoolProperty(
-                            "All Links Enabled",
-                            true,
-                            "Turn all links on or off.",
-                            link_tree_,
-                            SLOT( changedEnableAllLinks() ),
-                            this );
+      "All Links Enabled", true, "Turn all links on or off.", link_tree_, SLOT(changedEnableAllLinks()), this);
 }
 
 Robot::~Robot()
 {
   clear();
 
-  scene_manager_->destroySceneNode( root_visual_node_->getName() );
-  scene_manager_->destroySceneNode( root_collision_node_->getName() );
-  scene_manager_->destroySceneNode( root_other_node_->getName() );
+  scene_manager_->destroySceneNode(root_visual_node_->getName());
+  scene_manager_->destroySceneNode(root_collision_node_->getName());
+  scene_manager_->destroySceneNode(root_other_node_->getName());
   delete link_factory_;
 }
 
-void Robot::setLinkFactory(LinkFactory *link_factory)
+void Robot::setLinkFactory(LinkFactory* link_factory)
 {
   if (link_factory)
   {
@@ -142,30 +128,30 @@ void Robot::setLinkFactory(LinkFactory *link_factory)
   }
 }
 
-void Robot::setVisible( bool visible )
+void Robot::setVisible(bool visible)
 {
   visible_ = visible;
-  if ( visible )
+  if (visible)
   {
-    root_visual_node_->setVisible( visual_visible_ );
-    root_collision_node_->setVisible( collision_visible_ );
+    root_visual_node_->setVisible(visual_visible_);
+    root_collision_node_->setVisible(collision_visible_);
     updateLinkVisibilities();
   }
   else
   {
-    root_visual_node_->setVisible( false );
-    root_collision_node_->setVisible( false );
+    root_visual_node_->setVisible(false);
+    root_collision_node_->setVisible(false);
     updateLinkVisibilities();
   }
 }
 
-void Robot::setVisualVisible( bool visible )
+void Robot::setVisualVisible(bool visible)
 {
   visual_visible_ = visible;
   updateLinkVisibilities();
 }
 
-void Robot::setCollisionVisible( bool visible )
+void Robot::setCollisionVisible(bool visible)
 {
   collision_visible_ = visible;
   updateLinkVisibilities();
@@ -175,35 +161,23 @@ void Robot::updateLinkVisibilities()
 {
   M_NameToLink::iterator it = links_.begin();
   M_NameToLink::iterator end = links_.end();
-  for ( ; it != end; ++it )
+  for (; it != end; ++it)
   {
     RobotLink* link = it->second;
     link->updateVisibility();
   }
 }
 
-bool Robot::isVisible()
-{
-  return visible_;
-}
-
-bool Robot::isVisualVisible()
-{
-  return visual_visible_;
-}
-
-bool Robot::isCollisionVisible()
-{
-  return collision_visible_;
-}
-
+bool Robot::isVisible() { return visible_; }
+bool Robot::isVisualVisible() { return visual_visible_; }
+bool Robot::isCollisionVisible() { return collision_visible_; }
 void Robot::setAlpha(float a)
 {
   alpha_ = a;
 
   M_NameToLink::iterator it = links_.begin();
   M_NameToLink::iterator end = links_.end();
-  for ( ; it != end; ++it )
+  for (; it != end; ++it)
   {
     RobotLink* link = it->second;
 
@@ -220,7 +194,7 @@ void Robot::clear()
 
   M_NameToLink::iterator link_it = links_.begin();
   M_NameToLink::iterator link_end = links_.end();
-  for ( ; link_it != link_end; ++link_it )
+  for (; link_it != link_end; ++link_it)
   {
     RobotLink* link = link_it->second;
     delete link;
@@ -228,7 +202,7 @@ void Robot::clear()
 
   M_NameToJoint::iterator joint_it = joints_.begin();
   M_NameToJoint::iterator joint_end = joints_.end();
-  for ( ; joint_it != joint_end; ++joint_it )
+  for (; joint_it != joint_end; ++joint_it)
   {
     RobotJoint* joint = joint_it->second;
     delete joint;
@@ -242,36 +216,32 @@ void Robot::clear()
   root_other_node_->removeAndDestroyAllChildren();
 }
 
-RobotLink* Robot::LinkFactory::createLink(
-    Robot* robot,
-    const urdf::LinkConstSharedPtr& link,
-    const std::string& parent_joint_name,
-    bool visual,
-    bool collision)
+RobotLink* Robot::LinkFactory::createLink(Robot* robot,
+                                          const urdf::LinkConstSharedPtr& link,
+                                          const std::string& parent_joint_name,
+                                          bool visual,
+                                          bool collision)
 {
   return new RobotLink(robot, link, parent_joint_name, visual, collision);
 }
 
 RobotLink* Robot::LinkFactory::createLink(Robot* robot,
-    const tesseract::AttachableObject& ao,
-    const std::string& parent_joint_name,
-    bool visual,
-    bool collision)
+                                          const tesseract::AttachableObject& ao,
+                                          const std::string& parent_joint_name,
+                                          bool visual,
+                                          bool collision)
 {
   return new RobotLink(robot, ao, parent_joint_name, visual, collision);
 }
 
-RobotJoint* Robot::LinkFactory::createJoint(
-    Robot* robot,
-    const urdf::JointConstSharedPtr& joint)
+RobotJoint* Robot::LinkFactory::createJoint(Robot* robot, const urdf::JointConstSharedPtr& joint)
 {
   return new RobotJoint(robot, joint);
 }
 
-RobotJoint* Robot::LinkFactory::createJoint(
-    Robot* robot,
-    const std::string& name,
-    const tesseract::AttachedBodyInfo& ab)
+RobotJoint* Robot::LinkFactory::createJoint(Robot* robot,
+                                            const std::string& name,
+                                            const tesseract::AttachedBodyInfo& ab)
 {
   return new RobotJoint(robot, name, ab);
 }
@@ -294,21 +264,18 @@ void Robot::attachBody(const tesseract::AttachableObject& ao, const tesseract::A
   if ((!load_active_ && is_active) || (!load_static_ && !is_active))
     show_geom = false;
 
-  RobotLink* link = link_factory_->createLink( this,
-                                               ao,
-                                               parent_joint_name,
-                                               load_visual_ & show_geom,
-                                               load_collision_ & show_geom);
+  RobotLink* link =
+      link_factory_->createLink(this, ao, parent_joint_name, load_visual_ & show_geom, load_collision_ & show_geom);
 
   links_[ab.object_name] = link;
 
-  link->setRobotAlpha( alpha_ );
+  link->setRobotAlpha(alpha_);
 
-  RobotJoint* joint = link_factory_->createJoint( this, parent_joint_name, ab );
+  RobotJoint* joint = link_factory_->createJoint(this, parent_joint_name, ab);
 
   joints_[parent_joint_name] = joint;
 
-  joint->setRobotAlpha( alpha_ );
+  joint->setRobotAlpha(alpha_);
 
   links_[ab.parent_link_name]->addAttachedJointName(parent_joint_name);
 
@@ -318,7 +285,7 @@ void Robot::attachBody(const tesseract::AttachableObject& ao, const tesseract::A
 void Robot::detachBody(const std::string& link_name)
 {
   auto it = links_.find(link_name);
-  auto urdf_link = urdf_model_->getLink(link_name); // Check to make sure a urdf link is not being deleted.
+  auto urdf_link = urdf_model_->getLink(link_name);  // Check to make sure a urdf link is not being deleted.
   if (it != links_.end() && urdf_link == nullptr)
   {
     RobotLink* link = it->second;
@@ -354,17 +321,22 @@ void Robot::detachBody(const std::string& link_name)
   changedLinkTreeStyle();
 }
 
-void Robot::load(urdf::ModelInterfaceConstSharedPtr urdf, bool visual, bool collision, bool show_active, bool show_static)
+void Robot::load(urdf::ModelInterfaceConstSharedPtr urdf,
+                 bool visual,
+                 bool collision,
+                 bool show_active,
+                 bool show_static)
 {
   urdf_model_ = urdf;
-  link_tree_->hide(); // hide until loaded
+  link_tree_->hide();  // hide until loaded
   robot_loaded_ = false;
   load_visual_ = visual;
   load_collision_ = collision;
   load_active_ = show_active;
   load_static_ = show_static;
 
-  // clear out any data (properties, shapes, etc) from a previously loaded robot.
+  // clear out any data (properties, shapes, etc) from a previously loaded
+  // robot.
   clear();
 
   // Populate the list of active links
@@ -374,12 +346,13 @@ void Robot::load(urdf::ModelInterfaceConstSharedPtr urdf, bool visual, bool coll
   root_link_ = NULL;
 
   // Create properties for each link.
-  // Properties are not added to display until changedLinkTreeStyle() is called (below).
+  // Properties are not added to display until changedLinkTreeStyle() is called
+  // (below).
   {
-    typedef std::map<std::string, urdf::LinkSharedPtr > M_NameToUrdfLink;
+    typedef std::map<std::string, urdf::LinkSharedPtr> M_NameToUrdfLink;
     M_NameToUrdfLink::const_iterator link_it = urdf_model_->links_.begin();
     M_NameToUrdfLink::const_iterator link_end = urdf_model_->links_.end();
-    for( ; link_it != link_end; ++link_it )
+    for (; link_it != link_end; ++link_it)
     {
       const urdf::LinkConstSharedPtr& urdf_link = link_it->second;
       bool show_geom = true;
@@ -393,12 +366,9 @@ void Robot::load(urdf::ModelInterfaceConstSharedPtr urdf, bool visual, bool coll
       {
         parent_joint_name = urdf_link->parent_joint->name;
       }
-      
-      RobotLink* link = link_factory_->createLink( this,
-                                                   urdf_link,
-                                                   parent_joint_name,
-                                                   load_visual_ & show_geom,
-                                                   load_collision_ & show_geom);
+
+      RobotLink* link = link_factory_->createLink(
+          this, urdf_link, parent_joint_name, load_visual_ & show_geom, load_collision_ & show_geom);
 
       if (urdf_link == urdf_model_->getRoot())
       {
@@ -407,24 +377,25 @@ void Robot::load(urdf::ModelInterfaceConstSharedPtr urdf, bool visual, bool coll
 
       links_[urdf_link->name] = link;
 
-      link->setRobotAlpha( alpha_ );
+      link->setRobotAlpha(alpha_);
     }
   }
 
   // Create properties for each joint.
-  // Properties are not added to display until changedLinkTreeStyle() is called (below).
+  // Properties are not added to display until changedLinkTreeStyle() is called
+  // (below).
   {
-    typedef std::map<std::string, urdf::JointSharedPtr > M_NameToUrdfJoint;
+    typedef std::map<std::string, urdf::JointSharedPtr> M_NameToUrdfJoint;
     M_NameToUrdfJoint::const_iterator joint_it = urdf_model_->joints_.begin();
     M_NameToUrdfJoint::const_iterator joint_end = urdf_model_->joints_.end();
-    for( ; joint_it != joint_end; ++joint_it )
+    for (; joint_it != joint_end; ++joint_it)
     {
       const urdf::JointConstSharedPtr& urdf_joint = joint_it->second;
-      RobotJoint* joint = link_factory_->createJoint( this, urdf_joint );
+      RobotJoint* joint = link_factory_->createJoint(this, urdf_joint);
 
       joints_[urdf_joint->name] = joint;
 
-      joint->setRobotAlpha( alpha_ );
+      joint->setRobotAlpha(alpha_);
     }
   }
 
@@ -436,11 +407,12 @@ void Robot::load(urdf::ModelInterfaceConstSharedPtr urdf, bool visual, bool coll
   setLinkTreeStyle(LinkTreeStyle(link_tree_style_->getOptionInt()));
   changedLinkTreeStyle();
 
-  // at startup the link tree is collapsed since it is large and not often needed.
+  // at startup the link tree is collapsed since it is large and not often
+  // needed.
   link_tree_->collapse();
 
-  setVisualVisible( isVisualVisible() );
-  setCollisionVisible( isCollisionVisible() );
+  setVisualVisible(isVisualVisible());
+  setCollisionVisible(isCollisionVisible());
 }
 
 void Robot::unparentLinkProperties()
@@ -448,7 +420,7 @@ void Robot::unparentLinkProperties()
   // remove link properties from their parents
   M_NameToLink::iterator link_it = links_.begin();
   M_NameToLink::iterator link_end = links_.end();
-  for ( ; link_it != link_end ; ++link_it )
+  for (; link_it != link_end; ++link_it)
   {
     link_it->second->setParentProperty(NULL);
   }
@@ -456,7 +428,7 @@ void Robot::unparentLinkProperties()
   // remove joint properties from their parents
   M_NameToJoint::iterator joint_it = joints_.begin();
   M_NameToJoint::iterator joint_end = joints_.end();
-  for ( ; joint_it != joint_end ; ++joint_it )
+  for (; joint_it != joint_end; ++joint_it)
   {
     joint_it->second->setParentProperty(NULL);
   }
@@ -467,7 +439,7 @@ void Robot::useDetailProperty(bool use_detail)
   // remove sub properties and add them to detail
   M_NameToLink::iterator link_it = links_.begin();
   M_NameToLink::iterator link_end = links_.end();
-  for ( ; link_it != link_end ; ++link_it )
+  for (; link_it != link_end; ++link_it)
   {
     link_it->second->useDetailProperty(use_detail);
   }
@@ -475,7 +447,7 @@ void Robot::useDetailProperty(bool use_detail)
   // remove joint properties from their parents
   M_NameToJoint::iterator joint_it = joints_.begin();
   M_NameToJoint::iterator joint_end = joints_.end();
-  for ( ; joint_it != joint_end ; ++joint_it )
+  for (; joint_it != joint_end; ++joint_it)
   {
     joint_it->second->useDetailProperty(use_detail);
   }
@@ -487,7 +459,7 @@ void Robot::changedExpandTree()
 
   M_NameToLink::iterator link_it = links_.begin();
   M_NameToLink::iterator link_end = links_.end();
-  for ( ; link_it != link_end ; ++link_it )
+  for (; link_it != link_end; ++link_it)
   {
     if (expand)
       link_it->second->getLinkProperty()->expand();
@@ -497,7 +469,7 @@ void Robot::changedExpandTree()
 
   M_NameToJoint::iterator joint_it = joints_.begin();
   M_NameToJoint::iterator joint_end = joints_.end();
-  for ( ; joint_it != joint_end ; ++joint_it )
+  for (; joint_it != joint_end; ++joint_it)
   {
     if (expand)
       joint_it->second->getJointProperty()->expand();
@@ -512,14 +484,14 @@ void Robot::changedHideSubProperties()
 
   M_NameToLink::iterator link_it = links_.begin();
   M_NameToLink::iterator link_end = links_.end();
-  for ( ; link_it != link_end ; ++link_it )
+  for (; link_it != link_end; ++link_it)
   {
     link_it->second->hideSubProperties(hide);
   }
 
   M_NameToJoint::iterator joint_it = joints_.begin();
   M_NameToJoint::iterator joint_end = joints_.end();
-  for ( ; joint_it != joint_end ; ++joint_it )
+  for (; joint_it != joint_end; ++joint_it)
   {
     joint_it->second->hideSubProperties(hide);
   }
@@ -531,7 +503,7 @@ void Robot::changedExpandLinkDetails()
 
   M_NameToLink::iterator link_it = links_.begin();
   M_NameToLink::iterator link_end = links_.end();
-  for ( ; link_it != link_end ; ++link_it )
+  for (; link_it != link_end; ++link_it)
   {
     link_it->second->expandDetails(expand);
   }
@@ -543,7 +515,7 @@ void Robot::changedExpandJointDetails()
 
   M_NameToJoint::iterator joint_it = joints_.begin();
   M_NameToJoint::iterator joint_end = joints_.end();
-  for ( ; joint_it != joint_end ; ++joint_it )
+  for (; joint_it != joint_end; ++joint_it)
   {
     joint_it->second->expandDetails(expand);
   }
@@ -560,7 +532,7 @@ void Robot::changedEnableAllLinks()
 
   M_NameToLink::iterator link_it = links_.begin();
   M_NameToLink::iterator link_end = links_.end();
-  for ( ; link_it != link_end ; ++link_it )
+  for (; link_it != link_end; ++link_it)
   {
     if (link_it->second->hasGeometry())
     {
@@ -570,7 +542,7 @@ void Robot::changedEnableAllLinks()
 
   M_NameToJoint::iterator joint_it = joints_.begin();
   M_NameToJoint::iterator joint_end = joints_.end();
-  for ( ; joint_it != joint_end ; ++joint_it )
+  for (; joint_it != joint_end; ++joint_it)
   {
     if (joint_it->second->hasDescendentLinksWithGeometry())
     {
@@ -593,42 +565,27 @@ void Robot::setEnableAllLinksCheckbox(QVariant val)
 void Robot::initLinkTreeStyle()
 {
   style_name_map_.clear();
-	style_name_map_[STYLE_LINK_LIST] = "Links in Alphabetic Order";
-	style_name_map_[STYLE_JOINT_LIST] = "Joints in Alphabetic Order";
-	style_name_map_[STYLE_LINK_TREE] = "Tree of links";
-	style_name_map_[STYLE_JOINT_LINK_TREE] = "Tree of links and joints";
+  style_name_map_[STYLE_LINK_LIST] = "Links in Alphabetic Order";
+  style_name_map_[STYLE_JOINT_LIST] = "Joints in Alphabetic Order";
+  style_name_map_[STYLE_LINK_TREE] = "Tree of links";
+  style_name_map_[STYLE_JOINT_LINK_TREE] = "Tree of links and joints";
 
   link_tree_style_->clearOptions();
   std::map<LinkTreeStyle, std::string>::const_iterator style_it = style_name_map_.begin();
   std::map<LinkTreeStyle, std::string>::const_iterator style_end = style_name_map_.end();
-  for ( ; style_it != style_end ; ++style_it )
+  for (; style_it != style_end; ++style_it)
   {
-    link_tree_style_->addOptionStd( style_it->second, style_it->first );
+    link_tree_style_->addOptionStd(style_it->second, style_it->first);
   }
 }
 
 bool Robot::styleShowLink(LinkTreeStyle style)
 {
-  return 
-    style == STYLE_LINK_LIST ||
-    style == STYLE_LINK_TREE ||
-    style == STYLE_JOINT_LINK_TREE;
+  return style == STYLE_LINK_LIST || style == STYLE_LINK_TREE || style == STYLE_JOINT_LINK_TREE;
 }
 
-bool Robot::styleShowJoint(LinkTreeStyle style)
-{
-  return 
-    style == STYLE_JOINT_LIST ||
-    style == STYLE_JOINT_LINK_TREE;
-}
-
-bool Robot::styleIsTree(LinkTreeStyle style)
-{
-  return 
-    style == STYLE_LINK_TREE ||
-    style == STYLE_JOINT_LINK_TREE;
-}
-
+bool Robot::styleShowJoint(LinkTreeStyle style) { return style == STYLE_JOINT_LIST || style == STYLE_JOINT_LINK_TREE; }
+bool Robot::styleIsTree(LinkTreeStyle style) { return style == STYLE_LINK_TREE || style == STYLE_JOINT_LINK_TREE; }
 void Robot::setLinkTreeStyle(LinkTreeStyle style)
 {
   std::map<LinkTreeStyle, std::string>::const_iterator style_it = style_name_map_.find(style);
@@ -648,75 +605,78 @@ void Robot::changedLinkTreeStyle()
 
   unparentLinkProperties();
 
-  //expand_tree_->setValue(false);
+  // expand_tree_->setValue(false);
 
   switch (style)
   {
-  case STYLE_LINK_TREE:
-  case STYLE_JOINT_LINK_TREE:
-    useDetailProperty(true);
-    if (root_link_)
-    {
-      addLinkToLinkTree(style, link_tree_, root_link_);
-    }
-    break;
+    case STYLE_LINK_TREE:
+    case STYLE_JOINT_LINK_TREE:
+      useDetailProperty(true);
+      if (root_link_)
+      {
+        addLinkToLinkTree(style, link_tree_, root_link_);
+      }
+      break;
 
-  case STYLE_JOINT_LIST:
-  {
-    useDetailProperty(false);
-    M_NameToJoint::iterator joint_it = joints_.begin();
-    M_NameToJoint::iterator joint_end = joints_.end();
-    for ( ; joint_it != joint_end ; ++joint_it )
+    case STYLE_JOINT_LIST:
     {
-      joint_it->second->setParentProperty(link_tree_);
-      joint_it->second->setJointPropertyDescription();
+      useDetailProperty(false);
+      M_NameToJoint::iterator joint_it = joints_.begin();
+      M_NameToJoint::iterator joint_end = joints_.end();
+      for (; joint_it != joint_end; ++joint_it)
+      {
+        joint_it->second->setParentProperty(link_tree_);
+        joint_it->second->setJointPropertyDescription();
+      }
+      break;
     }
-    break;
-  }
 
-  case STYLE_LINK_LIST:
-  default:
-    useDetailProperty(false);
-    M_NameToLink::iterator link_it = links_.begin();
-    M_NameToLink::iterator link_end = links_.end();
-    for ( ; link_it != link_end ; ++link_it )
-    {
-      link_it->second->setParentProperty(link_tree_);
-    }
-    break;
+    case STYLE_LINK_LIST:
+    default:
+      useDetailProperty(false);
+      M_NameToLink::iterator link_it = links_.begin();
+      M_NameToLink::iterator link_end = links_.end();
+      for (; link_it != link_end; ++link_it)
+      {
+        link_it->second->setParentProperty(link_tree_);
+      }
+      break;
   }
 
   switch (style)
   {
-  case STYLE_LINK_TREE:
-    link_tree_->setName("Link Tree");
-    link_tree_->setDescription("A tree of all links in the robot.  Uncheck a link to hide its geometry.");
-    expand_tree_->show();
-    expand_link_details_->show();
-    expand_joint_details_->hide();
-    break;
-  case STYLE_JOINT_LINK_TREE:
-    link_tree_->setName("Link/Joint Tree");
-    link_tree_->setDescription("A tree of all joints and links in the robot.  Uncheck a link to hide its geometry.");
-    expand_tree_->show();
-    expand_link_details_->show();
-    expand_joint_details_->show();
-    break;
-  case STYLE_JOINT_LIST:
-    link_tree_->setName("Joints");
-    link_tree_->setDescription("All joints in the robot in alphabetic order.");
-    expand_tree_->hide();
-    expand_link_details_->hide();
-    expand_joint_details_->show();
-    break;
-  case STYLE_LINK_LIST:
-  default:
-    link_tree_->setName("Links");
-    link_tree_->setDescription("All links in the robot in alphabetic order.  Uncheck a link to hide its geometry.");
-    expand_tree_->hide();
-    expand_link_details_->show();
-    expand_joint_details_->hide();
-    break;
+    case STYLE_LINK_TREE:
+      link_tree_->setName("Link Tree");
+      link_tree_->setDescription("A tree of all links in the robot.  Uncheck a "
+                                 "link to hide its geometry.");
+      expand_tree_->show();
+      expand_link_details_->show();
+      expand_joint_details_->hide();
+      break;
+    case STYLE_JOINT_LINK_TREE:
+      link_tree_->setName("Link/Joint Tree");
+      link_tree_->setDescription("A tree of all joints and links in the robot.  "
+                                 "Uncheck a link to hide its geometry.");
+      expand_tree_->show();
+      expand_link_details_->show();
+      expand_joint_details_->show();
+      break;
+    case STYLE_JOINT_LIST:
+      link_tree_->setName("Joints");
+      link_tree_->setDescription("All joints in the robot in alphabetic order.");
+      expand_tree_->hide();
+      expand_link_details_->hide();
+      expand_joint_details_->show();
+      break;
+    case STYLE_LINK_LIST:
+    default:
+      link_tree_->setName("Links");
+      link_tree_->setDescription("All links in the robot in alphabetic order.  "
+                                 "Uncheck a link to hide its geometry.");
+      expand_tree_->hide();
+      expand_link_details_->show();
+      expand_joint_details_->hide();
+      break;
   }
 
   expand_link_details_->setValue(false);
@@ -725,9 +685,8 @@ void Robot::changedLinkTreeStyle()
   calculateJointCheckboxes();
 }
 
-
 // recursive helper for setLinkTreeStyle() when style is *_TREE
-void Robot::addLinkToLinkTree(LinkTreeStyle style, rviz::Property *parent, RobotLink *link)
+void Robot::addLinkToLinkTree(LinkTreeStyle style, rviz::Property* parent, RobotLink* link)
 {
   if (styleShowLink(style))
   {
@@ -737,9 +696,9 @@ void Robot::addLinkToLinkTree(LinkTreeStyle style, rviz::Property *parent, Robot
 
   std::vector<std::string>::const_iterator child_joint_it = link->getChildJointNames().begin();
   std::vector<std::string>::const_iterator child_joint_end = link->getChildJointNames().end();
-  for ( ; child_joint_it != child_joint_end ; ++child_joint_it )
+  for (; child_joint_it != child_joint_end; ++child_joint_it)
   {
-    RobotJoint* child_joint = getJoint( *child_joint_it );
+    RobotJoint* child_joint = getJoint(*child_joint_it);
     if (child_joint)
     {
       addJointToLinkTree(style, parent, child_joint);
@@ -748,7 +707,7 @@ void Robot::addLinkToLinkTree(LinkTreeStyle style, rviz::Property *parent, Robot
 }
 
 // recursive helper for setLinkTreeStyle() when style is *_TREE
-void Robot::addJointToLinkTree(LinkTreeStyle style, rviz::Property *parent, RobotJoint *joint)
+void Robot::addJointToLinkTree(LinkTreeStyle style, rviz::Property* parent, RobotJoint* joint)
 {
   if (styleShowJoint(style))
   {
@@ -757,31 +716,31 @@ void Robot::addJointToLinkTree(LinkTreeStyle style, rviz::Property *parent, Robo
     joint->setJointPropertyDescription();
   }
 
-  RobotLink *link = getLink( joint->getChildLinkName() );
+  RobotLink* link = getLink(joint->getChildLinkName());
   if (link)
   {
     addLinkToLinkTree(style, parent, link);
   }
 }
 
-RobotLink* Robot::getLink( const std::string& name )
+RobotLink* Robot::getLink(const std::string& name)
 {
-  M_NameToLink::iterator it = links_.find( name );
-  if ( it == links_.end() )
+  M_NameToLink::iterator it = links_.find(name);
+  if (it == links_.end())
   {
-    ROS_WARN( "Link [%s] does not exist", name.c_str() );
+    ROS_WARN("Link [%s] does not exist", name.c_str());
     return NULL;
   }
 
   return it->second;
 }
 
-RobotJoint* Robot::getJoint( const std::string& name )
+RobotJoint* Robot::getJoint(const std::string& name)
 {
-  M_NameToJoint::iterator it = joints_.find( name );
-  if ( it == joints_.end() )
+  M_NameToJoint::iterator it = joints_.find(name);
+  if (it == joints_.end())
   {
-    ROS_WARN( "Joint [%s] does not exist", name.c_str() );
+    ROS_WARN("Joint [%s] does not exist", name.c_str());
     return NULL;
   }
 
@@ -797,9 +756,9 @@ void Robot::calculateJointCheckboxes()
   int links_with_geom_unchecked = 0;
 
   // check root link
-  RobotLink *link = root_link_;
+  RobotLink* link = root_link_;
 
-  if(!link)
+  if (!link)
   {
     setEnableAllLinksCheckbox(QVariant());
     return;
@@ -816,15 +775,16 @@ void Robot::calculateJointCheckboxes()
   // check all child links and joints recursively
   std::vector<std::string>::const_iterator child_joint_it = link->getChildJointNames().begin();
   std::vector<std::string>::const_iterator child_joint_end = link->getChildJointNames().end();
-  for ( ; child_joint_it != child_joint_end ; ++child_joint_it )
+  for (; child_joint_it != child_joint_end; ++child_joint_it)
   {
-    RobotJoint* child_joint = getJoint( *child_joint_it );
+    RobotJoint* child_joint = getJoint(*child_joint_it);
     if (child_joint)
     {
       int child_links_with_geom;
       int child_links_with_geom_checked;
       int child_links_with_geom_unchecked;
-      child_joint->calculateJointCheckboxesRecursive(child_links_with_geom, child_links_with_geom_checked, child_links_with_geom_unchecked);
+      child_joint->calculateJointCheckboxesRecursive(
+          child_links_with_geom, child_links_with_geom_checked, child_links_with_geom_unchecked);
       links_with_geom_checked += child_links_with_geom_checked;
       links_with_geom_unchecked += child_links_with_geom_unchecked;
     }
@@ -845,7 +805,7 @@ void Robot::update(const rviz::LinkUpdater& updater)
 {
   M_NameToLink::iterator link_it = links_.begin();
   M_NameToLink::iterator link_end = links_.end();
-  for ( ; link_it != link_end; ++link_it )
+  for (; link_it != link_end; ++link_it)
   {
     RobotLink* link = link_it->second;
 
@@ -853,55 +813,53 @@ void Robot::update(const rviz::LinkUpdater& updater)
 
     Ogre::Vector3 visual_position, collision_position;
     Ogre::Quaternion visual_orientation, collision_orientation;
-    if( updater.getLinkTransforms( link->getName(),
-                                   visual_position, visual_orientation,
-                                   collision_position, collision_orientation
-                                   ))
+    if (updater.getLinkTransforms(
+            link->getName(), visual_position, visual_orientation, collision_position, collision_orientation))
     {
-      // Check if visual_orientation, visual_position, collision_orientation, and collision_position are NaN.
+      // Check if visual_orientation, visual_position, collision_orientation,
+      // and collision_position are NaN.
       if (visual_orientation.isNaN())
       {
-        ROS_ERROR_THROTTLE(
-          1.0,
-          "visual orientation of %s contains NaNs. Skipping render as long as the orientation is invalid.",
-          link->getName().c_str()
-        );
+        ROS_ERROR_THROTTLE(1.0,
+                           "visual orientation of %s contains NaNs. "
+                           "Skipping render as long as the orientation is "
+                           "invalid.",
+                           link->getName().c_str());
         continue;
       }
       if (visual_position.isNaN())
       {
-        ROS_ERROR_THROTTLE(
-          1.0,
-          "visual position of %s contains NaNs. Skipping render as long as the position is invalid.",
-          link->getName().c_str()
-        );
+        ROS_ERROR_THROTTLE(1.0,
+                           "visual position of %s contains NaNs. Skipping "
+                           "render as long as the position is invalid.",
+                           link->getName().c_str());
         continue;
       }
       if (collision_orientation.isNaN())
       {
-        ROS_ERROR_THROTTLE(
-          1.0,
-          "collision orientation of %s contains NaNs. Skipping render as long as the orientation is invalid.",
-          link->getName().c_str()
-        );
+        ROS_ERROR_THROTTLE(1.0,
+                           "collision orientation of %s contains NaNs. "
+                           "Skipping render as long as the orientation is "
+                           "invalid.",
+                           link->getName().c_str());
         continue;
       }
       if (collision_position.isNaN())
       {
-        ROS_ERROR_THROTTLE(
-          1.0,
-          "collision position of %s contains NaNs. Skipping render as long as the position is invalid.",
-          link->getName().c_str()
-        );
+        ROS_ERROR_THROTTLE(1.0,
+                           "collision position of %s contains NaNs. "
+                           "Skipping render as long as the position is "
+                           "invalid.",
+                           link->getName().c_str());
         continue;
       }
-      link->setTransforms( visual_position, visual_orientation, collision_position, collision_orientation );
+      link->setTransforms(visual_position, visual_orientation, collision_position, collision_orientation);
 
       std::vector<std::string>::const_iterator joint_it = link->getChildJointNames().begin();
       std::vector<std::string>::const_iterator joint_end = link->getChildJointNames().end();
-      for ( ; joint_it != joint_end ; ++joint_it )
+      for (; joint_it != joint_end; ++joint_it)
       {
-        RobotJoint *joint = getJoint(*joint_it);
+        RobotJoint* joint = getJoint(*joint_it);
         if (joint)
         {
           joint->setTransforms(visual_position, visual_orientation);
@@ -915,32 +873,24 @@ void Robot::update(const rviz::LinkUpdater& updater)
   }
 }
 
-void Robot::setPosition( const Ogre::Vector3& position )
+void Robot::setPosition(const Ogre::Vector3& position)
 {
-  root_visual_node_->setPosition( position );
-  root_collision_node_->setPosition( position );
+  root_visual_node_->setPosition(position);
+  root_collision_node_->setPosition(position);
 }
 
-void Robot::setOrientation( const Ogre::Quaternion& orientation )
+void Robot::setOrientation(const Ogre::Quaternion& orientation)
 {
-  root_visual_node_->setOrientation( orientation );
-  root_collision_node_->setOrientation( orientation );
+  root_visual_node_->setOrientation(orientation);
+  root_collision_node_->setOrientation(orientation);
 }
 
-void Robot::setScale( const Ogre::Vector3& scale )
+void Robot::setScale(const Ogre::Vector3& scale)
 {
-  root_visual_node_->setScale( scale );
-  root_collision_node_->setScale( scale );
+  root_visual_node_->setScale(scale);
+  root_collision_node_->setScale(scale);
 }
 
-const Ogre::Vector3& Robot::getPosition()
-{
-  return root_visual_node_->getPosition();
-}
-
-const Ogre::Quaternion& Robot::getOrientation()
-{
-  return root_visual_node_->getOrientation();
-}
-
-} // namespace rviz
+const Ogre::Vector3& Robot::getPosition() { return root_visual_node_->getPosition(); }
+const Ogre::Quaternion& Robot::getOrientation() { return root_visual_node_->getOrientation(); }
+}  // namespace rviz

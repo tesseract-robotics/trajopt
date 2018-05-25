@@ -30,10 +30,8 @@
 
 namespace tesseract
 {
-
 namespace tesseract_planning
 {
-
 /** @brief Negative status code should be related to errors and positive should be used for status of covergenace */
 typedef std::unordered_map<int, std::string> StatusCodeMap;
 
@@ -50,11 +48,11 @@ struct PlannerResponse
 {
   std::vector<std::string> joint_names; /**< @brief The joint names */
   TrajArray trajectory;                 /**< @brief The generated trajectory */
-  int status_code;                      /**< @brief Negative status code should be related to errors and positive should be used for status of covergenace */
-  std::string status_description;       /**< @brief Provide a brief description about what the error code means */
+  int status_code; /**< @brief Negative status code should be related to errors and positive should be used for status
+                      of covergenace */
+  std::string status_description; /**< @brief Provide a brief description about what the error code means */
 };
-
 }
 }
 
-#endif // TESSERACT_PLANNING_BASIC_PLANNER_TYPES_H
+#endif  // TESSERACT_PLANNING_BASIC_PLANNER_TYPES_H

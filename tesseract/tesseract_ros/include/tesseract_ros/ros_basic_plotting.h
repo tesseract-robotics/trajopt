@@ -38,12 +38,10 @@ namespace tesseract
 {
 namespace tesseract_ros
 {
-
 /** @brief The BasicPlotting class */
 class ROSBasicPlotting : public BasicPlotting
 {
 public:
-
   ROSBasicPlotting(ROSBasicEnvConstPtr env) : env_(env)
   {
     ros::NodeHandle nh;
@@ -63,7 +61,7 @@ public:
     scene_pub_.publish(msg);
   }
 
-  void plotTrajectory(const std::vector<std::string> &joint_names, const TrajArray &traj)
+  void plotTrajectory(const std::vector<std::string>& joint_names, const TrajArray& traj)
   {
     tesseract_msgs::Trajectory msg;
 
@@ -92,7 +90,7 @@ public:
           msg.joint_trajectory.joint_names[j] = joint.first;
           jn_to_index[joint.first] = j;
         }
-        jtp.positions[j] =  joint.second;
+        jtp.positions[j] = joint.second;
 
         ++j;
       }
@@ -111,12 +109,14 @@ public:
     trajectory_pub_.publish(msg);
   }
 
-  void plotContactResults(const std::vector<std::string> &link_names, const ContactResultVector &dist_results, const Eigen::VectorXd& safety_distances)
+  void plotContactResults(const std::vector<std::string>& link_names,
+                          const ContactResultVector& dist_results,
+                          const Eigen::VectorXd& safety_distances)
   {
     visualization_msgs::MarkerArray msg;
     for (unsigned i = 0; i < dist_results.size(); ++i)
     {
-      const ContactResult &dist = dist_results[i];
+      const ContactResult& dist = dist_results[i];
       const double& safety_distance = safety_distances[i];
 
       Eigen::Vector4d rgba;
@@ -144,7 +144,7 @@ public:
         ptB = dist.nearest_points[0];
       }
 
-      if(dist.cc_type == ContinouseCollisionType::CCType_Between)
+      if (dist.cc_type == ContinouseCollisionType::CCType_Between)
       {
         Eigen::Vector4d cc_rgba;
         cc_rgba << 0.0, 0.0, 0.0, 1.0;
@@ -157,10 +157,9 @@ public:
         msg.markers.push_back(getMarkerArrowMsg(ptA, dist.cc_nearest_points[0], temp_rgba, 0.01));
 
         ptB = ((1 - dist.cc_time) * ptB + dist.cc_time * dist.cc_nearest_points[1]);
-
       }
 
-       msg.markers.push_back(getMarkerArrowMsg(ptA, ptB, rgba, 0.01));
+      msg.markers.push_back(getMarkerArrowMsg(ptA, ptB, rgba, 0.01));
     }
 
     if (dist_results.size() > 0)
@@ -169,14 +168,14 @@ public:
     }
   }
 
-  void plotArrow(const Eigen::Vector3d &pt1, const Eigen::Vector3d &pt2, const Eigen::Vector4d &rgba, double scale)
+  void plotArrow(const Eigen::Vector3d& pt1, const Eigen::Vector3d& pt2, const Eigen::Vector4d& rgba, double scale)
   {
     visualization_msgs::MarkerArray msg;
     msg.markers.push_back(getMarkerArrowMsg(pt1, pt2, rgba, scale));
     arrows_pub_.publish(msg);
   }
 
-  void plotAxis(const Eigen::Affine3d &axis, double scale)
+  void plotAxis(const Eigen::Affine3d& axis, double scale)
   {
     visualization_msgs::MarkerArray msg;
     Eigen::Vector3d x_axis = axis.matrix().block<3, 1>(0, 0);
@@ -213,19 +212,20 @@ public:
   void waitForInput()
   {
     ROS_ERROR("Hit enter key to step optimization!");
-    std::cin.ignore(std::numeric_limits<std::streamsize>::max(),'\n');
+    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
   }
 
 private:
-  ROSBasicEnvConstPtr env_;                               /**< The ROS Env */
-  int marker_counter_;                                    /**< Counter when plotting */
-  ros::Publisher scene_pub_;                              /**< Scene publisher */
-  ros::Publisher trajectory_pub_;                         /**< Trajectory publisher */
-  ros::Publisher collisions_pub_;                         /**< Collision Data publisher */
-  ros::Publisher arrows_pub_;                             /**< Used for publishing arrow markers */
-  ros::Publisher axes_pub_;                               /**< Used for publishing axis markers */
+  ROSBasicEnvConstPtr env_;       /**< The ROS Env */
+  int marker_counter_;            /**< Counter when plotting */
+  ros::Publisher scene_pub_;      /**< Scene publisher */
+  ros::Publisher trajectory_pub_; /**< Trajectory publisher */
+  ros::Publisher collisions_pub_; /**< Collision Data publisher */
+  ros::Publisher arrows_pub_;     /**< Used for publishing arrow markers */
+  ros::Publisher axes_pub_;       /**< Used for publishing axis markers */
 
-  visualization_msgs::Marker getMarkerArrowMsg(const Eigen::Vector3d &pt1, const Eigen::Vector3d &pt2, const Eigen::Vector4d &rgba, double scale)
+  visualization_msgs::Marker
+  getMarkerArrowMsg(const Eigen::Vector3d& pt1, const Eigen::Vector3d& pt2, const Eigen::Vector4d& rgba, double scale)
   {
     visualization_msgs::Marker marker;
     marker.header.frame_id = env_->getURDF()->getRoot()->name;
@@ -266,7 +266,10 @@ private:
     return marker;
   }
 
-  visualization_msgs::Marker getMarkerCylinderMsg(const Eigen::Vector3d &pt1, const Eigen::Vector3d &pt2, const Eigen::Vector4d &rgba, double scale)
+  visualization_msgs::Marker getMarkerCylinderMsg(const Eigen::Vector3d& pt1,
+                                                  const Eigen::Vector3d& pt2,
+                                                  const Eigen::Vector4d& rgba,
+                                                  double scale)
   {
     visualization_msgs::Marker marker;
     marker.header.frame_id = env_->getURDF()->getRoot()->name;
@@ -296,8 +299,8 @@ private:
     marker.pose.orientation.w = q.w();
 
     double length = std::abs((pt2 - pt1).norm());
-    marker.scale.x = scale * length/20.0;
-    marker.scale.y = scale * length/20.0;
+    marker.scale.x = scale * length / 20.0;
+    marker.scale.y = scale * length / 20.0;
     marker.scale.z = scale * length;
 
     marker.color.r = rgba(0);
@@ -312,4 +315,4 @@ typedef std::shared_ptr<ROSBasicPlotting> ROSBasicPlottingPtr;
 typedef std::shared_ptr<const ROSBasicPlotting> ROSBasicPlottingConstPtr;
 }
 }
-#endif // TESSERACT_ROS_BASIC_PLOTTING_H
+#endif  // TESSERACT_ROS_BASIC_PLOTTING_H

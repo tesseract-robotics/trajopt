@@ -1,6 +1,6 @@
 #include <ros/ros.h>
-#include <tesseract_ros/ros_basic_env.h>
 #include <tesseract_monitoring/environment_monitor.h>
+#include <tesseract_ros/ros_basic_env.h>
 
 using namespace tesseract;
 using namespace tesseract::tesseract_ros;
@@ -32,7 +32,8 @@ int main(int argc, char** argv)
   if (monitored_environment_topic.empty())
     monitor.startPublishingEnvironment(tesseract_monitoring::EnvironmentMonitor::UPDATE_ENVIRONMENT);
   else
-    monitor.startPublishingEnvironment(tesseract_monitoring::EnvironmentMonitor::UPDATE_ENVIRONMENT, monitored_environment_topic);
+    monitor.startPublishingEnvironment(tesseract_monitoring::EnvironmentMonitor::UPDATE_ENVIRONMENT,
+                                       monitored_environment_topic);
 
   if (joint_state_topic.empty())
     monitor.startStateMonitor();

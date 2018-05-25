@@ -34,16 +34,14 @@
 
 /* Author: Ioan Sucan */
 
-#include <tesseract_monitoring/environment_monitor.h>
-#include <tesseract_ros/ros_tesseract_utils.h>
-#include <tesseract_ros/kdl/kdl_env.h>
 #include <dynamic_reconfigure/server.h>
-#include <tesseract_monitoring/EnvironmentMonitorDynamicReconfigureConfig.h>
 #include <memory>
-#include <urdf_parser/urdf_parser.h>
 #include <srdfdom/model.h>
-
-
+#include <tesseract_monitoring/EnvironmentMonitorDynamicReconfigureConfig.h>
+#include <tesseract_monitoring/environment_monitor.h>
+#include <tesseract_ros/kdl/kdl_env.h>
+#include <tesseract_ros/ros_tesseract_utils.h>
+#include <urdf_parser/urdf_parser.h>
 
 class DynamicReconfigureImpl
 {
@@ -56,7 +54,8 @@ public:
   }
 
 private:
-  // make sure we do not advertise the same service multiple times, in case we use multiple PlanningSceneMonitor
+  // make sure we do not advertise the same service multiple times, in case we
+  // use multiple PlanningSceneMonitor
   // instances in a process
   static std::string decideNamespace(const std::string& name)
   {
@@ -73,7 +72,8 @@ private:
     return ns;
   }
 
-  void dynamicReconfigureCallback(tesseract_monitoring::EnvironmentMonitorDynamicReconfigureConfig& config, uint32_t /*level*/)
+  void dynamicReconfigureCallback(tesseract_monitoring::EnvironmentMonitorDynamicReconfigureConfig& config,
+                                  uint32_t /*level*/)
   {
     using namespace tesseract::tesseract_monitoring;
     EnvironmentMonitor::EnvironmentUpdateType event = EnvironmentMonitor::UPDATE_NONE;
@@ -93,18 +93,17 @@ private:
   }
 
   tesseract::tesseract_monitoring::EnvironmentMonitor* owner_;
-  dynamic_reconfigure::Server<tesseract_monitoring::EnvironmentMonitorDynamicReconfigureConfig> dynamic_reconfigure_server_;
+  dynamic_reconfigure::Server<tesseract_monitoring::EnvironmentMonitorDynamicReconfigureConfig>
+      dynamic_reconfigure_server_;
 };
 
 namespace tesseract
 {
-
 namespace tesseract_monitoring
 {
-
 static const std::string LOGNAME = "environment_monitor";
-const std::string EnvironmentMonitor::DEFAULT_JOINT_STATES_TOPIC =  "joint_states";
-const std::string EnvironmentMonitor::DEFAULT_ENVIRONMENT_TOPIC =   "tesseract";
+const std::string EnvironmentMonitor::DEFAULT_JOINT_STATES_TOPIC = "joint_states";
+const std::string EnvironmentMonitor::DEFAULT_ENVIRONMENT_TOPIC = "tesseract";
 const std::string EnvironmentMonitor::DEFAULT_ENVIRONMENT_SERVICE = "get_tesseract";
 const std::string EnvironmentMonitor::MONITORED_ENVIRONMENT_TOPIC = "monitored_tesseract";
 
@@ -136,7 +135,6 @@ EnvironmentMonitor::EnvironmentMonitor(const urdf::ModelInterfaceConstSharedPtr&
   initialize(urdf_model, srdf_model);
 }
 
-
 EnvironmentMonitor::~EnvironmentMonitor()
 {
   stopPublishingEnvironment();
@@ -151,7 +149,8 @@ EnvironmentMonitor::~EnvironmentMonitor()
   srdf_model_.reset();
 }
 
-void EnvironmentMonitor::initialize(const urdf::ModelInterfaceConstSharedPtr& urdf_model, const srdf::ModelConstSharedPtr& /*srdf_model*/)
+void EnvironmentMonitor::initialize(const urdf::ModelInterfaceConstSharedPtr& urdf_model,
+                                    const srdf::ModelConstSharedPtr& /*srdf_model*/)
 {
   enforce_next_state_update_ = false;
 
@@ -160,10 +159,11 @@ void EnvironmentMonitor::initialize(const urdf::ModelInterfaceConstSharedPtr& ur
 
   if (!urdf_model)
   {
-    ROS_FATAL_NAMED(LOGNAME, "Tried to initalize environment monitor with nullptr to ModelInterfaceConstSharedPtr.");
+    ROS_FATAL_NAMED(LOGNAME,
+                    "Tried to initalize environment monitor with "
+                    "nullptr to ModelInterfaceConstSharedPtr.");
     return;
   }
-
 
   if (urdf_model)
   {
@@ -191,7 +191,9 @@ void EnvironmentMonitor::initialize(const urdf::ModelInterfaceConstSharedPtr& ur
   dt_state_update_ = ros::WallDuration(0.1);
 
   state_update_pending_ = false;
-  state_update_timer_ = nh_.createWallTimer(dt_state_update_, &EnvironmentMonitor::stateUpdateTimerCallback, this,
+  state_update_timer_ = nh_.createWallTimer(dt_state_update_,
+                                            &EnvironmentMonitor::stateUpdateTimerCallback,
+                                            this,
                                             false,   // not a oneshot timer
                                             false);  // do not start the timer yet
 
@@ -206,8 +208,9 @@ void EnvironmentMonitor::monitorDiffs(bool flag)
     {
       if (publish_environment_)
       {
-        ROS_WARN_NAMED(LOGNAME, "Diff monitoring was stopped while publishing environment diffs. "
-                                "Stopping environment diff publisher");
+        ROS_WARN_NAMED(LOGNAME,
+                       "Diff monitoring was stopped while publishing environment diffs. "
+                       "Stopping environment diff publisher");
         stopPublishingEnvironment();
       }
     }
@@ -228,7 +231,8 @@ void EnvironmentMonitor::stopPublishingEnvironment()
   }
 }
 
-void EnvironmentMonitor::startPublishingEnvironment(EnvironmentUpdateType update_type, const std::string& environment_topic)
+void EnvironmentMonitor::startPublishingEnvironment(EnvironmentUpdateType update_type,
+                                                    const std::string& environment_topic)
 {
   publish_update_types_ = update_type;
   if (!publish_environment_ && env_)
@@ -326,35 +330,45 @@ void EnvironmentMonitor::triggerEnvironmentUpdateEvent(EnvironmentUpdateType upd
 
 bool EnvironmentMonitor::requestEnvironmentState(const std::string& service_name)
 {
-  ROS_ERROR("tesseract environment request environment state is currently not implemented, %s", service_name.c_str());
+  ROS_ERROR("tesseract environment request environment state is currently not "
+            "implemented, %s",
+            service_name.c_str());
 
-//  // use global namespace for service
-//  ros::ServiceClient client = ros::NodeHandle().serviceClient<moveit_msgs::GetPlanningScene>(service_name);
-//  moveit_msgs::GetPlanningScene srv;
-//  srv.request.components.components =
-//      srv.request.components.SCENE_SETTINGS | srv.request.components.ROBOT_STATE |
-//      srv.request.components.ROBOT_STATE_ATTACHED_OBJECTS | srv.request.components.WORLD_OBJECT_NAMES |
-//      srv.request.components.WORLD_OBJECT_GEOMETRY | srv.request.components.OCTOMAP |
-//      srv.request.components.TRANSFORMS | srv.request.components.ALLOWED_COLLISION_MATRIX |
-//      srv.request.components.LINK_PADDING_AND_SCALING | srv.request.components.OBJECT_COLORS;
+  //  // use global namespace for service
+  //  ros::ServiceClient client =
+  //  ros::NodeHandle().serviceClient<moveit_msgs::GetPlanningScene>(service_name);
+  //  moveit_msgs::GetPlanningScene srv;
+  //  srv.request.components.components =
+  //      srv.request.components.SCENE_SETTINGS |
+  //      srv.request.components.ROBOT_STATE |
+  //      srv.request.components.ROBOT_STATE_ATTACHED_OBJECTS |
+  //      srv.request.components.WORLD_OBJECT_NAMES |
+  //      srv.request.components.WORLD_OBJECT_GEOMETRY |
+  //      srv.request.components.OCTOMAP |
+  //      srv.request.components.TRANSFORMS |
+  //      srv.request.components.ALLOWED_COLLISION_MATRIX |
+  //      srv.request.components.LINK_PADDING_AND_SCALING |
+  //      srv.request.components.OBJECT_COLORS;
 
-//  // Make sure client is connected to server
-//  if (!client.exists())
-//  {
-//    ROS_DEBUG_STREAM_NAMED(LOGNAME, "Waiting for service `" << service_name << "` to exist.");
-//    client.waitForExistence(ros::Duration(5.0));
-//  }
+  //  // Make sure client is connected to server
+  //  if (!client.exists())
+  //  {
+  //    ROS_DEBUG_STREAM_NAMED(LOGNAME, "Waiting for service `" << service_name
+  //    << "` to exist.");
+  //    client.waitForExistence(ros::Duration(5.0));
+  //  }
 
-//  if (client.call(srv))
-//  {
-//    newEnvironmentMessage(srv.response.scene);
-//  }
-//  else
-//  {
-//    ROS_INFO_NAMED(LOGNAME, "Failed to call service %s, have you launched move_group? at %s:%d", service_name.c_str(),
-//                   __FILE__, __LINE__);
-//    return false;
-//  }
+  //  if (client.call(srv))
+  //  {
+  //    newEnvironmentMessage(srv.response.scene);
+  //  }
+  //  else
+  //  {
+  //    ROS_INFO_NAMED(LOGNAME, "Failed to call service %s, have you launched
+  //    move_group? at %s:%d", service_name.c_str(),
+  //                   __FILE__, __LINE__);
+  //    return false;
+  //  }
   return true;
 }
 
@@ -377,7 +391,9 @@ bool EnvironmentMonitor::newEnvironmentMessage(const tesseract_msgs::TesseractSt
 
     last_update_time_ = ros::Time::now();
     last_robot_motion_time_ = env_msg.joint_state.header.stamp;
-    ROS_DEBUG_STREAM_NAMED(LOGNAME, "environment update " << fmod(last_update_time_.toSec(), 10.) << " robot stamp: " << fmod(last_robot_motion_time_.toSec(), 10.));
+    ROS_DEBUG_STREAM_NAMED(LOGNAME,
+                           "environment update " << fmod(last_update_time_.toSec(), 10.) << " robot stamp: "
+                                                 << fmod(last_robot_motion_time_.toSec(), 10.));
     old_scene_name = env_->getName();
     result = tesseract_ros::processTesseractStateMsg(env_, env_msg);
   }
@@ -385,8 +401,9 @@ bool EnvironmentMonitor::newEnvironmentMessage(const tesseract_msgs::TesseractSt
   // if we have a diff, try to more accuratelly determine the update type
   if (env_msg.is_diff)
   {
-//    bool no_other_scene_upd = (env_msg.name.empty() || env_msg.name == old_scene_name) &&
-//                               env_msg.allowed_collision_matrix.entry_names.empty();
+    //    bool no_other_scene_upd = (env_msg.name.empty() || env_msg.name ==
+    //    old_scene_name) &&
+    //                               env_msg.allowed_collision_matrix.entry_names.empty();
 
     // TODO: Levi Need to add back allowed collision matrix
     bool no_other_scene_upd = (env_msg.name.empty() || env_msg.name == old_scene_name);
@@ -397,10 +414,12 @@ bool EnvironmentMonitor::newEnvironmentMessage(const tesseract_msgs::TesseractSt
       if (!env_msg.attachable_objects.empty() || !env_msg.attached_bodies.empty())
         upd = (EnvironmentUpdateType)((int)upd | (int)UPDATE_GEOMETRY);
 
-//      if (!env.fixed_frame_transforms.empty())
-//        upd = (EnvironmentUpdateType)((int)upd | (int)UPDATE_TRANSFORMS);
+      //      if (!env.fixed_frame_transforms.empty())
+      //        upd = (EnvironmentUpdateType)((int)upd |
+      //        (int)UPDATE_TRANSFORMS);
 
-      if (!tesseract_ros::isMsgEmpty(env_msg.multi_dof_joint_state) || !tesseract_ros::isMsgEmpty(env_msg.multi_dof_joint_state))
+      if (!tesseract_ros::isMsgEmpty(env_msg.multi_dof_joint_state) ||
+          !tesseract_ros::isMsgEmpty(env_msg.multi_dof_joint_state))
         upd = (EnvironmentUpdateType)((int)upd | (int)UPDATE_STATE);
     }
   }
@@ -408,7 +427,7 @@ bool EnvironmentMonitor::newEnvironmentMessage(const tesseract_msgs::TesseractSt
   return result;
 }
 
-//void EnvironmentMonitor::newPlanningSceneWorldCallback(
+// void EnvironmentMonitor::newPlanningSceneWorldCallback(
 //    const moveit_msgs::PlanningSceneWorldConstPtr& world)
 //{
 //  if (scene_)
@@ -433,15 +452,18 @@ bool EnvironmentMonitor::newEnvironmentMessage(const tesseract_msgs::TesseractSt
 //  }
 //}
 
-//void EnvironmentMonitor::collisionObjectFailTFCallback(
-//    const moveit_msgs::CollisionObjectConstPtr& obj, tf::filter_failure_reasons::FilterFailureReason reason)
+// void EnvironmentMonitor::collisionObjectFailTFCallback(
+//    const moveit_msgs::CollisionObjectConstPtr& obj,
+//    tf::filter_failure_reasons::FilterFailureReason reason)
 //{
 //  // if we just want to remove objects, the frame does not matter
-//  if (reason == tf::filter_failure_reasons::EmptyFrameID && obj->operation == moveit_msgs::CollisionObject::REMOVE)
+//  if (reason == tf::filter_failure_reasons::EmptyFrameID && obj->operation ==
+//  moveit_msgs::CollisionObject::REMOVE)
 //    collisionObjectCallback(obj);
 //}
 
-//void EnvironmentMonitor::attachableObjectCallback(const tesseract_msgs::AttachableObjectConstPtr &ao_msg)
+// void EnvironmentMonitor::attachableObjectCallback(const
+// tesseract_msgs::AttachableObjectConstPtr &ao_msg)
 //{
 //  if (env_)
 //  {
@@ -455,7 +477,8 @@ bool EnvironmentMonitor::newEnvironmentMessage(const tesseract_msgs::TesseractSt
 //  }
 //}
 
-//void EnvironmentMonitor::attachedBodyInfoCallback(const tesseract_msgs::AttachedBodyInfoConstPtr &ab_info_msg)
+// void EnvironmentMonitor::attachedBodyInfoCallback(const
+// tesseract_msgs::AttachedBodyInfoConstPtr &ab_info_msg)
 //{
 //  if (env_)
 //  {
@@ -480,15 +503,20 @@ bool EnvironmentMonitor::waitForCurrentState(const ros::Time& t, double wait_tim
 
   if (current_state_monitor_)
   {
-    // Wait for next robot update in state monitor. Those updates are only passed to PSM when robot actually moved!
+    // Wait for next robot update in state monitor. Those updates are only
+    // passed to PSM when robot actually moved!
     enforce_next_state_update_ = true;  // enforce potential updates to be directly applied
     bool success = current_state_monitor_->waitForCurrentState(t, wait_time);
-    enforce_next_state_update_ =
-        false;  // back to normal throttling behavior, not applying incoming updates immediately
+    enforce_next_state_update_ = false;  // back to normal throttling behavior,
+                                         // not applying incoming updates
+                                         // immediately
 
-    /* If the robot doesn't move, we will never receive an update from CSM in planning scene.
-       As we ensured that an update, if it is triggered by CSM, is directly passed to the scene,
-       we can early return true here (if we successfully received a CSM update). Otherwise return false. */
+    /* If the robot doesn't move, we will never receive an update from CSM in
+       planning scene.
+       As we ensured that an update, if it is triggered by CSM, is directly
+       passed to the scene,
+       we can early return true here (if we successfully received a CSM update).
+       Otherwise return false. */
     if (success)
       return true;
 
@@ -496,9 +524,12 @@ bool EnvironmentMonitor::waitForCurrentState(const ros::Time& t, double wait_tim
     return false;
   }
 
-  // Sometimes there is no state monitor. In this case state updates are received as part of scene updates only.
-  // However, scene updates are only published if the robot actually moves. Hence we need a timeout!
-  // As publishing planning scene updates is throttled (2Hz by default), a 1s timeout is a suitable default.
+  // Sometimes there is no state monitor. In this case state updates are
+  // received as part of scene updates only.
+  // However, scene updates are only published if the robot actually moves.
+  // Hence we need a timeout!
+  // As publishing planning scene updates is throttled (2Hz by default), a 1s
+  // timeout is a suitable default.
   boost::shared_lock<boost::shared_mutex> lock(scene_update_mutex_);
   ros::Time prev_robot_motion_time = last_robot_motion_time_;
   while (last_robot_motion_time_ < t &&  // Wait until the state update actually reaches the scene.
@@ -511,43 +542,30 @@ bool EnvironmentMonitor::waitForCurrentState(const ros::Time& t, double wait_tim
   bool success = last_robot_motion_time_ >= t;
   // suppress warning if we received an update at all
   if (!success && prev_robot_motion_time != last_robot_motion_time_)
-    ROS_WARN_NAMED(LOGNAME, "Maybe failed to update robot state, time diff: %.3fs",
-                   (t - last_robot_motion_time_).toSec());
+    ROS_WARN_NAMED(
+        LOGNAME, "Maybe failed to update robot state, time diff: %.3fs", (t - last_robot_motion_time_).toSec());
 
-  ROS_DEBUG_STREAM_NAMED(LOGNAME, "sync done: robot motion: " << (t - last_robot_motion_time_).toSec()
-                                                              << " scene update: " << (t - last_update_time_).toSec());
+  ROS_DEBUG_STREAM_NAMED(LOGNAME,
+                         "sync done: robot motion: " << (t - last_robot_motion_time_).toSec() << " scene update: "
+                                                     << (t - last_update_time_).toSec());
   return success;
 }
 
-void EnvironmentMonitor::lockEnvironmentRead()
-{
-  scene_update_mutex_.lock_shared();
-}
-
-void EnvironmentMonitor::unlockEnvironmentRead()
-{
-  scene_update_mutex_.unlock_shared();
-}
-
-void EnvironmentMonitor::lockEnvironmentWrite()
-{
-  scene_update_mutex_.lock();
-}
-
-void EnvironmentMonitor::unlockEnvironmentWrite()
-{
-  scene_update_mutex_.unlock();
-}
-
+void EnvironmentMonitor::lockEnvironmentRead() { scene_update_mutex_.lock_shared(); }
+void EnvironmentMonitor::unlockEnvironmentRead() { scene_update_mutex_.unlock_shared(); }
+void EnvironmentMonitor::lockEnvironmentWrite() { scene_update_mutex_.lock(); }
+void EnvironmentMonitor::unlockEnvironmentWrite() { scene_update_mutex_.unlock(); }
 void EnvironmentMonitor::startEnvironmentMonitor(const std::string& environment_topic)
 {
   stopEnvironmentMonitor();
 
   ROS_INFO_NAMED(LOGNAME, "Starting environment monitor");
-  // listen for environment updates; these messages include transforms, so no need for filters
+  // listen for environment updates; these messages include transforms, so no
+  // need for filters
   if (!environment_topic.empty())
   {
-    environment_subscriber_ = root_nh_.subscribe(environment_topic, 100, &EnvironmentMonitor::newEnvironmentCallback, this);
+    environment_subscriber_ =
+        root_nh_.subscribe(environment_topic, 100, &EnvironmentMonitor::newEnvironmentCallback, this);
     ROS_INFO_NAMED(LOGNAME, "Listening to '%s'", root_nh_.resolveName(environment_topic).c_str());
   }
 }
@@ -565,7 +583,6 @@ void EnvironmentMonitor::startStateMonitor(const std::string& joint_states_topic
   stopStateMonitor();
   if (env_)
   {
-
     if (!current_state_monitor_)
       current_state_monitor_.reset(new CurrentStateMonitor(env_, root_nh_));
 
@@ -637,7 +654,8 @@ void EnvironmentMonitor::stateUpdateTimerCallback(const ros::WallTimerEvent& /*e
         state_update_pending_ = false;
         last_robot_state_update_wall_time_ = ros::WallTime::now();
         update = true;
-        ROS_DEBUG_STREAM_NAMED(LOGNAME, "performPendingStateUpdate: " << fmod(last_robot_state_update_wall_time_.toSec(), 10));
+        ROS_DEBUG_STREAM_NAMED(LOGNAME,
+                               "performPendingStateUpdate: " << fmod(last_robot_state_update_wall_time_.toSec(), 10));
       }
     }
 
@@ -684,8 +702,8 @@ void EnvironmentMonitor::updateEnvironmentWithCurrentState()
         (ros::Time::now() - current_state_monitor_->getMonitorStartTime()).toSec() > 1.0)
     {
       std::string missing_str = boost::algorithm::join(missing, ", ");
-      ROS_WARN_THROTTLE_NAMED(1, LOGNAME, "The complete state of the robot is not yet known.  Missing %s",
-                              missing_str.c_str());
+      ROS_WARN_THROTTLE_NAMED(
+          1, LOGNAME, "The complete state of the robot is not yet known.  Missing %s", missing_str.c_str());
     }
 
     {
@@ -719,8 +737,8 @@ void EnvironmentMonitor::clearUpdateCallbacks()
 void EnvironmentMonitor::setEnvironmentPublishingFrequency(double hz)
 {
   publish_environment_frequency_ = hz;
-  ROS_DEBUG_NAMED(LOGNAME, "Maximum frquency for publishing an environment is now %lf Hz", publish_environment_frequency_);
+  ROS_DEBUG_NAMED(
+      LOGNAME, "Maximum frquency for publishing an environment is now %lf Hz", publish_environment_frequency_);
 }
-
 }
 }

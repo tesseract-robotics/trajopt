@@ -35,25 +35,25 @@
 /* Author: Dave Coleman */
 
 #include "tesseract_rviz/render_tools/trajectory_visualization.h"
-#include "tesseract_rviz/render_tools/link_updater.h"
-#include "tesseract_rviz/render_tools/state_visualization.h"
 #include "tesseract_ros/ros_tesseract_utils.h"
 #include "tesseract_rviz/render_tools/env/robot.h"
 #include "tesseract_rviz/render_tools/env/robot_link.h"
+#include "tesseract_rviz/render_tools/link_updater.h"
+#include "tesseract_rviz/render_tools/state_visualization.h"
 
 #include <boost/algorithm/string.hpp>
 #include <boost/algorithm/string/replace.hpp>
 
-#include <rviz/properties/property.h>
-#include <rviz/properties/int_property.h>
-#include <rviz/properties/string_property.h>
+#include <rviz/display_context.h>
 #include <rviz/properties/bool_property.h>
-#include <rviz/properties/float_property.h>
-#include <rviz/properties/ros_topic_property.h>
+#include <rviz/properties/color_property.h>
 #include <rviz/properties/editable_enum_property.h>
 #include <rviz/properties/enum_property.h>
-#include <rviz/properties/color_property.h>
-#include <rviz/display_context.h>
+#include <rviz/properties/float_property.h>
+#include <rviz/properties/int_property.h>
+#include <rviz/properties/property.h>
+#include <rviz/properties/ros_topic_property.h>
+#include <rviz/properties/string_property.h>
 #include <rviz/window_manager_interface.h>
 
 namespace tesseract_rviz
@@ -69,46 +69,67 @@ TrajectoryVisualization::TrajectoryVisualization(rviz::Property* widget, rviz::D
   , trajectory_slider_dock_panel_(NULL)
 {
   trajectory_topic_property_ =
-      new rviz::RosTopicProperty("Trajectory Topic", "/tesseract/display_tesseract_trajectory",
+      new rviz::RosTopicProperty("Trajectory Topic",
+                                 "/tesseract/display_tesseract_trajectory",
                                  ros::message_traits::datatype<tesseract_msgs::Trajectory>(),
-                                 "The topic on which the tesseract_msgs::Trajectory messages are received", widget,
-                                 SLOT(changedTrajectoryTopic()), this);
+                                 "The topic on which the tesseract_msgs::Trajectory messages are received",
+                                 widget,
+                                 SLOT(changedTrajectoryTopic()),
+                                 this);
 
   display_path_visual_enabled_property_ =
-      new rviz::BoolProperty("Show Visual", true, "Whether to display the visual representation of the path.",
-                             widget, SLOT(changedDisplayPathVisualEnabled()), this);
+      new rviz::BoolProperty("Show Visual",
+                             true,
+                             "Whether to display the visual representation of the path.",
+                             widget,
+                             SLOT(changedDisplayPathVisualEnabled()),
+                             this);
 
   display_path_collision_enabled_property_ =
-      new rviz::BoolProperty("Show Collision", false, "Whether to display the collision representation of the path.",
-                             widget, SLOT(changedDisplayPathCollisionEnabled()), this);
+      new rviz::BoolProperty("Show Collision",
+                             false,
+                             "Whether to display the collision representation of the path.",
+                             widget,
+                             SLOT(changedDisplayPathCollisionEnabled()),
+                             this);
 
-  path_alpha_property_ = new rviz::FloatProperty("Alpha", 0.5f, "Specifies the alpha for links with geometry",
-                                                       widget, SLOT(changedPathAlpha()), this);
+  path_alpha_property_ = new rviz::FloatProperty(
+      "Alpha", 0.5f, "Specifies the alpha for links with geometry", widget, SLOT(changedPathAlpha()), this);
   path_alpha_property_->setMin(0.0);
   path_alpha_property_->setMax(1.0);
 
-  display_mode_property_ = new rviz::EnumProperty("Display Mode", "Loop", "How to display the trajectoy.", widget, SLOT(changedDisplayMode()), this);
+  display_mode_property_ = new rviz::EnumProperty(
+      "Display Mode", "Loop", "How to display the trajectoy.", widget, SLOT(changedDisplayMode()), this);
   display_mode_property_->addOptionStd("Single", 0);
   display_mode_property_->addOptionStd("Loop", 1);
   display_mode_property_->addOptionStd("Trail", 2);
 
-  state_display_time_property_ = new rviz::EditableEnumProperty("State Display Time", "0.05 s",
+  state_display_time_property_ = new rviz::EditableEnumProperty("State Display Time",
+                                                                "0.05 s",
                                                                 "The amount of wall-time to wait in between displaying "
                                                                 "states along a received trajectory path",
-                                                                widget, SLOT(changedStateDisplayTime()), this);
+                                                                widget,
+                                                                SLOT(changedStateDisplayTime()),
+                                                                this);
   state_display_time_property_->addOptionStd("REALTIME");
   state_display_time_property_->addOptionStd("0.05 s");
   state_display_time_property_->addOptionStd("0.1 s");
   state_display_time_property_->addOptionStd("0.5 s");
 
-  trail_step_size_property_ = new rviz::IntProperty("Trail Step Size", 1, "Specifies the step size of the samples "
-                                                                          "shown in the trajectory trail.",
-                                                    widget, SLOT(changedTrailStepSize()), this);
+  trail_step_size_property_ = new rviz::IntProperty("Trail Step Size",
+                                                    1,
+                                                    "Specifies the step size of the samples "
+                                                    "shown in the trajectory trail.",
+                                                    widget,
+                                                    SLOT(changedTrailStepSize()),
+                                                    this);
   trail_step_size_property_->setMin(1);
 
-  interrupt_display_property_ = new rviz::BoolProperty(
-      "Interrupt Display", false,
-      "Immediately show newly planned trajectory, interrupting the currently displayed one.", widget);
+  interrupt_display_property_ = new rviz::BoolProperty("Interrupt Display",
+                                                       false,
+                                                       "Immediately show newly planned trajectory, "
+                                                       "interrupting the currently displayed one.",
+                                                       widget);
 
   default_color_property_ = new rviz::ColorProperty(
       "Robot Color", QColor(150, 50, 150), "The color of the animated robot", widget, SLOT(changedColor()), this);
@@ -150,7 +171,9 @@ void TrajectoryVisualization::onInitialize(Ogre::SceneNode* scene_node,
     trajectory_slider_dock_panel_ =
         window_context->addPane(display_->getName() + " - Slider", trajectory_slider_panel_);
     trajectory_slider_dock_panel_->setIcon(display_->getIcon());
-    connect(trajectory_slider_dock_panel_, SIGNAL(visibilityChanged(bool)), this,
+    connect(trajectory_slider_dock_panel_,
+            SIGNAL(visibilityChanged(bool)),
+            this,
             SLOT(trajectorySliderPanelVisibilityChange(bool)));
     trajectory_slider_panel_->onInitialize();
   }
@@ -210,7 +233,8 @@ void TrajectoryVisualization::createTrajectoryTrail()
     return;
 
   // Add static trajectory geometry
-  trajectory_static_ = tesseract_rviz::StateVisualizationPtr(new tesseract_rviz::StateVisualization(scene_node_, context_, "Trail Static", nullptr));
+  trajectory_static_ = tesseract_rviz::StateVisualizationPtr(
+      new tesseract_rviz::StateVisualization(scene_node_, context_, "Trail Static", nullptr));
   trajectory_static_->load(env_->getURDF(), true, true, false, true);
   trajectory_static_->setVisualVisible(display_path_visual_enabled_property_->getBool());
   trajectory_static_->setCollisionVisible(display_path_collision_enabled_property_->getBool());
@@ -222,7 +246,6 @@ void TrajectoryVisualization::createTrajectoryTrail()
 
   trajectory_static_->setVisible(display_->isEnabled() && !animating_path_);
 
-
   int stepsize = trail_step_size_property_->getInt();
   // always include last trajectory point
   std::size_t num_waypoints = t->joint_trajectory.points.size();
@@ -230,7 +253,8 @@ void TrajectoryVisualization::createTrajectoryTrail()
   for (std::size_t i = 0; i < trajectory_trail_.size(); i++)
   {
     int waypoint_i = std::min(i * stepsize, num_waypoints - 1);  // limit to last trajectory point
-    tesseract_rviz::StateVisualizationPtr state(new tesseract_rviz::StateVisualization(scene_node_, context_, "Path Trail " + std::to_string(i), nullptr));
+    tesseract_rviz::StateVisualizationPtr state(
+        new tesseract_rviz::StateVisualization(scene_node_, context_, "Path Trail " + std::to_string(i), nullptr));
     state->load(env_->getURDF(), true, true, true, false);
     state->setVisualVisible(display_path_visual_enabled_property_->getBool());
     state->setCollisionVisible(display_path_collision_enabled_property_->getBool());
@@ -298,15 +322,12 @@ void TrajectoryVisualization::changedTrajectoryTopic()
   trajectory_topic_sub_.shutdown();
   if (!trajectory_topic_property_->getStdString().empty())
   {
-    trajectory_topic_sub_ = update_nh_.subscribe(trajectory_topic_property_->getStdString(), 5,
-                                                 &TrajectoryVisualization::incomingDisplayTrajectory, this);
+    trajectory_topic_sub_ = update_nh_.subscribe(
+        trajectory_topic_property_->getStdString(), 5, &TrajectoryVisualization::incomingDisplayTrajectory, this);
   }
 }
 
-void TrajectoryVisualization::changedStateDisplayTime()
-{
-}
-
+void TrajectoryVisualization::changedStateDisplayTime() {}
 void TrajectoryVisualization::changedDisplayPathVisualEnabled()
 {
   if (display_->isEnabled())
@@ -338,7 +359,7 @@ void TrajectoryVisualization::changedDisplayPathCollisionEnabled()
 }
 
 void TrajectoryVisualization::onEnable()
-{  
+{
   changedPathAlpha();  // set alpha property
 
   display_path_->setVisualVisible(display_path_visual_enabled_property_->getBool());
@@ -410,11 +431,7 @@ float TrajectoryVisualization::getStateDisplayTime()
   }
 }
 
-void TrajectoryVisualization::dropTrajectory()
-{
-  drop_displaying_trajectory_ = true;
-}
-
+void TrajectoryVisualization::dropTrajectory() { drop_displaying_trajectory_ = true; }
 void TrajectoryVisualization::update(float wall_dt, float /*ros_dt*/)
 {
   if (drop_displaying_trajectory_)
@@ -447,13 +464,15 @@ void TrajectoryVisualization::update(float wall_dt, float /*ros_dt*/)
       }
       else if (trajectory_slider_panel_ && trajectory_slider_panel_->isVisible())
       {
-        if (static_cast<unsigned>(trajectory_slider_panel_->getSliderPosition()) == displaying_trajectory_message_->joint_trajectory.points.size() - 1)
+        if (static_cast<unsigned>(trajectory_slider_panel_->getSliderPosition()) ==
+            displaying_trajectory_message_->joint_trajectory.points.size() - 1)
         {  // show the last waypoint if the slider is enabled
           std::size_t waypoint = displaying_trajectory_message_->joint_trajectory.points.size() - 1;
           std::unordered_map<std::string, double> joints;
           for (unsigned j = 0; j < displaying_trajectory_message_->joint_trajectory.joint_names.size(); ++j)
           {
-            joints[displaying_trajectory_message_->joint_trajectory.joint_names[j]] = displaying_trajectory_message_->joint_trajectory.points[waypoint].positions[j];
+            joints[displaying_trajectory_message_->joint_trajectory.joint_names[j]] =
+                displaying_trajectory_message_->joint_trajectory.points[waypoint].positions[j];
           }
 
           display_path_->update(env_, env_->getState(joints));
@@ -472,7 +491,8 @@ void TrajectoryVisualization::update(float wall_dt, float /*ros_dt*/)
       std::unordered_map<std::string, double> joints;
       for (unsigned j = 0; j < displaying_trajectory_message_->joint_trajectory.joint_names.size(); ++j)
       {
-        joints[displaying_trajectory_message_->joint_trajectory.joint_names[j]] = displaying_trajectory_message_->joint_trajectory.points[0].positions[j];
+        joints[displaying_trajectory_message_->joint_trajectory.joint_names[j]] =
+            displaying_trajectory_message_->joint_trajectory.points[0].positions[j];
       }
 
       display_path_->update(env_, env_->getState(joints));
@@ -487,14 +507,11 @@ void TrajectoryVisualization::update(float wall_dt, float /*ros_dt*/)
     float tm = getStateDisplayTime();
     if (tm < 0.0)  // if we should use realtime
     {
-
       ros::Duration d = displaying_trajectory_message_->joint_trajectory.points[current_state_ + 1].time_from_start;
       if (d.isZero())
         tm = 0;
       else
         tm = (d - displaying_trajectory_message_->joint_trajectory.points[current_state_].time_from_start).toSec();
-
-
     }
 
     if (current_state_time_ > tm)
@@ -512,7 +529,8 @@ void TrajectoryVisualization::update(float wall_dt, float /*ros_dt*/)
         std::unordered_map<std::string, double> joints;
         for (unsigned j = 0; j < displaying_trajectory_message_->joint_trajectory.joint_names.size(); ++j)
         {
-          joints[displaying_trajectory_message_->joint_trajectory.joint_names[j]] = displaying_trajectory_message_->joint_trajectory.points[current_state_].positions[j];
+          joints[displaying_trajectory_message_->joint_trajectory.joint_names[j]] =
+              displaying_trajectory_message_->joint_trajectory.points[current_state_].positions[j];
         }
 
         display_path_->update(env_, env_->getState(joints));
@@ -548,7 +566,9 @@ void TrajectoryVisualization::incomingDisplayTrajectory(const tesseract_msgs::Tr
   }
 
   if (!msg->model_id.empty() && msg->model_id != env_->getURDF()->getName())
-    ROS_WARN("Received a trajectory to display for model '%s' but model '%s' was expected", msg->model_id.c_str(),
+    ROS_WARN("Received a trajectory to display for model '%s' but model '%s' "
+             "was expected",
+             msg->model_id.c_str(),
              env_->getURDF()->getName().c_str());
 
   // Setup environment
@@ -559,13 +579,16 @@ void TrajectoryVisualization::incomingDisplayTrajectory(const tesseract_msgs::Tr
     bool joints_equal = true;
     if (trajectory_message_to_display_)
     {
-      if ((trajectory_message_to_display_->joint_trajectory.points.size() == msg->joint_trajectory.points.size()) && (trajectory_message_to_display_->joint_trajectory.joint_names.size() == msg->joint_trajectory.joint_names.size()))
+      if ((trajectory_message_to_display_->joint_trajectory.points.size() == msg->joint_trajectory.points.size()) &&
+          (trajectory_message_to_display_->joint_trajectory.joint_names.size() ==
+           msg->joint_trajectory.joint_names.size()))
       {
         for (unsigned i = 0; i < msg->joint_trajectory.points.size(); ++i)
         {
           for (unsigned j = 0; j < msg->joint_trajectory.joint_names.size(); ++j)
           {
-            double delta = msg->joint_trajectory.points[i].positions[j] - trajectory_message_to_display_->joint_trajectory.points[i].positions[j];
+            double delta = msg->joint_trajectory.points[i].positions[j] -
+                           trajectory_message_to_display_->joint_trajectory.points[i].positions[j];
             joints_equal &= (std::abs(delta) < std::numeric_limits<double>::epsilon());
           }
         }

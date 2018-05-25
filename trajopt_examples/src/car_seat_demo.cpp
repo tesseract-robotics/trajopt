@@ -1,21 +1,23 @@
-#include <ros/ros.h>
-#include <tesseract_ros/ros_basic_plotting.h>
-#include <tesseract_ros/kdl/kdl_env.h>
-#include <tesseract_ros/kdl/kdl_chain_kin.h>
-#include <trajopt/problem_description.hpp>
-#include <trajopt/plot_callback.hpp>
-#include <trajopt_utils/logging.hpp>
-#include <trajopt_utils/config.hpp>
-#include <urdf_parser/urdf_parser.h>
 #include <jsoncpp/json/json.h>
+#include <ros/ros.h>
 #include <srdfdom/model.h>
+#include <tesseract_ros/kdl/kdl_chain_kin.h>
+#include <tesseract_ros/kdl/kdl_env.h>
+#include <tesseract_ros/ros_basic_plotting.h>
+#include <trajopt/plot_callback.hpp>
+#include <trajopt/problem_description.hpp>
+#include <trajopt_utils/config.hpp>
+#include <trajopt_utils/logging.hpp>
+#include <urdf_parser/urdf_parser.h>
 
 using namespace trajopt;
 using namespace tesseract;
 
 const std::string ROBOT_DESCRIPTION_PARAM = "robot_description"; /**< Default ROS parameter for robot description */
-const std::string ROBOT_SEMANTIC_PARAM = "robot_description_semantic"; /**< Default ROS parameter for robot description */
-const std::string TRAJOPT_DESCRIPTION_PARAM = "trajopt_description"; /**< Default ROS parameter for trajopt description */
+const std::string ROBOT_SEMANTIC_PARAM = "robot_description_semantic"; /**< Default ROS parameter for robot
+                                                                          description */
+const std::string TRAJOPT_DESCRIPTION_PARAM =
+    "trajopt_description"; /**< Default ROS parameter for trajopt description */
 
 bool plotting_ = false;
 std::string method_ = "json";
@@ -23,16 +25,17 @@ urdf::ModelInterfaceSharedPtr urdf_model_; /**< URDF Model */
 srdf::ModelSharedPtr srdf_model_;          /**< SRDF Model */
 tesseract_ros::KDLEnvPtr env_;             /**< Trajopt Basic Environment */
 
-std::unordered_map<std::string, std::unordered_map<std::string, double> > saved_positions_;
+std::unordered_map<std::string, std::unordered_map<std::string, double>> saved_positions_;
 
 void addSeats()
 {
-  for (int i=0; i<3; ++i)
+  for (int i = 0; i < 3; ++i)
   {
     AttachableObjectPtr obj(new AttachableObject());
 
-    obj->name = "seat_" + std::to_string(i+1);
-    std::shared_ptr<shapes::Mesh> visual_mesh(shapes::createMeshFromResource("package://trajopt_examples/meshes/car_seat/visual/seat.dae"));
+    obj->name = "seat_" + std::to_string(i + 1);
+    std::shared_ptr<shapes::Mesh> visual_mesh(
+        shapes::createMeshFromResource("package://trajopt_examples/meshes/car_seat/visual/seat.dae"));
     Eigen::Affine3d seat_pose;
     seat_pose.setIdentity();
 
@@ -41,7 +44,8 @@ void addSeats()
 
     for (auto i = 1; i <= 10; ++i)
     {
-      std::shared_ptr<shapes::Mesh> collision_mesh(shapes::createMeshFromResource("package://trajopt_examples/meshes/car_seat/collision/seat_" + std::to_string(i) + ".stl"));
+      std::shared_ptr<shapes::Mesh> collision_mesh(shapes::createMeshFromResource(
+          "package://trajopt_examples/meshes/car_seat/collision/seat_" + std::to_string(i) + ".stl"));
 
       obj->collision.shapes.push_back(collision_mesh);
       obj->collision.shape_poses.push_back(seat_pose);
@@ -51,20 +55,23 @@ void addSeats()
     env_->addAttachableObject(obj);
 
     AttachedBodyInfo attached_body;
-    attached_body.object_name = "seat_" + std::to_string(i+1);
+    attached_body.object_name = "seat_" + std::to_string(i + 1);
     attached_body.parent_link_name = "world";
-    attached_body.transform = Eigen::AngleAxisd(0.0, Vector3d::UnitX()) * Eigen::AngleAxisd(0.0, Vector3d::UnitY()) * Eigen::AngleAxisd(3.14159, Vector3d::UnitZ());
+    attached_body.transform = Eigen::AngleAxisd(0.0, Vector3d::UnitX()) * Eigen::AngleAxisd(0.0, Vector3d::UnitY()) *
+                              Eigen::AngleAxisd(3.14159, Vector3d::UnitZ());
     attached_body.transform.translation() = Eigen::Vector3d(0.5 + i, 2.15, 0.45);
 
     env_->attachBody(attached_body);
   }
 }
 
-//void addCar()
+// void addCar()
 //{
 //  AttachableObjectPtr obj(new AttachableObject());
-//  std::shared_ptr<shapes::Mesh> visual_mesh(shapes::createMeshFromResource("package://trajopt_examples/meshes/car_seat/visual/car.dae"));
-//  std::shared_ptr<shapes::Mesh> collision_mesh(shapes::createMeshFromResource("package://trajopt_examples/meshes/car_seat/collision/car.stl"));
+//  std::shared_ptr<shapes::Mesh>
+//  visual_mesh(shapes::createMeshFromResource("package://trajopt_examples/meshes/car_seat/visual/car.dae"));
+//  std::shared_ptr<shapes::Mesh>
+//  collision_mesh(shapes::createMeshFromResource("package://trajopt_examples/meshes/car_seat/collision/car.stl"));
 //  Eigen::Affine3d seat_pose;
 //  seat_pose.setIdentity();
 
@@ -82,14 +89,15 @@ void addSeats()
 //  attached_body.parent_link_name = "world";
 //  attached_body.transform.setIdentity();
 //  attached_body.transform.translation() = Eigen::Vector3d(0.0, -0.2, 0.0);
-//  attached_body.touch_links = {"base_link", "carriage", "cell_logo", "conveyor", "fence", "link_l", "link_s", "rail"};
+//  attached_body.touch_links = {"base_link", "carriage", "cell_logo",
+//  "conveyor", "fence", "link_l", "link_s", "rail"};
 
 //  env_->attachBody(attached_body);
 //}
 
-std::unordered_map<std::string, std::unordered_map<std::string, double> > getPredefinedPosition()
+std::unordered_map<std::string, std::unordered_map<std::string, double>> getPredefinedPosition()
 {
-  std::unordered_map<std::string, std::unordered_map<std::string, double> > result;
+  std::unordered_map<std::string, std::unordered_map<std::string, double>> result;
 
   std::unordered_map<std::string, double> default_pos;
   default_pos["carriage_rail"] = 1.0;
@@ -163,7 +171,7 @@ std::unordered_map<std::string, std::unordered_map<std::string, double> > getPre
 std::vector<double> getPositionVector(const BasicKinConstPtr& kin, const std::unordered_map<std::string, double>& pos)
 {
   std::vector<double> result;
-  for (const auto &joint_name : kin->getJointNames())
+  for (const auto& joint_name : kin->getJointNames())
     result.push_back(pos.at(joint_name));
 
   return result;
@@ -174,13 +182,13 @@ Eigen::VectorXd getPositionVectorXd(const BasicKinConstPtr& kin, const std::unor
   Eigen::VectorXd result;
   result.resize(kin->numJoints());
   int cnt = 0;
-  for (const auto &joint_name : kin->getJointNames())
+  for (const auto& joint_name : kin->getJointNames())
     result[cnt++] = pos.at(joint_name);
 
   return result;
 }
 
-std::shared_ptr<ProblemConstructionInfo> cppMethod(const std::string &start, const std::string &finish)
+std::shared_ptr<ProblemConstructionInfo> cppMethod(const std::string& start, const std::string& finish)
 {
   std::shared_ptr<ProblemConstructionInfo> pci(new ProblemConstructionInfo(env_));
 
@@ -275,8 +283,8 @@ int main(int argc, char** argv)
   // Get predefined positions
   saved_positions_ = getPredefinedPosition();
 
-//  // Add the car as a detailed mesh
-//  addCar();
+  //  // Add the car as a detailed mesh
+  //  addCar();
 
   // Put three seats on the conveyor
   addSeats();
@@ -318,19 +326,24 @@ int main(int argc, char** argv)
   // Plot the trajectory
   plotter->plotTrajectory(prob->GetKin()->getJointNames(), getTraj(pick1_opt.x(), prob->GetVars()));
 
-  collisions.clear();;
-  env_->continuousCollisionCheckTrajectory(prob->GetKin()->getJointNames(), prob->GetKin()->getLinkNames(), getTraj(pick1_opt.x(), prob->GetVars()), collisions);
+  collisions.clear();
+  ;
+  env_->continuousCollisionCheckTrajectory(prob->GetKin()->getJointNames(),
+                                           prob->GetKin()->getLinkNames(),
+                                           getTraj(pick1_opt.x(), prob->GetVars()),
+                                           collisions);
   ROS_INFO("Pick seat #1 trajectory number of continuous collisions: %zu\n", collisions.size());
 
   // Get the state of at the end of pick 1 trajectory
-  EnvStatePtr state = env_->getState(prob->GetKin()->getJointNames(), getPositionVectorXd(prob->GetKin(), saved_positions_["Pick1"]));
+  EnvStatePtr state =
+      env_->getState(prob->GetKin()->getJointNames(), getPositionVectorXd(prob->GetKin(), saved_positions_["Pick1"]));
 
   // Now we to detach seat_1 and attach it to the robot end_effector
   AttachedBodyInfo attach_seat1;
   attach_seat1.object_name = "seat_1";
   attach_seat1.parent_link_name = "end_effector";
   attach_seat1.transform = state->transforms["end_effector"].inverse() * state->transforms["seat_1"];
-  attach_seat1.touch_links = {"eff_link", "cell_logo", "fence", "link_b", "link_r", "link_t"};
+  attach_seat1.touch_links = { "eff_link", "cell_logo", "fence", "link_b", "link_r", "link_t" };
 
   env_->detachBody(attach_seat1.object_name);
   env_->attachBody(attach_seat1);
@@ -352,12 +365,15 @@ int main(int argc, char** argv)
   // Plot the trajectory
   plotter->plotTrajectory(prob->GetKin()->getJointNames(), getTraj(place1_opt.x(), prob->GetVars()));
 
-  collisions.clear();;
-  env_->continuousCollisionCheckTrajectory(prob->GetKin()->getJointNames(), prob->GetKin()->getLinkNames(), getTraj(place1_opt.x(), prob->GetVars()), collisions);
+  collisions.clear();
+  ;
+  env_->continuousCollisionCheckTrajectory(prob->GetKin()->getJointNames(),
+                                           prob->GetKin()->getLinkNames(),
+                                           getTraj(place1_opt.x(), prob->GetVars()),
+                                           collisions);
   ROS_INFO("Place seat #1 trajectory number of continuous collisions: %zu\n", collisions.size());
-
 }
-//int main(int argc, char **argv)
+// int main(int argc, char **argv)
 //{
 //  // Set up ROS.
 //  ros::init(argc, argv, "rss_demo_node");
@@ -371,7 +387,8 @@ int main(int argc, char** argv)
 
 //  // Add all three seats to the world environment
 //  moveit::planning_interface::PlanningSceneInterface planning_scene_interface;
-//  planning_scene_monitor::PlanningSceneMonitor planning_scene_monitor("robot_description");
+//  planning_scene_monitor::PlanningSceneMonitor
+//  planning_scene_monitor("robot_description");
 //  planning_scene_monitor.startSceneMonitor("/move_group/monitored_planning_scene");
 
 //  collision_objects = createCollisionObjects();
@@ -393,7 +410,8 @@ int main(int argc, char** argv)
 //  sleep_t.sleep();
 //  std::string id = "seat_1";
 //  std::string eff_link = "end_effector";
-//  std::vector<std::string> touch_links = {eff_link, "cell_logo", "fence", "link_b", "link_r", "link_t", id};
+//  std::vector<std::string> touch_links = {eff_link, "cell_logo", "fence",
+//  "link_b", "link_r", "link_t", id};
 
 //  group.attachObject(id, eff_link, touch_links);
 //  sleep_t.sleep();

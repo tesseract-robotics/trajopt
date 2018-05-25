@@ -33,7 +33,6 @@
 
 namespace tesseract
 {
-
 class BasicEnv
 {
 public:
@@ -48,11 +47,10 @@ public:
    */
   virtual const std::string& getName() const = 0;
 
-
   /** @brief Set the current state of the environment */
-  virtual void setState(const std::unordered_map<std::string, double> &joints) = 0;
-  virtual void setState(const std::vector<std::string> &joint_names, const std::vector<double> &joint_values) = 0;
-  virtual void setState(const std::vector<std::string> &joint_names, const Eigen::VectorXd &joint_values) = 0;
+  virtual void setState(const std::unordered_map<std::string, double>& joints) = 0;
+  virtual void setState(const std::vector<std::string>& joint_names, const std::vector<double>& joint_values) = 0;
+  virtual void setState(const std::vector<std::string>& joint_names, const Eigen::VectorXd& joint_values) = 0;
 
   /** @brief Get the current state of the environment */
   virtual EnvStateConstPtr getState() const = 0;
@@ -65,23 +63,25 @@ public:
    * @param joints A map of joint names to joint values to change.
    * @return A the state of the environment
    */
-  virtual EnvStatePtr getState(const std::unordered_map<std::string, double> &joints) const = 0;
-  virtual EnvStatePtr getState(const std::vector<std::string> &joint_names, const std::vector<double> &joint_values) const = 0;
-  virtual EnvStatePtr getState(const std::vector<std::string> &joint_names, const Eigen::VectorXd &joint_values) const = 0;
+  virtual EnvStatePtr getState(const std::unordered_map<std::string, double>& joints) const = 0;
+  virtual EnvStatePtr getState(const std::vector<std::string>& joint_names,
+                               const std::vector<double>& joint_values) const = 0;
+  virtual EnvStatePtr getState(const std::vector<std::string>& joint_names,
+                               const Eigen::VectorXd& joint_values) const = 0;
 
   /**
    * @brief hasManipulator Check if a manipulator exist in the environment
    * @param manipulator_name Name of the manipulator
    * @return True if it exists otherwise false
    */
-  virtual bool hasManipulator(const std::string &manipulator_name) const = 0;
+  virtual bool hasManipulator(const std::string& manipulator_name) const = 0;
 
   /**
    * @brief getManipulatorKin Get a kinematic object for the provided manipulator name.
    * @param manipulator_name Name of the manipulator
    * @return BasicKinPtr
    */
-  virtual BasicKinConstPtr getManipulator(const std::string &manipulator_name) const = 0;
+  virtual BasicKinConstPtr getManipulator(const std::string& manipulator_name) const = 0;
 
   /**
    * @brief A a manipulator as a kinematic chain
@@ -90,7 +90,9 @@ public:
    * @param name The name of the manipulator. This must be unique.
    * @return true if successfully created, otherwise false.
    */
-  virtual bool addManipulator(const std::string &base_link, const std::string &tip_link, const std::string &manipulator_name) = 0;
+  virtual bool addManipulator(const std::string& base_link,
+                              const std::string& tip_link,
+                              const std::string& manipulator_name) = 0;
 
   /**
    * @brief Add object so it may be attached/detached.
@@ -136,13 +138,13 @@ public:
    * @brief Attached an attachable object to the environment
    * @param attached_body Information of attaching creating the attached body
    */
-  virtual void attachBody(const AttachedBodyInfo &attached_body_info) = 0;
+  virtual void attachBody(const AttachedBodyInfo& attached_body_info) = 0;
 
   /**
    * @brief Detach an attachable object from the environment
    * @param name The name given to the Attached Body when attached
    */
-  virtual void detachBody(const std::string &name) = 0;
+  virtual void detachBody(const std::string& name) = 0;
 
   /** @brief This will detach all bodies */
   virtual void clearAttachedBodies() = 0;
@@ -175,7 +177,7 @@ public:
    *
    * @return A vector of joint values
    */
-  virtual Eigen::VectorXd getCurrentJointValues(const std::string &manipulator_name) const = 0;
+  virtual Eigen::VectorXd getCurrentJointValues(const std::string& manipulator_name) const = 0;
 
   /**
    * @brief Get the root link name
@@ -208,7 +210,7 @@ public:
    * @brief Get the transform corresponding to the link.
    * @return Transform and is identity when no transform is available.
    */
-  virtual Eigen::Affine3d getLinkTransform(const std::string &link_name) const = 0;
+  virtual Eigen::Affine3d getLinkTransform(const std::string& link_name) const = 0;
 
   /** @brief Get the allowed collision matrix */
   virtual AllowedCollisionMatrixConstPtr getAllowedCollisionMatrix() const = 0;
@@ -230,7 +232,7 @@ public:
    *
    * @param req ContactRequest information
    */
-  virtual void setContactRequest(const ContactRequest &req) = 0;
+  virtual void setContactRequest(const ContactRequest& req) = 0;
 
   /**
    * @brief Should return distance information for all links in list req.link_names (Discrete Check)
@@ -240,7 +242,7 @@ public:
    *
    * @param contacts A list of contacts results.
    */
-  virtual void calcDistancesDiscrete(ContactResultMap &contacts) = 0;
+  virtual void calcDistancesDiscrete(ContactResultMap& contacts) = 0;
 
   /**
    * @brief calcDistances Should return distance information for all links in list req.link_names (Discrete Check)
@@ -249,10 +251,10 @@ public:
    * @param joint_values The values corresponding to the joint name
    * @param contacts A list of contacts results.
    */
-  virtual void calcDistancesDiscrete(const ContactRequest &req,
-                                     const std::vector<std::string> &joint_names,
-                                     const Eigen::VectorXd &joint_values,
-                                     ContactResultMap &contacts) const = 0;
+  virtual void calcDistancesDiscrete(const ContactRequest& req,
+                                     const std::vector<std::string>& joint_names,
+                                     const Eigen::VectorXd& joint_values,
+                                     ContactResultMap& contacts) const = 0;
 
   /**
    * @brief calcDistances Should return distance information for all links in list link_names (Continuous Check)
@@ -262,11 +264,11 @@ public:
    * @param joint_values2 The ending joint values corresponding to the joint names
    * @param contacts A list of contacts results.
    */
-  virtual void calcDistancesContinuous(const ContactRequest &req,
-                                       const std::vector<std::string> &joint_names,
-                                       const Eigen::VectorXd &joint_values1,
-                                       const Eigen::VectorXd &joint_values2,
-                                       ContactResultMap &contacts) const = 0;
+  virtual void calcDistancesContinuous(const ContactRequest& req,
+                                       const std::vector<std::string>& joint_names,
+                                       const Eigen::VectorXd& joint_values1,
+                                       const Eigen::VectorXd& joint_values2,
+                                       ContactResultMap& contacts) const = 0;
 
   /**
    * @brief Should return collision information for all links in list req.link_names (Discrete Check)
@@ -276,7 +278,7 @@ public:
    *
    * @param contacts A list of contact results.
    */
-  virtual void calcCollisionsDiscrete(ContactResultMap &contacts) = 0;
+  virtual void calcCollisionsDiscrete(ContactResultMap& contacts) = 0;
 
   /**
    * @brief calcCollisions Should return collision information for all links in list link_names (Discrete Check)
@@ -285,10 +287,10 @@ public:
    * @param joint_values The values corresponding to the joint name
    * @param contacts A list of contacts results.
    */
-  virtual void calcCollisionsDiscrete(const ContactRequest &req,
-                                      const std::vector<std::string> &joint_names,
-                                      const Eigen::VectorXd &joint_values,
-                                      ContactResultMap &contacts) const = 0;
+  virtual void calcCollisionsDiscrete(const ContactRequest& req,
+                                      const std::vector<std::string>& joint_names,
+                                      const Eigen::VectorXd& joint_values,
+                                      ContactResultMap& contacts) const = 0;
 
   /**
    * @brief calcCollisions Should return collision information for all links in list link_names (Continuous Check)
@@ -298,11 +300,11 @@ public:
    * @param joint_values2 The ending joint values corresponding to the joint names
    * @param contacts A list of contacts results.
    */
-  virtual void calcCollisionsContinuous(const ContactRequest &req,
-                                        const std::vector<std::string> &joint_names,
-                                        const Eigen::VectorXd &joint_values1,
-                                        const Eigen::VectorXd &joint_values2,
-                                        ContactResultMap &contacts) const = 0;
+  virtual void calcCollisionsContinuous(const ContactRequest& req,
+                                        const std::vector<std::string>& joint_names,
+                                        const Eigen::VectorXd& joint_values1,
+                                        const Eigen::VectorXd& joint_values2,
+                                        ContactResultMap& contacts) const = 0;
 
   /**
    * @brief continuousCollisionCheckTrajectory Should perform a continuous collision check over the trajectory
@@ -313,7 +315,10 @@ public:
    * @param collisions The return collision data.
    * @return True if collision was found, otherwise false.
    */
-  virtual bool continuousCollisionCheckTrajectory(const std::vector<std::string> &joint_names, const std::vector<std::string> &link_names, const TrajArray& traj, ContactResultMap& contacts) const = 0;
+  virtual bool continuousCollisionCheckTrajectory(const std::vector<std::string>& joint_names,
+                                                  const std::vector<std::string>& link_names,
+                                                  const TrajArray& traj,
+                                                  ContactResultMap& contacts) const = 0;
 
   /**
    * @brief continuousCollisionCheckTrajectory Should perform a continuous collision check over the trajectory
@@ -324,13 +329,16 @@ public:
    * @param collision The return collision data.
    * @return True if collision was found, otherwise false.
    */
-  virtual bool continuousCollisionCheckTrajectory(const std::vector<std::string> &joint_names, const std::vector<std::string> &link_names, const TrajArray& traj, ContactResult& contacts) const = 0;
+  virtual bool continuousCollisionCheckTrajectory(const std::vector<std::string>& joint_names,
+                                                  const std::vector<std::string>& link_names,
+                                                  const TrajArray& traj,
+                                                  ContactResult& contacts) const = 0;
 
-}; // class BasicEnvBase
+};  // class BasicEnvBase
 
 typedef std::shared_ptr<BasicEnv> BasicEnvPtr;
 typedef std::shared_ptr<const BasicEnv> BasicEnvConstPtr;
 
-} //namespace tesseract
+}  // namespace tesseract
 
-#endif // TESSERACT_CORE_BASIC_ENV_H
+#endif  // TESSERACT_CORE_BASIC_ENV_H

@@ -30,63 +30,62 @@
 #include <boost/filesystem.hpp>
 
 #include <OgreEntity.h>
+#include <OgreManualObject.h>
 #include <OgreMaterial.h>
 #include <OgreMaterialManager.h>
+#include <OgreMesh.h>
 #include <OgreRibbonTrail.h>
 #include <OgreSceneManager.h>
 #include <OgreSceneNode.h>
-#include <OgreSubEntity.h>
-#include <OgreTextureManager.h>
 #include <OgreSharedPtr.h>
+#include <OgreSubEntity.h>
 #include <OgreTechnique.h>
-#include <OgreMesh.h>
-#include <OgreManualObject.h>
+#include <OgreTextureManager.h>
 
 #include <ros/console.h>
 
 #include <resource_retriever/retriever.h>
-#include <urdf_model/model.h>
 #include <urdf_model/link.h>
+#include <urdf_model/model.h>
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wall"
 #pragma GCC diagnostic ignored "-Wunused-parameter"
-#include <octomap_msgs/Octomap.h>
 #include <octomap/octomap.h>
+#include <octomap_msgs/Octomap.h>
 
+#include "rviz/load_resource.h"
 #include "rviz/mesh_loader.h"
 #include "rviz/ogre_helpers/axes.h"
+#include "rviz/ogre_helpers/mesh_shape.h"
 #include "rviz/ogre_helpers/object.h"
 #include "rviz/ogre_helpers/shape.h"
-#include "rviz/properties/float_property.h"
 #include "rviz/properties/bool_property.h"
+#include "rviz/properties/float_property.h"
 #include "rviz/properties/property.h"
 #include "rviz/properties/quaternion_property.h"
 #include "rviz/properties/vector_property.h"
 #include "rviz/selection/selection_manager.h"
 #include "rviz/visualization_manager.h"
-#include "rviz/load_resource.h"
-#include "rviz/ogre_helpers/mesh_shape.h"
 #pragma GCC diagnostic pop
 
-#include <tesseract_core/basic_types.h>
-#include <geometric_shapes/mesh_operations.h>
 #include "tesseract_rviz/render_tools/env/robot.h"
-#include "tesseract_rviz/render_tools/env/robot_link.h"
 #include "tesseract_rviz/render_tools/env/robot_joint.h"
+#include "tesseract_rviz/render_tools/env/robot_link.h"
+#include <geometric_shapes/mesh_operations.h>
+#include <tesseract_core/basic_types.h>
 
-namespace fs=boost::filesystem;
+namespace fs = boost::filesystem;
 
 namespace tesseract_rviz
 {
-
 class RobotLinkSelectionHandler : public rviz::SelectionHandler
 {
 public:
-  RobotLinkSelectionHandler( RobotLink* link, rviz::DisplayContext* context );
+  RobotLinkSelectionHandler(RobotLink* link, rviz::DisplayContext* context);
   virtual ~RobotLinkSelectionHandler();
 
-  virtual void createProperties( const rviz::Picked& /*obj*/, rviz::Property* parent_property );
+  virtual void createProperties(const rviz::Picked& /*obj*/, rviz::Property* parent_property);
   virtual void updateProperties();
 
   virtual void preRenderPass(uint32_t /*pass*/);
@@ -98,56 +97,52 @@ private:
   rviz::QuaternionProperty* orientation_property_;
 };
 
-RobotLinkSelectionHandler::RobotLinkSelectionHandler( RobotLink* link, rviz::DisplayContext* context )
-  : rviz::SelectionHandler( context )
-  , link_( link )
+RobotLinkSelectionHandler::RobotLinkSelectionHandler(RobotLink* link, rviz::DisplayContext* context)
+  : rviz::SelectionHandler(context), link_(link)
 {
 }
 
-RobotLinkSelectionHandler::~RobotLinkSelectionHandler()
+RobotLinkSelectionHandler::~RobotLinkSelectionHandler() {}
+void RobotLinkSelectionHandler::createProperties(const rviz::Picked& /*obj*/, rviz::Property* parent_property)
 {
-}
+  rviz::Property* group =
+      new rviz::Property("Link " + QString::fromStdString(link_->getName()), QVariant(), "", parent_property);
+  properties_.push_back(group);
 
-void RobotLinkSelectionHandler::createProperties( const rviz::Picked& /*obj*/, rviz::Property* parent_property )
-{
-  rviz::Property* group = new rviz::Property( "Link " + QString::fromStdString( link_->getName() ), QVariant(), "", parent_property );
-  properties_.push_back( group );
+  position_property_ = new rviz::VectorProperty("Position", Ogre::Vector3::ZERO, "", group);
+  position_property_->setReadOnly(true);
 
-  position_property_ = new rviz::VectorProperty( "Position", Ogre::Vector3::ZERO, "", group );
-  position_property_->setReadOnly( true );
-
-  orientation_property_ = new rviz::QuaternionProperty( "Orientation", Ogre::Quaternion::IDENTITY, "", group );
-  orientation_property_->setReadOnly( true );
+  orientation_property_ = new rviz::QuaternionProperty("Orientation", Ogre::Quaternion::IDENTITY, "", group);
+  orientation_property_->setReadOnly(true);
 
   group->expand();
 }
 
 void RobotLinkSelectionHandler::updateProperties()
 {
-  position_property_->setVector( link_->getPosition() );
-  orientation_property_->setQuaternion( link_->getOrientation() );
+  position_property_->setVector(link_->getPosition());
+  orientation_property_->setQuaternion(link_->getOrientation());
 }
-
 
 void RobotLinkSelectionHandler::preRenderPass(uint32_t /*pass*/)
 {
   if (!link_->is_selectable_)
   {
-    if( link_->visual_node_ )
+    if (link_->visual_node_)
     {
-      link_->visual_node_->setVisible( false );
+      link_->visual_node_->setVisible(false);
     }
-    if( link_->collision_node_ )
+    if (link_->collision_node_)
     {
-      link_->collision_node_->setVisible( false );
+      link_->collision_node_->setVisible(false);
     }
-    if( link_->trail_ )
+    if (link_->trail_)
     {
-      link_->trail_->setVisible( false );
+      link_->trail_->setVisible(false);
     }
-    if( link_->axes_ )
+    if (link_->axes_)
     {
-      link_->axes_->getSceneNode()->setVisible( false );
+      link_->axes_->getSceneNode()->setVisible(false);
     }
   }
 }
@@ -160,53 +155,56 @@ void RobotLinkSelectionHandler::postRenderPass(uint32_t /*pass*/)
   }
 }
 
-
-RobotLink::RobotLink( Robot* robot,
-                      const urdf::LinkConstSharedPtr& link,
-                      const std::string& parent_joint_name,
-                      bool visual,
-                      bool collision)
-: robot_( robot )
-, scene_manager_( robot->getDisplayContext()->getSceneManager() )
-, context_( robot->getDisplayContext() )
-, name_( link->name )
-, parent_joint_name_( parent_joint_name )
-, visual_node_( NULL )
-, collision_node_( NULL )
-, trail_( NULL )
-, axes_( NULL )
-, material_alpha_( 1.0 )
-, robot_alpha_(1.0)
-, only_render_depth_(false)
-, is_selectable_( true )
-, using_color_( false )
+RobotLink::RobotLink(Robot* robot,
+                     const urdf::LinkConstSharedPtr& link,
+                     const std::string& parent_joint_name,
+                     bool visual,
+                     bool collision)
+  : robot_(robot)
+  , scene_manager_(robot->getDisplayContext()->getSceneManager())
+  , context_(robot->getDisplayContext())
+  , name_(link->name)
+  , parent_joint_name_(parent_joint_name)
+  , visual_node_(NULL)
+  , collision_node_(NULL)
+  , trail_(NULL)
+  , axes_(NULL)
+  , material_alpha_(1.0)
+  , robot_alpha_(1.0)
+  , only_render_depth_(false)
+  , is_selectable_(true)
+  , using_color_(false)
 {
-  link_property_ = new rviz::Property( link->name.c_str(), true, "", NULL, SLOT( updateVisibility() ), this );
-  link_property_->setIcon( rviz::loadPixmap( "package://rviz/icons/classes/RobotLink.png" ) );
+  link_property_ = new rviz::Property(link->name.c_str(), true, "", NULL, SLOT(updateVisibility()), this);
+  link_property_->setIcon(rviz::loadPixmap("package://rviz/icons/classes/RobotLink.png"));
 
-  details_ = new rviz::Property( "Details", QVariant(), "", NULL);
+  details_ = new rviz::Property("Details", QVariant(), "", NULL);
 
-  alpha_property_ = new rviz::FloatProperty( "Alpha", 1,
-                                       "Amount of transparency to apply to this link.",
-                                       link_property_, SLOT( updateAlpha() ), this );
+  alpha_property_ = new rviz::FloatProperty(
+      "Alpha", 1, "Amount of transparency to apply to this link.", link_property_, SLOT(updateAlpha()), this);
 
-  trail_property_ = new rviz::Property( "Show Trail", false,
-                                  "Enable/disable a 2 meter \"ribbon\" which follows this link.",
-                                  link_property_, SLOT( updateTrail() ), this );
+  trail_property_ = new rviz::Property("Show Trail",
+                                       false,
+                                       "Enable/disable a 2 meter \"ribbon\" which follows this link.",
+                                       link_property_,
+                                       SLOT(updateTrail()),
+                                       this);
 
-  axes_property_ = new rviz::Property( "Show Axes", false,
-                                 "Enable/disable showing the axes of this link.",
-                                 link_property_, SLOT( updateAxes() ), this );
+  axes_property_ = new rviz::Property(
+      "Show Axes", false, "Enable/disable showing the axes of this link.", link_property_, SLOT(updateAxes()), this);
 
-  position_property_ = new rviz::VectorProperty( "Position", Ogre::Vector3::ZERO,
-                                           "Position of this link, in the current Fixed Frame.  (Not editable)",
-                                           link_property_ );
-  position_property_->setReadOnly( true );
+  position_property_ = new rviz::VectorProperty("Position",
+                                                Ogre::Vector3::ZERO,
+                                                "Position of this link, in the current Fixed Frame.  (Not editable)",
+                                                link_property_);
+  position_property_->setReadOnly(true);
 
-  orientation_property_ = new rviz::QuaternionProperty( "Orientation", Ogre::Quaternion::IDENTITY,
-                                                  "Orientation of this link, in the current Fixed Frame.  (Not editable)",
-                                                  link_property_ );
-  orientation_property_->setReadOnly( true );
+  orientation_property_ =
+      new rviz::QuaternionProperty("Orientation",
+                                   Ogre::Quaternion::IDENTITY,
+                                   "Orientation of this link, in the current Fixed Frame.  (Not editable)",
+                                   link_property_);
+  orientation_property_->setReadOnly(true);
 
   link_property_->collapse();
 
@@ -217,20 +215,20 @@ RobotLink::RobotLink( Robot* robot,
   std::stringstream ss;
   static int count = 1;
   ss << "robot link color material " << count++;
-  color_material_ = Ogre::MaterialManager::getSingleton().create( ss.str(), "rviz" );
+  color_material_ = Ogre::MaterialManager::getSingleton().create(ss.str(), "rviz");
   color_material_->setReceiveShadows(false);
   color_material_->getTechnique(0)->setLightingEnabled(true);
 
   // create the ogre objects to display
 
-  if ( visual )
+  if (visual)
   {
-    createVisual( link );
+    createVisual(link);
   }
 
-  if ( collision )
+  if (collision)
   {
-    createCollision( link );
+    createCollision(link);
   }
 
   if (collision || visual)
@@ -256,9 +254,7 @@ RobotLink::RobotLink( Robot* robot,
   }
   else
   {
-    desc
-      << " has " 
-      << link->child_joints.size();
+    desc << " has " << link->child_joints.size();
 
     if (link->child_joints.size() > 1)
     {
@@ -269,15 +265,15 @@ RobotLink::RobotLink( Robot* robot,
       desc << " child joint: ";
     }
 
-    std::vector<urdf::JointSharedPtr >::const_iterator child_it = link->child_joints.begin();
-    std::vector<urdf::JointSharedPtr >::const_iterator child_end = link->child_joints.end();
-    for ( ; child_it != child_end ; ++child_it )
+    std::vector<urdf::JointSharedPtr>::const_iterator child_it = link->child_joints.begin();
+    std::vector<urdf::JointSharedPtr>::const_iterator child_end = link->child_joints.end();
+    for (; child_it != child_end; ++child_it)
     {
-      urdf::Joint *child_joint = child_it->get();
+      urdf::Joint* child_joint = child_it->get();
       if (child_joint && !child_joint->name.empty())
       {
         child_joint_names_.push_back(child_joint->name);
-        desc << "<b>" << child_joint->name << "</b>" << ((child_it+1 == child_end) ? "." : ", ");
+        desc << "<b>" << child_joint->name << "</b>" << ((child_it + 1 == child_end) ? "." : ", ");
       }
     }
   }
@@ -299,61 +295,65 @@ RobotLink::RobotLink( Robot* robot,
   }
 
   link_property_->setDescription(desc.str().c_str());
-  
+
   if (!hasGeometry())
   {
-    link_property_->setIcon( rviz::loadPixmap( "package://rviz/icons/classes/RobotLinkNoGeom.png" ) );
+    link_property_->setIcon(rviz::loadPixmap("package://rviz/icons/classes/RobotLinkNoGeom.png"));
     alpha_property_->hide();
     link_property_->setValue(QVariant());
   }
 }
 
-RobotLink::RobotLink( Robot* robot,
-                      const tesseract::AttachableObject& ao,
-                      const std::string& parent_joint_name,
-                      bool visual,
-                      bool collision)
-: robot_( robot )
-, scene_manager_( robot->getDisplayContext()->getSceneManager() )
-, context_( robot->getDisplayContext() )
-, name_( ao.name )
-, parent_joint_name_( parent_joint_name )
-, visual_node_( NULL )
-, collision_node_( NULL )
-, trail_( NULL )
-, axes_( NULL )
-, material_alpha_( 1.0 )
-, robot_alpha_(1.0)
-, only_render_depth_(false)
-, is_selectable_( true )
-, using_color_( false )
+RobotLink::RobotLink(Robot* robot,
+                     const tesseract::AttachableObject& ao,
+                     const std::string& parent_joint_name,
+                     bool visual,
+                     bool collision)
+  : robot_(robot)
+  , scene_manager_(robot->getDisplayContext()->getSceneManager())
+  , context_(robot->getDisplayContext())
+  , name_(ao.name)
+  , parent_joint_name_(parent_joint_name)
+  , visual_node_(NULL)
+  , collision_node_(NULL)
+  , trail_(NULL)
+  , axes_(NULL)
+  , material_alpha_(1.0)
+  , robot_alpha_(1.0)
+  , only_render_depth_(false)
+  , is_selectable_(true)
+  , using_color_(false)
 {
-  link_property_ = new rviz::Property( ao.name.c_str(), true, "", NULL, SLOT( updateVisibility() ), this );
-  link_property_->setIcon( rviz::loadPixmap( "package://rviz/icons/classes/RobotLink.png" ) );
+  link_property_ = new rviz::Property(ao.name.c_str(), true, "", NULL, SLOT(updateVisibility()), this);
+  link_property_->setIcon(rviz::loadPixmap("package://rviz/icons/classes/RobotLink.png"));
 
-  details_ = new rviz::Property( "Details", QVariant(), "", NULL);
+  details_ = new rviz::Property("Details", QVariant(), "", NULL);
 
-  alpha_property_ = new rviz::FloatProperty( "Alpha", 1,
-                                       "Amount of transparency to apply to this link.",
-                                       link_property_, SLOT( updateAlpha() ), this );
+  alpha_property_ = new rviz::FloatProperty(
+      "Alpha", 1, "Amount of transparency to apply to this link.", link_property_, SLOT(updateAlpha()), this);
 
-  trail_property_ = new rviz::Property( "Show Trail", false,
-                                  "Enable/disable a 2 meter \"ribbon\" which follows this link.",
-                                  link_property_, SLOT( updateTrail() ), this );
+  trail_property_ = new rviz::Property("Show Trail",
+                                       false,
+                                       "Enable/disable a 2 meter \"ribbon\" which follows this link.",
+                                       link_property_,
+                                       SLOT(updateTrail()),
+                                       this);
 
-  axes_property_ = new rviz::Property( "Show Axes", false,
-                                 "Enable/disable showing the axes of this link.",
-                                 link_property_, SLOT( updateAxes() ), this );
+  axes_property_ = new rviz::Property(
+      "Show Axes", false, "Enable/disable showing the axes of this link.", link_property_, SLOT(updateAxes()), this);
 
-  position_property_ = new rviz::VectorProperty( "Position", Ogre::Vector3::ZERO,
-                                           "Position of this link, in the current Fixed Frame.  (Not editable)",
-                                           link_property_ );
-  position_property_->setReadOnly( true );
+  position_property_ = new rviz::VectorProperty("Position",
+                                                Ogre::Vector3::ZERO,
+                                                "Position of this link, in the current Fixed Frame.  (Not editable)",
+                                                link_property_);
+  position_property_->setReadOnly(true);
 
-  orientation_property_ = new rviz::QuaternionProperty( "Orientation", Ogre::Quaternion::IDENTITY,
-                                                  "Orientation of this link, in the current Fixed Frame.  (Not editable)",
-                                                  link_property_ );
-  orientation_property_->setReadOnly( true );
+  orientation_property_ =
+      new rviz::QuaternionProperty("Orientation",
+                                   Ogre::Quaternion::IDENTITY,
+                                   "Orientation of this link, in the current Fixed Frame.  (Not editable)",
+                                   link_property_);
+  orientation_property_->setReadOnly(true);
 
   link_property_->collapse();
 
@@ -364,20 +364,20 @@ RobotLink::RobotLink( Robot* robot,
   std::stringstream ss;
   static int count = 1;
   ss << "attached link color material " << count++;
-  color_material_ = Ogre::MaterialManager::getSingleton().create( ss.str(), "rviz" );
+  color_material_ = Ogre::MaterialManager::getSingleton().create(ss.str(), "rviz");
   color_material_->setReceiveShadows(false);
   color_material_->getTechnique(0)->setLightingEnabled(true);
 
   // create the ogre objects to display
 
-  if ( visual )
+  if (visual)
   {
-    createVisual( ao );
+    createVisual(ao);
   }
 
-  if ( collision )
+  if (collision)
   {
-    createCollision( ao );
+    createCollision(ao);
   }
 
   if (collision || visual)
@@ -420,7 +420,7 @@ RobotLink::RobotLink( Robot* robot,
 
   if (!hasGeometry())
   {
-    link_property_->setIcon( rviz::loadPixmap( "package://rviz/icons/classes/RobotLinkNoGeom.png" ) );
+    link_property_->setIcon(rviz::loadPixmap("package://rviz/icons/classes/RobotLinkNoGeom.png"));
     alpha_property_->hide();
     link_property_->setValue(QVariant());
   }
@@ -428,36 +428,38 @@ RobotLink::RobotLink( Robot* robot,
 
 RobotLink::~RobotLink()
 {
-  for( size_t i = 0; i < visual_meshes_.size(); i++ )
+  for (size_t i = 0; i < visual_meshes_.size(); i++)
   {
-    scene_manager_->destroyEntity( visual_meshes_[ i ]);
+    scene_manager_->destroyEntity(visual_meshes_[i]);
   }
 
-  for( size_t i = 0; i < collision_meshes_.size(); i++ )
+  for (size_t i = 0; i < collision_meshes_.size(); i++)
   {
-    scene_manager_->destroyEntity( collision_meshes_[ i ]);
+    scene_manager_->destroyEntity(collision_meshes_[i]);
   }
 
-  for( size_t i = 0; i < visual_octrees_.size(); i++ )
+  for (size_t i = 0; i < visual_octrees_.size(); i++)
   {
-//    scene_manager_->destroyMovableObject( octree_objects_[ i ]); TODO: Need to create a MovableObjectFactory for this type.
-    delete visual_octrees_[ i ];
+    //    scene_manager_->destroyMovableObject( octree_objects_[ i ]); TODO:
+    //    Need to create a MovableObjectFactory for this type.
+    delete visual_octrees_[i];
   }
   visual_octrees_.clear();
 
-  for( size_t i = 0; i < collision_octrees_.size(); i++ )
+  for (size_t i = 0; i < collision_octrees_.size(); i++)
   {
-//    scene_manager_->destroyMovableObject( octree_objects_[ i ]); TODO: Need to create a MovableObjectFactory for this type.
-    delete collision_octrees_[ i ];
+    //    scene_manager_->destroyMovableObject( octree_objects_[ i ]); TODO:
+    //    Need to create a MovableObjectFactory for this type.
+    delete collision_octrees_[i];
   }
   collision_octrees_.clear();
 
-  scene_manager_->destroySceneNode( visual_node_ );
-  scene_manager_->destroySceneNode( collision_node_ );
+  scene_manager_->destroySceneNode(visual_node_);
+  scene_manager_->destroySceneNode(collision_node_);
 
-  if ( trail_ )
+  if (trail_)
   {
-    scene_manager_->destroyRibbonTrail( trail_ );
+    scene_manager_->destroyRibbonTrail(trail_);
   }
 
   delete axes_;
@@ -477,22 +479,22 @@ bool RobotLink::getEnabled() const
   return link_property_->getValue().toBool();
 }
 
-void RobotLink::setRobotAlpha( float a )
+void RobotLink::setRobotAlpha(float a)
 {
   robot_alpha_ = a;
   updateAlpha();
 }
 
-void RobotLink::setRenderQueueGroup( Ogre::uint8 group )
+void RobotLink::setRenderQueueGroup(Ogre::uint8 group)
 {
   Ogre::SceneNode::ChildNodeIterator child_it = visual_node_->getChildIterator();
-  while( child_it.hasMoreElements() )
+  while (child_it.hasMoreElements())
   {
-    Ogre::SceneNode* child = dynamic_cast<Ogre::SceneNode*>( child_it.getNext() );
-    if( child )
+    Ogre::SceneNode* child = dynamic_cast<Ogre::SceneNode*>(child_it.getNext());
+    if (child)
     {
       Ogre::SceneNode::ObjectIterator object_it = child->getAttachedObjectIterator();
-      while( object_it.hasMoreElements() )
+      while (object_it.hasMoreElements())
       {
         Ogre::MovableObject* obj = object_it.getNext();
         obj->setRenderQueueGroup(group);
@@ -503,7 +505,7 @@ void RobotLink::setRenderQueueGroup( Ogre::uint8 group )
 
 void RobotLink::setOnlyRenderDepth(bool onlyRenderDepth)
 {
-  setRenderQueueGroup( onlyRenderDepth ? Ogre::RENDER_QUEUE_BACKGROUND : Ogre::RENDER_QUEUE_MAIN );
+  setRenderQueueGroup(onlyRenderDepth ? Ogre::RENDER_QUEUE_BACKGROUND : Ogre::RENDER_QUEUE_MAIN);
   only_render_depth_ = onlyRenderDepth;
   updateAlpha();
 }
@@ -517,43 +519,43 @@ void RobotLink::updateAlpha()
   {
     const Ogre::MaterialPtr& material = it->second;
 
-    if ( only_render_depth_ )
+    if (only_render_depth_)
     {
-      material->setColourWriteEnabled( false );
-      material->setDepthWriteEnabled( true );
+      material->setColourWriteEnabled(false);
+      material->setDepthWriteEnabled(true);
     }
     else
     {
       Ogre::ColourValue color = material->getTechnique(0)->getPass(0)->getDiffuse();
       color.a = robot_alpha_ * material_alpha_ * link_alpha;
-      material->setDiffuse( color );
+      material->setDiffuse(color);
 
-      if ( color.a < 0.9998 )
+      if (color.a < 0.9998)
       {
-        material->setSceneBlending( Ogre::SBT_TRANSPARENT_ALPHA );
-        material->setDepthWriteEnabled( false );
+        material->setSceneBlending(Ogre::SBT_TRANSPARENT_ALPHA);
+        material->setDepthWriteEnabled(false);
       }
       else
       {
-        material->setSceneBlending( Ogre::SBT_REPLACE );
-        material->setDepthWriteEnabled( true );
+        material->setSceneBlending(Ogre::SBT_REPLACE);
+        material->setDepthWriteEnabled(true);
       }
     }
   }
 
   Ogre::ColourValue color = color_material_->getTechnique(0)->getPass(0)->getDiffuse();
   color.a = robot_alpha_ * link_alpha;
-  color_material_->setDiffuse( color );
+  color_material_->setDiffuse(color);
 
-  if ( color.a < 0.9998 )
+  if (color.a < 0.9998)
   {
-    color_material_->setSceneBlending( Ogre::SBT_TRANSPARENT_ALPHA );
-    color_material_->setDepthWriteEnabled( false );
+    color_material_->setSceneBlending(Ogre::SBT_TRANSPARENT_ALPHA);
+    color_material_->setDepthWriteEnabled(false);
   }
   else
   {
-    color_material_->setSceneBlending( Ogre::SBT_REPLACE );
-    color_material_->setDepthWriteEnabled( true );
+    color_material_->setSceneBlending(Ogre::SBT_REPLACE);
+    color_material_->setDepthWriteEnabled(true);
   }
 
   for (const auto& octree : visual_octrees_)
@@ -573,25 +575,25 @@ void RobotLink::updateVisibility()
 
   robot_->calculateJointCheckboxes();
 
-  if( visual_node_ )
+  if (visual_node_)
   {
-    visual_node_->setVisible( enabled && robot_->isVisible() && robot_->isVisualVisible() );
+    visual_node_->setVisible(enabled && robot_->isVisible() && robot_->isVisualVisible());
   }
-  if( collision_node_ )
+  if (collision_node_)
   {
-    collision_node_->setVisible( enabled && robot_->isVisible() && robot_->isCollisionVisible() );
+    collision_node_->setVisible(enabled && robot_->isVisible() && robot_->isCollisionVisible());
   }
-  if( trail_ )
+  if (trail_)
   {
-    trail_->setVisible( enabled && robot_->isVisible() );
+    trail_->setVisible(enabled && robot_->isVisible());
   }
-  if( axes_ )
+  if (axes_)
   {
-    axes_->getSceneNode()->setVisible( enabled && robot_->isVisible() );
+    axes_->getSceneNode()->setVisible(enabled && robot_->isVisible());
   }
 }
 
-Ogre::MaterialPtr RobotLink::getMaterialForLink( const urdf::LinkConstSharedPtr& link, const std::string material_name)
+Ogre::MaterialPtr RobotLink::getMaterialForLink(const urdf::LinkConstSharedPtr& link, const std::string material_name)
 {
   if (!link->visual || !link->visual->material)
   {
@@ -607,15 +609,17 @@ Ogre::MaterialPtr RobotLink::getMaterialForLink( const urdf::LinkConstSharedPtr&
 
   urdf::VisualSharedPtr visual = link->visual;
   std::vector<urdf::VisualSharedPtr>::const_iterator vi;
-  for( vi = link->visual_array.begin(); vi != link->visual_array.end(); vi++ )
+  for (vi = link->visual_array.begin(); vi != link->visual_array.end(); vi++)
   {
-    if( (*vi) && material_name != "" && (*vi)->material_name  == material_name) {
+    if ((*vi) && material_name != "" && (*vi)->material_name == material_name)
+    {
       visual = *vi;
       break;
     }
   }
-  if ( vi == link->visual_array.end() ) {
-    visual = link->visual; // if link does not have material, use default oneee
+  if (vi == link->visual_array.end())
+  {
+    visual = link->visual;  // if link does not have material, use default oneee
   }
 
   if (visual->material->texture_filename.empty())
@@ -656,7 +660,8 @@ Ogre::MaterialPtr RobotLink::getMaterialForLink( const urdf::LinkConstSharedPtr&
         try
         {
           image.load(stream, extension);
-          Ogre::TextureManager::getSingleton().loadImage(filename, Ogre::ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME, image);
+          Ogre::TextureManager::getSingleton().loadImage(
+              filename, Ogre::ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME, image);
         }
         catch (Ogre::Exception& e)
         {
@@ -666,7 +671,8 @@ Ogre::MaterialPtr RobotLink::getMaterialForLink( const urdf::LinkConstSharedPtr&
     }
 
     Ogre::Pass* pass = mat->getTechnique(0)->getPass(0);
-    Ogre::TextureUnitState* tex_unit = pass->createTextureUnitState();;
+    Ogre::TextureUnitState* tex_unit = pass->createTextureUnitState();
+    ;
     tex_unit->setTextureName(filename);
   }
 
@@ -692,54 +698,61 @@ Ogre::MaterialPtr RobotLink::getMaterialForAttachedLink(const Eigen::Vector4d co
   }
   else
   {
-//    std::string filename = visual->material->texture_filename;
-//    if (!Ogre::TextureManager::getSingleton().resourceExists(filename))
-//    {
-//      resource_retriever::Retriever retriever;
-//      resource_retriever::MemoryResource res;
-//      try
-//      {
-//        res = retriever.get(filename);
-//      }
-//      catch (resource_retriever::Exception& e)
-//      {
-//        ROS_ERROR("%s", e.what());
-//      }
+    //    std::string filename = visual->material->texture_filename;
+    //    if (!Ogre::TextureManager::getSingleton().resourceExists(filename))
+    //    {
+    //      resource_retriever::Retriever retriever;
+    //      resource_retriever::MemoryResource res;
+    //      try
+    //      {
+    //        res = retriever.get(filename);
+    //      }
+    //      catch (resource_retriever::Exception& e)
+    //      {
+    //        ROS_ERROR("%s", e.what());
+    //      }
 
-//      if (res.size != 0)
-//      {
-//        Ogre::DataStreamPtr stream(new Ogre::MemoryDataStream(res.data.get(), res.size));
-//        Ogre::Image image;
-//        std::string extension = fs::extension(fs::path(filename));
+    //      if (res.size != 0)
+    //      {
+    //        Ogre::DataStreamPtr stream(new
+    //        Ogre::MemoryDataStream(res.data.get(), res.size));
+    //        Ogre::Image image;
+    //        std::string extension = fs::extension(fs::path(filename));
 
-//        if (extension[0] == '.')
-//        {
-//          extension = extension.substr(1, extension.size() - 1);
-//        }
+    //        if (extension[0] == '.')
+    //        {
+    //          extension = extension.substr(1, extension.size() - 1);
+    //        }
 
-//        try
-//        {
-//          image.load(stream, extension);
-//          Ogre::TextureManager::getSingleton().loadImage(filename, Ogre::ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME, image);
-//        }
-//        catch (Ogre::Exception& e)
-//        {
-//          ROS_ERROR("Could not load texture [%s]: %s", filename.c_str(), e.what());
-//        }
-//      }
-//    }
+    //        try
+    //        {
+    //          image.load(stream, extension);
+    //          Ogre::TextureManager::getSingleton().loadImage(filename,
+    //          Ogre::ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME, image);
+    //        }
+    //        catch (Ogre::Exception& e)
+    //        {
+    //          ROS_ERROR("Could not load texture [%s]: %s", filename.c_str(),
+    //          e.what());
+    //        }
+    //      }
+    //    }
 
-//    Ogre::Pass* pass = mat->getTechnique(0)->getPass(0);
-//    Ogre::TextureUnitState* tex_unit = pass->createTextureUnitState();;
-//    tex_unit->setTextureName(filename);
+    //    Ogre::Pass* pass = mat->getTechnique(0)->getPass(0);
+    //    Ogre::TextureUnitState* tex_unit = pass->createTextureUnitState();;
+    //    tex_unit->setTextureName(filename);
   }
 
   return mat;
 }
 
-bool RobotLink::createEntityForGeometryElement(const urdf::LinkConstSharedPtr& link, const urdf::Geometry& geom, const urdf::Pose& origin, const std::string material_name, bool isVisual)
+bool RobotLink::createEntityForGeometryElement(const urdf::LinkConstSharedPtr& link,
+                                               const urdf::Geometry& geom,
+                                               const urdf::Pose& origin,
+                                               const std::string material_name,
+                                               bool isVisual)
 {
-  Ogre::Entity* entity = nullptr; // default in case nothing works.
+  Ogre::Entity* entity = nullptr;  // default in case nothing works.
 
   static int count = 0;
   std::stringstream ss;
@@ -751,11 +764,11 @@ bool RobotLink::createEntityForGeometryElement(const urdf::LinkConstSharedPtr& l
   Ogre::Vector3 offset_position(Ogre::Vector3::ZERO);
   Ogre::Quaternion offset_orientation(Ogre::Quaternion::IDENTITY);
 
-
   {
-    Ogre::Vector3 position( origin.position.x, origin.position.y, origin.position.z );
-    Ogre::Quaternion orientation( Ogre::Quaternion::IDENTITY );
-    orientation = orientation * Ogre::Quaternion( origin.rotation.w, origin.rotation.x, origin.rotation.y, origin.rotation.z  );
+    Ogre::Vector3 position(origin.position.x, origin.position.y, origin.position.z);
+    Ogre::Quaternion orientation(Ogre::Quaternion::IDENTITY);
+    orientation =
+        orientation * Ogre::Quaternion(origin.rotation.w, origin.rotation.x, origin.rotation.y, origin.rotation.z);
 
     offset_position = position;
     offset_orientation = orientation;
@@ -763,70 +776,74 @@ bool RobotLink::createEntityForGeometryElement(const urdf::LinkConstSharedPtr& l
 
   switch (geom.type)
   {
-  case urdf::Geometry::SPHERE:
-  {
-    const urdf::Sphere& sphere = static_cast<const urdf::Sphere&>(geom);
-    entity = rviz::Shape::createEntity(entity_name, rviz::Shape::Sphere, scene_manager_);
-
-    scale = Ogre::Vector3( sphere.radius*2, sphere.radius*2, sphere.radius*2 );
-    break;
-  }
-  case urdf::Geometry::BOX:
-  {
-    const urdf::Box& box = static_cast<const urdf::Box&>(geom);
-    entity = rviz::Shape::createEntity(entity_name, rviz::Shape::Cube, scene_manager_);
-
-    scale = Ogre::Vector3( box.dim.x, box.dim.y, box.dim.z );
-
-    break;
-  }
-  case urdf::Geometry::CYLINDER:
-  {
-    const urdf::Cylinder& cylinder = static_cast<const urdf::Cylinder&>(geom);
-
-    Ogre::Quaternion rotX;
-    rotX.FromAngleAxis( Ogre::Degree(90), Ogre::Vector3::UNIT_X );
-    offset_orientation = offset_orientation * rotX;
-
-    entity = rviz::Shape::createEntity(entity_name, rviz::Shape::Cylinder, scene_manager_);
-    scale = Ogre::Vector3( cylinder.radius*2, cylinder.length, cylinder.radius*2 );
-    break;
-  }
-  case urdf::Geometry::MESH:
-  {
-    const urdf::Mesh& mesh = static_cast<const urdf::Mesh&>(geom);
-
-    if ( mesh.filename.empty() )
-      return false;
-
-    scale = Ogre::Vector3(mesh.scale.x, mesh.scale.y, mesh.scale.z);
-    
-    std::string model_name = mesh.filename;
-    
-    try
+    case urdf::Geometry::SPHERE:
     {
-      rviz::loadMeshFromResource(model_name);
-      entity = scene_manager_->createEntity( ss.str(), model_name );
+      const urdf::Sphere& sphere = static_cast<const urdf::Sphere&>(geom);
+      entity = rviz::Shape::createEntity(entity_name, rviz::Shape::Sphere, scene_manager_);
+
+      scale = Ogre::Vector3(sphere.radius * 2, sphere.radius * 2, sphere.radius * 2);
+      break;
     }
-    catch( Ogre::InvalidParametersException& e )
+    case urdf::Geometry::BOX:
     {
-      ROS_ERROR( "Could not convert mesh resource '%s' for link '%s'. It might be an empty mesh: %s", model_name.c_str(), link->name.c_str(), e.what() );
+      const urdf::Box& box = static_cast<const urdf::Box&>(geom);
+      entity = rviz::Shape::createEntity(entity_name, rviz::Shape::Cube, scene_manager_);
+
+      scale = Ogre::Vector3(box.dim.x, box.dim.y, box.dim.z);
+
+      break;
     }
-    catch( Ogre::Exception& e )
+    case urdf::Geometry::CYLINDER:
     {
-      ROS_ERROR( "Could not load model '%s' for link '%s': %s", model_name.c_str(), link->name.c_str(), e.what() );
+      const urdf::Cylinder& cylinder = static_cast<const urdf::Cylinder&>(geom);
+
+      Ogre::Quaternion rotX;
+      rotX.FromAngleAxis(Ogre::Degree(90), Ogre::Vector3::UNIT_X);
+      offset_orientation = offset_orientation * rotX;
+
+      entity = rviz::Shape::createEntity(entity_name, rviz::Shape::Cylinder, scene_manager_);
+      scale = Ogre::Vector3(cylinder.radius * 2, cylinder.length, cylinder.radius * 2);
+      break;
     }
-    break;
-  }
-  default:
-    ROS_WARN("Unsupported geometry type for element: %d", geom.type);
-    break;
+    case urdf::Geometry::MESH:
+    {
+      const urdf::Mesh& mesh = static_cast<const urdf::Mesh&>(geom);
+
+      if (mesh.filename.empty())
+        return false;
+
+      scale = Ogre::Vector3(mesh.scale.x, mesh.scale.y, mesh.scale.z);
+
+      std::string model_name = mesh.filename;
+
+      try
+      {
+        rviz::loadMeshFromResource(model_name);
+        entity = scene_manager_->createEntity(ss.str(), model_name);
+      }
+      catch (Ogre::InvalidParametersException& e)
+      {
+        ROS_ERROR("Could not convert mesh resource '%s' for link '%s'. It might "
+                  "be an empty mesh: %s",
+                  model_name.c_str(),
+                  link->name.c_str(),
+                  e.what());
+      }
+      catch (Ogre::Exception& e)
+      {
+        ROS_ERROR("Could not load model '%s' for link '%s': %s", model_name.c_str(), link->name.c_str(), e.what());
+      }
+      break;
+    }
+    default:
+      ROS_WARN("Unsupported geometry type for element: %d", geom.type);
+      break;
   }
 
-  if ( entity )
+  if (entity)
   {
     Ogre::SceneNode* offset_node;
-    std::vector<Ogre::Entity*> *meshes;
+    std::vector<Ogre::Entity*>* meshes;
     if (isVisual)
     {
       offset_node = visual_node_->createChildSceneNode();
@@ -877,7 +894,8 @@ bool RobotLink::createEntityForGeometryElement(const urdf::LinkConstSharedPtr& l
       }
       else
       {
-        // Need to clone here due to how selection works.  Once selection id is done per object and not per material,
+        // Need to clone here due to how selection works.  Once selection id is
+        // done per object and not per material,
         // this can go away
         std::stringstream ss;
         ss << material_name << count++ << "Robot";
@@ -896,9 +914,12 @@ bool RobotLink::createEntityForGeometryElement(const urdf::LinkConstSharedPtr& l
   return false;
 }
 
-bool RobotLink::createEntityForGeometryElement(const shapes::Shape& geom, Eigen::Affine3d origin, Eigen::Vector4d color, bool isVisual)
+bool RobotLink::createEntityForGeometryElement(const shapes::Shape& geom,
+                                               Eigen::Affine3d origin,
+                                               Eigen::Vector4d color,
+                                               bool isVisual)
 {
-  Ogre::Entity* entity = nullptr; // default in case nothing works.
+  Ogre::Entity* entity = nullptr;  // default in case nothing works.
 
   static int count = 0;
   std::stringstream ss;
@@ -914,7 +935,8 @@ bool RobotLink::createEntityForGeometryElement(const shapes::Shape& geom, Eigen:
     const Eigen::Vector3d& origin_position = origin.translation();
     Eigen::Quaterniond origin_orientation(origin.rotation());
     Ogre::Vector3 position = Ogre::Vector3(origin_position.x(), origin_position.y(), origin_position.z());
-    Ogre::Quaternion orientation = Ogre::Quaternion(origin_orientation.w(), origin_orientation.x(), origin_orientation.y(), origin_orientation.z());
+    Ogre::Quaternion orientation = Ogre::Quaternion(
+        origin_orientation.w(), origin_orientation.x(), origin_orientation.y(), origin_orientation.z());
 
     offset_position = position;
     offset_orientation = Ogre::Quaternion::IDENTITY * orientation;
@@ -923,169 +945,174 @@ bool RobotLink::createEntityForGeometryElement(const shapes::Shape& geom, Eigen:
   {
     switch (geom.type)
     {
-    case shapes::SPHERE:
-    {
-      entity = rviz::Shape::createEntity(entity_name, rviz::Shape::Sphere, scene_manager_);
-      double d = 2.0 * static_cast<const shapes::Sphere&>(geom).radius;
-      scale = Ogre::Vector3( d, d, d );
-      break;
-    }
-    case shapes::BOX:
-    {
-      entity = rviz::Shape::createEntity(entity_name, rviz::Shape::Cube, scene_manager_);
-      const double* sz = static_cast<const shapes::Box&>(geom).size;
-      scale = Ogre::Vector3(sz[0], sz[1], sz[2]);
-      break;
-    }
-    case shapes::CYLINDER:
-    {
-      Ogre::Quaternion rotX;
-      rotX.FromAngleAxis( Ogre::Degree(90), Ogre::Vector3::UNIT_X );
-      offset_orientation = offset_orientation * rotX;
-
-      entity = rviz::Shape::createEntity(entity_name, rviz::Shape::Cylinder, scene_manager_);
-      double d = 2.0 * static_cast<const shapes::Cylinder&>(geom).radius;
-      double z = static_cast<const shapes::Cylinder&>(geom).length;
-      scale = Ogre::Vector3( d, z, d );
-      break;
-    }
-    case shapes::CONE:
-    {
-      entity = rviz::Shape::createEntity(entity_name, rviz::Shape::Cone, scene_manager_);
-      double d = 2.0 * static_cast<const shapes::Cone&>(geom).radius;
-      double z = static_cast<const shapes::Cylinder&>(geom).length;
-      scale = Ogre::Vector3(d, d, z);
-      break;
-    }
-    case shapes::MESH:
-    {
-      bool use_resource = false;
-      if (use_resource)
+      case shapes::SPHERE:
       {
-  //      const urdf::Mesh& mesh = static_cast<const urdf::Mesh&>(geom);
-
-  //      if ( mesh.filename.empty() )
-  //        return;
-
-  //      scale = Ogre::Vector3(mesh.scale.x, mesh.scale.y, mesh.scale.z);
-
-  //      std::string model_name = mesh.filename;
-
-  //      try
-  //      {
-  //        rviz::loadMeshFromResource(model_name);
-  //        entity = scene_manager_->createEntity( ss.str(), model_name );
-  //      }
-  //      catch( Ogre::InvalidParametersException& e )
-  //      {
-  //        ROS_ERROR( "Could not convert mesh resource '%s' for link '%s'. It might be an empty mesh: %s", model_name.c_str(), link->name.c_str(), e.what() );
-  //      }
-  //      catch( Ogre::Exception& e )
-  //      {
-  //        ROS_ERROR( "Could not load model '%s' for link '%s': %s", model_name.c_str(), link->name.c_str(), e.what() );
-  //      }
+        entity = rviz::Shape::createEntity(entity_name, rviz::Shape::Sphere, scene_manager_);
+        double d = 2.0 * static_cast<const shapes::Sphere&>(geom).radius;
+        scale = Ogre::Vector3(d, d, d);
+        break;
       }
-      else
+      case shapes::BOX:
       {
-        const shapes::Mesh& mesh = static_cast<const shapes::Mesh&>(geom);
-        if (mesh.triangle_count > 0)
+        entity = rviz::Shape::createEntity(entity_name, rviz::Shape::Cube, scene_manager_);
+        const double* sz = static_cast<const shapes::Box&>(geom).size;
+        scale = Ogre::Vector3(sz[0], sz[1], sz[2]);
+        break;
+      }
+      case shapes::CYLINDER:
+      {
+        Ogre::Quaternion rotX;
+        rotX.FromAngleAxis(Ogre::Degree(90), Ogre::Vector3::UNIT_X);
+        offset_orientation = offset_orientation * rotX;
+
+        entity = rviz::Shape::createEntity(entity_name, rviz::Shape::Cylinder, scene_manager_);
+        double d = 2.0 * static_cast<const shapes::Cylinder&>(geom).radius;
+        double z = static_cast<const shapes::Cylinder&>(geom).length;
+        scale = Ogre::Vector3(d, z, d);
+        break;
+      }
+      case shapes::CONE:
+      {
+        entity = rviz::Shape::createEntity(entity_name, rviz::Shape::Cone, scene_manager_);
+        double d = 2.0 * static_cast<const shapes::Cone&>(geom).radius;
+        double z = static_cast<const shapes::Cylinder&>(geom).length;
+        scale = Ogre::Vector3(d, d, z);
+        break;
+      }
+      case shapes::MESH:
+      {
+        bool use_resource = false;
+        if (use_resource)
         {
-          Ogre::ManualObject* object = new Ogre::ManualObject( "the one and only" );
-          object->begin( "BaseWhiteNoLighting", Ogre::RenderOperation::OT_TRIANGLE_LIST );
+          //      const urdf::Mesh& mesh = static_cast<const urdf::Mesh&>(geom);
 
-          unsigned int vertexCount = 0;
-          Ogre::Vector3 normal(0.0, 0.0, 0.0);
-          for (unsigned int i = 0; i < mesh.triangle_count; ++i)
-          {
-            if( vertexCount >= 2004 )
-            {
-              // Subdivide large meshes into submeshes with at most 2004
-              // vertices to prevent problems on some graphics cards.
-              object->end();
-              object->begin( "BaseWhiteNoLighting", Ogre::RenderOperation::OT_TRIANGLE_LIST );
-              vertexCount = 0;
-            }
+          //      if ( mesh.filename.empty() )
+          //        return;
 
-            unsigned int i3 = i * 3;
-            if (mesh.triangle_normals && !mesh.vertex_normals)
-            {
-              normal.x = mesh.triangle_normals[i3];
-              normal.y = mesh.triangle_normals[i3 + 1];
-              normal.z = mesh.triangle_normals[i3 + 2];
-            }
+          //      scale = Ogre::Vector3(mesh.scale.x, mesh.scale.y, mesh.scale.z);
 
-            std::vector<Ogre::Vector3> verticies(3);
-            std::vector<Ogre::Vector3> normals(3);
-            for (int k = 0; k < 3; ++k)
-            {
-              unsigned int vi = 3 * mesh.triangles[i3 + k];
-              verticies[k] = Ogre::Vector3(mesh.vertices[vi], mesh.vertices[vi + 1], mesh.vertices[vi + 2]);
-              if (mesh.vertex_normals)
-              {
-                normals[k] = Ogre::Vector3(mesh.vertex_normals[vi], mesh.vertex_normals[vi + 1], mesh.vertex_normals[vi + 2]);
-              }
-              else if (mesh.triangle_normals)
-              {
-                normals[k] = normal;
-              }
-            }
+          //      std::string model_name = mesh.filename;
 
-            if (!mesh.triangle_normals && !mesh.vertex_normals)
-            {
-              Ogre::Vector3 side1 = verticies[0] - verticies[1];
-              Ogre::Vector3 side2 = verticies[1] - verticies[2];
-              normal = side1.crossProduct(side2);
-              normal.normalise();
-
-              normals[0] = normal;
-              normals[1] = normal;
-              normals[2] = normal;
-            }
-
-//            float u, v;
-//            u = v = 0.0f;
-            object->position(verticies[0]);
-            object->normal(normals[0]);
-  //          calculateUV( verticies[0], u, v );
-  //          object->textureCoord( u, v );
-
-            object->position(verticies[1]);
-            object->normal(normals[1]);
-  //          calculateUV( verticies[1], u, v );
-  //          object->textureCoord( u, v );
-
-            object->position(verticies[2]);
-            object->normal(normals[2]);
-  //          calculateUV( verticies[2], u, v );
-  //          object->textureCoord( u, v );
-
-            object->triangle( vertexCount + 0, vertexCount + 1, vertexCount + 2 );
-
-            vertexCount += 3;
-          }
-
-          object->end();
-
-          std::string mesh_name = entity_name + "mesh";
-          Ogre::MeshPtr ogre_mesh = object->convertToMesh( mesh_name, Ogre::ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME );
-          ogre_mesh->buildEdgeList();
-
-          entity = scene_manager_->createEntity( entity_name, mesh_name );
-
-          delete object;
+          //      try
+          //      {
+          //        rviz::loadMeshFromResource(model_name);
+          //        entity = scene_manager_->createEntity( ss.str(), model_name );
+          //      }
+          //      catch( Ogre::InvalidParametersException& e )
+          //      {
+          //        ROS_ERROR( "Could not convert mesh resource '%s' for link
+          //        '%s'. It might be an empty mesh: %s", model_name.c_str(),
+          //        link->name.c_str(), e.what() );
+          //      }
+          //      catch( Ogre::Exception& e )
+          //      {
+          //        ROS_ERROR( "Could not load model '%s' for link '%s': %s",
+          //        model_name.c_str(), link->name.c_str(), e.what() );
+          //      }
         }
+        else
+        {
+          const shapes::Mesh& mesh = static_cast<const shapes::Mesh&>(geom);
+          if (mesh.triangle_count > 0)
+          {
+            Ogre::ManualObject* object = new Ogre::ManualObject("the one and only");
+            object->begin("BaseWhiteNoLighting", Ogre::RenderOperation::OT_TRIANGLE_LIST);
+
+            unsigned int vertexCount = 0;
+            Ogre::Vector3 normal(0.0, 0.0, 0.0);
+            for (unsigned int i = 0; i < mesh.triangle_count; ++i)
+            {
+              if (vertexCount >= 2004)
+              {
+                // Subdivide large meshes into submeshes with at most 2004
+                // vertices to prevent problems on some graphics cards.
+                object->end();
+                object->begin("BaseWhiteNoLighting", Ogre::RenderOperation::OT_TRIANGLE_LIST);
+                vertexCount = 0;
+              }
+
+              unsigned int i3 = i * 3;
+              if (mesh.triangle_normals && !mesh.vertex_normals)
+              {
+                normal.x = mesh.triangle_normals[i3];
+                normal.y = mesh.triangle_normals[i3 + 1];
+                normal.z = mesh.triangle_normals[i3 + 2];
+              }
+
+              std::vector<Ogre::Vector3> verticies(3);
+              std::vector<Ogre::Vector3> normals(3);
+              for (int k = 0; k < 3; ++k)
+              {
+                unsigned int vi = 3 * mesh.triangles[i3 + k];
+                verticies[k] = Ogre::Vector3(mesh.vertices[vi], mesh.vertices[vi + 1], mesh.vertices[vi + 2]);
+                if (mesh.vertex_normals)
+                {
+                  normals[k] =
+                      Ogre::Vector3(mesh.vertex_normals[vi], mesh.vertex_normals[vi + 1], mesh.vertex_normals[vi + 2]);
+                }
+                else if (mesh.triangle_normals)
+                {
+                  normals[k] = normal;
+                }
+              }
+
+              if (!mesh.triangle_normals && !mesh.vertex_normals)
+              {
+                Ogre::Vector3 side1 = verticies[0] - verticies[1];
+                Ogre::Vector3 side2 = verticies[1] - verticies[2];
+                normal = side1.crossProduct(side2);
+                normal.normalise();
+
+                normals[0] = normal;
+                normals[1] = normal;
+                normals[2] = normal;
+              }
+
+              //            float u, v;
+              //            u = v = 0.0f;
+              object->position(verticies[0]);
+              object->normal(normals[0]);
+              //          calculateUV( verticies[0], u, v );
+              //          object->textureCoord( u, v );
+
+              object->position(verticies[1]);
+              object->normal(normals[1]);
+              //          calculateUV( verticies[1], u, v );
+              //          object->textureCoord( u, v );
+
+              object->position(verticies[2]);
+              object->normal(normals[2]);
+              //          calculateUV( verticies[2], u, v );
+              //          object->textureCoord( u, v );
+
+              object->triangle(vertexCount + 0, vertexCount + 1, vertexCount + 2);
+
+              vertexCount += 3;
+            }
+
+            object->end();
+
+            std::string mesh_name = entity_name + "mesh";
+            Ogre::MeshPtr ogre_mesh =
+                object->convertToMesh(mesh_name, Ogre::ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME);
+            ogre_mesh->buildEdgeList();
+
+            entity = scene_manager_->createEntity(entity_name, mesh_name);
+
+            delete object;
+          }
+        }
+        break;
       }
-      break;
-    }
-    default:
-      ROS_WARN("Unsupported geometry type for element: %d", geom.type);
-      break;
+      default:
+        ROS_WARN("Unsupported geometry type for element: %d", geom.type);
+        break;
     }
 
-    if ( entity )
+    if (entity)
     {
       Ogre::SceneNode* offset_node;
-      std::vector<Ogre::Entity*> *meshes;
+      std::vector<Ogre::Entity*>* meshes;
       if (isVisual)
       {
         offset_node = visual_node_->createChildSceneNode();
@@ -1123,7 +1150,8 @@ bool RobotLink::createEntityForGeometryElement(const shapes::Shape& geom, Eigen:
         }
         else
         {
-          // Need to clone here due to how selection works.  Once selection id is done per object and not per material,
+          // Need to clone here due to how selection works.  Once selection id
+          // is done per object and not per material,
           // this can go away
           std::stringstream ss;
           ss << material_name << count++ << "Robot";
@@ -1147,7 +1175,7 @@ bool RobotLink::createEntityForGeometryElement(const shapes::Shape& geom, Eigen:
     OctreeVoxelColorMode octree_color_mode = OCTOMAP_Z_AXIS_COLOR;
     std::size_t octree_depth;
     Ogre::SceneNode* offset_node;
-    std::vector<rviz::PointCloud*> *octree_objects;
+    std::vector<rviz::PointCloud*>* octree_objects;
 
     const std::shared_ptr<const octomap::OcTree>& octree = static_cast<const shapes::OcTree&>(geom).octree;
 
@@ -1167,7 +1195,7 @@ bool RobotLink::createEntityForGeometryElement(const shapes::Shape& geom, Eigen:
       octree_objects = &collision_octrees_;
     }
 
-    std::vector< std::vector<rviz::PointCloud::Point> > pointBuf;
+    std::vector<std::vector<rviz::PointCloud::Point>> pointBuf;
     pointBuf.resize(octree_depth);
 
     // get dimensions of octree
@@ -1182,13 +1210,14 @@ bool RobotLink::createEntityForGeometryElement(const shapes::Shape& geom, Eigen:
       // traverse all leafs in the tree:
       for (octomap::OcTree::iterator it = octree->begin(octree_depth), end = octree->end(); it != end; ++it)
       {
-
         bool display_voxel = false;
 
-        // the left part evaluates to 1 for free voxels and 2 for occupied voxels
+        // the left part evaluates to 1 for free voxels and 2 for occupied
+        // voxels
         if (((int)octree->isNodeOccupied(*it) + 1) & render_mode_mask)
         {
-          // check if current voxel has neighbors on all sides -> no need to be displayed
+          // check if current voxel has neighbors on all sides -> no need to be
+          // displayed
           bool allNeighborsFound = true;
 
           octomap::OcTreeKey key;
@@ -1204,7 +1233,8 @@ bool RobotLink::createEntityForGeometryElement(const shapes::Shape& geom, Eigen:
                 {
                   octomap::OcTreeNode* node = octree->search(key);
 
-                  // the left part evaluates to 1 for free voxels and 2 for occupied voxels
+                  // the left part evaluates to 1 for free voxels and 2 for
+                  // occupied voxels
                   if (!(node && (((int)octree->isNodeOccupied(node)) + 1) & render_mode_mask))
                   {
                     // we do not have a neighbor => break!
@@ -1280,7 +1310,11 @@ bool RobotLink::createEntityForGeometryElement(const shapes::Shape& geom, Eigen:
   return false;
 }
 
-void RobotLink::setOctomapColor(double z_pos, double min_z, double max_z, double color_factor, rviz::PointCloud::Point* point)
+void RobotLink::setOctomapColor(double z_pos,
+                                double min_z,
+                                double max_z,
+                                double color_factor,
+                                rviz::PointCloud::Point* point)
 {
   int i;
   double m, n, f;
@@ -1329,63 +1363,65 @@ void RobotLink::setOctomapColor(double z_pos, double min_z, double max_z, double
 void RobotLink::createCollision(const urdf::LinkConstSharedPtr& link)
 {
   bool valid_collision_found = false;
-  std::vector<urdf::CollisionSharedPtr >::const_iterator vi;
-  for( vi = link->collision_array.begin(); vi != link->collision_array.end(); vi++ )
+  std::vector<urdf::CollisionSharedPtr>::const_iterator vi;
+  for (vi = link->collision_array.begin(); vi != link->collision_array.end(); vi++)
   {
     urdf::CollisionSharedPtr collision = *vi;
-    if( collision && collision->geometry )
+    if (collision && collision->geometry)
     {
-      if( createEntityForGeometryElement( link, *collision->geometry, collision->origin, "", false ) )
+      if (createEntityForGeometryElement(link, *collision->geometry, collision->origin, "", false))
         valid_collision_found = true;
     }
   }
 
-  if( !valid_collision_found && link->collision && link->collision->geometry )
+  if (!valid_collision_found && link->collision && link->collision->geometry)
   {
-    createEntityForGeometryElement( link, *link->collision->geometry, link->collision->origin, "", false );
+    createEntityForGeometryElement(link, *link->collision->geometry, link->collision->origin, "", false);
   }
 
-  collision_node_->setVisible( getEnabled() );
+  collision_node_->setVisible(getEnabled());
 }
 
-void RobotLink::createVisual(const urdf::LinkConstSharedPtr& link )
+void RobotLink::createVisual(const urdf::LinkConstSharedPtr& link)
 {
   bool valid_visual_found = false;
 
-  std::vector<urdf::VisualSharedPtr >::const_iterator vi;
-  for( vi = link->visual_array.begin(); vi != link->visual_array.end(); vi++ )
+  std::vector<urdf::VisualSharedPtr>::const_iterator vi;
+  for (vi = link->visual_array.begin(); vi != link->visual_array.end(); vi++)
   {
     urdf::VisualSharedPtr visual = *vi;
-    if( visual && visual->geometry )
+    if (visual && visual->geometry)
     {
-      if( createEntityForGeometryElement( link, *visual->geometry, visual->origin, visual->material_name, true ) )
+      if (createEntityForGeometryElement(link, *visual->geometry, visual->origin, visual->material_name, true))
         valid_visual_found = true;
     }
   }
 
-  if( !valid_visual_found && link->visual && link->visual->geometry )
+  if (!valid_visual_found && link->visual && link->visual->geometry)
   {
-    createEntityForGeometryElement( link, *link->visual->geometry, link->visual->origin, link->visual->material_name, true );
+    createEntityForGeometryElement(
+        link, *link->visual->geometry, link->visual->origin, link->visual->material_name, true);
   }
 
-  visual_node_->setVisible( getEnabled() );
+  visual_node_->setVisible(getEnabled());
 }
 
-void RobotLink::createVisual( const tesseract::AttachableObject& ao)
+void RobotLink::createVisual(const tesseract::AttachableObject& ao)
 {
   for (unsigned i = 0; i < ao.visual.shapes.size(); ++i)
   {
     const shapes::ShapeConstPtr& visual = ao.visual.shapes[i];
-    if( visual )
+    if (visual)
     {
       if (ao.visual.shape_colors.empty())
-        createEntityForGeometryElement(*visual, ao.visual.shape_poses[i], Eigen::Vector4d(0.0f, 0.7f, 0.0f, 1.0f), true );
+        createEntityForGeometryElement(
+            *visual, ao.visual.shape_poses[i], Eigen::Vector4d(0.0f, 0.7f, 0.0f, 1.0f), true);
       else
         createEntityForGeometryElement(*visual, ao.visual.shape_poses[i], ao.visual.shape_colors[i], true);
     }
   }
 
-  visual_node_->setVisible( getEnabled() );
+  visual_node_->setVisible(getEnabled());
 }
 
 void RobotLink::createCollision(const tesseract::AttachableObject& ao)
@@ -1393,70 +1429,71 @@ void RobotLink::createCollision(const tesseract::AttachableObject& ao)
   for (unsigned i = 0; i < ao.collision.shapes.size(); ++i)
   {
     const shapes::ShapeConstPtr& collision = ao.collision.shapes[i];
-    if( collision )
+    if (collision)
     {
       if (ao.collision.shape_colors.empty())
-        createEntityForGeometryElement(*collision, ao.collision.shape_poses[i], Eigen::Vector4d(0.0f, 0.7f, 0.0f, 1.0f), false );
+        createEntityForGeometryElement(
+            *collision, ao.collision.shape_poses[i], Eigen::Vector4d(0.0f, 0.7f, 0.0f, 1.0f), false);
       else
-        createEntityForGeometryElement(*collision, ao.collision.shape_poses[i], ao.collision.shape_colors[i], false );
+        createEntityForGeometryElement(*collision, ao.collision.shape_poses[i], ao.collision.shape_colors[i], false);
     }
   }
 
-  collision_node_->setVisible( getEnabled() );
+  collision_node_->setVisible(getEnabled());
 }
 
 void RobotLink::createSelection()
 {
-  selection_handler_.reset( new RobotLinkSelectionHandler( this, context_ ));
-  for( size_t i = 0; i < visual_meshes_.size(); i++ )
+  selection_handler_.reset(new RobotLinkSelectionHandler(this, context_));
+  for (size_t i = 0; i < visual_meshes_.size(); i++)
   {
-    selection_handler_->addTrackedObject( visual_meshes_[ i ]);
+    selection_handler_->addTrackedObject(visual_meshes_[i]);
   }
-  for( size_t i = 0; i < collision_meshes_.size(); i++ )
+  for (size_t i = 0; i < collision_meshes_.size(); i++)
   {
-    selection_handler_->addTrackedObject( collision_meshes_[ i ]);
+    selection_handler_->addTrackedObject(collision_meshes_[i]);
   }
-  for( size_t i = 0; i < visual_octrees_.size(); i++ )
+  for (size_t i = 0; i < visual_octrees_.size(); i++)
   {
-    selection_handler_->addTrackedObject( visual_octrees_[ i ]);
+    selection_handler_->addTrackedObject(visual_octrees_[i]);
   }
-  for( size_t i = 0; i < collision_octrees_.size(); i++ )
+  for (size_t i = 0; i < collision_octrees_.size(); i++)
   {
-    selection_handler_->addTrackedObject( collision_octrees_[ i ]);
+    selection_handler_->addTrackedObject(collision_octrees_[i]);
   }
 }
 
 void RobotLink::updateTrail()
 {
-  if( trail_property_->getValue().toBool() )
+  if (trail_property_->getValue().toBool())
   {
-    if( !trail_ )
+    if (!trail_)
     {
-      if( visual_node_ )
+      if (visual_node_)
       {
         static int count = 0;
         std::stringstream ss;
         ss << "Trail for link " << name_ << count++;
-        trail_ = scene_manager_->createRibbonTrail( ss.str() );
-        trail_->setMaxChainElements( 100 );
-        trail_->setInitialWidth( 0, 0.01f );
-        trail_->setInitialColour( 0, 0.0f, 0.5f, 0.5f );
-        trail_->addNode( visual_node_ );
-        trail_->setTrailLength( 2.0f );
-        trail_->setVisible( getEnabled() );
-        robot_->getOtherNode()->attachObject( trail_ );
+        trail_ = scene_manager_->createRibbonTrail(ss.str());
+        trail_->setMaxChainElements(100);
+        trail_->setInitialWidth(0, 0.01f);
+        trail_->setInitialColour(0, 0.0f, 0.5f, 0.5f);
+        trail_->addNode(visual_node_);
+        trail_->setTrailLength(2.0f);
+        trail_->setVisible(getEnabled());
+        robot_->getOtherNode()->attachObject(trail_);
       }
       else
       {
-        ROS_WARN( "No visual node for link %s, cannot create a trail", name_.c_str() );
+        ROS_WARN("No visual node for link %s, cannot create a trail", name_.c_str());
       }
     }
   }
   else
   {
-    if( trail_ )
+    if (trail_)
     {
-      scene_manager_->destroyRibbonTrail( trail_ );
+      scene_manager_->destroyRibbonTrail(trail_);
       trail_ = NULL;
     }
   }
@@ -1464,23 +1501,23 @@ void RobotLink::updateTrail()
 
 void RobotLink::updateAxes()
 {
-  if( axes_property_->getValue().toBool() )
+  if (axes_property_->getValue().toBool())
   {
-    if( !axes_ )
+    if (!axes_)
     {
       static int count = 0;
       std::stringstream ss;
       ss << "Axes for link " << name_ << count++;
-      axes_ = new rviz::Axes( scene_manager_, robot_->getOtherNode(), 0.1, 0.01 );
-      axes_->getSceneNode()->setVisible( getEnabled() );
+      axes_ = new rviz::Axes(scene_manager_, robot_->getOtherNode(), 0.1, 0.01);
+      axes_->getSceneNode()->setVisible(getEnabled());
 
-      axes_->setPosition( position_property_->getVector() );
-      axes_->setOrientation( orientation_property_->getQuaternion() );
+      axes_->setPosition(position_property_->getVector());
+      axes_->setOrientation(orientation_property_->getQuaternion());
     }
   }
   else
   {
-    if( axes_ )
+    if (axes_)
     {
       delete axes_;
       axes_ = NULL;
@@ -1488,40 +1525,42 @@ void RobotLink::updateAxes()
   }
 }
 
-void RobotLink::setTransforms( const Ogre::Vector3& visual_position, const Ogre::Quaternion& visual_orientation,
-                               const Ogre::Vector3& collision_position, const Ogre::Quaternion& collision_orientation )
+void RobotLink::setTransforms(const Ogre::Vector3& visual_position,
+                              const Ogre::Quaternion& visual_orientation,
+                              const Ogre::Vector3& collision_position,
+                              const Ogre::Quaternion& collision_orientation)
 {
-  if ( visual_node_ )
+  if (visual_node_)
   {
-    visual_node_->setPosition( visual_position );
-    visual_node_->setOrientation( visual_orientation );
+    visual_node_->setPosition(visual_position);
+    visual_node_->setOrientation(visual_orientation);
   }
 
-  if ( collision_node_ )
+  if (collision_node_)
   {
-    collision_node_->setPosition( collision_position );
-    collision_node_->setOrientation( collision_orientation );
+    collision_node_->setPosition(collision_position);
+    collision_node_->setOrientation(collision_orientation);
   }
 
-  position_property_->setVector( visual_position );
-  orientation_property_->setQuaternion( visual_orientation );
+  position_property_->setVector(visual_position);
+  orientation_property_->setQuaternion(visual_orientation);
 
-  if ( axes_ )
+  if (axes_)
   {
-    axes_->setPosition( visual_position );
-    axes_->setOrientation( visual_orientation );
+    axes_->setPosition(visual_position);
+    axes_->setOrientation(visual_orientation);
   }
 }
 
 void RobotLink::setToErrorMaterial()
 {
-  for( size_t i = 0; i < visual_meshes_.size(); i++ )
+  for (size_t i = 0; i < visual_meshes_.size(); i++)
   {
-    visual_meshes_[ i ]->setMaterialName("BaseWhiteNoLighting");
+    visual_meshes_[i]->setMaterialName("BaseWhiteNoLighting");
   }
-  for( size_t i = 0; i < collision_meshes_.size(); i++ )
+  for (size_t i = 0; i < collision_meshes_.size(); i++)
   {
-    collision_meshes_[ i ]->setMaterialName("BaseWhiteNoLighting");
+    collision_meshes_[i]->setMaterialName("BaseWhiteNoLighting");
   }
 
   // Currently not handling color for octree_objects_
@@ -1529,15 +1568,15 @@ void RobotLink::setToErrorMaterial()
 
 void RobotLink::setToNormalMaterial()
 {
-  if( using_color_ )
+  if (using_color_)
   {
-    for( size_t i = 0; i < visual_meshes_.size(); i++ )
+    for (size_t i = 0; i < visual_meshes_.size(); i++)
     {
-      visual_meshes_[ i ]->setMaterial( color_material_ );
+      visual_meshes_[i]->setMaterial(color_material_);
     }
-    for( size_t i = 0; i < collision_meshes_.size(); i++ )
+    for (size_t i = 0; i < collision_meshes_.size(); i++)
     {
-      collision_meshes_[ i ]->setMaterial( color_material_ );
+      collision_meshes_[i]->setMaterial(color_material_);
     }
 
     // Currently not handling color for octree_objects_
@@ -1553,14 +1592,14 @@ void RobotLink::setToNormalMaterial()
   }
 }
 
-void RobotLink::setColor( float red, float green, float blue )
+void RobotLink::setColor(float red, float green, float blue)
 {
   Ogre::ColourValue color = color_material_->getTechnique(0)->getPass(0)->getDiffuse();
   color.r = red;
   color.g = green;
   color.b = blue;
-  color_material_->getTechnique(0)->setAmbient( 0.5 * color );
-  color_material_->getTechnique(0)->setDiffuse( color );
+  color_material_->getTechnique(0)->setAmbient(0.5 * color);
+  color_material_->getTechnique(0)->setDiffuse(color);
 
   using_color_ = true;
   setToNormalMaterial();
@@ -1572,18 +1611,14 @@ void RobotLink::unsetColor()
   setToNormalMaterial();
 }
 
-bool RobotLink::setSelectable( bool selectable )
+bool RobotLink::setSelectable(bool selectable)
 {
   bool old = is_selectable_;
   is_selectable_ = selectable;
   return old;
 }
 
-bool RobotLink::getSelectable()
-{
-  return is_selectable_;
-}
-
+bool RobotLink::getSelectable() { return is_selectable_; }
 void RobotLink::hideSubProperties(bool hide)
 {
   position_property_->setHidden(hide);
@@ -1593,16 +1628,8 @@ void RobotLink::hideSubProperties(bool hide)
   alpha_property_->setHidden(hide);
 }
 
-Ogre::Vector3 RobotLink::getPosition()
-{
-  return position_property_->getVector();
-}
-
-Ogre::Quaternion RobotLink::getOrientation()
-{
-  return orientation_property_->getQuaternion();
-}
-
+Ogre::Vector3 RobotLink::getPosition() { return position_property_->getVector(); }
+Ogre::Quaternion RobotLink::getOrientation() { return orientation_property_->getQuaternion(); }
 void RobotLink::setParentProperty(rviz::Property* new_parent)
 {
   rviz::Property* old_parent = link_property_->getParent();
@@ -1649,7 +1676,7 @@ void RobotLink::useDetailProperty(bool use_detail)
 
 void RobotLink::expandDetails(bool expand)
 {
-  rviz::Property *parent = details_->getParent() ? details_ : link_property_;
+  rviz::Property* parent = details_->getParent() ? details_ : link_property_;
   if (expand)
   {
     parent->expand();
@@ -1660,6 +1687,4 @@ void RobotLink::expandDetails(bool expand)
   }
 }
 
-
-} // namespace rviz
-
+}  // namespace rviz

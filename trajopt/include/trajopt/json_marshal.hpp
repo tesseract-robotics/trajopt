@@ -1,14 +1,14 @@
 #pragma once
+#include <Eigen/Eigen>
+#include <boost/format.hpp>
 #include <jsoncpp/json/json.h>
+#include <sstream>
+#include <string>
 #include <trajopt_utils/macros.h>
 #include <vector>
-#include <Eigen/Eigen>
-#include <string>
-#include <sstream>
-#include <boost/format.hpp>
 
-namespace json_marshal {
-
+namespace json_marshal
+{
 TRAJOPT_API void fromJson(const Json::Value& v, bool& ref);
 TRAJOPT_API void fromJson(const Json::Value& v, int& ref);
 TRAJOPT_API void fromJson(const Json::Value& v, double& ref);
@@ -40,7 +40,7 @@ void fromJsonArray(const Json::Value& parent, std::vector<T>& ref, int size)
 {
   if (static_cast<int>(parent.size()) != size)
   {
-    PRINT_AND_THROW(boost::format("expected list of size size %i. got: %s\n")%size%parent);
+    PRINT_AND_THROW(boost::format("expected list of size size %i. got: %s\n") % size % parent);
   }
   else
   {
@@ -78,11 +78,7 @@ void childFromJson(const Json::Value& parent, T& ref, const char* name)
   }
   else
   {
-    PRINT_AND_THROW(boost::format("missing field: %s")%name);
+    PRINT_AND_THROW(boost::format("missing field: %s") % name);
   }
 }
-
-
-
-
 }

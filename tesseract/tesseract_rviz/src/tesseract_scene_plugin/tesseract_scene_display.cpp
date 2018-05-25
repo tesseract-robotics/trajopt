@@ -36,22 +36,21 @@
 /* Author: Ioan Sucan */
 
 #include "tesseract_rviz/tesseract_scene_plugin/tesseract_scene_display.h"
-#include "tesseract_rviz/render_tools/state_visualization.h"
-#include "tesseract_rviz/render_tools/octomap_render.h"
 #include "tesseract_rviz/render_tools/env/robot.h"
 #include "tesseract_rviz/render_tools/env/robot_link.h"
+#include "tesseract_rviz/render_tools/octomap_render.h"
+#include "tesseract_rviz/render_tools/state_visualization.h"
 
-
-#include <rviz/visualization_manager.h>
-#include <rviz/properties/property.h>
-#include <rviz/properties/string_property.h>
-#include <rviz/properties/bool_property.h>
-#include <rviz/properties/float_property.h>
-#include <rviz/properties/ros_topic_property.h>
-#include <rviz/properties/color_property.h>
-#include <rviz/properties/enum_property.h>
 #include <rviz/display_context.h>
 #include <rviz/frame_manager.h>
+#include <rviz/properties/bool_property.h>
+#include <rviz/properties/color_property.h>
+#include <rviz/properties/enum_property.h>
+#include <rviz/properties/float_property.h>
+#include <rviz/properties/property.h>
+#include <rviz/properties/ros_topic_property.h>
+#include <rviz/properties/string_property.h>
+#include <rviz/visualization_manager.h>
 #include <tf/transform_listener.h>
 
 #include <OgreSceneManager.h>
@@ -65,82 +64,134 @@ namespace tesseract_rviz
 TesseractSceneDisplay::TesseractSceneDisplay(bool listen_to_planning_scene, bool show_scene_robot)
   : Display(), model_is_loading_(false), tesseract_scene_needs_render_(true), current_scene_time_(0.0f)
 {
-  move_group_ns_property_ = new rviz::StringProperty("Move Group Namespace", "", "The name of the ROS namespace in "
-                                                                                 "which the move_group node is running",
-                                                     this, SLOT(changedMoveGroupNS()), this);
-  robot_description_property_ = new rviz::StringProperty(
-      "Robot Description", "robot_description", "The name of the ROS parameter where the URDF for the robot is loaded",
-      this, SLOT(changedRobotDescription()), this);
+  move_group_ns_property_ = new rviz::StringProperty("Move Group Namespace",
+                                                     "",
+                                                     "The name of the ROS namespace in "
+                                                     "which the move_group node is running",
+                                                     this,
+                                                     SLOT(changedMoveGroupNS()),
+                                                     this);
+  robot_description_property_ =
+      new rviz::StringProperty("Robot Description",
+                               "robot_description",
+                               "The name of the ROS parameter where the URDF for the robot is loaded",
+                               this,
+                               SLOT(changedRobotDescription()),
+                               this);
 
   if (listen_to_planning_scene)
     planning_scene_topic_property_ =
-        new rviz::RosTopicProperty("Planning Scene Topic", "move_group/monitored_planning_scene",
+        new rviz::RosTopicProperty("Planning Scene Topic",
+                                   "move_group/monitored_planning_scene",
                                    ros::message_traits::datatype<moveit_msgs::PlanningScene>(),
-                                   "The topic on which the moveit_msgs::PlanningScene messages are received", this,
-                                   SLOT(changedPlanningSceneTopic()), this);
+                                   "The topic on which the moveit_msgs::PlanningScene messages are "
+                                   "received",
+                                   this,
+                                   SLOT(changedPlanningSceneTopic()),
+                                   this);
   else
     planning_scene_topic_property_ = NULL;
 
-  // Planning scene category -------------------------------------------------------------------------------------------
+  // Planning scene category
+  // -------------------------------------------------------------------------------------------
   scene_category_ = new rviz::Property("Scene Geometry", QVariant(), "", this);
 
-  scene_name_property_ = new rviz::StringProperty("Scene Name", "(noname)", "Shows the name of the planning scene",
-                                                  scene_category_, SLOT(changedSceneName()), this);
+  scene_name_property_ = new rviz::StringProperty("Scene Name",
+                                                  "(noname)",
+                                                  "Shows the name of the planning scene",
+                                                  scene_category_,
+                                                  SLOT(changedSceneName()),
+                                                  this);
   scene_name_property_->setShouldBeSaved(false);
-  scene_enabled_property_ =
-      new rviz::BoolProperty("Show Scene Geometry", true, "Indicates whether planning scenes should be displayed",
-                             scene_category_, SLOT(changedSceneEnabled()), this);
+  scene_enabled_property_ = new rviz::BoolProperty("Show Scene Geometry",
+                                                   true,
+                                                   "Indicates whether planning scenes should be displayed",
+                                                   scene_category_,
+                                                   SLOT(changedSceneEnabled()),
+                                                   this);
 
-  scene_alpha_property_ = new rviz::FloatProperty("Scene Alpha", 0.9f, "Specifies the alpha for the scene geometry",
-                                                  scene_category_, SLOT(changedSceneAlpha()), this);
+  scene_alpha_property_ = new rviz::FloatProperty("Scene Alpha",
+                                                  0.9f,
+                                                  "Specifies the alpha for the scene geometry",
+                                                  scene_category_,
+                                                  SLOT(changedSceneAlpha()),
+                                                  this);
   scene_alpha_property_->setMin(0.0);
   scene_alpha_property_->setMax(1.0);
 
-  scene_color_property_ = new rviz::ColorProperty(
-      "Scene Color", QColor(50, 230, 50), "The color for the planning scene obstacles (if a color is not defined)",
-      scene_category_, SLOT(changedSceneColor()), this);
+  scene_color_property_ =
+      new rviz::ColorProperty("Scene Color",
+                              QColor(50, 230, 50),
+                              "The color for the planning scene obstacles (if a color is not defined)",
+                              scene_category_,
+                              SLOT(changedSceneColor()),
+                              this);
 
-  octree_render_property_ = new rviz::EnumProperty("Voxel Rendering", "Occupied Voxels", "Select voxel type.",
-                                                   scene_category_, SLOT(changedOctreeRenderMode()), this);
+  octree_render_property_ = new rviz::EnumProperty("Voxel Rendering",
+                                                   "Occupied Voxels",
+                                                   "Select voxel type.",
+                                                   scene_category_,
+                                                   SLOT(changedOctreeRenderMode()),
+                                                   this);
 
   octree_render_property_->addOption("Occupied Voxels", OCTOMAP_OCCUPIED_VOXELS);
   octree_render_property_->addOption("Free Voxels", OCTOMAP_FREE_VOXELS);
   octree_render_property_->addOption("All Voxels", OCTOMAP_FREE_VOXELS | OCTOMAP_OCCUPIED_VOXELS);
 
-  octree_coloring_property_ = new rviz::EnumProperty("Voxel Coloring", "Z-Axis", "Select voxel coloring mode",
-                                                     scene_category_, SLOT(changedOctreeColorMode()), this);
+  octree_coloring_property_ = new rviz::EnumProperty(
+      "Voxel Coloring", "Z-Axis", "Select voxel coloring mode", scene_category_, SLOT(changedOctreeColorMode()), this);
 
   octree_coloring_property_->addOption("Z-Axis", OCTOMAP_Z_AXIS_COLOR);
   octree_coloring_property_->addOption("Cell Probability", OCTOMAP_PROBABLILTY_COLOR);
 
-  scene_display_time_property_ =
-      new rviz::FloatProperty("Scene Display Time", 0.2f, "The amount of wall-time to wait in between rendering "
-                                                          "updates to the planning scene (if any)",
-                              scene_category_, SLOT(changedSceneDisplayTime()), this);
+  scene_display_time_property_ = new rviz::FloatProperty("Scene Display Time",
+                                                         0.2f,
+                                                         "The amount of wall-time to wait in between rendering "
+                                                         "updates to the planning scene (if any)",
+                                                         scene_category_,
+                                                         SLOT(changedSceneDisplayTime()),
+                                                         this);
   scene_display_time_property_->setMin(0.0001);
 
   if (show_scene_robot)
   {
     robot_category_ = new rviz::Property("Scene Robot", QVariant(), "", this);
 
-    scene_robot_visual_enabled_property_ = new rviz::BoolProperty(
-        "Show Robot Visual", true, "Indicates whether the robot state specified by the planning scene should be "
-                                   "displayed as defined for visualisation purposes.",
-        robot_category_, SLOT(changedSceneRobotVisualEnabled()), this);
+    scene_robot_visual_enabled_property_ =
+        new rviz::BoolProperty("Show Robot Visual",
+                               true,
+                               "Indicates whether the robot state specified by the planning scene "
+                               "should be "
+                               "displayed as defined for visualisation purposes.",
+                               robot_category_,
+                               SLOT(changedSceneRobotVisualEnabled()),
+                               this);
 
-    scene_robot_collision_enabled_property_ = new rviz::BoolProperty(
-        "Show Robot Collision", false, "Indicates whether the robot state specified by the planning scene should be "
-                                       "displayed as defined for collision detection purposes.",
-        robot_category_, SLOT(changedSceneRobotCollisionEnabled()), this);
+    scene_robot_collision_enabled_property_ =
+        new rviz::BoolProperty("Show Robot Collision",
+                               false,
+                               "Indicates whether the robot state specified by the planning scene "
+                               "should be "
+                               "displayed as defined for collision detection purposes.",
+                               robot_category_,
+                               SLOT(changedSceneRobotCollisionEnabled()),
+                               this);
 
-    robot_alpha_property_ = new rviz::FloatProperty("Robot Alpha", 1.0f, "Specifies the alpha for the robot links",
-                                                    robot_category_, SLOT(changedRobotSceneAlpha()), this);
+    robot_alpha_property_ = new rviz::FloatProperty("Robot Alpha",
+                                                    1.0f,
+                                                    "Specifies the alpha for the robot links",
+                                                    robot_category_,
+                                                    SLOT(changedRobotSceneAlpha()),
+                                                    this);
     robot_alpha_property_->setMin(0.0);
     robot_alpha_property_->setMax(1.0);
 
-    attached_body_color_property_ =
-        new rviz::ColorProperty("Attached Body Color", QColor(150, 50, 150), "The color for the attached bodies",
-                                robot_category_, SLOT(changedAttachedBodyColor()), this);
+    attached_body_color_property_ = new rviz::ColorProperty("Attached Body Color",
+                                                            QColor(150, 50, 150),
+                                                            "The color for the attached bodies",
+                                                            robot_category_,
+                                                            SLOT(changedAttachedBodyColor()),
+                                                            this);
   }
   else
   {
@@ -217,11 +268,7 @@ void TesseractSceneDisplay::addBackgroundJob(const boost::function<void()>& job,
   background_process_.addJob(job, name);
 }
 
-void TesseractSceneDisplay::spawnBackgroundJob(const boost::function<void()>& job)
-{
-  boost::thread t(job);
-}
-
+void TesseractSceneDisplay::spawnBackgroundJob(const boost::function<void()>& job) { boost::thread t(job); }
 void TesseractSceneDisplay::addMainLoopJob(const boost::function<void()>& job)
 {
   boost::unique_lock<boost::mutex> ulock(main_loop_jobs_lock_);
@@ -262,11 +309,7 @@ const planning_scene_monitor::PlanningSceneMonitorPtr& TesseractSceneDisplay::ge
   return planning_scene_monitor_;
 }
 
-const std::string TesseractSceneDisplay::getMoveGroupNS() const
-{
-  return move_group_ns_property_->getStdString();
-}
-
+const std::string TesseractSceneDisplay::getMoveGroupNS() const { return move_group_ns_property_->getStdString(); }
 const robot_model::RobotModelConstPtr& TesseractSceneDisplay::getRobotModel() const
 {
   if (planning_scene_monitor_)
@@ -295,16 +338,8 @@ planning_scene_monitor::LockedPlanningSceneRW TesseractSceneDisplay::getPlanning
   return planning_scene_monitor::LockedPlanningSceneRW(planning_scene_monitor_);
 }
 
-void TesseractSceneDisplay::changedAttachedBodyColor()
-{
-  queueRenderSceneGeometry();
-}
-
-void TesseractSceneDisplay::changedSceneColor()
-{
-  queueRenderSceneGeometry();
-}
-
+void TesseractSceneDisplay::changedAttachedBodyColor() { queueRenderSceneGeometry(); }
+void TesseractSceneDisplay::changedSceneColor() { queueRenderSceneGeometry(); }
 void TesseractSceneDisplay::changedMoveGroupNS()
 {
   if (isEnabled())
@@ -337,10 +372,12 @@ void TesseractSceneDisplay::renderPlanningScene()
     try
     {
       const planning_scene_monitor::LockedPlanningSceneRO& ps = getPlanningSceneRO();
-      tesseract_scene_render_->render(
-          ps, env_color, attached_color, static_cast<OctreeVoxelRenderMode>(octree_render_property_->getOptionInt()),
-          static_cast<OctreeVoxelColorMode>(octree_coloring_property_->getOptionInt()),
-          scene_alpha_property_->getFloat());
+      tesseract_scene_render_->render(ps,
+                                      env_color,
+                                      attached_color,
+                                      static_cast<OctreeVoxelRenderMode>(octree_render_property_->getOptionInt()),
+                                      static_cast<OctreeVoxelColorMode>(octree_coloring_property_->getOptionInt()),
+                                      scene_alpha_property_->getFloat());
     }
     catch (std::exception& ex)
     {
@@ -351,11 +388,7 @@ void TesseractSceneDisplay::renderPlanningScene()
   }
 }
 
-void TesseractSceneDisplay::changedSceneAlpha()
-{
-  queueRenderSceneGeometry();
-}
-
+void TesseractSceneDisplay::changedSceneAlpha() { queueRenderSceneGeometry(); }
 void TesseractSceneDisplay::changedRobotSceneAlpha()
 {
   if (planning_scene_robot_)
@@ -377,18 +410,9 @@ void TesseractSceneDisplay::changedPlanningSceneTopic()
   }
 }
 
-void TesseractSceneDisplay::changedSceneDisplayTime()
-{
-}
-
-void TesseractSceneDisplay::changedOctreeRenderMode()
-{
-}
-
-void TesseractSceneDisplay::changedOctreeColorMode()
-{
-}
-
+void TesseractSceneDisplay::changedSceneDisplayTime() {}
+void TesseractSceneDisplay::changedOctreeRenderMode() {}
+void TesseractSceneDisplay::changedOctreeColorMode() {}
 void TesseractSceneDisplay::changedSceneRobotVisualEnabled()
 {
   if (isEnabled() && planning_scene_robot_)
@@ -486,15 +510,18 @@ void TesseractSceneDisplay::unsetLinkColor(Robot* robot, const std::string& link
 // ******************************************************************************************
 planning_scene_monitor::PlanningSceneMonitorPtr TesseractSceneDisplay::createPlanningSceneMonitor()
 {
-  return planning_scene_monitor::PlanningSceneMonitorPtr(new planning_scene_monitor::PlanningSceneMonitor(
-      robot_description_property_->getStdString(), context_->getFrameManager()->getTFClientPtr(),
-      getNameStd() + "_planning_scene_monitor"));
+  return planning_scene_monitor::PlanningSceneMonitorPtr(
+      new planning_scene_monitor::PlanningSceneMonitor(robot_description_property_->getStdString(),
+                                                       context_->getFrameManager()->getTFClientPtr(),
+                                                       getNameStd() + "_planning_scene_monitor"));
 }
 
 void TesseractSceneDisplay::clearRobotModel()
 {
   tesseract_scene_render_.reset();
-  planning_scene_monitor_.reset();  // this so that the destructor of the PlanningSceneMonitor gets called before a new
+  planning_scene_monitor_.reset();  // this so that the destructor of the
+                                    // PlanningSceneMonitor gets called before a
+                                    // new
                                     // instance of a scene monitor is constructed
 }
 
@@ -602,11 +629,7 @@ void TesseractSceneDisplay::onDisable()
   Display::onDisable();
 }
 
-void TesseractSceneDisplay::queueRenderSceneGeometry()
-{
-  tesseract_scene_needs_render_ = true;
-}
-
+void TesseractSceneDisplay::queueRenderSceneGeometry() { tesseract_scene_needs_render_ = true; }
 void TesseractSceneDisplay::update(float wall_dt, float ros_dt)
 {
   Display::update(wall_dt, ros_dt);
@@ -628,16 +651,8 @@ void TesseractSceneDisplay::updateInternal(float wall_dt, float ros_dt)
   }
 }
 
-void TesseractSceneDisplay::load(const rviz::Config& config)
-{
-  Display::load(config);
-}
-
-void TesseractSceneDisplay::save(rviz::Config config) const
-{
-  Display::save(config);
-}
-
+void TesseractSceneDisplay::load(const rviz::Config& config) { Display::load(config); }
+void TesseractSceneDisplay::save(rviz::Config config) const { Display::save(config); }
 // ******************************************************************************************
 // Calculate Offset Position
 // ******************************************************************************************

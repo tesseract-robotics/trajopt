@@ -8,14 +8,12 @@
 
 namespace trajopt_moveit
 {
-
 class TrajOptMoveItEnv : public tesseract::BasicEnv
 {
 public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
   TrajOptMoveItEnv() : BasicEnv(), initialized_(false) {}
-
   bool init(planning_scene::PlanningScenePtr planning_scene);
 
   /**
@@ -23,27 +21,30 @@ public:
    * @return True if init() has completed successfully
    */
   bool checkInitialized() const { return initialized_; }
+  void calcDistancesDiscrete(const tesseract::ContactRequest& req, tesseract::ContactResultVector& dists) const;
 
-  void calcDistancesDiscrete(const tesseract::ContactRequest &req, tesseract::ContactResultVector &dists) const;
+  void calcDistancesContinuous(const tesseract::ContactRequest& req, tesseract::ContactResultVector& dists) const;
 
-  void calcDistancesContinuous(const tesseract::ContactRequest &req, tesseract::ContactResultVector &dists) const;
+  void calcCollisionsDiscrete(const tesseract::ContactRequest& req, tesseract::ContactResultVector& collisions) const;
 
-  void calcCollisionsDiscrete(const tesseract::ContactRequest &req, tesseract::ContactResultVector &collisions) const;
+  void calcCollisionsContinuous(const tesseract::ContactRequest& req, tesseract::ContactResultVector& collisions) const;
 
-  void calcCollisionsContinuous(const tesseract::ContactRequest &req, tesseract::ContactResultVector &collisions) const;
+  bool continuousCollisionCheckTrajectory(const std::vector<std::string>& joint_names,
+                                          const std::vector<std::string>& link_names,
+                                          const tesseract::TrajArray& traj,
+                                          tesseract::ContactResultVector& collisions) const;
 
-  bool continuousCollisionCheckTrajectory(const std::vector<std::string> &joint_names, const std::vector<std::string> &link_names, const tesseract::TrajArray& traj, tesseract::ContactResultVector& collisions) const;
-
-  bool continuousCollisionCheckTrajectory(const std::vector<std::string> &joint_names, const std::vector<std::string> &link_names, const tesseract::TrajArray& traj, tesseract::ContactResult &collision) const;
+  bool continuousCollisionCheckTrajectory(const std::vector<std::string>& joint_names,
+                                          const std::vector<std::string>& link_names,
+                                          const tesseract::TrajArray& traj,
+                                          tesseract::ContactResult& collision) const;
 
   std::vector<std::string> getJointNames() const { return env_->getCurrentState().getVariableNames(); }
-
   Eigen::VectorXd getCurrentJointValues() const;
 
-  Eigen::VectorXd getCurrentJointValues(const std::string &manipulator_name) const;
+  Eigen::VectorXd getCurrentJointValues(const std::string& manipulator_name) const;
 
   const std::string& getRootLinkName() const { return env_->getPlanningFrame(); }
-
   std::vector<std::string> getLinkNames() const;
 
   std::vector<std::string> getActiveLinkNames() const;
@@ -52,9 +53,9 @@ public:
 
   Eigen::Affine3d getLinkTransform(const std::string& link_name) const;
 
-  bool hasManipulator(const std::string &manipulator_name) const;
+  bool hasManipulator(const std::string& manipulator_name) const;
 
-  tesseract::BasicKinConstPtr getManipulator(const std::string &manipulator_name) const;
+  tesseract::BasicKinConstPtr getManipulator(const std::string& manipulator_name) const;
 
   tesseract::AllowedCollisionMatrixConstPtr getAllowedCollisionMatrix() const
   {
@@ -63,19 +64,20 @@ public:
   }
 
 private:
-  bool initialized_;        /**< Identifies if the object has been initialized */
+  bool initialized_; /**< Identifies if the object has been initialized */
   planning_scene::PlanningScenePtr env_;
   std::vector<std::string> urdf_active_link_names_;             /**< A vector of active link names */
-  collision_detection::CollisionRobotConstPtr collision_robot_; /**< Pointer to the collision robot, some constraints require it */
-  collision_detection::CollisionWorldConstPtr collision_world_; /**< Pointer to the collision world, some constraints require it */
+  collision_detection::CollisionRobotConstPtr collision_robot_; /**< Pointer to the collision robot, some constraints
+                                                                   require it */
+  collision_detection::CollisionWorldConstPtr collision_world_; /**< Pointer to the collision world, some constraints
+                                                                   require it */
 
-  std::set<const robot_model::LinkModel*> getLinkModels(const std::vector<std::string> &link_names) const;
+  std::set<const robot_model::LinkModel*> getLinkModels(const std::vector<std::string>& link_names) const;
 
-  std::string getManipulatorName(const std::vector<std::string> &joint_names) const;
-
+  std::string getManipulatorName(const std::vector<std::string>& joint_names) const;
 };
 typedef std::shared_ptr<TrajOptMoveItEnv> TrajOptMoveItEnvPtr;
 typedef std::shared_ptr<const TrajOptMoveItEnv> TrajOptMoveItEnvConstPtr;
 }
 
-#endif // ROS_COLL_H
+#endif  // ROS_COLL_H

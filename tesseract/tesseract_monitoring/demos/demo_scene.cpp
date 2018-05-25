@@ -34,9 +34,9 @@
 
 /* Author: Ioan Sucan */
 
+#include <geometric_shapes/solid_primitive_dims.h>
 #include <tesseract_msgs/TesseractState.h>
 #include <tesseract_ros/ros_tesseract_utils.h>
-#include <geometric_shapes/solid_primitive_dims.h>
 
 static const std::string ROBOT_DESCRIPTION = "robot_description";
 using namespace tesseract;
