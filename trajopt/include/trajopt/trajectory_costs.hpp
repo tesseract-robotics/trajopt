@@ -13,7 +13,7 @@ namespace trajopt {
 class TRAJOPT_API JointPosCost : public Cost {
 public:
   JointPosCost(const VarVector& vars, const VectorXd& vals, const VectorXd& coeffs);
-  virtual ConvexObjectivePtr convex(const vector<double>& /*x*/, Model* model);
+  virtual ConvexObjectivePtr convex(const vector<double>& x, Model* model);
   virtual double value(const vector<double>&);
 private:
   VarVector vars_;
@@ -24,7 +24,7 @@ private:
 class TRAJOPT_API JointVelCost : public Cost {
 public:
   JointVelCost(const VarArray& traj, const VectorXd& coeffs);
-  virtual ConvexObjectivePtr convex(const vector<double>& /*x*/, Model* model);
+  virtual ConvexObjectivePtr convex(const vector<double>& x, Model* model);
   virtual double value(const vector<double>&);
 private:
   VarArray vars_;
@@ -35,7 +35,7 @@ private:
 class TRAJOPT_API JointAccCost : public Cost {
 public:
   JointAccCost(const VarArray& traj, const VectorXd& coeffs);
-  virtual ConvexObjectivePtr convex(const vector<double>& /*x*/, Model* model);
+  virtual ConvexObjectivePtr convex(const vector<double>& x, Model* model);
   virtual double value(const vector<double>&);
 private:
   VarArray vars_;
@@ -46,7 +46,7 @@ private:
 class TRAJOPT_API JointJerkCost : public Cost {
 public:
   JointJerkCost(const VarArray& traj, const VectorXd& coeffs);
-  virtual ConvexObjectivePtr convex(const vector<double>& /*x*/, Model* model);
+  virtual ConvexObjectivePtr convex(const vector<double>& x, Model* model);
   virtual double value(const vector<double>&);
 private:
   VarArray vars_;

@@ -82,7 +82,7 @@ public:
 
   virtual ~TrajectoryVisualization();
 
-  virtual void update(float wall_dt, float /*ros_dt*/);
+  virtual void update(float wall_dt, float ros_dt);
   virtual void reset();
 
   void onInitialize(Ogre::SceneNode* scene_node, rviz::DisplayContext* context, ros::NodeHandle update_nh);

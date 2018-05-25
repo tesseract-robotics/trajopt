@@ -277,7 +277,7 @@ protected:
   /** @brief Initialize the planning scene monitor
    *  @param scene The scene instance to fill with data (an instance is allocated if the one passed in is not allocated)
    */
-  void initialize(const urdf::ModelInterfaceConstSharedPtr &urdf_model, const srdf::ModelConstSharedPtr &/*srdf_model*/);
+  void initialize(const urdf::ModelInterfaceConstSharedPtr &urdf_model, const srdf::ModelConstSharedPtr &srdf_model);
 
   /** @brief Callback for a new attachable object msg*/
   void attachableObjectCallback(const tesseract_msgs::AttachableObjectConstPtr &ao_msg);
@@ -329,7 +329,7 @@ private:
   void onStateUpdate(const sensor_msgs::JointStateConstPtr& joint_state);
 
   // called by state_update_timer_ when a state update it pending
-  void stateUpdateTimerCallback(const ros::WallTimerEvent& /*event*/);
+  void stateUpdateTimerCallback(const ros::WallTimerEvent& event);
 
   // Callback for a new environment msg
   void newEnvironmentCallback(const tesseract_msgs::TesseractStateConstPtr& env);

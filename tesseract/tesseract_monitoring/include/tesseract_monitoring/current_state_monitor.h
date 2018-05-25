@@ -188,7 +188,7 @@ public:
 
 private:
   void jointStateCallback(const sensor_msgs::JointStateConstPtr& joint_state);
-  bool isPassiveOrMimicDOF(const std::string& /*dof*/) const;
+  bool isPassiveOrMimicDOF(const std::string& dof) const;
 
   ros::NodeHandle nh_;
   tesseract_ros::ROSBasicEnvConstPtr env_;
