@@ -34,12 +34,14 @@
 
 /* Author: Ioan Sucan */
 
-#include <tesseract_ros_monitor/current_state_monitor.h>
+#include <tesseract_monitoring/current_state_monitor.h>
 #include <limits>
 
-using namespace tesseract;
-using namespace tesseract::tesseract_ros;
-using namespace tesseract::tesseract_ros::tesseract_ros_monitor;
+namespace tesseract
+{
+
+namespace tesseract_monitoring
+{
 
 CurrentStateMonitor::CurrentStateMonitor(const tesseract_ros::ROSBasicEnvConstPtr& env)
   : CurrentStateMonitor(env, ros::NodeHandle())
@@ -143,7 +145,7 @@ std::string CurrentStateMonitor::getMonitoredTopic() const
     return "";
 }
 
-bool CurrentStateMonitor::isPassiveOrMimicDOF(const std::string& dof) const
+bool CurrentStateMonitor::isPassiveOrMimicDOF(const std::string& /*dof*/) const
 {
   // TODO: Levi Need to implement
 
@@ -327,7 +329,7 @@ void CurrentStateMonitor::jointStateCallback(const sensor_msgs::JointStateConstP
     boost::mutex::scoped_lock slock(state_update_lock_);
     // read the received values, and update their time stamps
     current_state_time_ = joint_state->header.stamp;
-    for (auto i = 0; i < joint_state->name.size(); ++i)
+    for (unsigned i = 0; i < joint_state->name.size(); ++i)
     {
       if (state_.joints.find(joint_state->name[i]) != state_.joints.end())
       {
@@ -348,4 +350,6 @@ void CurrentStateMonitor::jointStateCallback(const sensor_msgs::JointStateConstP
 
   // notify waitForCurrentState() *after* potential update callbacks
   state_update_condition_.notify_all();
+}
+}
 }

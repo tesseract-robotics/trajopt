@@ -37,9 +37,9 @@ catkin_package(
 include_directories(
   include
   ${catkin_INCLUDE_DIRS}
-  ${EIGEN3_INCLUDE_DIRS}
-  ${Boost_INCLUDE_DIRS}
-  ${OCTOMAP_INCLUDE_DIRS}
+  SYSTEM ${EIGEN3_INCLUDE_DIRS}
+  SYSTEM ${Boost_INCLUDE_DIRS}
+  SYSTEM ${OCTOMAP_INCLUDE_DIRS}
 )
 
 add_library(${PROJECT_NAME}_bullet
@@ -77,6 +77,6 @@ if (CATKIN_ENABLE_TESTING)
   catkin_add_gtest(${PROJECT_NAME}_unit test/collision_unit.cpp)
   target_link_libraries(${PROJECT_NAME}_unit ${PROJECT_NAME}_bullet ${catkin_LIBRARIES} ${Boost_LIBRARIES} ${OCTOMAP_LIBRARIES})
 
-  catkin_add_gtest(${PROJECT_NAME}_convex_concave_unit test/convex_concave_unit.cpp)
-  target_link_libraries(${PROJECT_NAME}_convex_concave_unit ${PROJECT_NAME}_bullet ${catkin_LIBRARIES} ${Boost_LIBRARIES} ${OCTOMAP_LIBRARIES})
+#  catkin_add_gtest(${PROJECT_NAME}_convex_concave_unit test/convex_concave_unit.cpp)
+#  target_link_libraries(${PROJECT_NAME}_convex_concave_unit ${PROJECT_NAME}_bullet ${catkin_LIBRARIES} ${Boost_LIBRARIES} ${OCTOMAP_LIBRARIES})
 endif()

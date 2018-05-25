@@ -87,7 +87,7 @@ TrajOptProbPtr cppMethod()
 
   pci.init_info.type = InitInfo::GIVEN_TRAJ;
   pci.init_info.data = TrajArray(steps_, pci.kin->numJoints());
-  for (int idof = 0; idof < pci.kin->numJoints(); ++idof)
+  for (unsigned idof = 0; idof < pci.kin->numJoints(); ++idof)
   {
     pci.init_info.data.col(idof) = VectorXd::LinSpaced(steps_, start_pos[idof], end_pos[idof]);
   }
@@ -245,6 +245,17 @@ int main(int argc, char** argv)
   ros::Time tStart = ros::Time::now();
   opt.optimize();
   ROS_INFO("planning time: %.3f", (ros::Time::now() - tStart).toSec());
+
+  double d = 0;
+  TrajArray traj = getTraj(opt.x(), prob->GetVars());
+  for (unsigned i=1; i < traj.rows(); ++i)
+  {
+    for (unsigned j=0; j < traj.cols(); ++j)
+    {
+      d+=std::abs(traj(i, j) - traj(i-1, j));
+    }
+  }
+  ROS_ERROR("trajectory norm: %.3f", d);
 
   if (plotting_)
   {

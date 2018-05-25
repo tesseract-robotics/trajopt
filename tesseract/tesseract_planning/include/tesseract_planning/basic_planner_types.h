@@ -23,15 +23,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef TESSERACT_ROS_BASIC_PLANNER_TYPES_H
-#define TESSERACT_ROS_BASIC_PLANNER_TYPES_H
+#ifndef TESSERACT_PLANNING_BASIC_PLANNER_TYPES_H
+#define TESSERACT_PLANNING_BASIC_PLANNER_TYPES_H
 
 #include <tesseract_ros/ros_basic_env.h>
 
 namespace tesseract
 {
 
-namespace tesseract_ros
+namespace tesseract_planning
 {
 
 /** @brief Negative status code should be related to errors and positive should be used for status of covergenace */
@@ -39,17 +39,17 @@ typedef std::unordered_map<int, std::string> StatusCodeMap;
 
 struct PlannerRequest
 {
-  std::string name;             /**< @brief The name of the planner to use */
-  ROSBasicEnvConstPtr env;      /**< @brief The environment to use for planning */
-  EnvStateConstPtr start_state; /**< @brief The start state to use for planning */
-  std::string config;           /**< @brief The configuration to use (json file) */
-  std::string config_format;    /**< @brief The file extension used to parse config */
+  std::string name;                       /**< @brief The name of the planner to use */
+  tesseract_ros::ROSBasicEnvConstPtr env; /**< @brief The environment to use for planning */
+  EnvStateConstPtr start_state;           /**< @brief The start state to use for planning */
+  std::string config;                     /**< @brief The configuration to use (json file) */
+  std::string config_format;              /**< @brief The file extension used to parse config */
 };
 
 struct PlannerResponse
 {
   std::vector<std::string> joint_names; /**< @brief The joint names */
-  TrajArray trajectory;
+  TrajArray trajectory;                 /**< @brief The generated trajectory */
   int status_code;                      /**< @brief Negative status code should be related to errors and positive should be used for status of covergenace */
   std::string status_description;       /**< @brief Provide a brief description about what the error code means */
 };
@@ -57,4 +57,4 @@ struct PlannerResponse
 }
 }
 
-#endif // TESSERACT_ROS_BASIC_PLANNER_TYPES_H
+#endif // TESSERACT_PLANNING_BASIC_PLANNER_TYPES_H

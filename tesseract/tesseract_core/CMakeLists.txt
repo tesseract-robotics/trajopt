@@ -22,7 +22,7 @@ catkin_package(
 include_directories(
   include
   ${catkin_INCLUDE_DIRS}
-  ${EIGEN3_INCLUDE_DIRS}
+  SYSTEM ${EIGEN3_INCLUDE_DIRS}
 )
 
 # Mark cpp header files for installation

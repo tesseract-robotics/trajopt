@@ -116,7 +116,7 @@ public:
   Ogre::Vector3 getPosition();
   Ogre::Quaternion getOrientation();
 
-  void setRobotAlpha(float a) {}
+  void setRobotAlpha(float /*a*/) {}
 
   bool hasDescendentLinksWithGeometry() const { return has_decendent_links_with_geometry_; }
 

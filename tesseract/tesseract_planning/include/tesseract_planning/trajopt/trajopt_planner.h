@@ -23,15 +23,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef TESSERACT_ROS_TRAJOPT_PLANNER_H
-#define TESSERACT_ROS_TRAJOPT_PLANNER_H
+#ifndef TESSERACT_PLANNING_TRAJOPT_PLANNER_H
+#define TESSERACT_PLANNING_TRAJOPT_PLANNER_H
 
-#include <tesseract_ros_planning/basic_planner.h>
+#include <tesseract_planning/basic_planner.h>
 
 namespace tesseract
 {
 
-namespace tesseract_ros
+namespace tesseract_planning
 {
 
 class TrajoptPlanner : public BasicPlanner
@@ -62,4 +62,4 @@ private:
 };
 }
 }
-#endif // TESSERACT_ROS_TRAJOPT_PLANNER_H
+#endif // TESSERACT_PLANNING_TRAJOPT_PLANNER_H

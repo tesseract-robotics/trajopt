@@ -1,8 +1,7 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(trajopt_examples)
 
-## Compile as C++11, supported in ROS Kinetic and newer
-add_compile_options(-std=c++11)
+add_compile_options(-std=c++11 -Wall -Wextra)
 
 find_package(catkin REQUIRED COMPONENTS
   roscpp
@@ -23,8 +22,8 @@ catkin_package(
 
 include_directories(
 # include
-  ${PCL_INCLUDE_DIRS}
   ${catkin_INCLUDE_DIRS}
+  SYSTEM ${PCL_INCLUDE_DIRS}
 )
 
 add_executable(${PROJECT_NAME}_basic_cartesian_plan src/basic_cartesian_plan.cpp)

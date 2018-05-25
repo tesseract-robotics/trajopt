@@ -34,29 +34,27 @@
 
 /* Author: Ioan Sucan */
 
-#ifndef TESSERACT_ROS_MONITOR_ENVIRONMENT_H
-#define TESSERACT_ROS_MONITOR_ENVIRONMENT_H
+#ifndef TESSERACT_MONITORING_ENVIRONMENT_H
+#define TESSERACT_MONITORING_ENVIRONMENT_H
 
 #include <ros/ros.h>
 #include <tf/tf.h>
 #include <tf/message_filter.h>
-#include <pluginlib/class_loader.hpp>
 #include <message_filters/subscriber.h>
 #include <tesseract_ros/ros_basic_env.h>
-#include <tesseract_ros_monitor/current_state_monitor.h>
+#include <tesseract_monitoring/current_state_monitor.h>
 #include <tesseract_msgs/TesseractState.h>
 #include <boost/noncopyable.hpp>
 #include <boost/thread/shared_mutex.hpp>
 #include <boost/thread/recursive_mutex.hpp>
 #include <memory>
 
+class DynamicReconfigureImpl;
+
 namespace tesseract
 {
 
-namespace tesseract_ros
-{
-
-namespace tesseract_ros_monitor
+namespace tesseract_monitoring
 {
 
 /**
@@ -95,7 +93,7 @@ public:
 
   /// The name of the topic used by default for publishing the monitored tesseract environment (this is without "/" in the
   /// name, so the topic is prefixed by the node name)
-  static const std::string MONITORED_ENVIRONMENT_TOPIC;  // "monitored_tesseract"
+  static const std::string MONITORED_ENVIRONMENT_TOPIC;  // "/monitored_tesseract"
 
   /** @brief Constructor
    *  @param robot_description The name of the ROS parameter that contains the URDF (in string format)
@@ -364,32 +362,29 @@ private:
   urdf::ModelInterfaceConstSharedPtr urdf_model_;  /**< URDF MODEL */
   srdf::ModelConstSharedPtr srdf_model_;           /**< SRDF MODEL */
 
-  std::shared_ptr<pluginlib::ClassLoader<tesseract_ros::ROSBasicEnv> > env_loader;
-
-//  class DynamicReconfigureImpl;
-//  DynamicReconfigureImpl* reconfigure_impl_;
+  DynamicReconfigureImpl* reconfigure_impl_;
 };
 typedef std::shared_ptr<EnvironmentMonitor> EnvironmentMonitorPtr;
 typedef std::shared_ptr<const EnvironmentMonitor> EnvironmentMonitorConstPtr;
 
 /** \brief This is a convenience class for obtaining access to an
- *         instance of a locked PlanningScene.
+ *         instance of a locked Environment.
  *
  * Instances of this class can be used almost exactly like instances
- * of a PlanningScenePtr because of the typecast operator and
+ * of a ROSBasicEnvPtr because of the typecast operator and
  * "operator->" functions.  Therefore you will often see code like this:
  * @code
- *   planning_scene_monitor::LockedPlanningSceneRO ls(planning_scene_monitor);
- *   robot_model::RobotModelConstPtr model = ls->getRobotModel();
+ *   environment_monitor::LockedEnvironmentRO ls(environment_monitor);
+ *   const tesseract_ros::ROSBasicEnvPtr& env = ls->getEnvironment();
  * @endcode
 
- * The function "getRobotModel()" is a member of PlanningScene and not
+ * The function "getEnvironment()" is a member of EnvironmentMonitor and not
  * a member of this class.  However because of the "operator->" here
- * which returns a PlanningSceneConstPtr, this works.
+ * which returns a ROSBasicEnvConstPtr, this works.
  *
  * Any number of these "ReadOnly" locks can exist at a given time.
  * The intention is that users which only need to read from the
- * PlanningScene will use these and will thus not interfere with each
+ * ROSBasicEnvPtr will use these and will thus not interfere with each
  * other.
  *
  * @see LockedEnvironmentRW */
@@ -465,22 +460,22 @@ protected:
 };
 
 /** \brief This is a convenience class for obtaining access to an
- *         instance of a locked PlanningScene.
+ *         instance of a locked Environment.
  *
  * Instances of this class can be used almost exactly like instances
- * of a PlanningScenePtr because of the typecast operator and
+ * of a EnvironmentMonitorPtr because of the typecast operator and
  * "operator->" functions.  Therefore you will often see code like this:
  * @code
- *   planning_scene_monitor::LockedPlanningSceneRW ls(planning_scene_monitor);
- *   robot_model::RobotModelConstPtr model = ls->getRobotModel();
+ *   environment_monitor::LockedEnvironmentRW ls(environment_monitor);
+ *   const tesseract_ros::ROSBasicEnvPtr& env = ls->getEnvironment();
  * @endcode
 
- * The function "getRobotModel()" is a member of PlanningScene and not
+ * The function "getEnvironment()" is a member of EnvironmentMonitor and not
  * a member of this class.  However because of the "operator->" here
- * which returns a PlanningScenePtr, this works.
+ * which returns a ROSBasicEnvPtr, this works.
  *
  * Only one of these "ReadWrite" locks can exist at a given time.  The
- * intention is that users which need to write to the PlanningScene
+ * intention is that users which need to write to the ROSBasicEnv
  * will use these, preventing other writers and readers from locking
  * the same PlanningScene at the same time.
  *
@@ -503,7 +498,6 @@ public:
     return env_monitor_->getEnvironment();
   }
 };
-}
 }
 }
 

@@ -151,6 +151,17 @@ TEST_F(PlanningTest, arm_around_table)
   opt.optimize();
   ROS_DEBUG("planning time: %.3f", GetClock()-tStart);
 
+  double d = 0;
+  TrajArray traj = getTraj(opt.x(), prob->GetVars());
+  for (unsigned i=1; i < traj.rows(); ++i)
+  {
+    for (unsigned j=0; j < traj.cols(); ++j)
+    {
+      d+=std::abs(traj(i, j) - traj(i-1, j));
+    }
+  }
+  ROS_INFO("trajectory norm: %.3f", d);
+
   if (plotting)
   {
     plotter_->clear();

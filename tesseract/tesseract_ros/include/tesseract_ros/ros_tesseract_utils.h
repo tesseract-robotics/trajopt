@@ -26,6 +26,12 @@
 #ifndef TESSERACT_ROS_UTILS_H
 #define TESSERACT_ROS_UTILS_H
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wall"
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+#include <octomap_msgs/conversions.h>
+#pragma GCC diagnostic pop
+
 #include <tesseract_msgs/TesseractState.h>
 #include <tesseract_msgs/ContactResultVector.h>
 #include <tesseract_ros/ros_basic_env.h>
@@ -34,7 +40,6 @@
 #include <geometric_shapes/shapes.h>
 #include <geometric_shapes/shape_operations.h>
 #include <std_msgs/Int32.h>
-#include <octomap_msgs/conversions.h>
 #include <eigen_conversions/eigen_msg.h>
 #include <ros/console.h>
 
@@ -61,6 +66,162 @@ bool isMsgEmpty(const sensor_msgs::MultiDOFJointState& msg)
          msg.transforms.empty() &&
          msg.twist.empty() &&
          msg.wrench.empty();
+}
+
+static inline
+bool isIdentical(const shapes::Shape& shape1, const shapes::Shape& shape2)
+{
+  if (shape1.type != shape2.type)
+    return false;
+
+  switch (shape1.type)
+  {
+  case shapes::BOX:
+  {
+    const shapes::Box& s1 = static_cast<const shapes::Box&>(shape1);
+    const shapes::Box& s2 = static_cast<const shapes::Box&>(shape2);
+
+    for (unsigned i = 0; i < 3; ++i)
+      if (std::abs(s1.size[i]-s2.size[i]) > std::numeric_limits<double>::epsilon())
+        return false;
+
+    break;
+  }
+  case shapes::SPHERE:
+  {
+    const shapes::Sphere& s1 = static_cast<const shapes::Sphere&>(shape1);
+    const shapes::Sphere& s2 = static_cast<const shapes::Sphere&>(shape2);
+
+    if (std::abs(s1.radius-s2.radius) > std::numeric_limits<double>::epsilon())
+      return false;
+
+    break;
+  }
+  case shapes::CYLINDER:
+  {
+    const shapes::Cylinder& s1 = static_cast<const shapes::Cylinder&>(shape1);
+    const shapes::Cylinder& s2 = static_cast<const shapes::Cylinder&>(shape2);
+
+    if (std::abs(s1.radius-s2.radius) > std::numeric_limits<double>::epsilon())
+      return false;
+
+    if (std::abs(s1.length-s2.length) > std::numeric_limits<double>::epsilon())
+      return false;
+
+    break;
+  }
+  case shapes::CONE:
+  {
+    const shapes::Cone& s1 = static_cast<const shapes::Cone&>(shape1);
+    const shapes::Cone& s2 = static_cast<const shapes::Cone&>(shape2);
+
+    if (std::abs(s1.radius-s2.radius) > std::numeric_limits<double>::epsilon())
+      return false;
+
+    if (std::abs(s1.length-s2.length) > std::numeric_limits<double>::epsilon())
+      return false;
+
+    break;
+  }
+  case shapes::MESH:
+  {
+    const shapes::Mesh& s1 = static_cast<const shapes::Mesh&>(shape1);
+    const shapes::Mesh& s2 = static_cast<const shapes::Mesh&>(shape2);
+
+    if (s1.vertex_count != s2.vertex_count)
+      return false;
+
+    if (s1.triangle_count != s2.triangle_count)
+      return false;
+
+    break;
+  }
+  case shapes::OCTREE:
+  {
+    const shapes::OcTree& s1 = static_cast<const shapes::OcTree&>(shape1);
+    const shapes::OcTree& s2 = static_cast<const shapes::OcTree&>(shape2);
+
+
+    if (s1.octree->getTreeType() != s2.octree->getTreeType())
+      return false;
+
+    if (s1.octree->size() != s2.octree->size())
+      return false;
+
+    if (s1.octree->getTreeDepth() != s2.octree->getTreeDepth())
+      return false;
+
+    if (s1.octree->memoryUsage() != s2.octree->memoryUsage())
+      return false;
+
+    if (s1.octree->memoryFullGrid() != s2.octree->memoryFullGrid())
+      return false;
+
+    break;
+  }
+  default:
+    ROS_ERROR("This geometric shape type (%d) is not supported", static_cast<int>(shape1.type));
+    return false;
+  }
+
+  return true;
+}
+
+static inline
+bool isIdentical(const AttachableObject& ao1, const AttachableObject& ao2)
+{
+  if (ao1.name != ao2.name)
+    return false;
+
+  // Check Collision
+  if (ao1.collision.collision_object_types.size() != ao2.collision.collision_object_types.size())
+    return false;
+
+  if (ao1.collision.shapes.size() != ao2.collision.shapes.size())
+    return false;
+
+  for (unsigned i = 0; i < ao1.collision.shapes.size(); ++i)
+  {
+    if (!isIdentical(*ao1.collision.shapes[i], *ao2.collision.shapes[i]))
+      return false;
+  }
+
+  if (ao1.collision.shape_colors.size() != ao2.collision.shape_colors.size())
+    return false;
+
+  for (unsigned i = 0; i < ao1.collision.shape_colors.size(); ++i)
+  {
+    for (unsigned j = 0; j < 4; ++j)
+    {
+      if (std::abs(ao1.collision.shape_colors[i][j] - ao2.collision.shape_colors[i][j]) > std::numeric_limits<double>::epsilon())
+        return false;
+    }
+  }
+
+
+  // Check Visual
+  if (ao1.visual.shapes.size() != ao2.visual.shapes.size())
+    return false;
+
+  for (unsigned i = 0; i < ao1.visual.shapes.size(); ++i)
+  {
+    if (!isIdentical(*ao1.visual.shapes[i], *ao2.visual.shapes[i]))
+      return false;
+  }
+
+  if (ao1.visual.shape_colors.size() != ao2.visual.shape_colors.size())
+    return false;
+
+  for (unsigned i = 0; i < ao1.visual.shape_colors.size(); ++i)
+  {
+    for (unsigned j = 0; j < 4; ++j)
+    {
+      if (std::abs(ao1.visual.shape_colors[i][j] - ao2.visual.shape_colors[i][j]) > std::numeric_limits<double>::epsilon())
+        return false;
+    }
+  }
+
+  return true;
 }
 
 static inline

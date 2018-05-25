@@ -16,8 +16,8 @@
   <!-- If needed, broadcast static tf for robot root -->
 <!--  <node pkg="tf" type="static_transform_publisher" name="virtual_joint_broadcaster_0" args="0 0 0 0 0 0 world base_link 100" />-->
 
-  <!--<node pkg="trajopt_examples" type="trajopt_examples_car_seat_demo" name="trajopt_examples_car_seat_demo">
+  <node pkg="trajopt_examples" type="trajopt_examples_car_seat_demo" name="trajopt_examples_car_seat_demo">
     <param name="plotting" type="bool" value="$(arg plotting)"/>
-  </node>-->
+  </node>
 </launch>
 

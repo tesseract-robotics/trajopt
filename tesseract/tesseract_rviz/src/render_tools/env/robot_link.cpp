@@ -48,6 +48,9 @@
 #include <urdf_model/model.h>
 #include <urdf_model/link.h>
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wall"
+#pragma GCC diagnostic ignored "-Wunused-parameter"
 #include <octomap_msgs/Octomap.h>
 #include <octomap/octomap.h>
 
@@ -64,6 +67,7 @@
 #include "rviz/visualization_manager.h"
 #include "rviz/load_resource.h"
 #include "rviz/ogre_helpers/mesh_shape.h"
+#pragma GCC diagnostic pop
 
 #include <tesseract_core/basic_types.h>
 #include <geometric_shapes/mesh_operations.h>
@@ -82,11 +86,11 @@ public:
   RobotLinkSelectionHandler( RobotLink* link, rviz::DisplayContext* context );
   virtual ~RobotLinkSelectionHandler();
 
-  virtual void createProperties( const rviz::Picked& obj, rviz::Property* parent_property );
+  virtual void createProperties( const rviz::Picked& /*obj*/, rviz::Property* parent_property );
   virtual void updateProperties();
 
-  virtual void preRenderPass(uint32_t pass);
-  virtual void postRenderPass(uint32_t pass);
+  virtual void preRenderPass(uint32_t /*pass*/);
+  virtual void postRenderPass(uint32_t /*pass*/);
 
 private:
   RobotLink* link_;
@@ -104,7 +108,7 @@ RobotLinkSelectionHandler::~RobotLinkSelectionHandler()
 {
 }
 
-void RobotLinkSelectionHandler::createProperties( const rviz::Picked& obj, rviz::Property* parent_property )
+void RobotLinkSelectionHandler::createProperties( const rviz::Picked& /*obj*/, rviz::Property* parent_property )
 {
   rviz::Property* group = new rviz::Property( "Link " + QString::fromStdString( link_->getName() ), QVariant(), "", parent_property );
   properties_.push_back( group );
@@ -125,7 +129,7 @@ void RobotLinkSelectionHandler::updateProperties()
 }
 
 
-void RobotLinkSelectionHandler::preRenderPass(uint32_t pass)
+void RobotLinkSelectionHandler::preRenderPass(uint32_t /*pass*/)
 {
   if (!link_->is_selectable_)
   {
@@ -148,7 +152,7 @@ void RobotLinkSelectionHandler::preRenderPass(uint32_t pass)
   }
 }
 
-void RobotLinkSelectionHandler::postRenderPass(uint32_t pass)
+void RobotLinkSelectionHandler::postRenderPass(uint32_t /*pass*/)
 {
   if (!link_->is_selectable_)
   {
@@ -174,8 +178,8 @@ RobotLink::RobotLink( Robot* robot,
 , material_alpha_( 1.0 )
 , robot_alpha_(1.0)
 , only_render_depth_(false)
-, using_color_( false )
 , is_selectable_( true )
+, using_color_( false )
 {
   link_property_ = new rviz::Property( link->name.c_str(), true, "", NULL, SLOT( updateVisibility() ), this );
   link_property_->setIcon( rviz::loadPixmap( "package://rviz/icons/classes/RobotLink.png" ) );
@@ -321,8 +325,8 @@ RobotLink::RobotLink( Robot* robot,
 , material_alpha_( 1.0 )
 , robot_alpha_(1.0)
 , only_render_depth_(false)
-, using_color_( false )
 , is_selectable_( true )
+, using_color_( false )
 {
   link_property_ = new rviz::Property( ao.name.c_str(), true, "", NULL, SLOT( updateVisibility() ), this );
   link_property_->setIcon( rviz::loadPixmap( "package://rviz/icons/classes/RobotLink.png" ) );
@@ -1038,8 +1042,8 @@ bool RobotLink::createEntityForGeometryElement(const shapes::Shape& geom, Eigen:
               normals[2] = normal;
             }
 
-            float u, v;
-            u = v = 0.0f;
+//            float u, v;
+//            u = v = 0.0f;
             object->position(verticies[0]);
             object->normal(normals[0]);
   //          calculateUV( verticies[0], u, v );
@@ -1137,7 +1141,7 @@ bool RobotLink::createEntityForGeometryElement(const shapes::Shape& geom, Eigen:
   }
   else
   {
-    std::size_t max_octree_depth;
+    std::size_t max_octree_depth = 0;
     double color_factor = 0.8;
     OctreeVoxelRenderMode octree_voxel_rendering = OCTOMAP_OCCUPIED_VOXELS;
     OctreeVoxelColorMode octree_color_mode = OCTOMAP_Z_AXIS_COLOR;
@@ -1369,7 +1373,7 @@ void RobotLink::createVisual(const urdf::LinkConstSharedPtr& link )
 
 void RobotLink::createVisual( const tesseract::AttachableObject& ao)
 {
-  for (auto i = 0; i < ao.visual.shapes.size(); ++i)
+  for (unsigned i = 0; i < ao.visual.shapes.size(); ++i)
   {
     const shapes::ShapeConstPtr& visual = ao.visual.shapes[i];
     if( visual )
@@ -1386,7 +1390,7 @@ void RobotLink::createVisual( const tesseract::AttachableObject& ao)
 
 void RobotLink::createCollision(const tesseract::AttachableObject& ao)
 {
-  for (auto i = 0; i < ao.collision.shapes.size(); ++i)
+  for (unsigned i = 0; i < ao.collision.shapes.size(); ++i)
   {
     const shapes::ShapeConstPtr& collision = ao.collision.shapes[i];
     if( collision )

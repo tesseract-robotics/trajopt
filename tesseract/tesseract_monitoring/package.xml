@@ -14,6 +14,7 @@
   <depend>tesseract_ros</depend>
   <depend>tesseract_collision</depend>
   <depend>tesseract_msgs</depend>
+  <depend>dynamic_reconfigure</depend>
 
 
   <!-- The export tag contains other, unspecified, tags -->

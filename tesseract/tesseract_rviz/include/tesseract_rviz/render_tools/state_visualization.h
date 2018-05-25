@@ -98,6 +98,7 @@ private:
 
   Robot robot_;
   tesseract::AttachedBodyInfoMap attached_bodies_;
+  tesseract::AttachableObjectConstPtrMap attachable_objects_;
   std_msgs::ColorRGBA default_attached_object_color_;
 
   bool visible_;

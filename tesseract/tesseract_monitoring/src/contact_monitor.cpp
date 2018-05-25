@@ -58,6 +58,7 @@ bool callbackModifyTesseractEnv(tesseract_msgs::ModifyTesseractEnvRequest& reque
 {
   boost::mutex::scoped_lock(modify_mutex);
   response.success = processTesseractStateMsg(*env, request.state);
+  return true;
 }
 
 int main(int argc, char** argv)

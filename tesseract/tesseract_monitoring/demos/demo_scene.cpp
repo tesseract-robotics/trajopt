@@ -63,6 +63,7 @@ void sendSphere()
   obj.visual.shape_poses.push_back(sphere_pose);
   obj.collision.shapes.push_back(sphere);
   obj.collision.shape_poses.push_back(sphere_pose);
+  obj.collision.collision_object_types.push_back(tesseract::CollisionObjectTypes::UseShapeType);
 
   tesseract_msgs::AttachableObject ao_msg;
   tesseract_ros::attachableObjectToAttachableObjectMsg(ao_msg, obj);

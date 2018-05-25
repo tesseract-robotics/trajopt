@@ -1,7 +1,13 @@
-#include "tesseract_ros_planning/ompl/continuous_motion_validator.h"
+#include "tesseract_planning/ompl/continuous_motion_validator.h"
 #include <ompl/base/spaces/RealVectorStateSpace.h>
 
-tesseract_ros_planning::ContinuousMotionValidator::ContinuousMotionValidator(ompl::base::SpaceInformationPtr space_info,
+namespace tesseract
+{
+
+namespace tesseract_planning
+{
+
+ContinuousMotionValidator::ContinuousMotionValidator(ompl::base::SpaceInformationPtr space_info,
                                                                              tesseract::BasicEnvConstPtr env,
                                                                              const std::string &manipulator)
   : MotionValidator(space_info)
@@ -13,14 +19,14 @@ tesseract_ros_planning::ContinuousMotionValidator::ContinuousMotionValidator(omp
                              std::placeholders::_2);
 }
 
-bool tesseract_ros_planning::ContinuousMotionValidator::checkMotion(const ompl::base::State *s1,
+bool ContinuousMotionValidator::checkMotion(const ompl::base::State *s1,
                                                                     const ompl::base::State *s2) const
 {
   std::pair<ompl::base::State*, double> dummy = {nullptr, 0.0};
   return checkMotion(s1, s2, dummy);
 }
 
-bool tesseract_ros_planning::ContinuousMotionValidator::checkMotion(const ompl::base::State *s1,
+bool ContinuousMotionValidator::checkMotion(const ompl::base::State *s1,
                                                                     const ompl::base::State *s2,
                                                                     std::pair<ompl::base::State*, double>& lastValid) const
 {
@@ -57,7 +63,7 @@ bool tesseract_ros_planning::ContinuousMotionValidator::checkMotion(const ompl::
   return is_valid;
 }
 
-bool tesseract_ros_planning::ContinuousMotionValidator::continuousCollisionCheck(const ompl::base::State *s1,
+bool ContinuousMotionValidator::continuousCollisionCheck(const ompl::base::State *s1,
                                                                                  const ompl::base::State *s2) const
 {
   const ompl::base::RealVectorStateSpace::StateType* start = s1->as<ompl::base::RealVectorStateSpace::StateType>();
@@ -75,4 +81,7 @@ bool tesseract_ros_planning::ContinuousMotionValidator::continuousCollisionCheck
   env_->calcCollisionsContinuous(req, joints_, start_joints, finish_joints, contact_map);
 
   return contact_map.empty();
+}
+
+}
 }

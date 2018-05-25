@@ -137,7 +137,7 @@ void Optimizer::addCallback(const Callback& cb) {
   callbacks_.push_back(cb);
 }
 void Optimizer::callCallbacks(DblVec& x) {
-  for (int i=0; i < callbacks_.size(); ++i) {
+  for (unsigned i=0; i < callbacks_.size(); ++i) {
     callbacks_[i](prob_.get(), x);
   }
 }
@@ -303,7 +303,7 @@ OptStatus BasicTrustRegionSQP::optimize() {
         if (GetLogLevel() >= util::LevelDebug) {
           DblVec cnt_costs1 = evaluateModelCosts(cnt_cost_models, model_var_vals);
           DblVec cnt_costs2 = model_cnt_viols;
-          for (int i=0; i < cnt_costs2.size(); ++i) cnt_costs2[i] *= param_.merit_error_coeff;
+          for (unsigned i=0; i < cnt_costs2.size(); ++i) cnt_costs2[i] *= param_.merit_error_coeff;
           LOG_DEBUG("SHOULD BE ALMOST THE SAME: %s ?= %s", CSTR(cnt_costs1), CSTR(cnt_costs2) );
           // not exactly the same because cnt_costs1 is based on aux variables, but they might not be at EXACTLY the right value
         }

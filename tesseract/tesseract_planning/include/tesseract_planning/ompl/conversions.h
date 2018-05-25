@@ -4,11 +4,14 @@
 #include <ompl/geometric/PathGeometric.h>
 #include <tesseract_core/basic_env.h>
 
-namespace tesseract_ros_planning
+namespace tesseract
+{
+namespace tesseract_planning
 {
 
 tesseract::TrajArray toTrajArray(const ompl::geometric::PathGeometric& path);
 
+}
 }
 
 #endif

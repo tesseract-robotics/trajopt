@@ -34,74 +34,75 @@
 
 /* Author: Ioan Sucan */
 
-#include <tesseract_ros_monitor/environment_monitor.h>
+#include <tesseract_monitoring/environment_monitor.h>
 #include <tesseract_ros/ros_tesseract_utils.h>
-#include <moveit_msgs/GetPlanningScene.h>
+#include <tesseract_ros/kdl/kdl_env.h>
 #include <dynamic_reconfigure/server.h>
-#include <moveit_ros_planning/PlanningSceneMonitorDynamicReconfigureConfig.h>
+#include <tesseract_monitoring/EnvironmentMonitorDynamicReconfigureConfig.h>
 #include <memory>
 #include <urdf_parser/urdf_parser.h>
 #include <srdfdom/model.h>
 
 
-using namespace tesseract;
-using namespace tesseract::tesseract_ros;
-using namespace tesseract::tesseract_ros::tesseract_ros_monitor;
+
+class DynamicReconfigureImpl
+{
+public:
+  DynamicReconfigureImpl(tesseract::tesseract_monitoring::EnvironmentMonitor* owner)
+    : owner_(owner), dynamic_reconfigure_server_(ros::NodeHandle(decideNamespace(owner->getName())))
+  {
+    dynamic_reconfigure_server_.setCallback(
+        boost::bind(&DynamicReconfigureImpl::dynamicReconfigureCallback, this, _1, _2));
+  }
+
+private:
+  // make sure we do not advertise the same service multiple times, in case we use multiple PlanningSceneMonitor
+  // instances in a process
+  static std::string decideNamespace(const std::string& name)
+  {
+    std::string ns = "~/" + name;
+    std::replace(ns.begin(), ns.end(), ' ', '_');
+    std::transform(ns.begin(), ns.end(), ns.begin(), ::tolower);
+    if (ros::service::exists(ns + "/set_parameters", false))
+    {
+      unsigned int c = 1;
+      while (ros::service::exists(ns + boost::lexical_cast<std::string>(c) + "/set_parameters", false))
+        c++;
+      ns += boost::lexical_cast<std::string>(c);
+    }
+    return ns;
+  }
+
+  void dynamicReconfigureCallback(tesseract_monitoring::EnvironmentMonitorDynamicReconfigureConfig& config, uint32_t /*level*/)
+  {
+    using namespace tesseract::tesseract_monitoring;
+    EnvironmentMonitor::EnvironmentUpdateType event = EnvironmentMonitor::UPDATE_NONE;
+    if (config.publish_geometry_updates)
+      event = (EnvironmentMonitor::EnvironmentUpdateType)((int)event | (int)EnvironmentMonitor::UPDATE_GEOMETRY);
+    if (config.publish_state_updates)
+      event = (EnvironmentMonitor::EnvironmentUpdateType)((int)event | (int)EnvironmentMonitor::UPDATE_STATE);
+    if (config.publish_transforms_updates)
+      event = (EnvironmentMonitor::EnvironmentUpdateType)((int)event | (int)EnvironmentMonitor::UPDATE_TRANSFORMS);
+    if (config.publish_environment)
+    {
+      owner_->setEnvironmentPublishingFrequency(config.publish_environment_hz);
+      owner_->startPublishingEnvironment(event);
+    }
+    else
+      owner_->stopPublishingEnvironment();
+  }
+
+  tesseract::tesseract_monitoring::EnvironmentMonitor* owner_;
+  dynamic_reconfigure::Server<tesseract_monitoring::EnvironmentMonitorDynamicReconfigureConfig> dynamic_reconfigure_server_;
+};
+
+namespace tesseract
+{
+
+namespace tesseract_monitoring
+{
 
 static const std::string LOGNAME = "environment_monitor";
-static const std::string DEFAULT_TESSERACT_ENV_PLUGIN = "tesseract_ros/BulletEnv";
-
-//class PlanningSceneMonitor::DynamicReconfigureImpl
-//{
-//public:
-//  DynamicReconfigureImpl(PlanningSceneMonitor* owner)
-//    : owner_(owner), dynamic_reconfigure_server_(ros::NodeHandle(decideNamespace(owner->getName())))
-//  {
-//    dynamic_reconfigure_server_.setCallback(
-//        boost::bind(&DynamicReconfigureImpl::dynamicReconfigureCallback, this, _1, _2));
-//  }
-
-//private:
-//  // make sure we do not advertise the same service multiple times, in case we use multiple PlanningSceneMonitor
-//  // instances in a process
-//  static std::string decideNamespace(const std::string& name)
-//  {
-//    std::string ns = "~/" + name;
-//    std::replace(ns.begin(), ns.end(), ' ', '_');
-//    std::transform(ns.begin(), ns.end(), ns.begin(), ::tolower);
-//    if (ros::service::exists(ns + "/set_parameters", false))
-//    {
-//      unsigned int c = 1;
-//      while (ros::service::exists(ns + boost::lexical_cast<std::string>(c) + "/set_parameters", false))
-//        c++;
-//      ns += boost::lexical_cast<std::string>(c);
-//    }
-//    return ns;
-//  }
-
-//  void dynamicReconfigureCallback(PlanningSceneMonitorDynamicReconfigureConfig& config, uint32_t level)
-//  {
-//    PlanningSceneMonitor::SceneUpdateType event = PlanningSceneMonitor::UPDATE_NONE;
-//    if (config.publish_geometry_updates)
-//      event = (PlanningSceneMonitor::SceneUpdateType)((int)event | (int)PlanningSceneMonitor::UPDATE_GEOMETRY);
-//    if (config.publish_state_updates)
-//      event = (PlanningSceneMonitor::SceneUpdateType)((int)event | (int)PlanningSceneMonitor::UPDATE_STATE);
-//    if (config.publish_transforms_updates)
-//      event = (PlanningSceneMonitor::SceneUpdateType)((int)event | (int)PlanningSceneMonitor::UPDATE_TRANSFORMS);
-//    if (config.publish_planning_scene)
-//    {
-//      owner_->setPlanningScenePublishingFrequency(config.publish_planning_scene_hz);
-//      owner_->startPublishingPlanningScene(event);
-//    }
-//    else
-//      owner_->stopPublishingPlanningScene();
-//  }
-
-//  PlanningSceneMonitor* owner_;
-//  dynamic_reconfigure::Server<PlanningSceneMonitorDynamicReconfigureConfig> dynamic_reconfigure_server_;
-//};
-//}
-
 const std::string EnvironmentMonitor::DEFAULT_JOINT_STATES_TOPIC =  "joint_states";
 const std::string EnvironmentMonitor::DEFAULT_ENVIRONMENT_TOPIC =   "tesseract";
 const std::string EnvironmentMonitor::DEFAULT_ENVIRONMENT_SERVICE = "get_tesseract";
@@ -112,6 +113,7 @@ EnvironmentMonitor::EnvironmentMonitor(const std::string& robot_description,
                                        const std::string& plugin)
   : monitor_name_(name), plugin_name_(plugin), nh_("~")
 {
+  sleep(2);
   // Initial setup
   std::string urdf_xml_string, srdf_xml_string;
   root_nh_.getParam(robot_description, urdf_xml_string);
@@ -141,7 +143,7 @@ EnvironmentMonitor::~EnvironmentMonitor()
   stopStateMonitor();
   stopEnvironmentMonitor();
 
-//  delete reconfigure_impl_;
+  delete reconfigure_impl_;
   current_state_monitor_.reset();
   env_const_.reset();
   env_.reset();
@@ -149,15 +151,12 @@ EnvironmentMonitor::~EnvironmentMonitor()
   srdf_model_.reset();
 }
 
-void EnvironmentMonitor::initialize(const urdf::ModelInterfaceConstSharedPtr& urdf_model, const srdf::ModelConstSharedPtr& srdf_model)
+void EnvironmentMonitor::initialize(const urdf::ModelInterfaceConstSharedPtr& urdf_model, const srdf::ModelConstSharedPtr& /*srdf_model*/)
 {
   enforce_next_state_update_ = false;
 
   if (monitor_name_.empty())
     monitor_name_ = "tesseract_monitor";
-
-  if (plugin_name_.empty())
-    plugin_name_ = DEFAULT_TESSERACT_ENV_PLUGIN;
 
   if (!urdf_model)
   {
@@ -165,28 +164,20 @@ void EnvironmentMonitor::initialize(const urdf::ModelInterfaceConstSharedPtr& ur
     return;
   }
 
+
   if (urdf_model)
   {
+    env_.reset(new tesseract_ros::KDLEnv());
+    env_->init(urdf_model_, srdf_model_);
+    env_const_ = env_;
     try
     {
-      env_loader.reset(new pluginlib::ClassLoader<ROSBasicEnv>("tesseract_ros", "tesseract::tesseract_ros::ROSBasicEnv"));
-      env_.reset(env_loader->createUnmanagedInstance(plugin_name_));
-      if (env_ == nullptr)
-      {
-        ROS_ERROR("Failed to load tesseract environment plugin: %s.", plugin_name_.c_str());
-        throw;
-      }
-
-      if (!env_->init(urdf_model_, srdf_model_))
-      {
-        ROS_ERROR("Failed to initialize tesseract environment.");
-      }
-
-      env_const_ = env_;
+      if (!plugin_name_.empty())
+        env_->loadContactCheckerPlugin(plugin_name_);
     }
     catch (int& e)
     {
-      ROS_ERROR_NAMED(LOGNAME, "Failed to load tesseract environment");
+      ROS_ERROR_NAMED(LOGNAME, "Failed to load tesseract contact checker plugin");
       env_.reset();
       env_const_ = env_;
     }
@@ -204,7 +195,7 @@ void EnvironmentMonitor::initialize(const urdf::ModelInterfaceConstSharedPtr& ur
                                             false,   // not a oneshot timer
                                             false);  // do not start the timer yet
 
-//  reconfigure_impl_ = new DynamicReconfigureImpl(this);
+  reconfigure_impl_ = new DynamicReconfigureImpl(this);
 }
 
 void EnvironmentMonitor::monitorDiffs(bool flag)
@@ -335,7 +326,7 @@ void EnvironmentMonitor::triggerEnvironmentUpdateEvent(EnvironmentUpdateType upd
 
 bool EnvironmentMonitor::requestEnvironmentState(const std::string& service_name)
 {
-  ROS_ERROR("tesseract environment request environment state is currently not implemented");
+  ROS_ERROR("tesseract environment request environment state is currently not implemented, %s", service_name.c_str());
 
 //  // use global namespace for service
 //  ros::ServiceClient client = ros::NodeHandle().serviceClient<moveit_msgs::GetPlanningScene>(service_name);
@@ -409,7 +400,7 @@ bool EnvironmentMonitor::newEnvironmentMessage(const tesseract_msgs::TesseractSt
 //      if (!env.fixed_frame_transforms.empty())
 //        upd = (EnvironmentUpdateType)((int)upd | (int)UPDATE_TRANSFORMS);
 
-      if (!isMsgEmpty(env_msg.multi_dof_joint_state) || !isMsgEmpty(env_msg.multi_dof_joint_state))
+      if (!tesseract_ros::isMsgEmpty(env_msg.multi_dof_joint_state) || !tesseract_ros::isMsgEmpty(env_msg.multi_dof_joint_state))
         upd = (EnvironmentUpdateType)((int)upd | (int)UPDATE_STATE);
     }
   }
@@ -629,7 +620,7 @@ void EnvironmentMonitor::onStateUpdate(const sensor_msgs::JointStateConstPtr& /*
     updateEnvironmentWithCurrentState();
 }
 
-void EnvironmentMonitor::stateUpdateTimerCallback(const ros::WallTimerEvent& event)
+void EnvironmentMonitor::stateUpdateTimerCallback(const ros::WallTimerEvent& /*event*/)
 {
   if (state_update_pending_)
   {
@@ -729,4 +720,7 @@ void EnvironmentMonitor::setEnvironmentPublishingFrequency(double hz)
 {
   publish_environment_frequency_ = hz;
   ROS_DEBUG_NAMED(LOGNAME, "Maximum frquency for publishing an environment is now %lf Hz", publish_environment_frequency_);
+}
+
+}
 }

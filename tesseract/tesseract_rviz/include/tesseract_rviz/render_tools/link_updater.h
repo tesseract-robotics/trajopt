@@ -37,7 +37,12 @@
 #ifndef TESSERACT_RVIZ_LINK_UPDATER
 #define TESSERACT_RVIZ_LINK_UPDATER
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wall"
+#pragma GCC diagnostic ignored "-Wunused-parameter"
 #include <rviz/robot/link_updater.h>
+#pragma GCC diagnostic pop
+
 #include <tesseract_ros/ros_basic_env.h>
 
 namespace tesseract_rviz

@@ -424,7 +424,10 @@ void KDLEnv::addAttachableObject(const AttachableObjectConstPtr attachable_objec
 {
   const auto object = attachable_objects_.find(attachable_object->name);
   if (object != attachable_objects_.end())
+  {
+    contact_checker_->removeObject(attachable_object->name);
     ROS_DEBUG("Replacing attachable object %s!", attachable_object->name.c_str());
+  }
 
   attachable_objects_[attachable_object->name] = attachable_object;
 

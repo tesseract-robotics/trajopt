@@ -34,6 +34,9 @@
 #include <OgreSceneNode.h>
 #include <tesseract_core/basic_types.h>
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wall"
+#pragma GCC diagnostic ignored "-Wunused-parameter"
 #include "rviz/properties/float_property.h"
 #include "rviz/properties/vector_property.h"
 #include "rviz/properties/quaternion_property.h"
@@ -41,6 +44,7 @@
 #include "rviz/ogre_helpers/arrow.h"
 #include "rviz/ogre_helpers/axes.h"
 #include "rviz/load_resource.h"
+#pragma GCC diagnostic pop
 
 namespace tesseract_rviz
 {
@@ -48,12 +52,12 @@ namespace tesseract_rviz
 RobotJoint::RobotJoint( Robot* robot, const urdf::JointConstSharedPtr& joint )
   : robot_( robot )
   , name_( joint->name )
-  , child_link_name_( joint->child_link_name )
   , parent_link_name_( joint->parent_link_name )
-  , axes_( NULL )
-  , axis_( NULL )
+  , child_link_name_( joint->child_link_name )
   , has_decendent_links_with_geometry_( true )
   , doing_set_checkbox_( false )
+  , axes_( NULL )
+  , axis_( NULL )
 {
   joint_property_ = new rviz::Property(
                               name_.c_str(),
@@ -160,12 +164,12 @@ RobotJoint::RobotJoint( Robot* robot, const urdf::JointConstSharedPtr& joint )
 RobotJoint::RobotJoint(Robot* robot, const std::string &name, const tesseract::AttachedBodyInfo& ab)
   : robot_( robot )
   , name_( name )
-  , child_link_name_( ab.object_name )
   , parent_link_name_( ab.parent_link_name )
-  , axes_( NULL )
-  , axis_( NULL )
+  , child_link_name_( ab.object_name )
   , has_decendent_links_with_geometry_( true )
   , doing_set_checkbox_( false )
+  , axes_( NULL )
+  , axis_( NULL )
 {
   joint_property_ = new rviz::Property(
                               name_.c_str(),

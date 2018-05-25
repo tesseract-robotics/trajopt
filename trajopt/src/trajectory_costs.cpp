@@ -37,7 +37,7 @@ double JointPosCost::value(const vector<double>& xvec) {
   VectorXd dofs = getVec(xvec, vars_);
   return ((dofs - vals_).array().square() * coeffs_.array()).sum();
 }
-ConvexObjectivePtr JointPosCost::convex(const vector<double>& x, Model* model) {
+ConvexObjectivePtr JointPosCost::convex(const vector<double>& /*x*/, Model* model) {
   ConvexObjectivePtr out(new ConvexObjective(model));
   out->addQuadExpr(expr_);
   return out;
@@ -59,7 +59,7 @@ double JointVelCost::value(const vector<double>& xvec) {
   MatrixXd traj = getTraj(xvec, vars_);
   return (diffAxis0(traj).array().square().matrix() * coeffs_.asDiagonal()).sum();
 }
-ConvexObjectivePtr JointVelCost::convex(const vector<double>& x, Model* model) {
+ConvexObjectivePtr JointVelCost::convex(const vector<double>& /*x*/, Model* model) {
   ConvexObjectivePtr out(new ConvexObjective(model));
   out->addQuadExpr(expr_);
   return out;
@@ -81,7 +81,7 @@ double JointAccCost::value(const vector<double>& xvec) {
   MatrixXd traj = getTraj(xvec, vars_);
   return (diffAxis0(diffAxis0(traj)).array().square().matrix() * coeffs_.asDiagonal()).sum();
 }
-ConvexObjectivePtr JointAccCost::convex(const vector<double>& x, Model* model) {
+ConvexObjectivePtr JointAccCost::convex(const vector<double>& /*x*/, Model* model) {
   ConvexObjectivePtr out(new ConvexObjective(model));
   out->addQuadExpr(expr_);
   return out;
@@ -105,7 +105,7 @@ double JointJerkCost::value(const vector<double>& xvec) {
   MatrixXd traj = getTraj(xvec, vars_);
   return (diffAxis0(diffAxis0(traj)).array().square().matrix() * coeffs_.asDiagonal()).sum();
 }
-ConvexObjectivePtr JointJerkCost::convex(const vector<double>& x, Model* model) {
+ConvexObjectivePtr JointJerkCost::convex(const vector<double>& /*x*/, Model* model) {
   ConvexObjectivePtr out(new ConvexObjective(model));
   out->addQuadExpr(expr_);
   return out;

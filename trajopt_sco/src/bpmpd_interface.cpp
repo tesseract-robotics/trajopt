@@ -234,36 +234,36 @@ Var BPMPDModel::addVar(const string& name) {
   m_ubs.push_back(BIG);
   return m_vars.back();
 }
-Cnt BPMPDModel::addEqCnt(const AffExpr& expr, const string& name) {
+Cnt BPMPDModel::addEqCnt(const AffExpr& expr, const string& /*name*/) {
   m_cnts.push_back(new CntRep(m_cnts.size(), this));
   m_cntExprs.push_back(expr);
   m_cntTypes.push_back(EQ);
   return m_cnts.back();
 }
-Cnt BPMPDModel::addIneqCnt(const AffExpr& expr, const string& name) {
+Cnt BPMPDModel::addIneqCnt(const AffExpr& expr, const string& /*name*/) {
   m_cnts.push_back(new CntRep(m_cnts.size(), this));
   m_cntExprs.push_back(expr);
   m_cntTypes.push_back(INEQ);
   return m_cnts.back(); 
 }
-Cnt BPMPDModel::addIneqCnt(const QuadExpr&, const string& name) {
+Cnt BPMPDModel::addIneqCnt(const QuadExpr&, const string& /*name*/) {
   assert( 0 && "NOT IMPLEMENTED");
   return 0;
 }
 void BPMPDModel::removeVars(const VarVector& vars) {
   vector<int>inds = vars2inds(vars);
-  for (int i=0; i < vars.size(); ++i) vars[i].var_rep->removed = true;
+  for (unsigned i=0; i < vars.size(); ++i) vars[i].var_rep->removed = true;
 }
 
 void BPMPDModel::removeCnts(const vector<Cnt>& cnts) {
   vector<int>inds = cnts2inds(cnts);
-  for (int i=0; i < cnts.size(); ++i) cnts[i].cnt_rep->removed = true;
+  for (unsigned i=0; i < cnts.size(); ++i) cnts[i].cnt_rep->removed = true;
 }
 
 void BPMPDModel::update() {
   {
   int inew = 0;
-  for (int iold=0; iold < m_vars.size(); ++iold) {
+  for (unsigned iold=0; iold < m_vars.size(); ++iold) {
     const Var& var = m_vars[iold];
     if (!var.var_rep->removed) {
       m_vars[inew] = var;
@@ -280,7 +280,7 @@ void BPMPDModel::update() {
   }
   {
   int inew = 0;
-  for (int iold = 0; iold < m_cnts.size(); ++iold) {
+  for (unsigned iold = 0; iold < m_cnts.size(); ++iold) {
     const Cnt& cnt = m_cnts[iold];
     if (!cnt.cnt_rep->removed) {
       m_cnts[inew] = cnt;
@@ -298,7 +298,7 @@ void BPMPDModel::update() {
 }
 
 void BPMPDModel::setVarBounds(const vector<Var>& vars, const vector<double>& lower, const vector<double>& upper) {
-  for (int i=0; i < vars.size(); ++i) {
+  for (unsigned i=0; i < vars.size(); ++i) {
     int varind = vars[i].var_rep->index;
     m_lbs[varind] = lower[i];
     m_ubs[varind] = upper[i];
@@ -306,7 +306,7 @@ void BPMPDModel::setVarBounds(const vector<Var>& vars, const vector<double>& low
 }
 vector<double> BPMPDModel::getVarValues(const VarVector& vars) const {
   vector<double> out(vars.size());
-  for (int i=0; i < vars.size(); ++i) {
+  for (unsigned i=0; i < vars.size(); ++i) {
     int varind = vars[i].var_rep->index;
     out[i] = m_soln[varind];
   }  
@@ -349,7 +349,7 @@ CvxOptStatus BPMPDModel::optimize() {
     // cout << "adding constraint " << aff << endl;
     vector<int> inds = vars2inds(aff.vars);
 
-    for (int i=0; i < aff.vars.size(); ++i) {
+    for (unsigned i=0; i < aff.vars.size(); ++i) {
       var2cntinds[inds[i]].push_back(iCnt);
       var2cntvals[inds[i]].push_back(aff.coeffs[i]); // xxx maybe repeated/
     }
@@ -371,7 +371,7 @@ CvxOptStatus BPMPDModel::optimize() {
   
   vector< vector<double> > var2qcoeffs(n);
   vector< vector<int> > var2qinds(n);
-  for (int i=0; i < m_objective.size(); ++i) {
+  for (unsigned i=0; i < m_objective.size(); ++i) {
     int idx1 = m_objective.vars1[i].var_rep->index, idx2 = m_objective.vars2[i].var_rep->index;    
     if (idx1 < idx2) {
       var2qinds[idx1].push_back(idx2);
@@ -394,11 +394,11 @@ CvxOptStatus BPMPDModel::optimize() {
     qcolcnt[iVar] = var2qinds[iVar].size();
   }
 
-  for (int i=0; i < m_objective.affexpr.size(); ++i) {
+  for (unsigned i=0; i < m_objective.affexpr.size(); ++i) {
     obj[m_objective.affexpr.vars[i].var_rep->index] += m_objective.affexpr.coeffs[i];
   }
   
-#define VECINC(vec) for (int i=0; i < vec.size(); ++i) ++vec[i];
+#define VECINC(vec) for (unsigned i=0; i < vec.size(); ++i) ++vec[i];
   VECINC(acolidx);
   VECINC(qcolidx);
 #undef VECINC
@@ -480,7 +480,7 @@ void BPMPDModel::setObjective(const AffExpr& expr) {
 void BPMPDModel::setObjective(const QuadExpr& expr) {
   m_objective = expr;
 }
-void BPMPDModel::writeToFile(const string& fname) {
+void BPMPDModel::writeToFile(const string& /*fname*/) {
   // assert(0 && "NOT IMPLEMENTED");
 }
 VarVector BPMPDModel::getVars() const {

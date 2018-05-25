@@ -48,10 +48,10 @@ catkin_package(
 include_directories(
   include
   ${catkin_INCLUDE_DIRS}
-  ${EIGEN3_INCLUDE_DIRS}
-  ${Boost_INCLUDE_DIRS}
-  ${OCTOMAP_INCLUDE_DIRS}
-  ${orocos_kdl_INCLUDE_DIRS}
+  SYSTEM ${EIGEN3_INCLUDE_DIRS}
+  SYSTEM ${Boost_INCLUDE_DIRS}
+  SYSTEM ${OCTOMAP_INCLUDE_DIRS}
+  SYSTEM ${orocos_kdl_INCLUDE_DIRS}
 )
 
 add_library(${PROJECT_NAME}_kdl
@@ -74,32 +74,3 @@ install(DIRECTORY include/${PROJECT_NAME}/
   FILES_MATCHING PATTERN "*.h"
   PATTERN ".svn" EXCLUDE
  )
-
-#if (CATKIN_ENABLE_TESTING)
-
-#  add_definitions(-DDATA_DIR="${CMAKE_SOURCE_DIR}/data")
-#  find_package(rostest REQUIRED)
-#  find_package(catkin REQUIRED COMPONENTS octomap_ros)
-#  find_package(PCL REQUIRED COMPONENTS core features filters io segmentation surface)
-
-#  include_directories(
-#    test
-#    ${PCL_INCLUDE_DIRS}
-#  )
-
-#  add_rostest_gtest(${PROJECT_NAME}_planning_unit test/planning_unit.launch test/planning_unit.cpp)
-#  target_link_libraries(${PROJECT_NAME}_planning_unit ${PROJECT_NAME} ${Boost_SYSTEM_LIBRARY} ${Boost_PROGRAM_OPTIONS_LIBRARY} ${catkin_LIBRARIES})
-
-#  add_rostest_gtest(${PROJECT_NAME}_cast_cost_unit test/cast_cost_unit.launch test/cast_cost_unit.cpp)
-#  target_link_libraries(${PROJECT_NAME}_cast_cost_unit ${PROJECT_NAME} ${Boost_SYSTEM_LIBRARY} ${Boost_PROGRAM_OPTIONS_LIBRARY} ${catkin_LIBRARIES})
-
-#  add_rostest_gtest(${PROJECT_NAME}_cast_cost_world_unit test/cast_cost_world_unit.launch test/cast_cost_world_unit.cpp)
-#  target_link_libraries(${PROJECT_NAME}_cast_cost_world_unit ${PROJECT_NAME} ${Boost_SYSTEM_LIBRARY} ${Boost_PROGRAM_OPTIONS_LIBRARY} ${catkin_LIBRARIES})
-
-#  add_rostest_gtest(${PROJECT_NAME}_cast_cost_attached_unit test/cast_cost_attached_unit.launch test/cast_cost_attached_unit.cpp)
-#  target_link_libraries(${PROJECT_NAME}_cast_cost_attached_unit ${PROJECT_NAME} ${Boost_SYSTEM_LIBRARY} ${Boost_PROGRAM_OPTIONS_LIBRARY} ${catkin_LIBRARIES})
-
-#  add_rostest_gtest(${PROJECT_NAME}_cast_cost_octomap_unit test/cast_cost_octomap_unit.launch test/cast_cost_octomap_unit.cpp)
-#  target_link_libraries(${PROJECT_NAME}_cast_cost_octomap_unit ${PROJECT_NAME} ${Boost_SYSTEM_LIBRARY} ${Boost_PROGRAM_OPTIONS_LIBRARY} ${PCL_LIBRARIES} ${catkin_LIBRARIES})
-#endif()
-

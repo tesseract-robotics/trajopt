@@ -272,7 +272,7 @@ bool KDLChainKin::init(const urdf::ModelInterfaceConstSharedPtr model, const std
   joint_too_segment.resize(robot_chain_.getNrOfJoints());
   joint_too_segment.back() = -1;
 
-  for (unsigned i=0, j=0; i<robot_chain_.getNrOfSegments(); ++i, ++j)
+  for (unsigned i=0, j=0; i<robot_chain_.getNrOfSegments(); ++i)
   {
     const KDL::Segment &seg = robot_chain_.getSegment(i);
     const KDL::Joint   &jnt = seg.getJoint();
@@ -297,6 +297,7 @@ bool KDLChainKin::init(const urdf::ModelInterfaceConstSharedPtr model, const std
       joint_limits_(j,0) = -4 * M_PI;
       joint_limits_(j,1) = +4 * M_PI;
     }
+    ++j;
   }
 
   for (std::size_t i=0; i<link_list_.size(); ++i)

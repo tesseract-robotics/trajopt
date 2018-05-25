@@ -6,7 +6,10 @@
 #include <ompl/base/MotionValidator.h>
 #include <tesseract_ros/kdl/kdl_env.h>
 
-namespace tesseract_ros_planning
+namespace tesseract
+{
+
+namespace tesseract_planning
 {
 
 class ContinuousMotionValidator : public ompl::base::MotionValidator
@@ -34,6 +37,7 @@ private:
   std::vector<std::string> joints_;
 };
 
+}
 }
 
 #endif // TESSERACT_ROS_PLANNING_CONTINUOUS_MOTION_VALIDATOR_H

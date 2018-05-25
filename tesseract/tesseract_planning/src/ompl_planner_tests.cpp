@@ -1,7 +1,7 @@
 #include <ros/ros.h>
 
-#include "tesseract_ros_planning/ompl/chain_ompl_interface.h"
-#include "tesseract_ros_planning/ompl/conversions.h"
+#include "tesseract_planning/ompl/chain_ompl_interface.h"
+#include "tesseract_planning/ompl/conversions.h"
 
 #include <ompl/geometric/planners/rrt/RRTConnect.h>
 //#include <ompl/geometric/planners/prm/PRM.h>    // These are other options for planners
@@ -14,7 +14,7 @@
 #include <urdf_parser/urdf_parser.h>
 #include <ompl/base/spaces/RealVectorStateSpace.h>
 
-#include <tesseract_ros_planning/ompl/continuous_motion_validator.h>
+#include <tesseract_planning/ompl/continuous_motion_validator.h>
 
 #include <functional>
 
@@ -75,17 +75,17 @@ int main(int argc, char** argv)
   tesseract::tesseract_ros::ROSBasicPlottingPtr plotter = std::make_shared<tesseract::tesseract_ros::ROSBasicPlotting>(env);
 
   // Step 3: Create a planning context for OMPL - this sets up the OMPL state environment for your given chain
-  tesseract_ros_planning::ChainOmplInterface ompl_context (env, "manipulator");
+  tesseract::tesseract_planning::ChainOmplInterface ompl_context (env, "manipulator");
 
   ompl::base::MotionValidatorPtr mv (
-        new tesseract_ros_planning::ContinuousMotionValidator(ompl_context.spaceInformation(), env, "manipulator"));
+        new tesseract::tesseract_planning::ContinuousMotionValidator(ompl_context.spaceInformation(), env, "manipulator"));
   ompl_context.setMotionValidator(mv);
 
   // Step 4: Create an OMPL planner that we want to use
   ompl::base::PlannerPtr planner (new ompl::geometric::RRTConnect(ompl_context.spaceInformation()));
 
   // Step 5: Create a start and terminal state for the robot to move between
-  tesseract_ros_planning::OmplPlanParameters params;
+  tesseract::tesseract_planning::OmplPlanParameters params;
   std::vector<double> start {-1.2, 0.5, 0.0, -1.3348, 0.0, 1.4959, 0.0};
   std::vector<double> goal = {1.2, 0.2762, 0.0, -1.3348, 0.0, 1.4959, 0.0};
 
@@ -97,7 +97,7 @@ int main(int argc, char** argv)
   {
     const ompl::geometric::PathGeometric& path = *maybe_path;
     const auto& names = env->getManipulator("manipulator")->getJointNames();
-    plotter->plotTrajectory(names, tesseract_ros_planning::toTrajArray(path));
+    plotter->plotTrajectory(names, tesseract::tesseract_planning::toTrajArray(path));
   }
   else
   {

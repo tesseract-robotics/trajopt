@@ -172,7 +172,7 @@ int main(int argc, char **argv)
   btTransform trans;
   trans.setIdentity();
 
-  for (int c  =0; c < nClusters; c++)
+  for (unsigned c  =0; c < nClusters; c++)
   {
     //generate convex result
     size_t nPoints = myHACD.GetNPointsCH(c);

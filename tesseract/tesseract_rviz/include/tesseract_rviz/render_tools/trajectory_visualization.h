@@ -134,17 +134,17 @@ protected:
   tesseract_rviz::StateVisualizationPtr trajectory_static_;
 
   ros::Subscriber trajectory_topic_sub_;
-  bool animating_path_;
-  bool drop_displaying_trajectory_;
-  int current_state_;
-  float current_state_time_;
   boost::mutex update_trajectory_message_;
 
   tesseract::tesseract_ros::ROSBasicEnvPtr env_;
 
   // Pointers from parent display taht we save
-  rviz::Display* display_;  // the parent display that this class populates
   rviz::Property* widget_;
+  rviz::Display* display_;  // the parent display that this class populates
+  bool animating_path_;
+  bool drop_displaying_trajectory_;
+  int current_state_;
+  float current_state_time_;
   Ogre::SceneNode* scene_node_;
   rviz::DisplayContext* context_;
   ros::NodeHandle update_nh_;
