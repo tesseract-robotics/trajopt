@@ -61,7 +61,7 @@ public:
     scene_pub_.publish(msg);
   }
 
-  void plotTrajectory(const std::vector<std::string>& joint_names, const Eigen::Ref<const TrajArray>& traj)
+  void plotTrajectory(const std::vector<std::string>& joint_names, const Eigen::Ref<const TrajArray>& traj) override
   {
     tesseract_msgs::Trajectory msg;
 
@@ -111,7 +111,7 @@ public:
 
   void plotContactResults(const std::vector<std::string>& link_names,
                           const ContactResultVector& dist_results,
-                          const Eigen::Ref<const Eigen::VectorXd>& safety_distances)
+                          const Eigen::Ref<const Eigen::VectorXd>& safety_distances) override
   {
     visualization_msgs::MarkerArray msg;
     for (unsigned i = 0; i < dist_results.size(); ++i)
@@ -168,14 +168,17 @@ public:
     }
   }
 
-  void plotArrow(const Eigen::Ref<const Eigen::Vector3d>& pt1, const Eigen::Ref<const Eigen::Vector3d>& pt2, const Eigen::Ref<const Eigen::Vector4d>& rgba, double scale)
+  void plotArrow(const Eigen::Ref<const Eigen::Vector3d>& pt1,
+                 const Eigen::Ref<const Eigen::Vector3d>& pt2,
+                 const Eigen::Ref<const Eigen::Vector4d>& rgba,
+                 double scale) override
   {
     visualization_msgs::MarkerArray msg;
     msg.markers.push_back(getMarkerArrowMsg(pt1, pt2, rgba, scale));
     arrows_pub_.publish(msg);
   }
 
-  void plotAxis(const Eigen::Affine3d& axis, double scale)
+  void plotAxis(const Eigen::Affine3d& axis, double scale) override
   {
     visualization_msgs::MarkerArray msg;
     Eigen::Vector3d x_axis = axis.matrix().block<3, 1>(0, 0);
@@ -189,7 +192,7 @@ public:
     axes_pub_.publish(msg);
   }
 
-  void clear()
+  void clear() override
   {
     // Remove old arrows
     marker_counter_ = 0;
@@ -209,7 +212,7 @@ public:
     ros::Duration(0.5).sleep();
   }
 
-  void waitForInput()
+  void waitForInput() override
   {
     ROS_ERROR("Hit enter key to step optimization!");
     std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
@@ -224,8 +227,10 @@ private:
   ros::Publisher arrows_pub_;     /**< Used for publishing arrow markers */
   ros::Publisher axes_pub_;       /**< Used for publishing axis markers */
 
-  visualization_msgs::Marker
-  getMarkerArrowMsg(const Eigen::Ref<const Eigen::Vector3d>& pt1, const Eigen::Ref<const Eigen::Vector3d>& pt2, const Eigen::Ref<const Eigen::Vector4d>& rgba, double scale)
+  visualization_msgs::Marker getMarkerArrowMsg(const Eigen::Ref<const Eigen::Vector3d>& pt1,
+                                               const Eigen::Ref<const Eigen::Vector3d>& pt2,
+                                               const Eigen::Ref<const Eigen::Vector4d>& rgba,
+                                               double scale)
   {
     visualization_msgs::Marker marker;
     marker.header.frame_id = env_->getURDF()->getRoot()->name;

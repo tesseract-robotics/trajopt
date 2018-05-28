@@ -32,6 +32,7 @@
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include <iostream>
+#include <urdf/model.h>
 
 namespace tesseract
 {
@@ -49,6 +50,9 @@ public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
   ROSBasicKin() {}
+  /** @brief Get the URDF model */
+  virtual const urdf::ModelInterfaceConstSharedPtr getURDF() const = 0;
+
 };  // class BasicKin
 
 typedef std::shared_ptr<ROSBasicKin> ROSBasicKinPtr;

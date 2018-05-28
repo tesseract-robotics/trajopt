@@ -118,12 +118,14 @@ public:
   EnvStateConstPtr getState() const override { return current_state_; }
   void setState(const std::unordered_map<std::string, double>& joints) override;
   void setState(const std::vector<std::string>& joint_names, const std::vector<double>& joint_values) override;
-  void setState(const std::vector<std::string>& joint_names, const Eigen::Ref<const Eigen::VectorXd>& joint_values) override;
+  void setState(const std::vector<std::string>& joint_names,
+                const Eigen::Ref<const Eigen::VectorXd>& joint_values) override;
 
   EnvStatePtr getState(const std::unordered_map<std::string, double>& joints) const override;
   EnvStatePtr getState(const std::vector<std::string>& joint_names,
                        const std::vector<double>& joint_values) const override;
-  EnvStatePtr getState(const std::vector<std::string>& joint_names, const Eigen::Ref<const Eigen::VectorXd>& joint_values) const override;
+  EnvStatePtr getState(const std::vector<std::string>& joint_names,
+                       const Eigen::Ref<const Eigen::VectorXd>& joint_values) const override;
 
   std::vector<std::string> getJointNames() const override { return joint_names_; }
   Eigen::VectorXd getCurrentJointValues() const override;

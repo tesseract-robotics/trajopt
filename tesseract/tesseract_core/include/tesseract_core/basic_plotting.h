@@ -58,8 +58,10 @@ public:
    * @param rgba Color of the arrow
    * @param scale The size of the arrow (related to diameter)
    */
-  virtual void
-  plotArrow(const Eigen::Ref<const Eigen::Vector3d>& pt1, const Eigen::Ref<const Eigen::Vector3d>& pt2, const Eigen::Ref<const Eigen::Vector4d>& rgba, double scale) = 0;
+  virtual void plotArrow(const Eigen::Ref<const Eigen::Vector3d>& pt1,
+                         const Eigen::Ref<const Eigen::Vector3d>& pt2,
+                         const Eigen::Ref<const Eigen::Vector4d>& rgba,
+                         double scale) = 0;
 
   /**
    * @brief Plot axis

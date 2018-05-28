@@ -150,7 +150,7 @@ bool KDLEnv::init(urdf::ModelInterfaceConstSharedPtr urdf_model, srdf::ModelCons
 
 void KDLEnv::calcDistancesDiscrete(const ContactRequest& req,
                                    const std::vector<std::string>& joint_names,
-                                   const Eigen::Ref<const Eigen::VectorXd> &joint_values,
+                                   const Eigen::Ref<const Eigen::VectorXd>& joint_values,
                                    ContactResultMap& contacts) const
 {
   EnvStateConstPtr state = getState(joint_names, joint_values);
@@ -159,8 +159,8 @@ void KDLEnv::calcDistancesDiscrete(const ContactRequest& req,
 
 void KDLEnv::calcDistancesContinuous(const ContactRequest& req,
                                      const std::vector<std::string>& joint_names,
-                                     const Eigen::Ref<const Eigen::VectorXd> &joint_values1,
-                                     const Eigen::Ref<const Eigen::VectorXd> &joint_values2,
+                                     const Eigen::Ref<const Eigen::VectorXd>& joint_values1,
+                                     const Eigen::Ref<const Eigen::VectorXd>& joint_values2,
                                      ContactResultMap& contacts) const
 {
   EnvStateConstPtr state1 = getState(joint_names, joint_values1);
@@ -171,7 +171,7 @@ void KDLEnv::calcDistancesContinuous(const ContactRequest& req,
 
 void KDLEnv::calcCollisionsDiscrete(const ContactRequest& req,
                                     const std::vector<std::string>& joint_names,
-                                    const Eigen::Ref<const Eigen::VectorXd> &joint_values,
+                                    const Eigen::Ref<const Eigen::VectorXd>& joint_values,
                                     ContactResultMap& contacts) const
 {
   calcDistancesDiscrete(req, joint_names, joint_values, contacts);
@@ -179,8 +179,8 @@ void KDLEnv::calcCollisionsDiscrete(const ContactRequest& req,
 
 void KDLEnv::calcCollisionsContinuous(const ContactRequest& req,
                                       const std::vector<std::string>& joint_names,
-                                      const Eigen::Ref<const Eigen::VectorXd> &joint_values1,
-                                      const Eigen::Ref<const Eigen::VectorXd> &joint_values2,
+                                      const Eigen::Ref<const Eigen::VectorXd>& joint_values1,
+                                      const Eigen::Ref<const Eigen::VectorXd>& joint_values2,
                                       ContactResultMap& contacts) const
 {
   calcDistancesContinuous(req, joint_names, joint_values1, joint_values2, contacts);
@@ -188,7 +188,7 @@ void KDLEnv::calcCollisionsContinuous(const ContactRequest& req,
 
 bool KDLEnv::continuousCollisionCheckTrajectory(const std::vector<std::string>& joint_names,
                                                 const std::vector<std::string>& link_names,
-                                                const Eigen::Ref<const TrajArray> &traj,
+                                                const Eigen::Ref<const TrajArray>& traj,
                                                 ContactResult& contacts) const
 {
   ContactRequest req;
@@ -215,7 +215,7 @@ bool KDLEnv::continuousCollisionCheckTrajectory(const std::vector<std::string>& 
 
 bool KDLEnv::continuousCollisionCheckTrajectory(const std::vector<std::string>& joint_names,
                                                 const std::vector<std::string>& link_names,
-                                                const Eigen::Ref<const TrajArray> &traj,
+                                                const Eigen::Ref<const TrajArray>& traj,
                                                 ContactResultMap& contacts) const
 {
   ContactRequest req;
@@ -271,7 +271,8 @@ void KDLEnv::setState(const std::vector<std::string>& joint_names, const std::ve
   contact_checker_->setObjectsTransform(current_state_->transforms);
 }
 
-void KDLEnv::setState(const std::vector<std::string>& joint_names, const Eigen::Ref<const Eigen::VectorXd> &joint_values)
+void KDLEnv::setState(const std::vector<std::string>& joint_names,
+                      const Eigen::Ref<const Eigen::VectorXd>& joint_values)
 {
   for (auto i = 0u; i < joint_names.size(); ++i)
   {
@@ -322,7 +323,8 @@ EnvStatePtr KDLEnv::getState(const std::vector<std::string>& joint_names, const 
   return state;
 }
 
-EnvStatePtr KDLEnv::getState(const std::vector<std::string>& joint_names, const Eigen::Ref<const Eigen::VectorXd> &joint_values) const
+EnvStatePtr KDLEnv::getState(const std::vector<std::string>& joint_names,
+                             const Eigen::Ref<const Eigen::VectorXd>& joint_values) const
 {
   EnvStatePtr state(new EnvState(*current_state_));
   KDL::JntArray jnt_array = kdl_jnt_array_;

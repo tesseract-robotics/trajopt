@@ -50,7 +50,8 @@ public:
   /** @brief Set the current state of the environment */
   virtual void setState(const std::unordered_map<std::string, double>& joints) = 0;
   virtual void setState(const std::vector<std::string>& joint_names, const std::vector<double>& joint_values) = 0;
-  virtual void setState(const std::vector<std::string>& joint_names, const Eigen::Ref<const Eigen::VectorXd>& joint_values) = 0;
+  virtual void setState(const std::vector<std::string>& joint_names,
+                        const Eigen::Ref<const Eigen::VectorXd>& joint_values) = 0;
 
   /** @brief Get the current state of the environment */
   virtual EnvStateConstPtr getState() const = 0;

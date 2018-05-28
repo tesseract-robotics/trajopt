@@ -31,7 +31,6 @@
 #include <kdl/chain.hpp>
 #include <kdl/chainfksolverpos_recursive.hpp>
 #include <kdl/chainjnttojacsolver.hpp>
-#include <urdf/model.h>
 
 namespace tesseract
 {
@@ -51,35 +50,44 @@ public:
   KDLChainKin() : ROSBasicKin(), initialized_(false) {}
   bool calcFwdKin(Eigen::Affine3d& pose,
                   const Eigen::Affine3d& change_base,
-                  const Eigen::Ref<const Eigen::VectorXd>& joint_angles) const;
+                  const Eigen::Ref<const Eigen::VectorXd>& joint_angles) const override;
 
   bool calcFwdKin(Eigen::Affine3d& pose,
                   const Eigen::Affine3d& change_base,
                   const Eigen::Ref<const Eigen::VectorXd>& joint_angles,
-                  const std::string& link_name) const;
+                  const std::string& link_name) const override;
 
   bool calcJacobian(Eigen::Ref<Eigen::MatrixXd> jacobian,
                     const Eigen::Affine3d& change_base,
-                    const Eigen::Ref<const Eigen::VectorXd>& joint_angles) const;
+                    const Eigen::Ref<const Eigen::VectorXd>& joint_angles) const override;
 
   bool calcJacobian(Eigen::Ref<Eigen::MatrixXd> jacobian,
                     const Eigen::Affine3d& change_base,
                     const Eigen::Ref<const Eigen::VectorXd>& joint_angles,
-                    const std::string& link_name) const;
+                    const std::string& link_name) const override;
 
   bool calcJacobian(Eigen::Ref<Eigen::MatrixXd> jacobian,
                     const Eigen::Affine3d& change_base,
                     const Eigen::Ref<const Eigen::VectorXd>& joint_angles,
                     const std::string& link_name,
-                    const Eigen::Ref<const Eigen::Vector3d>& link_point) const;
+                    const Eigen::Ref<const Eigen::Vector3d>& link_point) const override;
 
-  bool checkJoints(const Eigen::Ref<const Eigen::VectorXd>& vec) const;
+  bool checkJoints(const Eigen::Ref<const Eigen::VectorXd>& vec) const override;
 
-  const std::vector<std::string>& getJointNames() const;
+  const std::vector<std::string>& getJointNames() const override;
 
-  const std::vector<std::string>& getLinkNames() const;
+  const std::vector<std::string>& getLinkNames() const override;
 
   const Eigen::MatrixX2d& getLimits() const;
+
+  const urdf::ModelInterfaceConstSharedPtr getURDF() const override { return model_; }
+  unsigned int numJoints() const override { return robot_chain_.getNrOfJoints(); }
+  const std::string& getName() const override { return name_; }
+  void addAttachedLink(const std::string& link_name, const std::string& parent_link_name) override;
+
+  void removeAttachedLink(const std::string& link_name) override;
+
+  void clearAttachedLinks() override;
 
   /**
    * @brief Initializes ROSKin
@@ -109,25 +117,10 @@ public:
     return initialized_;
   }
 
-  /** @brief Get the URDF model */
-  const urdf::ModelInterfaceConstSharedPtr getURDF() const { return model_; }
-  /**
-   * @brief Number of joints in robot
-   * @return Number of joints in robot
-   */
-  unsigned int numJoints() const { return robot_chain_.getNrOfJoints(); }
   /** @brief Get the base link name */
   const std::string& getBaseLinkName() const { return base_name_; }
   /** @brief Get the tip link name */
   const std::string& getTipLinkName() const { return tip_name_; }
-  /** @brief Get the name of the kinematic chain */
-  const std::string& getName() const { return name_; }
-  void addAttachedLink(const std::string& link_name, const std::string& parent_link_name);
-
-  void removeAttachedLink(const std::string& link_name);
-
-  void clearAttachedLinks();
-
   /**
    * @brief Assigns values from another ROSKin to this
    * @param rhs Input ROSKin object to copy from
