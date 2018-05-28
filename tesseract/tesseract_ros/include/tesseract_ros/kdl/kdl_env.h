@@ -85,45 +85,45 @@ public:
   bool checkInitialized() const override { return initialized_; }
   void calcDistancesDiscrete(const ContactRequest& req,
                              const std::vector<std::string>& joint_names,
-                             const Eigen::VectorXd& joint_values,
+                             const Eigen::Ref<const Eigen::VectorXd>& joint_values,
                              ContactResultMap& contacts) const override;
 
   void calcDistancesContinuous(const ContactRequest& req,
                                const std::vector<std::string>& joint_names,
-                               const Eigen::VectorXd& joint_values1,
-                               const Eigen::VectorXd& joint_values2,
+                               const Eigen::Ref<const Eigen::VectorXd>& joint_values1,
+                               const Eigen::Ref<const Eigen::VectorXd>& joint_values2,
                                ContactResultMap& contacts) const override;
 
   void calcCollisionsDiscrete(const ContactRequest& req,
                               const std::vector<std::string>& joint_names,
-                              const Eigen::VectorXd& joint_values,
+                              const Eigen::Ref<const Eigen::VectorXd>& joint_values,
                               ContactResultMap& contacts) const override;
 
   void calcCollisionsContinuous(const ContactRequest& req,
                                 const std::vector<std::string>& joint_names,
-                                const Eigen::VectorXd& joint_values1,
-                                const Eigen::VectorXd& joint_values2,
+                                const Eigen::Ref<const Eigen::VectorXd>& joint_values1,
+                                const Eigen::Ref<const Eigen::VectorXd>& joint_values2,
                                 ContactResultMap& contacts) const override;
 
   bool continuousCollisionCheckTrajectory(const std::vector<std::string>& joint_names,
                                           const std::vector<std::string>& link_names,
-                                          const TrajArray& traj,
+                                          const Eigen::Ref<const TrajArray>& traj,
                                           ContactResultMap& contacts) const override;
 
   bool continuousCollisionCheckTrajectory(const std::vector<std::string>& joint_names,
                                           const std::vector<std::string>& link_names,
-                                          const TrajArray& traj,
+                                          const Eigen::Ref<const TrajArray>& traj,
                                           ContactResult& contacts) const override;
 
   EnvStateConstPtr getState() const override { return current_state_; }
   void setState(const std::unordered_map<std::string, double>& joints) override;
   void setState(const std::vector<std::string>& joint_names, const std::vector<double>& joint_values) override;
-  void setState(const std::vector<std::string>& joint_names, const Eigen::VectorXd& joint_values) override;
+  void setState(const std::vector<std::string>& joint_names, const Eigen::Ref<const Eigen::VectorXd>& joint_values) override;
 
   EnvStatePtr getState(const std::unordered_map<std::string, double>& joints) const override;
   EnvStatePtr getState(const std::vector<std::string>& joint_names,
                        const std::vector<double>& joint_values) const override;
-  EnvStatePtr getState(const std::vector<std::string>& joint_names, const Eigen::VectorXd& joint_values) const override;
+  EnvStatePtr getState(const std::vector<std::string>& joint_names, const Eigen::Ref<const Eigen::VectorXd>& joint_values) const override;
 
   std::vector<std::string> getJointNames() const override { return joint_names_; }
   Eigen::VectorXd getCurrentJointValues() const override;

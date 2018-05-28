@@ -49,29 +49,31 @@ public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
   KDLChainKin() : ROSBasicKin(), initialized_(false) {}
-  bool calcFwdKin(Eigen::Affine3d& pose, const Eigen::Affine3d change_base, const Eigen::VectorXd& joint_angles) const;
+  bool calcFwdKin(Eigen::Affine3d& pose,
+                  const Eigen::Affine3d& change_base,
+                  const Eigen::Ref<const Eigen::VectorXd>& joint_angles) const;
 
   bool calcFwdKin(Eigen::Affine3d& pose,
-                  const Eigen::Affine3d change_base,
-                  const Eigen::VectorXd& joint_angles,
+                  const Eigen::Affine3d& change_base,
+                  const Eigen::Ref<const Eigen::VectorXd>& joint_angles,
                   const std::string& link_name) const;
 
-  bool calcJacobian(Eigen::MatrixXd& jacobian,
-                    const Eigen::Affine3d change_base,
-                    const Eigen::VectorXd& joint_angles) const;
+  bool calcJacobian(Eigen::Ref<Eigen::MatrixXd> jacobian,
+                    const Eigen::Affine3d& change_base,
+                    const Eigen::Ref<const Eigen::VectorXd>& joint_angles) const;
 
-  bool calcJacobian(Eigen::MatrixXd& jacobian,
-                    const Eigen::Affine3d change_base,
-                    const Eigen::VectorXd& joint_angles,
+  bool calcJacobian(Eigen::Ref<Eigen::MatrixXd> jacobian,
+                    const Eigen::Affine3d& change_base,
+                    const Eigen::Ref<const Eigen::VectorXd>& joint_angles,
                     const std::string& link_name) const;
 
-  bool calcJacobian(Eigen::MatrixXd& jacobian,
-                    const Eigen::Affine3d change_base,
-                    const Eigen::VectorXd& joint_angles,
+  bool calcJacobian(Eigen::Ref<Eigen::MatrixXd> jacobian,
+                    const Eigen::Affine3d& change_base,
+                    const Eigen::Ref<const Eigen::VectorXd>& joint_angles,
                     const std::string& link_name,
-                    const Eigen::Vector3d link_point) const;
+                    const Eigen::Ref<const Eigen::Vector3d>& link_point) const;
 
-  bool checkJoints(const Eigen::VectorXd& vec) const;
+  bool checkJoints(const Eigen::Ref<const Eigen::VectorXd>& vec) const;
 
   const std::vector<std::string>& getJointNames() const;
 
@@ -133,33 +135,6 @@ public:
    */
   KDLChainKin& operator=(const KDLChainKin& rhs);
 
-  /**
-   * @brief Convert KDL::Frame to Eigen::Affine3d
-   * @param frame Input KDL Frame
-   * @param transform Output Eigen transform (Affine3d)
-   */
-  static void KDLToEigen(const KDL::Frame& frame, Eigen::Affine3d& transform);
-
-  /**
-   * @brief Convert Eigen::Affine3d to KDL::Frame
-   * @param transform Input Eigen transform (Affine3d)
-   * @param frame Output KDL Frame
-   */
-  static void EigenToKDL(const Eigen::Affine3d& transform, KDL::Frame& frame);
-
-  /**
-   * @brief Convert KDL::Jacobian to Eigen::Matrix
-   * @param jacobian Input KDL Jacobian
-   * @param matrix Output Eigen MatrixXd
-   */
-  static void KDLToEigen(const KDL::Jacobian& jacobian, Eigen::MatrixXd& matrix);
-
-  /**
-   * @brief Convert Eigen::Vector to KDL::JntArray
-   * @param vec Input Eigen vector
-   * @param joints Output KDL joint array
-   */
-  static void EigenToKDL(const Eigen::VectorXd& vec, KDL::JntArray& joints) { joints.data = vec; }
 private:
   bool initialized_;                                           /**< Identifies if the object has been initialized */
   urdf::ModelInterfaceConstSharedPtr model_;                   /**< URDF MODEL */
@@ -178,14 +153,14 @@ private:
 
   /** @brief calcFwdKin helper function */
   bool calcFwdKinHelper(Eigen::Affine3d& pose,
-                        const Eigen::Affine3d change_base,
-                        const Eigen::VectorXd& joint_angles,
+                        const Eigen::Affine3d& change_base,
+                        const Eigen::Ref<const Eigen::VectorXd>& joint_angles,
                         int segment_num = -1) const;
 
   /** @brief calcJacobian helper function */
   bool calcJacobianHelper(KDL::Jacobian& jacobian,
-                          const Eigen::Affine3d change_base,
-                          const Eigen::VectorXd& joint_angles,
+                          const Eigen::Affine3d& change_base,
+                          const Eigen::Ref<const Eigen::VectorXd>& joint_angles,
                           int segment_num = -1) const;
 
   void addChildrenRecursive(const urdf::LinkConstSharedPtr urdf_link, const std::string& next_chain_segment);

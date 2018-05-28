@@ -55,8 +55,8 @@ public:
    * @return True if calculation successful, False if anything is wrong (including uninitialized BasicKin)
    */
   virtual bool calcFwdKin(Eigen::Affine3d& pose,
-                          const Eigen::Affine3d change_base,
-                          const Eigen::VectorXd& joint_angles) const = 0;
+                          const Eigen::Affine3d& change_base,
+                          const Eigen::Ref<const Eigen::VectorXd>& joint_angles) const = 0;
 
   /**
    * @brief Calculates pose for a given link
@@ -67,8 +67,8 @@ public:
    * @return True if calculation successful, False if anything is wrong (including uninitialized BasicKin)
    */
   virtual bool calcFwdKin(Eigen::Affine3d& pose,
-                          const Eigen::Affine3d change_base,
-                          const Eigen::VectorXd& joint_angles,
+                          const Eigen::Affine3d& change_base,
+                          const Eigen::Ref<const Eigen::VectorXd>& joint_angles,
                           const std::string& link_name) const = 0;
 
   /**
@@ -78,9 +78,9 @@ public:
    * @param joint_angles Input vector of joint angles
    * @return True if calculation successful, False if anything is wrong (including uninitialized BasicKin)
    */
-  virtual bool calcJacobian(Eigen::MatrixXd& jacobian,
-                            const Eigen::Affine3d change_base,
-                            const Eigen::VectorXd& joint_angles) const = 0;
+  virtual bool calcJacobian(Eigen::Ref<Eigen::MatrixXd> jacobian,
+                            const Eigen::Affine3d& change_base,
+                            const Eigen::Ref<const Eigen::VectorXd>& joint_angles) const = 0;
 
   /**
    * @brief Calculated jacobian at a link given joint angles
@@ -90,9 +90,9 @@ public:
    * @param link_name Name of link to calculate jacobian
    * @return True if calculation successful, False if anything is wrong (including uninitialized BasicKin)
    */
-  virtual bool calcJacobian(Eigen::MatrixXd& jacobian,
-                            const Eigen::Affine3d change_base,
-                            const Eigen::VectorXd& joint_angles,
+  virtual bool calcJacobian(Eigen::Ref<Eigen::MatrixXd> jacobian,
+                            const Eigen::Affine3d& change_base,
+                            const Eigen::Ref<const Eigen::VectorXd>& joint_angles,
                             const std::string& link_name) const = 0;
 
   /**
@@ -104,18 +104,18 @@ public:
    * @param link_point Point in the link_name frame for which to calculate the jacobian about
    * @return True if calculation successful, False if anything is wrong (including uninitialized BasicKin)
    */
-  virtual bool calcJacobian(Eigen::MatrixXd& jacobian,
-                            const Eigen::Affine3d change_base,
-                            const Eigen::VectorXd& joint_angles,
+  virtual bool calcJacobian(Eigen::Ref<Eigen::MatrixXd> jacobian,
+                            const Eigen::Affine3d& change_base,
+                            const Eigen::Ref<const Eigen::VectorXd>& joint_angles,
                             const std::string& link_name,
-                            const Eigen::Vector3d link_point) const = 0;
+                            const Eigen::Ref<const Eigen::Vector3d>& link_point) const = 0;
 
   /**
    * @brief Check for consistency in # and limits of joints
    * @param vec Vector of joint values
    * @return True if size of vec matches # of robot joints and all joints are within limits
    */
-  virtual bool checkJoints(const Eigen::VectorXd& vec) const = 0;
+  virtual bool checkJoints(const Eigen::Ref<const Eigen::VectorXd>& vec) const = 0;
 
   /**
    * @brief Get list of joint names for robot
@@ -176,7 +176,9 @@ public:
    * @param x Output vector (represents joint values)
    * @return True if solver completes properly
    */
-  static bool solvePInv(const Eigen::MatrixXd& A, const Eigen::VectorXd& b, Eigen::VectorXd& x)
+  static bool solvePInv(const Eigen::Ref<const Eigen::MatrixXd>& A,
+                        const Eigen::Ref<const Eigen::VectorXd>& b,
+                        Eigen::Ref<Eigen::VectorXd> x)
   {
     const double eps = 0.00001;  // TODO: Turn into class member var
     const double lambda = 0.01;  // TODO: Turn into class member var
@@ -225,8 +227,10 @@ public:
    * @param lambda Damping factor
    * @return True if Pseudoinverse completes properly
    */
-  static bool
-  dampedPInv(const Eigen::MatrixXd& A, Eigen::MatrixXd& P, const double eps = 0.011, const double lambda = 0.01)
+  static bool dampedPInv(const Eigen::Ref<const Eigen::MatrixXd>& A,
+                         Eigen::Ref<Eigen::MatrixXd> P,
+                         const double eps = 0.011,
+                         const double lambda = 0.01)
   {
     if ((A.rows() == 0) || (A.cols() == 0))
     {

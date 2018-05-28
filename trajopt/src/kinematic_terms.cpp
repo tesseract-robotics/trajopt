@@ -115,6 +115,8 @@ MatrixXd CartVelJacCalculator::operator()(const VectorXd& dof_vals) const
   Affine3d change_base = env_->getLinkTransform(manip_->getBaseLinkName());
 
   MatrixXd jac0, jac1;
+  jac0.resize(manip_->numJoints(), 6);
+  jac1.resize(manip_->numJoints(), 6);
 
   if (tcp_.translation().isZero())
   {

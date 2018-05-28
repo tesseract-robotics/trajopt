@@ -24,6 +24,7 @@
  * limitations under the License.
  */
 #include "tesseract_ros/kdl/kdl_chain_kin.h"
+#include "tesseract_ros/kdl/kdl_utils.h"
 #include <eigen_conversions/eigen_kdl.h>
 #include <kdl/segment.hpp>
 #include <kdl_parser/kdl_parser.hpp>
@@ -38,8 +39,8 @@ using Eigen::MatrixXd;
 using Eigen::VectorXd;
 
 bool KDLChainKin::calcFwdKinHelper(Eigen::Affine3d& pose,
-                                   const Eigen::Affine3d change_base,
-                                   const Eigen::VectorXd& joint_angles,
+                                   const Eigen::Affine3d& change_base,
+                                   const Eigen::Ref<const Eigen::VectorXd>& joint_angles,
                                    int segment_num) const
 {
   KDL::JntArray kdl_joints;
@@ -60,8 +61,8 @@ bool KDLChainKin::calcFwdKinHelper(Eigen::Affine3d& pose,
 }
 
 bool KDLChainKin::calcFwdKin(Eigen::Affine3d& pose,
-                             const Eigen::Affine3d change_base,
-                             const Eigen::VectorXd& joint_angles) const
+                             const Eigen::Affine3d& change_base,
+                             const Eigen::Ref<const Eigen::VectorXd>& joint_angles) const
 {
   assert(checkInitialized());
   assert(checkJoints(joint_angles));
@@ -70,8 +71,8 @@ bool KDLChainKin::calcFwdKin(Eigen::Affine3d& pose,
 }
 
 bool KDLChainKin::calcFwdKin(Eigen::Affine3d& pose,
-                             const Eigen::Affine3d change_base,
-                             const Eigen::VectorXd& joint_angles,
+                             const Eigen::Affine3d& change_base,
+                             const Eigen::Ref<const Eigen::VectorXd>& joint_angles,
                              const std::string& link_name) const
 {
   assert(checkInitialized());
@@ -80,14 +81,11 @@ bool KDLChainKin::calcFwdKin(Eigen::Affine3d& pose,
 
   int segment_nr = link_name_too_segment_index_.at(link_name);
   return calcFwdKinHelper(pose, change_base, joint_angles, segment_nr);
-  //  int joint_index = getLinkParentJointIndex(link_name);
-  //  return calcFwdKinHelper(pose, change_base, joint_angles, joint_index < 0 ?
-  //  -1 : joint_index + 1);
 }
 
 bool KDLChainKin::calcJacobianHelper(KDL::Jacobian& jacobian,
-                                     const Eigen::Affine3d change_base,
-                                     const Eigen::VectorXd& joint_angles,
+                                     const Eigen::Affine3d& change_base,
+                                     const Eigen::Ref<const Eigen::VectorXd>& joint_angles,
                                      int segment_num) const
 {
   KDL::JntArray kdl_joints;
@@ -111,9 +109,9 @@ bool KDLChainKin::calcJacobianHelper(KDL::Jacobian& jacobian,
   return true;
 }
 
-bool KDLChainKin::calcJacobian(Eigen::MatrixXd& jacobian,
-                               const Eigen::Affine3d change_base,
-                               const Eigen::VectorXd& joint_angles) const
+bool KDLChainKin::calcJacobian(Eigen::Ref<Eigen::MatrixXd> jacobian,
+                               const Eigen::Affine3d& change_base,
+                               const Eigen::Ref<const Eigen::VectorXd>& joint_angles) const
 {
   assert(checkInitialized());
   assert(checkJoints(joint_angles));
@@ -130,9 +128,9 @@ bool KDLChainKin::calcJacobian(Eigen::MatrixXd& jacobian,
   }
 }
 
-bool KDLChainKin::calcJacobian(Eigen::MatrixXd& jacobian,
-                               const Eigen::Affine3d change_base,
-                               const Eigen::VectorXd& joint_angles,
+bool KDLChainKin::calcJacobian(Eigen::Ref<Eigen::MatrixXd> jacobian,
+                               const Eigen::Affine3d& change_base,
+                               const Eigen::Ref<const Eigen::VectorXd>& joint_angles,
                                const std::string& link_name) const
 {
   assert(checkInitialized());
@@ -153,11 +151,11 @@ bool KDLChainKin::calcJacobian(Eigen::MatrixXd& jacobian,
   }
 }
 
-bool KDLChainKin::calcJacobian(Eigen::MatrixXd& jacobian,
-                               const Eigen::Affine3d change_base,
-                               const Eigen::VectorXd& joint_angles,
+bool KDLChainKin::calcJacobian(Eigen::Ref<Eigen::MatrixXd> jacobian,
+                               const Eigen::Affine3d& change_base,
+                               const Eigen::Ref<const Eigen::VectorXd>& joint_angles,
                                const std::string& link_name,
-                               const Eigen::Vector3d link_point) const
+                               const Eigen::Ref<const Eigen::Vector3d>& link_point) const
 {
   assert(checkInitialized());
   assert(checkJoints(joint_angles));
@@ -187,24 +185,9 @@ bool KDLChainKin::calcJacobian(Eigen::MatrixXd& jacobian,
   {
     return false;
   }
-
-  //  int joint_index = getLinkParentJointIndex(link_name);
-  //  KDL::Jacobian kdl_jacobian;
-  //  if (calcJacobianHelper(kdl_jacobian, change_base, joint_angles,
-  //  joint_index < 0 ? -1 : joint_index + 1))
-  //  {
-  //    KDL::Vector pt(link_point(0), link_point(1), link_point(2));
-  //    kdl_jacobian.changeRefPoint(pt);
-  //    KDLToEigen(kdl_jacobian, jacobian);
-  //    return true;
-  //  }
-  //  else
-  //  {
-  //    return false;
-  //  }
 }
 
-bool KDLChainKin::checkJoints(const Eigen::VectorXd& vec) const
+bool KDLChainKin::checkJoints(const Eigen::Ref<const Eigen::VectorXd>& vec) const
 {
   if (vec.size() != robot_chain_.getNrOfJoints())
   {
@@ -408,39 +391,6 @@ void KDLChainKin::clearAttachedLinks()
   attached_link_list_.clear();
 }
 
-void KDLChainKin::KDLToEigen(const KDL::Frame& frame, Eigen::Affine3d& transform)
-{
-  transform.setIdentity();
-
-  // translation
-  for (size_t i = 0; i < 3; ++i)
-    transform(i, 3) = frame.p[i];
-
-  // rotation matrix
-  for (size_t i = 0; i < 9; ++i)
-    transform(i / 3, i % 3) = frame.M.data[i];
-}
-
-void KDLChainKin::EigenToKDL(const Eigen::Affine3d& transform, KDL::Frame& frame)
-{
-  frame.Identity();
-
-  for (unsigned int i = 0; i < 3; ++i)
-    frame.p[i] = transform(i, 3);
-
-  for (unsigned int i = 0; i < 9; ++i)
-    frame.M.data[i] = transform(i / 3, i % 3);
-}
-
-void KDLChainKin::KDLToEigen(const KDL::Jacobian& jacobian, Eigen::MatrixXd& matrix)
-{
-  matrix.resize(jacobian.rows(), jacobian.columns());
-
-  for (size_t i = 0; i < jacobian.rows(); ++i)
-    for (size_t j = 0; j < jacobian.columns(); ++j)
-      matrix(i, j) = jacobian(i, j);
-}
-
 KDLChainKin& KDLChainKin::operator=(const KDLChainKin& rhs)
 {
   initialized_ = rhs.initialized_;
@@ -460,4 +410,4 @@ KDLChainKin& KDLChainKin::operator=(const KDLChainKin& rhs)
   return *this;
 }
 }
-}  // namespace trajopt
+}

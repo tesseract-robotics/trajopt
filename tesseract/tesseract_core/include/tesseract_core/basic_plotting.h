@@ -38,7 +38,7 @@ public:
    * @brief Plot a trajectory
    * @param traj
    */
-  virtual void plotTrajectory(const std::vector<std::string>& joint_names, const TrajArray& traj) = 0;
+  virtual void plotTrajectory(const std::vector<std::string>& joint_names, const Eigen::Ref<const TrajArray>& traj) = 0;
 
   /**
    * @brief Plot the collision results data
@@ -49,7 +49,7 @@ public:
    */
   virtual void plotContactResults(const std::vector<std::string>& link_names,
                                   const ContactResultVector& dist_results,
-                                  const Eigen::VectorXd& safety_distances) = 0;
+                                  const Eigen::Ref<const Eigen::VectorXd>& safety_distances) = 0;
 
   /**
    * @brief Plot arrow defined by two points
@@ -59,7 +59,7 @@ public:
    * @param scale The size of the arrow (related to diameter)
    */
   virtual void
-  plotArrow(const Eigen::Vector3d& pt1, const Eigen::Vector3d& pt2, const Eigen::Vector4d& rgba, double scale) = 0;
+  plotArrow(const Eigen::Ref<const Eigen::Vector3d>& pt1, const Eigen::Ref<const Eigen::Vector3d>& pt2, const Eigen::Ref<const Eigen::Vector4d>& rgba, double scale) = 0;
 
   /**
    * @brief Plot axis

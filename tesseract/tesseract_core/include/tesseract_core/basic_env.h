@@ -50,7 +50,7 @@ public:
   /** @brief Set the current state of the environment */
   virtual void setState(const std::unordered_map<std::string, double>& joints) = 0;
   virtual void setState(const std::vector<std::string>& joint_names, const std::vector<double>& joint_values) = 0;
-  virtual void setState(const std::vector<std::string>& joint_names, const Eigen::VectorXd& joint_values) = 0;
+  virtual void setState(const std::vector<std::string>& joint_names, const Eigen::Ref<const Eigen::VectorXd>& joint_values) = 0;
 
   /** @brief Get the current state of the environment */
   virtual EnvStateConstPtr getState() const = 0;
@@ -67,7 +67,7 @@ public:
   virtual EnvStatePtr getState(const std::vector<std::string>& joint_names,
                                const std::vector<double>& joint_values) const = 0;
   virtual EnvStatePtr getState(const std::vector<std::string>& joint_names,
-                               const Eigen::VectorXd& joint_values) const = 0;
+                               const Eigen::Ref<const Eigen::VectorXd>& joint_values) const = 0;
 
   /**
    * @brief hasManipulator Check if a manipulator exist in the environment
@@ -253,7 +253,7 @@ public:
    */
   virtual void calcDistancesDiscrete(const ContactRequest& req,
                                      const std::vector<std::string>& joint_names,
-                                     const Eigen::VectorXd& joint_values,
+                                     const Eigen::Ref<const Eigen::VectorXd>& joint_values,
                                      ContactResultMap& contacts) const = 0;
 
   /**
@@ -266,8 +266,8 @@ public:
    */
   virtual void calcDistancesContinuous(const ContactRequest& req,
                                        const std::vector<std::string>& joint_names,
-                                       const Eigen::VectorXd& joint_values1,
-                                       const Eigen::VectorXd& joint_values2,
+                                       const Eigen::Ref<const Eigen::VectorXd>& joint_values1,
+                                       const Eigen::Ref<const Eigen::VectorXd>& joint_values2,
                                        ContactResultMap& contacts) const = 0;
 
   /**
@@ -289,7 +289,7 @@ public:
    */
   virtual void calcCollisionsDiscrete(const ContactRequest& req,
                                       const std::vector<std::string>& joint_names,
-                                      const Eigen::VectorXd& joint_values,
+                                      const Eigen::Ref<const Eigen::VectorXd>& joint_values,
                                       ContactResultMap& contacts) const = 0;
 
   /**
@@ -302,8 +302,8 @@ public:
    */
   virtual void calcCollisionsContinuous(const ContactRequest& req,
                                         const std::vector<std::string>& joint_names,
-                                        const Eigen::VectorXd& joint_values1,
-                                        const Eigen::VectorXd& joint_values2,
+                                        const Eigen::Ref<const Eigen::VectorXd>& joint_values1,
+                                        const Eigen::Ref<const Eigen::VectorXd>& joint_values2,
                                         ContactResultMap& contacts) const = 0;
 
   /**
@@ -317,7 +317,7 @@ public:
    */
   virtual bool continuousCollisionCheckTrajectory(const std::vector<std::string>& joint_names,
                                                   const std::vector<std::string>& link_names,
-                                                  const TrajArray& traj,
+                                                  const Eigen::Ref<const TrajArray>& traj,
                                                   ContactResultMap& contacts) const = 0;
 
   /**
@@ -331,7 +331,7 @@ public:
    */
   virtual bool continuousCollisionCheckTrajectory(const std::vector<std::string>& joint_names,
                                                   const std::vector<std::string>& link_names,
-                                                  const TrajArray& traj,
+                                                  const Eigen::Ref<const TrajArray>& traj,
                                                   ContactResult& contacts) const = 0;
 
 };  // class BasicEnvBase

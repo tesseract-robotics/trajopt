@@ -103,6 +103,7 @@ void CollisionsToDistanceExpressions(const tesseract::ContactResultVector& dist_
     {
       MatrixXd jac;
       VectorXd dist_grad;
+      jac.resize(6, manip->numJoints());
       manip->calcJacobian(jac, change_base, dofvals, res.link_names[0], res.nearest_points[0]);
       dist_grad = -res.normal.transpose() * jac.topRows(3);
 
@@ -115,6 +116,7 @@ void CollisionsToDistanceExpressions(const tesseract::ContactResultVector& dist_
     {
       MatrixXd jac;
       VectorXd dist_grad;
+      jac.resize(6, manip->numJoints());
       manip->calcJacobian(jac,
                           change_base,
                           dofvals,

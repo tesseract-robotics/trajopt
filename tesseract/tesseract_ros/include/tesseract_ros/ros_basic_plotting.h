@@ -61,7 +61,7 @@ public:
     scene_pub_.publish(msg);
   }
 
-  void plotTrajectory(const std::vector<std::string>& joint_names, const TrajArray& traj)
+  void plotTrajectory(const std::vector<std::string>& joint_names, const Eigen::Ref<const TrajArray>& traj)
   {
     tesseract_msgs::Trajectory msg;
 
@@ -111,7 +111,7 @@ public:
 
   void plotContactResults(const std::vector<std::string>& link_names,
                           const ContactResultVector& dist_results,
-                          const Eigen::VectorXd& safety_distances)
+                          const Eigen::Ref<const Eigen::VectorXd>& safety_distances)
   {
     visualization_msgs::MarkerArray msg;
     for (unsigned i = 0; i < dist_results.size(); ++i)
@@ -168,7 +168,7 @@ public:
     }
   }
 
-  void plotArrow(const Eigen::Vector3d& pt1, const Eigen::Vector3d& pt2, const Eigen::Vector4d& rgba, double scale)
+  void plotArrow(const Eigen::Ref<const Eigen::Vector3d>& pt1, const Eigen::Ref<const Eigen::Vector3d>& pt2, const Eigen::Ref<const Eigen::Vector4d>& rgba, double scale)
   {
     visualization_msgs::MarkerArray msg;
     msg.markers.push_back(getMarkerArrowMsg(pt1, pt2, rgba, scale));
@@ -225,7 +225,7 @@ private:
   ros::Publisher axes_pub_;       /**< Used for publishing axis markers */
 
   visualization_msgs::Marker
-  getMarkerArrowMsg(const Eigen::Vector3d& pt1, const Eigen::Vector3d& pt2, const Eigen::Vector4d& rgba, double scale)
+  getMarkerArrowMsg(const Eigen::Ref<const Eigen::Vector3d>& pt1, const Eigen::Ref<const Eigen::Vector3d>& pt2, const Eigen::Ref<const Eigen::Vector4d>& rgba, double scale)
   {
     visualization_msgs::Marker marker;
     marker.header.frame_id = env_->getURDF()->getRoot()->name;
@@ -266,9 +266,9 @@ private:
     return marker;
   }
 
-  visualization_msgs::Marker getMarkerCylinderMsg(const Eigen::Vector3d& pt1,
-                                                  const Eigen::Vector3d& pt2,
-                                                  const Eigen::Vector4d& rgba,
+  visualization_msgs::Marker getMarkerCylinderMsg(const Eigen::Ref<const Eigen::Vector3d>& pt1,
+                                                  const Eigen::Ref<const Eigen::Vector3d>& pt2,
+                                                  const Eigen::Ref<const Eigen::Vector4d>& rgba,
                                                   double scale)
   {
     visualization_msgs::Marker marker;
