@@ -73,14 +73,28 @@ bool KDLChainKin::calcFwdKin(Eigen::Affine3d& pose,
 bool KDLChainKin::calcFwdKin(Eigen::Affine3d& pose,
                              const Eigen::Affine3d& change_base,
                              const Eigen::Ref<const Eigen::VectorXd>& joint_angles,
-                             const std::string& link_name) const
+                             const std::string& link_name,
+                             const EnvState& state) const
 {
   assert(checkInitialized());
   assert(checkJoints(joint_angles));
-  assert(link_name_too_segment_index_.find(link_name) != link_name_too_segment_index_.end());
 
-  int segment_nr = link_name_too_segment_index_.at(link_name);
-  return calcFwdKinHelper(pose, change_base, joint_angles, segment_nr);
+  const std::string& chain_link_name = link_name_too_chain_link_name_.at(link_name);
+  assert(segment_index_.find(chain_link_name) != segment_index_.end());
+
+  int segment_nr = segment_index_.at(chain_link_name);
+  if (calcFwdKinHelper(pose, change_base, joint_angles, segment_nr))
+  {
+    // This is required because manipulators are not aware of branches off the chain
+    // so it needs the current state to make calculations for links affected by the chain
+    // but not directly part of the chain.
+    if (chain_link_name != link_name)
+      pose = pose * (state.transforms.at(chain_link_name).inverse() * state.transforms.at(link_name));
+
+    return true;
+  }
+
+  return false;
 }
 
 bool KDLChainKin::calcJacobianHelper(KDL::Jacobian& jacobian,
@@ -131,37 +145,53 @@ bool KDLChainKin::calcJacobian(Eigen::Ref<Eigen::MatrixXd> jacobian,
 bool KDLChainKin::calcJacobian(Eigen::Ref<Eigen::MatrixXd> jacobian,
                                const Eigen::Affine3d& change_base,
                                const Eigen::Ref<const Eigen::VectorXd>& joint_angles,
-                               const std::string& link_name) const
+                               const std::string& link_name,
+                               const EnvState& state) const
 {
   assert(checkInitialized());
   assert(checkJoints(joint_angles));
 
-  assert(link_name_too_segment_index_.find(link_name) != link_name_too_segment_index_.end());
+  const std::string& chain_link_name = link_name_too_chain_link_name_.at(link_name);
+  assert(segment_index_.find(chain_link_name) != segment_index_.end());
 
-  int segment_nr = link_name_too_segment_index_.at(link_name);
+  int segment_nr = segment_index_.at(chain_link_name);
   KDL::Jacobian kdl_jacobian;
+
   if (calcJacobianHelper(kdl_jacobian, change_base, joint_angles, segment_nr))
   {
-    KDLToEigen(kdl_jacobian, jacobian);
-    return true;
+    if (chain_link_name == link_name)
+    {
+      KDLToEigen(kdl_jacobian, jacobian);
+      return true;
+    }
+    else
+    {
+      Eigen::Vector3d temp =
+          (state.transforms.at(chain_link_name).inverse() * state.transforms.at(link_name)).translation();
+      KDL::Vector pt(temp[0], temp[1], temp[2]);
+      kdl_jacobian.changeRefPoint(pt);
+      KDLToEigen(kdl_jacobian, jacobian);
+      return true;
+    }
   }
-  else
-  {
-    return false;
-  }
+
+  return false;
 }
 
 bool KDLChainKin::calcJacobian(Eigen::Ref<Eigen::MatrixXd> jacobian,
                                const Eigen::Affine3d& change_base,
                                const Eigen::Ref<const Eigen::VectorXd>& joint_angles,
                                const std::string& link_name,
+                               const EnvState& /*state*/,
                                const Eigen::Ref<const Eigen::Vector3d>& link_point) const
 {
   assert(checkInitialized());
   assert(checkJoints(joint_angles));
-  assert(link_name_too_segment_index_.find(link_name) != link_name_too_segment_index_.end());
 
-  int segment_nr = link_name_too_segment_index_.at(link_name);
+  const std::string& chain_link_name = link_name_too_chain_link_name_.at(link_name);
+  assert(segment_index_.find(chain_link_name) != segment_index_.end());
+
+  int segment_nr = segment_index_.at(chain_link_name);
   KDL::Jacobian kdl_jacobian;
   if (calcJacobianHelper(kdl_jacobian, change_base, joint_angles, segment_nr))
   {
@@ -224,21 +254,24 @@ const std::vector<std::string>& KDLChainKin::getLinkNames() const
 }
 
 const Eigen::MatrixX2d& KDLChainKin::getLimits() const { return joint_limits_; }
-void KDLChainKin::addChildrenRecursive(const urdf::LinkConstSharedPtr urdf_link, const std::string& next_chain_segment)
+void KDLChainKin::addChildrenRecursive(const std::string& chain_link_name,
+                                       urdf::LinkConstSharedPtr urdf_link,
+                                       const std::string& next_chain_segment)
 {
   // recursively build child links
   link_list_.push_back(urdf_link->name);
+  link_name_too_chain_link_name_[urdf_link->name] = chain_link_name;
   for (std::size_t i = 0; i < urdf_link->child_links.size(); ++i)
   {
     // Don't process the next chain link
     if (urdf_link->child_links[i]->name != next_chain_segment)
     {
-      addChildrenRecursive(urdf_link->child_links[i], next_chain_segment);
+      addChildrenRecursive(chain_link_name, urdf_link->child_links[i], next_chain_segment);
     }
   }
 }
 
-bool KDLChainKin::init(const urdf::ModelInterfaceConstSharedPtr model,
+bool KDLChainKin::init(urdf::ModelInterfaceConstSharedPtr model,
                        const std::string& base_link,
                        const std::string& tip_link,
                        const std::string name)
@@ -286,9 +319,9 @@ bool KDLChainKin::init(const urdf::ModelInterfaceConstSharedPtr model,
     const KDL::Joint& jnt = seg.getJoint();
 
     if (i != (robot_chain_.getNrOfSegments() - 1))
-      addChildrenRecursive(model_->getLink(seg.getName()), robot_chain_.getSegment(i + 1).getName());
+      addChildrenRecursive(seg.getName(), model_->getLink(seg.getName()), robot_chain_.getSegment(i + 1).getName());
     else
-      addChildrenRecursive(model_->getLink(seg.getName()), seg.getName());
+      addChildrenRecursive(seg.getName(), model_->getLink(seg.getName()), seg.getName());
 
     if (jnt.getType() == KDL::Joint::None)
       continue;
@@ -311,10 +344,11 @@ bool KDLChainKin::init(const urdf::ModelInterfaceConstSharedPtr model,
     ++j;
   }
 
-  for (std::size_t i = 0; i < link_list_.size(); ++i)
+  for (unsigned i = 0; i < robot_chain_.getNrOfSegments(); ++i)
   {
     bool found = false;
-    urdf::LinkConstSharedPtr link_model = model_->getLink(link_list_[i]);
+    const KDL::Segment& seg = robot_chain_.getSegment(i);
+    urdf::LinkConstSharedPtr link_model = model_->getLink(seg.getName());
     while (!found)
     {
       std::string joint_name = link_model->parent_joint->name;
@@ -322,7 +356,7 @@ bool KDLChainKin::init(const urdf::ModelInterfaceConstSharedPtr model,
       if (it != joint_list_.end())
       {
         int joint_index = it - joint_list_.begin();
-        link_name_too_segment_index_[link_list_[i]] = joint_too_segment[joint_index];
+        segment_index_[seg.getName()] = joint_too_segment[joint_index];
         found = true;
       }
       else
@@ -349,11 +383,10 @@ void KDLChainKin::addAttachedLink(const std::string& link_name, const std::strin
     return;
   }
 
-  auto it = link_name_too_segment_index_.find(parent_link_name);
-  if (it != link_name_too_segment_index_.end())
+  auto it = link_name_too_chain_link_name_.find(parent_link_name);
+  if (it != link_name_too_chain_link_name_.end())
   {
-    int i = it->second;
-    link_name_too_segment_index_[link_name] = i;
+    link_name_too_chain_link_name_[link_name] = it->second;
     attached_link_list_.push_back(link_name);
     link_list_.push_back(link_name);
   }
@@ -372,7 +405,7 @@ void KDLChainKin::removeAttachedLink(const std::string& link_name)
     attached_link_list_.erase(std::remove(attached_link_list_.begin(), attached_link_list_.end(), link_name),
                               attached_link_list_.end());
     link_list_.erase(std::remove(link_list_.begin(), link_list_.end(), link_name), link_list_.end());
-    link_name_too_segment_index_.erase(link_name);
+    link_name_too_chain_link_name_.erase(link_name);
   }
   else
   {
@@ -386,7 +419,7 @@ void KDLChainKin::clearAttachedLinks()
   for (const auto& al : attached_link_list_)
   {
     link_list_.erase(std::remove(link_list_.begin(), link_list_.end(), al), link_list_.end());
-    link_name_too_segment_index_.erase(al);
+    link_name_too_chain_link_name_.erase(al);
   }
   attached_link_list_.clear();
 }
@@ -404,8 +437,9 @@ KDLChainKin& KDLChainKin::operator=(const KDLChainKin& rhs)
   model_ = rhs.model_;
   base_name_ = rhs.base_name_;
   tip_name_ = rhs.tip_name_;
-  link_name_too_segment_index_ = rhs.link_name_too_segment_index_;
+  segment_index_ = rhs.segment_index_;
   attached_link_list_ = rhs.attached_link_list_;
+  link_name_too_chain_link_name_ = rhs.link_name_too_chain_link_name_;
 
   return *this;
 }

@@ -383,7 +383,7 @@ vector_Affine3d KDLEnv::getLinkTransforms() const
   return link_tfs;
 }
 
-Eigen::Affine3d KDLEnv::getLinkTransform(const std::string& link_name) const
+const Eigen::Affine3d& KDLEnv::getLinkTransform(const std::string& link_name) const
 {
   return current_state_->transforms[link_name];
 }

@@ -51,7 +51,7 @@ public:
 
   ROSBasicKin() {}
   /** @brief Get the URDF model */
-  virtual const urdf::ModelInterfaceConstSharedPtr getURDF() const = 0;
+  virtual urdf::ModelInterfaceConstSharedPtr getURDF() const = 0;
 
 };  // class BasicKin
 

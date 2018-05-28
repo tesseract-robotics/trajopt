@@ -211,7 +211,7 @@ public:
    * @brief Get the transform corresponding to the link.
    * @return Transform and is identity when no transform is available.
    */
-  virtual Eigen::Affine3d getLinkTransform(const std::string& link_name) const = 0;
+  virtual const Eigen::Affine3d& getLinkTransform(const std::string& link_name) const = 0;
 
   /** @brief Get the allowed collision matrix */
   virtual AllowedCollisionMatrixConstPtr getAllowedCollisionMatrix() const = 0;

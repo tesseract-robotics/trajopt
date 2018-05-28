@@ -27,6 +27,7 @@
 #define TESSERACT_ROS_KDL_CHAIN_KIN_H
 
 #include "tesseract_ros/ros_basic_kin.h"
+#include "tesseract_ros/ros_basic_env.h"
 #include <kdl/tree.hpp>
 #include <kdl/chain.hpp>
 #include <kdl/chainfksolverpos_recursive.hpp>
@@ -55,7 +56,8 @@ public:
   bool calcFwdKin(Eigen::Affine3d& pose,
                   const Eigen::Affine3d& change_base,
                   const Eigen::Ref<const Eigen::VectorXd>& joint_angles,
-                  const std::string& link_name) const override;
+                  const std::string& link_name,
+                  const EnvState& state) const override;
 
   bool calcJacobian(Eigen::Ref<Eigen::MatrixXd> jacobian,
                     const Eigen::Affine3d& change_base,
@@ -64,12 +66,14 @@ public:
   bool calcJacobian(Eigen::Ref<Eigen::MatrixXd> jacobian,
                     const Eigen::Affine3d& change_base,
                     const Eigen::Ref<const Eigen::VectorXd>& joint_angles,
-                    const std::string& link_name) const override;
+                    const std::string& link_name,
+                    const EnvState& state) const override;
 
   bool calcJacobian(Eigen::Ref<Eigen::MatrixXd> jacobian,
                     const Eigen::Affine3d& change_base,
                     const Eigen::Ref<const Eigen::VectorXd>& joint_angles,
                     const std::string& link_name,
+                    const EnvState& state,
                     const Eigen::Ref<const Eigen::Vector3d>& link_point) const override;
 
   bool checkJoints(const Eigen::Ref<const Eigen::VectorXd>& vec) const override;
@@ -80,7 +84,7 @@ public:
 
   const Eigen::MatrixX2d& getLimits() const;
 
-  const urdf::ModelInterfaceConstSharedPtr getURDF() const override { return model_; }
+  urdf::ModelInterfaceConstSharedPtr getURDF() const override { return model_; }
   unsigned int numJoints() const override { return robot_chain_.getNrOfJoints(); }
   const std::string& getName() const override { return name_; }
   void addAttachedLink(const std::string& link_name, const std::string& parent_link_name) override;
@@ -92,13 +96,13 @@ public:
   /**
    * @brief Initializes ROSKin
    * Creates KDL::Chain from urdf::Model, populates joint_list_, joint_limits_, and link_list_
-   * @param model The urdf model
+   * @param model_ The urdf model
    * @param base_link The name of the base link for the kinematic chain
    * @param tip_link The name of the tip link for the kinematic chain
    * @param name The name of the kinematic chain
    * @return True if init() completes successfully
    */
-  bool init(const urdf::ModelInterfaceConstSharedPtr model,
+  bool init(urdf::ModelInterfaceConstSharedPtr model_,
             const std::string& base_link,
             const std::string& tip_link,
             const std::string name);
@@ -141,8 +145,10 @@ private:
   Eigen::MatrixX2d joint_limits_;                              /**< Joint limits */
   std::unique_ptr<KDL::ChainFkSolverPos_recursive> fk_solver_; /**< KDL Forward Kinematic Solver */
   std::unique_ptr<KDL::ChainJntToJacSolver> jac_solver_;       /**< KDL Jacobian Solver */
-  std::map<std::string, int> link_name_too_segment_index_;     /**< A map from link name to kdl chain segment numer */
-  std::vector<std::string> attached_link_list_;                /**< A list of attached link names */
+  std::map<std::string, int> segment_index_;    /**< A map from chain link name to kdl chain segment number */
+  std::vector<std::string> attached_link_list_; /**< A list of attached link names */
+  std::unordered_map<std::string, std::string> link_name_too_chain_link_name_; /**< A map of affected link names to
+                                                                                  chain link names */
 
   /** @brief calcFwdKin helper function */
   bool calcFwdKinHelper(Eigen::Affine3d& pose,
@@ -156,7 +162,9 @@ private:
                           const Eigen::Ref<const Eigen::VectorXd>& joint_angles,
                           int segment_num = -1) const;
 
-  void addChildrenRecursive(const urdf::LinkConstSharedPtr urdf_link, const std::string& next_chain_segment);
+  void addChildrenRecursive(const std::string& chain_link_name,
+                            urdf::LinkConstSharedPtr urdf_link,
+                            const std::string& next_chain_segment);
 
 };  // class KDLChainKin
 

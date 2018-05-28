@@ -137,7 +137,7 @@ public:
   std::vector<std::string> getActiveLinkNames() const override { return active_link_names_; }
   vector_Affine3d getLinkTransforms() const override;
 
-  Eigen::Affine3d getLinkTransform(const std::string& link_name) const override;
+  const Eigen::Affine3d& getLinkTransform(const std::string& link_name) const override;
 
   bool hasManipulator(const std::string& manipulator_name) const override;
 

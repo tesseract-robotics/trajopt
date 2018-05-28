@@ -32,6 +32,7 @@
 #include <Eigen/Geometry>
 #include <iostream>
 #include <memory>
+#include <tesseract_core/basic_types.h>
 
 namespace tesseract
 {
@@ -64,12 +65,14 @@ public:
    * @param change_base The transform from the base frame of the manipulator to the desired frame.
    * @param joint_angles Vector of joint angles (size must match number of joints in robot chain)
    * @param link_name Name of link to calculate pose
+   * @param state The state of the environment
    * @return True if calculation successful, False if anything is wrong (including uninitialized BasicKin)
    */
   virtual bool calcFwdKin(Eigen::Affine3d& pose,
                           const Eigen::Affine3d& change_base,
                           const Eigen::Ref<const Eigen::VectorXd>& joint_angles,
-                          const std::string& link_name) const = 0;
+                          const std::string& link_name,
+                          const EnvState& state) const = 0;
 
   /**
    * @brief Calculated jacobian of robot given joint angles
@@ -88,12 +91,14 @@ public:
    * @param change_base The transform from the base frame of the manipulator to the desired frame.
    * @param joint_angles Input vector of joint angles
    * @param link_name Name of link to calculate jacobian
+   * @param state The state of the environment
    * @return True if calculation successful, False if anything is wrong (including uninitialized BasicKin)
    */
   virtual bool calcJacobian(Eigen::Ref<Eigen::MatrixXd> jacobian,
                             const Eigen::Affine3d& change_base,
                             const Eigen::Ref<const Eigen::VectorXd>& joint_angles,
-                            const std::string& link_name) const = 0;
+                            const std::string& link_name,
+                            const EnvState& state) const = 0;
 
   /**
    * @brief Calculated jacobian at a link given joint angles
@@ -101,6 +106,7 @@ public:
    * @param change_base The transform from the base frame of the manipulator to the desired frame.
    * @param joint_angles Input vector of joint angles
    * @param link_name Name of link to calculate jacobian
+   * @param state The state of the environment
    * @param link_point Point in the link_name frame for which to calculate the jacobian about
    * @return True if calculation successful, False if anything is wrong (including uninitialized BasicKin)
    */
@@ -108,6 +114,7 @@ public:
                             const Eigen::Affine3d& change_base,
                             const Eigen::Ref<const Eigen::VectorXd>& joint_angles,
                             const std::string& link_name,
+                            const EnvState& state,
                             const Eigen::Ref<const Eigen::Vector3d>& link_point) const = 0;
 
   /**

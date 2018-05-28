@@ -53,8 +53,11 @@ namespace trajopt
 VectorXd CartPoseErrCalculator::operator()(const VectorXd& dof_vals) const
 {
   Affine3d new_pose, change_base;
-  change_base = env_->getLinkTransform(manip_->getBaseLinkName());
-  manip_->calcFwdKin(new_pose, change_base, dof_vals, link_);
+  tesseract::EnvStateConstPtr state = env_->getState();
+  change_base = state->transforms.at(manip_->getBaseLinkName());
+  assert(change_base.isApprox(
+      env_->getState(manip_->getJointNames(), dof_vals)->transforms.at(manip_->getBaseLinkName())));
+  manip_->calcFwdKin(new_pose, change_base, dof_vals, link_, *state);
 
   Affine3d pose_err = pose_inv_ * (new_pose * tcp_);
   Quaterniond q(pose_err.rotation());
@@ -77,8 +80,10 @@ void CartPoseErrorPlotter::Plot(const tesseract::BasicPlottingPtr plotter, const
   CartPoseErrCalculator* calc = static_cast<CartPoseErrCalculator*>(m_calc.get());
   VectorXd dof_vals = getVec(x, m_vars);
   Affine3d cur_pose, change_base;
-  change_base = calc->env_->getLinkTransform(calc->manip_->getBaseLinkName());
-  calc->manip_->calcFwdKin(cur_pose, change_base, dof_vals, calc->link_);
+
+  tesseract::EnvStateConstPtr state = calc->env_->getState();
+  change_base = state->transforms.at(calc->manip_->getBaseLinkName());
+  calc->manip_->calcFwdKin(cur_pose, change_base, dof_vals, calc->link_, *state);
 
   cur_pose = cur_pose * calc->tcp_;
 
@@ -112,7 +117,12 @@ MatrixXd CartVelJacCalculator::operator()(const VectorXd& dof_vals) const
   int n_dof = manip_->numJoints();
   MatrixXd out(6, 2 * n_dof);
 
-  Affine3d change_base = env_->getLinkTransform(manip_->getBaseLinkName());
+  tesseract::EnvStateConstPtr state = env_->getState();
+  Affine3d change_base = state->transforms.at(manip_->getBaseLinkName());
+  assert(change_base.isApprox(
+      env_->getState(manip_->getJointNames(), dof_vals.topRows(n_dof))->transforms.at(manip_->getBaseLinkName())));
+  assert(change_base.isApprox(
+      env_->getState(manip_->getJointNames(), dof_vals.bottomRows(n_dof))->transforms.at(manip_->getBaseLinkName())));
 
   MatrixXd jac0, jac1;
   jac0.resize(manip_->numJoints(), 6);
@@ -120,13 +130,13 @@ MatrixXd CartVelJacCalculator::operator()(const VectorXd& dof_vals) const
 
   if (tcp_.translation().isZero())
   {
-    manip_->calcJacobian(jac0, change_base, dof_vals.topRows(n_dof), link_);
-    manip_->calcJacobian(jac1, change_base, dof_vals.bottomRows(n_dof), link_);
+    manip_->calcJacobian(jac0, change_base, dof_vals.topRows(n_dof), link_, *state);
+    manip_->calcJacobian(jac1, change_base, dof_vals.bottomRows(n_dof), link_, *state);
   }
   else
   {
-    manip_->calcJacobian(jac0, change_base, dof_vals.topRows(n_dof), link_, tcp_.translation());
-    manip_->calcJacobian(jac1, change_base, dof_vals.bottomRows(n_dof), link_, tcp_.translation());
+    manip_->calcJacobian(jac0, change_base, dof_vals.topRows(n_dof), link_, *state, tcp_.translation());
+    manip_->calcJacobian(jac1, change_base, dof_vals.bottomRows(n_dof), link_, *state, tcp_.translation());
   }
 
   out.block(0, 0, 3, n_dof) = -jac0.topRows(3);
@@ -140,10 +150,16 @@ VectorXd CartVelCalculator::operator()(const VectorXd& dof_vals) const
 {
   int n_dof = manip_->numJoints();
   Affine3d pose0, pose1, change_base;
-  change_base = env_->getLinkTransform(manip_->getBaseLinkName());
 
-  manip_->calcFwdKin(pose0, change_base, dof_vals.topRows(n_dof), link_);
-  manip_->calcFwdKin(pose1, change_base, dof_vals.bottomRows(n_dof), link_);
+  tesseract::EnvStateConstPtr state = env_->getState();
+  change_base = state->transforms.at(manip_->getBaseLinkName());
+  assert(change_base.isApprox(
+      env_->getState(manip_->getJointNames(), dof_vals.topRows(n_dof))->transforms.at(manip_->getBaseLinkName())));
+  assert(change_base.isApprox(
+      env_->getState(manip_->getJointNames(), dof_vals.bottomRows(n_dof))->transforms.at(manip_->getBaseLinkName())));
+
+  manip_->calcFwdKin(pose0, change_base, dof_vals.topRows(n_dof), link_, *state);
+  manip_->calcFwdKin(pose1, change_base, dof_vals.bottomRows(n_dof), link_, *state);
 
   pose0 = pose0 * tcp_;
   pose1 = pose1 * tcp_;

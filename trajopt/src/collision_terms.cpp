@@ -86,9 +86,11 @@ void CollisionsToDistanceExpressions(const tesseract::ContactResultVector& dist_
   const std::vector<std::string>& link_names = manip->getLinkNames();
 
   // All collision data is in world corrdinate system. This provides the
-  // transfrom
-  // for converting data between world frame and manipulator frame.
-  Eigen::Affine3d change_base = env->getLinkTransform(manip->getBaseLinkName());
+  // transfrom for converting data between world frame and manipulator
+  // frame.
+  tesseract::EnvStateConstPtr state = env->getState();
+  Eigen::Affine3d change_base = state->transforms.at(manip->getBaseLinkName());
+  assert(change_base.isApprox(env->getState(manip->getJointNames(), dofvals)->transforms.at(manip->getBaseLinkName())));
 
   exprs.clear();
   exprs.reserve(dist_results.size());
@@ -104,7 +106,7 @@ void CollisionsToDistanceExpressions(const tesseract::ContactResultVector& dist_
       MatrixXd jac;
       VectorXd dist_grad;
       jac.resize(6, manip->numJoints());
-      manip->calcJacobian(jac, change_base, dofvals, res.link_names[0], res.nearest_points[0]);
+      manip->calcJacobian(jac, change_base, dofvals, res.link_names[0], *state, res.nearest_points[0]);
       dist_grad = -res.normal.transpose() * jac.topRows(3);
 
       exprInc(dist, varDot(dist_grad, vars));
@@ -121,6 +123,7 @@ void CollisionsToDistanceExpressions(const tesseract::ContactResultVector& dist_
                           change_base,
                           dofvals,
                           res.link_names[1],
+                          *state,
                           (isTimestep1 && (res.cc_type == tesseract::ContinouseCollisionType::CCType_Between)) ?
                               res.cc_nearest_points[1] :
                               res.nearest_points[1]);
