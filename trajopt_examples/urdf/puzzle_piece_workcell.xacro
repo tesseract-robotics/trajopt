@@ -31,10 +31,28 @@
     <origin xyz="0 0 0.5" rpy="0 0 0"/>
   </joint>
 
+  <link name="link_grinder"/>
   <joint name="world_to_grinder" type="fixed">
     <parent link="world"/>
-    <child link="grinder_frame"/>
-    <origin xyz="0.35 -0.35 0.7" rpy="0 3.14159 0"/>
+    <child link="link_grinder"/>
+    <origin xyz="0.35 -0.35 0.6" rpy="0 0 0"/>
+  </joint>
+
+  <link name="link_grinder_1"/>
+  <joint name="joint_aux1" type="revolute">
+    <parent link="link_grinder"/>
+    <child link="link_grinder_1"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <axis xyz="0 0 1" />
+    <limit lower="-3.14159" upper="3.14159" effort="0" velocity="1.0" />
+  </joint>
+
+  <joint name="joint_aux2" type="revolute">
+    <parent link="link_grinder_1"/>
+    <child link="grinder_base"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <axis xyz="0 1 0" />
+    <limit lower="-0.785398" upper="0.785398" effort="0" velocity="1.0" />
   </joint>
 
   <joint name="table_to_robot" type="fixed">

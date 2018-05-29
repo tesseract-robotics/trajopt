@@ -42,6 +42,7 @@
  */
 #include "tesseract_ros/kdl/kdl_env.h"
 #include "tesseract_ros/kdl/kdl_chain_kin.h"
+#include "tesseract_ros/kdl/kdl_joint_kin.h"
 #include "tesseract_ros/kdl/kdl_utils.h"
 #include "tesseract_ros/ros_tesseract_utils.h"
 #include <eigen_conversions/eigen_msg.h>
@@ -122,15 +123,28 @@ bool KDLEnv::init(urdf::ModelInterfaceConstSharedPtr urdf_model, srdf::ModelCons
     srdf_model_ = srdf_model;
     for (const auto& group : srdf_model_->getGroups())
     {
-      for (const auto& chain : group.chains_)
+      if (!group.chains_.empty())
       {
-        KDLChainKinPtr manip(new KDLChainKin());
-        manip->init(urdf_model_, chain.first, chain.second, group.name_);
-        manipulators_.insert(std::make_pair(group.name_, manip));
+        assert(group.chains_.size() == 1);
+        addManipulator(group.chains_.front().first, group.chains_.front().second, group.name_);
+      }
+
+      if (!group.joints_.empty())
+      {
+        addManipulator(group.joints_, group.name_);
+      }
+
+      // TODO: Need to add other options
+      if (!group.links_.empty())
+      {
+        ROS_ERROR("Link groups are currently not supported!");
+      }
+
+      if (!group.subgroups_.empty())
+      {
+        ROS_ERROR("Subgroups are currently not supported!");
       }
     }
-
-    // TODO: Need to add other options
 
     // Populate allowed collision matrix
     for (const auto& pair : srdf_model_->getDisabledCollisionPairs())
@@ -396,6 +410,19 @@ bool KDLEnv::addManipulator(const std::string& base_link,
   {
     KDLChainKinPtr manip(new KDLChainKin());
     manip->init(urdf_model_, base_link, tip_link, manipulator_name);
+
+    manipulators_.insert(std::make_pair(manipulator_name, manip));
+    return true;
+  }
+  return false;
+}
+
+bool KDLEnv::addManipulator(const std::vector<std::string>& joint_names, const std::string& manipulator_name)
+{
+  if (!hasManipulator(manipulator_name))
+  {
+    KDLJointKinPtr manip(new KDLJointKin());
+    manip->init(urdf_model_, joint_names, manipulator_name);
 
     manipulators_.insert(std::make_pair(manipulator_name, manip));
     return true;

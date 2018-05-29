@@ -25,7 +25,6 @@
  */
 #include <ros/ros.h>
 #include <srdfdom/model.h>
-#include <tesseract_ros/kdl/kdl_chain_kin.h>
 #include <tesseract_ros/kdl/kdl_env.h>
 #include <tesseract_ros/ros_basic_plotting.h>
 #include <trajopt/plot_callback.hpp>
@@ -174,7 +173,7 @@ ProblemConstructionInfo cppMethod()
 
   for (auto i = 0; i < pci.basic_info.n_steps; ++i)
   {
-    std::shared_ptr<PoseCostInfo> pose = std::shared_ptr<PoseCostInfo>(new PoseCostInfo);
+    std::shared_ptr<StaticPoseCostInfo> pose = std::shared_ptr<StaticPoseCostInfo>(new StaticPoseCostInfo);
     pose->term_type = TT_CNT;
     pose->name = "waypoint_cart_" + std::to_string(i);
     pose->link = "part";
@@ -227,6 +226,8 @@ int main(int argc, char** argv)
   ipos["joint_a5"] = 0.0;
   ipos["joint_a6"] = 1.0;
   ipos["joint_a7"] = 0.0;
+  ipos["joint_aux1"] = 0.0;
+  ipos["joint_aux2"] = 0.0;
   env_->setState(ipos);
 
   plotter->plotScene();

@@ -165,16 +165,11 @@ private:
   void readInitInfo(const Value& v);
 };
 
-/**
- \brief pose error
-
- See trajopt::PoseTermInfo
- */
+/** @brief This is used when the goal frame is not fixed in space */
 struct PoseCostInfo : public TermInfo, public MakesCost, public MakesConstraint
 {
   int timestep;
-  Vector3d xyz;
-  Vector4d wxyz;
+  std::string target;
   Vector3d pos_coeffs, rot_coeffs;
 
   std::string link;
@@ -185,6 +180,24 @@ struct PoseCostInfo : public TermInfo, public MakesCost, public MakesConstraint
   void fromJson(ProblemConstructionInfo& pci, const Value& v);
   void hatch(TrajOptProb& prob);
   DEFINE_CREATE(PoseCostInfo)
+};
+
+/** @brief This cost is used when the goal frame is fixed in space */
+struct StaticPoseCostInfo : public TermInfo, public MakesCost, public MakesConstraint
+{
+  int timestep;
+  Vector3d xyz;
+  Vector4d wxyz;
+  Vector3d pos_coeffs, rot_coeffs;
+
+  std::string link;
+  Eigen::Affine3d tcp;
+
+  StaticPoseCostInfo();
+
+  void fromJson(ProblemConstructionInfo& pci, const Value& v);
+  void hatch(TrajOptProb& prob);
+  DEFINE_CREATE(StaticPoseCostInfo)
 };
 
 /**

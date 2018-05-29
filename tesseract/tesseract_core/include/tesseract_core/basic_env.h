@@ -96,6 +96,14 @@ public:
                               const std::string& manipulator_name) = 0;
 
   /**
+   * @brief A a manipulator as a set of joints
+   * @param joint_names The list of joint names that make up the manipulator (used for non chains)
+   * @param name The name of the manipulator. This must be unique.
+   * @return true if successfully created, otherwise false.
+   */
+  virtual bool addManipulator(const std::vector<std::string>& joint_names, const std::string& manipulator_name) = 0;
+
+  /**
    * @brief Add object so it may be attached/detached.
    *
    * This object is not part of the environment until attached to a link.

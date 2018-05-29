@@ -45,12 +45,41 @@ vector<T> concat(const vector<T>& a, const vector<T>& b) {
 
 namespace trajopt
 {
-// CostPtr ConstructCost(VectorOfVectorPtr err_calc, const VarVector& vars,
-// const VectorXd& coeffs, PenaltyType type, const string& name) {
-//   return CostPtr(new CostFromErrFunc(err_calc), vars, coeffs, type, name);
-// }
-
 VectorXd CartPoseErrCalculator::operator()(const VectorXd& dof_vals) const
+{
+  Affine3d new_pose, target_pose, change_base;
+  tesseract::EnvStateConstPtr state = env_->getState();
+  change_base = state->transforms.at(manip_->getBaseLinkName());
+  assert(change_base.isApprox(
+      env_->getState(manip_->getJointNames(), dof_vals)->transforms.at(manip_->getBaseLinkName())));
+  manip_->calcFwdKin(new_pose, change_base, dof_vals, link_, *state);
+  manip_->calcFwdKin(target_pose, change_base, dof_vals, target_, *state);
+
+  Affine3d pose_err = target_pose.inverse() * (new_pose * tcp_);
+  Quaterniond q(pose_err.rotation());
+  VectorXd err = concat(Vector3d(q.x(), q.y(), q.z()), pose_err.translation());
+  return err;
+}
+
+void CartPoseErrorPlotter::Plot(const tesseract::BasicPlottingPtr plotter, const DblVec& x)
+{
+  CartPoseErrCalculator* calc = static_cast<CartPoseErrCalculator*>(m_calc.get());
+  VectorXd dof_vals = getVec(x, m_vars);
+  Affine3d cur_pose, target_pose, change_base;
+
+  tesseract::EnvStateConstPtr state = calc->env_->getState();
+  change_base = state->transforms.at(calc->manip_->getBaseLinkName());
+  calc->manip_->calcFwdKin(cur_pose, change_base, dof_vals, calc->link_, *state);
+  calc->manip_->calcFwdKin(target_pose, change_base, dof_vals, calc->target_, *state);
+
+  cur_pose = cur_pose * calc->tcp_;
+
+  plotter->plotAxis(cur_pose, 0.05);
+  plotter->plotAxis(target_pose, 0.05);
+  plotter->plotArrow(cur_pose.translation(), target_pose.translation(), Eigen::Vector4d(1, 0, 1, 1), 0.005);
+}
+
+VectorXd StaticCartPoseErrCalculator::operator()(const VectorXd& dof_vals) const
 {
   Affine3d new_pose, change_base;
   tesseract::EnvStateConstPtr state = env_->getState();
@@ -65,19 +94,9 @@ VectorXd CartPoseErrCalculator::operator()(const VectorXd& dof_vals) const
   return err;
 }
 
-#if 0
-CartPoseCost::CartPoseCost(const VarVector& vars, const OR::Transform& pose, RobotAndDOFPtr manip, KinBody::LinkPtr link, const VectorXd& coeffs) :
-    CostFromErrFunc(VectorOfVectorPtr(new CartPoseErrCalculator(pose, manip, link)), vars, coeffs, ABS, "CartPose")
-{}
-CartPoseConstraint::CartPoseConstraint(const VarVector& vars, const OR::Transform& pose,
-    RobotAndDOFPtr manip, KinBody::LinkPtr link, const VectorXd& coeffs) :
-    ConstraintFromFunc(VectorOfVectorPtr(new CartPoseErrCalculator(pose, manip, link)), vars, coeffs, EQ, "CartPose")
-{}
-#endif
-
-void CartPoseErrorPlotter::Plot(const tesseract::BasicPlottingPtr plotter, const DblVec& x)
+void StaticCartPoseErrorPlotter::Plot(const tesseract::BasicPlottingPtr plotter, const DblVec& x)
 {
-  CartPoseErrCalculator* calc = static_cast<CartPoseErrCalculator*>(m_calc.get());
+  StaticCartPoseErrCalculator* calc = static_cast<StaticCartPoseErrCalculator*>(m_calc.get());
   VectorXd dof_vals = getVec(x, m_vars);
   Affine3d cur_pose, change_base;
 
@@ -93,24 +112,6 @@ void CartPoseErrorPlotter::Plot(const tesseract::BasicPlottingPtr plotter, const
   plotter->plotAxis(target, 0.05);
   plotter->plotArrow(cur_pose.translation(), target.translation(), Eigen::Vector4d(1, 0, 1, 1), 0.005);
 }
-
-#if 0
-struct CartPositionErrCalculator {
-  Vector3d pt_world_;
-  RobotAndDOFPtr manip_;
-  OR::KinBody::LinkPtr link_;
-  CartPositionErrCalculator(const Vector3d& pt_world, RobotAndDOFPtr manip, OR::KinBody::LinkPtr link) :
-  pt_world_(pt_world),
-  manip_(manip),
-  link_(link)
-  {}
-  VectorXd operator()(const VectorXd& dof_vals) {
-    manip_->SetDOFValues(toDblVec(dof_vals));
-    OR::Transform newpose = link_->GetTransform();
-    return pt_world_ - toVector3d(newpose.trans);
-  }
-};
-#endif
 
 MatrixXd CartVelJacCalculator::operator()(const VectorXd& dof_vals) const
 {

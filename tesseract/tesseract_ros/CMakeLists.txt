@@ -56,6 +56,7 @@ include_directories(
 
 add_library(${PROJECT_NAME}_kdl
   src/kdl/kdl_chain_kin.cpp
+  src/kdl/kdl_joint_kin.cpp
   src/kdl/kdl_env.cpp
 )
 

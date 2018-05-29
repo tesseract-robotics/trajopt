@@ -26,6 +26,7 @@
 #ifndef TESSERACT_ROS_KDL_UTILS_H
 #define TESSERACT_ROS_KDL_UTILS_H
 #include <kdl/frames.hpp>
+#include <kdl/jntarray.hpp>
 #include <Eigen/Eigen>
 
 namespace tesseract
@@ -73,9 +74,28 @@ inline void EigenToKDL(const Eigen::Affine3d& transform, KDL::Frame& frame)
  */
 inline void KDLToEigen(const KDL::Jacobian& jacobian, Eigen::Ref<Eigen::MatrixXd> matrix)
 {
+  assert(matrix.rows() == jacobian.rows());
+  assert(matrix.cols() == jacobian.columns());
+
   for (size_t i = 0; i < jacobian.rows(); ++i)
     for (size_t j = 0; j < jacobian.columns(); ++j)
       matrix(i, j) = jacobian(i, j);
+}
+
+/**
+ * @brief Convert a subset of KDL::Jacobian to Eigen::Matrix
+ * @param jacobian Input KDL Jacobian
+ * @param q_nrs Input the columns to use
+ * @param matrix Output Eigen MatrixXd
+ */
+inline void KDLToEigen(const KDL::Jacobian& jacobian, const std::vector<int>& q_nrs, Eigen::Ref<Eigen::MatrixXd> matrix)
+{
+  assert(matrix.rows() == jacobian.rows());
+  assert(static_cast<unsigned>(matrix.cols()) == q_nrs.size());
+
+  for (size_t i = 0; i < jacobian.rows(); ++i)
+    for (size_t j = 0; j < q_nrs.size(); ++j)
+      matrix(i, j) = jacobian(i, q_nrs[j]);
 }
 
 /**

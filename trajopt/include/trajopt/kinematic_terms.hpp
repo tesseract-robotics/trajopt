@@ -15,17 +15,17 @@ typedef BasicArray<Var> VarArray;
 
 struct CartPoseErrCalculator : public VectorOfVector
 {
-  Eigen::Affine3d pose_inv_;
+  std::string target_;
   tesseract::BasicKinConstPtr manip_;
   tesseract::BasicEnvConstPtr env_;
   std::string link_;
   Eigen::Affine3d tcp_;
-  CartPoseErrCalculator(const Eigen::Affine3d& pose,
+  CartPoseErrCalculator(const std::string& target,
                         tesseract::BasicKinConstPtr manip,
                         tesseract::BasicEnvConstPtr env,
                         std::string link,
                         Eigen::Affine3d tcp = Eigen::Affine3d::Identity())
-    : pose_inv_(pose.inverse()), manip_(manip), env_(env), link_(link), tcp_(tcp)
+    : target_(target), manip_(manip), env_(env), link_(link), tcp_(tcp)
   {
   }
 
@@ -37,6 +37,33 @@ struct CartPoseErrorPlotter : public Plotter
   std::shared_ptr<void> m_calc;  // actually points to a CartPoseErrCalculator = CartPoseCost::f_
   VarVector m_vars;
   CartPoseErrorPlotter(std::shared_ptr<void> calc, const VarVector& vars) : m_calc(calc), m_vars(vars) {}
+  void Plot(const tesseract::BasicPlottingPtr plotter, const DblVec& x);
+};
+
+struct StaticCartPoseErrCalculator : public VectorOfVector
+{
+  Eigen::Affine3d pose_inv_;
+  tesseract::BasicKinConstPtr manip_;
+  tesseract::BasicEnvConstPtr env_;
+  std::string link_;
+  Eigen::Affine3d tcp_;
+  StaticCartPoseErrCalculator(const Eigen::Affine3d& pose,
+                              tesseract::BasicKinConstPtr manip,
+                              tesseract::BasicEnvConstPtr env,
+                              std::string link,
+                              Eigen::Affine3d tcp = Eigen::Affine3d::Identity())
+    : pose_inv_(pose.inverse()), manip_(manip), env_(env), link_(link), tcp_(tcp)
+  {
+  }
+
+  VectorXd operator()(const VectorXd& dof_vals) const;
+};
+
+struct StaticCartPoseErrorPlotter : public Plotter
+{
+  std::shared_ptr<void> m_calc;  // actually points to a CartPoseErrCalculator = CartPoseCost::f_
+  VarVector m_vars;
+  StaticCartPoseErrorPlotter(std::shared_ptr<void> calc, const VarVector& vars) : m_calc(calc), m_vars(vars) {}
   void Plot(const tesseract::BasicPlottingPtr plotter, const DblVec& x);
 };
 

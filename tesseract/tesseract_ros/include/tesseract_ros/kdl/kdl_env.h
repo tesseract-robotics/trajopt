@@ -147,6 +147,8 @@ public:
                       const std::string& tip_link,
                       const std::string& manipulator_name) override;
 
+  bool addManipulator(const std::vector<std::string>& joint_names, const std::string& manipulator_name) override;
+
   ObjectColorMapConstPtr getKnownObjectColors() const override { return object_colors_; }
   void clearKnownObjectColors() override { object_colors_->clear(); }
   void addAttachableObject(const AttachableObjectConstPtr attachable_object) override;
