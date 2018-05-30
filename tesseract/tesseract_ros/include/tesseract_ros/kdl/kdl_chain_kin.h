@@ -27,17 +27,16 @@
 #define TESSERACT_ROS_KDL_CHAIN_KIN_H
 
 #include "tesseract_ros/ros_basic_kin.h"
+#include "tesseract_ros/ros_basic_env.h"
 #include <kdl/tree.hpp>
 #include <kdl/chain.hpp>
 #include <kdl/chainfksolverpos_recursive.hpp>
 #include <kdl/chainjnttojacsolver.hpp>
-#include <urdf/model.h>
 
 namespace tesseract
 {
 namespace tesseract_ros
 {
-
 /**
  * @brief ROS kinematics functions.
  *
@@ -50,36 +49,64 @@ public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
   KDLChainKin() : ROSBasicKin(), initialized_(false) {}
+  bool calcFwdKin(Eigen::Affine3d& pose,
+                  const Eigen::Affine3d& change_base,
+                  const Eigen::Ref<const Eigen::VectorXd>& joint_angles) const override;
 
-  bool calcFwdKin(Eigen::Affine3d &pose, const Eigen::Affine3d change_base, const Eigen::VectorXd &joint_angles) const;
+  bool calcFwdKin(Eigen::Affine3d& pose,
+                  const Eigen::Affine3d& change_base,
+                  const Eigen::Ref<const Eigen::VectorXd>& joint_angles,
+                  const std::string& link_name,
+                  const EnvState& state) const override;
 
-  bool calcFwdKin(Eigen::Affine3d &pose, const Eigen::Affine3d change_base, const Eigen::VectorXd &joint_angles, const std::string &link_name) const;
+  bool calcJacobian(Eigen::Ref<Eigen::MatrixXd> jacobian,
+                    const Eigen::Affine3d& change_base,
+                    const Eigen::Ref<const Eigen::VectorXd>& joint_angles) const override;
 
-  bool calcJacobian(Eigen::MatrixXd &jacobian, const Eigen::Affine3d change_base, const Eigen::VectorXd &joint_angles) const;
+  bool calcJacobian(Eigen::Ref<Eigen::MatrixXd> jacobian,
+                    const Eigen::Affine3d& change_base,
+                    const Eigen::Ref<const Eigen::VectorXd>& joint_angles,
+                    const std::string& link_name,
+                    const EnvState& state) const override;
 
-  bool calcJacobian(Eigen::MatrixXd &jacobian, const Eigen::Affine3d change_base, const Eigen::VectorXd &joint_angles, const std::string &link_name) const;
+  bool calcJacobian(Eigen::Ref<Eigen::MatrixXd> jacobian,
+                    const Eigen::Affine3d& change_base,
+                    const Eigen::Ref<const Eigen::VectorXd>& joint_angles,
+                    const std::string& link_name,
+                    const EnvState& state,
+                    const Eigen::Ref<const Eigen::Vector3d>& link_point) const override;
 
-  bool calcJacobian(Eigen::MatrixXd &jacobian, const Eigen::Affine3d change_base, const Eigen::VectorXd &joint_angles, const std::string &link_name, const Eigen::Vector3d link_point) const;
+  bool checkJoints(const Eigen::Ref<const Eigen::VectorXd>& vec) const override;
 
-  bool checkJoints(const Eigen::VectorXd &vec) const;
+  const std::vector<std::string>& getJointNames() const override;
 
-  const std::vector<std::string>& getJointNames() const;
-
-  const std::vector<std::string>& getLinkNames() const;
+  const std::vector<std::string>& getLinkNames() const override;
 
   const Eigen::MatrixX2d& getLimits() const;
+
+  urdf::ModelInterfaceConstSharedPtr getURDF() const override { return model_; }
+  unsigned int numJoints() const override { return robot_chain_.getNrOfJoints(); }
+  const std::string& getBaseLinkName() const { return base_name_; }
+  const std::string& getName() const override { return name_; }
+  void addAttachedLink(const std::string& link_name, const std::string& parent_link_name) override;
+
+  void removeAttachedLink(const std::string& link_name) override;
+
+  void clearAttachedLinks() override;
 
   /**
    * @brief Initializes ROSKin
    * Creates KDL::Chain from urdf::Model, populates joint_list_, joint_limits_, and link_list_
-   * @param model The urdf model
+   * @param model_ The urdf model
    * @param base_link The name of the base link for the kinematic chain
    * @param tip_link The name of the tip link for the kinematic chain
    * @param name The name of the kinematic chain
    * @return True if init() completes successfully
    */
-  bool init(const urdf::ModelInterfaceConstSharedPtr model, const std::string &base_link, const std::string &tip_link, const std::string name);
-
+  bool init(urdf::ModelInterfaceConstSharedPtr model_,
+            const std::string& base_link,
+            const std::string& tip_link,
+            const std::string name);
 
   /**
    * @brief Checks if BasicKin is initialized (init() has been run: urdf model loaded, etc.)
@@ -95,30 +122,8 @@ public:
     return initialized_;
   }
 
-  /** @brief Get the URDF model */
-  const urdf::ModelInterfaceConstSharedPtr getURDF() const {return model_;}
-
-  /**
-   * @brief Number of joints in robot
-   * @return Number of joints in robot
-   */
-  unsigned int numJoints() const { return robot_chain_.getNrOfJoints(); }
-
-  /** @brief Get the base link name */
-  const std::string& getBaseLinkName() const { return base_name_; }
-
   /** @brief Get the tip link name */
   const std::string& getTipLinkName() const { return tip_name_; }
-
-  /** @brief Get the name of the kinematic chain */
-  const std::string& getName() const { return name_; }
-
-  void addAttachedLink(const std::string &link_name, const std::string &parent_link_name);
-
-  void removeAttachedLink(const std::string &link_name);
-
-  void clearAttachedLinks();
-
   /**
    * @brief Assigns values from another ROSKin to this
    * @param rhs Input ROSKin object to copy from
@@ -126,62 +131,44 @@ public:
    */
   KDLChainKin& operator=(const KDLChainKin& rhs);
 
-  /**
-   * @brief Convert KDL::Frame to Eigen::Affine3d
-   * @param frame Input KDL Frame
-   * @param transform Output Eigen transform (Affine3d)
-   */
-  static void KDLToEigen(const KDL::Frame &frame, Eigen::Affine3d &transform);
-
-  /**
-   * @brief Convert Eigen::Affine3d to KDL::Frame
-   * @param transform Input Eigen transform (Affine3d)
-   * @param frame Output KDL Frame
-   */
-  static void EigenToKDL(const Eigen::Affine3d &transform, KDL::Frame &frame);
-
-  /**
-   * @brief Convert KDL::Jacobian to Eigen::Matrix
-   * @param jacobian Input KDL Jacobian
-   * @param matrix Output Eigen MatrixXd
-   */
-  static void KDLToEigen(const KDL::Jacobian &jacobian, Eigen::MatrixXd &matrix);
-
-  /**
-   * @brief Convert Eigen::Vector to KDL::JntArray
-   * @param vec Input Eigen vector
-   * @param joints Output KDL joint array
-   */
-  static void EigenToKDL(const Eigen::VectorXd &vec, KDL::JntArray &joints) {joints.data = vec;}
-
 private:
-  bool initialized_;                                             /**< Identifies if the object has been initialized */
-  urdf::ModelInterfaceConstSharedPtr model_;                     /**< URDF MODEL */
-  KDL::Chain  robot_chain_;                                      /**< KDL Chain object */
-  KDL::Tree   kdl_tree_;                                         /**< KDL tree object */
-  std::string base_name_;                                        /**< Link name of first link in the kinematic chain */
-  std::string tip_name_;                                         /**< Link name of last kink in the kinematic chain */
-  std::string name_;                                             /**< Name of the kinematic chain */
-  std::vector<std::string> joint_list_;                          /**< List of joint names */
-  std::vector<std::string> link_list_;                           /**< List of link names */
-  Eigen::MatrixX2d joint_limits_;                                /**< Joint limits */
-  std::unique_ptr<KDL::ChainFkSolverPos_recursive> fk_solver_;   /**< KDL Forward Kinematic Solver */
-  std::unique_ptr<KDL::ChainJntToJacSolver> jac_solver_;         /**< KDL Jacobian Solver */
-  std::map<std::string, int> link_name_too_segment_index_;       /**< A map from link name to kdl chain segment numer */
-  std::vector<std::string> attached_link_list_;                  /**< A list of attached link names */
+  bool initialized_;                                           /**< Identifies if the object has been initialized */
+  urdf::ModelInterfaceConstSharedPtr model_;                   /**< URDF MODEL */
+  KDL::Chain robot_chain_;                                     /**< KDL Chain object */
+  KDL::Tree kdl_tree_;                                         /**< KDL tree object */
+  std::string base_name_;                                      /**< Link name of first link in the kinematic chain */
+  std::string tip_name_;                                       /**< Link name of last kink in the kinematic chain */
+  std::string name_;                                           /**< Name of the kinematic chain */
+  std::vector<std::string> joint_list_;                        /**< List of joint names */
+  std::vector<std::string> link_list_;                         /**< List of link names */
+  Eigen::MatrixX2d joint_limits_;                              /**< Joint limits */
+  std::unique_ptr<KDL::ChainFkSolverPos_recursive> fk_solver_; /**< KDL Forward Kinematic Solver */
+  std::unique_ptr<KDL::ChainJntToJacSolver> jac_solver_;       /**< KDL Jacobian Solver */
+  std::map<std::string, int> segment_index_;    /**< A map from chain link name to kdl chain segment number */
+  std::vector<std::string> attached_link_list_; /**< A list of attached link names */
+  std::unordered_map<std::string, std::string> link_name_too_chain_link_name_; /**< A map of affected link names to
+                                                                                  chain link names */
 
   /** @brief calcFwdKin helper function */
-  bool calcFwdKinHelper(Eigen::Affine3d &pose, const Eigen::Affine3d change_base, const Eigen::VectorXd &joint_angles, int segment_num=-1) const;
+  bool calcFwdKinHelper(Eigen::Affine3d& pose,
+                        const Eigen::Affine3d& change_base,
+                        const Eigen::Ref<const Eigen::VectorXd>& joint_angles,
+                        int segment_num = -1) const;
 
   /** @brief calcJacobian helper function */
-  bool calcJacobianHelper(KDL::Jacobian &jacobian, const Eigen::Affine3d change_base, const Eigen::VectorXd &joint_angles, int segment_num=-1) const;
+  bool calcJacobianHelper(KDL::Jacobian& jacobian,
+                          const Eigen::Affine3d& change_base,
+                          const Eigen::Ref<const Eigen::VectorXd>& joint_angles,
+                          int segment_num = -1) const;
 
-  void addChildrenRecursive(const urdf::LinkConstSharedPtr urdf_link, const std::string &next_chain_segment);
+  void addChildrenRecursive(const std::string& chain_link_name,
+                            urdf::LinkConstSharedPtr urdf_link,
+                            const std::string& next_chain_segment);
 
-}; // class KDLChainKin
+};  // class KDLChainKin
 
 typedef std::shared_ptr<KDLChainKin> KDLChainKinPtr;
 typedef std::shared_ptr<const KDLChainKin> KDLChainKinConstPtr;
 }
 }
-#endif // TESSERACT_ROS_KDL_CHAIN_KIN_H
+#endif  // TESSERACT_ROS_KDL_CHAIN_KIN_H

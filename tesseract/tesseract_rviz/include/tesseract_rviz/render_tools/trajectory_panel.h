@@ -68,16 +68,8 @@ public:
 
   void setSliderPosition(int position);
 
-  int getSliderPosition() const
-  {
-    return slider_->sliderPosition();
-  }
-
-  bool isPaused() const
-  {
-    return paused_;
-  }
-
+  int getSliderPosition() const { return slider_->sliderPosition(); }
+  bool isPaused() const { return paused_; }
 private Q_SLOTS:
   void sliderValueChanged(int value);
   void buttonClicked();
@@ -94,4 +86,4 @@ protected:
 
 }  // namespace tesseract_rviz
 
-#endif //TESSERACT_RVIZ_TRAJECTORY_PANEL
+#endif  // TESSERACT_RVIZ_TRAJECTORY_PANEL

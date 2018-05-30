@@ -51,64 +51,103 @@ public:
   CollisionWorldBullet(const CollisionWorldBullet& other, const WorldPtr& world);
   virtual ~CollisionWorldBullet();
 
-  virtual void checkRobotCollision(const CollisionRequest& req, CollisionResult& res, const CollisionRobot& robot,
+  virtual void checkRobotCollision(const CollisionRequest& req,
+                                   CollisionResult& res,
+                                   const CollisionRobot& robot,
                                    const robot_state::RobotState& state) const;
-  virtual void checkRobotCollision(const CollisionRequest& req, CollisionResult& res, const CollisionRobot& robot,
-                                   const robot_state::RobotState& state, const AllowedCollisionMatrix& acm) const;
-  virtual void checkRobotCollision(const CollisionRequest& req, CollisionResult& res, const CollisionRobot& robot,
-                                   const robot_state::RobotState& state1, const robot_state::RobotState& state2) const;
-  virtual void checkRobotCollision(const CollisionRequest& req, CollisionResult& res, const CollisionRobot& robot,
-                                   const robot_state::RobotState& state1, const robot_state::RobotState& state2,
+  virtual void checkRobotCollision(const CollisionRequest& req,
+                                   CollisionResult& res,
+                                   const CollisionRobot& robot,
+                                   const robot_state::RobotState& state,
                                    const AllowedCollisionMatrix& acm) const;
-  virtual void checkWorldCollision(const CollisionRequest& req, CollisionResult& res,
+  virtual void checkRobotCollision(const CollisionRequest& req,
+                                   CollisionResult& res,
+                                   const CollisionRobot& robot,
+                                   const robot_state::RobotState& state1,
+                                   const robot_state::RobotState& state2) const;
+  virtual void checkRobotCollision(const CollisionRequest& req,
+                                   CollisionResult& res,
+                                   const CollisionRobot& robot,
+                                   const robot_state::RobotState& state1,
+                                   const robot_state::RobotState& state2,
+                                   const AllowedCollisionMatrix& acm) const;
+  virtual void checkWorldCollision(const CollisionRequest& req,
+                                   CollisionResult& res,
                                    const CollisionWorld& other_world) const;
-  virtual void checkWorldCollision(const CollisionRequest& req, CollisionResult& res, const CollisionWorld& other_world,
+  virtual void checkWorldCollision(const CollisionRequest& req,
+                                   CollisionResult& res,
+                                   const CollisionWorld& other_world,
                                    const AllowedCollisionMatrix& acm) const;
 
   MOVEIT_DEPRECATED
-  virtual double distanceRobot(const CollisionRobot& robot, const robot_state::RobotState& state,
+  virtual double distanceRobot(const CollisionRobot& robot,
+                               const robot_state::RobotState& state,
                                bool verbose = false) const;
 
   MOVEIT_DEPRECATED
-  virtual double distanceRobot(const CollisionRobot& robot, const robot_state::RobotState& state,
-                               const AllowedCollisionMatrix& acm, bool verbose = false) const;
+  virtual double distanceRobot(const CollisionRobot& robot,
+                               const robot_state::RobotState& state,
+                               const AllowedCollisionMatrix& acm,
+                               bool verbose = false) const;
 
   MOVEIT_DEPRECATED
   virtual double distanceWorld(const CollisionWorld& world, bool verbose = false) const;
 
   MOVEIT_DEPRECATED
-  virtual double distanceWorld(const CollisionWorld& world, const AllowedCollisionMatrix& acm,
+  virtual double distanceWorld(const CollisionWorld& world,
+                               const AllowedCollisionMatrix& acm,
                                bool verbose = false) const;
 
-  virtual void distanceRobot(const DistanceRequest& req, DistanceResult& res, const CollisionRobot& robot,
+  virtual void distanceRobot(const DistanceRequest& req,
+                             DistanceResult& res,
+                             const CollisionRobot& robot,
                              const robot_state::RobotState& state) const override;
 
-  virtual void distanceRobot(const DistanceRequest& req, DistanceResult& res, const CollisionRobot& robot,
-                             const robot_state::RobotState& state1, const robot_state::RobotState& state2) const override;
+  virtual void distanceRobot(const DistanceRequest& req,
+                             DistanceResult& res,
+                             const CollisionRobot& robot,
+                             const robot_state::RobotState& state1,
+                             const robot_state::RobotState& state2) const override;
 
-  virtual void distanceWorld(const DistanceRequest& req, DistanceResult& res,
+  virtual void distanceWorld(const DistanceRequest& req,
+                             DistanceResult& res,
                              const CollisionWorld& world) const override;
 
   virtual void setWorld(const WorldPtr& world);
 
 protected:
-  void checkWorldCollisionHelper(const CollisionRequest& req, CollisionResult& res, const CollisionWorld& other_world,
+  void checkWorldCollisionHelper(const CollisionRequest& req,
+                                 CollisionResult& res,
+                                 const CollisionWorld& other_world,
                                  const AllowedCollisionMatrix* acm) const;
 
-  void checkRobotCollisionHelper(const CollisionRequest& req, CollisionResult& res, const CollisionRobot& robot,
-                                 const robot_state::RobotState& state, const AllowedCollisionMatrix* acm) const;
-  void checkRobotCollisionHelper(const CollisionRequest& req, CollisionResult& res, const CollisionRobot& robot,
-                                 const robot_state::RobotState& state1, const robot_state::RobotState& state2,
+  void checkRobotCollisionHelper(const CollisionRequest& req,
+                                 CollisionResult& res,
+                                 const CollisionRobot& robot,
+                                 const robot_state::RobotState& state,
+                                 const AllowedCollisionMatrix* acm) const;
+  void checkRobotCollisionHelper(const CollisionRequest& req,
+                                 CollisionResult& res,
+                                 const CollisionRobot& robot,
+                                 const robot_state::RobotState& state1,
+                                 const robot_state::RobotState& state2,
                                  const AllowedCollisionMatrix* acm) const;
 
-  void distanceRobotHelper(const DistanceRequest& req, DistanceResult& res, const CollisionRobot& robot,
+  void distanceRobotHelper(const DistanceRequest& req,
+                           DistanceResult& res,
+                           const CollisionRobot& robot,
                            const robot_state::RobotState& state) const;
-  void distanceRobotHelper(const DistanceRequest& req, DistanceResult& res, const CollisionRobot& robot,
-                           const robot_state::RobotState& state1, const robot_state::RobotState& state2) const;
+  void distanceRobotHelper(const DistanceRequest& req,
+                           DistanceResult& res,
+                           const CollisionRobot& robot,
+                           const robot_state::RobotState& state1,
+                           const robot_state::RobotState& state2) const;
 
   void distanceWorldHelper(const DistanceRequest& req, DistanceResult& res, const CollisionWorld& world) const;
 
-  void constructBulletObject(Link2Cow &collision_objects, double contact_distance, bool allow_static2static = false) const;
+  void constructBulletObject(Link2Cow& collision_objects,
+                             double contact_distance,
+                             bool allow_static2static = false) const;
   void updateBulletObject(const std::string& id);
 
   Link2ConstCow m_link2cow;
@@ -117,7 +156,6 @@ private:
   void initialize();
   void notifyObjectChange(const ObjectConstPtr& obj, World::Action action);
   World::ObserverHandle observer_handle_;
-
 };
 }
 

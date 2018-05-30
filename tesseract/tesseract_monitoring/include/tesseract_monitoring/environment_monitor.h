@@ -53,10 +53,8 @@ class DynamicReconfigureImpl;
 
 namespace tesseract
 {
-
 namespace tesseract_monitoring
 {
-
 /**
  * @brief TesseractMonitor
  * Subscribes to the topic \e tesseract_environment */
@@ -74,7 +72,8 @@ public:
     /** \brief The maintained set of fixed transforms in the monitored environment was updated */
     UPDATE_TRANSFORMS = 2,
 
-    /** \brief The geometry of the environment was updated. This includes receiving new octomaps, collision objects, attached
+    /** \brief The geometry of the environment was updated. This includes receiving new octomaps, collision objects,
+       attached
        objects, environment geometry, etc. */
     UPDATE_GEOMETRY = 4,
 
@@ -91,7 +90,8 @@ public:
   /// The name of the service used by default for requesting full tesseract environment state
   static const std::string DEFAULT_ENVIRONMENT_SERVICE;  // "/get_tesseract"
 
-  /// The name of the topic used by default for publishing the monitored tesseract environment (this is without "/" in the
+  /// The name of the topic used by default for publishing the monitored tesseract environment (this is without "/" in
+  /// the
   /// name, so the topic is prefixed by the node name)
   static const std::string MONITORED_ENVIRONMENT_TOPIC;  // "/monitored_tesseract"
 
@@ -100,9 +100,7 @@ public:
    *  @param tf A pointer to a tf::Transformer
    *  @param name A name identifying this planning scene monitor
    */
-  EnvironmentMonitor(const std::string& robot_description,
-                     const std::string& name,
-                     const std::string& plugin = "");
+  EnvironmentMonitor(const std::string& robot_description, const std::string& name, const std::string& plugin = "");
 
   /** @brief Constructor
    *  @param rml A pointer to a kinematic model loader
@@ -118,11 +116,8 @@ public:
 
   /** \brief Get the name of this monitor */
   const std::string& getName() const { return monitor_name_; }
-
   const urdf::ModelInterfaceConstSharedPtr getURDF() const { return urdf_model_; }
-
   const srdf::ModelConstSharedPtr getSRDF() const { return srdf_model_; }
-
   /** @brief <b>Avoid this function!</b>  Returns an @b
    *         unsafe pointer to the current planning scene.
    * @warning Most likely you do not want to call this function
@@ -138,12 +133,10 @@ public:
    * @see LockedPlanningSceneRW.
    * @return A pointer to the current planning scene.*/
   const tesseract_ros::ROSBasicEnvPtr& getEnvironment() { return env_; }
-
   /*! @brief <b>Avoid this function!</b>  Returns an @b
    *         unsafe pointer to the current planning scene.
    * @copydetails PlanningSceneMonitor::getPlanningScene() */
   const tesseract_ros::ROSBasicEnvConstPtr& getEnvironment() const { return env_const_; }
-
   /** @brief Return true if the scene \e scene can be updated directly
       or indirectly by this monitor. This function will return true if
       the pointer of the scene is the same as the one maintained,
@@ -159,18 +152,19 @@ public:
   /** @brief Get the stored robot description
    *  @return An instance of the stored robot description*/
   const std::string& getURDFDescription() const { return robot_description_; }
-
-  /** \brief By default, the maintained planning scene does not reason about diffs. When the flag passed in is true, the maintained
+  /** \brief By default, the maintained planning scene does not reason about diffs. When the flag passed in is true, the
+     maintained
       scene starts counting diffs. Future updates to the planning scene will be stored as diffs and can be retrieved as
       such. Setting the flag to false restores the default behaviour. Maintaining diffs is automatically enabled when
       publishing environment. */
   void monitorDiffs(bool flag);
 
   /** \brief Start publishing the maintained environment. The first message set out is a complete environment.
-      Diffs are sent afterwards on updates specified by the \e event bitmask. For UPDATE_ENVIRONMENT, the full environment is always
+      Diffs are sent afterwards on updates specified by the \e event bitmask. For UPDATE_ENVIRONMENT, the full
+     environment is always
      sent. */
   void startPublishingEnvironment(EnvironmentUpdateType event,
-                                    const std::string& environment_topic = MONITORED_ENVIRONMENT_TOPIC);
+                                  const std::string& environment_topic = MONITORED_ENVIRONMENT_TOPIC);
 
   /** \brief Stop publishing the maintained environment. */
   void stopPublishingEnvironment();
@@ -180,13 +174,10 @@ public:
 
   /** \brief Get the maximum frequency at which environment are published (Hz) */
   double getEnvironmentPublishingFrequency() const { return publish_environment_frequency_; }
-
   /** @brief Get the stored instance of the stored current state monitor
    *  @return An instance of the stored current state monitor*/
   const CurrentStateMonitorPtr& getStateMonitor() const { return current_state_monitor_; }
-
   CurrentStateMonitorPtr& getStateMonitorNonConst() { return current_state_monitor_; }
-
   /** @brief Start the current state monitor
       @param joint_states_topic the topic to listen to for joint states
       @param attached_objects_topic the topic to listen to for attached collision objects */
@@ -243,7 +234,6 @@ public:
 
   /** \brief Return the time when the last update was made to the planning scene (by \e any monitor) */
   const ros::Time& getLastUpdateTime() const { return last_update_time_; }
-
   /** @brief This function is called every time there is a change to the planning scene */
   void triggerEnvironmentUpdateEvent(EnvironmentUpdateType update_type);
 
@@ -277,13 +267,13 @@ protected:
   /** @brief Initialize the planning scene monitor
    *  @param scene The scene instance to fill with data (an instance is allocated if the one passed in is not allocated)
    */
-  void initialize(const urdf::ModelInterfaceConstSharedPtr &urdf_model, const srdf::ModelConstSharedPtr &srdf_model);
+  void initialize(const urdf::ModelInterfaceConstSharedPtr& urdf_model, const srdf::ModelConstSharedPtr& srdf_model);
 
   /** @brief Callback for a new attachable object msg*/
-  void attachableObjectCallback(const tesseract_msgs::AttachableObjectConstPtr &ao_msg);
+  void attachableObjectCallback(const tesseract_msgs::AttachableObjectConstPtr& ao_msg);
 
   /** @brief Callback for a new attached body info msg*/
-  void attachedBodyInfoCallback(const tesseract_msgs::AttachedBodyInfoConstPtr &ab_info_msg);
+  void attachedBodyInfoCallback(const tesseract_msgs::AttachedBodyInfoConstPtr& ab_info_msg);
 
   /// The name of this scene monitor
   std::string monitor_name_;
@@ -291,10 +281,10 @@ protected:
 
   tesseract_ros::ROSBasicEnvPtr env_;
   tesseract_ros::ROSBasicEnvConstPtr env_const_;
-  boost::shared_mutex scene_update_mutex_;         /// mutex for stored scene
-  ros::Time last_update_time_;                     /// Last time the state was updated
-  ros::Time last_robot_motion_time_;               /// Last time the robot has moved
-  bool enforce_next_state_update_;                 /// flag to enforce immediate state update in onStateUpdate()
+  boost::shared_mutex scene_update_mutex_;  /// mutex for stored scene
+  ros::Time last_update_time_;              /// Last time the state was updated
+  ros::Time last_robot_motion_time_;        /// Last time the robot has moved
+  bool enforce_next_state_update_;          /// flag to enforce immediate state update in onStateUpdate()
 
   ros::NodeHandle nh_;
   ros::NodeHandle root_nh_;
@@ -316,7 +306,8 @@ protected:
 
   /// lock access to update_callbacks_
   boost::recursive_mutex update_lock_;
-  std::vector<boost::function<void(EnvironmentUpdateType)> > update_callbacks_;  /// List of callbacks to trigger when updates
+  std::vector<boost::function<void(EnvironmentUpdateType)> > update_callbacks_;  /// List of callbacks to trigger when
+                                                                                 /// updates
                                                                                  /// are received
 
 private:
@@ -359,8 +350,8 @@ private:
   // Only access this from callback functions (and constructor)
   ros::WallTime last_robot_state_update_wall_time_;
 
-  urdf::ModelInterfaceConstSharedPtr urdf_model_;  /**< URDF MODEL */
-  srdf::ModelConstSharedPtr srdf_model_;           /**< SRDF MODEL */
+  urdf::ModelInterfaceConstSharedPtr urdf_model_; /**< URDF MODEL */
+  srdf::ModelConstSharedPtr srdf_model_;          /**< SRDF MODEL */
 
   DynamicReconfigureImpl* reconfigure_impl_;
 };
@@ -391,22 +382,13 @@ typedef std::shared_ptr<const EnvironmentMonitor> EnvironmentMonitorConstPtr;
 class LockedEnvironmentRO
 {
 public:
-  LockedEnvironmentRO(const EnvironmentMonitorPtr& environment_monitor)
-    : env_monitor_(environment_monitor)
+  LockedEnvironmentRO(const EnvironmentMonitorPtr& environment_monitor) : env_monitor_(environment_monitor)
   {
     initialize(true);
   }
 
-  const EnvironmentMonitorPtr& getEnvironmentMonitor()
-  {
-    return env_monitor_;
-  }
-
-  operator bool() const
-  {
-    return env_monitor_ && env_monitor_->getEnvironment();
-  }
-
+  const EnvironmentMonitorPtr& getEnvironmentMonitor() { return env_monitor_; }
+  operator bool() const { return env_monitor_ && env_monitor_->getEnvironment(); }
   operator const tesseract_ros::ROSBasicEnvConstPtr&() const
   {
     return static_cast<const EnvironmentMonitor*>(env_monitor_.get())->getEnvironment();
@@ -488,15 +470,8 @@ public:
   {
   }
 
-  operator const tesseract_ros::ROSBasicEnvPtr&()
-  {
-    return env_monitor_->getEnvironment();
-  }
-
-  const tesseract_ros::ROSBasicEnvPtr& operator->()
-  {
-    return env_monitor_->getEnvironment();
-  }
+  operator const tesseract_ros::ROSBasicEnvPtr&() { return env_monitor_->getEnvironment(); }
+  const tesseract_ros::ROSBasicEnvPtr& operator->() { return env_monitor_->getEnvironment(); }
 };
 }
 }

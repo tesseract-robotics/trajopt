@@ -76,11 +76,7 @@ public:
   virtual void update(float wall_dt, float ros_dt);
   virtual void reset();
 
-  const tesseract::tesseract_ros::ROSBasicEnvConstPtr getEnv() const
-  {
-    return env_;
-  }
-
+  const tesseract::tesseract_ros::ROSBasicEnvConstPtr getEnv() const { return env_; }
   void setLinkColor(const std::string& link_name, const QColor& color);
   void unsetLinkColor(const std::string& link_name);
 
@@ -148,4 +144,4 @@ typedef std::shared_ptr<const TesseractStateDisplay> TesseractStateDisplayConstP
 
 }  // namespace tesseract_rviz
 
-#endif //TESSERACT_RVIZ_TESSERACT_STATE_DISPLAY_PLUGIN
+#endif  // TESSERACT_RVIZ_TESSERACT_STATE_DISPLAY_PLUGIN

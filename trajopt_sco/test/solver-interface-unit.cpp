@@ -1,21 +1,21 @@
+#include <cstdio>
+#include <gtest/gtest.h>
+#include <iostream>
+#include <trajopt_sco/expr_ops.hpp>
 #include <trajopt_sco/solver_interface.hpp>
 #include <trajopt_utils/logging.hpp>
-#include <trajopt_sco/expr_ops.hpp>
 #include <trajopt_utils/stl_to_string.hpp>
-#include <gtest/gtest.h>
-#include <cstdio>
-#include <iostream>
 
 using namespace std;
 
 using namespace sco;
 
-
-
-TEST(solver_interface, setup_problem) {
+TEST(solver_interface, setup_problem)
+{
   ModelPtr solver = createModel();
   vector<Var> vars;
-  for (int i=0; i < 3; ++i) {
+  for (int i = 0; i < 3; ++i)
+  {
     char namebuf[5];
     sprintf(namebuf, "v%i", i);
     vars.push_back(solver->addVar(namebuf));
@@ -24,7 +24,8 @@ TEST(solver_interface, setup_problem) {
 
   AffExpr aff;
   cout << aff << endl;
-  for (int i=0; i < 3; ++i) {
+  for (int i = 0; i < 3; ++i)
+  {
     exprInc(aff, vars[i]);
     solver->setVarBounds(vars[i], 0, 10);
   }
@@ -40,7 +41,8 @@ TEST(solver_interface, setup_problem) {
   solver->optimize();
 
   vector<double> soln(3);
-  for (int i=0; i < 3; ++i) {
+  for (int i = 0; i < 3; ++i)
+  {
     soln[i] = solver->getVarValue(vars[i]);
   }
   EXPECT_NEAR(aff.value(soln), 0, 1e-6);
@@ -48,5 +50,4 @@ TEST(solver_interface, setup_problem) {
   solver->removeVar(vars[2]);
   solver->update();
   EXPECT_EQ(solver->getVars().size(), 2);
-
 }

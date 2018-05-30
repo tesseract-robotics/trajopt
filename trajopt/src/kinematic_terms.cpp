@@ -1,23 +1,22 @@
-#include <trajopt_sco/expr_ops.hpp>
-#include <trajopt_sco/modeling_utils.hpp>
+#include <Eigen/Geometry>
+#include <boost/format.hpp>
+#include <iostream>
 #include <trajopt/kinematic_terms.hpp>
 #include <trajopt/utils.hpp>
+#include <trajopt_sco/expr_ops.hpp>
+#include <trajopt_sco/modeling_utils.hpp>
 #include <trajopt_utils/eigen_conversions.hpp>
 #include <trajopt_utils/eigen_slicing.hpp>
 #include <trajopt_utils/logging.hpp>
 #include <trajopt_utils/stl_to_string.hpp>
-#include <boost/format.hpp>
-#include <Eigen/Geometry>
-#include <iostream>
 
 using namespace std;
 using namespace sco;
 using namespace Eigen;
 using namespace util;
 
-
-namespace {
-  
+namespace
+{
 #if 0
 Vector3d rotVec(const Matrix3d& m) {
   Quaterniond q; q = m;
@@ -42,45 +41,68 @@ vector<T> concat(const vector<T>& a, const vector<T>& b) {
   return out;
 }
 #endif
-
 }
 
-namespace trajopt {
+namespace trajopt
+{
+VectorXd CartPoseErrCalculator::operator()(const VectorXd& dof_vals) const
+{
+  Affine3d new_pose, target_pose, change_base;
+  tesseract::EnvStateConstPtr state = env_->getState();
+  change_base = state->transforms.at(manip_->getBaseLinkName());
+  assert(change_base.isApprox(
+      env_->getState(manip_->getJointNames(), dof_vals)->transforms.at(manip_->getBaseLinkName())));
+  manip_->calcFwdKin(new_pose, change_base, dof_vals, link_, *state);
+  manip_->calcFwdKin(target_pose, change_base, dof_vals, target_, *state);
 
-
-// CostPtr ConstructCost(VectorOfVectorPtr err_calc, const VarVector& vars, const VectorXd& coeffs, PenaltyType type, const string& name) {
-//   return CostPtr(new CostFromErrFunc(err_calc), vars, coeffs, type, name);
-// }
-  
-  
-VectorXd CartPoseErrCalculator::operator()(const VectorXd& dof_vals) const {
-  Affine3d new_pose, change_base;
-  change_base = env_->getLinkTransform(manip_->getBaseLinkName());
-  manip_->calcFwdKin(new_pose, change_base, dof_vals, link_);
-
-  Affine3d pose_err = pose_inv_ * (new_pose * tcp_);
+  Affine3d pose_err = target_pose.inverse() * (new_pose * tcp_);
   Quaterniond q(pose_err.rotation());
   VectorXd err = concat(Vector3d(q.x(), q.y(), q.z()), pose_err.translation());
-  return err;  
+  return err;
 }
-
-#if 0
-CartPoseCost::CartPoseCost(const VarVector& vars, const OR::Transform& pose, RobotAndDOFPtr manip, KinBody::LinkPtr link, const VectorXd& coeffs) :
-    CostFromErrFunc(VectorOfVectorPtr(new CartPoseErrCalculator(pose, manip, link)), vars, coeffs, ABS, "CartPose")
-{}
-CartPoseConstraint::CartPoseConstraint(const VarVector& vars, const OR::Transform& pose,
-    RobotAndDOFPtr manip, KinBody::LinkPtr link, const VectorXd& coeffs) :
-    ConstraintFromFunc(VectorOfVectorPtr(new CartPoseErrCalculator(pose, manip, link)), vars, coeffs, EQ, "CartPose")
-{}
-#endif
 
 void CartPoseErrorPlotter::Plot(const tesseract::BasicPlottingPtr plotter, const DblVec& x)
 {
   CartPoseErrCalculator* calc = static_cast<CartPoseErrCalculator*>(m_calc.get());
   VectorXd dof_vals = getVec(x, m_vars);
+  Affine3d cur_pose, target_pose, change_base;
+
+  tesseract::EnvStateConstPtr state = calc->env_->getState();
+  change_base = state->transforms.at(calc->manip_->getBaseLinkName());
+  calc->manip_->calcFwdKin(cur_pose, change_base, dof_vals, calc->link_, *state);
+  calc->manip_->calcFwdKin(target_pose, change_base, dof_vals, calc->target_, *state);
+
+  cur_pose = cur_pose * calc->tcp_;
+
+  plotter->plotAxis(cur_pose, 0.05);
+  plotter->plotAxis(target_pose, 0.05);
+  plotter->plotArrow(cur_pose.translation(), target_pose.translation(), Eigen::Vector4d(1, 0, 1, 1), 0.005);
+}
+
+VectorXd StaticCartPoseErrCalculator::operator()(const VectorXd& dof_vals) const
+{
+  Affine3d new_pose, change_base;
+  tesseract::EnvStateConstPtr state = env_->getState();
+  change_base = state->transforms.at(manip_->getBaseLinkName());
+  assert(change_base.isApprox(
+      env_->getState(manip_->getJointNames(), dof_vals)->transforms.at(manip_->getBaseLinkName())));
+  manip_->calcFwdKin(new_pose, change_base, dof_vals, link_, *state);
+
+  Affine3d pose_err = pose_inv_ * (new_pose * tcp_);
+  Quaterniond q(pose_err.rotation());
+  VectorXd err = concat(Vector3d(q.x(), q.y(), q.z()), pose_err.translation());
+  return err;
+}
+
+void StaticCartPoseErrorPlotter::Plot(const tesseract::BasicPlottingPtr plotter, const DblVec& x)
+{
+  StaticCartPoseErrCalculator* calc = static_cast<StaticCartPoseErrCalculator*>(m_calc.get());
+  VectorXd dof_vals = getVec(x, m_vars);
   Affine3d cur_pose, change_base;
-  change_base = calc->env_->getLinkTransform(calc->manip_->getBaseLinkName());
-  calc->manip_->calcFwdKin(cur_pose, change_base, dof_vals, calc->link_);
+
+  tesseract::EnvStateConstPtr state = calc->env_->getState();
+  change_base = state->transforms.at(calc->manip_->getBaseLinkName());
+  calc->manip_->calcFwdKin(cur_pose, change_base, dof_vals, calc->link_, *state);
 
   cur_pose = cur_pose * calc->tcp_;
 
@@ -91,58 +113,54 @@ void CartPoseErrorPlotter::Plot(const tesseract::BasicPlottingPtr plotter, const
   plotter->plotArrow(cur_pose.translation(), target.translation(), Eigen::Vector4d(1, 0, 1, 1), 0.005);
 }
 
-
-#if 0
-struct CartPositionErrCalculator {
-  Vector3d pt_world_;
-  RobotAndDOFPtr manip_;
-  OR::KinBody::LinkPtr link_;
-  CartPositionErrCalculator(const Vector3d& pt_world, RobotAndDOFPtr manip, OR::KinBody::LinkPtr link) :
-  pt_world_(pt_world),
-  manip_(manip),
-  link_(link)
-  {}
-  VectorXd operator()(const VectorXd& dof_vals) {
-    manip_->SetDOFValues(toDblVec(dof_vals));
-    OR::Transform newpose = link_->GetTransform();
-    return pt_world_ - toVector3d(newpose.trans);
-  }
-};
-#endif
-
-MatrixXd CartVelJacCalculator::operator()(const VectorXd& dof_vals) const {
+MatrixXd CartVelJacCalculator::operator()(const VectorXd& dof_vals) const
+{
   int n_dof = manip_->numJoints();
-  MatrixXd out(6, 2*n_dof);
+  MatrixXd out(6, 2 * n_dof);
 
-  Affine3d change_base = env_->getLinkTransform(manip_->getBaseLinkName());
+  tesseract::EnvStateConstPtr state = env_->getState();
+  Affine3d change_base = state->transforms.at(manip_->getBaseLinkName());
+  assert(change_base.isApprox(
+      env_->getState(manip_->getJointNames(), dof_vals.topRows(n_dof))->transforms.at(manip_->getBaseLinkName())));
+  assert(change_base.isApprox(
+      env_->getState(manip_->getJointNames(), dof_vals.bottomRows(n_dof))->transforms.at(manip_->getBaseLinkName())));
 
   MatrixXd jac0, jac1;
+  jac0.resize(manip_->numJoints(), 6);
+  jac1.resize(manip_->numJoints(), 6);
 
   if (tcp_.translation().isZero())
   {
-    manip_->calcJacobian(jac0, change_base, dof_vals.topRows(n_dof), link_);
-    manip_->calcJacobian(jac1, change_base, dof_vals.bottomRows(n_dof), link_);
+    manip_->calcJacobian(jac0, change_base, dof_vals.topRows(n_dof), link_, *state);
+    manip_->calcJacobian(jac1, change_base, dof_vals.bottomRows(n_dof), link_, *state);
   }
   else
   {
-    manip_->calcJacobian(jac0, change_base, dof_vals.topRows(n_dof), link_, tcp_.translation());
-    manip_->calcJacobian(jac1, change_base, dof_vals.bottomRows(n_dof), link_, tcp_.translation());
+    manip_->calcJacobian(jac0, change_base, dof_vals.topRows(n_dof), link_, *state, tcp_.translation());
+    manip_->calcJacobian(jac1, change_base, dof_vals.bottomRows(n_dof), link_, *state, tcp_.translation());
   }
 
-  out.block(0,0,3,n_dof) = -jac0.topRows(3);
-  out.block(0,n_dof,3,n_dof) = jac1.topRows(3);
-  out.block(3,0,3,n_dof) = jac0.topRows(3);
-  out.block(3,n_dof,3,n_dof) = -jac1.topRows(3);
+  out.block(0, 0, 3, n_dof) = -jac0.topRows(3);
+  out.block(0, n_dof, 3, n_dof) = jac1.topRows(3);
+  out.block(3, 0, 3, n_dof) = jac0.topRows(3);
+  out.block(3, n_dof, 3, n_dof) = -jac1.topRows(3);
   return out;
 }
 
-VectorXd CartVelCalculator::operator()(const VectorXd& dof_vals) const {
+VectorXd CartVelCalculator::operator()(const VectorXd& dof_vals) const
+{
   int n_dof = manip_->numJoints();
   Affine3d pose0, pose1, change_base;
-  change_base = env_->getLinkTransform(manip_->getBaseLinkName());
 
-  manip_->calcFwdKin(pose0, change_base, dof_vals.topRows(n_dof), link_);
-  manip_->calcFwdKin(pose1, change_base, dof_vals.bottomRows(n_dof), link_);
+  tesseract::EnvStateConstPtr state = env_->getState();
+  change_base = state->transforms.at(manip_->getBaseLinkName());
+  assert(change_base.isApprox(
+      env_->getState(manip_->getJointNames(), dof_vals.topRows(n_dof))->transforms.at(manip_->getBaseLinkName())));
+  assert(change_base.isApprox(
+      env_->getState(manip_->getJointNames(), dof_vals.bottomRows(n_dof))->transforms.at(manip_->getBaseLinkName())));
+
+  manip_->calcFwdKin(pose0, change_base, dof_vals.topRows(n_dof), link_, *state);
+  manip_->calcFwdKin(pose1, change_base, dof_vals.bottomRows(n_dof), link_, *state);
 
   pose0 = pose0 * tcp_;
   pose1 = pose1 * tcp_;
@@ -152,7 +170,6 @@ VectorXd CartVelCalculator::operator()(const VectorXd& dof_vals) const {
   out.bottomRows(3) = (pose0.translation() - pose1.translation() - Vector3d(limit_, limit_, limit_));
   return out;
 }
-
 
 #if 0
 CartVelConstraint::CartVelConstraint(const VarVector& step0vars, const VarVector& step1vars, RobotAndDOFPtr manip, KinBody::LinkPtr link, double distlimit) :

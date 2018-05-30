@@ -39,14 +39,8 @@
 
 namespace tesseract_rviz
 {
-TrajectoryPanel::TrajectoryPanel(QWidget* parent) : Panel(parent)
-{
-}
-
-TrajectoryPanel::~TrajectoryPanel()
-{
-}
-
+TrajectoryPanel::TrajectoryPanel(QWidget* parent) : Panel(parent) {}
+TrajectoryPanel::~TrajectoryPanel() {}
 void TrajectoryPanel::onInitialize()
 {
   slider_ = new QSlider(Qt::Horizontal);
@@ -122,16 +116,8 @@ void TrajectoryPanel::pauseButton(bool pause)
   }
 }
 
-void TrajectoryPanel::setSliderPosition(int position)
-{
-  slider_->setSliderPosition(position);
-}
-
-void TrajectoryPanel::sliderValueChanged(int value)
-{
-  minimum_label_->setText(QString::number(value));
-}
-
+void TrajectoryPanel::setSliderPosition(int position) { slider_->setSliderPosition(position); }
+void TrajectoryPanel::sliderValueChanged(int value) { minimum_label_->setText(QString::number(value)); }
 void TrajectoryPanel::buttonClicked()
 {
   if (paused_)

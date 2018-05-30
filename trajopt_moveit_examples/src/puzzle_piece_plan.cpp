@@ -23,22 +23,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <ros/ros.h>
+#include <moveit/collision_plugin_loader/collision_plugin_loader.h>
 #include <moveit/planning_scene/planning_scene.h>
 #include <moveit/robot_model_loader/robot_model_loader.h>
-#include <moveit/collision_plugin_loader/collision_plugin_loader.h>
+#include <ros/ros.h>
+#include <tesseract_ros/kdl/kdl_chain_kin.h>
+#include <trajopt/plot_callback.hpp>
+#include <trajopt/problem_description.hpp>
 #include <trajopt_moveit/trajopt_moveit_env.h>
 #include <trajopt_moveit/trajopt_moveit_plotting.h>
-#include <tesseract_ros/kdl/kdl_chain_kin.h>
-#include <trajopt/problem_description.hpp>
-#include <trajopt/plot_callback.hpp>
 
-#include <trajopt_utils/logging.hpp>
 #include <trajopt_utils/config.hpp>
+#include <trajopt_utils/logging.hpp>
 
 // For loading the pose file from a local package
-#include <ros/package.h>
 #include <fstream>
+#include <ros/package.h>
 
 using namespace trajopt;
 
@@ -50,56 +50,60 @@ moveit::core::RobotModelPtr robot_model_;         /**< Robot model */
 planning_scene::PlanningScenePtr planning_scene_; /**< Planning scene for the current robot model */
 trajopt_moveit::TrajOptMoveItEnvPtr env_;         /**< Trajopt Basic Environment */
 
-
 static EigenSTL::vector_Affine3d makePuzzleToolPoses()
 {
-  EigenSTL::vector_Affine3d path; // results
-  std::ifstream indata; // input file
+  EigenSTL::vector_Affine3d path;  // results
+  std::ifstream indata;            // input file
 
-  // You could load your parts from anywhere, but we are transporting them with the git repo
+  // You could load your parts from anywhere, but we are transporting them with
+  // the git repo
   std::string filename = ros::package::getPath("trajopt_examples") + "/config/puzzle_bent.csv";
 
-  // In a non-trivial app, you'll of course want to check that calls like 'open' succeeded
+  // In a non-trivial app, you'll of course want to check that calls like 'open'
+  // succeeded
   indata.open(filename);
 
   std::string line;
   int lnum = 0;
   while (std::getline(indata, line))
   {
-      ++lnum;
-      if (lnum < 3)
+    ++lnum;
+    if (lnum < 3)
+      continue;
+
+    std::stringstream lineStream(line);
+    std::string cell;
+    Eigen::Matrix<double, 6, 1> xyzijk;
+    int i = -2;
+    while (std::getline(lineStream, cell, ','))
+    {
+      ++i;
+      if (i == -1)
         continue;
 
-      std::stringstream lineStream(line);
-      std::string  cell;
-      Eigen::Matrix<double, 6, 1> xyzijk;
-      int i = -2;
-      while (std::getline(lineStream, cell, ','))
-      {
-        ++i;
-        if (i == -1)
-          continue;
+      xyzijk(i) = std::stod(cell);
+    }
 
-        xyzijk(i) = std::stod(cell);
-      }
+    Eigen::Vector3d pos = xyzijk.head<3>();
+    pos = pos / 1000.0;  // Most things in ROS use meters as the unit of length.
+                         // Our part was exported in mm.
+    Eigen::Vector3d norm = xyzijk.tail<3>();
+    norm.normalize();
 
-      Eigen::Vector3d pos = xyzijk.head<3>();
-      pos = pos / 1000.0; // Most things in ROS use meters as the unit of length. Our part was exported in mm.
-      Eigen::Vector3d norm = xyzijk.tail<3>();
-      norm.normalize();
+    // This code computes two extra directions to turn the normal direction into
+    // a full defined frame. Descartes
+    // will search around this frame for extra poses, so the exact values do not
+    // matter as long they are valid.
+    Eigen::Vector3d temp_x = (-1 * pos).normalized();
+    Eigen::Vector3d y_axis = (norm.cross(temp_x)).normalized();
+    Eigen::Vector3d x_axis = (y_axis.cross(norm)).normalized();
+    Eigen::Affine3d pose;
+    pose.matrix().col(0).head<3>() = x_axis;
+    pose.matrix().col(1).head<3>() = y_axis;
+    pose.matrix().col(2).head<3>() = norm;
+    pose.matrix().col(3).head<3>() = pos;
 
-      // This code computes two extra directions to turn the normal direction into a full defined frame. Descartes
-      // will search around this frame for extra poses, so the exact values do not matter as long they are valid.
-      Eigen::Vector3d temp_x = (-1 * pos).normalized();
-      Eigen::Vector3d y_axis = (norm.cross(temp_x)).normalized();
-      Eigen::Vector3d x_axis = (y_axis.cross(norm)).normalized();
-      Eigen::Affine3d pose;
-      pose.matrix().col(0).head<3>() = x_axis;
-      pose.matrix().col(1).head<3>() = y_axis;
-      pose.matrix().col(2).head<3>() = norm;
-      pose.matrix().col(3).head<3>() = pos;
-
-      path.push_back(pose);
+    path.push_back(pose);
   }
   indata.close();
 
@@ -127,11 +131,10 @@ ProblemConstructionInfo cppMethod()
   // Populate Init Info
   Eigen::VectorXd start_pos = pci.env->getCurrentJointValues(pci.kin->getName());
 
-
   pci.init_info.type = InitInfo::GIVEN_TRAJ;
   pci.init_info.data = start_pos.transpose().replicate(pci.basic_info.n_steps, 1);
-//  pci.init_info.data.col(6) = VectorXd::LinSpaced(steps_, start_pos[6], end_pos[6]);
-
+  //  pci.init_info.data.col(6) = VectorXd::LinSpaced(steps_, start_pos[6],
+  //  end_pos[6]);
 
   // Populate Cost Info
   std::shared_ptr<JointVelCostInfo> joint_vel = std::shared_ptr<JointVelCostInfo>(new JointVelCostInfo);
@@ -152,16 +155,17 @@ ProblemConstructionInfo cppMethod()
   joint_jerk->term_type = TT_COST;
   pci.cost_infos.push_back(joint_jerk);
 
-//  std::shared_ptr<CollisionCostInfo> collision = std::shared_ptr<CollisionCostInfo>(new CollisionCostInfo);
-//  collision->name = "collision";
-//  collision->term_type = TT_COST;
-//  collision->continuous = false;
-//  collision->first_step = 0;
-//  collision->last_step = pci.basic_info.n_steps - 1;
-//  collision->gap = 1;
-//  collision->coeffs = DblVec(pci.basic_info.n_steps, 20.0);
-//  collision->dist_pen = DblVec(pci.basic_info.n_steps, 0.02);
-//  pci.cost_infos.push_back(collision);
+  //  std::shared_ptr<CollisionCostInfo> collision =
+  //  std::shared_ptr<CollisionCostInfo>(new CollisionCostInfo);
+  //  collision->name = "collision";
+  //  collision->term_type = TT_COST;
+  //  collision->continuous = false;
+  //  collision->first_step = 0;
+  //  collision->last_step = pci.basic_info.n_steps - 1;
+  //  collision->gap = 1;
+  //  collision->coeffs = DblVec(pci.basic_info.n_steps, 20.0);
+  //  collision->dist_pen = DblVec(pci.basic_info.n_steps, 0.02);
+  //  pci.cost_infos.push_back(collision);
 
   // Populate Constraints
   Eigen::Affine3d grinder_frame = env_->getLinkTransform("grinder_frame");
@@ -188,7 +192,6 @@ ProblemConstructionInfo cppMethod()
 
   return pci;
 }
-
 
 int main(int argc, char** argv)
 {
@@ -222,7 +225,7 @@ int main(int argc, char** argv)
   pnh.param("plotting", plotting_, plotting_);
 
   // Set the robot initial state
-  robot_state::RobotState &rs = planning_scene_->getCurrentStateNonConst();
+  robot_state::RobotState& rs = planning_scene_->getCurrentStateNonConst();
   std::map<std::string, double> ipos;
   ipos["joint_a1"] = -0.785398;
   ipos["joint_a2"] = 0.4;
@@ -260,7 +263,9 @@ int main(int argc, char** argv)
   opt.initialize(trajToDblVec(prob->GetInitTraj()));
   ros::Time tStart = ros::Time::now();
   sco::OptStatus status = opt.optimize();
-  ROS_INFO("Optimization Status: %s, Planning time: %.3f", sco::statusToString(status).c_str(), (ros::Time::now() - tStart).toSec());
+  ROS_INFO("Optimization Status: %s, Planning time: %.3f",
+           sco::statusToString(status).c_str(),
+           (ros::Time::now() - tStart).toSec());
 
   if (plotting_)
   {
@@ -273,5 +278,4 @@ int main(int argc, char** argv)
   collisions.clear();
   env_->continuousCollisionCheckTrajectory(joint_names, link_names, getTraj(opt.x(), prob->GetVars()), collisions);
   ROS_INFO("Final trajectory number of continuous collisions: %lui\n", collisions.size());
-
 }

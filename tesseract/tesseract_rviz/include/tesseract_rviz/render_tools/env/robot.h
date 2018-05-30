@@ -43,7 +43,7 @@
 #include <OgreQuaternion.h>
 #include <OgreAny.h>
 
-#include <urdf/model.h> // can be replaced later by urdf_model/types.h
+#include <urdf/model.h>  // can be replaced later by urdf_model/types.h
 
 namespace Ogre
 {
@@ -84,18 +84,21 @@ class Robot;
 class RobotLink;
 class RobotJoint;
 
-
 /**
  * \class Robot
  *
- * A helper class to draw a representation of a robot, as specified by a URDF.  Can display either the visual models of the robot,
+ * A helper class to draw a representation of a robot, as specified by a URDF.  Can display either the visual models of
+ * the robot,
  * or the collision models.
  */
 class Robot : public QObject
 {
-Q_OBJECT
+  Q_OBJECT
 public:
-  Robot( Ogre::SceneNode* root_node, rviz::DisplayContext* context, const std::string& name, rviz::Property* parent_property );
+  Robot(Ogre::SceneNode* root_node,
+        rviz::DisplayContext* context,
+        const std::string& name,
+        rviz::Property* parent_property);
   virtual ~Robot();
 
   /**
@@ -106,7 +109,11 @@ public:
    * @param collision Whether or not to load the collision representation
    * @param only_active Whether to only show active links (Used when visualizing trajectory)
    */
-  virtual void load(urdf::ModelInterfaceConstSharedPtr urdf, bool visual = true, bool collision = true, bool show_active = true, bool show_static = true);
+  virtual void load(urdf::ModelInterfaceConstSharedPtr urdf,
+                    bool visual = true,
+                    bool collision = true,
+                    bool show_active = true,
+                    bool show_static = true);
 
   /**
    * \brief Clears all data loaded from a URDF
@@ -119,19 +126,19 @@ public:
    * \brief Set the robot as a whole to be visible or not
    * @param visible Should we be visible?
    */
-  virtual void setVisible( bool visible );
+  virtual void setVisible(bool visible);
 
   /**
    * \brief Set whether the visual meshes of the robot should be visible
    * @param visible Whether the visual meshes of the robot should be visible
    */
-  void setVisualVisible( bool visible );
+  void setVisualVisible(bool visible);
 
   /**
    * \brief Set whether the collision meshes/primitives of the robot should be visible
    * @param visible Whether the collision meshes/primitives should be visible
    */
-  void setCollisionVisible( bool visible );
+  void setCollisionVisible(bool visible);
 
   /**
    * \brief Returns whether anything is visible
@@ -154,27 +161,23 @@ public:
 
   void setAlpha(float a);
   float getAlpha() { return alpha_; }
-
   RobotLink* getRootLink() { return root_link_; }
-  RobotLink* getLink( const std::string& name );
-  RobotJoint* getJoint( const std::string& name );
-  
-  typedef std::map< std::string, RobotLink* > M_NameToLink;
-  typedef std::map< std::string, RobotJoint* > M_NameToJoint;
+  RobotLink* getLink(const std::string& name);
+  RobotJoint* getJoint(const std::string& name);
+
+  typedef std::map<std::string, RobotLink*> M_NameToLink;
+  typedef std::map<std::string, RobotJoint*> M_NameToJoint;
   const M_NameToLink& getLinks() const { return links_; }
   const M_NameToJoint& getJoints() const { return joints_; }
-
   const std::string& getName() { return name_; }
-
   Ogre::SceneNode* getVisualNode() { return root_visual_node_; }
   Ogre::SceneNode* getCollisionNode() { return root_collision_node_; }
   Ogre::SceneNode* getOtherNode() { return root_other_node_; }
   Ogre::SceneManager* getSceneManager() { return scene_manager_; }
   rviz::DisplayContext* getDisplayContext() { return context_; }
-
-  virtual void setPosition( const Ogre::Vector3& position );
-  virtual void setOrientation( const Ogre::Quaternion& orientation );
-  virtual void setScale( const Ogre::Vector3& scale );
+  virtual void setPosition(const Ogre::Vector3& position);
+  virtual void setOrientation(const Ogre::Quaternion& orientation);
+  virtual void setScale(const Ogre::Vector3& scale);
   virtual const Ogre::Vector3& getPosition();
   virtual const Ogre::Quaternion& getOrientation();
 
@@ -183,30 +186,25 @@ public:
   {
   public:
     virtual ~LinkFactory() {}
+    virtual RobotLink* createLink(Robot* robot,
+                                  const urdf::LinkConstSharedPtr& link,
+                                  const std::string& parent_joint_name,
+                                  bool visual,
+                                  bool collision);
 
-    virtual RobotLink* createLink( Robot* robot,
-                                   const urdf::LinkConstSharedPtr& link,
-                                   const std::string& parent_joint_name,
-                                   bool visual,
-                                   bool collision);
+    virtual RobotLink* createLink(Robot* robot,
+                                  const tesseract::AttachableObject& ao,
+                                  const std::string& parent_joint_name,
+                                  bool visual,
+                                  bool collision);
 
-    virtual RobotLink* createLink( Robot* robot,
-                                   const tesseract::AttachableObject& ao,
-                                   const std::string& parent_joint_name,
-                                   bool visual,
-                                   bool collision);
+    virtual RobotJoint* createJoint(Robot* robot, const urdf::JointConstSharedPtr& joint);
 
-    virtual RobotJoint* createJoint( Robot* robot,
-                                     const urdf::JointConstSharedPtr& joint);
-
-    virtual RobotJoint* createJoint( Robot* robot,
-                                     const std::string &name,
-                                     const tesseract::AttachedBodyInfo& ab);
-
+    virtual RobotJoint* createJoint(Robot* robot, const std::string& name, const tesseract::AttachedBodyInfo& ab);
   };
 
   /** Call this before load() to subclass the RobotLink or RobotJoint class used in the link property.
-   * Example: 
+   * Example:
    *    class MyLinkFactory : public LinkFactory
    *    {
    *        ...  // overload createLink() and/or createJoint()
@@ -214,26 +212,22 @@ public:
    *    ...
    *    robot->setLinkFactory(new MyLinkFactory());
    */
-  void setLinkFactory(LinkFactory *link_factory);
+  void setLinkFactory(LinkFactory* link_factory);
 
-
-  enum LinkTreeStyle {
-    STYLE_LINK_LIST,         // list of all links sorted by link name
+  enum LinkTreeStyle
+  {
+    STYLE_LINK_LIST,  // list of all links sorted by link name
     STYLE_DEFAULT = STYLE_LINK_LIST,
-    STYLE_JOINT_LIST,        // list of joints sorted by joint name
-    STYLE_LINK_TREE,         // tree of links
-    STYLE_JOINT_LINK_TREE    // tree of joints with links
+    STYLE_JOINT_LIST,      // list of joints sorted by joint name
+    STYLE_LINK_TREE,       // tree of links
+    STYLE_JOINT_LINK_TREE  // tree of joints with links
   };
 
   /** Set the style of the link property. */
   void setLinkTreeStyle(LinkTreeStyle style);
 
   /** can be used to change the name, reparent, or add extra properties to the list of links */
-  rviz::Property *getLinkTreeProperty()
-  {
-    return link_tree_;
-  }
-
+  rviz::Property* getLinkTreeProperty() { return link_tree_; }
   // set joint checkboxes and All Links Enabled checkbox based on current link enables.
   void calculateJointCheckboxes();
 
@@ -257,8 +251,8 @@ protected:
   void useDetailProperty(bool use_detail);
 
   /** used by setLinkTreeStyle() to recursively build link & joint tree. */
-  void addLinkToLinkTree(LinkTreeStyle style, rviz::Property *parent, RobotLink *link);
-  void addJointToLinkTree(LinkTreeStyle style, rviz::Property *parent, RobotJoint *joint);
+  void addLinkToLinkTree(LinkTreeStyle style, rviz::Property* parent, RobotLink* link);
+  void addJointToLinkTree(LinkTreeStyle style, rviz::Property* parent, RobotJoint* joint);
 
   // set the value of the EnableAllLinks property without affecting child links/joints.
   void setEnableAllLinksCheckbox(QVariant val);
@@ -273,24 +267,24 @@ protected:
 
   urdf::ModelInterfaceConstSharedPtr urdf_model_;
 
-  M_NameToLink links_;                      ///< Map of name to link info, stores all loaded links.
-  M_NameToJoint joints_;                    ///< Map of name to joint info, stores all loaded joints.
-  RobotLink *root_link_;
-  std::vector<std::string> active_links_;   ///< This is a list of active links
-  bool load_visual_;                        ///< Indicate if visual geometries should be loaded
-  bool load_collision_;                     ///< Indicate if collision geometries should be loaded
-  bool load_active_;                        ///< Indicate if only active link geometries should be loaded
-  bool load_static_;                        ///< Indicate if only static link geometries should be loaded
+  M_NameToLink links_;    ///< Map of name to link info, stores all loaded links.
+  M_NameToJoint joints_;  ///< Map of name to joint info, stores all loaded joints.
+  RobotLink* root_link_;
+  std::vector<std::string> active_links_;  ///< This is a list of active links
+  bool load_visual_;                       ///< Indicate if visual geometries should be loaded
+  bool load_collision_;                    ///< Indicate if collision geometries should be loaded
+  bool load_active_;                       ///< Indicate if only active link geometries should be loaded
+  bool load_static_;                       ///< Indicate if only static link geometries should be loaded
 
-  LinkFactory *link_factory_;               ///< factory for generating links and joints
+  LinkFactory* link_factory_;  ///< factory for generating links and joints
 
-  Ogre::SceneNode* root_visual_node_;       ///< Node all our visual nodes are children of
-  Ogre::SceneNode* root_collision_node_;    ///< Node all our collision nodes are children of
+  Ogre::SceneNode* root_visual_node_;     ///< Node all our visual nodes are children of
+  Ogre::SceneNode* root_collision_node_;  ///< Node all our collision nodes are children of
   Ogre::SceneNode* root_other_node_;
 
-  bool visible_;                            ///< Should we show anything at all? (affects visual, collision, axes, and trails)
-  bool visual_visible_;                     ///< Should we show the visual representation?
-  bool collision_visible_;                  ///< Should we show the collision representation?
+  bool visible_;            ///< Should we show anything at all? (affects visual, collision, axes, and trails)
+  bool visual_visible_;     ///< Should we show the visual representation?
+  bool collision_visible_;  ///< Should we show the collision representation?
 
   rviz::DisplayContext* context_;
   rviz::Property* link_tree_;
@@ -300,9 +294,9 @@ protected:
   rviz::BoolProperty* expand_joint_details_;
   rviz::BoolProperty* enable_all_links_;
   std::map<LinkTreeStyle, std::string> style_name_map_;
-  
-  bool doing_set_checkbox_;   // used only inside setEnableAllLinksCheckbox()
-  bool robot_loaded_;         // true after robot model is loaded.
+
+  bool doing_set_checkbox_;  // used only inside setEnableAllLinksCheckbox()
+  bool robot_loaded_;        // true after robot model is loaded.
 
   // true inside changedEnableAllLinks().  Prevents calculateJointCheckboxes()
   // from recalculating over and over.
@@ -312,6 +306,6 @@ protected:
   float alpha_;
 };
 
-} // namespace tesseract_rviz
+}  // namespace tesseract_rviz
 
 #endif /* TESSERACT_RVIZ_ROBOT_H_ */

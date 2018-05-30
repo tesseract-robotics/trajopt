@@ -7,18 +7,16 @@
 
 namespace tesseract
 {
-
 class ContactCheckerBase
 {
 public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-
   /**
    * @brief Perform a discrete check using the current state and request
    * @param contacts A list of contact results.
    */
-  virtual void calcDistancesDiscrete(ContactResultMap &contacts) = 0;
+  virtual void calcDistancesDiscrete(ContactResultMap& contacts) = 0;
 
   /**
    * @brief Calculate distance information for all links in transforms (Discrete Check)
@@ -29,7 +27,9 @@ public:
    * @param transforms The transforms for objects to check collision.
    * @param contacts   A list of contact results.
    */
-  virtual void calcDistancesDiscrete(const ContactRequest &req, const TransformMap& transforms, ContactResultMap &contacts) const = 0;
+  virtual void calcDistancesDiscrete(const ContactRequest& req,
+                                     const TransformMap& transforms,
+                                     ContactResultMap& contacts) const = 0;
 
   /**
    * @brief Calculate distance information for all links in transforms1/transforms2 (Continuous Check)
@@ -41,13 +41,16 @@ public:
    * @param transforms2 The transforms for every object at end
    * @param contacts    A list of contact results.
    */
-  virtual void calcDistancesContinuous(const ContactRequest &req, const TransformMap& transforms1, const TransformMap& transforms2, ContactResultMap &contacts) const = 0;
+  virtual void calcDistancesContinuous(const ContactRequest& req,
+                                       const TransformMap& transforms1,
+                                       const TransformMap& transforms2,
+                                       ContactResultMap& contacts) const = 0;
 
   /**
    * @brief Perform a discrete collision check using the current state and request
    * @param contacts A list of contact results.
    */
-  virtual void calcCollisionsDiscrete(ContactResultMap &contacts) = 0;
+  virtual void calcCollisionsDiscrete(ContactResultMap& contacts) = 0;
 
   /**
    * @brief Calculate collision information for all links in transforms (Discrete Check)
@@ -58,7 +61,9 @@ public:
    * @param transforms The transforms for every object
    * @param contacts   A list of contact results.
    */
-  virtual void calcCollisionsDiscrete(const ContactRequest &req, const TransformMap& transforms, ContactResultMap &contacts) const = 0;
+  virtual void calcCollisionsDiscrete(const ContactRequest& req,
+                                      const TransformMap& transforms,
+                                      ContactResultMap& contacts) const = 0;
 
   /**
    * @brief Calculate collision information for all links in transforms1/transfroms2 (Continuous Check)
@@ -70,7 +75,10 @@ public:
    * @param transforms2 The transforms for every object at end
    * @param contacts    A list of contact results.
    */
-  virtual void calcCollisionsContinuous(const ContactRequest &req, const TransformMap& transforms1, const TransformMap& transforms2, ContactResultMap &contacts) const = 0;
+  virtual void calcCollisionsContinuous(const ContactRequest& req,
+                                        const TransformMap& transforms1,
+                                        const TransformMap& transforms2,
+                                        ContactResultMap& contacts) const = 0;
 
   /**
    * @brief Add a object to the checker
@@ -78,7 +86,8 @@ public:
    * @param mask_id         User defined id which gets stored in the results structure.
    * @param shapes          A vector of shapes that make up the collision object.
    * @param shape_poses     A vector of poses for each shape, must be same length as shapes
-   * @param shape_types     A vector of shape types for encode the collision object. If the vector is of length 1 it is used for all shapes.
+   * @param shape_types     A vector of shape types for encode the collision object. If the vector is of length 1 it is
+   * used for all shapes.
    * @param conversion_mode A int identifying a conversion mode for the object. (ex. convert meshes to convex_hulls)
    * @return true if successfully added, otherwise false.
    */
@@ -122,17 +131,15 @@ public:
    * @brief Set the active contact request information
    * @param req ContactRequest information
    */
-  virtual void setContactRequest(const ContactRequest &req) = 0;
+  virtual void setContactRequest(const ContactRequest& req) = 0;
 
   /**
    * @brief Get the active contact request information
    * @return Active contact request information
    */
   virtual const ContactRequest& getContactRequest() const = 0;
-
 };
 typedef std::shared_ptr<ContactCheckerBase> ContactCheckerBasePtr;
 typedef std::shared_ptr<const ContactCheckerBase> ContactCheckerBaseConstPtr;
-
 }
-#endif // TESSERACT_COLLISION_CONTACT_CHECKER_BASE_H
+#endif  // TESSERACT_COLLISION_CONTACT_CHECKER_BASE_H

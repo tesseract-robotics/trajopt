@@ -1,40 +1,40 @@
-#include <gtest/gtest.h>
-#include <trajopt_utils/stl_to_string.hpp>
-#include <trajopt/common.hpp>
-#include <trajopt/problem_description.hpp>
-#include <trajopt_sco/optimizers.hpp>
 #include <ctime>
-#include <trajopt_utils/eigen_conversions.hpp>
-#include <trajopt_utils/clock.hpp>
-#include <trajopt_utils/config.hpp>
-#include <trajopt_test_utils.hpp>
+#include <gtest/gtest.h>
 #include <tesseract_ros/kdl/kdl_chain_kin.h>
+#include <trajopt/common.hpp>
+#include <trajopt/plot_callback.hpp>
+#include <trajopt/problem_description.hpp>
 #include <trajopt_moveit/trajopt_moveit_env.h>
 #include <trajopt_moveit/trajopt_moveit_plotting.h>
-#include <trajopt/plot_callback.hpp>
+#include <trajopt_sco/optimizers.hpp>
+#include <trajopt_test_utils.hpp>
+#include <trajopt_utils/clock.hpp>
+#include <trajopt_utils/config.hpp>
+#include <trajopt_utils/eigen_conversions.hpp>
 #include <trajopt_utils/logging.hpp>
+#include <trajopt_utils/stl_to_string.hpp>
 
-#include <ros/ros.h>
-#include <moveit/robot_model_loader/robot_model_loader.h>
-#include <moveit/robot_model/joint_model_group.h>
 #include <moveit/collision_plugin_loader/collision_plugin_loader.h>
+#include <moveit/robot_model/joint_model_group.h>
+#include <moveit/robot_model_loader/robot_model_loader.h>
 #include <ros/package.h>
+#include <ros/ros.h>
 
 using namespace trajopt;
 using namespace std;
 using namespace util;
 
-
 const std::string ROBOT_DESCRIPTION_PARAM = "robot_description"; /**< Default ROS parameter for robot description */
-bool plotting = false; /**< Enable plotting */
+bool plotting = false;                                           /**< Enable plotting */
 
-class PlanningTest : public testing::TestWithParam<const char*> {
+class PlanningTest : public testing::TestWithParam<const char*>
+{
 public:
-  robot_model_loader::RobotModelLoaderPtr loader_;  /**< Used to load the robot model */
-  moveit::core::RobotModelPtr robot_model_;         /**< Robot model */
-  planning_scene::PlanningScenePtr planning_scene_; /**< Planning scene for the current robot model */
-  trajopt_moveit::TrajOptMoveItEnvPtr env_;         /**< Trajopt Basic Environment */
-  trajopt_moveit::TrajoptMoveItPlottingPtr plotter_;/**< Trajopt Plotter */
+  robot_model_loader::RobotModelLoaderPtr loader_;   /**< Used to load the robot model */
+  moveit::core::RobotModelPtr robot_model_;          /**< Robot model */
+  planning_scene::PlanningScenePtr planning_scene_;  /**< Planning scene for the current robot model */
+  trajopt_moveit::TrajOptMoveItEnvPtr env_;          /**< Trajopt Basic Environment */
+  trajopt_moveit::TrajoptMoveItPlottingPtr plotter_; /**< Trajopt Plotter */
 
   virtual void SetUp()
   {
@@ -43,12 +43,12 @@ public:
     env_ = trajopt_moveit::TrajOptMoveItEnvPtr(new trajopt_moveit::TrajOptMoveItEnv);
     ASSERT_TRUE(robot_model_ != nullptr);
     ASSERT_NO_THROW(planning_scene_.reset(new planning_scene::PlanningScene(robot_model_)));
-    robot_state::RobotState &rs = planning_scene_->getCurrentStateNonConst();
+    robot_state::RobotState& rs = planning_scene_->getCurrentStateNonConst();
     std::vector<double> val;
     val.push_back(0);
     rs.setJointPositions("torso_lift_joint", val);
 
-    //Now assign collision detection plugin
+    // Now assign collision detection plugin
     collision_detection::CollisionPluginLoader cd_loader;
     std::string class_name = "BULLET";
     ASSERT_TRUE(cd_loader.activate(class_name, planning_scene_, true));
@@ -60,7 +60,6 @@ public:
     gLogLevel = util::LevelError;
   }
 };
-
 
 TEST_F(PlanningTest, numerical_ik1)
 {
@@ -100,7 +99,7 @@ TEST_F(PlanningTest, numerical_ik1)
 
   ROS_DEBUG_STREAM("Final Position: " << final_pose.translation().transpose());
   ROS_DEBUG_STREAM("Final Vars: " << toVectorXd(opt.x()).transpose());
-  ROS_DEBUG("planning time: %.3f", GetClock()-tStart);
+  ROS_DEBUG("planning time: %.3f", GetClock() - tStart);
 }
 
 TEST_F(PlanningTest, arm_around_table)
@@ -109,7 +108,7 @@ TEST_F(PlanningTest, arm_around_table)
 
   std::string package_path = ros::package::getPath("trajopt_test_support");
   Json::Value root = readJsonFile(package_path + "/config/arm_around_table.json");
-  robot_state::RobotState &rs = planning_scene_->getCurrentStateNonConst();
+  robot_state::RobotState& rs = planning_scene_->getCurrentStateNonConst();
   std::map<std::string, double> ipos;
   ipos["torso_lift_joint"] = 0;
   ipos["r_shoulder_pan_joint"] = -1.832;
@@ -142,7 +141,7 @@ TEST_F(PlanningTest, arm_around_table)
   opt.initialize(trajToDblVec(prob->GetInitTraj()));
   double tStart = GetClock();
   opt.optimize();
-  ROS_DEBUG("planning time: %.3f", GetClock()-tStart);
+  ROS_DEBUG("planning time: %.3f", GetClock() - tStart);
 
   if (plotting)
   {
@@ -154,7 +153,6 @@ TEST_F(PlanningTest, arm_around_table)
   ROS_DEBUG("Final trajectory number of continuous collisions: %lui\n", collisions.size());
   ASSERT_EQ(collisions.size(), 0);
 }
-
 
 int main(int argc, char** argv)
 {

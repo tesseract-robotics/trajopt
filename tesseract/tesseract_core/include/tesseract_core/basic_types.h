@@ -38,7 +38,6 @@
 
 namespace tesseract
 {
-
 typedef Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> TrajArray;
 typedef std::vector<Eigen::Affine3d, Eigen::aligned_allocator<Eigen::Affine3d> > vector_Affine3d;
 typedef std::map<std::string, Eigen::Affine3d> TransformMap;
@@ -51,7 +50,9 @@ struct AllowedCollisionMatrix
    * @param obj2 Collision object name
    * @param reason The reason for disabling collison
    */
-  virtual void addAllowedCollision(const std::string &link_name1, const std::string &link_name2, const std::string &reason)
+  virtual void addAllowedCollision(const std::string& link_name1,
+                                   const std::string& link_name2,
+                                   const std::string& reason)
   {
     lookup_table_[link_name1 + link_name2] = reason;
     lookup_table_[link_name2 + link_name1] = reason;
@@ -62,7 +63,7 @@ struct AllowedCollisionMatrix
    * @param obj1 Collision object name
    * @param obj2 Collision object name
    */
-  virtual void removeAllowedCollision(const std::string &link_name1, const std::string &link_name2)
+  virtual void removeAllowedCollision(const std::string& link_name1, const std::string& link_name2)
   {
     lookup_table_.erase(link_name1 + link_name2);
     lookup_table_.erase(link_name2 + link_name1);
@@ -74,7 +75,7 @@ struct AllowedCollisionMatrix
    * @param link_name2 Second link anme
    * @return True if allowed to be in collision, otherwise false
    */
-  virtual bool isCollisionAllowed(const std::string &link_name1, const std::string &link_name2) const
+  virtual bool isCollisionAllowed(const std::string& link_name1, const std::string& link_name2) const
   {
     return (lookup_table_.find(link_name1 + link_name2) != lookup_table_.end());
   }
@@ -96,10 +97,12 @@ namespace CollisionObjectTypes
 {
 enum CollisionObjectType
 {
-  UseShapeType = 0,        /**< @brief Infer the type from the type specified in the shapes::Shape class */
+  UseShapeType = 0, /**< @brief Infer the type from the type specified in the shapes::Shape class */
 
   // These convert the meshes to custom collision objects
-  ConvexHull = 1,  /**< @brief Use the mesh in shapes::Shape but make it a convex hulls collision object. (if not convex it will be converted) */
+  ConvexHull =
+      1, /**< @brief Use the mesh in shapes::Shape but make it a convex hulls collision object. (if not convex it will
+            be converted) */
   MultiSphere = 2, /**< @brief Use the mesh and represent it by multiple spheres collision object */
   SDF = 3          /**< @brief Use the mesh and rpresent it by a signed distance fields collision object */
 };
@@ -111,8 +114,8 @@ namespace BodyTypes
 {
 enum BodyType
 {
-  ROBOT_LINK = 0,     /**< @brief These are links at the creation of the environment */
-  ROBOT_ATTACHED = 1  /**< @brief These are links that are added after initial creation */
+  ROBOT_LINK = 0,    /**< @brief These are links at the creation of the environment */
+  ROBOT_ATTACHED = 1 /**< @brief These are links that are added after initial creation */
 };
 }
 typedef BodyTypes::BodyType BodyType;
@@ -134,7 +137,7 @@ namespace ContactRequestTypes
 enum ContactRequestType
 {
   SINGLE, /**< Return the global minimum for a pair of objects */
-  ALL  ,  /**< Return all contacts for a pair of objects */
+  ALL,    /**< Return all contacts for a pair of objects */
   LIMITED /**< Return limited set of contacts for a pair of objects */
 };
 }
@@ -143,8 +146,8 @@ typedef ContactRequestTypes::ContactRequestType ContactRequestType;
 /** @brief The ContactRequest struct */
 struct ContactRequest
 {
-  ContactRequestType type;             /**< The type of request */
-  double contact_distance;             /**< The maximum distance between two objects for which distance data should be calculated */
+  ContactRequestType type; /**< The type of request */
+  double contact_distance; /**< The maximum distance between two objects for which distance data should be calculated */
   std::vector<std::string> link_names; /**< Name of the links to calculate distance data for. */
   IsContactAllowedFn isContactAllowed; /**< The allowed collision matrix */
 
@@ -163,7 +166,6 @@ struct ContactResult
   ContinouseCollisionType cc_type;
 
   ContactResult() { clear(); }
-
   /// Clear structure data
   void clear()
   {
@@ -184,8 +186,8 @@ struct ContactResult
 typedef std::vector<ContactResult> ContactResultVector;
 typedef std::map<std::pair<std::string, std::string>, ContactResultVector> ContactResultMap;
 
-static inline
-void moveContactResultsMapToContactResultsVector(ContactResultMap& contact_map, ContactResultVector &contact_vector)
+static inline void moveContactResultsMapToContactResultsVector(ContactResultMap& contact_map,
+                                                               ContactResultVector& contact_vector)
 {
   std::size_t size = 0;
   for (const auto& contact : contact_map)
@@ -209,33 +211,34 @@ typedef std::shared_ptr<const EnvState> EnvStateConstPtr;
 struct AttachedBodyInfo
 {
   AttachedBodyInfo() : transform(Eigen::Affine3d::Identity()) {}
-
   std::string object_name;              /**< @brief The name of the AttachableObject being used */
   std::string parent_link_name;         /**< @brief The name of the link to attach the body */
   Eigen::Affine3d transform;            /**< @brief The transform between parent link and object */
-  std::vector<std::string> touch_links; /**< @brief The names of links which the attached body is allowed to be in contact with */
+  std::vector<std::string> touch_links; /**< @brief The names of links which the attached body is allowed to be in
+                                           contact with */
 };
 
 /** @brief Contains visual geometry data */
 struct VisualObjectGeometry
 {
-  std::vector<shapes::ShapeConstPtr> shapes;  /**< @brief The shape */
-  EigenSTL::vector_Affine3d shape_poses;      /**< @brief The pose of the shape */
-  EigenSTL::vector_Vector4d shape_colors;     /**< @brief (Optional) The shape color (R, G, B, A) */
+  std::vector<shapes::ShapeConstPtr> shapes; /**< @brief The shape */
+  EigenSTL::vector_Affine3d shape_poses;     /**< @brief The pose of the shape */
+  EigenSTL::vector_Vector4d shape_colors;    /**< @brief (Optional) The shape color (R, G, B, A) */
 };
 
 /** @brief Contains visual geometry data */
 struct CollisionObjectGeometry : public VisualObjectGeometry
 {
-  CollisionObjectTypeVector collision_object_types;      /**< @brief The collision object type. This is used by the collision libraries */
+  CollisionObjectTypeVector
+      collision_object_types; /**< @brief The collision object type. This is used by the collision libraries */
 };
 
 /** @brief Contains data about an attachable object */
 struct AttachableObject
 {
-  std::string name;                   /**< @brief The name of the attachable object (aka. link name and must be unique) */
-  VisualObjectGeometry visual;        /**< @brief The objects visual geometry */
-  CollisionObjectGeometry collision;  /**< @brief The objects collision geometry */
+  std::string name;            /**< @brief The name of the attachable object (aka. link name and must be unique) */
+  VisualObjectGeometry visual; /**< @brief The objects visual geometry */
+  CollisionObjectGeometry collision; /**< @brief The objects collision geometry */
 };
 typedef std::shared_ptr<AttachableObject> AttachableObjectPtr;
 typedef std::shared_ptr<const AttachableObject> AttachableObjectConstPtr;
@@ -251,7 +254,6 @@ typedef std::shared_ptr<ObjectColorMap> ObjectColorMapPtr;
 typedef std::shared_ptr<const ObjectColorMap> ObjectColorMapConstPtr;
 typedef std::unordered_map<std::string, AttachedBodyInfo> AttachedBodyInfoMap;
 typedef std::unordered_map<std::string, AttachableObjectConstPtr> AttachableObjectConstPtrMap;
-
 }
 
-#endif // TESSERACT_CORE_BASIC_TYPES_H
+#endif  // TESSERACT_CORE_BASIC_TYPES_H

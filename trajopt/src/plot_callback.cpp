@@ -1,18 +1,22 @@
-#include <trajopt/common.hpp>
-#include <trajopt/problem_description.hpp>
-#include <trajopt_utils/eigen_conversions.hpp>
-#include <tesseract_core/basic_kin.h>
-#include <tesseract_core/basic_env.h>
-#include <trajopt/plot_callback.hpp>
 #include <functional>
 #include <set>
+#include <tesseract_core/basic_env.h>
+#include <tesseract_core/basic_kin.h>
+#include <trajopt/common.hpp>
+#include <trajopt/plot_callback.hpp>
+#include <trajopt/problem_description.hpp>
+#include <trajopt_utils/eigen_conversions.hpp>
 
 using namespace util;
 using namespace std;
 namespace trajopt
 {
-
-void PlotCosts(const tesseract::BasicPlottingPtr plotter, const std::vector<std::string>& joint_names, vector<CostPtr>& costs, vector<ConstraintPtr>& cnts, const VarArray& vars, const DblVec& x)
+void PlotCosts(const tesseract::BasicPlottingPtr plotter,
+               const std::vector<std::string>& joint_names,
+               vector<CostPtr>& costs,
+               vector<ConstraintPtr>& cnts,
+               const VarArray& vars,
+               const DblVec& x)
 {
   plotter->clear();
 
@@ -38,7 +42,6 @@ void PlotCosts(const tesseract::BasicPlottingPtr plotter, const std::vector<std:
 
 Optimizer::Callback PlotCallback(TrajOptProb& prob, const tesseract::BasicPlottingPtr plotter)
 {
-
   vector<ConstraintPtr> cnts = prob.getConstraints();
   return std::bind(&PlotCosts,
                    plotter,
@@ -48,5 +51,4 @@ Optimizer::Callback PlotCallback(TrajOptProb& prob, const tesseract::BasicPlotti
                    std::ref(prob.GetVars()),
                    std::placeholders::_2);
 }
-
 }

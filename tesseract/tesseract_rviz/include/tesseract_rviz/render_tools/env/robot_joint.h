@@ -81,7 +81,6 @@ class AttachedBodyInfo;
 
 namespace tesseract_rviz
 {
-
 class Robot;
 class RobotLinkSelectionHandler;
 class RobotJoint;
@@ -90,17 +89,15 @@ class RobotJoint;
  * \struct RobotJoint
  * \brief Contains any data we need from a joint in the robot.
  */
-class RobotJoint: public QObject
+class RobotJoint : public QObject
 {
-Q_OBJECT
+  Q_OBJECT
 public:
-  RobotJoint( Robot* robot, const urdf::JointConstSharedPtr& joint );
-  RobotJoint( Robot* robot, const std::string& name, const tesseract::AttachedBodyInfo& ab);
+  RobotJoint(Robot* robot, const urdf::JointConstSharedPtr& joint);
+  RobotJoint(Robot* robot, const std::string& name, const tesseract::AttachedBodyInfo& ab);
   virtual ~RobotJoint();
 
-
-  void setTransforms(const Ogre::Vector3& parent_link_position,
-                     const Ogre::Quaternion& parent_link_orientation);
+  void setTransforms(const Ogre::Vector3& parent_link_position, const Ogre::Quaternion& parent_link_orientation);
 
   const std::string& getName() const { return name_; }
   const std::string& getParentLinkName() const { return parent_link_name_; }
@@ -117,9 +114,7 @@ public:
   Ogre::Quaternion getOrientation();
 
   void setRobotAlpha(float /*a*/) {}
-
   bool hasDescendentLinksWithGeometry() const { return has_decendent_links_with_geometry_; }
-
   // place subproperties as children of details_ or joint_property_
   void useDetailProperty(bool use_detail);
 
@@ -134,11 +129,10 @@ public:
 
   // set checkboxes based on state of descendent link enables
   // Should only be called by Robot::calculateJointCheckboxes()
-  void calculateJointCheckboxesRecursive(
-      int& links_with_geom,             // returns # of children with geometry
-      int& links_with_geom_checked,     // returns # of enabled children with geometry
-      int& links_with_geom_unchecked);  // returns # of disabled children with geometry
-
+  void calculateJointCheckboxesRecursive(int& links_with_geom,          // returns # of children with geometry
+                                         int& links_with_geom_checked,  // returns # of enabled children with geometry
+                                         int& links_with_geom_unchecked);  // returns # of disabled children with
+                                                                           // geometry
 
 private Q_SLOTS:
   void updateAxes();
@@ -152,19 +146,17 @@ private:
   bool styleIsTree() const;
 
   // determine the state of child link(s)
-  void getChildLinkState(
-      int& links_with_geom,             // returns # of children with geometry
-      int& links_with_geom_checked,     // returns # of enabled children with geometry
-      int& links_with_geom_unchecked,   // returns # of disabled children with geometry
-      bool recursive) const;            // True: all descendant links.  False: just single child link.
+  void getChildLinkState(int& links_with_geom,            // returns # of children with geometry
+                         int& links_with_geom_checked,    // returns # of enabled children with geometry
+                         int& links_with_geom_unchecked,  // returns # of disabled children with geometry
+                         bool recursive) const;           // True: all descendant links.  False: just single child link.
 
   // set the value of the enable checkbox without touching child joints/links
   void setJointCheckbox(QVariant val);
 
-
 protected:
   Robot* robot_;
-  std::string name_;                          ///< Name of this joint
+  std::string name_;  ///< Name of this joint
   std::string parent_link_name_;
   std::string child_link_name_;
 
@@ -186,12 +178,12 @@ private:
   Ogre::Quaternion joint_origin_rot_;
   bool has_decendent_links_with_geometry_;
 
-  bool doing_set_checkbox_;   // prevents updateChildVisibility() from  touching children
+  bool doing_set_checkbox_;  // prevents updateChildVisibility() from  touching children
 
   rviz::Axes* axes_;
   rviz::Arrow* axis_;
 };
 
-} // namespace tesseract_rviz
+}  // namespace tesseract_rviz
 
-#endif // TESSERACT_RVIZ_ROBOT_LINK_H
+#endif  // TESSERACT_RVIZ_ROBOT_LINK_H

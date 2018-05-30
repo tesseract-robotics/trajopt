@@ -1,15 +1,17 @@
 #pragma once
+#include <tesseract_core/basic_env.h>
+#include <tesseract_core/basic_kin.h>
 #include <trajopt/common.hpp>
 #include <trajopt/json_marshal.hpp>
-#include <tesseract_core/basic_kin.h>
-#include <tesseract_core/basic_env.h>
 #include <trajopt_sco/optimizers.hpp>
 
+namespace sco
+{
+struct OptResults;
+}
 
-namespace sco{struct OptResults;}
-
-namespace trajopt {
-
+namespace trajopt
+{
 using namespace json_marshal;
 using namespace Json;
 
@@ -35,12 +37,12 @@ enum TermType
   TT_CNT
 };
 
-#define DEFINE_CREATE(classname) \
-  static TermInfoPtr create() {\
-    TermInfoPtr out(new classname());\
-    return out;\
+#define DEFINE_CREATE(classname)                                                                                       \
+  static TermInfoPtr create()                                                                                          \
+  {                                                                                                                    \
+    TermInfoPtr out(new classname());                                                                                  \
+    return out;                                                                                                        \
   }
-
 
 /**
  * Holds all the data for a trajectory optimization problem
@@ -50,20 +52,17 @@ class TRAJOPT_API TrajOptProb : public OptProb
 {
 public:
   TrajOptProb();
-  TrajOptProb(int n_steps,const ProblemConstructionInfo &pci);
+  TrajOptProb(int n_steps, const ProblemConstructionInfo& pci);
   ~TrajOptProb() {}
-
   VarVector GetVarRow(int i) { return m_traj_vars.row(i); }
-  Var& GetVar(int i, int j) { return m_traj_vars.at(i,j); }
-  VarArray& GetVars() { return m_traj_vars;}
-  int GetNumSteps() {return m_traj_vars.rows();}
-  int GetNumDOF() {return m_traj_vars.cols();}
-  tesseract::BasicKinConstPtr GetKin() {return m_kin;}
-  tesseract::BasicEnvConstPtr GetEnv() {return m_env;}
-
-  void SetInitTraj(const TrajArray& x) {m_init_traj = x;}
-  TrajArray GetInitTraj() {return m_init_traj;}
-
+  Var& GetVar(int i, int j) { return m_traj_vars.at(i, j); }
+  VarArray& GetVars() { return m_traj_vars; }
+  int GetNumSteps() { return m_traj_vars.rows(); }
+  int GetNumDOF() { return m_traj_vars.cols(); }
+  tesseract::BasicKinConstPtr GetKin() { return m_kin; }
+  tesseract::BasicEnvConstPtr GetEnv() { return m_env; }
+  void SetInitTraj(const TrajArray& x) { m_init_traj = x; }
+  TrajArray GetInitTraj() { return m_init_traj; }
   friend TrajOptProbPtr ConstructProblem(const ProblemConstructionInfo&);
 
 private:
@@ -73,7 +72,8 @@ private:
   TrajArray m_init_traj;
 };
 
-//void TRAJOPT_API SetupPlotting(TrajOptProb& prob, Optimizer& opt); TODO: Levi Fix
+// void TRAJOPT_API SetupPlotting(TrajOptProb& prob, Optimizer& opt); TODO: Levi
+// Fix
 
 struct TRAJOPT_API TrajOptResult
 {
@@ -88,8 +88,8 @@ struct BasicInfo
   bool start_fixed;
   int n_steps;
   string manip;
-  string robot; // optional
-  IntVec dofs_fixed; // optional
+  string robot;       // optional
+  IntVec dofs_fixed;  // optional
 };
 
 /**
@@ -106,21 +106,24 @@ struct InitInfo
   TrajArray data;
 };
 
-
-struct TRAJOPT_API MakesCost {};
-struct TRAJOPT_API MakesConstraint {};
+struct TRAJOPT_API MakesCost
+{
+};
+struct TRAJOPT_API MakesConstraint
+{
+};
 
 /**
-When cost or constraint element of JSON doc is read, one of these guys gets constructed to hold the parameters.
+When cost or constraint element of JSON doc is read, one of these guys gets
+constructed to hold the parameters.
 Then it later gets converted to a Cost object by the hatch method
 */
-struct TRAJOPT_API TermInfo  {
-
-  string name; // xxx is this used?
+struct TRAJOPT_API TermInfo
+{
+  string name;  // xxx is this used?
   TermType term_type;
-  virtual void fromJson(ProblemConstructionInfo &pci, const Json::Value& v)=0;
+  virtual void fromJson(ProblemConstructionInfo& pci, const Json::Value& v) = 0;
   virtual void hatch(TrajOptProb& prob) = 0;
-
 
   static TermInfoPtr fromName(const string& type);
 
@@ -162,12 +165,26 @@ private:
   void readInitInfo(const Value& v);
 };
 
-/**
- \brief pose error
+/** @brief This is used when the goal frame is not fixed in space */
+struct PoseCostInfo : public TermInfo, public MakesCost, public MakesConstraint
+{
+  int timestep;
+  std::string target;
+  Vector3d pos_coeffs, rot_coeffs;
 
- See trajopt::PoseTermInfo
- */
-struct PoseCostInfo : public TermInfo, public MakesCost, public MakesConstraint {
+  std::string link;
+  Eigen::Affine3d tcp;
+
+  PoseCostInfo();
+
+  void fromJson(ProblemConstructionInfo& pci, const Value& v);
+  void hatch(TrajOptProb& prob);
+  DEFINE_CREATE(PoseCostInfo)
+};
+
+/** @brief This cost is used when the goal frame is fixed in space */
+struct StaticPoseCostInfo : public TermInfo, public MakesCost, public MakesConstraint
+{
   int timestep;
   Vector3d xyz;
   Vector4d wxyz;
@@ -176,13 +193,12 @@ struct PoseCostInfo : public TermInfo, public MakesCost, public MakesConstraint 
   std::string link;
   Eigen::Affine3d tcp;
 
-  PoseCostInfo();
+  StaticPoseCostInfo();
 
-  void fromJson(ProblemConstructionInfo &pci, const Value& v);
+  void fromJson(ProblemConstructionInfo& pci, const Value& v);
   void hatch(TrajOptProb& prob);
-  DEFINE_CREATE(PoseCostInfo)
+  DEFINE_CREATE(StaticPoseCostInfo)
 };
-
 
 /**
   \brief Joint space position cost
@@ -192,26 +208,27 @@ struct PoseCostInfo : public TermInfo, public MakesCost, public MakesConstraint 
   \f}
   where \f$i\f$ indexes over dof and \f$c_i\f$ are coeffs
  */
-struct JointPosCostInfo : public TermInfo, public MakesCost {
+struct JointPosCostInfo : public TermInfo, public MakesCost
+{
   DblVec vals, coeffs;
   int timestep;
-  void fromJson(ProblemConstructionInfo &pci, const Value& v);
+  void fromJson(ProblemConstructionInfo& pci, const Value& v);
   void hatch(TrajOptProb& prob);
   DEFINE_CREATE(JointPosCostInfo)
 };
 
-
-
 /**
  \brief Motion constraint on link
 
- Constrains the change in position of the link in each timestep to be less than max_displacement
+ Constrains the change in position of the link in each timestep to be less than
+ max_displacement
  */
-struct CartVelCntInfo : public TermInfo, public MakesConstraint {
+struct CartVelCntInfo : public TermInfo, public MakesConstraint
+{
   int first_step, last_step;
-  std::string link; //LEVI This may need to be moveit LinkModel
+  std::string link;  // LEVI This may need to be moveit LinkModel
   double max_displacement;
-  void fromJson(ProblemConstructionInfo &pci, const Value& v);
+  void fromJson(ProblemConstructionInfo& pci, const Value& v);
   void hatch(TrajOptProb& prob);
   DEFINE_CREATE(CartVelCntInfo)
 };
@@ -224,31 +241,35 @@ struct CartVelCntInfo : public TermInfo, public MakesConstraint {
 \f}
 where j indexes over DOF, and \f$c_j\f$ are the coeffs.
 */
-struct JointVelCostInfo : public TermInfo, public MakesCost {
+struct JointVelCostInfo : public TermInfo, public MakesCost
+{
   DblVec coeffs;
-  void fromJson(ProblemConstructionInfo &pci, const Value& v);
+  void fromJson(ProblemConstructionInfo& pci, const Value& v);
   void hatch(TrajOptProb& prob);
   DEFINE_CREATE(JointVelCostInfo)
 };
 
-struct JointVelConstraintInfo : public TermInfo, public MakesConstraint {
+struct JointVelConstraintInfo : public TermInfo, public MakesConstraint
+{
   DblVec vals;
   int first_step, last_step;
-  void fromJson(ProblemConstructionInfo &pci, const Value& v);
+  void fromJson(ProblemConstructionInfo& pci, const Value& v);
   void hatch(TrajOptProb& prob);
   DEFINE_CREATE(JointVelConstraintInfo)
 };
 
-struct JointAccCostInfo : public TermInfo, public MakesCost {
+struct JointAccCostInfo : public TermInfo, public MakesCost
+{
   DblVec coeffs;
-  void fromJson(ProblemConstructionInfo &pci, const Value& v);
+  void fromJson(ProblemConstructionInfo& pci, const Value& v);
   void hatch(TrajOptProb& prob);
   DEFINE_CREATE(JointAccCostInfo)
 };
 
-struct JointJerkCostInfo : public TermInfo, public MakesCost {
+struct JointJerkCostInfo : public TermInfo, public MakesCost
+{
   DblVec coeffs;
-  void fromJson(ProblemConstructionInfo &pci, const Value& v);
+  void fromJson(ProblemConstructionInfo& pci, const Value& v);
   void hatch(TrajOptProb& prob);
   DEFINE_CREATE(JointJerkCostInfo)
 };
@@ -261,7 +282,8 @@ Distrete-time penalty:
   cost = \sum_{t=0}^{T-1} \sum_{A, B} | distpen_t - sd(A,B) |^+
 \f}
 
-Continuous-time penalty: same, except you consider swept-out shaps of robot links. Currently self-collisions are not included.
+Continuous-time penalty: same, except you consider swept-out shaps of robot
+links. Currently self-collisions are not included.
 
 */
 struct CollisionCostInfo : public TermInfo, public MakesCost
@@ -272,32 +294,32 @@ struct CollisionCostInfo : public TermInfo, public MakesCost
   /// Indicate if continuous collision checking should be used.
   bool continuous;
 
-  /// for continuous-time penalty, use swept-shape between timesteps t and t+gap (gap=1 by default)
+  /// for continuous-time penalty, use swept-shape between timesteps t and t+gap
+  /// (gap=1 by default)
   int gap;
 
-  /// Contains distance penalization data: Safety Margin, Coeff used during optimization, etc.
+  /// Contains distance penalization data: Safety Margin, Coeff used during
+  /// optimization, etc.
   std::vector<SafetyMarginDataPtr> info;
 
-  void fromJson(ProblemConstructionInfo &pci, const Value& v);
+  void fromJson(ProblemConstructionInfo& pci, const Value& v);
   void hatch(TrajOptProb& prob);
   DEFINE_CREATE(CollisionCostInfo)
 };
-
 
 // TODO: unify with joint position constraint
 /**
 joint-space position constraint
  */
-struct JointConstraintInfo : public TermInfo, public MakesConstraint {
-  /// joint values. list of length 1 automatically gets expanded to list of length n_dof
+struct JointConstraintInfo : public TermInfo, public MakesConstraint
+{
+  /// joint values. list of length 1 automatically gets expanded to list of
+  /// length n_dof
   DblVec vals;
   /// which timestep. default = n_timesteps - 1
   int timestep;
-  void fromJson(ProblemConstructionInfo &pci, const Value& v);
+  void fromJson(ProblemConstructionInfo& pci, const Value& v);
   void hatch(TrajOptProb& prob);
   DEFINE_CREATE(JointConstraintInfo)
 };
-
-
-
 }

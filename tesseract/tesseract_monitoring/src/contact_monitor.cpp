@@ -1,13 +1,13 @@
+#include <pluginlib/class_loader.hpp>
 #include <ros/ros.h>
-#include <tesseract_ros/kdl/kdl_env.h>
+#include <sensor_msgs/JointState.h>
+#include <srdfdom/model.h>
 #include <tesseract_collision/contact_checker_base.h>
 #include <tesseract_msgs/ContactResultVector.h>
 #include <tesseract_msgs/ModifyTesseractEnv.h>
+#include <tesseract_ros/kdl/kdl_env.h>
 #include <tesseract_ros/ros_tesseract_utils.h>
-#include <pluginlib/class_loader.hpp>
-#include <sensor_msgs/JointState.h>
 #include <urdf_parser/urdf_parser.h>
-#include <srdfdom/model.h>
 
 using namespace tesseract;
 using namespace tesseract::tesseract_ros;
@@ -47,14 +47,15 @@ void callbackJointState(const sensor_msgs::JointState::ConstPtr& msg)
   contacts_msg.constacts.reserve(contacts_vector.size());
   for (const auto& contact : contacts_vector)
   {
-   tesseract_msgs::ContactResult msg;
-   tesseractContactResultToContactResultMsg(msg, contact);
-   contacts_msg.constacts.push_back(msg);
+    tesseract_msgs::ContactResult msg;
+    tesseractContactResultToContactResultMsg(msg, contact);
+    contacts_msg.constacts.push_back(msg);
   }
   contact_results_pub.publish(contacts_msg);
 }
 
-bool callbackModifyTesseractEnv(tesseract_msgs::ModifyTesseractEnvRequest& request, tesseract_msgs::ModifyTesseractEnvResponse& response)
+bool callbackModifyTesseractEnv(tesseract_msgs::ModifyTesseractEnvRequest& request,
+                                tesseract_msgs::ModifyTesseractEnvResponse& response)
 {
   boost::mutex::scoped_lock(modify_mutex);
   response.success = processTesseractStateMsg(*env, request.state);
@@ -114,7 +115,9 @@ int main(int argc, char** argv)
 
   joint_states_sub = nh.subscribe("joint_states", 1, &callbackJointState);
   contact_results_pub = pnh.advertise<tesseract_msgs::ContactResultVector>("contact_results", 1, true);
-  modify_env_service = pnh.advertiseService<tesseract_msgs::ModifyTesseractEnvRequest, tesseract_msgs::ModifyTesseractEnvResponse>("modify_tesseract_env", &callbackModifyTesseractEnv);
+  modify_env_service =
+      pnh.advertiseService<tesseract_msgs::ModifyTesseractEnvRequest, tesseract_msgs::ModifyTesseractEnvResponse>(
+          "modify_tesseract_env", &callbackModifyTesseractEnv);
 
   if (publish_environment)
     environment_pub = pnh.advertise<tesseract_msgs::TesseractState>("tesseract", 100, false);

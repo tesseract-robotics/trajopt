@@ -1,7 +1,7 @@
 
+#include "tesseract_collision/bullet/bullet_contact_checker.h"
 #include <gtest/gtest.h>
 #include <ros/ros.h>
-#include "tesseract_collision/bullet/bullet_contact_checker.h"
 
 TEST(TesseractCollisionUnit, CollisionUnit)
 {
@@ -112,7 +112,6 @@ TEST(TesseractCollisionUnit, CollisionUnit)
   checker.calcCollisionsContinuous(req, location, location2, result);
   tesseract::moveContactResultsMapToContactResultsVector(result, result_vector);
   EXPECT_TRUE(!result_vector.empty());
-
 }
 
 int main(int argc, char** argv)

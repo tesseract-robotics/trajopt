@@ -1,86 +1,85 @@
-#include <ros/ros.h>
 #include <ConvexDecomposition/cd_wavefront.h>
+#include <ros/ros.h>
 #include <stdio.h>
 
+#include <BulletCollision/CollisionShapes/btConvexHullShape.h>
 #include <BulletCollision/CollisionShapes/btShapeHull.h>
 #include <BulletCollision/CollisionShapes/btTriangleMesh.h>
-#include <BulletCollision/CollisionShapes/btConvexHullShape.h>
 
 #include <HACD/hacdCircularList.h>
-#include <HACD/hacdVector.h>
-#include <HACD/hacdICHull.h>
 #include <HACD/hacdGraph.h>
 #include <HACD/hacdHACD.h>
+#include <HACD/hacdICHull.h>
+#include <HACD/hacdVector.h>
 
 class MyConvexDecomposition
 {
-
-  public:
-
+public:
   btAlignedObjectArray<btTriangleMesh*> trimeshes_;
-  int   base_count_;
-  int		hull_count_;
-  FILE*	output_file_;
+  int base_count_;
+  int hull_count_;
+  FILE* output_file_;
 
-  MyConvexDecomposition (FILE* output_file) : base_count_(0), hull_count_(0), output_file_(output_file) {}
-
+  MyConvexDecomposition(FILE* output_file) : base_count_(0), hull_count_(0), output_file_(output_file) {}
   void ConvexDecompResult(size_t nVertices, float* vertices, size_t nTriangles, unsigned int* triangles)
   {
-
     btTriangleMesh* trimesh = new btTriangleMesh();
     trimeshes_.push_back(trimesh);
 
-    btVector3 localScaling(6.f,6.f,6.f);
+    btVector3 localScaling(6.f, 6.f, 6.f);
 
-    //export data to .obj
+    // export data to .obj
     ROS_INFO("ConvexResult #%u.", trimeshes_.size());
     if (output_file_)
     {
-      std::fprintf(output_file_,"## Hull Piece %d with %lu vertices and %lu triangles.\r\n", hull_count_, nVertices, nTriangles );
+      std::fprintf(output_file_,
+                   "## Hull Piece %d with %lu vertices and %lu triangles.\r\n",
+                   hull_count_,
+                   nVertices,
+                   nTriangles);
 
       std::fprintf(output_file_, "usemtl Material%i\r\n", base_count_);
       std::fprintf(output_file_, "o Object%i\r\n", base_count_);
 
       for (unsigned int i = 0; i < nVertices; i++)
       {
-        const float *p = &vertices[i*3];
-        std::fprintf(output_file_,"v %0.9f %0.9f %0.9f\r\n", p[0], p[1], p[2] );
+        const float* p = &vertices[i * 3];
+        std::fprintf(output_file_, "v %0.9f %0.9f %0.9f\r\n", p[0], p[1], p[2]);
       }
 
-      //calc centroid, to shift vertices around center of mass
+      // calc centroid, to shift vertices around center of mass
       btVector3 centroid(0, 0, 0);
 
       btAlignedObjectArray<btVector3> centered_vertices;
-      //const unsigned int *src = result.mHullIndices;
-      for (unsigned int i=0; i<nVertices; i++)
+      // const unsigned int *src = result.mHullIndices;
+      for (unsigned int i = 0; i < nVertices; i++)
       {
-        btVector3 vertex(vertices[i*3],vertices[i*3+1],vertices[i*3+2]);
+        btVector3 vertex(vertices[i * 3], vertices[i * 3 + 1], vertices[i * 3 + 2]);
         vertex *= localScaling;
         centroid += vertex;
       }
 
+      centroid *= 1.f / (float(nVertices));
 
-      centroid *= 1.f/(float(nVertices) );
-
-      //const unsigned int *src = result.mHullIndices;
-      for (unsigned int i=0; i<nVertices; i++)
+      // const unsigned int *src = result.mHullIndices;
+      for (unsigned int i = 0; i < nVertices; i++)
       {
-        btVector3 vertex(vertices[i*3],vertices[i*3+1],vertices[i*3+2]);
+        btVector3 vertex(vertices[i * 3], vertices[i * 3 + 1], vertices[i * 3 + 2]);
         vertex *= localScaling;
-        vertex -= centroid ;
+        vertex -= centroid;
         centered_vertices.push_back(vertex);
       }
 
-      const unsigned int *src = triangles;
-      for (unsigned int i=0; i<nTriangles; i++)
+      const unsigned int* src = triangles;
+      for (unsigned int i = 0; i < nTriangles; i++)
       {
         unsigned int index0 = *src++;
         unsigned int index1 = *src++;
         unsigned int index2 = *src++;
 
-        btVector3 vertex0(vertices[index0*3], vertices[index0*3+1],vertices[index0*3+2]);
-        btVector3 vertex1(vertices[index1*3], vertices[index1*3+1],vertices[index1*3+2]);
-        btVector3 vertex2(vertices[index2*3], vertices[index2*3+1],vertices[index2*3+2]);
+        btVector3 vertex0(vertices[index0 * 3], vertices[index0 * 3 + 1], vertices[index0 * 3 + 2]);
+        btVector3 vertex1(vertices[index1 * 3], vertices[index1 * 3 + 1], vertices[index1 * 3 + 2]);
+        btVector3 vertex2(vertices[index2 * 3], vertices[index2 * 3 + 1], vertices[index2 * 3 + 2]);
         vertex0 *= localScaling;
         vertex1 *= localScaling;
         vertex2 *= localScaling;
@@ -89,20 +88,19 @@ class MyConvexDecomposition
         vertex1 -= centroid;
         vertex2 -= centroid;
 
+        trimesh->addTriangle(vertex0, vertex1, vertex2);
 
-        trimesh->addTriangle(vertex0,vertex1,vertex2);
+        index0 += base_count_;
+        index1 += base_count_;
+        index2 += base_count_;
 
-        index0+=base_count_;
-        index1+=base_count_;
-        index2+=base_count_;
-
-        std::fprintf(output_file_,"f %d %d %d\r\n", index0+1, index1+1, index2+1 );
+        std::fprintf(output_file_, "f %d %d %d\r\n", index0 + 1, index1 + 1, index2 + 1);
       }
     }
   }
 };
 
-int main(int argc, char **argv)
+int main(int argc, char** argv)
 {
   ros::init(argc, argv, "convex_decomposition_node");
   ros::NodeHandle pnh("~");
@@ -124,20 +122,20 @@ int main(int argc, char **argv)
   FILE* outputFile = std::fopen(output.c_str(), "wb");
   MyConvexDecomposition convexDecomposition(outputFile);
 
-  std::vector< HACD::Vec3<HACD::Real> > points;
-  std::vector< HACD::Vec3<long> > triangles;
+  std::vector<HACD::Vec3<HACD::Real>> points;
+  std::vector<HACD::Vec3<long>> triangles;
 
-  for(int i=0; i<wo.mVertexCount; i++ )
+  for (int i = 0; i < wo.mVertexCount; i++)
   {
-    int index = i*3;
-    HACD::Vec3<HACD::Real> vertex(wo.mVertices[index], wo.mVertices[index+1],wo.mVertices[index+2]);
+    int index = i * 3;
+    HACD::Vec3<HACD::Real> vertex(wo.mVertices[index], wo.mVertices[index + 1], wo.mVertices[index + 2]);
     points.push_back(vertex);
   }
 
-  for(int i=0;i<wo.mTriCount;i++)
+  for (int i = 0; i < wo.mTriCount; i++)
   {
-    int index = i*3;
-    HACD::Vec3<long> triangle(wo.mIndices[index], wo.mIndices[index+1], wo.mIndices[index+2]);
+    int index = i * 3;
+    HACD::Vec3<long> triangle(wo.mIndices[index], wo.mIndices[index + 1], wo.mIndices[index + 2]);
     triangles.push_back(triangle);
   }
 
@@ -157,9 +155,9 @@ int main(int argc, char **argv)
   bool addNeighboursDistPoints = false;
   bool addFacesPoints = false;
 
-  myHACD.SetNClusters(nClusters);                     // minimum number of clusters
-  myHACD.SetNVerticesPerCH(100);                      // max of 100 vertices per convex-hull
-  myHACD.SetConcavity(concavity);                     // maximum concavity
+  myHACD.SetNClusters(nClusters);  // minimum number of clusters
+  myHACD.SetNVerticesPerCH(100);   // max of 100 vertices per convex-hull
+  myHACD.SetConcavity(concavity);  // maximum concavity
   myHACD.SetAddExtraDistPoints(addExtraDistPoints);
   myHACD.SetAddNeighboursDistPoints(addNeighboursDistPoints);
   myHACD.SetAddFacesPoints(addFacesPoints);
@@ -172,36 +170,36 @@ int main(int argc, char **argv)
   btTransform trans;
   trans.setIdentity();
 
-  for (unsigned c  =0; c < nClusters; c++)
+  for (unsigned c = 0; c < nClusters; c++)
   {
-    //generate convex result
+    // generate convex result
     size_t nPoints = myHACD.GetNPointsCH(c);
     size_t nTriangles = myHACD.GetNTrianglesCH(c);
 
-    float* vertices = new float[nPoints*3];
-    unsigned int* triangles = new unsigned int[nTriangles*3];
+    float* vertices = new float[nPoints * 3];
+    unsigned int* triangles = new unsigned int[nTriangles * 3];
 
-    HACD::Vec3<HACD::Real> * pointsCH = new HACD::Vec3<HACD::Real>[nPoints];
-    HACD::Vec3<long> * trianglesCH = new HACD::Vec3<long>[nTriangles];
+    HACD::Vec3<HACD::Real>* pointsCH = new HACD::Vec3<HACD::Real>[nPoints];
+    HACD::Vec3<long>* trianglesCH = new HACD::Vec3<long>[nTriangles];
     myHACD.GetCH(c, pointsCH, trianglesCH);
 
     // points
-    for(size_t v = 0; v < nPoints; v++)
+    for (size_t v = 0; v < nPoints; v++)
     {
-      vertices[3*v] = pointsCH[v].X();
-      vertices[3*v+1] = pointsCH[v].Y();
-      vertices[3*v+2] = pointsCH[v].Z();
+      vertices[3 * v] = pointsCH[v].X();
+      vertices[3 * v + 1] = pointsCH[v].Y();
+      vertices[3 * v + 2] = pointsCH[v].Z();
     }
     // triangles
-    for(size_t f = 0; f < nTriangles; f++)
+    for (size_t f = 0; f < nTriangles; f++)
     {
-      triangles[3*f] = trianglesCH[f].X();
-      triangles[3*f+1] = trianglesCH[f].Y();
-      triangles[3*f+2] = trianglesCH[f].Z();
+      triangles[3 * f] = trianglesCH[f].X();
+      triangles[3 * f + 1] = trianglesCH[f].Y();
+      triangles[3 * f + 2] = trianglesCH[f].Z();
     }
 
-    delete [] pointsCH;
-    delete [] trianglesCH;
+    delete[] pointsCH;
+    delete[] trianglesCH;
 
     convexDecomposition.ConvexDecompResult(nPoints, vertices, nTriangles, triangles);
   }

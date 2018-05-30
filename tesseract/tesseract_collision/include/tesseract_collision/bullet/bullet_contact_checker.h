@@ -50,25 +50,33 @@
 
 namespace tesseract
 {
-
 class BulletContactChecker : public ContactCheckerBase
 {
 public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
   BulletContactChecker() { name_ = "BULLET"; }
+  void calcDistancesDiscrete(ContactResultMap& contacts) override;
 
-  void calcDistancesDiscrete(ContactResultMap &contacts) override;
+  void calcDistancesDiscrete(const ContactRequest& req,
+                             const TransformMap& transforms,
+                             ContactResultMap& contacts) const override;
 
-  void calcDistancesDiscrete(const ContactRequest &req, const TransformMap& transforms, ContactResultMap &contacts) const override;
+  void calcDistancesContinuous(const ContactRequest& req,
+                               const TransformMap& transforms1,
+                               const TransformMap& transforms2,
+                               ContactResultMap& contacts) const override;
 
-  void calcDistancesContinuous(const ContactRequest &req, const TransformMap& transforms1, const TransformMap& transforms2, ContactResultMap &contacts) const override;
+  void calcCollisionsDiscrete(ContactResultMap& contacts) override;
 
-  void calcCollisionsDiscrete(ContactResultMap &contacts) override;
+  void calcCollisionsDiscrete(const ContactRequest& req,
+                              const TransformMap& transforms,
+                              ContactResultMap& contacts) const override;
 
-  void calcCollisionsDiscrete(const ContactRequest &req, const TransformMap& transforms, ContactResultMap &contacts) const override;
-
-  void calcCollisionsContinuous(const ContactRequest &req, const TransformMap& transforms1, const TransformMap& transforms2, ContactResultMap &contacts) const override;
+  void calcCollisionsContinuous(const ContactRequest& req,
+                                const TransformMap& transforms1,
+                                const TransformMap& transforms2,
+                                ContactResultMap& contacts) const override;
 
   bool addObject(const std::string& name,
                  const int& mask_id,
@@ -89,7 +97,7 @@ public:
 
   void setObjectsTransform(const TransformMap& transforms) override;
 
-  void setContactRequest(const ContactRequest &req) override;
+  void setContactRequest(const ContactRequest& req) override;
 
   const ContactRequest& getContactRequest() const override;
 
@@ -99,13 +107,22 @@ private:
   ContactRequest request_;                  /**< Active request to be used for methods that don't require a request */
   std::vector<std::string> active_objects_; /**< A list of active objects ot check for contact */
 
-  void constructBulletObject(BulletManager &manager, std::vector<std::string> &active_objects, double contact_distance, const TransformMap& transforms, const std::vector<std::string> &active_links, bool continuous = false) const;
+  void constructBulletObject(BulletManager& manager,
+                             std::vector<std::string>& active_objects,
+                             double contact_distance,
+                             const TransformMap& transforms,
+                             const std::vector<std::string>& active_links,
+                             bool continuous = false) const;
 
-  void constructBulletObject(BulletManager &manager, std::vector<std::string> &active_objects, double contact_distance, const TransformMap& transforms1, const TransformMap& transforms2, const std::vector<std::string> &active_links) const;
-
+  void constructBulletObject(BulletManager& manager,
+                             std::vector<std::string>& active_objects,
+                             double contact_distance,
+                             const TransformMap& transforms1,
+                             const TransformMap& transforms2,
+                             const std::vector<std::string>& active_links) const;
 };
 typedef std::shared_ptr<BulletContactChecker> BulletContactCheckerPtr;
 typedef std::shared_ptr<const BulletContactChecker> BulletContactCheckerConstPtr;
 }
 
-#endif // TESSERACT_COLLISION_BULLET_CONTACT_CHECKER_H
+#endif  // TESSERACT_COLLISION_BULLET_CONTACT_CHECKER_H

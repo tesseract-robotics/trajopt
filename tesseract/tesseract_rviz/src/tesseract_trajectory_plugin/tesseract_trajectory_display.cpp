@@ -33,13 +33,14 @@
  *********************************************************************/
 
 /* Author: Dave Coleman
-   Desc:   Wraps a trajectory_visualization playback class for Rviz into a stand alone display
+   Desc:   Wraps a trajectory_visualization playback class for Rviz into a stand
+   alone display
 */
 
-#include <tesseract_rviz/tesseract_trajectory_plugin/tesseract_trajectory_display.h>
-#include <tesseract_ros/kdl/kdl_env.h>
-#include <urdf_parser/urdf_parser.h>
 #include <rviz/properties/string_property.h>
+#include <tesseract_ros/kdl/kdl_env.h>
+#include <tesseract_rviz/tesseract_trajectory_plugin/tesseract_trajectory_display.h>
+#include <urdf_parser/urdf_parser.h>
 
 namespace tesseract_rviz
 {
@@ -47,19 +48,20 @@ using namespace tesseract;
 
 TesseractTrajectoryDisplay::TesseractTrajectoryDisplay() : Display(), load_env_(false)
 {
-  // The robot description property is only needed when using the trajectory playback standalone (not within motion
+  // The robot description property is only needed when using the trajectory
+  // playback standalone (not within motion
   // planning plugin)
-  urdf_description_property_ = new rviz::StringProperty(
-      "URDF Description", "robot_description", "The name of the ROS parameter where the URDF is loaded",
-      this, SLOT(changedURDFDescription()), this);
+  urdf_description_property_ = new rviz::StringProperty("URDF Description",
+                                                        "robot_description",
+                                                        "The name of the ROS parameter where the URDF is loaded",
+                                                        this,
+                                                        SLOT(changedURDFDescription()),
+                                                        this);
 
   trajectory_visual_.reset(new TrajectoryVisualization(this, this));
 }
 
-TesseractTrajectoryDisplay::~TesseractTrajectoryDisplay()
-{
-}
-
+TesseractTrajectoryDisplay::~TesseractTrajectoryDisplay() {}
 void TesseractTrajectoryDisplay::onInitialize()
 {
   Display::onInitialize();
@@ -85,7 +87,6 @@ void TesseractTrajectoryDisplay::loadEnv()
     urdf::ModelInterfaceSharedPtr urdf_model = urdf::parseURDF(urdf_xml_string);
     if (urdf_model != nullptr)
     {
-
       // Load SRDF model (Not required)
       srdf::ModelSharedPtr srdf_model = srdf::ModelSharedPtr(new srdf::Model);
       srdf_model->initString(*urdf_model, srdf_xml_string);

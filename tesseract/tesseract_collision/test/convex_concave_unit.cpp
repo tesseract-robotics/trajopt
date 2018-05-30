@@ -1,7 +1,7 @@
 
+#include "tesseract_collision/bullet/bullet_contact_checker.h"
 #include <gtest/gtest.h>
 #include <ros/ros.h>
-#include "tesseract_collision/bullet/bullet_contact_checker.h"
 
 TEST(TesseractConvexConcaveUnit, ConvexConcaveUnit)
 {
@@ -93,28 +93,28 @@ TEST(TesseractConvexConcaveUnit, ConvexConcaveUnit)
   EXPECT_LT(std::abs(0.25 - result_vector[0].distance), 0.0001);
   EXPECT_TRUE(!result_vector.empty());
 
-//  // Test Cast object
-//  result.clear();
-//  result_vector.clear();
-//  tesseract::TransformMap location2;
-//  location.clear();
-//  location["thin_box_link"] = Eigen::Affine3d::Identity();
-//  location["sphere_link"] = Eigen::Affine3d::Identity();
-//  location2["thin_box_link"] = Eigen::Affine3d::Identity();
-//  location2["sphere_link"] = Eigen::Affine3d::Identity();
+  //  // Test Cast object
+  //  result.clear();
+  //  result_vector.clear();
+  //  tesseract::TransformMap location2;
+  //  location.clear();
+  //  location["thin_box_link"] = Eigen::Affine3d::Identity();
+  //  location["sphere_link"] = Eigen::Affine3d::Identity();
+  //  location2["thin_box_link"] = Eigen::Affine3d::Identity();
+  //  location2["sphere_link"] = Eigen::Affine3d::Identity();
 
-//  location["sphere_link"].translation() = Eigen::Vector3d(1, 0, 0);
-//  location2["sphere_link"].translation() = Eigen::Vector3d(-1, 0, 0);
+  //  location["sphere_link"].translation() = Eigen::Vector3d(1, 0, 0);
+  //  location2["sphere_link"].translation() = Eigen::Vector3d(-1, 0, 0);
 
-//  req.link_names.clear();
-//  req.link_names.push_back("sphere_link");
-//  req.contact_distance = 0.1;
-//  req.type = tesseract::ContactRequestType::SINGLE;
+  //  req.link_names.clear();
+  //  req.link_names.push_back("sphere_link");
+  //  req.contact_distance = 0.1;
+  //  req.type = tesseract::ContactRequestType::SINGLE;
 
-//  checker.calcCollisionsContinuous(req, location, location2, result);
-//  tesseract::moveContactResultsMapToContactResultsVector(result, result_vector);
-//  EXPECT_TRUE(!result_vector.empty());
-
+  //  checker.calcCollisionsContinuous(req, location, location2, result);
+  //  tesseract::moveContactResultsMapToContactResultsVector(result,
+  //  result_vector);
+  //  EXPECT_TRUE(!result_vector.empty());
 }
 
 int main(int argc, char** argv)

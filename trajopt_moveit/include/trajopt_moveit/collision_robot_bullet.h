@@ -54,29 +54,47 @@ public:
 
   CollisionRobotBullet(const CollisionRobotBullet& other);
 
-  virtual void checkSelfCollision(const CollisionRequest& req, CollisionResult& res,
+  virtual void checkSelfCollision(const CollisionRequest& req,
+                                  CollisionResult& res,
                                   const robot_state::RobotState& state) const;
-  virtual void checkSelfCollision(const CollisionRequest& req, CollisionResult& res,
-                                  const robot_state::RobotState& state, const AllowedCollisionMatrix& acm) const;
-  virtual void checkSelfCollision(const CollisionRequest& req, CollisionResult& res,
-                                  const robot_state::RobotState& state1, const robot_state::RobotState& state2) const;
-  virtual void checkSelfCollision(const CollisionRequest& req, CollisionResult& res,
-                                  const robot_state::RobotState& state1, const robot_state::RobotState& state2,
+  virtual void checkSelfCollision(const CollisionRequest& req,
+                                  CollisionResult& res,
+                                  const robot_state::RobotState& state,
+                                  const AllowedCollisionMatrix& acm) const;
+  virtual void checkSelfCollision(const CollisionRequest& req,
+                                  CollisionResult& res,
+                                  const robot_state::RobotState& state1,
+                                  const robot_state::RobotState& state2) const;
+  virtual void checkSelfCollision(const CollisionRequest& req,
+                                  CollisionResult& res,
+                                  const robot_state::RobotState& state1,
+                                  const robot_state::RobotState& state2,
                                   const AllowedCollisionMatrix& acm) const;
 
-  virtual void checkOtherCollision(const CollisionRequest& req, CollisionResult& res,
-                                   const robot_state::RobotState& state, const CollisionRobot& other_robot,
+  virtual void checkOtherCollision(const CollisionRequest& req,
+                                   CollisionResult& res,
+                                   const robot_state::RobotState& state,
+                                   const CollisionRobot& other_robot,
                                    const robot_state::RobotState& other_state) const;
-  virtual void checkOtherCollision(const CollisionRequest& req, CollisionResult& res,
-                                   const robot_state::RobotState& state, const CollisionRobot& other_robot,
-                                   const robot_state::RobotState& other_state, const AllowedCollisionMatrix& acm) const;
-  virtual void checkOtherCollision(const CollisionRequest& req, CollisionResult& res,
-                                   const robot_state::RobotState& state1, const robot_state::RobotState& state2,
-                                   const CollisionRobot& other_robot, const robot_state::RobotState& other_state1,
+  virtual void checkOtherCollision(const CollisionRequest& req,
+                                   CollisionResult& res,
+                                   const robot_state::RobotState& state,
+                                   const CollisionRobot& other_robot,
+                                   const robot_state::RobotState& other_state,
+                                   const AllowedCollisionMatrix& acm) const;
+  virtual void checkOtherCollision(const CollisionRequest& req,
+                                   CollisionResult& res,
+                                   const robot_state::RobotState& state1,
+                                   const robot_state::RobotState& state2,
+                                   const CollisionRobot& other_robot,
+                                   const robot_state::RobotState& other_state1,
                                    const robot_state::RobotState& other_state2) const;
-  virtual void checkOtherCollision(const CollisionRequest& req, CollisionResult& res,
-                                   const robot_state::RobotState& state1, const robot_state::RobotState& state2,
-                                   const CollisionRobot& other_robot, const robot_state::RobotState& other_state1,
+  virtual void checkOtherCollision(const CollisionRequest& req,
+                                   CollisionResult& res,
+                                   const robot_state::RobotState& state1,
+                                   const robot_state::RobotState& state2,
+                                   const CollisionRobot& other_robot,
+                                   const robot_state::RobotState& other_state1,
                                    const robot_state::RobotState& other_state2,
                                    const AllowedCollisionMatrix& acm) const;
   MOVEIT_DEPRECATED
@@ -86,56 +104,85 @@ public:
   virtual double distanceSelf(const robot_state::RobotState& state, const AllowedCollisionMatrix& acm) const;
 
   MOVEIT_DEPRECATED
-  virtual double distanceOther(const robot_state::RobotState& state, const CollisionRobot& other_robot,
+  virtual double distanceOther(const robot_state::RobotState& state,
+                               const CollisionRobot& other_robot,
                                const robot_state::RobotState& other_state) const;
 
   MOVEIT_DEPRECATED
-  virtual double distanceOther(const robot_state::RobotState& state, const CollisionRobot& other_robot,
-                               const robot_state::RobotState& other_state, const AllowedCollisionMatrix& acm) const;
+  virtual double distanceOther(const robot_state::RobotState& state,
+                               const CollisionRobot& other_robot,
+                               const robot_state::RobotState& other_state,
+                               const AllowedCollisionMatrix& acm) const;
 
-  virtual void distanceSelf(const DistanceRequest& req, DistanceResult& res,
+  virtual void distanceSelf(const DistanceRequest& req,
+                            DistanceResult& res,
                             const robot_state::RobotState& state) const override;
 
   // Need to add this to moveit
-  virtual void distanceSelf(const DistanceRequest& req, DistanceResult& res,
-                            const robot_state::RobotState& state1, const robot_state::RobotState& state2) const;
+  virtual void distanceSelf(const DistanceRequest& req,
+                            DistanceResult& res,
+                            const robot_state::RobotState& state1,
+                            const robot_state::RobotState& state2) const;
 
-  virtual void distanceOther(const DistanceRequest& req, DistanceResult& res, const robot_state::RobotState& state,
+  virtual void distanceOther(const DistanceRequest& req,
+                             DistanceResult& res,
+                             const robot_state::RobotState& state,
                              const CollisionRobot& other_robot,
                              const robot_state::RobotState& other_state) const override;
 
 protected:
   virtual void updatedPaddingOrScaling(const std::vector<std::string>& links);
 
-  void constructBulletObject(Link2Cow &collision_objects, std::vector<std::string> &active_objects, double contact_distance, const robot_state::RobotState& state, const std::set<const moveit::core::LinkModel *> *active_links, bool continuous = false) const;
+  void constructBulletObject(Link2Cow& collision_objects,
+                             std::vector<std::string>& active_objects,
+                             double contact_distance,
+                             const robot_state::RobotState& state,
+                             const std::set<const moveit::core::LinkModel*>* active_links,
+                             bool continuous = false) const;
 
   // Used for cast continuous distance checking
-  void constructBulletObject(Link2Cow &collision_objects, std::vector<std::string> &active_objects, double contact_distance, const robot_state::RobotState& state1, const robot_state::RobotState& state2, const std::set<const moveit::core::LinkModel *> *active_links) const;
+  void constructBulletObject(Link2Cow& collision_objects,
+                             std::vector<std::string>& active_objects,
+                             double contact_distance,
+                             const robot_state::RobotState& state1,
+                             const robot_state::RobotState& state2,
+                             const std::set<const moveit::core::LinkModel*>* active_links) const;
 
-  void checkSelfCollisionHelper(const CollisionRequest& req, CollisionResult& res,
+  void checkSelfCollisionHelper(const CollisionRequest& req,
+                                CollisionResult& res,
                                 const robot_state::RobotState& state,
                                 const AllowedCollisionMatrix* acm) const;
 
-  void checkSelfCollisionHelper(const CollisionRequest& req, CollisionResult& res,
-                                const robot_state::RobotState& state1, const robot_state::RobotState& state2,
+  void checkSelfCollisionHelper(const CollisionRequest& req,
+                                CollisionResult& res,
+                                const robot_state::RobotState& state1,
+                                const robot_state::RobotState& state2,
                                 const AllowedCollisionMatrix* acm) const;
 
-
-  void checkOtherCollisionHelper(const CollisionRequest& req, CollisionResult& res,
-                                 const robot_state::RobotState& state, const CollisionRobot& other_robot,
-                                 const robot_state::RobotState& other_state, const AllowedCollisionMatrix* acm) const;
+  void checkOtherCollisionHelper(const CollisionRequest& req,
+                                 CollisionResult& res,
+                                 const robot_state::RobotState& state,
+                                 const CollisionRobot& other_robot,
+                                 const robot_state::RobotState& other_state,
+                                 const AllowedCollisionMatrix* acm) const;
 
   void distanceSelfHelper(const DistanceRequest& req, DistanceResult& res, const robot_state::RobotState& state) const;
 
-  void distanceSelfHelper(const DistanceRequest& req, DistanceResult& res,
-                          const robot_state::RobotState& state1, const robot_state::RobotState& state2) const;
+  void distanceSelfHelper(const DistanceRequest& req,
+                          DistanceResult& res,
+                          const robot_state::RobotState& state1,
+                          const robot_state::RobotState& state2) const;
 
-  void distanceSelfHelperOriginal(const DistanceRequest& req, DistanceResult& res,
-                                  const robot_state::RobotState& state1, const robot_state::RobotState& state2) const;
+  void distanceSelfHelperOriginal(const DistanceRequest& req,
+                                  DistanceResult& res,
+                                  const robot_state::RobotState& state1,
+                                  const robot_state::RobotState& state2) const;
 
-
-  void distanceOtherHelper(const DistanceRequest& req, DistanceResult& res, const robot_state::RobotState& state,
-                           const CollisionRobot& other_robot, const robot_state::RobotState& other_state) const;
+  void distanceOtherHelper(const DistanceRequest& req,
+                           DistanceResult& res,
+                           const robot_state::RobotState& state,
+                           const CollisionRobot& other_robot,
+                           const robot_state::RobotState& other_state) const;
 
   Link2ConstCow m_link2cow;
   bool m_use_original_cast;

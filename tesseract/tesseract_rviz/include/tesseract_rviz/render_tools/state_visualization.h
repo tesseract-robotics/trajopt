@@ -44,20 +44,24 @@
 
 namespace tesseract_rviz
 {
-
 /** \brief Update the links of an rviz::Robot using a robot_state::RobotState */
 class StateVisualization
 {
 public:
-  StateVisualization(Ogre::SceneNode* root_node, rviz::DisplayContext* context, const std::string& name, rviz::Property* parent_property);
+  StateVisualization(Ogre::SceneNode* root_node,
+                     rviz::DisplayContext* context,
+                     const std::string& name,
+                     rviz::Property* parent_property);
 
   Robot& getRobot() { return robot_; }
-
-  void load(urdf::ModelInterfaceConstSharedPtr urdf, bool visual = true, bool collision = true, bool show_active = true, bool show_static = true);
+  void load(urdf::ModelInterfaceConstSharedPtr urdf,
+            bool visual = true,
+            bool collision = true,
+            bool show_active = true,
+            bool show_static = true);
   void clear();
 
-  void update(const tesseract::tesseract_ros::ROSBasicEnvConstPtr env,
-              const tesseract::EnvStateConstPtr state);
+  void update(const tesseract::tesseract_ros::ROSBasicEnvConstPtr env, const tesseract::EnvStateConstPtr state);
 
   void update(const tesseract::tesseract_ros::ROSBasicEnvConstPtr env,
               const tesseract::EnvStateConstPtr state,
@@ -107,7 +111,6 @@ private:
 };
 typedef std::shared_ptr<StateVisualization> StateVisualizationPtr;
 typedef std::shared_ptr<const StateVisualization> StateVisualizationConstPtr;
-
 }
 
-#endif //TESSERACT_RVIZ_STATE_VISUALIZATION
+#endif  // TESSERACT_RVIZ_STATE_VISUALIZATION

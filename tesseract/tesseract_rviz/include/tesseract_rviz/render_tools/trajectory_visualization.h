@@ -167,4 +167,4 @@ typedef std::shared_ptr<TrajectoryVisualization> TrajectoryVisualizationPtr;
 typedef std::shared_ptr<const TrajectoryVisualization> TrajectoryVisualizationConstPtr;
 }  // namespace tesseract_rviz
 
-#endif //TESSERACT_RVIZ_TRAJECTORY_VISUALIZATION
+#endif  // TESSERACT_RVIZ_TRAJECTORY_VISUALIZATION

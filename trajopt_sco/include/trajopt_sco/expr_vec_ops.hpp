@@ -1,8 +1,8 @@
-#include <trajopt_sco/solver_interface.hpp>
 #include <Eigen/Core>
+#include <trajopt_sco/solver_interface.hpp>
 
-namespace sco {
-
+namespace sco
+{
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
 

@@ -11,9 +11,10 @@ Gurobi backend
 struct _GRBmodel;
 typedef struct _GRBmodel GRBmodel;
 
-namespace sco {
-
-class GurobiModel : public Model {
+namespace sco
+{
+class GurobiModel : public Model
+{
 public:
   GRBmodel* m_model;
   vector<Var> m_vars;
@@ -36,7 +37,8 @@ public:
   vector<double> getVarValues(const vector<Var>&) const;
 
   CvxOptStatus optimize();
-  /** Don't use this function, because it adds constraints that aren't tracked  */
+  /** Don't use this function, because it adds constraints that aren't tracked
+   */
   CvxOptStatus optimizeFeasRelax();
 
   void setObjective(const AffExpr&);
@@ -46,9 +48,5 @@ public:
   VarVector getVars() const;
 
   ~GurobiModel();
-
 };
-
-
 }
-

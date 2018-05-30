@@ -30,10 +30,8 @@
 
 namespace tesseract
 {
-
 namespace tesseract_planning
 {
-
 class TrajoptPlanner : public BasicPlanner
 {
 public:
@@ -48,7 +46,6 @@ public:
     status_code_map_[-3] = "";
 
     // Converge Status Codes
-
   }
 
   bool solve(PlannerResponse& res) override;
@@ -58,8 +55,7 @@ public:
   void clear() override;
 
 private:
-
 };
 }
 }
-#endif // TESSERACT_PLANNING_TRAJOPT_PLANNER_H
+#endif  // TESSERACT_PLANNING_TRAJOPT_PLANNER_H

@@ -12,6 +12,19 @@
     <group name="manipulator">
         <chain base_link="base_link" tip_link="part" />
     </group>
+
+    <group name="manipulator_aux">
+        <joint name="joint_a1" />
+        <joint name="joint_a2" />
+        <joint name="joint_a3" />
+        <joint name="joint_a4" />
+        <joint name="joint_a5" />
+        <joint name="joint_a6" />
+        <joint name="joint_a7" />
+        <joint name="joint_aux1" />
+        <joint name="joint_aux2" />
+    </group>
+
     <!--DISABLE COLLISIONS: By default it is assumed that any link of the robot could potentially come into collision with any other link in the robot. This tag disables collision checking between a specified pair of links. -->
     <disable_collisions link1="base_link" link2="grinder_frame" reason="Never" />
     <disable_collisions link1="base_link" link2="link_1" reason="Adjacent" />

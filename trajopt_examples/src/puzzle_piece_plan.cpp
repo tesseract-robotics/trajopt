@@ -24,80 +24,85 @@
  * limitations under the License.
  */
 #include <ros/ros.h>
-#include <tesseract_ros/ros_basic_plotting.h>
-#include <tesseract_ros/kdl/kdl_env.h>
-#include <tesseract_ros/kdl/kdl_chain_kin.h>
-#include <trajopt/problem_description.hpp>
-#include <trajopt/plot_callback.hpp>
-#include <trajopt_utils/logging.hpp>
-#include <trajopt_utils/config.hpp>
-#include <urdf_parser/urdf_parser.h>
 #include <srdfdom/model.h>
+#include <tesseract_ros/kdl/kdl_env.h>
+#include <tesseract_ros/ros_basic_plotting.h>
+#include <trajopt/plot_callback.hpp>
+#include <trajopt/problem_description.hpp>
+#include <trajopt_utils/config.hpp>
+#include <trajopt_utils/logging.hpp>
+#include <urdf_parser/urdf_parser.h>
 
 // For loading the pose file from a local package
-#include <ros/package.h>
 #include <fstream>
+#include <ros/package.h>
 
 using namespace trajopt;
 using namespace tesseract;
 
 const std::string ROBOT_DESCRIPTION_PARAM = "robot_description"; /**< Default ROS parameter for robot description */
-const std::string ROBOT_SEMANTIC_PARAM = "robot_description_semantic"; /**< Default ROS parameter for robot description */
+const std::string ROBOT_SEMANTIC_PARAM = "robot_description_semantic"; /**< Default ROS parameter for robot
+                                                                          description */
 
 bool plotting_ = false;
-urdf::ModelInterfaceSharedPtr urdf_model_;  /**< URDF Model */
-srdf::ModelSharedPtr srdf_model_;           /**< SRDF Model */
-tesseract_ros::KDLEnvPtr env_;           /**< Trajopt Basic Environment */
+urdf::ModelInterfaceSharedPtr urdf_model_; /**< URDF Model */
+srdf::ModelSharedPtr srdf_model_;          /**< SRDF Model */
+tesseract_ros::KDLEnvPtr env_;             /**< Trajopt Basic Environment */
 
 static EigenSTL::vector_Affine3d makePuzzleToolPoses()
 {
-  EigenSTL::vector_Affine3d path; // results
-  std::ifstream indata; // input file
+  EigenSTL::vector_Affine3d path;  // results
+  std::ifstream indata;            // input file
 
-  // You could load your parts from anywhere, but we are transporting them with the git repo
+  // You could load your parts from anywhere, but we are transporting them with
+  // the git repo
   std::string filename = ros::package::getPath("trajopt_examples") + "/config/puzzle_bent.csv";
 
-  // In a non-trivial app, you'll of course want to check that calls like 'open' succeeded
+  // In a non-trivial app, you'll of course want to check that calls like 'open'
+  // succeeded
   indata.open(filename);
 
   std::string line;
   int lnum = 0;
   while (std::getline(indata, line))
   {
-      ++lnum;
-      if (lnum < 3)
+    ++lnum;
+    if (lnum < 3)
+      continue;
+
+    std::stringstream lineStream(line);
+    std::string cell;
+    Eigen::Matrix<double, 6, 1> xyzijk;
+    int i = -2;
+    while (std::getline(lineStream, cell, ','))
+    {
+      ++i;
+      if (i == -1)
         continue;
 
-      std::stringstream lineStream(line);
-      std::string  cell;
-      Eigen::Matrix<double, 6, 1> xyzijk;
-      int i = -2;
-      while (std::getline(lineStream, cell, ','))
-      {
-        ++i;
-        if (i == -1)
-          continue;
+      xyzijk(i) = std::stod(cell);
+    }
 
-        xyzijk(i) = std::stod(cell);
-      }
+    Eigen::Vector3d pos = xyzijk.head<3>();
+    pos = pos / 1000.0;  // Most things in ROS use meters as the unit of length.
+                         // Our part was exported in mm.
+    Eigen::Vector3d norm = xyzijk.tail<3>();
+    norm.normalize();
 
-      Eigen::Vector3d pos = xyzijk.head<3>();
-      pos = pos / 1000.0; // Most things in ROS use meters as the unit of length. Our part was exported in mm.
-      Eigen::Vector3d norm = xyzijk.tail<3>();
-      norm.normalize();
+    // This code computes two extra directions to turn the normal direction into
+    // a full defined frame. Descartes
+    // will search around this frame for extra poses, so the exact values do not
+    // matter as long they are valid.
+    Eigen::Vector3d temp_x = (-1 * pos).normalized();
+    Eigen::Vector3d y_axis = (norm.cross(temp_x)).normalized();
+    Eigen::Vector3d x_axis = (y_axis.cross(norm)).normalized();
+    Eigen::Affine3d pose;
+    pose.matrix().col(0).head<3>() = x_axis;
+    pose.matrix().col(1).head<3>() = y_axis;
+    pose.matrix().col(2).head<3>() = norm;
+    pose.matrix().col(3).head<3>() = pos;
 
-      // This code computes two extra directions to turn the normal direction into a full defined frame. Descartes
-      // will search around this frame for extra poses, so the exact values do not matter as long they are valid.
-      Eigen::Vector3d temp_x = (-1 * pos).normalized();
-      Eigen::Vector3d y_axis = (norm.cross(temp_x)).normalized();
-      Eigen::Vector3d x_axis = (y_axis.cross(norm)).normalized();
-      Eigen::Affine3d pose;
-      pose.matrix().col(0).head<3>() = x_axis;
-      pose.matrix().col(1).head<3>() = y_axis;
-      pose.matrix().col(2).head<3>() = norm;
-      pose.matrix().col(3).head<3>() = pos;
-
-      path.push_back(pose);
+    path.push_back(pose);
   }
   indata.close();
 
@@ -125,11 +130,10 @@ ProblemConstructionInfo cppMethod()
   // Populate Init Info
   Eigen::VectorXd start_pos = pci.env->getCurrentJointValues(pci.kin->getName());
 
-
   pci.init_info.type = InitInfo::GIVEN_TRAJ;
   pci.init_info.data = start_pos.transpose().replicate(pci.basic_info.n_steps, 1);
-//  pci.init_info.data.col(6) = VectorXd::LinSpaced(steps_, start_pos[6], end_pos[6]);
-
+  //  pci.init_info.data.col(6) = VectorXd::LinSpaced(steps_, start_pos[6],
+  //  end_pos[6]);
 
   // Populate Cost Info
   std::shared_ptr<JointVelCostInfo> joint_vel = std::shared_ptr<JointVelCostInfo>(new JointVelCostInfo);
@@ -169,7 +173,7 @@ ProblemConstructionInfo cppMethod()
 
   for (auto i = 0; i < pci.basic_info.n_steps; ++i)
   {
-    std::shared_ptr<PoseCostInfo> pose = std::shared_ptr<PoseCostInfo>(new PoseCostInfo);
+    std::shared_ptr<StaticPoseCostInfo> pose = std::shared_ptr<StaticPoseCostInfo>(new StaticPoseCostInfo);
     pose->term_type = TT_CNT;
     pose->name = "waypoint_cart_" + std::to_string(i);
     pose->link = "part";
@@ -185,7 +189,6 @@ ProblemConstructionInfo cppMethod()
 
   return pci;
 }
-
 
 int main(int argc, char** argv)
 {
@@ -223,6 +226,8 @@ int main(int argc, char** argv)
   ipos["joint_a5"] = 0.0;
   ipos["joint_a6"] = 1.0;
   ipos["joint_a7"] = 0.0;
+  ipos["joint_aux1"] = 0.0;
+  ipos["joint_aux2"] = 0.0;
   env_->setState(ipos);
 
   plotter->plotScene();
@@ -257,7 +262,9 @@ int main(int argc, char** argv)
   opt.initialize(trajToDblVec(prob->GetInitTraj()));
   ros::Time tStart = ros::Time::now();
   sco::OptStatus status = opt.optimize();
-  ROS_INFO("Optimization Status: %s, Planning time: %.3f", sco::statusToString(status).c_str(), (ros::Time::now() - tStart).toSec());
+  ROS_INFO("Optimization Status: %s, Planning time: %.3f",
+           sco::statusToString(status).c_str(),
+           (ros::Time::now() - tStart).toSec());
 
   if (plotting_)
   {
@@ -270,5 +277,4 @@ int main(int argc, char** argv)
   collisions.clear();
   env_->continuousCollisionCheckTrajectory(joint_names, link_names, getTraj(opt.x(), prob->GetVars()), collisions);
   ROS_INFO("Final trajectory number of continuous collisions: %lui\n", collisions.size());
-
 }

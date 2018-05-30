@@ -43,206 +43,216 @@
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wall"
 #pragma GCC diagnostic ignored "-Wint-to-pointer-cast"
+#include <BulletCollision/CollisionDispatch/btConvexConvexAlgorithm.h>
 #include <BulletCollision/CollisionShapes/btShapeHull.h>
 #include <BulletCollision/Gimpact/btGImpactShape.h>
-#include <BulletCollision/CollisionDispatch/btConvexConvexAlgorithm.h>
 #pragma GCC diagnostic pop
 
 #include "tesseract_collision/bullet/bullet_utils.h"
-#include <geometric_shapes/shapes.h>
 #include <boost/thread/mutex.hpp>
+#include <geometric_shapes/shapes.h>
 #include <memory>
 #include <octomap/octomap.h>
 #include <ros/console.h>
 
 namespace tesseract
 {
-
-btCollisionShape* createShapePrimitive(const shapes::ShapeConstPtr& geom, const CollisionObjectType& collision_object_type, CollisionObjectWrapper* cow)
+btCollisionShape* createShapePrimitive(const shapes::ShapeConstPtr& geom,
+                                       const CollisionObjectType& collision_object_type,
+                                       CollisionObjectWrapper* cow)
 {
-
-  btCollisionShape* subshape=0;
+  btCollisionShape* subshape = 0;
 
   switch (geom->type)
   {
-  case shapes::BOX:
-  {
-    assert(collision_object_type == CollisionObjectType::UseShapeType);
-    const shapes::Box* s = static_cast<const shapes::Box*>(geom.get());
-    const double* size = s->size;
-    btCollisionShape* subshape = new btBoxShape(btVector3(size[0]/2, size[1]/2, size[2]/2));
-    return subshape;
-  }
-  case shapes::SPHERE:
-  {
-    assert(collision_object_type == CollisionObjectType::UseShapeType);
-    const shapes::Sphere* s = static_cast<const shapes::Sphere*>(geom.get());
-    btCollisionShape* subshape = new btSphereShape(s->radius);
-    return subshape;
-  }
-  case shapes::CYLINDER:
-  {
-    assert(collision_object_type == CollisionObjectType::UseShapeType);
-    const shapes::Cylinder* s = static_cast<const shapes::Cylinder*>(geom.get());
-    btCollisionShape* subshape = new btCylinderShapeZ(btVector3(s->radius, s->radius, s->length / 2));
-    return subshape;
-  }
-  case shapes::CONE:
-  {
-    assert(collision_object_type == CollisionObjectType::UseShapeType);
-    const shapes::Cone* s = static_cast<const shapes::Cone*>(geom.get());
-    btCollisionShape* subshape = new btConeShapeZ(s->radius, s->length);
-    return subshape;
-  }
-  case shapes::MESH:
-  {
-    assert(collision_object_type == CollisionObjectType::UseShapeType || collision_object_type == CollisionObjectType::ConvexHull || collision_object_type == CollisionObjectType::SDF);
-    const shapes::Mesh* mesh = static_cast<const shapes::Mesh*>(geom.get());
-    std::shared_ptr<btTriangleMesh> ptrimesh(new btTriangleMesh());
-    if (mesh->vertex_count > 0 && mesh->triangle_count > 0)
+    case shapes::BOX:
     {
-      for (unsigned int i = 0; i < mesh->triangle_count; ++i)
+      assert(collision_object_type == CollisionObjectType::UseShapeType);
+      const shapes::Box* s = static_cast<const shapes::Box*>(geom.get());
+      const double* size = s->size;
+      btCollisionShape* subshape = new btBoxShape(btVector3(size[0] / 2, size[1] / 2, size[2] / 2));
+      return subshape;
+    }
+    case shapes::SPHERE:
+    {
+      assert(collision_object_type == CollisionObjectType::UseShapeType);
+      const shapes::Sphere* s = static_cast<const shapes::Sphere*>(geom.get());
+      btCollisionShape* subshape = new btSphereShape(s->radius);
+      return subshape;
+    }
+    case shapes::CYLINDER:
+    {
+      assert(collision_object_type == CollisionObjectType::UseShapeType);
+      const shapes::Cylinder* s = static_cast<const shapes::Cylinder*>(geom.get());
+      btCollisionShape* subshape = new btCylinderShapeZ(btVector3(s->radius, s->radius, s->length / 2));
+      return subshape;
+    }
+    case shapes::CONE:
+    {
+      assert(collision_object_type == CollisionObjectType::UseShapeType);
+      const shapes::Cone* s = static_cast<const shapes::Cone*>(geom.get());
+      btCollisionShape* subshape = new btConeShapeZ(s->radius, s->length);
+      return subshape;
+    }
+    case shapes::MESH:
+    {
+      assert(collision_object_type == CollisionObjectType::UseShapeType ||
+             collision_object_type == CollisionObjectType::ConvexHull ||
+             collision_object_type == CollisionObjectType::SDF);
+      const shapes::Mesh* mesh = static_cast<const shapes::Mesh*>(geom.get());
+      std::shared_ptr<btTriangleMesh> ptrimesh(new btTriangleMesh());
+      if (mesh->vertex_count > 0 && mesh->triangle_count > 0)
       {
-        unsigned int index1 = mesh->triangles[3 * i];
-        unsigned int index2 = mesh->triangles[3 * i + 1];
-        unsigned int index3 = mesh->triangles[3 * i + 2];
+        for (unsigned int i = 0; i < mesh->triangle_count; ++i)
+        {
+          unsigned int index1 = mesh->triangles[3 * i];
+          unsigned int index2 = mesh->triangles[3 * i + 1];
+          unsigned int index3 = mesh->triangles[3 * i + 2];
 
-        btVector3 v1(mesh->vertices[3 * index1], mesh->vertices[3 * index1 + 1], mesh->vertices[3 * index1 + 2]);
-        btVector3 v2(mesh->vertices[3 * index2], mesh->vertices[3 * index2 + 1], mesh->vertices[3 * index2 + 2]);
-        btVector3 v3(mesh->vertices[3 * index3], mesh->vertices[3 * index3 + 1], mesh->vertices[3 * index3 + 2]);
+          btVector3 v1(mesh->vertices[3 * index1], mesh->vertices[3 * index1 + 1], mesh->vertices[3 * index1 + 2]);
+          btVector3 v2(mesh->vertices[3 * index2], mesh->vertices[3 * index2 + 1], mesh->vertices[3 * index2 + 2]);
+          btVector3 v3(mesh->vertices[3 * index3], mesh->vertices[3 * index3 + 1], mesh->vertices[3 * index3 + 2]);
 
-        ptrimesh->addTriangle(v1, v2, v3);
+          ptrimesh->addTriangle(v1, v2, v3);
+        }
+
+        // convert the mesh to the assigned collision object type
+        switch (collision_object_type)
+        {
+          case CollisionObjectType::ConvexHull:
+          {
+            // CONVEX HULL
+            btConvexTriangleMeshShape convexTrimesh(ptrimesh.get());
+            convexTrimesh.setMargin(BULLET_MARGIN);  // margin: hull padding
+            // Create a hull shape to approximate Trimesh
+
+            bool useShapeHull;
+
+            btShapeHull shapeHull(&convexTrimesh);
+            if (mesh->vertex_count >= 50)
+            {
+              bool success = shapeHull.buildHull(-666);  // note: margin argument not used
+              if (!success)
+              {
+                ROS_WARN("shapehull convex hull failed! falling back to original "
+                         "vertices");
+              }
+              useShapeHull = success;
+            }
+            else
+            {
+              useShapeHull = false;
+            }
+
+            btConvexHullShape* subshape = new btConvexHullShape();
+            if (useShapeHull)
+            {
+              for (int i = 0; i < shapeHull.numVertices(); ++i)
+              {
+                subshape->addPoint(shapeHull.getVertexPointer()[i]);
+              }
+            }
+            else
+            {
+              for (unsigned i = 0u; i < mesh->vertex_count; ++i)
+              {
+                subshape->addPoint(
+                    btVector3(mesh->vertices[3 * i], mesh->vertices[3 * i + 1], mesh->vertices[3 * i + 2]));
+              }
+            }
+            return subshape;
+          }
+          case CollisionObjectType::UseShapeType:
+          {
+            subshape = new btBvhTriangleMeshShape(ptrimesh.get(), true);
+            cow->manage(ptrimesh);
+            return subshape;
+          }
+          default:
+          {
+            ROS_ERROR("This bullet shape type (%d) is not supported for geometry meshs", (int)collision_object_type);
+            return nullptr;
+          }
+        }
       }
+      break;
+    }
+    case shapes::OCTREE:
+    {
+      assert(collision_object_type == CollisionObjectType::UseShapeType ||
+             collision_object_type == CollisionObjectType::ConvexHull ||
+             collision_object_type == CollisionObjectType::SDF ||
+             collision_object_type == CollisionObjectType::MultiSphere);
+      const shapes::OcTree* g = static_cast<const shapes::OcTree*>(geom.get());
+      btCompoundShape* subshape = new btCompoundShape(/*dynamicAABBtree=*/false);
+      double occupancy_threshold = g->octree->getOccupancyThres();
 
       // convert the mesh to the assigned collision object type
       switch (collision_object_type)
       {
-        case CollisionObjectType::ConvexHull:
+        case CollisionObjectType::UseShapeType:
         {
-          // CONVEX HULL
-          btConvexTriangleMeshShape convexTrimesh(ptrimesh.get());
-          convexTrimesh.setMargin(BULLET_MARGIN); // margin: hull padding
-          //Create a hull shape to approximate Trimesh
-
-          bool useShapeHull;
-
-          btShapeHull shapeHull(&convexTrimesh);
-          if (mesh->vertex_count >= 50)
+          for (auto it = g->octree->begin(g->octree->getTreeDepth()), end = g->octree->end(); it != end; ++it)
           {
-            bool success = shapeHull.buildHull(-666); // note: margin argument not used
-            if (!success)
+            if (it->getOccupancy() >= occupancy_threshold)
             {
-              ROS_WARN("shapehull convex hull failed! falling back to original vertices");
-            }
-            useShapeHull = success;
-          }
-          else
-          {
-            useShapeHull = false;
-          }
+              double size = it.getSize();
+              btTransform geomTrans;
+              geomTrans.setIdentity();
+              geomTrans.setOrigin(btVector3(it.getX(), it.getY(), it.getZ()));
+              btBoxShape* childshape = new btBoxShape(btVector3(size / 2, size / 2, size / 2));
+              childshape->setMargin(BULLET_MARGIN);
+              cow->manage(childshape);
 
-          btConvexHullShape *subshape = new btConvexHullShape();
-          if (useShapeHull)
-          {
-            for (int i = 0; i < shapeHull.numVertices(); ++i)
-            {
-              subshape->addPoint(shapeHull.getVertexPointer()[i]);
-            }
-          }
-          else
-          {
-            for (unsigned i = 0u; i < mesh->vertex_count; ++i)
-            {
-              subshape->addPoint(btVector3(mesh->vertices[3 * i], mesh->vertices[3 * i + 1], mesh->vertices[3 * i + 2]));
+              subshape->addChildShape(geomTrans, childshape);
             }
           }
           return subshape;
         }
-        case CollisionObjectType::UseShapeType:
+        case CollisionObjectType::MultiSphere:
         {
-          subshape = new btBvhTriangleMeshShape(ptrimesh.get(), true);
-          cow->manage(ptrimesh);
+          for (auto it = g->octree->begin(g->octree->getTreeDepth()), end = g->octree->end(); it != end; ++it)
+          {
+            if (it->getOccupancy() >= occupancy_threshold)
+            {
+              double size = it.getSize();
+              btTransform geomTrans;
+              geomTrans.setIdentity();
+              geomTrans.setOrigin(btVector3(it.getX(), it.getY(), it.getZ()));
+              btSphereShape* childshape = new btSphereShape(std::sqrt(2 * ((size / 2) * (size / 2))));
+              childshape->setMargin(BULLET_MARGIN);
+              cow->manage(childshape);
+
+              subshape->addChildShape(geomTrans, childshape);
+            }
+          }
           return subshape;
         }
         default:
         {
-          ROS_ERROR("This bullet shape type (%d) is not supported for geometry meshs", (int)collision_object_type);
+          ROS_ERROR("This bullet shape type (%d) is not supported for geometry octree", (int)collision_object_type);
           return nullptr;
         }
       }
     }
-    break;
-  }
-  case shapes::OCTREE:
-  {
-    assert(collision_object_type == CollisionObjectType::UseShapeType || collision_object_type == CollisionObjectType::ConvexHull || collision_object_type == CollisionObjectType::SDF || collision_object_type == CollisionObjectType::MultiSphere);
-    const shapes::OcTree* g = static_cast<const shapes::OcTree*>(geom.get());
-    btCompoundShape* subshape = new btCompoundShape(/*dynamicAABBtree=*/false);
-    double occupancy_threshold = g->octree->getOccupancyThres();
-
-    // convert the mesh to the assigned collision object type
-    switch (collision_object_type)
-    {
-      case CollisionObjectType::UseShapeType:
-      {
-        for(auto it = g->octree->begin(g->octree->getTreeDepth()), end = g->octree->end(); it != end; ++it)
-        {
-          if(it->getOccupancy() >= occupancy_threshold)
-          {
-            double size = it.getSize();
-            btTransform geomTrans;
-            geomTrans.setIdentity();
-            geomTrans.setOrigin(btVector3(it.getX(), it.getY(), it.getZ()));
-            btBoxShape* childshape = new btBoxShape(btVector3(size/2, size/2, size/2));
-            childshape->setMargin(BULLET_MARGIN);
-            cow->manage(childshape);
-
-            subshape->addChildShape(geomTrans, childshape);
-          }
-        }
-        return subshape;
-      }
-      case CollisionObjectType::MultiSphere:
-      {
-        for(auto it = g->octree->begin(g->octree->getTreeDepth()), end = g->octree->end(); it != end; ++it)
-        {
-          if(it->getOccupancy() >= occupancy_threshold)
-          {
-            double size = it.getSize();
-            btTransform geomTrans;
-            geomTrans.setIdentity();
-            geomTrans.setOrigin(btVector3(it.getX(), it.getY(), it.getZ()));
-            btSphereShape* childshape = new btSphereShape(std::sqrt(2 * ((size/2) * (size/2))));
-            childshape->setMargin(BULLET_MARGIN);
-            cow->manage(childshape);
-
-            subshape->addChildShape(geomTrans, childshape);
-          }
-        }
-        return subshape;
-      }
-      default:
-      {
-        ROS_ERROR("This bullet shape type (%d) is not supported for geometry octree", (int)collision_object_type);
-        return nullptr;
-      }
-    }
-  }
-  default:
-    ROS_ERROR("This geometric shape type (%d) is not supported using BULLET yet", (int)geom->type);
-    return nullptr;
+    default:
+      ROS_ERROR("This geometric shape type (%d) is not supported using BULLET yet", (int)geom->type);
+      return nullptr;
   }
 
   return nullptr;
 }
 
-CollisionObjectWrapper::CollisionObjectWrapper(const std::string& name, const int& type_id, const std::vector<shapes::ShapeConstPtr> &shapes, const EigenSTL::vector_Affine3d &shape_poses, const CollisionObjectTypeVector &collision_object_types)
-  :
-    m_name(name),
-    m_type_id(type_id),
-    m_shapes(shapes),
-    m_shape_poses(shape_poses),
-    m_collision_object_types(collision_object_types)
+CollisionObjectWrapper::CollisionObjectWrapper(const std::string& name,
+                                               const int& type_id,
+                                               const std::vector<shapes::ShapeConstPtr>& shapes,
+                                               const EigenSTL::vector_Affine3d& shape_poses,
+                                               const CollisionObjectTypeVector& collision_object_types)
+  : m_name(name)
+  , m_type_id(type_id)
+  , m_shapes(shapes)
+  , m_shape_poses(shape_poses)
+  , m_collision_object_types(collision_object_types)
 {
   if (shapes.size() == 1 && m_shape_poses[0].matrix().isIdentity())
   {
@@ -255,7 +265,9 @@ CollisionObjectWrapper::CollisionObjectWrapper(const std::string& name, const in
   {
     btCompoundShape* compound = new btCompoundShape(/*dynamicAABBtree=*/false);
     manage(compound);
-    compound->setMargin(BULLET_MARGIN); //margin: compound. seems to have no effect when positive but has an effect when negative
+    compound->setMargin(BULLET_MARGIN);  // margin: compound. seems to have no
+                                         // effect when positive but has an
+                                         // effect when negative
     setCollisionShape(compound);
 
     for (std::size_t j = 0; j < m_shapes.size(); ++j)
@@ -276,8 +288,18 @@ CollisionObjectWrapper::CollisionObjectWrapper(const std::string& name, const in
   setWorldTransform(trans);
 }
 
-CollisionObjectWrapper::CollisionObjectWrapper(const std::string& name, const int& type_id, const std::vector<shapes::ShapeConstPtr> &shapes, const EigenSTL::vector_Affine3d &shape_poses, const CollisionObjectTypeVector &collision_object_types, const std::vector<std::shared_ptr<void>>& data) : m_name(name), m_type_id(type_id), m_shapes(shapes), m_shape_poses(shape_poses), m_collision_object_types(collision_object_types), m_data(data)
+CollisionObjectWrapper::CollisionObjectWrapper(const std::string& name,
+                                               const int& type_id,
+                                               const std::vector<shapes::ShapeConstPtr>& shapes,
+                                               const EigenSTL::vector_Affine3d& shape_poses,
+                                               const CollisionObjectTypeVector& collision_object_types,
+                                               const std::vector<std::shared_ptr<void>>& data)
+  : m_name(name)
+  , m_type_id(type_id)
+  , m_shapes(shapes)
+  , m_shape_poses(shape_poses)
+  , m_collision_object_types(collision_object_types)
+  , m_data(data)
 {
 }
-
 }

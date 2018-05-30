@@ -1,44 +1,40 @@
 #pragma once
+#include <functional>
 #include <string>
 #include <trajopt_sco/modeling.hpp>
-#include <functional>
 /*
  * Algorithms for non-convex, constrained optimization
  */
 
-namespace sco {
-
+namespace sco
+{
 using std::string;
 using std::vector;
 
-
-enum OptStatus {
+enum OptStatus
+{
   OPT_CONVERGED,
-  OPT_SCO_ITERATION_LIMIT, // hit iteration limit before convergence
+  OPT_SCO_ITERATION_LIMIT,  // hit iteration limit before convergence
   OPT_PENALTY_ITERATION_LIMIT,
   OPT_FAILED,
   INVALID
 };
-static const char* OptStatus_strings[]  = {
-  "CONVERGED",
-  "SCO_ITERATION_LIMIT",
-  "PENALTY_ITERATION_LIMIT",
-  "FAILED",
-  "INVALID"
-};
-inline string statusToString(OptStatus status) {
-  return OptStatus_strings[status];
-}
-
-
-struct OptResults {
-  DblVec x; // solution estimate
+static const char* OptStatus_strings[] = { "CONVERGED",
+                                           "SCO_ITERATION_LIMIT",
+                                           "PENALTY_ITERATION_LIMIT",
+                                           "FAILED",
+                                           "INVALID" };
+inline string statusToString(OptStatus status) { return OptStatus_strings[status]; }
+struct OptResults
+{
+  DblVec x;  // solution estimate
   OptStatus status;
   double total_cost;
   vector<double> cost_vals;
   DblVec cnt_viols;
   int n_func_evals, n_qp_solves;
-  void clear() {
+  void clear()
+  {
     x.clear();
     status = INVALID;
     cost_vals.clear();
@@ -46,24 +42,24 @@ struct OptResults {
     n_func_evals = 0;
     n_qp_solves = 0;
   }
-  OptResults() {clear();}
+  OptResults() { clear(); }
 };
 std::ostream& operator<<(std::ostream& o, const OptResults& r);
 
-class Optimizer {
+class Optimizer
+{
   /*
    * Solves an optimization problem
    */
 public:
   virtual OptStatus optimize() = 0;
   virtual ~Optimizer() {}
-  virtual void setProblem(OptProbPtr prob) {prob_ = prob;}
+  virtual void setProblem(OptProbPtr prob) { prob_ = prob; }
   void initialize(const vector<double>& x);
-  vector<double>& x() {return results_.x;}
-  OptResults& results() {return results_;}
-
+  vector<double>& x() { return results_.x; }
+  OptResults& results() { return results_; }
   typedef std::function<void(OptProb*, DblVec&)> Callback;
-  void addCallback(const Callback& f); // called before each iteration
+  void addCallback(const Callback& f);  // called before each iteration
 protected:
   vector<Callback> callbacks_;
   void callCallbacks(DblVec& x);
@@ -73,49 +69,59 @@ protected:
 
 struct BasicTrustRegionSQPParameters
 {
-  double improve_ratio_threshold;    // minimum ratio true_improve/approx_improve to accept step
-  double min_trust_box_size;         // if trust region gets any smaller, exit and report convergence
-  double min_approx_improve;         // if model improves less than this, exit and report convergence
-  double min_approx_improve_frac;    // if model improves less than this, exit and report convergence
-  double max_iter;                   // The max number of iterations
-  double trust_shrink_ratio;         // if improvement is less than improve_ratio_threshold, shrink trust region by this ratio
-  double trust_expand_ratio;         // if improvement is less than improve_ratio_threshold, shrink trust region by this ratio
-  double cnt_tolerance;              // after convergence of penalty subproblem, if constraint violation is less than this, we're done
-  double max_merit_coeff_increases;  // number of times that we jack up penalty coefficient
-  double merit_coeff_increase_ratio; // ratio that we increate coeff each time
-  double max_time;                   // not yet implemented
-  double merit_error_coeff;          // initial penalty coefficient
-  double trust_box_size;             // current size of trust region (component-wise)
+  double improve_ratio_threshold;  // minimum ratio true_improve/approx_improve
+                                   // to accept step
+  double min_trust_box_size;       // if trust region gets any smaller, exit and
+                                   // report convergence
+  double min_approx_improve;       // if model improves less than this, exit and
+                                   // report convergence
+  double min_approx_improve_frac;  // if model improves less than this, exit and
+                                   // report convergence
+  double max_iter;                 // The max number of iterations
+  double trust_shrink_ratio;       // if improvement is less than
+  // improve_ratio_threshold, shrink trust region by
+  // this ratio
+  double trust_expand_ratio;  // if improvement is less than
+                              // improve_ratio_threshold, shrink trust region by
+                              // this ratio
+  double cnt_tolerance;       // after convergence of penalty subproblem, if
+  // constraint violation is less than this, we're done
+  double max_merit_coeff_increases;   // number of times that we jack up penalty
+                                      // coefficient
+  double merit_coeff_increase_ratio;  // ratio that we increate coeff each time
+  double max_time;                    // not yet implemented
+  double merit_error_coeff;           // initial penalty coefficient
+  double trust_box_size;              // current size of trust region (component-wise)
 
   BasicTrustRegionSQPParameters();
-
 };
 
-class BasicTrustRegionSQP : public Optimizer {
+class BasicTrustRegionSQP : public Optimizer
+{
   /*
-   * Alternates between convexifying objectives and constraints and then solving convex subproblem
+   * Alternates between convexifying objectives and constraints and then solving
+   * convex subproblem
    * Uses a merit function to decide whether or not to accept the step
    * merit function = objective + merit_err_coeff * | constraint_error |
-   * Note: sometimes the convexified objectives and constraints lead to an infeasible subproblem
+   * Note: sometimes the convexified objectives and constraints lead to an
+   * infeasible subproblem
    * In that case, you should turn them into penalties and solve that problem
-   * (todo: implement penalty-based sqp that gracefully handles infeasible constraints)
+   * (todo: implement penalty-based sqp that gracefully handles infeasible
+   * constraints)
    */
 public:
-
   BasicTrustRegionSQP();
   BasicTrustRegionSQP(OptProbPtr prob);
   void setProblem(OptProbPtr prob);
   void setParameters(const BasicTrustRegionSQPParameters& param) { param_ = param; }
   const BasicTrustRegionSQPParameters& getParameters() const { return param_; }
   BasicTrustRegionSQPParameters& getParameters() { return param_; }
-
   OptStatus optimize();
+
 protected:
   void adjustTrustRegion(double ratio);
   void setTrustBoxConstraints(const vector<double>& x);
   ModelPtr model_;
   BasicTrustRegionSQPParameters param_;
 };
-
-
 }
