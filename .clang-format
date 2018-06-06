@@ -1,5 +1,5 @@
 ---
-# find . -path ./trajopt_ext/bullet3 -prune -o -regex '.*\.\(cpp\|hpp\|cc\|cxx\|h\|hxx\)' -exec clang-format -style=file -i {} \;
+# find . -path ./trajopt_ext/vhacd -prune -o -regex '.*\.\(cpp\|hpp\|cc\|cxx\|h\|hxx\)' -exec clang-format -style=file -i {} \;
 BasedOnStyle: Google
 AccessModifierOffset: -2
 AlignEscapedNewlinesLeft: false

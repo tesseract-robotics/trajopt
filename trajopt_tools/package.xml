@@ -12,6 +12,7 @@
   <build_export_depend>roscpp</build_export_depend>
   <exec_depend>roscpp</exec_depend>
   <depend>trajopt_ext</depend>
+  <depend>tesseract_ext</depend>
 
 
   <!-- The export tag contains other, unspecified, tags -->
