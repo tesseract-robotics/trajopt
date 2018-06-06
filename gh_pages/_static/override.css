@@ -1,0 +1,42 @@
+.icon:before {
+  white-space: pre-wrap !important;
+}
+.header-override {
+  margin-bottom: 20px;
+}
+.header-override p {
+  padding: 5px;
+  font-size: 1.2em;
+  text-align: right;
+}
+
+.wy-breadcrumbs li.wy-breadcrumbs-aside {
+  display: block;
+  width: 100%;
+  text-align: right;
+  margin-bottom: -25px;
+}
+
+.btn-copyboard {
+  opacity: 0.20;
+  background-color: #00adef;
+  color: #ffffff;
+  white-space: nowrap;
+  padding: 2px 2px;
+  position: relative;
+  float: right;
+  transition:opacity 0.3s ease-in-out;
+  -webkit-transition:opacity 0.3s ease-in-out;
+  -o-transition:opacity 0.3s ease-in-out;
+}
+
+.btn-copyboard:hover {
+  background-color: #00adef;
+  color: #ffffff;
+  opacity:1;
+}
+
+.btn-copyboard:hover::after, .btn-copyboard:focus, .btn-copyboard:active {
+  background-color: #00adef;
+  color: #ffffff;
+}
