@@ -1,7 +1,0 @@
-<library path="libtesseract_rviz_state_plugin">
-  <class name="tesseract_rviz/TesseractState" type="tesseract_rviz::TesseractStateDisplay" base_class_type="rviz::Display">
-    <description>
-      Displays a tesseract environment state.
-    </description>
-  </class>
-</library>

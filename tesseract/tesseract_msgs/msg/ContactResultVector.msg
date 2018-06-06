@@ -1,1 +1,0 @@
-ContactResult[] constacts
