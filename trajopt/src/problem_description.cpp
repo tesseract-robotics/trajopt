@@ -55,6 +55,8 @@ void RegisterMakers()
   TermInfo::RegisterMaker("joint", &JointConstraintInfo::create);
   TermInfo::RegisterMaker("cart_vel", &CartVelCntInfo::create);
   TermInfo::RegisterMaker("joint_vel_limits", &JointVelConstraintInfo::create);
+  TermInfo::RegisterMaker("confined_axis", &ConfinedAxisTermInfo::create);
+  TermInfo::RegisterMaker("conical_axis", &ConicalAxisTermInfo::create);
 
   gRegisteredMakers = true;
 }
@@ -801,4 +803,193 @@ void JointConstraintInfo::hatch(TrajOptProb& prob)
     prob.addLinearConstraint(exprSub(AffExpr(vars[j]), vals[j]), EQ);
   }
 }
+
+// initialize with basic default values
+ConfinedAxisTermInfo::ConfinedAxisTermInfo() {
+  pos_coeffs = Vector3d::Ones();
+  axis_coeff = 1.0;
+  confined_coeff = 1.0;
+  tcp.setIdentity();
+}
+
+// get the term information from a json value
+void ConfinedAxisTermInfo::fromJson(ProblemConstructionInfo &pci, const Value& v) {
+  // make sure params is a member of the Json value provided
+  FAIL_IF_FALSE(v.isMember("params"));
+
+  // provide default position and orienation for the tcp (tool center point)
+  Vector3d tcp_xyz = Vector3d::Zero();
+  Vector4d tcp_wxyz = Vector4d(1, 0, 0, 0);
+
+  // get the params value and read the parameters fmro the file into the object members
+  const Value& params = v["params"];
+  childFromJson(params, timestep, "timestep", pci.basic_info.n_steps-1);
+  childFromJson(params, xyz,"xyz");
+  childFromJson(params, wxyz,"wxyz");
+  childFromJson(params, pos_coeffs, "pos_coeffs", (Vector3d)Vector3d::Ones());
+  childFromJson(params, axis_coeff, "axis_coeff", (double)1.0);
+  childFromJson(params, confined_coeff, "confined_coeff", (double)1.0);
+  childFromJson(params, link, "link");
+  childFromJson(params, axis, "axis");
+  childFromJson(params, tol, "tolerance");
+
+  // construct the tcp Affine matrix from its components
+  childFromJson(params, tcp_xyz, "tcp,xyz", tcp_xyz);
+  childFromJson(params, tcp_wxyz, "tcp_xwyz", tcp_wxyz);
+  Eigen::Quaterniond q(tcp_wxyz(0), tcp_wxyz(1), tcp_wxyz(2), tcp_wxyz(3));
+  tcp.linear() = q.matrix();
+  tcp.translation() = tcp_xyz;
+
+  // make sure the link name provided is valid
+  const std::vector<std::string>& link_names = pci.kin->getLinkNames();
+  if (std::find(link_names.begin(), link_names.end(),link)==link_names.end()) {
+    PRINT_AND_THROW(boost::format("invalid link name: %s")%link);
+  }
+
+  // make sure there are no extra items in the params value
+  const char* all_fields[] = {"timestep", "xyz", "wxyz", "pos_coeffs", "axis_coeff", "confined_coeff", "link",
+                              "tolerance", "axis", "tcp_xyz", "tcp_wxyz"};
+  ensure_only_members(params, all_fields, sizeof(all_fields)/sizeof(char*));
+}
+
+// add the term to the problem description
+void ConfinedAxisTermInfo::hatch(TrajOptProb& prob) {
+  // construct the desired pose
+  Eigen::Affine3d input_pose;
+  Eigen::Quaterniond q(wxyz(0), wxyz(1), wxyz(2), wxyz(3));
+  input_pose.linear() = q.matrix();
+  input_pose.translation() = xyz;
+
+  // create the equality and inequality error functions to be used
+  VectorOfVectorPtr f_eq(new StaticCartPoseErrCalculator(input_pose, prob.GetKin(), prob.GetEnv(), link, tcp));
+  VectorOfVectorPtr f_ineq(new ConfinedAxisErrCalculator(input_pose, prob.GetKin(), prob.GetEnv(), link, axis, tol, tcp));
+
+  // construct the coefficient vectors for the errors
+  VectorXd pose_coeffs = concat(Vector3d(0.0, 0.0, 0.0), pos_coeffs);
+  VectorXd ineq_coeffs(1);
+
+  // the inequality coefficient is the one referrring to the error outside the confined rotation
+  ineq_coeffs(0) = confined_coeff;
+
+  // the error corresponding to the axis of rotation having the proper orientation corresponds to the
+  // values of the other 2 quaternion error components
+  switch(axis) {
+    case 'x':
+    pose_coeffs(1) = axis_coeff;
+    pose_coeffs(2) = axis_coeff;
+    break;
+    case 'y':
+    pose_coeffs(0) = axis_coeff;
+    pose_coeffs(2) = axis_coeff;
+    break;
+    case 'z':
+    pose_coeffs(0) = axis_coeff;
+    pose_coeffs(1) = axis_coeff;
+    break;
+  }
+
+  // add the costs or constraints depending on the term type
+  if (term_type == TT_COST) {
+    prob.addCost(CostPtr(new CostFromErrFunc(f_eq, prob.GetVarRow(timestep), pose_coeffs, ABS, name)));
+    prob.addCost(CostPtr(new CostFromErrFunc(f_ineq, prob.GetVarRow(timestep), ineq_coeffs, HINGE, name)));
+  }
+  else if (term_type == TT_CNT) {
+    prob.addConstraint(ConstraintPtr(new ConstraintFromFunc(f_eq, prob.GetVarRow(timestep), pose_coeffs, EQ, name)));
+    prob.addConstraint(ConstraintPtr(new ConstraintFromFunc(f_ineq, prob.GetVarRow(timestep), ineq_coeffs, INEQ, name)));
+  }
+}
+
+// initialize with basic default values
+ConicalAxisTermInfo::ConicalAxisTermInfo() {
+  pos_coeffs = Vector3d::Ones();
+  axis_coeff = 1.0;
+  conical_coeff = 1.0;
+  tcp.setIdentity();
+}
+
+// construct the term from a Json file
+void ConicalAxisTermInfo::fromJson(ProblemConstructionInfo &pci, const Value &v) {
+  // make sure params is a member of the Json value provided
+  FAIL_IF_FALSE(v.isMember("params"));
+
+  // provide default position and orienation for the tcp (tool center point)
+  Vector3d tcp_xyz = Vector3d::Zero();
+  Vector4d tcp_wxyz = Vector4d(1, 0, 0, 0);
+
+  // get the params value and read the parameters fmro the file into the object members
+  const Value& params = v["params"];
+  childFromJson(params, timestep, "timestep", pci.basic_info.n_steps-1);
+  childFromJson(params, xyz,"xyz");
+  childFromJson(params, wxyz,"wxyz");
+  childFromJson(params, pos_coeffs, "pos_coeffs", (Vector3d)Vector3d::Ones());
+  childFromJson(params, axis_coeff, "axis_coeff", (double)1.0);
+  childFromJson(params, conical_coeff, "conical_coeff", (double)1.0);
+  childFromJson(params, link, "link");
+  childFromJson(params, axis, "axis");
+  childFromJson(params, tol, "tolerance");
+
+  // construct the tcp Affine matrix from its components
+  childFromJson(params, tcp_xyz, "tcp,xyz", tcp_xyz);
+  childFromJson(params, tcp_wxyz, "tcp_xwyz", tcp_wxyz);
+  Eigen::Quaterniond q(tcp_wxyz(0), tcp_wxyz(1), tcp_wxyz(2), tcp_wxyz(3));
+  tcp.linear() = q.matrix();
+  tcp.translation() = tcp_xyz;
+
+  // make sure the link name provided is valid
+  const std::vector<std::string>& link_names = pci.kin->getLinkNames();
+  if (std::find(link_names.begin(), link_names.end(),link)==link_names.end()) {
+    PRINT_AND_THROW(boost::format("invalid link name: %s")%link);
+  }
+
+  // make sure there are no extra items in the params value
+  const char* all_fields[] = {"timestep", "xyz", "wxyz", "pos_coeffs", "axis_coeff", "conical_coeff", "link",
+                              "tolerance", "axis", "tcp_xyz", "tcp_wxyz"};
+  ensure_only_members(params, all_fields, sizeof(all_fields)/sizeof(char*));
+}
+
+// add the term to the problem description
+void ConicalAxisTermInfo::hatch(TrajOptProb &prob) {
+  // construct the desired pose
+  Eigen::Affine3d input_pose;
+  Eigen::Quaterniond q(wxyz(0), wxyz(1), wxyz(2), wxyz(3));
+  input_pose.linear() = q.matrix();
+  input_pose.translation() = xyz;
+
+  // create the equality and inequality error functions to be used
+  VectorOfVectorPtr f_eq(new StaticCartPoseErrCalculator(input_pose, prob.GetKin(), prob.GetEnv(), link, tcp));
+  VectorOfVectorPtr f_ineq(new ConicalAxisErrCalculator(input_pose, prob.GetKin(), prob.GetEnv(), link, axis, tol, tcp));
+
+  // construct the coefficient vectors for the errors
+  VectorXd pose_coeffs = concat(Vector3d(0.0, 0.0, 0.0), pos_coeffs);
+  VectorXd ineq_coeffs(1);
+
+  // the inequality coefficient is the one referrring to the error outside the conical tolerance
+  ineq_coeffs(0) = conical_coeff;
+
+  // the error corresponding to the rotation about the axis in the cone is given by
+  // the quaternion component of that axis
+  switch(axis) {
+    case 'x':
+    pose_coeffs(0) = axis_coeff;
+    break;
+    case 'y':
+    pose_coeffs(1) = axis_coeff;
+    break;
+    case 'z':
+    pose_coeffs(2) = axis_coeff;
+    break;
+  }
+
+  // add the costs or constraints depending on the term type
+  if (term_type == TT_COST) {
+    prob.addCost(CostPtr(new CostFromErrFunc(f_eq, prob.GetVarRow(timestep), pose_coeffs, ABS, name)));
+    prob.addCost(CostPtr(new CostFromErrFunc(f_ineq, prob.GetVarRow(timestep), ineq_coeffs, HINGE, name)));
+  }
+  else if (term_type == TT_CNT) {
+    prob.addConstraint(ConstraintPtr(new ConstraintFromFunc(f_eq, prob.GetVarRow(timestep), pose_coeffs, EQ, name)));
+    prob.addConstraint(ConstraintPtr(new ConstraintFromFunc(f_ineq, prob.GetVarRow(timestep), ineq_coeffs, INEQ, name)));
+  }
+
+}
+
 }

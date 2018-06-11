@@ -26,6 +26,12 @@ include_directories(
   SYSTEM ${PCL_INCLUDE_DIRS}
 )
 
+#add_executable(${PROJECT_NAME}_basic_cartesian_plan_conical_axis src/basic_cartesian_plan_conical_axis.cpp)
+#target_link_libraries(${PROJECT_NAME}_basic_cartesian_plan_conical_axis ${PCL_LIBRARIES} ${catkin_LIBRARIES} )
+
+#add_executable(${PROJECT_NAME}_basic_cartesian_plan_confined_axis src/basic_cartesian_plan_confined_axis.cpp)
+#target_link_libraries(${PROJECT_NAME}_basic_cartesian_plan_confined_axis ${PCL_LIBRARIES} ${catkin_LIBRARIES} )
+
 add_executable(${PROJECT_NAME}_basic_cartesian_plan src/basic_cartesian_plan.cpp)
 target_link_libraries(${PROJECT_NAME}_basic_cartesian_plan ${PCL_LIBRARIES} ${catkin_LIBRARIES} )
 
