@@ -10,6 +10,8 @@
 #include <trajopt_utils/logging.hpp>
 #include <trajopt_utils/stl_to_string.hpp>
 
+
+#include <ros/ros.h>
 using namespace std;
 using namespace sco;
 using namespace Eigen;
@@ -88,8 +90,13 @@ VectorXd StaticCartPoseErrCalculator::operator()(const VectorXd& dof_vals) const
       env_->getState(manip_->getJointNames(), dof_vals)->transforms.at(manip_->getBaseLinkName())));
   manip_->calcFwdKin(new_pose, change_base, dof_vals, link_, *state);
 
+  // calculate the err of the current pose
   Affine3d pose_err = pose_inv_ * (new_pose * tcp_);
+
+  // get the quaternion representation of the rotation error
   Quaterniond q(pose_err.rotation());
+
+  // construct a 6D vector containing orientation and positional errors
   VectorXd err = concat(Vector3d(q.x(), q.y(), q.z()), pose_err.translation());
   return err;
 }
@@ -171,37 +178,55 @@ VectorXd CartVelCalculator::operator()(const VectorXd& dof_vals) const
   return out;
 }
 
-#if 0
-CartVelConstraint::CartVelConstraint(const VarVector& step0vars, const VarVector& step1vars, RobotAndDOFPtr manip, KinBody::LinkPtr link, double distlimit) :
-        ConstraintFromFunc(VectorOfVectorPtr(new CartVelCalculator(manip, link, distlimit)),
-             MatrixOfVectorPtr(new CartVelJacCalculator(manip, link, distlimit)), concat(step0vars, step1vars), VectorXd::Ones(0), INEQ, "CartVel") 
-{} // TODO coeffs
-#endif
+VectorXd ConfinedAxisErrCalculator::operator()(const VectorXd& dof_vals) const {
+  // calculate the current pose given the DOF values for the robot
+  Affine3d new_pose, change_base;
+  change_base = env_->getLinkTransform(manip_->getBaseLinkName());
+  manip_->calcFwdKin(new_pose, change_base, dof_vals, link_, *env_->getState());
 
-#if 0
-struct UpErrorCalculator {
-  Vector3d dir_local_;
-  Vector3d goal_dir_world_;
-  RobotAndDOFPtr manip_;
-  OR::KinBody::LinkPtr link_;
-  MatrixXd perp_basis_; // 2x3 matrix perpendicular to goal_dir_world
-  UpErrorCalculator(const Vector3d& dir_local, const Vector3d& goal_dir_world, RobotAndDOFPtr manip, KinBody::LinkPtr link) :
-    dir_local_(dir_local),
-    goal_dir_world_(goal_dir_world),
-    manip_(manip),
-    link_(link)
-  {
-    Vector3d perp0 = goal_dir_world_.cross(Vector3d::Random()).normalized();
-    Vector3d perp1 = goal_dir_world_.cross(perp0);
-    perp_basis_.resize(2,3);
-    perp_basis_.row(0) = perp0.transpose();
-    perp_basis_.row(1) = perp1.transpose();
-  }
-  VectorXd operator()(const VectorXd& dof_vals) {
-    manip_->SetDOFValues(toDblVec(dof_vals));
-    OR::Transform newpose = link_->GetTransform();
-    return perp_basis_*(toRot(newpose.rot) * dir_local_ - goal_dir_world_);
-  }
-};
-#endif
+  // get the error of the current pose
+  Affine3d pose_err = pose_inv_ * (new_pose * tcp_);
+  Quaterniond q(pose_err.rotation());
+  VectorXd err(1);
+
+  // determine the error of the rotation
+   switch(axis_) {
+      case 'x': err(0) = fabs(q.x()) - tol_;
+      break;
+      case 'y': err(0) = fabs(q.y()) - tol_;
+      break;
+      case 'z': err(0) = fabs(q.z()) - tol_;
+      break;
+    }
+
+  return err;
+}
+
+VectorXd ConicalAxisErrCalculator::operator()(const VectorXd& dof_vals) const {
+  // calculate the current pose given the DOF values for the robot
+  Affine3d new_pose, change_base;
+  change_base = env_->getLinkTransform(manip_->getBaseLinkName());
+  manip_->calcFwdKin(new_pose, change_base, dof_vals, link_, *env_->getState());
+
+  // get the error of the current pose
+  Affine3d pose_err = pose_inv_ * (new_pose * tcp_);
+
+  // get the orientation matrix of the error
+  Matrix3d orientation(pose_err.rotation());
+  VectorXd err(1);
+
+  // determine the error of the conical axis
+  // tol_ = cos(tol_angle), so when angle < tol_angle, err < 0, and vice versa
+  switch(axis_) {
+     case 'x': err(0) = tol_ - orientation(0, 0);
+     break;
+     case 'y': err(0) = tol_ - orientation(1, 1);
+     break;
+     case 'z': err(0) = tol_ - orientation(2, 2);
+     break;
+   }
+
+  return err;
+}
+
 }
