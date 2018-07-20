@@ -214,7 +214,7 @@ std::shared_ptr<ProblemConstructionInfo> cppMethod(const std::string& start, con
     pci->init_info.data.col(i) = VectorXd::LinSpaced(pci->basic_info.n_steps, start_pos[i], joint_pose[i]);
 
   // Populate Cost Info
-  std::shared_ptr<JointVelCostInfo> joint_vel = std::shared_ptr<JointVelCostInfo>(new JointVelCostInfo);
+  std::shared_ptr<JointVelTermInfo> joint_vel = std::shared_ptr<JointVelTermInfo>(new JointVelTermInfo);
   joint_vel->coeffs = std::vector<double>(8, 5.0);
   joint_vel->name = "joint_vel";
   joint_vel->term_type = TT_COST;

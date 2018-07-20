@@ -4,6 +4,7 @@
 #include <trajopt/common.hpp>
 #include <trajopt/json_marshal.hpp>
 #include <trajopt_sco/optimizers.hpp>
+#include <trajopt_sco/modeling_utils.hpp>
 
 namespace sco
 {
@@ -54,6 +55,13 @@ public:
   TrajOptProb();
   TrajOptProb(int n_steps, const ProblemConstructionInfo& pci);
   ~TrajOptProb() {}
+  VarVector GetJointVarRow(int i)
+  {
+    VarVector var_row = GetVarRow(i);
+    var_row.pop_back();
+    return var_row;
+  }
+
   VarVector GetVarRow(int i) { return m_traj_vars.row(i); }
   Var& GetVar(int i, int j) { return m_traj_vars.at(i, j); }
   VarArray& GetVars() { return m_traj_vars; }
@@ -90,6 +98,10 @@ struct BasicInfo
   string manip;
   string robot;       // optional
   IntVec dofs_fixed;  // optional
+
+  // optional, but must be valid
+  double dt_upper_lim = 1.0;
+  double dt_lower_lim = 1.0;
 };
 
 /**
@@ -100,10 +112,13 @@ struct InitInfo
   enum Type
   {
     STATIONARY,
-    GIVEN_TRAJ,
+    STRAIGHT_LINE,
+    GIVEN_TRAJ
   };
   Type type;
   TrajArray data;
+  bool has_time = false;
+  double dt = 1.0;
 };
 
 struct TRAJOPT_API MakesCost
@@ -120,7 +135,7 @@ Then it later gets converted to a Cost object by the hatch method
 */
 struct TRAJOPT_API TermInfo
 {
-  string name;  // xxx is this used?
+  string name;
   TermType term_type;
   virtual void fromJson(ProblemConstructionInfo& pci, const Json::Value& v) = 0;
   virtual void hatch(TrajOptProb& prob) = 0;
@@ -241,12 +256,17 @@ struct CartVelCntInfo : public TermInfo, public MakesConstraint
 \f}
 where j indexes over DOF, and \f$c_j\f$ are the coeffs.
 */
-struct JointVelCostInfo : public TermInfo, public MakesCost
+struct JointVelTermInfo : public TermInfo, public MakesCost, public MakesConstraint
 {
   DblVec coeffs;
+  int first_step;
+  int last_step;
+  string joint_name;
+  PenaltyType penalty_type;
+  double limit = 0; // only applies if constraint or penalty_type == HINGE
   void fromJson(ProblemConstructionInfo& pci, const Value& v);
   void hatch(TrajOptProb& prob);
-  DEFINE_CREATE(JointVelCostInfo)
+  DEFINE_CREATE(JointVelTermInfo)
 };
 
 struct JointVelConstraintInfo : public TermInfo, public MakesConstraint
@@ -261,6 +281,11 @@ struct JointVelConstraintInfo : public TermInfo, public MakesConstraint
 struct JointAccCostInfo : public TermInfo, public MakesCost
 {
   DblVec coeffs;
+  int first_step;
+  int last_step;
+  string joint_name;
+  PenaltyType penalty_type;
+  double limit = 0; // only applies if penalty_type == HINGE
   void fromJson(ProblemConstructionInfo& pci, const Value& v);
   void hatch(TrajOptProb& prob);
   DEFINE_CREATE(JointAccCostInfo)
@@ -269,6 +294,11 @@ struct JointAccCostInfo : public TermInfo, public MakesCost
 struct JointJerkCostInfo : public TermInfo, public MakesCost
 {
   DblVec coeffs;
+  int first_step;
+  int last_step;
+  string joint_name;
+  PenaltyType penalty_type;
+  double limit = 0; // only applies if penalty_type == HINGE
   void fromJson(ProblemConstructionInfo& pci, const Value& v);
   void hatch(TrajOptProb& prob);
   DEFINE_CREATE(JointJerkCostInfo)
@@ -322,4 +352,17 @@ struct JointConstraintInfo : public TermInfo, public MakesConstraint
   void hatch(TrajOptProb& prob);
   DEFINE_CREATE(JointConstraintInfo)
 };
+
+struct TotalTimeTermInfo : public TermInfo, public MakesCost, MakesConstraint
+{
+  double weight;
+
+  PenaltyType penalty_type;
+  double limit = 0; // only applies if constraint or penalty_type == HINGE
+
+  void hatch(TrajOptProb &prob);
+  void fromJson(ProblemConstructionInfo &pci, const Value &v);
+  DEFINE_CREATE(TotalTimeTermInfo)
+};
+
 }

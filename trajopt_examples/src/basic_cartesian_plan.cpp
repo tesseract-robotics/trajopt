@@ -71,6 +71,7 @@ TrajOptProbPtr jsonMethod()
   if (!parse_success)
   {
     ROS_FATAL("Failed to load trajopt json file from ros parameter");
+    exit(-1);
   }
 
   return ConstructProblem(root, env_);
@@ -84,25 +85,41 @@ TrajOptProbPtr cppMethod()
   pci.basic_info.n_steps = steps_;
   pci.basic_info.manip = "manipulator";
   pci.basic_info.start_fixed = false;
+  pci.basic_info.dt_lower_lim = 0.1;
+  pci.basic_info.dt_upper_lim = 5.0;
   //  pci.basic_info.dofs_fixed
 
   // Create Kinematic Object
   pci.kin = pci.env->getManipulator(pci.basic_info.manip);
 
   // Populate Init Info
-  Eigen::VectorXd start_pos = pci.env->getCurrentJointValues(pci.kin->getName());
-
   pci.init_info.type = InitInfo::STATIONARY;
-  pci.init_info.data = start_pos.transpose().replicate(pci.basic_info.n_steps, 1);
+  pci.init_info.data = pci.env->getCurrentJointValues(pci.kin->getName());
+  pci.init_info.has_time = false;
 
   // Populate Cost Info
-  std::shared_ptr<JointVelCostInfo> jv = std::shared_ptr<JointVelCostInfo>(new JointVelCostInfo);
-  jv->coeffs = std::vector<double>(7, 5.0);
-  jv->name = "joint_vel";
-  jv->term_type = TT_COST;
-  pci.cost_infos.push_back(jv);
+  std::vector<std::string> joint_names = pci.kin->getJointNames();
+  for (std::size_t i = 0; i < joint_names.size(); i++)
+  {
+    std::shared_ptr<JointVelTermInfo> jv(new JointVelTermInfo);
+    jv->coeffs = std::vector<double>(1, 2.5);
+    jv->name = joint_names[i] + "_vel";
+    jv->term_type = TT_COST;
+    jv->first_step = 0;
+    jv->last_step = steps_ - 1;
+    jv->joint_name = joint_names[i];
+    jv->penalty_type = sco::SQUARED;
+    pci.cost_infos.push_back(jv);
+  }
 
-  std::shared_ptr<CollisionCostInfo> collision = std::shared_ptr<CollisionCostInfo>(new CollisionCostInfo);
+  std::shared_ptr<TotalTimeTermInfo> time_cost(new TotalTimeTermInfo);
+  time_cost->name = "time_cost";
+  time_cost->penalty_type = sco::SQUARED;
+  time_cost->weight = 1.0;
+  time_cost->term_type = TT_COST;
+  pci.cost_infos.push_back(time_cost);
+
+  std::shared_ptr<CollisionCostInfo> collision(new CollisionCostInfo);
   collision->name = "collision";
   collision->term_type = TT_COST;
   collision->continuous = false;
@@ -110,12 +127,13 @@ TrajOptProbPtr cppMethod()
   collision->last_step = pci.basic_info.n_steps - 1;
   collision->gap = 1;
   collision->info = createSafetyMarginDataVector(pci.basic_info.n_steps, 0.025, 20);
+  pci.cost_infos.push_back(collision);
 
   // Populate Constraints
   double delta = 0.5 / pci.basic_info.n_steps;
   for (auto i = 0; i < pci.basic_info.n_steps; ++i)
   {
-    std::shared_ptr<StaticPoseCostInfo> pose = std::shared_ptr<StaticPoseCostInfo>(new StaticPoseCostInfo);
+    std::shared_ptr<StaticPoseCostInfo> pose(new StaticPoseCostInfo);
     pose->term_type = TT_CNT;
     pose->name = "waypoint_cart_" + std::to_string(i);
     pose->link = "tool0";
@@ -212,12 +230,19 @@ int main(int argc, char** argv)
   // Set Log Level
   gLogLevel = util::LevelInfo;
 
+  ROS_INFO("Setting up the problem");
   // Setup Problem
   TrajOptProbPtr prob;
   if (method_ == "cpp")
+  {
+    ROS_INFO("Using C++ method");
     prob = cppMethod();
+  }
   else
+  {
+    ROS_INFO("Using Json method");
     prob = jsonMethod();
+  }
 
   // Solve Trajectory
   ROS_INFO("basic cartesian plan example");
@@ -230,7 +255,7 @@ int main(int argc, char** argv)
 
   tesseract::ContactResultVector collision_vector;
   tesseract::moveContactResultsMapToContactResultsVector(collisions, collision_vector);
-  ROS_INFO("Initial trajector number of continuous collisions: %lui\n", collision_vector.size());
+  ROS_INFO("Initial trajector number of continuous collisions: %lu\n", collision_vector.size());
 
   BasicTrustRegionSQP opt(prob);
   if (plotting_)
@@ -238,8 +263,10 @@ int main(int argc, char** argv)
     opt.addCallback(PlotCallback(*prob, plotter));
   }
 
+  ROS_INFO("Initializing");
   opt.initialize(trajToDblVec(prob->GetInitTraj()));
   ros::Time tStart = ros::Time::now();
+  ROS_INFO("Optimizing");
   opt.optimize();
   ROS_INFO("planning time: %.3f", (ros::Time::now() - tStart).toSec());
 
@@ -250,5 +277,6 @@ int main(int argc, char** argv)
 
   collisions.clear();
   env_->continuousCollisionCheckTrajectory(joint_names, link_names, getTraj(opt.x(), prob->GetVars()), collisions);
-  ROS_INFO("Final trajectory number of continuous collisions: %lui\n", collisions.size());
+  ROS_INFO("Final trajectory number of continuous collisions: %lu\n", collisions.size());
+  ROS_INFO_STREAM("Final trajectory\n" << getTraj(opt.x(), prob->GetVars()));
 }

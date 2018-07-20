@@ -137,7 +137,7 @@ ProblemConstructionInfo cppMethod()
   //  end_pos[6]);
 
   // Populate Cost Info
-  std::shared_ptr<JointVelCostInfo> joint_vel = std::shared_ptr<JointVelCostInfo>(new JointVelCostInfo);
+  std::shared_ptr<JointVelTermInfo> joint_vel = std::shared_ptr<JointVelTermInfo>(new JointVelTermInfo);
   joint_vel->coeffs = std::vector<double>(7, 1.0);
   joint_vel->name = "joint_vel";
   joint_vel->term_type = TT_COST;

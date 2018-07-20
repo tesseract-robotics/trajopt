@@ -104,4 +104,61 @@ struct CartVelCalculator : VectorOfVector
 
   VectorXd operator()(const VectorXd& dof_vals) const;
 };
+
+struct JointVelCalculator : VectorOfVector
+{
+  double limit_;
+  JointVelCalculator() : limit_(0.0) {}
+  JointVelCalculator(double limit) : limit_(limit) {}
+  VectorXd operator()(const VectorXd& var_vals) const;
+};
+
+struct JointVelJacCalculator : MatrixOfVector
+{
+  MatrixXd operator()(const VectorXd& var_vals) const;
+};
+
+struct JointAccCalculator : VectorOfVector
+{
+  JointVelCalculator vel_calc;
+  double limit_;
+  JointAccCalculator() : limit_(0.0) {}
+  JointAccCalculator(double limit) : limit_(limit) {}
+  VectorXd operator()(const VectorXd& var_vals) const;
+};
+
+struct JointAccJacCalculator : MatrixOfVector
+{
+  JointVelCalculator vel_calc;
+  JointVelJacCalculator vel_jac_calc;
+  MatrixXd operator()(const VectorXd& var_vals) const;
+};
+
+struct JointJerkCalculator : VectorOfVector
+{
+  JointAccCalculator acc_calc;
+  double limit_;
+  JointJerkCalculator() : limit_(0.0) {}
+  JointJerkCalculator(double limit) : limit_(limit) {}
+  VectorXd operator()(const VectorXd& var_vals) const;
+};
+
+struct JointJerkJacCalculator : MatrixOfVector
+{
+  JointAccCalculator acc_calc;
+  JointAccJacCalculator acc_jac_calc;
+  MatrixXd operator()(const VectorXd& var_vals) const;
+};
+
+struct TimeCostCalculator : VectorOfVector
+{
+  double limit_;
+  TimeCostCalculator(double limit) : limit_(limit) {}
+  VectorXd operator()(const VectorXd& var_vals) const;
+};
+
+struct TimeCostJacCalculator : MatrixOfVector
+{
+  MatrixXd operator()(const VectorXd& var_vals) const;
+};
 }

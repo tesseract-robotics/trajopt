@@ -37,7 +37,7 @@ void ensure_only_members(const Value& v, const char** fields, int nvalid)
     }
     if (!valid)
     {
-      PRINT_AND_THROW(boost::format("invalid field found: %1") % it.name());
+      PRINT_AND_THROW(boost::format("invalid field found: %s") % it.name());
     }
   }
 }
@@ -47,25 +47,40 @@ void RegisterMakers()
   TermInfo::RegisterMaker("pose", &PoseCostInfo::create);
   TermInfo::RegisterMaker("static_pose", &StaticPoseCostInfo::create);
   TermInfo::RegisterMaker("joint_pos", &JointPosCostInfo::create);
-  TermInfo::RegisterMaker("joint_vel", &JointVelCostInfo::create);
+  TermInfo::RegisterMaker("joint_vel", &JointVelTermInfo::create);
   TermInfo::RegisterMaker("joint_acc", &JointAccCostInfo::create);
   TermInfo::RegisterMaker("joint_jerk", &JointJerkCostInfo::create);
   TermInfo::RegisterMaker("collision", &CollisionCostInfo::create);
 
   TermInfo::RegisterMaker("joint", &JointConstraintInfo::create);
   TermInfo::RegisterMaker("cart_vel", &CartVelCntInfo::create);
-  TermInfo::RegisterMaker("joint_vel_limits", &JointVelConstraintInfo::create);
+  TermInfo::RegisterMaker("joint_vel_limit", &JointVelTermInfo::create);
+
+  TermInfo::RegisterMaker("total_time", &TotalTimeTermInfo::create);
 
   gRegisteredMakers = true;
 }
 
-#if 0
-BoolVec toMask(const VectorXd& x) {
-  BoolVec out(x.size());
-  for (int i=0; i < x.size(); ++i) out[i] = (x[i] > 0);
-  return out;
+PenaltyType stringToPenaltyType(string str)
+{
+  if (str == "HINGE")
+  {
+    return HINGE;
+  }
+  else if (str == "ABS")
+  {
+    return ABS;
+  }
+  else if (str == "SQUARED")
+  {
+    return SQUARED;
+  }
+  else {
+    PRINT_AND_THROW(boost::format("Failed string to PenaltyType conversion. %s is not a valid penalty type") % str);
+  }
+
 }
-#endif
+
 }
 
 namespace trajopt
@@ -94,6 +109,15 @@ void ProblemConstructionInfo::readBasicInfo(const Value& v)
   childFromJson(v, basic_info.manip, "manip");
   childFromJson(v, basic_info.robot, "robot", string(""));
   childFromJson(v, basic_info.dofs_fixed, "dofs_fixed", IntVec());
+  childFromJson(v, basic_info.dt_lower_lim, "dt_lower_lim", 1.0);
+  childFromJson(v, basic_info.dt_upper_lim, "dt_upper_lim", 1.0);
+
+  if (basic_info.dt_lower_lim <= 0 || basic_info.dt_upper_lim < basic_info.dt_lower_lim)
+  {
+    PRINT_AND_THROW("dt limits (Basic Info) invalid. The lower limit must be positive, "
+                    "and the minimum upper limit is equal to the lower limit.");
+  }
+
   // TODO: optimization parameters, etc?
 }
 
@@ -167,13 +191,16 @@ void ProblemConstructionInfo::readInitInfo(const Value& v)
 {
   string type_str;
   childFromJson(v, type_str, "type");
+  childFromJson(v, init_info.dt, "dt", 1.0);
+  childFromJson(v, init_info.has_time, "has_time", false);
   int n_steps = basic_info.n_steps;
   int n_dof = kin->numJoints();
   Eigen::VectorXd start_pos = env->getCurrentJointValues(kin->getName());
 
   if (type_str == "stationary")
   {
-    init_info.data = start_pos.transpose().replicate(n_steps, 1);
+    init_info.type = InitInfo::STATIONARY;
+    init_info.data = start_pos;
   }
   else if (type_str == "given_traj")
   {
@@ -196,17 +223,65 @@ void ProblemConstructionInfo::readInitInfo(const Value& v)
     FAIL_IF_FALSE(v.isMember("endpoint"));
     DblVec endpoint;
     childFromJson(v, endpoint, "endpoint");
-    if (static_cast<int>(endpoint.size()) != n_dof)
+    init_info.data = TrajArray(2, n_dof);
+    init_info.data.row(0) = start_pos.transpose();
+    init_info.data.row(1) = toVectorXd(endpoint).transpose();
+  }
+}
+
+TrajOptProbPtr ConstructProblem(const Json::Value& root, tesseract::BasicEnvConstPtr env)
+{
+  ProblemConstructionInfo pci(env);
+  pci.fromJson(root);
+  return ConstructProblem(pci);
+}
+
+void generateInitTraj(TrajArray& init_traj, const InitInfo& init_info, int num_steps)
+{
+  // initialize based on type specified
+  if (init_info.type == InitInfo::STATIONARY)
+  {
+    MatrixXd start_pos;
+    if (init_info.data.rows() != 1 && init_info.data.cols() != 1)
     {
-      PRINT_AND_THROW(boost::format("wrong number of dof values in "
-                                    "initialization. expected %i got %j") %
-                      n_dof % endpoint.size());
+      PRINT_AND_THROW("Selected stationary initialization, but provided a matrix instead of a vector");
     }
-    init_info.data = TrajArray(n_steps, n_dof);
-    for (int idof = 0; idof < n_dof; ++idof)
+    if (init_info.data.rows() > init_info.data.cols())
     {
-      init_info.data.col(idof) = VectorXd::LinSpaced(n_steps, start_pos[idof], endpoint[idof]);
+      start_pos = init_info.data.transpose();
     }
+    else
+    {
+      start_pos = init_info.data;
+    }
+    init_traj = start_pos.replicate(num_steps, 1);
+  }
+  else if (init_info.type == InitInfo::STRAIGHT_LINE)
+  {
+    VectorXd start_pos = init_info.data.row(0);
+    VectorXd end_pos = init_info.data.row(1);
+    init_traj.resize(num_steps, init_info.data.cols());
+    for (int idof = 0; idof < init_info.data.cols(); ++idof)
+    {
+      init_traj.col(idof) = VectorXd::LinSpaced(num_steps, start_pos(idof), end_pos(idof));
+    }
+  }
+  else if (init_info.type == InitInfo::GIVEN_TRAJ)
+  {
+    init_traj = init_info.data;
+  }
+  else
+  {
+    PRINT_AND_THROW("Init Info did not have a valid type. Valid types are "
+                    "stationary, staright_line, or given_traj");
+  }
+
+  if (!init_info.has_time)
+  {
+    // add on time (default to 1 sec) if not included in initialization data
+    init_traj.conservativeResize(Eigen::NoChange_t(), init_traj.cols() + 1);
+
+    init_traj.block(0, init_traj.cols() - 1, init_traj.rows(), 1) = VectorXd::Constant(init_traj.rows(), init_info.dt);
   }
 }
 
@@ -292,7 +367,8 @@ TrajOptProbPtr ConstructProblem(const ProblemConstructionInfo& pci)
       PRINT_AND_THROW("Initial trajectory must contain at least the start state.");
     }
 
-    if (pci.init_info.data.cols() != n_dof)
+    if (pci.init_info.data.cols() != n_dof ||
+        (pci.init_info.has_time && pci.init_info.data.cols() != (n_dof + 1)))
     {
       PRINT_AND_THROW("robot dof values don't match initialization. I don't "
                       "know what you want me to use for the dof values");
@@ -326,16 +402,19 @@ TrajOptProbPtr ConstructProblem(const ProblemConstructionInfo& pci)
     ci->hatch(*prob);
   }
 
-  prob->SetInitTraj(pci.init_info.data);
+  TrajArray init_traj;
+  generateInitTraj(init_traj, pci.init_info, n_steps);
+
+  if (init_traj.rows() != n_steps || init_traj.cols() != n_dof + 1)
+  {
+    PRINT_AND_THROW(boost::format("Initial trajectory is not the right size matrix\n"
+                                  "Expected %i rows (time steps) x %i columns (%i dof + 1 time column)\n"
+                                  "Got %i rows and %i columns") %
+                    n_steps % (n_dof + 1) % n_dof % init_traj.rows() % init_traj.cols());
+  }
+  prob->SetInitTraj(init_traj);
 
   return prob;
-}
-
-TrajOptProbPtr ConstructProblem(const Json::Value& root, tesseract::BasicEnvConstPtr env)
-{
-  ProblemConstructionInfo pci(env);
-  pci.fromJson(root);
-  return ConstructProblem(pci);
 }
 
 TrajOptProb::TrajOptProb(int n_steps, const ProblemConstructionInfo& pci) : m_kin(pci.kin), m_env(pci.env)
@@ -352,13 +431,18 @@ TrajOptProb::TrajOptProb(int n_steps, const ProblemConstructionInfo& pci) : m_ki
   {
     vlower.insert(vlower.end(), lower.data(), lower.data() + lower.size());
     vupper.insert(vupper.end(), upper.data(), upper.data() + upper.size());
+    vlower.insert(vlower.end(), pci.basic_info.dt_lower_lim);
+    vupper.insert(vupper.end(), pci.basic_info.dt_upper_lim);
     for (int j = 0; j < n_dof; ++j)
     {
       names.push_back((boost::format("j_%i_%i") % i % j).str());
     }
+    names.push_back((boost::format("dt_%i") % i).str());
   }
+
   VarVector trajvarvec = createVariables(names, vlower, vupper);
-  m_traj_vars = VarArray(n_steps, n_dof, trajvarvec.data());
+  m_traj_vars = VarArray(n_steps, n_dof + 1, trajvarvec.data());
+
 }
 
 TrajOptProb::TrajOptProb() {}
@@ -403,12 +487,12 @@ void PoseCostInfo::hatch(TrajOptProb& prob)
   VectorOfVectorPtr f(new CartPoseErrCalculator(target, prob.GetKin(), prob.GetEnv(), link, tcp));
   if (term_type == TT_COST)
   {
-    prob.addCost(CostPtr(new CostFromErrFunc(f, prob.GetVarRow(timestep), concat(rot_coeffs, pos_coeffs), ABS, name)));
+    prob.addCost(CostPtr(new CostFromErrFunc(f, prob.GetJointVarRow(timestep), concat(rot_coeffs, pos_coeffs), ABS, name)));
   }
   else if (term_type == TT_CNT)
   {
     prob.addConstraint(
-        ConstraintPtr(new ConstraintFromFunc(f, prob.GetVarRow(timestep), concat(rot_coeffs, pos_coeffs), EQ, name)));
+        ConstraintPtr(new ConstraintFromFunc(f, prob.GetJointVarRow(timestep), concat(rot_coeffs, pos_coeffs), EQ, name)));
   }
 }
 
@@ -459,12 +543,12 @@ void StaticPoseCostInfo::hatch(TrajOptProb& prob)
   VectorOfVectorPtr f(new StaticCartPoseErrCalculator(input_pose, prob.GetKin(), prob.GetEnv(), link, tcp));
   if (term_type == TT_COST)
   {
-    prob.addCost(CostPtr(new CostFromErrFunc(f, prob.GetVarRow(timestep), concat(rot_coeffs, pos_coeffs), ABS, name)));
+    prob.addCost(CostPtr(new CostFromErrFunc(f, prob.GetJointVarRow(timestep), concat(rot_coeffs, pos_coeffs), ABS, name)));
   }
   else if (term_type == TT_CNT)
   {
     prob.addConstraint(
-        ConstraintPtr(new ConstraintFromFunc(f, prob.GetVarRow(timestep), concat(rot_coeffs, pos_coeffs), EQ, name)));
+        ConstraintPtr(new ConstraintFromFunc(f, prob.GetJointVarRow(timestep), concat(rot_coeffs, pos_coeffs), EQ, name)));
   }
 }
 
@@ -491,7 +575,7 @@ void JointPosCostInfo::fromJson(ProblemConstructionInfo& pci, const Value& v)
 
 void JointPosCostInfo::hatch(TrajOptProb& prob)
 {
-  prob.addCost(CostPtr(new JointPosCost(prob.GetVarRow(timestep), toVectorXd(vals), toVectorXd(coeffs))));
+  prob.addCost(CostPtr(new JointPosCost(prob.GetJointVarRow(timestep), toVectorXd(vals), toVectorXd(coeffs))));
   prob.getCosts().back()->setName(name);
 }
 
@@ -531,28 +615,105 @@ void CartVelCntInfo::hatch(TrajOptProb& prob)
   }
 }
 
-void JointVelCostInfo::fromJson(ProblemConstructionInfo& pci, const Value& v)
+void JointVelTermInfo::fromJson(ProblemConstructionInfo& pci, const Value& v)
 {
   FAIL_IF_FALSE(v.isMember("params"));
   const Value& params = v["params"];
 
   childFromJson(params, coeffs, "coeffs");
-  unsigned n_dof = pci.kin->numJoints();
-  if (coeffs.size() == 1)
-    coeffs = DblVec(n_dof, coeffs[0]);
-  else if (coeffs.size() != n_dof)
+  childFromJson(params, joint_name, "joint_name");
+  childFromJson(params, first_step, "first_step", 0);
+  childFromJson(params, last_step, "last_step", pci.basic_info.n_steps - 1);
+
+  bool get_limit = term_type == TT_CNT;
+  if (term_type == TT_COST)
   {
-    PRINT_AND_THROW(boost::format("wrong number of coeffs. expected %i got %i") % n_dof % coeffs.size());
+    string penalty_type_str;
+    childFromJson(params, penalty_type_str, "penalty_type");
+    penalty_type = stringToPenaltyType(penalty_type_str);
+
+    get_limit = penalty_type == HINGE;
   }
 
-  const char* all_fields[] = { "coeffs" };
+  if (get_limit)
+  {
+    childFromJson(params, limit, "limit");
+  }
+
+  const char* all_fields[] = { "coeffs" , "joint_name", "first_step", "last_step", "penalty_type", "limit" };
   ensure_only_members(params, all_fields, sizeof(all_fields) / sizeof(char*));
 }
 
-void JointVelCostInfo::hatch(TrajOptProb& prob)
+void JointVelTermInfo::hatch(TrajOptProb& prob)
 {
-  prob.addCost(CostPtr(new JointVelCost(prob.GetVars(), toVectorXd(coeffs))));
-  prob.getCosts().back()->setName(name);
+  vector<string> joint_names = prob.GetKin()->getJointNames();
+  int index = -1;
+  for (std::size_t i = 0; i < joint_names.size(); i++)
+  {
+    if (joint_names[i] == joint_name)
+    {
+      index = i;
+      break;
+    }
+  }
+
+  if (index == -1)
+  {
+    PRINT_AND_THROW(boost::format("Joint name %s in JointVelCost is not a valid joint.") % joint_name);
+  }
+  if (first_step < 0 || last_step > prob.GetNumSteps() - 1)
+  {
+    PRINT_AND_THROW("First or last time step is not in valid range in JointVelCost");
+  }
+  if (last_step < first_step + 1)
+  {
+    PRINT_AND_THROW("Last time step must be after first time step in JointVelCost");
+  }
+
+  // grab the appropriate variables
+  VarVector joint_vars(last_step - first_step + 1);
+  VarVector time_vars(last_step - first_step + 1);
+  for (int i = first_step; i < last_step + 1; i++)
+  {
+    joint_vars[i - first_step] = prob.GetVar(i, index);
+    time_vars[i - first_step] = prob.GetVar(i, prob.GetNumDOF() - 1);
+  }
+
+  int num_vels = last_step - first_step;
+  if (coeffs.size() == 1)
+  {
+    coeffs = DblVec(num_vels * 2, coeffs[0]);
+  }
+  else if (coeffs.size() != num_vels * 2)
+  {
+    PRINT_AND_THROW(boost::format("wrong number of coeffs. expected %i got %i") % (num_vels * 2) % coeffs.size());
+  }
+
+  if (term_type == TT_COST)
+  {
+    prob.addCost(CostPtr(new CostFromErrFunc(
+        VectorOfVectorPtr(new JointVelCalculator(limit)),
+        MatrixOfVectorPtr(new JointVelJacCalculator()),
+        concat(joint_vars, time_vars),
+        toVectorXd(coeffs),
+        penalty_type,
+        name)));
+  }
+  else if (term_type == TT_CNT)
+  {
+    prob.addConstraint(ConstraintPtr(new ConstraintFromFunc(
+        VectorOfVectorPtr(new JointVelCalculator(limit)),
+        MatrixOfVectorPtr(new JointVelJacCalculator()),
+        concat(joint_vars, time_vars),
+        toVectorXd(coeffs),
+        INEQ,
+        name)));
+  }
+  else
+  {
+    PRINT_AND_THROW("Term type was not specified in JointVelTermInfo");
+  }
+
 }
 
 void JointAccCostInfo::fromJson(ProblemConstructionInfo& pci, const Value& v)
@@ -560,23 +721,77 @@ void JointAccCostInfo::fromJson(ProblemConstructionInfo& pci, const Value& v)
   FAIL_IF_FALSE(v.isMember("params"));
   const Value& params = v["params"];
 
+  childFromJson(params, joint_name, "joint_name");
   childFromJson(params, coeffs, "coeffs");
-  unsigned n_dof = pci.kin->numJoints();
-  if (coeffs.size() == 1)
-    coeffs = DblVec(n_dof, coeffs[0]);
-  else if (coeffs.size() != n_dof)
+  childFromJson(params, first_step, "first_step", 0);
+  childFromJson(params, last_step, "last_step", pci.basic_info.n_steps - 1);
+
+  string penalty_type_str;
+  childFromJson(params, penalty_type_str, "penalty_type");
+  penalty_type = stringToPenaltyType(penalty_type_str);
+
+  if (penalty_type == HINGE)
   {
-    PRINT_AND_THROW(boost::format("wrong number of coeffs. expected %i got %i") % n_dof % coeffs.size());
+    childFromJson(params, limit, "limit");
   }
 
-  const char* all_fields[] = { "coeffs" };
+  const char* all_fields[] = { "coeffs" , "joint_name", "first_step", "last_step", "penalty_type", "limit" };
   ensure_only_members(params, all_fields, sizeof(all_fields) / sizeof(char*));
 }
 
 void JointAccCostInfo::hatch(TrajOptProb& prob)
 {
-  prob.addCost(CostPtr(new JointAccCost(prob.GetVars(), toVectorXd(coeffs))));
-  prob.getCosts().back()->setName(name);
+  vector<string> joint_names = prob.GetKin()->getJointNames();
+  int index = -1;
+  for (std::size_t i = 0; i < joint_names.size(); i++)
+  {
+    if (joint_names[i] == joint_name)
+    {
+      index = i;
+      break;
+    }
+  }
+
+  if (index == -1)
+  {
+    PRINT_AND_THROW((boost::format("Joint name %s in JointAccCost is not a valid joint.") % joint_name.c_str()).str());
+  }
+  if (first_step < 0 || last_step > prob.GetNumSteps() - 1)
+  {
+    PRINT_AND_THROW("First or last time step is not in valid range in JointAccCost");
+  }
+  if (last_step < first_step + 2)
+  {
+    PRINT_AND_THROW("Last time step must be at least 2 steps ahead of first time step in JointAccCost");
+  }
+
+  // grab the appropriate variables
+  VarVector joint_vars(last_step - first_step + 1);
+  VarVector time_vars(last_step - first_step + 1);
+  for (int i = first_step; i < last_step + 1; i++)
+  {
+    joint_vars[i - first_step] = prob.GetVar(i, index);
+    time_vars[i - first_step] = prob.GetVar(i, prob.GetNumDOF() - 1);
+  }
+
+  int num_acc = last_step - first_step - 1;
+  if (coeffs.size() == 1)
+  {
+    coeffs = DblVec(num_acc, coeffs[0]);
+  }
+  else if (coeffs.size() != num_acc)
+  {
+    PRINT_AND_THROW(boost::format("wrong number of coeffs. expected %i got %i") % num_acc % coeffs.size());
+  }
+
+  prob.addCost(CostPtr(new CostFromErrFunc(
+      VectorOfVectorPtr(new JointAccCalculator(limit)),
+      MatrixOfVectorPtr(new JointAccJacCalculator()),
+      concat(joint_vars, time_vars),
+      toVectorXd(coeffs),
+      penalty_type,
+      name)));
+
 }
 
 void JointJerkCostInfo::fromJson(ProblemConstructionInfo& pci, const Value& v)
@@ -584,54 +799,82 @@ void JointJerkCostInfo::fromJson(ProblemConstructionInfo& pci, const Value& v)
   FAIL_IF_FALSE(v.isMember("params"));
   const Value& params = v["params"];
 
+  childFromJson(params, joint_name, "joint_name");
   childFromJson(params, coeffs, "coeffs");
-  unsigned n_dof = pci.kin->numJoints();
-  if (coeffs.size() == 1)
-    coeffs = DblVec(n_dof, coeffs[0]);
-  else if (coeffs.size() != n_dof)
+  childFromJson(params, first_step, "first_step", 0);
+  childFromJson(params, last_step, "last_step", pci.basic_info.n_steps - 1);
+
+  string penalty_type_str;
+  childFromJson(params, penalty_type_str, "penalty_type");
+  penalty_type = stringToPenaltyType(penalty_type_str);
+
+  if (penalty_type == HINGE)
   {
-    PRINT_AND_THROW(boost::format("wrong number of coeffs. expected %i got %i") % n_dof % coeffs.size());
+    childFromJson(params, limit, "limit");
   }
 
-  const char* all_fields[] = { "coeffs" };
+  const char* all_fields[] = { "coeffs" , "joint_name", "first_step", "last_step", "penalty_type", "limit" };
   ensure_only_members(params, all_fields, sizeof(all_fields) / sizeof(char*));
 }
 
 void JointJerkCostInfo::hatch(TrajOptProb& prob)
 {
-  prob.addCost(CostPtr(new JointJerkCost(prob.GetVars(), toVectorXd(coeffs))));
-  prob.getCosts().back()->setName(name);
-}
-
-void JointVelConstraintInfo::fromJson(ProblemConstructionInfo& pci, const Value& v)
-{
-  FAIL_IF_FALSE(v.isMember("params"));
-  const Value& params = v["params"];
-
-  int n_steps = pci.basic_info.n_steps;
-  unsigned n_dof = pci.kin->numJoints();
-  childFromJson(params, vals, "vals");
-  childFromJson(params, first_step, "first_step", 0);
-  childFromJson(params, last_step, "last_step", n_steps - 1);
-  FAIL_IF_FALSE(vals.size() == n_dof);
-  FAIL_IF_FALSE((first_step >= 0) && (first_step < n_steps));
-  FAIL_IF_FALSE((last_step >= first_step) && (last_step < n_steps));
-
-  const char* all_fields[] = { "vals", "first_step", "last_step" };
-  ensure_only_members(params, all_fields, sizeof(all_fields) / sizeof(char*));
-}
-
-void JointVelConstraintInfo::hatch(TrajOptProb& prob)
-{
-  for (int i = first_step; i <= last_step - 1; ++i)
+  vector<string> joint_names = prob.GetKin()->getJointNames();
+  int index = -1;
+  for (std::size_t i = 0; i < joint_names.size(); i++)
   {
-    for (std::size_t j = 0; j < vals.size(); ++j)
+    if (joint_names[i] == joint_name)
     {
-      AffExpr vel = prob.GetVar(i + 1, j) - prob.GetVar(i, j);
-      prob.addLinearConstraint(vel - vals[j], INEQ);
-      prob.addLinearConstraint(-vel - vals[j], INEQ);
+      index = i;
+      break;
     }
   }
+
+  if (index == -1)
+  {
+    PRINT_AND_THROW((boost::format("Joint name %s in JointJerkCost is not a valid joint.") % joint_name.c_str()).str());
+  }
+  if (first_step < 0 || last_step > prob.GetNumSteps() - 1)
+  {
+    PRINT_AND_THROW("First or last time step is not in valid range in JointJerkCost");
+  }
+  if (last_step < first_step + 3)
+  {
+    PRINT_AND_THROW("Last time step must be at least 3 steps ahead of first time step in JointJerkCost");
+  }
+
+  int num_jerk = last_step - first_step - 2;
+  if (coeffs.size() == 1)
+  {
+    coeffs = DblVec(num_jerk, coeffs[0]);
+  }
+  else if (coeffs.size() != num_jerk)
+  {
+    PRINT_AND_THROW(boost::format("wrong number of coeffs. expected %i got %i") % num_jerk % coeffs.size());
+  }
+
+  // grab the appropriate variables
+  VarVector joint_vars(last_step - first_step + 1);
+  VarVector time_vars(last_step - first_step + 1);
+  for (int i = first_step; i < last_step + 1; i++)
+  {
+    joint_vars[i - first_step] = prob.GetVar(i, index);
+    time_vars[i - first_step] = prob.GetVar(i, prob.GetNumDOF() - 1);
+  }
+
+  if (coeffs.size() == 1)
+  {
+    coeffs = DblVec(last_step - first_step - 2, coeffs[0]);
+  }
+
+  prob.addCost(CostPtr(new CostFromErrFunc(
+      VectorOfVectorPtr(new JointJerkCalculator(limit)),
+      MatrixOfVectorPtr(new JointJerkJacCalculator()),
+      concat(joint_vars, time_vars),
+      toVectorXd(coeffs),
+      penalty_type,
+      name)));
+
 }
 
 void CollisionCostInfo::fromJson(ProblemConstructionInfo& pci, const Value& v)
@@ -647,6 +890,11 @@ void CollisionCostInfo::fromJson(ProblemConstructionInfo& pci, const Value& v)
   FAIL_IF_FALSE(gap >= 0);
   FAIL_IF_FALSE((first_step >= 0) && (first_step < n_steps));
   FAIL_IF_FALSE((last_step >= first_step) && (last_step < n_steps));
+
+  if (v.isMember("name"))
+  {
+    childFromJson(params, name, "name");
+  }
 
   DblVec coeffs, dist_pen;
   childFromJson(params, coeffs, "coeffs");
@@ -739,7 +987,7 @@ void CollisionCostInfo::hatch(TrajOptProb& prob)
       for (int i = first_step; i <= last_step - gap; ++i)
       {
         prob.addCost(CostPtr(new CollisionCost(
-            prob.GetKin(), prob.GetEnv(), info[i - first_step], prob.GetVarRow(i), prob.GetVarRow(i + gap))));
+            prob.GetKin(), prob.GetEnv(), info[i - first_step], prob.GetJointVarRow(i), prob.GetJointVarRow(i + gap))));
         prob.getCosts().back()->setName((boost::format("%s_%i") % name % i).str());
       }
     }
@@ -747,7 +995,7 @@ void CollisionCostInfo::hatch(TrajOptProb& prob)
     {
       for (int i = first_step; i <= last_step; ++i)
       {
-        prob.addCost(CostPtr(new CollisionCost(prob.GetKin(), prob.GetEnv(), info[i - first_step], prob.GetVarRow(i))));
+        prob.addCost(CostPtr(new CollisionCost(prob.GetKin(), prob.GetEnv(), info[i - first_step], prob.GetJointVarRow(i))));
         prob.getCosts().back()->setName((boost::format("%s_%i") % name % i).str());
       }
     }
@@ -759,7 +1007,7 @@ void CollisionCostInfo::hatch(TrajOptProb& prob)
       for (int i = first_step; i < last_step; ++i)
       {
         prob.addIneqConstraint(ConstraintPtr(new CollisionConstraint(
-            prob.GetKin(), prob.GetEnv(), info[i - first_step], prob.GetVarRow(i), prob.GetVarRow(i + 1))));
+            prob.GetKin(), prob.GetEnv(), info[i - first_step], prob.GetJointVarRow(i), prob.GetJointVarRow(i + 1))));
         prob.getIneqConstraints().back()->setName((boost::format("%s_%i") % name % i).str());
       }
     }
@@ -768,7 +1016,7 @@ void CollisionCostInfo::hatch(TrajOptProb& prob)
       for (int i = first_step; i <= last_step; ++i)
       {
         prob.addIneqConstraint(ConstraintPtr(
-            new CollisionConstraint(prob.GetKin(), prob.GetEnv(), info[i - first_step], prob.GetVarRow(i))));
+            new CollisionConstraint(prob.GetKin(), prob.GetEnv(), info[i - first_step], prob.GetJointVarRow(i))));
         prob.getIneqConstraints().back()->setName((boost::format("%s_%i") % name % i).str());
       }
     }
@@ -794,11 +1042,76 @@ void JointConstraintInfo::fromJson(ProblemConstructionInfo& pci, const Value& v)
 
 void JointConstraintInfo::hatch(TrajOptProb& prob)
 {
-  VarVector vars = prob.GetVarRow(timestep);
+  VarVector vars = prob.GetJointVarRow(timestep);
   int n_dof = vars.size();
   for (int j = 0; j < n_dof; ++j)
   {
     prob.addLinearConstraint(exprSub(AffExpr(vars[j]), vals[j]), EQ);
   }
 }
+
+void TotalTimeTermInfo::fromJson(ProblemConstructionInfo &pci, const Value &v)
+{
+  FAIL_IF_FALSE(v.isMember("params"));
+  const Value& params = v["params"];
+
+  childFromJson(params, weight, "weight");
+
+  bool get_limit = term_type == TT_CNT;
+  if (term_type == TT_COST)
+  {
+    string penalty_type_str;
+    childFromJson(params, penalty_type_str, "penalty_type");
+    penalty_type = stringToPenaltyType(penalty_type_str);
+
+    get_limit = penalty_type == HINGE;
+  }
+
+  if (get_limit)
+  {
+    childFromJson(params, limit, "limit");
+  }
+
+  const char* all_fields[] = { "weight", "penalty_type", "limit" };
+  ensure_only_members(params, all_fields, sizeof(all_fields) / sizeof(char*));
+}
+
+void TotalTimeTermInfo::hatch(TrajOptProb& prob)
+{
+  VectorXd coeff(1);
+  coeff(0) = weight;
+
+  // get all dt vars except the first
+  VarVector time_vars(prob.GetNumSteps() - 1);
+  for (std::size_t i = 0; i < time_vars.size(); i++)
+  {
+    time_vars[i] = prob.GetVar(i + 1, prob.GetNumDOF() - 1);
+  }
+
+  if (term_type == TT_COST)
+  {
+  prob.addCost(CostPtr(new CostFromErrFunc(
+       VectorOfVectorPtr(new TimeCostCalculator(limit)),
+       MatrixOfVectorPtr(new TimeCostJacCalculator()),
+       time_vars,
+       coeff,
+       penalty_type,
+       name)));
+  }
+  else if (term_type == TT_CNT)
+  {
+    prob.addConstraint(ConstraintPtr(new ConstraintFromFunc(
+         VectorOfVectorPtr(new TimeCostCalculator(limit)),
+         MatrixOfVectorPtr(new TimeCostJacCalculator()),
+         time_vars,
+         coeff,
+         INEQ,
+         name)));
+  }
+  else{
+    PRINT_AND_THROW("Term type was not specified in TotalTimeTermInfo");
+  }
+
+}
+
 }

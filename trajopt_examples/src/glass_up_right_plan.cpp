@@ -95,7 +95,7 @@ TrajOptProbPtr cppMethod()
   }
 
   // Populate Cost Info
-  std::shared_ptr<JointVelCostInfo> jv = std::shared_ptr<JointVelCostInfo>(new JointVelCostInfo);
+  std::shared_ptr<JointVelTermInfo> jv = std::shared_ptr<JointVelTermInfo>(new JointVelTermInfo);
   jv->coeffs = std::vector<double>(7, 1.0);
   jv->name = "joint_vel";
   jv->term_type = TT_COST;

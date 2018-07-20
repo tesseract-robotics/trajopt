@@ -23,42 +23,4 @@ private:
   QuadExpr expr_;
 };
 
-class TRAJOPT_API JointVelCost : public Cost
-{
-public:
-  JointVelCost(const VarArray& traj, const VectorXd& coeffs);
-  virtual ConvexObjectivePtr convex(const vector<double>& x, Model* model);
-  virtual double value(const vector<double>&);
-
-private:
-  VarArray vars_;
-  VectorXd coeffs_;
-  QuadExpr expr_;
-};
-
-class TRAJOPT_API JointAccCost : public Cost
-{
-public:
-  JointAccCost(const VarArray& traj, const VectorXd& coeffs);
-  virtual ConvexObjectivePtr convex(const vector<double>& x, Model* model);
-  virtual double value(const vector<double>&);
-
-private:
-  VarArray vars_;
-  VectorXd coeffs_;
-  QuadExpr expr_;
-};
-
-class TRAJOPT_API JointJerkCost : public Cost
-{
-public:
-  JointJerkCost(const VarArray& traj, const VectorXd& coeffs);
-  virtual ConvexObjectivePtr convex(const vector<double>& x, Model* model);
-  virtual double value(const vector<double>&);
-
-private:
-  VarArray vars_;
-  VectorXd coeffs_;
-  QuadExpr expr_;
-};
 }

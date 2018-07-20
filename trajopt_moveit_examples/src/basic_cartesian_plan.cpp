@@ -90,7 +90,7 @@ TrajOptProbPtr cppMethod()
   pci.init_info.data = start_pos.transpose().replicate(pci.basic_info.n_steps, 1);
 
   // Populate Cost Info
-  std::shared_ptr<JointVelCostInfo> jv = std::shared_ptr<JointVelCostInfo>(new JointVelCostInfo);
+  std::shared_ptr<JointVelTermInfo> jv = std::shared_ptr<JointVelTermInfo>(new JointVelTermInfo);
   jv->coeffs = std::vector<double>(7, 5.0);
   jv->name = "joint_vel";
   jv->term_type = TT_COST;
