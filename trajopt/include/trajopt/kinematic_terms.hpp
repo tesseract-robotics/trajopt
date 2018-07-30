@@ -104,4 +104,98 @@ struct CartVelCalculator : VectorOfVector
 
   VectorXd operator()(const VectorXd& dof_vals) const;
 };
+
+/**
+ * @brief The ConfinedAxisErrCalculator is a truct whose operator() calculates error of a given
+ * pose with respect ot the confined rotation along the defined axis.
+ */
+struct ConfinedAxisErrCalculator : public VectorOfVector {
+
+  Eigen::Affine3d pose_inv_; /**< param The inverse of the desired pose */
+  tesseract::BasicKinConstPtr manip_; /**< Kinematics object */
+  tesseract::BasicEnvConstPtr env_; /**< Environment object */
+  std::string link_; /**< Link of the robot referred to */
+  Eigen::Affine3d tcp_; /**< Tool center point */
+
+  char axis_; /**< Axis of rotation being provided with a tolerance */
+  double tol_; /**< Tolerance of the rotation stored specific to the error calculation
+  NOTE: this is not an angle, but a value used in error calculation stored to avoid conversion using the angle during each call */
+
+  /**
+   * @brief ConfinedAxisErrCalculator Constructor
+   * @param pose Desired pose
+   * @param manip
+   * @param env
+   * @param link
+   * @param axis Axis of rotation
+   * @param tol_angle Tolerance in radians
+   * @param tcp Tool center point
+   */
+  ConfinedAxisErrCalculator(const Eigen::Affine3d& pose, tesseract::BasicKinConstPtr manip, tesseract::BasicEnvConstPtr env,
+                            std::string link, char axis, double tol_angle, Eigen::Affine3d tcp = Eigen::Affine3d::Identity()) :
+    pose_inv_(pose.inverse()),
+    manip_(manip),
+    env_(env),
+    link_(link),
+    tcp_(tcp),
+    axis_(axis)
+  {
+    tol_ = sin(tol_angle*M_PI/180.0 / 2.0);
+  }
+
+  /**
+   * @brief operator () Calculates error
+   * @param dof_vals Values of the joints for forward kinematics
+   * @return 1D vector of error beyond the allowed rotation
+   */
+  VectorXd operator()(const VectorXd& dof_vals) const;
+
+};
+
+/**
+ * @brief The ConicalAxisErrCalculator is a struct whose operator() returns the error of the
+ * given pose with respect to the conical constraint defined
+ *
+ */
+struct ConicalAxisErrCalculator : public VectorOfVector {
+  Eigen::Affine3d pose_inv_; /**< Inverse of the desired pose */
+  tesseract::BasicKinConstPtr manip_; /**< Kinematics object */
+  tesseract::BasicEnvConstPtr env_; /**< Environment object */
+  std::string link_; /**< The link of the robot reggered to */
+  Eigen::Affine3d tcp_; /**< Tool center point */
+
+  char axis_; /**< Axis the conical tolreance is applied to */
+  double tol_; /**< Internal representation of the tolerance.
+  NOTE: this is not an angle, but a value used in error calculation stored to avoid conversion using the angle during each call */
+
+  /**
+   * @brief ConicalAxisErrCalculator
+   * @param pose Desired pose
+   * @param manip Kinematics Object
+   * @param env Environment object
+   * @param link Link of the robot the term applies to
+   * @param axis Axis to define the conical tolerance around
+   * @param tol_angle Tolerance angle in degrees
+   * @param tcp Tool center point
+   */
+  ConicalAxisErrCalculator(const Eigen::Affine3d& pose, tesseract::BasicKinConstPtr manip, tesseract::BasicEnvConstPtr env,
+                           std::string link, char axis, double tol_angle, Eigen::Affine3d tcp = Eigen::Affine3d::Identity()) :
+    pose_inv_(pose.inverse()),
+    manip_(manip),
+    env_(env),
+    link_(link),
+    tcp_(tcp),
+    axis_(axis)
+  {
+    tol_ = cos(tol_angle*M_PI/180.0);
+  }
+
+  /**
+   * @brief operator ()
+   * @param dof_vals
+   * @return
+   */
+  VectorXd operator()(const VectorXd& dof_vals) const;
+};
+
 }

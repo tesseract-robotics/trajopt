@@ -200,7 +200,6 @@ int main(int argc, char** argv)
   testing::InitGoogleTest(&argc, argv);
   ros::init(argc, argv, "trajopt_cast_cost_attached_unit");
   ros::NodeHandle pnh("~");
-
   pnh.param("plotting", plotting, false);
   return RUN_ALL_TESTS();
 }

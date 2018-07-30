@@ -12,6 +12,7 @@ struct OptResults;
 
 namespace trajopt
 {
+
 using namespace json_marshal;
 using namespace Json;
 
@@ -322,4 +323,71 @@ struct JointConstraintInfo : public TermInfo, public MakesConstraint
   void hatch(TrajOptProb& prob);
   DEFINE_CREATE(JointConstraintInfo)
 };
+
+/**
+ * @brief The ConfinedAxisTermInfo struct contains information to create constraints or costs
+ * using a tolerance for the rotation about an axis
+ */
+struct ConfinedAxisTermInfo : public TermInfo, public MakesConstraint, public MakesCost {
+  int timestep; /**< The timestep of this term in the trajectory */
+  Vector3d xyz; /**< Cartesian position coordinate vector for the pose */
+  Vector4d wxyz; /**< 4D vector containing w, x, y, and z quaternion components for the pose (in that order) */
+  Vector3d pos_coeffs; /**< Coefficients multiplied by xyz errors during evaluation of cost/constraint values */
+  double confined_coeff; /**< Coefficient multiplied by error of the rotation beyond tolerance */
+  double axis_coeff; /**< Coefficient multiplied by the errors of the rotation axis from the specified axis */
+
+  string link; /**< Link of the robot the term refers to */
+  Eigen::Affine3d tcp; /**< Tool center point */
+
+  char axis; /**< Axis allowed to rotate */
+  double tol; /**< Rotation acceptable in degrees */
+
+  ConfinedAxisTermInfo();
+
+  /**
+   * @brief fromJson Constructs the term from a Json file
+   */
+  void fromJson(ProblemConstructionInfo &pci, const Value& v);
+
+  /**
+   * @brief hatch Add the proper cost/constraint functions to the problem
+   * @param prob The optimization problems to add the term to
+   */
+  void hatch(TrajOptProb& prob);
+  DEFINE_CREATE(ConfinedAxisTermInfo)
+};
+
+/**
+ * @brief The ConicalAxisTermInfo struct contains information to create constraints or costs
+ * using a conical tolerance about an axis
+ */
+struct ConicalAxisTermInfo : public TermInfo, public MakesConstraint, public MakesCost {
+  int timestep; /**< The timestep of this term in the trajectory */
+  Vector3d xyz; /**< Cartesian position coordinate vector for the pose */
+  Vector4d wxyz; /**< 4D vector containing w, x, y, and z quaternion components for the pose (in that order) */
+  Vector3d pos_coeffs; /**< Coefficients multiplied by xyz errors during evaluation of cost/constraint values */
+  double conical_coeff; /**< Coefficient multiplied by error of the axis orientation beyond tolerance */
+  double axis_coeff; /**< Coefficient multiplied by the rotation error about the axis in the conical tolerance */
+
+  string link; /**< Link of the robot the term refers to */
+  Eigen::Affine3d tcp; /**< Tool center point */
+
+  char axis; /**< Axis given a conical tolerance */
+  double tol; /**< Cone angle in degrees */
+
+  ConicalAxisTermInfo();
+
+  /**
+   * @brief fromJson Constructs the term from a Json file
+   */
+  void fromJson(ProblemConstructionInfo &pci, const Value& v);
+
+  /**
+   * @brief hatch Add the proper cost/constraint functions to the problem
+   * @param prob The optimization problems to add the term to
+   */
+  void hatch(TrajOptProb& prob);
+  DEFINE_CREATE(ConicalAxisTermInfo)
+};
+
 }
