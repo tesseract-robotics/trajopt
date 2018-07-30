@@ -39,9 +39,9 @@ if (HAVE_BPMPD)
   add_executable(bpmpd_caller src/bpmpd_caller.cpp)
 
   if( CMAKE_SIZEOF_VOID_P EQUAL 8 ) # 64 bits
-        set(BPMPD_LIBRARY "${CMAKE_SOURCE_DIR}/3rdpartylib/bpmpd_linux64.a")
+        set(BPMPD_LIBRARY "${CMAKE_CURRENT_SOURCE_DIR}/3rdpartylib/bpmpd_linux64.a")
   else()
-        set(BPMPD_LIBRARY "${CMAKE_SOURCE_DIR}/3rdpartylib/bpmpd_linux32.a")
+        set(BPMPD_LIBRARY "${CMAKE_CURRENT_SOURCE_DIR}/3rdpartylib/bpmpd_linux32.a")
   endif()
 
   target_link_libraries(bpmpd_caller ${BPMPD_LIBRARY})

@@ -10,5 +10,5 @@ catkin_package(
   LIBRARIES HACD vhacd
 )
 
-set(CMAKE_COMMON_INC "${CMAKE_SOURCE_DIR}/vhacd/scripts/cmake_common.cmake")
+set(CMAKE_COMMON_INC "${CMAKE_CURRENT_SOURCE_DIR}/vhacd/scripts/cmake_common.cmake")
 add_subdirectory(vhacd)
