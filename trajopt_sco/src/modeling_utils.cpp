@@ -132,21 +132,26 @@ double CostFromErrFunc::value(const vector<double>& xin)
 {
   VectorXd x = getVec(xin, vars_);
   VectorXd err = f_->call(x);
-  if (coeffs_.size() > 0)
-    err.array() *= coeffs_.array();
+
   switch (pen_type_)
   {
     case SQUARED:
-      return err.array().square().sum();
+      err = err.array().square();
+      break;
     case ABS:
-      return err.array().abs().sum();
+      err = err.array().abs();
+      break;
     case HINGE:
-      return err.cwiseMax(VectorXd::Zero(err.size())).sum();
+      err = err.cwiseMax(VectorXd::Zero(err.size()));
+      break;
     default:
       assert(0 && "unreachable");
   }
 
-  return 0;  // avoid compiler warning
+  if (coeffs_.size() > 0)
+    err.array() *= coeffs_.array();
+
+  return err.array().sum();
 }
 ConvexObjectivePtr CostFromErrFunc::convex(const vector<double>& xin, Model* model)
 {
@@ -159,7 +164,8 @@ ConvexObjectivePtr CostFromErrFunc::convex(const vector<double>& xin, Model* mod
     AffExpr aff = affFromValGrad(y[i], x, jac.row(i), vars_);
     if (coeffs_.size() > 0)
     {
-      exprScale(aff, coeffs_[i]);
+      double scale_factor = pen_type_ == SQUARED ? sqrt(coeffs_[i]) : coeffs_[i];
+      exprScale(aff, scale_factor);
       if (coeffs_[i] == 0)
         continue;
     }
