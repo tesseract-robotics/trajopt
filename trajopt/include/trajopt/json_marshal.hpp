@@ -12,7 +12,6 @@ namespace json_marshal
 TRAJOPT_API void fromJson(const Json::Value& v, bool& ref);
 TRAJOPT_API void fromJson(const Json::Value& v, int& ref);
 TRAJOPT_API void fromJson(const Json::Value& v, double& ref);
-TRAJOPT_API void fromJson(const Json::Value& v, char& ref);
 TRAJOPT_API void fromJson(const Json::Value& v, std::string& ref);
 TRAJOPT_API void fromJson(const Json::Value& v, Eigen::Vector3d& ref);
 TRAJOPT_API void fromJson(const Json::Value& v, Eigen::Vector4d& ref);

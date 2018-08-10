@@ -68,6 +68,27 @@ BoolVec toMask(const VectorXd& x) {
   return out;
 }
 #endif
+
+Axis stringToAxisEnum(string& str)
+{
+  if (str == "X_AXIS")
+  {
+    return X_AXIS;
+  }
+  else if (str == "Y_AXIS")
+  {
+    return Y_AXIS;
+  }
+  else if (str == "Z_AXIS")
+  {
+    return Z_AXIS;
+  }
+  else
+  {
+    PRINT_AND_THROW(boost::format("%s is not a valid axis string.") % str);
+  }
+
+}
 }
 
 namespace trajopt
@@ -830,7 +851,11 @@ void ConfinedAxisTermInfo::fromJson(ProblemConstructionInfo &pci, const Value& v
   childFromJson(params, axis_coeff, "axis_coeff", (double)1.0);
   childFromJson(params, confined_coeff, "confined_coeff", (double)1.0);
   childFromJson(params, link, "link");
-  childFromJson(params, axis, "axis");
+
+  string axis_str;
+  childFromJson(params, axis_str, "axis");
+  axis = stringToAxisEnum(axis_str);
+
   childFromJson(params, tol, "tolerance");
 
   // construct the tcp Affine matrix from its components
@@ -874,18 +899,18 @@ void ConfinedAxisTermInfo::hatch(TrajOptProb& prob) {
   // the error corresponding to the axis of rotation having the proper orientation corresponds to the
   // values of the other 2 quaternion error components
   switch(axis) {
-    case 'x':
-    pose_coeffs(1) = axis_coeff;
-    pose_coeffs(2) = axis_coeff;
-    break;
-    case 'y':
-    pose_coeffs(0) = axis_coeff;
-    pose_coeffs(2) = axis_coeff;
-    break;
-    case 'z':
-    pose_coeffs(0) = axis_coeff;
-    pose_coeffs(1) = axis_coeff;
-    break;
+    case X_AXIS:
+      pose_coeffs(1) = axis_coeff;
+      pose_coeffs(2) = axis_coeff;
+      break;
+    case Y_AXIS:
+      pose_coeffs(0) = axis_coeff;
+      pose_coeffs(2) = axis_coeff;
+      break;
+    case Z_AXIS:
+      pose_coeffs(0) = axis_coeff;
+      pose_coeffs(1) = axis_coeff;
+      break;
   }
 
   // add the costs or constraints depending on the term type
@@ -925,7 +950,11 @@ void ConicalAxisTermInfo::fromJson(ProblemConstructionInfo &pci, const Value &v)
   childFromJson(params, axis_coeff, "axis_coeff", (double)1.0);
   childFromJson(params, conical_coeff, "conical_coeff", (double)1.0);
   childFromJson(params, link, "link");
-  childFromJson(params, axis, "axis");
+
+  string axis_str;
+  childFromJson(params, axis_str, "axis");
+  axis = stringToAxisEnum(axis_str);
+
   childFromJson(params, tol, "tolerance");
 
   // construct the tcp Affine matrix from its components
@@ -969,15 +998,15 @@ void ConicalAxisTermInfo::hatch(TrajOptProb &prob) {
   // the error corresponding to the rotation about the axis in the cone is given by
   // the quaternion component of that axis
   switch(axis) {
-    case 'x':
-    pose_coeffs(0) = axis_coeff;
-    break;
-    case 'y':
-    pose_coeffs(1) = axis_coeff;
-    break;
-    case 'z':
-    pose_coeffs(2) = axis_coeff;
-    break;
+    case X_AXIS:
+      pose_coeffs(0) = axis_coeff;
+      break;
+    case Y_AXIS:
+      pose_coeffs(1) = axis_coeff;
+      break;
+    case Z_AXIS:
+      pose_coeffs(2) = axis_coeff;
+      break;
   }
 
   // add the costs or constraints depending on the term type

@@ -4,6 +4,7 @@
 #include <trajopt/common.hpp>
 #include <trajopt/json_marshal.hpp>
 #include <trajopt_sco/optimizers.hpp>
+#include <trajopt/kinematic_terms.hpp>
 
 namespace sco
 {
@@ -339,7 +340,7 @@ struct ConfinedAxisTermInfo : public TermInfo, public MakesConstraint, public Ma
   string link; /**< Link of the robot the term refers to */
   Eigen::Affine3d tcp; /**< Tool center point */
 
-  char axis; /**< Axis allowed to rotate */
+  Axis axis; /**< Axis allowed to rotate */
   double tol; /**< Rotation acceptable in degrees */
 
   ConfinedAxisTermInfo();
@@ -372,7 +373,7 @@ struct ConicalAxisTermInfo : public TermInfo, public MakesConstraint, public Mak
   string link; /**< Link of the robot the term refers to */
   Eigen::Affine3d tcp; /**< Tool center point */
 
-  char axis; /**< Axis given a conical tolerance */
+  Axis axis; /**< Axis given a conical tolerance */
   double tol; /**< Cone angle in degrees */
 
   ConicalAxisTermInfo();

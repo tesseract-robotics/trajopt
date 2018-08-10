@@ -10,8 +10,6 @@
 #include <trajopt_utils/logging.hpp>
 #include <trajopt_utils/stl_to_string.hpp>
 
-
-#include <ros/ros.h>
 using namespace std;
 using namespace sco;
 using namespace Eigen;
@@ -191,11 +189,11 @@ VectorXd ConfinedAxisErrCalculator::operator()(const VectorXd& dof_vals) const {
 
   // determine the error of the rotation
    switch(axis_) {
-      case 'x': err(0) = fabs(q.x()) - tol_;
+      case X_AXIS: err(0) = 2.0*fabs(asin(q.x())) - tol_;
       break;
-      case 'y': err(0) = fabs(q.y()) - tol_;
+      case Y_AXIS: err(0) = 2.0*fabs(asin(q.y())) - tol_;
       break;
-      case 'z': err(0) = fabs(q.z()) - tol_;
+      case Z_AXIS: err(0) = 2.0*fabs(asin(q.z())) - tol_;
       break;
     }
 
@@ -212,17 +210,16 @@ VectorXd ConicalAxisErrCalculator::operator()(const VectorXd& dof_vals) const {
   Affine3d pose_err = pose_inv_ * (new_pose * tcp_);
 
   // get the orientation matrix of the error
-  Matrix3d orientation(pose_err.rotation());
+  Matrix3d orientation_err(pose_err.rotation());
   VectorXd err(1);
 
   // determine the error of the conical axis
-  // tol_ = cos(tol_angle), so when angle < tol_angle, err < 0, and vice versa
   switch(axis_) {
-     case 'x': err(0) = tol_ - orientation(0, 0);
+     case X_AXIS: err(0) = acos(orientation_err(0, 0)) - tol_;
      break;
-     case 'y': err(0) = tol_ - orientation(1, 1);
+     case Y_AXIS: err(0) = acos(orientation_err(1, 1)) - tol_;
      break;
-     case 'z': err(0) = tol_ - orientation(2, 2);
+     case Z_AXIS: err(0) = acos(orientation_err(2, 2)) - tol_;
      break;
    }
 

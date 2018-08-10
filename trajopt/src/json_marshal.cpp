@@ -42,10 +42,6 @@ void fromJson(const Json::Value& v, double& ref)
   }
 }
 
-void fromJson(const Json::Value& v, char& ref) {
-  ref = *(v.asCString());
-}
-
 void fromJson(const Json::Value& v, std::string& ref)
 {
   try

@@ -38,7 +38,7 @@
         "pos_coeffs" : [10, 10, 10],
         "axis_coeff" : 10.0,
         "conical_coeff" : 10.0,
-        "axis" : "z",
+        "axis" : "Z_AXIS",
         "tolerance" : 15.0
       }
     },
@@ -54,7 +54,7 @@
         "pos_coeffs" : [10, 10, 10],
         "axis_coeff" : 10.0,
         "conical_coeff" : 10.0,
-        "axis" : "z",
+        "axis" : "Z_AXIS",
         "tolerance" : 15.0
       }
     },
@@ -70,7 +70,7 @@
         "pos_coeffs" : [10, 10, 10],
         "axis_coeff" : 10.0,
         "conical_coeff" : 10.0,
-        "axis" : "z",
+        "axis" : "Z_AXIS",
         "tolerance" : 15.0
       }
     },
@@ -86,7 +86,7 @@
         "pos_coeffs" : [10, 10, 10],
         "axis_coeff" : 10.0,
         "conical_coeff" : 10.0,
-        "axis" : "z",
+        "axis" : "Z_AXIS",
         "tolerance" : 15.0
       }
     },
@@ -102,7 +102,7 @@
         "pos_coeffs" : [10, 10, 10],
         "axis_coeff" : 10.0,
         "conical_coeff" : 10.0,
-        "axis" : "z",
+        "axis" : "Z_AXIS",
         "tolerance" : 15.0
       }
     }

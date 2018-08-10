@@ -29,7 +29,6 @@ set(TRAJOPT_SOURCE_FILES
     src/problem_description.cpp
     src/utils.cpp
     src/plot_callback.cpp
-    src/file_write_callback.cpp
 )
 
 catkin_package(
