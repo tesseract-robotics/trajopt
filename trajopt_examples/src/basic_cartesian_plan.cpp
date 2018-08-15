@@ -87,15 +87,12 @@ TrajOptProbPtr cppMethod()
   pci.basic_info.start_fixed = false;
   pci.basic_info.dt_lower_lim = 0.1;
   pci.basic_info.dt_upper_lim = 5.0;
-  //  pci.basic_info.dofs_fixed
 
   // Create Kinematic Object
   pci.kin = pci.env->getManipulator(pci.basic_info.manip);
 
   // Populate Init Info
   pci.init_info.type = InitInfo::STATIONARY;
-  pci.init_info.data = pci.env->getCurrentJointValues(pci.kin->getName());
-  pci.init_info.has_time = false;
 
   // Populate Cost Info
   std::vector<std::string> joint_names = pci.kin->getJointNames();
@@ -114,7 +111,7 @@ TrajOptProbPtr cppMethod()
 
   std::shared_ptr<TotalTimeTermInfo> time_cost(new TotalTimeTermInfo);
   time_cost->name = "time_cost";
-  time_cost->penalty_type = sco::SQUARED;
+  time_cost->penalty_type = sco::ABS;
   time_cost->weight = 1.0;
   time_cost->term_type = TT_COST;
   pci.cost_infos.push_back(time_cost);

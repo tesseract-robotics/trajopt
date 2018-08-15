@@ -214,25 +214,48 @@ std::shared_ptr<ProblemConstructionInfo> cppMethod(const std::string& start, con
     pci->init_info.data.col(i) = VectorXd::LinSpaced(pci->basic_info.n_steps, start_pos[i], joint_pose[i]);
 
   // Populate Cost Info
-  std::shared_ptr<JointVelTermInfo> joint_vel = std::shared_ptr<JointVelTermInfo>(new JointVelTermInfo);
-  joint_vel->coeffs = std::vector<double>(8, 5.0);
-  joint_vel->name = "joint_vel";
+  std::vector<std::string> joint_names = pci->kin->getJointNames();
+  for (std::size_t i = 0; i < joint_names.size(); i++)
+  {
+  std::shared_ptr<JointVelTermInfo> joint_vel(new JointVelTermInfo);
+  joint_vel->coeffs = std::vector<double>(1, 5.0);
+  joint_vel->name = joint_names[i] + "_vel";
   joint_vel->term_type = TT_COST;
+  joint_vel->first_step = 0;
+  joint_vel->last_step = pci->basic_info.n_steps - 1;
+  joint_vel->joint_name = joint_names[i];
+  joint_vel->penalty_type = sco::SQUARED;
   pci->cost_infos.push_back(joint_vel);
 
-  std::shared_ptr<JointAccCostInfo> joint_acc = std::shared_ptr<JointAccCostInfo>(new JointAccCostInfo);
-  joint_acc->coeffs = std::vector<double>(8, 5.0);
-  joint_acc->name = "joint_acc";
+  std::shared_ptr<JointAccCostInfo> joint_acc(new JointAccCostInfo);
+  joint_acc->coeffs = std::vector<double>(1, 5.0);
+  joint_acc->name = joint_names[i] + "_acc";
   joint_acc->term_type = TT_COST;
+  joint_acc->first_step = 0;
+  joint_acc->last_step = pci->basic_info.n_steps - 1;
+  joint_acc->joint_name = joint_names[i];
+  joint_acc->penalty_type = sco::SQUARED;
   pci->cost_infos.push_back(joint_acc);
 
-  std::shared_ptr<JointJerkCostInfo> joint_jerk = std::shared_ptr<JointJerkCostInfo>(new JointJerkCostInfo);
-  joint_jerk->coeffs = std::vector<double>(8, 5.0);
-  joint_jerk->name = "joint_jerk";
+  std::shared_ptr<JointJerkCostInfo> joint_jerk(new JointJerkCostInfo);
+  joint_jerk->coeffs = std::vector<double>(1, 5.0);
+  joint_jerk->name = joint_names[i] + "_jerk";
   joint_jerk->term_type = TT_COST;
+  joint_jerk->first_step = 0;
+  joint_jerk->last_step = pci->basic_info.n_steps - 1;
+  joint_jerk->joint_name = joint_names[i];
+  joint_jerk->penalty_type = sco::SQUARED;
   pci->cost_infos.push_back(joint_jerk);
+  }
 
-  std::shared_ptr<CollisionCostInfo> collision = std::shared_ptr<CollisionCostInfo>(new CollisionCostInfo);
+  std::shared_ptr<TotalTimeTermInfo> time_cost(new TotalTimeTermInfo);
+  time_cost->name = "time_cost";
+  time_cost->penalty_type = sco::SQUARED;
+  time_cost->weight = 1.0;
+  time_cost->term_type = TT_COST;
+  pci->cost_infos.push_back(time_cost);
+
+  std::shared_ptr<CollisionCostInfo> collision(new CollisionCostInfo);
   collision->name = "collision";
   collision->term_type = TT_COST;
   collision->continuous = true;

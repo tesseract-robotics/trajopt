@@ -8,10 +8,73 @@
   "costs" :
   [
     {
+      "name" : "joint_1_vel",
       "type" : "joint_vel",
       "params":
       {
-        "coeffs" : [1]
+        "joint_name" : "joint_a1",
+        "coeffs" : [2.5],
+        "penalty_type" : "SQUARED"
+      }
+    },
+    {
+      "name" : "joint_2_vel",
+      "type" : "joint_vel",
+      "params":
+      {
+        "joint_name" : "joint_a2",
+        "coeffs" : [2.5],
+        "penalty_type" : "SQUARED"
+      }
+    },
+    {
+      "name" : "joint_3_vel",
+      "type" : "joint_vel",
+      "params":
+      {
+        "joint_name" : "joint_a3",
+        "coeffs" : [2.5],
+        "penalty_type" : "SQUARED"
+      }
+    },
+    {
+      "name" : "joint_4_vel",
+      "type" : "joint_vel",
+      "params":
+      {
+        "joint_name" : "joint_a4",
+        "coeffs" : [2.5],
+        "penalty_type" : "SQUARED"
+      }
+    },
+    {
+      "name" : "joint_5_vel",
+      "type" : "joint_vel",
+      "params":
+      {
+        "joint_name" : "joint_a5",
+        "coeffs" : [2.5],
+        "penalty_type" : "SQUARED"
+      }
+    },
+    {
+      "name" : "joint_6_vel",
+      "type" : "joint_vel",
+      "params":
+      {
+        "joint_name" : "joint_a6",
+        "coeffs" : [2.5],
+        "penalty_type" : "SQUARED"
+      }
+    },
+    {
+      "name" : "joint_7_vel",
+      "type" : "joint_vel",
+      "params":
+      {
+        "joint_name" : "joint_a7",
+        "coeffs" : [2.5],
+        "penalty_type" : "SQUARED"
       }
     },
     {
@@ -42,7 +105,7 @@
   "constraints" :
   [
     {
-      "name" : "waypoint_cart_1",
+      "name" : "waypoint_cart_0",
       "type" : "static_pose",
       "params" :
       {
@@ -55,7 +118,7 @@
       }
     },
     {
-      "name" : "waypoint_cart_2",
+      "name" : "waypoint_cart_1",
       "type" : "static_pose",
       "params" :
       {
@@ -68,7 +131,7 @@
       }
     },
     {
-      "name" : "waypoint_cart_3",
+      "name" : "waypoint_cart_2",
       "type" : "static_pose",
       "params" :
       {
@@ -81,7 +144,7 @@
       }
     },
     {
-      "name" : "waypoint_cart_4",
+      "name" : "waypoint_cart_3",
       "type" : "static_pose",
       "params" :
       {
@@ -94,7 +157,7 @@
       }
     },
     {
-      "name" : "waypoint_cart_5",
+      "name" : "waypoint_cart_4",
       "type" : "static_pose",
       "params" :
       {
@@ -103,7 +166,7 @@
         "wxyz" : [0.0, 0.0, 1.0, 0.0],
         "link" : "tool0",
         "pos_coeffs" : [10, 10, 10],
-        "rot_coeffs" : [10, 10, 0]
+        "rot_coeffs" : [10, 10, 10]
       }
     }
   ],

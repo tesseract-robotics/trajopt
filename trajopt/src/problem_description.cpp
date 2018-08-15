@@ -63,15 +63,15 @@ void RegisterMakers()
 
 PenaltyType stringToPenaltyType(string str)
 {
-  if (str == "HINGE")
+  if (boost::iequals(str, "hinge"))
   {
     return HINGE;
   }
-  else if (str == "ABS")
+  else if (boost::iequals(str, "abs"))
   {
     return ABS;
   }
-  else if (str == "SQUARED")
+  else if (boost::iequals(str, "squared"))
   {
     return SQUARED;
   }
@@ -132,8 +132,7 @@ void ProblemConstructionInfo::readOptInfo(const Value& v)
   childFromJson(v, opt_info.trust_expand_ratio, "trust_expand_ratio", opt_info.trust_expand_ratio);
   childFromJson(v, opt_info.cnt_tolerance, "cnt_tolerance", opt_info.cnt_tolerance);
   childFromJson(v, opt_info.max_merit_coeff_increases, "max_merit_coeff_increases", opt_info.max_merit_coeff_increases);
-  childFromJson(
-      v, opt_info.merit_coeff_increase_ratio, "merit_coeff_increase_ratio", opt_info.merit_coeff_increase_ratio);
+  childFromJson(v, opt_info.merit_coeff_increase_ratio, "merit_coeff_increase_ratio", opt_info.merit_coeff_increase_ratio);
   childFromJson(v, opt_info.max_time, "max_time", opt_info.max_time);
   childFromJson(v, opt_info.merit_error_coeff, "merit_error_coeff", opt_info.merit_error_coeff);
   childFromJson(v, opt_info.trust_box_size, "trust_box_size", opt_info.trust_box_size);
@@ -197,13 +196,13 @@ void ProblemConstructionInfo::readInitInfo(const Value& v)
   int n_dof = kin->numJoints();
   Eigen::VectorXd start_pos = env->getCurrentJointValues(kin->getName());
 
-  if (type_str == "stationary")
+  if (boost::iequals(type_str, "stationary"))
   {
     init_info.type = InitInfo::STATIONARY;
-    init_info.data = start_pos;
   }
-  else if (type_str == "given_traj")
+  else if (boost::iequals(type_str, "given_traj"))
   {
+    init_info.type = InitInfo::GIVEN_TRAJ;
     FAIL_IF_FALSE(v.isMember("data"));
     const Value& vdata = v["data"];
     if (static_cast<int>(vdata.size()) != n_steps)
@@ -218,14 +217,17 @@ void ProblemConstructionInfo::readInitInfo(const Value& v)
       init_info.data.row(i) = toVectorXd(row);
     }
   }
-  else if (type_str == "straight_line")
+  else if (boost::iequals(type_str, "straight_line"))
   {
+    init_info.type = InitInfo::STRAIGHT_LINE;
     FAIL_IF_FALSE(v.isMember("endpoint"));
     DblVec endpoint;
     childFromJson(v, endpoint, "endpoint");
-    init_info.data = TrajArray(2, n_dof);
-    init_info.data.row(0) = start_pos.transpose();
-    init_info.data.row(1) = toVectorXd(endpoint).transpose();
+    init_info.data = toVectorXd(endpoint);
+  }
+  else {
+    PRINT_AND_THROW("init_info did not have a valid type from Json. Valid types are "
+                    "stationary, straight_line, or given_traj");
   }
 }
 
@@ -236,34 +238,34 @@ TrajOptProbPtr ConstructProblem(const Json::Value& root, tesseract::BasicEnvCons
   return ConstructProblem(pci);
 }
 
-void generateInitTraj(TrajArray& init_traj, const InitInfo& init_info, int num_steps)
+void generateInitTraj(TrajArray& init_traj, const ProblemConstructionInfo& pci)
 {
+  InitInfo init_info = pci.init_info;
+
   // initialize based on type specified
   if (init_info.type == InitInfo::STATIONARY)
   {
-    MatrixXd start_pos;
-    if (init_info.data.rows() != 1 && init_info.data.cols() != 1)
+    if (init_info.has_time)
     {
-      PRINT_AND_THROW("Selected stationary initialization, but provided a matrix instead of a vector");
+      LOG_WARN("Selected stationary initialization but set has_time to true. "
+               "Ignoring and continuing with stationary initialization");
     }
-    if (init_info.data.rows() > init_info.data.cols())
-    {
-      start_pos = init_info.data.transpose();
-    }
-    else
-    {
-      start_pos = init_info.data;
-    }
-    init_traj = start_pos.replicate(num_steps, 1);
+    VectorXd start_pos = pci.env->getCurrentJointValues(pci.kin->getName());
+    init_traj = start_pos.transpose().replicate(pci.basic_info.n_steps, 1);
   }
   else if (init_info.type == InitInfo::STRAIGHT_LINE)
   {
-    VectorXd start_pos = init_info.data.row(0);
-    VectorXd end_pos = init_info.data.row(1);
-    init_traj.resize(num_steps, init_info.data.cols());
-    for (int idof = 0; idof < init_info.data.cols(); ++idof)
+    VectorXd start_pos = pci.env->getCurrentJointValues(pci.kin->getName());
+    VectorXd end_pos = init_info.data;
+    init_traj.resize(pci.basic_info.n_steps, end_pos.rows());
+    for (int idof = 0; idof < start_pos.rows(); ++idof)
     {
-      init_traj.col(idof) = VectorXd::LinSpaced(num_steps, start_pos(idof), end_pos(idof));
+      init_traj.col(idof) = VectorXd::LinSpaced(pci.basic_info.n_steps, start_pos(idof), end_pos(idof));
+    }
+    if (init_info.has_time)
+    {
+      init_traj.col(init_traj.cols() - 1) = end_pos(end_pos.rows() - 1)/pci.basic_info.n_steps *
+                                            VectorXd::Ones(pci.basic_info.n_steps);
     }
   }
   else if (init_info.type == InitInfo::GIVEN_TRAJ)
@@ -273,10 +275,10 @@ void generateInitTraj(TrajArray& init_traj, const InitInfo& init_info, int num_s
   else
   {
     PRINT_AND_THROW("Init Info did not have a valid type. Valid types are "
-                    "stationary, staright_line, or given_traj");
+                    "STATIONARY, STRAIGHT_LINE, or GIVEN_TRAJ");
   }
 
-  if (!init_info.has_time)
+  if (!init_info.has_time || init_info.type == InitInfo::STATIONARY)
   {
     // add on time (default to 1 sec) if not included in initialization data
     init_traj.conservativeResize(Eigen::NoChange_t(), init_traj.cols() + 1);
@@ -360,20 +362,19 @@ TrajOptProbPtr ConstructProblem(const ProblemConstructionInfo& pci)
   TrajOptProbPtr prob(new TrajOptProb(n_steps, pci));
   int n_dof = prob->GetKin()->numJoints();
 
+  TrajArray init_traj;
+  generateInitTraj(init_traj, pci);
+  if (init_traj.rows() != n_steps || init_traj.cols() != n_dof + 1)
+  {
+    PRINT_AND_THROW(boost::format("Initial trajectory is not the right size matrix\n"
+                                  "Expected %i rows (time steps) x %i columns (%i dof + 1 time column)\n"
+                                  "Got %i rows and %i columns") %
+                    n_steps % (n_dof + 1) % n_dof % init_traj.rows() % init_traj.cols());
+  }
+  prob->SetInitTraj(init_traj);
+
   if (bi.start_fixed)
   {
-    if (pci.init_info.data.rows() < 1)
-    {
-      PRINT_AND_THROW("Initial trajectory must contain at least the start state.");
-    }
-
-    if (pci.init_info.data.cols() != n_dof ||
-        (pci.init_info.has_time && pci.init_info.data.cols() != (n_dof + 1)))
-    {
-      PRINT_AND_THROW("robot dof values don't match initialization. I don't "
-                      "know what you want me to use for the dof values");
-    }
-
     for (int j = 0; j < n_dof; ++j)
     {
       prob->addLinearConstraint(exprSub(AffExpr(prob->m_traj_vars(0, j)), pci.init_info.data(0, j)), EQ);
@@ -401,18 +402,6 @@ TrajOptProbPtr ConstructProblem(const ProblemConstructionInfo& pci)
   {
     ci->hatch(*prob);
   }
-
-  TrajArray init_traj;
-  generateInitTraj(init_traj, pci.init_info, n_steps);
-
-  if (init_traj.rows() != n_steps || init_traj.cols() != n_dof + 1)
-  {
-    PRINT_AND_THROW(boost::format("Initial trajectory is not the right size matrix\n"
-                                  "Expected %i rows (time steps) x %i columns (%i dof + 1 time column)\n"
-                                  "Got %i rows and %i columns") %
-                    n_steps % (n_dof + 1) % n_dof % init_traj.rows() % init_traj.cols());
-  }
-  prob->SetInitTraj(init_traj);
 
   return prob;
 }
@@ -679,7 +668,7 @@ void JointVelTermInfo::hatch(TrajOptProb& prob)
     time_vars[i - first_step] = prob.GetVar(i, prob.GetNumDOF() - 1);
   }
 
-  int num_vels = last_step - first_step;
+  unsigned num_vels = last_step - first_step;
   if (coeffs.size() == 1)
   {
     coeffs = DblVec(num_vels * 2, coeffs[0]);
@@ -774,7 +763,7 @@ void JointAccCostInfo::hatch(TrajOptProb& prob)
     time_vars[i - first_step] = prob.GetVar(i, prob.GetNumDOF() - 1);
   }
 
-  int num_acc = last_step - first_step - 1;
+  unsigned num_acc = last_step - first_step - 1;
   if (coeffs.size() == 1)
   {
     coeffs = DblVec(num_acc, coeffs[0]);
@@ -843,7 +832,7 @@ void JointJerkCostInfo::hatch(TrajOptProb& prob)
     PRINT_AND_THROW("Last time step must be at least 3 steps ahead of first time step in JointJerkCost");
   }
 
-  int num_jerk = last_step - first_step - 2;
+  unsigned num_jerk = last_step - first_step - 2;
   if (coeffs.size() == 1)
   {
     coeffs = DblVec(num_jerk, coeffs[0]);

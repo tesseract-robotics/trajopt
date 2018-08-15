@@ -92,15 +92,15 @@
       "type" : "total_time",
       "params" :
       {
-        "weight" : 1,
-        "penalty_type" : "SQUARED"
+        "weight" : 1.0,
+        "penalty_type" : "ABS"
       }
     }
   ],
   "constraints" :
   [
     {
-      "name" : "waypoint_cart_1",
+      "name" : "waypoint_cart_0",
       "type" : "static_pose",
       "params" :
       {
@@ -113,7 +113,7 @@
       }
     },
     {
-      "name" : "waypoint_cart_2",
+      "name" : "waypoint_cart_1",
       "type" : "static_pose",
       "params" :
       {
@@ -126,7 +126,7 @@
       }
     },
     {
-      "name" : "waypoint_cart_3",
+      "name" : "waypoint_cart_2",
       "type" : "static_pose",
       "params" :
       {
@@ -139,7 +139,7 @@
       }
     },
     {
-      "name" : "waypoint_cart_4",
+      "name" : "waypoint_cart_3",
       "type" : "static_pose",
       "params" :
       {
@@ -152,7 +152,7 @@
       }
     },
     {
-      "name" : "waypoint_cart_5",
+      "name" : "waypoint_cart_4",
       "type" : "static_pose",
       "params" :
       {
