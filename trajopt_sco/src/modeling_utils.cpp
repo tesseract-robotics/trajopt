@@ -132,21 +132,26 @@ double CostFromErrFunc::value(const vector<double>& xin)
 {
   VectorXd x = getVec(xin, vars_);
   VectorXd err = f_->call(x);
-  if (coeffs_.size() > 0)
-    err.array() *= coeffs_.array();
+
   switch (pen_type_)
   {
     case SQUARED:
-      return err.array().square().sum();
+      err = err.array().square();
+      break;
     case ABS:
-      return err.array().abs().sum();
+      err = err.array().abs();
+      break;
     case HINGE:
-      return err.cwiseMax(VectorXd::Zero(err.size())).sum();
+      err = err.cwiseMax(VectorXd::Zero(err.size()));
+      break;
     default:
       assert(0 && "unreachable");
   }
 
-  return 0;  // avoid compiler warning
+  if (coeffs_.size() > 0)
+    err.array() *= coeffs_.array();
+
+  return err.array().sum();
 }
 ConvexObjectivePtr CostFromErrFunc::convex(const vector<double>& xin, Model* model)
 {
@@ -157,23 +162,35 @@ ConvexObjectivePtr CostFromErrFunc::convex(const vector<double>& xin, Model* mod
   for (int i = 0; i < jac.rows(); ++i)
   {
     AffExpr aff = affFromValGrad(y[i], x, jac.row(i), vars_);
+    double weight = 1;
     if (coeffs_.size() > 0)
     {
-      exprScale(aff, coeffs_[i]);
       if (coeffs_[i] == 0)
         continue;
+
+      weight = coeffs_[i];
     }
     switch (pen_type_)
     {
       case SQUARED:
-        out->addQuadExpr(exprSquare(aff));
-        break;
+        {
+          QuadExpr quad = exprSquare(aff);
+          exprScale(quad, weight);
+          out->addQuadExpr(quad);
+          break;
+        }
       case ABS:
-        out->addAbs(aff, 1);
-        break;
+        {
+          exprScale(aff, weight);
+          out->addAbs(aff, 1);
+          break;
+        }
       case HINGE:
-        out->addHinge(aff, 1);
-        break;
+        {
+          exprScale(aff, weight);
+          out->addHinge(aff, 1);
+          break;
+        }
       default:
         assert(0 && "unreachable");
     }
