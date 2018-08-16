@@ -162,24 +162,35 @@ ConvexObjectivePtr CostFromErrFunc::convex(const vector<double>& xin, Model* mod
   for (int i = 0; i < jac.rows(); ++i)
   {
     AffExpr aff = affFromValGrad(y[i], x, jac.row(i), vars_);
+    double weight = 1;
     if (coeffs_.size() > 0)
     {
-      double scale_factor = pen_type_ == SQUARED ? sqrt(coeffs_[i]) : coeffs_[i];
-      exprScale(aff, scale_factor);
       if (coeffs_[i] == 0)
         continue;
+
+      weight = coeffs_[i];
     }
     switch (pen_type_)
     {
       case SQUARED:
-        out->addQuadExpr(exprSquare(aff));
-        break;
+        {
+          QuadExpr quad = exprSquare(aff);
+          exprScale(quad, weight);
+          out->addQuadExpr(quad);
+          break;
+        }
       case ABS:
-        out->addAbs(aff, 1);
-        break;
+        {
+          exprScale(aff, weight);
+          out->addAbs(aff, 1);
+          break;
+        }
       case HINGE:
-        out->addHinge(aff, 1);
-        break;
+        {
+          exprScale(aff, weight);
+          out->addHinge(aff, 1);
+          break;
+        }
       default:
         assert(0 && "unreachable");
     }
