@@ -176,27 +176,28 @@ VectorXd CartVelCalculator::operator()(const VectorXd& dof_vals) const
   return out;
 }
 
-VectorXd ConfinedAxisErrCalculator::operator()(const VectorXd& dof_vals) const {
+VectorXd AlignedAxisErrCalculator::operator()(const VectorXd& dof_vals) const {
   // calculate the current pose given the DOF values for the robot
   Affine3d new_pose, change_base;
   change_base = env_->getLinkTransform(manip_->getBaseLinkName());
   manip_->calcFwdKin(new_pose, change_base, dof_vals, link_, *env_->getState());
 
   // get the error of the current pose
-  Affine3d pose_err = pose_inv_ * (new_pose * tcp_);
-  Quaterniond q(pose_err.rotation());
-  VectorXd err(1);
+  Matrix3d orientation_err = orientation_inv_ * (new_pose.rotation() * tcp_orientation_);
+  AngleAxisd aa_err(orientation_err);
 
-  // determine the error of the rotation
-   switch(axis_) {
-      case X_AXIS: err(0) = 2.0*fabs(asin(q.x())) - tol_;
-      break;
-      case Y_AXIS: err(0) = 2.0*fabs(asin(q.y())) - tol_;
-      break;
-      case Z_AXIS: err(0) = 2.0*fabs(asin(q.z())) - tol_;
-      break;
-    }
+  // gets terms for error determination
+  double angle = fabs(aa_err.angle());
 
+  // the angle error is typical: actual value - tolerance
+  double angle_err = angle - tol_;
+
+  // the axis error is scaled with the angle. This is for two reasons:
+  // 1. The error terms will stay on the same scale, since 1 - |dot_prod| ranges from 0 to 1
+  // 2. As the angle approaches zero, the axis loses meaning and should not be counted as erroneous.
+  Vector3d axis_err = (axis_ - (orientation_err*axis_)).array().square();
+
+  Vector4d err(axis_err.x(), axis_err.y(), axis_err.z(), angle_err);
   return err;
 }
 
@@ -206,22 +207,12 @@ VectorXd ConicalAxisErrCalculator::operator()(const VectorXd& dof_vals) const {
   change_base = env_->getLinkTransform(manip_->getBaseLinkName());
   manip_->calcFwdKin(new_pose, change_base, dof_vals, link_, *env_->getState());
 
-  // get the error of the current pose
-  Affine3d pose_err = pose_inv_ * (new_pose * tcp_);
-
   // get the orientation matrix of the error
-  Matrix3d orientation_err(pose_err.rotation());
+  Matrix3d orientation_err = orientation_inv_ * (new_pose.rotation() * tcp_orientation_);
   VectorXd err(1);
 
   // determine the error of the conical axis
-  switch(axis_) {
-     case X_AXIS: err(0) = acos(orientation_err(0, 0)) - tol_;
-     break;
-     case Y_AXIS: err(0) = acos(orientation_err(1, 1)) - tol_;
-     break;
-     case Z_AXIS: err(0) = acos(orientation_err(2, 2)) - tol_;
-     break;
-   }
+  err(0) = acos((orientation_err*axis_).dot(axis_)) - tol_;
 
   return err;
 }

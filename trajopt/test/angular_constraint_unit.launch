@@ -7,7 +7,7 @@
   <arg name="plotting" default="false"/>
 
   <!-- Load problem description Json files -->
-  <param name="confined_json_file" textfile="$(arg json_path_base)_confined_axis.json"/>
+  <param name="aligned_json_file" textfile="$(arg json_path_base)_aligned_axis.json"/>
   <param name="conical_json_file" textfile="$(arg json_path_base)_conical_axis.json"/>
 
   <!-- Load universal robot description format (URDF) -->
@@ -29,7 +29,7 @@
   <!-- If needed, broadcast static tf for robot root -->
   <node pkg="tf" type="static_transform_publisher" name="virtual_joint_broadcaster_0" args="0 0 0 0 0 0 world base_link 100" />
 
-  <test test-name="angular_constraint_unit" pkg="trajopt" type="angular_constraint_unit" >
+  <test test-name="angular_constraint_unit" pkg="trajopt" type="trajopt_angular_constraint_unit" >
     <param name="plotting" value="$(arg plotting)"/>
   </test>
 

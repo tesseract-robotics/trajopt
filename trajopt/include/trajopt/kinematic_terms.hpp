@@ -104,29 +104,23 @@ struct CartVelCalculator : VectorOfVector
   VectorXd operator()(const VectorXd& dof_vals) const;
 };
 
-enum Axis {
-  X_AXIS,
-  Y_AXIS,
-  Z_AXIS
-};
-
 /**
- * @brief The ConfinedAxisErrCalculator is a truct whose operator() calculates error of a given
- * pose with respect ot the confined rotation along the defined axis.
+ * @brief The AlignedAxisErrCalculator is a struct whose operator() calculates error of a given
+ * pose with respect to the rotation along the defined axis.
  */
-struct ConfinedAxisErrCalculator : public VectorOfVector {
+struct AlignedAxisErrCalculator : public VectorOfVector {
 
-  Eigen::Affine3d pose_inv_; /**< param The inverse of the desired pose */
-  tesseract::BasicKinConstPtr manip_; /**< Kinematics object */
-  tesseract::BasicEnvConstPtr env_; /**< Environment object */
-  std::string link_; /**< Link of the robot referred to */
-  Eigen::Affine3d tcp_; /**< Tool center point */
+  Eigen::Matrix3d orientation_inv_; /**< @brief param The inverse of the desired orientation */
+  tesseract::BasicKinConstPtr manip_; /**< @brief Kinematics object */
+  tesseract::BasicEnvConstPtr env_; /**< @brief Environment object */
+  std::string link_; /**< @brief Link of the robot referred to */
+  Eigen::Matrix3d tcp_orientation_; /**< @brief Tool center point orientation */
 
-  Axis axis_; /**< Axis of rotation being provided with a tolerance */
-  double tol_; /**< Tolerance angle in radians */
+  Vector3d axis_; /**< @brief Axis of rotation to align with */
+  double tol_; /**< @brief Tolerance angle in radians */
 
   /**
-   * @brief ConfinedAxisErrCalculator Constructor
+   * @brief AlignedAxisErrCalculator Constructor
    * @param pose Desired pose
    * @param manip
    * @param env
@@ -135,15 +129,15 @@ struct ConfinedAxisErrCalculator : public VectorOfVector {
    * @param tol_angle Tolerance in radians
    * @param tcp Tool center point
    */
-  ConfinedAxisErrCalculator(const Eigen::Affine3d& pose, tesseract::BasicKinConstPtr manip, tesseract::BasicEnvConstPtr env,
-                            std::string link, Axis axis, double tol_angle, Eigen::Affine3d tcp = Eigen::Affine3d::Identity()) :
-    pose_inv_(pose.inverse()),
+  AlignedAxisErrCalculator(const Eigen::Matrix3d& orientation, tesseract::BasicKinConstPtr manip, tesseract::BasicEnvConstPtr env,
+                            std::string link, Vector3d axis, double tol, Eigen::Matrix3d tcp_orientation = Eigen::Matrix3d::Identity()) :
+    orientation_inv_(orientation.inverse()),
     manip_(manip),
     env_(env),
     link_(link),
-    tcp_(tcp),
+    tcp_orientation_(tcp_orientation),
     axis_(axis),
-    tol_(tol_angle * M_PI / 180.0)
+    tol_(tol)
   {
   }
 
@@ -162,14 +156,14 @@ struct ConfinedAxisErrCalculator : public VectorOfVector {
  *
  */
 struct ConicalAxisErrCalculator : public VectorOfVector {
-  Eigen::Affine3d pose_inv_; /**< Inverse of the desired pose */
-  tesseract::BasicKinConstPtr manip_; /**< Kinematics object */
-  tesseract::BasicEnvConstPtr env_; /**< Environment object */
-  std::string link_; /**< The link of the robot reggered to */
-  Eigen::Affine3d tcp_; /**< Tool center point */
+  Eigen::Matrix3d orientation_inv_; /**< @brief Inverse of the desired orientation */
+  tesseract::BasicKinConstPtr manip_; /**< @brief Kinematics object */
+  tesseract::BasicEnvConstPtr env_; /**< @brief Environment object */
+  std::string link_; /**< @brief The link of the robot referred to */
+  Eigen::Matrix3d tcp_orientation_; /**< @brief Tool center point orientation */
 
-  Axis axis_; /**< Axis the conical tolreance is applied to */
-  double tol_; /**< Tolerance angle in radians */
+  Vector3d axis_; /**< @brief Axis the conical tolerance is applied to */
+  double tol_; /**< @brief Tolerance angle in radians */
 
   /**
    * @brief ConicalAxisErrCalculator
@@ -181,15 +175,15 @@ struct ConicalAxisErrCalculator : public VectorOfVector {
    * @param tol_angle Tolerance angle in degrees
    * @param tcp Tool center point
    */
-  ConicalAxisErrCalculator(const Eigen::Affine3d& pose, tesseract::BasicKinConstPtr manip, tesseract::BasicEnvConstPtr env,
-                           std::string link, Axis axis, double tol_angle, Eigen::Affine3d tcp = Eigen::Affine3d::Identity()) :
-    pose_inv_(pose.inverse()),
+  ConicalAxisErrCalculator(const Eigen::Matrix3d& orientation, tesseract::BasicKinConstPtr manip, tesseract::BasicEnvConstPtr env,
+                           std::string link, Vector3d axis, double tol, Eigen::Matrix3d tcp_orientation = Eigen::Matrix3d::Identity()) :
+    orientation_inv_(orientation.inverse()),
     manip_(manip),
     env_(env),
     link_(link),
-    tcp_(tcp),
+    tcp_orientation_(tcp_orientation),
     axis_(axis),
-    tol_(tol_angle * M_PI / 180.0)
+    tol_(tol)
   {
   }
 

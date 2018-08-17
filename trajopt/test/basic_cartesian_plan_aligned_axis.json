@@ -27,67 +27,72 @@
   "constraints" :
   [
     {
-      "name" : "conical_1",
-      "type" : "conical_axis",
+      "name" : "aligned_1",
+      "type" : "aligned_axis",
       "params" :
       {
         "timestep" : 0,
         "wxyz" : [0.0, 0.0, 1.0, 0.0],
         "link" : "tool0",
-        "weight" : 10.0,
-        "axis" : [0, 0, 1],
+        "axis_coeff" : 2.0,
+        "angle_coeff" : 10.0,
+        "axis" : [1, 0, 0],
         "tolerance" : 0.087266
       }
     },
     {
-      "name" : "conical_2",
-      "type" : "conical_axis",
+      "name" : "aligned_2",
+      "type" : "aligned_axis",
       "params" :
       {
         "timestep" : 1,
         "wxyz" : [0.0, 0.0, 1.0, 0.0],
         "link" : "tool0",
-        "weight" : 10.0,
-        "axis" : [0, 0, 1],
+        "axis_coeff" : 2.0,
+        "angle_coeff" : 10.0,
+        "axis" : [1, 0, 0],
         "tolerance" : 0.087266
       }
     },
     {
-      "name" : "conical_3",
-      "type" : "conical_axis",
+      "name" : "aligned_3",
+      "type" : "aligned_axis",
       "params" :
       {
         "timestep" : 2,
         "wxyz" : [0.0, 0.0, 1.0, 0.0],
         "link" : "tool0",
-        "weight" : 10.0,
-        "axis" : [0, 0, 1],
+        "axis_coeff" : 2.0,
+        "angle_coeff" : 10.0,
+        "axis" : [1, 0, 0],
         "tolerance" : 0.087266
       }
     },
     {
-      "name" : "conical_4",
-      "type" : "conical_axis",
+      "name" : "aligned_4",
+      "type" : "aligned_axis",
       "params" :
       {
         "timestep" : 3,
         "wxyz" : [0.0, 0.0, 1.0, 0.0],
         "link" : "tool0",
-        "weight" : 10.0,
-        "axis" : [0, 0, 1],
+        "axis_coeff" : 2.0,
+        "angle_coeff" : 10.0,
+        "axis" : [1, 0, 0],
         "tolerance" : 0.087266
       }
     },
     {
-      "name" : "conical_5",
-      "type" : "conical_axis",
+      "name" : "aligned_5",
+      "type" : "aligned_axis",
       "params" :
       {
         "timestep" : 4,
         "wxyz" : [0.0, 0.0, 1.0, 0.0],
         "link" : "tool0",
-        "weight" : 10.0,
-        "axis" : [0, 0, 1],
+        "axis_coeff" : 2.0,
+        "angle_coeff" : 10.0,
+        "axis" : [1, 0, 0],
         "tolerance" : 0.087266
       }
     },
