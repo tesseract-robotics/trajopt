@@ -4,6 +4,7 @@
 #include <trajopt/common.hpp>
 #include <trajopt/json_marshal.hpp>
 #include <trajopt_sco/optimizers.hpp>
+#include <trajopt/kinematic_terms.hpp>
 
 namespace sco
 {
@@ -321,5 +322,68 @@ struct JointConstraintInfo : public TermInfo, public MakesConstraint
   void fromJson(ProblemConstructionInfo& pci, const Value& v);
   void hatch(TrajOptProb& prob);
   DEFINE_CREATE(JointConstraintInfo)
+};
+
+/**
+ * @brief The AlignedAxisTermInfo struct contains information to create constraints or costs
+ * using a tolerance for the rotation about an axis
+ */
+struct AlignedAxisTermInfo : public TermInfo, public MakesConstraint, public MakesCost
+{
+  int timestep; /**< @brief The timestep of this term in the trajectory */
+  Vector4d
+      wxyz; /**< @brief 4D vector containing w, x, y, and z quaternion components for the pose orientation (in that
+               order) */
+  Vector4d tcp_wxyz;  /**< @brief Tool center point */
+  double axis_coeff;  /**< @brief Coefficient multiplied by the errors of the rotation axis from the specified axis */
+  double angle_coeff; /**< @brief Coefficient multipleid by the angle of rotation past the tolerance */
+  string link;        /**< @brief Link of the robot the term refers to */
+  Vector3d axis;      /**< @brief Axis allowed to rotate with respect to the frame of #link */
+  double tolerance;   /**< @brief Rotation tolerance about the given axis in radians */
+
+  AlignedAxisTermInfo();
+
+  /**
+   * @brief fromJson Constructs the term from a Json file
+   */
+  void fromJson(ProblemConstructionInfo& pci, const Value& v);
+
+  /**
+   * @brief hatch Add the proper cost/constraint functions to the problem
+   * @param prob The optimization problems to add the term to
+   */
+  void hatch(TrajOptProb& prob);
+  DEFINE_CREATE(AlignedAxisTermInfo)
+};
+
+/**
+ * @brief The ConicalAxisTermInfo struct contains information to create constraints or costs
+ * using a conical tolerance about an axis
+ */
+struct ConicalAxisTermInfo : public TermInfo, public MakesConstraint, public MakesCost
+{
+  int timestep; /**< @brief The timestep of this term in the trajectory */
+  Vector4d
+      wxyz; /**< @brief 4D vector containing w, x, y, and z quaternion components for the pose orientation (in that
+               order) */
+  Vector4d tcp_wxyz; /**< @brief Tool center point */
+  double weight;     /**< @brief Coefficient multiplied by the errors of the rotation axis from the specified axis */
+  string link;       /**< @brief Link of the robot the term refers to */
+  Vector3d axis;     /**< @brief Axis around which the conical tolerance will be applied */
+  double tolerance;  /**< @brief Tolerance angle of the cone in radians*/
+
+  ConicalAxisTermInfo();
+
+  /**
+   * @brief fromJson Constructs the term from a Json file
+   */
+  void fromJson(ProblemConstructionInfo& pci, const Value& v);
+
+  /**
+   * @brief hatch Add the proper cost/constraint functions to the problem
+   * @param prob The optimization problems to add the term to
+   */
+  void hatch(TrajOptProb& prob);
+  DEFINE_CREATE(ConicalAxisTermInfo)
 };
 }

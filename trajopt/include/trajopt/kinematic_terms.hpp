@@ -1,5 +1,4 @@
 #pragma once
-
 #include <Eigen/Core>
 #include <tesseract_core/basic_env.h>
 #include <tesseract_core/basic_kin.h>
@@ -102,6 +101,107 @@ struct CartVelCalculator : VectorOfVector
   {
   }
 
+  VectorXd operator()(const VectorXd& dof_vals) const;
+};
+
+/**
+ * @brief The AlignedAxisErrCalculator is a struct whose operator() calculates error of a given
+ * pose with respect to the rotation along the defined axis.
+ */
+struct AlignedAxisErrCalculator : public VectorOfVector
+{
+  Eigen::Matrix3d orientation_inv_;   /**< @brief param The inverse of the desired orientation */
+  tesseract::BasicKinConstPtr manip_; /**< @brief Kinematics object */
+  tesseract::BasicEnvConstPtr env_;   /**< @brief Environment object */
+  std::string link_;                  /**< @brief Link of the robot referred to */
+  Eigen::Matrix3d tcp_orientation_;   /**< @brief Tool center point orientation */
+
+  Vector3d axis_; /**< @brief Axis of rotation to align with */
+  double tol_;    /**< @brief Tolerance angle in radians */
+
+  /**
+   * @brief AlignedAxisErrCalculator Constructor
+   * @param pose Desired pose
+   * @param manip
+   * @param env
+   * @param link
+   * @param axis Axis of rotation
+   * @param tol_angle Tolerance in radians
+   * @param tcp Tool center point
+   */
+  AlignedAxisErrCalculator(const Eigen::Matrix3d& orientation,
+                           tesseract::BasicKinConstPtr manip,
+                           tesseract::BasicEnvConstPtr env,
+                           std::string link,
+                           Vector3d axis,
+                           double tol,
+                           Eigen::Matrix3d tcp_orientation = Eigen::Matrix3d::Identity())
+    : orientation_inv_(orientation.inverse())
+    , manip_(manip)
+    , env_(env)
+    , link_(link)
+    , tcp_orientation_(tcp_orientation)
+    , axis_(axis)
+    , tol_(tol)
+  {
+  }
+
+  /**
+   * @brief operator () Calculates error
+   * @param dof_vals Values of the joints for forward kinematics
+   * @return 1D vector of error beyond the allowed rotation
+   */
+  VectorXd operator()(const VectorXd& dof_vals) const;
+};
+
+/**
+ * @brief The ConicalAxisErrCalculator is a struct whose operator() returns the error of the
+ * given pose with respect to the conical constraint defined
+ *
+ */
+struct ConicalAxisErrCalculator : public VectorOfVector
+{
+  Eigen::Matrix3d orientation_inv_;   /**< @brief Inverse of the desired orientation */
+  tesseract::BasicKinConstPtr manip_; /**< @brief Kinematics object */
+  tesseract::BasicEnvConstPtr env_;   /**< @brief Environment object */
+  std::string link_;                  /**< @brief The link of the robot referred to */
+  Eigen::Matrix3d tcp_orientation_;   /**< @brief Tool center point orientation */
+
+  Vector3d axis_; /**< @brief Axis the conical tolerance is applied to */
+  double tol_;    /**< @brief Tolerance angle in radians */
+
+  /**
+   * @brief ConicalAxisErrCalculator
+   * @param pose Desired pose
+   * @param manip Kinematics Object
+   * @param env Environment object
+   * @param link Link of the robot the term applies to
+   * @param axis Axis to define the conical tolerance around
+   * @param tol_angle Tolerance angle in degrees
+   * @param tcp Tool center point
+   */
+  ConicalAxisErrCalculator(const Eigen::Matrix3d& orientation,
+                           tesseract::BasicKinConstPtr manip,
+                           tesseract::BasicEnvConstPtr env,
+                           std::string link,
+                           Vector3d axis,
+                           double tol,
+                           Eigen::Matrix3d tcp_orientation = Eigen::Matrix3d::Identity())
+    : orientation_inv_(orientation.inverse())
+    , manip_(manip)
+    , env_(env)
+    , link_(link)
+    , tcp_orientation_(tcp_orientation)
+    , axis_(axis)
+    , tol_(tol)
+  {
+  }
+
+  /**
+   * @brief operator ()
+   * @param dof_vals
+   * @return
+   */
   VectorXd operator()(const VectorXd& dof_vals) const;
 };
 }

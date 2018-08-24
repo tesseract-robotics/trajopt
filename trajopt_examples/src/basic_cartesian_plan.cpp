@@ -110,6 +110,7 @@ TrajOptProbPtr cppMethod()
   collision->last_step = pci.basic_info.n_steps - 1;
   collision->gap = 1;
   collision->info = createSafetyMarginDataVector(pci.basic_info.n_steps, 0.025, 20);
+  pci.cost_infos.push_back(collision);
 
   // Populate Constraints
   double delta = 0.5 / pci.basic_info.n_steps;
@@ -230,7 +231,7 @@ int main(int argc, char** argv)
 
   tesseract::ContactResultVector collision_vector;
   tesseract::moveContactResultsMapToContactResultsVector(collisions, collision_vector);
-  ROS_INFO("Initial trajector number of continuous collisions: %lui\n", collision_vector.size());
+  ROS_INFO("Initial trajector number of continuous collisions: %lu\n", collision_vector.size());
 
   BasicTrustRegionSQP opt(prob);
   if (plotting_)
@@ -250,5 +251,5 @@ int main(int argc, char** argv)
 
   collisions.clear();
   env_->continuousCollisionCheckTrajectory(joint_names, link_names, getTraj(opt.x(), prob->GetVars()), collisions);
-  ROS_INFO("Final trajectory number of continuous collisions: %lui\n", collisions.size());
+  ROS_INFO("Final trajectory number of continuous collisions: %lu\n", collisions.size());
 }

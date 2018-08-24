@@ -83,4 +83,8 @@ if (CATKIN_ENABLE_TESTING)
 
   add_rostest_gtest(${PROJECT_NAME}_cast_cost_octomap_unit test/cast_cost_octomap_unit.launch test/cast_cost_octomap_unit.cpp)
   target_link_libraries(${PROJECT_NAME}_cast_cost_octomap_unit ${PROJECT_NAME} ${Boost_SYSTEM_LIBRARY} ${Boost_PROGRAM_OPTIONS_LIBRARY} ${PCL_LIBRARIES} ${catkin_LIBRARIES})
+
+  add_rostest_gtest(${PROJECT_NAME}_angular_constraint_unit test/angular_constraint_unit.launch test/angular_constraint_unit.cpp)
+  target_link_libraries(${PROJECT_NAME}_angular_constraint_unit ${PROJECT_NAME} ${Boost_SYSTEM_LIBRARY} ${Boost_PROGRAM_OPTIONS_LIBRARY} ${catkin_LIBRARIES})
+
 endif()
