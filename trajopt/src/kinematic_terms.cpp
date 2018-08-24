@@ -176,7 +176,8 @@ VectorXd CartVelCalculator::operator()(const VectorXd& dof_vals) const
   return out;
 }
 
-VectorXd AlignedAxisErrCalculator::operator()(const VectorXd& dof_vals) const {
+VectorXd AlignedAxisErrCalculator::operator()(const VectorXd& dof_vals) const
+{
   // calculate the current pose given the DOF values for the robot
   Affine3d new_pose, change_base;
   change_base = env_->getLinkTransform(manip_->getBaseLinkName());
@@ -192,16 +193,17 @@ VectorXd AlignedAxisErrCalculator::operator()(const VectorXd& dof_vals) const {
   // the angle error is typical: actual value - tolerance
   double angle_err = angle - tol_;
 
-  // the axis error is scaled with the angle. This is for two reasons:
-  // 1. The error terms will stay on the same scale, since 1 - |dot_prod| ranges from 0 to 1
-  // 2. As the angle approaches zero, the axis loses meaning and should not be counted as erroneous.
-  Vector3d axis_err = (axis_ - (orientation_err*axis_)).array().square();
+  // axis error
+  // the element wise squared difference between the desired axis and
+  // the desired axis after being rotated by the current pose "error"
+  Vector3d axis_err = (axis_ - (orientation_err * axis_)).array().square();
 
   Vector4d err(axis_err.x(), axis_err.y(), axis_err.z(), angle_err);
   return err;
 }
 
-VectorXd ConicalAxisErrCalculator::operator()(const VectorXd& dof_vals) const {
+VectorXd ConicalAxisErrCalculator::operator()(const VectorXd& dof_vals) const
+{
   // calculate the current pose given the DOF values for the robot
   Affine3d new_pose, change_base;
   change_base = env_->getLinkTransform(manip_->getBaseLinkName());
@@ -212,9 +214,8 @@ VectorXd ConicalAxisErrCalculator::operator()(const VectorXd& dof_vals) const {
   VectorXd err(1);
 
   // determine the error of the conical axis
-  err(0) = acos((orientation_err*axis_).dot(axis_)) - tol_;
+  err(0) = acos((orientation_err * axis_).dot(axis_)) - tol_;
 
   return err;
 }
-
 }

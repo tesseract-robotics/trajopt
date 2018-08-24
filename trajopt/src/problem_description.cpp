@@ -68,7 +68,6 @@ BoolVec toMask(const VectorXd& x) {
   return out;
 }
 #endif
-
 }
 
 namespace trajopt
@@ -806,19 +805,21 @@ void JointConstraintInfo::hatch(TrajOptProb& prob)
 }
 
 // initialize with basic default values
-AlignedAxisTermInfo::AlignedAxisTermInfo() : tcp_wxyz(1.0, 0.0, 0.0, 0.0) {
+AlignedAxisTermInfo::AlignedAxisTermInfo() : tcp_wxyz(1.0, 0.0, 0.0, 0.0)
+{
   axis_coeff = 0.0;
   angle_coeff = 0.0;
 }
 
 // get the term information from a json value
-void AlignedAxisTermInfo::fromJson(ProblemConstructionInfo &pci, const Value& v) {
+void AlignedAxisTermInfo::fromJson(ProblemConstructionInfo& pci, const Value& v)
+{
   // make sure params is a member of the Json value provided
   FAIL_IF_FALSE(v.isMember("params"));
 
   // get the params value and read the parameters fmro the file into the object members
   const Value& params = v["params"];
-  childFromJson(params, timestep, "timestep", pci.basic_info.n_steps-1);
+  childFromJson(params, timestep, "timestep", pci.basic_info.n_steps - 1);
   childFromJson(params, wxyz, "wxyz");
   childFromJson(params, tcp_wxyz, "tcp_xwyz", tcp_wxyz);
   childFromJson(params, axis_coeff, "axis_coeff");
@@ -829,50 +830,52 @@ void AlignedAxisTermInfo::fromJson(ProblemConstructionInfo &pci, const Value& v)
 
   // make sure the link name provided is valid
   const std::vector<std::string>& link_names = pci.kin->getLinkNames();
-  if (std::find(link_names.begin(), link_names.end(),link)==link_names.end()) {
-    PRINT_AND_THROW(boost::format("invalid link name: %s")%link);
+  if (std::find(link_names.begin(), link_names.end(), link) == link_names.end())
+  {
+    PRINT_AND_THROW(boost::format("invalid link name: %s") % link);
   }
 
   // make sure there are no extra items in the params value
-  const char* all_fields[] = {"timestep", "wxyz", "axis_coeff", "angle_coeff", "link",
-                              "tolerance", "axis", "tcp_wxyz"};
-  ensure_only_members(params, all_fields, sizeof(all_fields)/sizeof(char*));
+  const char* all_fields[] = { "timestep", "wxyz", "axis_coeff", "angle_coeff", "link", "tolerance", "axis", "tcp_"
+                                                                                                             "wxyz" };
+  ensure_only_members(params, all_fields, sizeof(all_fields) / sizeof(char*));
 }
 
 // add the term to the problem description
-void AlignedAxisTermInfo::hatch(TrajOptProb& prob) {
+void AlignedAxisTermInfo::hatch(TrajOptProb& prob)
+{
   // construct the desired pose
   Eigen::Quaterniond input_q(wxyz(0), wxyz(1), wxyz(2), wxyz(3));
   Eigen::Quaterniond tcp_q(tcp_wxyz(0), tcp_wxyz(1), tcp_wxyz(2), tcp_wxyz(3));
 
   // create the equality and inequality error functions to be used
-  VectorOfVectorPtr f_ineq(new AlignedAxisErrCalculator(input_q.matrix(), prob.GetKin(), prob.GetEnv(),
-                                                        link, axis, tolerance, tcp_q.matrix()));
+  VectorOfVectorPtr f_ineq(new AlignedAxisErrCalculator(
+      input_q.matrix(), prob.GetKin(), prob.GetEnv(), link, axis, tolerance, tcp_q.matrix()));
 
   Eigen::Vector4d coeffs(axis_coeff, axis_coeff, axis_coeff, angle_coeff);
 
   // add the costs or constraints depending on the term type
-  if (term_type == TT_COST) {
+  if (term_type == TT_COST)
+  {
     prob.addCost(CostPtr(new CostFromErrFunc(f_ineq, prob.GetVarRow(timestep), coeffs, HINGE, name)));
   }
-  else if (term_type == TT_CNT) {
+  else if (term_type == TT_CNT)
+  {
     prob.addConstraint(ConstraintPtr(new ConstraintFromFunc(f_ineq, prob.GetVarRow(timestep), coeffs, INEQ, name)));
   }
 }
 
 // initialize with basic default values
-ConicalAxisTermInfo::ConicalAxisTermInfo() : tcp_wxyz(1.0, 0.0, 0.0, 0.0) {
-  weight = 0.0;
-}
-
+ConicalAxisTermInfo::ConicalAxisTermInfo() : tcp_wxyz(1.0, 0.0, 0.0, 0.0) { weight = 0.0; }
 // construct the term from a Json file
-void ConicalAxisTermInfo::fromJson(ProblemConstructionInfo &pci, const Value &v) {
+void ConicalAxisTermInfo::fromJson(ProblemConstructionInfo& pci, const Value& v)
+{
   // make sure params is a member of the Json value provided
   FAIL_IF_FALSE(v.isMember("params"));
 
   // get the params value and read the parameters fmro the file into the object members
   const Value& params = v["params"];
-  childFromJson(params, timestep, "timestep", pci.basic_info.n_steps-1);
+  childFromJson(params, timestep, "timestep", pci.basic_info.n_steps - 1);
   childFromJson(params, wxyz, "wxyz");
   childFromJson(params, tcp_wxyz, "tcp_xwyz", tcp_wxyz);
   childFromJson(params, weight, "weight");
@@ -882,37 +885,38 @@ void ConicalAxisTermInfo::fromJson(ProblemConstructionInfo &pci, const Value &v)
 
   // make sure the link name provided is valid
   const std::vector<std::string>& link_names = pci.kin->getLinkNames();
-  if (std::find(link_names.begin(), link_names.end(),link)==link_names.end()) {
-    PRINT_AND_THROW(boost::format("invalid link name: %s")%link);
+  if (std::find(link_names.begin(), link_names.end(), link) == link_names.end())
+  {
+    PRINT_AND_THROW(boost::format("invalid link name: %s") % link);
   }
 
   // make sure there are no extra items in the params value
-  const char* all_fields[] = {"timestep", "wxyz", "weight", "link",
-                              "tolerance", "axis", "tcp_wxyz"};
-  ensure_only_members(params, all_fields, sizeof(all_fields)/sizeof(char*));
+  const char* all_fields[] = { "timestep", "wxyz", "weight", "link", "tolerance", "axis", "tcp_wxyz" };
+  ensure_only_members(params, all_fields, sizeof(all_fields) / sizeof(char*));
 }
 
 // add the term to the problem description
-void ConicalAxisTermInfo::hatch(TrajOptProb &prob) {
+void ConicalAxisTermInfo::hatch(TrajOptProb& prob)
+{
   // construct the desired pose
   Eigen::Quaterniond input_q(wxyz(0), wxyz(1), wxyz(2), wxyz(3));
   Eigen::Quaterniond tcp_q(tcp_wxyz(0), tcp_wxyz(1), tcp_wxyz(2), tcp_wxyz(3));
 
   // create the equality and inequality error functions to be used
-  VectorOfVectorPtr f_ineq(new ConicalAxisErrCalculator(input_q.matrix(), prob.GetKin(), prob.GetEnv(),
-                                                        link, axis, tolerance, tcp_q.matrix()));
+  VectorOfVectorPtr f_ineq(new ConicalAxisErrCalculator(
+      input_q.matrix(), prob.GetKin(), prob.GetEnv(), link, axis, tolerance, tcp_q.matrix()));
 
   VectorXd coeffs(1);
   coeffs(0) = weight;
 
   // add the costs or constraints depending on the term type
-  if (term_type == TT_COST) {
+  if (term_type == TT_COST)
+  {
     prob.addCost(CostPtr(new CostFromErrFunc(f_ineq, prob.GetVarRow(timestep), coeffs, HINGE, name)));
   }
-  else if (term_type == TT_CNT) {
+  else if (term_type == TT_CNT)
+  {
     prob.addConstraint(ConstraintPtr(new ConstraintFromFunc(f_ineq, prob.GetVarRow(timestep), coeffs, INEQ, name)));
   }
-
 }
-
 }

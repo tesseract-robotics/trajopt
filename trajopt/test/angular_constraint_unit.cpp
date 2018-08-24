@@ -23,32 +23,34 @@ using namespace tesseract;
 using namespace Eigen;
 
 const std::string ROBOT_DESCRIPTION_PARAM = "robot_description"; /**< Default ROS parameter for robot description */
-const std::string ROBOT_SEMANTIC_PARAM = "robot_description_semantic"; /**< Default ROS parameter for robot description */
+const std::string ROBOT_SEMANTIC_PARAM =
+    "robot_description_semantic"; /**< Default ROS parameter for robot description */
 
 bool plotting_ = false;
 int steps_ = 5;
 double approx_equals_diff_ = 1e-2;
 
-struct testInfo {
+struct testInfo
+{
   std::string method;
   std::string constraint;
 
   testInfo(std::string m, std::string c) : method(m), constraint(c) {}
 };
 
-class AngularConstraintTest : public testing::TestWithParam<testInfo> {
+class AngularConstraintTest : public testing::TestWithParam<testInfo>
+{
 public:
   ros::NodeHandle nh_;
   urdf::ModelInterfaceSharedPtr urdf_model_;   /**< URDF Model */
   srdf::ModelSharedPtr srdf_model_;            /**< SRDF Model */
-  tesseract_ros::KDLEnvPtr env_;            /**< Trajopt Basic Environment */
+  tesseract_ros::KDLEnvPtr env_;               /**< Trajopt Basic Environment */
   tesseract_ros::ROSBasicPlottingPtr plotter_; /**< Trajopt Plotter */
   std::vector<Affine3d> pose_inverses_;
   std::string constraint_type_;
   double tol_;
 
   AngularConstraintTest() : pose_inverses_(steps_) {}
-
   TrajOptProbPtr jsonMethod()
   {
     std::string config_file;
@@ -64,7 +66,7 @@ public:
 
     ProblemConstructionInfo pci(env_);
     pci.fromJson(root);
-    double y[] = {-0.2, -0.1, 0.0, 0.1, 0.2};
+    double y[] = { -0.2, -0.1, 0.0, 0.1, 0.2 };
     for (int i = 0; i < 5; i++)
     {
       Vector3d xyz(0.5, y[i], 0.62);
@@ -77,7 +79,6 @@ public:
       pose_inverses_.insert(pose_inverses_.begin() + i, cur_pose.inverse());
     }
 
-
     return ConstructProblem(pci);
   }
 
@@ -89,7 +90,7 @@ public:
     pci.basic_info.n_steps = steps_;
     pci.basic_info.manip = "manipulator";
     pci.basic_info.start_fixed = false;
-  //  pci.basic_info.dofs_fixed
+    //  pci.basic_info.dofs_fixed
 
     // Create Kinematic Object
     pci.kin = pci.env->getManipulator(pci.basic_info.manip);
@@ -118,7 +119,7 @@ public:
     pci.cost_infos.push_back(collision);
 
     // Populate Constraints
-    double delta = 0.5/pci.basic_info.n_steps;
+    double delta = 0.5 / pci.basic_info.n_steps;
     for (auto i = 0; i < pci.basic_info.n_steps; ++i)
     {
       Vector3d xyz(0.5, -0.2 + delta * i, 0.62);
@@ -142,7 +143,8 @@ public:
       position->rot_coeffs = Eigen::Vector3d::Zero();
       pci.cnt_infos.push_back(position);
 
-      if (constraint_type_ == "aligned") {
+      if (constraint_type_ == "aligned")
+      {
         std::shared_ptr<AlignedAxisTermInfo> aligned(new AlignedAxisTermInfo);
         aligned->tolerance = tol_;
         aligned->axis = Vector3d::UnitX();
@@ -155,7 +157,8 @@ public:
         aligned->angle_coeff = 10.0;
         pci.cnt_infos.push_back(aligned);
       }
-      else if (constraint_type_ == "conical") {
+      else if (constraint_type_ == "conical")
+      {
         std::shared_ptr<ConicalAxisTermInfo> conical(new ConicalAxisTermInfo);
         conical->tolerance = tol_;
         conical->axis = Vector3d::UnitZ();
@@ -167,11 +170,11 @@ public:
         conical->weight = 10.0;
         pci.cnt_infos.push_back(conical);
       }
-      else {
+      else
+      {
         ROS_ERROR("%s is not a valid constraint type. Exiting", constraint_type_.c_str());
         exit(-1);
       }
-
     }
 
     return ConstructProblem(pci);
@@ -179,7 +182,6 @@ public:
 
   virtual void SetUp()
   {
-
     // Initial setup
     std::string urdf_xml_string, srdf_xml_string;
     nh_.getParam(ROBOT_DESCRIPTION_PARAM, urdf_xml_string);
@@ -197,20 +199,20 @@ public:
 
     pcl::PointCloud<pcl::PointXYZ> full_cloud;
     double delta = 0.05;
-    int length = (1/delta);
+    int length = (1 / delta);
 
     for (int x = 0; x < length; ++x)
       for (int y = 0; y < length; ++y)
         for (int z = 0; z < length; ++z)
-          full_cloud.push_back(pcl::PointXYZ(-0.5 + x*delta, -0.5 + y*delta, -0.5 + z*delta));
+          full_cloud.push_back(pcl::PointXYZ(-0.5 + x * delta, -0.5 + y * delta, -0.5 + z * delta));
 
     sensor_msgs::PointCloud2 pointcloud_msg;
     pcl::toROSMsg(full_cloud, pointcloud_msg);
 
     octomap::Pointcloud octomap_data;
     octomap::pointCloud2ToOctomap(pointcloud_msg, octomap_data);
-    octomap::OcTree* octree = new octomap::OcTree(2*delta);
-    octree->insertPointCloud(octomap_data, octomap::point3d(0,0,0));
+    octomap::OcTree* octree = new octomap::OcTree(2 * delta);
+    octree->insertPointCloud(octomap_data, octomap::point3d(0, 0, 0));
 
     AttachableObjectPtr obj(new AttachableObject());
     shapes::OcTree* octomap_world = new shapes::OcTree(std::shared_ptr<const octomap::OcTree>(octree));
@@ -247,7 +249,6 @@ public:
 
     // Set Log Level
     gLogLevel = util::LevelError;
-
   }
 };
 
@@ -260,16 +261,21 @@ TEST_P(AngularConstraintTest, AngularConstraint)
   constraint_type_ = info.constraint;
 
   int num_iterations = method == "cpp" ? 3 : 1;
-  for (int i = 0; i < num_iterations; i++) {
-    tol_  = (method == "cpp" ? 5.0 * (i + 1) : 5.0) * M_PI/180.0;;
+  for (int i = 0; i < num_iterations; i++)
+  {
+    tol_ = (method == "cpp" ? 5.0 * (i + 1) : 5.0) * M_PI / 180.0;
+    ;
 
-    if (method == "cpp") {
+    if (method == "cpp")
+    {
       prob = cppMethod();
     }
-    else if (method == "json") {
+    else if (method == "json")
+    {
       prob = jsonMethod();
     }
-    else {
+    else
+    {
       ROS_ERROR("Method string invalid. Exiting");
       exit(-1);
     }
@@ -311,10 +317,12 @@ TEST_P(AngularConstraintTest, AngularConstraint)
     tcp.setIdentity();
 
     TrajArray traj = getTraj(opt.x(), prob->GetVars());
-    for (auto j = 0; j < traj.rows(); j++) {
+    for (auto j = 0; j < traj.rows(); j++)
+    {
       VectorXd joint_angles(traj.cols());
-      for (auto k = 0; k < traj.cols(); k++) {
-        joint_angles(k) = traj(j,k);
+      for (auto k = 0; k < traj.cols(); k++)
+      {
+        joint_angles(k) = traj(j, k);
       }
 
       Affine3d pose;
@@ -323,28 +331,32 @@ TEST_P(AngularConstraintTest, AngularConstraint)
       Affine3d pose_inv = pose_inverses_.at(j);
       Affine3d err = pose_inv * (pose * tcp);
 
-      if (constraint_type_ == "aligned") {
+      if (constraint_type_ == "aligned")
+      {
         AngleAxisd aa(err.rotation());
         double aligned_angle = aa.angle();
-        EXPECT_LE(aligned_angle, tol_ * (1.0 + approx_equals_diff_) );
+        EXPECT_LE(aligned_angle, tol_ * (1.0 + approx_equals_diff_));
 
         Vector3d axis = aa.axis();
         double dot_prod = axis.dot(Vector3d::UnitX());
         EXPECT_NEAR(1.0, fabs(dot_prod), approx_equals_diff_);
       }
-      else { // conical
+      else
+      {  // conical
         Matrix3d orientation(err.rotation());
         double conical_angle = acos(orientation(2, 2));
         EXPECT_LE(conical_angle, tol_ * (1 + approx_equals_diff_));
       }
     }
-
   }
-
 }
 
-INSTANTIATE_TEST_CASE_P(Tests, AngularConstraintTest, ::testing::Values(testInfo("json", "aligned"),
-                          testInfo("json", "conical"), testInfo("cpp", "aligned"), testInfo("cpp", "conical")) );
+INSTANTIATE_TEST_CASE_P(Tests,
+                        AngularConstraintTest,
+                        ::testing::Values(testInfo("json", "aligned"),
+                                          testInfo("json", "conical"),
+                                          testInfo("cpp", "aligned"),
+                                          testInfo("cpp", "conical")));
 
 int main(int argc, char** argv)
 {
@@ -356,7 +368,4 @@ int main(int argc, char** argv)
   pnh.param("plotting", plotting_, plotting_);
 
   return RUN_ALL_TESTS();
-
 }
-
-
