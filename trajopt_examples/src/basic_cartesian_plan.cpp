@@ -222,15 +222,14 @@ int main(int argc, char** argv)
   // Solve Trajectory
   ROS_INFO("basic cartesian plan example");
 
-  tesseract::ContactResultMap collisions;
-  const std::vector<std::string>& joint_names = prob->GetKin()->getJointNames();
-  const std::vector<std::string>& link_names = prob->GetKin()->getLinkNames();
+  std::vector<tesseract::ContactResultMap> collisions;
+  ContinuousContactManagerBasePtr manager = prob->GetEnv()->getContinuousContactManager();
 
-  env_->continuousCollisionCheckTrajectory(joint_names, link_names, prob->GetInitTraj(), collisions);
+  collisions.clear();
+  bool found = tesseract::continuousCollisionCheckTrajectory(
+      *manager, *prob->GetEnv(), *prob->GetKin(), prob->GetInitTraj(), collisions);
 
-  tesseract::ContactResultVector collision_vector;
-  tesseract::moveContactResultsMapToContactResultsVector(collisions, collision_vector);
-  ROS_INFO("Initial trajector number of continuous collisions: %lui\n", collision_vector.size());
+  ROS_INFO((found) ? ("Final trajectory is in collision") : ("Final trajectory is collision free"));
 
   BasicTrustRegionSQP opt(prob);
   if (plotting_)
@@ -249,6 +248,8 @@ int main(int argc, char** argv)
   }
 
   collisions.clear();
-  env_->continuousCollisionCheckTrajectory(joint_names, link_names, getTraj(opt.x(), prob->GetVars()), collisions);
-  ROS_INFO("Final trajectory number of continuous collisions: %lui\n", collisions.size());
+  found = tesseract::continuousCollisionCheckTrajectory(
+      *manager, *prob->GetEnv(), *prob->GetKin(), prob->GetInitTraj(), collisions);
+
+  ROS_INFO((found) ? ("Final trajectory is in collision") : ("Final trajectory is collision free"));
 }
