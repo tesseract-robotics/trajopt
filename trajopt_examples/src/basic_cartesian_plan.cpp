@@ -222,15 +222,15 @@ int main(int argc, char** argv)
   // Solve Trajectory
   ROS_INFO("basic cartesian plan example");
 
-  tesseract::ContactResultMap collisions;
-  const std::vector<std::string>& joint_names = prob->GetKin()->getJointNames();
-  const std::vector<std::string>& link_names = prob->GetKin()->getLinkNames();
+//  tesseract::ContactResultMap collisions;
+//  const std::vector<std::string>& joint_names = prob->GetKin()->getJointNames();
+//  const std::vector<std::string>& link_names = prob->GetKin()->getLinkNames();
 
-  env_->continuousCollisionCheckTrajectory(joint_names, link_names, prob->GetInitTraj(), collisions);
+//  env_->continuousCollisionCheckTrajectory(joint_names, link_names, prob->GetInitTraj(), collisions);
 
-  tesseract::ContactResultVector collision_vector;
-  tesseract::moveContactResultsMapToContactResultsVector(collisions, collision_vector);
-  ROS_INFO("Initial trajector number of continuous collisions: %lui\n", collision_vector.size());
+//  tesseract::ContactResultVector collision_vector;
+//  tesseract::moveContactResultsMapToContactResultsVector(collisions, collision_vector);
+//  ROS_INFO("Initial trajector number of continuous collisions: %lui\n", collision_vector.size());
 
   BasicTrustRegionSQP opt(prob);
   if (plotting_)
@@ -248,7 +248,7 @@ int main(int argc, char** argv)
     plotter->clear();
   }
 
-  collisions.clear();
-  env_->continuousCollisionCheckTrajectory(joint_names, link_names, getTraj(opt.x(), prob->GetVars()), collisions);
-  ROS_INFO("Final trajectory number of continuous collisions: %lui\n", collisions.size());
+//  collisions.clear();
+//  env_->continuousCollisionCheckTrajectory(joint_names, link_names, getTraj(opt.x(), prob->GetVars()), collisions);
+//  ROS_INFO("Final trajectory number of continuous collisions: %lui\n", collisions.size());
 }

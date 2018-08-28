@@ -326,13 +326,12 @@ int main(int argc, char** argv)
   // Plot the trajectory
   plotter->plotTrajectory(prob->GetKin()->getJointNames(), getTraj(pick1_opt.x(), prob->GetVars()));
 
-  collisions.clear();
-  ;
-  env_->continuousCollisionCheckTrajectory(prob->GetKin()->getJointNames(),
-                                           prob->GetKin()->getLinkNames(),
-                                           getTraj(pick1_opt.x(), prob->GetVars()),
-                                           collisions);
-  ROS_INFO("Pick seat #1 trajectory number of continuous collisions: %zu\n", collisions.size());
+//  collisions.clear();
+//  env_->continuousCollisionCheckTrajectory(prob->GetKin()->getJointNames(),
+//                                           prob->GetKin()->getLinkNames(),
+//                                           getTraj(pick1_opt.x(), prob->GetVars()),
+//                                           collisions);
+//  ROS_INFO("Pick seat #1 trajectory number of continuous collisions: %zu\n", collisions.size());
 
   // Get the state of at the end of pick 1 trajectory
   EnvStatePtr state =
@@ -365,13 +364,12 @@ int main(int argc, char** argv)
   // Plot the trajectory
   plotter->plotTrajectory(prob->GetKin()->getJointNames(), getTraj(place1_opt.x(), prob->GetVars()));
 
-  collisions.clear();
-  ;
-  env_->continuousCollisionCheckTrajectory(prob->GetKin()->getJointNames(),
-                                           prob->GetKin()->getLinkNames(),
-                                           getTraj(place1_opt.x(), prob->GetVars()),
-                                           collisions);
-  ROS_INFO("Place seat #1 trajectory number of continuous collisions: %zu\n", collisions.size());
+//  collisions.clear();
+//  env_->continuousCollisionCheckTrajectory(prob->GetKin()->getJointNames(),
+//                                           prob->GetKin()->getLinkNames(),
+//                                           getTraj(place1_opt.x(), prob->GetVars()),
+//                                           collisions);
+//  ROS_INFO("Place seat #1 trajectory number of continuous collisions: %zu\n", collisions.size());
 }
 // int main(int argc, char **argv)
 //{

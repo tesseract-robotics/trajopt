@@ -204,10 +204,6 @@ SingleTimestepCollisionEvaluator::SingleTimestepCollisionEvaluator(tesseract::Ba
                                                                    const VarVector& vars)
   : CollisionEvaluator(manip, env, safety_margin_data), m_vars(vars)
 {
-}
-
-void SingleTimestepCollisionEvaluator::CalcCollisions(const DblVec& x, tesseract::ContactResultVector& dist_results)
-{
   tesseract::ContactRequest req;
 
   req.link_names = manip_->getLinkNames();
@@ -216,8 +212,19 @@ void SingleTimestepCollisionEvaluator::CalcCollisions(const DblVec& x, tesseract
   req.isContactAllowed = env_->getIsContactAllowedFn();
   req.type = tesseract::ContactRequestTypes::ALL;
 
+  contact_manager_ = env_->getDiscreteContactManager();
+  contact_manager_->setContactRequest(req);
+}
+
+void SingleTimestepCollisionEvaluator::CalcCollisions(const DblVec& x, tesseract::ContactResultVector& dist_results)
+{
   tesseract::ContactResultMap contacts;
-  env_->calcDistancesDiscrete(req, manip_->getJointNames(), getVec(x, m_vars), contacts);
+  tesseract::EnvStatePtr state = env_->getState(manip_->getJointNames(), getVec(x, m_vars));
+
+  for (const auto& link_name : manip_->getLinkNames())
+    contact_manager_->setCollisionObjectsTransform(link_name, state->transforms[link_name]);
+
+  contact_manager_->contactTest(contacts);
   tesseract::moveContactResultsMapToContactResultsVector(contacts, dist_results);
 }
 
@@ -246,10 +253,6 @@ CastCollisionEvaluator::CastCollisionEvaluator(tesseract::BasicKinConstPtr manip
                                                const VarVector& vars1)
   : CollisionEvaluator(manip, env, safety_margin_data), m_vars0(vars0), m_vars1(vars1)
 {
-}
-
-void CastCollisionEvaluator::CalcCollisions(const DblVec& x, tesseract::ContactResultVector& dist_results)
-{
   tesseract::ContactRequest req;
   req.link_names = manip_->getLinkNames();
   req.contact_distance =
@@ -257,8 +260,19 @@ void CastCollisionEvaluator::CalcCollisions(const DblVec& x, tesseract::ContactR
   req.isContactAllowed = env_->getIsContactAllowedFn();
   req.type = tesseract::ContactRequestTypes::ALL;
 
+  contact_manager_ = env_->getContinuousContactManager();
+  contact_manager_->setContactRequest(req);
+}
+
+void CastCollisionEvaluator::CalcCollisions(const DblVec& x, tesseract::ContactResultVector& dist_results)
+{
   tesseract::ContactResultMap contacts;
-  env_->calcDistancesContinuous(req, manip_->getJointNames(), getVec(x, m_vars0), getVec(x, m_vars1), contacts);
+  tesseract::EnvStatePtr state0 = env_->getState(manip_->getJointNames(), getVec(x, m_vars0));
+  tesseract::EnvStatePtr state1 = env_->getState(manip_->getJointNames(), getVec(x, m_vars1));
+  for (const auto& link_name : manip_->getLinkNames())
+    contact_manager_->setCollisionObjectsTransform(link_name, state0->transforms[link_name], state1->transforms[link_name]);
+
+  contact_manager_->contactTest(contacts);
   tesseract::moveContactResultsMapToContactResultsVector(contacts, dist_results);
 }
 void CastCollisionEvaluator::CalcDistExpressions(const DblVec& x, vector<AffExpr>& exprs)
