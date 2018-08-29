@@ -61,6 +61,7 @@ public:
   VarVector GetVars() { return m_vars; }
 private:
   VarVector m_vars;
+  tesseract::DiscreteContactManagerBasePtr contact_manager_;
 };
 
 struct CastCollisionEvaluator : public CollisionEvaluator
@@ -78,6 +79,7 @@ public:
 private:
   VarVector m_vars0;
   VarVector m_vars1;
+  tesseract::ContinuousContactManagerBasePtr contact_manager_;
 };
 
 class TRAJOPT_API CollisionCost : public Cost, public Plotter
