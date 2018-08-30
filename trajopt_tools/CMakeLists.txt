@@ -6,7 +6,7 @@ add_compile_options(-std=c++11 -Wall -Wextra)
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   trajopt_ext
-  tesseract_ext
+  bullet3_ros
 )
 
 ## Generate dynamic reconfigure parameters in the 'cfg' folder
@@ -18,7 +18,7 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_package(
 #  INCLUDE_DIRS
 #  LIBRARIES
-  CATKIN_DEPENDS roscpp trajopt_ext tesseract_ext
+  CATKIN_DEPENDS roscpp trajopt_ext bullet3_ros
 #  DEPENDS system_lib
 )
 

@@ -126,13 +126,14 @@ TEST_F(CastAttachedTest, LinkWithGeom)
   TrajOptProbPtr prob = ConstructProblem(root, env_);
   ASSERT_TRUE(!!prob);
 
-  tesseract::ContactResultMap collisions;
-  const std::vector<std::string>& joint_names = prob->GetKin()->getJointNames();
-  const std::vector<std::string>& link_names = prob->GetKin()->getLinkNames();
+  std::vector<tesseract::ContactResultMap> collisions;
+  ContinuousContactManagerBasePtr manager = prob->GetEnv()->getContinuousContactManager();
 
-  env_->continuousCollisionCheckTrajectory(joint_names, link_names, prob->GetInitTraj(), collisions);
-  ROS_DEBUG("Initial trajector number of continuous collisions: %lui\n", collisions.size());
-  ASSERT_NE(collisions.size(), 0);
+  bool found = tesseract::continuousCollisionCheckTrajectory(
+      *manager, *prob->GetEnv(), *prob->GetKin(), prob->GetInitTraj(), collisions);
+
+  EXPECT_TRUE(found);
+  ROS_INFO((found) ? ("Initial trajectory is in collision") : ("Initial trajectory is collision free"));
 
   BasicTrustRegionSQP opt(prob);
   if (plotting)
@@ -144,9 +145,11 @@ TEST_F(CastAttachedTest, LinkWithGeom)
     plotter_->clear();
 
   collisions.clear();
-  env_->continuousCollisionCheckTrajectory(joint_names, link_names, getTraj(opt.x(), prob->GetVars()), collisions);
-  ROS_DEBUG("Final trajectory number of continuous collisions: %lui\n", collisions.size());
-  ASSERT_EQ(collisions.size(), 0);
+  found = tesseract::continuousCollisionCheckTrajectory(
+      *manager, *prob->GetEnv(), *prob->GetKin(), getTraj(opt.x(), prob->GetVars()), collisions);
+
+  EXPECT_FALSE(found);
+  ROS_INFO((found) ? ("Final trajectory is in collision") : ("Final trajectory is collision free"));
 }
 
 TEST_F(CastAttachedTest, LinkWithoutGeom)
@@ -172,13 +175,14 @@ TEST_F(CastAttachedTest, LinkWithoutGeom)
   TrajOptProbPtr prob = ConstructProblem(root, env_);
   ASSERT_TRUE(!!prob);
 
-  tesseract::ContactResultMap collisions;
-  const std::vector<std::string>& joint_names = prob->GetKin()->getJointNames();
-  const std::vector<std::string>& link_names = prob->GetKin()->getLinkNames();
+  std::vector<tesseract::ContactResultMap> collisions;
+  ContinuousContactManagerBasePtr manager = prob->GetEnv()->getContinuousContactManager();
 
-  env_->continuousCollisionCheckTrajectory(joint_names, link_names, prob->GetInitTraj(), collisions);
-  ROS_DEBUG("Initial trajector number of continuous collisions: %lui\n", collisions.size());
-  ASSERT_NE(collisions.size(), 0);
+  bool found = tesseract::continuousCollisionCheckTrajectory(
+      *manager, *prob->GetEnv(), *prob->GetKin(), prob->GetInitTraj(), collisions);
+
+  EXPECT_TRUE(found);
+  ROS_INFO((found) ? ("Initial trajectory is in collision") : ("Initial trajectory is collision free"));
 
   BasicTrustRegionSQP opt(prob);
   if (plotting)
@@ -190,9 +194,11 @@ TEST_F(CastAttachedTest, LinkWithoutGeom)
     plotter_->clear();
 
   collisions.clear();
-  env_->continuousCollisionCheckTrajectory(joint_names, link_names, getTraj(opt.x(), prob->GetVars()), collisions);
-  ROS_DEBUG("Final trajectory number of continuous collisions: %lui\n", collisions.size());
-  ASSERT_EQ(collisions.size(), 0);
+  found = tesseract::continuousCollisionCheckTrajectory(
+      *manager, *prob->GetEnv(), *prob->GetKin(), getTraj(opt.x(), prob->GetVars()), collisions);
+
+  EXPECT_FALSE(found);
+  ROS_INFO((found) ? ("Final trajectory is in collision") : ("Final trajectory is collision free"));
 }
 
 int main(int argc, char** argv)

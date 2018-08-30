@@ -304,8 +304,6 @@ int main(int argc, char** argv)
 
   // Go pick up first seat
   ros::Time tStart;
-  TrajArray traj;
-  tesseract::ContactResultMap collisions;
   std::shared_ptr<ProblemConstructionInfo> pci;
   TrajOptProbPtr prob;
 
@@ -326,13 +324,14 @@ int main(int argc, char** argv)
   // Plot the trajectory
   plotter->plotTrajectory(prob->GetKin()->getJointNames(), getTraj(pick1_opt.x(), prob->GetVars()));
 
+  std::vector<tesseract::ContactResultMap> collisions;
+  ContinuousContactManagerBasePtr manager = prob->GetEnv()->getContinuousContactManager();
+
   collisions.clear();
-  ;
-  env_->continuousCollisionCheckTrajectory(prob->GetKin()->getJointNames(),
-                                           prob->GetKin()->getLinkNames(),
-                                           getTraj(pick1_opt.x(), prob->GetVars()),
-                                           collisions);
-  ROS_INFO("Pick seat #1 trajectory number of continuous collisions: %zu\n", collisions.size());
+  bool found = tesseract::continuousCollisionCheckTrajectory(
+      *manager, *prob->GetEnv(), *prob->GetKin(), getTraj(pick1_opt.x(), prob->GetVars()), collisions);
+
+  ROS_INFO((found) ? ("Pick seat #1 trajectory is in collision") : ("Pick seat #1 trajectory is collision free"));
 
   // Get the state of at the end of pick 1 trajectory
   EnvStatePtr state =
@@ -366,12 +365,11 @@ int main(int argc, char** argv)
   plotter->plotTrajectory(prob->GetKin()->getJointNames(), getTraj(place1_opt.x(), prob->GetVars()));
 
   collisions.clear();
-  ;
-  env_->continuousCollisionCheckTrajectory(prob->GetKin()->getJointNames(),
-                                           prob->GetKin()->getLinkNames(),
-                                           getTraj(place1_opt.x(), prob->GetVars()),
-                                           collisions);
-  ROS_INFO("Place seat #1 trajectory number of continuous collisions: %zu\n", collisions.size());
+  found = tesseract::continuousCollisionCheckTrajectory(
+      *manager, *prob->GetEnv(), *prob->GetKin(), getTraj(place1_opt.x(), prob->GetVars()), collisions);
+
+  ROS_INFO((found) ? ("Place seat #1 trajectory is in collision") : ("Place seat #1 trajectory is collision free"));
+
 }
 // int main(int argc, char **argv)
 //{
