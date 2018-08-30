@@ -171,7 +171,7 @@ int main(int argc, char** argv)
   // Add sphere
   AttachableObjectPtr obj(new AttachableObject());
   std::shared_ptr<shapes::Sphere> sphere(new shapes::Sphere());
-  Eigen::Affine3d sphere_pose;
+  Eigen::Isometry3d sphere_pose;
 
   sphere->radius = 0.15;
 

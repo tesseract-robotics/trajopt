@@ -212,7 +212,7 @@ CollisionObjectWrapper::CollisionObjectWrapper(const World::Object* obj) : m_typ
 }
 
 void CollisionObjectWrapper::initialize(const std::vector<shapes::ShapeConstPtr>& shapes,
-                                        const EigenSTL::vector_Affine3d& transforms)
+                                        const tesseract::VectorIsometry3d& transforms)
 {
   bool useTrimesh = false;
   if (shapes.size() == 1 && transforms[0].matrix().isIdentity())

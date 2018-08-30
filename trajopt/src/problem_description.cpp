@@ -451,7 +451,7 @@ void StaticPoseCostInfo::fromJson(ProblemConstructionInfo& pci, const Value& v)
 
 void StaticPoseCostInfo::hatch(TrajOptProb& prob)
 {
-  Eigen::Affine3d input_pose;
+  Eigen::Isometry3d input_pose;
   Eigen::Quaterniond q(wxyz(0), wxyz(1), wxyz(2), wxyz(3));
   input_pose.linear() = q.matrix();
   input_pose.translation() = xyz;

@@ -170,7 +170,7 @@ int main(int argc, char** argv)
 
   AttachableObjectPtr obj(new AttachableObject());
   shapes::OcTree* octomap_world = new shapes::OcTree(std::shared_ptr<const octomap::OcTree>(octree));
-  Eigen::Affine3d octomap_pose;
+  Eigen::Isometry3d octomap_pose;
 
   octomap_pose.setIdentity();
   octomap_pose.translation() = Eigen::Vector3d(1, 0, 0);
@@ -184,7 +184,7 @@ int main(int argc, char** argv)
   AttachedBodyInfo attached_body;
   attached_body.object_name = "octomap_attached";
   attached_body.parent_link_name = "base_link";
-  attached_body.transform = Eigen::Affine3d::Identity();
+  attached_body.transform = Eigen::Isometry3d::Identity();
   env_->attachBody(attached_body);
 
   // Create plotting tool

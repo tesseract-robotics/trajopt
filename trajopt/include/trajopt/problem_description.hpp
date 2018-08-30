@@ -173,7 +173,7 @@ struct PoseCostInfo : public TermInfo, public MakesCost, public MakesConstraint
   Vector3d pos_coeffs, rot_coeffs;
 
   std::string link;
-  Eigen::Affine3d tcp;
+  Eigen::Isometry3d tcp;
 
   PoseCostInfo();
 
@@ -191,7 +191,7 @@ struct StaticPoseCostInfo : public TermInfo, public MakesCost, public MakesConst
   Vector3d pos_coeffs, rot_coeffs;
 
   std::string link;
-  Eigen::Affine3d tcp;
+  Eigen::Isometry3d tcp;
 
   StaticPoseCostInfo();
 

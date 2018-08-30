@@ -49,9 +49,9 @@ public:
 
   std::vector<std::string> getActiveLinkNames() const;
 
-  tesseract::vector_Affine3d getLinkTransforms() const;
+  tesseract::VectorIsometry3d getLinkTransforms() const;
 
-  Eigen::Affine3d getLinkTransform(const std::string& link_name) const;
+  Eigen::Isometry3d getLinkTransform(const std::string& link_name) const;
 
   bool hasManipulator(const std::string& manipulator_name) const;
 

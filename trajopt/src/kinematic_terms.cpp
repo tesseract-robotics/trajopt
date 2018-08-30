@@ -47,7 +47,7 @@ namespace trajopt
 {
 VectorXd CartPoseErrCalculator::operator()(const VectorXd& dof_vals) const
 {
-  Affine3d new_pose, target_pose, change_base;
+  Isometry3d new_pose, target_pose, change_base;
   tesseract::EnvStateConstPtr state = env_->getState();
   change_base = state->transforms.at(manip_->getBaseLinkName());
   assert(change_base.isApprox(
@@ -55,7 +55,7 @@ VectorXd CartPoseErrCalculator::operator()(const VectorXd& dof_vals) const
   manip_->calcFwdKin(new_pose, change_base, dof_vals, link_, *state);
   manip_->calcFwdKin(target_pose, change_base, dof_vals, target_, *state);
 
-  Affine3d pose_err = target_pose.inverse() * (new_pose * tcp_);
+  Isometry3d pose_err = target_pose.inverse() * (new_pose * tcp_);
   Quaterniond q(pose_err.rotation());
   VectorXd err = concat(Vector3d(q.x(), q.y(), q.z()), pose_err.translation());
   return err;
@@ -65,7 +65,7 @@ void CartPoseErrorPlotter::Plot(const tesseract::BasicPlottingPtr plotter, const
 {
   CartPoseErrCalculator* calc = static_cast<CartPoseErrCalculator*>(m_calc.get());
   VectorXd dof_vals = getVec(x, m_vars);
-  Affine3d cur_pose, target_pose, change_base;
+  Isometry3d cur_pose, target_pose, change_base;
 
   tesseract::EnvStateConstPtr state = calc->env_->getState();
   change_base = state->transforms.at(calc->manip_->getBaseLinkName());
@@ -81,14 +81,14 @@ void CartPoseErrorPlotter::Plot(const tesseract::BasicPlottingPtr plotter, const
 
 VectorXd StaticCartPoseErrCalculator::operator()(const VectorXd& dof_vals) const
 {
-  Affine3d new_pose, change_base;
+  Isometry3d new_pose, change_base;
   tesseract::EnvStateConstPtr state = env_->getState();
   change_base = state->transforms.at(manip_->getBaseLinkName());
   assert(change_base.isApprox(
       env_->getState(manip_->getJointNames(), dof_vals)->transforms.at(manip_->getBaseLinkName())));
   manip_->calcFwdKin(new_pose, change_base, dof_vals, link_, *state);
 
-  Affine3d pose_err = pose_inv_ * (new_pose * tcp_);
+  Isometry3d pose_err = pose_inv_ * (new_pose * tcp_);
   Quaterniond q(pose_err.rotation());
   VectorXd err = concat(Vector3d(q.x(), q.y(), q.z()), pose_err.translation());
   return err;
@@ -98,7 +98,7 @@ void StaticCartPoseErrorPlotter::Plot(const tesseract::BasicPlottingPtr plotter,
 {
   StaticCartPoseErrCalculator* calc = static_cast<StaticCartPoseErrCalculator*>(m_calc.get());
   VectorXd dof_vals = getVec(x, m_vars);
-  Affine3d cur_pose, change_base;
+  Isometry3d cur_pose, change_base;
 
   tesseract::EnvStateConstPtr state = calc->env_->getState();
   change_base = state->transforms.at(calc->manip_->getBaseLinkName());
@@ -106,7 +106,7 @@ void StaticCartPoseErrorPlotter::Plot(const tesseract::BasicPlottingPtr plotter,
 
   cur_pose = cur_pose * calc->tcp_;
 
-  Affine3d target = calc->pose_inv_.inverse();
+  Isometry3d target = calc->pose_inv_.inverse();
 
   plotter->plotAxis(cur_pose, 0.05);
   plotter->plotAxis(target, 0.05);
@@ -119,7 +119,7 @@ MatrixXd CartVelJacCalculator::operator()(const VectorXd& dof_vals) const
   MatrixXd out(6, 2 * n_dof);
 
   tesseract::EnvStateConstPtr state = env_->getState();
-  Affine3d change_base = state->transforms.at(manip_->getBaseLinkName());
+  Isometry3d change_base = state->transforms.at(manip_->getBaseLinkName());
   assert(change_base.isApprox(
       env_->getState(manip_->getJointNames(), dof_vals.topRows(n_dof))->transforms.at(manip_->getBaseLinkName())));
   assert(change_base.isApprox(
@@ -150,7 +150,7 @@ MatrixXd CartVelJacCalculator::operator()(const VectorXd& dof_vals) const
 VectorXd CartVelCalculator::operator()(const VectorXd& dof_vals) const
 {
   int n_dof = manip_->numJoints();
-  Affine3d pose0, pose1, change_base;
+  Isometry3d pose0, pose1, change_base;
 
   tesseract::EnvStateConstPtr state = env_->getState();
   change_base = state->transforms.at(manip_->getBaseLinkName());

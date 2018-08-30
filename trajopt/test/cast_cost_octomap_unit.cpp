@@ -88,7 +88,7 @@ public:
 
     AttachableObjectPtr obj(new AttachableObject());
     shapes::OcTree* octomap_world = new shapes::OcTree(std::shared_ptr<const octomap::OcTree>(octree));
-    Eigen::Affine3d octomap_pose;
+    Eigen::Isometry3d octomap_pose;
 
     octomap_pose.setIdentity();
     octomap_pose.translation() = Eigen::Vector3d(0, 0, 0);

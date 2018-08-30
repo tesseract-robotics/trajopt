@@ -89,7 +89,7 @@ void collision_detection::CollisionRobotBullet::constructBulletObject(
     COWPtr new_cow(new COW(*(element.second.get())));
     assert(new_cow->getCollisionShape());
 
-    Eigen::Affine3d tf = state.getGlobalLinkTransform(element.first);
+    Eigen::Isometry3d tf = state.getGlobalLinkTransform(element.first);
     new_cow->setWorldTransform(convertEigenToBt(tf));
 
     // For descrete checks we can check static to kinematic and kinematic to
@@ -204,8 +204,8 @@ void collision_detection::CollisionRobotBullet::constructBulletObject(
       else if (btBroadphaseProxy::isCompound(new_cow->getCollisionShape()->getShapeType()))
       {
         btCompoundShape* compound = static_cast<btCompoundShape*>(new_cow->getCollisionShape());
-        Eigen::Affine3d tf1 = state1.getGlobalLinkTransform(element.first);
-        Eigen::Affine3d tf2 = state2.getGlobalLinkTransform(element.first);
+        Eigen::Isometry3d tf1 = state1.getGlobalLinkTransform(element.first);
+        Eigen::Isometry3d tf2 = state2.getGlobalLinkTransform(element.first);
 
         btCompoundShape* new_compound = new btCompoundShape(/*dynamicAABBtree=*/false);
 
@@ -295,8 +295,8 @@ void collision_detection::CollisionRobotBullet::constructBulletObject(
       else if (btBroadphaseProxy::isCompound(new_cow->getCollisionShape()->getShapeType()))
       {
         btCompoundShape* compound = static_cast<btCompoundShape*>(new_cow->getCollisionShape());
-        Eigen::Affine3d tf1 = state1.getGlobalLinkTransform(body->getAttachedLinkName());
-        Eigen::Affine3d tf2 = state2.getGlobalLinkTransform(body->getAttachedLinkName());
+        Eigen::Isometry3d tf1 = state1.getGlobalLinkTransform(body->getAttachedLinkName());
+        Eigen::Isometry3d tf2 = state2.getGlobalLinkTransform(body->getAttachedLinkName());
 
         btCompoundShape* new_compound = new btCompoundShape(/*dynamicAABBtree=*/false);
 
@@ -452,8 +452,8 @@ void collision_detection::CollisionRobotBullet::checkSelfCollisionHelper(const C
     COWPtr cow = manager.m_link2cow[obj];
     assert(cow);
 
-    Eigen::Affine3d tf1 = state1.getGlobalLinkTransform(cow->getLinkName());
-    Eigen::Affine3d tf2 = state2.getGlobalLinkTransform(cow->getLinkName());
+    Eigen::Isometry3d tf1 = state1.getGlobalLinkTransform(cow->getLinkName());
+    Eigen::Isometry3d tf2 = state2.getGlobalLinkTransform(cow->getLinkName());
     manager.convexSweepTest(cow, convertEigenToBt(tf1), convertEigenToBt(tf2), collisions);
 
     if (collisions.done)

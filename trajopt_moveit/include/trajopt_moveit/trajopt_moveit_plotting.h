@@ -113,7 +113,7 @@ public:
     arrows_pub_.publish(msg);
   }
 
-  void plotAxis(const Eigen::Affine3d& axis, double scale)
+  void plotAxis(const Eigen::Isometry3d& axis, double scale)
   {
     visualization_msgs::MarkerArray msg;
     Eigen::Vector3d x_axis = axis.matrix().block<3, 1>(0, 0);

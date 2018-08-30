@@ -36,7 +36,7 @@ void addSeats()
     obj->name = "seat_" + std::to_string(i + 1);
     std::shared_ptr<shapes::Mesh> visual_mesh(
         shapes::createMeshFromResource("package://trajopt_examples/meshes/car_seat/visual/seat.dae"));
-    Eigen::Affine3d seat_pose;
+    Eigen::Isometry3d seat_pose;
     seat_pose.setIdentity();
 
     obj->visual.shapes.push_back(visual_mesh);
@@ -72,7 +72,7 @@ void addSeats()
 //  visual_mesh(shapes::createMeshFromResource("package://trajopt_examples/meshes/car_seat/visual/car.dae"));
 //  std::shared_ptr<shapes::Mesh>
 //  collision_mesh(shapes::createMeshFromResource("package://trajopt_examples/meshes/car_seat/collision/car.stl"));
-//  Eigen::Affine3d seat_pose;
+//  Eigen::Isometry3d seat_pose;
 //  seat_pose.setIdentity();
 
 //  obj->name = "car";

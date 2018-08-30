@@ -58,7 +58,7 @@ const double BULLET_DEFAULT_CONTACT_DISTANCE = 0.05;
 inline btVector3 convertEigenToBt(const Eigen::Vector3d& v) { return btVector3(v[0], v[1], v[2]); }
 inline Eigen::Vector3d convertBtToEigen(const btVector3& v) { return Eigen::Vector3d(v.x(), v.y(), v.z()); }
 inline btQuaternion convertEigenToBt(const Eigen::Quaterniond& q) { return btQuaternion(q.x(), q.y(), q.z(), q.w()); }
-inline btTransform convertEigenToBt(const Eigen::Affine3d& t)
+inline btTransform convertEigenToBt(const Eigen::Isometry3d& t)
 {
   Eigen::Quaterniond q(t.rotation());
   return btTransform(convertEigenToBt(q), convertEigenToBt(t.translation()));
@@ -246,7 +246,7 @@ public:
   }
 
 private:
-  void initialize(const std::vector<shapes::ShapeConstPtr>& shapes, const EigenSTL::vector_Affine3d& transforms);
+  void initialize(const std::vector<shapes::ShapeConstPtr>& shapes, const tesseract::VectorIsometry3d& transforms);
 };
 
 typedef CollisionObjectWrapper COW;

@@ -65,7 +65,7 @@ public:
     // Next add objects that can be attached/detached to the scene
     AttachableObjectPtr obj(new AttachableObject());
     std::shared_ptr<shapes::Box> box(new shapes::Box());
-    Eigen::Affine3d box_pose;
+    Eigen::Isometry3d box_pose;
 
     box->size[0] = 1.0;
     box->size[1] = 1.0;
