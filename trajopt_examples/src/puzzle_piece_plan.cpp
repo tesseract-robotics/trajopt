@@ -49,9 +49,9 @@ urdf::ModelInterfaceSharedPtr urdf_model_; /**< URDF Model */
 srdf::ModelSharedPtr srdf_model_;          /**< SRDF Model */
 tesseract_ros::KDLEnvPtr env_;             /**< Trajopt Basic Environment */
 
-static EigenSTL::vector_Affine3d makePuzzleToolPoses()
+static VectorIsometry3d makePuzzleToolPoses()
 {
-  EigenSTL::vector_Affine3d path;  // results
+  VectorIsometry3d path;  // results
   std::ifstream indata;            // input file
 
   // You could load your parts from anywhere, but we are transporting them with
@@ -96,7 +96,7 @@ static EigenSTL::vector_Affine3d makePuzzleToolPoses()
     Eigen::Vector3d temp_x = (-1 * pos).normalized();
     Eigen::Vector3d y_axis = (norm.cross(temp_x)).normalized();
     Eigen::Vector3d x_axis = (y_axis.cross(norm)).normalized();
-    Eigen::Affine3d pose;
+    Eigen::Isometry3d pose;
     pose.matrix().col(0).head<3>() = x_axis;
     pose.matrix().col(1).head<3>() = y_axis;
     pose.matrix().col(2).head<3>() = norm;
@@ -113,7 +113,7 @@ ProblemConstructionInfo cppMethod()
 {
   ProblemConstructionInfo pci(env_);
 
-  EigenSTL::vector_Affine3d tool_poses = makePuzzleToolPoses();
+  VectorIsometry3d tool_poses = makePuzzleToolPoses();
 
   // Populate Basic Info
   pci.basic_info.n_steps = tool_poses.size();
@@ -165,7 +165,7 @@ ProblemConstructionInfo cppMethod()
   pci.cost_infos.push_back(collision);
 
   // Populate Constraints
-  Eigen::Affine3d grinder_frame = env_->getLinkTransform("grinder_frame");
+  Eigen::Isometry3d grinder_frame = env_->getLinkTransform("grinder_frame");
   Eigen::Quaterniond q(grinder_frame.linear());
 
   Eigen::Vector3d stationary_xyz = grinder_frame.translation();

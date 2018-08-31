@@ -88,7 +88,7 @@ TEST_F(PlanningTest, numerical_ik1)
   double tStart = GetClock();
   ROS_DEBUG_STREAM("Size: " << opt.x().size());
   ROS_DEBUG_STREAM("Initial Vars: " << toVectorXd(opt.x()).transpose());
-  Eigen::Affine3d initial_pose, final_pose, change_base;
+  Eigen::Isometry3d initial_pose, final_pose, change_base;
   change_base = prob->GetEnv()->getLinkTransform(prob->GetKin()->getBaseLinkName());
   prob->GetKin()->calcFwdKin(initial_pose, change_base, toVectorXd(opt.x()));
 
@@ -97,7 +97,7 @@ TEST_F(PlanningTest, numerical_ik1)
   ROS_DEBUG_STREAM("Status: " << sco::statusToString(status));
   prob->GetKin()->calcFwdKin(final_pose, change_base, toVectorXd(opt.x()));
 
-  Eigen::Affine3d goal;
+  Eigen::Isometry3d goal;
   goal.translation() << 0.4, 0, 0.8;
   goal.linear() = Eigen::Quaterniond(0, 0, 1, 0).toRotationMatrix();
 

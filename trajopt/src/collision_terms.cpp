@@ -89,7 +89,7 @@ void CollisionsToDistanceExpressions(const tesseract::ContactResultVector& dist_
   // transfrom for converting data between world frame and manipulator
   // frame.
   tesseract::EnvStateConstPtr state = env->getState();
-  Eigen::Affine3d change_base = state->transforms.at(manip->getBaseLinkName());
+  Eigen::Isometry3d change_base = state->transforms.at(manip->getBaseLinkName());
   assert(change_base.isApprox(env->getState(manip->getJointNames(), dofvals)->transforms.at(manip->getBaseLinkName())));
 
   exprs.clear();

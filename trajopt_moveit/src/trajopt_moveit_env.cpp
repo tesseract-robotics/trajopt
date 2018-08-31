@@ -419,10 +419,10 @@ std::vector<std::string> TrajOptMoveItEnv::getActiveLinkNames() const
   return active_link_names;
 }
 
-tesseract::vector_Affine3d TrajOptMoveItEnv::getLinkTransforms() const
+tesseract::VectorIsometry3d TrajOptMoveItEnv::getLinkTransforms() const
 {
   std::vector<std::string> link_names = getLinkNames();
-  tesseract::vector_Affine3d link_tfs;
+  tesseract::VectorIsometry3d link_tfs;
   link_tfs.resize(link_names.size());
   for (const auto& link_name : link_names)
   {
@@ -431,7 +431,7 @@ tesseract::vector_Affine3d TrajOptMoveItEnv::getLinkTransforms() const
   return link_tfs;
 }
 
-Eigen::Affine3d TrajOptMoveItEnv::getLinkTransform(const std::string& link_name) const
+Eigen::Isometry3d TrajOptMoveItEnv::getLinkTransform(const std::string& link_name) const
 {
   return env_->getFrameTransform(link_name);
 }

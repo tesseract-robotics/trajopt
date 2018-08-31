@@ -19,12 +19,12 @@ struct CartPoseErrCalculator : public VectorOfVector
   tesseract::BasicKinConstPtr manip_;
   tesseract::BasicEnvConstPtr env_;
   std::string link_;
-  Eigen::Affine3d tcp_;
+  Eigen::Isometry3d tcp_;
   CartPoseErrCalculator(const std::string& target,
                         tesseract::BasicKinConstPtr manip,
                         tesseract::BasicEnvConstPtr env,
                         std::string link,
-                        Eigen::Affine3d tcp = Eigen::Affine3d::Identity())
+                        Eigen::Isometry3d tcp = Eigen::Isometry3d::Identity())
     : target_(target), manip_(manip), env_(env), link_(link), tcp_(tcp)
   {
   }
@@ -42,16 +42,16 @@ struct CartPoseErrorPlotter : public Plotter
 
 struct StaticCartPoseErrCalculator : public VectorOfVector
 {
-  Eigen::Affine3d pose_inv_;
+  Eigen::Isometry3d pose_inv_;
   tesseract::BasicKinConstPtr manip_;
   tesseract::BasicEnvConstPtr env_;
   std::string link_;
-  Eigen::Affine3d tcp_;
-  StaticCartPoseErrCalculator(const Eigen::Affine3d& pose,
+  Eigen::Isometry3d tcp_;
+  StaticCartPoseErrCalculator(const Eigen::Isometry3d& pose,
                               tesseract::BasicKinConstPtr manip,
                               tesseract::BasicEnvConstPtr env,
                               std::string link,
-                              Eigen::Affine3d tcp = Eigen::Affine3d::Identity())
+                              Eigen::Isometry3d tcp = Eigen::Isometry3d::Identity())
     : pose_inv_(pose.inverse()), manip_(manip), env_(env), link_(link), tcp_(tcp)
   {
   }
@@ -73,12 +73,12 @@ struct CartVelJacCalculator : MatrixOfVector
   tesseract::BasicEnvConstPtr env_;
   std::string link_;
   double limit_;
-  Eigen::Affine3d tcp_;
+  Eigen::Isometry3d tcp_;
   CartVelJacCalculator(tesseract::BasicKinConstPtr manip,
                        tesseract::BasicEnvConstPtr env,
                        std::string link,
                        double limit,
-                       Eigen::Affine3d tcp = Eigen::Affine3d::Identity())
+                       Eigen::Isometry3d tcp = Eigen::Isometry3d::Identity())
     : manip_(manip), env_(env), link_(link), limit_(limit), tcp_(tcp)
   {
   }
@@ -92,12 +92,12 @@ struct CartVelCalculator : VectorOfVector
   tesseract::BasicEnvConstPtr env_;
   std::string link_;
   double limit_;
-  Eigen::Affine3d tcp_;
+  Eigen::Isometry3d tcp_;
   CartVelCalculator(tesseract::BasicKinConstPtr manip,
                     tesseract::BasicEnvConstPtr env,
                     std::string link,
                     double limit,
-                    Eigen::Affine3d tcp = Eigen::Affine3d::Identity())
+                    Eigen::Isometry3d tcp = Eigen::Isometry3d::Identity())
     : manip_(manip), env_(env), link_(link), limit_(limit), tcp_(tcp)
   {
   }

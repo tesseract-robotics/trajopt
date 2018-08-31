@@ -64,7 +64,7 @@ public:
     AttachableObjectPtr obj1(new AttachableObject());
     AttachableObjectPtr obj2(new AttachableObject());
     std::shared_ptr<shapes::Box> box(new shapes::Box());
-    Eigen::Affine3d box_pose;
+    Eigen::Isometry3d box_pose;
 
     box->size[0] = 0.25;
     box->size[1] = 0.25;
@@ -82,7 +82,7 @@ public:
     env_->addAttachableObject(obj1);
 
     std::shared_ptr<shapes::Box> box2(new shapes::Box());
-    Eigen::Affine3d box_pose2;
+    Eigen::Isometry3d box_pose2;
 
     box2->size[0] = 0.25;
     box2->size[1] = 0.25;
