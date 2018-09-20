@@ -126,8 +126,8 @@ MatrixXd CartVelJacCalculator::operator()(const VectorXd& dof_vals) const
       env_->getState(manip_->getJointNames(), dof_vals.bottomRows(n_dof))->transforms.at(manip_->getBaseLinkName())));
 
   MatrixXd jac0, jac1;
-  jac0.resize(manip_->numJoints(), 6);
-  jac1.resize(manip_->numJoints(), 6);
+  jac0.resize(6,manip_->numJoints());
+  jac1.resize(6,manip_->numJoints());
 
   if (tcp_.translation().isZero())
   {
