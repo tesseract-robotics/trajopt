@@ -47,6 +47,7 @@ namespace trajopt
 {
 VectorXd CartPoseErrCalculator::operator()(const VectorXd& dof_vals) const
 {
+  dof_vals_ = dof_vals;
   Isometry3d new_pose, target_pose, change_base;
   tesseract::EnvStateConstPtr state = env_->getState();
   change_base = state->transforms.at(manip_->getBaseLinkName());
@@ -61,18 +62,16 @@ VectorXd CartPoseErrCalculator::operator()(const VectorXd& dof_vals) const
   return err;
 }
 
-void CartPoseErrorPlotter::Plot(const tesseract::BasicPlottingPtr plotter, const DblVec& x)
+void CartPoseErrCalculator::Plot(const tesseract::BasicPlottingPtr plotter, const DblVec& x)
 {
-  CartPoseErrCalculator* calc = static_cast<CartPoseErrCalculator*>(m_calc.get());
-  VectorXd dof_vals = getVec(x, m_vars);
   Isometry3d cur_pose, target_pose, change_base;
 
-  tesseract::EnvStateConstPtr state = calc->env_->getState();
-  change_base = state->transforms.at(calc->manip_->getBaseLinkName());
-  calc->manip_->calcFwdKin(cur_pose, change_base, dof_vals, calc->link_, *state);
-  calc->manip_->calcFwdKin(target_pose, change_base, dof_vals, calc->target_, *state);
+  tesseract::EnvStateConstPtr state = env_->getState();
+  change_base = state->transforms.at(manip_->getBaseLinkName());
+  manip_->calcFwdKin(cur_pose, change_base, dof_vals_, link_, *state);
+  manip_->calcFwdKin(target_pose, change_base, dof_vals_, target_, *state);
 
-  cur_pose = cur_pose * calc->tcp_;
+  cur_pose = cur_pose * tcp_;
 
   plotter->plotAxis(cur_pose, 0.05);
   plotter->plotAxis(target_pose, 0.05);
@@ -81,6 +80,7 @@ void CartPoseErrorPlotter::Plot(const tesseract::BasicPlottingPtr plotter, const
 
 VectorXd StaticCartPoseErrCalculator::operator()(const VectorXd& dof_vals) const
 {
+  dof_vals_ = dof_vals;
   Isometry3d new_pose, change_base;
   tesseract::EnvStateConstPtr state = env_->getState();
   change_base = state->transforms.at(manip_->getBaseLinkName());
@@ -94,19 +94,17 @@ VectorXd StaticCartPoseErrCalculator::operator()(const VectorXd& dof_vals) const
   return err;
 }
 
-void StaticCartPoseErrorPlotter::Plot(const tesseract::BasicPlottingPtr plotter, const DblVec& x)
+void StaticCartPoseErrCalculator::Plot(const tesseract::BasicPlottingPtr plotter, const DblVec& x)
 {
-  StaticCartPoseErrCalculator* calc = static_cast<StaticCartPoseErrCalculator*>(m_calc.get());
-  VectorXd dof_vals = getVec(x, m_vars);
   Isometry3d cur_pose, change_base;
 
-  tesseract::EnvStateConstPtr state = calc->env_->getState();
-  change_base = state->transforms.at(calc->manip_->getBaseLinkName());
-  calc->manip_->calcFwdKin(cur_pose, change_base, dof_vals, calc->link_, *state);
+  tesseract::EnvStateConstPtr state = env_->getState();
+  change_base = state->transforms.at(manip_->getBaseLinkName());
+  manip_->calcFwdKin(cur_pose, change_base, dof_vals_, link_, *state);
 
-  cur_pose = cur_pose * calc->tcp_;
+  cur_pose = cur_pose * tcp_;
 
-  Isometry3d target = calc->pose_inv_.inverse();
+  Isometry3d target = pose_inv_.inverse();
 
   plotter->plotAxis(cur_pose, 0.05);
   plotter->plotAxis(target, 0.05);

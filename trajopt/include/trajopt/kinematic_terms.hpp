@@ -13,13 +13,14 @@ namespace trajopt
 using namespace sco;
 typedef BasicArray<Var> VarArray;
 
-struct CartPoseErrCalculator : public VectorOfVector
+struct CartPoseErrCalculator : public VectorOfVector, public Plotter
 {
   std::string target_;
   tesseract::BasicKinConstPtr manip_;
   tesseract::BasicEnvConstPtr env_;
   std::string link_;
   Eigen::Isometry3d tcp_;
+  mutable VectorXd dof_vals_;
   CartPoseErrCalculator(const std::string& target,
                         tesseract::BasicKinConstPtr manip,
                         tesseract::BasicEnvConstPtr env,
@@ -30,15 +31,10 @@ struct CartPoseErrCalculator : public VectorOfVector
   }
 
   VectorXd operator()(const VectorXd& dof_vals) const;
-};
 
-struct CartPoseErrorPlotter : public Plotter
-{
-  std::shared_ptr<void> m_calc;  // actually points to a CartPoseErrCalculator = CartPoseCost::f_
-  VarVector m_vars;
-  CartPoseErrorPlotter(std::shared_ptr<void> calc, const VarVector& vars) : m_calc(calc), m_vars(vars) {}
   void Plot(const tesseract::BasicPlottingPtr plotter, const DblVec& x);
 };
+
 
 struct StaticCartPoseErrCalculator : public VectorOfVector
 {
@@ -47,6 +43,7 @@ struct StaticCartPoseErrCalculator : public VectorOfVector
   tesseract::BasicEnvConstPtr env_;
   std::string link_;
   Eigen::Isometry3d tcp_;
+  mutable VectorXd dof_vals_;
   StaticCartPoseErrCalculator(const Eigen::Isometry3d& pose,
                               tesseract::BasicKinConstPtr manip,
                               tesseract::BasicEnvConstPtr env,
@@ -57,15 +54,11 @@ struct StaticCartPoseErrCalculator : public VectorOfVector
   }
 
   VectorXd operator()(const VectorXd& dof_vals) const;
-};
 
-struct StaticCartPoseErrorPlotter : public Plotter
-{
-  std::shared_ptr<void> m_calc;  // actually points to a CartPoseErrCalculator = CartPoseCost::f_
-  VarVector m_vars;
-  StaticCartPoseErrorPlotter(std::shared_ptr<void> calc, const VarVector& vars) : m_calc(calc), m_vars(vars) {}
   void Plot(const tesseract::BasicPlottingPtr plotter, const DblVec& x);
 };
+
+
 
 struct CartVelJacCalculator : MatrixOfVector
 {
