@@ -67,6 +67,7 @@ public:
                   const VectorXd& coeffs,
                   PenaltyType pen_type,
                   const string& name);
+  CostFromErrFunc(){}
   double value(const vector<double>& x);
   ConvexObjectivePtr convex(const vector<double>& x, Model* model);
   VarVector getVars() { return vars_; }

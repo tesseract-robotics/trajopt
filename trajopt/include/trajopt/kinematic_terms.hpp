@@ -44,6 +44,7 @@ struct StaticCartPoseErrCalculator : public VectorOfVector
   std::string link_;
   Eigen::Isometry3d tcp_;
   mutable VectorXd dof_vals_;
+  StaticCartPoseErrCalculator() {}
   StaticCartPoseErrCalculator(const Eigen::Isometry3d& pose,
                               tesseract::BasicKinConstPtr manip,
                               tesseract::BasicEnvConstPtr env,
