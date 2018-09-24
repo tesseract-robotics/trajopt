@@ -464,7 +464,7 @@ void StaticPoseCostInfo::hatch(TrajOptProb& prob)
   else if (term_type == TT_CNT)
   {
     prob.addConstraint(
-        ConstraintPtr(new ConstraintFromFunc(f, prob.GetVarRow(timestep), concat(rot_coeffs, pos_coeffs), EQ, name)));
+        ConstraintPtr(new TrajoptConstraintFromFunc<StaticCartPoseErrCalculator>(f, prob.GetVarRow(timestep), concat(rot_coeffs, pos_coeffs), EQ, name)));
   }
 }
 

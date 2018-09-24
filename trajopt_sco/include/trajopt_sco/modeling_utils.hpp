@@ -96,6 +96,7 @@ public:
                      const VectorXd& coeffs,
                      ConstraintType type,
                      const std::string& name);
+  ConstraintFromFunc(){}
   vector<double> value(const vector<double>& x);
   ConvexConstraintsPtr convex(const vector<double>& x, Model* model);
   ConstraintType type() { return type_; }

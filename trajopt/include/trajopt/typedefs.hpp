@@ -56,8 +56,8 @@ public:
                          const VectorXd& coeffs,
                          PenaltyType pen_type,
                          const string& name)
+    : sco::CostFromErrFunc(f, vars, coeffs, pen_type, name)
   {
-    sco::CostFromErrFunc(f, vars, coeffs, pen_type, name);
   }
 
   /// supply error function and gradient
@@ -67,20 +67,59 @@ public:
                          const VectorXd& coeffs,
                          PenaltyType pen_type,
                          const string& name)
+    : sco::CostFromErrFunc(f, dfdx, vars, coeffs, pen_type, name)
   {
-    sco::CostFromErrFunc(f, dfdx, vars, coeffs, pen_type, name);
   }
 
-  void Plot(const tesseract::BasicPlottingPtr plotter, const DblVec& x)
+  void Plot(const tesseract::BasicPlottingPtr plotter, const DblVec& x) override
   {
-//    auto err_func_ptr_ = &err_func_;
+    //    auto err_func_ptr_ = &err_func_;
     // If error function has a inherited from Plotter, call its Plot function
-//    if (Plotter* plt = dynamic_cast<Plotter*>(&err_func_))
-//    {
-      err_func_.Plot(plotter, x);
-//    }
+    //    if (Plotter* plt = dynamic_cast<Plotter*>(&err_func_))
+    //    {
+    err_func_.Plot(plotter, x);
+    //    }
   }
 };
 
+/**  @brief Adds plotting to the CostFromErrFunc class in trajopt_sco
+ *
+ * */
+template <typename Err_Func_Type>
+class TrajoptConstraintFromFunc : public ConstraintFromFunc//, public Plotter
+{
+public:
+  Err_Func_Type err_func_;
+  /// supply error function, obtain derivative numerically
+  TrajoptConstraintFromFunc(VectorOfVectorPtr f,
+                            const VarVector& vars,
+                            const VectorXd& coeffs,
+                            ConstraintType type,
+                            const std::string& name)
+    : ConstraintFromFunc(f, vars, coeffs, type, name)
+  {
+  }
+
+  /// supply error function and gradient
+  TrajoptConstraintFromFunc(VectorOfVectorPtr f,
+                            MatrixOfVectorPtr dfdx,
+                            const VarVector& vars,
+                            const VectorXd& coeffs,
+                            ConstraintType type,
+                            const std::string& name)
+    : ConstraintFromFunc(f, dfdx, vars, coeffs, type, name)
+  {
+  }
+
+  void Plot(const tesseract::BasicPlottingPtr plotter, const DblVec& x) //override
+  {
+    //    auto err_func_ptr_ = &err_func_;
+    // If error function has a inherited from Plotter, call its Plot function
+    //    if (Plotter* plt = dynamic_cast<Plotter*>(&err_func_))
+    //    {
+    err_func_.Plot(plotter, x);
+    //    }
+  }
+};
 
 }  // namespace trajopt
