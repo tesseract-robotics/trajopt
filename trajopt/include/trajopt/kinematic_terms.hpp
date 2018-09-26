@@ -13,7 +13,7 @@ namespace trajopt
 using namespace sco;
 typedef BasicArray<Var> VarArray;
 
-struct CartPoseErrCalculator : public VectorOfVector
+struct CartPoseErrCalculator : public TrajOptVectorOfVector
 {
   std::string target_;
   tesseract::BasicKinConstPtr manip_;
@@ -29,18 +29,12 @@ struct CartPoseErrCalculator : public VectorOfVector
   {
   }
 
+  void Plot(const tesseract::BasicPlottingPtr& plotter, const VectorXd& dof_vals) override;
+
   VectorXd operator()(const VectorXd& dof_vals) const;
 };
 
-struct CartPoseErrorPlotter : public Plotter
-{
-  std::shared_ptr<void> m_calc;  // actually points to a CartPoseErrCalculator = CartPoseCost::f_
-  VarVector m_vars;
-  CartPoseErrorPlotter(std::shared_ptr<void> calc, const VarVector& vars) : m_calc(calc), m_vars(vars) {}
-  void Plot(const tesseract::BasicPlottingPtr plotter, const DblVec& x);
-};
-
-struct StaticCartPoseErrCalculator : public VectorOfVector
+struct StaticCartPoseErrCalculator : public TrajOptVectorOfVector
 {
   Eigen::Isometry3d pose_inv_;
   tesseract::BasicKinConstPtr manip_;
@@ -56,15 +50,9 @@ struct StaticCartPoseErrCalculator : public VectorOfVector
   {
   }
 
-  VectorXd operator()(const VectorXd& dof_vals) const;
-};
+  void Plot(const tesseract::BasicPlottingPtr& plotter, const VectorXd& dof_vals) override;
 
-struct StaticCartPoseErrorPlotter : public Plotter
-{
-  std::shared_ptr<void> m_calc;  // actually points to a CartPoseErrCalculator = CartPoseCost::f_
-  VarVector m_vars;
-  StaticCartPoseErrorPlotter(std::shared_ptr<void> calc, const VarVector& vars) : m_calc(calc), m_vars(vars) {}
-  void Plot(const tesseract::BasicPlottingPtr plotter, const DblVec& x);
+  VectorXd operator()(const VectorXd& dof_vals) const;
 };
 
 struct CartVelJacCalculator : MatrixOfVector

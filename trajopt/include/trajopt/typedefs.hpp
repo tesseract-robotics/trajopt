@@ -4,6 +4,7 @@
 #include <vector>
 
 #include <trajopt_sco/modeling.hpp>
+#include <trajopt_sco/modeling_utils.hpp>
 #include <trajopt_utils/basic_array.hpp>
 #include <trajopt_utils/macros.h>
 
@@ -36,8 +37,88 @@ using Eigen::Matrix3d;
 class Plotter
 {
 public:
-  virtual void Plot(const tesseract::BasicPlottingPtr plotter, const DblVec& x) = 0;
+  virtual void Plot(const tesseract::BasicPlottingPtr& plotter, const DblVec& x) = 0;
   virtual ~Plotter() {}
 };
 typedef std::shared_ptr<Plotter> PlotterPtr;
+
+/**  @brief Adds plotting to the VectorOfVector class in trajopt_sco */
+class TrajOptVectorOfVector : public VectorOfVector
+{
+public:
+  virtual void Plot(const tesseract::BasicPlottingPtr& plotter, const VectorXd& dof_vals) = 0;
+};
+
+/**  @brief Adds plotting to the CostFromErrFunc class in trajopt_sco */
+class TrajOptCostFromErrFunc : public CostFromErrFunc, public Plotter
+{
+public:
+  /// supply error function, obtain derivative numerically
+  TrajOptCostFromErrFunc(VectorOfVectorPtr f,
+                         const VarVector& vars,
+                         const VectorXd& coeffs,
+                         PenaltyType pen_type,
+                         const std::string& name)
+    : CostFromErrFunc(f, vars, coeffs, pen_type, name)
+  {
+  }
+
+  /// supply error function and gradient
+  TrajOptCostFromErrFunc(VectorOfVectorPtr f,
+                         MatrixOfVectorPtr dfdx,
+                         const VarVector& vars,
+                         const VectorXd& coeffs,
+                         PenaltyType pen_type,
+                         const string& name)
+    : CostFromErrFunc(f, dfdx, vars, coeffs, pen_type, name)
+  {
+  }
+
+  void Plot(const tesseract::BasicPlottingPtr& plotter, const DblVec& x) override
+  {
+    // If error function has a inherited from TrajOptVectorOfVector, call its Plot function
+    if (TrajOptVectorOfVector* plt = dynamic_cast<TrajOptVectorOfVector*>(f_.get()))
+    {
+      VectorXd dof_vals = getVec(x, vars_);
+      plt->Plot(plotter, dof_vals);
+    }
+  }
+};
+
+/**  @brief Adds plotting to the ConstraintFromFunc class in trajopt_sco */
+class TrajOptConstraintFromFunc : public ConstraintFromFunc, public Plotter
+{
+public:
+  /// supply error function, obtain derivative numerically
+  TrajOptConstraintFromFunc(VectorOfVectorPtr f,
+                            const VarVector& vars,
+                            const VectorXd& coeffs,
+                            ConstraintType type,
+                            const std::string& name)
+    : ConstraintFromFunc(f, vars, coeffs, type, name)
+  {
+  }
+
+  /// supply error function and gradient
+  TrajOptConstraintFromFunc(VectorOfVectorPtr f,
+                            MatrixOfVectorPtr dfdx,
+                            const VarVector& vars,
+                            const VectorXd& coeffs,
+                            ConstraintType type,
+                            const std::string& name)
+    : ConstraintFromFunc(f, dfdx, vars, coeffs, type, name)
+  {
+  }
+
+  void Plot(const tesseract::BasicPlottingPtr& plotter, const DblVec& x) override
+  {
+    // If error function has a inherited from TrajOptVectorOfVector, call its Plot function
+    if (TrajOptVectorOfVector* plt = dynamic_cast<TrajOptVectorOfVector*>(f_.get()))
+    {
+      VectorXd dof_vals = getVec(x, vars_);
+      plt->Plot(plotter, dof_vals);
+    }
+  }
+};
+
 }

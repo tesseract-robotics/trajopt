@@ -154,6 +154,7 @@ void CollisionsToDistanceExpressions(const tesseract::ContactResultVector& dist_
   exprs.resize(exprs0.size());
   for (std::size_t i = 0; i < exprs0.size(); ++i)
   {
+    assert(dist_results[i].cc_time >= 0.0 && dist_results[i].cc_time <= 1.0);
     exprScale(exprs0[i], (1 - dist_results[i].cc_time));
     exprScale(exprs1[i], dist_results[i].cc_time);
     exprs[i] = AffExpr(0);
@@ -343,7 +344,7 @@ double CollisionCost::value(const vector<double>& x)
   return out;
 }
 
-void CollisionCost::Plot(const tesseract::BasicPlottingPtr plotter, const DblVec& x) { m_calc->Plot(plotter, x); }
+void CollisionCost::Plot(const tesseract::BasicPlottingPtr &plotter, const DblVec& x) { m_calc->Plot(plotter, x); }
 // ALMOST EXACTLY COPIED FROM CollisionCost
 
 CollisionConstraint::CollisionConstraint(tesseract::BasicKinConstPtr manip,
