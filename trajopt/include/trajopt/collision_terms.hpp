@@ -98,7 +98,7 @@ public:
                 const VarVector& vars1);
   virtual ConvexObjectivePtr convex(const vector<double>& x, Model* model);
   virtual double value(const vector<double>&);
-  void Plot(const tesseract::BasicPlottingPtr plotter, const DblVec& x);
+  void Plot(const tesseract::BasicPlottingPtr& plotter, const DblVec& x);
   VarVector getVars() { return m_calc->GetVars(); }
 private:
   CollisionEvaluatorPtr m_calc;
