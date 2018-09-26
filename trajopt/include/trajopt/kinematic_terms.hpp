@@ -20,7 +20,6 @@ struct CartPoseErrCalculator : public VectorOfVector, public Plotter
   tesseract::BasicEnvConstPtr env_;
   std::string link_;
   Eigen::Isometry3d tcp_;
-  mutable VectorXd dof_vals_;
   CartPoseErrCalculator(const std::string& target,
                         tesseract::BasicKinConstPtr manip,
                         tesseract::BasicEnvConstPtr env,
@@ -35,16 +34,13 @@ struct CartPoseErrCalculator : public VectorOfVector, public Plotter
   void Plot(const tesseract::BasicPlottingPtr plotter, const DblVec& x);
 };
 
-
-struct StaticCartPoseErrCalculator : public VectorOfVector
+struct StaticCartPoseErrCalculator : public VectorOfVector, public Plotter
 {
   Eigen::Isometry3d pose_inv_;
   tesseract::BasicKinConstPtr manip_;
   tesseract::BasicEnvConstPtr env_;
   std::string link_;
   Eigen::Isometry3d tcp_;
-  mutable VectorXd dof_vals_;
-  StaticCartPoseErrCalculator() {}
   StaticCartPoseErrCalculator(const Eigen::Isometry3d& pose,
                               tesseract::BasicKinConstPtr manip,
                               tesseract::BasicEnvConstPtr env,
@@ -58,8 +54,6 @@ struct StaticCartPoseErrCalculator : public VectorOfVector
 
   void Plot(const tesseract::BasicPlottingPtr plotter, const DblVec& x);
 };
-
-
 
 struct CartVelJacCalculator : MatrixOfVector
 {
@@ -98,4 +92,4 @@ struct CartVelCalculator : VectorOfVector
 
   VectorXd operator()(const VectorXd& dof_vals) const;
 };
-}
+}  // namespace trajopt

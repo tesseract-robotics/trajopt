@@ -403,12 +403,12 @@ void PoseCostInfo::hatch(TrajOptProb& prob)
   VectorOfVectorPtr f(new CartPoseErrCalculator(target, prob.GetKin(), prob.GetEnv(), link, tcp));
   if (term_type == TT_COST)
   {
-    prob.addCost(CostPtr(new CostFromErrFunc(f, prob.GetVarRow(timestep), concat(rot_coeffs, pos_coeffs), ABS, name)));
+    prob.addCost(CostPtr(new TrajoptCostFromErrFunc(f, prob.GetVarRow(timestep), concat(rot_coeffs, pos_coeffs), ABS, name)));
   }
   else if (term_type == TT_CNT)
   {
     prob.addConstraint(
-        ConstraintPtr(new ConstraintFromFunc(f, prob.GetVarRow(timestep), concat(rot_coeffs, pos_coeffs), EQ, name)));
+        ConstraintPtr(new TrajoptConstraintFromFunc(f, prob.GetVarRow(timestep), concat(rot_coeffs, pos_coeffs), EQ, name)));
   }
 }
 
@@ -459,12 +459,12 @@ void StaticPoseCostInfo::hatch(TrajOptProb& prob)
   VectorOfVectorPtr f(new StaticCartPoseErrCalculator(input_pose, prob.GetKin(), prob.GetEnv(), link, tcp));
   if (term_type == TT_COST)
   {
-    prob.addCost(CostPtr(new TrajoptCostFromErrFunc<StaticCartPoseErrCalculator>(f, prob.GetVarRow(timestep), concat(rot_coeffs, pos_coeffs), ABS, name)));
+    prob.addCost(CostPtr(new TrajoptCostFromErrFunc(f, prob.GetVarRow(timestep), concat(rot_coeffs, pos_coeffs), ABS, name)));
   }
   else if (term_type == TT_CNT)
   {
     prob.addConstraint(
-        ConstraintPtr(new TrajoptConstraintFromFunc<StaticCartPoseErrCalculator>(f, prob.GetVarRow(timestep), concat(rot_coeffs, pos_coeffs), EQ, name)));
+        ConstraintPtr(new TrajoptConstraintFromFunc(f, prob.GetVarRow(timestep), concat(rot_coeffs, pos_coeffs), EQ, name)));
   }
 }
 

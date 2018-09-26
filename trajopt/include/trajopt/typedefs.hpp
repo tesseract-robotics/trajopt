@@ -39,24 +39,23 @@ class Plotter
 public:
   virtual void Plot(const tesseract::BasicPlottingPtr plotter, const DblVec& x) = 0;
   virtual ~Plotter() {}
+  VarVector p_vars_;
 };
 typedef std::shared_ptr<Plotter> PlotterPtr;
 
 /**  @brief Adds plotting to the CostFromErrFunc class in trajopt_sco
  *
  * */
-template <typename Err_Func_Type>
 class TrajoptCostFromErrFunc : public CostFromErrFunc, public Plotter
 {
 public:
-  Err_Func_Type err_func_;
   /// supply error function, obtain derivative numerically
   TrajoptCostFromErrFunc(VectorOfVectorPtr f,
                          const VarVector& vars,
                          const VectorXd& coeffs,
                          PenaltyType pen_type,
                          const string& name)
-    : sco::CostFromErrFunc(f, vars, coeffs, pen_type, name)
+    : CostFromErrFunc(f, vars, coeffs, pen_type, name)
   {
   }
 
@@ -67,29 +66,27 @@ public:
                          const VectorXd& coeffs,
                          PenaltyType pen_type,
                          const string& name)
-    : sco::CostFromErrFunc(f, dfdx, vars, coeffs, pen_type, name)
+    : CostFromErrFunc(f, dfdx, vars, coeffs, pen_type, name)
   {
   }
 
-  void Plot(const tesseract::BasicPlottingPtr plotter, const DblVec& x) override
+  void Plot(const tesseract::BasicPlottingPtr plotter, const DblVec& x)
   {
-    //    auto err_func_ptr_ = &err_func_;
-    // If error function has a inherited from Plotter, call its Plot function
-    //    if (Plotter* plt = dynamic_cast<Plotter*>(&err_func_))
-    //    {
-    err_func_.Plot(plotter, x);
-    //    }
+    if (Plotter* plt = dynamic_cast<Plotter*>(f_.get()))
+    {
+      plt->p_vars_ = vars_;
+      plt->Plot(plotter, x);
+    }
   }
 };
 
 /**  @brief Adds plotting to the CostFromErrFunc class in trajopt_sco
  *
  * */
-template <typename Err_Func_Type>
-class TrajoptConstraintFromFunc : public ConstraintFromFunc//, public Plotter
+
+class TrajoptConstraintFromFunc : public ConstraintFromFunc, public Plotter
 {
 public:
-  Err_Func_Type err_func_;
   /// supply error function, obtain derivative numerically
   TrajoptConstraintFromFunc(VectorOfVectorPtr f,
                             const VarVector& vars,
@@ -111,14 +108,14 @@ public:
   {
   }
 
-  void Plot(const tesseract::BasicPlottingPtr plotter, const DblVec& x) //override
+  void Plot(const tesseract::BasicPlottingPtr plotter, const DblVec& x)
   {
-    //    auto err_func_ptr_ = &err_func_;
     // If error function has a inherited from Plotter, call its Plot function
-    //    if (Plotter* plt = dynamic_cast<Plotter*>(&err_func_))
-    //    {
-    err_func_.Plot(plotter, x);
-    //    }
+    if (Plotter* plt = dynamic_cast<Plotter*>(f_.get()))
+    {
+      plt->p_vars_ = vars_;
+      plt->Plot(plotter, x);
+    }
   }
 };
 
