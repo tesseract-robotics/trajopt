@@ -21,7 +21,7 @@ struct CollisionEvaluator
   virtual void CalcDists(const DblVec& x, DblVec& exprs) = 0;
   virtual void CalcCollisions(const DblVec& x, tesseract::ContactResultVector& dist_results) = 0;
   void GetCollisionsCached(const DblVec& x, tesseract::ContactResultVector&);
-  void Plot(const tesseract::BasicPlottingPtr plotter, const DblVec& x);
+  void Plot(const tesseract::BasicPlottingPtr plotter, const DblVec& x, const VarVector& vars);
   virtual VarVector GetVars() = 0;
 
   const SafetyMarginDataConstPtr getSafetyMarginData() const { return safety_margin_data_; }
