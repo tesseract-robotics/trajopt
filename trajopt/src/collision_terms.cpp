@@ -23,13 +23,13 @@ void CollisionsToDistances(const tesseract::ContactResultVector& dist_results, D
     dists.push_back(dist_results[i].distance);
 }
 
-void DebugPrintInfo(const tesseract::ContactResult& res, bool header = false)
+void DebugPrintInfo(const tesseract::ContactResult& res, const Eigen::VectorXd& dist_grad_A, const Eigen::VectorXd& dist_grad_B, const Eigen::VectorXd& dof_vals, bool header = false)
 {
   if (header)
   {
     std::printf("\n");
     std::printf("DistanceResult| %30s | %30s | %6s | %6s, %6s, %6s | %6s, %6s, "
-                "%6s | %6s, %6s, %6s | %7s | %6s, %6s, %6s | %6s, %6s, %6s |\n",
+                "%6s | %6s, %6s, %6s | %7s | %6s, %6s, %6s | %6s, %6s, %6s |",
                 "LINK A",
                 "LINK B",
                 "DIST",
@@ -49,10 +49,49 @@ void DebugPrintInfo(const tesseract::ContactResult& res, bool header = false)
                 "CPBx",
                 "CPBy",
                 "CPBz");
+
+    for (auto i = 0; i < dist_grad_A.size(); ++i)
+    {
+      if (i == dist_grad_A.size() - 1)
+      {
+        std::printf(" %6s |", ("dA" + std::to_string(i)).c_str());
+      }
+      else
+      {
+        std::printf(" %6s,", ("dA" + std::to_string(i)).c_str());
+      }
+    }
+
+    for (auto i = 0; i < dist_grad_B.size(); ++i)
+    {
+      if (i == dist_grad_B.size() - 1)
+      {
+        std::printf(" %6s |", ("dB" + std::to_string(i)).c_str());
+      }
+      else
+      {
+        std::printf(" %6s,", ("dB" + std::to_string(i)).c_str());
+      }
+    }
+
+    for (auto i = 0; i < dof_vals.size(); ++i)
+    {
+      if (i == dof_vals.size() - 1)
+      {
+        std::printf(" %6s |", ("J" + std::to_string(i)).c_str());
+      }
+      else
+      {
+        std::printf(" %6s,", ("J" + std::to_string(i)).c_str());
+      }
+    }
+
+    std::printf("\n");
   }
+
   std::printf("DistanceResult| %30s | %30s | %6.3f | %6.3f, %6.3f, %6.3f | "
               "%6.3f, %6.3f, %6.3f | %6.3f, %6.3f, %6.3f | %7.3f | %6.3f, "
-              "%6.3f, %6.3f | %6.3f, %6.3f, %6.3f |\n",
+              "%6.3f, %6.3f | %6.3f, %6.3f, %6.3f |",
               res.link_names[0].c_str(),
               res.link_names[1].c_str(),
               res.distance,
@@ -72,6 +111,44 @@ void DebugPrintInfo(const tesseract::ContactResult& res, bool header = false)
               res.cc_nearest_points[1](0),
               res.cc_nearest_points[1](1),
               res.cc_nearest_points[1](2));
+
+  for (auto i = 0; i < dist_grad_A.size(); ++i)
+  {
+    if (i == dist_grad_A.size() - 1)
+    {
+      std::printf(" %6.3f |", dist_grad_A(i));
+    }
+    else
+    {
+      std::printf(" %6.3f,",  dist_grad_A(i));
+    }
+  }
+
+  for (auto i = 0; i < dist_grad_B.size(); ++i)
+  {
+    if (i == dist_grad_B.size() - 1)
+    {
+      std::printf(" %6.3f |",  dist_grad_B(i));
+    }
+    else
+    {
+      std::printf(" %6.3f,", dist_grad_B(i));
+    }
+  }
+
+  for (auto i = 0; i < dof_vals.size(); ++i)
+  {
+    if (i == dof_vals.size() - 1)
+    {
+      std::printf(" %6.3f |",  dof_vals(i));
+    }
+    else
+    {
+      std::printf(" %6.3f,", dof_vals(i));
+    }
+  }
+
+  std::printf("\n");
 }
 
 void CollisionsToDistanceExpressions(const tesseract::ContactResultVector& dist_results,
@@ -100,24 +177,22 @@ void CollisionsToDistanceExpressions(const tesseract::ContactResultVector& dist_
 
     AffExpr dist(res.distance);
 
+    VectorXd dist_grad_a, dist_grad_b;
     std::vector<std::string>::const_iterator itA = std::find(link_names.begin(), link_names.end(), res.link_names[0]);
     if (itA != link_names.end())
     {
       MatrixXd jac;
-      VectorXd dist_grad;
       jac.resize(6, manip->numJoints());
       manip->calcJacobian(jac, change_base, dofvals, res.link_names[0], *state, res.nearest_points[0]);
-      dist_grad = -res.normal.transpose() * jac.topRows(3);
-
-      exprInc(dist, varDot(dist_grad, vars));
-      exprInc(dist, -dist_grad.dot(dofvals));
+      dist_grad_a = -res.normal.transpose() * jac.topRows(3);
+      exprInc(dist, varDot(dist_grad_a, vars));
+      exprInc(dist, -dist_grad_a.dot(dofvals));
     }
 
     std::vector<std::string>::const_iterator itB = std::find(link_names.begin(), link_names.end(), res.link_names[1]);
     if (itB != link_names.end())
     {
       MatrixXd jac;
-      VectorXd dist_grad;
       jac.resize(6, manip->numJoints());
       manip->calcJacobian(jac,
                           change_base,
@@ -127,10 +202,11 @@ void CollisionsToDistanceExpressions(const tesseract::ContactResultVector& dist_
                           (isTimestep1 && (res.cc_type == tesseract::ContinouseCollisionType::CCType_Between)) ?
                               res.cc_nearest_points[1] :
                               res.nearest_points[1]);
-      dist_grad = res.normal.transpose() * jac.topRows(3);
-      exprInc(dist, varDot(dist_grad, vars));
-      exprInc(dist, -dist_grad.dot(dofvals));
+      dist_grad_b = res.normal.transpose() * jac.topRows(3);
+      exprInc(dist, varDot(dist_grad_b, vars));
+      exprInc(dist, -dist_grad_b.dot(dofvals));
     }
+    // DebugPrintInfo(res, dist_grad_a, dist_grad_b, dofvals, i == 0);
 
     if (itA != link_names.end() || itB != link_names.end())
     {
@@ -182,18 +258,37 @@ void CollisionEvaluator::GetCollisionsCached(const DblVec& x, tesseract::Contact
   }
 }
 
-void CollisionEvaluator::Plot(const tesseract::BasicPlottingPtr plotter, const DblVec& x)
+void CollisionEvaluator::Plot(const tesseract::BasicPlottingPtr plotter, const DblVec& x, const VarVector& vars)
 {
   tesseract::ContactResultVector dist_results;
   GetCollisionsCached(x, dist_results);
   const std::vector<std::string>& link_names = manip_->getLinkNames();
+  tesseract::EnvStateConstPtr state = env_->getState();
+  Eigen::Isometry3d change_base = state->transforms.at(manip_->getBaseLinkName());
+  VectorXd dofvals = getVec(x, vars);
 
   Eigen::VectorXd safety_distance(dist_results.size());
   for (auto i = 0u; i < dist_results.size(); ++i)
   {
-    const Eigen::Vector2d& data =
-        getSafetyMarginData()->getPairSafetyMarginData(dist_results[i].link_names[0], dist_results[i].link_names[1]);
+    const tesseract::ContactResult& res = dist_results[i];
+    const Eigen::Vector2d& data = getSafetyMarginData()->getPairSafetyMarginData(res.link_names[0], res.link_names[1]);
     safety_distance[i] = data[0];
+
+    std::vector<std::string>::const_iterator itA = std::find(link_names.begin(), link_names.end(), res.link_names[0]);
+    if (itA != link_names.end())
+    {
+      MatrixXd jac;
+      VectorXd dist_grad;
+      Eigen::Isometry3d pose, pose2;
+      jac.resize(6, manip_->numJoints());
+      manip_->calcFwdKin(pose, change_base, dofvals, res.link_names[0], *state);
+      manip_->calcJacobian(jac, change_base, dofvals, res.link_names[0], *state, res.nearest_points[0]);
+      dist_grad = -res.normal.transpose() * jac.topRows(3);
+
+      Eigen::Vector3d local_link_point = pose.inverse() * res.nearest_points[0];
+      manip_->calcFwdKin(pose2, change_base, dofvals + dist_grad, res.link_names[0], *state);
+      plotter->plotArrow(res.nearest_points[0], pose2 * local_link_point, Eigen::Vector4d(1, 1, 1, 1), 0.005);
+    }
   }
 
   plotter->plotContactResults(link_names, dist_results, safety_distance);
@@ -344,7 +439,7 @@ double CollisionCost::value(const vector<double>& x)
   return out;
 }
 
-void CollisionCost::Plot(const tesseract::BasicPlottingPtr &plotter, const DblVec& x) { m_calc->Plot(plotter, x); }
+void CollisionCost::Plot(const tesseract::BasicPlottingPtr &plotter, const DblVec& x) { m_calc->Plot(plotter, x, getVars()); }
 // ALMOST EXACTLY COPIED FROM CollisionCost
 
 CollisionConstraint::CollisionConstraint(tesseract::BasicKinConstPtr manip,
