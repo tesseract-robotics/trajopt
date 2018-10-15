@@ -44,9 +44,11 @@ if (HAVE_BPMPD)
         set(BPMPD_LIBRARY "${CMAKE_CURRENT_SOURCE_DIR}/3rdpartylib/bpmpd_linux32.a")
   endif()
 
-  target_link_libraries(bpmpd_caller ${BPMPD_LIBRARY})
+  target_link_libraries(bpmpd_caller ${BPMPD_LIBRARY} -static)
+
   list(APPEND SCO_SOURCE_FILES src/bpmpd_interface.cpp)
   set_property(SOURCE src/bpmpd_interface.cpp APPEND PROPERTY COMPILE_DEFINITIONS BPMPD_CALLER="\\\"${CATKIN_DEVEL_PREFIX}/lib/${PROJECT_NAME}/bpmpd_caller\\\"")
+
 
   #TODO: Levi check if this is correct.
   set(BPMPD_WORKING_DIR "${CATKIN_DEVEL_PREFIX}/lib/${PROJECT_NAME}/")
