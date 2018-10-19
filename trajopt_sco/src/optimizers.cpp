@@ -179,11 +179,11 @@ vector<ConvexObjectivePtr> cntsToCosts(const vector<ConvexConstraintsPtr>& cnts,
 }
 
 void Optimizer::addCallback(const Callback& cb) { callbacks_.push_back(cb); }
-void Optimizer::callCallbacks(DblVec& x)
+void Optimizer::callCallbacks()
 {
   for (unsigned i = 0; i < callbacks_.size(); ++i)
   {
-    callbacks_[i](prob_.get(), x);
+    callbacks_[i](prob_.get(), results_);
   }
 }
 
@@ -283,7 +283,7 @@ OptStatus BasicTrustRegionSQP::optimize()
   { /* merit adjustment loop */
     for (int iter = 1;; ++iter)
     { /* sqp loop */
-      callCallbacks(x_);
+      callCallbacks();
 
       LOG_DEBUG("current iterate: %s", CSTR(x_));
       LOG_INFO("iteration %i", iter);
@@ -476,8 +476,8 @@ cleanup:
   results_.status = retval;
   results_.total_cost = vecSum(results_.cost_vals);
   LOG_INFO("\n==================\n%s==================", CSTR(results_));
-  callCallbacks(x_);
+  callCallbacks();
 
   return retval;
 }
-}
+}  // namespace sco

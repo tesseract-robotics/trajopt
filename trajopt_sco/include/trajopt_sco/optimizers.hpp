@@ -30,7 +30,7 @@ struct OptResults
   DblVec x;  // solution estimate
   OptStatus status;
   double total_cost;
-  vector<double> cost_vals;
+  DblVec cost_vals;
   DblVec cnt_viols;
   int n_func_evals, n_qp_solves;
   void clear()
@@ -58,11 +58,11 @@ public:
   void initialize(const vector<double>& x);
   vector<double>& x() { return results_.x; }
   OptResults& results() { return results_; }
-  typedef std::function<void(OptProb*, DblVec&)> Callback;
+  typedef std::function<void(OptProb*, OptResults&)> Callback;
   void addCallback(const Callback& f);  // called before each iteration
 protected:
   vector<Callback> callbacks_;
-  void callCallbacks(DblVec& x);
+  void callCallbacks();
   OptProbPtr prob_;
   OptResults results_;
 };
