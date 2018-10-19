@@ -30,6 +30,7 @@
 #include <tesseract_ros/kdl/kdl_env.h>
 #include <tesseract_ros/ros_basic_plotting.h>
 #include <trajopt/plot_callback.hpp>
+#include <trajopt/file_write_callback.hpp>
 #include <trajopt/problem_description.hpp>
 #include <trajopt_utils/config.hpp>
 #include <trajopt_utils/logging.hpp>
@@ -45,6 +46,7 @@ const std::string TRAJOPT_DESCRIPTION_PARAM =
     "trajopt_description"; /**< Default ROS parameter for trajopt description */
 
 bool plotting_ = false;
+bool write_to_file_ = false;
 int steps_ = 5;
 std::string method_ = "json";
 urdf::ModelInterfaceSharedPtr urdf_model_; /**< URDF Model */
@@ -198,6 +200,7 @@ int main(int argc, char** argv)
 
   // Get ROS Parameters
   pnh.param("plotting", plotting_, plotting_);
+  pnh.param("write_to_file", write_to_file_, write_to_file_);
   pnh.param<std::string>("method", method_, method_);
   pnh.param<int>("steps", steps_, steps_);
 
@@ -225,7 +228,7 @@ int main(int argc, char** argv)
     prob = jsonMethod();
 
   // Solve Trajectory
-  ROS_INFO("basic cartesian plan example");
+  ROS_INFO("glass upright plan example");
 
   std::vector<tesseract::ContactResultMap> collisions;
   ContinuousContactManagerBasePtr manager = prob->GetEnv()->getContinuousContactManager();
@@ -241,6 +244,16 @@ int main(int argc, char** argv)
   if (plotting_)
   {
     opt.addCallback(PlotCallback(*prob, plotter));
+  }
+
+  std::shared_ptr<std::ofstream> stream_ptr;
+  if (write_to_file_)
+  {
+    // Create file write callback discarding any of the file's current contents
+    stream_ptr.reset(new std::ofstream);
+    std::string path = ros::package::getPath("trajopt") + "/scripts/glass_up_right_plan.csv";
+    stream_ptr->open(path, std::ofstream::out | std::ofstream::trunc);
+    opt.addCallback(trajopt::WriteCallback(stream_ptr, prob));
   }
 
   opt.initialize(trajToDblVec(prob->GetInitTraj()));
@@ -263,7 +276,11 @@ int main(int argc, char** argv)
   {
     plotter->clear();
   }
-
+  if (write_to_file_)
+  {
+    stream_ptr->close();
+    ROS_INFO("Data written to file. Evaluate using scripts in trajopt/scripts.");
+  }
   collisions.clear();
   found = tesseract::continuousCollisionCheckTrajectory(
       *manager, *prob->GetEnv(), *prob->GetKin(), prob->GetInitTraj(), collisions);
