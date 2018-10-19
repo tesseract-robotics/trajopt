@@ -23,6 +23,7 @@ shape_b = data_b.shape
 rows_b = shape_b[0]
 cols_b = shape_b[1]
 
+#%% Perform checks before processing
 # check that the files have the same number of columns
 if (cols_a != cols_b):
     print('The files do not have the same number of columns. Exiting');
@@ -32,46 +33,50 @@ if ((data_a.columns != data_b.columns).any()):
     print('The column names for these files do not match. Exiting')
     exit(-1)
 	
-num_dofs = cols_a - 7
+# Get the DOF of the robot - TODO: check if joints always start with joint_a 
+joint_val_col = [col for col in data_a if col.startswith('joint_a')] 
+num_dofs = len(joint_val_col)
 cols = cols_a
 
-# check that the robots have the same number of poses set for the path
-num_poses_a = 0
-num_poses_b = 0
+# check that the files have the same number of time steps
+num_steps_a = 0
+num_steps_b = 0
 
 var = data_a.iloc[0,0]
 while (not np.isnan(var)):
-	num_poses_a += 1
-	var = data_a.iloc[num_poses_a, 0]
+	num_steps_a += 1
+	var = data_a.iloc[num_steps_a, 0]
 
 var = data_b.iloc[0,0]
 while (not np.isnan(var)):
-	num_poses_b += 1
-	var = data_b.iloc[num_poses_b, 0]
+	num_steps_b += 1
+	var = data_b.iloc[num_steps_b, 0]
 
-if (num_poses_a != num_poses_b):
+if (num_steps_a != num_steps_b):
 	print('These two files do not describe the same path. Exiting')
 	exit(-1)
 
+#%% 
 # get the data for the final trajectories in each file
-lower_a = rows_a - 1 - num_poses_a;
+lower_a = rows_a - 1 - num_steps_a;
 upper_a = rows_a - 1;
 dof_vals_a = np.matrix(data_a.iloc[lower_a:upper_a, 0:num_dofs])
 pose_vals_a = np.matrix(data_a.iloc[lower_a:upper_a, num_dofs:(num_dofs + 7)])
 
-lower_b = rows_b - 1 - num_poses_b;
+lower_b = rows_b - 1 - num_steps_b;
 upper_b = rows_b - 1;
 dof_vals_b = np.matrix(data_b.iloc[lower_b:upper_b, 0:num_dofs])
 pose_vals_b = np.matrix(data_b.iloc[lower_b:upper_b, num_dofs:(num_dofs + 7)])
 
-x = np.transpose(np.array(range(0,num_poses_a), ndmin=2))
+x = np.transpose(np.array(range(0,num_steps_a), ndmin=2))
 
+#%% Plot joint values
 # start at figure 1 and plot the DOFs
 current_fig = 1
 plots_left = num_dofs
 
-# plot DOF values
-for iter in range(0, (num_dofs >> 2) + 1):
+# Plot in a few different windows for ease of viewing
+for iter in range(0, (num_dofs >> 2) + 1):  # This is non-intuitive but works 
 
     # open a new figure and determine the number of subplots
     plt.figure(current_fig)
@@ -83,7 +88,7 @@ for iter in range(0, (num_dofs >> 2) + 1):
         cur_plot = plt.subplot(num_to_plot, 1, i + 1)
         plt.plot(x, dof_vals_a[:, index], x, dof_vals_b[:, index])
 
-        dof_name = data_a.columns[i]
+        dof_name = data_a.columns[index]
         plt.legend([dof_name + '_' + args.a[:-4], dof_name + '_' + args.b[:-4]])
 
         # set the y axis limits such that the maximum and minimum values are visible
@@ -96,8 +101,7 @@ for iter in range(0, (num_dofs >> 2) + 1):
     plots_left -= 4
 	
 plots_left = 7
-
-# plot pose values
+#%% Plot cartesian pose values
 for iter in range(0, 2):
 
     # open a new figure and determine the number of subplots

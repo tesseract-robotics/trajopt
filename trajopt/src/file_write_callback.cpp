@@ -30,9 +30,9 @@ void WriteFile(shared_ptr<ofstream> file,
     {
       if (j != 0)
       {
-        //        *file << ',';
+        *file << ',';
       }
-      //            *file << traj(i, j);
+      *file << traj(i, j);
 
       joint_angles(j) = traj(i, j);
     }
@@ -65,7 +65,7 @@ void WriteFile(shared_ptr<ofstream> file,
     VectorXd pose_vec = concat(pose.translation(), rot_vec);
     for (auto i = 0; i < pose_vec.size(); i++)
     {
-      //            *file << ',' << pose_vec(i);
+      *file << ',' << pose_vec(i);
     }
 
     // Write costs to file
