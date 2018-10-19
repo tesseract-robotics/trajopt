@@ -8,7 +8,7 @@ using namespace util;
 using namespace std;
 namespace trajopt
 {
-void WriteFile(shared_ptr<ofstream> file, Affine3d tcp, TrajOptProbPtr prob, DblVec& x, bool angle_axis, bool degrees)
+void WriteFile(shared_ptr<ofstream> file, Isometry3d tcp, TrajOptProbPtr prob, DblVec& x, bool angle_axis, bool degrees)
 {
   auto env = prob->GetEnv();
   auto manip = prob->GetKin();
@@ -31,7 +31,7 @@ void WriteFile(shared_ptr<ofstream> file, Affine3d tcp, TrajOptProbPtr prob, Dbl
     }
 
     // get pose
-    Affine3d pose;
+    Isometry3d pose;
     manip->calcFwdKin(pose, change_base, joint_angles);
     pose = tcp * pose;
 
@@ -69,7 +69,7 @@ void WriteFile(shared_ptr<ofstream> file, Affine3d tcp, TrajOptProbPtr prob, Dbl
 Optimizer::Callback WriteCallback(shared_ptr<ofstream> file,
                                   TrajOptProbPtr prob,
                                   const vector<string>& joint_names,
-                                  Affine3d tcp /*=identity*/,
+                                  Isometry3d tcp /*=identity*/,
                                   bool angle_axis /*=false*/,
                                   bool degrees /*=false*/)
 {
