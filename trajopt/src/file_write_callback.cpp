@@ -8,29 +8,36 @@ using namespace util;
 using namespace std;
 namespace trajopt
 {
-void WriteFile(shared_ptr<ofstream> file, Isometry3d tcp, TrajOptProbPtr prob, DblVec& x, bool angle_axis, bool degrees)
+void WriteFile(shared_ptr<ofstream> file,
+               const Isometry3d tcp,
+               const TrajOptProbPtr prob,
+               const OptResults& results,
+               bool angle_axis,
+               bool degrees)
 {
+  auto x = results.x;
   auto env = prob->GetEnv();
   auto manip = prob->GetKin();
   auto change_base = env->getLinkTransform(manip->getBaseLinkName());
 
-  // get joint angles and write to file
+  // Loop over time steps
   TrajArray traj = getTraj(x, prob->GetVars());
   for (auto i = 0; i < traj.rows(); i++)
   {
+    // Calc/Write joint values
     VectorXd joint_angles(traj.cols());
     for (auto j = 0; j < traj.cols(); j++)
     {
       if (j != 0)
       {
-        *file << ',';
+        //        *file << ',';
       }
-      *file << traj(i, j);
+      //            *file << traj(i, j);
 
       joint_angles(j) = traj(i, j);
     }
 
-    // get pose
+    // Calc cartesian pose
     Isometry3d pose;
     manip->calcFwdKin(pose, change_base, joint_angles);
     pose = tcp * pose;
@@ -54,21 +61,20 @@ void WriteFile(shared_ptr<ofstream> file, Isometry3d tcp, TrajOptProbPtr prob, D
       rot_vec(3) = q.z();
     }
 
-    // write to file
+    // Write cartesian pose to file
     VectorXd pose_vec = concat(pose.translation(), rot_vec);
     for (auto i = 0; i < pose_vec.size(); i++)
     {
-      *file << ',' << pose_vec(i);
+      //            *file << ',' << pose_vec(i);
     }
 
     *file << endl;
+    }
+    *file << endl;
   }
-  *file << endl;
-}
 
 Optimizer::Callback WriteCallback(shared_ptr<ofstream> file,
                                   TrajOptProbPtr prob,
-                                  const vector<string>& joint_names,
                                   Isometry3d tcp /*=identity*/,
                                   bool angle_axis /*=false*/,
                                   bool degrees /*=false*/)
@@ -78,6 +84,8 @@ Optimizer::Callback WriteCallback(shared_ptr<ofstream> file,
     ROS_WARN("ofstream passed to create callback not in 'good' state");
   }
 
+  // Write joint names
+  vector<string> joint_names = prob->GetEnv()->getJointNames();
   for (size_t i = 0; i < joint_names.size(); i++)
   {
     if (i != 0)
@@ -87,9 +95,9 @@ Optimizer::Callback WriteCallback(shared_ptr<ofstream> file,
     *file << joint_names.at(i);
   }
 
+  // Write cartesian pose labels
   vector<string> pose_str = angle_axis ? vector<string>{ "x", "y", "z", "angle", "axis_x", "axis_y", "axis_z" } :
                                          vector<string>{ "x", "y", "z", "q_w", "q_x", "q_y", "q_z" };
-
   for (size_t i = 0; i < pose_str.size(); i++)
   {
     *file << ',' << pose_str.at(i);

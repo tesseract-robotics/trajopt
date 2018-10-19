@@ -16,8 +16,9 @@ void PlotCosts(const tesseract::BasicPlottingPtr plotter,
                vector<CostPtr>& costs,
                vector<ConstraintPtr>& cnts,
                const VarArray& vars,
-               const DblVec& x)
+               const OptResults& results)
 {
+  auto x=results.x;
   plotter->clear();
 
   for (CostPtr& cost : costs)
