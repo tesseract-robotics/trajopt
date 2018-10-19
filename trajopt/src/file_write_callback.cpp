@@ -68,10 +68,24 @@ void WriteFile(shared_ptr<ofstream> file,
       //            *file << ',' << pose_vec(i);
     }
 
-    *file << endl;
+    // Write costs to file
+    std::vector<double> costs = results.cost_vals;
+    for (auto cost : costs)
+    {
+      *file << ',' << cost;
     }
+
+    // Write constraints to file
+    std::vector<double> constraints = results.cnt_viols;
+    for (auto constraint : constraints)
+    {
+      *file << ',' << constraint;
+    }
+
     *file << endl;
   }
+  *file << endl;
+}  // namespace trajopt
 
 Optimizer::Callback WriteCallback(shared_ptr<ofstream> file,
                                   TrajOptProbPtr prob,
@@ -103,9 +117,23 @@ Optimizer::Callback WriteCallback(shared_ptr<ofstream> file,
     *file << ',' << pose_str.at(i);
   }
 
+  // Write cost names
+  vector<CostPtr> costs = prob->getCosts();
+  for (auto cost : costs)
+  {
+    *file << ',' << cost->name();
+  }
+
+  // Write constraint names
+  vector<ConstraintPtr> cnts = prob->getConstraints();
+  for (auto cnt : cnts)
+  {
+    *file << ',' << cnt->name();
+  }
+
   *file << endl;
 
   // return callback function
   return bind(&WriteFile, file, tcp, prob, placeholders::_2, angle_axis, degrees);
 }
-}
+}  // namespace trajopt
