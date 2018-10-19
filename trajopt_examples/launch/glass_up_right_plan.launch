@@ -5,6 +5,7 @@
   <arg name="robot_description" default="robot_description"/>
   <arg name="trajopt_description" default="trajopt_description"/>
   <arg name="plotting" default="true"/>
+  <arg name="write_to_file" default="true"/>
 
   <!-- Load universal robot description format (URDF) -->
   <param name="$(arg trajopt_description)" textfile="$(find trajopt_examples)/config/glass_up_right_plan.json"/>
@@ -30,6 +31,7 @@
 
   <node pkg="trajopt_examples" type="trajopt_examples_glass_up_right_plan" name="trajopt_examples_glass_up_right_plan">
     <param name="plotting" type="bool" value="$(arg plotting)"/>
+    <param name="write_to_file" type="bool" value="$(arg write_to_file)"/>
   </node>
 
 </launch>
