@@ -98,10 +98,17 @@ TEST_F(PlanningTest, numerical_ik1)
   prob->GetKin()->calcFwdKin(final_pose, change_base, toVectorXd(opt.x()));
 
   Eigen::Isometry3d goal;
+  goal.setIdentity();
   goal.translation() << 0.4, 0, 0.8;
   goal.linear() = Eigen::Quaterniond(0, 0, 1, 0).toRotationMatrix();
 
-  assert(goal.isApprox(final_pose, 1e-8));
+  for (auto i = 0; i < 4; ++i)
+  {
+    for (auto j = 0; j < 4; ++j)
+    {
+      EXPECT_NEAR(goal(i, j), final_pose(i, j), 1e-8);
+    }
+  }
 
   ROS_DEBUG_STREAM("Final Position: " << final_pose.translation().transpose());
   ROS_DEBUG_STREAM("Final Vars: " << toVectorXd(opt.x()).transpose());
@@ -133,6 +140,8 @@ TEST_F(PlanningTest, arm_around_table)
 
   std::vector<tesseract::ContactResultMap> collisions;
   ContinuousContactManagerBasePtr manager = prob->GetEnv()->getContinuousContactManager();
+  manager->setActiveCollisionObjects(prob->GetKin()->getLinkNames());
+  manager->setContactDistanceThreshold(0);
 
   bool found = tesseract::continuousCollisionCheckTrajectory(
       *manager, *prob->GetEnv(), *prob->GetKin(), prob->GetInitTraj(), collisions);

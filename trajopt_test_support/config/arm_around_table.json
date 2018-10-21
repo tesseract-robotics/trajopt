@@ -10,7 +10,7 @@
     "params": {
       "coeffs" : [1]
     }
-    },
+  },
   {
     "type" : "collision",
     "params" : {

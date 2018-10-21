@@ -21,7 +21,7 @@ struct CollisionEvaluator
   virtual void CalcDists(const DblVec& x, DblVec& exprs) = 0;
   virtual void CalcCollisions(const DblVec& x, tesseract::ContactResultVector& dist_results) = 0;
   void GetCollisionsCached(const DblVec& x, tesseract::ContactResultVector&);
-  void Plot(const tesseract::BasicPlottingPtr plotter, const DblVec& x, const VarVector& vars);
+  virtual void Plot(const tesseract::BasicPlottingPtr plotter, const DblVec& x) = 0;
   virtual VarVector GetVars() = 0;
 
   const SafetyMarginDataConstPtr getSafetyMarginData() const { return safety_margin_data_; }
@@ -58,6 +58,7 @@ public:
    */
   void CalcDists(const DblVec& x, DblVec& exprs);
   void CalcCollisions(const DblVec& x, tesseract::ContactResultVector& dist_results);
+  void Plot(const tesseract::BasicPlottingPtr plotter, const DblVec& x);
   VarVector GetVars() { return m_vars; }
 private:
   VarVector m_vars;
@@ -75,6 +76,7 @@ public:
   void CalcDistExpressions(const DblVec& x, vector<AffExpr>& exprs);
   void CalcDists(const DblVec& x, DblVec& exprs);
   void CalcCollisions(const DblVec& x, tesseract::ContactResultVector& dist_results);
+  void Plot(const tesseract::BasicPlottingPtr plotter, const DblVec& x);
   VarVector GetVars() { return concat(m_vars0, m_vars1); }
 private:
   VarVector m_vars0;

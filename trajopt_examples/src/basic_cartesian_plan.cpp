@@ -224,8 +224,9 @@ int main(int argc, char** argv)
 
   std::vector<tesseract::ContactResultMap> collisions;
   ContinuousContactManagerBasePtr manager = prob->GetEnv()->getContinuousContactManager();
+  manager->setActiveCollisionObjects(prob->GetKin()->getLinkNames());
+  manager->setContactDistanceThreshold(0);
 
-  collisions.clear();
   bool found = tesseract::continuousCollisionCheckTrajectory(
       *manager, *prob->GetEnv(), *prob->GetKin(), prob->GetInitTraj(), collisions);
 
