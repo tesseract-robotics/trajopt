@@ -46,11 +46,11 @@ public:
     nh_.getParam(ROBOT_DESCRIPTION_PARAM, urdf_xml_string);
     nh_.getParam(ROBOT_SEMANTIC_PARAM, srdf_xml_string);
     urdf_model_ = urdf::parseURDF(urdf_xml_string);
+    assert(urdf_model_ != nullptr);
 
     srdf_model_ = srdf::ModelSharedPtr(new srdf::Model);
     srdf_model_->initString(*urdf_model_, srdf_xml_string);
     env_ = tesseract_ros::KDLEnvPtr(new tesseract_ros::KDLEnv);
-    assert(urdf_model_ != nullptr);
     assert(env_ != nullptr);
 
     bool success = env_->init(urdf_model_, srdf_model_);
@@ -82,6 +82,8 @@ TEST_F(CastTest, boxes)
 
   std::vector<tesseract::ContactResultMap> collisions;
   ContinuousContactManagerBasePtr manager = prob->GetEnv()->getContinuousContactManager();
+  manager->setActiveCollisionObjects(prob->GetKin()->getLinkNames());
+  manager->setContactDistanceThreshold(0);
 
   collisions.clear();
   bool found = tesseract::continuousCollisionCheckTrajectory(
