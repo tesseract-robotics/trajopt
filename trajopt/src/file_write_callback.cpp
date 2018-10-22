@@ -9,18 +9,13 @@ using namespace std;
 namespace trajopt
 {
 void WriteFile(shared_ptr<ofstream> file,
-               const Isometry3d tcp,
-               const TrajOptProbPtr prob,
-               const OptResults& results,
-               bool angle_axis,
-               bool degrees)
+               const Eigen::Isometry3d& change_base,
+               const tesseract::BasicKinConstPtr manip,
+               const trajopt::VarArray& vars,
+               const OptResults& results)
 {
-  tesseract::BasicEnvConstPtr env = prob->GetEnv();
-  tesseract::BasicKinConstPtr manip = prob->GetKin();
-  const Eigen::Isometry3d change_base = env->getLinkTransform(manip->getBaseLinkName());
-
   // Loop over time steps
-  TrajArray traj = getTraj(results.x, prob->GetVars());
+  TrajArray traj = getTraj(results.x, vars);
   for (auto i = 0; i < traj.rows(); i++)
   {
     // Calc/Write joint values
@@ -39,26 +34,13 @@ void WriteFile(shared_ptr<ofstream> file,
     // Calc cartesian pose
     Isometry3d pose;
     manip->calcFwdKin(pose, change_base, joint_angles);
-    pose = tcp * pose;
 
     Vector4d rot_vec;
-    if (angle_axis)
-    {
-      AngleAxisd aa(pose.rotation());
-      Vector3d axis = aa.axis();
-      rot_vec(0) = degrees ? aa.angle() * 180.0 / M_PI : aa.angle();
-      rot_vec(1) = axis(0);
-      rot_vec(2) = axis(1);
-      rot_vec(3) = axis(2);
-    }
-    else
-    {
-      Quaterniond q(pose.rotation());
-      rot_vec(0) = q.w();
-      rot_vec(1) = q.x();
-      rot_vec(2) = q.y();
-      rot_vec(3) = q.z();
-    }
+    Quaterniond q(pose.rotation());
+    rot_vec(0) = q.w();
+    rot_vec(1) = q.x();
+    rot_vec(2) = q.y();
+    rot_vec(3) = q.z();
 
     // Write cartesian pose to file
     VectorXd pose_vec = concat(pose.translation(), rot_vec);
@@ -87,10 +69,7 @@ void WriteFile(shared_ptr<ofstream> file,
 }  // namespace trajopt
 
 Optimizer::Callback WriteCallback(shared_ptr<ofstream> file,
-                                  TrajOptProbPtr prob,
-                                  Isometry3d tcp /*=identity*/,
-                                  bool angle_axis /*=false*/,
-                                  bool degrees /*=false*/)
+                                  TrajOptProbPtr prob)
 {
   if (!file->good())
   {
@@ -109,8 +88,7 @@ Optimizer::Callback WriteCallback(shared_ptr<ofstream> file,
   }
 
   // Write cartesian pose labels
-  vector<string> pose_str = angle_axis ? vector<string>{ "x", "y", "z", "angle", "axis_x", "axis_y", "axis_z" } :
-                                         vector<string>{ "x", "y", "z", "q_w", "q_x", "q_y", "q_z" };
+  vector<string> pose_str = vector<string>{ "x", "y", "z", "q_w", "q_x", "q_y", "q_z" };
   for (size_t i = 0; i < pose_str.size(); i++)
   {
     *file << ',' << pose_str.at(i);
@@ -133,6 +111,8 @@ Optimizer::Callback WriteCallback(shared_ptr<ofstream> file,
   *file << endl;
 
   // return callback function
-  return bind(&WriteFile, file, tcp, prob, placeholders::_2, angle_axis, degrees);
+  const tesseract::BasicKinConstPtr manip = prob->GetKin();
+  const Eigen::Isometry3d change_base = prob->GetEnv()->getLinkTransform(manip->getBaseLinkName());
+  return bind(&WriteFile, file, change_base, manip, std::ref(prob->GetVars()), placeholders::_2);
 }
 }  // namespace trajopt
