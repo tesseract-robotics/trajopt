@@ -18,14 +18,13 @@ void PlotCosts(const tesseract::BasicPlottingPtr plotter,
                const VarArray& vars,
                const OptResults& results)
 {
-  auto x=results.x;
   plotter->clear();
 
   for (CostPtr& cost : costs)
   {
     if (Plotter* plt = dynamic_cast<Plotter*>(cost.get()))
     {
-      plt->Plot(plotter, x);
+      plt->Plot(plotter, results.x);
     }
   }
 
@@ -33,11 +32,11 @@ void PlotCosts(const tesseract::BasicPlottingPtr plotter,
   {
     if (Plotter* plt = dynamic_cast<Plotter*>(cnt.get()))
     {
-      plt->Plot(plotter, x);
+      plt->Plot(plotter, results.x);
     }
   }
 
-  plotter->plotTrajectory(joint_names, getTraj(x, vars));
+  plotter->plotTrajectory(joint_names, getTraj(results.x, vars));
   plotter->waitForInput();
 }
 
