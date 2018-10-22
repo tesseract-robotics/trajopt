@@ -266,15 +266,14 @@ OptStatus BasicTrustRegionSQP::optimize()
   vector<ConstraintPtr> constraints = prob_->getConstraints();
   vector<string> cnt_names = getCntNames(constraints);
 
-  DblVec& x_ = results_.x;  // just so I don't have to rewrite code
-  if (x_.size() == 0)
+  if (results_.x.size() == 0)
     PRINT_AND_THROW("you forgot to initialize!");
   if (!prob_)
     PRINT_AND_THROW("you forgot to set the optimization problem");
 
-  x_ = prob_->getClosestFeasiblePoint(x_);
+  results_.x = prob_->getClosestFeasiblePoint(results_.x);
 
-  assert(x_.size() == prob_->getVars().size());
+  assert(results_.x.size() == prob_->getVars().size());
   assert(prob_->getCosts().size() > 0 || constraints.size() > 0);
 
   OptStatus retval = INVALID;
@@ -285,21 +284,21 @@ OptStatus BasicTrustRegionSQP::optimize()
     { /* sqp loop */
       callCallbacks();
 
-      LOG_DEBUG("current iterate: %s", CSTR(x_));
+      LOG_DEBUG("current iterate: %s", CSTR(results_.x));
       LOG_INFO("iteration %i", iter);
 
       // speedup: if you just evaluated the cost when doing the line search, use
       // that
       if (results_.cost_vals.empty() && results_.cnt_viols.empty())
       {  // only happens on the first iteration
-        results_.cnt_viols = evaluateConstraintViols(constraints, x_);
-        results_.cost_vals = evaluateCosts(prob_->getCosts(), x_);
+        results_.cnt_viols = evaluateConstraintViols(constraints, results_.x);
+        results_.cost_vals = evaluateCosts(prob_->getCosts(), results_.x);
         assert(results_.n_func_evals == 0);
         ++results_.n_func_evals;
       }
 
-      // DblVec new_cnt_viols = evaluateConstraintViols(constraints, x_);
-      // DblVec new_cost_vals = evaluateCosts(prob_->getCosts(), x_);
+      // DblVec new_cnt_viols = evaluateConstraintViols(constraints, results_.x);
+      // DblVec new_cost_vals = evaluateCosts(prob_->getCosts(), results_.x);
       // cout << "costs" << endl;
       // for (int i=0; i < new_cnt_viols.size(); ++i) {
       //   cout << cnt_names[i] << " " << new_cnt_viols[i] -
@@ -310,8 +309,8 @@ OptStatus BasicTrustRegionSQP::optimize()
       //   results_.cost_vals[i] << endl;
       // }
 
-      vector<ConvexObjectivePtr> cost_models = convexifyCosts(prob_->getCosts(), x_, model_.get());
-      vector<ConvexConstraintsPtr> cnt_models = convexifyConstraints(constraints, x_, model_.get());
+      vector<ConvexObjectivePtr> cost_models = convexifyCosts(prob_->getCosts(), results_.x, model_.get());
+      vector<ConvexConstraintsPtr> cnt_models = convexifyConstraints(constraints, results_.x, model_.get());
       vector<ConvexObjectivePtr> cnt_cost_models = cntsToCosts(cnt_models, param_.merit_error_coeff, model_.get());
       model_->update();
       for (ConvexObjectivePtr& cost : cost_models)
@@ -339,7 +338,7 @@ OptStatus BasicTrustRegionSQP::optimize()
 
       while (param_.trust_box_size >= param_.min_trust_box_size)
       {
-        setTrustBoxConstraints(x_);
+        setTrustBoxConstraints(results_.x);
         CvxOptStatus status = model_->optimize();
         ++results_.n_qp_solves;
         if (status != CVX_SOLVED)
@@ -359,7 +358,7 @@ OptStatus BasicTrustRegionSQP::optimize()
 
         // the n variables of the OptProb happen to be the first n variables in
         // the Model
-        DblVec new_x(model_var_vals.begin(), model_var_vals.begin() + x_.size());
+        DblVec new_x(model_var_vals.begin(), model_var_vals.begin() + results_.x.size());
 
         if (GetLogLevel() >= util::LevelDebug)
         {
@@ -431,7 +430,7 @@ OptStatus BasicTrustRegionSQP::optimize()
         }
         else
         {
-          x_ = new_x;
+          results_.x = new_x;
           results_.cost_vals = new_cost_vals;
           results_.cnt_viols = new_cnt_viols;
           adjustTrustRegion(param_.trust_expand_ratio);

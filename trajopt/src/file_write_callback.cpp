@@ -15,13 +15,12 @@ void WriteFile(shared_ptr<ofstream> file,
                bool angle_axis,
                bool degrees)
 {
-  auto x = results.x;
-  auto env = prob->GetEnv();
-  auto manip = prob->GetKin();
-  auto change_base = env->getLinkTransform(manip->getBaseLinkName());
+  tesseract::BasicEnvConstPtr env = prob->GetEnv();
+  tesseract::BasicKinConstPtr manip = prob->GetKin();
+  const Eigen::Isometry3d change_base = env->getLinkTransform(manip->getBaseLinkName());
 
   // Loop over time steps
-  TrajArray traj = getTraj(x, prob->GetVars());
+  TrajArray traj = getTraj(results.x, prob->GetVars());
   for (auto i = 0; i < traj.rows(); i++)
   {
     // Calc/Write joint values

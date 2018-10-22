@@ -133,9 +133,12 @@ if plotting_costs == True:
     # Drop the nan rows (the ones seperating the iterations)
     df2 = df.dropna(axis=0)
     
+    df2.reset_index(drop=True, inplace=True)
+
+    
     # Take average of each cost (across time) for each iteration
     # https://stackoverflow.com/questions/36810595
-    df3 = df2.groupby(np.arange(len(df2))//5).mean()
+    df3 = df2.groupby(np.arange(len(df2))//num_steps_a).mean()
     
     # get columns to plot
     cost_cols = list(df3)[num_dofs+7:]
