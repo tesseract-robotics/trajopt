@@ -116,7 +116,7 @@ JointJerkCost::JointJerkCost(const VarArray& vars, const VectorXd& coeffs)
 double JointJerkCost::value(const vector<double>& xvec)
 {
   MatrixXd traj = getTraj(xvec, vars_);
-  return (diffAxis0(diffAxis0(traj)).array().square().matrix() * coeffs_.asDiagonal()).sum();
+  return (diffAxis0(diffAxis0(diffAxis0(traj))).array().square().matrix() * coeffs_.asDiagonal()).sum();
 }
 ConvexObjectivePtr JointJerkCost::convex(const vector<double>& /*x*/, Model* model)
 {
