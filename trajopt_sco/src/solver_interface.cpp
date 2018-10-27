@@ -163,12 +163,16 @@ ModelPtr createModel()
 #ifdef HAVE_OSQP
   extern ModelPtr createOSQPModel();
 #endif
+#ifdef HAVE_QPOASES
+  extern ModelPtr createqpOASESModel();
+#endif
 
   enum ConvexSolver
   {
     GUROBI,
     BPMPD,
     OSQP,
+    QPOASES,
     INVALID
   };
 
@@ -184,6 +188,8 @@ ModelPtr createModel()
       solver = BPMPD;
     else if (string(solver_env) == "OSQP")
       solver = OSQP;
+    else if (string(solver_env) == "QPOASES")
+      solver = QPOASES;
     else
       PRINT_AND_THROW(boost::format("invalid solver \"%s\"specified by TRAJOPT_CONVEX_SOLVER") % solver_env);
 #ifndef HAVE_GUROBI
@@ -198,6 +204,10 @@ ModelPtr createModel()
     if (solver == OSQP)
       PRINT_AND_THROW("you don't have OSQP support on this platform");
 #endif
+#ifndef HAVE_QPOASES
+    if (solver == QPOASES)
+      PRINT_AND_THROW("you don't have qpOASES support on this platform");
+#endif
   }
   else
   {
@@ -205,6 +215,8 @@ ModelPtr createModel()
     solver = GUROBI;
 #elif defined(HAVE_OSQP)
     solver = OSQP;
+#elif defined(HAVE_QPOASES)
+    solver = QPOASES;
 #else
     solver = BPMPD;
 #endif
@@ -221,6 +233,10 @@ ModelPtr createModel()
 #ifdef HAVE_OSQP
   if (solver == OSQP)
     return createOSQPModel();
+#endif
+#ifdef HAVE_QPOASES
+  if (solver == QPOASES)
+    return createqpOASESModel();
 #endif
   PRINT_AND_THROW("Failed to create solver");
   return ModelPtr();

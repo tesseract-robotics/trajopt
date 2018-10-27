@@ -149,7 +149,7 @@ logfile it generates.
 
 namespace sco
 {
-double BPMPD_LARGE_NUMBER = 1e+30;
+double BPMPD_BIG = 1e+30;
 
 extern void simplify2(vector<int>& inds, vector<double>& vals);
 extern vector<int> vars2inds(const vector<Var>& vars);
@@ -237,8 +237,8 @@ BPMPDModel::~BPMPDModel()
 Var BPMPDModel::addVar(const string& name)
 {
   m_vars.push_back(new VarRep(m_vars.size(), name, this));
-  m_lbs.push_back(-BPMPD_LARGE_NUMBER);
-  m_ubs.push_back(BPMPD_LARGE_NUMBER);
+  m_lbs.push_back(-BPMPD_BIG);
+  m_ubs.push_back(BPMPD_BIG);
   return m_vars.back();
 }
 Cnt BPMPDModel::addEqCnt(const AffExpr& expr, const string& /*name*/)
@@ -362,8 +362,8 @@ CvxOptStatus BPMPDModel::optimize()
   DBG(m_ubs);
   for (int iVar = 0; iVar < n; ++iVar)
   {
-    lbound[iVar] = fmax(m_lbs[iVar], -BPMPD_LARGE_NUMBER);
-    ubound[iVar] = fmin(m_ubs[iVar], BPMPD_LARGE_NUMBER);
+    lbound[iVar] = fmax(m_lbs[iVar], -BPMPD_BIG);
+    ubound[iVar] = fmin(m_ubs[iVar], BPMPD_BIG);
   }
 
   vector<vector<int>> var2cntinds(n);
@@ -380,7 +380,7 @@ CvxOptStatus BPMPDModel::optimize()
       var2cntvals[inds[i]].push_back(aff.coeffs[i]);  // xxx maybe repeated/
     }
 
-    lbound[n + iCnt] = (m_cntTypes[iCnt] == INEQ) ? -BPMPD_LARGE_NUMBER : 0;
+    lbound[n + iCnt] = (m_cntTypes[iCnt] == INEQ) ? -BPMPD_BIG : 0;
     ubound[n + iCnt] = 0;
     rhs[iCnt] = -aff.constant;
   }

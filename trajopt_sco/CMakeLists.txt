@@ -3,8 +3,11 @@ project(trajopt_sco)
 
 add_compile_options(-std=c++11 -Wall -Wextra)
 
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules/")
 find_package(catkin REQUIRED COMPONENTS trajopt_utils)
+find_package(GUROBI QUIET)
 find_package(osqp QUIET)
+find_package(qpOASES QUIET)
 find_package(Eigen3 REQUIRED)
 
 set(SCO_SOURCE_FILES
@@ -28,8 +31,6 @@ catkin_package(
 #  DEPENDS system_lib
 )
 
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules/")
-find_package(GUROBI QUIET)
 
 include_directories(
   include
@@ -51,24 +52,29 @@ if (HAVE_BPMPD)
   list(APPEND SCO_SOURCE_FILES src/bpmpd_interface.cpp)
   set_property(SOURCE src/bpmpd_interface.cpp APPEND PROPERTY COMPILE_DEFINITIONS BPMPD_CALLER="\\\"${CATKIN_DEVEL_PREFIX}/lib/${PROJECT_NAME}/bpmpd_caller\\\"")
 
-
   #TODO: Levi check if this is correct.
   set(BPMPD_WORKING_DIR "${CATKIN_DEVEL_PREFIX}/lib/${PROJECT_NAME}/")
   set_property(SOURCE src/bpmpd_caller.cpp APPEND PROPERTY COMPILE_DEFINITIONS BPMPD_WORKING_DIR="${BPMPD_WORKING_DIR}")
   file(COPY src/bpmpd.par DESTINATION ${BPMPD_WORKING_DIR})
 
-  set_property(SOURCE src/solver_interface.cpp APPEND PROPERTY COMPILE_DEFINITIONS HAVE_BPMPD )
+  set_property(SOURCE src/solver_interface.cpp APPEND PROPERTY COMPILE_DEFINITIONS HAVE_BPMPD)
 endif()
 
 if (GUROBI_FOUND)
   include_directories(${GUROBI_INCLUDE_DIR})
-  set_property(SOURCE src/solver_interface.cpp APPEND PROPERTY COMPILE_DEFINITIONS HAVE_GUROBI )
+  set_property(SOURCE src/solver_interface.cpp APPEND PROPERTY COMPILE_DEFINITIONS HAVE_GUROBI)
   list(APPEND SCO_SOURCE_FILES src/gurobi_interface.cpp)
 endif(GUROBI_FOUND)
 
 if (osqp_FOUND)
-  set_property(SOURCE src/solver_interface.cpp APPEND PROPERTY COMPILE_DEFINITIONS HAVE_OSQP )
+  set_property(SOURCE src/solver_interface.cpp APPEND PROPERTY COMPILE_DEFINITIONS HAVE_OSQP)
   list(APPEND SCO_SOURCE_FILES src/osqp_interface.cpp)
+endif()
+
+if (qpOASES_FOUND)
+  include_directories(${qpOASES_INCLUDE_DIRS})
+  set_property(SOURCE src/solver_interface.cpp APPEND PROPERTY COMPILE_DEFINITIONS HAVE_QPOASES)
+  list(APPEND SCO_SOURCE_FILES src/qpoases_interface.cpp)
 endif()
 
 add_library(${PROJECT_NAME} ${SCO_SOURCE_FILES})
@@ -82,6 +88,9 @@ if (HAVE_BPMPD)
 endif()
 if (osqp_FOUND)
   target_link_libraries(${PROJECT_NAME} PRIVATE osqp::osqpstatic)
+endif()
+if (qpOASES_FOUND)
+  target_link_libraries(${PROJECT_NAME} PRIVATE ${qpOASES_LIBRARIES})
 endif()
 
 target_link_libraries(${PROJECT_NAME} PUBLIC ${SCO_LINK_LIBS})
@@ -112,6 +121,9 @@ if (CATKIN_ENABLE_TESTING)
     list(APPEND SCO_TEST_SOURCE test/osqp-interface-unit.cpp)
   endif()
 
+  if (qpOASES_FOUND)
+    list(APPEND SCO_TEST_SOURCE test/qpoases-interface-unit.cpp)
+  endif()
   catkin_add_gtest(${PROJECT_NAME}-test ${SCO_TEST_SOURCE})
   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
   if (osqp_FOUND)
