@@ -13,6 +13,10 @@ namespace trajopt
 using namespace sco;
 typedef BasicArray<Var> VarArray;
 
+/**
+ * @brief The CartPosErrCalculator Used to calculate the error for CartPosTermInfo
+ * This is converted to a cost or constraint using TrajOptCostFromErrFunc or TrajOptConstraintFromErrFunc
+ */
 struct CartPosErrCalculator : public TrajOptVectorOfVector
 {
   std::string target_;
@@ -34,6 +38,10 @@ struct CartPosErrCalculator : public TrajOptVectorOfVector
   VectorXd operator()(const VectorXd& dof_vals) const;
 };
 
+/**
+ * @brief The StaticCartPosErrCalculator Used to calculate the error for StaticCartPosTermInfo
+ * This is converted to a cost or constraint using TrajOptCostFromErrFunc or TrajOptConstraintFromErrFunc
+ */
 struct StaticCartPosErrCalculator : public TrajOptVectorOfVector
 {
   Eigen::Isometry3d pose_inv_;
@@ -55,6 +63,10 @@ struct StaticCartPosErrCalculator : public TrajOptVectorOfVector
   VectorXd operator()(const VectorXd& dof_vals) const;
 };
 
+/**
+ * @brief The CartVeJacCalculator Used to calculate the jacobian for CartVelTermInfo
+ *
+ */
 struct CartVelJacCalculator : MatrixOfVector
 {
   tesseract::BasicKinConstPtr manip_;
@@ -74,6 +86,10 @@ struct CartVelJacCalculator : MatrixOfVector
   MatrixXd operator()(const VectorXd& dof_vals) const;
 };
 
+/**
+ * @brief The CartVelCalculator struct Used to calculate the error for CartVelTermInfo
+ * This is converted to a cost or constraint using TrajOptCostFromErrFunc or TrajOptConstraintFromErrFunc
+ */
 struct CartVelCalculator : VectorOfVector
 {
   tesseract::BasicKinConstPtr manip_;
