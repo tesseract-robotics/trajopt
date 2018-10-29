@@ -168,34 +168,49 @@ private:
 /** @brief This is used when the goal frame is not fixed in space */
 struct CartPosTermInfo : public TermInfo, public MakesCost, public MakesConstraint
 {
+  /// Timestep at which to apply term
   int timestep;
   std::string target;
+  /// Coefficients for position and rotation
   Vector3d pos_coeffs, rot_coeffs;
-
+  /// Link which should reach desired pos
   std::string link;
+  /// Static transform applied to the link
   Eigen::Isometry3d tcp;
 
   CartPosTermInfo();
 
+  /// Used to add term to pci from json
   void fromJson(ProblemConstructionInfo& pci, const Value& v);
+  /// Converts term info into cost/constraint and adds it to trajopt problem
   void hatch(TrajOptProb& prob);
   DEFINE_CREATE(PoseCostInfo)
 };
 
-/** @brief This cost is used when the goal frame is fixed in space */
+/** @brief This term is used when the goal frame is fixed in cartesian space
+
+  Set term_type == TT_COST or TT_CNT for cost or constraint.
+*/
 struct StaticCartPosTermInfo : public TermInfo, public MakesCost, public MakesConstraint
 {
+  /// Timestep at which to apply term
   int timestep;
+  ///  Cartesian position
   Vector3d xyz;
+  /// Rotation quaternion
   Vector4d wxyz;
+  /// coefficients for position and rotation
   Vector3d pos_coeffs, rot_coeffs;
-
+  /// Link which should reach desired pose
   std::string link;
+  /// Static transform applied to the link
   Eigen::Isometry3d tcp;
 
   StaticCartPosTermInfo();
 
+  /// Used to add term to pci from json
   void fromJson(ProblemConstructionInfo& pci, const Value& v);
+  /// Converts term info into cost/constraint and adds it to trajopt problem
   void hatch(TrajOptProb& prob);
   DEFINE_CREATE(StaticPoseCostInfo)
 };
@@ -218,23 +233,27 @@ struct JointPosTermInfo : public TermInfo, public MakesCost
 };
 
 /**
- \brief Motion constraint on link
+ \brief Applies cost/constraint to the cartesian velocity of a link
 
  Constrains the change in position of the link in each timestep to be less than
  max_displacement
  */
 struct CartVelTermInfo : public TermInfo, public MakesConstraint
 {
+  /// Timesteps over which to apply term
   int first_step, last_step;
+  /// Link to which the term is applied
   std::string link;  // LEVI This may need to be moveit LinkModel
   double max_displacement;
+  /// Used to add term to pci from json
   void fromJson(ProblemConstructionInfo& pci, const Value& v);
+  /// Converts term info into cost/constraint and adds it to trajopt problem
   void hatch(TrajOptProb& prob);
-  DEFINE_CREATE(CartVelCntInfo)
+  DEFINE_CREATE(CartVelTermInfo)
 };
 
 /**
-\brief Joint-space velocity squared
+\brief Used to apply cost/constraint to joint-space velocity
 
 \f{align*}{
   cost = \sum_{t=0}^{T-2} \sum_j c_j (x_{t+1,j} - x_{t,j})^2
@@ -244,11 +263,16 @@ where j indexes over DOF, and \f$c_j\f$ are the coeffs.
 struct JointVelTermInfo : public TermInfo, public MakesCost
 {
   DblVec coeffs;
+  /// Used to add term to pci from json
   void fromJson(ProblemConstructionInfo& pci, const Value& v);
+  /// Converts term info into cost/constraint and adds it to trajopt problem
   void hatch(TrajOptProb& prob);
-  DEFINE_CREATE(JointVelCostInfo)
+  DEFINE_CREATE(JointVelTermInfo)
 };
-
+/**
+ * @brief The JointVelConstraintInfo adds joint velocity constraint
+ * TODO: To be merged into JointVelTermInfo
+ */
 struct JointVelConstraintInfo : public TermInfo, public MakesConstraint
 {
   DblVec vals;
@@ -258,20 +282,30 @@ struct JointVelConstraintInfo : public TermInfo, public MakesConstraint
   DEFINE_CREATE(JointVelConstraintInfo)
 };
 
+/**
+ * @brief The JointAccTermInfo Used to apply cost/constraint to joint-space acceleration
+ */
 struct JointAccTermInfo : public TermInfo, public MakesCost
 {
   DblVec coeffs;
+  /// Used to add term to pci from json
   void fromJson(ProblemConstructionInfo& pci, const Value& v);
+  /// Converts term info into cost/constraint and adds it to trajopt problem
   void hatch(TrajOptProb& prob);
-  DEFINE_CREATE(JointAccCostInfo)
+  DEFINE_CREATE(JointAccTermInfo)
 };
 
+/**
+ * @brief The JointJerkTermInfo Used to apply cost/constraint to joint-space jerk
+ */
 struct JointJerkTermInfo : public TermInfo, public MakesCost
 {
   DblVec coeffs;
+  /// Used to add term to pci from json
   void fromJson(ProblemConstructionInfo& pci, const Value& v);
+  /// Converts term info into cost/constraint and adds it to trajopt problem
   void hatch(TrajOptProb& prob);
-  DEFINE_CREATE(JointJerkCostInfo)
+  DEFINE_CREATE(JointJerkTermInfo)
 };
 
 /**
@@ -302,9 +336,11 @@ struct CollisionTermInfo : public TermInfo, public MakesCost
   /// optimization, etc.
   std::vector<SafetyMarginDataPtr> info;
 
+  /// Used to add term to pci from json
   void fromJson(ProblemConstructionInfo& pci, const Value& v);
+  /// Converts term info into cost/constraint and adds it to trajopt problem
   void hatch(TrajOptProb& prob);
-  DEFINE_CREATE(CollisionCostInfo)
+  DEFINE_CREATE(CollisionTermInfo)
 };
 
 // TODO: unify with joint position constraint
