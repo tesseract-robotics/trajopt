@@ -37,3 +37,10 @@ target_link_libraries(convex_decomposition_hacd_node ${catkin_LIBRARIES})
 
 add_executable(convex_decomposition_vhacd_node src/convex_decomposition_vhacd.cpp)
 target_link_libraries(convex_decomposition_vhacd_node ${catkin_LIBRARIES})
+
+# Mark executables and/or libraries for installation
+install(TARGETS convex_decomposition_hacd_node convex_decomposition_vhacd_node
+  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
