@@ -11,7 +11,9 @@
       "type" : "joint_vel",
       "params":
       {
-        "coeffs" : [5]
+        "joint_name" : "all_joints",
+        "coeffs" : [5],
+        "penalty_type" : "SQUARED"
       }
     },
     {

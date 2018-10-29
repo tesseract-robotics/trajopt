@@ -60,6 +60,26 @@ void RegisterMakers()
   gRegisteredMakers = true;
 }
 
+PenaltyType stringToPenaltyType(string str)
+{
+  if (boost::iequals(str, "hinge"))
+  {
+    return HINGE;
+  }
+  else if (boost::iequals(str, "abs"))
+  {
+    return ABS;
+  }
+  else if (boost::iequals(str, "squared"))
+  {
+    return SQUARED;
+  }
+  else {
+    PRINT_AND_THROW(boost::format("Failed string to PenaltyType conversion. %s is not a valid penalty type") % str);
+  }
+
+}
+
 #if 0
 BoolVec toMask(const VectorXd& x) {
   BoolVec out(x.size());
@@ -563,7 +583,7 @@ void JointVelTermInfo::fromJson(ProblemConstructionInfo& pci, const Value& v)
   if (coeffs.size() == 1)
   {
     coeffs = DblVec(n_dof, coeffs[0]);
-    ROS_INFO(boost::format("1 JointVelTermInfo coefficient given. Applying to all %i joints") % n_dof);
+    ROS_INFO("1 JointVelTermInfo coefficient given. Applying to all %i joints", n_dof);
   }
   else if (coeffs.size() != n_dof)
   {

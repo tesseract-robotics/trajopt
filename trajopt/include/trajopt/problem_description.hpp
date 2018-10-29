@@ -184,7 +184,7 @@ struct CartPosTermInfo : public TermInfo, public MakesCost, public MakesConstrai
   void fromJson(ProblemConstructionInfo& pci, const Value& v);
   /// Converts term info into cost/constraint and adds it to trajopt problem
   void hatch(TrajOptProb& prob);
-  DEFINE_CREATE(PoseCostInfo)
+  DEFINE_CREATE(CartPosTermInfo)
 };
 
 /** @brief This term is used when the goal frame is fixed in cartesian space
@@ -212,7 +212,7 @@ struct StaticCartPosTermInfo : public TermInfo, public MakesCost, public MakesCo
   void fromJson(ProblemConstructionInfo& pci, const Value& v);
   /// Converts term info into cost/constraint and adds it to trajopt problem
   void hatch(TrajOptProb& prob);
-  DEFINE_CREATE(StaticPoseCostInfo)
+  DEFINE_CREATE(StaticCartPosTermInfo)
 };
 
 /**
@@ -229,7 +229,7 @@ struct JointPosTermInfo : public TermInfo, public MakesCost
   int timestep;
   void fromJson(ProblemConstructionInfo& pci, const Value& v);
   void hatch(TrajOptProb& prob);
-  DEFINE_CREATE(JointPosCostInfo)
+  DEFINE_CREATE(JointPosTermInfo)
 };
 
 /**
@@ -263,6 +263,15 @@ where j indexes over DOF, and \f$c_j\f$ are the coeffs.
 struct JointVelTermInfo : public TermInfo, public MakesCost
 {
   DblVec coeffs;
+  /// First time step to which the term is applied
+  int first_step;
+  /// Last time step to which the term is applied
+  int last_step;
+  /// Joint name to which the term is applied
+  string joint_name;
+  /// Penalty type applied
+  PenaltyType penalty_type;
+  double limit = 0; // only applies if constraint or penalty_type == HINGE
   /// Used to add term to pci from json
   void fromJson(ProblemConstructionInfo& pci, const Value& v);
   /// Converts term info into cost/constraint and adds it to trajopt problem
