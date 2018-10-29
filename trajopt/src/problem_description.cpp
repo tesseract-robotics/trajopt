@@ -11,6 +11,7 @@
 #include <trajopt_utils/eigen_conversions.hpp>
 #include <trajopt_utils/eigen_slicing.hpp>
 #include <trajopt_utils/logging.hpp>
+#include <ros/ros.h>
 
 using namespace Json;
 using namespace std;
@@ -44,16 +45,16 @@ void ensure_only_members(const Value& v, const char** fields, int nvalid)
 
 void RegisterMakers()
 {
-  TermInfo::RegisterMaker("pose", &PoseCostInfo::create);
-  TermInfo::RegisterMaker("static_pose", &StaticPoseCostInfo::create);
-  TermInfo::RegisterMaker("joint_pos", &JointPosCostInfo::create);
-  TermInfo::RegisterMaker("joint_vel", &JointVelCostInfo::create);
-  TermInfo::RegisterMaker("joint_acc", &JointAccCostInfo::create);
-  TermInfo::RegisterMaker("joint_jerk", &JointJerkCostInfo::create);
-  TermInfo::RegisterMaker("collision", &CollisionCostInfo::create);
+  TermInfo::RegisterMaker("pose", &CartPosTermInfo::create);
+  TermInfo::RegisterMaker("static_pose", &StaticCartPosTermInfo::create);
+  TermInfo::RegisterMaker("joint_pos", &JointPosTermInfo::create);
+  TermInfo::RegisterMaker("joint_vel", &JointVelTermInfo::create);
+  TermInfo::RegisterMaker("joint_acc", &JointAccTermInfo::create);
+  TermInfo::RegisterMaker("joint_jerk", &JointJerkTermInfo::create);
+  TermInfo::RegisterMaker("collision", &CollisionTermInfo::create);
 
   TermInfo::RegisterMaker("joint", &JointConstraintInfo::create);
-  TermInfo::RegisterMaker("cart_vel", &CartVelCntInfo::create);
+  TermInfo::RegisterMaker("cart_vel", &CartVelTermInfo::create);
   TermInfo::RegisterMaker("joint_vel_limits", &JointVelConstraintInfo::create);
 
   gRegisteredMakers = true;
@@ -362,14 +363,15 @@ TrajOptProb::TrajOptProb(int n_steps, const ProblemConstructionInfo& pci) : m_ki
 }
 
 TrajOptProb::TrajOptProb() {}
-PoseCostInfo::PoseCostInfo()
+
+CartPosTermInfo::CartPosTermInfo()
 {
   pos_coeffs = Vector3d::Ones();
   rot_coeffs = Vector3d::Ones();
   tcp.setIdentity();
 }
 
-void PoseCostInfo::fromJson(ProblemConstructionInfo& pci, const Value& v)
+void CartPosTermInfo::fromJson(ProblemConstructionInfo& pci, const Value& v)
 {
   FAIL_IF_FALSE(v.isMember("params"));
   Vector3d tcp_xyz = Vector3d::Zero();
@@ -398,9 +400,9 @@ void PoseCostInfo::fromJson(ProblemConstructionInfo& pci, const Value& v)
   ensure_only_members(params, all_fields, sizeof(all_fields) / sizeof(char*));
 }
 
-void PoseCostInfo::hatch(TrajOptProb& prob)
+void CartPosTermInfo::hatch(TrajOptProb& prob)
 {
-  VectorOfVectorPtr f(new CartPoseErrCalculator(target, prob.GetKin(), prob.GetEnv(), link, tcp));
+  VectorOfVectorPtr f(new CartPosErrCalculator(target, prob.GetKin(), prob.GetEnv(), link, tcp));
   if (term_type == TT_COST)
   {
     prob.addCost(CostPtr(new TrajOptCostFromErrFunc(f, prob.GetVarRow(timestep), concat(rot_coeffs, pos_coeffs), ABS, name)));
@@ -412,14 +414,14 @@ void PoseCostInfo::hatch(TrajOptProb& prob)
   }
 }
 
-StaticPoseCostInfo::StaticPoseCostInfo()
+StaticCartPosTermInfo::StaticCartPosTermInfo()
 {
   pos_coeffs = Vector3d::Ones();
   rot_coeffs = Vector3d::Ones();
   tcp.setIdentity();
 }
 
-void StaticPoseCostInfo::fromJson(ProblemConstructionInfo& pci, const Value& v)
+void StaticCartPosTermInfo::fromJson(ProblemConstructionInfo& pci, const Value& v)
 {
   FAIL_IF_FALSE(v.isMember("params"));
   Vector3d tcp_xyz = Vector3d::Zero();
@@ -449,14 +451,14 @@ void StaticPoseCostInfo::fromJson(ProblemConstructionInfo& pci, const Value& v)
   ensure_only_members(params, all_fields, sizeof(all_fields) / sizeof(char*));
 }
 
-void StaticPoseCostInfo::hatch(TrajOptProb& prob)
+void StaticCartPosTermInfo::hatch(TrajOptProb& prob)
 {
   Eigen::Isometry3d input_pose;
   Eigen::Quaterniond q(wxyz(0), wxyz(1), wxyz(2), wxyz(3));
   input_pose.linear() = q.matrix();
   input_pose.translation() = xyz;
 
-  VectorOfVectorPtr f(new StaticCartPoseErrCalculator(input_pose, prob.GetKin(), prob.GetEnv(), link, tcp));
+  VectorOfVectorPtr f(new StaticCartPosErrCalculator(input_pose, prob.GetKin(), prob.GetEnv(), link, tcp));
   if (term_type == TT_COST)
   {
     prob.addCost(CostPtr(new TrajOptCostFromErrFunc(f, prob.GetVarRow(timestep), concat(rot_coeffs, pos_coeffs), ABS, name)));
@@ -468,7 +470,7 @@ void StaticPoseCostInfo::hatch(TrajOptProb& prob)
   }
 }
 
-void JointPosCostInfo::fromJson(ProblemConstructionInfo& pci, const Value& v)
+void JointPosTermInfo::fromJson(ProblemConstructionInfo& pci, const Value& v)
 {
   FAIL_IF_FALSE(v.isMember("params"));
   int n_steps = pci.basic_info.n_steps;
@@ -477,7 +479,6 @@ void JointPosCostInfo::fromJson(ProblemConstructionInfo& pci, const Value& v)
   childFromJson(params, coeffs, "coeffs");
   if (coeffs.size() == 1)
     coeffs = DblVec(n_steps, coeffs[0]);
-
   unsigned n_dof = pci.kin->numJoints();
   if (vals.size() != n_dof)
   {
@@ -489,13 +490,13 @@ void JointPosCostInfo::fromJson(ProblemConstructionInfo& pci, const Value& v)
   ensure_only_members(params, all_fields, sizeof(all_fields) / sizeof(char*));
 }
 
-void JointPosCostInfo::hatch(TrajOptProb& prob)
+void JointPosTermInfo::hatch(TrajOptProb& prob)
 {
   prob.addCost(CostPtr(new JointPosCost(prob.GetVarRow(timestep), toVectorXd(vals), toVectorXd(coeffs))));
   prob.getCosts().back()->setName(name);
 }
 
-void CartVelCntInfo::fromJson(ProblemConstructionInfo& pci, const Value& v)
+void CartVelTermInfo::fromJson(ProblemConstructionInfo& pci, const Value& v)
 {
   FAIL_IF_FALSE(v.isMember("params"));
   const Value& params = v["params"];
@@ -517,7 +518,7 @@ void CartVelCntInfo::fromJson(ProblemConstructionInfo& pci, const Value& v)
   ensure_only_members(params, all_fields, sizeof(all_fields) / sizeof(char*));
 }
 
-void CartVelCntInfo::hatch(TrajOptProb& prob)
+void CartVelTermInfo::hatch(TrajOptProb& prob)
 {
   for (int iStep = first_step; iStep < last_step; ++iStep)
   {
@@ -531,31 +532,51 @@ void CartVelCntInfo::hatch(TrajOptProb& prob)
   }
 }
 
-void JointVelCostInfo::fromJson(ProblemConstructionInfo& pci, const Value& v)
+void JointVelTermInfo::fromJson(ProblemConstructionInfo& pci, const Value& v)
 {
   FAIL_IF_FALSE(v.isMember("params"));
   const Value& params = v["params"];
 
   childFromJson(params, coeffs, "coeffs");
+  childFromJson(params, joint_name, "joint_name");
+  childFromJson(params, first_step, "first_step", 0);
+  childFromJson(params, last_step, "last_step", pci.basic_info.n_steps - 1);
   unsigned n_dof = pci.kin->numJoints();
-  if (coeffs.size() == 1)
+  if (coeffs.size() == 1){
     coeffs = DblVec(n_dof, coeffs[0]);
+    ROS_INFO(boost::format("1 JointVelTermInfo coefficient given. Applying to all %i joints") % n_dof);
+  }
   else if (coeffs.size() != n_dof)
   {
     PRINT_AND_THROW(boost::format("wrong number of coeffs. expected %i got %i") % n_dof % coeffs.size());
   }
 
-  const char* all_fields[] = { "coeffs" };
+  bool get_limit = term_type == TT_CNT;
+  if (term_type == TT_COST)
+  {
+    string penalty_type_str;
+    childFromJson(params, penalty_type_str, "penalty_type");
+    penalty_type = stringToPenaltyType(penalty_type_str);
+
+    get_limit = penalty_type == HINGE;
+  }
+
+  if (get_limit)
+  {
+    childFromJson(params, limit, "limit");
+  }
+
+  const char* all_fields[] = { "coeffs", "joint_name", "first_step", "last_step", "penalty_type", "limit" };
   ensure_only_members(params, all_fields, sizeof(all_fields) / sizeof(char*));
 }
 
-void JointVelCostInfo::hatch(TrajOptProb& prob)
+void JointVelTermInfo::hatch(TrajOptProb& prob)
 {
   prob.addCost(CostPtr(new JointVelCost(prob.GetVars(), toVectorXd(coeffs))));
   prob.getCosts().back()->setName(name);
 }
 
-void JointAccCostInfo::fromJson(ProblemConstructionInfo& pci, const Value& v)
+void JointAccTermInfo::fromJson(ProblemConstructionInfo& pci, const Value& v)
 {
   FAIL_IF_FALSE(v.isMember("params"));
   const Value& params = v["params"];
@@ -573,13 +594,13 @@ void JointAccCostInfo::fromJson(ProblemConstructionInfo& pci, const Value& v)
   ensure_only_members(params, all_fields, sizeof(all_fields) / sizeof(char*));
 }
 
-void JointAccCostInfo::hatch(TrajOptProb& prob)
+void JointAccTermInfo::hatch(TrajOptProb& prob)
 {
   prob.addCost(CostPtr(new JointAccCost(prob.GetVars(), toVectorXd(coeffs))));
   prob.getCosts().back()->setName(name);
 }
 
-void JointJerkCostInfo::fromJson(ProblemConstructionInfo& pci, const Value& v)
+void JointJerkTermInfo::fromJson(ProblemConstructionInfo& pci, const Value& v)
 {
   FAIL_IF_FALSE(v.isMember("params"));
   const Value& params = v["params"];
@@ -597,7 +618,7 @@ void JointJerkCostInfo::fromJson(ProblemConstructionInfo& pci, const Value& v)
   ensure_only_members(params, all_fields, sizeof(all_fields) / sizeof(char*));
 }
 
-void JointJerkCostInfo::hatch(TrajOptProb& prob)
+void JointJerkTermInfo::hatch(TrajOptProb& prob)
 {
   prob.addCost(CostPtr(new JointJerkCost(prob.GetVars(), toVectorXd(coeffs))));
   prob.getCosts().back()->setName(name);
@@ -634,7 +655,7 @@ void JointVelConstraintInfo::hatch(TrajOptProb& prob)
   }
 }
 
-void CollisionCostInfo::fromJson(ProblemConstructionInfo& pci, const Value& v)
+void CollisionTermInfo::fromJson(ProblemConstructionInfo& pci, const Value& v)
 {
   FAIL_IF_FALSE(v.isMember("params"));
   const Value& params = v["params"];
@@ -730,7 +751,7 @@ void CollisionCostInfo::fromJson(ProblemConstructionInfo& pci, const Value& v)
   ensure_only_members(params, all_fields, sizeof(all_fields) / sizeof(char*));
 }
 
-void CollisionCostInfo::hatch(TrajOptProb& prob)
+void CollisionTermInfo::hatch(TrajOptProb& prob)
 {
   if (term_type == TT_COST)
   {
