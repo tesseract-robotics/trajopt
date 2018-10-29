@@ -136,25 +136,25 @@ ProblemConstructionInfo cppMethod()
   //  end_pos[6]);
 
   // Populate Cost Info
-  std::shared_ptr<JointVelCostInfo> joint_vel = std::shared_ptr<JointVelCostInfo>(new JointVelCostInfo);
+  std::shared_ptr<JointVelTermInfo> joint_vel = std::shared_ptr<JointVelTermInfo>(new JointVelTermInfo);
   joint_vel->coeffs = std::vector<double>(7, 1.0);
   joint_vel->name = "joint_vel";
   joint_vel->term_type = TT_COST;
   pci.cost_infos.push_back(joint_vel);
 
-  std::shared_ptr<JointAccCostInfo> joint_acc = std::shared_ptr<JointAccCostInfo>(new JointAccCostInfo);
+  std::shared_ptr<JointAccTermInfo> joint_acc = std::shared_ptr<JointAccTermInfo>(new JointAccTermInfo);
   joint_acc->coeffs = std::vector<double>(7, 2.0);
   joint_acc->name = "joint_acc";
   joint_acc->term_type = TT_COST;
   pci.cost_infos.push_back(joint_acc);
 
-  std::shared_ptr<JointJerkCostInfo> joint_jerk = std::shared_ptr<JointJerkCostInfo>(new JointJerkCostInfo);
+  std::shared_ptr<JointJerkTermInfo> joint_jerk = std::shared_ptr<JointJerkTermInfo>(new JointJerkTermInfo);
   joint_jerk->coeffs = std::vector<double>(7, 5.0);
   joint_jerk->name = "joint_jerk";
   joint_jerk->term_type = TT_COST;
   pci.cost_infos.push_back(joint_jerk);
 
-  std::shared_ptr<CollisionCostInfo> collision = std::shared_ptr<CollisionCostInfo>(new CollisionCostInfo);
+  std::shared_ptr<CollisionTermInfo> collision = std::shared_ptr<CollisionTermInfo>(new CollisionTermInfo);
   collision->name = "collision";
   collision->term_type = TT_COST;
   collision->continuous = false;
@@ -173,7 +173,7 @@ ProblemConstructionInfo cppMethod()
 
   for (auto i = 0; i < pci.basic_info.n_steps; ++i)
   {
-    std::shared_ptr<StaticPoseCostInfo> pose = std::shared_ptr<StaticPoseCostInfo>(new StaticPoseCostInfo);
+    std::shared_ptr<StaticCartPosTermInfo> pose = std::shared_ptr<StaticCartPosTermInfo>(new StaticCartPosTermInfo);
     pose->term_type = TT_CNT;
     pose->name = "waypoint_cart_" + std::to_string(i);
     pose->link = "part";

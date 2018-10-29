@@ -166,7 +166,7 @@ private:
 };
 
 /** @brief This is used when the goal frame is not fixed in space */
-struct PoseCostInfo : public TermInfo, public MakesCost, public MakesConstraint
+struct CartPosTermInfo : public TermInfo, public MakesCost, public MakesConstraint
 {
   int timestep;
   std::string target;
@@ -175,7 +175,7 @@ struct PoseCostInfo : public TermInfo, public MakesCost, public MakesConstraint
   std::string link;
   Eigen::Isometry3d tcp;
 
-  PoseCostInfo();
+  CartPosTermInfo();
 
   void fromJson(ProblemConstructionInfo& pci, const Value& v);
   void hatch(TrajOptProb& prob);
@@ -183,7 +183,7 @@ struct PoseCostInfo : public TermInfo, public MakesCost, public MakesConstraint
 };
 
 /** @brief This cost is used when the goal frame is fixed in space */
-struct StaticPoseCostInfo : public TermInfo, public MakesCost, public MakesConstraint
+struct StaticCartPosTermInfo : public TermInfo, public MakesCost, public MakesConstraint
 {
   int timestep;
   Vector3d xyz;
@@ -193,7 +193,7 @@ struct StaticPoseCostInfo : public TermInfo, public MakesCost, public MakesConst
   std::string link;
   Eigen::Isometry3d tcp;
 
-  StaticPoseCostInfo();
+  StaticCartPosTermInfo();
 
   void fromJson(ProblemConstructionInfo& pci, const Value& v);
   void hatch(TrajOptProb& prob);
@@ -208,7 +208,7 @@ struct StaticPoseCostInfo : public TermInfo, public MakesCost, public MakesConst
   \f}
   where \f$i\f$ indexes over dof and \f$c_i\f$ are coeffs
  */
-struct JointPosCostInfo : public TermInfo, public MakesCost
+struct JointPosTermInfo : public TermInfo, public MakesCost
 {
   DblVec vals, coeffs;
   int timestep;
@@ -223,7 +223,7 @@ struct JointPosCostInfo : public TermInfo, public MakesCost
  Constrains the change in position of the link in each timestep to be less than
  max_displacement
  */
-struct CartVelCntInfo : public TermInfo, public MakesConstraint
+struct CartVelTermInfo : public TermInfo, public MakesConstraint
 {
   int first_step, last_step;
   std::string link;  // LEVI This may need to be moveit LinkModel
@@ -241,7 +241,7 @@ struct CartVelCntInfo : public TermInfo, public MakesConstraint
 \f}
 where j indexes over DOF, and \f$c_j\f$ are the coeffs.
 */
-struct JointVelCostInfo : public TermInfo, public MakesCost
+struct JointVelTermInfo : public TermInfo, public MakesCost
 {
   DblVec coeffs;
   void fromJson(ProblemConstructionInfo& pci, const Value& v);
@@ -258,7 +258,7 @@ struct JointVelConstraintInfo : public TermInfo, public MakesConstraint
   DEFINE_CREATE(JointVelConstraintInfo)
 };
 
-struct JointAccCostInfo : public TermInfo, public MakesCost
+struct JointAccTermInfo : public TermInfo, public MakesCost
 {
   DblVec coeffs;
   void fromJson(ProblemConstructionInfo& pci, const Value& v);
@@ -266,7 +266,7 @@ struct JointAccCostInfo : public TermInfo, public MakesCost
   DEFINE_CREATE(JointAccCostInfo)
 };
 
-struct JointJerkCostInfo : public TermInfo, public MakesCost
+struct JointJerkTermInfo : public TermInfo, public MakesCost
 {
   DblVec coeffs;
   void fromJson(ProblemConstructionInfo& pci, const Value& v);
@@ -286,7 +286,7 @@ Continuous-time penalty: same, except you consider swept-out shaps of robot
 links. Currently self-collisions are not included.
 
 */
-struct CollisionCostInfo : public TermInfo, public MakesCost
+struct CollisionTermInfo : public TermInfo, public MakesCost
 {
   /// first_step and last_step are inclusive
   int first_step, last_step;

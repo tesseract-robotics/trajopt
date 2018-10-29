@@ -13,14 +13,14 @@ namespace trajopt
 using namespace sco;
 typedef BasicArray<Var> VarArray;
 
-struct CartPoseErrCalculator : public TrajOptVectorOfVector
+struct CartPosErrCalculator : public TrajOptVectorOfVector
 {
   std::string target_;
   tesseract::BasicKinConstPtr manip_;
   tesseract::BasicEnvConstPtr env_;
   std::string link_;
   Eigen::Isometry3d tcp_;
-  CartPoseErrCalculator(const std::string& target,
+  CartPosErrCalculator(const std::string& target,
                         tesseract::BasicKinConstPtr manip,
                         tesseract::BasicEnvConstPtr env,
                         std::string link,
@@ -34,14 +34,14 @@ struct CartPoseErrCalculator : public TrajOptVectorOfVector
   VectorXd operator()(const VectorXd& dof_vals) const;
 };
 
-struct StaticCartPoseErrCalculator : public TrajOptVectorOfVector
+struct StaticCartPosErrCalculator : public TrajOptVectorOfVector
 {
   Eigen::Isometry3d pose_inv_;
   tesseract::BasicKinConstPtr manip_;
   tesseract::BasicEnvConstPtr env_;
   std::string link_;
   Eigen::Isometry3d tcp_;
-  StaticCartPoseErrCalculator(const Eigen::Isometry3d& pose,
+  StaticCartPosErrCalculator(const Eigen::Isometry3d& pose,
                               tesseract::BasicKinConstPtr manip,
                               tesseract::BasicEnvConstPtr env,
                               std::string link,

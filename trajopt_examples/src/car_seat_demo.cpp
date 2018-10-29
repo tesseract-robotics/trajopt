@@ -214,25 +214,25 @@ std::shared_ptr<ProblemConstructionInfo> cppMethod(const std::string& start, con
     pci->init_info.data.col(i) = VectorXd::LinSpaced(pci->basic_info.n_steps, start_pos[i], joint_pose[i]);
 
   // Populate Cost Info
-  std::shared_ptr<JointVelCostInfo> joint_vel = std::shared_ptr<JointVelCostInfo>(new JointVelCostInfo);
+  std::shared_ptr<JointVelTermInfo> joint_vel = std::shared_ptr<JointVelTermInfo>(new JointVelTermInfo);
   joint_vel->coeffs = std::vector<double>(8, 5.0);
   joint_vel->name = "joint_vel";
   joint_vel->term_type = TT_COST;
   pci->cost_infos.push_back(joint_vel);
 
-  std::shared_ptr<JointAccCostInfo> joint_acc = std::shared_ptr<JointAccCostInfo>(new JointAccCostInfo);
+  std::shared_ptr<JointAccTermInfo> joint_acc = std::shared_ptr<JointAccTermInfo>(new JointAccTermInfo);
   joint_acc->coeffs = std::vector<double>(8, 5.0);
   joint_acc->name = "joint_acc";
   joint_acc->term_type = TT_COST;
   pci->cost_infos.push_back(joint_acc);
 
-  std::shared_ptr<JointJerkCostInfo> joint_jerk = std::shared_ptr<JointJerkCostInfo>(new JointJerkCostInfo);
+  std::shared_ptr<JointJerkTermInfo> joint_jerk = std::shared_ptr<JointJerkTermInfo>(new JointJerkTermInfo);
   joint_jerk->coeffs = std::vector<double>(8, 5.0);
   joint_jerk->name = "joint_jerk";
   joint_jerk->term_type = TT_COST;
   pci->cost_infos.push_back(joint_jerk);
 
-  std::shared_ptr<CollisionCostInfo> collision = std::shared_ptr<CollisionCostInfo>(new CollisionCostInfo);
+  std::shared_ptr<CollisionTermInfo> collision = std::shared_ptr<CollisionTermInfo>(new CollisionTermInfo);
   collision->name = "collision";
   collision->term_type = TT_COST;
   collision->continuous = true;
