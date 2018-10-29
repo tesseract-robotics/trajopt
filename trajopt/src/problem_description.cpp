@@ -67,7 +67,7 @@ BoolVec toMask(const VectorXd& x) {
   return out;
 }
 #endif
-}
+}  // namespace
 
 namespace trajopt
 {
@@ -405,12 +405,13 @@ void CartPosTermInfo::hatch(TrajOptProb& prob)
   VectorOfVectorPtr f(new CartPosErrCalculator(target, prob.GetKin(), prob.GetEnv(), link, tcp));
   if (term_type == TT_COST)
   {
-    prob.addCost(CostPtr(new TrajOptCostFromErrFunc(f, prob.GetVarRow(timestep), concat(rot_coeffs, pos_coeffs), ABS, name)));
+    prob.addCost(
+        CostPtr(new TrajOptCostFromErrFunc(f, prob.GetVarRow(timestep), concat(rot_coeffs, pos_coeffs), ABS, name)));
   }
   else if (term_type == TT_CNT)
   {
-    prob.addConstraint(
-        ConstraintPtr(new TrajOptConstraintFromFunc(f, prob.GetVarRow(timestep), concat(rot_coeffs, pos_coeffs), EQ, name)));
+    prob.addConstraint(ConstraintPtr(
+        new TrajOptConstraintFromFunc(f, prob.GetVarRow(timestep), concat(rot_coeffs, pos_coeffs), EQ, name)));
   }
 }
 
@@ -461,12 +462,13 @@ void StaticCartPosTermInfo::hatch(TrajOptProb& prob)
   VectorOfVectorPtr f(new StaticCartPosErrCalculator(input_pose, prob.GetKin(), prob.GetEnv(), link, tcp));
   if (term_type == TT_COST)
   {
-    prob.addCost(CostPtr(new TrajOptCostFromErrFunc(f, prob.GetVarRow(timestep), concat(rot_coeffs, pos_coeffs), ABS, name)));
+    prob.addCost(
+        CostPtr(new TrajOptCostFromErrFunc(f, prob.GetVarRow(timestep), concat(rot_coeffs, pos_coeffs), ABS, name)));
   }
   else if (term_type == TT_CNT)
   {
-    prob.addConstraint(
-        ConstraintPtr(new TrajOptConstraintFromFunc(f, prob.GetVarRow(timestep), concat(rot_coeffs, pos_coeffs), EQ, name)));
+    prob.addConstraint(ConstraintPtr(
+        new TrajOptConstraintFromFunc(f, prob.GetVarRow(timestep), concat(rot_coeffs, pos_coeffs), EQ, name)));
   }
 }
 
@@ -520,15 +522,31 @@ void CartVelTermInfo::fromJson(ProblemConstructionInfo& pci, const Value& v)
 
 void CartVelTermInfo::hatch(TrajOptProb& prob)
 {
-  for (int iStep = first_step; iStep < last_step; ++iStep)
+  if (term_type == TT_COST)
   {
-    prob.addConstraint(ConstraintPtr(new ConstraintFromFunc(
-        VectorOfVectorPtr(new CartVelCalculator(prob.GetKin(), prob.GetEnv(), link, max_displacement)),
-        MatrixOfVectorPtr(new CartVelJacCalculator(prob.GetKin(), prob.GetEnv(), link, max_displacement)),
-        concat(prob.GetVarRow(iStep), prob.GetVarRow(iStep + 1)),
-        VectorXd::Ones(0),
-        INEQ,
-        "CartVel")));
+    for (int iStep = first_step; iStep < last_step; ++iStep)
+    {
+      prob.addCost(CostPtr(new TrajOptCostFromErrFunc(
+          VectorOfVectorPtr(new CartVelCalculator(prob.GetKin(), prob.GetEnv(), link, max_displacement)),
+          MatrixOfVectorPtr(new CartVelJacCalculator(prob.GetKin(), prob.GetEnv(), link, max_displacement)),
+          concat(prob.GetVarRow(iStep), prob.GetVarRow(iStep + 1)),
+          VectorXd::Ones(0),
+          ABS,
+          name)));
+    }
+  }
+  else if (term_type == TT_CNT)
+  {
+    for (int iStep = first_step; iStep < last_step; ++iStep)
+    {
+      prob.addConstraint(ConstraintPtr(new TrajOptConstraintFromFunc(
+          VectorOfVectorPtr(new CartVelCalculator(prob.GetKin(), prob.GetEnv(), link, max_displacement)),
+          MatrixOfVectorPtr(new CartVelJacCalculator(prob.GetKin(), prob.GetEnv(), link, max_displacement)),
+          concat(prob.GetVarRow(iStep), prob.GetVarRow(iStep + 1)),
+          VectorXd::Ones(0),
+          INEQ,
+          "CartVel")));
+    }
   }
 }
 
@@ -542,7 +560,8 @@ void JointVelTermInfo::fromJson(ProblemConstructionInfo& pci, const Value& v)
   childFromJson(params, first_step, "first_step", 0);
   childFromJson(params, last_step, "last_step", pci.basic_info.n_steps - 1);
   unsigned n_dof = pci.kin->numJoints();
-  if (coeffs.size() == 1){
+  if (coeffs.size() == 1)
+  {
     coeffs = DblVec(n_dof, coeffs[0]);
     ROS_INFO(boost::format("1 JointVelTermInfo coefficient given. Applying to all %i joints") % n_dof);
   }
@@ -822,4 +841,4 @@ void JointConstraintInfo::hatch(TrajOptProb& prob)
     prob.addLinearConstraint(exprSub(AffExpr(vars[j]), vals[j]), EQ);
   }
 }
-}
+}  // namespace trajopt
