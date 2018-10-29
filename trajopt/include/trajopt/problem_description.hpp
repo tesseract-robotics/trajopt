@@ -238,7 +238,7 @@ struct JointPosTermInfo : public TermInfo, public MakesCost
  Constrains the change in position of the link in each timestep to be less than
  max_displacement
  */
-struct CartVelTermInfo : public TermInfo, public MakesConstraint
+struct CartVelTermInfo : public TermInfo, public MakesCost, public MakesConstraint
 {
   /// Timesteps over which to apply term
   int first_step, last_step;
