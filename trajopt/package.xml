@@ -5,6 +5,7 @@
   <description>The trajopt package</description>
   <maintainer email="levi.armstrong@swri.org">Levi Armstrong</maintainer>
   <license>BSD</license>
+  <license>Apache 2.0</license>
   <author>Levi Armstrong</author>
   <author>John Schulman</author>
 
