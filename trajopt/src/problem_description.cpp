@@ -53,9 +53,7 @@ void RegisterMakers()
   TermInfo::RegisterMaker("joint_jerk", &JointJerkTermInfo::create);
   TermInfo::RegisterMaker("collision", &CollisionTermInfo::create);
 
-  TermInfo::RegisterMaker("joint", &JointConstraintInfo::create);
   TermInfo::RegisterMaker("cart_vel", &CartVelTermInfo::create);
-  TermInfo::RegisterMaker("joint_vel_limits", &JointVelConstraintInfo::create);
 
   gRegisteredMakers = true;
 }
@@ -74,10 +72,10 @@ PenaltyType stringToPenaltyType(string str)
   {
     return SQUARED;
   }
-  else {
+  else
+  {
     PRINT_AND_THROW(boost::format("Failed string to PenaltyType conversion. %s is not a valid penalty type") % str);
   }
-
 }
 
 #if 0
@@ -492,32 +490,6 @@ void StaticCartPosTermInfo::hatch(TrajOptProb& prob)
   }
 }
 
-void JointPosTermInfo::fromJson(ProblemConstructionInfo& pci, const Value& v)
-{
-  FAIL_IF_FALSE(v.isMember("params"));
-  int n_steps = pci.basic_info.n_steps;
-  const Value& params = v["params"];
-  childFromJson(params, vals, "vals");
-  childFromJson(params, coeffs, "coeffs");
-  if (coeffs.size() == 1)
-    coeffs = DblVec(n_steps, coeffs[0]);
-  unsigned n_dof = pci.kin->numJoints();
-  if (vals.size() != n_dof)
-  {
-    PRINT_AND_THROW(boost::format("wrong number of dof vals. expected %i got %i") % n_dof % vals.size());
-  }
-  childFromJson(params, timestep, "timestep", pci.basic_info.n_steps - 1);
-
-  const char* all_fields[] = { "vals", "coeffs", "timestep" };
-  ensure_only_members(params, all_fields, sizeof(all_fields) / sizeof(char*));
-}
-
-void JointPosTermInfo::hatch(TrajOptProb& prob)
-{
-  prob.addCost(CostPtr(new JointPosCost(prob.GetVarRow(timestep), toVectorXd(vals), toVectorXd(coeffs))));
-  prob.getCosts().back()->setName(name);
-}
-
 void CartVelTermInfo::fromJson(ProblemConstructionInfo& pci, const Value& v)
 {
   FAIL_IF_FALSE(v.isMember("params"));
@@ -570,6 +542,49 @@ void CartVelTermInfo::hatch(TrajOptProb& prob)
   }
 }
 
+void JointPosTermInfo::fromJson(ProblemConstructionInfo& pci, const Value& v)
+{
+  FAIL_IF_FALSE(v.isMember("params"));
+  int n_steps = pci.basic_info.n_steps;
+  const Value& params = v["params"];
+  childFromJson(params, vals, "vals");
+  childFromJson(params, coeffs, "coeffs");
+  if (coeffs.size() == 1)
+    coeffs = DblVec(n_steps, coeffs[0]);
+  unsigned n_dof = pci.kin->numJoints();
+  if (vals.size() != n_dof)
+  {
+    PRINT_AND_THROW(boost::format("wrong number of dof vals. expected %i got %i") % n_dof % vals.size());
+  }
+  childFromJson(params, timestep, "timestep", pci.basic_info.n_steps - 1);
+
+  const char* all_fields[] = { "vals", "coeffs", "timestep" };
+  ensure_only_members(params, all_fields, sizeof(all_fields) / sizeof(char*));
+}
+
+void JointPosTermInfo::hatch(TrajOptProb& prob)
+{
+  if (term_type == TT_COST)
+  {
+    prob.addCost(CostPtr(new JointPosCost(prob.GetVarRow(timestep), toVectorXd(vals), toVectorXd(coeffs))));
+    prob.getCosts().back()->setName(name);
+  }
+  else if (term_type == TT_CNT)
+  {
+    // Position operates on a single point (unlike velocity, etc). This is b/c the primary usecase is joint-space
+    // position waypoints
+    for (std::size_t j = 0; j < vals.size(); ++j)
+    {
+      prob.addLinearConstraint(prob.GetVar(timestep, j) - vals[j], INEQ);
+      prob.addLinearConstraint(-prob.GetVar(timestep, j) - vals[j], INEQ);
+    }
+  }
+  else
+  {
+    ROS_WARN("JointPosTermInfo does not have a term_type defined. No cost/constraint applied");
+  }
+}
+
 void JointVelTermInfo::fromJson(ProblemConstructionInfo& pci, const Value& v)
 {
   FAIL_IF_FALSE(v.isMember("params"));
@@ -611,8 +626,28 @@ void JointVelTermInfo::fromJson(ProblemConstructionInfo& pci, const Value& v)
 
 void JointVelTermInfo::hatch(TrajOptProb& prob)
 {
-  prob.addCost(CostPtr(new JointVelCost(prob.GetVars(), toVectorXd(coeffs))));
-  prob.getCosts().back()->setName(name);
+  if (term_type == TT_COST)
+  {
+    prob.addCost(CostPtr(new JointVelCost(prob.GetVars(), toVectorXd(coeffs))));
+    prob.getCosts().back()->setName(name);
+  }
+  else if (term_type == TT_CNT)
+  {
+    // Calculate velocity as ((i+1) - i)/dt where dt=1
+    for (int i = first_step; i <= last_step - 1; ++i)
+    {
+      for (std::size_t j = 0; j < coeffs.size(); ++j)
+      {
+        AffExpr vel = prob.GetVar(i + 1, j) - prob.GetVar(i, j);
+        prob.addLinearConstraint(vel - coeffs[j], INEQ);
+        prob.addLinearConstraint(-vel - coeffs[j], INEQ);
+      }
+    }
+  }
+  else
+  {
+    ROS_WARN("JointVelTermInfo does not have a term_type defined. No cost/constraint applied");
+  }
 }
 
 void JointAccTermInfo::fromJson(ProblemConstructionInfo& pci, const Value& v)
@@ -635,8 +670,28 @@ void JointAccTermInfo::fromJson(ProblemConstructionInfo& pci, const Value& v)
 
 void JointAccTermInfo::hatch(TrajOptProb& prob)
 {
-  prob.addCost(CostPtr(new JointAccCost(prob.GetVars(), toVectorXd(coeffs))));
-  prob.getCosts().back()->setName(name);
+  if (term_type == TT_COST)
+  {
+    prob.addCost(CostPtr(new JointAccCost(prob.GetVars(), toVectorXd(coeffs))));
+    prob.getCosts().back()->setName(name);
+  }
+  else if (term_type == TT_CNT)
+  {
+    // Calculate acceleration as ((i+1) - 2i + (i-1))/dt where dt=1
+    for (int i = first_step - 1; i <= last_step - 1; ++i)
+    {
+      for (std::size_t j = 0; j < coeffs.size(); ++j)
+      {
+        AffExpr acc = prob.GetVar(i + 1, j) - 2 * prob.GetVar(i, j) + prob.GetVar(i - 1, j);
+        prob.addLinearConstraint(acc - coeffs[j], INEQ);
+        prob.addLinearConstraint(-acc - coeffs[j], INEQ);
+      }
+    }
+  }
+  else
+  {
+    ROS_WARN("JointAccTermInfo does not have a term_type defined. No cost/constraint applied");
+  }
 }
 
 void JointJerkTermInfo::fromJson(ProblemConstructionInfo& pci, const Value& v)
@@ -659,38 +714,27 @@ void JointJerkTermInfo::fromJson(ProblemConstructionInfo& pci, const Value& v)
 
 void JointJerkTermInfo::hatch(TrajOptProb& prob)
 {
-  prob.addCost(CostPtr(new JointJerkCost(prob.GetVars(), toVectorXd(coeffs))));
-  prob.getCosts().back()->setName(name);
-}
-
-void JointVelConstraintInfo::fromJson(ProblemConstructionInfo& pci, const Value& v)
-{
-  FAIL_IF_FALSE(v.isMember("params"));
-  const Value& params = v["params"];
-
-  int n_steps = pci.basic_info.n_steps;
-  unsigned n_dof = pci.kin->numJoints();
-  childFromJson(params, vals, "vals");
-  childFromJson(params, first_step, "first_step", 0);
-  childFromJson(params, last_step, "last_step", n_steps - 1);
-  FAIL_IF_FALSE(vals.size() == n_dof);
-  FAIL_IF_FALSE((first_step >= 0) && (first_step < n_steps));
-  FAIL_IF_FALSE((last_step >= first_step) && (last_step < n_steps));
-
-  const char* all_fields[] = { "vals", "first_step", "last_step" };
-  ensure_only_members(params, all_fields, sizeof(all_fields) / sizeof(char*));
-}
-
-void JointVelConstraintInfo::hatch(TrajOptProb& prob)
-{
-  for (int i = first_step; i <= last_step - 1; ++i)
+  if (term_type == TT_COST)
   {
-    for (std::size_t j = 0; j < vals.size(); ++j)
+    prob.addCost(CostPtr(new JointJerkCost(prob.GetVars(), toVectorXd(coeffs))));
+    prob.getCosts().back()->setName(name);
+  }
+  else if (term_type == TT_CNT)
+  {
+    // Calculate jerk as ((i+2) - 3(i+1) + 3(i) -(i-1))/dt where dt=1
+    for (int i = first_step - 1; i <= last_step - 1; ++i)
     {
-      AffExpr vel = prob.GetVar(i + 1, j) - prob.GetVar(i, j);
-      prob.addLinearConstraint(vel - vals[j], INEQ);
-      prob.addLinearConstraint(-vel - vals[j], INEQ);
+      for (std::size_t j = 0; j < coeffs.size(); ++j)
+      {
+        AffExpr jerk = prob.GetVar(i + 2, j) - 3 * prob.GetVar(i + 1, j) + 3 * prob.GetVar(i, j) - prob.GetVar(i - 1, j);
+        prob.addLinearConstraint(jerk - coeffs[j], INEQ);
+        prob.addLinearConstraint(-jerk - coeffs[j], INEQ);
+      }
     }
+  }
+  else
+  {
+    ROS_WARN("JointJerkTermInfo does not have a term_type defined. No cost/constraint applied");
   }
 }
 
@@ -835,30 +879,4 @@ void CollisionTermInfo::hatch(TrajOptProb& prob)
   }
 }
 
-void JointConstraintInfo::fromJson(ProblemConstructionInfo& pci, const Value& v)
-{
-  FAIL_IF_FALSE(v.isMember("params"));
-  const Value& params = v["params"];
-  childFromJson(params, vals, "vals");
-
-  int n_dof = pci.kin->numJoints();
-  if (static_cast<int>(vals.size()) != n_dof)
-  {
-    PRINT_AND_THROW(boost::format("wrong number of dof vals. expected %i got %i") % n_dof % vals.size());
-  }
-  childFromJson(params, timestep, "timestep", pci.basic_info.n_steps - 1);
-
-  const char* all_fields[] = { "vals", "timestep" };
-  ensure_only_members(params, all_fields, sizeof(all_fields) / sizeof(char*));
-}
-
-void JointConstraintInfo::hatch(TrajOptProb& prob)
-{
-  VarVector vars = prob.GetVarRow(timestep);
-  int n_dof = vars.size();
-  for (int j = 0; j < n_dof; ++j)
-  {
-    prob.addLinearConstraint(exprSub(AffExpr(vars[j]), vals[j]), EQ);
-  }
-}
 }  // namespace trajopt

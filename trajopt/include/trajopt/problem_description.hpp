@@ -216,23 +216,6 @@ struct StaticCartPosTermInfo : public TermInfo, public MakesCost, public MakesCo
 };
 
 /**
-  \brief Joint space position cost
-
-  \f{align*}{
-  \sum_i c_i (x_i - xtarg_i)^2
-  \f}
-  where \f$i\f$ indexes over dof and \f$c_i\f$ are coeffs
- */
-struct JointPosTermInfo : public TermInfo, public MakesCost
-{
-  DblVec vals, coeffs;
-  int timestep;
-  void fromJson(ProblemConstructionInfo& pci, const Value& v);
-  void hatch(TrajOptProb& prob);
-  DEFINE_CREATE(JointPosTermInfo)
-};
-
-/**
  \brief Applies cost/constraint to the cartesian velocity of a link
 
  Constrains the change in position of the link in each timestep to be less than
@@ -253,6 +236,31 @@ struct CartVelTermInfo : public TermInfo, public MakesCost, public MakesConstrai
 };
 
 /**
+  \brief Joint space position cost
+    Position operates on a single point (unlike velocity, etc). This is b/c the primary usecase is joint-space
+    position waypoints
+
+  \f{align*}{
+  \sum_i c_i (x_i - xtarg_i)^2
+  \f}
+  where \f$i\f$ indexes over dof and \f$c_i\f$ are coeffs
+ */
+struct JointPosTermInfo : public TermInfo, public MakesCost, public MakesConstraint
+{
+  /// TT_COST: Target joint value. TT_CNT: Joint Limit
+  DblVec vals;
+  /// Coefficent that scales the cost.
+  DblVec coeffs;
+  /// Time step to which term is applied
+  int timestep;
+  /// Used to add term to pci from json
+  void fromJson(ProblemConstructionInfo& pci, const Value& v);
+  /// Converts term info into cost/constraint and adds it to trajopt problem
+  void hatch(TrajOptProb& prob);
+  DEFINE_CREATE(JointPosTermInfo)
+};
+
+/**
 \brief Used to apply cost/constraint to joint-space velocity
 
 \f{align*}{
@@ -260,8 +268,9 @@ struct CartVelTermInfo : public TermInfo, public MakesCost, public MakesConstrai
 \f}
 where j indexes over DOF, and \f$c_j\f$ are the coeffs.
 */
-struct JointVelTermInfo : public TermInfo, public MakesCost
+struct JointVelTermInfo : public TermInfo, public MakesCost, public MakesConstraint
 {
+  /// For TT_COST: coefficient that scales cost. For TT_CNT: Velocity limit
   DblVec coeffs;
   /// First time step to which the term is applied
   int first_step;
@@ -278,25 +287,18 @@ struct JointVelTermInfo : public TermInfo, public MakesCost
   void hatch(TrajOptProb& prob);
   DEFINE_CREATE(JointVelTermInfo)
 };
-/**
- * @brief The JointVelConstraintInfo adds joint velocity constraint
- * TODO: To be merged into JointVelTermInfo
- */
-struct JointVelConstraintInfo : public TermInfo, public MakesConstraint
-{
-  DblVec vals;
-  int first_step, last_step;
-  void fromJson(ProblemConstructionInfo& pci, const Value& v);
-  void hatch(TrajOptProb& prob);
-  DEFINE_CREATE(JointVelConstraintInfo)
-};
 
 /**
  * @brief The JointAccTermInfo Used to apply cost/constraint to joint-space acceleration
  */
-struct JointAccTermInfo : public TermInfo, public MakesCost
+struct JointAccTermInfo : public TermInfo, public MakesCost, public MakesConstraint
 {
+  /// For TT_COST: coefficient that scales cost. For TT_CNT: Acceleration limit
   DblVec coeffs;
+  /// First time step to which the term is applied
+  int first_step;
+  /// Last time step to which the term is applied
+  int last_step;
   /// Used to add term to pci from json
   void fromJson(ProblemConstructionInfo& pci, const Value& v);
   /// Converts term info into cost/constraint and adds it to trajopt problem
@@ -307,9 +309,14 @@ struct JointAccTermInfo : public TermInfo, public MakesCost
 /**
  * @brief The JointJerkTermInfo Used to apply cost/constraint to joint-space jerk
  */
-struct JointJerkTermInfo : public TermInfo, public MakesCost
+struct JointJerkTermInfo : public TermInfo, public MakesCost, public MakesConstraint
 {
+  /// For TT_COST: coefficient that scales cost. For TT_CNT: Jerk limit
   DblVec coeffs;
+  /// First time step to which the term is applied
+  int first_step;
+  /// Last time step to which the term is applied
+  int last_step;
   /// Used to add term to pci from json
   void fromJson(ProblemConstructionInfo& pci, const Value& v);
   /// Converts term info into cost/constraint and adds it to trajopt problem
@@ -352,19 +359,4 @@ struct CollisionTermInfo : public TermInfo, public MakesCost
   DEFINE_CREATE(CollisionTermInfo)
 };
 
-// TODO: unify with joint position constraint
-/**
-joint-space position constraint
- */
-struct JointConstraintInfo : public TermInfo, public MakesConstraint
-{
-  /// joint values. list of length 1 automatically gets expanded to list of
-  /// length n_dof
-  DblVec vals;
-  /// which timestep. default = n_timesteps - 1
-  int timestep;
-  void fromJson(ProblemConstructionInfo& pci, const Value& v);
-  void hatch(TrajOptProb& prob);
-  DEFINE_CREATE(JointConstraintInfo)
-};
 }

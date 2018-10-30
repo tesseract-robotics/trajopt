@@ -243,7 +243,7 @@ std::shared_ptr<ProblemConstructionInfo> cppMethod(const std::string& start, con
   pci->cost_infos.push_back(collision);
 
   // Create place pose constraint
-  std::shared_ptr<JointConstraintInfo> jpos(new JointConstraintInfo);
+  std::shared_ptr<JointPosTermInfo> jpos(new JointPosTermInfo);
   jpos->term_type = TT_CNT;
   jpos->name = finish;
   jpos->timestep = pci->basic_info.n_steps - 1;
