@@ -20,6 +20,7 @@
   <test_depend>tesseract_ros</test_depend>
   <test_depend>trajopt_test_support</test_depend>
   <test_depend>libpcl-dev</test_depend>
+  <test_depend>octomap_ros</test_depend>
   <!-- The export tag contains other, unspecified, tags -->
   <export>
 
