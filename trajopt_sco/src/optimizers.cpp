@@ -32,7 +32,7 @@ std::ostream& operator<<(std::ostream& o, const OptResults& r)
 ////////// private utility functions for  sqp /////////
 //////////////////////////////////////////////////
 
-static DblVec evaluateCosts(vector<CostPtr>& costs, const DblVec& x)
+static DblVec evaluateCosts(const vector<CostPtr>& costs, const DblVec& x)
 {
   DblVec out(costs.size());
   for (size_t i = 0; i < costs.size(); ++i)
@@ -41,7 +41,7 @@ static DblVec evaluateCosts(vector<CostPtr>& costs, const DblVec& x)
   }
   return out;
 }
-static DblVec evaluateConstraintViols(vector<ConstraintPtr>& constraints, const DblVec& x)
+static DblVec evaluateConstraintViols(const vector<ConstraintPtr>& constraints, const DblVec& x)
 {
   DblVec out(constraints.size());
   for (size_t i = 0; i < constraints.size(); ++i)
@@ -50,7 +50,7 @@ static DblVec evaluateConstraintViols(vector<ConstraintPtr>& constraints, const 
   }
   return out;
 }
-static vector<ConvexObjectivePtr> convexifyCosts(vector<CostPtr>& costs, const DblVec& x, Model* model)
+static vector<ConvexObjectivePtr> convexifyCosts(const vector<CostPtr>& costs, const DblVec& x, Model* model)
 {
   vector<ConvexObjectivePtr> out(costs.size());
   for (size_t i = 0; i < costs.size(); ++i)
@@ -59,7 +59,7 @@ static vector<ConvexObjectivePtr> convexifyCosts(vector<CostPtr>& costs, const D
   }
   return out;
 }
-static vector<ConvexConstraintsPtr> convexifyConstraints(vector<ConstraintPtr>& cnts, const DblVec& x, Model* model)
+static vector<ConvexConstraintsPtr> convexifyConstraints(const vector<ConstraintPtr>& cnts, const DblVec& x, Model* model)
 {
   vector<ConvexConstraintsPtr> out(cnts.size());
   for (size_t i = 0; i < cnts.size(); ++i)
@@ -69,7 +69,7 @@ static vector<ConvexConstraintsPtr> convexifyConstraints(vector<ConstraintPtr>& 
   return out;
 }
 
-DblVec evaluateModelCosts(vector<ConvexObjectivePtr>& costs, const DblVec& x)
+DblVec evaluateModelCosts(const vector<ConvexObjectivePtr>& costs, const DblVec& x)
 {
   DblVec out(costs.size());
   for (size_t i = 0; i < costs.size(); ++i)
@@ -78,7 +78,7 @@ DblVec evaluateModelCosts(vector<ConvexObjectivePtr>& costs, const DblVec& x)
   }
   return out;
 }
-DblVec evaluateModelCntViols(vector<ConvexConstraintsPtr>& cnts, const DblVec& x)
+DblVec evaluateModelCntViols(const vector<ConvexConstraintsPtr>& cnts, const DblVec& x)
 {
   DblVec out(cnts.size());
   for (size_t i = 0; i < cnts.size(); ++i)
@@ -226,9 +226,9 @@ void BasicTrustRegionSQP::setProblem(OptProbPtr prob)
 void BasicTrustRegionSQP::adjustTrustRegion(double ratio) { param_.trust_box_size *= ratio; }
 void BasicTrustRegionSQP::setTrustBoxConstraints(const DblVec& x)
 {
-  vector<Var>& vars = prob_->getVars();
+  const vector<Var>& vars = prob_->getVars();
   assert(vars.size() == x.size());
-  DblVec &lb = prob_->getLowerBounds(), ub = prob_->getUpperBounds();
+  const DblVec &lb = prob_->getLowerBounds(), ub = prob_->getUpperBounds();
   DblVec lbtrust(x.size()), ubtrust(x.size());
   for (size_t i = 0; i < x.size(); ++i)
   {
