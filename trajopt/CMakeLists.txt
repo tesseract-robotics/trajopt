@@ -74,7 +74,7 @@ install(DIRECTORY include/${PROJECT_NAME}/
 if (CATKIN_ENABLE_TESTING)
 
   find_package(rostest REQUIRED)
-  find_package(catkin REQUIRED COMPONENTS tesseract_ros octomap_ros trajopt_test_support roslib)
+  find_package(catkin REQUIRED COMPONENTS tesseract_ros octomap_ros trajopt_test_support pcl_conversions roslib)
   find_package(PCL REQUIRED COMPONENTS core features filters io segmentation surface)
 
   include_directories(
