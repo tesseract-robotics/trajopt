@@ -190,13 +190,13 @@ public:
   vector<double> getClosestFeasiblePoint(const vector<double>& x);
 
   vector<ConstraintPtr> getConstraints() const;
-  vector<CostPtr>& getCosts() { return costs_; }
-  vector<ConstraintPtr>& getIneqConstraints() { return ineqcnts_; }
-  vector<ConstraintPtr>& getEqConstraints() { return eqcnts_; }
-  DblVec& getLowerBounds() { return lower_bounds_; }
-  DblVec& getUpperBounds() { return upper_bounds_; }
+  const vector<CostPtr>& getCosts()  { return costs_; }
+  const vector<ConstraintPtr>& getIneqConstraints() { return ineqcnts_; }
+  const vector<ConstraintPtr>& getEqConstraints() { return eqcnts_; }
+  const DblVec& getLowerBounds() { return lower_bounds_; }
+  const DblVec& getUpperBounds() { return upper_bounds_; }
   ModelPtr getModel() { return model_; }
-  vector<Var>& getVars() { return vars_; }
+  const vector<Var>& getVars() { return vars_; }
   int getNumCosts() { return costs_.size(); }
   int getNumConstraints() { return eqcnts_.size() + ineqcnts_.size(); }
   int getNumVars() { return vars_.size(); }

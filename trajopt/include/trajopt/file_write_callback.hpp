@@ -5,5 +5,5 @@
 namespace trajopt
 {
 Optimizer::Callback WriteCallback(std::shared_ptr<std::ofstream> file,
-                                  TrajOptProbPtr prob);
+                                  const TrajOptProbPtr& prob);
 }

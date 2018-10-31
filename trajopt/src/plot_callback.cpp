@@ -13,14 +13,14 @@ namespace trajopt
 {
 void PlotCosts(const tesseract::BasicPlottingPtr plotter,
                const std::vector<std::string>& joint_names,
-               vector<CostPtr>& costs,
-               vector<ConstraintPtr>& cnts,
+               const vector<CostPtr>& costs,
+               const vector<ConstraintPtr>& cnts,
                const VarArray& vars,
                const OptResults& results)
 {
   plotter->clear();
 
-  for (CostPtr& cost : costs)
+  for (const CostPtr& cost : costs)
   {
     if (Plotter* plt = dynamic_cast<Plotter*>(cost.get()))
     {
@@ -28,7 +28,7 @@ void PlotCosts(const tesseract::BasicPlottingPtr plotter,
     }
   }
 
-  for (ConstraintPtr& cnt : cnts)
+  for (const ConstraintPtr& cnt : cnts)
   {
     if (Plotter* plt = dynamic_cast<Plotter*>(cnt.get()))
     {
