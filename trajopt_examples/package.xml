@@ -16,6 +16,7 @@
   <depend>trajopt</depend>tesseract
   <depend>tesseract_ros</depend>
   <depend>octomap_ros</depend>
+  <depend>pcl_conversions</depend>
 
   <!-- The export tag contains other, unspecified, tags -->
   <export>
