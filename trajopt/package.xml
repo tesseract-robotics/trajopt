@@ -23,6 +23,7 @@
   <test_depend>libpcl-all-dev</test_depend>
   <test_depend>octomap_ros</test_depend>
   <test_depend>pcl_conversions</test_depend>
+  <test_depend>pr2_description</test_depend>
   <!-- The export tag contains other, unspecified, tags -->
   <export>
 
