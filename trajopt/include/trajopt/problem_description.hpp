@@ -166,53 +166,53 @@ private:
 };
 
 /** @brief This is used when the goal frame is not fixed in space */
-struct CartPosTermInfo : public TermInfo, public MakesCost, public MakesConstraint
+struct DynamicCartPosTermInfo : public TermInfo, public MakesCost, public MakesConstraint
 {
-  /// Timestep at which to apply term
+  /** @brief Timestep at which to apply term */
   int timestep;
   std::string target;
-  /// Coefficients for position and rotation
+  /** @brief Coefficients for position and rotation */
   Vector3d pos_coeffs, rot_coeffs;
-  /// Link which should reach desired pos
+  /** @brief Link which should reach desired pos */
   std::string link;
-  /// Static transform applied to the link
+  /** @brief Static transform applied to the link */
   Eigen::Isometry3d tcp;
 
-  CartPosTermInfo();
+  DynamicCartPosTermInfo();
 
-  /// Used to add term to pci from json
+  /** @brief Used to add term to pci from json */
   void fromJson(ProblemConstructionInfo& pci, const Value& v);
-  /// Converts term info into cost/constraint and adds it to trajopt problem
+  /** @brief Converts term info into cost/constraint and adds it to trajopt problem */
   void hatch(TrajOptProb& prob);
-  DEFINE_CREATE(CartPosTermInfo)
+  DEFINE_CREATE(DynamicCartPosTermInfo)
 };
 
 /** @brief This term is used when the goal frame is fixed in cartesian space
 
   Set term_type == TT_COST or TT_CNT for cost or constraint.
 */
-struct StaticCartPosTermInfo : public TermInfo, public MakesCost, public MakesConstraint
+struct CartPosTermInfo : public TermInfo, public MakesCost, public MakesConstraint
 {
-  /// Timestep at which to apply term
+  /** @brief Timestep at which to apply term */
   int timestep;
-  ///  Cartesian position
+  /** @brief  Cartesian position */
   Vector3d xyz;
-  /// Rotation quaternion
+  /** @brief Rotation quaternion */
   Vector4d wxyz;
-  /// coefficients for position and rotation
+  /** @brief coefficients for position and rotation */
   Vector3d pos_coeffs, rot_coeffs;
-  /// Link which should reach desired pose
+  /** @brief Link which should reach desired pose */
   std::string link;
-  /// Static transform applied to the link
+  /** @brief Static transform applied to the link */
   Eigen::Isometry3d tcp;
 
-  StaticCartPosTermInfo();
+  CartPosTermInfo();
 
-  /// Used to add term to pci from json
+  /** @brief Used to add term to pci from json */
   void fromJson(ProblemConstructionInfo& pci, const Value& v);
-  /// Converts term info into cost/constraint and adds it to trajopt problem
+  /** @brief Converts term info into cost/constraint and adds it to trajopt problem */
   void hatch(TrajOptProb& prob);
-  DEFINE_CREATE(StaticCartPosTermInfo)
+  DEFINE_CREATE(CartPosTermInfo)
 };
 
 /**
@@ -223,14 +223,14 @@ struct StaticCartPosTermInfo : public TermInfo, public MakesCost, public MakesCo
  */
 struct CartVelTermInfo : public TermInfo, public MakesCost, public MakesConstraint
 {
-  /// Timesteps over which to apply term
+  /** @brief Timesteps over which to apply term */
   int first_step, last_step;
-  /// Link to which the term is applied
+  /** @brief Link to which the term is applied */
   std::string link;  // LEVI This may need to be moveit LinkModel
   double max_displacement;
-  /// Used to add term to pci from json
+  /** @brief Used to add term to pci from json */
   void fromJson(ProblemConstructionInfo& pci, const Value& v);
-  /// Converts term info into cost/constraint and adds it to trajopt problem
+  /** @brief Converts term info into cost/constraint and adds it to trajopt problem */
   void hatch(TrajOptProb& prob);
   DEFINE_CREATE(CartVelTermInfo)
 };
@@ -247,15 +247,15 @@ struct CartVelTermInfo : public TermInfo, public MakesCost, public MakesConstrai
  */
 struct JointPosTermInfo : public TermInfo, public MakesCost, public MakesConstraint
 {
-  /// TT_COST: Target joint value. TT_CNT: Joint Limit
+  /** @brief TT_COST: Target joint value. TT_CNT: Joint Limit */
   DblVec vals;
-  /// Coefficent that scales the cost.
+  /** @brief Coefficent that scales the cost. */
   DblVec coeffs;
-  /// Time step to which term is applied
+  /** @brief Time step to which term is applied */
   int timestep;
-  /// Used to add term to pci from json
+  /** @brief Used to add term to pci from json */
   void fromJson(ProblemConstructionInfo& pci, const Value& v);
-  /// Converts term info into cost/constraint and adds it to trajopt problem
+  /** @brief Converts term info into cost/constraint and adds it to trajopt problem */
   void hatch(TrajOptProb& prob);
   DEFINE_CREATE(JointPosTermInfo)
 };
@@ -270,56 +270,56 @@ where j indexes over DOF, and \f$c_j\f$ are the coeffs.
 */
 struct JointVelTermInfo : public TermInfo, public MakesCost, public MakesConstraint
 {
-  /// For TT_COST: coefficient that scales cost. For TT_CNT: Velocity limit
+  /** @brief For TT_COST: coefficient that scales cost. For TT_CNT: Velocity limit */
   DblVec coeffs;
-  /// First time step to which the term is applied
+  /** @brief First time step to which the term is applied */
   int first_step;
-  /// Last time step to which the term is applied
+  /** @brief Last time step to which the term is applied */
   int last_step;
-  /// Joint name to which the term is applied
+  /** @brief Joint name to which the term is applied */
   string joint_name;
-  /// Penalty type applied
+  /** @brief Penalty type applied */
   PenaltyType penalty_type;
   double limit = 0; // only applies if constraint or penalty_type == HINGE
-  /// Used to add term to pci from json
+  /** @brief Used to add term to pci from json */
   void fromJson(ProblemConstructionInfo& pci, const Value& v);
-  /// Converts term info into cost/constraint and adds it to trajopt problem
+  /** @brief Converts term info into cost/constraint and adds it to trajopt problem */
   void hatch(TrajOptProb& prob);
   DEFINE_CREATE(JointVelTermInfo)
 };
 
 /**
- * @brief The JointAccTermInfo Used to apply cost/constraint to joint-space acceleration
+ * @brief  Used to apply cost/constraint to joint-space acceleration
  */
 struct JointAccTermInfo : public TermInfo, public MakesCost, public MakesConstraint
 {
-  /// For TT_COST: coefficient that scales cost. For TT_CNT: Acceleration limit
+  /** @brief For TT_COST: coefficient that scales cost. For TT_CNT: Acceleration limit*/
   DblVec coeffs;
-  /// First time step to which the term is applied
+  /** @brief First time step to which the term is applied */
   int first_step;
-  /// Last time step to which the term is applied
+  /** @brief Last time step to which the term is applied */
   int last_step;
-  /// Used to add term to pci from json
+  /** @brief Used to add term to pci from json */
   void fromJson(ProblemConstructionInfo& pci, const Value& v);
-  /// Converts term info into cost/constraint and adds it to trajopt problem
+  /** @brief Converts term info into cost/constraint and adds it to trajopt problem */
   void hatch(TrajOptProb& prob);
   DEFINE_CREATE(JointAccTermInfo)
 };
 
 /**
- * @brief The JointJerkTermInfo Used to apply cost/constraint to joint-space jerk
+ * @brief Used to apply cost/constraint to joint-space jerk
  */
 struct JointJerkTermInfo : public TermInfo, public MakesCost, public MakesConstraint
 {
-  /// For TT_COST: coefficient that scales cost. For TT_CNT: Jerk limit
+  /** @brief For TT_COST: coefficient that scales cost. For TT_CNT: Jerk limit */
   DblVec coeffs;
-  /// First time step to which the term is applied
+  /** @brief First time step to which the term is applied */
   int first_step;
-  /// Last time step to which the term is applied
+  /** @brief Last time step to which the term is applied */
   int last_step;
-  /// Used to add term to pci from json
+  /** @brief Used to add term to pci from json */
   void fromJson(ProblemConstructionInfo& pci, const Value& v);
-  /// Converts term info into cost/constraint and adds it to trajopt problem
+  /** @brief Converts term info into cost/constraint and adds it to trajopt problem */
   void hatch(TrajOptProb& prob);
   DEFINE_CREATE(JointJerkTermInfo)
 };
@@ -338,23 +338,23 @@ links. Currently self-collisions are not included.
 */
 struct CollisionTermInfo : public TermInfo, public MakesCost
 {
-  /// first_step and last_step are inclusive
+  /** @brief first_step and last_step are inclusive */
   int first_step, last_step;
 
-  /// Indicate if continuous collision checking should be used.
+  /** @brief Indicate if continuous collision checking should be used. */
   bool continuous;
 
-  /// for continuous-time penalty, use swept-shape between timesteps t and t+gap
-  /// (gap=1 by default)
+  /** @brief for continuous-time penalty, use swept-shape between timesteps t and t+gap */
+  /** @brief (gap=1 by default) */
   int gap;
 
-  /// Contains distance penalization data: Safety Margin, Coeff used during
-  /// optimization, etc.
+  /** @brief Contains distance penalization data: Safety Margin, Coeff used during */
+  /** @brief optimization, etc. */
   std::vector<SafetyMarginDataPtr> info;
 
-  /// Used to add term to pci from json
+  /** @brief Used to add term to pci from json */
   void fromJson(ProblemConstructionInfo& pci, const Value& v);
-  /// Converts term info into cost/constraint and adds it to trajopt problem
+  /** @brief Converts term info into cost/constraint and adds it to trajopt problem */
   void hatch(TrajOptProb& prob);
   DEFINE_CREATE(CollisionTermInfo)
 };

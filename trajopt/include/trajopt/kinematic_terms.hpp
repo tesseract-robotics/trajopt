@@ -14,17 +14,17 @@ using namespace sco;
 typedef BasicArray<Var> VarArray;
 
 /**
- * @brief The CartPosErrCalculator Used to calculate the error for CartPosTermInfo
+ * @brief Used to calculate the error for CartPosTermInfo
  * This is converted to a cost or constraint using TrajOptCostFromErrFunc or TrajOptConstraintFromErrFunc
  */
-struct CartPosErrCalculator : public TrajOptVectorOfVector
+struct DynamicCartPosErrCalculator : public TrajOptVectorOfVector
 {
   std::string target_;
   tesseract::BasicKinConstPtr manip_;
   tesseract::BasicEnvConstPtr env_;
   std::string link_;
   Eigen::Isometry3d tcp_;
-  CartPosErrCalculator(const std::string& target,
+  DynamicCartPosErrCalculator(const std::string& target,
                         tesseract::BasicKinConstPtr manip,
                         tesseract::BasicEnvConstPtr env,
                         std::string link,
@@ -39,17 +39,17 @@ struct CartPosErrCalculator : public TrajOptVectorOfVector
 };
 
 /**
- * @brief The StaticCartPosErrCalculator Used to calculate the error for StaticCartPosTermInfo
+ * @brief Used to calculate the error for StaticCartPosTermInfo
  * This is converted to a cost or constraint using TrajOptCostFromErrFunc or TrajOptConstraintFromErrFunc
  */
-struct StaticCartPosErrCalculator : public TrajOptVectorOfVector
+struct CartPosErrCalculator : public TrajOptVectorOfVector
 {
   Eigen::Isometry3d pose_inv_;
   tesseract::BasicKinConstPtr manip_;
   tesseract::BasicEnvConstPtr env_;
   std::string link_;
   Eigen::Isometry3d tcp_;
-  StaticCartPosErrCalculator(const Eigen::Isometry3d& pose,
+  CartPosErrCalculator(const Eigen::Isometry3d& pose,
                               tesseract::BasicKinConstPtr manip,
                               tesseract::BasicEnvConstPtr env,
                               std::string link,
@@ -64,7 +64,7 @@ struct StaticCartPosErrCalculator : public TrajOptVectorOfVector
 };
 
 /**
- * @brief The CartVeJacCalculator Used to calculate the jacobian for CartVelTermInfo
+ * @brief Used to calculate the jacobian for CartVelTermInfo
  *
  */
 struct CartVelJacCalculator : MatrixOfVector
@@ -87,17 +87,17 @@ struct CartVelJacCalculator : MatrixOfVector
 };
 
 /**
- * @brief The CartVelCalculator struct Used to calculate the error for CartVelTermInfo
+ * @brief  Used to calculate the error for CartVelTermInfo
  * This is converted to a cost or constraint using TrajOptCostFromErrFunc or TrajOptConstraintFromErrFunc
  */
-struct CartVelCalculator : VectorOfVector
+struct CartVelErrCalculator : VectorOfVector
 {
   tesseract::BasicKinConstPtr manip_;
   tesseract::BasicEnvConstPtr env_;
   std::string link_;
   double limit_;
   Eigen::Isometry3d tcp_;
-  CartVelCalculator(tesseract::BasicKinConstPtr manip,
+  CartVelErrCalculator(tesseract::BasicKinConstPtr manip,
                     tesseract::BasicEnvConstPtr env,
                     std::string link,
                     double limit,
