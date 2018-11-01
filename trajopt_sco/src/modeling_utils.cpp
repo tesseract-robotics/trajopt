@@ -198,7 +198,7 @@ ConvexObjectivePtr CostFromErrFunc::convex(const vector<double>& xin, Model* mod
   return out;
 }
 
-ConstraintFromFunc::ConstraintFromFunc(VectorOfVectorPtr f,
+ConstraintFromErrFunc::ConstraintFromErrFunc(VectorOfVectorPtr f,
                                        const VarVector& vars,
                                        const VectorXd& coeffs,
                                        ConstraintType type,
@@ -207,7 +207,7 @@ ConstraintFromFunc::ConstraintFromFunc(VectorOfVectorPtr f,
 {
 }
 
-ConstraintFromFunc::ConstraintFromFunc(VectorOfVectorPtr f,
+ConstraintFromErrFunc::ConstraintFromErrFunc(VectorOfVectorPtr f,
                                        MatrixOfVectorPtr dfdx,
                                        const VarVector& vars,
                                        const VectorXd& coeffs,
@@ -217,7 +217,7 @@ ConstraintFromFunc::ConstraintFromFunc(VectorOfVectorPtr f,
 {
 }
 
-vector<double> ConstraintFromFunc::value(const vector<double>& xin)
+vector<double> ConstraintFromErrFunc::value(const vector<double>& xin)
 {
   VectorXd x = getVec(xin, vars_);
   VectorXd err = f_->call(x);
@@ -226,7 +226,7 @@ vector<double> ConstraintFromFunc::value(const vector<double>& xin)
   return toDblVec(err);
 }
 
-ConvexConstraintsPtr ConstraintFromFunc::convex(const vector<double>& xin, Model* model)
+ConvexConstraintsPtr ConstraintFromErrFunc::convex(const vector<double>& xin, Model* model)
 {
   VectorXd x = getVec(xin, vars_);
   MatrixXd jac = (dfdx_) ? dfdx_->call(x) : calcForwardNumJac(*f_, x, epsilon_);

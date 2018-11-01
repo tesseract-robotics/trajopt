@@ -45,15 +45,14 @@ void ensure_only_members(const Value& v, const char** fields, int nvalid)
 
 void RegisterMakers()
 {
-  TermInfo::RegisterMaker("pose", &CartPosTermInfo::create);
-  TermInfo::RegisterMaker("static_pose", &StaticCartPosTermInfo::create);
+  TermInfo::RegisterMaker("dynamic_cart_pos", &DynamicCartPosTermInfo::create);
+  TermInfo::RegisterMaker("cart_pos", &CartPosTermInfo::create);
+  TermInfo::RegisterMaker("cart_vel", &CartVelTermInfo::create);
   TermInfo::RegisterMaker("joint_pos", &JointPosTermInfo::create);
   TermInfo::RegisterMaker("joint_vel", &JointVelTermInfo::create);
   TermInfo::RegisterMaker("joint_acc", &JointAccTermInfo::create);
   TermInfo::RegisterMaker("joint_jerk", &JointJerkTermInfo::create);
   TermInfo::RegisterMaker("collision", &CollisionTermInfo::create);
-
-  TermInfo::RegisterMaker("cart_vel", &CartVelTermInfo::create);
 
   gRegisteredMakers = true;
 }
@@ -382,14 +381,14 @@ TrajOptProb::TrajOptProb(int n_steps, const ProblemConstructionInfo& pci) : m_ki
 
 TrajOptProb::TrajOptProb() {}
 
-CartPosTermInfo::CartPosTermInfo()
+DynamicCartPosTermInfo::DynamicCartPosTermInfo()
 {
   pos_coeffs = Vector3d::Ones();
   rot_coeffs = Vector3d::Ones();
   tcp.setIdentity();
 }
 
-void CartPosTermInfo::fromJson(ProblemConstructionInfo& pci, const Value& v)
+void DynamicCartPosTermInfo::fromJson(ProblemConstructionInfo& pci, const Value& v)
 {
   FAIL_IF_FALSE(v.isMember("params"));
   Vector3d tcp_xyz = Vector3d::Zero();
@@ -418,9 +417,9 @@ void CartPosTermInfo::fromJson(ProblemConstructionInfo& pci, const Value& v)
   ensure_only_members(params, all_fields, sizeof(all_fields) / sizeof(char*));
 }
 
-void CartPosTermInfo::hatch(TrajOptProb& prob)
+void DynamicCartPosTermInfo::hatch(TrajOptProb& prob)
 {
-  VectorOfVectorPtr f(new CartPosErrCalculator(target, prob.GetKin(), prob.GetEnv(), link, tcp));
+  VectorOfVectorPtr f(new DynamicCartPosErrCalculator(target, prob.GetKin(), prob.GetEnv(), link, tcp));
   if (term_type == TT_COST)
   {
     prob.addCost(
@@ -429,18 +428,22 @@ void CartPosTermInfo::hatch(TrajOptProb& prob)
   else if (term_type == TT_CNT)
   {
     prob.addConstraint(ConstraintPtr(
-        new TrajOptConstraintFromFunc(f, prob.GetVarRow(timestep), concat(rot_coeffs, pos_coeffs), EQ, name)));
+        new TrajOptConstraintFromErrFunc(f, prob.GetVarRow(timestep), concat(rot_coeffs, pos_coeffs), EQ, name)));
+  }
+  else
+  {
+    ROS_WARN("DynamicCartPosTermInfo does not have a term_type defined. No cost/constraint applied");
   }
 }
 
-StaticCartPosTermInfo::StaticCartPosTermInfo()
+CartPosTermInfo::CartPosTermInfo()
 {
   pos_coeffs = Vector3d::Ones();
   rot_coeffs = Vector3d::Ones();
   tcp.setIdentity();
 }
 
-void StaticCartPosTermInfo::fromJson(ProblemConstructionInfo& pci, const Value& v)
+void CartPosTermInfo::fromJson(ProblemConstructionInfo& pci, const Value& v)
 {
   FAIL_IF_FALSE(v.isMember("params"));
   Vector3d tcp_xyz = Vector3d::Zero();
@@ -470,14 +473,14 @@ void StaticCartPosTermInfo::fromJson(ProblemConstructionInfo& pci, const Value& 
   ensure_only_members(params, all_fields, sizeof(all_fields) / sizeof(char*));
 }
 
-void StaticCartPosTermInfo::hatch(TrajOptProb& prob)
+void CartPosTermInfo::hatch(TrajOptProb& prob)
 {
   Eigen::Isometry3d input_pose;
   Eigen::Quaterniond q(wxyz(0), wxyz(1), wxyz(2), wxyz(3));
   input_pose.linear() = q.matrix();
   input_pose.translation() = xyz;
 
-  VectorOfVectorPtr f(new StaticCartPosErrCalculator(input_pose, prob.GetKin(), prob.GetEnv(), link, tcp));
+  VectorOfVectorPtr f(new CartPosErrCalculator(input_pose, prob.GetKin(), prob.GetEnv(), link, tcp));
   if (term_type == TT_COST)
   {
     prob.addCost(
@@ -486,7 +489,11 @@ void StaticCartPosTermInfo::hatch(TrajOptProb& prob)
   else if (term_type == TT_CNT)
   {
     prob.addConstraint(ConstraintPtr(
-        new TrajOptConstraintFromFunc(f, prob.GetVarRow(timestep), concat(rot_coeffs, pos_coeffs), EQ, name)));
+        new TrajOptConstraintFromErrFunc(f, prob.GetVarRow(timestep), concat(rot_coeffs, pos_coeffs), EQ, name)));
+  }
+  else
+  {
+    ROS_WARN("CartPosTermInfo does not have a term_type defined. No cost/constraint applied");
   }
 }
 
@@ -519,7 +526,7 @@ void CartVelTermInfo::hatch(TrajOptProb& prob)
     for (int iStep = first_step; iStep < last_step; ++iStep)
     {
       prob.addCost(CostPtr(new TrajOptCostFromErrFunc(
-          VectorOfVectorPtr(new CartVelCalculator(prob.GetKin(), prob.GetEnv(), link, max_displacement)),
+          VectorOfVectorPtr(new CartVelErrCalculator(prob.GetKin(), prob.GetEnv(), link, max_displacement)),
           MatrixOfVectorPtr(new CartVelJacCalculator(prob.GetKin(), prob.GetEnv(), link, max_displacement)),
           concat(prob.GetVarRow(iStep), prob.GetVarRow(iStep + 1)),
           VectorXd::Ones(0),
@@ -531,14 +538,18 @@ void CartVelTermInfo::hatch(TrajOptProb& prob)
   {
     for (int iStep = first_step; iStep < last_step; ++iStep)
     {
-      prob.addConstraint(ConstraintPtr(new TrajOptConstraintFromFunc(
-          VectorOfVectorPtr(new CartVelCalculator(prob.GetKin(), prob.GetEnv(), link, max_displacement)),
+      prob.addConstraint(ConstraintPtr(new TrajOptConstraintFromErrFunc(
+          VectorOfVectorPtr(new CartVelErrCalculator(prob.GetKin(), prob.GetEnv(), link, max_displacement)),
           MatrixOfVectorPtr(new CartVelJacCalculator(prob.GetKin(), prob.GetEnv(), link, max_displacement)),
           concat(prob.GetVarRow(iStep), prob.GetVarRow(iStep + 1)),
           VectorXd::Ones(0),
           INEQ,
           "CartVel")));
     }
+  }
+  else
+  {
+    ROS_WARN("CartVelTermInfo does not have a term_type defined. No cost/constraint applied");
   }
 }
 
@@ -726,7 +737,8 @@ void JointJerkTermInfo::hatch(TrajOptProb& prob)
     {
       for (std::size_t j = 0; j < coeffs.size(); ++j)
       {
-        AffExpr jerk = prob.GetVar(i + 2, j) - 3 * prob.GetVar(i + 1, j) + 3 * prob.GetVar(i, j) - prob.GetVar(i - 1, j);
+        AffExpr jerk =
+            prob.GetVar(i + 2, j) - 3 * prob.GetVar(i + 1, j) + 3 * prob.GetVar(i, j) - prob.GetVar(i - 1, j);
         prob.addLinearConstraint(jerk - coeffs[j], INEQ);
         prob.addLinearConstraint(-jerk - coeffs[j], INEQ);
       }

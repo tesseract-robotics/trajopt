@@ -79,17 +79,17 @@ protected:
   double epsilon_;
 };
 
-class ConstraintFromFunc : public Constraint
+class ConstraintFromErrFunc : public Constraint
 {
 public:
   /// supply error function, obtain derivative numerically
-  ConstraintFromFunc(VectorOfVectorPtr f,
+  ConstraintFromErrFunc(VectorOfVectorPtr f,
                      const VarVector& vars,
                      const VectorXd& coeffs,
                      ConstraintType type,
                      const std::string& name);
   /// supply error function and gradient
-  ConstraintFromFunc(VectorOfVectorPtr f,
+  ConstraintFromErrFunc(VectorOfVectorPtr f,
                      MatrixOfVectorPtr dfdx,
                      const VarVector& vars,
                      const VectorXd& coeffs,

@@ -86,27 +86,27 @@ public:
 };
 
 /**  @brief Adds plotting to the ConstraintFromFunc class in trajopt_sco */
-class TrajOptConstraintFromFunc : public ConstraintFromFunc, public Plotter
+class TrajOptConstraintFromErrFunc : public ConstraintFromErrFunc, public Plotter
 {
 public:
   /// supply error function, obtain derivative numerically
-  TrajOptConstraintFromFunc(VectorOfVectorPtr f,
+  TrajOptConstraintFromErrFunc(VectorOfVectorPtr f,
                             const VarVector& vars,
                             const VectorXd& coeffs,
                             ConstraintType type,
                             const std::string& name)
-    : ConstraintFromFunc(f, vars, coeffs, type, name)
+    : ConstraintFromErrFunc(f, vars, coeffs, type, name)
   {
   }
 
   /// supply error function and gradient
-  TrajOptConstraintFromFunc(VectorOfVectorPtr f,
+  TrajOptConstraintFromErrFunc(VectorOfVectorPtr f,
                             MatrixOfVectorPtr dfdx,
                             const VarVector& vars,
                             const VectorXd& coeffs,
                             ConstraintType type,
                             const std::string& name)
-    : ConstraintFromFunc(f, dfdx, vars, coeffs, type, name)
+    : ConstraintFromErrFunc(f, dfdx, vars, coeffs, type, name)
   {
   }
 

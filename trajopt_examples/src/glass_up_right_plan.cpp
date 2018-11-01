@@ -123,7 +123,7 @@ TrajOptProbPtr cppMethod()
   double delta = 0.5 / pci.basic_info.n_steps;
   for (auto i = 0; i < pci.basic_info.n_steps; ++i)
   {
-    std::shared_ptr<StaticCartPosTermInfo> pose = std::shared_ptr<StaticCartPosTermInfo>(new StaticCartPosTermInfo);
+    std::shared_ptr<CartPosTermInfo> pose = std::shared_ptr<CartPosTermInfo>(new CartPosTermInfo);
     pose->term_type = TT_CNT;
     pose->name = "waypoint_cart_" + std::to_string(i);
     pose->link = "tool0";

@@ -85,7 +85,7 @@ void testProblem(ScalarOfVectorPtr f,
   assert(sol.size() == n);
   setupProblem(prob, n);
   prob->addCost(CostPtr(new CostFromFunc(f, prob->getVars(), "f", true)));
-  prob->addConstraint(ConstraintPtr(new ConstraintFromFunc(g, prob->getVars(), VectorXd(), cnt_type, "g")));
+  prob->addConstraint(ConstraintPtr(new ConstraintFromErrFunc(g, prob->getVars(), VectorXd(), cnt_type, "g")));
   BasicTrustRegionSQP solver(prob);
   BasicTrustRegionSQPParameters &params = solver.getParameters();
   params.max_iter = 1000;
