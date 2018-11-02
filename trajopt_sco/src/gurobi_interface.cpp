@@ -1,6 +1,5 @@
-#include <trajopt_ros/sco/gurobi_interface.hpp>
-#include <trajopt_ros/sco/solver_interface.hpp>
-#include <trajopt_ros/utils/logging.hpp>
+#include <trajopt_sco/gurobi_interface.hpp>
+#include <trajopt_utils/logging.hpp>
 extern "C" {
 #include "gurobi_c.h"
 }
@@ -8,9 +7,9 @@ extern "C" {
 #include <map>
 #include <sstream>
 #include <stdexcept>
-#include <trajopt_ros/sco/sco_common.hpp>
-#include <trajopt_ros/utils/macros.h>
-#include <trajopt_ros/utils/stl_to_string.hpp>
+//#include <trajopt_ros/sco/sco_common.hpp>
+#include <trajopt_utils/macros.h>
+#include <trajopt_utils/stl_to_string.hpp>
 #include <utility>
 
 using namespace std;
