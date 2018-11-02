@@ -1,4 +1,4 @@
-#include <trajopt_ros/sco/solver_interface.hpp>
+#include <trajopt_sco/solver_interface.hpp>
 
 /**
 
