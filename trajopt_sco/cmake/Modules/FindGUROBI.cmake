@@ -32,7 +32,7 @@ find_library(GUROBI_CXX_LIBRARY NAMES gurobi_c++
              PATH_SUFFIXES lib
              )
 
-set(GUROBI_LIBRARIES "${GUROBI_LIBRARY};${GUROBI_CXX_LIBRARY}")
+set(GUROBI_LIBRARIES  ${GUROBI_LIBRARY} ${GUROBI_CXX_LIBRARY})
 
 include(FindPackageHandleStandardArgs)
 # handle the QUIETLY and REQUIRED arguments and set GUROBI_FOUND to TRUE
