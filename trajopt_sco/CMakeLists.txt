@@ -29,7 +29,7 @@ catkin_package(
 )
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules/")
-find_package(GUROBI REQUIRED)
+find_package(GUROBI QUIET)
 
 include_directories(
   include
