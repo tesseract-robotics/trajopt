@@ -151,6 +151,11 @@ inline QuadExpr exprSub(QuadExpr a, const QuadExpr& b)
 }
 
 //////////////////////
+/**
+ * @brief Multiplies two AffExpr. Does not consider any optimizations for shared variables
+ * @return The QuadExpr result of the multiplication
+ */
+QuadExpr exprMult(const AffExpr&, const AffExpr&);
 
 QuadExpr exprSquare(const Var&);
 QuadExpr exprSquare(const AffExpr&);

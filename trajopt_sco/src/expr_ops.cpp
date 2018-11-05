@@ -4,6 +4,42 @@
 static inline double sq(double x) { return x * x; }
 namespace sco
 {
+QuadExpr exprMult(const AffExpr& affexpr1, const AffExpr& affexpr2)
+{
+  QuadExpr out;
+  size_t naff1 = affexpr1.coeffs.size();
+  size_t naff2 = affexpr2.coeffs.size();
+  size_t nquad = naff1 * naff2;
+
+  // Multiply the constants of the two expr
+  out.affexpr.constant = affexpr1.constant * affexpr2.constant;
+
+  // Account for vars in each expr multiplied by the constant in the other expr
+  out.affexpr.vars.reserve(naff1 + naff2);
+  out.affexpr.vars.insert(out.affexpr.vars.end(), affexpr1.vars.begin(), affexpr1.vars.end());
+  out.affexpr.vars.insert(out.affexpr.vars.end(), affexpr2.vars.begin(), affexpr2.vars.end());
+  out.affexpr.coeffs.resize(naff1 + naff2);
+  for (size_t i = 0; i < naff1; ++i)
+    out.affexpr.coeffs[i] = affexpr2.constant * affexpr1.coeffs[i];
+  for (size_t i = 0; i < naff2; ++i)
+    out.affexpr.coeffs[i + naff1] = affexpr1.constant * affexpr2.coeffs[i];
+
+  // Account for the vars in each expr that are multipled by another var in the other expr
+  out.coeffs.reserve(nquad);
+  out.vars1.reserve(nquad);
+  out.vars2.reserve(nquad);
+  for (size_t i = 0; i < naff1; ++i)
+  {
+    for (size_t j = 0; j < naff2; ++j)
+    {
+      out.vars1.push_back(affexpr1.vars[i]);
+      out.vars2.push_back(affexpr2.vars[j]);
+      out.coeffs.push_back(affexpr1.coeffs[i] * affexpr2.coeffs[j]);
+    }
+  }
+  return out;
+}
+
 QuadExpr exprSquare(const Var& a)
 {
   QuadExpr out;
@@ -76,4 +112,4 @@ QuadExpr cleanupQuad(const QuadExpr& q)
 }
 
 ///////////////////////////////////////////////////////////////
-}
+}  // namespace sco
