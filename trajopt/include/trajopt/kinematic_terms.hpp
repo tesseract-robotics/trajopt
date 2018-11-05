@@ -17,14 +17,14 @@ typedef BasicArray<Var> VarArray;
  * @brief Used to calculate the error for CartPosTermInfo
  * This is converted to a cost or constraint using TrajOptCostFromErrFunc or TrajOptConstraintFromErrFunc
  */
-struct DynamicCartPosErrCalculator : public TrajOptVectorOfVector
+struct DynamicCartPoseErrCalculator : public TrajOptVectorOfVector
 {
   std::string target_;
   tesseract::BasicKinConstPtr manip_;
   tesseract::BasicEnvConstPtr env_;
   std::string link_;
   Eigen::Isometry3d tcp_;
-  DynamicCartPosErrCalculator(const std::string& target,
+  DynamicCartPoseErrCalculator(const std::string& target,
                         tesseract::BasicKinConstPtr manip,
                         tesseract::BasicEnvConstPtr env,
                         std::string link,
@@ -42,14 +42,14 @@ struct DynamicCartPosErrCalculator : public TrajOptVectorOfVector
  * @brief Used to calculate the error for StaticCartPosTermInfo
  * This is converted to a cost or constraint using TrajOptCostFromErrFunc or TrajOptConstraintFromErrFunc
  */
-struct CartPosErrCalculator : public TrajOptVectorOfVector
+struct CartPoseErrCalculator : public TrajOptVectorOfVector
 {
   Eigen::Isometry3d pose_inv_;
   tesseract::BasicKinConstPtr manip_;
   tesseract::BasicEnvConstPtr env_;
   std::string link_;
   Eigen::Isometry3d tcp_;
-  CartPosErrCalculator(const Eigen::Isometry3d& pose,
+  CartPoseErrCalculator(const Eigen::Isometry3d& pose,
                               tesseract::BasicKinConstPtr manip,
                               tesseract::BasicEnvConstPtr env,
                               std::string link,

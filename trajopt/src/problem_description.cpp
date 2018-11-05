@@ -45,8 +45,8 @@ void ensure_only_members(const Value& v, const char** fields, int nvalid)
 
 void RegisterMakers()
 {
-  TermInfo::RegisterMaker("dynamic_cart_pos", &DynamicCartPosTermInfo::create);
-  TermInfo::RegisterMaker("cart_pos", &CartPosTermInfo::create);
+  TermInfo::RegisterMaker("dynamic_cart_pose", &DynamicCartPoseTermInfo::create);
+  TermInfo::RegisterMaker("cart_pose", &CartPoseTermInfo::create);
   TermInfo::RegisterMaker("cart_vel", &CartVelTermInfo::create);
   TermInfo::RegisterMaker("joint_pos", &JointPosTermInfo::create);
   TermInfo::RegisterMaker("joint_vel", &JointVelTermInfo::create);
@@ -381,14 +381,14 @@ TrajOptProb::TrajOptProb(int n_steps, const ProblemConstructionInfo& pci) : m_ki
 
 TrajOptProb::TrajOptProb() {}
 
-DynamicCartPosTermInfo::DynamicCartPosTermInfo()
+DynamicCartPoseTermInfo::DynamicCartPoseTermInfo()
 {
   pos_coeffs = Vector3d::Ones();
   rot_coeffs = Vector3d::Ones();
   tcp.setIdentity();
 }
 
-void DynamicCartPosTermInfo::fromJson(ProblemConstructionInfo& pci, const Value& v)
+void DynamicCartPoseTermInfo::fromJson(ProblemConstructionInfo& pci, const Value& v)
 {
   FAIL_IF_FALSE(v.isMember("params"));
   Vector3d tcp_xyz = Vector3d::Zero();
@@ -417,9 +417,9 @@ void DynamicCartPosTermInfo::fromJson(ProblemConstructionInfo& pci, const Value&
   ensure_only_members(params, all_fields, sizeof(all_fields) / sizeof(char*));
 }
 
-void DynamicCartPosTermInfo::hatch(TrajOptProb& prob)
+void DynamicCartPoseTermInfo::hatch(TrajOptProb& prob)
 {
-  VectorOfVectorPtr f(new DynamicCartPosErrCalculator(target, prob.GetKin(), prob.GetEnv(), link, tcp));
+  VectorOfVectorPtr f(new DynamicCartPoseErrCalculator(target, prob.GetKin(), prob.GetEnv(), link, tcp));
   if (term_type == TT_COST)
   {
     prob.addCost(
@@ -436,14 +436,14 @@ void DynamicCartPosTermInfo::hatch(TrajOptProb& prob)
   }
 }
 
-CartPosTermInfo::CartPosTermInfo()
+CartPoseTermInfo::CartPoseTermInfo()
 {
   pos_coeffs = Vector3d::Ones();
   rot_coeffs = Vector3d::Ones();
   tcp.setIdentity();
 }
 
-void CartPosTermInfo::fromJson(ProblemConstructionInfo& pci, const Value& v)
+void CartPoseTermInfo::fromJson(ProblemConstructionInfo& pci, const Value& v)
 {
   FAIL_IF_FALSE(v.isMember("params"));
   Vector3d tcp_xyz = Vector3d::Zero();
@@ -473,14 +473,14 @@ void CartPosTermInfo::fromJson(ProblemConstructionInfo& pci, const Value& v)
   ensure_only_members(params, all_fields, sizeof(all_fields) / sizeof(char*));
 }
 
-void CartPosTermInfo::hatch(TrajOptProb& prob)
+void CartPoseTermInfo::hatch(TrajOptProb& prob)
 {
   Eigen::Isometry3d input_pose;
   Eigen::Quaterniond q(wxyz(0), wxyz(1), wxyz(2), wxyz(3));
   input_pose.linear() = q.matrix();
   input_pose.translation() = xyz;
 
-  VectorOfVectorPtr f(new CartPosErrCalculator(input_pose, prob.GetKin(), prob.GetEnv(), link, tcp));
+  VectorOfVectorPtr f(new CartPoseErrCalculator(input_pose, prob.GetKin(), prob.GetEnv(), link, tcp));
   if (term_type == TT_COST)
   {
     prob.addCost(

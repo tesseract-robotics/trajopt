@@ -173,7 +173,7 @@ ProblemConstructionInfo cppMethod()
 
   for (auto i = 0; i < pci.basic_info.n_steps; ++i)
   {
-    std::shared_ptr<CartPosTermInfo> pose = std::shared_ptr<CartPosTermInfo>(new CartPosTermInfo);
+    std::shared_ptr<CartPoseTermInfo> pose = std::shared_ptr<CartPoseTermInfo>(new CartPoseTermInfo);
     pose->term_type = TT_CNT;
     pose->name = "waypoint_cart_" + std::to_string(i);
     pose->link = "part";

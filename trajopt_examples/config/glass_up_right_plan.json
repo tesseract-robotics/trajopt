@@ -45,7 +45,7 @@
   [
     {
       "name" : "waypoint_cart_1",
-      "type" : "cart_pos",
+      "type" : "cart_pose",
       "params" :
       {
         "timestep" : 0,
@@ -58,7 +58,7 @@
     },
     {
       "name" : "waypoint_cart_2",
-      "type" : "cart_pos",
+      "type" : "cart_pose",
       "params" :
       {
         "timestep" : 1,
@@ -71,7 +71,7 @@
     },
     {
       "name" : "waypoint_cart_3",
-      "type" : "cart_pos",
+      "type" : "cart_pose",
       "params" :
       {
         "timestep" : 2,
@@ -84,7 +84,7 @@
     },
     {
       "name" : "waypoint_cart_4",
-      "type" : "cart_pos",
+      "type" : "cart_pose",
       "params" :
       {
         "timestep" : 3,
@@ -97,7 +97,7 @@
     },
     {
       "name" : "waypoint_cart_5",
-      "type" : "cart_pos",
+      "type" : "cart_pose",
       "params" :
       {
         "timestep" : 4,

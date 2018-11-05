@@ -45,7 +45,7 @@ vector<T> concat(const vector<T>& a, const vector<T>& b) {
 
 namespace trajopt
 {
-VectorXd DynamicCartPosErrCalculator::operator()(const VectorXd& dof_vals) const
+VectorXd DynamicCartPoseErrCalculator::operator()(const VectorXd& dof_vals) const
 {
   Isometry3d new_pose, target_pose, change_base;
   tesseract::EnvStateConstPtr state = env_->getState();
@@ -61,7 +61,7 @@ VectorXd DynamicCartPosErrCalculator::operator()(const VectorXd& dof_vals) const
   return err;
 }
 
-void DynamicCartPosErrCalculator::Plot(const tesseract::BasicPlottingPtr &plotter, const VectorXd &dof_vals)
+void DynamicCartPoseErrCalculator::Plot(const tesseract::BasicPlottingPtr &plotter, const VectorXd &dof_vals)
 {
   Isometry3d cur_pose, target_pose, change_base;
 
@@ -77,7 +77,7 @@ void DynamicCartPosErrCalculator::Plot(const tesseract::BasicPlottingPtr &plotte
   plotter->plotArrow(cur_pose.translation(), target_pose.translation(), Eigen::Vector4d(1, 0, 1, 1), 0.005);
 }
 
-VectorXd CartPosErrCalculator::operator()(const VectorXd& dof_vals) const
+VectorXd CartPoseErrCalculator::operator()(const VectorXd& dof_vals) const
 {
   Isometry3d new_pose, change_base;
   tesseract::EnvStateConstPtr state = env_->getState();
@@ -92,7 +92,7 @@ VectorXd CartPosErrCalculator::operator()(const VectorXd& dof_vals) const
   return err;
 }
 
-void CartPosErrCalculator::Plot(const tesseract::BasicPlottingPtr& plotter, const VectorXd& dof_vals)
+void CartPoseErrCalculator::Plot(const tesseract::BasicPlottingPtr& plotter, const VectorXd& dof_vals)
 {
   Isometry3d cur_pose, change_base;
 
