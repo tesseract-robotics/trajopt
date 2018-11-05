@@ -166,7 +166,7 @@ private:
 };
 
 /** @brief This is used when the goal frame is not fixed in space */
-struct DynamicCartPosTermInfo : public TermInfo, public MakesCost, public MakesConstraint
+struct DynamicCartPoseTermInfo : public TermInfo, public MakesCost, public MakesConstraint
 {
   /** @brief Timestep at which to apply term */
   int timestep;
@@ -178,20 +178,20 @@ struct DynamicCartPosTermInfo : public TermInfo, public MakesCost, public MakesC
   /** @brief Static transform applied to the link */
   Eigen::Isometry3d tcp;
 
-  DynamicCartPosTermInfo();
+  DynamicCartPoseTermInfo();
 
   /** @brief Used to add term to pci from json */
   void fromJson(ProblemConstructionInfo& pci, const Value& v);
   /** @brief Converts term info into cost/constraint and adds it to trajopt problem */
   void hatch(TrajOptProb& prob);
-  DEFINE_CREATE(DynamicCartPosTermInfo)
+  DEFINE_CREATE(DynamicCartPoseTermInfo)
 };
 
 /** @brief This term is used when the goal frame is fixed in cartesian space
 
   Set term_type == TT_COST or TT_CNT for cost or constraint.
 */
-struct CartPosTermInfo : public TermInfo, public MakesCost, public MakesConstraint
+struct CartPoseTermInfo : public TermInfo, public MakesCost, public MakesConstraint
 {
   /** @brief Timestep at which to apply term */
   int timestep;
@@ -206,13 +206,13 @@ struct CartPosTermInfo : public TermInfo, public MakesCost, public MakesConstrai
   /** @brief Static transform applied to the link */
   Eigen::Isometry3d tcp;
 
-  CartPosTermInfo();
+  CartPoseTermInfo();
 
   /** @brief Used to add term to pci from json */
   void fromJson(ProblemConstructionInfo& pci, const Value& v);
   /** @brief Converts term info into cost/constraint and adds it to trajopt problem */
   void hatch(TrajOptProb& prob);
-  DEFINE_CREATE(CartPosTermInfo)
+  DEFINE_CREATE(CartPoseTermInfo)
 };
 
 /**

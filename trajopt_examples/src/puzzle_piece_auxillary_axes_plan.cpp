@@ -167,7 +167,7 @@ ProblemConstructionInfo cppMethod()
   // Populate Constraints
   for (auto i = 0; i < pci.basic_info.n_steps; ++i)
   {
-    std::shared_ptr<DynamicCartPosTermInfo> pose = std::shared_ptr<DynamicCartPosTermInfo>(new DynamicCartPosTermInfo);
+    std::shared_ptr<DynamicCartPoseTermInfo> pose = std::shared_ptr<DynamicCartPoseTermInfo>(new DynamicCartPoseTermInfo);
     pose->term_type = TT_CNT;
     pose->name = "waypoint_cart_" + std::to_string(i);
     pose->target = "grinder_frame";
