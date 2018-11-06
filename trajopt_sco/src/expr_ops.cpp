@@ -95,21 +95,5 @@ AffExpr cleanupAff(const AffExpr& a)
   return out;
 }
 
-QuadExpr cleanupQuad(const QuadExpr& q)
-{
-  QuadExpr out;
-  out.affexpr = cleanupAff(q.affexpr);
-  for (size_t i = 0; i < q.size(); ++i)
-  {
-    if (fabs(q.coeffs[i]) > 1e-8)
-    {
-      out.coeffs.push_back(q.coeffs[i]);
-      out.vars1.push_back(q.vars1[i]);
-      out.vars2.push_back(q.vars2[i]);
-    }
-  }
-  return out;
-}
-
 ///////////////////////////////////////////////////////////////
 }  // namespace sco
