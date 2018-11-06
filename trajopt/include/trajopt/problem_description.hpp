@@ -276,11 +276,6 @@ struct JointVelTermInfo : public TermInfo, public MakesCost, public MakesConstra
   int first_step;
   /** @brief Last time step to which the term is applied */
   int last_step;
-  /** @brief Joint name to which the term is applied */
-  string joint_name;
-  /** @brief Penalty type applied */
-  PenaltyType penalty_type;
-  double limit = 0; // only applies if constraint or penalty_type == HINGE
   /** @brief Used to add term to pci from json */
   void fromJson(ProblemConstructionInfo& pci, const Value& v);
   /** @brief Converts term info into cost/constraint and adds it to trajopt problem */

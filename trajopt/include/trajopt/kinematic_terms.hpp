@@ -14,7 +14,7 @@ using namespace sco;
 typedef BasicArray<Var> VarArray;
 
 /**
- * @brief Used to calculate the error for CartPosTermInfo
+ * @brief Used to calculate the error for CartPoseTermInfo
  * This is converted to a cost or constraint using TrajOptCostFromErrFunc or TrajOptConstraintFromErrFunc
  */
 struct DynamicCartPoseErrCalculator : public TrajOptVectorOfVector
@@ -39,7 +39,7 @@ struct DynamicCartPoseErrCalculator : public TrajOptVectorOfVector
 };
 
 /**
- * @brief Used to calculate the error for StaticCartPosTermInfo
+ * @brief Used to calculate the error for StaticCartPoseTermInfo
  * This is converted to a cost or constraint using TrajOptCostFromErrFunc or TrajOptConstraintFromErrFunc
  */
 struct CartPoseErrCalculator : public TrajOptVectorOfVector
