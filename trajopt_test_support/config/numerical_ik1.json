@@ -6,7 +6,7 @@
   },
   "costs" : [
   {
-    "type" : "static_pose",
+    "type" : "cart_pose",
     "params": {
       "xyz" : [0.4,0,0.8],
       "wxyz" : [0,0,1,0],

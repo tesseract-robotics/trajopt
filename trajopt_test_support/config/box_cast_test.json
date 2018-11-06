@@ -24,9 +24,10 @@
   ],
   "constraints" : [
   {
-    "type" : "joint",
+    "type" : "joint_pos",
     "name" : "joint",
     "params" : {
+       "coeffs" : [1, 1],
        "vals" : [1.9, 3.8] 
     }
   }
