@@ -582,12 +582,11 @@ void JointPosTermInfo::hatch(TrajOptProb& prob)
   }
   else if (term_type == TT_CNT)
   {
-    // Position operates on a single point (unlike velocity, etc). This is b/c the primary usecase is joint-space
-    // position waypoints
-    for (std::size_t j = 0; j < vals.size(); ++j)
+    VarVector vars = prob.GetVarRow(timestep);
+    int n_dof = vars.size();
+    for (int j = 0; j < n_dof; ++j)
     {
-      prob.addLinearConstraint(prob.GetVar(timestep, j) - vals[j], INEQ);
-      prob.addLinearConstraint(-prob.GetVar(timestep, j) - vals[j], INEQ);
+      prob.addLinearConstraint(exprSub(AffExpr(vars[j]), vals[j]), EQ);
     }
   }
   else
