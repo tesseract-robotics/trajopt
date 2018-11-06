@@ -432,7 +432,7 @@ void DynamicCartPoseTermInfo::hatch(TrajOptProb& prob)
   }
   else
   {
-    ROS_WARN("DynamicCartPosTermInfo does not have a term_type defined. No cost/constraint applied");
+    ROS_WARN("DynamicCartPoseTermInfo does not have a term_type defined. No cost/constraint applied");
   }
 }
 
@@ -493,7 +493,7 @@ void CartPoseTermInfo::hatch(TrajOptProb& prob)
   }
   else
   {
-    ROS_WARN("CartPosTermInfo does not have a term_type defined. No cost/constraint applied");
+    ROS_WARN("CartPoseTermInfo does not have a term_type defined. No cost/constraint applied");
   }
 }
 
@@ -602,7 +602,6 @@ void JointVelTermInfo::fromJson(ProblemConstructionInfo& pci, const Value& v)
   const Value& params = v["params"];
 
   childFromJson(params, coeffs, "coeffs");
-  childFromJson(params, joint_name, "joint_name");
   childFromJson(params, first_step, "first_step", 0);
   childFromJson(params, last_step, "last_step", pci.basic_info.n_steps - 1);
   unsigned n_dof = pci.kin->numJoints();
@@ -616,22 +615,7 @@ void JointVelTermInfo::fromJson(ProblemConstructionInfo& pci, const Value& v)
     PRINT_AND_THROW(boost::format("wrong number of coeffs. expected %i got %i") % n_dof % coeffs.size());
   }
 
-  bool get_limit = term_type == TT_CNT;
-  if (term_type == TT_COST)
-  {
-    string penalty_type_str;
-    childFromJson(params, penalty_type_str, "penalty_type");
-    penalty_type = stringToPenaltyType(penalty_type_str);
-
-    get_limit = penalty_type == HINGE;
-  }
-
-  if (get_limit)
-  {
-    childFromJson(params, limit, "limit");
-  }
-
-  const char* all_fields[] = { "coeffs", "joint_name", "first_step", "last_step", "penalty_type", "limit" };
+  const char* all_fields[] = { "coeffs", "first_step", "last_step" };
   ensure_only_members(params, all_fields, sizeof(all_fields) / sizeof(char*));
 }
 
