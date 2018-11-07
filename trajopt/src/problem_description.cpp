@@ -669,22 +669,20 @@ void JointVelTermInfo::hatch(TrajOptProb& prob)
   }
   else if (term_type == TT_CNT)
   {
-    // Calculate velocity as ((i+1) - i)/dt where dt=1
-    for (int i = first_step; i <= last_step - 1; ++i)
+    // If the tolerances are 0, an equality cnt is set. Otherwise it's an inequality constraint
+    if (is_upper_zeros && is_lower_zeros)
     {
-      for (std::size_t j = 0; j < coeffs.size(); ++j)
-      {
-        sco::AffExpr vel = prob.GetVar(i + 1, j) - prob.GetVar(i, j);
-        prob.addLinearConstraint(vel - coeffs[j], sco::INEQ);
-        prob.addLinearConstraint(-vel - coeffs[j], sco::INEQ);
-      }
+      prob.addConstraint(
+          ConstraintPtr(new JointVelEqConstraint(prob.GetVars(), toVectorXd(coeffs), toVectorXd(targs))));
+      prob.getConstraints().back()->setName(name);
+    }
+    else
+    {
+      prob.addConstraint(ConstraintPtr(new JointVelIneqConstraint(
+          prob.GetVars(), toVectorXd(coeffs), toVectorXd(targs), toVectorXd(upper_tols), toVectorXd(lower_tols))));
+      prob.getConstraints().back()->setName(name);
     }
   }
-  // If limits not equal
-  // If CNT - Set to inequality (may need 2 constraints)
-
-  // If Cost - Set to hinge
-  // Sum of two hinge costs - one with value negated
 }
 
 void JointAccTermInfo::fromJson(ProblemConstructionInfo& pci, const Json::Value& v)
