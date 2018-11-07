@@ -32,14 +32,59 @@ private:
 class TRAJOPT_API JointVelCost : public sco::Cost
 {
 public:
-  JointVelCost(const VarArray& traj, const Eigen::VectorXd& coeffs);
+  /** @brief Forms error in QuadExpr - independent of penalty type */
+  JointVelEqCost(const VarArray& traj, const VectorXd& coeffs, const VectorXd& targs);
+  /** @brief Convexifies cost expression - In this case, it is already quadratic so there's nothing to do */
   virtual sco::ConvexObjectivePtr convex(const DblVec& x, sco::Model* model);
+  /** @brief Numerically evaluate cost given the vector of values */
   virtual double value(const DblVec&);
 
 private:
+  /** @brief The variables being optimized. Used to properly index the vector being optimized */
   VarArray vars_;
+  /** @brief The coefficients used to weight the cost */
   Eigen::VectorXd coeffs_;
+  /** @brief Stores the cost as an expression */
   sco::QuadExpr expr_;
+  /** @brief Vector of velocity targets */
+  VectorXd targs_;
+};
+
+/**
+ * @brief The JointVelIneqCost class
+ * Assumes that the target is ...
+ */
+class TRAJOPT_API JointVelIneqCost : public Cost
+{
+public:
+  /** @brief Forms error in QuadExpr - independent of penalty type */
+  JointVelIneqCost(const VarArray& traj,
+                   const VectorXd& coeffs,
+                   const VectorXd& targs,
+                   const VectorXd& upper_limits,
+                   const VectorXd& lower_limits);
+  /** @brief Convexifies cost expression - In this case, it is already quadratic so there's nothing to do */
+  virtual ConvexObjectivePtr convex(const vector<double>& x, Model* model);
+  /** @brief Numerically evaluate cost given the vector of values */
+  virtual double value(const vector<double>&);
+
+private:
+  /** @brief The variables being optimized. Used to properly index the vector being optimized */
+  VarArray vars_;
+  /** @brief The coefficients used to weight the cost */
+  VectorXd coeffs_;
+  /** @brief Vector of velocity targets */
+  VectorXd upper_tols_;
+  /** @brief Vector of velocity targets */
+  VectorXd lower_tols_;
+  /** @brief Vector of velocity targets */
+  VectorXd targs_;
+  /** @brief Stores the cost as an expression */
+  AffExpr expr_;
+  /** @brief Stores the cost as an expression */
+  AffExpr expr_neg_;
+
+  // TODO: Add time steps
 };
 
 class TRAJOPT_API JointAccCost : public sco::Cost
@@ -67,4 +112,4 @@ private:
   Eigen::VectorXd coeffs_;
   sco::QuadExpr expr_;
 };
-}
+}  // namespace trajopt
