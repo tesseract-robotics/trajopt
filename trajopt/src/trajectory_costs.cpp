@@ -5,11 +5,12 @@
 
 namespace
 {
+/** @brief Returns the difference between each row of a matrixXd and the row before */
 static Eigen::MatrixXd diffAxis0(const Eigen::MatrixXd& in)
 {
   return in.middleRows(1, in.rows() - 1) - in.middleRows(0, in.rows() - 1);
 }
-}
+}  // namespace
 
 namespace trajopt
 {
