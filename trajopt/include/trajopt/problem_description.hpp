@@ -284,8 +284,14 @@ where j indexes over DOF, and \f$c_j\f$ are the coeffs.
 */
 struct JointVelTermInfo : public TermInfo, public MakesCost, public MakesConstraint
 {
-  /** @brief For TT_COST: coefficient that scales cost. For TT_CNT: Velocity limit */
+  /** @brief Vector of coefficients that scales cost. */
   DblVec coeffs;
+  /** @brief Vector of velocity lower limits */
+  DblVec targs;
+  /** @brief Vector of velocity upper limits */
+  DblVec upper_tols;
+  /** @brief Vector of velocity lower limits */
+  DblVec lower_tols;
   /** @brief First time step to which the term is applied */
   int first_step;
   /** @brief Last time step to which the term is applied */
@@ -295,6 +301,9 @@ struct JointVelTermInfo : public TermInfo, public MakesCost, public MakesConstra
   /** @brief Converts term info into cost/constraint and adds it to trajopt problem */
   void hatch(TrajOptProb& prob);
   DEFINE_CREATE(JointVelTermInfo)
+  private:
+      /** @brief Stores the degrees of freedom for checking parameter size on hatch */
+    unsigned int n_dof_;
 };
 
 /**

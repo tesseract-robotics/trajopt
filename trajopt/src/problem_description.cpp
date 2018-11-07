@@ -72,6 +72,29 @@ sco::PenaltyType stringToPenaltyType(std::string str)
   }
 }
 
+/**
+ * @brief Checks the size of the parameter given and throws if incorrect
+ * @param parameter The vector whose size is getting checked
+ * @param expected_size The expected size of the vector
+ * @param name The name to use when printing an error or warning
+ * @param apply_first If true and only one value is given, broadcast value to length of expected_size
+ */
+void checkParameterSize(DblVec& parameter,
+                        const unsigned int& expected_size,
+                        const std::string& name,
+                        const bool& apply_first = true)
+{
+  if (apply_first == true && parameter.size() == 1)
+  {
+    parameter = DblVec(expected_size, parameter[0]);
+    ROS_INFO("1 %s given. Applying to all %i joints", name, expected_size);
+  }
+  else if (parameter.size() != expected_size)
+  {
+    PRINT_AND_THROW(boost::format("wrong number of %s. expected %i got %i") % name % expected_size % parameter.size());
+  }
+}
+
 #if 0
 BoolVec toMask(const VectorXd& x) {
   BoolVec out(x.size());
@@ -589,30 +612,60 @@ void JointVelTermInfo::fromJson(ProblemConstructionInfo& pci, const Json::Value&
   FAIL_IF_FALSE(v.isMember("params"));
   const Json::Value& params = v["params"];
 
-  json_marshal::childFromJson(params, coeffs, "coeffs");
-  json_marshal::childFromJson(params, first_step, "first_step", 0);
-  json_marshal::childFromJson(params, last_step, "last_step", pci.basic_info.n_steps - 1);
-  unsigned n_dof = pci.kin->numJoints();
-  if (coeffs.size() == 1)
-  {
-    coeffs = DblVec(n_dof, coeffs[0]);
-    ROS_INFO("1 JointVelTermInfo coefficient given. Applying to all %i joints", n_dof);
-  }
-  else if (coeffs.size() != n_dof)
-  {
-    PRINT_AND_THROW(boost::format("wrong number of coeffs. expected %i got %i") % n_dof % coeffs.size());
-  }
+  n_dof_ = pci.kin->numJoints();
+  childFromJson(params, coeffs, "coeffs");
+  childFromJson(params, targs, "targs");
 
-  const char* all_fields[] = { "coeffs", "first_step", "last_step" };
+  // TODO: How to make these optional? Are they already?
+  childFromJson(params, upper_tols, "upper_tols");
+  childFromJson(params, lower_tols, "lower_tols");
+  //  childFromJson(params, first_step, "first_step", 0);
+  //  childFromJson(params, last_step, "last_step", pci.basic_info.n_steps - 1);
+  //  childFromJson(params, joint_name, "joint_name");
+
+  const char* all_fields[] = { "coeffs", "first_step", "last_step", "targs", "lower_tols", "upper_tols" };
   ensure_only_members(params, all_fields, sizeof(all_fields) / sizeof(char*));
 }
 
 void JointVelTermInfo::hatch(TrajOptProb& prob)
 {
+  if ((term_type != TT_COST) && (term_type != TT_CNT))
+  {
+    ROS_WARN("JointVelTermInfo does not have a term_type defined. No cost/constraint applied");
+  }
+
+  // Check if parameters are right size.
+  checkParameterSize(coeffs, n_dof_, "JointVelTermInfo coeffs", true);
+
+  // If tolerance is not given, set all to 0
+  if (upper_tols.empty())
+    upper_tols = DblVec(n_dof_, 0);
+
+  if (lower_tols.empty())
+    lower_tols = DblVec(n_dof_, 0);
+
+  // Check if tolerances are the correct size.
+  checkParameterSize(upper_tols, n_dof_, "JointVelTermInfo upper_tols", true);
+  checkParameterSize(lower_tols, n_dof_, "JointVelTermInfo lower_tolss", true);
+
+  // Check if tolerances are all zeros
+  bool is_upper_zeros = std::all_of(upper_tols.begin(), upper_tols.end(), [](int i) { return i == 0; });
+  bool is_lower_zeros = std::all_of(lower_tols.begin(), lower_tols.end(), [](int i) { return i == 0; });
+
   if (term_type == TT_COST)
   {
-    prob.addCost(sco::CostPtr(new JointVelCost(prob.GetVars(), util::toVectorXd(coeffs))));
-    prob.getCosts().back()->setName(name);
+    // If the tolerances are 0, an equality cost is set. Otherwise it's a hinged "inequality" cost
+    if (is_upper_zeros && is_lower_zeros)
+    {
+      prob.addCost(CostPtr(new JointVelEqCost(prob.GetVars(), toVectorXd(coeffs), toVectorXd(targs))));
+      prob.getCosts().back()->setName(name);
+    }
+    else
+    {
+      prob.addCost(CostPtr(new JointVelIneqCost(
+          prob.GetVars(), toVectorXd(coeffs), toVectorXd(targs), toVectorXd(upper_tols), toVectorXd(lower_tols))));
+      prob.getCosts().back()->setName(name);
+    }
   }
   else if (term_type == TT_CNT)
   {
@@ -627,10 +680,11 @@ void JointVelTermInfo::hatch(TrajOptProb& prob)
       }
     }
   }
-  else
-  {
-    ROS_WARN("JointVelTermInfo does not have a term_type defined. No cost/constraint applied");
-  }
+  // If limits not equal
+  // If CNT - Set to inequality (may need 2 constraints)
+
+  // If Cost - Set to hinge
+  // Sum of two hinge costs - one with value negated
 }
 
 void JointAccTermInfo::fromJson(ProblemConstructionInfo& pci, const Json::Value& v)
