@@ -265,8 +265,8 @@ struct JointPosTermInfo : public TermInfo, public MakesCost, public MakesConstra
 /**
 \brief Used to apply cost/constraint to joint-space velocity
 
-Term is applied to every step between first_step and last_step. It applies two limits, upper_limits/lower_limits, to the
-joint velocity subject to the following cases.
+Term is applied to every step between first_step and last_step (TODO). It applies two limits, upper_limits/lower_limits,
+to the joint velocity subject to the following cases.
 
 * term_type = TT_COST
 ** upper_limit=lower_limit - Cost is applied with a SQUARED error scaled by coeffs
@@ -277,6 +277,9 @@ joint velocity subject to the following cases.
 ** upper_limit!=lower_limit - 2 Inequality constraints are applied. That velocity < upper_limit and velocity >
 lower_limit
 
+Note: targs, upper_limits, and lower_limits are optional. If a term is not given it will default to 0 for all joints. If
+one value is given, this will be broadcast to all joints.
+
 \f{align*}{
   cost = \sum_{t=0}^{T-2} \sum_j c_j (x_{t+1,j} - x_{t,j})^2
 \f}
@@ -286,24 +289,21 @@ struct JointVelTermInfo : public TermInfo, public MakesCost, public MakesConstra
 {
   /** @brief Vector of coefficients that scales cost. */
   DblVec coeffs;
-  /** @brief Vector of velocity lower limits */
+  /** @brief Vector of velocity targets. Default: 0 */
   DblVec targs;
-  /** @brief Vector of velocity upper limits */
+  /** @brief Vector of velocity upper limits. Default: 0 */
   DblVec upper_tols;
-  /** @brief Vector of velocity lower limits */
+  /** @brief Vector of velocity lower limits. Default: 0 */
   DblVec lower_tols;
-  /** @brief First time step to which the term is applied */
+  /** @brief First time step to which the term is applied (TODO)*/
   int first_step;
-  /** @brief Last time step to which the term is applied */
+  /** @brief Last time step to which the term is applied (TODO) */
   int last_step;
   /** @brief Used to add term to pci from json */
   void fromJson(ProblemConstructionInfo& pci, const Json::Value& v);
   /** @brief Converts term info into cost/constraint and adds it to trajopt problem */
   void hatch(TrajOptProb& prob);
   DEFINE_CREATE(JointVelTermInfo)
-  private:
-      /** @brief Stores the degrees of freedom for checking parameter size on hatch */
-    unsigned int n_dof_;
 };
 
 /**
