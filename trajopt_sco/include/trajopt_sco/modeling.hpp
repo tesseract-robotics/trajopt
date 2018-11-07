@@ -144,12 +144,17 @@ class EqConstraint : public Constraint
 {
 public:
   ConstraintType type() { return EQ; }
+  EqConstraint() : Constraint() {}
+  EqConstraint(const string& name) : Constraint(name) {}
+
 };
 
 class IneqConstraint : public Constraint
 {
 public:
   ConstraintType type() { return INEQ; }
+  IneqConstraint() : Constraint() {}
+  IneqConstraint(const string& name) : Constraint(name) {}
 };
 
 /**
