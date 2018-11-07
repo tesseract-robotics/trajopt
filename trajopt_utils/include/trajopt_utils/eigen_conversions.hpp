@@ -5,7 +5,7 @@
 
 namespace util
 {
-inline std::vector<double> toDblVec(const Eigen::VectorXd& x)
+inline std::vector<double> toDblVec(const Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>& x)
 {
   return std::vector<double>(x.data(), x.data() + x.size());
 }

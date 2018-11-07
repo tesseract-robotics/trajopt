@@ -612,16 +612,15 @@ void JointVelTermInfo::fromJson(ProblemConstructionInfo& pci, const Json::Value&
   FAIL_IF_FALSE(v.isMember("params"));
   const Json::Value& params = v["params"];
 
-  n_dof_ = pci.kin->numJoints();
+  unsigned int n_dof = pci.kin->numJoints();
   childFromJson(params, coeffs, "coeffs");
-  childFromJson(params, targs, "targs");
 
-  // TODO: How to make these optional? Are they already?
-  childFromJson(params, upper_tols, "upper_tols");
-  childFromJson(params, lower_tols, "lower_tols");
-  //  childFromJson(params, first_step, "first_step", 0);
-  //  childFromJson(params, last_step, "last_step", pci.basic_info.n_steps - 1);
-  //  childFromJson(params, joint_name, "joint_name");
+  // Optional Parameters
+  childFromJson(params, targs, "targs", DblVec(n_dof, 0));
+  childFromJson(params, upper_tols, "upper_tols", DblVec(n_dof, 0));
+  childFromJson(params, lower_tols, "lower_tols", DblVec(n_dof, 0));
+  childFromJson(params, first_step, "first_step", 0);
+  childFromJson(params, last_step, "last_step", pci.basic_info.n_steps - 1);
 
   const char* all_fields[] = { "coeffs", "first_step", "last_step", "targs", "lower_tols", "upper_tols" };
   ensure_only_members(params, all_fields, sizeof(all_fields) / sizeof(char*));
@@ -633,20 +632,21 @@ void JointVelTermInfo::hatch(TrajOptProb& prob)
   {
     ROS_WARN("JointVelTermInfo does not have a term_type defined. No cost/constraint applied");
   }
+  unsigned int n_dof = prob.GetKin()->getJointNames().size();
 
-  // Check if parameters are right size.
-  checkParameterSize(coeffs, n_dof_, "JointVelTermInfo coeffs", true);
-
-  // If tolerance is not given, set all to 0
+  // If target or tolerance is not given, set all to 0
+  if (targs.empty())
+    targs = DblVec(n_dof, 0);
   if (upper_tols.empty())
-    upper_tols = DblVec(n_dof_, 0);
-
+    upper_tols = DblVec(n_dof, 0);
   if (lower_tols.empty())
-    lower_tols = DblVec(n_dof_, 0);
+    lower_tols = DblVec(n_dof, 0);
 
-  // Check if tolerances are the correct size.
-  checkParameterSize(upper_tols, n_dof_, "JointVelTermInfo upper_tols", true);
-  checkParameterSize(lower_tols, n_dof_, "JointVelTermInfo lower_tolss", true);
+  // Check if parameters are the correct size.
+  checkParameterSize(coeffs, n_dof, "JointVelTermInfo coeffs", true);
+  checkParameterSize(targs, n_dof, "JointVelTermInfo upper_tols", true);
+  checkParameterSize(upper_tols, n_dof, "JointVelTermInfo upper_tols", true);
+  checkParameterSize(lower_tols, n_dof, "JointVelTermInfo lower_tols", true);
 
   // Check if tolerances are all zeros
   bool is_upper_zeros = std::all_of(upper_tols.begin(), upper_tols.end(), [](int i) { return i == 0; });

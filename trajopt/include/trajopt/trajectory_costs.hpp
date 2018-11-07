@@ -106,6 +106,10 @@ public:
   /** Sum of violations */
   double violation(const vector<double>& x);
 
+//  VarVector getVars() { return VarVector(); }
+  //TODO: Figure out why we are using vararray instead of varvector, and should I convert between them?
+  // From looking at pos, it appears that array contains all of the vectors for all the joints (maybe timesteps too?)
+
 private:
   /** @brief The variables being optimized. Used to properly index the vector being optimized */
   VarArray vars_;
