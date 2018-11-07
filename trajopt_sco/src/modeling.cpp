@@ -63,7 +63,6 @@ void ConvexObjective::addMax(const AffExprVector& ev)
     exprDec(ineqs_.back(), m);
   }
 }
-
 void ConvexObjective::addConstraintsToModel()
 {
   cnts_.reserve(eqs_.size() + ineqs_.size());
@@ -76,13 +75,13 @@ void ConvexObjective::addConstraintsToModel()
     cnts_.push_back(model_->addIneqCnt(aff, ""));
   }
 }
-
 void ConvexObjective::removeFromModel()
 {
   model_->removeCnts(cnts_);
   model_->removeVars(vars_);
   model_ = NULL;
 }
+double ConvexObjective::value(const vector<double>& x) { return quad_.value(x); }
 ConvexObjective::~ConvexObjective()
 {
   if (inModel())
@@ -103,7 +102,6 @@ void ConvexConstraints::addConstraintsToModel()
     cnts_.push_back(model_->addIneqCnt(aff, ""));
   }
 }
-
 void ConvexConstraints::removeFromModel()
 {
   model_->removeCnts(cnts_);
@@ -127,7 +125,6 @@ ConvexConstraints::~ConvexConstraints()
     removeFromModel();
 }
 
-double ConvexObjective::value(const DblVec& x) { return quad_.value(x); }
 DblVec Constraint::violations(const DblVec& x)
 {
   DblVec val = value(x);
@@ -146,8 +143,8 @@ DblVec Constraint::violations(const DblVec& x)
 
   return out;
 }
-
 double Constraint::violation(const DblVec& x) { return vecSum(violations(x)); }
+
 OptProb::OptProb() : model_(createModel()) {}
 VarVector OptProb::createVariables(const std::vector<std::string>& var_names)
 {
@@ -245,4 +242,4 @@ DblVec OptProb::getClosestFeasiblePoint(const DblVec& x)
   }
   return model_->getVarValues(vars_);
 }
-}
+}  // namespace sco
