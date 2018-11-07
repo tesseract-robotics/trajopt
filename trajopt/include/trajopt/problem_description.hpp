@@ -132,6 +132,7 @@ struct TRAJOPT_API TermInfo
   static void RegisterMaker(const std::string& type, MakerFunc);
 
   virtual ~TermInfo() {}
+
 private:
   static std::map<std::string, MakerFunc> name2maker;
 };
@@ -264,6 +265,18 @@ struct JointPosTermInfo : public TermInfo, public MakesCost, public MakesConstra
 /**
 \brief Used to apply cost/constraint to joint-space velocity
 
+Term is applied to every step between first_step and last_step. It applies two limits, upper_limits/lower_limits, to the
+joint velocity subject to the following cases.
+
+* term_type = TT_COST
+** upper_limit=lower_limit - Cost is applied with a SQUARED error scaled by coeffs
+** upper_limit!=lower_limit - Cost is applied with a hinge error scaled by coeffs
+
+* term_type = TT_CNT
+** upper_limit=lower_limit - Equality constraint is applied
+** upper_limit!=lower_limit - 2 Inequality constraints are applied. That velocity < upper_limit and velocity >
+lower_limit
+
 \f{align*}{
   cost = \sum_{t=0}^{T-2} \sum_j c_j (x_{t+1,j} - x_{t,j})^2
 \f}
@@ -355,4 +368,4 @@ struct CollisionTermInfo : public TermInfo, public MakesCost
   DEFINE_CREATE(CollisionTermInfo)
 };
 
-}
+}  // namespace trajopt
