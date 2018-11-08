@@ -24,12 +24,22 @@ vector<int> cnts2inds(const vector<Cnt>& cnts)
 }
 
 void simplify2(vector<int>& inds, vector<double>& vals)
+/**
+ * @brief simplify2 gets as input a list of indices, corresponding to non-zero
+ *        values in vals, checks that all indexed values are actually non-zero,
+ *        and if they are not, removes them from vals and inds, so that
+ *        inds_out.size() <= inds.size(). Also, it will compact vals so that
+ *        vals_out.size() == inds_out.size()
+ * 
+ * @param[in,out] inds indices of non-vero variables in vals
+ * @param[in,out] val values
+ */
 {
   typedef std::map<int, double> Int2Double;
   Int2Double ind2val;
   for (unsigned i = 0; i < inds.size(); ++i)
   {
-    if (vals[i] != 0)
+    if (vals[i] != 0.0)
       ind2val[inds[i]] += vals[i];
   }
   inds.resize(ind2val.size());
@@ -150,11 +160,15 @@ ModelPtr createModel()
 #ifdef HAVE_BPMPD
   extern ModelPtr createBPMPDModel();
 #endif
+#ifdef HAVE_OSQP
+  extern ModelPtr createOSQPModel();
+#endif
 
   enum ConvexSolver
   {
     GUROBI,
     BPMPD,
+    OSQP,
     INVALID
   };
 
@@ -168,6 +182,8 @@ ModelPtr createModel()
       solver = GUROBI;
     else if (string(solver_env) == "BPMPD")
       solver = BPMPD;
+    else if (string(solver_env) == "OSQP")
+      solver = OSQP;
     else
       PRINT_AND_THROW(boost::format("invalid solver \"%s\"specified by TRAJOPT_CONVEX_SOLVER") % solver_env);
 #ifndef HAVE_GUROBI
@@ -178,11 +194,17 @@ ModelPtr createModel()
     if (solver == BPMPD)
       PRINT_AND_THROW("you don't have BPMPD support on this platform");
 #endif
+#ifndef HAVE_OSQP
+    if (solver == OSQP)
+      PRINT_AND_THROW("you don't have OSQP support on this platform");
+#endif
   }
   else
   {
 #ifdef HAVE_GUROBI
     solver = GUROBI;
+#elif defined(HAVE_OSQP)
+    solver = OSQP;
 #else
     solver = BPMPD;
 #endif
@@ -195,6 +217,10 @@ ModelPtr createModel()
 #ifdef HAVE_BPMPD
   if (solver == BPMPD)
     return createBPMPDModel();
+#endif
+#ifdef HAVE_OSQP
+  if (solver == OSQP)
+    return createOSQPModel();
 #endif
   PRINT_AND_THROW("Failed to create solver");
   return ModelPtr();

@@ -8,7 +8,24 @@
 
 using namespace std;
 
+namespace sco
+{
+extern void simplify2(vector<int>& inds, vector<double>& vals);
+}
+
 using namespace sco;
+
+TEST(solver_interface, simplify2)
+{
+    vector<int> indices = {0, 1, 3};
+    vector<double> values = {1e-7, 1e3, 0., 0., 0.};
+    simplify2(indices, values);
+    
+    EXPECT_EQ(indices.size(), 2);
+    EXPECT_EQ(values.size(), 2);
+    EXPECT_TRUE((indices == vector<int>{0, 1}));
+    EXPECT_TRUE((values == vector<double>{1e-7, 1e3}));
+}
 
 TEST(solver_interface, setup_problem)
 {

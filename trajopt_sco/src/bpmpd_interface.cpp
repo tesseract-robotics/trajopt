@@ -140,8 +140,6 @@ A sample driver solving the above problem is included as well as the
 logfile it generates.
   **/
 
-double BIG = 1e+30;
-
 // extern "C" {
 //   extern void bpmpd(int *, int *, int *, int *, int *, int *, int *,
 //          double *, int *, int *, double *, double *, double *, double *,
@@ -151,6 +149,8 @@ double BIG = 1e+30;
 
 namespace sco
 {
+double BPMPD_LARGE_NUMBER = 1e+30;
+
 extern void simplify2(vector<int>& inds, vector<double>& vals);
 extern vector<int> vars2inds(const vector<Var>& vars);
 extern vector<int> cnts2inds(const vector<Cnt>& cnts);
@@ -237,8 +237,8 @@ BPMPDModel::~BPMPDModel()
 Var BPMPDModel::addVar(const string& name)
 {
   m_vars.push_back(new VarRep(m_vars.size(), name, this));
-  m_lbs.push_back(-BIG);
-  m_ubs.push_back(BIG);
+  m_lbs.push_back(-BPMPD_LARGE_NUMBER);
+  m_ubs.push_back(BPMPD_LARGE_NUMBER);
   return m_vars.back();
 }
 Cnt BPMPDModel::addEqCnt(const AffExpr& expr, const string& /*name*/)
@@ -362,8 +362,8 @@ CvxOptStatus BPMPDModel::optimize()
   DBG(m_ubs);
   for (int iVar = 0; iVar < n; ++iVar)
   {
-    lbound[iVar] = fmax(m_lbs[iVar], -BIG);
-    ubound[iVar] = fmin(m_ubs[iVar], BIG);
+    lbound[iVar] = fmax(m_lbs[iVar], -BPMPD_LARGE_NUMBER);
+    ubound[iVar] = fmin(m_ubs[iVar], BPMPD_LARGE_NUMBER);
   }
 
   vector<vector<int>> var2cntinds(n);
@@ -380,7 +380,7 @@ CvxOptStatus BPMPDModel::optimize()
       var2cntvals[inds[i]].push_back(aff.coeffs[i]);  // xxx maybe repeated/
     }
 
-    lbound[n + iCnt] = (m_cntTypes[iCnt] == INEQ) ? -BIG : 0;
+    lbound[n + iCnt] = (m_cntTypes[iCnt] == INEQ) ? -BPMPD_LARGE_NUMBER : 0;
     ubound[n + iCnt] = 0;
     rhs[iCnt] = -aff.constant;
   }

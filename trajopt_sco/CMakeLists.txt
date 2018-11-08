@@ -4,7 +4,7 @@ project(trajopt_sco)
 add_compile_options(-std=c++11 -Wall -Wextra)
 
 find_package(catkin REQUIRED COMPONENTS trajopt_utils)
-
+find_package(osqp QUIET)
 find_package(Eigen3 REQUIRED)
 
 set(SCO_SOURCE_FILES
@@ -66,17 +66,25 @@ if (GUROBI_FOUND)
   list(APPEND SCO_SOURCE_FILES src/gurobi_interface.cpp)
 endif(GUROBI_FOUND)
 
+if (osqp_FOUND)
+  set_property(SOURCE src/solver_interface.cpp APPEND PROPERTY COMPILE_DEFINITIONS HAVE_OSQP )
+  list(APPEND SCO_SOURCE_FILES src/osqp_interface.cpp)
+endif()
+
 add_library(${PROJECT_NAME} ${SCO_SOURCE_FILES})
 
-set (SCO_LINK_LIBS ${catkin_LIBRARIES})
+set (SCO_LINK_LIBS ${catkin_LIBRARIES} ${CMAKE_DL_LIBS})
 if (GUROBI_FOUND)
   list(APPEND SCO_LINK_LIBS ${GUROBI_LIBRARIES})
 endif()
 if (HAVE_BPMPD)
   list(APPEND SCO_LINK_LIBS ${BPMPD_LIBRARY})
 endif()
+if (osqp_FOUND)
+  target_link_libraries(${PROJECT_NAME} PRIVATE osqp::osqpstatic)
+endif()
 
-target_link_libraries(${PROJECT_NAME} ${SCO_LINK_LIBS})
+target_link_libraries(${PROJECT_NAME} PUBLIC ${SCO_LINK_LIBS})
 
 # Mark executables and/or libraries for installation
 install(
@@ -100,6 +108,13 @@ if (CATKIN_ENABLE_TESTING)
     test/solver-interface-unit.cpp
   )
 
+  if (osqp_FOUND)
+    list(APPEND SCO_TEST_SOURCE test/osqp-interface-unit.cpp)
+  endif()
+
   catkin_add_gtest(${PROJECT_NAME}-test ${SCO_TEST_SOURCE})
   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
+  if (osqp_FOUND)
+    target_link_libraries(${PROJECT_NAME}-test osqp::osqpstatic)
+  endif()
 endif()

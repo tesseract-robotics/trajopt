@@ -19,7 +19,11 @@ int LoggingInit()
     printf("You can set logging level with TRAJOPT_LOG_THRESH. Valid values: "
            "%s. Defaulting to INFO\n",
            VALID_THRESH_VALUES);
-    lvlstr = "INFO";
+  #ifdef NDEBUG
+    lvlstr = "ERROR";
+  #else
+    lvlstr = "DEBUG";
+  #endif
   }
   else
     lvlstr = string(lvlc);
