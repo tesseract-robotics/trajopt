@@ -15,7 +15,12 @@ extern void simplify2(vector<int>& inds, vector<double>& vals);
 
 using namespace sco;
 
-TEST(solver_interface, simplify2)
+class SolverInterface : public testing::TestWithParam<int> {
+ protected:
+  SolverInterface() {}
+};
+
+TEST(SolverInterface, simplify2)
 {
     vector<int> indices = {0, 1, 3};
     vector<double> values = {1e-7, 1e3, 0., 0., 0.};
@@ -27,9 +32,9 @@ TEST(solver_interface, simplify2)
     EXPECT_TRUE((values == vector<double>{1e-7, 1e3}));
 }
 
-TEST(solver_interface, setup_problem)
+TEST_P(SolverInterface, setup_problem)
 {
-  ModelPtr solver = createModel();
+  ModelPtr solver = createModel(static_cast<ConvexSolver>(GetParam()));
   vector<Var> vars;
   for (int i = 0; i < 3; ++i)
   {
@@ -70,9 +75,9 @@ TEST(solver_interface, setup_problem)
 }
 
 // Tests multiplying larger terms
-TEST(ExprMult_test1, DISABLED_setup_problem) // QuadExpr not PSD
+TEST_P(SolverInterface, DISABLED_ExprMult_test1) // QuadExpr not PSD
 {
-  ModelPtr solver = createModel();
+  ModelPtr solver = createModel(static_cast<ConvexSolver>(GetParam()));
   vector<Var> vars;
   for (int i = 0; i < 3; ++i)
   {
@@ -130,7 +135,7 @@ TEST(ExprMult_test1, DISABLED_setup_problem) // QuadExpr not PSD
 }
 
 // Tests multiplication with 2 variables: v1=10, v2=20 => (2*v1)(v2) = 400
-TEST(ExprMult_test2, setup_problem)
+TEST_P(SolverInterface, ExprMult_test2)
 {
   const double v1_val = 10;
   const double v2_val = 20;
@@ -139,7 +144,7 @@ TEST(ExprMult_test2, setup_problem)
   const double aff1_const = 0;
   const double aff2_const = 0;
 
-  ModelPtr solver = createModel();
+  ModelPtr solver = createModel(static_cast<ConvexSolver>(GetParam()));
   vector<Var> vars;
   vars.push_back(solver->addVar("v1"));
   vars.push_back(solver->addVar("v2"));
@@ -182,7 +187,7 @@ TEST(ExprMult_test2, setup_problem)
 }
 
 // Tests multiplication with a constant: v1=10, v2=20 => (3*v1-3)(2*v2-5) = 945
-TEST(ExprMult_test3, setup_problem)
+TEST_P(SolverInterface, ExprMult_test3)
 {
   const double v1_val = 10;
   const double v2_val = 20;
@@ -191,7 +196,7 @@ TEST(ExprMult_test3, setup_problem)
   const double aff1_const = -3;
   const double aff2_const = -5;
 
-  ModelPtr solver = createModel();
+  ModelPtr solver = createModel(static_cast<ConvexSolver>(GetParam()));
   vector<Var> vars;
   vars.push_back(solver->addVar("v1"));
   vars.push_back(solver->addVar("v2"));
@@ -232,3 +237,6 @@ TEST(ExprMult_test3, setup_problem)
   double answer = (v1_coeff * v1_val + aff1_const) * (v2_coeff * v2_val + aff2_const);
   EXPECT_NEAR(aff12.value(soln), answer, 1e-6);
 }
+
+INSTANTIATE_TEST_CASE_P(AllSolvers, SolverInterface,
+                        testing::Range<int>(GUROBI, AUTO_SOLVER));

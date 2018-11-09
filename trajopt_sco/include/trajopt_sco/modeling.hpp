@@ -159,7 +159,7 @@ Non-convex optimization problem
 class OptProb
 {
 public:
-  OptProb();
+  OptProb(ConvexSolver convex_solver = AUTO_SOLVER);
   /** create variables with bounds [-INFINITY, INFINITY]  */
   VarVector createVariables(const vector<string>& names);
   /** create variables with bounds [lb[i], ub[i] */

@@ -157,5 +157,14 @@ ostream& operator<<(ostream&, const Cnt&);
 ostream& operator<<(ostream&, const AffExpr&);
 ostream& operator<<(ostream&, const QuadExpr&);
 
-ModelPtr createModel();
+enum ConvexSolver
+{
+  GUROBI,
+  OSQP,
+  QPOASES,
+  BPMPD,
+  AUTO_SOLVER
+};
+
+ModelPtr createModel(ConvexSolver convex_solver = AUTO_SOLVER);
 }

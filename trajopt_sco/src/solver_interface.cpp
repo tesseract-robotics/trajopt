@@ -152,75 +152,75 @@ ostream& operator<<(ostream& o, const QuadExpr& e)
   return o;
 }
 
-ModelPtr createModel()
+ModelPtr createModel(ConvexSolver convex_solver)
 {
+  std::vector<bool> has_solver(AUTO_SOLVER, false);
 #ifdef HAVE_GUROBI
+  has_solver[GUROBI] = true;
   extern ModelPtr createGurobiModel();
 #endif
 #ifdef HAVE_BPMPD
+  has_solver[BPMPD] = true;
   extern ModelPtr createBPMPDModel();
 #endif
 #ifdef HAVE_OSQP
+  has_solver[OSQP] = true;
   extern ModelPtr createOSQPModel();
 #endif
 #ifdef HAVE_QPOASES
+  has_solver[QPOASES] = true;
   extern ModelPtr createqpOASESModel();
 #endif
 
-  enum ConvexSolver
-  {
-    GUROBI,
-    BPMPD,
-    OSQP,
-    QPOASES,
-    INVALID
-  };
-
   char* solver_env = getenv("TRAJOPT_CONVEX_SOLVER");
 
-  ConvexSolver solver = INVALID;
+  ConvexSolver solver = convex_solver;
 
-  if (solver_env)
+  if(solver == AUTO_SOLVER)
   {
-    if (string(solver_env) == "GUROBI")
-      solver = GUROBI;
-    else if (string(solver_env) == "BPMPD")
-      solver = BPMPD;
-    else if (string(solver_env) == "OSQP")
-      solver = OSQP;
-    else if (string(solver_env) == "QPOASES")
-      solver = QPOASES;
+    if (solver_env)
+    {
+      if (string(solver_env) == "GUROBI")
+        solver = GUROBI;
+      else if (string(solver_env) == "BPMPD")
+        solver = BPMPD;
+      else if (string(solver_env) == "OSQP")
+        solver = OSQP;
+      else if (string(solver_env) == "QPOASES")
+        solver = QPOASES;
+      else
+        PRINT_AND_THROW(boost::format("invalid solver \"%s\"specified by TRAJOPT_CONVEX_SOLVER") % solver_env);
+    }
     else
-      PRINT_AND_THROW(boost::format("invalid solver \"%s\"specified by TRAJOPT_CONVEX_SOLVER") % solver_env);
+    {
+#ifdef HAVE_GUROBI
+      solver = GUROBI;
+#elif defined(HAVE_OSQP)
+      solver = OSQP;
+#elif defined(HAVE_QPOASES)
+      solver = QPOASES;
+#else
+      solver = BPMPD;
+#endif
+    }
+  }
+
 #ifndef HAVE_GUROBI
-    if (solver == GUROBI)
-      PRINT_AND_THROW("you didn't build with GUROBI support");
+  if (solver == GUROBI)
+    PRINT_AND_THROW("you didn't build with GUROBI support");
 #endif
 #ifndef HAVE_BPMPD
-    if (solver == BPMPD)
-      PRINT_AND_THROW("you don't have BPMPD support on this platform");
+  if (solver == BPMPD)
+    PRINT_AND_THROW("you don't have BPMPD support on this platform");
 #endif
 #ifndef HAVE_OSQP
-    if (solver == OSQP)
-      PRINT_AND_THROW("you don't have OSQP support on this platform");
+  if (solver == OSQP)
+    PRINT_AND_THROW("you don't have OSQP support on this platform");
 #endif
 #ifndef HAVE_QPOASES
-    if (solver == QPOASES)
-      PRINT_AND_THROW("you don't have qpOASES support on this platform");
+  if (solver == QPOASES)
+    PRINT_AND_THROW("you don't have qpOASES support on this platform");
 #endif
-  }
-  else
-  {
-#ifdef HAVE_GUROBI
-    solver = GUROBI;
-#elif defined(HAVE_OSQP)
-    solver = OSQP;
-#elif defined(HAVE_QPOASES)
-    solver = QPOASES;
-#else
-    solver = BPMPD;
-#endif
-  }
 
 #ifdef HAVE_GUROBI
   if (solver == GUROBI)
