@@ -172,9 +172,10 @@ std::vector<ConvexSolver> availableSolvers()
     if (has_solver[i])
       ++n_available_solvers;
   std::vector<ConvexSolver> available_solvers(n_available_solvers, AUTO_SOLVER);
+  auto j = 0;
   for (auto i = 0; i < AUTO_SOLVER; ++i)
     if (has_solver[i])
-      available_solvers[i] = static_cast<ConvexSolver>(i);
+      available_solvers[j++] = static_cast<ConvexSolver>(i);
   return available_solvers;
 }
 
