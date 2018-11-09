@@ -90,7 +90,7 @@ OSQPModel::OSQPModel()
   _settings->eps_abs = 1e-4;
   _settings->eps_rel = 1e-6;
   _settings->max_iter = 8192;
-  _settings->sigma = 1e-16;
+  _settings->polish = 1;
 
   // Populate data
   _data = (OSQPData *)c_malloc(sizeof(OSQPData));

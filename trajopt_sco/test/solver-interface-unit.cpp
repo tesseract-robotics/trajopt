@@ -70,7 +70,7 @@ TEST(solver_interface, setup_problem)
 }
 
 // Tests multiplying larger terms
-TEST(ExprMult_test1, setup_problem)
+TEST(ExprMult_test1, DISABLED_setup_problem) // QuadExpr not PSD
 {
   ModelPtr solver = createModel();
   vector<Var> vars;
