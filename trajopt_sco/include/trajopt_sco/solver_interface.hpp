@@ -160,9 +160,9 @@ ostream& operator<<(ostream&, const QuadExpr&);
 enum ConvexSolver
 {
   GUROBI,
+  BPMPD,
   OSQP,
   QPOASES,
-  BPMPD,
   AUTO_SOLVER
 };
 
