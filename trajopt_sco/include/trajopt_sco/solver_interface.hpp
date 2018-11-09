@@ -166,5 +166,7 @@ enum ConvexSolver
   AUTO_SOLVER
 };
 
+std::vector<ConvexSolver> availableSolvers();
+
 ModelPtr createModel(ConvexSolver convex_solver = AUTO_SOLVER);
 }

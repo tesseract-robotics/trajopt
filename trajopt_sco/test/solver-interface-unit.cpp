@@ -15,7 +15,7 @@ extern void simplify2(vector<int>& inds, vector<double>& vals);
 
 using namespace sco;
 
-class SolverInterface : public testing::TestWithParam<int> {
+class SolverInterface : public testing::TestWithParam<ConvexSolver> {
  protected:
   SolverInterface() {}
 };
@@ -34,7 +34,7 @@ TEST(SolverInterface, simplify2)
 
 TEST_P(SolverInterface, setup_problem)
 {
-  ModelPtr solver = createModel(static_cast<ConvexSolver>(GetParam()));
+  ModelPtr solver = createModel(GetParam());
   vector<Var> vars;
   for (int i = 0; i < 3; ++i)
   {
@@ -77,7 +77,7 @@ TEST_P(SolverInterface, setup_problem)
 // Tests multiplying larger terms
 TEST_P(SolverInterface, DISABLED_ExprMult_test1) // QuadExpr not PSD
 {
-  ModelPtr solver = createModel(static_cast<ConvexSolver>(GetParam()));
+  ModelPtr solver = createModel(GetParam());
   vector<Var> vars;
   for (int i = 0; i < 3; ++i)
   {
@@ -144,7 +144,7 @@ TEST_P(SolverInterface, ExprMult_test2)
   const double aff1_const = 0;
   const double aff2_const = 0;
 
-  ModelPtr solver = createModel(static_cast<ConvexSolver>(GetParam()));
+  ModelPtr solver = createModel(GetParam());
   vector<Var> vars;
   vars.push_back(solver->addVar("v1"));
   vars.push_back(solver->addVar("v2"));
@@ -196,7 +196,7 @@ TEST_P(SolverInterface, ExprMult_test3)
   const double aff1_const = -3;
   const double aff2_const = -5;
 
-  ModelPtr solver = createModel(static_cast<ConvexSolver>(GetParam()));
+  ModelPtr solver = createModel(GetParam());
   vector<Var> vars;
   vars.push_back(solver->addVar("v1"));
   vars.push_back(solver->addVar("v2"));
@@ -239,4 +239,4 @@ TEST_P(SolverInterface, ExprMult_test3)
 }
 
 INSTANTIATE_TEST_CASE_P(AllSolvers, SolverInterface,
-                        testing::Range<int>(GUROBI, AUTO_SOLVER));
+                        testing::ValuesIn(availableSolvers()));

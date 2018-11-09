@@ -152,23 +152,44 @@ ostream& operator<<(ostream& o, const QuadExpr& e)
   return o;
 }
 
-ModelPtr createModel(ConvexSolver convex_solver)
+std::vector<ConvexSolver> availableSolvers()
 {
   std::vector<bool> has_solver(AUTO_SOLVER, false);
 #ifdef HAVE_GUROBI
   has_solver[GUROBI] = true;
-  extern ModelPtr createGurobiModel();
 #endif
 #ifdef HAVE_BPMPD
   has_solver[BPMPD] = true;
-  extern ModelPtr createBPMPDModel();
 #endif
 #ifdef HAVE_OSQP
   has_solver[OSQP] = true;
-  extern ModelPtr createOSQPModel();
 #endif
 #ifdef HAVE_QPOASES
   has_solver[QPOASES] = true;
+#endif
+  int n_available_solvers = 0;
+  for (auto i = 0; i < AUTO_SOLVER; ++i)
+    if (has_solver[i])
+      ++n_available_solvers;
+  std::vector<ConvexSolver> available_solvers(n_available_solvers, AUTO_SOLVER);
+  for (auto i = 0; i < AUTO_SOLVER; ++i)
+    if (has_solver[i])
+      available_solvers[i] = static_cast<ConvexSolver>(i);
+  return available_solvers;
+}
+
+ModelPtr createModel(ConvexSolver convex_solver)
+{
+#ifdef HAVE_GUROBI
+  extern ModelPtr createGurobiModel();
+#endif
+#ifdef HAVE_BPMPD
+  extern ModelPtr createBPMPDModel();
+#endif
+#ifdef HAVE_OSQP
+  extern ModelPtr createOSQPModel();
+#endif
+#ifdef HAVE_QPOASES
   extern ModelPtr createqpOASESModel();
 #endif
 
@@ -193,15 +214,7 @@ ModelPtr createModel(ConvexSolver convex_solver)
     }
     else
     {
-#ifdef HAVE_GUROBI
-      solver = GUROBI;
-#elif defined(HAVE_OSQP)
-      solver = OSQP;
-#elif defined(HAVE_QPOASES)
-      solver = QPOASES;
-#else
-      solver = BPMPD;
-#endif
+      solver = availableSolvers()[0];
     }
   }
 
