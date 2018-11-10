@@ -19,6 +19,7 @@ typedef BasicArray<Var> VarArray;
  */
 struct DynamicCartPoseErrCalculator : public TrajOptVectorOfVector
 {
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   std::string target_;
   tesseract::BasicKinConstPtr manip_;
   tesseract::BasicEnvConstPtr env_;
@@ -44,6 +45,7 @@ struct DynamicCartPoseErrCalculator : public TrajOptVectorOfVector
  */
 struct CartPoseErrCalculator : public TrajOptVectorOfVector
 {
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   Eigen::Isometry3d pose_inv_;
   tesseract::BasicKinConstPtr manip_;
   tesseract::BasicEnvConstPtr env_;
@@ -69,6 +71,7 @@ struct CartPoseErrCalculator : public TrajOptVectorOfVector
  */
 struct CartVelJacCalculator : MatrixOfVector
 {
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   tesseract::BasicKinConstPtr manip_;
   tesseract::BasicEnvConstPtr env_;
   std::string link_;
@@ -92,6 +95,7 @@ struct CartVelJacCalculator : MatrixOfVector
  */
 struct CartVelErrCalculator : VectorOfVector
 {
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   tesseract::BasicKinConstPtr manip_;
   tesseract::BasicEnvConstPtr env_;
   std::string link_;

@@ -168,6 +168,8 @@ private:
 /** @brief This is used when the goal frame is not fixed in space */
 struct DynamicCartPoseTermInfo : public TermInfo, public MakesCost, public MakesConstraint
 {
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
   /** @brief Timestep at which to apply term */
   int timestep;
   std::string target;
@@ -193,6 +195,8 @@ struct DynamicCartPoseTermInfo : public TermInfo, public MakesCost, public Makes
 */
 struct CartPoseTermInfo : public TermInfo, public MakesCost, public MakesConstraint
 {
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
   /** @brief Timestep at which to apply term */
   int timestep;
   /** @brief  Cartesian position */
