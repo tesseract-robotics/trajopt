@@ -46,7 +46,13 @@ class qpOASESModel : public Model
 
   void update_objective();
   void update_constraints();
-  void create_solver();
+  /**
+   * Instantiates a new qpOASES problem if it has not been instantiated yet
+   * or if the size of the problem has changed.
+   * 
+   * @returns true if a new qpOASES problem has been instantiated
+   */
+  bool updateSolver();
 
 public:
   vector<Var> m_vars;
@@ -55,6 +61,10 @@ public:
   vector<AffExpr> m_cntExprs;
   vector<ConstraintType> m_cntTypes;
   vector<double> m_soln;
+  /**
+   * Instantiates a new qpOASES problem
+   */
+  void createSolver();
 
 
   vector<int> m_H_row_indices;

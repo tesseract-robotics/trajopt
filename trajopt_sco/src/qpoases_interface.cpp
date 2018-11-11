@@ -248,8 +248,9 @@ void qpOASESModel::update_constraints()
                      m_A_csc_data.data());
 }
 
-void qpOASESModel::create_solver()
+bool qpOASESModel::updateSolver()
 {
+  bool solver_updated = false;
   if(!m_problem ||
      m_vars.size() != m_problem->getNV() ||
      m_cnts.size() != m_problem->getNC())
@@ -257,7 +258,15 @@ void qpOASESModel::create_solver()
     // Create Problem - this should be called only once
     m_problem.reset(new SQProblem(m_vars.size(), m_cnts.size()));
     m_problem->setOptions(m_options);
+    solver_updated = true;
   }
+  return solver_updated;
+}
+
+void qpOASESModel::createSolver()
+{
+  qpoases_problem_.reset();
+  updateSolver();
 }
 
 void qpOASESModel::update()
@@ -330,7 +339,7 @@ CvxOptStatus qpOASESModel::optimize()
   update();
   update_objective();
   update_constraints();
-  create_solver();
+  updateSolver();
   qpOASES::returnValue val = qpOASES::RET_QP_SOLUTION_STARTED;
 
   // Solve Problem
@@ -345,7 +354,7 @@ CvxOptStatus qpOASESModel::optimize()
   
   if(val != qpOASES::SUCCESSFUL_RETURN)
   {
-    create_solver();
+    createSolver();
   
     val = m_problem->init(&m_H, m_g.data(),
                         &m_A, m_lb.data(), m_ub.data(),
