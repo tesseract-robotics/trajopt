@@ -4,12 +4,10 @@
 
 namespace sco
 {
-
-
 /**
  * @brief converts a triplet representation of a sparse matrix into compressed
  *        sparse column representation (CSC).
- * 
+ *
  * @param [out] row_indices row indices for a CSC matrix
  * @param [out] column_pointers column pointer for a CSC matrix
  * @param [out] values pointer to non-zero elements in CSC representation
@@ -22,62 +20,61 @@ namespace sco
  * @param [in] data_j column indices for input values
  * @param [in] data_vij input values
  */
-void triplets_to_CSC(vector<int>& row_indices,
-                     vector<int>& column_pointers,
-                     vector<double>& values,
-                     const int m_size,
-                     const int n_size,
-                     const int n_nonzero,
-                     const vector<int>& data_i,
-                     const vector<int>& data_j,
-                     const vector<double>& data_vij,
-                     bool only_upper_triangular = false);
-
+void tripletsToCSC(vector<int>& row_indices,
+                   vector<int>& column_pointers,
+                   vector<double>& values,
+                   const int m_size,
+                   const int n_size,
+                   const int n_nonzero,
+                   const vector<int>& data_i,
+                   const vector<int>& data_j,
+                   const vector<double>& data_vij,
+                   bool only_upper_triangular = false);
 
 class qpOASESModel : public Model
 {
-  std::shared_ptr<qpOASES::SQProblem> m_problem;
-  std::shared_ptr<qpOASES::Constraints> m_constraints;
-  std::shared_ptr<qpOASES::Bounds> m_bounds;
-  qpOASES::Options m_options;
+  std::shared_ptr<qpOASES::SQProblem> qpoases_problem_;
+  std::shared_ptr<qpOASES::Constraints> qpoases_constraints_;
+  std::shared_ptr<qpOASES::Bounds> qpoases_bounds_;
+  qpOASES::Options qpoases_options_;
 
-  qpOASES::SymSparseMat m_H;
-  qpOASES::SparseMatrix m_A;
+  qpOASES::SymSparseMat H_; /**< Quadratic cost matrix */
+  qpOASES::SparseMatrix A_; /**< Constraints matrix */
 
-  void update_objective();
-  void update_constraints();
+  void updateObjective();
+  void updateConstraints();
   /**
    * Instantiates a new qpOASES problem if it has not been instantiated yet
    * or if the size of the problem has changed.
-   * 
+   *
    * @returns true if a new qpOASES problem has been instantiated
    */
   bool updateSolver();
 
-public:
-  vector<Var> m_vars;
-  vector<Cnt> m_cnts;
-  vector<double> m_lb, m_ub;
-  vector<AffExpr> m_cntExprs;
-  vector<ConstraintType> m_cntTypes;
-  vector<double> m_soln;
   /**
    * Instantiates a new qpOASES problem
    */
   void createSolver();
 
+public:
+  vector<Var> vars_;
+  vector<Cnt> cnts_;
+  vector<double> lb_, ub_;
+  vector<AffExpr> cnt_exprs_;
+  vector<ConstraintType> cnt_types_;
+  vector<double> solution_;
 
-  vector<int> m_H_row_indices;
-  vector<int> m_H_column_pointers;
-  vector<double> m_H_csc_data;
-  vector<double> m_g;
+  vector<int> H_row_indices_;
+  vector<int> H_column_pointers_;
+  vector<double> H_csc_data_;
+  vector<double> g_;
 
-  vector<int> m_A_row_indices;
-  vector<int> m_A_column_pointers;
-  vector<double> m_A_csc_data;
-  vector<double> m_lbA, m_ubA;
+  vector<int> A_row_indices_;
+  vector<int> A_column_pointers_;
+  vector<double> A_csc_data_;
+  vector<double> lbA_, ubA_;
 
-  QuadExpr m_objective;
+  QuadExpr objective_;
 
   qpOASESModel();
   virtual ~qpOASESModel();

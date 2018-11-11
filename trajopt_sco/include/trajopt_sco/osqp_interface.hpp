@@ -4,12 +4,10 @@
 
 namespace sco
 {
-
-
 /**
  * @brief converts a triplet representation of a sparse matrix into compressed
  *        sparse column representation (CSC).
- * 
+ *
  * @param [out] row_indices row indices for a CSC matrix
  * @param [out] column_pointers column pointer for a CSC matrix
  * @param [out] values pointer to non-zero elements in CSC representation
@@ -22,48 +20,46 @@ namespace sco
  * @param [in] data_j column indices for input values
  * @param [in] data_vij input values
  */
-void triplets_to_CSC(vector<c_int>& row_indices,
-                     vector<c_int>& column_pointers,
-                     vector<double>& values,
-                     const int m_size,
-                     const int n_size,
-                     const int n_nonzero,
-                     const vector<int>& data_i,
-                     const vector<int>& data_j,
-                     const vector<double>& data_vij,
-                     bool only_upper_triangular = false);
-
+void tripletsToCSC(vector<c_int>& row_indices,
+                   vector<c_int>& column_pointers,
+                   vector<double>& values,
+                   const int m_size,
+                   const int n_size,
+                   const int n_nonzero,
+                   const vector<int>& data_i,
+                   const vector<int>& data_j,
+                   const vector<double>& data_vij,
+                   bool only_upper_triangular = false);
 
 class OSQPModel : public Model
 {
-  OSQPSettings* _settings; // OSQP Settings
-  OSQPWorkspace * _work;  // OSQP Workspace
-  OSQPData * _data;  // OSQPData
-  
-  void update_objective();
-  void update_constraints();
-  void create_or_update_solver();
-  
+  OSQPSettings osqp_settings_;     // OSQP Settings
+  OSQPData osqp_data_;             // OSQPData
+  OSQPWorkspace* osqp_workspace_;  // OSQP Workspace
+
+  void updateObjective();
+  void updateConstraints();
+  void createOrUpdateSolver();
+
 public:
-  vector<Var> m_vars;
-  vector<Cnt> m_cnts;
-  vector<double> m_lbs, m_ubs;
-  vector<AffExpr> m_cntExprs;
-  vector<ConstraintType> m_cntTypes;
-  vector<double> m_soln;
+  vector<Var> vars_;
+  vector<Cnt> cnts_;
+  vector<double> lbs_, ubs_;
+  vector<AffExpr> cnt_exprs_;
+  vector<ConstraintType> cnt_types_;
+  vector<double> solution_;
 
+  vector<c_int> P_row_indices_;
+  vector<c_int> P_column_pointers_;
+  vector<double> P_csc_data_;
+  vector<double> q_;
 
-  vector<c_int> m_P_row_indices;
-  vector<c_int> m_P_column_pointers;
-  vector<double> m_P_csc_data;
-  vector<double> m_q;
+  vector<c_int> A_row_indices_;
+  vector<c_int> A_column_pointers_;
+  vector<double> A_csc_data_;
+  vector<double> l_, u_;
 
-  vector<c_int> m_A_row_indices;
-  vector<c_int> m_A_column_pointers;
-  vector<double> m_A_csc_data;
-  vector<double> m_l, m_u;
-
-  QuadExpr m_objective;
+  QuadExpr objective_;
 
   OSQPModel();
   virtual ~OSQPModel();
