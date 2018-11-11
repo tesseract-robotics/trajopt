@@ -94,16 +94,20 @@ OSQPModel::OSQPModel()
 
   // Populate data
   _data = (OSQPData *)c_malloc(sizeof(OSQPData));
+  osqp_data_.A = nullptr;
+  osqp_data_.P = nullptr;
+  osqp_workspace_ = nullptr;
 }
 
 OSQPModel::~OSQPModel()
 {
   // Cleanup
-  osqp_cleanup(_work);
-  c_free(_data->A);
-  c_free(_data->P);
-  c_free(_data);
-  c_free(_settings);
+  if (osqp_workspace_ != nullptr)
+    osqp_cleanup(osqp_workspace_);
+  if (osqp_data_.A != nullptr)
+    c_free(osqp_data_.A);
+  if (osqp_data_.P != nullptr)
+    c_free(osqp_data_.P);
 }
 
 Var OSQPModel::addVar(const string& name)
@@ -210,6 +214,8 @@ void OSQPModel::update_objective()
                   data_i, data_j, vals_ij);
 
   _data->n = n;
+  if (osqp_data_.P != nullptr)
+    c_free(osqp_data_.P);
   _data->P = csc_matrix(_data->n, _data->n, m_P_csc_data.size(),
                         m_P_csc_data.data(), m_P_row_indices.data(),
                         m_P_column_pointers.data());
@@ -263,6 +269,8 @@ void OSQPModel::update_constraints()
                   m_cnts.size() + m_vars.size(), m_vars.size(), m*n,
                   data_i, data_j, data_ij);
 
+  if (osqp_data_.A != nullptr)
+    c_free(osqp_data_.A); 
   _data->A = csc_matrix(_data->m, _data->n, m_A_csc_data.size(), 
                         m_A_csc_data.data(), m_A_row_indices.data(),
                         m_A_column_pointers.data());
@@ -279,6 +287,9 @@ void OSQPModel::create_or_update_solver()
     update_objective();
     update_constraints();
 
+    // TODO atm we are not updating the workspace, but recreating it each time
+    if (osqp_workspace_ != nullptr)
+      osqp_cleanup(osqp_workspace_);
     // Setup workspace - this should be called only once
    _work = osqp_setup(_data, _settings);
   }
