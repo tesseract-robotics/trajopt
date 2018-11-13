@@ -43,10 +43,14 @@ sco::ConvexObjectivePtr JointPosCost::convex(const DblVec& /*x*/, sco::Model* mo
 }
 
 //////////////////// Velocity /////////////////////
-JointVelEqCost::JointVelEqCost(const VarArray& vars, const VectorXd& coeffs, const VectorXd& targs)
-  : Cost("JointVel"), vars_(vars), coeffs_(coeffs), targs_(targs)
+JointVelEqCost::JointVelEqCost(const VarArray& vars,
+                               const VectorXd& coeffs,
+                               const VectorXd& targs,
+                               int& first_step,
+                               int& last_step)
+  : Cost("JointVel"), vars_(vars), coeffs_(coeffs), targs_(targs), first_step_(first_step), last_step_(last_step)
 {
-  for (int i = 0; i < vars.rows() - 1; ++i)
+  for (int i = first_step_; i <= last_step_ - 1 ; ++i)
   {
     for (int j = 0; j < vars.cols(); ++j)
     {
@@ -63,9 +67,10 @@ JointVelEqCost::JointVelEqCost(const VarArray& vars, const VectorXd& coeffs, con
 double JointVelEqCost::value(const vector<double>& xvec)
 {
   // Convert vector from optimization to trajectory
-  MatrixXd traj = getTraj(xvec, vars_);
+  MatrixXd traj = (getTraj(xvec, vars_));
   // Takes diff b/n the subsequent rows and subtract each row by the targs_ vector
-  MatrixXd diff = (diffAxis0(traj)).rowwise() - targs_.transpose();
+  MatrixXd diff =
+      (diffAxis0(traj.block(first_step_, 0, last_step_ - first_step_ + 1, traj.cols()))).rowwise() - targs_.transpose();
   // Element-wise square it, multiply it by a diagonal matrix of coefficients, and sums output
   return (diff.array().square().matrix() * coeffs_.asDiagonal()).sum();
 }
@@ -80,11 +85,20 @@ JointVelIneqCost::JointVelIneqCost(const VarArray& vars,
                                    const VectorXd& coeffs,
                                    const VectorXd& targs,
                                    const VectorXd& upper_tols,
-                                   const VectorXd& lower_tols)
-  : Cost("JointVel"), vars_(vars), coeffs_(coeffs), targs_(targs), upper_tols_(upper_tols), lower_tols_(lower_tols)
+                                   const VectorXd& lower_tols,
+                                   int& first_step,
+                                   int& last_step)
+  : Cost("JointVel")
+  , vars_(vars)
+  , coeffs_(coeffs)
+  , targs_(targs)
+  , upper_tols_(upper_tols)
+  , lower_tols_(lower_tols)
+  , first_step_(first_step)
+  , last_step_(last_step)
 {
   // Form upper limit expr = - (upper_tol-(vel-targ))
-  for (int i = 0; i < vars.rows() - 1; ++i)
+  for (int i = first_step_; i <= last_step_ - 1; ++i)
   {
     for (int j = 0; j < vars.cols(); ++j)
     {
@@ -102,7 +116,7 @@ JointVelIneqCost::JointVelIneqCost(const VarArray& vars,
   }
 
   // Form upper limit expr = - (upper_tol-(vel-targ))
-  for (int i = 0; i < vars.rows() - 1; ++i)
+  for (int i = first_step_; i <= last_step_ - 1; ++i)
   {
     for (int j = 0; j < vars.cols(); ++j)
     {
@@ -124,7 +138,7 @@ double JointVelIneqCost::value(const vector<double>& xvec)
   // Convert vector from optimization to trajectory
   MatrixXd traj = getTraj(xvec, vars_);
   // Takes diff b/n the subsequent rows to get velocity
-  MatrixXd vel = diffAxis0(traj);
+  MatrixXd vel = diffAxis0(traj.block(first_step_, 0, last_step_ - first_step_ + 1, traj.cols()));
   // Subtract targets to center about 0 and then subtract from tolerance
   MatrixXd diff1 = -1 * upper_tols_.transpose() - (vel.rowwise() - targs_.transpose());
   MatrixXd diff2 = lower_tols_.transpose() - (vel.rowwise() - targs_.transpose());
@@ -143,10 +157,19 @@ ConvexObjectivePtr JointVelIneqCost::convex(const vector<double>& /*x*/, Model* 
   return out;
 }
 
-JointVelEqConstraint::JointVelEqConstraint(const VarArray& vars, const VectorXd& coeffs, const VectorXd& targs)
-  : EqConstraint("JointVel"), vars_(vars), coeffs_(coeffs), targs_(targs)
+JointVelEqConstraint::JointVelEqConstraint(const VarArray& vars,
+                                           const VectorXd& coeffs,
+                                           const VectorXd& targs,
+                                           int& first_step,
+                                           int& last_step)
+  : EqConstraint("JointVel")
+  , vars_(vars)
+  , coeffs_(coeffs)
+  , targs_(targs)
+  , first_step_(first_step)
+  , last_step_(last_step)
 {
-  for (int i = 0; i < vars.rows() - 1; ++i)
+  for (int i = first_step_; i <= last_step_ - 1; ++i)
   {
     for (int j = 0; j < vars.cols(); ++j)
     {
@@ -157,15 +180,18 @@ JointVelEqConstraint::JointVelEqConstraint(const VarArray& vars, const VectorXd&
       exprDec(vel, targs_[j]);
       // expr_ = coeff * vel^2
       exprInc(expr_, exprMult(vel, coeffs_[j]));
+      AffExpr tmp = expr_;
     }
   }
 }
+
 vector<double> JointVelEqConstraint::value(const vector<double>& xvec)
 {
   // Convert vector from optimization to trajectory
   MatrixXd traj = getTraj(xvec, vars_);
   // Takes diff b/n the subsequent rows and subtract each row by the targs_ vector
-  MatrixXd diff = (diffAxis0(traj)).rowwise() - targs_.transpose();
+  MatrixXd diff =
+      (diffAxis0(traj.block(first_step_, 0, last_step_ - first_step_ + 1, traj.cols()))).rowwise() - targs_.transpose();
   // Squares it, multiplies it by a diagonal matrix of coefficients, and converts to vector
   return toDblVec((diff.array().square()).matrix() * coeffs_.asDiagonal());
 }
@@ -181,16 +207,20 @@ JointVelIneqConstraint::JointVelIneqConstraint(const VarArray& vars,
                                                const VectorXd& coeffs,
                                                const VectorXd& targs,
                                                const VectorXd& upper_tols,
-                                               const VectorXd& lower_tols)
+                                               const VectorXd& lower_tols,
+                                               int& first_step,
+                                               int& last_step)
   : IneqConstraint("JointVel")
   , vars_(vars)
   , coeffs_(coeffs)
   , targs_(targs)
+  , first_step_(first_step)
+  , last_step_(last_step)
   , upper_tols_(upper_tols)
   , lower_tols_(lower_tols)
 {
   // Form upper limit expr = - (upper_tol-(vel-targ))
-  for (int i = 0; i < vars.rows() - 1; ++i)
+  for (int i = first_step_; i <= last_step_ - 1; ++i)
   {
     for (int j = 0; j < vars.cols(); ++j)
     {
@@ -208,7 +238,7 @@ JointVelIneqConstraint::JointVelIneqConstraint(const VarArray& vars,
   }
 
   // Form upper limit expr = - (upper_tol-(vel-targ))
-  for (int i = 0; i < vars.rows() - 1; ++i)
+  for (int i = first_step_; i <= last_step_ - 1; ++i)
   {
     for (int j = 0; j < vars.cols(); ++j)
     {
@@ -230,7 +260,7 @@ vector<double> JointVelIneqConstraint::value(const vector<double>& xvec)
   // Convert vector from optimization to trajectory
   MatrixXd traj = getTraj(xvec, vars_);
   // Takes diff b/n the subsequent rows to get velocity
-  VectorXd vel = diffAxis0(traj);
+  VectorXd vel = diffAxis0(traj.block(first_step_, 0, last_step_ - first_step_ + 1, traj.cols()));
   // Subtract targets to center about 0 and then subtract from tolerance
   ArrayXd diff1 = -1 * upper_tols_.transpose().array() - (vel.array().rowwise() - targs_.transpose().array());
   ArrayXd diff2 = lower_tols_.transpose().array() - (vel.array().rowwise() - targs_.transpose().array());

@@ -642,6 +642,20 @@ void JointVelTermInfo::hatch(TrajOptProb& prob)
   if (lower_tols.empty())
     lower_tols = DblVec(n_dof, 0);
 
+  // If only one time step is desired, calculate velocity with next step (2 steps are needed for 1 velocity calculation)
+  if ((prob.GetNumSteps() - 2) <= first_step)
+    first_step = prob.GetNumSteps() - 2;
+  if ((prob.GetNumSteps() - 1) <= last_step)
+    last_step = prob.GetNumSteps() - 1;
+  if (last_step == first_step)
+    last_step += 1;
+  if (last_step < first_step){
+    int tmp = first_step;
+    first_step = last_step;
+    last_step = tmp;
+    ROS_WARN("Last time step for JointVelTerm comes before first step. Reversing them.");
+  }
+
   // Check if parameters are the correct size.
   checkParameterSize(coeffs, n_dof, "JointVelTermInfo coeffs", true);
   checkParameterSize(targs, n_dof, "JointVelTermInfo upper_tols", true);
@@ -657,13 +671,13 @@ void JointVelTermInfo::hatch(TrajOptProb& prob)
     // If the tolerances are 0, an equality cost is set. Otherwise it's a hinged "inequality" cost
     if (is_upper_zeros && is_lower_zeros)
     {
-      prob.addCost(CostPtr(new JointVelEqCost(prob.GetVars(), toVectorXd(coeffs), toVectorXd(targs))));
+      prob.addCost(CostPtr(new JointVelEqCost(prob.GetVars(), toVectorXd(coeffs), toVectorXd(targs), first_step, last_step)));
       prob.getCosts().back()->setName(name);
     }
     else
     {
       prob.addCost(CostPtr(new JointVelIneqCost(
-          prob.GetVars(), toVectorXd(coeffs), toVectorXd(targs), toVectorXd(upper_tols), toVectorXd(lower_tols))));
+          prob.GetVars(), toVectorXd(coeffs), toVectorXd(targs), toVectorXd(upper_tols), toVectorXd(lower_tols), first_step, last_step)));
       prob.getCosts().back()->setName(name);
     }
   }
@@ -673,13 +687,13 @@ void JointVelTermInfo::hatch(TrajOptProb& prob)
     if (is_upper_zeros && is_lower_zeros)
     {
       prob.addConstraint(
-          ConstraintPtr(new JointVelEqConstraint(prob.GetVars(), toVectorXd(coeffs), toVectorXd(targs))));
+          ConstraintPtr(new JointVelEqConstraint(prob.GetVars(), toVectorXd(coeffs), toVectorXd(targs), first_step, last_step)));
       prob.getConstraints().back()->setName(name);
     }
     else
     {
       prob.addConstraint(ConstraintPtr(new JointVelIneqConstraint(
-          prob.GetVars(), toVectorXd(coeffs), toVectorXd(targs), toVectorXd(upper_tols), toVectorXd(lower_tols))));
+          prob.GetVars(), toVectorXd(coeffs), toVectorXd(targs), toVectorXd(upper_tols), toVectorXd(lower_tols), first_step, last_step)));
       prob.getConstraints().back()->setName(name);
     }
   }
