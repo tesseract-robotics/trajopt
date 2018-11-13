@@ -33,7 +33,7 @@ class TRAJOPT_API JointVelCost : public sco::Cost
 {
 public:
   /** @brief Forms error in QuadExpr - independent of penalty type */
-  JointVelEqCost(const VarArray& traj, const VectorXd& coeffs, const VectorXd& targs);
+  JointVelEqCost(const VarArray& traj, const VectorXd& coeffs, const VectorXd& targs, int& first_step, int& last_step);
   /** @brief Convexifies cost expression - In this case, it is already quadratic so there's nothing to do */
   virtual sco::ConvexObjectivePtr convex(const DblVec& x, sco::Model* model);
   /** @brief Numerically evaluate cost given the vector of values */
@@ -48,6 +48,10 @@ private:
   sco::QuadExpr expr_;
   /** @brief Vector of velocity targets */
   VectorXd targs_;
+  /** @brief First time step to which the term is applied */
+  int first_step_;
+  /** @brief Last time step to which the term is applied */
+  int last_step_;
 
   // TODO: Add time steps
   // TODO: Add getVars
@@ -65,7 +69,9 @@ public:
                    const VectorXd& coeffs,
                    const VectorXd& targs,
                    const VectorXd& upper_limits,
-                   const VectorXd& lower_limits);
+                   const VectorXd& lower_limits,
+                   int& first_step,
+                   int& last_step);
   /** @brief Convexifies cost expression - In this case, it is already quadratic so there's nothing to do */
   virtual ConvexObjectivePtr convex(const vector<double>& x, Model* model);
   /** @brief Numerically evaluate cost given the vector of values */
@@ -82,6 +88,10 @@ private:
   VectorXd lower_tols_;
   /** @brief Vector of velocity targets */
   VectorXd targs_;
+  /** @brief First time step to which the term is applied */
+  int first_step_;
+  /** @brief Last time step to which the term is applied */
+  int last_step_;
   /** @brief Stores the cost as an expression */
   AffExpr expr_;
   /** @brief Stores the cost as an expression */
@@ -95,7 +105,11 @@ class TRAJOPT_API JointVelEqConstraint : public EqConstraint
 {
 public:
   /** @brief Forms error in QuadExpr - independent of penalty type */
-  JointVelEqConstraint(const VarArray& traj, const VectorXd& coeffs, const VectorXd& targs);
+  JointVelEqConstraint(const VarArray& traj,
+                       const VectorXd& coeffs,
+                       const VectorXd& targs,
+                       int& first_step,
+                       int& last_step);
   /** @brief Convexifies cost expression - In this case, it is already quadratic so there's nothing to do */
   virtual ConvexConstraintsPtr convex(const vector<double>& x, Model* model);
   /** @brief Numerically evaluate cost given the vector of values */
@@ -106,8 +120,8 @@ public:
   /** Sum of violations */
   double violation(const vector<double>& x);
 
-//  VarVector getVars() { return VarVector(); }
-  //TODO: Figure out why we are using vararray instead of varvector, and should I convert between them?
+  //  VarVector getVars() { return VarVector(); }
+  // TODO: Figure out why we are using vararray instead of varvector, and should I convert between them?
   // From looking at pos, it appears that array contains all of the vectors for all the joints (maybe timesteps too?)
 
 private:
@@ -119,6 +133,10 @@ private:
   AffExpr expr_;
   /** @brief Vector of velocity targets */
   VectorXd targs_;
+  /** @brief First time step to which the term is applied */
+  int first_step_;
+  /** @brief Last time step to which the term is applied */
+  int last_step_;
 
   // TODO: Add time steps
 };
@@ -128,10 +146,12 @@ class TRAJOPT_API JointVelIneqConstraint : public IneqConstraint
 public:
   /** @brief Forms error in QuadExpr - independent of penalty type */
   JointVelIneqConstraint(const VarArray& traj,
-                   const VectorXd& coeffs,
-                   const VectorXd& targs,
-                   const VectorXd& upper_limits,
-                   const VectorXd& lower_limits);
+                         const VectorXd& coeffs,
+                         const VectorXd& targs,
+                         const VectorXd& upper_limits,
+                         const VectorXd& lower_limits,
+                         int& first_step,
+                         int& last_step);
   /** @brief Convexifies cost expression - In this case, it is already quadratic so there's nothing to do */
   virtual ConvexConstraintsPtr convex(const vector<double>& x, Model* model);
   /** @brief Numerically evaluate cost given the vector of values */
@@ -148,6 +168,10 @@ private:
   VectorXd lower_tols_;
   /** @brief Vector of velocity targets */
   VectorXd targs_;
+  /** @brief First time step to which the term is applied */
+  int first_step_;
+  /** @brief Last time step to which the term is applied */
+  int last_step_;
   /** @brief Stores the cost as an expression */
   AffExpr expr_;
   /** @brief Stores the cost as an expression */
