@@ -147,6 +147,118 @@ TEST_F(CostsTest, equality_jointVel)
   ROS_DEBUG("planning time: %.3f", GetClock() - tStart);
 }
 
+////////////////////////////////////////////////////////////////////
+/**
+ * @brief Tests inequality jointVel constraint
+ *
+ * Sets a cost targetting the velocity of all joints at -0.5 for the first half of the timesteps and +0.5 for the rest.
+ * Sets a conflicting constraint on the velocity of all joints limiting them to +/- 0.25.
+ * Checks to make sure that the constraint is met
+ */
+TEST_F(CostsTest, inequality_jointVel)
+{
+  ROS_DEBUG("CostsTest, inequality_cnt_jointVel");
+
+  const double lower_tol = -0.1;
+  const double upper_tol = 0.1;
+  const double cost_targ1 = 0.5;
+  const double cost_targ2 = -0.5;
+
+  const int steps = 10;
+  const double cnt_tol = 0.01;
+
+  ProblemConstructionInfo pci(env_);
+
+  // Populate Basic Info
+  pci.basic_info.n_steps = steps;
+  pci.basic_info.manip = "right_arm";
+  pci.basic_info.start_fixed = false;
+
+  // Create Kinematic Object
+  pci.kin = pci.env->getManipulator(pci.basic_info.manip);
+
+  // Populate Init Info
+  Eigen::VectorXd start_pos = pci.env->getCurrentJointValues(pci.kin->getName());
+  pci.init_info.type = InitInfo::STATIONARY;
+  pci.init_info.data = start_pos.transpose().replicate(pci.basic_info.n_steps, 1);
+
+  // Constraint that limits velocity
+  std::shared_ptr<JointVelTermInfo> jv = std::shared_ptr<JointVelTermInfo>(new JointVelTermInfo);
+  jv->coeffs = std::vector<double>(7, 1.0);
+  jv->targs = std::vector<double>(7.0, 0);
+  jv->lower_tols = std::vector<double>(7.0, lower_tol);
+  jv->upper_tols = std::vector<double>(7.0, upper_tol);
+  jv->first_step = 0;
+  jv->last_step = pci.basic_info.n_steps - 1;
+  jv->name = "joint_vel_limits";
+  jv->term_type = TT_CNT;
+  pci.cnt_infos.push_back(jv);
+
+  // Joint Velocities also have a cost to some non zero value
+  std::shared_ptr<JointVelTermInfo> jv2 = std::shared_ptr<JointVelTermInfo>(new JointVelTermInfo);
+  jv2->coeffs = std::vector<double>(7, 1.0);
+  jv2->targs = std::vector<double>(7.0, cost_targ1);
+//  jv2->lower_tols = std::vector<double>(7.0, 0.0);
+//  jv2->upper_tols = std::vector<double>(7.0, 0.0);
+  jv2->first_step = 0;
+  jv2->last_step = (pci.basic_info.n_steps - 1) / 2;
+  jv2->name = "joint_vel_targ_1";
+  jv2->term_type = TT_COST;
+  pci.cost_infos.push_back(jv2);
+
+  std::shared_ptr<JointVelTermInfo> jv3 = std::shared_ptr<JointVelTermInfo>(new JointVelTermInfo);
+  jv3->coeffs = std::vector<double>(7, 1.0);
+  jv3->targs = std::vector<double>(7.0, cost_targ2);
+//  jv3->lower_tols = std::vector<double>(7.0, 0.0);
+//  jv3->upper_tols = std::vector<double>(7.0, 0.0);
+  jv3->first_step = (pci.basic_info.n_steps - 1) / 2 + 1;
+  jv3->last_step = pci.basic_info.n_steps - 1;
+  jv3->name = "joint_vel_targ_2";
+  jv3->term_type = TT_COST;
+  pci.cost_infos.push_back(jv3);
+
+  TrajOptProbPtr prob = ConstructProblem(pci);
+  ASSERT_TRUE(!!prob);
+
+  BasicTrustRegionSQP opt(prob);
+  if (plotting)
+  {
+    opt.addCallback(PlotCallback(*prob, plotter_));
+  }
+
+  opt.initialize(trajToDblVec(prob->GetInitTraj()));
+  double tStart = GetClock();
+
+  OptStatus status = opt.optimize();
+  ROS_DEBUG("planning time: %.3f", GetClock() - tStart);
+
+  TrajArray output = getTraj(opt.x(), prob->GetVars());
+  std::cout << "Trajectory: \n" << output << "\n";
+
+
+  // Check velocity cost is working
+  double velocity;
+  for (auto i = 0; i < (output.rows())/2; ++i)
+  {
+    for (auto j = 0; j < output.cols(); ++j)
+    {
+      velocity = output(i + 1, j) - output(i, j);
+      EXPECT_TRUE(velocity < upper_tol + cnt_tol);
+      EXPECT_TRUE(velocity > lower_tol - cnt_tol);
+    }
+  }
+  for (auto i = (output.rows())/2+1; i < output.rows() - 1; ++i)
+  {
+    for (auto j = 0; j < output.cols(); ++j)
+    {
+      velocity = output(i + 1, j) - output(i, j);
+      EXPECT_TRUE(velocity < upper_tol + cnt_tol);
+      EXPECT_TRUE(velocity > lower_tol - cnt_tol);
+    }
+  }
+
+}
+
 int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);

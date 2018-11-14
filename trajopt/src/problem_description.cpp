@@ -11,6 +11,7 @@
 #include <trajopt_utils/eigen_conversions.hpp>
 #include <trajopt_utils/eigen_slicing.hpp>
 #include <trajopt_utils/logging.hpp>
+#include <trajopt_utils/vector_ops.hpp>
 #include <ros/ros.h>
 
 namespace
@@ -663,8 +664,8 @@ void JointVelTermInfo::hatch(TrajOptProb& prob)
   checkParameterSize(lower_tols, n_dof, "JointVelTermInfo lower_tols", true);
 
   // Check if tolerances are all zeros
-  bool is_upper_zeros = std::all_of(upper_tols.begin(), upper_tols.end(), [](int i) { return i == 0; });
-  bool is_lower_zeros = std::all_of(lower_tols.begin(), lower_tols.end(), [](int i) { return i == 0; });
+  bool is_upper_zeros = std::all_of(upper_tols.begin(), upper_tols.end(), [](double i) { return doubleEquals(i,0.); });
+  bool is_lower_zeros = std::all_of(lower_tols.begin(), lower_tols.end(), [](double i) { return doubleEquals(i,0.); });
 
   if (term_type == TT_COST)
   {

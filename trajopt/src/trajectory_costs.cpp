@@ -50,7 +50,7 @@ JointVelEqCost::JointVelEqCost(const VarArray& vars,
                                int& last_step)
   : Cost("JointVel"), vars_(vars), coeffs_(coeffs), targs_(targs), first_step_(first_step), last_step_(last_step)
 {
-  for (int i = first_step_; i <= last_step_ - 1 ; ++i)
+  for (int i = first_step_; i <= last_step_ - 1; ++i)
   {
     for (int j = 0; j < vars.cols(); ++j)
     {
@@ -91,9 +91,9 @@ JointVelIneqCost::JointVelIneqCost(const VarArray& vars,
   : Cost("JointVel")
   , vars_(vars)
   , coeffs_(coeffs)
-  , targs_(targs)
   , upper_tols_(upper_tols)
   , lower_tols_(lower_tols)
+  , targs_(targs)
   , first_step_(first_step)
   , last_step_(last_step)
 {
@@ -104,14 +104,16 @@ JointVelIneqCost::JointVelIneqCost(const VarArray& vars,
     {
       // vel = (x2 - x1) - targ
       AffExpr vel;
+      AffExpr expr;
       exprInc(vel, exprMult(vars(i, j), -1));
       exprInc(vel, exprMult(vars(i + 1, j), 1));
 
       exprDec(vel, targs_[j]);         // offset to center about 0
-      exprInc(expr_, upper_tols_[j]);  // expr_ = upper_tol
-      exprDec(expr_, vel);             // expr = upper_tol_- (vel - targs_)
-      exprMult(expr_, -1);             // expr = - (upper_tol_- (vel - targs_))
-      exprMult(expr_, coeffs[j]);      // expr = - (upper_tol_- (vel - targs_)) * coeffs_
+      exprInc(expr, upper_tols_[j]);  // expr_ = upper_tol
+      exprDec(expr, vel);             // expr = upper_tol_- (vel - targs_)
+      exprMult(expr, -1);             // expr = - (upper_tol_- (vel - targs_))
+      exprMult(expr, coeffs[j]);      // expr = - (upper_tol_- (vel - targs_)) * coeffs_
+      exprInc(expr_, expr);
     }
   }
 
@@ -122,13 +124,15 @@ JointVelIneqCost::JointVelIneqCost(const VarArray& vars,
     {
       // vel = (x2 - x1) - targ
       AffExpr vel;
+      AffExpr expr_neg;
       exprInc(vel, exprMult(vars(i, j), -1));
       exprInc(vel, exprMult(vars(i + 1, j), 1));
 
       exprDec(vel, targs_[j]);             // offset to center about 0
-      exprInc(expr_neg_, lower_tols_[j]);  // expr_ = lower_tol_
-      exprDec(expr_neg_, vel);             // expr = lower_tol_- (vel - targs_)
-      exprMult(expr_neg_, coeffs[j]);      // expr = (lower_tol_- (vel - targs_)) * coeffs_
+      exprInc(expr_neg, lower_tols_[j]);   // expr_ = lower_tol_
+      exprDec(expr_neg, vel);              // expr = lower_tol_- (vel - targs_)
+      exprMult(expr_neg, coeffs[j]);       // expr = (lower_tol_- (vel - targs_)) * coeffs_
+      exprInc(expr_neg_, expr_neg);
     }
   }
 }
@@ -140,11 +144,15 @@ double JointVelIneqCost::value(const vector<double>& xvec)
   // Takes diff b/n the subsequent rows to get velocity
   MatrixXd vel = diffAxis0(traj.block(first_step_, 0, last_step_ - first_step_ + 1, traj.cols()));
   // Subtract targets to center about 0 and then subtract from tolerance
-  MatrixXd diff1 = -1 * upper_tols_.transpose() - (vel.rowwise() - targs_.transpose());
-  MatrixXd diff2 = lower_tols_.transpose() - (vel.rowwise() - targs_.transpose());
-  // Applies hinge, multiplies it by a diagonal matrix of coefficients, and sums outputs of the two
-  return (diff1.matrix().cwiseMax(0) * coeffs_.asDiagonal()).sum() +
-         (diff2.matrix().cwiseMax(0) * coeffs_.asDiagonal()).sum();
+  MatrixXd diff0 = (vel.rowwise() - targs_.transpose());
+  MatrixXd diff1 = (diff0.rowwise() - upper_tols_.transpose()) * coeffs_.asDiagonal();
+  MatrixXd diff2 = ((diff0 * -1).rowwise() + lower_tols_.transpose()) * coeffs_.asDiagonal();
+  // Applies hinge, multiplies it by a diagonal matrix of coefficients, sums each corresponding value, and converts to
+  // vector
+//  MatrixXd out(diff1.rows(), diff1.cols() + diff2.cols());
+//  out << diff1, diff2;
+  double out =  diff1.cwiseMax(0).sum() + diff2.cwiseMax(0).sum();
+  return diff1.cwiseMax(0).sum() + diff2.cwiseMax(0).sum();
 }
 
 ConvexObjectivePtr JointVelIneqCost::convex(const vector<double>& /*x*/, Model* model)
@@ -152,7 +160,7 @@ ConvexObjectivePtr JointVelIneqCost::convex(const vector<double>& /*x*/, Model* 
   ConvexObjectivePtr out(new ConvexObjective(model));
   // Add hinge cost. Set the coefficient to 1 here since we include it in the AffExpr already
   // This is necessary since we want a seperate coefficient per joint
-  out->addHinge(expr_, 1);
+//  out->addHinge(expr_, 1);
   out->addHinge(expr_neg_, 1);
   return out;
 }
@@ -213,11 +221,11 @@ JointVelIneqConstraint::JointVelIneqConstraint(const VarArray& vars,
   : IneqConstraint("JointVel")
   , vars_(vars)
   , coeffs_(coeffs)
+  , upper_tols_(upper_tols)
+  , lower_tols_(lower_tols)
   , targs_(targs)
   , first_step_(first_step)
   , last_step_(last_step)
-  , upper_tols_(upper_tols)
-  , lower_tols_(lower_tols)
 {
   // Form upper limit expr = - (upper_tol-(vel-targ))
   for (int i = first_step_; i <= last_step_ - 1; ++i)
@@ -226,14 +234,16 @@ JointVelIneqConstraint::JointVelIneqConstraint(const VarArray& vars,
     {
       // vel = (x2 - x1) - targ
       AffExpr vel;
+      AffExpr expr;
       exprInc(vel, exprMult(vars(i, j), -1));
       exprInc(vel, exprMult(vars(i + 1, j), 1));
 
       exprDec(vel, targs_[j]);         // offset to center about 0
-      exprInc(expr_, upper_tols_[j]);  // expr_ = upper_tol
-      exprDec(expr_, vel);             // expr = upper_tol_- (vel - targs_)
-      exprMult(expr_, -1);             // expr = - (upper_tol_- (vel - targs_))
-      exprMult(expr_, coeffs[j]);      // expr = - (upper_tol_- (vel - targs_)) * coeffs_
+      exprInc(expr, upper_tols_[j]);  // expr_ = upper_tol
+      exprDec(expr, vel);             // expr = upper_tol_- (vel - targs_)
+      exprMult(expr, -1);             // expr = - (upper_tol_- (vel - targs_))
+      exprMult(expr, coeffs[j]);      // expr = - (upper_tol_- (vel - targs_)) * coeffs_
+      exprInc(expr_, expr);
     }
   }
 
@@ -244,13 +254,15 @@ JointVelIneqConstraint::JointVelIneqConstraint(const VarArray& vars,
     {
       // vel = (x2 - x1) - targ
       AffExpr vel;
+      AffExpr expr_neg;
       exprInc(vel, exprMult(vars(i, j), -1));
       exprInc(vel, exprMult(vars(i + 1, j), 1));
 
       exprDec(vel, targs_[j]);             // offset to center about 0
-      exprInc(expr_neg_, lower_tols_[j]);  // expr_ = lower_tol_
-      exprDec(expr_neg_, vel);             // expr = lower_tol_- (vel - targs_)
-      exprMult(expr_neg_, coeffs[j]);      // expr = (lower_tol_- (vel - targs_)) * coeffs_
+      exprInc(expr_neg, lower_tols_[j]);   // expr_ = lower_tol_
+      exprDec(expr_neg, vel);              // expr = lower_tol_- (vel - targs_)
+      exprMult(expr_neg, coeffs[j]);       // expr = (lower_tol_- (vel - targs_)) * coeffs_
+      exprInc(expr_neg_, expr_neg);
     }
   }
 }
@@ -260,19 +272,16 @@ vector<double> JointVelIneqConstraint::value(const vector<double>& xvec)
   // Convert vector from optimization to trajectory
   MatrixXd traj = getTraj(xvec, vars_);
   // Takes diff b/n the subsequent rows to get velocity
-  VectorXd vel = diffAxis0(traj.block(first_step_, 0, last_step_ - first_step_ + 1, traj.cols()));
+  MatrixXd vel = diffAxis0(traj.block(first_step_, 0, last_step_ - first_step_ + 1, traj.cols()));
   // Subtract targets to center about 0 and then subtract from tolerance
-  ArrayXd diff1 = -1 * upper_tols_.transpose().array() - (vel.array().rowwise() - targs_.transpose().array());
-  ArrayXd diff2 = lower_tols_.transpose().array() - (vel.array().rowwise() - targs_.transpose().array());
+  MatrixXd diff0 = (vel.rowwise() - targs_.transpose());
+  MatrixXd diff1 = (diff0.rowwise() - upper_tols_.transpose()) * coeffs_.asDiagonal();
+  MatrixXd diff2 = ((diff0 * -1).rowwise() + lower_tols_.transpose()) * coeffs_.asDiagonal();
   // Applies hinge, multiplies it by a diagonal matrix of coefficients, sums each corresponding value, and converts to
   // vector
-  //  auto diff3 = (diff1.matrix().cwiseMax(0) * coeffs_.asDiagonal()) + (diff2.matrix().cwiseMax(0) *
-  //  coeffs_.asDiagonal());  // Should be and ArrayXd
-  return toDblVec(
-      ((diff1.matrix().cwiseMax(0) * coeffs_.asDiagonal()) + (diff2.matrix().cwiseMax(0) * coeffs_.asDiagonal()))
-          .matrix());
-  // TODO: Constraints need to return a vector of doubles. One for each joint/timestep. If one joint is really big and
-  // one really small, we don't want them to cancel and not trigger cnt
+  MatrixXd out(diff1.rows(), diff1.cols() + diff2.cols());
+  out << diff1, diff2;
+  return toDblVec(out);
 }
 
 ConvexConstraintsPtr JointVelIneqConstraint::convex(const vector<double>& /*x*/, Model* model)
@@ -280,7 +289,7 @@ ConvexConstraintsPtr JointVelIneqConstraint::convex(const vector<double>& /*x*/,
   ConvexConstraintsPtr out(new ConvexConstraints(model));
   // Add hinge cost. Set the coefficient to 1 here since we include it in the AffExpr already
   // This is necessary since we want a seperate coefficient per joint
-  out->addIneqCnt(expr_);
+//  out->addIneqCnt(expr_);
   out->addIneqCnt(expr_neg_);
   return out;
 }
