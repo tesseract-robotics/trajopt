@@ -53,7 +53,6 @@ private:
   /** @brief Last time step to which the term is applied */
   int last_step_;
 
-  // TODO: Add time steps
   // TODO: Add getVars
 };
 
@@ -82,9 +81,9 @@ private:
   VarArray vars_;
   /** @brief The coefficients used to weight the cost */
   VectorXd coeffs_;
-  /** @brief Vector of velocity targets */
+  /** @brief Vector of upper tolerances */
   VectorXd upper_tols_;
-  /** @brief Vector of velocity targets */
+  /** @brief Vector of lower tolerances */
   VectorXd lower_tols_;
   /** @brief Vector of velocity targets */
   VectorXd targs_;
@@ -97,7 +96,6 @@ private:
   /** @brief Stores the cost as an expression */
   AffExpr expr_neg_;
 
-  // TODO: Add time steps
   // TODO: Add getVars
 };
 
@@ -138,7 +136,6 @@ private:
   /** @brief Last time step to which the term is applied */
   int last_step_;
 
-  // TODO: Add time steps
 };
 
 class TRAJOPT_API JointVelIneqConstraint : public IneqConstraint
@@ -162,9 +159,9 @@ private:
   VarArray vars_;
   /** @brief The coefficients used to weight the cost */
   VectorXd coeffs_;
-  /** @brief Vector of velocity targets */
+  /** @brief Vector of upper tolerances */
   VectorXd upper_tols_;
-  /** @brief Vector of velocity targets */
+  /** @brief Vector of lower tolerances */
   VectorXd lower_tols_;
   /** @brief Vector of velocity targets */
   VectorXd targs_;
@@ -177,7 +174,6 @@ private:
   /** @brief Stores the cost as an expression */
   AffExpr expr_neg_;
 
-  // TODO: Add time steps
   // TODO: Add getVars
 };
 
