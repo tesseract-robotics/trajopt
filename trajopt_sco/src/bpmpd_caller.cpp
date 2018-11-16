@@ -4,8 +4,6 @@
 #include <trajopt_sco/bpmpd_io.hpp>
 #include <trajopt_utils/stl_to_string.hpp>
 #include <unistd.h>
-using namespace bpmpd_io;
-using namespace std;
 
 extern "C" {
 extern void bpmpd(int*,
@@ -34,23 +32,23 @@ extern void bpmpd(int*,
 
 int main(int /*argc*/, char** /*argv*/)
 {
-  string working_dir = BPMPD_WORKING_DIR;
+  std::string working_dir = BPMPD_WORKING_DIR;
   int err = chdir(working_dir.c_str());
   if (err != 0)
   {
-    cerr << "error going to BPMPD working dir\n";
-    cerr << strerror(err) << endl;
+    std::cerr << "error going to BPMPD working dir\n";
+    std::cerr << strerror(err) << std::endl;
     abort();
   }
   // int counter=0;
   while (true)
   {
-    bpmpd_input bi;
-    ser(STDIN_FILENO, bi, DESER);
+    bpmpd_io::bpmpd_input bi;
+    bpmpd_io::ser(STDIN_FILENO, bi, bpmpd_io::DESER);
 
     int memsiz = 0;
     double BIG = 1e30;
-    bpmpd_output bo;
+    bpmpd_io::bpmpd_output bo;
     bo.primal.resize(bi.m + bi.n);
     bo.dual.resize(bi.m + bi.n);
     bo.status.resize(bi.m + bi.n);
@@ -95,6 +93,6 @@ int main(int /*argc*/, char** /*argv*/)
           &bo.opt,
           &memsiz);
 
-    ser(STDOUT_FILENO, bo, SER);
+    bpmpd_io::ser(STDOUT_FILENO, bo, bpmpd_io::SER);
   }
 }

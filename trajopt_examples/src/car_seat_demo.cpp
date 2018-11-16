@@ -57,8 +57,7 @@ void addSeats()
     AttachedBodyInfo attached_body;
     attached_body.object_name = "seat_" + std::to_string(i + 1);
     attached_body.parent_link_name = "world";
-    attached_body.transform = Eigen::AngleAxisd(0.0, Vector3d::UnitX()) * Eigen::AngleAxisd(0.0, Vector3d::UnitY()) *
-                              Eigen::AngleAxisd(3.14159, Vector3d::UnitZ());
+    attached_body.transform = Eigen::AngleAxisd(0.0, Eigen::Vector3d::UnitX()) * Eigen::AngleAxisd(0.0, Eigen::Vector3d::UnitY()) * Eigen::AngleAxisd(3.14159, Eigen::Vector3d::UnitZ());
     attached_body.transform.translation() = Eigen::Vector3d(0.5 + i, 2.15, 0.45);
 
     env_->attachBody(attached_body);
@@ -211,7 +210,7 @@ std::shared_ptr<ProblemConstructionInfo> cppMethod(const std::string& start, con
   pci->init_info.type = InitInfo::GIVEN_TRAJ;
   pci->init_info.data = start_pos.transpose().replicate(pci->basic_info.n_steps, 1);
   for (auto i = 0; i < start_pos.size(); ++i)
-    pci->init_info.data.col(i) = VectorXd::LinSpaced(pci->basic_info.n_steps, start_pos[i], joint_pose[i]);
+    pci->init_info.data.col(i) = Eigen::VectorXd::LinSpaced(pci->basic_info.n_steps, start_pos[i], joint_pose[i]);
 
   // Populate Cost Info
   std::shared_ptr<JointVelTermInfo> joint_vel = std::shared_ptr<JointVelTermInfo>(new JointVelTermInfo);
@@ -297,7 +296,7 @@ int main(int argc, char** argv)
   plotter->plotScene();
 
   // Set Log Level
-  gLogLevel = util::LevelInfo;
+  util::gLogLevel = util::LevelInfo;
 
   // Solve Trajectory
   ROS_INFO("Car Seat Demo Started");
@@ -309,7 +308,7 @@ int main(int argc, char** argv)
 
   pci = cppMethod("Home", "Pick1");
   prob = ConstructProblem(*pci);
-  BasicTrustRegionSQP pick1_opt(prob);
+  sco::BasicTrustRegionSQP pick1_opt(prob);
   if (plotting_)
     pick1_opt.addCallback(PlotCallback(*prob, plotter));
 
@@ -350,7 +349,7 @@ int main(int argc, char** argv)
 
   pci = cppMethod("Pick1", "Place1");
   prob = ConstructProblem(*pci);
-  BasicTrustRegionSQP place1_opt(prob);
+  sco::BasicTrustRegionSQP place1_opt(prob);
   if (plotting_)
     place1_opt.addCallback(PlotCallback(*prob, plotter));
 

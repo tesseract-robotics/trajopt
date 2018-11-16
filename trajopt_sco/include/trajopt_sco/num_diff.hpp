@@ -8,8 +8,6 @@
 
 namespace sco
 {
-using Eigen::VectorXd;
-using Eigen::MatrixXd;
 class ScalarOfVector;
 class VectorOfVector;
 class MatrixOfVector;
@@ -20,10 +18,10 @@ typedef std::shared_ptr<MatrixOfVector> MatrixOfVectorPtr;
 class ScalarOfVector
 {
 public:
-  virtual double operator()(const VectorXd& x) const = 0;
-  double call(const VectorXd& x) const { return operator()(x); }
+  virtual double operator()(const Eigen::VectorXd& x) const = 0;
+  double call(const Eigen::VectorXd& x) const { return operator()(x); }
   virtual ~ScalarOfVector() {}
-  typedef std::function<double(VectorXd)> func;
+  typedef std::function<double(Eigen::VectorXd)> func;
   static ScalarOfVectorPtr construct(const func&);
   //  typedef VectorXd (*c_func)(const VectorXd&);
   //  static ScalarOfVectorPtr construct(const c_func&);
@@ -31,10 +29,10 @@ public:
 class VectorOfVector
 {
 public:
-  virtual VectorXd operator()(const VectorXd& x) const = 0;
-  VectorXd call(const VectorXd& x) const { return operator()(x); }
+  virtual Eigen::VectorXd operator()(const Eigen::VectorXd& x) const = 0;
+  Eigen::VectorXd call(const Eigen::VectorXd& x) const { return operator()(x); }
   virtual ~VectorOfVector() {}
-  typedef std::function<VectorXd(VectorXd)> func;
+  typedef std::function<Eigen::VectorXd(Eigen::VectorXd)> func;
   static VectorOfVectorPtr construct(const func&);
   //  typedef VectorXd (*c_func)(const VectorXd&);
   //  static VectorOfVectorPtr construct(const c_func&);
@@ -42,24 +40,24 @@ public:
 class MatrixOfVector
 {
 public:
-  virtual MatrixXd operator()(const VectorXd& x) const = 0;
-  MatrixXd call(const VectorXd& x) const { return operator()(x); }
+  virtual Eigen::MatrixXd operator()(const Eigen::VectorXd& x) const = 0;
+  Eigen::MatrixXd call(const Eigen::VectorXd& x) const { return operator()(x); }
   virtual ~MatrixOfVector() {}
-  typedef std::function<MatrixXd(VectorXd)> func;
+  typedef std::function<Eigen::MatrixXd(Eigen::VectorXd)> func;
   static MatrixOfVectorPtr construct(const func&);
   //  typedef VectorMatrixXd (*c_func)(const VectorXd&);
   //  static MatrixOfVectorPtr construct(const c_func&);
 };
 
-VectorXd calcForwardNumGrad(const ScalarOfVector& f, const VectorXd& x, double epsilon);
-MatrixXd calcForwardNumJac(const VectorOfVector& f, const VectorXd& x, double epsilon);
+Eigen::VectorXd calcForwardNumGrad(const ScalarOfVector& f, const Eigen::VectorXd& x, double epsilon);
+Eigen::MatrixXd calcForwardNumJac(const VectorOfVector& f, const Eigen::VectorXd& x, double epsilon);
 void calcGradAndDiagHess(const ScalarOfVector& f,
-                         const VectorXd& x,
+                         const Eigen::VectorXd& x,
                          double epsilon,
                          double& y,
-                         VectorXd& grad,
-                         VectorXd& hess);
-void calcGradHess(ScalarOfVectorPtr f, const VectorXd& x, double epsilon, double& y, VectorXd& grad, MatrixXd& hess);
+                         Eigen::VectorXd& grad,
+                         Eigen::VectorXd& hess);
+void calcGradHess(ScalarOfVectorPtr f, const Eigen::VectorXd& x, double epsilon, double& y, Eigen::VectorXd& grad, Eigen::MatrixXd& hess);
 VectorOfVectorPtr forwardNumGrad(ScalarOfVectorPtr f, double epsilon);
 MatrixOfVectorPtr forwardNumJac(VectorOfVectorPtr f, double epsilon);
 }

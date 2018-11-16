@@ -7,15 +7,13 @@
 #include <vector>
 namespace util
 {
-using std::string;
-using std::vector;
 
 // std::string Str(const vector<double>& x);
 // std::string Str(const vector<float>& x);
 // std::string Str(const vector<int>& x);
 
 template <class T>
-std::string Str(const vector<T>& x)
+std::string Str(const std::vector<T>& x)
 {
   std::stringstream ss;
   ss << "(";

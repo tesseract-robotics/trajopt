@@ -17,12 +17,12 @@ struct CollisionEvaluator
   {
   }
   virtual ~CollisionEvaluator() {}
-  virtual void CalcDistExpressions(const DblVec& x, vector<AffExpr>& exprs) = 0;
+  virtual void CalcDistExpressions(const DblVec& x, sco::AffExprVector& exprs) = 0;
   virtual void CalcDists(const DblVec& x, DblVec& exprs) = 0;
   virtual void CalcCollisions(const DblVec& x, tesseract::ContactResultVector& dist_results) = 0;
   void GetCollisionsCached(const DblVec& x, tesseract::ContactResultVector&);
   virtual void Plot(const tesseract::BasicPlottingPtr plotter, const DblVec& x) = 0;
-  virtual VarVector GetVars() = 0;
+  virtual sco::VarVector GetVars() = 0;
 
   const SafetyMarginDataConstPtr getSafetyMarginData() const { return safety_margin_data_; }
   Cache<size_t, tesseract::ContactResultVector, 10> m_cache;
@@ -44,7 +44,7 @@ public:
   SingleTimestepCollisionEvaluator(tesseract::BasicKinConstPtr manip,
                                    tesseract::BasicEnvConstPtr env,
                                    SafetyMarginDataConstPtr safety_margin_data,
-                                   const VarVector& vars);
+                                   const sco::VarVector& vars);
   /**
   @brief linearize all contact distances in terms of robot dofs
   ;
@@ -52,16 +52,16 @@ public:
   For each contact generated, return a linearization of the signed distance
   function
   */
-  void CalcDistExpressions(const DblVec& x, vector<AffExpr>& exprs);
+  void CalcDistExpressions(const DblVec& x, sco::AffExprVector& exprs);
   /**
    * Same as CalcDistExpressions, but just the distances--not the expressions
    */
   void CalcDists(const DblVec& x, DblVec& exprs);
   void CalcCollisions(const DblVec& x, tesseract::ContactResultVector& dist_results);
   void Plot(const tesseract::BasicPlottingPtr plotter, const DblVec& x);
-  VarVector GetVars() { return m_vars; }
+  sco::VarVector GetVars() { return m_vars; }
 private:
-  VarVector m_vars;
+  sco::VarVector m_vars;
   tesseract::DiscreteContactManagerBasePtr contact_manager_;
 };
 
@@ -71,59 +71,59 @@ public:
   CastCollisionEvaluator(tesseract::BasicKinConstPtr manip,
                          tesseract::BasicEnvConstPtr env,
                          SafetyMarginDataConstPtr safety_margin_data,
-                         const VarVector& vars0,
-                         const VarVector& vars1);
-  void CalcDistExpressions(const DblVec& x, vector<AffExpr>& exprs);
+                         const sco::VarVector& vars0,
+                         const sco::VarVector& vars1);
+  void CalcDistExpressions(const DblVec& x, sco::AffExprVector& exprs);
   void CalcDists(const DblVec& x, DblVec& exprs);
   void CalcCollisions(const DblVec& x, tesseract::ContactResultVector& dist_results);
   void Plot(const tesseract::BasicPlottingPtr plotter, const DblVec& x);
-  VarVector GetVars() { return concat(m_vars0, m_vars1); }
+  sco::VarVector GetVars() { return concat(m_vars0, m_vars1); }
 private:
-  VarVector m_vars0;
-  VarVector m_vars1;
+  sco::VarVector m_vars0;
+  sco::VarVector m_vars1;
   tesseract::ContinuousContactManagerBasePtr contact_manager_;
 };
 
-class TRAJOPT_API CollisionCost : public Cost, public Plotter
+class TRAJOPT_API CollisionCost : public sco::Cost, public Plotter
 {
 public:
   /* constructor for single timestep */
   CollisionCost(tesseract::BasicKinConstPtr manip,
                 tesseract::BasicEnvConstPtr env,
                 SafetyMarginDataConstPtr safety_margin_data,
-                const VarVector& vars);
+                const sco::VarVector& vars);
   /* constructor for cast cost */
   CollisionCost(tesseract::BasicKinConstPtr manip,
                 tesseract::BasicEnvConstPtr env,
                 SafetyMarginDataConstPtr safety_margin_data,
-                const VarVector& vars0,
-                const VarVector& vars1);
-  virtual ConvexObjectivePtr convex(const vector<double>& x, Model* model);
-  virtual double value(const vector<double>&);
+                const sco::VarVector& vars0,
+                const sco::VarVector& vars1);
+  virtual sco::ConvexObjectivePtr convex(const DblVec& x, sco::Model* model);
+  virtual double value(const DblVec&);
   void Plot(const tesseract::BasicPlottingPtr& plotter, const DblVec& x);
-  VarVector getVars() { return m_calc->GetVars(); }
+  sco::VarVector getVars() { return m_calc->GetVars(); }
 private:
   CollisionEvaluatorPtr m_calc;
 };
 
-class TRAJOPT_API CollisionConstraint : public IneqConstraint
+class TRAJOPT_API CollisionConstraint : public sco::IneqConstraint
 {
 public:
   /* constructor for single timestep */
   CollisionConstraint(tesseract::BasicKinConstPtr manip,
                       tesseract::BasicEnvConstPtr env,
                       SafetyMarginDataConstPtr safety_margin_data,
-                      const VarVector& vars);
+                      const sco::VarVector& vars);
   /* constructor for cast cost */
   CollisionConstraint(tesseract::BasicKinConstPtr manip,
                       tesseract::BasicEnvConstPtr env,
                       SafetyMarginDataConstPtr safety_margin_data,
-                      const VarVector& vars0,
-                      const VarVector& vars1);
-  virtual ConvexConstraintsPtr convex(const vector<double>& x, Model* model);
-  virtual DblVec value(const vector<double>&);
+                      const sco::VarVector& vars0,
+                      const sco::VarVector& vars1);
+  virtual sco::ConvexConstraintsPtr convex(const DblVec& x, sco::Model* model);
+  virtual DblVec value(const DblVec&);
   void Plot(const DblVec& x);
-  VarVector getVars() { return m_calc->GetVars(); }
+  sco::VarVector getVars() { return m_calc->GetVars(); }
 private:
   CollisionEvaluatorPtr m_calc;
 };

@@ -210,7 +210,7 @@ int main(int argc, char** argv)
   plotter->plotScene();
 
   // Set Log Level
-  gLogLevel = util::LevelInfo;
+  util::gLogLevel = util::LevelInfo;
 
   // Setup Problem
   TrajOptProbPtr prob;
@@ -232,7 +232,7 @@ int main(int argc, char** argv)
 
   ROS_INFO((found) ? ("Final trajectory is in collision") : ("Final trajectory is collision free"));
 
-  BasicTrustRegionSQP opt(prob);
+  sco::BasicTrustRegionSQP opt(prob);
   if (plotting_)
   {
     opt.addCallback(PlotCallback(*prob, plotter));

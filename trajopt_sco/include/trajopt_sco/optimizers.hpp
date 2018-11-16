@@ -8,8 +8,6 @@
 
 namespace sco
 {
-using std::string;
-using std::vector;
 
 enum OptStatus
 {
@@ -24,7 +22,7 @@ static const char* OptStatus_strings[] = { "CONVERGED",
                                            "PENALTY_ITERATION_LIMIT",
                                            "FAILED",
                                            "INVALID" };
-inline string statusToString(OptStatus status) { return OptStatus_strings[status]; }
+inline std::string statusToString(OptStatus status) { return OptStatus_strings[status]; }
 struct OptResults
 {
   DblVec x;  // solution estimate
@@ -55,13 +53,13 @@ public:
   virtual OptStatus optimize() = 0;
   virtual ~Optimizer() {}
   virtual void setProblem(OptProbPtr prob) { prob_ = prob; }
-  void initialize(const vector<double>& x);
-  vector<double>& x() { return results_.x; }
+  void initialize(const DblVec& x);
+  DblVec& x() { return results_.x; }
   OptResults& results() { return results_; }
   typedef std::function<void(OptProb*, OptResults&)> Callback;
   void addCallback(const Callback& f);  // called before each iteration
 protected:
-  vector<Callback> callbacks_;
+  std::vector<Callback> callbacks_;
   void callCallbacks();
   OptProbPtr prob_;
   OptResults results_;
@@ -120,7 +118,7 @@ public:
 
 protected:
   void adjustTrustRegion(double ratio);
-  void setTrustBoxConstraints(const vector<double>& x);
+  void setTrustBoxConstraints(const DblVec& x);
   ModelPtr model_;
   BasicTrustRegionSQPParameters param_;
 };

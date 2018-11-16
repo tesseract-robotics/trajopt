@@ -2,7 +2,6 @@
 #include <iostream>
 #include <string>
 #include <trajopt_utils/logging.hpp>
-using namespace std;
 
 namespace util
 {
@@ -13,16 +12,16 @@ int LoggingInit()
   const char* VALID_THRESH_VALUES = "FATAL ERROR WARN INFO DEBUG TRACE";
 
   char* lvlc = getenv("TRAJOPT_LOG_THRESH");
-  string lvlstr;
+  std::string lvlstr;
   if (lvlc == NULL)
   {
-    printf("You can set logging level with TRAJOPT_LOG_THRESH. Valid values: "
-           "%s. Defaulting to INFO\n",
-           VALID_THRESH_VALUES);
+    std::printf("You can set logging level with TRAJOPT_LOG_THRESH. Valid values: "
+                "%s. Defaulting to INFO\n",
+                VALID_THRESH_VALUES);
     lvlstr = "INFO";
   }
   else
-    lvlstr = string(lvlc);
+    lvlstr = std::string(lvlc);
   if (lvlstr == "FATAL")
     gLogLevel = LevelFatal;
   else if (lvlstr == "ERROR")
@@ -37,8 +36,8 @@ int LoggingInit()
     gLogLevel = LevelTrace;
   else
   {
-    printf("Invalid value for environment variable TRAJOPT_LOG_THRESH: %s\n", lvlstr.c_str());
-    printf("Valid values: %s\n", VALID_THRESH_VALUES);
+    std::printf("Invalid value for environment variable TRAJOPT_LOG_THRESH: %s\n", lvlstr.c_str());
+    std::printf("Valid values: %s\n", VALID_THRESH_VALUES);
     abort();
   }
   return 1;
