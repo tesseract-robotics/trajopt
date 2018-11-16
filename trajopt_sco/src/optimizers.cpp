@@ -10,21 +10,17 @@
 #include <trajopt_utils/macros.h>
 #include <trajopt_utils/stl_to_string.hpp>
 
-using namespace std;
-using namespace util;
-
 namespace sco
 {
-typedef vector<double> DblVec;
 
 std::ostream& operator<<(std::ostream& o, const OptResults& r)
 {
-  o << "Optimization results:" << endl
-    << "status: " << statusToString(r.status) << endl
-    << "cost values: " << Str(r.cost_vals) << endl
-    << "constraint violations: " << Str(r.cnt_viols) << endl
-    << "n func evals: " << r.n_func_evals << endl
-    << "n qp solves: " << r.n_qp_solves << endl;
+  o << "Optimization results:" << std::endl
+    << "status: " << statusToString(r.status) << std::endl
+    << "cost values: " << util::Str(r.cost_vals) << std::endl
+    << "constraint violations: " << util::Str(r.cnt_viols) << std::endl
+    << "n func evals: " << r.n_func_evals << std::endl
+    << "n qp solves: " << r.n_qp_solves << std::endl;
   return o;
 }
 
@@ -32,7 +28,7 @@ std::ostream& operator<<(std::ostream& o, const OptResults& r)
 ////////// private utility functions for  sqp /////////
 //////////////////////////////////////////////////
 
-static DblVec evaluateCosts(const vector<CostPtr>& costs, const DblVec& x)
+static DblVec evaluateCosts(const std::vector<CostPtr>& costs, const DblVec& x)
 {
   DblVec out(costs.size());
   for (size_t i = 0; i < costs.size(); ++i)
@@ -41,7 +37,7 @@ static DblVec evaluateCosts(const vector<CostPtr>& costs, const DblVec& x)
   }
   return out;
 }
-static DblVec evaluateConstraintViols(const vector<ConstraintPtr>& constraints, const DblVec& x)
+static DblVec evaluateConstraintViols(const std::vector<ConstraintPtr>& constraints, const DblVec& x)
 {
   DblVec out(constraints.size());
   for (size_t i = 0; i < constraints.size(); ++i)
@@ -50,18 +46,18 @@ static DblVec evaluateConstraintViols(const vector<ConstraintPtr>& constraints, 
   }
   return out;
 }
-static vector<ConvexObjectivePtr> convexifyCosts(const vector<CostPtr>& costs, const DblVec& x, Model* model)
+static std::vector<ConvexObjectivePtr> convexifyCosts(const std::vector<CostPtr>& costs, const DblVec& x, Model* model)
 {
-  vector<ConvexObjectivePtr> out(costs.size());
+  std::vector<ConvexObjectivePtr> out(costs.size());
   for (size_t i = 0; i < costs.size(); ++i)
   {
     out[i] = costs[i]->convex(x, model);
   }
   return out;
 }
-static vector<ConvexConstraintsPtr> convexifyConstraints(const vector<ConstraintPtr>& cnts, const DblVec& x, Model* model)
+static std::vector<ConvexConstraintsPtr> convexifyConstraints(const std::vector<ConstraintPtr>& cnts, const DblVec& x, Model* model)
 {
-  vector<ConvexConstraintsPtr> out(cnts.size());
+  std::vector<ConvexConstraintsPtr> out(cnts.size());
   for (size_t i = 0; i < cnts.size(); ++i)
   {
     out[i] = cnts[i]->convex(x, model);
@@ -69,7 +65,7 @@ static vector<ConvexConstraintsPtr> convexifyConstraints(const vector<Constraint
   return out;
 }
 
-DblVec evaluateModelCosts(const vector<ConvexObjectivePtr>& costs, const DblVec& x)
+DblVec evaluateModelCosts(const std::vector<ConvexObjectivePtr>& costs, const DblVec& x)
 {
   DblVec out(costs.size());
   for (size_t i = 0; i < costs.size(); ++i)
@@ -78,7 +74,7 @@ DblVec evaluateModelCosts(const vector<ConvexObjectivePtr>& costs, const DblVec&
   }
   return out;
 }
-DblVec evaluateModelCntViols(const vector<ConvexConstraintsPtr>& cnts, const DblVec& x)
+DblVec evaluateModelCntViols(const std::vector<ConvexConstraintsPtr>& cnts, const DblVec& x)
 {
   DblVec out(cnts.size());
   for (size_t i = 0; i < cnts.size(); ++i)
@@ -88,80 +84,80 @@ DblVec evaluateModelCntViols(const vector<ConvexConstraintsPtr>& cnts, const Dbl
   return out;
 }
 
-static vector<string> getCostNames(const vector<CostPtr>& costs)
+static std::vector<std::string> getCostNames(const std::vector<CostPtr>& costs)
 {
-  vector<string> out(costs.size());
+  std::vector<std::string> out(costs.size());
   for (size_t i = 0; i < costs.size(); ++i)
     out[i] = costs[i]->name();
   return out;
 }
-static vector<string> getCntNames(const vector<ConstraintPtr>& cnts)
+static std::vector<std::string> getCntNames(const std::vector<ConstraintPtr>& cnts)
 {
-  vector<string> out(cnts.size());
+  std::vector<std::string> out(cnts.size());
   for (size_t i = 0; i < cnts.size(); ++i)
     out[i] = cnts[i]->name();
   return out;
 }
 
-void printCostInfo(const vector<double>& old_cost_vals,
-                   const vector<double>& model_cost_vals,
-                   const vector<double>& new_cost_vals,
-                   const vector<double>& old_cnt_vals,
-                   const vector<double>& model_cnt_vals,
-                   const vector<double>& new_cnt_vals,
-                   const vector<string>& cost_names,
-                   const vector<string>& cnt_names,
+void printCostInfo(const DblVec& old_cost_vals,
+                   const DblVec& model_cost_vals,
+                   const DblVec& new_cost_vals,
+                   const DblVec& old_cnt_vals,
+                   const DblVec& model_cnt_vals,
+                   const DblVec& new_cnt_vals,
+                   const std::vector<std::string>& cost_names,
+                   const std::vector<std::string>& cnt_names,
                    double merit_coeff)
 {
-  printf("%15s | %10s | %10s | %10s | %10s\n", "", "oldexact", "dapprox", "dexact", "ratio");
-  printf("%15s | %10s---%10s---%10s---%10s\n", "COSTS", "----------", "----------", "----------", "----------");
+  std::printf("%15s | %10s | %10s | %10s | %10s\n", "", "oldexact", "dapprox", "dexact", "ratio");
+  std::printf("%15s | %10s---%10s---%10s---%10s\n", "COSTS", "----------", "----------", "----------", "----------");
   for (size_t i = 0; i < old_cost_vals.size(); ++i)
   {
     double approx_improve = old_cost_vals[i] - model_cost_vals[i];
     double exact_improve = old_cost_vals[i] - new_cost_vals[i];
     if (fabs(approx_improve) > 1e-8)
-      printf("%15s | %10.3e | %10.3e | %10.3e | %10.3e\n",
-             cost_names[i].c_str(),
-             old_cost_vals[i],
-             approx_improve,
-             exact_improve,
-             exact_improve / approx_improve);
+      std::printf("%15s | %10.3e | %10.3e | %10.3e | %10.3e\n",
+                  cost_names[i].c_str(),
+                  old_cost_vals[i],
+                  approx_improve,
+                  exact_improve,
+                  exact_improve / approx_improve);
     else
-      printf("%15s | %10.3e | %10.3e | %10.3e | %10s\n",
-             cost_names[i].c_str(),
-             old_cost_vals[i],
-             approx_improve,
-             exact_improve,
-             "  ------  ");
+      std::printf("%15s | %10.3e | %10.3e | %10.3e | %10s\n",
+                  cost_names[i].c_str(),
+                  old_cost_vals[i],
+                  approx_improve,
+                  exact_improve,
+                  "  ------  ");
   }
   if (cnt_names.size() == 0)
     return;
-  printf("%15s | %10s---%10s---%10s---%10s\n", "CONSTRAINTS", "----------", "----------", "----------", "----------");
+  std::printf("%15s | %10s---%10s---%10s---%10s\n", "CONSTRAINTS", "----------", "----------", "----------", "----------");
   for (size_t i = 0; i < old_cnt_vals.size(); ++i)
   {
     double approx_improve = old_cnt_vals[i] - model_cnt_vals[i];
     double exact_improve = old_cnt_vals[i] - new_cnt_vals[i];
     if (fabs(approx_improve) > 1e-8)
-      printf("%15s | %10.3e | %10.3e | %10.3e | %10.3e\n",
-             cnt_names[i].c_str(),
-             merit_coeff * old_cnt_vals[i],
-             merit_coeff * approx_improve,
-             merit_coeff * exact_improve,
-             exact_improve / approx_improve);
+      std::printf("%15s | %10.3e | %10.3e | %10.3e | %10.3e\n",
+                  cnt_names[i].c_str(),
+                  merit_coeff * old_cnt_vals[i],
+                  merit_coeff * approx_improve,
+                  merit_coeff * exact_improve,
+                  exact_improve / approx_improve);
     else
-      printf("%15s | %10.3e | %10.3e | %10.3e | %10s\n",
-             cnt_names[i].c_str(),
-             merit_coeff * old_cnt_vals[i],
-             merit_coeff * approx_improve,
-             merit_coeff * exact_improve,
-             "  ------  ");
+      std::printf("%15s | %10.3e | %10.3e | %10.3e | %10s\n",
+                  cnt_names[i].c_str(),
+                  merit_coeff * old_cnt_vals[i],
+                  merit_coeff * approx_improve,
+                  merit_coeff * exact_improve,
+                  "  ------  ");
   }
 }
 
 // todo: use different coeffs for each constraint
-vector<ConvexObjectivePtr> cntsToCosts(const vector<ConvexConstraintsPtr>& cnts, double err_coeff, Model* model)
+std::vector<ConvexObjectivePtr> cntsToCosts(const std::vector<ConvexConstraintsPtr>& cnts, double err_coeff, Model* model)
 {
-  vector<ConvexObjectivePtr> out;
+  std::vector<ConvexObjectivePtr> out;
   for (const ConvexConstraintsPtr& cnt : cnts)
   {
     ConvexObjectivePtr obj(new ConvexObjective(model));
@@ -187,7 +183,7 @@ void Optimizer::callCallbacks()
   }
 }
 
-void Optimizer::initialize(const vector<double>& x)
+void Optimizer::initialize(const DblVec &x)
 {
   if (!prob_)
     PRINT_AND_THROW("need to set the problem before initializing");
@@ -226,7 +222,7 @@ void BasicTrustRegionSQP::setProblem(OptProbPtr prob)
 void BasicTrustRegionSQP::adjustTrustRegion(double ratio) { param_.trust_box_size *= ratio; }
 void BasicTrustRegionSQP::setTrustBoxConstraints(const DblVec& x)
 {
-  const vector<Var>& vars = prob_->getVars();
+  const VarVector& vars = prob_->getVars();
   assert(vars.size() == x.size());
   const DblVec &lb = prob_->getLowerBounds(), ub = prob_->getUpperBounds();
   DblVec lbtrust(x.size()), ubtrust(x.size());
@@ -262,9 +258,9 @@ struct MultiCritFilter {
 
 OptStatus BasicTrustRegionSQP::optimize()
 {
-  vector<string> cost_names = getCostNames(prob_->getCosts());
-  vector<ConstraintPtr> constraints = prob_->getConstraints();
-  vector<string> cnt_names = getCntNames(constraints);
+  std::vector<std::string> cost_names = getCostNames(prob_->getCosts());
+  std::vector<ConstraintPtr> constraints = prob_->getConstraints();
+  std::vector<std::string> cnt_names = getCntNames(constraints);
 
   if (results_.x.size() == 0)
     PRINT_AND_THROW("you forgot to initialize!");
@@ -309,9 +305,9 @@ OptStatus BasicTrustRegionSQP::optimize()
       //   results_.cost_vals[i] << endl;
       // }
 
-      vector<ConvexObjectivePtr> cost_models = convexifyCosts(prob_->getCosts(), results_.x, model_.get());
-      vector<ConvexConstraintsPtr> cnt_models = convexifyConstraints(constraints, results_.x, model_.get());
-      vector<ConvexObjectivePtr> cnt_cost_models = cntsToCosts(cnt_models, param_.merit_error_coeff, model_.get());
+      std::vector<ConvexObjectivePtr> cost_models = convexifyCosts(prob_->getCosts(), results_.x, model_.get());
+      std::vector<ConvexConstraintsPtr> cnt_models = convexifyConstraints(constraints, results_.x, model_.get());
+      std::vector<ConvexObjectivePtr> cnt_cost_models = cntsToCosts(cnt_models, param_.merit_error_coeff, model_.get());
       model_->update();
       for (ConvexObjectivePtr& cost : cost_models)
         cost->addConstraintsToModel();
@@ -360,7 +356,7 @@ OptStatus BasicTrustRegionSQP::optimize()
         // the Model
         DblVec new_x(model_var_vals.begin(), model_var_vals.begin() + results_.x.size());
 
-        if (GetLogLevel() >= util::LevelDebug)
+        if (util::GetLogLevel() >= util::LevelDebug)
         {
           DblVec cnt_costs1 = evaluateModelCosts(cnt_cost_models, model_var_vals);
           DblVec cnt_costs2 = model_cnt_viols;
@@ -394,12 +390,12 @@ OptStatus BasicTrustRegionSQP::optimize()
                         cost_names,
                         cnt_names,
                         param_.merit_error_coeff);
-          printf("%15s | %10.3e | %10.3e | %10.3e | %10.3e\n",
-                 "TOTAL",
-                 old_merit,
-                 approx_merit_improve,
-                 exact_merit_improve,
-                 merit_improve_ratio);
+          std::printf("%15s | %10.3e | %10.3e | %10.3e | %10.3e\n",
+                      "TOTAL",
+                      old_merit,
+                      approx_merit_improve,
+                      exact_merit_improve,
+                      merit_improve_ratio);
         }
 
         if (approx_merit_improve < -1e-5)

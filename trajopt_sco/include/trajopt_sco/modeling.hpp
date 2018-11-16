@@ -14,7 +14,6 @@
 
 namespace sco
 {
-using std::vector;
 
 /**
 Stores convex terms in a objective
@@ -39,16 +38,16 @@ public:
   bool inModel() { return model_ != NULL; }
   void addConstraintsToModel();
   void removeFromModel();
-  double value(const vector<double>& x);
+  double value(const DblVec& x);
 
   ~ConvexObjective();
 
   Model* model_;
   QuadExpr quad_;
-  vector<Var> vars_;
-  vector<AffExpr> eqs_;
-  vector<AffExpr> ineqs_;
-  vector<Cnt> cnts_;
+  VarVector vars_;
+  AffExprVector eqs_;
+  AffExprVector ineqs_;
+  CntVector cnts_;
 
 private:
   ConvexObjective() {}
@@ -76,16 +75,16 @@ public:
   void addConstraintsToModel();
   void removeFromModel();
 
-  vector<double> violations(const vector<double>& x);
-  double violation(const vector<double>& x);
+  DblVec violations(const DblVec& x);
+  double violation(const DblVec& x);
 
   ~ConvexConstraints();
-  vector<AffExpr> eqs_;
-  vector<AffExpr> ineqs_;
+  AffExprVector eqs_;
+  AffExprVector ineqs_;
 
 private:
   Model* model_;
-  vector<Cnt> cnts_;
+  CntVector cnts_;
   ConvexConstraints() : model_(NULL) {}
   ConvexConstraints(ConvexConstraints&) {}
 };
@@ -98,18 +97,18 @@ class Cost
 {
 public:
   /** Evaluate at solution vector x*/
-  virtual double value(const vector<double>&) = 0;
+  virtual double value(const DblVec&) = 0;
   /** Convexify at solution vector x*/
-  virtual ConvexObjectivePtr convex(const vector<double>& x, Model* model) = 0;
+  virtual ConvexObjectivePtr convex(const DblVec& x, Model* model) = 0;
   /** Get problem variables associated with this cost */
   virtual VarVector getVars() { return VarVector(); }
-  string name() { return name_; }
-  void setName(const string& name) { name_ = name; }
+  std::string name() { return name_; }
+  void setName(const std::string& name) { name_ = name; }
   Cost() : name_("unnamed") {}
-  Cost(const string& name) : name_(name) {}
+  Cost(const std::string& name) : name_(name) {}
   virtual ~Cost() {}
 protected:
-  string name_;
+  std::string name_;
 };
 
 /**
@@ -122,23 +121,23 @@ public:
   /** inequality vs equality */
   virtual ConstraintType type() = 0;
   /** Evaluate at solution vector x*/
-  virtual vector<double> value(const vector<double>& x) = 0;
+  virtual DblVec value(const DblVec& x) = 0;
   /** Convexify at solution vector x*/
-  virtual ConvexConstraintsPtr convex(const vector<double>& x, Model* model) = 0;
+  virtual ConvexConstraintsPtr convex(const DblVec& x, Model* model) = 0;
   /** Calculate constraint violations (positive part for inequality constraint,
    * absolute value for inequality constraint)*/
-  vector<double> violations(const vector<double>& x);
+  DblVec violations(const DblVec& x);
   /** Sum of violations */
-  double violation(const vector<double>& x);
+  double violation(const DblVec& x);
   /** Get problem variables associated with this constraint */
   virtual VarVector getVars() { return VarVector(); }
-  string name() { return name_; }
-  void setName(const string& name) { name_ = name; }
+  std::string name() { return name_; }
+  void setName(const std::string& name) { name_ = name; }
   Constraint() : name_("unnamed") {}
-  Constraint(const string& name) : name_(name) {}
+  Constraint(const std::string& name) : name_(name) {}
   virtual ~Constraint() {}
 protected:
-  string name_;
+  std::string name_;
 };
 
 class EqConstraint : public Constraint
@@ -161,17 +160,17 @@ class OptProb
 public:
   OptProb();
   /** create variables with bounds [-INFINITY, INFINITY]  */
-  VarVector createVariables(const vector<string>& names);
+  VarVector createVariables(const std::vector<std::string>& names);
   /** create variables with bounds [lb[i], ub[i] */
-  VarVector createVariables(const vector<string>& names, const vector<double>& lb, const vector<double>& ub);
+  VarVector createVariables(const std::vector<std::string>& names, const DblVec& lb, const DblVec& ub);
   /** set the lower bounds of all the variables */
-  void setLowerBounds(const vector<double>& lb);
+  void setLowerBounds(const DblVec& lb);
   /** set the upper bounds of all the variables */
-  void setUpperBounds(const vector<double>& ub);
+  void setUpperBounds(const DblVec& ub);
   /** set lower bounds of some of the variables */
-  void setLowerBounds(const vector<double>& lb, const vector<Var>& vars);
+  void setLowerBounds(const DblVec& lb, const VarVector& vars);
   /** set upper bounds of some of the variables */
-  void setUpperBounds(const vector<double>& ub, const vector<Var>& vars);
+  void setUpperBounds(const DblVec& ub, const VarVector& vars);
   /** Note: in the current implementation, this function just adds the
    * constraint to the
    * model. So if you're not careful, you might end up with an infeasible
@@ -186,28 +185,28 @@ public:
   virtual ~OptProb() {}
   /** Find closest point to solution vector x that satisfies linear inequality
    * constraints */
-  vector<double> getCentralFeasiblePoint(const vector<double>& x);
-  vector<double> getClosestFeasiblePoint(const vector<double>& x);
+  DblVec getCentralFeasiblePoint(const DblVec& x);
+  DblVec getClosestFeasiblePoint(const DblVec& x);
 
-  vector<ConstraintPtr> getConstraints() const;
-  const vector<CostPtr>& getCosts()  { return costs_; }
-  const vector<ConstraintPtr>& getIneqConstraints() { return ineqcnts_; }
-  const vector<ConstraintPtr>& getEqConstraints() { return eqcnts_; }
+  std::vector<ConstraintPtr> getConstraints() const;
+  const std::vector<CostPtr>& getCosts()  { return costs_; }
+  const std::vector<ConstraintPtr>& getIneqConstraints() { return ineqcnts_; }
+  const std::vector<ConstraintPtr>& getEqConstraints() { return eqcnts_; }
   const DblVec& getLowerBounds() { return lower_bounds_; }
   const DblVec& getUpperBounds() { return upper_bounds_; }
   ModelPtr getModel() { return model_; }
-  const vector<Var>& getVars() { return vars_; }
+  const VarVector& getVars() { return vars_; }
   int getNumCosts() { return costs_.size(); }
   int getNumConstraints() { return eqcnts_.size() + ineqcnts_.size(); }
   int getNumVars() { return vars_.size(); }
 protected:
   ModelPtr model_;
-  vector<Var> vars_;
-  vector<double> lower_bounds_;
-  vector<double> upper_bounds_;
-  vector<CostPtr> costs_;
-  vector<ConstraintPtr> eqcnts_;
-  vector<ConstraintPtr> ineqcnts_;
+  VarVector vars_;
+  DblVec lower_bounds_;
+  DblVec upper_bounds_;
+  std::vector<CostPtr> costs_;
+  std::vector<ConstraintPtr> eqcnts_;
+  std::vector<ConstraintPtr> ineqcnts_;
 
   OptProb(OptProb&);
 };
@@ -222,7 +221,7 @@ inline void setVec(DblVec& x, const VarVector& vars, const VecType& vals)
   }
 }
 template <typename OutVecType>
-inline OutVecType getVec1(const vector<double>& x, const VarVector& vars)
+inline OutVecType getVec1(const DblVec& x, const VarVector& vars)
 {
   OutVecType out(vars.size());
   for (unsigned i = 0; i < vars.size(); ++i)

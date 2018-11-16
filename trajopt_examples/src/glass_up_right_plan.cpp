@@ -93,7 +93,7 @@ TrajOptProbPtr cppMethod()
   pci.init_info.data = TrajArray(steps_, pci.kin->numJoints());
   for (unsigned idof = 0; idof < pci.kin->numJoints(); ++idof)
   {
-    pci.init_info.data.col(idof) = VectorXd::LinSpaced(steps_, start_pos[idof], end_pos[idof]);
+    pci.init_info.data.col(idof) = Eigen::VectorXd::LinSpaced(steps_, start_pos[idof], end_pos[idof]);
   }
 
   // Populate Cost Info
@@ -218,7 +218,7 @@ int main(int argc, char** argv)
   plotter->plotScene();
 
   // Set Log Level
-  gLogLevel = util::LevelInfo;
+  util::gLogLevel = util::LevelInfo;
 
   // Setup Problem
   TrajOptProbPtr prob;
@@ -240,7 +240,7 @@ int main(int argc, char** argv)
 
   ROS_INFO((found) ? ("Initial trajectory is in collision") : ("Initial trajectory is collision free"));
 
-  BasicTrustRegionSQP opt(prob);
+  sco::BasicTrustRegionSQP opt(prob);
   if (plotting_)
   {
     opt.addCallback(PlotCallback(*prob, plotter));

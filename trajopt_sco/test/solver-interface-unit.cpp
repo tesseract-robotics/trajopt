@@ -6,14 +6,12 @@
 #include <trajopt_utils/logging.hpp>
 #include <trajopt_utils/stl_to_string.hpp>
 
-using namespace std;
-
 using namespace sco;
 
 TEST(solver_interface, setup_problem)
 {
   ModelPtr solver = createModel();
-  vector<Var> vars;
+  VarVector vars;
   for (int i = 0; i < 3; ++i)
   {
     char namebuf[5];
@@ -23,14 +21,14 @@ TEST(solver_interface, setup_problem)
   solver->update();
 
   AffExpr aff;
-  cout << aff << endl;
+  std::cout << aff << std::endl;
   for (int i = 0; i < 3; ++i)
   {
     exprInc(aff, vars[i]);
     solver->setVarBounds(vars[i], 0, 10);
   }
   aff.constant -= 3;
-  cout << aff << endl;
+  std::cout << aff << std::endl;
   QuadExpr affsquared = exprSquare(aff);
   solver->setObjective(affsquared);
   solver->update();
@@ -40,7 +38,7 @@ TEST(solver_interface, setup_problem)
 
   solver->optimize();
 
-  vector<double> soln(3);
+  DblVec soln(3);
   for (int i = 0; i < 3; ++i)
   {
     soln[i] = solver->getVarValue(vars[i]);
@@ -56,7 +54,7 @@ TEST(solver_interface, setup_problem)
 TEST(ExprMult_test1, setup_problem)
 {
   ModelPtr solver = createModel();
-  vector<Var> vars;
+  VarVector vars;
   for (int i = 0; i < 3; ++i)
   {
     char namebuf[5];
@@ -72,17 +70,17 @@ TEST(ExprMult_test1, setup_problem)
   solver->update();
 
   AffExpr aff1;
-  cout << aff1 << endl;
+  std::cout << aff1 << std::endl;
   for (int i = 0; i < 3; ++i)
   {
     exprInc(aff1, vars[i]);
     solver->setVarBounds(vars[i], 0, 10);
   }
   aff1.constant -= 3;
-  cout << aff1 << endl;
+  std::cout << aff1 << std::endl;
 
   AffExpr aff2;
-  cout << aff2 << endl;
+  std::cout << aff2 << std::endl;
   for (int i = 3; i < 6; ++i)
   {
     exprInc(aff2, vars[i]);
@@ -90,7 +88,7 @@ TEST(ExprMult_test1, setup_problem)
   }
   aff2.constant -= 5;
 
-  cout << aff2 << endl;
+  std::cout << aff2 << std::endl;
   QuadExpr aff12 = exprMult(aff1, aff2);
   solver->setObjective(aff12);
   solver->update();
@@ -100,7 +98,7 @@ TEST(ExprMult_test1, setup_problem)
 
   solver->optimize();
 
-  vector<double> soln(3);
+  DblVec soln(3);
   for (int i = 0; i < 3; ++i)
   {
     soln[i] = solver->getVarValue(vars[i]);
@@ -123,7 +121,7 @@ TEST(ExprMult_test2, setup_problem)
   const double aff2_const = 0;
 
   ModelPtr solver = createModel();
-  vector<Var> vars;
+  VarVector vars;
   vars.push_back(solver->addVar("v1"));
   vars.push_back(solver->addVar("v2"));
 
@@ -142,8 +140,8 @@ TEST(ExprMult_test2, setup_problem)
   aff2.constant = aff2_const;
   aff2.coeffs[0] = v2_coeff;
 
-  cout << "aff1: " << aff1 << endl;
-  cout << "aff2: " << aff2 << endl;
+  std::cout << "aff1: " << aff1 << std::endl;
+  std::cout << "aff2: " << aff2 << std::endl;
   QuadExpr aff12 = exprMult(aff1, aff2);
   solver->setObjective(aff12);
   solver->update();
@@ -153,13 +151,13 @@ TEST(ExprMult_test2, setup_problem)
 
   solver->optimize();
 
-  vector<double> soln(2);
+  DblVec soln(2);
   for (int i = 0; i < 2; ++i)
   {
     soln[i] = solver->getVarValue(vars[i]);
-    cout << soln[i] << endl;
+    std::cout << soln[i] << std::endl;
   }
-  cout << "Result: " << aff12.value(soln) << endl;
+  std::cout << "Result: " << aff12.value(soln) << std::endl;
   double answer = (v1_coeff * v1_val + aff1_const) * (v2_coeff * v2_val + aff2_const);
   EXPECT_NEAR(aff12.value(soln), answer, 1e-6);
 }
@@ -175,7 +173,7 @@ TEST(ExprMult_test3, setup_problem)
   const double aff2_const = -5;
 
   ModelPtr solver = createModel();
-  vector<Var> vars;
+  VarVector vars;
   vars.push_back(solver->addVar("v1"));
   vars.push_back(solver->addVar("v2"));
 
@@ -194,8 +192,8 @@ TEST(ExprMult_test3, setup_problem)
   aff2.constant = aff2_const;
   aff2.coeffs[0] = v2_coeff;
 
-  cout << "aff1: " << aff1 << endl;
-  cout << "aff2: " << aff2 << endl;
+  std::cout << "aff1: " << aff1 << std::endl;
+  std::cout << "aff2: " << aff2 << std::endl;
   QuadExpr aff12 = exprMult(aff1, aff2);
   solver->setObjective(aff12);
   solver->update();
@@ -205,13 +203,13 @@ TEST(ExprMult_test3, setup_problem)
 
   solver->optimize();
 
-  vector<double> soln(2);
+  DblVec soln(2);
   for (int i = 0; i < 2; ++i)
   {
     soln[i] = solver->getVarValue(vars[i]);
-    cout << soln[i] << endl;
+    std::cout << soln[i] << std::endl;
   }
-  cout << "Result: " << aff12.value(soln) << endl;
+  std::cout << "Result: " << aff12.value(soln) << std::endl;
   double answer = (v1_coeff * v1_val + aff1_const) * (v2_coeff * v2_val + aff2_const);
   EXPECT_NEAR(aff12.value(soln), answer, 1e-6);
 }

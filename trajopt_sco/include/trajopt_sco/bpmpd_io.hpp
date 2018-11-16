@@ -1,12 +1,9 @@
 #include <string>
 #include <vector>
-using std::string;
-using std::vector;
 #include <assert.h>
 #include <iostream>
 #include <stdlib.h>
 #include <unistd.h>
-using namespace std;
 
 namespace bpmpd_io
 {
@@ -41,7 +38,7 @@ void ser(int fp, T& x, SerMode mode)
 }
 
 template <typename T>
-void ser(int fp, vector<T>& x, SerMode mode)
+void ser(int fp, std::vector<T>& x, SerMode mode)
 {
   int size = x.size();
   ser(fp, size, mode);
@@ -66,11 +63,11 @@ void ser(int fp, vector<T>& x, SerMode mode)
 struct bpmpd_input
 {
   int m, n, nz, qn, qnz;
-  vector<int> acolcnt, acolidx;
-  vector<double> acolnzs;
-  vector<int> qcolcnt, qcolidx;
-  vector<double> qcolnzs;
-  vector<double> rhs, obj, lbound, ubound;
+  std::vector<int> acolcnt, acolidx;
+  std::vector<double> acolnzs;
+  std::vector<int> qcolcnt, qcolidx;
+  std::vector<double> qcolnzs;
+  std::vector<double> rhs, obj, lbound, ubound;
 
   bpmpd_input() {}
   bpmpd_input(int m,
@@ -78,16 +75,16 @@ struct bpmpd_input
               int nz,
               int qn,
               int qnz,
-              const vector<int>& acolcnt,
-              const vector<int>& acolidx,
-              const vector<double>& acolnzs,
-              const vector<int>& qcolcnt,
-              const vector<int>& qcolidx,
-              const vector<double>& qcolnzs,
-              const vector<double>& rhs,
-              const vector<double>& obj,
-              const vector<double>& lbound,
-              const vector<double>& ubound)
+              const std::vector<int>& acolcnt,
+              const std::vector<int>& acolidx,
+              const std::vector<double>& acolnzs,
+              const std::vector<int>& qcolcnt,
+              const std::vector<int>& qcolidx,
+              const std::vector<double>& qcolnzs,
+              const std::vector<double>& rhs,
+              const std::vector<double>& obj,
+              const std::vector<double>& lbound,
+              const std::vector<double>& ubound)
     : m(m)
     , n(n)
     , nz(nz)
@@ -138,14 +135,14 @@ void ser(int fp, bpmpd_input& bi, SerMode mode)
 
 struct bpmpd_output
 {
-  vector<double> primal, dual;
-  vector<int> status;
+  std::vector<double> primal, dual;
+  std::vector<int> status;
   int code;
   double opt;
   bpmpd_output() {}
-  bpmpd_output(const vector<double>& primal,
-               const vector<double>& dual,
-               const vector<int>& status,
+  bpmpd_output(const std::vector<double>& primal,
+               const std::vector<double>& dual,
+               const std::vector<int>& status,
                int code,
                double opt)
     : primal(primal), dual(dual), status(status), code(code), opt(opt)

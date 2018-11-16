@@ -1,9 +1,6 @@
 #include <jsoncpp/json/json.h>
 #include <stdexcept>
 #include <trajopt/json_marshal.hpp>
-using namespace Json;
-using namespace std;
-
 namespace json_marshal
 {
 void fromJson(const Json::Value& v, bool& ref)
@@ -56,14 +53,14 @@ void fromJson(const Json::Value& v, std::string& ref)
 
 void fromJson(const Json::Value& v, Eigen::Vector3d& ref)
 {
-  vector<double> vx;
+  std::vector<double> vx;
   fromJsonArray(v, vx, 3);
   ref = Eigen::Vector3d(vx[0], vx[1], vx[2]);
 }
 
 void fromJson(const Json::Value& v, Eigen::Vector4d& ref)
 {
-  vector<double> vx;
+  std::vector<double> vx;
   fromJsonArray(v, vx, 4);
   ref = Eigen::Vector4d(vx[0], vx[1], vx[2], vx[3]);
 }

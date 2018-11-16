@@ -17,24 +17,24 @@ class GurobiModel : public Model
 {
 public:
   GRBmodel* m_model;
-  vector<Var> m_vars;
-  vector<Cnt> m_cnts;
+  VarVector m_vars;
+  CntVector m_cnts;
 
   GurobiModel();
 
-  Var addVar(const string& name);
-  Var addVar(const string& name, double lower, double upper);
+  Var addVar(const std::string& name);
+  Var addVar(const std::string& name, double lower, double upper);
 
-  Cnt addEqCnt(const AffExpr&, const string& name);
-  Cnt addIneqCnt(const AffExpr&, const string& name);
-  Cnt addIneqCnt(const QuadExpr&, const string& name);
+  Cnt addEqCnt(const AffExpr&, const std::string& name);
+  Cnt addIneqCnt(const AffExpr&, const std::string& name);
+  Cnt addIneqCnt(const QuadExpr&, const std::string& name);
 
-  void removeVars(const vector<Var>&);
-  void removeCnts(const vector<Cnt>&);
+  void removeVars(const VarVector&);
+  void removeCnts(const CntVector&);
 
   void update();
-  void setVarBounds(const std::vector<Var>&, const std::vector<double>& lower, const std::vector<double>& upper);
-  vector<double> getVarValues(const vector<Var>&) const;
+  void setVarBounds(const VarVector&, const DblVec& lower, const DblVec& upper);
+  DblVec getVarValues(const VarVector&) const;
 
   CvxOptStatus optimize();
   /** Don't use this function, because it adds constraints that aren't tracked
@@ -43,7 +43,7 @@ public:
 
   void setObjective(const AffExpr&);
   void setObjective(const QuadExpr&);
-  void writeToFile(const string& fname);
+  void writeToFile(const std::string& fname);
 
   VarVector getVars() const;
 

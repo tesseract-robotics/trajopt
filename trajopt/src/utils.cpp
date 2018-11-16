@@ -3,8 +3,6 @@
 #include <trajopt/utils.hpp>
 #include <trajopt_sco/solver_interface.hpp>
 
-using namespace Eigen;
-
 namespace trajopt
 {
 TrajArray getTraj(const DblVec& x, const VarArray& vars)
@@ -22,7 +20,7 @@ TrajArray getTraj(const DblVec& x, const VarArray& vars)
 
 TrajArray getTraj(const DblVec& x, const AffArray& arr)
 {
-  MatrixXd out(arr.rows(), arr.cols());
+  Eigen::MatrixXd out(arr.rows(), arr.cols());
   for (int i = 0; i < arr.rows(); ++i)
   {
     for (int j = 0; j < arr.cols(); ++j)
@@ -33,23 +31,23 @@ TrajArray getTraj(const DblVec& x, const AffArray& arr)
   return out;
 }
 
-void AddVarArrays(OptProb& prob,
+void AddVarArrays(sco::OptProb& prob,
                   int rows,
-                  const vector<int>& cols,
-                  const vector<string>& name_prefix,
-                  const vector<VarArray*>& newvars)
+                  const IntVec& cols,
+                  const std::vector<std::string>& name_prefix,
+                  const std::vector<VarArray*>& newvars)
 {
   int n_arr = name_prefix.size();
   assert(static_cast<unsigned>(n_arr) == newvars.size());
 
-  vector<MatrixXi> index(n_arr);
+  std::vector<Eigen::MatrixXi> index(n_arr);
   for (int i = 0; i < n_arr; ++i)
   {
     newvars[i]->resize(rows, cols[i]);
     index[i].resize(rows, cols[i]);
   }
 
-  vector<string> names;
+  std::vector<std::string> names;
   int var_idx = prob.getNumVars();
   for (int i = 0; i < rows; ++i)
   {
@@ -65,7 +63,7 @@ void AddVarArrays(OptProb& prob,
   }
   prob.createVariables(names);  // note that w,r, are both unbounded
 
-  const vector<Var>& vars = prob.getVars();
+  const std::vector<sco::Var>& vars = prob.getVars();
   for (int k = 0; k < n_arr; ++k)
   {
     for (int i = 0; i < rows; ++i)
@@ -78,11 +76,11 @@ void AddVarArrays(OptProb& prob,
   }
 }
 
-void AddVarArray(OptProb& prob, int rows, int cols, const string& name_prefix, VarArray& newvars)
+void AddVarArray(sco::OptProb& prob, int rows, int cols, const std::string& name_prefix, VarArray& newvars)
 {
-  vector<VarArray*> arrs(1, &newvars);
-  vector<string> prefixes(1, name_prefix);
-  vector<int> colss(1, cols);
+  std::vector<VarArray*> arrs(1, &newvars);
+  std::vector<std::string> prefixes(1, name_prefix);
+  std::vector<int> colss(1, cols);
   AddVarArrays(prob, rows, colss, prefixes, arrs);
 }
 }

@@ -47,7 +47,7 @@ TEST(SQP, QuadraticSeparable)
   BasicTrustRegionSQP solver(prob);
   BasicTrustRegionSQPParameters &params = solver.getParameters();
   params.trust_box_size = 100;
-  vector<double> x = {3, 4, 5};
+  DblVec x = {3, 4, 5};
   solver.initialize(x);
   OptStatus status = solver.optimize();
   ASSERT_EQ(status, OPT_CONVERGED);
@@ -66,7 +66,7 @@ TEST(SQP, QuadraticNonseparable)
   params.trust_box_size = 100;
   params.min_trust_box_size = 1e-5;
   params.min_approx_improve = 1e-6;
-  vector<double> x = {3, 4, 5};
+  DblVec x = {3, 4, 5};
   solver.initialize(x);
   OptStatus status = solver.optimize();
   ASSERT_EQ(status, OPT_CONVERGED);
