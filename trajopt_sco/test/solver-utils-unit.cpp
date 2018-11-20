@@ -35,7 +35,7 @@ TEST(solver_utils, var_to_triplets)
   std::cout << "expecting A = [3, 2];" << std::endl
             << "          u = [1]" << std::endl;
   Eigen::MatrixXd m_A_expected(1,2);
-  m_A_expected << 1, 2;
+  m_A_expected << 3, 2;
   DblVec v_u_expected{-1};
 
   IntVec m_A_i, m_A_j;

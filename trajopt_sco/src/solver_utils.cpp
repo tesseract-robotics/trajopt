@@ -1,6 +1,5 @@
-#include <Eigen/Core>
-#include <Eigen/SparseCore>
 #include <trajopt_sco/solver_utils.hpp>
+#include <Eigen/SparseCore>
 
 namespace sco
 {
@@ -18,13 +17,12 @@ void exprToTriplets(const AffExprVector& expr_vec,
   for (size_t i = 0; i < expr_vec.size(); ++i)
   {
     const AffExpr& expr = expr_vec[i];
-    
+
     rows_i.reserve(rows_i.size() + expr.size());
     cols_j.reserve(cols_j.size() + expr.size());
     values_ij.reserve(values_ij.size() + expr.size());
-    
+
     IntVec data_j = vars2inds(expr.vars);
-    DblVec values_ij = expr.coeffs;
 
     for (size_t j = 0; j < expr.size(); ++j)
     {
@@ -45,32 +43,56 @@ void exprToTriplets(const QuadExpr& expr,
                     DblVec& values_ij,
                     DblVec& affine)
 {
-  IntVec data_i = vars2inds(expr.vars1);
-  IntVec data_j = vars2inds(expr.vars2);
-  rows_i.reserve(rows_i.size() + expr.size());
-  cols_j.reserve(cols_j.size() + expr.size());
-  values_ij.reserve(values_ij.size() + expr.size());
-  for(size_t i = 0; i < expr.size(); ++i)
-  {
-    if(expr.coeffs[i] != 0.0)
-    {
-      rows_i.push_back(data_i[i]);
-      cols_j.push_back(data_j[i]);
-      if(data_i[i] == data_j[i])
-      {
-        values_ij[i] = 2 * expr.coeffs[i]; // optimization is .5*x'Px
-      }
-      else
-      {
-        values_ij[i] = expr.coeffs[i]; // the matrix is symmetrical
-      }
-    }
-  }
   affine.clear();
   affine.resize(expr.affexpr.size(), 0.0);
   for (size_t i = 0; i < expr.affexpr.size(); ++i)
   {
     affine[expr.affexpr.vars[i].var_rep->index] += expr.affexpr.coeffs[i];
+  }
+
+  IntVec ind1 = vars2inds(expr.vars1);
+  IntVec ind2 = vars2inds(expr.vars2);
+  Eigen::SparseMatrix<double> sm(expr.size(), expr.size());
+  sm.reserve(expr.size() * expr.size());
+
+  for (size_t i = 0; i < expr.coeffs.size(); ++i)
+  {
+    if (expr.coeffs[i] != 0.0)
+    {
+      if (ind1[i] == ind2[i])
+        sm.coeffRef(ind1[i], ind2[i]) += expr.coeffs[i];
+      else
+      {
+        int c, r;
+        if (ind1[i] < ind2[i])
+        {
+          r = ind1[i];
+          c = ind2[i];
+        }
+        else
+        {
+          r = ind2[i];
+          c = ind1[i];
+        }
+        sm.coeffRef(r, c) += expr.coeffs[i];
+      }
+    }
+  }
+
+  sm = sm + Eigen::SparseMatrix<double>(sm.transpose());
+  sm.makeCompressed();
+
+  rows_i.reserve(rows_i.size() + expr.size());
+  cols_j.reserve(cols_j.size() + expr.size());
+  values_ij.reserve(values_ij.size() + expr.size() * expr.size());
+  for (int k = 0; k < sm.outerSize(); ++k)
+  {
+    for (Eigen::SparseMatrix<double>::InnerIterator it(sm, k); it; ++it)
+    {
+      rows_i.push_back(it.row());  // row index
+      cols_j.push_back(it.col());  // col index
+      values_ij.push_back(0.5 * it.value());
+    }
   }
 }
 
