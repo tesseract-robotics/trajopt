@@ -6,26 +6,25 @@
 #include <trajopt_utils/logging.hpp>
 #include <trajopt_utils/stl_to_string.hpp>
 
-using namespace std;
 using namespace qpOASES;
 
 namespace sco
 {
 double QPOASES_INFTY = qpOASES::INFTY;
 
-extern void simplify2(vector<int>& inds, vector<double>& vals);
-extern vector<int> vars2inds(const vector<Var>& vars);
-extern vector<int> cnts2inds(const vector<Cnt>& cnts);
+extern void simplify2(IntVec& inds, DblVec& vals);
+extern IntVec vars2inds(const VarVector& vars);
+extern IntVec cnts2inds(const CntVector& cnts);
 
-void tripletsToCSC(vector<int>& row_indices,
-                   vector<int>& column_pointers,
-                   vector<double>& values,
+void tripletsToCSC(IntVec& row_indices,
+                   IntVec& column_pointers,
+                   DblVec& values,
                    const int m_size,
                    const int n_size,
                    const int n_nonzero,
-                   const vector<int>& data_i,
-                   const vector<int>& data_j,
-                   const vector<double>& data_vij,
+                   const IntVec& data_i,
+                   const IntVec& data_j,
+                   const DblVec& data_vij,
                    bool only_upper_triangular)
 {
   Eigen::SparseMatrix<double> sm(m_size, n_size);
@@ -91,42 +90,42 @@ qpOASESModel::qpOASESModel()
 
 qpOASESModel::~qpOASESModel() {}
 
-Var qpOASESModel::addVar(const string& name)
+Var qpOASESModel::addVar(const std::string& name)
 {
   vars_.push_back(new VarRep(vars_.size(), name, this));
   lb_.push_back(-QPOASES_INFTY);
   ub_.push_back(QPOASES_INFTY);
   return vars_.back();
 }
-Cnt qpOASESModel::addEqCnt(const AffExpr& expr, const string& /*name*/)
+Cnt qpOASESModel::addEqCnt(const AffExpr& expr, const std::string& /*name*/)
 {
   cnts_.push_back(new CntRep(cnts_.size(), this));
   cnt_exprs_.push_back(expr);
   cnt_types_.push_back(EQ);
   return cnts_.back();
 }
-Cnt qpOASESModel::addIneqCnt(const AffExpr& expr, const string& /*name*/)
+Cnt qpOASESModel::addIneqCnt(const AffExpr& expr, const std::string& /*name*/)
 {
   cnts_.push_back(new CntRep(cnts_.size(), this));
   cnt_exprs_.push_back(expr);
   cnt_types_.push_back(INEQ);
   return cnts_.back();
 }
-Cnt qpOASESModel::addIneqCnt(const QuadExpr&, const string& /*name*/)
+Cnt qpOASESModel::addIneqCnt(const QuadExpr&, const std::string& /*name*/)
 {
   assert(0 && "NOT IMPLEMENTED");
   return 0;
 }
 void qpOASESModel::removeVars(const VarVector& vars)
 {
-  vector<int> inds = vars2inds(vars);
+  IntVec inds = vars2inds(vars);
   for (unsigned i = 0; i < vars.size(); ++i)
     vars[i].var_rep->removed = true;
 }
 
-void qpOASESModel::removeCnts(const vector<Cnt>& cnts)
+void qpOASESModel::removeCnts(const CntVector& cnts)
 {
-  vector<int> inds = cnts2inds(cnts);
+  IntVec inds = cnts2inds(cnts);
   for (unsigned i = 0; i < cnts.size(); ++i)
     cnts[i].cnt_rep->removed = true;
 }
@@ -142,8 +141,8 @@ void qpOASESModel::updateObjective()
     g_[objective_.affexpr.vars[i].var_rep->index] += objective_.affexpr.coeffs[i];
   }
 
-  vector<int> ind1 = vars2inds(objective_.vars1);
-  vector<int> ind2 = vars2inds(objective_.vars2);
+  IntVec ind1 = vars2inds(objective_.vars1);
+  IntVec ind2 = vars2inds(objective_.vars2);
   Eigen::SparseMatrix<double> sm(vars_.size(), vars_.size());
   sm.reserve(vars_.size() * vars_.size());
 
@@ -174,9 +173,9 @@ void qpOASESModel::updateObjective()
   sm = sm + Eigen::SparseMatrix<double>(sm.transpose());
   sm.makeCompressed();
 
-  vector<int> data_i;
-  vector<int> data_j;
-  vector<double> vals_ij;
+  IntVec data_i;
+  IntVec data_j;
+  DblVec vals_ij;
   for (int k = 0; k < sm.outerSize(); ++k)
   {
     for (Eigen::SparseMatrix<double>::InnerIterator it(sm, k); it; ++it)
@@ -187,9 +186,9 @@ void qpOASESModel::updateObjective()
     }
   }
 
-  vector<int> row_indices;
-  vector<int> column_pointers;
-  vector<double> csc_data;
+  IntVec row_indices;
+  IntVec column_pointers;
+  DblVec csc_data;
   tripletsToCSC(
       H_row_indices_, H_column_pointers_, H_csc_data_, vars_.size(), vars_.size(), n * n, data_i, data_j, vals_ij);
 
@@ -207,14 +206,14 @@ void qpOASESModel::updateConstraints()
   ubA_.clear();
   ubA_.resize(m, QPOASES_INFTY);
 
-  vector<int> data_i;
-  vector<int> data_j;
-  vector<double> data_ij;
+  IntVec data_i;
+  IntVec data_j;
+  DblVec data_ij;
   for (int iCnt = 0; iCnt < m; ++iCnt)
   {
     const AffExpr& aff = cnt_exprs_[iCnt];
-    vector<int> inds = vars2inds(aff.vars);
-    vector<double> vals = aff.coeffs;
+    IntVec inds = vars2inds(aff.vars);
+    DblVec vals = aff.coeffs;
 
     for (unsigned i = 0; i < aff.vars.size(); ++i)
     {
@@ -306,7 +305,7 @@ void qpOASESModel::update()
   }
 }
 
-void qpOASESModel::setVarBounds(const vector<Var>& vars, const vector<double>& lower, const vector<double>& upper)
+void qpOASESModel::setVarBounds(const VarVector& vars, const DblVec& lower, const DblVec& upper)
 {
   for (unsigned i = 0; i < vars.size(); ++i)
   {
@@ -315,9 +314,9 @@ void qpOASESModel::setVarBounds(const vector<Var>& vars, const vector<double>& l
     ub_[varind] = upper[i];
   }
 }
-vector<double> qpOASESModel::getVarValues(const VarVector& vars) const
+DblVec qpOASESModel::getVarValues(const VarVector& vars) const
 {
-  vector<double> out(vars.size());
+  DblVec out(vars.size());
   for (unsigned i = 0; i < vars.size(); ++i)
   {
     int varind = vars[i].var_rep->index;
@@ -370,7 +369,7 @@ CvxOptStatus qpOASESModel::optimize()
 }
 void qpOASESModel::setObjective(const AffExpr& expr) { objective_.affexpr = expr; }
 void qpOASESModel::setObjective(const QuadExpr& expr) { objective_ = expr; }
-void qpOASESModel::writeToFile(const string& /*fname*/)
+void qpOASESModel::writeToFile(const std::string& /*fname*/)
 {
   // assert(0 && "NOT IMPLEMENTED");
 }

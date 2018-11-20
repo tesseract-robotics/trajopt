@@ -20,15 +20,15 @@ namespace sco
  * @param [in] data_j column indices for input values
  * @param [in] data_vij input values
  */
-void tripletsToCSC(vector<int>& row_indices,
-                   vector<int>& column_pointers,
-                   vector<double>& values,
+void tripletsToCSC(IntVec& row_indices,
+                   IntVec& column_pointers,
+                   DblVec& values,
                    const int m_size,
                    const int n_size,
                    const int n_nonzero,
-                   const vector<int>& data_i,
-                   const vector<int>& data_j,
-                   const vector<double>& data_vij,
+                   const IntVec& data_i,
+                   const IntVec& data_j,
+                   const DblVec& data_vij,
                    bool only_upper_triangular = false);
 
 class qpOASESModel : public Model
@@ -57,42 +57,42 @@ class qpOASESModel : public Model
   void createSolver();
 
 public:
-  vector<Var> vars_;
-  vector<Cnt> cnts_;
-  vector<double> lb_, ub_;
-  vector<AffExpr> cnt_exprs_;
-  vector<ConstraintType> cnt_types_;
-  vector<double> solution_;
+  VarVector vars_;
+  CntVector cnts_;
+  DblVec lb_, ub_;
+  AffExprVector cnt_exprs_;
+  ConstraintTypeVector cnt_types_;
+  DblVec solution_;
 
-  vector<int> H_row_indices_;
-  vector<int> H_column_pointers_;
-  vector<double> H_csc_data_;
-  vector<double> g_;
+  IntVec H_row_indices_;
+  IntVec H_column_pointers_;
+  DblVec H_csc_data_;
+  DblVec g_;
 
-  vector<int> A_row_indices_;
-  vector<int> A_column_pointers_;
-  vector<double> A_csc_data_;
-  vector<double> lbA_, ubA_;
+  IntVec A_row_indices_;
+  IntVec A_column_pointers_;
+  DblVec A_csc_data_;
+  DblVec lbA_, ubA_;
 
   QuadExpr objective_;
 
   qpOASESModel();
   virtual ~qpOASESModel();
 
-  Var addVar(const string& name);
-  Cnt addEqCnt(const AffExpr&, const string& name);
-  Cnt addIneqCnt(const AffExpr&, const string& name);
-  Cnt addIneqCnt(const QuadExpr&, const string& name);
+  Var addVar(const std::string& name);
+  Cnt addEqCnt(const AffExpr&, const std::string& name);
+  Cnt addIneqCnt(const AffExpr&, const std::string& name);
+  Cnt addIneqCnt(const QuadExpr&, const std::string& name);
   void removeVars(const VarVector& vars);
-  void removeCnts(const vector<Cnt>& cnts);
+  void removeCnts(const CntVector& cnts);
 
   void update();
-  void setVarBounds(const vector<Var>& vars, const vector<double>& lower, const vector<double>& upper);
-  vector<double> getVarValues(const VarVector& vars) const;
+  void setVarBounds(const VarVector& vars, const DblVec& lower, const DblVec& upper);
+  DblVec getVarValues(const VarVector& vars) const;
   virtual CvxOptStatus optimize();
   virtual void setObjective(const AffExpr&);
   virtual void setObjective(const QuadExpr&);
-  virtual void writeToFile(const string& fname);
+  virtual void writeToFile(const std::string& fname);
   virtual VarVector getVars() const;
 };
 }

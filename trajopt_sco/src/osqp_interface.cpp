@@ -7,25 +7,23 @@
 #include <trajopt_utils/logging.hpp>
 #include <trajopt_utils/stl_to_string.hpp>
 
-using namespace std;
-
 namespace sco
 {
-double OSQP_INFINITY = numeric_limits<double>::infinity();
+double OSQP_INFINITY = std::numeric_limits<double>::infinity();
 
-extern void simplify2(vector<int>& inds, vector<double>& vals);
-extern vector<int> vars2inds(const vector<Var>& vars);
-extern vector<int> cnts2inds(const vector<Cnt>& cnts);
+extern void simplify2(IntVec& inds, DblVec& vals);
+extern IntVec vars2inds(const VarVector& vars);
+extern IntVec cnts2inds(const CntVector& cnts);
 
-void tripletsToCSC(vector<c_int>& row_indices,
-                   vector<c_int>& column_pointers,
-                   vector<double>& values,
+void tripletsToCSC(std::vector<c_int>& row_indices,
+                   std::vector<c_int>& column_pointers,
+                   DblVec& values,
                    const int m_size,
                    const int n_size,
                    const int n_nonzero,
-                   const vector<int>& data_i,
-                   const vector<int>& data_j,
-                   const vector<double>& data_vij,
+                   const IntVec& data_i,
+                   const IntVec& data_j,
+                   const DblVec& data_vij,
                    bool only_upper_triangular)
 {
   Eigen::SparseMatrix<double> sm(m_size, n_size);
@@ -102,42 +100,42 @@ OSQPModel::~OSQPModel()
     c_free(osqp_data_.P);
 }
 
-Var OSQPModel::addVar(const string& name)
+Var OSQPModel::addVar(const std::string& name)
 {
   vars_.push_back(new VarRep(vars_.size(), name, this));
   lbs_.push_back(-OSQP_INFINITY);
   ubs_.push_back(OSQP_INFINITY);
   return vars_.back();
 }
-Cnt OSQPModel::addEqCnt(const AffExpr& expr, const string& /*name*/)
+Cnt OSQPModel::addEqCnt(const AffExpr& expr, const std::string& /*name*/)
 {
   cnts_.push_back(new CntRep(cnts_.size(), this));
   cnt_exprs_.push_back(expr);
   cnt_types_.push_back(EQ);
   return cnts_.back();
 }
-Cnt OSQPModel::addIneqCnt(const AffExpr& expr, const string& /*name*/)
+Cnt OSQPModel::addIneqCnt(const AffExpr& expr, const std::string& /*name*/)
 {
   cnts_.push_back(new CntRep(cnts_.size(), this));
   cnt_exprs_.push_back(expr);
   cnt_types_.push_back(INEQ);
   return cnts_.back();
 }
-Cnt OSQPModel::addIneqCnt(const QuadExpr&, const string& /*name*/)
+Cnt OSQPModel::addIneqCnt(const QuadExpr&, const std::string& /*name*/)
 {
   assert(0 && "NOT IMPLEMENTED");
   return 0;
 }
 void OSQPModel::removeVars(const VarVector& vars)
 {
-  vector<int> inds = vars2inds(vars);
+  IntVec inds = vars2inds(vars);
   for (unsigned i = 0; i < vars.size(); ++i)
     vars[i].var_rep->removed = true;
 }
 
-void OSQPModel::removeCnts(const vector<Cnt>& cnts)
+void OSQPModel::removeCnts(const CntVector& cnts)
 {
-  vector<int> inds = cnts2inds(cnts);
+  IntVec inds = cnts2inds(cnts);
   for (unsigned i = 0; i < cnts.size(); ++i)
     cnts[i].cnt_rep->removed = true;
 }
@@ -154,8 +152,8 @@ void OSQPModel::updateObjective()
     q_[objective_.affexpr.vars[i].var_rep->index] += objective_.affexpr.coeffs[i];
   }
 
-  vector<int> ind1 = vars2inds(objective_.vars1);
-  vector<int> ind2 = vars2inds(objective_.vars2);
+  IntVec ind1 = vars2inds(objective_.vars1);
+  IntVec ind2 = vars2inds(objective_.vars2);
   Eigen::SparseMatrix<double> sm(vars_.size(), vars_.size());
   sm.reserve(vars_.size() * vars_.size());
 
@@ -186,9 +184,9 @@ void OSQPModel::updateObjective()
   sm = sm + Eigen::SparseMatrix<double>(sm.transpose());
   sm.makeCompressed();
 
-  vector<int> data_i;
-  vector<int> data_j;
-  vector<double> vals_ij;
+  IntVec data_i;
+  IntVec data_j;
+  DblVec vals_ij;
   for (int k = 0; k < sm.outerSize(); ++k)
   {
     for (Eigen::SparseMatrix<double>::InnerIterator it(sm, k); it; ++it)
@@ -199,9 +197,9 @@ void OSQPModel::updateObjective()
     }
   }
 
-  vector<c_int> row_indices;
-  vector<c_int> column_pointers;
-  vector<double> csc_data;
+  std::vector<c_int> row_indices;
+  std::vector<c_int> column_pointers;
+  DblVec csc_data;
   tripletsToCSC(
       P_row_indices_, P_column_pointers_, P_csc_data_, vars_.size(), vars_.size(), n * n, data_i, data_j, vals_ij);
 
@@ -228,9 +226,9 @@ void OSQPModel::updateConstraints()
   u_.clear();
   u_.resize(m + n, OSQP_INFINITY);
 
-  vector<int> data_i;
-  vector<int> data_j;
-  vector<double> data_ij;
+  IntVec data_i;
+  IntVec data_j;
+  DblVec data_ij;
   for (int iVar = 0; iVar < n; ++iVar)
   {
     l_[iVar] = fmax(lbs_[iVar], -OSQP_INFINITY);
@@ -243,8 +241,8 @@ void OSQPModel::updateConstraints()
   for (int iCnt = 0; iCnt < m; ++iCnt)
   {
     const AffExpr& aff = cnt_exprs_[iCnt];
-    vector<int> inds = vars2inds(aff.vars);
-    vector<double> vals = aff.coeffs;
+    IntVec inds = vars2inds(aff.vars);
+    DblVec vals = aff.coeffs;
 
     for (unsigned i = 0; i < aff.vars.size(); ++i)
     {
@@ -346,7 +344,7 @@ void OSQPModel::update()
   }
 }
 
-void OSQPModel::setVarBounds(const vector<Var>& vars, const vector<double>& lower, const vector<double>& upper)
+void OSQPModel::setVarBounds(const VarVector& vars, const DblVec& lower, const DblVec& upper)
 {
   for (unsigned i = 0; i < vars.size(); ++i)
   {
@@ -355,9 +353,9 @@ void OSQPModel::setVarBounds(const vector<Var>& vars, const vector<double>& lowe
     ubs_[varind] = upper[i];
   }
 }
-vector<double> OSQPModel::getVarValues(const VarVector& vars) const
+DblVec OSQPModel::getVarValues(const VarVector& vars) const
 {
-  vector<double> out(vars.size());
+  DblVec out(vars.size());
   for (unsigned i = 0; i < vars.size(); ++i)
   {
     int varind = vars[i].var_rep->index;
@@ -378,7 +376,7 @@ CvxOptStatus OSQPModel::optimize()
   if (retcode == 0)
   {
     // opt += m_objective.affexpr.constant;
-    solution_ = vector<double>(osqp_workspace_->solution->x, osqp_workspace_->solution->x + vars_.size());
+    solution_ = DblVec(osqp_workspace_->solution->x, osqp_workspace_->solution->x + vars_.size());
     int status = osqp_workspace_->info->status_val;
     if (status == OSQP_SOLVED || status == OSQP_SOLVED_INACCURATE)
       return CVX_SOLVED;
@@ -390,7 +388,7 @@ CvxOptStatus OSQPModel::optimize()
 }
 void OSQPModel::setObjective(const AffExpr& expr) { objective_.affexpr = expr; }
 void OSQPModel::setObjective(const QuadExpr& expr) { objective_ = expr; }
-void OSQPModel::writeToFile(const string& /*fname*/)
+void OSQPModel::writeToFile(const std::string& /*fname*/)
 {
   // assert(0 && "NOT IMPLEMENTED");
 }
