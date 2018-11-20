@@ -1,5 +1,5 @@
 #include <cmath>
-#include <Eigen/Eigen>
+#include <Eigen/SparseCore>
 #include <fstream>
 #include <constants.h>
 #include <signal.h>

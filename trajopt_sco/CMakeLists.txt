@@ -12,6 +12,7 @@ find_package(Eigen3 REQUIRED)
 
 set(SCO_SOURCE_FILES
     src/solver_interface.cpp
+    src/solver_utils.cpp
     src/modeling.cpp
     src/expr_ops.cpp
     src/expr_vec_ops.cpp
@@ -115,6 +116,7 @@ if (CATKIN_ENABLE_TESTING)
     test/unit.cpp
     test/small-problems-unit.cpp
     test/solver-interface-unit.cpp
+    test/solver-utils-unit.cpp
   )
 
   if (osqp_FOUND)
