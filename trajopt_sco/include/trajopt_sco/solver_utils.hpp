@@ -1,6 +1,4 @@
-#ifndef __SOLVER_UTILS_HPP__
-#define __SOLVER_UTILS_HPP__
-
+#pragma once
 #include <Eigen/Core>
 #include <trajopt_sco/solver_interface.hpp>
 
@@ -78,4 +76,3 @@ void triplets_to_CSC(IntVec& row_indices,
                      bool only_upper_triangular = false);
 
 }
-#endif // __SOLVER_UTILS_HPP__

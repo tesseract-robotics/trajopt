@@ -1,5 +1,4 @@
 #pragma once
-
 #include <trajopt_sco/sco_fwd.hpp>
 #include <trajopt_sco/solver_interface.hpp>
 

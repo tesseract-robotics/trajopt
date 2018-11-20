@@ -1,3 +1,4 @@
+#pragma once
 #include <qpOASES.hpp>
 #include <trajopt_sco/solver_interface.hpp>
 #include <trajopt_utils/macros.h>
