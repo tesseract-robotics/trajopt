@@ -120,7 +120,7 @@ TEST_F(CastWorldTest, boxes)
   EXPECT_TRUE(found);
   ROS_INFO((found) ? ("Initial trajectory is in collision") : ("Initial trajectory is collision free"));
 
-  BasicTrustRegionSQP opt(prob);
+  sco::BasicTrustRegionSQP opt(prob);
   if (plotting)
     opt.addCallback(PlotCallback(*prob, plotter_));
   opt.initialize(trajToDblVec(prob->GetInitTraj()));

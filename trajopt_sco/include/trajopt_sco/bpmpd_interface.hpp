@@ -7,12 +7,12 @@ namespace sco
 class BPMPDModel : public Model
 {
 public:
-  vector<Var> m_vars;
-  vector<Cnt> m_cnts;
-  vector<AffExpr> m_cntExprs;
-  vector<ConstraintType> m_cntTypes;
-  vector<double> m_soln;
-  vector<double> m_lbs, m_ubs;
+  VarVector m_vars;
+  CntVector m_cnts;
+  AffExprVector m_cntExprs;
+  ConstraintTypeVector m_cntTypes;
+  DblVec m_soln;
+  DblVec m_lbs, m_ubs;
 
   QuadExpr m_objective;
 
@@ -21,20 +21,20 @@ public:
   BPMPDModel();
   virtual ~BPMPDModel();
 
-  Var addVar(const string& name);
-  Cnt addEqCnt(const AffExpr&, const string& name);
-  Cnt addIneqCnt(const AffExpr&, const string& name);
-  Cnt addIneqCnt(const QuadExpr&, const string& name);
+  Var addVar(const std::string& name);
+  Cnt addEqCnt(const AffExpr&, const std::string& name);
+  Cnt addIneqCnt(const AffExpr&, const std::string& name);
+  Cnt addIneqCnt(const QuadExpr&, const std::string& name);
   void removeVars(const VarVector& vars);
-  void removeCnts(const vector<Cnt>& cnts);
+  void removeCnts(const CntVector& cnts);
 
   void update();
-  void setVarBounds(const vector<Var>& vars, const vector<double>& lower, const vector<double>& upper);
-  vector<double> getVarValues(const VarVector& vars) const;
+  void setVarBounds(const VarVector& vars, const DblVec& lower, const DblVec& upper);
+  DblVec getVarValues(const VarVector& vars) const;
   virtual CvxOptStatus optimize();
   virtual void setObjective(const AffExpr&);
   virtual void setObjective(const QuadExpr&);
-  virtual void writeToFile(const string& fname);
+  virtual void writeToFile(const std::string& fname);
   virtual VarVector getVars() const;
 };
 }

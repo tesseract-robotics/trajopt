@@ -2,12 +2,16 @@
 #include <algorithm>
 #include <cmath>
 #include <vector>
+#include <trajopt_sco/sco_fwd.hpp>
 
 namespace sco
 {
-using std::vector;
-typedef vector<double> DblVec;
-typedef vector<unsigned char> BoolVec;
+typedef std::vector<double> DblVec;
+typedef std::vector<int> IntVec;
+typedef std::vector<Var> VarVector;
+typedef std::vector<AffExpr> AffExprVector;
+typedef std::vector<QuadExpr> QuadExprVector;
+typedef std::vector<Cnt> CntVector;
 
 inline double vecSum(const DblVec& v)
 {

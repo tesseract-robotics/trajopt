@@ -77,7 +77,7 @@ TEST_F(PlanningTest, numerical_ik1)
   TrajOptProbPtr prob = ConstructProblem(root, env_);
   ASSERT_TRUE(!!prob);
 
-  BasicTrustRegionSQP opt(prob);
+  sco::BasicTrustRegionSQP opt(prob);
   if (plotting)
   {
     opt.addCallback(PlotCallback(*prob, plotter_));
@@ -93,7 +93,7 @@ TEST_F(PlanningTest, numerical_ik1)
   prob->GetKin()->calcFwdKin(initial_pose, change_base, toVectorXd(opt.x()));
 
   ROS_DEBUG_STREAM("Initial Position: " << initial_pose.translation().transpose());
-  OptStatus status = opt.optimize();
+  sco::OptStatus status = opt.optimize();
   ROS_DEBUG_STREAM("Status: " << sco::statusToString(status));
   prob->GetKin()->calcFwdKin(final_pose, change_base, toVectorXd(opt.x()));
 
@@ -149,7 +149,7 @@ TEST_F(PlanningTest, arm_around_table)
   EXPECT_TRUE(found);
   ROS_INFO((found) ? ("Initial trajectory is in collision") : ("Initial trajectory is collision free"));
 
-  BasicTrustRegionSQP opt(prob);
+  sco::BasicTrustRegionSQP opt(prob);
   ROS_DEBUG_STREAM("DOF: " << prob->GetNumDOF());
   if (plotting)
   {

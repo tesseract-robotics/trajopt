@@ -7,20 +7,18 @@
 #include <trajopt/problem_description.hpp>
 #include <trajopt_utils/eigen_conversions.hpp>
 
-using namespace util;
-using namespace std;
 namespace trajopt
 {
 void PlotCosts(const tesseract::BasicPlottingPtr plotter,
                const std::vector<std::string>& joint_names,
-               const vector<CostPtr>& costs,
-               const vector<ConstraintPtr>& cnts,
+               const std::vector<sco::CostPtr>& costs,
+               const std::vector<sco::ConstraintPtr>& cnts,
                const VarArray& vars,
-               const OptResults& results)
+               const sco::OptResults& results)
 {
   plotter->clear();
 
-  for (const CostPtr& cost : costs)
+  for (const sco::CostPtr& cost : costs)
   {
     if (Plotter* plt = dynamic_cast<Plotter*>(cost.get()))
     {
@@ -28,7 +26,7 @@ void PlotCosts(const tesseract::BasicPlottingPtr plotter,
     }
   }
 
-  for (const ConstraintPtr& cnt : cnts)
+  for (const sco::ConstraintPtr& cnt : cnts)
   {
     if (Plotter* plt = dynamic_cast<Plotter*>(cnt.get()))
     {
@@ -40,9 +38,9 @@ void PlotCosts(const tesseract::BasicPlottingPtr plotter,
   plotter->waitForInput();
 }
 
-Optimizer::Callback PlotCallback(TrajOptProb& prob, const tesseract::BasicPlottingPtr plotter)
+sco::Optimizer::Callback PlotCallback(TrajOptProb& prob, const tesseract::BasicPlottingPtr plotter)
 {
-  vector<ConstraintPtr> cnts = prob.getConstraints();
+  std::vector<sco::ConstraintPtr> cnts = prob.getConstraints();
   return std::bind(&PlotCosts,
                    plotter,
                    prob.GetKin()->getJointNames(),

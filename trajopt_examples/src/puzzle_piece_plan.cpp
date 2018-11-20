@@ -233,7 +233,7 @@ int main(int argc, char** argv)
   plotter->plotScene();
 
   // Set Log Level
-  gLogLevel = util::LevelInfo;
+  util::gLogLevel = util::LevelInfo;
 
   // Setup Problem
   ProblemConstructionInfo pci = cppMethod();
@@ -252,7 +252,7 @@ int main(int argc, char** argv)
 
   ROS_INFO((found) ? ("Initial trajectory is in collision") : ("Initial trajectory is collision free"));
 
-  BasicTrustRegionSQP opt(prob);
+  sco::BasicTrustRegionSQP opt(prob);
   opt.setParameters(pci.opt_info);
   if (plotting_)
   {

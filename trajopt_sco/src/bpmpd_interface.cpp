@@ -6,9 +6,6 @@
 #include <trajopt_utils/logging.hpp>
 #include <trajopt_utils/stl_to_string.hpp>
 
-using namespace std;
-using namespace bpmpd_io;
-
 /**
 This is a readme file for the linux DLL version of BPMPD version 2.21
 The DLL solves linear and convex quadratic problems.
@@ -151,9 +148,9 @@ namespace sco
 {
 double BPMPD_BIG = 1e+30;
 
-extern void simplify2(vector<int>& inds, vector<double>& vals);
-extern vector<int> vars2inds(const vector<Var>& vars);
-extern vector<int> cnts2inds(const vector<Cnt>& cnts);
+extern void simplify2(IntVec& inds, DblVec& vals);
+extern IntVec vars2inds(const VarVector& vars);
+extern IntVec cnts2inds(const CntVector& cnts);
 
 ModelPtr createBPMPDModel()
 {
@@ -209,7 +206,7 @@ int gPipeIn = 0, gPipeOut = 0;
 
 void fexit()
 {
-  char text[1] = { EXIT_CHAR };
+  char text[1] = { bpmpd_io::EXIT_CHAR };
   int n = write(gPipeIn, text, 1);
   ALWAYS_ASSERT(n == 1);
 }
@@ -234,42 +231,42 @@ BPMPDModel::~BPMPDModel()
   // m_pipeOut=0;
 }
 
-Var BPMPDModel::addVar(const string& name)
+Var BPMPDModel::addVar(const std::string& name)
 {
   m_vars.push_back(new VarRep(m_vars.size(), name, this));
   m_lbs.push_back(-BPMPD_BIG);
   m_ubs.push_back(BPMPD_BIG);
   return m_vars.back();
 }
-Cnt BPMPDModel::addEqCnt(const AffExpr& expr, const string& /*name*/)
+Cnt BPMPDModel::addEqCnt(const AffExpr& expr, const std::string& /*name*/)
 {
   m_cnts.push_back(new CntRep(m_cnts.size(), this));
   m_cntExprs.push_back(expr);
   m_cntTypes.push_back(EQ);
   return m_cnts.back();
 }
-Cnt BPMPDModel::addIneqCnt(const AffExpr& expr, const string& /*name*/)
+Cnt BPMPDModel::addIneqCnt(const AffExpr& expr, const std::string& /*name*/)
 {
   m_cnts.push_back(new CntRep(m_cnts.size(), this));
   m_cntExprs.push_back(expr);
   m_cntTypes.push_back(INEQ);
   return m_cnts.back();
 }
-Cnt BPMPDModel::addIneqCnt(const QuadExpr&, const string& /*name*/)
+Cnt BPMPDModel::addIneqCnt(const QuadExpr&, const std::string& /*name*/)
 {
   assert(0 && "NOT IMPLEMENTED");
   return 0;
 }
 void BPMPDModel::removeVars(const VarVector& vars)
 {
-  vector<int> inds = vars2inds(vars);
+  IntVec inds = vars2inds(vars);
   for (unsigned i = 0; i < vars.size(); ++i)
     vars[i].var_rep->removed = true;
 }
 
-void BPMPDModel::removeCnts(const vector<Cnt>& cnts)
+void BPMPDModel::removeCnts(const CntVector& cnts)
 {
-  vector<int> inds = cnts2inds(cnts);
+  IntVec inds = cnts2inds(cnts);
   for (unsigned i = 0; i < cnts.size(); ++i)
     cnts[i].cnt_rep->removed = true;
 }
@@ -318,7 +315,7 @@ void BPMPDModel::update()
   }
 }
 
-void BPMPDModel::setVarBounds(const vector<Var>& vars, const vector<double>& lower, const vector<double>& upper)
+void BPMPDModel::setVarBounds(const VarVector &vars, const DblVec &lower, const DblVec &upper)
 {
   for (unsigned i = 0; i < vars.size(); ++i)
   {
@@ -327,9 +324,9 @@ void BPMPDModel::setVarBounds(const vector<Var>& vars, const vector<double>& low
     m_ubs[varind] = upper[i];
   }
 }
-vector<double> BPMPDModel::getVarValues(const VarVector& vars) const
+DblVec BPMPDModel::getVarValues(const VarVector& vars) const
 {
-  vector<double> out(vars.size());
+  DblVec out(vars.size());
   for (unsigned i = 0; i < vars.size(); ++i)
   {
     int varind = vars[i].var_rep->index;
@@ -355,8 +352,8 @@ CvxOptStatus BPMPDModel::optimize()
   int n = m_vars.size();
   int m = m_cnts.size();
 
-  vector<int> acolcnt(n), acolidx, qcolcnt(n), qcolidx, status(m + n);
-  vector<double> acolnzs, qcolnzs, rhs(m), obj(n, 0), lbound(m + n), ubound(m + n), primal(m + n), dual(m + n);
+  IntVec acolcnt(n), acolidx, qcolcnt(n), qcolidx, status(m + n);
+  DblVec acolnzs, qcolnzs, rhs(m), obj(n, 0), lbound(m + n), ubound(m + n), primal(m + n), dual(m + n);
 
   DBG(m_lbs);
   DBG(m_ubs);
@@ -366,13 +363,13 @@ CvxOptStatus BPMPDModel::optimize()
     ubound[iVar] = fmin(m_ubs[iVar], BPMPD_BIG);
   }
 
-  vector<vector<int>> var2cntinds(n);
-  vector<vector<double>> var2cntvals(n);
+  std::vector<IntVec> var2cntinds(n);
+  std::vector<DblVec> var2cntvals(n);
   for (int iCnt = 0; iCnt < m; ++iCnt)
   {
     const AffExpr& aff = m_cntExprs[iCnt];
     // cout << "adding constraint " << aff << endl;
-    vector<int> inds = vars2inds(aff.vars);
+    IntVec inds = vars2inds(aff.vars);
 
     for (unsigned i = 0; i < aff.vars.size(); ++i)
     {
@@ -395,8 +392,8 @@ CvxOptStatus BPMPDModel::optimize()
   // cout << CSTR(acolidx) << endl;
   // cout << CSTR(acolnzs) << endl;
 
-  vector<vector<double>> var2qcoeffs(n);
-  vector<vector<int>> var2qinds(n);
+  std::vector<DblVec> var2qcoeffs(n);
+  std::vector<IntVec> var2qinds(n);
   for (unsigned i = 0; i < m_objective.size(); ++i)
   {
     int idx1 = m_objective.vars1[i].var_rep->index, idx2 = m_objective.vars2[i].var_rep->index;
@@ -463,7 +460,7 @@ CvxOptStatus BPMPDModel::optimize()
       primal.data(), dual.data(), status.data(), &BIG, &code, &opt, &memsiz);
 
   // opt += m_objective.affexpr.constant;
-  m_soln = vector<double>(primal.begin(), primal.begin()+n);
+  m_soln = DblVec(primal.begin(), primal.begin()+n);
 
 
   if (1) {
@@ -476,15 +473,15 @@ CvxOptStatus BPMPDModel::optimize()
 
 #else
 
-  bpmpd_input bi(m, n, nz, qn, qnz, acolcnt, acolidx, acolnzs, qcolcnt, qcolidx, qcolnzs, rhs, obj, lbound, ubound);
-  ser(gPipeIn, bi, SER);
+  bpmpd_io::bpmpd_input bi(m, n, nz, qn, qnz, acolcnt, acolidx, acolnzs, qcolcnt, qcolidx, qcolnzs, rhs, obj, lbound, ubound);
+  bpmpd_io::ser(gPipeIn, bi, bpmpd_io::SER);
 
   // std::cout << "serialization time:" << end-start << std::endl;
 
-  bpmpd_output bo;
-  ser(gPipeOut, bo, DESER);
+  bpmpd_io::bpmpd_output bo;
+  bpmpd_io::ser(gPipeOut, bo, bpmpd_io::DESER);
 
-  m_soln = vector<double>(bo.primal.begin(), bo.primal.begin() + n);
+  m_soln = DblVec(bo.primal.begin(), bo.primal.begin() + n);
   int retcode = bo.code;
 
   if (retcode == 2)
@@ -500,7 +497,7 @@ CvxOptStatus BPMPDModel::optimize()
 }
 void BPMPDModel::setObjective(const AffExpr& expr) { m_objective.affexpr = expr; }
 void BPMPDModel::setObjective(const QuadExpr& expr) { m_objective = expr; }
-void BPMPDModel::writeToFile(const string& /*fname*/)
+void BPMPDModel::writeToFile(const std::string& /*fname*/)
 {
   // assert(0 && "NOT IMPLEMENTED");
 }

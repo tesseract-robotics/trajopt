@@ -1,6 +1,4 @@
 #include <trajopt_sco/num_diff.hpp>
-using namespace Eigen;
-using namespace sco;
 
 namespace sco
 {
@@ -10,7 +8,7 @@ ScalarOfVectorPtr ScalarOfVector::construct(const func& f)
   {
     func f;
     F(const func& _f) : f(_f) {}
-    double operator()(const VectorXd& x) const { return f(x); }
+    double operator()(const Eigen::VectorXd& x) const { return f(x); }
   };
   ScalarOfVector* sov = new F(f);  // to avoid erroneous clang warning
   return ScalarOfVectorPtr(sov);
@@ -21,16 +19,16 @@ VectorOfVectorPtr VectorOfVector::construct(const func& f)
   {
     func f;
     F(const func& _f) : f(_f) {}
-    VectorXd operator()(const VectorXd& x) const { return f(x); }
+    Eigen::VectorXd operator()(const Eigen::VectorXd& x) const { return f(x); }
   };
   VectorOfVector* vov = new F(f);  // to avoid erroneous clang warning
   return VectorOfVectorPtr(vov);
 }
 
-VectorXd calcForwardNumGrad(const ScalarOfVector& f, const VectorXd& x, double epsilon)
+Eigen::VectorXd calcForwardNumGrad(const ScalarOfVector& f, const Eigen::VectorXd& x, double epsilon)
 {
-  VectorXd out(x.size());
-  VectorXd xpert = x;
+  Eigen::VectorXd out(x.size());
+  Eigen::VectorXd xpert = x;
   double y = f(x);
   for (size_t i = 0; i < size_t(x.size()); ++i)
   {
@@ -41,15 +39,15 @@ VectorXd calcForwardNumGrad(const ScalarOfVector& f, const VectorXd& x, double e
   }
   return out;
 }
-MatrixXd calcForwardNumJac(const VectorOfVector& f, const VectorXd& x, double epsilon)
+Eigen::MatrixXd calcForwardNumJac(const VectorOfVector& f, const Eigen::VectorXd& x, double epsilon)
 {
-  VectorXd y = f(x);
-  MatrixXd out(y.size(), x.size());
-  VectorXd xpert = x;
+  Eigen::VectorXd y = f(x);
+  Eigen::MatrixXd out(y.size(), x.size());
+  Eigen::VectorXd xpert = x;
   for (size_t i = 0; i < size_t(x.size()); ++i)
   {
     xpert(i) = x(i) + epsilon;
-    VectorXd ypert = f(xpert);
+    Eigen::VectorXd ypert = f(xpert);
     out.col(i) = (ypert - y) / epsilon;
     xpert(i) = x(i);
   }
@@ -57,16 +55,16 @@ MatrixXd calcForwardNumJac(const VectorOfVector& f, const VectorXd& x, double ep
 }
 
 void calcGradAndDiagHess(const ScalarOfVector& f,
-                         const VectorXd& x,
+                         const Eigen::VectorXd& x,
                          double epsilon,
                          double& y,
-                         VectorXd& grad,
-                         VectorXd& hess)
+                         Eigen::VectorXd& grad,
+                         Eigen::VectorXd& hess)
 {
   y = f(x);
   grad.resize(x.size());
   hess.resize(x.size());
-  VectorXd xpert = x;
+  Eigen::VectorXd xpert = x;
   for (size_t i = 0; i < size_t(x.size()); ++i)
   {
     xpert(i) = x(i) + epsilon / 2;
@@ -79,7 +77,7 @@ void calcGradAndDiagHess(const ScalarOfVector& f,
   }
 }
 
-void calcGradHess(ScalarOfVectorPtr f, const VectorXd& x, double epsilon, double& y, VectorXd& grad, MatrixXd& hess)
+void calcGradHess(ScalarOfVectorPtr f, const Eigen::VectorXd& x, double epsilon, double& y, Eigen::VectorXd& grad, Eigen::MatrixXd& hess)
 {
   y = f->call(x);
   VectorOfVectorPtr grad_func = forwardNumGrad(f, epsilon);
@@ -93,7 +91,7 @@ struct ForwardNumGrad : public VectorOfVector
   ScalarOfVectorPtr f_;
   double epsilon_;
   ForwardNumGrad(ScalarOfVectorPtr f, double epsilon) : f_(f), epsilon_(epsilon) {}
-  VectorXd operator()(const VectorXd& x) const { return calcForwardNumGrad(*f_, x, epsilon_); }
+  Eigen::VectorXd operator()(const Eigen::VectorXd& x) const { return calcForwardNumGrad(*f_, x, epsilon_); }
 };
 
 struct ForwardNumJac : public MatrixOfVector
@@ -101,7 +99,7 @@ struct ForwardNumJac : public MatrixOfVector
   VectorOfVectorPtr f_;
   double epsilon_;
   ForwardNumJac(VectorOfVectorPtr f, double epsilon) : f_(f), epsilon_(epsilon) {}
-  MatrixXd operator()(const VectorXd& x) const { return calcForwardNumJac(*f_, x, epsilon_); }
+  Eigen::MatrixXd operator()(const Eigen::VectorXd& x) const { return calcForwardNumJac(*f_, x, epsilon_); }
 };
 
 VectorOfVectorPtr forwardNumGrad(ScalarOfVectorPtr f, double epsilon)

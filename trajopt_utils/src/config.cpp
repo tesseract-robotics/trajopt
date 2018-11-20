@@ -1,5 +1,4 @@
 #include <trajopt_utils/config.hpp>
-using namespace std;
 
 namespace util
 {

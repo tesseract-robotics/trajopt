@@ -13,16 +13,11 @@
 #include <trajopt_utils/logging.hpp>
 #include <ros/ros.h>
 
-using namespace Json;
-using namespace std;
-using namespace trajopt;
-using namespace util;
-
 namespace
 {
 bool gRegisteredMakers = false;
 
-void ensure_only_members(const Value& v, const char** fields, int nvalid)
+void ensure_only_members(const Json::Value& v, const char** fields, int nvalid)
 {
   for (Json::ValueConstIterator it = v.begin(); it != v.end(); ++it)
   {
@@ -45,31 +40,31 @@ void ensure_only_members(const Value& v, const char** fields, int nvalid)
 
 void RegisterMakers()
 {
-  TermInfo::RegisterMaker("dynamic_cart_pose", &DynamicCartPoseTermInfo::create);
-  TermInfo::RegisterMaker("cart_pose", &CartPoseTermInfo::create);
-  TermInfo::RegisterMaker("cart_vel", &CartVelTermInfo::create);
-  TermInfo::RegisterMaker("joint_pos", &JointPosTermInfo::create);
-  TermInfo::RegisterMaker("joint_vel", &JointVelTermInfo::create);
-  TermInfo::RegisterMaker("joint_acc", &JointAccTermInfo::create);
-  TermInfo::RegisterMaker("joint_jerk", &JointJerkTermInfo::create);
-  TermInfo::RegisterMaker("collision", &CollisionTermInfo::create);
+  trajopt::TermInfo::RegisterMaker("dynamic_cart_pose", &trajopt::DynamicCartPoseTermInfo::create);
+  trajopt::TermInfo::RegisterMaker("cart_pose", &trajopt::CartPoseTermInfo::create);
+  trajopt::TermInfo::RegisterMaker("cart_vel", &trajopt::CartVelTermInfo::create);
+  trajopt::TermInfo::RegisterMaker("joint_pos", &trajopt::JointPosTermInfo::create);
+  trajopt::TermInfo::RegisterMaker("joint_vel", &trajopt::JointVelTermInfo::create);
+  trajopt::TermInfo::RegisterMaker("joint_acc", &trajopt::JointAccTermInfo::create);
+  trajopt::TermInfo::RegisterMaker("joint_jerk", &trajopt::JointJerkTermInfo::create);
+  trajopt::TermInfo::RegisterMaker("collision", &trajopt::CollisionTermInfo::create);
 
   gRegisteredMakers = true;
 }
 
-PenaltyType stringToPenaltyType(string str)
+sco::PenaltyType stringToPenaltyType(std::string str)
 {
   if (boost::iequals(str, "hinge"))
   {
-    return HINGE;
+    return sco::HINGE;
   }
   else if (boost::iequals(str, "abs"))
   {
-    return ABS;
+    return sco::ABS;
   }
   else if (boost::iequals(str, "squared"))
   {
-    return SQUARED;
+    return sco::SQUARED;
   }
   else
   {
@@ -88,9 +83,9 @@ BoolVec toMask(const VectorXd& x) {
 
 namespace trajopt
 {
-std::map<string, TermInfo::MakerFunc> TermInfo::name2maker;
+std::map<std::string, TermInfo::MakerFunc> TermInfo::name2maker;
 void TermInfo::RegisterMaker(const std::string& type, MakerFunc f) { name2maker[type] = f; }
-TermInfoPtr TermInfo::fromName(const string& type)
+TermInfoPtr TermInfo::fromName(const std::string& type)
 {
   if (!gRegisteredMakers)
     RegisterMakers();
@@ -105,42 +100,41 @@ TermInfoPtr TermInfo::fromName(const string& type)
   }
 }
 
-void ProblemConstructionInfo::readBasicInfo(const Value& v)
+void ProblemConstructionInfo::readBasicInfo(const Json::Value& v)
 {
-  childFromJson(v, basic_info.start_fixed, "start_fixed", true);
-  childFromJson(v, basic_info.n_steps, "n_steps");
-  childFromJson(v, basic_info.manip, "manip");
-  childFromJson(v, basic_info.robot, "robot", string(""));
-  childFromJson(v, basic_info.dofs_fixed, "dofs_fixed", IntVec());
+  json_marshal::childFromJson(v, basic_info.start_fixed, "start_fixed", true);
+  json_marshal::childFromJson(v, basic_info.n_steps, "n_steps");
+  json_marshal::childFromJson(v, basic_info.manip, "manip");
+  json_marshal::childFromJson(v, basic_info.robot, "robot", std::string(""));
+  json_marshal::childFromJson(v, basic_info.dofs_fixed, "dofs_fixed", IntVec());
   // TODO: optimization parameters, etc?
 }
 
-void ProblemConstructionInfo::readOptInfo(const Value& v)
+void ProblemConstructionInfo::readOptInfo(const Json::Value& v)
 {
-  childFromJson(v, opt_info.improve_ratio_threshold, "improve_ratio_threshold", opt_info.improve_ratio_threshold);
-  childFromJson(v, opt_info.min_trust_box_size, "min_trust_box_size", opt_info.min_trust_box_size);
-  childFromJson(v, opt_info.min_approx_improve, "min_approx_improve", opt_info.min_approx_improve);
-  childFromJson(v, opt_info.min_approx_improve_frac, "min_approx_improve_frac", opt_info.min_approx_improve_frac);
-  childFromJson(v, opt_info.max_iter, "max_iter", opt_info.max_iter);
-  childFromJson(v, opt_info.trust_shrink_ratio, "trust_shrink_ratio", opt_info.trust_shrink_ratio);
-  childFromJson(v, opt_info.trust_expand_ratio, "trust_expand_ratio", opt_info.trust_expand_ratio);
-  childFromJson(v, opt_info.cnt_tolerance, "cnt_tolerance", opt_info.cnt_tolerance);
-  childFromJson(v, opt_info.max_merit_coeff_increases, "max_merit_coeff_increases", opt_info.max_merit_coeff_increases);
-  childFromJson(
-      v, opt_info.merit_coeff_increase_ratio, "merit_coeff_increase_ratio", opt_info.merit_coeff_increase_ratio);
-  childFromJson(v, opt_info.max_time, "max_time", opt_info.max_time);
-  childFromJson(v, opt_info.merit_error_coeff, "merit_error_coeff", opt_info.merit_error_coeff);
-  childFromJson(v, opt_info.trust_box_size, "trust_box_size", opt_info.trust_box_size);
+  json_marshal::childFromJson(v, opt_info.improve_ratio_threshold, "improve_ratio_threshold", opt_info.improve_ratio_threshold);
+  json_marshal::childFromJson(v, opt_info.min_trust_box_size, "min_trust_box_size", opt_info.min_trust_box_size);
+  json_marshal::childFromJson(v, opt_info.min_approx_improve, "min_approx_improve", opt_info.min_approx_improve);
+  json_marshal::childFromJson(v, opt_info.min_approx_improve_frac, "min_approx_improve_frac", opt_info.min_approx_improve_frac);
+  json_marshal::childFromJson(v, opt_info.max_iter, "max_iter", opt_info.max_iter);
+  json_marshal::childFromJson(v, opt_info.trust_shrink_ratio, "trust_shrink_ratio", opt_info.trust_shrink_ratio);
+  json_marshal::childFromJson(v, opt_info.trust_expand_ratio, "trust_expand_ratio", opt_info.trust_expand_ratio);
+  json_marshal::childFromJson(v, opt_info.cnt_tolerance, "cnt_tolerance", opt_info.cnt_tolerance);
+  json_marshal::childFromJson(v, opt_info.max_merit_coeff_increases, "max_merit_coeff_increases", opt_info.max_merit_coeff_increases);
+  json_marshal::childFromJson(v, opt_info.merit_coeff_increase_ratio, "merit_coeff_increase_ratio", opt_info.merit_coeff_increase_ratio);
+  json_marshal::childFromJson(v, opt_info.max_time, "max_time", opt_info.max_time);
+  json_marshal::childFromJson(v, opt_info.merit_error_coeff, "merit_error_coeff", opt_info.merit_error_coeff);
+  json_marshal::childFromJson(v, opt_info.trust_box_size, "trust_box_size", opt_info.trust_box_size);
 }
 
-void ProblemConstructionInfo::readCosts(const Value& v)
+void ProblemConstructionInfo::readCosts(const Json::Value& v)
 {
   cost_infos.clear();
   cost_infos.reserve(v.size());
   for (Json::Value::const_iterator it = v.begin(); it != v.end(); ++it)
   {
-    string type;
-    childFromJson(*it, type, "type");
+    std::string type;
+    json_marshal::childFromJson(*it, type, "type");
     LOG_DEBUG("reading term: %s", type.c_str());
     TermInfoPtr term = TermInfo::fromName(type);
 
@@ -151,20 +145,20 @@ void ProblemConstructionInfo::readCosts(const Value& v)
     term->term_type = TT_COST;
 
     term->fromJson(*this, *it);
-    childFromJson(*it, term->name, "name", type);
+    json_marshal::childFromJson(*it, term->name, "name", type);
 
     cost_infos.push_back(term);
   }
 }
 
-void ProblemConstructionInfo::readConstraints(const Value& v)
+void ProblemConstructionInfo::readConstraints(const Json::Value& v)
 {
   cnt_infos.clear();
   cnt_infos.reserve(v.size());
   for (Json::Value::const_iterator it = v.begin(); it != v.end(); ++it)
   {
-    string type;
-    childFromJson(*it, type, "type");
+    std::string type;
+    json_marshal::childFromJson(*it, type, "type");
     LOG_DEBUG("reading term: %s", type.c_str());
     TermInfoPtr term = TermInfo::fromName(type);
 
@@ -175,16 +169,16 @@ void ProblemConstructionInfo::readConstraints(const Value& v)
     term->term_type = TT_CNT;
 
     term->fromJson(*this, *it);
-    childFromJson(*it, term->name, "name", type);
+    json_marshal::childFromJson(*it, term->name, "name", type);
 
     cnt_infos.push_back(term);
   }
 }
 
-void ProblemConstructionInfo::readInitInfo(const Value& v)
+void ProblemConstructionInfo::readInitInfo(const Json::Value& v)
 {
-  string type_str;
-  childFromJson(v, type_str, "type");
+  std::string type_str;
+  json_marshal::childFromJson(v, type_str, "type");
   int n_steps = basic_info.n_steps;
   int n_dof = kin->numJoints();
   Eigen::VectorXd start_pos = env->getCurrentJointValues(kin->getName());
@@ -196,7 +190,7 @@ void ProblemConstructionInfo::readInitInfo(const Value& v)
   else if (type_str == "given_traj")
   {
     FAIL_IF_FALSE(v.isMember("data"));
-    const Value& vdata = v["data"];
+    const Json::Value& vdata = v["data"];
     if (static_cast<int>(vdata.size()) != n_steps)
     {
       PRINT_AND_THROW("given initialization traj has wrong length");
@@ -205,15 +199,15 @@ void ProblemConstructionInfo::readInitInfo(const Value& v)
     for (int i = 0; i < n_steps; ++i)
     {
       DblVec row;
-      fromJsonArray(vdata[i], row, n_dof);
-      init_info.data.row(i) = toVectorXd(row);
+      json_marshal::fromJsonArray(vdata[i], row, n_dof);
+      init_info.data.row(i) = util::toVectorXd(row);
     }
   }
   else if (type_str == "straight_line")
   {
     FAIL_IF_FALSE(v.isMember("endpoint"));
     DblVec endpoint;
-    childFromJson(v, endpoint, "endpoint");
+    json_marshal::childFromJson(v, endpoint, "endpoint");
     if (static_cast<int>(endpoint.size()) != n_dof)
     {
       PRINT_AND_THROW(boost::format("wrong number of dof values in "
@@ -223,12 +217,12 @@ void ProblemConstructionInfo::readInitInfo(const Value& v)
     init_info.data = TrajArray(n_steps, n_dof);
     for (int idof = 0; idof < n_dof; ++idof)
     {
-      init_info.data.col(idof) = VectorXd::LinSpaced(n_steps, start_pos[idof], endpoint[idof]);
+      init_info.data.col(idof) = Eigen::VectorXd::LinSpaced(n_steps, start_pos[idof], endpoint[idof]);
     }
   }
 }
 
-void ProblemConstructionInfo::fromJson(const Value& v)
+void ProblemConstructionInfo::fromJson(const Json::Value& v)
 {
   if (v.isMember("basic_info"))
   {
@@ -265,14 +259,14 @@ void ProblemConstructionInfo::fromJson(const Value& v)
   }
 }
 
-TrajOptResult::TrajOptResult(OptResults& opt, TrajOptProb& prob) : cost_vals(opt.cost_vals), cnt_viols(opt.cnt_viols)
+TrajOptResult::TrajOptResult(sco::OptResults& opt, TrajOptProb& prob) : cost_vals(opt.cost_vals), cnt_viols(opt.cnt_viols)
 {
-  for (const CostPtr& cost : prob.getCosts())
+  for (const sco::CostPtr& cost : prob.getCosts())
   {
     cost_names.push_back(cost->name());
   }
 
-  for (const ConstraintPtr& cnt : prob.getConstraints())
+  for (const sco::ConstraintPtr& cnt : prob.getConstraints())
   {
     cnt_names.push_back(cnt->name());
   }
@@ -282,8 +276,8 @@ TrajOptResult::TrajOptResult(OptResults& opt, TrajOptProb& prob) : cost_vals(opt
 
 TrajOptResultPtr OptimizeProblem(TrajOptProbPtr prob, const tesseract::BasicPlottingPtr plotter)
 {
-  BasicTrustRegionSQP opt(prob);
-  BasicTrustRegionSQPParameters& param = opt.getParameters();
+  sco::BasicTrustRegionSQP opt(prob);
+  sco::BasicTrustRegionSQPParameters& param = opt.getParameters();
   param.max_iter = 40;
   param.min_approx_improve_frac = .001;
   param.improve_ratio_threshold = .2;
@@ -318,7 +312,7 @@ TrajOptProbPtr ConstructProblem(const ProblemConstructionInfo& pci)
 
     for (int j = 0; j < n_dof; ++j)
     {
-      prob->addLinearConstraint(exprSub(AffExpr(prob->m_traj_vars(0, j)), pci.init_info.data(0, j)), EQ);
+      prob->addLinearConstraint(sco::exprSub(sco::AffExpr(prob->m_traj_vars(0, j)), pci.init_info.data(0, j)), sco::EQ);
     }
   }
 
@@ -328,8 +322,7 @@ TrajOptProbPtr ConstructProblem(const ProblemConstructionInfo& pci)
     {
       for (int i = 1; i < prob->GetNumSteps(); ++i)
       {
-        prob->addLinearConstraint(
-            exprSub(AffExpr(prob->m_traj_vars(i, dof_ind)), AffExpr(prob->m_traj_vars(0, dof_ind))), EQ);
+        prob->addLinearConstraint(sco::exprSub(sco::AffExpr(prob->m_traj_vars(i, dof_ind)), sco::AffExpr(prob->m_traj_vars(0, dof_ind))), sco::EQ);
       }
     }
   }
@@ -364,8 +357,8 @@ TrajOptProb::TrajOptProb(int n_steps, const ProblemConstructionInfo& pci) : m_ki
   lower = limits.col(0);
   upper = limits.col(1);
 
-  vector<double> vlower, vupper;
-  vector<string> names;
+  DblVec vlower, vupper;
+  std::vector<std::string> names;
   for (int i = 0; i < n_steps; ++i)
   {
     vlower.insert(vlower.end(), lower.data(), lower.data() + lower.size());
@@ -375,7 +368,7 @@ TrajOptProb::TrajOptProb(int n_steps, const ProblemConstructionInfo& pci) : m_ki
       names.push_back((boost::format("j_%i_%i") % i % j).str());
     }
   }
-  VarVector trajvarvec = createVariables(names, vlower, vupper);
+  sco::VarVector trajvarvec = createVariables(names, vlower, vupper);
   m_traj_vars = VarArray(n_steps, n_dof, trajvarvec.data());
 }
 
@@ -383,25 +376,25 @@ TrajOptProb::TrajOptProb() {}
 
 DynamicCartPoseTermInfo::DynamicCartPoseTermInfo()
 {
-  pos_coeffs = Vector3d::Ones();
-  rot_coeffs = Vector3d::Ones();
+  pos_coeffs = Eigen::Vector3d::Ones();
+  rot_coeffs = Eigen::Vector3d::Ones();
   tcp.setIdentity();
 }
 
-void DynamicCartPoseTermInfo::fromJson(ProblemConstructionInfo& pci, const Value& v)
+void DynamicCartPoseTermInfo::fromJson(ProblemConstructionInfo& pci, const Json::Value& v)
 {
   FAIL_IF_FALSE(v.isMember("params"));
-  Vector3d tcp_xyz = Vector3d::Zero();
-  Vector4d tcp_wxyz = Vector4d(1, 0, 0, 0);
+  Eigen::Vector3d tcp_xyz = Eigen::Vector3d::Zero();
+  Eigen::Vector4d tcp_wxyz = Eigen::Vector4d(1, 0, 0, 0);
 
-  const Value& params = v["params"];
-  childFromJson(params, timestep, "timestep", pci.basic_info.n_steps - 1);
-  childFromJson(params, target, "target");
-  childFromJson(params, pos_coeffs, "pos_coeffs", (Vector3d)Vector3d::Ones());
-  childFromJson(params, rot_coeffs, "rot_coeffs", (Vector3d)Vector3d::Ones());
-  childFromJson(params, link, "link");
-  childFromJson(params, tcp_xyz, "tcp_xyz", (Vector3d)Vector3d::Zero());
-  childFromJson(params, tcp_wxyz, "tcp_wxyz", (Vector4d)Vector4d(1, 0, 0, 0));
+  const Json::Value& params = v["params"];
+  json_marshal::childFromJson(params, timestep, "timestep", pci.basic_info.n_steps - 1);
+  json_marshal::childFromJson(params, target, "target");
+  json_marshal::childFromJson(params, pos_coeffs, "pos_coeffs", Eigen::Vector3d(1, 1, 1));
+  json_marshal::childFromJson(params, rot_coeffs, "rot_coeffs", Eigen::Vector3d(1, 1, 1));
+  json_marshal::childFromJson(params, link, "link");
+  json_marshal::childFromJson(params, tcp_xyz, "tcp_xyz", Eigen::Vector3d(0, 0, 0));
+  json_marshal::childFromJson(params, tcp_wxyz, "tcp_wxyz", Eigen::Vector4d(1, 0, 0, 0));
 
   Eigen::Quaterniond q(tcp_wxyz(0), tcp_wxyz(1), tcp_wxyz(2), tcp_wxyz(3));
   tcp.linear() = q.matrix();
@@ -419,16 +412,14 @@ void DynamicCartPoseTermInfo::fromJson(ProblemConstructionInfo& pci, const Value
 
 void DynamicCartPoseTermInfo::hatch(TrajOptProb& prob)
 {
-  VectorOfVectorPtr f(new DynamicCartPoseErrCalculator(target, prob.GetKin(), prob.GetEnv(), link, tcp));
+  sco::VectorOfVectorPtr f(new DynamicCartPoseErrCalculator(target, prob.GetKin(), prob.GetEnv(), link, tcp));
   if (term_type == TT_COST)
   {
-    prob.addCost(
-        CostPtr(new TrajOptCostFromErrFunc(f, prob.GetVarRow(timestep), concat(rot_coeffs, pos_coeffs), ABS, name)));
+    prob.addCost(sco::CostPtr(new TrajOptCostFromErrFunc(f, prob.GetVarRow(timestep), concat(rot_coeffs, pos_coeffs), sco::ABS, name)));
   }
   else if (term_type == TT_CNT)
   {
-    prob.addConstraint(ConstraintPtr(
-        new TrajOptConstraintFromErrFunc(f, prob.GetVarRow(timestep), concat(rot_coeffs, pos_coeffs), EQ, name)));
+    prob.addConstraint(sco::ConstraintPtr(new TrajOptConstraintFromErrFunc(f, prob.GetVarRow(timestep), concat(rot_coeffs, pos_coeffs), sco::EQ, name)));
   }
   else
   {
@@ -438,26 +429,26 @@ void DynamicCartPoseTermInfo::hatch(TrajOptProb& prob)
 
 CartPoseTermInfo::CartPoseTermInfo()
 {
-  pos_coeffs = Vector3d::Ones();
-  rot_coeffs = Vector3d::Ones();
+  pos_coeffs = Eigen::Vector3d::Ones();
+  rot_coeffs = Eigen::Vector3d::Ones();
   tcp.setIdentity();
 }
 
-void CartPoseTermInfo::fromJson(ProblemConstructionInfo& pci, const Value& v)
+void CartPoseTermInfo::fromJson(ProblemConstructionInfo& pci, const Json::Value& v)
 {
   FAIL_IF_FALSE(v.isMember("params"));
-  Vector3d tcp_xyz = Vector3d::Zero();
-  Vector4d tcp_wxyz = Vector4d(1, 0, 0, 0);
+  Eigen::Vector3d tcp_xyz = Eigen::Vector3d::Zero();
+  Eigen::Vector4d tcp_wxyz = Eigen::Vector4d(1, 0, 0, 0);
 
-  const Value& params = v["params"];
-  childFromJson(params, timestep, "timestep", pci.basic_info.n_steps - 1);
-  childFromJson(params, xyz, "xyz");
-  childFromJson(params, wxyz, "wxyz");
-  childFromJson(params, pos_coeffs, "pos_coeffs", (Vector3d)Vector3d::Ones());
-  childFromJson(params, rot_coeffs, "rot_coeffs", (Vector3d)Vector3d::Ones());
-  childFromJson(params, link, "link");
-  childFromJson(params, tcp_xyz, "tcp_xyz", (Vector3d)Vector3d::Zero());
-  childFromJson(params, tcp_wxyz, "tcp_wxyz", (Vector4d)Vector4d(1, 0, 0, 0));
+  const Json::Value& params = v["params"];
+  json_marshal::childFromJson(params, timestep, "timestep", pci.basic_info.n_steps - 1);
+  json_marshal::childFromJson(params, xyz, "xyz");
+  json_marshal::childFromJson(params, wxyz, "wxyz");
+  json_marshal::childFromJson(params, pos_coeffs, "pos_coeffs", Eigen::Vector3d(1, 1, 1));
+  json_marshal::childFromJson(params, rot_coeffs, "rot_coeffs", Eigen::Vector3d(1, 1, 1));
+  json_marshal::childFromJson(params, link, "link");
+  json_marshal::childFromJson(params, tcp_xyz, "tcp_xyz", Eigen::Vector3d(0, 0, 0));
+  json_marshal::childFromJson(params, tcp_wxyz, "tcp_wxyz", Eigen::Vector4d(1, 0, 0, 0));
 
   Eigen::Quaterniond q(tcp_wxyz(0), tcp_wxyz(1), tcp_wxyz(2), tcp_wxyz(3));
   tcp.linear() = q.matrix();
@@ -480,16 +471,14 @@ void CartPoseTermInfo::hatch(TrajOptProb& prob)
   input_pose.linear() = q.matrix();
   input_pose.translation() = xyz;
 
-  VectorOfVectorPtr f(new CartPoseErrCalculator(input_pose, prob.GetKin(), prob.GetEnv(), link, tcp));
+  sco::VectorOfVectorPtr f(new CartPoseErrCalculator(input_pose, prob.GetKin(), prob.GetEnv(), link, tcp));
   if (term_type == TT_COST)
   {
-    prob.addCost(
-        CostPtr(new TrajOptCostFromErrFunc(f, prob.GetVarRow(timestep), concat(rot_coeffs, pos_coeffs), ABS, name)));
+    prob.addCost(sco::CostPtr(new TrajOptCostFromErrFunc(f, prob.GetVarRow(timestep), concat(rot_coeffs, pos_coeffs), sco::ABS, name)));
   }
   else if (term_type == TT_CNT)
   {
-    prob.addConstraint(ConstraintPtr(
-        new TrajOptConstraintFromErrFunc(f, prob.GetVarRow(timestep), concat(rot_coeffs, pos_coeffs), EQ, name)));
+    prob.addConstraint(sco::ConstraintPtr(new TrajOptConstraintFromErrFunc(f, prob.GetVarRow(timestep), concat(rot_coeffs, pos_coeffs), sco::EQ, name)));
   }
   else
   {
@@ -497,18 +486,18 @@ void CartPoseTermInfo::hatch(TrajOptProb& prob)
   }
 }
 
-void CartVelTermInfo::fromJson(ProblemConstructionInfo& pci, const Value& v)
+void CartVelTermInfo::fromJson(ProblemConstructionInfo& pci, const Json::Value& v)
 {
   FAIL_IF_FALSE(v.isMember("params"));
-  const Value& params = v["params"];
-  childFromJson(params, first_step, "first_step");
-  childFromJson(params, last_step, "last_step");
-  childFromJson(params, max_displacement, "max_displacement");
+  const Json::Value& params = v["params"];
+  json_marshal::childFromJson(params, first_step, "first_step");
+  json_marshal::childFromJson(params, last_step, "last_step");
+  json_marshal::childFromJson(params, max_displacement, "max_displacement");
 
   FAIL_IF_FALSE((first_step >= 0) && (first_step <= pci.basic_info.n_steps - 1) && (first_step < last_step));
   FAIL_IF_FALSE((last_step > 0) && (last_step <= pci.basic_info.n_steps - 1));
 
-  childFromJson(params, link, "link");
+  json_marshal::childFromJson(params, link, "link");
   const std::vector<std::string>& link_names = pci.kin->getLinkNames();
   if (std::find(link_names.begin(), link_names.end(), link) == link_names.end())
   {
@@ -525,12 +514,12 @@ void CartVelTermInfo::hatch(TrajOptProb& prob)
   {
     for (int iStep = first_step; iStep < last_step; ++iStep)
     {
-      prob.addCost(CostPtr(new TrajOptCostFromErrFunc(
-          VectorOfVectorPtr(new CartVelErrCalculator(prob.GetKin(), prob.GetEnv(), link, max_displacement)),
-          MatrixOfVectorPtr(new CartVelJacCalculator(prob.GetKin(), prob.GetEnv(), link, max_displacement)),
+      prob.addCost(sco::CostPtr(new TrajOptCostFromErrFunc(
+          sco::VectorOfVectorPtr(new CartVelErrCalculator(prob.GetKin(), prob.GetEnv(), link, max_displacement)),
+          sco::MatrixOfVectorPtr(new CartVelJacCalculator(prob.GetKin(), prob.GetEnv(), link, max_displacement)),
           concat(prob.GetVarRow(iStep), prob.GetVarRow(iStep + 1)),
-          VectorXd::Ones(0),
-          ABS,
+          Eigen::VectorXd::Ones(0),
+          sco::ABS,
           name)));
     }
   }
@@ -538,12 +527,12 @@ void CartVelTermInfo::hatch(TrajOptProb& prob)
   {
     for (int iStep = first_step; iStep < last_step; ++iStep)
     {
-      prob.addConstraint(ConstraintPtr(new TrajOptConstraintFromErrFunc(
-          VectorOfVectorPtr(new CartVelErrCalculator(prob.GetKin(), prob.GetEnv(), link, max_displacement)),
-          MatrixOfVectorPtr(new CartVelJacCalculator(prob.GetKin(), prob.GetEnv(), link, max_displacement)),
+      prob.addConstraint(sco::ConstraintPtr(new TrajOptConstraintFromErrFunc(
+          sco::VectorOfVectorPtr(new CartVelErrCalculator(prob.GetKin(), prob.GetEnv(), link, max_displacement)),
+          sco::MatrixOfVectorPtr(new CartVelJacCalculator(prob.GetKin(), prob.GetEnv(), link, max_displacement)),
           concat(prob.GetVarRow(iStep), prob.GetVarRow(iStep + 1)),
-          VectorXd::Ones(0),
-          INEQ,
+          Eigen::VectorXd::Ones(0),
+          sco::INEQ,
           "CartVel")));
     }
   }
@@ -553,13 +542,13 @@ void CartVelTermInfo::hatch(TrajOptProb& prob)
   }
 }
 
-void JointPosTermInfo::fromJson(ProblemConstructionInfo& pci, const Value& v)
+void JointPosTermInfo::fromJson(ProblemConstructionInfo& pci, const Json::Value& v)
 {
   FAIL_IF_FALSE(v.isMember("params"));
   int n_steps = pci.basic_info.n_steps;
-  const Value& params = v["params"];
-  childFromJson(params, vals, "vals");
-  childFromJson(params, coeffs, "coeffs");
+  const Json::Value& params = v["params"];
+  json_marshal::childFromJson(params, vals, "vals");
+  json_marshal::childFromJson(params, coeffs, "coeffs");
   if (coeffs.size() == 1)
     coeffs = DblVec(n_steps, coeffs[0]);
   unsigned n_dof = pci.kin->numJoints();
@@ -567,7 +556,7 @@ void JointPosTermInfo::fromJson(ProblemConstructionInfo& pci, const Value& v)
   {
     PRINT_AND_THROW(boost::format("wrong number of dof vals. expected %i got %i") % n_dof % vals.size());
   }
-  childFromJson(params, timestep, "timestep", pci.basic_info.n_steps - 1);
+  json_marshal::childFromJson(params, timestep, "timestep", pci.basic_info.n_steps - 1);
 
   const char* all_fields[] = { "vals", "coeffs", "timestep" };
   ensure_only_members(params, all_fields, sizeof(all_fields) / sizeof(char*));
@@ -577,16 +566,16 @@ void JointPosTermInfo::hatch(TrajOptProb& prob)
 {
   if (term_type == TT_COST)
   {
-    prob.addCost(CostPtr(new JointPosCost(prob.GetVarRow(timestep), toVectorXd(vals), toVectorXd(coeffs))));
+    prob.addCost(sco::CostPtr(new JointPosCost(prob.GetVarRow(timestep), util::toVectorXd(vals), util::toVectorXd(coeffs))));
     prob.getCosts().back()->setName(name);
   }
   else if (term_type == TT_CNT)
   {
-    VarVector vars = prob.GetVarRow(timestep);
+    sco::VarVector vars = prob.GetVarRow(timestep);
     int n_dof = vars.size();
     for (int j = 0; j < n_dof; ++j)
     {
-      prob.addLinearConstraint(exprSub(AffExpr(vars[j]), vals[j]), EQ);
+      prob.addLinearConstraint(sco::exprSub(sco::AffExpr(vars[j]), vals[j]), sco::EQ);
     }
   }
   else
@@ -595,14 +584,14 @@ void JointPosTermInfo::hatch(TrajOptProb& prob)
   }
 }
 
-void JointVelTermInfo::fromJson(ProblemConstructionInfo& pci, const Value& v)
+void JointVelTermInfo::fromJson(ProblemConstructionInfo& pci, const Json::Value& v)
 {
   FAIL_IF_FALSE(v.isMember("params"));
-  const Value& params = v["params"];
+  const Json::Value& params = v["params"];
 
-  childFromJson(params, coeffs, "coeffs");
-  childFromJson(params, first_step, "first_step", 0);
-  childFromJson(params, last_step, "last_step", pci.basic_info.n_steps - 1);
+  json_marshal::childFromJson(params, coeffs, "coeffs");
+  json_marshal::childFromJson(params, first_step, "first_step", 0);
+  json_marshal::childFromJson(params, last_step, "last_step", pci.basic_info.n_steps - 1);
   unsigned n_dof = pci.kin->numJoints();
   if (coeffs.size() == 1)
   {
@@ -622,7 +611,7 @@ void JointVelTermInfo::hatch(TrajOptProb& prob)
 {
   if (term_type == TT_COST)
   {
-    prob.addCost(CostPtr(new JointVelCost(prob.GetVars(), toVectorXd(coeffs))));
+    prob.addCost(sco::CostPtr(new JointVelCost(prob.GetVars(), util::toVectorXd(coeffs))));
     prob.getCosts().back()->setName(name);
   }
   else if (term_type == TT_CNT)
@@ -632,9 +621,9 @@ void JointVelTermInfo::hatch(TrajOptProb& prob)
     {
       for (std::size_t j = 0; j < coeffs.size(); ++j)
       {
-        AffExpr vel = prob.GetVar(i + 1, j) - prob.GetVar(i, j);
-        prob.addLinearConstraint(vel - coeffs[j], INEQ);
-        prob.addLinearConstraint(-vel - coeffs[j], INEQ);
+        sco::AffExpr vel = prob.GetVar(i + 1, j) - prob.GetVar(i, j);
+        prob.addLinearConstraint(vel - coeffs[j], sco::INEQ);
+        prob.addLinearConstraint(-vel - coeffs[j], sco::INEQ);
       }
     }
   }
@@ -644,12 +633,12 @@ void JointVelTermInfo::hatch(TrajOptProb& prob)
   }
 }
 
-void JointAccTermInfo::fromJson(ProblemConstructionInfo& pci, const Value& v)
+void JointAccTermInfo::fromJson(ProblemConstructionInfo& pci, const Json::Value& v)
 {
   FAIL_IF_FALSE(v.isMember("params"));
-  const Value& params = v["params"];
+  const Json::Value& params = v["params"];
 
-  childFromJson(params, coeffs, "coeffs");
+  json_marshal::childFromJson(params, coeffs, "coeffs");
   unsigned n_dof = pci.kin->numJoints();
   if (coeffs.size() == 1)
     coeffs = DblVec(n_dof, coeffs[0]);
@@ -666,7 +655,7 @@ void JointAccTermInfo::hatch(TrajOptProb& prob)
 {
   if (term_type == TT_COST)
   {
-    prob.addCost(CostPtr(new JointAccCost(prob.GetVars(), toVectorXd(coeffs))));
+    prob.addCost(sco::CostPtr(new JointAccCost(prob.GetVars(), util::toVectorXd(coeffs))));
     prob.getCosts().back()->setName(name);
   }
   else if (term_type == TT_CNT)
@@ -676,9 +665,9 @@ void JointAccTermInfo::hatch(TrajOptProb& prob)
     {
       for (std::size_t j = 0; j < coeffs.size(); ++j)
       {
-        AffExpr acc = prob.GetVar(i + 1, j) - 2 * prob.GetVar(i, j) + prob.GetVar(i - 1, j);
-        prob.addLinearConstraint(acc - coeffs[j], INEQ);
-        prob.addLinearConstraint(-acc - coeffs[j], INEQ);
+        sco::AffExpr acc = prob.GetVar(i + 1, j) - 2 * prob.GetVar(i, j) + prob.GetVar(i - 1, j);
+        prob.addLinearConstraint(acc - coeffs[j], sco::INEQ);
+        prob.addLinearConstraint(-acc - coeffs[j], sco::INEQ);
       }
     }
   }
@@ -688,12 +677,12 @@ void JointAccTermInfo::hatch(TrajOptProb& prob)
   }
 }
 
-void JointJerkTermInfo::fromJson(ProblemConstructionInfo& pci, const Value& v)
+void JointJerkTermInfo::fromJson(ProblemConstructionInfo& pci, const Json::Value& v)
 {
   FAIL_IF_FALSE(v.isMember("params"));
-  const Value& params = v["params"];
+  const Json::Value& params = v["params"];
 
-  childFromJson(params, coeffs, "coeffs");
+  json_marshal::childFromJson(params, coeffs, "coeffs");
   unsigned n_dof = pci.kin->numJoints();
   if (coeffs.size() == 1)
     coeffs = DblVec(n_dof, coeffs[0]);
@@ -710,7 +699,7 @@ void JointJerkTermInfo::hatch(TrajOptProb& prob)
 {
   if (term_type == TT_COST)
   {
-    prob.addCost(CostPtr(new JointJerkCost(prob.GetVars(), toVectorXd(coeffs))));
+    prob.addCost(sco::CostPtr(new JointJerkCost(prob.GetVars(), util::toVectorXd(coeffs))));
     prob.getCosts().back()->setName(name);
   }
   else if (term_type == TT_CNT)
@@ -720,10 +709,10 @@ void JointJerkTermInfo::hatch(TrajOptProb& prob)
     {
       for (std::size_t j = 0; j < coeffs.size(); ++j)
       {
-        AffExpr jerk =
+        sco::AffExpr jerk =
             prob.GetVar(i + 2, j) - 3 * prob.GetVar(i + 1, j) + 3 * prob.GetVar(i, j) - prob.GetVar(i - 1, j);
-        prob.addLinearConstraint(jerk - coeffs[j], INEQ);
-        prob.addLinearConstraint(-jerk - coeffs[j], INEQ);
+        prob.addLinearConstraint(jerk - coeffs[j], sco::INEQ);
+        prob.addLinearConstraint(-jerk - coeffs[j], sco::INEQ);
       }
     }
   }
@@ -733,22 +722,22 @@ void JointJerkTermInfo::hatch(TrajOptProb& prob)
   }
 }
 
-void CollisionTermInfo::fromJson(ProblemConstructionInfo& pci, const Value& v)
+void CollisionTermInfo::fromJson(ProblemConstructionInfo& pci, const Json::Value& v)
 {
   FAIL_IF_FALSE(v.isMember("params"));
-  const Value& params = v["params"];
+  const Json::Value& params = v["params"];
 
   int n_steps = pci.basic_info.n_steps;
-  childFromJson(params, continuous, "continuous", true);
-  childFromJson(params, first_step, "first_step", 0);
-  childFromJson(params, last_step, "last_step", n_steps - 1);
-  childFromJson(params, gap, "gap", 1);
+  json_marshal::childFromJson(params, continuous, "continuous", true);
+  json_marshal::childFromJson(params, first_step, "first_step", 0);
+  json_marshal::childFromJson(params, last_step, "last_step", n_steps - 1);
+  json_marshal::childFromJson(params, gap, "gap", 1);
   FAIL_IF_FALSE(gap >= 0);
   FAIL_IF_FALSE((first_step >= 0) && (first_step < n_steps));
   FAIL_IF_FALSE((last_step >= first_step) && (last_step < n_steps));
 
   DblVec coeffs, dist_pen;
-  childFromJson(params, coeffs, "coeffs");
+  json_marshal::childFromJson(params, coeffs, "coeffs");
   int n_terms = last_step - first_step + 1;
   if (coeffs.size() == 1)
     coeffs = DblVec(n_terms, coeffs[0]);
@@ -756,7 +745,7 @@ void CollisionTermInfo::fromJson(ProblemConstructionInfo& pci, const Value& v)
   {
     PRINT_AND_THROW(boost::format("wrong size: coeffs. expected %i got %i") % n_terms % coeffs.size());
   }
-  childFromJson(params, dist_pen, "dist_pen");
+  json_marshal::childFromJson(params, dist_pen, "dist_pen");
   if (dist_pen.size() == 1)
     dist_pen = DblVec(n_terms, dist_pen[0]);
   else if (static_cast<int>(dist_pen.size()) != n_terms)
@@ -775,16 +764,16 @@ void CollisionTermInfo::fromJson(ProblemConstructionInfo& pci, const Value& v)
   // Check if data was set for individual pairs
   if (params.isMember("pairs"))
   {
-    const Value& pairs = params["pairs"];
+    const Json::Value& pairs = params["pairs"];
     for (Json::Value::const_iterator it = pairs.begin(); it != pairs.end(); ++it)
     {
       FAIL_IF_FALSE(it->isMember("link"));
       std::string link;
-      childFromJson(*it, link, "link");
+      json_marshal::childFromJson(*it, link, "link");
 
       FAIL_IF_FALSE(it->isMember("pair"));
       std::vector<std::string> pair;
-      childFromJson(*it, pair, "pair");
+      json_marshal::childFromJson(*it, pair, "pair");
 
       if (pair.size() == 0)
       {
@@ -792,7 +781,7 @@ void CollisionTermInfo::fromJson(ProblemConstructionInfo& pci, const Value& v)
       }
 
       DblVec pair_coeffs;
-      childFromJson(*it, pair_coeffs, "coeffs");
+      json_marshal::childFromJson(*it, pair_coeffs, "coeffs");
       if (pair_coeffs.size() == 1)
       {
         pair_coeffs = DblVec(n_terms, pair_coeffs[0]);
@@ -803,7 +792,7 @@ void CollisionTermInfo::fromJson(ProblemConstructionInfo& pci, const Value& v)
       }
 
       DblVec pair_dist_pen;
-      childFromJson(*it, pair_dist_pen, "dist_pen");
+      json_marshal::childFromJson(*it, pair_dist_pen, "dist_pen");
       if (pair_dist_pen.size() == 1)
       {
         pair_dist_pen = DblVec(n_terms, pair_dist_pen[0]);
@@ -837,7 +826,7 @@ void CollisionTermInfo::hatch(TrajOptProb& prob)
     {
       for (int i = first_step; i <= last_step - gap; ++i)
       {
-        prob.addCost(CostPtr(new CollisionCost(
+        prob.addCost(sco::CostPtr(new CollisionCost(
             prob.GetKin(), prob.GetEnv(), info[i - first_step], prob.GetVarRow(i), prob.GetVarRow(i + gap))));
         prob.getCosts().back()->setName((boost::format("%s_%i") % name % i).str());
       }
@@ -846,7 +835,7 @@ void CollisionTermInfo::hatch(TrajOptProb& prob)
     {
       for (int i = first_step; i <= last_step; ++i)
       {
-        prob.addCost(CostPtr(new CollisionCost(prob.GetKin(), prob.GetEnv(), info[i - first_step], prob.GetVarRow(i))));
+        prob.addCost(sco::CostPtr(new CollisionCost(prob.GetKin(), prob.GetEnv(), info[i - first_step], prob.GetVarRow(i))));
         prob.getCosts().back()->setName((boost::format("%s_%i") % name % i).str());
       }
     }
@@ -857,7 +846,7 @@ void CollisionTermInfo::hatch(TrajOptProb& prob)
     {
       for (int i = first_step; i < last_step; ++i)
       {
-        prob.addIneqConstraint(ConstraintPtr(new CollisionConstraint(
+        prob.addIneqConstraint(sco::ConstraintPtr(new CollisionConstraint(
             prob.GetKin(), prob.GetEnv(), info[i - first_step], prob.GetVarRow(i), prob.GetVarRow(i + 1))));
         prob.getIneqConstraints().back()->setName((boost::format("%s_%i") % name % i).str());
       }
@@ -866,7 +855,7 @@ void CollisionTermInfo::hatch(TrajOptProb& prob)
     {
       for (int i = first_step; i <= last_step; ++i)
       {
-        prob.addIneqConstraint(ConstraintPtr(
+        prob.addIneqConstraint(sco::ConstraintPtr(
             new CollisionConstraint(prob.GetKin(), prob.GetEnv(), info[i - first_step], prob.GetVarRow(i))));
         prob.getIneqConstraints().back()->setName((boost::format("%s_%i") % name % i).str());
       }

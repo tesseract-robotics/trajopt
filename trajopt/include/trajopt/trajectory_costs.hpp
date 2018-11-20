@@ -10,55 +10,55 @@ Simple quadratic costs on trajectory
 
 namespace trajopt
 {
-class TRAJOPT_API JointPosCost : public Cost
+class TRAJOPT_API JointPosCost : public sco::Cost
 {
 public:
-  JointPosCost(const VarVector& vars, const VectorXd& vals, const VectorXd& coeffs);
-  virtual ConvexObjectivePtr convex(const vector<double>& x, Model* model);
-  virtual double value(const vector<double>&);
+  JointPosCost(const sco::VarVector& vars, const Eigen::VectorXd& vals, const Eigen::VectorXd& coeffs);
+  virtual sco::ConvexObjectivePtr convex(const DblVec& x, sco::Model* model);
+  virtual double value(const DblVec &);
 
 private:
-  VarVector vars_;
-  VectorXd vals_, coeffs_;
-  QuadExpr expr_;
+  sco::VarVector vars_;
+  Eigen::VectorXd vals_, coeffs_;
+  sco::QuadExpr expr_;
 };
 
-class TRAJOPT_API JointVelCost : public Cost
+class TRAJOPT_API JointVelCost : public sco::Cost
 {
 public:
-  JointVelCost(const VarArray& traj, const VectorXd& coeffs);
-  virtual ConvexObjectivePtr convex(const vector<double>& x, Model* model);
-  virtual double value(const vector<double>&);
+  JointVelCost(const VarArray& traj, const Eigen::VectorXd& coeffs);
+  virtual sco::ConvexObjectivePtr convex(const DblVec& x, sco::Model* model);
+  virtual double value(const DblVec&);
 
 private:
   VarArray vars_;
-  VectorXd coeffs_;
-  QuadExpr expr_;
+  Eigen::VectorXd coeffs_;
+  sco::QuadExpr expr_;
 };
 
-class TRAJOPT_API JointAccCost : public Cost
+class TRAJOPT_API JointAccCost : public sco::Cost
 {
 public:
-  JointAccCost(const VarArray& traj, const VectorXd& coeffs);
-  virtual ConvexObjectivePtr convex(const vector<double>& x, Model* model);
-  virtual double value(const vector<double>&);
+  JointAccCost(const VarArray& traj, const Eigen::VectorXd& coeffs);
+  virtual sco::ConvexObjectivePtr convex(const DblVec& x, sco::Model* model);
+  virtual double value(const DblVec&);
 
 private:
   VarArray vars_;
-  VectorXd coeffs_;
-  QuadExpr expr_;
+  Eigen::VectorXd coeffs_;
+  sco::QuadExpr expr_;
 };
 
-class TRAJOPT_API JointJerkCost : public Cost
+class TRAJOPT_API JointJerkCost : public sco::Cost
 {
 public:
-  JointJerkCost(const VarArray& traj, const VectorXd& coeffs);
-  virtual ConvexObjectivePtr convex(const vector<double>& x, Model* model);
-  virtual double value(const vector<double>&);
+  JointJerkCost(const VarArray& traj, const Eigen::VectorXd& coeffs);
+  virtual sco::ConvexObjectivePtr convex(const DblVec& x, sco::Model* model);
+  virtual double value(const DblVec&);
 
 private:
   VarArray vars_;
-  VectorXd coeffs_;
-  QuadExpr expr_;
+  Eigen::VectorXd coeffs_;
+  sco::QuadExpr expr_;
 };
 }

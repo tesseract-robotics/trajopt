@@ -10,8 +10,6 @@
 
 namespace trajopt
 {
-using namespace sco;
-typedef BasicArray<Var> VarArray;
 
 /**
  * @brief Used to calculate the error for CartPoseTermInfo
@@ -34,9 +32,9 @@ struct DynamicCartPoseErrCalculator : public TrajOptVectorOfVector
   {
   }
 
-  void Plot(const tesseract::BasicPlottingPtr& plotter, const VectorXd& dof_vals) override;
+  void Plot(const tesseract::BasicPlottingPtr& plotter, const Eigen::VectorXd& dof_vals) override;
 
-  VectorXd operator()(const VectorXd& dof_vals) const;
+  Eigen::VectorXd operator()(const Eigen::VectorXd& dof_vals) const;
 };
 
 /**
@@ -60,16 +58,16 @@ struct CartPoseErrCalculator : public TrajOptVectorOfVector
   {
   }
 
-  void Plot(const tesseract::BasicPlottingPtr& plotter, const VectorXd& dof_vals) override;
+  void Plot(const tesseract::BasicPlottingPtr& plotter, const Eigen::VectorXd& dof_vals) override;
 
-  VectorXd operator()(const VectorXd& dof_vals) const;
+  Eigen::VectorXd operator()(const Eigen::VectorXd& dof_vals) const;
 };
 
 /**
  * @brief Used to calculate the jacobian for CartVelTermInfo
  *
  */
-struct CartVelJacCalculator : MatrixOfVector
+struct CartVelJacCalculator : sco::MatrixOfVector
 {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   tesseract::BasicKinConstPtr manip_;
@@ -86,14 +84,14 @@ struct CartVelJacCalculator : MatrixOfVector
   {
   }
 
-  MatrixXd operator()(const VectorXd& dof_vals) const;
+  Eigen::MatrixXd operator()(const Eigen::VectorXd& dof_vals) const;
 };
 
 /**
  * @brief  Used to calculate the error for CartVelTermInfo
  * This is converted to a cost or constraint using TrajOptCostFromErrFunc or TrajOptConstraintFromErrFunc
  */
-struct CartVelErrCalculator : VectorOfVector
+struct CartVelErrCalculator : sco::VectorOfVector
 {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   tesseract::BasicKinConstPtr manip_;
@@ -110,6 +108,6 @@ struct CartVelErrCalculator : VectorOfVector
   {
   }
 
-  VectorXd operator()(const VectorXd& dof_vals) const;
+  Eigen::VectorXd operator()(const Eigen::VectorXd& dof_vals) const;
 };
 }

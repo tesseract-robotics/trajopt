@@ -18,23 +18,20 @@ limitations under the License.
 #include <trajopt/file_write_callback.hpp>
 #include <ros/ros.h>
 
-using namespace Eigen;
-using namespace util;
-using namespace std;
 namespace trajopt
 {
-void WriteFile(shared_ptr<ofstream> file,
+void WriteFile(std::shared_ptr<std::ofstream> file,
                const Eigen::Isometry3d& change_base,
                const tesseract::BasicKinConstPtr manip,
                const trajopt::VarArray& vars,
-               const OptResults& results)
+               const sco::OptResults& results)
 {
   // Loop over time steps
   TrajArray traj = getTraj(results.x, vars);
   for (auto i = 0; i < traj.rows(); i++)
   {
     // Calc/Write joint values
-    VectorXd joint_angles(traj.cols());
+    Eigen::VectorXd joint_angles(traj.cols());
     for (auto j = 0; j < traj.cols(); j++)
     {
       if (j != 0)
@@ -47,43 +44,43 @@ void WriteFile(shared_ptr<ofstream> file,
     }
 
     // Calc cartesian pose
-    Isometry3d pose;
+    Eigen::Isometry3d pose;
     manip->calcFwdKin(pose, change_base, joint_angles);
 
-    Vector4d rot_vec;
-    Quaterniond q(pose.rotation());
+    Eigen::Vector4d rot_vec;
+    Eigen::Quaterniond q(pose.rotation());
     rot_vec(0) = q.w();
     rot_vec(1) = q.x();
     rot_vec(2) = q.y();
     rot_vec(3) = q.z();
 
     // Write cartesian pose to file
-    VectorXd pose_vec = concat(pose.translation(), rot_vec);
+    Eigen::VectorXd pose_vec = concat(pose.translation(), rot_vec);
     for (auto i = 0; i < pose_vec.size(); i++)
     {
       *file << ',' << pose_vec(i);
     }
 
     // Write costs to file
-    const std::vector<double>& costs = results.cost_vals;
+    const DblVec& costs = results.cost_vals;
     for (const auto& cost : costs)
     {
       *file << ',' << cost;
     }
 
     // Write constraints to file
-    const std::vector<double>& constraints = results.cnt_viols;
+    const DblVec& constraints = results.cnt_viols;
     for (const auto& constraint : constraints)
     {
       *file << ',' << constraint;
     }
 
-    *file << endl;
+    *file << std::endl;
   }
-  *file << endl;
+  *file << std::endl;
 }  // namespace trajopt
 
-Optimizer::Callback WriteCallback(shared_ptr<ofstream> file, const TrajOptProbPtr& prob)
+sco::Optimizer::Callback WriteCallback(std::shared_ptr<std::ofstream> file, const TrajOptProbPtr& prob)
 {
   if (!file->good())
   {
@@ -91,7 +88,7 @@ Optimizer::Callback WriteCallback(shared_ptr<ofstream> file, const TrajOptProbPt
   }
 
   // Write joint names
-  vector<string> joint_names = prob->GetEnv()->getJointNames();
+  std::vector<std::string> joint_names = prob->GetEnv()->getJointNames();
   for (size_t i = 0; i < joint_names.size(); i++)
   {
     if (i != 0)
@@ -102,31 +99,31 @@ Optimizer::Callback WriteCallback(shared_ptr<ofstream> file, const TrajOptProbPt
   }
 
   // Write cartesian pose labels
-  vector<string> pose_str = vector<string>{ "x", "y", "z", "q_w", "q_x", "q_y", "q_z" };
+  std::vector<std::string> pose_str = std::vector<std::string>{ "x", "y", "z", "q_w", "q_x", "q_y", "q_z" };
   for (size_t i = 0; i < pose_str.size(); i++)
   {
     *file << ',' << pose_str.at(i);
   }
 
   // Write cost names
-  const vector<CostPtr>& costs = prob->getCosts();
+  const std::vector<sco::CostPtr>& costs = prob->getCosts();
   for (const auto& cost : costs)
   {
     *file << ',' << cost->name();
   }
 
   // Write constraint names
-  const vector<ConstraintPtr>& cnts = prob->getConstraints();
+  const std::vector<sco::ConstraintPtr>& cnts = prob->getConstraints();
   for (const auto& cnt : cnts)
   {
     *file << ',' << cnt->name();
   }
 
-  *file << endl;
+  *file << std::endl;
 
   // return callback function
   const tesseract::BasicKinConstPtr manip = prob->GetKin();
   const Eigen::Isometry3d change_base = prob->GetEnv()->getLinkTransform(manip->getBaseLinkName());
-  return bind(&WriteFile, file, change_base, manip, std::ref(prob->GetVars()), placeholders::_2);
+  return bind(&WriteFile, file, change_base, manip, std::ref(prob->GetVars()), std::placeholders::_2);
 }
 }  // namespace trajopt

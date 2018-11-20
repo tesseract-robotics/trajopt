@@ -7,8 +7,6 @@
 @brief Build problem from user-defined functions
 Utilities for creating Cost and Constraint objects from functions
 using numerical derivatives or user-defined analytic derivatives.
-
-
  */
 
 namespace sco
@@ -20,29 +18,26 @@ enum PenaltyType
   HINGE
 };
 
-using Eigen::VectorXd;
-using Eigen::MatrixXd;
-
 /**
 x is the big solution vector of the whole problem. vars are variables that
 index into the vector x
 this function extracts (from x) the values of the variables in vars
  */
-VectorXd getVec(const vector<double>& x, const VarVector& vars);
+Eigen::VectorXd getVec(const DblVec& x, const VarVector& vars);
 /**
 Same idea as above, but different output type
  */
-DblVec getDblVec(const vector<double>& x, const VarVector& vars);
+DblVec getDblVec(const DblVec& x, const VarVector& vars);
 
-AffExpr affFromValGrad(double y, const VectorXd& x, const VectorXd& dydx, const VarVector& vars);
+AffExpr affFromValGrad(double y, const Eigen::VectorXd& x, const Eigen::VectorXd& dydx, const VarVector& vars);
 
 class CostFromFunc : public Cost
 {
 public:
   /// supply function, obtain derivative and hessian numerically
-  CostFromFunc(ScalarOfVectorPtr f, const VarVector& vars, const string& name, bool full_hessian = false);
-  double value(const vector<double>& x);
-  ConvexObjectivePtr convex(const vector<double>& x, Model* model);
+  CostFromFunc(ScalarOfVectorPtr f, const VarVector& vars, const std::string& name, bool full_hessian = false);
+  double value(const DblVec& x);
+  ConvexObjectivePtr convex(const DblVec& x, Model* model);
   VarVector getVars() { return vars_; }
 protected:
   ScalarOfVectorPtr f_;
@@ -57,24 +52,24 @@ public:
   /// supply error function, obtain derivative numerically
   CostFromErrFunc(VectorOfVectorPtr f,
                   const VarVector& vars,
-                  const VectorXd& coeffs,
+                  const Eigen::VectorXd& coeffs,
                   PenaltyType pen_type,
-                  const string& name);
+                  const std::string& name);
   /// supply error function and gradient
   CostFromErrFunc(VectorOfVectorPtr f,
                   MatrixOfVectorPtr dfdx,
                   const VarVector& vars,
-                  const VectorXd& coeffs,
+                  const Eigen::VectorXd& coeffs,
                   PenaltyType pen_type,
-                  const string& name);
-  double value(const vector<double>& x);
-  ConvexObjectivePtr convex(const vector<double>& x, Model* model);
+                  const std::string& name);
+  double value(const DblVec& x);
+  ConvexObjectivePtr convex(const DblVec& x, Model* model);
   VarVector getVars() { return vars_; }
 protected:
   VectorOfVectorPtr f_;
   MatrixOfVectorPtr dfdx_;
   VarVector vars_;
-  VectorXd coeffs_;
+  Eigen::VectorXd coeffs_;
   PenaltyType pen_type_;
   double epsilon_;
 };
@@ -85,27 +80,27 @@ public:
   /// supply error function, obtain derivative numerically
   ConstraintFromErrFunc(VectorOfVectorPtr f,
                      const VarVector& vars,
-                     const VectorXd& coeffs,
+                     const Eigen::VectorXd& coeffs,
                      ConstraintType type,
                      const std::string& name);
   /// supply error function and gradient
   ConstraintFromErrFunc(VectorOfVectorPtr f,
                      MatrixOfVectorPtr dfdx,
                      const VarVector& vars,
-                     const VectorXd& coeffs,
+                     const Eigen::VectorXd& coeffs,
                      ConstraintType type,
                      const std::string& name);
-  vector<double> value(const vector<double>& x);
-  ConvexConstraintsPtr convex(const vector<double>& x, Model* model);
+  DblVec value(const DblVec& x);
+  ConvexConstraintsPtr convex(const DblVec& x, Model* model);
   ConstraintType type() { return type_; }
   VarVector getVars() { return vars_; }
 protected:
   VectorOfVectorPtr f_;
   MatrixOfVectorPtr dfdx_;
   VarVector vars_;
-  VectorXd coeffs_;
+  Eigen::VectorXd coeffs_;
   ConstraintType type_;
   double epsilon_;
-  VectorXd scaling_;
+  Eigen::VectorXd scaling_;
 };
 }

@@ -12,12 +12,9 @@ struct OptResults;
 
 namespace trajopt
 {
-using namespace json_marshal;
-using namespace Json;
 
 typedef Json::Value TrajOptRequest;
 typedef Json::Value TrajOptResponse;
-using std::string;
 
 struct TermInfo;
 typedef std::shared_ptr<TermInfo> TermInfoPtr;
@@ -48,14 +45,14 @@ enum TermType
  * Holds all the data for a trajectory optimization problem
  * so you can modify it programmatically, e.g. add your own costs
  */
-class TRAJOPT_API TrajOptProb : public OptProb
+class TRAJOPT_API TrajOptProb : public sco::OptProb
 {
 public:
   TrajOptProb();
   TrajOptProb(int n_steps, const ProblemConstructionInfo& pci);
   ~TrajOptProb() {}
-  VarVector GetVarRow(int i) { return m_traj_vars.row(i); }
-  Var& GetVar(int i, int j) { return m_traj_vars.at(i, j); }
+  sco::VarVector GetVarRow(int i) { return m_traj_vars.row(i); }
+  sco::Var& GetVar(int i, int j) { return m_traj_vars.at(i, j); }
   VarArray& GetVars() { return m_traj_vars; }
   int GetNumSteps() { return m_traj_vars.rows(); }
   int GetNumDOF() { return m_traj_vars.cols(); }
@@ -77,18 +74,18 @@ private:
 
 struct TRAJOPT_API TrajOptResult
 {
-  vector<string> cost_names, cnt_names;
-  vector<double> cost_vals, cnt_viols;
+  std::vector<std::string> cost_names, cnt_names;
+  DblVec cost_vals, cnt_viols;
   TrajArray traj;
-  TrajOptResult(OptResults& opt, TrajOptProb& prob);
+  TrajOptResult(sco::OptResults& opt, TrajOptProb& prob);
 };
 
 struct BasicInfo
 {
   bool start_fixed;
   int n_steps;
-  string manip;
-  string robot;       // optional
+  std::string manip;
+  std::string robot;       // optional
   IntVec dofs_fixed;  // optional
 };
 
@@ -120,12 +117,12 @@ Then it later gets converted to a Cost object by the hatch method
 */
 struct TRAJOPT_API TermInfo
 {
-  string name;  // xxx is this used?
+  std::string name;  // xxx is this used?
   TermType term_type;
   virtual void fromJson(ProblemConstructionInfo& pci, const Json::Value& v) = 0;
   virtual void hatch(TrajOptProb& prob) = 0;
 
-  static TermInfoPtr fromName(const string& type);
+  static TermInfoPtr fromName(const std::string& type);
 
   /**
    * Registers a user-defined TermInfo so you can use your own cost
@@ -136,7 +133,7 @@ struct TRAJOPT_API TermInfo
 
   virtual ~TermInfo() {}
 private:
-  static std::map<string, MakerFunc> name2maker;
+  static std::map<std::string, MakerFunc> name2maker;
 };
 
 /**
@@ -147,22 +144,22 @@ struct TRAJOPT_API ProblemConstructionInfo
 public:
   BasicInfo basic_info;
   sco::BasicTrustRegionSQPParameters opt_info;
-  vector<TermInfoPtr> cost_infos;
-  vector<TermInfoPtr> cnt_infos;
+  std::vector<TermInfoPtr> cost_infos;
+  std::vector<TermInfoPtr> cnt_infos;
   InitInfo init_info;
 
   tesseract::BasicEnvConstPtr env;
   tesseract::BasicKinConstPtr kin;
 
   ProblemConstructionInfo(tesseract::BasicEnvConstPtr env) : env(env) {}
-  void fromJson(const Value& v);
+  void fromJson(const Json::Value& v);
 
 private:
-  void readBasicInfo(const Value& v);
-  void readOptInfo(const Value& v);
-  void readCosts(const Value& v);
-  void readConstraints(const Value& v);
-  void readInitInfo(const Value& v);
+  void readBasicInfo(const Json::Value& v);
+  void readOptInfo(const Json::Value& v);
+  void readCosts(const Json::Value& v);
+  void readConstraints(const Json::Value& v);
+  void readInitInfo(const Json::Value& v);
 };
 
 /** @brief This is used when the goal frame is not fixed in space */
@@ -174,7 +171,7 @@ struct DynamicCartPoseTermInfo : public TermInfo, public MakesCost, public Makes
   int timestep;
   std::string target;
   /** @brief Coefficients for position and rotation */
-  Vector3d pos_coeffs, rot_coeffs;
+  Eigen::Vector3d pos_coeffs, rot_coeffs;
   /** @brief Link which should reach desired pos */
   std::string link;
   /** @brief Static transform applied to the link */
@@ -183,7 +180,7 @@ struct DynamicCartPoseTermInfo : public TermInfo, public MakesCost, public Makes
   DynamicCartPoseTermInfo();
 
   /** @brief Used to add term to pci from json */
-  void fromJson(ProblemConstructionInfo& pci, const Value& v);
+  void fromJson(ProblemConstructionInfo& pci, const Json::Value& v);
   /** @brief Converts term info into cost/constraint and adds it to trajopt problem */
   void hatch(TrajOptProb& prob);
   DEFINE_CREATE(DynamicCartPoseTermInfo)
@@ -200,11 +197,11 @@ struct CartPoseTermInfo : public TermInfo, public MakesCost, public MakesConstra
   /** @brief Timestep at which to apply term */
   int timestep;
   /** @brief  Cartesian position */
-  Vector3d xyz;
+  Eigen::Vector3d xyz;
   /** @brief Rotation quaternion */
-  Vector4d wxyz;
+  Eigen::Vector4d wxyz;
   /** @brief coefficients for position and rotation */
-  Vector3d pos_coeffs, rot_coeffs;
+  Eigen::Vector3d pos_coeffs, rot_coeffs;
   /** @brief Link which should reach desired pose */
   std::string link;
   /** @brief Static transform applied to the link */
@@ -213,7 +210,7 @@ struct CartPoseTermInfo : public TermInfo, public MakesCost, public MakesConstra
   CartPoseTermInfo();
 
   /** @brief Used to add term to pci from json */
-  void fromJson(ProblemConstructionInfo& pci, const Value& v);
+  void fromJson(ProblemConstructionInfo& pci, const Json::Value& v);
   /** @brief Converts term info into cost/constraint and adds it to trajopt problem */
   void hatch(TrajOptProb& prob);
   DEFINE_CREATE(CartPoseTermInfo)
@@ -233,7 +230,7 @@ struct CartVelTermInfo : public TermInfo, public MakesCost, public MakesConstrai
   std::string link;  // LEVI This may need to be moveit LinkModel
   double max_displacement;
   /** @brief Used to add term to pci from json */
-  void fromJson(ProblemConstructionInfo& pci, const Value& v);
+  void fromJson(ProblemConstructionInfo& pci, const Json::Value& v);
   /** @brief Converts term info into cost/constraint and adds it to trajopt problem */
   void hatch(TrajOptProb& prob);
   DEFINE_CREATE(CartVelTermInfo)
@@ -258,7 +255,7 @@ struct JointPosTermInfo : public TermInfo, public MakesCost, public MakesConstra
   /** @brief Time step to which term is applied */
   int timestep;
   /** @brief Used to add term to pci from json */
-  void fromJson(ProblemConstructionInfo& pci, const Value& v);
+  void fromJson(ProblemConstructionInfo& pci, const Json::Value& v);
   /** @brief Converts term info into cost/constraint and adds it to trajopt problem */
   void hatch(TrajOptProb& prob);
   DEFINE_CREATE(JointPosTermInfo)
@@ -281,7 +278,7 @@ struct JointVelTermInfo : public TermInfo, public MakesCost, public MakesConstra
   /** @brief Last time step to which the term is applied */
   int last_step;
   /** @brief Used to add term to pci from json */
-  void fromJson(ProblemConstructionInfo& pci, const Value& v);
+  void fromJson(ProblemConstructionInfo& pci, const Json::Value& v);
   /** @brief Converts term info into cost/constraint and adds it to trajopt problem */
   void hatch(TrajOptProb& prob);
   DEFINE_CREATE(JointVelTermInfo)
@@ -299,7 +296,7 @@ struct JointAccTermInfo : public TermInfo, public MakesCost, public MakesConstra
   /** @brief Last time step to which the term is applied */
   int last_step;
   /** @brief Used to add term to pci from json */
-  void fromJson(ProblemConstructionInfo& pci, const Value& v);
+  void fromJson(ProblemConstructionInfo& pci, const Json::Value& v);
   /** @brief Converts term info into cost/constraint and adds it to trajopt problem */
   void hatch(TrajOptProb& prob);
   DEFINE_CREATE(JointAccTermInfo)
@@ -317,7 +314,7 @@ struct JointJerkTermInfo : public TermInfo, public MakesCost, public MakesConstr
   /** @brief Last time step to which the term is applied */
   int last_step;
   /** @brief Used to add term to pci from json */
-  void fromJson(ProblemConstructionInfo& pci, const Value& v);
+  void fromJson(ProblemConstructionInfo& pci, const Json::Value& v);
   /** @brief Converts term info into cost/constraint and adds it to trajopt problem */
   void hatch(TrajOptProb& prob);
   DEFINE_CREATE(JointJerkTermInfo)
@@ -352,7 +349,7 @@ struct CollisionTermInfo : public TermInfo, public MakesCost
   std::vector<SafetyMarginDataPtr> info;
 
   /** @brief Used to add term to pci from json */
-  void fromJson(ProblemConstructionInfo& pci, const Value& v);
+  void fromJson(ProblemConstructionInfo& pci, const Json::Value& v);
   /** @brief Converts term info into cost/constraint and adds it to trajopt problem */
   void hatch(TrajOptProb& prob);
   DEFINE_CREATE(CollisionTermInfo)

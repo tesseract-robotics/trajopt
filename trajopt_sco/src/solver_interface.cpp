@@ -4,26 +4,25 @@
 #include <sstream>
 #include <trajopt_sco/solver_interface.hpp>
 #include <trajopt_utils/macros.h>
-using namespace std;
 
 namespace sco
 {
-vector<int> vars2inds(const vector<Var>& vars)
+IntVec vars2inds(const VarVector& vars)
 {
-  vector<int> inds(vars.size());
+  IntVec inds(vars.size());
   for (size_t i = 0; i < inds.size(); ++i)
     inds[i] = vars[i].var_rep->index;
   return inds;
 }
-vector<int> cnts2inds(const vector<Cnt>& cnts)
+IntVec cnts2inds(const CntVector& cnts)
 {
-  vector<int> inds(cnts.size());
+  IntVec inds(cnts.size());
   for (size_t i = 0; i < inds.size(); ++i)
     inds[i] = cnts[i].cnt_rep->index;
   return inds;
 }
 
-void simplify2(vector<int>& inds, vector<double>& vals)
+void simplify2(IntVec& inds, DblVec& vals)
 /**
  * @brief simplify2 gets as input a list of indices, corresponding to non-zero
  *        values in vals, checks that all indexed values are actually non-zero,
@@ -62,7 +61,7 @@ double AffExpr::value(const double* x) const
   }
   return out;
 }
-double AffExpr::value(const vector<double>& x) const
+double AffExpr::value(const DblVec &x) const
 {
   double out = constant;
   for (size_t i = 0; i < size(); ++i)
@@ -71,7 +70,7 @@ double AffExpr::value(const vector<double>& x) const
   }
   return out;
 }
-double QuadExpr::value(const vector<double>& x) const
+double QuadExpr::value(const DblVec& x) const
 {
   double out = affexpr.value(x);
   for (size_t i = 0; i < size(); ++i)
@@ -90,7 +89,7 @@ double QuadExpr::value(const double* x) const
   return out;
 }
 
-Var Model::addVar(const string& name, double lb, double ub)
+Var Model::addVar(const std::string& name, double lb, double ub)
 {
   Var v = addVar(name);
   setVarBounds(v, lb, ub);
@@ -98,12 +97,12 @@ Var Model::addVar(const string& name, double lb, double ub)
 }
 void Model::removeVar(const Var& var)
 {
-  vector<Var> vars(1, var);
+  VarVector vars(1, var);
   removeVars(vars);
 }
 void Model::removeCnt(const Cnt& cnt)
 {
-  vector<Cnt> cnts(1, cnt);
+  CntVector cnts(1, cnt);
   removeCnts(cnts);
 }
 
@@ -115,12 +114,12 @@ double Model::getVarValue(const Var& var) const
 
 void Model::setVarBounds(const Var& var, double lower, double upper)
 {
-  vector<double> lowers(1, lower), uppers(1, upper);
-  vector<Var> vars(1, var);
+  DblVec lowers(1, lower), uppers(1, upper);
+  VarVector vars(1, var);
   setVarBounds(vars, lowers, uppers);
 }
 
-ostream& operator<<(ostream& o, const Var& v)
+std::ostream& operator<<(std::ostream& o, const Var& v)
 {
   if (v.var_rep != NULL)
     o << v.var_rep->name;
@@ -128,12 +127,12 @@ ostream& operator<<(ostream& o, const Var& v)
     o << "nullvar";
   return o;
 }
-ostream& operator<<(ostream& o, const Cnt& c)
+std::ostream& operator<<(std::ostream& o, const Cnt& c)
 {
   o << c.cnt_rep->expr << ((c.cnt_rep->type == EQ) ? " == 0" : " <= 0");
   return o;
 }
-ostream& operator<<(ostream& o, const AffExpr& e)
+std::ostream& operator<<(std::ostream& o, const AffExpr& e)
 {
   o << e.constant;
   for (size_t i = 0; i < e.size(); ++i)
@@ -142,7 +141,7 @@ ostream& operator<<(ostream& o, const AffExpr& e)
   }
   return o;
 }
-ostream& operator<<(ostream& o, const QuadExpr& e)
+std::ostream& operator<<(std::ostream& o, const QuadExpr& e)
 {
   o << e.affexpr;
   for (size_t i = 0; i < e.size(); ++i)
@@ -202,13 +201,13 @@ ModelPtr createModel(ConvexSolver convex_solver)
   {
     if (solver_env)
     {
-      if (string(solver_env) == "GUROBI")
+      if (std::string(solver_env) == "GUROBI")
         solver = GUROBI;
-      else if (string(solver_env) == "BPMPD")
+      else if (std::string(solver_env) == "BPMPD")
         solver = BPMPD;
-      else if (string(solver_env) == "OSQP")
+      else if (std::string(solver_env) == "OSQP")
         solver = OSQP;
-      else if (string(solver_env) == "QPOASES")
+      else if (std::string(solver_env) == "QPOASES")
         solver = QPOASES;
       else
         PRINT_AND_THROW(boost::format("invalid solver \"%s\"specified by TRAJOPT_CONVEX_SOLVER") % solver_env);
