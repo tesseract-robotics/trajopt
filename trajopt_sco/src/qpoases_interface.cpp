@@ -2,7 +2,9 @@
 #include <Eigen/Eigen>
 #include <fstream>
 #include <signal.h>
+
 #include <trajopt_sco/qpoases_interface.hpp>
+#include <trajopt_sco/solver_utils.hpp>
 #include <trajopt_utils/logging.hpp>
 #include <trajopt_utils/stl_to_string.hpp>
 
@@ -11,68 +13,6 @@ using namespace qpOASES;
 namespace sco
 {
 double QPOASES_INFTY = qpOASES::INFTY;
-
-extern void simplify2(IntVec& inds, DblVec& vals);
-extern IntVec vars2inds(const VarVector& vars);
-extern IntVec cnts2inds(const CntVector& cnts);
-
-void tripletsToCSC(IntVec& row_indices,
-                   IntVec& column_pointers,
-                   DblVec& values,
-                   const int m_size,
-                   const int n_size,
-                   const int n_nonzero,
-                   const IntVec& data_i,
-                   const IntVec& data_j,
-                   const DblVec& data_vij,
-                   bool only_upper_triangular)
-{
-  Eigen::SparseMatrix<double> sm(m_size, n_size);
-  sm.reserve(n_nonzero);
-
-  for (unsigned int k = 0; k < data_vij.size(); ++k)
-  {
-    if (data_vij[k] != 0.0)
-    {  // TODO since we are not using simplify2, apparently there are cases
-      // when we try to add the same data twice. We should troubleshoot
-      // why this is the case in the first place - using coeffRef instead
-      // of insert for now
-      sm.coeffRef(data_i[k], data_j[k]) += data_vij[k];
-    }
-  }
-
-  for (unsigned int k = 0; k < std::min(m_size, n_size); ++k)
-  {
-    sm.coeffRef(k, k) += 0.0;
-  }
-
-  Eigen::SparseMatrix<double> sm_t;
-  auto sm_ref = std::ref(sm);
-
-  if (only_upper_triangular)
-  {
-    sm_t = sm.triangularView<Eigen::Upper>();
-    sm_t.makeCompressed();
-    sm_ref = std::ref(sm_t);
-  }
-  else
-  {
-    sm.makeCompressed();
-  }
-
-  auto si_p = sm_ref.get().innerIndexPtr();
-  row_indices.assign(si_p, si_p + sm_ref.get().nonZeros());
-
-  si_p = sm_ref.get().outerIndexPtr();
-  column_pointers.assign(si_p, si_p + sm_ref.get().outerSize());
-
-  // while Eigen does not enforce this, CSC format requires that column
-  // pointers ends with the number of non-zero elements
-  column_pointers.push_back(sm_ref.get().nonZeros());
-
-  auto csc_v = sm_ref.get().valuePtr();
-  values.assign(csc_v, csc_v + sm_ref.get().nonZeros());
-}
 
 ModelPtr createqpOASESModel()
 {
@@ -97,6 +37,7 @@ Var qpOASESModel::addVar(const std::string& name)
   ub_.push_back(QPOASES_INFTY);
   return vars_.back();
 }
+
 Cnt qpOASESModel::addEqCnt(const AffExpr& expr, const std::string& /*name*/)
 {
   cnts_.push_back(new CntRep(cnts_.size(), this));
@@ -104,6 +45,7 @@ Cnt qpOASESModel::addEqCnt(const AffExpr& expr, const std::string& /*name*/)
   cnt_types_.push_back(EQ);
   return cnts_.back();
 }
+
 Cnt qpOASESModel::addIneqCnt(const AffExpr& expr, const std::string& /*name*/)
 {
   cnts_.push_back(new CntRep(cnts_.size(), this));
@@ -111,11 +53,13 @@ Cnt qpOASESModel::addIneqCnt(const AffExpr& expr, const std::string& /*name*/)
   cnt_types_.push_back(INEQ);
   return cnts_.back();
 }
+
 Cnt qpOASESModel::addIneqCnt(const QuadExpr&, const std::string& /*name*/)
 {
   assert(0 && "NOT IMPLEMENTED");
   return 0;
 }
+
 void qpOASESModel::removeVars(const VarVector& vars)
 {
   IntVec inds = vars2inds(vars);
@@ -134,65 +78,12 @@ void qpOASESModel::updateObjective()
 {
   int n = vars_.size();
 
-  g_.clear();
-  g_.resize(n, 0.0);
-  for (size_t i = 0; i < objective_.affexpr.size(); ++i)
-  {
-    g_[objective_.affexpr.vars[i].var_rep->index] += objective_.affexpr.coeffs[i];
-  }
+  Eigen::SparseMatrix<double> sm;
+  exprToEigen(objective_, sm, g_, n, true, true);
+  eigenToCSC(sm, H_row_indices_, H_column_pointers_, H_csc_data_);
 
-  IntVec ind1 = vars2inds(objective_.vars1);
-  IntVec ind2 = vars2inds(objective_.vars2);
-  Eigen::SparseMatrix<double> sm(vars_.size(), vars_.size());
-  sm.reserve(vars_.size() * vars_.size());
-
-  for (size_t i = 0; i < objective_.coeffs.size(); ++i)
-  {
-    if (objective_.coeffs[i] != 0.0)
-    {
-      if (ind1[i] == ind2[i])
-        sm.coeffRef(ind1[i], ind2[i]) += objective_.coeffs[i];
-      else
-      {
-        int c, r;
-        if (ind1[i] < ind2[i])
-        {
-          r = ind1[i];
-          c = ind2[i];
-        }
-        else
-        {
-          r = ind2[i];
-          c = ind1[i];
-        }
-        sm.coeffRef(r, c) += objective_.coeffs[i];
-      }
-    }
-  }
-
-  sm = sm + Eigen::SparseMatrix<double>(sm.transpose());
-  sm.makeCompressed();
-
-  IntVec data_i;
-  IntVec data_j;
-  DblVec vals_ij;
-  for (int k = 0; k < sm.outerSize(); ++k)
-  {
-    for (Eigen::SparseMatrix<double>::InnerIterator it(sm, k); it; ++it)
-    {
-      data_i.push_back(it.row());  // row index
-      data_j.push_back(it.col());  // col index
-      vals_ij.push_back(it.value());
-    }
-  }
-
-  IntVec row_indices;
-  IntVec column_pointers;
-  DblVec csc_data;
-  tripletsToCSC(
-      H_row_indices_, H_column_pointers_, H_csc_data_, vars_.size(), vars_.size(), n * n, data_i, data_j, vals_ij);
-
-  H_ = SymSparseMat(vars_.size(), vars_.size(), H_row_indices_.data(), H_column_pointers_.data(), H_csc_data_.data());
+  H_ = SymSparseMat(vars_.size(), vars_.size(), H_row_indices_.data(),
+                    H_column_pointers_.data(), H_csc_data_.data());
   H_.createDiagInfo();
 }
 
@@ -206,40 +97,19 @@ void qpOASESModel::updateConstraints()
   ubA_.clear();
   ubA_.resize(m, QPOASES_INFTY);
 
-  IntVec data_i;
-  IntVec data_j;
-  DblVec data_ij;
-  for (int iCnt = 0; iCnt < m; ++iCnt)
+  Eigen::SparseMatrix<double> sm;
+  Eigen::VectorXd v;
+  exprToEigen(cnt_exprs_, sm, v, n);
+
+  for (int i_cnt = 0; i_cnt < m; ++i_cnt)
   {
-    const AffExpr& aff = cnt_exprs_[iCnt];
-    IntVec inds = vars2inds(aff.vars);
-    DblVec vals = aff.coeffs;
-
-    for (unsigned i = 0; i < aff.vars.size(); ++i)
-    {
-      if (aff.coeffs[i] != 0)
-      {
-        data_i.push_back(iCnt);
-        data_j.push_back(inds[i]);
-        data_ij.push_back(aff.coeffs[i]);
-      }
-    }
-
-    lbA_[iCnt] = (cnt_types_[iCnt] == INEQ) ? -QPOASES_INFTY : -aff.constant;
-    ubA_[iCnt] = -aff.constant;
+    lbA_[i_cnt] = (cnt_types_[i_cnt] == INEQ) ? -QPOASES_INFTY : v[i_cnt];
+    ubA_[i_cnt] = v[i_cnt];
   }
 
-  tripletsToCSC(A_row_indices_,
-                A_column_pointers_,
-                A_csc_data_,
-                cnts_.size() + vars_.size(),
-                vars_.size(),
-                m * n,
-                data_i,
-                data_j,
-                data_ij);
-
-  A_ = SparseMatrix(cnts_.size(), vars_.size(), A_row_indices_.data(), A_column_pointers_.data(), A_csc_data_.data());
+  eigenToCSC(sm, A_row_indices_, A_column_pointers_, A_csc_data_);
+  A_ = SparseMatrix(cnts_.size(), vars_.size(), A_row_indices_.data(),
+                    A_column_pointers_.data(), A_csc_data_.data());
 }
 
 bool qpOASESModel::updateSolver()
@@ -371,7 +241,7 @@ void qpOASESModel::setObjective(const AffExpr& expr) { objective_.affexpr = expr
 void qpOASESModel::setObjective(const QuadExpr& expr) { objective_ = expr; }
 void qpOASESModel::writeToFile(const std::string& /*fname*/)
 {
-  // assert(0 && "NOT IMPLEMENTED");
+  return; // NOT IMPLEMENTED
 }
 VarVector qpOASESModel::getVars() const { return vars_; }
 }

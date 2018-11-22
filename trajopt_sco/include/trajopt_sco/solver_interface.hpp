@@ -17,12 +17,12 @@ backends.
 
 namespace sco
 {
-
 enum ConstraintType
 {
   EQ,
   INEQ
 };
+
 typedef std::vector<ConstraintType> ConstraintTypeVector;
 
 enum CvxOptStatus
@@ -160,4 +160,20 @@ enum ConvexSolver
 std::vector<ConvexSolver> availableSolvers();
 
 ModelPtr createModel(ConvexSolver convex_solver = AUTO_SOLVER);
+
+IntVec vars2inds(const VarVector& vars);
+
+IntVec cnts2inds(const CntVector& cnts);
+
+/**
+ * @brief simplify2 gets as input a list of indices, corresponding to non-zero
+ *        values in vals, checks that all indexed values are actually non-zero,
+ *        and if they are not, removes them from vals and inds, so that
+ *        inds_out.size() <= inds.size(). Also, it will compact vals so that
+ *        vals_out.size() == inds_out.size()
+ * 
+ * @param[in,out] inds indices of non-vero variables in vals
+ * @param[in,out] val values
+ */
+void simplify2(IntVec& inds, DblVec& vals);
 }

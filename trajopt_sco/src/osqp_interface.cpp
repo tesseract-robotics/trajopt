@@ -1,72 +1,17 @@
+#include <constants.h>
 #include <cmath>
 #include <Eigen/SparseCore>
 #include <fstream>
-#include <constants.h>
 #include <signal.h>
+
 #include <trajopt_sco/osqp_interface.hpp>
+#include <trajopt_sco/solver_utils.hpp>
 #include <trajopt_utils/logging.hpp>
 #include <trajopt_utils/stl_to_string.hpp>
 
 namespace sco
 {
 double OSQP_INFINITY = std::numeric_limits<double>::infinity();
-
-extern void simplify2(IntVec& inds, DblVec& vals);
-extern IntVec vars2inds(const VarVector& vars);
-extern IntVec cnts2inds(const CntVector& cnts);
-
-void tripletsToCSC(std::vector<c_int>& row_indices,
-                   std::vector<c_int>& column_pointers,
-                   DblVec& values,
-                   const int m_size,
-                   const int n_size,
-                   const int n_nonzero,
-                   const IntVec& data_i,
-                   const IntVec& data_j,
-                   const DblVec& data_vij,
-                   bool only_upper_triangular)
-{
-  Eigen::SparseMatrix<double> sm(m_size, n_size);
-  sm.reserve(n_nonzero);
-
-  for (unsigned int k = 0; k < data_vij.size(); ++k)
-  {
-    if (data_vij[k] != 0.0)
-    {  // TODO since we are not using simplify2, apparently there are cases
-      // when we try to add the same data twice. We should troubleshoot
-      // why this is the case in the first place - using coeffRef instead
-      // of insert for now
-      sm.coeffRef(data_i[k], data_j[k]) += data_vij[k];
-    }
-  }
-
-  Eigen::SparseMatrix<double> sm_t;
-  auto sm_ref = std::ref(sm);
-
-  if (only_upper_triangular)
-  {
-    sm_t = sm.triangularView<Eigen::Upper>();
-    sm_t.makeCompressed();
-    sm_ref = std::ref(sm_t);
-  }
-  else
-  {
-    sm.makeCompressed();
-  }
-
-  auto si_p = sm_ref.get().innerIndexPtr();
-  row_indices.assign(si_p, si_p + sm_ref.get().nonZeros());
-
-  si_p = sm_ref.get().outerIndexPtr();
-  column_pointers.assign(si_p, si_p + sm_ref.get().outerSize());
-
-  // while Eigen does not enforce this, CSC format requires that column
-  // pointers ends with the number of non-zero elements
-  column_pointers.push_back(sm_ref.get().nonZeros());
-
-  auto csc_v = sm_ref.get().valuePtr();
-  values.assign(csc_v, csc_v + sm_ref.get().nonZeros());
-}
 
 ModelPtr createOSQPModel()
 {
@@ -107,6 +52,7 @@ Var OSQPModel::addVar(const std::string& name)
   ubs_.push_back(OSQP_INFINITY);
   return vars_.back();
 }
+
 Cnt OSQPModel::addEqCnt(const AffExpr& expr, const std::string& /*name*/)
 {
   cnts_.push_back(new CntRep(cnts_.size(), this));
@@ -114,6 +60,7 @@ Cnt OSQPModel::addEqCnt(const AffExpr& expr, const std::string& /*name*/)
   cnt_types_.push_back(EQ);
   return cnts_.back();
 }
+
 Cnt OSQPModel::addIneqCnt(const AffExpr& expr, const std::string& /*name*/)
 {
   cnts_.push_back(new CntRep(cnts_.size(), this));
@@ -121,11 +68,13 @@ Cnt OSQPModel::addIneqCnt(const AffExpr& expr, const std::string& /*name*/)
   cnt_types_.push_back(INEQ);
   return cnts_.back();
 }
+
 Cnt OSQPModel::addIneqCnt(const QuadExpr&, const std::string& /*name*/)
 {
   assert(0 && "NOT IMPLEMENTED");
   return 0;
 }
+
 void OSQPModel::removeVars(const VarVector& vars)
 {
   IntVec inds = vars2inds(vars);
@@ -145,63 +94,9 @@ void OSQPModel::updateObjective()
   int n = vars_.size();
   osqp_data_.n = n;
 
-  q_.clear();
-  q_.resize(n, 0.0);
-  for (size_t i = 0; i < objective_.affexpr.size(); ++i)
-  {
-    q_[objective_.affexpr.vars[i].var_rep->index] += objective_.affexpr.coeffs[i];
-  }
-
-  IntVec ind1 = vars2inds(objective_.vars1);
-  IntVec ind2 = vars2inds(objective_.vars2);
-  Eigen::SparseMatrix<double> sm(vars_.size(), vars_.size());
-  sm.reserve(vars_.size() * vars_.size());
-
-  for (size_t i = 0; i < objective_.coeffs.size(); ++i)
-  {
-    if (objective_.coeffs[i] != 0.0)
-    {
-      if (ind1[i] == ind2[i])
-        sm.coeffRef(ind1[i], ind2[i]) += objective_.coeffs[i];
-      else
-      {
-        int c, r;
-        if (ind1[i] < ind2[i])
-        {
-          r = ind1[i];
-          c = ind2[i];
-        }
-        else
-        {
-          r = ind2[i];
-          c = ind1[i];
-        }
-        sm.coeffRef(r, c) += objective_.coeffs[i];
-      }
-    }
-  }
-
-  sm = sm + Eigen::SparseMatrix<double>(sm.transpose());
-  sm.makeCompressed();
-
-  IntVec data_i;
-  IntVec data_j;
-  DblVec vals_ij;
-  for (int k = 0; k < sm.outerSize(); ++k)
-  {
-    for (Eigen::SparseMatrix<double>::InnerIterator it(sm, k); it; ++it)
-    {
-      data_i.push_back(it.row());  // row index
-      data_j.push_back(it.col());  // col index
-      vals_ij.push_back(it.value());
-    }
-  }
-
-  std::vector<c_int> row_indices;
-  std::vector<c_int> column_pointers;
-  DblVec csc_data;
-  tripletsToCSC(
-      P_row_indices_, P_column_pointers_, P_csc_data_, vars_.size(), vars_.size(), n * n, data_i, data_j, vals_ij);
+  Eigen::SparseMatrix<double> sm;
+  exprToEigen(objective_, sm, q_, n, true);
+  eigenToCSC(sm, P_row_indices_, P_column_pointers_, P_csc_data_);
 
   if (osqp_data_.P != nullptr)
     c_free(osqp_data_.P);
@@ -221,52 +116,32 @@ void OSQPModel::updateConstraints()
   int m = cnts_.size();
   osqp_data_.m = m + n;
 
+  Eigen::SparseMatrix<double> sm;
+  Eigen::VectorXd v;
+  exprToEigen(cnt_exprs_, sm, v, n);
+  Eigen::SparseMatrix<double> sm_e(m + n, n);
+  Eigen::SparseMatrix<double> sm_e2 = sm;
+  sm.conservativeResize(m + n, Eigen::NoChange_t(n));
+
   l_.clear();
   l_.resize(m + n, -OSQP_INFINITY);
   u_.clear();
   u_.resize(m + n, OSQP_INFINITY);
 
-  IntVec data_i;
-  IntVec data_j;
-  DblVec data_ij;
-  for (int iVar = 0; iVar < n; ++iVar)
+  for (int i_cnt = 0; i_cnt < m; ++i_cnt)
   {
-    l_[iVar] = fmax(lbs_[iVar], -OSQP_INFINITY);
-    u_[iVar] = fmin(ubs_[iVar], OSQP_INFINITY);
-    data_i.push_back(iVar);
-    data_j.push_back(iVar);
-    data_ij.push_back(1.);
+    l_[i_cnt] = (cnt_types_[i_cnt] == INEQ) ? -OSQP_INFINITY : v[i_cnt];
+    u_[i_cnt] = v[i_cnt];
   }
 
-  for (int iCnt = 0; iCnt < m; ++iCnt)
+  for (int i_bnd = 0; i_bnd < n; ++i_bnd)
   {
-    const AffExpr& aff = cnt_exprs_[iCnt];
-    IntVec inds = vars2inds(aff.vars);
-    DblVec vals = aff.coeffs;
-
-    for (unsigned i = 0; i < aff.vars.size(); ++i)
-    {
-      if (aff.coeffs[i] != 0.)
-      {
-        data_i.push_back(iCnt + n);
-        data_j.push_back(inds[i]);
-        data_ij.push_back(aff.coeffs[i]);
-      }
-    }
-
-    l_[iCnt + n] = (cnt_types_[iCnt] == INEQ) ? -OSQP_INFINITY : -aff.constant;
-    u_[iCnt + n] = -aff.constant;
+    l_[i_bnd + m] = fmax(lbs_[i_bnd], -OSQP_INFINITY);
+    u_[i_bnd + m] = fmin(ubs_[i_bnd], OSQP_INFINITY);
+    sm.insert(i_bnd + m, i_bnd) = 1.;
   }
 
-  tripletsToCSC(A_row_indices_,
-                A_column_pointers_,
-                A_csc_data_,
-                cnts_.size() + vars_.size(),
-                vars_.size(),
-                m * n,
-                data_i,
-                data_j,
-                data_ij);
+  eigenToCSC(sm, A_row_indices_, A_column_pointers_, A_csc_data_);
 
   if (osqp_data_.A != nullptr)
     c_free(osqp_data_.A);
@@ -371,7 +246,6 @@ CvxOptStatus OSQPModel::optimize()
 
   // Solve Problem
   int retcode = osqp_solve(osqp_workspace_);
-  ;
 
   if (retcode == 0)
   {
@@ -390,7 +264,7 @@ void OSQPModel::setObjective(const AffExpr& expr) { objective_.affexpr = expr; }
 void OSQPModel::setObjective(const QuadExpr& expr) { objective_ = expr; }
 void OSQPModel::writeToFile(const std::string& /*fname*/)
 {
-  // assert(0 && "NOT IMPLEMENTED");
+  return; // NOT IMPLEMENTED
 }
 VarVector OSQPModel::getVars() const { return vars_; }
 }

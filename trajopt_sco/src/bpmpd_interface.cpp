@@ -148,10 +148,6 @@ namespace sco
 {
 double BPMPD_BIG = 1e+30;
 
-extern void simplify2(IntVec& inds, DblVec& vals);
-extern IntVec vars2inds(const VarVector& vars);
-extern IntVec cnts2inds(const CntVector& cnts);
-
 ModelPtr createBPMPDModel()
 {
   ModelPtr out(new BPMPDModel());

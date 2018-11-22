@@ -23,16 +23,6 @@ IntVec cnts2inds(const CntVector& cnts)
 }
 
 void simplify2(IntVec& inds, DblVec& vals)
-/**
- * @brief simplify2 gets as input a list of indices, corresponding to non-zero
- *        values in vals, checks that all indexed values are actually non-zero,
- *        and if they are not, removes them from vals and inds, so that
- *        inds_out.size() <= inds.size(). Also, it will compact vals so that
- *        vals_out.size() == inds_out.size()
- * 
- * @param[in,out] inds indices of non-vero variables in vals
- * @param[in,out] val values
- */
 {
   typedef std::map<int, double> Int2Double;
   Int2Double ind2val;

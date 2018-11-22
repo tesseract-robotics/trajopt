@@ -119,13 +119,6 @@ if (CATKIN_ENABLE_TESTING)
     test/solver-utils-unit.cpp
   )
 
-  if (osqp_FOUND)
-    list(APPEND SCO_TEST_SOURCE test/osqp-interface-unit.cpp)
-  endif()
-
-  if (qpOASES_FOUND)
-    list(APPEND SCO_TEST_SOURCE test/qpoases-interface-unit.cpp)
-  endif()
   catkin_add_gtest(${PROJECT_NAME}-test ${SCO_TEST_SOURCE})
   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
   if (osqp_FOUND)

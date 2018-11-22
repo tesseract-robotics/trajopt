@@ -13,10 +13,6 @@ extern "C" {
 
 namespace sco
 {
-extern void simplify2(IntVec& inds, DblVec& vals);
-extern IntVec vars2inds(const VarVector& vars);
-extern IntVec cnts2inds(const CntVector& cnts);
-
 GRBenv* gEnv;
 
 #if 0
