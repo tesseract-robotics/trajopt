@@ -51,7 +51,7 @@ double AffExpr::value(const double* x) const
   }
   return out;
 }
-double AffExpr::value(const DblVec &x) const
+double AffExpr::value(const DblVec& x) const
 {
   double out = constant;
   for (size_t i = 0; i < size(); ++i)
@@ -187,7 +187,7 @@ ModelPtr createModel(ConvexSolver convex_solver)
 
   ConvexSolver solver = convex_solver;
 
-  if(solver == AUTO_SOLVER)
+  if (solver == AUTO_SOLVER)
   {
     if (solver_env)
     {

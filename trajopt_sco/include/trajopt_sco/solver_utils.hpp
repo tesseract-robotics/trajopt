@@ -15,9 +15,7 @@ namespace sco
  * @param [in] n_vars the number of variables in expr. It is usually equal
  *                    to `expr.size()`, but it might be larger.
  */
-void exprToEigen(const AffExpr& expr,
-                 Eigen::SparseVector<double>& sparse_vector,
-                 const int& n_vars);
+void exprToEigen(const AffExpr& expr, Eigen::SparseVector<double>& sparse_vector, const int& n_vars);
 
 /**
  * @brief transform a `QuadExpr` to an `Eigen::SparseMatrix` plus
@@ -37,7 +35,8 @@ void exprToEigen(const AffExpr& expr,
  */
 void exprToEigen(const QuadExpr& expr,
                  Eigen::SparseMatrix<double>& sparse_matrix,
-                 Eigen::VectorXd& vector, const int& n_vars,
+                 Eigen::VectorXd& vector,
+                 const int& n_vars,
                  const bool& matrix_is_halved = false,
                  const bool& force_diagonal = false);
 
@@ -63,33 +62,32 @@ void exprToEigen(const AffExprVector& expr_vec,
                  Eigen::VectorXd& vector,
                  const int& n_vars = -1);
 /**
-* @brief Converts triplets to an `Eigen::SparseMatrix`.
-* @param [in] rows_i a vector of row indices
-* @param [in] cols_j a vector of columns indices
-* @param [in] values_ij a vector of values, so that:
-*                       `M[rows_i[k], cols_j[k]] = values_ij[k]`
-* @param [in,out] sparse_matrix must be of the right size, as we should not
-*                               be guessing the right size of sparse_matrix from
-*                               a sparse triplet representation.
-*/
+ * @brief Converts triplets to an `Eigen::SparseMatrix`.
+ * @param [in] rows_i a vector of row indices
+ * @param [in] cols_j a vector of columns indices
+ * @param [in] values_ij a vector of values, so that:
+ *                       `M[rows_i[k], cols_j[k]] = values_ij[k]`
+ * @param [in,out] sparse_matrix must be of the right size, as we should not
+ *                               be guessing the right size of sparse_matrix from
+ *                               a sparse triplet representation.
+ */
 void tripletsToEigen(const IntVec& rows_i,
                      const IntVec& cols_j,
                      const DblVec& values_ij,
-                     Eigen::SparseMatrix<double> &sparse_matrix);
+                     Eigen::SparseMatrix<double>& sparse_matrix);
 
 /**
-* @brief Converts an `Eigen::SparseMatrix` into triplets format
-* @param [in] sparse_matrix an `Eigen::SparseMatrix`
-* @param [out] rows_i a vector of row indices
-* @param [out] cols_j a vector of columns indices
-* @param [out] values_ij a vector of values, so that:
-*                       `M[rows_i[k], cols_j[k]] = values_ij[k]`
-*/
-void eigenToTriplets(const Eigen::SparseMatrix<double> &sparse_matrix,
+ * @brief Converts an `Eigen::SparseMatrix` into triplets format
+ * @param [in] sparse_matrix an `Eigen::SparseMatrix`
+ * @param [out] rows_i a vector of row indices
+ * @param [out] cols_j a vector of columns indices
+ * @param [out] values_ij a vector of values, so that:
+ *                       `M[rows_i[k], cols_j[k]] = values_ij[k]`
+ */
+void eigenToTriplets(const Eigen::SparseMatrix<double>& sparse_matrix,
                      IntVec& rows_i,
                      IntVec& cols_j,
                      DblVec& values_ij);
-
 
 /**
  * @brief converts a sparse matrix into compressed
@@ -100,7 +98,7 @@ void eigenToTriplets(const Eigen::SparseMatrix<double> &sparse_matrix,
  * @param [out] values pointer to non-zero elements in CSC representation
  * @param [in,out] sparse_matrix input matrix: will be compressed
  */
-template<int eigenUpLoType = 0, typename T>
+template <int eigenUpLoType = 0, typename T>
 void eigenToCSC(Eigen::SparseMatrix<double>& sparse_matrix,
                 std::vector<T>& row_indices,
                 std::vector<T>& column_pointers,
@@ -123,14 +121,14 @@ void eigenToCSC(Eigen::SparseMatrix<double>& sparse_matrix,
     row_indices_int.assign(si_p, si_p + sm_ref.get().nonZeros());
     row_indices.clear();
     row_indices.reserve(row_indices_int.size());
-    for(const auto& v : row_indices_int)
+    for (const auto& v : row_indices_int)
       row_indices.push_back(static_cast<T>(v));
 
     si_p = sm_ref.get().outerIndexPtr();
     column_pointers_int.assign(si_p, si_p + sm_ref.get().outerSize());
     column_pointers.clear();
     column_pointers.reserve(column_pointers_int.size());
-    for(const auto& v : column_pointers_int)
+    for (const auto& v : column_pointers_int)
       column_pointers.push_back(static_cast<T>(v));
   }
   else

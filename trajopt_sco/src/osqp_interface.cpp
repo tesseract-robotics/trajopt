@@ -264,7 +264,7 @@ void OSQPModel::setObjective(const AffExpr& expr) { objective_.affexpr = expr; }
 void OSQPModel::setObjective(const QuadExpr& expr) { objective_ = expr; }
 void OSQPModel::writeToFile(const std::string& /*fname*/)
 {
-  return; // NOT IMPLEMENTED
+  return;  // NOT IMPLEMENTED
 }
 VarVector OSQPModel::getVars() const { return vars_; }
 }

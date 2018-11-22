@@ -4,12 +4,9 @@
 #include <trajopt_sco/solver_utils.hpp>
 #include <trajopt_utils/logging.hpp>
 
-
 namespace sco
 {
-void exprToEigen(const AffExpr& expr,
-                 Eigen::SparseVector<double>& sparse_vector,
-                 const int& n_vars)
+void exprToEigen(const AffExpr& expr, Eigen::SparseVector<double>& sparse_vector, const int& n_vars)
 {
   sparse_vector.resize(n_vars);
   sparse_vector.reserve(expr.size());
@@ -19,8 +16,7 @@ void exprToEigen(const AffExpr& expr,
     if (i_var_index >= n_vars)
     {
       std::stringstream msg;
-      msg << "Coefficient " << i << "has index " << i_var_index
-          << " but n_vars is " << n_vars;
+      msg << "Coefficient " << i << "has index " << i_var_index << " but n_vars is " << n_vars;
       throw std::runtime_error(msg.str());
     }
     if (expr.coeffs[i] != 0.)
@@ -30,8 +26,10 @@ void exprToEigen(const AffExpr& expr,
 
 void exprToEigen(const QuadExpr& expr,
                  Eigen::SparseMatrix<double>& sparse_matrix,
-                 Eigen::VectorXd& vector, const int& n_vars,
-                 const bool& matrix_is_halved, const bool& force_diagonal)
+                 Eigen::VectorXd& vector,
+                 const int& n_vars,
+                 const bool& matrix_is_halved,
+                 const bool& force_diagonal)
 {
   IntVec ind1 = vars2inds(expr.vars1);
   IntVec ind2 = vars2inds(expr.vars2);
@@ -102,7 +100,7 @@ void exprToEigen(const AffExprVector& expr_vec,
 void tripletsToEigen(const IntVec& rows_i,
                      const IntVec& cols_j,
                      const DblVec& values_ij,
-                     Eigen::SparseMatrix<double> &sparse_matrix)
+                     Eigen::SparseMatrix<double>& sparse_matrix)
 {
   typedef Eigen::Triplet<double> T;
   std::vector<T, Eigen::aligned_allocator<T>> triplets;
@@ -111,7 +109,7 @@ void tripletsToEigen(const IntVec& rows_i,
   sparse_matrix.setFromTriplets(triplets.begin(), triplets.end());
 }
 
-void eigenToTriplets(const Eigen::SparseMatrix<double> &sparse_matrix,
+void eigenToTriplets(const Eigen::SparseMatrix<double>& sparse_matrix,
                      IntVec& rows_i,
                      IntVec& cols_j,
                      DblVec& values_ij)
@@ -130,5 +128,4 @@ void eigenToTriplets(const Eigen::SparseMatrix<double> &sparse_matrix,
     }
   }
 }
-
 }

@@ -171,7 +171,7 @@ IntVec cnts2inds(const CntVector& cnts);
  *        and if they are not, removes them from vals and inds, so that
  *        inds_out.size() <= inds.size(). Also, it will compact vals so that
  *        vals_out.size() == inds_out.size()
- * 
+ *
  * @param[in,out] inds indices of non-vero variables in vals
  * @param[in,out] val values
  */

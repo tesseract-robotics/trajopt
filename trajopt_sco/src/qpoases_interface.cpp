@@ -82,8 +82,7 @@ void qpOASESModel::updateObjective()
   exprToEigen(objective_, sm, g_, n, true, true);
   eigenToCSC(sm, H_row_indices_, H_column_pointers_, H_csc_data_);
 
-  H_ = SymSparseMat(vars_.size(), vars_.size(), H_row_indices_.data(),
-                    H_column_pointers_.data(), H_csc_data_.data());
+  H_ = SymSparseMat(vars_.size(), vars_.size(), H_row_indices_.data(), H_column_pointers_.data(), H_csc_data_.data());
   H_.createDiagInfo();
 }
 
@@ -108,8 +107,7 @@ void qpOASESModel::updateConstraints()
   }
 
   eigenToCSC(sm, A_row_indices_, A_column_pointers_, A_csc_data_);
-  A_ = SparseMatrix(cnts_.size(), vars_.size(), A_row_indices_.data(),
-                    A_column_pointers_.data(), A_csc_data_.data());
+  A_ = SparseMatrix(cnts_.size(), vars_.size(), A_row_indices_.data(), A_column_pointers_.data(), A_csc_data_.data());
 }
 
 bool qpOASESModel::updateSolver()
@@ -241,7 +239,7 @@ void qpOASESModel::setObjective(const AffExpr& expr) { objective_.affexpr = expr
 void qpOASESModel::setObjective(const QuadExpr& expr) { objective_ = expr; }
 void qpOASESModel::writeToFile(const std::string& /*fname*/)
 {
-  return; // NOT IMPLEMENTED
+  return;  // NOT IMPLEMENTED
 }
 VarVector qpOASESModel::getVars() const { return vars_; }
 }
