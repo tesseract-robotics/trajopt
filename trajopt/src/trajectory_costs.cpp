@@ -105,15 +105,15 @@ JointVelIneqCost::JointVelIneqCost(const VarArray& vars,
       // vel = (x2 - x1) - targ
       AffExpr vel;
       AffExpr expr;
-      exprInc(vel, exprMult(vars(i, j), -1));
-      exprInc(vel, exprMult(vars(i + 1, j), 1));
+      exprInc(vel, exprMult(vars(i, j), 1));
+      exprInc(vel, exprMult(vars(i + 1, j), -1));
 
-      exprDec(vel, targs_[j]);         // offset to center about 0
+      exprDec(vel, targs_[j]);        // offset to center about 0
       exprInc(expr, upper_tols_[j]);  // expr_ = upper_tol
       exprDec(expr, vel);             // expr = upper_tol_- (vel - targs_)
-      exprMult(expr, -1);             // expr = - (upper_tol_- (vel - targs_))
-      exprMult(expr, coeffs[j]);      // expr = - (upper_tol_- (vel - targs_)) * coeffs_
-      exprInc(expr_, expr);
+      expr = exprMult(expr, -1);             // expr = - (upper_tol_- (vel - targs_))
+      expr = exprMult(expr, coeffs[j]);      // expr = - (upper_tol_- (vel - targs_)) * coeffs_
+      expr_vec_.push_back(expr);
     }
   }
 
@@ -131,8 +131,8 @@ JointVelIneqCost::JointVelIneqCost(const VarArray& vars,
       exprDec(vel, targs_[j]);             // offset to center about 0
       exprInc(expr_neg, lower_tols_[j]);   // expr_ = lower_tol_
       exprDec(expr_neg, vel);              // expr = lower_tol_- (vel - targs_)
-      exprMult(expr_neg, coeffs[j]);       // expr = (lower_tol_- (vel - targs_)) * coeffs_
-      exprInc(expr_neg_, expr_neg);
+      expr_neg = exprMult(expr_neg, coeffs[j]);       // expr = (lower_tol_- (vel - targs_)) * coeffs_
+      expr_vec_.push_back(expr_neg);
     }
   }
 }
@@ -149,9 +149,6 @@ double JointVelIneqCost::value(const vector<double>& xvec)
   MatrixXd diff2 = ((diff0 * -1).rowwise() + lower_tols_.transpose()) * coeffs_.asDiagonal();
   // Applies hinge, multiplies it by a diagonal matrix of coefficients, sums each corresponding value, and converts to
   // vector
-//  MatrixXd out(diff1.rows(), diff1.cols() + diff2.cols());
-//  out << diff1, diff2;
-  double out =  diff1.cwiseMax(0).sum() + diff2.cwiseMax(0).sum();
   return diff1.cwiseMax(0).sum() + diff2.cwiseMax(0).sum();
 }
 
@@ -160,8 +157,10 @@ ConvexObjectivePtr JointVelIneqCost::convex(const vector<double>& /*x*/, Model* 
   ConvexObjectivePtr out(new ConvexObjective(model));
   // Add hinge cost. Set the coefficient to 1 here since we include it in the AffExpr already
   // This is necessary since we want a seperate coefficient per joint
-//  out->addHinge(expr_, 1);
-  out->addHinge(expr_neg_, 1);
+  for (AffExpr expr : expr_vec_)
+  {
+    out->addHinge(expr, 1);
+  }
   return out;
 }
 
@@ -186,9 +185,8 @@ JointVelEqConstraint::JointVelEqConstraint(const VarArray& vars,
       exprInc(vel, exprMult(vars(i, j), -1));
       exprInc(vel, exprMult(vars(i + 1, j), 1));
       exprDec(vel, targs_[j]);
-      // expr_ = coeff * vel^2
-      exprInc(expr_, exprMult(vel, coeffs_[j]));
-      AffExpr tmp = expr_;
+      // expr_ = coeff * vel - Not squared b/c QuadExpr cnt not yet supported (TODO)
+      expr_vec_.push_back(exprMult(vel, coeffs_[j]));
     }
   }
 }
@@ -206,8 +204,10 @@ vector<double> JointVelEqConstraint::value(const vector<double>& xvec)
 ConvexConstraintsPtr JointVelEqConstraint::convex(const vector<double>& /*x*/, Model* model)
 {
   ConvexConstraintsPtr out(new ConvexConstraints(model));
-  out->addEqCnt(expr_);
-
+  for (AffExpr expr : expr_vec_)
+  {
+  out->addEqCnt(expr);
+  }
   return out;
 }
 
@@ -241,9 +241,9 @@ JointVelIneqConstraint::JointVelIneqConstraint(const VarArray& vars,
       exprDec(vel, targs_[j]);         // offset to center about 0
       exprInc(expr, upper_tols_[j]);  // expr_ = upper_tol
       exprDec(expr, vel);             // expr = upper_tol_- (vel - targs_)
-      exprMult(expr, -1);             // expr = - (upper_tol_- (vel - targs_))
-      exprMult(expr, coeffs[j]);      // expr = - (upper_tol_- (vel - targs_)) * coeffs_
-      exprInc(expr_, expr);
+      expr = exprMult(expr, -1);             // expr = - (upper_tol_- (vel - targs_))
+      expr = exprMult(expr, coeffs[j]);      // expr = - (upper_tol_- (vel - targs_)) * coeffs_
+      expr_vec_.push_back(expr);
     }
   }
 
@@ -261,8 +261,8 @@ JointVelIneqConstraint::JointVelIneqConstraint(const VarArray& vars,
       exprDec(vel, targs_[j]);             // offset to center about 0
       exprInc(expr_neg, lower_tols_[j]);   // expr_ = lower_tol_
       exprDec(expr_neg, vel);              // expr = lower_tol_- (vel - targs_)
-      exprMult(expr_neg, coeffs[j]);       // expr = (lower_tol_- (vel - targs_)) * coeffs_
-      exprInc(expr_neg_, expr_neg);
+      expr_neg = exprMult(expr_neg, coeffs[j]);       // expr = (lower_tol_- (vel - targs_)) * coeffs_
+      expr_vec_.push_back(expr_neg);
     }
   }
 }
@@ -289,8 +289,10 @@ ConvexConstraintsPtr JointVelIneqConstraint::convex(const vector<double>& /*x*/,
   ConvexConstraintsPtr out(new ConvexConstraints(model));
   // Add hinge cost. Set the coefficient to 1 here since we include it in the AffExpr already
   // This is necessary since we want a seperate coefficient per joint
-//  out->addIneqCnt(expr_);
-  out->addIneqCnt(expr_neg_);
+  for (AffExpr expr : expr_vec_)
+  {
+    out->addIneqCnt(expr);
+  }
   return out;
 }
 

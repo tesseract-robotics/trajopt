@@ -91,10 +91,8 @@ private:
   int first_step_;
   /** @brief Last time step to which the term is applied */
   int last_step_;
-  /** @brief Stores the cost as an expression */
-  AffExpr expr_;
-  /** @brief Stores the cost as an expression */
-  AffExpr expr_neg_;
+  /** @brief Stores the costs as an expression. Will be length num_jnts*num_timesteps*2 */
+  std::vector<AffExpr> expr_vec_;
 
   // TODO: Add getVars
 };
@@ -118,17 +116,14 @@ public:
   /** Sum of violations */
   double violation(const vector<double>& x);
 
-  //  VarVector getVars() { return VarVector(); }
-  // TODO: Figure out why we are using vararray instead of varvector, and should I convert between them?
-  // From looking at pos, it appears that array contains all of the vectors for all the joints (maybe timesteps too?)
-
+  //  TODO: VarVector getVars() { return VarVector(); }
 private:
   /** @brief The variables being optimized. Used to properly index the vector being optimized */
   VarArray vars_;
   /** @brief The coefficients used to weight the cost */
   VectorXd coeffs_;
-  /** @brief Stores the cost as an expression */
-  AffExpr expr_;
+  /** @brief Stores the costs as an expression. Will be length num_jnts*num_timesteps */
+  std::vector<AffExpr> expr_vec_;
   /** @brief Vector of velocity targets */
   VectorXd targs_;
   /** @brief First time step to which the term is applied */
@@ -169,10 +164,9 @@ private:
   int first_step_;
   /** @brief Last time step to which the term is applied */
   int last_step_;
-  /** @brief Stores the cost as an expression */
-  AffExpr expr_;
-  /** @brief Stores the cost as an expression */
-  AffExpr expr_neg_;
+  /** @brief Stores the costs as an expression. Will be length num_jnts*num_timesteps*2 */
+  std::vector<AffExpr> expr_vec_;
+
 
   // TODO: Add getVars
 };
