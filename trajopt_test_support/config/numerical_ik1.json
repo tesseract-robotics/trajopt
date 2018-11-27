@@ -2,7 +2,8 @@
   "basic_info" : {
     "n_steps" : 1,
     "manip" : "left_arm",
-    "start_fixed" : false
+    "start_fixed" : false,
+    "convex_solver" : "AUTO_SOLVER"
   },
   "costs" : [
   {
@@ -17,6 +18,6 @@
   }
   ],
   "init_info" : {
-    "type" : "stationary"    
+    "type" : "stationary"
   }
 }

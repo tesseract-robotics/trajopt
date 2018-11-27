@@ -141,28 +141,94 @@ std::ostream& operator<<(std::ostream& o, const QuadExpr& e)
   return o;
 }
 
+
+ConvexSolver::ConvexSolver()
+{
+  value_ = ConvexSolver::AUTO_SOLVER;
+}
+
+ConvexSolver::ConvexSolver(const ConvexSolver::Value& v)
+{
+  value_ = v;
+}
+
+ConvexSolver::ConvexSolver(const int& v)
+{
+  value_ = static_cast<Value>(v);
+}
+
+ConvexSolver::ConvexSolver(const std::string& s)
+{
+    if (s == "GUROBI")
+      value_ = ConvexSolver::GUROBI;
+    else if (s == "BPMPD")
+      value_ = ConvexSolver::BPMPD;
+    else if (s == "OSQP")
+      value_ = ConvexSolver::OSQP;
+    else if (s == "QPOASES")
+      value_ = ConvexSolver::QPOASES;
+    else if (s == "AUTO_SOLVER")
+      value_ == ConvexSolver::AUTO_SOLVER;
+    else
+      PRINT_AND_THROW(boost::format("invalid solver name:\"%s\"") % s);
+}
+
+ConvexSolver::operator int() const
+{
+  return static_cast<int>(value_);
+}
+
+bool ConvexSolver::operator==(ConvexSolver::Value a) const
+{
+  return value_ == a;
+}
+
+bool ConvexSolver::operator==(ConvexSolver a) const
+{
+  return value_ == a.value_;
+}
+
+bool ConvexSolver::operator!=(ConvexSolver a) const
+{
+  return value_ != a.value_;
+}
+
+void ConvexSolver::fromJson(const Json::Value& v) {
+  try
+  {
+    std::string ref = v.asString();
+    ConvexSolver cs(ref);
+    value_ = cs.value_;
+  }
+  catch (const std::runtime_error&)
+  {
+    PRINT_AND_THROW(boost::format("expected: %s, got %s") % ("string") % (v));
+  }
+}
+
 std::vector<ConvexSolver> availableSolvers()
 {
-  std::vector<bool> has_solver(AUTO_SOLVER, false);
+  std::vector<bool> has_solver(ConvexSolver::AUTO_SOLVER, false);
 #ifdef HAVE_GUROBI
-  has_solver[GUROBI] = true;
+  has_solver[ConvexSolver::GUROBI] = true;
 #endif
 #ifdef HAVE_BPMPD
-  has_solver[BPMPD] = true;
+  has_solver[ConvexSolver::BPMPD] = true;
 #endif
 #ifdef HAVE_OSQP
-  has_solver[OSQP] = true;
+  has_solver[ConvexSolver::OSQP] = true;
 #endif
 #ifdef HAVE_QPOASES
-  has_solver[QPOASES] = true;
+  has_solver[ConvexSolver::QPOASES] = true;
 #endif
   int n_available_solvers = 0;
-  for (auto i = 0; i < AUTO_SOLVER; ++i)
+  for (auto i = 0; i < ConvexSolver::AUTO_SOLVER; ++i)
     if (has_solver[i])
       ++n_available_solvers;
-  std::vector<ConvexSolver> available_solvers(n_available_solvers, AUTO_SOLVER);
+  std::vector<ConvexSolver> available_solvers(n_available_solvers,
+                                              ConvexSolver::AUTO_SOLVER);
   auto j = 0;
-  for (auto i = 0; i < AUTO_SOLVER; ++i)
+  for (auto i = 0; i < ConvexSolver::AUTO_SOLVER; ++i)
     if (has_solver[i])
       available_solvers[j++] = static_cast<ConvexSolver>(i);
   return available_solvers;
@@ -187,20 +253,18 @@ ModelPtr createModel(ConvexSolver convex_solver)
 
   ConvexSolver solver = convex_solver;
 
-  if (solver == AUTO_SOLVER)
+  if (solver == ConvexSolver::AUTO_SOLVER)
   {
     if (solver_env)
     {
-      if (std::string(solver_env) == "GUROBI")
-        solver = GUROBI;
-      else if (std::string(solver_env) == "BPMPD")
-        solver = BPMPD;
-      else if (std::string(solver_env) == "OSQP")
-        solver = OSQP;
-      else if (std::string(solver_env) == "QPOASES")
-        solver = QPOASES;
-      else
+      try
+      {
+        solver = ConvexSolver(std::string(solver_env));
+      }
+      catch (std::runtime_error&)
+      {
         PRINT_AND_THROW(boost::format("invalid solver \"%s\"specified by TRAJOPT_CONVEX_SOLVER") % solver_env);
+      }
     }
     else
     {
@@ -209,36 +273,36 @@ ModelPtr createModel(ConvexSolver convex_solver)
   }
 
 #ifndef HAVE_GUROBI
-  if (solver == GUROBI)
+  if (solver == ConvexSolver::GUROBI)
     PRINT_AND_THROW("you didn't build with GUROBI support");
 #endif
 #ifndef HAVE_BPMPD
-  if (solver == BPMPD)
+  if (solver == ConvexSolver::BPMPD)
     PRINT_AND_THROW("you don't have BPMPD support on this platform");
 #endif
 #ifndef HAVE_OSQP
-  if (solver == OSQP)
+  if (solver == ConvexSolver::OSQP)
     PRINT_AND_THROW("you don't have OSQP support on this platform");
 #endif
 #ifndef HAVE_QPOASES
-  if (solver == QPOASES)
+  if (solver == ConvexSolver::QPOASES)
     PRINT_AND_THROW("you don't have qpOASES support on this platform");
 #endif
 
 #ifdef HAVE_GUROBI
-  if (solver == GUROBI)
+  if (solver == ConvexSolver::GUROBI)
     return createGurobiModel();
 #endif
 #ifdef HAVE_BPMPD
-  if (solver == BPMPD)
+  if (solver == ConvexSolver::BPMPD)
     return createBPMPDModel();
 #endif
 #ifdef HAVE_OSQP
-  if (solver == OSQP)
+  if (solver == ConvexSolver::OSQP)
     return createOSQPModel();
 #endif
 #ifdef HAVE_QPOASES
-  if (solver == QPOASES)
+  if (solver == ConvexSolver::QPOASES)
     return createqpOASESModel();
 #endif
   PRINT_AND_THROW("Failed to create solver");

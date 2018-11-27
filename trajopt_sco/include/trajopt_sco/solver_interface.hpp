@@ -1,6 +1,7 @@
 #pragma once
 #include <cassert>
 #include <iosfwd>
+#include <jsoncpp/json/json.h>
 #include <limits>
 #include <string>
 #include <trajopt_sco/sco_common.hpp>
@@ -148,18 +149,33 @@ std::ostream& operator<<(std::ostream&, const Cnt&);
 std::ostream& operator<<(std::ostream&, const AffExpr&);
 std::ostream& operator<<(std::ostream&, const QuadExpr&);
 
-enum ConvexSolver
+class ConvexSolver
 {
+public:
+  enum Value {
   GUROBI,
   BPMPD,
   OSQP,
   QPOASES,
   AUTO_SOLVER
+  };
+
+  ConvexSolver();
+  ConvexSolver(const Value& v);
+  ConvexSolver(const int& v);
+  ConvexSolver(const std::string& s);
+  operator int() const;
+  bool operator==(Value a) const;
+  bool operator==(ConvexSolver a) const;
+  bool operator!=(ConvexSolver a) const;
+  void fromJson(const Json::Value& v);
+private:
+  Value value_;
 };
 
 std::vector<ConvexSolver> availableSolvers();
 
-ModelPtr createModel(ConvexSolver convex_solver = AUTO_SOLVER);
+ModelPtr createModel(ConvexSolver convex_solver = ConvexSolver::AUTO_SOLVER);
 
 IntVec vars2inds(const VarVector& vars);
 

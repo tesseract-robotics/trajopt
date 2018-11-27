@@ -85,8 +85,9 @@ struct BasicInfo
   bool start_fixed;
   int n_steps;
   std::string manip;
-  std::string robot;       // optional
+  std::string robot;  // optional
   IntVec dofs_fixed;  // optional
+  sco::ConvexSolver convex_solver; // which convex solver to use
 };
 
 /**
