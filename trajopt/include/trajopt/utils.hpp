@@ -1,4 +1,5 @@
 #pragma once
+#include<tesseract_core/basic_types.h>
 #include <trajopt/typedefs.hpp>
 #include <unordered_map>
 
@@ -108,7 +109,7 @@ private:
   double max_safety_margin_;
 
   /// A map of link pair to contact distance setting [dist_pen, coeff]
-  std::unordered_map<std::string, Eigen::Vector2d> pair_lookup_table_;
+  tesseract::AlignedUnorderedMap<std::string, Eigen::Vector2d> pair_lookup_table_;
 };
 typedef std::shared_ptr<SafetyMarginData> SafetyMarginDataPtr;
 typedef std::shared_ptr<const SafetyMarginData> SafetyMarginDataConstPtr;
