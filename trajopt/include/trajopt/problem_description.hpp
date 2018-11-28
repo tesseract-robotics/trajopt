@@ -313,6 +313,12 @@ struct JointAccTermInfo : public TermInfo, public MakesCost, public MakesConstra
 {
   /** @brief For TT_COST: coefficient that scales cost. For TT_CNT: Acceleration limit*/
   DblVec coeffs;
+  /** @brief Vector of accel targets. Default: 0 */
+  DblVec targs;
+  /** @brief Vector of accel upper limits. Default: 0 */
+  DblVec upper_tols;
+  /** @brief Vector of accel lower limits. Default: 0 */
+  DblVec lower_tols;
   /** @brief First time step to which the term is applied */
   int first_step;
   /** @brief Last time step to which the term is applied */
@@ -331,6 +337,12 @@ struct JointJerkTermInfo : public TermInfo, public MakesCost, public MakesConstr
 {
   /** @brief For TT_COST: coefficient that scales cost. For TT_CNT: Jerk limit */
   DblVec coeffs;
+  /** @brief Vector of jerk targets. Default: 0 */
+  DblVec targs;
+  /** @brief Vector of jerk upper limits. Default: 0 */
+  DblVec upper_tols;
+  /** @brief Vector of jerk lower limits. Default: 0 */
+  DblVec lower_tols;
   /** @brief First time step to which the term is applied */
   int first_step;
   /** @brief Last time step to which the term is applied */
