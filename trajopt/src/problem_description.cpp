@@ -629,13 +629,13 @@ void JointVelTermInfo::fromJson(ProblemConstructionInfo& pci, const Json::Value&
   json_marshal::childFromJson(params, coeffs, "coeffs");
 
   // Optional Parameters
-  json_marshal::childFromJson(params, targs, "targs", DblVec(n_dof, 0));
+  json_marshal::childFromJson(params, targets, "targets", DblVec(n_dof, 0));
   json_marshal::childFromJson(params, upper_tols, "upper_tols", DblVec(n_dof, 0));
   json_marshal::childFromJson(params, lower_tols, "lower_tols", DblVec(n_dof, 0));
   json_marshal::childFromJson(params, first_step, "first_step", 0);
   json_marshal::childFromJson(params, last_step, "last_step", pci.basic_info.n_steps - 1);
 
-  const char* all_fields[] = { "coeffs", "first_step", "last_step", "targs", "lower_tols", "upper_tols" };
+  const char* all_fields[] = { "coeffs", "first_step", "last_step", "targets", "lower_tols", "upper_tols" };
   ensure_only_members(params, all_fields, sizeof(all_fields) / sizeof(char*));
 }
 
@@ -648,8 +648,8 @@ void JointVelTermInfo::hatch(TrajOptProb& prob)
   unsigned int n_dof = prob.GetKin()->getJointNames().size();
 
   // If target or tolerance is not given, set all to 0
-  if (targs.empty())
-    targs = DblVec(n_dof, 0);
+  if (targets.empty())
+    targets = DblVec(n_dof, 0);
   if (upper_tols.empty())
     upper_tols = DblVec(n_dof, 0);
   if (lower_tols.empty())
@@ -672,7 +672,7 @@ void JointVelTermInfo::hatch(TrajOptProb& prob)
 
   // Check if parameters are the correct size.
   checkParameterSize(coeffs, n_dof, "JointVelTermInfo coeffs", true);
-  checkParameterSize(targs, n_dof, "JointVelTermInfo upper_tols", true);
+  checkParameterSize(targets, n_dof, "JointVelTermInfo upper_tols", true);
   checkParameterSize(upper_tols, n_dof, "JointVelTermInfo upper_tols", true);
   checkParameterSize(lower_tols, n_dof, "JointVelTermInfo lower_tols", true);
 
@@ -688,14 +688,14 @@ void JointVelTermInfo::hatch(TrajOptProb& prob)
     if (is_upper_zeros && is_lower_zeros)
     {
       prob.addCost(sco::CostPtr(new JointVelEqCost(
-          prob.GetVars(), util::toVectorXd(coeffs), util::toVectorXd(targs), first_step, last_step)));
+          prob.GetVars(), util::toVectorXd(coeffs), util::toVectorXd(targets), first_step, last_step)));
       prob.getCosts().back()->setName(name);
     }
     else
     {
       prob.addCost(sco::CostPtr(new JointVelIneqCost(prob.GetVars(),
                                                      util::toVectorXd(coeffs),
-                                                     util::toVectorXd(targs),
+                                                     util::toVectorXd(targets),
                                                      util::toVectorXd(upper_tols),
                                                      util::toVectorXd(lower_tols),
                                                      first_step,
@@ -709,14 +709,14 @@ void JointVelTermInfo::hatch(TrajOptProb& prob)
     if (is_upper_zeros && is_lower_zeros)
     {
       prob.addConstraint(sco::ConstraintPtr(new JointVelEqConstraint(
-          prob.GetVars(), util::toVectorXd(coeffs), util::toVectorXd(targs), first_step, last_step)));
+          prob.GetVars(), util::toVectorXd(coeffs), util::toVectorXd(targets), first_step, last_step)));
       prob.getConstraints().back()->setName(name);
     }
     else
     {
       prob.addConstraint(sco::ConstraintPtr(new JointVelIneqConstraint(prob.GetVars(),
                                                                        util::toVectorXd(coeffs),
-                                                                       util::toVectorXd(targs),
+                                                                       util::toVectorXd(targets),
                                                                        util::toVectorXd(upper_tols),
                                                                        util::toVectorXd(lower_tols),
                                                                        first_step,
@@ -735,13 +735,13 @@ void JointAccTermInfo::fromJson(ProblemConstructionInfo& pci, const Json::Value&
   json_marshal::childFromJson(params, coeffs, "coeffs");
 
   // Optional Parameters
-  json_marshal::childFromJson(params, targs, "targs", DblVec(n_dof, 0));
+  json_marshal::childFromJson(params, targets, "targets", DblVec(n_dof, 0));
   json_marshal::childFromJson(params, upper_tols, "upper_tols", DblVec(n_dof, 0));
   json_marshal::childFromJson(params, lower_tols, "lower_tols", DblVec(n_dof, 0));
   json_marshal::childFromJson(params, first_step, "first_step", 0);
   json_marshal::childFromJson(params, last_step, "last_step", pci.basic_info.n_steps - 1);
 
-  const char* all_fields[] = { "coeffs", "first_step", "last_step", "targs", "lower_tols", "upper_tols" };
+  const char* all_fields[] = { "coeffs", "first_step", "last_step", "targets", "lower_tols", "upper_tols" };
   ensure_only_members(params, all_fields, sizeof(all_fields) / sizeof(char*));
 }
 
@@ -754,8 +754,8 @@ void JointAccTermInfo::hatch(TrajOptProb& prob)
   unsigned int n_dof = prob.GetKin()->getJointNames().size();
 
   // If target or tolerance is not given, set all to 0
-  if (targs.empty())
-    targs = DblVec(n_dof, 0);
+  if (targets.empty())
+    targets = DblVec(n_dof, 0);
   if (upper_tols.empty())
     upper_tols = DblVec(n_dof, 0);
   if (lower_tols.empty())
@@ -779,7 +779,7 @@ void JointAccTermInfo::hatch(TrajOptProb& prob)
 
   // Check if parameters are the correct size.
   checkParameterSize(coeffs, n_dof, "JointAccTermInfo coeffs", true);
-  checkParameterSize(targs, n_dof, "JointAccTermInfo upper_tols", true);
+  checkParameterSize(targets, n_dof, "JointAccTermInfo upper_tols", true);
   checkParameterSize(upper_tols, n_dof, "JointAccTermInfo upper_tols", true);
   checkParameterSize(lower_tols, n_dof, "JointAccTermInfo lower_tols", true);
 
@@ -795,14 +795,14 @@ void JointAccTermInfo::hatch(TrajOptProb& prob)
     if (is_upper_zeros && is_lower_zeros)
     {
       prob.addCost(sco::CostPtr(new JointAccEqCost(
-          prob.GetVars(), util::toVectorXd(coeffs), util::toVectorXd(targs), first_step, last_step)));
+          prob.GetVars(), util::toVectorXd(coeffs), util::toVectorXd(targets), first_step, last_step)));
       prob.getCosts().back()->setName(name);
     }
     else
     {
       prob.addCost(sco::CostPtr(new JointAccIneqCost(prob.GetVars(),
                                                      util::toVectorXd(coeffs),
-                                                     util::toVectorXd(targs),
+                                                     util::toVectorXd(targets),
                                                      util::toVectorXd(upper_tols),
                                                      util::toVectorXd(lower_tols),
                                                      first_step,
@@ -816,14 +816,14 @@ void JointAccTermInfo::hatch(TrajOptProb& prob)
     if (is_upper_zeros && is_lower_zeros)
     {
       prob.addConstraint(sco::ConstraintPtr(new JointAccEqConstraint(
-          prob.GetVars(), util::toVectorXd(coeffs), util::toVectorXd(targs), first_step, last_step)));
+          prob.GetVars(), util::toVectorXd(coeffs), util::toVectorXd(targets), first_step, last_step)));
       prob.getConstraints().back()->setName(name);
     }
     else
     {
       prob.addConstraint(sco::ConstraintPtr(new JointAccIneqConstraint(prob.GetVars(),
                                                                        util::toVectorXd(coeffs),
-                                                                       util::toVectorXd(targs),
+                                                                       util::toVectorXd(targets),
                                                                        util::toVectorXd(upper_tols),
                                                                        util::toVectorXd(lower_tols),
                                                                        first_step,
@@ -842,13 +842,13 @@ void JointJerkTermInfo::fromJson(ProblemConstructionInfo& pci, const Json::Value
   json_marshal::childFromJson(params, coeffs, "coeffs");
 
   // Optional Parameters
-  json_marshal::childFromJson(params, targs, "targs", DblVec(n_dof, 0));
+  json_marshal::childFromJson(params, targets, "targets", DblVec(n_dof, 0));
   json_marshal::childFromJson(params, upper_tols, "upper_tols", DblVec(n_dof, 0));
   json_marshal::childFromJson(params, lower_tols, "lower_tols", DblVec(n_dof, 0));
   json_marshal::childFromJson(params, first_step, "first_step", 0);
   json_marshal::childFromJson(params, last_step, "last_step", pci.basic_info.n_steps - 1);
 
-  const char* all_fields[] = { "coeffs", "first_step", "last_step", "targs", "lower_tols", "upper_tols" };
+  const char* all_fields[] = { "coeffs", "first_step", "last_step", "targets", "lower_tols", "upper_tols" };
   ensure_only_members(params, all_fields, sizeof(all_fields) / sizeof(char*));
 }
 
@@ -861,8 +861,8 @@ void JointJerkTermInfo::hatch(TrajOptProb& prob)
   unsigned int n_dof = prob.GetKin()->getJointNames().size();
 
   // If target or tolerance is not given, set all to 0
-  if (targs.empty())
-    targs = DblVec(n_dof, 0);
+  if (targets.empty())
+    targets = DblVec(n_dof, 0);
   if (upper_tols.empty())
     upper_tols = DblVec(n_dof, 0);
   if (lower_tols.empty())
@@ -886,7 +886,7 @@ void JointJerkTermInfo::hatch(TrajOptProb& prob)
 
   // Check if parameters are the correct size.
   checkParameterSize(coeffs, n_dof, "JointJerkTermInfo coeffs", true);
-  checkParameterSize(targs, n_dof, "JointJerkTermInfo upper_tols", true);
+  checkParameterSize(targets, n_dof, "JointJerkTermInfo upper_tols", true);
   checkParameterSize(upper_tols, n_dof, "JointJerkTermInfo upper_tols", true);
   checkParameterSize(lower_tols, n_dof, "JointJerkTermInfo lower_tols", true);
 
@@ -902,14 +902,14 @@ void JointJerkTermInfo::hatch(TrajOptProb& prob)
     if (is_upper_zeros && is_lower_zeros)
     {
       prob.addCost(sco::CostPtr(new JointJerkEqCost(
-          prob.GetVars(), util::toVectorXd(coeffs), util::toVectorXd(targs), first_step, last_step)));
+          prob.GetVars(), util::toVectorXd(coeffs), util::toVectorXd(targets), first_step, last_step)));
       prob.getCosts().back()->setName(name);
     }
     else
     {
       prob.addCost(sco::CostPtr(new JointJerkIneqCost(prob.GetVars(),
                                                       util::toVectorXd(coeffs),
-                                                      util::toVectorXd(targs),
+                                                      util::toVectorXd(targets),
                                                       util::toVectorXd(upper_tols),
                                                       util::toVectorXd(lower_tols),
                                                       first_step,
@@ -923,14 +923,14 @@ void JointJerkTermInfo::hatch(TrajOptProb& prob)
     if (is_upper_zeros && is_lower_zeros)
     {
       prob.addConstraint(sco::ConstraintPtr(new JointJerkEqConstraint(
-          prob.GetVars(), util::toVectorXd(coeffs), util::toVectorXd(targs), first_step, last_step)));
+          prob.GetVars(), util::toVectorXd(coeffs), util::toVectorXd(targets), first_step, last_step)));
       prob.getConstraints().back()->setName(name);
     }
     else
     {
       prob.addConstraint(sco::ConstraintPtr(new JointJerkIneqConstraint(prob.GetVars(),
                                                                         util::toVectorXd(coeffs),
-                                                                        util::toVectorXd(targs),
+                                                                        util::toVectorXd(targets),
                                                                         util::toVectorXd(upper_tols),
                                                                         util::toVectorXd(lower_tols),
                                                                         first_step,

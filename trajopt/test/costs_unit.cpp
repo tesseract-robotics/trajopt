@@ -27,7 +27,7 @@ using namespace tesseract;
 const std::string ROBOT_DESCRIPTION_PARAM = "robot_description"; /**< Default ROS parameter for robot description */
 const std::string ROBOT_SEMANTIC_PARAM = "robot_description_semantic"; /**< Default ROS parameter for robot
                                                                           description */
-bool plotting = false;                                                 /**< Enable plotting */
+static bool plotting = false;                                                 /**< Enable plotting */
 
 class CostsTest : public testing::TestWithParam<const char*>
 {
@@ -94,7 +94,7 @@ TEST_F(CostsTest, equality_jointVel)
   // Constraint that first step velocity should be zero
   std::shared_ptr<JointVelTermInfo> jv = std::shared_ptr<JointVelTermInfo>(new JointVelTermInfo);
   jv->coeffs = std::vector<double>(7, 10.0);
-  jv->targs = std::vector<double>(7.0, cnt_targ);
+  jv->targets = std::vector<double>(7.0, cnt_targ);
   jv->first_step = 0;
   jv->last_step = 0;
   jv->name = "joint_vel_single";
@@ -104,7 +104,7 @@ TEST_F(CostsTest, equality_jointVel)
   // All the rest of the joint velocities have a cost to some non zero value
   std::shared_ptr<JointVelTermInfo> jv2 = std::shared_ptr<JointVelTermInfo>(new JointVelTermInfo);
   jv2->coeffs = std::vector<double>(7, 10.0);
-  jv2->targs = std::vector<double>(7.0, cost_targ);
+  jv2->targets = std::vector<double>(7.0, cost_targ);
   jv2->first_step = 0;
   jv2->last_step = pci.basic_info.n_steps - 1;
   jv2->name = "joint_vel_all";
@@ -185,7 +185,7 @@ TEST_F(CostsTest, inequality_jointVel)
   // Constraint that limits velocity
   std::shared_ptr<JointVelTermInfo> jv = std::shared_ptr<JointVelTermInfo>(new JointVelTermInfo);
   jv->coeffs = std::vector<double>(7, 1.0);
-  jv->targs = std::vector<double>(7.0, 0);
+  jv->targets = std::vector<double>(7.0, 0);
   jv->lower_tols = std::vector<double>(7.0, lower_tol);
   jv->upper_tols = std::vector<double>(7.0, upper_tol);
   jv->first_step = 0;
@@ -197,7 +197,7 @@ TEST_F(CostsTest, inequality_jointVel)
   // Joint Velocities also have a cost to some non zero value
   std::shared_ptr<JointVelTermInfo> jv2 = std::shared_ptr<JointVelTermInfo>(new JointVelTermInfo);
   jv2->coeffs = std::vector<double>(7, 1.0);
-  jv2->targs = std::vector<double>(7.0, cost_targ1);
+  jv2->targets = std::vector<double>(7.0, cost_targ1);
   jv2->lower_tols = std::vector<double>(7.0, -0.01);
   jv2->upper_tols = std::vector<double>(7.0, 0.0);
   jv2->first_step = 0;
@@ -208,7 +208,7 @@ TEST_F(CostsTest, inequality_jointVel)
 
   std::shared_ptr<JointVelTermInfo> jv3 = std::shared_ptr<JointVelTermInfo>(new JointVelTermInfo);
   jv3->coeffs = std::vector<double>(7, 1.0);
-  jv3->targs = std::vector<double>(7.0, cost_targ2);
+  jv3->targets = std::vector<double>(7.0, cost_targ2);
   jv3->lower_tols = std::vector<double>(7.0, -0.01);
   jv3->upper_tols = std::vector<double>(7.0, 0.01);
   jv3->first_step = (pci.basic_info.n_steps - 1) / 2 + 1;
@@ -293,7 +293,7 @@ TEST_F(CostsTest, equality_jointAcc)
   // Constraint that first step velocity should be zero
   std::shared_ptr<JointAccTermInfo> jv = std::shared_ptr<JointAccTermInfo>(new JointAccTermInfo);
   jv->coeffs = std::vector<double>(7, 10.0);
-  jv->targs = std::vector<double>(7.0, cnt_targ);
+  jv->targets = std::vector<double>(7.0, cnt_targ);
   jv->first_step = 0;
   jv->last_step = 0;
   jv->name = "joint_acc_single";
@@ -303,7 +303,7 @@ TEST_F(CostsTest, equality_jointAcc)
   // All the rest of the joint velocities have a cost to some non zero value
   std::shared_ptr<JointAccTermInfo> jv2 = std::shared_ptr<JointAccTermInfo>(new JointAccTermInfo);
   jv2->coeffs = std::vector<double>(7, 10.0);
-  jv2->targs = std::vector<double>(7.0, cost_targ);
+  jv2->targets = std::vector<double>(7.0, cost_targ);
   jv2->first_step = 0;
   jv2->last_step = pci.basic_info.n_steps - 1;
   jv2->name = "joint_acc_all";
@@ -385,7 +385,7 @@ TEST_F(CostsTest, inequality_jointAcc)
   // Constraint that limits accel
   std::shared_ptr<JointAccTermInfo> jv = std::shared_ptr<JointAccTermInfo>(new JointAccTermInfo);
   jv->coeffs = std::vector<double>(7, 1.0);
-  jv->targs = std::vector<double>(7.0, 0);
+  jv->targets = std::vector<double>(7.0, 0);
   jv->lower_tols = std::vector<double>(7.0, lower_tol);
   jv->upper_tols = std::vector<double>(7.0, upper_tol);
   jv->first_step = 0;
@@ -397,7 +397,7 @@ TEST_F(CostsTest, inequality_jointAcc)
   // Joint accel also have a cost to some non zero value
   std::shared_ptr<JointAccTermInfo> jv2 = std::shared_ptr<JointAccTermInfo>(new JointAccTermInfo);
   jv2->coeffs = std::vector<double>(7, 1.0);
-  jv2->targs = std::vector<double>(7.0, cost_targ1);
+  jv2->targets = std::vector<double>(7.0, cost_targ1);
   jv2->lower_tols = std::vector<double>(7.0, -0.01);
   jv2->upper_tols = std::vector<double>(7.0, 0.01);
   jv2->first_step = 0;
@@ -408,7 +408,7 @@ TEST_F(CostsTest, inequality_jointAcc)
 
   std::shared_ptr<JointAccTermInfo> jv3 = std::shared_ptr<JointAccTermInfo>(new JointAccTermInfo);
   jv3->coeffs = std::vector<double>(7, 1.0);
-  jv3->targs = std::vector<double>(7.0, cost_targ2);
+  jv3->targets = std::vector<double>(7.0, cost_targ2);
   jv3->lower_tols = std::vector<double>(7.0, -0.01);
   jv3->upper_tols = std::vector<double>(7.0, 0.01);
   jv3->first_step = (pci.basic_info.n_steps - 1) / 2 + 1;
