@@ -10,6 +10,9 @@ find_package(osqp QUIET)
 find_package(qpOASES QUIET)
 find_package(Eigen3 REQUIRED)
 
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(JSONCPP jsoncpp)
+
 set(SCO_SOURCE_FILES
     src/solver_interface.cpp
     src/solver_utils.cpp
@@ -27,7 +30,7 @@ endif()
 
 catkin_package(
   INCLUDE_DIRS include
-  LIBRARIES ${PROJECT_NAME}
+  LIBRARIES ${PROJECT_NAME} ${JSONCPP_LIBRARIES}
   CATKIN_DEPENDS trajopt_utils
 #  DEPENDS system_lib
 )
@@ -37,6 +40,7 @@ include_directories(
   include
   ${catkin_INCLUDE_DIRS}
   SYSTEM ${EIGEN3_INCLUDE_DIRS}
+  SYSTEM ${JSONCPP_INCLUDE_DIRS}
 )
 
 if (HAVE_BPMPD)
@@ -94,6 +98,7 @@ if (qpOASES_FOUND)
   target_link_libraries(${PROJECT_NAME} PRIVATE ${qpOASES_LIBRARIES})
 endif()
 
+target_link_libraries(${PROJECT_NAME} PRIVATE ${JSONCPP_LIBRARIES})
 target_link_libraries(${PROJECT_NAME} PUBLIC ${SCO_LINK_LIBS})
 
 # Mark executables and/or libraries for installation
