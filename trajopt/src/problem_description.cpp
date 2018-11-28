@@ -80,14 +80,14 @@ sco::PenaltyType stringToPenaltyType(std::string str)
  * @param name The name to use when printing an error or warning
  * @param apply_first If true and only one value is given, broadcast value to length of expected_size
  */
-void checkParameterSize(DblVec& parameter,
+void checkParameterSize(trajopt::DblVec& parameter,
                         const unsigned int& expected_size,
                         const std::string& name,
                         const bool& apply_first = true)
 {
   if (apply_first == true && parameter.size() == 1)
   {
-    parameter = DblVec(expected_size, parameter[0]);
+    parameter = trajopt::DblVec(expected_size, parameter[0]);
     ROS_INFO("1 %s given. Applying to all %i joints", name, expected_size);
   }
   else if (parameter.size() != expected_size)
@@ -614,14 +614,14 @@ void JointVelTermInfo::fromJson(ProblemConstructionInfo& pci, const Json::Value&
   const Json::Value& params = v["params"];
 
   unsigned int n_dof = pci.kin->numJoints();
-  childFromJson(params, coeffs, "coeffs");
+  json_marshal::childFromJson(params, coeffs, "coeffs");
 
   // Optional Parameters
-  childFromJson(params, targs, "targs", DblVec(n_dof, 0));
-  childFromJson(params, upper_tols, "upper_tols", DblVec(n_dof, 0));
-  childFromJson(params, lower_tols, "lower_tols", DblVec(n_dof, 0));
-  childFromJson(params, first_step, "first_step", 0);
-  childFromJson(params, last_step, "last_step", pci.basic_info.n_steps - 1);
+  json_marshal::childFromJson(params, targs, "targs", DblVec(n_dof, 0));
+  json_marshal::childFromJson(params, upper_tols, "upper_tols", DblVec(n_dof, 0));
+  json_marshal::childFromJson(params, lower_tols, "lower_tols", DblVec(n_dof, 0));
+  json_marshal::childFromJson(params, first_step, "first_step", 0);
+  json_marshal::childFromJson(params, last_step, "last_step", pci.basic_info.n_steps - 1);
 
   const char* all_fields[] = { "coeffs", "first_step", "last_step", "targs", "lower_tols", "upper_tols" };
   ensure_only_members(params, all_fields, sizeof(all_fields) / sizeof(char*));
@@ -664,21 +664,21 @@ void JointVelTermInfo::hatch(TrajOptProb& prob)
   checkParameterSize(lower_tols, n_dof, "JointVelTermInfo lower_tols", true);
 
   // Check if tolerances are all zeros
-  bool is_upper_zeros = std::all_of(upper_tols.begin(), upper_tols.end(), [](double i) { return doubleEquals(i,0.); });
-  bool is_lower_zeros = std::all_of(lower_tols.begin(), lower_tols.end(), [](double i) { return doubleEquals(i,0.); });
+  bool is_upper_zeros = std::all_of(upper_tols.begin(), upper_tols.end(), [](double i) { return util::doubleEquals(i,0.); });
+  bool is_lower_zeros = std::all_of(lower_tols.begin(), lower_tols.end(), [](double i) { return util::doubleEquals(i,0.); });
 
   if (term_type == TT_COST)
   {
     // If the tolerances are 0, an equality cost is set. Otherwise it's a hinged "inequality" cost
     if (is_upper_zeros && is_lower_zeros)
     {
-      prob.addCost(CostPtr(new JointVelEqCost(prob.GetVars(), toVectorXd(coeffs), toVectorXd(targs), first_step, last_step)));
+      prob.addCost(sco::CostPtr(new JointVelEqCost(prob.GetVars(), util::toVectorXd(coeffs), util::toVectorXd(targs), first_step, last_step)));
       prob.getCosts().back()->setName(name);
     }
     else
     {
-      prob.addCost(CostPtr(new JointVelIneqCost(
-          prob.GetVars(), toVectorXd(coeffs), toVectorXd(targs), toVectorXd(upper_tols), toVectorXd(lower_tols), first_step, last_step)));
+      prob.addCost(sco::CostPtr(new JointVelIneqCost(
+          prob.GetVars(), util::toVectorXd(coeffs), util::toVectorXd(targs), util::toVectorXd(upper_tols), util::toVectorXd(lower_tols), first_step, last_step)));
       prob.getCosts().back()->setName(name);
     }
   }
@@ -688,13 +688,13 @@ void JointVelTermInfo::hatch(TrajOptProb& prob)
     if (is_upper_zeros && is_lower_zeros)
     {
       prob.addConstraint(
-          ConstraintPtr(new JointVelEqConstraint(prob.GetVars(), toVectorXd(coeffs), toVectorXd(targs), first_step, last_step)));
+          sco::ConstraintPtr(new JointVelEqConstraint(prob.GetVars(), util::toVectorXd(coeffs), util::toVectorXd(targs), first_step, last_step)));
       prob.getConstraints().back()->setName(name);
     }
     else
     {
-      prob.addConstraint(ConstraintPtr(new JointVelIneqConstraint(
-          prob.GetVars(), toVectorXd(coeffs), toVectorXd(targs), toVectorXd(upper_tols), toVectorXd(lower_tols), first_step, last_step)));
+      prob.addConstraint(sco::ConstraintPtr(new JointVelIneqConstraint(
+          prob.GetVars(), util::toVectorXd(coeffs), util::toVectorXd(targs), util::toVectorXd(upper_tols), util::toVectorXd(lower_tols), first_step, last_step)));
       prob.getConstraints().back()->setName(name);
     }
   }

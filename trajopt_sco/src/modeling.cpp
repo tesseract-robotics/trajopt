@@ -81,7 +81,7 @@ void ConvexObjective::removeFromModel()
   model_->removeVars(vars_);
   model_ = NULL;
 }
-double ConvexObjective::value(const vector<double>& x) { return quad_.value(x); }
+double ConvexObjective::value(const DblVec& x) { return quad_.value(x); }
 ConvexObjective::~ConvexObjective()
 {
   if (inModel())

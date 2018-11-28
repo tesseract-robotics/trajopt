@@ -114,7 +114,7 @@ TEST_F(CostsTest, equality_jointVel)
   TrajOptProbPtr prob = ConstructProblem(pci);
   ASSERT_TRUE(!!prob);
 
-  BasicTrustRegionSQP opt(prob);
+  sco::BasicTrustRegionSQP opt(prob);
   if (plotting)
   {
     opt.addCallback(PlotCallback(*prob, plotter_));
@@ -123,7 +123,7 @@ TEST_F(CostsTest, equality_jointVel)
   opt.initialize(trajToDblVec(prob->GetInitTraj()));
   double tStart = GetClock();
 
-  OptStatus status = opt.optimize();
+  sco::OptStatus status = opt.optimize();
 
   TrajArray output = getTraj(opt.x(), prob->GetVars());
   std::cout << "Trajectory: \n" << output << "\n";
@@ -165,7 +165,7 @@ TEST_F(CostsTest, inequality_jointVel)
   const double cost_targ2 = -0.5;
 
   const int steps = 10;
-  const double cnt_tol = 0.01;
+  const double cnt_tol = 0.0001;
 
   ProblemConstructionInfo pci(env_);
 
@@ -220,7 +220,7 @@ TEST_F(CostsTest, inequality_jointVel)
   TrajOptProbPtr prob = ConstructProblem(pci);
   ASSERT_TRUE(!!prob);
 
-  BasicTrustRegionSQP opt(prob);
+  sco::BasicTrustRegionSQP opt(prob);
   if (plotting)
   {
     opt.addCallback(PlotCallback(*prob, plotter_));
@@ -229,7 +229,7 @@ TEST_F(CostsTest, inequality_jointVel)
   opt.initialize(trajToDblVec(prob->GetInitTraj()));
   double tStart = GetClock();
 
-  OptStatus status = opt.optimize();
+  sco::OptStatus status = opt.optimize();
   ROS_DEBUG("planning time: %.3f", GetClock() - tStart);
 
   TrajArray output = getTraj(opt.x(), prob->GetVars());
