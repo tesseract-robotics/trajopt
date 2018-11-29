@@ -18,27 +18,224 @@ namespace trajopt
 //////////// Joint cost functions /////////////////
 
 //////////////////// Position /////////////////////
-JointPosCost::JointPosCost(const sco::VarVector& vars, const Eigen::VectorXd& vals, const Eigen::VectorXd& coeffs)
-  : Cost("JointPos"), vars_(vars), vals_(vals), coeffs_(coeffs)
+JointPosEqCost::JointPosEqCost(const VarArray& vars,
+                               const Eigen::VectorXd& coeffs,
+                               const Eigen::VectorXd& targets,
+                               int& first_step,
+                               int& last_step)
+  : Cost("JointPosEq"), vars_(vars), coeffs_(coeffs), targets_(targets), first_step_(first_step), last_step_(last_step)
 {
-  for (std::size_t i = 0; i < vars.size(); ++i)
+  for (int i = first_step_; i <= last_step_; ++i)
   {
-    if (coeffs[i] > 0)
+    for (int j = 0; j < vars.cols(); ++j)
     {
-      sco::AffExpr diff = sco::exprSub(sco::AffExpr(vars[i]), sco::AffExpr(vals[i]));
-      sco::exprInc(expr_, sco::exprMult(sco::exprSquare(diff), coeffs[i]));
+      // pos = x1 - targ
+      sco::AffExpr pos;
+      sco::exprInc(pos, sco::exprMult(vars(i, j), 1));
+      sco::exprDec(pos, targets_[j]);
+      // expr_ = coeff * vel^2
+      sco::exprInc(expr_, sco::exprMult(sco::exprSquare(pos), coeffs_[j]));
     }
   }
 }
-double JointPosCost::value(const DblVec& xvec)
+double JointPosEqCost::value(const DblVec& xvec)
 {
-  Eigen::VectorXd dofs = sco::getVec(xvec, vars_);
-  return ((dofs - vals_).array().square() * coeffs_.array()).sum();
+  // Convert vector from optimization to trajectory
+  Eigen::MatrixXd traj = (getTraj(xvec, vars_));
+  // Takes diff b/n the subsequent rows and subtract each row by the targets_ vector
+  Eigen::MatrixXd diff =
+      (traj.block(first_step_, 0, last_step_ - first_step_ + 1, traj.cols())).rowwise() - targets_.transpose();
+  // Element-wise square it, multiply it by a diagonal matrix of coefficients, and sums output
+  return (diff.array().square().matrix() * coeffs_.asDiagonal()).sum();
 }
-sco::ConvexObjectivePtr JointPosCost::convex(const DblVec& /*x*/, sco::Model* model)
+sco::ConvexObjectivePtr JointPosEqCost::convex(const DblVec& /*x*/, sco::Model* model)
 {
   sco::ConvexObjectivePtr out(new sco::ConvexObjective(model));
   out->addQuadExpr(expr_);
+  return out;
+}
+
+JointPosIneqCost::JointPosIneqCost(const VarArray& vars,
+                                   const Eigen::VectorXd& coeffs,
+                                   const Eigen::VectorXd& targets,
+                                   const Eigen::VectorXd& upper_tols,
+                                   const Eigen::VectorXd& lower_tols,
+                                   int& first_step,
+                                   int& last_step)
+  : Cost("JointPosIneq")
+  , vars_(vars)
+  , coeffs_(coeffs)
+  , upper_tols_(upper_tols)
+  , lower_tols_(lower_tols)
+  , targets_(targets)
+  , first_step_(first_step)
+  , last_step_(last_step)
+{
+  for (int i = first_step_; i <= last_step_; ++i)
+  {
+    for (int j = 0; j < vars.cols(); ++j)
+    {
+      sco::AffExpr expr;
+      sco::AffExpr expr_neg;
+      // pos = x1 - targ
+      sco::AffExpr pos;
+      sco::exprInc(pos, sco::exprMult(vars(i, j), 1));
+      sco::exprDec(pos, targets_[j]);
+      sco::exprInc(expr, upper_tols_[j]);  // expr_ = upper_tol
+
+      // Form upper limit expr = - (upper_tol-(vel-targ))
+      sco::exprDec(expr, pos);           // expr = upper_tol_- (vel - targets_)
+      sco::exprScale(expr, -coeffs[j]);  // expr = - (upper_tol_- (vel - targets_)) * coeffs_
+      expr_vec_.push_back(expr);
+
+      // Form upper limit expr = - (upper_tol-(vel-targ))
+      sco::exprDec(expr_neg, pos);          // expr = lower_tol_- (vel - targets_)
+      sco::exprScale(expr_neg, coeffs[j]);  // expr = (lower_tol_- (vel - targets_)) * coeffs_
+      expr_vec_.push_back(expr_neg);
+    }
+  }
+}
+
+double JointPosIneqCost::value(const DblVec& xvec)
+{
+  // Convert vector from optimization to trajectory
+  Eigen::MatrixXd traj = getTraj(xvec, vars_);
+  // Takes diff b/n the subsequent rows to get velocity
+  Eigen::MatrixXd pos = traj.block(first_step_, 0, last_step_ - first_step_ + 1, traj.cols());
+  // Subtract targets to center about 0 and then subtract from tolerance
+  Eigen::MatrixXd diff0 = (pos.rowwise() - targets_.transpose());
+  Eigen::MatrixXd diff1 = (diff0.rowwise() - upper_tols_.transpose()) * coeffs_.asDiagonal();
+  Eigen::MatrixXd diff2 = ((diff0 * -1).rowwise() + lower_tols_.transpose()) * coeffs_.asDiagonal();
+  // Applies hinge, multiplies it by a diagonal matrix of coefficients, sums each corresponding value, and converts to
+  // vector
+  return diff1.cwiseMax(0).sum() + diff2.cwiseMax(0).sum();
+}
+
+sco::ConvexObjectivePtr JointPosIneqCost::convex(const DblVec& /*x*/, sco::Model* model)
+{
+  sco::ConvexObjectivePtr out(new sco::ConvexObjective(model));
+  // Add hinge cost. Set the coefficient to 1 here since we include it in the AffExpr already
+  // This is necessary since we want a seperate coefficient per joint
+  for (sco::AffExpr expr : expr_vec_)
+  {
+    out->addHinge(expr, 1);
+  }
+  return out;
+}
+
+JointPosEqConstraint::JointPosEqConstraint(const VarArray& vars,
+                                           const Eigen::VectorXd& coeffs,
+                                           const Eigen::VectorXd& targets,
+                                           int& first_step,
+                                           int& last_step)
+  : EqConstraint("JointPosEq")
+  , vars_(vars)
+  , coeffs_(coeffs)
+  , targets_(targets)
+  , first_step_(first_step)
+  , last_step_(last_step)
+{
+  for (int i = first_step_; i <= last_step_; ++i)
+  {
+    for (int j = 0; j < vars.cols(); ++j)
+    {
+      // pos = x1 - targ
+      sco::AffExpr pos;
+      sco::exprInc(pos, sco::exprMult(vars(i, j), 1));
+      sco::exprDec(pos, targets_[j]);
+      // expr_ = coeff * vel - Not squared b/c QuadExpr cnt not yet supported (TODO)
+      expr_vec_.push_back(sco::exprMult(pos, coeffs_[j]));
+    }
+  }
+}
+
+DblVec JointPosEqConstraint::value(const DblVec& xvec)
+{
+  // Convert vector from optimization to trajectory
+  Eigen::MatrixXd traj = getTraj(xvec, vars_);
+  // Takes diff b/n the subsequent rows and subtract each row by the targets_ vector
+  Eigen::MatrixXd diff =
+      (traj.block(first_step_, 0, last_step_ - first_step_ + 1, traj.cols())).rowwise() - targets_.transpose();
+  // Squares it, multiplies it by a diagonal matrix of coefficients, and converts to vector
+  return util::toDblVec((diff.array().square()).matrix() * coeffs_.asDiagonal());
+}
+sco::ConvexConstraintsPtr JointPosEqConstraint::convex(const DblVec& /*x*/, sco::Model* model)
+{
+  sco::ConvexConstraintsPtr out(new sco::ConvexConstraints(model));
+  for (sco::AffExpr expr : expr_vec_)
+  {
+    out->addEqCnt(expr);
+  }
+  return out;
+}
+
+JointPosIneqConstraint::JointPosIneqConstraint(const VarArray& vars,
+                                               const Eigen::VectorXd& coeffs,
+                                               const Eigen::VectorXd& targets,
+                                               const Eigen::VectorXd& upper_tols,
+                                               const Eigen::VectorXd& lower_tols,
+                                               int& first_step,
+                                               int& last_step)
+  : IneqConstraint("JointPosIneq")
+  , vars_(vars)
+  , coeffs_(coeffs)
+  , upper_tols_(upper_tols)
+  , lower_tols_(lower_tols)
+  , targets_(targets)
+  , first_step_(first_step)
+  , last_step_(last_step)
+{
+  for (int i = first_step_; i <= last_step_; ++i)
+  {
+    for (int j = 0; j < vars.cols(); ++j)
+    {
+      sco::AffExpr expr;
+      sco::AffExpr expr_neg;
+      // pos = x1 - targ
+      sco::AffExpr pos;
+      sco::exprInc(pos, sco::exprMult(vars(i, j), 1));
+      sco::exprDec(pos, targets_[j]);
+      sco::exprInc(expr, upper_tols_[j]);  // expr_ = upper_tol
+
+      // Form upper limit expr = - (upper_tol-(vel-targ))
+      sco::exprDec(expr, pos);          // expr = upper_tol_- (vel - targets_)
+      sco::exprScale(expr, -coeffs[j]);  // expr = - (upper_tol_- (vel - targets_)) * coeffs_
+      expr_vec_.push_back(expr);
+
+      // Form lower limit expr = (upper_tol-(vel-targ))
+      sco::exprDec(expr_neg, pos);          // expr = lower_tol_- (vel - targets_)
+      sco::exprScale(expr_neg, coeffs[j]);  // expr = (lower_tol_- (vel - targets_)) * coeffs_
+      expr_vec_.push_back(expr_neg);
+    }
+  }
+}
+
+DblVec JointPosIneqConstraint::value(const DblVec& xvec)
+{
+  // Convert vector from optimization to trajectory
+  Eigen::MatrixXd traj = getTraj(xvec, vars_);
+  // Takes diff b/n the subsequent rows to get velocity
+  Eigen::MatrixXd pos = diffAxis0(traj.block(first_step_, 0, last_step_ - first_step_ + 1, traj.cols()));
+  // Subtract targets to center about 0 and then subtract from tolerance
+  Eigen::MatrixXd diff0 = (pos.rowwise() - targets_.transpose());
+  Eigen::MatrixXd diff1 = (diff0.rowwise() - upper_tols_.transpose()) * coeffs_.asDiagonal();
+  Eigen::MatrixXd diff2 = ((diff0 * -1).rowwise() + lower_tols_.transpose()) * coeffs_.asDiagonal();
+  // Applies hinge, multiplies it by a diagonal matrix of coefficients, sums each corresponding value, and converts to
+  // vector
+  Eigen::MatrixXd out(diff1.rows(), diff1.cols() + diff2.cols());
+  out << diff1, diff2;
+  return util::toDblVec(out);
+}
+
+sco::ConvexConstraintsPtr JointPosIneqConstraint::convex(const DblVec& /*x*/, sco::Model* model)
+{
+  sco::ConvexConstraintsPtr out(new sco::ConvexConstraints(model));
+  // Add hinge cost. Set the coefficient to 1 here since we include it in the AffExpr already
+  // This is necessary since we want a seperate coefficient per joint
+  for (sco::AffExpr expr : expr_vec_)
+  {
+    out->addIneqCnt(expr);
+  }
   return out;
 }
 
@@ -97,7 +294,6 @@ JointVelIneqCost::JointVelIneqCost(const VarArray& vars,
   , first_step_(first_step)
   , last_step_(last_step)
 {
-
   for (int i = first_step_; i <= last_step_ - 1; ++i)
   {
     for (int j = 0; j < vars.cols(); ++j)
@@ -108,7 +304,7 @@ JointVelIneqCost::JointVelIneqCost(const VarArray& vars,
       sco::AffExpr expr_neg;
       sco::exprInc(vel, sco::exprMult(vars(i, j), -1));
       sco::exprInc(vel, sco::exprMult(vars(i + 1, j), 1));
-      sco::exprDec(vel, targets_[j]);      // offset to center about 0
+      sco::exprDec(vel, targets_[j]);  // offset to center about 0
 
       // Form upper limit expr = - (upper_tol-(vel-targ))
       sco::exprInc(expr, upper_tols_[j]);  // expr_ = upper_tol
@@ -215,7 +411,6 @@ JointVelIneqConstraint::JointVelIneqConstraint(const VarArray& vars,
   , first_step_(first_step)
   , last_step_(last_step)
 {
-
   for (int i = first_step_; i <= last_step_ - 1; ++i)
   {
     for (int j = 0; j < vars.cols(); ++j)
@@ -226,7 +421,7 @@ JointVelIneqConstraint::JointVelIneqConstraint(const VarArray& vars,
       sco::AffExpr expr_neg;
       sco::exprInc(vel, sco::exprMult(vars(i, j), -1));
       sco::exprInc(vel, sco::exprMult(vars(i + 1, j), 1));
-      sco::exprDec(vel, targets_[j]);      // offset to center about 0
+      sco::exprDec(vel, targets_[j]);  // offset to center about 0
 
       // Form upper limit expr = - (upper_tol-(vel-targ))
       sco::exprInc(expr, upper_tols_[j]);  // expr_ = upper_tol
@@ -330,12 +525,10 @@ JointAccIneqCost::JointAccIneqCost(const VarArray& vars,
   , first_step_(first_step)
   , last_step_(last_step)
 {
-
   for (int i = first_step_; i <= last_step_ - 2; ++i)
   {
     for (int j = 0; j < vars.cols(); ++j)
     {
-
       // acc = (x3 - 2*x2 + x1) - targ
       sco::AffExpr acc;
       sco::AffExpr expr;
@@ -343,7 +536,7 @@ JointAccIneqCost::JointAccIneqCost(const VarArray& vars,
       sco::exprInc(acc, sco::exprMult(vars(i, j), 1.0));
       sco::exprInc(acc, sco::exprMult(vars(i + 1, j), -2.0));
       sco::exprInc(acc, sco::exprMult(vars(i + 2, j), 1.0));
-      sco::exprDec(acc, targets_[j]);      // offset to center about 0
+      sco::exprDec(acc, targets_[j]);  // offset to center about 0
 
       // Form upper limit expr = - (upper_tol-(acc-targ))
       sco::exprInc(expr, upper_tols_[j]);  // expr_ = upper_tol
@@ -458,7 +651,6 @@ JointAccIneqConstraint::JointAccIneqConstraint(const VarArray& vars,
   {
     for (int j = 0; j < vars.cols(); ++j)
     {
-
       // acc = (x3 - 2*x2 + x1) - targ
       sco::AffExpr acc;
       sco::AffExpr expr;
@@ -466,7 +658,7 @@ JointAccIneqConstraint::JointAccIneqConstraint(const VarArray& vars,
       sco::exprInc(acc, sco::exprMult(vars(i, j), 1.0));
       sco::exprInc(acc, sco::exprMult(vars(i + 1, j), -2.0));
       sco::exprInc(acc, sco::exprMult(vars(i + 2, j), 1.0));
-      sco::exprDec(acc, targets_[j]);      // offset to center about 0
+      sco::exprDec(acc, targets_[j]);  // offset to center about 0
 
       // Form upper limit expr = - (upper_tol-(vel-targ))
       sco::exprInc(expr, upper_tols_[j]);  // expr_ = upper_tol
@@ -572,7 +764,6 @@ JointJerkIneqCost::JointJerkIneqCost(const VarArray& vars,
   , first_step_(first_step)
   , last_step_(last_step)
 {
-
   for (int i = first_step_; i <= last_step_ - 4; ++i)
   {
     for (int j = 0; j < vars.cols(); ++j)
@@ -698,13 +889,10 @@ JointJerkIneqConstraint::JointJerkIneqConstraint(const VarArray& vars,
   , first_step_(first_step)
   , last_step_(last_step)
 {
-
   for (int i = first_step_; i <= last_step_ - 2; ++i)
   {
     for (int j = 0; j < vars.cols(); ++j)
     {
-
-
       sco::AffExpr jerk;
       sco::AffExpr expr;
       sco::AffExpr expr_neg;
@@ -713,7 +901,7 @@ JointJerkIneqConstraint::JointJerkIneqConstraint(const VarArray& vars,
       sco::exprInc(jerk, sco::exprMult(vars(i + 2, j), 0.0));
       sco::exprInc(jerk, sco::exprMult(vars(i + 3, j), -1.0));
       sco::exprInc(jerk, sco::exprMult(vars(i + 4, j), 1.0 / 2.0));
-      sco::exprDec(jerk, targets_[j]);     // offset to center about 0
+      sco::exprDec(jerk, targets_[j]);  // offset to center about 0
 
       // Form upper limit expr = - (upper_tol-(vel-targ))
       sco::exprInc(expr, upper_tols_[j]);  // expr_ = upper_tol
