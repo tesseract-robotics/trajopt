@@ -7,6 +7,14 @@
 
 namespace sco
 {
+const std::vector<std::string> ConvexSolver::SOLVER_NAMES_ = {
+  "GUROBI",
+  "BPMPD",
+  "OSQP",
+  "QPOASES",
+  "AUTO_SOLVER"
+};
+
 IntVec vars2inds(const VarVector& vars)
 {
   IntVec inds(vars.size());
@@ -117,11 +125,13 @@ std::ostream& operator<<(std::ostream& o, const Var& v)
     o << "nullvar";
   return o;
 }
+
 std::ostream& operator<<(std::ostream& o, const Cnt& c)
 {
   o << c.cnt_rep->expr << ((c.cnt_rep->type == EQ) ? " == 0" : " <= 0");
   return o;
 }
+
 std::ostream& operator<<(std::ostream& o, const AffExpr& e)
 {
   o << e.constant;
@@ -131,6 +141,7 @@ std::ostream& operator<<(std::ostream& o, const AffExpr& e)
   }
   return o;
 }
+
 std::ostream& operator<<(std::ostream& o, const QuadExpr& e)
 {
   o << e.affexpr;
@@ -141,6 +152,19 @@ std::ostream& operator<<(std::ostream& o, const QuadExpr& e)
   return o;
 }
 
+std::ostream& operator<<(std::ostream& o, const ConvexSolver& cs)
+{
+  int cs_ivalue_ = static_cast<int>(cs.value_);
+  if (cs_ivalue_ > cs.SOLVER_NAMES_.size())
+  {
+    std::stringstream conversion_error;
+    conversion_error << "Error converting ConvexSolver to string - "
+                     << "enum value is " << cs_ivalue_ << std::endl;
+    throw std::runtime_error(conversion_error.str());
+  }
+  o << ConvexSolver::SOLVER_NAMES_[cs_ivalue_];
+  return o;
+}
 
 ConvexSolver::ConvexSolver()
 {
@@ -159,18 +183,15 @@ ConvexSolver::ConvexSolver(const int& v)
 
 ConvexSolver::ConvexSolver(const std::string& s)
 {
-    if (s == "GUROBI")
-      value_ = ConvexSolver::GUROBI;
-    else if (s == "BPMPD")
-      value_ = ConvexSolver::BPMPD;
-    else if (s == "OSQP")
-      value_ = ConvexSolver::OSQP;
-    else if (s == "QPOASES")
-      value_ = ConvexSolver::QPOASES;
-    else if (s == "AUTO_SOLVER")
-      value_ == ConvexSolver::AUTO_SOLVER;
-    else
-      PRINT_AND_THROW(boost::format("invalid solver name:\"%s\"") % s);
+  for (unsigned int i = 0; i < ConvexSolver::SOLVER_NAMES_.size(); ++i)
+  {
+    if (s == ConvexSolver::SOLVER_NAMES_[i])
+    {
+      value_ = static_cast<ConvexSolver::Value>(i);
+      return;
+    }
+  }
+  PRINT_AND_THROW(boost::format("invalid solver name:\"%s\"") % s);
 }
 
 ConvexSolver::operator int() const
@@ -178,17 +199,17 @@ ConvexSolver::operator int() const
   return static_cast<int>(value_);
 }
 
-bool ConvexSolver::operator==(ConvexSolver::Value a) const
+bool ConvexSolver::operator==(const ConvexSolver::Value& a) const
 {
   return value_ == a;
 }
 
-bool ConvexSolver::operator==(ConvexSolver a) const
+bool ConvexSolver::operator==(const ConvexSolver& a) const
 {
   return value_ == a.value_;
 }
 
-bool ConvexSolver::operator!=(ConvexSolver a) const
+bool ConvexSolver::operator!=(const ConvexSolver& a) const
 {
   return value_ != a.value_;
 }
@@ -255,7 +276,7 @@ ModelPtr createModel(ConvexSolver convex_solver)
 
   if (solver == ConvexSolver::AUTO_SOLVER)
   {
-    if (solver_env)
+    if (solver_env and std::string(solver_env) != "AUTO_SOLVER")
     {
       try
       {
@@ -305,7 +326,10 @@ ModelPtr createModel(ConvexSolver convex_solver)
   if (solver == ConvexSolver::QPOASES)
     return createqpOASESModel();
 #endif
-  PRINT_AND_THROW("Failed to create solver");
+  std::stringstream solver_instatiation_error;
+  solver_instatiation_error << "Failed to create solver: unknown solver "
+                            << solver << std::endl;
+  PRINT_AND_THROW(solver_instatiation_error.str());
   return ModelPtr();
 }
 }

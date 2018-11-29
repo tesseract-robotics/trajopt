@@ -160,20 +160,26 @@ public:
   AUTO_SOLVER
   };
 
+  static const std::vector<std::string> SOLVER_NAMES_;
+
   ConvexSolver();
-  ConvexSolver(const Value& v);
+  ConvexSolver(const ConvexSolver::Value& v);
   ConvexSolver(const int& v);
   ConvexSolver(const std::string& s);
   operator int() const;
-  bool operator==(Value a) const;
-  bool operator==(ConvexSolver a) const;
-  bool operator!=(ConvexSolver a) const;
+  bool operator==(const ConvexSolver::Value& a) const;
+  bool operator==(const ConvexSolver& a) const;
+  bool operator!=(const ConvexSolver& a) const;
   void fromJson(const Json::Value& v);
+  friend std::ostream& operator<<(std::ostream& os, const ConvexSolver& cs);
 private:
+
   Value value_;
 };
 
 std::vector<ConvexSolver> availableSolvers();
+
+std::ostream& operator<<(std::ostream& os, const ConvexSolver& cs);
 
 ModelPtr createModel(ConvexSolver convex_solver = ConvexSolver::AUTO_SOLVER);
 
