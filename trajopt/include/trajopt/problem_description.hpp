@@ -12,7 +12,6 @@ struct OptResults;
 
 namespace trajopt
 {
-
 typedef Json::Value TrajOptRequest;
 typedef Json::Value TrajOptResponse;
 
@@ -133,6 +132,7 @@ struct TRAJOPT_API TermInfo
   static void RegisterMaker(const std::string& type, MakerFunc);
 
   virtual ~TermInfo() {}
+
 private:
   static std::map<std::string, MakerFunc> name2maker;
 };
@@ -263,7 +263,25 @@ struct JointPosTermInfo : public TermInfo, public MakesCost, public MakesConstra
 };
 
 /**
-\brief Used to apply cost/constraint to joint-space velocity
+@brief Used to apply cost/constraint to joint-space velocity
+
+Term is applied to every step between first_step and last_step. It applies two limits, upper_limits/lower_limits,
+to the joint velocity subject to the following cases.
+
+* term_type = TT_COST
+** upper_limit = lower_limit = 0 - Cost is applied with a SQUARED error scaled for each joint by coeffs
+** upper_limit != lower_limit - 2 hinge costs are applied scaled for each joint by coeffs. If velocity < upper_limit and
+velocity > lower_limit, no penalty.
+
+* term_type = TT_CNT
+** upper_limit = lower_limit = 0 - Equality constraint is applied
+** upper_limit != lower_limit - 2 Inequality constraints are applied. These are both satisfied when velocity <
+upper_limit and velocity > lower_limit
+
+Note: targets, upper_limits, and lower_limits are optional. If a term is not given it will default to 0 for all joints. If
+one value is given, this will be broadcast to all joints.
+
+Note: Velocity is calculated numerically using forward finite difference
 
 \f{align*}{
   cost = \sum_{t=0}^{T-2} \sum_j c_j (x_{t+1,j} - x_{t,j})^2
@@ -272,11 +290,17 @@ where j indexes over DOF, and \f$c_j\f$ are the coeffs.
 */
 struct JointVelTermInfo : public TermInfo, public MakesCost, public MakesConstraint
 {
-  /** @brief For TT_COST: coefficient that scales cost. For TT_CNT: Velocity limit */
+  /** @brief Vector of coefficients that scales cost for each joint. */
   DblVec coeffs;
-  /** @brief First time step to which the term is applied */
+  /** @brief Vector of velocity targets. Default: 0 */
+  DblVec targets;
+  /** @brief Vector of velocity upper limits. Default: 0 */
+  DblVec upper_tols;
+  /** @brief Vector of velocity lower limits. Default: 0 */
+  DblVec lower_tols;
+  /** @brief First time step to which the term is applied*/
   int first_step;
-  /** @brief Last time step to which the term is applied */
+  /** @brief Last time step to which the term is applied*/
   int last_step;
   /** @brief Used to add term to pci from json */
   void fromJson(ProblemConstructionInfo& pci, const Json::Value& v);
@@ -286,12 +310,36 @@ struct JointVelTermInfo : public TermInfo, public MakesCost, public MakesConstra
 };
 
 /**
- * @brief  Used to apply cost/constraint to joint-space acceleration
- */
+@brief Used to apply cost/constraint to joint-space acceleration
+
+Term is applied to every step between first_step and last_step. It applies two limits, upper_limits/lower_limits,
+to the joint velocity subject to the following cases.
+
+* term_type = TT_COST
+** upper_limit = lower_limit = 0 - Cost is applied with a SQUARED error scaled for each joint by coeffs
+** upper_limit != lower_limit - 2 hinge costs are applied scaled for each joint by coeffs. If acceleration < upper_limit
+and acceleration > lower_limit, no penalty.
+
+* term_type = TT_CNT
+** upper_limit = lower_limit = 0 - Equality constraint is applied
+** upper_limit != lower_limit - 2 Inequality constraints are applied. These are both satisfied when acceleration <
+upper_limit and acceleration > lower_limit
+
+Note: targets, upper_limits, and lower_limits are optional. If a term is not given it will default to 0 for all joints. If
+one value is given, this will be broadcast to all joints.
+
+Note: Acceleration is calculated numerically using central finite difference
+*/
 struct JointAccTermInfo : public TermInfo, public MakesCost, public MakesConstraint
 {
   /** @brief For TT_COST: coefficient that scales cost. For TT_CNT: Acceleration limit*/
   DblVec coeffs;
+  /** @brief Vector of accel targets. Default: 0 */
+  DblVec targets;
+  /** @brief Vector of accel upper limits. Default: 0 */
+  DblVec upper_tols;
+  /** @brief Vector of accel lower limits. Default: 0 */
+  DblVec lower_tols;
   /** @brief First time step to which the term is applied */
   int first_step;
   /** @brief Last time step to which the term is applied */
@@ -304,12 +352,36 @@ struct JointAccTermInfo : public TermInfo, public MakesCost, public MakesConstra
 };
 
 /**
- * @brief Used to apply cost/constraint to joint-space jerk
- */
+@brief Used to apply cost/constraint to joint-space jerk
+
+Term is applied to every step between first_step and last_step. It applies two limits, upper_limits/lower_limits,
+to the joint velocity subject to the following cases.
+
+* term_type = TT_COST
+** upper_limit = lower_limit = 0 - Cost is applied with a SQUARED error scaled for each joint by coeffs
+** upper_limit != lower_limit - 2 hinge costs are applied scaled for each joint by coeffs. If jerk < upper_limit and
+jerk > lower_limit, no penalty.
+
+* term_type = TT_CNT
+** upper_limit = lower_limit = 0 - Equality constraint is applied
+** upper_limit != lower_limit - 2 Inequality constraints are applied. These are both satisfied when jerk <
+upper_limit and jerk > lower_limit
+
+Note: targets, upper_limits, and lower_limits are optional. If a term is not given it will default to 0 for all joints. If
+one value is given, this will be broadcast to all joints.
+
+Note: Jerk is calculated numerically using central finite difference
+*/
 struct JointJerkTermInfo : public TermInfo, public MakesCost, public MakesConstraint
 {
   /** @brief For TT_COST: coefficient that scales cost. For TT_CNT: Jerk limit */
   DblVec coeffs;
+  /** @brief Vector of jerk targets. Default: 0 */
+  DblVec targets;
+  /** @brief Vector of jerk upper limits. Default: 0 */
+  DblVec upper_tols;
+  /** @brief Vector of jerk lower limits. Default: 0 */
+  DblVec lower_tols;
   /** @brief First time step to which the term is applied */
   int first_step;
   /** @brief Last time step to which the term is applied */
@@ -356,4 +428,4 @@ struct CollisionTermInfo : public TermInfo, public MakesCost
   DEFINE_CREATE(CollisionTermInfo)
 };
 
-}
+}  // namespace trajopt

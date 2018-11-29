@@ -1,0 +1,5 @@
+<?xml version="1.0"?>
+<launch>
+  <include file="$(find trajopt_test_support)/launch/load_arm_around_table.launch" />
+  <test test-name="trajopt_costs_unit" pkg="trajopt" type="trajopt_costs_unit" />
+</launch>

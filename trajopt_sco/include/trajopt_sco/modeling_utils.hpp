@@ -103,4 +103,7 @@ protected:
   double epsilon_;
   Eigen::VectorXd scaling_;
 };
+
+std::string AffExprToString(const AffExpr& aff);
+
 }

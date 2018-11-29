@@ -10,6 +10,8 @@ namespace trajopt
 {
 struct CollisionEvaluator
 {
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
   CollisionEvaluator(tesseract::BasicKinConstPtr manip,
                      tesseract::BasicEnvConstPtr env,
                      SafetyMarginDataConstPtr safety_margin_data)

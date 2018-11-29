@@ -11,6 +11,7 @@
 #include <trajopt_utils/eigen_conversions.hpp>
 #include <trajopt_utils/eigen_slicing.hpp>
 #include <trajopt_utils/logging.hpp>
+#include <trajopt_utils/vector_ops.hpp>
 #include <ros/ros.h>
 
 namespace
@@ -72,6 +73,29 @@ sco::PenaltyType stringToPenaltyType(std::string str)
   }
 }
 
+/**
+ * @brief Checks the size of the parameter given and throws if incorrect
+ * @param parameter The vector whose size is getting checked
+ * @param expected_size The expected size of the vector
+ * @param name The name to use when printing an error or warning
+ * @param apply_first If true and only one value is given, broadcast value to length of expected_size
+ */
+void checkParameterSize(trajopt::DblVec& parameter,
+                        const unsigned int& expected_size,
+                        const std::string& name,
+                        const bool& apply_first = true)
+{
+  if (apply_first == true && parameter.size() == 1)
+  {
+    parameter = trajopt::DblVec(expected_size, parameter[0]);
+    ROS_INFO("1 %s given. Applying to all %i joints", name, expected_size);
+  }
+  else if (parameter.size() != expected_size)
+  {
+    PRINT_AND_THROW(boost::format("wrong number of %s. expected %i got %i") % name % expected_size % parameter.size());
+  }
+}
+
 #if 0
 BoolVec toMask(const VectorXd& x) {
   BoolVec out(x.size());
@@ -113,16 +137,20 @@ void ProblemConstructionInfo::readBasicInfo(const Json::Value& v)
 
 void ProblemConstructionInfo::readOptInfo(const Json::Value& v)
 {
-  json_marshal::childFromJson(v, opt_info.improve_ratio_threshold, "improve_ratio_threshold", opt_info.improve_ratio_threshold);
+  json_marshal::childFromJson(
+      v, opt_info.improve_ratio_threshold, "improve_ratio_threshold", opt_info.improve_ratio_threshold);
   json_marshal::childFromJson(v, opt_info.min_trust_box_size, "min_trust_box_size", opt_info.min_trust_box_size);
   json_marshal::childFromJson(v, opt_info.min_approx_improve, "min_approx_improve", opt_info.min_approx_improve);
-  json_marshal::childFromJson(v, opt_info.min_approx_improve_frac, "min_approx_improve_frac", opt_info.min_approx_improve_frac);
+  json_marshal::childFromJson(
+      v, opt_info.min_approx_improve_frac, "min_approx_improve_frac", opt_info.min_approx_improve_frac);
   json_marshal::childFromJson(v, opt_info.max_iter, "max_iter", opt_info.max_iter);
   json_marshal::childFromJson(v, opt_info.trust_shrink_ratio, "trust_shrink_ratio", opt_info.trust_shrink_ratio);
   json_marshal::childFromJson(v, opt_info.trust_expand_ratio, "trust_expand_ratio", opt_info.trust_expand_ratio);
   json_marshal::childFromJson(v, opt_info.cnt_tolerance, "cnt_tolerance", opt_info.cnt_tolerance);
-  json_marshal::childFromJson(v, opt_info.max_merit_coeff_increases, "max_merit_coeff_increases", opt_info.max_merit_coeff_increases);
-  json_marshal::childFromJson(v, opt_info.merit_coeff_increase_ratio, "merit_coeff_increase_ratio", opt_info.merit_coeff_increase_ratio);
+  json_marshal::childFromJson(
+      v, opt_info.max_merit_coeff_increases, "max_merit_coeff_increases", opt_info.max_merit_coeff_increases);
+  json_marshal::childFromJson(
+      v, opt_info.merit_coeff_increase_ratio, "merit_coeff_increase_ratio", opt_info.merit_coeff_increase_ratio);
   json_marshal::childFromJson(v, opt_info.max_time, "max_time", opt_info.max_time);
   json_marshal::childFromJson(v, opt_info.merit_error_coeff, "merit_error_coeff", opt_info.merit_error_coeff);
   json_marshal::childFromJson(v, opt_info.trust_box_size, "trust_box_size", opt_info.trust_box_size);
@@ -260,7 +288,8 @@ void ProblemConstructionInfo::fromJson(const Json::Value& v)
   }
 }
 
-TrajOptResult::TrajOptResult(sco::OptResults& opt, TrajOptProb& prob) : cost_vals(opt.cost_vals), cnt_viols(opt.cnt_viols)
+TrajOptResult::TrajOptResult(sco::OptResults& opt, TrajOptProb& prob)
+  : cost_vals(opt.cost_vals), cnt_viols(opt.cnt_viols)
 {
   for (const sco::CostPtr& cost : prob.getCosts())
   {
@@ -323,7 +352,9 @@ TrajOptProbPtr ConstructProblem(const ProblemConstructionInfo& pci)
     {
       for (int i = 1; i < prob->GetNumSteps(); ++i)
       {
-        prob->addLinearConstraint(sco::exprSub(sco::AffExpr(prob->m_traj_vars(i, dof_ind)), sco::AffExpr(prob->m_traj_vars(0, dof_ind))), sco::EQ);
+        prob->addLinearConstraint(
+            sco::exprSub(sco::AffExpr(prob->m_traj_vars(i, dof_ind)), sco::AffExpr(prob->m_traj_vars(0, dof_ind))),
+            sco::EQ);
       }
     }
   }
@@ -417,11 +448,13 @@ void DynamicCartPoseTermInfo::hatch(TrajOptProb& prob)
   sco::VectorOfVectorPtr f(new DynamicCartPoseErrCalculator(target, prob.GetKin(), prob.GetEnv(), link, tcp));
   if (term_type == TT_COST)
   {
-    prob.addCost(sco::CostPtr(new TrajOptCostFromErrFunc(f, prob.GetVarRow(timestep), concat(rot_coeffs, pos_coeffs), sco::ABS, name)));
+    prob.addCost(sco::CostPtr(
+        new TrajOptCostFromErrFunc(f, prob.GetVarRow(timestep), concat(rot_coeffs, pos_coeffs), sco::ABS, name)));
   }
   else if (term_type == TT_CNT)
   {
-    prob.addConstraint(sco::ConstraintPtr(new TrajOptConstraintFromErrFunc(f, prob.GetVarRow(timestep), concat(rot_coeffs, pos_coeffs), sco::EQ, name)));
+    prob.addConstraint(sco::ConstraintPtr(
+        new TrajOptConstraintFromErrFunc(f, prob.GetVarRow(timestep), concat(rot_coeffs, pos_coeffs), sco::EQ, name)));
   }
   else
   {
@@ -476,11 +509,13 @@ void CartPoseTermInfo::hatch(TrajOptProb& prob)
   sco::VectorOfVectorPtr f(new CartPoseErrCalculator(input_pose, prob.GetKin(), prob.GetEnv(), link, tcp));
   if (term_type == TT_COST)
   {
-    prob.addCost(sco::CostPtr(new TrajOptCostFromErrFunc(f, prob.GetVarRow(timestep), concat(rot_coeffs, pos_coeffs), sco::ABS, name)));
+    prob.addCost(sco::CostPtr(
+        new TrajOptCostFromErrFunc(f, prob.GetVarRow(timestep), concat(rot_coeffs, pos_coeffs), sco::ABS, name)));
   }
   else if (term_type == TT_CNT)
   {
-    prob.addConstraint(sco::ConstraintPtr(new TrajOptConstraintFromErrFunc(f, prob.GetVarRow(timestep), concat(rot_coeffs, pos_coeffs), sco::EQ, name)));
+    prob.addConstraint(sco::ConstraintPtr(
+        new TrajOptConstraintFromErrFunc(f, prob.GetVarRow(timestep), concat(rot_coeffs, pos_coeffs), sco::EQ, name)));
   }
   else
   {
@@ -568,7 +603,8 @@ void JointPosTermInfo::hatch(TrajOptProb& prob)
 {
   if (term_type == TT_COST)
   {
-    prob.addCost(sco::CostPtr(new JointPosCost(prob.GetVarRow(timestep), util::toVectorXd(vals), util::toVectorXd(coeffs))));
+    prob.addCost(
+        sco::CostPtr(new JointPosCost(prob.GetVarRow(timestep), util::toVectorXd(vals), util::toVectorXd(coeffs))));
     prob.getCosts().back()->setName(name);
   }
   else if (term_type == TT_CNT)
@@ -591,47 +627,104 @@ void JointVelTermInfo::fromJson(ProblemConstructionInfo& pci, const Json::Value&
   FAIL_IF_FALSE(v.isMember("params"));
   const Json::Value& params = v["params"];
 
+  unsigned int n_dof = pci.kin->numJoints();
   json_marshal::childFromJson(params, coeffs, "coeffs");
+
+  // Optional Parameters
+  json_marshal::childFromJson(params, targets, "targets", DblVec(n_dof, 0));
+  json_marshal::childFromJson(params, upper_tols, "upper_tols", DblVec(n_dof, 0));
+  json_marshal::childFromJson(params, lower_tols, "lower_tols", DblVec(n_dof, 0));
   json_marshal::childFromJson(params, first_step, "first_step", 0);
   json_marshal::childFromJson(params, last_step, "last_step", pci.basic_info.n_steps - 1);
-  unsigned n_dof = pci.kin->numJoints();
-  if (coeffs.size() == 1)
-  {
-    coeffs = DblVec(n_dof, coeffs[0]);
-    ROS_INFO("1 JointVelTermInfo coefficient given. Applying to all %i joints", n_dof);
-  }
-  else if (coeffs.size() != n_dof)
-  {
-    PRINT_AND_THROW(boost::format("wrong number of coeffs. expected %i got %i") % n_dof % coeffs.size());
-  }
 
-  const char* all_fields[] = { "coeffs", "first_step", "last_step" };
+  const char* all_fields[] = { "coeffs", "first_step", "last_step", "targets", "lower_tols", "upper_tols" };
   ensure_only_members(params, all_fields, sizeof(all_fields) / sizeof(char*));
 }
 
 void JointVelTermInfo::hatch(TrajOptProb& prob)
 {
+  if ((term_type != TT_COST) && (term_type != TT_CNT))
+  {
+    ROS_WARN("JointVelTermInfo does not have a term_type defined. No cost/constraint applied");
+  }
+  unsigned int n_dof = prob.GetKin()->getJointNames().size();
+
+  // If target or tolerance is not given, set all to 0
+  if (targets.empty())
+    targets = DblVec(n_dof, 0);
+  if (upper_tols.empty())
+    upper_tols = DblVec(n_dof, 0);
+  if (lower_tols.empty())
+    lower_tols = DblVec(n_dof, 0);
+
+  // If only one time step is desired, calculate velocity with next step (2 steps are needed for 1 velocity calculation)
+  if ((prob.GetNumSteps() - 2) <= first_step)
+    first_step = prob.GetNumSteps() - 2;
+  if ((prob.GetNumSteps() - 1) <= last_step)
+    last_step = prob.GetNumSteps() - 1;
+  if (last_step == first_step)
+    last_step += 1;
+  if (last_step < first_step)
+  {
+    int tmp = first_step;
+    first_step = last_step;
+    last_step = tmp;
+    ROS_WARN("Last time step for JointVelTerm comes before first step. Reversing them.");
+  }
+
+  // Check if parameters are the correct size.
+  checkParameterSize(coeffs, n_dof, "JointVelTermInfo coeffs", true);
+  checkParameterSize(targets, n_dof, "JointVelTermInfo upper_tols", true);
+  checkParameterSize(upper_tols, n_dof, "JointVelTermInfo upper_tols", true);
+  checkParameterSize(lower_tols, n_dof, "JointVelTermInfo lower_tols", true);
+
+  // Check if tolerances are all zeros
+  bool is_upper_zeros =
+      std::all_of(upper_tols.begin(), upper_tols.end(), [](double i) { return util::doubleEquals(i, 0.); });
+  bool is_lower_zeros =
+      std::all_of(lower_tols.begin(), lower_tols.end(), [](double i) { return util::doubleEquals(i, 0.); });
+
   if (term_type == TT_COST)
   {
-    prob.addCost(sco::CostPtr(new JointVelCost(prob.GetVars(), util::toVectorXd(coeffs))));
-    prob.getCosts().back()->setName(name);
+    // If the tolerances are 0, an equality cost is set. Otherwise it's a hinged "inequality" cost
+    if (is_upper_zeros && is_lower_zeros)
+    {
+      prob.addCost(sco::CostPtr(new JointVelEqCost(
+          prob.GetVars(), util::toVectorXd(coeffs), util::toVectorXd(targets), first_step, last_step)));
+      prob.getCosts().back()->setName(name);
+    }
+    else
+    {
+      prob.addCost(sco::CostPtr(new JointVelIneqCost(prob.GetVars(),
+                                                     util::toVectorXd(coeffs),
+                                                     util::toVectorXd(targets),
+                                                     util::toVectorXd(upper_tols),
+                                                     util::toVectorXd(lower_tols),
+                                                     first_step,
+                                                     last_step)));
+      prob.getCosts().back()->setName(name);
+    }
   }
   else if (term_type == TT_CNT)
   {
-    // Calculate velocity as ((i+1) - i)/dt where dt=1
-    for (int i = first_step; i <= last_step - 1; ++i)
+    // If the tolerances are 0, an equality cnt is set. Otherwise it's an inequality constraint
+    if (is_upper_zeros && is_lower_zeros)
     {
-      for (std::size_t j = 0; j < coeffs.size(); ++j)
-      {
-        sco::AffExpr vel = prob.GetVar(i + 1, j) - prob.GetVar(i, j);
-        prob.addLinearConstraint(vel - coeffs[j], sco::INEQ);
-        prob.addLinearConstraint(-vel - coeffs[j], sco::INEQ);
-      }
+      prob.addConstraint(sco::ConstraintPtr(new JointVelEqConstraint(
+          prob.GetVars(), util::toVectorXd(coeffs), util::toVectorXd(targets), first_step, last_step)));
+      prob.getConstraints().back()->setName(name);
     }
-  }
-  else
-  {
-    ROS_WARN("JointVelTermInfo does not have a term_type defined. No cost/constraint applied");
+    else
+    {
+      prob.addConstraint(sco::ConstraintPtr(new JointVelIneqConstraint(prob.GetVars(),
+                                                                       util::toVectorXd(coeffs),
+                                                                       util::toVectorXd(targets),
+                                                                       util::toVectorXd(upper_tols),
+                                                                       util::toVectorXd(lower_tols),
+                                                                       first_step,
+                                                                       last_step)));
+      prob.getConstraints().back()->setName(name);
+    }
   }
 }
 
@@ -640,42 +733,105 @@ void JointAccTermInfo::fromJson(ProblemConstructionInfo& pci, const Json::Value&
   FAIL_IF_FALSE(v.isMember("params"));
   const Json::Value& params = v["params"];
 
+  unsigned int n_dof = pci.kin->numJoints();
   json_marshal::childFromJson(params, coeffs, "coeffs");
-  unsigned n_dof = pci.kin->numJoints();
-  if (coeffs.size() == 1)
-    coeffs = DblVec(n_dof, coeffs[0]);
-  else if (coeffs.size() != n_dof)
-  {
-    PRINT_AND_THROW(boost::format("wrong number of coeffs. expected %i got %i") % n_dof % coeffs.size());
-  }
 
-  const char* all_fields[] = { "coeffs" };
+  // Optional Parameters
+  json_marshal::childFromJson(params, targets, "targets", DblVec(n_dof, 0));
+  json_marshal::childFromJson(params, upper_tols, "upper_tols", DblVec(n_dof, 0));
+  json_marshal::childFromJson(params, lower_tols, "lower_tols", DblVec(n_dof, 0));
+  json_marshal::childFromJson(params, first_step, "first_step", 0);
+  json_marshal::childFromJson(params, last_step, "last_step", pci.basic_info.n_steps - 1);
+
+  const char* all_fields[] = { "coeffs", "first_step", "last_step", "targets", "lower_tols", "upper_tols" };
   ensure_only_members(params, all_fields, sizeof(all_fields) / sizeof(char*));
 }
 
 void JointAccTermInfo::hatch(TrajOptProb& prob)
 {
+  if ((term_type != TT_COST) && (term_type != TT_CNT))
+  {
+    ROS_WARN("JointAccTermInfo does not have a term_type defined. No cost/constraint applied");
+  }
+  unsigned int n_dof = prob.GetKin()->getJointNames().size();
+
+  // If target or tolerance is not given, set all to 0
+  if (targets.empty())
+    targets = DblVec(n_dof, 0);
+  if (upper_tols.empty())
+    upper_tols = DblVec(n_dof, 0);
+  if (lower_tols.empty())
+    lower_tols = DblVec(n_dof, 0);
+
+  // Adjust final timesteps if calculating near the end of a trajectory
+  if ((prob.GetNumSteps() - 3) <= first_step)
+    first_step = prob.GetNumSteps() - 3;
+  if ((prob.GetNumSteps() - 1) <= last_step)
+    last_step = prob.GetNumSteps() - 1;
+  // If only one time step is desired, calculate velocity with next step (3 steps are needed for 1 accel calculation)
+  if (last_step == first_step)
+    last_step += 2;
+  if (last_step < first_step)
+  {
+    int tmp = first_step;
+    first_step = last_step;
+    last_step = tmp;
+    ROS_WARN("Last time step for JointAccTerm comes before first step. Reversing them.");
+  }
+
+  // Check if parameters are the correct size.
+  checkParameterSize(coeffs, n_dof, "JointAccTermInfo coeffs", true);
+  checkParameterSize(targets, n_dof, "JointAccTermInfo upper_tols", true);
+  checkParameterSize(upper_tols, n_dof, "JointAccTermInfo upper_tols", true);
+  checkParameterSize(lower_tols, n_dof, "JointAccTermInfo lower_tols", true);
+
+  // Check if tolerances are all zeros
+  bool is_upper_zeros =
+      std::all_of(upper_tols.begin(), upper_tols.end(), [](double i) { return util::doubleEquals(i, 0.); });
+  bool is_lower_zeros =
+      std::all_of(lower_tols.begin(), lower_tols.end(), [](double i) { return util::doubleEquals(i, 0.); });
+
   if (term_type == TT_COST)
   {
-    prob.addCost(sco::CostPtr(new JointAccCost(prob.GetVars(), util::toVectorXd(coeffs))));
-    prob.getCosts().back()->setName(name);
+    // If the tolerances are 0, an equality cost is set. Otherwise it's a hinged "inequality" cost
+    if (is_upper_zeros && is_lower_zeros)
+    {
+      prob.addCost(sco::CostPtr(new JointAccEqCost(
+          prob.GetVars(), util::toVectorXd(coeffs), util::toVectorXd(targets), first_step, last_step)));
+      prob.getCosts().back()->setName(name);
+    }
+    else
+    {
+      prob.addCost(sco::CostPtr(new JointAccIneqCost(prob.GetVars(),
+                                                     util::toVectorXd(coeffs),
+                                                     util::toVectorXd(targets),
+                                                     util::toVectorXd(upper_tols),
+                                                     util::toVectorXd(lower_tols),
+                                                     first_step,
+                                                     last_step)));
+      prob.getCosts().back()->setName(name);
+    }
   }
   else if (term_type == TT_CNT)
   {
-    // Calculate acceleration as ((i+1) - 2i + (i-1))/dt where dt=1
-    for (int i = first_step - 1; i <= last_step - 1; ++i)
+    // If the tolerances are 0, an equality cnt is set. Otherwise it's an inequality constraint
+    if (is_upper_zeros && is_lower_zeros)
     {
-      for (std::size_t j = 0; j < coeffs.size(); ++j)
-      {
-        sco::AffExpr acc = prob.GetVar(i + 1, j) - 2 * prob.GetVar(i, j) + prob.GetVar(i - 1, j);
-        prob.addLinearConstraint(acc - coeffs[j], sco::INEQ);
-        prob.addLinearConstraint(-acc - coeffs[j], sco::INEQ);
-      }
+      prob.addConstraint(sco::ConstraintPtr(new JointAccEqConstraint(
+          prob.GetVars(), util::toVectorXd(coeffs), util::toVectorXd(targets), first_step, last_step)));
+      prob.getConstraints().back()->setName(name);
     }
-  }
-  else
-  {
-    ROS_WARN("JointAccTermInfo does not have a term_type defined. No cost/constraint applied");
+    else
+    {
+      prob.addConstraint(sco::ConstraintPtr(new JointAccIneqConstraint(prob.GetVars(),
+                                                                       util::toVectorXd(coeffs),
+                                                                       util::toVectorXd(targets),
+                                                                       util::toVectorXd(upper_tols),
+                                                                       util::toVectorXd(lower_tols),
+                                                                       first_step,
+                                                                       last_step)));
+      prob.getConstraints().back()->setName(name);
+    }
   }
 }
 
@@ -684,43 +840,105 @@ void JointJerkTermInfo::fromJson(ProblemConstructionInfo& pci, const Json::Value
   FAIL_IF_FALSE(v.isMember("params"));
   const Json::Value& params = v["params"];
 
+  unsigned int n_dof = pci.kin->numJoints();
   json_marshal::childFromJson(params, coeffs, "coeffs");
-  unsigned n_dof = pci.kin->numJoints();
-  if (coeffs.size() == 1)
-    coeffs = DblVec(n_dof, coeffs[0]);
-  else if (coeffs.size() != n_dof)
-  {
-    PRINT_AND_THROW(boost::format("wrong number of coeffs. expected %i got %i") % n_dof % coeffs.size());
-  }
 
-  const char* all_fields[] = { "coeffs" };
+  // Optional Parameters
+  json_marshal::childFromJson(params, targets, "targets", DblVec(n_dof, 0));
+  json_marshal::childFromJson(params, upper_tols, "upper_tols", DblVec(n_dof, 0));
+  json_marshal::childFromJson(params, lower_tols, "lower_tols", DblVec(n_dof, 0));
+  json_marshal::childFromJson(params, first_step, "first_step", 0);
+  json_marshal::childFromJson(params, last_step, "last_step", pci.basic_info.n_steps - 1);
+
+  const char* all_fields[] = { "coeffs", "first_step", "last_step", "targets", "lower_tols", "upper_tols" };
   ensure_only_members(params, all_fields, sizeof(all_fields) / sizeof(char*));
 }
 
 void JointJerkTermInfo::hatch(TrajOptProb& prob)
 {
+  if ((term_type != TT_COST) && (term_type != TT_CNT))
+  {
+    ROS_WARN("JointJerkTermInfo does not have a term_type defined. No cost/constraint applied");
+  }
+  unsigned int n_dof = prob.GetKin()->getJointNames().size();
+
+  // If target or tolerance is not given, set all to 0
+  if (targets.empty())
+    targets = DblVec(n_dof, 0);
+  if (upper_tols.empty())
+    upper_tols = DblVec(n_dof, 0);
+  if (lower_tols.empty())
+    lower_tols = DblVec(n_dof, 0);
+
+  // Adjust final timesteps if calculating near the end of a trajectory
+  if ((prob.GetNumSteps() - 4) <= first_step)
+    first_step = prob.GetNumSteps() - 4;
+  if ((prob.GetNumSteps() - 1) <= last_step)
+    last_step = prob.GetNumSteps() - 1;
+  // If only one time step is desired, calculate velocity with next step (5 steps are needed for 1 jerk calculation)
+  if (last_step == first_step)
+    last_step += 4;
+  if (last_step < first_step)
+  {
+    int tmp = first_step;
+    first_step = last_step;
+    last_step = tmp;
+    ROS_WARN("Last time step for JointJerkTerm comes before first step. Reversing them.");
+  }
+
+  // Check if parameters are the correct size.
+  checkParameterSize(coeffs, n_dof, "JointJerkTermInfo coeffs", true);
+  checkParameterSize(targets, n_dof, "JointJerkTermInfo upper_tols", true);
+  checkParameterSize(upper_tols, n_dof, "JointJerkTermInfo upper_tols", true);
+  checkParameterSize(lower_tols, n_dof, "JointJerkTermInfo lower_tols", true);
+
+  // Check if tolerances are all zeros
+  bool is_upper_zeros =
+      std::all_of(upper_tols.begin(), upper_tols.end(), [](double i) { return util::doubleEquals(i, 0.); });
+  bool is_lower_zeros =
+      std::all_of(lower_tols.begin(), lower_tols.end(), [](double i) { return util::doubleEquals(i, 0.); });
+
   if (term_type == TT_COST)
   {
-    prob.addCost(sco::CostPtr(new JointJerkCost(prob.GetVars(), util::toVectorXd(coeffs))));
-    prob.getCosts().back()->setName(name);
+    // If the tolerances are 0, an equality cost is set. Otherwise it's a hinged "inequality" cost
+    if (is_upper_zeros && is_lower_zeros)
+    {
+      prob.addCost(sco::CostPtr(new JointJerkEqCost(
+          prob.GetVars(), util::toVectorXd(coeffs), util::toVectorXd(targets), first_step, last_step)));
+      prob.getCosts().back()->setName(name);
+    }
+    else
+    {
+      prob.addCost(sco::CostPtr(new JointJerkIneqCost(prob.GetVars(),
+                                                      util::toVectorXd(coeffs),
+                                                      util::toVectorXd(targets),
+                                                      util::toVectorXd(upper_tols),
+                                                      util::toVectorXd(lower_tols),
+                                                      first_step,
+                                                      last_step)));
+      prob.getCosts().back()->setName(name);
+    }
   }
   else if (term_type == TT_CNT)
   {
-    // Calculate jerk as ((i+2) - 3(i+1) + 3(i) -(i-1))/dt where dt=1
-    for (int i = first_step - 1; i <= last_step - 1; ++i)
+    // If the tolerances are 0, an equality cnt is set. Otherwise it's an inequality constraint
+    if (is_upper_zeros && is_lower_zeros)
     {
-      for (std::size_t j = 0; j < coeffs.size(); ++j)
-      {
-        sco::AffExpr jerk =
-            prob.GetVar(i + 2, j) - 3 * prob.GetVar(i + 1, j) + 3 * prob.GetVar(i, j) - prob.GetVar(i - 1, j);
-        prob.addLinearConstraint(jerk - coeffs[j], sco::INEQ);
-        prob.addLinearConstraint(-jerk - coeffs[j], sco::INEQ);
-      }
+      prob.addConstraint(sco::ConstraintPtr(new JointJerkEqConstraint(
+          prob.GetVars(), util::toVectorXd(coeffs), util::toVectorXd(targets), first_step, last_step)));
+      prob.getConstraints().back()->setName(name);
     }
-  }
-  else
-  {
-    ROS_WARN("JointJerkTermInfo does not have a term_type defined. No cost/constraint applied");
+    else
+    {
+      prob.addConstraint(sco::ConstraintPtr(new JointJerkIneqConstraint(prob.GetVars(),
+                                                                        util::toVectorXd(coeffs),
+                                                                        util::toVectorXd(targets),
+                                                                        util::toVectorXd(upper_tols),
+                                                                        util::toVectorXd(lower_tols),
+                                                                        first_step,
+                                                                        last_step)));
+      prob.getConstraints().back()->setName(name);
+    }
   }
 }
 
@@ -837,7 +1055,8 @@ void CollisionTermInfo::hatch(TrajOptProb& prob)
     {
       for (int i = first_step; i <= last_step; ++i)
       {
-        prob.addCost(sco::CostPtr(new CollisionCost(prob.GetKin(), prob.GetEnv(), info[i - first_step], prob.GetVarRow(i))));
+        prob.addCost(
+            sco::CostPtr(new CollisionCost(prob.GetKin(), prob.GetEnv(), info[i - first_step], prob.GetVarRow(i))));
         prob.getCosts().back()->setName((boost::format("%s_%i") % name % i).str());
       }
     }

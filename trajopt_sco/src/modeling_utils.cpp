@@ -245,4 +245,18 @@ ConvexConstraintsPtr ConstraintFromErrFunc::convex(const DblVec& xin, Model* mod
   }
   return out;
 }
+
+std::string AffExprToString(const AffExpr& aff)
+{
+  std::string out;
+  for(int i = 0; i < aff.vars.size(); i++)
+  {
+    if(i!=0) out.append(" + ");
+    std::string term = std::to_string(aff.coeffs[i]) + "*" + aff.vars[i].var_rep->name;
+    out.append(term);
+  }
+  out.append(" + " + std::to_string(aff.constant));
+  return out;
+}
+
 }
