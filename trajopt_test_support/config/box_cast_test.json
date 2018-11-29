@@ -28,7 +28,9 @@
     "name" : "joint",
     "params" : {
        "coeffs" : [1, 1],
-       "vals" : [1.9, 3.8] 
+       "targets" : [1.9, 3.8],
+       "first_step": 2,
+       "last_step": 2
     }
   }
   ],

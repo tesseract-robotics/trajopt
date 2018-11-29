@@ -245,8 +245,9 @@ std::shared_ptr<ProblemConstructionInfo> cppMethod(const std::string& start, con
   std::shared_ptr<JointPosTermInfo> jpos(new JointPosTermInfo);
   jpos->term_type = TT_CNT;
   jpos->name = finish;
-  jpos->timestep = pci->basic_info.n_steps - 1;
-  jpos->vals = joint_pose;
+  jpos->first_step = pci->basic_info.n_steps - 1;
+  jpos->last_step = pci->basic_info.n_steps - 1;
+  jpos->targets = joint_pose;
   pci->cnt_infos.push_back(jpos);
 
   return pci;

@@ -582,43 +582,108 @@ void CartVelTermInfo::hatch(TrajOptProb& prob)
 void JointPosTermInfo::fromJson(ProblemConstructionInfo& pci, const Json::Value& v)
 {
   FAIL_IF_FALSE(v.isMember("params"));
-  int n_steps = pci.basic_info.n_steps;
   const Json::Value& params = v["params"];
-  json_marshal::childFromJson(params, vals, "vals");
-  json_marshal::childFromJson(params, coeffs, "coeffs");
-  if (coeffs.size() == 1)
-    coeffs = DblVec(n_steps, coeffs[0]);
-  unsigned n_dof = pci.kin->numJoints();
-  if (vals.size() != n_dof)
-  {
-    PRINT_AND_THROW(boost::format("wrong number of dof vals. expected %i got %i") % n_dof % vals.size());
-  }
-  json_marshal::childFromJson(params, timestep, "timestep", pci.basic_info.n_steps - 1);
 
-  const char* all_fields[] = { "vals", "coeffs", "timestep" };
+  unsigned int n_dof = pci.kin->numJoints();
+  json_marshal::childFromJson(params, coeffs, "coeffs");
+
+  // Optional Parameters
+  json_marshal::childFromJson(params, targets, "targets", DblVec(n_dof, 0));
+  json_marshal::childFromJson(params, upper_tols, "upper_tols", DblVec(n_dof, 0));
+  json_marshal::childFromJson(params, lower_tols, "lower_tols", DblVec(n_dof, 0));
+  json_marshal::childFromJson(params, first_step, "first_step", 0);
+  json_marshal::childFromJson(params, last_step, "last_step", pci.basic_info.n_steps - 1);
+
+  const char* all_fields[] = { "coeffs", "first_step", "last_step", "targets", "lower_tols", "upper_tols" };
   ensure_only_members(params, all_fields, sizeof(all_fields) / sizeof(char*));
 }
 
 void JointPosTermInfo::hatch(TrajOptProb& prob)
 {
+  if ((term_type != TT_COST) && (term_type != TT_CNT))
+  {
+    ROS_WARN("JointPosTermInfo does not have a term_type defined. No cost/constraint applied");
+  }
+  unsigned int n_dof = prob.GetKin()->getJointNames().size();
+
+  // If target or tolerance is not given, set all to 0
+  if (targets.empty())
+    targets = DblVec(n_dof, 0);
+  if (upper_tols.empty())
+    upper_tols = DblVec(n_dof, 0);
+  if (lower_tols.empty())
+    lower_tols = DblVec(n_dof, 0);
+
+  // Check time step is valid
+  if ((prob.GetNumSteps() - 1) <= first_step)
+    first_step = prob.GetNumSteps() - 1;
+  if ((prob.GetNumSteps() - 1) <= last_step)
+    last_step = prob.GetNumSteps() - 1;
+  //  if (last_step == first_step)
+  //    last_step += 1;
+  if (last_step < first_step)
+  {
+    int tmp = first_step;
+    first_step = last_step;
+    last_step = tmp;
+    ROS_WARN("Last time step for JointPosTerm comes before first step. Reversing them.");
+  }
+  if (last_step == -1)  // last_step not set
+    last_step = first_step;
+
+  // Check if parameters are the correct size.
+  checkParameterSize(coeffs, n_dof, "JointPosTermInfo coeffs", true);
+  checkParameterSize(targets, n_dof, "JointPosTermInfo upper_tols", true);
+  checkParameterSize(upper_tols, n_dof, "JointPosTermInfo upper_tols", true);
+  checkParameterSize(lower_tols, n_dof, "JointPosTermInfo lower_tols", true);
+
+  // Check if tolerances are all zeros
+  bool is_upper_zeros =
+      std::all_of(upper_tols.begin(), upper_tols.end(), [](double i) { return util::doubleEquals(i, 0.); });
+  bool is_lower_zeros =
+      std::all_of(lower_tols.begin(), lower_tols.end(), [](double i) { return util::doubleEquals(i, 0.); });
+
   if (term_type == TT_COST)
   {
-    prob.addCost(
-        sco::CostPtr(new JointPosCost(prob.GetVarRow(timestep), util::toVectorXd(vals), util::toVectorXd(coeffs))));
-    prob.getCosts().back()->setName(name);
+    // If the tolerances are 0, an equality cost is set. Otherwise it's a hinged "inequality" cost
+    if (is_upper_zeros && is_lower_zeros)
+    {
+      prob.addCost(sco::CostPtr(new JointPosEqCost(
+          prob.GetVars(), util::toVectorXd(coeffs), util::toVectorXd(targets), first_step, last_step)));
+      prob.getCosts().back()->setName(name);
+    }
+    else
+    {
+      prob.addCost(sco::CostPtr(new JointPosIneqCost(prob.GetVars(),
+                                                     util::toVectorXd(coeffs),
+                                                     util::toVectorXd(targets),
+                                                     util::toVectorXd(upper_tols),
+                                                     util::toVectorXd(lower_tols),
+                                                     first_step,
+                                                     last_step)));
+      prob.getCosts().back()->setName(name);
+    }
   }
   else if (term_type == TT_CNT)
   {
-    sco::VarVector vars = prob.GetVarRow(timestep);
-    int n_dof = vars.size();
-    for (int j = 0; j < n_dof; ++j)
+    // If the tolerances are 0, an equality cnt is set. Otherwise it's an inequality constraint
+    if (is_upper_zeros && is_lower_zeros)
     {
-      prob.addLinearConstraint(sco::exprSub(sco::AffExpr(vars[j]), vals[j]), sco::EQ);
+      prob.addConstraint(sco::ConstraintPtr(new JointPosEqConstraint(
+          prob.GetVars(), util::toVectorXd(coeffs), util::toVectorXd(targets), first_step, last_step)));
+      prob.getConstraints().back()->setName(name);
     }
-  }
-  else
-  {
-    ROS_WARN("JointPosTermInfo does not have a term_type defined. No cost/constraint applied");
+    else
+    {
+      prob.addConstraint(sco::ConstraintPtr(new JointPosIneqConstraint(prob.GetVars(),
+                                                                       util::toVectorXd(coeffs),
+                                                                       util::toVectorXd(targets),
+                                                                       util::toVectorXd(upper_tols),
+                                                                       util::toVectorXd(lower_tols),
+                                                                       first_step,
+                                                                       last_step)));
+      prob.getConstraints().back()->setName(name);
+    }
   }
 }
 

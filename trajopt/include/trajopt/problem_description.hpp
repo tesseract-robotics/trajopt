@@ -249,12 +249,18 @@ struct CartVelTermInfo : public TermInfo, public MakesCost, public MakesConstrai
  */
 struct JointPosTermInfo : public TermInfo, public MakesCost, public MakesConstraint
 {
-  /** @brief TT_COST: Target joint value. TT_CNT: Joint Limit */
-  DblVec vals;
-  /** @brief Coefficent that scales the cost. */
+  /** @brief Vector of coefficients that scales cost. */
   DblVec coeffs;
-  /** @brief Time step to which term is applied */
-  int timestep;
+  /** @brief Vector of position targets. Default: 0 */
+  DblVec targets;
+  /** @brief Vector of position upper limits. Default: 0 */
+  DblVec upper_tols;
+  /** @brief Vector of position lower limits. Default: 0 */
+  DblVec lower_tols;
+  /** @brief First time step to which the term is applied*/
+  int first_step = 0;
+  /** @brief Last time step to which the term is applied*/
+  int last_step = -1;
   /** @brief Used to add term to pci from json */
   void fromJson(ProblemConstructionInfo& pci, const Json::Value& v);
   /** @brief Converts term info into cost/constraint and adds it to trajopt problem */
