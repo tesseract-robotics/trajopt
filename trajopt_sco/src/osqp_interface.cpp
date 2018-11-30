@@ -22,7 +22,9 @@ ModelPtr createOSQPModel()
 OSQPModel::OSQPModel()
 {
   // Define Solver settings as default
+  // see https://osqp.org/docs/interfaces/solver_settings.html#solver-settings
   osqp_set_default_settings(&osqp_settings_);
+  // tuning parameters to be less accurate, but add a polishing step
   osqp_settings_.eps_abs = 1e-4;
   osqp_settings_.eps_rel = 1e-6;
   osqp_settings_.max_iter = 8192;
@@ -71,8 +73,8 @@ Cnt OSQPModel::addIneqCnt(const AffExpr& expr, const std::string& /*name*/)
 
 Cnt OSQPModel::addIneqCnt(const QuadExpr&, const std::string& /*name*/)
 {
-  assert(0 && "NOT IMPLEMENTED");
-  return 0;
+  throw std::runtime_error("NOT IMPLEMENTED");
+  return Cnt();
 }
 
 void OSQPModel::removeVars(const VarVector& vars)
@@ -91,7 +93,7 @@ void OSQPModel::removeCnts(const CntVector& cnts)
 
 void OSQPModel::updateObjective()
 {
-  int n = vars_.size();
+  const size_t n = vars_.size();
   osqp_data_.n = n;
 
   Eigen::SparseMatrix<double> sm;
@@ -112,8 +114,8 @@ void OSQPModel::updateObjective()
 
 void OSQPModel::updateConstraints()
 {
-  int n = vars_.size();
-  int m = cnts_.size();
+  const size_t n = vars_.size();
+  const size_t m = cnts_.size();
   osqp_data_.m = m + n;
 
   Eigen::SparseMatrix<double> sm;
@@ -158,21 +160,15 @@ void OSQPModel::updateConstraints()
 
 void OSQPModel::createOrUpdateSolver()
 {
-  if (true)
-  {
-    updateObjective();
-    updateConstraints();
+  updateObjective();
+  updateConstraints();
 
-    // TODO atm we are not updating the workspace, but recreating it each time
-    if (osqp_workspace_ != nullptr)
-      osqp_cleanup(osqp_workspace_);
-    // Setup workspace - this should be called only once
-    osqp_workspace_ = osqp_setup(&osqp_data_, &osqp_settings_);
-  }
-  else
-  {
-    // TODO update everything - take care of checking sparsity did not change
-  }
+  // TODO atm we are not updating the workspace, but recreating it each time.
+  // In the future, we will checking sparsity did not change and update instead
+  if (osqp_workspace_ != nullptr)
+    osqp_cleanup(osqp_workspace_);
+  // Setup workspace - this should be called only once
+  osqp_workspace_ = osqp_setup(&osqp_data_, &osqp_settings_);
 }
 
 void OSQPModel::update()
@@ -223,7 +219,7 @@ void OSQPModel::setVarBounds(const VarVector& vars, const DblVec& lower, const D
 {
   for (unsigned i = 0; i < vars.size(); ++i)
   {
-    int varind = vars[i].var_rep->index;
+    const int varind = vars[i].var_rep->index;
     lbs_[varind] = lower[i];
     ubs_[varind] = upper[i];
   }
@@ -233,7 +229,7 @@ DblVec OSQPModel::getVarValues(const VarVector& vars) const
   DblVec out(vars.size());
   for (unsigned i = 0; i < vars.size(); ++i)
   {
-    int varind = vars[i].var_rep->index;
+    const int varind = vars[i].var_rep->index;
     out[i] = solution_[varind];
   }
   return out;
@@ -245,7 +241,7 @@ CvxOptStatus OSQPModel::optimize()
   createOrUpdateSolver();
 
   // Solve Problem
-  int retcode = osqp_solve(osqp_workspace_);
+  const int retcode = osqp_solve(osqp_workspace_);
 
   if (retcode == 0)
   {

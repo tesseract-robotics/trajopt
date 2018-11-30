@@ -22,8 +22,12 @@ ModelPtr createqpOASESModel()
 
 qpOASESModel::qpOASESModel()
 {
+  // set to be fast. More details at:
+  // https://www.coin-or.org/qpOASES/doc/3.2/doxygen/classOptions.html
+  // https://projects.coin-or.org/qpOASES/browser/stable/3.2/src/Options.cpp#L191
   qpoases_options_.setToMPC();
   qpoases_options_.printLevel = qpOASES::PL_NONE;
+  // enable regularisation to deal with degenerate Hessians
   qpoases_options_.enableRegularisation = qpOASES::BT_TRUE;
   qpoases_options_.ensureConsistency();
 }
@@ -76,7 +80,7 @@ void qpOASESModel::removeCnts(const CntVector& cnts)
 
 void qpOASESModel::updateObjective()
 {
-  int n = vars_.size();
+  const size_t n = vars_.size();
 
   Eigen::SparseMatrix<double> sm;
   exprToEigen(objective_, sm, g_, n, true, true);
@@ -88,8 +92,8 @@ void qpOASESModel::updateObjective()
 
 void qpOASESModel::updateConstraints()
 {
-  int n = vars_.size();
-  int m = cnts_.size();
+  const size_t n = vars_.size();
+  const size_t m = cnts_.size();
 
   lbA_.clear();
   lbA_.resize(m, -QPOASES_INFTY);
@@ -177,7 +181,7 @@ void qpOASESModel::setVarBounds(const VarVector& vars, const DblVec& lower, cons
 {
   for (unsigned i = 0; i < vars.size(); ++i)
   {
-    int varind = vars[i].var_rep->index;
+    const int varind = vars[i].var_rep->index;
     lb_[varind] = lower[i];
     ub_[varind] = upper[i];
   }
@@ -187,7 +191,7 @@ DblVec qpOASESModel::getVarValues(const VarVector& vars) const
   DblVec out(vars.size());
   for (unsigned i = 0; i < vars.size(); ++i)
   {
-    int varind = vars[i].var_rep->index;
+    const int varind = vars[i].var_rep->index;
     out[i] = solution_[varind];
   }
   return out;
