@@ -11,6 +11,7 @@
       "type" : "joint_vel",
       "params":
       {
+        "targets" : [0],
         "coeffs" : [5]
       }
     },
