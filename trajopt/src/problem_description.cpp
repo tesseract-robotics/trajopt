@@ -585,10 +585,11 @@ void JointPosTermInfo::fromJson(ProblemConstructionInfo& pci, const Json::Value&
   const Json::Value& params = v["params"];
 
   unsigned int n_dof = pci.kin->numJoints();
-  json_marshal::childFromJson(params, coeffs, "coeffs");
+  json_marshal::childFromJson(params, targets, "targets");
+
 
   // Optional Parameters
-  json_marshal::childFromJson(params, targets, "targets", DblVec(n_dof, 0));
+  json_marshal::childFromJson(params, coeffs, "coeffs", DblVec(n_dof, 1));
   json_marshal::childFromJson(params, upper_tols, "upper_tols", DblVec(n_dof, 0));
   json_marshal::childFromJson(params, lower_tols, "lower_tols", DblVec(n_dof, 0));
   json_marshal::childFromJson(params, first_step, "first_step", 0);
@@ -606,9 +607,9 @@ void JointPosTermInfo::hatch(TrajOptProb& prob)
   }
   unsigned int n_dof = prob.GetKin()->getJointNames().size();
 
-  // If target or tolerance is not given, set all to 0
-  if (targets.empty())
-    targets = DblVec(n_dof, 0);
+  // If optional parameter not given, set to default
+  if (coeffs.empty())
+    coeffs = DblVec(n_dof, 1);
   if (upper_tols.empty())
     upper_tols = DblVec(n_dof, 0);
   if (lower_tols.empty())
@@ -693,10 +694,11 @@ void JointVelTermInfo::fromJson(ProblemConstructionInfo& pci, const Json::Value&
   const Json::Value& params = v["params"];
 
   unsigned int n_dof = pci.kin->numJoints();
-  json_marshal::childFromJson(params, coeffs, "coeffs");
+  json_marshal::childFromJson(params, targets, "targets");
+
 
   // Optional Parameters
-  json_marshal::childFromJson(params, targets, "targets", DblVec(n_dof, 0));
+  json_marshal::childFromJson(params, coeffs, "coeffs", DblVec(n_dof, 1));
   json_marshal::childFromJson(params, upper_tols, "upper_tols", DblVec(n_dof, 0));
   json_marshal::childFromJson(params, lower_tols, "lower_tols", DblVec(n_dof, 0));
   json_marshal::childFromJson(params, first_step, "first_step", 0);
@@ -714,9 +716,9 @@ void JointVelTermInfo::hatch(TrajOptProb& prob)
   }
   unsigned int n_dof = prob.GetKin()->getJointNames().size();
 
-  // If target or tolerance is not given, set all to 0
-  if (targets.empty())
-    targets = DblVec(n_dof, 0);
+  // If optional parameter not given, set to default
+  if (coeffs.empty())
+     coeffs = DblVec(n_dof, 1);
   if (upper_tols.empty())
     upper_tols = DblVec(n_dof, 0);
   if (lower_tols.empty())
@@ -799,10 +801,10 @@ void JointAccTermInfo::fromJson(ProblemConstructionInfo& pci, const Json::Value&
   const Json::Value& params = v["params"];
 
   unsigned int n_dof = pci.kin->numJoints();
-  json_marshal::childFromJson(params, coeffs, "coeffs");
+  json_marshal::childFromJson(params, targets, "targets");
 
   // Optional Parameters
-  json_marshal::childFromJson(params, targets, "targets", DblVec(n_dof, 0));
+  json_marshal::childFromJson(params, coeffs, "coeffs", DblVec(n_dof, 1));
   json_marshal::childFromJson(params, upper_tols, "upper_tols", DblVec(n_dof, 0));
   json_marshal::childFromJson(params, lower_tols, "lower_tols", DblVec(n_dof, 0));
   json_marshal::childFromJson(params, first_step, "first_step", 0);
@@ -820,9 +822,9 @@ void JointAccTermInfo::hatch(TrajOptProb& prob)
   }
   unsigned int n_dof = prob.GetKin()->getJointNames().size();
 
-  // If target or tolerance is not given, set all to 0
-  if (targets.empty())
-    targets = DblVec(n_dof, 0);
+  // If optional parameter not given, set to default
+  if (coeffs.empty())
+    coeffs = DblVec(n_dof, 1);
   if (upper_tols.empty())
     upper_tols = DblVec(n_dof, 0);
   if (lower_tols.empty())
@@ -906,10 +908,11 @@ void JointJerkTermInfo::fromJson(ProblemConstructionInfo& pci, const Json::Value
   const Json::Value& params = v["params"];
 
   unsigned int n_dof = pci.kin->numJoints();
-  json_marshal::childFromJson(params, coeffs, "coeffs");
+
+  json_marshal::childFromJson(params, targets, "targets");
 
   // Optional Parameters
-  json_marshal::childFromJson(params, targets, "targets", DblVec(n_dof, 0));
+  json_marshal::childFromJson(params, coeffs, "coeffs", DblVec(n_dof, 1));
   json_marshal::childFromJson(params, upper_tols, "upper_tols", DblVec(n_dof, 0));
   json_marshal::childFromJson(params, lower_tols, "lower_tols", DblVec(n_dof, 0));
   json_marshal::childFromJson(params, first_step, "first_step", 0);
@@ -927,9 +930,9 @@ void JointJerkTermInfo::hatch(TrajOptProb& prob)
   }
   unsigned int n_dof = prob.GetKin()->getJointNames().size();
 
-  // If target or tolerance is not given, set all to 0
-  if (targets.empty())
-    targets = DblVec(n_dof, 0);
+  // If optional parameter not given, set to default
+  if (coeffs.empty())
+    coeffs = DblVec(n_dof, 1);
   if (upper_tols.empty())
     upper_tols = DblVec(n_dof, 0);
   if (lower_tols.empty())
