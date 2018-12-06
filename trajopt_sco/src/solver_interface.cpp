@@ -7,7 +7,7 @@
 
 namespace sco
 {
-const std::vector<std::string> ConvexSolver::SOLVER_NAMES_ = {
+const std::vector<std::string> ModelType::MODEL_NAMES_ = {
   "GUROBI",
   "BPMPD",
   "OSQP",
@@ -152,73 +152,73 @@ std::ostream& operator<<(std::ostream& o, const QuadExpr& e)
   return o;
 }
 
-std::ostream& operator<<(std::ostream& o, const ConvexSolver& cs)
+std::ostream& operator<<(std::ostream& o, const ModelType& cs)
 {
   int cs_ivalue_ = static_cast<int>(cs.value_);
-  if (cs_ivalue_ > cs.SOLVER_NAMES_.size())
+  if (cs_ivalue_ > cs.MODEL_NAMES_.size())
   {
     std::stringstream conversion_error;
-    conversion_error << "Error converting ConvexSolver to string - "
+    conversion_error << "Error converting ModelType to string - "
                      << "enum value is " << cs_ivalue_ << std::endl;
     throw std::runtime_error(conversion_error.str());
   }
-  o << ConvexSolver::SOLVER_NAMES_[cs_ivalue_];
+  o << ModelType::MODEL_NAMES_[cs_ivalue_];
   return o;
 }
 
-ConvexSolver::ConvexSolver()
+ModelType::ModelType()
 {
-  value_ = ConvexSolver::AUTO_SOLVER;
+  value_ = ModelType::AUTO_SOLVER;
 }
 
-ConvexSolver::ConvexSolver(const ConvexSolver::Value& v)
+ModelType::ModelType(const ModelType::Value& v)
 {
   value_ = v;
 }
 
-ConvexSolver::ConvexSolver(const int& v)
+ModelType::ModelType(const int& v)
 {
   value_ = static_cast<Value>(v);
 }
 
-ConvexSolver::ConvexSolver(const std::string& s)
+ModelType::ModelType(const std::string& s)
 {
-  for (unsigned int i = 0; i < ConvexSolver::SOLVER_NAMES_.size(); ++i)
+  for (unsigned int i = 0; i < ModelType::MODEL_NAMES_.size(); ++i)
   {
-    if (s == ConvexSolver::SOLVER_NAMES_[i])
+    if (s == ModelType::MODEL_NAMES_[i])
     {
-      value_ = static_cast<ConvexSolver::Value>(i);
+      value_ = static_cast<ModelType::Value>(i);
       return;
     }
   }
   PRINT_AND_THROW(boost::format("invalid solver name:\"%s\"") % s);
 }
 
-ConvexSolver::operator int() const
+ModelType::operator int() const
 {
   return static_cast<int>(value_);
 }
 
-bool ConvexSolver::operator==(const ConvexSolver::Value& a) const
+bool ModelType::operator==(const ModelType::Value& a) const
 {
   return value_ == a;
 }
 
-bool ConvexSolver::operator==(const ConvexSolver& a) const
+bool ModelType::operator==(const ModelType& a) const
 {
   return value_ == a.value_;
 }
 
-bool ConvexSolver::operator!=(const ConvexSolver& a) const
+bool ModelType::operator!=(const ModelType& a) const
 {
   return value_ != a.value_;
 }
 
-void ConvexSolver::fromJson(const Json::Value& v) {
+void ModelType::fromJson(const Json::Value& v) {
   try
   {
     std::string ref = v.asString();
-    ConvexSolver cs(ref);
+    ModelType cs(ref);
     value_ = cs.value_;
   }
   catch (const std::runtime_error&)
@@ -227,35 +227,35 @@ void ConvexSolver::fromJson(const Json::Value& v) {
   }
 }
 
-std::vector<ConvexSolver> availableSolvers()
+std::vector<ModelType> availableSolvers()
 {
-  std::vector<bool> has_solver(ConvexSolver::AUTO_SOLVER, false);
+  std::vector<bool> has_solver(ModelType::AUTO_SOLVER, false);
 #ifdef HAVE_GUROBI
-  has_solver[ConvexSolver::GUROBI] = true;
+  has_solver[ModelType::GUROBI] = true;
 #endif
 #ifdef HAVE_BPMPD
-  has_solver[ConvexSolver::BPMPD] = true;
+  has_solver[ModelType::BPMPD] = true;
 #endif
 #ifdef HAVE_OSQP
-  has_solver[ConvexSolver::OSQP] = true;
+  has_solver[ModelType::OSQP] = true;
 #endif
 #ifdef HAVE_QPOASES
-  has_solver[ConvexSolver::QPOASES] = true;
+  has_solver[ModelType::QPOASES] = true;
 #endif
   int n_available_solvers = 0;
-  for (auto i = 0; i < ConvexSolver::AUTO_SOLVER; ++i)
+  for (auto i = 0; i < ModelType::AUTO_SOLVER; ++i)
     if (has_solver[i])
       ++n_available_solvers;
-  std::vector<ConvexSolver> available_solvers(n_available_solvers,
-                                              ConvexSolver::AUTO_SOLVER);
+  std::vector<ModelType> available_solvers(n_available_solvers,
+                                              ModelType::AUTO_SOLVER);
   auto j = 0;
-  for (auto i = 0; i < ConvexSolver::AUTO_SOLVER; ++i)
+  for (auto i = 0; i < ModelType::AUTO_SOLVER; ++i)
     if (has_solver[i])
-      available_solvers[j++] = static_cast<ConvexSolver>(i);
+      available_solvers[j++] = static_cast<ModelType>(i);
   return available_solvers;
 }
 
-ModelPtr createModel(ConvexSolver convex_solver)
+ModelPtr createModel(ModelType model_type)
 {
 #ifdef HAVE_GUROBI
   extern ModelPtr createGurobiModel();
@@ -272,15 +272,15 @@ ModelPtr createModel(ConvexSolver convex_solver)
 
   char* solver_env = getenv("TRAJOPT_CONVEX_SOLVER");
 
-  ConvexSolver solver = convex_solver;
+  ModelType solver = model_type;
 
-  if (solver == ConvexSolver::AUTO_SOLVER)
+  if (solver == ModelType::AUTO_SOLVER)
   {
     if (solver_env and std::string(solver_env) != "AUTO_SOLVER")
     {
       try
       {
-        solver = ConvexSolver(std::string(solver_env));
+        solver = ModelType(std::string(solver_env));
       }
       catch (std::runtime_error&)
       {
@@ -294,36 +294,36 @@ ModelPtr createModel(ConvexSolver convex_solver)
   }
 
 #ifndef HAVE_GUROBI
-  if (solver == ConvexSolver::GUROBI)
+  if (solver == ModelType::GUROBI)
     PRINT_AND_THROW("you didn't build with GUROBI support");
 #endif
 #ifndef HAVE_BPMPD
-  if (solver == ConvexSolver::BPMPD)
+  if (solver == ModelType::BPMPD)
     PRINT_AND_THROW("you don't have BPMPD support on this platform");
 #endif
 #ifndef HAVE_OSQP
-  if (solver == ConvexSolver::OSQP)
+  if (solver == ModelType::OSQP)
     PRINT_AND_THROW("you don't have OSQP support on this platform");
 #endif
 #ifndef HAVE_QPOASES
-  if (solver == ConvexSolver::QPOASES)
+  if (solver == ModelType::QPOASES)
     PRINT_AND_THROW("you don't have qpOASES support on this platform");
 #endif
 
 #ifdef HAVE_GUROBI
-  if (solver == ConvexSolver::GUROBI)
+  if (solver == ModelType::GUROBI)
     return createGurobiModel();
 #endif
 #ifdef HAVE_BPMPD
-  if (solver == ConvexSolver::BPMPD)
+  if (solver == ModelType::BPMPD)
     return createBPMPDModel();
 #endif
 #ifdef HAVE_OSQP
-  if (solver == ConvexSolver::OSQP)
+  if (solver == ModelType::OSQP)
     return createOSQPModel();
 #endif
 #ifdef HAVE_QPOASES
-  if (solver == ConvexSolver::QPOASES)
+  if (solver == ModelType::QPOASES)
     return createqpOASESModel();
 #endif
   std::stringstream solver_instatiation_error;

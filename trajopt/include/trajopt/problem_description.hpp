@@ -86,7 +86,7 @@ struct BasicInfo
   std::string manip;
   std::string robot;  // optional
   IntVec dofs_fixed;  // optional
-  sco::ConvexSolver convex_solver; // which convex solver to use
+  sco::ModelType convex_solver; // which convex solver to use
 };
 
 /**

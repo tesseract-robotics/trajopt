@@ -13,7 +13,7 @@ extern void simplify2(IntVec& inds, DblVec& vals);
 
 using namespace sco;
 
-class SolverInterface : public testing::TestWithParam<ConvexSolver> {
+class SolverInterface : public testing::TestWithParam<ModelType> {
  protected:
   SolverInterface() {}
 };

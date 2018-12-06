@@ -17,12 +17,12 @@ using namespace std;
 using namespace sco;
 using namespace Eigen;
 
-class SQP : public testing::TestWithParam<ConvexSolver> {
+class SQP : public testing::TestWithParam<ModelType> {
  protected:
   SQP() {}
 };
 
-void setupProblem(OptProbPtr& probptr, size_t nvars, ConvexSolver convex_solver)
+void setupProblem(OptProbPtr& probptr, size_t nvars, ModelType convex_solver)
 {
   probptr.reset(new OptProb(convex_solver));
   vector<string> var_names;
@@ -84,7 +84,7 @@ void testProblem(ScalarOfVectorPtr f,
                  ConstraintType cnt_type,
                  const DblVec& init,
                  const DblVec& sol,
-                 ConvexSolver convex_solver
+                 ModelType convex_solver
                 )
 {
   OptProbPtr prob;

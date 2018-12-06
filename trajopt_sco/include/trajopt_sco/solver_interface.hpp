@@ -149,7 +149,7 @@ std::ostream& operator<<(std::ostream&, const Cnt&);
 std::ostream& operator<<(std::ostream&, const AffExpr&);
 std::ostream& operator<<(std::ostream&, const QuadExpr&);
 
-class ConvexSolver
+class ModelType
 {
 public:
   enum Value {
@@ -160,28 +160,28 @@ public:
   AUTO_SOLVER
   };
 
-  static const std::vector<std::string> SOLVER_NAMES_;
+  static const std::vector<std::string> MODEL_NAMES_;
 
-  ConvexSolver();
-  ConvexSolver(const ConvexSolver::Value& v);
-  ConvexSolver(const int& v);
-  ConvexSolver(const std::string& s);
+  ModelType();
+  ModelType(const ModelType::Value& v);
+  ModelType(const int& v);
+  ModelType(const std::string& s);
   operator int() const;
-  bool operator==(const ConvexSolver::Value& a) const;
-  bool operator==(const ConvexSolver& a) const;
-  bool operator!=(const ConvexSolver& a) const;
+  bool operator==(const ModelType::Value& a) const;
+  bool operator==(const ModelType& a) const;
+  bool operator!=(const ModelType& a) const;
   void fromJson(const Json::Value& v);
-  friend std::ostream& operator<<(std::ostream& os, const ConvexSolver& cs);
+  friend std::ostream& operator<<(std::ostream& os, const ModelType& cs);
 private:
 
   Value value_;
 };
 
-std::vector<ConvexSolver> availableSolvers();
+std::vector<ModelType> availableSolvers();
 
-std::ostream& operator<<(std::ostream& os, const ConvexSolver& cs);
+std::ostream& operator<<(std::ostream& os, const ModelType& cs);
 
-ModelPtr createModel(ConvexSolver convex_solver = ConvexSolver::AUTO_SOLVER);
+ModelPtr createModel(ModelType model_type = ModelType::AUTO_SOLVER);
 
 IntVec vars2inds(const VarVector& vars);
 
