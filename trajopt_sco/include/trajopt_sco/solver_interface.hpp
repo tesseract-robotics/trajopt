@@ -1,6 +1,7 @@
 #pragma once
 #include <cassert>
 #include <iosfwd>
+#include <jsoncpp/json/json.h>
 #include <limits>
 #include <string>
 #include <trajopt_sco/sco_common.hpp>
@@ -17,12 +18,12 @@ backends.
 
 namespace sco
 {
-
 enum ConstraintType
 {
   EQ,
   INEQ
 };
+
 typedef std::vector<ConstraintType> ConstraintTypeVector;
 
 enum CvxOptStatus
@@ -148,5 +149,53 @@ std::ostream& operator<<(std::ostream&, const Cnt&);
 std::ostream& operator<<(std::ostream&, const AffExpr&);
 std::ostream& operator<<(std::ostream&, const QuadExpr&);
 
-ModelPtr createModel();
+class ModelType
+{
+public:
+  enum Value {
+  GUROBI,
+  BPMPD,
+  OSQP,
+  QPOASES,
+  AUTO_SOLVER
+  };
+
+  static const std::vector<std::string> MODEL_NAMES_;
+
+  ModelType();
+  ModelType(const ModelType::Value& v);
+  ModelType(const int& v);
+  ModelType(const std::string& s);
+  operator int() const;
+  bool operator==(const ModelType::Value& a) const;
+  bool operator==(const ModelType& a) const;
+  bool operator!=(const ModelType& a) const;
+  void fromJson(const Json::Value& v);
+  friend std::ostream& operator<<(std::ostream& os, const ModelType& cs);
+private:
+
+  Value value_;
+};
+
+std::vector<ModelType> availableSolvers();
+
+std::ostream& operator<<(std::ostream& os, const ModelType& cs);
+
+ModelPtr createModel(ModelType model_type = ModelType::AUTO_SOLVER);
+
+IntVec vars2inds(const VarVector& vars);
+
+IntVec cnts2inds(const CntVector& cnts);
+
+/**
+ * @brief simplify2 gets as input a list of indices, corresponding to non-zero
+ *        values in vals, checks that all indexed values are actually non-zero,
+ *        and if they are not, removes them from vals and inds, so that
+ *        inds_out.size() <= inds.size(). Also, it will compact vals so that
+ *        vals_out.size() == inds_out.size()
+ *
+ * @param[in,out] inds indices of non-vero variables in vals
+ * @param[in,out] val values
+ */
+void simplify2(IntVec& inds, DblVec& vals);
 }

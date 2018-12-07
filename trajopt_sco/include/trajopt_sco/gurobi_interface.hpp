@@ -1,3 +1,4 @@
+#pragma once
 #include <trajopt_sco/solver_interface.hpp>
 
 /**
@@ -22,30 +23,30 @@ public:
 
   GurobiModel();
 
-  Var addVar(const std::string& name);
-  Var addVar(const std::string& name, double lower, double upper);
+  Var addVar(const std::string& name) override;
+  Var addVar(const std::string& name, double lower, double upper) override;
 
-  Cnt addEqCnt(const AffExpr&, const std::string& name);
-  Cnt addIneqCnt(const AffExpr&, const std::string& name);
-  Cnt addIneqCnt(const QuadExpr&, const std::string& name);
+  Cnt addEqCnt(const AffExpr&, const std::string& name) override;
+  Cnt addIneqCnt(const AffExpr&, const std::string& name) override;
+  Cnt addIneqCnt(const QuadExpr&, const std::string& name) override;
 
-  void removeVars(const VarVector&);
-  void removeCnts(const CntVector&);
+  void removeVars(const VarVector&) override;
+  void removeCnts(const CntVector&) override;
 
-  void update();
-  void setVarBounds(const VarVector&, const DblVec& lower, const DblVec& upper);
-  DblVec getVarValues(const VarVector&) const;
+  void update() override;
+  void setVarBounds(const VarVector&, const DblVec& lower, const DblVec& upper) override;
+  DblVec getVarValues(const VarVector&) const override;
 
-  CvxOptStatus optimize();
+  CvxOptStatus optimize() override;
   /** Don't use this function, because it adds constraints that aren't tracked
    */
   CvxOptStatus optimizeFeasRelax();
 
-  void setObjective(const AffExpr&);
-  void setObjective(const QuadExpr&);
-  void writeToFile(const std::string& fname);
+  void setObjective(const AffExpr&) override;
+  void setObjective(const QuadExpr&) override;
+  void writeToFile(const std::string& fname) override;
 
-  VarVector getVars() const;
+  VarVector getVars() const override;
 
   ~GurobiModel();
 };

@@ -21,6 +21,7 @@ void ConvexObjective::addHinge(const AffExpr& affexpr, double coeff)
   AffExpr hinge_cost = exprMult(AffExpr(hinge), coeff);
   exprInc(quad_, hinge_cost);
 }
+
 void ConvexObjective::addAbs(const AffExpr& affexpr, double coeff)
 {
   Var neg = model_->addVar("neg", 0, INFINITY);
@@ -39,21 +40,25 @@ void ConvexObjective::addAbs(const AffExpr& affexpr, double coeff)
   affeq.coeffs.push_back(-1);
   eqs_.push_back(affeq);
 }
+
 void ConvexObjective::addHinges(const AffExprVector& ev)
 {
   for (size_t i = 0; i < ev.size(); ++i)
     addHinge(ev[i], 1);
 }
+
 void ConvexObjective::addL1Norm(const AffExprVector& ev)
 {
   for (size_t i = 0; i < ev.size(); ++i)
     addAbs(ev[i], 1);
 }
+
 void ConvexObjective::addL2Norm(const AffExprVector& ev)
 {
   for (size_t i = 0; i < ev.size(); ++i)
     exprInc(quad_, exprSquare(ev[i]));
 }
+
 void ConvexObjective::addMax(const AffExprVector& ev)
 {
   Var m = model_->addVar("max", -INFINITY, INFINITY);
@@ -63,6 +68,7 @@ void ConvexObjective::addMax(const AffExprVector& ev)
     exprDec(ineqs_.back(), m);
   }
 }
+
 void ConvexObjective::addConstraintsToModel()
 {
   cnts_.reserve(eqs_.size() + ineqs_.size());
@@ -75,13 +81,13 @@ void ConvexObjective::addConstraintsToModel()
     cnts_.push_back(model_->addIneqCnt(aff, ""));
   }
 }
+
 void ConvexObjective::removeFromModel()
 {
   model_->removeCnts(cnts_);
   model_->removeVars(vars_);
   model_ = NULL;
 }
-double ConvexObjective::value(const DblVec& x) { return quad_.value(x); }
 ConvexObjective::~ConvexObjective()
 {
   if (inModel())
@@ -102,6 +108,7 @@ void ConvexConstraints::addConstraintsToModel()
     cnts_.push_back(model_->addIneqCnt(aff, ""));
   }
 }
+
 void ConvexConstraints::removeFromModel()
 {
   model_->removeCnts(cnts_);
@@ -125,6 +132,7 @@ ConvexConstraints::~ConvexConstraints()
     removeFromModel();
 }
 
+double ConvexObjective::value(const DblVec& x) { return quad_.value(x); }
 DblVec Constraint::violations(const DblVec& x)
 {
   DblVec val = value(x);
@@ -143,13 +151,16 @@ DblVec Constraint::violations(const DblVec& x)
 
   return out;
 }
+
 double Constraint::violation(const DblVec& x) { return vecSum(violations(x)); }
 
-OptProb::OptProb() : model_(createModel()) {}
+OptProb::OptProb(ModelType convex_solver) : model_(createModel(convex_solver)) {}
+
 VarVector OptProb::createVariables(const std::vector<std::string>& var_names)
 {
   return createVariables(var_names, DblVec(var_names.size(), -INFINITY), DblVec(var_names.size(), INFINITY));
 }
+
 VarVector OptProb::createVariables(const std::vector<std::string>& var_names, const DblVec& lb, const DblVec& ub)
 {
   size_t n_add = var_names.size(), n_cur = vars_.size();
@@ -167,16 +178,19 @@ VarVector OptProb::createVariables(const std::vector<std::string>& var_names, co
   model_->update();
   return VarVector(vars_.end() - n_add, vars_.end());
 }
+
 void OptProb::setLowerBounds(const DblVec& lb)
 {
   assert(lb.size() == vars_.size());
   lower_bounds_ = lb;
 }
+
 void OptProb::setUpperBounds(const DblVec& ub)
 {
   assert(ub.size() == vars_.size());
   upper_bounds_ = ub;
 }
+
 void OptProb::setLowerBounds(const DblVec& lb, const VarVector& vars) { setVec(lower_bounds_, vars, lb); }
 void OptProb::setUpperBounds(const DblVec& ub, const VarVector &vars) { setVec(upper_bounds_, vars, ub); }
 void OptProb::addCost(CostPtr cost) { costs_.push_back(cost); }
@@ -187,16 +201,19 @@ void OptProb::addConstraint(ConstraintPtr cnt)
   else
     addIneqConstraint(cnt);
 }
+
 void OptProb::addEqConstraint(ConstraintPtr cnt)
 {
   assert(cnt->type() == EQ);
   eqcnts_.push_back(cnt);
 }
+
 void OptProb::addIneqConstraint(ConstraintPtr cnt)
 {
   assert(cnt->type() == INEQ);
   ineqcnts_.push_back(cnt);
 }
+
 std::vector<ConstraintPtr> OptProb::getConstraints() const
 {
   std::vector<ConstraintPtr> out;
@@ -205,6 +222,7 @@ std::vector<ConstraintPtr> OptProb::getConstraints() const
   out.insert(out.end(), ineqcnts_.begin(), ineqcnts_.end());
   return out;
 }
+
 void OptProb::addLinearConstraint(const AffExpr& expr, ConstraintType type)
 {
   if (type == EQ)
@@ -221,6 +239,7 @@ DblVec OptProb::getCentralFeasiblePoint(const DblVec& x)
     center[i] = (lower_bounds_[i] + upper_bounds_[i]) / 2;
   return getClosestFeasiblePoint(center);
 }
+
 DblVec OptProb::getClosestFeasiblePoint(const DblVec& x)
 {
   LOG_DEBUG("getClosestFeasiblePoint");

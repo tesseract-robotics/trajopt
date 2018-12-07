@@ -17,9 +17,14 @@ using namespace std;
 using namespace sco;
 using namespace Eigen;
 
-void setupProblem(OptProbPtr& probptr, size_t nvars)
+class SQP : public testing::TestWithParam<ModelType> {
+ protected:
+  SQP() {}
+};
+
+void setupProblem(OptProbPtr& probptr, size_t nvars, ModelType convex_solver)
 {
-  probptr.reset(new OptProb());
+  probptr.reset(new OptProb(convex_solver));
   vector<string> var_names;
   for (size_t i = 0; i < nvars; ++i)
   {
@@ -38,11 +43,11 @@ void expectAllNear(const DblVec& x, const DblVec& y, double abstol)
 }
 
 double f_QuadraticSeparable(const VectorXd& x) { return x(0) * x(0) + sq(x(1) - 1) + sq(x(2) - 2); }
-TEST(SQP, QuadraticSeparable)
+TEST_P(SQP, QuadraticSeparable)
 {
   // if the problem is exactly a QP, it should be solved in one iteration
   OptProbPtr prob;
-  setupProblem(prob, 3);
+  setupProblem(prob, 3, GetParam());
   prob->addCost(CostPtr(new CostFromFunc(ScalarOfVector::construct(&f_QuadraticSeparable), prob->getVars(), "f")));
   BasicTrustRegionSQP solver(prob);
   BasicTrustRegionSQPParameters &params = solver.getParameters();
@@ -55,10 +60,10 @@ TEST(SQP, QuadraticSeparable)
   // todo: checks on number of iterations and function evaluates
 }
 double f_QuadraticNonseparable(const VectorXd& x) { return sq(x(0) - x(1) + 3 * x(2)) + sq(x(0) - 1) + sq(x(2) - 2); }
-TEST(SQP, QuadraticNonseparable)
+TEST_P(SQP, QuadraticNonseparable)
 {
   OptProbPtr prob;
-  setupProblem(prob, 3);
+  setupProblem(prob, 3, GetParam());
   prob->addCost(
       CostPtr(new CostFromFunc(ScalarOfVector::construct(&f_QuadraticNonseparable), prob->getVars(), "f", true)));
   BasicTrustRegionSQP solver(prob);
@@ -78,12 +83,14 @@ void testProblem(ScalarOfVectorPtr f,
                  VectorOfVectorPtr g,
                  ConstraintType cnt_type,
                  const DblVec& init,
-                 const DblVec& sol)
+                 const DblVec& sol,
+                 ModelType convex_solver
+                )
 {
   OptProbPtr prob;
   size_t n = init.size();
   assert(sol.size() == n);
-  setupProblem(prob, n);
+  setupProblem(prob, n, convex_solver);
   prob->addCost(CostPtr(new CostFromFunc(f, prob->getVars(), "f", true)));
   prob->addConstraint(ConstraintPtr(new ConstraintFromErrFunc(g, prob->getVars(), VectorXd(), cnt_type, "g")));
   BasicTrustRegionSQP solver(prob);
@@ -136,22 +143,30 @@ VectorXd g_TP7(const VectorXd& x)
   return out;
 }
 
-TEST(SQP, TP1)
+TEST_P(SQP, TP1)
 {
   testProblem(
-      ScalarOfVector::construct(&f_TP1), VectorOfVector::construct(&g_TP1), INEQ, {-2, 1}, {1, 1});
+    ScalarOfVector::construct(&f_TP1), VectorOfVector::construct(&g_TP1),
+    INEQ, {-2, 1}, {1, 1}, GetParam());
 }
-TEST(SQP, TP3)
+TEST_P(SQP, TP3)
 {
   testProblem(
-        ScalarOfVector::construct(&f_TP3), VectorOfVector::construct(&g_TP3), INEQ, {10, 1}, {0, 0});
+    ScalarOfVector::construct(&f_TP3), VectorOfVector::construct(&g_TP3),
+    INEQ, {10, 1}, {0, 0}, GetParam());
 }
-TEST(SQP, TP6)
-{
-  testProblem(ScalarOfVector::construct(&f_TP6), VectorOfVector::construct(&g_TP6), EQ, {10, 1}, {1, 1});
-}
-TEST(SQP, TP7)
+TEST_P(SQP, TP6)
 {
   testProblem(
-      ScalarOfVector::construct(&f_TP7), VectorOfVector::construct(&g_TP7), EQ, {2, 2}, {0., sqrtf(3.)});
+    ScalarOfVector::construct(&f_TP6), VectorOfVector::construct(&g_TP6),
+    EQ, {10, 1}, {1, 1}, GetParam());
 }
+TEST_P(SQP, TP7)
+{
+  testProblem(
+    ScalarOfVector::construct(&f_TP7), VectorOfVector::construct(&g_TP7),
+    EQ, {2, 2}, {0., sqrtf(3.)}, GetParam());
+}
+
+INSTANTIATE_TEST_CASE_P(AllSolvers, SQP,
+                        testing::ValuesIn(availableSolvers()));

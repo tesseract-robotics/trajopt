@@ -131,6 +131,7 @@ void ProblemConstructionInfo::readBasicInfo(const Json::Value& v)
   json_marshal::childFromJson(v, basic_info.manip, "manip");
   json_marshal::childFromJson(v, basic_info.robot, "robot", std::string(""));
   json_marshal::childFromJson(v, basic_info.dofs_fixed, "dofs_fixed", IntVec());
+  json_marshal::childFromJson(v, basic_info.convex_solver, "convex_solver", basic_info.convex_solver);
   // TODO: optimization parameters, etc?
 }
 
@@ -380,7 +381,8 @@ TrajOptProbPtr ConstructProblem(const Json::Value& root, tesseract::BasicEnvCons
   return ConstructProblem(pci);
 }
 
-TrajOptProb::TrajOptProb(int n_steps, const ProblemConstructionInfo& pci) : m_kin(pci.kin), m_env(pci.env)
+TrajOptProb::TrajOptProb(int n_steps, const ProblemConstructionInfo& pci)
+ : OptProb(pci.basic_info.convex_solver), m_kin(pci.kin), m_env(pci.env)
 {
   const Eigen::MatrixX2d& limits = m_kin->getLimits();
   int n_dof = m_kin->numJoints();

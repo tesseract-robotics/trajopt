@@ -1,3 +1,4 @@
+#pragma once
 #include <Eigen/Core>
 #include <trajopt_sco/solver_interface.hpp>
 

@@ -7,6 +7,14 @@
 
 namespace sco
 {
+const std::vector<std::string> ModelType::MODEL_NAMES_ = {
+  "GUROBI",
+  "BPMPD",
+  "OSQP",
+  "QPOASES",
+  "AUTO_SOLVER"
+};
+
 IntVec vars2inds(const VarVector& vars)
 {
   IntVec inds(vars.size());
@@ -28,7 +36,7 @@ void simplify2(IntVec& inds, DblVec& vals)
   Int2Double ind2val;
   for (unsigned i = 0; i < inds.size(); ++i)
   {
-    if (vals[i] != 0)
+    if (vals[i] != 0.0)
       ind2val[inds[i]] += vals[i];
   }
   inds.resize(ind2val.size());
@@ -51,7 +59,7 @@ double AffExpr::value(const double* x) const
   }
   return out;
 }
-double AffExpr::value(const DblVec &x) const
+double AffExpr::value(const DblVec& x) const
 {
   double out = constant;
   for (size_t i = 0; i < size(); ++i)
@@ -117,11 +125,13 @@ std::ostream& operator<<(std::ostream& o, const Var& v)
     o << "nullvar";
   return o;
 }
+
 std::ostream& operator<<(std::ostream& o, const Cnt& c)
 {
   o << c.cnt_rep->expr << ((c.cnt_rep->type == EQ) ? " == 0" : " <= 0");
   return o;
 }
+
 std::ostream& operator<<(std::ostream& o, const AffExpr& e)
 {
   o << e.constant;
@@ -131,6 +141,7 @@ std::ostream& operator<<(std::ostream& o, const AffExpr& e)
   }
   return o;
 }
+
 std::ostream& operator<<(std::ostream& o, const QuadExpr& e)
 {
   o << e.affexpr;
@@ -141,7 +152,110 @@ std::ostream& operator<<(std::ostream& o, const QuadExpr& e)
   return o;
 }
 
-ModelPtr createModel()
+std::ostream& operator<<(std::ostream& o, const ModelType& cs)
+{
+  int cs_ivalue_ = static_cast<int>(cs.value_);
+  if (cs_ivalue_ > cs.MODEL_NAMES_.size())
+  {
+    std::stringstream conversion_error;
+    conversion_error << "Error converting ModelType to string - "
+                     << "enum value is " << cs_ivalue_ << std::endl;
+    throw std::runtime_error(conversion_error.str());
+  }
+  o << ModelType::MODEL_NAMES_[cs_ivalue_];
+  return o;
+}
+
+ModelType::ModelType()
+{
+  value_ = ModelType::AUTO_SOLVER;
+}
+
+ModelType::ModelType(const ModelType::Value& v)
+{
+  value_ = v;
+}
+
+ModelType::ModelType(const int& v)
+{
+  value_ = static_cast<Value>(v);
+}
+
+ModelType::ModelType(const std::string& s)
+{
+  for (unsigned int i = 0; i < ModelType::MODEL_NAMES_.size(); ++i)
+  {
+    if (s == ModelType::MODEL_NAMES_[i])
+    {
+      value_ = static_cast<ModelType::Value>(i);
+      return;
+    }
+  }
+  PRINT_AND_THROW(boost::format("invalid solver name:\"%s\"") % s);
+}
+
+ModelType::operator int() const
+{
+  return static_cast<int>(value_);
+}
+
+bool ModelType::operator==(const ModelType::Value& a) const
+{
+  return value_ == a;
+}
+
+bool ModelType::operator==(const ModelType& a) const
+{
+  return value_ == a.value_;
+}
+
+bool ModelType::operator!=(const ModelType& a) const
+{
+  return value_ != a.value_;
+}
+
+void ModelType::fromJson(const Json::Value& v) {
+  try
+  {
+    std::string ref = v.asString();
+    ModelType cs(ref);
+    value_ = cs.value_;
+  }
+  catch (const std::runtime_error&)
+  {
+    PRINT_AND_THROW(boost::format("expected: %s, got %s") % ("string") % (v));
+  }
+}
+
+std::vector<ModelType> availableSolvers()
+{
+  std::vector<bool> has_solver(ModelType::AUTO_SOLVER, false);
+#ifdef HAVE_GUROBI
+  has_solver[ModelType::GUROBI] = true;
+#endif
+#ifdef HAVE_BPMPD
+  has_solver[ModelType::BPMPD] = true;
+#endif
+#ifdef HAVE_OSQP
+  has_solver[ModelType::OSQP] = true;
+#endif
+#ifdef HAVE_QPOASES
+  has_solver[ModelType::QPOASES] = true;
+#endif
+  int n_available_solvers = 0;
+  for (auto i = 0; i < ModelType::AUTO_SOLVER; ++i)
+    if (has_solver[i])
+      ++n_available_solvers;
+  std::vector<ModelType> available_solvers(n_available_solvers,
+                                              ModelType::AUTO_SOLVER);
+  auto j = 0;
+  for (auto i = 0; i < ModelType::AUTO_SOLVER; ++i)
+    if (has_solver[i])
+      available_solvers[j++] = static_cast<ModelType>(i);
+  return available_solvers;
+}
+
+ModelPtr createModel(ModelType model_type)
 {
 #ifdef HAVE_GUROBI
   extern ModelPtr createGurobiModel();
@@ -149,53 +263,73 @@ ModelPtr createModel()
 #ifdef HAVE_BPMPD
   extern ModelPtr createBPMPDModel();
 #endif
-
-  enum ConvexSolver
-  {
-    GUROBI,
-    BPMPD,
-    INVALID
-  };
+#ifdef HAVE_OSQP
+  extern ModelPtr createOSQPModel();
+#endif
+#ifdef HAVE_QPOASES
+  extern ModelPtr createqpOASESModel();
+#endif
 
   char* solver_env = getenv("TRAJOPT_CONVEX_SOLVER");
 
-  ConvexSolver solver = INVALID;
+  ModelType solver = model_type;
 
-  if (solver_env)
+  if (solver == ModelType::AUTO_SOLVER)
   {
-    if (std::string(solver_env) == "GUROBI")
-      solver = GUROBI;
-    else if (std::string(solver_env) == "BPMPD")
-      solver = BPMPD;
+    if (solver_env and std::string(solver_env) != "AUTO_SOLVER")
+    {
+      try
+      {
+        solver = ModelType(std::string(solver_env));
+      }
+      catch (std::runtime_error&)
+      {
+        PRINT_AND_THROW(boost::format("invalid solver \"%s\"specified by TRAJOPT_CONVEX_SOLVER") % solver_env);
+      }
+    }
     else
-      PRINT_AND_THROW(boost::format("invalid solver \"%s\"specified by TRAJOPT_CONVEX_SOLVER") % solver_env);
+    {
+      solver = availableSolvers()[0];
+    }
+  }
+
 #ifndef HAVE_GUROBI
-    if (solver == GUROBI)
-      PRINT_AND_THROW("you didn't build with GUROBI support");
+  if (solver == ModelType::GUROBI)
+    PRINT_AND_THROW("you didn't build with GUROBI support");
 #endif
 #ifndef HAVE_BPMPD
-    if (solver == BPMPD)
-      PRINT_AND_THROW("you don't have BPMPD support on this platform");
+  if (solver == ModelType::BPMPD)
+    PRINT_AND_THROW("you don't have BPMPD support on this platform");
 #endif
-  }
-  else
-  {
-#ifdef HAVE_GUROBI
-    solver = GUROBI;
-#else
-    solver = BPMPD;
+#ifndef HAVE_OSQP
+  if (solver == ModelType::OSQP)
+    PRINT_AND_THROW("you don't have OSQP support on this platform");
 #endif
-  }
+#ifndef HAVE_QPOASES
+  if (solver == ModelType::QPOASES)
+    PRINT_AND_THROW("you don't have qpOASES support on this platform");
+#endif
 
 #ifdef HAVE_GUROBI
-  if (solver == GUROBI)
+  if (solver == ModelType::GUROBI)
     return createGurobiModel();
 #endif
 #ifdef HAVE_BPMPD
-  if (solver == BPMPD)
+  if (solver == ModelType::BPMPD)
     return createBPMPDModel();
 #endif
-  PRINT_AND_THROW("Failed to create solver");
+#ifdef HAVE_OSQP
+  if (solver == ModelType::OSQP)
+    return createOSQPModel();
+#endif
+#ifdef HAVE_QPOASES
+  if (solver == ModelType::QPOASES)
+    return createqpOASESModel();
+#endif
+  std::stringstream solver_instatiation_error;
+  solver_instatiation_error << "Failed to create solver: unknown solver "
+                            << solver << std::endl;
+  PRINT_AND_THROW(solver_instatiation_error.str());
   return ModelPtr();
 }
 }

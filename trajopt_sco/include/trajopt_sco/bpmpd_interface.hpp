@@ -1,4 +1,4 @@
-
+#pragma once
 #include <trajopt_sco/solver_interface.hpp>
 #include <trajopt_utils/macros.h>
 
@@ -22,19 +22,19 @@ public:
   virtual ~BPMPDModel();
 
   Var addVar(const std::string& name);
-  Cnt addEqCnt(const AffExpr&, const std::string& name);
-  Cnt addIneqCnt(const AffExpr&, const std::string& name);
-  Cnt addIneqCnt(const QuadExpr&, const std::string& name);
-  void removeVars(const VarVector& vars);
-  void removeCnts(const CntVector& cnts);
+  Cnt addEqCnt(const AffExpr&, const std::string& name) override;
+  Cnt addIneqCnt(const AffExpr&, const std::string& name) override;
+  Cnt addIneqCnt(const QuadExpr&, const std::string& name) override;
+  void removeVars(const VarVector& vars) override;
+  void removeCnts(const CntVector& cnts) override;
 
-  void update();
-  void setVarBounds(const VarVector& vars, const DblVec& lower, const DblVec& upper);
-  DblVec getVarValues(const VarVector& vars) const;
-  virtual CvxOptStatus optimize();
-  virtual void setObjective(const AffExpr&);
-  virtual void setObjective(const QuadExpr&);
-  virtual void writeToFile(const std::string& fname);
-  virtual VarVector getVars() const;
+  void update() override;
+  void setVarBounds(const VarVector& vars, const DblVec& lower, const DblVec& upper) override;
+  DblVec getVarValues(const VarVector& vars) const override;
+  virtual CvxOptStatus optimize() override;
+  virtual void setObjective(const AffExpr&) override;
+  virtual void setObjective(const QuadExpr&) override;
+  virtual void writeToFile(const std::string& fname) override;
+  virtual VarVector getVars() const override;
 };
 }

@@ -13,12 +13,16 @@ int LoggingInit()
 
   char* lvlc = getenv("TRAJOPT_LOG_THRESH");
   std::string lvlstr;
-  if (lvlc == NULL)
+  if (lvlc == nullptr)
   {
     std::printf("You can set logging level with TRAJOPT_LOG_THRESH. Valid values: "
-                "%s. Defaulting to INFO\n",
+                "%s. Defaulting to ERROR\n",
                 VALID_THRESH_VALUES);
-    lvlstr = "INFO";
+  #ifdef NDEBUG
+    lvlstr = "ERROR";
+  #else
+    lvlstr = "DEBUG";
+  #endif
   }
   else
     lvlstr = std::string(lvlc);

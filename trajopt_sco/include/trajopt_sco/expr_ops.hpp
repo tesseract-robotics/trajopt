@@ -1,5 +1,4 @@
 #pragma once
-
 #include <trajopt_sco/sco_fwd.hpp>
 #include <trajopt_sco/solver_interface.hpp>
 
@@ -161,5 +160,4 @@ QuadExpr exprSquare(const Var&);
 QuadExpr exprSquare(const AffExpr&);
 
 AffExpr cleanupAff(const AffExpr&);
-QuadExpr cleanupQuad(const QuadExpr&);  // warning: might make it non-psd!
 }
