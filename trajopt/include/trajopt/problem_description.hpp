@@ -23,7 +23,7 @@ struct ProblemConstructionInfo;
 struct TrajOptResult;
 typedef std::shared_ptr<TrajOptResult> TrajOptResultPtr;
 
-TrajOptProbPtr TRAJOPT_API ConstructProblem(const ProblemConstructionInfo&);
+TrajOptProbPtr TRAJOPT_API ConstructProblem(const ProblemConstructionInfo &);
 TrajOptProbPtr TRAJOPT_API ConstructProblem(const Json::Value&, tesseract::BasicEnvConstPtr env);
 TrajOptResultPtr TRAJOPT_API OptimizeProblem(TrajOptProbPtr, const tesseract::BasicPlottingPtr plotter = nullptr);
 
