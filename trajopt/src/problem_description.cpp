@@ -794,6 +794,14 @@ void JointPosTermInfo::hatch(TrajOptProb& prob)
 
   if (term_type & TT_COST)
   {
+    ROS_ERROR("Use time version of this term has not been defined.");
+  }
+  else if (term_type == (TT_CNT | TT_USE_TIME))
+  {
+    ROS_ERROR("Use time version of this term has not been defined.");
+  }
+  else if ((term_type & TT_COST) && ~(term_type | ~TT_USE_TIME))
+  {
     // If the tolerances are 0, an equality cost is set. Otherwise it's a hinged "inequality" cost
     if (is_upper_zeros && is_lower_zeros)
     {
