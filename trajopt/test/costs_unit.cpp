@@ -177,6 +177,7 @@ TEST_F(CostsTest, inequality_jointPos)
   pci.basic_info.n_steps = steps;
   pci.basic_info.manip = "right_arm";
   pci.basic_info.start_fixed = false;
+  pci.basic_info.use_time = false;
 
   // Create Kinematic Object
   pci.kin = pci.env->getManipulator(pci.basic_info.manip);
@@ -261,8 +262,6 @@ TEST_F(CostsTest, inequality_jointPos)
   }
 }
 
-
-
 /**
  * @brief Tests the equality jointVel cost/constraints.
  *
@@ -287,6 +286,7 @@ TEST_F(CostsTest, equality_jointVel)
   pci.basic_info.n_steps = steps;
   pci.basic_info.manip = "right_arm";
   pci.basic_info.start_fixed = false;
+  pci.basic_info.use_time = false;
 
   // Create Kinematic Object
   pci.kin = pci.env->getManipulator(pci.basic_info.manip);
@@ -378,6 +378,7 @@ TEST_F(CostsTest, inequality_jointVel)
   pci.basic_info.n_steps = steps;
   pci.basic_info.manip = "right_arm";
   pci.basic_info.start_fixed = false;
+  pci.basic_info.use_time = false;
 
   // Create Kinematic Object
   pci.kin = pci.env->getManipulator(pci.basic_info.manip);
@@ -486,6 +487,7 @@ TEST_F(CostsTest, equality_jointAcc)
   pci.basic_info.n_steps = steps;
   pci.basic_info.manip = "right_arm";
   pci.basic_info.start_fixed = false;
+  pci.basic_info.use_time = false;
 
   // Create Kinematic Object
   pci.kin = pci.env->getManipulator(pci.basic_info.manip);
@@ -578,6 +580,7 @@ TEST_F(CostsTest, inequality_jointAcc)
   pci.basic_info.n_steps = steps;
   pci.basic_info.manip = "right_arm";
   pci.basic_info.start_fixed = false;
+  pci.basic_info.use_time = false;
 
   // Create Kinematic Object
   pci.kin = pci.env->getManipulator(pci.basic_info.manip);
