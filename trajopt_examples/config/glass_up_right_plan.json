@@ -110,7 +110,7 @@
   ],
   "init_info" :
   {
-    "type" : "straight_line",
+    "type" : "joint_interpolated",
     "endpoint" : [0.4, 0.2762, 0.0, -1.3348, 0.0, 1.4959, 0.0]
   }
 }

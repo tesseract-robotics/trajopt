@@ -87,6 +87,7 @@ TrajOptProbPtr cppMethod()
   pci.basic_info.n_steps = steps_;
   pci.basic_info.manip = "manipulator";
   pci.basic_info.start_fixed = false;
+  pci.basic_info.use_time = false;
   //  pci.basic_info.dofs_fixed
 
   // Create Kinematic Object
@@ -101,6 +102,7 @@ TrajOptProbPtr cppMethod()
   // Populate Cost Info
   std::shared_ptr<JointVelTermInfo> jv = std::shared_ptr<JointVelTermInfo>(new JointVelTermInfo);
   jv->coeffs = std::vector<double>(7, 5.0);
+  jv->targets = std::vector<double>(7, 0.0);
   jv->name = "joint_vel";
   jv->term_type = TT_COST;
   pci.cost_infos.push_back(jv);

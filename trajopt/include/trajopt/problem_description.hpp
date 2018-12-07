@@ -23,14 +23,15 @@ struct ProblemConstructionInfo;
 struct TrajOptResult;
 typedef std::shared_ptr<TrajOptResult> TrajOptResultPtr;
 
-TrajOptProbPtr TRAJOPT_API ConstructProblem(const ProblemConstructionInfo&);
+TrajOptProbPtr TRAJOPT_API ConstructProblem(const ProblemConstructionInfo &);
 TrajOptProbPtr TRAJOPT_API ConstructProblem(const Json::Value&, tesseract::BasicEnvConstPtr env);
 TrajOptResultPtr TRAJOPT_API OptimizeProblem(TrajOptProbPtr, const tesseract::BasicPlottingPtr plotter = nullptr);
 
 enum TermType
 {
-  TT_COST,
-  TT_CNT
+  TT_COST = 0x1,      // 0000 0001
+  TT_CNT = 0x2,       // 0000 0010
+  TT_USE_TIME = 0x4,  // 0000 0100
 };
 
 #define DEFINE_CREATE(classname)                                                                                       \
@@ -50,6 +51,14 @@ public:
   TrajOptProb();
   TrajOptProb(int n_steps, const ProblemConstructionInfo& pci);
   virtual ~TrajOptProb() = default;
+  sco::VarVector GetJointVarRow(int i)
+  {
+    sco::VarVector var_row = GetVarRow(i);
+    // Remove time column
+    if (has_time)
+      var_row.pop_back();
+    return var_row;
+  }
   sco::VarVector GetVarRow(int i) { return m_traj_vars.row(i); }
   sco::Var& GetVar(int i, int j) { return m_traj_vars.at(i, j); }
   VarArray& GetVars() { return m_traj_vars; }
@@ -60,6 +69,8 @@ public:
   void SetInitTraj(const TrajArray& x) { m_init_traj = x; }
   TrajArray GetInitTraj() { return m_init_traj; }
   friend TrajOptProbPtr ConstructProblem(const ProblemConstructionInfo&);
+  // Indicates whether or not the last column is dt
+  bool has_time;
 
 private:
   VarArray m_traj_vars;
@@ -87,6 +98,11 @@ struct BasicInfo
   std::string robot;  // optional
   IntVec dofs_fixed;  // optional
   sco::ModelType convex_solver; // which convex solver to use
+
+  // optional, but must be valid
+  bool use_time = false;
+  double dt_upper_lim = 1.0;
+  double dt_lower_lim = 1.0;
 };
 
 /**
@@ -97,10 +113,12 @@ struct InitInfo
   enum Type
   {
     STATIONARY,
+    JOINT_INTERPOLATED,
     GIVEN_TRAJ,
   };
   Type type;
   TrajArray data;
+  double dt = 1.0;
 };
 
 struct TRAJOPT_API MakesCost
@@ -117,8 +135,10 @@ Then it later gets converted to a Cost object by the hatch method
 */
 struct TRAJOPT_API TermInfo
 {
-  std::string name;  // xxx is this used?
-  TermType term_type;
+  std::string name;
+  int term_type;
+  int GetSupportedTypes() { return supported_term_type_;}
+
   virtual void fromJson(ProblemConstructionInfo& pci, const Json::Value& v) = 0;
   virtual void hatch(TrajOptProb& prob) = 0;
 
@@ -133,8 +153,12 @@ struct TRAJOPT_API TermInfo
 
   virtual ~TermInfo() = default;
 
+protected:
+  TermInfo(int supported_term_type) : supported_term_type_(supported_term_type) {}
+
 private:
   static std::map<std::string, MakerFunc> name2maker;
+  int supported_term_type_;
 };
 
 /**
@@ -164,7 +188,7 @@ private:
 };
 
 /** @brief This is used when the goal frame is not fixed in space */
-struct DynamicCartPoseTermInfo : public TermInfo, public MakesCost, public MakesConstraint
+struct DynamicCartPoseTermInfo : public TermInfo
 {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
@@ -191,7 +215,7 @@ struct DynamicCartPoseTermInfo : public TermInfo, public MakesCost, public Makes
 
   Set term_type == TT_COST or TT_CNT for cost or constraint.
 */
-struct CartPoseTermInfo : public TermInfo, public MakesCost, public MakesConstraint
+struct CartPoseTermInfo : public TermInfo
 {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
@@ -223,7 +247,7 @@ struct CartPoseTermInfo : public TermInfo, public MakesCost, public MakesConstra
  Constrains the change in position of the link in each timestep to be less than
  max_displacement
  */
-struct CartVelTermInfo : public TermInfo, public MakesCost, public MakesConstraint
+struct CartVelTermInfo : public TermInfo
 {
   /** @brief Timesteps over which to apply term */
   int first_step, last_step;
@@ -235,6 +259,8 @@ struct CartVelTermInfo : public TermInfo, public MakesCost, public MakesConstrai
   /** @brief Converts term info into cost/constraint and adds it to trajopt problem */
   void hatch(TrajOptProb& prob) override;
   DEFINE_CREATE(CartVelTermInfo)
+
+  CartVelTermInfo() : TermInfo(TT_COST | TT_CNT) {}
 };
 
 /**
@@ -247,7 +273,7 @@ struct CartVelTermInfo : public TermInfo, public MakesCost, public MakesConstrai
   \f}
   where \f$i\f$ indexes over dof and \f$c_i\f$ are coeffs
  */
-struct JointPosTermInfo : public TermInfo, public MakesCost, public MakesConstraint
+struct JointPosTermInfo : public TermInfo
 {
   /** @brief Vector of coefficients that scales cost. */
   DblVec coeffs;
@@ -266,6 +292,8 @@ struct JointPosTermInfo : public TermInfo, public MakesCost, public MakesConstra
   /** @brief Converts term info into cost/constraint and adds it to trajopt problem */
   void hatch(TrajOptProb& prob) override;
   DEFINE_CREATE(JointPosTermInfo)
+
+  JointPosTermInfo() : TermInfo(TT_COST | TT_CNT) {}
 };
 
 /**
@@ -284,8 +312,8 @@ velocity > lower_limit, no penalty.
 ** upper_limit != lower_limit - 2 Inequality constraints are applied. These are both satisfied when velocity <
 upper_limit and velocity > lower_limit
 
-Note: targets, upper_limits, and lower_limits are optional. If a term is not given it will default to 0 for all joints. If
-one value is given, this will be broadcast to all joints.
+Note: targets, upper_limits, and lower_limits are optional. If a term is not given it will default to 0 for all joints.
+If one value is given, this will be broadcast to all joints.
 
 Note: Velocity is calculated numerically using forward finite difference
 
@@ -294,7 +322,7 @@ Note: Velocity is calculated numerically using forward finite difference
 \f}
 where j indexes over DOF, and \f$c_j\f$ are the coeffs.
 */
-struct JointVelTermInfo : public TermInfo, public MakesCost, public MakesConstraint
+struct JointVelTermInfo : public TermInfo
 {
   /** @brief Vector of coefficients that scales cost for each joint. */
   DblVec coeffs;
@@ -313,6 +341,8 @@ struct JointVelTermInfo : public TermInfo, public MakesCost, public MakesConstra
   /** @brief Converts term info into cost/constraint and adds it to trajopt problem */
   void hatch(TrajOptProb& prob) override;
   DEFINE_CREATE(JointVelTermInfo)
+
+  JointVelTermInfo() : TermInfo(TT_COST | TT_CNT) {}
 };
 
 /**
@@ -331,12 +361,12 @@ and acceleration > lower_limit, no penalty.
 ** upper_limit != lower_limit - 2 Inequality constraints are applied. These are both satisfied when acceleration <
 upper_limit and acceleration > lower_limit
 
-Note: targets, upper_limits, and lower_limits are optional. If a term is not given it will default to 0 for all joints. If
-one value is given, this will be broadcast to all joints.
+Note: targets, upper_limits, and lower_limits are optional. If a term is not given it will default to 0 for all joints.
+If one value is given, this will be broadcast to all joints.
 
 Note: Acceleration is calculated numerically using central finite difference
 */
-struct JointAccTermInfo : public TermInfo, public MakesCost, public MakesConstraint
+struct JointAccTermInfo : public TermInfo
 {
   /** @brief For TT_COST: coefficient that scales cost. For TT_CNT: Acceleration limit*/
   DblVec coeffs;
@@ -355,6 +385,8 @@ struct JointAccTermInfo : public TermInfo, public MakesCost, public MakesConstra
   /** @brief Converts term info into cost/constraint and adds it to trajopt problem */
   void hatch(TrajOptProb& prob) override;
   DEFINE_CREATE(JointAccTermInfo)
+
+  JointAccTermInfo() : TermInfo(TT_COST | TT_CNT) {}
 };
 
 /**
@@ -373,12 +405,12 @@ jerk > lower_limit, no penalty.
 ** upper_limit != lower_limit - 2 Inequality constraints are applied. These are both satisfied when jerk <
 upper_limit and jerk > lower_limit
 
-Note: targets, upper_limits, and lower_limits are optional. If a term is not given it will default to 0 for all joints. If
-one value is given, this will be broadcast to all joints.
+Note: targets, upper_limits, and lower_limits are optional. If a term is not given it will default to 0 for all joints.
+If one value is given, this will be broadcast to all joints.
 
 Note: Jerk is calculated numerically using central finite difference
 */
-struct JointJerkTermInfo : public TermInfo, public MakesCost, public MakesConstraint
+struct JointJerkTermInfo : public TermInfo
 {
   /** @brief For TT_COST: coefficient that scales cost. For TT_CNT: Jerk limit */
   DblVec coeffs;
@@ -397,6 +429,8 @@ struct JointJerkTermInfo : public TermInfo, public MakesCost, public MakesConstr
   /** @brief Converts term info into cost/constraint and adds it to trajopt problem */
   void hatch(TrajOptProb& prob) override;
   DEFINE_CREATE(JointJerkTermInfo)
+
+  JointJerkTermInfo() : TermInfo(TT_COST | TT_CNT) {}
 };
 
 /**
@@ -411,7 +445,7 @@ Continuous-time penalty: same, except you consider swept-out shaps of robot
 links. Currently self-collisions are not included.
 
 */
-struct CollisionTermInfo : public TermInfo, public MakesCost
+struct CollisionTermInfo : public TermInfo
 {
   /** @brief first_step and last_step are inclusive */
   int first_step, last_step;
@@ -432,6 +466,8 @@ struct CollisionTermInfo : public TermInfo, public MakesCost
   /** @brief Converts term info into cost/constraint and adds it to trajopt problem */
   void hatch(TrajOptProb& prob) override;
   DEFINE_CREATE(CollisionTermInfo)
+
+  CollisionTermInfo() : TermInfo(TT_COST) {}
 };
 
 }  // namespace trajopt

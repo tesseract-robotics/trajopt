@@ -121,6 +121,7 @@ ProblemConstructionInfo cppMethod()
   pci.basic_info.n_steps = static_cast<int>(tool_poses.size());
   pci.basic_info.manip = "manipulator";
   pci.basic_info.start_fixed = false;
+  pci.basic_info.use_time = false;
 
   pci.opt_info.max_iter = 200;
   pci.opt_info.min_approx_improve = 1e-3;
