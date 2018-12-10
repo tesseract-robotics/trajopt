@@ -1,6 +1,9 @@
+#include <trajopt_utils/macros.h>
+TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <fstream>
 #include <json/json.h>
 #include <stdexcept>
+TRAJOPT_IGNORE_WARNINGS_POP
 
 Json::Value readJsonFile(const std::string& fname)
 {

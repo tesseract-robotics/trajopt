@@ -1,6 +1,10 @@
 #pragma once
+#include <trajopt_utils/macros.h>
+TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <functional>
 #include <string>
+TRAJOPT_IGNORE_WARNINGS_POP
+
 #include <trajopt_sco/modeling.hpp>
 /*
  * Algorithms for non-convex, constrained optimization
@@ -50,8 +54,8 @@ class Optimizer
    * Solves an optimization problem
    */
 public:
+  virtual ~Optimizer() = default;
   virtual OptStatus optimize() = 0;
-  virtual ~Optimizer() {}
   virtual void setProblem(OptProbPtr prob) { prob_ = prob; }
   void initialize(const DblVec& x);
   DblVec& x() { return results_.x; }
@@ -110,11 +114,11 @@ class BasicTrustRegionSQP : public Optimizer
 public:
   BasicTrustRegionSQP();
   BasicTrustRegionSQP(OptProbPtr prob);
-  void setProblem(OptProbPtr prob);
+  void setProblem(OptProbPtr prob) override;
   void setParameters(const BasicTrustRegionSQPParameters& param) { param_ = param; }
   const BasicTrustRegionSQPParameters& getParameters() const { return param_; }
   BasicTrustRegionSQPParameters& getParameters() { return param_; }
-  OptStatus optimize();
+  OptStatus optimize() override;
 
 protected:
   void adjustTrustRegion(double ratio);

@@ -1,7 +1,11 @@
 #pragma once
+#include <trajopt_utils/macros.h>
+TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <Eigen/Dense>
 #include <functional>
 #include <memory>
+TRAJOPT_IGNORE_WARNINGS_POP
+
 /*
  * Numerical derivatives
  */

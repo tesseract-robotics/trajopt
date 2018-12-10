@@ -1,5 +1,8 @@
+#include <trajopt_utils/macros.h>
+TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <Eigen/Core>
 #include <vector>
+TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace util
 {

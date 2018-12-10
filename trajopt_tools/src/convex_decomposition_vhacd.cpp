@@ -1,5 +1,6 @@
+#include <trajopt_utils/macros.h>
+TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <ros/ros.h>
-
 #include <VHACD.h>
 #include <algorithm>
 #include <assert.h>
@@ -12,6 +13,7 @@
 #include <string.h>
 #include <string>
 #include <vector>
+TRAJOPT_IGNORE_WARNINGS_POP
 
 using namespace VHACD;
 using namespace std;
@@ -46,16 +48,16 @@ class ProgressCallback : public IVHACD::IUserCallback
 {
 public:
   ProgressCallback(void) {}
-  ~ProgressCallback() {}
+  ~ProgressCallback() override = default;
   void Update(const double overallProgress,
               const double stageProgress,
               const double operationProgress,
               const char* const stage,
-              const char* const operation)
+              const char* const operation) override
   {
-    cout << setfill(' ') << setw(3) << (int)(overallProgress + 0.5) << "% "
-         << "[ " << stage << " " << setfill(' ') << setw(3) << (int)(stageProgress + 0.5) << "% ] " << operation << " "
-         << setfill(' ') << setw(3) << (int)(operationProgress + 0.5) << "%" << endl;
+    cout << setfill(' ') << setw(3) << static_cast<int>(overallProgress + 0.5) << "% "
+         << "[ " << stage << " " << setfill(' ') << setw(3) << static_cast<int>(stageProgress + 0.5) << "% ] " << operation << " "
+         << setfill(' ') << setw(3) << static_cast<int>(operationProgress + 0.5) << "%" << endl;
   }
 };
 
@@ -64,8 +66,8 @@ class Logger : public IVHACD::IUserLogger
 public:
   Logger(void) {}
   Logger(const string& fileName) { OpenFile(fileName); }
-  ~Logger() {}
-  void Log(const char* const msg)
+  ~Logger() override = default;
+  void Log(const char* const msg) override
   {
     if (m_file.is_open())
     {
@@ -102,8 +104,8 @@ struct Parameters
 class MeshConvexApproximation
 {
 public:
-  MeshConvexApproximation() {}
-  virtual ~MeshConvexApproximation() {}
+  MeshConvexApproximation() = default;
+  virtual ~MeshConvexApproximation() = default;
   bool run(int argc, char** argv)
   {
     parseParameters(argc, argv, params_);
@@ -131,7 +133,7 @@ public:
 
     // load mesh
     vector<float> points;
-    vector<int> triangles;
+    vector<unsigned int> triangles;
     string fileExtension;
     getFileExtension(params_.m_fileNameIn, fileExtension);
     if (fileExtension == ".OFF")
@@ -158,9 +160,9 @@ public:
     IVHACD* interfaceVHACD = CreateVHACD();
 
     bool res = interfaceVHACD->Compute(&points[0],
-                                       (unsigned int)points.size() / 3,
-                                       (const uint32_t*)&triangles[0],
-                                       (unsigned int)triangles.size() / 3,
+                                       static_cast<unsigned int>(points.size() / 3),
+                                       (const uint32_t*)(&triangles[0]),
+                                       static_cast<unsigned int>(triangles.size() / 3),
                                        params_.m_paramsVHACD);
 
     if (res)
@@ -187,7 +189,7 @@ public:
           {
             interfaceVHACD->GetConvexHull(p, ch);
             computeRandomColor(mat);
-            saveVRML2(foutCH, ch.m_points, (const int*)ch.m_triangles, ch.m_nPoints, ch.m_nTriangles, mat, logger_);
+            saveVRML2(foutCH, ch.m_points, ch.m_triangles, ch.m_nPoints, ch.m_nTriangles, mat, logger_);
             msg.str("");
             msg << "\t CH[" << setfill('0') << setw(5) << p << "] " << ch.m_nPoints << " V, " << ch.m_nTriangles << " T"
                 << endl;
@@ -207,18 +209,18 @@ public:
         if (foutCH.is_open())
         {
           Material mat;
-          int vertexOffset = 1;  // obj wavefront starts counting at 1...
+          unsigned vertexOffset = 1;  // obj wavefront starts counting at 1...
           for (unsigned int p = 0; p < nConvexHulls; ++p)
           {
             interfaceVHACD->GetConvexHull(p, ch);
             saveOBJ(foutCH,
                     ch.m_points,
-                    (const int*)ch.m_triangles,
+                    ch.m_triangles,
                     ch.m_nPoints,
                     ch.m_nTriangles,
                     mat,
                     logger_,
-                    p,
+                    static_cast<int>(p),
                     vertexOffset);
             vertexOffset += ch.m_nPoints;
             msg.str("");
@@ -292,12 +294,12 @@ protected:
       else if (!strcmp(argv[i], "--resolution"))
       {
         if (++i < argc)
-          params.m_paramsVHACD.m_resolution = atoi(argv[i]);
+          params.m_paramsVHACD.m_resolution = static_cast<unsigned>(atoi(argv[i]));
       }
       else if (!strcmp(argv[i], "--maxhulls"))
       {
         if (++i < argc)
-          params.m_paramsVHACD.m_maxConvexHulls = atoi(argv[i]);
+          params.m_paramsVHACD.m_maxConvexHulls = static_cast<unsigned>(atoi(argv[i]));
       }
       else if (!strcmp(argv[i], "--concavity"))
       {
@@ -307,12 +309,12 @@ protected:
       else if (!strcmp(argv[i], "--planeDownsampling"))
       {
         if (++i < argc)
-          params.m_paramsVHACD.m_planeDownsampling = atoi(argv[i]);
+          params.m_paramsVHACD.m_planeDownsampling = static_cast<unsigned>(atoi(argv[i]));
       }
       else if (!strcmp(argv[i], "--convexhullDownsampling"))
       {
         if (++i < argc)
-          params.m_paramsVHACD.m_convexhullDownsampling = atoi(argv[i]);
+          params.m_paramsVHACD.m_convexhullDownsampling = static_cast<unsigned>(atoi(argv[i]));
       }
       else if (!strcmp(argv[i], "--alpha"))
       {
@@ -327,17 +329,17 @@ protected:
       else if (!strcmp(argv[i], "--pca"))
       {
         if (++i < argc)
-          params.m_paramsVHACD.m_pca = atoi(argv[i]);
+          params.m_paramsVHACD.m_pca = static_cast<unsigned>(atoi(argv[i]));
       }
       else if (!strcmp(argv[i], "--mode"))
       {
         if (++i < argc)
-          params.m_paramsVHACD.m_mode = atoi(argv[i]);
+          params.m_paramsVHACD.m_mode = static_cast<unsigned>(atoi(argv[i]));
       }
       else if (!strcmp(argv[i], "--maxNumVerticesPerCH"))
       {
         if (++i < argc)
-          params.m_paramsVHACD.m_maxNumVerticesPerCH = atoi(argv[i]);
+          params.m_paramsVHACD.m_maxNumVerticesPerCH = static_cast<unsigned>(atoi(argv[i]));
       }
       else if (!strcmp(argv[i], "--minVolumePerCH"))
       {
@@ -347,22 +349,22 @@ protected:
       else if (!strcmp(argv[i], "--convexhullApproximation"))
       {
         if (++i < argc)
-          params.m_paramsVHACD.m_convexhullApproximation = atoi(argv[i]);
+          params.m_paramsVHACD.m_convexhullApproximation = static_cast<unsigned>(atoi(argv[i]));
       }
       else if (!strcmp(argv[i], "--oclAcceleration"))
       {
         if (++i < argc)
-          params.m_paramsVHACD.m_oclAcceleration = atoi(argv[i]);
+          params.m_paramsVHACD.m_oclAcceleration = static_cast<unsigned>(atoi(argv[i]));
       }
       else if (!strcmp(argv[i], "--oclPlatformID"))
       {
         if (++i < argc)
-          params.m_oclPlatformID = atoi(argv[i]);
+          params.m_oclPlatformID = static_cast<unsigned>(atoi(argv[i]));
       }
       else if (!strcmp(argv[i], "--oclDeviceID"))
       {
         if (++i < argc)
-          params.m_oclDeviceID = atoi(argv[i]);
+          params.m_oclDeviceID = static_cast<unsigned>(atoi(argv[i]));
       }
       else if (!strcmp(argv[i], "--help"))
       {
@@ -398,9 +400,9 @@ protected:
     while (mat.m_diffuseColor[0] == mat.m_diffuseColor[1] || mat.m_diffuseColor[2] == mat.m_diffuseColor[1] ||
            mat.m_diffuseColor[2] == mat.m_diffuseColor[0])
     {
-      mat.m_diffuseColor[0] = (rand() % 100) / 100.0f;
-      mat.m_diffuseColor[1] = (rand() % 100) / 100.0f;
-      mat.m_diffuseColor[2] = (rand() % 100) / 100.0f;
+      mat.m_diffuseColor[0] = static_cast<float>(rand() % 100) / 100.0f;
+      mat.m_diffuseColor[1] = static_cast<float>(rand() % 100) / 100.0f;
+      mat.m_diffuseColor[2] = static_cast<float>(rand() % 100) / 100.0f;
     }
   }
 
@@ -493,7 +495,7 @@ protected:
     }
   }
 
-  bool loadOFF(const string& fileName, vector<float>& points, vector<int>& triangles, IVHACD::IUserLogger& logger)
+  bool loadOFF(const string& fileName, vector<float>& points, vector<unsigned int>& triangles, IVHACD::IUserLogger& logger)
   {
     FILE* fid = fopen(fileName.c_str(), "r");
     if (fid)
@@ -509,21 +511,21 @@ protected:
       }
       else
       {
-        int nv = 0;
-        int nf = 0;
-        int ne = 0;
-        fscanf(fid, "%i", &nv);
-        fscanf(fid, "%i", &nf);
-        fscanf(fid, "%i", &ne);
+        unsigned long nv = 0;
+        unsigned long nf = 0;
+        unsigned long ne = 0;
+        fscanf(fid, "%lu", &nv);
+        fscanf(fid, "%lu", &nf);
+        fscanf(fid, "%lu", &ne);
         points.resize(nv * 3);
         triangles.resize(nf * 3);
-        const int np = nv * 3;
-        for (int p = 0; p < np; p++)
+        unsigned long np = nv * 3;
+        for (unsigned long p = 0; p < np; p++)
         {
           fscanf(fid, "%f", &(points[p]));
         }
         int s;
-        for (int t = 0, r = 0; t < nf; ++t)
+        for (unsigned long t = 0, r = 0; t < nf; ++t)
         {
           fscanf(fid, "%i", &s);
           if (s == 3)
@@ -549,7 +551,7 @@ protected:
     return true;
   }
 
-  bool loadOBJ(const string& fileName, vector<float>& points, vector<int>& triangles, IVHACD::IUserLogger& logger)
+  bool loadOBJ(const string& fileName, vector<float>& points, vector<unsigned int>& triangles, IVHACD::IUserLogger& logger)
   {
     const unsigned int BufferSize = 1024;
     FILE* fid = fopen(fileName.c_str(), "r");
@@ -576,12 +578,12 @@ protected:
             {
               pch = strtok(str, " ");
               if (pch)
-                x[k] = (float)atof(pch);
+                x[k] = static_cast<float>(atof(pch));
               else
               {
                 return false;
               }
-              str = NULL;
+              str = nullptr;
             }
             points.push_back(x[0]);
             points.push_back(x[1]);
@@ -603,23 +605,23 @@ protected:
             {
               break;
             }
-            str = NULL;
+            str = nullptr;
           }
           if (k == 3)
           {
-            triangles.push_back(ip[0]);
-            triangles.push_back(ip[1]);
-            triangles.push_back(ip[2]);
+            triangles.push_back(static_cast<unsigned>(ip[0]));
+            triangles.push_back(static_cast<unsigned>(ip[1]));
+            triangles.push_back(static_cast<unsigned>(ip[2]));
           }
           else if (k == 4)
           {
-            triangles.push_back(ip[0]);
-            triangles.push_back(ip[1]);
-            triangles.push_back(ip[2]);
+            triangles.push_back(static_cast<unsigned>(ip[0]));
+            triangles.push_back(static_cast<unsigned>(ip[1]));
+            triangles.push_back(static_cast<unsigned>(ip[2]));
 
-            triangles.push_back(ip[0]);
-            triangles.push_back(ip[2]);
-            triangles.push_back(ip[3]);
+            triangles.push_back(static_cast<unsigned>(ip[0]));
+            triangles.push_back(static_cast<unsigned>(ip[2]));
+            triangles.push_back(static_cast<unsigned>(ip[3]));
           }
         }
       }
@@ -667,7 +669,7 @@ protected:
 
   bool saveVRML2(ofstream& fout,
                  const double* const& points,
-                 const int* const& triangles,
+                 const unsigned int* const& triangles,
                  const unsigned int& nPoints,
                  const unsigned int& nTriangles,
                  const Material& material,
@@ -742,13 +744,13 @@ protected:
 
   bool saveOBJ(ofstream& fout,
                const double* const& points,
-               const int* const& triangles,
+               const unsigned int* const& triangles,
                const unsigned int& nPoints,
                const unsigned int& nTriangles,
                const Material& /*material*/,
                IVHACD::IUserLogger& logger,
                int convexPart,
-               int vertexOffset)
+               unsigned int vertexOffset)
   {
     if (fout.is_open())
     {

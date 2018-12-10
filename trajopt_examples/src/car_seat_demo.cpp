@@ -1,6 +1,36 @@
+/**
+ * @file car_seat_demo.cpp
+ * @brief Example using Trajopt for installing car seat
+ *
+ * @author Levi Armstrong
+ * @date Dec 18, 2017
+ * @version TODO
+ * @bug No known bugs
+ *
+ * @copyright Copyright (c) 2017, Southwest Research Institute
+ *
+ * @par License
+ * Software License Agreement (Apache License)
+ * @par
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * @par
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+#include <trajopt_utils/macros.h>
+TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <jsoncpp/json/json.h>
 #include <ros/ros.h>
 #include <srdfdom/model.h>
+#include <urdf_parser/urdf_parser.h>
+TRAJOPT_IGNORE_WARNINGS_POP
+
 #include <tesseract_ros/kdl/kdl_chain_kin.h>
 #include <tesseract_ros/kdl/kdl_env.h>
 #include <tesseract_ros/ros_basic_plotting.h>
@@ -8,7 +38,6 @@
 #include <trajopt/problem_description.hpp>
 #include <trajopt_utils/config.hpp>
 #include <trajopt_utils/logging.hpp>
-#include <urdf_parser/urdf_parser.h>
 
 using namespace trajopt;
 using namespace tesseract;
@@ -19,11 +48,11 @@ const std::string ROBOT_SEMANTIC_PARAM = "robot_description_semantic"; /**< Defa
 const std::string TRAJOPT_DESCRIPTION_PARAM =
     "trajopt_description"; /**< Default ROS parameter for trajopt description */
 
-bool plotting_ = false;
-std::string method_ = "json";
-urdf::ModelInterfaceSharedPtr urdf_model_; /**< URDF Model */
-srdf::ModelSharedPtr srdf_model_;          /**< SRDF Model */
-tesseract_ros::KDLEnvPtr env_;             /**< Trajopt Basic Environment */
+static bool plotting_ = false;
+static std::string method_ = "json";
+static urdf::ModelInterfaceSharedPtr urdf_model_; /**< URDF Model */
+static srdf::ModelSharedPtr srdf_model_;          /**< SRDF Model */
+static tesseract_ros::KDLEnvPtr env_;             /**< Trajopt Basic Environment */
 
 std::unordered_map<std::string, std::unordered_map<std::string, double>> saved_positions_;
 
@@ -210,7 +239,9 @@ std::shared_ptr<ProblemConstructionInfo> cppMethod(const std::string& start, con
   pci->init_info.type = InitInfo::GIVEN_TRAJ;
   pci->init_info.data = start_pos.transpose().replicate(pci->basic_info.n_steps, 1);
   for (auto i = 0; i < start_pos.size(); ++i)
-    pci->init_info.data.col(i) = Eigen::VectorXd::LinSpaced(pci->basic_info.n_steps, start_pos[i], joint_pose[i]);
+    pci->init_info.data.col(i) = Eigen::VectorXd::LinSpaced(static_cast<size_t>(pci->basic_info.n_steps),
+                                                            start_pos[i],
+                                                            joint_pose[static_cast<size_t>(i)]);
 
   // Populate Cost Info
   std::shared_ptr<JointVelTermInfo> joint_vel = std::shared_ptr<JointVelTermInfo>(new JointVelTermInfo);

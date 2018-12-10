@@ -1,5 +1,9 @@
+#include <trajopt_utils/macros.h>
+TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <Eigen/Eigenvalues>
 #include <iostream>
+TRAJOPT_IGNORE_WARNINGS_POP
+
 #include <trajopt_sco/expr_ops.hpp>
 #include <trajopt_sco/modeling.hpp>
 #include <trajopt_sco/modeling_utils.hpp>
@@ -13,7 +17,7 @@ Eigen::VectorXd getVec(const DblVec &x, const VarVector& vars)
 {
   Eigen::VectorXd out(vars.size());
   for (unsigned i = 0; i < vars.size(); ++i)
-    out[i] = x[vars[i].var_rep->index];
+    out[i] = x[static_cast<long unsigned int>(vars[i].var_rep->index)];
   return out;
 }
 
@@ -21,7 +25,7 @@ DblVec getDblVec(const DblVec& x, const VarVector& vars)
 {
   DblVec out(vars.size());
   for (unsigned i = 0; i < vars.size(); ++i)
-    out[i] = x[vars[i].var_rep->index];
+    out[i] = x[static_cast<long unsigned int>(vars[i].var_rep->index)];
   return out;
 }
 
@@ -76,7 +80,7 @@ ConvexObjectivePtr CostFromFunc::convex(const DblVec& xin, Model* model)
     Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> es(hess);
     Eigen::VectorXd eigvals = es.eigenvalues();
     Eigen::MatrixXd eigvecs = es.eigenvectors();
-    for (size_t i = 0, end = x.size(); i != end; ++i)
+    for (long int i = 0, end = x.size(); i != end; ++i)
     {  // tricky --- eigen size() is signed
       if (eigvals(i) > 0)
         pos_hess += eigvals(i) * eigvecs.col(i) * eigvecs.col(i).transpose();
@@ -87,19 +91,19 @@ ConvexObjectivePtr CostFromFunc::convex(const DblVec& xin, Model* model)
     quad.affexpr.vars = vars_;
     quad.affexpr.coeffs = util::toDblVec(grad - pos_hess * x);
 
-    int nquadterms = (x.size() * (x.size() - 1)) / 2;
+    size_t nquadterms = static_cast<size_t>((x.size() * (x.size() - 1)) / 2);
     quad.coeffs.reserve(nquadterms);
     quad.vars1.reserve(nquadterms);
     quad.vars2.reserve(nquadterms);
-    for (size_t i = 0, end = x.size(); i != end; ++i)
+    for (long int i = 0, end = x.size(); i != end; ++i)
     {  // tricky --- eigen size() is signed
-      quad.vars1.push_back(vars_[i]);
-      quad.vars2.push_back(vars_[i]);
+      quad.vars1.push_back(vars_[static_cast<size_t>(i)]);
+      quad.vars2.push_back(vars_[static_cast<size_t>(i)]);
       quad.coeffs.push_back(pos_hess(i, i) / 2);
-      for (size_t j = i + 1; j != end; ++j)
+      for (long int j = i + 1; j != end; ++j)
       {  // tricky --- eigen size() is signed
-        quad.vars1.push_back(vars_[i]);
-        quad.vars2.push_back(vars_[j]);
+        quad.vars1.push_back(vars_[static_cast<size_t>(i)]);
+        quad.vars2.push_back(vars_[static_cast<size_t>(j)]);
         quad.coeffs.push_back(pos_hess(i, j));
       }
     }
@@ -249,7 +253,7 @@ ConvexConstraintsPtr ConstraintFromErrFunc::convex(const DblVec& xin, Model* mod
 std::string AffExprToString(const AffExpr& aff)
 {
   std::string out;
-  for(int i = 0; i < aff.vars.size(); i++)
+  for(size_t i = 0; i < aff.vars.size(); i++)
   {
     if(i!=0) out.append(" + ");
     std::string term = std::to_string(aff.coeffs[i]) + "*" + aff.vars[i].var_rep->name;

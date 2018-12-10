@@ -1,6 +1,10 @@
+#include <trajopt_utils/macros.h>
+TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <boost/format.hpp>
 #include <cmath>
 #include <cstdio>
+TRAJOPT_IGNORE_WARNINGS_POP
+
 #include <trajopt_sco/expr_ops.hpp>
 #include <trajopt_sco/modeling.hpp>
 #include <trajopt_sco/optimizers.hpp>
@@ -354,7 +358,7 @@ OptStatus BasicTrustRegionSQP::optimize()
 
         // the n variables of the OptProb happen to be the first n variables in
         // the Model
-        DblVec new_x(model_var_vals.begin(), model_var_vals.begin() + results_.x.size());
+        DblVec new_x(model_var_vals.begin(), model_var_vals.begin() + static_cast<long int>(results_.x.size()));
 
         if (util::GetLogLevel() >= util::LevelDebug)
         {

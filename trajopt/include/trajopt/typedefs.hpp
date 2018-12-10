@@ -1,7 +1,10 @@
 #pragma once
+#include <trajopt_utils/macros.h>
+TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <Eigen/Core>
 #include <map>
 #include <vector>
+TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt_sco/modeling.hpp>
 #include <trajopt_sco/modeling_utils.hpp>
@@ -28,7 +31,7 @@ class Plotter
 {
 public:
   virtual void Plot(const tesseract::BasicPlottingPtr& plotter, const DblVec& x) = 0;
-  virtual ~Plotter() {}
+  virtual ~Plotter() = default;
 };
 typedef std::shared_ptr<Plotter> PlotterPtr;
 

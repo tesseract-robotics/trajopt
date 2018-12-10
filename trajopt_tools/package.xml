@@ -13,6 +13,7 @@
   <exec_depend>roscpp</exec_depend>
   <depend>trajopt_ext</depend>
   <depend>bullet3_ros</depend>
+  <depend>trajopt_utils</depend>
 
 
   <!-- The export tag contains other, unspecified, tags -->

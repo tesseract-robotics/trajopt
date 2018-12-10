@@ -1,5 +1,10 @@
+#include <trajopt_utils/macros.h>
+TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <boost/algorithm/string.hpp>
+#include <ros/ros.h>
 #include <tesseract_core/basic_kin.h>
+TRAJOPT_IGNORE_WARNINGS_POP
+
 #include <trajopt/collision_terms.hpp>
 #include <trajopt/common.hpp>
 #include <trajopt/kinematic_terms.hpp>
@@ -12,7 +17,6 @@
 #include <trajopt_utils/eigen_slicing.hpp>
 #include <trajopt_utils/logging.hpp>
 #include <trajopt_utils/vector_ops.hpp>
-#include <ros/ros.h>
 
 namespace
 {
@@ -53,26 +57,6 @@ void RegisterMakers()
   gRegisteredMakers = true;
 }
 
-sco::PenaltyType stringToPenaltyType(std::string str)
-{
-  if (boost::iequals(str, "hinge"))
-  {
-    return sco::HINGE;
-  }
-  else if (boost::iequals(str, "abs"))
-  {
-    return sco::ABS;
-  }
-  else if (boost::iequals(str, "squared"))
-  {
-    return sco::SQUARED;
-  }
-  else
-  {
-    PRINT_AND_THROW(boost::format("Failed string to PenaltyType conversion. %s is not a valid penalty type") % str);
-  }
-}
-
 /**
  * @brief Checks the size of the parameter given and throws if incorrect
  * @param parameter The vector whose size is getting checked
@@ -88,7 +72,7 @@ void checkParameterSize(trajopt::DblVec& parameter,
   if (apply_first == true && parameter.size() == 1)
   {
     parameter = trajopt::DblVec(expected_size, parameter[0]);
-    ROS_INFO("1 %s given. Applying to all %i joints", name, expected_size);
+    ROS_INFO("1 %s given. Applying to all %i joints", name.c_str(), expected_size);
   }
   else if (parameter.size() != expected_size)
   {
@@ -209,7 +193,7 @@ void ProblemConstructionInfo::readInitInfo(const Json::Value& v)
   std::string type_str;
   json_marshal::childFromJson(v, type_str, "type");
   int n_steps = basic_info.n_steps;
-  int n_dof = kin->numJoints();
+  unsigned n_dof = kin->numJoints();
   Eigen::VectorXd start_pos = env->getCurrentJointValues(kin->getName());
 
   if (type_str == "stationary")
@@ -228,7 +212,7 @@ void ProblemConstructionInfo::readInitInfo(const Json::Value& v)
     for (int i = 0; i < n_steps; ++i)
     {
       DblVec row;
-      json_marshal::fromJsonArray(vdata[i], row, n_dof);
+      json_marshal::fromJsonArray(vdata[i], row, static_cast<int>(n_dof));
       init_info.data.row(i) = util::toVectorXd(row);
     }
   }
@@ -237,14 +221,14 @@ void ProblemConstructionInfo::readInitInfo(const Json::Value& v)
     FAIL_IF_FALSE(v.isMember("endpoint"));
     DblVec endpoint;
     json_marshal::childFromJson(v, endpoint, "endpoint");
-    if (static_cast<int>(endpoint.size()) != n_dof)
+    if (endpoint.size() != n_dof)
     {
       PRINT_AND_THROW(boost::format("wrong number of dof values in "
                                     "initialization. expected %i got %j") %
                       n_dof % endpoint.size());
     }
     init_info.data = TrajArray(n_steps, n_dof);
-    for (int idof = 0; idof < n_dof; ++idof)
+    for (unsigned idof = 0; idof < n_dof; ++idof)
     {
       init_info.data.col(idof) = Eigen::VectorXd::LinSpaced(n_steps, start_pos[idof], endpoint[idof]);
     }
@@ -269,7 +253,7 @@ void ProblemConstructionInfo::fromJson(const Json::Value& v)
 
   if (!env->hasManipulator(basic_info.manip))
   {
-    PRINT_AND_THROW(boost::format("Manipulator does not exist: %s") % basic_info.manip);
+    PRINT_AND_THROW(boost::format("Manipulator does not exist: %s") % basic_info.manip.c_str());
   }
   kin = env->getManipulator(basic_info.manip);
 
@@ -325,7 +309,7 @@ TrajOptProbPtr ConstructProblem(const ProblemConstructionInfo& pci)
   int n_steps = bi.n_steps;
 
   TrajOptProbPtr prob(new TrajOptProb(n_steps, pci));
-  int n_dof = prob->GetKin()->numJoints();
+  unsigned n_dof = prob->GetKin()->numJoints();
 
   if (bi.start_fixed)
   {
@@ -340,7 +324,7 @@ TrajOptProbPtr ConstructProblem(const ProblemConstructionInfo& pci)
                       "know what you want me to use for the dof values");
     }
 
-    for (int j = 0; j < n_dof; ++j)
+    for (int j = 0; j < static_cast<int>(n_dof); ++j)
     {
       prob->addLinearConstraint(sco::exprSub(sco::AffExpr(prob->m_traj_vars(0, j)), pci.init_info.data(0, j)), sco::EQ);
     }
@@ -385,7 +369,7 @@ TrajOptProb::TrajOptProb(int n_steps, const ProblemConstructionInfo& pci)
  : OptProb(pci.basic_info.convex_solver), m_kin(pci.kin), m_env(pci.env)
 {
   const Eigen::MatrixX2d& limits = m_kin->getLimits();
-  int n_dof = m_kin->numJoints();
+  int n_dof = static_cast<int>(m_kin->numJoints());
   Eigen::VectorXd lower, upper;
   lower = limits.col(0);
   upper = limits.col(1);
@@ -605,7 +589,8 @@ void JointPosTermInfo::hatch(TrajOptProb& prob)
   {
     ROS_WARN("JointPosTermInfo does not have a term_type defined. No cost/constraint applied");
   }
-  unsigned int n_dof = prob.GetKin()->getJointNames().size();
+
+  unsigned int n_dof = prob.GetKin()->numJoints();
 
   // If optional parameter not given, set to default
   if (coeffs.empty())
@@ -714,7 +699,7 @@ void JointVelTermInfo::hatch(TrajOptProb& prob)
   {
     ROS_WARN("JointVelTermInfo does not have a term_type defined. No cost/constraint applied");
   }
-  unsigned int n_dof = prob.GetKin()->getJointNames().size();
+  unsigned int n_dof = prob.GetKin()->numJoints();
 
   // If optional parameter not given, set to default
   if (coeffs.empty())
@@ -820,7 +805,7 @@ void JointAccTermInfo::hatch(TrajOptProb& prob)
   {
     ROS_WARN("JointAccTermInfo does not have a term_type defined. No cost/constraint applied");
   }
-  unsigned int n_dof = prob.GetKin()->getJointNames().size();
+  unsigned int n_dof = prob.GetKin()->numJoints();
 
   // If optional parameter not given, set to default
   if (coeffs.empty())
@@ -928,7 +913,7 @@ void JointJerkTermInfo::hatch(TrajOptProb& prob)
   {
     ROS_WARN("JointJerkTermInfo does not have a term_type defined. No cost/constraint applied");
   }
-  unsigned int n_dof = prob.GetKin()->getJointNames().size();
+  unsigned int n_dof = prob.GetKin()->numJoints();
 
   // If optional parameter not given, set to default
   if (coeffs.empty())
@@ -1028,24 +1013,25 @@ void CollisionTermInfo::fromJson(ProblemConstructionInfo& pci, const Json::Value
   json_marshal::childFromJson(params, coeffs, "coeffs");
   int n_terms = last_step - first_step + 1;
   if (coeffs.size() == 1)
-    coeffs = DblVec(n_terms, coeffs[0]);
+    coeffs = DblVec(static_cast<size_t>(n_terms), coeffs[0]);
   else if (static_cast<int>(coeffs.size()) != n_terms)
   {
     PRINT_AND_THROW(boost::format("wrong size: coeffs. expected %i got %i") % n_terms % coeffs.size());
   }
   json_marshal::childFromJson(params, dist_pen, "dist_pen");
   if (dist_pen.size() == 1)
-    dist_pen = DblVec(n_terms, dist_pen[0]);
+    dist_pen = DblVec(static_cast<size_t>(n_terms), dist_pen[0]);
   else if (static_cast<int>(dist_pen.size()) != n_terms)
   {
     PRINT_AND_THROW(boost::format("wrong size: dist_pen. expected %i got %i") % n_terms % dist_pen.size());
   }
 
   // Create Contact Distance Data for each timestep
-  info.reserve(n_terms);
+  info.reserve(static_cast<size_t>(n_terms));
   for (int i = first_step; i <= last_step; ++i)
   {
-    SafetyMarginDataPtr data(new SafetyMarginData(dist_pen[i - first_step], coeffs[i - first_step]));
+    size_t index = static_cast<size_t>(i - first_step);
+    SafetyMarginDataPtr data(new SafetyMarginData(dist_pen[index], coeffs[index]));
     info.push_back(data);
   }
 
@@ -1072,7 +1058,7 @@ void CollisionTermInfo::fromJson(ProblemConstructionInfo& pci, const Json::Value
       json_marshal::childFromJson(*it, pair_coeffs, "coeffs");
       if (pair_coeffs.size() == 1)
       {
-        pair_coeffs = DblVec(n_terms, pair_coeffs[0]);
+        pair_coeffs = DblVec(static_cast<size_t>(n_terms), pair_coeffs[0]);
       }
       else if (static_cast<int>(pair_coeffs.size()) != n_terms)
       {
@@ -1083,7 +1069,7 @@ void CollisionTermInfo::fromJson(ProblemConstructionInfo& pci, const Json::Value
       json_marshal::childFromJson(*it, pair_dist_pen, "dist_pen");
       if (pair_dist_pen.size() == 1)
       {
-        pair_dist_pen = DblVec(n_terms, pair_dist_pen[0]);
+        pair_dist_pen = DblVec(static_cast<size_t>(n_terms), pair_dist_pen[0]);
       }
       else if (static_cast<int>(pair_dist_pen.size()) != n_terms)
       {
@@ -1092,7 +1078,7 @@ void CollisionTermInfo::fromJson(ProblemConstructionInfo& pci, const Json::Value
 
       for (auto i = first_step; i <= last_step; ++i)
       {
-        auto index = i - first_step;
+        size_t index = static_cast<size_t>(i - first_step);
         SafetyMarginDataPtr& data = info[index];
         for (auto j = 0u; j < pair.size(); ++j)
         {
@@ -1115,8 +1101,8 @@ void CollisionTermInfo::hatch(TrajOptProb& prob)
       for (int i = first_step; i <= last_step - gap; ++i)
       {
         prob.addCost(sco::CostPtr(new CollisionCost(
-            prob.GetKin(), prob.GetEnv(), info[i - first_step], prob.GetVarRow(i), prob.GetVarRow(i + gap))));
-        prob.getCosts().back()->setName((boost::format("%s_%i") % name % i).str());
+            prob.GetKin(), prob.GetEnv(), info[static_cast<size_t>(i - first_step)], prob.GetVarRow(i), prob.GetVarRow(i + gap))));
+        prob.getCosts().back()->setName((boost::format("%s_%i") % name.c_str() % i).str());
       }
     }
     else
@@ -1124,8 +1110,8 @@ void CollisionTermInfo::hatch(TrajOptProb& prob)
       for (int i = first_step; i <= last_step; ++i)
       {
         prob.addCost(
-            sco::CostPtr(new CollisionCost(prob.GetKin(), prob.GetEnv(), info[i - first_step], prob.GetVarRow(i))));
-        prob.getCosts().back()->setName((boost::format("%s_%i") % name % i).str());
+            sco::CostPtr(new CollisionCost(prob.GetKin(), prob.GetEnv(), info[static_cast<size_t>(i - first_step)], prob.GetVarRow(i))));
+        prob.getCosts().back()->setName((boost::format("%s_%i") % name.c_str() % i).str());
       }
     }
   }
@@ -1136,8 +1122,8 @@ void CollisionTermInfo::hatch(TrajOptProb& prob)
       for (int i = first_step; i < last_step; ++i)
       {
         prob.addIneqConstraint(sco::ConstraintPtr(new CollisionConstraint(
-            prob.GetKin(), prob.GetEnv(), info[i - first_step], prob.GetVarRow(i), prob.GetVarRow(i + 1))));
-        prob.getIneqConstraints().back()->setName((boost::format("%s_%i") % name % i).str());
+            prob.GetKin(), prob.GetEnv(), info[static_cast<size_t>(i - first_step)], prob.GetVarRow(i), prob.GetVarRow(i + 1))));
+        prob.getIneqConstraints().back()->setName((boost::format("%s_%i") % name.c_str() % i).str());
       }
     }
     else
@@ -1145,8 +1131,8 @@ void CollisionTermInfo::hatch(TrajOptProb& prob)
       for (int i = first_step; i <= last_step; ++i)
       {
         prob.addIneqConstraint(sco::ConstraintPtr(
-            new CollisionConstraint(prob.GetKin(), prob.GetEnv(), info[i - first_step], prob.GetVarRow(i))));
-        prob.getIneqConstraints().back()->setName((boost::format("%s_%i") % name % i).str());
+            new CollisionConstraint(prob.GetKin(), prob.GetEnv(), info[static_cast<size_t>(i - first_step)], prob.GetVarRow(i))));
+        prob.getIneqConstraints().back()->setName((boost::format("%s_%i") % name.c_str() % i).str());
       }
     }
   }

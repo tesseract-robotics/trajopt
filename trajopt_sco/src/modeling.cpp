@@ -1,7 +1,11 @@
+#include <trajopt_utils/macros.h>
+TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <boost/format.hpp>
 #include <cstdio>
 #include <iostream>
 #include <sstream>
+TRAJOPT_IGNORE_WARNINGS_POP
+
 #include <trajopt_sco/expr_ops.hpp>
 #include <trajopt_sco/modeling.hpp>
 #include <trajopt_sco/sco_common.hpp>
@@ -86,7 +90,7 @@ void ConvexObjective::removeFromModel()
 {
   model_->removeCnts(cnts_);
   model_->removeVars(vars_);
-  model_ = NULL;
+  model_ = nullptr;
 }
 ConvexObjective::~ConvexObjective()
 {
@@ -112,7 +116,7 @@ void ConvexConstraints::addConstraintsToModel()
 void ConvexConstraints::removeFromModel()
 {
   model_->removeCnts(cnts_);
-  model_ = NULL;
+  model_ = nullptr;
 }
 
 DblVec ConvexConstraints::violations(const DblVec& x)
@@ -176,7 +180,7 @@ VarVector OptProb::createVariables(const std::vector<std::string>& var_names, co
     upper_bounds_.push_back(ub[i]);
   }
   model_->update();
-  return VarVector(vars_.end() - n_add, vars_.end());
+  return VarVector(vars_.end() - static_cast<long int>(n_add), vars_.end());
 }
 
 void OptProb::setLowerBounds(const DblVec& lb)

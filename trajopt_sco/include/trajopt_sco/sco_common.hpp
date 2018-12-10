@@ -1,7 +1,11 @@
 #pragma once
+#include <trajopt_utils/macros.h>
+TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <algorithm>
 #include <cmath>
 #include <vector>
+TRAJOPT_IGNORE_WARNINGS_POP
+
 #include <trajopt_sco/sco_fwd.hpp>
 
 namespace sco

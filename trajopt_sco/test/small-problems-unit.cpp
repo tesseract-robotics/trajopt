@@ -1,9 +1,13 @@
+#include <trajopt_utils/macros.h>
+TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <Eigen/Dense>
 #include <boost/format.hpp>
 #include <cmath>
 #include <gtest/gtest.h>
 #include <iostream>
 #include <sstream>
+TRAJOPT_IGNORE_WARNINGS_POP
+
 #include <trajopt_sco/expr_op_overloads.hpp>
 #include <trajopt_sco/modeling_utils.hpp>
 #include <trajopt_sco/optimizers.hpp>

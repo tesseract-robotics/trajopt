@@ -1,5 +1,5 @@
-#include <trajopt_sco/gurobi_interface.hpp>
-#include <trajopt_utils/logging.hpp>
+#include <trajopt_utils/macros.h>
+TRAJOPT_IGNORE_WARNINGS_PUSH
 extern "C" {
 #include "gurobi_c.h"
 }
@@ -7,9 +7,12 @@ extern "C" {
 #include <map>
 #include <sstream>
 #include <stdexcept>
-#include <trajopt_utils/macros.h>
-#include <trajopt_utils/stl_to_string.hpp>
 #include <utility>
+TRAJOPT_IGNORE_WARNINGS_POP
+
+#include <trajopt_sco/gurobi_interface.hpp>
+#include <trajopt_utils/logging.hpp>
+#include <trajopt_utils/stl_to_string.hpp>
 
 namespace sco
 {
@@ -69,26 +72,26 @@ GurobiModel::GurobiModel()
 {
   if (!gEnv)
   {
-    GRBloadenv(&gEnv, NULL);
+    GRBloadenv(&gEnv, nullptr);
     if (util::GetLogLevel() < util::LevelDebug)
     {
       ENSURE_SUCCESS(GRBsetintparam(gEnv, "OutputFlag", 0));
     }
   }
-  GRBnewmodel(gEnv, &m_model, "problem", 0, NULL, NULL, NULL, NULL, NULL);
+  GRBnewmodel(gEnv, &m_model, "problem", 0, nullptr, nullptr, nullptr, nullptr, nullptr);
 }
 
 Var GurobiModel::addVar(const string& name)
 {
   ENSURE_SUCCESS(GRBaddvar(
-      m_model, 0, NULL, NULL, 0, -GRB_INFINITY, GRB_INFINITY, GRB_CONTINUOUS, const_cast<char*>(name.c_str())));
+      m_model, 0, nullptr, nullptr, 0, -GRB_INFINITY, GRB_INFINITY, GRB_CONTINUOUS, const_cast<char*>(name.c_str())));
   m_vars.push_back(new VarRep(m_vars.size(), name, this));
   return m_vars.back();
 }
 
 Var GurobiModel::addVar(const string& name, double lb, double ub)
 {
-  ENSURE_SUCCESS(GRBaddvar(m_model, 0, NULL, NULL, 0, lb, ub, GRB_CONTINUOUS, const_cast<char*>(name.c_str())));
+  ENSURE_SUCCESS(GRBaddvar(m_model, 0, nullptr, nullptr, 0, lb, ub, GRB_CONTINUOUS, const_cast<char*>(name.c_str())));
   m_vars.push_back(new VarRep(m_vars.size(), name, this));
   return m_vars.back();
 }
@@ -228,7 +231,7 @@ CvxOptStatus GurobiModel::optimizeFeasRelax()
 {
   double lbpen = GRB_INFINITY, ubpen = GRB_INFINITY, rhspen = 1;
   ENSURE_SUCCESS(
-      GRBfeasrelax(m_model, 0 /*sum of viol*/, 0 /*just minimize cost of viol*/, &lbpen, &ubpen, &rhspen, NULL));
+      GRBfeasrelax(m_model, 0 /*sum of viol*/, 0 /*just minimize cost of viol*/, &lbpen, &ubpen, &rhspen, nullptr));
   return optimize();
 }
 

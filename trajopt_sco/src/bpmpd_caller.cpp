@@ -1,9 +1,13 @@
+#include <trajopt_utils/macros.h>
+TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <errno.h>
 #include <iostream>
 #include <string.h>
+#include <unistd.h>
+TRAJOPT_IGNORE_WARNINGS_POP
+
 #include <trajopt_sco/bpmpd_io.hpp>
 #include <trajopt_utils/stl_to_string.hpp>
-#include <unistd.h>
 
 extern "C" {
 extern void bpmpd(int*,
@@ -49,9 +53,9 @@ int main(int /*argc*/, char** /*argv*/)
     int memsiz = 0;
     double BIG = 1e30;
     bpmpd_io::bpmpd_output bo;
-    bo.primal.resize(bi.m + bi.n);
-    bo.dual.resize(bi.m + bi.n);
-    bo.status.resize(bi.m + bi.n);
+    bo.primal.resize(static_cast<unsigned long>(bi.m + bi.n));
+    bo.dual.resize(static_cast<unsigned long>(bi.m + bi.n));
+    bo.status.resize(static_cast<unsigned long>(bi.m + bi.n));
 
 #define DBG(expr)  // cerr << #expr << ": " << CSTR(expr) << std::endl
     DBG(bi.m);

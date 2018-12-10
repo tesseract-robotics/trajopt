@@ -1,4 +1,8 @@
+#include <trajopt_utils/macros.h>
+TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <boost/functional/hash.hpp>
+TRAJOPT_IGNORE_WARNINGS_POP
+
 #include <trajopt/collision_terms.hpp>
 #include <trajopt/utils.hpp>
 #include <trajopt_sco/expr_ops.hpp>
@@ -241,7 +245,7 @@ void CollisionEvaluator::GetCollisionsCached(const DblVec& x, tesseract::Contact
 {
   size_t key = hash(sco::getDblVec(x, GetVars()));
   tesseract::ContactResultVector* it = m_cache.get(key);
-  if (it != NULL)
+  if (it != nullptr)
   {
     LOG_DEBUG("using cached collision check\n");
     dist_results = *it;

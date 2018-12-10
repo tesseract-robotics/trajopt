@@ -30,7 +30,9 @@ set(BULLET_LIBRARIES BulletCollision LinearMath)
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-  INCLUDE_DIRS include
+  INCLUDE_DIRS
+    include
+    ${EIGEN3_INCLUDE_DIRS}
   LIBRARIES
     ${PROJECT_NAME}
     ${OCTOMAP_LIBRARIES}
@@ -59,9 +61,9 @@ catkin_package(
 include_directories(
   include
   ${catkin_INCLUDE_DIRS}
-  ${EIGEN3_INCLUDE_DIRS}
-  ${Boost_INCLUDE_DIRS}
-  ${OCTOMAP_INCLUDE_DIRS}
+  SYSTEM ${EIGEN3_INCLUDE_DIRS}
+  SYSTEM ${Boost_INCLUDE_DIRS}
+  SYSTEM ${OCTOMAP_INCLUDE_DIRS}
 )
 
 add_library(${PROJECT_NAME}

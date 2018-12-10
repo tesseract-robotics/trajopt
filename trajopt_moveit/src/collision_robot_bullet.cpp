@@ -189,13 +189,13 @@ void collision_detection::CollisionRobotBullet::constructBulletObject(
       if (btBroadphaseProxy::isConvex(new_cow->getCollisionShape()->getShapeType()))
       {
         btConvexShape* convex = static_cast<btConvexShape*>(new_cow->getCollisionShape());
-        assert(convex != NULL);
+        assert(convex != nullptr);
 
         btTransform tf1 = convertEigenToBt(state1.getGlobalLinkTransform(element.first));
         btTransform tf2 = convertEigenToBt(state2.getGlobalLinkTransform(element.first));
 
         CastHullShape* shape = new CastHullShape(convex, tf1.inverseTimes(tf2));
-        assert(shape != NULL);
+        assert(shape != nullptr);
 
         new_cow->manage(shape);
         new_cow->setCollisionShape(shape);
@@ -212,16 +212,16 @@ void collision_detection::CollisionRobotBullet::constructBulletObject(
         for (int i = 0; i < compound->getNumChildShapes(); ++i)
         {
           btConvexShape* convex = static_cast<btConvexShape*>(compound->getChildShape(i));
-          assert(convex != NULL);
+          assert(convex != nullptr);
 
           btTransform geomTrans = compound->getChildTransform(i);
           btTransform child_tf1 = convertEigenToBt(tf1) * geomTrans;
           btTransform child_tf2 = convertEigenToBt(tf2) * geomTrans;
 
           btCollisionShape* subshape = new CastHullShape(convex, child_tf1.inverseTimes(child_tf2));
-          assert(subshape != NULL);
+          assert(subshape != nullptr);
 
-          if (subshape != NULL)
+          if (subshape != nullptr)
           {
             new_cow->manage(subshape);
             subshape->setMargin(BULLET_MARGIN);
@@ -280,13 +280,13 @@ void collision_detection::CollisionRobotBullet::constructBulletObject(
       if (btBroadphaseProxy::isConvex(new_cow->getCollisionShape()->getShapeType()))
       {
         btConvexShape* convex = static_cast<btConvexShape*>(new_cow->getCollisionShape());
-        assert(convex != NULL);
+        assert(convex != nullptr);
 
         btTransform tf1 = convertEigenToBt(state1.getGlobalLinkTransform(body->getAttachedLinkName()));
         btTransform tf2 = convertEigenToBt(state2.getGlobalLinkTransform(body->getAttachedLinkName()));
 
         CastHullShape* shape = new CastHullShape(convex, tf1.inverseTimes(tf2));
-        assert(shape != NULL);
+        assert(shape != nullptr);
 
         new_cow->manage(shape);
         new_cow->setCollisionShape(shape);
@@ -303,16 +303,16 @@ void collision_detection::CollisionRobotBullet::constructBulletObject(
         for (int i = 0; i < compound->getNumChildShapes(); ++i)
         {
           btConvexShape* convex = static_cast<btConvexShape*>(compound->getChildShape(i));
-          assert(convex != NULL);
+          assert(convex != nullptr);
 
           btTransform geomTrans = compound->getChildTransform(i);
           btTransform child_tf1 = convertEigenToBt(tf1) * geomTrans;
           btTransform child_tf2 = convertEigenToBt(tf2) * geomTrans;
 
           btCollisionShape* subshape = new CastHullShape(convex, child_tf1.inverseTimes(child_tf2));
-          assert(subshape != NULL);
+          assert(subshape != nullptr);
 
-          if (subshape != NULL)
+          if (subshape != nullptr)
           {
             new_cow->manage(subshape);
             subshape->setMargin(BULLET_MARGIN);

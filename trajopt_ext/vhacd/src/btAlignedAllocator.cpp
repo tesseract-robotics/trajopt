@@ -140,7 +140,7 @@ void btAlignedFreeInternal(void* ptr, int32_t line, char* filename)
   }
   else
   {
-    printf("NULL ptr\n");
+    printf("nullptr\n");
   }
 }
 

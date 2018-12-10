@@ -1,9 +1,13 @@
+#include <trajopt_utils/macros.h>
+TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <cstdio>
 #include <gtest/gtest.h>
 #include <Eigen/Core>
 #include <iostream>
 #include <sstream>
 #include <vector>
+TRAJOPT_IGNORE_WARNINGS_POP
+
 #include <trajopt_sco/expr_ops.hpp>
 #include <trajopt_sco/solver_interface.hpp>
 #include <trajopt_sco/solver_utils.hpp>

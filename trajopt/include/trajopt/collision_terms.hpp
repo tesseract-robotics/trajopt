@@ -18,7 +18,7 @@ struct CollisionEvaluator
     : env_(env), manip_(manip), safety_margin_data_(safety_margin_data)
   {
   }
-  virtual ~CollisionEvaluator() {}
+  virtual ~CollisionEvaluator() = default;
   virtual void CalcDistExpressions(const DblVec& x, sco::AffExprVector& exprs) = 0;
   virtual void CalcDists(const DblVec& x, DblVec& exprs) = 0;
   virtual void CalcCollisions(const DblVec& x, tesseract::ContactResultVector& dist_results) = 0;
@@ -54,14 +54,14 @@ public:
   For each contact generated, return a linearization of the signed distance
   function
   */
-  void CalcDistExpressions(const DblVec& x, sco::AffExprVector& exprs);
+  void CalcDistExpressions(const DblVec& x, sco::AffExprVector& exprs) override;
   /**
    * Same as CalcDistExpressions, but just the distances--not the expressions
    */
-  void CalcDists(const DblVec& x, DblVec& exprs);
-  void CalcCollisions(const DblVec& x, tesseract::ContactResultVector& dist_results);
-  void Plot(const tesseract::BasicPlottingPtr plotter, const DblVec& x);
-  sco::VarVector GetVars() { return m_vars; }
+  void CalcDists(const DblVec& x, DblVec& exprs) override;
+  void CalcCollisions(const DblVec& x, tesseract::ContactResultVector& dist_results) override;
+  void Plot(const tesseract::BasicPlottingPtr plotter, const DblVec& x) override;
+  sco::VarVector GetVars() override { return m_vars; }
 private:
   sco::VarVector m_vars;
   tesseract::DiscreteContactManagerBasePtr contact_manager_;
@@ -75,11 +75,11 @@ public:
                          SafetyMarginDataConstPtr safety_margin_data,
                          const sco::VarVector& vars0,
                          const sco::VarVector& vars1);
-  void CalcDistExpressions(const DblVec& x, sco::AffExprVector& exprs);
-  void CalcDists(const DblVec& x, DblVec& exprs);
-  void CalcCollisions(const DblVec& x, tesseract::ContactResultVector& dist_results);
-  void Plot(const tesseract::BasicPlottingPtr plotter, const DblVec& x);
-  sco::VarVector GetVars() { return concat(m_vars0, m_vars1); }
+  void CalcDistExpressions(const DblVec& x, sco::AffExprVector& exprs) override;
+  void CalcDists(const DblVec& x, DblVec& exprs) override;
+  void CalcCollisions(const DblVec& x, tesseract::ContactResultVector& dist_results) override;
+  void Plot(const tesseract::BasicPlottingPtr plotter, const DblVec& x) override;
+  sco::VarVector GetVars() override { return concat(m_vars0, m_vars1); }
 private:
   sco::VarVector m_vars0;
   sco::VarVector m_vars1;
@@ -100,10 +100,10 @@ public:
                 SafetyMarginDataConstPtr safety_margin_data,
                 const sco::VarVector& vars0,
                 const sco::VarVector& vars1);
-  virtual sco::ConvexObjectivePtr convex(const DblVec& x, sco::Model* model);
-  virtual double value(const DblVec&);
-  void Plot(const tesseract::BasicPlottingPtr& plotter, const DblVec& x);
-  sco::VarVector getVars() { return m_calc->GetVars(); }
+  virtual sco::ConvexObjectivePtr convex(const DblVec& x, sco::Model* model) override;
+  virtual double value(const DblVec&) override;
+  void Plot(const tesseract::BasicPlottingPtr& plotter, const DblVec& x) override;
+  sco::VarVector getVars() override { return m_calc->GetVars(); }
 private:
   CollisionEvaluatorPtr m_calc;
 };
@@ -122,10 +122,10 @@ public:
                       SafetyMarginDataConstPtr safety_margin_data,
                       const sco::VarVector& vars0,
                       const sco::VarVector& vars1);
-  virtual sco::ConvexConstraintsPtr convex(const DblVec& x, sco::Model* model);
-  virtual DblVec value(const DblVec&);
+  virtual sco::ConvexConstraintsPtr convex(const DblVec& x, sco::Model* model) override;
+  virtual DblVec value(const DblVec&) override;
   void Plot(const DblVec& x);
-  sco::VarVector getVars() { return m_calc->GetVars(); }
+  sco::VarVector getVars() override { return m_calc->GetVars(); }
 private:
   CollisionEvaluatorPtr m_calc;
 };

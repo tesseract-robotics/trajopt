@@ -1,7 +1,10 @@
+#include <trajopt_utils/macros.h>
+TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <cmath>
 #include <Eigen/Eigen>
 #include <fstream>
 #include <signal.h>
+TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt_sco/qpoases_interface.hpp>
 #include <trajopt_sco/solver_utils.hpp>

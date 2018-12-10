@@ -1,7 +1,11 @@
 #pragma once
-#include<tesseract_core/basic_types.h>
-#include <trajopt/typedefs.hpp>
+#include <trajopt_utils/macros.h>
+TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <unordered_map>
+TRAJOPT_IGNORE_WARNINGS_POP
+
+#include <tesseract_core/basic_types.h>
+#include <trajopt/typedefs.hpp>
 
 namespace trajopt
 {
@@ -126,7 +130,7 @@ inline std::vector<SafetyMarginDataPtr> createSafetyMarginDataVector(int num_ele
                                                                      const double& default_safety_margin_coeff)
 {
   std::vector<SafetyMarginDataPtr> info;
-  info.reserve(num_elements);
+  info.reserve(static_cast<size_t>(num_elements));
   for (auto i = 0; i < num_elements; ++i)
   {
     info.push_back(SafetyMarginDataPtr(new SafetyMarginData(default_safety_margin, default_safety_margin_coeff)));

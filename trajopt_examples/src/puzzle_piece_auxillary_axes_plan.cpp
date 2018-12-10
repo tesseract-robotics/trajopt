@@ -23,19 +23,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include <trajopt_utils/macros.h>
+TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <ros/ros.h>
 #include <srdfdom/model.h>
+#include <urdf_parser/urdf_parser.h>
+#include <fstream>
+#include <ros/package.h>
+TRAJOPT_IGNORE_WARNINGS_POP
+
 #include <tesseract_ros/kdl/kdl_env.h>
 #include <tesseract_ros/ros_basic_plotting.h>
 #include <trajopt/plot_callback.hpp>
 #include <trajopt/problem_description.hpp>
 #include <trajopt_utils/config.hpp>
 #include <trajopt_utils/logging.hpp>
-#include <urdf_parser/urdf_parser.h>
-
-// For loading the pose file from a local package
-#include <fstream>
-#include <ros/package.h>
 
 using namespace trajopt;
 using namespace tesseract;
@@ -44,10 +46,10 @@ const std::string ROBOT_DESCRIPTION_PARAM = "robot_description"; /**< Default RO
 const std::string ROBOT_SEMANTIC_PARAM = "robot_description_semantic"; /**< Default ROS parameter for robot
                                                                           description */
 
-bool plotting_ = false;
-urdf::ModelInterfaceSharedPtr urdf_model_; /**< URDF Model */
-srdf::ModelSharedPtr srdf_model_;          /**< SRDF Model */
-tesseract_ros::KDLEnvPtr env_;             /**< Trajopt Basic Environment */
+static bool plotting_ = false;
+static urdf::ModelInterfaceSharedPtr urdf_model_; /**< URDF Model */
+static srdf::ModelSharedPtr srdf_model_;          /**< SRDF Model */
+static tesseract_ros::KDLEnvPtr env_;             /**< Trajopt Basic Environment */
 
 static VectorIsometry3d makePuzzleToolPoses()
 {
@@ -116,7 +118,7 @@ ProblemConstructionInfo cppMethod()
   VectorIsometry3d tool_poses = makePuzzleToolPoses();
 
   // Populate Basic Info
-  pci.basic_info.n_steps = tool_poses.size();
+  pci.basic_info.n_steps = static_cast<int>(tool_poses.size());
   pci.basic_info.manip = "manipulator_aux";
   pci.basic_info.start_fixed = false;
 
@@ -174,7 +176,7 @@ ProblemConstructionInfo cppMethod()
     pose->timestep = i;
 
     pose->link = "part";
-    pose->tcp = tool_poses[i];
+    pose->tcp = tool_poses[static_cast<size_t>(i)];
     pose->pos_coeffs = Eigen::Vector3d(10, 10, 10);
     pose->rot_coeffs = Eigen::Vector3d(10, 10, 0);
 

@@ -1,5 +1,9 @@
+#include <trajopt_utils/macros.h>
+TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <functional>
 #include <set>
+TRAJOPT_IGNORE_WARNINGS_POP
+
 #include <tesseract_core/basic_env.h>
 #include <tesseract_core/basic_kin.h>
 #include <trajopt/common.hpp>

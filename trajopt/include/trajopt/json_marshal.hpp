@@ -1,11 +1,13 @@
 #pragma once
+#include <trajopt_utils/macros.h>
+TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <Eigen/Eigen>
 #include <boost/format.hpp>
 #include <jsoncpp/json/json.h>
 #include <sstream>
 #include <string>
-#include <trajopt_utils/macros.h>
 #include <vector>
+TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace json_marshal
 {

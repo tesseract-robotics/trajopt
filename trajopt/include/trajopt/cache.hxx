@@ -21,6 +21,6 @@ public:
   ValueT* get(const KeyT& key)
   {
     KeyT* it = std::find(&keybuf[0], &keybuf[0] + bufsize, key);
-    return (it == &keybuf[0] + bufsize) ? NULL : &valbuf[it - &keybuf[0]];
+    return (it == &keybuf[0] + bufsize) ? nullptr : &valbuf[it - &keybuf[0]];
   }
 };

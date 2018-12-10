@@ -47,7 +47,7 @@ private:
   Vec3<double> m_pos;
   int32_t m_name;
   size_t m_id;
-  CircularListElement<TMMEdge>* m_duplicate;  // pointer to incident cone edge (or NULL)
+  CircularListElement<TMMEdge>* m_duplicate;  // pointer to incident cone edge (or nullptr)
   bool m_onHull;
   bool m_tag;
   TMMVertex(const TMMVertex& rhs);

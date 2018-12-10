@@ -234,7 +234,7 @@ bool VHACD::OCLInit(void* const oclDevice, IUserLogger* const logger)
 #ifdef CL_VERSION_1_1
   m_oclDevice = (cl_device_id*)oclDevice;
   cl_int error;
-  m_oclContext = clCreateContext(NULL, 1, m_oclDevice, NULL, NULL, &error);
+  m_oclContext = clCreateContext(nullptr, 1, m_oclDevice, nullptr, nullptr, &error);
   if (error != CL_SUCCESS)
   {
     if (logger)
@@ -276,16 +276,16 @@ bool VHACD::OCLInit(void* const oclDevice, IUserLogger* const logger)
   }
 
   /* Build program */
-  error = clBuildProgram(m_oclProgram, 1, m_oclDevice, "-cl-denorms-are-zero", NULL, NULL);
+  error = clBuildProgram(m_oclProgram, 1, m_oclDevice, "-cl-denorms-are-zero", nullptr, nullptr);
   if (error != CL_SUCCESS)
   {
     size_t log_size;
     /* Find Size of log and print to std output */
-    clGetProgramBuildInfo(m_oclProgram, *m_oclDevice, CL_PROGRAM_BUILD_LOG, 0, NULL, &log_size);
+    clGetProgramBuildInfo(m_oclProgram, *m_oclDevice, CL_PROGRAM_BUILD_LOG, 0, nullptr, &log_size);
     char* program_log = new char[log_size + 2];
     program_log[log_size] = '\n';
     program_log[log_size + 1] = '\0';
-    clGetProgramBuildInfo(m_oclProgram, *m_oclDevice, CL_PROGRAM_BUILD_LOG, log_size + 1, program_log, NULL);
+    clGetProgramBuildInfo(m_oclProgram, *m_oclDevice, CL_PROGRAM_BUILD_LOG, log_size + 1, program_log, nullptr);
     if (logger)
     {
       logger->Log("Couldn't build program\n");
@@ -331,10 +331,10 @@ bool VHACD::OCLInit(void* const oclDevice, IUserLogger* const logger)
                                    CL_KERNEL_WORK_GROUP_SIZE,
                                    sizeof(size_t),
                                    &m_oclWorkGroupSize,
-                                   NULL);
+                                   nullptr);
   size_t workGroupSize = 0;
   error = clGetKernelWorkGroupInfo(
-      m_oclKernelComputeSum[0], *m_oclDevice, CL_KERNEL_WORK_GROUP_SIZE, sizeof(size_t), &workGroupSize, NULL);
+      m_oclKernelComputeSum[0], *m_oclDevice, CL_KERNEL_WORK_GROUP_SIZE, sizeof(size_t), &workGroupSize, nullptr);
   if (error != CL_SUCCESS)
   {
     if (logger)
@@ -845,7 +845,7 @@ void VHACD::ComputeBestClippingPlane(const PrimitiveSet* inputPSet,
     for (int32_t i = 0; i < m_ompNumProcessors; ++i)
     {
       partialVolumes[i] =
-          clCreateBuffer(m_oclContext, CL_MEM_WRITE_ONLY, sizeof(uint32_t) * 4 * nWorkGroups, NULL, &error);
+          clCreateBuffer(m_oclContext, CL_MEM_WRITE_ONLY, sizeof(uint32_t) * 4 * nWorkGroups, nullptr, &error);
       if (error != CL_SUCCESS)
       {
         if (params.m_logger)
@@ -859,10 +859,10 @@ void VHACD::ComputeBestClippingPlane(const PrimitiveSet* inputPSet,
       error |= clSetKernelArg(m_oclKernelComputePartialVolumes[i], 1, sizeof(uint32_t), &nVoxels);
       error |= clSetKernelArg(m_oclKernelComputePartialVolumes[i], 3, sizeof(float) * 4, fMinBB);
       error |= clSetKernelArg(m_oclKernelComputePartialVolumes[i], 4, sizeof(float) * 4, &fSclae);
-      error |= clSetKernelArg(m_oclKernelComputePartialVolumes[i], 5, sizeof(uint32_t) * 4 * m_oclWorkGroupSize, NULL);
+      error |= clSetKernelArg(m_oclKernelComputePartialVolumes[i], 5, sizeof(uint32_t) * 4 * m_oclWorkGroupSize, nullptr);
       error |= clSetKernelArg(m_oclKernelComputePartialVolumes[i], 6, sizeof(cl_mem), &(partialVolumes[i]));
       error |= clSetKernelArg(m_oclKernelComputeSum[i], 0, sizeof(cl_mem), &(partialVolumes[i]));
-      error |= clSetKernelArg(m_oclKernelComputeSum[i], 2, sizeof(uint32_t) * 4 * m_oclWorkGroupSize, NULL);
+      error |= clSetKernelArg(m_oclKernelComputeSum[i], 2, sizeof(uint32_t) * 4 * m_oclWorkGroupSize, nullptr);
       if (error != CL_SUCCESS)
       {
         if (params.m_logger)
@@ -921,12 +921,12 @@ void VHACD::ComputeBestClippingPlane(const PrimitiveSet* inputPSet,
         error = clEnqueueNDRangeKernel(m_oclQueue[threadID],
                                        m_oclKernelComputePartialVolumes[threadID],
                                        1,
-                                       NULL,
+                                       nullptr,
                                        &globalSize,
                                        &m_oclWorkGroupSize,
                                        0,
-                                       NULL,
-                                       NULL);
+                                       nullptr,
+                                       nullptr);
         if (error != CL_SUCCESS)
         {
           if (params.m_logger)
@@ -952,12 +952,12 @@ void VHACD::ComputeBestClippingPlane(const PrimitiveSet* inputPSet,
           error = clEnqueueNDRangeKernel(m_oclQueue[threadID],
                                          m_oclKernelComputeSum[threadID],
                                          1,
-                                         NULL,
+                                         nullptr,
                                          &globalSize,
                                          &m_oclWorkGroupSize,
                                          0,
-                                         NULL,
-                                         NULL);
+                                         nullptr,
+                                         nullptr);
           if (error != CL_SUCCESS)
           {
             if (params.m_logger)
@@ -1025,7 +1025,7 @@ void VHACD::ComputeBestClippingPlane(const PrimitiveSet* inputPSet,
 #ifdef CL_VERSION_1_1
         uint32_t volumes[4];
         cl_int error = clEnqueueReadBuffer(
-            m_oclQueue[threadID], partialVolumes[threadID], CL_TRUE, 0, sizeof(uint32_t) * 4, volumes, 0, NULL, NULL);
+            m_oclQueue[threadID], partialVolumes[threadID], CL_TRUE, 0, sizeof(uint32_t) * 4, volumes, 0, nullptr, nullptr);
         size_t nPrimitivesRight = volumes[0] + volumes[1] + volumes[2] + volumes[3];
         size_t nPrimitivesLeft = nPrimitives - nPrimitivesRight;
         volumeRight = nPrimitivesRight * unitVolume;

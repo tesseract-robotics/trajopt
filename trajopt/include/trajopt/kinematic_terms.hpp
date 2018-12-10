@@ -1,6 +1,9 @@
 #pragma once
-
+#include <trajopt_utils/macros.h>
+TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <Eigen/Core>
+TRAJOPT_IGNORE_WARNINGS_POP
+
 #include <tesseract_core/basic_env.h>
 #include <tesseract_core/basic_kin.h>
 #include <trajopt/common.hpp>
@@ -34,7 +37,7 @@ struct DynamicCartPoseErrCalculator : public TrajOptVectorOfVector
 
   void Plot(const tesseract::BasicPlottingPtr& plotter, const Eigen::VectorXd& dof_vals) override;
 
-  Eigen::VectorXd operator()(const Eigen::VectorXd& dof_vals) const;
+  Eigen::VectorXd operator()(const Eigen::VectorXd& dof_vals) const override;
 };
 
 /**
@@ -60,7 +63,7 @@ struct CartPoseErrCalculator : public TrajOptVectorOfVector
 
   void Plot(const tesseract::BasicPlottingPtr& plotter, const Eigen::VectorXd& dof_vals) override;
 
-  Eigen::VectorXd operator()(const Eigen::VectorXd& dof_vals) const;
+  Eigen::VectorXd operator()(const Eigen::VectorXd& dof_vals) const override;
 };
 
 /**
@@ -84,7 +87,7 @@ struct CartVelJacCalculator : sco::MatrixOfVector
   {
   }
 
-  Eigen::MatrixXd operator()(const Eigen::VectorXd& dof_vals) const;
+  Eigen::MatrixXd operator()(const Eigen::VectorXd& dof_vals) const override;
 };
 
 /**
@@ -108,6 +111,6 @@ struct CartVelErrCalculator : sco::VectorOfVector
   {
   }
 
-  Eigen::VectorXd operator()(const Eigen::VectorXd& dof_vals) const;
+  Eigen::VectorXd operator()(const Eigen::VectorXd& dof_vals) const override;
 };
 }

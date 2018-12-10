@@ -23,9 +23,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include <trajopt_utils/macros.h>
+TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <jsoncpp/json/json.h>
 #include <ros/ros.h>
 #include <srdfdom/model.h>
+#include <urdf_parser/urdf_parser.h>
+TRAJOPT_IGNORE_WARNINGS_POP
+
 #include <tesseract_ros/kdl/kdl_chain_kin.h>
 #include <tesseract_ros/kdl/kdl_env.h>
 #include <tesseract_ros/ros_basic_plotting.h>
@@ -34,7 +39,6 @@
 #include <trajopt/problem_description.hpp>
 #include <trajopt_utils/config.hpp>
 #include <trajopt_utils/logging.hpp>
-#include <urdf_parser/urdf_parser.h>
 
 using namespace trajopt;
 using namespace tesseract;
@@ -45,13 +49,13 @@ const std::string ROBOT_SEMANTIC_PARAM = "robot_description_semantic"; /**< Defa
 const std::string TRAJOPT_DESCRIPTION_PARAM =
     "trajopt_description"; /**< Default ROS parameter for trajopt description */
 
-bool plotting_ = false;
-bool write_to_file_ = false;
-int steps_ = 5;
-std::string method_ = "json";
-urdf::ModelInterfaceSharedPtr urdf_model_; /**< URDF Model */
-srdf::ModelSharedPtr srdf_model_;          /**< SRDF Model */
-tesseract_ros::KDLEnvPtr env_;             /**< Trajopt Basic Environment */
+static bool plotting_ = false;
+static bool write_to_file_ = false;
+static int steps_ = 5;
+static std::string method_ = "json";
+static urdf::ModelInterfaceSharedPtr urdf_model_; /**< URDF Model */
+static srdf::ModelSharedPtr srdf_model_;          /**< SRDF Model */
+static tesseract_ros::KDLEnvPtr env_;             /**< Trajopt Basic Environment */
 
 TrajOptProbPtr jsonMethod()
 {

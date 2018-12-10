@@ -234,7 +234,7 @@ void CollisionObjectWrapper::initialize(const std::vector<shapes::ShapeConstPtr>
     for (std::size_t j = 0; j < shapes.size(); ++j)
     {
       btCollisionShape* subshape = createShapePrimitive(shapes[j], useTrimesh, this);
-      if (subshape != NULL)
+      if (subshape != nullptr)
       {
         manage(subshape);
         subshape->setMargin(BULLET_MARGIN);

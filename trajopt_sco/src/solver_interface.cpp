@@ -1,7 +1,11 @@
+#include <trajopt_utils/macros.h>
+TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <boost/format.hpp>
 #include <iostream>
 #include <map>
 #include <sstream>
+TRAJOPT_IGNORE_WARNINGS_POP
+
 #include <trajopt_sco/solver_interface.hpp>
 #include <trajopt_utils/macros.h>
 
@@ -41,7 +45,7 @@ void simplify2(IntVec& inds, DblVec& vals)
   }
   inds.resize(ind2val.size());
   vals.resize(ind2val.size());
-  int i_new = 0;
+  long unsigned int i_new = 0;
   for (Int2Double::value_type& iv : ind2val)
   {
     inds[i_new] = iv.first;
@@ -119,7 +123,7 @@ void Model::setVarBounds(const Var& var, double lower, double upper)
 
 std::ostream& operator<<(std::ostream& o, const Var& v)
 {
-  if (v.var_rep != NULL)
+  if (v.var_rep != nullptr)
     o << v.var_rep->name;
   else
     o << "nullvar";
@@ -154,7 +158,7 @@ std::ostream& operator<<(std::ostream& o, const QuadExpr& e)
 
 std::ostream& operator<<(std::ostream& o, const ModelType& cs)
 {
-  int cs_ivalue_ = static_cast<int>(cs.value_);
+  size_t cs_ivalue_ = static_cast<size_t>(cs.value_);
   if (cs_ivalue_ > cs.MODEL_NAMES_.size())
   {
     std::stringstream conversion_error;
@@ -242,15 +246,15 @@ std::vector<ModelType> availableSolvers()
 #ifdef HAVE_QPOASES
   has_solver[ModelType::QPOASES] = true;
 #endif
-  int n_available_solvers = 0;
+  size_t n_available_solvers = 0;
   for (auto i = 0; i < ModelType::AUTO_SOLVER; ++i)
-    if (has_solver[i])
+    if (has_solver[static_cast<size_t>(i)])
       ++n_available_solvers;
-  std::vector<ModelType> available_solvers(n_available_solvers,
-                                              ModelType::AUTO_SOLVER);
-  auto j = 0;
-  for (auto i = 0; i < ModelType::AUTO_SOLVER; ++i)
-    if (has_solver[i])
+  std::vector<ModelType> available_solvers(n_available_solvers, ModelType::AUTO_SOLVER);
+
+  size_t j = 0;
+  for (int i = 0; i < static_cast<int>(ModelType::AUTO_SOLVER); ++i)
+    if (has_solver[static_cast<size_t>(i)])
       available_solvers[j++] = static_cast<ModelType>(i);
   return available_solvers;
 }

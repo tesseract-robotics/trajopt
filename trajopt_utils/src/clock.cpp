@@ -1,5 +1,9 @@
+#include <trajopt_utils/macros.h>
+TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <sys/time.h>
 #include <time.h>
+TRAJOPT_IGNORE_WARNINGS_POP
+
 #include <trajopt_utils/clock.hpp>
 
 namespace util
@@ -18,8 +22,8 @@ void StartClock()
 {
   // determine start time
   struct timeval startTimeStruct;
-  gettimeofday(&startTimeStruct, NULL);
-  startTime = startTimeStruct.tv_sec * (long unsigned int)(1e6) + startTimeStruct.tv_usec;
+  gettimeofday(&startTimeStruct, nullptr);
+  startTime = static_cast<unsigned long>(startTimeStruct.tv_sec * 1e6l + startTimeStruct.tv_usec);
 }
 
 /*
@@ -29,8 +33,8 @@ double GetClock()
 {
   struct timeval startTimeStruct;
   unsigned long int curTime;
-  gettimeofday(&startTimeStruct, NULL);
-  curTime = startTimeStruct.tv_sec * (long unsigned int)(1e6) + startTimeStruct.tv_usec;
-  return (1e-6) * (curTime - startTime);
+  gettimeofday(&startTimeStruct, nullptr);
+  curTime = static_cast<unsigned long>(startTimeStruct.tv_sec * 1e6l + startTimeStruct.tv_usec);
+  return (1e-6) * static_cast<double>(curTime - startTime);
 }
 }

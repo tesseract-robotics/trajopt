@@ -1,6 +1,4 @@
-#include <sstream>
 #include <trajopt_utils/stl_to_string.hpp>
-#include <vector>
 
 namespace
 {

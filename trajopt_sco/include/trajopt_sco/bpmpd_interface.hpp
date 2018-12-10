@@ -19,9 +19,9 @@ public:
   int m_pipeIn, m_pipeOut, m_pid;
 
   BPMPDModel();
-  virtual ~BPMPDModel();
+  ~BPMPDModel() override;
 
-  Var addVar(const std::string& name);
+  Var addVar(const std::string& name) override;
   Cnt addEqCnt(const AffExpr&, const std::string& name) override;
   Cnt addIneqCnt(const AffExpr&, const std::string& name) override;
   Cnt addIneqCnt(const QuadExpr&, const std::string& name) override;
