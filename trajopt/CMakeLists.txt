@@ -95,6 +95,9 @@ if (CATKIN_ENABLE_TESTING)
   add_rostest_gtest(${PROJECT_NAME}_planning_unit test/planning_unit.launch test/planning_unit.cpp)
   target_link_libraries(${PROJECT_NAME}_planning_unit ${PROJECT_NAME} ${Boost_SYSTEM_LIBRARY} ${Boost_PROGRAM_OPTIONS_LIBRARY} ${catkin_LIBRARIES})
 
+  add_rostest_gtest(${PROJECT_NAME}_interface_unit test/interface_unit.launch test/interface_unit.cpp)
+  target_link_libraries(${PROJECT_NAME}_interface_unit ${PROJECT_NAME} ${Boost_SYSTEM_LIBRARY} ${Boost_PROGRAM_OPTIONS_LIBRARY} ${catkin_LIBRARIES})
+
   add_rostest_gtest(${PROJECT_NAME}_costs_unit test/costs_unit.launch test/costs_unit.cpp)
   target_link_libraries(${PROJECT_NAME}_costs_unit ${PROJECT_NAME} ${Boost_SYSTEM_LIBRARY} ${Boost_PROGRAM_OPTIONS_LIBRARY} ${catkin_LIBRARIES})
 
