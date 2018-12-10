@@ -891,12 +891,14 @@ void JointVelTermInfo::hatch(TrajOptProb& prob)
   checkParameterSize(targets, n_dof, "JointVelTermInfo targets", true);
   checkParameterSize(upper_tols, n_dof, "JointVelTermInfo upper_tols", true);
   checkParameterSize(lower_tols, n_dof, "JointVelTermInfo lower_tols", true);
+  assert(last_step > first_step);
+  assert(first_step >= 0);
 
   // Check if tolerances are all zeros
   bool is_upper_zeros =
-      std::all_of(upper_tols.begin(), upper_tols.end(), [](double i) { return util::doubleEquals(i, 0.); });
+          std::all_of(upper_tols.begin(), upper_tols.end(), [](double i) { return util::doubleEquals(i, 0.); });
   bool is_lower_zeros =
-      std::all_of(lower_tols.begin(), lower_tols.end(), [](double i) { return util::doubleEquals(i, 0.); });
+          std::all_of(lower_tols.begin(), lower_tols.end(), [](double i) { return util::doubleEquals(i, 0.); });
 
   // Get vars associated with joints
   trajopt::VarArray vars = prob.GetVars();
@@ -904,11 +906,78 @@ void JointVelTermInfo::hatch(TrajOptProb& prob)
 
   if (term_type == (TT_COST | TT_USE_TIME))
   {
-    ROS_ERROR("Use time version of this term has not been defined.");
+      sco::VarVector joint_vars(static_cast<std::size_t>(last_step - first_step + 1));
+      sco::VarVector time_vars(static_cast<std::size_t>(last_step - first_step + 1));
+      unsigned num_vels = last_step - first_step;
+
+      // Apply seperate cost to each joint b/c that is how the error function is currently written
+      for (int j = 0; j < n_dof; j++)
+      {
+          for (int i = first_step; i < last_step + 1; i++)
+          {
+              joint_vars[i - first_step] = prob.GetVar(i, j);
+              time_vars[i - first_step] = prob.GetVar(i, prob.GetNumDOF() - 1);
+          }
+
+          // If the tolerances are 0, an equality cost is set
+          if (is_upper_zeros && is_lower_zeros)
+          {
+              DblVec single_jnt_coeffs = DblVec(num_vels * 2, coeffs[j]);
+              prob.addCost(sco::CostPtr(new TrajOptCostFromErrFunc(
+                                            sco::VectorOfVectorPtr(new JointVelErrCalculator(targets[j], upper_tols[j], lower_tols[j])),
+                                            sco::MatrixOfVectorPtr(new JointVelJacCalculator()),
+                                            concat(joint_vars, time_vars),
+                                            util::toVectorXd(single_jnt_coeffs),
+                                            sco::SQUARED,
+                                            name + "_j" + std::to_string(j))));
+          }
+          // Otherwise it's a hinged "inequality" cost
+          else
+          {
+              DblVec single_jnt_coeffs = DblVec(num_vels * 2, coeffs[j]);
+              prob.addCost(sco::CostPtr(new TrajOptCostFromErrFunc(
+                                            sco::VectorOfVectorPtr(new JointVelErrCalculator(targets[j], upper_tols[j], lower_tols[j])),
+                                            sco::MatrixOfVectorPtr(new JointVelJacCalculator()),
+                                            concat(joint_vars, time_vars),
+                                            util::toVectorXd(single_jnt_coeffs),
+                                            sco::HINGE,
+                                            name + "_j" + std::to_string(j))));
+          }
+      }
   }
   else if (term_type == (TT_CNT | TT_USE_TIME))
   {
-    ROS_ERROR("Use time version of this term has not been defined.");
+      sco::VarVector joint_vars(static_cast<std::size_t>(last_step - first_step + 1));
+      sco::VarVector time_vars(static_cast<std::size_t>(last_step - first_step + 1));
+      unsigned num_vels = last_step - first_step;
+
+      // If the tolerances are 0, an equality cnt is set
+      if (is_upper_zeros && is_lower_zeros)
+      {
+          // Apply seperate cnt to each joint b/c that is how the error function is currently written
+          for (int j = 0; j < n_dof; j++)
+          {
+              for (int i = first_step; i < last_step + 1; i++)
+              {
+                  joint_vars[i - first_step] = prob.GetVar(i, j);
+                  time_vars[i - first_step] = prob.GetVar(i, prob.GetNumDOF() - 1);
+              }
+              double limit = targets[j];  // Is this sufficient for equality cnt?
+              DblVec single_jnt_coeffs = DblVec(num_vels * 2, coeffs[j]);
+              prob.addConstraint(sco::ConstraintPtr(new TrajOptConstraintFromErrFunc(
+                                            sco::VectorOfVectorPtr(new JointVelErrCalculator(targets[j], upper_tols[j], lower_tols[j])),
+                                            sco::MatrixOfVectorPtr(new JointVelJacCalculator()),
+                                            concat(joint_vars, time_vars),
+                                            util::toVectorXd(coeffs),
+                                            sco::EQ,
+                                            name + "_j" + std::to_string(j))));
+          }
+      }
+      // Otherwise it's a hinged "inequality" constraint
+      else
+      {
+          ROS_ERROR("Use time inequality cnt of this term has not been defined.");
+      }
   }
   else if ((term_type & TT_COST) && ~(term_type | ~TT_USE_TIME))
   {

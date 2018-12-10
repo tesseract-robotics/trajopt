@@ -171,37 +171,152 @@ VectorXd CartVelErrCalculator::operator()(const VectorXd& dof_vals) const
   return out;
 }
 
-#if 0
-CartVelConstraint::CartVelConstraint(const VarVector& step0vars, const VarVector& step1vars, RobotAndDOFPtr manip, KinBody::LinkPtr link, double distlimit) :
-        ConstraintFromFunc(VectorOfVectorPtr(new CartVelCalculator(manip, link, distlimit)),
-             MatrixOfVectorPtr(new CartVelJacCalculator(manip, link, distlimit)), concat(step0vars, step1vars), VectorXd::Ones(0), INEQ, "CartVel") 
-{} // TODO coeffs
-#endif
 
-#if 0
-struct UpErrorCalculator {
-  Vector3d dir_local_;
-  Vector3d goal_dir_world_;
-  RobotAndDOFPtr manip_;
-  OR::KinBody::LinkPtr link_;
-  MatrixXd perp_basis_; // 2x3 matrix perpendicular to goal_dir_world
-  UpErrorCalculator(const Vector3d& dir_local, const Vector3d& goal_dir_world, RobotAndDOFPtr manip, KinBody::LinkPtr link) :
-    dir_local_(dir_local),
-    goal_dir_world_(goal_dir_world),
-    manip_(manip),
-    link_(link)
+Eigen::VectorXd JointVelErrCalculator::operator()(const VectorXd& var_vals) const
+{
+  assert(var_vals.rows() % 2 == 0);
+  // Top half of the vector are the joint values. The bottom half are the dt values
+  int half = static_cast<int>(var_vals.rows() / 2);
+  int num_vels = half - 1;
+  // (x1-x0)/dt
+  VectorXd vel = (var_vals.segment(1, num_vels) - var_vals.segment(0, num_vels)).array()/var_vals.segment(half + 1, num_vels).array();
+
+  // Note that for equality terms tols are 0, so error is effectively doubled
+  VectorXd result(vel.rows() * 2);
+  result.topRows(vel.rows()) = -(upper_tol_ - (vel.array() - target_));
+  result.bottomRows(vel.rows()) = lower_tol_ - (vel.array() - target_);
+  return result;
+}
+
+MatrixXd JointVelJacCalculator::operator()(const VectorXd& var_vals) const
+{
+  // var_vals = (theta_t1, theta_t2, theta_t3 ... dt_1, dt_2, dt_3 ...)
+  int num_vals = static_cast<int>(var_vals.rows());
+  int half = num_vals/2;
+  int num_vels = half - 1;
+  MatrixXd jac = MatrixXd::Zero(num_vels * 2, num_vals);
+
+  for (int i = 0; i < num_vels; i++)
   {
-    Vector3d perp0 = goal_dir_world_.cross(Vector3d::Random()).normalized();
-    Vector3d perp1 = goal_dir_world_.cross(perp0);
-    perp_basis_.resize(2,3);
-    perp_basis_.row(0) = perp0.transpose();
-    perp_basis_.row(1) = perp1.transpose();
+    // v = (j_i+1 - j_i)*(1/dt)
+    int time_index = i + half + 1;
+    // dv_i/dj_i = -(1/dt)
+    jac(i, i) = -1.0*var_vals(time_index);
+    // dv_i/dj_i+1 = (1/dt)
+    jac(i, i + 1) = 1.0*var_vals(time_index);
+    // dv_i/dt_i = j_i+1 - j_i
+    jac(i, time_index) = var_vals(i + 1) - var_vals(i);
+    // All others are 0
   }
-  VectorXd operator()(const VectorXd& dof_vals) {
-    manip_->SetDOFValues(toDblVec(dof_vals));
-    OR::Transform newpose = link_->GetTransform();
-    return perp_basis_*(toRot(newpose.rot) * dir_local_ - goal_dir_world_);
+
+  // bottom half is negative velocities
+  jac.bottomRows(num_vels) = -jac.topRows(num_vels);
+
+  return jac;
+}
+
+VectorXd JointAccErrCalculator::operator()(const VectorXd& var_vals) const
+{
+  assert(var_vals.rows() % 2 == 0);
+  int half = static_cast<int>(var_vals.rows() / 2);
+  int num_acc = half - 2;
+  VectorXd vels = vel_calc(var_vals);
+
+  VectorXd vel_diff = (vels.segment(1, num_acc) - vels.segment(0, num_acc));
+  VectorXd acc = 2.0*vel_diff.array()/
+      (var_vals.segment(half + 1, num_acc) +
+       var_vals.segment(half + 2, num_acc)).array();
+
+  return acc.array() - limit_;
+}
+
+MatrixXd JointAccJacCalculator::operator()(const VectorXd& var_vals) const
+{
+  int num_vals = static_cast<int>(var_vals.rows());
+  int half = num_vals/2;
+  MatrixXd jac = MatrixXd::Zero(half - 2, num_vals);
+
+  VectorXd vels = vel_calc(var_vals);
+  MatrixXd vel_jac = vel_jac_calc(var_vals);
+  for (int i = 0; i < jac.rows(); i++)
+  {
+    int dt_1_index = i + half + 1;
+    int dt_2_index = dt_1_index + 1;
+    double dt_1 = var_vals(dt_1_index);
+    double dt_2 = var_vals(dt_2_index);
+    double total_dt = dt_1 + dt_2;
+
+    jac(i, i) = 2.0*(vel_jac(i + 1, i) - vel_jac(i, i))/total_dt;
+    jac(i, i + 1) = 2.0*(vel_jac(i + 1, i + 1) - vel_jac(i, i + 1))/total_dt;
+    jac(i , i + 2) = 2.0*(vel_jac(i + 1, i + 2) - vel_jac(i, i + 2))/total_dt;
+
+    jac(i, dt_1_index) = 2.0*((vel_jac(i + 1, dt_1_index) - vel_jac(i, dt_1_index))/total_dt - (vels(i + 1) - vels(i))/sq(total_dt));
+    jac(i, dt_2_index) = 2.0*((vel_jac(i + 1, dt_2_index) - vel_jac(i, dt_2_index))/total_dt - (vels(i + 1) - vels(i))/sq(total_dt));
   }
-};
-#endif
+
+  return jac;
+}
+
+VectorXd JointJerkErrCalculator::operator()(const VectorXd& var_vals) const
+{
+  assert(var_vals.rows() % 2 == 0);
+  int half = static_cast<int>(var_vals.rows() / 2);
+  int num_jerk = half - 3;
+  VectorXd acc = acc_calc(var_vals);
+
+  VectorXd acc_diff = acc.segment(1, num_jerk) - acc.segment(0, num_jerk);
+
+  VectorXd jerk = 3.0*acc_diff.array()/
+      (var_vals.segment(half + 1, num_jerk) +
+       var_vals.segment(half + 2, num_jerk) +
+       var_vals.segment(half + 3, num_jerk)).array();
+
+  return jerk.array() - limit_;
+
+}
+
+MatrixXd JointJerkJacCalculator::operator()(const VectorXd& var_vals) const
+{
+  int num_vals = static_cast<int>(var_vals.rows());
+  int half = num_vals/2;
+  MatrixXd jac = MatrixXd::Zero(half - 3, num_vals);
+
+  VectorXd acc = acc_calc(var_vals);
+  MatrixXd acc_jac = acc_jac_calc(var_vals);
+
+  for (int i = 0; i < jac.rows(); i++)
+  {
+    int dt_1_index = i + half + 1;
+    int dt_2_index = dt_1_index + 1;
+    int dt_3_index = dt_2_index + 1;
+    double dt_1 = var_vals(dt_1_index);
+    double dt_2 = var_vals(dt_2_index);
+    double dt_3 = var_vals(dt_3_index);
+    double total_dt = dt_1 + dt_2 + dt_3;
+
+    jac(i, i) = 3.0*(acc_jac(i + 1, i) - acc_jac(i, i))/total_dt;
+    jac(i, i + 1) = 3.0*(acc_jac(i + 1, i + 1) - acc_jac(i, i + 1))/total_dt;
+    jac(i , i + 2) = 3.0*(acc_jac(i + 1, i + 2) - acc_jac(i, i + 2))/total_dt;
+    jac(i , i + 3) = 3.0*(acc_jac(i + 1, i + 3) - acc_jac(i, i + 3))/total_dt;
+
+    jac(i, dt_1_index) = 3.0*((acc_jac(i + 1, dt_1_index) - acc_jac(i, dt_1_index))/total_dt - (acc(i + 1) - acc(i))/sq(total_dt));
+    jac(i, dt_2_index) = 3.0*((acc_jac(i + 1, dt_2_index) - acc_jac(i, dt_2_index))/total_dt - (acc(i + 1) - acc(i))/sq(total_dt));
+    jac(i, dt_3_index) = 3.0*((acc_jac(i + 1, dt_3_index) - acc_jac(i, dt_3_index))/total_dt - (acc(i + 1) - acc(i))/sq(total_dt));
+  }
+
+  return jac;
+}
+
+VectorXd TimeCostCalculator::operator()(const VectorXd& time_vals) const
+{
+  VectorXd total(1);
+  total(0) = time_vals.array().sum() - limit_;
+  return total;
+}
+
+MatrixXd TimeCostJacCalculator::operator()(const VectorXd& time_vals) const
+{
+  return MatrixXd::Ones(1, time_vals.rows());
+}
+
 }
