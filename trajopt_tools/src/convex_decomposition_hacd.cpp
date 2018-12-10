@@ -1,3 +1,5 @@
+#include <trajopt_utils/macros.h>
+TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <ConvexDecomposition/cd_wavefront.h>
 #include <ros/ros.h>
 #include <stdio.h>
@@ -11,6 +13,7 @@
 #include <HACD/hacdHACD.h>
 #include <HACD/hacdICHull.h>
 #include <HACD/hacdVector.h>
+TRAJOPT_IGNORE_WARNINGS_POP
 
 class MyConvexDecomposition
 {
@@ -44,7 +47,11 @@ public:
       for (unsigned int i = 0; i < nVertices; i++)
       {
         const float* p = &vertices[i * 3];
-        std::fprintf(output_file_, "v %0.9f %0.9f %0.9f\r\n", p[0], p[1], p[2]);
+        std::fprintf(output_file_,
+                     "v %0.9f %0.9f %0.9f\r\n",
+                     static_cast<double>(p[0]),
+                     static_cast<double>(p[1]),
+                     static_cast<double>(p[2]));
       }
 
       // calc centroid, to shift vertices around center of mass
@@ -90,9 +97,9 @@ public:
 
         trimesh->addTriangle(vertex0, vertex1, vertex2);
 
-        index0 += base_count_;
-        index1 += base_count_;
-        index2 += base_count_;
+        index0 += static_cast<unsigned int>(base_count_);
+        index1 += static_cast<unsigned int>(base_count_);
+        index2 += static_cast<unsigned int>(base_count_);
 
         std::fprintf(output_file_, "f %d %d %d\r\n", index0 + 1, index1 + 1, index2 + 1);
       }
@@ -128,7 +135,9 @@ int main(int argc, char** argv)
   for (int i = 0; i < wo.mVertexCount; i++)
   {
     int index = i * 3;
-    HACD::Vec3<HACD::Real> vertex(wo.mVertices[index], wo.mVertices[index + 1], wo.mVertices[index + 2]);
+    HACD::Vec3<HACD::Real> vertex(static_cast<double>(wo.mVertices[index]),
+                                  static_cast<double>(wo.mVertices[index + 1]),
+                                  static_cast<double>(wo.mVertices[index + 2]));
     points.push_back(vertex);
   }
 
@@ -186,16 +195,16 @@ int main(int argc, char** argv)
     // points
     for (size_t v = 0; v < nPoints; v++)
     {
-      vertices[3 * v] = pointsCH[v].X();
-      vertices[3 * v + 1] = pointsCH[v].Y();
-      vertices[3 * v + 2] = pointsCH[v].Z();
+      vertices[3 * v] = static_cast<float>(pointsCH[v].X());
+      vertices[3 * v + 1] =  static_cast<float>(pointsCH[v].Y());
+      vertices[3 * v + 2] =  static_cast<float>(pointsCH[v].Z());
     }
     // triangles
     for (size_t f = 0; f < nTriangles; f++)
     {
-      triangles[3 * f] = trianglesCH[f].X();
-      triangles[3 * f + 1] = trianglesCH[f].Y();
-      triangles[3 * f + 2] = trianglesCH[f].Z();
+      triangles[3 * f] =  static_cast<unsigned int>(trianglesCH[f].X());
+      triangles[3 * f + 1] =  static_cast<unsigned int>(trianglesCH[f].Y());
+      triangles[3 * f + 2] =  static_cast<unsigned int>(trianglesCH[f].Z());
     }
 
     delete[] pointsCH;

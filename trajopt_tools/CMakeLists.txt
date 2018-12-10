@@ -1,12 +1,19 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(trajopt_tools)
 
-add_compile_options(-std=c++11 -Wall -Wextra)
+add_compile_options(
+  -std=c++11
+  -Wall
+  -Wextra
+  -Wsuggest-override
+  -Wconversion
+  -Wsign-conversion)
 
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   trajopt_ext
   bullet3_ros
+  trajopt_utils
 )
 
 ## Generate dynamic reconfigure parameters in the 'cfg' folder
@@ -18,7 +25,7 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_package(
 #  INCLUDE_DIRS
 #  LIBRARIES
-  CATKIN_DEPENDS roscpp trajopt_ext bullet3_ros
+  CATKIN_DEPENDS roscpp trajopt_ext bullet3_ros trajopt_utils
 #  DEPENDS system_lib
 )
 

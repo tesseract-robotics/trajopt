@@ -1,6 +1,19 @@
 #pragma once
 #include <iostream>
 
+#define TRAJOPT_IGNORE_WARNINGS_PUSH \
+  _Pragma ("GCC diagnostic push") \
+  _Pragma ("GCC diagnostic ignored \"-Wall\"") \
+  _Pragma ("GCC diagnostic ignored \"-Wint-to-pointer-cast\"") \
+  _Pragma ("GCC diagnostic ignored \"-Wunused-parameter\"") \
+  _Pragma ("GCC diagnostic ignored \"-Wsuggest-override\"") \
+  _Pragma ("GCC diagnostic ignored \"-Wconversion\"") \
+  _Pragma ("GCC diagnostic ignored \"-Wfloat-conversion\"") \
+  _Pragma ("GCC diagnostic ignored \"-Wsign-conversion\"")
+
+#define TRAJOPT_IGNORE_WARNINGS_POP \
+  _Pragma ("GCC diagnostic pop")
+
 // Generic helper definitions for shared library support
 #if defined _WIN32 || defined __CYGWIN__
 #define TRAJOPT_HELPER_DLL_IMPORT __declspec(dllimport)

@@ -1,11 +1,15 @@
 #pragma once
+#include <trajopt_utils/macros.h>
+TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <cassert>
 #include <iosfwd>
 #include <jsoncpp/json/json.h>
 #include <limits>
 #include <string>
-#include <trajopt_sco/sco_common.hpp>
 #include <vector>
+TRAJOPT_IGNORE_WARNINGS_POP
+#include <trajopt_sco/sco_common.hpp>
+
 /**
 @file solver_interface.hpp
 @brief Interface to convex solvers
@@ -86,14 +90,14 @@ struct VarRep
 struct Var
 {
   VarRep* var_rep;
-  Var() : var_rep(NULL) {}
+  Var() : var_rep(nullptr) {}
   Var(VarRep* var_rep) : var_rep(var_rep) {}
   Var(const Var& other) : var_rep(other.var_rep) {}
   double value(const double* x) const { return x[var_rep->index]; }
   double value(const DblVec& x) const
   {
-    assert(var_rep->index < (int)x.size());
-    return x[var_rep->index];
+    assert(var_rep->index < static_cast<int>(x.size()));
+    return x[static_cast<size_t>(var_rep->index)];
   }
 };
 
@@ -110,7 +114,7 @@ struct CntRep
 struct Cnt
 {
   CntRep* cnt_rep;
-  Cnt() : cnt_rep(NULL) {}
+  Cnt() : cnt_rep(nullptr) {}
   Cnt(CntRep* cnt_rep) : cnt_rep(cnt_rep) {}
   Cnt(const Cnt& other) : cnt_rep(other.cnt_rep) {}
 };

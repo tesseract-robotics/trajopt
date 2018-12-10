@@ -1,7 +1,13 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(trajopt_sco)
 
-add_compile_options(-std=c++11 -Wall -Wextra)
+add_compile_options(
+  -std=c++11
+  -Wall
+  -Wextra
+  -Wsuggest-override
+  -Wconversion
+  -Wsign-conversion)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules/")
 find_package(catkin REQUIRED COMPONENTS trajopt_utils)
@@ -29,12 +35,16 @@ if (NOT APPLE)
 endif()
 
 catkin_package(
-  INCLUDE_DIRS include
-  LIBRARIES ${PROJECT_NAME} ${JSONCPP_LIBRARIES}
+  INCLUDE_DIRS
+    include
+    ${EIGEN3_INCLUDE_DIRS}
+  LIBRARIES
+    ${PROJECT_NAME}
+    ${JSONCPP_LIBRARIES}
   CATKIN_DEPENDS trajopt_utils
-#  DEPENDS system_lib
+  DEPENDS
+    EIGEN3
 )
-
 
 include_directories(
   include

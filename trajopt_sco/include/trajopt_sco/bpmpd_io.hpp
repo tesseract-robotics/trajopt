@@ -1,10 +1,13 @@
 #pragma once
+#include <trajopt_utils/macros.h>
+TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <string>
 #include <vector>
 #include <assert.h>
 #include <iostream>
 #include <stdlib.h>
 #include <unistd.h>
+TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace bpmpd_io
 {
@@ -14,9 +17,6 @@ enum SerMode
   SER
 };
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-variable"
-
 template <typename T>
 void ser(int fp, T& x, SerMode mode)
 {
@@ -25,13 +25,13 @@ void ser(int fp, T& x, SerMode mode)
     case SER:
     {
       T xcopy = x;
-      int n = write(fp, &xcopy, sizeof(T));
+      long n = write(fp, &xcopy, sizeof(T));
       assert(n == sizeof(T));
       break;
     }
     case DESER:
     {
-      int n = read(fp, &x, sizeof(T));
+      long n = read(fp, &x, sizeof(T));
       assert(n == sizeof(T));
       break;
     }
@@ -41,20 +41,20 @@ void ser(int fp, T& x, SerMode mode)
 template <typename T>
 void ser(int fp, std::vector<T>& x, SerMode mode)
 {
-  int size = x.size();
+  unsigned long size = x.size();
   ser(fp, size, mode);
   switch (mode)
   {
     case SER:
     {
-      int n = write(fp, x.data(), sizeof(T) * size);
-      assert(static_cast<unsigned>(n) == sizeof(T) * size);
+      long n = write(fp, x.data(), sizeof(T) * size);
+      assert(static_cast<unsigned long>(n) == sizeof(T) * size);
       break;
     }
     case DESER:
     {
       x.resize(size);
-      int n = read(fp, x.data(), sizeof(T) * size);
+      long n = read(fp, x.data(), sizeof(T) * size);
       assert(static_cast<unsigned>(n) == sizeof(T) * size);
       break;
     }
@@ -166,5 +166,4 @@ void ser(int fp, bpmpd_output& bo, SerMode mode)
   ser(fp, bo.opt, mode);
 }
 
-#pragma GCC diagnostic pop
 }

@@ -7,10 +7,13 @@
  *
  *
  */
+#include <trajopt_utils/macros.h>
+TRAJOPT_IGNORE_WARNINGS_PUSH
+#include <vector>
+TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt_sco/sco_fwd.hpp>
 #include <trajopt_sco/solver_interface.hpp>
-#include <vector>
 
 namespace sco
 {
@@ -35,7 +38,7 @@ public:
   void addL2Norm(const AffExprVector&);
   void addMax(const AffExprVector&);
 
-  bool inModel() { return model_ != NULL; }
+  bool inModel() { return model_ != nullptr; }
   void addConstraintsToModel();
   void removeFromModel();
   double value(const DblVec& x);
@@ -71,7 +74,7 @@ public:
     assert(!inModel());
     model_ = model;
   }
-  bool inModel() { return model_ != NULL; }
+  bool inModel() { return model_ != nullptr; }
   void addConstraintsToModel();
   void removeFromModel();
 
@@ -85,7 +88,7 @@ public:
 private:
   Model* model_;
   CntVector cnts_;
-  ConvexConstraints() : model_(NULL) {}
+  ConvexConstraints() : model_(nullptr) {}
   ConvexConstraints(ConvexConstraints&) {}
 };
 
@@ -101,12 +104,12 @@ public:
   /** Convexify at solution vector x*/
   virtual ConvexObjectivePtr convex(const DblVec& x, Model* model) = 0;
   /** Get problem variables associated with this cost */
-  virtual VarVector getVars() { return VarVector(); }
+  virtual VarVector getVars() = 0;
   std::string name() { return name_; }
   void setName(const std::string& name) { name_ = name; }
   Cost() : name_("unnamed") {}
   Cost(const std::string& name) : name_(name) {}
-  virtual ~Cost() {}
+  virtual ~Cost() = default;
 protected:
   std::string name_;
 };
@@ -130,7 +133,7 @@ public:
   /** Sum of violations */
   double violation(const DblVec& x);
   /** Get problem variables associated with this constraint */
-  virtual VarVector getVars() { return VarVector(); }
+  virtual VarVector getVars() = 0;
   std::string name() { return name_; }
   void setName(const std::string& name) { name_ = name; }
   Constraint() : name_("unnamed") {}
@@ -143,16 +146,15 @@ protected:
 class EqConstraint : public Constraint
 {
 public:
-  ConstraintType type() { return EQ; }
+  ConstraintType type() override { return EQ; }
   EqConstraint() : Constraint() {}
   EqConstraint(const std::string& name) : Constraint(name) {}
-
 };
 
 class IneqConstraint : public Constraint
 {
 public:
-  ConstraintType type() { return INEQ; }
+  ConstraintType type() override { return INEQ; }
   IneqConstraint() : Constraint() {}
   IneqConstraint(const std::string& name) : Constraint(name) {}
 };
@@ -164,6 +166,8 @@ class OptProb
 {
 public:
   OptProb(ModelType convex_solver = ModelType::AUTO_SOLVER);
+  virtual ~OptProb() = default;
+
   /** create variables with bounds [-INFINITY, INFINITY]  */
   VarVector createVariables(const std::vector<std::string>& names);
   /** create variables with bounds [lb[i], ub[i] */
@@ -187,7 +191,6 @@ public:
   void addConstraint(ConstraintPtr);
   void addEqConstraint(ConstraintPtr);
   void addIneqConstraint(ConstraintPtr);
-  virtual ~OptProb() {}
   /** Find closest point to solution vector x that satisfies linear inequality
    * constraints */
   DblVec getCentralFeasiblePoint(const DblVec& x);
@@ -201,9 +204,9 @@ public:
   const DblVec& getUpperBounds() { return upper_bounds_; }
   ModelPtr getModel() { return model_; }
   const VarVector& getVars() { return vars_; }
-  int getNumCosts() { return costs_.size(); }
-  int getNumConstraints() { return eqcnts_.size() + ineqcnts_.size(); }
-  int getNumVars() { return vars_.size(); }
+  int getNumCosts() { return static_cast<int>(costs_.size()); }
+  int getNumConstraints() { return static_cast<int>(eqcnts_.size() + ineqcnts_.size()); }
+  int getNumVars() { return static_cast<int>(vars_.size()); }
 protected:
   ModelPtr model_;
   VarVector vars_;
@@ -220,9 +223,9 @@ template <typename VecType>
 inline void setVec(DblVec& x, const VarVector& vars, const VecType& vals)
 {
   assert(vars.size() == vals.size());
-  for (unsigned i = 0; i < vars.size(); ++i)
+  for (size_t i = 0; i < vars.size(); ++i)
   {
-    x[vars[i].var_rep->index] = vals[i];
+    x[static_cast<size_t>(vars[i].var_rep->index)] = vals[i];
   }
 }
 template <typename OutVecType>

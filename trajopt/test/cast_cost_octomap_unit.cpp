@@ -1,5 +1,23 @@
+#include <trajopt_utils/macros.h>
+TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <ctime>
 #include <gtest/gtest.h>
+#include <geometric_shapes/shape_operations.h>
+#include <geometric_shapes/shapes.h>
+#include <octomap_msgs/OctomapWithPose.h>
+#include <octomap_msgs/conversions.h>
+#include <octomap_ros/conversions.h>
+#include <pcl/point_cloud.h>
+#include <pcl/point_types.h>
+#include <pcl_conversions/pcl_conversions.h>
+#include <ros/package.h>
+#include <ros/ros.h>
+#include <sensor_msgs/PointCloud2.h>
+#include <sensor_msgs/point_cloud_conversion.h>
+#include <srdfdom/model.h>
+#include <urdf_parser/urdf_parser.h>
+TRAJOPT_IGNORE_WARNINGS_POP
+
 #include <trajopt/collision_terms.hpp>
 #include <trajopt/common.hpp>
 #include <trajopt/plot_callback.hpp>
@@ -15,21 +33,6 @@
 #include <tesseract_ros/kdl/kdl_chain_kin.h>
 #include <tesseract_ros/kdl/kdl_env.h>
 #include <tesseract_ros/ros_basic_plotting.h>
-
-#include <geometric_shapes/shape_operations.h>
-#include <geometric_shapes/shapes.h>
-#include <octomap_msgs/OctomapWithPose.h>
-#include <octomap_msgs/conversions.h>
-#include <octomap_ros/conversions.h>
-#include <pcl/point_cloud.h>
-#include <pcl/point_types.h>
-#include <pcl_conversions/pcl_conversions.h>
-#include <ros/package.h>
-#include <ros/ros.h>
-#include <sensor_msgs/PointCloud2.h>
-#include <sensor_msgs/point_cloud_conversion.h>
-#include <srdfdom/model.h>
-#include <urdf_parser/urdf_parser.h>
 
 using namespace trajopt;
 using namespace std;

@@ -1,12 +1,15 @@
+#include <trajopt_utils/macros.h>
+TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <vector>
+TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace util
 {
 std::vector<int> arange(int n)
 {
-  std::vector<int> out(n);
+  std::vector<int> out(static_cast<size_t>(n));
   for (int i = 0; i < n; ++i)
-    out[i] = i;
+    out[static_cast<size_t>(i)] = i;
   return out;
 }
 

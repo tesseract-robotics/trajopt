@@ -1,5 +1,9 @@
+#include <trajopt_utils/macros.h>
+TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <jsoncpp/json/json.h>
 #include <stdexcept>
+TRAJOPT_IGNORE_WARNINGS_POP
+
 #include <trajopt/json_marshal.hpp>
 namespace json_marshal
 {

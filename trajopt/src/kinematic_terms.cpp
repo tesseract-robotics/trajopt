@@ -1,6 +1,10 @@
+#include <trajopt_utils/macros.h>
+TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <Eigen/Geometry>
 #include <boost/format.hpp>
 #include <iostream>
+TRAJOPT_IGNORE_WARNINGS_POP
+
 #include <trajopt/kinematic_terms.hpp>
 #include <trajopt/utils.hpp>
 #include <trajopt_sco/expr_ops.hpp>
@@ -111,7 +115,7 @@ void CartPoseErrCalculator::Plot(const tesseract::BasicPlottingPtr& plotter, con
 
 MatrixXd CartVelJacCalculator::operator()(const VectorXd& dof_vals) const
 {
-  int n_dof = manip_->numJoints();
+  int n_dof = static_cast<int>(manip_->numJoints());
   MatrixXd out(6, 2 * n_dof);
 
   tesseract::EnvStateConstPtr state = env_->getState();
@@ -145,7 +149,7 @@ MatrixXd CartVelJacCalculator::operator()(const VectorXd& dof_vals) const
 
 VectorXd CartVelErrCalculator::operator()(const VectorXd& dof_vals) const
 {
-  int n_dof = manip_->numJoints();
+  int n_dof = static_cast<int>(manip_->numJoints());
   Isometry3d pose0, pose1, change_base;
 
   tesseract::EnvStateConstPtr state = env_->getState();

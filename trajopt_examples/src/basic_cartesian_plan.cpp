@@ -23,9 +23,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include <trajopt_utils/macros.h>
+TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <jsoncpp/json/json.h>
 #include <ros/ros.h>
 #include <srdfdom/model.h>
+#include <urdf_parser/urdf_parser.h>
+#include <octomap_ros/conversions.h>
+#include <pcl/point_cloud.h>
+#include <pcl/point_types.h>
+#include <pcl_conversions/pcl_conversions.h>
+#include <sensor_msgs/PointCloud2.h>
+#include <sensor_msgs/point_cloud_conversion.h>
+TRAJOPT_IGNORE_WARNINGS_POP
+
 #include <tesseract_ros/kdl/kdl_chain_kin.h>
 #include <tesseract_ros/kdl/kdl_env.h>
 #include <tesseract_ros/ros_basic_plotting.h>
@@ -33,14 +44,6 @@
 #include <trajopt/problem_description.hpp>
 #include <trajopt_utils/config.hpp>
 #include <trajopt_utils/logging.hpp>
-#include <urdf_parser/urdf_parser.h>
-
-#include <octomap_ros/conversions.h>
-#include <pcl/point_cloud.h>
-#include <pcl/point_types.h>
-#include <pcl_conversions/pcl_conversions.h>
-#include <sensor_msgs/PointCloud2.h>
-#include <sensor_msgs/point_cloud_conversion.h>
 
 using namespace trajopt;
 using namespace tesseract;
@@ -51,12 +54,12 @@ const std::string ROBOT_SEMANTIC_PARAM = "robot_description_semantic"; /**< Defa
 const std::string TRAJOPT_DESCRIPTION_PARAM =
     "trajopt_description"; /**< Default ROS parameter for trajopt description */
 
-bool plotting_ = false;
-int steps_ = 5;
-std::string method_ = "json";
-urdf::ModelInterfaceSharedPtr urdf_model_; /**< URDF Model */
-srdf::ModelSharedPtr srdf_model_;          /**< SRDF Model */
-tesseract_ros::KDLEnvPtr env_;             /**< Trajopt Basic Environment */
+static bool plotting_ = false;
+static int steps_ = 5;
+static std::string method_ = "json";
+static urdf::ModelInterfaceSharedPtr urdf_model_; /**< URDF Model */
+static srdf::ModelSharedPtr srdf_model_;          /**< SRDF Model */
+static tesseract_ros::KDLEnvPtr env_;             /**< Trajopt Basic Environment */
 
 TrajOptProbPtr jsonMethod()
 {
@@ -153,12 +156,14 @@ int main(int argc, char** argv)
 
   pcl::PointCloud<pcl::PointXYZ> full_cloud;
   double delta = 0.05;
-  int length = (1 / delta);
+  int length = static_cast<int>(1 / delta);
 
   for (int x = 0; x < length; ++x)
     for (int y = 0; y < length; ++y)
       for (int z = 0; z < length; ++z)
-        full_cloud.push_back(pcl::PointXYZ(-0.5 + x * delta, -0.5 + y * delta, -0.5 + z * delta));
+        full_cloud.push_back(pcl::PointXYZ(-0.5f + static_cast<float>(x * delta),
+                                           -0.5f + static_cast<float>(y * delta),
+                                           -0.5f + static_cast<float>(z * delta)));
 
   sensor_msgs::PointCloud2 pointcloud_msg;
   pcl::toROSMsg(full_cloud, pointcloud_msg);

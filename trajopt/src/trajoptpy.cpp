@@ -1,5 +1,8 @@
+#include <trajopt_utils/macros.h>
+TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <boost/python.hpp>
-#include <trajopt_ros/osgviewer/osgviewer.hpp>
+TRAJOPT_IGNORE_WARNINGS_POP
+
 #include <trajopt_ros/sco/modeling_utils.hpp>
 #include <trajopt_ros/trajopt/collision_checker.hpp>
 #include <trajopt_ros/trajopt/numpy_utils.hpp>

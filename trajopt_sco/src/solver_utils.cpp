@@ -1,6 +1,10 @@
+#include <trajopt_utils/macros.h>
+TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <algorithm>
 #include <Eigen/SparseCore>
 #include <sstream>
+TRAJOPT_IGNORE_WARNINGS_POP
+
 #include <trajopt_sco/solver_utils.hpp>
 #include <trajopt_utils/logging.hpp>
 
@@ -9,7 +13,7 @@ namespace sco
 void exprToEigen(const AffExpr& expr, Eigen::SparseVector<double>& sparse_vector, const int& n_vars)
 {
   sparse_vector.resize(n_vars);
-  sparse_vector.reserve(expr.size());
+  sparse_vector.reserve(static_cast<long int>(expr.size()));
   for (size_t i = 0; i < expr.size(); ++i)
   {
     int i_var_index = expr.vars[i].var_rep->index;
@@ -34,7 +38,7 @@ void exprToEigen(const QuadExpr& expr,
   IntVec ind1 = vars2inds(expr.vars1);
   IntVec ind2 = vars2inds(expr.vars2);
   sparse_matrix.resize(n_vars, n_vars);
-  sparse_matrix.reserve(2 * expr.size());
+  sparse_matrix.reserve(static_cast<long int>(2 * expr.size()));
 
   Eigen::SparseVector<double> vector_sparse;
   exprToEigen(expr.affexpr, vector_sparse, n_vars);
@@ -71,7 +75,7 @@ void exprToEigen(const QuadExpr& expr,
     sparse_matrix = 0.5 * sparse_matrix;
 
   if (force_diagonal)
-    for (unsigned int k = 0; k < n_vars; ++k)
+    for (int k = 0; k < n_vars; ++k)
       sparse_matrix.coeffRef(k, k) += 0.0;
 }
 
@@ -80,16 +84,15 @@ void exprToEigen(const AffExprVector& expr_vec,
                  Eigen::VectorXd& vector,
                  const int& n_vars)
 {
-  vector.resize(expr_vec.size());
+  vector.resize(static_cast<long int>(expr_vec.size()));
   vector.setZero();
-  sparse_matrix.resize(expr_vec.size(), n_vars);
-  sparse_matrix.reserve(expr_vec.size() * n_vars);
+  sparse_matrix.resize(static_cast<long int>(expr_vec.size()), n_vars);
+  sparse_matrix.reserve(static_cast<long int>(expr_vec.size()) * n_vars);
 
-  for (size_t i = 0; i < expr_vec.size(); ++i)
+  for (long int i = 0; i < static_cast<long int>(expr_vec.size()); ++i)
   {
-    const AffExpr& expr = expr_vec[i];
+    const AffExpr& expr = expr_vec[static_cast<size_t>(i)];
     Eigen::SparseVector<double> expr_vector;
-    double expr_constant;
     exprToEigen(expr, expr_vector, n_vars);
     for (Eigen::SparseVector<double>::InnerIterator it(expr_vector); it; ++it)
       sparse_matrix.coeffRef(i, it.index()) = it.value();
@@ -115,15 +118,15 @@ void eigenToTriplets(const Eigen::SparseMatrix<double>& sparse_matrix,
                      DblVec& values_ij)
 {
   auto& sm = sparse_matrix;
-  rows_i.reserve(rows_i.size() + sm.nonZeros());
-  cols_j.reserve(cols_j.size() + sm.nonZeros());
-  values_ij.reserve(values_ij.size() + sm.nonZeros());
+  rows_i.reserve(rows_i.size() + static_cast<size_t>(sm.nonZeros()));
+  cols_j.reserve(cols_j.size() + static_cast<size_t>(sm.nonZeros()));
+  values_ij.reserve(values_ij.size() + static_cast<size_t>(sm.nonZeros()));
   for (int k = 0; k < sm.outerSize(); ++k)
   {
     for (Eigen::SparseMatrix<double>::InnerIterator it(sm, k); it; ++it)
     {
-      rows_i.push_back(it.row());
-      cols_j.push_back(it.col());
+      rows_i.push_back(static_cast<int>(it.row()));
+      cols_j.push_back(static_cast<int>(it.col()));
       values_ij.push_back(it.value());
     }
   }

@@ -1,6 +1,9 @@
 #pragma once
+#include <trajopt_utils/macros.h>
+TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <Eigen/Core>
 #include <qpOASES.hpp>
+TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt_sco/solver_interface.hpp>
 #include <trajopt_utils/macros.h>

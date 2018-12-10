@@ -1,4 +1,8 @@
+#include <trajopt_utils/macros.h>
+TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <cmath>
+TRAJOPT_IGNORE_WARNINGS_POP
+
 #include <trajopt_sco/expr_ops.hpp>
 
 static inline double sq(double x) { return x * x; }

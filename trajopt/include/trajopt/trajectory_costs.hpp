@@ -20,9 +20,10 @@ public:
                  int& first_step,
                  int& last_step);
   /** @brief Convexifies cost expression - In this case, it is already quadratic so there's nothing to do */
-  virtual sco::ConvexObjectivePtr convex(const DblVec& x, sco::Model* model);
+  sco::ConvexObjectivePtr convex(const DblVec& x, sco::Model* model) override;
   /** @brief Numerically evaluate cost given the vector of values */
-  virtual double value(const DblVec&);
+  double value(const DblVec&) override;
+  sco::VarVector getVars() override { return vars_.flatten(); }
 
 private:
   /** @brief The variables being optimized. Used to properly index the vector being optimized */
@@ -38,7 +39,6 @@ private:
   /** @brief Last time step to which the term is applied */
   int last_step_;
 
-  // TODO: Add getVars
 };
 
 /**
@@ -57,9 +57,10 @@ public:
                    int& first_step,
                    int& last_step);
   /** @brief Convexifies cost expression - In this case, it is already quadratic so there's nothing to do */
-  virtual sco::ConvexObjectivePtr convex(const DblVec& x, sco::Model* model);
+  sco::ConvexObjectivePtr convex(const DblVec& x, sco::Model* model) override;
   /** @brief Numerically evaluate cost given the vector of values */
-  virtual double value(const DblVec&);
+  double value(const DblVec&) override;
+  sco::VarVector getVars() override { return vars_.flatten(); }
 
 private:
   /** @brief The variables being optimized. Used to properly index the vector being optimized */
@@ -79,7 +80,6 @@ private:
   /** @brief Stores the costs as an expression. Will be length num_jnts*num_timesteps*2 */
   std::vector<sco::AffExpr> expr_vec_;
 
-  // TODO: Add getVars
 };
 
 class TRAJOPT_API JointPosEqConstraint : public sco::EqConstraint
@@ -92,16 +92,16 @@ public:
                        int& first_step,
                        int& last_step);
   /** @brief Convexifies cost expression - In this case, it is already quadratic so there's nothing to do */
-  virtual sco::ConvexConstraintsPtr convex(const DblVec& x, sco::Model* model);
+  sco::ConvexConstraintsPtr convex(const DblVec& x, sco::Model* model) override;
   /** @brief Numerically evaluate cost given the vector of values */
-  virtual DblVec value(const DblVec&);
+  DblVec value(const DblVec&) override;
   /** Calculate constraint violations (positive part for inequality constraint,
    * absolute value for inequality constraint)*/
   DblVec violations(const DblVec& x);
   /** Sum of violations */
   double violation(const DblVec& x);
+  sco::VarVector getVars() override { return vars_.flatten(); }
 
-  //  TODO: VarVector getVars() { return VarVector(); }
 private:
   /** @brief The variables being optimized. Used to properly index the vector being optimized */
   VarArray vars_;
@@ -129,9 +129,10 @@ public:
                          int& first_step,
                          int& last_step);
   /** @brief Convexifies cost expression - In this case, it is already quadratic so there's nothing to do */
-  virtual sco::ConvexConstraintsPtr convex(const DblVec& x, sco::Model* model);
+  sco::ConvexConstraintsPtr convex(const DblVec& x, sco::Model* model) override;
   /** @brief Numerically evaluate cost given the vector of values */
-  virtual DblVec value(const DblVec&);
+  DblVec value(const DblVec&) override;
+  sco::VarVector getVars() override { return vars_.flatten(); }
 
 private:
   /** @brief The variables being optimized. Used to properly index the vector being optimized */
@@ -151,7 +152,6 @@ private:
   /** @brief Stores the costs as an expression. Will be length num_jnts*num_timesteps*2 */
   std::vector<sco::AffExpr> expr_vec_;
 
-  // TODO: Add getVars
 };
 
 
@@ -165,9 +165,10 @@ public:
                  int& first_step,
                  int& last_step);
   /** @brief Convexifies cost expression - In this case, it is already quadratic so there's nothing to do */
-  virtual sco::ConvexObjectivePtr convex(const DblVec& x, sco::Model* model);
+  sco::ConvexObjectivePtr convex(const DblVec& x, sco::Model* model) override;
   /** @brief Numerically evaluate cost given the vector of values using Eigen*/
-  virtual double value(const DblVec&);
+  double value(const DblVec&) override;
+  sco::VarVector getVars() override { return vars_.flatten(); }
 
 private:
   /** @brief The variables being optimized. Used to properly index the vector being optimized */
@@ -183,7 +184,6 @@ private:
   /** @brief Last time step to which the term is applied */
   int last_step_;
 
-  // TODO: Add getVars
 };
 
 class TRAJOPT_API JointVelIneqCost : public sco::Cost
@@ -198,9 +198,10 @@ public:
                    int& first_step,
                    int& last_step);
   /** @brief Convexifies cost expression - In this case, it is already quadratic so there's nothing to do */
-  virtual sco::ConvexObjectivePtr convex(const DblVec& x, sco::Model* model);
+  sco::ConvexObjectivePtr convex(const DblVec& x, sco::Model* model) override;
   /** @brief Numerically evaluate cost given the vector of values */
-  virtual double value(const DblVec&);
+  double value(const DblVec&) override;
+  sco::VarVector getVars() override { return vars_.flatten(); }
 
 private:
   /** @brief The variables being optimized. Used to properly index the vector being optimized */
@@ -220,7 +221,6 @@ private:
   /** @brief Stores the costs as an expression. Will be length num_jnts*num_timesteps*2 */
   std::vector<sco::AffExpr> expr_vec_;
 
-  // TODO: Add getVars
 };
 
 class TRAJOPT_API JointVelEqConstraint : public sco::EqConstraint
@@ -233,16 +233,16 @@ public:
                        int& first_step,
                        int& last_step);
   /** @brief Convexifies cost expression - In this case, it is already quadratic so there's nothing to do */
-  virtual sco::ConvexConstraintsPtr convex(const DblVec& x, sco::Model* model);
+  sco::ConvexConstraintsPtr convex(const DblVec& x, sco::Model* model) override;
   /** @brief Numerically evaluate cost given the vector of values */
-  virtual DblVec value(const DblVec&);
+  DblVec value(const DblVec&) override;
   /** Calculate constraint violations (positive part for inequality constraint,
    * absolute value for inequality constraint)*/
   DblVec violations(const DblVec& x);
   /** Sum of violations */
   double violation(const DblVec& x);
+  sco::VarVector getVars() override { return vars_.flatten(); }
 
-  //  TODO: VarVector getVars() { return VarVector(); }
 private:
   /** @brief The variables being optimized. Used to properly index the vector being optimized */
   VarArray vars_;
@@ -270,9 +270,10 @@ public:
                          int& first_step,
                          int& last_step);
   /** @brief Convexifies cost expression - In this case, it is already quadratic so there's nothing to do */
-  virtual sco::ConvexConstraintsPtr convex(const DblVec& x, sco::Model* model);
+  sco::ConvexConstraintsPtr convex(const DblVec& x, sco::Model* model) override;
   /** @brief Numerically evaluate cost given the vector of values */
-  virtual DblVec value(const DblVec&);
+  DblVec value(const DblVec&) override;
+  sco::VarVector getVars() override { return vars_.flatten(); }
 
 private:
   /** @brief The variables being optimized. Used to properly index the vector being optimized */
@@ -292,7 +293,6 @@ private:
   /** @brief Stores the costs as an expression. Will be length num_jnts*(num_timesteps-1)*2 */
   std::vector<sco::AffExpr> expr_vec_;
 
-  // TODO: Add getVars
 };
 
 class TRAJOPT_API JointAccEqCost : public sco::Cost
@@ -305,9 +305,10 @@ public:
                  int& first_step,
                  int& last_step);
   /** @brief Convexifies cost expression - In this case, it is already quadratic so there's nothing to do */
-  virtual sco::ConvexObjectivePtr convex(const DblVec& x, sco::Model* model);
+  sco::ConvexObjectivePtr convex(const DblVec& x, sco::Model* model) override;
   /** @brief Numerically evaluate cost given the vector of values */
-  virtual double value(const DblVec&);
+  double value(const DblVec&) override;
+  sco::VarVector getVars() override { return vars_.flatten(); }
 
 private:
   /** @brief The variables being optimized. Used to properly index the vector being optimized */
@@ -323,7 +324,6 @@ private:
   /** @brief Last time step to which the term is applied */
   int last_step_;
 
-  // TODO: Add getVars
 };
 
 class TRAJOPT_API JointAccIneqCost : public sco::Cost
@@ -338,9 +338,10 @@ public:
                    int& first_step,
                    int& last_step);
   /** @brief Convexifies cost expression - In this case, it is already quadratic so there's nothing to do */
-  virtual sco::ConvexObjectivePtr convex(const DblVec& x, sco::Model* model);
+  sco::ConvexObjectivePtr convex(const DblVec& x, sco::Model* model) override;
   /** @brief Numerically evaluate cost given the vector of values */
-  virtual double value(const DblVec&);
+  double value(const DblVec&) override;
+  sco::VarVector getVars() override { return vars_.flatten(); }
 
 private:
   /** @brief The variables being optimized. Used to properly index the vector being optimized */
@@ -360,7 +361,6 @@ private:
   /** @brief Stores the costs as an expression. Will be length num_jnts*(num_timesteps-2)*2 */
   std::vector<sco::AffExpr> expr_vec_;
 
-  // TODO: Add getVars
 };
 
 class TRAJOPT_API JointAccEqConstraint : public sco::EqConstraint
@@ -373,16 +373,16 @@ public:
                        int& first_step,
                        int& last_step);
   /** @brief Convexifies cost expression - In this case, it is already quadratic so there's nothing to do */
-  virtual sco::ConvexConstraintsPtr convex(const DblVec& x, sco::Model* model);
+  sco::ConvexConstraintsPtr convex(const DblVec& x, sco::Model* model) override;
   /** @brief Numerically evaluate cost given the vector of values */
-  virtual DblVec value(const DblVec&);
+  DblVec value(const DblVec&) override;
   /** Calculate constraint violations (positive part for inequality constraint,
    * absolute value for inequality constraint)*/
   DblVec violations(const DblVec& x);
   /** Sum of violations */
   double violation(const DblVec& x);
+  sco::VarVector getVars() override { return vars_.flatten(); }
 
-  //  TODO: VarVector getVars() { return VarVector(); }
 private:
   /** @brief The variables being optimized. Used to properly index the vector being optimized */
   VarArray vars_;
@@ -410,9 +410,10 @@ public:
                          int& first_step,
                          int& last_step);
   /** @brief Convexifies cost expression - In this case, it is already quadratic so there's nothing to do */
-  virtual sco::ConvexConstraintsPtr convex(const DblVec& x, sco::Model* model);
+  sco::ConvexConstraintsPtr convex(const DblVec& x, sco::Model* model) override;
   /** @brief Numerically evaluate cost given the vector of values */
-  virtual DblVec value(const DblVec&);
+  DblVec value(const DblVec&) override;
+  sco::VarVector getVars() override { return vars_.flatten(); }
 
 private:
   /** @brief The variables being optimized. Used to properly index the vector being optimized */
@@ -432,7 +433,6 @@ private:
   /** @brief Stores the costs as an expression. Will be length num_jnts*(num_timesteps-2)*2 */
   std::vector<sco::AffExpr> expr_vec_;
 
-  // TODO: Add getVars
 };
 
 class TRAJOPT_API JointJerkEqCost : public sco::Cost
@@ -445,9 +445,10 @@ public:
                   int& first_step,
                   int& last_step);
   /** @brief Convexifies cost expression - In this case, it is already quadratic so there's nothing to do */
-  virtual sco::ConvexObjectivePtr convex(const DblVec& x, sco::Model* model);
+  sco::ConvexObjectivePtr convex(const DblVec& x, sco::Model* model) override;
   /** @brief Numerically evaluate cost given the vector of values */
-  virtual double value(const DblVec&);
+  double value(const DblVec&) override;
+  sco::VarVector getVars() override { return vars_.flatten(); }
 
 private:
   /** @brief The variables being optimized. Used to properly index the vector being optimized */
@@ -463,7 +464,6 @@ private:
   /** @brief Last time step to which the term is applied */
   int last_step_;
 
-  // TODO: Add getVars
 };
 
 class TRAJOPT_API JointJerkIneqCost : public sco::Cost
@@ -478,9 +478,10 @@ public:
                     int& first_step,
                     int& last_step);
   /** @brief Convexifies cost expression - In this case, it is already quadratic so there's nothing to do */
-  virtual sco::ConvexObjectivePtr convex(const DblVec& x, sco::Model* model);
+  sco::ConvexObjectivePtr convex(const DblVec& x, sco::Model* model) override;
   /** @brief Numerically evaluate cost given the vector of values */
-  virtual double value(const DblVec&);
+  double value(const DblVec&) override;
+  sco::VarVector getVars() override { return vars_.flatten(); }
 
 private:
   /** @brief The variables being optimized. Used to properly index the vector being optimized */
@@ -500,7 +501,6 @@ private:
   /** @brief Stores the costs as an expression. Will be length num_jnts*(num_timesteps-4)*2 */
   std::vector<sco::AffExpr> expr_vec_;
 
-  // TODO: Add getVars
 };
 
 class TRAJOPT_API JointJerkEqConstraint : public sco::EqConstraint
@@ -513,16 +513,16 @@ public:
                         int& first_step,
                         int& last_step);
   /** @brief Convexifies cost expression - In this case, it is already quadratic so there's nothing to do */
-  virtual sco::ConvexConstraintsPtr convex(const DblVec& x, sco::Model* model);
+  sco::ConvexConstraintsPtr convex(const DblVec& x, sco::Model* model) override;
   /** @brief Numerically evaluate cost given the vector of values */
-  virtual DblVec value(const DblVec&);
+  DblVec value(const DblVec&) override;
   /** Calculate constraint violations (positive part for inequality constraint,
    * absolute value for inequality constraint)*/
   DblVec violations(const DblVec& x);
   /** Sum of violations */
   double violation(const DblVec& x);
+  sco::VarVector getVars() override { return vars_.flatten(); }
 
-  //  TODO: VarVector getVars() { return VarVector(); }
 private:
   /** @brief The variables being optimized. Used to properly index the vector being optimized */
   VarArray vars_;
@@ -550,9 +550,10 @@ public:
                           int& first_step,
                           int& last_step);
   /** @brief Convexifies cost expression - In this case, it is already quadratic so there's nothing to do */
-  virtual sco::ConvexConstraintsPtr convex(const DblVec& x, sco::Model* model);
+  sco::ConvexConstraintsPtr convex(const DblVec& x, sco::Model* model) override;
   /** @brief Numerically evaluate cost given the vector of values */
-  virtual DblVec value(const DblVec&);
+  DblVec value(const DblVec&) override;
+  sco::VarVector getVars() override { return vars_.flatten(); }
 
 private:
   /** @brief The variables being optimized. Used to properly index the vector being optimized */
@@ -572,6 +573,5 @@ private:
   /** @brief Stores the costs as an expression. Will be length num_jnts*(num_timesteps-4)*2 */
   std::vector<sco::AffExpr> expr_vec_;
 
-  // TODO: Add getVars
 };
 }  // namespace trajopt

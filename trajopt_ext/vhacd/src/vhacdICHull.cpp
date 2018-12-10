@@ -44,7 +44,7 @@ bool ICHull::AddPoints(const Vec3<double>* points, size_t nPoints)
   {
     return false;
   }
-  CircularListElement<TMMVertex>* vertex = NULL;
+  CircularListElement<TMMVertex>* vertex = nullptr;
   for (size_t i = 0; i < nPoints; i++)
   {
     vertex = m_mesh.AddVertex();

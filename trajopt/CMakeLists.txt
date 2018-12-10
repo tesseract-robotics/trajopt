@@ -1,7 +1,13 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(trajopt)
 
-add_compile_options(-std=c++11 -Wall -Wextra)
+add_compile_options(
+  -std=c++11
+  -Wall
+  -Wextra
+  -Wsuggest-override
+  -Wconversion
+  -Wsign-conversion)
 
 find_package(catkin REQUIRED COMPONENTS
   trajopt_sco
@@ -33,7 +39,9 @@ set(TRAJOPT_SOURCE_FILES
 )
 
 catkin_package(
-  INCLUDE_DIRS include
+  INCLUDE_DIRS
+    include
+    ${EIGEN3_INCLUDE_DIRS}
   LIBRARIES
     ${PROJECT_NAME}
     ${JSONCPP_LIBRARIES}

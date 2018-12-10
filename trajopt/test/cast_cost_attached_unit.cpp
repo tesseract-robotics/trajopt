@@ -1,5 +1,15 @@
+#include <trajopt_utils/macros.h>
+TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <ctime>
 #include <gtest/gtest.h>
+#include <geometric_shapes/shape_operations.h>
+#include <geometric_shapes/shapes.h>
+#include <ros/package.h>
+#include <ros/ros.h>
+#include <srdfdom/model.h>
+#include <urdf_parser/urdf_parser.h>
+TRAJOPT_IGNORE_WARNINGS_POP
+
 #include <tesseract_ros/kdl/kdl_chain_kin.h>
 #include <tesseract_ros/kdl/kdl_env.h>
 #include <tesseract_ros/ros_basic_plotting.h>
@@ -14,13 +24,6 @@
 #include <trajopt_utils/eigen_conversions.hpp>
 #include <trajopt_utils/logging.hpp>
 #include <trajopt_utils/stl_to_string.hpp>
-
-#include <geometric_shapes/shape_operations.h>
-#include <geometric_shapes/shapes.h>
-#include <ros/package.h>
-#include <ros/ros.h>
-#include <srdfdom/model.h>
-#include <urdf_parser/urdf_parser.h>
 
 using namespace trajopt;
 using namespace std;

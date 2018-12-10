@@ -1,6 +1,10 @@
+#include <trajopt_utils/macros.h>
+TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <cmath>
 #include <fstream>
 #include <signal.h>
+TRAJOPT_IGNORE_WARNINGS_POP
+
 #include <trajopt_sco/bpmpd_interface.hpp>
 #include <trajopt_sco/bpmpd_io.hpp>
 #include <trajopt_utils/logging.hpp>
@@ -146,7 +150,7 @@ logfile it generates.
 
 namespace sco
 {
-double BPMPD_BIG = 1e+30;
+static double BPMPD_BIG = 1e+30;
 
 ModelPtr createBPMPDModel()
 {
@@ -179,17 +183,17 @@ pid_t popen2(const char* command, int* infp, int* outfp)
     close(p_stdout[READ]);
     dup2(p_stdout[WRITE], WRITE);
 
-    execl("/bin/sh", "sh", "-c", command, NULL);
+    execl("/bin/sh", "sh", "-c", command, nullptr);
     perror("execl");
     exit(1);
   }
 
-  if (infp == NULL)
+  if (infp == nullptr)
     close(p_stdin[WRITE]);
   else
     *infp = p_stdin[WRITE];
 
-  if (outfp == NULL)
+  if (outfp == nullptr)
     close(p_stdout[READ]);
   else
     *outfp = p_stdout[READ];
@@ -197,13 +201,14 @@ pid_t popen2(const char* command, int* infp, int* outfp)
   return pid;
 }
 
-pid_t gPID = 0;
-int gPipeIn = 0, gPipeOut = 0;
+static pid_t gPID = 0;
+static int gPipeIn = 0;
+static int gPipeOut = 0;
 
 void fexit()
 {
   char text[1] = { bpmpd_io::EXIT_CHAR };
-  int n = write(gPipeIn, text, 1);
+  long n = write(gPipeIn, text, 1);
   ALWAYS_ASSERT(n == 1);
 }
 
@@ -229,21 +234,21 @@ BPMPDModel::~BPMPDModel()
 
 Var BPMPDModel::addVar(const std::string& name)
 {
-  m_vars.push_back(new VarRep(m_vars.size(), name, this));
+  m_vars.push_back(new VarRep(static_cast<int>(m_vars.size()), name, this));
   m_lbs.push_back(-BPMPD_BIG);
   m_ubs.push_back(BPMPD_BIG);
   return m_vars.back();
 }
 Cnt BPMPDModel::addEqCnt(const AffExpr& expr, const std::string& /*name*/)
 {
-  m_cnts.push_back(new CntRep(m_cnts.size(), this));
+  m_cnts.push_back(new CntRep(static_cast<int>(m_cnts.size()), this));
   m_cntExprs.push_back(expr);
   m_cntTypes.push_back(EQ);
   return m_cnts.back();
 }
 Cnt BPMPDModel::addIneqCnt(const AffExpr& expr, const std::string& /*name*/)
 {
-  m_cnts.push_back(new CntRep(m_cnts.size(), this));
+  m_cnts.push_back(new CntRep(static_cast<int>(m_cnts.size()), this));
   m_cntExprs.push_back(expr);
   m_cntTypes.push_back(INEQ);
   return m_cnts.back();
@@ -251,7 +256,7 @@ Cnt BPMPDModel::addIneqCnt(const AffExpr& expr, const std::string& /*name*/)
 Cnt BPMPDModel::addIneqCnt(const QuadExpr&, const std::string& /*name*/)
 {
   assert(0 && "NOT IMPLEMENTED");
-  return 0;
+  return nullptr;
 }
 void BPMPDModel::removeVars(const VarVector& vars)
 {
@@ -270,7 +275,7 @@ void BPMPDModel::removeCnts(const CntVector& cnts)
 void BPMPDModel::update()
 {
   {
-    int inew = 0;
+    size_t inew = 0;
     for (unsigned iold = 0; iold < m_vars.size(); ++iold)
     {
       const Var& var = m_vars[iold];
@@ -279,7 +284,7 @@ void BPMPDModel::update()
         m_vars[inew] = var;
         m_lbs[inew] = m_lbs[iold];
         m_ubs[inew] = m_ubs[iold];
-        var.var_rep->index = inew;
+        var.var_rep->index = static_cast<int>(inew);
         ++inew;
       }
       else
@@ -290,7 +295,7 @@ void BPMPDModel::update()
     m_ubs.resize(inew);
   }
   {
-    int inew = 0;
+    size_t inew = 0;
     for (unsigned iold = 0; iold < m_cnts.size(); ++iold)
     {
       const Cnt& cnt = m_cnts[iold];
@@ -299,7 +304,7 @@ void BPMPDModel::update()
         m_cnts[inew] = cnt;
         m_cntExprs[inew] = m_cntExprs[iold];
         m_cntTypes[inew] = m_cntTypes[iold];
-        cnt.cnt_rep->index = inew;
+        cnt.cnt_rep->index = static_cast<int>(inew);
         ++inew;
       }
       else
@@ -315,7 +320,7 @@ void BPMPDModel::setVarBounds(const VarVector &vars, const DblVec &lower, const 
 {
   for (unsigned i = 0; i < vars.size(); ++i)
   {
-    int varind = vars[i].var_rep->index;
+    size_t varind = static_cast<size_t>(vars[i].var_rep->index);
     m_lbs[varind] = lower[i];
     m_ubs[varind] = upper[i];
   }
@@ -325,7 +330,7 @@ DblVec BPMPDModel::getVarValues(const VarVector& vars) const
   DblVec out(vars.size());
   for (unsigned i = 0; i < vars.size(); ++i)
   {
-    int varind = vars[i].var_rep->index;
+    size_t varind = static_cast<size_t>(vars[i].var_rep->index);
     out[i] = m_soln[varind];
   }
   return out;
@@ -345,15 +350,15 @@ CvxOptStatus BPMPDModel::optimize()
   // lbound[maxn+maxm],
   //        ubound[maxn+maxm], primal[maxn+maxm], dual[maxn+maxm], big, opt;
 
-  int n = m_vars.size();
-  int m = m_cnts.size();
+  size_t n = m_vars.size();
+  size_t m = m_cnts.size();
 
   IntVec acolcnt(n), acolidx, qcolcnt(n), qcolidx, status(m + n);
   DblVec acolnzs, qcolnzs, rhs(m), obj(n, 0), lbound(m + n), ubound(m + n), primal(m + n), dual(m + n);
 
   DBG(m_lbs);
   DBG(m_ubs);
-  for (int iVar = 0; iVar < n; ++iVar)
+  for (size_t iVar = 0; iVar < n; ++iVar)
   {
     lbound[iVar] = fmax(m_lbs[iVar], -BPMPD_BIG);
     ubound[iVar] = fmin(m_ubs[iVar], BPMPD_BIG);
@@ -361,16 +366,16 @@ CvxOptStatus BPMPDModel::optimize()
 
   std::vector<IntVec> var2cntinds(n);
   std::vector<DblVec> var2cntvals(n);
-  for (int iCnt = 0; iCnt < m; ++iCnt)
+  for (size_t iCnt = 0; iCnt < m; ++iCnt)
   {
     const AffExpr& aff = m_cntExprs[iCnt];
     // cout << "adding constraint " << aff << endl;
     IntVec inds = vars2inds(aff.vars);
 
-    for (unsigned i = 0; i < aff.vars.size(); ++i)
+    for (size_t i = 0; i < aff.vars.size(); ++i)
     {
-      var2cntinds[inds[i]].push_back(iCnt);
-      var2cntvals[inds[i]].push_back(aff.coeffs[i]);  // xxx maybe repeated/
+      var2cntinds[static_cast<size_t>(inds[i])].push_back(static_cast<int>(iCnt));
+      var2cntvals[static_cast<size_t>(inds[i])].push_back(aff.coeffs[i]);  // xxx maybe repeated/
     }
 
     lbound[n + iCnt] = (m_cntTypes[iCnt] == INEQ) ? -BPMPD_BIG : 0;
@@ -378,10 +383,10 @@ CvxOptStatus BPMPDModel::optimize()
     rhs[iCnt] = -aff.constant;
   }
 
-  for (int iVar = 0; iVar < n; ++iVar)
+  for (size_t iVar = 0; iVar < n; ++iVar)
   {
     simplify2(var2cntinds[iVar], var2cntvals[iVar]);
-    acolcnt[iVar] = var2cntinds[iVar].size();
+    acolcnt[iVar] = static_cast<int>(var2cntinds[iVar].size());
     acolidx.insert(acolidx.end(), var2cntinds[iVar].begin(), var2cntinds[iVar].end());
     acolnzs.insert(acolnzs.end(), var2cntvals[iVar].begin(), var2cntvals[iVar].end());
   }
@@ -390,37 +395,38 @@ CvxOptStatus BPMPDModel::optimize()
 
   std::vector<DblVec> var2qcoeffs(n);
   std::vector<IntVec> var2qinds(n);
-  for (unsigned i = 0; i < m_objective.size(); ++i)
+  for (size_t i = 0; i < m_objective.size(); ++i)
   {
-    int idx1 = m_objective.vars1[i].var_rep->index, idx2 = m_objective.vars2[i].var_rep->index;
+    size_t idx1 = static_cast<size_t>(m_objective.vars1[i].var_rep->index);
+    size_t idx2 = static_cast<size_t>(m_objective.vars2[i].var_rep->index);
     if (idx1 < idx2)
     {
-      var2qinds[idx1].push_back(idx2);
+      var2qinds[idx1].push_back(static_cast<int>(idx2));
       var2qcoeffs[idx1].push_back(m_objective.coeffs[i]);
     }
     else if (idx1 == idx2)
     {
-      var2qinds[idx1].push_back(idx2);
+      var2qinds[idx1].push_back(static_cast<int>(idx2));
       var2qcoeffs[idx1].push_back(m_objective.coeffs[i] * 2);
     }
     else
     {
-      var2qinds[idx2].push_back(idx1);
+      var2qinds[idx2].push_back(static_cast<int>(idx1));
       var2qcoeffs[idx2].push_back(m_objective.coeffs[i]);
     }
   }
 
-  for (int iVar = 0; iVar < n; ++iVar)
+  for (size_t iVar = 0; iVar < n; ++iVar)
   {
     simplify2(var2qinds[iVar], var2qcoeffs[iVar]);
     qcolidx.insert(qcolidx.end(), var2qinds[iVar].begin(), var2qinds[iVar].end());
     qcolnzs.insert(qcolnzs.end(), var2qcoeffs[iVar].begin(), var2qcoeffs[iVar].end());
-    qcolcnt[iVar] = var2qinds[iVar].size();
+    qcolcnt[iVar] = static_cast<int>(var2qinds[iVar].size());
   }
 
-  for (unsigned i = 0; i < m_objective.affexpr.size(); ++i)
+  for (size_t i = 0; i < m_objective.affexpr.size(); ++i)
   {
-    obj[m_objective.affexpr.vars[i].var_rep->index] += m_objective.affexpr.coeffs[i];
+    obj[static_cast<size_t>(m_objective.affexpr.vars[i].var_rep->index)] += m_objective.affexpr.coeffs[i];
   }
 
 #define VECINC(vec)                                                                                                    \
@@ -432,7 +438,7 @@ CvxOptStatus BPMPDModel::optimize()
 
   // cout << "objective: " << m_objective << endl;
 
-  int nz = acolnzs.size(), qn = n, qnz = qcolnzs.size();
+  int nz = static_cast<int>(acolnzs.size()), qn = static_cast<int>(n), qnz = static_cast<int>(qcolnzs.size());
 
   DBG(m);
   DBG(n);
@@ -469,7 +475,7 @@ CvxOptStatus BPMPDModel::optimize()
 
 #else
 
-  bpmpd_io::bpmpd_input bi(m, n, nz, qn, qnz, acolcnt, acolidx, acolnzs, qcolcnt, qcolidx, qcolnzs, rhs, obj, lbound, ubound);
+  bpmpd_io::bpmpd_input bi(static_cast<int>(m), static_cast<int>(n), nz, qn, qnz, acolcnt, acolidx, acolnzs, qcolcnt, qcolidx, qcolnzs, rhs, obj, lbound, ubound);
   bpmpd_io::ser(gPipeIn, bi, bpmpd_io::SER);
 
   // std::cout << "serialization time:" << end-start << std::endl;
@@ -477,7 +483,7 @@ CvxOptStatus BPMPDModel::optimize()
   bpmpd_io::bpmpd_output bo;
   bpmpd_io::ser(gPipeOut, bo, bpmpd_io::DESER);
 
-  m_soln = DblVec(bo.primal.begin(), bo.primal.begin() + n);
+  m_soln = DblVec(bo.primal.begin(), bo.primal.begin() + static_cast<long int>(n));
   int retcode = bo.code;
 
   if (retcode == 2)

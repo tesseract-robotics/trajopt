@@ -1,11 +1,14 @@
 #pragma once
-
+#include <trajopt_utils/macros.h>
+TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <boost/program_options.hpp>
 #include <iostream>
 #include <memory>
 #include <string>
-#include <trajopt_utils/stl_to_string.hpp>
 #include <vector>
+TRAJOPT_IGNORE_WARNINGS_POP
+
+#include <trajopt_utils/stl_to_string.hpp>
 
 namespace util
 {

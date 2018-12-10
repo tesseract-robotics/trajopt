@@ -1,4 +1,8 @@
+#include <trajopt_utils/macros.h>
+TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <Eigen/Core>
+TRAJOPT_IGNORE_WARNINGS_POP
+
 #include <trajopt/trajectory_costs.hpp>
 #include <trajopt_sco/expr_ops.hpp>
 #include <trajopt_sco/modeling_utils.hpp>

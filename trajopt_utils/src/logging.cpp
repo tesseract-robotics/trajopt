@@ -1,6 +1,10 @@
+#include <trajopt_utils/macros.h>
+TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <cstdlib>
 #include <iostream>
 #include <string>
+TRAJOPT_IGNORE_WARNINGS_POP
+
 #include <trajopt_utils/logging.hpp>
 
 namespace util

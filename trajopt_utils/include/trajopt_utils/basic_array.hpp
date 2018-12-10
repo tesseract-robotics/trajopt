@@ -1,5 +1,8 @@
 #pragma once
+#include <trajopt_utils/macros.h>
+TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <vector>
+TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace util
 {
@@ -18,7 +21,7 @@ struct BasicArray
   {
     m_nRow = nRow;
     m_nCol = nCol;
-    m_data.resize(m_nRow * m_nCol);
+    m_data.resize(static_cast<size_t>(m_nRow * m_nCol));
   }
 
   int rows() const { return m_nRow; }
@@ -61,10 +64,10 @@ struct BasicArray
   }
   BasicArray topRows(int n) { return middleRows(0, n); }
   BasicArray bottomRows(int n) { return middleRows(m_nRow - n, n); }
-  const T& at(int row, int col) const { return m_data.at(row * m_nCol + col); }
-  T& at(int row, int col) { return m_data.at(row * m_nCol + col); }
-  const T& operator()(int row, int col) const { return m_data.at(row * m_nCol + col); }
-  T& operator()(int row, int col) { return m_data.at(row * m_nCol + col); }
+  const T& at(int row, int col) const { return m_data.at(static_cast<size_t>(row * m_nCol + col)); }
+  T& at(int row, int col) { return m_data.at(static_cast<size_t>(row * m_nCol + col)); }
+  const T& operator()(int row, int col) const { return m_data.at(static_cast<size_t>(row * m_nCol + col)); }
+  T& operator()(int row, int col) { return m_data.at(static_cast<size_t>(row * m_nCol + col)); }
   std::vector<T> col(int col)
   {
     std::vector<T> out;
@@ -77,7 +80,7 @@ struct BasicArray
   std::vector<T> row(int row)
   {
     std::vector<T> out;
-    out.reserve(m_nCol);
+    out.reserve(static_cast<size_t>(m_nCol));
     for (int col = 0; col < m_nCol; col++)
       out.push_back(at(row, col));
     return out;

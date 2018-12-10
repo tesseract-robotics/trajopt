@@ -1,8 +1,11 @@
+#include <trajopt_utils/macros.h>
+TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <constants.h>
 #include <cmath>
 #include <Eigen/SparseCore>
 #include <fstream>
 #include <signal.h>
+TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt_sco/osqp_interface.hpp>
 #include <trajopt_sco/solver_utils.hpp>

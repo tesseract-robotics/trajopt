@@ -1,5 +1,8 @@
 #pragma once
+#include <trajopt_utils/macros.h>
+TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <cstdio>
+TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace util
 {

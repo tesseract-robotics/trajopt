@@ -36,9 +36,9 @@ class CostFromFunc : public Cost
 public:
   /// supply function, obtain derivative and hessian numerically
   CostFromFunc(ScalarOfVectorPtr f, const VarVector& vars, const std::string& name, bool full_hessian = false);
-  double value(const DblVec& x);
-  ConvexObjectivePtr convex(const DblVec& x, Model* model);
-  VarVector getVars() { return vars_; }
+  double value(const DblVec& x) override;
+  ConvexObjectivePtr convex(const DblVec& x, Model* model) override;
+  VarVector getVars() override { return vars_; }
 protected:
   ScalarOfVectorPtr f_;
   VarVector vars_;
@@ -62,9 +62,9 @@ public:
                   const Eigen::VectorXd& coeffs,
                   PenaltyType pen_type,
                   const std::string& name);
-  double value(const DblVec& x);
-  ConvexObjectivePtr convex(const DblVec& x, Model* model);
-  VarVector getVars() { return vars_; }
+  double value(const DblVec& x) override;
+  ConvexObjectivePtr convex(const DblVec& x, Model* model) override;
+  VarVector getVars() override { return vars_; }
 protected:
   VectorOfVectorPtr f_;
   MatrixOfVectorPtr dfdx_;
@@ -90,10 +90,10 @@ public:
                      const Eigen::VectorXd& coeffs,
                      ConstraintType type,
                      const std::string& name);
-  DblVec value(const DblVec& x);
-  ConvexConstraintsPtr convex(const DblVec& x, Model* model);
-  ConstraintType type() { return type_; }
-  VarVector getVars() { return vars_; }
+  DblVec value(const DblVec& x) override;
+  ConvexConstraintsPtr convex(const DblVec& x, Model* model) override;
+  ConstraintType type() override { return type_; }
+  VarVector getVars() override { return vars_; }
 protected:
   VectorOfVectorPtr f_;
   MatrixOfVectorPtr dfdx_;
