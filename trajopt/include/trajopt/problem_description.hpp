@@ -23,7 +23,7 @@ struct ProblemConstructionInfo;
 struct TrajOptResult;
 typedef std::shared_ptr<TrajOptResult> TrajOptResultPtr;
 
-TrajOptProbPtr TRAJOPT_API ConstructProblem(const ProblemConstructionInfo &);
+TrajOptProbPtr TRAJOPT_API ConstructProblem(const ProblemConstructionInfo&);
 TrajOptProbPtr TRAJOPT_API ConstructProblem(const Json::Value&, tesseract::BasicEnvConstPtr env);
 TrajOptResultPtr TRAJOPT_API OptimizeProblem(TrajOptProbPtr, const tesseract::BasicPlottingPtr plotter = nullptr);
 
@@ -69,10 +69,15 @@ public:
   void SetInitTraj(const TrajArray& x) { m_init_traj = x; }
   TrajArray GetInitTraj() { return m_init_traj; }
   friend TrajOptProbPtr ConstructProblem(const ProblemConstructionInfo&);
-  // Indicates whether or not the last column is dt
-  bool has_time;
+  /** @brief Returns TrajOptProb.has_time */
+  bool GetHasTime() { return has_time;}
+  /** @brief Sets TrajOptProb.has_time  */
+  void SetHasTime(bool tmp) { has_time = tmp;}
+
 
 private:
+  /** @brief If true, the last column in the optimization matrix will be 1/dt */
+  bool has_time;
   VarArray m_traj_vars;
   tesseract::BasicKinConstPtr m_kin;
   tesseract::BasicEnvConstPtr m_env;
@@ -92,16 +97,20 @@ struct TRAJOPT_API TrajOptResult
 
 struct BasicInfo
 {
+  /** @brief If true first time step is fixed with a joint level constraint*/
   bool start_fixed;
+  /** @brief Number of time steps (rows) in the optimization matrix */
   int n_steps;
   std::string manip;
-  std::string robot;  // optional
-  IntVec dofs_fixed;  // optional
-  sco::ModelType convex_solver; // which convex solver to use
+  std::string robot;             // optional
+  IntVec dofs_fixed;             // optional
+  sco::ModelType convex_solver;  // which convex solver to use
 
-  // optional, but must be valid
+  /** @brief If true, the last column in the optimization matrix will be 1/dt */
   bool use_time = false;
+  /** @brief The upper limit of 1/dt values allowed in the optimization*/
   double dt_upper_lim = 1.0;
+  /** @brief The lower limit of 1/dt values allowed in the optimization*/
   double dt_lower_lim = 1.0;
 };
 
@@ -110,14 +119,25 @@ Initialization info read from json
 */
 struct InitInfo
 {
+ /** @brief Methods of initializing the optimization matrix
+
+   STATIONARY: Initializes all joint values to the initial value (the current value in the env pci.env->getCurrentJointValues)
+   JOINT_INTERPOLATED: Linearly interpolates between initial value and the joint position specified in InitInfo.data
+   GIVEN_TRAJ: Initializes the matrix to a given trajectory
+
+   In all cases the dt column (if present) is appended the selected method is defined.
+*/
   enum Type
   {
     STATIONARY,
     JOINT_INTERPOLATED,
     GIVEN_TRAJ,
   };
+  /** @brief Specifies the type of initialization to use */
   Type type;
+  /** @brief Data used during initialization. Use depends on the initialization selected. */
   TrajArray data;
+  /** @brief Default value the final column of the optimization is initialized too if time is being used */
   double dt = 1.0;
 };
 
@@ -137,7 +157,7 @@ struct TRAJOPT_API TermInfo
 {
   std::string name;
   int term_type;
-  int GetSupportedTypes() { return supported_term_type_;}
+  int GetSupportedTypes() { return supported_term_type_; }
 
   virtual void fromJson(ProblemConstructionInfo& pci, const Json::Value& v) = 0;
   virtual void hatch(TrajOptProb& prob) = 0;
@@ -293,7 +313,7 @@ struct JointPosTermInfo : public TermInfo
   void hatch(TrajOptProb& prob) override;
   DEFINE_CREATE(JointPosTermInfo)
 
-  JointPosTermInfo() : TermInfo(TT_COST | TT_CNT) {}
+  JointPosTermInfo() : TermInfo(TT_COST | TT_CNT | TT_USE_TIME) {}
 };
 
 /**

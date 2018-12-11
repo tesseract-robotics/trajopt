@@ -153,22 +153,17 @@ void ProblemConstructionInfo::readCosts(const Json::Value& v)
   cost_infos.reserve(v.size());
   for (Json::Value::const_iterator it = v.begin(); it != v.end(); ++it)
   {
-    std::string type;
-    bool use_time;
+    std::string type, use_time_str;
     json_marshal::childFromJson(*it, type, "type");
-    json_marshal::childFromJson(*it, use_time, "use_time", false);
+    json_marshal::childFromJson(*it, use_time_str, "use_time", static_cast<std::string>("false"));
     LOG_DEBUG("reading term: %s", type.c_str());
     TermInfoPtr term = TermInfo::fromName(type);
 
     if (!term)
       PRINT_AND_THROW(boost::format("failed to construct cost named %s") % type);
-    if (!(term->GetSupportedTypes() & TT_COST))
-      PRINT_AND_THROW(boost::format("%s is only a constraint, but you listed it as a cost") % type);
 
-    if (use_time)
+    if (boost::iequals(use_time_str, "true"))
     {
-      if (!(term->GetSupportedTypes() & TT_USE_TIME))
-        PRINT_AND_THROW(boost::format("%s does not support time, but you listed it as a using time") % type);
       term->term_type = TT_COST | TT_USE_TIME;
       basic_info.use_time = true;
     }
@@ -187,21 +182,17 @@ void ProblemConstructionInfo::readConstraints(const Json::Value& v)
   cnt_infos.reserve(v.size());
   for (Json::Value::const_iterator it = v.begin(); it != v.end(); ++it)
   {
-    std::string type;
-    bool use_time;
+    std::string type, use_time_str;
     json_marshal::childFromJson(*it, type, "type");
-    json_marshal::childFromJson(*it, use_time, "use_time", false);
+    json_marshal::childFromJson(*it, use_time_str, "use_time", static_cast<std::string>("false"));
     LOG_DEBUG("reading term: %s", type.c_str());
     TermInfoPtr term = TermInfo::fromName(type);
 
     if (!term)
       PRINT_AND_THROW(boost::format("failed to construct constraint named %s") % type);
-    if (!(term->GetSupportedTypes() & TT_CNT))
-      PRINT_AND_THROW(boost::format("%s is only a cost, but you listed it as a constraint") % type);
-    if (use_time)
+
+    if (boost::iequals(use_time_str, "true"))
     {
-      if (!(term->GetSupportedTypes() & TT_USE_TIME))
-        PRINT_AND_THROW(boost::format("%s does not support time, but you listed it as a using time") % type);
       term->term_type = (TT_CNT | TT_USE_TIME);
       basic_info.use_time = true;
     }
@@ -379,24 +370,38 @@ TrajOptProbPtr ConstructProblem(const ProblemConstructionInfo& pci)
   const BasicInfo& bi = pci.basic_info;
   int n_steps = bi.n_steps;
 
-  // Check that if a cost or constraint uses time, basic_info is set accordingly
   bool use_time = false;
+  // Check that all costs and constraints support the types that are specified in pci
   for (TermInfoPtr cost : pci.cost_infos)
   {
+    if (!(cost->GetSupportedTypes() & TT_COST))
+      PRINT_AND_THROW(boost::format("%s is only a constraint, but you listed it as a cost") % cost->name);
     if (cost->term_type & TT_USE_TIME)
+    {
       use_time = true;
+      if (!(cost->GetSupportedTypes() & TT_USE_TIME))
+        PRINT_AND_THROW(boost::format("%s does not support time, but you listed it as a using time") % cost->name);
+    }
   }
   for (TermInfoPtr cnt : pci.cnt_infos)
   {
+    if (!(cnt->GetSupportedTypes() & TT_CNT))
+      PRINT_AND_THROW(boost::format("%s is only a cost, but you listed it as a constraint") % cnt->name);
     if (cnt->term_type & TT_USE_TIME)
+    {
       use_time = true;
+      if (!(cnt->GetSupportedTypes() & TT_USE_TIME))
+        PRINT_AND_THROW(boost::format("%s does not support time, but you listed it as a using time") % cnt->name);
+    }
   }
+
+  // Check that if a cost or constraint uses time, basic_info is set accordingly
   if ((use_time == true) && (pci.basic_info.use_time == false))
-          PRINT_AND_THROW("A term is using time and basic_info is not set correctly. Try basic_info.use_time = true");
+    PRINT_AND_THROW("A term is using time and basic_info is not set correctly. Try basic_info.use_time = true");
 
   // This could be removed in the future once we are sure that all costs are
   if ((use_time == false) && (pci.basic_info.use_time == true))
-        PRINT_AND_THROW("No terms use time and basic_info is not set correctly. Try basic_info.use_time = false");
+    PRINT_AND_THROW("No terms use time and basic_info is not set correctly. Try basic_info.use_time = false");
 
   TrajOptProbPtr prob(new TrajOptProb(n_steps, pci));
   unsigned n_dof = prob->GetKin()->numJoints();
@@ -406,7 +411,7 @@ TrajOptProbPtr ConstructProblem(const ProblemConstructionInfo& pci)
   generateInitTraj(init_traj, pci);
   if (pci.basic_info.use_time == true)
   {
-    prob->has_time = true;
+    prob->SetHasTime(true);
     if (init_traj.rows() != n_steps || init_traj.cols() != n_dof + 1)
     {
       PRINT_AND_THROW(boost::format("Initial trajectory is not the right size matrix\n"
@@ -417,7 +422,7 @@ TrajOptProbPtr ConstructProblem(const ProblemConstructionInfo& pci)
   }
   else
   {
-    prob->has_time = false;
+    prob->SetHasTime(false);
     if (init_traj.rows() != n_steps || init_traj.cols() != n_dof)
     {
       PRINT_AND_THROW(boost::format("Initial trajectory is not the right size matrix\n"
@@ -431,12 +436,12 @@ TrajOptProbPtr ConstructProblem(const ProblemConstructionInfo& pci)
   // If start_fixed, constrain the joint values for the first time step to be their initialized values
   if (bi.start_fixed)
   {
-    if (pci.init_info.data.rows() < 1)
+    if (init_traj.rows() < 1)
     {
       PRINT_AND_THROW("Initial trajectory must contain at least the start state.");
     }
 
-    if (pci.init_info.data.cols() != n_dof)
+    if (init_traj.cols() != (n_dof + (use_time ? 1 : 0)))
     {
       PRINT_AND_THROW("robot dof values don't match initialization. I don't "
                       "know what you want me to use for the dof values");
@@ -444,7 +449,7 @@ TrajOptProbPtr ConstructProblem(const ProblemConstructionInfo& pci)
 
     for (int j = 0; j < static_cast<int>(n_dof); ++j)
     {
-      prob->addLinearConstraint(sco::exprSub(sco::AffExpr(prob->m_traj_vars(0, j)), pci.init_info.data(0, j)), sco::EQ);
+      prob->addLinearConstraint(sco::exprSub(sco::AffExpr(prob->m_traj_vars(0, j)), init_traj(0, j)), sco::EQ);
     }
   }
 
@@ -456,8 +461,7 @@ TrajOptProbPtr ConstructProblem(const ProblemConstructionInfo& pci)
       for (int i = 1; i < prob->GetNumSteps(); ++i)
       {
         prob->addLinearConstraint(
-            sco::exprSub(sco::AffExpr(prob->m_traj_vars(i, dof_ind)), sco::AffExpr(prob->m_traj_vars(0, dof_ind))),
-            sco::EQ);
+            sco::exprSub(sco::AffExpr(prob->m_traj_vars(i, dof_ind)), sco::AffExpr(init_traj(0, dof_ind))), sco::EQ);
       }
     }
   }
@@ -482,7 +486,7 @@ TrajOptProbPtr ConstructProblem(const Json::Value& root, tesseract::BasicEnvCons
 }
 
 TrajOptProb::TrajOptProb(int n_steps, const ProblemConstructionInfo& pci)
- : OptProb(pci.basic_info.convex_solver), m_kin(pci.kin), m_env(pci.env)
+  : OptProb(pci.basic_info.convex_solver), m_kin(pci.kin), m_env(pci.env)
 {
   const Eigen::MatrixX2d& limits = m_kin->getLimits();
   int n_dof = static_cast<int>(m_kin->numJoints());
@@ -514,8 +518,7 @@ TrajOptProb::TrajOptProb(int n_steps, const ProblemConstructionInfo& pci)
 
 TrajOptProb::TrajOptProb() {}
 
-DynamicCartPoseTermInfo::DynamicCartPoseTermInfo()
-: TermInfo(TT_COST | TT_CNT)
+DynamicCartPoseTermInfo::DynamicCartPoseTermInfo() : TermInfo(TT_COST | TT_CNT)
 {
   pos_coeffs = Eigen::Vector3d::Ones();
   rot_coeffs = Eigen::Vector3d::Ones();
@@ -553,7 +556,6 @@ void DynamicCartPoseTermInfo::fromJson(ProblemConstructionInfo& pci, const Json:
 
 void DynamicCartPoseTermInfo::hatch(TrajOptProb& prob)
 {
-
   if (term_type & TT_USE_TIME)
   {
     ROS_ERROR("Use time version of this term has not been defined.");
@@ -564,8 +566,8 @@ void DynamicCartPoseTermInfo::hatch(TrajOptProb& prob)
     // Apply error calculator as either cost or constraint
     if (term_type & TT_COST)
     {
-      prob.addCost(sco::CostPtr(
-          new TrajOptCostFromErrFunc(f, prob.GetJointVarRow(timestep), concat(rot_coeffs, pos_coeffs), sco::ABS, name)));
+      prob.addCost(sco::CostPtr(new TrajOptCostFromErrFunc(
+          f, prob.GetJointVarRow(timestep), concat(rot_coeffs, pos_coeffs), sco::ABS, name)));
     }
     else if (term_type & TT_CNT)
     {
@@ -576,11 +578,10 @@ void DynamicCartPoseTermInfo::hatch(TrajOptProb& prob)
     {
       ROS_WARN("DynamicCartPoseTermInfo does not have a valid term_type defined. No cost/constraint applied");
     }
-  } 
+  }
 }
 
-CartPoseTermInfo::CartPoseTermInfo()
-: TermInfo(TT_COST | TT_CNT)
+CartPoseTermInfo::CartPoseTermInfo() : TermInfo(TT_COST | TT_CNT)
 {
   pos_coeffs = Eigen::Vector3d::Ones();
   rot_coeffs = Eigen::Vector3d::Ones();
@@ -780,26 +781,31 @@ void JointPosTermInfo::hatch(TrajOptProb& prob)
   bool is_lower_zeros =
       std::all_of(lower_tols.begin(), lower_tols.end(), [](double i) { return util::doubleEquals(i, 0.); });
 
-  if (term_type == (TT_COST | TT_USE_TIME))
+  // Get vars associated with joints
+  trajopt::VarArray joint_vars;
+  if (prob.GetHasTime())
   {
-    ROS_ERROR("Use time version of this term has not been defined.");
+    ROS_INFO("JointPosTermInfo does not differ based on setting of TT_USE_TIME");
+    trajopt::VarArray vars = prob.GetVars();
+    joint_vars.m_data = vars.rblock(0, 0, vars.size());
   }
-  else if (term_type == (TT_CNT | TT_USE_TIME))
+  else
   {
-    ROS_ERROR("Use time version of this term has not been defined.");
+    joint_vars = prob.GetVars();
   }
-  else if ((term_type & TT_COST) && ~(term_type | ~TT_USE_TIME))
+
+  if (term_type & TT_COST)
   {
     // If the tolerances are 0, an equality cost is set. Otherwise it's a hinged "inequality" cost
     if (is_upper_zeros && is_lower_zeros)
     {
-      prob.addCost(sco::CostPtr(new JointPosEqCost(
-          prob.GetVars(), util::toVectorXd(coeffs), util::toVectorXd(targets), first_step, last_step)));
+      prob.addCost(sco::CostPtr(
+          new JointPosEqCost(joint_vars, util::toVectorXd(coeffs), util::toVectorXd(targets), first_step, last_step)));
       prob.getCosts().back()->setName(name);
     }
     else
     {
-      prob.addCost(sco::CostPtr(new JointPosIneqCost(prob.GetVars(),
+      prob.addCost(sco::CostPtr(new JointPosIneqCost(joint_vars,
                                                      util::toVectorXd(coeffs),
                                                      util::toVectorXd(targets),
                                                      util::toVectorXd(upper_tols),
@@ -809,18 +815,18 @@ void JointPosTermInfo::hatch(TrajOptProb& prob)
       prob.getCosts().back()->setName(name);
     }
   }
-  else if ((term_type & TT_CNT) && ~(term_type | ~TT_USE_TIME))
+  else if (term_type & TT_CNT)
   {
     // If the tolerances are 0, an equality cnt is set. Otherwise it's an inequality constraint
     if (is_upper_zeros && is_lower_zeros)
     {
       prob.addConstraint(sco::ConstraintPtr(new JointPosEqConstraint(
-          prob.GetVars(), util::toVectorXd(coeffs), util::toVectorXd(targets), first_step, last_step)));
+          joint_vars, util::toVectorXd(coeffs), util::toVectorXd(targets), first_step, last_step)));
       prob.getConstraints().back()->setName(name);
     }
     else
     {
-      prob.addConstraint(sco::ConstraintPtr(new JointPosIneqConstraint(prob.GetVars(),
+      prob.addConstraint(sco::ConstraintPtr(new JointPosIneqConstraint(joint_vars,
                                                                        util::toVectorXd(coeffs),
                                                                        util::toVectorXd(targets),
                                                                        util::toVectorXd(upper_tols),
@@ -894,6 +900,18 @@ void JointVelTermInfo::hatch(TrajOptProb& prob)
   bool is_lower_zeros =
       std::all_of(lower_tols.begin(), lower_tols.end(), [](double i) { return util::doubleEquals(i, 0.); });
 
+  // Get vars associated with joints
+  trajopt::VarArray joint_vars;
+  if (prob.GetHasTime())
+  {
+    trajopt::VarArray vars = prob.GetVars();
+    joint_vars.m_data = vars.rblock(0, 0, vars.size());
+  }
+  else
+  {
+    joint_vars = prob.GetVars();
+  }
+
   if (term_type == (TT_COST | TT_USE_TIME))
   {
     ROS_ERROR("Use time version of this term has not been defined.");
@@ -907,13 +925,13 @@ void JointVelTermInfo::hatch(TrajOptProb& prob)
     // If the tolerances are 0, an equality cost is set. Otherwise it's a hinged "inequality" cost
     if (is_upper_zeros && is_lower_zeros)
     {
-      prob.addCost(sco::CostPtr(new JointVelEqCost(
-          prob.GetVars(), util::toVectorXd(coeffs), util::toVectorXd(targets), first_step, last_step)));
+      prob.addCost(sco::CostPtr(
+          new JointVelEqCost(joint_vars, util::toVectorXd(coeffs), util::toVectorXd(targets), first_step, last_step)));
       prob.getCosts().back()->setName(name);
     }
     else
     {
-      prob.addCost(sco::CostPtr(new JointVelIneqCost(prob.GetVars(),
+      prob.addCost(sco::CostPtr(new JointVelIneqCost(joint_vars,
                                                      util::toVectorXd(coeffs),
                                                      util::toVectorXd(targets),
                                                      util::toVectorXd(upper_tols),
@@ -929,12 +947,12 @@ void JointVelTermInfo::hatch(TrajOptProb& prob)
     if (is_upper_zeros && is_lower_zeros)
     {
       prob.addConstraint(sco::ConstraintPtr(new JointVelEqConstraint(
-          prob.GetVars(), util::toVectorXd(coeffs), util::toVectorXd(targets), first_step, last_step)));
+          joint_vars, util::toVectorXd(coeffs), util::toVectorXd(targets), first_step, last_step)));
       prob.getConstraints().back()->setName(name);
     }
     else
     {
-      prob.addConstraint(sco::ConstraintPtr(new JointVelIneqConstraint(prob.GetVars(),
+      prob.addConstraint(sco::ConstraintPtr(new JointVelIneqConstraint(joint_vars,
                                                                        util::toVectorXd(coeffs),
                                                                        util::toVectorXd(targets),
                                                                        util::toVectorXd(upper_tols),
@@ -1009,6 +1027,18 @@ void JointAccTermInfo::hatch(TrajOptProb& prob)
   bool is_lower_zeros =
       std::all_of(lower_tols.begin(), lower_tols.end(), [](double i) { return util::doubleEquals(i, 0.); });
 
+  // Get vars associated with joints
+  trajopt::VarArray joint_vars;
+  if (prob.GetHasTime())
+  {
+    trajopt::VarArray vars = prob.GetVars();
+    joint_vars.m_data = vars.rblock(0, 0, vars.size());
+  }
+  else
+  {
+    joint_vars = prob.GetVars();
+  }
+
   if (term_type == (TT_COST | TT_USE_TIME))
   {
     ROS_ERROR("Use time version of this term has not been defined.");
@@ -1022,13 +1052,13 @@ void JointAccTermInfo::hatch(TrajOptProb& prob)
     // If the tolerances are 0, an equality cost is set. Otherwise it's a hinged "inequality" cost
     if (is_upper_zeros && is_lower_zeros)
     {
-      prob.addCost(sco::CostPtr(new JointAccEqCost(
-          prob.GetVars(), util::toVectorXd(coeffs), util::toVectorXd(targets), first_step, last_step)));
+      prob.addCost(sco::CostPtr(
+          new JointAccEqCost(joint_vars, util::toVectorXd(coeffs), util::toVectorXd(targets), first_step, last_step)));
       prob.getCosts().back()->setName(name);
     }
     else
     {
-      prob.addCost(sco::CostPtr(new JointAccIneqCost(prob.GetVars(),
+      prob.addCost(sco::CostPtr(new JointAccIneqCost(joint_vars,
                                                      util::toVectorXd(coeffs),
                                                      util::toVectorXd(targets),
                                                      util::toVectorXd(upper_tols),
@@ -1044,12 +1074,12 @@ void JointAccTermInfo::hatch(TrajOptProb& prob)
     if (is_upper_zeros && is_lower_zeros)
     {
       prob.addConstraint(sco::ConstraintPtr(new JointAccEqConstraint(
-          prob.GetVars(), util::toVectorXd(coeffs), util::toVectorXd(targets), first_step, last_step)));
+          joint_vars, util::toVectorXd(coeffs), util::toVectorXd(targets), first_step, last_step)));
       prob.getConstraints().back()->setName(name);
     }
     else
     {
-      prob.addConstraint(sco::ConstraintPtr(new JointAccIneqConstraint(prob.GetVars(),
+      prob.addConstraint(sco::ConstraintPtr(new JointAccIneqConstraint(joint_vars,
                                                                        util::toVectorXd(coeffs),
                                                                        util::toVectorXd(targets),
                                                                        util::toVectorXd(upper_tols),
@@ -1125,6 +1155,18 @@ void JointJerkTermInfo::hatch(TrajOptProb& prob)
   bool is_lower_zeros =
       std::all_of(lower_tols.begin(), lower_tols.end(), [](double i) { return util::doubleEquals(i, 0.); });
 
+  // Get vars associated with joints
+  trajopt::VarArray joint_vars;
+  if (prob.GetHasTime())
+  {
+    trajopt::VarArray vars = prob.GetVars();
+    joint_vars.m_data = vars.rblock(0, 0, vars.size());
+  }
+  else
+  {
+    joint_vars = prob.GetVars();
+  }
+
   if (term_type == (TT_COST | TT_USE_TIME))
   {
     ROS_ERROR("Use time version of this term has not been defined.");
@@ -1138,13 +1180,13 @@ void JointJerkTermInfo::hatch(TrajOptProb& prob)
     // If the tolerances are 0, an equality cost is set. Otherwise it's a hinged "inequality" cost
     if (is_upper_zeros && is_lower_zeros)
     {
-      prob.addCost(sco::CostPtr(new JointJerkEqCost(
-          prob.GetVars(), util::toVectorXd(coeffs), util::toVectorXd(targets), first_step, last_step)));
+      prob.addCost(sco::CostPtr(
+          new JointJerkEqCost(joint_vars, util::toVectorXd(coeffs), util::toVectorXd(targets), first_step, last_step)));
       prob.getCosts().back()->setName(name);
     }
     else
     {
-      prob.addCost(sco::CostPtr(new JointJerkIneqCost(prob.GetVars(),
+      prob.addCost(sco::CostPtr(new JointJerkIneqCost(joint_vars,
                                                       util::toVectorXd(coeffs),
                                                       util::toVectorXd(targets),
                                                       util::toVectorXd(upper_tols),
@@ -1160,12 +1202,12 @@ void JointJerkTermInfo::hatch(TrajOptProb& prob)
     if (is_upper_zeros && is_lower_zeros)
     {
       prob.addConstraint(sco::ConstraintPtr(new JointJerkEqConstraint(
-          prob.GetVars(), util::toVectorXd(coeffs), util::toVectorXd(targets), first_step, last_step)));
+          joint_vars, util::toVectorXd(coeffs), util::toVectorXd(targets), first_step, last_step)));
       prob.getConstraints().back()->setName(name);
     }
     else
     {
-      prob.addConstraint(sco::ConstraintPtr(new JointJerkIneqConstraint(prob.GetVars(),
+      prob.addConstraint(sco::ConstraintPtr(new JointJerkIneqConstraint(joint_vars,
                                                                         util::toVectorXd(coeffs),
                                                                         util::toVectorXd(targets),
                                                                         util::toVectorXd(upper_tols),
