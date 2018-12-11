@@ -792,13 +792,16 @@ void JointPosTermInfo::hatch(TrajOptProb& prob)
 
   if (term_type & TT_COST)
   {
-    ROS_ERROR("Use time version of this term has not been defined.");
+    ROS_INFO("JointPosTermInfo does not differ based on setting of TT_USE_TIME");
+    trajopt::VarArray vars = prob.GetVars();
+    joint_vars.m_data = vars.rblock(0, 0, vars.size());
   }
-  else if (term_type == (TT_CNT | TT_USE_TIME))
+  else
   {
-    ROS_ERROR("Use time version of this term has not been defined.");
+    joint_vars = prob.GetVars();
   }
-  else if ((term_type & TT_COST) && ~(term_type | ~TT_USE_TIME))
+
+  if (term_type & TT_COST)
   {
     // If the tolerances are 0, an equality cost is set. Otherwise it's a hinged "inequality" cost
     if (is_upper_zeros && is_lower_zeros)
