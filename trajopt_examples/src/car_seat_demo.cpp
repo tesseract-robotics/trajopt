@@ -224,7 +224,7 @@ std::shared_ptr<ProblemConstructionInfo> cppMethod(const std::string& start, con
   pci->basic_info.n_steps = 50;
   pci->basic_info.manip = "manipulator";
   pci->basic_info.start_fixed = true;
-  pci.basic_info.use_time = false;
+  pci->basic_info.use_time = false;
 
   pci->opt_info.max_iter = 200;
   pci->opt_info.min_approx_improve = 1e-3;
