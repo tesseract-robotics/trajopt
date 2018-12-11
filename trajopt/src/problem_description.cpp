@@ -161,8 +161,6 @@ void ProblemConstructionInfo::readCosts(const Json::Value& v)
 
     if (!term)
       PRINT_AND_THROW(boost::format("failed to construct cost named %s") % type);
-    if (!(term->GetSupportedTypes() & TT_COST))
-      PRINT_AND_THROW(boost::format("%s is only a constraint, but you listed it as a cost") % type);
 
     if (boost::iequals(use_time_str, "true"))
     {
