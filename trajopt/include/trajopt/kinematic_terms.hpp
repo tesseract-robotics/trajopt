@@ -169,7 +169,8 @@ struct JointJerkJacCalculator : sco::MatrixOfVector
 struct TimeCostCalculator : sco::VectorOfVector
 {
   double limit_;
-  TimeCostCalculator(double limit) : limit_(limit) {}
+  TimeCostCalculator() : limit_(0.0) {}
+  TimeCostCalculator(double limit) : limit_(limit){}
   Eigen::VectorXd operator()(const Eigen::VectorXd& var_vals) const;
 };
 

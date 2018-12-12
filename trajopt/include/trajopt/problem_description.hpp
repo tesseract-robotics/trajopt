@@ -483,4 +483,21 @@ struct CollisionTermInfo : public TermInfo
   CollisionTermInfo() : TermInfo(TT_COST | TT_CNT) {}
 };
 
+/**
+ * @brief Applies a penalty to the total time taken by the trajectory
+ */
+struct TotalTimeTermInfo : public TermInfo
+{
+  /** @brief Scales this term. */
+  double coeff = 1.0;
+  /** @brief If non zero, penalty type will be a hinge on values greater than this limit relative to the target. */
+  double limit = 0.0;
+
+  void hatch(TrajOptProb& prob);
+  void fromJson(ProblemConstructionInfo &pci, const Json::Value &v);
+  DEFINE_CREATE(TotalTimeTermInfo)
+
+  TotalTimeTermInfo(): TermInfo(TT_COST | TT_CNT | TT_USE_TIME) {}
+};
+
 }  // namespace trajopt
