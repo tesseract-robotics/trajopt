@@ -374,6 +374,8 @@ TrajOptProbPtr ConstructProblem(const ProblemConstructionInfo& pci)
   // Check that all costs and constraints support the types that are specified in pci
   for (TermInfoPtr cost : pci.cost_infos)
   {
+    if (cost->term_type & TT_CNT)
+        ROS_WARN("%s is listed as a type TT_CNT but was added to cost_infos", (cost->name).c_str());
     if (!(cost->GetSupportedTypes() & TT_COST))
       PRINT_AND_THROW(boost::format("%s is only a constraint, but you listed it as a cost") % cost->name);
     if (cost->term_type & TT_USE_TIME)
@@ -385,6 +387,8 @@ TrajOptProbPtr ConstructProblem(const ProblemConstructionInfo& pci)
   }
   for (TermInfoPtr cnt : pci.cnt_infos)
   {
+    if (cnt->term_type & TT_COST)
+       ROS_WARN("%s is listed as a type TT_COST but was added to cnt_infos", (cnt->name).c_str());
     if (!(cnt->GetSupportedTypes() & TT_CNT))
       PRINT_AND_THROW(boost::format("%s is only a cost, but you listed it as a constraint") % cnt->name);
     if (cnt->term_type & TT_USE_TIME)
@@ -736,12 +740,6 @@ void JointPosTermInfo::fromJson(ProblemConstructionInfo& pci, const Json::Value&
 
 void JointPosTermInfo::hatch(TrajOptProb& prob)
 {
-  if ((term_type != TT_COST) && (term_type != TT_CNT))
-  {
-    ROS_WARN("JointPosTermInfo does not have a term_type defined. No cost/constraint applied");
-  }
-  unsigned int n_dof = prob.GetKin()->getJointNames().size();
-
   unsigned int n_dof = prob.GetKin()->numJoints();
 
   // If optional parameter not given, set to default
@@ -890,7 +888,7 @@ void JointVelTermInfo::hatch(TrajOptProb& prob)
 
   // Check if parameters are the correct size.
   checkParameterSize(coeffs, n_dof, "JointVelTermInfo coeffs", true);
-  checkParameterSize(targets, n_dof, "JointVelTermInfo upper_tols", true);
+  checkParameterSize(targets, n_dof, "JointVelTermInfo targets", true);
   checkParameterSize(upper_tols, n_dof, "JointVelTermInfo upper_tols", true);
   checkParameterSize(lower_tols, n_dof, "JointVelTermInfo lower_tols", true);
 
@@ -1017,7 +1015,7 @@ void JointAccTermInfo::hatch(TrajOptProb& prob)
 
   // Check if parameters are the correct size.
   checkParameterSize(coeffs, n_dof, "JointAccTermInfo coeffs", true);
-  checkParameterSize(targets, n_dof, "JointAccTermInfo upper_tols", true);
+  checkParameterSize(targets, n_dof, "JointAccTermInfo targets", true);
   checkParameterSize(upper_tols, n_dof, "JointAccTermInfo upper_tols", true);
   checkParameterSize(lower_tols, n_dof, "JointAccTermInfo lower_tols", true);
 
@@ -1145,7 +1143,7 @@ void JointJerkTermInfo::hatch(TrajOptProb& prob)
 
   // Check if parameters are the correct size.
   checkParameterSize(coeffs, n_dof, "JointJerkTermInfo coeffs", true);
-  checkParameterSize(targets, n_dof, "JointJerkTermInfo upper_tols", true);
+  checkParameterSize(targets, n_dof, "JointJerkTermInfo targets", true);
   checkParameterSize(upper_tols, n_dof, "JointJerkTermInfo upper_tols", true);
   checkParameterSize(lower_tols, n_dof, "JointJerkTermInfo lower_tols", true);
 
