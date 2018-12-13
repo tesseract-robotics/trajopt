@@ -66,7 +66,8 @@ public:
  *
  * Sets a cost targetting the position of all joints at 0.1 for all timesteps.
  * Sets a conflicting constraint on the position of all joints for the first timestep only.
- * Checks to make sure that the constraint is met if the first time step and the other time steps are close to the cost
+ * Checks to make sure that the constraint is met if the first time step and the other time steps are close to the
+ cost
  * target
  */
 TEST_F(CostsTest, equality_jointPos)
@@ -154,7 +155,8 @@ TEST_F(CostsTest, equality_jointPos)
 /**
  * @brief Tests inequality jointPos constraint
  *
- * Sets a cost targetting the position of all joints at -0.5 for the first half of the timesteps and +0.5 for the rest.
+ * Sets a cost targetting the position of all joints at -0.5 for the first half of the timesteps and +0.5 for the
+ rest.
  * Sets a conflicting constraint on the velocity of all joints limiting them to +/- 0.1.
  * Checks to make sure that the constraint is met
  */
@@ -261,12 +263,14 @@ TEST_F(CostsTest, inequality_jointPos)
   }
 }
 
+////////////////////////////////////////////////////////////////////
 /**
  * @brief Tests the equality jointVel cost/constraints.
  *
  * Sets a cost targetting the velocity of all joints at 0.1 for all timesteps.
  * Sets a conflicting constraint on the velocity of all joints for the first timestep only.
- * Checks to make sure that the constraint is met if the first time step and the other time steps are close to the cost
+ * Checks to make sure that the constraint is met if the first time step and the other time steps are close to the
+ cost
  * target
  */
 TEST_F(CostsTest, equality_jointVel)
@@ -355,7 +359,8 @@ TEST_F(CostsTest, equality_jointVel)
 /**
  * @brief Tests inequality jointVel constraint
  *
- * Sets a cost targetting the velocity of all joints at -0.5 for the first half of the timesteps and +0.5 for the rest.
+ * Sets a cost targetting the velocity of all joints at -0.5 for the first half of the timesteps and +0.5 for the
+ rest.
  * Sets a conflicting constraint on the velocity of all joints limiting them to +/- 0.1.
  * Checks to make sure that the constraint is met
  */
@@ -462,12 +467,227 @@ TEST_F(CostsTest, inequality_jointVel)
   }
 }
 
+////////////////////////////////////////////////////////////////////
+/**
+ * @brief Tests the equality jointVel cost/constraints with time parameterization.
+ *
+ * Sets a cost targetting the velocity of all joints at 0.1 for all timesteps.
+ * Sets a conflicting constraint on the velocity of all joints for the first timestep only.
+ * Checks to make sure that the constraint is met if the first time step and the other time steps are close to the cost
+ * target
+ */
+TEST_F(CostsTest, equality_jointVel_time)
+{
+  ROS_DEBUG("CostsTest, equality_jointVel_time");
+
+  const double cnt_targ = 0.0;
+  const double cost_targ = 0.1;
+  const int steps = 10;
+  const double cost_tol = 0.01;
+  const double cnt_tol = 0.0001;
+  const double dt_lower = 0.01234;
+  const double dt_upper = 1.5678;
+
+  ProblemConstructionInfo pci(env_);
+
+  // Populate Basic Info
+  pci.basic_info.n_steps = steps;
+  pci.basic_info.manip = "right_arm";
+  pci.basic_info.start_fixed = false;
+  pci.basic_info.use_time = true;
+  pci.basic_info.dt_lower_lim = dt_lower;
+  pci.basic_info.dt_upper_lim = dt_upper;
+
+  // Create Kinematic Object
+  pci.kin = pci.env->getManipulator(pci.basic_info.manip);
+
+  // Populate Init Info
+  pci.init_info.type = InitInfo::STATIONARY;
+
+  // Constraint that first step velocity should be zero
+  std::shared_ptr<JointVelTermInfo> jv = std::shared_ptr<JointVelTermInfo>(new JointVelTermInfo);
+  jv->coeffs = std::vector<double>(7, 1.0);
+  jv->targets = std::vector<double>(7.0, cnt_targ);
+  jv->upper_tols = std::vector<double>(7, 0.0);
+  jv->lower_tols = std::vector<double>(7, 0.0);
+  jv->first_step = 0;
+  jv->last_step = 0;
+  jv->name = "joint_vel_single";
+  jv->term_type = TT_CNT | TT_USE_TIME;
+  pci.cnt_infos.push_back(jv);
+
+  // All the rest of the joint velocities have a cost to some non zero value
+  std::shared_ptr<JointVelTermInfo> jv2 = std::shared_ptr<JointVelTermInfo>(new JointVelTermInfo);
+  jv2->coeffs = std::vector<double>(7, 1.0);
+  jv2->targets = std::vector<double>(7.0, cost_targ);
+  jv2->first_step = 0;
+  jv2->last_step = pci.basic_info.n_steps - 1;
+  jv2->name = "joint_vel_all";
+  jv2->term_type = TT_COST | TT_USE_TIME;
+  pci.cost_infos.push_back(jv2);
+
+  TrajOptProbPtr prob = ConstructProblem(pci);
+  ASSERT_TRUE(!!prob);
+
+  sco::BasicTrustRegionSQP opt(prob);
+  if (plotting)
+  {
+    opt.addCallback(PlotCallback(*prob, plotter_));
+  }
+
+  opt.initialize(trajToDblVec(prob->GetInitTraj()));
+  double tStart = GetClock();
+
+  sco::OptStatus status = opt.optimize();
+
+  TrajArray output = getTraj(opt.x(), prob->GetVars());
+  std::cout << "Trajectory: \n" << output << "\n";
+
+  // Check velocity constraint is satisfied
+  double velocity;
+  for (auto j = 0; j < output.cols() - 1; ++j)
+  {
+    velocity = (output(1, j) - output(0, j)) * output(0 + 1, output.cols() - 1);
+    EXPECT_NEAR(velocity, cnt_targ, cnt_tol);
+  }
+  // Check velocity cost is working
+  for (auto i = 1; i < output.rows() - 1; ++i)
+  {
+    // dt limit is obeyed
+    EXPECT_TRUE(output(i, output.cols() - 1) <= dt_upper);
+    EXPECT_TRUE(output(i, output.cols() - 1) >= dt_lower);
+    for (auto j = 0; j < output.cols() - 1; ++j)
+    {
+      velocity = (output(i + 1, j) - output(i, j)) * output(i + 1, output.cols() - 1);
+      EXPECT_NEAR(velocity, cost_targ, cost_tol);
+    }
+  }
+  ROS_DEBUG("planning time: %.3f", GetClock() - tStart);
+}
+
+////////////////////////////////////////////////////////////////////
+/**
+ * @brief Tests inequality jointVel constraint with time parameterization
+ *
+ * Sets a cost targetting the velocity of all joints at -0.5 for the first half of the timesteps and +0.5 for the
+ rest.
+ * Sets a conflicting constraint on the velocity of all joints limiting them to +/- 0.1.
+ * Checks to make sure that the constraint is met
+ */
+TEST_F(CostsTest, inequality_jointVel_time)
+{
+  ROS_DEBUG("CostsTest, inequality_cnt_jointVel_time");
+
+  const double lower_tol = -0.1;
+  const double upper_tol = 0.1;
+  const double cost_targ1 = 0.5;
+  const double cost_targ2 = -0.5;
+  const double dt_lower = 0.01234;
+  const double dt_upper = 3.5678;
+
+  const int steps = 10;
+  const double cnt_tol = 0.0001;
+
+  ProblemConstructionInfo pci(env_);
+
+  // Populate Basic Info
+  pci.basic_info.n_steps = steps;
+  pci.basic_info.manip = "right_arm";
+  pci.basic_info.start_fixed = false;
+  pci.basic_info.use_time = true;
+  pci.basic_info.dt_lower_lim = dt_lower;
+  pci.basic_info.dt_upper_lim = dt_upper;
+
+  // Create Kinematic Object
+  pci.kin = pci.env->getManipulator(pci.basic_info.manip);
+
+  // Populate Init Info
+  pci.init_info.type = InitInfo::STATIONARY;
+  pci.init_info.dt = dt_upper - dt_lower;
+
+  // Constraint that limits velocity
+  std::shared_ptr<JointVelTermInfo> jv = std::shared_ptr<JointVelTermInfo>(new JointVelTermInfo);
+  jv->coeffs = std::vector<double>(7, 1.0);
+  jv->targets = std::vector<double>(7.0, 0);
+  jv->lower_tols = std::vector<double>(7.0, lower_tol);
+  jv->upper_tols = std::vector<double>(7.0, upper_tol);
+  jv->first_step = 0;
+  jv->last_step = pci.basic_info.n_steps - 1;
+  jv->name = "joint_vel_limits";
+  jv->term_type = TT_CNT | TT_USE_TIME;
+  pci.cnt_infos.push_back(jv);
+
+  // Joint Velocities also have a cost to some non zero value
+  std::shared_ptr<JointVelTermInfo> jv2 = std::shared_ptr<JointVelTermInfo>(new JointVelTermInfo);
+  jv2->coeffs = std::vector<double>(7, 1.0);
+  jv2->targets = std::vector<double>(7.0, cost_targ1);
+  //  jv2->lower_tols = std::vector<double>(7.0, -0.01);
+  //  jv2->upper_tols = std::vector<double>(7.0, 0.0);
+  jv2->first_step = 0;
+  jv2->last_step = (pci.basic_info.n_steps - 1) / 2;
+  jv2->name = "joint_vel_targ_1";
+  jv2->term_type = TT_COST | TT_USE_TIME;
+  pci.cost_infos.push_back(jv2);
+
+  std::shared_ptr<JointVelTermInfo> jv3 = std::shared_ptr<JointVelTermInfo>(new JointVelTermInfo);
+  jv3->coeffs = std::vector<double>(7, 1.0);
+  jv3->targets = std::vector<double>(7.0, cost_targ2);
+  //  jv3->lower_tols = std::vector<double>(7.0, -0.01);
+  //  jv3->upper_tols = std::vector<double>(7.0, 0.01);
+  jv3->first_step = (pci.basic_info.n_steps - 1) / 2 + 1;
+  jv3->last_step = pci.basic_info.n_steps - 1;
+  jv3->name = "joint_vel_targ_2";
+  jv3->term_type = TT_COST | TT_USE_TIME;
+  pci.cost_infos.push_back(jv3);
+
+  TrajOptProbPtr prob = ConstructProblem(pci);
+  ASSERT_TRUE(!!prob);
+
+  sco::BasicTrustRegionSQP opt(prob);
+  if (plotting)
+  {
+    opt.addCallback(PlotCallback(*prob, plotter_));
+  }
+
+  opt.initialize(trajToDblVec(prob->GetInitTraj()));
+  double tStart = GetClock();
+
+  sco::OptStatus status = opt.optimize();
+  ROS_DEBUG("planning time: %.3f", GetClock() - tStart);
+
+  TrajArray output = getTraj(opt.x(), prob->GetVars());
+  std::cout << "Trajectory: \n" << output << "\n";
+
+  // Check velocity cost is working
+  double velocity;
+  for (auto i = 0; i < (output.rows()) / 2; ++i)
+  {
+    for (auto j = 0; j < output.cols() - 1; ++j)
+    {
+      velocity = (output(i + 1, j) - output(i, j)) * output(i + 1, output.cols() - 1);
+      EXPECT_TRUE(velocity < (upper_tol + cnt_tol));
+      EXPECT_TRUE(velocity > (lower_tol - cnt_tol));
+    }
+  }
+  for (auto i = (output.rows()) / 2 + 1; i < output.rows() - 1; ++i)
+  {
+    for (auto j = 0; j < output.cols() - 1; ++j)
+    {
+      velocity = (output(i + 1, j) - output(i, j)) * output(i + 1, output.cols() - 1);
+      EXPECT_TRUE(velocity < (upper_tol + cnt_tol));
+      EXPECT_TRUE(velocity > (lower_tol - cnt_tol));
+    }
+  }
+}
+
+////////////////////////////////////////////////////////////////////
 /**
  * @brief Tests the equality jointAcc cost/constraints.
  *
  * Sets a cost targetting the acceleration of all joints at 0.1 for all timesteps.
  * Sets a conflicting constraint on the velocity of all joints for the first timestep only.
- * Checks to make sure that the constraint is met if the first time step and the other time steps are close to the cost
+ * Checks to make sure that the constraint is met if the first time step and the other time steps are close to the
+ cost
  * target
  */
 TEST_F(CostsTest, equality_jointAcc)
@@ -558,7 +778,8 @@ TEST_F(CostsTest, equality_jointAcc)
  * @brief Tests inequality jointAcc constraint
  *
  * Sets a cost targetting the acceleration of all joints at -0.5 for the first half of the timesteps and +0.5 for the
- * rest. Sets a conflicting constraint on the velocity of all joints limiting them to +/- 0.1. Checks to make sure that
+ * rest. Sets a conflicting constraint on the velocity of all joints limiting them to +/- 0.1. Checks to make sure
+ that
  * the constraint is met
  */
 TEST_F(CostsTest, inequality_jointAcc)
@@ -663,6 +884,8 @@ TEST_F(CostsTest, inequality_jointAcc)
     }
   }
 }
+
+////////////////////////////////////////////////////////////////////
 
 int main(int argc, char** argv)
 {
