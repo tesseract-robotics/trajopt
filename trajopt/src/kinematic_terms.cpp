@@ -199,6 +199,7 @@ MatrixXd JointVelJacCalculator::operator()(const VectorXd& var_vals) const
   for (int i = 0; i < num_vels; i++)
   {
     // v = (j_i+1 - j_i)*(1/dt)
+    // We calculate v with the dt from the second pt
     int time_index = i + half + 1;
     // dv_i/dj_i = -(1/dt)
     jac(i, i) = -1.0 * var_vals(time_index);
@@ -211,6 +212,7 @@ MatrixXd JointVelJacCalculator::operator()(const VectorXd& var_vals) const
 
   // bottom half is negative velocities
   jac.bottomRows(num_vels) = -jac.topRows(num_vels);
+
 
   return jac;
 }
