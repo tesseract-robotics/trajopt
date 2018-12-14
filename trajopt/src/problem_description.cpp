@@ -1,4 +1,4 @@
-#include <trajopt_utils/macros.h>
+﻿#include <trajopt_utils/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <boost/algorithm/string.hpp>
 #include <ros/ros.h>
@@ -191,8 +191,6 @@ void ProblemConstructionInfo::readConstraints(const Json::Value& v)
 
     if (!term)
       PRINT_AND_THROW(boost::format("failed to construct constraint named %s") % type);
-    if (!(term->GetSupportedTypes() & TT_CNT))
-      PRINT_AND_THROW(boost::format("%s is only a cost, but you listed it as a constraint") % type);
 
     if (boost::iequals(use_time_str, "true"))
     {
@@ -911,18 +909,14 @@ void JointVelTermInfo::hatch(TrajOptProb& prob)
 
   if (term_type == (TT_COST | TT_USE_TIME))
   {
-    sco::VarVector joint_vars_vec(static_cast<std::size_t>(last_step - first_step + 1));
-    sco::VarVector time_vars_vec(static_cast<std::size_t>(last_step - first_step + 1));
     unsigned num_vels = last_step - first_step;
 
     // Apply seperate cost to each joint b/c that is how the error function is currently written
     for (size_t j = 0; j < n_dof; j++)
     {
-      for (size_t i = first_step; i < last_step + 1; i++)
-      {
-        joint_vars_vec[i - first_step] = prob.GetVar(i, j);
-        time_vars_vec[i - first_step] = prob.GetVar(i, prob.GetNumDOF() - 1);
-      }
+      // Get a vector of a single column of vars
+      sco::VarVector joint_vars_vec = joint_vars.cblock(first_step, j, last_step - first_step + 1);
+      sco::VarVector time_vars_vec = vars.cblock(first_step, vars.cols() - 1, last_step - first_step + 1);
 
       // If the tolerances are 0, an equality cost is set
       if (is_upper_zeros && is_lower_zeros)
@@ -952,18 +946,14 @@ void JointVelTermInfo::hatch(TrajOptProb& prob)
   }
   else if (term_type == (TT_CNT | TT_USE_TIME))
   {
-    sco::VarVector joint_vars_vec(static_cast<std::size_t>(last_step - first_step + 1));
-    sco::VarVector time_vars_vec(static_cast<std::size_t>(last_step - first_step + 1));
     unsigned num_vels = last_step - first_step;
 
     // Apply seperate cnt to each joint b/c that is how the error function is currently written
     for (size_t j = 0; j < n_dof; j++)
     {
-      for (size_t i = first_step; i < last_step + 1; i++)
-      {
-        joint_vars_vec[i - first_step] = prob.GetVar(i, j);
-        time_vars_vec[i - first_step] = prob.GetVar(i, prob.GetNumDOF() - 1);
-      }
+      // Get a vector of a single column of vars
+      sco::VarVector joint_vars_vec = joint_vars.cblock(first_step, j, last_step - first_step + 1);
+      sco::VarVector time_vars_vec = vars.cblock(first_step, vars.cols() - 1, last_step - first_step + 1);
 
       // If the tolerances are 0, an equality cnt is set
       if (is_upper_zeros && is_lower_zeros)

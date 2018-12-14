@@ -49,6 +49,15 @@ struct BasicArray
     }
     return out;
   }
+  std::vector<T> cblock(int startRow, int startCol, int nRow) const
+  {
+    std::vector<T> out(nRow);
+    for (int iRow = 0; iRow < nRow; ++iRow)
+    {
+      out[iRow] = at(iRow + startRow, startCol);
+    }
+    return out;
+  }
   BasicArray middleRows(int start, int n)
   {
     BasicArray out;
