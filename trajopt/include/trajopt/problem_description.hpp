@@ -51,18 +51,14 @@ public:
   TrajOptProb();
   TrajOptProb(int n_steps, const ProblemConstructionInfo& pci);
   virtual ~TrajOptProb() = default;
-  sco::VarVector GetJointVarRow(int i)
-  {
-    sco::VarVector var_row = GetVarRow(i);
-    // Remove time column
-    if (has_time)
-      var_row.pop_back();
-    return var_row;
-  }
+  sco::VarVector GetVarRow(int i, int start_col, int num_col){ return m_traj_vars.rblock(i, start_col, num_col);}
   sco::VarVector GetVarRow(int i) { return m_traj_vars.row(i); }
   sco::Var& GetVar(int i, int j) { return m_traj_vars.at(i, j); }
   VarArray& GetVars() { return m_traj_vars; }
+  /** @brief Returns the number of steps in the problem. This is the number of rows in the optimization matrix.*/
   int GetNumSteps() { return m_traj_vars.rows(); }
+  /** @brief Returns the problem DOF. This is the number of columns in the optization matrix.
+   * Note that this is not necessarily the same as the kinematic DOF.*/
   int GetNumDOF() { return m_traj_vars.cols(); }
   tesseract::BasicKinConstPtr GetKin() { return m_kin; }
   tesseract::BasicEnvConstPtr GetEnv() { return m_env; }
@@ -157,7 +153,7 @@ struct TRAJOPT_API TermInfo
 {
   std::string name;
   int term_type;
-  int GetSupportedTypes() { return supported_term_type_; }
+  int getSupportedTypes() { return supported_term_types_; }
 
   virtual void fromJson(ProblemConstructionInfo& pci, const Json::Value& v) = 0;
   virtual void hatch(TrajOptProb& prob) = 0;
@@ -174,11 +170,11 @@ struct TRAJOPT_API TermInfo
   virtual ~TermInfo() = default;
 
 protected:
-  TermInfo(int supported_term_type) : supported_term_type_(supported_term_type) {}
+  TermInfo(int supported_term_types) : supported_term_types_(supported_term_types) {}
 
 private:
   static std::map<std::string, MakerFunc> name2maker;
-  int supported_term_type_;
+  int supported_term_types_;
 };
 
 /**
