@@ -376,12 +376,12 @@ TrajOptProbPtr ConstructProblem(const ProblemConstructionInfo& pci)
   {
     if (cost->term_type & TT_CNT)
         ROS_WARN("%s is listed as a type TT_CNT but was added to cost_infos", (cost->name).c_str());
-    if (!(cost->GetSupportedTypes() & TT_COST))
+    if (!(cost->getSupportedTypes() & TT_COST))
       PRINT_AND_THROW(boost::format("%s is only a constraint, but you listed it as a cost") % cost->name);
     if (cost->term_type & TT_USE_TIME)
     {
       use_time = true;
-      if (!(cost->GetSupportedTypes() & TT_USE_TIME))
+      if (!(cost->getSupportedTypes() & TT_USE_TIME))
         PRINT_AND_THROW(boost::format("%s does not support time, but you listed it as a using time") % cost->name);
     }
   }
@@ -389,12 +389,12 @@ TrajOptProbPtr ConstructProblem(const ProblemConstructionInfo& pci)
   {
     if (cnt->term_type & TT_COST)
        ROS_WARN("%s is listed as a type TT_COST but was added to cnt_infos", (cnt->name).c_str());
-    if (!(cnt->GetSupportedTypes() & TT_CNT))
+    if (!(cnt->getSupportedTypes() & TT_CNT))
       PRINT_AND_THROW(boost::format("%s is only a cost, but you listed it as a constraint") % cnt->name);
     if (cnt->term_type & TT_USE_TIME)
     {
       use_time = true;
-      if (!(cnt->GetSupportedTypes() & TT_USE_TIME))
+      if (!(cnt->getSupportedTypes() & TT_USE_TIME))
         PRINT_AND_THROW(boost::format("%s does not support time, but you listed it as a using time") % cnt->name);
     }
   }
@@ -560,6 +560,8 @@ void DynamicCartPoseTermInfo::fromJson(ProblemConstructionInfo& pci, const Json:
 
 void DynamicCartPoseTermInfo::hatch(TrajOptProb& prob)
 {
+    unsigned int n_dof = prob.GetKin()->numJoints();
+
   if (term_type & TT_USE_TIME)
   {
     ROS_ERROR("Use time version of this term has not been defined.");
@@ -571,12 +573,12 @@ void DynamicCartPoseTermInfo::hatch(TrajOptProb& prob)
     if (term_type & TT_COST)
     {
       prob.addCost(sco::CostPtr(new TrajOptCostFromErrFunc(
-          f, prob.GetJointVarRow(timestep), concat(rot_coeffs, pos_coeffs), sco::ABS, name)));
+          f, prob.GetVarRow(timestep, 0, n_dof), concat(rot_coeffs, pos_coeffs), sco::ABS, name)));
     }
     else if (term_type & TT_CNT)
     {
       prob.addConstraint(sco::ConstraintPtr(new TrajOptConstraintFromErrFunc(
-          f, prob.GetJointVarRow(timestep), concat(rot_coeffs, pos_coeffs), sco::EQ, name)));
+          f, prob.GetVarRow(timestep, 0, n_dof), concat(rot_coeffs, pos_coeffs), sco::EQ, name)));
     }
     else
     {
@@ -624,6 +626,8 @@ void CartPoseTermInfo::fromJson(ProblemConstructionInfo& pci, const Json::Value&
 
 void CartPoseTermInfo::hatch(TrajOptProb& prob)
 {
+    unsigned int n_dof = prob.GetKin()->numJoints();
+
   Eigen::Isometry3d input_pose;
   Eigen::Quaterniond q(wxyz(0), wxyz(1), wxyz(2), wxyz(3));
   input_pose.linear() = q.matrix();
@@ -641,13 +645,13 @@ void CartPoseTermInfo::hatch(TrajOptProb& prob)
   {
     sco::VectorOfVectorPtr f(new CartPoseErrCalculator(input_pose, prob.GetKin(), prob.GetEnv(), link, tcp));
     prob.addCost(sco::CostPtr(
-        new TrajOptCostFromErrFunc(f, prob.GetVarRow(timestep), concat(rot_coeffs, pos_coeffs), sco::ABS, name)));
+        new TrajOptCostFromErrFunc(f, prob.GetVarRow(timestep, 0, n_dof), concat(rot_coeffs, pos_coeffs), sco::ABS, name)));
   }
   else if ((term_type & TT_CNT) && ~(term_type | ~TT_USE_TIME))
   {
     sco::VectorOfVectorPtr f(new CartPoseErrCalculator(input_pose, prob.GetKin(), prob.GetEnv(), link, tcp));
     prob.addConstraint(sco::ConstraintPtr(
-        new TrajOptConstraintFromErrFunc(f, prob.GetVarRow(timestep), concat(rot_coeffs, pos_coeffs), sco::EQ, name)));
+        new TrajOptConstraintFromErrFunc(f, prob.GetVarRow(timestep, 0, n_dof), concat(rot_coeffs, pos_coeffs), sco::EQ, name)));
   }
   else
   {
@@ -679,6 +683,8 @@ void CartVelTermInfo::fromJson(ProblemConstructionInfo& pci, const Json::Value& 
 
 void CartVelTermInfo::hatch(TrajOptProb& prob)
 {
+    unsigned int n_dof = prob.GetKin()->numJoints();
+
   if (term_type == (TT_COST | TT_USE_TIME))
   {
     ROS_ERROR("Use time version of this term has not been defined.");
@@ -694,7 +700,7 @@ void CartVelTermInfo::hatch(TrajOptProb& prob)
       prob.addCost(sco::CostPtr(new TrajOptCostFromErrFunc(
           sco::VectorOfVectorPtr(new CartVelErrCalculator(prob.GetKin(), prob.GetEnv(), link, max_displacement)),
           sco::MatrixOfVectorPtr(new CartVelJacCalculator(prob.GetKin(), prob.GetEnv(), link, max_displacement)),
-          concat(prob.GetVarRow(iStep), prob.GetVarRow(iStep + 1)),
+          concat(prob.GetVarRow(iStep, 0, n_dof), prob.GetVarRow(iStep + 1, 0, n_dof)),
           Eigen::VectorXd::Ones(0),
           sco::ABS,
           name)));
@@ -707,7 +713,7 @@ void CartVelTermInfo::hatch(TrajOptProb& prob)
       prob.addConstraint(sco::ConstraintPtr(new TrajOptConstraintFromErrFunc(
           sco::VectorOfVectorPtr(new CartVelErrCalculator(prob.GetKin(), prob.GetEnv(), link, max_displacement)),
           sco::MatrixOfVectorPtr(new CartVelJacCalculator(prob.GetKin(), prob.GetEnv(), link, max_displacement)),
-          concat(prob.GetVarRow(iStep), prob.GetVarRow(iStep + 1)),
+          concat(prob.GetVarRow(iStep, 0, n_dof), prob.GetVarRow(iStep + 1, 0, n_dof)),
           Eigen::VectorXd::Ones(0),
           sco::INEQ,
           "CartVel")));
@@ -780,17 +786,10 @@ void JointPosTermInfo::hatch(TrajOptProb& prob)
       std::all_of(lower_tols.begin(), lower_tols.end(), [](double i) { return util::doubleEquals(i, 0.); });
 
   // Get vars associated with joints
-  trajopt::VarArray joint_vars;
+  trajopt::VarArray vars = prob.GetVars();
+  trajopt::VarArray joint_vars = vars.block(0, 0, vars.rows(), n_dof);
   if (prob.GetHasTime())
-  {
-    ROS_INFO("JointPosTermInfo does not differ based on setting of TT_USE_TIME");
-    trajopt::VarArray vars = prob.GetVars();
-    joint_vars.m_data = vars.rblock(0, 0, vars.size());
-  }
-  else
-  {
-    joint_vars = prob.GetVars();
-  }
+        ROS_INFO("JointPosTermInfo does not differ based on setting of TT_USE_TIME");
 
   if (term_type & TT_COST)
   {
@@ -899,16 +898,8 @@ void JointVelTermInfo::hatch(TrajOptProb& prob)
       std::all_of(lower_tols.begin(), lower_tols.end(), [](double i) { return util::doubleEquals(i, 0.); });
 
   // Get vars associated with joints
-  trajopt::VarArray joint_vars;
-  if (prob.GetHasTime())
-  {
-    trajopt::VarArray vars = prob.GetVars();
-    joint_vars.m_data = vars.rblock(0, 0, vars.size());
-  }
-  else
-  {
-    joint_vars = prob.GetVars();
-  }
+  trajopt::VarArray vars = prob.GetVars();
+  trajopt::VarArray joint_vars = vars.block(0, 0, vars.rows(), n_dof);
 
   if (term_type == (TT_COST | TT_USE_TIME))
   {
@@ -1026,16 +1017,8 @@ void JointAccTermInfo::hatch(TrajOptProb& prob)
       std::all_of(lower_tols.begin(), lower_tols.end(), [](double i) { return util::doubleEquals(i, 0.); });
 
   // Get vars associated with joints
-  trajopt::VarArray joint_vars;
-  if (prob.GetHasTime())
-  {
-    trajopt::VarArray vars = prob.GetVars();
-    joint_vars.m_data = vars.rblock(0, 0, vars.size());
-  }
-  else
-  {
-    joint_vars = prob.GetVars();
-  }
+  trajopt::VarArray vars = prob.GetVars();
+  trajopt::VarArray joint_vars = vars.block(0, 0, vars.rows(), n_dof);
 
   if (term_type == (TT_COST | TT_USE_TIME))
   {
@@ -1154,16 +1137,8 @@ void JointJerkTermInfo::hatch(TrajOptProb& prob)
       std::all_of(lower_tols.begin(), lower_tols.end(), [](double i) { return util::doubleEquals(i, 0.); });
 
   // Get vars associated with joints
-  trajopt::VarArray joint_vars;
-  if (prob.GetHasTime())
-  {
-    trajopt::VarArray vars = prob.GetVars();
-    joint_vars.m_data = vars.rblock(0, 0, vars.size());
-  }
-  else
-  {
-    joint_vars = prob.GetVars();
-  }
+  trajopt::VarArray vars = prob.GetVars();
+  trajopt::VarArray joint_vars = vars.block(0, 0, vars.rows(), n_dof);
 
   if (term_type == (TT_COST | TT_USE_TIME))
   {
@@ -1320,6 +1295,7 @@ void CollisionTermInfo::fromJson(ProblemConstructionInfo& pci, const Json::Value
 
 void CollisionTermInfo::hatch(TrajOptProb& prob)
 {
+    unsigned int n_dof = prob.GetKin()->numJoints();
   if (term_type == TT_COST)
   {
     if (continuous)
@@ -1327,7 +1303,7 @@ void CollisionTermInfo::hatch(TrajOptProb& prob)
       for (int i = first_step; i <= last_step - gap; ++i)
       {
         prob.addCost(sco::CostPtr(new CollisionCost(
-            prob.GetKin(), prob.GetEnv(), info[static_cast<size_t>(i - first_step)], prob.GetVarRow(i), prob.GetVarRow(i + gap))));
+            prob.GetKin(), prob.GetEnv(), info[static_cast<size_t>(i - first_step)], prob.GetVarRow(i, 0, n_dof), prob.GetVarRow(i + gap, 0, n_dof))));
         prob.getCosts().back()->setName((boost::format("%s_%i") % name.c_str() % i).str());
       }
     }
@@ -1336,7 +1312,7 @@ void CollisionTermInfo::hatch(TrajOptProb& prob)
       for (int i = first_step; i <= last_step; ++i)
       {
         prob.addCost(
-            sco::CostPtr(new CollisionCost(prob.GetKin(), prob.GetEnv(), info[static_cast<size_t>(i - first_step)], prob.GetVarRow(i))));
+            sco::CostPtr(new CollisionCost(prob.GetKin(), prob.GetEnv(), info[static_cast<size_t>(i - first_step)], prob.GetVarRow(i, 0, n_dof))));
         prob.getCosts().back()->setName((boost::format("%s_%i") % name.c_str() % i).str());
       }
     }
@@ -1348,7 +1324,7 @@ void CollisionTermInfo::hatch(TrajOptProb& prob)
       for (int i = first_step; i < last_step; ++i)
       {
         prob.addIneqConstraint(sco::ConstraintPtr(new CollisionConstraint(
-            prob.GetKin(), prob.GetEnv(), info[static_cast<size_t>(i - first_step)], prob.GetVarRow(i), prob.GetVarRow(i + 1))));
+            prob.GetKin(), prob.GetEnv(), info[static_cast<size_t>(i - first_step)], prob.GetVarRow(i, 0, n_dof), prob.GetVarRow(i + 1, 0, n_dof))));
         prob.getIneqConstraints().back()->setName((boost::format("%s_%i") % name.c_str() % i).str());
       }
     }
@@ -1357,7 +1333,7 @@ void CollisionTermInfo::hatch(TrajOptProb& prob)
       for (int i = first_step; i <= last_step; ++i)
       {
         prob.addIneqConstraint(sco::ConstraintPtr(
-            new CollisionConstraint(prob.GetKin(), prob.GetEnv(), info[static_cast<size_t>(i - first_step)], prob.GetVarRow(i))));
+            new CollisionConstraint(prob.GetKin(), prob.GetEnv(), info[static_cast<size_t>(i - first_step)], prob.GetVarRow(i, 0, n_dof))));
         prob.getIneqConstraints().back()->setName((boost::format("%s_%i") % name.c_str() % i).str());
       }
     }
