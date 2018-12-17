@@ -54,7 +54,7 @@ static tesseract_ros::KDLEnvPtr env_;             /**< Trajopt Basic Environment
 static VectorIsometry3d makePuzzleToolPoses()
 {
   VectorIsometry3d path;  // results
-  std::ifstream indata;            // input file
+  std::ifstream indata;   // input file
 
   // You could load your parts from anywhere, but we are transporting them with
   // the git repo
@@ -170,7 +170,8 @@ ProblemConstructionInfo cppMethod()
   // Populate Constraints
   for (auto i = 0; i < pci.basic_info.n_steps; ++i)
   {
-    std::shared_ptr<DynamicCartPoseTermInfo> pose = std::shared_ptr<DynamicCartPoseTermInfo>(new DynamicCartPoseTermInfo);
+    std::shared_ptr<DynamicCartPoseTermInfo> pose =
+        std::shared_ptr<DynamicCartPoseTermInfo>(new DynamicCartPoseTermInfo);
     pose->term_type = TT_CNT;
     pose->name = "waypoint_cart_" + std::to_string(i);
     pose->target = "grinder_frame";

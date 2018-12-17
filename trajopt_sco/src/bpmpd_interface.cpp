@@ -316,7 +316,7 @@ void BPMPDModel::update()
   }
 }
 
-void BPMPDModel::setVarBounds(const VarVector &vars, const DblVec &lower, const DblVec &upper)
+void BPMPDModel::setVarBounds(const VarVector& vars, const DblVec& lower, const DblVec& upper)
 {
   for (unsigned i = 0; i < vars.size(); ++i)
   {
@@ -475,7 +475,21 @@ CvxOptStatus BPMPDModel::optimize()
 
 #else
 
-  bpmpd_io::bpmpd_input bi(static_cast<int>(m), static_cast<int>(n), nz, qn, qnz, acolcnt, acolidx, acolnzs, qcolcnt, qcolidx, qcolnzs, rhs, obj, lbound, ubound);
+  bpmpd_io::bpmpd_input bi(static_cast<int>(m),
+                           static_cast<int>(n),
+                           nz,
+                           qn,
+                           qnz,
+                           acolcnt,
+                           acolidx,
+                           acolnzs,
+                           qcolcnt,
+                           qcolidx,
+                           qcolnzs,
+                           rhs,
+                           obj,
+                           lbound,
+                           ubound);
   bpmpd_io::ser(gPipeIn, bi, bpmpd_io::SER);
 
   // std::cout << "serialization time:" << end-start << std::endl;

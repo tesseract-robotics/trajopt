@@ -16,7 +16,6 @@ TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace sco
 {
-
 std::ostream& operator<<(std::ostream& o, const OptResults& r)
 {
   o << "Optimization results:" << std::endl
@@ -59,7 +58,9 @@ static std::vector<ConvexObjectivePtr> convexifyCosts(const std::vector<CostPtr>
   }
   return out;
 }
-static std::vector<ConvexConstraintsPtr> convexifyConstraints(const std::vector<ConstraintPtr>& cnts, const DblVec& x, Model* model)
+static std::vector<ConvexConstraintsPtr> convexifyConstraints(const std::vector<ConstraintPtr>& cnts,
+                                                              const DblVec& x,
+                                                              Model* model)
 {
   std::vector<ConvexConstraintsPtr> out(cnts.size());
   for (size_t i = 0; i < cnts.size(); ++i)
@@ -136,7 +137,13 @@ void printCostInfo(const DblVec& old_cost_vals,
   }
   if (cnt_names.size() == 0)
     return;
-  std::printf("%15s | %10s---%10s---%10s---%10s\n", "CONSTRAINTS", "----------", "----------", "----------", "----------");
+  std::printf("%15s | %10s---%10s---%10s---%10s\n",
+              "CONSTRAINTS",
+              "----------",
+              "----------",
+              "----------",
+              "---------"
+              "-");
   for (size_t i = 0; i < old_cnt_vals.size(); ++i)
   {
     double approx_improve = old_cnt_vals[i] - model_cnt_vals[i];
@@ -159,7 +166,9 @@ void printCostInfo(const DblVec& old_cost_vals,
 }
 
 // todo: use different coeffs for each constraint
-std::vector<ConvexObjectivePtr> cntsToCosts(const std::vector<ConvexConstraintsPtr>& cnts, double err_coeff, Model* model)
+std::vector<ConvexObjectivePtr> cntsToCosts(const std::vector<ConvexConstraintsPtr>& cnts,
+                                            double err_coeff,
+                                            Model* model)
 {
   std::vector<ConvexObjectivePtr> out;
   for (const ConvexConstraintsPtr& cnt : cnts)
@@ -187,7 +196,7 @@ void Optimizer::callCallbacks()
   }
 }
 
-void Optimizer::initialize(const DblVec &x)
+void Optimizer::initialize(const DblVec& x)
 {
   if (!prob_)
     PRINT_AND_THROW("need to set the problem before initializing");

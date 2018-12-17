@@ -13,7 +13,6 @@ TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace trajopt
 {
-
 /**
  * @brief Used to calculate the error for CartPoseTermInfo
  * This is converted to a cost or constraint using TrajOptCostFromErrFunc or TrajOptConstraintFromErrFunc
@@ -27,10 +26,10 @@ struct DynamicCartPoseErrCalculator : public TrajOptVectorOfVector
   std::string link_;
   Eigen::Isometry3d tcp_;
   DynamicCartPoseErrCalculator(const std::string& target,
-                        tesseract::BasicKinConstPtr manip,
-                        tesseract::BasicEnvConstPtr env,
-                        std::string link,
-                        Eigen::Isometry3d tcp = Eigen::Isometry3d::Identity())
+                               tesseract::BasicKinConstPtr manip,
+                               tesseract::BasicEnvConstPtr env,
+                               std::string link,
+                               Eigen::Isometry3d tcp = Eigen::Isometry3d::Identity())
     : target_(target), manip_(manip), env_(env), link_(link), tcp_(tcp)
   {
   }
@@ -53,10 +52,10 @@ struct CartPoseErrCalculator : public TrajOptVectorOfVector
   std::string link_;
   Eigen::Isometry3d tcp_;
   CartPoseErrCalculator(const Eigen::Isometry3d& pose,
-                              tesseract::BasicKinConstPtr manip,
-                              tesseract::BasicEnvConstPtr env,
-                              std::string link,
-                              Eigen::Isometry3d tcp = Eigen::Isometry3d::Identity())
+                        tesseract::BasicKinConstPtr manip,
+                        tesseract::BasicEnvConstPtr env,
+                        std::string link,
+                        Eigen::Isometry3d tcp = Eigen::Isometry3d::Identity())
     : pose_inv_(pose.inverse()), manip_(manip), env_(env), link_(link), tcp_(tcp)
   {
   }
@@ -103,10 +102,10 @@ struct CartVelErrCalculator : sco::VectorOfVector
   double limit_;
   Eigen::Isometry3d tcp_;
   CartVelErrCalculator(tesseract::BasicKinConstPtr manip,
-                    tesseract::BasicEnvConstPtr env,
-                    std::string link,
-                    double limit,
-                    Eigen::Isometry3d tcp = Eigen::Isometry3d::Identity())
+                       tesseract::BasicEnvConstPtr env,
+                       std::string link,
+                       double limit,
+                       Eigen::Isometry3d tcp = Eigen::Isometry3d::Identity())
     : manip_(manip), env_(env), link_(link), limit_(limit), tcp_(tcp)
   {
   }

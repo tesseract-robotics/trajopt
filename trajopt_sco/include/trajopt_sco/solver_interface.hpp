@@ -156,12 +156,13 @@ std::ostream& operator<<(std::ostream&, const QuadExpr&);
 class ModelType
 {
 public:
-  enum Value {
-  GUROBI,
-  BPMPD,
-  OSQP,
-  QPOASES,
-  AUTO_SOLVER
+  enum Value
+  {
+    GUROBI,
+    BPMPD,
+    OSQP,
+    QPOASES,
+    AUTO_SOLVER
   };
 
   static const std::vector<std::string> MODEL_NAMES_;
@@ -176,8 +177,8 @@ public:
   bool operator!=(const ModelType& a) const;
   void fromJson(const Json::Value& v);
   friend std::ostream& operator<<(std::ostream& os, const ModelType& cs);
-private:
 
+private:
   Value value_;
 };
 

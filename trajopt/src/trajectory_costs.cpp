@@ -202,7 +202,7 @@ JointPosIneqConstraint::JointPosIneqConstraint(const VarArray& vars,
       sco::exprInc(expr, upper_tols_[j]);  // expr_ = upper_tol
 
       // Form upper limit expr = - (upper_tol-(vel-targ))
-      sco::exprDec(expr, pos);          // expr = upper_tol_- (vel - targets_)
+      sco::exprDec(expr, pos);           // expr = upper_tol_- (vel - targets_)
       sco::exprScale(expr, -coeffs[j]);  // expr = - (upper_tol_- (vel - targets_)) * coeffs_
       expr_vec_.push_back(expr);
 

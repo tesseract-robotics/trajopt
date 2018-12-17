@@ -17,21 +17,22 @@ extern void simplify2(IntVec& inds, DblVec& vals);
 
 using namespace sco;
 
-class SolverInterface : public testing::TestWithParam<ModelType> {
- protected:
+class SolverInterface : public testing::TestWithParam<ModelType>
+{
+protected:
   SolverInterface() {}
 };
 
 TEST(SolverInterface, simplify2)
 {
-    IntVec indices = {0, 1, 3};
-    DblVec values = {1e-7, 1e3, 0., 0., 0.};
-    simplify2(indices, values);
-    
-    EXPECT_EQ(indices.size(), 2);
-    EXPECT_EQ(values.size(), 2);
-    EXPECT_TRUE((indices == IntVec{0, 1}));
-    EXPECT_TRUE((values == DblVec{1e-7, 1e3}));
+  IntVec indices = { 0, 1, 3 };
+  DblVec values = { 1e-7, 1e3, 0., 0., 0. };
+  simplify2(indices, values);
+
+  EXPECT_EQ(indices.size(), 2);
+  EXPECT_EQ(values.size(), 2);
+  EXPECT_TRUE((indices == IntVec{ 0, 1 }));
+  EXPECT_TRUE((values == DblVec{ 1e-7, 1e3 }));
 }
 
 TEST_P(SolverInterface, setup_problem)
@@ -77,7 +78,7 @@ TEST_P(SolverInterface, setup_problem)
 }
 
 // Tests multiplying larger terms
-TEST_P(SolverInterface, DISABLED_ExprMult_test1) // QuadExpr not PSD
+TEST_P(SolverInterface, DISABLED_ExprMult_test1)  // QuadExpr not PSD
 {
   ModelPtr solver = createModel(GetParam());
   VarVector vars;
@@ -240,5 +241,4 @@ TEST_P(SolverInterface, ExprMult_test3)
   EXPECT_NEAR(aff12.value(soln), answer, 1e-6);
 }
 
-INSTANTIATE_TEST_CASE_P(AllSolvers, SolverInterface,
-                        testing::ValuesIn(availableSolvers()));
+INSTANTIATE_TEST_CASE_P(AllSolvers, SolverInterface, testing::ValuesIn(availableSolvers()));

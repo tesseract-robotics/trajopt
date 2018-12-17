@@ -196,15 +196,15 @@ int main(int argc, char** argv)
     for (size_t v = 0; v < nPoints; v++)
     {
       vertices[3 * v] = static_cast<float>(pointsCH[v].X());
-      vertices[3 * v + 1] =  static_cast<float>(pointsCH[v].Y());
-      vertices[3 * v + 2] =  static_cast<float>(pointsCH[v].Z());
+      vertices[3 * v + 1] = static_cast<float>(pointsCH[v].Y());
+      vertices[3 * v + 2] = static_cast<float>(pointsCH[v].Z());
     }
     // triangles
     for (size_t f = 0; f < nTriangles; f++)
     {
-      triangles[3 * f] =  static_cast<unsigned int>(trianglesCH[f].X());
-      triangles[3 * f + 1] =  static_cast<unsigned int>(trianglesCH[f].Y());
-      triangles[3 * f + 2] =  static_cast<unsigned int>(trianglesCH[f].Z());
+      triangles[3 * f] = static_cast<unsigned int>(trianglesCH[f].X());
+      triangles[3 * f + 1] = static_cast<unsigned int>(trianglesCH[f].Y());
+      triangles[3 * f + 2] = static_cast<unsigned int>(trianglesCH[f].Z());
     }
 
     delete[] pointsCH;

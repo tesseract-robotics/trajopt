@@ -37,8 +37,7 @@ TEST(solver_utils, exprToEigen)
   x_affine.constant = 1;
 
   std::cout << "x_affine=  " << x_affine << std::endl;
-  std::cout << "expecting A = [3, 2];" << std::endl
-            << "          u = [1]" << std::endl;
+  std::cout << "expecting A = [3, 2];" << std::endl << "          u = [1]" << std::endl;
   Eigen::MatrixXd m_A_expected(1, n_vars);
   m_A_expected << 3, 2;
   Eigen::VectorXd v_u_expected(1);

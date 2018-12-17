@@ -54,7 +54,7 @@ static tesseract_ros::KDLEnvPtr env_;             /**< Trajopt Basic Environment
 static VectorIsometry3d makePuzzleToolPoses()
 {
   VectorIsometry3d path;  // results
-  std::ifstream indata;            // input file
+  std::ifstream indata;   // input file
 
   // You could load your parts from anywhere, but we are transporting them with
   // the git repo

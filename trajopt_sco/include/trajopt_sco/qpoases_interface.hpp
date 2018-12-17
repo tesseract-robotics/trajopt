@@ -53,26 +53,26 @@ class qpOASESModel : public Model
    */
   void createSolver();
 
-  VarVector vars_;  /**< model variables */
-  CntVector cnts_;  /**< model's constraints sizes */
-  DblVec lb_, ub_;  /**< variables bounds */
-  AffExprVector cnt_exprs_; /**< constraints expressions */
+  VarVector vars_;                 /**< model variables */
+  CntVector cnts_;                 /**< model's constraints sizes */
+  DblVec lb_, ub_;                 /**< variables bounds */
+  AffExprVector cnt_exprs_;        /**< constraints expressions */
   ConstraintTypeVector cnt_types_; /**< constraints types */
-  DblVec solution_;  /**< optimizizer's solution for current model */
+  DblVec solution_;                /**< optimizizer's solution for current model */
 
-  IntVec H_row_indices_;      /**< row indices for Hessian, CSC format */
-  IntVec H_column_pointers_;  /**< column pointers for Hessian, CSC format */
-  DblVec H_csc_data_;         /**< Hessian values in CSC format */
-  Eigen::VectorXd g_;  /**< gradient of the optimization problem */
+  IntVec H_row_indices_;     /**< row indices for Hessian, CSC format */
+  IntVec H_column_pointers_; /**< column pointers for Hessian, CSC format */
+  DblVec H_csc_data_;        /**< Hessian values in CSC format */
+  Eigen::VectorXd g_;        /**< gradient of the optimization problem */
 
-  IntVec A_row_indices_;      /**< row indices for constraint matrix, CSC format */
-  IntVec A_column_pointers_;  /**< column pointers for constraint matrix, CSC format */
-  DblVec A_csc_data_;         /**< constraint matrix values in CSC format */
-  DblVec lbA_, ubA_;  /**< linear constraints upper and lower limits */
+  IntVec A_row_indices_;     /**< row indices for constraint matrix, CSC format */
+  IntVec A_column_pointers_; /**< column pointers for constraint matrix, CSC format */
+  DblVec A_csc_data_;        /**< constraint matrix values in CSC format */
+  DblVec lbA_, ubA_;         /**< linear constraints upper and lower limits */
 
-  QuadExpr objective_;  /**< objective QuadExpr expression */
+  QuadExpr objective_; /**< objective QuadExpr expression */
 
-  public:
+public:
   qpOASESModel();
   virtual ~qpOASESModel();
 

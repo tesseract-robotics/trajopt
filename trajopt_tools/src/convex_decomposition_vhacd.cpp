@@ -56,8 +56,8 @@ public:
               const char* const operation) override
   {
     cout << setfill(' ') << setw(3) << static_cast<int>(overallProgress + 0.5) << "% "
-         << "[ " << stage << " " << setfill(' ') << setw(3) << static_cast<int>(stageProgress + 0.5) << "% ] " << operation << " "
-         << setfill(' ') << setw(3) << static_cast<int>(operationProgress + 0.5) << "%" << endl;
+         << "[ " << stage << " " << setfill(' ') << setw(3) << static_cast<int>(stageProgress + 0.5) << "% ] "
+         << operation << " " << setfill(' ') << setw(3) << static_cast<int>(operationProgress + 0.5) << "%" << endl;
   }
 };
 
@@ -495,7 +495,8 @@ protected:
     }
   }
 
-  bool loadOFF(const string& fileName, vector<float>& points, vector<unsigned int>& triangles, IVHACD::IUserLogger& logger)
+  bool
+  loadOFF(const string& fileName, vector<float>& points, vector<unsigned int>& triangles, IVHACD::IUserLogger& logger)
   {
     FILE* fid = fopen(fileName.c_str(), "r");
     if (fid)
@@ -551,7 +552,8 @@ protected:
     return true;
   }
 
-  bool loadOBJ(const string& fileName, vector<float>& points, vector<unsigned int>& triangles, IVHACD::IUserLogger& logger)
+  bool
+  loadOBJ(const string& fileName, vector<float>& points, vector<unsigned int>& triangles, IVHACD::IUserLogger& logger)
   {
     const unsigned int BufferSize = 1024;
     FILE* fid = fopen(fileName.c_str(), "r");

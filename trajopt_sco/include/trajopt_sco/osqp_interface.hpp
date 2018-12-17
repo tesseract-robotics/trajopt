@@ -23,9 +23,9 @@ namespace sco
  */
 class OSQPModel : public Model
 {
-  OSQPSettings osqp_settings_;  /**< OSQP Settings */
-  /** OSQPData. Some fields here (`osp_data_.A` and `osp_data_.P`) are
-   *  automatically allocated by OSQP, but deallocated by us. */
+  OSQPSettings osqp_settings_; /**< OSQP Settings */
+                               /** OSQPData. Some fields here (`osp_data_.A` and `osp_data_.P`) are
+                                *  automatically allocated by OSQP, but deallocated by us. */
   OSQPData osqp_data_;
   /** OSQP Workspace. Memory here is managed by OSQP */
   OSQPWorkspace* osqp_workspace_;
@@ -35,33 +35,33 @@ class OSQPModel : public Model
   void updateObjective();
 
   /** Updates qpOASES constraints from AffExpr expression.
-   *  Transforms AffExpr cntr_exprs_ and box bounds lbs_ and ubs_ into the 
+   *  Transforms AffExpr cntr_exprs_ and box bounds lbs_ and ubs_ into the
    *  OSQP CSC matrix A_, and vectors lbA_ and ubA_ */
   void updateConstraints();
 
   /** Creates or updates the solver and its workspace */
   void createOrUpdateSolver();
 
-  VarVector vars_;  /**< model variables */
-  CntVector cnts_;  /**< model's constraints sizes */
-  DblVec lbs_, ubs_;  /**< variables bounds */
-  AffExprVector cnt_exprs_;  /**< constraints expressions */
-  ConstraintTypeVector cnt_types_;  /**< constraints types */
-  DblVec solution_;  /**< optimizizer's solution for current model */
+  VarVector vars_;                 /**< model variables */
+  CntVector cnts_;                 /**< model's constraints sizes */
+  DblVec lbs_, ubs_;               /**< variables bounds */
+  AffExprVector cnt_exprs_;        /**< constraints expressions */
+  ConstraintTypeVector cnt_types_; /**< constraints types */
+  DblVec solution_;                /**< optimizizer's solution for current model */
 
-  std::vector<c_int> P_row_indices_;      /**< row indices for P, CSC format */
-  std::vector<c_int> P_column_pointers_;  /**< column pointers for P, CSC format */
-  DblVec P_csc_data_;                     /**< P values in CSC format */
-  Eigen::VectorXd q_; /**< linear part of the objective */
+  std::vector<c_int> P_row_indices_;     /**< row indices for P, CSC format */
+  std::vector<c_int> P_column_pointers_; /**< column pointers for P, CSC format */
+  DblVec P_csc_data_;                    /**< P values in CSC format */
+  Eigen::VectorXd q_;                    /**< linear part of the objective */
 
-  std::vector<c_int> A_row_indices_;      /**< row indices for constraint matrix, CSC format */
-  std::vector<c_int> A_column_pointers_;  /**< column pointers for constraint matrix, CSC format */
-  DblVec A_csc_data_;                     /**< constraint matrix values in CSC format */
-  DblVec l_, u_;  /**< linear constraints upper and lower limits */
+  std::vector<c_int> A_row_indices_;     /**< row indices for constraint matrix, CSC format */
+  std::vector<c_int> A_column_pointers_; /**< column pointers for constraint matrix, CSC format */
+  DblVec A_csc_data_;                    /**< constraint matrix values in CSC format */
+  DblVec l_, u_;                         /**< linear constraints upper and lower limits */
 
-  QuadExpr objective_;  /**< objective QuadExpr expression */
+  QuadExpr objective_; /**< objective QuadExpr expression */
 
-  public:
+public:
   OSQPModel();
   virtual ~OSQPModel();
 

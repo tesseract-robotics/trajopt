@@ -22,11 +22,11 @@ int LoggingInit()
     std::printf("You can set logging level with TRAJOPT_LOG_THRESH. Valid values: "
                 "%s. Defaulting to ERROR\n",
                 VALID_THRESH_VALUES);
-  #ifdef NDEBUG
+#ifdef NDEBUG
     lvlstr = "ERROR";
-  #else
+#else
     lvlstr = "DEBUG";
-  #endif
+#endif
   }
   else
     lvlstr = std::string(lvlc);
