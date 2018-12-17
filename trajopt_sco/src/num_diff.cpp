@@ -77,7 +77,12 @@ void calcGradAndDiagHess(const ScalarOfVector& f,
   }
 }
 
-void calcGradHess(ScalarOfVectorPtr f, const Eigen::VectorXd& x, double epsilon, double& y, Eigen::VectorXd& grad, Eigen::MatrixXd& hess)
+void calcGradHess(ScalarOfVectorPtr f,
+                  const Eigen::VectorXd& x,
+                  double epsilon,
+                  double& y,
+                  Eigen::VectorXd& grad,
+                  Eigen::MatrixXd& hess)
 {
   y = f->call(x);
   VectorOfVectorPtr grad_func = forwardNumGrad(f, epsilon);

@@ -17,7 +17,6 @@ TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace sco
 {
-
 /**
 Stores convex terms in a objective
 For non-quadratic terms like hinge(x) and abs(x), it needs to add auxilliary
@@ -110,6 +109,7 @@ public:
   Cost() : name_("unnamed") {}
   Cost(const std::string& name) : name_(name) {}
   virtual ~Cost() = default;
+
 protected:
   std::string name_;
 };
@@ -197,7 +197,7 @@ public:
   DblVec getClosestFeasiblePoint(const DblVec& x);
 
   std::vector<ConstraintPtr> getConstraints() const;
-  const std::vector<CostPtr>& getCosts()  { return costs_; }
+  const std::vector<CostPtr>& getCosts() { return costs_; }
   const std::vector<ConstraintPtr>& getIneqConstraints() { return ineqcnts_; }
   const std::vector<ConstraintPtr>& getEqConstraints() { return eqcnts_; }
   const DblVec& getLowerBounds() { return lower_bounds_; }

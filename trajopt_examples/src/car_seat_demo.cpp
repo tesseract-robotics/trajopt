@@ -86,7 +86,9 @@ void addSeats()
     AttachedBodyInfo attached_body;
     attached_body.object_name = "seat_" + std::to_string(i + 1);
     attached_body.parent_link_name = "world";
-    attached_body.transform = Eigen::AngleAxisd(0.0, Eigen::Vector3d::UnitX()) * Eigen::AngleAxisd(0.0, Eigen::Vector3d::UnitY()) * Eigen::AngleAxisd(3.14159, Eigen::Vector3d::UnitZ());
+    attached_body.transform = Eigen::AngleAxisd(0.0, Eigen::Vector3d::UnitX()) *
+                              Eigen::AngleAxisd(0.0, Eigen::Vector3d::UnitY()) *
+                              Eigen::AngleAxisd(3.14159, Eigen::Vector3d::UnitZ());
     attached_body.transform.translation() = Eigen::Vector3d(0.5 + i, 2.15, 0.45);
 
     env_->attachBody(attached_body);
@@ -240,9 +242,8 @@ std::shared_ptr<ProblemConstructionInfo> cppMethod(const std::string& start, con
   pci->init_info.type = InitInfo::GIVEN_TRAJ;
   pci->init_info.data = start_pos.transpose().replicate(pci->basic_info.n_steps, 1);
   for (auto i = 0; i < start_pos.size(); ++i)
-    pci->init_info.data.col(i) = Eigen::VectorXd::LinSpaced(static_cast<size_t>(pci->basic_info.n_steps),
-                                                            start_pos[i],
-                                                            joint_pose[static_cast<size_t>(i)]);
+    pci->init_info.data.col(i) = Eigen::VectorXd::LinSpaced(
+        static_cast<size_t>(pci->basic_info.n_steps), start_pos[i], joint_pose[static_cast<size_t>(i)]);
 
   // Populate Cost Info
   std::shared_ptr<JointVelTermInfo> joint_vel = std::shared_ptr<JointVelTermInfo>(new JointVelTermInfo);
@@ -402,7 +403,6 @@ int main(int argc, char** argv)
       *manager, *prob->GetEnv(), *prob->GetKin(), getTraj(place1_opt.x(), prob->GetVars()), collisions);
 
   ROS_INFO((found) ? ("Place seat #1 trajectory is in collision") : ("Place seat #1 trajectory is collision free"));
-
 }
 // int main(int argc, char **argv)
 //{

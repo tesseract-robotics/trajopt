@@ -61,7 +61,12 @@ void calcGradAndDiagHess(const ScalarOfVector& f,
                          double& y,
                          Eigen::VectorXd& grad,
                          Eigen::VectorXd& hess);
-void calcGradHess(ScalarOfVectorPtr f, const Eigen::VectorXd& x, double epsilon, double& y, Eigen::VectorXd& grad, Eigen::MatrixXd& hess);
+void calcGradHess(ScalarOfVectorPtr f,
+                  const Eigen::VectorXd& x,
+                  double epsilon,
+                  double& y,
+                  Eigen::VectorXd& grad,
+                  Eigen::MatrixXd& hess);
 VectorOfVectorPtr forwardNumGrad(ScalarOfVectorPtr f, double epsilon);
 MatrixOfVectorPtr forwardNumJac(VectorOfVectorPtr f, double epsilon);
 }

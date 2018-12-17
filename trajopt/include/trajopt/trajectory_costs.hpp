@@ -24,7 +24,6 @@ public:
   /** @brief Numerically evaluate cost given the vector of values */
   double value(const DblVec&) override;
   sco::VarVector getVars() override { return vars_.flatten(); }
-
 private:
   /** @brief The variables being optimized. Used to properly index the vector being optimized */
   VarArray vars_;
@@ -38,7 +37,6 @@ private:
   int first_step_;
   /** @brief Last time step to which the term is applied */
   int last_step_;
-
 };
 
 /**
@@ -61,7 +59,6 @@ public:
   /** @brief Numerically evaluate cost given the vector of values */
   double value(const DblVec&) override;
   sco::VarVector getVars() override { return vars_.flatten(); }
-
 private:
   /** @brief The variables being optimized. Used to properly index the vector being optimized */
   VarArray vars_;
@@ -79,7 +76,6 @@ private:
   int last_step_;
   /** @brief Stores the costs as an expression. Will be length num_jnts*num_timesteps*2 */
   std::vector<sco::AffExpr> expr_vec_;
-
 };
 
 class TRAJOPT_API JointPosEqConstraint : public sco::EqConstraint
@@ -101,7 +97,6 @@ public:
   /** Sum of violations */
   double violation(const DblVec& x);
   sco::VarVector getVars() override { return vars_.flatten(); }
-
 private:
   /** @brief The variables being optimized. Used to properly index the vector being optimized */
   VarArray vars_;
@@ -133,7 +128,6 @@ public:
   /** @brief Numerically evaluate cost given the vector of values */
   DblVec value(const DblVec&) override;
   sco::VarVector getVars() override { return vars_.flatten(); }
-
 private:
   /** @brief The variables being optimized. Used to properly index the vector being optimized */
   VarArray vars_;
@@ -151,9 +145,7 @@ private:
   int last_step_;
   /** @brief Stores the costs as an expression. Will be length num_jnts*num_timesteps*2 */
   std::vector<sco::AffExpr> expr_vec_;
-
 };
-
 
 class TRAJOPT_API JointVelEqCost : public sco::Cost
 {
@@ -169,7 +161,6 @@ public:
   /** @brief Numerically evaluate cost given the vector of values using Eigen*/
   double value(const DblVec&) override;
   sco::VarVector getVars() override { return vars_.flatten(); }
-
 private:
   /** @brief The variables being optimized. Used to properly index the vector being optimized */
   VarArray vars_;
@@ -183,7 +174,6 @@ private:
   int first_step_;
   /** @brief Last time step to which the term is applied */
   int last_step_;
-
 };
 
 class TRAJOPT_API JointVelIneqCost : public sco::Cost
@@ -202,7 +192,6 @@ public:
   /** @brief Numerically evaluate cost given the vector of values */
   double value(const DblVec&) override;
   sco::VarVector getVars() override { return vars_.flatten(); }
-
 private:
   /** @brief The variables being optimized. Used to properly index the vector being optimized */
   VarArray vars_;
@@ -220,7 +209,6 @@ private:
   int last_step_;
   /** @brief Stores the costs as an expression. Will be length num_jnts*num_timesteps*2 */
   std::vector<sco::AffExpr> expr_vec_;
-
 };
 
 class TRAJOPT_API JointVelEqConstraint : public sco::EqConstraint
@@ -242,7 +230,6 @@ public:
   /** Sum of violations */
   double violation(const DblVec& x);
   sco::VarVector getVars() override { return vars_.flatten(); }
-
 private:
   /** @brief The variables being optimized. Used to properly index the vector being optimized */
   VarArray vars_;
@@ -274,7 +261,6 @@ public:
   /** @brief Numerically evaluate cost given the vector of values */
   DblVec value(const DblVec&) override;
   sco::VarVector getVars() override { return vars_.flatten(); }
-
 private:
   /** @brief The variables being optimized. Used to properly index the vector being optimized */
   VarArray vars_;
@@ -292,7 +278,6 @@ private:
   int last_step_;
   /** @brief Stores the costs as an expression. Will be length num_jnts*(num_timesteps-1)*2 */
   std::vector<sco::AffExpr> expr_vec_;
-
 };
 
 class TRAJOPT_API JointAccEqCost : public sco::Cost
@@ -309,7 +294,6 @@ public:
   /** @brief Numerically evaluate cost given the vector of values */
   double value(const DblVec&) override;
   sco::VarVector getVars() override { return vars_.flatten(); }
-
 private:
   /** @brief The variables being optimized. Used to properly index the vector being optimized */
   VarArray vars_;
@@ -323,7 +307,6 @@ private:
   int first_step_;
   /** @brief Last time step to which the term is applied */
   int last_step_;
-
 };
 
 class TRAJOPT_API JointAccIneqCost : public sco::Cost
@@ -342,7 +325,6 @@ public:
   /** @brief Numerically evaluate cost given the vector of values */
   double value(const DblVec&) override;
   sco::VarVector getVars() override { return vars_.flatten(); }
-
 private:
   /** @brief The variables being optimized. Used to properly index the vector being optimized */
   VarArray vars_;
@@ -360,7 +342,6 @@ private:
   int last_step_;
   /** @brief Stores the costs as an expression. Will be length num_jnts*(num_timesteps-2)*2 */
   std::vector<sco::AffExpr> expr_vec_;
-
 };
 
 class TRAJOPT_API JointAccEqConstraint : public sco::EqConstraint
@@ -382,7 +363,6 @@ public:
   /** Sum of violations */
   double violation(const DblVec& x);
   sco::VarVector getVars() override { return vars_.flatten(); }
-
 private:
   /** @brief The variables being optimized. Used to properly index the vector being optimized */
   VarArray vars_;
@@ -414,7 +394,6 @@ public:
   /** @brief Numerically evaluate cost given the vector of values */
   DblVec value(const DblVec&) override;
   sco::VarVector getVars() override { return vars_.flatten(); }
-
 private:
   /** @brief The variables being optimized. Used to properly index the vector being optimized */
   VarArray vars_;
@@ -432,7 +411,6 @@ private:
   int last_step_;
   /** @brief Stores the costs as an expression. Will be length num_jnts*(num_timesteps-2)*2 */
   std::vector<sco::AffExpr> expr_vec_;
-
 };
 
 class TRAJOPT_API JointJerkEqCost : public sco::Cost
@@ -449,7 +427,6 @@ public:
   /** @brief Numerically evaluate cost given the vector of values */
   double value(const DblVec&) override;
   sco::VarVector getVars() override { return vars_.flatten(); }
-
 private:
   /** @brief The variables being optimized. Used to properly index the vector being optimized */
   VarArray vars_;
@@ -463,7 +440,6 @@ private:
   int first_step_;
   /** @brief Last time step to which the term is applied */
   int last_step_;
-
 };
 
 class TRAJOPT_API JointJerkIneqCost : public sco::Cost
@@ -482,7 +458,6 @@ public:
   /** @brief Numerically evaluate cost given the vector of values */
   double value(const DblVec&) override;
   sco::VarVector getVars() override { return vars_.flatten(); }
-
 private:
   /** @brief The variables being optimized. Used to properly index the vector being optimized */
   VarArray vars_;
@@ -500,7 +475,6 @@ private:
   int last_step_;
   /** @brief Stores the costs as an expression. Will be length num_jnts*(num_timesteps-4)*2 */
   std::vector<sco::AffExpr> expr_vec_;
-
 };
 
 class TRAJOPT_API JointJerkEqConstraint : public sco::EqConstraint
@@ -522,7 +496,6 @@ public:
   /** Sum of violations */
   double violation(const DblVec& x);
   sco::VarVector getVars() override { return vars_.flatten(); }
-
 private:
   /** @brief The variables being optimized. Used to properly index the vector being optimized */
   VarArray vars_;
@@ -554,7 +527,6 @@ public:
   /** @brief Numerically evaluate cost given the vector of values */
   DblVec value(const DblVec&) override;
   sco::VarVector getVars() override { return vars_.flatten(); }
-
 private:
   /** @brief The variables being optimized. Used to properly index the vector being optimized */
   VarArray vars_;
@@ -572,6 +544,5 @@ private:
   int last_step_;
   /** @brief Stores the costs as an expression. Will be length num_jnts*(num_timesteps-4)*2 */
   std::vector<sco::AffExpr> expr_vec_;
-
 };
 }  // namespace trajopt

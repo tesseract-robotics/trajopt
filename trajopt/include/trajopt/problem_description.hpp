@@ -51,7 +51,7 @@ public:
   TrajOptProb();
   TrajOptProb(int n_steps, const ProblemConstructionInfo& pci);
   virtual ~TrajOptProb() = default;
-  sco::VarVector GetVarRow(int i, int start_col, int num_col){ return m_traj_vars.rblock(i, start_col, num_col);}
+  sco::VarVector GetVarRow(int i, int start_col, int num_col) { return m_traj_vars.rblock(i, start_col, num_col); }
   sco::VarVector GetVarRow(int i) { return m_traj_vars.row(i); }
   sco::Var& GetVar(int i, int j) { return m_traj_vars.at(i, j); }
   VarArray& GetVars() { return m_traj_vars; }
@@ -66,11 +66,9 @@ public:
   TrajArray GetInitTraj() { return m_init_traj; }
   friend TrajOptProbPtr ConstructProblem(const ProblemConstructionInfo&);
   /** @brief Returns TrajOptProb.has_time */
-  bool GetHasTime() { return has_time;}
+  bool GetHasTime() { return has_time; }
   /** @brief Sets TrajOptProb.has_time  */
-  void SetHasTime(bool tmp) { has_time = tmp;}
-
-
+  void SetHasTime(bool tmp) { has_time = tmp; }
 private:
   /** @brief If true, the last column in the optimization matrix will be 1/dt */
   bool has_time;
@@ -115,14 +113,15 @@ Initialization info read from json
 */
 struct InitInfo
 {
- /** @brief Methods of initializing the optimization matrix
+  /** @brief Methods of initializing the optimization matrix
 
-   STATIONARY: Initializes all joint values to the initial value (the current value in the env pci.env->getCurrentJointValues)
-   JOINT_INTERPOLATED: Linearly interpolates between initial value and the joint position specified in InitInfo.data
-   GIVEN_TRAJ: Initializes the matrix to a given trajectory
+    STATIONARY: Initializes all joint values to the initial value (the current value in the env
+    pci.env->getCurrentJointValues)
+    JOINT_INTERPOLATED: Linearly interpolates between initial value and the joint position specified in InitInfo.data
+    GIVEN_TRAJ: Initializes the matrix to a given trajectory
 
-   In all cases the dt column (if present) is appended the selected method is defined.
-*/
+    In all cases the dt column (if present) is appended the selected method is defined.
+ */
   enum Type
   {
     STATIONARY,
@@ -154,7 +153,6 @@ struct TRAJOPT_API TermInfo
   std::string name;
   int term_type;
   int getSupportedTypes() { return supported_term_types_; }
-
   virtual void fromJson(ProblemConstructionInfo& pci, const Json::Value& v) = 0;
   virtual void hatch(TrajOptProb& prob) = 0;
 
@@ -171,7 +169,6 @@ struct TRAJOPT_API TermInfo
 
 protected:
   TermInfo(int supported_term_types) : supported_term_types_(supported_term_types) {}
-
 private:
   static std::map<std::string, MakerFunc> name2maker;
   int supported_term_types_;

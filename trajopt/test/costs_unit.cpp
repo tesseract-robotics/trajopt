@@ -30,7 +30,7 @@ using namespace tesseract;
 const std::string ROBOT_DESCRIPTION_PARAM = "robot_description"; /**< Default ROS parameter for robot description */
 const std::string ROBOT_SEMANTIC_PARAM = "robot_description_semantic"; /**< Default ROS parameter for robot
                                                                           description */
-static bool plotting = false;                                                 /**< Enable plotting */
+static bool plotting = false;                                          /**< Enable plotting */
 
 class CostsTest : public testing::TestWithParam<const char*>
 {
@@ -60,7 +60,6 @@ public:
     gLogLevel = util::LevelError;
   }
 };
-
 
 /**
  * @brief Tests the equality jointPos cost/constraints.
@@ -539,7 +538,7 @@ TEST_F(CostsTest, equality_jointAcc)
   for (auto j = 0; j < output.cols(); ++j)
   {
     int i = 0;
-    accel =  output(i, j) - 2*output(i + 1, j) + output(i + 2, j);
+    accel = output(i, j) - 2 * output(i + 1, j) + output(i + 2, j);
     EXPECT_NEAR(accel, cnt_targ, cnt_tol);
   }
   // Check acceleration cost is working
@@ -547,7 +546,7 @@ TEST_F(CostsTest, equality_jointAcc)
   {
     for (auto j = 0; j < output.cols(); ++j)
     {
-      accel =  output(i, j) - 2*output(i + 1, j) + output(i + 2, j);
+      accel = output(i, j) - 2 * output(i + 1, j) + output(i + 2, j);
       EXPECT_NEAR(accel, cost_targ, cost_tol);
     }
   }
@@ -649,7 +648,7 @@ TEST_F(CostsTest, inequality_jointAcc)
   {
     for (auto j = 0; j < output.cols(); ++j)
     {
-      accel =  output(i, j) - 2*output(i + 1, j) + output(i + 2, j);
+      accel = output(i, j) - 2 * output(i + 1, j) + output(i + 2, j);
       EXPECT_TRUE(accel < upper_tol + cnt_tol);
       EXPECT_TRUE(accel > lower_tol - cnt_tol);
     }
@@ -658,7 +657,7 @@ TEST_F(CostsTest, inequality_jointAcc)
   {
     for (auto j = 0; j < output.cols(); ++j)
     {
-      accel =  output(i, j) - 2*output(i + 1, j) + output(i + 2, j);
+      accel = output(i, j) - 2 * output(i + 1, j) + output(i + 2, j);
       EXPECT_TRUE(accel < upper_tol + cnt_tol);
       EXPECT_TRUE(accel > lower_tol - cnt_tol);
     }

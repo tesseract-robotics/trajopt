@@ -79,17 +79,17 @@ class ConstraintFromErrFunc : public Constraint
 public:
   /// supply error function, obtain derivative numerically
   ConstraintFromErrFunc(VectorOfVectorPtr f,
-                     const VarVector& vars,
-                     const Eigen::VectorXd& coeffs,
-                     ConstraintType type,
-                     const std::string& name);
+                        const VarVector& vars,
+                        const Eigen::VectorXd& coeffs,
+                        ConstraintType type,
+                        const std::string& name);
   /// supply error function and gradient
   ConstraintFromErrFunc(VectorOfVectorPtr f,
-                     MatrixOfVectorPtr dfdx,
-                     const VarVector& vars,
-                     const Eigen::VectorXd& coeffs,
-                     ConstraintType type,
-                     const std::string& name);
+                        MatrixOfVectorPtr dfdx,
+                        const VarVector& vars,
+                        const Eigen::VectorXd& coeffs,
+                        ConstraintType type,
+                        const std::string& name);
   DblVec value(const DblVec& x) override;
   ConvexConstraintsPtr convex(const DblVec& x, Model* model) override;
   ConstraintType type() override { return type_; }
@@ -105,5 +105,4 @@ protected:
 };
 
 std::string AffExprToString(const AffExpr& aff);
-
 }

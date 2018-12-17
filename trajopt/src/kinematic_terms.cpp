@@ -65,7 +65,7 @@ VectorXd DynamicCartPoseErrCalculator::operator()(const VectorXd& dof_vals) cons
   return err;
 }
 
-void DynamicCartPoseErrCalculator::Plot(const tesseract::BasicPlottingPtr &plotter, const VectorXd &dof_vals)
+void DynamicCartPoseErrCalculator::Plot(const tesseract::BasicPlottingPtr& plotter, const VectorXd& dof_vals)
 {
   Isometry3d cur_pose, target_pose, change_base;
 
@@ -126,8 +126,8 @@ MatrixXd CartVelJacCalculator::operator()(const VectorXd& dof_vals) const
       env_->getState(manip_->getJointNames(), dof_vals.bottomRows(n_dof))->transforms.at(manip_->getBaseLinkName())));
 
   MatrixXd jac0, jac1;
-  jac0.resize(6,manip_->numJoints());
-  jac1.resize(6,manip_->numJoints());
+  jac0.resize(6, manip_->numJoints());
+  jac1.resize(6, manip_->numJoints());
 
   if (tcp_.translation().isZero())
   {

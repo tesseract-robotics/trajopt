@@ -13,7 +13,7 @@ namespace sco
 {
 const double DEFAULT_EPSILON = 1e-5;
 
-Eigen::VectorXd getVec(const DblVec &x, const VarVector& vars)
+Eigen::VectorXd getVec(const DblVec& x, const VarVector& vars)
 {
   Eigen::VectorXd out(vars.size());
   for (unsigned i = 0; i < vars.size(); ++i)
@@ -174,24 +174,24 @@ ConvexObjectivePtr CostFromErrFunc::convex(const DblVec& xin, Model* model)
     switch (pen_type_)
     {
       case SQUARED:
-        {
-          QuadExpr quad = exprSquare(aff);
-          exprScale(quad, weight);
-          out->addQuadExpr(quad);
-          break;
-        }
+      {
+        QuadExpr quad = exprSquare(aff);
+        exprScale(quad, weight);
+        out->addQuadExpr(quad);
+        break;
+      }
       case ABS:
-        {
-          exprScale(aff, weight);
-          out->addAbs(aff, 1);
-          break;
-        }
+      {
+        exprScale(aff, weight);
+        out->addAbs(aff, 1);
+        break;
+      }
       case HINGE:
-        {
-          exprScale(aff, weight);
-          out->addHinge(aff, 1);
-          break;
-        }
+      {
+        exprScale(aff, weight);
+        out->addHinge(aff, 1);
+        break;
+      }
       default:
         assert(0 && "unreachable");
     }
@@ -200,20 +200,20 @@ ConvexObjectivePtr CostFromErrFunc::convex(const DblVec& xin, Model* model)
 }
 
 ConstraintFromErrFunc::ConstraintFromErrFunc(VectorOfVectorPtr f,
-                                       const VarVector& vars,
-                                       const Eigen::VectorXd& coeffs,
-                                       ConstraintType type,
-                                       const std::string& name)
+                                             const VarVector& vars,
+                                             const Eigen::VectorXd& coeffs,
+                                             ConstraintType type,
+                                             const std::string& name)
   : Constraint(name), f_(f), vars_(vars), coeffs_(coeffs), type_(type), epsilon_(DEFAULT_EPSILON)
 {
 }
 
 ConstraintFromErrFunc::ConstraintFromErrFunc(VectorOfVectorPtr f,
-                                       MatrixOfVectorPtr dfdx,
-                                       const VarVector& vars,
-                                       const Eigen::VectorXd& coeffs,
-                                       ConstraintType type,
-                                       const std::string& name)
+                                             MatrixOfVectorPtr dfdx,
+                                             const VarVector& vars,
+                                             const Eigen::VectorXd& coeffs,
+                                             ConstraintType type,
+                                             const std::string& name)
   : Constraint(name), f_(f), dfdx_(dfdx), vars_(vars), coeffs_(coeffs), type_(type), epsilon_(DEFAULT_EPSILON)
 {
 }
@@ -253,14 +253,14 @@ ConvexConstraintsPtr ConstraintFromErrFunc::convex(const DblVec& xin, Model* mod
 std::string AffExprToString(const AffExpr& aff)
 {
   std::string out;
-  for(size_t i = 0; i < aff.vars.size(); i++)
+  for (size_t i = 0; i < aff.vars.size(); i++)
   {
-    if(i!=0) out.append(" + ");
+    if (i != 0)
+      out.append(" + ");
     std::string term = std::to_string(aff.coeffs[i]) + "*" + aff.vars[i].var_rep->name;
     out.append(term);
   }
   out.append(" + " + std::to_string(aff.constant));
   return out;
 }
-
 }

@@ -347,7 +347,9 @@ public:
     Point32 point;
     int32_t copy;
 
-    Vertex() : next(nullptr), prev(nullptr), edges(nullptr), firstNearbyFace(nullptr), lastNearbyFace(nullptr), copy(-1) {}
+    Vertex() : next(nullptr), prev(nullptr), edges(nullptr), firstNearbyFace(nullptr), lastNearbyFace(nullptr), copy(-1)
+    {
+    }
 #ifdef DEBUG_CONVEX_HULL
     void print() { printf("V%d (%d, %d, %d)", point.index, point.x, point.y, point.z); }
     void printGraph();

@@ -15,7 +15,6 @@ TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace trajopt
 {
-
 typedef util::BasicArray<sco::Var> VarArray;
 typedef util::BasicArray<sco::AffExpr> AffArray;
 typedef util::BasicArray<sco::Cnt> CntArray;
@@ -23,7 +22,6 @@ typedef Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> D
 typedef Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> TrajArray;
 typedef sco::DblVec DblVec;
 typedef sco::IntVec IntVec;
-
 
 /** @brief Interface for objects that know how to plot themselves given solution
  * vector x */
@@ -84,21 +82,21 @@ class TrajOptConstraintFromErrFunc : public sco::ConstraintFromErrFunc, public P
 public:
   /// supply error function, obtain derivative numerically
   TrajOptConstraintFromErrFunc(sco::VectorOfVectorPtr f,
-                            const sco::VarVector& vars,
-                            const Eigen::VectorXd& coeffs,
-                            sco::ConstraintType type,
-                            const std::string& name)
+                               const sco::VarVector& vars,
+                               const Eigen::VectorXd& coeffs,
+                               sco::ConstraintType type,
+                               const std::string& name)
     : ConstraintFromErrFunc(f, vars, coeffs, type, name)
   {
   }
 
   /// supply error function and gradient
   TrajOptConstraintFromErrFunc(sco::VectorOfVectorPtr f,
-                            sco::MatrixOfVectorPtr dfdx,
-                            const sco::VarVector& vars,
-                            const Eigen::VectorXd& coeffs,
-                            sco::ConstraintType type,
-                            const std::string& name)
+                               sco::MatrixOfVectorPtr dfdx,
+                               const sco::VarVector& vars,
+                               const Eigen::VectorXd& coeffs,
+                               sco::ConstraintType type,
+                               const std::string& name)
     : ConstraintFromErrFunc(f, dfdx, vars, coeffs, type, name)
   {
   }
@@ -113,5 +111,4 @@ public:
     }
   }
 };
-
 }

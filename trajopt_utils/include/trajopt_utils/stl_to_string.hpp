@@ -11,7 +11,6 @@ TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace util
 {
-
 // std::string Str(const vector<double>& x);
 // std::string Str(const vector<float>& x);
 // std::string Str(const vector<int>& x);

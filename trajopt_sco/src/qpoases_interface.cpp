@@ -36,7 +36,6 @@ qpOASESModel::qpOASESModel()
 }
 
 qpOASESModel::~qpOASESModel() {}
-
 Var qpOASESModel::addVar(const std::string& name)
 {
   vars_.push_back(new VarRep(vars_.size(), name, this));

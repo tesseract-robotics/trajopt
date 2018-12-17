@@ -12,7 +12,6 @@ TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace sco
 {
-
 enum OptStatus
 {
   OPT_CONVERGED,

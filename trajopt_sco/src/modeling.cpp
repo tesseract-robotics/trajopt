@@ -157,9 +157,7 @@ DblVec Constraint::violations(const DblVec& x)
 }
 
 double Constraint::violation(const DblVec& x) { return vecSum(violations(x)); }
-
 OptProb::OptProb(ModelType convex_solver) : model_(createModel(convex_solver)) {}
-
 VarVector OptProb::createVariables(const std::vector<std::string>& var_names)
 {
   return createVariables(var_names, DblVec(var_names.size(), -INFINITY), DblVec(var_names.size(), INFINITY));
@@ -196,7 +194,7 @@ void OptProb::setUpperBounds(const DblVec& ub)
 }
 
 void OptProb::setLowerBounds(const DblVec& lb, const VarVector& vars) { setVec(lower_bounds_, vars, lb); }
-void OptProb::setUpperBounds(const DblVec& ub, const VarVector &vars) { setVec(upper_bounds_, vars, ub); }
+void OptProb::setUpperBounds(const DblVec& ub, const VarVector& vars) { setVec(upper_bounds_, vars, ub); }
 void OptProb::addCost(CostPtr cost) { costs_.push_back(cost); }
 void OptProb::addConstraint(ConstraintPtr cnt)
 {

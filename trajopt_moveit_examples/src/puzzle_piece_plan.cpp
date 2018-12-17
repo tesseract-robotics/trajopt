@@ -53,7 +53,7 @@ trajopt_moveit::TrajOptMoveItEnvPtr env_;         /**< Trajopt Basic Environment
 static tesseract::VectorIsometry3d makePuzzleToolPoses()
 {
   tesseract::VectorIsometry3d path;  // results
-  std::ifstream indata;            // input file
+  std::ifstream indata;              // input file
 
   // You could load your parts from anywhere, but we are transporting them with
   // the git repo

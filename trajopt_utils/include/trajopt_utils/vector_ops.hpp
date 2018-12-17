@@ -13,9 +13,5 @@ std::vector<int> arange(int n)
   return out;
 }
 
-inline bool doubleEquals(double x, double y, double eps = 1E-5)
-{
- return std::abs(x-y) < eps;
-}
-
+inline bool doubleEquals(double x, double y, double eps = 1E-5) { return std::abs(x - y) < eps; }
 }

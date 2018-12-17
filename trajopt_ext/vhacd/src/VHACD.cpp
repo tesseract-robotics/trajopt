@@ -859,7 +859,8 @@ void VHACD::ComputeBestClippingPlane(const PrimitiveSet* inputPSet,
       error |= clSetKernelArg(m_oclKernelComputePartialVolumes[i], 1, sizeof(uint32_t), &nVoxels);
       error |= clSetKernelArg(m_oclKernelComputePartialVolumes[i], 3, sizeof(float) * 4, fMinBB);
       error |= clSetKernelArg(m_oclKernelComputePartialVolumes[i], 4, sizeof(float) * 4, &fSclae);
-      error |= clSetKernelArg(m_oclKernelComputePartialVolumes[i], 5, sizeof(uint32_t) * 4 * m_oclWorkGroupSize, nullptr);
+      error |=
+          clSetKernelArg(m_oclKernelComputePartialVolumes[i], 5, sizeof(uint32_t) * 4 * m_oclWorkGroupSize, nullptr);
       error |= clSetKernelArg(m_oclKernelComputePartialVolumes[i], 6, sizeof(cl_mem), &(partialVolumes[i]));
       error |= clSetKernelArg(m_oclKernelComputeSum[i], 0, sizeof(cl_mem), &(partialVolumes[i]));
       error |= clSetKernelArg(m_oclKernelComputeSum[i], 2, sizeof(uint32_t) * 4 * m_oclWorkGroupSize, nullptr);
@@ -1024,8 +1025,15 @@ void VHACD::ComputeBestClippingPlane(const PrimitiveSet* inputPSet,
       {
 #ifdef CL_VERSION_1_1
         uint32_t volumes[4];
-        cl_int error = clEnqueueReadBuffer(
-            m_oclQueue[threadID], partialVolumes[threadID], CL_TRUE, 0, sizeof(uint32_t) * 4, volumes, 0, nullptr, nullptr);
+        cl_int error = clEnqueueReadBuffer(m_oclQueue[threadID],
+                                           partialVolumes[threadID],
+                                           CL_TRUE,
+                                           0,
+                                           sizeof(uint32_t) * 4,
+                                           volumes,
+                                           0,
+                                           nullptr,
+                                           nullptr);
         size_t nPrimitivesRight = volumes[0] + volumes[1] + volumes[2] + volumes[3];
         size_t nPrimitivesLeft = nPrimitives - nPrimitivesRight;
         volumeRight = nPrimitivesRight * unitVolume;

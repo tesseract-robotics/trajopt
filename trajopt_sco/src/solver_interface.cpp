@@ -11,13 +11,7 @@ TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace sco
 {
-const std::vector<std::string> ModelType::MODEL_NAMES_ = {
-  "GUROBI",
-  "BPMPD",
-  "OSQP",
-  "QPOASES",
-  "AUTO_SOLVER"
-};
+const std::vector<std::string> ModelType::MODEL_NAMES_ = { "GUROBI", "BPMPD", "OSQP", "QPOASES", "AUTO_SOLVER" };
 
 IntVec vars2inds(const VarVector& vars)
 {
@@ -170,21 +164,9 @@ std::ostream& operator<<(std::ostream& o, const ModelType& cs)
   return o;
 }
 
-ModelType::ModelType()
-{
-  value_ = ModelType::AUTO_SOLVER;
-}
-
-ModelType::ModelType(const ModelType::Value& v)
-{
-  value_ = v;
-}
-
-ModelType::ModelType(const int& v)
-{
-  value_ = static_cast<Value>(v);
-}
-
+ModelType::ModelType() { value_ = ModelType::AUTO_SOLVER; }
+ModelType::ModelType(const ModelType::Value& v) { value_ = v; }
+ModelType::ModelType(const int& v) { value_ = static_cast<Value>(v); }
 ModelType::ModelType(const std::string& s)
 {
   for (unsigned int i = 0; i < ModelType::MODEL_NAMES_.size(); ++i)
@@ -198,27 +180,12 @@ ModelType::ModelType(const std::string& s)
   PRINT_AND_THROW(boost::format("invalid solver name:\"%s\"") % s);
 }
 
-ModelType::operator int() const
+ModelType::operator int() const { return static_cast<int>(value_); }
+bool ModelType::operator==(const ModelType::Value& a) const { return value_ == a; }
+bool ModelType::operator==(const ModelType& a) const { return value_ == a.value_; }
+bool ModelType::operator!=(const ModelType& a) const { return value_ != a.value_; }
+void ModelType::fromJson(const Json::Value& v)
 {
-  return static_cast<int>(value_);
-}
-
-bool ModelType::operator==(const ModelType::Value& a) const
-{
-  return value_ == a;
-}
-
-bool ModelType::operator==(const ModelType& a) const
-{
-  return value_ == a.value_;
-}
-
-bool ModelType::operator!=(const ModelType& a) const
-{
-  return value_ != a.value_;
-}
-
-void ModelType::fromJson(const Json::Value& v) {
   try
   {
     std::string ref = v.asString();
@@ -331,8 +298,7 @@ ModelPtr createModel(ModelType model_type)
     return createqpOASESModel();
 #endif
   std::stringstream solver_instatiation_error;
-  solver_instatiation_error << "Failed to create solver: unknown solver "
-                            << solver << std::endl;
+  solver_instatiation_error << "Failed to create solver: unknown solver " << solver << std::endl;
   PRINT_AND_THROW(solver_instatiation_error.str());
   return ModelPtr();
 }
