@@ -10,6 +10,9 @@ cache:
   directories:
     - $HOME/.ccache
 
+git:
+  quiet: true
+
 notifications:
   email:
     recipients:
@@ -20,17 +23,22 @@ env:
     - CCACHE_DIR=$HOME/.ccache
     - UPSTREAM_WORKSPACE=file
     - ROSINSTALL_FILENAME=dependencies.rosinstall
+    - ROS_REPO=ros
+    - NOT_TEST_INSTALL=true
 
 matrix:
   include:
     - env: ROS_DISTRO=kinetic CLANG_FORMAT_CHECK=file
-    - env: ROS_DISTRO=kinetic ROS_REPO=ros              NOT_TEST_INSTALL=true
-    - env: ROS_DISTRO=kinetic ROS_REPO=ros-shadow-fixed NOT_TEST_INSTALL=true
-    - env: ROS_DISTRO=melodic ROS_REPO=ros              NOT_TEST_INSTALL=true
-    - env: ROS_DISTRO=melodic ROS_REPO=ros-shadow-fixed NOT_TEST_INSTALL=true
+    - env: ROS_DISTRO=kinetic
+    - env: ROS_DISTRO=kinetic ROS_REPO=ros-shadow-fixed
+    - env: ROS_DISTRO=melodic
+    - env: ROS_DISTRO=melodic ROS_REPO=ros-shadow-fixed
+  allow_failures:
+    - env: ROS_DISTRO=kinetic ROS_REPO=ros-shadow-fixed
+    - env: ROS_DISTRO=melodic ROS_REPO=ros-shadow-fixed
 
 install:
-  - git clone https://github.com/ros-industrial/industrial_ci.git .industrial_ci
+  - git clone --quiet --depth=1 https://github.com/ros-industrial/industrial_ci.git .industrial_ci
 
 script:
   - .industrial_ci/travis.sh
