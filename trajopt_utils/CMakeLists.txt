@@ -1,13 +1,7 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(trajopt_utils)
 
-add_compile_options(
-  -std=c++11
-  -Wall
-  -Wextra
-  -Wsuggest-override
-  -Wconversion
-  -Wsign-conversion)
+add_compile_options(-std=c++11 -Wall -Wextra)
 
 find_package(catkin REQUIRED COMPONENTS)
 
@@ -38,6 +32,7 @@ include_directories(
 
 add_library(${PROJECT_NAME} ${UTILS_SOURCE_FILES})
 target_link_libraries(${PROJECT_NAME} ${Boost_PROGRAM_OPTIONS_LIBRARY})
+target_compile_options(${PROJECT_NAME} PRIVATE -Wsuggest-override -Wconversion -Wsign-conversion)
 
 # Mark executables and/or libraries for installation
 install(TARGETS ${PROJECT_NAME}

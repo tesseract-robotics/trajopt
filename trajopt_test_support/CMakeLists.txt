@@ -3,17 +3,9 @@ project(trajopt_test_support)
 
 find_package(catkin REQUIRED)
 
-catkin_package(
-#  INCLUDE_DIRS include
-#  LIBRARIES trajopt_test_support
-#  CATKIN_DEPENDS other_catkin_pkg
-#  DEPENDS system_lib
-)
+catkin_package()
 
-include_directories(
-# include
-# ${catkin_INCLUDE_DIRS}
-)
+include_directories()
 
 install(
   DIRECTORY config launch meshes urdf srdf

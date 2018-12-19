@@ -1,13 +1,7 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(trajopt_sco)
 
-add_compile_options(
-  -std=c++11
-  -Wall
-  -Wextra
-  -Wsuggest-override
-  -Wconversion
-  -Wsign-conversion)
+add_compile_options(-std=c++11 -Wall -Wextra)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules/")
 find_package(catkin REQUIRED COMPONENTS trajopt_utils)
@@ -63,6 +57,7 @@ if (HAVE_BPMPD)
   endif()
 
   target_link_libraries(bpmpd_caller ${BPMPD_LIBRARY} -static)
+  target_compile_options(bpmpd_caller PRIVATE -Wsuggest-override -Wconversion -Wsign-conversion)
 
   list(APPEND SCO_SOURCE_FILES src/bpmpd_interface.cpp)
   set_property(SOURCE src/bpmpd_interface.cpp APPEND PROPERTY COMPILE_DEFINITIONS BPMPD_CALLER="\\\"${CATKIN_DEVEL_PREFIX}/lib/${PROJECT_NAME}/bpmpd_caller\\\"")
@@ -110,6 +105,7 @@ endif()
 
 target_link_libraries(${PROJECT_NAME} PRIVATE ${JSONCPP_LIBRARIES})
 target_link_libraries(${PROJECT_NAME} PUBLIC ${SCO_LINK_LIBS})
+target_compile_options(${PROJECT_NAME} PRIVATE -Wsuggest-override -Wconversion -Wsign-conversion)
 
 # Mark executables and/or libraries for installation
 install(
