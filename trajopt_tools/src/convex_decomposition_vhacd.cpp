@@ -1,7 +1,7 @@
 #include <trajopt_utils/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <ros/ros.h>
-#include <VHACD.h>
+#include <vhacd_ros/VHACD.h>
 #include <algorithm>
 #include <assert.h>
 #include <cstddef>
