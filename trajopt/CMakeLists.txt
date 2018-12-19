@@ -1,13 +1,7 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(trajopt)
 
-add_compile_options(
-  -std=c++11
-  -Wall
-  -Wextra
-  -Wsuggest-override
-  -Wconversion
-  -Wsign-conversion)
+add_compile_options(-std=c++11 -Wall -Wextra)
 
 find_package(catkin REQUIRED COMPONENTS
   trajopt_sco
@@ -65,6 +59,7 @@ include_directories(
 
 add_library(${PROJECT_NAME} ${TRAJOPT_SOURCE_FILES})
 target_link_libraries(${PROJECT_NAME} ${Boost_SYSTEM_LIBRARY} ${JSONCPP_LIBRARIES} ${catkin_LIBRARIES})
+target_compile_options(${PROJECT_NAME} PRIVATE -Wsuggest-override -Wconversion -Wsign-conversion)
 
 # Mark executables and/or libraries for installation
 install(TARGETS ${PROJECT_NAME}
@@ -94,22 +89,29 @@ if (CATKIN_ENABLE_TESTING)
 
   add_rostest_gtest(${PROJECT_NAME}_planning_unit test/planning_unit.launch test/planning_unit.cpp)
   target_link_libraries(${PROJECT_NAME}_planning_unit ${PROJECT_NAME} ${Boost_SYSTEM_LIBRARY} ${Boost_PROGRAM_OPTIONS_LIBRARY} ${catkin_LIBRARIES})
+  target_compile_options(${PROJECT_NAME}_planning_unit PRIVATE -Wsuggest-override -Wconversion -Wsign-conversion)
 
   add_rostest_gtest(${PROJECT_NAME}_interface_unit test/interface_unit.launch test/interface_unit.cpp)
   target_link_libraries(${PROJECT_NAME}_interface_unit ${PROJECT_NAME} ${Boost_SYSTEM_LIBRARY} ${Boost_PROGRAM_OPTIONS_LIBRARY} ${catkin_LIBRARIES})
+  target_compile_options(${PROJECT_NAME}_interface_unit PRIVATE -Wsuggest-override -Wconversion -Wsign-conversion)
 
   add_rostest_gtest(${PROJECT_NAME}_costs_unit test/costs_unit.launch test/costs_unit.cpp)
   target_link_libraries(${PROJECT_NAME}_costs_unit ${PROJECT_NAME} ${Boost_SYSTEM_LIBRARY} ${Boost_PROGRAM_OPTIONS_LIBRARY} ${catkin_LIBRARIES})
+  target_compile_options(${PROJECT_NAME}_costs_unit PRIVATE -Wsuggest-override -Wconversion -Wsign-conversion)
 
   add_rostest_gtest(${PROJECT_NAME}_cast_cost_unit test/cast_cost_unit.launch test/cast_cost_unit.cpp)
   target_link_libraries(${PROJECT_NAME}_cast_cost_unit ${PROJECT_NAME} ${Boost_SYSTEM_LIBRARY} ${Boost_PROGRAM_OPTIONS_LIBRARY} ${catkin_LIBRARIES})
+  target_compile_options(${PROJECT_NAME}_cast_cost_unit PRIVATE -Wsuggest-override -Wconversion -Wsign-conversion)
 
   add_rostest_gtest(${PROJECT_NAME}_cast_cost_world_unit test/cast_cost_world_unit.launch test/cast_cost_world_unit.cpp)
   target_link_libraries(${PROJECT_NAME}_cast_cost_world_unit ${PROJECT_NAME} ${Boost_SYSTEM_LIBRARY} ${Boost_PROGRAM_OPTIONS_LIBRARY} ${catkin_LIBRARIES})
+  target_compile_options(${PROJECT_NAME}_cast_cost_world_unit PRIVATE -Wsuggest-override -Wconversion -Wsign-conversion)
 
   add_rostest_gtest(${PROJECT_NAME}_cast_cost_attached_unit test/cast_cost_attached_unit.launch test/cast_cost_attached_unit.cpp)
   target_link_libraries(${PROJECT_NAME}_cast_cost_attached_unit ${PROJECT_NAME} ${Boost_SYSTEM_LIBRARY} ${Boost_PROGRAM_OPTIONS_LIBRARY} ${catkin_LIBRARIES})
+  target_compile_options(${PROJECT_NAME}_cast_cost_attached_unit PRIVATE -Wsuggest-override -Wconversion -Wsign-conversion)
 
   add_rostest_gtest(${PROJECT_NAME}_cast_cost_octomap_unit test/cast_cost_octomap_unit.launch test/cast_cost_octomap_unit.cpp)
   target_link_libraries(${PROJECT_NAME}_cast_cost_octomap_unit ${PROJECT_NAME} ${Boost_SYSTEM_LIBRARY} ${Boost_PROGRAM_OPTIONS_LIBRARY} ${PCL_LIBRARIES} ${catkin_LIBRARIES})
+  target_compile_options(${PROJECT_NAME}_cast_cost_octomap_unit PRIVATE -Wsuggest-override -Wconversion -Wsign-conversion)
 endif()
