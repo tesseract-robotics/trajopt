@@ -35,7 +35,7 @@ public:
   tesseract_ros::KDLEnvPtr env_;               /**< Trajopt Basic Environment */
   tesseract_ros::ROSBasicPlottingPtr plotter_; /**< Trajopt Plotter */
 
-  virtual void SetUp()
+  void SetUp() override
   {
     std::string urdf_xml_string, srdf_xml_string;
     nh_.getParam(ROBOT_DESCRIPTION_PARAM, urdf_xml_string);
@@ -260,7 +260,7 @@ TEST_F(InterfaceTest, bitmask_test)
 
   for (size_t i = 0; i < types.size(); i++)
   {
-    std::bitset<8> x(types[i]);
+    std::bitset<8> x(static_cast<long long unsigned>(types[i]));
 
     std::cout << "index: " << i << "  types= " << types[i] << "   bitmask: " << x << "\n";
     // It is a cost
