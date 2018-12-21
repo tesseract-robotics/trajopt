@@ -3,7 +3,7 @@ project(vhacd_ros)
 
 add_compile_options(-std=c++11 -w)
 
-find_package(catkin REQUIRED COMPONENTS)
+find_package(catkin REQUIRED COMPONENTS bullet3_ros)
 
 option(NO_OPENCL "NO_OPENCL" OFF)
 option(NO_OPENMP "NO_OPENMP" OFF)
@@ -14,6 +14,7 @@ message("NO_OPENMP " ${NO_OPENMP})
 catkin_package(
   INCLUDE_DIRS include
   LIBRARIES vhacd
+  CATKIN_DEPENDS bullet3_ros
 )
 
 include_directories(
