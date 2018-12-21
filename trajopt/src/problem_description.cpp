@@ -211,7 +211,7 @@ void ProblemConstructionInfo::readInitInfo(const Json::Value& v)
   json_marshal::childFromJson(v, type_str, "type");
   json_marshal::childFromJson(v, init_info.dt, "dt", 1.0);
   int n_steps = basic_info.n_steps;
-  int n_dof = kin->numJoints();
+  int n_dof = static_cast<int>(kin->numJoints());
 
   if (boost::iequals(type_str, "stationary"))
   {
@@ -240,7 +240,7 @@ void ProblemConstructionInfo::readInitInfo(const Json::Value& v)
     FAIL_IF_FALSE(v.isMember("endpoint"));
     DblVec endpoint;
     json_marshal::childFromJson(v, endpoint, "endpoint");
-    if (endpoint.size() != n_dof)
+    if (endpoint.size() != static_cast<unsigned>(n_dof))
     {
       PRINT_AND_THROW(boost::format("wrong number of dof values in "
                                     "initialization. expected %i got %j") %
@@ -559,7 +559,7 @@ void DynamicCartPoseTermInfo::fromJson(ProblemConstructionInfo& pci, const Json:
 
 void DynamicCartPoseTermInfo::hatch(TrajOptProb& prob)
 {
-  unsigned int n_dof = prob.GetKin()->numJoints();
+  int n_dof = static_cast<int>(prob.GetKin()->numJoints());
 
   if (term_type & TT_USE_TIME)
   {
@@ -625,7 +625,7 @@ void CartPoseTermInfo::fromJson(ProblemConstructionInfo& pci, const Json::Value&
 
 void CartPoseTermInfo::hatch(TrajOptProb& prob)
 {
-  unsigned int n_dof = prob.GetKin()->numJoints();
+  int n_dof = static_cast<int>(prob.GetKin()->numJoints());
 
   Eigen::Isometry3d input_pose;
   Eigen::Quaterniond q(wxyz(0), wxyz(1), wxyz(2), wxyz(3));
@@ -682,7 +682,7 @@ void CartVelTermInfo::fromJson(ProblemConstructionInfo& pci, const Json::Value& 
 
 void CartVelTermInfo::hatch(TrajOptProb& prob)
 {
-  unsigned int n_dof = prob.GetKin()->numJoints();
+  int n_dof = static_cast<int>(prob.GetKin()->numJoints());
 
   if (term_type == (TT_COST | TT_USE_TIME))
   {
@@ -786,7 +786,7 @@ void JointPosTermInfo::hatch(TrajOptProb& prob)
 
   // Get vars associated with joints
   trajopt::VarArray vars = prob.GetVars();
-  trajopt::VarArray joint_vars = vars.block(0, 0, vars.rows(), n_dof);
+  trajopt::VarArray joint_vars = vars.block(0, 0, vars.rows(), static_cast<int>(n_dof));
   if (prob.GetHasTime())
     ROS_INFO("JointPosTermInfo does not differ based on setting of TT_USE_TIME");
 
@@ -898,7 +898,7 @@ void JointVelTermInfo::hatch(TrajOptProb& prob)
 
   // Get vars associated with joints
   trajopt::VarArray vars = prob.GetVars();
-  trajopt::VarArray joint_vars = vars.block(0, 0, vars.rows(), n_dof);
+  trajopt::VarArray joint_vars = vars.block(0, 0, vars.rows(), static_cast<int>(n_dof));
 
   if (term_type == (TT_COST | TT_USE_TIME))
   {
@@ -1017,7 +1017,7 @@ void JointAccTermInfo::hatch(TrajOptProb& prob)
 
   // Get vars associated with joints
   trajopt::VarArray vars = prob.GetVars();
-  trajopt::VarArray joint_vars = vars.block(0, 0, vars.rows(), n_dof);
+  trajopt::VarArray joint_vars = vars.block(0, 0, vars.rows(), static_cast<int>(n_dof));
 
   if (term_type == (TT_COST | TT_USE_TIME))
   {
@@ -1137,7 +1137,7 @@ void JointJerkTermInfo::hatch(TrajOptProb& prob)
 
   // Get vars associated with joints
   trajopt::VarArray vars = prob.GetVars();
-  trajopt::VarArray joint_vars = vars.block(0, 0, vars.rows(), n_dof);
+  trajopt::VarArray joint_vars = vars.block(0, 0, vars.rows(), static_cast<int>(n_dof));
 
   if (term_type == (TT_COST | TT_USE_TIME))
   {
@@ -1294,7 +1294,8 @@ void CollisionTermInfo::fromJson(ProblemConstructionInfo& pci, const Json::Value
 
 void CollisionTermInfo::hatch(TrajOptProb& prob)
 {
-  unsigned int n_dof = prob.GetKin()->numJoints();
+  int n_dof = static_cast<int>(prob.GetKin()->numJoints());
+
   if (term_type == TT_COST)
   {
     if (continuous)
