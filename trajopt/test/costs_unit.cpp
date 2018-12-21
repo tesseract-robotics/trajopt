@@ -327,7 +327,7 @@ TEST_F(CostsTest, equality_jointVel)
   opt.initialize(trajToDblVec(prob->GetInitTraj()));
   double tStart = GetClock();
 
- opt.optimize();
+  opt.optimize();
 
   TrajArray output = getTraj(opt.x(), prob->GetVars());
   std::cout << "Trajectory: \n" << output << "\n";
