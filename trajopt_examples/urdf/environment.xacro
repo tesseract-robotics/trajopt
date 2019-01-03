@@ -1,0 +1,121 @@
+<?xml version="1.0" ?>
+<robot name="environment" xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+<xacro:macro name="workcell" params="parent_link *location">
+
+  <material name="light_gray">
+    <color rgba="0.7 0.7 0.7 1"/>
+  </material>
+  <material name="red">
+    <color rgba="1.0 0.1 0.1 1"/>
+  </material>
+
+  <link name="workcell_base">
+    <visual>
+      <geometry>
+        <mesh filename="package://trajopt_examples/meshes/pick_and_place/workcell.STL"/>
+      </geometry>
+      <material name="light_gray"/>
+    </visual>
+    <collision name="workcell_table">
+      <geometry>
+        <box size="0.8 1.25 0.77153"/>
+      </geometry>
+      <origin xyz="0.0 0.3 -0.385765"/>
+    </collision>
+    <collision name="workcell_columnSW">
+      <geometry>
+        <box size="0.1 0.1 1.25"/>
+      </geometry>
+      <origin xyz="-.3302 -.2794 0.6"/>
+    </collision>
+    <collision name="workcell_columnsSE">
+      <geometry>
+        <box size="0.1 0.1 1.25"/>
+      </geometry>
+      <origin xyz=".3302 -.2794 0.6"/>
+    </collision>
+    <collision name="workcell_columnNW">
+      <geometry>
+        <box size="0.1 0.1 1.25"/>
+      </geometry>
+      <origin xyz="-.3302 0.8382 0.6"/>colors
+    </collision>
+    <collision name="workcell_columnNE">
+      <geometry>
+        <box size="0.1 0.1 1.25"/>
+      </geometry>
+      <origin xyz=".3302 0.8382 0.6"/>
+    </collision>
+    <collision name="workcell_top">
+      <geometry>
+        <box size="0.95 1.4 0.2"/>
+      </geometry>
+      <origin xyz="0.0 0.3 1.2"/>
+    </collision>
+  </link>
+
+  <joint name="workcell_joint" type ="fixed">
+    <xacro:insert_block name="location" />
+    <parent link="${parent_link}"/>
+    <child link="workcell_base"/>
+  </joint>
+</xacro:macro>
+
+
+<!-- cabinet - Visual is in workcell_base.stl-->
+<xacro:macro name="cabinet" params="id parent_link *location">
+  <link name="cabinet_${id}">
+
+<collision name="cabinet_${id}_back">
+  <geometry>
+    <box size="0.5969 0.0254 0.762"/>
+  </geometry>
+  <origin xyz=".2985 -.0127 -0.381"/>
+</collision>
+<collision name="cabinet_${id}_sideL">
+  <geometry>
+    <box size="0.0254 0.3048 0.762"/>
+  </geometry>
+  <origin xyz="0.0127 -0.1524 -0.381"/>
+</collision>
+<collision name="cabinet_${id}_sideR">
+<geometry>
+  <box size="0.0254 0.3048 0.762"/>
+</geometry>
+<origin xyz="0.5969 -0.1524 -0.381"/>
+</collision>
+<collision name="cabinet_${id}_cabinet1">
+     <geometry>
+          <box size="0.5969 0.3048 0.0254"/>
+    </geometry>
+    <origin xyz=".2985 -0.1524  -0.7493"/>
+</collision>
+<collision name="cabinet_${id}_cabinet2">
+    <geometry>
+        <box size="0.5969 0.3048 0.0254"/>
+    </geometry>
+    <origin xyz=".2985 -0.1524  -0.508"/>
+</collision>
+<collision name="cabinet_${id}_cabinet3">
+    <geometry>
+        <box size="0.5969 0.3048 0.0254"/>
+    </geometry>
+    <origin xyz=".2985 -0.1524  -0.254"/>
+</collision>
+<collision name="cabinet_${id}_cabinet4">
+    <geometry>
+        <box size="0.5969 0.3048 0.0254"/>
+    </geometry>
+    <origin xyz=".2985 -0.1524  -0.0127"/>
+</collision>
+
+  </link>
+<joint name="cabinet_${id}_joint" type ="fixed">
+  <xacro:insert_block name="location" />
+  <parent link="${parent_link}"/>
+  <child link="cabinet_${id}"/>
+</joint>
+
+</xacro:macro>
+</robot>

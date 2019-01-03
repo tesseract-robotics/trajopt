@@ -1,0 +1,33 @@
+<?xml version="1.0" ?>
+<robot name="robot" xmlns:xacro="http://www.ros.org/wiki/xacro">
+    <!-- Create links -->
+    <link name="world"/>
+    <link name="base_link"/>
+
+    <!-- Import Rviz colors -->
+    <xacro:include filename="$(find trajopt_examples)/urdf/iiwa7/materials.xacro" />
+    <!--Import the lbr iiwa macro -->
+    <xacro:include filename="$(find trajopt_examples)/urdf/iiwa7/iiwa7.xacro"/>
+    <!-- Include robot -->
+    <xacro:iiwa7 hardware_interface="PositionJointInterface" robot_name="iiwa" parent="base_link">
+        <origin xyz="0.0 0 0.0" rpy="0 0 0"/>
+    </xacro:iiwa7>
+
+    <!-- Include workcell (creates joint from world to workcell_base)-->
+    <xacro:include filename="$(find trajopt_examples)/urdf/environment.xacro"/>
+    <xacro:workcell parent_link="world" >
+        <origin xyz="0.0 0.0 0.77153" rpy="0 0 0"/>
+    </xacro:workcell >
+
+    <xacro:cabinet id="1" parent_link="workcell_base" >
+        <origin rpy="0 0 0" xyz="-0.3048 1.016 0.771525"/>
+    </xacro:cabinet >
+
+    <!-- Create joints -->
+    <joint name="workcell_base_to_base" type="fixed">
+      <parent link="workcell_base"/>
+      <child link="base_link"/>
+      <origin xyz="0 -0.0381 0.00953" rpy="0 0 1.5708"/>
+    </joint>
+
+</robot>
