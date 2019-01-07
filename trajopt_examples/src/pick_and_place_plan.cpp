@@ -128,10 +128,10 @@ int main(int argc, char** argv)
 
   pci.basic_info.n_steps = steps_per_phase * 2;
   pci.basic_info.manip = manip;
-  pci.basic_info.dt_lower_lim = 0.2;
-  pci.basic_info.dt_upper_lim = .5;
+  pci.basic_info.dt_lower_lim = 2;    // 1/most time
+  pci.basic_info.dt_upper_lim = 100;  // 1/least time
   pci.basic_info.start_fixed = true;
-  pci.basic_info.use_time = false;
+  pci.basic_info.use_time = true;
 
   pci.init_info.type = trajopt::InitInfo::STATIONARY;
   pci.init_info.dt = 0.5;
@@ -150,7 +150,20 @@ int main(int argc, char** argv)
     pci.cost_infos.push_back(collision);
   }
 
-  // Add a velocity cost
+  // Add a velocity cost without time to penalize paths that are longer
+  if (true)
+  {
+    std::shared_ptr<trajopt::JointVelTermInfo> jv(new trajopt::JointVelTermInfo);
+    jv->targets = std::vector<double>(7, 0.0);
+    jv->coeffs = std::vector<double>(7, 5.0);
+    jv->term_type = trajopt::TT_COST;
+    jv->first_step = 0;
+    jv->last_step = pci.basic_info.n_steps - 1;
+    jv->name = "joint_velocity_cost";
+    pci.cost_infos.push_back(jv);
+  }
+
+  // Add a velocity cnt with time to insure that robot dynamics are obeyed
   if (true)
   {
     std::shared_ptr<trajopt::JointVelTermInfo> jv(new trajopt::JointVelTermInfo);
@@ -162,14 +175,14 @@ int main(int argc, char** argv)
                                        2.44 * 0.8, 3.14 * 0.8, 3.14 * 0.8 };
 
     jv->targets = std::vector<double>(7, 0.0);
-    jv->coeffs = std::vector<double>(7, 5.0);
-    //  jv->lower_tols = vel_lower_lim;
-    //  jv->upper_tols = vel_upper_lim;
-    jv->term_type = trajopt::TT_COST;
+    jv->coeffs = std::vector<double>(7, 50.0);
+    jv->lower_tols = vel_lower_lim;
+    jv->upper_tols = vel_upper_lim;
+    jv->term_type = (trajopt::TT_CNT | trajopt::TT_USE_TIME);
     jv->first_step = 0;
     jv->last_step = pci.basic_info.n_steps - 1;
-    jv->name = "joint_velocity_cost";
-    pci.cost_infos.push_back(jv);
+    jv->name = "joint_velocity_cnt";
+    pci.cnt_infos.push_back(jv);
   }
 
   // Add cartesian pose cnt at the approach point
@@ -206,6 +219,17 @@ int main(int argc, char** argv)
     pose_constraint->rot_coeffs = Eigen::Vector3d(10.0, 10.0, 10.0);
     pose_constraint->name = "pose_" + std::to_string(2 * steps_per_phase - 1);
     pci.cnt_infos.push_back(pose_constraint);
+  }
+
+  // Add a cost on the total time to complete the pick
+  if (true)
+  {
+    std::shared_ptr<trajopt::TotalTimeTermInfo> time_cost(new trajopt::TotalTimeTermInfo);
+    time_cost->name = "time_cost";
+    time_cost->coeff = 5.0;
+    time_cost->limit = 0.0;
+    time_cost->term_type = trajopt::TT_COST;
+    pci.cost_infos.push_back(time_cost);
   }
 
   // Create the pick problem
@@ -284,10 +308,10 @@ int main(int argc, char** argv)
 
   pci_place.basic_info.n_steps = steps_per_phase * 3;
   pci_place.basic_info.manip = manip;
-  pci_place.basic_info.dt_lower_lim = 0.2;
-  pci_place.basic_info.dt_upper_lim = .5;
+  pci_place.basic_info.dt_lower_lim = 2;    // 1/most time
+  pci_place.basic_info.dt_upper_lim = 100;  // 1/least time
   pci_place.basic_info.start_fixed = true;
-  pci_place.basic_info.use_time = false;
+  pci_place.basic_info.use_time = true;
 
   pci_place.init_info.type = trajopt::InitInfo::STATIONARY;
   pci_place.init_info.dt = 0.5;
@@ -306,7 +330,19 @@ int main(int argc, char** argv)
     pci_place.cost_infos.push_back(collision);
   }
 
-  // Add a velocity cost
+  // Add a velocity cost without time to penalize paths that are longer
+  if (true)
+  {
+    std::shared_ptr<trajopt::JointVelTermInfo> jv(new trajopt::JointVelTermInfo);
+    jv->targets = std::vector<double>(7, 0.0);
+    jv->coeffs = std::vector<double>(7, 5.0);
+    jv->term_type = trajopt::TT_COST;
+    jv->first_step = 0;
+    jv->last_step = pci_place.basic_info.n_steps - 1;
+    jv->name = "joint_velocity_cost";
+    pci_place.cost_infos.push_back(jv);
+  }
+  // Add a velocity cnt with time to insure that robot dynamics are obeyed
   if (true)
   {
     std::shared_ptr<trajopt::JointVelTermInfo> jv(new trajopt::JointVelTermInfo);
@@ -319,13 +355,13 @@ int main(int argc, char** argv)
 
     jv->targets = std::vector<double>(7, 0.0);
     jv->coeffs = std::vector<double>(7, 50.0);
-    //  jv->lower_tols = vel_lower_lim;
-    //  jv->upper_tols = vel_upper_lim;
-    jv->term_type = trajopt::TT_COST;
+    jv->lower_tols = vel_lower_lim;
+    jv->upper_tols = vel_upper_lim;
+    jv->term_type = (trajopt::TT_CNT | trajopt::TT_USE_TIME);
     jv->first_step = 0;
     jv->last_step = pci_place.basic_info.n_steps - 1;
-    jv->name = "joint_velocity_cost";
-    pci_place.cost_infos.push_back(jv);
+    jv->name = "joint_velocity_cnt";
+    pci_place.cnt_infos.push_back(jv);
   }
 
   // Add cartesian pose cnt at the retreat point
@@ -346,40 +382,34 @@ int main(int argc, char** argv)
     pci_place.cnt_infos.push_back(pose_constraint);
   }
 
-  // Add cartesian pose cnt at the approach point
-  if (true)
-  {
-    Eigen::Quaterniond rotation(approach_pose.linear());
-    std::shared_ptr<trajopt::CartPoseTermInfo> pose_constraint =
-        std::shared_ptr<trajopt::CartPoseTermInfo>(new trajopt::CartPoseTermInfo);
-    pose_constraint->term_type = trajopt::TT_CNT;
-    pose_constraint->link = end_effector;
-    pose_constraint->timestep = 2 * steps_per_phase - 1;
-    pose_constraint->xyz = approach_pose.translation();
-
-    pose_constraint->wxyz = Eigen::Vector4d(rotation.w(), rotation.x(), rotation.y(), rotation.z());
-    pose_constraint->pos_coeffs = Eigen::Vector3d(10.0, 10.0, 10.0);
-    pose_constraint->rot_coeffs = Eigen::Vector3d(10.0, 10.0, 10.0);
-    pose_constraint->name = "pose_" + std::to_string(2 * steps_per_phase - 1);
-    pci_place.cnt_infos.push_back(pose_constraint);
-  }
-
   // Add cartesian pose cnt at the final point
-  if (true)
+  int steps = 3 * steps_per_phase - 2 * steps_per_phase;
+  for (int index = 1; index < steps; index++)
   {
     Eigen::Quaterniond rotation(final_pose.linear());
     std::shared_ptr<trajopt::CartPoseTermInfo> pose_constraint =
         std::shared_ptr<trajopt::CartPoseTermInfo>(new trajopt::CartPoseTermInfo);
     pose_constraint->term_type = trajopt::TT_CNT;
     pose_constraint->link = end_effector;
-    pose_constraint->timestep = 3 * steps_per_phase - 1;
-    pose_constraint->xyz = final_pose.translation();
+    pose_constraint->timestep = 2 * steps_per_phase + index;
+    pose_constraint->xyz = approach_pose.translation();
+    pose_constraint->xyz.y() = approach_pose.translation().y() + 0.25 / steps * index;
 
     pose_constraint->wxyz = Eigen::Vector4d(rotation.w(), rotation.x(), rotation.y(), rotation.z());
     pose_constraint->pos_coeffs = Eigen::Vector3d(10.0, 10.0, 10.0);
     pose_constraint->rot_coeffs = Eigen::Vector3d(10.0, 10.0, 10.0);
-    pose_constraint->name = "pose_" + std::to_string(3 * steps_per_phase - 1);
+    pose_constraint->name = "pose_" + std::to_string(2 * steps_per_phase + index);
     pci_place.cnt_infos.push_back(pose_constraint);
+  }
+
+  // Add a cost on the total time to complete the pick
+  if (true)
+  {
+    std::shared_ptr<trajopt::TotalTimeTermInfo> time_cost(new trajopt::TotalTimeTermInfo);
+    time_cost->name = "time_cost";
+    time_cost->coeff = 5.0;
+    time_cost->term_type = trajopt::TT_COST;
+    pci_place.cost_infos.push_back(time_cost);
   }
 
   // Create the place problem
