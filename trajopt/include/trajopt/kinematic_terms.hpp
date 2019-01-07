@@ -168,6 +168,7 @@ struct JointJerkJacCalculator : sco::MatrixOfVector
 
 struct TimeCostCalculator : sco::VectorOfVector
 {
+  /** @brief The time target (s). This is subtracted from the cost, so only set limit!=0 if the penalty type is a hinge (or you could get negatives)*/
   double limit_;
   TimeCostCalculator() : limit_(0.0) {}
   TimeCostCalculator(double limit) : limit_(limit){}

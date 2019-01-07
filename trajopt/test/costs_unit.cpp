@@ -621,8 +621,8 @@ TEST_F(CostsTest, inequality_jointVel_time)
   std::shared_ptr<JointVelTermInfo> jv2 = std::shared_ptr<JointVelTermInfo>(new JointVelTermInfo);
   jv2->coeffs = std::vector<double>(7, 1.0);
   jv2->targets = std::vector<double>(7.0, cost_targ1);
-  //  jv2->lower_tols = std::vector<double>(7.0, -0.01);
-  //  jv2->upper_tols = std::vector<double>(7.0, 0.0);
+  jv2->lower_tols = std::vector<double>(7.0, -0.01);
+  jv2->upper_tols = std::vector<double>(7.0, 0.01);
   jv2->first_step = 0;
   jv2->last_step = (pci.basic_info.n_steps - 1) / 2;
   jv2->name = "joint_vel_targ_1";
@@ -632,8 +632,8 @@ TEST_F(CostsTest, inequality_jointVel_time)
   std::shared_ptr<JointVelTermInfo> jv3 = std::shared_ptr<JointVelTermInfo>(new JointVelTermInfo);
   jv3->coeffs = std::vector<double>(7, 1.0);
   jv3->targets = std::vector<double>(7.0, cost_targ2);
-  //  jv3->lower_tols = std::vector<double>(7.0, -0.01);
-  //  jv3->upper_tols = std::vector<double>(7.0, 0.01);
+  jv3->lower_tols = std::vector<double>(7.0, -0.01);
+  jv3->upper_tols = std::vector<double>(7.0, 0.01);
   jv3->first_step = (pci.basic_info.n_steps - 1) / 2 + 1;
   jv3->last_step = pci.basic_info.n_steps - 1;
   jv3->name = "joint_vel_targ_2";
