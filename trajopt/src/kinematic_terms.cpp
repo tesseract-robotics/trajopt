@@ -326,7 +326,9 @@ VectorXd TimeCostCalculator::operator()(const VectorXd& time_vals) const
 
 MatrixXd TimeCostJacCalculator::operator()(const VectorXd& time_vals) const
 {
-  return MatrixXd::Ones(1, time_vals.rows());
+    MatrixXd jac(1, time_vals.rows());
+    jac.row(0) = -1*time_vals.cwiseAbs2().cwiseInverse();
+  return jac;
 }
 
 }  // namespace trajopt
