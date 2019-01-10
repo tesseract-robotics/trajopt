@@ -123,7 +123,7 @@ struct JointVelErrCalculator : sco::VectorOfVector
   double lower_tol_;
   JointVelErrCalculator() : target_(0.0), upper_tol_(0.0), lower_tol_(0.0) {}
   JointVelErrCalculator(double target, double upper_tol, double lower_tol)
-    :  target_(target), upper_tol_(upper_tol), lower_tol_(lower_tol)
+    : target_(target), upper_tol_(upper_tol), lower_tol_(lower_tol)
   {
   }
   Eigen::VectorXd operator()(const Eigen::VectorXd& var_vals) const;
@@ -168,10 +168,11 @@ struct JointJerkJacCalculator : sco::MatrixOfVector
 
 struct TimeCostCalculator : sco::VectorOfVector
 {
-  /** @brief The time target (s). This is subtracted from the cost, so only set limit!=0 if the penalty type is a hinge (or you could get negatives)*/
+  /** @brief The time target (s). This is subtracted from the cost, so only set limit!=0 if the penalty type is a hinge
+   * (or you could get negatives)*/
   double limit_;
   TimeCostCalculator() : limit_(0.0) {}
-  TimeCostCalculator(double limit) : limit_(limit){}
+  TimeCostCalculator(double limit) : limit_(limit) {}
   Eigen::VectorXd operator()(const Eigen::VectorXd& var_vals) const;
 };
 
