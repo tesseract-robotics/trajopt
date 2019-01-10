@@ -23,7 +23,7 @@ struct ProblemConstructionInfo;
 struct TrajOptResult;
 typedef std::shared_ptr<TrajOptResult> TrajOptResultPtr;
 
-TrajOptProbPtr TRAJOPT_API ConstructProblem(const ProblemConstructionInfo &);
+TrajOptProbPtr TRAJOPT_API ConstructProblem(const ProblemConstructionInfo&);
 TrajOptProbPtr TRAJOPT_API ConstructProblem(const Json::Value&, tesseract::BasicEnvConstPtr env);
 TrajOptResultPtr TRAJOPT_API OptimizeProblem(TrajOptProbPtr, const tesseract::BasicPlottingPtr plotter = nullptr);
 
@@ -499,10 +499,10 @@ struct TotalTimeTermInfo : public TermInfo
   double limit = 0.0;
 
   void hatch(TrajOptProb& prob);
-  void fromJson(ProblemConstructionInfo &pci, const Json::Value &v);
+  void fromJson(ProblemConstructionInfo& pci, const Json::Value& v);
   DEFINE_CREATE(TotalTimeTermInfo)
 
-  TotalTimeTermInfo(): TermInfo(TT_COST | TT_CNT | TT_USE_TIME) {}
+  TotalTimeTermInfo() : TermInfo(TT_COST | TT_CNT | TT_USE_TIME) {}
 };
 
 }  // namespace trajopt

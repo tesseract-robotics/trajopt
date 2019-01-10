@@ -213,7 +213,6 @@ MatrixXd JointVelJacCalculator::operator()(const VectorXd& var_vals) const
   // bottom half is negative velocities
   jac.bottomRows(num_vels) = -jac.topRows(num_vels);
 
-
   return jac;
 }
 
@@ -326,8 +325,8 @@ VectorXd TimeCostCalculator::operator()(const VectorXd& time_vals) const
 
 MatrixXd TimeCostJacCalculator::operator()(const VectorXd& time_vals) const
 {
-    MatrixXd jac(1, time_vals.rows());
-    jac.row(0) = -1*time_vals.cwiseAbs2().cwiseInverse();
+  MatrixXd jac(1, time_vals.rows());
+  jac.row(0) = -1 * time_vals.cwiseAbs2().cwiseInverse();
   return jac;
 }
 

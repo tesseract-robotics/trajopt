@@ -99,4 +99,4 @@ struct BasicArray
   T* data() { return m_data.data(); }
   T* data() const { return m_data.data(); }
 };
-}
+}  // namespace util
