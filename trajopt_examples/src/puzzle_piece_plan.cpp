@@ -141,18 +141,21 @@ ProblemConstructionInfo cppMethod()
   // Populate Cost Info
   std::shared_ptr<JointVelTermInfo> joint_vel = std::shared_ptr<JointVelTermInfo>(new JointVelTermInfo);
   joint_vel->coeffs = std::vector<double>(7, 1.0);
+  joint_vel->targets = std::vector<double>(7, 0.0);
   joint_vel->name = "joint_vel";
   joint_vel->term_type = TT_COST;
   pci.cost_infos.push_back(joint_vel);
 
   std::shared_ptr<JointAccTermInfo> joint_acc = std::shared_ptr<JointAccTermInfo>(new JointAccTermInfo);
   joint_acc->coeffs = std::vector<double>(7, 2.0);
+  joint_acc->targets = std::vector<double>(7, 0.0);
   joint_acc->name = "joint_acc";
   joint_acc->term_type = TT_COST;
   pci.cost_infos.push_back(joint_acc);
 
   std::shared_ptr<JointJerkTermInfo> joint_jerk = std::shared_ptr<JointJerkTermInfo>(new JointJerkTermInfo);
   joint_jerk->coeffs = std::vector<double>(7, 5.0);
+  joint_jerk->targets = std::vector<double>(7, 0.0);
   joint_jerk->name = "joint_jerk";
   joint_jerk->term_type = TT_COST;
   pci.cost_infos.push_back(joint_jerk);
