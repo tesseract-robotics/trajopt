@@ -480,7 +480,7 @@ struct CollisionTermInfo : public TermInfo
   void hatch(TrajOptProb& prob) override;
   DEFINE_CREATE(CollisionTermInfo)
 
-  CollisionTermInfo() : TermInfo(TT_COST) {}
+  CollisionTermInfo() : TermInfo(TT_COST | TT_CNT) {}
 };
 
 }  // namespace trajopt
