@@ -288,17 +288,17 @@ struct CartVelTermInfo : public TermInfo
  */
 struct JointPosTermInfo : public TermInfo
 {
-  /** @brief Vector of coefficients that scales cost. */
+  /** @brief Vector of coefficients that scale the cost. Size should be the DOF of the system. Default: vector of 0's*/
   DblVec coeffs;
-  /** @brief Vector of position targets. Default: 0 */
+  /** @brief Vector of position targets. This is a required value. Size should be the DOF of the system */
   DblVec targets;
-  /** @brief Vector of position upper limits. Default: 0 */
+  /** @brief Vector of position upper limits. Size should be the DOF of the system. Default: vector of 0's*/
   DblVec upper_tols;
-  /** @brief Vector of position lower limits. Default: 0 */
+  /** @brief Vector of position lower limits. Size should be the DOF of the system. Default: vector of 0's*/
   DblVec lower_tols;
-  /** @brief First time step to which the term is applied*/
+  /** @brief First time step to which the term is applied. Default: 0 */
   int first_step = 0;
-  /** @brief Last time step to which the term is applied*/
+  /** @brief Last time step to which the term is applied. Default: prob.GetNumSteps() - 1*/
   int last_step = -1;
   /** @brief Used to add term to pci from json */
   void fromJson(ProblemConstructionInfo& pci, const Json::Value& v) override;
@@ -325,7 +325,7 @@ velocity > lower_limit, no penalty.
 ** upper_limit != lower_limit - 2 Inequality constraints are applied. These are both satisfied when velocity <
 upper_limit and velocity > lower_limit
 
-Note: targets, upper_limits, and lower_limits are optional. If a term is not given it will default to 0 for all joints.
+Note: coeffs, upper_limits, and lower_limits are optional. If a term is not given it will default to 0 for all joints.
 If one value is given, this will be broadcast to all joints.
 
 Note: Velocity is calculated numerically using forward finite difference
@@ -337,18 +337,18 @@ where j indexes over DOF, and \f$c_j\f$ are the coeffs.
 */
 struct JointVelTermInfo : public TermInfo
 {
-  /** @brief Vector of coefficients that scales cost for each joint. */
+  /** @brief Vector of coefficients that scale the cost. Size should be the DOF of the system. Default: vector of 0's*/
   DblVec coeffs;
-  /** @brief Vector of velocity targets. Default: 0 */
+  /** @brief Vector of velocity targets. This is a required value. Size should be the DOF of the system */
   DblVec targets;
-  /** @brief Vector of velocity upper limits. Default: 0 */
+  /** @brief Vector of velocity upper limits. Size should be the DOF of the system. Default: vector of 0's*/
   DblVec upper_tols;
-  /** @brief Vector of velocity lower limits. Default: 0 */
+  /** @brief Vector of velocity lower limits. Size should be the DOF of the system. Default: vector of 0's*/
   DblVec lower_tols;
-  /** @brief First time step to which the term is applied*/
-  int first_step;
-  /** @brief Last time step to which the term is applied*/
-  int last_step;
+  /** @brief First time step to which the term is applied. Default: 0*/
+  int first_step = 0;
+  /** @brief Last time step to which the term is applied. Default: prob.GetNumSteps() - 1*/
+  int last_step = -1;
   /** @brief Used to add term to pci from json */
   void fromJson(ProblemConstructionInfo& pci, const Json::Value& v) override;
   /** @brief Converts term info into cost/constraint and adds it to trajopt problem */
@@ -374,25 +374,25 @@ and acceleration > lower_limit, no penalty.
 ** upper_limit != lower_limit - 2 Inequality constraints are applied. These are both satisfied when acceleration <
 upper_limit and acceleration > lower_limit
 
-Note: targets, upper_limits, and lower_limits are optional. If a term is not given it will default to 0 for all joints.
+Note: coeffs, upper_limits, and lower_limits are optional. If a term is not given it will default to 0 for all joints.
 If one value is given, this will be broadcast to all joints.
 
 Note: Acceleration is calculated numerically using central finite difference
 */
 struct JointAccTermInfo : public TermInfo
 {
-  /** @brief For TT_COST: coefficient that scales cost. For TT_CNT: Acceleration limit*/
+  /** @brief Vector of coefficients that scale the cost. Size should be the DOF of the system. Default: vector of 0's*/
   DblVec coeffs;
-  /** @brief Vector of accel targets. Default: 0 */
+  /** @brief Vector of accel targets. This is a required value. Size should be the DOF of the system */
   DblVec targets;
-  /** @brief Vector of accel upper limits. Default: 0 */
+  /** @brief Vector of accel upper limits. Size should be the DOF of the system. Default: vector of 0's*/
   DblVec upper_tols;
-  /** @brief Vector of accel lower limits. Default: 0 */
+  /** @brief Vector of accel lower limits. Size should be the DOF of the system. Default: vector of 0's*/
   DblVec lower_tols;
-  /** @brief First time step to which the term is applied */
-  int first_step;
-  /** @brief Last time step to which the term is applied */
-  int last_step;
+  /** @brief First time step to which the term is applied. Default: 0 */
+  int first_step = 0;
+  /** @brief Last time step to which the term is applied. Default: prob.GetNumSteps() - 1 */
+  int last_step = -1;
   /** @brief Used to add term to pci from json */
   void fromJson(ProblemConstructionInfo& pci, const Json::Value& v) override;
   /** @brief Converts term info into cost/constraint and adds it to trajopt problem */
@@ -418,25 +418,25 @@ jerk > lower_limit, no penalty.
 ** upper_limit != lower_limit - 2 Inequality constraints are applied. These are both satisfied when jerk <
 upper_limit and jerk > lower_limit
 
-Note: targets, upper_limits, and lower_limits are optional. If a term is not given it will default to 0 for all joints.
+Note: coeffs, upper_limits, and lower_limits are optional. If a term is not given it will default to 0 for all joints.
 If one value is given, this will be broadcast to all joints.
 
 Note: Jerk is calculated numerically using central finite difference
 */
 struct JointJerkTermInfo : public TermInfo
 {
-  /** @brief For TT_COST: coefficient that scales cost. For TT_CNT: Jerk limit */
+  /** @brief Vector of coefficients that scale the cost. Size should be the DOF of the system. Default: vector of 0's*/
   DblVec coeffs;
-  /** @brief Vector of jerk targets. Default: 0 */
+  /** @brief Vector of jerk targets. This is a required value. Size should be the DOF of the system */
   DblVec targets;
-  /** @brief Vector of jerk upper limits. Default: 0 */
+  /** @brief Vector of jerk upper limits. Size should be the DOF of the system. Default: vector of 0's*/
   DblVec upper_tols;
-  /** @brief Vector of jerk lower limits. Default: 0 */
+  /** @brief Vector of jerk lower limits. Size should be the DOF of the system. Default: vector of 0's*/
   DblVec lower_tols;
-  /** @brief First time step to which the term is applied */
-  int first_step;
-  /** @brief Last time step to which the term is applied */
-  int last_step;
+  /** @brief First time step to which the term is applied. Default: 0 */
+  int first_step = 0;
+  /** @brief Last time step to which the term is applied. Default: prob.GetNumSteps() - 1 */
+  int last_step = -1;
   /** @brief Used to add term to pci from json */
   void fromJson(ProblemConstructionInfo& pci, const Json::Value& v) override;
   /** @brief Converts term info into cost/constraint and adds it to trajopt problem */

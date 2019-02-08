@@ -754,6 +754,8 @@ void JointPosTermInfo::hatch(TrajOptProb& prob)
     upper_tols = DblVec(n_dof, 0);
   if (lower_tols.empty())
     lower_tols = DblVec(n_dof, 0);
+  if (last_step <= -1)
+    last_step = prob.GetNumSteps() - 1;
 
   // Check time step is valid
   if ((prob.GetNumSteps() - 1) <= first_step)
@@ -868,6 +870,8 @@ void JointVelTermInfo::hatch(TrajOptProb& prob)
     upper_tols = DblVec(n_dof, 0);
   if (lower_tols.empty())
     lower_tols = DblVec(n_dof, 0);
+  if (last_step <= -1)
+    last_step = prob.GetNumSteps() - 1;
 
   // If only one time step is desired, calculate velocity with next step (2 steps are needed for 1 velocity calculation)
   if ((prob.GetNumSteps() - 2) <= first_step)
@@ -986,6 +990,8 @@ void JointAccTermInfo::hatch(TrajOptProb& prob)
     upper_tols = DblVec(n_dof, 0);
   if (lower_tols.empty())
     lower_tols = DblVec(n_dof, 0);
+  if (last_step <= -1)
+    last_step = prob.GetNumSteps() - 1;
 
   // Adjust final timesteps if calculating near the end of a trajectory
   if ((prob.GetNumSteps() - 3) <= first_step)
@@ -1106,6 +1112,8 @@ void JointJerkTermInfo::hatch(TrajOptProb& prob)
     upper_tols = DblVec(n_dof, 0);
   if (lower_tols.empty())
     lower_tols = DblVec(n_dof, 0);
+  if (last_step <= -1)
+    last_step = prob.GetNumSteps() - 1;
 
   // Adjust final timesteps if calculating near the end of a trajectory
   if ((prob.GetNumSteps() - 4) <= first_step)

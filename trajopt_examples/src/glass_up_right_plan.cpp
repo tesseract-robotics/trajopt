@@ -105,6 +105,8 @@ TrajOptProbPtr cppMethod()
   std::shared_ptr<JointVelTermInfo> jv = std::shared_ptr<JointVelTermInfo>(new JointVelTermInfo);
   jv->coeffs = std::vector<double>(7, 1.0);
   jv->targets = std::vector<double>(7, 0.0);
+  jv->first_step = 0;
+  jv->last_step = pci.basic_info.n_steps - 1;
   jv->name = "joint_vel";
   jv->term_type = TT_COST;
   pci.cost_infos.push_back(jv);
