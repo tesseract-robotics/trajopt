@@ -38,6 +38,7 @@ using namespace trajopt;
 using namespace std;
 using namespace util;
 using namespace tesseract;
+using namespace tesseract_collision;
 
 const std::string ROBOT_DESCRIPTION_PARAM = "robot_description"; /**< Default ROS parameter for robot description */
 const std::string ROBOT_SEMANTIC_PARAM = "robot_description_semantic"; /**< Default ROS parameter for robot
@@ -92,16 +93,15 @@ public:
     octree->insertPointCloud(octomap_data, octomap::point3d(0, 0, 0));
 
     AttachableObjectPtr obj(new AttachableObject());
-    shapes::OcTree* octomap_world = new shapes::OcTree(std::shared_ptr<const octomap::OcTree>(octree));
+    OctreeCollisionShapePtr octomap_world(new OctreeCollisionShape(std::shared_ptr<const octomap::OcTree>(octree), OctreeCollisionShape::SubShapeType::BOX));
     Eigen::Isometry3d octomap_pose;
 
     octomap_pose.setIdentity();
     octomap_pose.translation() = Eigen::Vector3d(0, 0, 0);
 
     obj->name = "octomap_attached";
-    obj->collision.shapes.push_back(shapes::ShapeConstPtr(octomap_world));
+    obj->collision.shapes.push_back(octomap_world);
     obj->collision.shape_poses.push_back(octomap_pose);
-    obj->collision.collision_object_types.push_back(CollisionObjectType::UseShapeType);
     env_->addAttachableObject(obj);
 
     gLogLevel = util::LevelInfo;
@@ -131,8 +131,8 @@ TEST_F(CastOctomapTest, boxes)
   TrajOptProbPtr prob = ConstructProblem(root, env_);
   ASSERT_TRUE(!!prob);
 
-  std::vector<tesseract::ContactResultMap> collisions;
-  ContinuousContactManagerBasePtr manager = prob->GetEnv()->getContinuousContactManager();
+  std::vector<ContactResultMap> collisions;
+  ContinuousContactManagerPtr manager = prob->GetEnv()->getContinuousContactManager();
   manager->setActiveCollisionObjects(prob->GetKin()->getLinkNames());
   manager->setContactDistanceThreshold(0);
 

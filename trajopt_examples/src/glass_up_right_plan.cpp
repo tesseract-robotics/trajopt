@@ -180,10 +180,9 @@ int main(int argc, char** argv)
 
   // Add sphere
   AttachableObjectPtr obj(new AttachableObject());
-  std::shared_ptr<shapes::Sphere> sphere(new shapes::Sphere());
+  std::shared_ptr<shapes::Sphere> sphere(new shapes::Sphere(0.15));
+  std::shared_ptr<tesseract_collision::SphereCollisionShape> c_sphere(new tesseract_collision::SphereCollisionShape(0.15));
   Eigen::Isometry3d sphere_pose;
-
-  sphere->radius = 0.15;
 
   sphere_pose.setIdentity();
   sphere_pose.translation() = Eigen::Vector3d(0.5, 0, 0.55);
@@ -191,9 +190,8 @@ int main(int argc, char** argv)
   obj->name = "sphere_attached";
   obj->visual.shapes.push_back(sphere);
   obj->visual.shape_poses.push_back(sphere_pose);
-  obj->collision.shapes.push_back(sphere);
+  obj->collision.shapes.push_back(c_sphere);
   obj->collision.shape_poses.push_back(sphere_pose);
-  obj->collision.collision_object_types.push_back(CollisionObjectType::UseShapeType);
 
   env_->addAttachableObject(obj);
 
@@ -238,8 +236,8 @@ int main(int argc, char** argv)
   // Solve Trajectory
   ROS_INFO("glass upright plan example");
 
-  std::vector<tesseract::ContactResultMap> collisions;
-  ContinuousContactManagerBasePtr manager = prob->GetEnv()->getContinuousContactManager();
+  std::vector<tesseract_collision::ContactResultMap> collisions;
+  tesseract_collision::ContinuousContactManagerPtr manager = prob->GetEnv()->getContinuousContactManager();
   manager->setActiveCollisionObjects(prob->GetKin()->getLinkNames());
   manager->setContactDistanceThreshold(0);
 

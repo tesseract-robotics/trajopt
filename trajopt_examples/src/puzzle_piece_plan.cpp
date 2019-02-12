@@ -254,8 +254,8 @@ int main(int argc, char** argv)
   // Solve Trajectory
   ROS_INFO("puzzle piece plan");
 
-  std::vector<tesseract::ContactResultMap> collisions;
-  ContinuousContactManagerBasePtr manager = prob->GetEnv()->getContinuousContactManager();
+  std::vector<tesseract_collision::ContactResultMap> collisions;
+  tesseract_collision::ContinuousContactManagerPtr manager = prob->GetEnv()->getContinuousContactManager();
   manager->setActiveCollisionObjects(prob->GetKin()->getLinkNames());
   manager->setContactDistanceThreshold(0);
 

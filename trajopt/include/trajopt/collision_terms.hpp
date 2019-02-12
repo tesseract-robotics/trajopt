@@ -21,13 +21,13 @@ struct CollisionEvaluator
   virtual ~CollisionEvaluator() = default;
   virtual void CalcDistExpressions(const DblVec& x, sco::AffExprVector& exprs) = 0;
   virtual void CalcDists(const DblVec& x, DblVec& exprs) = 0;
-  virtual void CalcCollisions(const DblVec& x, tesseract::ContactResultVector& dist_results) = 0;
-  void GetCollisionsCached(const DblVec& x, tesseract::ContactResultVector&);
+  virtual void CalcCollisions(const DblVec& x, tesseract_collision::ContactResultVector& dist_results) = 0;
+  void GetCollisionsCached(const DblVec& x, tesseract_collision::ContactResultVector&);
   virtual void Plot(const tesseract::BasicPlottingPtr plotter, const DblVec& x) = 0;
   virtual sco::VarVector GetVars() = 0;
 
   const SafetyMarginDataConstPtr getSafetyMarginData() const { return safety_margin_data_; }
-  Cache<size_t, tesseract::ContactResultVector, 10> m_cache;
+  Cache<size_t, tesseract_collision::ContactResultVector, 10> m_cache;
 
 protected:
   tesseract::BasicEnvConstPtr env_;
@@ -59,12 +59,12 @@ public:
    * Same as CalcDistExpressions, but just the distances--not the expressions
    */
   void CalcDists(const DblVec& x, DblVec& exprs) override;
-  void CalcCollisions(const DblVec& x, tesseract::ContactResultVector& dist_results) override;
+  void CalcCollisions(const DblVec& x, tesseract_collision::ContactResultVector& dist_results) override;
   void Plot(const tesseract::BasicPlottingPtr plotter, const DblVec& x) override;
   sco::VarVector GetVars() override { return m_vars; }
 private:
   sco::VarVector m_vars;
-  tesseract::DiscreteContactManagerBasePtr contact_manager_;
+  tesseract_collision::DiscreteContactManagerPtr contact_manager_;
 };
 
 struct CastCollisionEvaluator : public CollisionEvaluator
@@ -77,13 +77,13 @@ public:
                          const sco::VarVector& vars1);
   void CalcDistExpressions(const DblVec& x, sco::AffExprVector& exprs) override;
   void CalcDists(const DblVec& x, DblVec& exprs) override;
-  void CalcCollisions(const DblVec& x, tesseract::ContactResultVector& dist_results) override;
+  void CalcCollisions(const DblVec& x, tesseract_collision::ContactResultVector& dist_results) override;
   void Plot(const tesseract::BasicPlottingPtr plotter, const DblVec& x) override;
   sco::VarVector GetVars() override { return concat(m_vars0, m_vars1); }
 private:
   sco::VarVector m_vars0;
   sco::VarVector m_vars1;
-  tesseract::ContinuousContactManagerBasePtr contact_manager_;
+  tesseract_collision::ContinuousContactManagerPtr contact_manager_;
 };
 
 class TRAJOPT_API CollisionCost : public sco::Cost, public Plotter
