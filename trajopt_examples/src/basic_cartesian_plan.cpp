@@ -178,16 +178,15 @@ int main(int argc, char** argv)
   octree->insertPointCloud(octomap_data, octomap::point3d(0, 0, 0));
 
   AttachableObjectPtr obj(new AttachableObject());
-  shapes::OcTree* octomap_world = new shapes::OcTree(std::shared_ptr<const octomap::OcTree>(octree));
+  tesseract_collision::OctreeCollisionShapePtr octomap_world(new tesseract_collision::OctreeCollisionShape(std::shared_ptr<const octomap::OcTree>(octree), tesseract_collision::OctreeCollisionShape::SubShapeType::BOX));
   Eigen::Isometry3d octomap_pose;
 
   octomap_pose.setIdentity();
   octomap_pose.translation() = Eigen::Vector3d(1, 0, 0);
 
   obj->name = "octomap_attached";
-  obj->collision.shapes.push_back(shapes::ShapeConstPtr(octomap_world));
+  obj->collision.shapes.push_back(octomap_world);
   obj->collision.shape_poses.push_back(octomap_pose);
-  obj->collision.collision_object_types.push_back(CollisionObjectType::UseShapeType);
   env_->addAttachableObject(obj);
 
   AttachedBodyInfo attached_body;
@@ -231,8 +230,8 @@ int main(int argc, char** argv)
   // Solve Trajectory
   ROS_INFO("basic cartesian plan example");
 
-  std::vector<tesseract::ContactResultMap> collisions;
-  ContinuousContactManagerBasePtr manager = prob->GetEnv()->getContinuousContactManager();
+  std::vector<tesseract_collision::ContactResultMap> collisions;
+  tesseract_collision::ContinuousContactManagerPtr manager = prob->GetEnv()->getContinuousContactManager();
   manager->setActiveCollisionObjects(prob->GetKin()->getLinkNames());
   manager->setContactDistanceThreshold(0);
 

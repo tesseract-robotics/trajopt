@@ -30,6 +30,7 @@ using namespace trajopt;
 using namespace std;
 using namespace util;
 using namespace tesseract;
+using namespace tesseract_collision;
 
 const std::string ROBOT_DESCRIPTION_PARAM = "robot_description"; /**< Default ROS parameter for robot description */
 const std::string ROBOT_SEMANTIC_PARAM = "robot_description_semantic"; /**< Default ROS parameter for robot
@@ -66,12 +67,9 @@ public:
 
     // Next add objects that can be attached/detached to the scene
     AttachableObjectPtr obj(new AttachableObject());
-    std::shared_ptr<shapes::Box> box(new shapes::Box());
+    std::shared_ptr<shapes::Box> box(new shapes::Box(1.0, 1.0, 1.0));
+    BoxCollisionShapePtr c_box(new BoxCollisionShape(1.0, 1.0, 1.0));
     Eigen::Isometry3d box_pose;
-
-    box->size[0] = 1.0;
-    box->size[1] = 1.0;
-    box->size[2] = 1.0;
 
     box_pose.setIdentity();
     box_pose.translation() = Eigen::Vector3d(0, 0, 0);
@@ -79,9 +77,8 @@ public:
     obj->name = "box_world";
     obj->visual.shapes.push_back(box);
     obj->visual.shape_poses.push_back(box_pose);
-    obj->collision.shapes.push_back(box);
+    obj->collision.shapes.push_back(c_box);
     obj->collision.shape_poses.push_back(box_pose);
-    obj->collision.collision_object_types.push_back(CollisionObjectType::UseShapeType);
     env_->addAttachableObject(obj);
 
     gLogLevel = util::LevelInfo;
@@ -111,8 +108,8 @@ TEST_F(CastWorldTest, boxes)
   TrajOptProbPtr prob = ConstructProblem(root, env_);
   ASSERT_TRUE(!!prob);
 
-  std::vector<tesseract::ContactResultMap> collisions;
-  ContinuousContactManagerBasePtr manager = prob->GetEnv()->getContinuousContactManager();
+  std::vector<ContactResultMap> collisions;
+  ContinuousContactManagerPtr manager = prob->GetEnv()->getContinuousContactManager();
   manager->setActiveCollisionObjects(prob->GetKin()->getLinkNames());
   manager->setContactDistanceThreshold(0);
 

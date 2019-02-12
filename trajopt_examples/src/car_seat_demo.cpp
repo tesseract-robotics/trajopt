@@ -34,6 +34,7 @@ TRAJOPT_IGNORE_WARNINGS_POP
 #include <tesseract_ros/kdl/kdl_chain_kin.h>
 #include <tesseract_ros/kdl/kdl_env.h>
 #include <tesseract_ros/ros_basic_plotting.h>
+#include <tesseract_collision/core/common.h>
 #include <trajopt/plot_callback.hpp>
 #include <trajopt/problem_description.hpp>
 #include <trajopt_utils/config.hpp>
@@ -73,12 +74,24 @@ void addSeats()
 
     for (auto i = 1; i <= 10; ++i)
     {
-      std::shared_ptr<shapes::Mesh> collision_mesh(shapes::createMeshFromResource(
+      std::shared_ptr<shapes::Mesh> mesh(shapes::createMeshFromResource(
           "package://trajopt_examples/meshes/car_seat/collision/seat_" + std::to_string(i) + ".stl"));
+
+      VectorVector3d mesh_vertices;
+      mesh_vertices.reserve(mesh->vertex_count);
+
+      for (unsigned int i = 0; i < mesh->vertex_count; ++i)
+        mesh_vertices.push_back(
+            Eigen::Vector3d(mesh->vertices[3 * i + 0], mesh->vertices[3 * i + 1], mesh->vertices[3 * i + 2]));
+
+      std::shared_ptr<VectorVector3d> ch_vertices(new VectorVector3d());
+      std::shared_ptr<std::vector<int>> ch_faces(new std::vector<int>());
+
+      int ch_num_faces = tesseract_collision::createConvexHull(*ch_vertices, *ch_faces, mesh_vertices);
+      tesseract_collision::ConvexMeshCollisionShapePtr collision_mesh(new tesseract_collision::ConvexMeshCollisionShape(ch_vertices, ch_faces, ch_num_faces));
 
       obj->collision.shapes.push_back(collision_mesh);
       obj->collision.shape_poses.push_back(seat_pose);
-      obj->collision.collision_object_types.push_back(CollisionObjectType::ConvexHull);
     }
 
     env_->addAttachableObject(obj);
@@ -366,8 +379,8 @@ int main(int argc, char** argv)
   // Plot the trajectory
   plotter->plotTrajectory(prob->GetKin()->getJointNames(), getTraj(pick1_opt.x(), prob->GetVars()));
 
-  std::vector<tesseract::ContactResultMap> collisions;
-  ContinuousContactManagerBasePtr manager = prob->GetEnv()->getContinuousContactManager();
+  std::vector<tesseract_collision::ContactResultMap> collisions;
+  tesseract_collision::ContinuousContactManagerPtr manager = prob->GetEnv()->getContinuousContactManager();
   manager->setActiveCollisionObjects(prob->GetKin()->getLinkNames());
   manager->setContactDistanceThreshold(0);
 

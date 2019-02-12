@@ -26,6 +26,7 @@ using namespace trajopt;
 using namespace std;
 using namespace util;
 using namespace tesseract;
+using namespace tesseract_collision;
 
 const std::string ROBOT_DESCRIPTION_PARAM = "robot_description"; /**< Default ROS parameter for robot description */
 const std::string ROBOT_SEMANTIC_PARAM = "robot_description_semantic"; /**< Default ROS parameter for robot
@@ -141,8 +142,8 @@ TEST_F(PlanningTest, arm_around_table)
   TrajOptProbPtr prob = ConstructProblem(root, env_);
   ASSERT_TRUE(!!prob);
 
-  std::vector<tesseract::ContactResultMap> collisions;
-  ContinuousContactManagerBasePtr manager = prob->GetEnv()->getContinuousContactManager();
+  std::vector<ContactResultMap> collisions;
+  ContinuousContactManagerPtr manager = prob->GetEnv()->getContinuousContactManager();
   manager->setActiveCollisionObjects(prob->GetKin()->getLinkNames());
   manager->setContactDistanceThreshold(0);
 
@@ -181,7 +182,7 @@ TEST_F(PlanningTest, arm_around_table)
   }
 
   collisions.clear();
-  found = tesseract::continuousCollisionCheckTrajectory(
+  found = continuousCollisionCheckTrajectory(
       *manager, *prob->GetEnv(), *prob->GetKin(), getTraj(opt.x(), prob->GetVars()), collisions);
 
   EXPECT_FALSE(found);

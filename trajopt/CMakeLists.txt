@@ -7,6 +7,7 @@ find_package(catkin REQUIRED COMPONENTS
   trajopt_sco
   trajopt_utils
   tesseract_core
+  tesseract_collision
   roscpp
 )
 
@@ -43,6 +44,7 @@ catkin_package(
     trajopt_sco
     trajopt_utils
     tesseract_core
+    tesseract_collision
     roscpp
   DEPENDS
     EIGEN3

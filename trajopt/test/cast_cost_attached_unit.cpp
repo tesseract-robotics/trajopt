@@ -29,6 +29,7 @@ using namespace trajopt;
 using namespace std;
 using namespace util;
 using namespace tesseract;
+using namespace tesseract_collision;
 
 const std::string ROBOT_DESCRIPTION_PARAM = "robot_description"; /**< Default ROS parameter for robot description */
 const std::string ROBOT_SEMANTIC_PARAM = "robot_description_semantic"; /**< Default ROS parameter for robot
@@ -66,12 +67,9 @@ public:
     // Next add objects that can be attached/detached to the scene
     AttachableObjectPtr obj1(new AttachableObject());
     AttachableObjectPtr obj2(new AttachableObject());
-    std::shared_ptr<shapes::Box> box(new shapes::Box());
+    std::shared_ptr<shapes::Box> box(new shapes::Box(0.25, 0.25, 0.25));
+    BoxCollisionShapePtr c_box(new BoxCollisionShape(0.25, 0.25, 0.25));
     Eigen::Isometry3d box_pose;
-
-    box->size[0] = 0.25;
-    box->size[1] = 0.25;
-    box->size[2] = 0.25;
 
     box_pose.setIdentity();
     box_pose.translation() = Eigen::Vector3d(0.5, -0.5, 0);
@@ -79,17 +77,13 @@ public:
     obj1->name = "box_attached";
     obj1->visual.shapes.push_back(box);
     obj1->visual.shape_poses.push_back(box_pose);
-    obj1->collision.shapes.push_back(box);
+    obj1->collision.shapes.push_back(c_box);
     obj1->collision.shape_poses.push_back(box_pose);
-    obj1->collision.collision_object_types.push_back(CollisionObjectType::UseShapeType);
     env_->addAttachableObject(obj1);
 
-    std::shared_ptr<shapes::Box> box2(new shapes::Box());
+    std::shared_ptr<shapes::Box> box2(new shapes::Box(0.25, 0.25, 0.25));
+    BoxCollisionShapePtr c_box2(new BoxCollisionShape(0.25, 0.25, 0.25));
     Eigen::Isometry3d box_pose2;
-
-    box2->size[0] = 0.25;
-    box2->size[1] = 0.25;
-    box2->size[2] = 0.25;
 
     box_pose2.setIdentity();
     box_pose2.translation() = Eigen::Vector3d(0, 0, 0);
@@ -97,9 +91,8 @@ public:
     obj2->name = "box_attached2";
     obj2->visual.shapes.push_back(box2);
     obj2->visual.shape_poses.push_back(box_pose2);
-    obj2->collision.shapes.push_back(box2);
+    obj2->collision.shapes.push_back(c_box2);
     obj2->collision.shape_poses.push_back(box_pose2);
-    obj2->collision.collision_object_types.push_back(CollisionObjectType::UseShapeType);
     env_->addAttachableObject(obj2);
 
     gLogLevel = util::LevelInfo;
@@ -129,8 +122,8 @@ TEST_F(CastAttachedTest, LinkWithGeom)
   TrajOptProbPtr prob = ConstructProblem(root, env_);
   ASSERT_TRUE(!!prob);
 
-  std::vector<tesseract::ContactResultMap> collisions;
-  ContinuousContactManagerBasePtr manager = prob->GetEnv()->getContinuousContactManager();
+  std::vector<ContactResultMap> collisions;
+  ContinuousContactManagerPtr manager = prob->GetEnv()->getContinuousContactManager();
   manager->setActiveCollisionObjects(prob->GetKin()->getLinkNames());
   manager->setContactDistanceThreshold(0);
 
@@ -180,8 +173,8 @@ TEST_F(CastAttachedTest, LinkWithoutGeom)
   TrajOptProbPtr prob = ConstructProblem(root, env_);
   ASSERT_TRUE(!!prob);
 
-  std::vector<tesseract::ContactResultMap> collisions;
-  ContinuousContactManagerBasePtr manager = prob->GetEnv()->getContinuousContactManager();
+  std::vector<ContactResultMap> collisions;
+  ContinuousContactManagerPtr manager = prob->GetEnv()->getContinuousContactManager();
   manager->setActiveCollisionObjects(prob->GetKin()->getLinkNames());
   manager->setContactDistanceThreshold(0);
 
