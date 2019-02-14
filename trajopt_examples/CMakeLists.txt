@@ -9,7 +9,6 @@ find_package(catkin REQUIRED COMPONENTS
   trajopt
   tesseract_ros
   octomap_ros
-  pcl_conversions
 )
 
 find_package(PCL REQUIRED COMPONENTS core features filters io segmentation surface)
