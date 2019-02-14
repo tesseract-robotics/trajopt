@@ -53,7 +53,7 @@ public:
   tesseract_ros::KDLEnvPtr env_;               /**< Trajopt Basic Environment */
   tesseract_ros::ROSBasicPlottingPtr plotter_; /**< Trajopt Plotter */
 
-  virtual void SetUp()
+  void SetUp() override
   {
     std::string urdf_xml_string, srdf_xml_string;
     nh_.getParam(ROBOT_DESCRIPTION_PARAM, urdf_xml_string);
@@ -74,12 +74,14 @@ public:
 
     pcl::PointCloud<pcl::PointXYZ> full_cloud;
     double delta = 0.05;
-    int length = (1 / delta);
+    int length = static_cast<int>(1 / delta);
 
     for (int x = 0; x < length; ++x)
       for (int y = 0; y < length; ++y)
         for (int z = 0; z < length; ++z)
-          full_cloud.push_back(pcl::PointXYZ(-0.5 + x * delta, -0.5 + y * delta, -0.5 + z * delta));
+          full_cloud.push_back(pcl::PointXYZ(-0.5f + static_cast<float>(x * delta),
+                                             -0.5f + static_cast<float>(y * delta),
+                                             -0.5f + static_cast<float>(z * delta)));
 
     sensor_msgs::PointCloud2 pointcloud_msg;
     pcl::toROSMsg(full_cloud, pointcloud_msg);

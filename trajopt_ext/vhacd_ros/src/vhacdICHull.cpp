@@ -2,31 +2,27 @@
  All rights reserved.
 
 
- Redistribution and use in source and binary forms, with or without
- modification, are permitted provided that the following conditions are met:
+ Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
+ following conditions are met:
 
- 1. Redistributions of source code must retain the above copyright notice, this
- list of conditions and the following disclaimer.
+ 1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following
+ disclaimer.
 
- 2. Redistributions in binary form must reproduce the above copyright notice,
- this list of conditions and the following disclaimer in the documentation
- and/or other materials provided with the distribution.
+ 2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following
+ disclaimer in the documentation and/or other materials provided with the distribution.
 
- 3. The names of the contributors may not be used to endorse or promote products
- derived from this software without specific prior written permission.
+ 3. The names of the contributors may not be used to endorse or promote products derived from this software without
+ specific prior written permission.
 
- THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
- FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
- SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+ INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+ WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
+ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-#include "vhacdICHull.h"
+#include "vhacd_ros/inc/vhacdICHull.h"
 #include <limits>
 
 #ifdef _MSC_VER
@@ -44,7 +40,7 @@ bool ICHull::AddPoints(const Vec3<double>* points, size_t nPoints)
   {
     return false;
   }
-  CircularListElement<TMMVertex>* vertex = nullptr;
+  CircularListElement<TMMVertex>* vertex = NULL;
   for (size_t i = 0; i < nPoints; i++)
   {
     vertex = m_mesh.AddVertex();
@@ -514,9 +510,7 @@ CircularListElement<TMMTriangle>* ICHull::MakeConeFace(CircularListElement<TMMEd
   for (int32_t i = 0; i < 2; ++i)
   {
     if (!(newEdges[i] = e->GetData().m_vertices[i]->GetData().m_duplicate))
-    {  // if the edge doesn't exits add it
-       // and mark the vertex as
-       // duplicated
+    {  // if the edge doesn't exits add it and mark the vertex as duplicated
       newEdges[i] = m_mesh.AddEdge();
       newEdges[i]->GetData().m_vertices[0] = e->GetData().m_vertices[i];
       newEdges[i]->GetData().m_vertices[1] = p;
@@ -653,8 +647,7 @@ bool ICHull::MakeCCW(CircularListElement<TMMTriangle>* f,
     fv = e->GetData().m_triangles[1];
   }
 
-  //  set vertex[0] and vertex[1] to have the same orientation as the
-  //  corresponding vertices of fv.
+  //  set vertex[0] and vertex[1] to have the same orientation as the corresponding vertices of fv.
   int32_t i;  // index of e->m_vertices[0] in fv
   CircularListElement<TMMVertex>* v0 = e->GetData().m_vertices[0];
   CircularListElement<TMMVertex>* v1 = e->GetData().m_vertices[1];

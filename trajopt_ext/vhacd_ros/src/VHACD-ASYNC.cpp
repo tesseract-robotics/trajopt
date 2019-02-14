@@ -1,12 +1,12 @@
-#include "../public/VHACD.h"
-#include <atomic>
-#include <float.h>
-#include <mutex>
-#include <stdarg.h>
+#include "vhacd_ros/VHACD.h"
 #include <stdlib.h>
 #include <string.h>
-#include <string>
+#include <stdarg.h>
 #include <thread>
+#include <atomic>
+#include <mutex>
+#include <string>
+#include <float.h>
 
 #define ENABLE_ASYNC 1
 
@@ -37,8 +37,7 @@ public:
     Cancel();  // if we previously had a solution running; cancel it.
     releaseHACD();
 
-    // We need to copy the input vertices and triangles into our own buffers so
-    // we can operate
+    // We need to copy the input vertices and triangles into our own buffers so we can operate
     // on them safely from the background thread.
     mVertices = (double*)HACD_ALLOC(sizeof(double) * countPoints * 3);
     mIndices = (uint32_t*)HACD_ALLOC(sizeof(uint32_t) * countTriangles * 3);
@@ -154,8 +153,7 @@ public:
     }
     if (mThread)
     {
-      mThread->join();  // Wait for the thread to fully exit before we delete the
-                        // instance
+      mThread->join();  // Wait for the thread to fully exit before we delete the instance
       delete mThread;
       mThread = nullptr;
       Log("Convex Decomposition thread canceled\n");
@@ -240,15 +238,12 @@ public:
     return !mRunning;
   }
 
-  // As a convenience for the calling application we only send it update and log
-  // messages from it's own main
-  // thread.  This reduces the complexity burden on the caller by making sure it
-  // only has to deal with log
+  // As a convenience for the calling application we only send it update and log messages from it's own main
+  // thread.  This reduces the complexity burden on the caller by making sure it only has to deal with log
   // messages in it's main application thread.
   void processPendingMessages(void) const
   {
-    // If we have a new update message and the user has specified a callback we
-    // send the message and clear the semaphore
+    // If we have a new update message and the user has specified a callback we send the message and clear the semaphore
     if (mHaveUpdateMessage && mCallback)
     {
       mMessageMutex.lock();
@@ -256,8 +251,7 @@ public:
       mHaveUpdateMessage = false;
       mMessageMutex.unlock();
     }
-    // If we have a new log message and the user has specified a callback we
-    // send the message and clear the semaphore
+    // If we have a new log message and the user has specified a callback we send the message and clear the semaphore
     if (mHaveLogMessage && mLogger)
     {
       mMessageMutex.lock();
@@ -267,10 +261,8 @@ public:
     }
   }
 
-  // Will compute the center of mass of the convex hull decomposition results
-  // and return it
-  // in 'centerOfMass'.  Returns false if the center of mass could not be
-  // computed.
+  // Will compute the center of mass of the convex hull decomposition results and return it
+  // in 'centerOfMass'.  Returns false if the center of mass could not be computed.
   virtual bool ComputeCenterOfMass(double centerOfMass[3]) const
   {
     bool ret = false;
@@ -300,8 +292,7 @@ private:
 
   // Thread safe caching mechanism for messages and update status.
   // This is so that caller always gets messages in his own thread
-  // Member variables are marked as 'mutable' since the message dispatch
-  // function
+  // Member variables are marked as 'mutable' since the message dispatch function
   // is called from const query methods.
   mutable std::mutex mMessageMutex;
   mutable std::atomic<bool> mHaveUpdateMessage{ false };

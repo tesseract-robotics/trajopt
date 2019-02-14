@@ -41,7 +41,7 @@ public:
   tesseract_ros::KDLEnvPtr env_;               /**< Trajopt Basic Environment */
   tesseract_ros::ROSBasicPlottingPtr plotter_; /**< Trajopt Plotter */
 
-  virtual void SetUp()
+  void SetUp() override
   {
     std::string urdf_xml_string, srdf_xml_string;
     nh_.getParam(ROBOT_DESCRIPTION_PARAM, urdf_xml_string);
@@ -127,7 +127,7 @@ TEST_F(CostsTest, equality_jointPos)
   opt.initialize(trajToDblVec(prob->GetInitTraj()));
   double tStart = GetClock();
 
-  sco::OptStatus status = opt.optimize();
+  opt.optimize();
 
   TrajArray output = getTraj(opt.x(), prob->GetVars());
   std::cout << "Trajectory: \n" << output << "\n";
@@ -235,7 +235,7 @@ TEST_F(CostsTest, inequality_jointPos)
   opt.initialize(trajToDblVec(prob->GetInitTraj()));
   double tStart = GetClock();
 
-  sco::OptStatus status = opt.optimize();
+  opt.optimize();
   ROS_DEBUG("planning time: %.3f", GetClock() - tStart);
 
   TrajArray output = getTraj(opt.x(), prob->GetVars());
@@ -331,7 +331,7 @@ TEST_F(CostsTest, equality_jointVel)
   opt.initialize(trajToDblVec(prob->GetInitTraj()));
   double tStart = GetClock();
 
-  sco::OptStatus status = opt.optimize();
+  opt.optimize();
 
   TrajArray output = getTraj(opt.x(), prob->GetVars());
   std::cout << "Trajectory: \n" << output << "\n";
@@ -439,7 +439,7 @@ TEST_F(CostsTest, inequality_jointVel)
   opt.initialize(trajToDblVec(prob->GetInitTraj()));
   double tStart = GetClock();
 
-  sco::OptStatus status = opt.optimize();
+  opt.optimize();
   ROS_DEBUG("planning time: %.3f", GetClock() - tStart);
 
   TrajArray output = getTraj(opt.x(), prob->GetVars());
@@ -748,7 +748,7 @@ TEST_F(CostsTest, equality_jointAcc)
   opt.initialize(trajToDblVec(prob->GetInitTraj()));
   double tStart = GetClock();
 
-  sco::OptStatus status = opt.optimize();
+  opt.optimize();
 
   TrajArray output = getTraj(opt.x(), prob->GetVars());
   std::cout << "Trajectory: \n" << output << "\n";
@@ -857,7 +857,7 @@ TEST_F(CostsTest, inequality_jointAcc)
   opt.initialize(trajToDblVec(prob->GetInitTraj()));
   double tStart = GetClock();
 
-  sco::OptStatus status = opt.optimize();
+  opt.optimize();
   ROS_DEBUG("planning time: %.3f", GetClock() - tStart);
 
   TrajArray output = getTraj(opt.x(), prob->GetVars());

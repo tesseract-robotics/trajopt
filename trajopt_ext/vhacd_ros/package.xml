@@ -1,16 +1,14 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>trajopt_ext</name>
+  <name>vhacd_ros</name>
   <version>0.1.0</version>
-  <description>The trajopt_ext package</description>
+  <description>The vhacd_ros package</description>
   <maintainer email="levi.armstrong@swri.org">Levi Armstrong</maintainer>
   <license>BSD</license>
 
   <buildtool_depend>catkin</buildtool_depend>
+  <depend>bullet3_ros</depend>
 
-  <!-- The export tag contains other, unspecified, tags -->
   <export>
-    <!-- Other tools can request additional information be placed here -->
-
   </export>
 </package>

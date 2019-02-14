@@ -91,11 +91,7 @@ public:
   sco::ConvexConstraintsPtr convex(const DblVec& x, sco::Model* model) override;
   /** @brief Numerically evaluate cost given the vector of values */
   DblVec value(const DblVec&) override;
-  /** Calculate constraint violations (positive part for inequality constraint,
-   * absolute value for inequality constraint)*/
-  DblVec violations(const DblVec& x);
-  /** Sum of violations */
-  double violation(const DblVec& x);
+
   sco::VarVector getVars() override { return vars_.flatten(); }
 private:
   /** @brief The variables being optimized. Used to properly index the vector being optimized */
@@ -224,11 +220,7 @@ public:
   sco::ConvexConstraintsPtr convex(const DblVec& x, sco::Model* model) override;
   /** @brief Numerically evaluate cost given the vector of values */
   DblVec value(const DblVec&) override;
-  /** Calculate constraint violations (positive part for inequality constraint,
-   * absolute value for inequality constraint)*/
-  DblVec violations(const DblVec& x);
-  /** Sum of violations */
-  double violation(const DblVec& x);
+
   sco::VarVector getVars() override { return vars_.flatten(); }
 private:
   /** @brief The variables being optimized. Used to properly index the vector being optimized */
@@ -357,11 +349,7 @@ public:
   sco::ConvexConstraintsPtr convex(const DblVec& x, sco::Model* model) override;
   /** @brief Numerically evaluate cost given the vector of values */
   DblVec value(const DblVec&) override;
-  /** Calculate constraint violations (positive part for inequality constraint,
-   * absolute value for inequality constraint)*/
-  DblVec violations(const DblVec& x);
-  /** Sum of violations */
-  double violation(const DblVec& x);
+
   sco::VarVector getVars() override { return vars_.flatten(); }
 private:
   /** @brief The variables being optimized. Used to properly index the vector being optimized */
@@ -490,11 +478,7 @@ public:
   sco::ConvexConstraintsPtr convex(const DblVec& x, sco::Model* model) override;
   /** @brief Numerically evaluate cost given the vector of values */
   DblVec value(const DblVec&) override;
-  /** Calculate constraint violations (positive part for inequality constraint,
-   * absolute value for inequality constraint)*/
-  DblVec violations(const DblVec& x);
-  /** Sum of violations */
-  double violation(const DblVec& x);
+
   sco::VarVector getVars() override { return vars_.flatten(); }
 private:
   /** @brief The variables being optimized. Used to properly index the vector being optimized */

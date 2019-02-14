@@ -70,21 +70,15 @@ double fm_getDeterminant(const double matrix[16]);
 void fm_getSubMatrix(int32_t ki, int32_t kj, float pDst[16], const float matrix[16]);
 void fm_getSubMatrix(int32_t ki, int32_t kj, double pDst[16], const float matrix[16]);
 
-void fm_rotate(const float matrix[16],
-               const float pos[3],
-               float t[3]);  // only rotate the point by a 4x4 matrix, don't translate.
-void fm_rotate(const double matri[16],
-               const double pos[3],
-               double t[3]);  // only rotate the point by a 4x4 matrix, don't translate.
+void fm_rotate(const float matrix[16], const float pos[3], float t[3]);  // only rotate the point by a 4x4 matrix, don't
+                                                                         // translate.
+void fm_rotate(const double matri[16], const double pos[3], double t[3]);  // only rotate the point by a 4x4 matrix,
+                                                                           // don't translate.
 
-void fm_eulerToMatrix(float ax,
-                      float ay,
-                      float az,
-                      float matrix[16]);  // convert euler (in radians) to a dest 4x4 matrix (translation set to zero)
-void fm_eulerToMatrix(double ax,
-                      double ay,
-                      double az,
-                      double matrix[16]);  // convert euler (in radians) to a dest 4x4 matrix (translation set to zero)
+void fm_eulerToMatrix(float ax, float ay, float az, float matrix[16]);      // convert euler (in radians) to a dest 4x4
+                                                                            // matrix (translation set to zero)
+void fm_eulerToMatrix(double ax, double ay, double az, double matrix[16]);  // convert euler (in radians) to a dest 4x4
+                                                                            // matrix (translation set to zero)
 
 void fm_getAABB(uint32_t vcount, const float* points, uint32_t pstride, float bmin[3], float bmax[3]);
 void fm_getAABB(uint32_t vcount, const double* points, uint32_t pstride, double bmin[3], double bmax[3]);
@@ -112,23 +106,15 @@ void fm_eulerToQuat(const double euler[3], double quat[4]);  // convert euler an
 void fm_scale(float x, float y, float z, float matrix[16]);      // apply scale to the matrix.
 void fm_scale(double x, double y, double z, double matrix[16]);  // apply scale to the matrix.
 
-void fm_eulerToQuatDX(float x,
-                      float y,
-                      float z,
-                      float quat[4]);  // convert euler angles to quaternion using the fucked up DirectX method
-void fm_eulerToQuatDX(double x,
-                      double y,
-                      double z,
-                      double quat[4]);  // convert euler angles to quaternion using the fucked up DirectX method
+void fm_eulerToQuatDX(float x, float y, float z, float quat[4]);  // convert euler angles to quaternion using the fucked
+                                                                  // up DirectX method
+void fm_eulerToQuatDX(double x, double y, double z, double quat[4]);  // convert euler angles to quaternion using the
+                                                                      // fucked up DirectX method
 
-void fm_eulerToMatrixDX(float x,
-                        float y,
-                        float z,
-                        float matrix[16]);  // convert euler angles to quaternion using the fucked up DirectX method.
-void fm_eulerToMatrixDX(double x,
-                        double y,
-                        double z,
-                        double matrix[16]);  // convert euler angles to quaternion using the fucked up DirectX method.
+void fm_eulerToMatrixDX(float x, float y, float z, float matrix[16]);  // convert euler angles to quaternion using the
+                                                                       // fucked up DirectX method.
+void fm_eulerToMatrixDX(double x, double y, double z, double matrix[16]);  // convert euler angles to quaternion using
+                                                                           // the fucked up DirectX method.
 
 void fm_quatToMatrix(const float quat[4],
                      float matrix[16]);  // convert quaterinion rotation to matrix, translation set to zero.
@@ -186,12 +172,10 @@ void fm_cross(double cross[3], const double a[3], const double b[3]);
 float fm_computeNormalVector(float n[3], const float p1[3], const float p2[3]);      // as P2-P1 normalized.
 double fm_computeNormalVector(double n[3], const double p1[3], const double p2[3]);  // as P2-P1 normalized.
 
-bool fm_computeWindingOrder(const float p1[3],
-                            const float p2[3],
-                            const float p3[3]);  // returns true if the triangle is clockwise.
-bool fm_computeWindingOrder(const double p1[3],
-                            const double p2[3],
-                            const double p3[3]);  // returns true if the triangle is clockwise.
+bool fm_computeWindingOrder(const float p1[3], const float p2[3], const float p3[3]);  // returns true if the triangle
+                                                                                       // is clockwise.
+bool fm_computeWindingOrder(const double p1[3], const double p2[3], const double p3[3]);  // returns true if the
+                                                                                          // triangle is clockwise.
 
 float fm_normalize(float n[3]);    // normalize this vector and return the distance
 double fm_normalize(double n[3]);  // normalize this vector and return the distance
@@ -230,9 +214,8 @@ uint32_t fm_clipTestPoint(const float bmin[3], const float bmax[3], const float 
 uint32_t fm_clipTestPoint(const double bmin[3], const double bmax[3], const double pos[3]);
 
 uint32_t fm_clipTestPointXZ(const float bmin[3], const float bmax[3], const float pos[3]);  // only tests X and Z, not Y
-uint32_t fm_clipTestPointXZ(const double bmin[3],
-                            const double bmax[3],
-                            const double pos[3]);  // only tests X and Z, not Y
+uint32_t fm_clipTestPointXZ(const double bmin[3], const double bmax[3], const double pos[3]);  // only tests X and Z,
+                                                                                               // not Y
 
 uint32_t fm_clipTestAABB(const float bmin[3],
                          const float bmax[3],
@@ -271,26 +254,20 @@ void fm_minmax(const double p[3], double bmin[3], double bmax[3]);  // accumulat
 void fm_inflateMinMax(float bmin[3], float bmax[3], float ratio);
 void fm_inflateMinMax(double bmin[3], double bmax[3], double ratio);
 
-float fm_solveX(const float plane[4],
-                float y,
-                float z);  // solve for X given this plane equation and the other two components.
-double fm_solveX(const double plane[4],
-                 double y,
-                 double z);  // solve for X given this plane equation and the other two components.
+float fm_solveX(const float plane[4], float y, float z);      // solve for X given this plane equation and the other two
+                                                              // components.
+double fm_solveX(const double plane[4], double y, double z);  // solve for X given this plane equation and the other two
+                                                              // components.
 
-float fm_solveY(const float plane[4],
-                float x,
-                float z);  // solve for Y given this plane equation and the other two components.
-double fm_solveY(const double plane[4],
-                 double x,
-                 double z);  // solve for Y given this plane equation and the other two components.
+float fm_solveY(const float plane[4], float x, float z);      // solve for Y given this plane equation and the other two
+                                                              // components.
+double fm_solveY(const double plane[4], double x, double z);  // solve for Y given this plane equation and the other two
+                                                              // components.
 
-float fm_solveZ(const float plane[4],
-                float x,
-                float y);  // solve for Z given this plane equation and the other two components.
-double fm_solveZ(const double plane[4],
-                 double x,
-                 double y);  // solve for Z given this plane equation and the other two components.
+float fm_solveZ(const float plane[4], float x, float y);      // solve for Z given this plane equation and the other two
+                                                              // components.
+double fm_solveZ(const double plane[4], double x, double y);  // solve for Z given this plane equation and the other two
+                                                              // components.
 
 bool fm_computeBestFitPlane(uint32_t vcount,       // number of input data points
                             const float* points,   // starting address of points array.
@@ -441,10 +418,10 @@ double fm_distancePointLineSegment(const double Point[3],
                                    LineSegmentType& type,
                                    double epsilon);
 
-bool fm_colinear(const double p1[3],
-                 const double p2[3],
-                 const double p3[3],
-                 double epsilon = 0.999);  // true if these three points in a row are co-linear
+bool fm_colinear(const double p1[3], const double p2[3], const double p3[3], double epsilon = 0.999);  // true if these
+                                                                                                       // three points
+                                                                                                       // in a row are
+                                                                                                       // co-linear
 bool fm_colinear(const float p1[3], const float p2[3], const float p3[3], float epsilon = 0.999f);
 
 bool fm_colinear(const float a1[3],
@@ -573,14 +550,12 @@ void fm_computeBestFitCapsule(uint32_t vcount,
 
 void fm_planeToMatrix(const float plane[4], float matrix[16]);  // convert a plane equation to a 4x4 rotation matrix.
                                                                 // Reference vector is 0,1,0
-void fm_planeToQuat(const float plane[4],
-                    float quat[4],
-                    float pos[3]);  // convert a plane equation to a quaternion and translation
+void fm_planeToQuat(const float plane[4], float quat[4], float pos[3]);  // convert a plane equation to a quaternion and
+                                                                         // translation
 
 void fm_planeToMatrix(const double plane[4], double matrix[16]);  // convert a plane equation to a 4x4 rotation matrix
-void fm_planeToQuat(const double plane[4],
-                    double quat[4],
-                    double pos[3]);  // convert a plane equation to a quaternion and translation
+void fm_planeToQuat(const double plane[4], double quat[4], double pos[3]);  // convert a plane equation to a quaternion
+                                                                            // and translation
 
 inline void fm_doubleToFloat3(const double p[3], float t[3])
 {
@@ -595,14 +570,10 @@ inline void fm_floatToDouble3(const float p[3], double t[3])
   t[2] = (double)p[2];
 };
 
-void fm_eulerMatrix(float ax,
-                    float ay,
-                    float az,
-                    float matrix[16]);  // convert euler (in radians) to a dest 4x4 matrix (translation set to zero)
-void fm_eulerMatrix(double ax,
-                    double ay,
-                    double az,
-                    double matrix[16]);  // convert euler (in radians) to a dest 4x4 matrix (translation set to zero)
+void fm_eulerMatrix(float ax, float ay, float az, float matrix[16]);  // convert euler (in radians) to a dest 4x4 matrix
+                                                                      // (translation set to zero)
+void fm_eulerMatrix(double ax, double ay, double az, double matrix[16]);  // convert euler (in radians) to a dest 4x4
+                                                                          // matrix (translation set to zero)
 
 float fm_computeMeshVolume(const float* vertices, uint32_t tcount, const uint32_t* indices);
 double fm_computeMeshVolume(const double* vertices, uint32_t tcount, const uint32_t* indices);

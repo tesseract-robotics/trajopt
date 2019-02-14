@@ -2,37 +2,33 @@
  All rights reserved.
 
 
- Redistribution and use in source and binary forms, with or without
- modification, are permitted provided that the following conditions are met:
+ Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
+ following conditions are met:
 
- 1. Redistributions of source code must retain the above copyright notice, this
- list of conditions and the following disclaimer.
+ 1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following
+ disclaimer.
 
- 2. Redistributions in binary form must reproduce the above copyright notice,
- this list of conditions and the following disclaimer in the documentation
- and/or other materials provided with the distribution.
+ 2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following
+ disclaimer in the documentation and/or other materials provided with the distribution.
 
- 3. The names of the contributors may not be used to endorse or promote products
- derived from this software without specific prior written permission.
+ 3. The names of the contributors may not be used to endorse or promote products derived from this software without
+ specific prior written permission.
 
- THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
- FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
- SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+ INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+ WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
+ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 #ifndef _CRT_SECURE_NO_WARNINGS
 #define _CRT_SECURE_NO_WARNINGS
 #endif
 
-#include "vhacdVolume.h"
-#include "btConvexHullComputer.h"
+#include "vhacd_ros/inc/btConvexHullComputer.h"
+#include "vhacd_ros/inc/vhacdVolume.h"
 #include <algorithm>
 #include <float.h>
 #include <math.h>
@@ -209,8 +205,7 @@ int32_t TriBoxOverlap(const Vec3<double>& boxcenter,
 {
   /*    use separating axis theorem to test overlap between triangle and box */
   /*    need to test for overlap in these directions: */
-  /*    1) the {x,y,z}-directions (actually, since we use the AABB of the
-   * triangle */
+  /*    1) the {x,y,z}-directions (actually, since we use the AABB of the triangle */
   /*       we do not even need to test these) */
   /*    2) normal of the triangle */
   /*    3) crossproduct(edge from tri, {x,y,z}-directin) */
@@ -289,8 +284,7 @@ int32_t TriBoxOverlap(const Vec3<double>& boxcenter,
   return 1; /* box and triangle overlaps */
 }
 
-// Slightly modified version of  Stan Melax's code for 3x3 matrix
-// diagonalization (Thanks Stan!)
+// Slightly modified version of  Stan Melax's code for 3x3 matrix diagonalization (Thanks Stan!)
 // source: http://www.melax.com/diag.html?attredirects=0
 void Diagonalize(const double (&A)[3][3], double (&Q)[3][3], double (&D)[3][3])
 {
@@ -446,7 +440,7 @@ void VoxelSet::ComputeConvexHull(Mesh& meshCH, const size_t sampling) const
   if (nVoxels == 0)
     return;
 
-  SArray<Vec3<double>> cpoints;
+  SArray<Vec3<double> > cpoints;
 
   Vec3<double>* points = new Vec3<double>[CLUSTER_SIZE];
   size_t p = 0;
@@ -552,8 +546,8 @@ void VoxelSet::GetPoints(const Voxel& voxel, Vec3<double>* const pts) const
   pts[7][2] = (k + 0.5) * m_scale + m_minBB[2];
 }
 void VoxelSet::Intersect(const Plane& plane,
-                         SArray<Vec3<double>>* const positivePts,
-                         SArray<Vec3<double>>* const negativePts,
+                         SArray<Vec3<double> >* const positivePts,
+                         SArray<Vec3<double> >* const negativePts,
                          const size_t sampling) const
 {
   const size_t nVoxels = m_voxels.Size();
@@ -625,7 +619,7 @@ void VoxelSet::Intersect(const Plane& plane,
 }
 void VoxelSet::ComputeExteriorPoints(const Plane& plane,
                                      const Mesh& mesh,
-                                     SArray<Vec3<double>>* const exteriorPts) const
+                                     SArray<Vec3<double> >* const exteriorPts) const
 {
   const size_t nVoxels = m_voxels.Size();
   if (nVoxels == 0)
@@ -865,7 +859,7 @@ void Volume::FillOutsideSurface(const size_t i0,
                                 const size_t k1)
 {
   const short neighbours[6][3] = { { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 }, { -1, 0, 0 }, { 0, -1, 0 }, { 0, 0, -1 } };
-  std::queue<Vec3<short>> fifo;
+  std::queue<Vec3<short> > fifo;
   Vec3<short> current;
   short a, b, c;
   for (size_t i = i0; i < i1; ++i)
@@ -1205,7 +1199,7 @@ void TetrahedronSet::ComputeConvexHull(Mesh& meshCH, const size_t sampling) cons
   if (nTetrahedra == 0)
     return;
 
-  SArray<Vec3<double>> cpoints;
+  SArray<Vec3<double> > cpoints;
 
   Vec3<double>* points = new Vec3<double>[CLUSTER_SIZE];
   size_t p = 0;
@@ -1506,8 +1500,8 @@ void TetrahedronSet::AddClippedTetrahedra(const Vec3<double> (&pts)[10], const i
 }
 
 void TetrahedronSet::Intersect(const Plane& plane,
-                               SArray<Vec3<double>>* const positivePts,
-                               SArray<Vec3<double>>* const negativePts,
+                               SArray<Vec3<double> >* const positivePts,
+                               SArray<Vec3<double> >* const negativePts,
                                const size_t sampling) const
 {
   const size_t nTetrahedra = m_tetrahedra.Size();
@@ -1516,7 +1510,7 @@ void TetrahedronSet::Intersect(const Plane& plane,
 }
 void TetrahedronSet::ComputeExteriorPoints(const Plane& plane,
                                            const Mesh& mesh,
-                                           SArray<Vec3<double>>* const exteriorPts) const
+                                           SArray<Vec3<double> >* const exteriorPts) const
 {
 }
 void TetrahedronSet::ComputeClippedVolumes(const Plane& plane, double& positiveVolume, double& negativeVolume) const

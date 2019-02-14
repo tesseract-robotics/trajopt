@@ -837,7 +837,7 @@ JointJerkEqConstraint::JointJerkEqConstraint(const VarArray& vars,
   , first_step_(first_step)
   , last_step_(last_step)
 {
-  for (int i = first_step_; i <= last_step_ - 2; ++i)
+  for (int i = first_step_; i <= last_step_ - 4; ++i)
   {
     for (int j = 0; j < vars.cols(); ++j)
     {
@@ -893,7 +893,7 @@ JointJerkIneqConstraint::JointJerkIneqConstraint(const VarArray& vars,
   , first_step_(first_step)
   , last_step_(last_step)
 {
-  for (int i = first_step_; i <= last_step_ - 2; ++i)
+  for (int i = first_step_; i <= last_step_ - 4; ++i)
   {
     for (int j = 0; j < vars.cols(); ++j)
     {

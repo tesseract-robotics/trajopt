@@ -1,6 +1,6 @@
-#include "vhacdRaycastMesh.h"
-#include <assert.h>
+#include "vhacd_ros/inc/vhacdRaycastMesh.h"
 #include <math.h>
+#include <assert.h>
 
 namespace RAYCAST_MESH
 {
@@ -95,12 +95,10 @@ public:
   virtual void release(void) { delete this; }
   virtual bool raycast(const double* from,            // The starting point of the raycast
                        const double* to,              // The ending point of the raycast
-                       const double* closestToPoint,  // The point to match the nearest hit
-                                                      // location (can just be the 'from'
-                                                      // location of no specific point)
-                       double* hitLocation,           // The point where the ray hit nearest to the
-                                                      // 'closestToPoint' location
-                       double* hitDistance) final     // The distance the ray traveled to the hit location
+                       const double* closestToPoint,  // The point to match the nearest hit location (can just be the
+                                                      // 'from' location of no specific point)
+                       double* hitLocation,  // The point where the ray hit nearest to the 'closestToPoint' location
+                       double* hitDistance) final  // The distance the ray traveled to the hit location
   {
     bool ret = false;
 
@@ -173,23 +171,21 @@ using namespace RAYCAST_MESH;
 
 namespace VHACD
 {
-RaycastMesh* RaycastMesh::createRaycastMesh(uint32_t vcount,  // The number of vertices in the source triangle mesh
-                                            const double* vertices,  // The array of vertex positions in the format
-                                                                     // x1,y1,z1..x2,y2,z2.. etc.
-                                            uint32_t tcount,  // The number of triangles in the source triangle mesh
-                                            const uint32_t* indices)  // The triangle indices in the format of i1,i2,i3
-                                                                      // ... i4,i5,i6, ...
+RaycastMesh* RaycastMesh::createRaycastMesh(
+    uint32_t vcount,          // The number of vertices in the source triangle mesh
+    const double* vertices,   // The array of vertex positions in the format x1,y1,z1..x2,y2,z2.. etc.
+    uint32_t tcount,          // The number of triangles in the source triangle mesh
+    const uint32_t* indices)  // The triangle indices in the format of i1,i2,i3 ... i4,i5,i6, ...
 {
   MyRaycastMesh* m = new MyRaycastMesh(vcount, vertices, tcount, indices);
   return static_cast<RaycastMesh*>(m);
 }
 
-RaycastMesh* RaycastMesh::createRaycastMesh(uint32_t vcount,  // The number of vertices in the source triangle mesh
-                                            const float* vertices,  // The array of vertex positions in the format
-                                                                    // x1,y1,z1..x2,y2,z2.. etc.
-                                            uint32_t tcount,  // The number of triangles in the source triangle mesh
-                                            const uint32_t* indices)  // The triangle indices in the format of i1,i2,i3
-                                                                      // ... i4,i5,i6, ...
+RaycastMesh* RaycastMesh::createRaycastMesh(
+    uint32_t vcount,          // The number of vertices in the source triangle mesh
+    const float* vertices,    // The array of vertex positions in the format x1,y1,z1..x2,y2,z2.. etc.
+    uint32_t tcount,          // The number of triangles in the source triangle mesh
+    const uint32_t* indices)  // The triangle indices in the format of i1,i2,i3 ... i4,i5,i6, ...
 {
   MyRaycastMesh* m = new MyRaycastMesh(vcount, vertices, tcount, indices);
   return static_cast<RaycastMesh*>(m);

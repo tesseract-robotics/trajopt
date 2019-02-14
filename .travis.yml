@@ -35,6 +35,7 @@ matrix:
     - env: ROS_DISTRO=melodic ROS_REPO=ros-shadow-fixed
   allow_failures:
     - env: ROS_DISTRO=kinetic ROS_REPO=ros-shadow-fixed
+    - env: ROS_DISTRO=melodic
     - env: ROS_DISTRO=melodic ROS_REPO=ros-shadow-fixed
 
 install:

@@ -2,27 +2,25 @@
 Copyright (c) 2011 Ole Kniemeyer, MAXON, www.maxon.net
 
 This software is provided 'as-is', without any express or implied warranty.
-In no event will the authors be held liable for any damages arising from the use
-of this software.
+In no event will the authors be held liable for any damages arising from the use of this software.
 Permission is granted to anyone to use this software for any purpose,
 including commercial applications, and to alter it and redistribute it freely,
 subject to the following restrictions:
 
-1. The origin of this software must not be misrepresented; you must not claim
-that you wrote the original software. If you use this software in a product, an
-acknowledgment in the product documentation would be appreciated but is not
+1. The origin of this software must not be misrepresented; you must not claim that you wrote the original software. If
+you use this software in a product, an acknowledgment in the product documentation would be appreciated but is not
 required.
-2. Altered source versions must be plainly marked as such, and must not be
-misrepresented as being the original software.
+2. Altered source versions must be plainly marked as such, and must not be misrepresented as being the original
+software.
 3. This notice may not be removed or altered from any source distribution.
 */
 
 #include <string.h>
 
-#include "btAlignedObjectArray.h"
-#include "btConvexHullComputer.h"
-#include "btMinMax.h"
-#include "btVector3.h"
+#include "vhacd_ros/inc/btAlignedObjectArray.h"
+#include "vhacd_ros/inc/btConvexHullComputer.h"
+#include "vhacd_ros/inc/btMinMax.h"
+#include "vhacd_ros/inc/btVector3.h"
 
 #ifdef __GNUC__
 #include <stdint.h>
@@ -42,11 +40,10 @@ typedef unsigned long long int32_t uint64_t;
 #pragma warning(disable : 4458)
 #endif
 
-// The definition of USE_X86_64_ASM is moved into the build system. You can
-// enable it manually by commenting out the following lines
-//#if (defined(__GNUC__) && defined(__x86_64__) && !defined(__ICL))  // ||
-//(defined(__ICL) && defined(_M_X64))   bug in Intel compiler, disable inline
-// assembly
+// The definition of USE_X86_64_ASM is moved into the build system. You can enable it manually by commenting out the
+// following lines
+//#if (defined(__GNUC__) && defined(__x86_64__) && !defined(__ICL))  // || (defined(__ICL) && defined(_M_X64))   bug in
+// Intel compiler, disable inline assembly
 //	#define USE_X86_64_ASM
 //#endif
 
@@ -347,9 +344,7 @@ public:
     Point32 point;
     int32_t copy;
 
-    Vertex() : next(nullptr), prev(nullptr), edges(nullptr), firstNearbyFace(nullptr), lastNearbyFace(nullptr), copy(-1)
-    {
-    }
+    Vertex() : next(NULL), prev(NULL), edges(NULL), firstNearbyFace(NULL), lastNearbyFace(NULL), copy(-1) {}
 #ifdef DEBUG_CONVEX_HULL
     void print() { printf("V%d (%d, %d, %d)", point.index, point.x, point.y, point.z); }
     void printGraph();
@@ -385,8 +380,8 @@ public:
         btAssert(f->nearbyVertex == src);
         f->nearbyVertex = this;
       }
-      src->firstNearbyFace = nullptr;
-      src->lastNearbyFace = nullptr;
+      src->firstNearbyFace = NULL;
+      src->lastNearbyFace = NULL;
     }
   };
 
@@ -402,11 +397,11 @@ public:
 
     ~Edge()
     {
-      next = nullptr;
-      prev = nullptr;
-      reverse = nullptr;
-      target = nullptr;
-      face = nullptr;
+      next = NULL;
+      prev = NULL;
+      reverse = NULL;
+      target = NULL;
+      face = NULL;
     }
 
     void link(Edge* n)
@@ -445,7 +440,7 @@ public:
     Point32 dir0;
     Point32 dir1;
 
-    Face() : next(nullptr), nearbyVertex(nullptr), nextWithSameNearbyVertex(nullptr) {}
+    Face() : next(NULL), nearbyVertex(NULL), nextWithSameNearbyVertex(NULL) {}
     void init(Vertex* a, Vertex* b, Vertex* c)
     {
       nearbyVertex = a;
@@ -514,7 +509,7 @@ private:
     Vertex* minYx;
     Vertex* maxYx;
 
-    IntermediateHull() : minXy(nullptr), maxXy(nullptr), minYx(nullptr), maxYx(nullptr) {}
+    IntermediateHull() : minXy(NULL), maxXy(NULL), minYx(NULL), maxYx(NULL) {}
     void print();
   };
 
@@ -535,14 +530,14 @@ private:
   public:
     PoolArray<T>* next;
 
-    PoolArray(int32_t size) : size(size), next(nullptr) { array = (T*)btAlignedAlloc(sizeof(T) * size, 16); }
+    PoolArray(int32_t size) : size(size), next(NULL) { array = (T*)btAlignedAlloc(sizeof(T) * size, 16); }
     ~PoolArray() { btAlignedFree(array); }
     T* init()
     {
       T* o = array;
       for (int32_t i = 0; i < size; i++, o++)
       {
-        o->next = (i + 1 < size) ? o + 1 : nullptr;
+        o->next = (i + 1 < size) ? o + 1 : NULL;
       }
       return array;
     }
@@ -558,7 +553,7 @@ private:
     int32_t arraySize;
 
   public:
-    Pool() : arrays(nullptr), nextArray(nullptr), freeObjects(nullptr), arraySize(256) {}
+    Pool() : arrays(NULL), nextArray(NULL), freeObjects(NULL), arraySize(256) {}
     ~Pool()
     {
       while (arrays)
@@ -573,7 +568,7 @@ private:
     void reset()
     {
       nextArray = arrays;
-      freeObjects = nullptr;
+      freeObjects = NULL;
     }
 
     void setArraySize(int32_t arraySize) { this->arraySize = arraySize; }
@@ -646,7 +641,7 @@ private:
     }
     else
     {
-      r->target->edges = nullptr;
+      r->target->edges = NULL;
     }
 
     n = r->next;
@@ -659,7 +654,7 @@ private:
     }
     else
     {
-      edge->target->edges = nullptr;
+      edge->target->edges = NULL;
     }
 
     edgePool.freeObject(edge);
@@ -752,8 +747,8 @@ int32_t btConvexHullInternal::Rational64::compare(const Rational64& b) const
     return 0;
   }
 
-//	return (numerator * b.denominator > b.numerator * denominator) ? sign :
-//(numerator * b.denominator < b.numerator * denominator) ? -sign : 0;
+//	return (numerator * b.denominator > b.numerator * denominator) ? sign : (numerator * b.denominator < b.numerator *
+// denominator) ? -sign : 0;
 
 #ifdef USE_X86_64_ASM
 
@@ -766,24 +761,21 @@ int32_t btConvexHullInternal::Rational64::compare(const Rational64& b) const
           "movq %[tn], %%rax\n\t"
           "mulq %[bd]\n\t"
           "subq %[tmp], %%rax\n\t"
-          "sbbq %%rbx, %%rdx\n\t"  // rdx:rax contains 128-bit-difference
-                                   // "numerator*b.denominator -
+          "sbbq %%rbx, %%rdx\n\t"  // rdx:rax contains 128-bit-difference "numerator*b.denominator -
                                    // b.numerator*denominator"
           "setnsb %%bh\n\t"        // bh=1 if difference is non-negative, bh=0 otherwise
           "orq %%rdx, %%rax\n\t"
           "setnzb %%bl\n\t"  // bl=1 if difference if non-zero, bl=0 if it is zero
-          "decb %%bh\n\t"    // now bx=0x0000 if difference is zero, 0xff01 if it is
-          // negative, 0x0001 if it is positive (i.e., same sign as
-          // difference)
+          "decb %%bh\n\t"    // now bx=0x0000 if difference is zero, 0xff01 if it is negative, 0x0001 if it is positive
+                             // (i.e., same sign as difference)
           "shll $16, %%ebx\n\t"  // ebx has same sign as difference
           : "=&b"(result), [tmp] "=&r"(tmp), "=a"(dummy)
           : "a"(denominator), [bn] "g"(b.numerator), [tn] "g"(numerator), [bd] "g"(b.denominator)
           : "%rdx", "cc");
-  return result ? result ^ sign  // if sign is +1, only bit 0 of result is
-                                 // inverted, which does not change the sign of
+  return result ? result ^ sign  // if sign is +1, only bit 0 of result is inverted, which does not change the sign of
                                  // result (and cannot result in zero)
-                  // if sign is -1, all bits of result are inverted, which changes
-                  // the sign of result (and again cannot result in zero)
+                  // if sign is -1, all bits of result are inverted, which changes the sign of result (and again cannot
+                  // result in zero)
                   :
                   0;
 
@@ -862,8 +854,8 @@ btConvexHullInternal::Edge* btConvexHullInternal::newEdgePair(Vertex* from, Vert
   r->copy = mergeStamp;
   e->target = to;
   r->target = from;
-  e->face = nullptr;
-  r->face = nullptr;
+  e->face = NULL;
+  r->face = NULL;
   usedEdgePairs++;
   if (usedEdgePairs > maxUsedEdgePairs)
   {
@@ -921,8 +913,8 @@ bool btConvexHullInternal::mergeProjection(IntermediateHull& h0, IntermediateHul
 
   v0 = h0.maxXy;
   v1 = h1.maxXy;
-  Vertex* v00 = nullptr;
-  Vertex* v10 = nullptr;
+  Vertex* v00 = NULL;
+  Vertex* v10 = NULL;
   int32_t sign = 1;
 
   for (int32_t side = 0; side <= 1; side++)
@@ -1063,10 +1055,10 @@ void btConvexHullInternal::computeInternal(int32_t start, int32_t end, Intermedi
   switch (n)
   {
     case 0:
-      result.minXy = nullptr;
-      result.maxXy = nullptr;
-      result.minYx = nullptr;
-      result.maxYx = nullptr;
+      result.minXy = NULL;
+      result.maxXy = NULL;
+      result.minYx = NULL;
+      result.maxYx = NULL;
       return;
     case 2:
     {
@@ -1138,7 +1130,7 @@ void btConvexHullInternal::computeInternal(int32_t start, int32_t end, Intermedi
     case 1:
     {
       Vertex* v = originalVertices[start];
-      v->edges = nullptr;
+      v->edges = NULL;
       v->next = v;
       v->prev = v;
 
@@ -1272,7 +1264,7 @@ btConvexHullInternal::Edge* btConvexHullInternal::findMaxAngle(bool ccw,
                                                                const Point64& sxrxs,
                                                                Rational64& minCot)
 {
-  Edge* minEdge = nullptr;
+  Edge* minEdge = NULL;
 
 #ifdef DEBUG_CONVEX_HULL
   printf("find max edge for %d\n", start->point.index);
@@ -1297,7 +1289,7 @@ btConvexHullInternal::Edge* btConvexHullInternal::findMaxAngle(bool ccw,
         else
         {
           int32_t cmp;
-          if (minEdge == nullptr)
+          if (minEdge == NULL)
           {
             minCot = cot;
             minEdge = e;
@@ -1424,7 +1416,7 @@ void btConvexHullInternal::findEdgeForCoplanarFaces(Vertex* c0,
           {
             et0 = f0->target->point;
             dx = (et1 - et0).dot(perp);
-            e0 = (e0 == start0) ? nullptr : f0;
+            e0 = (e0 == start0) ? NULL : f0;
             continue;
           }
         }
@@ -1477,7 +1469,7 @@ void btConvexHullInternal::findEdgeForCoplanarFaces(Vertex* c0,
           {
             et1 = f1->target->point;
             dx = (et1 - et0).dot(perp);
-            e1 = (e1 == start1) ? nullptr : f1;
+            e1 = (e1 == start1) ? NULL : f1;
             continue;
           }
         }
@@ -1532,16 +1524,16 @@ void btConvexHullInternal::merge(IntermediateHull& h0, IntermediateHull& h1)
 
   mergeStamp--;
 
-  Vertex* c0 = nullptr;
-  Edge* toPrev0 = nullptr;
-  Edge* firstNew0 = nullptr;
-  Edge* pendingHead0 = nullptr;
-  Edge* pendingTail0 = nullptr;
-  Vertex* c1 = nullptr;
-  Edge* toPrev1 = nullptr;
-  Edge* firstNew1 = nullptr;
-  Edge* pendingHead1 = nullptr;
-  Edge* pendingTail1 = nullptr;
+  Vertex* c0 = NULL;
+  Edge* toPrev0 = NULL;
+  Edge* firstNew0 = NULL;
+  Edge* pendingHead0 = NULL;
+  Edge* pendingTail0 = NULL;
+  Vertex* c1 = NULL;
+  Edge* toPrev1 = NULL;
+  Edge* firstNew1 = NULL;
+  Edge* pendingHead1 = NULL;
+  Edge* pendingTail1 = NULL;
   Point32 prevPoint;
 
   if (mergeProjection(h0, h1, c0, c1))
@@ -1552,7 +1544,7 @@ void btConvexHullInternal::merge(IntermediateHull& h0, IntermediateHull& h1)
     btAssert(!t.isZero());
 
     Edge* e = c0->edges;
-    Edge* start0 = nullptr;
+    Edge* start0 = NULL;
     if (e)
     {
       do
@@ -1571,7 +1563,7 @@ void btConvexHullInternal::merge(IntermediateHull& h0, IntermediateHull& h1)
     }
 
     e = c1->edges;
-    Edge* start1 = nullptr;
+    Edge* start1 = NULL;
     if (e)
     {
       do
@@ -1591,7 +1583,7 @@ void btConvexHullInternal::merge(IntermediateHull& h0, IntermediateHull& h1)
 
     if (start0 || start1)
     {
-      findEdgeForCoplanarFaces(c0, c1, start0, start1, nullptr, nullptr);
+      findEdgeForCoplanarFaces(c0, c1, start0, start1, NULL, NULL);
       if (start0)
       {
         c0 = start0->target;
@@ -1682,14 +1674,14 @@ void btConvexHullInternal::merge(IntermediateHull& h0, IntermediateHull& h1)
 
       if (cmp == 0)
       {
-        findEdgeForCoplanarFaces(c0, c1, e0, e1, nullptr, nullptr);
+        findEdgeForCoplanarFaces(c0, c1, e0, e1, NULL, NULL);
       }
 
       if ((cmp >= 0) && e1)
       {
         if (toPrev1)
         {
-          for (Edge *e = toPrev1->next, *n = nullptr; e != min1; e = n)
+          for (Edge *e = toPrev1->next, *n = NULL; e != min1; e = n)
           {
             n = e->next;
             removeEdgePair(e);
@@ -1708,8 +1700,8 @@ void btConvexHullInternal::merge(IntermediateHull& h0, IntermediateHull& h1)
             firstNew1 = pendingHead1;
           }
           pendingTail1->link(min1);
-          pendingHead1 = nullptr;
-          pendingTail1 = nullptr;
+          pendingHead1 = NULL;
+          pendingTail1 = NULL;
         }
         else if (!toPrev1)
         {
@@ -1725,7 +1717,7 @@ void btConvexHullInternal::merge(IntermediateHull& h0, IntermediateHull& h1)
       {
         if (toPrev0)
         {
-          for (Edge *e = toPrev0->prev, *n = nullptr; e != min0; e = n)
+          for (Edge *e = toPrev0->prev, *n = NULL; e != min0; e = n)
           {
             n = e->prev;
             removeEdgePair(e);
@@ -1744,8 +1736,8 @@ void btConvexHullInternal::merge(IntermediateHull& h0, IntermediateHull& h1)
             firstNew0 = pendingHead0;
           }
           min0->link(pendingTail0);
-          pendingHead0 = nullptr;
-          pendingTail0 = nullptr;
+          pendingHead0 = NULL;
+          pendingTail0 = NULL;
         }
         else if (!toPrev0)
         {
@@ -1760,14 +1752,14 @@ void btConvexHullInternal::merge(IntermediateHull& h0, IntermediateHull& h1)
 
     if ((c0 == first0) && (c1 == first1))
     {
-      if (toPrev0 == nullptr)
+      if (toPrev0 == NULL)
       {
         pendingHead0->link(pendingTail0);
         c0->edges = pendingTail0;
       }
       else
       {
-        for (Edge *e = toPrev0->prev, *n = nullptr; e != firstNew0; e = n)
+        for (Edge *e = toPrev0->prev, *n = NULL; e != firstNew0; e = n)
         {
           n = e->prev;
           removeEdgePair(e);
@@ -1779,14 +1771,14 @@ void btConvexHullInternal::merge(IntermediateHull& h0, IntermediateHull& h1)
         }
       }
 
-      if (toPrev1 == nullptr)
+      if (toPrev1 == NULL)
       {
         pendingTail1->link(pendingHead1);
         c1->edges = pendingTail1;
       }
       else
       {
-        for (Edge *e = toPrev1->next, *n = nullptr; e != firstNew1; e = n)
+        for (Edge *e = toPrev1->next, *n = NULL; e != firstNew1; e = n)
         {
           n = e->next;
           removeEdgePair(e);
@@ -1907,7 +1899,7 @@ void btConvexHullInternal::compute(const void* coords, bool doubleCoords, int32_
   for (int32_t i = 0; i < count; i++)
   {
     Vertex* v = vertexPool.newObject();
-    v->edges = nullptr;
+    v->edges = NULL;
     v->point = points[i];
     v->copy = -1;
     originalVertices[i] = v;
@@ -1993,8 +1985,8 @@ btScalar btConvexHullInternal::shrink(btScalar amount, btScalar clampAmount)
           faces.push_back(face);
           Edge* f = e;
 
-          Vertex* a = nullptr;
-          Vertex* b = nullptr;
+          Vertex* a = NULL;
+          Vertex* b = NULL;
           do
           {
             if (a && b)
@@ -2120,7 +2112,7 @@ bool btConvexHullInternal::shiftFace(Face* face, btScalar amount, btAlignedObjec
     return false;
   }
 
-  Edge* intersection = nullptr;
+  Edge* intersection = NULL;
 
   Edge* startEdge = face->nearbyVertex->edges;
 #ifdef DEBUG_CONVEX_HULL
@@ -2236,9 +2228,9 @@ bool btConvexHullInternal::shiftFace(Face* face, btScalar amount, btAlignedObjec
 #endif
   }
 
-  Edge* firstIntersection = nullptr;
-  Edge* faceEdge = nullptr;
-  Edge* firstFaceEdge = nullptr;
+  Edge* firstIntersection = NULL;
+  Edge* faceEdge = NULL;
+  Edge* firstFaceEdge = NULL;
 
 #ifdef SHOW_ITERATIONS
   int32_t m = 0;
@@ -2333,7 +2325,7 @@ bool btConvexHullInternal::shiftFace(Face* face, btScalar amount, btAlignedObjec
       e = intersection->reverse;
       if (e->prev == e)
       {
-        removed->edges = nullptr;
+        removed->edges = NULL;
       }
       else
       {
@@ -2374,7 +2366,7 @@ bool btConvexHullInternal::shiftFace(Face* face, btScalar amount, btAlignedObjec
 
       stack.push_back(v);
       stack.push_back(removed);
-      stack.push_back(nullptr);
+      stack.push_back(NULL);
     }
 
     if (cmp || prevCmp || (prevIntersection->reverse->next->target != intersection->target))
@@ -2417,7 +2409,7 @@ bool btConvexHullInternal::shiftFace(Face* face, btScalar amount, btAlignedObjec
           printf("2: Removed part contains (%d %d %d)\n", removed->point.x, removed->point.y, removed->point.z);
 #endif
         }
-        stack.push_back(nullptr);
+        stack.push_back(NULL);
       }
     }
     faceEdge->face = face;
@@ -2450,7 +2442,7 @@ bool btConvexHullInternal::shiftFace(Face* face, btScalar amount, btAlignedObjec
       printf("3: Removed part contains (%d %d %d)\n", removed->point.x, removed->point.y, removed->point.z);
 #endif
     }
-    stack.push_back(nullptr);
+    stack.push_back(NULL);
   }
 
   btAssert(stack.size() > 0);
@@ -2474,7 +2466,7 @@ bool btConvexHullInternal::shiftFace(Face* face, btScalar amount, btAlignedObjec
 #endif
       bool deeper = false;
       Vertex* removed;
-      while ((removed = stack[pos++]) != nullptr)
+      while ((removed = stack[pos++]) != NULL)
       {
 #ifdef SHOW_ITERATIONS
         n++;
@@ -2493,7 +2485,7 @@ bool btConvexHullInternal::shiftFace(Face* face, btScalar amount, btAlignedObjec
       }
       if (deeper)
       {
-        stack.push_back(nullptr);
+        stack.push_back(NULL);
       }
     }
   }
