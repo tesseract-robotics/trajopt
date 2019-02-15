@@ -6,7 +6,7 @@
 
   <maintainer email="levi.armstrong@swri.org">Levi Armstrong</maintainer>
   <license>Apache 2.0</license>
-  <license>BSD</license>
+  <license>BSD 2-Clause</license>
   <author >Levi Armstrong</author>
 
   <buildtool_depend>catkin</buildtool_depend>
