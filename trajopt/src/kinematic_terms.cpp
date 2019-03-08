@@ -3,6 +3,7 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <Eigen/Geometry>
 #include <boost/format.hpp>
 #include <iostream>
+#include <tesseract_kinematics/core/utils.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt/kinematic_terms.hpp>
@@ -51,60 +52,53 @@ namespace trajopt
 {
 VectorXd DynamicCartPoseErrCalculator::operator()(const VectorXd& dof_vals) const
 {
-  Isometry3d new_pose, target_pose, change_base;
-  tesseract::EnvStateConstPtr state = env_->getState();
-  change_base = state->transforms.at(manip_->getBaseLinkName());
-  assert(change_base.isApprox(
-      env_->getState(manip_->getJointNames(), dof_vals)->transforms.at(manip_->getBaseLinkName())));
-  manip_->calcFwdKin(new_pose, change_base, dof_vals, link_, *state);
-  manip_->calcFwdKin(target_pose, change_base, dof_vals, target_, *state);
+  Isometry3d new_pose, target_pose;
+  manip_->calcFwdKin(new_pose, dof_vals, kin_link_.first);
+  manip_->calcFwdKin(target_pose, dof_vals, kin_target_.first);
 
-  Isometry3d pose_err = target_pose.inverse() * (new_pose * tcp_);
+  Eigen::Isometry3d link_tf = world_to_base_ * new_pose * kin_link_.second * tcp_;
+  Eigen::Isometry3d target_tf = world_to_base_ * target_pose * kin_target_.second;
+
+  Isometry3d pose_err = target_tf.inverse() * link_tf;
   Quaterniond q(pose_err.rotation());
   VectorXd err = concat(Vector3d(q.x(), q.y(), q.z()), pose_err.translation());
   return err;
 }
 
-void DynamicCartPoseErrCalculator::Plot(const tesseract::BasicPlottingPtr& plotter, const VectorXd& dof_vals)
+void DynamicCartPoseErrCalculator::Plot(const tesseract_visualization::VisualizationPtr& plotter, const VectorXd& dof_vals)
 {
-  Isometry3d cur_pose, target_pose, change_base;
+  Isometry3d cur_pose, target_pose;
 
-  tesseract::EnvStateConstPtr state = env_->getState();
-  change_base = state->transforms.at(manip_->getBaseLinkName());
-  manip_->calcFwdKin(cur_pose, change_base, dof_vals, link_, *state);
-  manip_->calcFwdKin(target_pose, change_base, dof_vals, target_, *state);
+  manip_->calcFwdKin(cur_pose, dof_vals, kin_link_.first);
+  manip_->calcFwdKin(target_pose, dof_vals, kin_target_.first);
 
-  cur_pose = cur_pose * tcp_;
+  Eigen::Isometry3d cur_tf = world_to_base_ * cur_pose * kin_link_.second * tcp_;
+  Eigen::Isometry3d target_tf = world_to_base_ * target_pose * kin_target_.second;
 
-  plotter->plotAxis(cur_pose, 0.05);
-  plotter->plotAxis(target_pose, 0.05);
-  plotter->plotArrow(cur_pose.translation(), target_pose.translation(), Eigen::Vector4d(1, 0, 1, 1), 0.005);
+  plotter->plotAxis(cur_tf, 0.05);
+  plotter->plotAxis(target_tf, 0.05);
+  plotter->plotArrow(cur_tf.translation(), target_tf.translation(), Eigen::Vector4d(1, 0, 1, 1), 0.005);
 }
 
 VectorXd CartPoseErrCalculator::operator()(const VectorXd& dof_vals) const
 {
-  Isometry3d new_pose, change_base;
-  tesseract::EnvStateConstPtr state = env_->getState();
-  change_base = state->transforms.at(manip_->getBaseLinkName());
-  assert(change_base.isApprox(
-      env_->getState(manip_->getJointNames(), dof_vals)->transforms.at(manip_->getBaseLinkName())));
-  manip_->calcFwdKin(new_pose, change_base, dof_vals, link_, *state);
+  Isometry3d new_pose;
+  manip_->calcFwdKin(new_pose, dof_vals, kin_link_.first);
 
-  Isometry3d pose_err = pose_inv_ * (new_pose * tcp_);
+  new_pose = world_to_base_ * new_pose * kin_link_.second * tcp_;
+
+  Isometry3d pose_err = pose_inv_ * new_pose;
   Quaterniond q(pose_err.rotation());
   VectorXd err = concat(Vector3d(q.x(), q.y(), q.z()), pose_err.translation());
   return err;
 }
 
-void CartPoseErrCalculator::Plot(const tesseract::BasicPlottingPtr& plotter, const VectorXd& dof_vals)
+void CartPoseErrCalculator::Plot(const tesseract_visualization::VisualizationPtr& plotter, const VectorXd& dof_vals)
 {
-  Isometry3d cur_pose, change_base;
+  Isometry3d cur_pose;
+  manip_->calcFwdKin(cur_pose, dof_vals, kin_link_.first);
 
-  tesseract::EnvStateConstPtr state = env_->getState();
-  change_base = state->transforms.at(manip_->getBaseLinkName());
-  manip_->calcFwdKin(cur_pose, change_base, dof_vals, link_, *state);
-
-  cur_pose = cur_pose * tcp_;
+  cur_pose = world_to_base_ * cur_pose * kin_link_.second * tcp_;
 
   Isometry3d target = pose_inv_.inverse();
 
@@ -118,26 +112,35 @@ MatrixXd CartVelJacCalculator::operator()(const VectorXd& dof_vals) const
   int n_dof = static_cast<int>(manip_->numJoints());
   MatrixXd out(6, 2 * n_dof);
 
-  tesseract::EnvStateConstPtr state = env_->getState();
-  Isometry3d change_base = state->transforms.at(manip_->getBaseLinkName());
-  assert(change_base.isApprox(
-      env_->getState(manip_->getJointNames(), dof_vals.topRows(n_dof))->transforms.at(manip_->getBaseLinkName())));
-  assert(change_base.isApprox(
-      env_->getState(manip_->getJointNames(), dof_vals.bottomRows(n_dof))->transforms.at(manip_->getBaseLinkName())));
-
   MatrixXd jac0, jac1;
+  Eigen::Isometry3d tf0, tf1;
+
   jac0.resize(6, manip_->numJoints());
   jac1.resize(6, manip_->numJoints());
 
   if (tcp_.translation().isZero())
   {
-    manip_->calcJacobian(jac0, change_base, dof_vals.topRows(n_dof), link_, *state);
-    manip_->calcJacobian(jac1, change_base, dof_vals.bottomRows(n_dof), link_, *state);
+    manip_->calcFwdKin(tf0, dof_vals.topRows(n_dof), kin_link_.first);
+    manip_->calcJacobian(jac0, dof_vals.topRows(n_dof), kin_link_.first);
+    tesseract_kinematics::jacobianChangeBase(jac0, world_to_base_);
+    tesseract_kinematics::jacobianChangeRefPoint(jac0, (world_to_base_ * tf0).linear() * kin_link_.second.translation());
+
+    manip_->calcFwdKin(tf1, dof_vals.bottomRows(n_dof), kin_link_.first);
+    manip_->calcJacobian(jac1, dof_vals.bottomRows(n_dof), kin_link_.first);
+    tesseract_kinematics::jacobianChangeBase(jac1, world_to_base_);
+    tesseract_kinematics::jacobianChangeRefPoint(jac1, (world_to_base_ * tf1).linear() * kin_link_.second.translation());
   }
   else
   {
-    manip_->calcJacobian(jac0, change_base, dof_vals.topRows(n_dof), link_, *state, tcp_.translation());
-    manip_->calcJacobian(jac1, change_base, dof_vals.bottomRows(n_dof), link_, *state, tcp_.translation());
+    manip_->calcFwdKin(tf0, dof_vals.topRows(n_dof), kin_link_.first);
+    manip_->calcJacobian(jac0, dof_vals.topRows(n_dof), kin_link_.first);
+    tesseract_kinematics::jacobianChangeBase(jac0, world_to_base_);
+    tesseract_kinematics::jacobianChangeRefPoint(jac0, (world_to_base_ * tf0).linear() * (kin_link_.second * tcp_).translation());
+
+    manip_->calcFwdKin(tf1, dof_vals.bottomRows(n_dof), kin_link_.first);
+    manip_->calcJacobian(jac1, dof_vals.bottomRows(n_dof), kin_link_.first);
+    tesseract_kinematics::jacobianChangeBase(jac1, world_to_base_);
+    tesseract_kinematics::jacobianChangeRefPoint(jac1, (world_to_base_ * tf1).linear() * (kin_link_.second * tcp_).translation());
   }
 
   out.block(0, 0, 3, n_dof) = -jac0.topRows(3);
@@ -150,20 +153,13 @@ MatrixXd CartVelJacCalculator::operator()(const VectorXd& dof_vals) const
 VectorXd CartVelErrCalculator::operator()(const VectorXd& dof_vals) const
 {
   int n_dof = static_cast<int>(manip_->numJoints());
-  Isometry3d pose0, pose1, change_base;
+  Isometry3d pose0, pose1;
 
-  tesseract::EnvStateConstPtr state = env_->getState();
-  change_base = state->transforms.at(manip_->getBaseLinkName());
-  assert(change_base.isApprox(
-      env_->getState(manip_->getJointNames(), dof_vals.topRows(n_dof))->transforms.at(manip_->getBaseLinkName())));
-  assert(change_base.isApprox(
-      env_->getState(manip_->getJointNames(), dof_vals.bottomRows(n_dof))->transforms.at(manip_->getBaseLinkName())));
+  manip_->calcFwdKin(pose0, dof_vals.topRows(n_dof), kin_link_.first);
+  manip_->calcFwdKin(pose1, dof_vals.bottomRows(n_dof), kin_link_.first);
 
-  manip_->calcFwdKin(pose0, change_base, dof_vals.topRows(n_dof), link_, *state);
-  manip_->calcFwdKin(pose1, change_base, dof_vals.bottomRows(n_dof), link_, *state);
-
-  pose0 = pose0 * tcp_;
-  pose1 = pose1 * tcp_;
+  pose0 = world_to_base_ * pose0 * kin_link_.second * tcp_;
+  pose1 = world_to_base_ * pose1 * kin_link_.second * tcp_;
 
   VectorXd out(6);
   out.topRows(3) = (pose1.translation() - pose0.translation() - Vector3d(limit_, limit_, limit_));

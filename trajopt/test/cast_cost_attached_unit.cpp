@@ -2,17 +2,14 @@
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <ctime>
 #include <gtest/gtest.h>
-#include <geometric_shapes/shape_operations.h>
-#include <geometric_shapes/shapes.h>
-#include <ros/package.h>
-#include <ros/ros.h>
-#include <srdfdom/model.h>
-#include <urdf_parser/urdf_parser.h>
+
+#include <tesseract_kinematics/kdl/kdl_fwd_kin_chain.h>
+#include <tesseract_environment/kdl/kdl_env.h>
+#include <tesseract_scene_graph/parser/urdf_parser.h>
+#include <tesseract_scene_graph/parser/srdf_parser.h>
+#include <tesseract_visualization/visualization.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
-#include <tesseract_ros/kdl/kdl_chain_kin.h>
-#include <tesseract_ros/kdl/kdl_env.h>
-#include <tesseract_ros/ros_basic_plotting.h>
 #include <trajopt/collision_terms.hpp>
 #include <trajopt/common.hpp>
 #include <trajopt/plot_callback.hpp>
@@ -28,41 +25,39 @@ TRAJOPT_IGNORE_WARNINGS_POP
 using namespace trajopt;
 using namespace std;
 using namespace util;
-using namespace tesseract;
+using namespace tesseract_environment;
 using namespace tesseract_collision;
+using namespace tesseract_kinematics;
+using namespace tesseract_visualization;
+using namespace tesseract_scene_graph;
 
-const std::string ROBOT_DESCRIPTION_PARAM = "robot_description"; /**< Default ROS parameter for robot description */
-const std::string ROBOT_SEMANTIC_PARAM = "robot_description_semantic"; /**< Default ROS parameter for robot
-                                                                          description */
 bool plotting = false;
 
 class CastAttachedTest : public testing::TestWithParam<const char*>
 {
 public:
   ros::NodeHandle nh_;
-  urdf::ModelInterfaceSharedPtr urdf_model_;   /**< URDF Model */
-  srdf::ModelSharedPtr srdf_model_;            /**< SRDF Model */
-  tesseract_ros::KDLEnvPtr env_;               /**< Trajopt Basic Environment */
-  tesseract_ros::ROSBasicPlottingPtr plotter_; /**< Trajopt Plotter */
+  SceneGraph scene_graph_;   /**< Scene Graph */
+  KDLEnvPtr env_;            /**< Trajopt Basic Environment */
+  VisualizationPtr plotter_; /**< Trajopt Plotter */
 
   void SetUp() override
   {
-    std::string urdf_xml_string, srdf_xml_string;
-    nh_.getParam(ROBOT_DESCRIPTION_PARAM, urdf_xml_string);
-    nh_.getParam(ROBOT_SEMANTIC_PARAM, srdf_xml_string);
-    urdf_model_ = urdf::parseURDF(urdf_xml_string);
+    std::string urdf_file = std::string(DATA_DIR) + "/data/lbr_iiwa_14_r820.urdf";
+    std::string srdf_file = std::string(DATA_DIR) + "/data/lbr_iiwa_14_r820.srdf";
 
-    srdf_model_ = srdf::ModelSharedPtr(new srdf::Model);
-    srdf_model_->initString(*urdf_model_, srdf_xml_string);
-    env_ = tesseract_ros::KDLEnvPtr(new tesseract_ros::KDLEnv);
-    assert(urdf_model_ != nullptr);
-    assert(env_ != nullptr);
+    ResourceLocatorFn locator = locateResource;
+    scene_graph_ = parseURDF(urdf_file, locator);
+    EXPECT_TRUE(scene_graph_ != nullptr);
 
-    bool success = env_->init(urdf_model_, srdf_model_);
-    assert(success);
+    SRDFModel srdf;
+    EXPECT_TRUE(srdf.initFile(*scene_graph_, srdf_file));
+
+    env_ = KDLEnvPtr(new KDLEnv);
+    EXPECT_TRUE(env_->init(scene_graph_));
 
     // Create plotting tool
-    plotter_.reset(new tesseract_ros::ROSBasicPlotting(env_));
+//    plotter_.reset(new tesseract_ros::ROSBasicPlotting(env_));
 
     // Next add objects that can be attached/detached to the scene
     AttachableObjectPtr obj1(new AttachableObject());

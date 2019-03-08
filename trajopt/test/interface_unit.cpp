@@ -1,8 +1,18 @@
+#include <trajopt_utils/macros.h>
+TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <ctime>
 #include <gtest/gtest.h>
-#include <tesseract_ros/kdl/kdl_chain_kin.h>
-#include <tesseract_ros/kdl/kdl_env.h>
-#include <tesseract_ros/ros_basic_plotting.h>
+#include <ros/package.h>
+#include <ros/ros.h>
+#include <srdfdom/model.h>
+#include <urdf_parser/urdf_parser.h>
+#include <bitset>
+
+#include <tesseract_kinematics/kdl/kdl_fwd_kin_chain.h>
+#include <tesseract_environment/kdl/kdl_env.h>
+#include <tesseract_visualization/visualization.h>
+TRAJOPT_IGNORE_WARNINGS_POP
+
 #include <trajopt/common.hpp>
 #include <trajopt/plot_callback.hpp>
 #include <trajopt/problem_description.hpp>
@@ -10,11 +20,7 @@
 #include <trajopt_test_utils.hpp>
 #include <trajopt_utils/logging.hpp>
 
-#include <ros/package.h>
-#include <ros/ros.h>
-#include <srdfdom/model.h>
-#include <urdf_parser/urdf_parser.h>
-#include <bitset>
+
 
 using namespace trajopt;
 using namespace std;

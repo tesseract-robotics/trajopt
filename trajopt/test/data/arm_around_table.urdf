@@ -72,7 +72,7 @@
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0" />
       <geometry>
-        <mesh filename="package://trajopt_test_support/meshes/table.stl"/>
+        <mesh filename="package://trajopt/test/data/meshes/Table.stl"/>
       </geometry>
       <material name="Cyan">
         <color rgba="0 1.0 1.0 1.0"/>
@@ -82,7 +82,7 @@
     <collision>
       <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-        <mesh filename="package://trajopt_test_support/meshes/table.stl"/>
+        <mesh filename="package://trajopt/test/data/meshes/Table.stl"/>
       </geometry>
     </collision>
   </link>

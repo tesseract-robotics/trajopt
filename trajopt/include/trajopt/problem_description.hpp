@@ -1,6 +1,11 @@
 #pragma once
-#include <tesseract_core/basic_env.h>
-#include <tesseract_core/basic_kin.h>
+#include <trajopt_utils/macros.h>
+TRAJOPT_IGNORE_WARNINGS_PUSH
+#include <unordered_map>
+TRAJOPT_IGNORE_WARNINGS_POP
+
+#include <tesseract_environment/core/environment.h>
+#include <tesseract_kinematics/core/forward_kinematics.h>
 #include <trajopt/common.hpp>
 #include <trajopt/json_marshal.hpp>
 #include <trajopt_sco/optimizers.hpp>
@@ -24,8 +29,8 @@ struct TrajOptResult;
 typedef std::shared_ptr<TrajOptResult> TrajOptResultPtr;
 
 TrajOptProbPtr TRAJOPT_API ConstructProblem(const ProblemConstructionInfo&);
-TrajOptProbPtr TRAJOPT_API ConstructProblem(const Json::Value&, tesseract::BasicEnvConstPtr env);
-TrajOptResultPtr TRAJOPT_API OptimizeProblem(TrajOptProbPtr, const tesseract::BasicPlottingPtr plotter = nullptr);
+TrajOptProbPtr TRAJOPT_API ConstructProblem(const Json::Value&, const tesseract_environment::EnvironmentConstPtr& env, const tesseract_kinematics::ForwardKinematicsConstPtrMap& kinematics_map);
+TrajOptResultPtr TRAJOPT_API OptimizeProblem(TrajOptProbPtr, const tesseract_visualization::VisualizationPtr& plotter = nullptr);
 
 enum TermType
 {
@@ -60,8 +65,8 @@ public:
   /** @brief Returns the problem DOF. This is the number of columns in the optization matrix.
    * Note that this is not necessarily the same as the kinematic DOF.*/
   int GetNumDOF() { return m_traj_vars.cols(); }
-  tesseract::BasicKinConstPtr GetKin() { return m_kin; }
-  tesseract::BasicEnvConstPtr GetEnv() { return m_env; }
+  tesseract_kinematics::ForwardKinematicsConstPtr GetKin() { return m_kin; }
+  tesseract_environment::EnvironmentConstPtr GetEnv() { return m_env; }
   void SetInitTraj(const TrajArray& x) { m_init_traj = x; }
   TrajArray GetInitTraj() { return m_init_traj; }
   friend TrajOptProbPtr ConstructProblem(const ProblemConstructionInfo&);
@@ -73,8 +78,8 @@ private:
   /** @brief If true, the last column in the optimization matrix will be 1/dt */
   bool has_time;
   VarArray m_traj_vars;
-  tesseract::BasicKinConstPtr m_kin;
-  tesseract::BasicEnvConstPtr m_env;
+  tesseract_kinematics::ForwardKinematicsConstPtr m_kin;
+  tesseract_environment::EnvironmentConstPtr m_env;
   TrajArray m_init_traj;
 };
 
@@ -186,10 +191,12 @@ public:
   std::vector<TermInfoPtr> cnt_infos;
   InitInfo init_info;
 
-  tesseract::BasicEnvConstPtr env;
-  tesseract::BasicKinConstPtr kin;
+  tesseract_environment::EnvironmentConstPtr env;
+  tesseract_kinematics::ForwardKinematicsConstPtr kin;
 
-  ProblemConstructionInfo(tesseract::BasicEnvConstPtr env) : env(env) {}
+  ProblemConstructionInfo(const tesseract_environment::EnvironmentConstPtr& env,
+                          const std::unordered_map<std::string, tesseract_kinematics::ForwardKinematicsConstPtr>& kinematics_map) : env(env), kinematics_map_(kinematics_map) {}
+
   void fromJson(const Json::Value& v);
 
 private:
@@ -198,6 +205,8 @@ private:
   void readCosts(const Json::Value& v);
   void readConstraints(const Json::Value& v);
   void readInitInfo(const Json::Value& v);
+
+  const std::unordered_map<std::string, tesseract_kinematics::ForwardKinematicsConstPtr>& kinematics_map_;
 };
 
 /** @brief This is used when the goal frame is not fixed in space */

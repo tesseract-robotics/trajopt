@@ -1,7 +1,7 @@
 <?xml version="1.0" ?>
 <robot name="boxbot" xmlns:xacro="http://ros.org/wiki/xacro">
-  <xacro:include filename="$(find trajopt_test_support)/urdf/boxbot_macro.xacro"/>
-  <xacro:include filename="$(find trajopt_test_support)/urdf/box_1m_macro.xacro"/>
+  <xacro:include filename="$(find trajopt)/test/data/boxbot_macro.xacro"/>
+  <xacro:include filename="$(find trajopt)/test/data/box_1m_macro.xacro"/>
 
   <xacro:boxbot prefix=""/>
 
