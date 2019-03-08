@@ -4,14 +4,14 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <Eigen/Core>
 #include <map>
 #include <vector>
+
+#include <tesseract_visualization/visualization.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt_sco/modeling.hpp>
 #include <trajopt_sco/modeling_utils.hpp>
 #include <trajopt_utils/basic_array.hpp>
 #include <trajopt_utils/macros.h>
-
-#include <tesseract_core/basic_plotting.h>
 
 namespace trajopt
 {
@@ -23,12 +23,19 @@ typedef Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> T
 typedef sco::DblVec DblVec;
 typedef sco::IntVec IntVec;
 
+template <typename Key, typename Value>
+using AlignedUnorderedMap = std::unordered_map<Key,
+                                               Value,
+                                               std::hash<Key>,
+                                               std::equal_to<Key>,
+                                               Eigen::aligned_allocator<std::pair<const Key, Value>>>;
+
 /** @brief Interface for objects that know how to plot themselves given solution
  * vector x */
 class Plotter
 {
 public:
-  virtual void Plot(const tesseract::BasicPlottingPtr& plotter, const DblVec& x) = 0;
+  virtual void Plot(const tesseract_visualization::VisualizationPtr& plotter, const DblVec& x) = 0;
   virtual ~Plotter() = default;
 };
 typedef std::shared_ptr<Plotter> PlotterPtr;
@@ -37,7 +44,7 @@ typedef std::shared_ptr<Plotter> PlotterPtr;
 class TrajOptVectorOfVector : public sco::VectorOfVector
 {
 public:
-  virtual void Plot(const tesseract::BasicPlottingPtr& plotter, const Eigen::VectorXd& dof_vals) = 0;
+  virtual void Plot(const tesseract_visualization::VisualizationPtr& plotter, const Eigen::VectorXd& dof_vals) = 0;
 };
 
 /**  @brief Adds plotting to the CostFromErrFunc class in trajopt_sco */
@@ -65,7 +72,7 @@ public:
   {
   }
 
-  void Plot(const tesseract::BasicPlottingPtr& plotter, const DblVec& x) override
+  void Plot(const tesseract_visualization::VisualizationPtr& plotter, const DblVec& x) override
   {
     // If error function has a inherited from TrajOptVectorOfVector, call its Plot function
     if (TrajOptVectorOfVector* plt = dynamic_cast<TrajOptVectorOfVector*>(f_.get()))
@@ -101,7 +108,7 @@ public:
   {
   }
 
-  void Plot(const tesseract::BasicPlottingPtr& plotter, const DblVec& x) override
+  void Plot(const tesseract_visualization::VisualizationPtr& plotter, const DblVec& x) override
   {
     // If error function has a inherited from TrajOptVectorOfVector, call its Plot function
     if (TrajOptVectorOfVector* plt = dynamic_cast<TrajOptVectorOfVector*>(f_.get()))

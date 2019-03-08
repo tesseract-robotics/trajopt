@@ -4,7 +4,6 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <unordered_map>
 TRAJOPT_IGNORE_WARNINGS_POP
 
-#include <tesseract_core/basic_types.h>
 #include <trajopt/typedefs.hpp>
 
 namespace trajopt
@@ -113,7 +112,7 @@ private:
   double max_safety_margin_;
 
   /// A map of link pair to contact distance setting [dist_pen, coeff]
-  tesseract::AlignedUnorderedMap<std::string, Eigen::Vector2d> pair_lookup_table_;
+  AlignedUnorderedMap<std::string, Eigen::Vector2d> pair_lookup_table_;
 };
 typedef std::shared_ptr<SafetyMarginData> SafetyMarginDataPtr;
 typedef std::shared_ptr<const SafetyMarginData> SafetyMarginDataConstPtr;

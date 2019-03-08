@@ -26,7 +26,7 @@ namespace trajopt
 {
 void WriteFile(std::shared_ptr<std::ofstream> file,
                const Eigen::Isometry3d& change_base,
-               const tesseract::BasicKinConstPtr manip,
+               const tesseract_kinematics::ForwardKinematicsConstPtr manip,
                const trajopt::VarArray& vars,
                const sco::OptResults& results)
 {
@@ -49,7 +49,8 @@ void WriteFile(std::shared_ptr<std::ofstream> file,
 
     // Calc cartesian pose
     Eigen::Isometry3d pose;
-    manip->calcFwdKin(pose, change_base, joint_angles);
+    manip->calcFwdKin(pose, joint_angles);
+    pose = change_base * pose;
 
     Eigen::Vector4d rot_vec;
     Eigen::Quaterniond q(pose.rotation());
@@ -126,7 +127,7 @@ sco::Optimizer::Callback WriteCallback(std::shared_ptr<std::ofstream> file, cons
   *file << std::endl;
 
   // return callback function
-  const tesseract::BasicKinConstPtr manip = prob->GetKin();
+  const tesseract_kinematics::ForwardKinematicsConstPtr manip = prob->GetKin();
   const Eigen::Isometry3d change_base = prob->GetEnv()->getLinkTransform(manip->getBaseLinkName());
   return bind(&WriteFile, file, change_base, manip, std::ref(prob->GetVars()), std::placeholders::_2);
 }

@@ -1,6 +1,7 @@
 #pragma once
-#include <tesseract_core/basic_env.h>
-#include <tesseract_core/basic_kin.h>
+#include <tesseract_environment/core/environment.h>
+#include <tesseract_environment/core/utils.h>
+#include <tesseract_kinematics/core/forward_kinematics.h>
 #include <trajopt/cache.hxx>
 #include <trajopt/common.hpp>
 #include <trajopt_sco/modeling.hpp>
@@ -8,14 +9,18 @@
 
 namespace trajopt
 {
+
+
 struct CollisionEvaluator
 {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-  CollisionEvaluator(tesseract::BasicKinConstPtr manip,
-                     tesseract::BasicEnvConstPtr env,
+  CollisionEvaluator(tesseract_kinematics::ForwardKinematicsConstPtr manip,
+                     tesseract_environment::EnvironmentConstPtr env,
+                     tesseract_environment::AdjacencyMapConstPtr adjacency_map,
+                     Eigen::Isometry3d world_to_base,
                      SafetyMarginDataConstPtr safety_margin_data)
-    : env_(env), manip_(manip), safety_margin_data_(safety_margin_data)
+    : manip_(manip), env_(env), adjacency_map_(adjacency_map), world_to_base_(world_to_base), safety_margin_data_(safety_margin_data)
   {
   }
   virtual ~CollisionEvaluator() = default;
@@ -23,15 +28,17 @@ struct CollisionEvaluator
   virtual void CalcDists(const DblVec& x, DblVec& exprs) = 0;
   virtual void CalcCollisions(const DblVec& x, tesseract_collision::ContactResultVector& dist_results) = 0;
   void GetCollisionsCached(const DblVec& x, tesseract_collision::ContactResultVector&);
-  virtual void Plot(const tesseract::BasicPlottingPtr plotter, const DblVec& x) = 0;
+  virtual void Plot(const tesseract_visualization::VisualizationPtr& plotter, const DblVec& x) = 0;
   virtual sco::VarVector GetVars() = 0;
 
   const SafetyMarginDataConstPtr getSafetyMarginData() const { return safety_margin_data_; }
   Cache<size_t, tesseract_collision::ContactResultVector, 10> m_cache;
 
 protected:
-  tesseract::BasicEnvConstPtr env_;
-  tesseract::BasicKinConstPtr manip_;
+  tesseract_kinematics::ForwardKinematicsConstPtr manip_;
+  tesseract_environment::EnvironmentConstPtr env_;
+  tesseract_environment::AdjacencyMapConstPtr adjacency_map_;
+  Eigen::Isometry3d world_to_base_;
   SafetyMarginDataConstPtr safety_margin_data_;
 
 private:
@@ -43,8 +50,10 @@ typedef std::shared_ptr<CollisionEvaluator> CollisionEvaluatorPtr;
 struct SingleTimestepCollisionEvaluator : public CollisionEvaluator
 {
 public:
-  SingleTimestepCollisionEvaluator(tesseract::BasicKinConstPtr manip,
-                                   tesseract::BasicEnvConstPtr env,
+  SingleTimestepCollisionEvaluator(tesseract_kinematics::ForwardKinematicsConstPtr manip,
+                                   tesseract_environment::EnvironmentConstPtr env,
+                                   tesseract_environment::AdjacencyMapConstPtr adjacency_map,
+                                   Eigen::Isometry3d world_to_base,
                                    SafetyMarginDataConstPtr safety_margin_data,
                                    const sco::VarVector& vars);
   /**
@@ -60,7 +69,7 @@ public:
    */
   void CalcDists(const DblVec& x, DblVec& exprs) override;
   void CalcCollisions(const DblVec& x, tesseract_collision::ContactResultVector& dist_results) override;
-  void Plot(const tesseract::BasicPlottingPtr plotter, const DblVec& x) override;
+  void Plot(const tesseract_visualization::VisualizationPtr& plotter, const DblVec& x) override;
   sco::VarVector GetVars() override { return m_vars; }
 private:
   sco::VarVector m_vars;
@@ -70,15 +79,17 @@ private:
 struct CastCollisionEvaluator : public CollisionEvaluator
 {
 public:
-  CastCollisionEvaluator(tesseract::BasicKinConstPtr manip,
-                         tesseract::BasicEnvConstPtr env,
+  CastCollisionEvaluator(tesseract_kinematics::ForwardKinematicsConstPtr manip,
+                         tesseract_environment::EnvironmentConstPtr env,
+                         tesseract_environment::AdjacencyMapConstPtr adjacency_map,
+                         Eigen::Isometry3d world_to_base,
                          SafetyMarginDataConstPtr safety_margin_data,
                          const sco::VarVector& vars0,
                          const sco::VarVector& vars1);
   void CalcDistExpressions(const DblVec& x, sco::AffExprVector& exprs) override;
   void CalcDists(const DblVec& x, DblVec& exprs) override;
   void CalcCollisions(const DblVec& x, tesseract_collision::ContactResultVector& dist_results) override;
-  void Plot(const tesseract::BasicPlottingPtr plotter, const DblVec& x) override;
+  void Plot(const tesseract_visualization::VisualizationPtr& plotter, const DblVec& x) override;
   sco::VarVector GetVars() override { return concat(m_vars0, m_vars1); }
 private:
   sco::VarVector m_vars0;
@@ -90,19 +101,23 @@ class TRAJOPT_API CollisionCost : public sco::Cost, public Plotter
 {
 public:
   /* constructor for single timestep */
-  CollisionCost(tesseract::BasicKinConstPtr manip,
-                tesseract::BasicEnvConstPtr env,
+  CollisionCost(tesseract_kinematics::ForwardKinematicsConstPtr manip,
+                tesseract_environment::EnvironmentConstPtr env,
+                tesseract_environment::AdjacencyMapConstPtr adjacency_map,
+                Eigen::Isometry3d world_to_base,
                 SafetyMarginDataConstPtr safety_margin_data,
                 const sco::VarVector& vars);
   /* constructor for cast cost */
-  CollisionCost(tesseract::BasicKinConstPtr manip,
-                tesseract::BasicEnvConstPtr env,
+  CollisionCost(tesseract_kinematics::ForwardKinematicsConstPtr manip,
+                tesseract_environment::EnvironmentConstPtr env,
+                tesseract_environment::AdjacencyMapConstPtr adjacency_map,
+                Eigen::Isometry3d world_to_base,
                 SafetyMarginDataConstPtr safety_margin_data,
                 const sco::VarVector& vars0,
                 const sco::VarVector& vars1);
   virtual sco::ConvexObjectivePtr convex(const DblVec& x, sco::Model* model) override;
   virtual double value(const DblVec&) override;
-  void Plot(const tesseract::BasicPlottingPtr& plotter, const DblVec& x) override;
+  void Plot(const tesseract_visualization::VisualizationPtr& plotter, const DblVec& x) override;
   sco::VarVector getVars() override { return m_calc->GetVars(); }
 private:
   CollisionEvaluatorPtr m_calc;
@@ -112,13 +127,17 @@ class TRAJOPT_API CollisionConstraint : public sco::IneqConstraint
 {
 public:
   /* constructor for single timestep */
-  CollisionConstraint(tesseract::BasicKinConstPtr manip,
-                      tesseract::BasicEnvConstPtr env,
+  CollisionConstraint(tesseract_kinematics::ForwardKinematicsConstPtr manip,
+                      tesseract_environment::EnvironmentConstPtr env,
+                      tesseract_environment::AdjacencyMapConstPtr adjacency_map,
+                      Eigen::Isometry3d world_to_base,
                       SafetyMarginDataConstPtr safety_margin_data,
                       const sco::VarVector& vars);
   /* constructor for cast cost */
-  CollisionConstraint(tesseract::BasicKinConstPtr manip,
-                      tesseract::BasicEnvConstPtr env,
+  CollisionConstraint(tesseract_kinematics::ForwardKinematicsConstPtr manip,
+                      tesseract_environment::EnvironmentConstPtr env,
+                      tesseract_environment::AdjacencyMapConstPtr adjacency_map,
+                      Eigen::Isometry3d world_to_base,
                       SafetyMarginDataConstPtr safety_margin_data,
                       const sco::VarVector& vars0,
                       const sco::VarVector& vars1);

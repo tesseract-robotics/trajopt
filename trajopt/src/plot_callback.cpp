@@ -4,8 +4,8 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <set>
 TRAJOPT_IGNORE_WARNINGS_POP
 
-#include <tesseract_core/basic_env.h>
-#include <tesseract_core/basic_kin.h>
+#include <tesseract_environment/core/environment.h>
+#include <tesseract_kinematics/core/forward_kinematics.h>
 #include <trajopt/common.hpp>
 #include <trajopt/plot_callback.hpp>
 #include <trajopt/problem_description.hpp>
@@ -13,7 +13,7 @@ TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace trajopt
 {
-void PlotCosts(const tesseract::BasicPlottingPtr plotter,
+void PlotCosts(const tesseract_visualization::VisualizationPtr& plotter,
                const std::vector<std::string>& joint_names,
                const std::vector<sco::CostPtr>& costs,
                const std::vector<sco::ConstraintPtr>& cnts,
@@ -42,7 +42,7 @@ void PlotCosts(const tesseract::BasicPlottingPtr plotter,
   plotter->waitForInput();
 }
 
-sco::Optimizer::Callback PlotCallback(TrajOptProb& prob, const tesseract::BasicPlottingPtr plotter)
+sco::Optimizer::Callback PlotCallback(TrajOptProb& prob, const tesseract_visualization::VisualizationPtr& plotter)
 {
   std::vector<sco::ConstraintPtr> cnts = prob.getConstraints();
   return std::bind(&PlotCosts,

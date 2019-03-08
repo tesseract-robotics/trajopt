@@ -1,6 +1,8 @@
 #include <trajopt_utils/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <boost/functional/hash.hpp>
+#include <tesseract_kinematics/core/forward_kinematics.h>
+#include <tesseract_kinematics/core/utils.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt/collision_terms.hpp>
@@ -156,22 +158,19 @@ void DebugPrintInfo(const tesseract_collision::ContactResult& res,
 }
 
 void CollisionsToDistanceExpressions(const tesseract_collision::ContactResultVector& dist_results,
-                                     const tesseract::BasicEnvConstPtr env,
-                                     const tesseract::BasicKinConstPtr manip,
+                                     const tesseract_kinematics::ForwardKinematicsConstPtr& manip,
+                                     const tesseract_environment::AdjacencyMapConstPtr& adjacency_map,
+                                     const Eigen::Isometry3d& world_to_base,
                                      const sco::VarVector& vars,
                                      const DblVec& x,
                                      sco::AffExprVector& exprs,
                                      bool isTimestep1)
 {
   Eigen::VectorXd dofvals = sco::getVec(x, vars);
-  const std::vector<std::string>& link_names = manip->getLinkNames();
 
   // All collision data is in world corrdinate system. This provides the
   // transfrom for converting data between world frame and manipulator
   // frame.
-  tesseract::EnvStateConstPtr state = env->getState();
-  Eigen::Isometry3d change_base = state->transforms.at(manip->getBaseLinkName());
-  assert(change_base.isApprox(env->getState(manip->getJointNames(), dofvals)->transforms.at(manip->getBaseLinkName())));
 
   exprs.clear();
   exprs.reserve(dist_results.size());
@@ -182,37 +181,57 @@ void CollisionsToDistanceExpressions(const tesseract_collision::ContactResultVec
     sco::AffExpr dist(res.distance);
 
     Eigen::VectorXd dist_grad_a, dist_grad_b;
-    std::vector<std::string>::const_iterator itA = std::find(link_names.begin(), link_names.end(), res.link_names[0]);
-    if (itA != link_names.end())
+    tesseract_environment::AdjacencyMap::const_iterator itA = adjacency_map->find(res.link_names[0]);
+    if (itA != adjacency_map->end())
     {
+      const auto& kin_link = itA->second;
+
       Eigen::MatrixXd jac;
       jac.resize(6, manip->numJoints());
-      manip->calcJacobian(jac, change_base, dofvals, res.link_names[0], *state, res.nearest_points[0]);
+
+      // Calculate Jacobian
+      manip->calcJacobian(jac, dofvals, kin_link.first);
+
+      // Need to change the base and ref point of the jacobian.
+      // When changing ref point you must provide a vector from the current ref
+      // point to the new ref point.
+      Eigen::Isometry3d link_transform;
+      manip->calcFwdKin(link_transform, dofvals, kin_link.first);
+      tesseract_kinematics::jacobianChangeBase(jac, world_to_base);
+      tesseract_kinematics::jacobianChangeRefPoint(jac, (world_to_base * link_transform).inverse() * (kin_link.second * res.nearest_points[0]));
+
       dist_grad_a = -res.normal.transpose() * jac.topRows(3);
       sco::exprInc(dist, sco::varDot(dist_grad_a, vars));
       sco::exprInc(dist, -dist_grad_a.dot(dofvals));
     }
 
-    std::vector<std::string>::const_iterator itB = std::find(link_names.begin(), link_names.end(), res.link_names[1]);
-    if (itB != link_names.end())
+    tesseract_environment::AdjacencyMap::const_iterator itB = adjacency_map->find(res.link_names[1]);
+    if (itB != adjacency_map->end())
     {
+      const auto& kin_link = itB->second;
+
       Eigen::MatrixXd jac;
       jac.resize(6, manip->numJoints());
-      manip->calcJacobian(jac,
-                          change_base,
-                          dofvals,
-                          res.link_names[1],
-                          *state,
-                          (isTimestep1 && (res.cc_type == tesseract_collision::ContinouseCollisionType::CCType_Between)) ?
-                              res.cc_nearest_points[1] :
-                              res.nearest_points[1]);
+
+      // Calculate Jacobian
+      manip->calcJacobian(jac, dofvals, kin_link.first);
+
+      // Need to change the base and ref point of the jacobian.
+      // When changing ref point you must provide a vector from the current ref
+      // point to the new ref point.
+      Eigen::Isometry3d link_transform;
+      manip->calcFwdKin(link_transform, dofvals, kin_link.first);
+      tesseract_kinematics::jacobianChangeBase(jac, world_to_base);
+      Eigen::Vector3d link_point = (isTimestep1 && (res.cc_type == tesseract_collision::ContinouseCollisionType::CCType_Between)) ? res.cc_nearest_points[1] : res.nearest_points[1];
+      tesseract_kinematics::jacobianChangeRefPoint(jac, (world_to_base * link_transform).inverse() * (kin_link.second * link_point));
+
       dist_grad_b = res.normal.transpose() * jac.topRows(3);
       sco::exprInc(dist, sco::varDot(dist_grad_b, vars));
       sco::exprInc(dist, -dist_grad_b.dot(dofvals));
     }
     // DebugPrintInfo(res, dist_grad_a, dist_grad_b, dofvals, i == 0);
 
-    if (itA != link_names.end() || itB != link_names.end())
+    if (itA != adjacency_map->end() || itB != adjacency_map->end())
     {
       exprs.push_back(dist);
     }
@@ -220,16 +239,17 @@ void CollisionsToDistanceExpressions(const tesseract_collision::ContactResultVec
 }
 
 void CollisionsToDistanceExpressions(const tesseract_collision::ContactResultVector& dist_results,
-                                     const tesseract::BasicEnvConstPtr env,
-                                     const tesseract::BasicKinConstPtr manip,
+                                     const tesseract_kinematics::ForwardKinematicsConstPtr& manip,
+                                     const tesseract_environment::AdjacencyMapConstPtr& adjacency_map,
+                                     const Eigen::Isometry3d& world_to_base,
                                      const sco::VarVector& vars0,
                                      const sco::VarVector& vars1,
                                      const DblVec& x,
                                      sco::AffExprVector& exprs)
 {
   sco::AffExprVector exprs0, exprs1;
-  CollisionsToDistanceExpressions(dist_results, env, manip, vars0, x, exprs0, false);
-  CollisionsToDistanceExpressions(dist_results, env, manip, vars1, x, exprs1, true);
+  CollisionsToDistanceExpressions(dist_results, manip, adjacency_map, world_to_base, vars0, x, exprs0, false);
+  CollisionsToDistanceExpressions(dist_results, manip, adjacency_map, world_to_base, vars1, x, exprs1, true);
 
   exprs.resize(exprs0.size());
   for (std::size_t i = 0; i < exprs0.size(); ++i)
@@ -262,11 +282,13 @@ void CollisionEvaluator::GetCollisionsCached(const DblVec& x, tesseract_collisio
   }
 }
 
-SingleTimestepCollisionEvaluator::SingleTimestepCollisionEvaluator(tesseract::BasicKinConstPtr manip,
-                                                                   tesseract::BasicEnvConstPtr env,
+SingleTimestepCollisionEvaluator::SingleTimestepCollisionEvaluator(tesseract_kinematics::ForwardKinematicsConstPtr manip,
+                                                                   tesseract_environment::EnvironmentConstPtr env,
+                                                                   tesseract_environment::AdjacencyMapConstPtr adjacency_map,
+                                                                   Eigen::Isometry3d world_to_base,
                                                                    SafetyMarginDataConstPtr safety_margin_data,
                                                                    const sco::VarVector& vars)
-  : CollisionEvaluator(manip, env, safety_margin_data), m_vars(vars)
+  : CollisionEvaluator(manip, env, adjacency_map, world_to_base, safety_margin_data), m_vars(vars)
 {
   contact_manager_ = env_->getDiscreteContactManager();
   contact_manager_->setActiveCollisionObjects(manip_->getLinkNames());
@@ -277,7 +299,7 @@ SingleTimestepCollisionEvaluator::SingleTimestepCollisionEvaluator(tesseract::Ba
 void SingleTimestepCollisionEvaluator::CalcCollisions(const DblVec& x, tesseract_collision::ContactResultVector& dist_results)
 {
   tesseract_collision::ContactResultMap contacts;
-  tesseract::EnvStatePtr state = env_->getState(manip_->getJointNames(), sco::getVec(x, m_vars));
+  tesseract_environment::EnvStatePtr state = env_->getState(manip_->getJointNames(), sco::getVec(x, m_vars));
 
   for (const auto& link_name : manip_->getLinkNames())
     contact_manager_->setCollisionObjectsTransform(link_name, state->transforms[link_name]);
@@ -297,18 +319,15 @@ void SingleTimestepCollisionEvaluator::CalcDistExpressions(const DblVec& x, sco:
 {
   tesseract_collision::ContactResultVector dist_results;
   GetCollisionsCached(x, dist_results);
-  CollisionsToDistanceExpressions(dist_results, env_, manip_, m_vars, x, exprs, false);
+  CollisionsToDistanceExpressions(dist_results, manip_, adjacency_map_, world_to_base_, m_vars, x, exprs, false);
 
   LOG_DEBUG("%ld distance expressions\n", exprs.size());
 }
 
-void SingleTimestepCollisionEvaluator::Plot(const tesseract::BasicPlottingPtr plotter, const DblVec& x)
+void SingleTimestepCollisionEvaluator::Plot(const tesseract_visualization::VisualizationPtr& plotter, const DblVec& x)
 {
   tesseract_collision::ContactResultVector dist_results;
   GetCollisionsCached(x, dist_results);
-  const std::vector<std::string>& link_names = manip_->getLinkNames();
-  tesseract::EnvStateConstPtr state = env_->getState();
-  Eigen::Isometry3d change_base = state->transforms.at(manip_->getBaseLinkName());
   Eigen::VectorXd dofvals = sco::getVec(x, m_vars);
 
   Eigen::VectorXd safety_distance(dist_results.size());
@@ -318,34 +337,48 @@ void SingleTimestepCollisionEvaluator::Plot(const tesseract::BasicPlottingPtr pl
     const Eigen::Vector2d& data = getSafetyMarginData()->getPairSafetyMarginData(res.link_names[0], res.link_names[1]);
     safety_distance[i] = data[0];
 
-    std::vector<std::string>::const_iterator itA = std::find(link_names.begin(), link_names.end(), res.link_names[0]);
-    if (itA != link_names.end())
+    tesseract_environment::AdjacencyMap::const_iterator itA = adjacency_map_->find(res.link_names[0]);
+    if (itA != adjacency_map_->end())
     {
+      const auto& kin_link = itA->second;
       Eigen::MatrixXd jac;
       Eigen::VectorXd dist_grad;
       Eigen::Isometry3d pose, pose2;
       jac.resize(6, manip_->numJoints());
-      manip_->calcFwdKin(pose, change_base, dofvals, res.link_names[0], *state);
-      manip_->calcJacobian(jac, change_base, dofvals, res.link_names[0], *state, res.nearest_points[0]);
+      manip_->calcFwdKin(pose, dofvals, kin_link.first);
+      pose = world_to_base_ * pose;
+
+      manip_->calcJacobian(jac, dofvals, kin_link.first);
+      tesseract_kinematics::jacobianChangeBase(jac, world_to_base_);
+      tesseract_kinematics::jacobianChangeRefPoint(jac, pose.inverse() * (kin_link.second * res.nearest_points[0]));
+
       dist_grad = -res.normal.transpose() * jac.topRows(3);
 
       Eigen::Vector3d local_link_point = pose.inverse() * res.nearest_points[0];
-      manip_->calcFwdKin(pose2, change_base, dofvals + dist_grad, res.link_names[0], *state);
+      manip_->calcFwdKin(pose2, dofvals + dist_grad, kin_link.first);
+      pose2 = world_to_base_ * pose2 * kin_link.second;
       plotter->plotArrow(res.nearest_points[0], pose2 * local_link_point, Eigen::Vector4d(1, 1, 1, 1), 0.005);
     }
   }
+
+  std::vector<std::string> link_names;
+  link_names.reserve(adjacency_map_->size());
+  for(auto const& m : *adjacency_map_)
+      link_names.push_back(m.first);
 
   plotter->plotContactResults(link_names, dist_results, safety_distance);
 }
 
 ////////////////////////////////////////
 
-CastCollisionEvaluator::CastCollisionEvaluator(tesseract::BasicKinConstPtr manip,
-                                               tesseract::BasicEnvConstPtr env,
+CastCollisionEvaluator::CastCollisionEvaluator(tesseract_kinematics::ForwardKinematicsConstPtr manip,
+                                               tesseract_environment::EnvironmentConstPtr env,
+                                               tesseract_environment::AdjacencyMapConstPtr adjacency_map,
+                                               Eigen::Isometry3d world_to_base,
                                                SafetyMarginDataConstPtr safety_margin_data,
                                                const sco::VarVector& vars0,
                                                const sco::VarVector& vars1)
-  : CollisionEvaluator(manip, env, safety_margin_data), m_vars0(vars0), m_vars1(vars1)
+  : CollisionEvaluator(manip, env, adjacency_map, world_to_base, safety_margin_data), m_vars0(vars0), m_vars1(vars1)
 {
   contact_manager_ = env_->getContinuousContactManager();
   contact_manager_->setActiveCollisionObjects(manip_->getLinkNames());
@@ -356,8 +389,8 @@ CastCollisionEvaluator::CastCollisionEvaluator(tesseract::BasicKinConstPtr manip
 void CastCollisionEvaluator::CalcCollisions(const DblVec& x, tesseract_collision::ContactResultVector& dist_results)
 {
   tesseract_collision::ContactResultMap contacts;
-  tesseract::EnvStatePtr state0 = env_->getState(manip_->getJointNames(), sco::getVec(x, m_vars0));
-  tesseract::EnvStatePtr state1 = env_->getState(manip_->getJointNames(), sco::getVec(x, m_vars1));
+  tesseract_environment::EnvStatePtr state0 = env_->getState(manip_->getJointNames(), sco::getVec(x, m_vars0));
+  tesseract_environment::EnvStatePtr state1 = env_->getState(manip_->getJointNames(), sco::getVec(x, m_vars1));
   for (const auto& link_name : manip_->getLinkNames())
     contact_manager_->setCollisionObjectsTransform(
         link_name, state0->transforms[link_name], state1->transforms[link_name]);
@@ -369,7 +402,7 @@ void CastCollisionEvaluator::CalcDistExpressions(const DblVec& x, sco::AffExprVe
 {
   tesseract_collision::ContactResultVector dist_results;
   GetCollisionsCached(x, dist_results);
-  CollisionsToDistanceExpressions(dist_results, env_, manip_, m_vars0, m_vars1, x, exprs);
+  CollisionsToDistanceExpressions(dist_results, manip_, adjacency_map_, world_to_base_, m_vars0, m_vars1, x, exprs);
 }
 void CastCollisionEvaluator::CalcDists(const DblVec& x, DblVec& dists)
 {
@@ -378,14 +411,11 @@ void CastCollisionEvaluator::CalcDists(const DblVec& x, DblVec& dists)
   CollisionsToDistances(dist_results, dists);
 }
 
-void CastCollisionEvaluator::Plot(const tesseract::BasicPlottingPtr plotter, const DblVec& x)
+void CastCollisionEvaluator::Plot(const tesseract_visualization::VisualizationPtr& plotter, const DblVec& x)
 {
   // TODO LEVI: Need to improve this to match casted object
   tesseract_collision::ContactResultVector dist_results;
   GetCollisionsCached(x, dist_results);
-  const std::vector<std::string>& link_names = manip_->getLinkNames();
-  tesseract::EnvStateConstPtr state = env_->getState();
-  Eigen::Isometry3d change_base = state->transforms.at(manip_->getBaseLinkName());
   Eigen::VectorXd dofvals = sco::getVec(x, m_vars0);
 
   Eigen::VectorXd safety_distance(dist_results.size());
@@ -395,42 +425,58 @@ void CastCollisionEvaluator::Plot(const tesseract::BasicPlottingPtr plotter, con
     const Eigen::Vector2d& data = getSafetyMarginData()->getPairSafetyMarginData(res.link_names[0], res.link_names[1]);
     safety_distance[i] = data[0];
 
-    std::vector<std::string>::const_iterator itA = std::find(link_names.begin(), link_names.end(), res.link_names[0]);
-    if (itA != link_names.end())
+    tesseract_environment::AdjacencyMap::const_iterator itA = adjacency_map_->find(res.link_names[0]);
+    if (itA != adjacency_map_->end())
     {
+      const auto& kin_link = itA->second;
       Eigen::MatrixXd jac;
       Eigen::VectorXd dist_grad;
       Eigen::Isometry3d pose, pose2;
       jac.resize(6, manip_->numJoints());
-      manip_->calcFwdKin(pose, change_base, dofvals, res.link_names[0], *state);
-      manip_->calcJacobian(jac, change_base, dofvals, res.link_names[0], *state, res.nearest_points[0]);
+      manip_->calcFwdKin(pose, dofvals, kin_link.first);
+      pose = world_to_base_ * pose;
+
+      manip_->calcJacobian(jac, dofvals, kin_link.first);
+      tesseract_kinematics::jacobianChangeBase(jac, world_to_base_);
+      tesseract_kinematics::jacobianChangeRefPoint(jac, pose.inverse() * (kin_link.second * res.nearest_points[0]));
+
       dist_grad = -res.normal.transpose() * jac.topRows(3);
 
-      Eigen::Vector3d local_link_point = pose.inverse() * res.nearest_points[0];
-      manip_->calcFwdKin(pose2, change_base, dofvals + dist_grad, res.link_names[0], *state);
+      Eigen::Vector3d local_link_point = (pose * kin_link.second).inverse() * res.nearest_points[0];
+      manip_->calcFwdKin(pose2, dofvals + dist_grad, kin_link.first);
+      pose2 = world_to_base_ * pose2 * kin_link.second;
       plotter->plotArrow(res.nearest_points[0], pose2 * local_link_point, Eigen::Vector4d(1, 1, 1, 1), 0.005);
     }
   }
+
+  std::vector<std::string> link_names;
+  link_names.reserve(adjacency_map_->size());
+  for(auto const& m : *adjacency_map_)
+      link_names.push_back(m.first);
 
   plotter->plotContactResults(link_names, dist_results, safety_distance);
 }
 
 //////////////////////////////////////////
 
-CollisionCost::CollisionCost(tesseract::BasicKinConstPtr manip,
-                             tesseract::BasicEnvConstPtr env,
+CollisionCost::CollisionCost(tesseract_kinematics::ForwardKinematicsConstPtr manip,
+                             tesseract_environment::EnvironmentConstPtr env,
+                             tesseract_environment::AdjacencyMapConstPtr adjacency_map,
+                             Eigen::Isometry3d world_to_base,
                              SafetyMarginDataConstPtr safety_margin_data,
                              const sco::VarVector& vars)
-  : Cost("collision"), m_calc(new SingleTimestepCollisionEvaluator(manip, env, safety_margin_data, vars))
+  : Cost("collision"), m_calc(new SingleTimestepCollisionEvaluator(manip, env, adjacency_map, world_to_base, safety_margin_data, vars))
 {
 }
 
-CollisionCost::CollisionCost(tesseract::BasicKinConstPtr manip,
-                             tesseract::BasicEnvConstPtr env,
+CollisionCost::CollisionCost(tesseract_kinematics::ForwardKinematicsConstPtr manip,
+                             tesseract_environment::EnvironmentConstPtr env,
+                             tesseract_environment::AdjacencyMapConstPtr adjacency_map,
+                             Eigen::Isometry3d world_to_base,
                              SafetyMarginDataConstPtr safety_margin_data,
                              const sco::VarVector& vars0,
                              const sco::VarVector& vars1)
-  : Cost("cast_collision"), m_calc(new CastCollisionEvaluator(manip, env, safety_margin_data, vars0, vars1))
+  : Cost("cast_collision"), m_calc(new CastCollisionEvaluator(manip, env, adjacency_map, world_to_base, safety_margin_data, vars0, vars1))
 {
 }
 
@@ -470,24 +516,28 @@ double CollisionCost::value(const sco::DblVec& x)
   return out;
 }
 
-void CollisionCost::Plot(const tesseract::BasicPlottingPtr& plotter, const DblVec& x) { m_calc->Plot(plotter, x); }
+void CollisionCost::Plot(const tesseract_visualization::VisualizationPtr& plotter, const DblVec& x) { m_calc->Plot(plotter, x); }
 // ALMOST EXACTLY COPIED FROM CollisionCost
 
-CollisionConstraint::CollisionConstraint(tesseract::BasicKinConstPtr manip,
-                                         tesseract::BasicEnvConstPtr env,
+CollisionConstraint::CollisionConstraint(tesseract_kinematics::ForwardKinematicsConstPtr manip,
+                                         tesseract_environment::EnvironmentConstPtr env,
+                                         tesseract_environment::AdjacencyMapConstPtr adjacency_map,
+                                         Eigen::Isometry3d world_to_base,
                                          SafetyMarginDataConstPtr safety_margin_data,
                                          const sco::VarVector& vars)
-  : m_calc(new SingleTimestepCollisionEvaluator(manip, env, safety_margin_data, vars))
+  : m_calc(new SingleTimestepCollisionEvaluator(manip, env, adjacency_map, world_to_base, safety_margin_data, vars))
 {
   name_ = "collision";
 }
 
-CollisionConstraint::CollisionConstraint(tesseract::BasicKinConstPtr manip,
-                                         tesseract::BasicEnvConstPtr env,
+CollisionConstraint::CollisionConstraint(tesseract_kinematics::ForwardKinematicsConstPtr manip,
+                                         tesseract_environment::EnvironmentConstPtr env,
+                                         tesseract_environment::AdjacencyMapConstPtr adjacency_map,
+                                         Eigen::Isometry3d world_to_base,
                                          SafetyMarginDataConstPtr safety_margin_data,
                                          const sco::VarVector& vars0,
                                          const sco::VarVector& vars1)
-  : m_calc(new CastCollisionEvaluator(manip, env, safety_margin_data, vars0, vars1))
+  : m_calc(new CastCollisionEvaluator(manip, env, adjacency_map, world_to_base, safety_margin_data, vars0, vars1))
 {
   name_ = "collision";
 }

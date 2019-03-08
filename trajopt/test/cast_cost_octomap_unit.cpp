@@ -16,6 +16,10 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <sensor_msgs/point_cloud_conversion.h>
 #include <srdfdom/model.h>
 #include <urdf_parser/urdf_parser.h>
+
+#include <tesseract_kinematics/kdl/kdl_fwd_kin_chain.h>
+#include <tesseract_environment/kdl/kdl_env.h>
+#include <tesseract_visualization/visualization.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt/collision_terms.hpp>
@@ -30,15 +34,13 @@ TRAJOPT_IGNORE_WARNINGS_POP
 #include <trajopt_utils/logging.hpp>
 #include <trajopt_utils/stl_to_string.hpp>
 
-#include <tesseract_ros/kdl/kdl_chain_kin.h>
-#include <tesseract_ros/kdl/kdl_env.h>
-#include <tesseract_ros/ros_basic_plotting.h>
-
 using namespace trajopt;
 using namespace std;
 using namespace util;
-using namespace tesseract;
+using namespace tesseract_environment;
+using namespace tesseract_kinematics;
 using namespace tesseract_collision;
+using namespace tesseract_visualization;
 
 const std::string ROBOT_DESCRIPTION_PARAM = "robot_description"; /**< Default ROS parameter for robot description */
 const std::string ROBOT_SEMANTIC_PARAM = "robot_description_semantic"; /**< Default ROS parameter for robot
@@ -51,8 +53,8 @@ public:
   ros::NodeHandle nh_;
   urdf::ModelInterfaceSharedPtr urdf_model_;   /**< URDF Model */
   srdf::ModelSharedPtr srdf_model_;            /**< SRDF Model */
-  tesseract_ros::KDLEnvPtr env_;               /**< Trajopt Basic Environment */
-  tesseract_ros::ROSBasicPlottingPtr plotter_; /**< Trajopt Plotter */
+  KDLEnvPtr env_;                              /**< Trajopt Basic Environment */
+  VisualizationPtr plotter_;                   /**< Trajopt Plotter */
 
   void SetUp() override
   {
@@ -63,7 +65,7 @@ public:
 
     srdf_model_ = srdf::ModelSharedPtr(new srdf::Model);
     srdf_model_->initString(*urdf_model_, srdf_xml_string);
-    env_ = tesseract_ros::KDLEnvPtr(new tesseract_ros::KDLEnv);
+    env_ = KDLEnvPtr(new KDLEnv);
     assert(urdf_model_ != nullptr);
     assert(env_ != nullptr);
 

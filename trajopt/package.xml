@@ -13,14 +13,14 @@
   <depend>trajopt_sco</depend>
   <depend>trajopt_utils</depend>
   <depend>tesseract_collision</depend>
-  <depend>tesseract_core</depend>
+  <depend>tesseract_environment</depend>
+  <depend>tesseract_kinematics</depend>
+  <depend>tesseract_visualization</depend>
   <depend>roscpp</depend>
 
   <test_depend>gtest</test_depend>
   <test_depend>rostest</test_depend>
   <test_depend>roslib</test_depend>
-  <test_depend>tesseract_ros</test_depend>
-  <test_depend>trajopt_test_support</test_depend>
   <test_depend>libpcl-all-dev</test_depend>
   <test_depend>octomap_ros</test_depend>
   <test_depend>pcl_conversions</test_depend>
