@@ -21,8 +21,8 @@ int main(int argc, char** argv)
   int steps_per_phase;
   bool plotting_cb, file_write_cb;
   pnh.param<int>("steps_per_phase", steps_per_phase, 10);
-  nh.param<bool>("/pick_and_place_node/plotting", plotting_cb, false);
-  nh.param<bool>("/pick_and_place_node/file_write_cb", file_write_cb, false);
+  pnh.param<bool>("plotting", plotting_cb, false);
+  pnh.param<bool>("file_write_cb", file_write_cb, false);
 
   // Set Log Level
   util::gLogLevel = util::LevelInfo;
@@ -237,7 +237,7 @@ int main(int argc, char** argv)
 
   // Set the optimization parameters (Most are being left as defaults)
   tesseract::tesseract_planning::TrajOptPlannerConfig config(pick_prob);
-  config.params.max_iter = 50;
+  config.params.max_iter = 100;
 
   // Create Plot Callback
   if (plotting_cb)
@@ -288,18 +288,27 @@ int main(int argc, char** argv)
   Eigen::Isometry3d retreat_pose = approach_pose;
 
   // Define some place locations.
-  Eigen::Isometry3d middle_right_shelf, middle_left_shelf;
+  Eigen::Isometry3d bottom_right_shelf, bottom_left_shelf, middle_right_shelf, middle_left_shelf, top_right_shelf,
+      top_left_shelf;
+  bottom_right_shelf.linear() = Eigen::Quaterniond(0, 0, 0.7071068, 0.7071068).matrix();
+  bottom_right_shelf.translation() = Eigen::Vector3d(0.148856, 0.73085, 0.906);
+  bottom_left_shelf.linear() = Eigen::Quaterniond(0, 0, 0.7071068, 0.7071068).matrix();
+  bottom_left_shelf.translation() = Eigen::Vector3d(-0.148856, 0.73085, 0.906);
   middle_right_shelf.linear() = Eigen::Quaterniond(0, 0, 0.7071068, 0.7071068).matrix();
   middle_right_shelf.translation() = Eigen::Vector3d(0.148856, 0.73085, 1.16);
   middle_left_shelf.linear() = Eigen::Quaterniond(0, 0, 0.7071068, 0.7071068).matrix();
   middle_left_shelf.translation() = Eigen::Vector3d(-0.148856, 0.73085, 1.16);
+  top_right_shelf.linear() = Eigen::Quaterniond(0, 0, 0.7071068, 0.7071068).matrix();
+  top_right_shelf.translation() = Eigen::Vector3d(0.148856, 0.73085, 1.414);
+  top_left_shelf.linear() = Eigen::Quaterniond(0, 0, 0.7071068, 0.7071068).matrix();
+  top_left_shelf.translation() = Eigen::Vector3d(-0.148856, 0.73085, 1.414);
 
   // Set the target pose to middle_left_shelf
   final_pose = middle_left_shelf;
 
   // Setup approach for place move
   approach_pose = final_pose;
-  approach_pose.translation() += Eigen::Vector3d(0.0, -0.2, 0);
+  approach_pose.translation() += Eigen::Vector3d(0.0, -0.25, 0);
 
   // Create the problem construction info
   trajopt::ProblemConstructionInfo pci_place(env);
@@ -384,7 +393,7 @@ int main(int argc, char** argv)
 
   // Add cartesian pose cnt at the final point
   int steps = 3 * steps_per_phase - 2 * steps_per_phase;
-  for (int index = 1; index < steps; index++)
+  for (int index = 0; index < steps; index++)
   {
     Eigen::Quaterniond rotation(final_pose.linear());
     std::shared_ptr<trajopt::CartPoseTermInfo> pose_constraint =
@@ -393,7 +402,7 @@ int main(int argc, char** argv)
     pose_constraint->link = end_effector;
     pose_constraint->timestep = 2 * steps_per_phase + index;
     pose_constraint->xyz = approach_pose.translation();
-    pose_constraint->xyz.y() = approach_pose.translation().y() + 0.25 / steps * index;
+    pose_constraint->xyz.y() = approach_pose.translation().y() + 0.25 / (steps - 1) * index;
 
     pose_constraint->wxyz = Eigen::Vector4d(rotation.w(), rotation.x(), rotation.y(), rotation.z());
     pose_constraint->pos_coeffs = Eigen::Vector3d(10.0, 10.0, 10.0);
@@ -417,7 +426,7 @@ int main(int argc, char** argv)
 
   // Set the optimization parameters
   tesseract::tesseract_planning::TrajOptPlannerConfig config_place(place_prob);
-  config_place.params.max_iter = 50;
+  config_place.params.max_iter = 100;
 
   // Create Plot Callback
   if (plotting_cb)

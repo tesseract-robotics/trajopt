@@ -1,5 +1,6 @@
 <launch>
     <arg name="rviz" default="true"/>
+    <arg name="steps_per_phase" default="10"/>
     <arg name="plotting" default="false" />
     <arg name="file_write_cb" default="false" />
     <arg name="box_side" default="0.2"/>
@@ -27,6 +28,7 @@
 
     <!-- Launch planner node -->
     <node name="pick_and_place_plan_node" pkg="trajopt_examples" type="trajopt_examples_pick_and_place_plan" output="screen">
+        <param name="steps_per_phase" value="$(arg steps_per_phase)"/>
         <param name="plotting" value="$(arg plotting)"/>
         <param name="file_write_cb" value="$(arg file_write_cb)" />
     </node>
