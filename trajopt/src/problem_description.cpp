@@ -119,6 +119,7 @@ void ProblemConstructionInfo::readBasicInfo(const Json::Value& v)
   json_marshal::childFromJson(v, basic_info.convex_solver, "convex_solver", basic_info.convex_solver);
   json_marshal::childFromJson(v, basic_info.dt_lower_lim, "dt_lower_lim", 1.0);
   json_marshal::childFromJson(v, basic_info.dt_upper_lim, "dt_upper_lim", 1.0);
+  json_marshal::childFromJson(v, basic_info.use_time, "use_time", false);
 
   if (basic_info.dt_lower_lim <= 0 || basic_info.dt_upper_lim < basic_info.dt_lower_lim)
   {
@@ -154,16 +155,17 @@ void ProblemConstructionInfo::readCosts(const Json::Value& v)
   cost_infos.reserve(v.size());
   for (Json::Value::const_iterator it = v.begin(); it != v.end(); ++it)
   {
-    std::string type, use_time_str;
+    std::string type;
+    bool use_time;
     json_marshal::childFromJson(*it, type, "type");
-    json_marshal::childFromJson(*it, use_time_str, "use_time", static_cast<std::string>("false"));
+    json_marshal::childFromJson(*it, use_time, "use_time", false);
     LOG_DEBUG("reading term: %s", type.c_str());
     TermInfoPtr term = TermInfo::fromName(type);
 
     if (!term)
       PRINT_AND_THROW(boost::format("failed to construct cost named %s") % type);
 
-    if (boost::iequals(use_time_str, "true"))
+    if (use_time)
     {
       term->term_type = TT_COST | TT_USE_TIME;
       basic_info.use_time = true;
@@ -183,16 +185,17 @@ void ProblemConstructionInfo::readConstraints(const Json::Value& v)
   cnt_infos.reserve(v.size());
   for (Json::Value::const_iterator it = v.begin(); it != v.end(); ++it)
   {
-    std::string type, use_time_str;
+    std::string type;
+    bool use_time;
     json_marshal::childFromJson(*it, type, "type");
-    json_marshal::childFromJson(*it, use_time_str, "use_time", static_cast<std::string>("false"));
+    json_marshal::childFromJson(*it, use_time, "use_time", false);
     LOG_DEBUG("reading term: %s", type.c_str());
     TermInfoPtr term = TermInfo::fromName(type);
 
     if (!term)
       PRINT_AND_THROW(boost::format("failed to construct constraint named %s") % type);
 
-    if (boost::iequals(use_time_str, "true"))
+    if (use_time)
     {
       term->term_type = (TT_CNT | TT_USE_TIME);
       basic_info.use_time = true;
@@ -856,7 +859,7 @@ void JointVelTermInfo::fromJson(ProblemConstructionInfo& pci, const Json::Value&
   json_marshal::childFromJson(params, first_step, "first_step", 0);
   json_marshal::childFromJson(params, last_step, "last_step", pci.basic_info.n_steps - 1);
 
-  const char* all_fields[] = { "coeffs", "first_step", "last_step", "targets", "lower_tols", "upper_tols" };
+  const char* all_fields[] = { "coeffs", "first_step", "last_step", "targets", "lower_tols", "upper_tols", "use_time" };
   ensure_only_members(params, all_fields, sizeof(all_fields) / sizeof(char*));
 }
 
@@ -1044,7 +1047,7 @@ void JointAccTermInfo::fromJson(ProblemConstructionInfo& pci, const Json::Value&
   json_marshal::childFromJson(params, first_step, "first_step", 0);
   json_marshal::childFromJson(params, last_step, "last_step", pci.basic_info.n_steps - 1);
 
-  const char* all_fields[] = { "coeffs", "first_step", "last_step", "targets", "lower_tols", "upper_tols" };
+  const char* all_fields[] = { "coeffs", "first_step", "last_step", "targets", "lower_tols", "upper_tols", "use_time" };
   ensure_only_members(params, all_fields, sizeof(all_fields) / sizeof(char*));
 }
 
@@ -1431,7 +1434,7 @@ void TotalTimeTermInfo::fromJson(ProblemConstructionInfo& pci, const Json::Value
   json_marshal::childFromJson(params, coeff, "coeff", 1.0);
   json_marshal::childFromJson(params, limit, "limit", 1.0);
 
-  const char* all_fields[] = { "weight", "penalty_type", "limit" };
+  const char* all_fields[] = { "coeff", "limit" };
   ensure_only_members(params, all_fields, sizeof(all_fields) / sizeof(char*));
 }
 
