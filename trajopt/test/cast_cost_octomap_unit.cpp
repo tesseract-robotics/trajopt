@@ -2,24 +2,19 @@
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <ctime>
 #include <gtest/gtest.h>
-#include <geometric_shapes/shape_operations.h>
-#include <geometric_shapes/shapes.h>
-#include <octomap_msgs/OctomapWithPose.h>
-#include <octomap_msgs/conversions.h>
-#include <octomap_ros/conversions.h>
-#include <pcl/point_cloud.h>
-#include <pcl/point_types.h>
-#include <pcl_conversions/pcl_conversions.h>
-#include <ros/package.h>
-#include <ros/ros.h>
-#include <sensor_msgs/PointCloud2.h>
-#include <sensor_msgs/point_cloud_conversion.h>
-#include <srdfdom/model.h>
-#include <urdf_parser/urdf_parser.h>
+#include <octomap/Pointcloud.h>
+#include <octomap/OcTree.h>
 
+#include <tesseract_collision/bullet/bullet_discrete_bvh_manager.h>
+#include <tesseract_collision/bullet/bullet_cast_bvh_manager.h>
 #include <tesseract_kinematics/kdl/kdl_fwd_kin_chain.h>
+#include <tesseract_kinematics/kdl/kdl_fwd_kin_tree.h>
+#include <tesseract_kinematics/core/utils.h>
 #include <tesseract_environment/kdl/kdl_env.h>
-#include <tesseract_visualization/visualization.h>
+#include <tesseract_environment/core/utils.h>
+#include <tesseract_scene_graph/graph.h>
+#include <tesseract_scene_graph/parser/urdf_parser.h>
+#include <tesseract_scene_graph/parser/srdf_parser.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt/collision_terms.hpp>
@@ -41,108 +36,132 @@ using namespace tesseract_environment;
 using namespace tesseract_kinematics;
 using namespace tesseract_collision;
 using namespace tesseract_visualization;
+using namespace tesseract_scene_graph;
+using namespace tesseract_geometry;
 
-const std::string ROBOT_DESCRIPTION_PARAM = "robot_description"; /**< Default ROS parameter for robot description */
-const std::string ROBOT_SEMANTIC_PARAM = "robot_description_semantic"; /**< Default ROS parameter for robot
-                                                                          description */
-bool plotting = false;
+static bool plotting = false;
 
 class CastOctomapTest : public testing::TestWithParam<const char*>
 {
 public:
-  ros::NodeHandle nh_;
-  urdf::ModelInterfaceSharedPtr urdf_model_;   /**< URDF Model */
-  srdf::ModelSharedPtr srdf_model_;            /**< SRDF Model */
-  KDLEnvPtr env_;                              /**< Trajopt Basic Environment */
-  VisualizationPtr plotter_;                   /**< Trajopt Plotter */
+  SceneGraphPtr scene_graph_;             /**< Scene Graph */
+  SRDFModel srdf_model_;                  /**< SRDF Model */
+  KDLEnvPtr env_;                         /**< Trajopt Basic Environment */
+  AllowedCollisionMatrixPtr acm_;         /**< Allowed Collision Matrix */
+  VisualizationPtr plotter_;              /**< Trajopt Plotter */
+  ForwardKinematicsConstPtrMap kin_map_;  /**< A map between manipulator name and kinematics object */
+//  tesseract_ros::ROSBasicPlottingPtr plotter_; /**< Trajopt Plotter */
 
   void SetUp() override
   {
-    std::string urdf_xml_string, srdf_xml_string;
-    nh_.getParam(ROBOT_DESCRIPTION_PARAM, urdf_xml_string);
-    nh_.getParam(ROBOT_SEMANTIC_PARAM, srdf_xml_string);
-    urdf_model_ = urdf::parseURDF(urdf_xml_string);
+    std::string urdf_file = std::string(DATA_DIR) + "/data/boxbot_world.urdf";
+    std::string srdf_file = std::string(DATA_DIR) + "/data/boxbot.srdf";
 
-    srdf_model_ = srdf::ModelSharedPtr(new srdf::Model);
-    srdf_model_->initString(*urdf_model_, srdf_xml_string);
+    ResourceLocatorFn locator = locateResource;
+    scene_graph_ = parseURDF(urdf_file, locator);
+    EXPECT_TRUE(scene_graph_ != nullptr);
+    EXPECT_TRUE(srdf_model_.initFile(*scene_graph_, srdf_file));
+
     env_ = KDLEnvPtr(new KDLEnv);
-    assert(urdf_model_ != nullptr);
-    assert(env_ != nullptr);
+    EXPECT_TRUE(env_ != nullptr);
+    EXPECT_TRUE(env_->init(scene_graph_));
 
-    bool success = env_->init(urdf_model_, srdf_model_);
-    assert(success);
+    // Add collision detectors
+    tesseract_collision_bullet::BulletDiscreteBVHManagerPtr dc(new tesseract_collision_bullet::BulletDiscreteBVHManager());
+    tesseract_collision_bullet::BulletCastBVHManagerPtr cc(new tesseract_collision_bullet::BulletCastBVHManager());
+
+    EXPECT_TRUE(env_->setDiscreteContactManager(dc));
+    EXPECT_TRUE(env_->setContinuousContactManager(cc));
+
+    // Add Allowed Collision Matrix
+    acm_ = getAllowedCollisionMatrix(srdf_model_);
+    IsContactAllowedFn fn = std::bind(&CastOctomapTest::defaultIsContactAllowedFn, this, std::placeholders::_1, std::placeholders::_2);
+    env_->setIsContactAllowedFn(fn);
+
+    // Generate Kinematics Map
+    kin_map_ = createKinematicsMap<KDLFwdKinChain, KDLFwdKinTree>(scene_graph_, srdf_model_);
+
+    gLogLevel = util::LevelError;
 
     // Create plotting tool
-    plotter_.reset(new tesseract_ros::ROSBasicPlotting(env_));
+//    plotter_.reset(new tesseract_ros::ROSBasicPlotting(env_));
 
-    pcl::PointCloud<pcl::PointXYZ> full_cloud;
+    octomap::Pointcloud point_cloud;
     double delta = 0.05;
     int length = static_cast<int>(1 / delta);
 
     for (int x = 0; x < length; ++x)
       for (int y = 0; y < length; ++y)
         for (int z = 0; z < length; ++z)
-          full_cloud.push_back(pcl::PointXYZ(-0.5f + static_cast<float>(x * delta),
-                                             -0.5f + static_cast<float>(y * delta),
-                                             -0.5f + static_cast<float>(z * delta)));
+          point_cloud.push_back(-0.5f + static_cast<float>(x * delta),
+                                -0.5f + static_cast<float>(y * delta),
+                                -0.5f + static_cast<float>(z * delta));
 
-    sensor_msgs::PointCloud2 pointcloud_msg;
-    pcl::toROSMsg(full_cloud, pointcloud_msg);
+    std::shared_ptr<octomap::OcTree> octree = std::make_shared<octomap::OcTree>(2 * delta);
+    octree->insertPointCloud(point_cloud, octomap::point3d(0, 0, 0));
 
-    octomap::Pointcloud octomap_data;
-    octomap::pointCloud2ToOctomap(pointcloud_msg, octomap_data);
-    octomap::OcTree* octree = new octomap::OcTree(2 * delta);
-    octree->insertPointCloud(octomap_data, octomap::point3d(0, 0, 0));
+    // Next add objects that can be attached/detached to the scene
+    OctreePtr coll_octree = std::make_shared<Octree>(octree, Octree::SubType::BOX);
+    BoxPtr vis_box(new Box(1.0, 1.0, 1.0));
 
-    AttachableObjectPtr obj(new AttachableObject());
-    OctreeCollisionShapePtr octomap_world(new OctreeCollisionShape(std::shared_ptr<const octomap::OcTree>(octree), OctreeCollisionShape::SubShapeType::BOX));
-    Eigen::Isometry3d octomap_pose;
+    VisualPtr visual(new Visual());
+    visual->geometry = vis_box;
+    visual->origin = Eigen::Isometry3d::Identity();
 
-    octomap_pose.setIdentity();
-    octomap_pose.translation() = Eigen::Vector3d(0, 0, 0);
+    CollisionPtr collision(new Collision());
+    collision->geometry = coll_octree;
+    collision->origin = Eigen::Isometry3d::Identity();
 
-    obj->name = "octomap_attached";
-    obj->collision.shapes.push_back(octomap_world);
-    obj->collision.shape_poses.push_back(octomap_pose);
-    env_->addAttachableObject(obj);
+    LinkPtr new_link(new Link("octomap_attached"));
+    new_link->visual.push_back(visual);
+    new_link->collision.push_back(collision);
 
-    gLogLevel = util::LevelInfo;
+    JointPtr new_joint(new Joint("base_link-octomap_attached"));
+    new_joint->parent_link_name = "base_link";
+    new_joint->child_link_name = "octomap_attached";
+
+    env_->addLink(new_link, new_joint);
+  }
+
+  bool defaultIsContactAllowedFn(const std::string& link_name1, const std::string& link_name2) const
+  {
+    if (acm_ != nullptr && acm_->isCollisionAllowed(link_name1, link_name2))
+      return true;
+
+    return false;
   }
 };
 
 TEST_F(CastOctomapTest, boxes)
 {
-  ROS_DEBUG("CastTest, boxes");
+  CONSOLE_BRIDGE_logDebug("CastOctomapTest, boxes");
 
-  AttachedBodyInfo attached_body;
-  attached_body.object_name = "octomap_attached";
-  attached_body.parent_link_name = "base_link";
-
-  env_->attachBody(attached_body);
-
-  std::string package_path = ros::package::getPath("trajopt_test_support");
-  Json::Value root = readJsonFile(package_path + "/config/box_cast_test.json");
+  Json::Value root = readJsonFile(std::string(DATA_DIR)  + "/data/config/box_cast_test.json");
 
   std::unordered_map<std::string, double> ipos;
   ipos["boxbot_x_joint"] = -1.9;
   ipos["boxbot_y_joint"] = 0;
   env_->setState(ipos);
 
-  plotter_->plotScene();
+//  plotter_->plotScene();
 
-  TrajOptProbPtr prob = ConstructProblem(root, env_);
+  TrajOptProbPtr prob = ConstructProblem(root, env_, kin_map_);
   ASSERT_TRUE(!!prob);
 
   std::vector<ContactResultMap> collisions;
   ContinuousContactManagerPtr manager = prob->GetEnv()->getContinuousContactManager();
-  manager->setActiveCollisionObjects(prob->GetKin()->getLinkNames());
+  AdjacencyMapPtr adjacency_map = std::make_shared<AdjacencyMap>(scene_graph_,
+                                                                 prob->GetKin()->getActiveLinkNames(),
+                                                                 prob->GetEnv()->getLinkNames(),
+                                                                 prob->GetEnv()->getState()->transforms);
+
+  manager->setActiveCollisionObjects(adjacency_map->getActiveLinkNames());
   manager->setContactDistanceThreshold(0);
 
-  bool found = tesseract::continuousCollisionCheckTrajectory(
-      *manager, *prob->GetEnv(), *prob->GetKin(), prob->GetInitTraj(), collisions);
+  bool found = checkTrajectory(*manager, *prob->GetEnv(), prob->GetKin()->getJointNames(), adjacency_map->getActiveLinkNames(), prob->GetInitTraj(), collisions);
 
   EXPECT_TRUE(found);
-  ROS_INFO((found) ? ("Initial trajectory is in collision") : ("Initial trajectory is collision free"));
+  CONSOLE_BRIDGE_logDebug((found) ? ("Initial trajectory is in collision") : ("Initial trajectory is collision free"));
 
   sco::BasicTrustRegionSQP opt(prob);
   if (plotting)
@@ -154,19 +173,16 @@ TEST_F(CastOctomapTest, boxes)
     plotter_->clear();
 
   collisions.clear();
-  found = tesseract::continuousCollisionCheckTrajectory(
-      *manager, *prob->GetEnv(), *prob->GetKin(), getTraj(opt.x(), prob->GetVars()), collisions);
+  found = checkTrajectory(*manager, *prob->GetEnv(), prob->GetKin()->getJointNames(), adjacency_map->getActiveLinkNames(), getTraj(opt.x(), prob->GetVars()), collisions);
 
   EXPECT_FALSE(found);
-  ROS_INFO((found) ? ("Final trajectory is in collision") : ("Final trajectory is collision free"));
+  CONSOLE_BRIDGE_logDebug((found) ? ("Final trajectory is in collision") : ("Final trajectory is collision free"));
 }
 
 int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
-  ros::init(argc, argv, "trajopt_cast_cost_octomap_unit");
-  ros::NodeHandle pnh("~");
 
-  pnh.param("plotting", plotting, false);
+//  pnh.param("plotting", plotting, false);
   return RUN_ALL_TESTS();
 }

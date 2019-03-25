@@ -3,7 +3,6 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <ctime>
 #include <sstream>
 #include <gtest/gtest.h>
-#include <ros/package.h>
 
 #include <tesseract_collision/bullet/bullet_discrete_bvh_manager.h>
 #include <tesseract_collision/bullet/bullet_cast_bvh_manager.h>
@@ -43,12 +42,11 @@ bool plotting = false;                                                 /**< Enab
 class PlanningTest : public testing::TestWithParam<const char*>
 {
 public:
-  SceneGraphPtr scene_graph_;     /**< Scene Graph */
-  SRDFModel srdf_model_;          /**< SRDF Model */
-  KDLEnvPtr env_;                 /**< Trajopt Basic Environment */
-  AllowedCollisionMatrixPtr acm_; /**< Allowed Collision Matrix */
-  VisualizationPtr plotter_;      /**< Trajopt Plotter */
-  std::unordered_map<std::string, tesseract_kinematics::ForwardKinematicsConstPtr> kinematics_map;
+  SceneGraphPtr scene_graph_;                    /**< Scene Graph */
+  SRDFModel srdf_model_;                         /**< SRDF Model */
+  KDLEnvPtr env_;                                /**< Trajopt Basic Environment */
+  AllowedCollisionMatrixPtr acm_;                /**< Allowed Collision Matrix */
+  VisualizationPtr plotter_;                     /**< Trajopt Plotter */
   void SetUp() override
   {
     std::string urdf_file = std::string(DATA_DIR) + "/data/arm_around_table.urdf";
@@ -181,10 +179,15 @@ TEST_F(PlanningTest, arm_around_table)
 
   std::vector<ContactResultMap> collisions;
   ContinuousContactManagerPtr manager = prob->GetEnv()->getContinuousContactManager();
-  manager->setActiveCollisionObjects(prob->GetKin()->getLinkNames());
+  AdjacencyMapPtr adjacency_map = std::make_shared<AdjacencyMap>(scene_graph_,
+                                                                 prob->GetKin()->getActiveLinkNames(),
+                                                                 prob->GetEnv()->getLinkNames(),
+                                                                 prob->GetEnv()->getState()->transforms);
+
+  manager->setActiveCollisionObjects(adjacency_map->getActiveLinkNames());
   manager->setContactDistanceThreshold(0);
 
-  bool found = checkTrajectory(*manager, *prob->GetEnv(), *prob->GetKin(), prob->GetInitTraj(), collisions);
+  bool found = checkTrajectory(*manager, *prob->GetEnv(), prob->GetKin()->getJointNames(), adjacency_map->getActiveLinkNames(), prob->GetInitTraj(), collisions);
 
   EXPECT_TRUE(found);
   CONSOLE_BRIDGE_logDebug((found) ? ("Initial trajectory is in collision") : ("Initial trajectory is collision free"));
@@ -218,7 +221,7 @@ TEST_F(PlanningTest, arm_around_table)
 //  }
 
   collisions.clear();
-  found = checkTrajectory(*manager, *prob->GetEnv(), *prob->GetKin(), getTraj(opt.x(), prob->GetVars()), collisions);
+  found = checkTrajectory(*manager, *prob->GetEnv(), prob->GetKin()->getJointNames(), adjacency_map->getActiveLinkNames(), getTraj(opt.x(), prob->GetVars()), collisions);
 
   EXPECT_FALSE(found);
   CONSOLE_BRIDGE_logDebug((found) ? ("Final trajectory is in collision") : ("Final trajectory is collision free"));

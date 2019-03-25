@@ -2,15 +2,19 @@
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <ctime>
 #include <gtest/gtest.h>
-#include <ros/package.h>
-#include <ros/ros.h>
-#include <srdfdom/model.h>
-#include <urdf_parser/urdf_parser.h>
+
+#include <tesseract_collision/bullet/bullet_discrete_bvh_manager.h>
+#include <tesseract_collision/bullet/bullet_cast_bvh_manager.h>
+#include <tesseract_kinematics/kdl/kdl_fwd_kin_chain.h>
+#include <tesseract_kinematics/kdl/kdl_fwd_kin_tree.h>
+#include <tesseract_kinematics/core/utils.h>
+#include <tesseract_environment/kdl/kdl_env.h>
+#include <tesseract_environment/core/utils.h>
+#include <tesseract_scene_graph/graph.h>
+#include <tesseract_scene_graph/parser/urdf_parser.h>
+#include <tesseract_scene_graph/parser/srdf_parser.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
-#include <tesseract_ros/kdl/kdl_chain_kin.h>
-#include <tesseract_ros/kdl/kdl_env.h>
-#include <tesseract_ros/ros_basic_plotting.h>
 #include <trajopt/common.hpp>
 #include <trajopt/plot_callback.hpp>
 #include <trajopt/problem_description.hpp>
@@ -25,40 +29,65 @@ TRAJOPT_IGNORE_WARNINGS_POP
 using namespace trajopt;
 using namespace std;
 using namespace util;
-using namespace tesseract;
+using namespace tesseract_environment;
+using namespace tesseract_collision;
+using namespace tesseract_kinematics;
+using namespace tesseract_visualization;
+using namespace tesseract_scene_graph;
 
-const std::string ROBOT_DESCRIPTION_PARAM = "robot_description"; /**< Default ROS parameter for robot description */
-const std::string ROBOT_SEMANTIC_PARAM = "robot_description_semantic"; /**< Default ROS parameter for robot
-                                                                          description */
 static bool plotting = false;                                          /**< Enable plotting */
 
 class CostsTest : public testing::TestWithParam<const char*>
 {
 public:
-  ros::NodeHandle nh_;
-  urdf::ModelInterfaceSharedPtr urdf_model_;   /**< URDF Model */
-  srdf::ModelSharedPtr srdf_model_;            /**< SRDF Model */
-  tesseract_ros::KDLEnvPtr env_;               /**< Trajopt Basic Environment */
-  tesseract_ros::ROSBasicPlottingPtr plotter_; /**< Trajopt Plotter */
+  SceneGraphPtr scene_graph_;            /**< Scene Graph */
+  SRDFModel srdf_model_;                 /**< SRDF Model */
+  KDLEnvPtr env_;                        /**< Trajopt Basic Environment */
+  AllowedCollisionMatrixPtr acm_;        /**< Allowed Collision Matrix */
+  VisualizationPtr plotter_;             /**< Trajopt Plotter */
+  ForwardKinematicsConstPtrMap kin_map_; /**< A map between manipulator name and kinematics object */
+//  tesseract_ros::ROSBasicPlottingPtr plotter_; /**< Trajopt Plotter */
 
   void SetUp() override
   {
-    std::string urdf_xml_string, srdf_xml_string;
-    nh_.getParam(ROBOT_DESCRIPTION_PARAM, urdf_xml_string);
-    nh_.getParam(ROBOT_SEMANTIC_PARAM, srdf_xml_string);
-    urdf_model_ = urdf::parseURDF(urdf_xml_string);
+    std::string urdf_file = std::string(DATA_DIR) + "/data/arm_around_table.urdf";
+    std::string srdf_file = std::string(DATA_DIR) + "/data/pr2.srdf";
 
-    srdf_model_ = srdf::ModelSharedPtr(new srdf::Model);
-    srdf_model_->initString(*urdf_model_, srdf_xml_string);
-    env_ = tesseract_ros::KDLEnvPtr(new tesseract_ros::KDLEnv);
-    assert(urdf_model_ != nullptr);
-    assert(env_ != nullptr);
+    ResourceLocatorFn locator = locateResource;
+    scene_graph_ = parseURDF(urdf_file, locator);
+    EXPECT_TRUE(scene_graph_ != nullptr);
+    EXPECT_TRUE(srdf_model_.initFile(*scene_graph_, srdf_file));
 
-    bool success = env_->init(urdf_model_, srdf_model_);
-    assert(success);
+    env_ = KDLEnvPtr(new KDLEnv);
+    EXPECT_TRUE(env_ != nullptr);
+    EXPECT_TRUE(env_->init(scene_graph_));
+
+    // Add collision detectors
+    tesseract_collision_bullet::BulletDiscreteBVHManagerPtr dc(new tesseract_collision_bullet::BulletDiscreteBVHManager());
+    tesseract_collision_bullet::BulletCastBVHManagerPtr cc(new tesseract_collision_bullet::BulletCastBVHManager());
+
+    EXPECT_TRUE(env_->setDiscreteContactManager(dc));
+    EXPECT_TRUE(env_->setContinuousContactManager(cc));
+
+    // Add Allowed Collision Matrix
+    acm_ = getAllowedCollisionMatrix(srdf_model_);
+    IsContactAllowedFn fn = std::bind(&CostsTest::defaultIsContactAllowedFn, this, std::placeholders::_1, std::placeholders::_2);
+    env_->setIsContactAllowedFn(fn);
+
+    // Generate Kinematics Map
+    kin_map_ = createKinematicsMap<KDLFwdKinChain, KDLFwdKinTree>(scene_graph_, srdf_model_);
 
     gLogLevel = util::LevelError;
   }
+
+  bool defaultIsContactAllowedFn(const std::string& link_name1, const std::string& link_name2) const
+  {
+    if (acm_ != nullptr && acm_->isCollisionAllowed(link_name1, link_name2))
+      return true;
+
+    return false;
+  }
+
 };
 
 /**
@@ -72,7 +101,7 @@ public:
  */
 TEST_F(CostsTest, equality_jointPos)
 {
-  ROS_DEBUG("CostsTest, equality_jointPos");
+  CONSOLE_BRIDGE_logDebug("CostsTest, equality_jointPos");
 
   const double cnt_targ = 0.0;
   const double cost_targ = -0.1;
@@ -80,7 +109,7 @@ TEST_F(CostsTest, equality_jointPos)
   const double cost_tol = 0.01;
   const double cnt_tol = 0.0001;
 
-  ProblemConstructionInfo pci(env_);
+  ProblemConstructionInfo pci(env_, kin_map_);
 
   // Populate Basic Info
   pci.basic_info.n_steps = steps;
@@ -88,10 +117,10 @@ TEST_F(CostsTest, equality_jointPos)
   pci.basic_info.start_fixed = false;
 
   // Create Kinematic Object
-  pci.kin = pci.env->getManipulator(pci.basic_info.manip);
+  pci.kin = kin_map_[pci.basic_info.manip];
 
   // Populate Init Info
-  Eigen::VectorXd start_pos = pci.env->getCurrentJointValues(pci.kin->getName());
+  Eigen::VectorXd start_pos = pci.env->getCurrentJointValues(pci.kin->getJointNames());
   pci.init_info.type = InitInfo::STATIONARY;
   pci.init_info.data = start_pos.transpose().replicate(pci.basic_info.n_steps, 1);
 
@@ -148,7 +177,7 @@ TEST_F(CostsTest, equality_jointPos)
       EXPECT_NEAR(pos, cost_targ, cost_tol);
     }
   }
-  ROS_DEBUG("planning time: %.3f", GetClock() - tStart);
+  CONSOLE_BRIDGE_logDebug("planning time: %.3f", GetClock() - tStart);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -162,7 +191,7 @@ TEST_F(CostsTest, equality_jointPos)
  */
 TEST_F(CostsTest, inequality_jointPos)
 {
-  ROS_DEBUG("CostsTest, inequality_cnt_jointPos");
+  CONSOLE_BRIDGE_logDebug("CostsTest, inequality_cnt_jointPos");
 
   const double lower_tol = -0.1;
   const double upper_tol = 0.1;
@@ -172,7 +201,7 @@ TEST_F(CostsTest, inequality_jointPos)
   const int steps = 10;
   const double cnt_tol = 0.0001;
 
-  ProblemConstructionInfo pci(env_);
+  ProblemConstructionInfo pci(env_, kin_map_);
 
   // Populate Basic Info
   pci.basic_info.n_steps = steps;
@@ -181,10 +210,10 @@ TEST_F(CostsTest, inequality_jointPos)
   pci.basic_info.use_time = false;
 
   // Create Kinematic Object
-  pci.kin = pci.env->getManipulator(pci.basic_info.manip);
+  pci.kin = kin_map_[pci.basic_info.manip];
 
   // Populate Init Info
-  Eigen::VectorXd start_pos = pci.env->getCurrentJointValues(pci.kin->getName());
+  Eigen::VectorXd start_pos = pci.env->getCurrentJointValues(pci.kin->getJointNames());
   pci.init_info.type = InitInfo::STATIONARY;
   pci.init_info.data = start_pos.transpose().replicate(pci.basic_info.n_steps, 1);
 
@@ -236,7 +265,7 @@ TEST_F(CostsTest, inequality_jointPos)
   double tStart = GetClock();
 
   opt.optimize();
-  ROS_DEBUG("planning time: %.3f", GetClock() - tStart);
+  CONSOLE_BRIDGE_logDebug("planning time: %.3f", GetClock() - tStart);
 
   TrajArray output = getTraj(opt.x(), prob->GetVars());
   std::cout << "Trajectory: \n" << output << "\n";
@@ -275,7 +304,7 @@ TEST_F(CostsTest, inequality_jointPos)
  */
 TEST_F(CostsTest, equality_jointVel)
 {
-  ROS_DEBUG("CostsTest, equality_jointVel");
+  CONSOLE_BRIDGE_logDebug("CostsTest, equality_jointVel");
 
   const double cnt_targ = 0.0;
   const double cost_targ = 0.1;
@@ -283,7 +312,7 @@ TEST_F(CostsTest, equality_jointVel)
   const double cost_tol = 0.01;
   const double cnt_tol = 0.0001;
 
-  ProblemConstructionInfo pci(env_);
+  ProblemConstructionInfo pci(env_, kin_map_);
 
   // Populate Basic Info
   pci.basic_info.n_steps = steps;
@@ -292,10 +321,10 @@ TEST_F(CostsTest, equality_jointVel)
   pci.basic_info.use_time = false;
 
   // Create Kinematic Object
-  pci.kin = pci.env->getManipulator(pci.basic_info.manip);
+  pci.kin = kin_map_[pci.basic_info.manip];
 
   // Populate Init Info
-  Eigen::VectorXd start_pos = pci.env->getCurrentJointValues(pci.kin->getName());
+  Eigen::VectorXd start_pos = pci.env->getCurrentJointValues(pci.kin->getJointNames());
   pci.init_info.type = InitInfo::STATIONARY;
   pci.init_info.data = start_pos.transpose().replicate(pci.basic_info.n_steps, 1);
 
@@ -352,7 +381,7 @@ TEST_F(CostsTest, equality_jointVel)
       EXPECT_NEAR(velocity, cost_targ, cost_tol);
     }
   }
-  ROS_DEBUG("planning time: %.3f", GetClock() - tStart);
+  CONSOLE_BRIDGE_logDebug("planning time: %.3f", GetClock() - tStart);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -366,7 +395,7 @@ TEST_F(CostsTest, equality_jointVel)
  */
 TEST_F(CostsTest, inequality_jointVel)
 {
-  ROS_DEBUG("CostsTest, inequality_cnt_jointVel");
+  CONSOLE_BRIDGE_logDebug("CostsTest, inequality_cnt_jointVel");
 
   const double lower_tol = -0.1;
   const double upper_tol = 0.1;
@@ -376,7 +405,7 @@ TEST_F(CostsTest, inequality_jointVel)
   const int steps = 10;
   const double cnt_tol = 0.0001;
 
-  ProblemConstructionInfo pci(env_);
+  ProblemConstructionInfo pci(env_, kin_map_);
 
   // Populate Basic Info
   pci.basic_info.n_steps = steps;
@@ -385,10 +414,10 @@ TEST_F(CostsTest, inequality_jointVel)
   pci.basic_info.use_time = false;
 
   // Create Kinematic Object
-  pci.kin = pci.env->getManipulator(pci.basic_info.manip);
+  pci.kin = kin_map_[pci.basic_info.manip];
 
   // Populate Init Info
-  Eigen::VectorXd start_pos = pci.env->getCurrentJointValues(pci.kin->getName());
+  Eigen::VectorXd start_pos = pci.env->getCurrentJointValues(pci.kin->getJointNames());
   pci.init_info.type = InitInfo::STATIONARY;
   pci.init_info.data = start_pos.transpose().replicate(pci.basic_info.n_steps, 1);
 
@@ -440,7 +469,7 @@ TEST_F(CostsTest, inequality_jointVel)
   double tStart = GetClock();
 
   opt.optimize();
-  ROS_DEBUG("planning time: %.3f", GetClock() - tStart);
+  CONSOLE_BRIDGE_logDebug("planning time: %.3f", GetClock() - tStart);
 
   TrajArray output = getTraj(opt.x(), prob->GetVars());
   std::cout << "Trajectory: \n" << output << "\n";
@@ -478,7 +507,7 @@ TEST_F(CostsTest, inequality_jointVel)
  */
 TEST_F(CostsTest, equality_jointVel_time)
 {
-  ROS_DEBUG("CostsTest, equality_jointVel_time");
+  CONSOLE_BRIDGE_logDebug("CostsTest, equality_jointVel_time");
 
   const double cnt_targ = 0.0;
   const double cost_targ = 0.1;
@@ -488,7 +517,7 @@ TEST_F(CostsTest, equality_jointVel_time)
   const double dt_lower = 0.01234;
   const double dt_upper = 1.5678;
 
-  ProblemConstructionInfo pci(env_);
+  ProblemConstructionInfo pci(env_, kin_map_);
 
   // Populate Basic Info
   pci.basic_info.n_steps = steps;
@@ -499,7 +528,7 @@ TEST_F(CostsTest, equality_jointVel_time)
   pci.basic_info.dt_upper_lim = dt_upper;
 
   // Create Kinematic Object
-  pci.kin = pci.env->getManipulator(pci.basic_info.manip);
+  pci.kin = kin_map_[pci.basic_info.manip];
 
   // Populate Init Info
   pci.init_info.type = InitInfo::STATIONARY;
@@ -562,7 +591,7 @@ TEST_F(CostsTest, equality_jointVel_time)
       EXPECT_NEAR(velocity, cost_targ, cost_tol);
     }
   }
-  ROS_DEBUG("planning time: %.3f", GetClock() - tStart);
+  CONSOLE_BRIDGE_logDebug("planning time: %.3f", GetClock() - tStart);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -576,7 +605,7 @@ TEST_F(CostsTest, equality_jointVel_time)
  */
 TEST_F(CostsTest, inequality_jointVel_time)
 {
-  ROS_DEBUG("CostsTest, inequality_cnt_jointVel_time");
+  CONSOLE_BRIDGE_logDebug("CostsTest, inequality_cnt_jointVel_time");
 
   const double lower_tol = -0.1;
   const double upper_tol = 0.1;
@@ -588,7 +617,7 @@ TEST_F(CostsTest, inequality_jointVel_time)
   const int steps = 10;
   const double cnt_tol = 0.0001;
 
-  ProblemConstructionInfo pci(env_);
+  ProblemConstructionInfo pci(env_, kin_map_);
 
   // Populate Basic Info
   pci.basic_info.n_steps = steps;
@@ -599,7 +628,7 @@ TEST_F(CostsTest, inequality_jointVel_time)
   pci.basic_info.dt_upper_lim = dt_upper;
 
   // Create Kinematic Object
-  pci.kin = pci.env->getManipulator(pci.basic_info.manip);
+  pci.kin = kin_map_[pci.basic_info.manip];
 
   // Populate Init Info
   pci.init_info.type = InitInfo::STATIONARY;
@@ -653,7 +682,7 @@ TEST_F(CostsTest, inequality_jointVel_time)
   double tStart = GetClock();
 
   sco::OptStatus status = opt.optimize();
-  ROS_DEBUG("planning time: %.3f", GetClock() - tStart);
+  CONSOLE_BRIDGE_logDebug("planning time: %.3f", GetClock() - tStart);
 
   TrajArray output = getTraj(opt.x(), prob->GetVars());
   std::cout << "Trajectory: \n" << output << "\n";
@@ -692,7 +721,7 @@ TEST_F(CostsTest, inequality_jointVel_time)
  */
 TEST_F(CostsTest, equality_jointAcc)
 {
-  ROS_DEBUG("CostsTest, equality_jointAcc");
+  CONSOLE_BRIDGE_logDebug("CostsTest, equality_jointAcc");
 
   const double cnt_targ = 0.0;
   const double cost_targ = 0.1;
@@ -700,7 +729,7 @@ TEST_F(CostsTest, equality_jointAcc)
   const double cost_tol = 0.01;
   const double cnt_tol = 0.0001;
 
-  ProblemConstructionInfo pci(env_);
+  ProblemConstructionInfo pci(env_, kin_map_);
 
   // Populate Basic Info
   pci.basic_info.n_steps = steps;
@@ -709,10 +738,10 @@ TEST_F(CostsTest, equality_jointAcc)
   pci.basic_info.use_time = false;
 
   // Create Kinematic Object
-  pci.kin = pci.env->getManipulator(pci.basic_info.manip);
+  pci.kin = kin_map_[pci.basic_info.manip];
 
   // Populate Init Info
-  Eigen::VectorXd start_pos = pci.env->getCurrentJointValues(pci.kin->getName());
+  Eigen::VectorXd start_pos = pci.env->getCurrentJointValues(pci.kin->getJointNames());
   pci.init_info.type = InitInfo::STATIONARY;
   pci.init_info.data = start_pos.transpose().replicate(pci.basic_info.n_steps, 1);
 
@@ -770,7 +799,7 @@ TEST_F(CostsTest, equality_jointAcc)
       EXPECT_NEAR(accel, cost_targ, cost_tol);
     }
   }
-  ROS_DEBUG("planning time: %.3f", GetClock() - tStart);
+  CONSOLE_BRIDGE_logDebug("planning time: %.3f", GetClock() - tStart);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -784,7 +813,7 @@ TEST_F(CostsTest, equality_jointAcc)
  */
 TEST_F(CostsTest, inequality_jointAcc)
 {
-  ROS_DEBUG("CostsTest, inequality_cnt_jointVel");
+  CONSOLE_BRIDGE_logDebug("CostsTest, inequality_cnt_jointVel");
 
   const double lower_tol = -0.1;
   const double upper_tol = 0.1;
@@ -794,7 +823,7 @@ TEST_F(CostsTest, inequality_jointAcc)
   const int steps = 10;
   const double cnt_tol = 0.0001;
 
-  ProblemConstructionInfo pci(env_);
+  ProblemConstructionInfo pci(env_, kin_map_);
 
   // Populate Basic Info
   pci.basic_info.n_steps = steps;
@@ -803,10 +832,10 @@ TEST_F(CostsTest, inequality_jointAcc)
   pci.basic_info.use_time = false;
 
   // Create Kinematic Object
-  pci.kin = pci.env->getManipulator(pci.basic_info.manip);
+  pci.kin = kin_map_[pci.basic_info.manip];
 
   // Populate Init Info
-  Eigen::VectorXd start_pos = pci.env->getCurrentJointValues(pci.kin->getName());
+  Eigen::VectorXd start_pos = pci.env->getCurrentJointValues(pci.kin->getJointNames());
   pci.init_info.type = InitInfo::STATIONARY;
   pci.init_info.data = start_pos.transpose().replicate(pci.basic_info.n_steps, 1);
 
@@ -858,7 +887,7 @@ TEST_F(CostsTest, inequality_jointAcc)
   double tStart = GetClock();
 
   opt.optimize();
-  ROS_DEBUG("planning time: %.3f", GetClock() - tStart);
+  CONSOLE_BRIDGE_logDebug("planning time: %.3f", GetClock() - tStart);
 
   TrajArray output = getTraj(opt.x(), prob->GetVars());
   std::cout << "Trajectory: \n" << output << "\n";
@@ -890,9 +919,7 @@ TEST_F(CostsTest, inequality_jointAcc)
 int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
-  ros::init(argc, argv, "trajopt_costs_unit");
-  ros::NodeHandle pnh("~");
 
-  pnh.param("plotting", plotting, false);
+//  pnh.param("plotting", plotting, false);
   return RUN_ALL_TESTS();
 }

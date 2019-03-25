@@ -65,14 +65,13 @@ std::string locateResource(const std::string& url)
  */
 bool checkTrajectory(tesseract_collision::ContinuousContactManager& manager,
                      const tesseract_environment::Environment& env,
-                     const tesseract_kinematics::ForwardKinematics& kin,
+                     const std::vector<std::string>& joint_names,
+                     const std::vector<std::string>& active_link_names,
                      const trajopt::TrajArray& traj,
                      std::vector<tesseract_collision::ContactResultMap>& contacts,
                      bool first_only = true)
 {
   bool found = false;
-  const std::vector<std::string>& joint_names = kin.getJointNames();
-  const std::vector<std::string>& link_names = kin.getLinkNames();
 
   contacts.reserve(static_cast<size_t>(traj.rows() - 1));
   for (int iStep = 0; iStep < traj.rows() - 1; ++iStep)
@@ -82,7 +81,7 @@ bool checkTrajectory(tesseract_collision::ContinuousContactManager& manager,
     tesseract_environment::EnvStatePtr state0 = env.getState(joint_names, traj.row(iStep));
     tesseract_environment::EnvStatePtr state1 = env.getState(joint_names, traj.row(iStep + 1));
 
-    for (const auto& link_name : link_names)
+    for (const auto& link_name : active_link_names)
       manager.setCollisionObjectsTransform(link_name, state0->transforms[link_name], state1->transforms[link_name]);
 
     manager.contactTest(collisions, tesseract_collision::ContactTestTypes::FIRST);

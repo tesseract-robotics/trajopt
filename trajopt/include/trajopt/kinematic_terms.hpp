@@ -23,12 +23,12 @@ struct DynamicCartPoseErrCalculator : public TrajOptVectorOfVector
 {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   std::string target_;
-  std::pair<std::string, Eigen::Isometry3d> kin_target_;
+  tesseract_environment::AdjacencyMapPairConstPtr kin_target_;
   tesseract_kinematics::ForwardKinematicsConstPtr manip_;
   tesseract_environment::AdjacencyMapConstPtr adjacency_map_;
   Eigen::Isometry3d world_to_base_;
   std::string link_;
-  std::pair<std::string, Eigen::Isometry3d> kin_link_;
+  tesseract_environment::AdjacencyMapPairConstPtr kin_link_;
   Eigen::Isometry3d tcp_;
   DynamicCartPoseErrCalculator(const std::string& target,
                                tesseract_kinematics::ForwardKinematicsConstPtr manip,
@@ -38,8 +38,8 @@ struct DynamicCartPoseErrCalculator : public TrajOptVectorOfVector
                                Eigen::Isometry3d tcp = Eigen::Isometry3d::Identity())
     : target_(target), manip_(manip), adjacency_map_(adjacency_map), world_to_base_(world_to_base), link_(link), tcp_(tcp)
   {
-    kin_link_ = adjacency_map_->at(link_);
-    kin_target_ = adjacency_map_->at(target_);
+    kin_link_ = adjacency_map_->getLinkMapping(link_);
+    kin_target_ = adjacency_map_->getLinkMapping(target_);
   }
 
   void Plot(const tesseract_visualization::VisualizationPtr& plotter, const Eigen::VectorXd& dof_vals) override;
@@ -60,7 +60,7 @@ struct CartPoseErrCalculator : public TrajOptVectorOfVector
   tesseract_environment::AdjacencyMapConstPtr adjacency_map_;
   Eigen::Isometry3d world_to_base_;
   std::string link_;
-  std::pair<std::string, Eigen::Isometry3d> kin_link_;
+  tesseract_environment::AdjacencyMapPairConstPtr kin_link_;
   Eigen::Isometry3d tcp_;
   CartPoseErrCalculator(const Eigen::Isometry3d& pose,
                         tesseract_kinematics::ForwardKinematicsConstPtr manip,
@@ -70,7 +70,7 @@ struct CartPoseErrCalculator : public TrajOptVectorOfVector
                         Eigen::Isometry3d tcp = Eigen::Isometry3d::Identity())
     : pose_inv_(pose.inverse()), manip_(manip), adjacency_map_(adjacency_map), world_to_base_(world_to_base), link_(link), tcp_(tcp)
   {
-    kin_link_ = adjacency_map_->at(link_);
+    kin_link_ = adjacency_map_->getLinkMapping(link_);
   }
 
   void Plot(const tesseract_visualization::VisualizationPtr& plotter, const Eigen::VectorXd& dof_vals) override;
@@ -89,7 +89,7 @@ struct CartVelJacCalculator : sco::MatrixOfVector
   tesseract_environment::AdjacencyMapConstPtr adjacency_map_;
   Eigen::Isometry3d world_to_base_;
   std::string link_;
-  std::pair<std::string, Eigen::Isometry3d> kin_link_;
+  tesseract_environment::AdjacencyMapPairConstPtr kin_link_;
   double limit_;
   Eigen::Isometry3d tcp_;
   CartVelJacCalculator(tesseract_kinematics::ForwardKinematicsConstPtr manip,
@@ -100,7 +100,7 @@ struct CartVelJacCalculator : sco::MatrixOfVector
                        Eigen::Isometry3d tcp = Eigen::Isometry3d::Identity())
     : manip_(manip), adjacency_map_(adjacency_map), world_to_base_(world_to_base), link_(link), limit_(limit), tcp_(tcp)
   {
-    kin_link_ = adjacency_map_->at(link_);
+    kin_link_ = adjacency_map_->getLinkMapping(link_);
   }
 
   Eigen::MatrixXd operator()(const Eigen::VectorXd& dof_vals) const override;
@@ -117,7 +117,7 @@ struct CartVelErrCalculator : sco::VectorOfVector
   tesseract_environment::AdjacencyMapConstPtr adjacency_map_;
   Eigen::Isometry3d world_to_base_;
   std::string link_;
-  std::pair<std::string, Eigen::Isometry3d> kin_link_;
+  tesseract_environment::AdjacencyMapPairConstPtr kin_link_;
   double limit_;
   Eigen::Isometry3d tcp_;
   CartVelErrCalculator(tesseract_kinematics::ForwardKinematicsConstPtr manip,
@@ -128,7 +128,7 @@ struct CartVelErrCalculator : sco::VectorOfVector
                        Eigen::Isometry3d tcp = Eigen::Isometry3d::Identity())
     : manip_(manip), adjacency_map_(adjacency_map), world_to_base_(world_to_base), link_(link), limit_(limit), tcp_(tcp)
   {
-    kin_link_ = adjacency_map_->at(link_);
+    kin_link_ = adjacency_map_->getLinkMapping(link_);
   }
 
   Eigen::VectorXd operator()(const Eigen::VectorXd& dof_vals) const override;
