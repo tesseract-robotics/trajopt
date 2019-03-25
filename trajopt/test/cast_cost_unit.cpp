@@ -2,10 +2,6 @@
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <ctime>
 #include <gtest/gtest.h>
-#include <ros/package.h>
-#include <ros/ros.h>
-#include <srdfdom/model.h>
-#include <urdf_parser/urdf_parser.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt/collision_terms.hpp>
@@ -20,9 +16,17 @@ TRAJOPT_IGNORE_WARNINGS_POP
 #include <trajopt_utils/logging.hpp>
 #include <trajopt_utils/stl_to_string.hpp>
 
+#include <tesseract_collision/bullet/bullet_discrete_bvh_manager.h>
+#include <tesseract_collision/bullet/bullet_cast_bvh_manager.h>
 #include <tesseract_kinematics/kdl/kdl_fwd_kin_chain.h>
+#include <tesseract_kinematics/kdl/kdl_fwd_kin_tree.h>
+#include <tesseract_kinematics/core/utils.h>
 #include <tesseract_environment/kdl/kdl_env.h>
+#include <tesseract_environment/core/utils.h>
 #include <tesseract_visualization/visualization.h>
+#include <tesseract_scene_graph/graph.h>
+#include <tesseract_scene_graph/parser/urdf_parser.h>
+#include <tesseract_scene_graph/parser/srdf_parser.h>
 
 using namespace trajopt;
 using namespace std;
@@ -31,72 +35,97 @@ using namespace tesseract_environment;
 using namespace tesseract_kinematics;
 using namespace tesseract_collision;
 using namespace tesseract_visualization;
+using namespace tesseract_scene_graph;
+using namespace tesseract_geometry;
 
-const std::string ROBOT_DESCRIPTION_PARAM = "robot_description"; /**< Default ROS parameter for robot description */
-const std::string ROBOT_SEMANTIC_PARAM = "robot_description_semantic"; /**< Default ROS parameter for robot
-                                                                          description */
-bool plotting = false;
+static bool plotting = false;
 
 class CastTest : public testing::TestWithParam<const char*>
 {
 public:
-  ros::NodeHandle nh_;
-  urdf::ModelInterfaceSharedPtr urdf_model_;   /**< URDF Model */
-  srdf::ModelSharedPtr srdf_model_;            /**< SRDF Model */
-  KDLEnvPtr env_;                              /**< Trajopt Basic Environment */
-  VisualizationPtr plotter_;                   /**< Trajopt Plotter */
+  SceneGraphPtr scene_graph_;             /**< Scene Graph */
+  SRDFModel srdf_model_;                  /**< SRDF Model */
+  KDLEnvPtr env_;                         /**< Trajopt Basic Environment */
+  AllowedCollisionMatrixPtr acm_;         /**< Allowed Collision Matrix */
+  VisualizationPtr plotter_;              /**< Trajopt Plotter */
+  ForwardKinematicsConstPtrMap kin_map_;  /**< A map between manipulator name and kinematics object */
+//  tesseract_ros::ROSBasicPlottingPtr plotter_; /**< Trajopt Plotter */
 
   void SetUp() override
   {
-    std::string urdf_xml_string, srdf_xml_string;
-    nh_.getParam(ROBOT_DESCRIPTION_PARAM, urdf_xml_string);
-    nh_.getParam(ROBOT_SEMANTIC_PARAM, srdf_xml_string);
-    urdf_model_ = urdf::parseURDF(urdf_xml_string);
-    assert(urdf_model_ != nullptr);
+    std::string urdf_file = std::string(DATA_DIR) + "/data/boxbot.urdf";
+    std::string srdf_file = std::string(DATA_DIR) + "/data/boxbot.srdf";
 
-    srdf_model_ = srdf::ModelSharedPtr(new srdf::Model);
-    srdf_model_->initString(*urdf_model_, srdf_xml_string);
-    env_ = tesseract_ros::KDLEnvPtr(new tesseract_ros::KDLEnv);
-    assert(env_ != nullptr);
+    ResourceLocatorFn locator = locateResource;
+    scene_graph_ = parseURDF(urdf_file, locator);
+    EXPECT_TRUE(scene_graph_ != nullptr);
+    EXPECT_TRUE(srdf_model_.initFile(*scene_graph_, srdf_file));
 
-    bool success = env_->init(urdf_model_, srdf_model_);
-    assert(success);
+    env_ = KDLEnvPtr(new KDLEnv);
+    EXPECT_TRUE(env_ != nullptr);
+    EXPECT_TRUE(env_->init(scene_graph_));
+
+    // Add collision detectors
+    tesseract_collision_bullet::BulletDiscreteBVHManagerPtr dc(new tesseract_collision_bullet::BulletDiscreteBVHManager());
+    tesseract_collision_bullet::BulletCastBVHManagerPtr cc(new tesseract_collision_bullet::BulletCastBVHManager());
+
+    EXPECT_TRUE(env_->setDiscreteContactManager(dc));
+    EXPECT_TRUE(env_->setContinuousContactManager(cc));
+
+    // Add Allowed Collision Matrix
+    acm_ = getAllowedCollisionMatrix(srdf_model_);
+    IsContactAllowedFn fn = std::bind(&CastTest::defaultIsContactAllowedFn, this, std::placeholders::_1, std::placeholders::_2);
+    env_->setIsContactAllowedFn(fn);
+
+    // Generate Kinematics Map
+    kin_map_ = createKinematicsMap<KDLFwdKinChain, KDLFwdKinTree>(scene_graph_, srdf_model_);
+
+    gLogLevel = util::LevelError;
 
     // Create plotting tool
-    plotter_.reset(new tesseract_ros::ROSBasicPlotting(env_));
+//    plotter_.reset(new tesseract_ros::ROSBasicPlotting(env_));
+  }
 
-    gLogLevel = util::LevelInfo;
+  bool defaultIsContactAllowedFn(const std::string& link_name1, const std::string& link_name2) const
+  {
+    if (acm_ != nullptr && acm_->isCollisionAllowed(link_name1, link_name2))
+      return true;
+
+    return false;
   }
 };
 
 TEST_F(CastTest, boxes)
 {
-  ROS_DEBUG("CastTest, boxes");
+  CONSOLE_BRIDGE_logDebug("CastTest, boxes");
 
-  std::string package_path = ros::package::getPath("trajopt_test_support");
-  Json::Value root = readJsonFile(package_path + "/config/box_cast_test.json");
+  Json::Value root = readJsonFile(std::string(DATA_DIR)  + "/data/config/box_cast_test.json");
 
   std::unordered_map<std::string, double> ipos;
   ipos["boxbot_x_joint"] = -1.9;
   ipos["boxbot_y_joint"] = 0;
   env_->setState(ipos);
 
-  plotter_->plotScene();
+//  plotter_->plotScene();
 
-  TrajOptProbPtr prob = ConstructProblem(root, env_);
+  TrajOptProbPtr prob = ConstructProblem(root, env_, kin_map_);
   ASSERT_TRUE(!!prob);
 
   std::vector<ContactResultMap> collisions;
   ContinuousContactManagerPtr manager = prob->GetEnv()->getContinuousContactManager();
-  manager->setActiveCollisionObjects(prob->GetKin()->getLinkNames());
+  AdjacencyMapPtr adjacency_map = std::make_shared<AdjacencyMap>(scene_graph_,
+                                                                 prob->GetKin()->getActiveLinkNames(),
+                                                                 prob->GetEnv()->getLinkNames(),
+                                                                 prob->GetEnv()->getState()->transforms);
+
+  manager->setActiveCollisionObjects(adjacency_map->getActiveLinkNames());
   manager->setContactDistanceThreshold(0);
 
   collisions.clear();
-  bool found = continuousCollisionCheckTrajectory(
-      *manager, *prob->GetEnv(), *prob->GetKin(), prob->GetInitTraj(), collisions);
+  bool found = checkTrajectory(*manager, *prob->GetEnv(), prob->GetKin()->getJointNames(), adjacency_map->getActiveLinkNames(), prob->GetInitTraj(), collisions);
 
   EXPECT_TRUE(found);
-  ROS_INFO((found) ? ("Initial trajectory is in collision") : ("Initial trajectory is collision free"));
+  CONSOLE_BRIDGE_logDebug((found) ? ("Initial trajectory is in collision") : ("Initial trajectory is collision free"));
 
   sco::BasicTrustRegionSQP opt(prob);
   if (plotting)
@@ -108,19 +137,16 @@ TEST_F(CastTest, boxes)
     plotter_->clear();
 
   collisions.clear();
-  found = tesseract::continuousCollisionCheckTrajectory(
-      *manager, *prob->GetEnv(), *prob->GetKin(), getTraj(opt.x(), prob->GetVars()), collisions);
+  found = checkTrajectory(*manager, *prob->GetEnv(), prob->GetKin()->getJointNames(), adjacency_map->getActiveLinkNames(), getTraj(opt.x(), prob->GetVars()), collisions);
 
   EXPECT_FALSE(found);
-  ROS_INFO((found) ? ("Final trajectory is in collision") : ("Final trajectory is collision free"));
+  CONSOLE_BRIDGE_logDebug((found) ? ("Final trajectory is in collision") : ("Final trajectory is collision free"));
 }
 
 int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
-  ros::init(argc, argv, "trajopt_cast_cost_unit");
-  ros::NodeHandle pnh("~");
 
-  pnh.param("plotting", plotting, false);
+//  pnh.param("plotting", plotting, false);
   return RUN_ALL_TESTS();
 }

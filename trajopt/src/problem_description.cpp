@@ -568,7 +568,7 @@ void DynamicCartPoseTermInfo::fromJson(ProblemConstructionInfo& pci, const Json:
   tcp.linear() = q.matrix();
   tcp.translation() = tcp_xyz;
 
-  const std::vector<std::string>& link_names = pci.kin->getLinkNames();
+  const std::vector<std::string>& link_names = pci.kin->getActiveLinkNames();
   if (std::find(link_names.begin(), link_names.end(), link) == link_names.end())
   {
     PRINT_AND_THROW(boost::format("invalid link name: %s") % link);
@@ -590,10 +590,10 @@ void DynamicCartPoseTermInfo::hatch(TrajOptProb& prob)
   {
     tesseract_environment::EnvStateConstPtr state = prob.GetEnv()->getState();
     Eigen::Isometry3d world_to_base = state->transforms.at(prob.GetKin()->getBaseLinkName());
-    tesseract_environment::AdjacencyMapPtr adjacency_map = tesseract_environment::getAdjacencyMap(prob.GetEnv()->getSceneGraph(),
-                                                                                                  prob.GetKin()->getLinkNames(),
-                                                                                                  prob.GetEnv()->getLinkNames(),
-                                                                                                  state->transforms);
+    tesseract_environment::AdjacencyMapPtr adjacency_map = std::make_shared<tesseract_environment::AdjacencyMap>(prob.GetEnv()->getSceneGraph(),
+                                                                                                                 prob.GetKin()->getActiveLinkNames(),
+                                                                                                                 prob.GetEnv()->getLinkNames(),
+                                                                                                                 state->transforms);
 
     sco::VectorOfVectorPtr f(new DynamicCartPoseErrCalculator(target, prob.GetKin(), adjacency_map, world_to_base, link, tcp));
     // Apply error calculator as either cost or constraint
@@ -641,7 +641,7 @@ void CartPoseTermInfo::fromJson(ProblemConstructionInfo& pci, const Json::Value&
   tcp.linear() = q.matrix();
   tcp.translation() = tcp_xyz;
 
-  const std::vector<std::string>& link_names = pci.kin->getLinkNames();
+  const std::vector<std::string>& link_names = pci.kin->getActiveLinkNames();
   if (std::find(link_names.begin(), link_names.end(), link) == link_names.end())
   {
     PRINT_AND_THROW(boost::format("invalid link name: %s") % link);
@@ -662,10 +662,10 @@ void CartPoseTermInfo::hatch(TrajOptProb& prob)
 
   tesseract_environment::EnvStateConstPtr state = prob.GetEnv()->getState();
   Eigen::Isometry3d world_to_base = state->transforms.at(prob.GetKin()->getBaseLinkName());
-  tesseract_environment::AdjacencyMapPtr adjacency_map = tesseract_environment::getAdjacencyMap(prob.GetEnv()->getSceneGraph(),
-                                                                                                prob.GetKin()->getLinkNames(),
-                                                                                                prob.GetEnv()->getLinkNames(),
-                                                                                                state->transforms);
+  tesseract_environment::AdjacencyMapPtr adjacency_map = std::make_shared<tesseract_environment::AdjacencyMap>(prob.GetEnv()->getSceneGraph(),
+                                                                                                               prob.GetKin()->getActiveLinkNames(),
+                                                                                                               prob.GetEnv()->getLinkNames(),
+                                                                                                               state->transforms);
 
   if (term_type == (TT_COST | TT_USE_TIME))
   {
@@ -705,7 +705,7 @@ void CartVelTermInfo::fromJson(ProblemConstructionInfo& pci, const Json::Value& 
   FAIL_IF_FALSE((last_step > 0) && (last_step <= pci.basic_info.n_steps - 1));
 
   json_marshal::childFromJson(params, link, "link");
-  const std::vector<std::string>& link_names = pci.kin->getLinkNames();
+  const std::vector<std::string>& link_names = pci.kin->getActiveLinkNames();
   if (std::find(link_names.begin(), link_names.end(), link) == link_names.end())
   {
     PRINT_AND_THROW(boost::format("invalid link name: %s") % link);
@@ -721,10 +721,10 @@ void CartVelTermInfo::hatch(TrajOptProb& prob)
 
   tesseract_environment::EnvStateConstPtr state = prob.GetEnv()->getState();
   Eigen::Isometry3d world_to_base = state->transforms.at(prob.GetKin()->getBaseLinkName());
-  tesseract_environment::AdjacencyMapPtr adjacency_map = tesseract_environment::getAdjacencyMap(prob.GetEnv()->getSceneGraph(),
-                                                                                                prob.GetKin()->getLinkNames(),
-                                                                                                prob.GetEnv()->getLinkNames(),
-                                                                                                state->transforms);
+  tesseract_environment::AdjacencyMapPtr adjacency_map = std::make_shared<tesseract_environment::AdjacencyMap>(prob.GetEnv()->getSceneGraph(),
+                                                                                                               prob.GetKin()->getActiveLinkNames(),
+                                                                                                               prob.GetEnv()->getLinkNames(),
+                                                                                                               state->transforms);
 
   if (term_type == (TT_COST | TT_USE_TIME))
   {
@@ -1415,10 +1415,10 @@ void CollisionTermInfo::hatch(TrajOptProb& prob)
   int n_dof = static_cast<int>(prob.GetKin()->numJoints());
   tesseract_environment::EnvStateConstPtr state = prob.GetEnv()->getState();
   Eigen::Isometry3d world_to_base = state->transforms.at(prob.GetKin()->getBaseLinkName());
-  tesseract_environment::AdjacencyMapPtr adjacency_map = tesseract_environment::getAdjacencyMap(prob.GetEnv()->getSceneGraph(),
-                                                                                                prob.GetKin()->getLinkNames(),
-                                                                                                prob.GetEnv()->getLinkNames(),
-                                                                                                state->transforms);
+  tesseract_environment::AdjacencyMapPtr adjacency_map = std::make_shared<tesseract_environment::AdjacencyMap>(prob.GetEnv()->getSceneGraph(),
+                                                                                                               prob.GetKin()->getActiveLinkNames(),
+                                                                                                               prob.GetEnv()->getLinkNames(),
+                                                                                                               state->transforms);
 
   if (term_type == TT_COST)
   {

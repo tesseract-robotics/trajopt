@@ -181,49 +181,45 @@ void CollisionsToDistanceExpressions(const tesseract_collision::ContactResultVec
     sco::AffExpr dist(res.distance);
 
     Eigen::VectorXd dist_grad_a, dist_grad_b;
-    tesseract_environment::AdjacencyMap::const_iterator itA = adjacency_map->find(res.link_names[0]);
-    if (itA != adjacency_map->end())
+    tesseract_environment::AdjacencyMapPairConstPtr itA = adjacency_map->getLinkMapping(res.link_names[0]);
+    if (itA != nullptr)
     {
-      const auto& kin_link = itA->second;
-
       Eigen::MatrixXd jac;
       jac.resize(6, manip->numJoints());
 
       // Calculate Jacobian
-      manip->calcJacobian(jac, dofvals, kin_link.first);
+      manip->calcJacobian(jac, dofvals, itA->link_name);
 
       // Need to change the base and ref point of the jacobian.
       // When changing ref point you must provide a vector from the current ref
       // point to the new ref point.
       Eigen::Isometry3d link_transform;
-      manip->calcFwdKin(link_transform, dofvals, kin_link.first);
+      manip->calcFwdKin(link_transform, dofvals, itA->link_name);
       tesseract_kinematics::jacobianChangeBase(jac, world_to_base);
-      tesseract_kinematics::jacobianChangeRefPoint(jac, (world_to_base * link_transform).inverse() * (kin_link.second * res.nearest_points[0]));
+      tesseract_kinematics::jacobianChangeRefPoint(jac, (world_to_base * link_transform).inverse() * (itA->transform * res.nearest_points[0]));
 
       dist_grad_a = -res.normal.transpose() * jac.topRows(3);
       sco::exprInc(dist, sco::varDot(dist_grad_a, vars));
       sco::exprInc(dist, -dist_grad_a.dot(dofvals));
     }
 
-    tesseract_environment::AdjacencyMap::const_iterator itB = adjacency_map->find(res.link_names[1]);
-    if (itB != adjacency_map->end())
+    tesseract_environment::AdjacencyMapPairConstPtr itB = adjacency_map->getLinkMapping(res.link_names[1]);
+    if (itB != nullptr)
     {
-      const auto& kin_link = itB->second;
-
       Eigen::MatrixXd jac;
       jac.resize(6, manip->numJoints());
 
       // Calculate Jacobian
-      manip->calcJacobian(jac, dofvals, kin_link.first);
+      manip->calcJacobian(jac, dofvals, itB->link_name);
 
       // Need to change the base and ref point of the jacobian.
       // When changing ref point you must provide a vector from the current ref
       // point to the new ref point.
       Eigen::Isometry3d link_transform;
-      manip->calcFwdKin(link_transform, dofvals, kin_link.first);
+      manip->calcFwdKin(link_transform, dofvals, itB->link_name);
       tesseract_kinematics::jacobianChangeBase(jac, world_to_base);
       Eigen::Vector3d link_point = (isTimestep1 && (res.cc_type == tesseract_collision::ContinouseCollisionType::CCType_Between)) ? res.cc_nearest_points[1] : res.nearest_points[1];
-      tesseract_kinematics::jacobianChangeRefPoint(jac, (world_to_base * link_transform).inverse() * (kin_link.second * link_point));
+      tesseract_kinematics::jacobianChangeRefPoint(jac, (world_to_base * link_transform).inverse() * (itB->transform * link_point));
 
       dist_grad_b = res.normal.transpose() * jac.topRows(3);
       sco::exprInc(dist, sco::varDot(dist_grad_b, vars));
@@ -231,7 +227,7 @@ void CollisionsToDistanceExpressions(const tesseract_collision::ContactResultVec
     }
     // DebugPrintInfo(res, dist_grad_a, dist_grad_b, dofvals, i == 0);
 
-    if (itA != adjacency_map->end() || itB != adjacency_map->end())
+    if (itA != nullptr || itB != nullptr)
     {
       exprs.push_back(dist);
     }
@@ -291,7 +287,7 @@ SingleTimestepCollisionEvaluator::SingleTimestepCollisionEvaluator(tesseract_kin
   : CollisionEvaluator(manip, env, adjacency_map, world_to_base, safety_margin_data), m_vars(vars)
 {
   contact_manager_ = env_->getDiscreteContactManager();
-  contact_manager_->setActiveCollisionObjects(manip_->getLinkNames());
+  contact_manager_->setActiveCollisionObjects(adjacency_map->getActiveLinkNames());
   contact_manager_->setContactDistanceThreshold(safety_margin_data_->getMaxSafetyMargin() +
                                                 0.04);  // The original implementation added a margin of 0.04;
 }
@@ -301,7 +297,7 @@ void SingleTimestepCollisionEvaluator::CalcCollisions(const DblVec& x, tesseract
   tesseract_collision::ContactResultMap contacts;
   tesseract_environment::EnvStatePtr state = env_->getState(manip_->getJointNames(), sco::getVec(x, m_vars));
 
-  for (const auto& link_name : manip_->getLinkNames())
+  for (const auto& link_name : adjacency_map_->getActiveLinkNames())
     contact_manager_->setCollisionObjectsTransform(link_name, state->transforms[link_name]);
 
   contact_manager_->contactTest(contacts, tesseract_collision::ContactTestTypes::ALL);
@@ -337,36 +333,30 @@ void SingleTimestepCollisionEvaluator::Plot(const tesseract_visualization::Visua
     const Eigen::Vector2d& data = getSafetyMarginData()->getPairSafetyMarginData(res.link_names[0], res.link_names[1]);
     safety_distance[i] = data[0];
 
-    tesseract_environment::AdjacencyMap::const_iterator itA = adjacency_map_->find(res.link_names[0]);
-    if (itA != adjacency_map_->end())
+    tesseract_environment::AdjacencyMapPairConstPtr itA = adjacency_map_->getLinkMapping(res.link_names[0]);
+    if (itA != nullptr)
     {
-      const auto& kin_link = itA->second;
       Eigen::MatrixXd jac;
       Eigen::VectorXd dist_grad;
       Eigen::Isometry3d pose, pose2;
       jac.resize(6, manip_->numJoints());
-      manip_->calcFwdKin(pose, dofvals, kin_link.first);
+      manip_->calcFwdKin(pose, dofvals, itA->link_name);
       pose = world_to_base_ * pose;
 
-      manip_->calcJacobian(jac, dofvals, kin_link.first);
+      manip_->calcJacobian(jac, dofvals, itA->link_name);
       tesseract_kinematics::jacobianChangeBase(jac, world_to_base_);
-      tesseract_kinematics::jacobianChangeRefPoint(jac, pose.inverse() * (kin_link.second * res.nearest_points[0]));
+      tesseract_kinematics::jacobianChangeRefPoint(jac, pose.inverse() * (itA->transform * res.nearest_points[0]));
 
       dist_grad = -res.normal.transpose() * jac.topRows(3);
 
       Eigen::Vector3d local_link_point = pose.inverse() * res.nearest_points[0];
-      manip_->calcFwdKin(pose2, dofvals + dist_grad, kin_link.first);
-      pose2 = world_to_base_ * pose2 * kin_link.second;
+      manip_->calcFwdKin(pose2, dofvals + dist_grad, itA->link_name);
+      pose2 = world_to_base_ * pose2 * itA->transform;
       plotter->plotArrow(res.nearest_points[0], pose2 * local_link_point, Eigen::Vector4d(1, 1, 1, 1), 0.005);
     }
   }
 
-  std::vector<std::string> link_names;
-  link_names.reserve(adjacency_map_->size());
-  for(auto const& m : *adjacency_map_)
-      link_names.push_back(m.first);
-
-  plotter->plotContactResults(link_names, dist_results, safety_distance);
+  plotter->plotContactResults(adjacency_map_->getActiveLinkNames(), dist_results, safety_distance);
 }
 
 ////////////////////////////////////////
@@ -381,7 +371,7 @@ CastCollisionEvaluator::CastCollisionEvaluator(tesseract_kinematics::ForwardKine
   : CollisionEvaluator(manip, env, adjacency_map, world_to_base, safety_margin_data), m_vars0(vars0), m_vars1(vars1)
 {
   contact_manager_ = env_->getContinuousContactManager();
-  contact_manager_->setActiveCollisionObjects(manip_->getLinkNames());
+  contact_manager_->setActiveCollisionObjects(adjacency_map_->getActiveLinkNames());
   contact_manager_->setContactDistanceThreshold(safety_margin_data_->getMaxSafetyMargin() +
                                                 0.04);  // The original implementation added a margin of 0.04;
 }
@@ -391,7 +381,7 @@ void CastCollisionEvaluator::CalcCollisions(const DblVec& x, tesseract_collision
   tesseract_collision::ContactResultMap contacts;
   tesseract_environment::EnvStatePtr state0 = env_->getState(manip_->getJointNames(), sco::getVec(x, m_vars0));
   tesseract_environment::EnvStatePtr state1 = env_->getState(manip_->getJointNames(), sco::getVec(x, m_vars1));
-  for (const auto& link_name : manip_->getLinkNames())
+  for (const auto& link_name : adjacency_map_->getActiveLinkNames())
     contact_manager_->setCollisionObjectsTransform(
         link_name, state0->transforms[link_name], state1->transforms[link_name]);
 
@@ -425,36 +415,30 @@ void CastCollisionEvaluator::Plot(const tesseract_visualization::VisualizationPt
     const Eigen::Vector2d& data = getSafetyMarginData()->getPairSafetyMarginData(res.link_names[0], res.link_names[1]);
     safety_distance[i] = data[0];
 
-    tesseract_environment::AdjacencyMap::const_iterator itA = adjacency_map_->find(res.link_names[0]);
-    if (itA != adjacency_map_->end())
+    tesseract_environment::AdjacencyMapPairConstPtr itA = adjacency_map_->getLinkMapping(res.link_names[0]);
+    if (itA != nullptr)
     {
-      const auto& kin_link = itA->second;
       Eigen::MatrixXd jac;
       Eigen::VectorXd dist_grad;
       Eigen::Isometry3d pose, pose2;
       jac.resize(6, manip_->numJoints());
-      manip_->calcFwdKin(pose, dofvals, kin_link.first);
+      manip_->calcFwdKin(pose, dofvals, itA->link_name);
       pose = world_to_base_ * pose;
 
-      manip_->calcJacobian(jac, dofvals, kin_link.first);
+      manip_->calcJacobian(jac, dofvals, itA->link_name);
       tesseract_kinematics::jacobianChangeBase(jac, world_to_base_);
-      tesseract_kinematics::jacobianChangeRefPoint(jac, pose.inverse() * (kin_link.second * res.nearest_points[0]));
+      tesseract_kinematics::jacobianChangeRefPoint(jac, pose.inverse() * (itA->transform * res.nearest_points[0]));
 
       dist_grad = -res.normal.transpose() * jac.topRows(3);
 
-      Eigen::Vector3d local_link_point = (pose * kin_link.second).inverse() * res.nearest_points[0];
-      manip_->calcFwdKin(pose2, dofvals + dist_grad, kin_link.first);
-      pose2 = world_to_base_ * pose2 * kin_link.second;
+      Eigen::Vector3d local_link_point = (pose * itA->transform).inverse() * res.nearest_points[0];
+      manip_->calcFwdKin(pose2, dofvals + dist_grad, itA->link_name);
+      pose2 = world_to_base_ * pose2 * itA->transform;
       plotter->plotArrow(res.nearest_points[0], pose2 * local_link_point, Eigen::Vector4d(1, 1, 1, 1), 0.005);
     }
   }
 
-  std::vector<std::string> link_names;
-  link_names.reserve(adjacency_map_->size());
-  for(auto const& m : *adjacency_map_)
-      link_names.push_back(m.first);
-
-  plotter->plotContactResults(link_names, dist_results, safety_distance);
+  plotter->plotContactResults(adjacency_map_->getActiveLinkNames(), dist_results, safety_distance);
 }
 
 //////////////////////////////////////////

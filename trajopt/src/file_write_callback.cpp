@@ -93,7 +93,7 @@ sco::Optimizer::Callback WriteCallback(std::shared_ptr<std::ofstream> file, cons
   }
 
   // Write joint names
-  std::vector<std::string> joint_names = prob->GetEnv()->getJointNames();
+  std::vector<std::string> joint_names = prob->GetEnv()->getActiveJointNames();
   for (size_t i = 0; i < joint_names.size(); i++)
   {
     if (i != 0)
