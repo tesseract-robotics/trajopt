@@ -1,5 +1,7 @@
 # trajopt_ros
-Integration of TrajOpt into ROS
+An optimizing path planner for ROS
+
+![PR2 Table](gh_pages/_static/example_gifs/PR2_table.gif)
 
 ## Solvers support
 `trajopt_ros` implements sequential convex optimization to solve the motion planning problem.
@@ -15,6 +17,55 @@ While the `BPMPD` library is bundled in the distribution, `Gurobi`, `OSQP` and `
 To compile with `Gurobi` support, a `GUROBI_HOME` variable needs to be defined.
 Once `trajopt_ros` is compiled with support for a specific solver, you can select it by properly setting the `TRAJOPT_CONVEX_SOLVER` environment variable. Possible values are `GUROBI`, `BPMPD`, `OSQP`, `QPOASES`, `AUTO_SOLVER`.
 The selection to `AUTO_SOLVER` is the default and automatically picks the best between the available solvers.
+
+## TrajOpt Examples
+If you're new to TrajOpt, a great place to start is trajopt_examples. This contains a number of examples to get you started. Additionally, there is an industrial training module that covers TrajOpt for a pick and place application. That module can be found [HERE](https://industrial-training-master.readthedocs.io/en/melodic/_source/demo3/index.html).
+#### Pick and Place
+The pick and place example is great place to start because it shows a complete end to end process using TrajOpt. While the code itself is quite long, this is because it is showing setting up and solving 2 problems (the pick and the place) as well as attaching and detaching objects in Tesseract. It makes use of the Tesseract TrajOpt Planner which simplifies some of the problem setup.
+
+```roslaunch trajopt_examples pick_and_place_plan.launch```
+
+![Pick and Place](gh_pages/_static/example_gifs/pick_and_place.gif)
+
+### Raster Path Plan
+Raster path plan also has a launch file. It demonstrates the Tesseract TrajOpt Freespace and Array planners. These planners wrap TrajOpt for two common problems - freespace motion planning and following a process path.
+
+```roslaunch trajopt_examples raster_path_plan.launch```
+
+![Raster Path Plan](gh_pages/_static/example_gifs/raster_path.gif)
+
+### Basic Cartesian
+Basic Cartesian shows how to use TrajOpt directly. It also shows doing collision checking against an octomap generated from a point cloud
+
+```roslaunch trajopt_examples basic_cartesian_plan.launch```
+
+### Glass Upright
+This example shows a robot avoiding a collision while keeping its end effector orientation upright. It demonstrates how competing costs and constraints can be combined to achieve the desired results
+
+```roslaunch trajopt_examples glass_up_right_plan.launch```
+
+![Glass Upright](gh_pages/_static/example_gifs/glass_upright.gif)
+
+### Car Seat Demo
+The car seat demo requires and external package. Clone the [Motoman driver](https://github.com/ros-industrial/motoman) into your workspace to use it. While it is quite complex, it shows the power of TrajOpt to plan using external axes and redundancy to solve complex manipulation tasks.
+
+```roslaunch trajopt_examples car_seat_demo.launch```
+
+![Car Seat Demo](gh_pages/_static/car_seat_demo.png)
+
+### Puzzle Piece Demos
+The puzzle piece examples show a small collaborative robot manipulaing a puzzle piece to debur the edges with either a fixed grinder or one with extra axes.
+
+```roslaunch trajopt_examples puzzle_piece_plan.launch```
+
+```roslaunch trajopt_examples puzzle_piece_auxillary_axes_plan.launch```
+
+
+![Puzzle Piece](gh_pages/_static/example_gifs/puzzle_piece.gif)  ![Puzzle Piece Aux Axes](gh_pages/_static/example_gifs/puzzle_piece_with_positioner.gif)
+
+
+
+
 
 ## Build Branch Sphinx Documentation
 
