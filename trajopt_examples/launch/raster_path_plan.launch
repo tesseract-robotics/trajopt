@@ -1,0 +1,26 @@
+<launch>
+    <arg name="rviz" default="true"/>
+    <arg name="plotting" default="false" />
+
+    <!-- Load Robot Model    -->
+    <param name="robot_description"  command="$(find xacro)/xacro --inorder $(find trajopt_examples)/urdf/pick_and_place_plan.xacro"/>
+
+    <!-- Load Robot Semantic -->
+    <param name="robot_description_semantic" textfile="$(find trajopt_examples)/config/pick_and_place_plan.srdf" />
+
+    <!-- Launch GUI to drive joints   -->
+    <node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher" />
+
+    <!-- Launch robot state publisher - may need to remap to /iiwa/joints..-->
+    <node name="robot_state_publisher" pkg="robot_state_publisher" type="state_publisher" />
+
+    <!-- Launch planner node -->
+    <node name="pick_and_place_plan_node" pkg="trajopt_examples" type="trajopt_examples_raster_path_plan" output="screen">
+        <param name="plotting" value="$(arg plotting)"/>
+    </node>
+
+    <!-- Launch visualization -->
+    <node if="$(arg rviz)" pkg="rviz" type="rviz" name="pick_and_place_viz"
+        args="-d $(find trajopt_examples)/config/pick_and_place_plan.rviz" />
+
+</launch>
