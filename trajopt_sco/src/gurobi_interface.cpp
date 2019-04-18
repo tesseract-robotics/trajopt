@@ -81,22 +81,22 @@ GurobiModel::GurobiModel()
   GRBnewmodel(gEnv, &m_model, "problem", 0, nullptr, nullptr, nullptr, nullptr, nullptr);
 }
 
-Var GurobiModel::addVar(const string& name)
+Var GurobiModel::addVar(const std::string& name)
 {
   ENSURE_SUCCESS(GRBaddvar(
       m_model, 0, nullptr, nullptr, 0, -GRB_INFINITY, GRB_INFINITY, GRB_CONTINUOUS, const_cast<char*>(name.c_str())));
-  m_vars.push_back(new VarRep(m_vars.size(), name, this));
+  m_vars.push_back(new VarRep(static_cast<int>(m_vars.size()), name, this));
   return m_vars.back();
 }
 
-Var GurobiModel::addVar(const string& name, double lb, double ub)
+Var GurobiModel::addVar(const std::string& name, double lb, double ub)
 {
   ENSURE_SUCCESS(GRBaddvar(m_model, 0, nullptr, nullptr, 0, lb, ub, GRB_CONTINUOUS, const_cast<char*>(name.c_str())));
-  m_vars.push_back(new VarRep(m_vars.size(), name, this));
+  m_vars.push_back(new VarRep(static_cast<int>(m_vars.size()), name, this));
   return m_vars.back();
 }
 
-Cnt GurobiModel::addEqCnt(const AffExpr& expr, const string& name)
+Cnt GurobiModel::addEqCnt(const AffExpr& expr, const std::string& name)
 {
   LOG_TRACE("adding eq constraint: %s = 0", CSTR(expr));
   IntVec inds = vars2inds(expr.vars);
@@ -109,10 +109,10 @@ Cnt GurobiModel::addEqCnt(const AffExpr& expr, const string& name)
                               GRB_EQUAL,
                               -expr.constant,
                               const_cast<char*>(name.c_str())));
-  m_cnts.push_back(new CntRep(m_cnts.size(), this));
+  m_cnts.push_back(new CntRep(static_cast<int>(m_cnts.size()), this));
   return m_cnts.back();
 }
-Cnt GurobiModel::addIneqCnt(const AffExpr& expr, const string& name)
+Cnt GurobiModel::addIneqCnt(const AffExpr& expr, const std::string& name)
 {
   LOG_TRACE("adding ineq: %s <= 0", CSTR(expr));
   IntVec inds = vars2inds(expr.vars);
@@ -120,10 +120,10 @@ Cnt GurobiModel::addIneqCnt(const AffExpr& expr, const string& name)
   simplify2(inds, vals);
   ENSURE_SUCCESS(GRBaddconstr(
       m_model, inds.size(), inds.data(), vals.data(), GRB_LESS_EQUAL, -expr.constant, const_cast<char*>(name.c_str())));
-  m_cnts.push_back(new CntRep(m_cnts.size(), this));
+  m_cnts.push_back(new CntRep(static_cast<int>(m_cnts.size()), this));
   return m_cnts.back();
 }
-Cnt GurobiModel::addIneqCnt(const QuadExpr& qexpr, const string& name)
+Cnt GurobiModel::addIneqCnt(const QuadExpr& qexpr, const std::string& name)
 {
   int numlnz = qexpr.affexpr.size();
   IntVec linds = vars2inds(qexpr.affexpr.vars);
@@ -264,7 +264,7 @@ void GurobiModel::setObjective(const QuadExpr& quad_expr)
                 const_cast<double*>(quad_expr.coeffs.data()));
 }
 
-void GurobiModel::writeToFile(const string& fname) { ENSURE_SUCCESS(GRBwrite(m_model, fname.c_str())); }
+void GurobiModel::writeToFile(const std::string& fname) { ENSURE_SUCCESS(GRBwrite(m_model, fname.c_str())); }
 void GurobiModel::update()
 {
   ENSURE_SUCCESS(GRBupdatemodel(m_model));
