@@ -32,6 +32,7 @@ OSQPModel::OSQPModel()
   osqp_settings_.eps_rel = 1e-6;
   osqp_settings_.max_iter = 8192;
   osqp_settings_.polish = 1;
+  osqp_settings_.verbose = false;
 
   // Initialize data
   osqp_data_.A = nullptr;
