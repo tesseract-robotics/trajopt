@@ -36,16 +36,16 @@
 #include <omp.h>
 #endif  // _OPENMP
 
-#include "vhacd_ros/VHACD.h"
-#include "vhacd_ros/inc/btConvexHullComputer.h"
-#include "vhacd_ros/inc/vhacdICHull.h"
-#include "vhacd_ros/inc/vhacdMesh.h"
-#include "vhacd_ros/inc/vhacdSArray.h"
-#include "vhacd_ros/inc/vhacdTimer.h"
-#include "vhacd_ros/inc/vhacdVHACD.h"
-#include "vhacd_ros/inc/vhacdVector.h"
-#include "vhacd_ros/inc/vhacdVolume.h"
-#include "vhacd_ros/inc/FloatMath.h"
+#include "vhacd/VHACD.h"
+#include "vhacd/inc/btConvexHullComputer.h"
+#include "vhacd/inc/vhacdICHull.h"
+#include "vhacd/inc/vhacdMesh.h"
+#include "vhacd/inc/vhacdSArray.h"
+#include "vhacd/inc/vhacdTimer.h"
+#include "vhacd/inc/vhacdVHACD.h"
+#include "vhacd/inc/vhacdVector.h"
+#include "vhacd/inc/vhacdVolume.h"
+#include "vhacd/inc/FloatMath.h"
 
 #define MAX(a, b) (((a) > (b)) ? (a) : (b))
 #define MIN(a, b) (((a) < (b)) ? (a) : (b))

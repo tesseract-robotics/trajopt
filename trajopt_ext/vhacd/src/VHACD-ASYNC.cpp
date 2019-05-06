@@ -1,4 +1,4 @@
-#include "vhacd_ros/VHACD.h"
+#include "vhacd/VHACD.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>

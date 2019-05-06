@@ -17,10 +17,10 @@ software.
 
 #include <string.h>
 
-#include "vhacd_ros/inc/btAlignedObjectArray.h"
-#include "vhacd_ros/inc/btConvexHullComputer.h"
-#include "vhacd_ros/inc/btMinMax.h"
-#include "vhacd_ros/inc/btVector3.h"
+#include "vhacd/inc/btAlignedObjectArray.h"
+#include "vhacd/inc/btConvexHullComputer.h"
+#include "vhacd/inc/btMinMax.h"
+#include "vhacd/inc/btVector3.h"
 
 #ifdef __GNUC__
 #include <stdint.h>
