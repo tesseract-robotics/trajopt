@@ -16,7 +16,7 @@ software.
 3. This notice may not be removed or altered from any source distribution.
 */
 
-#include "vhacd_ros/inc/btAlignedAllocator.h"
+#include "vhacd/inc/btAlignedAllocator.h"
 
 #ifdef _MSC_VER
 #pragma warning(disable : 4311 4302)

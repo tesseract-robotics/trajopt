@@ -1,14 +1,14 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>vhacd_ros</name>
+  <name>vhacd</name>
   <version>0.1.0</version>
-  <description>The vhacd_ros package</description>
+  <description>The vhacd package</description>
   <maintainer email="levi.armstrong@swri.org">Levi Armstrong</maintainer>
   <license>BSD</license>
 
-  <buildtool_depend>catkin</buildtool_depend>
-  <depend>bullet3_ros</depend>
+  <depend>bullet3</depend>
 
   <export>
+    <build_type>cmake</build_type>
   </export>
 </package>

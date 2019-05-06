@@ -4,7 +4,7 @@
 #include <assert.h>
 #include <math.h>
 #include <float.h>
-#include "vhacd_ros/inc/FloatMath.h"
+#include "vhacd/inc/FloatMath.h"
 #include <vector>
 
 #define REAL float

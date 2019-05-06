@@ -27,8 +27,8 @@
 #define _CRT_SECURE_NO_WARNINGS
 #endif
 
-#include "vhacd_ros/inc/btConvexHullComputer.h"
-#include "vhacd_ros/inc/vhacdVolume.h"
+#include "vhacd/inc/btConvexHullComputer.h"
+#include "vhacd/inc/vhacdVolume.h"
 #include <algorithm>
 #include <float.h>
 #include <math.h>

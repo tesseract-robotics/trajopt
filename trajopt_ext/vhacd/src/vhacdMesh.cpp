@@ -27,9 +27,9 @@
 #define _CRT_SECURE_NO_WARNINGS
 #endif
 
-#include "vhacd_ros/inc/btConvexHullComputer.h"
-#include "vhacd_ros/inc/vhacdMesh.h"
-#include "vhacd_ros/inc/FloatMath.h"
+#include "vhacd/inc/btConvexHullComputer.h"
+#include "vhacd/inc/vhacdMesh.h"
+#include "vhacd/inc/FloatMath.h"
 #include <fstream>
 #include <iosfwd>
 #include <iostream>
