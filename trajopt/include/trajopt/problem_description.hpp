@@ -195,7 +195,16 @@ public:
   tesseract_kinematics::ForwardKinematicsConstPtr kin;
 
   ProblemConstructionInfo(const tesseract_environment::EnvironmentConstPtr& env,
-                          const std::unordered_map<std::string, tesseract_kinematics::ForwardKinematicsConstPtr>& kinematics_map) : env(env), kinematics_map_(kinematics_map) {}
+                          const tesseract_kinematics::ForwardKinematicsConstPtrMap& kinematics_map) : env(env), kinematics_map_(kinematics_map) {}
+
+  tesseract_kinematics::ForwardKinematicsConstPtr getManipulator(const std::string& name) const
+  {
+    auto it = kinematics_map_.find(name);
+    if (it == kinematics_map_.end())
+      return nullptr;
+
+    return it->second;
+  }
 
   void fromJson(const Json::Value& v);
 
@@ -206,7 +215,7 @@ private:
   void readConstraints(const Json::Value& v);
   void readInitInfo(const Json::Value& v);
 
-  const std::unordered_map<std::string, tesseract_kinematics::ForwardKinematicsConstPtr>& kinematics_map_;
+  const tesseract_kinematics::ForwardKinematicsConstPtrMap& kinematics_map_;
 };
 
 /** @brief This is used when the goal frame is not fixed in space */

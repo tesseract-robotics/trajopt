@@ -37,29 +37,30 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <sensor_msgs/point_cloud_conversion.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
-#include <tesseract_ros/kdl/kdl_chain_kin.h>
-#include <tesseract_ros/kdl/kdl_env.h>
-#include <tesseract_ros/ros_basic_plotting.h>
+#include <tesseract_kinematics/kdl/kdl_fwd_kin_chain.h>
+#include <tesseract_environment/kdl/kdl_env.h>
+#include <tesseract_scene_graph/parser/srdf_parser.h>
+#include <tesseract_scene_graph/parser/urdf_parser.h>
+#include <tesseract_rosutils/plotting.h>
 #include <trajopt/plot_callback.hpp>
 #include <trajopt/problem_description.hpp>
 #include <trajopt_utils/config.hpp>
 #include <trajopt_utils/logging.hpp>
 
 using namespace trajopt;
-using namespace tesseract;
+using namespace tesseract_environment;
 
 const std::string ROBOT_DESCRIPTION_PARAM = "robot_description"; /**< Default ROS parameter for robot description */
 const std::string ROBOT_SEMANTIC_PARAM = "robot_description_semantic"; /**< Default ROS parameter for robot
                                                                           description */
-const std::string TRAJOPT_DESCRIPTION_PARAM =
-    "trajopt_description"; /**< Default ROS parameter for trajopt description */
+const std::string TRAJOPT_DESCRIPTION_PARAM = "trajopt_description"; /**< Default ROS parameter for trajopt description */
 
 static bool plotting_ = false;
 static int steps_ = 5;
 static std::string method_ = "json";
-static urdf::ModelInterfaceSharedPtr urdf_model_; /**< URDF Model */
-static srdf::ModelSharedPtr srdf_model_;          /**< SRDF Model */
-static tesseract_ros::KDLEnvPtr env_;             /**< Trajopt Basic Environment */
+//static urdf::ModelInterfaceSharedPtr urdf_model_; /**< URDF Model */
+//static srdf::ModelSharedPtr srdf_model_;          /**< SRDF Model */
+static KDLEnvPtr env_;                            /**< Trajopt Basic Environment */
 
 TrajOptProbPtr jsonMethod()
 {
@@ -147,15 +148,19 @@ int main(int argc, char** argv)
   std::string urdf_xml_string, srdf_xml_string;
   nh.getParam(ROBOT_DESCRIPTION_PARAM, urdf_xml_string);
   nh.getParam(ROBOT_SEMANTIC_PARAM, srdf_xml_string);
-  urdf_model_ = urdf::parseURDF(urdf_xml_string);
 
-  srdf_model_ = srdf::ModelSharedPtr(new srdf::Model);
-  srdf_model_->initString(*urdf_model_, srdf_xml_string);
-  env_ = tesseract_ros::KDLEnvPtr(new tesseract_ros::KDLEnv);
-  assert(urdf_model_ != nullptr);
+  tesseract_scene_graph::ResourceLocatorFn locator = locateResource;
+  tesseract_scene_graph::SceneGraphPtr g = tesseract_scene_graph::parseURDF(urdf::parseURDF(urdf_xml_string), locator);
+  assert(g != nullptr);
+
+  tesseract_scene_graph::SRDFModel srdf;
+  bool success = srdf.initString(*g, srdf_xml_string);
+  assert(success);
+
+  env_ = std::make_shared<tesseract_environment::KDLEnv>();
   assert(env_ != nullptr);
 
-  bool success = env_->init(urdf_model_, srdf_model_);
+  success = env_->init(g);
   assert(success);
 
   pcl::PointCloud<pcl::PointXYZ> full_cloud;

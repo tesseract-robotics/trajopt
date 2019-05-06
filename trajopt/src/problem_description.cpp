@@ -592,7 +592,6 @@ void DynamicCartPoseTermInfo::hatch(TrajOptProb& prob)
     Eigen::Isometry3d world_to_base = state->transforms.at(prob.GetKin()->getBaseLinkName());
     tesseract_environment::AdjacencyMapPtr adjacency_map = std::make_shared<tesseract_environment::AdjacencyMap>(prob.GetEnv()->getSceneGraph(),
                                                                                                                  prob.GetKin()->getActiveLinkNames(),
-                                                                                                                 prob.GetEnv()->getLinkNames(),
                                                                                                                  state->transforms);
 
     sco::VectorOfVectorPtr f(new DynamicCartPoseErrCalculator(target, prob.GetKin(), adjacency_map, world_to_base, link, tcp));
@@ -664,7 +663,6 @@ void CartPoseTermInfo::hatch(TrajOptProb& prob)
   Eigen::Isometry3d world_to_base = state->transforms.at(prob.GetKin()->getBaseLinkName());
   tesseract_environment::AdjacencyMapPtr adjacency_map = std::make_shared<tesseract_environment::AdjacencyMap>(prob.GetEnv()->getSceneGraph(),
                                                                                                                prob.GetKin()->getActiveLinkNames(),
-                                                                                                               prob.GetEnv()->getLinkNames(),
                                                                                                                state->transforms);
 
   if (term_type == (TT_COST | TT_USE_TIME))
@@ -723,7 +721,6 @@ void CartVelTermInfo::hatch(TrajOptProb& prob)
   Eigen::Isometry3d world_to_base = state->transforms.at(prob.GetKin()->getBaseLinkName());
   tesseract_environment::AdjacencyMapPtr adjacency_map = std::make_shared<tesseract_environment::AdjacencyMap>(prob.GetEnv()->getSceneGraph(),
                                                                                                                prob.GetKin()->getActiveLinkNames(),
-                                                                                                               prob.GetEnv()->getLinkNames(),
                                                                                                                state->transforms);
 
   if (term_type == (TT_COST | TT_USE_TIME))
@@ -1417,7 +1414,6 @@ void CollisionTermInfo::hatch(TrajOptProb& prob)
   Eigen::Isometry3d world_to_base = state->transforms.at(prob.GetKin()->getBaseLinkName());
   tesseract_environment::AdjacencyMapPtr adjacency_map = std::make_shared<tesseract_environment::AdjacencyMap>(prob.GetEnv()->getSceneGraph(),
                                                                                                                prob.GetKin()->getActiveLinkNames(),
-                                                                                                               prob.GetEnv()->getLinkNames(),
                                                                                                                state->transforms);
 
   if (term_type == TT_COST)

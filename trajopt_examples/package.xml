@@ -15,8 +15,12 @@
   <exec_depend>roscpp</exec_depend>
   <depend>roslib</depend>
   <depend>trajopt</depend>
-  <depend>tesseract_ros</depend>
+  <depend>tesseract_collision</depend>
   <depend>tesseract_planning</depend>
+  <depend>tesseract_kinematics</depend>
+  <depend>tesseract_environment</depend>
+  <depend>tesseract_scene_graph</depend>
+  <depend>tesseract_rosutils</depend>
   <depend>octomap_ros</depend>
   <depend>pcl_conversions</depend>
 

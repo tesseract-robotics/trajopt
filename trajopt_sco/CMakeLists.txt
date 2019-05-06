@@ -1,14 +1,12 @@
-cmake_minimum_required(VERSION 2.8.3)
-project(trajopt_sco)
+cmake_minimum_required(VERSION 3.5.0)
+project(trajopt_sco VERSION 0.1.0 LANGUAGES CXX)
 
-add_compile_options(-std=c++11 -Wall -Wextra)
-
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules/")
-find_package(catkin REQUIRED COMPONENTS trajopt_utils)
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/")
 find_package(GUROBI QUIET)
 find_package(osqp QUIET)
 find_package(qpOASES QUIET)
 find_package(Eigen3 REQUIRED)
+find_package(trajopt_utils REQUIRED)
 
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(JSONCPP jsoncpp)
@@ -28,25 +26,6 @@ if (NOT APPLE)
   set (HAVE_BPMPD TRUE)
 endif()
 
-catkin_package(
-  INCLUDE_DIRS
-    include
-    ${EIGEN3_INCLUDE_DIRS}
-  LIBRARIES
-    ${PROJECT_NAME}
-    ${JSONCPP_LIBRARIES}
-  CATKIN_DEPENDS trajopt_utils
-  DEPENDS
-    EIGEN3
-)
-
-include_directories(
-  include
-  ${catkin_INCLUDE_DIRS}
-  SYSTEM ${EIGEN3_INCLUDE_DIRS}
-  SYSTEM ${JSONCPP_INCLUDE_DIRS}
-)
-
 if (HAVE_BPMPD)
   add_executable(bpmpd_caller src/bpmpd_caller.cpp)
 
@@ -57,21 +36,22 @@ if (HAVE_BPMPD)
   endif()
 
   target_link_libraries(bpmpd_caller ${BPMPD_LIBRARY} -static)
-  target_compile_options(bpmpd_caller PRIVATE -Wsuggest-override -Wconversion -Wsign-conversion)
+  target_compile_options(bpmpd_caller PRIVATE -Wall -Wextra -Wsuggest-override -Wconversion -Wsign-conversion)
+  target_compile_features(bpmpd_caller PRIVATE cxx_std_11)
+  target_compile_definitions(bpmpd_caller PUBLIC BPMPD_WORKING_DIR="${CMAKE_CURRENT_BINARY_DIR}")
+  target_include_directories(bpmpd_caller PUBLIC
+      "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+      "$<INSTALL_INTERFACE:include>")
+  target_include_directories(bpmpd_caller SYSTEM PUBLIC
+      $<TARGET_PROPERTY:trajopt_utils,INTERFACE_INCLUDE_DIRECTORIES>)
 
-  list(APPEND SCO_SOURCE_FILES src/bpmpd_interface.cpp)
-  set_property(SOURCE src/bpmpd_interface.cpp APPEND PROPERTY COMPILE_DEFINITIONS BPMPD_CALLER="\\\"${CATKIN_DEVEL_PREFIX}/lib/${PROJECT_NAME}/bpmpd_caller\\\"")
-
-  #TODO: Levi check if this is correct.
-  set(BPMPD_WORKING_DIR "${CATKIN_DEVEL_PREFIX}/lib/${PROJECT_NAME}/")
-  set_property(SOURCE src/bpmpd_caller.cpp APPEND PROPERTY COMPILE_DEFINITIONS BPMPD_WORKING_DIR="${BPMPD_WORKING_DIR}")
-  file(COPY src/bpmpd.par DESTINATION ${BPMPD_WORKING_DIR})
+  install(TARGETS bpmpd_caller DESTINATION bin)
 
   set_property(SOURCE src/solver_interface.cpp APPEND PROPERTY COMPILE_DEFINITIONS HAVE_BPMPD)
+  list(APPEND SCO_SOURCE_FILES src/bpmpd_interface.cpp)
 endif()
 
 if (GUROBI_FOUND)
-  include_directories(${GUROBI_INCLUDE_DIR})
   set_property(SOURCE src/solver_interface.cpp APPEND PROPERTY COMPILE_DEFINITIONS HAVE_GUROBI)
   list(APPEND SCO_SOURCE_FILES src/gurobi_interface.cpp)
 endif(GUROBI_FOUND)
@@ -82,57 +62,80 @@ if (osqp_FOUND)
 endif()
 
 if (qpOASES_FOUND)
-  include_directories(${qpOASES_INCLUDE_DIRS})
   set_property(SOURCE src/solver_interface.cpp APPEND PROPERTY COMPILE_DEFINITIONS HAVE_QPOASES)
   list(APPEND SCO_SOURCE_FILES src/qpoases_interface.cpp)
 endif()
 
-add_library(${PROJECT_NAME} ${SCO_SOURCE_FILES})
+add_library(${PROJECT_NAME} SHARED ${SCO_SOURCE_FILES})
 
-set (SCO_LINK_LIBS ${catkin_LIBRARIES} ${CMAKE_DL_LIBS})
 if (GUROBI_FOUND)
-  list(APPEND SCO_LINK_LIBS ${GUROBI_LIBRARIES})
+  target_link_libraries(${PROJECT_NAME} PUBLIC ${GUROBI_LIBRARIES})
+  target_include_directories(${PROJECT_NAME} SYSTEM PUBLIC ${GUROBI_INCLUDE_DIR})
 endif()
 if (HAVE_BPMPD)
-  list(APPEND SCO_LINK_LIBS ${BPMPD_LIBRARY})
+  file(COPY src/bpmpd.par DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+
+  target_link_libraries(${PROJECT_NAME} PUBLIC ${BPMPD_LIBRARY})
+  target_compile_definitions(${PROJECT_NAME} PUBLIC BPMPD_CALLER="${CMAKE_BINARY_DIR}/bin/bpmpd_caller")
 endif()
 if (osqp_FOUND)
   target_link_libraries(${PROJECT_NAME} PRIVATE osqp::osqpstatic)
 endif()
 if (qpOASES_FOUND)
   target_link_libraries(${PROJECT_NAME} PRIVATE ${qpOASES_LIBRARIES})
+  target_include_directories(${PROJECT_NAME} SYSTEM PUBLIC ${qpOASES_INCLUDE_DIRS})
 endif()
 
-target_link_libraries(${PROJECT_NAME} PRIVATE ${JSONCPP_LIBRARIES})
-target_link_libraries(${PROJECT_NAME} PUBLIC ${SCO_LINK_LIBS})
-target_compile_options(${PROJECT_NAME} PRIVATE -Wsuggest-override -Wconversion -Wsign-conversion)
+target_link_libraries(${PROJECT_NAME} PUBLIC trajopt_utils ${CMAKE_DL_LIBS} ${JSONCPP_LIBRARIES})
+target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wsuggest-override -Wconversion -Wsign-conversion)
+target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_11)
+target_include_directories(${PROJECT_NAME} PUBLIC
+    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+    "$<INSTALL_INTERFACE:include>")
+target_include_directories(${PROJECT_NAME} SYSTEM PUBLIC
+    ${EIGEN3_INCLUDE_DIRS}
+    ${JSONCPP_INCLUDE_DIRS})
+
+list (APPEND PACKAGE_LIBRARIES ${PROJECT_NAME})
 
 # Mark executables and/or libraries for installation
-install(
-  TARGETS ${PROJECT_NAME}
-  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-)
+install(TARGETS ${PACKAGE_LIBRARIES} EXPORT ${PROJECT_NAME}-targets DESTINATION lib)
+install(EXPORT ${PROJECT_NAME}-targets DESTINATION lib/cmake/${PROJECT_NAME})
 
 # Mark cpp header files for installation
-install(DIRECTORY include/${PROJECT_NAME}/
-  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
+install(DIRECTORY include/${PROJECT_NAME}
+  DESTINATION include
   FILES_MATCHING PATTERN "*.h" PATTERN "*.hpp"
   PATTERN ".svn" EXCLUDE
  )
 
-if (CATKIN_ENABLE_TESTING)
-  set(SCO_TEST_SOURCE
-    test/unit.cpp
-    test/small-problems-unit.cpp
-    test/solver-interface-unit.cpp
-    test/solver-utils-unit.cpp
-  )
+install(FILES cmake/FindGUROBI.cmake cmake/FindqpOASES.cmake DESTINATION lib/cmake/${PROJECT_NAME})
 
-  catkin_add_gtest(${PROJECT_NAME}-test ${SCO_TEST_SOURCE})
-  target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
-  if (osqp_FOUND)
-    target_link_libraries(${PROJECT_NAME}-test osqp::osqpstatic)
-  endif()
+install(FILES package.xml DESTINATION share/${PROJECT_NAME})
+
+# Create cmake config files
+include(CMakePackageConfigHelpers)
+configure_package_config_file(${CMAKE_CURRENT_LIST_DIR}/cmake/${PROJECT_NAME}-config.cmake.in
+  ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-config.cmake
+  INSTALL_DESTINATION lib/cmake/${PROJECT_NAME}
+  NO_CHECK_REQUIRED_COMPONENTS_MACRO)
+
+write_basic_package_version_file(${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-config-version.cmake
+  VERSION ${PROJECT_VERSION} COMPATIBILITY ExactVersion)
+
+install(FILES
+  "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-config.cmake"
+  "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-config-version.cmake"
+  DESTINATION lib/cmake/${PROJECT_NAME})
+
+export(EXPORT ${PROJECT_NAME}-targets FILE ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-targets.cmake)
+
+option(ENABLE_TESTS "Enable tests" OFF)
+if (${ENABLE_TESTS})
+  enable_testing()
+  add_custom_target(run_tests ALL
+      WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+      COMMAND ${CMAKE_CTEST_COMMAND} -C $<CONFIGURATION> -V)
+
+  add_subdirectory(test)
 endif()
