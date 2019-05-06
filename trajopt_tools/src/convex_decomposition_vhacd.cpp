@@ -1,7 +1,7 @@
 #include <trajopt_utils/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
-#include <ros/ros.h>
-#include <vhacd_ros/VHACD.h>
+#include <console_bridge/console.h>
+#include <vhacd/VHACD.h>
 #include <algorithm>
 #include <assert.h>
 #include <cstddef>
@@ -117,11 +117,11 @@ public:
     {
       if (params_.m_fileNameIn.empty())
       {
-        std::cout << "Empty input file" << std::endl;
+        CONSOLE_BRIDGE_logInform("Empty input file");
       }
       else
       {
-        std::cout << "Input file " << params_.m_fileNameIn << std::endl;
+        CONSOLE_BRIDGE_logInform("Input file: %s", params_.m_fileNameIn);
       }
 
       usage(params_);
@@ -796,9 +796,6 @@ protected:
 
 int main(int argc, char** argv)
 {
-  ros::init(argc, argv, "convex_decomposition_vhacd_node");
-  ros::NodeHandle nh;
-
   MeshConvexApproximation mca;
   if (!mca.run(argc, argv))
   {

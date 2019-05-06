@@ -7,18 +7,12 @@
   <license>Apache 2.0</license>
   <author >Levi Armstrong</author>
 
-  <buildtool_depend>catkin</buildtool_depend>
-  <build_depend>roscpp</build_depend>
-  <build_export_depend>roscpp</build_export_depend>
-  <exec_depend>roscpp</exec_depend>
-  <depend>vhacd_ros</depend>
-  <depend>bullet3_ros</depend>
+  <depend>vhacd</depend>
+  <depend>bullet3</depend>
   <depend>trajopt_utils</depend>
+  <depend>libconsole-bridge-dev</depend>
 
-
-  <!-- The export tag contains other, unspecified, tags -->
   <export>
-    <!-- Other tools can request additional information be placed here -->
-
+    <build_type>cmake</build_type>
   </export>
 </package>

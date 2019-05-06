@@ -1,7 +1,8 @@
 #include <trajopt_utils/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
+#include <boost/program_options.hpp>
+#include <console_bridge/console.h>
 #include <ConvexDecomposition/cd_wavefront.h>
-#include <ros/ros.h>
 #include <stdio.h>
 
 #include <BulletCollision/CollisionShapes/btConvexHullShape.h>
@@ -32,7 +33,7 @@ public:
     btVector3 localScaling(6.f, 6.f, 6.f);
 
     // export data to .obj
-    ROS_INFO("ConvexResult #%u.", trimeshes_.size());
+    CONSOLE_BRIDGE_logInform("ConvexResult #%u.", trimeshes_.size());
     if (output_file_)
     {
       std::fprintf(output_file_,
@@ -107,20 +108,51 @@ public:
   }
 };
 
+namespace
+{
+  const size_t ERROR_IN_COMMAND_LINE = 1;
+  const size_t SUCCESS = 0;
+  const size_t ERROR_UNHANDLED_EXCEPTION = 2;
+}
+
 int main(int argc, char** argv)
 {
-  ros::init(argc, argv, "convex_decomposition_node");
-  ros::NodeHandle pnh("~");
+  std::string input;
+  std::string output;
 
-  // Get ROS Parameters
-  std::string input, output;
-  pnh.getParam("input", input);
-  pnh.getParam("output", output);
+  namespace po = boost::program_options;
+  po::options_description desc("Options");
+  desc.add_options()
+      ("help,h", "Print help messages")
+      ("input,i", po::value<std::string>(&input)->required(), "File path to mesh used to create a convex decomposition of.")
+      ("output,o", po::value<std::string>(&output)->required(), "File path to save the generated convex decomposition.");
+
+  po::variables_map vm;
+  try
+  {
+    po::store(po::parse_command_line(argc, argv, desc), vm); // can throw
+
+    /** --help option */
+    if ( vm.count("help")  )
+    {
+      CONSOLE_BRIDGE_logInform("Basic Command Line Parameter App: %s", desc);
+      return SUCCESS;
+    }
+
+    po::notify(vm); // throws on error, so do after help in case
+                    // there are any problems
+  }
+  catch(po::error& e)
+  {
+    CONSOLE_BRIDGE_logError(e.what());
+    CONSOLE_BRIDGE_logError("%s", desc);
+    return ERROR_IN_COMMAND_LINE;
+  }
 
   ConvexDecomposition::WavefrontObj wo;
 
   unsigned int tcount = wo.loadObj(input.c_str());
-  ROS_INFO("WavefrontObj num triangles read %i\n", tcount);
+  CONSOLE_BRIDGE_logInform("WavefrontObj num triangles read %i\n", tcount);
 
   //-----------------------------------------------
   // HACD

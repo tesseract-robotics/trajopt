@@ -1,0 +1,34 @@
+@PACKAGE_INIT@
+
+set(@PROJECT_NAME@_FOUND ON)
+set_and_check(@PROJECT_NAME@_INCLUDE_DIRS "${PACKAGE_PREFIX_DIR}/include")
+set_and_check(@PROJECT_NAME@_LIBRARY_DIRS "${PACKAGE_PREFIX_DIR}/lib")
+set(@PROJECT_NAME@_LIBRARIES "@PACKAGE_LIBRARIES@")
+
+include(CMakeFindDependencyMacro)
+find_dependency(Eigen3)
+find_dependency(Boost COMPONENTS system thread program_options)
+find_dependency(octomap)
+find_dependency(PkgConfig)
+find_dependency(ccd)
+find_dependency(console_bridge)
+find_dependency(tesseract_geometry)
+find_dependency(Bullet)
+
+find_dependency(Eigen3)
+find_dependency(Boost COMPONENTS system python thread program_options)
+find_dependency(console_bridge)
+find_dependency(trajopt_sco)
+find_dependency(trajopt_utils)
+find_dependency(tesseract_environment)
+find_dependency(tesseract_kinematics)
+find_dependency(tesseract_collision)
+find_dependency(tesseract_visualization)
+find_dependency(tesseract_scene_graph) # Dont understand why this is needed. Should be included by tesseract_environment
+find_dependency(tesseract_geometry) # Dont understand why this is needed. Should be included by tesseract_environment
+find_dependency(orocos_kdl) # Dont understand why this is needed. Should be included by tesseract_environment
+
+find_dependency(PkgConfig)
+pkg_check_modules(JSONCPP jsoncpp)
+
+include("${CMAKE_CURRENT_LIST_DIR}/@PROJECT_NAME@-targets.cmake")
