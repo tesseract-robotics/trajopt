@@ -1,0 +1,5 @@
+<launch> 
+  <include file="$(find trajopt_examples)/launch/car_seat_demo.launch"> 
+    <arg name="testing" value="true" /> 
+  </include> 
+</launch> 

@@ -5,6 +5,8 @@
   <arg name="robot_description" default="robot_description"/>
   <arg name="trajopt_description" default="trajopt_description"/>
   <arg name="plotting" default="true"/>
+  <arg name="testing" default="false"/>
+  <arg name="init_method" default="json"/>
 
   <!-- Load universal robot description format (URDF) -->
   <param name="$(arg trajopt_description)" textfile="$(find trajopt_examples)/config/basic_cartesian_plan.json"/>
@@ -28,8 +30,19 @@
   <!-- If needed, broadcast static tf for robot root -->
   <node pkg="tf" type="static_transform_publisher" name="virtual_joint_broadcaster_0" args="0 0 0 0 0 0 world base_link 100" />
 
-  <node pkg="trajopt_examples" type="trajopt_examples_basic_cartesian_plan" name="trajopt_examples_basic_cartesian_plan">
+  <node unless="$(arg testing)" pkg="trajopt_examples" type="trajopt_examples_basic_cartesian_plan" name="trajopt_examples_basic_cartesian_plan">
     <param name="plotting" type="bool" value="$(arg plotting)"/>
+    <param name="init_method" type="string" value="json"/>
   </node>
+
+  <!-- For unit testing. Not needed for regular operation -->
+  <test if="$(arg testing)" pkg="trajopt_examples" type="trajopt_examples_basic_cartesian_plan" test-name="trajopt_examples_basic_cartesian_plan_json" time-limit="120.0">
+    <param name="plotting" type="bool" value="false"/>
+    <param name="init_method" type="string" value="json"/>
+  </test>
+  <test if="$(arg testing)" pkg="trajopt_examples" type="trajopt_examples_basic_cartesian_plan" test-name="trajopt_examples_basic_cartesian_plan_cpp" time-limit="120.0">
+    <param name="plotting" type="bool" value="false"/>
+    <param name="init_method" type="string" value="cpp"/>
+  </test>
 
 </launch>

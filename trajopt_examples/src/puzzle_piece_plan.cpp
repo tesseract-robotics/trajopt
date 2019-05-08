@@ -38,6 +38,7 @@ TRAJOPT_IGNORE_WARNINGS_POP
 #include <trajopt/problem_description.hpp>
 #include <trajopt_utils/config.hpp>
 #include <trajopt_utils/logging.hpp>
+#include <gtest/gtest.h>
 
 using namespace trajopt;
 using namespace tesseract;
@@ -49,7 +50,6 @@ const std::string ROBOT_SEMANTIC_PARAM = "robot_description_semantic"; /**< Defa
 static bool plotting_ = false;
 static urdf::ModelInterfaceSharedPtr urdf_model_; /**< URDF Model */
 static srdf::ModelSharedPtr srdf_model_;          /**< SRDF Model */
-static tesseract_ros::KDLEnvPtr env_;             /**< Trajopt Basic Environment */
 
 static VectorIsometry3d makePuzzleToolPoses()
 {
@@ -111,7 +111,7 @@ static VectorIsometry3d makePuzzleToolPoses()
   return path;
 }
 
-ProblemConstructionInfo cppMethod()
+ProblemConstructionInfo cppMethod(const tesseract_ros::KDLEnvPtr& env_)
 {
   ProblemConstructionInfo pci(env_);
 
@@ -202,9 +202,8 @@ ProblemConstructionInfo cppMethod()
   return pci;
 }
 
-int main(int argc, char** argv)
+TEST(TrajOptExamples, PuzzlePiecePlan)
 {
-  ros::init(argc, argv, "puzzle_piece_plan");
   ros::NodeHandle pnh("~");
   ros::NodeHandle nh;
 
@@ -216,7 +215,7 @@ int main(int argc, char** argv)
   urdf_model_ = urdf::parseURDF(urdf_xml_string);
   srdf_model_ = srdf::ModelSharedPtr(new srdf::Model);
   srdf_model_->initString(*urdf_model_, srdf_xml_string);
-  env_ = tesseract_ros::KDLEnvPtr(new tesseract_ros::KDLEnv);
+  tesseract_ros::KDLEnvPtr env_ = tesseract_ros::KDLEnvPtr(new tesseract_ros::KDLEnv);
   assert(urdf_model_ != nullptr);
   assert(env_ != nullptr);
 
@@ -248,7 +247,7 @@ int main(int argc, char** argv)
   util::gLogLevel = util::LevelInfo;
 
   // Setup Problem
-  ProblemConstructionInfo pci = cppMethod();
+  ProblemConstructionInfo pci = cppMethod(env_);
   TrajOptProbPtr prob = ConstructProblem(pci);
 
   // Solve Trajectory
@@ -291,4 +290,15 @@ int main(int argc, char** argv)
       *manager, *prob->GetEnv(), *prob->GetKin(), prob->GetInitTraj(), collisions);
 
   ROS_INFO((found) ? ("Final trajectory is in collision") : ("Final trajectory is collision free"));
+}
+
+int main(int argc, char** argv)
+{
+  ros::init(argc, argv, "puzzle_piece_plan");
+
+  // Here we are running all of the code inside of a gtest. This is done so that we can automatically check that the
+  // example has not been broken during development. This is not TrajOpt specific, and all of the code in the test (with
+  // the exception of the gtest checks "EXPECT_x", etc) could be copied into main.
+  testing::InitGoogleTest(&argc, argv);
+  RUN_ALL_TESTS();
 }

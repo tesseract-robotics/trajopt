@@ -19,6 +19,7 @@
   <depend>tesseract_planning</depend>
   <depend>octomap_ros</depend>
   <depend>pcl_conversions</depend>
+  <depend>rostest</depend>
 
   <!-- The export tag contains other, unspecified, tags -->
   <export>

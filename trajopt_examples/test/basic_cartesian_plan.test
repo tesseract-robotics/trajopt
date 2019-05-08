@@ -1,0 +1,5 @@
+<launch> 
+  <include file="$(find trajopt_examples)/launch/basic_cartesian_plan.launch"> 
+    <arg name="testing" value="true" /> 
+  </include> 
+</launch> 

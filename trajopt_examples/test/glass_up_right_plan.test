@@ -1,0 +1,5 @@
+<launch> 
+  <include file="$(find trajopt_examples)/launch/glass_up_right_plan.launch"> 
+    <arg name="testing" value="true" /> 
+  </include> 
+</launch> 

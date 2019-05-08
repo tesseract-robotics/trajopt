@@ -4,6 +4,7 @@
   <!-- The name of the parameter under which the URDF is loaded -->
   <arg name="robot_description" default="robot_description"/>
   <arg name="plotting" default="true"/>
+  <arg name="testing" default="false"/>
 
   <!-- Load universal robot description format (URDF) -->
   <param name="$(arg robot_description)" command="$(find xacro)/xacro --inorder '$(find trajopt_examples)/urdf/puzzle_piece_workcell.xacro'" />
@@ -24,7 +25,12 @@
   <!-- If needed, broadcast static tf for robot root -->
   <node pkg="tf" type="static_transform_publisher" name="virtual_joint_broadcaster_0" args="0 0 0 0 0 0 world base_link 100" />
 
-  <node pkg="trajopt_examples" type="trajopt_examples_puzzle_piece_plan" name="trajopt_examples_puzzle_piece_plan">
+  <node unless="$(arg testing)" pkg="trajopt_examples" type="trajopt_examples_puzzle_piece_plan" name="trajopt_examples_puzzle_piece_plan">
     <param name="plotting" type="bool" value="$(arg plotting)"/>
   </node>
+
+  <!-- For unit testing. Not needed for regular operation -->
+  <test if="$(arg testing)" pkg="trajopt_examples" type="trajopt_examples_puzzle_piece_plan" test-name="trajopt_examples_puzzle_piece_plan" time-limit="120.0">
+    <param name="plotting" type="bool" value="false"/>
+  </test>
 </launch>

@@ -1,0 +1,5 @@
+<launch> 
+  <include file="$(find trajopt_examples)/launch/puzzle_piece_auxillary_axes_plan.launch">
+    <arg name="testing" value="true" /> 
+  </include> 
+</launch> 

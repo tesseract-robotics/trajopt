@@ -38,6 +38,7 @@ TRAJOPT_IGNORE_WARNINGS_POP
 #include <trajopt/problem_description.hpp>
 #include <trajopt_utils/config.hpp>
 #include <trajopt_utils/logging.hpp>
+#include <gtest/gtest.h>
 
 using namespace trajopt;
 using namespace tesseract;
@@ -52,19 +53,18 @@ static bool plotting_ = false;
 static std::string method_ = "json";
 static urdf::ModelInterfaceSharedPtr urdf_model_; /**< URDF Model */
 static srdf::ModelSharedPtr srdf_model_;          /**< SRDF Model */
-static tesseract_ros::KDLEnvPtr env_;             /**< Trajopt Basic Environment */
 
 std::unordered_map<std::string, std::unordered_map<std::string, double>> saved_positions_;
 
-void addSeats()
+void addSeats(const tesseract_ros::KDLEnvPtr& env_)
 {
   for (int i = 0; i < 3; ++i)
   {
     AttachableObjectPtr obj(new AttachableObject());
 
     obj->name = "seat_" + std::to_string(i + 1);
-    std::shared_ptr<shapes::Mesh> visual_mesh(
-        shapes::createMeshFromResource("package://trajopt_examples/meshes/car_seat/visual/seat.dae"));
+    std::shared_ptr<shapes::Mesh> visual_mesh(shapes::createMeshFromResource("package://trajopt_examples/meshes/"
+                                                                             "car_seat/visual/seat.dae"));
     Eigen::Isometry3d seat_pose;
     seat_pose.setIdentity();
 
@@ -73,8 +73,9 @@ void addSeats()
 
     for (auto i = 1; i <= 10; ++i)
     {
-      std::shared_ptr<shapes::Mesh> collision_mesh(shapes::createMeshFromResource(
-          "package://trajopt_examples/meshes/car_seat/collision/seat_" + std::to_string(i) + ".stl"));
+      std::shared_ptr<shapes::Mesh> collision_mesh(shapes::createMeshFromResource("package://trajopt_examples/meshes/"
+                                                                                  "car_seat/collision/seat_" +
+                                                                                  std::to_string(i) + ".stl"));
 
       obj->collision.shapes.push_back(collision_mesh);
       obj->collision.shape_poses.push_back(seat_pose);
@@ -218,7 +219,9 @@ Eigen::VectorXd getPositionVectorXd(const BasicKinConstPtr& kin, const std::unor
   return result;
 }
 
-std::shared_ptr<ProblemConstructionInfo> cppMethod(const std::string& start, const std::string& finish)
+std::shared_ptr<ProblemConstructionInfo> cppMethod(const tesseract_ros::KDLEnvPtr& env_,
+                                                   const std::string& start,
+                                                   const std::string& finish)
 {
   std::shared_ptr<ProblemConstructionInfo> pci(new ProblemConstructionInfo(env_));
 
@@ -295,9 +298,8 @@ std::shared_ptr<ProblemConstructionInfo> cppMethod(const std::string& start, con
   return pci;
 }
 
-int main(int argc, char** argv)
+TEST(TrajOptExamples, CarSeatDemo)
 {
-  ros::init(argc, argv, "car_seat_demo");
   ros::NodeHandle pnh("~");
   ros::NodeHandle nh;
 
@@ -309,7 +311,7 @@ int main(int argc, char** argv)
 
   srdf_model_ = srdf::ModelSharedPtr(new srdf::Model);
   srdf_model_->initString(*urdf_model_, srdf_xml_string);
-  env_ = tesseract_ros::KDLEnvPtr(new tesseract_ros::KDLEnv);
+  tesseract_ros::KDLEnvPtr env_ = tesseract_ros::KDLEnvPtr(new tesseract_ros::KDLEnv);
   assert(urdf_model_ != nullptr);
   assert(env_ != nullptr);
 
@@ -329,7 +331,7 @@ int main(int argc, char** argv)
   //  addCar();
 
   // Put three seats on the conveyor
-  addSeats();
+  addSeats(env_);
 
   // Move to home position
   env_->setState(saved_positions_["Home"]);
@@ -349,7 +351,7 @@ int main(int argc, char** argv)
   std::shared_ptr<ProblemConstructionInfo> pci;
   TrajOptProbPtr prob;
 
-  pci = cppMethod("Home", "Pick1");
+  pci = cppMethod(env_, "Home", "Pick1");
   prob = ConstructProblem(*pci);
   sco::BasicTrustRegionSQP pick1_opt(prob);
   if (plotting_)
@@ -390,7 +392,7 @@ int main(int argc, char** argv)
   env_->detachBody(attach_seat1.object_name);
   env_->attachBody(attach_seat1);
 
-  pci = cppMethod("Pick1", "Place1");
+  pci = cppMethod(env_, "Pick1", "Place1");
   prob = ConstructProblem(*pci);
   sco::BasicTrustRegionSQP place1_opt(prob);
   if (plotting_)
@@ -408,11 +410,26 @@ int main(int argc, char** argv)
   plotter->plotTrajectory(prob->GetKin()->getJointNames(), getTraj(place1_opt.x(), prob->GetVars()));
 
   collisions.clear();
+  manager = prob->GetEnv()->getContinuousContactManager();
+  manager->setActiveCollisionObjects(prob->GetKin()->getLinkNames());
+  manager->setContactDistanceThreshold(0);
   found = tesseract::continuousCollisionCheckTrajectory(
       *manager, *prob->GetEnv(), *prob->GetKin(), getTraj(place1_opt.x(), prob->GetVars()), collisions);
 
   ROS_INFO((found) ? ("Place seat #1 trajectory is in collision") : ("Place seat #1 trajectory is collision free"));
 }
+
+int main(int argc, char** argv)
+{
+  ros::init(argc, argv, "car_seat_demo");
+
+  // Here we are running all of the code inside of a gtest. This is done so that we can automatically check that the
+  // example has not been broken during development. This is not TrajOpt specific, and all of the code in the test (with
+  // the exception of the gtest checks "EXPECT_x", etc) could be copied into main.
+  testing::InitGoogleTest(&argc, argv);
+  RUN_ALL_TESTS();
+}
+
 // int main(int argc, char **argv)
 //{
 //  // Set up ROS.

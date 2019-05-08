@@ -1,0 +1,5 @@
+<launch> 
+  <include file="$(find trajopt_examples)/launch/pick_and_place_plan.launch">
+    <arg name="testing" value="true" /> 
+  </include> 
+</launch> 

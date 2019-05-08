@@ -8,21 +8,21 @@
 #include <trajopt/file_write_callback.hpp>
 #include <trajopt/plot_callback.hpp>
 #include <trajopt_utils/logging.hpp>
+#include <gtest/gtest.h>
 
-int main(int argc, char** argv)
+TEST(TrajOptExamples, PickAndPlacePlan)
 {
   //////////////////////
   /// INITIALIZATION ///
   //////////////////////
-
-  ros::init(argc, argv, "pick_and_place_plan");
   ros::NodeHandle nh, pnh("~");
 
   int steps_per_phase;
-  bool plotting_cb, file_write_cb;
+  bool plotting_cb, file_write_cb, testing;
   pnh.param<int>("steps_per_phase", steps_per_phase, 10);
   pnh.param<bool>("plotting", plotting_cb, false);
   pnh.param<bool>("file_write_cb", file_write_cb, false);
+  pnh.param<bool>("testing", testing, false);
 
   // Set Log Level
   util::gLogLevel = util::LevelInfo;
@@ -98,9 +98,11 @@ int main(int argc, char** argv)
   ////////////
   /// PICK ///
   ////////////
-
-  ROS_ERROR("Press enter to continue");
-  std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+  if (!testing)
+  {
+    ROS_ERROR("Press enter to continue");
+    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+  }
 
   // Create the planner and the responses that will store the results
   tesseract::tesseract_planning::TrajOptPlanner planner;
@@ -268,8 +270,11 @@ int main(int argc, char** argv)
   /////////////
   /// PLACE ///
   /////////////
-  ROS_ERROR("Press enter to continue");
-  std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+  if (!testing)
+  {
+    ROS_ERROR("Press enter to continue");
+    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+  }
 
   // Detach the simulated box from the world and attach to the end effector
   env->detachBody("box");
@@ -455,5 +460,15 @@ int main(int argc, char** argv)
   std::cout << planning_response_place.trajectory << '\n';
 
   ROS_INFO("Done");
-  ros::spin();
+}
+
+int main(int argc, char** argv)
+{
+  ros::init(argc, argv, "pick_and_place_plan");
+
+  // Here we are running all of the code inside of a gtest. This is done so that we can automatically check that the
+  // example has not been broken during development. This is not TrajOpt specific, and all of the code in the test (with
+  // the exception of the gtest checks "EXPECT_x", etc) could be copied into main.
+  testing::InitGoogleTest(&argc, argv);
+  RUN_ALL_TESTS();
 }

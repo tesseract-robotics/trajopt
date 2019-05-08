@@ -6,6 +6,8 @@
   <arg name="trajopt_description" default="trajopt_description"/>
   <arg name="plotting" default="true"/>
   <arg name="write_to_file" default="false"/>
+  <arg name="testing" default="false"/>
+  <arg name="init_method" default="json"/>
 
   <!-- Load universal robot description format (URDF) -->
   <param name="$(arg trajopt_description)" textfile="$(find trajopt_examples)/config/glass_up_right_plan.json"/>
@@ -29,9 +31,22 @@
   <!-- If needed, broadcast static tf for robot root -->
   <node pkg="tf" type="static_transform_publisher" name="virtual_joint_broadcaster_0" args="0 0 0 0 0 0 world base_link 100" />
 
-  <node pkg="trajopt_examples" type="trajopt_examples_glass_up_right_plan" name="trajopt_examples_glass_up_right_plan">
+  <node unless="$(arg testing)" pkg="trajopt_examples" type="trajopt_examples_glass_up_right_plan" name="trajopt_examples_glass_up_right_plan">
     <param name="plotting" type="bool" value="$(arg plotting)"/>
     <param name="write_to_file" type="bool" value="$(arg write_to_file)"/>
+    <param name="init_method" type="string" value="$(arg init_method)"/>
   </node>
+
+  <!-- For unit testing. Not needed for regular operation -->
+  <test if="$(arg testing)" pkg="trajopt_examples" type="trajopt_examples_glass_up_right_plan" test-name="trajopt_examples_glass_up_right_plan_json" time-limit="120.0">
+    <param name="plotting" type="bool" value="false"/>
+    <param name="write_to_file" type="bool" value="false"/>
+    <param name="init_method" type="string" value="json"/>
+  </test>
+  <test if="$(arg testing)" pkg="trajopt_examples" type="trajopt_examples_glass_up_right_plan" test-name="trajopt_examples_glass_up_right_plan_cpp" time-limit="120.0">
+    <param name="plotting" type="bool" value="false"/>
+    <param name="write_to_file" type="bool" value="false"/>
+    <param name="init_method" type="string" value="cpp"/>
+  </test>
 
 </launch>

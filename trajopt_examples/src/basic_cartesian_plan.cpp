@@ -44,6 +44,7 @@ TRAJOPT_IGNORE_WARNINGS_POP
 #include <trajopt/problem_description.hpp>
 #include <trajopt_utils/config.hpp>
 #include <trajopt_utils/logging.hpp>
+#include <gtest/gtest.h>
 
 using namespace trajopt;
 using namespace tesseract;
@@ -56,12 +57,10 @@ const std::string TRAJOPT_DESCRIPTION_PARAM =
 
 static bool plotting_ = false;
 static int steps_ = 5;
-static std::string method_ = "json";
 static urdf::ModelInterfaceSharedPtr urdf_model_; /**< URDF Model */
 static srdf::ModelSharedPtr srdf_model_;          /**< SRDF Model */
-static tesseract_ros::KDLEnvPtr env_;             /**< Trajopt Basic Environment */
 
-TrajOptProbPtr jsonMethod()
+TrajOptProbPtr jsonMethod(const tesseract_ros::KDLEnvPtr& env_)
 {
   ros::NodeHandle nh;
   std::string trajopt_config;
@@ -79,7 +78,7 @@ TrajOptProbPtr jsonMethod()
   return ConstructProblem(root, env_);
 }
 
-TrajOptProbPtr cppMethod()
+TrajOptProbPtr cppMethod(const tesseract_ros::KDLEnvPtr& env_)
 {
   ProblemConstructionInfo pci(env_);
 
@@ -137,9 +136,8 @@ TrajOptProbPtr cppMethod()
   return ConstructProblem(pci);
 }
 
-int main(int argc, char** argv)
+TEST(TrajOptExamples, BasicCartesianPlan)
 {
-  ros::init(argc, argv, "basic_cartesian_plan");
   ros::NodeHandle pnh("~");
   ros::NodeHandle nh;
 
@@ -151,7 +149,7 @@ int main(int argc, char** argv)
 
   srdf_model_ = srdf::ModelSharedPtr(new srdf::Model);
   srdf_model_->initString(*urdf_model_, srdf_xml_string);
-  env_ = tesseract_ros::KDLEnvPtr(new tesseract_ros::KDLEnv);
+  tesseract_ros::KDLEnvPtr env_ = tesseract_ros::KDLEnvPtr(new tesseract_ros::KDLEnv);
   assert(urdf_model_ != nullptr);
   assert(env_ != nullptr);
 
@@ -200,8 +198,9 @@ int main(int argc, char** argv)
   tesseract_ros::ROSBasicPlottingPtr plotter(new tesseract_ros::ROSBasicPlotting(env_));
 
   // Get ROS Parameters
+  std::string init_method;
   pnh.param("plotting", plotting_, plotting_);
-  pnh.param<std::string>("method", method_, method_);
+  pnh.param<std::string>("init_method", init_method, "json");
   pnh.param<int>("steps", steps_, steps_);
 
   // Set the robot initial state
@@ -223,10 +222,10 @@ int main(int argc, char** argv)
 
   // Setup Problem
   TrajOptProbPtr prob;
-  if (method_ == "cpp")
-    prob = cppMethod();
+  if (init_method == "cpp")
+    prob = cppMethod(env_);
   else
-    prob = jsonMethod();
+    prob = jsonMethod(env_);
 
   // Solve Trajectory
   ROS_INFO("basic cartesian plan example");
@@ -262,4 +261,15 @@ int main(int argc, char** argv)
       *manager, *prob->GetEnv(), *prob->GetKin(), prob->GetInitTraj(), collisions);
 
   ROS_INFO((found) ? ("Final trajectory is in collision") : ("Final trajectory is collision free"));
+}
+
+int main(int argc, char** argv)
+{
+  ros::init(argc, argv, "basic_cartesian_plan");
+
+  // Here we are running all of the code inside of a gtest. This is done so that we can automatically check that the
+  // example has not been broken during development. This is not TrajOpt specific, and all of the code in the test (with
+  // the exception of the gtest checks "EXPECT_x", etc) could be copied into main.
+  testing::InitGoogleTest(&argc, argv);
+  RUN_ALL_TESTS();
 }
