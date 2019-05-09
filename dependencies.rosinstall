@@ -2,3 +2,8 @@
     local-name: tesseract
     uri: https://github.com/ros-industrial-consortium/tesseract.git
     version: kinetic-devel
+
+- git:
+    local-name: motoman
+    uri: https://github.com/ros-industrial/motoman.git
+    version: kinetic-devel
