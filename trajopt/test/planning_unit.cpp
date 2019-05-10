@@ -14,7 +14,7 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <tesseract_scene_graph/graph.h>
 #include <tesseract_scene_graph/parser/urdf_parser.h>
 #include <tesseract_scene_graph/parser/srdf_parser.h>
-//#include <tesseract_ros/ros_basic_plotting.h>
+#include <tesseract_scene_graph/utils.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt/common.hpp>
@@ -45,33 +45,31 @@ public:
   SceneGraphPtr scene_graph_;                    /**< Scene Graph */
   SRDFModel srdf_model_;                         /**< SRDF Model */
   KDLEnvPtr env_;                                /**< Trajopt Basic Environment */
-  AllowedCollisionMatrixPtr acm_;                /**< Allowed Collision Matrix */
   VisualizationPtr plotter_;                     /**< Trajopt Plotter */
   void SetUp() override
   {
-    std::string urdf_file = std::string(DATA_DIR) + "/data/arm_around_table.urdf";
-    std::string srdf_file = std::string(DATA_DIR) + "/data/pr2.srdf";
+    std::string urdf_file = std::string(TRAJOPT_DIR) + "/test/data/arm_around_table.urdf";
+    std::string srdf_file = std::string(TRAJOPT_DIR) + "/test/data/pr2.srdf";
 
     ResourceLocatorFn locator = locateResource;
     scene_graph_ = parseURDF(urdf_file, locator);
     EXPECT_TRUE(scene_graph_ != nullptr);
     EXPECT_TRUE(srdf_model_.initFile(*scene_graph_, srdf_file));
 
+    // Add allowed collision to the scene
+    processSRDFAllowedCollisions(*scene_graph_, srdf_model_);
+
     env_ = KDLEnvPtr(new KDLEnv);
     EXPECT_TRUE(env_ != nullptr);
     EXPECT_TRUE(env_->init(scene_graph_));
 
-    // Add collision detectors
-    tesseract_collision_bullet::BulletDiscreteBVHManagerPtr dc(new tesseract_collision_bullet::BulletDiscreteBVHManager());
-    tesseract_collision_bullet::BulletCastBVHManagerPtr cc(new tesseract_collision_bullet::BulletCastBVHManager());
+    // Register contact manager
+    EXPECT_TRUE(env_->registerDiscreteContactManager("bullet", &tesseract_collision_bullet::BulletDiscreteBVHManager::create));
+    EXPECT_TRUE(env_->registerContinuousContactManager("bullet", &tesseract_collision_bullet::BulletCastBVHManager::create));
 
-    EXPECT_TRUE(env_->setDiscreteContactManager(dc));
-    EXPECT_TRUE(env_->setContinuousContactManager(cc));
-
-    // Add Allowed Collision Matrix
-    acm_ = getAllowedCollisionMatrix(srdf_model_);
-    IsContactAllowedFn fn = std::bind(&PlanningTest::defaultIsContactAllowedFn, this, std::placeholders::_1, std::placeholders::_2);
-    env_->setIsContactAllowedFn(fn);
+    // Set Active contact manager
+    EXPECT_TRUE(env_->setActiveDiscreteContactManager("bullet"));
+    EXPECT_TRUE(env_->setActiveContinuousContactManager("bullet"));
 
     // Create plotting tool
 //    plotter_.reset(new tesseract_ros::ROSBasicPlotting(env_));
@@ -82,21 +80,13 @@ public:
 
     gLogLevel = util::LevelInfo;
   }
-
-  bool defaultIsContactAllowedFn(const std::string& link_name1, const std::string& link_name2) const
-  {
-    if (acm_ != nullptr && acm_->isCollisionAllowed(link_name1, link_name2))
-      return true;
-
-    return false;
-  }
 };
 
 TEST_F(PlanningTest, numerical_ik1)
 {
   CONSOLE_BRIDGE_logDebug("PlanningTest, numerical_ik1");
 
-  Json::Value root = readJsonFile(std::string(DATA_DIR) + "/data/config/numerical_ik1.json");
+  Json::Value root = readJsonFile(std::string(TRAJOPT_DIR) + "/test/data/config/numerical_ik1.json");
 
 //  plotter_->plotScene();
 
@@ -158,7 +148,7 @@ TEST_F(PlanningTest, arm_around_table)
 {
   CONSOLE_BRIDGE_logDebug("PlanningTest, arm_around_table");
 
-  Json::Value root = readJsonFile(std::string(DATA_DIR)  + "/data/config/arm_around_table.json");
+  Json::Value root = readJsonFile(std::string(TRAJOPT_DIR)  + "/test/data/config/arm_around_table.json");
 
   std::unordered_map<std::string, double> ipos;
   ipos["torso_lift_joint"] = 0;
@@ -186,7 +176,7 @@ TEST_F(PlanningTest, arm_around_table)
   manager->setActiveCollisionObjects(adjacency_map->getActiveLinkNames());
   manager->setContactDistanceThreshold(0);
 
-  bool found = checkTrajectory(*manager, *prob->GetEnv(), prob->GetKin()->getJointNames(), adjacency_map->getActiveLinkNames(), prob->GetInitTraj(), collisions);
+  bool found = checkTrajectory(*manager, *prob->GetEnv(), prob->GetKin()->getJointNames(), prob->GetInitTraj(), collisions);
 
   EXPECT_TRUE(found);
   CONSOLE_BRIDGE_logDebug((found) ? ("Initial trajectory is in collision") : ("Initial trajectory is collision free"));
@@ -220,7 +210,7 @@ TEST_F(PlanningTest, arm_around_table)
 //  }
 
   collisions.clear();
-  found = checkTrajectory(*manager, *prob->GetEnv(), prob->GetKin()->getJointNames(), adjacency_map->getActiveLinkNames(), getTraj(opt.x(), prob->GetVars()), collisions);
+  found = checkTrajectory(*manager, *prob->GetEnv(), prob->GetKin()->getJointNames(), getTraj(opt.x(), prob->GetVars()), collisions);
 
   EXPECT_FALSE(found);
   CONSOLE_BRIDGE_logDebug((found) ? ("Final trajectory is in collision") : ("Final trajectory is collision free"));

@@ -1,7 +1,6 @@
 ﻿#include <trajopt_utils/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <boost/algorithm/string.hpp>
-#include <ros/ros.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt/collision_terms.hpp>
@@ -72,7 +71,7 @@ void checkParameterSize(trajopt::DblVec& parameter,
   if (apply_first == true && parameter.size() == 1)
   {
     parameter = trajopt::DblVec(expected_size, parameter[0]);
-    ROS_INFO("1 %s given. Applying to all %i joints", name.c_str(), expected_size);
+    CONSOLE_BRIDGE_logInform("1 %s given. Applying to all %i joints", name.c_str(), expected_size);
   }
   else if (parameter.size() != expected_size)
   {
@@ -394,7 +393,7 @@ TrajOptProbPtr ConstructProblem(const ProblemConstructionInfo& pci)
   for (TermInfoPtr cost : pci.cost_infos)
   {
     if (cost->term_type & TT_CNT)
-      ROS_WARN("%s is listed as a type TT_CNT but was added to cost_infos", (cost->name).c_str());
+      CONSOLE_BRIDGE_logWarn("%s is listed as a type TT_CNT but was added to cost_infos", (cost->name).c_str());
     if (!(cost->getSupportedTypes() & TT_COST))
       PRINT_AND_THROW(boost::format("%s is only a constraint, but you listed it as a cost") % cost->name);
     if (cost->term_type & TT_USE_TIME)
@@ -407,7 +406,7 @@ TrajOptProbPtr ConstructProblem(const ProblemConstructionInfo& pci)
   for (TermInfoPtr cnt : pci.cnt_infos)
   {
     if (cnt->term_type & TT_COST)
-      ROS_WARN("%s is listed as a type TT_COST but was added to cnt_infos", (cnt->name).c_str());
+      CONSOLE_BRIDGE_logWarn("%s is listed as a type TT_COST but was added to cnt_infos", (cnt->name).c_str());
     if (!(cnt->getSupportedTypes() & TT_CNT))
       PRINT_AND_THROW(boost::format("%s is only a cost, but you listed it as a constraint") % cnt->name);
     if (cnt->term_type & TT_USE_TIME)
@@ -584,7 +583,7 @@ void DynamicCartPoseTermInfo::hatch(TrajOptProb& prob)
 
   if (term_type & TT_USE_TIME)
   {
-    ROS_ERROR("Use time version of this term has not been defined.");
+    CONSOLE_BRIDGE_logError("Use time version of this term has not been defined.");
   }
   else
   {
@@ -608,7 +607,7 @@ void DynamicCartPoseTermInfo::hatch(TrajOptProb& prob)
     }
     else
     {
-      ROS_WARN("DynamicCartPoseTermInfo does not have a valid term_type defined. No cost/constraint applied");
+      CONSOLE_BRIDGE_logWarn("DynamicCartPoseTermInfo does not have a valid term_type defined. No cost/constraint applied");
     }
   }
 }
@@ -667,11 +666,11 @@ void CartPoseTermInfo::hatch(TrajOptProb& prob)
 
   if (term_type == (TT_COST | TT_USE_TIME))
   {
-    ROS_ERROR("Use time version of this term has not been defined.");
+    CONSOLE_BRIDGE_logError("Use time version of this term has not been defined.");
   }
   else if (term_type == (TT_CNT | TT_USE_TIME))
   {
-    ROS_ERROR("Use time version of this term has not been defined.");
+    CONSOLE_BRIDGE_logError("Use time version of this term has not been defined.");
   }
   else if ((term_type & TT_COST) && ~(term_type | ~TT_USE_TIME))
   {
@@ -687,7 +686,7 @@ void CartPoseTermInfo::hatch(TrajOptProb& prob)
   }
   else
   {
-    ROS_WARN("CartPoseTermInfo does not have a valid term_type defined. No cost/constraint applied");
+    CONSOLE_BRIDGE_logWarn("CartPoseTermInfo does not have a valid term_type defined. No cost/constraint applied");
   }
 }
 
@@ -725,11 +724,11 @@ void CartVelTermInfo::hatch(TrajOptProb& prob)
 
   if (term_type == (TT_COST | TT_USE_TIME))
   {
-    ROS_ERROR("Use time version of this term has not been defined.");
+    CONSOLE_BRIDGE_logError("Use time version of this term has not been defined.");
   }
   else if (term_type == (TT_CNT | TT_USE_TIME))
   {
-    ROS_ERROR("Use time version of this term has not been defined.");
+    CONSOLE_BRIDGE_logError("Use time version of this term has not been defined.");
   }
   else if ((term_type & TT_COST) && ~(term_type | ~TT_USE_TIME))
   {
@@ -759,7 +758,7 @@ void CartVelTermInfo::hatch(TrajOptProb& prob)
   }
   else
   {
-    ROS_WARN("CartVelTermInfo does not have a valid term_type defined. No cost/constraint applied");
+    CONSOLE_BRIDGE_logWarn("CartVelTermInfo does not have a valid term_type defined. No cost/constraint applied");
   }
 }
 
@@ -808,7 +807,7 @@ void JointPosTermInfo::hatch(TrajOptProb& prob)
     int tmp = first_step;
     first_step = last_step;
     last_step = tmp;
-    ROS_WARN("Last time step for JointPosTerm comes before first step. Reversing them.");
+    CONSOLE_BRIDGE_logWarn("Last time step for JointPosTerm comes before first step. Reversing them.");
   }
   if (last_step == -1)  // last_step not set
     last_step = first_step;
@@ -829,7 +828,7 @@ void JointPosTermInfo::hatch(TrajOptProb& prob)
   trajopt::VarArray vars = prob.GetVars();
   trajopt::VarArray joint_vars = vars.block(0, 0, vars.rows(), static_cast<int>(n_dof));
   if (prob.GetHasTime())
-    ROS_INFO("JointPosTermInfo does not differ based on setting of TT_USE_TIME");
+    CONSOLE_BRIDGE_logInform("JointPosTermInfo does not differ based on setting of TT_USE_TIME");
 
   if (term_type & TT_COST)
   {
@@ -875,7 +874,7 @@ void JointPosTermInfo::hatch(TrajOptProb& prob)
   }
   else
   {
-    ROS_WARN("JointPosTermInfo does not have a valid term_type defined. No cost/constraint applied");
+    CONSOLE_BRIDGE_logWarn("JointPosTermInfo does not have a valid term_type defined. No cost/constraint applied");
   }
 }
 
@@ -924,7 +923,7 @@ void JointVelTermInfo::hatch(TrajOptProb& prob)
     int tmp = first_step;
     first_step = last_step;
     last_step = tmp;
-    ROS_WARN("Last time step for JointVelTerm comes before first step. Reversing them.");
+    CONSOLE_BRIDGE_logWarn("Last time step for JointVelTerm comes before first step. Reversing them.");
   }
 
   // Check if parameters are the correct size.
@@ -1063,7 +1062,7 @@ void JointVelTermInfo::hatch(TrajOptProb& prob)
   }
   else
   {
-    ROS_WARN("JointVelTermInfo does not have a valid term_type defined. No cost/constraint applied");
+    CONSOLE_BRIDGE_logWarn("JointVelTermInfo does not have a valid term_type defined. No cost/constraint applied");
   }
 }
 
@@ -1113,7 +1112,7 @@ void JointAccTermInfo::hatch(TrajOptProb& prob)
     int tmp = first_step;
     first_step = last_step;
     last_step = tmp;
-    ROS_WARN("Last time step for JointAccTerm comes before first step. Reversing them.");
+    CONSOLE_BRIDGE_logWarn("Last time step for JointAccTerm comes before first step. Reversing them.");
   }
 
   // Check if parameters are the correct size.
@@ -1134,11 +1133,11 @@ void JointAccTermInfo::hatch(TrajOptProb& prob)
 
   if (term_type == (TT_COST | TT_USE_TIME))
   {
-    ROS_ERROR("Use time version of this term has not been defined.");
+    CONSOLE_BRIDGE_logError("Use time version of this term has not been defined.");
   }
   else if (term_type == (TT_CNT | TT_USE_TIME))
   {
-    ROS_ERROR("Use time version of this term has not been defined.");
+    CONSOLE_BRIDGE_logError("Use time version of this term has not been defined.");
   }
   else if ((term_type & TT_COST) && ~(term_type | ~TT_USE_TIME))
   {
@@ -1184,7 +1183,7 @@ void JointAccTermInfo::hatch(TrajOptProb& prob)
   }
   else
   {
-    ROS_WARN("JointAccTermInfo does not have a valid term_type defined. No cost/constraint applied");
+    CONSOLE_BRIDGE_logWarn("JointAccTermInfo does not have a valid term_type defined. No cost/constraint applied");
   }
 }
 
@@ -1235,7 +1234,7 @@ void JointJerkTermInfo::hatch(TrajOptProb& prob)
     int tmp = first_step;
     first_step = last_step;
     last_step = tmp;
-    ROS_WARN("Last time step for JointJerkTerm comes before first step. Reversing them.");
+    CONSOLE_BRIDGE_logWarn("Last time step for JointJerkTerm comes before first step. Reversing them.");
   }
 
   // Check if parameters are the correct size.
@@ -1256,11 +1255,11 @@ void JointJerkTermInfo::hatch(TrajOptProb& prob)
 
   if (term_type == (TT_COST | TT_USE_TIME))
   {
-    ROS_ERROR("Use time version of this term has not been defined.");
+    CONSOLE_BRIDGE_logError("Use time version of this term has not been defined.");
   }
   else if (term_type == (TT_CNT | TT_USE_TIME))
   {
-    ROS_ERROR("Use time version of this term has not been defined.");
+    CONSOLE_BRIDGE_logError("Use time version of this term has not been defined.");
   }
   else if ((term_type & TT_COST) && ~(term_type | ~TT_USE_TIME))
   {
@@ -1306,7 +1305,7 @@ void JointJerkTermInfo::hatch(TrajOptProb& prob)
   }
   else
   {
-    ROS_WARN("JointJerkTermInfo does not have a valid term_type defined. No cost/constraint applied");
+    CONSOLE_BRIDGE_logWarn("JointJerkTermInfo does not have a valid term_type defined. No cost/constraint applied");
   }
 }
 

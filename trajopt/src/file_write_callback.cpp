@@ -17,7 +17,7 @@ limitations under the License.
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <functional>
 #include <fstream>
-#include <ros/ros.h>
+#include <console_bridge/console.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt/file_write_callback.hpp>
@@ -89,7 +89,7 @@ sco::Optimizer::Callback WriteCallback(std::shared_ptr<std::ofstream> file, cons
 {
   if (!file->good())
   {
-    ROS_WARN("ofstream passed to create callback not in 'good' state");
+    CONSOLE_BRIDGE_logWarn("ofstream passed to create callback not in 'good' state");
   }
 
   // Write joint names
