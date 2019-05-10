@@ -143,7 +143,7 @@ TEST_F(CastOctomapTest, boxes)
   ContinuousContactManagerPtr manager = prob->GetEnv()->getContinuousContactManager();
   AdjacencyMapPtr adjacency_map = std::make_shared<AdjacencyMap>(scene_graph_,
                                                                  prob->GetKin()->getActiveLinkNames(),
-                                                                 prob->GetEnv()->getState()->transforms);
+                                                                 prob->GetEnv()->getCurrentState()->transforms);
 
   manager->setActiveCollisionObjects(adjacency_map->getActiveLinkNames());
   manager->setContactDistanceThreshold(0);

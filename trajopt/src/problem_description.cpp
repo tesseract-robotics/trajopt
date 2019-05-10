@@ -300,7 +300,7 @@ void generateInitTraj(TrajArray& init_traj, const ProblemConstructionInfo& pci)
   // initialize based on type specified
   if (init_info.type == InitInfo::STATIONARY)
   {
-    tesseract_environment::EnvState state(*(pci.env->getState()));
+    tesseract_environment::EnvState state(*(pci.env->getCurrentState()));
     Eigen::VectorXd start_pos(pci.kin->numJoints());
     int i = 0;
     for (const auto& joint : pci.kin->getJointNames())
@@ -314,7 +314,7 @@ void generateInitTraj(TrajArray& init_traj, const ProblemConstructionInfo& pci)
   }
   else if (init_info.type == InitInfo::JOINT_INTERPOLATED)
   {
-    tesseract_environment::EnvState state(*(pci.env->getState()));
+    tesseract_environment::EnvState state(*(pci.env->getCurrentState()));
     Eigen::VectorXd start_pos(pci.kin->numJoints());
     int i = 0;
     for (const auto& joint : pci.kin->getJointNames())
@@ -587,7 +587,7 @@ void DynamicCartPoseTermInfo::hatch(TrajOptProb& prob)
   }
   else
   {
-    tesseract_environment::EnvStateConstPtr state = prob.GetEnv()->getState();
+    tesseract_environment::EnvStateConstPtr state = prob.GetEnv()->getCurrentState();
     Eigen::Isometry3d world_to_base = state->transforms.at(prob.GetKin()->getBaseLinkName());
     tesseract_environment::AdjacencyMapPtr adjacency_map = std::make_shared<tesseract_environment::AdjacencyMap>(prob.GetEnv()->getSceneGraph(),
                                                                                                                  prob.GetKin()->getActiveLinkNames(),
@@ -658,7 +658,7 @@ void CartPoseTermInfo::hatch(TrajOptProb& prob)
   input_pose.linear() = q.matrix();
   input_pose.translation() = xyz;
 
-  tesseract_environment::EnvStateConstPtr state = prob.GetEnv()->getState();
+  tesseract_environment::EnvStateConstPtr state = prob.GetEnv()->getCurrentState();
   Eigen::Isometry3d world_to_base = state->transforms.at(prob.GetKin()->getBaseLinkName());
   tesseract_environment::AdjacencyMapPtr adjacency_map = std::make_shared<tesseract_environment::AdjacencyMap>(prob.GetEnv()->getSceneGraph(),
                                                                                                                prob.GetKin()->getActiveLinkNames(),
@@ -716,7 +716,7 @@ void CartVelTermInfo::hatch(TrajOptProb& prob)
 {
   int n_dof = static_cast<int>(prob.GetKin()->numJoints());
 
-  tesseract_environment::EnvStateConstPtr state = prob.GetEnv()->getState();
+  tesseract_environment::EnvStateConstPtr state = prob.GetEnv()->getCurrentState();
   Eigen::Isometry3d world_to_base = state->transforms.at(prob.GetKin()->getBaseLinkName());
   tesseract_environment::AdjacencyMapPtr adjacency_map = std::make_shared<tesseract_environment::AdjacencyMap>(prob.GetEnv()->getSceneGraph(),
                                                                                                                prob.GetKin()->getActiveLinkNames(),
@@ -1409,7 +1409,7 @@ void CollisionTermInfo::fromJson(ProblemConstructionInfo& pci, const Json::Value
 void CollisionTermInfo::hatch(TrajOptProb& prob)
 {
   int n_dof = static_cast<int>(prob.GetKin()->numJoints());
-  tesseract_environment::EnvStateConstPtr state = prob.GetEnv()->getState();
+  tesseract_environment::EnvStateConstPtr state = prob.GetEnv()->getCurrentState();
   Eigen::Isometry3d world_to_base = state->transforms.at(prob.GetKin()->getBaseLinkName());
   tesseract_environment::AdjacencyMapPtr adjacency_map = std::make_shared<tesseract_environment::AdjacencyMap>(prob.GetEnv()->getSceneGraph(),
                                                                                                                prob.GetKin()->getActiveLinkNames(),
