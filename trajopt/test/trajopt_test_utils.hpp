@@ -3,7 +3,6 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <fstream>
 #include <json/json.h>
 #include <stdexcept>
-#include <ros/package.h>
 #include <Eigen/Core>
 
 #include <tesseract_kinematics/core/forward_kinematics.h>
@@ -28,9 +27,9 @@ Json::Value readJsonFile(const std::string& fname)
 std::string locateResource(const std::string& url)
 {
   std::string mod_url = url;
-  if (url.find("package://") == 0)
+  if (url.find("package://trajopt") == 0)
   {
-    mod_url.erase(0, strlen("package://"));
+    mod_url.erase(0, strlen("package://trajopt"));
     size_t pos = mod_url.find("/");
     if (pos == std::string::npos)
     {
@@ -39,14 +38,14 @@ std::string locateResource(const std::string& url)
 
     std::string package = mod_url.substr(0, pos);
     mod_url.erase(0, pos);
-    std::string package_path = ros::package::getPath(package);
+    std::string package_path = std::string(TRAJOPT_DIR);
 
     if (package_path.empty())
     {
       return std::string();
     }
 
-    mod_url = package_path + mod_url; // "file://" + package_path + mod_url;
+    mod_url = package_path + mod_url;
   }
 
   return mod_url;

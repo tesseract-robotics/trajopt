@@ -13,6 +13,7 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <tesseract_scene_graph/graph.h>
 #include <tesseract_scene_graph/parser/urdf_parser.h>
 #include <tesseract_scene_graph/parser/srdf_parser.h>
+#include <tesseract_scene_graph/utils.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt/collision_terms.hpp>
@@ -45,36 +46,34 @@ public:
   SceneGraphPtr scene_graph_;             /**< Scene Graph */
   SRDFModel srdf_model_;                  /**< SRDF Model */
   KDLEnvPtr env_;                         /**< Trajopt Basic Environment */
-  AllowedCollisionMatrixPtr acm_;         /**< Allowed Collision Matrix */
   VisualizationPtr plotter_;              /**< Trajopt Plotter */
   ForwardKinematicsConstPtrMap kin_map_;  /**< A map between manipulator name and kinematics object */
 //  tesseract_ros::ROSBasicPlottingPtr plotter_; /**< Trajopt Plotter */
 
   void SetUp() override
   {
-    std::string urdf_file = std::string(DATA_DIR) + "/data/boxbot.urdf";
-    std::string srdf_file = std::string(DATA_DIR) + "/data/boxbot.srdf";
+    std::string urdf_file = std::string(TRAJOPT_DIR) + "/test/data/boxbot.urdf";
+    std::string srdf_file = std::string(TRAJOPT_DIR) + "/test/data/boxbot.srdf";
 
     ResourceLocatorFn locator = locateResource;
     scene_graph_ = parseURDF(urdf_file, locator);
     EXPECT_TRUE(scene_graph_ != nullptr);
     EXPECT_TRUE(srdf_model_.initFile(*scene_graph_, srdf_file));
 
+    // Add allowed collision to the scene
+    processSRDFAllowedCollisions(*scene_graph_, srdf_model_);
+
     env_ = KDLEnvPtr(new KDLEnv);
     EXPECT_TRUE(env_ != nullptr);
     EXPECT_TRUE(env_->init(scene_graph_));
 
-    // Add collision detectors
-    tesseract_collision_bullet::BulletDiscreteBVHManagerPtr dc(new tesseract_collision_bullet::BulletDiscreteBVHManager());
-    tesseract_collision_bullet::BulletCastBVHManagerPtr cc(new tesseract_collision_bullet::BulletCastBVHManager());
+    // Register contact manager
+    EXPECT_TRUE(env_->registerDiscreteContactManager("bullet", &tesseract_collision_bullet::BulletDiscreteBVHManager::create));
+    EXPECT_TRUE(env_->registerContinuousContactManager("bullet", &tesseract_collision_bullet::BulletCastBVHManager::create));
 
-    EXPECT_TRUE(env_->setDiscreteContactManager(dc));
-    EXPECT_TRUE(env_->setContinuousContactManager(cc));
-
-    // Add Allowed Collision Matrix
-    acm_ = getAllowedCollisionMatrix(srdf_model_);
-    IsContactAllowedFn fn = std::bind(&CastAttachedTest::defaultIsContactAllowedFn, this, std::placeholders::_1, std::placeholders::_2);
-    env_->setIsContactAllowedFn(fn);
+    // Set Active contact manager
+    EXPECT_TRUE(env_->setActiveDiscreteContactManager("bullet"));
+    EXPECT_TRUE(env_->setActiveContinuousContactManager("bullet"));
 
     // Generate Kinematics Map
     kin_map_ = createKinematicsMap<KDLFwdKinChain, KDLFwdKinTree>(scene_graph_, srdf_model_);
@@ -95,37 +94,29 @@ public:
     collision->geometry = box;
     collision->origin = Eigen::Isometry3d::Identity();
 
-    LinkPtr box_attached_link(new Link("box_attached"));
-    box_attached_link->visual.push_back(visual);
-    box_attached_link->collision.push_back(collision);
+    Link box_attached_link("box_attached");
+    box_attached_link.visual.push_back(visual);
+    box_attached_link.collision.push_back(collision);
 
-    JointPtr box_attached_joint(new Joint("boxbot_link-box_attached"));
-    box_attached_joint->parent_link_name = "boxbot_link";
-    box_attached_joint->child_link_name = "box_attached";
-    box_attached_joint->parent_to_joint_origin_transform.translation() = Eigen::Vector3d(0.5, -0.5, 0);
+    Joint box_attached_joint("boxbot_link-box_attached");
+    box_attached_joint.parent_link_name = "boxbot_link";
+    box_attached_joint.child_link_name = "box_attached";
+    box_attached_joint.parent_to_joint_origin_transform.translation() = Eigen::Vector3d(0.5, -0.5, 0);
 
     env_->addLink(box_attached_link, box_attached_joint);
     env_->disableCollision("box_attached");
 
-    LinkPtr box_attached2_link(new Link("box_attached2"));
-    box_attached2_link->visual.push_back(visual);
-    box_attached2_link->collision.push_back(collision);
+    Link box_attached2_link("box_attached2");
+    box_attached2_link.visual.push_back(visual);
+    box_attached2_link.collision.push_back(collision);
 
-    JointPtr box_attached2_joint(new Joint("no_geom_link-box_attached2"));
-    box_attached2_joint->parent_link_name = "no_geom_link";
-    box_attached2_joint->child_link_name = "box_attached2";
-    box_attached2_joint->parent_to_joint_origin_transform.translation() = Eigen::Vector3d(0, 0, 0);
+    Joint box_attached2_joint("no_geom_link-box_attached2");
+    box_attached2_joint.parent_link_name = "no_geom_link";
+    box_attached2_joint.child_link_name = "box_attached2";
+    box_attached2_joint.parent_to_joint_origin_transform.translation() = Eigen::Vector3d(0, 0, 0);
 
     env_->addLink(box_attached2_link, box_attached2_joint);
     env_->disableCollision("box_attached2");
-  }
-
-  bool defaultIsContactAllowedFn(const std::string& link_name1, const std::string& link_name2) const
-  {
-    if (acm_ != nullptr && acm_->isCollisionAllowed(link_name1, link_name2))
-      return true;
-
-    return false;
   }
 };
 
@@ -135,7 +126,7 @@ TEST_F(CastAttachedTest, LinkWithGeom)
 
   env_->enableCollision("box_attached");
 
-  Json::Value root = readJsonFile(std::string(DATA_DIR)  + "/data/config/box_cast_test.json");
+  Json::Value root = readJsonFile(std::string(TRAJOPT_DIR)  + "/test/data/config/box_cast_test.json");
 
   std::unordered_map<std::string, double> ipos;
   ipos["boxbot_x_joint"] = -1.9;
@@ -156,7 +147,7 @@ TEST_F(CastAttachedTest, LinkWithGeom)
   manager->setActiveCollisionObjects(adjacency_map->getActiveLinkNames());
   manager->setContactDistanceThreshold(0);
 
-  bool found = checkTrajectory(*manager, *prob->GetEnv(), prob->GetKin()->getJointNames(), adjacency_map->getActiveLinkNames(), prob->GetInitTraj(), collisions);
+  bool found = checkTrajectory(*manager, *prob->GetEnv(), prob->GetKin()->getJointNames(), prob->GetInitTraj(), collisions);
 
   EXPECT_TRUE(found);
   CONSOLE_BRIDGE_logDebug((found) ? ("Initial trajectory is in collision") : ("Initial trajectory is collision free"));
@@ -171,7 +162,7 @@ TEST_F(CastAttachedTest, LinkWithGeom)
     plotter_->clear();
 
   collisions.clear();
-  found = checkTrajectory(*manager, *prob->GetEnv(), prob->GetKin()->getJointNames(), adjacency_map->getActiveLinkNames(), getTraj(opt.x(), prob->GetVars()), collisions);
+  found = checkTrajectory(*manager, *prob->GetEnv(), prob->GetKin()->getJointNames(), getTraj(opt.x(), prob->GetVars()), collisions);
 
   EXPECT_FALSE(found);
   CONSOLE_BRIDGE_logDebug((found) ? ("Final trajectory is in collision") : ("Final trajectory is collision free"));
@@ -183,7 +174,7 @@ TEST_F(CastAttachedTest, LinkWithoutGeom)
 
   env_->enableCollision("box_attached2");
 
-  Json::Value root = readJsonFile(std::string(DATA_DIR)  + "/data/config/box_cast_test.json");
+  Json::Value root = readJsonFile(std::string(TRAJOPT_DIR)  + "/test/data/config/box_cast_test.json");
 
   std::unordered_map<std::string, double> ipos;
   ipos["boxbot_x_joint"] = -1.9;
@@ -204,7 +195,7 @@ TEST_F(CastAttachedTest, LinkWithoutGeom)
   manager->setActiveCollisionObjects(adjacency_map->getActiveLinkNames());
   manager->setContactDistanceThreshold(0);
 
-  bool found = checkTrajectory(*manager, *prob->GetEnv(), prob->GetKin()->getJointNames(), adjacency_map->getActiveLinkNames(), prob->GetInitTraj(), collisions);
+  bool found = checkTrajectory(*manager, *prob->GetEnv(), prob->GetKin()->getJointNames(), prob->GetInitTraj(), collisions);
 
   EXPECT_TRUE(found);
   CONSOLE_BRIDGE_logDebug((found) ? ("Initial trajectory is in collision") : ("Initial trajectory is collision free"));
@@ -219,7 +210,7 @@ TEST_F(CastAttachedTest, LinkWithoutGeom)
     plotter_->clear();
 
   collisions.clear();
-  found = checkTrajectory(*manager, *prob->GetEnv(), prob->GetKin()->getJointNames(), adjacency_map->getActiveLinkNames(), getTraj(opt.x(), prob->GetVars()), collisions);
+  found = checkTrajectory(*manager, *prob->GetEnv(), prob->GetKin()->getJointNames(), getTraj(opt.x(), prob->GetVars()), collisions);
 
   EXPECT_FALSE(found);
   CONSOLE_BRIDGE_logDebug((found) ? ("Final trajectory is in collision") : ("Final trajectory is collision free"));

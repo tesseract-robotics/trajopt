@@ -73,10 +73,14 @@ if (GUROBI_FOUND)
   target_include_directories(${PROJECT_NAME} SYSTEM PUBLIC ${GUROBI_INCLUDE_DIR})
 endif()
 if (HAVE_BPMPD)
-  file(COPY src/bpmpd.par DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+#  file(COPY src/bpmpd.par DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+
+  install(FILES src/bpmpd.par DESTINATION "${CMAKE_INSTALL_PREFIX}/bin")
 
   target_link_libraries(${PROJECT_NAME} PUBLIC ${BPMPD_LIBRARY})
-  target_compile_definitions(${PROJECT_NAME} PUBLIC BPMPD_CALLER="${CMAKE_BINARY_DIR}/bin/bpmpd_caller")
+  message("${CMAKE_INSTALL_PREFIX}/bin/bpmpd_caller")
+  target_compile_definitions(${PROJECT_NAME} PUBLIC BPMPD_CALLER="${CMAKE_INSTALL_PREFIX}/bin/bpmpd_caller")
+
 endif()
 if (osqp_FOUND)
   target_link_libraries(${PROJECT_NAME} PRIVATE osqp::osqpstatic)

@@ -2,6 +2,19 @@
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <ctime>
 #include <gtest/gtest.h>
+
+#include <tesseract_collision/bullet/bullet_discrete_bvh_manager.h>
+#include <tesseract_collision/bullet/bullet_cast_bvh_manager.h>
+#include <tesseract_kinematics/kdl/kdl_fwd_kin_chain.h>
+#include <tesseract_kinematics/kdl/kdl_fwd_kin_tree.h>
+#include <tesseract_kinematics/core/utils.h>
+#include <tesseract_environment/kdl/kdl_env.h>
+#include <tesseract_environment/core/utils.h>
+#include <tesseract_visualization/visualization.h>
+#include <tesseract_scene_graph/graph.h>
+#include <tesseract_scene_graph/parser/urdf_parser.h>
+#include <tesseract_scene_graph/parser/srdf_parser.h>
+#include <tesseract_scene_graph/utils.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt/collision_terms.hpp>
@@ -15,18 +28,6 @@ TRAJOPT_IGNORE_WARNINGS_POP
 #include <trajopt_utils/eigen_conversions.hpp>
 #include <trajopt_utils/logging.hpp>
 #include <trajopt_utils/stl_to_string.hpp>
-
-#include <tesseract_collision/bullet/bullet_discrete_bvh_manager.h>
-#include <tesseract_collision/bullet/bullet_cast_bvh_manager.h>
-#include <tesseract_kinematics/kdl/kdl_fwd_kin_chain.h>
-#include <tesseract_kinematics/kdl/kdl_fwd_kin_tree.h>
-#include <tesseract_kinematics/core/utils.h>
-#include <tesseract_environment/kdl/kdl_env.h>
-#include <tesseract_environment/core/utils.h>
-#include <tesseract_visualization/visualization.h>
-#include <tesseract_scene_graph/graph.h>
-#include <tesseract_scene_graph/parser/urdf_parser.h>
-#include <tesseract_scene_graph/parser/srdf_parser.h>
 
 using namespace trajopt;
 using namespace std;
@@ -46,36 +47,34 @@ public:
   SceneGraphPtr scene_graph_;             /**< Scene Graph */
   SRDFModel srdf_model_;                  /**< SRDF Model */
   KDLEnvPtr env_;                         /**< Trajopt Basic Environment */
-  AllowedCollisionMatrixPtr acm_;         /**< Allowed Collision Matrix */
   VisualizationPtr plotter_;              /**< Trajopt Plotter */
   ForwardKinematicsConstPtrMap kin_map_;  /**< A map between manipulator name and kinematics object */
 //  tesseract_ros::ROSBasicPlottingPtr plotter_; /**< Trajopt Plotter */
 
   void SetUp() override
   {
-    std::string urdf_file = std::string(DATA_DIR) + "/data/boxbot.urdf";
-    std::string srdf_file = std::string(DATA_DIR) + "/data/boxbot.srdf";
+    std::string urdf_file = std::string(TRAJOPT_DIR) + "/test/data/boxbot.urdf";
+    std::string srdf_file = std::string(TRAJOPT_DIR) + "/test/data/boxbot.srdf";
 
     ResourceLocatorFn locator = locateResource;
     scene_graph_ = parseURDF(urdf_file, locator);
     EXPECT_TRUE(scene_graph_ != nullptr);
     EXPECT_TRUE(srdf_model_.initFile(*scene_graph_, srdf_file));
 
+    // Add allowed collision to the scene
+    processSRDFAllowedCollisions(*scene_graph_, srdf_model_);
+
     env_ = KDLEnvPtr(new KDLEnv);
     EXPECT_TRUE(env_ != nullptr);
     EXPECT_TRUE(env_->init(scene_graph_));
 
-    // Add collision detectors
-    tesseract_collision_bullet::BulletDiscreteBVHManagerPtr dc(new tesseract_collision_bullet::BulletDiscreteBVHManager());
-    tesseract_collision_bullet::BulletCastBVHManagerPtr cc(new tesseract_collision_bullet::BulletCastBVHManager());
+    // Register contact manager
+    EXPECT_TRUE(env_->registerDiscreteContactManager("bullet", &tesseract_collision_bullet::BulletDiscreteBVHManager::create));
+    EXPECT_TRUE(env_->registerContinuousContactManager("bullet", &tesseract_collision_bullet::BulletCastBVHManager::create));
 
-    EXPECT_TRUE(env_->setDiscreteContactManager(dc));
-    EXPECT_TRUE(env_->setContinuousContactManager(cc));
-
-    // Add Allowed Collision Matrix
-    acm_ = getAllowedCollisionMatrix(srdf_model_);
-    IsContactAllowedFn fn = std::bind(&CastTest::defaultIsContactAllowedFn, this, std::placeholders::_1, std::placeholders::_2);
-    env_->setIsContactAllowedFn(fn);
+    // Set Active contact manager
+    EXPECT_TRUE(env_->setActiveDiscreteContactManager("bullet"));
+    EXPECT_TRUE(env_->setActiveContinuousContactManager("bullet"));
 
     // Generate Kinematics Map
     kin_map_ = createKinematicsMap<KDLFwdKinChain, KDLFwdKinTree>(scene_graph_, srdf_model_);
@@ -85,21 +84,13 @@ public:
     // Create plotting tool
 //    plotter_.reset(new tesseract_ros::ROSBasicPlotting(env_));
   }
-
-  bool defaultIsContactAllowedFn(const std::string& link_name1, const std::string& link_name2) const
-  {
-    if (acm_ != nullptr && acm_->isCollisionAllowed(link_name1, link_name2))
-      return true;
-
-    return false;
-  }
 };
 
 TEST_F(CastTest, boxes)
 {
   CONSOLE_BRIDGE_logDebug("CastTest, boxes");
 
-  Json::Value root = readJsonFile(std::string(DATA_DIR)  + "/data/config/box_cast_test.json");
+  Json::Value root = readJsonFile(std::string(TRAJOPT_DIR)  + "/test/data/config/box_cast_test.json");
 
   std::unordered_map<std::string, double> ipos;
   ipos["boxbot_x_joint"] = -1.9;
@@ -121,7 +112,7 @@ TEST_F(CastTest, boxes)
   manager->setContactDistanceThreshold(0);
 
   collisions.clear();
-  bool found = checkTrajectory(*manager, *prob->GetEnv(), prob->GetKin()->getJointNames(), adjacency_map->getActiveLinkNames(), prob->GetInitTraj(), collisions);
+  bool found = checkTrajectory(*manager, *prob->GetEnv(), prob->GetKin()->getJointNames(), prob->GetInitTraj(), collisions);
 
   EXPECT_TRUE(found);
   CONSOLE_BRIDGE_logDebug((found) ? ("Initial trajectory is in collision") : ("Initial trajectory is collision free"));
@@ -136,7 +127,7 @@ TEST_F(CastTest, boxes)
     plotter_->clear();
 
   collisions.clear();
-  found = checkTrajectory(*manager, *prob->GetEnv(), prob->GetKin()->getJointNames(), adjacency_map->getActiveLinkNames(), getTraj(opt.x(), prob->GetVars()), collisions);
+  found = checkTrajectory(*manager, *prob->GetEnv(), prob->GetKin()->getJointNames(), getTraj(opt.x(), prob->GetVars()), collisions);
 
   EXPECT_FALSE(found);
   CONSOLE_BRIDGE_logDebug((found) ? ("Final trajectory is in collision") : ("Final trajectory is collision free"));
