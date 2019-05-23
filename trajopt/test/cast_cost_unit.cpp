@@ -57,12 +57,12 @@ public:
     std::string srdf_file = std::string(TRAJOPT_DIR) + "/test/data/boxbot.srdf";
 
     ResourceLocatorFn locator = locateResource;
-    scene_graph_ = parseURDF(urdf_file, locator);
-    EXPECT_TRUE(scene_graph_ != nullptr);
-    EXPECT_TRUE(srdf_model_.initFile(*scene_graph_, srdf_file));
+    std::pair<tesseract_scene_graph::SceneGraphPtr, tesseract_scene_graph::SRDFModelPtr> data;
+    data = tesseract_scene_graph::createSceneGraphFromFiles(urdf_file, srdf_file, locator);
+    EXPECT_TRUE(data.first != nullptr && data.second != nullptr);
 
-    // Add allowed collision to the scene
-    processSRDFAllowedCollisions(*scene_graph_, srdf_model_);
+    scene_graph_ = data.first;
+    srdf_model_ = data.second;
 
     env_ = KDLEnvPtr(new KDLEnv);
     EXPECT_TRUE(env_ != nullptr);
