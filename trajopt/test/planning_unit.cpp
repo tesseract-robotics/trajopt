@@ -3,17 +3,10 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <ctime>
 #include <sstream>
 #include <gtest/gtest.h>
+#include <boost/filesystem/path.hpp>
 
-#include <tesseract_collision/bullet/bullet_discrete_bvh_manager.h>
-#include <tesseract_collision/bullet/bullet_cast_bvh_manager.h>
-#include <tesseract_kinematics/kdl/kdl_fwd_kin_chain.h>
-#include <tesseract_kinematics/kdl/kdl_fwd_kin_tree.h>
-#include <tesseract_kinematics/core/utils.h>
-#include <tesseract_environment/kdl/kdl_env.h>
+#include <tesseract/tesseract.h>
 #include <tesseract_environment/core/utils.h>
-#include <tesseract_scene_graph/graph.h>
-#include <tesseract_scene_graph/parser/urdf_parser.h>
-#include <tesseract_scene_graph/parser/srdf_parser.h>
 #include <tesseract_scene_graph/utils.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
@@ -31,6 +24,7 @@ TRAJOPT_IGNORE_WARNINGS_POP
 using namespace trajopt;
 using namespace std;
 using namespace util;
+using namespace tesseract;
 using namespace tesseract_environment;
 using namespace tesseract_collision;
 using namespace tesseract_kinematics;
@@ -42,41 +36,22 @@ bool plotting = false;                                                 /**< Enab
 class PlanningTest : public testing::TestWithParam<const char*>
 {
 public:
-  SceneGraphPtr scene_graph_;                    /**< Scene Graph */
-  SRDFModel srdf_model_;                         /**< SRDF Model */
-  KDLEnvPtr env_;                                /**< Trajopt Basic Environment */
-  VisualizationPtr plotter_;                     /**< Trajopt Plotter */
+  Tesseract::Ptr tesseract_ = std::make_shared<Tesseract>(); /**< Tesseract */
+  VisualizationPtr plotter_; /**< Trajopt Plotter */
   void SetUp() override
   {
-    std::string urdf_file = std::string(TRAJOPT_DIR) + "/test/data/arm_around_table.urdf";
-    std::string srdf_file = std::string(TRAJOPT_DIR) + "/test/data/pr2.srdf";
+    boost::filesystem::path urdf_file(std::string(TRAJOPT_DIR) + "/test/data/arm_around_table.urdf");
+    boost::filesystem::path srdf_file(std::string(TRAJOPT_DIR) + "/test/data/pr2.srdf");
 
     ResourceLocatorFn locator = locateResource;
-    std::pair<tesseract_scene_graph::SceneGraphPtr, tesseract_scene_graph::SRDFModelPtr> data;
-    data = tesseract_scene_graph::createSceneGraphFromFiles(urdf_file, srdf_file, locator);
-    EXPECT_TRUE(data.first != nullptr && data.second != nullptr);
-
-    scene_graph_ = data.first;
-    srdf_model_ = data.second;
-
-    env_ = KDLEnvPtr(new KDLEnv);
-    EXPECT_TRUE(env_ != nullptr);
-    EXPECT_TRUE(env_->init(scene_graph_));
-
-    // Register contact manager
-    EXPECT_TRUE(env_->registerDiscreteContactManager("bullet", &tesseract_collision_bullet::BulletDiscreteBVHManager::create));
-    EXPECT_TRUE(env_->registerContinuousContactManager("bullet", &tesseract_collision_bullet::BulletCastBVHManager::create));
-
-    // Set Active contact manager
-    EXPECT_TRUE(env_->setActiveDiscreteContactManager("bullet"));
-    EXPECT_TRUE(env_->setActiveContinuousContactManager("bullet"));
+    EXPECT_TRUE(tesseract_->init(urdf_file, srdf_file, locator));
 
     // Create plotting tool
 //    plotter_.reset(new tesseract_ros::ROSBasicPlotting(env_));
 
     std::unordered_map<std::string, double> ipos;
     ipos["torso_lift_joint"] = 0.0;
-    env_->setState(ipos);
+    tesseract_->getEnvironment()->setState(ipos);
 
     gLogLevel = util::LevelInfo;
   }
@@ -90,8 +65,7 @@ TEST_F(PlanningTest, numerical_ik1)
 
 //  plotter_->plotScene();
 
-  ForwardKinematicsConstPtrMap kin_map = createKinematicsMap<KDLFwdKinChain, KDLFwdKinTree>(scene_graph_, srdf_model_);
-  TrajOptProbPtr prob = ConstructProblem(root, env_, kin_map);
+  TrajOptProbPtr prob = ConstructProblem(root, tesseract_->getEnvironment(), tesseract_->getFwdKinematics());
   ASSERT_TRUE(!!prob);
 
   sco::BasicTrustRegionSQP opt(prob);
@@ -159,17 +133,16 @@ TEST_F(PlanningTest, arm_around_table)
   ipos["r_forearm_roll_joint"] = -1.1;
   ipos["r_wrist_flex_joint"] = -1.926;
   ipos["r_wrist_roll_joint"] = 3.074;
-  env_->setState(ipos);
+  tesseract_->getEnvironment()->setState(ipos);
 
 //  plotter_->plotScene();
 
-  ForwardKinematicsConstPtrMap kin_map = createKinematicsMap<KDLFwdKinChain, KDLFwdKinTree>(scene_graph_, srdf_model_);
-  TrajOptProbPtr prob = ConstructProblem(root, env_, kin_map);
+  TrajOptProbPtr prob = ConstructProblem(root, tesseract_->getEnvironment(), tesseract_->getFwdKinematics());
   ASSERT_TRUE(!!prob);
 
   std::vector<ContactResultMap> collisions;
   ContinuousContactManagerPtr manager = prob->GetEnv()->getContinuousContactManager();
-  AdjacencyMapPtr adjacency_map = std::make_shared<AdjacencyMap>(scene_graph_,
+  AdjacencyMapPtr adjacency_map = std::make_shared<AdjacencyMap>(tesseract_->getEnvironment()->getSceneGraph(),
                                                                  prob->GetKin()->getActiveLinkNames(),
                                                                  prob->GetEnv()->getCurrentState()->transforms);
 

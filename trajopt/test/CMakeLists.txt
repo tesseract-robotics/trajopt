@@ -9,10 +9,6 @@ macro(add_gtest test_name test_file)
   target_link_libraries(${test_name}
       ${PROJECT_NAME}
       ${GTEST_BOTH_LIBRARIES}
-      tesseract_kinematics_kdl
-      tesseract_environment_kdl
-      tesseract_collision_bullet
-      console_bridge
       ${Boost_SYSTEM_LIBRARY}
       ${Boost_PROGRAM_OPTIONS_LIBRARY}
       ${rospack_LIBRARY})
@@ -26,7 +22,7 @@ macro(add_gtest test_name test_file)
 endmacro()
 
 add_gtest(${PROJECT_NAME}_planning_unit planning_unit.cpp)
-add_gtest(${PROJECT_NAME}_interface_unit interface_unit.cpp)
+#add_gtest(${PROJECT_NAME}_interface_unit interface_unit.cpp)
 add_gtest(${PROJECT_NAME}_costs_unit costs_unit.cpp)
 add_gtest(${PROJECT_NAME}_cast_cost_unit cast_cost_unit.cpp)
 add_gtest(${PROJECT_NAME}_cast_cost_world_unit cast_cost_world_unit.cpp)

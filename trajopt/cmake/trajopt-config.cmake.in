@@ -11,13 +11,7 @@ find_dependency(Boost COMPONENTS system python thread program_options)
 find_dependency(console_bridge)
 find_dependency(trajopt_sco)
 find_dependency(trajopt_utils)
-find_dependency(tesseract_environment)
-find_dependency(tesseract_kinematics)
-find_dependency(tesseract_collision)
-find_dependency(tesseract_visualization)
-find_dependency(tesseract_scene_graph) # Dont understand why this is needed. Should be included by tesseract_environment
-find_dependency(tesseract_geometry) # Dont understand why this is needed. Should be included by tesseract_environment
-find_dependency(orocos_kdl) # Dont understand why this is needed. Should be included by tesseract_environment
+find_dependency(tesseract)
 
 find_dependency(PkgConfig)
 pkg_check_modules(JSONCPP jsoncpp)
