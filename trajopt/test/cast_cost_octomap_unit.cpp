@@ -106,7 +106,7 @@ TEST_F(CastOctomapTest, boxes)
 
 //  plotter_->plotScene();
 
-  TrajOptProbPtr prob = ConstructProblem(root, tesseract_->getEnvironment(), tesseract_->getFwdKinematics());
+  TrajOptProbPtr prob = ConstructProblem(root, tesseract_);
   ASSERT_TRUE(!!prob);
 
   std::vector<ContactResultMap> collisions;

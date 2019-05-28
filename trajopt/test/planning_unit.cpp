@@ -65,7 +65,7 @@ TEST_F(PlanningTest, numerical_ik1)
 
 //  plotter_->plotScene();
 
-  TrajOptProbPtr prob = ConstructProblem(root, tesseract_->getEnvironment(), tesseract_->getFwdKinematics());
+  TrajOptProbPtr prob = ConstructProblem(root, tesseract_);
   ASSERT_TRUE(!!prob);
 
   sco::BasicTrustRegionSQP opt(prob);
@@ -137,7 +137,7 @@ TEST_F(PlanningTest, arm_around_table)
 
 //  plotter_->plotScene();
 
-  TrajOptProbPtr prob = ConstructProblem(root, tesseract_->getEnvironment(), tesseract_->getFwdKinematics());
+  TrajOptProbPtr prob = ConstructProblem(root, tesseract_);
   ASSERT_TRUE(!!prob);
 
   std::vector<ContactResultMap> collisions;

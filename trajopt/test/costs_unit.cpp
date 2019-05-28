@@ -68,7 +68,7 @@ TEST_F(CostsTest, equality_jointPos)
   const double cost_tol = 0.01;
   const double cnt_tol = 0.0001;
 
-  ProblemConstructionInfo pci(tesseract_->getEnvironment(), tesseract_->getFwdKinematics());
+  ProblemConstructionInfo pci(tesseract_);
 
   // Populate Basic Info
   pci.basic_info.n_steps = steps;
@@ -160,7 +160,7 @@ TEST_F(CostsTest, inequality_jointPos)
   const int steps = 10;
   const double cnt_tol = 0.0001;
 
-  ProblemConstructionInfo pci(tesseract_->getEnvironment(), tesseract_->getFwdKinematics());
+  ProblemConstructionInfo pci(tesseract_);
 
   // Populate Basic Info
   pci.basic_info.n_steps = steps;
@@ -271,7 +271,7 @@ TEST_F(CostsTest, equality_jointVel)
   const double cost_tol = 0.01;
   const double cnt_tol = 0.0001;
 
-  ProblemConstructionInfo pci(tesseract_->getEnvironment(), tesseract_->getFwdKinematics());
+  ProblemConstructionInfo pci(tesseract_);
 
   // Populate Basic Info
   pci.basic_info.n_steps = steps;
@@ -364,7 +364,7 @@ TEST_F(CostsTest, inequality_jointVel)
   const int steps = 10;
   const double cnt_tol = 0.0001;
 
-  ProblemConstructionInfo pci(tesseract_->getEnvironment(), tesseract_->getFwdKinematics());
+  ProblemConstructionInfo pci(tesseract_);
 
   // Populate Basic Info
   pci.basic_info.n_steps = steps;
@@ -476,7 +476,7 @@ TEST_F(CostsTest, equality_jointVel_time)
   const double dt_lower = 0.01234;
   const double dt_upper = 1.5678;
 
-  ProblemConstructionInfo pci(tesseract_->getEnvironment(), tesseract_->getFwdKinematics());
+  ProblemConstructionInfo pci(tesseract_);
 
   // Populate Basic Info
   pci.basic_info.n_steps = steps;
@@ -576,7 +576,7 @@ TEST_F(CostsTest, inequality_jointVel_time)
   const int steps = 10;
   const double cnt_tol = 0.0001;
 
-  ProblemConstructionInfo pci(tesseract_->getEnvironment(), tesseract_->getFwdKinematics());
+  ProblemConstructionInfo pci(tesseract_);
 
   // Populate Basic Info
   pci.basic_info.n_steps = steps;
@@ -688,7 +688,7 @@ TEST_F(CostsTest, equality_jointAcc)
   const double cost_tol = 0.01;
   const double cnt_tol = 0.0001;
 
-  ProblemConstructionInfo pci(tesseract_->getEnvironment(), tesseract_->getFwdKinematics());
+  ProblemConstructionInfo pci(tesseract_);
 
   // Populate Basic Info
   pci.basic_info.n_steps = steps;
@@ -782,7 +782,7 @@ TEST_F(CostsTest, inequality_jointAcc)
   const int steps = 10;
   const double cnt_tol = 0.0001;
 
-  ProblemConstructionInfo pci(tesseract_->getEnvironment(), tesseract_->getFwdKinematics());
+  ProblemConstructionInfo pci(tesseract_);
 
   // Populate Basic Info
   pci.basic_info.n_steps = steps;
