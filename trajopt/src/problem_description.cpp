@@ -270,12 +270,11 @@ void ProblemConstructionInfo::fromJson(const Json::Value& v)
     readOptInfo(v["opt_info"]);
   }
 
-  auto manip = kinematics_map_.find(basic_info.manip);
-  if (manip == kinematics_map_.end())
+  kin = tesseract_->getFwdKinematics(basic_info.manip);
+  if (kin == nullptr)
   {
     PRINT_AND_THROW(boost::format("Manipulator does not exist: %s") % basic_info.manip.c_str());
   }
-  kin = manip->second;
 
   if (v.isMember("costs"))
     readCosts(v["costs"]);
@@ -501,10 +500,9 @@ TrajOptProbPtr ConstructProblem(const ProblemConstructionInfo& pci)
 }
 
 TrajOptProbPtr ConstructProblem(const Json::Value& root,
-                                const tesseract_environment::EnvironmentConstPtr& env,
-                                const tesseract_kinematics::ForwardKinematicsConstPtrMap& kinematics_map)
+                                const tesseract::Tesseract::ConstPtr &tesseract)
 {
-  ProblemConstructionInfo pci(env, kinematics_map);
+  ProblemConstructionInfo pci(tesseract);
   pci.fromJson(root);
   return ConstructProblem(pci);
 }

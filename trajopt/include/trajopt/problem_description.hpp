@@ -4,8 +4,7 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <unordered_map>
 TRAJOPT_IGNORE_WARNINGS_POP
 
-#include <tesseract_environment/core/environment.h>
-#include <tesseract_kinematics/core/forward_kinematics.h>
+#include <tesseract/tesseract.h>
 #include <trajopt/common.hpp>
 #include <trajopt/json_marshal.hpp>
 #include <trajopt_sco/optimizers.hpp>
@@ -29,7 +28,7 @@ struct TrajOptResult;
 typedef std::shared_ptr<TrajOptResult> TrajOptResultPtr;
 
 TrajOptProbPtr TRAJOPT_API ConstructProblem(const ProblemConstructionInfo&);
-TrajOptProbPtr TRAJOPT_API ConstructProblem(const Json::Value&, const tesseract_environment::EnvironmentConstPtr& env, const tesseract_kinematics::ForwardKinematicsConstPtrMap& kinematics_map);
+TrajOptProbPtr TRAJOPT_API ConstructProblem(const Json::Value&, const tesseract::Tesseract::ConstPtr &tesseract);
 TrajOptResultPtr TRAJOPT_API OptimizeProblem(TrajOptProbPtr, const tesseract_visualization::VisualizationPtr& plotter = nullptr);
 
 enum TermType
@@ -191,19 +190,15 @@ public:
   std::vector<TermInfoPtr> cnt_infos;
   InitInfo init_info;
 
+
   tesseract_environment::EnvironmentConstPtr env;
   tesseract_kinematics::ForwardKinematicsConstPtr kin;
 
-  ProblemConstructionInfo(const tesseract_environment::EnvironmentConstPtr& env,
-                          const tesseract_kinematics::ForwardKinematicsConstPtrMap& kinematics_map) : env(env), kinematics_map_(kinematics_map) {}
+  ProblemConstructionInfo(tesseract::Tesseract::ConstPtr tesseract) : env(tesseract->getEnvironmentConst()), tesseract_(tesseract) {}
 
   tesseract_kinematics::ForwardKinematicsConstPtr getManipulator(const std::string& name) const
   {
-    auto it = kinematics_map_.find(name);
-    if (it == kinematics_map_.end())
-      return nullptr;
-
-    return it->second;
+    return tesseract_->getFwdKinematics(name);
   }
 
   void fromJson(const Json::Value& v);
@@ -215,7 +210,7 @@ private:
   void readConstraints(const Json::Value& v);
   void readInitInfo(const Json::Value& v);
 
-  const tesseract_kinematics::ForwardKinematicsConstPtrMap& kinematics_map_;
+  tesseract::Tesseract::ConstPtr tesseract_;
 };
 
 /** @brief This is used when the goal frame is not fixed in space */
