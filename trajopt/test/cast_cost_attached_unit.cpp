@@ -2,17 +2,10 @@
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <ctime>
 #include <gtest/gtest.h>
+#include <boost/filesystem/path.hpp>
 
-#include <tesseract_collision/bullet/bullet_discrete_bvh_manager.h>
-#include <tesseract_collision/bullet/bullet_cast_bvh_manager.h>
-#include <tesseract_kinematics/kdl/kdl_fwd_kin_chain.h>
-#include <tesseract_kinematics/kdl/kdl_fwd_kin_tree.h>
-#include <tesseract_kinematics/core/utils.h>
-#include <tesseract_environment/kdl/kdl_env.h>
+#include <tesseract/tesseract.h>
 #include <tesseract_environment/core/utils.h>
-#include <tesseract_scene_graph/graph.h>
-#include <tesseract_scene_graph/parser/urdf_parser.h>
-#include <tesseract_scene_graph/parser/srdf_parser.h>
 #include <tesseract_scene_graph/utils.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
@@ -31,6 +24,7 @@ TRAJOPT_IGNORE_WARNINGS_POP
 using namespace trajopt;
 using namespace std;
 using namespace util;
+using namespace tesseract;
 using namespace tesseract_environment;
 using namespace tesseract_collision;
 using namespace tesseract_kinematics;
@@ -43,40 +37,16 @@ static bool plotting = false;
 class CastAttachedTest : public testing::TestWithParam<const char*>
 {
 public:
-  SceneGraphPtr scene_graph_;             /**< Scene Graph */
-  SRDFModel srdf_model_;                  /**< SRDF Model */
-  KDLEnvPtr env_;                         /**< Trajopt Basic Environment */
-  VisualizationPtr plotter_;              /**< Trajopt Plotter */
-  ForwardKinematicsConstPtrMap kin_map_;  /**< A map between manipulator name and kinematics object */
-//  tesseract_ros::ROSBasicPlottingPtr plotter_; /**< Trajopt Plotter */
+  Tesseract::Ptr tesseract_ = std::make_shared<Tesseract>(); /**< Tesseract */
+  VisualizationPtr plotter_; /**< Trajopt Plotter */
 
   void SetUp() override
   {
-    std::string urdf_file = std::string(TRAJOPT_DIR) + "/test/data/boxbot.urdf";
-    std::string srdf_file = std::string(TRAJOPT_DIR) + "/test/data/boxbot.srdf";
+    boost::filesystem::path urdf_file(std::string(TRAJOPT_DIR) + "/test/data/boxbot.urdf");
+    boost::filesystem::path srdf_file(std::string(TRAJOPT_DIR) + "/test/data/boxbot.srdf");
 
     ResourceLocatorFn locator = locateResource;
-    std::pair<tesseract_scene_graph::SceneGraphPtr, tesseract_scene_graph::SRDFModelPtr> data;
-    data = tesseract_scene_graph::createSceneGraphFromFiles(urdf_file, srdf_file, locator);
-    EXPECT_TRUE(data.first != nullptr && data.second != nullptr);
-
-    scene_graph_ = data.first;
-    srdf_model_ = data.second;
-
-    env_ = KDLEnvPtr(new KDLEnv);
-    EXPECT_TRUE(env_ != nullptr);
-    EXPECT_TRUE(env_->init(scene_graph_));
-
-    // Register contact manager
-    EXPECT_TRUE(env_->registerDiscreteContactManager("bullet", &tesseract_collision_bullet::BulletDiscreteBVHManager::create));
-    EXPECT_TRUE(env_->registerContinuousContactManager("bullet", &tesseract_collision_bullet::BulletCastBVHManager::create));
-
-    // Set Active contact manager
-    EXPECT_TRUE(env_->setActiveDiscreteContactManager("bullet"));
-    EXPECT_TRUE(env_->setActiveContinuousContactManager("bullet"));
-
-    // Generate Kinematics Map
-    kin_map_ = createKinematicsMap<KDLFwdKinChain, KDLFwdKinTree>(scene_graph_, srdf_model_);
+    EXPECT_TRUE(tesseract_->init(urdf_file, srdf_file, locator));
 
     gLogLevel = util::LevelDebug;
 
@@ -103,8 +73,8 @@ public:
     box_attached_joint.child_link_name = "box_attached";
     box_attached_joint.parent_to_joint_origin_transform.translation() = Eigen::Vector3d(0.5, -0.5, 0);
 
-    env_->addLink(box_attached_link, box_attached_joint);
-    env_->setLinkCollisionEnabled("box_attached", false);
+    tesseract_->getEnvironment()->addLink(box_attached_link, box_attached_joint);
+    tesseract_->getEnvironment()->setLinkCollisionEnabled("box_attached", false);
 
     Link box_attached2_link("box_attached2");
     box_attached2_link.visual.push_back(visual);
@@ -115,8 +85,8 @@ public:
     box_attached2_joint.child_link_name = "box_attached2";
     box_attached2_joint.parent_to_joint_origin_transform.translation() = Eigen::Vector3d(0, 0, 0);
 
-    env_->addLink(box_attached2_link, box_attached2_joint);
-    env_->setLinkCollisionEnabled("box_attached2", false);
+    tesseract_->getEnvironment()->addLink(box_attached2_link, box_attached2_joint);
+    tesseract_->getEnvironment()->setLinkCollisionEnabled("box_attached2", false);
   }
 };
 
@@ -124,23 +94,23 @@ TEST_F(CastAttachedTest, LinkWithGeom)
 {
   CONSOLE_BRIDGE_logDebug("CastAttachedTest, LinkWithGeom");
 
-  env_->setLinkCollisionEnabled("box_attached", true);
+  tesseract_->getEnvironment()->setLinkCollisionEnabled("box_attached", true);
 
   Json::Value root = readJsonFile(std::string(TRAJOPT_DIR)  + "/test/data/config/box_cast_test.json");
 
   std::unordered_map<std::string, double> ipos;
   ipos["boxbot_x_joint"] = -1.9;
   ipos["boxbot_y_joint"] = 0;
-  env_->setState(ipos);
+  tesseract_->getEnvironment()->setState(ipos);
 
 //  plotter_->plotScene();
 
-  TrajOptProbPtr prob = ConstructProblem(root, env_, kin_map_);
+  TrajOptProbPtr prob = ConstructProblem(root, tesseract_->getEnvironment(), tesseract_->getFwdKinematics());
   ASSERT_TRUE(!!prob);
 
   std::vector<ContactResultMap> collisions;
   ContinuousContactManagerPtr manager = prob->GetEnv()->getContinuousContactManager();
-  AdjacencyMapPtr adjacency_map = std::make_shared<AdjacencyMap>(scene_graph_,
+  AdjacencyMapPtr adjacency_map = std::make_shared<AdjacencyMap>(tesseract_->getEnvironment()->getSceneGraph(),
                                                                  prob->GetKin()->getActiveLinkNames(),
                                                                  prob->GetEnv()->getCurrentState()->transforms);
 
@@ -172,23 +142,23 @@ TEST_F(CastAttachedTest, LinkWithoutGeom)
 {
   CONSOLE_BRIDGE_logDebug("CastAttachedTest, LinkWithGeom");
 
-  env_->setLinkCollisionEnabled("box_attached2", true);
+  tesseract_->getEnvironment()->setLinkCollisionEnabled("box_attached2", true);
 
   Json::Value root = readJsonFile(std::string(TRAJOPT_DIR)  + "/test/data/config/box_cast_test.json");
 
   std::unordered_map<std::string, double> ipos;
   ipos["boxbot_x_joint"] = -1.9;
   ipos["boxbot_y_joint"] = 0;
-  env_->setState(ipos);
+  tesseract_->getEnvironment()->setState(ipos);
 
 //  plotter_->plotScene();
 
-  TrajOptProbPtr prob = ConstructProblem(root, env_, kin_map_);
+  TrajOptProbPtr prob = ConstructProblem(root, tesseract_->getEnvironment(), tesseract_->getFwdKinematics());
   ASSERT_TRUE(!!prob);
 
   std::vector<ContactResultMap> collisions;
   ContinuousContactManagerPtr manager = prob->GetEnv()->getContinuousContactManager();
-  AdjacencyMapPtr adjacency_map = std::make_shared<AdjacencyMap>(scene_graph_,
+  AdjacencyMapPtr adjacency_map = std::make_shared<AdjacencyMap>(tesseract_->getEnvironment()->getSceneGraph(),
                                                                  prob->GetKin()->getActiveLinkNames(),
                                                                  prob->GetEnv()->getCurrentState()->transforms);
 

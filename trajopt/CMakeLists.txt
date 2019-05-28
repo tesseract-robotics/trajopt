@@ -6,18 +6,10 @@ find_package(Boost COMPONENTS system python thread program_options REQUIRED)
 find_package(console_bridge REQUIRED)
 find_package(trajopt_sco REQUIRED)
 find_package(trajopt_utils REQUIRED)
-find_package(tesseract_environment REQUIRED)
-find_package(tesseract_kinematics REQUIRED)
-find_package(tesseract_collision REQUIRED)
-find_package(tesseract_visualization REQUIRED)
-find_package(tesseract_scene_graph REQUIRED) # Dont understand why this is needed. Should be included by tesseract_environment
-find_package(tesseract_geometry REQUIRED) # Dont understand why this is needed. Should be included by tesseract_environment
-find_package(orocos_kdl REQUIRED) # Dont understand why this is needed. Should be included by tesseract_environment
+find_package(tesseract REQUIRED)
 
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(JSONCPP jsoncpp)
-
-set(TRAJOPT_PKGCONFIG_REQUIRES Eigen3 console_bridge Boost PkgConfig trajopt_sco trajopt_utils tesseract_environment tesseract_kinematics tesseract_collision tesseract_visualization orocos_kdl)
 
 link_directories(
     /usr/local/lib
@@ -39,14 +31,8 @@ add_library(${PROJECT_NAME} SHARED ${TRAJOPT_SOURCE_FILES})
 target_link_libraries(${PROJECT_NAME} PUBLIC
     trajopt_sco
     trajopt_utils
-    tesseract_environment_core
-    tesseract_kinematics_core
-    tesseract_collision_core
-    tesseract_visualization
-    tesseract_scene_graph
-    tesseract_geometry
+    tesseract
     console_bridge
-    orocos-kdl
     ${Boost_SYSTEM_LIBRARY}
     ${JSONCPP_LIBRARIES})
 target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wsuggest-override -Wconversion -Wsign-conversion)
@@ -57,8 +43,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC
 target_include_directories(${PROJECT_NAME} SYSTEM PUBLIC
     ${JSONCPP_INCLUDE_DIRS}
     ${EIGEN3_INCLUDE_DIRS}
-    ${Boost_INCLUDE_DIRS}
-    ${orocos_kdl_INCLUDE_DIRS}) # Orocos did not export target correctly
+    ${Boost_INCLUDE_DIRS})
 
 list (APPEND PACKAGE_LIBRARIES ${PROJECT_NAME})
 

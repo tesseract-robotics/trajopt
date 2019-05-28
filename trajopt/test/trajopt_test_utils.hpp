@@ -4,11 +4,6 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <json/json.h>
 #include <stdexcept>
 #include <Eigen/Core>
-
-#include <tesseract_kinematics/core/forward_kinematics.h>
-#include <tesseract_environment/core/environment.h>
-#include <tesseract_collision/core/continuous_contact_manager.h>
-#include <tesseract_collision/core/types.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt/typedefs.hpp>
