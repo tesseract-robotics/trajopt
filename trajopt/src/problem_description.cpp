@@ -270,7 +270,8 @@ void ProblemConstructionInfo::fromJson(const Json::Value& v)
     readOptInfo(v["opt_info"]);
   }
 
-  kin = tesseract_->getFwdKinematics(basic_info.manip);
+  kin = getManipulator(basic_info.manip);
+
   if (kin == nullptr)
   {
     PRINT_AND_THROW(boost::format("Manipulator does not exist: %s") % basic_info.manip.c_str());
