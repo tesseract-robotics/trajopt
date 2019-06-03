@@ -198,7 +198,7 @@ public:
 
   tesseract_kinematics::ForwardKinematicsConstPtr getManipulator(const std::string& name) const
   {
-    return tesseract_->getFwdKinematics(name);
+    return tesseract_->getFwdKinematicsManagerConst()->getFwdKinematicSolver(name);
   }
 
   void fromJson(const Json::Value& v);
