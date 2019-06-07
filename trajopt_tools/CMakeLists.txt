@@ -8,6 +8,8 @@ find_package(console_bridge REQUIRED)
 find_package(Boost COMPONENTS system thread program_options REQUIRED)
 find_package(Eigen3 REQUIRED)
 
+list(FIND CMAKE_CXX_COMPILE_FEATURES cxx_std_11 CXX_FEATURE_FOUND)
+
 find_package(OpenMP)
 if(NOT TARGET OpenMP::OpenMP_CXX)
     find_package(Threads REQUIRED)
@@ -24,18 +26,28 @@ find_library(CONVEX_DECOMPOSITION_LIBRARY ConvexDecomposition HINTS ${CMAKE_INST
 find_library(HACD_LIBRARY HACD HINTS ${CMAKE_INSTALL_PREFIX}/lib)
 
 add_executable(convex_decomposition_hacd_node src/convex_decomposition_hacd.cpp)
-target_link_libraries(convex_decomposition_hacd_node trajopt_utils vhacd console_bridge Eigen3::Eigen ${BULLET_LIBRARIES} ${CONVEX_DECOMPOSITION_LIBRARY} ${HACD_LIBRARY}  ${Boost_LIBRARIES})
+target_link_libraries(convex_decomposition_hacd_node trajopt_utils vhacd console_bridge ${BULLET_LIBRARIES} ${CONVEX_DECOMPOSITION_LIBRARY} ${HACD_LIBRARY}  ${Boost_LIBRARIES})
 target_compile_options(convex_decomposition_hacd_node PRIVATE -Wall -Wextra -Wsuggest-override -Wconversion -Wsign-conversion)
-target_compile_features(convex_decomposition_hacd_node PRIVATE cxx_std_11)
+if(CXX_FEATURE_FOUND EQUAL "-1")
+    set_target_properties(convex_decomposition_hacd_node PROPERTIES CXX_STANDARD 11 CXX_STANDARD_REQUIRED YES)
+else()
+    target_compile_features(convex_decomposition_hacd_node PRIVATE cxx_std_11)
+endif()
 target_include_directories(convex_decomposition_hacd_node SYSTEM PRIVATE
+    ${EIGEN3_INCLUDE_DIRS}
     ${BULLET_INCLUDE_DIRS}
     ${Boost_INCLUDE_DIRS})
 
 add_executable(convex_decomposition_vhacd_node src/convex_decomposition_vhacd.cpp)
-target_link_libraries(convex_decomposition_vhacd_node trajopt_utils vhacd console_bridge Eigen3::Eigen ${BULLET_LIBRARIES})
+target_link_libraries(convex_decomposition_vhacd_node trajopt_utils vhacd console_bridge ${BULLET_LIBRARIES})
 target_compile_options(convex_decomposition_vhacd_node PRIVATE -Wall -Wextra -Wsuggest-override -Wconversion -Wsign-conversion)
-target_compile_features(convex_decomposition_vhacd_node PRIVATE cxx_std_11)
+if(CXX_FEATURE_FOUND EQUAL "-1")
+    set_target_properties(convex_decomposition_vhacd_node PROPERTIES CXX_STANDARD 11 CXX_STANDARD_REQUIRED YES)
+else()
+    target_compile_features(convex_decomposition_vhacd_node PRIVATE cxx_std_11)
+endif()
 target_include_directories(convex_decomposition_vhacd_node SYSTEM PRIVATE
+    ${EIGEN3_INCLUDE_DIRS}
     ${BULLET_INCLUDE_DIRS})
 
 # Mark executables and/or libraries for installation

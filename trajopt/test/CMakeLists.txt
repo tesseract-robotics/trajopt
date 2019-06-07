@@ -4,7 +4,11 @@ find_package(PCL REQUIRED COMPONENTS core features filters io segmentation surfa
 macro(add_gtest test_name test_file)
   add_executable(${test_name} ${test_file})
   target_compile_options(${test_name} PRIVATE -Wall -Wextra -Wsuggest-override -Wconversion -Wsign-conversion)
-  target_compile_features(${test_name} PRIVATE cxx_std_11)
+  if(CXX_FEATURE_FOUND EQUAL "-1")
+      set_target_properties(${test_name} PROPERTIES CXX_STANDARD 11 CXX_STANDARD_REQUIRED YES)
+  else()
+      target_compile_features(${test_name} PRIVATE cxx_std_11)
+  endif()
   target_compile_definitions(${test_name} PRIVATE TRAJOPT_DIR="${CMAKE_SOURCE_DIR}")
   target_link_libraries(${test_name}
       ${PROJECT_NAME}
