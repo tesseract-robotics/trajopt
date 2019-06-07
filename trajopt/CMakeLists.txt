@@ -8,6 +8,8 @@ find_package(trajopt_sco REQUIRED)
 find_package(trajopt_utils REQUIRED)
 find_package(tesseract REQUIRED)
 
+list(FIND CMAKE_CXX_COMPILE_FEATURES cxx_std_11 CXX_FEATURE_FOUND)
+
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(JSONCPP jsoncpp)
 
@@ -36,7 +38,11 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
     ${Boost_SYSTEM_LIBRARY}
     ${JSONCPP_LIBRARIES})
 target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wsuggest-override -Wconversion -Wsign-conversion)
-target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_11)
+if(CXX_FEATURE_FOUND EQUAL "-1")
+    set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD 11 CXX_STANDARD_REQUIRED YES)
+else()
+    target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_11)
+endif()
 target_include_directories(${PROJECT_NAME} PUBLIC
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
     "$<INSTALL_INTERFACE:include>")

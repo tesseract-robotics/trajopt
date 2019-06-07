@@ -54,11 +54,11 @@ if(OPENMP_FOUND)
 
 endif()
 
-target_link_libraries(${PROJECT_NAME} PUBLIC Eigen3::Eigen)
 target_include_directories(${PROJECT_NAME} PUBLIC
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
     "$<INSTALL_INTERFACE:include>")
 target_include_directories(${PROJECT_NAME} SYSTEM PUBLIC
+    ${EIGEN3_INCLUDE_DIRS}
     ${BULLET_INCLUDE_DIRS})
 
 list (APPEND VHACD_LIBRARIES ${PROJECT_NAME})
