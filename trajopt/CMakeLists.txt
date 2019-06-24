@@ -8,10 +8,10 @@ find_package(trajopt_sco REQUIRED)
 find_package(trajopt_utils REQUIRED)
 find_package(tesseract REQUIRED)
 
-list(FIND CMAKE_CXX_COMPILE_FEATURES cxx_std_11 CXX_FEATURE_FOUND)
-
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(JSONCPP jsoncpp)
+
+list(FIND CMAKE_CXX_COMPILE_FEATURES cxx_std_11 CXX_FEATURE_FOUND)
 
 link_directories(
     /usr/local/lib
@@ -39,7 +39,7 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
     ${JSONCPP_LIBRARIES})
 target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wsuggest-override -Wconversion -Wsign-conversion)
 if(CXX_FEATURE_FOUND EQUAL "-1")
-    set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD 11 CXX_STANDARD_REQUIRED YES)
+    target_compile_options(${PROJECT_NAME} PUBLIC -std=c++11)
 else()
     target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_11)
 endif()

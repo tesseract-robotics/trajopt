@@ -9,6 +9,8 @@ set(VHACD_VERSION ${VHACD_VERSION_MAJOR}.${VHACD_VERSION_MINOR}.${VHACD_VERSION_
 find_package(Bullet REQUIRED)
 find_package(Eigen3 REQUIRED)
 
+list(FIND CMAKE_CXX_COMPILE_FEATURES cxx_std_11 CXX_FEATURE_FOUND)
+
 option(NO_OPENCL "NO_OPENCL" OFF)
 option(NO_OPENMP "NO_OPENMP" OFF)
 
@@ -43,7 +45,11 @@ if (OpenCL_FOUND)
     target_include_directories(${PROJECT_NAME} PRIVATE "${OpenCL_INCLUDE_DIR}")
     target_link_libraries(${PROJECT_NAME} PRIVATE "${OpenCL_LIBRARY}")
     target_compile_options(${PROJECT_NAME} PRIVATE -w)
-    target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_11)
+    if(CXX_FEATURE_FOUND EQUAL "-1")
+        target_compile_options(${PROJECT_NAME} PRIVATE -std=c++11)
+    else()
+        target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_11)
+    endif()
     target_compile_definitions(${PROJECT_NAME} PRIVATE -DOPENCL_FOUND=1 )
     target_compile_definitions(${PROJECT_NAME} PRIVATE -DOPENCL_CL_FILES="${PROJECT_CL_FILES}" )
 endif()
