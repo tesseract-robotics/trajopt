@@ -76,7 +76,7 @@ TEST_F(CostsTest, equality_jointPos)
   pci.basic_info.start_fixed = false;
 
   // Create Kinematic Object
-  pci.kin = tesseract_->getFwdKinematics(pci.basic_info.manip);
+  pci.kin = tesseract_->getFwdKinematicsManagerConst()->getFwdKinematicSolver(pci.basic_info.manip);
 
   // Populate Init Info
   Eigen::VectorXd start_pos = pci.env->getCurrentJointValues(pci.kin->getJointNames());
@@ -169,7 +169,7 @@ TEST_F(CostsTest, inequality_jointPos)
   pci.basic_info.use_time = false;
 
   // Create Kinematic Object
-  pci.kin = tesseract_->getFwdKinematics(pci.basic_info.manip);
+  pci.kin = tesseract_->getFwdKinematicsManagerConst()->getFwdKinematicSolver(pci.basic_info.manip);
 
   // Populate Init Info
   Eigen::VectorXd start_pos = pci.env->getCurrentJointValues(pci.kin->getJointNames());
@@ -280,7 +280,7 @@ TEST_F(CostsTest, equality_jointVel)
   pci.basic_info.use_time = false;
 
   // Create Kinematic Object
-  pci.kin = tesseract_->getFwdKinematics(pci.basic_info.manip);
+  pci.kin = tesseract_->getFwdKinematicsManagerConst()->getFwdKinematicSolver(pci.basic_info.manip);
 
   // Populate Init Info
   Eigen::VectorXd start_pos = pci.env->getCurrentJointValues(pci.kin->getJointNames());
@@ -373,7 +373,7 @@ TEST_F(CostsTest, inequality_jointVel)
   pci.basic_info.use_time = false;
 
   // Create Kinematic Object
-  pci.kin = tesseract_->getFwdKinematics(pci.basic_info.manip);
+  pci.kin = tesseract_->getFwdKinematicsManagerConst()->getFwdKinematicSolver(pci.basic_info.manip);
 
   // Populate Init Info
   Eigen::VectorXd start_pos = pci.env->getCurrentJointValues(pci.kin->getJointNames());
@@ -487,7 +487,7 @@ TEST_F(CostsTest, equality_jointVel_time)
   pci.basic_info.dt_upper_lim = dt_upper;
 
   // Create Kinematic Object
-  pci.kin = tesseract_->getFwdKinematics(pci.basic_info.manip);
+  pci.kin = tesseract_->getFwdKinematicsManagerConst()->getFwdKinematicSolver(pci.basic_info.manip);
 
   // Populate Init Info
   pci.init_info.type = InitInfo::STATIONARY;
@@ -587,7 +587,7 @@ TEST_F(CostsTest, inequality_jointVel_time)
   pci.basic_info.dt_upper_lim = dt_upper;
 
   // Create Kinematic Object
-  pci.kin = tesseract_->getFwdKinematics(pci.basic_info.manip);
+  pci.kin = tesseract_->getFwdKinematicsManagerConst()->getFwdKinematicSolver(pci.basic_info.manip);
 
   // Populate Init Info
   pci.init_info.type = InitInfo::STATIONARY;
@@ -697,7 +697,7 @@ TEST_F(CostsTest, equality_jointAcc)
   pci.basic_info.use_time = false;
 
   // Create Kinematic Object
-  pci.kin = tesseract_->getFwdKinematics(pci.basic_info.manip);
+  pci.kin = tesseract_->getFwdKinematicsManagerConst()->getFwdKinematicSolver(pci.basic_info.manip);
 
   // Populate Init Info
   Eigen::VectorXd start_pos = pci.env->getCurrentJointValues(pci.kin->getJointNames());
@@ -791,7 +791,7 @@ TEST_F(CostsTest, inequality_jointAcc)
   pci.basic_info.use_time = false;
 
   // Create Kinematic Object
-  pci.kin = tesseract_->getFwdKinematics(pci.basic_info.manip);
+  pci.kin = tesseract_->getFwdKinematicsManagerConst()->getFwdKinematicSolver(pci.basic_info.manip);
 
   // Populate Init Info
   Eigen::VectorXd start_pos = pci.env->getCurrentJointValues(pci.kin->getJointNames());

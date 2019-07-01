@@ -14,8 +14,7 @@ macro(add_gtest test_name test_file)
       ${PROJECT_NAME}
       ${GTEST_BOTH_LIBRARIES}
       ${Boost_SYSTEM_LIBRARY}
-      ${Boost_PROGRAM_OPTIONS_LIBRARY}
-      ${rospack_LIBRARY})
+      ${Boost_PROGRAM_OPTIONS_LIBRARY})
   target_include_directories(${test_name} PRIVATE
       "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>"
       ${GTEST_INCLUDE_DIRS})
