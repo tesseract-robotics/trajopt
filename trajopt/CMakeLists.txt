@@ -85,8 +85,7 @@ install(FILES
 
 export(EXPORT ${PROJECT_NAME}-targets FILE ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-targets.cmake)
 
-option(ENABLE_TESTS "Enable tests" OFF)
-if (${ENABLE_TESTS})
+if (ENABLE_TESTS)
   enable_testing()
   add_custom_target(run_tests ALL
       WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
