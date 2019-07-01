@@ -32,7 +32,7 @@ list (APPEND PACKAGE_LIBRARIES ${PROJECT_NAME})
 
 # Mark executables and/or libraries for installation
 install(TARGETS ${PACKAGE_LIBRARIES} EXPORT ${PROJECT_NAME}-targets DESTINATION lib)
-install(EXPORT ${PROJECT_NAME}-targets DESTINATION lib/cmake/${PROJECT_NAME})
+install(EXPORT ${PROJECT_NAME}-targets NAMESPACE trajopt:: DESTINATION lib/cmake/${PROJECT_NAME})
 
 # Mark cpp header files for installation
 install(DIRECTORY include/${PROJECT_NAME}

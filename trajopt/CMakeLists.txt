@@ -7,6 +7,7 @@ find_package(console_bridge REQUIRED)
 find_package(trajopt_sco REQUIRED)
 find_package(trajopt_utils REQUIRED)
 find_package(tesseract REQUIRED)
+find_package(tesseract_visualization REQUIRED)
 
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(JSONCPP jsoncpp)
@@ -31,9 +32,10 @@ set(TRAJOPT_SOURCE_FILES
 
 add_library(${PROJECT_NAME} SHARED ${TRAJOPT_SOURCE_FILES})
 target_link_libraries(${PROJECT_NAME} PUBLIC
-    trajopt_sco
-    trajopt_utils
-    tesseract
+    trajopt::trajopt_sco
+    trajopt::trajopt_utils
+    tesseract::tesseract
+    tesseract::tesseract_visualization
     console_bridge
     ${Boost_SYSTEM_LIBRARY}
     ${JSONCPP_LIBRARIES})
@@ -55,7 +57,7 @@ list (APPEND PACKAGE_LIBRARIES ${PROJECT_NAME})
 
 # Mark executables and/or libraries for installation
 install(TARGETS ${PACKAGE_LIBRARIES} EXPORT ${PROJECT_NAME}-targets DESTINATION lib)
-install(EXPORT ${PROJECT_NAME}-targets DESTINATION lib/cmake/${PROJECT_NAME})
+install(EXPORT ${PROJECT_NAME}-targets NAMESPACE trajopt:: DESTINATION lib/cmake/${PROJECT_NAME})
 
 # Mark cpp header files for installation
 install(DIRECTORY include/${PROJECT_NAME}
