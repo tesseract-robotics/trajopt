@@ -49,7 +49,7 @@ if (HAVE_BPMPD)
       "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
       "$<INSTALL_INTERFACE:include>")
   target_include_directories(bpmpd_caller SYSTEM PUBLIC
-      $<TARGET_PROPERTY:trajopt_utils,INTERFACE_INCLUDE_DIRECTORIES>)
+      $<TARGET_PROPERTY:trajopt::trajopt_utils,INTERFACE_INCLUDE_DIRECTORIES>)
 
   install(TARGETS bpmpd_caller DESTINATION bin)
 
@@ -96,7 +96,7 @@ if (qpOASES_FOUND)
   target_include_directories(${PROJECT_NAME} SYSTEM PUBLIC ${qpOASES_INCLUDE_DIRS})
 endif()
 
-target_link_libraries(${PROJECT_NAME} PUBLIC trajopt_utils ${CMAKE_DL_LIBS} ${JSONCPP_LIBRARIES})
+target_link_libraries(${PROJECT_NAME} PUBLIC trajopt::trajopt_utils ${CMAKE_DL_LIBS} ${JSONCPP_LIBRARIES})
 target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wsuggest-override -Wconversion -Wsign-conversion)
 if(CXX_FEATURE_FOUND EQUAL "-1")
     target_compile_options(${PROJECT_NAME} PUBLIC -std=c++11)
@@ -114,7 +114,7 @@ list (APPEND PACKAGE_LIBRARIES ${PROJECT_NAME})
 
 # Mark executables and/or libraries for installation
 install(TARGETS ${PACKAGE_LIBRARIES} EXPORT ${PROJECT_NAME}-targets DESTINATION lib)
-install(EXPORT ${PROJECT_NAME}-targets DESTINATION lib/cmake/${PROJECT_NAME})
+install(EXPORT ${PROJECT_NAME}-targets NAMESPACE trajopt:: DESTINATION lib/cmake/${PROJECT_NAME})
 
 # Mark cpp header files for installation
 install(DIRECTORY include/${PROJECT_NAME}

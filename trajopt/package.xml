@@ -12,6 +12,7 @@
   <depend>trajopt_sco</depend>
   <depend>trajopt_utils</depend>
   <depend>tesseract</depend>
+  <depend>tesseract_visualization</depend>
   <depend>libconsole-bridge-dev</depend>
 
   <test_depend>gtest</test_depend>

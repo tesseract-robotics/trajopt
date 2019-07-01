@@ -26,7 +26,7 @@ find_library(CONVEX_DECOMPOSITION_LIBRARY ConvexDecomposition HINTS ${CMAKE_INST
 find_library(HACD_LIBRARY HACD HINTS ${CMAKE_INSTALL_PREFIX}/lib)
 
 add_executable(convex_decomposition_hacd_node src/convex_decomposition_hacd.cpp)
-target_link_libraries(convex_decomposition_hacd_node trajopt_utils vhacd console_bridge ${BULLET_LIBRARIES} ${CONVEX_DECOMPOSITION_LIBRARY} ${HACD_LIBRARY}  ${Boost_LIBRARIES})
+target_link_libraries(convex_decomposition_hacd_node trajopt::trajopt_utils vhacd console_bridge ${BULLET_LIBRARIES} ${CONVEX_DECOMPOSITION_LIBRARY} ${HACD_LIBRARY}  ${Boost_LIBRARIES})
 target_compile_options(convex_decomposition_hacd_node PRIVATE -Wall -Wextra -Wsuggest-override -Wconversion -Wsign-conversion)
 if(CXX_FEATURE_FOUND EQUAL "-1")
     target_compile_options(convex_decomposition_hacd_node PRIVATE -std=c++11)
@@ -39,7 +39,7 @@ target_include_directories(convex_decomposition_hacd_node SYSTEM PRIVATE
     ${Boost_INCLUDE_DIRS})
 
 add_executable(convex_decomposition_vhacd_node src/convex_decomposition_vhacd.cpp)
-target_link_libraries(convex_decomposition_vhacd_node trajopt_utils vhacd console_bridge ${BULLET_LIBRARIES})
+target_link_libraries(convex_decomposition_vhacd_node trajopt::trajopt_utils vhacd console_bridge ${BULLET_LIBRARIES})
 target_compile_options(convex_decomposition_vhacd_node PRIVATE -Wall -Wextra -Wsuggest-override -Wconversion -Wsign-conversion)
 if(CXX_FEATURE_FOUND EQUAL "-1")
     target_compile_options(convex_decomposition_vhacd_node PRIVATE -std=c++11)

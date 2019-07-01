@@ -3,7 +3,6 @@
 set(@PROJECT_NAME@_FOUND ON)
 set_and_check(@PROJECT_NAME@_INCLUDE_DIRS "${PACKAGE_PREFIX_DIR}/include")
 set_and_check(@PROJECT_NAME@_LIBRARY_DIRS "${PACKAGE_PREFIX_DIR}/lib")
-set(@PROJECT_NAME@_LIBRARIES "@PACKAGE_LIBRARIES@")
 
 include(CMakeFindDependencyMacro)
 find_dependency(Eigen3)
@@ -12,6 +11,7 @@ find_dependency(console_bridge)
 find_dependency(trajopt_sco)
 find_dependency(trajopt_utils)
 find_dependency(tesseract)
+find_dependency(tesseract_visualization)
 
 find_dependency(PkgConfig)
 pkg_check_modules(JSONCPP jsoncpp)
