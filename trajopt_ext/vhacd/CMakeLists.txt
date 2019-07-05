@@ -40,6 +40,11 @@ if (NOT NO_OPENMP)
 endif()
 
 add_library(vhacd SHARED ${PROJECT_CPP_FILES} ${PROJECT_C_FILES} ${PROJECT_INC_FILES} ${PROJECT_INL_FILES} ${PROJECT_CL_FILES})
+if(CXX_FEATURE_FOUND EQUAL "-1")
+    target_compile_options(vhacd PRIVATE -std=c++11)
+else()
+    target_compile_features(vhacd PRIVATE cxx_std_11)
+endif()
 
 if (OpenCL_FOUND)
     target_include_directories(${PROJECT_NAME} PRIVATE "${OpenCL_INCLUDE_DIR}")
