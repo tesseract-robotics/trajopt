@@ -195,8 +195,8 @@ void OptProb::setUpperBounds(const DblVec& ub)
 
 void OptProb::setLowerBounds(const DblVec& lb, const VarVector& vars) { setVec(lower_bounds_, vars, lb); }
 void OptProb::setUpperBounds(const DblVec& ub, const VarVector& vars) { setVec(upper_bounds_, vars, ub); }
-void OptProb::addCost(CostPtr cost) { costs_.push_back(cost); }
-void OptProb::addConstraint(ConstraintPtr cnt)
+void OptProb::addCost(Cost::Ptr cost) { costs_.push_back(cost); }
+void OptProb::addConstraint(Constraint::Ptr cnt)
 {
   if (cnt->type() == EQ)
     addEqConstraint(cnt);
@@ -204,21 +204,21 @@ void OptProb::addConstraint(ConstraintPtr cnt)
     addIneqConstraint(cnt);
 }
 
-void OptProb::addEqConstraint(ConstraintPtr cnt)
+void OptProb::addEqConstraint(Constraint::Ptr cnt)
 {
   assert(cnt->type() == EQ);
   eqcnts_.push_back(cnt);
 }
 
-void OptProb::addIneqConstraint(ConstraintPtr cnt)
+void OptProb::addIneqConstraint(Constraint::Ptr cnt)
 {
   assert(cnt->type() == INEQ);
   ineqcnts_.push_back(cnt);
 }
 
-std::vector<ConstraintPtr> OptProb::getConstraints() const
+std::vector<Constraint::Ptr> OptProb::getConstraints() const
 {
-  std::vector<ConstraintPtr> out;
+  std::vector<Constraint::Ptr> out;
   out.reserve(eqcnts_.size() + ineqcnts_.size());
   out.insert(out.end(), eqcnts_.begin(), eqcnts_.end());
   out.insert(out.end(), ineqcnts_.begin(), ineqcnts_.end());

@@ -105,7 +105,7 @@ void tripletsToEigen(const IntVec& rows_i,
                      const DblVec& values_ij,
                      Eigen::SparseMatrix<double>& sparse_matrix)
 {
-  typedef Eigen::Triplet<double> T;
+  using T = Eigen::Triplet<double>;
   std::vector<T, Eigen::aligned_allocator<T>> triplets;
   for (unsigned int i = 0; i < values_ij.size(); ++i)
     triplets.push_back(T(rows_i[i], cols_j[i], values_ij[i]));

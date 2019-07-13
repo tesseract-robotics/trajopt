@@ -6,16 +6,20 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <vector>
 TRAJOPT_IGNORE_WARNINGS_POP
 
-#include <trajopt_sco/sco_fwd.hpp>
-
 namespace sco
 {
-typedef std::vector<double> DblVec;
-typedef std::vector<int> IntVec;
-typedef std::vector<Var> VarVector;
-typedef std::vector<AffExpr> AffExprVector;
-typedef std::vector<QuadExpr> QuadExprVector;
-typedef std::vector<Cnt> CntVector;
+
+class Var;
+class AffExpr;
+class QuadExpr;
+class Cnt;
+
+using DblVec = std::vector<double>;
+using IntVec = std::vector<int>;
+using VarVector = std::vector<Var>;
+using AffExprVector = std::vector<AffExpr>;
+using QuadExprVector = std::vector<QuadExpr>;
+using CntVector = std::vector<Cnt>;
 
 inline double vecSum(const DblVec& v)
 {

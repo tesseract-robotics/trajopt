@@ -30,7 +30,7 @@ IntVec cnts2inds(const CntVector& cnts)
 
 void simplify2(IntVec& inds, DblVec& vals)
 {
-  typedef std::map<int, double> Int2Double;
+  using Int2Double = std::map<int, double>;
   Int2Double ind2val;
   for (unsigned i = 0; i < inds.size(); ++i)
   {
@@ -226,19 +226,19 @@ std::vector<ModelType> availableSolvers()
   return available_solvers;
 }
 
-ModelPtr createModel(ModelType model_type)
+Model::Ptr createModel(ModelType model_type)
 {
 #ifdef HAVE_GUROBI
-  extern ModelPtr createGurobiModel();
+  extern Model::Ptr createGurobiModel();
 #endif
 #ifdef HAVE_BPMPD
-  extern ModelPtr createBPMPDModel();
+  extern Model::Ptr createBPMPDModel();
 #endif
 #ifdef HAVE_OSQP
-  extern ModelPtr createOSQPModel();
+  extern Model::Ptr createOSQPModel();
 #endif
 #ifdef HAVE_QPOASES
-  extern ModelPtr createqpOASESModel();
+  extern Model::Ptr createqpOASESModel();
 #endif
 
   char* solver_env = getenv("TRAJOPT_CONVEX_SOLVER");
@@ -300,6 +300,6 @@ ModelPtr createModel(ModelType model_type)
   std::stringstream solver_instatiation_error;
   solver_instatiation_error << "Failed to create solver: unknown solver " << solver << std::endl;
   PRINT_AND_THROW(solver_instatiation_error.str());
-  return ModelPtr();
+  return Model::Ptr();
 }
 }

@@ -52,9 +52,9 @@ double JointPosEqCost::value(const DblVec& xvec)
   // Element-wise square it, multiply it by a diagonal matrix of coefficients, and sums output
   return (diff.array().square().matrix() * coeffs_.asDiagonal()).sum();
 }
-sco::ConvexObjectivePtr JointPosEqCost::convex(const DblVec& /*x*/, sco::Model* model)
+sco::ConvexObjective::Ptr JointPosEqCost::convex(const DblVec& /*x*/, sco::Model* model)
 {
-  sco::ConvexObjectivePtr out(new sco::ConvexObjective(model));
+  sco::ConvexObjective::Ptr out(new sco::ConvexObjective(model));
   out->addQuadExpr(expr_);
   return out;
 }
@@ -115,9 +115,9 @@ double JointPosIneqCost::value(const DblVec& xvec)
   return diff1.cwiseMax(0).sum() + diff2.cwiseMax(0).sum();
 }
 
-sco::ConvexObjectivePtr JointPosIneqCost::convex(const DblVec& /*x*/, sco::Model* model)
+sco::ConvexObjective::Ptr JointPosIneqCost::convex(const DblVec& /*x*/, sco::Model* model)
 {
-  sco::ConvexObjectivePtr out(new sco::ConvexObjective(model));
+  sco::ConvexObjective::Ptr out(new sco::ConvexObjective(model));
   // Add hinge cost. Set the coefficient to 1 here since we include it in the AffExpr already
   // This is necessary since we want a seperate coefficient per joint
   for (sco::AffExpr& expr : expr_vec_)
@@ -163,9 +163,9 @@ DblVec JointPosEqConstraint::value(const DblVec& xvec)
   // Squares it, multiplies it by a diagonal matrix of coefficients, and converts to vector
   return util::toDblVec((diff.array().square()).matrix() * coeffs_.asDiagonal());
 }
-sco::ConvexConstraintsPtr JointPosEqConstraint::convex(const DblVec& /*x*/, sco::Model* model)
+sco::ConvexConstraints::Ptr JointPosEqConstraint::convex(const DblVec& /*x*/, sco::Model* model)
 {
-  sco::ConvexConstraintsPtr out(new sco::ConvexConstraints(model));
+  sco::ConvexConstraints::Ptr out(new sco::ConvexConstraints(model));
   for (sco::AffExpr& expr : expr_vec_)
   {
     out->addEqCnt(expr);
@@ -231,9 +231,9 @@ DblVec JointPosIneqConstraint::value(const DblVec& xvec)
   return util::toDblVec(out);
 }
 
-sco::ConvexConstraintsPtr JointPosIneqConstraint::convex(const DblVec& /*x*/, sco::Model* model)
+sco::ConvexConstraints::Ptr JointPosIneqConstraint::convex(const DblVec& /*x*/, sco::Model* model)
 {
-  sco::ConvexConstraintsPtr out(new sco::ConvexConstraints(model));
+  sco::ConvexConstraints::Ptr out(new sco::ConvexConstraints(model));
   // Add hinge cost. Set the coefficient to 1 here since we include it in the AffExpr already
   // This is necessary since we want a seperate coefficient per joint
   for (sco::AffExpr& expr : expr_vec_)
@@ -275,9 +275,9 @@ double JointVelEqCost::value(const DblVec& xvec)
   // Element-wise square it, multiply it by a diagonal matrix of coefficients, and sums output
   return (diff.array().square().matrix() * coeffs_.asDiagonal()).sum();
 }
-sco::ConvexObjectivePtr JointVelEqCost::convex(const DblVec& /*x*/, sco::Model* model)
+sco::ConvexObjective::Ptr JointVelEqCost::convex(const DblVec& /*x*/, sco::Model* model)
 {
-  sco::ConvexObjectivePtr out(new sco::ConvexObjective(model));
+  sco::ConvexObjective::Ptr out(new sco::ConvexObjective(model));
   out->addQuadExpr(expr_);
   return out;
 }
@@ -340,9 +340,9 @@ double JointVelIneqCost::value(const DblVec& xvec)
   return diff1.cwiseMax(0).sum() + diff2.cwiseMax(0).sum();
 }
 
-sco::ConvexObjectivePtr JointVelIneqCost::convex(const DblVec& /*x*/, sco::Model* model)
+sco::ConvexObjective::Ptr JointVelIneqCost::convex(const DblVec& /*x*/, sco::Model* model)
 {
-  sco::ConvexObjectivePtr out(new sco::ConvexObjective(model));
+  sco::ConvexObjective::Ptr out(new sco::ConvexObjective(model));
   // Add hinge cost. Set the coefficient to 1 here since we include it in the AffExpr already
   // This is necessary since we want a seperate coefficient per joint
   for (sco::AffExpr& expr : expr_vec_)
@@ -389,9 +389,9 @@ DblVec JointVelEqConstraint::value(const DblVec& xvec)
   // Squares it, multiplies it by a diagonal matrix of coefficients, and converts to vector
   return util::toDblVec((diff.array().square()).matrix() * coeffs_.asDiagonal());
 }
-sco::ConvexConstraintsPtr JointVelEqConstraint::convex(const DblVec& /*x*/, sco::Model* model)
+sco::ConvexConstraints::Ptr JointVelEqConstraint::convex(const DblVec& /*x*/, sco::Model* model)
 {
-  sco::ConvexConstraintsPtr out(new sco::ConvexConstraints(model));
+  sco::ConvexConstraints::Ptr out(new sco::ConvexConstraints(model));
   for (sco::AffExpr& expr : expr_vec_)
   {
     out->addEqCnt(expr);
@@ -459,9 +459,9 @@ DblVec JointVelIneqConstraint::value(const DblVec& xvec)
   return util::toDblVec(out.cwiseMax(0));
 }
 
-sco::ConvexConstraintsPtr JointVelIneqConstraint::convex(const DblVec& /*x*/, sco::Model* model)
+sco::ConvexConstraints::Ptr JointVelIneqConstraint::convex(const DblVec& /*x*/, sco::Model* model)
 {
-  sco::ConvexConstraintsPtr out(new sco::ConvexConstraints(model));
+  sco::ConvexConstraints::Ptr out(new sco::ConvexConstraints(model));
   // Add hinge cost. Set the coefficient to 1 here since we include it in the AffExpr already
   // This is necessary since we want a seperate coefficient per joint
   for (sco::AffExpr& expr : expr_vec_)
@@ -506,9 +506,9 @@ double JointAccEqCost::value(const DblVec& xvec)
   // Element-wise square it, multiply it by a diagonal matrix of coefficients, and sums output
   return (diff.array().square().matrix() * coeffs_.asDiagonal()).sum();
 }
-sco::ConvexObjectivePtr JointAccEqCost::convex(const DblVec& /*x*/, sco::Model* model)
+sco::ConvexObjective::Ptr JointAccEqCost::convex(const DblVec& /*x*/, sco::Model* model)
 {
-  sco::ConvexObjectivePtr out(new sco::ConvexObjective(model));
+  sco::ConvexObjective::Ptr out(new sco::ConvexObjective(model));
   out->addQuadExpr(expr_);
   return out;
 }
@@ -572,9 +572,9 @@ double JointAccIneqCost::value(const DblVec& xvec)
   return diff1.cwiseMax(0).sum() + diff2.cwiseMax(0).sum();
 }
 
-sco::ConvexObjectivePtr JointAccIneqCost::convex(const DblVec& /*x*/, sco::Model* model)
+sco::ConvexObjective::Ptr JointAccIneqCost::convex(const DblVec& /*x*/, sco::Model* model)
 {
-  sco::ConvexObjectivePtr out(new sco::ConvexObjective(model));
+  sco::ConvexObjective::Ptr out(new sco::ConvexObjective(model));
   // Add hinge cost. Set the coefficient to 1 here since we include it in the AffExpr already
   // This is necessary since we want a seperate coefficient per joint
   for (sco::AffExpr& expr : expr_vec_)
@@ -624,9 +624,9 @@ DblVec JointAccEqConstraint::value(const DblVec& xvec)
   // Squares it, multiplies it by a diagonal matrix of coefficients, and converts to vector
   return util::toDblVec((diff.array().square()).matrix() * coeffs_.asDiagonal());
 }
-sco::ConvexConstraintsPtr JointAccEqConstraint::convex(const DblVec& /*x*/, sco::Model* model)
+sco::ConvexConstraints::Ptr JointAccEqConstraint::convex(const DblVec& /*x*/, sco::Model* model)
 {
-  sco::ConvexConstraintsPtr out(new sco::ConvexConstraints(model));
+  sco::ConvexConstraints::Ptr out(new sco::ConvexConstraints(model));
   for (sco::AffExpr& expr : expr_vec_)
   {
     out->addEqCnt(expr);
@@ -696,9 +696,9 @@ DblVec JointAccIneqConstraint::value(const DblVec& xvec)
   return util::toDblVec(out.cwiseMax(0));
 }
 
-sco::ConvexConstraintsPtr JointAccIneqConstraint::convex(const DblVec& /*x*/, sco::Model* model)
+sco::ConvexConstraints::Ptr JointAccIneqConstraint::convex(const DblVec& /*x*/, sco::Model* model)
 {
-  sco::ConvexConstraintsPtr out(new sco::ConvexConstraints(model));
+  sco::ConvexConstraints::Ptr out(new sco::ConvexConstraints(model));
   // Add hinge cost. Set the coefficient to 1 here since we include it in the AffExpr already
   // This is necessary since we want a seperate coefficient per joint
   for (sco::AffExpr& expr : expr_vec_)
@@ -745,9 +745,9 @@ double JointJerkEqCost::value(const DblVec& xvec)
   // Element-wise square it, multiply it by a diagonal matrix of coefficients, and sums output
   return (diff.array().square().matrix() * coeffs_.asDiagonal()).sum();
 }
-sco::ConvexObjectivePtr JointJerkEqCost::convex(const DblVec& /*x*/, sco::Model* model)
+sco::ConvexObjective::Ptr JointJerkEqCost::convex(const DblVec& /*x*/, sco::Model* model)
 {
-  sco::ConvexObjectivePtr out(new sco::ConvexObjective(model));
+  sco::ConvexObjective::Ptr out(new sco::ConvexObjective(model));
   out->addQuadExpr(expr_);
   return out;
 }
@@ -813,9 +813,9 @@ double JointJerkIneqCost::value(const DblVec& xvec)
   return diff1.cwiseMax(0).sum() + diff2.cwiseMax(0).sum();
 }
 
-sco::ConvexObjectivePtr JointJerkIneqCost::convex(const DblVec& /*x*/, sco::Model* model)
+sco::ConvexObjective::Ptr JointJerkIneqCost::convex(const DblVec& /*x*/, sco::Model* model)
 {
-  sco::ConvexObjectivePtr out(new sco::ConvexObjective(model));
+  sco::ConvexObjective::Ptr out(new sco::ConvexObjective(model));
   // Add hinge cost. Set the coefficient to 1 here since we include it in the AffExpr already
   // This is necessary since we want a seperate coefficient per joint
   for (sco::AffExpr& expr : expr_vec_)
@@ -867,9 +867,9 @@ DblVec JointJerkEqConstraint::value(const DblVec& xvec)
   // Squares it, multiplies it by a diagonal matrix of coefficients, and converts to vector
   return util::toDblVec((diff.array().square()).matrix() * coeffs_.asDiagonal());
 }
-sco::ConvexConstraintsPtr JointJerkEqConstraint::convex(const DblVec& /*x*/, sco::Model* model)
+sco::ConvexConstraints::Ptr JointJerkEqConstraint::convex(const DblVec& /*x*/, sco::Model* model)
 {
-  sco::ConvexConstraintsPtr out(new sco::ConvexConstraints(model));
+  sco::ConvexConstraints::Ptr out(new sco::ConvexConstraints(model));
   for (sco::AffExpr& expr : expr_vec_)
   {
     out->addEqCnt(expr);
@@ -939,9 +939,9 @@ DblVec JointJerkIneqConstraint::value(const DblVec& xvec)
   return util::toDblVec(out.cwiseMax(0));
 }
 
-sco::ConvexConstraintsPtr JointJerkIneqConstraint::convex(const DblVec& /*x*/, sco::Model* model)
+sco::ConvexConstraints::Ptr JointJerkIneqConstraint::convex(const DblVec& /*x*/, sco::Model* model)
 {
-  sco::ConvexConstraintsPtr out(new sco::ConvexConstraints(model));
+  sco::ConvexConstraints::Ptr out(new sco::ConvexConstraints(model));
   // Add hinge cost. Set the coefficient to 1 here since we include it in the AffExpr already
   // This is necessary since we want a seperate coefficient per joint
   for (sco::AffExpr& expr : expr_vec_)

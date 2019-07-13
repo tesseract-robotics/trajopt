@@ -16,20 +16,10 @@ struct OptResults;
 
 namespace trajopt
 {
-typedef Json::Value TrajOptRequest;
-typedef Json::Value TrajOptResponse;
+using TrajOptRequest = Json::Value;
+using TrajOptResponse = Json::Value;
 
-struct TermInfo;
-typedef std::shared_ptr<TermInfo> TermInfoPtr;
-class TrajOptProb;
-typedef std::shared_ptr<TrajOptProb> TrajOptProbPtr;
 struct ProblemConstructionInfo;
-struct TrajOptResult;
-typedef std::shared_ptr<TrajOptResult> TrajOptResultPtr;
-
-TrajOptProbPtr TRAJOPT_API ConstructProblem(const ProblemConstructionInfo&);
-TrajOptProbPtr TRAJOPT_API ConstructProblem(const Json::Value&, const tesseract::Tesseract::ConstPtr &tesseract);
-TrajOptResultPtr TRAJOPT_API OptimizeProblem(TrajOptProbPtr, const tesseract_visualization::VisualizationPtr& plotter = nullptr);
 
 enum TermType
 {
@@ -39,9 +29,9 @@ enum TermType
 };
 
 #define DEFINE_CREATE(classname)                                                                                       \
-  static TermInfoPtr create()                                                                                          \
+  static TermInfo::Ptr create()                                                                                        \
   {                                                                                                                    \
-    TermInfoPtr out(new classname());                                                                                  \
+    TermInfo::Ptr out(new classname());                                                                                  \
     return out;                                                                                                        \
   }
 
@@ -52,6 +42,9 @@ enum TermType
 class TRAJOPT_API TrajOptProb : public sco::OptProb
 {
 public:
+
+  using Ptr = std::shared_ptr<TrajOptProb>;
+
   TrajOptProb();
   TrajOptProb(int n_steps, const ProblemConstructionInfo& pci);
   virtual ~TrajOptProb() = default;
@@ -64,11 +57,11 @@ public:
   /** @brief Returns the problem DOF. This is the number of columns in the optization matrix.
    * Note that this is not necessarily the same as the kinematic DOF.*/
   int GetNumDOF() { return m_traj_vars.cols(); }
-  tesseract_kinematics::ForwardKinematicsConstPtr GetKin() { return m_kin; }
-  tesseract_environment::EnvironmentConstPtr GetEnv() { return m_env; }
+  tesseract_kinematics::ForwardKinematics::ConstPtr GetKin() { return m_kin; }
+  tesseract_environment::Environment::ConstPtr GetEnv() { return m_env; }
   void SetInitTraj(const TrajArray& x) { m_init_traj = x; }
   TrajArray GetInitTraj() { return m_init_traj; }
-  friend TrajOptProbPtr ConstructProblem(const ProblemConstructionInfo&);
+  friend TrajOptProb::Ptr ConstructProblem(const ProblemConstructionInfo&);
   /** @brief Returns TrajOptProb.has_time */
   bool GetHasTime() { return has_time; }
   /** @brief Sets TrajOptProb.has_time  */
@@ -77,8 +70,8 @@ private:
   /** @brief If true, the last column in the optimization matrix will be 1/dt */
   bool has_time;
   VarArray m_traj_vars;
-  tesseract_kinematics::ForwardKinematicsConstPtr m_kin;
-  tesseract_environment::EnvironmentConstPtr m_env;
+  tesseract_kinematics::ForwardKinematics::ConstPtr m_kin;
+  tesseract_environment::Environment::ConstPtr m_env;
   TrajArray m_init_traj;
 };
 
@@ -87,6 +80,8 @@ private:
 
 struct TRAJOPT_API TrajOptResult
 {
+  using Ptr = std::shared_ptr<TrajOptResult>;
+
   std::vector<std::string> cost_names, cnt_names;
   DblVec cost_vals, cnt_viols;
   TrajArray traj;
@@ -154,19 +149,21 @@ Then it later gets converted to a Cost object by the hatch method
 */
 struct TRAJOPT_API TermInfo
 {
+  using Ptr = std::shared_ptr<TermInfo>;
+
   std::string name;
   int term_type;
   int getSupportedTypes() { return supported_term_types_; }
   virtual void fromJson(ProblemConstructionInfo& pci, const Json::Value& v) = 0;
   virtual void hatch(TrajOptProb& prob) = 0;
 
-  static TermInfoPtr fromName(const std::string& type);
+  static TermInfo::Ptr fromName(const std::string& type);
 
   /**
    * Registers a user-defined TermInfo so you can use your own cost
    * see function RegisterMakers.cpp
    */
-  typedef TermInfoPtr (*MakerFunc)(void);
+  typedef std::shared_ptr<TermInfo> (*MakerFunc)(void);
   static void RegisterMaker(const std::string& type, MakerFunc);
 
   virtual ~TermInfo() = default;
@@ -186,17 +183,17 @@ struct TRAJOPT_API ProblemConstructionInfo
 public:
   BasicInfo basic_info;
   sco::BasicTrustRegionSQPParameters opt_info;
-  std::vector<TermInfoPtr> cost_infos;
-  std::vector<TermInfoPtr> cnt_infos;
+  std::vector<TermInfo::Ptr> cost_infos;
+  std::vector<TermInfo::Ptr> cnt_infos;
   InitInfo init_info;
 
 
-  tesseract_environment::EnvironmentConstPtr env;
-  tesseract_kinematics::ForwardKinematicsConstPtr kin;
+  tesseract_environment::Environment::ConstPtr env;
+  tesseract_kinematics::ForwardKinematics::ConstPtr kin;
 
   ProblemConstructionInfo(tesseract::Tesseract::ConstPtr tesseract) : env(tesseract->getEnvironmentConst()), tesseract_(tesseract) {}
 
-  tesseract_kinematics::ForwardKinematicsConstPtr getManipulator(const std::string& name) const
+  tesseract_kinematics::ForwardKinematics::ConstPtr getManipulator(const std::string& name) const
   {
     return tesseract_->getFwdKinematicsManagerConst()->getFwdKinematicSolver(name);
   }
@@ -490,7 +487,7 @@ struct CollisionTermInfo : public TermInfo
 
   /** @brief Contains distance penalization data: Safety Margin, Coeff used during */
   /** @brief optimization, etc. */
-  std::vector<SafetyMarginDataPtr> info;
+  std::vector<SafetyMarginData::Ptr> info;
 
   /** @brief Used to add term to pci from json */
   void fromJson(ProblemConstructionInfo& pci, const Json::Value& v) override;
@@ -517,5 +514,9 @@ struct TotalTimeTermInfo : public TermInfo
 
   TotalTimeTermInfo() : TermInfo(TT_COST | TT_CNT | TT_USE_TIME) {}
 };
+
+TrajOptProb::Ptr TRAJOPT_API ConstructProblem(const ProblemConstructionInfo&);
+TrajOptProb::Ptr TRAJOPT_API ConstructProblem(const Json::Value&, const tesseract::Tesseract::ConstPtr &tesseract);
+TrajOptResult::Ptr TRAJOPT_API OptimizeProblem(TrajOptProb::Ptr, const tesseract_visualization::Visualization::Ptr& plotter = nullptr);
 
 }  // namespace trajopt

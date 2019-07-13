@@ -11,7 +11,6 @@ TRAJOPT_IGNORE_WARNINGS_POP
 #include <trajopt/common.hpp>
 #include <trajopt_sco/modeling.hpp>
 #include <trajopt_sco/modeling_utils.hpp>
-#include <trajopt_sco/sco_fwd.hpp>
 
 namespace trajopt
 {
@@ -23,16 +22,16 @@ struct DynamicCartPoseErrCalculator : public TrajOptVectorOfVector
 {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   std::string target_;
-  tesseract_environment::AdjacencyMapPairConstPtr kin_target_;
-  tesseract_kinematics::ForwardKinematicsConstPtr manip_;
-  tesseract_environment::AdjacencyMapConstPtr adjacency_map_;
+  tesseract_environment::AdjacencyMapPair::ConstPtr kin_target_;
+  tesseract_kinematics::ForwardKinematics::ConstPtr manip_;
+  tesseract_environment::AdjacencyMap::ConstPtr adjacency_map_;
   Eigen::Isometry3d world_to_base_;
   std::string link_;
-  tesseract_environment::AdjacencyMapPairConstPtr kin_link_;
+  tesseract_environment::AdjacencyMapPair::ConstPtr kin_link_;
   Eigen::Isometry3d tcp_;
   DynamicCartPoseErrCalculator(const std::string& target,
-                               tesseract_kinematics::ForwardKinematicsConstPtr manip,
-                               tesseract_environment::AdjacencyMapConstPtr adjacency_map,
+                               tesseract_kinematics::ForwardKinematics::ConstPtr manip,
+                               tesseract_environment::AdjacencyMap::ConstPtr adjacency_map,
                                Eigen::Isometry3d world_to_base,
                                std::string link,
                                Eigen::Isometry3d tcp = Eigen::Isometry3d::Identity())
@@ -42,7 +41,7 @@ struct DynamicCartPoseErrCalculator : public TrajOptVectorOfVector
     kin_target_ = adjacency_map_->getLinkMapping(target_);
   }
 
-  void Plot(const tesseract_visualization::VisualizationPtr& plotter, const Eigen::VectorXd& dof_vals) override;
+  void Plot(const tesseract_visualization::Visualization::Ptr& plotter, const Eigen::VectorXd& dof_vals) override;
 
   Eigen::VectorXd operator()(const Eigen::VectorXd& dof_vals) const override;
 
@@ -56,15 +55,15 @@ struct CartPoseErrCalculator : public TrajOptVectorOfVector
 {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   Eigen::Isometry3d pose_inv_;
-  tesseract_kinematics::ForwardKinematicsConstPtr manip_;
-  tesseract_environment::AdjacencyMapConstPtr adjacency_map_;
+  tesseract_kinematics::ForwardKinematics::ConstPtr manip_;
+  tesseract_environment::AdjacencyMap::ConstPtr adjacency_map_;
   Eigen::Isometry3d world_to_base_;
   std::string link_;
-  tesseract_environment::AdjacencyMapPairConstPtr kin_link_;
+  tesseract_environment::AdjacencyMapPair::ConstPtr kin_link_;
   Eigen::Isometry3d tcp_;
   CartPoseErrCalculator(const Eigen::Isometry3d& pose,
-                        tesseract_kinematics::ForwardKinematicsConstPtr manip,
-                        tesseract_environment::AdjacencyMapConstPtr adjacency_map,
+                        tesseract_kinematics::ForwardKinematics::ConstPtr manip,
+                        tesseract_environment::AdjacencyMap::ConstPtr adjacency_map,
                         Eigen::Isometry3d world_to_base,
                         std::string link,
                         Eigen::Isometry3d tcp = Eigen::Isometry3d::Identity())
@@ -73,7 +72,7 @@ struct CartPoseErrCalculator : public TrajOptVectorOfVector
     kin_link_ = adjacency_map_->getLinkMapping(link_);
   }
 
-  void Plot(const tesseract_visualization::VisualizationPtr& plotter, const Eigen::VectorXd& dof_vals) override;
+  void Plot(const tesseract_visualization::Visualization::Ptr& plotter, const Eigen::VectorXd& dof_vals) override;
 
   Eigen::VectorXd operator()(const Eigen::VectorXd& dof_vals) const override;
 };
@@ -85,15 +84,15 @@ struct CartPoseErrCalculator : public TrajOptVectorOfVector
 struct CartVelJacCalculator : sco::MatrixOfVector
 {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-  tesseract_kinematics::ForwardKinematicsConstPtr manip_;
-  tesseract_environment::AdjacencyMapConstPtr adjacency_map_;
+  tesseract_kinematics::ForwardKinematics::ConstPtr manip_;
+  tesseract_environment::AdjacencyMap::ConstPtr adjacency_map_;
   Eigen::Isometry3d world_to_base_;
   std::string link_;
-  tesseract_environment::AdjacencyMapPairConstPtr kin_link_;
+  tesseract_environment::AdjacencyMapPair::ConstPtr kin_link_;
   double limit_;
   Eigen::Isometry3d tcp_;
-  CartVelJacCalculator(tesseract_kinematics::ForwardKinematicsConstPtr manip,
-                       tesseract_environment::AdjacencyMapConstPtr adjacency_map,
+  CartVelJacCalculator(tesseract_kinematics::ForwardKinematics::ConstPtr manip,
+                       tesseract_environment::AdjacencyMap::ConstPtr adjacency_map,
                        Eigen::Isometry3d world_to_base,
                        std::string link,
                        double limit,
@@ -113,15 +112,15 @@ struct CartVelJacCalculator : sco::MatrixOfVector
 struct CartVelErrCalculator : sco::VectorOfVector
 {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-  tesseract_kinematics::ForwardKinematicsConstPtr manip_;
-  tesseract_environment::AdjacencyMapConstPtr adjacency_map_;
+  tesseract_kinematics::ForwardKinematics::ConstPtr manip_;
+  tesseract_environment::AdjacencyMap::ConstPtr adjacency_map_;
   Eigen::Isometry3d world_to_base_;
   std::string link_;
-  tesseract_environment::AdjacencyMapPairConstPtr kin_link_;
+  tesseract_environment::AdjacencyMapPair::ConstPtr kin_link_;
   double limit_;
   Eigen::Isometry3d tcp_;
-  CartVelErrCalculator(tesseract_kinematics::ForwardKinematicsConstPtr manip,
-                       tesseract_environment::AdjacencyMapConstPtr adjacency_map,
+  CartVelErrCalculator(tesseract_kinematics::ForwardKinematics::ConstPtr manip,
+                       tesseract_environment::AdjacencyMap::ConstPtr adjacency_map,
                        Eigen::Isometry3d world_to_base,
                        std::string link,
                        double limit,

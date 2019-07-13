@@ -51,6 +51,10 @@ void TRAJOPT_API AddVarArray(sco::OptProb& prob, int rows, int cols, const std::
 struct SafetyMarginData
 {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
+  using Ptr = std::shared_ptr<SafetyMarginData>;
+  using ConstPtr = std::shared_ptr<const SafetyMarginData>;
+
   SafetyMarginData(const double& default_safety_margin, const double& default_safety_margin_coeff)
     : default_safety_margin_data_(default_safety_margin, default_safety_margin_coeff)
     , max_safety_margin_(default_safety_margin)
@@ -114,8 +118,6 @@ private:
   /// A map of link pair to contact distance setting [dist_pen, coeff]
   AlignedUnorderedMap<std::string, Eigen::Vector2d> pair_lookup_table_;
 };
-typedef std::shared_ptr<SafetyMarginData> SafetyMarginDataPtr;
-typedef std::shared_ptr<const SafetyMarginData> SafetyMarginDataConstPtr;
 
 /**
  * @brief This is a utility function for creating the Safety Margin data vector
@@ -124,15 +126,15 @@ typedef std::shared_ptr<const SafetyMarginData> SafetyMarginDataConstPtr;
  * @param default_safety_margin_coeff Default safety margin coeff
  * @return A vector of Safety Margin Data
  */
-inline std::vector<SafetyMarginDataPtr> createSafetyMarginDataVector(int num_elements,
+inline std::vector<SafetyMarginData::Ptr> createSafetyMarginDataVector(int num_elements,
                                                                      const double& default_safety_margin,
                                                                      const double& default_safety_margin_coeff)
 {
-  std::vector<SafetyMarginDataPtr> info;
+  std::vector<SafetyMarginData::Ptr> info;
   info.reserve(static_cast<size_t>(num_elements));
   for (auto i = 0; i < num_elements; ++i)
   {
-    info.push_back(SafetyMarginDataPtr(new SafetyMarginData(default_safety_margin, default_safety_margin_coeff)));
+    info.push_back(SafetyMarginData::Ptr(new SafetyMarginData(default_safety_margin, default_safety_margin_coeff)));
   }
   return info;
 }

@@ -39,7 +39,7 @@ AffExpr affFromValGrad(double y, const Eigen::VectorXd& x, const Eigen::VectorXd
   return aff;
 }
 
-CostFromFunc::CostFromFunc(ScalarOfVectorPtr f, const VarVector& vars, const std::string& name, bool full_hessian)
+CostFromFunc::CostFromFunc(ScalarOfVector::Ptr f, const VarVector& vars, const std::string& name, bool full_hessian)
   : Cost(name), f_(f), vars_(vars), full_hessian_(full_hessian), epsilon_(DEFAULT_EPSILON)
 {
 }
@@ -50,11 +50,11 @@ double CostFromFunc::value(const DblVec& xin)
   return f_->call(x);
 }
 
-ConvexObjectivePtr CostFromFunc::convex(const DblVec& xin, Model* model)
+ConvexObjective::Ptr CostFromFunc::convex(const DblVec& xin, Model* model)
 {
   Eigen::VectorXd x = getVec(xin, vars_);
 
-  ConvexObjectivePtr out(new ConvexObjective(model));
+  ConvexObjective::Ptr out(new ConvexObjective(model));
   if (!full_hessian_)
   {
     double val;
@@ -112,7 +112,7 @@ ConvexObjectivePtr CostFromFunc::convex(const DblVec& xin, Model* model)
   return out;
 }
 
-CostFromErrFunc::CostFromErrFunc(VectorOfVectorPtr f,
+CostFromErrFunc::CostFromErrFunc(VectorOfVector::Ptr f,
                                  const VarVector& vars,
                                  const Eigen::VectorXd& coeffs,
                                  PenaltyType pen_type,
@@ -120,8 +120,8 @@ CostFromErrFunc::CostFromErrFunc(VectorOfVectorPtr f,
   : Cost(name), f_(f), vars_(vars), coeffs_(coeffs), pen_type_(pen_type), epsilon_(DEFAULT_EPSILON)
 {
 }
-CostFromErrFunc::CostFromErrFunc(VectorOfVectorPtr f,
-                                 MatrixOfVectorPtr dfdx,
+CostFromErrFunc::CostFromErrFunc(VectorOfVector::Ptr f,
+                                 MatrixOfVector::Ptr dfdx,
                                  const VarVector& vars,
                                  const Eigen::VectorXd& coeffs,
                                  PenaltyType pen_type,
@@ -154,11 +154,11 @@ double CostFromErrFunc::value(const DblVec& xin)
 
   return err.array().sum();
 }
-ConvexObjectivePtr CostFromErrFunc::convex(const DblVec& xin, Model* model)
+ConvexObjective::Ptr CostFromErrFunc::convex(const DblVec& xin, Model* model)
 {
   Eigen::VectorXd x = getVec(xin, vars_);
   Eigen::MatrixXd jac = (dfdx_) ? dfdx_->call(x) : calcForwardNumJac(*f_, x, epsilon_);
-  ConvexObjectivePtr out(new ConvexObjective(model));
+  ConvexObjective::Ptr out(new ConvexObjective(model));
   Eigen::VectorXd y = f_->call(x);
   for (int i = 0; i < jac.rows(); ++i)
   {
@@ -199,7 +199,7 @@ ConvexObjectivePtr CostFromErrFunc::convex(const DblVec& xin, Model* model)
   return out;
 }
 
-ConstraintFromErrFunc::ConstraintFromErrFunc(VectorOfVectorPtr f,
+ConstraintFromErrFunc::ConstraintFromErrFunc(VectorOfVector::Ptr f,
                                              const VarVector& vars,
                                              const Eigen::VectorXd& coeffs,
                                              ConstraintType type,
@@ -208,8 +208,8 @@ ConstraintFromErrFunc::ConstraintFromErrFunc(VectorOfVectorPtr f,
 {
 }
 
-ConstraintFromErrFunc::ConstraintFromErrFunc(VectorOfVectorPtr f,
-                                             MatrixOfVectorPtr dfdx,
+ConstraintFromErrFunc::ConstraintFromErrFunc(VectorOfVector::Ptr f,
+                                             MatrixOfVector::Ptr dfdx,
                                              const VarVector& vars,
                                              const Eigen::VectorXd& coeffs,
                                              ConstraintType type,
@@ -227,11 +227,11 @@ DblVec ConstraintFromErrFunc::value(const DblVec& xin)
   return util::toDblVec(err);
 }
 
-ConvexConstraintsPtr ConstraintFromErrFunc::convex(const DblVec& xin, Model* model)
+ConvexConstraints::Ptr ConstraintFromErrFunc::convex(const DblVec& xin, Model* model)
 {
   Eigen::VectorXd x = getVec(xin, vars_);
   Eigen::MatrixXd jac = (dfdx_) ? dfdx_->call(x) : calcForwardNumJac(*f_, x, epsilon_);
-  ConvexConstraintsPtr out(new ConvexConstraints(model));
+  ConvexConstraints::Ptr out(new ConvexConstraints(model));
   Eigen::VectorXd y = f_->call(x);
   for (int i = 0; i < jac.rows(); ++i)
   {

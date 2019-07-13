@@ -37,7 +37,7 @@ class PlanningTest : public testing::TestWithParam<const char*>
 {
 public:
   Tesseract::Ptr tesseract_ = std::make_shared<Tesseract>(); /**< Tesseract */
-  VisualizationPtr plotter_; /**< Trajopt Plotter */
+  Visualization::Ptr plotter_; /**< Trajopt Plotter */
   void SetUp() override
   {
     boost::filesystem::path urdf_file(std::string(TRAJOPT_DIR) + "/test/data/arm_around_table.urdf");
@@ -65,7 +65,7 @@ TEST_F(PlanningTest, numerical_ik1)
 
 //  plotter_->plotScene();
 
-  TrajOptProbPtr prob = ConstructProblem(root, tesseract_);
+  TrajOptProb::Ptr prob = ConstructProblem(root, tesseract_);
   ASSERT_TRUE(!!prob);
 
   sco::BasicTrustRegionSQP opt(prob);
@@ -137,12 +137,12 @@ TEST_F(PlanningTest, arm_around_table)
 
 //  plotter_->plotScene();
 
-  TrajOptProbPtr prob = ConstructProblem(root, tesseract_);
+  TrajOptProb::Ptr prob = ConstructProblem(root, tesseract_);
   ASSERT_TRUE(!!prob);
 
   std::vector<ContactResultMap> collisions;
-  ContinuousContactManagerPtr manager = prob->GetEnv()->getContinuousContactManager();
-  AdjacencyMapPtr adjacency_map = std::make_shared<AdjacencyMap>(tesseract_->getEnvironment()->getSceneGraph(),
+  ContinuousContactManager::Ptr manager = prob->GetEnv()->getContinuousContactManager();
+  AdjacencyMap::Ptr adjacency_map = std::make_shared<AdjacencyMap>(tesseract_->getEnvironment()->getSceneGraph(),
                                                                  prob->GetKin()->getActiveLinkNames(),
                                                                  prob->GetEnv()->getCurrentState()->transforms);
 

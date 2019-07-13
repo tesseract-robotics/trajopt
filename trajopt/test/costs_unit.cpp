@@ -35,7 +35,7 @@ class CostsTest : public testing::TestWithParam<const char*>
 {
 public:
   Tesseract::Ptr tesseract_ = std::make_shared<Tesseract>(); /**< Trajopt Basic Environment */
-  VisualizationPtr plotter_; /**< Trajopt Plotter */
+  Visualization::Ptr plotter_; /**< Trajopt Plotter */
 
   void SetUp() override
   {
@@ -103,7 +103,7 @@ TEST_F(CostsTest, equality_jointPos)
   jv2->term_type = TT_COST;
   pci.cost_infos.push_back(jv2);
 
-  TrajOptProbPtr prob = ConstructProblem(pci);
+  TrajOptProb::Ptr prob = ConstructProblem(pci);
   ASSERT_TRUE(!!prob);
 
   sco::BasicTrustRegionSQP opt(prob);
@@ -211,7 +211,7 @@ TEST_F(CostsTest, inequality_jointPos)
   jv3->term_type = TT_COST;
   pci.cost_infos.push_back(jv3);
 
-  TrajOptProbPtr prob = ConstructProblem(pci);
+  TrajOptProb::Ptr prob = ConstructProblem(pci);
   ASSERT_TRUE(!!prob);
 
   sco::BasicTrustRegionSQP opt(prob);
@@ -307,7 +307,7 @@ TEST_F(CostsTest, equality_jointVel)
   jv2->term_type = TT_COST;
   pci.cost_infos.push_back(jv2);
 
-  TrajOptProbPtr prob = ConstructProblem(pci);
+  TrajOptProb::Ptr prob = ConstructProblem(pci);
   ASSERT_TRUE(!!prob);
 
   sco::BasicTrustRegionSQP opt(prob);
@@ -415,7 +415,7 @@ TEST_F(CostsTest, inequality_jointVel)
   jv3->term_type = TT_COST;
   pci.cost_infos.push_back(jv3);
 
-  TrajOptProbPtr prob = ConstructProblem(pci);
+  TrajOptProb::Ptr prob = ConstructProblem(pci);
   ASSERT_TRUE(!!prob);
 
   sco::BasicTrustRegionSQP opt(prob);
@@ -514,7 +514,7 @@ TEST_F(CostsTest, equality_jointVel_time)
   jv2->term_type = TT_COST | TT_USE_TIME;
   pci.cost_infos.push_back(jv2);
 
-  TrajOptProbPtr prob = ConstructProblem(pci);
+  TrajOptProb::Ptr prob = ConstructProblem(pci);
   ASSERT_TRUE(!!prob);
 
   sco::BasicTrustRegionSQP opt(prob);
@@ -628,7 +628,7 @@ TEST_F(CostsTest, inequality_jointVel_time)
   jv3->term_type = TT_COST | TT_USE_TIME;
   pci.cost_infos.push_back(jv3);
 
-  TrajOptProbPtr prob = ConstructProblem(pci);
+  TrajOptProb::Ptr prob = ConstructProblem(pci);
   ASSERT_TRUE(!!prob);
 
   sco::BasicTrustRegionSQP opt(prob);
@@ -724,7 +724,7 @@ TEST_F(CostsTest, equality_jointAcc)
   jv2->term_type = TT_COST;
   pci.cost_infos.push_back(jv2);
 
-  TrajOptProbPtr prob = ConstructProblem(pci);
+  TrajOptProb::Ptr prob = ConstructProblem(pci);
   ASSERT_TRUE(!!prob);
 
   sco::BasicTrustRegionSQP opt(prob);
@@ -833,7 +833,7 @@ TEST_F(CostsTest, inequality_jointAcc)
   jv3->term_type = TT_COST;
   pci.cost_infos.push_back(jv3);
 
-  TrajOptProbPtr prob = ConstructProblem(pci);
+  TrajOptProb::Ptr prob = ConstructProblem(pci);
   ASSERT_TRUE(!!prob);
 
   sco::BasicTrustRegionSQP opt(prob);

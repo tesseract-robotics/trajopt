@@ -38,7 +38,7 @@ class CastTest : public testing::TestWithParam<const char*>
 {
 public:
   Tesseract::Ptr tesseract_ = std::make_shared<Tesseract>(); /**< Tesseract */
-  VisualizationPtr plotter_; /**< Trajopt Plotter */
+  Visualization::Ptr plotter_; /**< Trajopt Plotter */
 
   void SetUp() override
   {
@@ -68,12 +68,12 @@ TEST_F(CastTest, boxes)
 
 //  plotter_->plotScene();
 
-  TrajOptProbPtr prob = ConstructProblem(root, tesseract_);
+  TrajOptProb::Ptr prob = ConstructProblem(root, tesseract_);
   ASSERT_TRUE(!!prob);
 
   std::vector<ContactResultMap> collisions;
-  ContinuousContactManagerPtr manager = prob->GetEnv()->getContinuousContactManager();
-  AdjacencyMapPtr adjacency_map = std::make_shared<AdjacencyMap>(tesseract_->getEnvironment()->getSceneGraph(),
+  ContinuousContactManager::Ptr manager = prob->GetEnv()->getContinuousContactManager();
+  AdjacencyMap::Ptr adjacency_map = std::make_shared<AdjacencyMap>(tesseract_->getEnvironment()->getSceneGraph(),
                                                                  prob->GetKin()->getActiveLinkNames(),
                                                                  prob->GetEnv()->getCurrentState()->transforms);
 

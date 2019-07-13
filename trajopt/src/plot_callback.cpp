@@ -13,16 +13,16 @@ TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace trajopt
 {
-void PlotCosts(const tesseract_visualization::VisualizationPtr& plotter,
+void PlotCosts(const tesseract_visualization::Visualization::Ptr& plotter,
                const std::vector<std::string>& joint_names,
-               const std::vector<sco::CostPtr>& costs,
-               const std::vector<sco::ConstraintPtr>& cnts,
+               const std::vector<sco::Cost::Ptr>& costs,
+               const std::vector<sco::Constraint::Ptr>& cnts,
                const VarArray& vars,
                const sco::OptResults& results)
 {
   plotter->clear();
 
-  for (const sco::CostPtr& cost : costs)
+  for (const sco::Cost::Ptr& cost : costs)
   {
     if (Plotter* plt = dynamic_cast<Plotter*>(cost.get()))
     {
@@ -30,7 +30,7 @@ void PlotCosts(const tesseract_visualization::VisualizationPtr& plotter,
     }
   }
 
-  for (const sco::ConstraintPtr& cnt : cnts)
+  for (const sco::Constraint::Ptr& cnt : cnts)
   {
     if (Plotter* plt = dynamic_cast<Plotter*>(cnt.get()))
     {
@@ -42,9 +42,9 @@ void PlotCosts(const tesseract_visualization::VisualizationPtr& plotter,
   plotter->waitForInput();
 }
 
-sco::Optimizer::Callback PlotCallback(TrajOptProb& prob, const tesseract_visualization::VisualizationPtr& plotter)
+sco::Optimizer::Callback PlotCallback(TrajOptProb& prob, const tesseract_visualization::Visualization::Ptr& plotter)
 {
-  std::vector<sco::ConstraintPtr> cnts = prob.getConstraints();
+  std::vector<sco::Constraint::Ptr> cnts = prob.getConstraints();
   return std::bind(&PlotCosts,
                    plotter,
                    prob.GetKin()->getJointNames(),

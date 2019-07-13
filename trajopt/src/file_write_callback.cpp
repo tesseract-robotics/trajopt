@@ -26,7 +26,7 @@ namespace trajopt
 {
 void WriteFile(std::shared_ptr<std::ofstream> file,
                const Eigen::Isometry3d& change_base,
-               const tesseract_kinematics::ForwardKinematicsConstPtr manip,
+               const tesseract_kinematics::ForwardKinematics::ConstPtr manip,
                const trajopt::VarArray& vars,
                const sco::OptResults& results)
 {
@@ -85,7 +85,7 @@ void WriteFile(std::shared_ptr<std::ofstream> file,
   *file << std::endl;
 }  // namespace trajopt
 
-sco::Optimizer::Callback WriteCallback(std::shared_ptr<std::ofstream> file, const TrajOptProbPtr& prob)
+sco::Optimizer::Callback WriteCallback(std::shared_ptr<std::ofstream> file, const TrajOptProb::Ptr& prob)
 {
   if (!file->good())
   {
@@ -111,14 +111,14 @@ sco::Optimizer::Callback WriteCallback(std::shared_ptr<std::ofstream> file, cons
   }
 
   // Write cost names
-  const std::vector<sco::CostPtr>& costs = prob->getCosts();
+  const std::vector<sco::Cost::Ptr>& costs = prob->getCosts();
   for (const auto& cost : costs)
   {
     *file << ',' << cost->name();
   }
 
   // Write constraint names
-  const std::vector<sco::ConstraintPtr>& cnts = prob->getConstraints();
+  const std::vector<sco::Constraint::Ptr>& cnts = prob->getConstraints();
   for (const auto& cnt : cnts)
   {
     *file << ',' << cnt->name();
@@ -127,7 +127,7 @@ sco::Optimizer::Callback WriteCallback(std::shared_ptr<std::ofstream> file, cons
   *file << std::endl;
 
   // return callback function
-  const tesseract_kinematics::ForwardKinematicsConstPtr manip = prob->GetKin();
+  const tesseract_kinematics::ForwardKinematics::ConstPtr manip = prob->GetKin();
   const Eigen::Isometry3d change_base = prob->GetEnv()->getLinkTransform(manip->getBaseLinkName());
   return bind(&WriteFile, file, change_base, manip, std::ref(prob->GetVars()), std::placeholders::_2);
 }

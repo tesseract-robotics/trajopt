@@ -16,13 +16,14 @@ namespace po = boost::program_options;
 
 struct ParameterBase
 {
+  using Ptr = std::shared_ptr<ParameterBase>;
+
   std::string m_name;
   std::string m_desc;
   ParameterBase(const std::string& name, const std::string& desc) : m_name(name), m_desc(desc) {}
   virtual void addToBoost(po::options_description&) = 0;
   virtual ~ParameterBase() {}
 };
-typedef std::shared_ptr<ParameterBase> ParameterBasePtr;
 
 template <typename T>
 struct ParameterVec : ParameterBase
@@ -49,8 +50,8 @@ struct Parameter : ParameterBase
 
 struct Config
 {
-  std::vector<ParameterBasePtr> params;
-  void add(ParameterBase* param) { params.push_back(ParameterBasePtr(param)); }
+  std::vector<ParameterBase::Ptr> params;
+  void add(ParameterBase* param) { params.push_back(ParameterBase::Ptr(param)); }
 };
 
 struct CommandParser
