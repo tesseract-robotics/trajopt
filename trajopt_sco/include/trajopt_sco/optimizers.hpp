@@ -53,18 +53,21 @@ class Optimizer
    * Solves an optimization problem
    */
 public:
+
+  using Ptr = std::shared_ptr<Optimizer>;
+
   virtual ~Optimizer() = default;
   virtual OptStatus optimize() = 0;
-  virtual void setProblem(OptProbPtr prob) { prob_ = prob; }
+  virtual void setProblem(OptProb::Ptr prob) { prob_ = prob; }
   void initialize(const DblVec& x);
   DblVec& x() { return results_.x; }
   OptResults& results() { return results_; }
-  typedef std::function<void(OptProb*, OptResults&)> Callback;
+  using Callback = std::function<void(OptProb*, OptResults&)>;
   void addCallback(const Callback& f);  // called before each iteration
 protected:
   std::vector<Callback> callbacks_;
   void callCallbacks();
-  OptProbPtr prob_;
+  OptProb::Ptr prob_;
   OptResults results_;
 };
 
@@ -111,9 +114,12 @@ class BasicTrustRegionSQP : public Optimizer
    * constraints)
    */
 public:
+
+  using Ptr = std::shared_ptr<BasicTrustRegionSQP>;
+
   BasicTrustRegionSQP();
-  BasicTrustRegionSQP(OptProbPtr prob);
-  void setProblem(OptProbPtr prob) override;
+  BasicTrustRegionSQP(OptProb::Ptr prob);
+  void setProblem(OptProb::Ptr prob) override;
   void setParameters(const BasicTrustRegionSQPParameters& param) { param_ = param; }
   const BasicTrustRegionSQPParameters& getParameters() const { return param_; }
   BasicTrustRegionSQPParameters& getParameters() { return param_; }
@@ -122,7 +128,7 @@ public:
 protected:
   void adjustTrustRegion(double ratio);
   void setTrustBoxConstraints(const DblVec& x);
-  ModelPtr model_;
+  Model::Ptr model_;
   BasicTrustRegionSQPParameters param_;
 };
 }

@@ -34,13 +34,16 @@ AffExpr affFromValGrad(double y, const Eigen::VectorXd& x, const Eigen::VectorXd
 class CostFromFunc : public Cost
 {
 public:
+
+  using Ptr = std::shared_ptr<CostFromFunc>;
+
   /// supply function, obtain derivative and hessian numerically
-  CostFromFunc(ScalarOfVectorPtr f, const VarVector& vars, const std::string& name, bool full_hessian = false);
+  CostFromFunc(ScalarOfVector::Ptr f, const VarVector& vars, const std::string& name, bool full_hessian = false);
   double value(const DblVec& x) override;
-  ConvexObjectivePtr convex(const DblVec& x, Model* model) override;
+  ConvexObjective::Ptr convex(const DblVec& x, Model* model) override;
   VarVector getVars() override { return vars_; }
 protected:
-  ScalarOfVectorPtr f_;
+  ScalarOfVector::Ptr f_;
   VarVector vars_;
   bool full_hessian_;
   double epsilon_;
@@ -50,24 +53,24 @@ class CostFromErrFunc : public Cost
 {
 public:
   /// supply error function, obtain derivative numerically
-  CostFromErrFunc(VectorOfVectorPtr f,
+  CostFromErrFunc(VectorOfVector::Ptr f,
                   const VarVector& vars,
                   const Eigen::VectorXd& coeffs,
                   PenaltyType pen_type,
                   const std::string& name);
   /// supply error function and gradient
-  CostFromErrFunc(VectorOfVectorPtr f,
-                  MatrixOfVectorPtr dfdx,
+  CostFromErrFunc(VectorOfVector::Ptr f,
+                  MatrixOfVector::Ptr dfdx,
                   const VarVector& vars,
                   const Eigen::VectorXd& coeffs,
                   PenaltyType pen_type,
                   const std::string& name);
   double value(const DblVec& x) override;
-  ConvexObjectivePtr convex(const DblVec& x, Model* model) override;
+  ConvexObjective::Ptr convex(const DblVec& x, Model* model) override;
   VarVector getVars() override { return vars_; }
 protected:
-  VectorOfVectorPtr f_;
-  MatrixOfVectorPtr dfdx_;
+  VectorOfVector::Ptr f_;
+  MatrixOfVector::Ptr dfdx_;
   VarVector vars_;
   Eigen::VectorXd coeffs_;
   PenaltyType pen_type_;
@@ -77,26 +80,29 @@ protected:
 class ConstraintFromErrFunc : public Constraint
 {
 public:
+
+  using Ptr = std::shared_ptr<ConstraintFromErrFunc>;
+
   /// supply error function, obtain derivative numerically
-  ConstraintFromErrFunc(VectorOfVectorPtr f,
+  ConstraintFromErrFunc(VectorOfVector::Ptr f,
                         const VarVector& vars,
                         const Eigen::VectorXd& coeffs,
                         ConstraintType type,
                         const std::string& name);
   /// supply error function and gradient
-  ConstraintFromErrFunc(VectorOfVectorPtr f,
-                        MatrixOfVectorPtr dfdx,
+  ConstraintFromErrFunc(VectorOfVector::Ptr f,
+                        MatrixOfVector::Ptr dfdx,
                         const VarVector& vars,
                         const Eigen::VectorXd& coeffs,
                         ConstraintType type,
                         const std::string& name);
   DblVec value(const DblVec& x) override;
-  ConvexConstraintsPtr convex(const DblVec& x, Model* model) override;
+  ConvexConstraints::Ptr convex(const DblVec& x, Model* model) override;
   ConstraintType type() override { return type_; }
   VarVector getVars() override { return vars_; }
 protected:
-  VectorOfVectorPtr f_;
-  MatrixOfVectorPtr dfdx_;
+  VectorOfVector::Ptr f_;
+  MatrixOfVector::Ptr dfdx_;
   VarVector vars_;
   Eigen::VectorXd coeffs_;
   ConstraintType type_;

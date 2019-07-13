@@ -27,7 +27,7 @@ protected:
   SQP() {}
 };
 
-void setupProblem(OptProbPtr& probptr, size_t nvars, ModelType convex_solver)
+void setupProblem(OptProb::Ptr& probptr, size_t nvars, ModelType convex_solver)
 {
   probptr.reset(new OptProb(convex_solver));
   vector<string> var_names;
@@ -51,9 +51,9 @@ double f_QuadraticSeparable(const VectorXd& x) { return x(0) * x(0) + sq(x(1) - 
 TEST_P(SQP, QuadraticSeparable)
 {
   // if the problem is exactly a QP, it should be solved in one iteration
-  OptProbPtr prob;
+  OptProb::Ptr prob;
   setupProblem(prob, 3, GetParam());
-  prob->addCost(CostPtr(new CostFromFunc(ScalarOfVector::construct(&f_QuadraticSeparable), prob->getVars(), "f")));
+  prob->addCost(Cost::Ptr(new CostFromFunc(ScalarOfVector::construct(&f_QuadraticSeparable), prob->getVars(), "f")));
   BasicTrustRegionSQP solver(prob);
   BasicTrustRegionSQPParameters& params = solver.getParameters();
   params.trust_box_size = 100;
@@ -67,10 +67,10 @@ TEST_P(SQP, QuadraticSeparable)
 double f_QuadraticNonseparable(const VectorXd& x) { return sq(x(0) - x(1) + 3 * x(2)) + sq(x(0) - 1) + sq(x(2) - 2); }
 TEST_P(SQP, QuadraticNonseparable)
 {
-  OptProbPtr prob;
+  OptProb::Ptr prob;
   setupProblem(prob, 3, GetParam());
   prob->addCost(
-      CostPtr(new CostFromFunc(ScalarOfVector::construct(&f_QuadraticNonseparable), prob->getVars(), "f", true)));
+      Cost::Ptr(new CostFromFunc(ScalarOfVector::construct(&f_QuadraticNonseparable), prob->getVars(), "f", true)));
   BasicTrustRegionSQP solver(prob);
   BasicTrustRegionSQPParameters& params = solver.getParameters();
   params.trust_box_size = 100;
@@ -84,19 +84,19 @@ TEST_P(SQP, QuadraticNonseparable)
   // todo: checks on number of iterations and function evaluates
 }
 
-void testProblem(ScalarOfVectorPtr f,
-                 VectorOfVectorPtr g,
+void testProblem(ScalarOfVector::Ptr f,
+                 VectorOfVector::Ptr g,
                  ConstraintType cnt_type,
                  const DblVec& init,
                  const DblVec& sol,
                  ModelType convex_solver)
 {
-  OptProbPtr prob;
+  OptProb::Ptr prob;
   size_t n = init.size();
   assert(sol.size() == n);
   setupProblem(prob, n, convex_solver);
-  prob->addCost(CostPtr(new CostFromFunc(f, prob->getVars(), "f", true)));
-  prob->addConstraint(ConstraintPtr(new ConstraintFromErrFunc(g, prob->getVars(), VectorXd(), cnt_type, "g")));
+  prob->addCost(Cost::Ptr(new CostFromFunc(f, prob->getVars(), "f", true)));
+  prob->addConstraint(Constraint::Ptr(new ConstraintFromErrFunc(g, prob->getVars(), VectorXd(), cnt_type, "g")));
   BasicTrustRegionSQP solver(prob);
   BasicTrustRegionSQPParameters& params = solver.getParameters();
   params.max_iter = 1000;

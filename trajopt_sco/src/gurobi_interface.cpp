@@ -62,9 +62,9 @@ void simplify(IntVec& inds, DblVec& vals) {
     }                                                                                                                  \
   } while (0)
 
-ModelPtr createGurobiModel()
+Model::Ptr createGurobiModel()
 {
-  ModelPtr out(new GurobiModel());
+  Model::Ptr out(new GurobiModel());
   return out;
 }
 

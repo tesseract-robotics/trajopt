@@ -15,13 +15,13 @@ TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace trajopt
 {
-typedef util::BasicArray<sco::Var> VarArray;
-typedef util::BasicArray<sco::AffExpr> AffArray;
-typedef util::BasicArray<sco::Cnt> CntArray;
-typedef Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> DblMatrix;
-typedef Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> TrajArray;
-typedef sco::DblVec DblVec;
-typedef sco::IntVec IntVec;
+using VarArray = util::BasicArray<sco::Var>;
+using AffArray = util::BasicArray<sco::AffExpr>;
+using CntArray = util::BasicArray<sco::Cnt>;
+using DblMatrix = Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
+using TrajArray = Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
+using DblVec = sco::DblVec;
+using IntVec = sco::IntVec;
 
 template <typename Key, typename Value>
 using AlignedUnorderedMap = std::unordered_map<Key,
@@ -35,16 +35,18 @@ using AlignedUnorderedMap = std::unordered_map<Key,
 class Plotter
 {
 public:
-  virtual void Plot(const tesseract_visualization::VisualizationPtr& plotter, const DblVec& x) = 0;
+
+  using Ptr = std::shared_ptr<Plotter>;
+
+  virtual void Plot(const tesseract_visualization::Visualization::Ptr& plotter, const DblVec& x) = 0;
   virtual ~Plotter() = default;
 };
-typedef std::shared_ptr<Plotter> PlotterPtr;
 
 /**  @brief Adds plotting to the VectorOfVector class in trajopt_sco */
 class TrajOptVectorOfVector : public sco::VectorOfVector
 {
 public:
-  virtual void Plot(const tesseract_visualization::VisualizationPtr& plotter, const Eigen::VectorXd& dof_vals) = 0;
+  virtual void Plot(const tesseract_visualization::Visualization::Ptr& plotter, const Eigen::VectorXd& dof_vals) = 0;
 };
 
 /**  @brief Adds plotting to the CostFromErrFunc class in trajopt_sco */
@@ -52,7 +54,7 @@ class TrajOptCostFromErrFunc : public sco::CostFromErrFunc, public Plotter
 {
 public:
   /// supply error function, obtain derivative numerically
-  TrajOptCostFromErrFunc(sco::VectorOfVectorPtr f,
+  TrajOptCostFromErrFunc(sco::VectorOfVector::Ptr f,
                          const sco::VarVector& vars,
                          const Eigen::VectorXd& coeffs,
                          sco::PenaltyType pen_type,
@@ -62,8 +64,8 @@ public:
   }
 
   /// supply error function and gradient
-  TrajOptCostFromErrFunc(sco::VectorOfVectorPtr f,
-                         sco::MatrixOfVectorPtr dfdx,
+  TrajOptCostFromErrFunc(sco::VectorOfVector::Ptr f,
+                         sco::MatrixOfVector::Ptr dfdx,
                          const sco::VarVector& vars,
                          const Eigen::VectorXd& coeffs,
                          sco::PenaltyType pen_type,
@@ -72,7 +74,7 @@ public:
   {
   }
 
-  void Plot(const tesseract_visualization::VisualizationPtr& plotter, const DblVec& x) override
+  void Plot(const tesseract_visualization::Visualization::Ptr& plotter, const DblVec& x) override
   {
     // If error function has a inherited from TrajOptVectorOfVector, call its Plot function
     if (TrajOptVectorOfVector* plt = dynamic_cast<TrajOptVectorOfVector*>(f_.get()))
@@ -88,7 +90,7 @@ class TrajOptConstraintFromErrFunc : public sco::ConstraintFromErrFunc, public P
 {
 public:
   /// supply error function, obtain derivative numerically
-  TrajOptConstraintFromErrFunc(sco::VectorOfVectorPtr f,
+  TrajOptConstraintFromErrFunc(sco::VectorOfVector::Ptr f,
                                const sco::VarVector& vars,
                                const Eigen::VectorXd& coeffs,
                                sco::ConstraintType type,
@@ -98,8 +100,8 @@ public:
   }
 
   /// supply error function and gradient
-  TrajOptConstraintFromErrFunc(sco::VectorOfVectorPtr f,
-                               sco::MatrixOfVectorPtr dfdx,
+  TrajOptConstraintFromErrFunc(sco::VectorOfVector::Ptr f,
+                               sco::MatrixOfVector::Ptr dfdx,
                                const sco::VarVector& vars,
                                const Eigen::VectorXd& coeffs,
                                sco::ConstraintType type,
@@ -108,7 +110,7 @@ public:
   {
   }
 
-  void Plot(const tesseract_visualization::VisualizationPtr& plotter, const DblVec& x) override
+  void Plot(const tesseract_visualization::Visualization::Ptr& plotter, const DblVec& x) override
   {
     // If error function has a inherited from TrajOptVectorOfVector, call its Plot function
     if (TrajOptVectorOfVector* plt = dynamic_cast<TrajOptVectorOfVector*>(f_.get()))

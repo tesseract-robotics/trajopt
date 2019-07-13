@@ -65,7 +65,7 @@ VectorXd DynamicCartPoseErrCalculator::operator()(const VectorXd& dof_vals) cons
   return err;
 }
 
-void DynamicCartPoseErrCalculator::Plot(const tesseract_visualization::VisualizationPtr& plotter, const VectorXd& dof_vals)
+void DynamicCartPoseErrCalculator::Plot(const tesseract_visualization::Visualization::Ptr& plotter, const VectorXd& dof_vals)
 {
   Isometry3d cur_pose, target_pose;
 
@@ -93,7 +93,7 @@ VectorXd CartPoseErrCalculator::operator()(const VectorXd& dof_vals) const
   return err;
 }
 
-void CartPoseErrCalculator::Plot(const tesseract_visualization::VisualizationPtr& plotter, const VectorXd& dof_vals)
+void CartPoseErrCalculator::Plot(const tesseract_visualization::Visualization::Ptr& plotter, const VectorXd& dof_vals)
 {
   Isometry3d cur_pose;
   manip_->calcFwdKin(cur_pose, dof_vals, kin_link_->link_name);

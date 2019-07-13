@@ -152,9 +152,9 @@ namespace sco
 {
 static double BPMPD_BIG = 1e+30;
 
-ModelPtr createBPMPDModel()
+Model::Ptr createBPMPDModel()
 {
-  ModelPtr out(new BPMPDModel());
+  Model::Ptr out(new BPMPDModel());
   return out;
 }
 

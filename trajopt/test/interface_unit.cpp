@@ -32,7 +32,7 @@ class InterfaceTest : public testing::TestWithParam<const char*>
 {
 public:
   Tesseract::Ptr tesseract_ = std::make_shared<Tesseract>(); /**< Tesseract */
-  VisualizationPtr plotter_; /**< Trajopt Plotter */
+  Visualization::Ptr plotter_; /**< Trajopt Plotter */
   void SetUp() override
   {
     boost::filesystem::path urdf_file(std::string(TRAJOPT_DIR) + "/test/data/arm_around_table.urdf");
@@ -80,7 +80,7 @@ TEST_F(InterfaceTest, initial_trajectory_cpp_interface)
   jv->term_type = TT_COST;
   pci.cost_infos.push_back(jv);
 
-  TrajOptProbPtr prob = ConstructProblem(pci);
+  TrajOptProb::Ptr prob = ConstructProblem(pci);
   ASSERT_TRUE(!!prob);
 
   trajopt::TrajArray initial_trajectory = prob->GetInitTraj();
@@ -130,7 +130,7 @@ TEST_F(InterfaceTest, initial_trajectory_time_cpp_interface)
   jv->term_type = TT_COST | TT_USE_TIME;
   pci.cost_infos.push_back(jv);
 
-  TrajOptProbPtr prob = ConstructProblem(pci);
+  TrajOptProb::Ptr prob = ConstructProblem(pci);
   ASSERT_TRUE(!!prob);
 
   trajopt::TrajArray initial_trajectory = prob->GetInitTraj();
@@ -176,7 +176,7 @@ TEST_F(InterfaceTest, initial_trajectory_json_interface)
   ipos["r_wrist_roll_joint"] = 0;
   tesseract_->getEnvironment()->setState(ipos);
 
-  TrajOptProbPtr prob = ConstructProblem(root, tesseract_->getEnvironment(), tesseract_->getFwdKinematics());
+  TrajOptProb::Ptr prob = ConstructProblem(root, tesseract_->getEnvironment(), tesseract_->getFwdKinematics());
   ASSERT_TRUE(!!prob);
 
   trajopt::TrajArray initial_trajectory = prob->GetInitTraj();
@@ -211,7 +211,7 @@ TEST_F(InterfaceTest, initial_trajectory_time_json_interface)
   ipos["r_wrist_roll_joint"] = 0;
   tesseract_->getEnvironment()->setState(ipos);
 
-  TrajOptProbPtr prob = ConstructProblem(root, tesseract_->getEnvironment(), tesseract_->getFwdKinematics());
+  TrajOptProb::Ptr prob = ConstructProblem(root, tesseract_->getEnvironment(), tesseract_->getFwdKinematics());
   ASSERT_TRUE(!!prob);
 
   trajopt::TrajArray initial_trajectory = prob->GetInitTraj();

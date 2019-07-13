@@ -31,7 +31,7 @@ std::ostream& operator<<(std::ostream& o, const OptResults& r)
 ////////// private utility functions for  sqp /////////
 //////////////////////////////////////////////////
 
-static DblVec evaluateCosts(const std::vector<CostPtr>& costs, const DblVec& x)
+static DblVec evaluateCosts(const std::vector<Cost::Ptr>& costs, const DblVec& x)
 {
   DblVec out(costs.size());
   for (size_t i = 0; i < costs.size(); ++i)
@@ -40,7 +40,7 @@ static DblVec evaluateCosts(const std::vector<CostPtr>& costs, const DblVec& x)
   }
   return out;
 }
-static DblVec evaluateConstraintViols(const std::vector<ConstraintPtr>& constraints, const DblVec& x)
+static DblVec evaluateConstraintViols(const std::vector<Constraint::Ptr>& constraints, const DblVec& x)
 {
   DblVec out(constraints.size());
   for (size_t i = 0; i < constraints.size(); ++i)
@@ -49,20 +49,20 @@ static DblVec evaluateConstraintViols(const std::vector<ConstraintPtr>& constrai
   }
   return out;
 }
-static std::vector<ConvexObjectivePtr> convexifyCosts(const std::vector<CostPtr>& costs, const DblVec& x, Model* model)
+static std::vector<ConvexObjective::Ptr> convexifyCosts(const std::vector<Cost::Ptr>& costs, const DblVec& x, Model* model)
 {
-  std::vector<ConvexObjectivePtr> out(costs.size());
+  std::vector<ConvexObjective::Ptr> out(costs.size());
   for (size_t i = 0; i < costs.size(); ++i)
   {
     out[i] = costs[i]->convex(x, model);
   }
   return out;
 }
-static std::vector<ConvexConstraintsPtr> convexifyConstraints(const std::vector<ConstraintPtr>& cnts,
+static std::vector<ConvexConstraints::Ptr> convexifyConstraints(const std::vector<Constraint::Ptr>& cnts,
                                                               const DblVec& x,
                                                               Model* model)
 {
-  std::vector<ConvexConstraintsPtr> out(cnts.size());
+  std::vector<ConvexConstraints::Ptr> out(cnts.size());
   for (size_t i = 0; i < cnts.size(); ++i)
   {
     out[i] = cnts[i]->convex(x, model);
@@ -70,7 +70,7 @@ static std::vector<ConvexConstraintsPtr> convexifyConstraints(const std::vector<
   return out;
 }
 
-DblVec evaluateModelCosts(const std::vector<ConvexObjectivePtr>& costs, const DblVec& x)
+DblVec evaluateModelCosts(const std::vector<ConvexObjective::Ptr>& costs, const DblVec& x)
 {
   DblVec out(costs.size());
   for (size_t i = 0; i < costs.size(); ++i)
@@ -79,7 +79,7 @@ DblVec evaluateModelCosts(const std::vector<ConvexObjectivePtr>& costs, const Db
   }
   return out;
 }
-DblVec evaluateModelCntViols(const std::vector<ConvexConstraintsPtr>& cnts, const DblVec& x)
+DblVec evaluateModelCntViols(const std::vector<ConvexConstraints::Ptr>& cnts, const DblVec& x)
 {
   DblVec out(cnts.size());
   for (size_t i = 0; i < cnts.size(); ++i)
@@ -89,14 +89,14 @@ DblVec evaluateModelCntViols(const std::vector<ConvexConstraintsPtr>& cnts, cons
   return out;
 }
 
-static std::vector<std::string> getCostNames(const std::vector<CostPtr>& costs)
+static std::vector<std::string> getCostNames(const std::vector<Cost::Ptr>& costs)
 {
   std::vector<std::string> out(costs.size());
   for (size_t i = 0; i < costs.size(); ++i)
     out[i] = costs[i]->name();
   return out;
 }
-static std::vector<std::string> getCntNames(const std::vector<ConstraintPtr>& cnts)
+static std::vector<std::string> getCntNames(const std::vector<Constraint::Ptr>& cnts)
 {
   std::vector<std::string> out(cnts.size());
   for (size_t i = 0; i < cnts.size(); ++i)
@@ -166,14 +166,14 @@ void printCostInfo(const DblVec& old_cost_vals,
 }
 
 // todo: use different coeffs for each constraint
-std::vector<ConvexObjectivePtr> cntsToCosts(const std::vector<ConvexConstraintsPtr>& cnts,
+std::vector<ConvexObjective::Ptr> cntsToCosts(const std::vector<ConvexConstraints::Ptr>& cnts,
                                             double err_coeff,
                                             Model* model)
 {
-  std::vector<ConvexObjectivePtr> out;
-  for (const ConvexConstraintsPtr& cnt : cnts)
+  std::vector<ConvexObjective::Ptr> out;
+  for (const ConvexConstraints::Ptr& cnt : cnts)
   {
-    ConvexObjectivePtr obj(new ConvexObjective(model));
+    ConvexObjective::Ptr obj(new ConvexObjective(model));
     for (const AffExpr& aff : cnt->eqs_)
     {
       obj->addAbs(aff, err_coeff);
@@ -225,8 +225,8 @@ BasicTrustRegionSQPParameters::BasicTrustRegionSQPParameters()
 }
 
 BasicTrustRegionSQP::BasicTrustRegionSQP() {}
-BasicTrustRegionSQP::BasicTrustRegionSQP(OptProbPtr prob) { setProblem(prob); }
-void BasicTrustRegionSQP::setProblem(OptProbPtr prob)
+BasicTrustRegionSQP::BasicTrustRegionSQP(OptProb::Ptr prob) { setProblem(prob); }
+void BasicTrustRegionSQP::setProblem(OptProb::Ptr prob)
 {
   Optimizer::setProblem(prob);
   model_ = prob->getModel();
@@ -272,7 +272,7 @@ struct MultiCritFilter {
 OptStatus BasicTrustRegionSQP::optimize()
 {
   std::vector<std::string> cost_names = getCostNames(prob_->getCosts());
-  std::vector<ConstraintPtr> constraints = prob_->getConstraints();
+  std::vector<Constraint::Ptr> constraints = prob_->getConstraints();
   std::vector<std::string> cnt_names = getCntNames(constraints);
 
   if (results_.x.size() == 0)
@@ -318,19 +318,19 @@ OptStatus BasicTrustRegionSQP::optimize()
       //   results_.cost_vals[i] << endl;
       // }
 
-      std::vector<ConvexObjectivePtr> cost_models = convexifyCosts(prob_->getCosts(), results_.x, model_.get());
-      std::vector<ConvexConstraintsPtr> cnt_models = convexifyConstraints(constraints, results_.x, model_.get());
-      std::vector<ConvexObjectivePtr> cnt_cost_models = cntsToCosts(cnt_models, param_.merit_error_coeff, model_.get());
+      std::vector<ConvexObjective::Ptr> cost_models = convexifyCosts(prob_->getCosts(), results_.x, model_.get());
+      std::vector<ConvexConstraints::Ptr> cnt_models = convexifyConstraints(constraints, results_.x, model_.get());
+      std::vector<ConvexObjective::Ptr> cnt_cost_models = cntsToCosts(cnt_models, param_.merit_error_coeff, model_.get());
       model_->update();
-      for (ConvexObjectivePtr& cost : cost_models)
+      for (ConvexObjective::Ptr& cost : cost_models)
         cost->addConstraintsToModel();
-      for (ConvexObjectivePtr& cost : cnt_cost_models)
+      for (ConvexObjective::Ptr& cost : cnt_cost_models)
         cost->addConstraintsToModel();
       model_->update();
       QuadExpr objective;
-      for (ConvexObjectivePtr& co : cost_models)
+      for (ConvexObjective::Ptr& co : cost_models)
         exprInc(objective, co->quad_);
-      for (ConvexObjectivePtr& co : cnt_cost_models)
+      for (ConvexObjective::Ptr& co : cnt_cost_models)
         exprInc(objective, co->quad_);
 
       //    objective = cleanupExpr(objective);

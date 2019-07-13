@@ -7,6 +7,7 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <limits>
 #include <string>
 #include <vector>
+#include <memory>
 TRAJOPT_IGNORE_WARNINGS_POP
 #include <trajopt_sco/sco_common.hpp>
 
@@ -28,7 +29,7 @@ enum ConstraintType
   INEQ
 };
 
-typedef std::vector<ConstraintType> ConstraintTypeVector;
+using ConstraintTypeVector = std::vector<ConstraintType>;
 
 enum CvxOptStatus
 {
@@ -47,6 +48,9 @@ that variable
 class Model
 {
 public:
+
+  using Ptr = std::shared_ptr<Model>;
+
   virtual Var addVar(const std::string& name) = 0;
   virtual Var addVar(const std::string& name, double lb, double ub);
 
@@ -77,6 +81,9 @@ public:
 
 struct VarRep
 {
+
+  using Ptr = std::shared_ptr<VarRep>;
+
   VarRep(int _index, const std::string& _name, void* _creator)
     : index(_index), name(_name), removed(false), creator(_creator)
   {
@@ -89,6 +96,9 @@ struct VarRep
 
 struct Var
 {
+
+  using Ptr = std::shared_ptr<Var>;
+
   VarRep* var_rep;
   Var() : var_rep(nullptr) {}
   Var(VarRep* var_rep) : var_rep(var_rep) {}
@@ -103,6 +113,9 @@ struct Var
 
 struct CntRep
 {
+
+  using Ptr = std::shared_ptr<CntRep>;
+
   CntRep(int _index, void* _creator) : index(_index), removed(false), creator(_creator) {}
   int index;
   bool removed;
@@ -113,6 +126,9 @@ struct CntRep
 
 struct Cnt
 {
+
+  using Ptr = std::shared_ptr<Cnt>;
+
   CntRep* cnt_rep;
   Cnt() : cnt_rep(nullptr) {}
   Cnt(CntRep* cnt_rep) : cnt_rep(cnt_rep) {}
@@ -121,6 +137,9 @@ struct Cnt
 
 struct AffExpr
 {  // affine expression
+
+  using Ptr = std::shared_ptr<AffExpr>;
+
   double constant;
   DblVec coeffs;
   VarVector vars;
@@ -135,6 +154,9 @@ struct AffExpr
 
 struct QuadExpr
 {
+
+  using Ptr = std::shared_ptr<QuadExpr>;
+
   AffExpr affexpr;
   DblVec coeffs;
   VarVector vars1;
@@ -186,7 +208,7 @@ std::vector<ModelType> availableSolvers();
 
 std::ostream& operator<<(std::ostream& os, const ModelType& cs);
 
-ModelPtr createModel(ModelType model_type = ModelType::AUTO_SOLVER);
+Model::Ptr createModel(ModelType model_type = ModelType::AUTO_SOLVER);
 
 IntVec vars2inds(const VarVector& vars);
 

@@ -38,7 +38,7 @@ class CastAttachedTest : public testing::TestWithParam<const char*>
 {
 public:
   Tesseract::Ptr tesseract_ = std::make_shared<Tesseract>(); /**< Tesseract */
-  VisualizationPtr plotter_; /**< Trajopt Plotter */
+  Visualization::Ptr plotter_; /**< Trajopt Plotter */
 
   void SetUp() override
   {
@@ -55,12 +55,12 @@ public:
 
 
     // Next add objects that can be attached/detached to the scene
-    BoxPtr box(new Box(0.25, 0.25, 0.25));
-    VisualPtr visual(new Visual());
+    Box::Ptr box(new Box(0.25, 0.25, 0.25));
+    Visual::Ptr visual(new Visual());
     visual->geometry = box;
     visual->origin = Eigen::Isometry3d::Identity();
 
-    CollisionPtr collision(new Collision());
+    Collision::Ptr collision(new Collision());
     collision->geometry = box;
     collision->origin = Eigen::Isometry3d::Identity();
 
@@ -105,12 +105,12 @@ TEST_F(CastAttachedTest, LinkWithGeom)
 
 //  plotter_->plotScene();
 
-  TrajOptProbPtr prob = ConstructProblem(root, tesseract_);
+  TrajOptProb::Ptr prob = ConstructProblem(root, tesseract_);
   ASSERT_TRUE(!!prob);
 
   std::vector<ContactResultMap> collisions;
-  ContinuousContactManagerPtr manager = prob->GetEnv()->getContinuousContactManager();
-  AdjacencyMapPtr adjacency_map = std::make_shared<AdjacencyMap>(tesseract_->getEnvironment()->getSceneGraph(),
+  ContinuousContactManager::Ptr manager = prob->GetEnv()->getContinuousContactManager();
+  AdjacencyMap::Ptr adjacency_map = std::make_shared<AdjacencyMap>(tesseract_->getEnvironment()->getSceneGraph(),
                                                                  prob->GetKin()->getActiveLinkNames(),
                                                                  prob->GetEnv()->getCurrentState()->transforms);
 
@@ -153,12 +153,12 @@ TEST_F(CastAttachedTest, LinkWithoutGeom)
 
 //  plotter_->plotScene();
 
-  TrajOptProbPtr prob = ConstructProblem(root, tesseract_);
+  TrajOptProb::Ptr prob = ConstructProblem(root, tesseract_);
   ASSERT_TRUE(!!prob);
 
   std::vector<ContactResultMap> collisions;
-  ContinuousContactManagerPtr manager = prob->GetEnv()->getContinuousContactManager();
-  AdjacencyMapPtr adjacency_map = std::make_shared<AdjacencyMap>(tesseract_->getEnvironment()->getSceneGraph(),
+  ContinuousContactManager::Ptr manager = prob->GetEnv()->getContinuousContactManager();
+  AdjacencyMap::Ptr adjacency_map = std::make_shared<AdjacencyMap>(tesseract_->getEnvironment()->getSceneGraph(),
                                                                  prob->GetKin()->getActiveLinkNames(),
                                                                  prob->GetEnv()->getCurrentState()->transforms);
 

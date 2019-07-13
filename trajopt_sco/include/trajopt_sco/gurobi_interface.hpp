@@ -17,6 +17,9 @@ namespace sco
 class GurobiModel : public Model
 {
 public:
+
+  using Ptr = std::shared_ptr<GurobiModel>;
+
   GRBmodel* m_model;
   VarVector m_vars;
   CntVector m_cnts;

@@ -20,7 +20,7 @@ public:
                  int& first_step,
                  int& last_step);
   /** @brief Convexifies cost expression - In this case, it is already quadratic so there's nothing to do */
-  sco::ConvexObjectivePtr convex(const DblVec& x, sco::Model* model) override;
+  sco::ConvexObjective::Ptr convex(const DblVec& x, sco::Model* model) override;
   /** @brief Numerically evaluate cost given the vector of values */
   double value(const DblVec&) override;
   sco::VarVector getVars() override { return vars_.flatten(); }
@@ -55,7 +55,7 @@ public:
                    int& first_step,
                    int& last_step);
   /** @brief Convexifies cost expression - In this case, it is already quadratic so there's nothing to do */
-  sco::ConvexObjectivePtr convex(const DblVec& x, sco::Model* model) override;
+  sco::ConvexObjective::Ptr convex(const DblVec& x, sco::Model* model) override;
   /** @brief Numerically evaluate cost given the vector of values */
   double value(const DblVec&) override;
   sco::VarVector getVars() override { return vars_.flatten(); }
@@ -88,7 +88,7 @@ public:
                        int& first_step,
                        int& last_step);
   /** @brief Convexifies cost expression - In this case, it is already quadratic so there's nothing to do */
-  sco::ConvexConstraintsPtr convex(const DblVec& x, sco::Model* model) override;
+  sco::ConvexConstraints::Ptr convex(const DblVec& x, sco::Model* model) override;
   /** @brief Numerically evaluate cost given the vector of values */
   DblVec value(const DblVec&) override;
 
@@ -120,7 +120,7 @@ public:
                          int& first_step,
                          int& last_step);
   /** @brief Convexifies cost expression - In this case, it is already quadratic so there's nothing to do */
-  sco::ConvexConstraintsPtr convex(const DblVec& x, sco::Model* model) override;
+  sco::ConvexConstraints::Ptr convex(const DblVec& x, sco::Model* model) override;
   /** @brief Numerically evaluate cost given the vector of values */
   DblVec value(const DblVec&) override;
   sco::VarVector getVars() override { return vars_.flatten(); }
@@ -153,7 +153,7 @@ public:
                  int& first_step,
                  int& last_step);
   /** @brief Convexifies cost expression - In this case, it is already quadratic so there's nothing to do */
-  sco::ConvexObjectivePtr convex(const DblVec& x, sco::Model* model) override;
+  sco::ConvexObjective::Ptr convex(const DblVec& x, sco::Model* model) override;
   /** @brief Numerically evaluate cost given the vector of values using Eigen*/
   double value(const DblVec&) override;
   sco::VarVector getVars() override { return vars_.flatten(); }
@@ -184,7 +184,7 @@ public:
                    int& first_step,
                    int& last_step);
   /** @brief Convexifies cost expression - In this case, it is already quadratic so there's nothing to do */
-  sco::ConvexObjectivePtr convex(const DblVec& x, sco::Model* model) override;
+  sco::ConvexObjective::Ptr convex(const DblVec& x, sco::Model* model) override;
   /** @brief Numerically evaluate cost given the vector of values */
   double value(const DblVec&) override;
   sco::VarVector getVars() override { return vars_.flatten(); }
@@ -217,7 +217,7 @@ public:
                        int& first_step,
                        int& last_step);
   /** @brief Convexifies cost expression - In this case, it is already quadratic so there's nothing to do */
-  sco::ConvexConstraintsPtr convex(const DblVec& x, sco::Model* model) override;
+  sco::ConvexConstraints::Ptr convex(const DblVec& x, sco::Model* model) override;
   /** @brief Numerically evaluate cost given the vector of values */
   DblVec value(const DblVec&) override;
 
@@ -249,7 +249,7 @@ public:
                          int& first_step,
                          int& last_step);
   /** @brief Convexifies cost expression - In this case, it is already quadratic so there's nothing to do */
-  sco::ConvexConstraintsPtr convex(const DblVec& x, sco::Model* model) override;
+  sco::ConvexConstraints::Ptr convex(const DblVec& x, sco::Model* model) override;
   /** @brief Numerically evaluate cost given the vector of values */
   DblVec value(const DblVec&) override;
   sco::VarVector getVars() override { return vars_.flatten(); }
@@ -282,7 +282,7 @@ public:
                  int& first_step,
                  int& last_step);
   /** @brief Convexifies cost expression - In this case, it is already quadratic so there's nothing to do */
-  sco::ConvexObjectivePtr convex(const DblVec& x, sco::Model* model) override;
+  sco::ConvexObjective::Ptr convex(const DblVec& x, sco::Model* model) override;
   /** @brief Numerically evaluate cost given the vector of values */
   double value(const DblVec&) override;
   sco::VarVector getVars() override { return vars_.flatten(); }
@@ -313,7 +313,7 @@ public:
                    int& first_step,
                    int& last_step);
   /** @brief Convexifies cost expression - In this case, it is already quadratic so there's nothing to do */
-  sco::ConvexObjectivePtr convex(const DblVec& x, sco::Model* model) override;
+  sco::ConvexObjective::Ptr convex(const DblVec& x, sco::Model* model) override;
   /** @brief Numerically evaluate cost given the vector of values */
   double value(const DblVec&) override;
   sco::VarVector getVars() override { return vars_.flatten(); }
@@ -346,7 +346,7 @@ public:
                        int& first_step,
                        int& last_step);
   /** @brief Convexifies cost expression - In this case, it is already quadratic so there's nothing to do */
-  sco::ConvexConstraintsPtr convex(const DblVec& x, sco::Model* model) override;
+  sco::ConvexConstraints::Ptr convex(const DblVec& x, sco::Model* model) override;
   /** @brief Numerically evaluate cost given the vector of values */
   DblVec value(const DblVec&) override;
 
@@ -378,7 +378,7 @@ public:
                          int& first_step,
                          int& last_step);
   /** @brief Convexifies cost expression - In this case, it is already quadratic so there's nothing to do */
-  sco::ConvexConstraintsPtr convex(const DblVec& x, sco::Model* model) override;
+  sco::ConvexConstraints::Ptr convex(const DblVec& x, sco::Model* model) override;
   /** @brief Numerically evaluate cost given the vector of values */
   DblVec value(const DblVec&) override;
   sco::VarVector getVars() override { return vars_.flatten(); }
@@ -411,7 +411,7 @@ public:
                   int& first_step,
                   int& last_step);
   /** @brief Convexifies cost expression - In this case, it is already quadratic so there's nothing to do */
-  sco::ConvexObjectivePtr convex(const DblVec& x, sco::Model* model) override;
+  sco::ConvexObjective::Ptr convex(const DblVec& x, sco::Model* model) override;
   /** @brief Numerically evaluate cost given the vector of values */
   double value(const DblVec&) override;
   sco::VarVector getVars() override { return vars_.flatten(); }
@@ -442,7 +442,7 @@ public:
                     int& first_step,
                     int& last_step);
   /** @brief Convexifies cost expression - In this case, it is already quadratic so there's nothing to do */
-  sco::ConvexObjectivePtr convex(const DblVec& x, sco::Model* model) override;
+  sco::ConvexObjective::Ptr convex(const DblVec& x, sco::Model* model) override;
   /** @brief Numerically evaluate cost given the vector of values */
   double value(const DblVec&) override;
   sco::VarVector getVars() override { return vars_.flatten(); }
@@ -475,7 +475,7 @@ public:
                         int& first_step,
                         int& last_step);
   /** @brief Convexifies cost expression - In this case, it is already quadratic so there's nothing to do */
-  sco::ConvexConstraintsPtr convex(const DblVec& x, sco::Model* model) override;
+  sco::ConvexConstraints::Ptr convex(const DblVec& x, sco::Model* model) override;
   /** @brief Numerically evaluate cost given the vector of values */
   DblVec value(const DblVec&) override;
 
@@ -507,7 +507,7 @@ public:
                           int& first_step,
                           int& last_step);
   /** @brief Convexifies cost expression - In this case, it is already quadratic so there's nothing to do */
-  sco::ConvexConstraintsPtr convex(const DblVec& x, sco::Model* model) override;
+  sco::ConvexConstraints::Ptr convex(const DblVec& x, sco::Model* model) override;
   /** @brief Numerically evaluate cost given the vector of values */
   DblVec value(const DblVec&) override;
   sco::VarVector getVars() override { return vars_.flatten(); }

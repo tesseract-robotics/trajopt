@@ -91,8 +91,13 @@ BoolVec toMask(const VectorXd& x) {
 namespace trajopt
 {
 std::map<std::string, TermInfo::MakerFunc> TermInfo::name2maker;
-void TermInfo::RegisterMaker(const std::string& type, MakerFunc f) { name2maker[type] = f; }
-TermInfoPtr TermInfo::fromName(const std::string& type)
+
+void TermInfo::RegisterMaker(const std::string& type, MakerFunc f)
+{
+  TermInfo::name2maker[type] = f;
+}
+
+TermInfo::Ptr TermInfo::fromName(const std::string& type)
 {
   if (!gRegisteredMakers)
     RegisterMakers();
@@ -103,7 +108,7 @@ TermInfoPtr TermInfo::fromName(const std::string& type)
   else
   {
     // RAVELOG_ERROR("There is no cost of type %s\n", type.c_str());
-    return TermInfoPtr();
+    return TermInfo::Ptr();
   }
 }
 
@@ -156,7 +161,7 @@ void ProblemConstructionInfo::readCosts(const Json::Value& v)
     json_marshal::childFromJson(*it, type, "type");
     json_marshal::childFromJson(*it, use_time_str, "use_time", static_cast<std::string>("false"));
     LOG_DEBUG("reading term: %s", type.c_str());
-    TermInfoPtr term = TermInfo::fromName(type);
+    TermInfo::Ptr term = TermInfo::fromName(type);
 
     if (!term)
       PRINT_AND_THROW(boost::format("failed to construct cost named %s") % type);
@@ -185,7 +190,7 @@ void ProblemConstructionInfo::readConstraints(const Json::Value& v)
     json_marshal::childFromJson(*it, type, "type");
     json_marshal::childFromJson(*it, use_time_str, "use_time", static_cast<std::string>("false"));
     LOG_DEBUG("reading term: %s", type.c_str());
-    TermInfoPtr term = TermInfo::fromName(type);
+    TermInfo::Ptr term = TermInfo::fromName(type);
 
     if (!term)
       PRINT_AND_THROW(boost::format("failed to construct constraint named %s") % type);
@@ -355,12 +360,12 @@ void generateInitTraj(TrajArray& init_traj, const ProblemConstructionInfo& pci)
 TrajOptResult::TrajOptResult(sco::OptResults& opt, TrajOptProb& prob)
   : cost_vals(opt.cost_vals), cnt_viols(opt.cnt_viols)
 {
-  for (const sco::CostPtr& cost : prob.getCosts())
+  for (const sco::Cost::Ptr& cost : prob.getCosts())
   {
     cost_names.push_back(cost->name());
   }
 
-  for (const sco::ConstraintPtr& cnt : prob.getConstraints())
+  for (const sco::Constraint::Ptr& cnt : prob.getConstraints())
   {
     cnt_names.push_back(cnt->name());
   }
@@ -368,7 +373,7 @@ TrajOptResult::TrajOptResult(sco::OptResults& opt, TrajOptProb& prob)
   traj = getTraj(opt.x, prob.GetVars());
 }
 
-TrajOptResultPtr OptimizeProblem(TrajOptProbPtr prob, const tesseract_visualization::VisualizationPtr& plotter)
+TrajOptResult::Ptr OptimizeProblem(TrajOptProb::Ptr prob, const tesseract_visualization::Visualization::Ptr& plotter)
 {
   sco::BasicTrustRegionSQP opt(prob);
   sco::BasicTrustRegionSQPParameters& param = opt.getParameters();
@@ -380,17 +385,17 @@ TrajOptResultPtr OptimizeProblem(TrajOptProbPtr prob, const tesseract_visualizat
     opt.addCallback(PlotCallback(*prob, plotter));
   opt.initialize(trajToDblVec(prob->GetInitTraj()));
   opt.optimize();
-  return TrajOptResultPtr(new TrajOptResult(opt.results(), *prob));
+  return TrajOptResult::Ptr(new TrajOptResult(opt.results(), *prob));
 }
 
-TrajOptProbPtr ConstructProblem(const ProblemConstructionInfo& pci)
+TrajOptProb::Ptr ConstructProblem(const ProblemConstructionInfo& pci)
 {
   const BasicInfo& bi = pci.basic_info;
   int n_steps = bi.n_steps;
 
   bool use_time = false;
   // Check that all costs and constraints support the types that are specified in pci
-  for (TermInfoPtr cost : pci.cost_infos)
+  for (TermInfo::Ptr cost : pci.cost_infos)
   {
     if (cost->term_type & TT_CNT)
       CONSOLE_BRIDGE_logWarn("%s is listed as a type TT_CNT but was added to cost_infos", (cost->name).c_str());
@@ -403,7 +408,7 @@ TrajOptProbPtr ConstructProblem(const ProblemConstructionInfo& pci)
         PRINT_AND_THROW(boost::format("%s does not support time, but you listed it as a using time") % cost->name);
     }
   }
-  for (TermInfoPtr cnt : pci.cnt_infos)
+  for (TermInfo::Ptr cnt : pci.cnt_infos)
   {
     if (cnt->term_type & TT_COST)
       CONSOLE_BRIDGE_logWarn("%s is listed as a type TT_COST but was added to cnt_infos", (cnt->name).c_str());
@@ -425,7 +430,7 @@ TrajOptProbPtr ConstructProblem(const ProblemConstructionInfo& pci)
   if ((use_time == false) && (pci.basic_info.use_time == true))
     PRINT_AND_THROW("No terms use time and basic_info is not set correctly. Try basic_info.use_time = false");
 
-  TrajOptProbPtr prob(new TrajOptProb(n_steps, pci));
+  TrajOptProb::Ptr prob(new TrajOptProb(n_steps, pci));
   unsigned n_dof = prob->GetKin()->numJoints();
 
   // Generate initial trajectory and check its size
@@ -488,19 +493,19 @@ TrajOptProbPtr ConstructProblem(const ProblemConstructionInfo& pci)
     }
   }
 
-  for (const TermInfoPtr& ci : pci.cost_infos)
+  for (const TermInfo::Ptr& ci : pci.cost_infos)
   {
     ci->hatch(*prob);
   }
 
-  for (const TermInfoPtr& ci : pci.cnt_infos)
+  for (const TermInfo::Ptr& ci : pci.cnt_infos)
   {
     ci->hatch(*prob);
   }
   return prob;
 }
 
-TrajOptProbPtr ConstructProblem(const Json::Value& root,
+TrajOptProb::Ptr ConstructProblem(const Json::Value& root,
                                 const tesseract::Tesseract::ConstPtr &tesseract)
 {
   ProblemConstructionInfo pci(tesseract);
@@ -586,22 +591,22 @@ void DynamicCartPoseTermInfo::hatch(TrajOptProb& prob)
   }
   else
   {
-    tesseract_environment::EnvStateConstPtr state = prob.GetEnv()->getCurrentState();
+    tesseract_environment::EnvState::ConstPtr state = prob.GetEnv()->getCurrentState();
     Eigen::Isometry3d world_to_base = state->transforms.at(prob.GetKin()->getBaseLinkName());
-    tesseract_environment::AdjacencyMapPtr adjacency_map = std::make_shared<tesseract_environment::AdjacencyMap>(prob.GetEnv()->getSceneGraph(),
+    tesseract_environment::AdjacencyMap::Ptr adjacency_map = std::make_shared<tesseract_environment::AdjacencyMap>(prob.GetEnv()->getSceneGraph(),
                                                                                                                  prob.GetKin()->getActiveLinkNames(),
                                                                                                                  state->transforms);
 
-    sco::VectorOfVectorPtr f(new DynamicCartPoseErrCalculator(target, prob.GetKin(), adjacency_map, world_to_base, link, tcp));
+    sco::VectorOfVector::Ptr f(new DynamicCartPoseErrCalculator(target, prob.GetKin(), adjacency_map, world_to_base, link, tcp));
     // Apply error calculator as either cost or constraint
     if (term_type & TT_COST)
     {
-      prob.addCost(sco::CostPtr(new TrajOptCostFromErrFunc(
+      prob.addCost(sco::Cost::Ptr(new TrajOptCostFromErrFunc(
           f, prob.GetVarRow(timestep, 0, n_dof), concat(rot_coeffs, pos_coeffs), sco::ABS, name)));
     }
     else if (term_type & TT_CNT)
     {
-      prob.addConstraint(sco::ConstraintPtr(new TrajOptConstraintFromErrFunc(
+      prob.addConstraint(sco::Constraint::Ptr(new TrajOptConstraintFromErrFunc(
           f, prob.GetVarRow(timestep, 0, n_dof), concat(rot_coeffs, pos_coeffs), sco::EQ, name)));
     }
     else
@@ -657,9 +662,9 @@ void CartPoseTermInfo::hatch(TrajOptProb& prob)
   input_pose.linear() = q.matrix();
   input_pose.translation() = xyz;
 
-  tesseract_environment::EnvStateConstPtr state = prob.GetEnv()->getCurrentState();
+  tesseract_environment::EnvState::ConstPtr state = prob.GetEnv()->getCurrentState();
   Eigen::Isometry3d world_to_base = state->transforms.at(prob.GetKin()->getBaseLinkName());
-  tesseract_environment::AdjacencyMapPtr adjacency_map = std::make_shared<tesseract_environment::AdjacencyMap>(prob.GetEnv()->getSceneGraph(),
+  tesseract_environment::AdjacencyMap::Ptr adjacency_map = std::make_shared<tesseract_environment::AdjacencyMap>(prob.GetEnv()->getSceneGraph(),
                                                                                                                prob.GetKin()->getActiveLinkNames(),
                                                                                                                state->transforms);
 
@@ -673,14 +678,14 @@ void CartPoseTermInfo::hatch(TrajOptProb& prob)
   }
   else if ((term_type & TT_COST) && ~(term_type | ~TT_USE_TIME))
   {
-    sco::VectorOfVectorPtr f(new CartPoseErrCalculator(input_pose, prob.GetKin(), adjacency_map, world_to_base, link, tcp));
-    prob.addCost(sco::CostPtr(new TrajOptCostFromErrFunc(
+    sco::VectorOfVector::Ptr f(new CartPoseErrCalculator(input_pose, prob.GetKin(), adjacency_map, world_to_base, link, tcp));
+    prob.addCost(sco::Cost::Ptr(new TrajOptCostFromErrFunc(
         f, prob.GetVarRow(timestep, 0, n_dof), concat(rot_coeffs, pos_coeffs), sco::ABS, name)));
   }
   else if ((term_type & TT_CNT) && ~(term_type | ~TT_USE_TIME))
   {
-    sco::VectorOfVectorPtr f(new CartPoseErrCalculator(input_pose, prob.GetKin(), adjacency_map, world_to_base, link, tcp));
-    prob.addConstraint(sco::ConstraintPtr(new TrajOptConstraintFromErrFunc(
+    sco::VectorOfVector::Ptr f(new CartPoseErrCalculator(input_pose, prob.GetKin(), adjacency_map, world_to_base, link, tcp));
+    prob.addConstraint(sco::Constraint::Ptr(new TrajOptConstraintFromErrFunc(
         f, prob.GetVarRow(timestep, 0, n_dof), concat(rot_coeffs, pos_coeffs), sco::EQ, name)));
   }
   else
@@ -715,9 +720,9 @@ void CartVelTermInfo::hatch(TrajOptProb& prob)
 {
   int n_dof = static_cast<int>(prob.GetKin()->numJoints());
 
-  tesseract_environment::EnvStateConstPtr state = prob.GetEnv()->getCurrentState();
+  tesseract_environment::EnvState::ConstPtr state = prob.GetEnv()->getCurrentState();
   Eigen::Isometry3d world_to_base = state->transforms.at(prob.GetKin()->getBaseLinkName());
-  tesseract_environment::AdjacencyMapPtr adjacency_map = std::make_shared<tesseract_environment::AdjacencyMap>(prob.GetEnv()->getSceneGraph(),
+  tesseract_environment::AdjacencyMap::Ptr adjacency_map = std::make_shared<tesseract_environment::AdjacencyMap>(prob.GetEnv()->getSceneGraph(),
                                                                                                                prob.GetKin()->getActiveLinkNames(),
                                                                                                                state->transforms);
 
@@ -733,9 +738,9 @@ void CartVelTermInfo::hatch(TrajOptProb& prob)
   {
     for (int iStep = first_step; iStep < last_step; ++iStep)
     {
-      prob.addCost(sco::CostPtr(new TrajOptCostFromErrFunc(
-          sco::VectorOfVectorPtr(new CartVelErrCalculator(prob.GetKin(), adjacency_map, world_to_base, link, max_displacement)),
-          sco::MatrixOfVectorPtr(new CartVelJacCalculator(prob.GetKin(), adjacency_map, world_to_base, link, max_displacement)),
+      prob.addCost(sco::Cost::Ptr(new TrajOptCostFromErrFunc(
+          sco::VectorOfVector::Ptr(new CartVelErrCalculator(prob.GetKin(), adjacency_map, world_to_base, link, max_displacement)),
+          sco::MatrixOfVector::Ptr(new CartVelJacCalculator(prob.GetKin(), adjacency_map, world_to_base, link, max_displacement)),
           concat(prob.GetVarRow(iStep, 0, n_dof), prob.GetVarRow(iStep + 1, 0, n_dof)),
           Eigen::VectorXd::Ones(0),
           sco::ABS,
@@ -746,9 +751,9 @@ void CartVelTermInfo::hatch(TrajOptProb& prob)
   {
     for (int iStep = first_step; iStep < last_step; ++iStep)
     {
-      prob.addConstraint(sco::ConstraintPtr(new TrajOptConstraintFromErrFunc(
-          sco::VectorOfVectorPtr(new CartVelErrCalculator(prob.GetKin(), adjacency_map, world_to_base, link, max_displacement)),
-          sco::MatrixOfVectorPtr(new CartVelJacCalculator(prob.GetKin(), adjacency_map, world_to_base, link, max_displacement)),
+      prob.addConstraint(sco::Constraint::Ptr(new TrajOptConstraintFromErrFunc(
+          sco::VectorOfVector::Ptr(new CartVelErrCalculator(prob.GetKin(), adjacency_map, world_to_base, link, max_displacement)),
+          sco::MatrixOfVector::Ptr(new CartVelJacCalculator(prob.GetKin(), adjacency_map, world_to_base, link, max_displacement)),
           concat(prob.GetVarRow(iStep, 0, n_dof), prob.GetVarRow(iStep + 1, 0, n_dof)),
           Eigen::VectorXd::Ones(0),
           sco::INEQ,
@@ -834,13 +839,13 @@ void JointPosTermInfo::hatch(TrajOptProb& prob)
     // If the tolerances are 0, an equality cost is set. Otherwise it's a hinged "inequality" cost
     if (is_upper_zeros && is_lower_zeros)
     {
-      prob.addCost(sco::CostPtr(
+      prob.addCost(sco::Cost::Ptr(
           new JointPosEqCost(joint_vars, util::toVectorXd(coeffs), util::toVectorXd(targets), first_step, last_step)));
       prob.getCosts().back()->setName(name);
     }
     else
     {
-      prob.addCost(sco::CostPtr(new JointPosIneqCost(joint_vars,
+      prob.addCost(sco::Cost::Ptr(new JointPosIneqCost(joint_vars,
                                                      util::toVectorXd(coeffs),
                                                      util::toVectorXd(targets),
                                                      util::toVectorXd(upper_tols),
@@ -855,13 +860,13 @@ void JointPosTermInfo::hatch(TrajOptProb& prob)
     // If the tolerances are 0, an equality cnt is set. Otherwise it's an inequality constraint
     if (is_upper_zeros && is_lower_zeros)
     {
-      prob.addConstraint(sco::ConstraintPtr(new JointPosEqConstraint(
+      prob.addConstraint(sco::Constraint::Ptr(new JointPosEqConstraint(
           joint_vars, util::toVectorXd(coeffs), util::toVectorXd(targets), first_step, last_step)));
       prob.getConstraints().back()->setName(name);
     }
     else
     {
-      prob.addConstraint(sco::ConstraintPtr(new JointPosIneqConstraint(joint_vars,
+      prob.addConstraint(sco::Constraint::Ptr(new JointPosIneqConstraint(joint_vars,
                                                                        util::toVectorXd(coeffs),
                                                                        util::toVectorXd(targets),
                                                                        util::toVectorXd(upper_tols),
@@ -958,9 +963,9 @@ void JointVelTermInfo::hatch(TrajOptProb& prob)
       if (is_upper_zeros && is_lower_zeros)
       {
         DblVec single_jnt_coeffs = DblVec(num_vels * 2, coeffs[j]);
-        prob.addCost(sco::CostPtr(new TrajOptCostFromErrFunc(
-            sco::VectorOfVectorPtr(new JointVelErrCalculator(targets[j], upper_tols[j], lower_tols[j])),
-            sco::MatrixOfVectorPtr(new JointVelJacCalculator()),
+        prob.addCost(sco::Cost::Ptr(new TrajOptCostFromErrFunc(
+            sco::VectorOfVector::Ptr(new JointVelErrCalculator(targets[j], upper_tols[j], lower_tols[j])),
+            sco::MatrixOfVector::Ptr(new JointVelJacCalculator()),
             concat(joint_vars_vec, time_vars_vec),
             util::toVectorXd(single_jnt_coeffs),
             sco::SQUARED,
@@ -970,9 +975,9 @@ void JointVelTermInfo::hatch(TrajOptProb& prob)
       else
       {
         DblVec single_jnt_coeffs = DblVec(num_vels * 2, coeffs[j]);
-        prob.addCost(sco::CostPtr(new TrajOptCostFromErrFunc(
-            sco::VectorOfVectorPtr(new JointVelErrCalculator(targets[j], upper_tols[j], lower_tols[j])),
-            sco::MatrixOfVectorPtr(new JointVelJacCalculator()),
+        prob.addCost(sco::Cost::Ptr(new TrajOptCostFromErrFunc(
+            sco::VectorOfVector::Ptr(new JointVelErrCalculator(targets[j], upper_tols[j], lower_tols[j])),
+            sco::MatrixOfVector::Ptr(new JointVelJacCalculator()),
             concat(joint_vars_vec, time_vars_vec),
             util::toVectorXd(single_jnt_coeffs),
             sco::HINGE,
@@ -995,9 +1000,9 @@ void JointVelTermInfo::hatch(TrajOptProb& prob)
       if (is_upper_zeros && is_lower_zeros)
       {
         DblVec single_jnt_coeffs = DblVec(num_vels * 2, coeffs[j]);
-        prob.addConstraint(sco::ConstraintPtr(new TrajOptConstraintFromErrFunc(
-            sco::VectorOfVectorPtr(new JointVelErrCalculator(targets[j], upper_tols[j], lower_tols[j])),
-            sco::MatrixOfVectorPtr(new JointVelJacCalculator()),
+        prob.addConstraint(sco::Constraint::Ptr(new TrajOptConstraintFromErrFunc(
+            sco::VectorOfVector::Ptr(new JointVelErrCalculator(targets[j], upper_tols[j], lower_tols[j])),
+            sco::MatrixOfVector::Ptr(new JointVelJacCalculator()),
             concat(joint_vars_vec, time_vars_vec),
             util::toVectorXd(single_jnt_coeffs),
             sco::EQ,
@@ -1007,9 +1012,9 @@ void JointVelTermInfo::hatch(TrajOptProb& prob)
       else
       {
         DblVec single_jnt_coeffs = DblVec(num_vels * 2, coeffs[j]);
-        prob.addConstraint(sco::ConstraintPtr(new TrajOptConstraintFromErrFunc(
-            sco::VectorOfVectorPtr(new JointVelErrCalculator(targets[j], upper_tols[j], lower_tols[j])),
-            sco::MatrixOfVectorPtr(new JointVelJacCalculator()),
+        prob.addConstraint(sco::Constraint::Ptr(new TrajOptConstraintFromErrFunc(
+            sco::VectorOfVector::Ptr(new JointVelErrCalculator(targets[j], upper_tols[j], lower_tols[j])),
+            sco::MatrixOfVector::Ptr(new JointVelJacCalculator()),
             concat(joint_vars_vec, time_vars_vec),
             util::toVectorXd(single_jnt_coeffs),
             sco::INEQ,
@@ -1022,13 +1027,13 @@ void JointVelTermInfo::hatch(TrajOptProb& prob)
     // If the tolerances are 0, an equality cost is set. Otherwise it's a hinged "inequality" cost
     if (is_upper_zeros && is_lower_zeros)
     {
-      prob.addCost(sco::CostPtr(
+      prob.addCost(sco::Cost::Ptr(
           new JointVelEqCost(joint_vars, util::toVectorXd(coeffs), util::toVectorXd(targets), first_step, last_step)));
       prob.getCosts().back()->setName(name);
     }
     else
     {
-      prob.addCost(sco::CostPtr(new JointVelIneqCost(joint_vars,
+      prob.addCost(sco::Cost::Ptr(new JointVelIneqCost(joint_vars,
                                                      util::toVectorXd(coeffs),
                                                      util::toVectorXd(targets),
                                                      util::toVectorXd(upper_tols),
@@ -1043,13 +1048,13 @@ void JointVelTermInfo::hatch(TrajOptProb& prob)
     // If the tolerances are 0, an equality cnt is set. Otherwise it's an inequality constraint
     if (is_upper_zeros && is_lower_zeros)
     {
-      prob.addConstraint(sco::ConstraintPtr(new JointVelEqConstraint(
+      prob.addConstraint(sco::Constraint::Ptr(new JointVelEqConstraint(
           joint_vars, util::toVectorXd(coeffs), util::toVectorXd(targets), first_step, last_step)));
       prob.getConstraints().back()->setName(name);
     }
     else
     {
-      prob.addConstraint(sco::ConstraintPtr(new JointVelIneqConstraint(joint_vars,
+      prob.addConstraint(sco::Constraint::Ptr(new JointVelIneqConstraint(joint_vars,
                                                                        util::toVectorXd(coeffs),
                                                                        util::toVectorXd(targets),
                                                                        util::toVectorXd(upper_tols),
@@ -1143,13 +1148,13 @@ void JointAccTermInfo::hatch(TrajOptProb& prob)
     // If the tolerances are 0, an equality cost is set. Otherwise it's a hinged "inequality" cost
     if (is_upper_zeros && is_lower_zeros)
     {
-      prob.addCost(sco::CostPtr(
+      prob.addCost(sco::Cost::Ptr(
           new JointAccEqCost(joint_vars, util::toVectorXd(coeffs), util::toVectorXd(targets), first_step, last_step)));
       prob.getCosts().back()->setName(name);
     }
     else
     {
-      prob.addCost(sco::CostPtr(new JointAccIneqCost(joint_vars,
+      prob.addCost(sco::Cost::Ptr(new JointAccIneqCost(joint_vars,
                                                      util::toVectorXd(coeffs),
                                                      util::toVectorXd(targets),
                                                      util::toVectorXd(upper_tols),
@@ -1164,13 +1169,13 @@ void JointAccTermInfo::hatch(TrajOptProb& prob)
     // If the tolerances are 0, an equality cnt is set. Otherwise it's an inequality constraint
     if (is_upper_zeros && is_lower_zeros)
     {
-      prob.addConstraint(sco::ConstraintPtr(new JointAccEqConstraint(
+      prob.addConstraint(sco::Constraint::Ptr(new JointAccEqConstraint(
           joint_vars, util::toVectorXd(coeffs), util::toVectorXd(targets), first_step, last_step)));
       prob.getConstraints().back()->setName(name);
     }
     else
     {
-      prob.addConstraint(sco::ConstraintPtr(new JointAccIneqConstraint(joint_vars,
+      prob.addConstraint(sco::Constraint::Ptr(new JointAccIneqConstraint(joint_vars,
                                                                        util::toVectorXd(coeffs),
                                                                        util::toVectorXd(targets),
                                                                        util::toVectorXd(upper_tols),
@@ -1265,13 +1270,13 @@ void JointJerkTermInfo::hatch(TrajOptProb& prob)
     // If the tolerances are 0, an equality cost is set. Otherwise it's a hinged "inequality" cost
     if (is_upper_zeros && is_lower_zeros)
     {
-      prob.addCost(sco::CostPtr(
+      prob.addCost(sco::Cost::Ptr(
           new JointJerkEqCost(joint_vars, util::toVectorXd(coeffs), util::toVectorXd(targets), first_step, last_step)));
       prob.getCosts().back()->setName(name);
     }
     else
     {
-      prob.addCost(sco::CostPtr(new JointJerkIneqCost(joint_vars,
+      prob.addCost(sco::Cost::Ptr(new JointJerkIneqCost(joint_vars,
                                                       util::toVectorXd(coeffs),
                                                       util::toVectorXd(targets),
                                                       util::toVectorXd(upper_tols),
@@ -1286,13 +1291,13 @@ void JointJerkTermInfo::hatch(TrajOptProb& prob)
     // If the tolerances are 0, an equality cnt is set. Otherwise it's an inequality constraint
     if (is_upper_zeros && is_lower_zeros)
     {
-      prob.addConstraint(sco::ConstraintPtr(new JointJerkEqConstraint(
+      prob.addConstraint(sco::Constraint::Ptr(new JointJerkEqConstraint(
           joint_vars, util::toVectorXd(coeffs), util::toVectorXd(targets), first_step, last_step)));
       prob.getConstraints().back()->setName(name);
     }
     else
     {
-      prob.addConstraint(sco::ConstraintPtr(new JointJerkIneqConstraint(joint_vars,
+      prob.addConstraint(sco::Constraint::Ptr(new JointJerkIneqConstraint(joint_vars,
                                                                         util::toVectorXd(coeffs),
                                                                         util::toVectorXd(targets),
                                                                         util::toVectorXd(upper_tols),
@@ -1344,7 +1349,7 @@ void CollisionTermInfo::fromJson(ProblemConstructionInfo& pci, const Json::Value
   for (int i = first_step; i <= last_step; ++i)
   {
     size_t index = static_cast<size_t>(i - first_step);
-    SafetyMarginDataPtr data(new SafetyMarginData(dist_pen[index], coeffs[index]));
+    SafetyMarginData::Ptr data(new SafetyMarginData(dist_pen[index], coeffs[index]));
     info.push_back(data);
   }
 
@@ -1392,7 +1397,7 @@ void CollisionTermInfo::fromJson(ProblemConstructionInfo& pci, const Json::Value
       for (auto i = first_step; i <= last_step; ++i)
       {
         size_t index = static_cast<size_t>(i - first_step);
-        SafetyMarginDataPtr& data = info[index];
+        SafetyMarginData::Ptr& data = info[index];
         for (auto j = 0u; j < pair.size(); ++j)
         {
           data->SetPairSafetyMarginData(link, pair[j], pair_dist_pen[index], pair_coeffs[index]);
@@ -1408,9 +1413,9 @@ void CollisionTermInfo::fromJson(ProblemConstructionInfo& pci, const Json::Value
 void CollisionTermInfo::hatch(TrajOptProb& prob)
 {
   int n_dof = static_cast<int>(prob.GetKin()->numJoints());
-  tesseract_environment::EnvStateConstPtr state = prob.GetEnv()->getCurrentState();
+  tesseract_environment::EnvState::ConstPtr state = prob.GetEnv()->getCurrentState();
   Eigen::Isometry3d world_to_base = state->transforms.at(prob.GetKin()->getBaseLinkName());
-  tesseract_environment::AdjacencyMapPtr adjacency_map = std::make_shared<tesseract_environment::AdjacencyMap>(prob.GetEnv()->getSceneGraph(),
+  tesseract_environment::AdjacencyMap::Ptr adjacency_map = std::make_shared<tesseract_environment::AdjacencyMap>(prob.GetEnv()->getSceneGraph(),
                                                                                                                prob.GetKin()->getActiveLinkNames(),
                                                                                                                state->transforms);
 
@@ -1420,7 +1425,7 @@ void CollisionTermInfo::hatch(TrajOptProb& prob)
     {
       for (int i = first_step; i <= last_step - gap; ++i)
       {
-        prob.addCost(sco::CostPtr(new CollisionCost(prob.GetKin(),
+        prob.addCost(sco::Cost::Ptr(new CollisionCost(prob.GetKin(),
                                                     prob.GetEnv(),
                                                     adjacency_map,
                                                     world_to_base,
@@ -1434,7 +1439,7 @@ void CollisionTermInfo::hatch(TrajOptProb& prob)
     {
       for (int i = first_step; i <= last_step; ++i)
       {
-        prob.addCost(sco::CostPtr(new CollisionCost(prob.GetKin(),
+        prob.addCost(sco::Cost::Ptr(new CollisionCost(prob.GetKin(),
                                                     prob.GetEnv(),
                                                     adjacency_map,
                                                     world_to_base,
@@ -1450,7 +1455,7 @@ void CollisionTermInfo::hatch(TrajOptProb& prob)
     {
       for (int i = first_step; i < last_step; ++i)
       {
-        prob.addIneqConstraint(sco::ConstraintPtr(new CollisionConstraint(prob.GetKin(),
+        prob.addIneqConstraint(sco::Constraint::Ptr(new CollisionConstraint(prob.GetKin(),
                                                                           prob.GetEnv(),
                                                                           adjacency_map,
                                                                           world_to_base,
@@ -1464,7 +1469,7 @@ void CollisionTermInfo::hatch(TrajOptProb& prob)
     {
       for (int i = first_step; i <= last_step; ++i)
       {
-        prob.addIneqConstraint(sco::ConstraintPtr(new CollisionConstraint(prob.GetKin(),
+        prob.addIneqConstraint(sco::Constraint::Ptr(new CollisionConstraint(prob.GetKin(),
                                                                           prob.GetEnv(),
                                                                           adjacency_map,
                                                                           world_to_base,
@@ -1516,8 +1521,8 @@ void TotalTimeTermInfo::hatch(TrajOptProb& prob)
 
   if (term_type & TT_COST)
   {
-    prob.addCost(sco::CostPtr(new TrajOptCostFromErrFunc(sco::VectorOfVectorPtr(new TimeCostCalculator(limit)),
-                                                         sco::MatrixOfVectorPtr(new TimeCostJacCalculator()),
+    prob.addCost(sco::Cost::Ptr(new TrajOptCostFromErrFunc(sco::VectorOfVector::Ptr(new TimeCostCalculator(limit)),
+                                                         sco::MatrixOfVector::Ptr(new TimeCostJacCalculator()),
                                                          time_vars,
                                                          coeff_vec,
                                                          penalty_type,
@@ -1526,8 +1531,8 @@ void TotalTimeTermInfo::hatch(TrajOptProb& prob)
   else if (term_type & TT_CNT)
   {
     prob.addConstraint(
-        sco::ConstraintPtr(new TrajOptConstraintFromErrFunc(sco::VectorOfVectorPtr(new TimeCostCalculator(limit)),
-                                                            sco::MatrixOfVectorPtr(new TimeCostJacCalculator()),
+        sco::Constraint::Ptr(new TrajOptConstraintFromErrFunc(sco::VectorOfVector::Ptr(new TimeCostCalculator(limit)),
+                                                            sco::MatrixOfVector::Ptr(new TimeCostJacCalculator()),
                                                             time_vars,
                                                             coeff_vec,
                                                             constraint_type,

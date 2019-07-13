@@ -10,9 +10,9 @@
 #include <trajopt_utils/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <vector>
+#include <memory>
 TRAJOPT_IGNORE_WARNINGS_POP
 
-#include <trajopt_sco/sco_fwd.hpp>
 #include <trajopt_sco/solver_interface.hpp>
 
 namespace sco
@@ -27,6 +27,9 @@ model are removed
 class ConvexObjective
 {
 public:
+
+  using Ptr = std::shared_ptr<ConvexObjective>;
+
   ConvexObjective(Model* model) : model_(model) {}
   void addAffExpr(const AffExpr&);
   void addQuadExpr(const QuadExpr&);
@@ -63,6 +66,9 @@ Actually only affine inequality constraints are currently implemented.
 class ConvexConstraints
 {
 public:
+
+  using Ptr = std::shared_ptr<ConvexConstraints>;
+
   ConvexConstraints(Model* model) : model_(model) {}
   /** Expression that should == 0 */
   void addEqCnt(const AffExpr&);
@@ -98,10 +104,13 @@ Non-convex cost function, which knows how to calculate its convex approximation
 class Cost
 {
 public:
+
+  using Ptr = std::shared_ptr<Cost>;
+
   /** Evaluate at solution vector x*/
   virtual double value(const DblVec&) = 0;
   /** Convexify at solution vector x*/
-  virtual ConvexObjectivePtr convex(const DblVec& x, Model* model) = 0;
+  virtual ConvexObjective::Ptr convex(const DblVec& x, Model* model) = 0;
   /** Get problem variables associated with this cost */
   virtual VarVector getVars() = 0;
   std::string name() { return name_; }
@@ -121,12 +130,15 @@ convex approximation
 class Constraint
 {
 public:
+
+  using Ptr = std::shared_ptr<Constraint>;
+
   /** inequality vs equality */
   virtual ConstraintType type() = 0;
   /** Evaluate at solution vector x*/
   virtual DblVec value(const DblVec& x) = 0;
   /** Convexify at solution vector x*/
-  virtual ConvexConstraintsPtr convex(const DblVec& x, Model* model) = 0;
+  virtual ConvexConstraints::Ptr convex(const DblVec& x, Model* model) = 0;
   /** Calculate constraint violations (positive part for inequality constraint,
    * absolute value for inequality constraint)*/
   DblVec violations(const DblVec& x);
@@ -146,6 +158,9 @@ protected:
 class EqConstraint : public Constraint
 {
 public:
+
+  using Ptr = std::shared_ptr<EqConstraint>;
+
   ConstraintType type() override { return EQ; }
   EqConstraint() : Constraint() {}
   EqConstraint(const std::string& name) : Constraint(name) {}
@@ -154,6 +169,9 @@ public:
 class IneqConstraint : public Constraint
 {
 public:
+
+  using Ptr = std::shared_ptr<IneqConstraint>;
+
   ConstraintType type() override { return INEQ; }
   IneqConstraint() : Constraint() {}
   IneqConstraint(const std::string& name) : Constraint(name) {}
@@ -165,6 +183,9 @@ Non-convex optimization problem
 class OptProb
 {
 public:
+
+  using Ptr = std::shared_ptr<OptProb>;
+
   OptProb(ModelType convex_solver = ModelType::AUTO_SOLVER);
   virtual ~OptProb() = default;
 
@@ -186,35 +207,35 @@ public:
    * problem. */
   void addLinearConstraint(const AffExpr&, ConstraintType type);
   /** Add nonlinear cost function */
-  void addCost(CostPtr);
+  void addCost(Cost::Ptr);
   /** Add nonlinear constraint function */
-  void addConstraint(ConstraintPtr);
-  void addEqConstraint(ConstraintPtr);
-  void addIneqConstraint(ConstraintPtr);
+  void addConstraint(Constraint::Ptr);
+  void addEqConstraint(Constraint::Ptr);
+  void addIneqConstraint(Constraint::Ptr);
   /** Find closest point to solution vector x that satisfies linear inequality
    * constraints */
   DblVec getCentralFeasiblePoint(const DblVec& x);
   DblVec getClosestFeasiblePoint(const DblVec& x);
 
-  std::vector<ConstraintPtr> getConstraints() const;
-  const std::vector<CostPtr>& getCosts() { return costs_; }
-  const std::vector<ConstraintPtr>& getIneqConstraints() { return ineqcnts_; }
-  const std::vector<ConstraintPtr>& getEqConstraints() { return eqcnts_; }
+  std::vector<Constraint::Ptr> getConstraints() const;
+  const std::vector<Cost::Ptr>& getCosts() { return costs_; }
+  const std::vector<Constraint::Ptr>& getIneqConstraints() { return ineqcnts_; }
+  const std::vector<Constraint::Ptr>& getEqConstraints() { return eqcnts_; }
   const DblVec& getLowerBounds() { return lower_bounds_; }
   const DblVec& getUpperBounds() { return upper_bounds_; }
-  ModelPtr getModel() { return model_; }
+  Model::Ptr getModel() { return model_; }
   const VarVector& getVars() { return vars_; }
   int getNumCosts() { return static_cast<int>(costs_.size()); }
   int getNumConstraints() { return static_cast<int>(eqcnts_.size() + ineqcnts_.size()); }
   int getNumVars() { return static_cast<int>(vars_.size()); }
 protected:
-  ModelPtr model_;
+  Model::Ptr model_;
   VarVector vars_;
   DblVec lower_bounds_;
   DblVec upper_bounds_;
-  std::vector<CostPtr> costs_;
-  std::vector<ConstraintPtr> eqcnts_;
-  std::vector<ConstraintPtr> ineqcnts_;
+  std::vector<Cost::Ptr> costs_;
+  std::vector<Constraint::Ptr> eqcnts_;
+  std::vector<Constraint::Ptr> ineqcnts_;
 
   OptProb(OptProb&);
 };

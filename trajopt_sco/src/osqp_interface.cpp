@@ -16,9 +16,9 @@ namespace sco
 {
 double OSQP_INFINITY = std::numeric_limits<double>::infinity();
 
-ModelPtr createOSQPModel()
+Model::Ptr createOSQPModel()
 {
-  ModelPtr out(new OSQPModel());
+  Model::Ptr out(new OSQPModel());
   return out;
 }
 

@@ -40,7 +40,7 @@ class CastOctomapTest : public testing::TestWithParam<const char*>
 {
 public:
   Tesseract::Ptr tesseract_ = std::make_shared<Tesseract>(); /**< Tesseract */
-  VisualizationPtr plotter_;                                 /**< Trajopt Plotter */
+  Visualization::Ptr plotter_;                                 /**< Trajopt Plotter */
 
   void SetUp() override
   {
@@ -70,14 +70,14 @@ public:
     octree->insertPointCloud(point_cloud, octomap::point3d(0, 0, 0));
 
     // Next add objects that can be attached/detached to the scene
-    OctreePtr coll_octree = std::make_shared<Octree>(octree, Octree::SubType::BOX);
-    BoxPtr vis_box(new Box(1.0, 1.0, 1.0));
+    Octree::Ptr coll_octree = std::make_shared<Octree>(octree, Octree::SubType::BOX);
+    Box::Ptr vis_box(new Box(1.0, 1.0, 1.0));
 
-    VisualPtr visual(new Visual());
+    Visual::Ptr visual(new Visual());
     visual->geometry = vis_box;
     visual->origin = Eigen::Isometry3d::Identity();
 
-    CollisionPtr collision(new Collision());
+    Collision::Ptr collision(new Collision());
     collision->geometry = coll_octree;
     collision->origin = Eigen::Isometry3d::Identity();
 
@@ -106,12 +106,12 @@ TEST_F(CastOctomapTest, boxes)
 
 //  plotter_->plotScene();
 
-  TrajOptProbPtr prob = ConstructProblem(root, tesseract_);
+  TrajOptProb::Ptr prob = ConstructProblem(root, tesseract_);
   ASSERT_TRUE(!!prob);
 
   std::vector<ContactResultMap> collisions;
-  ContinuousContactManagerPtr manager = prob->GetEnv()->getContinuousContactManager();
-  AdjacencyMapPtr adjacency_map = std::make_shared<AdjacencyMap>(tesseract_->getEnvironment()->getSceneGraph(),
+  ContinuousContactManager::Ptr manager = prob->GetEnv()->getContinuousContactManager();
+  AdjacencyMap::Ptr adjacency_map = std::make_shared<AdjacencyMap>(tesseract_->getEnvironment()->getSceneGraph(),
                                                                  prob->GetKin()->getActiveLinkNames(),
                                                                  prob->GetEnv()->getCurrentState()->transforms);
 

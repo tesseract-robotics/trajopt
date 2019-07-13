@@ -17,9 +17,9 @@ namespace sco
 {
 double QPOASES_INFTY = qpOASES::INFTY;
 
-ModelPtr createqpOASESModel()
+Model::Ptr createqpOASESModel()
 {
-  ModelPtr out(new qpOASESModel());
+  Model::Ptr out(new qpOASESModel());
   return out;
 }
 
