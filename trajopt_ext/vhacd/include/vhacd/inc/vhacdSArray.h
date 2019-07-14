@@ -145,11 +145,12 @@ public:
   }
   SArray() { Initialize(); }
   ~SArray() { delete[] m_data; }
+
 private:
   T m_data0[N];
   T* m_data;
   size_t m_size;
   size_t m_maxSize;
 };
-}
+}  // namespace VHACD
 #endif

@@ -8,8 +8,6 @@
 
 namespace trajopt
 {
-
-
 struct CollisionEvaluator
 {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -21,7 +19,11 @@ struct CollisionEvaluator
                      tesseract_environment::AdjacencyMap::ConstPtr adjacency_map,
                      Eigen::Isometry3d world_to_base,
                      SafetyMarginData::ConstPtr safety_margin_data)
-    : manip_(manip), env_(env), adjacency_map_(adjacency_map), world_to_base_(world_to_base), safety_margin_data_(safety_margin_data)
+    : manip_(manip)
+    , env_(env)
+    , adjacency_map_(adjacency_map)
+    , world_to_base_(world_to_base)
+    , safety_margin_data_(safety_margin_data)
   {
   }
   virtual ~CollisionEvaluator() = default;
@@ -70,6 +72,7 @@ public:
   void CalcCollisions(const DblVec& x, tesseract_collision::ContactResultVector& dist_results) override;
   void Plot(const tesseract_visualization::Visualization::Ptr& plotter, const DblVec& x) override;
   sco::VarVector GetVars() override { return m_vars; }
+
 private:
   sco::VarVector m_vars;
   tesseract_collision::DiscreteContactManager::Ptr contact_manager_;
@@ -90,6 +93,7 @@ public:
   void CalcCollisions(const DblVec& x, tesseract_collision::ContactResultVector& dist_results) override;
   void Plot(const tesseract_visualization::Visualization::Ptr& plotter, const DblVec& x) override;
   sco::VarVector GetVars() override { return concat(m_vars0, m_vars1); }
+
 private:
   sco::VarVector m_vars0;
   sco::VarVector m_vars1;
@@ -118,6 +122,7 @@ public:
   virtual double value(const DblVec&) override;
   void Plot(const tesseract_visualization::Visualization::Ptr& plotter, const DblVec& x) override;
   sco::VarVector getVars() override { return m_calc->GetVars(); }
+
 private:
   CollisionEvaluator::Ptr m_calc;
 };
@@ -144,7 +149,8 @@ public:
   virtual DblVec value(const DblVec&) override;
   void Plot(const DblVec& x);
   sco::VarVector getVars() override { return m_calc->GetVars(); }
+
 private:
   CollisionEvaluator::Ptr m_calc;
 };
-}
+}  // namespace trajopt

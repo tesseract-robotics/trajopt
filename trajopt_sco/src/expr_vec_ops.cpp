@@ -9,4 +9,4 @@ AffExpr varDot(const Eigen::VectorXd& x, const VarVector& v)
   out.coeffs = DblVec(x.data(), x.data() + x.size());
   return out;
 }
-}
+}  // namespace sco

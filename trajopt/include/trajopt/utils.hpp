@@ -105,6 +105,7 @@ struct SafetyMarginData
   }
 
   const double& getMaxSafetyMargin() const { return max_safety_margin_; }
+
 private:
   /// The coeff used during optimization
   /// safety margin: contacts with distance < dist_pen are penalized
@@ -127,8 +128,8 @@ private:
  * @return A vector of Safety Margin Data
  */
 inline std::vector<SafetyMarginData::Ptr> createSafetyMarginDataVector(int num_elements,
-                                                                     const double& default_safety_margin,
-                                                                     const double& default_safety_margin_coeff)
+                                                                       const double& default_safety_margin,
+                                                                       const double& default_safety_margin_coeff)
 {
   std::vector<SafetyMarginData::Ptr> info;
   info.reserve(static_cast<size_t>(num_elements));
@@ -138,4 +139,4 @@ inline std::vector<SafetyMarginData::Ptr> createSafetyMarginDataVector(int num_e
   }
   return info;
 }
-}
+}  // namespace trajopt

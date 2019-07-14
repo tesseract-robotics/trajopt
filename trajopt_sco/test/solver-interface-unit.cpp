@@ -241,8 +241,14 @@ TEST_P(SolverInterface, ExprMult_test3)
   EXPECT_NEAR(aff12.value(soln), answer, 1e-6);
 }
 
-auto getAvailableSolvers = [] () { std::vector<ModelType> solvers = availableSolvers();
-  auto it = std::find(solvers.begin(), solvers.end(),ModelType::OSQP);
-  if(it != solvers.end()) { solvers.erase(it); }; return solvers; };
+auto getAvailableSolvers = []() {
+  std::vector<ModelType> solvers = availableSolvers();
+  auto it = std::find(solvers.begin(), solvers.end(), ModelType::OSQP);
+  if (it != solvers.end())
+  {
+    solvers.erase(it);
+  };
+  return solvers;
+};
 
 INSTANTIATE_TEST_CASE_P(AllSolvers, SolverInterface, testing::ValuesIn(getAvailableSolvers()));

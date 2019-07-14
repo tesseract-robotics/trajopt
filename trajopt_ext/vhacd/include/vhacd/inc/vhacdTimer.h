@@ -107,5 +107,5 @@ private:
   struct timespec m_stop;
 };
 #endif
-}
+}  // namespace VHACD
 #endif  // VHACD_TIMER_H

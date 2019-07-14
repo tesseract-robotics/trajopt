@@ -53,4 +53,4 @@ sco::Optimizer::Callback PlotCallback(TrajOptProb& prob, const tesseract_visuali
                    std::ref(prob.GetVars()),
                    std::placeholders::_2);
 }
-}
+}  // namespace trajopt

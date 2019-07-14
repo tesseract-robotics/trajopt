@@ -61,4 +61,4 @@ struct CommandParser
   CommandParser(const Config& config) { addGroup(config); }
   void read(int argc, char* argv[]);
 };
-}
+}  // namespace util

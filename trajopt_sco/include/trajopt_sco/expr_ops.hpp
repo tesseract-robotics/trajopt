@@ -159,4 +159,4 @@ QuadExpr exprSquare(const Var&);
 QuadExpr exprSquare(const AffExpr&);
 
 AffExpr cleanupAff(const AffExpr&);
-}
+}  // namespace sco

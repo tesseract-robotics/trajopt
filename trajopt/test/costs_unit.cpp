@@ -29,13 +29,13 @@ using namespace tesseract_kinematics;
 using namespace tesseract_visualization;
 using namespace tesseract_scene_graph;
 
-static bool plotting = false;                                          /**< Enable plotting */
+static bool plotting = false; /**< Enable plotting */
 
 class CostsTest : public testing::TestWithParam<const char*>
 {
 public:
   Tesseract::Ptr tesseract_ = std::make_shared<Tesseract>(); /**< Trajopt Basic Environment */
-  Visualization::Ptr plotter_; /**< Trajopt Plotter */
+  Visualization::Ptr plotter_;                               /**< Trajopt Plotter */
 
   void SetUp() override
   {
@@ -879,6 +879,6 @@ int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
 
-//  pnh.param("plotting", plotting, false);
+  //  pnh.param("plotting", plotting, false);
   return RUN_ALL_TESTS();
 }

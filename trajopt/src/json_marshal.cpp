@@ -68,4 +68,4 @@ void fromJson(const Json::Value& v, Eigen::Vector4d& ref)
   fromJsonArray(v, vx, 4);
   ref = Eigen::Vector4d(vx[0], vx[1], vx[2], vx[3]);
 }
-}
+}  // namespace json_marshal

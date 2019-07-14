@@ -131,4 +131,4 @@ void eigenToTriplets(const Eigen::SparseMatrix<double>& sparse_matrix,
     }
   }
 }
-}
+}  // namespace sco

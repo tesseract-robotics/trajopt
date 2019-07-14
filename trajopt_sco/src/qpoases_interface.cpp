@@ -248,4 +248,4 @@ void qpOASESModel::writeToFile(const std::string& /*fname*/)
   return;  // NOT IMPLEMENTED
 }
 VarVector qpOASESModel::getVars() const { return vars_; }
-}
+}  // namespace sco

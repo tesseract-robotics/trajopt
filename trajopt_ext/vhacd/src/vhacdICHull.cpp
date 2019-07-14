@@ -834,4 +834,4 @@ bool ICHull::IsInside(const Vec3<double>& pt0, const double eps)
     return true;
   }
 }
-}
+}  // namespace VHACD

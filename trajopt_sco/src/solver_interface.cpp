@@ -302,4 +302,4 @@ Model::Ptr createModel(ModelType model_type)
   PRINT_AND_THROW(solver_instatiation_error.str());
   return Model::Ptr();
 }
-}
+}  // namespace sco

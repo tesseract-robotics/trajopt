@@ -223,4 +223,4 @@ bool TMMesh::CheckConsistancy()
   }
   return true;
 }
-}
+}  // namespace VHACD

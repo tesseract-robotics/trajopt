@@ -8,7 +8,6 @@ TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace sco
 {
-
 class Var;
 class AffExpr;
 class QuadExpr;
@@ -53,4 +52,4 @@ inline double vecDot(const DblVec& a, const DblVec& b)
     out += a[i] * b[i];
   return out;
 }
-}
+}  // namespace sco

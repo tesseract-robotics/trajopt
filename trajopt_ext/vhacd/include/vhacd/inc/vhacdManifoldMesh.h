@@ -153,5 +153,5 @@ private:
   TMMesh(const TMMesh& rhs);
   friend class ICHull;
 };
-}
+}  // namespace VHACD
 #endif  // VHACD_MANIFOLD_MESH_H

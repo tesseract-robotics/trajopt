@@ -53,7 +53,6 @@ class Optimizer
    * Solves an optimization problem
    */
 public:
-
   using Ptr = std::shared_ptr<Optimizer>;
 
   virtual ~Optimizer() = default;
@@ -114,7 +113,6 @@ class BasicTrustRegionSQP : public Optimizer
    * constraints)
    */
 public:
-
   using Ptr = std::shared_ptr<BasicTrustRegionSQP>;
 
   BasicTrustRegionSQP();
@@ -131,4 +129,4 @@ protected:
   Model::Ptr model_;
   BasicTrustRegionSQPParameters param_;
 };
-}
+}  // namespace sco

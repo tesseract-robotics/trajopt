@@ -37,4 +37,4 @@ double GetClock()
   curTime = static_cast<unsigned long>(startTimeStruct.tv_sec * 1e6l + startTimeStruct.tv_usec);
   return (1e-6) * static_cast<double>(curTime - startTime);
 }
-}
+}  // namespace util

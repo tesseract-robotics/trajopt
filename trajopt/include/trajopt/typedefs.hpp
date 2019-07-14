@@ -35,7 +35,6 @@ using AlignedUnorderedMap = std::unordered_map<Key,
 class Plotter
 {
 public:
-
   using Ptr = std::shared_ptr<Plotter>;
 
   virtual void Plot(const tesseract_visualization::Visualization::Ptr& plotter, const DblVec& x) = 0;
@@ -120,4 +119,4 @@ public:
     }
   }
 };
-}
+}  // namespace trajopt

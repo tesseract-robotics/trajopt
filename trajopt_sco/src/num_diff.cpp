@@ -115,4 +115,4 @@ MatrixOfVector::Ptr forwardNumJac(VectorOfVector::Ptr f, double epsilon)
 {
   return MatrixOfVector::Ptr(new ForwardNumJac(f, epsilon));
 }
-}
+}  // namespace sco

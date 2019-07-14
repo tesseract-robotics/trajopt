@@ -165,30 +165,32 @@ public:
   uint32_t mTcount;
   uint32_t* mIndices;
 };
-};
+};  // namespace RAYCAST_MESH
 
 using namespace RAYCAST_MESH;
 
 namespace VHACD
 {
-RaycastMesh* RaycastMesh::createRaycastMesh(
-    uint32_t vcount,          // The number of vertices in the source triangle mesh
-    const double* vertices,   // The array of vertex positions in the format x1,y1,z1..x2,y2,z2.. etc.
-    uint32_t tcount,          // The number of triangles in the source triangle mesh
-    const uint32_t* indices)  // The triangle indices in the format of i1,i2,i3 ... i4,i5,i6, ...
+RaycastMesh* RaycastMesh::createRaycastMesh(uint32_t vcount,  // The number of vertices in the source triangle mesh
+                                            const double* vertices,  // The array of vertex positions in the format
+                                                                     // x1,y1,z1..x2,y2,z2.. etc.
+                                            uint32_t tcount,  // The number of triangles in the source triangle mesh
+                                            const uint32_t* indices)  // The triangle indices in the format of i1,i2,i3
+                                                                      // ... i4,i5,i6, ...
 {
   MyRaycastMesh* m = new MyRaycastMesh(vcount, vertices, tcount, indices);
   return static_cast<RaycastMesh*>(m);
 }
 
-RaycastMesh* RaycastMesh::createRaycastMesh(
-    uint32_t vcount,          // The number of vertices in the source triangle mesh
-    const float* vertices,    // The array of vertex positions in the format x1,y1,z1..x2,y2,z2.. etc.
-    uint32_t tcount,          // The number of triangles in the source triangle mesh
-    const uint32_t* indices)  // The triangle indices in the format of i1,i2,i3 ... i4,i5,i6, ...
+RaycastMesh* RaycastMesh::createRaycastMesh(uint32_t vcount,  // The number of vertices in the source triangle mesh
+                                            const float* vertices,  // The array of vertex positions in the format
+                                                                    // x1,y1,z1..x2,y2,z2.. etc.
+                                            uint32_t tcount,  // The number of triangles in the source triangle mesh
+                                            const uint32_t* indices)  // The triangle indices in the format of i1,i2,i3
+                                                                      // ... i4,i5,i6, ...
 {
   MyRaycastMesh* m = new MyRaycastMesh(vcount, vertices, tcount, indices);
   return static_cast<RaycastMesh*>(m);
 }
 
-}  // end of VHACD namespace
+}  // namespace VHACD

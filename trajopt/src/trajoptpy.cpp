@@ -314,6 +314,7 @@ public:
     m_cc->IncludeCollisionPair(*GetCppLink(link0, env), *GetCppLink(link1, env));
   }
   PyCollisionChecker(CollisionCheckerPtr cc) : m_cc(cc) {}
+
 private:
   PyCollisionChecker();
   CollisionCheckerPtr m_cc;

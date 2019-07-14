@@ -37,4 +37,4 @@ inline AffExpr operator*(const AffExpr& a, double b) { return exprMult(a, b); }
 inline QuadExpr operator*(const QuadExpr& a, double b) { return exprMult(a, b); }
 inline AffExpr operator-(const Var& a) { return exprMult(a, -1); }
 inline AffExpr operator-(const AffExpr& a) { return exprMult(a, -1); }
-}
+}  // namespace sco

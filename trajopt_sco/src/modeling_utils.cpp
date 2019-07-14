@@ -263,4 +263,4 @@ std::string AffExprToString(const AffExpr& aff)
   out.append(" + " + std::to_string(aff.constant));
   return out;
 }
-}
+}  // namespace sco

@@ -37,4 +37,4 @@ public:
   virtual void writeToFile(const std::string& fname) override;
   virtual VarVector getVars() const override;
 };
-}
+}  // namespace sco

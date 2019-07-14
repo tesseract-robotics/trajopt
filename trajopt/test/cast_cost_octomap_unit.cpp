@@ -40,7 +40,7 @@ class CastOctomapTest : public testing::TestWithParam<const char*>
 {
 public:
   Tesseract::Ptr tesseract_ = std::make_shared<Tesseract>(); /**< Tesseract */
-  Visualization::Ptr plotter_;                                 /**< Trajopt Plotter */
+  Visualization::Ptr plotter_;                               /**< Trajopt Plotter */
 
   void SetUp() override
   {
@@ -53,7 +53,7 @@ public:
     gLogLevel = util::LevelError;
 
     // Create plotting tool
-//    plotter_.reset(new tesseract_ros::ROSBasicPlotting(env_));
+    //    plotter_.reset(new tesseract_ros::ROSBasicPlotting(env_));
 
     octomap::Pointcloud point_cloud;
     double delta = 0.05;
@@ -97,14 +97,14 @@ TEST_F(CastOctomapTest, boxes)
 {
   CONSOLE_BRIDGE_logDebug("CastOctomapTest, boxes");
 
-  Json::Value root = readJsonFile(std::string(TRAJOPT_DIR)  + "/test/data/config/box_cast_test.json");
+  Json::Value root = readJsonFile(std::string(TRAJOPT_DIR) + "/test/data/config/box_cast_test.json");
 
   std::unordered_map<std::string, double> ipos;
   ipos["boxbot_x_joint"] = -1.9;
   ipos["boxbot_y_joint"] = 0;
   tesseract_->getEnvironment()->setState(ipos);
 
-//  plotter_->plotScene();
+  //  plotter_->plotScene();
 
   TrajOptProb::Ptr prob = ConstructProblem(root, tesseract_);
   ASSERT_TRUE(!!prob);
@@ -112,13 +112,14 @@ TEST_F(CastOctomapTest, boxes)
   std::vector<ContactResultMap> collisions;
   ContinuousContactManager::Ptr manager = prob->GetEnv()->getContinuousContactManager();
   AdjacencyMap::Ptr adjacency_map = std::make_shared<AdjacencyMap>(tesseract_->getEnvironment()->getSceneGraph(),
-                                                                 prob->GetKin()->getActiveLinkNames(),
-                                                                 prob->GetEnv()->getCurrentState()->transforms);
+                                                                   prob->GetKin()->getActiveLinkNames(),
+                                                                   prob->GetEnv()->getCurrentState()->transforms);
 
   manager->setActiveCollisionObjects(adjacency_map->getActiveLinkNames());
   manager->setContactDistanceThreshold(0);
 
-  bool found = checkTrajectory(*manager, *prob->GetEnv(), prob->GetKin()->getJointNames(), prob->GetInitTraj(), collisions);
+  bool found =
+      checkTrajectory(*manager, *prob->GetEnv(), prob->GetKin()->getJointNames(), prob->GetInitTraj(), collisions);
 
   EXPECT_TRUE(found);
   CONSOLE_BRIDGE_logDebug((found) ? ("Initial trajectory is in collision") : ("Initial trajectory is collision free"));
@@ -133,7 +134,8 @@ TEST_F(CastOctomapTest, boxes)
     plotter_->clear();
 
   collisions.clear();
-  found = checkTrajectory(*manager, *prob->GetEnv(), prob->GetKin()->getJointNames(), getTraj(opt.x(), prob->GetVars()), collisions);
+  found = checkTrajectory(
+      *manager, *prob->GetEnv(), prob->GetKin()->getJointNames(), getTraj(opt.x(), prob->GetVars()), collisions);
 
   EXPECT_FALSE(found);
   CONSOLE_BRIDGE_logDebug((found) ? ("Final trajectory is in collision") : ("Final trajectory is collision free"));
@@ -143,6 +145,6 @@ int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
 
-//  pnh.param("plotting", plotting, false);
+  //  pnh.param("plotting", plotting, false);
   return RUN_ALL_TESTS();
 }

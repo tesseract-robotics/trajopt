@@ -48,7 +48,6 @@ that variable
 class Model
 {
 public:
-
   using Ptr = std::shared_ptr<Model>;
 
   virtual Var addVar(const std::string& name) = 0;
@@ -81,7 +80,6 @@ public:
 
 struct VarRep
 {
-
   using Ptr = std::shared_ptr<VarRep>;
 
   VarRep(int _index, const std::string& _name, void* _creator)
@@ -96,7 +94,6 @@ struct VarRep
 
 struct Var
 {
-
   using Ptr = std::shared_ptr<Var>;
 
   VarRep* var_rep;
@@ -113,7 +110,6 @@ struct Var
 
 struct CntRep
 {
-
   using Ptr = std::shared_ptr<CntRep>;
 
   CntRep(int _index, void* _creator) : index(_index), removed(false), creator(_creator) {}
@@ -126,7 +122,6 @@ struct CntRep
 
 struct Cnt
 {
-
   using Ptr = std::shared_ptr<Cnt>;
 
   CntRep* cnt_rep;
@@ -154,7 +149,6 @@ struct AffExpr
 
 struct QuadExpr
 {
-
   using Ptr = std::shared_ptr<QuadExpr>;
 
   AffExpr affexpr;
@@ -225,4 +219,4 @@ IntVec cnts2inds(const CntVector& cnts);
  * @param[in,out] val values
  */
 void simplify2(IntVec& inds, DblVec& vals);
-}
+}  // namespace sco

@@ -400,4 +400,4 @@ bool Mesh::LoadOFF(const std::string& fileName, bool invert)
   return true;
 }
 #endif  // VHACD_DEBUG_MESH
-}
+}  // namespace VHACD

@@ -92,10 +92,7 @@ namespace trajopt
 {
 std::map<std::string, TermInfo::MakerFunc> TermInfo::name2maker;
 
-void TermInfo::RegisterMaker(const std::string& type, MakerFunc f)
-{
-  TermInfo::name2maker[type] = f;
-}
+void TermInfo::RegisterMaker(const std::string& type, MakerFunc f) { TermInfo::name2maker[type] = f; }
 
 TermInfo::Ptr TermInfo::fromName(const std::string& type)
 {
@@ -505,8 +502,7 @@ TrajOptProb::Ptr ConstructProblem(const ProblemConstructionInfo& pci)
   return prob;
 }
 
-TrajOptProb::Ptr ConstructProblem(const Json::Value& root,
-                                const tesseract::Tesseract::ConstPtr &tesseract)
+TrajOptProb::Ptr ConstructProblem(const Json::Value& root, const tesseract::Tesseract::ConstPtr& tesseract)
 {
   ProblemConstructionInfo pci(tesseract);
   pci.fromJson(root);
@@ -593,11 +589,11 @@ void DynamicCartPoseTermInfo::hatch(TrajOptProb& prob)
   {
     tesseract_environment::EnvState::ConstPtr state = prob.GetEnv()->getCurrentState();
     Eigen::Isometry3d world_to_base = state->transforms.at(prob.GetKin()->getBaseLinkName());
-    tesseract_environment::AdjacencyMap::Ptr adjacency_map = std::make_shared<tesseract_environment::AdjacencyMap>(prob.GetEnv()->getSceneGraph(),
-                                                                                                                 prob.GetKin()->getActiveLinkNames(),
-                                                                                                                 state->transforms);
+    tesseract_environment::AdjacencyMap::Ptr adjacency_map = std::make_shared<tesseract_environment::AdjacencyMap>(
+        prob.GetEnv()->getSceneGraph(), prob.GetKin()->getActiveLinkNames(), state->transforms);
 
-    sco::VectorOfVector::Ptr f(new DynamicCartPoseErrCalculator(target, prob.GetKin(), adjacency_map, world_to_base, link, tcp));
+    sco::VectorOfVector::Ptr f(
+        new DynamicCartPoseErrCalculator(target, prob.GetKin(), adjacency_map, world_to_base, link, tcp));
     // Apply error calculator as either cost or constraint
     if (term_type & TT_COST)
     {
@@ -611,7 +607,8 @@ void DynamicCartPoseTermInfo::hatch(TrajOptProb& prob)
     }
     else
     {
-      CONSOLE_BRIDGE_logWarn("DynamicCartPoseTermInfo does not have a valid term_type defined. No cost/constraint applied");
+      CONSOLE_BRIDGE_logWarn("DynamicCartPoseTermInfo does not have a valid term_type defined. No cost/constraint "
+                             "applied");
     }
   }
 }
@@ -664,9 +661,8 @@ void CartPoseTermInfo::hatch(TrajOptProb& prob)
 
   tesseract_environment::EnvState::ConstPtr state = prob.GetEnv()->getCurrentState();
   Eigen::Isometry3d world_to_base = state->transforms.at(prob.GetKin()->getBaseLinkName());
-  tesseract_environment::AdjacencyMap::Ptr adjacency_map = std::make_shared<tesseract_environment::AdjacencyMap>(prob.GetEnv()->getSceneGraph(),
-                                                                                                               prob.GetKin()->getActiveLinkNames(),
-                                                                                                               state->transforms);
+  tesseract_environment::AdjacencyMap::Ptr adjacency_map = std::make_shared<tesseract_environment::AdjacencyMap>(
+      prob.GetEnv()->getSceneGraph(), prob.GetKin()->getActiveLinkNames(), state->transforms);
 
   if (term_type == (TT_COST | TT_USE_TIME))
   {
@@ -678,13 +674,15 @@ void CartPoseTermInfo::hatch(TrajOptProb& prob)
   }
   else if ((term_type & TT_COST) && ~(term_type | ~TT_USE_TIME))
   {
-    sco::VectorOfVector::Ptr f(new CartPoseErrCalculator(input_pose, prob.GetKin(), adjacency_map, world_to_base, link, tcp));
+    sco::VectorOfVector::Ptr f(
+        new CartPoseErrCalculator(input_pose, prob.GetKin(), adjacency_map, world_to_base, link, tcp));
     prob.addCost(sco::Cost::Ptr(new TrajOptCostFromErrFunc(
         f, prob.GetVarRow(timestep, 0, n_dof), concat(rot_coeffs, pos_coeffs), sco::ABS, name)));
   }
   else if ((term_type & TT_CNT) && ~(term_type | ~TT_USE_TIME))
   {
-    sco::VectorOfVector::Ptr f(new CartPoseErrCalculator(input_pose, prob.GetKin(), adjacency_map, world_to_base, link, tcp));
+    sco::VectorOfVector::Ptr f(
+        new CartPoseErrCalculator(input_pose, prob.GetKin(), adjacency_map, world_to_base, link, tcp));
     prob.addConstraint(sco::Constraint::Ptr(new TrajOptConstraintFromErrFunc(
         f, prob.GetVarRow(timestep, 0, n_dof), concat(rot_coeffs, pos_coeffs), sco::EQ, name)));
   }
@@ -722,9 +720,8 @@ void CartVelTermInfo::hatch(TrajOptProb& prob)
 
   tesseract_environment::EnvState::ConstPtr state = prob.GetEnv()->getCurrentState();
   Eigen::Isometry3d world_to_base = state->transforms.at(prob.GetKin()->getBaseLinkName());
-  tesseract_environment::AdjacencyMap::Ptr adjacency_map = std::make_shared<tesseract_environment::AdjacencyMap>(prob.GetEnv()->getSceneGraph(),
-                                                                                                               prob.GetKin()->getActiveLinkNames(),
-                                                                                                               state->transforms);
+  tesseract_environment::AdjacencyMap::Ptr adjacency_map = std::make_shared<tesseract_environment::AdjacencyMap>(
+      prob.GetEnv()->getSceneGraph(), prob.GetKin()->getActiveLinkNames(), state->transforms);
 
   if (term_type == (TT_COST | TT_USE_TIME))
   {
@@ -739,8 +736,10 @@ void CartVelTermInfo::hatch(TrajOptProb& prob)
     for (int iStep = first_step; iStep < last_step; ++iStep)
     {
       prob.addCost(sco::Cost::Ptr(new TrajOptCostFromErrFunc(
-          sco::VectorOfVector::Ptr(new CartVelErrCalculator(prob.GetKin(), adjacency_map, world_to_base, link, max_displacement)),
-          sco::MatrixOfVector::Ptr(new CartVelJacCalculator(prob.GetKin(), adjacency_map, world_to_base, link, max_displacement)),
+          sco::VectorOfVector::Ptr(
+              new CartVelErrCalculator(prob.GetKin(), adjacency_map, world_to_base, link, max_displacement)),
+          sco::MatrixOfVector::Ptr(
+              new CartVelJacCalculator(prob.GetKin(), adjacency_map, world_to_base, link, max_displacement)),
           concat(prob.GetVarRow(iStep, 0, n_dof), prob.GetVarRow(iStep + 1, 0, n_dof)),
           Eigen::VectorXd::Ones(0),
           sco::ABS,
@@ -752,8 +751,10 @@ void CartVelTermInfo::hatch(TrajOptProb& prob)
     for (int iStep = first_step; iStep < last_step; ++iStep)
     {
       prob.addConstraint(sco::Constraint::Ptr(new TrajOptConstraintFromErrFunc(
-          sco::VectorOfVector::Ptr(new CartVelErrCalculator(prob.GetKin(), adjacency_map, world_to_base, link, max_displacement)),
-          sco::MatrixOfVector::Ptr(new CartVelJacCalculator(prob.GetKin(), adjacency_map, world_to_base, link, max_displacement)),
+          sco::VectorOfVector::Ptr(
+              new CartVelErrCalculator(prob.GetKin(), adjacency_map, world_to_base, link, max_displacement)),
+          sco::MatrixOfVector::Ptr(
+              new CartVelJacCalculator(prob.GetKin(), adjacency_map, world_to_base, link, max_displacement)),
           concat(prob.GetVarRow(iStep, 0, n_dof), prob.GetVarRow(iStep + 1, 0, n_dof)),
           Eigen::VectorXd::Ones(0),
           sco::INEQ,
@@ -846,12 +847,12 @@ void JointPosTermInfo::hatch(TrajOptProb& prob)
     else
     {
       prob.addCost(sco::Cost::Ptr(new JointPosIneqCost(joint_vars,
-                                                     util::toVectorXd(coeffs),
-                                                     util::toVectorXd(targets),
-                                                     util::toVectorXd(upper_tols),
-                                                     util::toVectorXd(lower_tols),
-                                                     first_step,
-                                                     last_step)));
+                                                       util::toVectorXd(coeffs),
+                                                       util::toVectorXd(targets),
+                                                       util::toVectorXd(upper_tols),
+                                                       util::toVectorXd(lower_tols),
+                                                       first_step,
+                                                       last_step)));
       prob.getCosts().back()->setName(name);
     }
   }
@@ -867,12 +868,12 @@ void JointPosTermInfo::hatch(TrajOptProb& prob)
     else
     {
       prob.addConstraint(sco::Constraint::Ptr(new JointPosIneqConstraint(joint_vars,
-                                                                       util::toVectorXd(coeffs),
-                                                                       util::toVectorXd(targets),
-                                                                       util::toVectorXd(upper_tols),
-                                                                       util::toVectorXd(lower_tols),
-                                                                       first_step,
-                                                                       last_step)));
+                                                                         util::toVectorXd(coeffs),
+                                                                         util::toVectorXd(targets),
+                                                                         util::toVectorXd(upper_tols),
+                                                                         util::toVectorXd(lower_tols),
+                                                                         first_step,
+                                                                         last_step)));
       prob.getConstraints().back()->setName(name);
     }
   }
@@ -1034,12 +1035,12 @@ void JointVelTermInfo::hatch(TrajOptProb& prob)
     else
     {
       prob.addCost(sco::Cost::Ptr(new JointVelIneqCost(joint_vars,
-                                                     util::toVectorXd(coeffs),
-                                                     util::toVectorXd(targets),
-                                                     util::toVectorXd(upper_tols),
-                                                     util::toVectorXd(lower_tols),
-                                                     first_step,
-                                                     last_step)));
+                                                       util::toVectorXd(coeffs),
+                                                       util::toVectorXd(targets),
+                                                       util::toVectorXd(upper_tols),
+                                                       util::toVectorXd(lower_tols),
+                                                       first_step,
+                                                       last_step)));
       prob.getCosts().back()->setName(name);
     }
   }
@@ -1055,12 +1056,12 @@ void JointVelTermInfo::hatch(TrajOptProb& prob)
     else
     {
       prob.addConstraint(sco::Constraint::Ptr(new JointVelIneqConstraint(joint_vars,
-                                                                       util::toVectorXd(coeffs),
-                                                                       util::toVectorXd(targets),
-                                                                       util::toVectorXd(upper_tols),
-                                                                       util::toVectorXd(lower_tols),
-                                                                       first_step,
-                                                                       last_step)));
+                                                                         util::toVectorXd(coeffs),
+                                                                         util::toVectorXd(targets),
+                                                                         util::toVectorXd(upper_tols),
+                                                                         util::toVectorXd(lower_tols),
+                                                                         first_step,
+                                                                         last_step)));
       prob.getConstraints().back()->setName(name);
     }
   }
@@ -1155,12 +1156,12 @@ void JointAccTermInfo::hatch(TrajOptProb& prob)
     else
     {
       prob.addCost(sco::Cost::Ptr(new JointAccIneqCost(joint_vars,
-                                                     util::toVectorXd(coeffs),
-                                                     util::toVectorXd(targets),
-                                                     util::toVectorXd(upper_tols),
-                                                     util::toVectorXd(lower_tols),
-                                                     first_step,
-                                                     last_step)));
+                                                       util::toVectorXd(coeffs),
+                                                       util::toVectorXd(targets),
+                                                       util::toVectorXd(upper_tols),
+                                                       util::toVectorXd(lower_tols),
+                                                       first_step,
+                                                       last_step)));
       prob.getCosts().back()->setName(name);
     }
   }
@@ -1176,12 +1177,12 @@ void JointAccTermInfo::hatch(TrajOptProb& prob)
     else
     {
       prob.addConstraint(sco::Constraint::Ptr(new JointAccIneqConstraint(joint_vars,
-                                                                       util::toVectorXd(coeffs),
-                                                                       util::toVectorXd(targets),
-                                                                       util::toVectorXd(upper_tols),
-                                                                       util::toVectorXd(lower_tols),
-                                                                       first_step,
-                                                                       last_step)));
+                                                                         util::toVectorXd(coeffs),
+                                                                         util::toVectorXd(targets),
+                                                                         util::toVectorXd(upper_tols),
+                                                                         util::toVectorXd(lower_tols),
+                                                                         first_step,
+                                                                         last_step)));
       prob.getConstraints().back()->setName(name);
     }
   }
@@ -1277,12 +1278,12 @@ void JointJerkTermInfo::hatch(TrajOptProb& prob)
     else
     {
       prob.addCost(sco::Cost::Ptr(new JointJerkIneqCost(joint_vars,
-                                                      util::toVectorXd(coeffs),
-                                                      util::toVectorXd(targets),
-                                                      util::toVectorXd(upper_tols),
-                                                      util::toVectorXd(lower_tols),
-                                                      first_step,
-                                                      last_step)));
+                                                        util::toVectorXd(coeffs),
+                                                        util::toVectorXd(targets),
+                                                        util::toVectorXd(upper_tols),
+                                                        util::toVectorXd(lower_tols),
+                                                        first_step,
+                                                        last_step)));
       prob.getCosts().back()->setName(name);
     }
   }
@@ -1298,12 +1299,12 @@ void JointJerkTermInfo::hatch(TrajOptProb& prob)
     else
     {
       prob.addConstraint(sco::Constraint::Ptr(new JointJerkIneqConstraint(joint_vars,
-                                                                        util::toVectorXd(coeffs),
-                                                                        util::toVectorXd(targets),
-                                                                        util::toVectorXd(upper_tols),
-                                                                        util::toVectorXd(lower_tols),
-                                                                        first_step,
-                                                                        last_step)));
+                                                                          util::toVectorXd(coeffs),
+                                                                          util::toVectorXd(targets),
+                                                                          util::toVectorXd(upper_tols),
+                                                                          util::toVectorXd(lower_tols),
+                                                                          first_step,
+                                                                          last_step)));
       prob.getConstraints().back()->setName(name);
     }
   }
@@ -1415,9 +1416,8 @@ void CollisionTermInfo::hatch(TrajOptProb& prob)
   int n_dof = static_cast<int>(prob.GetKin()->numJoints());
   tesseract_environment::EnvState::ConstPtr state = prob.GetEnv()->getCurrentState();
   Eigen::Isometry3d world_to_base = state->transforms.at(prob.GetKin()->getBaseLinkName());
-  tesseract_environment::AdjacencyMap::Ptr adjacency_map = std::make_shared<tesseract_environment::AdjacencyMap>(prob.GetEnv()->getSceneGraph(),
-                                                                                                               prob.GetKin()->getActiveLinkNames(),
-                                                                                                               state->transforms);
+  tesseract_environment::AdjacencyMap::Ptr adjacency_map = std::make_shared<tesseract_environment::AdjacencyMap>(
+      prob.GetEnv()->getSceneGraph(), prob.GetKin()->getActiveLinkNames(), state->transforms);
 
   if (term_type == TT_COST)
   {
@@ -1426,12 +1426,12 @@ void CollisionTermInfo::hatch(TrajOptProb& prob)
       for (int i = first_step; i <= last_step - gap; ++i)
       {
         prob.addCost(sco::Cost::Ptr(new CollisionCost(prob.GetKin(),
-                                                    prob.GetEnv(),
-                                                    adjacency_map,
-                                                    world_to_base,
-                                                    info[static_cast<size_t>(i - first_step)],
-                                                    prob.GetVarRow(i, 0, n_dof),
-                                                    prob.GetVarRow(i + gap, 0, n_dof))));
+                                                      prob.GetEnv(),
+                                                      adjacency_map,
+                                                      world_to_base,
+                                                      info[static_cast<size_t>(i - first_step)],
+                                                      prob.GetVarRow(i, 0, n_dof),
+                                                      prob.GetVarRow(i + gap, 0, n_dof))));
         prob.getCosts().back()->setName((boost::format("%s_%i") % name.c_str() % i).str());
       }
     }
@@ -1440,11 +1440,11 @@ void CollisionTermInfo::hatch(TrajOptProb& prob)
       for (int i = first_step; i <= last_step; ++i)
       {
         prob.addCost(sco::Cost::Ptr(new CollisionCost(prob.GetKin(),
-                                                    prob.GetEnv(),
-                                                    adjacency_map,
-                                                    world_to_base,
-                                                    info[static_cast<size_t>(i - first_step)],
-                                                    prob.GetVarRow(i, 0, n_dof))));
+                                                      prob.GetEnv(),
+                                                      adjacency_map,
+                                                      world_to_base,
+                                                      info[static_cast<size_t>(i - first_step)],
+                                                      prob.GetVarRow(i, 0, n_dof))));
         prob.getCosts().back()->setName((boost::format("%s_%i") % name.c_str() % i).str());
       }
     }
@@ -1456,12 +1456,12 @@ void CollisionTermInfo::hatch(TrajOptProb& prob)
       for (int i = first_step; i < last_step; ++i)
       {
         prob.addIneqConstraint(sco::Constraint::Ptr(new CollisionConstraint(prob.GetKin(),
-                                                                          prob.GetEnv(),
-                                                                          adjacency_map,
-                                                                          world_to_base,
-                                                                          info[static_cast<size_t>(i - first_step)],
-                                                                          prob.GetVarRow(i, 0, n_dof),
-                                                                          prob.GetVarRow(i + 1, 0, n_dof))));
+                                                                            prob.GetEnv(),
+                                                                            adjacency_map,
+                                                                            world_to_base,
+                                                                            info[static_cast<size_t>(i - first_step)],
+                                                                            prob.GetVarRow(i, 0, n_dof),
+                                                                            prob.GetVarRow(i + 1, 0, n_dof))));
         prob.getIneqConstraints().back()->setName((boost::format("%s_%i") % name.c_str() % i).str());
       }
     }
@@ -1470,11 +1470,11 @@ void CollisionTermInfo::hatch(TrajOptProb& prob)
       for (int i = first_step; i <= last_step; ++i)
       {
         prob.addIneqConstraint(sco::Constraint::Ptr(new CollisionConstraint(prob.GetKin(),
-                                                                          prob.GetEnv(),
-                                                                          adjacency_map,
-                                                                          world_to_base,
-                                                                          info[static_cast<size_t>(i - first_step)],
-                                                                          prob.GetVarRow(i, 0, n_dof))));
+                                                                            prob.GetEnv(),
+                                                                            adjacency_map,
+                                                                            world_to_base,
+                                                                            info[static_cast<size_t>(i - first_step)],
+                                                                            prob.GetVarRow(i, 0, n_dof))));
         prob.getIneqConstraints().back()->setName((boost::format("%s_%i") % name.c_str() % i).str());
       }
     }
@@ -1522,21 +1522,21 @@ void TotalTimeTermInfo::hatch(TrajOptProb& prob)
   if (term_type & TT_COST)
   {
     prob.addCost(sco::Cost::Ptr(new TrajOptCostFromErrFunc(sco::VectorOfVector::Ptr(new TimeCostCalculator(limit)),
-                                                         sco::MatrixOfVector::Ptr(new TimeCostJacCalculator()),
-                                                         time_vars,
-                                                         coeff_vec,
-                                                         penalty_type,
-                                                         name)));
+                                                           sco::MatrixOfVector::Ptr(new TimeCostJacCalculator()),
+                                                           time_vars,
+                                                           coeff_vec,
+                                                           penalty_type,
+                                                           name)));
   }
   else if (term_type & TT_CNT)
   {
     prob.addConstraint(
         sco::Constraint::Ptr(new TrajOptConstraintFromErrFunc(sco::VectorOfVector::Ptr(new TimeCostCalculator(limit)),
-                                                            sco::MatrixOfVector::Ptr(new TimeCostJacCalculator()),
-                                                            time_vars,
-                                                            coeff_vec,
-                                                            constraint_type,
-                                                            name)));
+                                                              sco::MatrixOfVector::Ptr(new TimeCostJacCalculator()),
+                                                              time_vars,
+                                                              coeff_vec,
+                                                              constraint_type,
+                                                              name)));
   }
   else
   {

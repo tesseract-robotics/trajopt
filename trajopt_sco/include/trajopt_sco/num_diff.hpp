@@ -12,11 +12,9 @@ TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace sco
 {
-
 class ScalarOfVector
 {
 public:
-
   using Ptr = std::shared_ptr<ScalarOfVector>;
 
   virtual double operator()(const Eigen::VectorXd& x) const = 0;
@@ -30,7 +28,6 @@ public:
 class VectorOfVector
 {
 public:
-
   using Ptr = std::shared_ptr<VectorOfVector>;
 
   virtual Eigen::VectorXd operator()(const Eigen::VectorXd& x) const = 0;
@@ -44,7 +41,6 @@ public:
 class MatrixOfVector
 {
 public:
-
   using Ptr = std::shared_ptr<MatrixOfVector>;
 
   virtual Eigen::MatrixXd operator()(const Eigen::VectorXd& x) const = 0;
@@ -72,4 +68,4 @@ void calcGradHess(ScalarOfVector::Ptr f,
                   Eigen::MatrixXd& hess);
 VectorOfVector::Ptr forwardNumGrad(ScalarOfVector::Ptr f, double epsilon);
 MatrixOfVector::Ptr forwardNumJac(VectorOfVector::Ptr f, double epsilon);
-}
+}  // namespace sco

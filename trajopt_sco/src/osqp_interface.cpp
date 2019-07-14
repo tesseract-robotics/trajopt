@@ -267,4 +267,4 @@ void OSQPModel::writeToFile(const std::string& /*fname*/)
   return;  // NOT IMPLEMENTED
 }
 VarVector OSQPModel::getVars() const { return vars_; }
-}
+}  // namespace sco
