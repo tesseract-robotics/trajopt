@@ -31,13 +31,13 @@ using namespace tesseract_kinematics;
 using namespace tesseract_visualization;
 using namespace tesseract_scene_graph;
 
-bool plotting = false;                                                 /**< Enable plotting */
+bool plotting = false; /**< Enable plotting */
 
 class PlanningTest : public testing::TestWithParam<const char*>
 {
 public:
   Tesseract::Ptr tesseract_ = std::make_shared<Tesseract>(); /**< Tesseract */
-  Visualization::Ptr plotter_; /**< Trajopt Plotter */
+  Visualization::Ptr plotter_;                               /**< Trajopt Plotter */
   void SetUp() override
   {
     boost::filesystem::path urdf_file(std::string(TRAJOPT_DIR) + "/test/data/arm_around_table.urdf");
@@ -47,7 +47,7 @@ public:
     EXPECT_TRUE(tesseract_->init(urdf_file, srdf_file, locator));
 
     // Create plotting tool
-//    plotter_.reset(new tesseract_ros::ROSBasicPlotting(env_));
+    //    plotter_.reset(new tesseract_ros::ROSBasicPlotting(env_));
 
     std::unordered_map<std::string, double> ipos;
     ipos["torso_lift_joint"] = 0.0;
@@ -63,16 +63,16 @@ TEST_F(PlanningTest, numerical_ik1)
 
   Json::Value root = readJsonFile(std::string(TRAJOPT_DIR) + "/test/data/config/numerical_ik1.json");
 
-//  plotter_->plotScene();
+  //  plotter_->plotScene();
 
   TrajOptProb::Ptr prob = ConstructProblem(root, tesseract_);
   ASSERT_TRUE(!!prob);
 
   sco::BasicTrustRegionSQP opt(prob);
-//  if (plotting)
-//  {
-//    opt.addCallback(PlotCallback(*prob, plotter_));
-//  }
+  //  if (plotting)
+  //  {
+  //    opt.addCallback(PlotCallback(*prob, plotter_));
+  //  }
 
   CONSOLE_BRIDGE_logDebug("DOF: %d", prob->GetNumDOF());
   opt.initialize(DblVec(static_cast<size_t>(prob->GetNumDOF()), 0));
@@ -122,7 +122,7 @@ TEST_F(PlanningTest, arm_around_table)
 {
   CONSOLE_BRIDGE_logDebug("PlanningTest, arm_around_table");
 
-  Json::Value root = readJsonFile(std::string(TRAJOPT_DIR)  + "/test/data/config/arm_around_table.json");
+  Json::Value root = readJsonFile(std::string(TRAJOPT_DIR) + "/test/data/config/arm_around_table.json");
 
   std::unordered_map<std::string, double> ipos;
   ipos["torso_lift_joint"] = 0;
@@ -135,7 +135,7 @@ TEST_F(PlanningTest, arm_around_table)
   ipos["r_wrist_roll_joint"] = 3.074;
   tesseract_->getEnvironment()->setState(ipos);
 
-//  plotter_->plotScene();
+  //  plotter_->plotScene();
 
   TrajOptProb::Ptr prob = ConstructProblem(root, tesseract_);
   ASSERT_TRUE(!!prob);
@@ -143,23 +143,24 @@ TEST_F(PlanningTest, arm_around_table)
   std::vector<ContactResultMap> collisions;
   ContinuousContactManager::Ptr manager = prob->GetEnv()->getContinuousContactManager();
   AdjacencyMap::Ptr adjacency_map = std::make_shared<AdjacencyMap>(tesseract_->getEnvironment()->getSceneGraph(),
-                                                                 prob->GetKin()->getActiveLinkNames(),
-                                                                 prob->GetEnv()->getCurrentState()->transforms);
+                                                                   prob->GetKin()->getActiveLinkNames(),
+                                                                   prob->GetEnv()->getCurrentState()->transforms);
 
   manager->setActiveCollisionObjects(adjacency_map->getActiveLinkNames());
   manager->setContactDistanceThreshold(0);
 
-  bool found = checkTrajectory(*manager, *prob->GetEnv(), prob->GetKin()->getJointNames(), prob->GetInitTraj(), collisions);
+  bool found =
+      checkTrajectory(*manager, *prob->GetEnv(), prob->GetKin()->getJointNames(), prob->GetInitTraj(), collisions);
 
   EXPECT_TRUE(found);
   CONSOLE_BRIDGE_logDebug((found) ? ("Initial trajectory is in collision") : ("Initial trajectory is collision free"));
 
   sco::BasicTrustRegionSQP opt(prob);
   CONSOLE_BRIDGE_logDebug("DOF: %d", prob->GetNumDOF());
-//  if (plotting)
-//  {
-//    opt.addCallback(PlotCallback(*prob, plotter_));
-//  }
+  //  if (plotting)
+  //  {
+  //    opt.addCallback(PlotCallback(*prob, plotter_));
+  //  }
 
   opt.initialize(trajToDblVec(prob->GetInitTraj()));
   double tStart = GetClock();
@@ -177,13 +178,14 @@ TEST_F(PlanningTest, arm_around_table)
   }
   CONSOLE_BRIDGE_logDebug("trajectory norm: %.3f", d);
 
-//  if (plotting)
-//  {
-//    plotter_->clear();
-//  }
+  //  if (plotting)
+  //  {
+  //    plotter_->clear();
+  //  }
 
   collisions.clear();
-  found = checkTrajectory(*manager, *prob->GetEnv(), prob->GetKin()->getJointNames(), getTraj(opt.x(), prob->GetVars()), collisions);
+  found = checkTrajectory(
+      *manager, *prob->GetEnv(), prob->GetKin()->getJointNames(), getTraj(opt.x(), prob->GetVars()), collisions);
 
   EXPECT_FALSE(found);
   CONSOLE_BRIDGE_logDebug((found) ? ("Final trajectory is in collision") : ("Final trajectory is collision free"));
@@ -193,6 +195,6 @@ int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
 
-//  pnh.param("plotting", plotting, false);
+  //  pnh.param("plotting", plotting, false);
   return RUN_ALL_TESTS();
 }

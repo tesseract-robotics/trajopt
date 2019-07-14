@@ -49,7 +49,9 @@ static DblVec evaluateConstraintViols(const std::vector<Constraint::Ptr>& constr
   }
   return out;
 }
-static std::vector<ConvexObjective::Ptr> convexifyCosts(const std::vector<Cost::Ptr>& costs, const DblVec& x, Model* model)
+static std::vector<ConvexObjective::Ptr> convexifyCosts(const std::vector<Cost::Ptr>& costs,
+                                                        const DblVec& x,
+                                                        Model* model)
 {
   std::vector<ConvexObjective::Ptr> out(costs.size());
   for (size_t i = 0; i < costs.size(); ++i)
@@ -59,8 +61,8 @@ static std::vector<ConvexObjective::Ptr> convexifyCosts(const std::vector<Cost::
   return out;
 }
 static std::vector<ConvexConstraints::Ptr> convexifyConstraints(const std::vector<Constraint::Ptr>& cnts,
-                                                              const DblVec& x,
-                                                              Model* model)
+                                                                const DblVec& x,
+                                                                Model* model)
 {
   std::vector<ConvexConstraints::Ptr> out(cnts.size());
   for (size_t i = 0; i < cnts.size(); ++i)
@@ -167,8 +169,8 @@ void printCostInfo(const DblVec& old_cost_vals,
 
 // todo: use different coeffs for each constraint
 std::vector<ConvexObjective::Ptr> cntsToCosts(const std::vector<ConvexConstraints::Ptr>& cnts,
-                                            double err_coeff,
-                                            Model* model)
+                                              double err_coeff,
+                                              Model* model)
 {
   std::vector<ConvexObjective::Ptr> out;
   for (const ConvexConstraints::Ptr& cnt : cnts)
@@ -320,7 +322,8 @@ OptStatus BasicTrustRegionSQP::optimize()
 
       std::vector<ConvexObjective::Ptr> cost_models = convexifyCosts(prob_->getCosts(), results_.x, model_.get());
       std::vector<ConvexConstraints::Ptr> cnt_models = convexifyConstraints(constraints, results_.x, model_.get());
-      std::vector<ConvexObjective::Ptr> cnt_cost_models = cntsToCosts(cnt_models, param_.merit_error_coeff, model_.get());
+      std::vector<ConvexObjective::Ptr> cnt_cost_models =
+          cntsToCosts(cnt_models, param_.merit_error_coeff, model_.get());
       model_->update();
       for (ConvexObjective::Ptr& cost : cost_models)
         cost->addConstraintsToModel();

@@ -44,6 +44,7 @@ public:
   CircularListElement(void) {}
   //! Destructor
   ~CircularListElement(void) {}
+
 private:
   T m_data;
   CircularListElement<T>* m_next;
@@ -83,10 +84,11 @@ public:
   CircularList(const CircularList& rhs);
   //! Destructor
   ~CircularList(void) { Clear(); };
+
 private:
   CircularListElement<T>* m_head;  //!< a pointer to the head of the circular list
   size_t m_size;                   //!< number of element in the circular list
 };
-}
+}  // namespace VHACD
 #include "vhacdCircularList.inl"
 #endif  // VHACD_CIRCULAR_LIST_H

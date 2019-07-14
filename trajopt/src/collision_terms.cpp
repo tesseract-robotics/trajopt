@@ -196,12 +196,16 @@ void CollisionsToDistanceExpressions(const tesseract_collision::ContactResultVec
       Eigen::Isometry3d link_transform;
       manip->calcFwdKin(link_transform, dofvals, itA->link_name);
       tesseract_kinematics::jacobianChangeBase(jac, world_to_base);
-      tesseract_kinematics::jacobianChangeRefPoint(jac, (world_to_base * link_transform).linear() * ((world_to_base * link_transform).inverse() * res.nearest_points[0]));
+      tesseract_kinematics::jacobianChangeRefPoint(
+          jac,
+          (world_to_base * link_transform).linear() *
+              ((world_to_base * link_transform).inverse() * res.nearest_points[0]));
 
-//      Eigen::MatrixXd jac_test;
-//      jac_test.resize(6, manip->numJoints());
-//      tesseract_kinematics::numericalJacobian(jac_test, world_to_base, *manip, dofvals, itA->link_name, (world_to_base * link_transform).inverse() * res.nearest_points[0]);
-//      bool check = jac.isApprox(jac_test, 1e-3);
+      //      Eigen::MatrixXd jac_test;
+      //      jac_test.resize(6, manip->numJoints());
+      //      tesseract_kinematics::numericalJacobian(jac_test, world_to_base, *manip, dofvals, itA->link_name,
+      //      (world_to_base * link_transform).inverse() * res.nearest_points[0]); bool check = jac.isApprox(jac_test,
+      //      1e-3);
 
       dist_grad_a = -res.normal.transpose() * jac.topRows(3);
       sco::exprInc(dist, sco::varDot(dist_grad_a, vars));
@@ -223,13 +227,17 @@ void CollisionsToDistanceExpressions(const tesseract_collision::ContactResultVec
       Eigen::Isometry3d link_transform;
       manip->calcFwdKin(link_transform, dofvals, itB->link_name);
       tesseract_kinematics::jacobianChangeBase(jac, world_to_base);
-      Eigen::Vector3d link_point = (isTimestep1 && (res.cc_type == tesseract_collision::ContinouseCollisionType::CCType_Between)) ? res.cc_nearest_points[1] : res.nearest_points[1];
-      tesseract_kinematics::jacobianChangeRefPoint(jac, (world_to_base * link_transform).linear() * ((world_to_base * link_transform).inverse() * link_point));
+      Eigen::Vector3d link_point =
+          (isTimestep1 && (res.cc_type == tesseract_collision::ContinouseCollisionType::CCType_Between)) ?
+              res.cc_nearest_points[1] :
+              res.nearest_points[1];
+      tesseract_kinematics::jacobianChangeRefPoint(
+          jac, (world_to_base * link_transform).linear() * ((world_to_base * link_transform).inverse() * link_point));
 
-//      Eigen::MatrixXd jac_test;
-//      jac_test.resize(6, manip->numJoints());
-//      tesseract_kinematics::numericalJacobian(jac_test, world_to_base, *manip, dofvals, itB->link_name, (world_to_base * link_transform).inverse() * link_point);
-//      bool check = jac.isApprox(jac_test, 1e-3);
+      //      Eigen::MatrixXd jac_test;
+      //      jac_test.resize(6, manip->numJoints());
+      //      tesseract_kinematics::numericalJacobian(jac_test, world_to_base, *manip, dofvals, itB->link_name,
+      //      (world_to_base * link_transform).inverse() * link_point); bool check = jac.isApprox(jac_test, 1e-3);
 
       dist_grad_b = res.normal.transpose() * jac.topRows(3);
       sco::exprInc(dist, sco::varDot(dist_grad_b, vars));
@@ -288,12 +296,13 @@ void CollisionEvaluator::GetCollisionsCached(const DblVec& x, tesseract_collisio
   }
 }
 
-SingleTimestepCollisionEvaluator::SingleTimestepCollisionEvaluator(tesseract_kinematics::ForwardKinematics::ConstPtr manip,
-                                                                   tesseract_environment::Environment::ConstPtr env,
-                                                                   tesseract_environment::AdjacencyMap::ConstPtr adjacency_map,
-                                                                   Eigen::Isometry3d world_to_base,
-                                                                   SafetyMarginData::ConstPtr safety_margin_data,
-                                                                   const sco::VarVector& vars)
+SingleTimestepCollisionEvaluator::SingleTimestepCollisionEvaluator(
+    tesseract_kinematics::ForwardKinematics::ConstPtr manip,
+    tesseract_environment::Environment::ConstPtr env,
+    tesseract_environment::AdjacencyMap::ConstPtr adjacency_map,
+    Eigen::Isometry3d world_to_base,
+    SafetyMarginData::ConstPtr safety_margin_data,
+    const sco::VarVector& vars)
   : CollisionEvaluator(manip, env, adjacency_map, world_to_base, safety_margin_data), m_vars(vars)
 {
   contact_manager_ = env_->getDiscreteContactManager();
@@ -302,7 +311,8 @@ SingleTimestepCollisionEvaluator::SingleTimestepCollisionEvaluator(tesseract_kin
                                                 0.04);  // The original implementation added a margin of 0.04;
 }
 
-void SingleTimestepCollisionEvaluator::CalcCollisions(const DblVec& x, tesseract_collision::ContactResultVector& dist_results)
+void SingleTimestepCollisionEvaluator::CalcCollisions(const DblVec& x,
+                                                      tesseract_collision::ContactResultVector& dist_results)
 {
   tesseract_collision::ContactResultMap contacts;
   tesseract_environment::EnvState::Ptr state = env_->getState(manip_->getJointNames(), sco::getVec(x, m_vars));
@@ -360,7 +370,6 @@ void SingleTimestepCollisionEvaluator::Plot(const tesseract_visualization::Visua
       tesseract_kinematics::jacobianChangeRefPoint(jac, pose.linear() * local_link_point);
 
       dist_grad = -res.normal.transpose() * jac.topRows(3);
-
 
       manip_->calcFwdKin(pose2, dofvals + dist_grad, itA->link_name);
       pose2 = world_to_base_ * pose2 * itA->transform;
@@ -443,10 +452,10 @@ void CastCollisionEvaluator::Plot(const tesseract_visualization::Visualization::
       tesseract_kinematics::jacobianChangeBase(jac, world_to_base_);
       tesseract_kinematics::jacobianChangeRefPoint(jac, pose.linear() * local_link_point);
 
-//      Eigen::MatrixXd jac_test;
-//      jac_test.resize(6, manip_->numJoints());
-//      tesseract_kinematics::numericalJacobian(jac_test, world_to_base_, *manip_, dofvals, itA->link_name, local_link_point);
-//      bool check = jac.isApprox(jac_test, 1e-3);
+      //      Eigen::MatrixXd jac_test;
+      //      jac_test.resize(6, manip_->numJoints());
+      //      tesseract_kinematics::numericalJacobian(jac_test, world_to_base_, *manip_, dofvals, itA->link_name,
+      //      local_link_point); bool check = jac.isApprox(jac_test, 1e-3);
 
       dist_grad = -res.normal.transpose() * jac.topRows(3);
 
@@ -470,14 +479,17 @@ void CastCollisionEvaluator::Plot(const tesseract_visualization::Visualization::
 
       tesseract_kinematics::jacobianChangeBase(jac, world_to_base_);
       bool isTimestep1 = false;
-      Eigen::Vector3d link_point = (isTimestep1 && (res.cc_type == tesseract_collision::ContinouseCollisionType::CCType_Between)) ? res.cc_nearest_points[1] : res.nearest_points[1];
+      Eigen::Vector3d link_point =
+          (isTimestep1 && (res.cc_type == tesseract_collision::ContinouseCollisionType::CCType_Between)) ?
+              res.cc_nearest_points[1] :
+              res.nearest_points[1];
       Eigen::Vector3d local_link_point = pose.inverse() * link_point;
       tesseract_kinematics::jacobianChangeRefPoint(jac, pose.linear() * local_link_point);
 
-//      Eigen::MatrixXd jac_test;
-//      jac_test.resize(6, manip_->numJoints());
-//      tesseract_kinematics::numericalJacobian(jac_test, world_to_base_, *manip_, dofvals, itB->link_name, local_link_point);
-//      bool check = jac.isApprox(jac_test, 1e-3);
+      //      Eigen::MatrixXd jac_test;
+      //      jac_test.resize(6, manip_->numJoints());
+      //      tesseract_kinematics::numericalJacobian(jac_test, world_to_base_, *manip_, dofvals, itB->link_name,
+      //      local_link_point); bool check = jac.isApprox(jac_test, 1e-3);
 
       dist_grad = res.normal.transpose() * jac.topRows(3);
 
@@ -498,7 +510,8 @@ CollisionCost::CollisionCost(tesseract_kinematics::ForwardKinematics::ConstPtr m
                              Eigen::Isometry3d world_to_base,
                              SafetyMarginData::ConstPtr safety_margin_data,
                              const sco::VarVector& vars)
-  : Cost("collision"), m_calc(new SingleTimestepCollisionEvaluator(manip, env, adjacency_map, world_to_base, safety_margin_data, vars))
+  : Cost("collision")
+  , m_calc(new SingleTimestepCollisionEvaluator(manip, env, adjacency_map, world_to_base, safety_margin_data, vars))
 {
 }
 
@@ -509,7 +522,8 @@ CollisionCost::CollisionCost(tesseract_kinematics::ForwardKinematics::ConstPtr m
                              SafetyMarginData::ConstPtr safety_margin_data,
                              const sco::VarVector& vars0,
                              const sco::VarVector& vars1)
-  : Cost("cast_collision"), m_calc(new CastCollisionEvaluator(manip, env, adjacency_map, world_to_base, safety_margin_data, vars0, vars1))
+  : Cost("cast_collision")
+  , m_calc(new CastCollisionEvaluator(manip, env, adjacency_map, world_to_base, safety_margin_data, vars0, vars1))
 {
 }
 
@@ -549,7 +563,10 @@ double CollisionCost::value(const sco::DblVec& x)
   return out;
 }
 
-void CollisionCost::Plot(const tesseract_visualization::Visualization::Ptr& plotter, const DblVec& x) { m_calc->Plot(plotter, x); }
+void CollisionCost::Plot(const tesseract_visualization::Visualization::Ptr& plotter, const DblVec& x)
+{
+  m_calc->Plot(plotter, x);
+}
 // ALMOST EXACTLY COPIED FROM CollisionCost
 
 CollisionConstraint::CollisionConstraint(tesseract_kinematics::ForwardKinematics::ConstPtr manip,
@@ -611,4 +628,4 @@ DblVec CollisionConstraint::value(const sco::DblVec& x)
   }
   return out;
 }
-}
+}  // namespace trajopt

@@ -34,7 +34,6 @@ AffExpr affFromValGrad(double y, const Eigen::VectorXd& x, const Eigen::VectorXd
 class CostFromFunc : public Cost
 {
 public:
-
   using Ptr = std::shared_ptr<CostFromFunc>;
 
   /// supply function, obtain derivative and hessian numerically
@@ -42,6 +41,7 @@ public:
   double value(const DblVec& x) override;
   ConvexObjective::Ptr convex(const DblVec& x, Model* model) override;
   VarVector getVars() override { return vars_; }
+
 protected:
   ScalarOfVector::Ptr f_;
   VarVector vars_;
@@ -68,6 +68,7 @@ public:
   double value(const DblVec& x) override;
   ConvexObjective::Ptr convex(const DblVec& x, Model* model) override;
   VarVector getVars() override { return vars_; }
+
 protected:
   VectorOfVector::Ptr f_;
   MatrixOfVector::Ptr dfdx_;
@@ -80,7 +81,6 @@ protected:
 class ConstraintFromErrFunc : public Constraint
 {
 public:
-
   using Ptr = std::shared_ptr<ConstraintFromErrFunc>;
 
   /// supply error function, obtain derivative numerically
@@ -100,6 +100,7 @@ public:
   ConvexConstraints::Ptr convex(const DblVec& x, Model* model) override;
   ConstraintType type() override { return type_; }
   VarVector getVars() override { return vars_; }
+
 protected:
   VectorOfVector::Ptr f_;
   MatrixOfVector::Ptr dfdx_;
@@ -111,4 +112,4 @@ protected:
 };
 
 std::string AffExprToString(const AffExpr& aff);
-}
+}  // namespace sco

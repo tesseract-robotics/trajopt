@@ -137,5 +137,5 @@ private:
   Vec3<double> m_center;
   double m_diag;
 };
-}
+}  // namespace VHACD
 #endif

@@ -125,6 +125,7 @@ public:
   T GetDistance(const Vec3& p) const { return sqrt(GetDistanceSquared(p)); }
   // Returns the raw vector data as a pointer
   T* GetData(void) { return m_data; }
+
 private:
   T m_data[3];
 };
@@ -169,6 +170,6 @@ template <typename T>
 const bool Colinear(const Vec3<T>& a, const Vec3<T>& b, const Vec3<T>& c);
 template <typename T>
 const T ComputeVolume4(const Vec3<T>& a, const Vec3<T>& b, const Vec3<T>& c, const Vec3<T>& d);
-}
+}  // namespace VHACD
 #include "vhacdVector.inl"  // template implementation
 #endif

@@ -303,4 +303,4 @@ void GurobiModel::update()
 
 VarVector GurobiModel::getVars() const { return m_vars; }
 GurobiModel::~GurobiModel() { ENSURE_SUCCESS(GRBfreemodel(m_model)); }
-}
+}  // namespace sco

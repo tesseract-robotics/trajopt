@@ -51,4 +51,4 @@ int LoggingInit()
   return 1;
 }
 int this_is_a_hack_but_rhs_executes_on_library_load = LoggingInit();
-}
+}  // namespace util

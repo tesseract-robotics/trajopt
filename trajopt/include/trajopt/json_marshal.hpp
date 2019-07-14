@@ -83,4 +83,4 @@ void childFromJson(const Json::Value& parent, T& ref, const char* name)
     PRINT_AND_THROW(boost::format("missing field: %s") % name);
   }
 }
-}
+}  // namespace json_marshal

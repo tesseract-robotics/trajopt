@@ -155,10 +155,11 @@ public:
   // a new solution.  In an asynchronous config the 'IsReady' call will report any update or log
   // messages in the caller's current thread.
   virtual bool IsReady(void) const { return true; }
+
 protected:
   virtual ~IVHACD(void) {}
 };
 IVHACD* CreateVHACD(void);
 IVHACD* CreateVHACD_ASYNC(void);
-}
+}  // namespace VHACD
 #endif  // VHACD_H

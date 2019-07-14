@@ -1797,4 +1797,4 @@ void TetrahedronSet::AlignToPrincipalAxes()
   }
   ComputeBB();
 }
-}
+}  // namespace VHACD

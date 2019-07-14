@@ -151,4 +151,4 @@ void eigenToCSC(Eigen::SparseMatrix<double>& sparse_matrix,
   auto csc_v = sm_ref.get().valuePtr();
   values.assign(csc_v, csc_v + sm_ref.get().nonZeros());
 }
-}
+}  // namespace sco

@@ -311,4 +311,4 @@ IVHACD* CreateVHACD_ASYNC(void)
   return static_cast<IVHACD*>(m);
 }
 
-};  // end of VHACD namespace
+};  // namespace VHACD

@@ -1790,4 +1790,4 @@ bool VHACD::ComputeCenterOfMass(double centerOfMass[3]) const
   return ret;
 }
 
-}  // end of VHACD namespace
+}  // namespace VHACD

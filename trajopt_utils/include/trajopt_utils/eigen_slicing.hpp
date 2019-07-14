@@ -24,4 +24,4 @@ std::vector<int> flatnonzero(const VectorT& x)
       out.push_back(i);
   return out;
 }
-}
+}  // namespace util

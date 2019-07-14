@@ -27,7 +27,6 @@ model are removed
 class ConvexObjective
 {
 public:
-
   using Ptr = std::shared_ptr<ConvexObjective>;
 
   ConvexObjective(Model* model) : model_(model) {}
@@ -66,7 +65,6 @@ Actually only affine inequality constraints are currently implemented.
 class ConvexConstraints
 {
 public:
-
   using Ptr = std::shared_ptr<ConvexConstraints>;
 
   ConvexConstraints(Model* model) : model_(model) {}
@@ -104,7 +102,6 @@ Non-convex cost function, which knows how to calculate its convex approximation
 class Cost
 {
 public:
-
   using Ptr = std::shared_ptr<Cost>;
 
   /** Evaluate at solution vector x*/
@@ -130,7 +127,6 @@ convex approximation
 class Constraint
 {
 public:
-
   using Ptr = std::shared_ptr<Constraint>;
 
   /** inequality vs equality */
@@ -151,6 +147,7 @@ public:
   Constraint() : name_("unnamed") {}
   Constraint(const std::string& name) : name_(name) {}
   virtual ~Constraint() {}
+
 protected:
   std::string name_;
 };
@@ -158,7 +155,6 @@ protected:
 class EqConstraint : public Constraint
 {
 public:
-
   using Ptr = std::shared_ptr<EqConstraint>;
 
   ConstraintType type() override { return EQ; }
@@ -169,7 +165,6 @@ public:
 class IneqConstraint : public Constraint
 {
 public:
-
   using Ptr = std::shared_ptr<IneqConstraint>;
 
   ConstraintType type() override { return INEQ; }
@@ -183,7 +178,6 @@ Non-convex optimization problem
 class OptProb
 {
 public:
-
   using Ptr = std::shared_ptr<OptProb>;
 
   OptProb(ModelType convex_solver = ModelType::AUTO_SOLVER);
@@ -228,6 +222,7 @@ public:
   int getNumCosts() { return static_cast<int>(costs_.size()); }
   int getNumConstraints() { return static_cast<int>(eqcnts_.size() + ineqcnts_.size()); }
   int getNumVars() { return static_cast<int>(vars_.size()); }
+
 protected:
   Model::Ptr model_;
   VarVector vars_;
@@ -257,4 +252,4 @@ inline OutVecType getVec1(const DblVec& x, const VarVector& vars)
     out[i] = x[vars[i].var_rep->index];
   return out;
 }
-}
+}  // namespace sco

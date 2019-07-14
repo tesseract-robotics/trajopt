@@ -65,7 +65,8 @@ VectorXd DynamicCartPoseErrCalculator::operator()(const VectorXd& dof_vals) cons
   return err;
 }
 
-void DynamicCartPoseErrCalculator::Plot(const tesseract_visualization::Visualization::Ptr& plotter, const VectorXd& dof_vals)
+void DynamicCartPoseErrCalculator::Plot(const tesseract_visualization::Visualization::Ptr& plotter,
+                                        const VectorXd& dof_vals)
 {
   Isometry3d cur_pose, target_pose;
 
@@ -123,24 +124,28 @@ MatrixXd CartVelJacCalculator::operator()(const VectorXd& dof_vals) const
     manip_->calcFwdKin(tf0, dof_vals.topRows(n_dof), kin_link_->link_name);
     manip_->calcJacobian(jac0, dof_vals.topRows(n_dof), kin_link_->link_name);
     tesseract_kinematics::jacobianChangeBase(jac0, world_to_base_);
-    tesseract_kinematics::jacobianChangeRefPoint(jac0, (world_to_base_ * tf0).linear() * kin_link_->transform.translation());
+    tesseract_kinematics::jacobianChangeRefPoint(jac0,
+                                                 (world_to_base_ * tf0).linear() * kin_link_->transform.translation());
 
     manip_->calcFwdKin(tf1, dof_vals.bottomRows(n_dof), kin_link_->link_name);
     manip_->calcJacobian(jac1, dof_vals.bottomRows(n_dof), kin_link_->link_name);
     tesseract_kinematics::jacobianChangeBase(jac1, world_to_base_);
-    tesseract_kinematics::jacobianChangeRefPoint(jac1, (world_to_base_ * tf1).linear() * kin_link_->transform.translation());
+    tesseract_kinematics::jacobianChangeRefPoint(jac1,
+                                                 (world_to_base_ * tf1).linear() * kin_link_->transform.translation());
   }
   else
   {
     manip_->calcFwdKin(tf0, dof_vals.topRows(n_dof), kin_link_->link_name);
     manip_->calcJacobian(jac0, dof_vals.topRows(n_dof), kin_link_->link_name);
     tesseract_kinematics::jacobianChangeBase(jac0, world_to_base_);
-    tesseract_kinematics::jacobianChangeRefPoint(jac0, (world_to_base_ * tf0).linear() * (kin_link_->transform * tcp_).translation());
+    tesseract_kinematics::jacobianChangeRefPoint(
+        jac0, (world_to_base_ * tf0).linear() * (kin_link_->transform * tcp_).translation());
 
     manip_->calcFwdKin(tf1, dof_vals.bottomRows(n_dof), kin_link_->link_name);
     manip_->calcJacobian(jac1, dof_vals.bottomRows(n_dof), kin_link_->link_name);
     tesseract_kinematics::jacobianChangeBase(jac1, world_to_base_);
-    tesseract_kinematics::jacobianChangeRefPoint(jac1, (world_to_base_ * tf1).linear() * (kin_link_->transform * tcp_).translation());
+    tesseract_kinematics::jacobianChangeRefPoint(
+        jac1, (world_to_base_ * tf1).linear() * (kin_link_->transform * tcp_).translation());
   }
 
   out.block(0, 0, 3, n_dof) = -jac0.topRows(3);

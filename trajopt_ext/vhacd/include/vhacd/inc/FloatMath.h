@@ -761,6 +761,6 @@ void fm_computeMeanNormals(uint32_t vcount,           // the number of vertices
 bool fm_isValidTriangle(const float* p1, const float* p2, const float* p3, float epsilon = 0.00001f);
 bool fm_isValidTriangle(const double* p1, const double* p2, const double* p3, double epsilon = 0.00001f);
 
-};  // end of namespace
+};  // namespace FLOAT_MATH
 
 #endif

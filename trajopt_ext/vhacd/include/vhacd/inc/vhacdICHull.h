@@ -108,5 +108,5 @@ private:
   bool m_isFlat;
   ICHull(const ICHull& rhs);
 };
-}
+}  // namespace VHACD
 #endif  // VHACD_ICHULL_H

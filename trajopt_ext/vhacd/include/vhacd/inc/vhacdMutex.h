@@ -146,5 +146,5 @@ private:
   pthread_mutex_t m_mutex;
 #endif
 };
-}
+}  // namespace VHACD
 #endif  // VHACD_MUTEX_H

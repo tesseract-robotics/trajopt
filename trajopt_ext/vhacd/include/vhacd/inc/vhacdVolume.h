@@ -80,6 +80,7 @@ public:
   virtual void Convert(Mesh& mesh, const VOXEL_VALUE value) const = 0;
   const Mesh& GetConvexHull() const { return m_convexHull; };
   Mesh& GetConvexHull() { return m_convexHull; };
+
 private:
   Mesh m_convexHull;
 };
@@ -140,6 +141,7 @@ public:
   void RevertAlignToPrincipalAxes(){};
   Voxel* const GetVoxels() { return m_voxels.Data(); }
   const Voxel* const GetVoxels() const { return m_voxels.Data(); }
+
 private:
   size_t m_numVoxelsOnSurface;
   size_t m_numVoxelsInsideSurface;
@@ -479,7 +481,7 @@ void Volume::Voxelize(const T* const points,
   FillOutsideSurface(m_dim[0] - 1, 0, 0, m_dim[0], m_dim[1], m_dim[2]);
   FillInsideSurface();
 }
-}
+}  // namespace VHACD
 
 #ifdef _MSC_VER
 #pragma warning(pop)

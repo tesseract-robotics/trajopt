@@ -24,4 +24,4 @@ void CommandParser::read(int argc, char* argv[])
   }
   po::notify(vm);
 }
-}
+}  // namespace util

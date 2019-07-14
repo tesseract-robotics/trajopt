@@ -24,6 +24,7 @@ public:
   /** @brief Numerically evaluate cost given the vector of values */
   double value(const DblVec&) override;
   sco::VarVector getVars() override { return vars_.flatten(); }
+
 private:
   /** @brief The variables being optimized. Used to properly index the vector being optimized */
   VarArray vars_;
@@ -59,6 +60,7 @@ public:
   /** @brief Numerically evaluate cost given the vector of values */
   double value(const DblVec&) override;
   sco::VarVector getVars() override { return vars_.flatten(); }
+
 private:
   /** @brief The variables being optimized. Used to properly index the vector being optimized */
   VarArray vars_;
@@ -93,6 +95,7 @@ public:
   DblVec value(const DblVec&) override;
 
   sco::VarVector getVars() override { return vars_.flatten(); }
+
 private:
   /** @brief The variables being optimized. Used to properly index the vector being optimized */
   VarArray vars_;
@@ -124,6 +127,7 @@ public:
   /** @brief Numerically evaluate cost given the vector of values */
   DblVec value(const DblVec&) override;
   sco::VarVector getVars() override { return vars_.flatten(); }
+
 private:
   /** @brief The variables being optimized. Used to properly index the vector being optimized */
   VarArray vars_;
@@ -157,6 +161,7 @@ public:
   /** @brief Numerically evaluate cost given the vector of values using Eigen*/
   double value(const DblVec&) override;
   sco::VarVector getVars() override { return vars_.flatten(); }
+
 private:
   /** @brief The variables being optimized. Used to properly index the vector being optimized */
   VarArray vars_;
@@ -188,6 +193,7 @@ public:
   /** @brief Numerically evaluate cost given the vector of values */
   double value(const DblVec&) override;
   sco::VarVector getVars() override { return vars_.flatten(); }
+
 private:
   /** @brief The variables being optimized. Used to properly index the vector being optimized */
   VarArray vars_;
@@ -222,6 +228,7 @@ public:
   DblVec value(const DblVec&) override;
 
   sco::VarVector getVars() override { return vars_.flatten(); }
+
 private:
   /** @brief The variables being optimized. Used to properly index the vector being optimized */
   VarArray vars_;
@@ -253,6 +260,7 @@ public:
   /** @brief Numerically evaluate cost given the vector of values */
   DblVec value(const DblVec&) override;
   sco::VarVector getVars() override { return vars_.flatten(); }
+
 private:
   /** @brief The variables being optimized. Used to properly index the vector being optimized */
   VarArray vars_;
@@ -286,6 +294,7 @@ public:
   /** @brief Numerically evaluate cost given the vector of values */
   double value(const DblVec&) override;
   sco::VarVector getVars() override { return vars_.flatten(); }
+
 private:
   /** @brief The variables being optimized. Used to properly index the vector being optimized */
   VarArray vars_;
@@ -317,6 +326,7 @@ public:
   /** @brief Numerically evaluate cost given the vector of values */
   double value(const DblVec&) override;
   sco::VarVector getVars() override { return vars_.flatten(); }
+
 private:
   /** @brief The variables being optimized. Used to properly index the vector being optimized */
   VarArray vars_;
@@ -351,6 +361,7 @@ public:
   DblVec value(const DblVec&) override;
 
   sco::VarVector getVars() override { return vars_.flatten(); }
+
 private:
   /** @brief The variables being optimized. Used to properly index the vector being optimized */
   VarArray vars_;
@@ -382,6 +393,7 @@ public:
   /** @brief Numerically evaluate cost given the vector of values */
   DblVec value(const DblVec&) override;
   sco::VarVector getVars() override { return vars_.flatten(); }
+
 private:
   /** @brief The variables being optimized. Used to properly index the vector being optimized */
   VarArray vars_;
@@ -415,6 +427,7 @@ public:
   /** @brief Numerically evaluate cost given the vector of values */
   double value(const DblVec&) override;
   sco::VarVector getVars() override { return vars_.flatten(); }
+
 private:
   /** @brief The variables being optimized. Used to properly index the vector being optimized */
   VarArray vars_;
@@ -446,6 +459,7 @@ public:
   /** @brief Numerically evaluate cost given the vector of values */
   double value(const DblVec&) override;
   sco::VarVector getVars() override { return vars_.flatten(); }
+
 private:
   /** @brief The variables being optimized. Used to properly index the vector being optimized */
   VarArray vars_;
@@ -480,6 +494,7 @@ public:
   DblVec value(const DblVec&) override;
 
   sco::VarVector getVars() override { return vars_.flatten(); }
+
 private:
   /** @brief The variables being optimized. Used to properly index the vector being optimized */
   VarArray vars_;
@@ -511,6 +526,7 @@ public:
   /** @brief Numerically evaluate cost given the vector of values */
   DblVec value(const DblVec&) override;
   sco::VarVector getVars() override { return vars_.flatten(); }
+
 private:
   /** @brief The variables being optimized. Used to properly index the vector being optimized */
   VarArray vars_;

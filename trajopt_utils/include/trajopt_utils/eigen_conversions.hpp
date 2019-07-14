@@ -15,4 +15,4 @@ inline Eigen::VectorXd toVectorXd(const std::vector<double>& x)
 {
   return Eigen::Map<const Eigen::VectorXd>(x.data(), static_cast<long int>(x.size()));
 }
-}
+}  // namespace util

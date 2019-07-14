@@ -518,4 +518,4 @@ void BPMPDModel::writeToFile(const std::string& /*fname*/)
   // assert(0 && "NOT IMPLEMENTED");
 }
 VarVector BPMPDModel::getVars() const { return m_vars; }
-}
+}  // namespace sco

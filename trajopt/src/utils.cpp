@@ -87,4 +87,4 @@ void AddVarArray(sco::OptProb& prob, int rows, int cols, const std::string& name
   std::vector<int> colss(1, cols);
   AddVarArrays(prob, rows, colss, prefixes, arrs);
 }
-}
+}  // namespace trajopt

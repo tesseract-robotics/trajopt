@@ -26,13 +26,13 @@ using namespace tesseract_kinematics;
 using namespace tesseract_visualization;
 using namespace tesseract_scene_graph;
 
-static bool plotting = false;                                          /**< Enable plotting */
+static bool plotting = false; /**< Enable plotting */
 
 class InterfaceTest : public testing::TestWithParam<const char*>
 {
 public:
   Tesseract::Ptr tesseract_ = std::make_shared<Tesseract>(); /**< Tesseract */
-  Visualization::Ptr plotter_; /**< Trajopt Plotter */
+  Visualization::Ptr plotter_;                               /**< Trajopt Plotter */
   void SetUp() override
   {
     boost::filesystem::path urdf_file(std::string(TRAJOPT_DIR) + "/test/data/arm_around_table.urdf");
@@ -163,7 +163,7 @@ TEST_F(InterfaceTest, initial_trajectory_json_interface)
   // These must match the json file or the test will fail!!
   const int steps = 10;
 
-  Json::Value root = readJsonFile(std::string(TRAJOPT_DIR)  + "/test/data/config/arm_around_table.json");
+  Json::Value root = readJsonFile(std::string(TRAJOPT_DIR) + "/test/data/config/arm_around_table.json");
 
   std::unordered_map<std::string, double> ipos;
   ipos["torso_lift_joint"] = 0;
@@ -198,7 +198,7 @@ TEST_F(InterfaceTest, initial_trajectory_time_json_interface)
   const int steps = 10;
   const double dt = 0.12341234;
 
-  Json::Value root = readJsonFile(std::string(TRAJOPT_DIR)  + "/test/data/config/arm_around_table.json");
+  Json::Value root = readJsonFile(std::string(TRAJOPT_DIR) + "/test/data/config/arm_around_table.json");
 
   std::unordered_map<std::string, double> ipos;
   ipos["torso_lift_joint"] = 0;
@@ -266,6 +266,6 @@ int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
 
-//  pnh.param("plotting", plotting, false);
+  //  pnh.param("plotting", plotting, false);
   return RUN_ALL_TESTS();
 }

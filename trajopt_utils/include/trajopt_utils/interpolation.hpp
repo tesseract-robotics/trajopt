@@ -45,4 +45,4 @@ MatrixT interp2d(const VectorT& xNew, const VectorT& xOld, const MatrixT& yOld)
   }
   return yNew;
 }
-}
+}  // namespace util

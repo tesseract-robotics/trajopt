@@ -35,7 +35,12 @@ struct DynamicCartPoseErrCalculator : public TrajOptVectorOfVector
                                Eigen::Isometry3d world_to_base,
                                std::string link,
                                Eigen::Isometry3d tcp = Eigen::Isometry3d::Identity())
-    : target_(target), manip_(manip), adjacency_map_(adjacency_map), world_to_base_(world_to_base), link_(link), tcp_(tcp)
+    : target_(target)
+    , manip_(manip)
+    , adjacency_map_(adjacency_map)
+    , world_to_base_(world_to_base)
+    , link_(link)
+    , tcp_(tcp)
   {
     kin_link_ = adjacency_map_->getLinkMapping(link_);
     kin_target_ = adjacency_map_->getLinkMapping(target_);
@@ -44,7 +49,6 @@ struct DynamicCartPoseErrCalculator : public TrajOptVectorOfVector
   void Plot(const tesseract_visualization::Visualization::Ptr& plotter, const Eigen::VectorXd& dof_vals) override;
 
   Eigen::VectorXd operator()(const Eigen::VectorXd& dof_vals) const override;
-
 };
 
 /**
@@ -67,7 +71,12 @@ struct CartPoseErrCalculator : public TrajOptVectorOfVector
                         Eigen::Isometry3d world_to_base,
                         std::string link,
                         Eigen::Isometry3d tcp = Eigen::Isometry3d::Identity())
-    : pose_inv_(pose.inverse()), manip_(manip), adjacency_map_(adjacency_map), world_to_base_(world_to_base), link_(link), tcp_(tcp)
+    : pose_inv_(pose.inverse())
+    , manip_(manip)
+    , adjacency_map_(adjacency_map)
+    , world_to_base_(world_to_base)
+    , link_(link)
+    , tcp_(tcp)
   {
     kin_link_ = adjacency_map_->getLinkMapping(link_);
   }

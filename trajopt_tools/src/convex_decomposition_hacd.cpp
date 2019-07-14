@@ -110,10 +110,10 @@ public:
 
 namespace
 {
-  const size_t ERROR_IN_COMMAND_LINE = 1;
-  const size_t SUCCESS = 0;
-  const size_t ERROR_UNHANDLED_EXCEPTION = 2;
-}
+const size_t ERROR_IN_COMMAND_LINE = 1;
+const size_t SUCCESS = 0;
+const size_t ERROR_UNHANDLED_EXCEPTION = 2;
+}  // namespace
 
 int main(int argc, char** argv)
 {
@@ -122,27 +122,27 @@ int main(int argc, char** argv)
 
   namespace po = boost::program_options;
   po::options_description desc("Options");
-  desc.add_options()
-      ("help,h", "Print help messages")
-      ("input,i", po::value<std::string>(&input)->required(), "File path to mesh used to create a convex decomposition of.")
-      ("output,o", po::value<std::string>(&output)->required(), "File path to save the generated convex decomposition.");
+  desc.add_options()("help,h", "Print help messages")("input,i",
+                                                      po::value<std::string>(&input)->required(),
+                                                      "File path to mesh used to create a convex decomposition of.")(
+      "output,o", po::value<std::string>(&output)->required(), "File path to save the generated convex decomposition.");
 
   po::variables_map vm;
   try
   {
-    po::store(po::parse_command_line(argc, argv, desc), vm); // can throw
+    po::store(po::parse_command_line(argc, argv, desc), vm);  // can throw
 
     /** --help option */
-    if ( vm.count("help")  )
+    if (vm.count("help"))
     {
       CONSOLE_BRIDGE_logInform("Basic Command Line Parameter App: %s", desc);
       return SUCCESS;
     }
 
-    po::notify(vm); // throws on error, so do after help in case
-                    // there are any problems
+    po::notify(vm);  // throws on error, so do after help in case
+                     // there are any problems
   }
-  catch(po::error& e)
+  catch (po::error& e)
   {
     CONSOLE_BRIDGE_logError(e.what());
     CONSOLE_BRIDGE_logError("%s", desc);

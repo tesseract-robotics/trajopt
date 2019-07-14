@@ -70,4 +70,4 @@ std::string Str(const typename std::map<K, V>& x)
   ss << "}";
   return ss.str();
 }
-}
+}  // namespace util

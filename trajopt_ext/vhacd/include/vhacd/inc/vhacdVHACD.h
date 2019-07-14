@@ -377,5 +377,5 @@ private:
   size_t m_oclWorkGroupSize;
 #endif  // CL_VERSION_1_1
 };
-}
+}  // namespace VHACD
 #endif  // VHACD_VHACD_H

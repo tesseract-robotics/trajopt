@@ -31,7 +31,7 @@ enum TermType
 #define DEFINE_CREATE(classname)                                                                                       \
   static TermInfo::Ptr create()                                                                                        \
   {                                                                                                                    \
-    TermInfo::Ptr out(new classname());                                                                                  \
+    TermInfo::Ptr out(new classname());                                                                                \
     return out;                                                                                                        \
   }
 
@@ -42,7 +42,6 @@ enum TermType
 class TRAJOPT_API TrajOptProb : public sco::OptProb
 {
 public:
-
   using Ptr = std::shared_ptr<TrajOptProb>;
 
   TrajOptProb();
@@ -66,6 +65,7 @@ public:
   bool GetHasTime() { return has_time; }
   /** @brief Sets TrajOptProb.has_time  */
   void SetHasTime(bool tmp) { has_time = tmp; }
+
 private:
   /** @brief If true, the last column in the optimization matrix will be 1/dt */
   bool has_time;
@@ -170,6 +170,7 @@ struct TRAJOPT_API TermInfo
 
 protected:
   TermInfo(int supported_term_types) : supported_term_types_(supported_term_types) {}
+
 private:
   static std::map<std::string, MakerFunc> name2maker;
   int supported_term_types_;
@@ -187,11 +188,13 @@ public:
   std::vector<TermInfo::Ptr> cnt_infos;
   InitInfo init_info;
 
-
   tesseract_environment::Environment::ConstPtr env;
   tesseract_kinematics::ForwardKinematics::ConstPtr kin;
 
-  ProblemConstructionInfo(tesseract::Tesseract::ConstPtr tesseract) : env(tesseract->getEnvironmentConst()), tesseract_(tesseract) {}
+  ProblemConstructionInfo(tesseract::Tesseract::ConstPtr tesseract)
+    : env(tesseract->getEnvironmentConst()), tesseract_(tesseract)
+  {
+  }
 
   tesseract_kinematics::ForwardKinematics::ConstPtr getManipulator(const std::string& name) const
   {
@@ -516,7 +519,8 @@ struct TotalTimeTermInfo : public TermInfo
 };
 
 TrajOptProb::Ptr TRAJOPT_API ConstructProblem(const ProblemConstructionInfo&);
-TrajOptProb::Ptr TRAJOPT_API ConstructProblem(const Json::Value&, const tesseract::Tesseract::ConstPtr &tesseract);
-TrajOptResult::Ptr TRAJOPT_API OptimizeProblem(TrajOptProb::Ptr, const tesseract_visualization::Visualization::Ptr& plotter = nullptr);
+TrajOptProb::Ptr TRAJOPT_API ConstructProblem(const Json::Value&, const tesseract::Tesseract::ConstPtr& tesseract);
+TrajOptResult::Ptr TRAJOPT_API OptimizeProblem(TrajOptProb::Ptr,
+                                               const tesseract_visualization::Visualization::Ptr& plotter = nullptr);
 
 }  // namespace trajopt

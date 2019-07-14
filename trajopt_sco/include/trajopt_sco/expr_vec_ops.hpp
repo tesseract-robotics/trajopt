@@ -27,4 +27,4 @@ AffExpr exprDot(const Eigen::VectorXd& x, const AffExprVector& v);
 QuadExpr varNorm2(const VarVector& v);
 QuadExpr exprNorm2(const ExprVector& v);
 #endif
-}
+}  // namespace sco
