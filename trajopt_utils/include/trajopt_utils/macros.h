@@ -1,6 +1,7 @@
 #pragma once
 #include <iostream>
 
+// clang-format off
 #define TRAJOPT_IGNORE_WARNINGS_PUSH                                                                                   \
   _Pragma("GCC diagnostic push") _Pragma("GCC diagnostic ignored \"-Wall\"")                                           \
       _Pragma("GCC diagnostic ignored \"-Wint-to-pointer-cast\"")                                                      \
@@ -69,3 +70,4 @@
     printf("%s failed in file %s at line %i\n", #exp, __FILE__, __LINE__);                                             \
     abort();                                                                                                           \
   }
+// clang-format on
