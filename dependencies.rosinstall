@@ -1,4 +1,4 @@
 - git:
     local-name: tesseract
     uri: https://github.com/ros-industrial-consortium/tesseract.git
-    version: kinetic-devel
+    version: master
