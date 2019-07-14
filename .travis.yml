@@ -28,7 +28,7 @@ env:
 
 matrix:
   include:
-    - env: ROS_DISTRO=kinetic CLANG_FORMAT_CHECK=file
+    - env: ROS_DISTRO=melodic CLANG_FORMAT_CHECK=file CLANG_FORMAT_VERSION=8
     - env: ROS_DISTRO=kinetic
     - env: ROS_DISTRO=kinetic ROS_REPO=ros-shadow-fixed
     - env: ROS_DISTRO=melodic
