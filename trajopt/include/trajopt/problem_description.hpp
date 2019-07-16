@@ -511,8 +511,8 @@ struct TotalTimeTermInfo : public TermInfo
   /** @brief If non zero, penalty type will be a hinge on values greater than this limit relative to the target. */
   double limit = 0.0;
 
-  void hatch(TrajOptProb& prob);
-  void fromJson(ProblemConstructionInfo& pci, const Json::Value& v);
+  void hatch(TrajOptProb& prob) override;
+  void fromJson(ProblemConstructionInfo& pci, const Json::Value& v) override;
   DEFINE_CREATE(TotalTimeTermInfo)
 
   TotalTimeTermInfo() : TermInfo(TT_COST | TT_CNT | TT_USE_TIME) {}

@@ -951,13 +951,13 @@ void JointVelTermInfo::hatch(TrajOptProb& prob)
 
   if (term_type == (TT_COST | TT_USE_TIME))
   {
-    unsigned num_vels = last_step - first_step;
+    unsigned num_vels = static_cast<unsigned>(last_step - first_step);
 
     // Apply seperate cost to each joint b/c that is how the error function is currently written
     for (size_t j = 0; j < n_dof; j++)
     {
       // Get a vector of a single column of vars
-      sco::VarVector joint_vars_vec = joint_vars.cblock(first_step, j, last_step - first_step + 1);
+      sco::VarVector joint_vars_vec = joint_vars.cblock(first_step, static_cast<int>(j), last_step - first_step + 1);
       sco::VarVector time_vars_vec = vars.cblock(first_step, vars.cols() - 1, last_step - first_step + 1);
 
       // If the tolerances are 0, an equality cost is set
@@ -988,13 +988,13 @@ void JointVelTermInfo::hatch(TrajOptProb& prob)
   }
   else if (term_type == (TT_CNT | TT_USE_TIME))
   {
-    unsigned num_vels = last_step - first_step;
+    unsigned num_vels = static_cast<unsigned>(last_step - first_step);
 
     // Apply seperate cnt to each joint b/c that is how the error function is currently written
     for (size_t j = 0; j < n_dof; j++)
     {
       // Get a vector of a single column of vars
-      sco::VarVector joint_vars_vec = joint_vars.cblock(first_step, j, last_step - first_step + 1);
+      sco::VarVector joint_vars_vec = joint_vars.cblock(first_step, static_cast<int>(j), last_step - first_step + 1);
       sco::VarVector time_vars_vec = vars.cblock(first_step, vars.cols() - 1, last_step - first_step + 1);
 
       // If the tolerances are 0, an equality cnt is set
@@ -1481,7 +1481,7 @@ void CollisionTermInfo::hatch(TrajOptProb& prob)
   }
 }
 
-void TotalTimeTermInfo::fromJson(ProblemConstructionInfo& pci, const Json::Value& v)
+void TotalTimeTermInfo::fromJson(ProblemConstructionInfo& /*pci*/, const Json::Value& v)
 {
   FAIL_IF_FALSE(v.isMember("params"));
   const Json::Value& params = v["params"];
@@ -1499,10 +1499,10 @@ void TotalTimeTermInfo::hatch(TrajOptProb& prob)
   coeff_vec[0] = coeff;
 
   // get all (1/dt) vars except the first
-  sco::VarVector time_vars(prob.GetNumSteps() - 1);
+  sco::VarVector time_vars(static_cast<unsigned long>(prob.GetNumSteps() - 1));
   for (std::size_t i = 0; i < time_vars.size(); i++)
   {
-    time_vars[i] = prob.GetVar(i + 1, prob.GetNumDOF() - 1);
+    time_vars[i] = prob.GetVar(static_cast<int>(i + 1), prob.GetNumDOF() - 1);
   }
 
   // Get correct penalty type

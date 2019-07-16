@@ -45,16 +45,16 @@ struct BasicArray
     std::vector<T> out(static_cast<size_t>(nCol));
     for (int iCol = 0; iCol < nCol; ++iCol)
     {
-      out[static_cast<size_t>(iCol)] = at(static_cast<size_t>(startRow), static_cast<size_t>(iCol + startCol));
+      out[static_cast<size_t>(iCol)] = at(startRow, iCol + startCol);
     }
     return out;
   }
   std::vector<T> cblock(int startRow, int startCol, int nRow) const
   {
-    std::vector<T> out(nRow);
+    std::vector<T> out(static_cast<size_t>(nRow));
     for (int iRow = 0; iRow < nRow; ++iRow)
     {
-      out[iRow] = at(iRow + startRow, startCol);
+      out[static_cast<size_t>(iRow)] = at(iRow + startRow, startCol);
     }
     return out;
   }

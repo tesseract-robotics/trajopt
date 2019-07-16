@@ -3,10 +3,10 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <cmath>
 #include <fstream>
 #include <signal.h>
+#include <trajopt_sco/bpmpd_io.hpp>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt_sco/bpmpd_interface.hpp>
-#include <trajopt_sco/bpmpd_io.hpp>
 #include <trajopt_utils/logging.hpp>
 #include <trajopt_utils/stl_to_string.hpp>
 

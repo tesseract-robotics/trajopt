@@ -79,7 +79,8 @@ TEST(solver_utils, exprToEigen)
   Eigen::VectorXd v_q;
   exprToEigen(x_squared, m_Q, v_q, n_vars);
   {
-    Eigen::Map<Eigen::VectorXd, Eigen::Unaligned> v_q_e_eig(v_q_expected.data(), v_q_expected.size());
+    Eigen::Map<Eigen::VectorXd, Eigen::Unaligned> v_q_e_eig(v_q_expected.data(),
+                                                            static_cast<long>(v_q_expected.size()));
     ASSERT_EQ(v_q.size(), v_q_e_eig.size());
     EXPECT_TRUE(v_q_e_eig.isApprox(v_q)) << "v_q_expected != v_q" << std::endl
                                          << "v_q:" << std::endl
@@ -92,7 +93,8 @@ TEST(solver_utils, exprToEigen)
 
   exprToEigen(x_squared, m_Q, v_q, n_vars, true);
   {
-    Eigen::Map<Eigen::VectorXd, Eigen::Unaligned> v_q_e_eig(v_q_expected.data(), v_q_expected.size());
+    Eigen::Map<Eigen::VectorXd, Eigen::Unaligned> v_q_e_eig(v_q_expected.data(),
+                                                            static_cast<long>(v_q_expected.size()));
     EXPECT_TRUE(v_q_e_eig.isApprox(v_q)) << "v_q_expected != v_q" << std::endl
                                          << "v_q:" << std::endl
                                          << v_q << std::endl;

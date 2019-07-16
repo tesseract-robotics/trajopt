@@ -155,12 +155,12 @@ struct JointVelErrCalculator : sco::VectorOfVector
     : target_(target), upper_tol_(upper_tol), lower_tol_(lower_tol)
   {
   }
-  Eigen::VectorXd operator()(const Eigen::VectorXd& var_vals) const;
+  Eigen::VectorXd operator()(const Eigen::VectorXd& var_vals) const override;
 };
 
 struct JointVelJacCalculator : sco::MatrixOfVector
 {
-  Eigen::MatrixXd operator()(const Eigen::VectorXd& var_vals) const;
+  Eigen::MatrixXd operator()(const Eigen::VectorXd& var_vals) const override;
 };
 
 struct JointAccErrCalculator : sco::VectorOfVector
@@ -169,14 +169,14 @@ struct JointAccErrCalculator : sco::VectorOfVector
   double limit_;
   JointAccErrCalculator() : limit_(0.0) {}
   JointAccErrCalculator(double limit) : limit_(limit) {}
-  Eigen::VectorXd operator()(const Eigen::VectorXd& var_vals) const;
+  Eigen::VectorXd operator()(const Eigen::VectorXd& var_vals) const override;
 };
 
 struct JointAccJacCalculator : sco::MatrixOfVector
 {
   JointVelErrCalculator vel_calc;
   JointVelJacCalculator vel_jac_calc;
-  Eigen::MatrixXd operator()(const Eigen::VectorXd& var_vals) const;
+  Eigen::MatrixXd operator()(const Eigen::VectorXd& var_vals) const override;
 };
 
 struct JointJerkErrCalculator : sco::VectorOfVector
@@ -185,14 +185,14 @@ struct JointJerkErrCalculator : sco::VectorOfVector
   double limit_;
   JointJerkErrCalculator() : limit_(0.0) {}
   JointJerkErrCalculator(double limit) : limit_(limit) {}
-  Eigen::VectorXd operator()(const Eigen::VectorXd& var_vals) const;
+  Eigen::VectorXd operator()(const Eigen::VectorXd& var_vals) const override;
 };
 
 struct JointJerkJacCalculator : sco::MatrixOfVector
 {
   JointAccErrCalculator acc_calc;
   JointAccJacCalculator acc_jac_calc;
-  Eigen::MatrixXd operator()(const Eigen::VectorXd& var_vals) const;
+  Eigen::MatrixXd operator()(const Eigen::VectorXd& var_vals) const override;
 };
 
 struct TimeCostCalculator : sco::VectorOfVector
@@ -202,12 +202,12 @@ struct TimeCostCalculator : sco::VectorOfVector
   double limit_;
   TimeCostCalculator() : limit_(0.0) {}
   TimeCostCalculator(double limit) : limit_(limit) {}
-  Eigen::VectorXd operator()(const Eigen::VectorXd& var_vals) const;
+  Eigen::VectorXd operator()(const Eigen::VectorXd& var_vals) const override;
 };
 
 struct TimeCostJacCalculator : sco::MatrixOfVector
 {
-  Eigen::MatrixXd operator()(const Eigen::VectorXd& var_vals) const;
+  Eigen::MatrixXd operator()(const Eigen::VectorXd& var_vals) const override;
 };
 
 }  // namespace trajopt
