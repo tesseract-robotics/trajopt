@@ -146,7 +146,7 @@ void eigenToCSC(Eigen::SparseMatrix<double>& sparse_matrix,
 
   // while Eigen does not enforce this, CSC format requires that column
   // pointers ends with the number of non-zero elements
-  column_pointers.push_back(sm_ref.get().nonZeros());
+  column_pointers.push_back(static_cast<int>(sm_ref.get().nonZeros()));
 
   auto csc_v = sm_ref.get().valuePtr();
   values.assign(csc_v, csc_v + sm_ref.get().nonZeros());

@@ -8,10 +8,10 @@ TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace sco
 {
-class Var;
-class AffExpr;
-class QuadExpr;
-class Cnt;
+struct Var;
+struct AffExpr;
+struct QuadExpr;
+struct Cnt;
 
 using DblVec = std::vector<double>;
 using IntVec = std::vector<int>;

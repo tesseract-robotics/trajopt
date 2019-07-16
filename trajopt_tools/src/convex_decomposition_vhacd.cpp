@@ -122,7 +122,7 @@ public:
       }
       else
       {
-        CONSOLE_BRIDGE_logInform("Input file: %s", params_.m_fileNameIn);
+        CONSOLE_BRIDGE_logInform("Input file: %s", params_.m_fileNameIn.c_str());
       }
 
       usage(params_);

@@ -526,7 +526,7 @@ TEST_F(CostsTest, equality_jointVel_time)
   opt.initialize(trajToDblVec(prob->GetInitTraj()));
   double tStart = GetClock();
 
-  sco::OptStatus status = opt.optimize();
+  opt.optimize();
 
   TrajArray output = getTraj(opt.x(), prob->GetVars());
   std::cout << "Trajectory: \n" << output << "\n";
@@ -640,7 +640,7 @@ TEST_F(CostsTest, inequality_jointVel_time)
   opt.initialize(trajToDblVec(prob->GetInitTraj()));
   double tStart = GetClock();
 
-  sco::OptStatus status = opt.optimize();
+  opt.optimize();
   CONSOLE_BRIDGE_logDebug("planning time: %.3f", GetClock() - tStart);
 
   TrajArray output = getTraj(opt.x(), prob->GetVars());

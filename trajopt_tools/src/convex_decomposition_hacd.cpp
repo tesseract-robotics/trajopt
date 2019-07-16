@@ -112,7 +112,7 @@ namespace
 {
 const size_t ERROR_IN_COMMAND_LINE = 1;
 const size_t SUCCESS = 0;
-const size_t ERROR_UNHANDLED_EXCEPTION = 2;
+// const size_t ERROR_UNHANDLED_EXCEPTION = 2;
 }  // namespace
 
 int main(int argc, char** argv)
@@ -135,7 +135,8 @@ int main(int argc, char** argv)
     /** --help option */
     if (vm.count("help"))
     {
-      CONSOLE_BRIDGE_logInform("Basic Command Line Parameter App: %s", desc);
+      CONSOLE_BRIDGE_logInform("Basic Command Line Parameter App:");
+      desc.print(std::cout);
       return SUCCESS;
     }
 
@@ -145,7 +146,7 @@ int main(int argc, char** argv)
   catch (po::error& e)
   {
     CONSOLE_BRIDGE_logError(e.what());
-    CONSOLE_BRIDGE_logError("%s", desc);
+    desc.print(std::cout);
     return ERROR_IN_COMMAND_LINE;
   }
 

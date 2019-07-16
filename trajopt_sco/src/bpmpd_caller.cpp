@@ -1,12 +1,12 @@
-//#include <trajopt_utils/macros.h>
-// TRAJOPT_IGNORE_WARNINGS_PUSH
+#include <trajopt_utils/macros.h>
+TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <errno.h>
 #include <iostream>
 #include <string.h>
 #include <unistd.h>
-// TRAJOPT_IGNORE_WARNINGS_POP
-
 #include <trajopt_sco/bpmpd_io.hpp>
+TRAJOPT_IGNORE_WARNINGS_POP
+
 #include <trajopt_utils/stl_to_string.hpp>
 
 extern "C" {

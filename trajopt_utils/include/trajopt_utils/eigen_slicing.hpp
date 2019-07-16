@@ -10,7 +10,7 @@ template <typename VectorT>
 VectorT fancySlice(const VectorT& x, const std::vector<int>& inds)
 {
   VectorT out(inds.size());
-  for (int i = 0; i < inds.size(); ++i)
+  for (size_t i = 0; i < inds.size(); ++i)
     out[i] = x[inds[i]];
   return out;
 }
