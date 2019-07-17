@@ -21,6 +21,7 @@ macro(add_gtest test_name test_file)
   target_include_directories(${test_name} SYSTEM PRIVATE
       ${PCL_INCLUDE_DIRS})
   add_test(${test_name} ${test_name})
+  add_dependencies(${test_name} ${PACKAGE_LIBRARIES})
   add_dependencies(run_tests ${test_name})
 endmacro()
 
