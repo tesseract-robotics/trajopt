@@ -44,7 +44,7 @@ if (HAVE_BPMPD)
   else()
       target_compile_features(bpmpd_caller PRIVATE cxx_std_11)
   endif()
-  target_compile_definitions(bpmpd_caller PUBLIC BPMPD_WORKING_DIR="${CMAKE_CURRENT_BINARY_DIR}")
+  target_compile_definitions(bpmpd_caller PRIVATE BPMPD_WORKING_DIR="${CMAKE_CURRENT_BINARY_DIR}")
   target_include_directories(bpmpd_caller PUBLIC
       "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
       "$<INSTALL_INTERFACE:include>")
@@ -79,20 +79,16 @@ if (GUROBI_FOUND)
   target_include_directories(${PROJECT_NAME} SYSTEM PUBLIC ${GUROBI_INCLUDE_DIR})
 endif()
 if (HAVE_BPMPD)
-#  file(COPY src/bpmpd.par DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
-
   install(FILES src/bpmpd.par DESTINATION "${CMAKE_INSTALL_PREFIX}/bin")
 
   target_link_libraries(${PROJECT_NAME} PUBLIC ${BPMPD_LIBRARY})
-  message("${CMAKE_INSTALL_PREFIX}/bin/bpmpd_caller")
-  target_compile_definitions(${PROJECT_NAME} PUBLIC BPMPD_CALLER="${CMAKE_INSTALL_PREFIX}/bin/bpmpd_caller")
-
+  target_compile_definitions(${PROJECT_NAME} PRIVATE BPMPD_CALLER="${CMAKE_INSTALL_PREFIX}/bin/bpmpd_caller")
 endif()
 if (osqp_FOUND)
-  target_link_libraries(${PROJECT_NAME} PRIVATE osqp::osqpstatic)
+  target_link_libraries(${PROJECT_NAME} PUBLIC osqp::osqpstatic)
 endif()
 if (qpOASES_FOUND)
-  target_link_libraries(${PROJECT_NAME} PRIVATE ${qpOASES_LIBRARIES})
+  target_link_libraries(${PROJECT_NAME} PUBLIC ${qpOASES_LIBRARIES})
   target_include_directories(${PROJECT_NAME} SYSTEM PUBLIC ${qpOASES_INCLUDE_DIRS})
 endif()
 
@@ -149,6 +145,21 @@ if (ENABLE_TESTS)
   add_custom_target(run_tests ALL
       WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
       COMMAND ${CMAKE_CTEST_COMMAND} -C $<CONFIGURATION> -V)
+
+  if (HAVE_BPMPD)
+    # BPMPD Expects the caller to be in the install location so for
+    # testing it must manually be copied so tests will run.
+    add_custom_target(test_depend ALL
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/bpmpd.par
+            ${CMAKE_INSTALL_PREFIX}/bin/bpmpd.par
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            ${CMAKE_BINARY_DIR}/bpmpd_caller
+            ${CMAKE_INSTALL_PREFIX}/bin/bpmpd_caller)
+    add_dependencies(test_depend ${PROJECT_NAME})
+
+    add_dependencies(run_tests test_depend)
+  endif()
 
   add_subdirectory(test)
 endif()
