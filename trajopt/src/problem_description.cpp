@@ -1401,7 +1401,7 @@ void CollisionTermInfo::fromJson(ProblemConstructionInfo& pci, const Json::Value
         SafetyMarginData::Ptr& data = info[index];
         for (auto j = 0u; j < pair.size(); ++j)
         {
-          data->SetPairSafetyMarginData(link, pair[j], pair_dist_pen[index], pair_coeffs[index]);
+          data->setPairSafetyMarginData(link, pair[j], pair_dist_pen[index], pair_coeffs[index]);
         }
       }
     }
