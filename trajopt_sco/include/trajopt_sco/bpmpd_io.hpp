@@ -25,13 +25,13 @@ void ser(int fp, T& x, SerMode mode)
     case SER:
     {
       T xcopy = x;
-      long n = write(fp, &xcopy, sizeof(T));
+      ssize_t n = write(fp, &xcopy, sizeof(T));
       assert(n == sizeof(T));
       break;
     }
     case DESER:
     {
-      long n = read(fp, &x, sizeof(T));
+      ssize_t n = read(fp, &x, sizeof(T));
       assert(n == sizeof(T));
       break;
     }
