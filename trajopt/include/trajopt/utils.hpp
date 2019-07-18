@@ -73,7 +73,7 @@ struct SafetyMarginData
    * @param safety_margin_coeffs A safety margin coefficient vector where each
    * element corresponds to a given timestep.
    */
-  void SetPairSafetyMarginData(const std::string& obj1,
+  void setPairSafetyMarginData(const std::string& obj1,
                                const std::string& obj2,
                                const double& safety_margin,
                                const double& safety_margin_coeff)
@@ -89,6 +89,15 @@ struct SafetyMarginData
     }
   }
 
+  /**
+   * @brief Get the pairs safety margin data
+   *
+   * If a safety margin for the request pair does not exist it returns the default safety margin data.
+   *
+   * @param obj1 The first object name
+   * @param obj2 The second object name
+   * @return A Vector2d[Contact Distance Threshold, Coefficient]
+   */
   const Eigen::Vector2d& getPairSafetyMarginData(const std::string& obj1, const std::string& obj2) const
   {
     const std::string& key = obj1 + obj2;
@@ -104,6 +113,13 @@ struct SafetyMarginData
     }
   }
 
+  /**
+   * @brief Get the max safety margin data
+   *
+   * This used when setting the contact distance in the contact manager.
+   *
+   * @return Max contact distance threshold
+   */
   const double& getMaxSafetyMargin() const { return max_safety_margin_; }
 
 private:
