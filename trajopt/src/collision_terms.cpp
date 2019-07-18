@@ -321,7 +321,19 @@ void SingleTimestepCollisionEvaluator::CalcCollisions(const DblVec& x,
     contact_manager_->setCollisionObjectsTransform(link_name, state->transforms[link_name]);
 
   contact_manager_->contactTest(contacts, tesseract_collision::ContactTestType::ALL);
-  tesseract_collision::flattenResults(std::move(contacts), dist_results);
+
+  tesseract_collision::ContactResultVector temp;
+  tesseract_collision::flattenResults(std::move(contacts), temp);
+
+  // Because each pair can have its own contact distance we need to
+  // filter out collision pairs that are outside the pairs threshold
+  dist_results.reserve(temp.size());
+  for (auto& res : temp)
+  {
+    const Eigen::Vector2d& data = getSafetyMarginData()->getPairSafetyMarginData(res.link_names[0], res.link_names[1]);
+    if (data[0] > res.distance)
+      dist_results.emplace_back(res);
+  }
 }
 
 void SingleTimestepCollisionEvaluator::CalcDists(const DblVec& x, DblVec& dists)
@@ -407,7 +419,19 @@ void CastCollisionEvaluator::CalcCollisions(const DblVec& x, tesseract_collision
         link_name, state0->transforms[link_name], state1->transforms[link_name]);
 
   contact_manager_->contactTest(contacts, tesseract_collision::ContactTestType::ALL);
-  tesseract_collision::flattenResults(std::move(contacts), dist_results);
+
+  tesseract_collision::ContactResultVector temp;
+  tesseract_collision::flattenResults(std::move(contacts), temp);
+
+  // Because each pair can have its own contact distance we need to
+  // filter out collision pairs that are outside the pairs threshold
+  dist_results.reserve(temp.size());
+  for (auto& res : temp)
+  {
+    const Eigen::Vector2d& data = getSafetyMarginData()->getPairSafetyMarginData(res.link_names[0], res.link_names[1]);
+    if (data[0] > res.distance)
+      dist_results.emplace_back(res);
+  }
 }
 void CastCollisionEvaluator::CalcDistExpressions(const DblVec& x, sco::AffExprVector& exprs)
 {
