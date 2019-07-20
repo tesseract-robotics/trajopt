@@ -244,7 +244,7 @@ void ProblemConstructionInfo::readInitInfo(const Json::Value& v)
     if (endpoint.size() != static_cast<unsigned>(n_dof))
     {
       PRINT_AND_THROW(boost::format("wrong number of dof values in "
-                                    "initialization. expected %i got %j") %
+                                    "initialization. expected %i got %i") %
                       n_dof % endpoint.size());
     }
     init_info.data = util::toVectorXd(endpoint);
