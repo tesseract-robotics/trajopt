@@ -6,6 +6,7 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <tesseract_environment/core/environment.h>
 #include <tesseract_environment/core/utils.h>
 #include <tesseract_kinematics/core/forward_kinematics.h>
+#include <console_bridge/console.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt/common.hpp>
@@ -79,6 +80,11 @@ struct CartPoseErrCalculator : public TrajOptVectorOfVector
     , tcp_(tcp)
   {
     kin_link_ = adjacency_map_->getLinkMapping(link_);
+    if (kin_link_ == nullptr)
+    {
+      CONSOLE_BRIDGE_logError("Link name '%s' provided does not exist.", link_.c_str());
+      assert(false);
+    }
   }
 
   void Plot(const tesseract_visualization::Visualization::Ptr& plotter, const Eigen::VectorXd& dof_vals) override;
