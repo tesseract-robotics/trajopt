@@ -225,8 +225,10 @@ struct DynamicCartPoseTermInfo : public TermInfo
   Eigen::Vector3d pos_coeffs, rot_coeffs;
   /** @brief Link which should reach desired pos */
   std::string link;
-  /** @brief Static transform applied to the link */
+  /** @brief Static transform applied to the link_ location */
   Eigen::Isometry3d tcp;
+  /** @brief A Static tranform to be applied to target_ location */
+  Eigen::Isometry3d target_tcp;
 
   DynamicCartPoseTermInfo();
 

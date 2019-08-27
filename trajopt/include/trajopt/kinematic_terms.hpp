@@ -22,26 +22,48 @@ namespace trajopt
 struct DynamicCartPoseErrCalculator : public TrajOptVectorOfVector
 {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-  std::string target_;
-  tesseract_environment::AdjacencyMapPair::ConstPtr kin_target_;
+
+  /** @brief Manipulator kinematics object */
   tesseract_kinematics::ForwardKinematics::ConstPtr manip_;
+
+  /** @brief Adjacency map for kinematics object mapping rigid links to moving links */
   tesseract_environment::AdjacencyMap::ConstPtr adjacency_map_;
+
+  /** @brief Transform from world (root of scene) to base of the kinematics object */
   Eigen::Isometry3d world_to_base_;
+
+  /** @brief The name of the link to track relative to target_*/
   std::string link_;
-  tesseract_environment::AdjacencyMapPair::ConstPtr kin_link_;
+
+  /** @brief The tcp transform to apply to link_ location */
   Eigen::Isometry3d tcp_;
+
+  /** @brief This is a map containing the transform from link_ to its adjacent moving link in the kinematics object */
+  tesseract_environment::AdjacencyMapPair::ConstPtr kin_link_;
+
+  /** @brief The name of the target link to track relative to link_ */
+  std::string target_;
+
+  /** @brief A tcp tranform to be applied to target_ location */
+  Eigen::Isometry3d target_tcp_;
+
+  /** @brief This is a map containing the transform from target_ to its adjacent moving link in the kinematics object */
+  tesseract_environment::AdjacencyMapPair::ConstPtr kin_target_;
+
   DynamicCartPoseErrCalculator(const std::string& target,
                                tesseract_kinematics::ForwardKinematics::ConstPtr manip,
                                tesseract_environment::AdjacencyMap::ConstPtr adjacency_map,
                                Eigen::Isometry3d world_to_base,
                                std::string link,
-                               Eigen::Isometry3d tcp = Eigen::Isometry3d::Identity())
+                               Eigen::Isometry3d tcp = Eigen::Isometry3d::Identity(),
+                               Eigen::Isometry3d target_tcp = Eigen::Isometry3d::Identity())
     : target_(target)
     , manip_(manip)
     , adjacency_map_(adjacency_map)
     , world_to_base_(world_to_base)
     , link_(link)
     , tcp_(tcp)
+    , target_tcp_(target_tcp)
   {
     kin_link_ = adjacency_map_->getLinkMapping(link_);
     kin_target_ = adjacency_map_->getLinkMapping(target_);
