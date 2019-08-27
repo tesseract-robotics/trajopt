@@ -57,7 +57,7 @@ VectorXd DynamicCartPoseErrCalculator::operator()(const VectorXd& dof_vals) cons
   manip_->calcFwdKin(target_pose, dof_vals, kin_target_->link_name);
 
   Eigen::Isometry3d link_tf = world_to_base_ * new_pose * kin_link_->transform * tcp_;
-  Eigen::Isometry3d target_tf = world_to_base_ * target_pose * kin_target_->transform;
+  Eigen::Isometry3d target_tf = world_to_base_ * target_pose * kin_target_->transform * target_tcp_;
 
   Isometry3d pose_err = target_tf.inverse() * link_tf;
   Quaterniond q(pose_err.rotation());
@@ -74,7 +74,7 @@ void DynamicCartPoseErrCalculator::Plot(const tesseract_visualization::Visualiza
   manip_->calcFwdKin(target_pose, dof_vals, kin_target_->link_name);
 
   Eigen::Isometry3d cur_tf = world_to_base_ * cur_pose * kin_link_->transform * tcp_;
-  Eigen::Isometry3d target_tf = world_to_base_ * target_pose * kin_target_->transform;
+  Eigen::Isometry3d target_tf = world_to_base_ * target_pose * kin_target_->transform * target_tcp_;
 
   plotter->plotAxis(cur_tf, 0.05);
   plotter->plotAxis(target_tf, 0.05);

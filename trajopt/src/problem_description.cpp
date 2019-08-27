@@ -546,6 +546,7 @@ DynamicCartPoseTermInfo::DynamicCartPoseTermInfo() : TermInfo(TT_COST | TT_CNT)
   pos_coeffs = Eigen::Vector3d::Ones();
   rot_coeffs = Eigen::Vector3d::Ones();
   tcp.setIdentity();
+  target_tcp.setIdentity();
 }
 
 void DynamicCartPoseTermInfo::fromJson(ProblemConstructionInfo& pci, const Json::Value& v)
@@ -553,6 +554,8 @@ void DynamicCartPoseTermInfo::fromJson(ProblemConstructionInfo& pci, const Json:
   FAIL_IF_FALSE(v.isMember("params"));
   Eigen::Vector3d tcp_xyz = Eigen::Vector3d::Zero();
   Eigen::Vector4d tcp_wxyz = Eigen::Vector4d(1, 0, 0, 0);
+  Eigen::Vector3d target_tcp_xyz = Eigen::Vector3d::Zero();
+  Eigen::Vector4d target_tcp_wxyz = Eigen::Vector4d(1, 0, 0, 0);
 
   const Json::Value& params = v["params"];
   json_marshal::childFromJson(params, timestep, "timestep", pci.basic_info.n_steps - 1);
@@ -562,10 +565,16 @@ void DynamicCartPoseTermInfo::fromJson(ProblemConstructionInfo& pci, const Json:
   json_marshal::childFromJson(params, link, "link");
   json_marshal::childFromJson(params, tcp_xyz, "tcp_xyz", Eigen::Vector3d(0, 0, 0));
   json_marshal::childFromJson(params, tcp_wxyz, "tcp_wxyz", Eigen::Vector4d(1, 0, 0, 0));
+  json_marshal::childFromJson(params, target_tcp_xyz, "target_tcp_xyz", Eigen::Vector3d(0, 0, 0));
+  json_marshal::childFromJson(params, target_tcp_wxyz, "target_tcp_wxyz", Eigen::Vector4d(1, 0, 0, 0));
 
   Eigen::Quaterniond q(tcp_wxyz(0), tcp_wxyz(1), tcp_wxyz(2), tcp_wxyz(3));
   tcp.linear() = q.matrix();
   tcp.translation() = tcp_xyz;
+
+  Eigen::Quaterniond target_q(target_tcp_wxyz(0), target_tcp_wxyz(1), target_tcp_wxyz(2), target_tcp_wxyz(3));
+  target_tcp.linear() = target_q.matrix();
+  target_tcp.translation() = target_tcp_xyz;
 
   const std::vector<std::string>& link_names = pci.kin->getActiveLinkNames();
   if (std::find(link_names.begin(), link_names.end(), link) == link_names.end())
@@ -573,7 +582,8 @@ void DynamicCartPoseTermInfo::fromJson(ProblemConstructionInfo& pci, const Json:
     PRINT_AND_THROW(boost::format("invalid link name: %s") % link);
   }
 
-  const char* all_fields[] = { "timestep", "target", "pos_coeffs", "rot_coeffs", "link", "tcp_xyz", "tcp_wxyz" };
+  const char* all_fields[] = { "timestep", "target",   "pos_coeffs",     "rot_coeffs",     "link",
+                               "tcp_xyz",  "tcp_wxyz", "target_tcp_xyz", "target_tcp_wxyz" };
   ensure_only_members(params, all_fields, sizeof(all_fields) / sizeof(char*));
 }
 
