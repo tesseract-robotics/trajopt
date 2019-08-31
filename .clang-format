@@ -1,5 +1,4 @@
 ---
-# find . -type f -regex '.*\.\(cpp\|hpp\|cc\|cxx\|h\|hxx\)' -exec clang-format-8 -style=file -i {} \;
 BasedOnStyle: Google
 AccessModifierOffset: -2
 AlignEscapedNewlinesLeft: false
