@@ -115,6 +115,32 @@ struct CartPoseErrCalculator : public TrajOptVectorOfVector
 };
 
 /**
+ * @brief Used to calculate the jacobian for StaticCartPoseTermInfo
+ *
+ */
+struct CartPoseJacCalculator : sco::MatrixOfVector
+{
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+  tesseract_kinematics::ForwardKinematics::ConstPtr manip_;
+  tesseract_environment::AdjacencyMap::ConstPtr adjacency_map_;
+  Eigen::Isometry3d world_to_base_;
+  std::string link_;
+  tesseract_environment::AdjacencyMapPair::ConstPtr kin_link_;
+  Eigen::Isometry3d tcp_;
+  CartPoseJacCalculator(tesseract_kinematics::ForwardKinematics::ConstPtr manip,
+                       tesseract_environment::AdjacencyMap::ConstPtr adjacency_map,
+                       Eigen::Isometry3d world_to_base,
+                       std::string link,
+                       Eigen::Isometry3d tcp = Eigen::Isometry3d::Identity())
+    : manip_(manip), adjacency_map_(adjacency_map), world_to_base_(world_to_base), link_(link), tcp_(tcp)
+  {
+    kin_link_ = adjacency_map_->getLinkMapping(link_);
+  }
+
+  Eigen::MatrixXd operator()(const Eigen::VectorXd& dof_vals) const override;
+};
+
+/**
  * @brief Used to calculate the jacobian for CartVelTermInfo
  *
  */
