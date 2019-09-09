@@ -86,8 +86,7 @@ VectorXd CartPoseErrCalculator::operator()(const VectorXd& dof_vals) const
   new_pose = world_to_base_ * new_pose * kin_link_->transform * tcp_;
 
   Isometry3d pose_err = pose_inv_ * new_pose;
-  VectorXd err = concat(pose_err.translation(), calcRotationalError(pose_err.rotation()));
-  return err;
+  return concat(pose_err.translation(), calcRotationalError(pose_err.rotation()));
 }
 
 void CartPoseErrCalculator::Plot(const tesseract_visualization::Visualization::Ptr& plotter, const VectorXd& dof_vals)
@@ -110,20 +109,11 @@ MatrixXd CartPoseJacCalculator::operator()(const VectorXd& dof_vals) const
   MatrixXd jac0(6,  n_dof);
   Eigen::Isometry3d tf0;
 
-  if (tcp_.translation().isZero())
-  {
-    manip_->calcFwdKin(tf0, dof_vals, kin_link_->link_name);
-    manip_->calcJacobian(jac0, dof_vals, kin_link_->link_name);
-    tesseract_kinematics::jacobianChangeBase(jac0, world_to_base_);
-    tesseract_kinematics::jacobianChangeRefPoint(jac0, (world_to_base_ * tf0).linear() * kin_link_->transform.translation());
-  }
-  else
-  {
-    manip_->calcFwdKin(tf0, dof_vals, kin_link_->link_name);
-    manip_->calcJacobian(jac0, dof_vals, kin_link_->link_name);
-    tesseract_kinematics::jacobianChangeBase(jac0, world_to_base_);
-    tesseract_kinematics::jacobianChangeRefPoint(jac0, (world_to_base_ * tf0).linear() * (kin_link_->transform * tcp_).translation());
-  }
+  manip_->calcFwdKin(tf0, dof_vals, kin_link_->link_name);
+  manip_->calcJacobian(jac0, dof_vals, kin_link_->link_name);
+  tesseract_kinematics::jacobianChangeBase(jac0, world_to_base_);
+  tesseract_kinematics::jacobianChangeRefPoint(jac0, (world_to_base_ * tf0).linear() * (kin_link_->transform * tcp_).translation());
+  tesseract_kinematics::jacobianChangeBase(jac0, pose_inv_);
 
   return jac0;
 }

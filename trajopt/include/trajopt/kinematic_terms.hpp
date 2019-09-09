@@ -121,20 +121,28 @@ struct CartPoseErrCalculator : public TrajOptVectorOfVector
 struct CartPoseJacCalculator : sco::MatrixOfVector
 {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
+  Eigen::Isometry3d pose_inv_;
   tesseract_kinematics::ForwardKinematics::ConstPtr manip_;
   tesseract_environment::AdjacencyMap::ConstPtr adjacency_map_;
   Eigen::Isometry3d world_to_base_;
   std::string link_;
   tesseract_environment::AdjacencyMapPair::ConstPtr kin_link_;
   Eigen::Isometry3d tcp_;
-  CartPoseJacCalculator(tesseract_kinematics::ForwardKinematics::ConstPtr manip,
-                       tesseract_environment::AdjacencyMap::ConstPtr adjacency_map,
-                       Eigen::Isometry3d world_to_base,
-                       std::string link,
-                       Eigen::Isometry3d tcp = Eigen::Isometry3d::Identity())
-    : manip_(manip), adjacency_map_(adjacency_map), world_to_base_(world_to_base), link_(link), tcp_(tcp)
+  CartPoseJacCalculator(const Eigen::Isometry3d& pose,
+                        tesseract_kinematics::ForwardKinematics::ConstPtr manip,
+                        tesseract_environment::AdjacencyMap::ConstPtr adjacency_map,
+                        Eigen::Isometry3d world_to_base,
+                        std::string link,
+                        Eigen::Isometry3d tcp = Eigen::Isometry3d::Identity())
+    : pose_inv_(pose.inverse()), manip_(manip), adjacency_map_(adjacency_map), world_to_base_(world_to_base), link_(link), tcp_(tcp)
   {
     kin_link_ = adjacency_map_->getLinkMapping(link_);
+    if (kin_link_ == nullptr)
+    {
+      CONSOLE_BRIDGE_logError("Link name '%s' provided does not exist.", link_.c_str());
+      assert(false);
+    }
   }
 
   Eigen::MatrixXd operator()(const Eigen::VectorXd& dof_vals) const override;

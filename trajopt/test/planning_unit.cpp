@@ -103,7 +103,7 @@ TEST_F(PlanningTest, numerical_ik1)
   {
     for (auto j = 0; j < 4; ++j)
     {
-      EXPECT_NEAR(goal(i, j), final_pose(i, j), 1e-8);
+      EXPECT_NEAR(goal(i, j), final_pose(i, j), 1e-5);
     }
   }
 
