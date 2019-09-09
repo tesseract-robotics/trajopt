@@ -2,6 +2,7 @@
 #include <trajopt_utils/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <unordered_map>
+#include <Eigen/Geometry>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt/typedefs.hpp>
@@ -155,4 +156,36 @@ inline std::vector<SafetyMarginData::Ptr> createSafetyMarginDataVector(int num_e
   }
   return info;
 }
+
+/**
+ * @brief Calculate the rotation error given a rotation error matrix
+ * @param R rotation error matrix
+ * @return rotation error vector
+ */
+inline Eigen::Vector3d calcRotationalError(const Eigen::Ref<const Eigen::Matrix3d>& R)
+{
+  Eigen::AngleAxisd r12(R);
+  double theta = r12.angle();
+  theta = copysign(fmod(fabs(theta),2.0*M_PI), theta);
+  if (theta < -M_PI)
+    theta+=2.*M_PI;
+
+  if (theta > M_PI)
+    theta-=2.*M_PI;
+
+  return r12.axis() * theta;
+}
+
+/**
+ * @brief Calculate error between two transfroms expressed in t1 coordinate system
+ * @param t1 Target Transform
+ * @param t2 Current Transform
+ * @return error [Position, Rotational]
+ */
+inline Eigen::VectorXd calcTransformError(const Eigen::Isometry3d& t1, const Eigen::Isometry3d& t2)
+{
+  Eigen::Isometry3d pose_err = t1.inverse() * t2;
+  return concat(pose_err.translation(), calcRotationalError(pose_err.rotation()));
+}
+
 }  // namespace trajopt

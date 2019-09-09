@@ -59,10 +59,7 @@ VectorXd DynamicCartPoseErrCalculator::operator()(const VectorXd& dof_vals) cons
   Eigen::Isometry3d link_tf = world_to_base_ * new_pose * kin_link_->transform * tcp_;
   Eigen::Isometry3d target_tf = world_to_base_ * target_pose * kin_target_->transform * target_tcp_;
 
-  Isometry3d pose_err = target_tf.inverse() * link_tf;
-  Quaterniond q(pose_err.rotation());
-  VectorXd err = concat(Vector3d(q.x(), q.y(), q.z()), pose_err.translation());
-  return err;
+  return calcTransformError(target_tf, link_tf);
 }
 
 void DynamicCartPoseErrCalculator::Plot(const tesseract_visualization::Visualization::Ptr& plotter,
@@ -89,16 +86,7 @@ VectorXd CartPoseErrCalculator::operator()(const VectorXd& dof_vals) const
   new_pose = world_to_base_ * new_pose * kin_link_->transform * tcp_;
 
   Isometry3d pose_err = pose_inv_ * new_pose;
-  Quaterniond q(pose_err.rotation());
-  Eigen::AngleAxisd r12(pose_err.rotation());
-  double angle = r12.angle();
-  double theta = copysign(fmod(fabs(angle), 2.0 *M_PI), angle);
-  if (theta < -M_PI) theta += 2.0 * M_PI;
-  if (theta > M_PI) theta -= 2.0 * M_PI;
-
-
-  Vector3d rot_err = (pose_inv_.inverse()).rotation() * r12.axis() * theta;
-  VectorXd err = concat(pose_err.translation(), rot_err); // Vector3d(q.x(), q.y(), q.z()));
+  VectorXd err = concat(pose_err.translation(), calcRotationalError(pose_err.rotation()));
   return err;
 }
 
