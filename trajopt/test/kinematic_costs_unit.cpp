@@ -82,15 +82,15 @@ static void checkJacobian(const sco::VectorOfVector& f, const sco::MatrixOfVecto
 TEST_F(KinematicCostsTest, CartPoseJacCalculator)
 {
   CONSOLE_BRIDGE_logDebug("KinematicCostsTest, CartPoseJacCalculator");
-  Eigen::Isometry3d input_pose = Eigen::Isometry3d::Identity();
-  Eigen::Isometry3d tcp = Eigen::Isometry3d::Identity();
   std::string link = "r_gripper_tool_frame";
+  Eigen::Isometry3d input_pose = tesseract_->getEnvironment()->getCurrentState()->transforms.at(link);
+  Eigen::Isometry3d tcp = Eigen::Isometry3d::Identity();
 
   Eigen::VectorXd values(7);
-  values << -1.1, 1.2, -3.3, -1.4, 5.5, -1.6, 7.7;
+  values.setZero();
 
   CartPoseErrCalculator f(input_pose, kin_, adjacency_map_, world_to_base_, link, tcp);
-  CartPoseJacCalculator dfdx(kin_, adjacency_map_, world_to_base_, link);
+  CartPoseJacCalculator dfdx(input_pose, kin_, adjacency_map_, world_to_base_, link, tcp);
   checkJacobian(f, dfdx, values, 1.0e-5);
 }
 
