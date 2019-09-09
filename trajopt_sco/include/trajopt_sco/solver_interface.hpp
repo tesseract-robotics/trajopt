@@ -49,6 +49,7 @@ class Model
 {
 public:
   using Ptr = std::shared_ptr<Model>;
+  using ConstPtr = std::shared_ptr<const Model>;
 
   virtual Var addVar(const std::string& name) = 0;
   virtual Var addVar(const std::string& name, double lb, double ub);

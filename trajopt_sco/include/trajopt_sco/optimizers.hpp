@@ -96,7 +96,105 @@ struct BasicTrustRegionSQPParameters
   double merit_error_coeff;           // initial penalty coefficient
   double trust_box_size;              // current size of trust region (component-wise)
 
+  bool log_results;     // Log results to file
+  std::string log_dir;  // Directory to store log results (Default: /tmp)
+
   BasicTrustRegionSQPParameters();
+};
+
+/**
+ * @brief This struct stores iteration results for the BasicTrustRegionSQP
+ *
+ * Variable with model_ indicates values calcuated using the Convex approximation
+ * of the cost or constraint.
+ *
+ * Variables without model_ indicates values calcuated using the exact
+ * function provided for the cost or constraint
+ *
+ */
+struct BasicTrustRegionSQPResults
+{
+  /** @brief The model optimization variables */
+  DblVec model_var_vals;
+  /** @brief The model (Covex Representation) cost values using the new_x values */
+  DblVec model_cost_vals;
+  /** @brief The model (Covex Representation) constraint violations using the new_x values */
+  DblVec model_cnt_viols;
+  /** @brief The new optimzation variable values */
+  DblVec new_x;
+  /** @brief The cost (exact) values calculated using the new_x values */
+  DblVec new_cost_vals;
+  /** @brief The previous iterations cost (exact) values */
+  DblVec old_cost_vals;
+  /** @brief The constraint violations (exact) calculated using the new_x values */
+  DblVec new_cnt_viols;
+  /** @brief The previous iterations constraint (exact) values */
+  DblVec old_cnt_viols;
+  /** @brief The previous iterations (exact) merit = vecSum(old_cost_vals) + merit_error_coeff * vecSum(old_cnt_viols)
+   */
+  double old_merit;
+  /** @brief The models merit = vecSum(model_cost_vals) + merit_error_coeff * vecSum(model_cnt_viols) */
+  double model_merit;
+  /** @brief The exact merit = vecSum(new_cost_vals) + merit_error_coeff * vecSum(new_cnt_viols) */
+  double new_merit;
+  /**
+   * @brief A measure of improvement approximated using values from the model.
+   * approx_merit_improve = old_merit - model_merit;
+   */
+  double approx_merit_improve;
+  /**
+   * @brief A measure of improvement using exact values
+   * exact_merit_improve = old_merit - new_merit;
+   */
+  double exact_merit_improve;
+  /**
+   * @brief The ratio between the exact and model merit improvement
+   * merit_improve_ratio = exact_merit_improve / approx_merit_improve;
+   */
+  double merit_improve_ratio;
+  /** @brief This is the penalty applied to the constraints for this iteration */
+  double merit_error_coeff;
+  /** @brief Variable names */
+  const std::vector<std::string> var_names;
+  /** @brief Cost Names */
+  const std::vector<std::string> cost_names;
+  /** @brief Constraint Names */
+  const std::vector<std::string> cnt_names;
+
+  BasicTrustRegionSQPResults(const std::vector<std::string>& var_names,
+                             const std::vector<std::string>& cost_names,
+                             const std::vector<std::string>& cnt_names);
+
+  /**
+   * @brief Update the structure data for a new iteration
+   * @param prev_opt_results The previous optimization results
+   * @param model The current model
+   * @param cost_models The current cost models
+   * @param cnt_models The current constraint models
+   * @param cnt_cost_models The current constraint cost models
+   * @param constraints The current exact constraints
+   * @param costs The current exact costs
+   * @param merit_error_coeff The iteration penalty to apply to constraints
+   */
+  void update(const OptResults& prev_opt_results,
+              const Model& model,
+              const std::vector<ConvexObjective::Ptr>& cost_models,
+              const std::vector<ConvexConstraints::Ptr>& cnt_models,
+              const std::vector<ConvexObjective::Ptr>& cnt_cost_models,
+              const std::vector<Constraint::Ptr>& constraints,
+              const std::vector<Cost::Ptr>& costs,
+              const double merit_error_coeff);
+
+  /** @brief Print current results to the terminal */
+  void print() const;
+  /** @brief Write solver results to a file */
+  void writeSolver(std::FILE* stream, bool header = false) const;
+  /** @brief Write variable values to a file */
+  void writeVars(std::FILE* stream, bool header = false) const;
+  /** @brief Write cost results to file */
+  void writeCosts(std::FILE* stream, bool header = false) const;
+  /** @brief Write constraint results to file */
+  void writeConstraints(std::FILE* stream, bool header = false) const;
 };
 
 class BasicTrustRegionSQP : public Optimizer

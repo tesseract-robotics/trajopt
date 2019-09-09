@@ -75,7 +75,7 @@ struct DynamicCartPoseErrCalculator : public TrajOptVectorOfVector
 };
 
 /**
- * @brief Used to calculate the error for StaticCartPoseTermInfo
+ * @brief Used to calculate the error for StaticCartPoseTermInfo in target coordinate system
  * This is converted to a cost or constraint using TrajOptCostFromErrFunc or TrajOptConstraintFromErrFunc
  */
 struct CartPoseErrCalculator : public TrajOptVectorOfVector
