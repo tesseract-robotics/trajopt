@@ -37,9 +37,6 @@ class KinematicCostsTest : public testing::Test
 {
 public:
   Tesseract::Ptr tesseract_ = std::make_shared<Tesseract>(); /**< Trajopt Basic Environment */
-  tesseract_environment::AdjacencyMap::Ptr adjacency_map_;
-  Eigen::Isometry3d world_to_base_;
-  tesseract_kinematics::ForwardKinematics::Ptr kin_;
 
   void SetUp() override
   {
@@ -48,12 +45,6 @@ public:
 
     ResourceLocatorFn locator = locateResource;
     EXPECT_TRUE(tesseract_->init(urdf_file, srdf_file, locator));
-
-    auto env = tesseract_->getEnvironment();
-    kin_ = tesseract_->getFwdKinematicsManager()->getFwdKinematicSolver("right_arm");
-    world_to_base_ = env->getCurrentState()->transforms.at(kin_->getBaseLinkName());
-    world_to_base_ = Eigen::Isometry3d::Identity();
-    adjacency_map_ = std::make_shared<tesseract_environment::AdjacencyMap>(env->getSceneGraph(), kin_->getActiveLinkNames(), env->getCurrentState()->transforms);
 
     gLogLevel = util::LevelError;
   }
@@ -82,6 +73,12 @@ static void checkJacobian(const sco::VectorOfVector& f, const sco::MatrixOfVecto
 TEST_F(KinematicCostsTest, CartPoseJacCalculator)
 {
   CONSOLE_BRIDGE_logDebug("KinematicCostsTest, CartPoseJacCalculator");
+
+  auto env = tesseract_->getEnvironment();
+  auto kin = tesseract_->getFwdKinematicsManager()->getFwdKinematicSolver("right_arm");
+  auto world_to_base = env->getCurrentState()->transforms.at(kin->getBaseLinkName());
+  auto adjacency_map = std::make_shared<tesseract_environment::AdjacencyMap>(env->getSceneGraph(), kin->getActiveLinkNames(), env->getCurrentState()->transforms);
+
   std::string link = "r_gripper_tool_frame";
   Eigen::Isometry3d input_pose = tesseract_->getEnvironment()->getCurrentState()->transforms.at(link);
   Eigen::Isometry3d tcp = Eigen::Isometry3d::Identity();
@@ -89,8 +86,8 @@ TEST_F(KinematicCostsTest, CartPoseJacCalculator)
   Eigen::VectorXd values(7);
   values.setZero();
 
-  CartPoseErrCalculator f(input_pose, kin_, adjacency_map_, world_to_base_, link, tcp);
-  CartPoseJacCalculator dfdx(input_pose, kin_, adjacency_map_, world_to_base_, link, tcp);
+  CartPoseErrCalculator f(input_pose, kin, adjacency_map, world_to_base, link, tcp);
+  CartPoseJacCalculator dfdx(input_pose, kin, adjacency_map, world_to_base, link, tcp);
   checkJacobian(f, dfdx, values, 1.0e-5);
 }
 

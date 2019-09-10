@@ -16,6 +16,8 @@ TRAJOPT_IGNORE_WARNINGS_POP
 #include <trajopt_utils/logging.hpp>
 #include <trajopt_utils/vector_ops.hpp>
 
+#include <tesseract_kinematics/kdl/kdl_fwd_kin_chain.h>
+
 namespace
 {
 bool gRegisteredMakers = false;
@@ -594,6 +596,32 @@ void DynamicCartPoseTermInfo::hatch(TrajOptProb& prob)
 {
   int n_dof = static_cast<int>(prob.GetKin()->numJoints());
 
+  // Next parse the coeff and if not zero add the indice and coeff
+  std::vector<int> ic;
+  std::vector<double> c;
+  ic.reserve(6);
+  c.reserve(6);
+  for (int i = 0; i < 3; ++i)
+  {
+    if (std::abs(pos_coeffs[i]) > 1e-5)
+    {
+      ic.push_back(i);
+      c.push_back(pos_coeffs[i]);
+    }
+  }
+
+  for (int i = 0; i < 3; ++i)
+  {
+    if (std::abs(rot_coeffs[i]) > 1e-5)
+    {
+      ic.push_back(i + 3);
+      c.push_back(rot_coeffs[i]);
+    }
+  }
+
+  Eigen::VectorXi indices = Eigen::Map<Eigen::VectorXi>(ic.data(), static_cast<long>(ic.size()));
+  Eigen::VectorXd coeff = Eigen::Map<Eigen::VectorXd>(c.data(), static_cast<long>(c.size()));
+
   if (term_type & TT_USE_TIME)
   {
     CONSOLE_BRIDGE_logError("Use time version of this term has not been defined.");
@@ -605,18 +633,18 @@ void DynamicCartPoseTermInfo::hatch(TrajOptProb& prob)
     tesseract_environment::AdjacencyMap::Ptr adjacency_map = std::make_shared<tesseract_environment::AdjacencyMap>(
         prob.GetEnv()->getSceneGraph(), prob.GetKin()->getActiveLinkNames(), state->transforms);
 
-    sco::VectorOfVector::Ptr f(
-        new DynamicCartPoseErrCalculator(target, prob.GetKin(), adjacency_map, world_to_base, link, tcp, target_tcp));
+    sco::VectorOfVector::Ptr f(new DynamicCartPoseErrCalculator(target, prob.GetKin(), adjacency_map, world_to_base, link, tcp, target_tcp, indices));
+
     // Apply error calculator as either cost or constraint
     if (term_type & TT_COST)
     {
       prob.addCost(sco::Cost::Ptr(new TrajOptCostFromErrFunc(
-          f, prob.GetVarRow(timestep, 0, n_dof), concat(rot_coeffs, pos_coeffs), sco::ABS, name)));
+          f, prob.GetVarRow(timestep, 0, n_dof), coeff, sco::ABS, name)));
     }
     else if (term_type & TT_CNT)
     {
       prob.addConstraint(sco::Constraint::Ptr(new TrajOptConstraintFromErrFunc(
-          f, prob.GetVarRow(timestep, 0, n_dof), concat(rot_coeffs, pos_coeffs), sco::EQ, name)));
+          f, prob.GetVarRow(timestep, 0, n_dof), coeff, sco::EQ, name)));
     }
     else
     {
@@ -677,6 +705,32 @@ void CartPoseTermInfo::hatch(TrajOptProb& prob)
   tesseract_environment::AdjacencyMap::Ptr adjacency_map = std::make_shared<tesseract_environment::AdjacencyMap>(
       prob.GetEnv()->getSceneGraph(), prob.GetKin()->getActiveLinkNames(), state->transforms);
 
+  // Next parse the coeff and if not zero add the indice and coeff
+  std::vector<int> ic;
+  std::vector<double> c;
+  ic.reserve(6);
+  c.reserve(6);
+  for (int i = 0; i < 3; ++i)
+  {
+    if (std::abs(pos_coeffs[i]) > 1e-5)
+    {
+      ic.push_back(i);
+      c.push_back(pos_coeffs[i]);
+    }
+  }
+
+  for (int i = 0; i < 3; ++i)
+  {
+    if (std::abs(rot_coeffs[i]) > 1e-5)
+    {
+      ic.push_back(i + 3);
+      c.push_back(rot_coeffs[i]);
+    }
+  }
+
+  Eigen::VectorXi indices = Eigen::Map<Eigen::VectorXi>(ic.data(), static_cast<long>(ic.size()));
+  Eigen::VectorXd coeff = Eigen::Map<Eigen::VectorXd>(c.data(), static_cast<long>(c.size()));
+
   if (term_type == (TT_COST | TT_USE_TIME))
   {
     CONSOLE_BRIDGE_logError("Use time version of this term has not been defined.");
@@ -687,17 +741,17 @@ void CartPoseTermInfo::hatch(TrajOptProb& prob)
   }
   else if ((term_type & TT_COST) && ~(term_type | ~TT_USE_TIME))
   {
-    sco::VectorOfVector::Ptr f(new CartPoseErrCalculator(input_pose, prob.GetKin(), adjacency_map, world_to_base, link, tcp));
-    sco::MatrixOfVector::Ptr dfdx(new CartPoseJacCalculator(input_pose, prob.GetKin(), adjacency_map, world_to_base, link));
+    sco::VectorOfVector::Ptr f(new CartPoseErrCalculator(input_pose, prob.GetKin(), adjacency_map, world_to_base, link, tcp, indices));
+    sco::MatrixOfVector::Ptr dfdx(new CartPoseJacCalculator(input_pose, prob.GetKin(), adjacency_map, world_to_base, link, tcp, indices));
     prob.addCost(sco::Cost::Ptr(new TrajOptCostFromErrFunc(
-        f, dfdx, prob.GetVarRow(timestep, 0, n_dof), concat(pos_coeffs, rot_coeffs), sco::ABS, name)));
+        f, dfdx, prob.GetVarRow(timestep, 0, n_dof), coeff, sco::ABS, name)));
   }
   else if ((term_type & TT_CNT) && ~(term_type | ~TT_USE_TIME))
   {
-    sco::VectorOfVector::Ptr f(new CartPoseErrCalculator(input_pose, prob.GetKin(), adjacency_map, world_to_base, link, tcp));
-    sco::MatrixOfVector::Ptr dfdx(new CartPoseJacCalculator(input_pose, prob.GetKin(), adjacency_map, world_to_base, link));
+    sco::VectorOfVector::Ptr f(new CartPoseErrCalculator(input_pose, prob.GetKin(), adjacency_map, world_to_base, link, tcp, indices));
+    sco::MatrixOfVector::Ptr dfdx(new CartPoseJacCalculator(input_pose, prob.GetKin(), adjacency_map, world_to_base, link, tcp, indices));
     prob.addConstraint(sco::Constraint::Ptr(new TrajOptConstraintFromErrFunc(
-        f, dfdx, prob.GetVarRow(timestep, 0, n_dof), concat(pos_coeffs, rot_coeffs), sco::EQ, name)));
+        f, dfdx, prob.GetVarRow(timestep, 0, n_dof), coeff, sco::EQ, name)));
   }
   else
   {
