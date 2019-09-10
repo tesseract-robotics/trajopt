@@ -158,29 +158,22 @@ inline std::vector<SafetyMarginData::Ptr> createSafetyMarginDataVector(int num_e
 }
 
 /**
- * @brief Calculate the rotation error given a rotation error matrix
+ * @brief Calculate the angle axis rotation error given a rotation error matrix
  * @param R rotation error matrix
- * @return rotation error vector
+ * @return Angle axis rotation error vector
  */
 inline Eigen::Vector3d calcRotationalError(const Eigen::Ref<const Eigen::Matrix3d>& R)
 {
+  // Per Eigen AngleAxis documentation the angle is always between [0,PI].
   Eigen::AngleAxisd r12(R);
-  double theta = r12.angle();
-  theta = copysign(fmod(fabs(theta),2.0*M_PI), theta);
-  if (theta < -M_PI)
-    theta+=2.*M_PI;
-
-  if (theta > M_PI)
-    theta-=2.*M_PI;
-
-  return r12.axis() * theta;
+  return r12.axis() * r12.angle();
 }
 
 /**
  * @brief Calculate error between two transfroms expressed in t1 coordinate system
  * @param t1 Target Transform
  * @param t2 Current Transform
- * @return error [Position, Rotational]
+ * @return error [Position, Rotational(Angle Axis)]
  */
 inline Eigen::VectorXd calcTransformError(const Eigen::Isometry3d& t1, const Eigen::Isometry3d& t2)
 {

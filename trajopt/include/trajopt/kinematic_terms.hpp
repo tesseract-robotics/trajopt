@@ -50,13 +50,22 @@ struct DynamicCartPoseErrCalculator : public TrajOptVectorOfVector
   /** @brief This is a map containing the transform from target_ to its adjacent moving link in the kinematics object */
   tesseract_environment::AdjacencyMapPair::ConstPtr kin_target_;
 
+  /**
+   * @brief This is a vector of indices to be returned Default: {0, 1, 2, 3, 4, 5}
+   *
+   * If you only care about x, y and z error, this is {0, 1, 2}
+   * If you only care about rotation error around x, y and z, this is {3, 4, 5}
+   */
+  Eigen::VectorXi indices_;
+
   DynamicCartPoseErrCalculator(const std::string& target,
                                tesseract_kinematics::ForwardKinematics::ConstPtr manip,
                                tesseract_environment::AdjacencyMap::ConstPtr adjacency_map,
                                Eigen::Isometry3d world_to_base,
                                std::string link,
                                Eigen::Isometry3d tcp = Eigen::Isometry3d::Identity(),
-                               Eigen::Isometry3d target_tcp = Eigen::Isometry3d::Identity())
+                               Eigen::Isometry3d target_tcp = Eigen::Isometry3d::Identity(),
+                               Eigen::VectorXi indices = Eigen::Matrix<int, 1, 6>(std::vector<int>({0, 1, 2, 3, 4, 5}).data()))
     : target_(target)
     , manip_(manip)
     , adjacency_map_(adjacency_map)
@@ -64,9 +73,21 @@ struct DynamicCartPoseErrCalculator : public TrajOptVectorOfVector
     , link_(link)
     , tcp_(tcp)
     , target_tcp_(target_tcp)
+    , indices_(indices)
   {
     kin_link_ = adjacency_map_->getLinkMapping(link_);
+    if (kin_link_ == nullptr)
+    {
+      CONSOLE_BRIDGE_logError("Link name '%s' provided does not exist.", link_.c_str());
+      assert(false);
+    }
+
     kin_target_ = adjacency_map_->getLinkMapping(target_);
+    if (kin_target_ == nullptr)
+    {
+      CONSOLE_BRIDGE_logError("Link name '%s' provided does not exist.", target_.c_str());
+      assert(false);
+    }
   }
 
   void Plot(const tesseract_visualization::Visualization::Ptr& plotter, const Eigen::VectorXd& dof_vals) override;
@@ -88,18 +109,29 @@ struct CartPoseErrCalculator : public TrajOptVectorOfVector
   std::string link_;
   tesseract_environment::AdjacencyMapPair::ConstPtr kin_link_;
   Eigen::Isometry3d tcp_;
+
+  /**
+   * @brief This is a vector of indices to be returned Default: {0, 1, 2, 3, 4, 5}
+   *
+   * If you only care about x, y and z error, this is {0, 1, 2}
+   * If you only care about rotation error around x, y and z, this is {3, 4, 5}
+   */
+  Eigen::VectorXi indices_;
+
   CartPoseErrCalculator(const Eigen::Isometry3d& pose,
                         tesseract_kinematics::ForwardKinematics::ConstPtr manip,
                         tesseract_environment::AdjacencyMap::ConstPtr adjacency_map,
                         Eigen::Isometry3d world_to_base,
                         std::string link,
-                        Eigen::Isometry3d tcp = Eigen::Isometry3d::Identity())
+                        Eigen::Isometry3d tcp = Eigen::Isometry3d::Identity(),
+                        Eigen::VectorXi indices = Eigen::Matrix<int, 1, 6>(std::vector<int>({0, 1, 2, 3, 4, 5}).data()))
     : pose_inv_(pose.inverse())
     , manip_(manip)
     , adjacency_map_(adjacency_map)
     , world_to_base_(world_to_base)
     , link_(link)
     , tcp_(tcp)
+    , indices_(indices)
   {
     kin_link_ = adjacency_map_->getLinkMapping(link_);
     if (kin_link_ == nullptr)
@@ -107,6 +139,7 @@ struct CartPoseErrCalculator : public TrajOptVectorOfVector
       CONSOLE_BRIDGE_logError("Link name '%s' provided does not exist.", link_.c_str());
       assert(false);
     }
+    assert(indices_.size() <= 6);
   }
 
   void Plot(const tesseract_visualization::Visualization::Ptr& plotter, const Eigen::VectorXd& dof_vals) override;
@@ -114,10 +147,7 @@ struct CartPoseErrCalculator : public TrajOptVectorOfVector
   Eigen::VectorXd operator()(const Eigen::VectorXd& dof_vals) const override;
 };
 
-/**
- * @brief Used to calculate the jacobian for StaticCartPoseTermInfo
- *
- */
+/** @brief Used to calculate the jacobian for StaticCartPoseTermInfo */
 struct CartPoseJacCalculator : sco::MatrixOfVector
 {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -129,13 +159,29 @@ struct CartPoseJacCalculator : sco::MatrixOfVector
   std::string link_;
   tesseract_environment::AdjacencyMapPair::ConstPtr kin_link_;
   Eigen::Isometry3d tcp_;
+
+  /**
+   * @brief This is a vector of indices to be returned Default: {0, 1, 2, 3, 4, 5}
+   *
+   * If you only care about x, y and z error, this is {0, 1, 2}
+   * If you only care about rotation error around x, y and z, this is {3, 4, 5}
+   */
+  Eigen::VectorXi indices_;
+
   CartPoseJacCalculator(const Eigen::Isometry3d& pose,
                         tesseract_kinematics::ForwardKinematics::ConstPtr manip,
                         tesseract_environment::AdjacencyMap::ConstPtr adjacency_map,
                         Eigen::Isometry3d world_to_base,
                         std::string link,
-                        Eigen::Isometry3d tcp = Eigen::Isometry3d::Identity())
-    : pose_inv_(pose.inverse()), manip_(manip), adjacency_map_(adjacency_map), world_to_base_(world_to_base), link_(link), tcp_(tcp)
+                        Eigen::Isometry3d tcp = Eigen::Isometry3d::Identity(),
+                        Eigen::VectorXi indices = Eigen::Matrix<int, 1, 6>(std::vector<int>({0, 1, 2, 3, 4, 5}).data()))
+    : pose_inv_(pose.inverse())
+    , manip_(manip)
+    , adjacency_map_(adjacency_map)
+    , world_to_base_(world_to_base)
+    , link_(link)
+    , tcp_(tcp)
+    , indices_(indices)
   {
     kin_link_ = adjacency_map_->getLinkMapping(link_);
     if (kin_link_ == nullptr)
@@ -143,6 +189,7 @@ struct CartPoseJacCalculator : sco::MatrixOfVector
       CONSOLE_BRIDGE_logError("Link name '%s' provided does not exist.", link_.c_str());
       assert(false);
     }
+    assert(indices_.size() <= 6);
   }
 
   Eigen::MatrixXd operator()(const Eigen::VectorXd& dof_vals) const override;
