@@ -1,4 +1,4 @@
-﻿#include <trajopt_utils/macros.h>
+#include <trajopt_utils/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <boost/algorithm/string.hpp>
 TRAJOPT_IGNORE_WARNINGS_POP
@@ -606,7 +606,7 @@ void DynamicCartPoseTermInfo::hatch(TrajOptProb& prob)
         prob.GetEnv()->getSceneGraph(), prob.GetKin()->getActiveLinkNames(), state->transforms);
 
     sco::VectorOfVector::Ptr f(
-        new DynamicCartPoseErrCalculator(target, prob.GetKin(), adjacency_map, world_to_base, link, tcp));
+        new DynamicCartPoseErrCalculator(target, prob.GetKin(), adjacency_map, world_to_base, link, tcp, target_tcp));
     // Apply error calculator as either cost or constraint
     if (term_type & TT_COST)
     {
