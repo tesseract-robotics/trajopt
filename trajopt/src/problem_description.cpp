@@ -629,8 +629,17 @@ void DynamicCartPoseTermInfo::hatch(TrajOptProb& prob)
   else
   {
     tesseract_environment::EnvState::ConstPtr state = prob.GetEnv()->getCurrentState();
-    Eigen::Isometry3d world_to_base = state->transforms.at(prob.GetKin()->getBaseLinkName());
-
+    Eigen::Isometry3d world_to_base = Eigen::Isometry3d::Identity();
+    try
+    {
+      world_to_base = state->transforms.at(prob.GetKin()->getBaseLinkName());
+    }
+    catch (const std::exception&)
+    {
+      std::stringstream ss;
+      ss << "Failed to find transform for link '" + prob.GetKin()->getBaseLinkName() + "'; using identity transform instead";
+      CONSOLE_BRIDGE_logError(ss.str().c_str());
+    }
     tesseract_environment::AdjacencyMap::Ptr adjacency_map = std::make_shared<tesseract_environment::AdjacencyMap>(
         prob.GetEnv()->getSceneGraph(), prob.GetKin()->getActiveLinkNames(), state->transforms);
 
@@ -712,8 +721,29 @@ void CartPoseTermInfo::hatch(TrajOptProb& prob)
   input_pose.translation() = xyz;
 
   tesseract_environment::EnvState::ConstPtr state = prob.GetEnv()->getCurrentState();
-  Eigen::Isometry3d world_to_base = state->transforms.at(prob.GetKin()->getBaseLinkName());
-  Eigen::Isometry3d base_to_target = state->transforms.at(target);
+  Eigen::Isometry3d world_to_base = Eigen::Isometry3d::Identity();
+  try
+  {
+    world_to_base = state->transforms.at(prob.GetKin()->getBaseLinkName());
+  }
+  catch(const std::exception&)
+  {
+    std::stringstream ss;
+    ss << "Failed to find transform for link '" + prob.GetKin()->getBaseLinkName() + "'; using identity transform instead";
+    CONSOLE_BRIDGE_logError(ss.str().c_str());
+  }
+
+  Eigen::Isometry3d base_to_target = Eigen::Isometry3d::Identity();
+  try
+  {
+    base_to_target = state->transforms.at(target);
+  }
+  catch (const std::exception& ex)
+  {
+    std::stringstream ss;
+    ss << "Failed to find transform for link '" + prob.GetKin()->getBaseLinkName() + "'; using identity transform instead";
+    CONSOLE_BRIDGE_logError(ss.str().c_str());
+  }
 
   tesseract_environment::AdjacencyMap::Ptr adjacency_map = std::make_shared<tesseract_environment::AdjacencyMap>(
       prob.GetEnv()->getSceneGraph(), prob.GetKin()->getActiveLinkNames(), state->transforms);
@@ -803,7 +833,18 @@ void CartVelTermInfo::hatch(TrajOptProb& prob)
   int n_dof = static_cast<int>(prob.GetKin()->numJoints());
 
   tesseract_environment::EnvState::ConstPtr state = prob.GetEnv()->getCurrentState();
-  Eigen::Isometry3d world_to_base = state->transforms.at(prob.GetKin()->getBaseLinkName());
+  Eigen::Isometry3d world_to_base = Eigen::Isometry3d::Identity();
+  try
+  {
+    world_to_base = state->transforms.at(prob.GetKin()->getBaseLinkName());
+  }
+  catch(const std::exception&)
+  {
+    std::stringstream ss;
+    ss << "Failed to find transform for link '" + prob.GetKin()->getBaseLinkName() + "'; using identity transform instead";
+    CONSOLE_BRIDGE_logError(ss.str().c_str());
+  }
+
   tesseract_environment::AdjacencyMap::Ptr adjacency_map = std::make_shared<tesseract_environment::AdjacencyMap>(
       prob.GetEnv()->getSceneGraph(), prob.GetKin()->getActiveLinkNames(), state->transforms);
 
@@ -1499,7 +1540,18 @@ void CollisionTermInfo::hatch(TrajOptProb& prob)
 {
   int n_dof = static_cast<int>(prob.GetKin()->numJoints());
   tesseract_environment::EnvState::ConstPtr state = prob.GetEnv()->getCurrentState();
-  Eigen::Isometry3d world_to_base = state->transforms.at(prob.GetKin()->getBaseLinkName());
+  Eigen::Isometry3d world_to_base = Eigen::Isometry3d::Identity();
+  try
+  {
+    world_to_base = state->transforms.at(prob.GetKin()->getBaseLinkName());
+  }
+  catch(const std::exception&)
+  {
+    std::stringstream ss;
+    ss << "Failed to find transform for link '" + prob.GetKin()->getBaseLinkName() + "'; using identity transform instead";
+    CONSOLE_BRIDGE_logError(ss.str().c_str());
+  }
+
   tesseract_environment::AdjacencyMap::Ptr adjacency_map = std::make_shared<tesseract_environment::AdjacencyMap>(
       prob.GetEnv()->getSceneGraph(), prob.GetKin()->getActiveLinkNames(), state->transforms);
 
