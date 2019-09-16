@@ -260,6 +260,8 @@ struct CartPoseTermInfo : public TermInfo
   std::string link;
   /** @brief Static transform applied to the link */
   Eigen::Isometry3d tcp;
+  /** @brief The frame relative to which the target position is defined */
+  std::string target;
 
   CartPoseTermInfo();
 
