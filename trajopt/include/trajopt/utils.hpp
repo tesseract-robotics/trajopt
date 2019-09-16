@@ -158,9 +158,9 @@ inline std::vector<SafetyMarginData::Ptr> createSafetyMarginDataVector(int num_e
 }
 
 /**
- * @brief Calculate the angle axis rotation error given a rotation error matrix
+ * @brief Calculate the rotation error vector given a rotation error matrix
  * @param R rotation error matrix
- * @return Angle axis rotation error vector
+ * @return Rotation error vector = Eigen::AngleAxisd.axis() * Eigen::AngleAxisd.angle()
  */
 inline Eigen::Vector3d calcRotationalError(const Eigen::Ref<const Eigen::Matrix3d>& R)
 {
@@ -179,6 +179,23 @@ inline Eigen::VectorXd calcTransformError(const Eigen::Isometry3d& t1, const Eig
 {
   Eigen::Isometry3d pose_err = t1.inverse() * t2;
   return concat(pose_err.translation(), calcRotationalError(pose_err.rotation()));
+}
+
+/**
+ * @brief Apply a twist for dt to a given transform
+ * @param t1 The transform to apply twist.
+ * @param twist The twist to apply.
+ * @param dt The delta time for which the twist is applied
+ * @return Transform result of applying a twist for dt.
+ */
+inline Eigen::Isometry3d addTwist(const Eigen::Isometry3d& t1, const Eigen::Ref<const Eigen::Matrix<double, 6, 1>>& twist, double dt)
+{
+  Eigen::Isometry3d t2;
+  t2.setIdentity();
+  Eigen::Vector3d angle_axis = (t1.rotation().inverse() * twist.tail(3)) * dt;
+  t2.linear() = t1.rotation() * Eigen::AngleAxisd(angle_axis.norm(), angle_axis.normalized());
+  t2.translation() = t1.translation() + twist.head(3) * dt;
+  return t2;
 }
 
 }  // namespace trajopt

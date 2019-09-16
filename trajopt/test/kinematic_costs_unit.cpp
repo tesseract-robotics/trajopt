@@ -84,7 +84,7 @@ TEST_F(KinematicCostsTest, CartPoseJacCalculator)
   Eigen::Isometry3d tcp = Eigen::Isometry3d::Identity();
 
   Eigen::VectorXd values(7);
-  values.setZero();
+  values << -1.1, 1.2, -3.3, -1.4, 5.5, -1.6, 7.7;
 
   CartPoseErrCalculator f(input_pose, kin, adjacency_map, world_to_base, link, tcp);
   CartPoseJacCalculator dfdx(input_pose, kin, adjacency_map, world_to_base, link, tcp);
@@ -97,6 +97,5 @@ int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
 
-  //  pnh.param("plotting", plotting, false);
   return RUN_ALL_TESTS();
 }
