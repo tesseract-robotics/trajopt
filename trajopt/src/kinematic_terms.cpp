@@ -126,6 +126,29 @@ MatrixXd CartPoseJacCalculator::operator()(const VectorXd& dof_vals) const
   tesseract_kinematics::jacobianChangeRefPoint(jac0, (world_to_base_ * tf0).linear() * (kin_link_->transform * tcp_).translation());
   tesseract_kinematics::jacobianChangeBase(jac0, pose_inv_);
 
+  // Paper: https://ethz.ch/content/dam/ethz/special-interest/mavt/robotics-n-intelligent-systems/rsl-dam/documents/RobotDynamics2016/RD2016script.pdf
+  // The jacobian of the robot is the geometric jacobian (Je) which maps generalized velocities in
+  // joint space to time derivatives of the end-effector configuration representation. It does not
+  // represent the analytic jacobian (Ja) given by a partial differentiation of position and rotation
+  // to generalized coordinates. Since the geometric jacobian is unique there exists a linear mapping
+  // between velocities and the derivatives of the representation.
+  //
+  // The approach in the paper was tried but it was having issues with getting correct jacobian.
+  // Must of had an error in the implementation so should revisit at another time but the approach
+  // below should be sufficient and faster than numerical calculations using the err function.
+
+  // The approach below leverages the geometric jacobian and a small step in time to approximate
+  // the partial derivative of the error function. Note that the rotational portion is the only part
+  // that is required to be modified per the paper.
+  Isometry3d pose_err = pose_inv_ * tf0;
+  Eigen::Vector3d rot_err = calcRotationalError(pose_err.rotation());
+  for (int c = 0; c < jac0.cols(); ++c)
+  {
+    auto new_pose_err = addTwist(pose_err, jac0.col(c), 1e-5);
+    Eigen::VectorXd new_rot_err = calcRotationalError(new_pose_err.rotation());
+    jac0.col(c).tail(3) = ((new_rot_err - rot_err) / 1e-5);
+  }
+
   MatrixXd reduced_jac(indices_.size(), n_dof);
   for (int i = 0; i < indices_.size(); ++i)
     reduced_jac.row(i) = jac0.row(indices_[i]);
