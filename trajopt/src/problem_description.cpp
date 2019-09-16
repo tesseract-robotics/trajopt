@@ -630,6 +630,7 @@ void DynamicCartPoseTermInfo::hatch(TrajOptProb& prob)
   {
     tesseract_environment::EnvState::ConstPtr state = prob.GetEnv()->getCurrentState();
     Eigen::Isometry3d world_to_base = state->transforms.at(prob.GetKin()->getBaseLinkName());
+
     tesseract_environment::AdjacencyMap::Ptr adjacency_map = std::make_shared<tesseract_environment::AdjacencyMap>(
         prob.GetEnv()->getSceneGraph(), prob.GetKin()->getActiveLinkNames(), state->transforms);
 
@@ -679,6 +680,7 @@ void CartPoseTermInfo::fromJson(ProblemConstructionInfo& pci, const Json::Value&
   json_marshal::childFromJson(params, link, "link");
   json_marshal::childFromJson(params, tcp_xyz, "tcp_xyz", Eigen::Vector3d(0, 0, 0));
   json_marshal::childFromJson(params, tcp_wxyz, "tcp_wxyz", Eigen::Vector4d(1, 0, 0, 0));
+  json_marshal::childFromJson(params, target, "target", std::string(""));
 
   Eigen::Quaterniond q(tcp_wxyz(0), tcp_wxyz(1), tcp_wxyz(2), tcp_wxyz(3));
   tcp.linear() = q.matrix();
@@ -690,7 +692,13 @@ void CartPoseTermInfo::fromJson(ProblemConstructionInfo& pci, const Json::Value&
     PRINT_AND_THROW(boost::format("invalid link name: %s") % link);
   }
 
-  const char* all_fields[] = { "timestep", "xyz", "wxyz", "pos_coeffs", "rot_coeffs", "link", "tcp_xyz", "tcp_wxyz" };
+  const std::vector<std::string>& all_links = pci.env->getLinkNames();
+  if (std::find(all_links.begin(), all_links.end(), target) == all_links.end())
+  {
+    PRINT_AND_THROW(boost::format("invalid target link name: %s") % target);
+  }
+
+  const char* all_fields[] = { "timestep", "xyz", "wxyz", "pos_coeffs", "rot_coeffs", "link", "tcp_xyz", "tcp_wxyz", "target"};
   ensure_only_members(params, all_fields, sizeof(all_fields) / sizeof(char*));
 }
 
@@ -705,6 +713,8 @@ void CartPoseTermInfo::hatch(TrajOptProb& prob)
 
   tesseract_environment::EnvState::ConstPtr state = prob.GetEnv()->getCurrentState();
   Eigen::Isometry3d world_to_base = state->transforms.at(prob.GetKin()->getBaseLinkName());
+  Eigen::Isometry3d base_to_target = state->transforms.at(target);
+
   tesseract_environment::AdjacencyMap::Ptr adjacency_map = std::make_shared<tesseract_environment::AdjacencyMap>(
       prob.GetEnv()->getSceneGraph(), prob.GetKin()->getActiveLinkNames(), state->transforms);
 
@@ -745,7 +755,7 @@ void CartPoseTermInfo::hatch(TrajOptProb& prob)
   else if ((term_type & TT_COST) && ~(term_type | ~TT_USE_TIME))
   {
     sco::VectorOfVector::Ptr f(
-        new CartPoseErrCalculator(input_pose, prob.GetKin(), adjacency_map, world_to_base, link, tcp, indices));
+        new CartPoseErrCalculator(base_to_target * input_pose, prob.GetKin(), adjacency_map, world_to_base, link, tcp, indices));
     sco::MatrixOfVector::Ptr dfdx(
         new CartPoseJacCalculator(input_pose, prob.GetKin(), adjacency_map, world_to_base, link, tcp, indices));
     prob.addCost(
@@ -754,7 +764,7 @@ void CartPoseTermInfo::hatch(TrajOptProb& prob)
   else if ((term_type & TT_CNT) && ~(term_type | ~TT_USE_TIME))
   {
     sco::VectorOfVector::Ptr f(
-        new CartPoseErrCalculator(input_pose, prob.GetKin(), adjacency_map, world_to_base, link, tcp, indices));
+        new CartPoseErrCalculator(base_to_target * input_pose, prob.GetKin(), adjacency_map, world_to_base, link, tcp, indices));
     sco::MatrixOfVector::Ptr dfdx(
         new CartPoseJacCalculator(input_pose, prob.GetKin(), adjacency_map, world_to_base, link, tcp, indices));
     prob.addConstraint(sco::Constraint::Ptr(
