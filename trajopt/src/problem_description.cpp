@@ -634,17 +634,18 @@ void DynamicCartPoseTermInfo::hatch(TrajOptProb& prob)
         prob.GetEnv()->getSceneGraph(), prob.GetKin()->getActiveLinkNames(), state->transforms);
 
     sco::VectorOfVector::Ptr f(new DynamicCartPoseErrCalculator(target, prob.GetKin(), adjacency_map, world_to_base, link, tcp, target_tcp, indices));
+    sco::MatrixOfVector::Ptr dfdx(new DynamicCartPoseJacCalculator(target, prob.GetKin(), adjacency_map, world_to_base, link, tcp, target_tcp, indices));
 
     // Apply error calculator as either cost or constraint
     if (term_type & TT_COST)
     {
       prob.addCost(sco::Cost::Ptr(new TrajOptCostFromErrFunc(
-          f, prob.GetVarRow(timestep, 0, n_dof), coeff, sco::ABS, name)));
+          f, dfdx, prob.GetVarRow(timestep, 0, n_dof), coeff, sco::ABS, name)));
     }
     else if (term_type & TT_CNT)
     {
       prob.addConstraint(sco::Constraint::Ptr(new TrajOptConstraintFromErrFunc(
-          f, prob.GetVarRow(timestep, 0, n_dof), coeff, sco::EQ, name)));
+          f, dfdx, prob.GetVarRow(timestep, 0, n_dof), coeff, sco::EQ, name)));
     }
     else
     {

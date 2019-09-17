@@ -95,6 +95,82 @@ struct DynamicCartPoseErrCalculator : public TrajOptVectorOfVector
   Eigen::VectorXd operator()(const Eigen::VectorXd& dof_vals) const override;
 };
 
+/** @brief Used to calculate the jacobian for CartPoseTermInfo */
+struct DynamicCartPoseJacCalculator : sco::MatrixOfVector
+{
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
+  /** @brief Manipulator kinematics object */
+  tesseract_kinematics::ForwardKinematics::ConstPtr manip_;
+
+  /** @brief Adjacency map for kinematics object mapping rigid links to moving links */
+  tesseract_environment::AdjacencyMap::ConstPtr adjacency_map_;
+
+  /** @brief Transform from world (root of scene) to base of the kinematics object */
+  Eigen::Isometry3d world_to_base_;
+
+  /** @brief The name of the link to track relative to target_*/
+  std::string link_;
+
+  /** @brief The tcp transform to apply to link_ location */
+  Eigen::Isometry3d tcp_;
+
+  /** @brief This is a map containing the transform from link_ to its adjacent moving link in the kinematics object */
+  tesseract_environment::AdjacencyMapPair::ConstPtr kin_link_;
+
+  /** @brief The name of the target link to track relative to link_ */
+  std::string target_;
+
+  /** @brief A tcp tranform to be applied to target_ location */
+  Eigen::Isometry3d target_tcp_;
+
+  /** @brief This is a map containing the transform from target_ to its adjacent moving link in the kinematics object */
+  tesseract_environment::AdjacencyMapPair::ConstPtr kin_target_;
+
+  /**
+   * @brief This is a vector of indices to be returned Default: {0, 1, 2, 3, 4, 5}
+   *
+   * If you only care about x, y and z error, this is {0, 1, 2}
+   * If you only care about rotation error around x, y and z, this is {3, 4, 5}
+   */
+  Eigen::VectorXi indices_;
+
+  DynamicCartPoseJacCalculator(const std::string& target,
+                               tesseract_kinematics::ForwardKinematics::ConstPtr manip,
+                               tesseract_environment::AdjacencyMap::ConstPtr adjacency_map,
+                               Eigen::Isometry3d world_to_base,
+                               std::string link,
+                               Eigen::Isometry3d tcp = Eigen::Isometry3d::Identity(),
+                               Eigen::Isometry3d target_tcp = Eigen::Isometry3d::Identity(),
+                               Eigen::VectorXi indices = Eigen::Matrix<int, 1, 6>(std::vector<int>({0, 1, 2, 3, 4, 5}).data()))
+    : target_(target)
+    , manip_(manip)
+    , adjacency_map_(adjacency_map)
+    , world_to_base_(world_to_base)
+    , link_(link)
+    , tcp_(tcp)
+    , target_tcp_(target_tcp)
+    , indices_(indices)
+  {
+    kin_link_ = adjacency_map_->getLinkMapping(link_);
+    if (kin_link_ == nullptr)
+    {
+      CONSOLE_BRIDGE_logError("Link name '%s' provided does not exist.", link_.c_str());
+      assert(false);
+    }
+
+    kin_target_ = adjacency_map_->getLinkMapping(target_);
+    if (kin_target_ == nullptr)
+    {
+      CONSOLE_BRIDGE_logError("Link name '%s' provided does not exist.", target_.c_str());
+      assert(false);
+    }
+    assert(indices_.size() <= 6);
+  }
+
+  Eigen::MatrixXd operator()(const Eigen::VectorXd& dof_vals) const override;
+};
+
 /**
  * @brief Used to calculate the error for StaticCartPoseTermInfo in target coordinate system
  * This is converted to a cost or constraint using TrajOptCostFromErrFunc or TrajOptConstraintFromErrFunc
