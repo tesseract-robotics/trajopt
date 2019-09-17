@@ -65,7 +65,7 @@ VectorXd DynamicCartPoseErrCalculator::operator()(const VectorXd& dof_vals) cons
   for (int i = 0; i < indices_.size(); ++i)
     reduced_err[i] = err[indices_[i]];
 
-  return reduced_err; // This is available in 3.4 err(indices_, Eigen::all);
+  return reduced_err;  // This is available in 3.4 err(indices_, Eigen::all);
 }
 
 void DynamicCartPoseErrCalculator::Plot(const tesseract_visualization::Visualization::Ptr& plotter,
@@ -100,19 +100,22 @@ MatrixXd DynamicCartPoseJacCalculator::operator()(const VectorXd& dof_vals) cons
   // Get the jacobian of link in the targets coordinate system
   manip_->calcJacobian(jac_link, dof_vals, kin_link_->link_name);
   tesseract_kinematics::jacobianChangeBase(jac_link, world_to_base_);
-  tesseract_kinematics::jacobianChangeRefPoint(jac_link, (world_to_base_ * cur_pose).linear() * (kin_link_->transform * tcp_).translation());
+  tesseract_kinematics::jacobianChangeRefPoint(
+      jac_link, (world_to_base_ * cur_pose).linear() * (kin_link_->transform * tcp_).translation());
   tesseract_kinematics::jacobianChangeBase(jac_link, target_tf.inverse());
 
   // Get the jacobian of the target in the targets coordinate system
   manip_->calcJacobian(jac_target, dof_vals, kin_target_->link_name);
   tesseract_kinematics::jacobianChangeBase(jac_target, world_to_base_);
-  tesseract_kinematics::jacobianChangeRefPoint(jac_target, (world_to_base_ * target_pose).linear() * (kin_target_->transform * target_tcp_).translation());
+  tesseract_kinematics::jacobianChangeRefPoint(
+      jac_target, (world_to_base_ * target_pose).linear() * (kin_target_->transform * target_tcp_).translation());
   tesseract_kinematics::jacobianChangeBase(jac_target, target_tf.inverse());
   tesseract_kinematics::jacobianChangeRefPoint(jac_target, (target_tf.inverse() * cur_tf).translation());
 
   jac0 = jac_link - jac_target;
 
-  // Paper: https://ethz.ch/content/dam/ethz/special-interest/mavt/robotics-n-intelligent-systems/rsl-dam/documents/RobotDynamics2016/RD2016script.pdf
+  // Paper:
+  // https://ethz.ch/content/dam/ethz/special-interest/mavt/robotics-n-intelligent-systems/rsl-dam/documents/RobotDynamics2016/RD2016script.pdf
   // The jacobian of the robot is the geometric jacobian (Je) which maps generalized velocities in
   // joint space to time derivatives of the end-effector configuration representation. It does not
   // represent the analytic jacobian (Ja) given by a partial differentiation of position and rotation
@@ -139,7 +142,7 @@ MatrixXd DynamicCartPoseJacCalculator::operator()(const VectorXd& dof_vals) cons
   for (int i = 0; i < indices_.size(); ++i)
     reduced_jac.row(i) = jac0.row(indices_[i]);
 
-  return reduced_jac; // This is available in 3.4 jac0(indices_, Eigen::all);
+  return reduced_jac;  // This is available in 3.4 jac0(indices_, Eigen::all);
 }
 
 VectorXd CartPoseErrCalculator::operator()(const VectorXd& dof_vals) const
@@ -155,7 +158,7 @@ VectorXd CartPoseErrCalculator::operator()(const VectorXd& dof_vals) const
   for (int i = 0; i < indices_.size(); ++i)
     reduced_err[i] = err[indices_[i]];
 
-  return reduced_err; // This is available in 3.4 err(indices_, Eigen::all);
+  return reduced_err;  // This is available in 3.4 err(indices_, Eigen::all);
 }
 
 void CartPoseErrCalculator::Plot(const tesseract_visualization::Visualization::Ptr& plotter, const VectorXd& dof_vals)
@@ -175,16 +178,18 @@ void CartPoseErrCalculator::Plot(const tesseract_visualization::Visualization::P
 MatrixXd CartPoseJacCalculator::operator()(const VectorXd& dof_vals) const
 {
   int n_dof = static_cast<int>(manip_->numJoints());
-  MatrixXd jac0(6,  n_dof);
+  MatrixXd jac0(6, n_dof);
   Eigen::Isometry3d tf0;
 
   manip_->calcFwdKin(tf0, dof_vals, kin_link_->link_name);
   manip_->calcJacobian(jac0, dof_vals, kin_link_->link_name);
   tesseract_kinematics::jacobianChangeBase(jac0, world_to_base_);
-  tesseract_kinematics::jacobianChangeRefPoint(jac0, (world_to_base_ * tf0).linear() * (kin_link_->transform * tcp_).translation());
+  tesseract_kinematics::jacobianChangeRefPoint(
+      jac0, (world_to_base_ * tf0).linear() * (kin_link_->transform * tcp_).translation());
   tesseract_kinematics::jacobianChangeBase(jac0, pose_inv_);
 
-  // Paper: https://ethz.ch/content/dam/ethz/special-interest/mavt/robotics-n-intelligent-systems/rsl-dam/documents/RobotDynamics2016/RD2016script.pdf
+  // Paper:
+  // https://ethz.ch/content/dam/ethz/special-interest/mavt/robotics-n-intelligent-systems/rsl-dam/documents/RobotDynamics2016/RD2016script.pdf
   // The jacobian of the robot is the geometric jacobian (Je) which maps generalized velocities in
   // joint space to time derivatives of the end-effector configuration representation. It does not
   // represent the analytic jacobian (Ja) given by a partial differentiation of position and rotation
@@ -211,7 +216,7 @@ MatrixXd CartPoseJacCalculator::operator()(const VectorXd& dof_vals) const
   for (int i = 0; i < indices_.size(); ++i)
     reduced_jac.row(i) = jac0.row(indices_[i]);
 
-  return reduced_jac; // This is available in 3.4 jac0(indices_, Eigen::all);
+  return reduced_jac;  // This is available in 3.4 jac0(indices_, Eigen::all);
 }
 
 MatrixXd CartVelJacCalculator::operator()(const VectorXd& dof_vals) const

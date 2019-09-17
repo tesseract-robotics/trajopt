@@ -58,14 +58,15 @@ struct DynamicCartPoseErrCalculator : public TrajOptVectorOfVector
    */
   Eigen::VectorXi indices_;
 
-  DynamicCartPoseErrCalculator(const std::string& target,
-                               tesseract_kinematics::ForwardKinematics::ConstPtr manip,
-                               tesseract_environment::AdjacencyMap::ConstPtr adjacency_map,
-                               Eigen::Isometry3d world_to_base,
-                               std::string link,
-                               Eigen::Isometry3d tcp = Eigen::Isometry3d::Identity(),
-                               Eigen::Isometry3d target_tcp = Eigen::Isometry3d::Identity(),
-                               Eigen::VectorXi indices = Eigen::Matrix<int, 1, 6>(std::vector<int>({0, 1, 2, 3, 4, 5}).data()))
+  DynamicCartPoseErrCalculator(
+      const std::string& target,
+      tesseract_kinematics::ForwardKinematics::ConstPtr manip,
+      tesseract_environment::AdjacencyMap::ConstPtr adjacency_map,
+      Eigen::Isometry3d world_to_base,
+      std::string link,
+      Eigen::Isometry3d tcp = Eigen::Isometry3d::Identity(),
+      Eigen::Isometry3d target_tcp = Eigen::Isometry3d::Identity(),
+      Eigen::VectorXi indices = Eigen::Matrix<int, 1, 6>(std::vector<int>({ 0, 1, 2, 3, 4, 5 }).data()))
     : target_(target)
     , manip_(manip)
     , adjacency_map_(adjacency_map)
@@ -135,14 +136,15 @@ struct DynamicCartPoseJacCalculator : sco::MatrixOfVector
    */
   Eigen::VectorXi indices_;
 
-  DynamicCartPoseJacCalculator(const std::string& target,
-                               tesseract_kinematics::ForwardKinematics::ConstPtr manip,
-                               tesseract_environment::AdjacencyMap::ConstPtr adjacency_map,
-                               Eigen::Isometry3d world_to_base,
-                               std::string link,
-                               Eigen::Isometry3d tcp = Eigen::Isometry3d::Identity(),
-                               Eigen::Isometry3d target_tcp = Eigen::Isometry3d::Identity(),
-                               Eigen::VectorXi indices = Eigen::Matrix<int, 1, 6>(std::vector<int>({0, 1, 2, 3, 4, 5}).data()))
+  DynamicCartPoseJacCalculator(
+      const std::string& target,
+      tesseract_kinematics::ForwardKinematics::ConstPtr manip,
+      tesseract_environment::AdjacencyMap::ConstPtr adjacency_map,
+      Eigen::Isometry3d world_to_base,
+      std::string link,
+      Eigen::Isometry3d tcp = Eigen::Isometry3d::Identity(),
+      Eigen::Isometry3d target_tcp = Eigen::Isometry3d::Identity(),
+      Eigen::VectorXi indices = Eigen::Matrix<int, 1, 6>(std::vector<int>({ 0, 1, 2, 3, 4, 5 }).data()))
     : target_(target)
     , manip_(manip)
     , adjacency_map_(adjacency_map)
@@ -194,13 +196,14 @@ struct CartPoseErrCalculator : public TrajOptVectorOfVector
    */
   Eigen::VectorXi indices_;
 
-  CartPoseErrCalculator(const Eigen::Isometry3d& pose,
-                        tesseract_kinematics::ForwardKinematics::ConstPtr manip,
-                        tesseract_environment::AdjacencyMap::ConstPtr adjacency_map,
-                        Eigen::Isometry3d world_to_base,
-                        std::string link,
-                        Eigen::Isometry3d tcp = Eigen::Isometry3d::Identity(),
-                        Eigen::VectorXi indices = Eigen::Matrix<int, 1, 6>(std::vector<int>({0, 1, 2, 3, 4, 5}).data()))
+  CartPoseErrCalculator(
+      const Eigen::Isometry3d& pose,
+      tesseract_kinematics::ForwardKinematics::ConstPtr manip,
+      tesseract_environment::AdjacencyMap::ConstPtr adjacency_map,
+      Eigen::Isometry3d world_to_base,
+      std::string link,
+      Eigen::Isometry3d tcp = Eigen::Isometry3d::Identity(),
+      Eigen::VectorXi indices = Eigen::Matrix<int, 1, 6>(std::vector<int>({ 0, 1, 2, 3, 4, 5 }).data()))
     : pose_inv_(pose.inverse())
     , manip_(manip)
     , adjacency_map_(adjacency_map)
@@ -244,13 +247,14 @@ struct CartPoseJacCalculator : sco::MatrixOfVector
    */
   Eigen::VectorXi indices_;
 
-  CartPoseJacCalculator(const Eigen::Isometry3d& pose,
-                        tesseract_kinematics::ForwardKinematics::ConstPtr manip,
-                        tesseract_environment::AdjacencyMap::ConstPtr adjacency_map,
-                        Eigen::Isometry3d world_to_base,
-                        std::string link,
-                        Eigen::Isometry3d tcp = Eigen::Isometry3d::Identity(),
-                        Eigen::VectorXi indices = Eigen::Matrix<int, 1, 6>(std::vector<int>({0, 1, 2, 3, 4, 5}).data()))
+  CartPoseJacCalculator(
+      const Eigen::Isometry3d& pose,
+      tesseract_kinematics::ForwardKinematics::ConstPtr manip,
+      tesseract_environment::AdjacencyMap::ConstPtr adjacency_map,
+      Eigen::Isometry3d world_to_base,
+      std::string link,
+      Eigen::Isometry3d tcp = Eigen::Isometry3d::Identity(),
+      Eigen::VectorXi indices = Eigen::Matrix<int, 1, 6>(std::vector<int>({ 0, 1, 2, 3, 4, 5 }).data()))
     : pose_inv_(pose.inverse())
     , manip_(manip)
     , adjacency_map_(adjacency_map)
