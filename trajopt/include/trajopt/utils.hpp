@@ -188,7 +188,9 @@ inline Eigen::VectorXd calcTransformError(const Eigen::Isometry3d& t1, const Eig
  * @param dt The delta time for which the twist is applied
  * @return Transform result of applying a twist for dt.
  */
-inline Eigen::Isometry3d addTwist(const Eigen::Isometry3d& t1, const Eigen::Ref<const Eigen::Matrix<double, 6, 1>>& twist, double dt)
+inline Eigen::Isometry3d addTwist(const Eigen::Isometry3d& t1,
+                                  const Eigen::Ref<const Eigen::Matrix<double, 6, 1>>& twist,
+                                  double dt)
 {
   Eigen::Isometry3d t2;
   t2.setIdentity();

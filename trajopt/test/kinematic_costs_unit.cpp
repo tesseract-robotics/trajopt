@@ -32,7 +32,6 @@ using namespace tesseract_kinematics;
 using namespace tesseract_visualization;
 using namespace tesseract_scene_graph;
 
-
 class KinematicCostsTest : public testing::Test
 {
 public:
@@ -50,13 +49,17 @@ public:
   }
 };
 
-static std::string toString(const Eigen::MatrixXd& mat){
-    std::stringstream ss;
-    ss << mat;
-    return ss.str();
+static std::string toString(const Eigen::MatrixXd& mat)
+{
+  std::stringstream ss;
+  ss << mat;
+  return ss.str();
 }
 
-static void checkJacobian(const sco::VectorOfVector& f, const sco::MatrixOfVector& dfdx, const Eigen::VectorXd& values, const double epsilon)
+static void checkJacobian(const sco::VectorOfVector& f,
+                          const sco::MatrixOfVector& dfdx,
+                          const Eigen::VectorXd& values,
+                          const double epsilon)
 {
   Eigen::MatrixXd numerical = sco::calcForwardNumJac(f, values, epsilon);
   Eigen::MatrixXd analytical = dfdx(values);
@@ -77,7 +80,8 @@ TEST_F(KinematicCostsTest, CartPoseJacCalculator)
   auto env = tesseract_->getEnvironment();
   auto kin = tesseract_->getFwdKinematicsManager()->getFwdKinematicSolver("right_arm");
   auto world_to_base = env->getCurrentState()->transforms.at(kin->getBaseLinkName());
-  auto adjacency_map = std::make_shared<tesseract_environment::AdjacencyMap>(env->getSceneGraph(), kin->getActiveLinkNames(), env->getCurrentState()->transforms);
+  auto adjacency_map = std::make_shared<tesseract_environment::AdjacencyMap>(
+      env->getSceneGraph(), kin->getActiveLinkNames(), env->getCurrentState()->transforms);
 
   std::string link = "r_gripper_tool_frame";
   Eigen::Isometry3d input_pose = tesseract_->getEnvironment()->getCurrentState()->transforms.at(link);
@@ -101,7 +105,8 @@ TEST_F(KinematicCostsTest, DynamicCartPoseJacCalculator)
   j["l_elbow_flex_joint"] = -0.15;
   env->setState(j);
   auto world_to_base = env->getCurrentState()->transforms.at(kin->getBaseLinkName());
-  auto adjacency_map = std::make_shared<tesseract_environment::AdjacencyMap>(env->getSceneGraph(), kin->getActiveLinkNames(), env->getCurrentState()->transforms);
+  auto adjacency_map = std::make_shared<tesseract_environment::AdjacencyMap>(
+      env->getSceneGraph(), kin->getActiveLinkNames(), env->getCurrentState()->transforms);
 
   std::string link = "r_gripper_tool_frame";
   std::string target = "l_gripper_tool_frame";
