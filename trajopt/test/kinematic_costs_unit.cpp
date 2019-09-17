@@ -91,6 +91,41 @@ TEST_F(KinematicCostsTest, CartPoseJacCalculator)
   checkJacobian(f, dfdx, values, 1.0e-5);
 }
 
+TEST_F(KinematicCostsTest, DynamicCartPoseJacCalculator)
+{
+  CONSOLE_BRIDGE_logDebug("KinematicCostsTest, DynamicCartPoseJacCalculator");
+
+  auto env = tesseract_->getEnvironment();
+  auto kin = tesseract_->getFwdKinematicsManager()->getFwdKinematicSolver("full_body");
+  std::unordered_map<std::string, double> j;
+  j["l_elbow_flex_joint"] = -0.15;
+  env->setState(j);
+  auto world_to_base = env->getCurrentState()->transforms.at(kin->getBaseLinkName());
+  auto adjacency_map = std::make_shared<tesseract_environment::AdjacencyMap>(env->getSceneGraph(), kin->getActiveLinkNames(), env->getCurrentState()->transforms);
+
+  std::string link = "r_gripper_tool_frame";
+  std::string target = "l_gripper_tool_frame";
+  Eigen::Isometry3d input_pose = tesseract_->getEnvironment()->getCurrentState()->transforms.at(link);
+  Eigen::Isometry3d target_pose = tesseract_->getEnvironment()->getCurrentState()->transforms.at(target);
+  Eigen::Isometry3d tcp = Eigen::Isometry3d::Identity();
+
+  Eigen::VectorXd values(15);
+  values.setZero();
+  std::vector<std::string> joint_names = kin->getJointNames();
+  for (size_t i = 0; i < 15; ++i)
+  {
+    if (joint_names[i] == "r_elbow_flex_joint" || joint_names[i] == "l_elbow_flex_joint")
+      values(static_cast<long>(i)) = -0.15;
+
+    if (joint_names[i] == "r_wrist_flex_joint" || joint_names[i] == "l_wrist_flex_joint")
+      values(static_cast<long>(i)) = -0.1;
+  }
+
+  DynamicCartPoseErrCalculator f(target, kin, adjacency_map, world_to_base, link, tcp, tcp);
+  DynamicCartPoseJacCalculator dfdx(target, kin, adjacency_map, world_to_base, link, tcp, tcp);
+  checkJacobian(f, dfdx, values, 1.0e-5);
+}
+
 ////////////////////////////////////////////////////////////////////
 
 int main(int argc, char** argv)
