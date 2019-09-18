@@ -360,7 +360,7 @@ void generateInitTraj(TrajArray& init_traj, const ProblemConstructionInfo& pci)
 }
 
 TrajOptResult::TrajOptResult(sco::OptResults& opt, TrajOptProb& prob)
-  : cost_vals(opt.cost_vals), cnt_viols(opt.cnt_viols)
+  : cost_vals(opt.cost_vals), cnt_viols(opt.cnt_viols), status(opt.status)
 {
   for (const sco::Cost::Ptr& cost : prob.getCosts())
   {
