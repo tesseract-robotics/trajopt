@@ -221,6 +221,7 @@ struct DynamicCartPoseTermInfo : public TermInfo
 
   /** @brief Timestep at which to apply term */
   int timestep;
+  /** @brief The link relative to which the target_tcp is defined */
   std::string target;
   /** @brief Coefficients for position and rotation */
   Eigen::Vector3d pos_coeffs, rot_coeffs;
@@ -260,7 +261,8 @@ struct CartPoseTermInfo : public TermInfo
   std::string link;
   /** @brief Static transform applied to the link */
   Eigen::Isometry3d tcp;
-  /** @brief The frame relative to which the target position is defined */
+  /** @brief The frame relative to which the target position is defined. If empty, frame is assumed to the root,
+   * "world", frame */
   std::string target;
 
   CartPoseTermInfo();
