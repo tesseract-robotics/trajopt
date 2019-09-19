@@ -637,7 +637,8 @@ void DynamicCartPoseTermInfo::hatch(TrajOptProb& prob)
     catch (const std::exception&)
     {
       std::stringstream ss;
-      ss << "Failed to find transform for link '" + prob.GetKin()->getBaseLinkName() + "'; using identity transform instead";
+      ss << "Failed to find transform for link '" + prob.GetKin()->getBaseLinkName() +
+                "'; using identity transform instead";
       CONSOLE_BRIDGE_logError(ss.str().c_str());
     }
     tesseract_environment::AdjacencyMap::Ptr adjacency_map = std::make_shared<tesseract_environment::AdjacencyMap>(
@@ -701,13 +702,21 @@ void CartPoseTermInfo::fromJson(ProblemConstructionInfo& pci, const Json::Value&
     PRINT_AND_THROW(boost::format("invalid link name: %s") % link);
   }
 
-  const std::vector<std::string>& all_links = pci.env->getLinkNames();
-  if (std::find(all_links.begin(), all_links.end(), target) == all_links.end())
+  if (target.empty())
   {
-    PRINT_AND_THROW(boost::format("invalid target link name: %s") % target);
+    target = pci.env->getRootLinkName();
+  }
+  else
+  {
+    const std::vector<std::string>& all_links = pci.env->getLinkNames();
+    if (std::find(all_links.begin(), all_links.end(), target) == all_links.end())
+    {
+      PRINT_AND_THROW(boost::format("invalid target link name: %s") % target);
+    }
   }
 
-  const char* all_fields[] = { "timestep", "xyz", "wxyz", "pos_coeffs", "rot_coeffs", "link", "tcp_xyz", "tcp_wxyz", "target"};
+  const char* all_fields[] = { "timestep", "xyz",     "wxyz",     "pos_coeffs", "rot_coeffs",
+                               "link",     "tcp_xyz", "tcp_wxyz", "target" };
   ensure_only_members(params, all_fields, sizeof(all_fields) / sizeof(char*));
 }
 
@@ -726,22 +735,23 @@ void CartPoseTermInfo::hatch(TrajOptProb& prob)
   {
     world_to_base = state->transforms.at(prob.GetKin()->getBaseLinkName());
   }
-  catch(const std::exception&)
+  catch (const std::exception&)
   {
     std::stringstream ss;
-    ss << "Failed to find transform for link '" + prob.GetKin()->getBaseLinkName() + "'; using identity transform instead";
+    ss << "Failed to find transform for link '" + prob.GetKin()->getBaseLinkName() +
+              "'; using identity transform instead";
     CONSOLE_BRIDGE_logError(ss.str().c_str());
   }
 
-  Eigen::Isometry3d base_to_target = Eigen::Isometry3d::Identity();
+  Eigen::Isometry3d world_to_target = Eigen::Isometry3d::Identity();
   try
   {
-    base_to_target = state->transforms.at(target);
+    world_to_target = state->transforms.at(target);
   }
   catch (const std::exception& ex)
   {
     std::stringstream ss;
-    ss << "Failed to find transform for link '" + prob.GetKin()->getBaseLinkName() + "'; using identity transform instead";
+    ss << "Failed to find transform for link '" + target + "'; using identity transform instead";
     CONSOLE_BRIDGE_logError(ss.str().c_str());
   }
 
@@ -784,8 +794,8 @@ void CartPoseTermInfo::hatch(TrajOptProb& prob)
   }
   else if ((term_type & TT_COST) && ~(term_type | ~TT_USE_TIME))
   {
-    sco::VectorOfVector::Ptr f(
-        new CartPoseErrCalculator(base_to_target * input_pose, prob.GetKin(), adjacency_map, world_to_base, link, tcp, indices));
+    sco::VectorOfVector::Ptr f(new CartPoseErrCalculator(
+        world_to_target * input_pose, prob.GetKin(), adjacency_map, world_to_base, link, tcp, indices));
     sco::MatrixOfVector::Ptr dfdx(
         new CartPoseJacCalculator(input_pose, prob.GetKin(), adjacency_map, world_to_base, link, tcp, indices));
     prob.addCost(
@@ -793,8 +803,8 @@ void CartPoseTermInfo::hatch(TrajOptProb& prob)
   }
   else if ((term_type & TT_CNT) && ~(term_type | ~TT_USE_TIME))
   {
-    sco::VectorOfVector::Ptr f(
-        new CartPoseErrCalculator(base_to_target * input_pose, prob.GetKin(), adjacency_map, world_to_base, link, tcp, indices));
+    sco::VectorOfVector::Ptr f(new CartPoseErrCalculator(
+        world_to_target * input_pose, prob.GetKin(), adjacency_map, world_to_base, link, tcp, indices));
     sco::MatrixOfVector::Ptr dfdx(
         new CartPoseJacCalculator(input_pose, prob.GetKin(), adjacency_map, world_to_base, link, tcp, indices));
     prob.addConstraint(sco::Constraint::Ptr(
@@ -838,10 +848,11 @@ void CartVelTermInfo::hatch(TrajOptProb& prob)
   {
     world_to_base = state->transforms.at(prob.GetKin()->getBaseLinkName());
   }
-  catch(const std::exception&)
+  catch (const std::exception&)
   {
     std::stringstream ss;
-    ss << "Failed to find transform for link '" + prob.GetKin()->getBaseLinkName() + "'; using identity transform instead";
+    ss << "Failed to find transform for link '" + prob.GetKin()->getBaseLinkName() +
+              "'; using identity transform instead";
     CONSOLE_BRIDGE_logError(ss.str().c_str());
   }
 
@@ -1545,10 +1556,11 @@ void CollisionTermInfo::hatch(TrajOptProb& prob)
   {
     world_to_base = state->transforms.at(prob.GetKin()->getBaseLinkName());
   }
-  catch(const std::exception&)
+  catch (const std::exception&)
   {
     std::stringstream ss;
-    ss << "Failed to find transform for link '" + prob.GetKin()->getBaseLinkName() + "'; using identity transform instead";
+    ss << "Failed to find transform for link '" + prob.GetKin()->getBaseLinkName() +
+              "'; using identity transform instead";
     CONSOLE_BRIDGE_logError(ss.str().c_str());
   }
 
