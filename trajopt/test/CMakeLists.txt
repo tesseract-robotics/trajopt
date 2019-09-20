@@ -9,6 +9,11 @@ macro(add_gtest test_name test_file)
   else()
       target_compile_features(${test_name} PUBLIC cxx_std_11)
   endif()
+  if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+      target_compile_options(${test_name} PUBLIC -mno-avx)
+    else()
+      message(WARNING "Non-GNU compiler detected. If using AVX instructions, Eigen alignment issues may result.")
+    endif()
   target_compile_definitions(${test_name} PRIVATE TRAJOPT_DIR="${CMAKE_SOURCE_DIR}")
   target_link_libraries(${test_name}
       ${PROJECT_NAME}
