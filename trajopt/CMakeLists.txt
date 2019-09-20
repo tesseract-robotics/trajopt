@@ -45,6 +45,11 @@ if(CXX_FEATURE_FOUND EQUAL "-1")
 else()
     target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_11)
 endif()
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    target_compile_options(${PROJECT_NAME} PUBLIC -mno-avx)
+  else()
+    message(WARNING "Non-GNU compiler detected. If using AVX instructions, Eigen alignment issues may result.")
+  endif()
 target_include_directories(${PROJECT_NAME} PUBLIC
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
     "$<INSTALL_INTERFACE:include>")
