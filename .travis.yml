@@ -26,6 +26,7 @@ env:
     - ROS_REPO=ros
     - NOT_TEST_INSTALL=true
     - CMAKE_ARGS=-DENABLE_TESTS=ON
+    - BUILD_PKGS_WHITELIST="trajopt trajopt_sco trajopt_tools trajopt_utils"
 
 matrix:
   include:
