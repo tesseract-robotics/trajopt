@@ -636,10 +636,7 @@ void DynamicCartPoseTermInfo::hatch(TrajOptProb& prob)
     }
     catch (const std::exception&)
     {
-      std::stringstream ss;
-      ss << "Failed to find transform for link '" + prob.GetKin()->getBaseLinkName() +
-                "'; using identity transform instead";
-      CONSOLE_BRIDGE_logError(ss.str().c_str());
+      PRINT_AND_THROW(boost::format("Failed to find transform for link '%s'") % prob.GetKin()->getBaseLinkName());
     }
     tesseract_environment::AdjacencyMap::Ptr adjacency_map = std::make_shared<tesseract_environment::AdjacencyMap>(
         prob.GetEnv()->getSceneGraph(), prob.GetKin()->getActiveLinkNames(), state->transforms);
@@ -737,10 +734,7 @@ void CartPoseTermInfo::hatch(TrajOptProb& prob)
   }
   catch (const std::exception&)
   {
-    std::stringstream ss;
-    ss << "Failed to find transform for link '" + prob.GetKin()->getBaseLinkName() +
-              "'; using identity transform instead";
-    CONSOLE_BRIDGE_logError(ss.str().c_str());
+    PRINT_AND_THROW(boost::format("Failed to find transform for link '%s'") % prob.GetKin()->getBaseLinkName());
   }
 
   Eigen::Isometry3d world_to_target = Eigen::Isometry3d::Identity();
@@ -750,9 +744,7 @@ void CartPoseTermInfo::hatch(TrajOptProb& prob)
   }
   catch (const std::exception& ex)
   {
-    std::stringstream ss;
-    ss << "Failed to find transform for link '" + target + "'; using identity transform instead";
-    CONSOLE_BRIDGE_logError(ss.str().c_str());
+    PRINT_AND_THROW(boost::format("Failed to find transform for link '%s'") % target);
   }
 
   tesseract_environment::AdjacencyMap::Ptr adjacency_map = std::make_shared<tesseract_environment::AdjacencyMap>(
@@ -850,10 +842,7 @@ void CartVelTermInfo::hatch(TrajOptProb& prob)
   }
   catch (const std::exception&)
   {
-    std::stringstream ss;
-    ss << "Failed to find transform for link '" + prob.GetKin()->getBaseLinkName() +
-              "'; using identity transform instead";
-    CONSOLE_BRIDGE_logError(ss.str().c_str());
+    PRINT_AND_THROW(boost::format("Failed to find transform for link '%s'") % prob.GetKin()->getBaseLinkName());
   }
 
   tesseract_environment::AdjacencyMap::Ptr adjacency_map = std::make_shared<tesseract_environment::AdjacencyMap>(
@@ -1558,10 +1547,7 @@ void CollisionTermInfo::hatch(TrajOptProb& prob)
   }
   catch (const std::exception&)
   {
-    std::stringstream ss;
-    ss << "Failed to find transform for link '" + prob.GetKin()->getBaseLinkName() +
-              "'; using identity transform instead";
-    CONSOLE_BRIDGE_logError(ss.str().c_str());
+    PRINT_AND_THROW(boost::format("Failed to find transform for link '%s'") % prob.GetKin()->getBaseLinkName());
   }
 
   tesseract_environment::AdjacencyMap::Ptr adjacency_map = std::make_shared<tesseract_environment::AdjacencyMap>(
