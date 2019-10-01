@@ -738,13 +738,16 @@ void CartPoseTermInfo::hatch(TrajOptProb& prob)
   }
 
   Eigen::Isometry3d world_to_target = Eigen::Isometry3d::Identity();
-  try
+  if (!target.empty())
   {
-    world_to_target = state->transforms.at(target);
-  }
-  catch (const std::exception& ex)
-  {
-    PRINT_AND_THROW(boost::format("Failed to find transform for link '%s'") % target);
+    try
+    {
+      world_to_target = state->transforms.at(target);
+    }
+    catch (const std::exception& ex)
+    {
+      PRINT_AND_THROW(boost::format("Failed to find transform for link '%s'") % target);
+    }
   }
 
   tesseract_environment::AdjacencyMap::Ptr adjacency_map = std::make_shared<tesseract_environment::AdjacencyMap>(
