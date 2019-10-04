@@ -164,9 +164,19 @@ inline std::vector<SafetyMarginData::Ptr> createSafetyMarginDataVector(int num_e
  */
 inline Eigen::Vector3d calcRotationalError(const Eigen::Ref<const Eigen::Matrix3d>& R)
 {
-  // Per Eigen AngleAxis documentation the angle is always between [0,PI].
   Eigen::AngleAxisd r12(R);
-  return r12.axis() * r12.angle();
+
+  // Make sure that the angle is on [-pi, pi]
+  double angle = r12.angle();
+  angle = copysign(fmod(fabs(angle), 2.0 * M_PI), angle);
+  if (angle < -M_PI)
+    angle += 2.0 * M_PI;
+  else if (angle > M_PI)
+    angle -= 2.0 * M_PI;
+
+  assert(std::abs(angle) <= M_PI);
+
+  return r12.axis() * angle;
 }
 
 /**
