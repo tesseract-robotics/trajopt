@@ -13,6 +13,7 @@ ScalarOfVector::Ptr ScalarOfVector::construct(const func& f)
   ScalarOfVector* sov = new F(f);  // to avoid erroneous clang warning
   return ScalarOfVector::Ptr(sov);
 }
+
 VectorOfVector::Ptr VectorOfVector::construct(const func& f)
 {
   struct F : public VectorOfVector
@@ -23,6 +24,18 @@ VectorOfVector::Ptr VectorOfVector::construct(const func& f)
   };
   VectorOfVector* vov = new F(f);  // to avoid erroneous clang warning
   return VectorOfVector::Ptr(vov);
+}
+
+MatrixOfVector::Ptr MatrixOfVector::construct(const func& f)
+{
+  struct F : public MatrixOfVector
+  {
+    func f;
+    F(const func& _f) : f(_f) {}
+    Eigen::MatrixXd operator()(const Eigen::VectorXd& x) const override { return f(x); }
+  };
+  MatrixOfVector* mov = new F(f);  // to avoid erroneous clang warning
+  return MatrixOfVector::Ptr(mov);
 }
 
 Eigen::VectorXd calcForwardNumGrad(const ScalarOfVector& f, const Eigen::VectorXd& x, double epsilon)
