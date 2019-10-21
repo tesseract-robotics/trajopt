@@ -643,19 +643,21 @@ void DynamicCartPoseTermInfo::hatch(TrajOptProb& prob)
 
     sco::VectorOfVector::Ptr f(new DynamicCartPoseErrCalculator(
         target, prob.GetKin(), adjacency_map, world_to_base, link, tcp, target_tcp, indices));
+
+    // This is currently not being used. There is an intermittent bug that needs to be tracked down it is not used.
     sco::MatrixOfVector::Ptr dfdx(new DynamicCartPoseJacCalculator(
         target, prob.GetKin(), adjacency_map, world_to_base, link, tcp, target_tcp, indices));
 
     // Apply error calculator as either cost or constraint
     if (term_type & TT_COST)
     {
-      prob.addCost(sco::Cost::Ptr(
-          new TrajOptCostFromErrFunc(f, dfdx, prob.GetVarRow(timestep, 0, n_dof), coeff, sco::ABS, name)));
+      prob.addCost(
+          sco::Cost::Ptr(new TrajOptCostFromErrFunc(f, prob.GetVarRow(timestep, 0, n_dof), coeff, sco::ABS, name)));
     }
     else if (term_type & TT_CNT)
     {
       prob.addConstraint(sco::Constraint::Ptr(
-          new TrajOptConstraintFromErrFunc(f, dfdx, prob.GetVarRow(timestep, 0, n_dof), coeff, sco::EQ, name)));
+          new TrajOptConstraintFromErrFunc(f, prob.GetVarRow(timestep, 0, n_dof), coeff, sco::EQ, name)));
     }
     else
     {
@@ -791,19 +793,23 @@ void CartPoseTermInfo::hatch(TrajOptProb& prob)
   {
     sco::VectorOfVector::Ptr f(new CartPoseErrCalculator(
         world_to_target * input_pose, prob.GetKin(), adjacency_map, world_to_base, link, tcp, indices));
+
+    // This is currently not being used. There is an intermittent bug that needs to be tracked down it is not used.
     sco::MatrixOfVector::Ptr dfdx(
         new CartPoseJacCalculator(input_pose, prob.GetKin(), adjacency_map, world_to_base, link, tcp, indices));
     prob.addCost(
-        sco::Cost::Ptr(new TrajOptCostFromErrFunc(f, dfdx, prob.GetVarRow(timestep, 0, n_dof), coeff, sco::ABS, name)));
+        sco::Cost::Ptr(new TrajOptCostFromErrFunc(f, prob.GetVarRow(timestep, 0, n_dof), coeff, sco::ABS, name)));
   }
   else if ((term_type & TT_CNT) && ~(term_type | ~TT_USE_TIME))
   {
     sco::VectorOfVector::Ptr f(new CartPoseErrCalculator(
         world_to_target * input_pose, prob.GetKin(), adjacency_map, world_to_base, link, tcp, indices));
+
+    // This is currently not being used. There is an intermittent bug that needs to be tracked down it is not used.
     sco::MatrixOfVector::Ptr dfdx(
         new CartPoseJacCalculator(input_pose, prob.GetKin(), adjacency_map, world_to_base, link, tcp, indices));
     prob.addConstraint(sco::Constraint::Ptr(
-        new TrajOptConstraintFromErrFunc(f, dfdx, prob.GetVarRow(timestep, 0, n_dof), coeff, sco::EQ, name)));
+        new TrajOptConstraintFromErrFunc(f, prob.GetVarRow(timestep, 0, n_dof), coeff, sco::EQ, name)));
   }
   else
   {
