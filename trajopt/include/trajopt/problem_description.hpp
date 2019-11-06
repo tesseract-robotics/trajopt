@@ -214,6 +214,42 @@ private:
   tesseract::Tesseract::ConstPtr tesseract_;
 };
 
+/** @brief User defined error function that is set as a constraint or cost for each timestep.
+ *
+ * The error function is required, but the jacobian is optional (nullptr).
+ *
+ * Error Function:
+ *   arg: VectorXd will be all of the joint values for one timestep.
+ *   return: VectorXd of violations for each joint. Anything != 0 will be a violation
+ *
+ * Error Function Jacobian:
+ *   arg: VectorXd will be all of the joint values for one timestep.
+ *   return: Eigen::MatrixXd that represents the change in the error function with respect to joint values
+ */
+struct UserDefinedTermInfo : public TermInfo
+{
+  /** @brief The name prefix shown in output */
+  std::string name = "UserDefined";
+
+  /** @brief Timesteps over which to apply term */
+  int first_step, last_step;
+
+  /** @brief The user defined error function */
+  sco::VectorOfVector::func error_function;
+
+  /** @brief The user defined jocobian function */
+  sco::MatrixOfVector::func jacobian_function;
+
+  /** @brief Used to add term to pci from json */
+  void fromJson(ProblemConstructionInfo& pci, const Json::Value& v) override;
+  /** @brief Converts term info into cost/constraint and adds it to trajopt problem */
+  void hatch(TrajOptProb& prob) override;
+  DEFINE_CREATE(UserDefinedTermInfo)
+
+  /** @brief Initialize term with it's supported types */
+  UserDefinedTermInfo() : TermInfo(TT_COST | TT_CNT) {}
+};
+
 /** @brief This is used when the goal frame is not fixed in space */
 struct DynamicCartPoseTermInfo : public TermInfo
 {

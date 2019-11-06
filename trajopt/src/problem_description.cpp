@@ -546,6 +546,72 @@ TrajOptProb::TrajOptProb(int n_steps, const ProblemConstructionInfo& pci)
 }
 
 TrajOptProb::TrajOptProb() {}
+
+void UserDefinedTermInfo::fromJson(ProblemConstructionInfo& /*pci*/, const Json::Value& /*v*/)
+{
+  PRINT_AND_THROW("UserDefinedTermInfo does not support fromJson!");
+}
+
+void UserDefinedTermInfo::hatch(TrajOptProb& prob)
+{
+  int n_dof = static_cast<int>(prob.GetKin()->numJoints());
+
+  // Apply error calculator as either cost or constraint
+  if (term_type & TT_COST)
+  {
+    for (int iStep = first_step; iStep <= last_step; ++iStep)
+    {
+      if (jacobian_function == nullptr)
+      {
+        prob.addCost(std::make_shared<trajopt::TrajOptCostFromErrFunc>(sco::VectorOfVector::construct(error_function),
+                                                                       prob.GetVarRow(iStep, 0, n_dof),
+                                                                       Eigen::VectorXd::Ones(0),
+                                                                       sco::ABS,
+                                                                       name + "_" + std::to_string(iStep)));
+      }
+      else
+      {
+        prob.addCost(
+            std::make_shared<trajopt::TrajOptCostFromErrFunc>(sco::VectorOfVector::construct(error_function),
+                                                              sco::MatrixOfVector::construct(jacobian_function),
+                                                              prob.GetVarRow(iStep, 0, n_dof),
+                                                              Eigen::VectorXd::Ones(0),
+                                                              sco::ABS,
+                                                              name + "_" + std::to_string(iStep)));
+      }
+    }
+  }
+  else if (term_type & TT_CNT)
+  {
+    for (int iStep = first_step; iStep <= last_step; ++iStep)
+    {
+      if (jacobian_function == nullptr)
+      {
+        prob.addConstraint(
+            std::make_shared<trajopt::TrajOptConstraintFromErrFunc>(sco::VectorOfVector::construct(error_function),
+                                                                    prob.GetVarRow(iStep, 0, n_dof),
+                                                                    Eigen::VectorXd::Ones(0),
+                                                                    sco::EQ,
+                                                                    name + "_" + std::to_string(iStep)));
+      }
+      else
+      {
+        prob.addConstraint(
+            std::make_shared<trajopt::TrajOptConstraintFromErrFunc>(sco::VectorOfVector::construct(error_function),
+                                                                    sco::MatrixOfVector::construct(jacobian_function),
+                                                                    prob.GetVarRow(iStep, 0, n_dof),
+                                                                    Eigen::VectorXd::Ones(0),
+                                                                    sco::EQ,
+                                                                    name + "_" + std::to_string(iStep)));
+      }
+    }
+  }
+  else
+  {
+    CONSOLE_BRIDGE_logWarn("UserDefinedTermInfo does not have a valid term_type defined. No cost/constraint applied");
+  }
+}
+
 DynamicCartPoseTermInfo::DynamicCartPoseTermInfo() : TermInfo(TT_COST | TT_CNT)
 {
   pos_coeffs = Eigen::Vector3d::Ones();
@@ -867,7 +933,7 @@ void CartVelTermInfo::hatch(TrajOptProb& prob)
   }
   else if ((term_type & TT_COST) && ~(term_type | ~TT_USE_TIME))
   {
-    for (int iStep = first_step; iStep < last_step; ++iStep)
+    for (int iStep = first_step; iStep <= last_step; ++iStep)
     {
       prob.addCost(sco::Cost::Ptr(new TrajOptCostFromErrFunc(
           sco::VectorOfVector::Ptr(
@@ -882,7 +948,7 @@ void CartVelTermInfo::hatch(TrajOptProb& prob)
   }
   else if ((term_type & TT_CNT) && ~(term_type | ~TT_USE_TIME))
   {
-    for (int iStep = first_step; iStep < last_step; ++iStep)
+    for (int iStep = first_step; iStep <= last_step; ++iStep)
     {
       prob.addConstraint(sco::Constraint::Ptr(new TrajOptConstraintFromErrFunc(
           sco::VectorOfVector::Ptr(
