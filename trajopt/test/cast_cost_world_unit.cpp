@@ -45,7 +45,7 @@ public:
     boost::filesystem::path urdf_file(std::string(TRAJOPT_DIR) + "/test/data/boxbot_world.urdf");
     boost::filesystem::path srdf_file(std::string(TRAJOPT_DIR) + "/test/data/boxbot.srdf");
 
-    ResourceLocatorFn locator = locateResource;
+    ResourceLocator::Ptr locator = std::make_shared<SimpleResourceLocator>(locateResource);
     EXPECT_TRUE(tesseract_->init(urdf_file, srdf_file, locator));
 
     gLogLevel = util::LevelError;

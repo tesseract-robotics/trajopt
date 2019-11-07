@@ -43,7 +43,7 @@ public:
     boost::filesystem::path urdf_file(std::string(TRAJOPT_DIR) + "/test/data/arm_around_table.urdf");
     boost::filesystem::path srdf_file(std::string(TRAJOPT_DIR) + "/test/data/pr2.srdf");
 
-    ResourceLocatorFn locator = locateResource;
+    ResourceLocator::Ptr locator = std::make_shared<SimpleResourceLocator>(locateResource);
     EXPECT_TRUE(tesseract_->init(urdf_file, srdf_file, locator));
 
     // Create plotting tool
