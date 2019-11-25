@@ -59,22 +59,22 @@ struct DynamicCartPoseErrCalculator : public TrajOptVectorOfVector
   Eigen::VectorXi indices_;
 
   DynamicCartPoseErrCalculator(
-      const std::string& target,
+      std::string target,
       tesseract_kinematics::ForwardKinematics::ConstPtr manip,
       tesseract_environment::AdjacencyMap::ConstPtr adjacency_map,
-      Eigen::Isometry3d world_to_base,
+      const Eigen::Isometry3d& world_to_base,
       std::string link,
-      Eigen::Isometry3d tcp = Eigen::Isometry3d::Identity(),
-      Eigen::Isometry3d target_tcp = Eigen::Isometry3d::Identity(),
+      const Eigen::Isometry3d& tcp = Eigen::Isometry3d::Identity(),
+      const Eigen::Isometry3d& target_tcp = Eigen::Isometry3d::Identity(),
       Eigen::VectorXi indices = Eigen::Matrix<int, 1, 6>(std::vector<int>({ 0, 1, 2, 3, 4, 5 }).data()))
-    : target_(target)
-    , manip_(manip)
-    , adjacency_map_(adjacency_map)
+    : target_(std::move(target))
+    , manip_(std::move(manip))
+    , adjacency_map_(std::move(adjacency_map))
     , world_to_base_(world_to_base)
-    , link_(link)
+    , link_(std::move(link))
     , tcp_(tcp)
     , target_tcp_(target_tcp)
-    , indices_(indices)
+    , indices_(std::move(indices))
   {
     kin_link_ = adjacency_map_->getLinkMapping(link_);
     if (kin_link_ == nullptr)
@@ -137,22 +137,22 @@ struct DynamicCartPoseJacCalculator : sco::MatrixOfVector
   Eigen::VectorXi indices_;
 
   DynamicCartPoseJacCalculator(
-      const std::string& target,
+      std::string target,
       tesseract_kinematics::ForwardKinematics::ConstPtr manip,
       tesseract_environment::AdjacencyMap::ConstPtr adjacency_map,
-      Eigen::Isometry3d world_to_base,
+      const Eigen::Isometry3d& world_to_base,
       std::string link,
-      Eigen::Isometry3d tcp = Eigen::Isometry3d::Identity(),
-      Eigen::Isometry3d target_tcp = Eigen::Isometry3d::Identity(),
+      const Eigen::Isometry3d& tcp = Eigen::Isometry3d::Identity(),
+      const Eigen::Isometry3d& target_tcp = Eigen::Isometry3d::Identity(),
       Eigen::VectorXi indices = Eigen::Matrix<int, 1, 6>(std::vector<int>({ 0, 1, 2, 3, 4, 5 }).data()))
-    : target_(target)
-    , manip_(manip)
-    , adjacency_map_(adjacency_map)
+    : target_(std::move(target))
+    , manip_(std::move(manip))
+    , adjacency_map_(std::move(adjacency_map))
     , world_to_base_(world_to_base)
-    , link_(link)
+    , link_(std::move(link))
     , tcp_(tcp)
     , target_tcp_(target_tcp)
-    , indices_(indices)
+    , indices_(std::move(indices))
   {
     kin_link_ = adjacency_map_->getLinkMapping(link_);
     if (kin_link_ == nullptr)
@@ -200,17 +200,17 @@ struct CartPoseErrCalculator : public TrajOptVectorOfVector
       const Eigen::Isometry3d& pose,
       tesseract_kinematics::ForwardKinematics::ConstPtr manip,
       tesseract_environment::AdjacencyMap::ConstPtr adjacency_map,
-      Eigen::Isometry3d world_to_base,
+      const Eigen::Isometry3d& world_to_base,
       std::string link,
-      Eigen::Isometry3d tcp = Eigen::Isometry3d::Identity(),
+      const Eigen::Isometry3d& tcp = Eigen::Isometry3d::Identity(),
       Eigen::VectorXi indices = Eigen::Matrix<int, 1, 6>(std::vector<int>({ 0, 1, 2, 3, 4, 5 }).data()))
     : pose_inv_(pose.inverse())
-    , manip_(manip)
-    , adjacency_map_(adjacency_map)
+    , manip_(std::move(manip))
+    , adjacency_map_(std::move(adjacency_map))
     , world_to_base_(world_to_base)
-    , link_(link)
+    , link_(std::move(link))
     , tcp_(tcp)
-    , indices_(indices)
+    , indices_(std::move(indices))
   {
     kin_link_ = adjacency_map_->getLinkMapping(link_);
     if (kin_link_ == nullptr)
@@ -251,17 +251,17 @@ struct CartPoseJacCalculator : sco::MatrixOfVector
       const Eigen::Isometry3d& pose,
       tesseract_kinematics::ForwardKinematics::ConstPtr manip,
       tesseract_environment::AdjacencyMap::ConstPtr adjacency_map,
-      Eigen::Isometry3d world_to_base,
+      const Eigen::Isometry3d& world_to_base,
       std::string link,
-      Eigen::Isometry3d tcp = Eigen::Isometry3d::Identity(),
+      const Eigen::Isometry3d& tcp = Eigen::Isometry3d::Identity(),
       Eigen::VectorXi indices = Eigen::Matrix<int, 1, 6>(std::vector<int>({ 0, 1, 2, 3, 4, 5 }).data()))
     : pose_inv_(pose.inverse())
-    , manip_(manip)
-    , adjacency_map_(adjacency_map)
+    , manip_(std::move(manip))
+    , adjacency_map_(std::move(adjacency_map))
     , world_to_base_(world_to_base)
-    , link_(link)
+    , link_(std::move(link))
     , tcp_(tcp)
-    , indices_(indices)
+    , indices_(std::move(indices))
   {
     kin_link_ = adjacency_map_->getLinkMapping(link_);
     if (kin_link_ == nullptr)
@@ -291,11 +291,16 @@ struct CartVelJacCalculator : sco::MatrixOfVector
   Eigen::Isometry3d tcp_;
   CartVelJacCalculator(tesseract_kinematics::ForwardKinematics::ConstPtr manip,
                        tesseract_environment::AdjacencyMap::ConstPtr adjacency_map,
-                       Eigen::Isometry3d world_to_base,
+                       const Eigen::Isometry3d& world_to_base,
                        std::string link,
                        double limit,
-                       Eigen::Isometry3d tcp = Eigen::Isometry3d::Identity())
-    : manip_(manip), adjacency_map_(adjacency_map), world_to_base_(world_to_base), link_(link), limit_(limit), tcp_(tcp)
+                       const Eigen::Isometry3d& tcp = Eigen::Isometry3d::Identity())
+    : manip_(std::move(manip))
+    , adjacency_map_(std::move(adjacency_map))
+    , world_to_base_(world_to_base)
+    , link_(std::move(link))
+    , limit_(limit)
+    , tcp_(tcp)
   {
     kin_link_ = adjacency_map_->getLinkMapping(link_);
   }
@@ -319,11 +324,16 @@ struct CartVelErrCalculator : sco::VectorOfVector
   Eigen::Isometry3d tcp_;
   CartVelErrCalculator(tesseract_kinematics::ForwardKinematics::ConstPtr manip,
                        tesseract_environment::AdjacencyMap::ConstPtr adjacency_map,
-                       Eigen::Isometry3d world_to_base,
+                       const Eigen::Isometry3d& world_to_base,
                        std::string link,
                        double limit,
-                       Eigen::Isometry3d tcp = Eigen::Isometry3d::Identity())
-    : manip_(manip), adjacency_map_(adjacency_map), world_to_base_(world_to_base), link_(link), limit_(limit), tcp_(tcp)
+                       const Eigen::Isometry3d& tcp = Eigen::Isometry3d::Identity())
+    : manip_(std::move(manip))
+    , adjacency_map_(std::move(adjacency_map))
+    , world_to_base_(world_to_base)
+    , link_(std::move(link))
+    , limit_(limit)
+    , tcp_(tcp)
   {
     kin_link_ = adjacency_map_->getLinkMapping(link_);
   }
@@ -334,12 +344,12 @@ struct CartVelErrCalculator : sco::VectorOfVector
 struct JointVelErrCalculator : sco::VectorOfVector
 {
   /** @brief Velocity target */
-  double target_;
+  double target_{ 0.0 };
   /** @brief Upper tolerance */
-  double upper_tol_;
+  double upper_tol_{ 0.0 };
   /** @brief Lower tolerance */
-  double lower_tol_;
-  JointVelErrCalculator() : target_(0.0), upper_tol_(0.0), lower_tol_(0.0) {}
+  double lower_tol_{ 0.0 };
+  JointVelErrCalculator() = default;
   JointVelErrCalculator(double target, double upper_tol, double lower_tol)
     : target_(target), upper_tol_(upper_tol), lower_tol_(lower_tol)
   {
@@ -355,8 +365,8 @@ struct JointVelJacCalculator : sco::MatrixOfVector
 struct JointAccErrCalculator : sco::VectorOfVector
 {
   JointVelErrCalculator vel_calc;
-  double limit_;
-  JointAccErrCalculator() : limit_(0.0) {}
+  double limit_{ 0.0 };
+  JointAccErrCalculator() = default;
   JointAccErrCalculator(double limit) : limit_(limit) {}
   Eigen::VectorXd operator()(const Eigen::VectorXd& var_vals) const override;
 };
@@ -371,8 +381,8 @@ struct JointAccJacCalculator : sco::MatrixOfVector
 struct JointJerkErrCalculator : sco::VectorOfVector
 {
   JointAccErrCalculator acc_calc;
-  double limit_;
-  JointJerkErrCalculator() : limit_(0.0) {}
+  double limit_{ 0.0 };
+  JointJerkErrCalculator() = default;
   JointJerkErrCalculator(double limit) : limit_(limit) {}
   Eigen::VectorXd operator()(const Eigen::VectorXd& var_vals) const override;
 };
@@ -388,8 +398,8 @@ struct TimeCostCalculator : sco::VectorOfVector
 {
   /** @brief The time target (s). This is subtracted from the cost, so only set limit!=0 if the penalty type is a hinge
    * (or you could get negatives)*/
-  double limit_;
-  TimeCostCalculator() : limit_(0.0) {}
+  double limit_{ 0.0 };
+  TimeCostCalculator() = default;
   TimeCostCalculator(double limit) : limit_(limit) {}
   Eigen::VectorXd operator()(const Eigen::VectorXd& var_vals) const override;
 };

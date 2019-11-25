@@ -30,6 +30,12 @@ public:
   using Ptr = std::shared_ptr<ConvexObjective>;
 
   ConvexObjective(Model* model) : model_(model) {}
+  ~ConvexObjective();
+  ConvexObjective(const ConvexObjective&) = default;
+  ConvexObjective& operator=(const ConvexObjective&) = default;
+  ConvexObjective(ConvexObjective&&) = default;
+  ConvexObjective& operator=(ConvexObjective&&) = default;
+
   void addAffExpr(const AffExpr&);
   void addQuadExpr(const QuadExpr&);
   void addHinge(const AffExpr&, double coeff);
@@ -44,8 +50,6 @@ public:
   void removeFromModel();
   double value(const DblVec& x);
 
-  ~ConvexObjective();
-
   Model* model_;
   QuadExpr quad_;
   VarVector vars_;
@@ -54,7 +58,7 @@ public:
   CntVector cnts_;
 
 private:
-  ConvexObjective() {}
+  ConvexObjective() = default;
   ConvexObjective(ConvexObjective&) {}
 };
 
@@ -89,10 +93,13 @@ public:
   AffExprVector ineqs_;
 
 private:
-  Model* model_;
+  Model* model_{ nullptr };
   CntVector cnts_;
-  ConvexConstraints() : model_(nullptr) {}
-  ConvexConstraints(ConvexConstraints&) {}
+  ConvexConstraints() = default;
+  ConvexConstraints(const ConvexConstraints&) = default;
+  ConvexConstraints& operator=(const ConvexConstraints&) = default;
+  ConvexConstraints(ConvexConstraints&&) = default;
+  ConvexConstraints& operator=(ConvexConstraints&&) = default;
 };
 
 /**
@@ -112,12 +119,17 @@ public:
   virtual VarVector getVars() = 0;
   std::string name() { return name_; }
   void setName(const std::string& name) { name_ = name; }
-  Cost() : name_("unnamed") {}
-  Cost(const std::string& name) : name_(name) {}
+
+  Cost() = default;
+  Cost(std::string name) : name_(std::move(name)) {}
   virtual ~Cost() = default;
+  Cost(const Cost&) = default;
+  Cost& operator=(const Cost&) = default;
+  Cost(Cost&&) = default;
+  Cost& operator=(Cost&&) = default;
 
 protected:
-  std::string name_;
+  std::string name_{ "unnamed" };
 };
 
 /**
@@ -144,12 +156,17 @@ public:
   virtual VarVector getVars() = 0;
   std::string name() { return name_; }
   void setName(const std::string& name) { name_ = name; }
-  Constraint() : name_("unnamed") {}
-  Constraint(const std::string& name) : name_(name) {}
-  virtual ~Constraint() {}
+
+  Constraint() = default;
+  Constraint(std::string name) : name_(std::move(name)) {}
+  virtual ~Constraint() = default;
+  Constraint(const Constraint&) = default;
+  Constraint& operator=(const Constraint&) = default;
+  Constraint(Constraint&&) = default;
+  Constraint& operator=(Constraint&&) = default;
 
 protected:
-  std::string name_;
+  std::string name_{ "unnamed" };
 };
 
 class EqConstraint : public Constraint
@@ -158,8 +175,8 @@ public:
   using Ptr = std::shared_ptr<EqConstraint>;
 
   ConstraintType type() override { return EQ; }
-  EqConstraint() : Constraint() {}
-  EqConstraint(const std::string& name) : Constraint(name) {}
+  EqConstraint() = default;
+  EqConstraint(std::string name) : Constraint(std::move(name)) {}
 };
 
 class IneqConstraint : public Constraint
@@ -168,8 +185,8 @@ public:
   using Ptr = std::shared_ptr<IneqConstraint>;
 
   ConstraintType type() override { return INEQ; }
-  IneqConstraint() : Constraint() {}
-  IneqConstraint(const std::string& name) : Constraint(name) {}
+  IneqConstraint() = default;
+  IneqConstraint(std::string name) : Constraint(std::move(name)) {}
 };
 
 /**
@@ -182,6 +199,10 @@ public:
 
   OptProb(ModelType convex_solver = ModelType::AUTO_SOLVER);
   virtual ~OptProb() = default;
+  OptProb(const OptProb&) = default;
+  OptProb& operator=(const OptProb&) = default;
+  OptProb(OptProb&&) = default;
+  OptProb& operator=(OptProb&&) = default;
 
   /** create variables with bounds [-INFINITY, INFINITY]  */
   VarVector createVariables(const std::vector<std::string>& names);
@@ -201,11 +222,11 @@ public:
    * problem. */
   void addLinearConstraint(const AffExpr&, ConstraintType type);
   /** Add nonlinear cost function */
-  void addCost(Cost::Ptr);
+  void addCost(const Cost::Ptr&);
   /** Add nonlinear constraint function */
-  void addConstraint(Constraint::Ptr);
-  void addEqConstraint(Constraint::Ptr);
-  void addIneqConstraint(Constraint::Ptr);
+  void addConstraint(const Constraint::Ptr&);
+  void addEqConstraint(const Constraint::Ptr&);
+  void addIneqConstraint(const Constraint::Ptr&);
   /** Find closest point to solution vector x that satisfies linear inequality
    * constraints */
   DblVec getCentralFeasiblePoint(const DblVec& x);

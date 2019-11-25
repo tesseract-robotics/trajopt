@@ -8,9 +8,7 @@ find_package(trajopt_sco REQUIRED)
 find_package(trajopt_utils REQUIRED)
 find_package(tesseract REQUIRED)
 find_package(tesseract_visualization REQUIRED)
-
-find_package(PkgConfig REQUIRED)
-pkg_check_modules(JSONCPP jsoncpp)
+find_package(jsoncpp REQUIRED)
 
 list(FIND CMAKE_CXX_COMPILE_FEATURES cxx_std_11 CXX_FEATURE_FOUND)
 
@@ -38,13 +36,13 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
     tesseract::tesseract_visualization
     console_bridge
     ${Boost_SYSTEM_LIBRARY}
-    ${JSONCPP_LIBRARIES})
+    jsoncpp_lib)
 target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wsuggest-override -Wconversion -Wsign-conversion)
-if(CXX_FEATURE_FOUND EQUAL "-1")
-    target_compile_options(${PROJECT_NAME} PUBLIC -std=c++11)
-else()
-    target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_11)
-endif()
+#if(CXX_FEATURE_FOUND EQUAL "-1")
+#    target_compile_options(${PROJECT_NAME} PUBLIC -std=c++11)
+#else()
+#    target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_11)
+#endif()
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     target_compile_options(${PROJECT_NAME} PUBLIC -mno-avx)
   else()
@@ -54,7 +52,6 @@ target_include_directories(${PROJECT_NAME} PUBLIC
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
     "$<INSTALL_INTERFACE:include>")
 target_include_directories(${PROJECT_NAME} SYSTEM PUBLIC
-    ${JSONCPP_INCLUDE_DIRS}
     ${EIGEN3_INCLUDE_DIRS}
     ${Boost_INCLUDE_DIRS})
 

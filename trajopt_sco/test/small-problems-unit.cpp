@@ -24,7 +24,7 @@ using namespace Eigen;
 class SQP : public testing::TestWithParam<ModelType>
 {
 protected:
-  SQP() {}
+  SQP() = default;
 };
 
 void setupProblem(OptProb::Ptr& probptr, size_t nvars, ModelType convex_solver)

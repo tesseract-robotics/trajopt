@@ -8,7 +8,7 @@ TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt/typedefs.hpp>
 
-Json::Value readJsonFile(const std::string& fname)
+inline Json::Value readJsonFile(const std::string& fname)
 {
   Json::Value root;
   Json::Reader reader;
@@ -19,7 +19,7 @@ Json::Value readJsonFile(const std::string& fname)
   return root;
 }
 
-std::string locateResource(const std::string& url)
+inline std::string locateResource(const std::string& url)
 {
   std::string mod_url = url;
   if (url.find("package://trajopt") == 0)

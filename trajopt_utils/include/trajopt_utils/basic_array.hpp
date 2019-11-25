@@ -9,19 +9,24 @@ namespace util
 template <class T>
 struct BasicArray
 {
-  int m_nRow;
-  int m_nCol;
+  int m_nRow{ 0 };
+  int m_nCol{ 0 };
   std::vector<T> m_data;
 
-  BasicArray() : m_nRow(0), m_nCol(0) {}
+  BasicArray() = default;
+  virtual ~BasicArray() = default;
   BasicArray(int nRow, int nCol) : m_nRow(nRow), m_nCol(nCol) { m_data.resize(m_nRow * m_nCol); }
   BasicArray(int nRow, int nCol, const T* data) : m_nRow(nRow), m_nCol(nCol), m_data(data, data + nRow * nCol) {}
   BasicArray(const BasicArray& x) : m_nRow(x.m_nRow), m_nCol(x.m_nCol), m_data(x.m_data) {}
+  BasicArray& operator=(const BasicArray&) = default;
+  BasicArray(BasicArray&&) noexcept = default;
+  BasicArray& operator=(BasicArray&&) noexcept = default;
+
   void resize(int nRow, int nCol)
   {
     m_nRow = nRow;
     m_nCol = nCol;
-    m_data.resize(static_cast<size_t>(m_nRow * m_nCol));
+    m_data.resize(static_cast<size_t>(m_nRow) * static_cast<size_t>(m_nCol));
   }
 
   int rows() const { return m_nRow; }
@@ -73,10 +78,22 @@ struct BasicArray
   }
   BasicArray topRows(int n) { return middleRows(0, n); }
   BasicArray bottomRows(int n) { return middleRows(m_nRow - n, n); }
-  const T& at(int row, int col) const { return m_data.at(static_cast<size_t>(row * m_nCol + col)); }
-  T& at(int row, int col) { return m_data.at(static_cast<size_t>(row * m_nCol + col)); }
-  const T& operator()(int row, int col) const { return m_data.at(static_cast<size_t>(row * m_nCol + col)); }
-  T& operator()(int row, int col) { return m_data.at(static_cast<size_t>(row * m_nCol + col)); }
+  const T& at(int row, int col) const
+  {
+    return m_data.at(static_cast<size_t>(row) * static_cast<size_t>(m_nCol) + static_cast<size_t>(col));
+  }
+  T& at(int row, int col)
+  {
+    return m_data.at(static_cast<size_t>(row) * static_cast<size_t>(m_nCol) + static_cast<size_t>(col));
+  }
+  const T& operator()(int row, int col) const
+  {
+    return m_data.at(static_cast<size_t>(row) * static_cast<size_t>(m_nCol) + static_cast<size_t>(col));
+  }
+  T& operator()(int row, int col)
+  {
+    return m_data.at(static_cast<size_t>(row) * static_cast<size_t>(m_nCol) + static_cast<size_t>(col));
+  }
   std::vector<T> col(int col)
   {
     std::vector<T> out;

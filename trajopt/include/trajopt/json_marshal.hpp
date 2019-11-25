@@ -29,10 +29,10 @@ void fromJsonArray(const Json::Value& parent, std::vector<T>& ref)
 {
   ref.clear();
   ref.reserve(parent.size());
-  for (Json::Value::const_iterator it = parent.begin(); it != parent.end(); ++it)
+  for (const auto& it : parent)
   {
     T t;
-    fromJson(*it, t);
+    fromJson(it, t);
     ref.push_back(t);
   }
 }

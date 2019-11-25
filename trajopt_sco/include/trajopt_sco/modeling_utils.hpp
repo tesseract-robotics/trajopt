@@ -37,7 +37,7 @@ public:
   using Ptr = std::shared_ptr<CostFromFunc>;
 
   /// supply function, obtain derivative and hessian numerically
-  CostFromFunc(ScalarOfVector::Ptr f, const VarVector& vars, const std::string& name, bool full_hessian = false);
+  CostFromFunc(ScalarOfVector::Ptr f, VarVector vars, const std::string& name, bool full_hessian = false);
   double value(const DblVec& x) override;
   ConvexObjective::Ptr convex(const DblVec& x, Model* model) override;
   VarVector getVars() override { return vars_; }
@@ -54,15 +54,15 @@ class CostFromErrFunc : public Cost
 public:
   /// supply error function, obtain derivative numerically
   CostFromErrFunc(VectorOfVector::Ptr f,
-                  const VarVector& vars,
-                  const Eigen::VectorXd& coeffs,
+                  VarVector vars,
+                  Eigen::VectorXd coeffs,
                   PenaltyType pen_type,
                   const std::string& name);
   /// supply error function and gradient
   CostFromErrFunc(VectorOfVector::Ptr f,
                   MatrixOfVector::Ptr dfdx,
-                  const VarVector& vars,
-                  const Eigen::VectorXd& coeffs,
+                  VarVector vars,
+                  Eigen::VectorXd coeffs,
                   PenaltyType pen_type,
                   const std::string& name);
   double value(const DblVec& x) override;
@@ -85,15 +85,15 @@ public:
 
   /// supply error function, obtain derivative numerically
   ConstraintFromErrFunc(VectorOfVector::Ptr f,
-                        const VarVector& vars,
-                        const Eigen::VectorXd& coeffs,
+                        VarVector vars,
+                        Eigen::VectorXd coeffs,
                         ConstraintType type,
                         const std::string& name);
   /// supply error function and gradient
   ConstraintFromErrFunc(VectorOfVector::Ptr f,
                         MatrixOfVector::Ptr dfdx,
-                        const VarVector& vars,
-                        const Eigen::VectorXd& coeffs,
+                        VarVector vars,
+                        Eigen::VectorXd coeffs,
                         ConstraintType type,
                         const std::string& name);
   DblVec value(const DblVec& x) override;

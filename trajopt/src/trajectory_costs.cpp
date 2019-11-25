@@ -11,7 +11,7 @@ TRAJOPT_IGNORE_WARNINGS_POP
 namespace
 {
 /** @brief Returns the difference between each row of a matrixXd and the row before */
-static Eigen::MatrixXd diffAxis0(const Eigen::MatrixXd& in)
+Eigen::MatrixXd diffAxis0(const Eigen::MatrixXd& in)
 {
   return in.middleRows(1, in.rows() - 1) - in.middleRows(0, in.rows() - 1);
 }
@@ -22,20 +22,25 @@ namespace trajopt
 //////////// Joint cost functions /////////////////
 
 //////////////////// Position /////////////////////
-JointPosEqCost::JointPosEqCost(const VarArray& vars,
-                               const Eigen::VectorXd& coeffs,
-                               const Eigen::VectorXd& targets,
+JointPosEqCost::JointPosEqCost(VarArray vars,
+                               Eigen::VectorXd coeffs,
+                               Eigen::VectorXd targets,
                                int& first_step,
                                int& last_step)
-  : Cost("JointPosEq"), vars_(vars), coeffs_(coeffs), targets_(targets), first_step_(first_step), last_step_(last_step)
+  : Cost("JointPosEq")
+  , vars_(std::move(vars))
+  , coeffs_(std::move(coeffs))
+  , targets_(std::move(targets))
+  , first_step_(first_step)
+  , last_step_(last_step)
 {
   for (int i = first_step_; i <= last_step_; ++i)
   {
-    for (int j = 0; j < vars.cols(); ++j)
+    for (int j = 0; j < vars_.cols(); ++j)
     {
       // pos = x1 - targ
       sco::AffExpr pos;
-      sco::exprInc(pos, sco::exprMult(vars(i, j), 1));
+      sco::exprInc(pos, sco::exprMult(vars_(i, j), 1));
       sco::exprDec(pos, targets_[j]);
       // expr_ = coeff * vel^2
       sco::exprInc(expr_, sco::exprMult(sco::exprSquare(pos), coeffs_[j]));
@@ -59,42 +64,42 @@ sco::ConvexObjective::Ptr JointPosEqCost::convex(const DblVec& /*x*/, sco::Model
   return out;
 }
 
-JointPosIneqCost::JointPosIneqCost(const VarArray& vars,
-                                   const Eigen::VectorXd& coeffs,
-                                   const Eigen::VectorXd& targets,
-                                   const Eigen::VectorXd& upper_tols,
-                                   const Eigen::VectorXd& lower_tols,
+JointPosIneqCost::JointPosIneqCost(VarArray vars,
+                                   Eigen::VectorXd coeffs,
+                                   Eigen::VectorXd targets,
+                                   Eigen::VectorXd upper_limits,
+                                   Eigen::VectorXd lower_limits,
                                    int& first_step,
                                    int& last_step)
   : Cost("JointPosIneq")
-  , vars_(vars)
-  , coeffs_(coeffs)
-  , upper_tols_(upper_tols)
-  , lower_tols_(lower_tols)
-  , targets_(targets)
+  , vars_(std::move(vars))
+  , coeffs_(std::move(coeffs))
+  , upper_tols_(std::move(upper_limits))
+  , lower_tols_(std::move(lower_limits))
+  , targets_(std::move(targets))
   , first_step_(first_step)
   , last_step_(last_step)
 {
   for (int i = first_step_; i <= last_step_; ++i)
   {
-    for (int j = 0; j < vars.cols(); ++j)
+    for (int j = 0; j < vars_.cols(); ++j)
     {
       sco::AffExpr expr;
       sco::AffExpr expr_neg;
       // pos = x1 - targ
       sco::AffExpr pos;
-      sco::exprInc(pos, sco::exprMult(vars(i, j), 1));
+      sco::exprInc(pos, sco::exprMult(vars_(i, j), 1));
       sco::exprDec(pos, targets_[j]);
       sco::exprInc(expr, upper_tols_[j]);  // expr_ = upper_tol
 
       // Form upper limit expr = - (upper_tol-(vel-targ))
-      sco::exprDec(expr, pos);           // expr = upper_tol_- (vel - targets_)
-      sco::exprScale(expr, -coeffs[j]);  // expr = - (upper_tol_- (vel - targets_)) * coeffs_
+      sco::exprDec(expr, pos);            // expr = upper_tol_- (vel - targets_)
+      sco::exprScale(expr, -coeffs_[j]);  // expr = - (upper_tol_- (vel - targets_)) * coeffs_
       expr_vec_.push_back(expr);
 
       // Form upper limit expr = - (upper_tol-(vel-targ))
-      sco::exprDec(expr_neg, pos);          // expr = lower_tol_- (vel - targets_)
-      sco::exprScale(expr_neg, coeffs[j]);  // expr = (lower_tol_- (vel - targets_)) * coeffs_
+      sco::exprDec(expr_neg, pos);           // expr = lower_tol_- (vel - targets_)
+      sco::exprScale(expr_neg, coeffs_[j]);  // expr = (lower_tol_- (vel - targets_)) * coeffs_
       expr_vec_.push_back(expr_neg);
     }
   }
@@ -127,25 +132,25 @@ sco::ConvexObjective::Ptr JointPosIneqCost::convex(const DblVec& /*x*/, sco::Mod
   return out;
 }
 
-JointPosEqConstraint::JointPosEqConstraint(const VarArray& vars,
-                                           const Eigen::VectorXd& coeffs,
-                                           const Eigen::VectorXd& targets,
+JointPosEqConstraint::JointPosEqConstraint(VarArray vars,
+                                           Eigen::VectorXd coeffs,
+                                           Eigen::VectorXd targets,
                                            int& first_step,
                                            int& last_step)
   : EqConstraint("JointPosEq")
-  , vars_(vars)
-  , coeffs_(coeffs)
-  , targets_(targets)
+  , vars_(std::move(vars))
+  , coeffs_(std::move(coeffs))
+  , targets_(std::move(targets))
   , first_step_(first_step)
   , last_step_(last_step)
 {
   for (int i = first_step_; i <= last_step_; ++i)
   {
-    for (int j = 0; j < vars.cols(); ++j)
+    for (int j = 0; j < vars_.cols(); ++j)
     {
       // pos = x1 - targ
       sco::AffExpr pos;
-      sco::exprInc(pos, sco::exprMult(vars(i, j), 1));
+      sco::exprInc(pos, sco::exprMult(vars_(i, j), 1));
       sco::exprDec(pos, targets_[j]);
       // expr_ = coeff * vel - Not squared b/c QuadExpr cnt not yet supported (TODO)
       expr_vec_.push_back(sco::exprMult(pos, coeffs_[j]));
@@ -173,42 +178,42 @@ sco::ConvexConstraints::Ptr JointPosEqConstraint::convex(const DblVec& /*x*/, sc
   return out;
 }
 
-JointPosIneqConstraint::JointPosIneqConstraint(const VarArray& vars,
-                                               const Eigen::VectorXd& coeffs,
-                                               const Eigen::VectorXd& targets,
-                                               const Eigen::VectorXd& upper_tols,
-                                               const Eigen::VectorXd& lower_tols,
+JointPosIneqConstraint::JointPosIneqConstraint(VarArray vars,
+                                               Eigen::VectorXd coeffs,
+                                               Eigen::VectorXd targets,
+                                               Eigen::VectorXd upper_limits,
+                                               Eigen::VectorXd lower_limits,
                                                int& first_step,
                                                int& last_step)
   : IneqConstraint("JointPosIneq")
-  , vars_(vars)
-  , coeffs_(coeffs)
-  , upper_tols_(upper_tols)
-  , lower_tols_(lower_tols)
-  , targets_(targets)
+  , vars_(std::move(vars))
+  , coeffs_(std::move(coeffs))
+  , upper_tols_(std::move(upper_limits))
+  , lower_tols_(std::move(lower_limits))
+  , targets_(std::move(targets))
   , first_step_(first_step)
   , last_step_(last_step)
 {
   for (int i = first_step_; i <= last_step_; ++i)
   {
-    for (int j = 0; j < vars.cols(); ++j)
+    for (int j = 0; j < vars_.cols(); ++j)
     {
       sco::AffExpr expr;
       sco::AffExpr expr_neg;
       // pos = x1 - targ
       sco::AffExpr pos;
-      sco::exprInc(pos, sco::exprMult(vars(i, j), 1));
+      sco::exprInc(pos, sco::exprMult(vars_(i, j), 1));
       sco::exprDec(pos, targets_[j]);
       sco::exprInc(expr, upper_tols_[j]);  // expr_ = upper_tol
 
       // Form upper limit expr = - (upper_tol-(vel-targ))
-      sco::exprDec(expr, pos);           // expr = upper_tol_- (vel - targets_)
-      sco::exprScale(expr, -coeffs[j]);  // expr = - (upper_tol_- (vel - targets_)) * coeffs_
+      sco::exprDec(expr, pos);            // expr = upper_tol_- (vel - targets_)
+      sco::exprScale(expr, -coeffs_[j]);  // expr = - (upper_tol_- (vel - targets_)) * coeffs_
       expr_vec_.push_back(expr);
 
       // Form lower limit expr = (upper_tol-(vel-targ))
-      sco::exprDec(expr_neg, pos);          // expr = lower_tol_- (vel - targets_)
-      sco::exprScale(expr_neg, coeffs[j]);  // expr = (lower_tol_- (vel - targets_)) * coeffs_
+      sco::exprDec(expr_neg, pos);           // expr = lower_tol_- (vel - targets_)
+      sco::exprScale(expr_neg, coeffs_[j]);  // expr = (lower_tol_- (vel - targets_)) * coeffs_
       expr_vec_.push_back(expr_neg);
     }
   }
@@ -244,21 +249,26 @@ sco::ConvexConstraints::Ptr JointPosIneqConstraint::convex(const DblVec& /*x*/, 
 }
 
 //////////////////// Velocity /////////////////////
-JointVelEqCost::JointVelEqCost(const VarArray& vars,
-                               const Eigen::VectorXd& coeffs,
-                               const Eigen::VectorXd& targets,
+JointVelEqCost::JointVelEqCost(VarArray vars,
+                               Eigen::VectorXd coeffs,
+                               Eigen::VectorXd targets,
                                int& first_step,
                                int& last_step)
-  : Cost("JointVelEq"), vars_(vars), coeffs_(coeffs), targets_(targets), first_step_(first_step), last_step_(last_step)
+  : Cost("JointVelEq")
+  , vars_(std::move(vars))
+  , coeffs_(std::move(coeffs))
+  , targets_(std::move(targets))
+  , first_step_(first_step)
+  , last_step_(last_step)
 {
   for (int i = first_step_; i <= last_step_ - 1; ++i)
   {
-    for (int j = 0; j < vars.cols(); ++j)
+    for (int j = 0; j < vars_.cols(); ++j)
     {
       // vel = (x2 - x1) - targ
       sco::AffExpr vel;
-      sco::exprInc(vel, sco::exprMult(vars(i, j), -1));
-      sco::exprInc(vel, sco::exprMult(vars(i + 1, j), 1));
+      sco::exprInc(vel, sco::exprMult(vars_(i, j), -1));
+      sco::exprInc(vel, sco::exprMult(vars_(i + 1, j), 1));
       exprDec(vel, targets_[j]);
       // expr_ = coeff * vel^2
       exprInc(expr_, exprMult(exprSquare(vel), coeffs_[j]));
@@ -282,44 +292,44 @@ sco::ConvexObjective::Ptr JointVelEqCost::convex(const DblVec& /*x*/, sco::Model
   return out;
 }
 
-JointVelIneqCost::JointVelIneqCost(const VarArray& vars,
-                                   const Eigen::VectorXd& coeffs,
-                                   const Eigen::VectorXd& targets,
-                                   const Eigen::VectorXd& upper_tols,
-                                   const Eigen::VectorXd& lower_tols,
+JointVelIneqCost::JointVelIneqCost(VarArray vars,
+                                   Eigen::VectorXd coeffs,
+                                   Eigen::VectorXd targets,
+                                   Eigen::VectorXd upper_limits,
+                                   Eigen::VectorXd lower_limits,
                                    int& first_step,
                                    int& last_step)
   : Cost("JointVelIneq")
-  , vars_(vars)
-  , coeffs_(coeffs)
-  , upper_tols_(upper_tols)
-  , lower_tols_(lower_tols)
-  , targets_(targets)
+  , vars_(std::move(vars))
+  , coeffs_(std::move(coeffs))
+  , upper_tols_(std::move(upper_limits))
+  , lower_tols_(std::move(lower_limits))
+  , targets_(std::move(targets))
   , first_step_(first_step)
   , last_step_(last_step)
 {
   for (int i = first_step_; i <= last_step_ - 1; ++i)
   {
-    for (int j = 0; j < vars.cols(); ++j)
+    for (int j = 0; j < vars_.cols(); ++j)
     {
       // vel = (x2 - x1) - targ
       sco::AffExpr vel;
       sco::AffExpr expr;
       sco::AffExpr expr_neg;
-      sco::exprInc(vel, sco::exprMult(vars(i, j), -1));
-      sco::exprInc(vel, sco::exprMult(vars(i + 1, j), 1));
+      sco::exprInc(vel, sco::exprMult(vars_(i, j), -1));
+      sco::exprInc(vel, sco::exprMult(vars_(i + 1, j), 1));
       sco::exprDec(vel, targets_[j]);  // offset to center about 0
 
       // Form upper limit expr = - (upper_tol-(vel-targ))
       sco::exprInc(expr, upper_tols_[j]);  // expr_ = upper_tol
       sco::exprDec(expr, vel);             // expr = upper_tol_- (vel - targets_)
-      sco::exprScale(expr, -coeffs[j]);    // expr = - (upper_tol_- (vel - targets_)) * coeffs_
+      sco::exprScale(expr, -coeffs_[j]);   // expr = - (upper_tol_- (vel - targets_)) * coeffs_
       expr_vec_.push_back(expr);
 
       // Form lower limit expr =  (upper_tol-(vel-targ))
       sco::exprInc(expr_neg, lower_tols_[j]);  // expr_ = lower_tol_
       sco::exprDec(expr_neg, vel);             // expr = lower_tol_- (vel - targets_)
-      sco::exprScale(expr_neg, coeffs[j]);     // expr = (lower_tol_- (vel - targets_)) * coeffs_
+      sco::exprScale(expr_neg, coeffs_[j]);    // expr = (lower_tol_- (vel - targets_)) * coeffs_
       expr_vec_.push_back(expr_neg);
     }
   }
@@ -352,26 +362,26 @@ sco::ConvexObjective::Ptr JointVelIneqCost::convex(const DblVec& /*x*/, sco::Mod
   return out;
 }
 
-JointVelEqConstraint::JointVelEqConstraint(const VarArray& vars,
-                                           const Eigen::VectorXd& coeffs,
-                                           const Eigen::VectorXd& targets,
+JointVelEqConstraint::JointVelEqConstraint(VarArray vars,
+                                           Eigen::VectorXd coeffs,
+                                           Eigen::VectorXd targets,
                                            int& first_step,
                                            int& last_step)
   : EqConstraint("JointVelEq")
-  , vars_(vars)
-  , coeffs_(coeffs)
-  , targets_(targets)
+  , vars_(std::move(vars))
+  , coeffs_(std::move(coeffs))
+  , targets_(std::move(targets))
   , first_step_(first_step)
   , last_step_(last_step)
 {
   for (int i = first_step_; i <= last_step_ - 1; ++i)
   {
-    for (int j = 0; j < vars.cols(); ++j)
+    for (int j = 0; j < vars_.cols(); ++j)
     {
       // vel = (x2 - x1) - targ
       sco::AffExpr vel;
-      sco::exprInc(vel, sco::exprMult(vars(i, j), -1));
-      sco::exprInc(vel, sco::exprMult(vars(i + 1, j), 1));
+      sco::exprInc(vel, sco::exprMult(vars_(i, j), -1));
+      sco::exprInc(vel, sco::exprMult(vars_(i + 1, j), 1));
       sco::exprDec(vel, targets_[j]);
       // expr_ = coeff * vel - Not squared b/c QuadExpr cnt not yet supported (TODO)
       expr_vec_.push_back(sco::exprMult(vel, coeffs_[j]));
@@ -399,44 +409,44 @@ sco::ConvexConstraints::Ptr JointVelEqConstraint::convex(const DblVec& /*x*/, sc
   return out;
 }
 
-JointVelIneqConstraint::JointVelIneqConstraint(const VarArray& vars,
-                                               const Eigen::VectorXd& coeffs,
-                                               const Eigen::VectorXd& targets,
-                                               const Eigen::VectorXd& upper_tols,
-                                               const Eigen::VectorXd& lower_tols,
+JointVelIneqConstraint::JointVelIneqConstraint(VarArray vars,
+                                               Eigen::VectorXd coeffs,
+                                               Eigen::VectorXd targets,
+                                               Eigen::VectorXd upper_limits,
+                                               Eigen::VectorXd lower_limits,
                                                int& first_step,
                                                int& last_step)
   : IneqConstraint("JointVelIneq")
-  , vars_(vars)
-  , coeffs_(coeffs)
-  , upper_tols_(upper_tols)
-  , lower_tols_(lower_tols)
-  , targets_(targets)
+  , vars_(std::move(vars))
+  , coeffs_(std::move(coeffs))
+  , upper_tols_(std::move(upper_limits))
+  , lower_tols_(std::move(lower_limits))
+  , targets_(std::move(targets))
   , first_step_(first_step)
   , last_step_(last_step)
 {
   for (int i = first_step_; i <= last_step_ - 1; ++i)
   {
-    for (int j = 0; j < vars.cols(); ++j)
+    for (int j = 0; j < vars_.cols(); ++j)
     {
       // vel = (x2 - x1) - targ
       sco::AffExpr vel;
       sco::AffExpr expr;
       sco::AffExpr expr_neg;
-      sco::exprInc(vel, sco::exprMult(vars(i, j), -1));
-      sco::exprInc(vel, sco::exprMult(vars(i + 1, j), 1));
+      sco::exprInc(vel, sco::exprMult(vars_(i, j), -1));
+      sco::exprInc(vel, sco::exprMult(vars_(i + 1, j), 1));
       sco::exprDec(vel, targets_[j]);  // offset to center about 0
 
       // Form upper limit expr = - (upper_tol-(vel-targ))
       sco::exprInc(expr, upper_tols_[j]);  // expr_ = upper_tol
       sco::exprDec(expr, vel);             // expr = upper_tol_- (vel - targets_)
-      sco::exprScale(expr, -coeffs[j]);    // expr = - (upper_tol_- (vel - targets_)) * coeffs_
+      sco::exprScale(expr, -coeffs_[j]);   // expr = - (upper_tol_- (vel - targets_)) * coeffs_
       expr_vec_.push_back(expr);
 
       // Form lower limit expr = (lower_tol-(vel-targ))
       sco::exprInc(expr_neg, lower_tols_[j]);  // expr_ = lower_tol_
       sco::exprDec(expr_neg, vel);             // expr = lower_tol_- (vel - targets_)
-      sco::exprScale(expr_neg, coeffs[j]);     // expr = (lower_tol_- (vel - targets_)) * coeffs_
+      sco::exprScale(expr_neg, coeffs_[j]);    // expr = (lower_tol_- (vel - targets_)) * coeffs_
       expr_vec_.push_back(expr_neg);
     }
   }
@@ -472,22 +482,27 @@ sco::ConvexConstraints::Ptr JointVelIneqConstraint::convex(const DblVec& /*x*/, 
 }
 
 //////////////////// Acceleration /////////////////////
-JointAccEqCost::JointAccEqCost(const VarArray& vars,
-                               const Eigen::VectorXd& coeffs,
-                               const Eigen::VectorXd& targets,
+JointAccEqCost::JointAccEqCost(VarArray vars,
+                               Eigen::VectorXd coeffs,
+                               Eigen::VectorXd targets,
                                int& first_step,
                                int& last_step)
-  : Cost("JointAccEq"), vars_(vars), coeffs_(coeffs), targets_(targets), first_step_(first_step), last_step_(last_step)
+  : Cost("JointAccEq")
+  , vars_(std::move(vars))
+  , coeffs_(std::move(coeffs))
+  , targets_(std::move(targets))
+  , first_step_(first_step)
+  , last_step_(last_step)
 {
   for (int i = first_step_; i <= last_step_ - 2; ++i)
   {
-    for (int j = 0; j < vars.cols(); ++j)
+    for (int j = 0; j < vars_.cols(); ++j)
     {
       // acc = (x3 - 2*x2 + x1) - targ
       sco::AffExpr acc;
-      sco::exprInc(acc, sco::exprMult(vars(i, j), 1.0));
-      sco::exprInc(acc, sco::exprMult(vars(i + 1, j), -2.0));
-      sco::exprInc(acc, sco::exprMult(vars(i + 2, j), 1.0));
+      sco::exprInc(acc, sco::exprMult(vars_(i, j), 1.0));
+      sco::exprInc(acc, sco::exprMult(vars_(i + 1, j), -2.0));
+      sco::exprInc(acc, sco::exprMult(vars_(i + 2, j), 1.0));
 
       sco::exprDec(acc, targets_[j]);
       // expr_ = coeff * acc^2
@@ -513,45 +528,45 @@ sco::ConvexObjective::Ptr JointAccEqCost::convex(const DblVec& /*x*/, sco::Model
   return out;
 }
 
-JointAccIneqCost::JointAccIneqCost(const VarArray& vars,
-                                   const Eigen::VectorXd& coeffs,
-                                   const Eigen::VectorXd& targets,
-                                   const Eigen::VectorXd& upper_tols,
-                                   const Eigen::VectorXd& lower_tols,
+JointAccIneqCost::JointAccIneqCost(VarArray vars,
+                                   Eigen::VectorXd coeffs,
+                                   Eigen::VectorXd targets,
+                                   Eigen::VectorXd upper_limits,
+                                   Eigen::VectorXd lower_limits,
                                    int& first_step,
                                    int& last_step)
   : Cost("JointAccIneq")
-  , vars_(vars)
-  , coeffs_(coeffs)
-  , upper_tols_(upper_tols)
-  , lower_tols_(lower_tols)
-  , targets_(targets)
+  , vars_(std::move(vars))
+  , coeffs_(std::move(coeffs))
+  , upper_tols_(std::move(upper_limits))
+  , lower_tols_(std::move(lower_limits))
+  , targets_(std::move(targets))
   , first_step_(first_step)
   , last_step_(last_step)
 {
   for (int i = first_step_; i <= last_step_ - 2; ++i)
   {
-    for (int j = 0; j < vars.cols(); ++j)
+    for (int j = 0; j < vars_.cols(); ++j)
     {
       // acc = (x3 - 2*x2 + x1) - targ
       sco::AffExpr acc;
       sco::AffExpr expr;
       sco::AffExpr expr_neg;
-      sco::exprInc(acc, sco::exprMult(vars(i, j), 1.0));
-      sco::exprInc(acc, sco::exprMult(vars(i + 1, j), -2.0));
-      sco::exprInc(acc, sco::exprMult(vars(i + 2, j), 1.0));
+      sco::exprInc(acc, sco::exprMult(vars_(i, j), 1.0));
+      sco::exprInc(acc, sco::exprMult(vars_(i + 1, j), -2.0));
+      sco::exprInc(acc, sco::exprMult(vars_(i + 2, j), 1.0));
       sco::exprDec(acc, targets_[j]);  // offset to center about 0
 
       // Form upper limit expr = - (upper_tol-(acc-targ))
       sco::exprInc(expr, upper_tols_[j]);  // expr_ = upper_tol
       sco::exprDec(expr, acc);             // expr = upper_tol_- (vel - targets_)
-      sco::exprScale(expr, -coeffs[j]);    // expr = - (upper_tol_- (vel - targets_)) * coeffs_
+      sco::exprScale(expr, -coeffs_[j]);   // expr = - (upper_tol_- (vel - targets_)) * coeffs_
       expr_vec_.push_back(expr);
 
       // Form lower limit expr = (lower_tol-(acc-targ))
       sco::exprInc(expr_neg, lower_tols_[j]);  // expr_ = lower_tol_
       sco::exprDec(expr_neg, acc);             // expr = lower_tol_- (vel - targets_)
-      sco::exprScale(expr_neg, coeffs[j]);     // expr = (lower_tol_- (vel - targets_)) * coeffs_
+      sco::exprScale(expr_neg, coeffs_[j]);    // expr = (lower_tol_- (vel - targets_)) * coeffs_
       expr_vec_.push_back(expr_neg);
     }
   }
@@ -584,27 +599,27 @@ sco::ConvexObjective::Ptr JointAccIneqCost::convex(const DblVec& /*x*/, sco::Mod
   return out;
 }
 
-JointAccEqConstraint::JointAccEqConstraint(const VarArray& vars,
-                                           const Eigen::VectorXd& coeffs,
-                                           const Eigen::VectorXd& targets,
+JointAccEqConstraint::JointAccEqConstraint(VarArray vars,
+                                           Eigen::VectorXd coeffs,
+                                           Eigen::VectorXd targets,
                                            int& first_step,
                                            int& last_step)
   : EqConstraint("JointAccEq")
-  , vars_(vars)
-  , coeffs_(coeffs)
-  , targets_(targets)
+  , vars_(std::move(vars))
+  , coeffs_(std::move(coeffs))
+  , targets_(std::move(targets))
   , first_step_(first_step)
   , last_step_(last_step)
 {
   for (int i = first_step_; i <= last_step_ - 2; ++i)
   {
-    for (int j = 0; j < vars.cols(); ++j)
+    for (int j = 0; j < vars_.cols(); ++j)
     {
       // acc = (x3 - 2*x2 + x1) - targ
       sco::AffExpr acc;
-      sco::exprInc(acc, sco::exprMult(vars(i, j), 1.0));
-      sco::exprInc(acc, sco::exprMult(vars(i + 1, j), -2.0));
-      sco::exprInc(acc, sco::exprMult(vars(i + 2, j), 1.0));
+      sco::exprInc(acc, sco::exprMult(vars_(i, j), 1.0));
+      sco::exprInc(acc, sco::exprMult(vars_(i + 1, j), -2.0));
+      sco::exprInc(acc, sco::exprMult(vars_(i + 2, j), 1.0));
 
       sco::exprDec(acc, targets_[j]);  // offset to center about 0
       // expr_ = coeff * vel - Not squared b/c QuadExpr cnt not yet supported (TODO)
@@ -634,46 +649,46 @@ sco::ConvexConstraints::Ptr JointAccEqConstraint::convex(const DblVec& /*x*/, sc
   return out;
 }
 
-JointAccIneqConstraint::JointAccIneqConstraint(const VarArray& vars,
-                                               const Eigen::VectorXd& coeffs,
-                                               const Eigen::VectorXd& targets,
-                                               const Eigen::VectorXd& upper_tols,
-                                               const Eigen::VectorXd& lower_tols,
+JointAccIneqConstraint::JointAccIneqConstraint(VarArray vars,
+                                               Eigen::VectorXd coeffs,
+                                               Eigen::VectorXd targets,
+                                               Eigen::VectorXd upper_limits,
+                                               Eigen::VectorXd lower_limits,
                                                int& first_step,
                                                int& last_step)
   : IneqConstraint("JointAccIneq")
-  , vars_(vars)
-  , coeffs_(coeffs)
-  , upper_tols_(upper_tols)
-  , lower_tols_(lower_tols)
-  , targets_(targets)
+  , vars_(std::move(vars))
+  , coeffs_(std::move(coeffs))
+  , upper_tols_(std::move(upper_limits))
+  , lower_tols_(std::move(lower_limits))
+  , targets_(std::move(targets))
   , first_step_(first_step)
   , last_step_(last_step)
 {
   // Form upper limit expr = - (upper_tol-(vel-targ))
   for (int i = first_step_; i <= last_step_ - 2; ++i)
   {
-    for (int j = 0; j < vars.cols(); ++j)
+    for (int j = 0; j < vars_.cols(); ++j)
     {
       // acc = (x3 - 2*x2 + x1) - targ
       sco::AffExpr acc;
       sco::AffExpr expr;
       sco::AffExpr expr_neg;
-      sco::exprInc(acc, sco::exprMult(vars(i, j), 1.0));
-      sco::exprInc(acc, sco::exprMult(vars(i + 1, j), -2.0));
-      sco::exprInc(acc, sco::exprMult(vars(i + 2, j), 1.0));
+      sco::exprInc(acc, sco::exprMult(vars_(i, j), 1.0));
+      sco::exprInc(acc, sco::exprMult(vars_(i + 1, j), -2.0));
+      sco::exprInc(acc, sco::exprMult(vars_(i + 2, j), 1.0));
       sco::exprDec(acc, targets_[j]);  // offset to center about 0
 
       // Form upper limit expr = - (upper_tol-(vel-targ))
       sco::exprInc(expr, upper_tols_[j]);  // expr_ = upper_tol
       sco::exprDec(expr, acc);             // expr = upper_tol_- (vel - targets_)
-      sco::exprScale(expr, -coeffs[j]);    // expr = - (upper_tol_- (vel - targets_)) * coeffs_
+      sco::exprScale(expr, -coeffs_[j]);   // expr = - (upper_tol_- (vel - targets_)) * coeffs_
       expr_vec_.push_back(expr);
 
       // Form upper limit expr = - (upper_tol-(vel-targ))
       sco::exprInc(expr_neg, lower_tols_[j]);  // expr_ = lower_tol_
       sco::exprDec(expr_neg, acc);             // expr = lower_tol_- (vel - targets_)
-      sco::exprScale(expr_neg, coeffs[j]);     // expr = (lower_tol_- (vel - targets_)) * coeffs_
+      sco::exprScale(expr_neg, coeffs_[j]);    // expr = (lower_tol_- (vel - targets_)) * coeffs_
       expr_vec_.push_back(expr_neg);
     }
   }
@@ -709,23 +724,28 @@ sco::ConvexConstraints::Ptr JointAccIneqConstraint::convex(const DblVec& /*x*/, 
 }
 
 //////////////////// Jerk /////////////////////
-JointJerkEqCost::JointJerkEqCost(const VarArray& vars,
-                                 const Eigen::VectorXd& coeffs,
-                                 const Eigen::VectorXd& targets,
+JointJerkEqCost::JointJerkEqCost(VarArray vars,
+                                 Eigen::VectorXd coeffs,
+                                 Eigen::VectorXd targets,
                                  int& first_step,
                                  int& last_step)
-  : Cost("JointJerkEq"), vars_(vars), coeffs_(coeffs), targets_(targets), first_step_(first_step), last_step_(last_step)
+  : Cost("JointJerkEq")
+  , vars_(std::move(vars))
+  , coeffs_(std::move(coeffs))
+  , targets_(std::move(targets))
+  , first_step_(first_step)
+  , last_step_(last_step)
 {
   for (int i = first_step_; i <= last_step_ - 4; ++i)
   {
-    for (int j = 0; j < vars.cols(); ++j)
+    for (int j = 0; j < vars_.cols(); ++j)
     {
       sco::AffExpr jerk;
-      sco::exprInc(jerk, sco::exprMult(vars(i, j), -1.0 / 2.0));
-      sco::exprInc(jerk, sco::exprMult(vars(i + 1, j), 1.0));
-      sco::exprInc(jerk, sco::exprMult(vars(i + 2, j), 0.0));
-      sco::exprInc(jerk, sco::exprMult(vars(i + 3, j), -1.0));
-      sco::exprInc(jerk, sco::exprMult(vars(i + 4, j), 1.0 / 2.0));
+      sco::exprInc(jerk, sco::exprMult(vars_(i, j), -1.0 / 2.0));
+      sco::exprInc(jerk, sco::exprMult(vars_(i + 1, j), 1.0));
+      sco::exprInc(jerk, sco::exprMult(vars_(i + 2, j), 0.0));
+      sco::exprInc(jerk, sco::exprMult(vars_(i + 3, j), -1.0));
+      sco::exprInc(jerk, sco::exprMult(vars_(i + 4, j), 1.0 / 2.0));
 
       sco::exprDec(jerk, targets_[j]);
       // expr_ = coeff * jerk^2
@@ -752,46 +772,46 @@ sco::ConvexObjective::Ptr JointJerkEqCost::convex(const DblVec& /*x*/, sco::Mode
   return out;
 }
 
-JointJerkIneqCost::JointJerkIneqCost(const VarArray& vars,
-                                     const Eigen::VectorXd& coeffs,
-                                     const Eigen::VectorXd& targets,
-                                     const Eigen::VectorXd& upper_tols,
-                                     const Eigen::VectorXd& lower_tols,
+JointJerkIneqCost::JointJerkIneqCost(VarArray vars,
+                                     Eigen::VectorXd coeffs,
+                                     Eigen::VectorXd targets,
+                                     Eigen::VectorXd upper_limits,
+                                     Eigen::VectorXd lower_limits,
                                      int& first_step,
                                      int& last_step)
   : Cost("JointJerkIneq")
-  , vars_(vars)
-  , coeffs_(coeffs)
-  , upper_tols_(upper_tols)
-  , lower_tols_(lower_tols)
-  , targets_(targets)
+  , vars_(std::move(vars))
+  , coeffs_(std::move(coeffs))
+  , upper_tols_(std::move(upper_limits))
+  , lower_tols_(std::move(lower_limits))
+  , targets_(std::move(targets))
   , first_step_(first_step)
   , last_step_(last_step)
 {
   for (int i = first_step_; i <= last_step_ - 4; ++i)
   {
-    for (int j = 0; j < vars.cols(); ++j)
+    for (int j = 0; j < vars_.cols(); ++j)
     {
       sco::AffExpr jerk;
       sco::AffExpr expr;
       sco::AffExpr expr_neg;
-      sco::exprInc(jerk, sco::exprMult(vars(i, j), -1.0 / 2.0));
-      sco::exprInc(jerk, sco::exprMult(vars(i + 1, j), 1.0));
-      sco::exprInc(jerk, sco::exprMult(vars(i + 2, j), 0.0));
-      sco::exprInc(jerk, sco::exprMult(vars(i + 3, j), -1.0));
-      sco::exprInc(jerk, sco::exprMult(vars(i + 4, j), 1.0 / 2.0));
+      sco::exprInc(jerk, sco::exprMult(vars_(i, j), -1.0 / 2.0));
+      sco::exprInc(jerk, sco::exprMult(vars_(i + 1, j), 1.0));
+      sco::exprInc(jerk, sco::exprMult(vars_(i + 2, j), 0.0));
+      sco::exprInc(jerk, sco::exprMult(vars_(i + 3, j), -1.0));
+      sco::exprInc(jerk, sco::exprMult(vars_(i + 4, j), 1.0 / 2.0));
       sco::exprDec(jerk, targets_[j]);
 
       // Form upper limit expr = - (upper_tol-(jerk-targ))
       sco::exprInc(expr, upper_tols_[j]);  // expr_ = upper_tol
       sco::exprDec(expr, jerk);            // expr = upper_tol_- (vel - targets_)
-      sco::exprScale(expr, -coeffs[j]);    // expr = - (upper_tol_- (vel - targets_)) * coeffs_
+      sco::exprScale(expr, -coeffs_[j]);   // expr = - (upper_tol_- (vel - targets_)) * coeffs_
       expr_vec_.push_back(expr);
 
       // Form lower limit expr = (lower_tol-(acc-targ))
       sco::exprInc(expr_neg, lower_tols_[j]);  // expr_ = lower_tol_
       sco::exprDec(expr_neg, jerk);            // expr = lower_tol_- (vel - targets_)
-      sco::exprScale(expr_neg, coeffs[j]);     // expr = (lower_tol_- (vel - targets_)) * coeffs_
+      sco::exprScale(expr_neg, coeffs_[j]);    // expr = (lower_tol_- (vel - targets_)) * coeffs_
       expr_vec_.push_back(expr_neg);
     }
   }
@@ -825,28 +845,28 @@ sco::ConvexObjective::Ptr JointJerkIneqCost::convex(const DblVec& /*x*/, sco::Mo
   return out;
 }
 
-JointJerkEqConstraint::JointJerkEqConstraint(const VarArray& vars,
-                                             const Eigen::VectorXd& coeffs,
-                                             const Eigen::VectorXd& targets,
+JointJerkEqConstraint::JointJerkEqConstraint(VarArray vars,
+                                             Eigen::VectorXd coeffs,
+                                             Eigen::VectorXd targets,
                                              int& first_step,
                                              int& last_step)
   : EqConstraint("JointJerkEq")
-  , vars_(vars)
-  , coeffs_(coeffs)
-  , targets_(targets)
+  , vars_(std::move(vars))
+  , coeffs_(std::move(coeffs))
+  , targets_(std::move(targets))
   , first_step_(first_step)
   , last_step_(last_step)
 {
   for (int i = first_step_; i <= last_step_ - 4; ++i)
   {
-    for (int j = 0; j < vars.cols(); ++j)
+    for (int j = 0; j < vars_.cols(); ++j)
     {
       sco::AffExpr jerk;
-      sco::exprInc(jerk, sco::exprMult(vars(i, j), -1.0 / 2.0));
-      sco::exprInc(jerk, sco::exprMult(vars(i + 1, j), 1.0));
-      sco::exprInc(jerk, sco::exprMult(vars(i + 2, j), 0.0));
-      sco::exprInc(jerk, sco::exprMult(vars(i + 3, j), -1.0));
-      sco::exprInc(jerk, sco::exprMult(vars(i + 4, j), 1.0 / 2.0));
+      sco::exprInc(jerk, sco::exprMult(vars_(i, j), -1.0 / 2.0));
+      sco::exprInc(jerk, sco::exprMult(vars_(i + 1, j), 1.0));
+      sco::exprInc(jerk, sco::exprMult(vars_(i + 2, j), 0.0));
+      sco::exprInc(jerk, sco::exprMult(vars_(i + 3, j), -1.0));
+      sco::exprInc(jerk, sco::exprMult(vars_(i + 4, j), 1.0 / 2.0));
 
       sco::exprDec(jerk, targets_[j]);  // offset to center about 0
       // expr_ = coeff * jerk - Not squared b/c QuadExpr cnt not yet supported (TODO)
@@ -877,46 +897,46 @@ sco::ConvexConstraints::Ptr JointJerkEqConstraint::convex(const DblVec& /*x*/, s
   return out;
 }
 
-JointJerkIneqConstraint::JointJerkIneqConstraint(const VarArray& vars,
-                                                 const Eigen::VectorXd& coeffs,
-                                                 const Eigen::VectorXd& targets,
-                                                 const Eigen::VectorXd& upper_tols,
-                                                 const Eigen::VectorXd& lower_tols,
+JointJerkIneqConstraint::JointJerkIneqConstraint(VarArray vars,
+                                                 Eigen::VectorXd coeffs,
+                                                 Eigen::VectorXd targets,
+                                                 Eigen::VectorXd upper_limits,
+                                                 Eigen::VectorXd lower_limits,
                                                  int& first_step,
                                                  int& last_step)
   : IneqConstraint("JointJerkIneq")
-  , vars_(vars)
-  , coeffs_(coeffs)
-  , upper_tols_(upper_tols)
-  , lower_tols_(lower_tols)
-  , targets_(targets)
+  , vars_(std::move(vars))
+  , coeffs_(std::move(coeffs))
+  , upper_tols_(std::move(upper_limits))
+  , lower_tols_(std::move(lower_limits))
+  , targets_(std::move(targets))
   , first_step_(first_step)
   , last_step_(last_step)
 {
   for (int i = first_step_; i <= last_step_ - 4; ++i)
   {
-    for (int j = 0; j < vars.cols(); ++j)
+    for (int j = 0; j < vars_.cols(); ++j)
     {
       sco::AffExpr jerk;
       sco::AffExpr expr;
       sco::AffExpr expr_neg;
-      sco::exprInc(jerk, sco::exprMult(vars(i, j), -1.0 / 2.0));
-      sco::exprInc(jerk, sco::exprMult(vars(i + 1, j), 1.0));
-      sco::exprInc(jerk, sco::exprMult(vars(i + 2, j), 0.0));
-      sco::exprInc(jerk, sco::exprMult(vars(i + 3, j), -1.0));
-      sco::exprInc(jerk, sco::exprMult(vars(i + 4, j), 1.0 / 2.0));
+      sco::exprInc(jerk, sco::exprMult(vars_(i, j), -1.0 / 2.0));
+      sco::exprInc(jerk, sco::exprMult(vars_(i + 1, j), 1.0));
+      sco::exprInc(jerk, sco::exprMult(vars_(i + 2, j), 0.0));
+      sco::exprInc(jerk, sco::exprMult(vars_(i + 3, j), -1.0));
+      sco::exprInc(jerk, sco::exprMult(vars_(i + 4, j), 1.0 / 2.0));
       sco::exprDec(jerk, targets_[j]);  // offset to center about 0
 
       // Form upper limit expr = - (upper_tol-(vel-targ))
       sco::exprInc(expr, upper_tols_[j]);  // expr_ = upper_tol
       sco::exprDec(expr, jerk);            // expr = upper_tol_- (vel - targets_)
-      sco::exprScale(expr, -coeffs[j]);    // expr = - (upper_tol_- (vel - targets_)) * coeffs_
+      sco::exprScale(expr, -coeffs_[j]);   // expr = - (upper_tol_- (vel - targets_)) * coeffs_
       expr_vec_.push_back(expr);
 
       // Form upper limit expr = - (upper_tol-(vel-targ))
       sco::exprInc(expr_neg, lower_tols_[j]);  // expr_ = lower_tol_
       sco::exprDec(expr_neg, jerk);            // expr = lower_tol_- (vel - targets_)
-      sco::exprScale(expr_neg, coeffs[j]);     // expr = (lower_tol_- (vel - targets_)) * coeffs_
+      sco::exprScale(expr_neg, coeffs_[j]);    // expr = (lower_tol_- (vel - targets_)) * coeffs_
       expr_vec_.push_back(expr_neg);
     }
   }

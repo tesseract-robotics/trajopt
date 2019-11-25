@@ -108,10 +108,8 @@ struct SafetyMarginData
     {
       return it->second;
     }
-    else
-    {
-      return default_safety_margin_data_;
-    }
+
+    return default_safety_margin_data_;
   }
 
   /**
@@ -152,7 +150,7 @@ inline std::vector<SafetyMarginData::Ptr> createSafetyMarginDataVector(int num_e
   info.reserve(static_cast<size_t>(num_elements));
   for (auto i = 0; i < num_elements; ++i)
   {
-    info.push_back(SafetyMarginData::Ptr(new SafetyMarginData(default_safety_margin, default_safety_margin_coeff)));
+    info.push_back(std::make_shared<SafetyMarginData>(default_safety_margin, default_safety_margin_coeff));
   }
   return info;
 }

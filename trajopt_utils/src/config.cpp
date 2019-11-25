@@ -7,11 +7,11 @@ void CommandParser::read(int argc, char* argv[])
   // create boost options_description based on variables, parser
   po::options_description od;
   od.add_options()("help,h", "produce help message");
-  for (std::size_t i = 0; i < configs.size(); ++i)
+  for (auto& config : configs)
   {
-    for (std::size_t j = 0; j < configs[i].params.size(); ++j)
+    for (auto& param : config.params)
     {
-      configs[i].params[j]->addToBoost(od);
+      param->addToBoost(od);
     }
   }
   po::variables_map vm;

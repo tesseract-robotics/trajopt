@@ -3,9 +3,9 @@
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <string>
 #include <vector>
-#include <assert.h>
+#include <cassert>
 #include <iostream>
-#include <stdlib.h>
+#include <cstdlib>
 #include <unistd.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
@@ -70,37 +70,37 @@ struct bpmpd_input
   std::vector<double> qcolnzs;
   std::vector<double> rhs, obj, lbound, ubound;
 
-  bpmpd_input() {}
+  bpmpd_input() = default;
   bpmpd_input(int m,
               int n,
               int nz,
               int qn,
               int qnz,
-              const std::vector<int>& acolcnt,
-              const std::vector<int>& acolidx,
-              const std::vector<double>& acolnzs,
-              const std::vector<int>& qcolcnt,
-              const std::vector<int>& qcolidx,
-              const std::vector<double>& qcolnzs,
-              const std::vector<double>& rhs,
-              const std::vector<double>& obj,
-              const std::vector<double>& lbound,
-              const std::vector<double>& ubound)
+              std::vector<int> acolcnt,
+              std::vector<int> acolidx,
+              std::vector<double> acolnzs,
+              std::vector<int> qcolcnt,
+              std::vector<int> qcolidx,
+              std::vector<double> qcolnzs,
+              std::vector<double> rhs,
+              std::vector<double> obj,
+              std::vector<double> lbound,
+              std::vector<double> ubound)
     : m(m)
     , n(n)
     , nz(nz)
     , qn(qn)
     , qnz(qnz)
-    , acolcnt(acolcnt)
-    , acolidx(acolidx)
-    , acolnzs(acolnzs)
-    , qcolcnt(qcolcnt)
-    , qcolidx(qcolidx)
-    , qcolnzs(qcolnzs)
-    , rhs(rhs)
-    , obj(obj)
-    , lbound(lbound)
-    , ubound(ubound)
+    , acolcnt(std::move(acolcnt))
+    , acolidx(std::move(acolidx))
+    , acolnzs(std::move(acolnzs))
+    , qcolcnt(std::move(qcolcnt))
+    , qcolidx(std::move(qcolidx))
+    , qcolnzs(std::move(qcolnzs))
+    , rhs(std::move(rhs))
+    , obj(std::move(obj))
+    , lbound(std::move(lbound))
+    , ubound(std::move(ubound))
   {
   }
 };
@@ -108,7 +108,7 @@ struct bpmpd_input
 const char EXIT_CHAR = 123;
 const char CHECK_CHAR = 111;
 
-void ser(int fp, bpmpd_input& bi, SerMode mode)
+inline void ser(int fp, bpmpd_input& bi, SerMode mode)
 {
   char scorrect = 'z', s = (mode == SER) ? scorrect : 0;
   ser(fp, s, mode);
@@ -140,18 +140,14 @@ struct bpmpd_output
   std::vector<int> status;
   int code;
   double opt;
-  bpmpd_output() {}
-  bpmpd_output(const std::vector<double>& primal,
-               const std::vector<double>& dual,
-               const std::vector<int>& status,
-               int code,
-               double opt)
-    : primal(primal), dual(dual), status(status), code(code), opt(opt)
+  bpmpd_output() = default;
+  bpmpd_output(std::vector<double> primal, std::vector<double> dual, std::vector<int> status, int code, double opt)
+    : primal(std::move(primal)), dual(std::move(dual)), status(std::move(status)), code(code), opt(opt)
   {
   }
 };
 
-void ser(int fp, bpmpd_output& bo, SerMode mode)
+inline void ser(int fp, bpmpd_output& bo, SerMode mode)
 {
   char scorrect = CHECK_CHAR, s = (mode == SER) ? scorrect : 0;
   ser(fp, s, mode);

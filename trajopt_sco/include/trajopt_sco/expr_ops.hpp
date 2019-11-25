@@ -9,14 +9,14 @@ namespace sco
 inline void exprScale(AffExpr& v, double a)
 {
   v.constant *= a;
-  for (unsigned i = 0; i < v.coeffs.size(); ++i)
-    v.coeffs[i] *= a;
+  for (double& coeff : v.coeffs)
+    coeff *= a;
 }
 inline void exprScale(QuadExpr& q, double a)
 {
   exprScale(q.affexpr, a);
-  for (unsigned i = 0; i < q.coeffs.size(); ++i)
-    q.coeffs[i] *= a;
+  for (double& coeff : q.coeffs)
+    coeff *= a;
 }
 
 // addition
