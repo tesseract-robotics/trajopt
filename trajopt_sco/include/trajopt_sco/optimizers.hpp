@@ -55,14 +55,20 @@ class Optimizer
 public:
   using Ptr = std::shared_ptr<Optimizer>;
 
+  Optimizer() = default;
   virtual ~Optimizer() = default;
+  Optimizer(const Optimizer&) = default;
+  Optimizer& operator=(const Optimizer&) = default;
+  Optimizer(Optimizer&&) = default;
+  Optimizer& operator=(Optimizer&&) = default;
+
   virtual OptStatus optimize() = 0;
-  virtual void setProblem(OptProb::Ptr prob) { prob_ = prob; }
+  virtual void setProblem(OptProb::Ptr prob) { prob_ = std::move(prob); }
   void initialize(const DblVec& x);
   DblVec& x() { return results_.x; }
   OptResults& results() { return results_; }
   using Callback = std::function<void(OptProb*, OptResults&)>;
-  void addCallback(const Callback& f);  // called before each iteration
+  void addCallback(const Callback& cb);  // called before each iteration
 protected:
   std::vector<Callback> callbacks_;
   void callCallbacks();
@@ -161,9 +167,9 @@ struct BasicTrustRegionSQPResults
   /** @brief Constraint Names */
   const std::vector<std::string> cnt_names;
 
-  BasicTrustRegionSQPResults(const std::vector<std::string>& var_names,
-                             const std::vector<std::string>& cost_names,
-                             const std::vector<std::string>& cnt_names);
+  BasicTrustRegionSQPResults(std::vector<std::string> var_names,
+                             std::vector<std::string> cost_names,
+                             std::vector<std::string> cnt_names);
 
   /**
    * @brief Update the structure data for a new iteration
@@ -183,7 +189,7 @@ struct BasicTrustRegionSQPResults
               const std::vector<ConvexObjective::Ptr>& cnt_cost_models,
               const std::vector<Constraint::Ptr>& constraints,
               const std::vector<Cost::Ptr>& costs,
-              const double merit_error_coeff);
+              double merit_error_coeff);
 
   /** @brief Print current results to the terminal */
   void print() const;
@@ -213,7 +219,7 @@ class BasicTrustRegionSQP : public Optimizer
 public:
   using Ptr = std::shared_ptr<BasicTrustRegionSQP>;
 
-  BasicTrustRegionSQP();
+  BasicTrustRegionSQP() = default;
   BasicTrustRegionSQP(OptProb::Ptr prob);
   void setProblem(OptProb::Ptr prob) override;
   void setParameters(const BasicTrustRegionSQPParameters& param) { param_ = param; }

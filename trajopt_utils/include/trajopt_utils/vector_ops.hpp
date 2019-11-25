@@ -5,7 +5,7 @@ TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace util
 {
-std::vector<int> arange(int n)
+inline std::vector<int> arange(int n)
 {
   std::vector<int> out(static_cast<size_t>(n));
   for (int i = 0; i < n; ++i)

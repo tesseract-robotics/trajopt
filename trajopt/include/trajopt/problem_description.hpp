@@ -46,7 +46,12 @@ public:
 
   TrajOptProb();
   TrajOptProb(int n_steps, const ProblemConstructionInfo& pci);
-  virtual ~TrajOptProb() = default;
+  ~TrajOptProb() override = default;
+  TrajOptProb(const TrajOptProb&) = default;
+  TrajOptProb& operator=(const TrajOptProb&) = default;
+  TrajOptProb(TrajOptProb&&) = default;
+  TrajOptProb& operator=(TrajOptProb&&) = default;
+
   sco::VarVector GetVarRow(int i, int start_col, int num_col) { return m_traj_vars.rblock(i, start_col, num_col); }
   sco::VarVector GetVarRow(int i) { return m_traj_vars.row(i); }
   sco::Var& GetVar(int i, int j) { return m_traj_vars.at(i, j); }
@@ -164,10 +169,14 @@ struct TRAJOPT_API TermInfo
    * Registers a user-defined TermInfo so you can use your own cost
    * see function RegisterMakers.cpp
    */
-  typedef std::shared_ptr<TermInfo> (*MakerFunc)(void);
+  using MakerFunc = std::shared_ptr<TermInfo> (*)();
   static void RegisterMaker(const std::string& type, MakerFunc);
 
   virtual ~TermInfo() = default;
+  TermInfo(const TermInfo&) = default;
+  TermInfo& operator=(const TermInfo&) = default;
+  TermInfo(TermInfo&&) = default;
+  TermInfo& operator=(TermInfo&&) = default;
 
 protected:
   TermInfo(int supported_term_types) : supported_term_types_(supported_term_types) {}
@@ -192,7 +201,7 @@ public:
   tesseract_environment::Environment::ConstPtr env;
   tesseract_kinematics::ForwardKinematics::ConstPtr kin;
 
-  ProblemConstructionInfo(tesseract::Tesseract::ConstPtr tesseract)
+  ProblemConstructionInfo(const tesseract::Tesseract::ConstPtr& tesseract)
     : env(tesseract->getEnvironmentConst()), tesseract_(tesseract)
   {
   }

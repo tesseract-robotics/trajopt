@@ -39,8 +39,8 @@ AffExpr affFromValGrad(double y, const Eigen::VectorXd& x, const Eigen::VectorXd
   return aff;
 }
 
-CostFromFunc::CostFromFunc(ScalarOfVector::Ptr f, const VarVector& vars, const std::string& name, bool full_hessian)
-  : Cost(name), f_(f), vars_(vars), full_hessian_(full_hessian), epsilon_(DEFAULT_EPSILON)
+CostFromFunc::CostFromFunc(ScalarOfVector::Ptr f, VarVector vars, const std::string& name, bool full_hessian)
+  : Cost(name), f_(std::move(f)), vars_(std::move(vars)), full_hessian_(full_hessian), epsilon_(DEFAULT_EPSILON)
 {
 }
 
@@ -91,7 +91,7 @@ ConvexObjective::Ptr CostFromFunc::convex(const DblVec& xin, Model* model)
     quad.affexpr.vars = vars_;
     quad.affexpr.coeffs = util::toDblVec(grad - pos_hess * x);
 
-    size_t nquadterms = static_cast<size_t>((x.size() * (x.size() - 1)) / 2);
+    auto nquadterms = static_cast<size_t>((x.size() * (x.size() - 1)) / 2);
     quad.coeffs.reserve(nquadterms);
     quad.vars1.reserve(nquadterms);
     quad.vars2.reserve(nquadterms);
@@ -113,20 +113,31 @@ ConvexObjective::Ptr CostFromFunc::convex(const DblVec& xin, Model* model)
 }
 
 CostFromErrFunc::CostFromErrFunc(VectorOfVector::Ptr f,
-                                 const VarVector& vars,
-                                 const Eigen::VectorXd& coeffs,
+                                 VarVector vars,
+                                 Eigen::VectorXd coeffs,
                                  PenaltyType pen_type,
                                  const std::string& name)
-  : Cost(name), f_(f), vars_(vars), coeffs_(coeffs), pen_type_(pen_type), epsilon_(DEFAULT_EPSILON)
+  : Cost(name)
+  , f_(std::move(f))
+  , vars_(std::move(vars))
+  , coeffs_(std::move(coeffs))
+  , pen_type_(pen_type)
+  , epsilon_(DEFAULT_EPSILON)
 {
 }
 CostFromErrFunc::CostFromErrFunc(VectorOfVector::Ptr f,
                                  MatrixOfVector::Ptr dfdx,
-                                 const VarVector& vars,
-                                 const Eigen::VectorXd& coeffs,
+                                 VarVector vars,
+                                 Eigen::VectorXd coeffs,
                                  PenaltyType pen_type,
                                  const std::string& name)
-  : Cost(name), f_(f), dfdx_(dfdx), vars_(vars), coeffs_(coeffs), pen_type_(pen_type), epsilon_(DEFAULT_EPSILON)
+  : Cost(name)
+  , f_(std::move(f))
+  , dfdx_(std::move(dfdx))
+  , vars_(std::move(vars))
+  , coeffs_(std::move(coeffs))
+  , pen_type_(pen_type)
+  , epsilon_(DEFAULT_EPSILON)
 {
 }
 double CostFromErrFunc::value(const DblVec& xin)
@@ -200,21 +211,32 @@ ConvexObjective::Ptr CostFromErrFunc::convex(const DblVec& xin, Model* model)
 }
 
 ConstraintFromErrFunc::ConstraintFromErrFunc(VectorOfVector::Ptr f,
-                                             const VarVector& vars,
-                                             const Eigen::VectorXd& coeffs,
+                                             VarVector vars,
+                                             Eigen::VectorXd coeffs,
                                              ConstraintType type,
                                              const std::string& name)
-  : Constraint(name), f_(f), vars_(vars), coeffs_(coeffs), type_(type), epsilon_(DEFAULT_EPSILON)
+  : Constraint(name)
+  , f_(std::move(f))
+  , vars_(std::move(vars))
+  , coeffs_(std::move(coeffs))
+  , type_(type)
+  , epsilon_(DEFAULT_EPSILON)
 {
 }
 
 ConstraintFromErrFunc::ConstraintFromErrFunc(VectorOfVector::Ptr f,
                                              MatrixOfVector::Ptr dfdx,
-                                             const VarVector& vars,
-                                             const Eigen::VectorXd& coeffs,
+                                             VarVector vars,
+                                             Eigen::VectorXd coeffs,
                                              ConstraintType type,
                                              const std::string& name)
-  : Constraint(name), f_(f), dfdx_(dfdx), vars_(vars), coeffs_(coeffs), type_(type), epsilon_(DEFAULT_EPSILON)
+  : Constraint(name)
+  , f_(std::move(f))
+  , dfdx_(std::move(dfdx))
+  , vars_(std::move(vars))
+  , coeffs_(std::move(coeffs))
+  , type_(type)
+  , epsilon_(DEFAULT_EPSILON)
 {
 }
 

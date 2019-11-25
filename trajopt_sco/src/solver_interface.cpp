@@ -152,8 +152,8 @@ std::ostream& operator<<(std::ostream& o, const QuadExpr& e)
 
 std::ostream& operator<<(std::ostream& o, const ModelType& cs)
 {
-  size_t cs_ivalue_ = static_cast<size_t>(cs.value_);
-  if (cs_ivalue_ > cs.MODEL_NAMES_.size())
+  auto cs_ivalue_ = static_cast<size_t>(cs.value_);
+  if (cs_ivalue_ > ModelType::MODEL_NAMES_.size())
   {
     std::stringstream conversion_error;
     conversion_error << "Error converting ModelType to string - "

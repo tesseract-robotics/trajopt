@@ -3,7 +3,6 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <boost/format.hpp>
 #include <cmath>
 #include <cstdio>
-#include <stdio.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt_sco/expr_ops.hpp>
@@ -141,9 +140,9 @@ std::vector<ConvexObjective::Ptr> cntsToCosts(const std::vector<ConvexConstraint
 void Optimizer::addCallback(const Callback& cb) { callbacks_.push_back(cb); }
 void Optimizer::callCallbacks()
 {
-  for (unsigned i = 0; i < callbacks_.size(); ++i)
+  for (auto& callback : callbacks_)
   {
-    callbacks_[i](prob_.get(), results_);
+    callback(prob_.get(), results_);
   }
 }
 
@@ -177,8 +176,7 @@ BasicTrustRegionSQPParameters::BasicTrustRegionSQPParameters()
   log_dir = "/tmp";
 }
 
-BasicTrustRegionSQP::BasicTrustRegionSQP() {}
-BasicTrustRegionSQP::BasicTrustRegionSQP(OptProb::Ptr prob) { setProblem(prob); }
+BasicTrustRegionSQP::BasicTrustRegionSQP(OptProb::Ptr prob) { setProblem(std::move(prob)); }
 void BasicTrustRegionSQP::setProblem(OptProb::Ptr prob)
 {
   Optimizer::setProblem(prob);
@@ -222,10 +220,10 @@ struct MultiCritFilter {
 };
 #endif
 
-BasicTrustRegionSQPResults::BasicTrustRegionSQPResults(const std::vector<std::string>& var_names,
-                                                       const std::vector<std::string>& cost_names,
-                                                       const std::vector<std::string>& cnt_names)
-  : var_names(var_names), cost_names(cost_names), cnt_names(cnt_names)
+BasicTrustRegionSQPResults::BasicTrustRegionSQPResults(std::vector<std::string> var_names,
+                                                       std::vector<std::string> cost_names,
+                                                       std::vector<std::string> cnt_names)
+  : var_names(std::move(var_names)), cost_names(std::move(cost_names)), cnt_names(std::move(cnt_names))
 {
   model_var_vals.clear();
   model_cost_vals.clear();
@@ -267,7 +265,8 @@ void BasicTrustRegionSQPResults::update(const OptResults& prev_opt_results,
     DblVec cnt_costs1 = evaluateModelCosts(cnt_cost_models, model_var_vals);
     DblVec cnt_costs2 = model_cnt_viols;
     for (unsigned i = 0; i < cnt_costs2.size(); ++i)
-      cnt_costs2[i] *= merit_error_coeff;
+      for (auto& cnt_cost2 : cnt_costs2)
+        cnt_cost2 *= merit_error_coeff;
     LOG_DEBUG("SHOULD BE ALMOST THE SAME: %s ?= %s", CSTR(cnt_costs1), CSTR(cnt_costs2));
     // not exactly the same because cnt_costs1 is based on aux variables,
     // but they might not be at EXACTLY the right value
@@ -316,7 +315,7 @@ void BasicTrustRegionSQPResults::print() const
                   "  ------  ");
   }
 
-  if (cnt_names.size() != 0)
+  if (!cnt_names.empty())
   {
     std::printf("%15s | %10s---%10s---%10s---%10s\n",
                 "CONSTRAINTS",
@@ -489,7 +488,7 @@ OptStatus BasicTrustRegionSQP::optimize()
     log_constraints_stream = std::fopen((param_.log_dir + "/trajopt_constraints.log").c_str(), "w");
   }
 
-  if (results_.x.size() == 0)
+  if (results_.x.empty())
     PRINT_AND_THROW("you forgot to initialize!");
   if (!prob_)
     PRINT_AND_THROW("you forgot to set the optimization problem");
@@ -497,7 +496,7 @@ OptStatus BasicTrustRegionSQP::optimize()
   results_.x = prob_->getClosestFeasiblePoint(results_.x);
 
   assert(results_.x.size() == prob_->getVars().size());
-  assert(prob_->getCosts().size() > 0 || constraints.size() > 0);
+  assert(!prob_->getCosts().empty() || !constraints.empty());
 
   OptStatus retval = INVALID;
 
@@ -661,9 +660,9 @@ OptStatus BasicTrustRegionSQP::optimize()
   penaltyadjustment:
     if (results_.cnt_viols.empty() || vecMax(results_.cnt_viols) < param_.cnt_tolerance)
     {
-      if (results_.cnt_viols.size() > 0)
+      if (!results_.cnt_viols.empty())
         LOG_INFO("woo-hoo! constraints are satisfied (to tolerance %.2e)", param_.cnt_tolerance);
-      goto cleanup;
+      goto cleanup;  // NOLINT
     }
     else
     {

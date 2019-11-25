@@ -51,6 +51,13 @@ public:
   using Ptr = std::shared_ptr<Model>;
   using ConstPtr = std::shared_ptr<const Model>;
 
+  Model() = default;
+  virtual ~Model() = default;
+  Model(const Model&) = default;
+  Model& operator=(const Model&) = default;
+  Model(Model&&) = default;
+  Model& operator=(Model&&) = default;
+
   virtual Var addVar(const std::string& name) = 0;
   virtual Var addVar(const std::string& name, double lb, double ub);
 
@@ -75,16 +82,14 @@ public:
   virtual void writeToFile(const std::string& fname) = 0;
 
   virtual VarVector getVars() const = 0;
-
-  virtual ~Model() {}
 };
 
 struct VarRep
 {
   using Ptr = std::shared_ptr<VarRep>;
 
-  VarRep(int _index, const std::string& _name, void* _creator)
-    : index(_index), name(_name), removed(false), creator(_creator)
+  VarRep(int _index, std::string _name, void* _creator)
+    : index(_index), name(std::move(_name)), removed(false), creator(_creator)
   {
   }
   int index;
@@ -97,10 +102,15 @@ struct Var
 {
   using Ptr = std::shared_ptr<Var>;
 
-  VarRep* var_rep;
-  Var() : var_rep(nullptr) {}
+  VarRep* var_rep{ nullptr };
+  Var() = default;
+  ~Var() = default;
   Var(VarRep* var_rep) : var_rep(var_rep) {}
-  Var(const Var& other) : var_rep(other.var_rep) {}
+  Var(const Var& other) = default;
+  Var& operator=(const Var&) = default;
+  Var(Var&&) = default;
+  Var& operator=(Var&&) = default;
+
   double value(const double* x) const { return x[var_rep->index]; }
   double value(const DblVec& x) const
   {
@@ -114,6 +124,12 @@ struct CntRep
   using Ptr = std::shared_ptr<CntRep>;
 
   CntRep(int _index, void* _creator) : index(_index), removed(false), creator(_creator) {}
+  CntRep(const CntRep&) = default;
+  CntRep& operator=(const CntRep&) = default;
+  CntRep(CntRep&&) = default;
+  CntRep& operator=(CntRep&&) = default;
+  ~CntRep() = default;
+
   int index;
   bool removed;
   void* creator;
@@ -125,10 +141,15 @@ struct Cnt
 {
   using Ptr = std::shared_ptr<Cnt>;
 
-  CntRep* cnt_rep;
-  Cnt() : cnt_rep(nullptr) {}
+  CntRep* cnt_rep{ nullptr };
+  Cnt() = default;
+  Cnt(const Cnt&) = default;
+  Cnt& operator=(const Cnt&) = default;
+  Cnt(Cnt&&) = default;
+  Cnt& operator=(Cnt&&) = default;
+  ~Cnt() = default;
+
   Cnt(CntRep* cnt_rep) : cnt_rep(cnt_rep) {}
-  Cnt(const Cnt& other) : cnt_rep(other.cnt_rep) {}
 };
 
 struct AffExpr
@@ -136,13 +157,19 @@ struct AffExpr
 
   using Ptr = std::shared_ptr<AffExpr>;
 
-  double constant;
+  double constant{ 0 };
   DblVec coeffs;
   VarVector vars;
-  AffExpr() : constant(0) {}
+  AffExpr() = default;
+  ~AffExpr() = default;
+  AffExpr(const AffExpr& other) = default;
+  AffExpr& operator=(const AffExpr&) = default;
+  AffExpr(AffExpr&&) = default;
+  AffExpr& operator=(AffExpr&&) = default;
+
   explicit AffExpr(double a) : constant(a) {}
   explicit AffExpr(const Var& v) : constant(0), coeffs(1, 1), vars(1, v) {}
-  AffExpr(const AffExpr& other) : constant(other.constant), coeffs(other.coeffs), vars(other.vars) {}
+
   size_t size() const { return coeffs.size(); }
   double value(const double* x) const;
   double value(const DblVec& x) const;
@@ -156,10 +183,10 @@ struct QuadExpr
   DblVec coeffs;
   VarVector vars1;
   VarVector vars2;
-  QuadExpr() {}
+  QuadExpr() = default;
   explicit QuadExpr(double a) : affexpr(a) {}
   explicit QuadExpr(const Var& v) : affexpr(v) {}
-  explicit QuadExpr(const AffExpr& aff) : affexpr(aff) {}
+  explicit QuadExpr(AffExpr aff) : affexpr(std::move(aff)) {}
   size_t size() const { return coeffs.size(); }
   double value(const double* x) const;
   double value(const DblVec& x) const;

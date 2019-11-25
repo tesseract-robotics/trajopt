@@ -37,8 +37,14 @@ class Plotter
 public:
   using Ptr = std::shared_ptr<Plotter>;
 
-  virtual void Plot(const tesseract_visualization::Visualization::Ptr& plotter, const DblVec& x) = 0;
+  Plotter() = default;
   virtual ~Plotter() = default;
+  Plotter(const Plotter&) = default;
+  Plotter& operator=(const Plotter&) = default;
+  Plotter(Plotter&&) = default;
+  Plotter& operator=(Plotter&&) = default;
+
+  virtual void Plot(const tesseract_visualization::Visualization::Ptr& plotter, const DblVec& x) = 0;
 };
 
 /**  @brief Adds plotting to the VectorOfVector class in trajopt_sco */
@@ -54,29 +60,29 @@ class TrajOptCostFromErrFunc : public sco::CostFromErrFunc, public Plotter
 public:
   /// supply error function, obtain derivative numerically
   TrajOptCostFromErrFunc(sco::VectorOfVector::Ptr f,
-                         const sco::VarVector& vars,
-                         const Eigen::VectorXd& coeffs,
+                         sco::VarVector vars,
+                         Eigen::VectorXd coeffs,
                          sco::PenaltyType pen_type,
                          const std::string& name)
-    : CostFromErrFunc(f, vars, coeffs, pen_type, name)
+    : CostFromErrFunc(std::move(f), std::move(vars), std::move(coeffs), pen_type, name)
   {
   }
 
   /// supply error function and gradient
   TrajOptCostFromErrFunc(sco::VectorOfVector::Ptr f,
                          sco::MatrixOfVector::Ptr dfdx,
-                         const sco::VarVector& vars,
-                         const Eigen::VectorXd& coeffs,
+                         sco::VarVector vars,
+                         Eigen::VectorXd coeffs,
                          sco::PenaltyType pen_type,
                          const std::string& name)
-    : CostFromErrFunc(f, dfdx, vars, coeffs, pen_type, name)
+    : CostFromErrFunc(std::move(f), std::move(dfdx), std::move(vars), std::move(coeffs), pen_type, name)
   {
   }
 
   void Plot(const tesseract_visualization::Visualization::Ptr& plotter, const DblVec& x) override
   {
     // If error function has a inherited from TrajOptVectorOfVector, call its Plot function
-    if (TrajOptVectorOfVector* plt = dynamic_cast<TrajOptVectorOfVector*>(f_.get()))
+    if (auto* plt = dynamic_cast<TrajOptVectorOfVector*>(f_.get()))
     {
       Eigen::VectorXd dof_vals = sco::getVec(x, vars_);
       plt->Plot(plotter, dof_vals);
@@ -90,29 +96,29 @@ class TrajOptConstraintFromErrFunc : public sco::ConstraintFromErrFunc, public P
 public:
   /// supply error function, obtain derivative numerically
   TrajOptConstraintFromErrFunc(sco::VectorOfVector::Ptr f,
-                               const sco::VarVector& vars,
-                               const Eigen::VectorXd& coeffs,
+                               sco::VarVector vars,
+                               Eigen::VectorXd coeffs,
                                sco::ConstraintType type,
                                const std::string& name)
-    : ConstraintFromErrFunc(f, vars, coeffs, type, name)
+    : ConstraintFromErrFunc(std::move(f), std::move(vars), std::move(coeffs), type, name)
   {
   }
 
   /// supply error function and gradient
   TrajOptConstraintFromErrFunc(sco::VectorOfVector::Ptr f,
                                sco::MatrixOfVector::Ptr dfdx,
-                               const sco::VarVector& vars,
-                               const Eigen::VectorXd& coeffs,
+                               sco::VarVector vars,
+                               Eigen::VectorXd coeffs,
                                sco::ConstraintType type,
                                const std::string& name)
-    : ConstraintFromErrFunc(f, dfdx, vars, coeffs, type, name)
+    : ConstraintFromErrFunc(std::move(f), std::move(dfdx), std::move(vars), std::move(coeffs), type, name)
   {
   }
 
   void Plot(const tesseract_visualization::Visualization::Ptr& plotter, const DblVec& x) override
   {
     // If error function has a inherited from TrajOptVectorOfVector, call its Plot function
-    if (TrajOptVectorOfVector* plt = dynamic_cast<TrajOptVectorOfVector*>(f_.get()))
+    if (auto* plt = dynamic_cast<TrajOptVectorOfVector*>(f_.get()))
     {
       Eigen::VectorXd dof_vals = sco::getVec(x, vars_);
       plt->Plot(plotter, dof_vals);

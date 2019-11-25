@@ -2,7 +2,7 @@
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <cmath>
 #include <fstream>
-#include <signal.h>
+#include <csignal>
 #include <trajopt_sco/bpmpd_io.hpp>
 TRAJOPT_IGNORE_WARNINGS_POP
 
@@ -176,7 +176,8 @@ pid_t popen2(const char* command, int* infp, int* outfp)
     assert(0);
     return pid;
   }
-  else if (pid == 0)
+
+  if (pid == 0)
   {
     close(p_stdin[WRITE]);
     dup2(p_stdin[READ], READ);
@@ -212,7 +213,7 @@ void fexit()
   ALWAYS_ASSERT(n == 1);
 }
 
-BPMPDModel::BPMPDModel() : m_pipeIn(0), m_pipeOut(0)
+BPMPDModel::BPMPDModel()
 {
   if (gPID == 0)
   {
@@ -221,16 +222,16 @@ BPMPDModel::BPMPDModel() : m_pipeIn(0), m_pipeOut(0)
   }
 }
 
-BPMPDModel::~BPMPDModel()
-{
-  // char text[1] = {123};
-  // write(gPipeIn, text, 1);
-  // // kill(m_pid, SIGKILL); // TODO: WHY DOES THIS KILL THE PARENT PROCESS?!
-  // close(m_pipeIn);
-  // close(m_pipeOut);
-  // m_pipeIn=0;
-  // m_pipeOut=0;
-}
+// BPMPDModel::~BPMPDModel()
+//{
+// char text[1] = {123};
+// write(gPipeIn, text, 1);
+// // kill(m_pid, SIGKILL); // TODO: WHY DOES THIS KILL THE PARENT PROCESS?!
+// close(m_pipeIn);
+// close(m_pipeOut);
+// m_pipeIn=0;
+// m_pipeOut=0;
+//}
 
 Var BPMPDModel::addVar(const std::string& name)
 {
@@ -261,15 +262,15 @@ Cnt BPMPDModel::addIneqCnt(const QuadExpr&, const std::string& /*name*/)
 void BPMPDModel::removeVars(const VarVector& vars)
 {
   IntVec inds = vars2inds(vars);
-  for (unsigned i = 0; i < vars.size(); ++i)
-    vars[i].var_rep->removed = true;
+  for (const auto& var : vars)
+    var.var_rep->removed = true;
 }
 
 void BPMPDModel::removeCnts(const CntVector& cnts)
 {
   IntVec inds = cnts2inds(cnts);
-  for (unsigned i = 0; i < cnts.size(); ++i)
-    cnts[i].cnt_rep->removed = true;
+  for (auto& cnt : cnts)
+    cnt.cnt_rep->removed = true;
 }
 
 void BPMPDModel::update()
@@ -320,7 +321,7 @@ void BPMPDModel::setVarBounds(const VarVector& vars, const DblVec& lower, const 
 {
   for (unsigned i = 0; i < vars.size(); ++i)
   {
-    size_t varind = static_cast<size_t>(vars[i].var_rep->index);
+    auto varind = static_cast<size_t>(vars[i].var_rep->index);
     m_lbs[varind] = lower[i];
     m_ubs[varind] = upper[i];
   }
@@ -330,7 +331,7 @@ DblVec BPMPDModel::getVarValues(const VarVector& vars) const
   DblVec out(vars.size());
   for (unsigned i = 0; i < vars.size(); ++i)
   {
-    size_t varind = static_cast<size_t>(vars[i].var_rep->index);
+    auto varind = static_cast<size_t>(vars[i].var_rep->index);
     out[i] = m_soln[varind];
   }
   return out;
@@ -397,8 +398,8 @@ CvxOptStatus BPMPDModel::optimize()
   std::vector<IntVec> var2qinds(n);
   for (size_t i = 0; i < m_objective.size(); ++i)
   {
-    size_t idx1 = static_cast<size_t>(m_objective.vars1[i].var_rep->index);
-    size_t idx2 = static_cast<size_t>(m_objective.vars2[i].var_rep->index);
+    auto idx1 = static_cast<size_t>(m_objective.vars1[i].var_rep->index);
+    auto idx2 = static_cast<size_t>(m_objective.vars2[i].var_rep->index);
     if (idx1 < idx2)
     {
       var2qinds[idx1].push_back(static_cast<int>(idx2));
@@ -430,8 +431,8 @@ CvxOptStatus BPMPDModel::optimize()
   }
 
 #define VECINC(vec)                                                                                                    \
-  for (unsigned i = 0; i < vec.size(); ++i)                                                                            \
-    ++vec[i];
+  for (unsigned i = 0; i < (vec).size(); ++i)                                                                          \
+    ++(vec)[i];
   VECINC(acolidx);
   VECINC(qcolidx);
 #undef VECINC
@@ -502,10 +503,11 @@ CvxOptStatus BPMPDModel::optimize()
 
   if (retcode == 2)
     return CVX_SOLVED;
-  else if (retcode == 3 || retcode == 4)
+
+  if (retcode == 3 || retcode == 4)
     return CVX_INFEASIBLE;
-  else
-    return CVX_FAILED;
+
+  return CVX_FAILED;
 
 #endif
 

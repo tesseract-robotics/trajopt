@@ -47,28 +47,28 @@ void ConvexObjective::addAbs(const AffExpr& affexpr, double coeff)
 
 void ConvexObjective::addHinges(const AffExprVector& ev)
 {
-  for (size_t i = 0; i < ev.size(); ++i)
-    addHinge(ev[i], 1);
+  for (const auto& i : ev)
+    addHinge(i, 1);
 }
 
 void ConvexObjective::addL1Norm(const AffExprVector& ev)
 {
-  for (size_t i = 0; i < ev.size(); ++i)
-    addAbs(ev[i], 1);
+  for (const auto& i : ev)
+    addAbs(i, 1);
 }
 
 void ConvexObjective::addL2Norm(const AffExprVector& ev)
 {
-  for (size_t i = 0; i < ev.size(); ++i)
-    exprInc(quad_, exprSquare(ev[i]));
+  for (const auto& i : ev)
+    exprInc(quad_, exprSquare(i));
 }
 
 void ConvexObjective::addMax(const AffExprVector& ev)
 {
   Var m = model_->addVar("max", -INFINITY, INFINITY);
-  for (size_t i = 0; i < ev.size(); ++i)
+  for (const auto& i : ev)
   {
-    ineqs_.push_back(ev[i]);
+    ineqs_.push_back(i);
     exprDec(ineqs_.back(), m);
   }
 }
@@ -195,8 +195,8 @@ void OptProb::setUpperBounds(const DblVec& ub)
 
 void OptProb::setLowerBounds(const DblVec& lb, const VarVector& vars) { setVec(lower_bounds_, vars, lb); }
 void OptProb::setUpperBounds(const DblVec& ub, const VarVector& vars) { setVec(upper_bounds_, vars, ub); }
-void OptProb::addCost(Cost::Ptr cost) { costs_.push_back(cost); }
-void OptProb::addConstraint(Constraint::Ptr cnt)
+void OptProb::addCost(const Cost::Ptr& cost) { costs_.push_back(cost); }
+void OptProb::addConstraint(const Constraint::Ptr& cnt)
 {
   if (cnt->type() == EQ)
     addEqConstraint(cnt);
@@ -204,13 +204,13 @@ void OptProb::addConstraint(Constraint::Ptr cnt)
     addIneqConstraint(cnt);
 }
 
-void OptProb::addEqConstraint(Constraint::Ptr cnt)
+void OptProb::addEqConstraint(const Constraint::Ptr& cnt)
 {
   assert(cnt->type() == EQ);
   eqcnts_.push_back(cnt);
 }
 
-void OptProb::addIneqConstraint(Constraint::Ptr cnt)
+void OptProb::addIneqConstraint(const Constraint::Ptr& cnt)
 {
   assert(cnt->type() == INEQ);
   ineqcnts_.push_back(cnt);

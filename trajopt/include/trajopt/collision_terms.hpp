@@ -17,16 +17,21 @@ struct CollisionEvaluator
   CollisionEvaluator(tesseract_kinematics::ForwardKinematics::ConstPtr manip,
                      tesseract_environment::Environment::ConstPtr env,
                      tesseract_environment::AdjacencyMap::ConstPtr adjacency_map,
-                     Eigen::Isometry3d world_to_base,
+                     const Eigen::Isometry3d& world_to_base,
                      SafetyMarginData::ConstPtr safety_margin_data)
-    : manip_(manip)
-    , env_(env)
-    , adjacency_map_(adjacency_map)
+    : manip_(std::move(manip))
+    , env_(std::move(env))
+    , adjacency_map_(std::move(adjacency_map))
     , world_to_base_(world_to_base)
-    , safety_margin_data_(safety_margin_data)
+    , safety_margin_data_(std::move(safety_margin_data))
   {
   }
   virtual ~CollisionEvaluator() = default;
+  CollisionEvaluator(const CollisionEvaluator&) = default;
+  CollisionEvaluator& operator=(const CollisionEvaluator&) = default;
+  CollisionEvaluator(CollisionEvaluator&&) = default;
+  CollisionEvaluator& operator=(CollisionEvaluator&&) = default;
+
   virtual void CalcDistExpressions(const DblVec& x, sco::AffExprVector& exprs) = 0;
   virtual void CalcDists(const DblVec& x, DblVec& exprs) = 0;
   virtual void CalcCollisions(const DblVec& x, tesseract_collision::ContactResultVector& dist_results) = 0;
@@ -45,7 +50,7 @@ protected:
   SafetyMarginData::ConstPtr safety_margin_data_;
 
 private:
-  CollisionEvaluator() {}
+  CollisionEvaluator() = default;
 };
 
 struct SingleTimestepCollisionEvaluator : public CollisionEvaluator
@@ -68,7 +73,7 @@ public:
   /**
    * Same as CalcDistExpressions, but just the distances--not the expressions
    */
-  void CalcDists(const DblVec& x, DblVec& exprs) override;
+  void CalcDists(const DblVec& x, DblVec& dists) override;
   void CalcCollisions(const DblVec& x, tesseract_collision::ContactResultVector& dist_results) override;
   void Plot(const tesseract_visualization::Visualization::Ptr& plotter, const DblVec& x) override;
   sco::VarVector GetVars() override { return m_vars; }
@@ -118,8 +123,8 @@ public:
                 SafetyMarginData::ConstPtr safety_margin_data,
                 const sco::VarVector& vars0,
                 const sco::VarVector& vars1);
-  virtual sco::ConvexObjective::Ptr convex(const DblVec& x, sco::Model* model) override;
-  virtual double value(const DblVec&) override;
+  sco::ConvexObjective::Ptr convex(const DblVec& x, sco::Model* model) override;
+  double value(const DblVec&) override;
   void Plot(const tesseract_visualization::Visualization::Ptr& plotter, const DblVec& x) override;
   sco::VarVector getVars() override { return m_calc->GetVars(); }
 
@@ -145,8 +150,8 @@ public:
                       SafetyMarginData::ConstPtr safety_margin_data,
                       const sco::VarVector& vars0,
                       const sco::VarVector& vars1);
-  virtual sco::ConvexConstraints::Ptr convex(const DblVec& x, sco::Model* model) override;
-  virtual DblVec value(const DblVec&) override;
+  sco::ConvexConstraints::Ptr convex(const DblVec& x, sco::Model* model) override;
+  DblVec value(const DblVec&) override;
   void Plot(const DblVec& x);
   sco::VarVector getVars() override { return m_calc->GetVars(); }
 

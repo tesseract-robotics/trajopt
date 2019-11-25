@@ -428,17 +428,17 @@ MatrixXd JointJerkJacCalculator::operator()(const VectorXd& var_vals) const
   return jac;
 }
 
-VectorXd TimeCostCalculator::operator()(const VectorXd& time_vals) const
+VectorXd TimeCostCalculator::operator()(const VectorXd& var_vals) const
 {
   VectorXd total(1);
-  total(0) = time_vals.cwiseInverse().sum() - limit_;
+  total(0) = var_vals.cwiseInverse().sum() - limit_;
   return total;
 }
 
-MatrixXd TimeCostJacCalculator::operator()(const VectorXd& time_vals) const
+MatrixXd TimeCostJacCalculator::operator()(const VectorXd& var_vals) const
 {
-  MatrixXd jac(1, time_vals.rows());
-  jac.row(0) = -1 * time_vals.cwiseAbs2().cwiseInverse();
+  MatrixXd jac(1, var_vals.rows());
+  jac.row(0) = -1 * var_vals.cwiseAbs2().cwiseInverse();
   return jac;
 }
 

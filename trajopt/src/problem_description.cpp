@@ -70,7 +70,7 @@ void checkParameterSize(trajopt::DblVec& parameter,
                         const std::string& name,
                         const bool& apply_first = true)
 {
-  if (apply_first == true && parameter.size() == 1)
+  if (apply_first && parameter.size() == 1)
   {
     parameter = trajopt::DblVec(expected_size, parameter[0]);
     CONSOLE_BRIDGE_logInform("1 %s given. Applying to all %i joints", name.c_str(), expected_size);
@@ -425,11 +425,11 @@ TrajOptProb::Ptr ConstructProblem(const ProblemConstructionInfo& pci)
   }
 
   // Check that if a cost or constraint uses time, basic_info is set accordingly
-  if ((use_time == true) && (pci.basic_info.use_time == false))
+  if (use_time && !pci.basic_info.use_time)
     PRINT_AND_THROW("A term is using time and basic_info is not set correctly. Try basic_info.use_time = true");
 
   // This could be removed in the future once we are sure that all costs are
-  if ((use_time == false) && (pci.basic_info.use_time == true))
+  if (!use_time && pci.basic_info.use_time)
     PRINT_AND_THROW("No terms use time and basic_info is not set correctly. Try basic_info.use_time = false");
 
   TrajOptProb::Ptr prob(new TrajOptProb(n_steps, pci));
@@ -438,7 +438,7 @@ TrajOptProb::Ptr ConstructProblem(const ProblemConstructionInfo& pci)
   // Generate initial trajectory and check its size
   TrajArray init_traj;
   generateInitTraj(init_traj, pci);
-  if (pci.basic_info.use_time == true)
+  if (pci.basic_info.use_time)
   {
     prob->SetHasTime(true);
     if (init_traj.rows() != n_steps || init_traj.cols() != n_dof + 1)
@@ -534,7 +534,7 @@ TrajOptProb::TrajOptProb(int n_steps, const ProblemConstructionInfo& pci)
     vlower.insert(vlower.end(), lower.data(), lower.data() + lower.size());
     vupper.insert(vupper.end(), upper.data(), upper.data() + upper.size());
 
-    if (pci.basic_info.use_time == true)
+    if (pci.basic_info.use_time)
     {
       vlower.insert(vlower.end(), pci.basic_info.dt_lower_lim);
       vupper.insert(vupper.end(), pci.basic_info.dt_upper_lim);

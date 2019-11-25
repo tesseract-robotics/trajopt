@@ -439,11 +439,11 @@ void CastCollisionEvaluator::CalcDistExpressions(const DblVec& x, sco::AffExprVe
   GetCollisionsCached(x, dist_results);
   CollisionsToDistanceExpressions(dist_results, manip_, adjacency_map_, world_to_base_, m_vars0, m_vars1, x, exprs);
 }
-void CastCollisionEvaluator::CalcDists(const DblVec& x, DblVec& dists)
+void CastCollisionEvaluator::CalcDists(const DblVec& x, DblVec& exprs)
 {
   tesseract_collision::ContactResultVector dist_results;
   GetCollisionsCached(x, dist_results);
-  CollisionsToDistances(dist_results, dists);
+  CollisionsToDistances(dist_results, exprs);
 }
 
 void CastCollisionEvaluator::Plot(const tesseract_visualization::Visualization::Ptr& plotter, const DblVec& x)

@@ -16,10 +16,16 @@ public:
 
   QuadExpr m_objective;
 
-  int m_pipeIn, m_pipeOut, m_pid;
+  int m_pipeIn{ 0 };
+  int m_pipeOut{ 0 };
+  int m_pid{ 0 };
 
   BPMPDModel();
-  ~BPMPDModel() override;
+  ~BPMPDModel() override = default;
+  BPMPDModel(const BPMPDModel&) = default;
+  BPMPDModel& operator=(const BPMPDModel&) = default;
+  BPMPDModel(BPMPDModel&&) = default;
+  BPMPDModel& operator=(BPMPDModel&&) = default;
 
   Var addVar(const std::string& name) override;
   Cnt addEqCnt(const AffExpr&, const std::string& name) override;
@@ -31,10 +37,10 @@ public:
   void update() override;
   void setVarBounds(const VarVector& vars, const DblVec& lower, const DblVec& upper) override;
   DblVec getVarValues(const VarVector& vars) const override;
-  virtual CvxOptStatus optimize() override;
-  virtual void setObjective(const AffExpr&) override;
-  virtual void setObjective(const QuadExpr&) override;
-  virtual void writeToFile(const std::string& fname) override;
-  virtual VarVector getVars() const override;
+  CvxOptStatus optimize() override;
+  void setObjective(const AffExpr&) override;
+  void setObjective(const QuadExpr&) override;
+  void writeToFile(const std::string& fname) override;
+  VarVector getVars() const override;
 };
 }  // namespace sco

@@ -20,9 +20,14 @@ struct ParameterBase
 
   std::string m_name;
   std::string m_desc;
-  ParameterBase(const std::string& name, const std::string& desc) : m_name(name), m_desc(desc) {}
+  ParameterBase(std::string name, std::string desc) : m_name(std::move(name)), m_desc(std::move(desc)) {}
+  virtual ~ParameterBase() = default;
+  ParameterBase(const ParameterBase&) = default;
+  ParameterBase& operator=(const ParameterBase&) = default;
+  ParameterBase(ParameterBase&&) = default;
+  ParameterBase& operator=(ParameterBase&&) = default;
+
   virtual void addToBoost(po::options_description&) = 0;
-  virtual ~ParameterBase() {}
 };
 
 template <typename T>
@@ -30,7 +35,7 @@ struct ParameterVec : ParameterBase
 {
   std::vector<T>* m_value;
   ParameterVec(std::string name, std::vector<T>* value, std::string desc) : ParameterBase(name, desc), m_value(value) {}
-  void addToBoost(po::options_description& od)
+  void addToBoost(po::options_description& od) override
   {
     od.add_options()(
         m_name.c_str(), po::value(m_value)->default_value(*m_value, Str(*m_value))->multitoken(), m_desc.c_str());
@@ -42,7 +47,7 @@ struct Parameter : ParameterBase
 {
   T* m_value;
   Parameter(std::string name, T* value, std::string desc) : ParameterBase(name, desc), m_value(value) {}
-  void addToBoost(po::options_description& od)
+  void addToBoost(po::options_description& od) override
   {
     od.add_options()(m_name.c_str(), po::value(m_value)->default_value(*m_value, Str(*m_value)), m_desc.c_str());
   }

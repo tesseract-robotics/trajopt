@@ -2,39 +2,39 @@
 
 namespace sco
 {
-ScalarOfVector::Ptr ScalarOfVector::construct(const func& f)
+ScalarOfVector::Ptr ScalarOfVector::construct(func f)
 {
   struct F : public ScalarOfVector
   {
     func f;
-    F(const func& _f) : f(_f) {}
+    F(func _f) : f(std::move(_f)) {}
     double operator()(const Eigen::VectorXd& x) const override { return f(x); }
   };
-  ScalarOfVector* sov = new F(f);  // to avoid erroneous clang warning
+  ScalarOfVector* sov = new F(std::move(f));  // to avoid erroneous clang warning
   return ScalarOfVector::Ptr(sov);
 }
 
-VectorOfVector::Ptr VectorOfVector::construct(const func& f)
+VectorOfVector::Ptr VectorOfVector::construct(func f)
 {
   struct F : public VectorOfVector
   {
     func f;
-    F(const func& _f) : f(_f) {}
+    F(func _f) : f(std::move(_f)) {}
     Eigen::VectorXd operator()(const Eigen::VectorXd& x) const override { return f(x); }
   };
-  VectorOfVector* vov = new F(f);  // to avoid erroneous clang warning
+  VectorOfVector* vov = new F(std::move(f));  // to avoid erroneous clang warning
   return VectorOfVector::Ptr(vov);
 }
 
-MatrixOfVector::Ptr MatrixOfVector::construct(const func& f)
+MatrixOfVector::Ptr MatrixOfVector::construct(func f)
 {
   struct F : public MatrixOfVector
   {
     func f;
-    F(const func& _f) : f(_f) {}
+    F(func _f) : f(std::move(_f)) {}
     Eigen::MatrixXd operator()(const Eigen::VectorXd& x) const override { return f(x); }
   };
-  MatrixOfVector* mov = new F(f);  // to avoid erroneous clang warning
+  MatrixOfVector* mov = new F(std::move(f));  // to avoid erroneous clang warning
   return MatrixOfVector::Ptr(mov);
 }
 
@@ -90,7 +90,7 @@ void calcGradAndDiagHess(const ScalarOfVector& f,
   }
 }
 
-void calcGradHess(ScalarOfVector::Ptr f,
+void calcGradHess(const ScalarOfVector::Ptr& f,
                   const Eigen::VectorXd& x,
                   double epsilon,
                   double& y,
@@ -108,7 +108,7 @@ struct ForwardNumGrad : public VectorOfVector
 {
   ScalarOfVector::Ptr f_;
   double epsilon_;
-  ForwardNumGrad(ScalarOfVector::Ptr f, double epsilon) : f_(f), epsilon_(epsilon) {}
+  ForwardNumGrad(ScalarOfVector::Ptr f, double epsilon) : f_(std::move(f)), epsilon_(epsilon) {}
   Eigen::VectorXd operator()(const Eigen::VectorXd& x) const override { return calcForwardNumGrad(*f_, x, epsilon_); }
 };
 
@@ -116,16 +116,16 @@ struct ForwardNumJac : public MatrixOfVector
 {
   VectorOfVector::Ptr f_;
   double epsilon_;
-  ForwardNumJac(VectorOfVector::Ptr f, double epsilon) : f_(f), epsilon_(epsilon) {}
+  ForwardNumJac(VectorOfVector::Ptr f, double epsilon) : f_(std::move(f)), epsilon_(epsilon) {}
   Eigen::MatrixXd operator()(const Eigen::VectorXd& x) const override { return calcForwardNumJac(*f_, x, epsilon_); }
 };
 
 VectorOfVector::Ptr forwardNumGrad(ScalarOfVector::Ptr f, double epsilon)
 {
-  return VectorOfVector::Ptr(new ForwardNumGrad(f, epsilon));
+  return VectorOfVector::Ptr(new ForwardNumGrad(std::move(f), epsilon));
 }
 MatrixOfVector::Ptr forwardNumJac(VectorOfVector::Ptr f, double epsilon)
 {
-  return MatrixOfVector::Ptr(new ForwardNumJac(f, epsilon));
+  return MatrixOfVector::Ptr(new ForwardNumJac(std::move(f), epsilon));
 }
 }  // namespace sco

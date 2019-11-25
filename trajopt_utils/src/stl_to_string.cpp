@@ -7,7 +7,7 @@ std::string Str_impl(const std::vector<T>& x)
 {
   std::stringstream ss;
   ss << "(";
-  if (x.size() > 0)
+  if (!x.empty())
     ss << x[0];
   for (size_t i = 1; i < x.size(); ++i)
     ss << ", " << x[i];

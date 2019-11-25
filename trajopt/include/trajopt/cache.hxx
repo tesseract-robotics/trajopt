@@ -8,8 +8,8 @@ public:
 
   KeyT keybuf[bufsize];    // circular buffer
   ValueT valbuf[bufsize];  // circular buffer
-  int m_i;
-  Cache() : m_i(0) { memset(keybuf, 666, sizeof(keybuf)); }
+  int m_i{ 0 };
+  Cache() { memset(keybuf, 666, sizeof(keybuf)); }
   void put(const KeyT& key, const ValueT& value)
   {
     keybuf[m_i] = key;

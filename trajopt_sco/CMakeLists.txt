@@ -10,8 +10,7 @@ find_package(trajopt_utils REQUIRED)
 
 list(FIND CMAKE_CXX_COMPILE_FEATURES cxx_std_11 CXX_FEATURE_FOUND)
 
-find_package(PkgConfig REQUIRED)
-pkg_check_modules(JSONCPP jsoncpp)
+find_package(jsoncpp REQUIRED)
 
 set(SCO_SOURCE_FILES
     src/solver_interface.cpp
@@ -39,11 +38,11 @@ if (HAVE_BPMPD)
 
   target_link_libraries(bpmpd_caller ${BPMPD_LIBRARY} -static)
   target_compile_options(bpmpd_caller PRIVATE -Wall -Wextra -Wsuggest-override -Wconversion -Wsign-conversion)
-  if(CXX_FEATURE_FOUND EQUAL "-1")
-      target_compile_options(bpmpd_caller PRIVATE -std=c++11)
-  else()
-      target_compile_features(bpmpd_caller PRIVATE cxx_std_11)
-  endif()
+#  if(CXX_FEATURE_FOUND EQUAL "-1")
+#      target_compile_options(bpmpd_caller PRIVATE -std=c++11)
+#  else()
+#      target_compile_features(bpmpd_caller PRIVATE cxx_std_11)
+#  endif()
   if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
       target_compile_options(bpmpd_caller PRIVATE -mno-avx)
     else()
@@ -97,13 +96,13 @@ if (qpOASES_FOUND)
   target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE ${qpOASES_INCLUDE_DIRS})
 endif()
 
-target_link_libraries(${PROJECT_NAME} PUBLIC trajopt::trajopt_utils ${CMAKE_DL_LIBS} ${JSONCPP_LIBRARIES})
+target_link_libraries(${PROJECT_NAME} PUBLIC trajopt::trajopt_utils ${CMAKE_DL_LIBS} jsoncpp_lib)
 target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wsuggest-override -Wconversion -Wsign-conversion)
-if(CXX_FEATURE_FOUND EQUAL "-1")
-    target_compile_options(${PROJECT_NAME} PUBLIC -std=c++11)
-else()
-    target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_11)
-endif()
+#if(CXX_FEATURE_FOUND EQUAL "-1")
+#    target_compile_options(${PROJECT_NAME} PUBLIC -std=c++11)
+#else()
+#    target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_11)
+#endif()
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     target_compile_options(${PROJECT_NAME} PUBLIC -mno-avx)
   else()
@@ -113,8 +112,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
     "$<INSTALL_INTERFACE:include>")
 target_include_directories(${PROJECT_NAME} SYSTEM PUBLIC
-    ${EIGEN3_INCLUDE_DIRS}
-    ${JSONCPP_INCLUDE_DIRS})
+    ${EIGEN3_INCLUDE_DIRS})
 
 list (APPEND PACKAGE_LIBRARIES ${PROJECT_NAME})
 
@@ -148,7 +146,7 @@ install(FILES
   "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-config-version.cmake"
   DESTINATION lib/cmake/${PROJECT_NAME})
 
-export(EXPORT ${PROJECT_NAME}-targets FILE ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-targets.cmake)
+export(EXPORT ${PROJECT_NAME}-targets NAMESPACE trajopt:: FILE ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-targets.cmake)
 
 if (ENABLE_TESTS)
   enable_testing()
