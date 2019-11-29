@@ -1,4 +1,13 @@
 # trajopt_ros
+
+[![Build Status](https://travis-ci.com/ros-industrial-consortium/trajopt_ros.svg?branch=master)](https://travis-ci.com/ros-industrial-consortium/trajopt_ros)
+[![Github Issues](https://img.shields.io/github/issues/ros-industrial-consortium/trajopt_ros.svg)](http://github.com/ros-industrial-consortium/trajopt_ros/issues)
+
+[![license - apache 2.0](https://img.shields.io/:license-Apache%202.0-yellowgreen.svg)](https://opensource.org/licenses/Apache-2.0)
+[![license - bsd 2 clause](https://img.shields.io/:license-BSD%202--Clause-blue.svg)](https://opensource.org/licenses/BSD-2-Clause)
+
+[![support level: consortium](https://img.shields.io/badge/support%20level-consortium-brightgreen.png)](http://rosindustrial.org/news/2016/10/7/better-supporting-a-growing-ros-industrial-software-platform)
+
 An optimizing path planner for ROS
 
 ![PR2 Table](gh_pages/_static/example_gifs/PR2_table.gif)
