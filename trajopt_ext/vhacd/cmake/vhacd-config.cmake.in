@@ -8,6 +8,7 @@ include(CMakeFindDependencyMacro)
 find_dependency(Eigen3)
 find_dependency(Bullet)
 find_dependency(OpenMP)
+find_dependency(trajopt_utils)
 
 if(NOT TARGET OpenMP::OpenMP_CXX)
     find_package(Threads REQUIRED)
