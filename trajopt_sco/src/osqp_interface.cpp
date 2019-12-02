@@ -172,7 +172,7 @@ void OSQPModel::createOrUpdateSolver()
   if (osqp_workspace_ != nullptr)
     osqp_cleanup(osqp_workspace_);
   // Setup workspace - this should be called only once
-  osqp_workspace_ = osqp_setup(&osqp_data_, &osqp_settings_);
+  osqp_setup(&osqp_workspace_, &osqp_data_, &osqp_settings_);
 }
 
 void OSQPModel::update()
