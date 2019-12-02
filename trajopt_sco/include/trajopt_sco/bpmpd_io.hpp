@@ -27,12 +27,14 @@ void ser(int fp, T& x, SerMode mode)
       T xcopy = x;
       ssize_t n = write(fp, &xcopy, sizeof(T));
       assert(n == sizeof(T));
+      UNUSED(n);
       break;
     }
     case DESER:
     {
       ssize_t n = read(fp, &x, sizeof(T));
       assert(n == sizeof(T));
+      UNUSED(n);
       break;
     }
   }
@@ -49,6 +51,7 @@ void ser(int fp, std::vector<T>& x, SerMode mode)
     {
       long n = write(fp, x.data(), sizeof(T) * size);
       assert(static_cast<unsigned long>(n) == sizeof(T) * size);
+      UNUSED(n);
       break;
     }
     case DESER:
@@ -56,6 +59,7 @@ void ser(int fp, std::vector<T>& x, SerMode mode)
       x.resize(size);
       long n = read(fp, x.data(), sizeof(T) * size);
       assert(static_cast<unsigned>(n) == sizeof(T) * size);
+      UNUSED(n);
       break;
     }
   }

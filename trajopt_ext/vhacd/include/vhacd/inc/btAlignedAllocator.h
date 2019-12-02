@@ -19,6 +19,9 @@ software.
 #ifndef BT_ALIGNED_ALLOCATOR
 #define BT_ALIGNED_ALLOCATOR
 
+#include <trajopt_utils/macros.h>
+TRAJOPT_IGNORE_WARNINGS_PUSH
+
 /// we probably replace this with our own aligned memory allocator
 /// so we replace _aligned_malloc and _aligned_free with our own
 /// that is better portable and more predictable
@@ -106,5 +109,6 @@ btAlignedAllocator( const self_type & ) {}
 
   friend bool operator==(const self_type&, const self_type&) { return true; }
 };
+TRAJOPT_IGNORE_WARNINGS_POP
 
 #endif  // BT_ALIGNED_ALLOCATOR

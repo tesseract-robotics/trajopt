@@ -3,16 +3,17 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <console_bridge/console.h>
 #include <vhacd/VHACD.h>
 #include <algorithm>
-#include <assert.h>
+#include <cassert>
 #include <cstddef>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
 #include <sstream>
-#include <stdio.h>
-#include <string.h>
+#include <cstdio>
+#include <cstring>
 #include <string>
 #include <vector>
+#include <cmath>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 using namespace VHACD;
@@ -27,7 +28,7 @@ struct Material
   float m_shininess;
   float m_transparency;
 
-  Material(void)
+  Material()
   {
     m_diffuseColor[0] = 0.5f;
     m_diffuseColor[1] = 0.5f;
@@ -47,26 +48,36 @@ struct Material
 class ProgressCallback : public IVHACD::IUserCallback
 {
 public:
-  ProgressCallback(void) {}
+  ProgressCallback() = default;
   ~ProgressCallback() override = default;
+  ProgressCallback(const ProgressCallback&) = default;
+  ProgressCallback& operator=(const ProgressCallback&) = default;
+  ProgressCallback(ProgressCallback&&) = default;
+  ProgressCallback& operator=(ProgressCallback&&) = default;
+
   void Update(const double overallProgress,
               const double stageProgress,
               const double operationProgress,
               const char* const stage,
               const char* const operation) override
   {
-    cout << setfill(' ') << setw(3) << static_cast<int>(overallProgress + 0.5) << "% "
-         << "[ " << stage << " " << setfill(' ') << setw(3) << static_cast<int>(stageProgress + 0.5) << "% ] "
-         << operation << " " << setfill(' ') << setw(3) << static_cast<int>(operationProgress + 0.5) << "%" << endl;
+    cout << setfill(' ') << setw(3) << lround(overallProgress + 0.5) << "% "
+         << "[ " << stage << " " << setfill(' ') << setw(3) << lround(stageProgress + 0.5) << "% ] "
+         << operation << " " << setfill(' ') << setw(3) << lround(operationProgress + 0.5) << "%" << endl;
   }
 };
 
 class Logger : public IVHACD::IUserLogger
 {
 public:
-  Logger(void) {}
+  Logger() = default;
   Logger(const string& fileName) { OpenFile(fileName); }
   ~Logger() override = default;
+  Logger(const Logger&) = delete;
+  Logger& operator=(const Logger&) = delete;
+  Logger(Logger&&) = default;
+  Logger& operator=(Logger&&) = default;
+
   void Log(const char* const msg) override
   {
     if (m_file.is_open())
@@ -91,7 +102,7 @@ struct Parameters
   bool m_run;
   IVHACD::Parameters m_paramsVHACD;
 
-  Parameters(void)
+  Parameters()
   {
     m_run = true;
     m_oclPlatformID = 0;
@@ -107,6 +118,11 @@ class MeshConvexApproximation
 public:
   MeshConvexApproximation() = default;
   virtual ~MeshConvexApproximation() = default;
+  MeshConvexApproximation(const MeshConvexApproximation&) = delete;
+  MeshConvexApproximation& operator=(const MeshConvexApproximation&) = delete;
+  MeshConvexApproximation(MeshConvexApproximation&&) = delete;
+  MeshConvexApproximation& operator=(MeshConvexApproximation&&) = delete;
+
   bool run(int argc, char** argv)
   {
     parseParameters(argc, argv, params_);
@@ -241,7 +257,7 @@ public:
     interfaceVHACD->Clean();
     interfaceVHACD->Release();
 
-    return 0;
+    return false;
   }
 
 protected:
@@ -383,7 +399,7 @@ protected:
 
   void getFileExtension(const string& fileName, string& fileExtension)
   {
-    size_t lastDotPosition = fileName.find_last_of(".");
+    size_t lastDotPosition = fileName.find_last_of("'.'");
     if (lastDotPosition == string::npos)
     {
       fileExtension = "";
@@ -504,46 +520,62 @@ protected:
     {
       const string strOFF("OFF");
       char temp[1024];
-      fscanf(fid, "%s", temp);
+      if (fscanf(fid, "%s", temp) != 1)
+        return false;
+
       if (string(temp) != strOFF)
       {
         logger.Log("Loading error: format not recognized \n");
         fclose(fid);
         return false;
       }
-      else
+
+      unsigned long nv = 0;
+      unsigned long nf = 0;
+      unsigned long ne = 0;
+
+      if (fscanf(fid, "%lu", &nv) != 1)
+        return false;
+
+      if (fscanf(fid, "%lu", &nf) != 1)
+        return false;
+
+      if (fscanf(fid, "%lu", &ne) != 1)
+        return false;
+
+      points.resize(nv * 3);
+      triangles.resize(nf * 3);
+      unsigned long np = nv * 3;
+      for (unsigned long p = 0; p < np; p++)
       {
-        unsigned long nv = 0;
-        unsigned long nf = 0;
-        unsigned long ne = 0;
-        fscanf(fid, "%lu", &nv);
-        fscanf(fid, "%lu", &nf);
-        fscanf(fid, "%lu", &ne);
-        points.resize(nv * 3);
-        triangles.resize(nf * 3);
-        unsigned long np = nv * 3;
-        for (unsigned long p = 0; p < np; p++)
-        {
-          fscanf(fid, "%f", &(points[p]));
-        }
-        int s;
-        for (unsigned long t = 0, r = 0; t < nf; ++t)
-        {
-          fscanf(fid, "%i", &s);
-          if (s == 3)
-          {
-            fscanf(fid, "%i", &(triangles[r++]));
-            fscanf(fid, "%i", &(triangles[r++]));
-            fscanf(fid, "%i", &(triangles[r++]));
-          }
-          else  // Fix me: support only triangular meshes
-          {
-            for (int h = 0; h < s; ++h)
-              fscanf(fid, "%i", &s);
-          }
-        }
-        fclose(fid);
+        if (fscanf(fid, "%f", &(points[p])) != 1)
+          return false;
       }
+      int s;
+      for (unsigned long t = 0, r = 0; t < nf; ++t)
+      {
+        if (fscanf(fid, "%i", &s) != 1)
+          return false;
+
+        if (s == 3)
+        {
+          if (fscanf(fid, "%i", &(triangles[r++])) != 1)
+            return false;
+
+          if (fscanf(fid, "%i", &(triangles[r++])) != 1)
+            return false;
+
+          if (fscanf(fid, "%i", &(triangles[r++])) != 1)
+            return false;
+        }
+        else  // Fix me: support only triangular meshes
+        {
+          for (int h = 0; h < s; ++h)
+            if (fscanf(fid, "%i", &s) != 1)
+              return false;
+        }
+      }
+      fclose(fid);
     }
     else
     {
@@ -572,20 +604,20 @@ protected:
         {
           break;
         }
-        else if (buffer[0] == 'v')
+
+        if (buffer[0] == 'v')
         {
           if (buffer[1] == ' ')
           {
             str = buffer + 2;
-            for (int k = 0; k < 3; ++k)
+            for (float& k : x)
             {
               pch = strtok(str, " ");
               if (pch)
-                x[k] = static_cast<float>(atof(pch));
+                k = static_cast<float>(atof(pch));
               else
-              {
                 return false;
-              }
+
               str = nullptr;
             }
             points.push_back(x[0]);
@@ -663,11 +695,9 @@ protected:
       fout.close();
       return true;
     }
-    else
-    {
-      logger.Log("Can't open file\n");
-      return false;
-    }
+
+    logger.Log("Can't open file\n");
+    return false;
   }
 
   bool saveVRML2(ofstream& fout,
@@ -738,11 +768,9 @@ protected:
       fout << "}" << std::endl;
       return true;
     }
-    else
-    {
-      logger.Log("Can't open file\n");
-      return false;
-    }
+
+    logger.Log("Can't open file\n");
+    return false;
   }
 
   bool saveOBJ(ofstream& fout,
@@ -782,11 +810,9 @@ protected:
       }
       return true;
     }
-    else
-    {
-      logger.Log("Can't open file\n");
-      return false;
-    }
+
+    logger.Log("Can't open file\n");
+    return false;
   }
 
 protected:

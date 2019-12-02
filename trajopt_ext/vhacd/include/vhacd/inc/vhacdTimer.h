@@ -26,6 +26,9 @@
 #ifndef VHACD_TIMER_H
 #define VHACD_TIMER_H
 
+#include <trajopt_utils/macros.h>
+TRAJOPT_IGNORE_WARNINGS_PUSH
+
 #ifdef _WIN32
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN  // Exclude rarely-used stuff from Windows headers
@@ -108,4 +111,7 @@ private:
 };
 #endif
 }  // namespace VHACD
+
+TRAJOPT_IGNORE_WARNINGS_POP
+
 #endif  // VHACD_TIMER_H

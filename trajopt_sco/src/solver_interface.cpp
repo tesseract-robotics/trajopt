@@ -150,7 +150,7 @@ std::ostream& operator<<(std::ostream& o, const QuadExpr& e)
   return o;
 }
 
-std::ostream& operator<<(std::ostream& o, const ModelType& cs)
+std::ostream& operator<<(std::ostream& os, const ModelType& cs)
 {
   auto cs_ivalue_ = static_cast<size_t>(cs.value_);
   if (cs_ivalue_ > ModelType::MODEL_NAMES_.size())
@@ -160,8 +160,8 @@ std::ostream& operator<<(std::ostream& o, const ModelType& cs)
                      << "enum value is " << cs_ivalue_ << std::endl;
     throw std::runtime_error(conversion_error.str());
   }
-  o << ModelType::MODEL_NAMES_[cs_ivalue_];
-  return o;
+  os << ModelType::MODEL_NAMES_[cs_ivalue_];
+  return os;
 }
 
 ModelType::ModelType() { value_ = ModelType::AUTO_SOLVER; }

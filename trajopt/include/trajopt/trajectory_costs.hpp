@@ -82,7 +82,7 @@ public:
   /** @brief Forms error in QuadExpr - independent of penalty type */
   JointPosEqConstraint(VarArray vars,
                        Eigen::VectorXd coeffs,
-                       Eigen::VectorXd targetss,
+                       Eigen::VectorXd targets,
                        int& first_step,
                        int& last_step);
   /** @brief Convexifies cost expression - In this case, it is already quadratic so there's nothing to do */

@@ -26,6 +26,8 @@
 #ifndef _CRT_SECURE_NO_WARNINGS
 #define _CRT_SECURE_NO_WARNINGS
 #endif
+#include <trajopt_utils/macros.h>
+TRAJOPT_IGNORE_WARNINGS_PUSH
 
 #include <algorithm>
 #include <fstream>
@@ -37,7 +39,7 @@
 #endif  // _OPENMP
 
 #include "vhacd/VHACD.h"
-#include "vhacd/inc/btConvexHullComputer.h"
+
 #include "vhacd/inc/vhacdICHull.h"
 #include "vhacd/inc/vhacdMesh.h"
 #include "vhacd/inc/vhacdSArray.h"
@@ -46,12 +48,15 @@
 #include "vhacd/inc/vhacdVector.h"
 #include "vhacd/inc/vhacdVolume.h"
 #include "vhacd/inc/FloatMath.h"
+#include "vhacd/inc/btConvexHullComputer.h"
+
 
 #define MAX(a, b) (((a) > (b)) ? (a) : (b))
 #define MIN(a, b) (((a) < (b)) ? (a) : (b))
 #define ABS(a) (((a) < 0) ? -(a) : (a))
 #define ZSGN(a) (((a) < 0) ? -1 : (a) > 0 ? 1 : 0)
 #define MAX_DOUBLE (1.79769e+308)
+#define UNUSED(x) (void)(x)
 
 #ifdef _MSC_VER
 #pragma warning(disable : 4267 4100 4244 4456)
@@ -359,6 +364,8 @@ bool VHACD::OCLInit(void* const oclDevice, IUserLogger* const logger)
   }
   return true;
 #else   // CL_VERSION_1_1
+  UNUSED(oclDevice);
+  UNUSED(logger);
   return false;
 #endif  // CL_VERSION_1_1
 }
@@ -435,6 +442,7 @@ bool VHACD::OCLRelease(IUserLogger* const logger)
 
   return true;
 #else   // CL_VERSION_1_1
+  UNUSED(logger);
   return false;
 #endif  // CL_VERSION_1_1
 }
@@ -1072,6 +1080,8 @@ void VHACD::ComputeBestClippingPlane(const PrimitiveSet* inputPSet,
         }
       }
     }
+
+    UNUSED(volume);
   }
 
 #ifdef DEBUG_TEMP
@@ -1791,3 +1801,5 @@ bool VHACD::ComputeCenterOfMass(double centerOfMass[3]) const
 }
 
 }  // namespace VHACD
+
+TRAJOPT_IGNORE_WARNINGS_POP

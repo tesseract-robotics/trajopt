@@ -18,6 +18,9 @@ software.
 #ifndef BT_SCALAR_H
 #define BT_SCALAR_H
 
+#include <trajopt_utils/macros.h>
+TRAJOPT_IGNORE_WARNINGS_PUSH
+
 #ifdef BT_MANAGED_CODE
 // Aligned data types not supported in managed code
 #pragma unmanaged
@@ -506,4 +509,6 @@ struct btTypedObject
   int32_t m_objectType;
   inline int32_t getObjectType() const { return m_objectType; }
 };
+TRAJOPT_IGNORE_WARNINGS_POP
+
 #endif  // BT_SCALAR_H

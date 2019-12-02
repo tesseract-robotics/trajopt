@@ -27,8 +27,11 @@
 #define _CRT_SECURE_NO_WARNINGS
 #endif
 
-#include "vhacd/inc/btConvexHullComputer.h"
+#include <trajopt_utils/macros.h>
+TRAJOPT_IGNORE_WARNINGS_PUSH
+
 #include "vhacd/inc/vhacdVolume.h"
+#include "vhacd/inc/btConvexHullComputer.h"
 #include <algorithm>
 #include <float.h>
 #include <math.h>
@@ -402,7 +405,7 @@ VoxelSet::VoxelSet()
   memset(m_Q, 0, sizeof(double) * 9);
   memset(m_D, 0, sizeof(double) * 9);
 }
-VoxelSet::~VoxelSet(void) {}
+
 void VoxelSet::ComputeBB()
 {
   const size_t nVoxels = m_voxels.Size();
@@ -1499,21 +1502,21 @@ void TetrahedronSet::AddClippedTetrahedra(const Vec3<double> (&pts)[10], const i
   }
 }
 
-void TetrahedronSet::Intersect(const Plane& plane,
-                               SArray<Vec3<double> >* const positivePts,
-                               SArray<Vec3<double> >* const negativePts,
-                               const size_t sampling) const
+void TetrahedronSet::Intersect(const Plane& /*plane*/,
+                               SArray<Vec3<double> >* const /*positivePts*/,
+                               SArray<Vec3<double> >* const /*negativePts*/,
+                               const size_t /*sampling*/) const
 {
   const size_t nTetrahedra = m_tetrahedra.Size();
   if (nTetrahedra == 0)
     return;
 }
-void TetrahedronSet::ComputeExteriorPoints(const Plane& plane,
-                                           const Mesh& mesh,
-                                           SArray<Vec3<double> >* const exteriorPts) const
+void TetrahedronSet::ComputeExteriorPoints(const Plane& /*plane*/,
+                                           const Mesh& /*mesh*/,
+                                           SArray<Vec3<double> >* const /*exteriorPts*/) const
 {
 }
-void TetrahedronSet::ComputeClippedVolumes(const Plane& plane, double& positiveVolume, double& negativeVolume) const
+void TetrahedronSet::ComputeClippedVolumes(const Plane& /*plane*/, double& /*positiveVolume*/, double& /*negativeVolume*/) const
 {
   const size_t nTetrahedra = m_tetrahedra.Size();
   if (nTetrahedra == 0)
@@ -1689,7 +1692,7 @@ void TetrahedronSet::Convert(Mesh& mesh, const VOXEL_VALUE value) const
     }
   }
 }
-const double TetrahedronSet::ComputeVolume() const
+double TetrahedronSet::ComputeVolume() const
 {
   const size_t nTetrahedra = m_tetrahedra.Size();
   if (nTetrahedra == 0)
@@ -1703,7 +1706,7 @@ const double TetrahedronSet::ComputeVolume() const
   }
   return volume / 6.0;
 }
-const double TetrahedronSet::ComputeMaxVolumeError() const
+double TetrahedronSet::ComputeMaxVolumeError() const
 {
   const size_t nTetrahedra = m_tetrahedra.Size();
   if (nTetrahedra == 0)
@@ -1798,3 +1801,4 @@ void TetrahedronSet::AlignToPrincipalAxes()
   ComputeBB();
 }
 }  // namespace VHACD
+TRAJOPT_IGNORE_WARNINGS_POP

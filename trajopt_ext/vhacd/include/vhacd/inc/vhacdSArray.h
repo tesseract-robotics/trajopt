@@ -49,8 +49,8 @@ public:
     return data[i];
   }
   size_t Size() const { return m_size; }
-  T* const Data() { return (m_maxSize == N) ? m_data0 : m_data; }
-  const T* const Data() const { return (m_maxSize == N) ? m_data0 : m_data; }
+  T* Data() { return (m_maxSize == N) ? m_data0 : m_data; }
+  const T* Data() const { return (m_maxSize == N) ? m_data0 : m_data; }
   void Clear()
   {
     m_size = 0;

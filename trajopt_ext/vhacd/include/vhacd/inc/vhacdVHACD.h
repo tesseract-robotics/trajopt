@@ -26,6 +26,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef VHACD_VHACD_H
 #define VHACD_VHACD_H
 
+#include <trajopt_utils/macros.h>
+TRAJOPT_IGNORE_WARNINGS_PUSH
+
 #ifdef OPENCL_FOUND
 #ifdef __MACH__
 #include <OpenCL/cl.h>
@@ -67,9 +70,9 @@ public:
   }
   //! Destructor.
   ~VHACD(void) {}
-  uint32_t GetNConvexHulls() const { return (uint32_t)m_convexHulls.Size(); }
-  void Cancel() { SetCancel(true); }
-  void GetConvexHull(const uint32_t index, ConvexHull& ch) const
+  uint32_t GetNConvexHulls() const override { return (uint32_t)m_convexHulls.Size(); }
+  void Cancel() override { SetCancel(true); }
+  void GetConvexHull(const uint32_t index, ConvexHull& ch) const override
   {
     Mesh* mesh = m_convexHulls[index];
     ch.m_nPoints = (uint32_t)mesh->GetNPoints();
@@ -82,7 +85,7 @@ public:
     ch.m_center[1] = center.Y();
     ch.m_center[2] = center.Z();
   }
-  void Clean(void)
+  void Clean(void) override
   {
     if (mRaycastMesh)
     {
@@ -99,21 +102,21 @@ public:
     m_convexHulls.Clear();
     Init();
   }
-  void Release(void) { delete this; }
+  void Release(void) override { delete this; }
   bool Compute(const float* const points,
                const uint32_t nPoints,
                const uint32_t* const triangles,
                const uint32_t nTriangles,
-               const Parameters& params);
+               const Parameters& params) override;
   bool Compute(const double* const points,
                const uint32_t nPoints,
                const uint32_t* const triangles,
                const uint32_t nTriangles,
-               const Parameters& params);
-  bool OCLInit(void* const oclDevice, IUserLogger* const logger = 0);
-  bool OCLRelease(IUserLogger* const logger = 0);
+               const Parameters& params) override;
+  bool OCLInit(void* const oclDevice, IUserLogger* const logger = 0) override;
+  bool OCLRelease(IUserLogger* const logger = 0) override;
 
-  virtual bool ComputeCenterOfMass(double centerOfMass[3]) const;
+  virtual bool ComputeCenterOfMass(double centerOfMass[3]) const override;
 
 private:
   void SetCancel(bool cancel)
@@ -378,4 +381,7 @@ private:
 #endif  // CL_VERSION_1_1
 };
 }  // namespace VHACD
+TRAJOPT_IGNORE_WARNINGS_POP
+
 #endif  // VHACD_VHACD_H
+

@@ -16,6 +16,9 @@ software.
 3. This notice may not be removed or altered from any source distribution.
 */
 
+#include <trajopt_utils/macros.h>
+TRAJOPT_IGNORE_WARNINGS_PUSH
+
 #include "vhacd/inc/btAlignedAllocator.h"
 
 #ifdef _MSC_VER
@@ -164,5 +167,6 @@ void btAlignedFreeInternal(void* ptr)
   //	printf("btAlignedFreeInternal %x\n",ptr);
   sAlignedFreeFunc(ptr);
 }
+TRAJOPT_IGNORE_WARNINGS_POP
 
 #endif  // BT_DEBUG_MEMORY_ALLOCATIONS

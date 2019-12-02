@@ -15,6 +15,8 @@ software.
 3. This notice may not be removed or altered from any source distribution.
 */
 
+#include <trajopt_utils/macros.h>
+TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <string.h>
 
 #include "vhacd/inc/btAlignedObjectArray.h"
@@ -1052,6 +1054,7 @@ bool btConvexHullInternal::mergeProjection(IntermediateHull& h0, IntermediateHul
 void btConvexHullInternal::computeInternal(int32_t start, int32_t end, IntermediateHull& result)
 {
   int32_t n = end - start;
+  TRAJOPT_IGNORE_WARNINGS_PUSH
   switch (n)
   {
     case 0:
@@ -1142,6 +1145,7 @@ void btConvexHullInternal::computeInternal(int32_t start, int32_t end, Intermedi
       return;
     }
   }
+  TRAJOPT_IGNORE_WARNINGS_POP
 
   int32_t split0 = start + n / 2;
   Point32 p = originalVertices[split0 - 1]->point;
@@ -2626,3 +2630,4 @@ btScalar btConvexHullComputer::compute(const void* coords,
 
   return shift;
 }
+TRAJOPT_IGNORE_WARNINGS_POP

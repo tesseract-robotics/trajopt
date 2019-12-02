@@ -86,7 +86,7 @@ void DynamicCartPoseErrCalculator::Plot(const tesseract_visualization::Visualiza
 
 MatrixXd DynamicCartPoseJacCalculator::operator()(const VectorXd& dof_vals) const
 {
-  int n_dof = static_cast<int>(manip_->numJoints());
+  auto n_dof = static_cast<int>(manip_->numJoints());
   MatrixXd jac_link(6, n_dof), jac_target(6, n_dof), jac0(6, n_dof);
 
   Isometry3d cur_pose, target_pose;
@@ -177,7 +177,7 @@ void CartPoseErrCalculator::Plot(const tesseract_visualization::Visualization::P
 
 MatrixXd CartPoseJacCalculator::operator()(const VectorXd& dof_vals) const
 {
-  int n_dof = static_cast<int>(manip_->numJoints());
+  auto n_dof = static_cast<int>(manip_->numJoints());
   MatrixXd jac0(6, n_dof);
   Eigen::Isometry3d tf0;
 
@@ -221,7 +221,7 @@ MatrixXd CartPoseJacCalculator::operator()(const VectorXd& dof_vals) const
 
 MatrixXd CartVelJacCalculator::operator()(const VectorXd& dof_vals) const
 {
-  int n_dof = static_cast<int>(manip_->numJoints());
+  auto n_dof = static_cast<int>(manip_->numJoints());
   MatrixXd out(6, 2 * n_dof);
 
   MatrixXd jac0, jac1;
@@ -268,7 +268,7 @@ MatrixXd CartVelJacCalculator::operator()(const VectorXd& dof_vals) const
 
 VectorXd CartVelErrCalculator::operator()(const VectorXd& dof_vals) const
 {
-  int n_dof = static_cast<int>(manip_->numJoints());
+  auto n_dof = static_cast<int>(manip_->numJoints());
   Isometry3d pose0, pose1;
 
   manip_->calcFwdKin(pose0, dof_vals.topRows(n_dof), kin_link_->link_name);
@@ -287,7 +287,7 @@ Eigen::VectorXd JointVelErrCalculator::operator()(const VectorXd& var_vals) cons
 {
   assert(var_vals.rows() % 2 == 0);
   // Top half of the vector are the joint values. The bottom half are the 1/dt values
-  int half = static_cast<int>(var_vals.rows() / 2);
+  auto half = static_cast<int>(var_vals.rows() / 2);
   int num_vels = half - 1;
   // (x1-x0)*(1/dt)
   VectorXd vel = (var_vals.segment(1, num_vels) - var_vals.segment(0, num_vels)).array() *
@@ -303,7 +303,7 @@ Eigen::VectorXd JointVelErrCalculator::operator()(const VectorXd& var_vals) cons
 MatrixXd JointVelJacCalculator::operator()(const VectorXd& var_vals) const
 {
   // var_vals = (theta_t1, theta_t2, theta_t3 ... 1/dt_1, 1/dt_2, 1/dt_3 ...)
-  int num_vals = static_cast<int>(var_vals.rows());
+  auto num_vals = static_cast<int>(var_vals.rows());
   int half = num_vals / 2;
   int num_vels = half - 1;
   MatrixXd jac = MatrixXd::Zero(num_vels * 2, num_vals);
@@ -332,7 +332,7 @@ MatrixXd JointVelJacCalculator::operator()(const VectorXd& var_vals) const
 VectorXd JointAccErrCalculator::operator()(const VectorXd& var_vals) const
 {
   assert(var_vals.rows() % 2 == 0);
-  int half = static_cast<int>(var_vals.rows() / 2);
+  auto half = static_cast<int>(var_vals.rows() / 2);
   int num_acc = half - 2;
   VectorXd vels = vel_calc(var_vals);
 
@@ -348,7 +348,7 @@ VectorXd JointAccErrCalculator::operator()(const VectorXd& var_vals) const
 
 MatrixXd JointAccJacCalculator::operator()(const VectorXd& var_vals) const
 {
-  int num_vals = static_cast<int>(var_vals.rows());
+  auto num_vals = static_cast<int>(var_vals.rows());
   int half = num_vals / 2;
   MatrixXd jac = MatrixXd::Zero(half - 2, num_vals);
 
@@ -379,7 +379,7 @@ MatrixXd JointAccJacCalculator::operator()(const VectorXd& var_vals) const
 VectorXd JointJerkErrCalculator::operator()(const VectorXd& var_vals) const
 {
   assert(var_vals.rows() % 2 == 0);
-  int half = static_cast<int>(var_vals.rows() / 2);
+  auto half = static_cast<int>(var_vals.rows() / 2);
   int num_jerk = half - 3;
   VectorXd acc = acc_calc(var_vals);
 
@@ -395,7 +395,7 @@ VectorXd JointJerkErrCalculator::operator()(const VectorXd& var_vals) const
 
 MatrixXd JointJerkJacCalculator::operator()(const VectorXd& var_vals) const
 {
-  int num_vals = static_cast<int>(var_vals.rows());
+  auto num_vals = static_cast<int>(var_vals.rows());
   int half = num_vals / 2;
   MatrixXd jac = MatrixXd::Zero(half - 3, num_vals);
 

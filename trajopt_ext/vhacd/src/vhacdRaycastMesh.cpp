@@ -92,13 +92,13 @@ public:
     delete[] mIndices;
   }
 
-  virtual void release(void) { delete this; }
+  virtual void release(void) override { delete this; }
   virtual bool raycast(const double* from,            // The starting point of the raycast
                        const double* to,              // The ending point of the raycast
                        const double* closestToPoint,  // The point to match the nearest hit location (can just be the
                                                       // 'from' location of no specific point)
                        double* hitLocation,  // The point where the ray hit nearest to the 'closestToPoint' location
-                       double* hitDistance) final  // The distance the ray traveled to the hit location
+                       double* hitDistance)  override final  // The distance the ray traveled to the hit location
   {
     bool ret = false;
 

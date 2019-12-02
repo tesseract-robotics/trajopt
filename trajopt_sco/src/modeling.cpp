@@ -158,22 +158,22 @@ DblVec Constraint::violations(const DblVec& x)
 
 double Constraint::violation(const DblVec& x) { return vecSum(violations(x)); }
 OptProb::OptProb(ModelType convex_solver) : model_(createModel(convex_solver)) {}
-VarVector OptProb::createVariables(const std::vector<std::string>& var_names)
+VarVector OptProb::createVariables(const std::vector<std::string>& names)
 {
-  return createVariables(var_names, DblVec(var_names.size(), -INFINITY), DblVec(var_names.size(), INFINITY));
+  return createVariables(names, DblVec(names.size(), -INFINITY), DblVec(names.size(), INFINITY));
 }
 
-VarVector OptProb::createVariables(const std::vector<std::string>& var_names, const DblVec& lb, const DblVec& ub)
+VarVector OptProb::createVariables(const std::vector<std::string>& names, const DblVec& lb, const DblVec& ub)
 {
-  size_t n_add = var_names.size(), n_cur = vars_.size();
+  size_t n_add = names.size(), n_cur = vars_.size();
   assert(lb.size() == n_add);
   assert(ub.size() == n_add);
   vars_.reserve(n_cur + n_add);
   lower_bounds_.reserve(n_cur + n_add);
   upper_bounds_.reserve(n_cur + n_add);
-  for (size_t i = 0; i < var_names.size(); ++i)
+  for (size_t i = 0; i < names.size(); ++i)
   {
-    vars_.push_back(model_->addVar(var_names[i], lb[i], ub[i]));
+    vars_.push_back(model_->addVar(names[i], lb[i], ub[i]));
     lower_bounds_.push_back(lb[i]);
     upper_bounds_.push_back(ub[i]);
   }
