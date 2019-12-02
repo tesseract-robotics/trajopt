@@ -9,9 +9,13 @@
               _Pragma("GCC diagnostic ignored \"-Wsuggest-override\"")                                                 \
                   _Pragma("GCC diagnostic ignored \"-Wconversion\"")                                                   \
                       _Pragma("GCC diagnostic ignored \"-Wfloat-conversion\"")                                         \
-                          _Pragma("GCC diagnostic ignored \"-Wsign-conversion\"")
+                          _Pragma("GCC diagnostic ignored \"-Wsign-conversion\"")                                      \
+                              _Pragma("GCC diagnostic ignored \"-Wstrict-aliasing\"")                                  \
+                                  _Pragma("GCC diagnostic ignored \"-Wimplicit-fallthrough\"")
 
 #define TRAJOPT_IGNORE_WARNINGS_POP _Pragma("GCC diagnostic pop")
+
+#define UNUSED(x) (void)(x)
 
 // Generic helper definitions for shared library support
 #if defined _WIN32 || defined __CYGWIN__

@@ -50,7 +50,10 @@
 // the last approximation operation is complete and will dispatch any pending messages.
 // If you call 'Compute' while a previous operation was still running, it will automatically cancel the last request
 // and begin a new one.  To cancel a currently running approximation just call 'Cancel'.
+#include <trajopt_utils/macros.h>
+TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <stdint.h>
+TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace VHACD
 {

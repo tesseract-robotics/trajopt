@@ -3,7 +3,7 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <boost/program_options.hpp>
 #include <console_bridge/console.h>
 #include <ConvexDecomposition/cd_wavefront.h>
-#include <stdio.h>
+#include <cstdio>
 
 #include <BulletCollision/CollisionShapes/btConvexHullShape.h>
 #include <BulletCollision/CollisionShapes/btShapeHull.h>
@@ -25,9 +25,9 @@ public:
   FILE* output_file_;
 
   MyConvexDecomposition(FILE* output_file) : base_count_(0), hull_count_(0), output_file_(output_file) {}
-  void ConvexDecompResult(size_t nVertices, float* vertices, size_t nTriangles, unsigned int* triangles)
+  void ConvexDecompResult(size_t nVertices, float* vertices, size_t nTriangles, const unsigned int* triangles)
   {
-    btTriangleMesh* trimesh = new btTriangleMesh();
+    auto* trimesh = new btTriangleMesh();
     trimeshes_.push_back(trimesh);
 
     btVector3 localScaling(6.f, 6.f, 6.f);
@@ -218,11 +218,11 @@ int main(int argc, char** argv)
     size_t nPoints = myHACD.GetNPointsCH(c);
     size_t nTriangles = myHACD.GetNTrianglesCH(c);
 
-    float* vertices = new float[nPoints * 3];
-    unsigned int* triangles = new unsigned int[nTriangles * 3];
+    auto* vertices = new float[nPoints * 3];
+    auto* triangles = new unsigned int[nTriangles * 3];
 
-    HACD::Vec3<HACD::Real>* pointsCH = new HACD::Vec3<HACD::Real>[nPoints];
-    HACD::Vec3<long>* trianglesCH = new HACD::Vec3<long>[nTriangles];
+    auto* pointsCH = new HACD::Vec3<HACD::Real>[nPoints];
+    auto* trianglesCH = new HACD::Vec3<long>[nTriangles];
     myHACD.GetCH(c, pointsCH, trianglesCH);
 
     // points

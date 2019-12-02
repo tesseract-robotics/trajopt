@@ -27,11 +27,11 @@ public:
     mVHACD->Release();
   }
 
-  virtual bool Compute(const double* const _points,
-                       const uint32_t countPoints,
-                       const uint32_t* const _triangles,
-                       const uint32_t countTriangles,
-                       const Parameters& _desc) final
+  bool Compute(const double* const _points,
+               const uint32_t countPoints,
+               const uint32_t* const _triangles,
+               const uint32_t countTriangles,
+               const Parameters& _desc) override final
   {
 #if ENABLE_ASYNC
     Cancel();  // if we previously had a solution running; cancel it.
@@ -116,7 +116,7 @@ public:
     h.m_points = nullptr;
   }
 
-  virtual void GetConvexHull(const uint32_t index, VHACD::IVHACD::ConvexHull& ch) const final
+  void GetConvexHull(const uint32_t index, VHACD::IVHACD::ConvexHull& ch) const override final
   {
     if (index < mHullCount)
     {
@@ -145,7 +145,7 @@ public:
   }
 
   virtual uint32_t getHullCount(void) { return mHullCount; }
-  virtual void Cancel() final
+  virtual void Cancel() override final
   {
     if (mRunning)
     {
@@ -161,11 +161,11 @@ public:
     mCancel = false;  // clear the cancel semaphore
   }
 
-  virtual bool Compute(const float* const points,
-                       const uint32_t countPoints,
-                       const uint32_t* const triangles,
-                       const uint32_t countTriangles,
-                       const Parameters& params) final
+  bool Compute(const float* const points,
+               const uint32_t countPoints,
+               const uint32_t* const triangles,
+               const uint32_t countTriangles,
+               const Parameters& params) override final
   {
     double* vertices = (double*)HACD_ALLOC(sizeof(double) * countPoints * 3);
     const float* source = points;
@@ -184,35 +184,35 @@ public:
     return ret;
   }
 
-  virtual uint32_t GetNConvexHulls() const final
+  uint32_t GetNConvexHulls() const override final
   {
     processPendingMessages();
     return mHullCount;
   }
 
-  virtual void Clean(void) final  // release internally allocated memory
+  void Clean(void) override final  // release internally allocated memory
   {
     Cancel();
     releaseHACD();
     mVHACD->Clean();
   }
 
-  virtual void Release(void) final  // release IVHACD
+  void Release(void) override final  // release IVHACD
   {
     delete this;
   }
 
-  virtual bool OCLInit(void* const oclDevice, IVHACD::IUserLogger* const logger = 0) final
+  bool OCLInit(void* const oclDevice, IVHACD::IUserLogger* const logger = nullptr) override final
   {
     return mVHACD->OCLInit(oclDevice, logger);
   }
 
-  virtual bool OCLRelease(IVHACD::IUserLogger* const logger = 0) final { return mVHACD->OCLRelease(logger); }
-  virtual void Update(const double overallProgress,
-                      const double stageProgress,
-                      const double operationProgress,
-                      const char* const stage,
-                      const char* const operation) final
+  bool OCLRelease(IVHACD::IUserLogger* const logger = nullptr) override final { return mVHACD->OCLRelease(logger); }
+  void Update(const double overallProgress,
+              const double stageProgress,
+              const double operationProgress,
+              const char* const stage,
+              const char* const operation) override final
   {
     mMessageMutex.lock();
     mHaveUpdateMessage = true;
@@ -224,7 +224,7 @@ public:
     mMessageMutex.unlock();
   }
 
-  virtual void Log(const char* const msg) final
+  void Log(const char* const msg) override final
   {
     mMessageMutex.lock();
     mHaveLogMessage = true;
@@ -232,7 +232,7 @@ public:
     mMessageMutex.unlock();
   }
 
-  virtual bool IsReady(void) const final
+  bool IsReady(void) const override final
   {
     processPendingMessages();
     return !mRunning;
@@ -263,7 +263,7 @@ public:
 
   // Will compute the center of mass of the convex hull decomposition results and return it
   // in 'centerOfMass'.  Returns false if the center of mass could not be computed.
-  virtual bool ComputeCenterOfMass(double centerOfMass[3]) const
+  bool ComputeCenterOfMass(double centerOfMass[3]) const override
   {
     bool ret = false;
 

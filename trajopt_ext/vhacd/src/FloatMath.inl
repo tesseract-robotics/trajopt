@@ -6,10 +6,11 @@
 // a matrix is a 'float *' to an array of 16 floating point numbers representing a 4x4 transformation matrix compatible with D3D or OGL
 // a quaternion is a 'float *' to 4 floats representing a quaternion x,y,z,w
 //
+#include <trajopt_utils/macros.h>
 
 namespace FLOAT_MATH
 {
-
+TRAJOPT_IGNORE_WARNINGS_PUSH
 void fm_inverseRT(const REAL matrix[16],const REAL pos[3],REAL t[3]) // inverse rotate translate the point.
 {
 
@@ -2757,14 +2758,14 @@ public:
 	reset();
   }
 
-  const double * getPositionDouble(uint32_t index) const
+  const double * getPositionDouble(uint32_t index) const override
   {
 	assert( mUseDouble );
 	assert ( index < mVcount );
 	return  &mVerticesDouble[index*3];
   }
 
-  const float * getPositionFloat(uint32_t index) const
+  const float * getPositionFloat(uint32_t index) const override
   {
 	assert( !mUseDouble );
 	assert ( index < mVcount );
@@ -2977,7 +2978,7 @@ public:
 	return p;
   }
 
-  uint32_t    getIndex(const float *_p,bool &newPos)  // get index for a vector float
+  uint32_t getIndex(const float *_p,bool &newPos) override // get index for a vector float
   {
 	uint32_t ret;
 
@@ -3019,7 +3020,7 @@ public:
 	return ret;
   }
 
-  uint32_t    getIndex(const double *_p,bool &newPos)  // get index for a vector double
+  uint32_t getIndex(const double *_p,bool &newPos) override  // get index for a vector double
   {
 	uint32_t ret;
 
@@ -3061,7 +3062,7 @@ public:
 	return ret;
   }
 
-  const float *   getVerticesFloat(void) const
+  const float *   getVerticesFloat(void) const override
   {
 	const float * ret = 0;
 
@@ -3072,7 +3073,7 @@ public:
 	return ret;
   }
 
-  const double *  getVerticesDouble(void) const
+  const double *  getVerticesDouble(void) const override
   {
 	const double * ret = 0;
 
@@ -3083,7 +3084,7 @@ public:
 	return ret;
   }
 
-  const float *   getVertexFloat(uint32_t index) const
+  const float *   getVertexFloat(uint32_t index) const override
   {
 	const float * ret  = 0;
 	assert( !mUseDouble );
@@ -3096,7 +3097,7 @@ public:
 	return ret;
   }
 
-  const double *   getVertexDouble(uint32_t index) const
+  const double *   getVertexDouble(uint32_t index) const override
   {
 	const double * ret = 0;
 	assert( mUseDouble );
@@ -3110,18 +3111,18 @@ public:
 	return ret;
   }
 
-  uint32_t    getVcount(void) const
+  uint32_t getVcount(void) const override
   {
 	return mKdTree.getVcount();
   }
 
-  bool isDouble(void) const
+  bool isDouble(void) const override
   {
 	return mUseDouble;
   }
 
 
-  bool            saveAsObj(const char *fname,uint32_t tcount,uint32_t *indices)
+  bool saveAsObj(const char *fname,uint32_t tcount,uint32_t *indices) override
   {
 	bool ret = false;
 
@@ -3681,8 +3682,6 @@ bool fm_computeSplitPlane(uint32_t vcount,
 
 }
 
-#pragma warning(disable:4100)
-
 void fm_nearestPointInTriangle(const REAL * /*nearestPoint*/,const REAL * /*p1*/,const REAL * /*p2*/,const REAL * /*p3*/,REAL * /*nearest*/)
 {
 
@@ -3907,7 +3906,7 @@ public:
 
   }
 
-  const uint32_t * tesselate(fm_VertexIndex *vindex,uint32_t tcount,const uint32_t *indices,float longEdge,uint32_t maxDepth,uint32_t &outcount)
+  const uint32_t * tesselate(fm_VertexIndex *vindex,uint32_t tcount,const uint32_t *indices,float longEdge,uint32_t maxDepth,uint32_t &outcount) override
   {
 	const uint32_t *ret = 0;
 
@@ -3996,7 +3995,7 @@ public:
 		else
 			edge = 2;
 
-			float splits[3];
+    float splits[3];
 
 		switch ( edge )
 		{
@@ -4067,7 +4066,7 @@ public:
 		else
 			edge = 2;
 
-			double splits[3];
+    double splits[3];
 
 		switch ( edge )
 		{
@@ -4250,8 +4249,6 @@ bool fm_intersectLineSegmentAABB(const float bmin[3],const float bmax[3],const f
 #ifndef OBB_TO_AABB
 
 #define OBB_TO_AABB
-
-#pragma warning(disable:4100)
 
 void    fm_OBBtoAABB(const float /*obmin*/[3],const float /*obmax*/[3],const float /*matrix*/[16],float /*abmin*/[3],float /*abmax*/[3])
 {
@@ -4921,7 +4918,7 @@ public:
 											 uint32_t vstride,
 											 uint32_t &tcount,
 											 bool consolidate,
-											 double epsilon)
+                       double epsilon) override
   {
 	reset();
 
@@ -4993,7 +4990,7 @@ public:
 											 uint32_t vstride,
 											 uint32_t &tcount,
 											 bool consolidate,
-											 float epsilon)
+                       float epsilon) override
   {
 	reset();
 
@@ -5271,6 +5268,6 @@ REAL  fm_normalizeQuat(REAL n[4]) // normalize this quat
 
 	return dist;
 }
-
+TRAJOPT_IGNORE_WARNINGS_POP
 
 }; // end of namespace

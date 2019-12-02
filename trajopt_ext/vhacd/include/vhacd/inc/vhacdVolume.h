@@ -25,6 +25,10 @@
 #pragma once
 #ifndef VHACD_VOLUME_H
 #define VHACD_VOLUME_H
+
+#include <trajopt_utils/macros.h>
+TRAJOPT_IGNORE_WARNINGS_PUSH
+
 #include "vhacdMesh.h"
 #include "vhacdVector.h"
 #include <assert.h>
@@ -56,12 +60,12 @@ class PrimitiveSet
 public:
   virtual ~PrimitiveSet(){};
   virtual PrimitiveSet* Create() const = 0;
-  virtual const size_t GetNPrimitives() const = 0;
-  virtual const size_t GetNPrimitivesOnSurf() const = 0;
-  virtual const size_t GetNPrimitivesInsideSurf() const = 0;
-  virtual const double GetEigenValue(AXIS axis) const = 0;
-  virtual const double ComputeMaxVolumeError() const = 0;
-  virtual const double ComputeVolume() const = 0;
+  virtual size_t GetNPrimitives() const = 0;
+  virtual size_t GetNPrimitivesOnSurf() const = 0;
+  virtual size_t GetNPrimitivesInsideSurf() const = 0;
+  virtual double GetEigenValue(AXIS axis) const = 0;
+  virtual double ComputeMaxVolumeError() const = 0;
+  virtual double ComputeVolume() const = 0;
   virtual void Clip(const Plane& plane, PrimitiveSet* const positivePart, PrimitiveSet* const negativePart) const = 0;
   virtual void Intersect(const Plane& plane,
                          SArray<Vec3<double> >* const positivePts,
@@ -92,16 +96,16 @@ class VoxelSet : public PrimitiveSet
 
 public:
   //! Destructor.
-  ~VoxelSet(void);
+  ~VoxelSet() = default;
   //! Constructor.
   VoxelSet();
 
-  const size_t GetNPrimitives() const { return m_voxels.Size(); }
-  const size_t GetNPrimitivesOnSurf() const { return m_numVoxelsOnSurface; }
-  const size_t GetNPrimitivesInsideSurf() const { return m_numVoxelsInsideSurface; }
-  const double GetEigenValue(AXIS axis) const { return m_D[axis][axis]; }
-  const double ComputeVolume() const { return m_unitVolume * m_voxels.Size(); }
-  const double ComputeMaxVolumeError() const { return m_unitVolume * m_numVoxelsOnSurface; }
+  size_t GetNPrimitives() const override { return m_voxels.Size(); }
+  size_t GetNPrimitivesOnSurf() const override { return m_numVoxelsOnSurface; }
+  size_t GetNPrimitivesInsideSurf() const override { return m_numVoxelsInsideSurface; }
+  double GetEigenValue(AXIS axis) const override { return m_D[axis][axis]; }
+  double ComputeVolume() const override { return m_unitVolume * static_cast<double>(m_voxels.Size()); }
+  double ComputeMaxVolumeError() const override { return m_unitVolume * static_cast<double>(m_numVoxelsOnSurface); }
   const Vec3<short>& GetMinBBVoxels() const { return m_minBBVoxels; }
   const Vec3<short>& GetMaxBBVoxels() const { return m_maxBBVoxels; }
   const Vec3<double>& GetMinBB() const { return m_minBB; }
@@ -124,23 +128,23 @@ public:
         voxel[0] * m_scale + m_minBB[0], voxel[1] * m_scale + m_minBB[1], voxel[2] * m_scale + m_minBB[2]);
   }
   void GetPoints(const Voxel& voxel, Vec3<double>* const pts) const;
-  void ComputeConvexHull(Mesh& meshCH, const size_t sampling = 1) const;
-  void Clip(const Plane& plane, PrimitiveSet* const positivePart, PrimitiveSet* const negativePart) const;
+  void ComputeConvexHull(Mesh& meshCH, const size_t sampling = 1) const override ;
+  void Clip(const Plane& plane, PrimitiveSet* const positivePart, PrimitiveSet* const negativePart) const override;
   void Intersect(const Plane& plane,
                  SArray<Vec3<double> >* const positivePts,
                  SArray<Vec3<double> >* const negativePts,
-                 const size_t sampling) const;
-  void ComputeExteriorPoints(const Plane& plane, const Mesh& mesh, SArray<Vec3<double> >* const exteriorPts) const;
-  void ComputeClippedVolumes(const Plane& plane, double& positiveVolume, double& negativeVolume) const;
-  void SelectOnSurface(PrimitiveSet* const onSurfP) const;
-  void ComputeBB();
-  void Convert(Mesh& mesh, const VOXEL_VALUE value) const;
-  void ComputePrincipalAxes();
-  PrimitiveSet* Create() const { return new VoxelSet(); }
-  void AlignToPrincipalAxes(){};
-  void RevertAlignToPrincipalAxes(){};
-  Voxel* const GetVoxels() { return m_voxels.Data(); }
-  const Voxel* const GetVoxels() const { return m_voxels.Data(); }
+                 const size_t sampling) const override;
+  void ComputeExteriorPoints(const Plane& plane, const Mesh& mesh, SArray<Vec3<double> >* const exteriorPts) const override;
+  void ComputeClippedVolumes(const Plane& plane, double& positiveVolume, double& negativeVolume) const override;
+  void SelectOnSurface(PrimitiveSet* const onSurfP) const override;
+  void ComputeBB() override;
+  void Convert(Mesh& mesh, const VOXEL_VALUE value) const override;
+  void ComputePrincipalAxes() override;
+  PrimitiveSet* Create() const override { return new VoxelSet(); }
+  void AlignToPrincipalAxes() override {}
+  void RevertAlignToPrincipalAxes() override {}
+  Voxel* GetVoxels() { return m_voxels.Data(); }
+  const Voxel* GetVoxels() const { return m_voxels.Data(); }
 
 private:
   size_t m_numVoxelsOnSurface;
@@ -177,32 +181,32 @@ public:
   //! Constructor.
   TetrahedronSet();
 
-  const size_t GetNPrimitives() const { return m_tetrahedra.Size(); }
-  const size_t GetNPrimitivesOnSurf() const { return m_numTetrahedraOnSurface; }
-  const size_t GetNPrimitivesInsideSurf() const { return m_numTetrahedraInsideSurface; }
+  size_t GetNPrimitives() const override { return m_tetrahedra.Size(); }
+  size_t GetNPrimitivesOnSurf() const override { return m_numTetrahedraOnSurface; }
+  size_t GetNPrimitivesInsideSurf() const override { return m_numTetrahedraInsideSurface; }
   const Vec3<double>& GetMinBB() const { return m_minBB; }
   const Vec3<double>& GetMaxBB() const { return m_maxBB; }
   const Vec3<double>& GetBarycenter() const { return m_barycenter; }
-  const double GetEigenValue(AXIS axis) const { return m_D[axis][axis]; }
-  const double GetSacle() const { return m_scale; }
-  const double ComputeVolume() const;
-  const double ComputeMaxVolumeError() const;
-  void ComputeConvexHull(Mesh& meshCH, const size_t sampling = 1) const;
-  void ComputePrincipalAxes();
-  void AlignToPrincipalAxes();
-  void RevertAlignToPrincipalAxes();
-  void Clip(const Plane& plane, PrimitiveSet* const positivePart, PrimitiveSet* const negativePart) const;
+  double GetEigenValue(AXIS axis) const override { return m_D[axis][axis]; }
+  double GetSacle() const { return m_scale; }
+  double ComputeVolume() const override;
+  double ComputeMaxVolumeError() const override;
+  void ComputeConvexHull(Mesh& meshCH, const size_t sampling = 1) const override;
+  void ComputePrincipalAxes() override;
+  void AlignToPrincipalAxes() override;
+  void RevertAlignToPrincipalAxes() override;
+  void Clip(const Plane& plane, PrimitiveSet* const positivePart, PrimitiveSet* const negativePart) const override;
   void Intersect(const Plane& plane,
                  SArray<Vec3<double> >* const positivePts,
                  SArray<Vec3<double> >* const negativePts,
-                 const size_t sampling) const;
-  void ComputeExteriorPoints(const Plane& plane, const Mesh& mesh, SArray<Vec3<double> >* const exteriorPts) const;
-  void ComputeClippedVolumes(const Plane& plane, double& positiveVolume, double& negativeVolume) const;
-  void SelectOnSurface(PrimitiveSet* const onSurfP) const;
-  void ComputeBB();
-  void Convert(Mesh& mesh, const VOXEL_VALUE value) const;
+                 const size_t sampling) const override;
+  void ComputeExteriorPoints(const Plane& plane, const Mesh& mesh, SArray<Vec3<double> >* const exteriorPts) const override;
+  void ComputeClippedVolumes(const Plane& plane, double& positiveVolume, double& negativeVolume) const override;
+  void SelectOnSurface(PrimitiveSet* const onSurfP) const override;
+  void ComputeBB() override;
+  void Convert(Mesh& mesh, const VOXEL_VALUE value) const override;
   inline bool Add(Tetrahedron& tetrahedron);
-  PrimitiveSet* Create() const { return new TetrahedronSet(); }
+  PrimitiveSet* Create() const override { return new TetrahedronSet(); }
   static const double EPS;
 
 private:
@@ -254,8 +258,8 @@ public:
     assert(k < m_dim[0] || k >= 0);
     return m_data[i + j * m_dim[0] + k * m_dim[0] * m_dim[1]];
   }
-  const size_t GetNPrimitivesOnSurf() const { return m_numVoxelsOnSurface; }
-  const size_t GetNPrimitivesInsideSurf() const { return m_numVoxelsInsideSurface; }
+  size_t GetNPrimitivesOnSurf() const { return m_numVoxelsOnSurface; }
+  size_t GetNPrimitivesInsideSurf() const { return m_numVoxelsInsideSurface; }
   void Convert(Mesh& mesh, const VOXEL_VALUE value) const;
   void Convert(VoxelSet& vset) const;
   void Convert(TetrahedronSet& tset) const;
@@ -486,5 +490,7 @@ void Volume::Voxelize(const T* const points,
 #ifdef _MSC_VER
 #pragma warning(pop)
 #endif
+
+TRAJOPT_IGNORE_WARNINGS_POP
 
 #endif  // VHACD_VOLUME_H

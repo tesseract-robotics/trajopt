@@ -24,9 +24,9 @@ TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace trajopt
 {
-void WriteFile(std::shared_ptr<std::ofstream> file,
+void WriteFile(const std::shared_ptr<std::ofstream>& file,
                const Eigen::Isometry3d& change_base,
-               const tesseract_kinematics::ForwardKinematics::ConstPtr manip,
+               const tesseract_kinematics::ForwardKinematics::ConstPtr& manip,
                const trajopt::VarArray& vars,
                const sco::OptResults& results)
 {
@@ -105,9 +105,9 @@ sco::Optimizer::Callback WriteCallback(std::shared_ptr<std::ofstream> file, cons
 
   // Write cartesian pose labels
   std::vector<std::string> pose_str = std::vector<std::string>{ "x", "y", "z", "q_w", "q_x", "q_y", "q_z" };
-  for (size_t i = 0; i < pose_str.size(); i++)
+  for (const auto& i : pose_str)
   {
-    *file << ',' << pose_str.at(i);
+    *file << ',' << i;
   }
 
   // Write cost names

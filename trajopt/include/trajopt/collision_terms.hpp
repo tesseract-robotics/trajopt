@@ -59,9 +59,9 @@ public:
   SingleTimestepCollisionEvaluator(tesseract_kinematics::ForwardKinematics::ConstPtr manip,
                                    tesseract_environment::Environment::ConstPtr env,
                                    tesseract_environment::AdjacencyMap::ConstPtr adjacency_map,
-                                   Eigen::Isometry3d world_to_base,
+                                   const Eigen::Isometry3d &world_to_base,
                                    SafetyMarginData::ConstPtr safety_margin_data,
-                                   const sco::VarVector& vars);
+                                   sco::VarVector vars);
   /**
   @brief linearize all contact distances in terms of robot dofs
   ;
@@ -89,10 +89,10 @@ public:
   CastCollisionEvaluator(tesseract_kinematics::ForwardKinematics::ConstPtr manip,
                          tesseract_environment::Environment::ConstPtr env,
                          tesseract_environment::AdjacencyMap::ConstPtr adjacency_map,
-                         Eigen::Isometry3d world_to_base,
+                         const Eigen::Isometry3d &world_to_base,
                          SafetyMarginData::ConstPtr safety_margin_data,
-                         const sco::VarVector& vars0,
-                         const sco::VarVector& vars1);
+                         sco::VarVector vars0,
+                         sco::VarVector vars1);
   void CalcDistExpressions(const DblVec& x, sco::AffExprVector& exprs) override;
   void CalcDists(const DblVec& x, DblVec& exprs) override;
   void CalcCollisions(const DblVec& x, tesseract_collision::ContactResultVector& dist_results) override;
@@ -112,17 +112,17 @@ public:
   CollisionCost(tesseract_kinematics::ForwardKinematics::ConstPtr manip,
                 tesseract_environment::Environment::ConstPtr env,
                 tesseract_environment::AdjacencyMap::ConstPtr adjacency_map,
-                Eigen::Isometry3d world_to_base,
+                const Eigen::Isometry3d &world_to_base,
                 SafetyMarginData::ConstPtr safety_margin_data,
-                const sco::VarVector& vars);
+                sco::VarVector vars);
   /* constructor for cast cost */
   CollisionCost(tesseract_kinematics::ForwardKinematics::ConstPtr manip,
                 tesseract_environment::Environment::ConstPtr env,
                 tesseract_environment::AdjacencyMap::ConstPtr adjacency_map,
-                Eigen::Isometry3d world_to_base,
+                const Eigen::Isometry3d &world_to_base,
                 SafetyMarginData::ConstPtr safety_margin_data,
-                const sco::VarVector& vars0,
-                const sco::VarVector& vars1);
+                sco::VarVector vars0,
+                sco::VarVector vars1);
   sco::ConvexObjective::Ptr convex(const DblVec& x, sco::Model* model) override;
   double value(const DblVec&) override;
   void Plot(const tesseract_visualization::Visualization::Ptr& plotter, const DblVec& x) override;
@@ -139,17 +139,17 @@ public:
   CollisionConstraint(tesseract_kinematics::ForwardKinematics::ConstPtr manip,
                       tesseract_environment::Environment::ConstPtr env,
                       tesseract_environment::AdjacencyMap::ConstPtr adjacency_map,
-                      Eigen::Isometry3d world_to_base,
+                      const Eigen::Isometry3d &world_to_base,
                       SafetyMarginData::ConstPtr safety_margin_data,
-                      const sco::VarVector& vars);
+                      sco::VarVector vars);
   /* constructor for cast cost */
   CollisionConstraint(tesseract_kinematics::ForwardKinematics::ConstPtr manip,
                       tesseract_environment::Environment::ConstPtr env,
                       tesseract_environment::AdjacencyMap::ConstPtr adjacency_map,
-                      Eigen::Isometry3d world_to_base,
+                      const Eigen::Isometry3d &world_to_base,
                       SafetyMarginData::ConstPtr safety_margin_data,
-                      const sco::VarVector& vars0,
-                      const sco::VarVector& vars1);
+                      sco::VarVector vars0,
+                      sco::VarVector vars1);
   sco::ConvexConstraints::Ptr convex(const DblVec& x, sco::Model* model) override;
   DblVec value(const DblVec&) override;
   void Plot(const DblVec& x);

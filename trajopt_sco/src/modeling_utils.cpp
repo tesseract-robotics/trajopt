@@ -44,27 +44,27 @@ CostFromFunc::CostFromFunc(ScalarOfVector::Ptr f, VarVector vars, const std::str
 {
 }
 
-double CostFromFunc::value(const DblVec& xin)
+double CostFromFunc::value(const DblVec& x)
 {
-  Eigen::VectorXd x = getVec(xin, vars_);
-  return f_->call(x);
+  Eigen::VectorXd x_eigen = getVec(x, vars_);
+  return f_->call(x_eigen);
 }
 
-ConvexObjective::Ptr CostFromFunc::convex(const DblVec& xin, Model* model)
+ConvexObjective::Ptr CostFromFunc::convex(const DblVec& x, Model* model)
 {
-  Eigen::VectorXd x = getVec(xin, vars_);
+  Eigen::VectorXd x_eigen = getVec(x, vars_);
 
   ConvexObjective::Ptr out(new ConvexObjective(model));
   if (!full_hessian_)
   {
     double val;
     Eigen::VectorXd grad, hess;
-    calcGradAndDiagHess(*f_, x, epsilon_, val, grad, hess);
+    calcGradAndDiagHess(*f_, x_eigen, epsilon_, val, grad, hess);
     hess = hess.cwiseMax(Eigen::VectorXd::Zero(hess.size()));
     QuadExpr& quad = out->quad_;
-    quad.affexpr.constant = val - grad.dot(x) + .5 * x.dot(hess.cwiseProduct(x));
+    quad.affexpr.constant = val - grad.dot(x_eigen) + .5 * x_eigen.dot(hess.cwiseProduct(x_eigen));
     quad.affexpr.vars = vars_;
-    quad.affexpr.coeffs = util::toDblVec(grad - hess.cwiseProduct(x));
+    quad.affexpr.coeffs = util::toDblVec(grad - hess.cwiseProduct(x_eigen));
     quad.vars1 = vars_;
     quad.vars2 = vars_;
     quad.coeffs = util::toDblVec(hess * .5);
@@ -74,28 +74,28 @@ ConvexObjective::Ptr CostFromFunc::convex(const DblVec& xin, Model* model)
     double val;
     Eigen::VectorXd grad;
     Eigen::MatrixXd hess;
-    calcGradHess(f_, x, epsilon_, val, grad, hess);
+    calcGradHess(f_, x_eigen, epsilon_, val, grad, hess);
 
-    Eigen::MatrixXd pos_hess = Eigen::MatrixXd::Zero(x.size(), x.size());
+    Eigen::MatrixXd pos_hess = Eigen::MatrixXd::Zero(x_eigen.size(), x_eigen.size());
     Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> es(hess);
     Eigen::VectorXd eigvals = es.eigenvalues();
     Eigen::MatrixXd eigvecs = es.eigenvectors();
-    for (long int i = 0, end = x.size(); i != end; ++i)
+    for (long int i = 0, end = x_eigen.size(); i != end; ++i)
     {  // tricky --- eigen size() is signed
       if (eigvals(i) > 0)
         pos_hess += eigvals(i) * eigvecs.col(i) * eigvecs.col(i).transpose();
     }
 
     QuadExpr& quad = out->quad_;
-    quad.affexpr.constant = val - grad.dot(x) + .5 * x.dot(pos_hess * x);
+    quad.affexpr.constant = val - grad.dot(x_eigen) + .5 * x_eigen.dot(pos_hess * x_eigen);
     quad.affexpr.vars = vars_;
-    quad.affexpr.coeffs = util::toDblVec(grad - pos_hess * x);
+    quad.affexpr.coeffs = util::toDblVec(grad - pos_hess * x_eigen);
 
-    auto nquadterms = static_cast<size_t>((x.size() * (x.size() - 1)) / 2);
+    auto nquadterms = static_cast<size_t>((x_eigen.size() * (x_eigen.size() - 1)) / 2);
     quad.coeffs.reserve(nquadterms);
     quad.vars1.reserve(nquadterms);
     quad.vars2.reserve(nquadterms);
-    for (long int i = 0, end = x.size(); i != end; ++i)
+    for (long int i = 0, end = x_eigen.size(); i != end; ++i)
     {  // tricky --- eigen size() is signed
       quad.vars1.push_back(vars_[static_cast<size_t>(i)]);
       quad.vars2.push_back(vars_[static_cast<size_t>(i)]);
@@ -140,10 +140,10 @@ CostFromErrFunc::CostFromErrFunc(VectorOfVector::Ptr f,
   , epsilon_(DEFAULT_EPSILON)
 {
 }
-double CostFromErrFunc::value(const DblVec& xin)
+double CostFromErrFunc::value(const DblVec& x)
 {
-  Eigen::VectorXd x = getVec(xin, vars_);
-  Eigen::VectorXd err = f_->call(x);
+  Eigen::VectorXd x_eigen = getVec(x, vars_);
+  Eigen::VectorXd err = f_->call(x_eigen);
 
   switch (pen_type_)
   {
@@ -165,15 +165,15 @@ double CostFromErrFunc::value(const DblVec& xin)
 
   return err.array().sum();
 }
-ConvexObjective::Ptr CostFromErrFunc::convex(const DblVec& xin, Model* model)
+ConvexObjective::Ptr CostFromErrFunc::convex(const DblVec& x, Model* model)
 {
-  Eigen::VectorXd x = getVec(xin, vars_);
-  Eigen::MatrixXd jac = (dfdx_) ? dfdx_->call(x) : calcForwardNumJac(*f_, x, epsilon_);
+  Eigen::VectorXd x_eigen = getVec(x, vars_);
+  Eigen::MatrixXd jac = (dfdx_) ? dfdx_->call(x_eigen) : calcForwardNumJac(*f_, x_eigen, epsilon_);
   ConvexObjective::Ptr out(new ConvexObjective(model));
-  Eigen::VectorXd y = f_->call(x);
+  Eigen::VectorXd y = f_->call(x_eigen);
   for (int i = 0; i < jac.rows(); ++i)
   {
-    AffExpr aff = affFromValGrad(y[i], x, jac.row(i), vars_);
+    AffExpr aff = affFromValGrad(y[i], x_eigen, jac.row(i), vars_);
     double weight = 1;
     if (coeffs_.size() > 0)
     {
@@ -240,24 +240,24 @@ ConstraintFromErrFunc::ConstraintFromErrFunc(VectorOfVector::Ptr f,
 {
 }
 
-DblVec ConstraintFromErrFunc::value(const DblVec& xin)
+DblVec ConstraintFromErrFunc::value(const DblVec& x)
 {
-  Eigen::VectorXd x = getVec(xin, vars_);
-  Eigen::VectorXd err = f_->call(x);
+  Eigen::VectorXd x_eigen = getVec(x, vars_);
+  Eigen::VectorXd err = f_->call(x_eigen);
   if (coeffs_.size() > 0)
     err.array() *= coeffs_.array();
   return util::toDblVec(err);
 }
 
-ConvexConstraints::Ptr ConstraintFromErrFunc::convex(const DblVec& xin, Model* model)
+ConvexConstraints::Ptr ConstraintFromErrFunc::convex(const DblVec& x, Model* model)
 {
-  Eigen::VectorXd x = getVec(xin, vars_);
-  Eigen::MatrixXd jac = (dfdx_) ? dfdx_->call(x) : calcForwardNumJac(*f_, x, epsilon_);
+  Eigen::VectorXd x_eigen = getVec(x, vars_);
+  Eigen::MatrixXd jac = (dfdx_) ? dfdx_->call(x_eigen) : calcForwardNumJac(*f_, x_eigen, epsilon_);
   ConvexConstraints::Ptr out(new ConvexConstraints(model));
-  Eigen::VectorXd y = f_->call(x);
+  Eigen::VectorXd y = f_->call(x_eigen);
   for (int i = 0; i < jac.rows(); ++i)
   {
-    AffExpr aff = affFromValGrad(y[i], x, jac.row(i), vars_);
+    AffExpr aff = affFromValGrad(y[i], x_eigen, jac.row(i), vars_);
     if (coeffs_.size() > 0)
     {
       if (coeffs_[i] == 0)

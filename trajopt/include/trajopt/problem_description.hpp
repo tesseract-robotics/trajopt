@@ -572,7 +572,7 @@ struct TotalTimeTermInfo : public TermInfo
 
 TrajOptProb::Ptr TRAJOPT_API ConstructProblem(const ProblemConstructionInfo&);
 TrajOptProb::Ptr TRAJOPT_API ConstructProblem(const Json::Value&, const tesseract::Tesseract::ConstPtr& tesseract);
-TrajOptResult::Ptr TRAJOPT_API OptimizeProblem(TrajOptProb::Ptr,
+TrajOptResult::Ptr TRAJOPT_API OptimizeProblem(const TrajOptProb::Ptr &,
                                                const tesseract_visualization::Visualization::Ptr& plotter = nullptr);
 
 }  // namespace trajopt

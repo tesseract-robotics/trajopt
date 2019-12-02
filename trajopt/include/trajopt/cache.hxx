@@ -15,7 +15,7 @@ public:
     keybuf[m_i] = key;
     valbuf[m_i] = value;
     ++m_i;
-    if (m_i == bufsize)
+    if (static_cast<unsigned>(m_i) == bufsize)
       m_i = 0;
   }
   ValueT* get(const KeyT& key)

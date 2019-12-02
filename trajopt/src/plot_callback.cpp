@@ -24,7 +24,7 @@ void PlotCosts(const tesseract_visualization::Visualization::Ptr& plotter,
 
   for (const sco::Cost::Ptr& cost : costs)
   {
-    if (Plotter* plt = dynamic_cast<Plotter*>(cost.get()))
+    if (auto* plt = dynamic_cast<Plotter*>(cost.get()))
     {
       plt->Plot(plotter, results.x);
     }
@@ -32,7 +32,7 @@ void PlotCosts(const tesseract_visualization::Visualization::Ptr& plotter,
 
   for (const sco::Constraint::Ptr& cnt : cnts)
   {
-    if (Plotter* plt = dynamic_cast<Plotter*>(cnt.get()))
+    if (auto* plt = dynamic_cast<Plotter*>(cnt.get()))
     {
       plt->Plot(plotter, results.x);
     }
@@ -63,7 +63,7 @@ void PlotProb(const tesseract_visualization::Visualization::Ptr& plotter,
 
   for (const sco::Cost::Ptr& cost : prob->getCosts())
   {
-    if (Plotter* plt = dynamic_cast<Plotter*>(cost.get()))
+    if (auto* plt = dynamic_cast<Plotter*>(cost.get()))
     {
       plt->Plot(plotter, results.x);
     }
@@ -71,7 +71,7 @@ void PlotProb(const tesseract_visualization::Visualization::Ptr& plotter,
 
   for (const sco::Constraint::Ptr& cnt : prob->getConstraints())
   {
-    if (Plotter* plt = dynamic_cast<Plotter*>(cnt.get()))
+    if (auto* plt = dynamic_cast<Plotter*>(cnt.get()))
     {
       plt->Plot(plotter, results.x);
     }
@@ -80,8 +80,8 @@ void PlotProb(const tesseract_visualization::Visualization::Ptr& plotter,
   // This probably is/should be a utility somewhere
   VarArray var_array;
   var_array.m_data = var_vec;
-  var_array.m_nCol = joint_names.size();
-  var_array.m_nRow = var_vec.size() / var_array.cols();
+  var_array.m_nCol = static_cast<int>(joint_names.size());
+  var_array.m_nRow = static_cast<int>(var_vec.size()) / var_array.cols();
 
   plotter->plotTrajectory(joint_names, getTraj(results.x, var_array));
   plotter->waitForInput();

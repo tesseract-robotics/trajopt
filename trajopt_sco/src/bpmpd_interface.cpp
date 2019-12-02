@@ -439,7 +439,9 @@ CvxOptStatus BPMPDModel::optimize()
 
   // cout << "objective: " << m_objective << endl;
 
-  int nz = static_cast<int>(acolnzs.size()), qn = static_cast<int>(n), qnz = static_cast<int>(qcolnzs.size());
+  auto nz = static_cast<int>(acolnzs.size());
+  auto qn = static_cast<int>(n);
+  auto qnz = static_cast<int>(qcolnzs.size());
 
   DBG(m);
   DBG(n);

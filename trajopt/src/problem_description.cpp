@@ -100,15 +100,12 @@ TermInfo::Ptr TermInfo::fromName(const std::string& type)
 {
   if (!gRegisteredMakers)
     RegisterMakers();
+
   if (name2maker.find(type) != name2maker.end())
-  {
     return (*name2maker[type])();
-  }
-  else
-  {
-    // RAVELOG_ERROR("There is no cost of type %s\n", type.c_str());
-    return TermInfo::Ptr();
-  }
+
+  // RAVELOG_ERROR("There is no cost of type %s\n", type.c_str());
+  return TermInfo::Ptr();
 }
 
 void ProblemConstructionInfo::readBasicInfo(const Json::Value& v)
@@ -155,12 +152,12 @@ void ProblemConstructionInfo::readCosts(const Json::Value& v)
 {
   cost_infos.clear();
   cost_infos.reserve(v.size());
-  for (Json::Value::const_iterator it = v.begin(); it != v.end(); ++it)
+  for (const auto& it : v)
   {
     std::string type;
     bool use_time;
-    json_marshal::childFromJson(*it, type, "type");
-    json_marshal::childFromJson(*it, use_time, "use_time", false);
+    json_marshal::childFromJson(it, type, "type");
+    json_marshal::childFromJson(it, use_time, "use_time", false);
     LOG_DEBUG("reading term: %s", type.c_str());
     TermInfo::Ptr term = TermInfo::fromName(type);
 
@@ -174,8 +171,8 @@ void ProblemConstructionInfo::readCosts(const Json::Value& v)
     }
     else
       term->term_type = TT_COST;
-    term->fromJson(*this, *it);
-    json_marshal::childFromJson(*it, term->name, "name", type);
+    term->fromJson(*this, it);
+    json_marshal::childFromJson(it, term->name, "name", type);
 
     cost_infos.push_back(term);
   }
@@ -185,12 +182,12 @@ void ProblemConstructionInfo::readConstraints(const Json::Value& v)
 {
   cnt_infos.clear();
   cnt_infos.reserve(v.size());
-  for (Json::Value::const_iterator it = v.begin(); it != v.end(); ++it)
+  for (const auto& it : v)
   {
     std::string type;
     bool use_time;
-    json_marshal::childFromJson(*it, type, "type");
-    json_marshal::childFromJson(*it, use_time, "use_time", false);
+    json_marshal::childFromJson(it, type, "type");
+    json_marshal::childFromJson(it, use_time, "use_time", false);
     LOG_DEBUG("reading term: %s", type.c_str());
     TermInfo::Ptr term = TermInfo::fromName(type);
 
@@ -204,8 +201,8 @@ void ProblemConstructionInfo::readConstraints(const Json::Value& v)
     }
     else
       term->term_type = (TT_CNT);
-    term->fromJson(*this, *it);
-    json_marshal::childFromJson(*it, term->name, "name", type);
+    term->fromJson(*this, it);
+    json_marshal::childFromJson(it, term->name, "name", type);
 
     cnt_infos.push_back(term);
   }
@@ -217,7 +214,7 @@ void ProblemConstructionInfo::readInitInfo(const Json::Value& v)
   json_marshal::childFromJson(v, type_str, "type");
   json_marshal::childFromJson(v, init_info.dt, "dt", 1.0);
   int n_steps = basic_info.n_steps;
-  int n_dof = static_cast<int>(kin->numJoints());
+  auto n_dof = static_cast<int>(kin->numJoints());
 
   if (boost::iequals(type_str, "stationary"))
   {
@@ -375,7 +372,7 @@ TrajOptResult::TrajOptResult(sco::OptResults& opt, TrajOptProb& prob)
   traj = getTraj(opt.x, prob.GetVars());
 }
 
-TrajOptResult::Ptr OptimizeProblem(TrajOptProb::Ptr prob, const tesseract_visualization::Visualization::Ptr& plotter)
+TrajOptResult::Ptr OptimizeProblem(const TrajOptProb::Ptr& prob, const tesseract_visualization::Visualization::Ptr& plotter)
 {
   sco::BasicTrustRegionSQP opt(prob);
   sco::BasicTrustRegionSQPParameters& param = opt.getParameters();
@@ -387,7 +384,7 @@ TrajOptResult::Ptr OptimizeProblem(TrajOptProb::Ptr prob, const tesseract_visual
     opt.addCallback(PlotCallback(*prob, plotter));
   opt.initialize(trajToDblVec(prob->GetInitTraj()));
   opt.optimize();
-  return TrajOptResult::Ptr(new TrajOptResult(opt.results(), *prob));
+  return std::make_shared<TrajOptResult>(opt.results(), *prob);
 }
 
 TrajOptProb::Ptr ConstructProblem(const ProblemConstructionInfo& pci)
@@ -397,7 +394,7 @@ TrajOptProb::Ptr ConstructProblem(const ProblemConstructionInfo& pci)
 
   bool use_time = false;
   // Check that all costs and constraints support the types that are specified in pci
-  for (TermInfo::Ptr cost : pci.cost_infos)
+  for (const TermInfo::Ptr& cost : pci.cost_infos)
   {
     if (cost->term_type & TT_CNT)
       CONSOLE_BRIDGE_logWarn("%s is listed as a type TT_CNT but was added to cost_infos", (cost->name).c_str());
@@ -410,7 +407,7 @@ TrajOptProb::Ptr ConstructProblem(const ProblemConstructionInfo& pci)
         PRINT_AND_THROW(boost::format("%s does not support time, but you listed it as a using time") % cost->name);
     }
   }
-  for (TermInfo::Ptr cnt : pci.cnt_infos)
+  for (const TermInfo::Ptr& cnt : pci.cnt_infos)
   {
     if (cnt->term_type & TT_COST)
       CONSOLE_BRIDGE_logWarn("%s is listed as a type TT_COST but was added to cnt_infos", (cnt->name).c_str());
@@ -518,7 +515,7 @@ TrajOptProb::TrajOptProb(int n_steps, const ProblemConstructionInfo& pci)
   : OptProb(pci.basic_info.convex_solver), m_kin(pci.kin), m_env(pci.env)
 {
   const Eigen::MatrixX2d& limits = m_kin->getLimits();
-  int n_dof = static_cast<int>(m_kin->numJoints());
+  auto n_dof = static_cast<int>(m_kin->numJoints());
   Eigen::VectorXd lower, upper;
   lower = limits.col(0);
   upper = limits.col(1);
@@ -545,7 +542,7 @@ TrajOptProb::TrajOptProb(int n_steps, const ProblemConstructionInfo& pci)
   m_traj_vars = VarArray(n_steps, n_dof + (pci.basic_info.use_time ? 1 : 0), trajvarvec.data());
 }
 
-TrajOptProb::TrajOptProb() {}
+TrajOptProb::TrajOptProb() = default;
 
 void UserDefinedTermInfo::fromJson(ProblemConstructionInfo& /*pci*/, const Json::Value& /*v*/)
 {
@@ -1151,7 +1148,7 @@ void JointVelTermInfo::hatch(TrajOptProb& prob)
 
   if (term_type == (TT_COST | TT_USE_TIME))
   {
-    unsigned num_vels = static_cast<unsigned>(last_step - first_step);
+    auto num_vels = static_cast<unsigned>(last_step - first_step);
 
     // Apply seperate cost to each joint b/c that is how the error function is currently written
     for (size_t j = 0; j < n_dof; j++)
@@ -1188,7 +1185,7 @@ void JointVelTermInfo::hatch(TrajOptProb& prob)
   }
   else if (term_type == (TT_CNT | TT_USE_TIME))
   {
-    unsigned num_vels = static_cast<unsigned>(last_step - first_step);
+    auto num_vels = static_cast<unsigned>(last_step - first_step);
 
     // Apply seperate cnt to each joint b/c that is how the error function is currently written
     for (size_t j = 0; j < n_dof; j++)
@@ -1549,7 +1546,7 @@ void CollisionTermInfo::fromJson(ProblemConstructionInfo& pci, const Json::Value
   info.reserve(static_cast<size_t>(n_terms));
   for (int i = first_step; i <= last_step; ++i)
   {
-    size_t index = static_cast<size_t>(i - first_step);
+    auto index = static_cast<size_t>(i - first_step);
     SafetyMarginData::Ptr data(new SafetyMarginData(dist_pen[index], coeffs[index]));
     info.push_back(data);
   }
@@ -1568,7 +1565,7 @@ void CollisionTermInfo::fromJson(ProblemConstructionInfo& pci, const Json::Value
       std::vector<std::string> pair;
       json_marshal::childFromJson(*it, pair, "pair");
 
-      if (pair.size() == 0)
+      if (pair.empty())
       {
         PRINT_AND_THROW(boost::format("wrong size: pair. expected > 0 got %i") % pair.size());
       }
@@ -1597,11 +1594,11 @@ void CollisionTermInfo::fromJson(ProblemConstructionInfo& pci, const Json::Value
 
       for (auto i = first_step; i <= last_step; ++i)
       {
-        size_t index = static_cast<size_t>(i - first_step);
+        auto index = static_cast<size_t>(i - first_step);
         SafetyMarginData::Ptr& data = info[index];
-        for (auto j = 0u; j < pair.size(); ++j)
+        for (const auto& p : pair)
         {
-          data->setPairSafetyMarginData(link, pair[j], pair_dist_pen[index], pair_coeffs[index]);
+          data->setPairSafetyMarginData(link, p, pair_dist_pen[index], pair_coeffs[index]);
         }
       }
     }

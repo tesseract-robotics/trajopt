@@ -3,21 +3,13 @@ find_package(PCL REQUIRED COMPONENTS core features filters io segmentation surfa
 
 macro(add_gtest test_name test_file)
   add_executable(${test_name} ${test_file})
-  target_compile_options(${test_name} PRIVATE -Wall -Wextra -Wsuggest-override -Wconversion -Wsign-conversion)
-#  if(CXX_FEATURE_FOUND EQUAL "-1")
-#      target_compile_options(${test_name} PUBLIC -std=c++11)
-#  else()
-#      target_compile_features(${test_name} PUBLIC cxx_std_11)
-#  endif()
-  if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-      target_compile_options(${test_name} PUBLIC -mno-avx)
-    else()
-      message(WARNING "Non-GNU compiler detected. If using AVX instructions, Eigen alignment issues may result.")
-    endif()
+  trajopt_target_compile_options(${test_name} PRIVATE)
+  trajopt_clang_tidy(${test_name})
   target_compile_definitions(${test_name} PRIVATE TRAJOPT_DIR="${CMAKE_SOURCE_DIR}")
   target_link_libraries(${test_name}
       ${PROJECT_NAME}
-      ${GTEST_BOTH_LIBRARIES}
+      GTest::GTest
+      GTest::Main
       ${Boost_SYSTEM_LIBRARY}
       ${Boost_PROGRAM_OPTIONS_LIBRARY})
   target_include_directories(${test_name} PRIVATE
@@ -25,8 +17,8 @@ macro(add_gtest test_name test_file)
       ${GTEST_INCLUDE_DIRS})
   target_include_directories(${test_name} SYSTEM PRIVATE
       ${PCL_INCLUDE_DIRS})
-  add_test(${test_name} ${test_name})
-  add_dependencies(${test_name} ${PACKAGE_LIBRARIES})
+  trajopt_gtest_discover_tests(${test_name})
+  add_dependencies(${test_name} ${PROJECT_NAME})
   add_dependencies(run_tests ${test_name})
 endmacro()
 

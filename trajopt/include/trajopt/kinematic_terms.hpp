@@ -67,12 +67,12 @@ struct DynamicCartPoseErrCalculator : public TrajOptVectorOfVector
       const Eigen::Isometry3d& tcp = Eigen::Isometry3d::Identity(),
       const Eigen::Isometry3d& target_tcp = Eigen::Isometry3d::Identity(),
       Eigen::VectorXi indices = Eigen::Matrix<int, 1, 6>(std::vector<int>({ 0, 1, 2, 3, 4, 5 }).data()))
-    : target_(std::move(target))
-    , manip_(std::move(manip))
+    : manip_(std::move(manip))
     , adjacency_map_(std::move(adjacency_map))
     , world_to_base_(world_to_base)
     , link_(std::move(link))
     , tcp_(tcp)
+    , target_(std::move(target))
     , target_tcp_(target_tcp)
     , indices_(std::move(indices))
   {
@@ -145,12 +145,12 @@ struct DynamicCartPoseJacCalculator : sco::MatrixOfVector
       const Eigen::Isometry3d& tcp = Eigen::Isometry3d::Identity(),
       const Eigen::Isometry3d& target_tcp = Eigen::Isometry3d::Identity(),
       Eigen::VectorXi indices = Eigen::Matrix<int, 1, 6>(std::vector<int>({ 0, 1, 2, 3, 4, 5 }).data()))
-    : target_(std::move(target))
-    , manip_(std::move(manip))
+    : manip_(std::move(manip))
     , adjacency_map_(std::move(adjacency_map))
     , world_to_base_(world_to_base)
     , link_(std::move(link))
     , tcp_(tcp)
+    , target_(std::move(target))
     , target_tcp_(target_tcp)
     , indices_(std::move(indices))
   {

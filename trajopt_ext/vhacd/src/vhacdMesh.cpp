@@ -27,15 +27,20 @@
 #define _CRT_SECURE_NO_WARNINGS
 #endif
 
-#include "vhacd/inc/btConvexHullComputer.h"
+
 #include "vhacd/inc/vhacdMesh.h"
 #include "vhacd/inc/FloatMath.h"
+
+#include <trajopt_utils/macros.h>
+TRAJOPT_IGNORE_WARNINGS_PUSH
+#include "vhacd/inc/btConvexHullComputer.h"
 #include <fstream>
 #include <iosfwd>
 #include <iostream>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string>
+TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace VHACD
 {
@@ -50,7 +55,7 @@ Vec3<double>& Mesh::ComputeCenter(void)
     uint32_t pcount = uint32_t(GetNPoints());
     const double* points = GetPoints();
     uint32_t tcount = uint32_t(GetNTriangles());
-    const uint32_t* indices = (const uint32_t*)GetTriangles();
+    const uint32_t* indices = reinterpret_cast<const uint32_t*>(GetTriangles());
     FLOAT_MATH::fm_computeCentroid(pcount, points, tcount, indices, center);
     m_center.X() = center[0];
     m_center.Y() = center[1];
@@ -107,12 +112,12 @@ double Mesh::ComputeVolume() const
 
   Vec3<double> ver0, ver1, ver2;
   double totalVolume = 0.0;
-  for (int32_t t = 0; t < int32_t(nT); t++)
+  for (size_t t = 0; t < nT; t++)
   {
     const Vec3<int32_t>& tri = GetTriangle(t);
-    ver0 = GetPoint(tri[0]);
-    ver1 = GetPoint(tri[1]);
-    ver2 = GetPoint(tri[2]);
+    ver0 = GetPoint(static_cast<size_t>(tri[0]));
+    ver1 = GetPoint(static_cast<size_t>(tri[1]));
+    ver2 = GetPoint(static_cast<size_t>(tri[2]));
     totalVolume += ComputeVolume4(ver0, ver1, ver2, bary);
   }
   return totalVolume / 6.0;
@@ -123,10 +128,10 @@ void Mesh::ComputeConvexHull(const double* const pts, const size_t nPts)
   ResizePoints(0);
   ResizeTriangles(0);
   btConvexHullComputer ch;
-  ch.compute(pts, 3 * sizeof(double), (int32_t)nPts, -1.0, -1.0);
+  ch.compute(pts, 3 * sizeof(double), static_cast<int32_t>(nPts), -1.0, -1.0);
   for (int32_t v = 0; v < ch.vertices.size(); v++)
   {
-    AddPoint(Vec3<double>(ch.vertices[v].getX(), ch.vertices[v].getY(), ch.vertices[v].getZ()));
+    AddPoint(Vec3<double>(static_cast<double>(ch.vertices[v].getX()), static_cast<double>(ch.vertices[v].getY()), static_cast<double>(ch.vertices[v].getZ())));
   }
   const int32_t nt = ch.faces.size();
   for (int32_t t = 0; t < nt; ++t)
@@ -182,12 +187,12 @@ bool Mesh::IsInside(const Vec3<double>& pt) const
   }
   Vec3<double> ver0, ver1, ver2;
   double volume;
-  for (int32_t t = 0; t < int32_t(nT); t++)
+  for (size_t t = 0; t < nT; t++)
   {
     const Vec3<int32_t>& tri = GetTriangle(t);
-    ver0 = GetPoint(tri[0]);
-    ver1 = GetPoint(tri[1]);
-    ver2 = GetPoint(tri[2]);
+    ver0 = GetPoint(static_cast<size_t>(tri[0]));
+    ver1 = GetPoint(static_cast<size_t>(tri[1]));
+    ver2 = GetPoint(static_cast<size_t>(tri[2]));
     volume = ComputeVolume4(ver0, ver1, ver2, pt);
     if (volume < 0.0)
     {
@@ -336,62 +341,83 @@ bool Mesh::LoadOFF(const std::string& fileName, bool invert)
   {
     const std::string strOFF("OFF");
     char temp[1024];
-    fscanf(fid, "%s", temp);
+    if (fscanf(fid, "%s", temp) != 1)
+      return false;
+
     if (std::string(temp) != strOFF)
     {
       fclose(fid);
       return false;
     }
-    else
+
+    int32_t nv = 0;
+    int32_t nf = 0;
+    int32_t ne = 0;
+    if (fscanf(fid, "%i", &nv) != 1)
+      return false;
+
+    if (fscanf(fid, "%i", &nf) != 1)
+      return false;
+
+    if (fscanf(fid, "%i", &ne) != 1)
+      return false;
+
+    m_points.Resize(static_cast<size_t>(nv));
+    m_triangles.Resize(static_cast<size_t>(nf));
+    Vec3<double> coord;
+    float x, y, z;
+    for (size_t p = 0; p < static_cast<size_t>(nv); p++)
     {
-      int32_t nv = 0;
-      int32_t nf = 0;
-      int32_t ne = 0;
-      fscanf(fid, "%i", &nv);
-      fscanf(fid, "%i", &nf);
-      fscanf(fid, "%i", &ne);
-      m_points.Resize(nv);
-      m_triangles.Resize(nf);
-      Vec3<double> coord;
-      float x, y, z;
-      for (int32_t p = 0; p < nv; p++)
-      {
-        fscanf(fid, "%f", &x);
-        fscanf(fid, "%f", &y);
-        fscanf(fid, "%f", &z);
-        m_points[p][0] = x;
-        m_points[p][1] = y;
-        m_points[p][2] = z;
-      }
-      int32_t i, j, k, s;
-      for (int32_t t = 0; t < nf; ++t)
-      {
-        fscanf(fid, "%i", &s);
-        if (s == 3)
-        {
-          fscanf(fid, "%i", &i);
-          fscanf(fid, "%i", &j);
-          fscanf(fid, "%i", &k);
-          m_triangles[t][0] = i;
-          if (invert)
-          {
-            m_triangles[t][1] = k;
-            m_triangles[t][2] = j;
-          }
-          else
-          {
-            m_triangles[t][1] = j;
-            m_triangles[t][2] = k;
-          }
-        }
-        else  // Fix me: support only triangular meshes
-        {
-          for (int32_t h = 0; h < s; ++h)
-            fscanf(fid, "%i", &s);
-        }
-      }
-      fclose(fid);
+      if (fscanf(fid, "%f", &x) != 1)
+        return false;
+
+      if (fscanf(fid, "%f", &y) != 1)
+        return false;
+
+      if (fscanf(fid, "%f", &z) != 1)
+        return false;
+
+      m_points[p][0] = static_cast<double>(x);
+      m_points[p][1] = static_cast<double>(y);
+      m_points[p][2] = static_cast<double>(z);
     }
+    int32_t i, j, k, s;
+    for (size_t t = 0; t < static_cast<size_t>(nf); ++t)
+    {
+      if (fscanf(fid, "%i", &s) != 1)
+        return false;
+
+      if (s == 3)
+      {
+        if (fscanf(fid, "%i", &i) != 1)
+          return false;
+
+        if (fscanf(fid, "%i", &j) != 1)
+          return false;
+
+        if (fscanf(fid, "%i", &k) != 1)
+          return false;
+
+        m_triangles[t][0] = i;
+        if (invert)
+        {
+          m_triangles[t][1] = k;
+          m_triangles[t][2] = j;
+        }
+        else
+        {
+          m_triangles[t][1] = j;
+          m_triangles[t][2] = k;
+        }
+      }
+      else  // Fix me: support only triangular meshes
+      {
+        for (int32_t h = 0; h < s; ++h)
+          if (fscanf(fid, "%i", &s) != 1)
+            return false;
+      }
+    }
+    fclose(fid);
   }
   else
   {
