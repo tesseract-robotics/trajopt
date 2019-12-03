@@ -102,7 +102,11 @@ void OSQPModel::updateObjective()
 
   Eigen::SparseMatrix<double> sm;
   exprToEigen(objective_, sm, q_, n, true);
-  eigenToCSC(sm, P_row_indices_, P_column_pointers_, P_csc_data_);
+
+  // Copy triangular upper into empty matrix
+  Eigen::SparseMatrix<double> triangular_sm;
+  triangular_sm = sm.triangularView<Eigen::Upper>();
+  eigenToCSC(triangular_sm, P_row_indices_, P_column_pointers_, P_csc_data_);
 
   if (osqp_data_.P != nullptr)
     c_free(osqp_data_.P);
@@ -172,7 +176,11 @@ void OSQPModel::createOrUpdateSolver()
   if (osqp_workspace_ != nullptr)
     osqp_cleanup(osqp_workspace_);
   // Setup workspace - this should be called only once
-  osqp_setup(&osqp_workspace_, &osqp_data_, &osqp_settings_);
+  auto ret = osqp_setup(&osqp_workspace_, &osqp_data_, &osqp_settings_);
+  if(ret)
+  {
+    throw std::runtime_error("Could not initialize OSQP: error " + std::to_string(ret));
+  }
 }
 
 void OSQPModel::update()
