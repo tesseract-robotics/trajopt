@@ -237,6 +237,8 @@ private:
  */
 struct UserDefinedTermInfo : public TermInfo
 {
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
   /** @brief The name prefix shown in output */
   std::string name = "UserDefined";
 
@@ -248,6 +250,15 @@ struct UserDefinedTermInfo : public TermInfo
 
   /** @brief The user defined jocobian function */
   sco::MatrixOfVector::func jacobian_function;
+
+  /** @brief If added as a cost it will use this penalty type */
+  sco::PenaltyType cost_penalty_type{sco::PenaltyType::SQUARED};
+
+  /** @brief If added as a constraint it will use this constraint type */
+  sco::ConstraintType constraint_type{sco::ConstraintType::EQ};
+
+  /** @brief Coefficients for user defined error function */
+  Eigen::VectorXd coeff;
 
   /** @brief Used to add term to pci from json */
   void fromJson(ProblemConstructionInfo& pci, const Json::Value& v) override;

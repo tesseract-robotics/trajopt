@@ -558,13 +558,23 @@ void UserDefinedTermInfo::hatch(TrajOptProb& prob)
   {
     for (int iStep = first_step; iStep <= last_step; ++iStep)
     {
+      std::string type_str;
+      if (cost_penalty_type == sco::PenaltyType::ABS)
+        type_str = "ABS";
+      else if (cost_penalty_type == sco::PenaltyType::HINGE)
+        type_str = "HING";
+      else if (cost_penalty_type == sco::PenaltyType::SQUARED)
+        type_str = "SQUARED";
+      else
+        type_str = "INVALID";
+
       if (jacobian_function == nullptr)
       {
         prob.addCost(std::make_shared<trajopt::TrajOptCostFromErrFunc>(sco::VectorOfVector::construct(error_function),
                                                                        prob.GetVarRow(iStep, 0, n_dof),
-                                                                       Eigen::VectorXd::Ones(0),
-                                                                       sco::ABS,
-                                                                       name + "_" + std::to_string(iStep)));
+                                                                       coeff,
+                                                                       cost_penalty_type,
+                                                                       name + "_" + type_str + "_" + std::to_string(iStep)));
       }
       else
       {
@@ -572,9 +582,9 @@ void UserDefinedTermInfo::hatch(TrajOptProb& prob)
             std::make_shared<trajopt::TrajOptCostFromErrFunc>(sco::VectorOfVector::construct(error_function),
                                                               sco::MatrixOfVector::construct(jacobian_function),
                                                               prob.GetVarRow(iStep, 0, n_dof),
-                                                              Eigen::VectorXd::Ones(0),
-                                                              sco::ABS,
-                                                              name + "_" + std::to_string(iStep)));
+                                                              coeff,
+                                                              cost_penalty_type,
+                                                              name + "_" + type_str + "_" + std::to_string(iStep)));
       }
     }
   }
@@ -582,14 +592,15 @@ void UserDefinedTermInfo::hatch(TrajOptProb& prob)
   {
     for (int iStep = first_step; iStep <= last_step; ++iStep)
     {
+      std::string type_str = (constraint_type == sco::ConstraintType::EQ) ? "EQ" : "INEQ";
       if (jacobian_function == nullptr)
       {
         prob.addConstraint(
             std::make_shared<trajopt::TrajOptConstraintFromErrFunc>(sco::VectorOfVector::construct(error_function),
                                                                     prob.GetVarRow(iStep, 0, n_dof),
-                                                                    Eigen::VectorXd::Ones(0),
-                                                                    sco::EQ,
-                                                                    name + "_" + std::to_string(iStep)));
+                                                                    coeff,
+                                                                    constraint_type,
+                                                                    name + "_" + type_str + "_" + std::to_string(iStep)));
       }
       else
       {
@@ -597,9 +608,9 @@ void UserDefinedTermInfo::hatch(TrajOptProb& prob)
             std::make_shared<trajopt::TrajOptConstraintFromErrFunc>(sco::VectorOfVector::construct(error_function),
                                                                     sco::MatrixOfVector::construct(jacobian_function),
                                                                     prob.GetVarRow(iStep, 0, n_dof),
-                                                                    Eigen::VectorXd::Ones(0),
-                                                                    sco::EQ,
-                                                                    name + "_" + std::to_string(iStep)));
+                                                                    coeff,
+                                                                    constraint_type,
+                                                                    name + "_" + type_str + "_" + std::to_string(iStep)));
       }
     }
   }
