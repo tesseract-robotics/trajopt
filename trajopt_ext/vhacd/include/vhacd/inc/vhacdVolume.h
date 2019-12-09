@@ -128,13 +128,15 @@ public:
         voxel[0] * m_scale + m_minBB[0], voxel[1] * m_scale + m_minBB[1], voxel[2] * m_scale + m_minBB[2]);
   }
   void GetPoints(const Voxel& voxel, Vec3<double>* const pts) const;
-  void ComputeConvexHull(Mesh& meshCH, const size_t sampling = 1) const override ;
+  void ComputeConvexHull(Mesh& meshCH, const size_t sampling = 1) const override;
   void Clip(const Plane& plane, PrimitiveSet* const positivePart, PrimitiveSet* const negativePart) const override;
   void Intersect(const Plane& plane,
                  SArray<Vec3<double> >* const positivePts,
                  SArray<Vec3<double> >* const negativePts,
                  const size_t sampling) const override;
-  void ComputeExteriorPoints(const Plane& plane, const Mesh& mesh, SArray<Vec3<double> >* const exteriorPts) const override;
+  void ComputeExteriorPoints(const Plane& plane,
+                             const Mesh& mesh,
+                             SArray<Vec3<double> >* const exteriorPts) const override;
   void ComputeClippedVolumes(const Plane& plane, double& positiveVolume, double& negativeVolume) const override;
   void SelectOnSurface(PrimitiveSet* const onSurfP) const override;
   void ComputeBB() override;
@@ -200,7 +202,9 @@ public:
                  SArray<Vec3<double> >* const positivePts,
                  SArray<Vec3<double> >* const negativePts,
                  const size_t sampling) const override;
-  void ComputeExteriorPoints(const Plane& plane, const Mesh& mesh, SArray<Vec3<double> >* const exteriorPts) const override;
+  void ComputeExteriorPoints(const Plane& plane,
+                             const Mesh& mesh,
+                             SArray<Vec3<double> >* const exteriorPts) const override;
   void ComputeClippedVolumes(const Plane& plane, double& positiveVolume, double& negativeVolume) const override;
   void SelectOnSurface(PrimitiveSet* const onSurfP) const override;
   void ComputeBB() override;
@@ -246,16 +250,16 @@ public:
                 const double (&rot)[3][3]);
   unsigned char& GetVoxel(const size_t i, const size_t j, const size_t k)
   {
-    assert(i < m_dim[0] || i >= 0);
-    assert(j < m_dim[0] || j >= 0);
-    assert(k < m_dim[0] || k >= 0);
+    assert(i < m_dim[0]);
+    assert(j < m_dim[0]);
+    assert(k < m_dim[0]);
     return m_data[i + j * m_dim[0] + k * m_dim[0] * m_dim[1]];
   }
   const unsigned char& GetVoxel(const size_t i, const size_t j, const size_t k) const
   {
-    assert(i < m_dim[0] || i >= 0);
-    assert(j < m_dim[0] || j >= 0);
-    assert(k < m_dim[0] || k >= 0);
+    assert(i < m_dim[0]);
+    assert(j < m_dim[0]);
+    assert(k < m_dim[0]);
     return m_data[i + j * m_dim[0] + k * m_dim[0] * m_dim[1]];
   }
   size_t GetNPrimitivesOnSurf() const { return m_numVoxelsOnSurface; }

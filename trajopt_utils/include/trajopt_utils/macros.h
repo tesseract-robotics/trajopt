@@ -6,12 +6,11 @@
   _Pragma("GCC diagnostic push") _Pragma("GCC diagnostic ignored \"-Wall\"")                                           \
       _Pragma("GCC diagnostic ignored \"-Wint-to-pointer-cast\"")                                                      \
           _Pragma("GCC diagnostic ignored \"-Wunused-parameter\"")                                                     \
-              _Pragma("GCC diagnostic ignored \"-Wsuggest-override\"")                                                 \
-                  _Pragma("GCC diagnostic ignored \"-Wconversion\"")                                                   \
-                      _Pragma("GCC diagnostic ignored \"-Wfloat-conversion\"")                                         \
-                          _Pragma("GCC diagnostic ignored \"-Wsign-conversion\"")                                      \
-                              _Pragma("GCC diagnostic ignored \"-Wstrict-aliasing\"")                                  \
-                                  _Pragma("GCC diagnostic ignored \"-Wimplicit-fallthrough\"")
+              _Pragma("GCC diagnostic ignored \"-Wconversion\"")                                                       \
+                  _Pragma("GCC diagnostic ignored \"-Wfloat-conversion\"")                                             \
+                      _Pragma("GCC diagnostic ignored \"-Wsign-conversion\"")                                          \
+                           _Pragma("GCC diagnostic ignored \"-Wstrict-aliasing\"")                                     \
+                               _Pragma("GCC diagnostic ignored \"-Wimplicit-fallthrough\"")
 
 #define TRAJOPT_IGNORE_WARNINGS_POP _Pragma("GCC diagnostic pop")
 

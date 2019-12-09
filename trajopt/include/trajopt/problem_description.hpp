@@ -252,10 +252,10 @@ struct UserDefinedTermInfo : public TermInfo
   sco::MatrixOfVector::func jacobian_function;
 
   /** @brief If added as a cost it will use this penalty type */
-  sco::PenaltyType cost_penalty_type{sco::PenaltyType::SQUARED};
+  sco::PenaltyType cost_penalty_type{ sco::PenaltyType::SQUARED };
 
   /** @brief If added as a constraint it will use this constraint type */
-  sco::ConstraintType constraint_type{sco::ConstraintType::EQ};
+  sco::ConstraintType constraint_type{ sco::ConstraintType::EQ };
 
   /** @brief Coefficients for user defined error function */
   Eigen::VectorXd coeff;
@@ -583,7 +583,7 @@ struct TotalTimeTermInfo : public TermInfo
 
 TrajOptProb::Ptr TRAJOPT_API ConstructProblem(const ProblemConstructionInfo&);
 TrajOptProb::Ptr TRAJOPT_API ConstructProblem(const Json::Value&, const tesseract::Tesseract::ConstPtr& tesseract);
-TrajOptResult::Ptr TRAJOPT_API OptimizeProblem(const TrajOptProb::Ptr &,
+TrajOptResult::Ptr TRAJOPT_API OptimizeProblem(const TrajOptProb::Ptr&,
                                                const tesseract_visualization::Visualization::Ptr& plotter = nullptr);
 
 }  // namespace trajopt

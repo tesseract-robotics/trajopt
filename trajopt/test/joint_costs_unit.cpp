@@ -58,7 +58,7 @@ public:
  cost
  * target
  */
-TEST_F(CostsTest, equality_jointPos)
+TEST_F(CostsTest, equality_jointPos)  // NOLINT
 {
   CONSOLE_BRIDGE_logDebug("CostsTest, equality_jointPos");
 
@@ -84,7 +84,7 @@ TEST_F(CostsTest, equality_jointPos)
   pci.init_info.data = start_pos.transpose().replicate(pci.basic_info.n_steps, 1);
 
   // Constraint that first step velocity should be zero
-  std::shared_ptr<JointPosTermInfo> jv = std::shared_ptr<JointPosTermInfo>(new JointPosTermInfo);
+  auto jv = std::make_shared<JointPosTermInfo>();
   jv->coeffs = std::vector<double>(7, 10.0);
   jv->targets = std::vector<double>(7.0, cnt_targ);
   jv->first_step = 0;
@@ -94,7 +94,7 @@ TEST_F(CostsTest, equality_jointPos)
   pci.cnt_infos.push_back(jv);
 
   // All the rest of the joint velocities have a cost to some non zero value
-  std::shared_ptr<JointPosTermInfo> jv2 = std::shared_ptr<JointPosTermInfo>(new JointPosTermInfo);
+  auto jv2 = std::make_shared<JointPosTermInfo>();
   jv2->coeffs = std::vector<double>(7, 10.0);
   jv2->targets = std::vector<double>(7.0, cost_targ);
   jv2->first_step = 0;
@@ -148,7 +148,7 @@ TEST_F(CostsTest, equality_jointPos)
  * Sets a conflicting constraint on the velocity of all joints limiting them to +/- 0.1.
  * Checks to make sure that the constraint is met
  */
-TEST_F(CostsTest, inequality_jointPos)
+TEST_F(CostsTest, inequality_jointPos)  // NOLINT
 {
   CONSOLE_BRIDGE_logDebug("CostsTest, inequality_cnt_jointPos");
 
@@ -177,7 +177,7 @@ TEST_F(CostsTest, inequality_jointPos)
   pci.init_info.data = start_pos.transpose().replicate(pci.basic_info.n_steps, 1);
 
   // Constraint that limits velocity
-  std::shared_ptr<JointPosTermInfo> jv = std::shared_ptr<JointPosTermInfo>(new JointPosTermInfo);
+  auto jv = std::make_shared<JointPosTermInfo>();
   jv->coeffs = std::vector<double>(7, 1.0);
   jv->targets = std::vector<double>(7.0, 0);
   jv->lower_tols = std::vector<double>(7.0, lower_tol);
@@ -189,7 +189,7 @@ TEST_F(CostsTest, inequality_jointPos)
   pci.cnt_infos.push_back(jv);
 
   // Joint Velocities also have a cost to some non zero value
-  std::shared_ptr<JointPosTermInfo> jv2 = std::shared_ptr<JointPosTermInfo>(new JointPosTermInfo);
+  auto jv2 = std::make_shared<JointPosTermInfo>();
   jv2->coeffs = std::vector<double>(7, 1.0);
   jv2->targets = std::vector<double>(7.0, cost_targ1);
   jv2->lower_tols = std::vector<double>(7.0, -0.01);
@@ -200,7 +200,7 @@ TEST_F(CostsTest, inequality_jointPos)
   jv2->term_type = TT_COST;
   pci.cost_infos.push_back(jv2);
 
-  std::shared_ptr<JointPosTermInfo> jv3 = std::shared_ptr<JointPosTermInfo>(new JointPosTermInfo);
+  auto jv3 = std::make_shared<JointPosTermInfo>();
   jv3->coeffs = std::vector<double>(7, 1.0);
   jv3->targets = std::vector<double>(7.0, cost_targ2);
   jv3->lower_tols = std::vector<double>(7.0, -0.01);
@@ -261,7 +261,7 @@ TEST_F(CostsTest, inequality_jointPos)
  cost
  * target
  */
-TEST_F(CostsTest, equality_jointVel)
+TEST_F(CostsTest, equality_jointVel)  // NOLINT
 {
   CONSOLE_BRIDGE_logDebug("CostsTest, equality_jointVel");
 
@@ -288,7 +288,7 @@ TEST_F(CostsTest, equality_jointVel)
   pci.init_info.data = start_pos.transpose().replicate(pci.basic_info.n_steps, 1);
 
   // Constraint that first step velocity should be zero
-  std::shared_ptr<JointVelTermInfo> jv = std::shared_ptr<JointVelTermInfo>(new JointVelTermInfo);
+  auto jv = std::make_shared<JointVelTermInfo>();
   jv->coeffs = std::vector<double>(7, 10.0);
   jv->targets = std::vector<double>(7.0, cnt_targ);
   jv->first_step = 0;
@@ -298,7 +298,7 @@ TEST_F(CostsTest, equality_jointVel)
   pci.cnt_infos.push_back(jv);
 
   // All the rest of the joint velocities have a cost to some non zero value
-  std::shared_ptr<JointVelTermInfo> jv2 = std::shared_ptr<JointVelTermInfo>(new JointVelTermInfo);
+  auto jv2 = std::make_shared<JointVelTermInfo>();
   jv2->coeffs = std::vector<double>(7, 10.0);
   jv2->targets = std::vector<double>(7.0, cost_targ);
   jv2->first_step = 0;
@@ -352,7 +352,7 @@ TEST_F(CostsTest, equality_jointVel)
  * Sets a conflicting constraint on the velocity of all joints limiting them to +/- 0.1.
  * Checks to make sure that the constraint is met
  */
-TEST_F(CostsTest, inequality_jointVel)
+TEST_F(CostsTest, inequality_jointVel)  // NOLINT
 {
   CONSOLE_BRIDGE_logDebug("CostsTest, inequality_cnt_jointVel");
 
@@ -381,7 +381,7 @@ TEST_F(CostsTest, inequality_jointVel)
   pci.init_info.data = start_pos.transpose().replicate(pci.basic_info.n_steps, 1);
 
   // Constraint that limits velocity
-  std::shared_ptr<JointVelTermInfo> jv = std::shared_ptr<JointVelTermInfo>(new JointVelTermInfo);
+  auto jv = std::make_shared<JointVelTermInfo>();
   jv->coeffs = std::vector<double>(7, 1.0);
   jv->targets = std::vector<double>(7.0, 0);
   jv->lower_tols = std::vector<double>(7.0, lower_tol);
@@ -393,7 +393,7 @@ TEST_F(CostsTest, inequality_jointVel)
   pci.cnt_infos.push_back(jv);
 
   // Joint Velocities also have a cost to some non zero value
-  std::shared_ptr<JointVelTermInfo> jv2 = std::shared_ptr<JointVelTermInfo>(new JointVelTermInfo);
+  auto jv2 = std::make_shared<JointVelTermInfo>();
   jv2->coeffs = std::vector<double>(7, 1.0);
   jv2->targets = std::vector<double>(7.0, cost_targ1);
   jv2->lower_tols = std::vector<double>(7.0, -0.01);
@@ -404,7 +404,7 @@ TEST_F(CostsTest, inequality_jointVel)
   jv2->term_type = TT_COST;
   pci.cost_infos.push_back(jv2);
 
-  std::shared_ptr<JointVelTermInfo> jv3 = std::shared_ptr<JointVelTermInfo>(new JointVelTermInfo);
+  auto jv3 = std::make_shared<JointVelTermInfo>();
   jv3->coeffs = std::vector<double>(7, 1.0);
   jv3->targets = std::vector<double>(7.0, cost_targ2);
   jv3->lower_tols = std::vector<double>(7.0, -0.01);
@@ -464,7 +464,7 @@ TEST_F(CostsTest, inequality_jointVel)
  * Checks to make sure that the constraint is met if the first time step and the other time steps are close to the cost
  * target
  */
-TEST_F(CostsTest, equality_jointVel_time)
+TEST_F(CostsTest, equality_jointVel_time)  // NOLINT
 {
   CONSOLE_BRIDGE_logDebug("CostsTest, equality_jointVel_time");
 
@@ -493,7 +493,7 @@ TEST_F(CostsTest, equality_jointVel_time)
   pci.init_info.type = InitInfo::STATIONARY;
 
   // Constraint that first step velocity should be zero
-  std::shared_ptr<JointVelTermInfo> jv = std::shared_ptr<JointVelTermInfo>(new JointVelTermInfo);
+  auto jv = std::make_shared<JointVelTermInfo>();
   jv->coeffs = std::vector<double>(7, 1.0);
   jv->targets = std::vector<double>(7.0, cnt_targ);
   jv->upper_tols = std::vector<double>(7, 0.0);
@@ -505,7 +505,7 @@ TEST_F(CostsTest, equality_jointVel_time)
   pci.cnt_infos.push_back(jv);
 
   // All the rest of the joint velocities have a cost to some non zero value
-  std::shared_ptr<JointVelTermInfo> jv2 = std::shared_ptr<JointVelTermInfo>(new JointVelTermInfo);
+  auto jv2 = std::make_shared<JointVelTermInfo>();
   jv2->coeffs = std::vector<double>(7, 1.0);
   jv2->targets = std::vector<double>(7.0, cost_targ);
   jv2->first_step = 0;
@@ -562,7 +562,7 @@ TEST_F(CostsTest, equality_jointVel_time)
  * Sets a conflicting constraint on the velocity of all joints limiting them to +/- 0.1.
  * Checks to make sure that the constraint is met
  */
-TEST_F(CostsTest, inequality_jointVel_time)
+TEST_F(CostsTest, inequality_jointVel_time)  // NOLINT
 {
   CONSOLE_BRIDGE_logDebug("CostsTest, inequality_cnt_jointVel_time");
 
@@ -594,7 +594,7 @@ TEST_F(CostsTest, inequality_jointVel_time)
   pci.init_info.dt = dt_upper - dt_lower;
 
   // Constraint that limits velocity
-  std::shared_ptr<JointVelTermInfo> jv = std::shared_ptr<JointVelTermInfo>(new JointVelTermInfo);
+  auto jv = std::make_shared<JointVelTermInfo>();
   jv->coeffs = std::vector<double>(7, 1.0);
   jv->targets = std::vector<double>(7.0, 0);
   jv->lower_tols = std::vector<double>(7.0, lower_tol);
@@ -606,7 +606,7 @@ TEST_F(CostsTest, inequality_jointVel_time)
   pci.cnt_infos.push_back(jv);
 
   // Joint Velocities also have a cost to some non zero value
-  std::shared_ptr<JointVelTermInfo> jv2 = std::shared_ptr<JointVelTermInfo>(new JointVelTermInfo);
+  auto jv2 = std::make_shared<JointVelTermInfo>();
   jv2->coeffs = std::vector<double>(7, 1.0);
   jv2->targets = std::vector<double>(7.0, cost_targ1);
   jv2->lower_tols = std::vector<double>(7.0, -0.01);
@@ -617,7 +617,7 @@ TEST_F(CostsTest, inequality_jointVel_time)
   jv2->term_type = TT_COST | TT_USE_TIME;
   pci.cost_infos.push_back(jv2);
 
-  std::shared_ptr<JointVelTermInfo> jv3 = std::shared_ptr<JointVelTermInfo>(new JointVelTermInfo);
+  auto jv3 = std::make_shared<JointVelTermInfo>();
   jv3->coeffs = std::vector<double>(7, 1.0);
   jv3->targets = std::vector<double>(7.0, cost_targ2);
   jv3->lower_tols = std::vector<double>(7.0, -0.01);
@@ -678,7 +678,7 @@ TEST_F(CostsTest, inequality_jointVel_time)
  cost
  * target
  */
-TEST_F(CostsTest, equality_jointAcc)
+TEST_F(CostsTest, equality_jointAcc)  // NOLINT
 {
   CONSOLE_BRIDGE_logDebug("CostsTest, equality_jointAcc");
 
@@ -705,7 +705,7 @@ TEST_F(CostsTest, equality_jointAcc)
   pci.init_info.data = start_pos.transpose().replicate(pci.basic_info.n_steps, 1);
 
   // Constraint that first step velocity should be zero
-  std::shared_ptr<JointAccTermInfo> jv = std::shared_ptr<JointAccTermInfo>(new JointAccTermInfo);
+  auto jv = std::make_shared<JointAccTermInfo>();
   jv->coeffs = std::vector<double>(7, 10.0);
   jv->targets = std::vector<double>(7.0, cnt_targ);
   jv->first_step = 0;
@@ -715,7 +715,7 @@ TEST_F(CostsTest, equality_jointAcc)
   pci.cnt_infos.push_back(jv);
 
   // All the rest of the joint velocities have a cost to some non zero value
-  std::shared_ptr<JointAccTermInfo> jv2 = std::shared_ptr<JointAccTermInfo>(new JointAccTermInfo);
+  auto jv2 = std::make_shared<JointAccTermInfo>();
   jv2->coeffs = std::vector<double>(7, 10.0);
   jv2->targets = std::vector<double>(7.0, cost_targ);
   jv2->first_step = 0;
@@ -770,7 +770,7 @@ TEST_F(CostsTest, equality_jointAcc)
  that
  * the constraint is met
  */
-TEST_F(CostsTest, inequality_jointAcc)
+TEST_F(CostsTest, inequality_jointAcc)  // NOLINT
 {
   CONSOLE_BRIDGE_logDebug("CostsTest, inequality_cnt_jointVel");
 
@@ -799,7 +799,7 @@ TEST_F(CostsTest, inequality_jointAcc)
   pci.init_info.data = start_pos.transpose().replicate(pci.basic_info.n_steps, 1);
 
   // Constraint that limits accel
-  std::shared_ptr<JointAccTermInfo> jv = std::shared_ptr<JointAccTermInfo>(new JointAccTermInfo);
+  auto jv = std::make_shared<JointAccTermInfo>();
   jv->coeffs = std::vector<double>(7, 1.0);
   jv->targets = std::vector<double>(7.0, 0);
   jv->lower_tols = std::vector<double>(7.0, lower_tol);
@@ -811,7 +811,7 @@ TEST_F(CostsTest, inequality_jointAcc)
   pci.cnt_infos.push_back(jv);
 
   // Joint accel also have a cost to some non zero value
-  std::shared_ptr<JointAccTermInfo> jv2 = std::shared_ptr<JointAccTermInfo>(new JointAccTermInfo);
+  auto jv2 = std::make_shared<JointAccTermInfo>();
   jv2->coeffs = std::vector<double>(7, 1.0);
   jv2->targets = std::vector<double>(7.0, cost_targ1);
   jv2->lower_tols = std::vector<double>(7.0, -0.01);
@@ -822,7 +822,7 @@ TEST_F(CostsTest, inequality_jointAcc)
   jv2->term_type = TT_COST;
   pci.cost_infos.push_back(jv2);
 
-  std::shared_ptr<JointAccTermInfo> jv3 = std::shared_ptr<JointAccTermInfo>(new JointAccTermInfo);
+  auto jv3 = std::make_shared<JointAccTermInfo>();
   jv3->coeffs = std::vector<double>(7, 1.0);
   jv3->targets = std::vector<double>(7.0, cost_targ2);
   jv3->lower_tols = std::vector<double>(7.0, -0.01);

@@ -73,7 +73,7 @@ static void checkJacobian(const sco::VectorOfVector& f,
   }
 }
 
-TEST_F(KinematicCostsTest, CartPoseJacCalculator)
+TEST_F(KinematicCostsTest, CartPoseJacCalculator)  // NOLINT
 {
   CONSOLE_BRIDGE_logDebug("KinematicCostsTest, CartPoseJacCalculator");
 
@@ -95,7 +95,7 @@ TEST_F(KinematicCostsTest, CartPoseJacCalculator)
   checkJacobian(f, dfdx, values, 1.0e-5);
 }
 
-TEST_F(KinematicCostsTest, DynamicCartPoseJacCalculator)
+TEST_F(KinematicCostsTest, DynamicCartPoseJacCalculator)  // NOLINT
 {
   CONSOLE_BRIDGE_logDebug("KinematicCostsTest, DynamicCartPoseJacCalculator");
 
@@ -110,8 +110,6 @@ TEST_F(KinematicCostsTest, DynamicCartPoseJacCalculator)
 
   std::string link = "r_gripper_tool_frame";
   std::string target = "l_gripper_tool_frame";
-  Eigen::Isometry3d input_pose = tesseract_->getEnvironment()->getCurrentState()->transforms.at(link);
-  Eigen::Isometry3d target_pose = tesseract_->getEnvironment()->getCurrentState()->transforms.at(target);
   Eigen::Isometry3d tcp = Eigen::Isometry3d::Identity();
 
   Eigen::VectorXd values(15);

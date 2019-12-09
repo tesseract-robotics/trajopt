@@ -10,20 +10,15 @@ TRAJOPT_IGNORE_WARNINGS_POP
 #include <trajopt_utils/logging.hpp>
 #include <trajopt_utils/stl_to_string.hpp>
 
-namespace sco
-{
-extern void simplify2(IntVec& inds, DblVec& vals);
-}
-
 using namespace sco;
 
 class SolverInterface : public testing::TestWithParam<ModelType>
 {
 protected:
-  SolverInterface() {}
+  SolverInterface() = default;
 };
 
-TEST(SolverInterface, simplify2)
+TEST(SolverInterface, simplify2)  // NOLINT
 {
   IntVec indices = { 0, 1, 3 };
   DblVec values = { 1e-7, 1e3, 0., 0., 0. };
@@ -35,7 +30,7 @@ TEST(SolverInterface, simplify2)
   EXPECT_TRUE((values == DblVec{ 1e-7, 1e3 }));
 }
 
-TEST_P(SolverInterface, setup_problem)
+TEST_P(SolverInterface, setup_problem)  // NOLINT
 {
   Model::Ptr solver = createModel(GetParam());
   VarVector vars;
@@ -78,7 +73,7 @@ TEST_P(SolverInterface, setup_problem)
 }
 
 // Tests multiplying larger terms
-TEST_P(SolverInterface, DISABLED_ExprMult_test1)  // QuadExpr not PSD
+TEST_P(SolverInterface, DISABLED_ExprMult_test1)  // NOLINT // QuadExpr not PSD
 {
   Model::Ptr solver = createModel(GetParam());
   VarVector vars;
@@ -138,7 +133,7 @@ TEST_P(SolverInterface, DISABLED_ExprMult_test1)  // QuadExpr not PSD
 }
 
 // Tests multiplication with 2 variables: v1=10, v2=20 => (2*v1)(v2) = 400
-TEST_P(SolverInterface, ExprMult_test2)
+TEST_P(SolverInterface, ExprMult_test2)  // NOLINT
 {
   const double v1_val = 10;
   const double v2_val = 20;
@@ -190,7 +185,7 @@ TEST_P(SolverInterface, ExprMult_test2)
 }
 
 // Tests multiplication with a constant: v1=10, v2=20 => (3*v1-3)(2*v2-5) = 945
-TEST_P(SolverInterface, ExprMult_test3)
+TEST_P(SolverInterface, ExprMult_test3)  // NOLINT
 {
   const double v1_val = 10;
   const double v2_val = 20;

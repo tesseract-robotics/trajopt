@@ -384,4 +384,3 @@ private:
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #endif  // VHACD_VHACD_H
-
