@@ -48,7 +48,7 @@ void expectAllNear(const DblVec& x, const DblVec& y, double abstol)
 }
 
 double f_QuadraticSeparable(const VectorXd& x) { return x(0) * x(0) + sq(x(1) - 1) + sq(x(2) - 2); }
-TEST_P(SQP, QuadraticSeparable)
+TEST_P(SQP, QuadraticSeparable)  // NOLINT
 {
   // if the problem is exactly a QP, it should be solved in one iteration
   OptProb::Ptr prob;
@@ -65,7 +65,7 @@ TEST_P(SQP, QuadraticSeparable)
   // todo: checks on number of iterations and function evaluates
 }
 double f_QuadraticNonseparable(const VectorXd& x) { return sq(x(0) - x(1) + 3 * x(2)) + sq(x(0) - 1) + sq(x(2) - 2); }
-TEST_P(SQP, QuadraticNonseparable)
+TEST_P(SQP, QuadraticNonseparable)  // NOLINT
 {
   OptProb::Ptr prob;
   setupProblem(prob, 3, GetParam());
@@ -95,8 +95,9 @@ void testProblem(ScalarOfVector::Ptr f,
   size_t n = init.size();
   assert(sol.size() == n);
   setupProblem(prob, n, convex_solver);
-  prob->addCost(Cost::Ptr(new CostFromFunc(f, prob->getVars(), "f", true)));
-  prob->addConstraint(Constraint::Ptr(new ConstraintFromErrFunc(g, prob->getVars(), VectorXd(), cnt_type, "g")));
+  prob->addCost(Cost::Ptr(new CostFromFunc(std::move(f), prob->getVars(), "f", true)));
+  prob->addConstraint(
+      Constraint::Ptr(new ConstraintFromErrFunc(std::move(g), prob->getVars(), VectorXd(), cnt_type, "g")));
   BasicTrustRegionSQP solver(prob);
   BasicTrustRegionSQPParameters& params = solver.getParameters();
   params.max_iter = 1000;
@@ -147,22 +148,22 @@ VectorXd g_TP7(const VectorXd& x)
   return out;
 }
 
-TEST_P(SQP, TP1)
+TEST_P(SQP, TP1)  // NOLINT
 {
   testProblem(
       ScalarOfVector::construct(&f_TP1), VectorOfVector::construct(&g_TP1), INEQ, { -2, 1 }, { 1, 1 }, GetParam());
 }
-TEST_P(SQP, TP3)
+TEST_P(SQP, TP3)  // NOLINT
 {
   testProblem(
       ScalarOfVector::construct(&f_TP3), VectorOfVector::construct(&g_TP3), INEQ, { 10, 1 }, { 0, 0 }, GetParam());
 }
-TEST_P(SQP, TP6)
+TEST_P(SQP, TP6)  // NOLINT
 {
   testProblem(
       ScalarOfVector::construct(&f_TP6), VectorOfVector::construct(&g_TP6), EQ, { 10, 1 }, { 1, 1 }, GetParam());
 }
-TEST_P(SQP, TP7)
+TEST_P(SQP, TP7)  // NOLINT
 {
   testProblem(ScalarOfVector::construct(&f_TP7),
               VectorOfVector::construct(&g_TP7),

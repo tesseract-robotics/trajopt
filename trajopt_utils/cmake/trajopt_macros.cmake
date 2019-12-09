@@ -38,7 +38,11 @@ macro(trajopt_target_compile_options target)
   endif()
 
   list(FIND CMAKE_CXX_COMPILE_FEATURES cxx_std_14 CXX_FEATURE_FOUND)
-  set(warning_flags -Wall -Wextra -Wsuggest-override -Wconversion -Wsign-conversion)
+  if (NOT ENABLE_TESTS)
+    set(warning_flags -Wall -Wextra -Wconversion -Wsign-conversion -Wno-sign-compare)
+  else()
+    set(warning_flags -Wall -Wextra -Wconversion -Wsign-conversion -Wno-sign-compare) # -fsanitize=bounds)
+  endif()
 
   if (ARG_INTERFACE)
     target_compile_options("${target}" INTERFACE ${warning_flags})

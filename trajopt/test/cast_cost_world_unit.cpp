@@ -80,7 +80,7 @@ public:
   }
 };
 
-TEST_F(CastWorldTest, boxes)
+TEST_F(CastWorldTest, boxes)  // NOLINT
 {
   CONSOLE_BRIDGE_logDebug("CastWorldTest, boxes");
 

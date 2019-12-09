@@ -16,7 +16,7 @@ TRAJOPT_IGNORE_WARNINGS_POP
 
 using namespace sco;
 
-TEST(solver_utils, exprToEigen)
+TEST(solver_utils, exprToEigen)  // NOLINT
 {
   int n_vars = 2;
   std::vector<VarRep::Ptr> x_info;
@@ -137,7 +137,7 @@ TEST(solver_utils, exprToEigen)
   EXPECT_EQ(m_Q.nonZeros(), 2) << "m_Q.nonZeros() != 2" << std::endl;
 }
 
-TEST(solver_utils, eigenToTriplets)
+TEST(solver_utils, eigenToTriplets)  // NOLINT
 {
   Eigen::MatrixXd m_Q(2, 2);
   m_Q << 9, 0, 6, 4;
@@ -153,7 +153,7 @@ TEST(solver_utils, eigenToTriplets)
   EXPECT_EQ(m_Q_sparse.nonZeros(), 3) << "m_Q.nonZeros() != 3" << std::endl;
 }
 
-TEST(solver_utils, eigenToCSC)
+TEST(solver_utils, eigenToCSC)  // NOLINT
 {
   DblVec P;
   IntVec rows_i;
@@ -235,7 +235,7 @@ TEST(solver_utils, eigenToCSC)
   }
 }
 
-TEST(solver_utils, eigenToCSC_upper_triangular)
+TEST(solver_utils, eigenToCSC_upper_triangular)  // NOLINT
 {
   /*
    * M = [ 1, 2, 0,

@@ -27,7 +27,6 @@
 #define _CRT_SECURE_NO_WARNINGS
 #endif
 
-
 #include "vhacd/inc/vhacdMesh.h"
 #include "vhacd/inc/FloatMath.h"
 
@@ -131,7 +130,9 @@ void Mesh::ComputeConvexHull(const double* const pts, const size_t nPts)
   ch.compute(pts, 3 * sizeof(double), static_cast<int32_t>(nPts), -1.0, -1.0);
   for (int32_t v = 0; v < ch.vertices.size(); v++)
   {
-    AddPoint(Vec3<double>(static_cast<double>(ch.vertices[v].getX()), static_cast<double>(ch.vertices[v].getY()), static_cast<double>(ch.vertices[v].getZ())));
+    AddPoint(Vec3<double>(static_cast<double>(ch.vertices[v].getX()),
+                          static_cast<double>(ch.vertices[v].getY()),
+                          static_cast<double>(ch.vertices[v].getZ())));
   }
   const int32_t nt = ch.faces.size();
   for (int32_t t = 0; t < nt; ++t)

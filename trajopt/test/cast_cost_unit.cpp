@@ -55,7 +55,7 @@ public:
   }
 };
 
-TEST_F(CastTest, boxes)
+TEST_F(CastTest, boxes)  // NOLINT
 {
   CONSOLE_BRIDGE_logDebug("CastTest, boxes");
 

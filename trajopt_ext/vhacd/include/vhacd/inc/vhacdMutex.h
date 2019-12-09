@@ -102,7 +102,6 @@ public:
     VHACD_VERIFY(pthread_mutexattr_destroy(&mutexAttr) == 0);
     (void)(mutexAttr);
 #endif
-
   }
   ~Mutex(void)
   {

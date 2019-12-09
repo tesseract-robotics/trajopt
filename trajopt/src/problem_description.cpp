@@ -372,7 +372,8 @@ TrajOptResult::TrajOptResult(sco::OptResults& opt, TrajOptProb& prob)
   traj = getTraj(opt.x, prob.GetVars());
 }
 
-TrajOptResult::Ptr OptimizeProblem(const TrajOptProb::Ptr& prob, const tesseract_visualization::Visualization::Ptr& plotter)
+TrajOptResult::Ptr OptimizeProblem(const TrajOptProb::Ptr& prob,
+                                   const tesseract_visualization::Visualization::Ptr& plotter)
 {
   sco::BasicTrustRegionSQP opt(prob);
   sco::BasicTrustRegionSQPParameters& param = opt.getParameters();
@@ -570,11 +571,12 @@ void UserDefinedTermInfo::hatch(TrajOptProb& prob)
 
       if (jacobian_function == nullptr)
       {
-        prob.addCost(std::make_shared<trajopt::TrajOptCostFromErrFunc>(sco::VectorOfVector::construct(error_function),
-                                                                       prob.GetVarRow(iStep, 0, n_dof),
-                                                                       coeff,
-                                                                       cost_penalty_type,
-                                                                       name + "_" + type_str + "_" + std::to_string(iStep)));
+        prob.addCost(
+            std::make_shared<trajopt::TrajOptCostFromErrFunc>(sco::VectorOfVector::construct(error_function),
+                                                              prob.GetVarRow(iStep, 0, n_dof),
+                                                              coeff,
+                                                              cost_penalty_type,
+                                                              name + "_" + type_str + "_" + std::to_string(iStep)));
       }
       else
       {
@@ -595,22 +597,22 @@ void UserDefinedTermInfo::hatch(TrajOptProb& prob)
       std::string type_str = (constraint_type == sco::ConstraintType::EQ) ? "EQ" : "INEQ";
       if (jacobian_function == nullptr)
       {
-        prob.addConstraint(
-            std::make_shared<trajopt::TrajOptConstraintFromErrFunc>(sco::VectorOfVector::construct(error_function),
-                                                                    prob.GetVarRow(iStep, 0, n_dof),
-                                                                    coeff,
-                                                                    constraint_type,
-                                                                    name + "_" + type_str + "_" + std::to_string(iStep)));
+        prob.addConstraint(std::make_shared<trajopt::TrajOptConstraintFromErrFunc>(
+            sco::VectorOfVector::construct(error_function),
+            prob.GetVarRow(iStep, 0, n_dof),
+            coeff,
+            constraint_type,
+            name + "_" + type_str + "_" + std::to_string(iStep)));
       }
       else
       {
-        prob.addConstraint(
-            std::make_shared<trajopt::TrajOptConstraintFromErrFunc>(sco::VectorOfVector::construct(error_function),
-                                                                    sco::MatrixOfVector::construct(jacobian_function),
-                                                                    prob.GetVarRow(iStep, 0, n_dof),
-                                                                    coeff,
-                                                                    constraint_type,
-                                                                    name + "_" + type_str + "_" + std::to_string(iStep)));
+        prob.addConstraint(std::make_shared<trajopt::TrajOptConstraintFromErrFunc>(
+            sco::VectorOfVector::construct(error_function),
+            sco::MatrixOfVector::construct(jacobian_function),
+            prob.GetVarRow(iStep, 0, n_dof),
+            coeff,
+            constraint_type,
+            name + "_" + type_str + "_" + std::to_string(iStep)));
       }
     }
   }

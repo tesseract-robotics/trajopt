@@ -89,7 +89,7 @@ public:
   }
 };
 
-TEST_F(CastAttachedTest, LinkWithGeom)
+TEST_F(CastAttachedTest, LinkWithGeom)  // NOLINT
 {
   CONSOLE_BRIDGE_logDebug("CastAttachedTest, LinkWithGeom");
 
@@ -139,7 +139,7 @@ TEST_F(CastAttachedTest, LinkWithGeom)
   CONSOLE_BRIDGE_logDebug((found) ? ("Final trajectory is in collision") : ("Final trajectory is collision free"));
 }
 
-TEST_F(CastAttachedTest, LinkWithoutGeom)
+TEST_F(CastAttachedTest, LinkWithoutGeom)  // NOLINT
 {
   CONSOLE_BRIDGE_logDebug("CastAttachedTest, LinkWithGeom");
 

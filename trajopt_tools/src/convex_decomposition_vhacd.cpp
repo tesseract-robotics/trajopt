@@ -62,8 +62,8 @@ public:
               const char* const operation) override
   {
     cout << setfill(' ') << setw(3) << lround(overallProgress + 0.5) << "% "
-         << "[ " << stage << " " << setfill(' ') << setw(3) << lround(stageProgress + 0.5) << "% ] "
-         << operation << " " << setfill(' ') << setw(3) << lround(operationProgress + 0.5) << "%" << endl;
+         << "[ " << stage << " " << setfill(' ') << setw(3) << lround(stageProgress + 0.5) << "% ] " << operation << " "
+         << setfill(' ') << setw(3) << lround(operationProgress + 0.5) << "%" << endl;
   }
 };
 

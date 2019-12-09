@@ -301,7 +301,11 @@ SingleTimestepCollisionEvaluator::SingleTimestepCollisionEvaluator(
     const Eigen::Isometry3d& world_to_base,
     SafetyMarginData::ConstPtr safety_margin_data,
     sco::VarVector vars)
-  : CollisionEvaluator(std::move(manip), std::move(env), std::move(adjacency_map), world_to_base, std::move(safety_margin_data))
+  : CollisionEvaluator(std::move(manip),
+                       std::move(env),
+                       std::move(adjacency_map),
+                       world_to_base,
+                       std::move(safety_margin_data))
   , m_vars(std::move(vars))
 {
   contact_manager_ = env_->getDiscreteContactManager();
@@ -400,7 +404,11 @@ CastCollisionEvaluator::CastCollisionEvaluator(tesseract_kinematics::ForwardKine
                                                SafetyMarginData::ConstPtr safety_margin_data,
                                                sco::VarVector vars0,
                                                sco::VarVector vars1)
-  : CollisionEvaluator(std::move(manip), std::move(env), std::move(adjacency_map), world_to_base, std::move(safety_margin_data))
+  : CollisionEvaluator(std::move(manip),
+                       std::move(env),
+                       std::move(adjacency_map),
+                       world_to_base,
+                       std::move(safety_margin_data))
   , m_vars0(std::move(vars0))
   , m_vars1(std::move(vars1))
 {
@@ -536,7 +544,12 @@ CollisionCost::CollisionCost(tesseract_kinematics::ForwardKinematics::ConstPtr m
                              SafetyMarginData::ConstPtr safety_margin_data,
                              sco::VarVector vars)
   : Cost("collision")
-  , m_calc(new SingleTimestepCollisionEvaluator(std::move(manip), std::move(env), std::move(adjacency_map), world_to_base, std::move(safety_margin_data), std::move(vars)))
+  , m_calc(new SingleTimestepCollisionEvaluator(std::move(manip),
+                                                std::move(env),
+                                                std::move(adjacency_map),
+                                                world_to_base,
+                                                std::move(safety_margin_data),
+                                                std::move(vars)))
 {
 }
 
@@ -548,7 +561,13 @@ CollisionCost::CollisionCost(tesseract_kinematics::ForwardKinematics::ConstPtr m
                              sco::VarVector vars0,
                              sco::VarVector vars1)
   : Cost("cast_collision")
-  , m_calc(new CastCollisionEvaluator(std::move(manip), std::move(env), std::move(adjacency_map), world_to_base, std::move(safety_margin_data), std::move(vars0), std::move(vars1)))
+  , m_calc(new CastCollisionEvaluator(std::move(manip),
+                                      std::move(env),
+                                      std::move(adjacency_map),
+                                      world_to_base,
+                                      std::move(safety_margin_data),
+                                      std::move(vars0),
+                                      std::move(vars1)))
 {
 }
 
@@ -600,7 +619,12 @@ CollisionConstraint::CollisionConstraint(tesseract_kinematics::ForwardKinematics
                                          const Eigen::Isometry3d& world_to_base,
                                          SafetyMarginData::ConstPtr safety_margin_data,
                                          sco::VarVector vars)
-  : m_calc(new SingleTimestepCollisionEvaluator(std::move(manip), std::move(env), std::move(adjacency_map), world_to_base, std::move(safety_margin_data), std::move(vars)))
+  : m_calc(new SingleTimestepCollisionEvaluator(std::move(manip),
+                                                std::move(env),
+                                                std::move(adjacency_map),
+                                                world_to_base,
+                                                std::move(safety_margin_data),
+                                                std::move(vars)))
 {
   name_ = "collision";
 }
@@ -612,7 +636,13 @@ CollisionConstraint::CollisionConstraint(tesseract_kinematics::ForwardKinematics
                                          SafetyMarginData::ConstPtr safety_margin_data,
                                          sco::VarVector vars0,
                                          sco::VarVector vars1)
-  : m_calc(new CastCollisionEvaluator(std::move(manip), std::move(env), std::move(adjacency_map), world_to_base, std::move(safety_margin_data), std::move(vars0), std::move(vars1)))
+  : m_calc(new CastCollisionEvaluator(std::move(manip),
+                                      std::move(env),
+                                      std::move(adjacency_map),
+                                      world_to_base,
+                                      std::move(safety_margin_data),
+                                      std::move(vars0),
+                                      std::move(vars1)))
 {
   name_ = "collision";
 }

@@ -59,7 +59,7 @@ public:
   SingleTimestepCollisionEvaluator(tesseract_kinematics::ForwardKinematics::ConstPtr manip,
                                    tesseract_environment::Environment::ConstPtr env,
                                    tesseract_environment::AdjacencyMap::ConstPtr adjacency_map,
-                                   const Eigen::Isometry3d &world_to_base,
+                                   const Eigen::Isometry3d& world_to_base,
                                    SafetyMarginData::ConstPtr safety_margin_data,
                                    sco::VarVector vars);
   /**
@@ -89,7 +89,7 @@ public:
   CastCollisionEvaluator(tesseract_kinematics::ForwardKinematics::ConstPtr manip,
                          tesseract_environment::Environment::ConstPtr env,
                          tesseract_environment::AdjacencyMap::ConstPtr adjacency_map,
-                         const Eigen::Isometry3d &world_to_base,
+                         const Eigen::Isometry3d& world_to_base,
                          SafetyMarginData::ConstPtr safety_margin_data,
                          sco::VarVector vars0,
                          sco::VarVector vars1);
@@ -112,14 +112,14 @@ public:
   CollisionCost(tesseract_kinematics::ForwardKinematics::ConstPtr manip,
                 tesseract_environment::Environment::ConstPtr env,
                 tesseract_environment::AdjacencyMap::ConstPtr adjacency_map,
-                const Eigen::Isometry3d &world_to_base,
+                const Eigen::Isometry3d& world_to_base,
                 SafetyMarginData::ConstPtr safety_margin_data,
                 sco::VarVector vars);
   /* constructor for cast cost */
   CollisionCost(tesseract_kinematics::ForwardKinematics::ConstPtr manip,
                 tesseract_environment::Environment::ConstPtr env,
                 tesseract_environment::AdjacencyMap::ConstPtr adjacency_map,
-                const Eigen::Isometry3d &world_to_base,
+                const Eigen::Isometry3d& world_to_base,
                 SafetyMarginData::ConstPtr safety_margin_data,
                 sco::VarVector vars0,
                 sco::VarVector vars1);
@@ -139,14 +139,14 @@ public:
   CollisionConstraint(tesseract_kinematics::ForwardKinematics::ConstPtr manip,
                       tesseract_environment::Environment::ConstPtr env,
                       tesseract_environment::AdjacencyMap::ConstPtr adjacency_map,
-                      const Eigen::Isometry3d &world_to_base,
+                      const Eigen::Isometry3d& world_to_base,
                       SafetyMarginData::ConstPtr safety_margin_data,
                       sco::VarVector vars);
   /* constructor for cast cost */
   CollisionConstraint(tesseract_kinematics::ForwardKinematics::ConstPtr manip,
                       tesseract_environment::Environment::ConstPtr env,
                       tesseract_environment::AdjacencyMap::ConstPtr adjacency_map,
-                      const Eigen::Isometry3d &world_to_base,
+                      const Eigen::Isometry3d& world_to_base,
                       SafetyMarginData::ConstPtr safety_margin_data,
                       sco::VarVector vars0,
                       sco::VarVector vars1);

@@ -57,7 +57,7 @@ public:
 
     octomap::Pointcloud point_cloud;
     double delta = 0.05;
-    int length = static_cast<int>(1 / delta);
+    auto length = static_cast<int>(1 / delta);
 
     for (int x = 0; x < length; ++x)
       for (int y = 0; y < length; ++y)
@@ -93,7 +93,7 @@ public:
   }
 };
 
-TEST_F(CastOctomapTest, boxes)
+TEST_F(CastOctomapTest, boxes)  // NOLINT
 {
   CONSOLE_BRIDGE_logDebug("CastOctomapTest, boxes");
 

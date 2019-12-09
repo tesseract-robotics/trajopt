@@ -57,7 +57,7 @@ public:
   }
 };
 
-TEST_F(PlanningTest, numerical_ik1)
+TEST_F(PlanningTest, numerical_ik1)  // NOLINT
 {
   CONSOLE_BRIDGE_logDebug("PlanningTest, numerical_ik1");
 
@@ -118,7 +118,7 @@ TEST_F(PlanningTest, numerical_ik1)
   CONSOLE_BRIDGE_logDebug("planning time: %.3f", GetClock() - tStart);
 }
 
-TEST_F(PlanningTest, arm_around_table)
+TEST_F(PlanningTest, arm_around_table)  // NOLINT
 {
   CONSOLE_BRIDGE_logDebug("PlanningTest, arm_around_table");
 

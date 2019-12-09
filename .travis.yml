@@ -25,8 +25,9 @@ env:
     - ROSINSTALL_FILENAME=dependencies.rosinstall
     - ROS_REPO=ros
     - NOT_TEST_INSTALL=true
-    - CMAKE_ARGS=-DENABLE_TESTS=ON
+    - CMAKE_ARGS="-DCMAKE_BUILD_TYPE=Debug -DENABLE_TESTS=ON"
     - BUILD_PKGS_WHITELIST="trajopt trajopt_sco trajopt_tools trajopt_utils"
+    - ADDITIONAL_DEBS="clang clang-tidy"
 
 matrix:
   include:

@@ -1516,7 +1516,9 @@ void TetrahedronSet::ComputeExteriorPoints(const Plane& /*plane*/,
                                            SArray<Vec3<double> >* const /*exteriorPts*/) const
 {
 }
-void TetrahedronSet::ComputeClippedVolumes(const Plane& /*plane*/, double& /*positiveVolume*/, double& /*negativeVolume*/) const
+void TetrahedronSet::ComputeClippedVolumes(const Plane& /*plane*/,
+                                           double& /*positiveVolume*/,
+                                           double& /*negativeVolume*/) const
 {
   const size_t nTetrahedra = m_tetrahedra.Size();
   if (nTetrahedra == 0)
