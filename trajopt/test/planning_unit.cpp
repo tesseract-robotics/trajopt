@@ -150,7 +150,7 @@ TEST_F(PlanningTest, arm_around_table)  // NOLINT
   manager->setContactDistanceThreshold(0);
 
   bool found =
-      checkTrajectory(*manager, *prob->GetEnv(), prob->GetKin()->getJointNames(), prob->GetInitTraj(), collisions);
+      checkTrajectory(collisions, *manager, *prob->GetEnv(), prob->GetKin()->getJointNames(), prob->GetInitTraj());
 
   EXPECT_TRUE(found);
   CONSOLE_BRIDGE_logDebug((found) ? ("Initial trajectory is in collision") : ("Initial trajectory is collision free"));
@@ -185,7 +185,7 @@ TEST_F(PlanningTest, arm_around_table)  // NOLINT
 
   collisions.clear();
   found = checkTrajectory(
-      *manager, *prob->GetEnv(), prob->GetKin()->getJointNames(), getTraj(opt.x(), prob->GetVars()), collisions);
+      collisions, *manager, *prob->GetEnv(), prob->GetKin()->getJointNames(), getTraj(opt.x(), prob->GetVars()));
 
   EXPECT_FALSE(found);
   CONSOLE_BRIDGE_logDebug((found) ? ("Final trajectory is in collision") : ("Final trajectory is collision free"));
