@@ -41,7 +41,7 @@ macro(trajopt_target_compile_options target)
   if (NOT ENABLE_TESTS)
     set(warning_flags -Wall -Wextra -Wconversion -Wsign-conversion -Wno-sign-compare)
   else()
-    set(warning_flags -Wall -Wextra -Wconversion -Wsign-conversion -Wno-sign-compare) # -fsanitize=bounds)
+    set(warning_flags -Werror=all -Werror=extra -Werror=conversion -Werror=sign-conversion -Wno-sign-compare)
   endif()
 
   if (ARG_INTERFACE)
