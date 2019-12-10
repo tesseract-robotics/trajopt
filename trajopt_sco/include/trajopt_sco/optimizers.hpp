@@ -95,11 +95,15 @@ struct BasicTrustRegionSQPParameters
                               // this ratio
   double cnt_tolerance;       // after convergence of penalty subproblem, if
   // constraint violation is less than this, we're done
-  double max_merit_coeff_increases;   // number of times that we jack up penalty
-                                      // coefficient
+  /** @brief Max number of times that the constraints' cost will be increased */
+  double max_merit_coeff_increases;
+
   double merit_coeff_increase_ratio;  // ratio that we increate coeff each time
   double max_time;                    // not yet implemented
-  double merit_error_coeff;           // initial penalty coefficient
+  /** @brief Initial coefficient that is used to scale the constraints. The total constaint cost is constaint_value * coeff * merit_coeff */
+  double initial_merit_error_coeff;
+  /** @brief If true, merit coeffs will only be inflated for the constaints that failed. This can help when there are lots of constaints*/
+  bool inflate_constraints_individually;
   double trust_box_size;              // current size of trust region (component-wise)
 
   bool log_results;     // Log results to file
@@ -159,7 +163,7 @@ struct BasicTrustRegionSQPResults
    */
   double merit_improve_ratio;
   /** @brief This is the penalty applied to the constraints for this iteration */
-  double merit_error_coeff;
+  std::vector<double> merit_error_coeffs;
   /** @brief Variable names */
   const std::vector<std::string> var_names;
   /** @brief Cost Names */
@@ -189,7 +193,7 @@ struct BasicTrustRegionSQPResults
               const std::vector<ConvexObjective::Ptr>& cnt_cost_models,
               const std::vector<Constraint::Ptr>& constraints,
               const std::vector<Cost::Ptr>& costs,
-              double merit_error_coeff);
+              std::vector<double> merit_error_coeffs);
 
   /** @brief Print current results to the terminal */
   void print() const;

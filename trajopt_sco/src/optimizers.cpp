@@ -117,20 +117,23 @@ static std::vector<std::string> getVarNames(const VarVector& vars)
 
 // todo: use different coeffs for each constraint
 std::vector<ConvexObjective::Ptr> cntsToCosts(const std::vector<ConvexConstraints::Ptr>& cnts,
-                                              double err_coeff,
+                                              const std::vector<double> err_coeffs,
                                               Model* model)
 {
+  assert(cnts.size() == err_coeffs.size());
   std::vector<ConvexObjective::Ptr> out;
   for (const ConvexConstraints::Ptr& cnt : cnts)
   {
     ConvexObjective::Ptr obj(new ConvexObjective(model));
-    for (const AffExpr& aff : cnt->eqs_)
+    for (std::size_t idx = 0; idx < cnt->eqs_.size(); idx++)
     {
-      obj->addAbs(aff, err_coeff);
+      const AffExpr& aff = cnt->eqs_[idx];
+      obj->addAbs(aff, err_coeffs[idx]);
     }
-    for (const AffExpr& aff : cnt->ineqs_)
+    for (std::size_t idx = 0; idx < cnt->ineqs_.size(); idx++)
     {
-      obj->addHinge(aff, err_coeff);
+      const AffExpr& aff = cnt->ineqs_[idx];
+      obj->addHinge(aff, err_coeffs[idx]);
     }
     out.push_back(obj);
   }
@@ -170,7 +173,8 @@ BasicTrustRegionSQPParameters::BasicTrustRegionSQPParameters()
   max_merit_coeff_increases = 5;
   merit_coeff_increase_ratio = 10;
   max_time = static_cast<double>(INFINITY);
-  merit_error_coeff = 10;
+  initial_merit_error_coeff = 10;
+  inflate_constraints_individually = true;
   trust_box_size = 1e-1;
   log_results = false;
   log_dir = "/tmp";
@@ -239,7 +243,7 @@ BasicTrustRegionSQPResults::BasicTrustRegionSQPResults(std::vector<std::string> 
   approx_merit_improve = 0;
   exact_merit_improve = 0;
   merit_improve_ratio = 0;
-  merit_error_coeff = 0;
+  merit_error_coeffs = std::vector<double>(cnt_names.size(), 0);
 }
 
 void BasicTrustRegionSQPResults::update(const OptResults& prev_opt_results,
@@ -249,9 +253,9 @@ void BasicTrustRegionSQPResults::update(const OptResults& prev_opt_results,
                                         const std::vector<ConvexObjective::Ptr>& cnt_cost_models,
                                         const std::vector<Constraint::Ptr>& constraints,
                                         const std::vector<Cost::Ptr>& costs,
-                                        const double merit_error_coeff)
+                                        std::vector<double> merit_error_coeffs)
 {
-  this->merit_error_coeff = merit_error_coeff;
+  this->merit_error_coeffs = merit_error_coeffs;
   model_var_vals = model.getVarValues(model.getVars());
   model_cost_vals = evaluateModelCosts(cost_models, model_var_vals);
   model_cnt_viols = evaluateModelCntViols(cnt_models, model_var_vals);
@@ -264,8 +268,9 @@ void BasicTrustRegionSQPResults::update(const OptResults& prev_opt_results,
   {
     DblVec cnt_costs1 = evaluateModelCosts(cnt_cost_models, model_var_vals);
     DblVec cnt_costs2 = model_cnt_viols;
-    for (auto& cnt_cost2 : cnt_costs2)
-      cnt_cost2 *= merit_error_coeff;
+    for (unsigned i = 0; i < cnt_costs2.size(); ++i)
+      for (auto& cnt_cost2 : cnt_costs2)
+        cnt_cost2 *= merit_error_coeffs[i];
     LOG_DEBUG("SHOULD BE ALMOST THE SAME: %s ?= %s", CSTR(cnt_costs1), CSTR(cnt_costs2));
     // not exactly the same because cnt_costs1 is based on aux variables,
     // but they might not be at EXACTLY the right value
@@ -276,9 +281,9 @@ void BasicTrustRegionSQPResults::update(const OptResults& prev_opt_results,
   new_cost_vals = evaluateCosts(costs, new_x);
   new_cnt_viols = evaluateConstraintViols(constraints, new_x);
 
-  old_merit = vecSum(old_cost_vals) + merit_error_coeff * vecSum(old_cnt_viols);
-  model_merit = vecSum(model_cost_vals) + merit_error_coeff * vecSum(model_cnt_viols);
-  new_merit = vecSum(new_cost_vals) + merit_error_coeff * vecSum(new_cnt_viols);
+  old_merit = vecSum(old_cost_vals) + vecDot(old_cnt_viols, merit_error_coeffs);
+  model_merit = vecSum(model_cost_vals) + vecDot(model_cnt_viols, merit_error_coeffs);
+  new_merit = vecSum(new_cost_vals) + vecDot(new_cnt_viols, merit_error_coeffs);
   approx_merit_improve = old_merit - model_merit;
   exact_merit_improve = old_merit - new_merit;
   merit_improve_ratio = exact_merit_improve / approx_merit_improve;
@@ -293,7 +298,13 @@ void BasicTrustRegionSQPResults::update(const OptResults& prev_opt_results,
 void BasicTrustRegionSQPResults::print() const
 {
   std::printf("%15s | %10s | %10s | %10s | %10s | %10s\n", "", "oldexact", "new_exact", "dapprox", "dexact", "ratio");
-  std::printf("%15s | %10s---%10s---%10s---%10s---%10s\n", "COSTS", "----------", "----------", "----------", "----------", "----------");
+  std::printf("%15s | %10s---%10s---%10s---%10s---%10s\n",
+              "COSTS",
+              "----------",
+              "----------",
+              "----------",
+              "----------",
+              "----------");
   for (size_t i = 0; i < old_cost_vals.size(); ++i)
   {
     double approx_improve = old_cost_vals[i] - model_cost_vals[i];
@@ -333,18 +344,18 @@ void BasicTrustRegionSQPResults::print() const
       if (fabs(approx_improve) > 1e-8)
         std::printf("%15s | %10.3e | %10.3e | %10.3e | %10.3e | %10.3e\n",
                     cnt_names[i].c_str(),
-                    merit_error_coeff * old_cnt_viols[i],
-                    merit_error_coeff * new_cnt_viols[i],
-                    merit_error_coeff * approx_improve,
-                    merit_error_coeff * exact_improve,
+                    merit_error_coeffs[i] * old_cnt_viols[i],
+                    merit_error_coeffs[i] * new_cnt_viols[i],
+                    merit_error_coeffs[i] * approx_improve,
+                    merit_error_coeffs[i] * exact_improve,
                     exact_improve / approx_improve);
       else
         std::printf("%15s | %10.3e | %10.3e | %10.3e | %10.3e | %10s\n",
                     cnt_names[i].c_str(),
-                    merit_error_coeff * old_cnt_viols[i],
-                    merit_error_coeff * new_cnt_viols[i],
-                    merit_error_coeff * approx_improve,
-                    merit_error_coeff * exact_improve,
+                    merit_error_coeffs[i] * old_cnt_viols[i],
+                    merit_error_coeffs[i] * new_cnt_viols[i],
+                    merit_error_coeffs[i] * approx_improve,
+                    merit_error_coeffs[i] * exact_improve,
                     "  ------  ");
     }
   }
@@ -455,18 +466,18 @@ void BasicTrustRegionSQPResults::writeConstraints(std::FILE* stream, bool header
     {
       std::fprintf(stream,
                    ",%e,%e,%e,%e",
-                   merit_error_coeff * old_cnt_viols[i],
-                   merit_error_coeff * approx_improve,
-                   merit_error_coeff * exact_improve,
+                   merit_error_coeffs[i] * old_cnt_viols[i],
+                   merit_error_coeffs[i] * approx_improve,
+                   merit_error_coeffs[i] * exact_improve,
                    exact_improve / approx_improve);
     }
     else
     {
       std::fprintf(stream,
                    ",%e,%e,%e,%s",
-                   merit_error_coeff * old_cnt_viols[i],
-                   merit_error_coeff * approx_improve,
-                   merit_error_coeff * exact_improve,
+                   merit_error_coeffs[i] * old_cnt_viols[i],
+                   merit_error_coeffs[i] * approx_improve,
+                   merit_error_coeffs[i] * exact_improve,
                    "nan");
     }
   }
@@ -480,6 +491,7 @@ OptStatus BasicTrustRegionSQP::optimize()
   std::vector<std::string> cost_names = getCostNames(prob_->getCosts());
   std::vector<Constraint::Ptr> constraints = prob_->getConstraints();
   std::vector<std::string> cnt_names = getCntNames(constraints);
+  std::vector<double> merit_error_coeffs(constraints.size(), param_.initial_merit_error_coeff);
   BasicTrustRegionSQPResults iteration_results(var_names, cost_names, cnt_names);
 
   std::FILE* log_solver_stream = nullptr;
@@ -539,8 +551,7 @@ OptStatus BasicTrustRegionSQP::optimize()
 
       std::vector<ConvexObjective::Ptr> cost_models = convexifyCosts(prob_->getCosts(), results_.x, model_.get());
       std::vector<ConvexConstraints::Ptr> cnt_models = convexifyConstraints(constraints, results_.x, model_.get());
-      std::vector<ConvexObjective::Ptr> cnt_cost_models =
-          cntsToCosts(cnt_models, param_.merit_error_coeff, model_.get());
+      std::vector<ConvexObjective::Ptr> cnt_cost_models = cntsToCosts(cnt_models, merit_error_coeffs, model_.get());
       model_->update();
       for (ConvexObjective::Ptr& cost : cost_models)
         cost->addConstraintsToModel();
@@ -589,7 +600,7 @@ OptStatus BasicTrustRegionSQP::optimize()
                                  cnt_cost_models,
                                  constraints,
                                  prob_->getCosts(),
-                                 param_.merit_error_coeff);
+                                 merit_error_coeffs);
 
         if (param_.log_results || util::GetLogLevel() >= util::LevelDebug)
         {
@@ -661,7 +672,7 @@ OptStatus BasicTrustRegionSQP::optimize()
         retval = OPT_SCO_ITERATION_LIMIT;
         goto cleanup;
       }
-    }
+    } /* sqp loop */
 
   penaltyadjustment:
     if (results_.cnt_viols.empty() || vecMax(results_.cnt_viols) < param_.cnt_tolerance)
@@ -672,11 +683,28 @@ OptStatus BasicTrustRegionSQP::optimize()
     }
     else
     {
-      LOG_INFO("not all constraints are satisfied. increasing penalties");
-      param_.merit_error_coeff *= param_.merit_coeff_increase_ratio;
+      if (param_.inflate_constraints_individually)
+      {
+        assert(results_.cnt_viols.size() == merit_error_coeffs.size());
+        for (std::size_t idx = 0; idx < results_.cnt_viols.size(); idx++)
+        {
+          if (results_.cnt_viols[idx] > param_.cnt_tolerance)
+          {
+            LOG_INFO("Not all constraints are satisfied. Increasing constraint penalties for %s", CSTR(cnt_names[idx]));
+            merit_error_coeffs[idx] *= param_.merit_coeff_increase_ratio;
+          }
+        }
+      }
+      else
+      {
+        LOG_INFO("Not all constraints are satisfied. Increasing constraint penalties uniformly");
+        for (auto& merit_error_coeff : merit_error_coeffs)
+          merit_error_coeff *= param_.merit_coeff_increase_ratio;
+      }
+      LOG_INFO("New merit_error_coeffs: %s", CSTR(merit_error_coeffs));
       param_.trust_box_size = fmax(param_.trust_box_size, param_.min_trust_box_size / param_.trust_shrink_ratio * 1.5);
     }
-  }
+  } /* merit adjustment loop */
   retval = OPT_PENALTY_ITERATION_LIMIT;
   LOG_INFO("optimization couldn't satisfy all constraints");
 
