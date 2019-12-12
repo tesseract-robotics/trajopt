@@ -75,8 +75,6 @@ public:
     tesseract_->getEnvironment()->addLink(new_link, new_joint);
 
     // TODO: Need to add method to environment to disable collision and hid objects
-
-    gLogLevel = util::LevelInfo;
   }
 };
 
