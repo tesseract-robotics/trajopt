@@ -53,7 +53,7 @@ public:
     ipos["torso_lift_joint"] = 0.0;
     tesseract_->getEnvironment()->setState(ipos);
 
-    gLogLevel = util::LevelInfo;
+    gLogLevel = util::LevelError;
   }
 };
 

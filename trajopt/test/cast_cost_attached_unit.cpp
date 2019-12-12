@@ -48,7 +48,7 @@ public:
     ResourceLocator::Ptr locator = std::make_shared<SimpleResourceLocator>(locateResource);
     EXPECT_TRUE(tesseract_->init(urdf_file, srdf_file, locator));
 
-    gLogLevel = util::LevelDebug;
+    gLogLevel = util::LevelError;
 
     // Create plotting tool
     //    plotter_.reset(new tesseract_ros::ROSBasicPlotting(env_));
