@@ -1768,4 +1768,37 @@ void TotalTimeTermInfo::hatch(TrajOptProb& prob)
   }
 }
 
+void AvoidSingularityTermInfo::fromJson(ProblemConstructionInfo &, const Json::Value &)
+{
+  CONSOLE_BRIDGE_logWarn("Not implemented yet");
+}
+
+void AvoidSingularityTermInfo::hatch(TrajOptProb& prob)
+{
+  tesseract_kinematics::ForwardKinematics::ConstPtr kin = prob.GetKin();
+  int n_dof = kin->numJoints();
+
+  sco::VectorOfVector::Ptr f = std::make_shared<AvoidSingularityCostCalculator>(kin, link, lambda);
+  sco::MatrixOfVector::Ptr dfdx = std::make_shared<AvoidSingularityJacCalculator>(kin, link, lambda);
+
+  // Apply error calculator as either cost or constraint
+  for(int i = first_step; i <= last_step; ++i)
+  {
+    if (term_type & TT_COST)
+    {
+      prob.addCost(
+            sco::Cost::Ptr(new TrajOptCostFromErrFunc(f, dfdx, prob.GetVarRow(i, 0, n_dof), util::toVectorXd(coeffs), sco::ABS, name)));
+    }
+    else if (term_type & TT_CNT)
+    {
+      prob.addConstraint(sco::Constraint::Ptr(
+          new TrajOptConstraintFromErrFunc(f, dfdx, prob.GetVarRow(i, 0, n_dof), util::toVectorXd(coeffs), sco::INEQ, name)));
+    }
+    else
+    {
+      CONSOLE_BRIDGE_logWarn("Avoid singularity does not have a valid term_type defined. No cost/constraint applied");
+    }
+  }
+}
+
 }  // namespace trajopt
