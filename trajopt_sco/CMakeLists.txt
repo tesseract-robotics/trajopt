@@ -105,11 +105,9 @@ install(DIRECTORY include/${PROJECT_NAME}
 
 install(FILES cmake/FindGUROBI.cmake cmake/FindqpOASES.cmake DESTINATION lib/cmake/${PROJECT_NAME})
 
-if (ENABLE_TESTS)
+if (TRAJOPT_ENABLE_TESTING)
   enable_testing()
-  add_custom_target(run_tests ALL
-      WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-      COMMAND ${CMAKE_CTEST_COMMAND} -C $<CONFIGURATION> -V)
+  trajopt_add_run_tests_target()
 
   if (HAVE_BPMPD)
     # BPMPD Expects the caller to be in the install location so for
