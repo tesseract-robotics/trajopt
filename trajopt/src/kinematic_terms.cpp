@@ -442,4 +442,81 @@ MatrixXd TimeCostJacCalculator::operator()(const VectorXd& var_vals) const
   return jac;
 }
 
+VectorXd AvoidSingularityCostCalculator::operator()(const VectorXd& var_vals) const
+{
+  // Calculate the SVD of the jacobian at this joint state
+  MatrixXd jacobian(6, fwd_kin_->numJoints());
+  if(!fwd_kin_->calcJacobian(jacobian, var_vals, link_name_))
+  {
+    std::cout << "Could not calculate jacobian for link '" << link_name_ << "' in AvoidSingularities" << std::endl;
+    return Eigen::VectorXd::Zero(1);
+  }
+  JacobiSVD<MatrixXd> svd(jacobian, Eigen::ComputeThinU | Eigen::ComputeThinV);
+
+  // Get the U and V vectors for the smallest singular value
+  double smallest_sv = svd.singularValues().tail(1)(0);
+  double cost = 1.0 / (smallest_sv + lambda_);
+
+  const static double smallest_allowable_sv = 0.1;
+  const double threshold = 1.0 / (smallest_allowable_sv + lambda_);
+
+  VectorXd err(1);
+  err(0) = cost - threshold;
+
+  return err;
+}
+
+MatrixXd AvoidSingularityJacCalculator::jacobianPartialDerivative(const VectorXd& state, const Eigen::MatrixXd& jacobian, const Index jntIdx) const
+{
+  // Calculate the jacobian for the given joint perturbed by some epsilon
+  Eigen::VectorXd joints(state);
+  double eps = eps_;
+  joints(jntIdx) += eps;
+
+  if (!fwd_kin_->checkJoints(joints))
+  {
+    eps = -eps;
+    joints(jntIdx) += 2*eps;
+  }
+
+  MatrixXd jacobian_increment(6, fwd_kin_->numJoints());
+  if (!fwd_kin_->calcJacobian(jacobian_increment, joints, link_name_))
+  {
+    std::cout << "Could not calculate jacobian for link '" << link_name_ << "' in AvoidSingularities" << std::endl;
+    return MatrixXd::Zero(6, fwd_kin_->numJoints());
+  }
+  return (jacobian_increment - jacobian) / eps;
+}
+
+MatrixXd AvoidSingularityJacCalculator::operator()(const VectorXd& var_vals) const
+{
+  MatrixXd cost_jacobian;
+  cost_jacobian.resize(1, var_vals.size());
+
+  // Calculate the SVD of the jacobian at this joint state
+  MatrixXd jacobian(6, fwd_kin_->numJoints());
+  if (!fwd_kin_->calcJacobian(jacobian, var_vals, link_name_))
+  {
+    std::cout << "Could not calculate jacobian for link '" << link_name_ << "' in AvoidSingularities" << std::endl;
+    return MatrixXd::Zero(1, var_vals.size());
+  }
+  JacobiSVD<MatrixXd> svd(jacobian, Eigen::ComputeThinU | Eigen::ComputeThinV);
+
+  // Get the U and V vectors for the smallest singular value
+  double smallest_sv = svd.singularValues().tail(1)(0);
+  VectorXd ui = svd.matrixU().rightCols(1);
+  VectorXd vi = svd.matrixV().rightCols(1);
+
+  // Calculate the jacobian partial derivative for each joint, perturbing it slightly
+  for (Index jntIdx = 0; jntIdx < var_vals.size(); ++jntIdx)
+  {
+    // J is of size (m, n); U[i] is size (m, 1); V[i] is of size (n, 1)
+    // The result of { u_i^T * dJ/dx_i * v_i } will always be a single number that is dS_i/dx_i
+    cost_jacobian(0, jntIdx) = (ui.transpose() * jacobianPartialDerivative(var_vals, jacobian, jntIdx) * vi)(0);
+  }
+
+  cost_jacobian *= -1.0 / std::pow(smallest_sv + lambda_, 2.0);
+  return cost_jacobian;
+}
+
 }  // namespace trajopt

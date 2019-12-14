@@ -586,4 +586,28 @@ TrajOptProb::Ptr TRAJOPT_API ConstructProblem(const Json::Value&, const tesserac
 TrajOptResult::Ptr TRAJOPT_API OptimizeProblem(const TrajOptProb::Ptr&,
                                                const tesseract_visualization::Visualization::Ptr& plotter = nullptr);
 
+/**
+ * @brief Applies a cost to avoid kinematic singularities
+ */
+struct AvoidSingularityTermInfo : public TermInfo
+{
+  /** @brief Damping factor used to prevent numerical instability in the singularity avoidance cost as the smallest singular value approaches zero */
+  double lambda;
+  /** @brief The robot link with which to calculate the robot jacobian (required because of kinematic trees) */
+  std::string link;
+  int first_step;
+  int last_step;
+  DblVec coeffs;
+
+  void hatch(TrajOptProb& prob) override;
+  void fromJson(ProblemConstructionInfo& pci, const Json::Value& v) override;
+  DEFINE_CREATE(AvoidSingularityTermInfo)
+
+  AvoidSingularityTermInfo(double lambda_ = 0.1)
+    : TermInfo(TT_COST | TT_CNT)
+    , lambda(std::move(lambda_))
+  {
+  }
+};
+
 }  // namespace trajopt
