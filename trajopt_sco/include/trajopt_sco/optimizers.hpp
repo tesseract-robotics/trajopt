@@ -100,11 +100,13 @@ struct BasicTrustRegionSQPParameters
 
   double merit_coeff_increase_ratio;  // ratio that we increate coeff each time
   double max_time;                    // not yet implemented
-  /** @brief Initial coefficient that is used to scale the constraints. The total constaint cost is constaint_value * coeff * merit_coeff */
+  /** @brief Initial coefficient that is used to scale the constraints. The total constaint cost is constaint_value *
+   * coeff * merit_coeff */
   double initial_merit_error_coeff;
-  /** @brief If true, merit coeffs will only be inflated for the constaints that failed. This can help when there are lots of constaints*/
+  /** @brief If true, merit coeffs will only be inflated for the constaints that failed. This can help when there are
+   * lots of constaints*/
   bool inflate_constraints_individually;
-  double trust_box_size;              // current size of trust region (component-wise)
+  double trust_box_size;  // current size of trust region (component-wise)
 
   bool log_results;     // Log results to file
   std::string log_dir;  // Directory to store log results (Default: /tmp)

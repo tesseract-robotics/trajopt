@@ -103,7 +103,7 @@ void testProblem(ScalarOfVector::Ptr f,
   params.max_iter = 1000;
   params.min_trust_box_size = 1e-5;
   params.min_approx_improve = 1e-10;
-  params.merit_error_coeff = 1;
+  params.initial_merit_error_coeff = 1;
 
   solver.initialize(init);
   OptStatus status = solver.optimize();

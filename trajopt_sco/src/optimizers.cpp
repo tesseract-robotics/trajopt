@@ -269,8 +269,7 @@ void BasicTrustRegionSQPResults::update(const OptResults& prev_opt_results,
     DblVec cnt_costs1 = evaluateModelCosts(cnt_cost_models, model_var_vals);
     DblVec cnt_costs2 = model_cnt_viols;
     for (unsigned i = 0; i < cnt_costs2.size(); ++i)
-      for (auto& cnt_cost2 : cnt_costs2)
-        cnt_cost2 *= merit_error_coeffs[i];
+      cnt_costs2[i] *= merit_error_coeffs[i];
     LOG_DEBUG("SHOULD BE ALMOST THE SAME: %s ?= %s", CSTR(cnt_costs1), CSTR(cnt_costs2));
     // not exactly the same because cnt_costs1 is based on aux variables,
     // but they might not be at EXACTLY the right value
