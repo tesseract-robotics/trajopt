@@ -144,8 +144,12 @@ void ProblemConstructionInfo::readOptInfo(const Json::Value& v)
   json_marshal::childFromJson(
       v, opt_info.merit_coeff_increase_ratio, "merit_coeff_increase_ratio", opt_info.merit_coeff_increase_ratio);
   json_marshal::childFromJson(v, opt_info.max_time, "max_time", opt_info.max_time);
-  json_marshal::childFromJson(v, opt_info.initial_merit_error_coeff, "initial_merit_error_coeff", opt_info.initial_merit_error_coeff);
-  json_marshal::childFromJson(v, opt_info.inflate_constraints_individually, "inflate_constraints_individually", opt_info.inflate_constraints_individually);
+  json_marshal::childFromJson(
+      v, opt_info.initial_merit_error_coeff, "initial_merit_error_coeff", opt_info.initial_merit_error_coeff);
+  json_marshal::childFromJson(v,
+                              opt_info.inflate_constraints_individually,
+                              "inflate_constraints_individually",
+                              opt_info.inflate_constraints_individually);
   json_marshal::childFromJson(v, opt_info.trust_box_size, "trust_box_size", opt_info.trust_box_size);
 }
 
