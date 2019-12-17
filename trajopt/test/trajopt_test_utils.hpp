@@ -25,7 +25,7 @@ inline std::string locateResource(const std::string& url)
   if (url.find("package://trajopt") == 0)
   {
     mod_url.erase(0, strlen("package://trajopt"));
-    size_t pos = mod_url.find("/");
+    size_t pos = mod_url.find('/');
     if (pos == std::string::npos)
     {
       return std::string();
