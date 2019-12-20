@@ -87,4 +87,69 @@ void AddVarArray(sco::OptProb& prob, int rows, int cols, const std::string& name
   std::vector<int> colss(1, cols);
   AddVarArrays(prob, rows, colss, prefixes, arrs);
 }
+
+bool isSuperset(const std::vector<std::string>& subset, const std::vector<std::string>& superset)
+{
+  for (const std::string& s : subset)
+  {
+    if (std::find(superset.begin(), superset.end(), s) == superset.end())
+    {
+      return false;
+    }
+  }
+
+  // All subset strings were found in the superset
+  // Check that the superset is bigger than the subset
+  return superset.size() > subset.size();
+}
+
+bool updateFromSubset(const std::vector<std::string>& superset_names,
+                      const Eigen::VectorXd& superset_vals,
+                      const std::vector<std::string>& subset_names,
+                      const Eigen::VectorXd& subset_vals,
+                      Eigen::Ref<Eigen::VectorXd> new_superset_vals)
+{
+  new_superset_vals = superset_vals;
+  for (std::size_t i = 0; i < subset_names.size(); ++i)
+  {
+    const std::string& joint = subset_names[i];
+    auto it = std::find(superset_names.begin(), superset_names.end(), joint);
+    if (it == superset_names.end())
+    {
+      std::cout << "Failed to find joint '" << joint << "' in superset joint names";
+      return false;
+    }
+    auto idx = std::distance(superset_names.begin(), it);
+    new_superset_vals[idx] = subset_vals[static_cast<Eigen::Index>(i)];
+  }
+
+  return true;
+}
+
+bool getSubset(const std::vector<std::string>& superset_names,
+               const Eigen::VectorXd& superset_vals,
+               const std::vector<std::string>& subset_names,
+               Eigen::Ref<Eigen::VectorXd> subset_vals)
+{
+  Eigen::VectorXd out(subset_names.size());
+  for (Eigen::Index i = 0; i < static_cast<Eigen::Index>(subset_names.size()); ++i)
+  {
+    const std::string& name = subset_names[static_cast<std::size_t>(i)];
+
+    auto it = std::find(superset_names.begin(), superset_names.end(), name);
+    if (it != superset_names.end())
+    {
+      auto idx = std::distance(superset_names.begin(), it);
+      out[i] = superset_vals[idx];
+    }
+    else
+    {
+      return false;
+    }
+  }
+
+  subset_vals = out;
+  return true;
+}
+
 }  // namespace trajopt

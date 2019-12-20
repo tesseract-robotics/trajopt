@@ -591,6 +591,8 @@ TrajOptResult::Ptr TRAJOPT_API OptimizeProblem(const TrajOptProb::Ptr&,
  */
 struct AvoidSingularityTermInfo : public TermInfo
 {
+  /** @brief The forward kinematics solver used to calculate the jacobian for which to do singularity avoidance */
+  tesseract_kinematics::ForwardKinematics::ConstPtr subset_kin_;
   /** @brief Damping factor used to prevent numerical instability in the singularity avoidance cost as the smallest singular value approaches zero */
   double lambda;
   /** @brief The robot link with which to calculate the robot jacobian (required because of kinematic trees) */
@@ -603,8 +605,9 @@ struct AvoidSingularityTermInfo : public TermInfo
   void fromJson(ProblemConstructionInfo& pci, const Json::Value& v) override;
   DEFINE_CREATE(AvoidSingularityTermInfo)
 
-  AvoidSingularityTermInfo(double lambda_ = 0.1)
+  AvoidSingularityTermInfo(tesseract_kinematics::ForwardKinematics::ConstPtr subset_kin = nullptr, double lambda_ = 0.1)
     : TermInfo(TT_COST | TT_CNT)
+    , subset_kin_(subset_kin)
     , lambda(std::move(lambda_))
   {
   }
