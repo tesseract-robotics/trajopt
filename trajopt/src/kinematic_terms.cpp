@@ -446,7 +446,7 @@ VectorXd AvoidSingularityCostCalculator::operator()(const VectorXd& var_vals) co
 {
   // Calculate the SVD of the jacobian at this joint state
   MatrixXd jacobian(6, fwd_kin_->numJoints());
-  if(!fwd_kin_->calcJacobian(jacobian, var_vals, link_name_))
+  if (!fwd_kin_->calcJacobian(jacobian, var_vals, link_name_))
   {
     std::cout << "Could not calculate jacobian for link '" << link_name_ << "' in AvoidSingularities" << std::endl;
     return Eigen::VectorXd::Zero(1);
@@ -466,7 +466,9 @@ VectorXd AvoidSingularityCostCalculator::operator()(const VectorXd& var_vals) co
   return err;
 }
 
-MatrixXd AvoidSingularityJacCalculator::jacobianPartialDerivative(const VectorXd& state, const Eigen::MatrixXd& jacobian, const Index jntIdx) const
+MatrixXd AvoidSingularityJacCalculator::jacobianPartialDerivative(const VectorXd& state,
+                                                                  const Eigen::MatrixXd& jacobian,
+                                                                  const Index jntIdx) const
 {
   // Calculate the jacobian for the given joint perturbed by some epsilon
   Eigen::VectorXd joints(state);
@@ -476,7 +478,7 @@ MatrixXd AvoidSingularityJacCalculator::jacobianPartialDerivative(const VectorXd
   if (!fwd_kin_->checkJoints(joints))
   {
     eps = -eps;
-    joints(jntIdx) += 2*eps;
+    joints(jntIdx) += 2 * eps;
   }
 
   MatrixXd jacobian_increment(6, fwd_kin_->numJoints());
@@ -526,7 +528,8 @@ VectorXd AvoidSingularitySubsetCostCalculator::operator()(const VectorXd& var_va
   assert(getSubset(superset_kin_->getJointNames(), var_vals, fwd_kin_->getJointNames(), subset_var_vals) == true);
 
   // Return the cost using the base class
-  return AvoidSingularityCostCalculator::operator()(subset_var_vals);;
+  return AvoidSingularityCostCalculator::operator()(subset_var_vals);
+  ;
 }
 
 MatrixXd AvoidSingularitySubsetJacCalculator::operator()(const VectorXd& var_vals) const
@@ -543,7 +546,8 @@ MatrixXd AvoidSingularitySubsetJacCalculator::operator()(const VectorXd& var_val
   // Update the all-zero superset gradient with the values from the subset gradient
   VectorXd tmp(superset_kin_->numJoints());
   assert(updateFromSubset(
-             superset_kin_->getJointNames(), superset_jac.row(0), fwd_kin_->getJointNames(), subset_jac.row(0), tmp) == true);
+             superset_kin_->getJointNames(), superset_jac.row(0), fwd_kin_->getJointNames(), subset_jac.row(0), tmp) ==
+         true);
 
   // Create the output gradient
   MatrixXd jac(1, superset_kin_->numJoints());
