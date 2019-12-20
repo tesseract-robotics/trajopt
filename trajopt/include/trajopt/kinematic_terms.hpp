@@ -414,14 +414,16 @@ struct AvoidSingularityCostCalculator : sco::VectorOfVector
 {
   /** @brief Forward kinematics (and robot jacobian) calculator */
   tesseract_kinematics::ForwardKinematics::ConstPtr fwd_kin_;
-  /** @brief The name of the robot link for which to calculate the robot jacobian (required because of kinematic trees) */
+  /** @brief The name of the robot link for which to calculate the robot jacobian (required because of kinematic trees)
+   */
   std::string link_name_;
-  /** @brief Damping factor to prevent the cost from becoming infinite when the smallest singular value is very close or equal to zero */
+  /** @brief Damping factor to prevent the cost from becoming infinite when the smallest singular value is very close or
+   * equal to zero */
   double lambda_;
-  AvoidSingularityCostCalculator(tesseract_kinematics::ForwardKinematics::ConstPtr fwd_kin, std::string link_name, double lambda = 1.0e-3)
-    : fwd_kin_(fwd_kin)
-    , link_name_(std::move(link_name))
-    , lambda_(std::move(lambda))
+  AvoidSingularityCostCalculator(tesseract_kinematics::ForwardKinematics::ConstPtr fwd_kin,
+                                 std::string link_name,
+                                 double lambda = 1.0e-3)
+    : fwd_kin_(fwd_kin), link_name_(std::move(link_name)), lambda_(std::move(lambda))
   {
   }
   Eigen::VectorXd operator()(const Eigen::VectorXd& var_vals) const override;
@@ -432,27 +434,32 @@ struct AvoidSingularityJacCalculator : sco::MatrixOfVector
 {
   /** @brief Forward kinematics (and robot jacobian) calculator */
   tesseract_kinematics::ForwardKinematics::ConstPtr fwd_kin_;
-  /** @brief The name of the robot link for which to calculate the robot jacobian (required because of kinematic trees) */
+  /** @brief The name of the robot link for which to calculate the robot jacobian (required because of kinematic trees)
+   */
   std::string link_name_;
-  /** @brief Damping factor to prevent the cost from becoming infinite when the smallest singular value is very close or equal to zero */
+  /** @brief Damping factor to prevent the cost from becoming infinite when the smallest singular value is very close or
+   * equal to zero */
   double lambda_;
-  /** @brief Small number used to perturb each joint in the current state to calculate the partial derivative of the robot jacobian */
+  /** @brief Small number used to perturb each joint in the current state to calculate the partial derivative of the
+   * robot jacobian */
   double eps_;
-  AvoidSingularityJacCalculator(tesseract_kinematics::ForwardKinematics::ConstPtr fwd_kin, std::string link_name,
-                                double lambda = 1.0e-3, double eps = 1.0e-6)
-    : fwd_kin_(fwd_kin)
-    , link_name_(std::move(link_name))
-    , lambda_(std::move(lambda))
-    , eps_(std::move(eps))
+  AvoidSingularityJacCalculator(tesseract_kinematics::ForwardKinematics::ConstPtr fwd_kin,
+                                std::string link_name,
+                                double lambda = 1.0e-3,
+                                double eps = 1.0e-6)
+    : fwd_kin_(fwd_kin), link_name_(std::move(link_name)), lambda_(std::move(lambda)), eps_(std::move(eps))
   {
   }
   /** @brief Helper function for numerically calculating the partial derivative of the jacobian */
-  Eigen::MatrixXd jacobianPartialDerivative(const Eigen::VectorXd& state, const Eigen::MatrixXd& jacobian, const Eigen::Index jntIdx) const;
+  Eigen::MatrixXd jacobianPartialDerivative(const Eigen::VectorXd& state,
+                                            const Eigen::MatrixXd& jacobian,
+                                            const Eigen::Index jntIdx) const;
   Eigen::MatrixXd operator()(const Eigen::VectorXd& var_vals) const override;
 };
 
 /** @brief Cost caluclator for evaulating the cost of a singularity of a subset of the optimization problem joints.
- * The use case of this cost calculator would be to help a kinematic sub-chain avoid singularity (i.e. a robot in a system with an integrated positioner) */
+ * The use case of this cost calculator would be to help a kinematic sub-chain avoid singularity (i.e. a robot in a
+ * system with an integrated positioner) */
 struct AvoidSingularitySubsetCostCalculator : AvoidSingularityCostCalculator
 {
   /** @brief Forward kinematics (and robot jacobian) calculator for the optimization problem's full set of joints */

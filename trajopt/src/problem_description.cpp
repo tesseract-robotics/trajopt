@@ -1768,7 +1768,7 @@ void TotalTimeTermInfo::hatch(TrajOptProb& prob)
   }
 }
 
-void AvoidSingularityTermInfo::fromJson(ProblemConstructionInfo &, const Json::Value &)
+void AvoidSingularityTermInfo::fromJson(ProblemConstructionInfo&, const Json::Value&)
 {
   CONSOLE_BRIDGE_logWarn("Not implemented yet");
 }
@@ -1795,17 +1795,17 @@ void AvoidSingularityTermInfo::hatch(TrajOptProb& prob)
   int n_dof = kin->numJoints();
 
   // Apply error calculator as either cost or constraint
-  for(int i = first_step; i <= last_step; ++i)
+  for (int i = first_step; i <= last_step; ++i)
   {
     if (term_type & TT_COST)
     {
-      prob.addCost(
-            sco::Cost::Ptr(new TrajOptCostFromErrFunc(f, dfdx, prob.GetVarRow(i, 0, n_dof), util::toVectorXd(coeffs), sco::ABS, name)));
+      prob.addCost(sco::Cost::Ptr(
+          new TrajOptCostFromErrFunc(f, dfdx, prob.GetVarRow(i, 0, n_dof), util::toVectorXd(coeffs), sco::ABS, name)));
     }
     else if (term_type & TT_CNT)
     {
-      prob.addConstraint(sco::Constraint::Ptr(
-          new TrajOptConstraintFromErrFunc(f, dfdx, prob.GetVarRow(i, 0, n_dof), util::toVectorXd(coeffs), sco::INEQ, name)));
+      prob.addConstraint(sco::Constraint::Ptr(new TrajOptConstraintFromErrFunc(
+          f, dfdx, prob.GetVarRow(i, 0, n_dof), util::toVectorXd(coeffs), sco::INEQ, name)));
     }
     else
     {
