@@ -95,6 +95,7 @@ TEST_F(CastWorldTest, boxes)  // NOLINT
   ASSERT_TRUE(!!prob);
 
   std::vector<ContactResultMap> collisions;
+  tesseract_environment::StateSolver::Ptr state_solver = prob->GetEnv()->getStateSolver();
   ContinuousContactManager::Ptr manager = prob->GetEnv()->getContinuousContactManager();
 
   AdjacencyMap::Ptr adjacency_map = std::make_shared<AdjacencyMap>(tesseract_->getEnvironment()->getSceneGraph(),
@@ -105,7 +106,7 @@ TEST_F(CastWorldTest, boxes)  // NOLINT
   manager->setContactDistanceThreshold(0);
 
   bool found =
-      checkTrajectory(collisions, *manager, *prob->GetEnv(), prob->GetKin()->getJointNames(), prob->GetInitTraj());
+      checkTrajectory(collisions, *manager, *state_solver, prob->GetKin()->getJointNames(), prob->GetInitTraj());
 
   EXPECT_TRUE(found);
   CONSOLE_BRIDGE_logDebug((found) ? ("Initial trajectory is in collision") : ("Initial trajectory is collision free"));
@@ -121,7 +122,7 @@ TEST_F(CastWorldTest, boxes)  // NOLINT
 
   collisions.clear();
   found = checkTrajectory(
-      collisions, *manager, *prob->GetEnv(), prob->GetKin()->getJointNames(), getTraj(opt.x(), prob->GetVars()));
+      collisions, *manager, *state_solver, prob->GetKin()->getJointNames(), getTraj(opt.x(), prob->GetVars()));
 
   EXPECT_FALSE(found);
   CONSOLE_BRIDGE_logDebug((found) ? ("Final trajectory is in collision") : ("Final trajectory is collision free"));
