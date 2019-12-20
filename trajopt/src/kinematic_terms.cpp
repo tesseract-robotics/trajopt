@@ -519,4 +519,37 @@ MatrixXd AvoidSingularityJacCalculator::operator()(const VectorXd& var_vals) con
   return cost_jacobian;
 }
 
+VectorXd AvoidSingularitySubsetCostCalculator::operator()(const VectorXd& var_vals) const
+{
+  // Get the subset of the input variable values
+  VectorXd subset_var_vals(fwd_kin_->numJoints());
+  assert(getSubset(superset_kin_->getJointNames(), var_vals, fwd_kin_->getJointNames(), subset_var_vals) == true);
+
+  // Return the cost using the base class
+  return AvoidSingularityCostCalculator::operator()(subset_var_vals);;
+}
+
+MatrixXd AvoidSingularitySubsetJacCalculator::operator()(const VectorXd& var_vals) const
+{
+  // Calculate the gradient using the subset kinematics
+  VectorXd subset_var_vals(fwd_kin_->numJoints());
+  assert(getSubset(superset_kin_->getJointNames(), var_vals, fwd_kin_->getJointNames(), subset_var_vals) == true);
+  MatrixXd subset_jac = AvoidSingularityJacCalculator::operator()(subset_var_vals);
+
+  // Create an all-zero gradient that is the size of the superset joints
+  MatrixXd superset_jac(1, superset_kin_->numJoints());
+  superset_jac.setZero();
+
+  // Update the all-zero superset gradient with the values from the subset gradient
+  VectorXd tmp(superset_kin_->numJoints());
+  assert(updateFromSubset(
+             superset_kin_->getJointNames(), superset_jac.row(0), fwd_kin_->getJointNames(), subset_jac.row(0), tmp) == true);
+
+  // Create the output gradient
+  MatrixXd jac(1, superset_kin_->numJoints());
+  jac.row(0) = tmp;
+
+  return jac;
+}
+
 }  // namespace trajopt

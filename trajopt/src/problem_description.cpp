@@ -1776,10 +1776,23 @@ void AvoidSingularityTermInfo::fromJson(ProblemConstructionInfo &, const Json::V
 void AvoidSingularityTermInfo::hatch(TrajOptProb& prob)
 {
   tesseract_kinematics::ForwardKinematics::ConstPtr kin = prob.GetKin();
-  int n_dof = kin->numJoints();
+  sco::VectorOfVector::Ptr f;
+  sco::MatrixOfVector::Ptr dfdx;
 
-  sco::VectorOfVector::Ptr f = std::make_shared<AvoidSingularityCostCalculator>(kin, link, lambda);
-  sco::MatrixOfVector::Ptr dfdx = std::make_shared<AvoidSingularityJacCalculator>(kin, link, lambda);
+  // Check if the subset kinematics are specified and its joint set is a subset of the problem's joint set
+  if (subset_kin_ && isSuperset(subset_kin_->getJointNames(), kin->getJointNames()))
+  {
+    f = std::make_shared<AvoidSingularitySubsetCostCalculator>(subset_kin_, kin, link, lambda);
+    dfdx = std::make_shared<AvoidSingularitySubsetJacCalculator>(subset_kin_, kin, link, lambda);
+  }
+  else
+  {
+    // Otherwise create a singularity cost and jacobian calculator with the problem's full set of joints
+    f = std::make_shared<AvoidSingularityCostCalculator>(kin, link, lambda);
+    dfdx = std::make_shared<AvoidSingularityJacCalculator>(kin, link, lambda);
+  }
+
+  int n_dof = kin->numJoints();
 
   // Apply error calculator as either cost or constraint
   for(int i = first_step; i <= last_step; ++i)

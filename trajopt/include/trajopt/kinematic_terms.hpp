@@ -451,4 +451,35 @@ struct AvoidSingularityJacCalculator : sco::MatrixOfVector
   Eigen::MatrixXd operator()(const Eigen::VectorXd& var_vals) const override;
 };
 
+/** @brief Cost caluclator for evaulating the cost of a singularity of a subset of the optimization problem joints.
+ * The use case of this cost calculator would be to help a kinematic sub-chain avoid singularity (i.e. a robot in a system with an integrated positioner) */
+struct AvoidSingularitySubsetCostCalculator : AvoidSingularityCostCalculator
+{
+  /** @brief Forward kinematics (and robot jacobian) calculator for the optimization problem's full set of joints */
+  tesseract_kinematics::ForwardKinematics::ConstPtr superset_kin_;
+  AvoidSingularitySubsetCostCalculator(tesseract_kinematics::ForwardKinematics::ConstPtr subset_kin,
+                                       tesseract_kinematics::ForwardKinematics::ConstPtr superset_kin,
+                                       std::string link_name,
+                                       double lambda = 1.0e-3)
+    : AvoidSingularityCostCalculator(subset_kin, link_name, lambda), superset_kin_(superset_kin)
+  {
+  }
+  Eigen::VectorXd operator()(const Eigen::VectorXd& var_vals) const override;
+};
+
+/** @brief Jacobian calculator for the subset singularity avoidance cost */
+struct AvoidSingularitySubsetJacCalculator : AvoidSingularityJacCalculator
+{
+  tesseract_kinematics::ForwardKinematics::ConstPtr superset_kin_;
+  AvoidSingularitySubsetJacCalculator(tesseract_kinematics::ForwardKinematics::ConstPtr subset_kin,
+                                      tesseract_kinematics::ForwardKinematics::ConstPtr superset_kin,
+                                      std::string link_name,
+                                      double lambda = 1.0e-3,
+                                      double eps = 1.0e-6)
+    : AvoidSingularityJacCalculator(subset_kin, link_name, lambda, eps), superset_kin_(superset_kin)
+  {
+  }
+  Eigen::MatrixXd operator()(const Eigen::VectorXd& var_vals) const override;
+};
+
 }  // namespace trajopt

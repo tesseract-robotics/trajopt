@@ -208,4 +208,40 @@ inline Eigen::Isometry3d addTwist(const Eigen::Isometry3d& t1,
   return t2;
 }
 
+/**
+ * @brief Determines if the input superset includes the input subset
+ * @param subset
+ * @param superset
+ * @return
+ */
+bool isSuperset(const std::vector<std::string>& subset, const std::vector<std::string>& superset);
+
+/**
+ * @brief Updates a superset of joint values with those from a subset of joint values
+ * @param superset_names: Vector of names of the superset variables
+ * @param superset_vals: Values of the superset
+ * @param subset_names: Vector of names of the subset variables
+ * @param subset_vals: Values of the subset
+ * @param new_superset_vals: [output] the updated superset values
+ * @return True on success, false on failure
+ */
+bool updateFromSubset(const std::vector<std::string>& superset_names,
+                      const Eigen::VectorXd& superset_vals,
+                      const std::vector<std::string>& subset_names,
+                      const Eigen::VectorXd& subset_vals,
+                      Eigen::Ref<Eigen::VectorXd> new_superset_vals);
+
+/**
+ * @brief Gets the subset of joint values from a superset of joint values
+ * @param superset_names: Vector of superset variable names
+ * @param superset_vals: Vector of superset variable values
+ * @param subset_names: Vector of subset variable names
+ * @param subset_vals [output]: Subset variable values
+ * @return True on success, false on failure
+ */
+bool getSubset(const std::vector<std::string>& superset_names,
+               const Eigen::VectorXd& superset_vals,
+               const std::vector<std::string>& subset_names,
+               Eigen::Ref<Eigen::VectorXd> subset_vals);
+
 }  // namespace trajopt
