@@ -177,7 +177,7 @@ void OSQPModel::createOrUpdateSolver()
     osqp_cleanup(osqp_workspace_);
   // Setup workspace - this should be called only once
   auto ret = osqp_setup(&osqp_workspace_, &osqp_data_, &osqp_settings_);
-  if(ret)
+  if (ret)
   {
     throw std::runtime_error("Could not initialize OSQP: error " + std::to_string(ret));
   }
