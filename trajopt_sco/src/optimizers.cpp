@@ -122,18 +122,18 @@ std::vector<ConvexObjective::Ptr> cntsToCosts(const std::vector<ConvexConstraint
 {
   assert(cnts.size() == err_coeffs.size());
   std::vector<ConvexObjective::Ptr> out;
-  for (const ConvexConstraints::Ptr& cnt : cnts)
+  for (std::size_t c = 0; c < cnts.size(); ++c)
   {
     ConvexObjective::Ptr obj(new ConvexObjective(model));
-    for (std::size_t idx = 0; idx < cnt->eqs_.size(); idx++)
+    for (std::size_t idx = 0; idx < cnts[c]->eqs_.size(); ++idx)
     {
-      const AffExpr& aff = cnt->eqs_[idx];
-      obj->addAbs(aff, err_coeffs[idx]);
+      const AffExpr& aff = cnts[c]->eqs_[idx];
+      obj->addAbs(aff, err_coeffs[c]);
     }
-    for (std::size_t idx = 0; idx < cnt->ineqs_.size(); idx++)
+    for (std::size_t idx = 0; idx < cnts[c]->ineqs_.size(); ++idx)
     {
-      const AffExpr& aff = cnt->ineqs_[idx];
-      obj->addHinge(aff, err_coeffs[idx]);
+      const AffExpr& aff = cnts[c]->ineqs_[idx];
+      obj->addHinge(aff, err_coeffs[c]);
     }
     out.push_back(obj);
   }
@@ -296,9 +296,17 @@ void BasicTrustRegionSQPResults::update(const OptResults& prev_opt_results,
 
 void BasicTrustRegionSQPResults::print() const
 {
-  std::printf("%15s | %10s | %10s | %10s | %10s | %10s\n", "", "oldexact", "new_exact", "dapprox", "dexact", "ratio");
-  std::printf("%15s | %10s---%10s---%10s---%10s---%10s\n",
+  std::printf("%15s | %10s | %10s | %10s | %10s | %10s | %10s\n",
+              "",
+              "merit",
+              "oldexact",
+              "new_exact",
+              "dapprox",
+              "dexact",
+              "ratio");
+  std::printf("%15s | %10s---%10s---%10s---%10s---%10s---%10s\n",
               "COSTS",
+              "----------",
               "----------",
               "----------",
               "----------",
@@ -309,16 +317,18 @@ void BasicTrustRegionSQPResults::print() const
     double approx_improve = old_cost_vals[i] - model_cost_vals[i];
     double exact_improve = old_cost_vals[i] - new_cost_vals[i];
     if (fabs(approx_improve) > 1e-8)
-      std::printf("%15s | %10.3e | %10.3e | %10.3e | %10.3e | %10.3e\n",
+      std::printf("%15s | %10s | %10.3e | %10.3e | %10.3e | %10.3e | %10.3e\n",
                   cost_names[i].c_str(),
+                  "----------",
                   old_cost_vals[i],
                   new_cost_vals[i],
                   approx_improve,
                   exact_improve,
                   exact_improve / approx_improve);
     else
-      std::printf("%15s | %10.3e | %10.3e | %10.3e | %10.3e | %10s\n",
+      std::printf("%15s | %10s | %10.3e | %10.3e | %10.3e | %10.3e | %10s\n",
                   cost_names[i].c_str(),
+                  "----------",
                   old_cost_vals[i],
                   new_cost_vals[i],
                   approx_improve,
@@ -328,29 +338,31 @@ void BasicTrustRegionSQPResults::print() const
 
   if (!cnt_names.empty())
   {
-    std::printf("%15s | %10s---%10s---%10s---%10s---%10s\n",
+    std::printf("%15s | %10s---%10s---%10s---%10s---%10s---%10s\n",
                 "CONSTRAINTS",
                 "----------",
                 "----------",
                 "----------",
                 "----------",
-                "---------"
-                "-");
+                "----------",
+                "---------");
     for (size_t i = 0; i < old_cnt_viols.size(); ++i)
     {
       double approx_improve = old_cnt_viols[i] - model_cnt_viols[i];
       double exact_improve = old_cnt_viols[i] - new_cnt_viols[i];
       if (fabs(approx_improve) > 1e-8)
-        std::printf("%15s | %10.3e | %10.3e | %10.3e | %10.3e | %10.3e\n",
+        std::printf("%15s | %10.3e | %10.3e | %10.3e | %10.3e | %10.3e | %10.3e\n",
                     cnt_names[i].c_str(),
+                    merit_error_coeffs[i],
                     merit_error_coeffs[i] * old_cnt_viols[i],
                     merit_error_coeffs[i] * new_cnt_viols[i],
                     merit_error_coeffs[i] * approx_improve,
                     merit_error_coeffs[i] * exact_improve,
                     exact_improve / approx_improve);
       else
-        std::printf("%15s | %10.3e | %10.3e | %10.3e | %10.3e | %10s\n",
+        std::printf("%15s | %10.3e | %10.3e | %10.3e | %10.3e | %10.3e | %10s\n",
                     cnt_names[i].c_str(),
+                    merit_error_coeffs[i],
                     merit_error_coeffs[i] * old_cnt_viols[i],
                     merit_error_coeffs[i] * new_cnt_viols[i],
                     merit_error_coeffs[i] * approx_improve,
@@ -359,8 +371,9 @@ void BasicTrustRegionSQPResults::print() const
     }
   }
 
-  std::printf("%15s | %10.3e | %10.3e | %10.3e | %10.3e | %10.3e\n",
+  std::printf("%15s | %10s | %10.3e | %10.3e | %10.3e | %10.3e | %10.3e\n",
               "TOTAL",
+              "----------",
               old_merit,
               new_merit,
               approx_merit_improve,
