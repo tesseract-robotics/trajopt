@@ -117,7 +117,7 @@ static std::vector<std::string> getVarNames(const VarVector& vars)
 
 // todo: use different coeffs for each constraint
 std::vector<ConvexObjective::Ptr> cntsToCosts(const std::vector<ConvexConstraints::Ptr>& cnts,
-                                              const std::vector<double> err_coeffs,
+                                              const std::vector<double>& err_coeffs,
                                               Model* model)
 {
   assert(cnts.size() == err_coeffs.size());
