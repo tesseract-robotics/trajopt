@@ -607,7 +607,7 @@ struct AvoidSingularityTermInfo : public TermInfo
   DEFINE_CREATE(AvoidSingularityTermInfo)
 
   AvoidSingularityTermInfo(tesseract_kinematics::ForwardKinematics::ConstPtr subset_kin = nullptr, double lambda_ = 0.1)
-    : TermInfo(TT_COST | TT_CNT), subset_kin_(subset_kin), lambda(std::move(lambda_))
+    : TermInfo(TT_COST | TT_CNT), subset_kin_(std::move(subset_kin)), lambda(lambda_)
   {
   }
 };
