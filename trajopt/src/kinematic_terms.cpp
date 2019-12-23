@@ -442,7 +442,7 @@ MatrixXd TimeCostJacCalculator::operator()(const VectorXd& var_vals) const
   return jac;
 }
 
-VectorXd AvoidSingularityCostCalculator::operator()(const VectorXd& var_vals) const
+VectorXd AvoidSingularityErrCalculator::operator()(const VectorXd& var_vals) const
 {
   // Calculate the SVD of the jacobian at this joint state
   MatrixXd jacobian(6, fwd_kin_->numJoints());
@@ -468,7 +468,7 @@ VectorXd AvoidSingularityCostCalculator::operator()(const VectorXd& var_vals) co
 
 MatrixXd AvoidSingularityJacCalculator::jacobianPartialDerivative(const VectorXd& state,
                                                                   const Eigen::MatrixXd& jacobian,
-                                                                  const Index jntIdx) const
+                                                                  Index jntIdx) const
 {
   // Calculate the jacobian for the given joint perturbed by some epsilon
   Eigen::VectorXd joints(state);
@@ -521,15 +521,14 @@ MatrixXd AvoidSingularityJacCalculator::operator()(const VectorXd& var_vals) con
   return cost_jacobian;
 }
 
-VectorXd AvoidSingularitySubsetCostCalculator::operator()(const VectorXd& var_vals) const
+VectorXd AvoidSingularitySubsetErrCalculator::operator()(const VectorXd& var_vals) const
 {
   // Get the subset of the input variable values
   VectorXd subset_var_vals(fwd_kin_->numJoints());
   assert(getSubset(superset_kin_->getJointNames(), var_vals, fwd_kin_->getJointNames(), subset_var_vals) == true);
 
   // Return the cost using the base class
-  return AvoidSingularityCostCalculator::operator()(subset_var_vals);
-  ;
+  return AvoidSingularityErrCalculator::operator()(subset_var_vals);
 }
 
 MatrixXd AvoidSingularitySubsetJacCalculator::operator()(const VectorXd& var_vals) const

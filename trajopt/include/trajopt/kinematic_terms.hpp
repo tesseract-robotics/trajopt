@@ -409,8 +409,8 @@ struct TimeCostJacCalculator : sco::MatrixOfVector
   Eigen::MatrixXd operator()(const Eigen::VectorXd& var_vals) const override;
 };
 
-/** @brief Cost calculator for evaluating the cost of a singularity, in the form 1.0 / (smallest_sv + lambda) */
-struct AvoidSingularityCostCalculator : sco::VectorOfVector
+/** @brief Error calculator for evaluating the cost of a singularity, in the form 1.0 / (smallest_sv + lambda) */
+struct AvoidSingularityErrCalculator : sco::VectorOfVector
 {
   /** @brief Forward kinematics (and robot jacobian) calculator */
   tesseract_kinematics::ForwardKinematics::ConstPtr fwd_kin_;
@@ -420,16 +420,16 @@ struct AvoidSingularityCostCalculator : sco::VectorOfVector
   /** @brief Damping factor to prevent the cost from becoming infinite when the smallest singular value is very close or
    * equal to zero */
   double lambda_;
-  AvoidSingularityCostCalculator(tesseract_kinematics::ForwardKinematics::ConstPtr fwd_kin,
-                                 std::string link_name,
-                                 double lambda = 1.0e-3)
-    : fwd_kin_(fwd_kin), link_name_(std::move(link_name)), lambda_(std::move(lambda))
+  AvoidSingularityErrCalculator(tesseract_kinematics::ForwardKinematics::ConstPtr fwd_kin,
+                                std::string link_name,
+                                double lambda = 1.0e-3)
+    : fwd_kin_(std::move(fwd_kin)), link_name_(std::move(link_name)), lambda_(lambda)
   {
   }
   Eigen::VectorXd operator()(const Eigen::VectorXd& var_vals) const override;
 };
 
-/** @brief Jacobian calculator for the singularity avoidance cost */
+/** @brief Jacobian calculator for the singularity avoidance error */
 struct AvoidSingularityJacCalculator : sco::MatrixOfVector
 {
   /** @brief Forward kinematics (and robot jacobian) calculator */
@@ -447,34 +447,35 @@ struct AvoidSingularityJacCalculator : sco::MatrixOfVector
                                 std::string link_name,
                                 double lambda = 1.0e-3,
                                 double eps = 1.0e-6)
-    : fwd_kin_(fwd_kin), link_name_(std::move(link_name)), lambda_(std::move(lambda)), eps_(std::move(eps))
+    : fwd_kin_(std::move(fwd_kin)), link_name_(std::move(link_name)), lambda_(lambda), eps_(eps)
   {
   }
   /** @brief Helper function for numerically calculating the partial derivative of the jacobian */
   Eigen::MatrixXd jacobianPartialDerivative(const Eigen::VectorXd& state,
                                             const Eigen::MatrixXd& jacobian,
-                                            const Eigen::Index jntIdx) const;
+                                            Eigen::Index jntIdx) const;
   Eigen::MatrixXd operator()(const Eigen::VectorXd& var_vals) const override;
 };
 
-/** @brief Cost caluclator for evaulating the cost of a singularity of a subset of the optimization problem joints.
+/** @brief Error calculator for evaluating the cost of a singularity of a subset of the optimization problem joints.
  * The use case of this cost calculator would be to help a kinematic sub-chain avoid singularity (i.e. a robot in a
  * system with an integrated positioner) */
-struct AvoidSingularitySubsetCostCalculator : AvoidSingularityCostCalculator
+struct AvoidSingularitySubsetErrCalculator : AvoidSingularityErrCalculator
 {
   /** @brief Forward kinematics (and robot jacobian) calculator for the optimization problem's full set of joints */
   tesseract_kinematics::ForwardKinematics::ConstPtr superset_kin_;
-  AvoidSingularitySubsetCostCalculator(tesseract_kinematics::ForwardKinematics::ConstPtr subset_kin,
-                                       tesseract_kinematics::ForwardKinematics::ConstPtr superset_kin,
-                                       std::string link_name,
-                                       double lambda = 1.0e-3)
-    : AvoidSingularityCostCalculator(subset_kin, link_name, lambda), superset_kin_(superset_kin)
+  AvoidSingularitySubsetErrCalculator(tesseract_kinematics::ForwardKinematics::ConstPtr subset_kin,
+                                      tesseract_kinematics::ForwardKinematics::ConstPtr superset_kin,
+                                      std::string link_name,
+                                      double lambda = 1.0e-3)
+    : AvoidSingularityErrCalculator(std::move(subset_kin), std::move(link_name), lambda)
+    , superset_kin_(std::move(superset_kin))
   {
   }
   Eigen::VectorXd operator()(const Eigen::VectorXd& var_vals) const override;
 };
 
-/** @brief Jacobian calculator for the subset singularity avoidance cost */
+/** @brief Jacobian calculator for the subset singularity avoidance error */
 struct AvoidSingularitySubsetJacCalculator : AvoidSingularityJacCalculator
 {
   tesseract_kinematics::ForwardKinematics::ConstPtr superset_kin_;
@@ -483,7 +484,8 @@ struct AvoidSingularitySubsetJacCalculator : AvoidSingularityJacCalculator
                                       std::string link_name,
                                       double lambda = 1.0e-3,
                                       double eps = 1.0e-6)
-    : AvoidSingularityJacCalculator(subset_kin, link_name, lambda, eps), superset_kin_(superset_kin)
+    : AvoidSingularityJacCalculator(std::move(subset_kin), std::move(link_name), lambda, eps)
+    , superset_kin_(std::move(superset_kin))
   {
   }
   Eigen::MatrixXd operator()(const Eigen::VectorXd& var_vals) const override;
