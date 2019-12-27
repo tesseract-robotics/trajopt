@@ -74,6 +74,7 @@ public:
 
     tesseract_->getEnvironment()->addLink(box_attached_link, box_attached_joint);
     tesseract_->getEnvironment()->setLinkCollisionEnabled("box_attached", false);
+    tesseract_->getEnvironment()->addAllowedCollision("box_attached", "boxbot_link", "Adjacent");
 
     Link box_attached2_link("box_attached2");
     box_attached2_link.visual.push_back(visual);
@@ -86,6 +87,7 @@ public:
 
     tesseract_->getEnvironment()->addLink(box_attached2_link, box_attached2_joint);
     tesseract_->getEnvironment()->setLinkCollisionEnabled("box_attached2", false);
+    tesseract_->getEnvironment()->addAllowedCollision("box_attached2", "boxbot_link", "Adjacent");
   }
 };
 
