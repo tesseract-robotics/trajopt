@@ -317,30 +317,34 @@ SingleTimestepCollisionEvaluator::SingleTimestepCollisionEvaluator(
     tesseract_environment::AdjacencyMap::ConstPtr adjacency_map,
     const Eigen::Isometry3d& world_to_base,
     SafetyMarginData::ConstPtr safety_margin_data,
+    tesseract_collision::ContactTestType contact_test_type,
     sco::VarVector vars)
   : CollisionEvaluator(std::move(manip),
                        std::move(env),
                        std::move(adjacency_map),
                        world_to_base,
-                       std::move(safety_margin_data))
+                       std::move(safety_margin_data),
+                       contact_test_type,
+                       0)
   , m_vars(std::move(vars))
 {
   contact_manager_ = env_->getDiscreteContactManager();
   contact_manager_->setActiveCollisionObjects(adjacency_map_->getActiveLinkNames());
   contact_manager_->setContactDistanceThreshold(safety_margin_data_->getMaxSafetyMargin() +
                                                 0.04);  // The original implementation added a margin of 0.04;
+  state_solver_ = env_->getStateSolver();
 }
 
 void SingleTimestepCollisionEvaluator::CalcCollisions(const DblVec& x,
                                                       tesseract_collision::ContactResultVector& dist_results)
 {
   tesseract_collision::ContactResultMap contacts;
-  tesseract_environment::EnvState::Ptr state = env_->getState(manip_->getJointNames(), sco::getVec(x, m_vars));
+  tesseract_environment::EnvState::Ptr state = state_solver_->getState(manip_->getJointNames(), sco::getVec(x, m_vars));
 
   for (const auto& link_name : adjacency_map_->getActiveLinkNames())
     contact_manager_->setCollisionObjectsTransform(link_name, state->transforms[link_name]);
 
-  contact_manager_->contactTest(contacts, tesseract_collision::ContactTestType::ALL);
+  contact_manager_->contactTest(contacts, contact_test_type_);
 
   tesseract_collision::ContactResultVector temp;
   tesseract_collision::flattenResults(std::move(contacts), temp);
@@ -423,13 +427,17 @@ CastCollisionEvaluator::CastCollisionEvaluator(tesseract_kinematics::ForwardKine
                                                tesseract_environment::AdjacencyMap::ConstPtr adjacency_map,
                                                const Eigen::Isometry3d& world_to_base,
                                                SafetyMarginData::ConstPtr safety_margin_data,
+                                               tesseract_collision::ContactTestType contact_test_type,
+                                               double longest_valid_segment_length,
                                                sco::VarVector vars0,
                                                sco::VarVector vars1)
   : CollisionEvaluator(std::move(manip),
                        std::move(env),
                        std::move(adjacency_map),
                        world_to_base,
-                       std::move(safety_margin_data))
+                       std::move(safety_margin_data),
+                       contact_test_type,
+                       longest_valid_segment_length)
   , m_vars0(std::move(vars0))
   , m_vars1(std::move(vars1))
 {
@@ -437,21 +445,89 @@ CastCollisionEvaluator::CastCollisionEvaluator(tesseract_kinematics::ForwardKine
   contact_manager_->setActiveCollisionObjects(adjacency_map_->getActiveLinkNames());
   contact_manager_->setContactDistanceThreshold(safety_margin_data_->getMaxSafetyMargin() +
                                                 0.04);  // The original implementation added a margin of 0.04;
+
+  state_solver_ = env_->getStateSolver();
 }
 
 void CastCollisionEvaluator::CalcCollisions(const DblVec& x, tesseract_collision::ContactResultVector& dist_results)
 {
-  tesseract_collision::ContactResultMap contacts;
-  tesseract_environment::EnvState::Ptr state0 = env_->getState(manip_->getJointNames(), sco::getVec(x, m_vars0));
-  tesseract_environment::EnvState::Ptr state1 = env_->getState(manip_->getJointNames(), sco::getVec(x, m_vars1));
-  for (const auto& link_name : adjacency_map_->getActiveLinkNames())
-    contact_manager_->setCollisionObjectsTransform(
-        link_name, state0->transforms[link_name], state1->transforms[link_name]);
+  Eigen::VectorXd s0 = sco::getVec(x, m_vars0);
+  Eigen::VectorXd s1 = sco::getVec(x, m_vars1);
+  tesseract_collision::ContactResultMap contact_results;
+  double dist = (s1 - s0).norm();
+  if (dist > longest_valid_segment_length_)
+  {
+    long cnt = static_cast<long>(std::ceil(dist / longest_valid_segment_length_)) + 1;
+    tesseract_common::TrajArray subtraj(cnt, s0.size());
+    for (long i = 0; i < s0.size(); ++i)
+      subtraj.col(i) = Eigen::VectorXd::LinSpaced(cnt, s0(i), s1(i));
 
-  contact_manager_->contactTest(contacts, tesseract_collision::ContactTestType::ALL);
+    std::vector<tesseract_collision::ContactResultMap> contacts_vector;
+    bool contact_found = false;
+    for (int i = 0; i < subtraj.rows() - 1; ++i)
+    {
+      tesseract_collision::ContactResultMap contacts;
+      tesseract_environment::EnvState::Ptr state0 = state_solver_->getState(manip_->getJointNames(), subtraj.row(i));
+      tesseract_environment::EnvState::Ptr state1 =
+          state_solver_->getState(manip_->getJointNames(), subtraj.row(i + 1));
+
+      for (const auto& link_name : adjacency_map_->getActiveLinkNames())
+        contact_manager_->setCollisionObjectsTransform(
+            link_name, state0->transforms[link_name], state1->transforms[link_name]);
+
+      contact_manager_->contactTest(contacts, contact_test_type_);
+      if (!contacts.empty())
+        contact_found = true;
+
+      contacts_vector.push_back(contacts);
+    }
+
+    if (contact_found)
+    {
+      double dt = 1.0 / static_cast<double>(cnt - 1);
+      std::map<std::pair<std::string, std::string>, double> worst_results;
+      for (size_t i = 0; i < contacts_vector.size(); ++i)
+      {
+        for (auto& pair : contacts_vector[i])
+        {
+          auto p = contact_results.find(pair.first);
+          auto w = worst_results.find(pair.first);
+
+          double m = std::numeric_limits<double>::max();
+          for (auto& r : pair.second)
+          {
+            if (r.cc_type[0] != tesseract_collision::ContinouseCollisionType::CCType_None)
+              r.cc_time[0] = (static_cast<double>(i) * dt) + (dt * r.cc_time[0]);
+
+            if (r.cc_type[1] != tesseract_collision::ContinouseCollisionType::CCType_None)
+              r.cc_time[1] = (static_cast<double>(i) * dt) + (dt * r.cc_time[1]);
+
+            if (r.distance < m)
+              m = r.distance;
+          }
+
+          if (p == contact_results.end() || m < w->second)
+          {
+            contact_results[pair.first] = pair.second;
+            worst_results[pair.first] = m;
+          }
+        }
+      }
+    }
+  }
+  else
+  {
+    tesseract_environment::EnvState::Ptr state0 = state_solver_->getState(manip_->getJointNames(), s0);
+    tesseract_environment::EnvState::Ptr state1 = state_solver_->getState(manip_->getJointNames(), s1);
+    for (const auto& link_name : adjacency_map_->getActiveLinkNames())
+      contact_manager_->setCollisionObjectsTransform(
+          link_name, state0->transforms[link_name], state1->transforms[link_name]);
+
+    contact_manager_->contactTest(contact_results, contact_test_type_);
+  }
 
   tesseract_collision::ContactResultVector temp;
-  tesseract_collision::flattenResults(std::move(contacts), temp);
+  tesseract_collision::flattenResults(std::move(contact_results), temp);
 
   // Because each pair can have its own contact distance we need to
   // filter out collision pairs that are outside the pairs threshold
@@ -556,6 +632,7 @@ CollisionCost::CollisionCost(tesseract_kinematics::ForwardKinematics::ConstPtr m
                              tesseract_environment::AdjacencyMap::ConstPtr adjacency_map,
                              const Eigen::Isometry3d& world_to_base,
                              SafetyMarginData::ConstPtr safety_margin_data,
+                             tesseract_collision::ContactTestType contact_test_type,
                              sco::VarVector vars)
   : Cost("collision")
   , m_calc(new SingleTimestepCollisionEvaluator(std::move(manip),
@@ -563,6 +640,7 @@ CollisionCost::CollisionCost(tesseract_kinematics::ForwardKinematics::ConstPtr m
                                                 std::move(adjacency_map),
                                                 world_to_base,
                                                 std::move(safety_margin_data),
+                                                contact_test_type,
                                                 std::move(vars)))
 {
 }
@@ -572,6 +650,8 @@ CollisionCost::CollisionCost(tesseract_kinematics::ForwardKinematics::ConstPtr m
                              tesseract_environment::AdjacencyMap::ConstPtr adjacency_map,
                              const Eigen::Isometry3d& world_to_base,
                              SafetyMarginData::ConstPtr safety_margin_data,
+                             tesseract_collision::ContactTestType contact_test_type,
+                             double longest_valid_segment_length,
                              sco::VarVector vars0,
                              sco::VarVector vars1)
   : Cost("cast_collision")
@@ -580,6 +660,8 @@ CollisionCost::CollisionCost(tesseract_kinematics::ForwardKinematics::ConstPtr m
                                       std::move(adjacency_map),
                                       world_to_base,
                                       std::move(safety_margin_data),
+                                      contact_test_type,
+                                      longest_valid_segment_length,
                                       std::move(vars0),
                                       std::move(vars1)))
 {
@@ -632,12 +714,14 @@ CollisionConstraint::CollisionConstraint(tesseract_kinematics::ForwardKinematics
                                          tesseract_environment::AdjacencyMap::ConstPtr adjacency_map,
                                          const Eigen::Isometry3d& world_to_base,
                                          SafetyMarginData::ConstPtr safety_margin_data,
+                                         tesseract_collision::ContactTestType contact_test_type,
                                          sco::VarVector vars)
   : m_calc(new SingleTimestepCollisionEvaluator(std::move(manip),
                                                 std::move(env),
                                                 std::move(adjacency_map),
                                                 world_to_base,
                                                 std::move(safety_margin_data),
+                                                contact_test_type,
                                                 std::move(vars)))
 {
   name_ = "collision";
@@ -648,6 +732,8 @@ CollisionConstraint::CollisionConstraint(tesseract_kinematics::ForwardKinematics
                                          tesseract_environment::AdjacencyMap::ConstPtr adjacency_map,
                                          const Eigen::Isometry3d& world_to_base,
                                          SafetyMarginData::ConstPtr safety_margin_data,
+                                         tesseract_collision::ContactTestType contact_test_type,
+                                         double longest_valid_segment_length,
                                          sco::VarVector vars0,
                                          sco::VarVector vars1)
   : m_calc(new CastCollisionEvaluator(std::move(manip),
@@ -655,6 +741,8 @@ CollisionConstraint::CollisionConstraint(tesseract_kinematics::ForwardKinematics
                                       std::move(adjacency_map),
                                       world_to_base,
                                       std::move(safety_margin_data),
+                                      contact_test_type,
+                                      longest_valid_segment_length,
                                       std::move(vars0),
                                       std::move(vars1)))
 {

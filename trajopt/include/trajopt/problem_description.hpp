@@ -547,9 +547,16 @@ struct CollisionTermInfo : public TermInfo
   /** @brief Indicate if continuous collision checking should be used. */
   bool continuous;
 
-  /** @brief for continuous-time penalty, use swept-shape between timesteps t and t+gap */
-  /** @brief (gap=1 by default) */
-  int gap;
+  /** @brief Set the resolution at which state validity needs to be verified in order for a motion between two states
+   * to be considered valid. If norm(state1 - state0) > longest_valid_segment_length.
+   *
+   * Note: This gets converted to longest_valid_segment_fraction.
+   *       longest_valid_segment_fraction = longest_valid_segment_length / state_space.getMaximumExtent()
+   */
+  double longest_valid_segment_length = 0.5;
+
+  /** @brief Set the contact test type that should be used. */
+  tesseract_collision::ContactTestType contact_test_type = tesseract_collision::ContactTestType::ALL;
 
   /** @brief Contains distance penalization data: Safety Margin, Coeff used during */
   /** @brief optimization, etc. */
