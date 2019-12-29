@@ -18,12 +18,16 @@ struct CollisionEvaluator
                      tesseract_environment::Environment::ConstPtr env,
                      tesseract_environment::AdjacencyMap::ConstPtr adjacency_map,
                      const Eigen::Isometry3d& world_to_base,
-                     SafetyMarginData::ConstPtr safety_margin_data)
+                     SafetyMarginData::ConstPtr safety_margin_data,
+                     tesseract_collision::ContactTestType contact_test_type,
+                     double longest_valid_segment_length)
     : manip_(std::move(manip))
     , env_(std::move(env))
     , adjacency_map_(std::move(adjacency_map))
     , world_to_base_(world_to_base)
     , safety_margin_data_(std::move(safety_margin_data))
+    , contact_test_type_(contact_test_type)
+    , longest_valid_segment_length_(longest_valid_segment_length)
   {
   }
   virtual ~CollisionEvaluator() = default;
@@ -48,6 +52,8 @@ protected:
   tesseract_environment::AdjacencyMap::ConstPtr adjacency_map_;
   Eigen::Isometry3d world_to_base_;
   SafetyMarginData::ConstPtr safety_margin_data_;
+  tesseract_collision::ContactTestType contact_test_type_;
+  double longest_valid_segment_length_;
 
 private:
   CollisionEvaluator() = default;
@@ -61,6 +67,7 @@ public:
                                    tesseract_environment::AdjacencyMap::ConstPtr adjacency_map,
                                    const Eigen::Isometry3d& world_to_base,
                                    SafetyMarginData::ConstPtr safety_margin_data,
+                                   tesseract_collision::ContactTestType contact_test_type,
                                    sco::VarVector vars);
   /**
   @brief linearize all contact distances in terms of robot dofs
@@ -81,6 +88,7 @@ public:
 private:
   sco::VarVector m_vars;
   tesseract_collision::DiscreteContactManager::Ptr contact_manager_;
+  tesseract_environment::StateSolver::Ptr state_solver_;
 };
 
 struct CastCollisionEvaluator : public CollisionEvaluator
@@ -91,6 +99,8 @@ public:
                          tesseract_environment::AdjacencyMap::ConstPtr adjacency_map,
                          const Eigen::Isometry3d& world_to_base,
                          SafetyMarginData::ConstPtr safety_margin_data,
+                         tesseract_collision::ContactTestType contact_test_type,
+                         double longest_valid_segment_length,
                          sco::VarVector vars0,
                          sco::VarVector vars1);
   void CalcDistExpressions(const DblVec& x, sco::AffExprVector& exprs) override;
@@ -103,6 +113,7 @@ private:
   sco::VarVector m_vars0;
   sco::VarVector m_vars1;
   tesseract_collision::ContinuousContactManager::Ptr contact_manager_;
+  tesseract_environment::StateSolver::Ptr state_solver_;
 };
 
 class TRAJOPT_API CollisionCost : public sco::Cost, public Plotter
@@ -114,6 +125,7 @@ public:
                 tesseract_environment::AdjacencyMap::ConstPtr adjacency_map,
                 const Eigen::Isometry3d& world_to_base,
                 SafetyMarginData::ConstPtr safety_margin_data,
+                tesseract_collision::ContactTestType contact_test_type,
                 sco::VarVector vars);
   /* constructor for cast cost */
   CollisionCost(tesseract_kinematics::ForwardKinematics::ConstPtr manip,
@@ -121,6 +133,8 @@ public:
                 tesseract_environment::AdjacencyMap::ConstPtr adjacency_map,
                 const Eigen::Isometry3d& world_to_base,
                 SafetyMarginData::ConstPtr safety_margin_data,
+                tesseract_collision::ContactTestType contact_test_type,
+                double longest_valid_segment_length,
                 sco::VarVector vars0,
                 sco::VarVector vars1);
   sco::ConvexObjective::Ptr convex(const DblVec& x, sco::Model* model) override;
@@ -141,6 +155,7 @@ public:
                       tesseract_environment::AdjacencyMap::ConstPtr adjacency_map,
                       const Eigen::Isometry3d& world_to_base,
                       SafetyMarginData::ConstPtr safety_margin_data,
+                      tesseract_collision::ContactTestType contact_test_type,
                       sco::VarVector vars);
   /* constructor for cast cost */
   CollisionConstraint(tesseract_kinematics::ForwardKinematics::ConstPtr manip,
@@ -148,6 +163,8 @@ public:
                       tesseract_environment::AdjacencyMap::ConstPtr adjacency_map,
                       const Eigen::Isometry3d& world_to_base,
                       SafetyMarginData::ConstPtr safety_margin_data,
+                      tesseract_collision::ContactTestType contact_test_type,
+                      double longest_valid_segment_length,
                       sco::VarVector vars0,
                       sco::VarVector vars1);
   sco::ConvexConstraints::Ptr convex(const DblVec& x, sco::Model* model) override;

@@ -1538,10 +1538,16 @@ void CollisionTermInfo::fromJson(ProblemConstructionInfo& pci, const Json::Value
   json_marshal::childFromJson(params, continuous, "continuous", true);
   json_marshal::childFromJson(params, first_step, "first_step", 0);
   json_marshal::childFromJson(params, last_step, "last_step", n_steps - 1);
-  json_marshal::childFromJson(params, gap, "gap", 1);
-  FAIL_IF_FALSE(gap >= 0);
+  json_marshal::childFromJson(params, longest_valid_segment_length, "longest_valid_segment_length", 0.5);
+  FAIL_IF_FALSE(longest_valid_segment_length >= 0);
   FAIL_IF_FALSE((first_step >= 0) && (first_step < n_steps));
   FAIL_IF_FALSE((last_step >= first_step) && (last_step < n_steps));
+
+  int contact_type = 2;  // FIRST = 0, CLOSEST = 1, ALL = 2
+  json_marshal::childFromJson(params, contact_type, "contact_test_type", contact_type);
+  FAIL_IF_FALSE(contact_type >= 0);
+  FAIL_IF_FALSE(contact_type < 3);
+  contact_test_type = static_cast<tesseract_collision::ContactTestType>(contact_type);
 
   DblVec coeffs, dist_pen;
   json_marshal::childFromJson(params, coeffs, "coeffs");
@@ -1622,7 +1628,10 @@ void CollisionTermInfo::fromJson(ProblemConstructionInfo& pci, const Json::Value
     }
   }
 
-  const char* all_fields[] = { "continuous", "first_step", "last_step", "gap", "coeffs", "dist_pen", "pairs" };
+  const char* all_fields[] = {
+    "continuous", "first_step", "last_step", "contact_test_type", "longest_valid_segment_length",
+    "coeffs",     "dist_pen",   "pairs"
+  };
   ensure_only_members(params, all_fields, sizeof(all_fields) / sizeof(char*));
 }
 
@@ -1647,15 +1656,17 @@ void CollisionTermInfo::hatch(TrajOptProb& prob)
   {
     if (continuous)
     {
-      for (int i = first_step; i <= last_step - gap; ++i)
+      for (int i = first_step; i < last_step; ++i)
       {
         prob.addCost(sco::Cost::Ptr(new CollisionCost(prob.GetKin(),
                                                       prob.GetEnv(),
                                                       adjacency_map,
                                                       world_to_base,
                                                       info[static_cast<size_t>(i - first_step)],
+                                                      contact_test_type,
+                                                      longest_valid_segment_length,
                                                       prob.GetVarRow(i, 0, n_dof),
-                                                      prob.GetVarRow(i + gap, 0, n_dof))));
+                                                      prob.GetVarRow(i + 1, 0, n_dof))));
         prob.getCosts().back()->setName((boost::format("%s_%i") % name.c_str() % i).str());
       }
     }
@@ -1668,6 +1679,7 @@ void CollisionTermInfo::hatch(TrajOptProb& prob)
                                                       adjacency_map,
                                                       world_to_base,
                                                       info[static_cast<size_t>(i - first_step)],
+                                                      contact_test_type,
                                                       prob.GetVarRow(i, 0, n_dof))));
         prob.getCosts().back()->setName((boost::format("%s_%i") % name.c_str() % i).str());
       }
@@ -1684,6 +1696,8 @@ void CollisionTermInfo::hatch(TrajOptProb& prob)
                                                                             adjacency_map,
                                                                             world_to_base,
                                                                             info[static_cast<size_t>(i - first_step)],
+                                                                            contact_test_type,
+                                                                            longest_valid_segment_length,
                                                                             prob.GetVarRow(i, 0, n_dof),
                                                                             prob.GetVarRow(i + 1, 0, n_dof))));
         prob.getIneqConstraints().back()->setName((boost::format("%s_%i") % name.c_str() % i).str());
@@ -1698,6 +1712,7 @@ void CollisionTermInfo::hatch(TrajOptProb& prob)
                                                                             adjacency_map,
                                                                             world_to_base,
                                                                             info[static_cast<size_t>(i - first_step)],
+                                                                            contact_test_type,
                                                                             prob.GetVarRow(i, 0, n_dof))));
         prob.getIneqConstraints().back()->setName((boost::format("%s_%i") % name.c_str() % i).str());
       }
