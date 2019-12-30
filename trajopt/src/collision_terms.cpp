@@ -195,7 +195,7 @@ void CollisionsToDistanceExpressions(sco::AffExprVector& exprs,
       // point to the new ref point.
       double scale = 1;
       Eigen::Isometry3d link_transform = res.transform[0];
-      if (res.cc_type[0] != tesseract_collision::ContinouseCollisionType::CCType_None)
+      if (res.cc_type[0] != tesseract_collision::ContinuousCollisionType::CCType_None)
       {
         assert(res.cc_time[0] >= 0.0 && res.cc_time[0] <= 1.0);
         scale = (isTimestep1) ? res.cc_time[0] : (1 - res.cc_time[0]);
@@ -235,7 +235,7 @@ void CollisionsToDistanceExpressions(sco::AffExprVector& exprs,
       // point to the new ref point.
       double scale = 1;
       Eigen::Isometry3d link_transform = res.transform[1];
-      if (res.cc_type[1] != tesseract_collision::ContinouseCollisionType::CCType_None)
+      if (res.cc_type[1] != tesseract_collision::ContinuousCollisionType::CCType_None)
       {
         assert(res.cc_time[1] >= 0.0 && res.cc_time[1] <= 1.0);
         scale = (isTimestep1) ? res.cc_time[1] : (1 - res.cc_time[1]);
@@ -496,10 +496,10 @@ void CastCollisionEvaluator::CalcCollisions(const DblVec& x, tesseract_collision
           double m = std::numeric_limits<double>::max();
           for (auto& r : pair.second)
           {
-            if (r.cc_type[0] != tesseract_collision::ContinouseCollisionType::CCType_None)
+            if (r.cc_type[0] != tesseract_collision::ContinuousCollisionType::CCType_None)
               r.cc_time[0] = (static_cast<double>(i) * dt) + (dt * r.cc_time[0]);
 
-            if (r.cc_type[1] != tesseract_collision::ContinouseCollisionType::CCType_None)
+            if (r.cc_type[1] != tesseract_collision::ContinuousCollisionType::CCType_None)
               r.cc_time[1] = (static_cast<double>(i) * dt) + (dt * r.cc_time[1]);
 
             if (r.distance < m)
