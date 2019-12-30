@@ -454,14 +454,22 @@ void CastCollisionEvaluator::CalcCollisions(const DblVec& x, tesseract_collision
   Eigen::VectorXd s0 = sco::getVec(x, m_vars0);
   Eigen::VectorXd s1 = sco::getVec(x, m_vars1);
   tesseract_collision::ContactResultMap contact_results;
+
+  // The first step is to see if the distance between two states is larger than the longest valid segment. If larger
+  // the collision checking is broken up into multiple casted collision checks such that each check is less then
+  // the longest valid segment length.
   double dist = (s1 - s0).norm();
   if (dist > longest_valid_segment_length_)
   {
+    // Calculate the number state to interpolate
     long cnt = static_cast<long>(std::ceil(dist / longest_valid_segment_length_)) + 1;
+
+    // Create interpolated trajectory between two states that satisfies the longest valid segment length.
     tesseract_common::TrajArray subtraj(cnt, s0.size());
     for (long i = 0; i < s0.size(); ++i)
       subtraj.col(i) = Eigen::VectorXd::LinSpaced(cnt, s0(i), s1(i));
 
+    // Perform casted collision checking for sub trajectory and store results in contacts_vector
     std::vector<tesseract_collision::ContactResultMap> contacts_vector;
     bool contact_found = false;
     for (int i = 0; i < subtraj.rows() - 1; ++i)
@@ -484,6 +492,8 @@ void CastCollisionEvaluator::CalcCollisions(const DblVec& x, tesseract_collision
 
     if (contact_found)
     {
+      // If contact is found the actual dt between the original two state must be recalculated based on where it
+      // occured in the subtrajectory
       double dt = 1.0 / static_cast<double>(cnt - 1);
       std::map<std::pair<std::string, std::string>, double> worst_results;
       for (size_t i = 0; i < contacts_vector.size(); ++i)
@@ -493,6 +503,8 @@ void CastCollisionEvaluator::CalcCollisions(const DblVec& x, tesseract_collision
           auto p = contact_results.find(pair.first);
           auto w = worst_results.find(pair.first);
 
+          // It is also capturing the worst contact distance during the update of the time. Only the worst contact
+          // distance is kept for a given pair.
           double m = std::numeric_limits<double>::max();
           for (auto& r : pair.second)
           {
@@ -506,6 +518,8 @@ void CastCollisionEvaluator::CalcCollisions(const DblVec& x, tesseract_collision
               m = r.distance;
           }
 
+          // If the contact pair does not exist in contact_results or the current has a worse contact distance,
+          // then update the final results
           if (p == contact_results.end() || m < w->second)
           {
             contact_results[pair.first] = pair.second;
