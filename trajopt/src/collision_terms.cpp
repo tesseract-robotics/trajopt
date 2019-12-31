@@ -493,37 +493,57 @@ void CastCollisionEvaluator::CalcCollisions(const DblVec& x, tesseract_collision
     if (contact_found)
     {
       // If contact is found the actual dt between the original two state must be recalculated based on where it
-      // occured in the subtrajectory
+      // occured in the subtrajectory. Also the cc_type must also be recalculated but does not appear to be used
+      // currently by trajopt.
       double dt = 1.0 / static_cast<double>(cnt - 1);
-      std::map<std::pair<std::string, std::string>, double> worst_results;
       for (size_t i = 0; i < contacts_vector.size(); ++i)
       {
         for (auto& pair : contacts_vector[i])
         {
           auto p = contact_results.find(pair.first);
-          auto w = worst_results.find(pair.first);
 
-          // It is also capturing the worst contact distance during the update of the time. Only the worst contact
-          // distance is kept for a given pair.
-          double m = std::numeric_limits<double>::max();
+          // Update cc_time and cc_type
           for (auto& r : pair.second)
           {
             if (r.cc_type[0] != tesseract_collision::ContinuousCollisionType::CCType_None)
+            {
               r.cc_time[0] = (static_cast<double>(i) * dt) + (dt * r.cc_time[0]);
+              if (i == 0 && r.cc_type[0] == tesseract_collision::ContinuousCollisionType::CCType_Time0)
+                r.cc_type[0] = tesseract_collision::ContinuousCollisionType::CCType_Time0;
+              else if (i == (contacts_vector.size() - 1) &&
+                       r.cc_type[0] == tesseract_collision::ContinuousCollisionType::CCType_Time1)
+                r.cc_type[0] = tesseract_collision::ContinuousCollisionType::CCType_Time1;
+              else
+                r.cc_type[0] = tesseract_collision::ContinuousCollisionType::CCType_Between;
+            }
 
             if (r.cc_type[1] != tesseract_collision::ContinuousCollisionType::CCType_None)
+            {
               r.cc_time[1] = (static_cast<double>(i) * dt) + (dt * r.cc_time[1]);
-
-            if (r.distance < m)
-              m = r.distance;
+              if (i == 0 && r.cc_type[1] == tesseract_collision::ContinuousCollisionType::CCType_Time0)
+                r.cc_type[1] = tesseract_collision::ContinuousCollisionType::CCType_Time0;
+              else if (i == (contacts_vector.size() - 1) &&
+                       r.cc_type[1] == tesseract_collision::ContinuousCollisionType::CCType_Time1)
+                r.cc_type[1] = tesseract_collision::ContinuousCollisionType::CCType_Time1;
+              else
+                r.cc_type[1] = tesseract_collision::ContinuousCollisionType::CCType_Between;
+            }
           }
 
-          // If the contact pair does not exist in contact_results or the current has a worse contact distance,
-          // then update the final results
-          if (p == contact_results.end() || m < w->second)
+          // If the contact pair does not exist in contact_results add it
+          if (p == contact_results.end())
           {
             contact_results[pair.first] = pair.second;
-            worst_results[pair.first] = m;
+          }
+          else
+          {
+            // Note: Must include all contacts through out the trajectory so the optimizer has all the information
+            //      to understand how to adjust the start and end state to move it out of collision. Originally tried
+            //      keeping the works case only but ran into edge cases where this does not work in the units tests.
+
+            // If it exists then add addition contacts to the contact_results pair
+            for (auto& r : pair.second)
+              p->second.push_back(r);
           }
         }
       }
