@@ -54,13 +54,13 @@ public:
     //    plotter_.reset(new tesseract_ros::ROSBasicPlotting(env_));
 
     // Next add objects that can be attached/detached to the scene
-    Box::Ptr box(new Box(1.0, 1.0, 1.0));
+    auto box = std::make_shared<Box>(1.0, 1.0, 1.0);
 
-    Visual::Ptr visual(new Visual());
+    auto visual = std::make_shared<Visual>();
     visual->geometry = box;
     visual->origin = Eigen::Isometry3d::Identity();
 
-    Collision::Ptr collision(new Collision());
+    auto collision = std::make_shared<Collision>();
     collision->geometry = box;
     collision->origin = Eigen::Isometry3d::Identity();
 
