@@ -330,8 +330,7 @@ SingleTimestepCollisionEvaluator::SingleTimestepCollisionEvaluator(
 {
   contact_manager_ = env_->getDiscreteContactManager();
   contact_manager_->setActiveCollisionObjects(adjacency_map_->getActiveLinkNames());
-  contact_manager_->setContactDistanceThreshold(safety_margin_data_->getMaxSafetyMargin() +
-                                                0.04);  // The original implementation added a margin of 0.04;
+  contact_manager_->setContactDistanceThreshold(safety_margin_data_->getMaxSafetyMargin());
   state_solver_ = env_->getStateSolver();
 }
 
@@ -443,8 +442,7 @@ CastCollisionEvaluator::CastCollisionEvaluator(tesseract_kinematics::ForwardKine
 {
   contact_manager_ = env_->getContinuousContactManager();
   contact_manager_->setActiveCollisionObjects(adjacency_map_->getActiveLinkNames());
-  contact_manager_->setContactDistanceThreshold(safety_margin_data_->getMaxSafetyMargin() +
-                                                0.04);  // The original implementation added a margin of 0.04;
+  contact_manager_->setContactDistanceThreshold(safety_margin_data_->getMaxSafetyMargin());
 
   state_solver_ = env_->getStateSolver();
 }
