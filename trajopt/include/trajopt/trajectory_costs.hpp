@@ -14,7 +14,11 @@ class TRAJOPT_API JointPosEqCost : public sco::Cost
 {
 public:
   /** @brief Forms error in QuadExpr - independent of penalty type */
-  JointPosEqCost(VarArray vars, Eigen::VectorXd coeffs, Eigen::VectorXd targets, int& first_step, int& last_step);
+  JointPosEqCost(VarArray vars,
+                 const Eigen::Ref<const Eigen::VectorXd>& coeffs,
+                 const Eigen::Ref<const Eigen::VectorXd>& targets,
+                 int first_step,
+                 int last_step);
   /** @brief Convexifies cost expression - In this case, it is already quadratic so there's nothing to do */
   sco::ConvexObjective::Ptr convex(const DblVec& x, sco::Model* model) override;
   /** @brief Numerically evaluate cost given the vector of values */
@@ -45,12 +49,12 @@ class TRAJOPT_API JointPosIneqCost : public sco::Cost
 public:
   /** @brief Forms error in QuadExpr - independent of penalty type */
   JointPosIneqCost(VarArray vars,
-                   Eigen::VectorXd coeffs,
-                   Eigen::VectorXd targets,
-                   Eigen::VectorXd upper_limits,
-                   Eigen::VectorXd lower_limits,
-                   int& first_step,
-                   int& last_step);
+                   const Eigen::Ref<const Eigen::VectorXd>& coeffs,
+                   const Eigen::Ref<const Eigen::VectorXd>& targets,
+                   const Eigen::Ref<const Eigen::VectorXd>& upper_limits,
+                   const Eigen::Ref<const Eigen::VectorXd>& lower_limits,
+                   int first_step,
+                   int last_step);
   /** @brief Convexifies cost expression - In this case, it is already quadratic so there's nothing to do */
   sco::ConvexObjective::Ptr convex(const DblVec& x, sco::Model* model) override;
   /** @brief Numerically evaluate cost given the vector of values */
@@ -80,7 +84,11 @@ class TRAJOPT_API JointPosEqConstraint : public sco::EqConstraint
 {
 public:
   /** @brief Forms error in QuadExpr - independent of penalty type */
-  JointPosEqConstraint(VarArray vars, Eigen::VectorXd coeffs, Eigen::VectorXd targets, int& first_step, int& last_step);
+  JointPosEqConstraint(VarArray vars,
+                       const Eigen::Ref<const Eigen::VectorXd>& coeffs,
+                       const Eigen::Ref<const Eigen::VectorXd>& targets,
+                       int first_step,
+                       int last_step);
   /** @brief Convexifies cost expression - In this case, it is already quadratic so there's nothing to do */
   sco::ConvexConstraints::Ptr convex(const DblVec& x, sco::Model* model) override;
   /** @brief Numerically evaluate cost given the vector of values */
@@ -108,12 +116,12 @@ class TRAJOPT_API JointPosIneqConstraint : public sco::IneqConstraint
 public:
   /** @brief Forms error in QuadExpr - independent of penalty type */
   JointPosIneqConstraint(VarArray vars,
-                         Eigen::VectorXd coeffs,
-                         Eigen::VectorXd targets,
-                         Eigen::VectorXd upper_limits,
-                         Eigen::VectorXd lower_limits,
-                         int& first_step,
-                         int& last_step);
+                         const Eigen::Ref<const Eigen::VectorXd>& coeffs,
+                         const Eigen::Ref<const Eigen::VectorXd>& targets,
+                         const Eigen::Ref<const Eigen::VectorXd>& upper_limits,
+                         const Eigen::Ref<const Eigen::VectorXd>& lower_limits,
+                         int first_step,
+                         int last_step);
   /** @brief Convexifies cost expression - In this case, it is already quadratic so there's nothing to do */
   sco::ConvexConstraints::Ptr convex(const DblVec& x, sco::Model* model) override;
   /** @brief Numerically evaluate cost given the vector of values */
@@ -143,7 +151,11 @@ class TRAJOPT_API JointVelEqCost : public sco::Cost
 {
 public:
   /** @brief Forms error in QuadExpr - independent of penalty type */
-  JointVelEqCost(VarArray vars, Eigen::VectorXd coeffs, Eigen::VectorXd targets, int& first_step, int& last_step);
+  JointVelEqCost(VarArray vars,
+                 const Eigen::Ref<const Eigen::VectorXd>& coeffs,
+                 const Eigen::Ref<const Eigen::VectorXd>& targets,
+                 int first_step,
+                 int last_step);
   /** @brief Convexifies cost expression - In this case, it is already quadratic so there's nothing to do */
   sco::ConvexObjective::Ptr convex(const DblVec& x, sco::Model* model) override;
   /** @brief Numerically evaluate cost given the vector of values using Eigen*/
@@ -170,12 +182,12 @@ class TRAJOPT_API JointVelIneqCost : public sco::Cost
 public:
   /** @brief Forms error in QuadExpr - independent of penalty type */
   JointVelIneqCost(VarArray vars,
-                   Eigen::VectorXd coeffs,
-                   Eigen::VectorXd targets,
-                   Eigen::VectorXd upper_limits,
-                   Eigen::VectorXd lower_limits,
-                   int& first_step,
-                   int& last_step);
+                   const Eigen::Ref<const Eigen::VectorXd>& coeffs,
+                   const Eigen::Ref<const Eigen::VectorXd>& targets,
+                   const Eigen::Ref<const Eigen::VectorXd>& upper_limits,
+                   const Eigen::Ref<const Eigen::VectorXd>& lower_limits,
+                   int first_step,
+                   int last_step);
   /** @brief Convexifies cost expression - In this case, it is already quadratic so there's nothing to do */
   sco::ConvexObjective::Ptr convex(const DblVec& x, sco::Model* model) override;
   /** @brief Numerically evaluate cost given the vector of values */
@@ -205,7 +217,11 @@ class TRAJOPT_API JointVelEqConstraint : public sco::EqConstraint
 {
 public:
   /** @brief Forms error in QuadExpr - independent of penalty type */
-  JointVelEqConstraint(VarArray vars, Eigen::VectorXd coeffs, Eigen::VectorXd targets, int& first_step, int& last_step);
+  JointVelEqConstraint(VarArray vars,
+                       const Eigen::Ref<const Eigen::VectorXd>& coeffs,
+                       const Eigen::Ref<const Eigen::VectorXd>& targets,
+                       int first_step,
+                       int last_step);
   /** @brief Convexifies cost expression - In this case, it is already quadratic so there's nothing to do */
   sco::ConvexConstraints::Ptr convex(const DblVec& x, sco::Model* model) override;
   /** @brief Numerically evaluate cost given the vector of values */
@@ -233,12 +249,12 @@ class TRAJOPT_API JointVelIneqConstraint : public sco::IneqConstraint
 public:
   /** @brief Forms error in QuadExpr - independent of penalty type */
   JointVelIneqConstraint(VarArray vars,
-                         Eigen::VectorXd coeffs,
-                         Eigen::VectorXd targets,
-                         Eigen::VectorXd upper_limits,
-                         Eigen::VectorXd lower_limits,
-                         int& first_step,
-                         int& last_step);
+                         const Eigen::Ref<const Eigen::VectorXd>& coeffs,
+                         const Eigen::Ref<const Eigen::VectorXd>& targets,
+                         const Eigen::Ref<const Eigen::VectorXd>& upper_limits,
+                         const Eigen::Ref<const Eigen::VectorXd>& lower_limits,
+                         int first_step,
+                         int last_step);
   /** @brief Convexifies cost expression - In this case, it is already quadratic so there's nothing to do */
   sco::ConvexConstraints::Ptr convex(const DblVec& x, sco::Model* model) override;
   /** @brief Numerically evaluate cost given the vector of values */
@@ -268,7 +284,11 @@ class TRAJOPT_API JointAccEqCost : public sco::Cost
 {
 public:
   /** @brief Forms error in QuadExpr - independent of penalty type */
-  JointAccEqCost(VarArray vars, Eigen::VectorXd coeffs, Eigen::VectorXd targets, int& first_step, int& last_step);
+  JointAccEqCost(VarArray vars,
+                 const Eigen::Ref<const Eigen::VectorXd>& coeffs,
+                 const Eigen::Ref<const Eigen::VectorXd>& targets,
+                 int first_step,
+                 int last_step);
   /** @brief Convexifies cost expression - In this case, it is already quadratic so there's nothing to do */
   sco::ConvexObjective::Ptr convex(const DblVec& x, sco::Model* model) override;
   /** @brief Numerically evaluate cost given the vector of values */
@@ -295,12 +315,12 @@ class TRAJOPT_API JointAccIneqCost : public sco::Cost
 public:
   /** @brief Forms error in a vector of AffExpr - independent of penalty type */
   JointAccIneqCost(VarArray vars,
-                   Eigen::VectorXd coeffs,
-                   Eigen::VectorXd targets,
-                   Eigen::VectorXd upper_limits,
-                   Eigen::VectorXd lower_limits,
-                   int& first_step,
-                   int& last_step);
+                   const Eigen::Ref<const Eigen::VectorXd>& coeffs,
+                   const Eigen::Ref<const Eigen::VectorXd>& targets,
+                   const Eigen::Ref<const Eigen::VectorXd>& upper_limits,
+                   const Eigen::Ref<const Eigen::VectorXd>& lower_limits,
+                   int first_step,
+                   int last_step);
   /** @brief Convexifies cost expression - In this case, it is already quadratic so there's nothing to do */
   sco::ConvexObjective::Ptr convex(const DblVec& x, sco::Model* model) override;
   /** @brief Numerically evaluate cost given the vector of values */
@@ -330,7 +350,11 @@ class TRAJOPT_API JointAccEqConstraint : public sco::EqConstraint
 {
 public:
   /** @brief Forms error in a vector of AffExpr - independent of penalty type */
-  JointAccEqConstraint(VarArray vars, Eigen::VectorXd coeffs, Eigen::VectorXd targets, int& first_step, int& last_step);
+  JointAccEqConstraint(VarArray vars,
+                       const Eigen::Ref<const Eigen::VectorXd>& coeffs,
+                       const Eigen::Ref<const Eigen::VectorXd>& targets,
+                       int first_step,
+                       int last_step);
   /** @brief Convexifies cost expression - In this case, it is already quadratic so there's nothing to do */
   sco::ConvexConstraints::Ptr convex(const DblVec& x, sco::Model* model) override;
   /** @brief Numerically evaluate cost given the vector of values */
@@ -358,12 +382,12 @@ class TRAJOPT_API JointAccIneqConstraint : public sco::IneqConstraint
 public:
   /** @brief Forms error in a vector of AffExpr - independent of penalty type */
   JointAccIneqConstraint(VarArray vars,
-                         Eigen::VectorXd coeffs,
-                         Eigen::VectorXd targets,
-                         Eigen::VectorXd upper_limits,
-                         Eigen::VectorXd lower_limits,
-                         int& first_step,
-                         int& last_step);
+                         const Eigen::Ref<const Eigen::VectorXd>& coeffs,
+                         const Eigen::Ref<const Eigen::VectorXd>& targets,
+                         const Eigen::Ref<const Eigen::VectorXd>& upper_limits,
+                         const Eigen::Ref<const Eigen::VectorXd>& lower_limits,
+                         int first_step,
+                         int last_step);
   /** @brief Convexifies cost expression - In this case, it is already quadratic so there's nothing to do */
   sco::ConvexConstraints::Ptr convex(const DblVec& x, sco::Model* model) override;
   /** @brief Numerically evaluate cost given the vector of values */
@@ -393,7 +417,11 @@ class TRAJOPT_API JointJerkEqCost : public sco::Cost
 {
 public:
   /** @brief Forms error in QuadExpr - independent of penalty type */
-  JointJerkEqCost(VarArray vars, Eigen::VectorXd coeffs, Eigen::VectorXd targets, int& first_step, int& last_step);
+  JointJerkEqCost(VarArray vars,
+                  const Eigen::Ref<const Eigen::VectorXd>& coeffs,
+                  const Eigen::Ref<const Eigen::VectorXd>& targets,
+                  int first_step,
+                  int last_step);
   /** @brief Convexifies cost expression - In this case, it is already quadratic so there's nothing to do */
   sco::ConvexObjective::Ptr convex(const DblVec& x, sco::Model* model) override;
   /** @brief Numerically evaluate cost given the vector of values */
@@ -420,12 +448,12 @@ class TRAJOPT_API JointJerkIneqCost : public sco::Cost
 public:
   /** @brief Forms error in a vector of AffExpr - independent of penalty type */
   JointJerkIneqCost(VarArray vars,
-                    Eigen::VectorXd coeffs,
-                    Eigen::VectorXd targets,
-                    Eigen::VectorXd upper_limits,
-                    Eigen::VectorXd lower_limits,
-                    int& first_step,
-                    int& last_step);
+                    const Eigen::Ref<const Eigen::VectorXd>& coeffs,
+                    const Eigen::Ref<const Eigen::VectorXd>& targets,
+                    const Eigen::Ref<const Eigen::VectorXd>& upper_limits,
+                    const Eigen::Ref<const Eigen::VectorXd>& lower_limits,
+                    int first_step,
+                    int last_step);
   /** @brief Convexifies cost expression - In this case, it is already quadratic so there's nothing to do */
   sco::ConvexObjective::Ptr convex(const DblVec& x, sco::Model* model) override;
   /** @brief Numerically evaluate cost given the vector of values */
@@ -456,10 +484,10 @@ class TRAJOPT_API JointJerkEqConstraint : public sco::EqConstraint
 public:
   /** @brief Forms error in a vector of AffExpr - independent of penalty type */
   JointJerkEqConstraint(VarArray vars,
-                        Eigen::VectorXd coeffs,
-                        Eigen::VectorXd targets,
-                        int& first_step,
-                        int& last_step);
+                        const Eigen::Ref<const Eigen::VectorXd>& coeffs,
+                        const Eigen::Ref<const Eigen::VectorXd>& targets,
+                        int first_step,
+                        int last_step);
   /** @brief Convexifies cost expression - In this case, it is already quadratic so there's nothing to do */
   sco::ConvexConstraints::Ptr convex(const DblVec& x, sco::Model* model) override;
   /** @brief Numerically evaluate cost given the vector of values */
@@ -487,12 +515,12 @@ class TRAJOPT_API JointJerkIneqConstraint : public sco::IneqConstraint
 public:
   /** @brief Forms error in a vector of AffExpr - independent of penalty type */
   JointJerkIneqConstraint(VarArray vars,
-                          Eigen::VectorXd coeffs,
-                          Eigen::VectorXd targets,
-                          Eigen::VectorXd upper_limits,
-                          Eigen::VectorXd lower_limits,
-                          int& first_step,
-                          int& last_step);
+                          const Eigen::Ref<const Eigen::VectorXd>& coeffs,
+                          const Eigen::Ref<const Eigen::VectorXd>& targets,
+                          const Eigen::Ref<const Eigen::VectorXd>& upper_limits,
+                          const Eigen::Ref<const Eigen::VectorXd>& lower_limits,
+                          int first_step,
+                          int last_step);
   /** @brief Convexifies cost expression - In this case, it is already quadratic so there's nothing to do */
   sco::ConvexConstraints::Ptr convex(const DblVec& x, sco::Model* model) override;
   /** @brief Numerically evaluate cost given the vector of values */

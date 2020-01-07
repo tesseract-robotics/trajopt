@@ -562,62 +562,68 @@ void UserDefinedTermInfo::hatch(TrajOptProb& prob)
   // Apply error calculator as either cost or constraint
   if (term_type & TT_COST)
   {
-    for (int iStep = first_step; iStep <= last_step; ++iStep)
+    for (int s = first_step; s <= last_step; ++s)
     {
-      std::string type_str;
-      if (cost_penalty_type == sco::PenaltyType::ABS)
-        type_str = "ABS";
-      else if (cost_penalty_type == sco::PenaltyType::HINGE)
-        type_str = "HING";
-      else if (cost_penalty_type == sco::PenaltyType::SQUARED)
-        type_str = "SQUARED";
-      else
-        type_str = "INVALID";
+      if (std::find(fixed_steps.begin(), fixed_steps.end(), s) == fixed_steps.end())
+      {
+        std::string type_str;
+        if (cost_penalty_type == sco::PenaltyType::ABS)
+          type_str = "ABS";
+        else if (cost_penalty_type == sco::PenaltyType::HINGE)
+          type_str = "HING";
+        else if (cost_penalty_type == sco::PenaltyType::SQUARED)
+          type_str = "SQUARED";
+        else
+          type_str = "INVALID";
 
-      if (jacobian_function == nullptr)
-      {
-        prob.addCost(
-            std::make_shared<trajopt::TrajOptCostFromErrFunc>(sco::VectorOfVector::construct(error_function),
-                                                              prob.GetVarRow(iStep, 0, n_dof),
-                                                              coeff,
-                                                              cost_penalty_type,
-                                                              name + "_" + type_str + "_" + std::to_string(iStep)));
-      }
-      else
-      {
-        prob.addCost(
-            std::make_shared<trajopt::TrajOptCostFromErrFunc>(sco::VectorOfVector::construct(error_function),
-                                                              sco::MatrixOfVector::construct(jacobian_function),
-                                                              prob.GetVarRow(iStep, 0, n_dof),
-                                                              coeff,
-                                                              cost_penalty_type,
-                                                              name + "_" + type_str + "_" + std::to_string(iStep)));
+        if (jacobian_function == nullptr)
+        {
+          prob.addCost(
+              std::make_shared<trajopt::TrajOptCostFromErrFunc>(sco::VectorOfVector::construct(error_function),
+                                                                prob.GetVarRow(s, 0, n_dof),
+                                                                coeff,
+                                                                cost_penalty_type,
+                                                                name + "_" + type_str + "_" + std::to_string(s)));
+        }
+        else
+        {
+          prob.addCost(
+              std::make_shared<trajopt::TrajOptCostFromErrFunc>(sco::VectorOfVector::construct(error_function),
+                                                                sco::MatrixOfVector::construct(jacobian_function),
+                                                                prob.GetVarRow(s, 0, n_dof),
+                                                                coeff,
+                                                                cost_penalty_type,
+                                                                name + "_" + type_str + "_" + std::to_string(s)));
+        }
       }
     }
   }
   else if (term_type & TT_CNT)
   {
-    for (int iStep = first_step; iStep <= last_step; ++iStep)
+    for (int s = first_step; s <= last_step; ++s)
     {
-      std::string type_str = (constraint_type == sco::ConstraintType::EQ) ? "EQ" : "INEQ";
-      if (jacobian_function == nullptr)
+      if (std::find(fixed_steps.begin(), fixed_steps.end(), s) == fixed_steps.end())
       {
-        prob.addConstraint(std::make_shared<trajopt::TrajOptConstraintFromErrFunc>(
-            sco::VectorOfVector::construct(error_function),
-            prob.GetVarRow(iStep, 0, n_dof),
-            coeff,
-            constraint_type,
-            name + "_" + type_str + "_" + std::to_string(iStep)));
-      }
-      else
-      {
-        prob.addConstraint(std::make_shared<trajopt::TrajOptConstraintFromErrFunc>(
-            sco::VectorOfVector::construct(error_function),
-            sco::MatrixOfVector::construct(jacobian_function),
-            prob.GetVarRow(iStep, 0, n_dof),
-            coeff,
-            constraint_type,
-            name + "_" + type_str + "_" + std::to_string(iStep)));
+        std::string type_str = (constraint_type == sco::ConstraintType::EQ) ? "EQ" : "INEQ";
+        if (jacobian_function == nullptr)
+        {
+          prob.addConstraint(
+              std::make_shared<trajopt::TrajOptConstraintFromErrFunc>(sco::VectorOfVector::construct(error_function),
+                                                                      prob.GetVarRow(s, 0, n_dof),
+                                                                      coeff,
+                                                                      constraint_type,
+                                                                      name + "_" + type_str + "_" + std::to_string(s)));
+        }
+        else
+        {
+          prob.addConstraint(
+              std::make_shared<trajopt::TrajOptConstraintFromErrFunc>(sco::VectorOfVector::construct(error_function),
+                                                                      sco::MatrixOfVector::construct(jacobian_function),
+                                                                      prob.GetVarRow(s, 0, n_dof),
+                                                                      coeff,
+                                                                      constraint_type,
+                                                                      name + "_" + type_str + "_" + std::to_string(s)));
+        }
       }
     }
   }
@@ -1061,13 +1067,14 @@ void JointPosTermInfo::hatch(TrajOptProb& prob)
     }
     else
     {
-      prob.addCost(sco::Cost::Ptr(new JointPosIneqCost(joint_vars,
-                                                       util::toVectorXd(coeffs),
-                                                       util::toVectorXd(targets),
-                                                       util::toVectorXd(upper_tols),
-                                                       util::toVectorXd(lower_tols),
-                                                       first_step,
-                                                       last_step)));
+      auto c = std::make_shared<JointPosIneqCost>(joint_vars,
+                                                  util::toVectorXd(coeffs),
+                                                  util::toVectorXd(targets),
+                                                  util::toVectorXd(upper_tols),
+                                                  util::toVectorXd(lower_tols),
+                                                  first_step,
+                                                  last_step);
+      prob.addCost(c);
       prob.getCosts().back()->setName(name);
     }
   }
@@ -1076,19 +1083,21 @@ void JointPosTermInfo::hatch(TrajOptProb& prob)
     // If the tolerances are 0, an equality cnt is set. Otherwise it's an inequality constraint
     if (is_upper_zeros && is_lower_zeros)
     {
-      prob.addConstraint(sco::Constraint::Ptr(new JointPosEqConstraint(
-          joint_vars, util::toVectorXd(coeffs), util::toVectorXd(targets), first_step, last_step)));
+      auto c = std::make_shared<JointPosEqConstraint>(
+          joint_vars, util::toVectorXd(coeffs), util::toVectorXd(targets), first_step, last_step);
+      prob.addConstraint(c);
       prob.getConstraints().back()->setName(name);
     }
     else
     {
-      prob.addConstraint(sco::Constraint::Ptr(new JointPosIneqConstraint(joint_vars,
-                                                                         util::toVectorXd(coeffs),
-                                                                         util::toVectorXd(targets),
-                                                                         util::toVectorXd(upper_tols),
-                                                                         util::toVectorXd(lower_tols),
-                                                                         first_step,
-                                                                         last_step)));
+      auto c = std::make_shared<JointPosIneqConstraint>(joint_vars,
+                                                        util::toVectorXd(coeffs),
+                                                        util::toVectorXd(targets),
+                                                        util::toVectorXd(upper_tols),
+                                                        util::toVectorXd(lower_tols),
+                                                        first_step,
+                                                        last_step);
+      prob.addConstraint(c);
       prob.getConstraints().back()->setName(name);
     }
   }
@@ -1543,6 +1552,16 @@ void CollisionTermInfo::fromJson(ProblemConstructionInfo& pci, const Json::Value
   FAIL_IF_FALSE((first_step >= 0) && (first_step < n_steps));
   FAIL_IF_FALSE((last_step >= first_step) && (last_step < n_steps));
 
+  json_marshal::childFromJson(params, fixed_steps, "fixed_steps");
+  for (const auto& fs : fixed_steps)
+  {
+    if (fs < first_step || fs > last_step)
+    {
+      PRINT_AND_THROW(boost::format("Fixed step %i is not between first step %i and last step %i") % fs % first_step %
+                      last_step);
+    }
+  }
+
   int contact_type = 2;  // FIRST = 0, CLOSEST = 1, ALL = 2
   json_marshal::childFromJson(params, contact_type, "contact_test_type", contact_type);
   FAIL_IF_FALSE(contact_type >= 0);
@@ -1628,10 +1647,9 @@ void CollisionTermInfo::fromJson(ProblemConstructionInfo& pci, const Json::Value
     }
   }
 
-  const char* all_fields[] = {
-    "continuous", "first_step", "last_step", "contact_test_type", "longest_valid_segment_length",
-    "coeffs",     "dist_pen",   "pairs"
-  };
+  const char* all_fields[] = { "continuous",  "first_step",        "last_step",
+                               "fixed_steps", "contact_test_type", "longest_valid_segment_length",
+                               "coeffs",      "dist_pen",          "pairs" };
   ensure_only_members(params, all_fields, sizeof(all_fields) / sizeof(char*));
 }
 
@@ -1658,15 +1676,55 @@ void CollisionTermInfo::hatch(TrajOptProb& prob)
     {
       for (int i = first_step; i < last_step; ++i)
       {
-        prob.addCost(sco::Cost::Ptr(new CollisionCost(prob.GetKin(),
-                                                      prob.GetEnv(),
-                                                      adjacency_map,
-                                                      world_to_base,
-                                                      info[static_cast<size_t>(i - first_step)],
-                                                      contact_test_type,
-                                                      longest_valid_segment_length,
-                                                      prob.GetVarRow(i, 0, n_dof),
-                                                      prob.GetVarRow(i + 1, 0, n_dof))));
+        bool current_fixed = std::find(fixed_steps.begin(), fixed_steps.end(), i) != fixed_steps.end();
+        bool next_fixed = std::find(fixed_steps.begin(), fixed_steps.end(), i + 1) != fixed_steps.end();
+
+        sco::Cost::Ptr c;
+        if (!current_fixed && !next_fixed)
+        {
+          c = std::make_shared<CollisionCost>(prob.GetKin(),
+                                              prob.GetEnv(),
+                                              adjacency_map,
+                                              world_to_base,
+                                              info[static_cast<size_t>(i - first_step)],
+                                              contact_test_type,
+                                              longest_valid_segment_length,
+                                              prob.GetVarRow(i, 0, n_dof),
+                                              prob.GetVarRow(i + 1, 0, n_dof),
+                                              CollisionEvaluatorType::START_FREE_END_FREE);
+        }
+        else if (current_fixed)
+        {
+          c = std::make_shared<CollisionCost>(prob.GetKin(),
+                                              prob.GetEnv(),
+                                              adjacency_map,
+                                              world_to_base,
+                                              info[static_cast<size_t>(i - first_step)],
+                                              contact_test_type,
+                                              longest_valid_segment_length,
+                                              prob.GetVarRow(i, 0, n_dof),
+                                              prob.GetVarRow(i + 1, 0, n_dof),
+                                              CollisionEvaluatorType::START_FIXED_END_FREE);
+        }
+        else if (next_fixed)
+        {
+          c = std::make_shared<CollisionCost>(prob.GetKin(),
+                                              prob.GetEnv(),
+                                              adjacency_map,
+                                              world_to_base,
+                                              info[static_cast<size_t>(i - first_step)],
+                                              contact_test_type,
+                                              longest_valid_segment_length,
+                                              prob.GetVarRow(i, 0, n_dof),
+                                              prob.GetVarRow(i + 1, 0, n_dof),
+                                              CollisionEvaluatorType::START_FREE_END_FIXED);
+        }
+        else
+        {
+          PRINT_AND_THROW("Currently two adjacent fixed steps are not supported in collision term.");
+        }
+
+        prob.addCost(c);
         prob.getCosts().back()->setName((boost::format("%s_%i") % name.c_str() % i).str());
       }
     }
@@ -1674,14 +1732,18 @@ void CollisionTermInfo::hatch(TrajOptProb& prob)
     {
       for (int i = first_step; i <= last_step; ++i)
       {
-        prob.addCost(sco::Cost::Ptr(new CollisionCost(prob.GetKin(),
-                                                      prob.GetEnv(),
-                                                      adjacency_map,
-                                                      world_to_base,
-                                                      info[static_cast<size_t>(i - first_step)],
-                                                      contact_test_type,
-                                                      prob.GetVarRow(i, 0, n_dof))));
-        prob.getCosts().back()->setName((boost::format("%s_%i") % name.c_str() % i).str());
+        if (std::find(fixed_steps.begin(), fixed_steps.end(), i) == fixed_steps.end())
+        {
+          auto c = std::make_shared<CollisionCost>(prob.GetKin(),
+                                                   prob.GetEnv(),
+                                                   adjacency_map,
+                                                   world_to_base,
+                                                   info[static_cast<size_t>(i - first_step)],
+                                                   contact_test_type,
+                                                   prob.GetVarRow(i, 0, n_dof));
+          prob.addCost(c);
+          prob.getCosts().back()->setName((boost::format("%s_%i") % name.c_str() % i).str());
+        }
       }
     }
   }
@@ -1691,15 +1753,55 @@ void CollisionTermInfo::hatch(TrajOptProb& prob)
     {
       for (int i = first_step; i < last_step; ++i)
       {
-        prob.addIneqConstraint(sco::Constraint::Ptr(new CollisionConstraint(prob.GetKin(),
-                                                                            prob.GetEnv(),
-                                                                            adjacency_map,
-                                                                            world_to_base,
-                                                                            info[static_cast<size_t>(i - first_step)],
-                                                                            contact_test_type,
-                                                                            longest_valid_segment_length,
-                                                                            prob.GetVarRow(i, 0, n_dof),
-                                                                            prob.GetVarRow(i + 1, 0, n_dof))));
+        bool current_fixed = std::find(fixed_steps.begin(), fixed_steps.end(), i) != fixed_steps.end();
+        bool next_fixed = std::find(fixed_steps.begin(), fixed_steps.end(), i + 1) != fixed_steps.end();
+
+        sco::Constraint::Ptr c;
+        if (!current_fixed && !next_fixed)
+        {
+          c = std::make_shared<CollisionConstraint>(prob.GetKin(),
+                                                    prob.GetEnv(),
+                                                    adjacency_map,
+                                                    world_to_base,
+                                                    info[static_cast<size_t>(i - first_step)],
+                                                    contact_test_type,
+                                                    longest_valid_segment_length,
+                                                    prob.GetVarRow(i, 0, n_dof),
+                                                    prob.GetVarRow(i + 1, 0, n_dof),
+                                                    CollisionEvaluatorType::START_FREE_END_FREE);
+        }
+        else if (current_fixed)
+        {
+          c = std::make_shared<CollisionConstraint>(prob.GetKin(),
+                                                    prob.GetEnv(),
+                                                    adjacency_map,
+                                                    world_to_base,
+                                                    info[static_cast<size_t>(i - first_step)],
+                                                    contact_test_type,
+                                                    longest_valid_segment_length,
+                                                    prob.GetVarRow(i, 0, n_dof),
+                                                    prob.GetVarRow(i + 1, 0, n_dof),
+                                                    CollisionEvaluatorType::START_FIXED_END_FREE);
+        }
+        else if (next_fixed)
+        {
+          c = std::make_shared<CollisionConstraint>(prob.GetKin(),
+                                                    prob.GetEnv(),
+                                                    adjacency_map,
+                                                    world_to_base,
+                                                    info[static_cast<size_t>(i - first_step)],
+                                                    contact_test_type,
+                                                    longest_valid_segment_length,
+                                                    prob.GetVarRow(i, 0, n_dof),
+                                                    prob.GetVarRow(i + 1, 0, n_dof),
+                                                    CollisionEvaluatorType::START_FREE_END_FIXED);
+        }
+        else
+        {
+          PRINT_AND_THROW("Currently two adjacent fixed steps are not supported in collision term.");
+        }
+
+        prob.addIneqConstraint(c);
         prob.getIneqConstraints().back()->setName((boost::format("%s_%i") % name.c_str() % i).str());
       }
     }
@@ -1707,14 +1809,18 @@ void CollisionTermInfo::hatch(TrajOptProb& prob)
     {
       for (int i = first_step; i <= last_step; ++i)
       {
-        prob.addIneqConstraint(sco::Constraint::Ptr(new CollisionConstraint(prob.GetKin(),
-                                                                            prob.GetEnv(),
-                                                                            adjacency_map,
-                                                                            world_to_base,
-                                                                            info[static_cast<size_t>(i - first_step)],
-                                                                            contact_test_type,
-                                                                            prob.GetVarRow(i, 0, n_dof))));
-        prob.getIneqConstraints().back()->setName((boost::format("%s_%i") % name.c_str() % i).str());
+        if (std::find(fixed_steps.begin(), fixed_steps.end(), i) == fixed_steps.end())
+        {
+          auto c = std::make_shared<CollisionConstraint>(prob.GetKin(),
+                                                         prob.GetEnv(),
+                                                         adjacency_map,
+                                                         world_to_base,
+                                                         info[static_cast<size_t>(i - first_step)],
+                                                         contact_test_type,
+                                                         prob.GetVarRow(i, 0, n_dof));
+          prob.addIneqConstraint(c);
+          prob.getIneqConstraints().back()->setName((boost::format("%s_%i") % name.c_str() % i).str());
+        }
       }
     }
   }

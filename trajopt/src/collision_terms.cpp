@@ -269,30 +269,6 @@ void CollisionsToDistanceExpressions(sco::AffExprVector& exprs,
   }
 }
 
-void CollisionsToDistanceExpressions(sco::AffExprVector& exprs,
-                                     const tesseract_collision::ContactResultVector& dist_results,
-                                     const tesseract_kinematics::ForwardKinematics::ConstPtr& manip,
-                                     const tesseract_environment::AdjacencyMap::ConstPtr& adjacency_map,
-                                     const Eigen::Isometry3d& world_to_base,
-                                     const sco::VarVector& vars0,
-                                     const sco::VarVector& vars1,
-                                     const DblVec& x)
-{
-  sco::AffExprVector exprs0, exprs1;
-  CollisionsToDistanceExpressions(exprs0, dist_results, manip, adjacency_map, world_to_base, vars0, x, false);
-  CollisionsToDistanceExpressions(exprs1, dist_results, manip, adjacency_map, world_to_base, vars1, x, true);
-
-  exprs.resize(exprs0.size());
-  assert(exprs0.size() == dist_results.size());
-  for (std::size_t i = 0; i < exprs0.size(); ++i)
-  {
-    exprs[i] = sco::AffExpr(dist_results[i].distance);
-    sco::exprInc(exprs[i], exprs0[i]);
-    sco::exprInc(exprs[i], exprs1[i]);
-    sco::cleanupAff(exprs[i]);
-  }
-}
-
 inline size_t hash(const DblVec& x) { return boost::hash_range(x.begin(), x.end()); }
 void CollisionEvaluator::GetCollisionsCached(const DblVec& x, tesseract_collision::ContactResultVector& dist_results)
 {
@@ -429,7 +405,8 @@ CastCollisionEvaluator::CastCollisionEvaluator(tesseract_kinematics::ForwardKine
                                                tesseract_collision::ContactTestType contact_test_type,
                                                double longest_valid_segment_length,
                                                sco::VarVector vars0,
-                                               sco::VarVector vars1)
+                                               sco::VarVector vars1,
+                                               CollisionEvaluatorType type)
   : CollisionEvaluator(std::move(manip),
                        std::move(env),
                        std::move(adjacency_map),
@@ -437,20 +414,43 @@ CastCollisionEvaluator::CastCollisionEvaluator(tesseract_kinematics::ForwardKine
                        std::move(safety_margin_data),
                        contact_test_type,
                        longest_valid_segment_length)
-  , m_vars0(std::move(vars0))
-  , m_vars1(std::move(vars1))
+  , vars0_(std::move(vars0))
+  , vars1_(std::move(vars1))
+  , type_(type)
 {
   contact_manager_ = env_->getContinuousContactManager();
   contact_manager_->setActiveCollisionObjects(adjacency_map_->getActiveLinkNames());
   contact_manager_->setContactDistanceThreshold(safety_margin_data_->getMaxSafetyMargin());
 
   state_solver_ = env_->getStateSolver();
+
+  switch (type_)
+  {
+    case CollisionEvaluatorType::START_FREE_END_FREE:
+    {
+      fn_ = std::bind(
+          &CastCollisionEvaluator::CalcDistExpressionsBothFree, this, std::placeholders::_1, std::placeholders::_2);
+      break;
+    }
+    case CollisionEvaluatorType::START_FIXED_END_FREE:
+    {
+      fn_ = std::bind(
+          &CastCollisionEvaluator::CalcDistExpressionsEndFree, this, std::placeholders::_1, std::placeholders::_2);
+      break;
+    }
+    case CollisionEvaluatorType::START_FREE_END_FIXED:
+    {
+      fn_ = std::bind(
+          &CastCollisionEvaluator::CalcDistExpressionsStartFree, this, std::placeholders::_1, std::placeholders::_2);
+      break;
+    }
+  };
 }
 
 void CastCollisionEvaluator::CalcCollisions(const DblVec& x, tesseract_collision::ContactResultVector& dist_results)
 {
-  Eigen::VectorXd s0 = sco::getVec(x, m_vars0);
-  Eigen::VectorXd s1 = sco::getVec(x, m_vars1);
+  Eigen::VectorXd s0 = sco::getVec(x, vars0_);
+  Eigen::VectorXd s1 = sco::getVec(x, vars1_);
   tesseract_collision::ContactResultMap contact_results;
 
   // The first step is to see if the distance between two states is larger than the longest valid segment. If larger
@@ -571,12 +571,65 @@ void CastCollisionEvaluator::CalcCollisions(const DblVec& x, tesseract_collision
       dist_results.emplace_back(res);
   }
 }
-void CastCollisionEvaluator::CalcDistExpressions(const DblVec& x, sco::AffExprVector& exprs)
+
+void CastCollisionEvaluator::CalcDistExpressions(const DblVec& x, sco::AffExprVector& exprs) { fn_(x, exprs); }
+
+void CastCollisionEvaluator::CalcDistExpressionsStartFree(const DblVec& x, sco::AffExprVector& exprs)
 {
   tesseract_collision::ContactResultVector dist_results;
   GetCollisionsCached(x, dist_results);
-  CollisionsToDistanceExpressions(exprs, dist_results, manip_, adjacency_map_, world_to_base_, m_vars0, m_vars1, x);
+
+  sco::AffExprVector exprs0;
+  CollisionsToDistanceExpressions(exprs0, dist_results, manip_, adjacency_map_, world_to_base_, vars0_, x, false);
+
+  exprs.resize(exprs0.size());
+  assert(exprs0.size() == dist_results.size());
+  for (std::size_t i = 0; i < exprs0.size(); ++i)
+  {
+    exprs[i] = sco::AffExpr(dist_results[i].distance);
+    sco::exprInc(exprs[i], exprs0[i]);
+    sco::cleanupAff(exprs[i]);
+  }
 }
+
+void CastCollisionEvaluator::CalcDistExpressionsEndFree(const DblVec& x, sco::AffExprVector& exprs)
+{
+  tesseract_collision::ContactResultVector dist_results;
+  GetCollisionsCached(x, dist_results);
+
+  sco::AffExprVector exprs1;
+  CollisionsToDistanceExpressions(exprs1, dist_results, manip_, adjacency_map_, world_to_base_, vars1_, x, true);
+
+  exprs.resize(exprs1.size());
+  assert(exprs1.size() == dist_results.size());
+  for (std::size_t i = 0; i < exprs1.size(); ++i)
+  {
+    exprs[i] = sco::AffExpr(dist_results[i].distance);
+    sco::exprInc(exprs[i], exprs1[i]);
+    sco::cleanupAff(exprs[i]);
+  }
+}
+
+void CastCollisionEvaluator::CalcDistExpressionsBothFree(const DblVec& x, sco::AffExprVector& exprs)
+{
+  tesseract_collision::ContactResultVector dist_results;
+  GetCollisionsCached(x, dist_results);
+
+  sco::AffExprVector exprs0, exprs1;
+  CollisionsToDistanceExpressions(exprs0, dist_results, manip_, adjacency_map_, world_to_base_, vars0_, x, false);
+  CollisionsToDistanceExpressions(exprs1, dist_results, manip_, adjacency_map_, world_to_base_, vars1_, x, true);
+
+  exprs.resize(exprs0.size());
+  assert(exprs0.size() == dist_results.size());
+  for (std::size_t i = 0; i < exprs0.size(); ++i)
+  {
+    exprs[i] = sco::AffExpr(dist_results[i].distance);
+    sco::exprInc(exprs[i], exprs0[i]);
+    sco::exprInc(exprs[i], exprs1[i]);
+    sco::cleanupAff(exprs[i]);
+  }
+}
+
 void CastCollisionEvaluator::CalcDists(const DblVec& x, DblVec& exprs)
 {
   tesseract_collision::ContactResultVector dist_results;
@@ -589,7 +642,7 @@ void CastCollisionEvaluator::Plot(const tesseract_visualization::Visualization::
   // TODO LEVI: Need to improve this to match casted object
   tesseract_collision::ContactResultVector dist_results;
   GetCollisionsCached(x, dist_results);
-  Eigen::VectorXd dofvals = sco::getVec(x, m_vars0);
+  Eigen::VectorXd dofvals = sco::getVec(x, vars0_);
 
   Eigen::VectorXd safety_distance(dist_results.size());
   for (auto i = 0u; i < dist_results.size(); ++i)
@@ -685,7 +738,8 @@ CollisionCost::CollisionCost(tesseract_kinematics::ForwardKinematics::ConstPtr m
                              tesseract_collision::ContactTestType contact_test_type,
                              double longest_valid_segment_length,
                              sco::VarVector vars0,
-                             sco::VarVector vars1)
+                             sco::VarVector vars1,
+                             CollisionEvaluatorType type)
   : Cost("cast_collision")
   , m_calc(new CastCollisionEvaluator(std::move(manip),
                                       std::move(env),
@@ -695,7 +749,8 @@ CollisionCost::CollisionCost(tesseract_kinematics::ForwardKinematics::ConstPtr m
                                       contact_test_type,
                                       longest_valid_segment_length,
                                       std::move(vars0),
-                                      std::move(vars1)))
+                                      std::move(vars1),
+                                      type))
 {
 }
 
@@ -767,7 +822,8 @@ CollisionConstraint::CollisionConstraint(tesseract_kinematics::ForwardKinematics
                                          tesseract_collision::ContactTestType contact_test_type,
                                          double longest_valid_segment_length,
                                          sco::VarVector vars0,
-                                         sco::VarVector vars1)
+                                         sco::VarVector vars1,
+                                         CollisionEvaluatorType type)
   : m_calc(new CastCollisionEvaluator(std::move(manip),
                                       std::move(env),
                                       std::move(adjacency_map),
@@ -776,7 +832,8 @@ CollisionConstraint::CollisionConstraint(tesseract_kinematics::ForwardKinematics
                                       contact_test_type,
                                       longest_valid_segment_length,
                                       std::move(vars0),
-                                      std::move(vars1)))
+                                      std::move(vars1),
+                                      type))
 {
   name_ = "collision";
 }

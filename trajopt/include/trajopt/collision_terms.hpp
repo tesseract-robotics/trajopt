@@ -8,6 +8,13 @@
 
 namespace trajopt
 {
+enum class CollisionEvaluatorType
+{
+  START_FREE_END_FREE = 0,  /**< @brief Both start and end state variables are free to be adjusted */
+  START_FREE_END_FIXED = 1, /**< @brief Only start state variables are free to be adjusted */
+  START_FIXED_END_FREE = 2  /**< @brief Only end state variables are free to be adjusted */
+};
+
 struct CollisionEvaluator
 {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -102,18 +109,42 @@ public:
                          tesseract_collision::ContactTestType contact_test_type,
                          double longest_valid_segment_length,
                          sco::VarVector vars0,
-                         sco::VarVector vars1);
+                         sco::VarVector vars1,
+                         CollisionEvaluatorType type);
   void CalcDistExpressions(const DblVec& x, sco::AffExprVector& exprs) override;
   void CalcDists(const DblVec& x, DblVec& exprs) override;
   void CalcCollisions(const DblVec& x, tesseract_collision::ContactResultVector& dist_results) override;
   void Plot(const tesseract_visualization::Visualization::Ptr& plotter, const DblVec& x) override;
-  sco::VarVector GetVars() override { return concat(m_vars0, m_vars1); }
+  sco::VarVector GetVars() override { return concat(vars0_, vars1_); }
 
 private:
-  sco::VarVector m_vars0;
-  sco::VarVector m_vars1;
+  sco::VarVector vars0_;
+  sco::VarVector vars1_;
+  CollisionEvaluatorType type_;
   tesseract_collision::ContinuousContactManager::Ptr contact_manager_;
   tesseract_environment::StateSolver::Ptr state_solver_;
+  std::function<void(const DblVec&, sco::AffExprVector&)> fn_;
+
+  /**
+   * @brief Calculate the distance expressions when the start is free but the end is fixed
+   * @param x The current values
+   * @param exprs The returned expression
+   */
+  void CalcDistExpressionsStartFree(const DblVec& x, sco::AffExprVector& exprs);
+
+  /**
+   * @brief Calculate the distance expressions when the end is free but the start is fixed
+   * @param x The current values
+   * @param exprs The returned expression
+   */
+  void CalcDistExpressionsEndFree(const DblVec& x, sco::AffExprVector& exprs);
+
+  /**
+   * @brief Calculate the distance expressions when the start and end is free
+   * @param x The current values
+   * @param exprs The returned expression
+   */
+  void CalcDistExpressionsBothFree(const DblVec& x, sco::AffExprVector& exprs);
 };
 
 class TRAJOPT_API CollisionCost : public sco::Cost, public Plotter
@@ -136,7 +167,8 @@ public:
                 tesseract_collision::ContactTestType contact_test_type,
                 double longest_valid_segment_length,
                 sco::VarVector vars0,
-                sco::VarVector vars1);
+                sco::VarVector vars1,
+                CollisionEvaluatorType type);
   sco::ConvexObjective::Ptr convex(const DblVec& x, sco::Model* model) override;
   double value(const DblVec&) override;
   void Plot(const tesseract_visualization::Visualization::Ptr& plotter, const DblVec& x) override;
@@ -166,7 +198,8 @@ public:
                       tesseract_collision::ContactTestType contact_test_type,
                       double longest_valid_segment_length,
                       sco::VarVector vars0,
-                      sco::VarVector vars1);
+                      sco::VarVector vars1,
+                      CollisionEvaluatorType type);
   sco::ConvexConstraints::Ptr convex(const DblVec& x, sco::Model* model) override;
   DblVec value(const DblVec&) override;
   void Plot(const DblVec& x);
