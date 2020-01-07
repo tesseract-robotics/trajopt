@@ -23,14 +23,14 @@ namespace trajopt
 
 //////////////////// Position /////////////////////
 JointPosEqCost::JointPosEqCost(VarArray vars,
-                               Eigen::VectorXd coeffs,
-                               Eigen::VectorXd targets,
-                               int& first_step,
-                               int& last_step)
+                               const Eigen::Ref<const Eigen::VectorXd>& coeffs,
+                               const Eigen::Ref<const Eigen::VectorXd>& targets,
+                               int first_step,
+                               int last_step)
   : Cost("JointPosEq")
   , vars_(std::move(vars))
-  , coeffs_(std::move(coeffs))
-  , targets_(std::move(targets))
+  , coeffs_(coeffs)
+  , targets_(targets)
   , first_step_(first_step)
   , last_step_(last_step)
 {
@@ -65,18 +65,18 @@ sco::ConvexObjective::Ptr JointPosEqCost::convex(const DblVec& /*x*/, sco::Model
 }
 
 JointPosIneqCost::JointPosIneqCost(VarArray vars,
-                                   Eigen::VectorXd coeffs,
-                                   Eigen::VectorXd targets,
-                                   Eigen::VectorXd upper_limits,
-                                   Eigen::VectorXd lower_limits,
-                                   int& first_step,
-                                   int& last_step)
+                                   const Eigen::Ref<const Eigen::VectorXd>& coeffs,
+                                   const Eigen::Ref<const Eigen::VectorXd>& targets,
+                                   const Eigen::Ref<const Eigen::VectorXd>& upper_limits,
+                                   const Eigen::Ref<const Eigen::VectorXd>& lower_limits,
+                                   int first_step,
+                                   int last_step)
   : Cost("JointPosIneq")
   , vars_(std::move(vars))
-  , coeffs_(std::move(coeffs))
-  , upper_tols_(std::move(upper_limits))
-  , lower_tols_(std::move(lower_limits))
-  , targets_(std::move(targets))
+  , coeffs_(coeffs)
+  , upper_tols_(upper_limits)
+  , lower_tols_(lower_limits)
+  , targets_(targets)
   , first_step_(first_step)
   , last_step_(last_step)
 {
@@ -133,14 +133,14 @@ sco::ConvexObjective::Ptr JointPosIneqCost::convex(const DblVec& /*x*/, sco::Mod
 }
 
 JointPosEqConstraint::JointPosEqConstraint(VarArray vars,
-                                           Eigen::VectorXd coeffs,
-                                           Eigen::VectorXd targets,
-                                           int& first_step,
-                                           int& last_step)
+                                           const Eigen::Ref<const Eigen::VectorXd>& coeffs,
+                                           const Eigen::Ref<const Eigen::VectorXd>& targets,
+                                           int first_step,
+                                           int last_step)
   : EqConstraint("JointPosEq")
   , vars_(std::move(vars))
-  , coeffs_(std::move(coeffs))
-  , targets_(std::move(targets))
+  , coeffs_(coeffs)
+  , targets_(targets)
   , first_step_(first_step)
   , last_step_(last_step)
 {
@@ -179,18 +179,18 @@ sco::ConvexConstraints::Ptr JointPosEqConstraint::convex(const DblVec& /*x*/, sc
 }
 
 JointPosIneqConstraint::JointPosIneqConstraint(VarArray vars,
-                                               Eigen::VectorXd coeffs,
-                                               Eigen::VectorXd targets,
-                                               Eigen::VectorXd upper_limits,
-                                               Eigen::VectorXd lower_limits,
-                                               int& first_step,
-                                               int& last_step)
+                                               const Eigen::Ref<const Eigen::VectorXd>& coeffs,
+                                               const Eigen::Ref<const Eigen::VectorXd>& targets,
+                                               const Eigen::Ref<const Eigen::VectorXd>& upper_limits,
+                                               const Eigen::Ref<const Eigen::VectorXd>& lower_limits,
+                                               int first_step,
+                                               int last_step)
   : IneqConstraint("JointPosIneq")
   , vars_(std::move(vars))
-  , coeffs_(std::move(coeffs))
-  , upper_tols_(std::move(upper_limits))
-  , lower_tols_(std::move(lower_limits))
-  , targets_(std::move(targets))
+  , coeffs_(coeffs)
+  , upper_tols_(upper_limits)
+  , lower_tols_(lower_limits)
+  , targets_(targets)
   , first_step_(first_step)
   , last_step_(last_step)
 {
@@ -250,14 +250,14 @@ sco::ConvexConstraints::Ptr JointPosIneqConstraint::convex(const DblVec& /*x*/, 
 
 //////////////////// Velocity /////////////////////
 JointVelEqCost::JointVelEqCost(VarArray vars,
-                               Eigen::VectorXd coeffs,
-                               Eigen::VectorXd targets,
-                               int& first_step,
-                               int& last_step)
+                               const Eigen::Ref<const Eigen::VectorXd>& coeffs,
+                               const Eigen::Ref<const Eigen::VectorXd>& targets,
+                               int first_step,
+                               int last_step)
   : Cost("JointVelEq")
   , vars_(std::move(vars))
-  , coeffs_(std::move(coeffs))
-  , targets_(std::move(targets))
+  , coeffs_(coeffs)
+  , targets_(targets)
   , first_step_(first_step)
   , last_step_(last_step)
 {
@@ -293,18 +293,18 @@ sco::ConvexObjective::Ptr JointVelEqCost::convex(const DblVec& /*x*/, sco::Model
 }
 
 JointVelIneqCost::JointVelIneqCost(VarArray vars,
-                                   Eigen::VectorXd coeffs,
-                                   Eigen::VectorXd targets,
-                                   Eigen::VectorXd upper_limits,
-                                   Eigen::VectorXd lower_limits,
-                                   int& first_step,
-                                   int& last_step)
+                                   const Eigen::Ref<const Eigen::VectorXd>& coeffs,
+                                   const Eigen::Ref<const Eigen::VectorXd>& targets,
+                                   const Eigen::Ref<const Eigen::VectorXd>& upper_limits,
+                                   const Eigen::Ref<const Eigen::VectorXd>& lower_limits,
+                                   int first_step,
+                                   int last_step)
   : Cost("JointVelIneq")
   , vars_(std::move(vars))
-  , coeffs_(std::move(coeffs))
-  , upper_tols_(std::move(upper_limits))
-  , lower_tols_(std::move(lower_limits))
-  , targets_(std::move(targets))
+  , coeffs_(coeffs)
+  , upper_tols_(upper_limits)
+  , lower_tols_(lower_limits)
+  , targets_(targets)
   , first_step_(first_step)
   , last_step_(last_step)
 {
@@ -363,14 +363,14 @@ sco::ConvexObjective::Ptr JointVelIneqCost::convex(const DblVec& /*x*/, sco::Mod
 }
 
 JointVelEqConstraint::JointVelEqConstraint(VarArray vars,
-                                           Eigen::VectorXd coeffs,
-                                           Eigen::VectorXd targets,
-                                           int& first_step,
-                                           int& last_step)
+                                           const Eigen::Ref<const Eigen::VectorXd>& coeffs,
+                                           const Eigen::Ref<const Eigen::VectorXd>& targets,
+                                           int first_step,
+                                           int last_step)
   : EqConstraint("JointVelEq")
   , vars_(std::move(vars))
-  , coeffs_(std::move(coeffs))
-  , targets_(std::move(targets))
+  , coeffs_(coeffs)
+  , targets_(targets)
   , first_step_(first_step)
   , last_step_(last_step)
 {
@@ -410,18 +410,18 @@ sco::ConvexConstraints::Ptr JointVelEqConstraint::convex(const DblVec& /*x*/, sc
 }
 
 JointVelIneqConstraint::JointVelIneqConstraint(VarArray vars,
-                                               Eigen::VectorXd coeffs,
-                                               Eigen::VectorXd targets,
-                                               Eigen::VectorXd upper_limits,
-                                               Eigen::VectorXd lower_limits,
-                                               int& first_step,
-                                               int& last_step)
+                                               const Eigen::Ref<const Eigen::VectorXd>& coeffs,
+                                               const Eigen::Ref<const Eigen::VectorXd>& targets,
+                                               const Eigen::Ref<const Eigen::VectorXd>& upper_limits,
+                                               const Eigen::Ref<const Eigen::VectorXd>& lower_limits,
+                                               int first_step,
+                                               int last_step)
   : IneqConstraint("JointVelIneq")
   , vars_(std::move(vars))
-  , coeffs_(std::move(coeffs))
-  , upper_tols_(std::move(upper_limits))
-  , lower_tols_(std::move(lower_limits))
-  , targets_(std::move(targets))
+  , coeffs_(coeffs)
+  , upper_tols_(upper_limits)
+  , lower_tols_(lower_limits)
+  , targets_(targets)
   , first_step_(first_step)
   , last_step_(last_step)
 {
@@ -483,14 +483,14 @@ sco::ConvexConstraints::Ptr JointVelIneqConstraint::convex(const DblVec& /*x*/, 
 
 //////////////////// Acceleration /////////////////////
 JointAccEqCost::JointAccEqCost(VarArray vars,
-                               Eigen::VectorXd coeffs,
-                               Eigen::VectorXd targets,
-                               int& first_step,
-                               int& last_step)
+                               const Eigen::Ref<const Eigen::VectorXd>& coeffs,
+                               const Eigen::Ref<const Eigen::VectorXd>& targets,
+                               int first_step,
+                               int last_step)
   : Cost("JointAccEq")
   , vars_(std::move(vars))
-  , coeffs_(std::move(coeffs))
-  , targets_(std::move(targets))
+  , coeffs_(coeffs)
+  , targets_(targets)
   , first_step_(first_step)
   , last_step_(last_step)
 {
@@ -529,18 +529,18 @@ sco::ConvexObjective::Ptr JointAccEqCost::convex(const DblVec& /*x*/, sco::Model
 }
 
 JointAccIneqCost::JointAccIneqCost(VarArray vars,
-                                   Eigen::VectorXd coeffs,
-                                   Eigen::VectorXd targets,
-                                   Eigen::VectorXd upper_limits,
-                                   Eigen::VectorXd lower_limits,
-                                   int& first_step,
-                                   int& last_step)
+                                   const Eigen::Ref<const Eigen::VectorXd>& coeffs,
+                                   const Eigen::Ref<const Eigen::VectorXd>& targets,
+                                   const Eigen::Ref<const Eigen::VectorXd>& upper_limits,
+                                   const Eigen::Ref<const Eigen::VectorXd>& lower_limits,
+                                   int first_step,
+                                   int last_step)
   : Cost("JointAccIneq")
   , vars_(std::move(vars))
-  , coeffs_(std::move(coeffs))
-  , upper_tols_(std::move(upper_limits))
-  , lower_tols_(std::move(lower_limits))
-  , targets_(std::move(targets))
+  , coeffs_(coeffs)
+  , upper_tols_(upper_limits)
+  , lower_tols_(lower_limits)
+  , targets_(targets)
   , first_step_(first_step)
   , last_step_(last_step)
 {
@@ -600,14 +600,14 @@ sco::ConvexObjective::Ptr JointAccIneqCost::convex(const DblVec& /*x*/, sco::Mod
 }
 
 JointAccEqConstraint::JointAccEqConstraint(VarArray vars,
-                                           Eigen::VectorXd coeffs,
-                                           Eigen::VectorXd targets,
-                                           int& first_step,
-                                           int& last_step)
+                                           const Eigen::Ref<const Eigen::VectorXd>& coeffs,
+                                           const Eigen::Ref<const Eigen::VectorXd>& targets,
+                                           int first_step,
+                                           int last_step)
   : EqConstraint("JointAccEq")
   , vars_(std::move(vars))
-  , coeffs_(std::move(coeffs))
-  , targets_(std::move(targets))
+  , coeffs_(coeffs)
+  , targets_(targets)
   , first_step_(first_step)
   , last_step_(last_step)
 {
@@ -650,18 +650,18 @@ sco::ConvexConstraints::Ptr JointAccEqConstraint::convex(const DblVec& /*x*/, sc
 }
 
 JointAccIneqConstraint::JointAccIneqConstraint(VarArray vars,
-                                               Eigen::VectorXd coeffs,
-                                               Eigen::VectorXd targets,
-                                               Eigen::VectorXd upper_limits,
-                                               Eigen::VectorXd lower_limits,
-                                               int& first_step,
-                                               int& last_step)
+                                               const Eigen::Ref<const Eigen::VectorXd>& coeffs,
+                                               const Eigen::Ref<const Eigen::VectorXd>& targets,
+                                               const Eigen::Ref<const Eigen::VectorXd>& upper_limits,
+                                               const Eigen::Ref<const Eigen::VectorXd>& lower_limits,
+                                               int first_step,
+                                               int last_step)
   : IneqConstraint("JointAccIneq")
   , vars_(std::move(vars))
-  , coeffs_(std::move(coeffs))
-  , upper_tols_(std::move(upper_limits))
-  , lower_tols_(std::move(lower_limits))
-  , targets_(std::move(targets))
+  , coeffs_(coeffs)
+  , upper_tols_(upper_limits)
+  , lower_tols_(lower_limits)
+  , targets_(targets)
   , first_step_(first_step)
   , last_step_(last_step)
 {
@@ -725,14 +725,14 @@ sco::ConvexConstraints::Ptr JointAccIneqConstraint::convex(const DblVec& /*x*/, 
 
 //////////////////// Jerk /////////////////////
 JointJerkEqCost::JointJerkEqCost(VarArray vars,
-                                 Eigen::VectorXd coeffs,
-                                 Eigen::VectorXd targets,
-                                 int& first_step,
-                                 int& last_step)
+                                 const Eigen::Ref<const Eigen::VectorXd>& coeffs,
+                                 const Eigen::Ref<const Eigen::VectorXd>& targets,
+                                 int first_step,
+                                 int last_step)
   : Cost("JointJerkEq")
   , vars_(std::move(vars))
-  , coeffs_(std::move(coeffs))
-  , targets_(std::move(targets))
+  , coeffs_(coeffs)
+  , targets_(targets)
   , first_step_(first_step)
   , last_step_(last_step)
 {
@@ -773,18 +773,18 @@ sco::ConvexObjective::Ptr JointJerkEqCost::convex(const DblVec& /*x*/, sco::Mode
 }
 
 JointJerkIneqCost::JointJerkIneqCost(VarArray vars,
-                                     Eigen::VectorXd coeffs,
-                                     Eigen::VectorXd targets,
-                                     Eigen::VectorXd upper_limits,
-                                     Eigen::VectorXd lower_limits,
-                                     int& first_step,
-                                     int& last_step)
+                                     const Eigen::Ref<const Eigen::VectorXd>& coeffs,
+                                     const Eigen::Ref<const Eigen::VectorXd>& targets,
+                                     const Eigen::Ref<const Eigen::VectorXd>& upper_limits,
+                                     const Eigen::Ref<const Eigen::VectorXd>& lower_limits,
+                                     int first_step,
+                                     int last_step)
   : Cost("JointJerkIneq")
   , vars_(std::move(vars))
-  , coeffs_(std::move(coeffs))
-  , upper_tols_(std::move(upper_limits))
-  , lower_tols_(std::move(lower_limits))
-  , targets_(std::move(targets))
+  , coeffs_(coeffs)
+  , upper_tols_(upper_limits)
+  , lower_tols_(lower_limits)
+  , targets_(targets)
   , first_step_(first_step)
   , last_step_(last_step)
 {
@@ -846,14 +846,14 @@ sco::ConvexObjective::Ptr JointJerkIneqCost::convex(const DblVec& /*x*/, sco::Mo
 }
 
 JointJerkEqConstraint::JointJerkEqConstraint(VarArray vars,
-                                             Eigen::VectorXd coeffs,
-                                             Eigen::VectorXd targets,
-                                             int& first_step,
-                                             int& last_step)
+                                             const Eigen::Ref<const Eigen::VectorXd>& coeffs,
+                                             const Eigen::Ref<const Eigen::VectorXd>& targets,
+                                             int first_step,
+                                             int last_step)
   : EqConstraint("JointJerkEq")
   , vars_(std::move(vars))
-  , coeffs_(std::move(coeffs))
-  , targets_(std::move(targets))
+  , coeffs_(coeffs)
+  , targets_(targets)
   , first_step_(first_step)
   , last_step_(last_step)
 {
@@ -898,18 +898,18 @@ sco::ConvexConstraints::Ptr JointJerkEqConstraint::convex(const DblVec& /*x*/, s
 }
 
 JointJerkIneqConstraint::JointJerkIneqConstraint(VarArray vars,
-                                                 Eigen::VectorXd coeffs,
-                                                 Eigen::VectorXd targets,
-                                                 Eigen::VectorXd upper_limits,
-                                                 Eigen::VectorXd lower_limits,
-                                                 int& first_step,
-                                                 int& last_step)
+                                                 const Eigen::Ref<const Eigen::VectorXd>& coeffs,
+                                                 const Eigen::Ref<const Eigen::VectorXd>& targets,
+                                                 const Eigen::Ref<const Eigen::VectorXd>& upper_limits,
+                                                 const Eigen::Ref<const Eigen::VectorXd>& lower_limits,
+                                                 int first_step,
+                                                 int last_step)
   : IneqConstraint("JointJerkIneq")
   , vars_(std::move(vars))
-  , coeffs_(std::move(coeffs))
-  , upper_tols_(std::move(upper_limits))
-  , lower_tols_(std::move(lower_limits))
-  , targets_(std::move(targets))
+  , coeffs_(coeffs)
+  , upper_tols_(upper_limits)
+  , lower_tols_(lower_limits)
+  , targets_(targets)
   , first_step_(first_step)
   , last_step_(last_step)
 {

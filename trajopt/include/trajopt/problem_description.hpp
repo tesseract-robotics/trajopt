@@ -245,6 +245,9 @@ struct UserDefinedTermInfo : public TermInfo
   /** @brief Timesteps over which to apply term */
   int first_step, last_step;
 
+  /** @brief Indicated if a step is fixed and its variables cannot be changed */
+  std::vector<int> fixed_steps;
+
   /** @brief The user defined error function */
   sco::VectorOfVector::func error_function;
 
@@ -546,6 +549,9 @@ struct CollisionTermInfo : public TermInfo
 
   /** @brief Indicate if continuous collision checking should be used. */
   bool continuous;
+
+  /** @brief Indicated if a step is fixed and its variables cannot be changed */
+  std::vector<int> fixed_steps;
 
   /** @brief Set the resolution at which state validity needs to be verified in order for a motion between two states
    * to be considered valid. If norm(state1 - state0) > longest_valid_segment_length.
