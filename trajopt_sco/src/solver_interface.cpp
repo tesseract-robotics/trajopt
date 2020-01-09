@@ -204,11 +204,11 @@ std::vector<ModelType> availableSolvers()
 #ifdef HAVE_GUROBI
   has_solver[ModelType::GUROBI] = true;
 #endif
-#ifdef HAVE_BPMPD
-  has_solver[ModelType::BPMPD] = true;
-#endif
 #ifdef HAVE_OSQP
   has_solver[ModelType::OSQP] = true;
+#endif
+#ifdef HAVE_BPMPD
+  has_solver[ModelType::BPMPD] = true;
 #endif
 #ifdef HAVE_QPOASES
   has_solver[ModelType::QPOASES] = true;
@@ -231,11 +231,11 @@ Model::Ptr createModel(ModelType model_type)
 #ifdef HAVE_GUROBI
   extern Model::Ptr createGurobiModel();
 #endif
-#ifdef HAVE_BPMPD
-  extern Model::Ptr createBPMPDModel();
-#endif
 #ifdef HAVE_OSQP
   extern Model::Ptr createOSQPModel();
+#endif
+#ifdef HAVE_BPMPD
+  extern Model::Ptr createBPMPDModel();
 #endif
 #ifdef HAVE_QPOASES
   extern Model::Ptr createqpOASESModel();
@@ -268,13 +268,13 @@ Model::Ptr createModel(ModelType model_type)
   if (solver == ModelType::GUROBI)
     PRINT_AND_THROW("you didn't build with GUROBI support");
 #endif
-#ifndef HAVE_BPMPD
-  if (solver == ModelType::BPMPD)
-    PRINT_AND_THROW("you don't have BPMPD support on this platform");
-#endif
 #ifndef HAVE_OSQP
   if (solver == ModelType::OSQP)
     PRINT_AND_THROW("you don't have OSQP support on this platform");
+#endif
+#ifndef HAVE_BPMPD
+  if (solver == ModelType::BPMPD)
+    PRINT_AND_THROW("you don't have BPMPD support on this platform");
 #endif
 #ifndef HAVE_QPOASES
   if (solver == ModelType::QPOASES)
@@ -285,13 +285,13 @@ Model::Ptr createModel(ModelType model_type)
   if (solver == ModelType::GUROBI)
     return createGurobiModel();
 #endif
-#ifdef HAVE_BPMPD
-  if (solver == ModelType::BPMPD)
-    return createBPMPDModel();
-#endif
 #ifdef HAVE_OSQP
   if (solver == ModelType::OSQP)
     return createOSQPModel();
+#endif
+#ifdef HAVE_BPMPD
+  if (solver == ModelType::BPMPD)
+    return createBPMPDModel();
 #endif
 #ifdef HAVE_QPOASES
   if (solver == ModelType::QPOASES)
