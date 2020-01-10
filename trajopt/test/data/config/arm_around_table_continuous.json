@@ -17,7 +17,7 @@
     "type" : "collision",
     "name" : "collision",
     "params" : {
-      "continuous" : true,
+      "evaluator_type" : 2,
       "coeffs" : [20],
       "dist_pen" : [0.025]
     }

@@ -1544,15 +1544,19 @@ void CollisionTermInfo::fromJson(ProblemConstructionInfo& pci, const Json::Value
   const Json::Value& params = v["params"];
 
   int n_steps = pci.basic_info.n_steps;
-  json_marshal::childFromJson(params, continuous, "continuous", true);
+  int collision_evaluator_type;
+  json_marshal::childFromJson(params, collision_evaluator_type, "evaluator_type", 0);
   json_marshal::childFromJson(params, first_step, "first_step", 0);
   json_marshal::childFromJson(params, last_step, "last_step", n_steps - 1);
   json_marshal::childFromJson(params, longest_valid_segment_length, "longest_valid_segment_length", 0.5);
   FAIL_IF_FALSE(longest_valid_segment_length >= 0);
   FAIL_IF_FALSE((first_step >= 0) && (first_step < n_steps));
   FAIL_IF_FALSE((last_step >= first_step) && (last_step < n_steps));
+  FAIL_IF_FALSE(collision_evaluator_type <= 2);
 
-  json_marshal::childFromJson(params, fixed_steps, "fixed_steps");
+  evaluator_type = static_cast<CollisionEvaluatorType>(collision_evaluator_type);
+
+  json_marshal::childFromJson(params, fixed_steps, "fixed_steps", {});
   for (const auto& fs : fixed_steps)
   {
     if (fs < first_step || fs > last_step)
@@ -1647,9 +1651,16 @@ void CollisionTermInfo::fromJson(ProblemConstructionInfo& pci, const Json::Value
     }
   }
 
-  const char* all_fields[] = { "continuous",  "first_step",        "last_step",
-                               "fixed_steps", "contact_test_type", "longest_valid_segment_length",
-                               "coeffs",      "dist_pen",          "pairs" };
+  const char* all_fields[] = { "type",
+                               "first_step",
+                               "last_step",
+                               "evaluator_type",
+                               "fixed_steps",
+                               "contact_test_type",
+                               "longest_valid_segment_length",
+                               "coeffs",
+                               "dist_pen",
+                               "pairs" };
   ensure_only_members(params, all_fields, sizeof(all_fields) / sizeof(char*));
 }
 
@@ -1672,57 +1683,43 @@ void CollisionTermInfo::hatch(TrajOptProb& prob)
 
   if (term_type == TT_COST)
   {
-    if (continuous)
+    if (evaluator_type != CollisionEvaluatorType::SINGLE_TIMESTEP)
     {
+      bool discrete_continuous = (evaluator_type == CollisionEvaluatorType::DISCRETE_CONTINUOUS);
       for (int i = first_step; i < last_step; ++i)
       {
         bool current_fixed = std::find(fixed_steps.begin(), fixed_steps.end(), i) != fixed_steps.end();
         bool next_fixed = std::find(fixed_steps.begin(), fixed_steps.end(), i + 1) != fixed_steps.end();
 
-        sco::Cost::Ptr c;
+        CollisionExpressionEvaluatorType expression_evaluator_type;
         if (!current_fixed && !next_fixed)
         {
-          c = std::make_shared<CollisionCost>(prob.GetKin(),
-                                              prob.GetEnv(),
-                                              adjacency_map,
-                                              world_to_base,
-                                              info[static_cast<size_t>(i - first_step)],
-                                              contact_test_type,
-                                              longest_valid_segment_length,
-                                              prob.GetVarRow(i, 0, n_dof),
-                                              prob.GetVarRow(i + 1, 0, n_dof),
-                                              CollisionEvaluatorType::START_FREE_END_FREE);
+          expression_evaluator_type = CollisionExpressionEvaluatorType::START_FREE_END_FREE;
         }
         else if (current_fixed)
         {
-          c = std::make_shared<CollisionCost>(prob.GetKin(),
-                                              prob.GetEnv(),
-                                              adjacency_map,
-                                              world_to_base,
-                                              info[static_cast<size_t>(i - first_step)],
-                                              contact_test_type,
-                                              longest_valid_segment_length,
-                                              prob.GetVarRow(i, 0, n_dof),
-                                              prob.GetVarRow(i + 1, 0, n_dof),
-                                              CollisionEvaluatorType::START_FIXED_END_FREE);
+          expression_evaluator_type = CollisionExpressionEvaluatorType::START_FIXED_END_FREE;
         }
         else if (next_fixed)
         {
-          c = std::make_shared<CollisionCost>(prob.GetKin(),
-                                              prob.GetEnv(),
-                                              adjacency_map,
-                                              world_to_base,
-                                              info[static_cast<size_t>(i - first_step)],
-                                              contact_test_type,
-                                              longest_valid_segment_length,
-                                              prob.GetVarRow(i, 0, n_dof),
-                                              prob.GetVarRow(i + 1, 0, n_dof),
-                                              CollisionEvaluatorType::START_FREE_END_FIXED);
+          expression_evaluator_type = CollisionExpressionEvaluatorType::START_FREE_END_FIXED;
         }
         else
         {
           PRINT_AND_THROW("Currently two adjacent fixed steps are not supported in collision term.");
         }
+
+        auto c = std::make_shared<CollisionCost>(prob.GetKin(),
+                                                 prob.GetEnv(),
+                                                 adjacency_map,
+                                                 world_to_base,
+                                                 info[static_cast<size_t>(i - first_step)],
+                                                 contact_test_type,
+                                                 longest_valid_segment_length,
+                                                 prob.GetVarRow(i, 0, n_dof),
+                                                 prob.GetVarRow(i + 1, 0, n_dof),
+                                                 expression_evaluator_type,
+                                                 discrete_continuous);
 
         prob.addCost(c);
         prob.getCosts().back()->setName((boost::format("%s_%i") % name.c_str() % i).str());
@@ -1749,57 +1746,43 @@ void CollisionTermInfo::hatch(TrajOptProb& prob)
   }
   else
   {  // ALMOST COPIED
-    if (continuous)
+    if (evaluator_type != CollisionEvaluatorType::SINGLE_TIMESTEP)
     {
+      bool discrete_continuous = (evaluator_type == CollisionEvaluatorType::DISCRETE_CONTINUOUS);
       for (int i = first_step; i < last_step; ++i)
       {
         bool current_fixed = std::find(fixed_steps.begin(), fixed_steps.end(), i) != fixed_steps.end();
         bool next_fixed = std::find(fixed_steps.begin(), fixed_steps.end(), i + 1) != fixed_steps.end();
 
-        sco::Constraint::Ptr c;
+        CollisionExpressionEvaluatorType expression_evaluator_type;
         if (!current_fixed && !next_fixed)
         {
-          c = std::make_shared<CollisionConstraint>(prob.GetKin(),
-                                                    prob.GetEnv(),
-                                                    adjacency_map,
-                                                    world_to_base,
-                                                    info[static_cast<size_t>(i - first_step)],
-                                                    contact_test_type,
-                                                    longest_valid_segment_length,
-                                                    prob.GetVarRow(i, 0, n_dof),
-                                                    prob.GetVarRow(i + 1, 0, n_dof),
-                                                    CollisionEvaluatorType::START_FREE_END_FREE);
+          expression_evaluator_type = CollisionExpressionEvaluatorType::START_FREE_END_FREE;
         }
         else if (current_fixed)
         {
-          c = std::make_shared<CollisionConstraint>(prob.GetKin(),
-                                                    prob.GetEnv(),
-                                                    adjacency_map,
-                                                    world_to_base,
-                                                    info[static_cast<size_t>(i - first_step)],
-                                                    contact_test_type,
-                                                    longest_valid_segment_length,
-                                                    prob.GetVarRow(i, 0, n_dof),
-                                                    prob.GetVarRow(i + 1, 0, n_dof),
-                                                    CollisionEvaluatorType::START_FIXED_END_FREE);
+          expression_evaluator_type = CollisionExpressionEvaluatorType::START_FIXED_END_FREE;
         }
         else if (next_fixed)
         {
-          c = std::make_shared<CollisionConstraint>(prob.GetKin(),
-                                                    prob.GetEnv(),
-                                                    adjacency_map,
-                                                    world_to_base,
-                                                    info[static_cast<size_t>(i - first_step)],
-                                                    contact_test_type,
-                                                    longest_valid_segment_length,
-                                                    prob.GetVarRow(i, 0, n_dof),
-                                                    prob.GetVarRow(i + 1, 0, n_dof),
-                                                    CollisionEvaluatorType::START_FREE_END_FIXED);
+          expression_evaluator_type = CollisionExpressionEvaluatorType::START_FREE_END_FIXED;
         }
         else
         {
           PRINT_AND_THROW("Currently two adjacent fixed steps are not supported in collision term.");
         }
+
+        auto c = std::make_shared<CollisionConstraint>(prob.GetKin(),
+                                                       prob.GetEnv(),
+                                                       adjacency_map,
+                                                       world_to_base,
+                                                       info[static_cast<size_t>(i - first_step)],
+                                                       contact_test_type,
+                                                       longest_valid_segment_length,
+                                                       prob.GetVarRow(i, 0, n_dof),
+                                                       prob.GetVarRow(i + 1, 0, n_dof),
+                                                       expression_evaluator_type,
+                                                       discrete_continuous);
 
         prob.addIneqConstraint(c);
         prob.getIneqConstraints().back()->setName((boost::format("%s_%i") % name.c_str() % i).str());

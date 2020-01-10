@@ -18,7 +18,7 @@
     "params" : {
       "coeffs" : [20],
       "dist_pen" : [0.025],
-      "continuous" : true
+      "evaluator_type" : 2
     }
   }
   ],
