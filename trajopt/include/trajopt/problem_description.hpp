@@ -530,6 +530,13 @@ struct JointJerkTermInfo : public TermInfo
   JointJerkTermInfo() : TermInfo(TT_COST | TT_CNT) {}
 };
 
+enum class CollisionEvaluatorType
+{
+  SINGLE_TIMESTEP = 0,
+  DISCRETE_CONTINUOUS = 1,
+  CAST_CONTINUOUS = 2,
+};
+
 /**
 \brief %Collision penalty
 
@@ -547,8 +554,8 @@ struct CollisionTermInfo : public TermInfo
   /** @brief first_step and last_step are inclusive */
   int first_step, last_step;
 
-  /** @brief Indicate if continuous collision checking should be used. */
-  bool continuous;
+  /** @brief Indicate the type of collision checking that should be used. */
+  CollisionEvaluatorType evaluator_type;
 
   /** @brief Indicated if a step is fixed and its variables cannot be changed */
   std::vector<int> fixed_steps;
