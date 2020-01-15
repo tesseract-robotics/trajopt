@@ -6,6 +6,7 @@
   <maintainer email="levi.armstrong@swri.org">Levi Armstrong</maintainer>
   <license>BSD</license>
 
+  <depend>osqp</depend>
   <depend>trajopt_utils</depend>
   <depend>libjsoncpp-dev</depend>
 
