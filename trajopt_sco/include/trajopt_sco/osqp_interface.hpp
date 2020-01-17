@@ -63,7 +63,11 @@ class OSQPModel : public Model
 
 public:
   OSQPModel();
-  virtual ~OSQPModel();
+  ~OSQPModel() override;
+  OSQPModel(const OSQPModel&) = default;
+  OSQPModel& operator=(const OSQPModel&) = default;
+  OSQPModel(OSQPModel&&) = default;
+  OSQPModel& operator=(OSQPModel&&) = default;
 
   Var addVar(const std::string& name) override;
   Cnt addEqCnt(const AffExpr&, const std::string& name) override;
@@ -75,10 +79,10 @@ public:
   void update() override;
   void setVarBounds(const VarVector& vars, const DblVec& lower, const DblVec& upper) override;
   DblVec getVarValues(const VarVector& vars) const override;
-  virtual CvxOptStatus optimize() override;
-  virtual void setObjective(const AffExpr&) override;
-  virtual void setObjective(const QuadExpr&) override;
-  virtual void writeToFile(const std::string& fname) override;
-  virtual VarVector getVars() const override;
+  CvxOptStatus optimize() override;
+  void setObjective(const AffExpr&) override;
+  void setObjective(const QuadExpr&) override;
+  void writeToFile(const std::string& fname) override;
+  VarVector getVars() const override;
 };
 }  // namespace sco

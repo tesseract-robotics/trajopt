@@ -13,16 +13,16 @@ namespace sco
 {
 const std::vector<std::string> ModelType::MODEL_NAMES_ = { "GUROBI", "BPMPD", "OSQP", "QPOASES", "AUTO_SOLVER" };
 
-IntVec vars2inds(const VarVector& vars)
+SizeTVec vars2inds(const VarVector& vars)
 {
-  IntVec inds(vars.size());
+  SizeTVec inds(vars.size());
   for (size_t i = 0; i < inds.size(); ++i)
     inds[i] = vars[i].var_rep->index;
   return inds;
 }
-IntVec cnts2inds(const CntVector& cnts)
+SizeTVec cnts2inds(const CntVector& cnts)
 {
-  IntVec inds(cnts.size());
+  SizeTVec inds(cnts.size());
   for (size_t i = 0; i < inds.size(); ++i)
     inds[i] = cnts[i].cnt_rep->index;
   return inds;

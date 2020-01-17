@@ -16,7 +16,7 @@ void exprToEigen(const AffExpr& expr, Eigen::SparseVector<double>& sparse_vector
   sparse_vector.reserve(static_cast<long int>(expr.size()));
   for (size_t i = 0; i < expr.size(); ++i)
   {
-    int i_var_index = expr.vars[i].var_rep->index;
+    auto i_var_index = static_cast<int>(expr.vars[i].var_rep->index);
     if (i_var_index >= n_vars)
     {
       std::stringstream msg;
@@ -35,8 +35,8 @@ void exprToEigen(const QuadExpr& expr,
                  const bool& matrix_is_halved,
                  const bool& force_diagonal)
 {
-  IntVec ind1 = vars2inds(expr.vars1);
-  IntVec ind2 = vars2inds(expr.vars2);
+  SizeTVec ind1 = vars2inds(expr.vars1);
+  SizeTVec ind2 = vars2inds(expr.vars2);
   sparse_matrix.resize(n_vars, n_vars);
   sparse_matrix.reserve(static_cast<long int>(2 * expr.size()));
 
@@ -49,19 +49,20 @@ void exprToEigen(const QuadExpr& expr,
     if (expr.coeffs[i] != 0.0)
     {
       if (ind1[i] == ind2[i])
-        sparse_matrix.coeffRef(ind1[i], ind2[i]) += expr.coeffs[i];
+        sparse_matrix.coeffRef(static_cast<Eigen::Index>(ind1[i]), static_cast<Eigen::Index>(ind2[i])) +=
+            expr.coeffs[i];
       else
       {
-        int c, r;
+        Eigen::Index c, r;
         if (ind1[i] < ind2[i])
         {
-          r = ind1[i];
-          c = ind2[i];
+          r = static_cast<Eigen::Index>(ind1[i]);
+          c = static_cast<Eigen::Index>(ind2[i]);
         }
         else
         {
-          r = ind2[i];
-          c = ind1[i];
+          r = static_cast<Eigen::Index>(ind2[i]);
+          c = static_cast<Eigen::Index>(ind1[i]);
         }
         sparse_matrix.coeffRef(r, c) += expr.coeffs[i];
       }
