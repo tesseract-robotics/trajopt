@@ -21,7 +21,7 @@ TEST(solver_utils, exprToEigen)  // NOLINT
   int n_vars = 2;
   std::vector<VarRep::Ptr> x_info;
   VarVector x;
-  for (int i = 0; i < n_vars; ++i)
+  for (std::size_t i = 0; i < static_cast<std::size_t>(n_vars); ++i)
   {
     std::stringstream var_name;
     var_name << "x_" << i;

@@ -88,11 +88,11 @@ struct VarRep
 {
   using Ptr = std::shared_ptr<VarRep>;
 
-  VarRep(int _index, std::string _name, void* _creator)
+  VarRep(std::size_t _index, std::string _name, void* _creator)
     : index(_index), name(std::move(_name)), removed(false), creator(_creator)
   {
   }
-  int index;
+  std::size_t index;
   std::string name;
   bool removed;
   void* creator;
@@ -114,7 +114,7 @@ struct Var
   double value(const double* x) const { return x[var_rep->index]; }
   double value(const DblVec& x) const
   {
-    assert(var_rep->index < static_cast<int>(x.size()));
+    assert(var_rep->index < x.size());
     return x[static_cast<size_t>(var_rep->index)];
   }
 };
@@ -123,14 +123,14 @@ struct CntRep
 {
   using Ptr = std::shared_ptr<CntRep>;
 
-  CntRep(int _index, void* _creator) : index(_index), removed(false), creator(_creator) {}
+  CntRep(std::size_t _index, void* _creator) : index(_index), removed(false), creator(_creator) {}
   CntRep(const CntRep&) = default;
   CntRep& operator=(const CntRep&) = default;
   CntRep(CntRep&&) = default;
   CntRep& operator=(CntRep&&) = default;
   ~CntRep() = default;
 
-  int index;
+  std::size_t index;
   bool removed;
   void* creator;
   ConstraintType type;
@@ -232,9 +232,9 @@ std::ostream& operator<<(std::ostream& os, const ModelType& cs);
 
 Model::Ptr createModel(ModelType model_type = ModelType::AUTO_SOLVER);
 
-IntVec vars2inds(const VarVector& vars);
+SizeTVec vars2inds(const VarVector& vars);
 
-IntVec cnts2inds(const CntVector& cnts);
+SizeTVec cnts2inds(const CntVector& cnts);
 
 /**
  * @brief simplify2 gets as input a list of indices, corresponding to non-zero

@@ -235,21 +235,21 @@ BPMPDModel::BPMPDModel()
 
 Var BPMPDModel::addVar(const std::string& name)
 {
-  m_vars.push_back(new VarRep(static_cast<int>(m_vars.size()), name, this));
+  m_vars.push_back(new VarRep(m_vars.size(), name, this));
   m_lbs.push_back(-BPMPD_BIG);
   m_ubs.push_back(BPMPD_BIG);
   return m_vars.back();
 }
 Cnt BPMPDModel::addEqCnt(const AffExpr& expr, const std::string& /*name*/)
 {
-  m_cnts.push_back(new CntRep(static_cast<int>(m_cnts.size()), this));
+  m_cnts.push_back(new CntRep(m_cnts.size(), this));
   m_cntExprs.push_back(expr);
   m_cntTypes.push_back(EQ);
   return m_cnts.back();
 }
 Cnt BPMPDModel::addIneqCnt(const AffExpr& expr, const std::string& /*name*/)
 {
-  m_cnts.push_back(new CntRep(static_cast<int>(m_cnts.size()), this));
+  m_cnts.push_back(new CntRep(m_cnts.size(), this));
   m_cntExprs.push_back(expr);
   m_cntTypes.push_back(INEQ);
   return m_cnts.back();
@@ -261,14 +261,14 @@ Cnt BPMPDModel::addIneqCnt(const QuadExpr&, const std::string& /*name*/)
 }
 void BPMPDModel::removeVars(const VarVector& vars)
 {
-  IntVec inds = vars2inds(vars);
+  SizeTVec inds = vars2inds(vars);
   for (const auto& var : vars)
     var.var_rep->removed = true;
 }
 
 void BPMPDModel::removeCnts(const CntVector& cnts)
 {
-  IntVec inds = cnts2inds(cnts);
+  SizeTVec inds = cnts2inds(cnts);
   for (auto& cnt : cnts)
     cnt.cnt_rep->removed = true;
 }
@@ -285,7 +285,7 @@ void BPMPDModel::update()
         m_vars[inew] = var;
         m_lbs[inew] = m_lbs[iold];
         m_ubs[inew] = m_ubs[iold];
-        var.var_rep->index = static_cast<int>(inew);
+        var.var_rep->index = inew;
         ++inew;
       }
       else
@@ -305,7 +305,7 @@ void BPMPDModel::update()
         m_cnts[inew] = cnt;
         m_cntExprs[inew] = m_cntExprs[iold];
         m_cntTypes[inew] = m_cntTypes[iold];
-        cnt.cnt_rep->index = static_cast<int>(inew);
+        cnt.cnt_rep->index = inew;
         ++inew;
       }
       else
@@ -371,7 +371,7 @@ CvxOptStatus BPMPDModel::optimize()
   {
     const AffExpr& aff = m_cntExprs[iCnt];
     // cout << "adding constraint " << aff << endl;
-    IntVec inds = vars2inds(aff.vars);
+    SizeTVec inds = vars2inds(aff.vars);
 
     for (size_t i = 0; i < aff.vars.size(); ++i)
     {
