@@ -35,8 +35,8 @@ OSQPModel::OSQPModel()
   osqp_settings_.verbose = false;
 
   // Initialize data
-  osqp_data_.A = nullptr;
-  osqp_data_.P = nullptr;
+  A_.reset(osqp_data_.A);
+  P_.reset(osqp_data_.P);
   osqp_workspace_ = nullptr;
 }
 
@@ -45,10 +45,6 @@ OSQPModel::~OSQPModel()
   // Cleanup
   if (osqp_workspace_ != nullptr)
     osqp_cleanup(osqp_workspace_);
-  if (osqp_data_.A != nullptr)
-    c_free(osqp_data_.A);  // NOLINT
-  if (osqp_data_.P != nullptr)
-    c_free(osqp_data_.P);  // NOLINT
 }
 
 Var OSQPModel::addVar(const std::string& name)
@@ -108,14 +104,12 @@ void OSQPModel::updateObjective()
   triangular_sm = sm.triangularView<Eigen::Upper>();
   eigenToCSC(triangular_sm, P_row_indices_, P_column_pointers_, P_csc_data_);
 
-  if (osqp_data_.P != nullptr)
-    c_free(osqp_data_.P);  // NOLINT
-  osqp_data_.P = csc_matrix(osqp_data_.n,
-                            osqp_data_.n,
-                            static_cast<c_int>(P_csc_data_.size()),
-                            P_csc_data_.data(),
-                            P_row_indices_.data(),
-                            P_column_pointers_.data());
+  P_.reset(csc_matrix(osqp_data_.n,
+                      osqp_data_.n,
+                      static_cast<c_int>(P_csc_data_.size()),
+                      P_csc_data_.data(),
+                      P_row_indices_.data(),
+                      P_column_pointers_.data()));
 
   osqp_data_.q = q_.data();
 }
@@ -156,14 +150,12 @@ void OSQPModel::updateConstraints()
 
   eigenToCSC(sm, A_row_indices_, A_column_pointers_, A_csc_data_);
 
-  if (osqp_data_.A != nullptr)
-    c_free(osqp_data_.A);  // NOLINT
-  osqp_data_.A = csc_matrix(osqp_data_.m,
-                            osqp_data_.n,
-                            static_cast<c_int>(A_csc_data_.size()),
-                            A_csc_data_.data(),
-                            A_row_indices_.data(),
-                            A_column_pointers_.data());
+  A_.reset(csc_matrix(osqp_data_.m,
+                      osqp_data_.n,
+                      static_cast<c_int>(A_csc_data_.size()),
+                      A_csc_data_.data(),
+                      A_row_indices_.data(),
+                      A_column_pointers_.data()));
 
   osqp_data_.l = l_.data();
   osqp_data_.u = u_.data();
