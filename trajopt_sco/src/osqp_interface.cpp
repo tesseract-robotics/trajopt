@@ -46,9 +46,9 @@ OSQPModel::~OSQPModel()
   if (osqp_workspace_ != nullptr)
     osqp_cleanup(osqp_workspace_);
   if (osqp_data_.A != nullptr)
-    c_free(osqp_data_.A);
+    c_free(osqp_data_.A);  // NOLINT
   if (osqp_data_.P != nullptr)
-    c_free(osqp_data_.P);
+    c_free(osqp_data_.P);  // NOLINT
 }
 
 Var OSQPModel::addVar(const std::string& name)
@@ -109,7 +109,7 @@ void OSQPModel::updateObjective()
   eigenToCSC(triangular_sm, P_row_indices_, P_column_pointers_, P_csc_data_);
 
   if (osqp_data_.P != nullptr)
-    c_free(osqp_data_.P);
+    c_free(osqp_data_.P);  // NOLINT
   osqp_data_.P = csc_matrix(osqp_data_.n,
                             osqp_data_.n,
                             static_cast<c_int>(P_csc_data_.size()),
@@ -157,7 +157,7 @@ void OSQPModel::updateConstraints()
   eigenToCSC(sm, A_row_indices_, A_column_pointers_, A_csc_data_);
 
   if (osqp_data_.A != nullptr)
-    c_free(osqp_data_.A);
+    c_free(osqp_data_.A);  // NOLINT
   osqp_data_.A = csc_matrix(osqp_data_.m,
                             osqp_data_.n,
                             static_cast<c_int>(A_csc_data_.size()),
@@ -266,15 +266,13 @@ CvxOptStatus OSQPModel::optimize()
     if (status == OSQP_SOLVED || status == OSQP_SOLVED_INACCURATE)
       return CVX_SOLVED;
     if (status == OSQP_PRIMAL_INFEASIBLE || status == OSQP_PRIMAL_INFEASIBLE_INACCURATE ||
-             status == OSQP_DUAL_INFEASIBLE || status == OSQP_DUAL_INFEASIBLE_INACCURATE)
+        status == OSQP_DUAL_INFEASIBLE || status == OSQP_DUAL_INFEASIBLE_INACCURATE)
       return CVX_INFEASIBLE;
   }
   return CVX_FAILED;
 }
 void OSQPModel::setObjective(const AffExpr& expr) { objective_.affexpr = expr; }
 void OSQPModel::setObjective(const QuadExpr& expr) { objective_ = expr; }
-void OSQPModel::writeToFile(const std::string& /*fname*/)
-{
-}
+void OSQPModel::writeToFile(const std::string& /*fname*/) {}
 VarVector OSQPModel::getVars() const { return vars_; }
 }  // namespace sco
