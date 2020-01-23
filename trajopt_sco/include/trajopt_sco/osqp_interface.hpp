@@ -27,8 +27,9 @@ class OSQPModel : public Model
                                /** OSQPData. Some fields here (`osp_data_.A` and `osp_data_.P`) are
                                 *  automatically allocated by OSQP, but deallocated by us. */
   OSQPData osqp_data_;
+
   /** OSQP Workspace. Memory here is managed by OSQP */
-  OSQPWorkspace* osqp_workspace_;
+  std::unique_ptr<OSQPWorkspace, std::function<void(OSQPWorkspace*)>> osqp_workspace_;
 
   /** Updates OSQP quadratic cost matrix from QuadExpr expression.
    *  Transforms QuadExpr objective_ into the OSQP CSC matrix P_ */
@@ -49,8 +50,8 @@ class OSQPModel : public Model
   ConstraintTypeVector cnt_types_; /**< constraints types */
   DblVec solution_;                /**< optimizizer's solution for current model */
 
-  std::unique_ptr<csc> P_;               /**< Takes ownershipt of OSQPData.P to avoid having to deallocate manually */
-  std::unique_ptr<csc> A_;               /**< Takes ownershipt of OSQPData.A to avoid having to deallocate manually */
+  std::unique_ptr<csc> P_;               /**< Takes ownership of OSQPData.P to avoid having to deallocate manually */
+  std::unique_ptr<csc> A_;               /**< Takes ownership of OSQPData.A to avoid having to deallocate manually */
   std::vector<c_int> P_row_indices_;     /**< row indices for P, CSC format */
   std::vector<c_int> P_column_pointers_; /**< column pointers for P, CSC format */
   DblVec P_csc_data_;                    /**< P values in CSC format */
@@ -65,14 +66,9 @@ class OSQPModel : public Model
 
 public:
   OSQPModel();
-  ~OSQPModel() override;
-  OSQPModel(const OSQPModel& model) : Model(model), P_(new csc{}), A_(new csc{}) {}
-  OSQPModel& operator=(const OSQPModel&)
-  {
-    A_ = std::make_unique<csc>();
-    P_ = std::make_unique<csc>();
-    return *this;
-  }
+  ~OSQPModel() override = default;
+  OSQPModel(const OSQPModel& model) = delete;
+  OSQPModel& operator=(const OSQPModel& model) = delete;
   OSQPModel(OSQPModel&&) = default;
   OSQPModel& operator=(OSQPModel&&) = default;
 
