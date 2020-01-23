@@ -37,7 +37,8 @@ struct CollisionEvaluator
                      const Eigen::Isometry3d& world_to_base,
                      SafetyMarginData::ConstPtr safety_margin_data,
                      tesseract_collision::ContactTestType contact_test_type,
-                     double longest_valid_segment_length);
+                     double longest_valid_segment_length,
+                     double safety_margin_buffer);
   virtual ~CollisionEvaluator() = default;
   CollisionEvaluator(const CollisionEvaluator&) = default;
   CollisionEvaluator& operator=(const CollisionEvaluator&) = default;
@@ -98,6 +99,7 @@ protected:
   tesseract_environment::AdjacencyMap::ConstPtr adjacency_map_;
   Eigen::Isometry3d world_to_base_;
   SafetyMarginData::ConstPtr safety_margin_data_;
+  double safety_margin_buffer_;
   tesseract_collision::ContactTestType contact_test_type_;
   double longest_valid_segment_length_;
   tesseract_environment::StateSolver::Ptr state_solver_;
@@ -160,7 +162,8 @@ public:
                                    const Eigen::Isometry3d& world_to_base,
                                    SafetyMarginData::ConstPtr safety_margin_data,
                                    tesseract_collision::ContactTestType contact_test_type,
-                                   sco::VarVector vars);
+                                   sco::VarVector vars,
+                                   double safety_margin_buffer);
   /**
   @brief linearize all contact distances in terms of robot dofs
   ;
@@ -193,7 +196,8 @@ public:
                          double longest_valid_segment_length,
                          sco::VarVector vars0,
                          sco::VarVector vars1,
-                         CollisionExpressionEvaluatorType type);
+                         CollisionExpressionEvaluatorType type,
+                         double safety_margin_buffer);
   void CalcDistExpressions(const DblVec& x, sco::AffExprVector& exprs) override;
   void CalcCollisions(const DblVec& x, tesseract_collision::ContactResultVector& dist_results) override;
   void Plot(const tesseract_visualization::Visualization::Ptr& plotter, const DblVec& x) override;
@@ -220,7 +224,8 @@ public:
                              double longest_valid_segment_length,
                              sco::VarVector vars0,
                              sco::VarVector vars1,
-                             CollisionExpressionEvaluatorType type);
+                             CollisionExpressionEvaluatorType type,
+                             double safety_margin_buffer);
   void CalcDistExpressions(const DblVec& x, sco::AffExprVector& exprs) override;
   void CalcCollisions(const DblVec& x, tesseract_collision::ContactResultVector& dist_results) override;
   void Plot(const tesseract_visualization::Visualization::Ptr& plotter, const DblVec& x) override;
@@ -241,7 +246,8 @@ public:
                 const Eigen::Isometry3d& world_to_base,
                 SafetyMarginData::ConstPtr safety_margin_data,
                 tesseract_collision::ContactTestType contact_test_type,
-                sco::VarVector vars);
+                sco::VarVector vars,
+                double safety_margin_buffer);
   /* constructor for discrete continuous and cast continuous cost */
   CollisionCost(tesseract_kinematics::ForwardKinematics::ConstPtr manip,
                 tesseract_environment::Environment::ConstPtr env,
@@ -253,7 +259,8 @@ public:
                 sco::VarVector vars0,
                 sco::VarVector vars1,
                 CollisionExpressionEvaluatorType type,
-                bool discrete);
+                bool discrete,
+                double safety_margin_buffer);
   sco::ConvexObjective::Ptr convex(const DblVec& x, sco::Model* model) override;
   double value(const DblVec&) override;
   void Plot(const tesseract_visualization::Visualization::Ptr& plotter, const DblVec& x) override;
@@ -273,7 +280,8 @@ public:
                       const Eigen::Isometry3d& world_to_base,
                       SafetyMarginData::ConstPtr safety_margin_data,
                       tesseract_collision::ContactTestType contact_test_type,
-                      sco::VarVector vars);
+                      sco::VarVector vars,
+                      double safety_margin_buffer);
   /* constructor for discrete continuous and cast continuous cost */
   CollisionConstraint(tesseract_kinematics::ForwardKinematics::ConstPtr manip,
                       tesseract_environment::Environment::ConstPtr env,
@@ -285,7 +293,8 @@ public:
                       sco::VarVector vars0,
                       sco::VarVector vars1,
                       CollisionExpressionEvaluatorType type,
-                      bool discrete);
+                      bool discrete,
+                      double safety_margin_buffer);
   sco::ConvexConstraints::Ptr convex(const DblVec& x, sco::Model* model) override;
   DblVec value(const DblVec&) override;
   void Plot(const DblVec& x);

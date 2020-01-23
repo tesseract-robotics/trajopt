@@ -568,6 +568,11 @@ struct CollisionTermInfo : public TermInfo
    */
   double longest_valid_segment_length = 0.5;
 
+  /** @brief A buffer added to the collision margin distance. Contact results that are within the safety margin buffer distance but greater than the
+  safety margin distance (i.e. close but not in collision) will be evaluated but will not contribute costs to the optimization problem.
+  This helps keep the solution away from collision constraint conditions when the safety margin distance is small.*/
+  double safety_margin_buffer = 0.05;
+
   /** @brief Set the contact test type that should be used. */
   tesseract_collision::ContactTestType contact_test_type = tesseract_collision::ContactTestType::ALL;
 
