@@ -114,13 +114,13 @@ ConvexObjective::Ptr CostFromFunc::convex(const DblVec& x, Model* model)
 
 CostFromErrFunc::CostFromErrFunc(VectorOfVector::Ptr f,
                                  VarVector vars,
-                                 Eigen::VectorXd coeffs,
+                                 const Eigen::Ref<const Eigen::VectorXd>& coeffs,
                                  PenaltyType pen_type,
                                  const std::string& name)
   : Cost(name)
   , f_(std::move(f))
   , vars_(std::move(vars))
-  , coeffs_(std::move(coeffs))
+  , coeffs_(coeffs)
   , pen_type_(pen_type)
   , epsilon_(DEFAULT_EPSILON)
 {
@@ -128,14 +128,14 @@ CostFromErrFunc::CostFromErrFunc(VectorOfVector::Ptr f,
 CostFromErrFunc::CostFromErrFunc(VectorOfVector::Ptr f,
                                  MatrixOfVector::Ptr dfdx,
                                  VarVector vars,
-                                 Eigen::VectorXd coeffs,
+                                 const Eigen::Ref<const Eigen::VectorXd>& coeffs,
                                  PenaltyType pen_type,
                                  const std::string& name)
   : Cost(name)
   , f_(std::move(f))
   , dfdx_(std::move(dfdx))
   , vars_(std::move(vars))
-  , coeffs_(std::move(coeffs))
+  , coeffs_(coeffs)
   , pen_type_(pen_type)
   , epsilon_(DEFAULT_EPSILON)
 {
@@ -212,29 +212,24 @@ ConvexObjective::Ptr CostFromErrFunc::convex(const DblVec& x, Model* model)
 
 ConstraintFromErrFunc::ConstraintFromErrFunc(VectorOfVector::Ptr f,
                                              VarVector vars,
-                                             Eigen::VectorXd coeffs,
+                                             const Eigen::Ref<const Eigen::VectorXd>& coeffs,
                                              ConstraintType type,
                                              const std::string& name)
-  : Constraint(name)
-  , f_(std::move(f))
-  , vars_(std::move(vars))
-  , coeffs_(std::move(coeffs))
-  , type_(type)
-  , epsilon_(DEFAULT_EPSILON)
+  : Constraint(name), f_(std::move(f)), vars_(std::move(vars)), coeffs_(coeffs), type_(type), epsilon_(DEFAULT_EPSILON)
 {
 }
 
 ConstraintFromErrFunc::ConstraintFromErrFunc(VectorOfVector::Ptr f,
                                              MatrixOfVector::Ptr dfdx,
                                              VarVector vars,
-                                             Eigen::VectorXd coeffs,
+                                             const Eigen::Ref<const Eigen::VectorXd>& coeffs,
                                              ConstraintType type,
                                              const std::string& name)
   : Constraint(name)
   , f_(std::move(f))
   , dfdx_(std::move(dfdx))
   , vars_(std::move(vars))
-  , coeffs_(std::move(coeffs))
+  , coeffs_(coeffs)
   , type_(type)
   , epsilon_(DEFAULT_EPSILON)
 {

@@ -18,7 +18,6 @@ namespace trajopt
 using VarArray = util::BasicArray<sco::Var>;
 using AffArray = util::BasicArray<sco::AffExpr>;
 using CntArray = util::BasicArray<sco::Cnt>;
-using DblMatrix = Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
 using TrajArray = Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
 using DblVec = sco::DblVec;
 using IntVec = sco::IntVec;
@@ -61,10 +60,10 @@ public:
   /// supply error function, obtain derivative numerically
   TrajOptCostFromErrFunc(sco::VectorOfVector::Ptr f,
                          sco::VarVector vars,
-                         Eigen::VectorXd coeffs,
+                         const Eigen::Ref<const Eigen::VectorXd>& coeffs,
                          sco::PenaltyType pen_type,
                          const std::string& name)
-    : CostFromErrFunc(std::move(f), std::move(vars), std::move(coeffs), pen_type, name)
+    : CostFromErrFunc(std::move(f), std::move(vars), coeffs, pen_type, name)
   {
   }
 
@@ -72,10 +71,10 @@ public:
   TrajOptCostFromErrFunc(sco::VectorOfVector::Ptr f,
                          sco::MatrixOfVector::Ptr dfdx,
                          sco::VarVector vars,
-                         Eigen::VectorXd coeffs,
+                         const Eigen::Ref<const Eigen::VectorXd>& coeffs,
                          sco::PenaltyType pen_type,
                          const std::string& name)
-    : CostFromErrFunc(std::move(f), std::move(dfdx), std::move(vars), std::move(coeffs), pen_type, name)
+    : CostFromErrFunc(std::move(f), std::move(dfdx), std::move(vars), coeffs, pen_type, name)
   {
   }
 
@@ -97,10 +96,10 @@ public:
   /// supply error function, obtain derivative numerically
   TrajOptConstraintFromErrFunc(sco::VectorOfVector::Ptr f,
                                sco::VarVector vars,
-                               Eigen::VectorXd coeffs,
+                               const Eigen::Ref<const Eigen::VectorXd>& coeffs,
                                sco::ConstraintType type,
                                const std::string& name)
-    : ConstraintFromErrFunc(std::move(f), std::move(vars), std::move(coeffs), type, name)
+    : ConstraintFromErrFunc(std::move(f), std::move(vars), coeffs, type, name)
   {
   }
 
@@ -108,10 +107,10 @@ public:
   TrajOptConstraintFromErrFunc(sco::VectorOfVector::Ptr f,
                                sco::MatrixOfVector::Ptr dfdx,
                                sco::VarVector vars,
-                               Eigen::VectorXd coeffs,
+                               const Eigen::Ref<const Eigen::VectorXd>& coeffs,
                                sco::ConstraintType type,
                                const std::string& name)
-    : ConstraintFromErrFunc(std::move(f), std::move(dfdx), std::move(vars), std::move(coeffs), type, name)
+    : ConstraintFromErrFunc(std::move(f), std::move(dfdx), std::move(vars), coeffs, type, name)
   {
   }
 

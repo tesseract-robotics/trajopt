@@ -55,14 +55,14 @@ public:
   /// supply error function, obtain derivative numerically
   CostFromErrFunc(VectorOfVector::Ptr f,
                   VarVector vars,
-                  Eigen::VectorXd coeffs,
+                  const Eigen::Ref<const Eigen::VectorXd>& coeffs,
                   PenaltyType pen_type,
                   const std::string& name);
   /// supply error function and gradient
   CostFromErrFunc(VectorOfVector::Ptr f,
                   MatrixOfVector::Ptr dfdx,
                   VarVector vars,
-                  Eigen::VectorXd coeffs,
+                  const Eigen::Ref<const Eigen::VectorXd>& coeffs,
                   PenaltyType pen_type,
                   const std::string& name);
   double value(const DblVec& x) override;
@@ -86,14 +86,14 @@ public:
   /// supply error function, obtain derivative numerically
   ConstraintFromErrFunc(VectorOfVector::Ptr f,
                         VarVector vars,
-                        Eigen::VectorXd coeffs,
+                        const Eigen::Ref<const Eigen::VectorXd>& coeffs,
                         ConstraintType type,
                         const std::string& name);
   /// supply error function and gradient
   ConstraintFromErrFunc(VectorOfVector::Ptr f,
                         MatrixOfVector::Ptr dfdx,
                         VarVector vars,
-                        Eigen::VectorXd coeffs,
+                        const Eigen::Ref<const Eigen::VectorXd>& coeffs,
                         ConstraintType type,
                         const std::string& name);
   DblVec value(const DblVec& x) override;
