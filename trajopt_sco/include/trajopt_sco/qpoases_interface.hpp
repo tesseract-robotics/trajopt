@@ -89,7 +89,7 @@ public:
   virtual CvxOptStatus optimize() override;
   virtual void setObjective(const AffExpr&) override;
   virtual void setObjective(const QuadExpr&) override;
-  virtual void writeToFile(const std::string& fname) override;
+  virtual void writeToFile(const std::string& fname) const override;
   virtual VarVector getVars() const override;
 };
 }  // namespace sco

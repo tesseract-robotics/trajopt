@@ -83,6 +83,6 @@ public:
   void setObjective(const AffExpr&) override;
   void setObjective(const QuadExpr&) override;
   VarVector getVars() const override;
-  void writeToFile(const std::string& fname) override;
+  void writeToFile(const std::string& fname) const override;
 };
 }  // namespace sco

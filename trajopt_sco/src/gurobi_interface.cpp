@@ -264,7 +264,7 @@ void GurobiModel::setObjective(const QuadExpr& quad_expr)
                 const_cast<double*>(quad_expr.coeffs.data()));
 }
 
-void GurobiModel::writeToFile(const std::string& fname) { ENSURE_SUCCESS(GRBwrite(m_model, fname.c_str())); }
+void GurobiModel::writeToFile(const std::string& fname) const { ENSURE_SUCCESS(GRBwrite(m_model, fname.c_str())); }
 void GurobiModel::update()
 {
   ENSURE_SUCCESS(GRBupdatemodel(m_model));

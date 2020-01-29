@@ -243,7 +243,7 @@ CvxOptStatus qpOASESModel::optimize()
 }
 void qpOASESModel::setObjective(const AffExpr& expr) { objective_.affexpr = expr; }
 void qpOASESModel::setObjective(const QuadExpr& expr) { objective_ = expr; }
-void qpOASESModel::writeToFile(const std::string& /*fname*/)
+void qpOASESModel::writeToFile(const std::string& /*fname*/) const
 {
   return;  // NOT IMPLEMENTED
 }
