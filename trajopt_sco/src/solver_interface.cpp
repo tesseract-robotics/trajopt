@@ -1,7 +1,7 @@
 #include <trajopt_utils/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <boost/format.hpp>
-#include <iostream>
+#include <fstream>
 #include <map>
 #include <sstream>
 TRAJOPT_IGNORE_WARNINGS_POP
@@ -132,10 +132,27 @@ std::ostream& operator<<(std::ostream& o, const Cnt& c)
 
 std::ostream& operator<<(std::ostream& o, const AffExpr& e)
 {
-  o << e.constant;
+  std::string sep = "";
+  if (e.constant != 0)
+  {
+    o << e.constant;
+    sep = " + ";
+  }
+
   for (size_t i = 0; i < e.size(); ++i)
   {
-    o << " + " << e.coeffs[i] << "*" << e.vars[i];
+    if (e.coeffs[i] != 0)
+    {
+      if (e.coeffs[i] == 1)
+      {
+        o << sep << e.vars[i];
+      }
+      else
+      {
+        o << sep << e.coeffs[i] << " " << e.vars[i];
+      }
+      sep = " + ";
+    }
   }
   return o;
 }
@@ -143,10 +160,30 @@ std::ostream& operator<<(std::ostream& o, const AffExpr& e)
 std::ostream& operator<<(std::ostream& o, const QuadExpr& e)
 {
   o << e.affexpr;
+  o << " + [ ";
+
+  std::string op = "";
   for (size_t i = 0; i < e.size(); ++i)
   {
-    o << " + " << e.coeffs[i] << "*" << e.vars1[i] << "*" << e.vars2[i];
+    if (e.coeffs[i] != 0)
+    {
+      o << op;
+      if (e.coeffs[i] != 1)
+      {
+        o << e.coeffs[i] << " ";
+      }
+      if (e.vars1[i].var_rep->name == e.vars2[i].var_rep->name)
+      {
+        o << e.vars1[i] << " ^ 2";
+      }
+      else
+      {
+        o << e.vars1[i] << " * " << e.vars2[i];
+      }
+      op = " + ";
+    }
   }
+  o << " ] /2\n";
   return o;
 }
 

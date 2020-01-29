@@ -57,7 +57,7 @@ endif(GUROBI_FOUND)
 
 if (osqp_FOUND)
   set_property(SOURCE src/solver_interface.cpp APPEND PROPERTY COMPILE_DEFINITIONS HAVE_OSQP)
-  list(APPEND SCO_SOURCE_FILES src/osqp_interface.cpp src/osqp_printing.cpp)
+  list(APPEND SCO_SOURCE_FILES src/osqp_interface.cpp)
 endif()
 
 if (qpOASES_FOUND)
