@@ -1,7 +1,7 @@
 #include <trajopt_utils/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <boost/format.hpp>
-#include <fstream>
+#include <iostream>
 #include <map>
 #include <sstream>
 TRAJOPT_IGNORE_WARNINGS_POP
