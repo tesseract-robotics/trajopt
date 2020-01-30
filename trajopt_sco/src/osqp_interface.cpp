@@ -22,10 +22,7 @@ Model::Ptr createOSQPModel()
   return out;
 }
 
-OSQPModel::OSQPModel()
-  : osqp_workspace_(new OSQPWorkspace, [](OSQPWorkspace* ptr) { osqp_cleanup(ptr); })
-  , P_(osqp_data_.P)
-  , A_(osqp_data_.A)
+OSQPModel::OSQPModel() : P_(nullptr), A_(nullptr)
 {
   // Define Solver settings as default
   // see https://osqp.org/docs/interfaces/solver_settings.html#solver-settings
@@ -36,6 +33,12 @@ OSQPModel::OSQPModel()
   osqp_settings_.max_iter = 8192;
   osqp_settings_.polish = 1;
   osqp_settings_.verbose = false;
+}
+OSQPModel::~OSQPModel()
+{
+  // The osqp_workspace_ is managed by osqp but its members are not so must clean up.
+  if (osqp_workspace_ != nullptr)
+    osqp_cleanup(osqp_workspace_);
 }
 
 Var OSQPModel::addVar(const std::string& name)
@@ -161,10 +164,11 @@ void OSQPModel::createOrUpdateSolver()
 
   // TODO atm we are not updating the workspace, but recreating it each time.
   // In the future, we will checking sparsity did not change and update instead
+  if (osqp_workspace_ != nullptr)
+    osqp_cleanup(osqp_workspace_);
 
   // Setup workspace - this should be called only once
-  OSQPWorkspace* tmp = osqp_workspace_.get();
-  auto ret = osqp_setup(&tmp, &osqp_data_, &osqp_settings_);
+  auto ret = osqp_setup(&osqp_workspace_, &osqp_data_, &osqp_settings_);
   if (ret)
   {
     throw std::runtime_error("Could not initialize OSQP: error " + std::to_string(ret));
@@ -241,7 +245,7 @@ CvxOptStatus OSQPModel::optimize()
   createOrUpdateSolver();
 
   // Solve Problem
-  const c_int retcode = osqp_solve(osqp_workspace_.get());
+  const c_int retcode = osqp_solve(osqp_workspace_);
 
   if (retcode == 0)
   {
