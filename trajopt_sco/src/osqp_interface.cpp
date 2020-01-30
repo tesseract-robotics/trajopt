@@ -102,6 +102,7 @@ void OSQPModel::updateObjective()
                       P_row_indices_.data(),
                       P_column_pointers_.data()));
 
+  osqp_data_.P = P_.get();
   osqp_data_.q = q_.data();
 }
 
@@ -148,6 +149,7 @@ void OSQPModel::updateConstraints()
                       A_row_indices_.data(),
                       A_column_pointers_.data()));
 
+  osqp_data_.A = A_.get();
   osqp_data_.l = l_.data();
   osqp_data_.u = u_.data();
 }
