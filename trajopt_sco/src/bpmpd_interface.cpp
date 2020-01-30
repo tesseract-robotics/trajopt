@@ -517,7 +517,7 @@ CvxOptStatus BPMPDModel::optimize()
 }
 void BPMPDModel::setObjective(const AffExpr& expr) { m_objective.affexpr = expr; }
 void BPMPDModel::setObjective(const QuadExpr& expr) { m_objective = expr; }
-void BPMPDModel::writeToFile(const std::string& /*fname*/)
+void BPMPDModel::writeToFile(const std::string& /*fname*/) const
 {
   // assert(0 && "NOT IMPLEMENTED");
 }

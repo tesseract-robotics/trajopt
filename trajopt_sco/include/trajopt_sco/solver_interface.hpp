@@ -79,7 +79,7 @@ public:
 
   virtual void setObjective(const AffExpr&) = 0;
   virtual void setObjective(const QuadExpr&) = 0;
-  virtual void writeToFile(const std::string& fname) = 0;
+  virtual void writeToFile(const std::string& fname) const = 0;
 
   virtual VarVector getVars() const = 0;
 };
