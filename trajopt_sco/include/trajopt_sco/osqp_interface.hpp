@@ -29,7 +29,7 @@ class OSQPModel : public Model
   OSQPData osqp_data_;
 
   /** OSQP Workspace. Memory here is managed by OSQP */
-  std::unique_ptr<OSQPWorkspace, std::function<void(OSQPWorkspace*)>> osqp_workspace_;
+  OSQPWorkspace* osqp_workspace_{nullptr};
 
   /** Updates OSQP quadratic cost matrix from QuadExpr expression.
    *  Transforms QuadExpr objective_ into the OSQP CSC matrix P_ */
@@ -66,7 +66,7 @@ class OSQPModel : public Model
 
 public:
   OSQPModel();
-  ~OSQPModel() override = default;
+  ~OSQPModel() override;
   OSQPModel(const OSQPModel& model) = delete;
   OSQPModel& operator=(const OSQPModel& model) = delete;
   OSQPModel(OSQPModel&&) = default;
