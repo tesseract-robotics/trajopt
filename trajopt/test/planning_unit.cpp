@@ -32,6 +32,7 @@ using namespace tesseract_visualization;
 using namespace tesseract_scene_graph;
 
 bool plotting = false; /**< Enable plotting */
+static const double LONGEST_VALID_SEGMENT_LENGTH = 0.05;
 
 class PlanningTest : public testing::TestWithParam<const char*>
 {
@@ -150,8 +151,12 @@ TEST_F(PlanningTest, arm_around_table)  // NOLINT
   manager->setActiveCollisionObjects(adjacency_map->getActiveLinkNames());
   manager->setContactDistanceThreshold(0);
 
-  bool found =
-      checkTrajectory(collisions, *manager, *state_solver, prob->GetKin()->getJointNames(), prob->GetInitTraj());
+  bool found = checkTrajectory(collisions,
+                               *manager,
+                               *state_solver,
+                               prob->GetKin()->getJointNames(),
+                               prob->GetInitTraj(),
+                               LONGEST_VALID_SEGMENT_LENGTH);
 
   EXPECT_TRUE(found);
   CONSOLE_BRIDGE_logDebug((found) ? ("Initial trajectory is in collision") : ("Initial trajectory is collision free"));
@@ -165,7 +170,8 @@ TEST_F(PlanningTest, arm_around_table)  // NOLINT
 
   opt.initialize(trajToDblVec(prob->GetInitTraj()));
   double tStart = GetClock();
-  opt.optimize();
+  sco::OptStatus status = opt.optimize();
+  EXPECT_TRUE(status == sco::OptStatus::OPT_CONVERGED);
   CONSOLE_BRIDGE_logDebug("planning time: %.3f", GetClock() - tStart);
 
   double d = 0;
@@ -185,8 +191,12 @@ TEST_F(PlanningTest, arm_around_table)  // NOLINT
   //  }
 
   collisions.clear();
-  found = checkTrajectory(
-      collisions, *manager, *state_solver, prob->GetKin()->getJointNames(), getTraj(opt.x(), prob->GetVars()));
+  found = checkTrajectory(collisions,
+                          *manager,
+                          *state_solver,
+                          prob->GetKin()->getJointNames(),
+                          getTraj(opt.x(), prob->GetVars()),
+                          LONGEST_VALID_SEGMENT_LENGTH);
 
   EXPECT_FALSE(found);
   CONSOLE_BRIDGE_logDebug((found) ? ("Final trajectory is in collision") : ("Final trajectory is collision free"));
