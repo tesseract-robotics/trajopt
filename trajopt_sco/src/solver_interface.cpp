@@ -132,7 +132,7 @@ std::ostream& operator<<(std::ostream& o, const Cnt& c)
 
 std::ostream& operator<<(std::ostream& o, const AffExpr& e)
 {
-  std::string sep = "";
+  std::string sep;
   if (e.constant != 0)
   {
     o << e.constant;
@@ -162,7 +162,7 @@ std::ostream& operator<<(std::ostream& o, const QuadExpr& e)
   o << e.affexpr;
   o << " + [ ";
 
-  std::string op = "";
+  std::string op;
   for (size_t i = 0; i < e.size(); ++i)
   {
     if (e.coeffs[i] != 0)
