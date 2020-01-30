@@ -90,8 +90,8 @@ void exprToEigen(const AffExprVector& expr_vec,
   sparse_matrix.resize(static_cast<long int>(expr_vec.size()), n_vars);
   sparse_matrix.reserve(static_cast<long int>(expr_vec.size()) * n_vars);
 
-  IntVec triplet_rows, triplet_cols;
-  DblVec triplet_values_row_col;
+  using T = Eigen::Triplet<double>;
+  std::vector<T, Eigen::aligned_allocator<T>> triplets;
 
   for (int i = 0; i < static_cast<int>(expr_vec.size()); ++i)
   {
@@ -109,13 +109,11 @@ void exprToEigen(const AffExprVector& expr_vec,
       }
       if (expr.coeffs[j] != 0.)
       {
-        triplet_rows.push_back(i);
-        triplet_cols.push_back(i_var_index);
-        triplet_values_row_col.push_back(expr.coeffs[j]);
+        triplets.emplace_back(i, i_var_index, expr.coeffs[j]);
       }
     }
   }
-  tripletsToEigen(triplet_rows, triplet_cols, triplet_values_row_col, sparse_matrix);
+  sparse_matrix.setFromTriplets(triplets.begin(), triplets.end());
 }
 
 void tripletsToEigen(const IntVec& rows_i,
