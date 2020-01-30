@@ -203,9 +203,9 @@ public:
   enum Value
   {
     GUROBI,
-    BPMPD,
     OSQP,
     QPOASES,
+    BPMPD,
     AUTO_SOLVER
   };
 

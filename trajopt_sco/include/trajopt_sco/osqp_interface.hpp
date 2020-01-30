@@ -29,7 +29,7 @@ class OSQPModel : public Model
   OSQPData osqp_data_;
 
   /** OSQP Workspace. Memory here is managed by OSQP */
-  OSQPWorkspace* osqp_workspace_{nullptr};
+  OSQPWorkspace* osqp_workspace_{ nullptr };
 
   /** Updates OSQP quadratic cost matrix from QuadExpr expression.
    *  Transforms QuadExpr objective_ into the OSQP CSC matrix P_ */
