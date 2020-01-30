@@ -18,7 +18,8 @@
     "params" : {
       "coeffs" : [20],
       "dist_pen" : [0.025],
-      "evaluator_type" : 2
+      "evaluator_type" : 2,
+      "longest_valid_segment_length" : 0.05
     }
   }
   ],
@@ -30,8 +31,8 @@
     "params" : {
        "coeffs": [1, 1, 1, 1, 1, 1, 1],
        "targets" : [0.062, 1.287, 0.1, -1.554, -3.011, -0.268, 2.988],
-       "first_step": 8,
-       "last_step": 8
+       "first_step": 9,
+       "last_step": 9
     }
   }
   ],

@@ -15,11 +15,12 @@
   },
   {
     "type" : "collision",
-    "name" : "cc",
     "params" : {
-      "evaluator_type": 2,
       "coeffs" : [10],
-      "dist_pen" : [0.2]
+      "dist_pen" : [0.02],
+      "evaluator_type" : 2,
+      "fixed_steps": [0, 2],
+      "longest_valid_segment_length" : 0.05
     }
   }
   ],
