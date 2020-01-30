@@ -90,15 +90,32 @@ void exprToEigen(const AffExprVector& expr_vec,
   sparse_matrix.resize(static_cast<long int>(expr_vec.size()), n_vars);
   sparse_matrix.reserve(static_cast<long int>(expr_vec.size()) * n_vars);
 
-  for (long int i = 0; i < static_cast<long int>(expr_vec.size()); ++i)
+  IntVec triplet_rows, triplet_cols;
+  DblVec triplet_values_row_col;
+
+  for (int i = 0; i < static_cast<int>(expr_vec.size()); ++i)
   {
     const AffExpr& expr = expr_vec[static_cast<size_t>(i)];
-    Eigen::SparseVector<double> expr_vector;
-    exprToEigen(expr, expr_vector, n_vars);
-    for (Eigen::SparseVector<double>::InnerIterator it(expr_vector); it; ++it)
-      sparse_matrix.coeffRef(i, it.index()) = it.value();
     vector[i] = -expr.constant;
+
+    for (size_t j = 0; j < expr.size(); ++j)
+    {
+      auto i_var_index = static_cast<int>(expr.vars[j].var_rep->index);
+      if (i_var_index >= n_vars)
+      {
+        std::stringstream msg;
+        msg << "Coefficient " << i << "has index " << i_var_index << " but n_vars is " << n_vars;
+        throw std::runtime_error(msg.str());
+      }
+      if (expr.coeffs[j] != 0.)
+      {
+        triplet_rows.push_back(i);
+        triplet_cols.push_back(i_var_index);
+        triplet_values_row_col.push_back(expr.coeffs[j]);
+      }
+    }
   }
+  tripletsToEigen(triplet_rows, triplet_cols, triplet_values_row_col, sparse_matrix);
 }
 
 void tripletsToEigen(const IntVec& rows_i,
