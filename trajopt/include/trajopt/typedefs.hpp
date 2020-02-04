@@ -22,6 +22,9 @@ using TrajArray = Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::R
 using DblVec = sco::DblVec;
 using IntVec = sco::IntVec;
 
+template <typename T>
+using AlignedVector = std::vector<T, Eigen::aligned_allocator<T>>;
+
 template <typename Key, typename Value>
 using AlignedUnorderedMap = std::unordered_map<Key,
                                                Value,
