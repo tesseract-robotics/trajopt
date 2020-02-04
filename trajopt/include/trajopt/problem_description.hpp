@@ -557,6 +557,12 @@ struct CollisionTermInfo : public TermInfo
   /** @brief Indicate the type of collision checking that should be used. */
   CollisionEvaluatorType evaluator_type;
 
+  /**
+   * @brief Use the weighted sum for each link pair. This reduces the number equations added to the problem
+   * When enable it is good to start with a coefficient of 1 otherwise 20 is a good starting point.
+   */
+  bool use_weighted_sum = false;
+
   /** @brief Indicated if a step is fixed and its variables cannot be changed */
   std::vector<int> fixed_steps;
 
