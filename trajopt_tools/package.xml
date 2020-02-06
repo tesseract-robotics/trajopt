@@ -7,10 +7,12 @@
   <license>Apache 2.0</license>
   <author >Levi Armstrong</author>
 
-  <depend>vhacd</depend>
-  <depend>bullet3</depend>
   <depend>trajopt_utils</depend>
+
+  <depend>bullet3</depend>
+  <build_depend>eigen</build_depend>
   <depend>libconsole-bridge-dev</depend>
+  <depend>vhacd</depend>
 
   <export>
     <build_type>cmake</build_type>

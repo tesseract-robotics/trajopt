@@ -6,6 +6,9 @@
   <maintainer email="levi.armstrong@swri.org">Levi Armstrong</maintainer>
   <license>BSD</license>
 
+  <build_depend>eigen</build_depend>
+  <build_export_depend>eigen</build_export_depend>
+
   <export>
     <build_type>cmake</build_type>
   </export>
