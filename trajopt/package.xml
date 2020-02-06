@@ -11,10 +11,13 @@
 
   <depend>trajopt_sco</depend>
   <depend>trajopt_utils</depend>
-  <depend>tesseract</depend>
-  <depend>tesseract_visualization</depend>
+
+  <build_depend>eigen</build_depend>
+  <build_export_depend>eigen</build_export_depend>
   <depend>libconsole-bridge-dev</depend>
   <depend>libjsoncpp-dev</depend>
+  <depend>tesseract</depend>
+  <depend>tesseract_visualization</depend>
 
   <test_depend>gtest</test_depend>
   <test_depend>libpcl-all-dev</test_depend>
