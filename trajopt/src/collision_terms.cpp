@@ -881,7 +881,8 @@ void CollisionEvaluator::processInterpolatedCollisionResults(
       {
         if (std::find(active_links.begin(), active_links.end(), r.link_names[0]) != active_links.end())
         {
-          r.cc_time[0] = (r.cc_time[0] < 0) ? (static_cast<double>(i) * dt) : (static_cast<double>(i) * dt) + (r.cc_time[0] * dt);
+          r.cc_time[0] =
+              (r.cc_time[0] < 0) ? (static_cast<double>(i) * dt) : (static_cast<double>(i) * dt) + (r.cc_time[0] * dt);
           assert(r.cc_time[0] >= 0.0 && r.cc_time[0] <= 1.0);
           if (i == 0 && r.cc_type[0] == tesseract_collision::ContinuousCollisionType::CCType_Time0)
             r.cc_type[0] = tesseract_collision::ContinuousCollisionType::CCType_Time0;
@@ -894,7 +895,8 @@ void CollisionEvaluator::processInterpolatedCollisionResults(
 
         if (std::find(active_links.begin(), active_links.end(), r.link_names[1]) != active_links.end())
         {
-          r.cc_time[1] = (r.cc_time[0] < 0) ? (static_cast<double>(i) * dt) : (static_cast<double>(i) * dt) + (r.cc_time[1] * dt);
+          r.cc_time[1] =
+              (r.cc_time[0] < 0) ? (static_cast<double>(i) * dt) : (static_cast<double>(i) * dt) + (r.cc_time[1] * dt);
           assert(r.cc_time[1] >= 0.0 && r.cc_time[1] <= 1.0);
           if (i == 0 && r.cc_type[1] == tesseract_collision::ContinuousCollisionType::CCType_Time0)
             r.cc_type[1] = tesseract_collision::ContinuousCollisionType::CCType_Time0;
