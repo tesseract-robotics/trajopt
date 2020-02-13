@@ -333,7 +333,15 @@ void generateInitTraj(TrajArray& init_traj, const ProblemConstructionInfo& pci)
       ++i;
     }
 
-    Eigen::VectorXd end_pos = init_info.data;
+    Eigen::VectorXd end_pos(pci.kin->numJoints());
+    if (init_info.data.rows() == 1 && init_info.data.cols() == pci.kin->numJoints())
+      end_pos = init_info.data.transpose();
+    else if (init_info.data.rows() == pci.kin->numJoints() && init_info.data.cols() == 1)
+      end_pos = init_info.data;
+    else
+      PRINT_AND_THROW("JOINT_INTERPOLATED selected, but init_info.data is the wrong size. It should be 1 x "
+                      "pci.kin->numJoints()");
+
     init_traj.resize(pci.basic_info.n_steps, end_pos.rows());
     for (int idof = 0; idof < start_pos.rows(); ++idof)
     {
