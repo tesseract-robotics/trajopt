@@ -72,7 +72,7 @@ public:
     box_attached_joint.child_link_name = "box_attached";
     box_attached_joint.parent_to_joint_origin_transform.translation() = Eigen::Vector3d(0.5, -0.5, 0);
 
-    tesseract_->getEnvironment()->addLink(box_attached_link, box_attached_joint);
+    tesseract_->getEnvironment()->addLink(std::move(box_attached_link), std::move(box_attached_joint));
     tesseract_->getEnvironment()->setLinkCollisionEnabled("box_attached", false);
     tesseract_->getEnvironment()->addAllowedCollision("box_attached", "boxbot_link", "Adjacent");
 
@@ -85,7 +85,7 @@ public:
     box_attached2_joint.child_link_name = "box_attached2";
     box_attached2_joint.parent_to_joint_origin_transform.translation() = Eigen::Vector3d(0, 0, 0);
 
-    tesseract_->getEnvironment()->addLink(box_attached2_link, box_attached2_joint);
+    tesseract_->getEnvironment()->addLink(std::move(box_attached2_link), std::move(box_attached2_joint));
     tesseract_->getEnvironment()->setLinkCollisionEnabled("box_attached2", false);
     tesseract_->getEnvironment()->addAllowedCollision("box_attached2", "boxbot_link", "Adjacent");
   }

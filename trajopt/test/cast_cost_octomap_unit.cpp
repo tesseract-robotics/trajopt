@@ -89,7 +89,7 @@ public:
     new_joint.parent_link_name = "base_link";
     new_joint.child_link_name = "octomap_attached";
 
-    tesseract_->getEnvironment()->addLink(new_link, new_joint);
+    tesseract_->getEnvironment()->addLink(std::move(new_link), std::move(new_joint));
   }
 };
 
