@@ -20,9 +20,26 @@ SizeTVec vars2inds(const VarVector& vars)
     inds[i] = vars[i].var_rep->index;
   return inds;
 }
+
+IntVec vars2indsI(const VarVector& vars)
+{
+  IntVec inds(vars.size());
+  for (size_t i = 0; i < inds.size(); ++i)
+    inds[i] = vars[i].var_rep->index;
+  return inds;
+}
+
 SizeTVec cnts2inds(const CntVector& cnts)
 {
   SizeTVec inds(cnts.size());
+  for (size_t i = 0; i < inds.size(); ++i)
+    inds[i] = cnts[i].cnt_rep->index;
+  return inds;
+}
+
+IntVec cnts2indsI(const CntVector& cnts)
+{
+  IntVec inds(cnts.size());
   for (size_t i = 0; i < inds.size(); ++i)
     inds[i] = cnts[i].cnt_rep->index;
   return inds;

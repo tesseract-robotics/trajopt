@@ -234,7 +234,11 @@ Model::Ptr createModel(ModelType model_type = ModelType::AUTO_SOLVER);
 
 SizeTVec vars2inds(const VarVector& vars);
 
+IntVec vars2indsI(const VarVector& vars);
+
 SizeTVec cnts2inds(const CntVector& cnts);
+
+IntVec cnts2indsI(const CntVector& cnts);
 
 /**
  * @brief simplify2 gets as input a list of indices, corresponding to non-zero
