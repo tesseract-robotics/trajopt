@@ -159,6 +159,144 @@ void DebugPrintInfo(const tesseract_collision::ContactResult& res,
   std::printf("\n");
 }
 
+GradientResults CollisionEvaluator::GetGradient(const Eigen::VectorXd& dofvals,
+                                                const tesseract_collision::ContactResult& contact_result,
+                                                const Eigen::Vector2d& data,
+                                                bool isTimestep1)
+{
+  GradientResults results(data);
+  for (std::size_t i = 0; i < 2; ++i)
+  {
+    tesseract_environment::AdjacencyMapPair::ConstPtr it = adjacency_map_->getLinkMapping(contact_result.link_names[i]);
+    if (it != nullptr)
+    {
+      results.gradients[i].has_gradient = true;
+
+      Eigen::MatrixXd jac;
+      jac.resize(6, manip_->numJoints());
+
+      // Calculate Jacobian
+      manip_->calcJacobian(jac, dofvals, it->link_name);
+
+      // Need to change the base and ref point of the jacobian.
+      // When changing ref point you must provide a vector from the current ref
+      // point to the new ref point.
+      results.gradients[i].scale = 1;
+      Eigen::Isometry3d link_transform = contact_result.transform[i];
+      if (contact_result.cc_type[i] != tesseract_collision::ContinuousCollisionType::CCType_None)
+      {
+        assert(contact_result.cc_time[i] >= 0.0 && contact_result.cc_time[i] <= 1.0);
+        results.gradients[i].scale = (isTimestep1) ? contact_result.cc_time[i] : (1 - contact_result.cc_time[i]);
+        link_transform = (isTimestep1) ? contact_result.cc_transform[i] : contact_result.transform[i];
+      }
+      tesseract_kinematics::jacobianChangeBase(jac, world_to_base_);
+      tesseract_kinematics::jacobianChangeRefPoint(jac,
+                                                   (link_transform * it->transform.inverse()).linear() *
+                                                       (it->transform * contact_result.nearest_points_local[i]));
+
+      // Eigen::Isometry3d test_link_transform, temp1, temp2;
+      // manip->calcFwdKin(test_link_transform, dofvals, it->link_name);
+      // temp1 = world_to_base * test_link_transform;
+      // temp2 = link_transform * it->transform.inverse();
+      // assert(temp1.isApprox(temp2, 0.0001));
+
+      // Eigen::MatrixXd jac_test;
+      // jac_test.resize(6, manip->numJoints());
+      // tesseract_kinematics::numericalJacobian(jac_test, world_to_base, *manip, dofvals, it->link_name,
+      // res.nearest_points_local[i]); bool check = jac.isApprox(jac_test, 1e-3); assert(check == true);
+
+      results.gradients[i].gradient = ((i == 0) ? -1.0 : 1.0) * contact_result.normal.transpose() * jac.topRows(3);
+    }
+  }
+  // DebugPrintInfo(res, results.gradients[0], results.gradients[1], dofvals, &res == &(dist_results.front()));
+
+  return results;
+}
+
+GradientResults CollisionEvaluator::GetGradient(const Eigen::VectorXd& dofvals,
+                                                const tesseract_collision::ContactResult& contact_result,
+                                                bool isTimestep1)
+{
+  // Contains the contact distance threshold and coefficient for the given link pair
+  const Eigen::Vector2d& data =
+      safety_margin_data_->getPairSafetyMarginData(contact_result.link_names[0], contact_result.link_names[1]);
+  return GetGradient(dofvals, contact_result, data, isTimestep1);
+}
+
+GradientResults CollisionEvaluator::GetGradient(const Eigen::VectorXd& dofvals0,
+                                                const Eigen::VectorXd& dofvals1,
+                                                const tesseract_collision::ContactResult& contact_result,
+                                                const Eigen::Vector2d& data,
+                                                bool isTimestep1)
+{
+  GradientResults results(data);
+  Eigen::VectorXd dofvalst = Eigen::VectorXd::Zero(dofvals0.size());
+  for (std::size_t i = 0; i < 2; ++i)
+  {
+    tesseract_environment::AdjacencyMapPair::ConstPtr it = adjacency_map_->getLinkMapping(contact_result.link_names[i]);
+    if (it != nullptr)
+    {
+      results.gradients[i].has_gradient = true;
+
+      Eigen::MatrixXd jac;
+      jac.resize(6, manip_->numJoints());
+
+      if (contact_result.cc_type[i] == tesseract_collision::ContinuousCollisionType::CCType_Time0)
+        dofvalst = dofvals0;
+      else if (contact_result.cc_type[i] == tesseract_collision::ContinuousCollisionType::CCType_Time1)
+        dofvalst = dofvals0;
+      else
+        dofvalst = dofvals0 + (dofvals1 - dofvals0) * contact_result.cc_time[i];
+
+      // Calculate Jacobian
+      manip_->calcJacobian(jac, dofvalst, it->link_name);
+
+      // Need to change the base and ref point of the jacobian.
+      // When changing ref point you must provide a vector from the current ref
+      // point to the new ref point.
+      results.gradients[i].scale = 1;
+      Eigen::Isometry3d link_transform = contact_result.transform[i];
+
+      assert(contact_result.cc_time[i] >= 0.0 && contact_result.cc_time[i] <= 1.0);
+      results.gradients[i].scale = (isTimestep1) ? contact_result.cc_time[i] : (1 - contact_result.cc_time[i]);
+      link_transform = (isTimestep1) ? contact_result.cc_transform[i] : contact_result.transform[i];
+
+      tesseract_kinematics::jacobianChangeBase(jac, world_to_base_);
+      tesseract_kinematics::jacobianChangeRefPoint(jac,
+                                                   (link_transform * it->transform.inverse()).linear() *
+                                                       (it->transform * contact_result.nearest_points_local[i]));
+
+      // Eigen::Isometry3d test_link_transform, temp1, temp2;
+      // manip->calcFwdKin(test_link_transform, dofvals, it->link_name);
+      // temp1 = world_to_base * test_link_transform;
+      // temp2 = link_transform * it->transform.inverse();
+      // assert(temp1.isApprox(temp2, 0.0001));
+
+      // Eigen::MatrixXd jac_test;
+      // jac_test.resize(6, manip->numJoints());
+      // tesseract_kinematics::numericalJacobian(jac_test, world_to_base, *manip, dofvals, it->link_name,
+      // res.nearest_points_local[i]); bool check = jac.isApprox(jac_test, 1e-3); assert(check == true);
+
+      results.gradients[i].gradient = ((i == 0) ? -1.0 : 1.0) * contact_result.normal.transpose() * jac.topRows(3);
+    }
+  }
+
+  // DebugPrintInfo(res, results.gradients[0], results.gradients[1], dofvals, &res == &(dist_results.front()));
+
+  return results;
+}
+
+GradientResults CollisionEvaluator::GetGradient(const Eigen::VectorXd& dofvals0,
+                                                const Eigen::VectorXd& dofvals1,
+                                                const tesseract_collision::ContactResult& contact_result,
+                                                bool isTimestep1)
+{
+  // Contains the contact distance threshold and coefficient for the given link pair
+  const Eigen::Vector2d& data =
+      safety_margin_data_->getPairSafetyMarginData(contact_result.link_names[0], contact_result.link_names[1]);
+  return GetGradient(dofvals0, dofvals1, contact_result, data, isTimestep1);
+}
+
 void CollisionEvaluator::CollisionsToDistanceExpressions(sco::AffExprVector& exprs,
                                                          AlignedVector<Eigen::Vector2d>& exprs_data,
                                                          const tesseract_collision::ContactResultVector& dist_results,
@@ -179,96 +317,20 @@ void CollisionEvaluator::CollisionsToDistanceExpressions(sco::AffExprVector& exp
   for (const auto& res : dist_results)
   {
     sco::AffExpr dist(0);
-
-    // Contains the contact distance threshold and coefficient for the given link pair
-    const Eigen::Vector2d& data = safety_margin_data_->getPairSafetyMarginData(res.link_names[0], res.link_names[1]);
-
-    Eigen::VectorXd dist_grad_a, dist_grad_b;
-    tesseract_environment::AdjacencyMapPair::ConstPtr itA = adjacency_map_->getLinkMapping(res.link_names[0]);
-    if (itA != nullptr)
+    GradientResults grad = GetGradient(dofvals, res, isTimestep1);
+    for (const auto& g : grad.gradients)
     {
-      Eigen::MatrixXd jac;
-      jac.resize(6, manip_->numJoints());
-
-      // Calculate Jacobian
-      manip_->calcJacobian(jac, dofvals, itA->link_name);
-
-      // Need to change the base and ref point of the jacobian.
-      // When changing ref point you must provide a vector from the current ref
-      // point to the new ref point.
-      double scale = 1;
-      Eigen::Isometry3d link_transform = res.transform[0];
-      if (res.cc_type[0] != tesseract_collision::ContinuousCollisionType::CCType_None)
+      if (g.has_gradient)
       {
-        assert(res.cc_time[0] >= 0.0 && res.cc_time[0] <= 1.0);
-        scale = (isTimestep1) ? res.cc_time[0] : (1 - res.cc_time[0]);
-        link_transform = (isTimestep1) ? res.cc_transform[0] : res.transform[0];
+        sco::exprInc(dist, sco::varDot(g.scale * g.gradient, vars));
+        sco::exprInc(dist, g.scale * -g.gradient.dot(dofvals));
       }
-      tesseract_kinematics::jacobianChangeBase(jac, world_to_base_);
-      tesseract_kinematics::jacobianChangeRefPoint(
-          jac, (link_transform * itA->transform.inverse()).linear() * (itA->transform * res.nearest_points_local[0]));
-
-      // Eigen::Isometry3d test_link_transform, temp1, temp2;
-      // manip->calcFwdKin(test_link_transform, dofvals, itA->link_name);
-      // temp1 = world_to_base * test_link_transform;
-      // temp2 = link_transform * itA->transform.inverse();
-      // assert(temp1.isApprox(temp2, 0.0001));
-
-      // Eigen::MatrixXd jac_test;
-      // jac_test.resize(6, manip->numJoints());
-      // tesseract_kinematics::numericalJacobian(jac_test, world_to_base, *manip, dofvals, itA->link_name,
-      // res.nearest_points_local[0]); bool check = jac.isApprox(jac_test, 1e-3); assert(check == true);
-
-      dist_grad_a = -res.normal.transpose() * jac.topRows(3);
-      sco::exprInc(dist, sco::varDot(scale * dist_grad_a, vars));
-      sco::exprInc(dist, scale * -dist_grad_a.dot(dofvals));
     }
 
-    tesseract_environment::AdjacencyMapPair::ConstPtr itB = adjacency_map_->getLinkMapping(res.link_names[1]);
-    if (itB != nullptr)
-    {
-      Eigen::MatrixXd jac;
-      jac.resize(6, manip_->numJoints());
-
-      // Calculate Jacobian
-      manip_->calcJacobian(jac, dofvals, itB->link_name);
-
-      // Need to change the base and ref point of the jacobian.
-      // When changing ref point you must provide a vector from the current ref
-      // point to the new ref point.
-      double scale = 1;
-      Eigen::Isometry3d link_transform = res.transform[1];
-      if (res.cc_type[1] != tesseract_collision::ContinuousCollisionType::CCType_None)
-      {
-        assert(res.cc_time[1] >= 0.0 && res.cc_time[1] <= 1.0);
-        scale = (isTimestep1) ? res.cc_time[1] : (1 - res.cc_time[1]);
-        link_transform = (isTimestep1) ? res.cc_transform[1] : res.transform[1];
-      }
-      tesseract_kinematics::jacobianChangeBase(jac, world_to_base_);
-      tesseract_kinematics::jacobianChangeRefPoint(
-          jac, (link_transform * itB->transform.inverse()).linear() * (itB->transform * res.nearest_points_local[1]));
-
-      // Eigen::Isometry3d test_link_transform, temp1, temp2;
-      // manip->calcFwdKin(test_link_transform, dofvals, itB->link_name);
-      // temp1 = world_to_base * test_link_transform;
-      // temp2 = link_transform * itB->transform.inverse();
-      // assert(temp1.isApprox(temp2, 0.0001));
-
-      // Eigen::MatrixXd jac_test;
-      // jac_test.resize(6, manip->numJoints());
-      // tesseract_kinematics::numericalJacobian(jac_test, world_to_base, *manip, dofvals, itB->link_name,
-      // res.nearest_points_local[1]); bool check = jac.isApprox(jac_test, 1e-3); assert(check == true);
-
-      dist_grad_b = res.normal.transpose() * jac.topRows(3);
-      sco::exprInc(dist, sco::varDot(scale * dist_grad_b, vars));
-      sco::exprInc(dist, scale * -dist_grad_b.dot(dofvals));
-    }
-    // DebugPrintInfo(res, dist_grad_a, dist_grad_b, dofvals, &res == &(dist_results.front()));
-
-    if (itA != nullptr || itB != nullptr)
+    if (grad.gradients[0].has_gradient || grad.gradients[1].has_gradient)
     {
       exprs.push_back(dist);
-      exprs_data.push_back(data);
+      exprs_data.push_back(grad.data);
     }
   }
 }
@@ -293,142 +355,64 @@ void CollisionEvaluator::CollisionsToDistanceExpressionsW(sco::AffExprVector& ex
   for (const auto& pair : dist_results)
   {
     double worst_dist{ std::numeric_limits<double>::max() };
-    double total_weight_a{ 0 }, total_weight_b{ 0 };
-    bool found_a{ false }, found_b{ false };
+    double total_weight[2];
+    bool found[2];
+    Eigen::VectorXd dist_grad[2];
 
-    Eigen::VectorXd dist_grad_a = Eigen::VectorXd::Zero(manip_->numJoints());
-    Eigen::VectorXd dist_grad_b = Eigen::VectorXd::Zero(manip_->numJoints());
+    total_weight[0] = 0;
+    total_weight[1] = 0;
+
+    found[0] = false;
+    found[1] = false;
+
+    dist_grad[0] = Eigen::VectorXd::Zero(manip_->numJoints());
+    dist_grad[1] = Eigen::VectorXd::Zero(manip_->numJoints());
 
     // Contains the contact distance threshold and coefficient for the given link pair
     const Eigen::Vector2d& data = safety_margin_data_->getPairSafetyMarginData(pair.first.first, pair.first.second);
 
     for (const auto& res : pair.second)
     {
-      tesseract_environment::AdjacencyMapPair::ConstPtr itA = adjacency_map_->getLinkMapping(res.link_names[0]);
+      GradientResults grad = GetGradient(dofvals, res, data, isTimestep1);
 
-      // Changing the start state does not have an affect if the collision is at the end state so do not process
-      // Changing the end state does not have an affect if the collision is at the start state so do not process
-      if (itA != nullptr &&
-          !(!isTimestep1 && res.cc_type[0] == tesseract_collision::ContinuousCollisionType::CCType_Time1) &&
-          !(isTimestep1 && res.cc_type[0] == tesseract_collision::ContinuousCollisionType::CCType_Time0))
+      for (std::size_t i = 0; i < 2; ++i)
       {
-        found_a = true;
-
-        Eigen::MatrixXd jac;
-        jac.resize(6, manip_->numJoints());
-
-        // Calculate Jacobian
-        manip_->calcJacobian(jac, dofvals, itA->link_name);
-
-        // Need to change the base and ref point of the jacobian.
-        // When changing ref point you must provide a vector from the current ref
-        // point to the new ref point.
-        double scale = 1;
-        Eigen::Isometry3d link_transform = res.transform[0];
-        if (res.cc_type[0] != tesseract_collision::ContinuousCollisionType::CCType_None)
+        // Changing the start state does not have an affect if the collision is at the end state so do not process
+        // Changing the end state does not have an affect if the collision is at the start state so do not process
+        if (grad.gradients[i].has_gradient &&
+            !(!isTimestep1 && res.cc_type[i] == tesseract_collision::ContinuousCollisionType::CCType_Time1) &&
+            !(isTimestep1 && res.cc_type[i] == tesseract_collision::ContinuousCollisionType::CCType_Time0))
         {
-          assert(res.cc_time[0] >= 0.0 && res.cc_time[0] <= 1.0);
-          scale = (isTimestep1) ? res.cc_time[0] : (1 - res.cc_time[0]);
-          link_transform = (isTimestep1) ? res.cc_transform[0] : res.transform[0];
+          found[i] = true;
+
+          if (res.distance < worst_dist)
+            worst_dist = res.distance;
+
+          double weight = 100.0 * sco::pospart(grad.data[static_cast<long>(i)] + safety_margin_buffer_ - res.distance);
+          total_weight[i] += weight;
+          dist_grad[i] += (weight * grad.gradients[i].gradient);
         }
-        tesseract_kinematics::jacobianChangeBase(jac, world_to_base_);
-        tesseract_kinematics::jacobianChangeRefPoint(
-            jac, (link_transform * itA->transform.inverse()).linear() * (itA->transform * res.nearest_points_local[0]));
-
-        // Eigen::Isometry3d test_link_transform, temp1, temp2;
-        // manip->calcFwdKin(test_link_transform, dofvals, itA->link_name);
-        // temp1 = world_to_base * test_link_transform;
-        // temp2 = link_transform * itA->transform.inverse();
-        // assert(temp1.isApprox(temp2, 0.0001));
-
-        // Eigen::MatrixXd jac_test;
-        // jac_test.resize(6, manip->numJoints());
-        // tesseract_kinematics::numericalJacobian(jac_test, world_to_base, *manip, dofvals, itA->link_name,
-        // res.nearest_points_local[0]); bool check = jac.isApprox(jac_test, 1e-3); assert(check == true);
-
-        if (res.distance < worst_dist)
-          worst_dist = res.distance;
-
-        double weight = 100.0 * sco::pospart(data[0] + safety_margin_buffer_ - res.distance);
-        total_weight_a += weight;
-        dist_grad_a -= (weight * scale * res.normal.transpose() * jac.topRows(3));
-      }
-
-      tesseract_environment::AdjacencyMapPair::ConstPtr itB = adjacency_map_->getLinkMapping(res.link_names[1]);
-      // Changing the start state does not have an affect if the collision is at the end state so do not continue
-      // Changing the end state does not have an affect if the collision is at the start state so do not continue
-      if (itB != nullptr &&
-          !(!isTimestep1 && res.cc_type[1] == tesseract_collision::ContinuousCollisionType::CCType_Time1) &&
-          !(isTimestep1 && res.cc_type[1] == tesseract_collision::ContinuousCollisionType::CCType_Time0))
-      {
-        found_b = true;
-
-        Eigen::MatrixXd jac;
-        jac.resize(6, manip_->numJoints());
-
-        // Calculate Jacobian
-        manip_->calcJacobian(jac, dofvals, itB->link_name);
-
-        // Need to change the base and ref point of the jacobian.
-        // When changing ref point you must provide a vector from the current ref
-        // point to the new ref point.
-        double scale = 1;
-        Eigen::Isometry3d link_transform = res.transform[1];
-        if (res.cc_type[1] != tesseract_collision::ContinuousCollisionType::CCType_None)
-        {
-          assert(res.cc_time[1] >= 0.0 && res.cc_time[1] <= 1.0);
-          scale = (isTimestep1) ? res.cc_time[1] : (1 - res.cc_time[1]);
-          link_transform = (isTimestep1) ? res.cc_transform[1] : res.transform[1];
-        }
-        tesseract_kinematics::jacobianChangeBase(jac, world_to_base_);
-        tesseract_kinematics::jacobianChangeRefPoint(
-            jac, (link_transform * itB->transform.inverse()).linear() * (itB->transform * res.nearest_points_local[1]));
-
-        // Eigen::Isometry3d test_link_transform, temp1, temp2;
-        // manip->calcFwdKin(test_link_transform, dofvals, itB->link_name);
-        // temp1 = world_to_base * test_link_transform;
-        // temp2 = link_transform * itB->transform.inverse();
-        // assert(temp1.isApprox(temp2, 0.0001));
-
-        // Eigen::MatrixXd jac_test;
-        // jac_test.resize(6, manip->numJoints());
-        // tesseract_kinematics::numericalJacobian(jac_test, world_to_base, *manip, dofvals, itB->link_name,
-        // res.nearest_points_local[1]); bool check = jac.isApprox(jac_test, 1e-3); assert(check == true);
-
-        if (res.distance < worst_dist)
-          worst_dist = res.distance;
-
-        double weight = 100.0 * sco::pospart(data[0] + safety_margin_buffer_ - res.distance);
-        total_weight_b += weight;
-
-        dist_grad_b += (weight * scale * res.normal.transpose() * jac.topRows(3));
       }
     }
 
     exprs_data.push_back(data);
-    if (!found_a && !found_b)
+    if (!found[0] && !found[1])
     {
       exprs.push_back(sco::AffExpr(0));
     }
     else
     {
       sco::AffExpr dist(worst_dist);
-      if (found_a)
+      for (std::size_t i = 0; i < 2; ++i)
       {
-        assert(std::abs(total_weight_a) > 1e-8);
-        dist_grad_a *= (1.0 / total_weight_a);
-        sco::exprInc(dist, sco::varDot(dist_grad_a, vars));
-        sco::exprInc(dist, -dist_grad_a.dot(dofvals));
+        if (found[i])
+        {
+          assert(std::abs(total_weight[i]) > 1e-8);
+          dist_grad[i] *= (1.0 / total_weight[i]);
+          sco::exprInc(dist, sco::varDot(dist_grad[i], vars));
+          sco::exprInc(dist, -dist_grad[i].dot(dofvals));
+        }
       }
-
-      if (found_b)
-      {
-        assert(std::abs(total_weight_b) > 1e-8);
-        dist_grad_b *= (1.0 / total_weight_b);
-        sco::exprInc(dist, sco::varDot(dist_grad_b, vars));
-        sco::exprInc(dist, -dist_grad_b.dot(dofvals));
-      }
-
       exprs.push_back(dist);
     }
   }
@@ -458,172 +442,76 @@ void CollisionEvaluator::CollisionsToDistanceExpressionsContinuousW(
   for (const auto& pair : dist_results)
   {
     double worst_dist{ std::numeric_limits<double>::max() };
-    double total_weight_a{ 0 }, total_weight_b{ 0 };
-    bool found_a{ false }, found_b{ false };
+    double total_weight[2];
+    bool found[2];
+    Eigen::VectorXd dist_grad[2];
 
-    Eigen::VectorXd dist_grad_a = Eigen::VectorXd::Zero(manip_->numJoints());
-    Eigen::VectorXd dist_grad_b = Eigen::VectorXd::Zero(manip_->numJoints());
+    total_weight[0] = 0;
+    total_weight[1] = 0;
+
+    found[0] = false;
+    found[1] = false;
+
+    dist_grad[0] = Eigen::VectorXd::Zero(manip_->numJoints());
+    dist_grad[1] = Eigen::VectorXd::Zero(manip_->numJoints());
 
     // Contains the contact distance threshold and coefficient for the given link pair
     const Eigen::Vector2d& data = safety_margin_data_->getPairSafetyMarginData(pair.first.first, pair.first.second);
 
     for (const auto& res : pair.second)
     {
-      tesseract_environment::AdjacencyMapPair::ConstPtr itA = adjacency_map_->getLinkMapping(res.link_names[0]);
+      GradientResults grad = GetGradient(dofvals0, dofvals1, res, data, isTimestep1);
 
-      // Changing the start state does not have an affect if the collision is at the end state so do not process
-      // Changing the end state does not have an affect if the collision is at the start state so do not process
-      if (itA != nullptr &&
-          !(!isTimestep1 && res.cc_type[0] == tesseract_collision::ContinuousCollisionType::CCType_Time1) &&
-          !(isTimestep1 && res.cc_type[0] == tesseract_collision::ContinuousCollisionType::CCType_Time0))
+      for (std::size_t i = 0; i < 2; ++i)
       {
-        assert(res.cc_type[0] != tesseract_collision::ContinuousCollisionType::CCType_None);
-        assert(res.cc_time[0] >= 0.0 && res.cc_time[0] <= 1.0);
+        // Changing the start state does not have an affect if the collision is at the end state so do not process
+        // Changing the end state does not have an affect if the collision is at the start state so do not process
+        if (grad.gradients[i].has_gradient &&
+            !(!isTimestep1 && res.cc_type[i] == tesseract_collision::ContinuousCollisionType::CCType_Time1) &&
+            !(isTimestep1 && res.cc_type[i] == tesseract_collision::ContinuousCollisionType::CCType_Time0))
+        {
+          assert(res.cc_type[i] != tesseract_collision::ContinuousCollisionType::CCType_None);
+          assert(res.cc_time[i] >= 0.0 && res.cc_time[i] <= 1.0);
 
-        found_a = true;
+          found[i] = true;
 
-        if (res.cc_type[0] == tesseract_collision::ContinuousCollisionType::CCType_Time0)
-          dofvalst = dofvals0;
-        else if (res.cc_type[0] == tesseract_collision::ContinuousCollisionType::CCType_Time1)
-          dofvalst = dofvals0;
-        else
-          dofvalst = dofvals0 + (dofvals1 - dofvals0) * res.cc_time[0];
+          if (res.distance < worst_dist)
+            worst_dist = res.distance;
 
-        Eigen::MatrixXd jac;
-        jac.resize(6, manip_->numJoints());
-
-        // Calculate Jacobian
-        manip_->calcJacobian(jac, dofvalst, itA->link_name);
-
-        // Need to change the base and ref point of the jacobian.
-        // When changing ref point you must provide a vector from the current ref
-        // point to the new ref point.
-        double scale = 1;
-        Eigen::Isometry3d link_transform = res.transform[0];
-        scale = (isTimestep1) ? res.cc_time[0] : (1 - res.cc_time[0]);
-        link_transform = (isTimestep1) ? res.cc_transform[0] : res.transform[0];
-
-        tesseract_kinematics::jacobianChangeBase(jac, world_to_base_);
-        tesseract_kinematics::jacobianChangeRefPoint(
-            jac, (link_transform * itA->transform.inverse()).linear() * (itA->transform * res.nearest_points_local[0]));
-
-        // Eigen::Isometry3d test_link_transform, temp1, temp2;
-        // manip->calcFwdKin(test_link_transform, dofvals, itA->link_name);
-        // temp1 = world_to_base * test_link_transform;
-        // temp2 = link_transform * itA->transform.inverse();
-        // assert(temp1.isApprox(temp2, 0.0001));
-
-        // Eigen::MatrixXd jac_test;
-        // jac_test.resize(6, manip->numJoints());
-        // tesseract_kinematics::numericalJacobian(jac_test, world_to_base, *manip, dofvals, itA->link_name,
-        // res.nearest_points_local[0]); bool check = jac.isApprox(jac_test, 1e-3); assert(check == true);
-
-        if (res.distance < worst_dist)
-          worst_dist = res.distance;
-
-        double weight = 100.0 * sco::pospart(data[0] + safety_margin_buffer_ - res.distance);
-        total_weight_a += weight;
-        dist_grad_a -= (weight * scale * res.normal.transpose() * jac.topRows(3));
-      }
-
-      tesseract_environment::AdjacencyMapPair::ConstPtr itB = adjacency_map_->getLinkMapping(res.link_names[1]);
-      // Changing the start state does not have an affect if the collision is at the end state so do not continue
-      // Changing the end state does not have an affect if the collision is at the start state so do not continue
-      if (itB != nullptr &&
-          !(!isTimestep1 && res.cc_type[1] == tesseract_collision::ContinuousCollisionType::CCType_Time1) &&
-          !(isTimestep1 && res.cc_type[1] == tesseract_collision::ContinuousCollisionType::CCType_Time0))
-      {
-        assert(res.cc_type[1] != tesseract_collision::ContinuousCollisionType::CCType_None);
-        assert(res.cc_time[1] >= 0.0 && res.cc_time[1] <= 1.0);
-
-        found_b = true;
-
-        if (res.cc_type[1] == tesseract_collision::ContinuousCollisionType::CCType_Time0)
-          dofvalst = dofvals0;
-        else if (res.cc_type[1] == tesseract_collision::ContinuousCollisionType::CCType_Time1)
-          dofvalst = dofvals0;
-        else
-          dofvalst = dofvals0 + (dofvals1 - dofvals0) * res.cc_time[1];
-
-        Eigen::MatrixXd jac;
-        jac.resize(6, manip_->numJoints());
-
-        // Calculate Jacobian
-        manip_->calcJacobian(jac, dofvalst, itB->link_name);
-
-        // Need to change the base and ref point of the jacobian.
-        // When changing ref point you must provide a vector from the current ref
-        // point to the new ref point.
-        double scale = 1;
-        Eigen::Isometry3d link_transform = res.transform[1];
-        scale = (isTimestep1) ? res.cc_time[1] : (1 - res.cc_time[1]);
-        link_transform = (isTimestep1) ? res.cc_transform[1] : res.transform[1];
-
-        tesseract_kinematics::jacobianChangeBase(jac, world_to_base_);
-        tesseract_kinematics::jacobianChangeRefPoint(
-            jac, (link_transform * itB->transform.inverse()).linear() * (itB->transform * res.nearest_points_local[1]));
-
-        // Eigen::Isometry3d test_link_transform, temp1, temp2;
-        // manip->calcFwdKin(test_link_transform, dofvals, itB->link_name);
-        // temp1 = world_to_base * test_link_transform;
-        // temp2 = link_transform * itB->transform.inverse();
-        // assert(temp1.isApprox(temp2, 0.0001));
-
-        // Eigen::MatrixXd jac_test;
-        // jac_test.resize(6, manip->numJoints());
-        // tesseract_kinematics::numericalJacobian(jac_test, world_to_base, *manip, dofvals, itB->link_name,
-        // res.nearest_points_local[1]); bool check = jac.isApprox(jac_test, 1e-3); assert(check == true);
-
-        if (res.distance < worst_dist)
-          worst_dist = res.distance;
-
-        double weight = 100.0 * sco::pospart(data[0] + safety_margin_buffer_ - res.distance);
-        total_weight_b += weight;
-
-        dist_grad_b += (weight * scale * res.normal.transpose() * jac.topRows(3));
+          double weight = 100.0 * sco::pospart(grad.data[static_cast<long>(i)] + safety_margin_buffer_ - res.distance);
+          total_weight[i] += weight;
+          dist_grad[i] += (weight * grad.gradients[i].gradient);
+        }
       }
     }
 
     exprs_data.push_back(data);
-    if (!found_a && !found_b)
+    if (!found[0] && !found[1])
     {
       exprs.push_back(sco::AffExpr(0));
     }
     else
     {
       sco::AffExpr dist(worst_dist);
-      if (found_a)
+      for (std::size_t i = 0; i < 2; ++i)
       {
-        assert(std::abs(total_weight_a) > 1e-8);
-        dist_grad_a *= (1.0 / total_weight_a);
-        if (!isTimestep1)
+        if (found[i])
         {
-          sco::exprInc(dist, sco::varDot(dist_grad_a, vars0));
-          sco::exprInc(dist, -dist_grad_a.dot(dofvals0));
-        }
-        else
-        {
-          sco::exprInc(dist, sco::varDot(dist_grad_a, vars1));
-          sco::exprInc(dist, -dist_grad_a.dot(dofvals1));
+          assert(std::abs(total_weight[i]) > 1e-8);
+          dist_grad[i] *= (1.0 / total_weight[i]);
+
+          if (i == 0)
+          {
+            sco::exprInc(dist, sco::varDot(dist_grad[i], vars0));
+            sco::exprInc(dist, -dist_grad[i].dot(dofvals0));
+          }
+          else
+          {
+            sco::exprInc(dist, sco::varDot(dist_grad[i], vars1));
+            sco::exprInc(dist, -dist_grad[i].dot(dofvals1));
+          }
         }
       }
-
-      if (found_b)
-      {
-        assert(std::abs(total_weight_b) > 1e-8);
-        dist_grad_b *= (1.0 / total_weight_b);
-        if (!isTimestep1)
-        {
-          sco::exprInc(dist, sco::varDot(dist_grad_b, vars0));
-          sco::exprInc(dist, -dist_grad_b.dot(dofvals0));
-        }
-        else
-        {
-          sco::exprInc(dist, sco::varDot(dist_grad_b, vars1));
-          sco::exprInc(dist, -dist_grad_b.dot(dofvals1));
-        }
-      }
-
       exprs.push_back(dist);
     }
   }

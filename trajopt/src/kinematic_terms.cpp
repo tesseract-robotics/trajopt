@@ -523,6 +523,7 @@ MatrixXd AvoidSingularityJacCalculator::operator()(const VectorXd& var_vals) con
 
 VectorXd AvoidSingularitySubsetErrCalculator::operator()(const VectorXd& var_vals) const
 {
+  UNUSED(var_vals);
   // Get the subset of the input variable values
   VectorXd subset_var_vals(fwd_kin_->numJoints());
   assert(getSubset(superset_kin_->getJointNames(), var_vals, fwd_kin_->getJointNames(), subset_var_vals) == true);
@@ -533,6 +534,7 @@ VectorXd AvoidSingularitySubsetErrCalculator::operator()(const VectorXd& var_val
 
 MatrixXd AvoidSingularitySubsetJacCalculator::operator()(const VectorXd& var_vals) const
 {
+  UNUSED(var_vals);
   // Calculate the gradient using the subset kinematics
   VectorXd subset_var_vals(fwd_kin_->numJoints());
   assert(getSubset(superset_kin_->getJointNames(), var_vals, fwd_kin_->getJointNames(), subset_var_vals) == true);
