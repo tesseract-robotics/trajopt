@@ -41,6 +41,35 @@ enum class CollisionExpressionEvaluatorType
   SINGLE_TIME_STEP_WEIGHTED_SUM = 7
 };
 
+/** @brief A data structure to contain a links gradient results */
+struct LinkGradientResults
+{
+  /** @brief Indicates if gradient results are available */
+  bool has_gradient{ false };
+
+  /** @brief Gradient Results */
+  Eigen::VectorXd gradient;
+
+  /** @brief Gradient Scale */
+  double scale{ 1.0 };
+};
+
+/** @brief A data structure to contain a link pair gradient results */
+struct GradientResults
+{
+  /**
+   * @brief Construct the GradientResults
+   * @param data The link pair safety margin data
+   */
+  GradientResults(const Eigen::Vector2d& data) : data(data) {}
+
+  /** @brief The gradient results data for LinkA and LinkB */
+  LinkGradientResults gradients[2];
+
+  /** @brief The link pair safety margin data */
+  const Eigen::Vector2d& data;
+};
+
 /**
  * @brief Base class for collision evaluators containing function that are commonly used between them.
  *
@@ -128,6 +157,56 @@ struct CollisionEvaluator
    * @param x Optimizer variables
    */
   void GetCollisionsCached(const DblVec& x, tesseract_collision::ContactResultMap&);
+
+  /**
+   * @brief Extracts the gradient information based on the contact results
+   * @param dofvals The joint values
+   * @param contact_result The contact results to compute the gradient
+   * @param data Data associated with the link pair the contact results associated with.
+   * @param isTimestep1 Indicates if this is the second timestep when computing gradient for continuous collision
+   * @return The gradient results
+   */
+  GradientResults GetGradient(const Eigen::VectorXd& dofvals,
+                              const tesseract_collision::ContactResult& contact_result,
+                              const Eigen::Vector2d& data,
+                              bool isTimestep1);
+
+  /**
+   * @brief Extracts the gradient information based on the contact results
+   * @param dofvals The joint values
+   * @param contact_result The contact results to compute the gradient
+   * @param isTimestep1 Indicates if this is the second timestep when computing gradient for continuous collision
+   * @return The gradient results
+   */
+  GradientResults GetGradient(const Eigen::VectorXd& dofvals,
+                              const tesseract_collision::ContactResult& contact_result,
+                              bool isTimestep1);
+
+  /**
+   * @brief Extracts the gradient information based on the contact results
+   * @param dofvals The joint values
+   * @param contact_result The contact results to compute the gradient
+   * @param data Data associated with the link pair the contact results associated with.
+   * @param isTimestep1 Indicates if this is the second timestep when computing gradient for continuous collision
+   * @return The gradient results
+   */
+  GradientResults GetGradient(const Eigen::VectorXd& dofvals0,
+                              const Eigen::VectorXd& dofvals1,
+                              const tesseract_collision::ContactResult& contact_result,
+                              const Eigen::Vector2d& data,
+                              bool isTimestep1);
+
+  /**
+   * @brief Extracts the gradient information based on the contact results
+   * @param dofvals The joint values
+   * @param contact_result The contact results to compute the gradient
+   * @param isTimestep1 Indicates if this is the second timestep when computing gradient for continuous collision
+   * @return The gradient results
+   */
+  GradientResults GetGradient(const Eigen::VectorXd& dofvals0,
+                              const Eigen::VectorXd& dofvals1,
+                              const tesseract_collision::ContactResult& contact_result,
+                              bool isTimestep1);
 
   /**
    * @brief Get the safety margin information.
