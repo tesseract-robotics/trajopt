@@ -141,7 +141,10 @@ TEST_F(PlanningTest, arm_around_table)  // NOLINT
 
   //  plotter_->plotScene();
 
-  TrajOptProb::Ptr prob = ConstructProblem(root, tesseract_);
+  ProblemConstructionInfo pci(tesseract_);
+  pci.fromJson(root);
+  pci.basic_info.convex_solver = sco::ModelType::BPMPD;
+  TrajOptProb::Ptr prob = ConstructProblem(pci);
   ASSERT_TRUE(!!prob);
 
   std::vector<ContactResultMap> collisions;
