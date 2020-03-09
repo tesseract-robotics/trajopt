@@ -33,6 +33,7 @@ OSQPModel::OSQPModel() : P_(nullptr), A_(nullptr)
   osqp_settings_.max_iter = 8192;
   osqp_settings_.polish = 1;
   osqp_settings_.verbose = false;
+  osqp_settings_.adaptive_rho = false;
 }
 OSQPModel::~OSQPModel()
 {
