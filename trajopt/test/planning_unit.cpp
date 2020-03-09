@@ -143,7 +143,7 @@ TEST_F(PlanningTest, arm_around_table)  // NOLINT
 
   ProblemConstructionInfo pci(tesseract_);
   pci.fromJson(root);
-  pci.basic_info.convex_solver = sco::ModelType::BPMPD;
+  pci.basic_info.convex_solver = sco::ModelType::OSQP;
   TrajOptProb::Ptr prob = ConstructProblem(pci);
   ASSERT_TRUE(!!prob);
 
