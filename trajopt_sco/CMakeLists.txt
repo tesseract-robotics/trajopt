@@ -66,7 +66,7 @@ add_library(${PROJECT_NAME} SHARED ${SCO_SOURCE_FILES})
 
 if (GUROBI_FOUND)
   target_link_libraries(${PROJECT_NAME} PRIVATE ${GUROBI_LIBRARIES})
-  target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE ${GUROBI_INCLUDE_DIR})
+  target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE ${GUROBI_INCLUDE_DIRS})
   target_compile_definitions(${PROJECT_NAME} PRIVATE HAVE_GUROBI=ON)
 endif()
 if (HAVE_BPMPD)
