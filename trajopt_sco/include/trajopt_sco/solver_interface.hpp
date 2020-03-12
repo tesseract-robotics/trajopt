@@ -232,9 +232,13 @@ std::ostream& operator<<(std::ostream& os, const ModelType& cs);
 
 Model::Ptr createModel(ModelType model_type = ModelType::AUTO_SOLVER);
 
-SizeTVec vars2inds(const VarVector& vars);
+void vars2inds(const VarVector& varsm, SizeTVec &inds);
 
-SizeTVec cnts2inds(const CntVector& cnts);
+void vars2inds(const VarVector& varsm, IntVec &inds);
+
+void cnts2inds(const CntVector& cnts, SizeTVec &inds);
+
+void cnts2inds(const CntVector& cnts, IntVec &inds);
 
 /**
  * @brief simplify2 gets as input a list of indices, corresponding to non-zero

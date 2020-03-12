@@ -68,14 +68,16 @@ Cnt qpOASESModel::addIneqCnt(const QuadExpr&, const std::string& /*name*/)
 
 void qpOASESModel::removeVars(const VarVector& vars)
 {
-  IntVec inds = vars2inds(vars);
+  IntVec inds;
+  vars2inds(vars, inds);
   for (unsigned i = 0; i < vars.size(); ++i)
     vars[i].var_rep->removed = true;
 }
 
 void qpOASESModel::removeCnts(const CntVector& cnts)
 {
-  IntVec inds = cnts2inds(cnts);
+  IntVec inds;
+  cnts2inds(cnts, inds);
   for (unsigned i = 0; i < cnts.size(); ++i)
     cnts[i].cnt_rep->removed = true;
 }

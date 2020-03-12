@@ -74,14 +74,16 @@ Cnt OSQPModel::addIneqCnt(const QuadExpr&, const std::string& /*name*/)
 
 void OSQPModel::removeVars(const VarVector& vars)
 {
-  SizeTVec inds = vars2inds(vars);
+  SizeTVec inds;
+  vars2inds(vars, inds);
   for (auto& var : vars)
     var.var_rep->removed = true;
 }
 
 void OSQPModel::removeCnts(const CntVector& cnts)
 {
-  SizeTVec inds = cnts2inds(cnts);
+  SizeTVec inds;
+  cnts2inds(cnts, inds);
   for (auto& cnt : cnts)
     cnt.cnt_rep->removed = true;
 }
