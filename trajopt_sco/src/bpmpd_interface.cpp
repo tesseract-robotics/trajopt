@@ -261,14 +261,16 @@ Cnt BPMPDModel::addIneqCnt(const QuadExpr&, const std::string& /*name*/)
 }
 void BPMPDModel::removeVars(const VarVector& vars)
 {
-  SizeTVec inds = vars2inds(vars);
+  SizeTVec inds;
+  vars2inds(vars, inds);
   for (const auto& var : vars)
     var.var_rep->removed = true;
 }
 
 void BPMPDModel::removeCnts(const CntVector& cnts)
 {
-  SizeTVec inds = cnts2inds(cnts);
+  SizeTVec inds;
+  cnts2inds(cnts, inds);
   for (auto& cnt : cnts)
     cnt.cnt_rep->removed = true;
 }
@@ -371,7 +373,8 @@ CvxOptStatus BPMPDModel::optimize()
   {
     const AffExpr& aff = m_cntExprs[iCnt];
     // cout << "adding constraint " << aff << endl;
-    SizeTVec inds = vars2inds(aff.vars);
+    SizeTVec inds;
+    vars2inds(aff.vars, inds);
 
     for (size_t i = 0; i < aff.vars.size(); ++i)
     {

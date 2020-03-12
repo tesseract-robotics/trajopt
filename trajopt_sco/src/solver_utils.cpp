@@ -35,8 +35,10 @@ void exprToEigen(const QuadExpr& expr,
                  const bool& matrix_is_halved,
                  const bool& force_diagonal)
 {
-  SizeTVec ind1 = vars2inds(expr.vars1);
-  SizeTVec ind2 = vars2inds(expr.vars2);
+  SizeTVec ind1;
+  vars2inds(expr.vars1, ind1);
+  SizeTVec ind2;
+  vars2inds(expr.vars2, ind2);
   sparse_matrix.resize(n_vars, n_vars);
   sparse_matrix.reserve(static_cast<long int>(2 * expr.size()));
 

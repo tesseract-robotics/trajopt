@@ -99,7 +99,8 @@ Var GurobiModel::addVar(const std::string& name, double lb, double ub)
 Cnt GurobiModel::addEqCnt(const AffExpr& expr, const std::string& name)
 {
   LOG_TRACE("adding eq constraint: %s = 0", CSTR(expr));
-  IntVec inds = vars2inds(expr.vars);
+  IntVec inds;
+  vars2inds(expr.vars, inds);
   DblVec vals = expr.coeffs;
   simplify2(inds, vals);
   ENSURE_SUCCESS(GRBaddconstr(m_model,
@@ -115,7 +116,8 @@ Cnt GurobiModel::addEqCnt(const AffExpr& expr, const std::string& name)
 Cnt GurobiModel::addIneqCnt(const AffExpr& expr, const std::string& name)
 {
   LOG_TRACE("adding ineq: %s <= 0", CSTR(expr));
-  IntVec inds = vars2inds(expr.vars);
+  IntVec inds;
+  vars2inds(expr.vars, inds);
   DblVec vals = expr.coeffs;
   simplify2(inds, vals);
   ENSURE_SUCCESS(GRBaddconstr(
@@ -126,10 +128,13 @@ Cnt GurobiModel::addIneqCnt(const AffExpr& expr, const std::string& name)
 Cnt GurobiModel::addIneqCnt(const QuadExpr& qexpr, const std::string& name)
 {
   int numlnz = qexpr.affexpr.size();
-  IntVec linds = vars2inds(qexpr.affexpr.vars);
+  IntVec linds;
+  vars2inds(qexpr.affexpr.vars, linds);
   DblVec lvals = qexpr.affexpr.coeffs;
-  IntVec inds1 = vars2inds(qexpr.vars1);
-  IntVec inds2 = vars2inds(qexpr.vars2);
+  IntVec inds1;
+  vars2inds(qexpr.vars1, inds1);
+  IntVec inds2;
+  vars2inds(qexpr.vars2, inds2);
   ENSURE_SUCCESS(GRBaddqconstr(m_model,
                                numlnz,
                                linds.data(),
@@ -157,7 +162,8 @@ void resetIndices(CntVector& cnts)
 
 void GurobiModel::removeVars(const VarVector& vars)
 {
-  IntVec inds = vars2inds(vars);
+  IntVec inds;
+  vars2inds(vars, inds);
   ENSURE_SUCCESS(GRBdelvars(m_model, inds.size(), inds.data()));
   for (int i = 0; i < vars.size(); ++i)
     vars[i].var_rep->removed = true;
@@ -165,7 +171,8 @@ void GurobiModel::removeVars(const VarVector& vars)
 
 void GurobiModel::removeCnts(const CntVector& cnts)
 {
-  IntVec inds = cnts2inds(cnts);
+  IntVec inds;
+  cnts2inds(cnts, inds);
   ENSURE_SUCCESS(GRBdelconstrs(m_model, inds.size(), inds.data()));
   for (int i = 0; i < cnts.size(); ++i)
     cnts[i].cnt_rep->removed = true;
@@ -182,7 +189,8 @@ void GurobiModel::setVarBounds(const Var& var, double lower, double upper) {
 void GurobiModel::setVarBounds(const VarVector& vars, const DblVec& lower, const DblVec& upper)
 {
   assert(vars.size() == lower.size() && vars.size() == upper.size());
-  IntVec inds = vars2inds(vars);
+  IntVec inds;
+  vars2inds(vars, inds);
   ENSURE_SUCCESS(
       GRBsetdblattrlist(m_model, GRB_DBL_ATTR_LB, inds.size(), inds.data(), const_cast<double*>(lower.data())));
   ENSURE_SUCCESS(
@@ -201,7 +209,8 @@ double GurobiModel::getVarValue(const Var& var) const {
 DblVec GurobiModel::getVarValues(const VarVector& vars) const
 {
   assert((vars.size() == 0) || (vars[0].var_rep->creator == this));
-  IntVec inds = vars2inds(vars);
+  IntVec inds;
+  vars2inds(vars, inds);
   DblVec out(inds.size());
   ENSURE_SUCCESS(GRBgetdblattrlist(m_model, GRB_DBL_ATTR_X, inds.size(), inds.data(), out.data()));
   return out;
@@ -255,8 +264,10 @@ void GurobiModel::setObjective(const AffExpr& expr)
 void GurobiModel::setObjective(const QuadExpr& quad_expr)
 {
   setObjective(quad_expr.affexpr);
-  IntVec inds1 = vars2inds(quad_expr.vars1);
-  IntVec inds2 = vars2inds(quad_expr.vars2);
+  IntVec inds1;
+  vars2inds(quad_expr.vars1, inds1);
+  IntVec inds2;
+  vars2inds(quad_expr.vars2, inds2);
   GRBaddqpterms(m_model,
                 quad_expr.coeffs.size(),
                 const_cast<int*>(inds1.data()),
