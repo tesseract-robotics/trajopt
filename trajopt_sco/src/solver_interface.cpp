@@ -24,7 +24,7 @@ void vars2inds(const VarVector& vars, IntVec &inds)
 {
   inds = IntVec(vars.size());
   for (size_t i = 0; i < inds.size(); ++i)
-    inds[i] = vars[i].var_rep->index;
+    inds[i] = static_cast<int>(vars[i].var_rep->index);
 }
 
 void cnts2inds(const CntVector& cnts, SizeTVec &inds)
@@ -38,7 +38,7 @@ void cnts2inds(const CntVector& cnts, IntVec &inds)
 {
   inds = IntVec(cnts.size());
   for (size_t i = 0; i < inds.size(); ++i)
-    inds[i] = cnts[i].cnt_rep->index;
+    inds[i] = static_cast<int>(cnts[i].cnt_rep->index);
 }
 
 void simplify2(IntVec& inds, DblVec& vals)
