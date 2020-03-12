@@ -120,8 +120,13 @@ Cnt GurobiModel::addIneqCnt(const AffExpr& expr, const std::string& name)
   vars2inds(expr.vars, inds);
   DblVec vals = expr.coeffs;
   simplify2(inds, vals);
-  ENSURE_SUCCESS(GRBaddconstr(
-      m_model, static_cast<int>(inds.size()), inds.data(), vals.data(), GRB_LESS_EQUAL, -expr.constant, const_cast<char*>(name.c_str())));
+  ENSURE_SUCCESS(GRBaddconstr(m_model,
+                              static_cast<int>(inds.size()),
+                              inds.data(),
+                              vals.data(),
+                              GRB_LESS_EQUAL,
+                              -expr.constant,
+                              const_cast<char*>(name.c_str())));
   m_cnts.push_back(new CntRep(m_cnts.size(), this));
   return m_cnts.back();
 }
@@ -191,10 +196,10 @@ void GurobiModel::setVarBounds(const VarVector& vars, const DblVec& lower, const
   assert(vars.size() == lower.size() && vars.size() == upper.size());
   IntVec inds;
   vars2inds(vars, inds);
-  ENSURE_SUCCESS(
-      GRBsetdblattrlist(m_model, GRB_DBL_ATTR_LB, static_cast<int>(inds.size()), inds.data(), const_cast<double*>(lower.data())));
-  ENSURE_SUCCESS(
-      GRBsetdblattrlist(m_model, GRB_DBL_ATTR_UB, static_cast<int>(inds.size()), inds.data(), const_cast<double*>(upper.data())));
+  ENSURE_SUCCESS(GRBsetdblattrlist(
+      m_model, GRB_DBL_ATTR_LB, static_cast<int>(inds.size()), inds.data(), const_cast<double*>(lower.data())));
+  ENSURE_SUCCESS(GRBsetdblattrlist(
+      m_model, GRB_DBL_ATTR_UB, static_cast<int>(inds.size()), inds.data(), const_cast<double*>(upper.data())));
 }
 
 #if 0
