@@ -60,6 +60,7 @@ struct SafetyMarginData
     : default_safety_margin_data_(default_safety_margin, default_safety_margin_coeff)
     , max_safety_margin_(default_safety_margin)
   {
+    negative_collisions_ = (default_safety_margin < 0) ? true : false;
   }
 
   /**
@@ -88,6 +89,7 @@ struct SafetyMarginData
     {
       max_safety_margin_ = safety_margin;
     }
+    negative_collisions_ = (safety_margin < 0) ? true : false;
   }
 
   /**
@@ -121,6 +123,15 @@ struct SafetyMarginData
    */
   const double& getMaxSafetyMargin() const { return max_safety_margin_; }
 
+  /**
+   * @brief Get if there are negative collisions allowed
+   *
+   * This used when checking if a more refined collision check is required.
+   *
+   * @return negative collisions allowed bool
+   */
+  const bool& getNegativeCollisions() const { return negative_collisions_; }
+
 private:
   /// The coeff used during optimization
   /// safety margin: contacts with distance < dist_pen are penalized
@@ -130,6 +141,9 @@ private:
   /// This use when requesting collision data because you can only provide a
   /// single contact distance threshold.
   double max_safety_margin_;
+
+  // This is used to check if there are negative collisions allowed
+  bool negative_collisions_ = false;
 
   /// A map of link pair to contact distance setting [dist_pen, coeff]
   AlignedUnorderedMap<std::string, Eigen::Vector2d> pair_lookup_table_;
