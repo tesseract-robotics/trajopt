@@ -89,7 +89,7 @@ struct SafetyMarginData
     {
       max_safety_margin_ = safety_margin;
     }
-    negative_collisions_ = (safety_margin < 0) ? true : false;
+    negative_collisions_ = (safety_margin < 0) ? true : negative_collisions_;
   }
 
   /**
