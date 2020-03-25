@@ -389,6 +389,12 @@ public:
                            sco::AffExprVector& exprs,
                            AlignedVector<Eigen::Vector2d>& exprs_data) override;
   void CalcCollisions(const DblVec& x, tesseract_collision::ContactResultMap& dist_results) override;
+  /**
+   * @brief Given joint names and values calculate the collision results for this evaluator
+   * @param dof_vals Joint values set prior to collision checking
+   * @param dist_results Contact Results Map
+   */
+  void CalcCollisions(const Eigen::Ref<Eigen::VectorXd>& dof_vals, tesseract_collision::ContactResultMap& dist_results);
   void Plot(const tesseract_visualization::Visualization::Ptr& plotter, const DblVec& x) override;
   sco::VarVector GetVars() override { return vars0_; }
 
@@ -419,6 +425,15 @@ public:
                            sco::AffExprVector& exprs,
                            AlignedVector<Eigen::Vector2d>& exprs_data) override;
   void CalcCollisions(const DblVec& x, tesseract_collision::ContactResultMap& dist_results) override;
+  /**
+   * @brief Given joint names and values calculate the collision results for this evaluator
+   * @param dof_vals0 Joint values for state0
+   * @param dof_vals1 Joint values for state1
+   * @param dist_results Contact Results Map
+   */
+  void CalcCollisions(const Eigen::Ref<Eigen::VectorXd>& dof_vals0,
+                      const Eigen::Ref<Eigen::VectorXd>& dof_vals1,
+                      tesseract_collision::ContactResultMap& dist_results);
   void Plot(const tesseract_visualization::Visualization::Ptr& plotter, const DblVec& x) override;
   sco::VarVector GetVars() override { return concat(vars0_, vars1_); }
 
@@ -449,6 +464,15 @@ public:
                            sco::AffExprVector& exprs,
                            AlignedVector<Eigen::Vector2d>& exprs_data) override;
   void CalcCollisions(const DblVec& x, tesseract_collision::ContactResultMap& dist_results) override;
+  /**
+   * @brief Given joint names and values calculate the collision results for this evaluator
+   * @param dof_vals0 Joint values for state0
+   * @param dof_vals1 Joint values for state1
+   * @param dist_results Contact Results Map
+   */
+  void CalcCollisions(const Eigen::Ref<Eigen::VectorXd>& dof_vals0,
+                      const Eigen::Ref<Eigen::VectorXd>& dof_vals1,
+                      tesseract_collision::ContactResultMap& dist_results);
   void Plot(const tesseract_visualization::Visualization::Ptr& plotter, const DblVec& x) override;
   sco::VarVector GetVars() override { return concat(vars0_, vars1_); }
 

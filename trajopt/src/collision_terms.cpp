@@ -934,7 +934,14 @@ SingleTimestepCollisionEvaluator::SingleTimestepCollisionEvaluator(
 void SingleTimestepCollisionEvaluator::CalcCollisions(const DblVec& x,
                                                       tesseract_collision::ContactResultMap& dist_results)
 {
-  tesseract_environment::EnvState::Ptr state = state_solver_->getState(manip_->getJointNames(), sco::getVec(x, vars0_));
+  Eigen::VectorXd joint_vals = sco::getVec(x, vars0_);
+  CalcCollisions(joint_vals, dist_results);
+}
+
+void SingleTimestepCollisionEvaluator::CalcCollisions(const Eigen::Ref<Eigen::VectorXd>& dof_vals,
+                                                      tesseract_collision::ContactResultMap& dist_results)
+{
+  tesseract_environment::EnvState::Ptr state = state_solver_->getState(manip_->getJointNames(), dof_vals);
 
   for (const auto& link_name : adjacency_map_->getActiveLinkNames())
     contact_manager_->setCollisionObjectsTransform(link_name, state->transforms[link_name]);
@@ -1098,11 +1105,17 @@ void DiscreteCollisionEvaluator::CalcCollisions(const DblVec& x, tesseract_colli
 {
   Eigen::VectorXd s0 = sco::getVec(x, vars0_);
   Eigen::VectorXd s1 = sco::getVec(x, vars1_);
+  CalcCollisions(s0, s1, dist_results);
+}
 
+void DiscreteCollisionEvaluator::CalcCollisions(const Eigen::Ref<Eigen::VectorXd>& dof_vals0,
+                                                const Eigen::Ref<Eigen::VectorXd>& dof_vals1,
+                                                tesseract_collision::ContactResultMap& dist_results)
+{
   // The first step is to see if the distance between two states is larger than the longest valid segment. If larger
   // the collision checking is broken up into multiple casted collision checks such that each check is less then
   // the longest valid segment length.
-  double dist = (s1 - s0).norm();
+  double dist = (dof_vals1 - dof_vals0).norm();
   long cnt = 2;
   if (dist > longest_valid_segment_length_)
   {
@@ -1114,9 +1127,9 @@ void DiscreteCollisionEvaluator::CalcCollisions(const DblVec& x, tesseract_colli
   const std::vector<std::string>& active_links = adjacency_map_->getActiveLinkNames();
 
   // Create interpolated trajectory between two states that satisfies the longest valid segment length.
-  tesseract_common::TrajArray subtraj(cnt, s0.size());
-  for (long i = 0; i < s0.size(); ++i)
-    subtraj.col(i) = Eigen::VectorXd::LinSpaced(cnt, s0(i), s1(i));
+  tesseract_common::TrajArray subtraj(cnt, dof_vals0.size());
+  for (long i = 0; i < dof_vals0.size(); ++i)
+    subtraj.col(i) = Eigen::VectorXd::LinSpaced(cnt, dof_vals0(i), dof_vals1(i));
 
   // Perform casted collision checking for sub trajectory and store results in contacts_vector
   std::vector<tesseract_collision::ContactResultMap> contacts_vector;
@@ -1327,20 +1340,26 @@ void CastCollisionEvaluator::CalcCollisions(const DblVec& x, tesseract_collision
 {
   Eigen::VectorXd s0 = sco::getVec(x, vars0_);
   Eigen::VectorXd s1 = sco::getVec(x, vars1_);
+  CalcCollisions(s0, s1, dist_results);
+}
 
+void CastCollisionEvaluator::CalcCollisions(const Eigen::Ref<Eigen::VectorXd>& dof_vals0,
+                                            const Eigen::Ref<Eigen::VectorXd>& dof_vals1,
+                                            tesseract_collision::ContactResultMap& dist_results)
+{
   // The first step is to see if the distance between two states is larger than the longest valid segment. If larger
   // the collision checking is broken up into multiple casted collision checks such that each check is less then
   // the longest valid segment length.
-  double dist = (s1 - s0).norm();
+  double dist = (dof_vals1 - dof_vals0).norm();
   if (dist > longest_valid_segment_length_)
   {
     // Calculate the number state to interpolate
     long cnt = static_cast<long>(std::ceil(dist / longest_valid_segment_length_)) + 1;
 
     // Create interpolated trajectory between two states that satisfies the longest valid segment length.
-    tesseract_common::TrajArray subtraj(cnt, s0.size());
-    for (long i = 0; i < s0.size(); ++i)
-      subtraj.col(i) = Eigen::VectorXd::LinSpaced(cnt, s0(i), s1(i));
+    tesseract_common::TrajArray subtraj(cnt, dof_vals0.size());
+    for (long i = 0; i < dof_vals0.size(); ++i)
+      subtraj.col(i) = Eigen::VectorXd::LinSpaced(cnt, dof_vals0(i), dof_vals1(i));
 
     // Perform casted collision checking for sub trajectory and store results in contacts_vector
     std::vector<tesseract_collision::ContactResultMap> contacts_vector;
@@ -1369,8 +1388,8 @@ void CastCollisionEvaluator::CalcCollisions(const DblVec& x, tesseract_collision
   }
   else
   {
-    tesseract_environment::EnvState::Ptr state0 = state_solver_->getState(manip_->getJointNames(), s0);
-    tesseract_environment::EnvState::Ptr state1 = state_solver_->getState(manip_->getJointNames(), s1);
+    tesseract_environment::EnvState::Ptr state0 = state_solver_->getState(manip_->getJointNames(), dof_vals0);
+    tesseract_environment::EnvState::Ptr state1 = state_solver_->getState(manip_->getJointNames(), dof_vals1);
     for (const auto& link_name : adjacency_map_->getActiveLinkNames())
       contact_manager_->setCollisionObjectsTransform(
           link_name, state0->transforms[link_name], state1->transforms[link_name]);
