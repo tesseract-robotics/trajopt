@@ -73,7 +73,19 @@ The puzzle piece examples show a small collaborative robot manipulaing a puzzle 
 ![Puzzle Piece](gh_pages/_static/example_gifs/puzzle_piece.gif)  ![Puzzle Piece Aux Axes](gh_pages/_static/example_gifs/puzzle_piece_with_positioner.gif)
 
 
+## Building with Clang-Tidy Enabled
 
+Must pass the -DTRAJOPT_ENABLE_CLANG_TIDY=ON to cmake when building. This is automatically enabled if cmake argument -DTRAJOPT_ENABLE_CLANG_TIDY=ON is passed.
+
+## Building TrajOpt Tests
+
+Must pass the -DTRAJOPT_ENABLE_TESTING=ON to cmake when wanting to build tests. This is automatically enabled if cmake argument -DTRAJOPT_ENABLE_TESTING_ALL=ON is passed.
+
+.. NOTE: If you are building using catkin tools, use `catkin build --force-cmake -DTRAJOPT_ENABLE_TESTING=ON`.
+
+## Running TrajOpt Tests
+
+TrajOpt packages use ctest because it is ROS agnostic, so to run the test call `catkin test --no-deps trajopt trajopt_sco`
 
 
 ## Build Branch Sphinx Documentation

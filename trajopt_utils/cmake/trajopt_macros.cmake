@@ -82,7 +82,7 @@ macro(trajopt_target_compile_options target)
   endif()
 endmacro()
 
-# Add clang-tidy to a target if ENABLE_CLANG_TIDY or ENABLE_TESTS is enabled
+# Add clang-tidy to a target if TRAJOPT_ENABLE_CLANG_TIDY or TRAJOPT_ENABLE_TESTING is enabled
 # Usage: tesseract_clang_tidy(Target) or tesseract_clang_tidy(Target true) or tesseract_clang_tidy(Target false)
 #    * tesseract_clang_tidy(Target) adds clang tidy with warnings as errors
 #    * tesseract_clang_tidy(Target true) adds clang tidy with warnings as errors
