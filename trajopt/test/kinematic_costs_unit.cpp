@@ -79,12 +79,12 @@ TEST_F(KinematicCostsTest, CartPoseJacCalculator)  // NOLINT
 
   auto env = tesseract_->getEnvironment();
   auto kin = tesseract_->getFwdKinematicsManager()->getFwdKinematicSolver("right_arm");
-  auto world_to_base = env->getCurrentState()->transforms.at(kin->getBaseLinkName());
+  auto world_to_base = env->getCurrentState()->link_transforms.at(kin->getBaseLinkName());
   auto adjacency_map = std::make_shared<tesseract_environment::AdjacencyMap>(
-      env->getSceneGraph(), kin->getActiveLinkNames(), env->getCurrentState()->transforms);
+      env->getSceneGraph(), kin->getActiveLinkNames(), env->getCurrentState()->link_transforms);
 
   std::string link = "r_gripper_tool_frame";
-  Eigen::Isometry3d input_pose = tesseract_->getEnvironment()->getCurrentState()->transforms.at(link);
+  Eigen::Isometry3d input_pose = tesseract_->getEnvironment()->getCurrentState()->link_transforms.at(link);
   Eigen::Isometry3d tcp = Eigen::Isometry3d::Identity();
 
   Eigen::VectorXd values(7);
@@ -104,9 +104,9 @@ TEST_F(KinematicCostsTest, DynamicCartPoseJacCalculator)  // NOLINT
   std::unordered_map<std::string, double> j;
   j["l_elbow_flex_joint"] = -0.15;
   env->setState(j);
-  auto world_to_base = env->getCurrentState()->transforms.at(kin->getBaseLinkName());
+  auto world_to_base = env->getCurrentState()->link_transforms.at(kin->getBaseLinkName());
   auto adjacency_map = std::make_shared<tesseract_environment::AdjacencyMap>(
-      env->getSceneGraph(), kin->getActiveLinkNames(), env->getCurrentState()->transforms);
+      env->getSceneGraph(), kin->getActiveLinkNames(), env->getCurrentState()->link_transforms);
 
   std::string link = "r_gripper_tool_frame";
   std::string target = "l_gripper_tool_frame";
