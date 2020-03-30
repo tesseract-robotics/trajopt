@@ -944,7 +944,7 @@ void SingleTimestepCollisionEvaluator::CalcCollisions(const Eigen::Ref<Eigen::Ve
   tesseract_environment::EnvState::Ptr state = state_solver_->getState(manip_->getJointNames(), dof_vals);
 
   for (const auto& link_name : adjacency_map_->getActiveLinkNames())
-    contact_manager_->setCollisionObjectsTransform(link_name, state->transforms[link_name]);
+    contact_manager_->setCollisionObjectsTransform(link_name, state->link_transforms[link_name]);
 
   contact_manager_->contactTest(dist_results, contact_test_type_);
 
@@ -1141,7 +1141,7 @@ void DiscreteCollisionEvaluator::CalcCollisions(const Eigen::Ref<Eigen::VectorXd
     tesseract_environment::EnvState::Ptr state0 = state_solver_->getState(manip_->getJointNames(), subtraj.row(i));
 
     for (const auto& link_name : active_links)
-      contact_manager_->setCollisionObjectsTransform(link_name, state0->transforms[link_name]);
+      contact_manager_->setCollisionObjectsTransform(link_name, state0->link_transforms[link_name]);
 
     contact_manager_->contactTest(contacts, contact_test_type_);
     if (!contacts.empty())
@@ -1374,7 +1374,7 @@ void CastCollisionEvaluator::CalcCollisions(const Eigen::Ref<Eigen::VectorXd>& d
 
       for (const auto& link_name : adjacency_map_->getActiveLinkNames())
         contact_manager_->setCollisionObjectsTransform(
-            link_name, state0->transforms[link_name], state1->transforms[link_name]);
+            link_name, state0->link_transforms[link_name], state1->link_transforms[link_name]);
 
       contact_manager_->contactTest(contacts, contact_test_type_);
       if (!contacts.empty())
@@ -1392,7 +1392,7 @@ void CastCollisionEvaluator::CalcCollisions(const Eigen::Ref<Eigen::VectorXd>& d
     tesseract_environment::EnvState::Ptr state1 = state_solver_->getState(manip_->getJointNames(), dof_vals1);
     for (const auto& link_name : adjacency_map_->getActiveLinkNames())
       contact_manager_->setCollisionObjectsTransform(
-          link_name, state0->transforms[link_name], state1->transforms[link_name]);
+          link_name, state0->link_transforms[link_name], state1->link_transforms[link_name]);
 
     contact_manager_->contactTest(dist_results, contact_test_type_);
 

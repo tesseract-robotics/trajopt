@@ -727,14 +727,14 @@ void DynamicCartPoseTermInfo::hatch(TrajOptProb& prob)
     Eigen::Isometry3d world_to_base = Eigen::Isometry3d::Identity();
     try
     {
-      world_to_base = state->transforms.at(prob.GetKin()->getBaseLinkName());
+      world_to_base = state->link_transforms.at(prob.GetKin()->getBaseLinkName());
     }
     catch (const std::exception&)
     {
       PRINT_AND_THROW(boost::format("Failed to find transform for link '%s'") % prob.GetKin()->getBaseLinkName());
     }
     tesseract_environment::AdjacencyMap::Ptr adjacency_map = std::make_shared<tesseract_environment::AdjacencyMap>(
-        prob.GetEnv()->getSceneGraph(), prob.GetKin()->getActiveLinkNames(), state->transforms);
+        prob.GetEnv()->getSceneGraph(), prob.GetKin()->getActiveLinkNames(), state->link_transforms);
 
     sco::VectorOfVector::Ptr f(new DynamicCartPoseErrCalculator(
         target, prob.GetKin(), adjacency_map, world_to_base, link, tcp, target_tcp, indices));
@@ -827,7 +827,7 @@ void CartPoseTermInfo::hatch(TrajOptProb& prob)
   Eigen::Isometry3d world_to_base = Eigen::Isometry3d::Identity();
   try
   {
-    world_to_base = state->transforms.at(prob.GetKin()->getBaseLinkName());
+    world_to_base = state->link_transforms.at(prob.GetKin()->getBaseLinkName());
   }
   catch (const std::exception&)
   {
@@ -839,7 +839,7 @@ void CartPoseTermInfo::hatch(TrajOptProb& prob)
   {
     try
     {
-      world_to_target = state->transforms.at(target);
+      world_to_target = state->link_transforms.at(target);
     }
     catch (const std::exception& ex)
     {
@@ -848,7 +848,7 @@ void CartPoseTermInfo::hatch(TrajOptProb& prob)
   }
 
   tesseract_environment::AdjacencyMap::Ptr adjacency_map = std::make_shared<tesseract_environment::AdjacencyMap>(
-      prob.GetEnv()->getSceneGraph(), prob.GetKin()->getActiveLinkNames(), state->transforms);
+      prob.GetEnv()->getSceneGraph(), prob.GetKin()->getActiveLinkNames(), state->link_transforms);
 
   // Next parse the coeff and if not zero add the indice and coeff
   std::vector<int> ic;
@@ -942,7 +942,7 @@ void CartVelTermInfo::hatch(TrajOptProb& prob)
   Eigen::Isometry3d world_to_base = Eigen::Isometry3d::Identity();
   try
   {
-    world_to_base = state->transforms.at(prob.GetKin()->getBaseLinkName());
+    world_to_base = state->link_transforms.at(prob.GetKin()->getBaseLinkName());
   }
   catch (const std::exception&)
   {
@@ -950,7 +950,7 @@ void CartVelTermInfo::hatch(TrajOptProb& prob)
   }
 
   tesseract_environment::AdjacencyMap::Ptr adjacency_map = std::make_shared<tesseract_environment::AdjacencyMap>(
-      prob.GetEnv()->getSceneGraph(), prob.GetKin()->getActiveLinkNames(), state->transforms);
+      prob.GetEnv()->getSceneGraph(), prob.GetKin()->getActiveLinkNames(), state->link_transforms);
 
   if (term_type == (TT_COST | TT_USE_TIME))
   {
@@ -1684,7 +1684,7 @@ void CollisionTermInfo::hatch(TrajOptProb& prob)
   Eigen::Isometry3d world_to_base = Eigen::Isometry3d::Identity();
   try
   {
-    world_to_base = state->transforms.at(prob.GetKin()->getBaseLinkName());
+    world_to_base = state->link_transforms.at(prob.GetKin()->getBaseLinkName());
   }
   catch (const std::exception&)
   {
@@ -1692,7 +1692,7 @@ void CollisionTermInfo::hatch(TrajOptProb& prob)
   }
 
   tesseract_environment::AdjacencyMap::Ptr adjacency_map = std::make_shared<tesseract_environment::AdjacencyMap>(
-      prob.GetEnv()->getSceneGraph(), prob.GetKin()->getActiveLinkNames(), state->transforms);
+      prob.GetEnv()->getSceneGraph(), prob.GetKin()->getActiveLinkNames(), state->link_transforms);
 
   if (term_type == TT_COST)
   {

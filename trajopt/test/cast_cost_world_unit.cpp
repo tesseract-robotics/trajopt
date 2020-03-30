@@ -100,7 +100,7 @@ TEST_F(CastWorldTest, boxes)  // NOLINT
 
   AdjacencyMap::Ptr adjacency_map = std::make_shared<AdjacencyMap>(tesseract_->getEnvironment()->getSceneGraph(),
                                                                    prob->GetKin()->getActiveLinkNames(),
-                                                                   prob->GetEnv()->getCurrentState()->transforms);
+                                                                   prob->GetEnv()->getCurrentState()->link_transforms);
 
   manager->setActiveCollisionObjects(adjacency_map->getActiveLinkNames());
   manager->setContactDistanceThreshold(0);
