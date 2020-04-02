@@ -58,3 +58,9 @@ if (TRAJOPT_ENABLE_TESTING)
   trajopt_add_run_tests_target()
   add_subdirectory(test)
 endif()
+
+if (TRAJOPT_ENABLE_BENCHMARKING)
+#  trajopt_add_run_benchmarks_target()
+  add_subdirectory(test/benchmarks)
+endif()
+
