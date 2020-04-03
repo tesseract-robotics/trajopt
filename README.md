@@ -87,6 +87,11 @@ Must pass the -DTRAJOPT_ENABLE_TESTING=ON to cmake when wanting to build tests. 
 
 TrajOpt packages use ctest because it is ROS agnostic, so to run the test call `catkin test --no-deps trajopt trajopt_sco`
 
+## TrajOpt Benchmarks
+
+TrajOpt's Google benchmarks can be built by building with the flag `DTRAJOPT_ENABLE_BENCHMARKING=ON`.
+
+To run the benchmarks at compile time and save the results to a json file in the build directory, add the flag `-DTRAJOPT_ENABLE_RUN_BENCHMARKING=ON`
 
 ## Build Branch Sphinx Documentation
 
