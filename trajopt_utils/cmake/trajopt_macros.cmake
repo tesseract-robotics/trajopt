@@ -166,3 +166,17 @@ macro(trajopt_add_run_tests_target)
     add_custom_target(run_tests)
   endif()
 endmacro()
+
+# This macro add a custom target that will run the benchmarks after they are finished building.
+# Usage: trajopt_add_run_benchmark_target(benchmark_name)
+# Results are saved to /test/benchmarks/${benchmark_name}_results.json in the build directory
+macro(trajopt_add_run_benchmark_target benchmark_name)
+  if(TRAJOPT_ENABLE_RUN_BENCHMARKING)
+    add_custom_target(run_benchmark_${benchmark_name} ALL
+        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+        COMMAND ./test/benchmarks/${benchmark_name} --benchmark_out_format=json --benchmark_out="./test/benchmarks/${benchmark_name}_results.json")
+  else()
+    add_custom_target(run_benchmark_${benchmark_name})
+  endif()
+  add_dependencies(run_benchmark_${benchmark_name} ${benchmark_name})
+endmacro()
