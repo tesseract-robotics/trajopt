@@ -35,12 +35,12 @@ env:
 matrix:
   include:
     - env: ROS_DISTRO=melodic CLANG_FORMAT_CHECK=file CLANG_FORMAT_VERSION=8 AFTER_SCRIPT=""
-    - env: ROS_DISTRO=kinetic DOCKER_IMAGE=lharmstrong/tesseract:kinetic
-    - env: ROS_DISTRO=kinetic ROS_REPO=ros-shadow-fixed DOCKER_IMAGE=lharmstrong/tesseract:kinetic
+    - env: ROS_DISTRO=kinetic DOCKER_IMAGE=lharmstrong/tesseract:kinetic ROSDEP_SKIP_KEYS="bullet3 fcl benchmark"
+    - env: ROS_DISTRO=kinetic ROS_REPO=ros-shadow-fixed DOCKER_IMAGE=lharmstrong/tesseract:kinetic ROSDEP_SKIP_KEYS="bullet3 fcl benchmark"
     - env: ROS_DISTRO=melodic DOCKER_IMAGE=lharmstrong/tesseract:melodic ROS_PARALLEL_JOBS=-j4 ROS_PARALLEL_TEST_JOBS=-j4
     - env: ROS_DISTRO=melodic ROS_REPO=ros-shadow-fixed DOCKER_IMAGE=lharmstrong/tesseract:melodic ROS_PARALLEL_JOBS=-j4 ROS_PARALLEL_TEST_JOBS=-j4
   allow_failures:
-    - env: ROS_DISTRO=kinetic ROS_REPO=ros-shadow-fixed DOCKER_IMAGE=lharmstrong/tesseract:kinetic
+    - env: ROS_DISTRO=kinetic ROS_REPO=ros-shadow-fixed DOCKER_IMAGE=lharmstrong/tesseract:kinetic ROSDEP_SKIP_KEYS="bullet3 fcl benchmark"
     - env: ROS_DISTRO=melodic ROS_REPO=ros-shadow-fixed DOCKER_IMAGE=lharmstrong/tesseract:melodic ROS_PARALLEL_JOBS=-j4 ROS_PARALLEL_TEST_JOBS=-j4
 
 install:
