@@ -1,7 +1,10 @@
+#include <trajopt_utils/macros.h>
+TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <iostream>
 
 #include <ifopt/problem.h>
 #include <ifopt/ipopt_solver.h>
+TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt_ifopt/constraints/joint_position_constraint.h>
 #include <trajopt_ifopt/constraints/joint_velocity_constraint.h>
