@@ -82,6 +82,7 @@ struct CollisionEvaluator
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
   using Ptr = std::shared_ptr<CollisionEvaluator>;
+  using ConstPtr = std::shared_ptr<const CollisionEvaluator>;
 
   CollisionEvaluator(tesseract_kinematics::ForwardKinematics::ConstPtr manip,
                      tesseract_environment::Environment::ConstPtr env,
@@ -369,6 +370,9 @@ private:
 struct SingleTimestepCollisionEvaluator : public CollisionEvaluator
 {
 public:
+  using Ptr = std::shared_ptr<SingleTimestepCollisionEvaluator>;
+  using ConstPtr = std::shared_ptr<const SingleTimestepCollisionEvaluator>;
+
   SingleTimestepCollisionEvaluator(tesseract_kinematics::ForwardKinematics::ConstPtr manip,
                                    tesseract_environment::Environment::ConstPtr env,
                                    tesseract_environment::AdjacencyMap::ConstPtr adjacency_map,
@@ -410,6 +414,9 @@ private:
 struct CastCollisionEvaluator : public CollisionEvaluator
 {
 public:
+  using Ptr = std::shared_ptr<CastCollisionEvaluator>;
+  using ConstPtr = std::shared_ptr<const CastCollisionEvaluator>;
+
   CastCollisionEvaluator(tesseract_kinematics::ForwardKinematics::ConstPtr manip,
                          tesseract_environment::Environment::ConstPtr env,
                          tesseract_environment::AdjacencyMap::ConstPtr adjacency_map,
@@ -449,6 +456,9 @@ private:
 struct DiscreteCollisionEvaluator : public CollisionEvaluator
 {
 public:
+  using Ptr = std::shared_ptr<DiscreteCollisionEvaluator>;
+  using ConstPtr = std::shared_ptr<const DiscreteCollisionEvaluator>;
+
   DiscreteCollisionEvaluator(tesseract_kinematics::ForwardKinematics::ConstPtr manip,
                              tesseract_environment::Environment::ConstPtr env,
                              tesseract_environment::AdjacencyMap::ConstPtr adjacency_map,
