@@ -46,6 +46,20 @@ target_include_directories(${PROJECT_NAME} SYSTEM PUBLIC
 
 trajopt_configure_package(${PROJECT_NAME})
 
+# Install test data directory for use in other packages
+add_library(${PROJECT_NAME}_test_data INTERFACE)
+target_link_libraries(${PROJECT_NAME}_test_data INTERFACE)
+target_compile_definitions(${PROJECT_NAME}_test_data INTERFACE TRAJOPT_DIR="${CMAKE_INSTALL_PREFIX}/share/${PROJECT_NAME}")
+
+trajopt_target_compile_options(${PROJECT_NAME}_test_data INTERFACE)
+trajopt_configure_package(${PROJECT_NAME}_test_data)
+
+foreach(dir test/data)
+   install(DIRECTORY ${dir}/
+      DESTINATION share/${PROJECT_NAME}/${dir})
+endforeach()
+
+
 # Mark cpp header files for installation
 install(DIRECTORY include/${PROJECT_NAME}
   DESTINATION include
