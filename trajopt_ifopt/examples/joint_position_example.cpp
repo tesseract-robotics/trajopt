@@ -10,7 +10,7 @@ TRAJOPT_IGNORE_WARNINGS_POP
 #include <trajopt_ifopt/constraints/joint_velocity_constraint.h>
 #include <trajopt_ifopt/variable_sets/joint_position_variable.h>
 
-int main(int argc, char** argv)
+int main(int /*argc*/, char** /*argv*/)
 {
   // 1) Create the problem
   ifopt::Problem nlp;

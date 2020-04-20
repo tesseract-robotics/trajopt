@@ -1,10 +1,13 @@
 #ifndef TRAJOPT_IFOPT_JOINT_JOINT_VELOCITY_CONSTRAINT_H
 #define TRAJOPT_IFOPT_JOINT_JOINT_VELOCITY_CONSTRAINT_H
 
+#include <trajopt_utils/macros.h>
+TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <ifopt/constraint_set.h>
-#include <trajopt_ifopt/variable_sets/joint_position_variable.h>
-
 #include <Eigen/Eigen>
+TRAJOPT_IGNORE_WARNINGS_POP
+
+#include <trajopt_ifopt/variable_sets/joint_position_variable.h>
 
 namespace trajopt
 {

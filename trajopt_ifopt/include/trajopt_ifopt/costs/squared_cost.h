@@ -1,9 +1,12 @@
 #ifndef TRAJOPT_IFOPT_SQUARED_COST_H
 #define TRAJOPT_IFOPT_SQUARED_COST_H
 
+#include <trajopt_utils/macros.h>
+TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <ifopt/cost_term.h>
 
 #include <Eigen/Eigen>
+TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace trajopt
 {
@@ -22,7 +25,7 @@ namespace trajopt
  *
  * The target of the cost is set to the average of the upper and lower bounds:
  *
- *     target = 1/2 * (upper_ - lower_)
+ *     target = 1/2 * (upper_ + lower_)
  *
  * and
  *
