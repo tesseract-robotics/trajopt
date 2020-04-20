@@ -40,7 +40,7 @@ inline std::string locateResource(const std::string& url)
   return mod_url;
 }
 
-int main(int argc, char** argv)
+int main(int /*argc*/, char** /*argv*/)
 {
   // 1)  Load Robot
   boost::filesystem::path urdf_file(std::string(TRAJOPT_DIR) + "/test/data/arm_around_table.urdf");
