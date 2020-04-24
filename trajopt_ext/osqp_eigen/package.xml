@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>osqp_eigen</name>
+  <version>0.1.0</version>
+  <description>OSQP Package</description>
+  <maintainer email="levi.armstrong@swri.org">Levi Armstrong</maintainer>
+  <license>Unknown</license>
+
+  <build_depend>osqp</build_depend>
+
+  <export>
+    <build_type>cmake</build_type>
+  </export>
+
+</package>
