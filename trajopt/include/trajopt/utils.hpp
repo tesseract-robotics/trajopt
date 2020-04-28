@@ -130,7 +130,7 @@ struct SafetyMarginData
    *
    * @return negative collisions allowed bool
    */
-  const bool& getNegativeCollisions() const { return negative_collisions_; }
+  const bool& hasNegativeCollisions() const { return negative_collisions_; }
 
 private:
   /// The coeff used during optimization
@@ -142,7 +142,7 @@ private:
   /// single contact distance threshold.
   double max_safety_margin_;
 
-  // This is used to check if there are negative collisions allowed
+  /// This is used to check if there are negative collisions allowed
   bool negative_collisions_ = false;
 
   /// A map of link pair to contact distance setting [dist_pen, coeff]
