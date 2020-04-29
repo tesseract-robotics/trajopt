@@ -1,6 +1,8 @@
 #include <trajopt_ifopt/constraints/joint_velocity_constraint.h>
 
+TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <console_bridge/console.h>
+TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace trajopt
 {
@@ -44,8 +46,6 @@ Eigen::VectorXd JointVelConstraint::GetValues() const
   {
     auto vals1 = GetVariables()->GetComponent(position_vars_[ind]->GetName())->GetValues();
     auto vals2 = GetVariables()->GetComponent(position_vars_[ind + 1]->GetName())->GetValues();
-    //    Eigen::VectorXd single_step = GetVariables()->GetComponent(position_vars_[ind]->GetName())->GetValues() -
-    //                                  GetVariables()->GetComponent(position_vars_[ind + 1]->GetName())->GetValues();
     Eigen::VectorXd single_step = vals1 - vals2;
     velocity.block(n_dof_ * static_cast<Eigen::Index>(ind), 0, n_dof_, 1) = single_step;
   }

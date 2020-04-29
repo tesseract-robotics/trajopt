@@ -5,7 +5,7 @@
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <Eigen/Eigen>
 #include <ifopt/constraint_set.h>
-TRAJOPT_IGNORE_WARNINGS_PUSH
+TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt/utils.hpp>
 #include <trajopt/collision_terms.hpp>

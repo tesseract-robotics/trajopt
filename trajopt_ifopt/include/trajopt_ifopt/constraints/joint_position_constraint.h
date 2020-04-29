@@ -5,7 +5,7 @@
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <ifopt/constraint_set.h>
 #include <Eigen/Eigen>
-TRAJOPT_IGNORE_WARNINGS_PUSH
+TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt_ifopt/variable_sets/joint_position_variable.h>
 

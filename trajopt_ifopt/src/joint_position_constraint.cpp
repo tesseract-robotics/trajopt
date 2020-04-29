@@ -1,6 +1,8 @@
 #include <trajopt_ifopt/constraints/joint_position_constraint.h>
 
+TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <console_bridge/console.h>
+TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace trajopt
 {

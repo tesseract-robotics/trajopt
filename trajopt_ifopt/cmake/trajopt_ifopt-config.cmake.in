@@ -13,5 +13,8 @@ else()
 endif()
 find_dependency(console_bridge)
 find_dependency(ifopt)
+find_dependency(trajopt)
+find_dependency(trajopt_utils)
+find_dependency(tesseract)
 
 include("${CMAKE_CURRENT_LIST_DIR}/@PROJECT_NAME@-targets.cmake")
