@@ -1,9 +1,10 @@
 #include <trajopt_ifopt/constraints/collision_constraint.h>
-
-#include <tesseract_kinematics/core/utils.h>
 #include <trajopt/collision_terms.hpp>
 
+TRAJOPT_IGNORE_WARNINGS_PUSH
+#include <tesseract_kinematics/core/utils.h>
 #include <console_bridge/console.h>
+TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace trajopt
 {
@@ -64,7 +65,7 @@ void CollisionConstraintIfopt::FillJacobianBlock(std::string var_set, Jacobian& 
   if (var_set == position_var_->GetName())
   {
     // Reserve enough room in the sparse matrix
-    jac_block.reserve(Eigen::VectorXd::Constant(1, n_dof_));
+    jac_block.reserve(n_dof_);
 
     // Get current joint values
     VectorXd joint_vals = this->GetVariables()->GetComponent(position_var_->GetName())->GetValues();

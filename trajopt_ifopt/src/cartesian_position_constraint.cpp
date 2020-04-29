@@ -1,8 +1,9 @@
 #include <trajopt_ifopt/constraints/cartesian_position_constraint.h>
 
+TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <tesseract_kinematics/core/utils.h>
-
 #include <console_bridge/console.h>
+TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace trajopt
 {
@@ -33,9 +34,6 @@ Eigen::VectorXd CartPosConstraint::GetValues() const
 
   Eigen::Isometry3d pose_err = target_pose_inv_ * new_pose;
   Eigen::VectorXd err = concat(pose_err.translation(), calcRotationalError(pose_err.rotation()));
-  //    Eigen::VectorXd reduced_err(indices_.size());
-  //    for (int i = 0; i < indices_.size(); ++i)
-  //      reduced_err[i] = err[indices_[i]];
 
   return err;
 }
@@ -96,10 +94,6 @@ void CartPosConstraint::FillJacobianBlock(std::string var_set, Jacobian& jac_blo
       Eigen::VectorXd new_rot_err = calcRotationalError(new_pose_err.rotation());
       jac0.col(c).tail(3) = ((new_rot_err - rot_err) / 1e-5);
     }
-
-    //      Eigen::MatrixXd reduced_jac(indices_.size(), n_dof);
-    //      for (int i = 0; i < indices_.size(); ++i)
-    //        reduced_jac.row(i) = jac0.row(indices_[i]);
 
     // Convert to a sparse matrix and set the jacobian
     // TODO: Make this more efficient. This does not work.

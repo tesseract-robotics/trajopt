@@ -1,6 +1,8 @@
 #include <trajopt_ifopt/costs/squared_cost.h>
 
+TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <console_bridge/console.h>
+TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace trajopt
 {

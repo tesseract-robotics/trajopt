@@ -36,35 +36,28 @@ target_include_directories(${PROJECT_NAME} PUBLIC
     "$<INSTALL_INTERFACE:include>")
 target_include_directories(${PROJECT_NAME} SYSTEM PUBLIC
     ${EIGEN3_INCLUDE_DIRS})
+list (APPEND PACKAGE_LIBRARIES ${PROJECT_NAME})
 
 add_executable(${PROJECT_NAME}_cart_position_example examples/cart_position_example.cpp)
 target_link_libraries(${PROJECT_NAME}_cart_position_example ${PROJECT_NAME} ifopt::ifopt_ipopt trajopt::trajopt_test_data)
 set_property(TARGET ${PROJECT_NAME}_cart_position_example PROPERTY CXX_STANDARD 14)
+list (APPEND PACKAGE_LIBRARIES ${PROJECT_NAME}_cart_position_example)
 
 add_executable(${PROJECT_NAME}_joint_position_example examples/joint_position_example.cpp)
 target_link_libraries(${PROJECT_NAME}_joint_position_example ${PROJECT_NAME} ifopt::ifopt_ipopt)
 set_property(TARGET ${PROJECT_NAME}_joint_position_example PROPERTY CXX_STANDARD 14)
+list (APPEND PACKAGE_LIBRARIES ${PROJECT_NAME}_joint_position_example)
 
 add_executable(${PROJECT_NAME}_velocity_smoother examples/velocity_smoother.cpp)
 target_link_libraries(${PROJECT_NAME}_velocity_smoother ${PROJECT_NAME} ifopt::ifopt_ipopt)
 set_property(TARGET ${PROJECT_NAME}_velocity_smoother PROPERTY CXX_STANDARD 14)
+list (APPEND PACKAGE_LIBRARIES ${PROJECT_NAME}_velocity_smoother)
 
 #############
 ## Install ##
 #############
 
-list (APPEND PACKAGE_LIBRARIES ${PROJECT_NAME})
-
-# Mark executables and/or libraries for installation
-install(TARGETS
-  ${PACKAGE_LIBRARIES}
-  ${PROJECT_NAME}_cart_position_example
-  ${PROJECT_NAME}_joint_position_example
-  ${PROJECT_NAME}_velocity_smoother
-
-    EXPORT ${PROJECT_NAME}-targets DESTINATION lib)
-install(EXPORT ${PROJECT_NAME}-targets
-    NAMESPACE trajopt:: DESTINATION lib/cmake/${PROJECT_NAME})
+trajopt_configure_package(${PACKAGE_LIBRARIES})
 
 # Mark cpp header files for installation
 install(DIRECTORY include/${PROJECT_NAME}
@@ -72,28 +65,6 @@ install(DIRECTORY include/${PROJECT_NAME}
   FILES_MATCHING PATTERN "*.h" PATTERN "*.hpp"
   PATTERN ".svn" EXCLUDE
  )
-
-install(FILES package.xml DESTINATION share/${PROJECT_NAME})
-
-# Create cmake config files
-include(CMakePackageConfigHelpers)
-configure_package_config_file(
-    ${CMAKE_CURRENT_LIST_DIR}/cmake/${PROJECT_NAME}-config.cmake.in
-    ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-config.cmake
-    INSTALL_DESTINATION lib/cmake/${PROJECT_NAME}
-    NO_CHECK_REQUIRED_COMPONENTS_MACRO)
-
-write_basic_package_version_file(
-    ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-config-version.cmake
-    VERSION ${PROJECT_VERSION} COMPATIBILITY ExactVersion)
-
-install(FILES
-    "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-config.cmake"
-    "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-config-version.cmake"
-    DESTINATION lib/cmake/${PROJECT_NAME})
-
-export(EXPORT ${PROJECT_NAME}-targets FILE
-    ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-targets.cmake)
 
 #############
 ## Testing ##
