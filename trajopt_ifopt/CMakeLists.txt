@@ -3,6 +3,7 @@ project(trajopt_ifopt VERSION 0.1.0 LANGUAGES CXX)
 
 find_package(trajopt_utils)
 find_package(trajopt)
+find_package(trajopt_sqp)
 find_package(console_bridge REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(ifopt REQUIRED)
@@ -39,17 +40,17 @@ target_include_directories(${PROJECT_NAME} SYSTEM PUBLIC
 list (APPEND PACKAGE_LIBRARIES ${PROJECT_NAME})
 
 add_executable(${PROJECT_NAME}_cart_position_example examples/cart_position_example.cpp)
-target_link_libraries(${PROJECT_NAME}_cart_position_example ${PROJECT_NAME} ifopt::ifopt_ipopt trajopt::trajopt_test_data)
+target_link_libraries(${PROJECT_NAME}_cart_position_example ${PROJECT_NAME} ifopt::ifopt_ipopt trajopt::trajopt_sqp trajopt::trajopt_test_data)
 set_property(TARGET ${PROJECT_NAME}_cart_position_example PROPERTY CXX_STANDARD 14)
 list (APPEND PACKAGE_LIBRARIES ${PROJECT_NAME}_cart_position_example)
 
 add_executable(${PROJECT_NAME}_joint_position_example examples/joint_position_example.cpp)
-target_link_libraries(${PROJECT_NAME}_joint_position_example ${PROJECT_NAME} ifopt::ifopt_ipopt)
+target_link_libraries(${PROJECT_NAME}_joint_position_example ${PROJECT_NAME} ifopt::ifopt_ipopt trajopt::trajopt_sqp)
 set_property(TARGET ${PROJECT_NAME}_joint_position_example PROPERTY CXX_STANDARD 14)
 list (APPEND PACKAGE_LIBRARIES ${PROJECT_NAME}_joint_position_example)
 
 add_executable(${PROJECT_NAME}_velocity_smoother examples/velocity_smoother.cpp)
-target_link_libraries(${PROJECT_NAME}_velocity_smoother ${PROJECT_NAME} ifopt::ifopt_ipopt)
+target_link_libraries(${PROJECT_NAME}_velocity_smoother ${PROJECT_NAME} ifopt::ifopt_ipopt trajopt::trajopt_sqp)
 set_property(TARGET ${PROJECT_NAME}_velocity_smoother PROPERTY CXX_STANDARD 14)
 list (APPEND PACKAGE_LIBRARIES ${PROJECT_NAME}_velocity_smoother)
 

@@ -1,20 +1,18 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>trajopt_ifopt</name>
+  <name>trajopt_sqp</name>
   <version>0.1.0</version>
-  <description>The trajopt_ifopt package</description>
+  <description>The trajopt_sqp package</description>
   <maintainer email="levi.armstrong@swri.org">Levi Armstrong</maintainer>
   <license>Apache 2.0</license>
   <author>Levi Armstrong</author>
   <author>Matthew Powelson</author>
 
-  <depend>eigen</depend>
   <depend>ifopt</depend>
   <depend>libconsole-bridge-dev</depend>
-  <depend>tesseract</depend>
+  <depend>osqp_eigen</depend>
   <depend>trajopt</depend>
   <depend>trajopt_utils</depend>
-  <depend>trajopt_sqp</depend>
 
   <test_depend>gtest</test_depend>
 

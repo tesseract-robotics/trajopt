@@ -8,10 +8,14 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <tesseract/tesseract.h>
 #include <tesseract_scene_graph/resource_locator.h>
 #include <boost/filesystem/path.hpp>
+#include <console_bridge/console.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
+#include <trajopt_sqp/trust_region_sqp_solver.h>
+#include <trajopt_sqp/osqp_eigen_solver.h>
 #include <trajopt_ifopt/constraints/cartesian_position_constraint.h>
 #include <trajopt_ifopt/variable_sets/joint_position_variable.h>
+#include <trajopt_ifopt/costs/squared_cost.h>
 
 inline std::string locateResource(const std::string& url)
 {
@@ -42,6 +46,8 @@ inline std::string locateResource(const std::string& url)
 
 int main(int /*argc*/, char** /*argv*/)
 {
+  console_bridge::setLogLevel(console_bridge::LogLevel::CONSOLE_BRIDGE_LOG_DEBUG);
+
   // 1)  Load Robot
   boost::filesystem::path urdf_file(std::string(TRAJOPT_DIR) + "/test/data/arm_around_table.urdf");
   boost::filesystem::path srdf_file(std::string(TRAJOPT_DIR) + "/test/data/pr2.srdf");
@@ -64,7 +70,7 @@ int main(int /*argc*/, char** /*argv*/)
 
   // 3) Add Variables
   std::vector<trajopt::JointPosition::Ptr> vars;
-  for (int ind = 0; ind < 9; ind++)
+  for (int ind = 0; ind < 1; ind++)
   {
     auto pos = Eigen::VectorXd::Zero(forward_kinematics->numJoints());
     auto var = std::make_shared<trajopt::JointPosition>(pos, "Joint_Position_" + std::to_string(ind));
@@ -77,22 +83,22 @@ int main(int /*argc*/, char** /*argv*/)
   for (const auto& var : vars)
   {
     auto cnt = std::make_shared<trajopt::CartPosConstraint>(target_pose, kinematic_info, var);
-    nlp.AddConstraintSet(cnt);
+    cnt->LinkWithVariables(nlp.GetOptVariables());
+    auto cost = std::make_shared<trajopt::SquaredCost>(cnt);
+    nlp.AddCostSet(cost);
   }
 
   nlp.PrintCurrent();
-  std::cout << "Jacobian: \n" << nlp.GetJacobianOfConstraints() << std::endl;
+  std::cout << "Constraint Jacobian: \n" << nlp.GetJacobianOfConstraints() << std::endl;
 
-  // 5) choose solver and options
-  ifopt::IpoptSolver ipopt;
-  ipopt.SetOption("derivative_test", "first-order");
-  ipopt.SetOption("linear_solver", "mumps");
-  // ipopt.SetOption("jacobian_approximation", "finite-difference-values");
-  ipopt.SetOption("jacobian_approximation", "exact");
-  ipopt.SetOption("print_level", 5);
+  // 5) Choose solver and options
+  auto qp_solver = std::make_shared<trajopt::OSQPEigenSolver>();
+  trajopt::TrustRegionSQPSolver solver(qp_solver);
+  qp_solver->solver_.settings()->setVerbosity(false);
+  qp_solver->solver_.settings()->setWarmStart(true);
 
   // 6) solve
-  ipopt.Solve(nlp);
+  solver.Solve(nlp);
   Eigen::VectorXd x = nlp.GetOptVariables()->GetValues();
   std::cout << "Optimized Variables:" << x.transpose() << std::endl;
 
