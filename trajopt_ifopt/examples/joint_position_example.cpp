@@ -1,17 +1,22 @@
-#include <trajopt_utils/macros.h>
+﻿#include <trajopt_utils/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <iostream>
 
 #include <ifopt/problem.h>
 #include <ifopt/ipopt_solver.h>
+#include <console_bridge/console.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
+#include <trajopt_sqp/trust_region_sqp_solver.h>
+#include <trajopt_sqp/osqp_eigen_solver.h>
 #include <trajopt_ifopt/constraints/joint_position_constraint.h>
 #include <trajopt_ifopt/constraints/joint_velocity_constraint.h>
 #include <trajopt_ifopt/variable_sets/joint_position_variable.h>
 
 int main(int /*argc*/, char** /*argv*/)
 {
+  console_bridge::setLogLevel(console_bridge::LogLevel::CONSOLE_BRIDGE_LOG_DEBUG);
+
   // 1) Create the problem
   ifopt::Problem nlp;
 
@@ -44,15 +49,15 @@ int main(int /*argc*/, char** /*argv*/)
   std::cout << "Jacobian: \n" << nlp.GetJacobianOfConstraints() << std::endl;
 
   // 5) choose solver and options
-  ifopt::IpoptSolver ipopt;
-  ipopt.SetOption("derivative_test", "first-order");
-  ipopt.SetOption("linear_solver", "mumps");
+  ifopt::IpoptSolver solver;
+  solver.SetOption("derivative_test", "first-order");
+  solver.SetOption("linear_solver", "mumps");
   //  ipopt.SetOption("jacobian_approximation", "finite-difference-values");
-  ipopt.SetOption("jacobian_approximation", "exact");
-  ipopt.SetOption("print_level", 5);
+  solver.SetOption("jacobian_approximation", "exact");
+  solver.SetOption("print_level", 5);
 
   // 6) solve
-  ipopt.Solve(nlp);
+  solver.Solve(nlp);
   Eigen::VectorXd x = nlp.GetOptVariables()->GetValues();
   std::cout << x.transpose() << std::endl;
 
