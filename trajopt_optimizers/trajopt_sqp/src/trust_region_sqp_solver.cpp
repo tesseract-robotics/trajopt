@@ -54,9 +54,6 @@ void TrustRegionSQPSolver::Solve(ifopt::Problem& nlp)
                                    results_.approx_merit_improve,
                                    params_.min_approx_improve);
           status_ = SQPStatus::NLP_CONVERGED;
-          results_.best_var_vals = results_.new_var_vals;  // This is not in trajopt_sco
-          results_.best_exact_merit = results_.new_exact_merit;
-          results_.best_approx_merit = results_.best_approx_merit;
           break;
         }
         if (results_.approx_merit_improve / results_.best_exact_merit < params_.min_approx_improve_frac)
@@ -65,9 +62,6 @@ void TrustRegionSQPSolver::Solve(ifopt::Problem& nlp)
                                    results_.approx_merit_improve / results_.best_exact_merit,
                                    params_.min_approx_improve_frac);
           status_ = SQPStatus::NLP_CONVERGED;
-          results_.best_var_vals = results_.new_var_vals;  // This is not in trajopt_sco
-          results_.best_exact_merit = results_.new_exact_merit;
-          results_.best_approx_merit = results_.best_approx_merit;
           break;
         }
 
@@ -91,8 +85,6 @@ void TrustRegionSQPSolver::Solve(ifopt::Problem& nlp)
           qp_solver_->updateVariableBounds();
           results_.box_size = qp_solver_->getBoxSize();
           CONSOLE_BRIDGE_logInform("Expanded trust region. new box size: %.4f", results_.box_size[0]);
-          // TODO: This is not in the shulman paper, but why not try to solve the QP again in this case to get more
-          // improvement prior to reconvexifying?
           break;
         }
       }  // Trust region loop
@@ -172,11 +164,11 @@ void TrustRegionSQPSolver::stepOptimization(ifopt::Problem& nlp)
   results_.approx_merit_improve = results_.best_approx_merit - results_.new_approx_merit;
 
   // Evaluate exact constraint violations (expensive)
-  Eigen::VectorXd violations = qp_solver_->getConstraintViolations();
+  results_.constraint_violations = qp_solver_->getConstraintViolations();
 
   // Calculate exact NLP merits (expensive) - TODO: Look into caching for qp_solver->Convexify()
-  results_.new_exact_merit =
-      nlp.EvaluateCostFunction(results_.new_var_vals.data()) + violations.dot(results_.merit_error_coeffs);
+  results_.new_exact_merit = nlp.EvaluateCostFunction(results_.new_var_vals.data()) +
+                             results_.constraint_violations.dot(results_.merit_error_coeffs);
   results_.exact_merit_improve = results_.best_exact_merit - results_.new_exact_merit;
   results_.merit_improve_ratio = results_.exact_merit_improve / results_.approx_merit_improve;
 

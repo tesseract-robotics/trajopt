@@ -52,7 +52,8 @@ void OSQPEigenSolver::solve()
 
   solver_.clearSolver();
   solver_.initSolver();
-  solver_.solve();
+  bool success = solver_.solve();
+  assert(success);
   results_ = solver_.getSolution();
   //  solver_.setWarmStart
 }
