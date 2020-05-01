@@ -26,9 +26,8 @@ Eigen::VectorXd CollisionConstraintIfopt::GetValues() const
 {
   // Get current joint values
   Eigen::VectorXd joint_vals = this->GetVariables()->GetComponent(position_var_->GetName())->GetValues();
-  DblVec joint_vals_vec(joint_vals.data(), joint_vals.data() + joint_vals.rows() * joint_vals.cols());
 
-  Eigen::VectorXd err(1);
+  Eigen::VectorXd err = Eigen::VectorXd::Zero(1);
 
   // Check the collisions
   tesseract_collision::ContactResultVector dist_results;
@@ -69,7 +68,6 @@ void CollisionConstraintIfopt::FillJacobianBlock(std::string var_set, Jacobian& 
 
     // Get current joint values
     VectorXd joint_vals = this->GetVariables()->GetComponent(position_var_->GetName())->GetValues();
-    DblVec joint_vals_vec(joint_vals.data(), joint_vals.data() + joint_vals.rows() * joint_vals.cols());
 
     // Calculate collisions
     tesseract_collision::ContactResultVector dist_results;

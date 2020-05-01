@@ -203,8 +203,11 @@ void OSQPEigenSolver::updateVariableBounds()
   // Apply box constraints and variable limits
   Eigen::VectorXd var_bounds_lower_final =
       var_bounds_lower.cwiseMax(Eigen::VectorXd::Ones(num_vars_) * -OSQP_INFTY).cwiseMax(lower_box_cnt);
-  Eigen::VectorXd var_bounds_upper_final =
-      var_bounds_upper.cwiseMin(Eigen::VectorXd::Ones(num_vars_) * OSQP_INFTY).cwiseMin(upper_box_cnt);
+  // Add the extra check here that the upper is bigger than the lower. There can be issues when the numbers get close to
+  // 0.
+  Eigen::VectorXd var_bounds_upper_final = var_bounds_upper.cwiseMin(Eigen::VectorXd::Ones(num_vars_) * OSQP_INFTY)
+                                               .cwiseMin(upper_box_cnt)
+                                               .cwiseMax(var_bounds_lower);
   full_bounds_lower_.bottomRows(num_vars_) = var_bounds_lower_final;
   full_bounds_upper_.bottomRows(num_vars_) = var_bounds_upper_final;
 
