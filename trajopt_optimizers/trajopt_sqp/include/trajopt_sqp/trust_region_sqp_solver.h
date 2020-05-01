@@ -23,7 +23,7 @@ struct SQPParameters
   int max_iterations = 50;
 
   /** @brief Trust region is scaled by this when it is shrunk */
-  double trust_shrink_ratio = 0.1;
+  double trust_shrink_ratio = 0.9;
   /** @brief Trust region is expanded by this when it is expanded */
   double trust_expand_ratio = 1.5;
   /** @brief Max number of times the trust region will be expanded */
@@ -105,11 +105,16 @@ class TrustRegionSQPSolver : public ifopt::Solver
 public:
   using Ptr = std::shared_ptr<TrustRegionSQPSolver>;
   using ConstPtr = std::shared_ptr<const TrustRegionSQPSolver>;
+  using Callback = std::function<void(const SQPResults&)>;
 
   TrustRegionSQPSolver(trajopt::OSQPEigenSolver::Ptr qp_solver);
 
   void Solve(ifopt::Problem& nlp) override;
 
+  /**
+   * @brief Take a single QP optimization step, storing the results and calling callbacks
+   * @param nlp
+   */
   void stepOptimization(ifopt::Problem& nlp);
 
   /** @brief  Get the return status for the optimization.*/
@@ -117,13 +122,14 @@ public:
 
   SQPParameters params_;
 
-  void callCallbacks(){};
+  void callCallbacks();
 
-private:
+  trajopt::OSQPEigenSolver::Ptr qp_solver_;
+
   SQPStatus status_;
   SQPResults results_;
 
-  trajopt::OSQPEigenSolver::Ptr qp_solver_;
+  std::vector<Callback> callbacks_;
 };
 
 }  // namespace trajopt

@@ -8,6 +8,8 @@ TrustRegionSQPSolver::TrustRegionSQPSolver(OSQPEigenSolver::Ptr qp_solver) : qp_
 
 void TrustRegionSQPSolver::Solve(ifopt::Problem& nlp)
 {
+  console_bridge::setLogLevel(console_bridge::LogLevel::CONSOLE_BRIDGE_LOG_INFO);
+
   qp_solver_->init(nlp);
 
   // Initialize optimization parameters
@@ -185,4 +187,10 @@ void TrustRegionSQPSolver::stepOptimization(ifopt::Problem& nlp)
 }
 
 int TrustRegionSQPSolver::getReturnStatus() { return 0; }
+
+void TrustRegionSQPSolver::callCallbacks()
+{
+  for (const auto& callback : callbacks_)
+    callback(results_);
+}
 }  // namespace trajopt
