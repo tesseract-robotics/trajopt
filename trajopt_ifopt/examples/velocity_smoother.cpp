@@ -67,7 +67,8 @@ int main(int /*argc*/, char** /*argv*/)
 
   nlp.PrintCurrent();
   std::cout << "Constraint Jacobian: \n" << nlp.GetJacobianOfConstraints() << std::endl;
-//  std::cout << "Cost Jacobian: \n" << nlp.GetJacobianOfCosts() << std::endl;  // GetJacobianOfCosts not in debian release
+  //  std::cout << "Cost Jacobian: \n" << nlp.GetJacobianOfCosts() << std::endl;  // GetJacobianOfCosts not in debian
+  //  release
 
   // 5) Set up the solver
   auto qp_solver = std::make_shared<trajopt::OSQPEigenSolver>();

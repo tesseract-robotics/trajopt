@@ -3,6 +3,7 @@
 
 #include <ifopt/variable_set.h>
 #include <ifopt/bounds.h>
+#include <trajopt_ifopt/utils/utils.h>
 
 #include <Eigen/Eigen>
 
@@ -45,10 +46,17 @@ public:
   VecBound GetBounds() const override { return bounds_; }
 
   /**
-   * @brief Sets the bounds for the joints in this variable
+   * @brief Sets the bounds for the joints in this variable.
    * @param new_bounds New bounds for the joints
    */
   void SetBounds(VecBound& new_bounds) { bounds_ = new_bounds; }
+
+  /**
+   * @brief Sets the bounds for the joints in this variable from a MatrixX2d with the first column being lower bound and
+   * second column being upper bound
+   * @param bounds Columns 1/2 are lower/upper bounds. You probably will get this from forward_kinematics->getLimits()
+   */
+  void setBounds(const Eigen::Ref<Eigen::MatrixX2d>& bounds) { bounds_ = toBounds(bounds); }
 
 private:
   VecBound bounds_;
