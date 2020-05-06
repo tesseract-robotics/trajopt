@@ -111,4 +111,10 @@ void CartPosConstraint::FillJacobianBlock(std::string var_set, Jacobian& jac_blo
     }
   }
 }
+
+void CartPosConstraint::setTargetPose(const Eigen::Isometry3d& target_pose)
+{
+  target_pose_ = target_pose;
+  target_pose_inv_ = target_pose.inverse();
+}
 }  // namespace trajopt
