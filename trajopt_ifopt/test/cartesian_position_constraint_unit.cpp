@@ -84,7 +84,7 @@ TEST_F(CartesianPositionConstraintUnit, GetValue)  // NOLINT
   //    Eigen::VectorXd joint_position_single = Eigen::VectorXd::Ones(forward_kinematics_->numJoints());
   //    auto target_pose = Eigen::Isometry3d::Identity();
   //    inverse_kinematics_->calcInvKin(joint_position_single, target_pose, joint_position_single);
-  //    constraint_->setTargetPose(target_pose);
+  //    constraint_->SetTargetPose(target_pose);
 
   //    // Set the joints to that joint position
   //    Eigen::VectorXd joint_position = Eigen::VectorXd::Ones(n_dof_ * 2);

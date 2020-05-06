@@ -23,6 +23,8 @@ public:
                            JointPosition::Ptr position_var,
                            const std::string& name = "Collision");
 
+  /** @brief Calculates the values associated with the constraint */
+  Eigen::VectorXd CalcValues(const Eigen::Ref<Eigen::VectorXd>& joint_vals) const;
   /**
    * @brief Returns the values associated with the constraint.
    * @return
@@ -35,11 +37,21 @@ public:
    */
   std::vector<ifopt::Bounds> GetBounds() const override;
 
+  /**
+   * @brief Sets the bounds on the collision distance
+   * @param bounds New bounds that will be set. Should be size 1
+   */
   void SetBounds(const std::vector<ifopt::Bounds>& bounds);
+
+  /**
+   * @brief Fills the jacobian block associated with the constraint
+   * @param jac_block Block of the overall jacobian associated with these constraints
+   */
+  void CalcJacobianBlock(const Eigen::Ref<Eigen::VectorXd>& joint_vals, Jacobian& jac_block) const;
   /**
    * @brief Fills the jacobian block associated with the given var_set.
    * @param var_set Name of the var_set to which the jac_block is associated
-   * @param jac_block Block of the overal jacobian associated with these constraints and the var_set variable
+   * @param jac_block Block of the overall jacobian associated with these constraints and the var_set variable
    */
   void FillJacobianBlock(std::string var_set, Jacobian& jac_block) const override;
 

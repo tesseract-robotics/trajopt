@@ -82,6 +82,14 @@ public:
                               const std::string& name = "InverseKinematics");
 
   /**
+   * @brief Calculates the values associated with the constraint
+   * @param joint_vals Joint values for which the value is calculated
+   * @param seed_joint_position Joint values used as the seed when calculating IK
+   * @return Distance of each joint from the IK solution
+   */
+  Eigen::VectorXd CalcValues(const Eigen::Ref<Eigen::VectorXd>& joint_vals,
+                             const Eigen::Ref<Eigen::VectorXd>& seed_joint_position) const;
+  /**
    * @brief Returns the values associated with the constraint. This is the joint distance from the target joint position
    * (size n_dof_)
    * @return
@@ -98,6 +106,11 @@ public:
   void SetBounds(const std::vector<ifopt::Bounds>& bounds);
 
   /**
+   * @brief Fills the jacobian block associated with the constraint
+   * @param jac_block Block of the overall jacobian associated with these constraints
+   */
+  void CalcJacobianBlock(const Eigen::Ref<Eigen::VectorXd>& joint_vals, Jacobian& jac_block) const;
+  /**
    * @brief Fills the jacobian block associated with the given var_set.
    *
    * Since the value of this constraint is the joint distance from the joint position acquired with IK, the jacobian is
@@ -107,7 +120,7 @@ public:
    */
   void FillJacobianBlock(std::string var_set, Jacobian& jac_block) const override;
 
-  void setTargetPose(const Eigen::Isometry3d& target_pose);
+  void SetTargetPose(const Eigen::Isometry3d& target_pose);
 
 private:
   /** @brief The number of joints in a single JointPosition */

@@ -27,17 +27,25 @@ InverseKinematicsConstraint::InverseKinematicsConstraint(const Eigen::Isometry3d
   bounds_ = std::vector<ifopt::Bounds>(static_cast<std::size_t>(n_dof_), ifopt::BoundZero);
 }
 
-Eigen::VectorXd InverseKinematicsConstraint::GetValues() const
+Eigen::VectorXd InverseKinematicsConstraint::CalcValues(const Eigen::Ref<Eigen::VectorXd>& joint_vals,
+                                                        const Eigen::Ref<Eigen::VectorXd>& seed_joint_position) const
 {
   // Get joint position using IK and the seed variable
   Eigen::VectorXd target_joint_position;
-  Eigen::VectorXd seed_joint_position = this->GetVariables()->GetComponent(seed_var_->GetName())->GetValues();
   kinematic_info_->inverse_kinematics_->calcInvKin(target_joint_position, target_pose_, seed_joint_position);
 
   // Calculate joint error
-  Eigen::VectorXd error =
-      target_joint_position - this->GetVariables()->GetComponent(constraint_var_->GetName())->GetValues();
+  Eigen::VectorXd error = target_joint_position - joint_vals;
   return error;
+}
+
+Eigen::VectorXd InverseKinematicsConstraint::GetValues() const
+{
+  // Get the two variables
+  Eigen::VectorXd seed_joint_position = this->GetVariables()->GetComponent(seed_var_->GetName())->GetValues();
+  Eigen::VectorXd joint_vals = this->GetVariables()->GetComponent(constraint_var_->GetName())->GetValues();
+
+  return CalcValues(joint_vals, seed_joint_position);
 }
 
 // Set the limits on the constraint values
@@ -67,5 +75,5 @@ void InverseKinematicsConstraint::FillJacobianBlock(std::string var_set, Jacobia
   }
 }
 
-void InverseKinematicsConstraint::setTargetPose(const Eigen::Isometry3d& target_pose) { target_pose_ = target_pose; }
+void InverseKinematicsConstraint::SetTargetPose(const Eigen::Isometry3d& target_pose) { target_pose_ = target_pose; }
 }  // namespace trajopt
