@@ -88,6 +88,8 @@ public:
    */
   void FillJacobianBlock(std::string var_set, Jacobian& jac_block) const override;
 
+  void setTargetPose(const Eigen::Isometry3d& target_pose);
+
 private:
   /** @brief The number of joints in a single JointPosition */
   long n_dof_;
