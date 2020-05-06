@@ -68,6 +68,13 @@ public:
                     const std::string& name = "CartPos");
 
   /**
+   * @brief CalcValues Calculates the values associated with the constraint
+   * @param joint_vals Input joint values for which FK is solved
+   * @return Error of FK solution from target, size 6. The first 3 terms are associated with position and the last 3 are
+   * associated with orientation.
+   */
+  Eigen::VectorXd CalcValues(const Eigen::Ref<Eigen::VectorXd>& joint_vals) const;
+  /**
    * @brief Returns the values associated with the constraint. In this case that is the concatenated joint values
    * associated with each of the joint positions should be n_dof_ * n_vars_ long
    * @return
@@ -81,6 +88,12 @@ public:
   std::vector<ifopt::Bounds> GetBounds() const override;
 
   void SetBounds(const std::vector<ifopt::Bounds>& bounds);
+
+  /**
+   * @brief Fills the jacobian block associated with the constraint
+   * @param jac_block Block of the overall jacobian associated with these constraints
+   */
+  void CalcJacobianBlock(const Eigen::Ref<Eigen::VectorXd>& joint_vals, Jacobian& jac_block) const;
   /**
    * @brief Fills the jacobian block associated with the given var_set.
    * @param var_set Name of the var_set to which the jac_block is associated
@@ -88,7 +101,7 @@ public:
    */
   void FillJacobianBlock(std::string var_set, Jacobian& jac_block) const override;
 
-  void setTargetPose(const Eigen::Isometry3d& target_pose);
+  void SetTargetPose(const Eigen::Isometry3d& target_pose);
 
 private:
   /** @brief The number of joints in a single JointPosition */

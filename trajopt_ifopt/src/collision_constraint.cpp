@@ -22,11 +22,8 @@ CollisionConstraintIfopt::CollisionConstraintIfopt(SingleTimestepCollisionEvalua
   bounds_ = std::vector<ifopt::Bounds>(1, ifopt::BoundSmallerZero);
 }
 
-Eigen::VectorXd CollisionConstraintIfopt::GetValues() const
+Eigen::VectorXd CollisionConstraintIfopt::CalcValues(const Eigen::Ref<Eigen::VectorXd>& joint_vals) const
 {
-  // Get current joint values
-  Eigen::VectorXd joint_vals = this->GetVariables()->GetComponent(position_var_->GetName())->GetValues();
-
   Eigen::VectorXd err = Eigen::VectorXd::Zero(1);
 
   // Check the collisions
@@ -49,6 +46,14 @@ Eigen::VectorXd CollisionConstraintIfopt::GetValues() const
   return err;
 }
 
+Eigen::VectorXd CollisionConstraintIfopt::GetValues() const
+{
+  // Get current joint values
+  Eigen::VectorXd joint_vals = this->GetVariables()->GetComponent(position_var_->GetName())->GetValues();
+
+  return CalcValues(joint_vals);
+}
+
 // Set the limits on the constraint values
 std::vector<ifopt::Bounds> CollisionConstraintIfopt::GetBounds() const { return bounds_; }
 
@@ -58,54 +63,60 @@ void CollisionConstraintIfopt::SetBounds(const std::vector<ifopt::Bounds>& bound
   bounds_ = bounds;
 }
 
+void CollisionConstraintIfopt::CalcJacobianBlock(const Eigen::Ref<Eigen::VectorXd>& joint_vals,
+                                                 Jacobian& jac_block) const
+{
+  // Reserve enough room in the sparse matrix
+  jac_block.reserve(n_dof_);
+
+  // Calculate collisions
+  tesseract_collision::ContactResultVector dist_results;
+  {
+    tesseract_collision::ContactResultMap dist_results_map;
+    collision_evaluator_->CalcCollisions(joint_vals, dist_results_map);
+    tesseract_collision::flattenMoveResults(std::move(dist_results_map), dist_results);
+  }
+
+  // Get gradients for all contacts
+  std::vector<trajopt::GradientResults> grad_results;
+  grad_results.reserve(dist_results.size());
+  for (tesseract_collision::ContactResult& dist_result : dist_results)
+  {
+    // Contains the contact distance threshold and coefficient for the given link pair
+    const Eigen::Vector2d& data = collision_evaluator_->getSafetyMarginData()->getPairSafetyMarginData(
+        dist_result.link_names[0], dist_result.link_names[1]);
+    grad_results.push_back(collision_evaluator_->GetGradient(joint_vals, dist_result, data, true));
+  }
+
+  // Convert GradientResults to jacobian
+  int idx = 0;
+  Eigen::VectorXd grad_vec = Eigen::VectorXd::Zero(n_dof_);
+  for (auto& grad : grad_results)
+  {
+    if (grad.gradients[0].has_gradient)
+      grad_vec += grad.gradients[0].gradient;
+    if (grad.gradients[1].has_gradient)
+      grad_vec += grad.gradients[1].gradient;
+    idx++;
+  }
+
+  // This does work but could be faster
+  for (int j = 0; j < n_dof_; j++)
+  {
+    // Collision is 1 x n_dof
+    jac_block.coeffRef(0, j) = -1 * grad_vec[j];
+  }
+}
+
 void CollisionConstraintIfopt::FillJacobianBlock(std::string var_set, Jacobian& jac_block) const
 {
   // Only modify the jacobian if this constraint uses var_set
   if (var_set == position_var_->GetName())
   {
-    // Reserve enough room in the sparse matrix
-    jac_block.reserve(n_dof_);
-
     // Get current joint values
     VectorXd joint_vals = this->GetVariables()->GetComponent(position_var_->GetName())->GetValues();
 
-    // Calculate collisions
-    tesseract_collision::ContactResultVector dist_results;
-    {
-      tesseract_collision::ContactResultMap dist_results_map;
-      collision_evaluator_->CalcCollisions(joint_vals, dist_results_map);
-      tesseract_collision::flattenMoveResults(std::move(dist_results_map), dist_results);
-    }
-
-    // Get gradients for all contacts
-    std::vector<trajopt::GradientResults> grad_results;
-    grad_results.reserve(dist_results.size());
-    for (tesseract_collision::ContactResult& dist_result : dist_results)
-    {
-      // Contains the contact distance threshold and coefficient for the given link pair
-      const Eigen::Vector2d& data = collision_evaluator_->getSafetyMarginData()->getPairSafetyMarginData(
-          dist_result.link_names[0], dist_result.link_names[1]);
-      grad_results.push_back(collision_evaluator_->GetGradient(joint_vals, dist_result, data, true));
-    }
-
-    // Convert GradientResults to jacobian
-    int idx = 0;
-    Eigen::VectorXd grad_vec = Eigen::VectorXd::Zero(n_dof_);
-    for (auto& grad : grad_results)
-    {
-      if (grad.gradients[0].has_gradient)
-        grad_vec += grad.gradients[0].gradient;
-      if (grad.gradients[1].has_gradient)
-        grad_vec += grad.gradients[1].gradient;
-      idx++;
-    }
-
-    // This does work but could be faster
-    for (int j = 0; j < n_dof_; j++)
-    {
-      // Collision is 1 x n_dof
-      jac_block.coeffRef(0, j) = -1 * grad_vec[j];
-    }
+    CalcJacobianBlock(joint_vals, jac_block);
   }
 }
 }  // namespace trajopt
