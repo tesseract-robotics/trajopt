@@ -526,7 +526,8 @@ CollisionEvaluator::CollisionEvaluator(tesseract_kinematics::ForwardKinematics::
                                        SafetyMarginData::ConstPtr safety_margin_data,
                                        tesseract_collision::ContactTestType contact_test_type,
                                        double longest_valid_segment_length,
-                                       double safety_margin_buffer)
+                                       double safety_margin_buffer,
+                                       bool dynamic_environment)
   : manip_(std::move(manip))
   , env_(std::move(env))
   , adjacency_map_(std::move(adjacency_map))
@@ -536,7 +537,19 @@ CollisionEvaluator::CollisionEvaluator(tesseract_kinematics::ForwardKinematics::
   , contact_test_type_(contact_test_type)
   , longest_valid_segment_length_(longest_valid_segment_length)
   , state_solver_(env_->getStateSolver())
+  , dynamic_environment_(dynamic_environment)
 {
+  // If the environment is not expected to change, then the cloned state solver may be used each time.
+  if (dynamic_environment_)
+    get_state_fn_ = [&](const std::vector<std::string>& joint_names,
+                        const Eigen::Ref<const Eigen::VectorXd>& joint_values) {
+      return env_->getState(joint_names, joint_values);
+    };
+  else
+    get_state_fn_ = [&](const std::vector<std::string>& joint_names,
+                        const Eigen::Ref<const Eigen::VectorXd>& joint_values) {
+      return state_solver_->getState(joint_names, joint_values);
+    };
 }
 
 void CollisionEvaluator::CalcDists(const DblVec& x, DblVec& dists)
@@ -887,7 +900,8 @@ SingleTimestepCollisionEvaluator::SingleTimestepCollisionEvaluator(
     tesseract_collision::ContactTestType contact_test_type,
     sco::VarVector vars,
     CollisionExpressionEvaluatorType type,
-    double safety_margin_buffer)
+    double safety_margin_buffer,
+    bool dynamic_environment)
   : CollisionEvaluator(std::move(manip),
                        std::move(env),
                        std::move(adjacency_map),
@@ -895,7 +909,8 @@ SingleTimestepCollisionEvaluator::SingleTimestepCollisionEvaluator(
                        std::move(safety_margin_data),
                        contact_test_type,
                        0,
-                       safety_margin_buffer)
+                       safety_margin_buffer,
+                       dynamic_environment)
 {
   vars0_ = std::move(vars);
   evaluator_type_ = type;
@@ -941,9 +956,9 @@ void SingleTimestepCollisionEvaluator::CalcCollisions(const DblVec& x,
 void SingleTimestepCollisionEvaluator::CalcCollisions(const Eigen::Ref<Eigen::VectorXd>& dof_vals,
                                                       tesseract_collision::ContactResultMap& dist_results)
 {
-  tesseract_environment::EnvState::Ptr state = state_solver_->getState(manip_->getJointNames(), dof_vals);
+  tesseract_environment::EnvState::Ptr state = get_state_fn_(manip_->getJointNames(), dof_vals);
 
-  for (const auto& link_name : adjacency_map_->getActiveLinkNames())
+  for (const auto& link_name : env_->getActiveLinkNames())
     contact_manager_->setCollisionObjectsTransform(link_name, state->link_transforms[link_name]);
 
   contact_manager_->contactTest(dist_results, contact_test_type_);
