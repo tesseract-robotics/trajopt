@@ -49,6 +49,54 @@ TEST(UtilsUnit, interpolate)
   EXPECT_TRUE(results[7].isApprox(Eigen::VectorXd::Ones(10) * 0.7));
 }
 
+/** @brief Tests getClosestValidPoint: Input within Finite bounds*/
+TEST(UtilsUnit, getClosestValidPoint1)
+{
+  ifopt::Bounds bound(-2.0, 2.0);
+  std::vector<ifopt::Bounds> bounds(3, bound);
+  Eigen::VectorXd input = Eigen::VectorXd::Ones(3) * 1.0;
+  Eigen::VectorXd output = trajopt::getClosestValidPoint(input, bounds);
+  EXPECT_TRUE(output.isApprox(input));
+}
+/** @brief Tests getClosestValidPoint: Input greater than Finite bounds*/
+TEST(UtilsUnit, getClosestValidPoint2)
+{
+  ifopt::Bounds bound(-2.0, 2.0);
+  std::vector<ifopt::Bounds> bounds(3, bound);
+  Eigen::VectorXd input = Eigen::VectorXd::Ones(3) * 3.0;
+  Eigen::VectorXd output = trajopt::getClosestValidPoint(input, bounds);
+  Eigen::VectorXd desired_results = Eigen::VectorXd::Ones(3) * 2.0;
+  EXPECT_TRUE(output.isApprox(desired_results));
+}
+/** @brief Tests getClosestValidPoint: Input less than Finite bounds*/
+TEST(UtilsUnit, getClosestValidPoint3)
+{
+  ifopt::Bounds bound(-2.0, 2.0);
+  std::vector<ifopt::Bounds> bounds(3, bound);
+  Eigen::VectorXd input = Eigen::VectorXd::Ones(3) * -3.0;
+  Eigen::VectorXd output = trajopt::getClosestValidPoint(input, bounds);
+  Eigen::VectorXd desired_results = Eigen::VectorXd::Ones(3) * -2.0;
+  EXPECT_TRUE(output.isApprox(desired_results));
+}
+/** @brief Tests getClosestValidPoint: Input within BoundGreaterZero*/
+TEST(UtilsUnit, getClosestValidPoint4)
+{
+  ifopt::Bounds bound(ifopt::BoundGreaterZero);
+  std::vector<ifopt::Bounds> bounds(3, bound);
+  Eigen::VectorXd input = Eigen::VectorXd::Ones(3) * 3.0e6;
+  Eigen::VectorXd output = trajopt::getClosestValidPoint(input, bounds);
+  EXPECT_TRUE(output.isApprox(input));
+}
+/** @brief Tests getClosestValidPoint: Input within BoundSmallerZero*/
+TEST(UtilsUnit, getClosestValidPoint5)
+{
+  ifopt::Bounds bound(ifopt::BoundSmallerZero);
+  std::vector<ifopt::Bounds> bounds(3, bound);
+  Eigen::VectorXd input = Eigen::VectorXd::Ones(3) * -3.0e6;
+  Eigen::VectorXd output = trajopt::getClosestValidPoint(input, bounds);
+  EXPECT_TRUE(output.isApprox(input));
+}
+
 ////////////////////////////////////////////////////////////////////
 
 int main(int argc, char** argv)

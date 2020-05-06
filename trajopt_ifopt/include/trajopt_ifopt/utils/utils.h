@@ -45,5 +45,29 @@ inline std::vector<Eigen::VectorXd> interpolate(const Eigen::Ref<Eigen::VectorXd
   return results;
 }
 
+/**
+ * @brief Gets the closes vector to the input given the bounds
+ * @param input Input vector
+ * @param bounds Bounds on that vector
+ * @return Output vector. If input is outside a bound, force it to the boundary
+ */
+inline Eigen::VectorXd getClosestValidPoint(const Eigen::Ref<Eigen::VectorXd>& input, std::vector<ifopt::Bounds> bounds)
+{
+  // Convert Bounds to VectorXds
+  Eigen::VectorXd bound_lower(static_cast<Eigen::Index>(bounds.size()));
+  Eigen::VectorXd bound_upper(static_cast<Eigen::Index>(bounds.size()));
+  for (std::size_t i = 0; i < bounds.size(); i++)
+  {
+    bound_lower[static_cast<Eigen::Index>(i)] = bounds[i].lower_;
+    bound_upper[static_cast<Eigen::Index>(i)] = bounds[i].upper_;
+  }
+
+  // If input is outside a bound, force it to the boundary
+  Eigen::VectorXd valid_point(static_cast<Eigen::Index>(bounds.size()));
+  valid_point = input.cwiseMax(bound_lower);
+  valid_point = valid_point.cwiseMin(bound_upper);
+  return valid_point;
+}
+
 }  // namespace trajopt
 #endif
