@@ -91,7 +91,8 @@ struct CollisionEvaluator
                      SafetyMarginData::ConstPtr safety_margin_data,
                      tesseract_collision::ContactTestType contact_test_type,
                      double longest_valid_segment_length,
-                     double safety_margin_buffer);
+                     double safety_margin_buffer,
+                     bool dynamic_environment = false);
   virtual ~CollisionEvaluator() = default;
   CollisionEvaluator(const CollisionEvaluator&) = default;
   CollisionEvaluator& operator=(const CollisionEvaluator&) = default;
@@ -229,6 +230,10 @@ protected:
   sco::VarVector vars0_;
   sco::VarVector vars1_;
   CollisionExpressionEvaluatorType evaluator_type_;
+  std::function<tesseract_environment::EnvState::Ptr(const std::vector<std::string>& joint_names,
+                                                     const Eigen::Ref<const Eigen::VectorXd>& joint_values)>
+      get_state_fn_;
+  bool dynamic_environment_;
 
   void CollisionsToDistanceExpressions(sco::AffExprVector& exprs,
                                        AlignedVector<Eigen::Vector2d>& exprs_data,
@@ -381,7 +386,8 @@ public:
                                    tesseract_collision::ContactTestType contact_test_type,
                                    sco::VarVector vars,
                                    CollisionExpressionEvaluatorType type,
-                                   double safety_margin_buffer);
+                                   double safety_margin_buffer,
+                                   bool dynamic_environment = false);
   /**
   @brief linearize all contact distances in terms of robot dofs
   ;
