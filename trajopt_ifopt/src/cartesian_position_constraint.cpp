@@ -55,7 +55,7 @@ void CartPosConstraint::SetBounds(const std::vector<ifopt::Bounds>& bounds)
 void CartPosConstraint::CalcJacobianBlock(const Eigen::Ref<Eigen::VectorXd>& joint_vals, Jacobian& jac_block) const
 {
   // Reserve enough room in the sparse matrix
-  jac_block.reserve(Eigen::VectorXd::Constant(n_dof_ * 6, 1));
+  jac_block.reserve(n_dof_ * 6);
 
   Eigen::MatrixXd jac0(6, n_dof_);
   Eigen::Isometry3d tf0;

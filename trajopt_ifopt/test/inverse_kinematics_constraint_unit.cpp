@@ -13,6 +13,7 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt_ifopt/constraints/inverse_kinematics_constraint.h>
+#include <trajopt_ifopt/utils/numeric_differentiation.h>
 #include <trajopt_test_utils.hpp>
 
 using namespace trajopt;
@@ -103,6 +104,13 @@ TEST_F(InverseKinematicsConstraintUnit, GetValue)  // NOLINT
     // Check that it is identity
     for (Eigen::Index i = 0; i < n_dof_; i++)
       EXPECT_EQ(jac_block.coeff(i, i), -1.0);
+
+    // Check against numeric differentiation
+    auto error_calculator = [&](const Eigen::Ref<Eigen::VectorXd>& x) {
+      return constraint_->CalcValues(x, joint_position_single);
+    };
+    trajopt::Jacobian num_jac_block = trajopt::calcForwardNumJac(error_calculator, joint_position_single, 1e-4);
+    EXPECT_TRUE(jac_block.isApprox(num_jac_block));
   }
 
   // Check that jac wrt seed_var is zero
