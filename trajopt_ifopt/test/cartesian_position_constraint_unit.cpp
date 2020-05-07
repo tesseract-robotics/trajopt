@@ -13,6 +13,7 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt_ifopt/constraints/cartesian_position_constraint.h>
+#include <trajopt_ifopt/utils/numeric_differentiation.h>
 #include <trajopt_test_utils.hpp>
 
 using namespace trajopt;
@@ -64,9 +65,7 @@ public:
 
     auto pos = Eigen::VectorXd::Ones(forward_kinematics_->numJoints());
     auto var0 = std::make_shared<trajopt::JointPosition>(pos, "Joint_Position_0");
-    auto var1 = std::make_shared<trajopt::JointPosition>(pos, "Joint_Position_1");
     nlp_.AddVariableSet(var0);
-    nlp_.AddVariableSet(var1);
 
     // 4) Add constraints
     auto target_pose = Eigen::Isometry3d::Identity();
@@ -75,44 +74,97 @@ public:
   }
 };
 
+/** @brief Checks that the GetValue function is correct */
 TEST_F(CartesianPositionConstraintUnit, GetValue)  // NOLINT
 {
   CONSOLE_BRIDGE_logDebug("CartesianPositionConstraintUnit, GetValue");
 
-  // TODO: Add checks to the value and jacobian
-  //    // Run IK to get target joint pose
-  //    Eigen::VectorXd joint_position_single = Eigen::VectorXd::Ones(forward_kinematics_->numJoints());
-  //    auto target_pose = Eigen::Isometry3d::Identity();
-  //    inverse_kinematics_->calcInvKin(joint_position_single, target_pose, joint_position_single);
-  //    constraint_->SetTargetPose(target_pose);
+  // Run FK to get target pose
+  Eigen::VectorXd joint_position = Eigen::VectorXd::Ones(n_dof_);
+  Eigen::Isometry3d target_pose;
+  forward_kinematics_->calcFwdKin(target_pose, joint_position);
+  constraint_->SetTargetPose(target_pose);
 
-  //    // Set the joints to that joint position
-  //    Eigen::VectorXd joint_position = Eigen::VectorXd::Ones(n_dof_ * 2);
-  //    nlp_.SetVariables(joint_position.data());
+  // Set the joints to the joint position that should satisfy it
+  nlp_.SetVariables(joint_position.data());
 
-  //    // Get the value (distance from IK position)
-  //    Eigen::VectorXd values = constraint_->GetValues();
-  //    EXPECT_TRUE(values.isApprox(Eigen::VectorXd::Zero(n_dof_)));
+  // Given a joint position at the target, the error should be 0
+  {
+    auto error = constraint_->CalcValues(joint_position);
+    EXPECT_LT(error.maxCoeff(), 1e-3);
+    EXPECT_GT(error.minCoeff(), -1e-3);
+  }
+  {
+    auto error = constraint_->GetValues();
+    EXPECT_LT(error.maxCoeff(), 1e-3);
+    EXPECT_GT(error.minCoeff(), -1e-3);
+  }
 
-  //    // Check that jac wrt constraint_var is identity
-  //    {
-  //      ifopt::ConstraintSet::Jacobian jac_block;
-  //      jac_block.resize(n_dof_, n_dof_);
-  //      constraint_->FillJacobianBlock("Joint_Position_0", jac_block);
-  //      // Check that the size is correct
-  //      EXPECT_EQ(jac_block.nonZeros(), n_dof_);
-  //      // Check that it is identity
-  //      for (Eigen::Index i = 0; i < n_dof_; i++)
-  //        EXPECT_EQ(jac_block.coeff(i, i), -1.0);
-  //    }
+  // Given a joint position a small distance away, check the error for translation
+  {
+    Eigen::Isometry3d target_pose_mod = target_pose;
+    target_pose_mod.translate(Eigen::Vector3d(0.1, 0.0, 0.0));
+    constraint_->SetTargetPose(target_pose_mod);
+    auto error = constraint_->CalcValues(joint_position);
+    EXPECT_NEAR(error[0], -0.1, 1e-3);
+  }
+  {
+    Eigen::Isometry3d target_pose_mod = target_pose;
+    target_pose_mod.translate(Eigen::Vector3d(0.0, 0.2, 0.0));
+    constraint_->SetTargetPose(target_pose_mod);
+    auto error = constraint_->CalcValues(joint_position);
+    EXPECT_NEAR(error[1], -0.2, 1e-3);
+  }
+  {
+    Eigen::Isometry3d target_pose_mod = target_pose;
+    target_pose_mod.translate(Eigen::Vector3d(0.0, 0.0, -0.3));
+    constraint_->SetTargetPose(target_pose_mod);
+    auto error = constraint_->CalcValues(joint_position);
+    EXPECT_NEAR(error[2], 0.3, 1e-3);
+  }
 
-  //    // Check that jac wrt seed_var is zero
-  //    {
-  //      ifopt::ConstraintSet::Jacobian jac_block;
-  //      jac_block.resize(n_dof_, n_dof_);
-  //      constraint_->FillJacobianBlock("Joint_Position_1", jac_block);
-  //      EXPECT_EQ(jac_block.nonZeros(), 0);
-  //    }
+  // TODO: Check error for orientation
+}
+
+/** @brief Checks that the FillJacobian function is correct */
+TEST_F(CartesianPositionConstraintUnit, FillJacobian)
+{
+  CONSOLE_BRIDGE_logDebug("CartesianPositionConstraintUnit, FillJacobian");
+
+  // Run FK to get target pose
+  Eigen::VectorXd joint_position = Eigen::VectorXd::Ones(n_dof_);
+  Eigen::Isometry3d target_pose;
+  forward_kinematics_->calcFwdKin(target_pose, joint_position);
+  constraint_->SetTargetPose(target_pose);
+
+  // Modify one joint at a time
+  for (Eigen::Index i = 0; i < n_dof_; i++)
+  {
+    // Set the joints
+    Eigen::VectorXd joint_position_mod = joint_position;
+    joint_position_mod[i] = 2.0;
+    nlp_.SetVariables(joint_position_mod.data());
+
+    // Calculate jacobian numerically
+    auto error_calculator = [&](const Eigen::Ref<Eigen::VectorXd>& x) { return constraint_->CalcValues(x); };
+    trajopt::Jacobian num_jac_block = trajopt::calcForwardNumJac(error_calculator, joint_position_mod, 1e-4);
+
+    // Compare to constraint jacobian
+    {
+      trajopt::Jacobian jac_block(num_jac_block.rows(), num_jac_block.cols());
+      constraint_->CalcJacobianBlock(joint_position_mod, jac_block);
+      EXPECT_TRUE(jac_block.isApprox(num_jac_block, 1e-3));
+      //      std::cout << "Numeric:\n" << num_jac_block.toDense() << std::endl;
+      //      std::cout << "Analytic:\n" << jac_block.toDense() << std::endl;
+    }
+    {
+      trajopt::Jacobian jac_block(num_jac_block.rows(), num_jac_block.cols());
+      constraint_->FillJacobianBlock("Joint_Position_0", jac_block);
+      EXPECT_TRUE(jac_block.toDense().isApprox(num_jac_block.toDense(), 1e-3));
+      //      std::cout << "Numeric:\n" << num_jac_block.toDense() << std::endl;
+      //      std::cout << "Analytic:\n" << jac_block.toDense() << std::endl;
+    }
+  }
 }
 
 /**
