@@ -28,15 +28,18 @@ void ConvexObjective::addHinge(const AffExpr& affexpr, double coeff)
 
 void ConvexObjective::addAbs(const AffExpr& affexpr, double coeff)
 {
+  // Add variables that will enforce ABS
   Var neg = model_->addVar("neg", 0, INFINITY);
   Var pos = model_->addVar("pos", 0, INFINITY);
   vars_.push_back(neg);
   vars_.push_back(pos);
+  // Coeff will be applied whenever neg/pos are not 0
   AffExpr neg_plus_pos;
   neg_plus_pos.coeffs = DblVec(2, coeff);
   neg_plus_pos.vars.push_back(neg);
   neg_plus_pos.vars.push_back(pos);
   exprInc(quad_, neg_plus_pos);
+  // Add neg/pos to problem. They will be nonzero when ABS is not satisfied
   AffExpr affeq = affexpr;
   affeq.vars.push_back(neg);
   affeq.vars.push_back(pos);
@@ -245,6 +248,18 @@ DblVec OptProb::getCentralFeasiblePoint(const DblVec& x)
 DblVec OptProb::getClosestFeasiblePoint(const DblVec& x)
 {
   LOG_DEBUG("getClosestFeasiblePoint");
+  DblVec y(x.size());
+  for (std::size_t i = 0; i < x.size(); i++)
+  {
+    y[i] = fmax(lower_bounds_[i], x[i]);
+    y[i] = fmin(upper_bounds_[i], x[i]);
+  }
+  return y;
+}
+
+DblVec OptProb::getClosestFeasiblePointQP(const DblVec& x)
+{
+  LOG_DEBUG("getClosestFeasiblePoint using a QP");
   assert(vars_.size() == x.size());
   QuadExpr obj;
   for (unsigned i = 0; i < x.size(); ++i)
