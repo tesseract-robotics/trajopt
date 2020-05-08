@@ -231,6 +231,7 @@ public:
    * constraints */
   DblVec getCentralFeasiblePoint(const DblVec& x);
   DblVec getClosestFeasiblePoint(const DblVec& x);
+  DblVec getClosestFeasiblePointQP(const DblVec& x);
 
   std::vector<Constraint::Ptr> getConstraints() const;
   const std::vector<Cost::Ptr>& getCosts() { return costs_; }
