@@ -51,9 +51,12 @@ public:
   double value(const DblVec& x);
 
   Model* model_;
+  /// The objective Function
   QuadExpr quad_;
   VarVector vars_;
+  /// EQ Constraints
   AffExprVector eqs_;
+  // INEQ Constraints
   AffExprVector ineqs_;
   CntVector cnts_;
 
@@ -230,7 +233,15 @@ public:
   /** Find closest point to solution vector x that satisfies linear inequality
    * constraints */
   DblVec getCentralFeasiblePoint(const DblVec& x);
-  DblVec getClosestFeasiblePoint(const DblVec& x);
+  /**
+   * @brief Pushes the input vector within joint limits by some amount in a repeatable fashion
+   * @param x Input vector. If it is already within joint limits, it will not be changed
+   * @param delta (Default = 1e-3) Amount that it is pushed within the joint limits. Pushing it exactly onto a limit can
+   * cause numerical problems
+   * @return The input vector x with values modified to be within the joint limits
+   */
+  DblVec getClosestFeasiblePoint(const DblVec& x, const double& delta = 1e-3);
+  /** This one does it by solving the QP with only variable limits */
   DblVec getClosestFeasiblePointQP(const DblVec& x);
 
   std::vector<Constraint::Ptr> getConstraints() const;

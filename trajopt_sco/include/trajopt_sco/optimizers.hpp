@@ -207,6 +207,8 @@ struct BasicTrustRegionSQPResults
   void writeCosts(std::FILE* stream, bool header = false) const;
   /** @brief Write constraint results to file */
   void writeConstraints(std::FILE* stream, bool header = false) const;
+  /** @brief Prints the raw values to the terminal */
+  void printRaw() const;
 };
 
 class BasicTrustRegionSQP : public Optimizer

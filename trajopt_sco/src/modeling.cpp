@@ -245,14 +245,15 @@ DblVec OptProb::getCentralFeasiblePoint(const DblVec& x)
   return getClosestFeasiblePoint(center);
 }
 
-DblVec OptProb::getClosestFeasiblePoint(const DblVec& x)
+DblVec OptProb::getClosestFeasiblePoint(const DblVec& x, const double& delta)
 {
   LOG_DEBUG("getClosestFeasiblePoint");
   DblVec y(x.size());
   for (std::size_t i = 0; i < x.size(); i++)
   {
-    y[i] = fmax(lower_bounds_[i], x[i]);
-    y[i] = fmin(upper_bounds_[i], x[i]);
+    // Force it a tiny bit inside the bounds
+    y[i] = fmax(lower_bounds_[i] + delta, x[i]);
+    y[i] = fmin(upper_bounds_[i] - delta, x[i]);
   }
   return y;
 }
