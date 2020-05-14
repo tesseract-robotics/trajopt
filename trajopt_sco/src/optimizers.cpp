@@ -16,6 +16,8 @@ TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace sco
 {
+const bool SUPER_DEBUG_MODE = false;
+
 std::ostream& operator<<(std::ostream& o, const OptResults& r)
 {
   o << "Optimization results:" << std::endl
@@ -497,6 +499,56 @@ void BasicTrustRegionSQPResults::writeConstraints(std::FILE* stream, bool header
   std::fflush(stream);
 }
 
+void BasicTrustRegionSQPResults::printRaw() const
+{
+  std::cout << "\nmodel_var_vals:";
+  for (auto& i : model_var_vals)
+    std::cout << i << ", ";
+
+  std::cout << "\nmodel_cost_vals: ";
+  for (auto& i : model_cost_vals)
+    std::cout << i << ", ";
+
+  std::cout << "\nmodel_cnt_viols: ";
+  for (auto& i : model_cnt_viols)
+    std::cout << i << ", ";
+  std::cout << "\nnew_x: ";
+  for (auto& i : new_x)
+    std::cout << i << ", ";
+  std::cout << "\nnew_cost_vals: ";
+  for (auto& i : new_cost_vals)
+    std::cout << i << ", ";
+  std::cout << "\nold_cost_vals: ";
+  for (auto& i : old_cost_vals)
+    std::cout << i << ", ";
+  std::cout << "\nnew_cnt_viols: ";
+  for (auto& i : new_cnt_viols)
+    std::cout << i << ", ";
+  std::cout << "\nold_cnt_viols: ";
+  for (auto& i : old_cnt_viols)
+    std::cout << i << ", ";
+
+  std::cout << "\nold_merit: " << old_merit << " \n";
+  std::cout << "model_merit: " << model_merit << " \n";
+  std::cout << "new_merit: " << new_merit << " \n";
+  std::cout << "approx_merit_improve: " << approx_merit_improve << " \n";
+  std::cout << "exact_merit_improve: " << exact_merit_improve << " \n";
+  std::cout << "merit_improve_ratio: " << merit_improve_ratio << " \n";
+
+  std::cout << "merit_error_coeffs: ";
+  for (auto& i : merit_error_coeffs)
+    std::cout << i << ", ";
+  std::cout << "\nvar_names: ";
+  for (auto& i : var_names)
+    std::cout << i << ", ";
+  std::cout << "\ncost_names: ";
+  for (auto& i : cost_names)
+    std::cout << i << ", ";
+  std::cout << "\ncnt_names: ";
+  for (auto& i : cnt_names)
+    std::cout << i << ", ";
+}
+
 OptStatus BasicTrustRegionSQP::optimize()
 {
   std::vector<std::string> var_names = getVarNames(prob_->getVars());
@@ -613,6 +665,11 @@ OptStatus BasicTrustRegionSQP::optimize()
                                  constraints,
                                  prob_->getCosts(),
                                  merit_error_coeffs);
+        if (SUPER_DEBUG_MODE)
+        {
+          model_->writeToFile("trajopt_model.txt");
+          iteration_results.printRaw();
+        }
 
         if (param_.log_results || util::GetLogLevel() >= util::LevelDebug)
         {

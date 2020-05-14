@@ -5,6 +5,7 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <Eigen/SparseCore>
 #include <fstream>
 #include <csignal>
+#include <iomanip>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt_sco/osqp_interface.hpp>
@@ -15,6 +16,7 @@ TRAJOPT_IGNORE_WARNINGS_POP
 namespace sco
 {
 const double OSQP_INFINITY = std::numeric_limits<double>::infinity();
+const bool SUPER_DEBUG_MODE = false;
 
 Model::Ptr createOSQPModel()
 {
@@ -32,7 +34,7 @@ OSQPModel::OSQPModel() : P_(nullptr), A_(nullptr)
   osqp_settings_.eps_rel = 1e-6;
   osqp_settings_.max_iter = 8192;
   osqp_settings_.polish = 1;
-  osqp_settings_.verbose = false;
+  osqp_settings_.verbose = SUPER_DEBUG_MODE;
   osqp_settings_.adaptive_rho = false;
 }
 OSQPModel::~OSQPModel()
@@ -99,6 +101,8 @@ void OSQPModel::updateObjective()
   // Copy triangular upper into empty matrix
   Eigen::SparseMatrix<double> triangular_sm;
   triangular_sm = sm.triangularView<Eigen::Upper>();
+  if (SUPER_DEBUG_MODE)
+    std::cout << std::fixed << std::setprecision(3) << "OSQP Hessian:\n" << triangular_sm.toDense() << std::endl;
   eigenToCSC(triangular_sm, P_row_indices_, P_column_pointers_, P_csc_data_);
 
   P_.reset(csc_matrix(osqp_data_.n,
@@ -110,6 +114,12 @@ void OSQPModel::updateObjective()
 
   osqp_data_.P = P_.get();
   osqp_data_.q = q_.data();
+
+  if (SUPER_DEBUG_MODE)
+  {
+    Eigen::Map<Eigen::VectorXd> q_vec(q_.data(), q_.size());
+    std::cout << std::fixed << std::setprecision(3) << "OSQP Gradient: " << q_vec.transpose() << std::endl;
+  }
 }
 
 void OSQPModel::updateConstraints()
@@ -145,7 +155,8 @@ void OSQPModel::updateConstraints()
     u_[i_bnd + m] = fmin(ubs_[i_bnd], OSQP_INFINITY);
     sm.insert(static_cast<Eigen::Index>(i_bnd + m), static_cast<Eigen::Index>(i_bnd)) = 1.;
   }
-
+  if (SUPER_DEBUG_MODE)
+    std::cout << std::fixed << std::setprecision(3) << "OSQP Constraint Matrix:\n" << sm.toDense() << std::endl;
   eigenToCSC(sm, A_row_indices_, A_column_pointers_, A_csc_data_);
 
   A_.reset(csc_matrix(osqp_data_.m,
@@ -156,6 +167,14 @@ void OSQPModel::updateConstraints()
                       A_column_pointers_.data()));
 
   osqp_data_.A = A_.get();
+
+  if (SUPER_DEBUG_MODE)
+  {
+    Eigen::Map<Eigen::VectorXd> l_vec(l_.data(), static_cast<Eigen::Index>(l_.size()));
+    Eigen::Map<Eigen::VectorXd> u_vec(u_.data(), static_cast<Eigen::Index>(u_.size()));
+    std::cout << "OSQP Lower Bounds: " << l_vec.transpose() << std::endl;
+    std::cout << "OSQP Upper Bounds: " << u_vec.transpose() << std::endl;
+  }
   osqp_data_.l = l_.data();
   osqp_data_.u = u_.data();
 }
@@ -254,6 +273,13 @@ CvxOptStatus OSQPModel::optimize()
   {
     // opt += m_objective.affexpr.constant;
     solution_ = DblVec(osqp_workspace_->solution->x, osqp_workspace_->solution->x + vars_.size());
+
+    if (SUPER_DEBUG_MODE)
+    {
+      Eigen::Map<Eigen::VectorXd> solution_vec(solution_.data(), static_cast<Eigen::Index>(solution_.size()));
+      std::cout << "Solution: " << solution_vec.transpose() << std::endl;
+    }
+
     auto status = static_cast<int>(osqp_workspace_->info->status_val);
     if (status == OSQP_SOLVED || status == OSQP_SOLVED_INACCURATE)
       return CVX_SOLVED;
