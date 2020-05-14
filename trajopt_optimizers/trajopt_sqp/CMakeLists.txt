@@ -13,6 +13,7 @@ find_package(trajopt_utils REQUIRED)
 
 add_library(${PROJECT_NAME} SHARED
     src/osqp_eigen_solver.cpp
+    src/qp_problem.cpp
     src/trust_region_sqp_solver.cpp
 )
 target_include_directories(${PROJECT_NAME}

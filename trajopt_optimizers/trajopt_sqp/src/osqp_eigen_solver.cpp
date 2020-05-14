@@ -2,224 +2,93 @@
 
 #include <OsqpEigen/OsqpEigen.h>
 
-namespace trajopt
+namespace trajopt_sqp
 {
-void OSQPEigenSolver::init(ifopt::Problem& nlp)
+bool OSQPEigenSolver::init(Eigen::Index num_vars, Eigen::Index num_cnts)
 {
-  nlp_ = &nlp;
-  solver_.clearSolver();
-
-  num_vars_ = nlp_->GetNumberOfOptimizationVariables();
-  num_cnts_ = nlp_->GetNumberOfConstraints();
-
-  // set the initial data of the QP solver_
+  // Set the solver size
+  num_cnts_ = num_cnts;
+  num_vars_ = num_vars;
   solver_.data()->setNumberOfVariables(static_cast<int>(num_vars_));
-  // OSQP does not have variable limits, so we set constraints on them
-  solver_.data()->setNumberOfConstraints(static_cast<int>(num_cnts_ + num_vars_));
+  solver_.data()->setNumberOfConstraints(static_cast<int>(num_cnts_));
 
-  box_size_ = Eigen::VectorXd::Ones(num_vars_) * 1e-1;
-  full_bounds_lower_ = Eigen::VectorXd::Ones(num_cnts_ + num_vars_) * -OSQP_INFTY;
-  full_bounds_upper_ = Eigen::VectorXd::Ones(num_cnts_ + num_vars_) * OSQP_INFTY;
+  // Initialize the bounds
+  bounds_lower_ = Eigen::VectorXd::Ones(num_cnts_) * -OSQP_INFTY;
+  bounds_upper_ = Eigen::VectorXd::Ones(num_cnts_) * OSQP_INFTY;
+
+  return solver_.initSolver();
 }
 
-void OSQPEigenSolver::convexifyAndSolve()
+bool OSQPEigenSolver::clear()
 {
-  assert(nlp_->GetNumberOfConstraints() == num_cnts_);
-  assert(nlp_->GetNumberOfOptimizationVariables() == num_vars_);
-
+  // Clear all data
   solver_.clearSolver();
-
-  convexify();
-  updateConstraintBounds();
-  updateVariableBounds();
-
-  ////////////////////////////////////////////////////////
-  // Instantiate the solver
-  ////////////////////////////////////////////////////////
-  solver_.initSolver();
-
-  ////////////////////////////////////////////////////////
-  // Solve and save the solution
-  ////////////////////////////////////////////////////////
-  solver_.solve();
-  results_ = solver_.getSolution();
-}
-
-void OSQPEigenSolver::solve()
-{
-  assert(nlp_->GetNumberOfConstraints() == num_cnts_);
-  assert(nlp_->GetNumberOfOptimizationVariables() == num_vars_);
-
-  solver_.clearSolver();
-  solver_.initSolver();
-  bool success = solver_.solve();
-  assert(success);
-  results_ = solver_.getSolution();
-  //  solver_.setWarmStart
-}
-
-void OSQPEigenSolver::convexify()
-{
-  assert(nlp_->GetNumberOfConstraints() == num_cnts_);
-  assert(nlp_->GetNumberOfOptimizationVariables() == num_vars_);
-
-  ////////////////////////////////////////////////////////
-  // Set the Hessian (empty for now)
-  ////////////////////////////////////////////////////////
   solver_.data()->clearHessianMatrix();
-  hessian_.resize(num_vars_, num_vars_);
-  solver_.data()->setHessianMatrix(hessian_);
-
-  ////////////////////////////////////////////////////////
-  // Set the gradient
-  ////////////////////////////////////////////////////////
-  gradient_.resize(num_vars_);
-  ifopt::ConstraintSet::Jacobian cost_jac = nlp_->GetJacobianOfCosts();
-  if (cost_jac.nonZeros() > 0)
-    gradient_ << cost_jac.toDense().transpose();
-  else
-    gradient_ = Eigen::VectorXd::Zero(num_vars_);
-  solver_.data()->setGradient(gradient_);
-
-  ////////////////////////////////////////////////////////
-  // Linearize Constraints
-  ////////////////////////////////////////////////////////
-  Eigen::SparseMatrix<double> jac = nlp_->GetJacobianOfConstraints();
-
-  // Create triplet list of nonzero constraints
-  using T = Eigen::Triplet<double>;
-  std::vector<T> tripletList;
-  tripletList.reserve(static_cast<std::size_t>(jac.nonZeros()));
-
-  // Iterate over nonzero elements of jac and add them to triplet list
-  for (int k = 0; k < jac.outerSize(); ++k)
-  {
-    for (Eigen::SparseMatrix<double>::InnerIterator it(jac, k); it; ++it)
-    {
-      tripletList.emplace_back(it.row(), it.col(), it.value());
-    }
-  }
-  // Add a diagonal matrix for the variable limits below the actual constraints
-  for (Eigen::Index i = 0; i < num_vars_; i++)
-    tripletList.emplace_back(i + jac.rows(), i, 1);
-
-  // Insert the triplet list into the sparse matrix
-  Eigen::SparseMatrix<double> linearMatrix(num_cnts_ + num_vars_, num_vars_);
-  linearMatrix.reserve(jac.nonZeros() + num_vars_);
-  linearMatrix.setFromTriplets(tripletList.begin(), tripletList.end());
-
-  // Set linear constraints
   solver_.data()->clearLinearConstraintsMatrix();
-  solver_.data()->setLinearConstraintsMatrix(linearMatrix);
+  return true;
 }
 
-double OSQPEigenSolver::evaluateConvexCost(const Eigen::Ref<Eigen::VectorXd>& var_vals)
+bool OSQPEigenSolver::solve() { return solver_.solve(); }
+
+Eigen::VectorXd OSQPEigenSolver::getSolution()
 {
-  double result_quad = var_vals.transpose() * hessian_ * var_vals;
-  double result_lin = gradient_.transpose() * var_vals;
-  return result_quad + result_lin;
+  Eigen::VectorXd solution = solver_.getSolution();
+  return solution;
 }
 
-Eigen::VectorXd OSQPEigenSolver::getConstraintViolations()
+bool OSQPEigenSolver::updateHessianMatrix(const Hessian& hessian)
 {
-  Eigen::VectorXd cnt_eval = nlp_->EvaluateConstraints(nlp_->GetOptVariables()->GetValues().data());
+  if (solver_.isInitialized())
+    return solver_.updateHessianMatrix(hessian);
+  solver_.data()->clearHessianMatrix();
+  Hessian cleaned = hessian.pruned(1e-7);
+  std::cout << "Hessian nonzero: " << cleaned.nonZeros() << std::endl;
 
-  // Values will be negative if they violate the constraint
-  Eigen::VectorXd dist_from_lower = -(full_bounds_lower_.topRows(num_cnts_) - cnt_eval);
-  Eigen::VectorXd dist_from_upper = full_bounds_upper_.topRows(num_cnts_) - cnt_eval;
-  Eigen::VectorXd zero = Eigen::VectorXd::Zero(num_cnts_);
-
-  // Now we put those values into a matrix
-  Eigen::MatrixXd tmp(num_cnts_, 3);
-  tmp << dist_from_lower, dist_from_upper, zero;
-
-  // We return the worst violation and flip it so violations are positive
-  Eigen::VectorXd violation = -1 * tmp.rowwise().minCoeff();
-  return violation;
+  return solver_.data()->setHessianMatrix(cleaned);
 }
 
-void OSQPEigenSolver::updateConstraintBounds()
+bool OSQPEigenSolver::updateGradient(const Eigen::Ref<Eigen::VectorXd>& gradient)
 {
-  assert(nlp_->GetNumberOfConstraints() == num_cnts_);
-  assert(nlp_->GetNumberOfOptimizationVariables() == num_vars_);
-  if (num_cnts_)
-  {
-    ////////////////////////////////////////////////////////
-    // Set the bounds of the constraints
-    ////////////////////////////////////////////////////////
-    Eigen::VectorXd cnt_bound_lower(num_cnts_);
-    Eigen::VectorXd cnt_bound_upper(num_cnts_);
+  if (solver_.isInitialized())
+    return solver_.updateGradient(gradient);
 
-    // Convert constraint bounds to VectorXd
-    std::vector<ifopt::Bounds> cnt_bounds = nlp_->GetBoundsOnConstraints();
-    for (Eigen::Index i = 0; i < num_cnts_; i++)
-    {
-      cnt_bound_lower[i] = cnt_bounds[static_cast<std::size_t>(i)].lower_;
-      cnt_bound_upper[i] = cnt_bounds[static_cast<std::size_t>(i)].upper_;
-    }
-
-    // Get values about which we will linearize
-    Eigen::VectorXd x_initial = nlp_->GetVariableValues();
-    Eigen::VectorXd cnt_initial_value = nlp_->EvaluateConstraints(x_initial.data());
-
-    // Our error is now represented as dy(x0)/dx * x + (y(x0) - dy(xo)/dx * x0)
-    // This accounts for moving (error - dy/dx*x) term to other side of equation
-    Eigen::SparseMatrix<double> jac = nlp_->GetJacobianOfConstraints();
-    // TODO: I think I was messing with joint limits here. I need to only do this change on the cnts (top part)
-    Eigen::VectorXd linearized_cnt_lower = cnt_bound_lower - (cnt_initial_value - jac * x_initial);
-    Eigen::VectorXd linearized_cnt_upper = cnt_bound_upper - (cnt_initial_value - jac * x_initial);
-
-    // Insert linearized constraint bounds
-    full_bounds_lower_.topRows(num_cnts_) =
-        linearized_cnt_lower.cwiseMax(Eigen::VectorXd::Ones(num_cnts_) * -OSQP_INFTY);
-    full_bounds_upper_.topRows(num_cnts_) =
-        linearized_cnt_upper.cwiseMin(Eigen::VectorXd::Ones(num_cnts_) * OSQP_INFTY);
-
-    solver_.data()->setLowerBound(full_bounds_lower_);
-    solver_.data()->setUpperBound(full_bounds_upper_);
-  }
+  return solver_.data()->setGradient(gradient);
 }
 
-void OSQPEigenSolver::updateVariableBounds()
+bool OSQPEigenSolver::updateLowerBound(const Eigen::Ref<const Eigen::VectorXd>& lowerBound)
 {
-  assert(nlp_->GetNumberOfConstraints() == num_cnts_);
-  assert(nlp_->GetNumberOfOptimizationVariables() == num_vars_);
-  Eigen::VectorXd x_initial = nlp_->GetVariableValues();
-
-  // Calculate box constraints
-  Eigen::VectorXd lower_box_cnt = x_initial - box_size_;
-  Eigen::VectorXd upper_box_cnt = x_initial + box_size_;
-
-  // Set the variable limits once
-  std::vector<ifopt::Bounds> var_bounds = nlp_->GetBoundsOnOptimizationVariables();
-  Eigen::VectorXd var_bounds_lower(num_vars_);
-  Eigen::VectorXd var_bounds_upper(num_vars_);
-  for (Eigen::Index i = 0; i < num_vars_; i++)
-  {
-    var_bounds_lower[i] = var_bounds[static_cast<std::size_t>(i)].lower_;
-    var_bounds_upper[i] = var_bounds[static_cast<std::size_t>(i)].upper_;
-  }
-
-  // Apply box constraints and variable limits
-  Eigen::VectorXd var_bounds_lower_final =
-      var_bounds_lower.cwiseMax(Eigen::VectorXd::Ones(num_vars_) * -OSQP_INFTY).cwiseMax(lower_box_cnt);
-  // Add the extra check here that the upper is bigger than the lower. There can be issues when the numbers get close to
-  // 0.
-  Eigen::VectorXd var_bounds_upper_final = var_bounds_upper.cwiseMin(Eigen::VectorXd::Ones(num_vars_) * OSQP_INFTY)
-                                               .cwiseMin(upper_box_cnt)
-                                               .cwiseMax(var_bounds_lower);
-  full_bounds_lower_.bottomRows(num_vars_) = var_bounds_lower_final;
-  full_bounds_upper_.bottomRows(num_vars_) = var_bounds_upper_final;
-
-  // Send the full bounds vector to OSQP
-  solver_.data()->setLowerBound(full_bounds_lower_);
-  solver_.data()->setUpperBound(full_bounds_upper_);
+  bounds_lower_ = lowerBound.cwiseMax(Eigen::VectorXd::Ones(num_cnts_) * -OSQP_INFTY);
+  return solver_.updateLowerBound(bounds_lower_);
 }
 
-void OSQPEigenSolver::setBoxSize(const Eigen::Ref<const Eigen::VectorXd>& box_size)
+bool OSQPEigenSolver::updateUpperBound(const Eigen::Ref<const Eigen::VectorXd>& upperBound)
 {
-  assert(box_size.size() == num_vars_);
-  box_size_ = box_size;
+  bounds_upper_ = upperBound.cwiseMin(Eigen::VectorXd::Ones(num_cnts_) * OSQP_INFTY);
+  return solver_.updateUpperBound(bounds_upper_);
 }
 
-}  // namespace trajopt
+bool OSQPEigenSolver::updateBounds(const Eigen::Ref<const Eigen::VectorXd>& lowerBound,
+                                   const Eigen::Ref<const Eigen::VectorXd>& upperBound)
+{
+  bounds_lower_ = lowerBound.cwiseMax(Eigen::VectorXd::Ones(num_cnts_) * -OSQP_INFTY);
+  bounds_upper_ = upperBound.cwiseMin(Eigen::VectorXd::Ones(num_cnts_) * OSQP_INFTY);
+  if (solver_.isInitialized())
+    return solver_.updateBounds(bounds_lower_, bounds_upper_);
+
+  solver_.data()->setLowerBound(bounds_lower_);
+  solver_.data()->setUpperBound(bounds_upper_);
+  return true;
+}
+
+bool OSQPEigenSolver::updateLinearConstraintsMatrix(const Jacobian& linearConstraintsMatrix)
+{
+  solver_.data()->clearLinearConstraintsMatrix();
+  Jacobian cleaned = linearConstraintsMatrix.pruned(1e-7);
+  std::cout << "Constraint Matrix nonzero: " << cleaned.nonZeros() << std::endl;
+  return solver_.data()->setLinearConstraintsMatrix(cleaned);
+  //  return solver_.updateLinearConstraintsMatrix(linearConstraintsMatrix);
+}
+
+QP_SOLVER_STATUS OSQPEigenSolver::getSolverStatus() { return QP_SOLVER_STATUS::INITIALIZED; }
+
+}  // namespace trajopt_sqp

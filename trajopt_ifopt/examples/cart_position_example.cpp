@@ -16,6 +16,9 @@ TRAJOPT_IGNORE_WARNINGS_POP
 #include <trajopt_ifopt/constraints/cartesian_position_constraint.h>
 #include <trajopt_ifopt/variable_sets/joint_position_variable.h>
 #include <trajopt_ifopt/costs/squared_cost.h>
+#include <trajopt_ifopt/utils/trajopt_utils.h>
+#include <trajopt_ifopt/callbacks/joint_state_plotter.h>
+#include <trajopt_ifopt/callbacks/cartesian_error_plotter.h>
 
 inline std::string locateResource(const std::string& url)
 {
@@ -68,34 +71,61 @@ int main(int /*argc*/, char** /*argv*/)
   // 2) Create the problem
   ifopt::Problem nlp;
 
+  // Get target position
+  Eigen::VectorXd start_pos(forward_kinematics->numJoints());
+  std::cout << "Joint Limits:\n" << forward_kinematics->getLimits().transpose() << std::endl;
+  start_pos << 0.0, 0, 0, -1.0, 0, -1, -0.00;
+
+  auto target_pose = Eigen::Isometry3d::Identity();
+  auto joint_target = start_pos;
+  forward_kinematics->calcFwdKin(target_pose, joint_target);
+  auto world_to_base =
+      tesseract->getEnvironment()->getCurrentState()->link_transforms.at(forward_kinematics->getBaseLinkName());
+  target_pose = world_to_base * target_pose;
+  std::cout << "target_pose:\n" << target_pose.matrix() << std::endl;
+
   // 3) Add Variables
   std::vector<trajopt::JointPosition::Ptr> vars;
   for (int ind = 0; ind < 1; ind++)
   {
-    auto pos = Eigen::VectorXd::Zero(forward_kinematics->numJoints());
-    auto var = std::make_shared<trajopt::JointPosition>(pos, "Joint_Position_" + std::to_string(ind));
+    auto zero = Eigen::VectorXd::Zero(7);
+    auto var = std::make_shared<trajopt::JointPosition>(
+        zero, forward_kinematics->getJointNames(), "Joint_Position_" + std::to_string(ind));
     vars.push_back(var);
     nlp.AddVariableSet(var);
   }
 
   // 4) Add constraints
-  auto target_pose = Eigen::Isometry3d::Identity();
+  forward_kinematics->calcFwdKin(target_pose, joint_target);
   for (const auto& var : vars)
   {
     auto cnt = std::make_shared<trajopt::CartPosConstraint>(target_pose, kinematic_info, var);
-    cnt->LinkWithVariables(nlp.GetOptVariables());
-    auto cost = std::make_shared<trajopt::SquaredCost>(cnt);
-    nlp.AddCostSet(cost);
+    nlp.AddConstraintSet(cnt);
+    //    cnt->LinkWithVariables(nlp.GetOptVariables());
+    //    auto cost = std::make_shared<trajopt::SquaredCost>(cnt);
+    //    nlp.AddCostSet(cost);
   }
 
   nlp.PrintCurrent();
   std::cout << "Constraint Jacobian: \n" << nlp.GetJacobianOfConstraints() << std::endl;
 
   // 5) Choose solver and options
-  auto qp_solver = std::make_shared<trajopt::OSQPEigenSolver>();
-  trajopt::TrustRegionSQPSolver solver(qp_solver);
-  qp_solver->solver_.settings()->setVerbosity(false);
+  auto qp_solver = std::make_shared<trajopt_sqp::OSQPEigenSolver>();
+  trajopt_sqp::TrustRegionSQPSolver solver(qp_solver);
+  qp_solver->solver_.settings()->setVerbosity(true);
   qp_solver->solver_.settings()->setWarmStart(true);
+  qp_solver->solver_.settings()->setPolish(true);
+  qp_solver->solver_.settings()->setAdaptiveRho(false);
+  qp_solver->solver_.settings()->setMaxIteraction(8192);
+  qp_solver->solver_.settings()->setAbsoluteTolerance(1e-4);
+  qp_solver->solver_.settings()->setRelativeTolerance(1e-6);
+
+  //  ifopt::IpoptSolver solver;
+  //  solver.SetOption("derivative_test", "first-order");
+  //  solver.SetOption("linear_solver", "mumps");
+  //  //  ipopt.SetOption("jacobian_approximation", "finite-difference-values");
+  //  solver.SetOption("jacobian_approximation", "exact");
+  //  solver.SetOption("print_level", 5);
 
   // 6) solve
   solver.Solve(nlp);

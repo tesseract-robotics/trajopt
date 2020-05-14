@@ -22,9 +22,10 @@ int main(int /*argc*/, char** /*argv*/)
 
   // 2) Add Variables
   std::vector<trajopt::JointPosition::Ptr> vars;
+  std::vector<std::string> joint_names(7, "name");
   {
     auto pos = Eigen::VectorXd::Zero(7);
-    auto var = std::make_shared<trajopt::JointPosition>(pos, "Joint_Position_0");
+    auto var = std::make_shared<trajopt::JointPosition>(pos, joint_names, "Joint_Position_0");
     auto bounds = std::vector<ifopt::Bounds>(7, ifopt::NoBound);
     var->SetBounds(bounds);
     vars.push_back(var);
@@ -33,7 +34,7 @@ int main(int /*argc*/, char** /*argv*/)
   for (int ind = 1; ind < 3; ind++)
   {
     auto pos = Eigen::VectorXd::Ones(7) * 10;
-    auto var = std::make_shared<trajopt::JointPosition>(pos, "Joint_Position_" + std::to_string(ind));
+    auto var = std::make_shared<trajopt::JointPosition>(pos, joint_names, "Joint_Position_" + std::to_string(ind));
     auto bounds = std::vector<ifopt::Bounds>(7, ifopt::NoBound);
     var->SetBounds(bounds);
     vars.push_back(var);
@@ -71,8 +72,8 @@ int main(int /*argc*/, char** /*argv*/)
   //  release
 
   // 5) Set up the solver
-  auto qp_solver = std::make_shared<trajopt::OSQPEigenSolver>();
-  trajopt::TrustRegionSQPSolver solver(qp_solver);
+  auto qp_solver = std::make_shared<trajopt_sqp::OSQPEigenSolver>();
+  trajopt_sqp::TrustRegionSQPSolver solver(qp_solver);
   qp_solver->solver_.settings()->setVerbosity(false);
   qp_solver->solver_.settings()->setWarmStart(true);
   qp_solver->solver_.settings()->setAbsoluteTolerance(1e-4);

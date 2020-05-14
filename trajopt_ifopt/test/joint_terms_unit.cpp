@@ -17,13 +17,14 @@ TEST(JointTermsUnit, joint_pos_constraint_1)
   CONSOLE_BRIDGE_logDebug("JointTermsUnit, JointPosConstraint_1");
 
   std::vector<JointPosition::Ptr> position_vars;
+  std::vector<std::string> joint_names(10, "name");
   Eigen::VectorXd init1(10);
   init1 << 0, 1, 2, 3, 4, 5, 6, 7, 8, 9;
-  position_vars.push_back(std::make_shared<JointPosition>(init1, "test_var1"));
+  position_vars.push_back(std::make_shared<JointPosition>(init1, joint_names, "test_var1"));
 
   Eigen::VectorXd init2(10);
   init2 << 10, 11, 12, 13, 14, 15, 16, 17, 18, 19;
-  position_vars.push_back(std::make_shared<JointPosition>(init2, "test_var2"));
+  position_vars.push_back(std::make_shared<JointPosition>(init2, joint_names, "test_var2"));
 
   Eigen::VectorXd targets(10);
   targets << 20, 21, 22, 23, 24, 25, 26, 27, 28, 29;

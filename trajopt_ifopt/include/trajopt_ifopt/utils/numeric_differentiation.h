@@ -19,7 +19,7 @@ using Jacobian = Eigen::SparseMatrix<double, Eigen::RowMajor>;
  * @param epsilon Amount x is perturbed
  * @return The resulting jacobian. If f(x) = y, jac.size = [y.size(), x.size()]
  */
-Jacobian calcForwardNumJac(const ErrorCalculator& f, const Eigen::Ref<Eigen::VectorXd>& x, double epsilon)
+inline Jacobian calcForwardNumJac(const ErrorCalculator& f, const Eigen::Ref<Eigen::VectorXd>& x, double epsilon)
 {
   Eigen::VectorXd y = f(x);
   Eigen::MatrixXd out(y.size(), x.size());

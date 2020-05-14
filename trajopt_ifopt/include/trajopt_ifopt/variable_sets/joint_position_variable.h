@@ -3,7 +3,7 @@
 
 #include <ifopt/variable_set.h>
 #include <ifopt/bounds.h>
-#include <trajopt_ifopt/utils/utils.h>
+#include <trajopt_ifopt/utils/ifopt_utils.h>
 
 #include <Eigen/Eigen>
 
@@ -18,8 +18,10 @@ public:
   using Ptr = std::shared_ptr<JointPosition>;
   using ConstPtr = std::shared_ptr<const JointPosition>;
 
-  JointPosition(const Eigen::Ref<const Eigen::VectorXd>& init_value, const std::string& name = "Joint_Position")
-    : ifopt::VariableSet(static_cast<int>(init_value.size()), name)
+  JointPosition(const Eigen::Ref<const Eigen::VectorXd>& init_value,
+                std::vector<std::string> joint_names,
+                const std::string& name = "Joint_Position")
+    : ifopt::VariableSet(static_cast<int>(init_value.size()), name), joint_names_(std::move(joint_names))
   {
     // This needs to be set somehow
     ifopt::Bounds bounds(-M_PI, M_PI);
@@ -56,11 +58,18 @@ public:
    * second column being upper bound
    * @param bounds Columns 1/2 are lower/upper bounds. You probably will get this from forward_kinematics->getLimits()
    */
-  void setBounds(const Eigen::Ref<Eigen::MatrixX2d>& bounds) { bounds_ = toBounds(bounds); }
+  void SetBounds(const Eigen::Ref<Eigen::MatrixX2d>& bounds) { bounds_ = toBounds(bounds); }
+
+  /**
+   * @brief Get the joint names associated with this variable set
+   * @return The joint names
+   */
+  std::vector<std::string> GetJointNames() const { return joint_names_; }
 
 private:
   VecBound bounds_;
   Eigen::VectorXd values_;
+  std::vector<std::string> joint_names_;
 };
 
 }  // namespace trajopt

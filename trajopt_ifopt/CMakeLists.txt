@@ -11,6 +11,7 @@ find_package(tesseract REQUIRED)
 
 list(FIND CMAKE_CXX_COMPILE_FEATURES cxx_std_14 CXX_FEATURE_FOUND)
 
+
 ###########
 ## Build ##
 ###########
@@ -40,10 +41,31 @@ target_include_directories(${PROJECT_NAME} SYSTEM PUBLIC
     ${EIGEN3_INCLUDE_DIRS})
 list (APPEND PACKAGE_LIBRARIES ${PROJECT_NAME})
 
+
+add_library(${PROJECT_NAME}_callbacks SHARED
+    src/callbacks/joint_state_plotter.cpp
+    src/callbacks/cartesian_error_plotter.cpp
+    src/callbacks/collision_plotter.cpp
+    )
+target_include_directories(${PROJECT_NAME}_callbacks
+  PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:include>
+)
+target_link_libraries(${PROJECT_NAME}_callbacks PUBLIC ${PROJECT_NAME} tesseract::tesseract_visualization console_bridge osqp::osqp)
+trajopt_target_compile_options(${PROJECT_NAME}_callbacks PUBLIC)
+trajopt_clang_tidy(${PROJECT_NAME}_callbacks)
+list (APPEND PACKAGE_LIBRARIES ${PROJECT_NAME}_callbacks)
+
 add_executable(${PROJECT_NAME}_cart_position_example examples/cart_position_example.cpp)
-target_link_libraries(${PROJECT_NAME}_cart_position_example ${PROJECT_NAME} ifopt::ifopt_ipopt trajopt::trajopt_sqp trajopt::trajopt_test_data)
+target_link_libraries(${PROJECT_NAME}_cart_position_example ${PROJECT_NAME} ${PROJECT_NAME}_callbacks ifopt::ifopt_ipopt trajopt::trajopt_sqp trajopt::trajopt_test_data)
 set_property(TARGET ${PROJECT_NAME}_cart_position_example PROPERTY CXX_STANDARD 14)
 list (APPEND PACKAGE_LIBRARIES ${PROJECT_NAME}_cart_position_example)
+
+add_executable(${PROJECT_NAME}_cart_position_example_trajopt_sco examples/cart_position_example_trajopt_sco.cpp)
+target_link_libraries(${PROJECT_NAME}_cart_position_example_trajopt_sco ${PROJECT_NAME} ifopt::ifopt_ipopt trajopt::trajopt_sqp trajopt::trajopt_test_data trajopt::trajopt)
+set_property(TARGET ${PROJECT_NAME}_cart_position_example_trajopt_sco PROPERTY CXX_STANDARD 14)
+list (APPEND PACKAGE_LIBRARIES ${PROJECT_NAME}_cart_position_example_trajopt_sco)
 
 add_executable(${PROJECT_NAME}_joint_position_example examples/joint_position_example.cpp)
 target_link_libraries(${PROJECT_NAME}_joint_position_example ${PROJECT_NAME} ifopt::ifopt_ipopt trajopt::trajopt_sqp)

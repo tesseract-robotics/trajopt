@@ -70,7 +70,7 @@ public:
     // 3) Add Variables
     Eigen::VectorXd pos(2);
     pos << -1.9, 0;
-    auto var0 = std::make_shared<trajopt::JointPosition>(pos, "Joint_Position_0");
+    auto var0 = std::make_shared<trajopt::JointPosition>(pos, kin->getJointNames(), "Joint_Position_0");
     nlp_.AddVariableSet(var0);
 
     constraint_ = std::make_shared<trajopt::CollisionConstraintIfopt>(collision_evaluator_, var0);
@@ -164,7 +164,8 @@ TEST_F(CollisionUnit, GetSetBounds)  // NOLINT
   {
     Eigen::VectorXd pos(2);
     pos << -1.9, 0;
-    auto var0 = std::make_shared<trajopt::JointPosition>(pos, "Joint_Position_0");
+    std::vector<std::string> joint_names(2, "names");
+    auto var0 = std::make_shared<trajopt::JointPosition>(pos, joint_names, "Joint_Position_0");
 
     auto constraint_2 = std::make_shared<trajopt::CollisionConstraintIfopt>(collision_evaluator_, var0);
     ifopt::Bounds bounds(-0.1234, 0.5678);

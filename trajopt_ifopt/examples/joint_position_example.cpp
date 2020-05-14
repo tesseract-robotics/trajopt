@@ -25,7 +25,8 @@ int main(int /*argc*/, char** /*argv*/)
   for (int ind = 0; ind < 9; ind++)
   {
     auto pos = Eigen::VectorXd::Zero(7);
-    auto var = std::make_shared<trajopt::JointPosition>(pos, "Joint_Position_" + std::to_string(ind));
+    std::vector<std::string> joint_names(7, "name");
+    auto var = std::make_shared<trajopt::JointPosition>(pos, joint_names, "Joint_Position_" + std::to_string(ind));
     vars.push_back(var);
     nlp.AddVariableSet(var);
   }
@@ -35,6 +36,7 @@ int main(int /*argc*/, char** /*argv*/)
   start_pos << 0, 0, 0, 0, 0, 0, 0;
   std::vector<trajopt::JointPosition::Ptr> start;
   start.push_back(vars.front());
+
   auto start_constraint = std::make_shared<trajopt::JointPosConstraint>(start_pos, start, "StartPosition");
   nlp.AddConstraintSet(start_constraint);
 
