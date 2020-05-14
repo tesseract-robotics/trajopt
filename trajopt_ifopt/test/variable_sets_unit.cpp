@@ -19,7 +19,7 @@ TEST(VariableSetsUnit, joint_position_1)
   std::string name("test_var");
   Eigen::VectorXd init(10);
   init << 0, 1, 2, 3, 4, 5, 6, 7, 8, 9;
-  JointPosition position_var(init, name);
+  JointPosition position_var(init, std::vector<std::string>(), name);
 
   // Check that everything has been initialized correctly
   EXPECT_EQ(position_var.GetRows(), init.size());

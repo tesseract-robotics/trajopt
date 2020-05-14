@@ -10,3 +10,7 @@
     local-name: opw_kinematics
     uri: https://github.com/Jmeyer1292/opw_kinematics.git
     version: master
+- git:
+    local-name: ifopt
+    uri: https://github.com/mpowelson/ifopt.git
+    version: feature/cost_cnt_getters

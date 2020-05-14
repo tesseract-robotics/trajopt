@@ -1,10 +1,17 @@
 #ifndef TRAJOPT_SQP_INCLUDE_QP_SOLVER_H_
 #define TRAJOPT_SQP_INCLUDE_QP_SOLVER_H_
 
-#include <ifopt/problem.h>
+#include <trajopt_sqp/types.h>
 
-namespace trajopt
+namespace trajopt_sqp
 {
+enum class QP_SOLVER_STATUS
+{
+  UNITIALIZED,
+  INITIALIZED,
+  ERROR
+};
+
 /**
  * @brief Base class for Quadratic programming solvers
  */
@@ -14,31 +21,27 @@ public:
   using Ptr = std::shared_ptr<QPSolver>;
   using ConstPtr = std::shared_ptr<const QPSolver>;
 
-  virtual void init(ifopt::Problem& nlp) = 0;
+  //  virtual bool init() = 0;
 
-  virtual void convexify() = 0;
+  //  virtual bool solve() = 0;
 
-  virtual void updateConstraintBounds() = 0;
+  //  virtual Eigen::VectorXd getSolution() = 0;
 
-  virtual void updateVariableBounds() = 0;
+  //  virtual bool updateHessianMatrix(const Hessian hessianMatrix) = 0;
 
-  virtual void solve() = 0;
+  //  virtual bool updateGradient(const Eigen::Ref<const Eigen::VectorXd>> &gradient) = 0;
 
-  virtual void convexifyAndSolve() = 0;
+  //  virtual bool updateLowerBound(const Eigen::Ref<const Eigen::VectorXd>> &lowerBound) = 0;
 
-  virtual double evaluateConvexCost(const Eigen::Ref<Eigen::VectorXd>& var_vals) = 0;
+  //  virtual bool updateUpperBound(const Eigen::Ref<const Eigen::VectorXd>> &upperBound) = 0;
 
-  virtual Eigen::VectorXd getConstraintViolations() = 0;
+  //  virtual bool updateBounds(const Eigen::Ref<const Eigen::VectorXd>> &lowerBound,
+  //                            const Eigen::Ref<const Eigen::VectorXd>> &upperBound) = 0;
 
-  virtual Eigen::VectorXd getResults() = 0;
+  //  virtual bool updateLinearConstraintsMatrix(const Jacobian& linearConstraintsMatrix) = 0;
 
-  virtual void scaleBoxSize(double) = 0;
-
-  virtual void setBoxSize(const Eigen::Ref<const Eigen::VectorXd>& box_size) = 0;
-
-  virtual Eigen::VectorXd getBoxSize() = 0;
+  //  virtual QP_SOLVER_STATUS getSolverStatus() = 0;
 };
-
-}  // namespace trajopt
+}  // namespace trajopt_sqp
 
 #endif

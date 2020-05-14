@@ -64,8 +64,8 @@ public:
         inverse_kinematics_, adjacency_map, Eigen::Isometry3d::Identity(), forward_kinematics_->getTipLinkName());
 
     auto pos = Eigen::VectorXd::Ones(forward_kinematics_->numJoints());
-    auto var0 = std::make_shared<trajopt::JointPosition>(pos, "Joint_Position_0");
-    auto var1 = std::make_shared<trajopt::JointPosition>(pos, "Joint_Position_1");
+    auto var0 = std::make_shared<trajopt::JointPosition>(pos, forward_kinematics_->getJointNames(), "Joint_Position_0");
+    auto var1 = std::make_shared<trajopt::JointPosition>(pos, forward_kinematics_->getJointNames(), "Joint_Position_1");
     nlp_.AddVariableSet(var0);
     nlp_.AddVariableSet(var1);
 
@@ -132,8 +132,8 @@ TEST_F(InverseKinematicsConstraintUnit, GetSetBounds)  // NOLINT
   // Check that setting bounds works
   {
     Eigen::VectorXd pos = Eigen::VectorXd::Ones(n_dof_);
-    auto var0 = std::make_shared<trajopt::JointPosition>(pos, "Joint_Position_0");
-    auto var1 = std::make_shared<trajopt::JointPosition>(pos, "Joint_Position_1");
+    auto var0 = std::make_shared<trajopt::JointPosition>(pos, forward_kinematics_->getJointNames(), "Joint_Position_0");
+    auto var1 = std::make_shared<trajopt::JointPosition>(pos, forward_kinematics_->getJointNames(), "Joint_Position_1");
 
     auto target_pose = Eigen::Isometry3d::Identity();
     auto constraint_2 =

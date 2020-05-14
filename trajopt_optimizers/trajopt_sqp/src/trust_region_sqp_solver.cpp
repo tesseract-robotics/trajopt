@@ -2,25 +2,47 @@
 #include <iostream>
 #include <console_bridge/console.h>
 
-namespace trajopt
+namespace trajopt_sqp
 {
-TrustRegionSQPSolver::TrustRegionSQPSolver(OSQPEigenSolver::Ptr qp_solver) : qp_solver_(std::move(qp_solver)) {}
+const bool SUPER_DEBUG_MODE = false;
+
+TrustRegionSQPSolver::TrustRegionSQPSolver(OSQPEigenSolver::Ptr qp_solver) : qp_solver_(std::move(qp_solver))
+{
+  qp_problem_ = std::make_shared<QPProblem>();
+}
 
 void TrustRegionSQPSolver::Solve(ifopt::Problem& nlp)
 {
   console_bridge::setLogLevel(console_bridge::LogLevel::CONSOLE_BRIDGE_LOG_INFO);
+  nlp_ = &nlp;
 
-  qp_solver_->init(nlp);
+  qp_problem_->init(nlp);
+  qp_problem_->convexify();
+
+  // TODO: Clean up the solver interface and switch to using base class here.
+  qp_solver_->solver_.data()->setNumberOfVariables(static_cast<int>(qp_problem_->num_qp_vars_));
+  qp_solver_->solver_.data()->setNumberOfConstraints(static_cast<int>(qp_problem_->num_qp_cnts_));
+  qp_solver_->solver_.data()->setHessianMatrix(qp_problem_->hessian_);
+  qp_solver_->solver_.data()->setGradient(qp_problem_->gradient_);
+  Jacobian cleaned = qp_problem_->constraint_matrix_.pruned(1e-7);
+  qp_solver_->solver_.data()->setLinearConstraintsMatrix(cleaned);
+  qp_solver_->solver_.data()->setUpperBound(qp_problem_->bounds_upper_);
+  qp_solver_->solver_.data()->setLowerBound(qp_problem_->bounds_lower_);
+
+  //  qp_solver_->updateHessianMatrix(qp_problem_->hessian_);
+  //  qp_solver_->updateGradient(qp_problem_->gradient_);
+  //  qp_solver_->updateLinearConstraintsMatrix(qp_problem_->constraint_matrix_);
+  //  qp_solver_->updateBounds(qp_problem_->bounds_lower_, qp_problem_->bounds_upper_);
+  qp_solver_->init(qp_problem_->num_qp_vars_, qp_problem_->num_qp_cnts_);
 
   // Initialize optimization parameters
   results_ = SQPResults(nlp.GetNumberOfOptimizationVariables(), nlp.GetNumberOfConstraints());
   results_.box_size = Eigen::VectorXd::Ones(nlp.GetNumberOfOptimizationVariables()) * params_.initial_trust_box_size;
-  qp_solver_->setBoxSize(results_.box_size);
+  qp_problem_->setBoxSize(results_.box_size);
 
   // ---------------------------
   // Penalty Iteration Loop
   // ---------------------------
-  int overall_iteration = 0;
   for (int penalty_iteration = 0; penalty_iteration < params_.max_merit_coeff_increases; penalty_iteration++)
   {
     // ---------------------------
@@ -28,10 +50,33 @@ void TrustRegionSQPSolver::Solve(ifopt::Problem& nlp)
     // ---------------------------
     for (int convex_iteration = 0; convex_iteration < 100; convex_iteration++)
     {
+      qp_problem_->convexify();
+
+      //      qp_solver_->clear();
+      //      qp_solver_->updateHessianMatrix(qp_problem_->hessian_);
+      //      qp_solver_->updateGradient(qp_problem_->gradient_);
+      //      qp_solver_->updateLinearConstraintsMatrix(qp_problem_->constraint_matrix_);
+      //      qp_solver_->updateBounds(qp_problem_->bounds_lower_, qp_problem_->bounds_upper_);
+      //      qp_solver_->init(qp_problem_->num_qp_vars_, qp_problem_->num_qp_cnts_);
+
       // Convexify the costs and constraints around their current values
-      qp_solver_->convexify();
-      qp_solver_->updateConstraintBounds();
-      qp_solver_->updateVariableBounds();
+      qp_solver_->solver_.clearSolver();
+      qp_solver_->solver_.data()->clearHessianMatrix();
+      qp_solver_->solver_.data()->clearLinearConstraintsMatrix();
+
+      qp_solver_->solver_.data()->setNumberOfVariables(static_cast<int>(qp_problem_->num_qp_vars_));
+      qp_solver_->solver_.data()->setNumberOfConstraints(static_cast<int>(qp_problem_->num_qp_cnts_));
+      qp_solver_->solver_.data()->setHessianMatrix(qp_problem_->hessian_);
+      qp_solver_->solver_.data()->setGradient(qp_problem_->gradient_);
+      Jacobian cleaned = qp_problem_->constraint_matrix_.pruned(1e-7);
+
+      qp_solver_->solver_.data()->setLinearConstraintsMatrix(cleaned);
+      qp_solver_->solver_.data()->setUpperBound(qp_problem_->bounds_upper_);
+      qp_solver_->solver_.data()->setLowerBound(qp_problem_->bounds_lower_);
+      qp_solver_->init(qp_problem_->num_qp_vars_, qp_problem_->num_qp_cnts_);
+
+      if (SUPER_DEBUG_MODE)
+        qp_problem_->print();
 
       // ---------------------------
       // Trust region loop
@@ -39,9 +84,18 @@ void TrustRegionSQPSolver::Solve(ifopt::Problem& nlp)
       for (int trust_region_iteration = 0; trust_region_iteration < params_.max_trust_region_expansions;
            trust_region_iteration++)
       {
-        overall_iteration++;
+        results_.overall_iteration++;
+        results_.penalty_iteration = penalty_iteration;
+        results_.convexify_iteration = convex_iteration;
+        results_.trust_region_iteration = trust_region_iteration;
+
         // Take a single step (one QP solve)
-        stepOptimization(nlp);
+        if (!stepOptimization(nlp))
+        {
+          nlp.SetVariables(results_.best_var_vals.data());
+          status_ = SQPStatus::CALLBACK_STOPPED;
+          return;
+        }
 
         // Check if the entire NLP Converged
         if (results_.approx_merit_improve < -1e-5)
@@ -71,9 +125,10 @@ void TrustRegionSQPSolver::Solve(ifopt::Problem& nlp)
         // This happens if the exact solution got worse or if the QP approximation deviates from the exact by too much
         if (results_.exact_merit_improve < 0 || results_.merit_improve_ratio < params_.improve_ratio_threshold)
         {
-          qp_solver_->scaleBoxSize(params_.trust_shrink_ratio);
-          qp_solver_->updateVariableBounds();
-          results_.box_size = qp_solver_->getBoxSize();
+          qp_problem_->scaleBoxSize(params_.trust_shrink_ratio);
+          qp_problem_->updateNLPVariableBounds();
+          qp_solver_->updateBounds(qp_problem_->bounds_lower_, qp_problem_->bounds_upper_);
+          results_.box_size = qp_problem_->getBoxSize();
 
           CONSOLE_BRIDGE_logInform("Shrunk trust region. new box size: %.4f", results_.box_size[0]);
         }
@@ -83,9 +138,9 @@ void TrustRegionSQPSolver::Solve(ifopt::Problem& nlp)
           results_.best_exact_merit = results_.new_exact_merit;
           results_.best_approx_merit = results_.best_approx_merit;
 
-          qp_solver_->scaleBoxSize(params_.trust_expand_ratio);
-          qp_solver_->updateVariableBounds();
-          results_.box_size = qp_solver_->getBoxSize();
+          qp_problem_->scaleBoxSize(params_.trust_expand_ratio);
+          qp_problem_->updateNLPVariableBounds();
+          results_.box_size = qp_problem_->getBoxSize();
           CONSOLE_BRIDGE_logInform("Expanded trust region. new box size: %.4f", results_.box_size[0]);
           break;
         }
@@ -100,7 +155,7 @@ void TrustRegionSQPSolver::Solve(ifopt::Problem& nlp)
         status_ = SQPStatus::NLP_CONVERGED;
         break;
       }
-      if (overall_iteration >= params_.max_iterations)
+      if (results_.overall_iteration >= params_.max_iterations)
       {
         CONSOLE_BRIDGE_logInform("Iteration limit");
         status_ = SQPStatus::ITERATION_LIMIT;
@@ -113,13 +168,13 @@ void TrustRegionSQPSolver::Solve(ifopt::Problem& nlp)
     // ---------------------------
 
     // Check if constrainsts are satisfied
-    if (results_.constraint_violations.size() == 0)
+    if (results_.new_constraint_violations.size() == 0)
     {
       CONSOLE_BRIDGE_logInform("Optimization has converged and there are no constraints");
       break;
     }
 
-    if (results_.constraint_violations.maxCoeff() < params_.cnt_tolerance)
+    if (results_.new_constraint_violations.maxCoeff() < params_.cnt_tolerance)
     {
       CONSOLE_BRIDGE_logInform("woo-hoo! constraints are satisfied (to tolerance %.2e)", params_.cnt_tolerance);
       break;
@@ -127,13 +182,12 @@ void TrustRegionSQPSolver::Solve(ifopt::Problem& nlp)
 
     if (params_.inflate_constraints_individually)
     {
-      assert(results_.constraint_violations.size() == results_.merit_error_coeffs.size());
-      for (Eigen::Index idx = 0; idx < results_.constraint_violations.size(); idx++)
+      assert(results_.new_constraint_violations.size() == results_.merit_error_coeffs.size());
+      for (Eigen::Index idx = 0; idx < results_.new_constraint_violations.size(); idx++)
       {
-        if (results_.constraint_violations[idx] > params_.cnt_tolerance)
+        if (results_.new_constraint_violations[idx] > params_.cnt_tolerance)
         {
-          //            CONSOLE_BRIDGE_logInform("Not all constraints are satisfied. Increasing constraint penalties
-          //            for %s", CSTR(cnt_names[idx]));
+          CONSOLE_BRIDGE_logInform("Not all constraints are satisfied. Increasing constraint penalties for %d", idx);
           results_.merit_error_coeffs[idx] *= params_.merit_coeff_increase_ratio;
         }
       }
@@ -143,7 +197,6 @@ void TrustRegionSQPSolver::Solve(ifopt::Problem& nlp)
       CONSOLE_BRIDGE_logInform("Not all constraints are satisfied. Increasing constraint penalties uniformly");
       results_.merit_error_coeffs *= params_.merit_coeff_increase_ratio;
     }
-    //      CONSOLE_BRIDGE_logInform("New merit_error_coeffs: %s", CSTR(results_.merit_error_coeffs));
     results_.box_size = Eigen::VectorXd::Ones(results_.box_size.size()) *
                         fmax(results_.box_size[0], params_.min_trust_box_size / params_.trust_shrink_ratio * 1.5);
 
@@ -151,46 +204,246 @@ void TrustRegionSQPSolver::Solve(ifopt::Problem& nlp)
 
   // Final Cleanup
   nlp.SetVariables(results_.best_var_vals.data());
-  callCallbacks();
 }
 
-void TrustRegionSQPSolver::stepOptimization(ifopt::Problem& nlp)
+bool TrustRegionSQPSolver::stepOptimization(ifopt::Problem& nlp)
 {
+  // TODO: Think about removing nlp_
+  nlp_ = &nlp;
+
   // Solve the QP
-  qp_solver_->solve();
-  results_.new_var_vals = qp_solver_->getResults();
-
-  // Calculate approximate QP merits (cheap)
-  nlp.SetVariables(results_.new_var_vals.data());
-  results_.new_approx_merit = qp_solver_->evaluateConvexCost(results_.new_var_vals);
-  results_.approx_merit_improve = results_.best_approx_merit - results_.new_approx_merit;
-
-  // Evaluate exact constraint violations (expensive)
-  results_.constraint_violations = qp_solver_->getConstraintViolations();
-
-  // Calculate exact NLP merits (expensive) - TODO: Look into caching for qp_solver->Convexify()
-  results_.new_exact_merit = nlp.EvaluateCostFunction(results_.new_var_vals.data()) +
-                             results_.constraint_violations.dot(results_.merit_error_coeffs);
-  results_.exact_merit_improve = results_.best_exact_merit - results_.new_exact_merit;
-  results_.merit_improve_ratio = results_.exact_merit_improve / results_.approx_merit_improve;
-
-  // Store variables if they improved the exact merit
-  if (results_.exact_merit_improve > 1e-5)
+  bool succeed = qp_solver_->solve();
+  if (succeed)
   {
-    results_.best_var_vals = results_.new_var_vals;
-    results_.best_exact_merit = results_.new_exact_merit;
-    results_.best_approx_merit = results_.new_approx_merit;
+    results_.new_var_vals = qp_solver_->getSolution();
+
+    // Calculate approximate QP merits (cheap)
+    nlp.SetVariables(results_.new_var_vals.data());
+    results_.new_approx_merit = qp_problem_->evaluateTotalConvexCost(results_.new_var_vals);
+    results_.approx_merit_improve = results_.best_approx_merit - results_.new_approx_merit;
+
+    // Evaluate exact constraint violations (expensive)
+    results_.new_constraint_violations = qp_problem_->getExactConstraintViolations();
+
+    // Calculate exact NLP merits (expensive) - TODO: Look into caching for qp_solver->Convexify()
+    results_.new_exact_merit = nlp.EvaluateCostFunction(results_.new_var_vals.data()) +
+                               results_.new_constraint_violations.dot(results_.merit_error_coeffs);
+    results_.exact_merit_improve = results_.best_exact_merit - results_.new_exact_merit;
+    results_.merit_improve_ratio = results_.exact_merit_improve / results_.approx_merit_improve;
+
+    // Store variables if they improved the exact merit
+    if (results_.exact_merit_improve > 1e-5)
+    {
+      results_.best_var_vals = results_.new_var_vals;
+      results_.best_exact_merit = results_.new_exact_merit;
+      results_.best_approx_merit = results_.new_approx_merit;
+      results_.best_constraint_violations = results_.new_constraint_violations;
+      nlp_->SetVariables(results_.best_var_vals.data());
+    }
+    if (SUPER_DEBUG_MODE)
+      results_.print();
+  }
+  else
+  {
+    CONSOLE_BRIDGE_logError("Solver Failure");
+
+    //    // If primal infeasible
+    //    {
+    //      Eigen::Map<Eigen::VectorXd> primal_certificate(
+    //          qp_solver_->solver_.workspace()->delta_x, qp_problem_->num_qp_cnts_, 1);
+    //      std::cout << "\n---------------------------------------\n";
+    //      std::cout << std::scientific << "Primal Certificate (v): " << primal_certificate.transpose() << std::endl;
+
+    //      double first = qp_problem_->bounds_lower_.transpose() * primal_certificate;
+    //      double second = qp_problem_->bounds_upper_.transpose() * primal_certificate;
+
+    //      std::cout << "A.transpose() * v = 0\n"
+    //                << "l.transpose() * v = " << first << "    u.transpose() * v = " << second << std::endl;
+    //      std::cout << "l.transpose() * v + u.transpose() * v  = " << first + second << " < 0\n";
+    //      std::cout << "Bounds_lower: " << qp_problem_->bounds_lower_.transpose() << std::endl;
+    //      std::cout << "Bounds_upper: " << qp_problem_->bounds_upper_.transpose() << std::endl;
+    //      std::cout << std::fixed;
+    //      std::cout << "\n---------------------------------------\n";
+    //    }
+
+    //    // If dual infeasible
+    //    {
+    //      Eigen::Map<Eigen::VectorXd> dual_certificate(
+    //          qp_solver_->solver_.workspace()->delta_y, qp_problem_->num_qp_vars_, 1);
+    //      std::cout << "\n---------------------------------------\n";
+    //      std::cout << "Dual Certificate (x): " << dual_certificate.transpose() << std::endl;
+
+    //      std::cout << "P*x = " << (qp_problem_->hessian_ * dual_certificate).transpose() << " = 0" << std::endl;
+    //      std::cout << "q.transpose() * x = " << qp_problem_->gradient_.transpose() * dual_certificate << " < 0"
+    //                << std::endl;
+    //      std::cout << std::fixed;
+    //      std::cout << "\n---------------------------------------\n";
+    //    }
   }
 
+  // Print debugging info
+  printStepInfo();
+
   // Call callbacks
-  callCallbacks();
+  succeed &= callCallbacks();
+  return succeed;
 }
 
-int TrustRegionSQPSolver::getReturnStatus() { return 0; }
-
-void TrustRegionSQPSolver::callCallbacks()
+bool TrustRegionSQPSolver::callCallbacks()
 {
+  bool success = true;
   for (const auto& callback : callbacks_)
-    callback(results_);
+    success &= callback->execute(*nlp_, results_);
+  return success;
 }
-}  // namespace trajopt
+
+void TrustRegionSQPSolver::printStepInfo() const
+{
+  // Print Header
+  std::printf("\n%15s | %10s===%10s===%10s===%10s===%10s===%10s\n",
+              "",
+              "==========",
+              "==========",
+              "==========",
+              "==========",
+              "==========",
+              "==========");
+  std::printf("                |                              ROS Industrial \n");
+  std::printf("                |                         TrajOpt Motion Planning \n");
+  std::printf("%15s | %10s===%10s===%10s===%10s===%10s===%10s\n",
+              "",
+              "==========",
+              "==========",
+              "==========",
+              "==========",
+              "==========",
+              "==========");
+  std::printf("%15s | %11s %1d/%2d/%2d/%3d\n",
+              "",
+              "Iteration:",
+              results_.penalty_iteration,
+              results_.convexify_iteration,
+              results_.trust_region_iteration,
+              results_.overall_iteration);
+  std::printf("%15s | %10s===%10s===%10s===%10s===%10s===%10s\n",
+              "",
+              "==========",
+              "==========",
+              "==========",
+              "==========",
+              "==========",
+              "==========");
+  std::printf("%15s | %10s | %10s | %10s | %10s | %10s | %10s\n",
+              "",
+              "merit",
+              "oldexact",
+              "new_exact",
+              "dapprox",
+              "dexact",
+              "ratio");
+  // Costs
+  std::printf("%15s | %10s---%10s---%10s---%10s---%10s---%10s\n",
+              "COSTS",
+              "----------",
+              "----------",
+              "----------",
+              "----------",
+              "----------",
+              "----------");
+  std::vector<ifopt::Component::Ptr> costs = nlp_->GetCosts().GetComponents();
+  // Loop over cost sets
+  Eigen::Index cost_number = 0;
+  for (const auto& cost : costs)
+  {
+    // Loop over each constraint in the set
+    for (Eigen::Index j = 0; j < cost->GetRows(); j++)
+    {
+      double approx_improve = 0;  // old_cost_vals[i] - model_cost_vals[i];
+      double exact_improve = 0;   // old_cost_vals[i] - new_cost_vals[i];
+      if (fabs(approx_improve) > 1e-8)
+        std::printf("%15s | %10s | %10.3e | %10.3e | %10.3e | %10.3e | %10.3e\n",
+                    (cost->GetName() + "_" + std::to_string(j)).c_str(),
+                    "----------",
+                    results_.best_exact_merit,
+                    results_.new_exact_merit,
+                    approx_improve,
+                    exact_improve,
+                    exact_improve / approx_improve);
+      else
+        std::printf("%15s | %10s | %10.3e | %10.3e | %10.3e | %10.3e | %10s\n",
+                    (cost->GetName() + "_" + std::to_string(j)).c_str(),
+                    "----------",
+                    results_.best_exact_merit,
+                    results_.new_exact_merit,
+                    approx_improve,
+                    exact_improve,
+                    "  ------  ");
+      cost_number++;
+    }
+  }
+
+  // Constraints
+  // If we want to print the names we will have to add a getConstraints function to IFOPT
+  if (results_.new_constraint_violations.size() != 0)
+  {
+    std::printf("%15s | %10s---%10s---%10s---%10s---%10s---%10s\n",
+                "CONSTRAINTS",
+                "----------",
+                "----------",
+                "----------",
+                "----------",
+                "----------",
+                "----------");
+    Eigen::VectorXd exact_cnt_improve = results_.best_constraint_violations - results_.new_constraint_violations;
+    std::vector<ifopt::Component::Ptr> constraints = nlp_->GetConstraints().GetComponents();
+    // Loop over constraint sets
+    Eigen::Index cnt_number = 0;
+    for (const auto& cnt : constraints)
+    {
+      // Loop over each constraint in the set
+      for (Eigen::Index j = 0; j < cnt->GetRows(); j++)
+      {
+        double approx_improve = 0;  // old_cnt_viols[i] - model_cnt_viols[i];  // TODO
+        if (fabs(approx_improve) > 1e-8)
+          std::printf("%15s | %10.3e | %10.3e | %10.3e | %10s | %10.3e | %10.3e\n",
+                      (cnt->GetName() + "_" + std::to_string(j)).c_str(),
+                      results_.merit_error_coeffs[cnt_number],
+                      results_.merit_error_coeffs[cnt_number] * results_.best_constraint_violations[cnt_number],
+                      results_.merit_error_coeffs[cnt_number] * results_.new_constraint_violations[cnt_number],
+                      "  ------  ",
+                      results_.merit_error_coeffs[cnt_number] * exact_cnt_improve[cnt_number],
+                      exact_cnt_improve[cnt_number] / approx_improve);
+        else
+          std::printf("%15s | %10.3e | %10.3e | %10.3e | %10s | %10.3e | %10s\n",
+                      (cnt->GetName() + "_" + std::to_string(j)).c_str(),
+                      results_.merit_error_coeffs[cnt_number],
+                      results_.merit_error_coeffs[cnt_number] * results_.best_constraint_violations[cnt_number],
+                      results_.merit_error_coeffs[cnt_number] * results_.new_constraint_violations[cnt_number],
+                      "  ------  ",
+                      results_.merit_error_coeffs[cnt_number] * exact_cnt_improve[cnt_number],
+                      "  ------  ");
+        cnt_number++;
+      }
+    }
+  }
+
+  // Total
+  std::printf("%15s | %10s===%10s===%10s===%10s===%10s===%10s\n",
+              "",
+              "==========",
+              "==========",
+              "==========",
+              "==========",
+              "==========",
+              "==========");
+  std::printf("%15s | %10s | %10.3e | %10.3e | %10.3e | %10.3e | %10.3e\n",
+              "TOTAL",
+              "----------",
+              results_.best_exact_merit,
+              results_.new_exact_merit,
+              results_.approx_merit_improve,
+              results_.exact_merit_improve,
+              results_.merit_improve_ratio);
+}
+
+}  // namespace trajopt_sqp

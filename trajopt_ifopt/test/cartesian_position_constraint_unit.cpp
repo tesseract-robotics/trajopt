@@ -64,7 +64,7 @@ public:
         forward_kinematics_, adjacency_map, Eigen::Isometry3d::Identity(), forward_kinematics_->getTipLinkName());
 
     auto pos = Eigen::VectorXd::Ones(forward_kinematics_->numJoints());
-    auto var0 = std::make_shared<trajopt::JointPosition>(pos, "Joint_Position_0");
+    auto var0 = std::make_shared<trajopt::JointPosition>(pos, forward_kinematics_->getJointNames(), "Joint_Position_0");
     nlp_.AddVariableSet(var0);
 
     // 4) Add constraints
@@ -177,7 +177,7 @@ TEST_F(CartesianPositionConstraintUnit, GetSetBounds)  // NOLINT
   // Check that setting bounds works
   {
     Eigen::VectorXd pos = Eigen::VectorXd::Ones(forward_kinematics_->numJoints());
-    auto var0 = std::make_shared<trajopt::JointPosition>(pos, "Joint_Position_0");
+    auto var0 = std::make_shared<trajopt::JointPosition>(pos, forward_kinematics_->getJointNames(), "Joint_Position_0");
 
     auto target_pose = Eigen::Isometry3d::Identity();
     auto constraint_2 = std::make_shared<trajopt::CartPosConstraint>(target_pose, kinematic_info_, var0);

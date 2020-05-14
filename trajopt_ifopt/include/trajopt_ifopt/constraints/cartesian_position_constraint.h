@@ -103,6 +103,14 @@ public:
 
   void SetTargetPose(const Eigen::Isometry3d& target_pose);
 
+  const CartPosKinematicInfo::ConstPtr& getKinematicInfo() { return kinematic_info_; }
+
+  Eigen::Isometry3d GetTargetPose() const;
+
+  Eigen::Isometry3d GetCurrentPose() const;
+
+  bool use_numeric_differentiation_ = true;
+
 private:
   /** @brief The number of joints in a single JointPosition */
   long n_dof_;

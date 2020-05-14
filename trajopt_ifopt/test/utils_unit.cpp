@@ -3,7 +3,7 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <ctime>
 #include <gtest/gtest.h>
 TRAJOPT_IGNORE_WARNINGS_POP
-#include <trajopt_ifopt/utils/utils.h>
+#include <trajopt_ifopt/utils/ifopt_utils.h>
 #include <console_bridge/console.h>
 
 using namespace trajopt;

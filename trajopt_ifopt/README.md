@@ -36,4 +36,8 @@ Therefore the solvers that will work in this new framework are
 - [ ] [OptimLib](https://github.com/kthohr/optim)
 - [ ] Gurobi interface - We should try SNOPT first, but an interface to Gurobi might be nice.
 - [ ] [Pagmo2](https://github.com/esa/pagmo2)
+
+
+### IFOPT Improvements
 - [ ] [Add Hessian to IFOPT](https://github.com/ethz-adrl/ifopt/issues/41)
+- [ ] Add caching to functions like Problem::EvaluateCostFunction

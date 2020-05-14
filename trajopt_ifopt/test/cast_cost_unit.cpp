@@ -85,21 +85,21 @@ TEST_F(CastTest, boxes)  // NOLINT
   {
     Eigen::VectorXd pos(2);
     pos << -1.9, 0;
-    auto var = std::make_shared<trajopt::JointPosition>(pos, "Joint_Position_0");
+    auto var = std::make_shared<trajopt::JointPosition>(pos, forward_kinematics->getJointNames(), "Joint_Position_0");
     vars.push_back(var);
     nlp.AddVariableSet(var);
   }
   {
     Eigen::VectorXd pos(2);
     pos << 0, 0;
-    auto var = std::make_shared<trajopt::JointPosition>(pos, "Joint_Position_1");
+    auto var = std::make_shared<trajopt::JointPosition>(pos, forward_kinematics->getJointNames(), "Joint_Position_1");
     vars.push_back(var);
     nlp.AddVariableSet(var);
   }
   {
     Eigen::VectorXd pos(2);
     pos << 1.9, 3.8;
-    auto var = std::make_shared<trajopt::JointPosition>(pos, "Joint_Position_2");
+    auto var = std::make_shared<trajopt::JointPosition>(pos, forward_kinematics->getJointNames(), "Joint_Position_2");
     vars.push_back(var);
     nlp.AddVariableSet(var);
   }
