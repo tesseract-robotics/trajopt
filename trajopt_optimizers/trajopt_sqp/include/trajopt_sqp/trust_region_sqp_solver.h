@@ -43,6 +43,8 @@ public:
   OSQPEigenSolver::Ptr qp_solver_;
   QPProblem::Ptr qp_problem_;
 
+  bool verbose_{false};
+
 private:
   ifopt::Problem* nlp_;
 };
