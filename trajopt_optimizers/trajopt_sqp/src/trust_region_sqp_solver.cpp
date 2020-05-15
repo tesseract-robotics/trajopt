@@ -231,6 +231,13 @@ bool TrustRegionSQPSolver::stepOptimization(ifopt::Problem& nlp)
     results_.exact_merit_improve = results_.best_exact_merit - results_.new_exact_merit;
     results_.merit_improve_ratio = results_.exact_merit_improve / results_.approx_merit_improve;
 
+    // Print debugging info
+    if (verbose_)
+      printStepInfo();
+
+    // Call callbacks
+    succeed &= callCallbacks();
+
     // Store variables if they improved the exact merit
     if (results_.exact_merit_improve > 1e-5)
     {
@@ -281,11 +288,6 @@ bool TrustRegionSQPSolver::stepOptimization(ifopt::Problem& nlp)
     //    }
   }
 
-  // Print debugging info
-  printStepInfo();
-
-  // Call callbacks
-  succeed &= callCallbacks();
   return succeed;
 }
 

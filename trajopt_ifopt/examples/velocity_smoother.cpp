@@ -83,6 +83,7 @@ int main(int /*argc*/, char** /*argv*/)
   qp_solver->solver_.settings()->setAdaptiveRho(false);
 
   // 6) solve
+  solver.verbose_ = true;
   solver.Solve(nlp);
   Eigen::VectorXd x = nlp.GetOptVariables()->GetValues();
   std::cout << "Results: " << x.transpose() << std::endl;
