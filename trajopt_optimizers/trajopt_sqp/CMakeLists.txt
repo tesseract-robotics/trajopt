@@ -32,9 +32,11 @@ trajopt_clang_tidy(${PROJECT_NAME})
 list (APPEND PACKAGE_LIBRARIES ${PROJECT_NAME})
 
 add_library(${PROJECT_NAME}_callbacks SHARED
-    src/callbacks/joint_state_plotter.cpp
     src/callbacks/cartesian_error_plotter.cpp
+    src/callbacks/clear_plotter.cpp
     src/callbacks/collision_plotter.cpp
+    src/callbacks/joint_state_plotter.cpp
+    src/callbacks/wait_for_input.cpp
     )
 target_include_directories(${PROJECT_NAME}_callbacks
   PUBLIC
