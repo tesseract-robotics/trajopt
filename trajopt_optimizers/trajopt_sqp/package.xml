@@ -12,6 +12,7 @@
   <depend>libconsole-bridge-dev</depend>
   <depend>osqp_eigen</depend>
   <depend>trajopt</depend>
+  <depend>trajopt_ifopt</depend>
   <depend>trajopt_utils</depend>
 
   <test_depend>gtest</test_depend>

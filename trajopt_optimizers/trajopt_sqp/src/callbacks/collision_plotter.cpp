@@ -1,4 +1,4 @@
-#include <trajopt_ifopt/callbacks/collision_plotter.h>
+#include <trajopt_sqp/callbacks/collision_plotter.h>
 #include <trajopt_ifopt/utils/trajopt_utils.h>
 #include <trajopt/typedefs.hpp>
 
