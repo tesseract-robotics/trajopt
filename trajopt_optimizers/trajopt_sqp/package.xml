@@ -8,8 +8,8 @@
   <author>Levi Armstrong</author>
   <author>Matthew Powelson</author>
 
-  <depend>ifopt</depend>
   <depend>libconsole-bridge-dev</depend>
+  <depend>ifopt</depend>
   <depend>osqp_eigen</depend>
   <depend>trajopt</depend>
   <depend>trajopt_ifopt</depend>

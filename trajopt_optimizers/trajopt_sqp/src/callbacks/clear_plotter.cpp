@@ -35,7 +35,7 @@ ClearPlotterCallback::ClearPlotterCallback(tesseract_visualization::Visualizatio
 {
 }
 
-bool ClearPlotterCallback::execute(const ifopt::Problem& nlp, const trajopt_sqp::SQPResults&)
+bool ClearPlotterCallback::execute(const ifopt::Problem& /*nlp*/, const trajopt_sqp::SQPResults&)
 {
   plotter_->clear();
   return true;
