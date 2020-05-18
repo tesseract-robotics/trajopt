@@ -8,6 +8,7 @@ include(CMakeFindDependencyMacro)
 find_dependency(console_bridge)
 find_dependency(ifopt)
 find_dependency(OsqpEigen)
+find_dependency(trajopt_ifopt)
 find_dependency(trajopt_utils)
 
 include("${CMAKE_CURRENT_LIST_DIR}/@PROJECT_NAME@-targets.cmake")
