@@ -14,7 +14,6 @@
   <depend>tesseract</depend>
   <depend>trajopt</depend>
   <depend>trajopt_utils</depend>
-  <depend>trajopt_sqp</depend>
 
   <test_depend>gtest</test_depend>
 

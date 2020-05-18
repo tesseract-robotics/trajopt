@@ -1,5 +1,6 @@
 #include <trajopt_utils/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
+#include <gtest/gtest.h>
 #include <iostream>
 
 #include <tesseract/tesseract.h>
@@ -22,6 +23,8 @@ using namespace tesseract;
 using namespace tesseract_environment;
 using namespace tesseract_scene_graph;
 using namespace tesseract_collision;
+
+const bool DEBUG = true;
 
 inline std::string locateResource(const std::string& url)
 {
@@ -52,10 +55,18 @@ inline std::string locateResource(const std::string& url)
 
 // This is example is made to pair with cart_position_example.cpp. This is the same motion planning problem in the
 // trajopt_sco framework
-int main(int /*argc*/, char** /*argv*/)
+TEST(CartPositionOptimizationTrajoptSCO, cart_position_optimization_trajopt_sco)
 {
-  console_bridge::setLogLevel(console_bridge::LogLevel::CONSOLE_BRIDGE_LOG_DEBUG);
-  util::gLogLevel = util::LevelInfo;
+  if (DEBUG)
+  {
+    console_bridge::setLogLevel(console_bridge::LogLevel::CONSOLE_BRIDGE_LOG_DEBUG);
+    util::gLogLevel = util::LevelInfo;
+  }
+  else
+  {
+    console_bridge::setLogLevel(console_bridge::LogLevel::CONSOLE_BRIDGE_LOG_NONE);
+    util::gLogLevel = util::LevelError;
+  }
 
   // 1)  Load Robot
   boost::filesystem::path urdf_file(std::string(TRAJOPT_DIR) + "/test/data/arm_around_table.urdf");
@@ -86,8 +97,9 @@ int main(int /*argc*/, char** /*argv*/)
   // Populate Init Info
   EnvState::ConstPtr current_state = pci.env->getCurrentState();
   Eigen::VectorXd start_pos(forward_kinematics->numJoints());
-  std::cout << "Joint Limits:\n" << forward_kinematics->getLimits().transpose() << std::endl;
   start_pos << 0, 0, 0, -1.0, 0, -1, 0.0;
+  if (DEBUG)
+    std::cout << "Joint Limits:\n" << forward_kinematics->getLimits().transpose() << std::endl;
 
   pci.init_info.type = InitInfo::GIVEN_TRAJ;
   pci.init_info.data = tesseract_common::TrajArray(1, pci.kin->numJoints());
@@ -99,7 +111,8 @@ int main(int /*argc*/, char** /*argv*/)
   forward_kinematics->calcFwdKin(target_pose, joint_target);
   auto world_to_base = pci.env->getCurrentState()->link_transforms.at(forward_kinematics->getBaseLinkName());
   target_pose = world_to_base * target_pose;
-  std::cout << "target_pose:\n" << target_pose.matrix() << std::endl;
+  if (DEBUG)
+    std::cout << "target_pose:\n" << target_pose.matrix() << std::endl;
 
   {
     auto pose = std::make_shared<CartPoseTermInfo>();
@@ -123,10 +136,17 @@ int main(int /*argc*/, char** /*argv*/)
 
   sco::BasicTrustRegionSQP opt(prob);
 
-  std::cout << "Initial: " << prob->GetInitTraj() << std::endl;
   opt.initialize(trajToDblVec(prob->GetInitTraj()));
   opt.optimize();
 
   tesseract_common::TrajArray traj = getTraj(opt.x(), prob->GetVars());
-  std::cout << "Results: " << traj << std::endl;
+
+  for (Eigen::Index i = 0; i < traj.cols(); i++)
+    EXPECT_NEAR(traj(0, i), joint_target[i], 1.1e-3);
+
+  if (DEBUG)
+  {
+    std::cout << "Initial: " << prob->GetInitTraj() << std::endl;
+    std::cout << "Results: " << traj << std::endl;
+  }
 }

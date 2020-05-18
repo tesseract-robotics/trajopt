@@ -1,4 +1,4 @@
-#include <trajopt_ifopt/callbacks/joint_state_plotter.h>
+#include <trajopt_sqp/callbacks/joint_state_plotter.h>
 #include <trajopt_ifopt/utils/trajopt_utils.h>
 
 using namespace trajopt_sqp;
