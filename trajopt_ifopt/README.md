@@ -1,4 +1,4 @@
-# trajopt_ros_ifopt
+# trajopt_ifopt
 
 This package provides robotics costs and constraints for use with the ifopt optimization framework. Each term is written as a constraint that can then be converted into a cost.
 
@@ -27,15 +27,17 @@ Therefore the solvers that will work in this new framework are
 ## TODO
 
 - [ ] Collision - Add other collision evaluators
-- [ ] Callbacks - Callbacks for plotting need to be developed (here and in Tesseract)
-- [ ] Print debug info - trajopt_sco prints a bunch of debugging information that developers have become accustomed to. We need to replicate that here.
+- [ ] Collision Callback - Collision is the only one that is missing
+- [ ] Print debug info - trajopt_sco prints a bunch of debugging information that developers have become accustomed to. Some of this has been added to trajopt_sqp, but some like the cost associated with individual convex costs, will require some work to implement
 
 
 ### Additional Solvers
 
 - [ ] [OptimLib](https://github.com/kthohr/optim)
 - [ ] Gurobi interface - We should try SNOPT first, but an interface to Gurobi might be nice.
-- [ ] [Pagmo2](https://github.com/esa/pagmo2)
+- [ ] [Pagmo2](https://github.com/esa/pagmo2) - "A C++ scientific library for massively parallel optimization"
+- [ ] [NOMAD](https://sourceforge.net/projects/nomad-bb-opt/) - LGPL Derivative free
+- [ ] [Others](http://plato.asu.edu/sub/nlores.html)
 
 
 ### IFOPT Improvements
