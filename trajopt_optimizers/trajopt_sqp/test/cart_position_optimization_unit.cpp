@@ -73,12 +73,14 @@ public:
 
     // Extract necessary kinematic information
     auto forward_kinematics = tesseract->getFwdKinematicsManager()->getFwdKinematicSolver("right_arm");
+    auto world_to_base =
+        tesseract->getEnvironment()->getCurrentState()->link_transforms.at(forward_kinematics->getBaseLinkName());
     tesseract_environment::AdjacencyMap::Ptr adjacency_map = std::make_shared<tesseract_environment::AdjacencyMap>(
         tesseract->getEnvironment()->getSceneGraph(),
         forward_kinematics->getActiveLinkNames(),
         tesseract->getEnvironment()->getCurrentState()->link_transforms);
     auto kinematic_info = std::make_shared<trajopt::CartPosKinematicInfo>(
-        forward_kinematics, adjacency_map, Eigen::Isometry3d::Identity(), forward_kinematics->getTipLinkName());
+        forward_kinematics, adjacency_map, world_to_base, forward_kinematics->getTipLinkName());
 
     // Get target position
     Eigen::VectorXd start_pos(forward_kinematics->numJoints());
@@ -89,9 +91,7 @@ public:
     auto target_pose = Eigen::Isometry3d::Identity();
     joint_target_ = start_pos;
     forward_kinematics->calcFwdKin(target_pose, joint_target_);
-    //    auto world_to_base =
-    //        tesseract->getEnvironment()->getCurrentState()->link_transforms.at(forward_kinematics->getBaseLinkName());
-    //    target_pose = world_to_base * target_pose;
+    target_pose = world_to_base * target_pose;
 
     // 3) Add Variables
     std::vector<trajopt::JointPosition::ConstPtr> vars;
