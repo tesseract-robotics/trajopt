@@ -59,7 +59,7 @@ inline std::vector<Eigen::VectorXd> interpolate(const Eigen::Ref<Eigen::VectorXd
                                                 Eigen::Index steps)
 {
   assert(start.size() == end.size());
-  Eigen::VectorXd delta = (end - start) / (steps - 1);
+  Eigen::VectorXd delta = (end - start) / static_cast<double>(steps - 1);
   Eigen::VectorXd running = start;
   std::vector<Eigen::VectorXd> results;
   for (Eigen::Index i = 0; i < steps; i++)
