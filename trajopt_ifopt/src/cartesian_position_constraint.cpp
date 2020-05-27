@@ -2,6 +2,7 @@
  * @file cartesian_position_constraint.h
  * @brief The cartesian position constraint
  *
+ * @author Levi Armstrong
  * @author Matthew Powelson
  * @date May 18, 2020
  * @version TODO
@@ -35,7 +36,7 @@ namespace trajopt
 {
 CartPosConstraint::CartPosConstraint(const Eigen::Isometry3d& target_pose,
                                      CartPosKinematicInfo::ConstPtr kinematic_info,
-                                     JointPosition::Ptr position_var,
+                                     JointPosition::ConstPtr position_var,
                                      const std::string& name)
   : ifopt::ConstraintSet(6, name)
   , position_var_(std::move(position_var))
@@ -44,7 +45,7 @@ CartPosConstraint::CartPosConstraint(const Eigen::Isometry3d& target_pose,
   , kinematic_info_(std::move(kinematic_info))
 {
   // Set the n_dof and n_vars for convenience
-  n_dof_ = kinematic_info_->manip_->numJoints();
+  n_dof_ = kinematic_info_->manip->numJoints();
   assert(n_dof_ > 0);
 
   bounds_ = std::vector<ifopt::Bounds>(6, ifopt::BoundZero);
@@ -53,9 +54,9 @@ CartPosConstraint::CartPosConstraint(const Eigen::Isometry3d& target_pose,
 Eigen::VectorXd CartPosConstraint::CalcValues(const Eigen::Ref<Eigen::VectorXd>& joint_vals) const
 {
   Eigen::Isometry3d new_pose;
-  kinematic_info_->manip_->calcFwdKin(new_pose, joint_vals, kinematic_info_->kin_link_->link_name);
+  kinematic_info_->manip->calcFwdKin(new_pose, joint_vals, kinematic_info_->kin_link->link_name);
 
-  new_pose = kinematic_info_->world_to_base_ * new_pose * kinematic_info_->kin_link_->transform * kinematic_info_->tcp_;
+  new_pose = kinematic_info_->world_to_base * new_pose * kinematic_info_->kin_link->transform * kinematic_info_->tcp;
 
   Eigen::Isometry3d pose_err = target_pose_inv_ * new_pose;
   Eigen::VectorXd err = concat(pose_err.translation(), calcRotationalError(pose_err.rotation()));
@@ -80,7 +81,7 @@ void CartPosConstraint::SetBounds(const std::vector<ifopt::Bounds>& bounds)
 
 void CartPosConstraint::CalcJacobianBlock(const Eigen::Ref<Eigen::VectorXd>& joint_vals, Jacobian& jac_block) const
 {
-  if (use_numeric_differentiation_)
+  if (use_numeric_differentiation)
   {
     auto error_calculator = [&](const Eigen::Ref<Eigen::VectorXd>& x) { return this->CalcValues(x); };
     Jacobian jac0(6, n_dof_);
@@ -105,13 +106,13 @@ void CartPosConstraint::CalcJacobianBlock(const Eigen::Ref<Eigen::VectorXd>& joi
     Eigen::Isometry3d tf0;
 
     // Calculate the jacobian
-    kinematic_info_->manip_->calcFwdKin(tf0, joint_vals, kinematic_info_->kin_link_->link_name);
-    kinematic_info_->manip_->calcJacobian(jac0, joint_vals, kinematic_info_->kin_link_->link_name);
-    tesseract_kinematics::jacobianChangeBase(jac0, kinematic_info_->world_to_base_);
+    kinematic_info_->manip->calcFwdKin(tf0, joint_vals, kinematic_info_->kin_link->link_name);
+    kinematic_info_->manip->calcJacobian(jac0, joint_vals, kinematic_info_->kin_link->link_name);
+    tesseract_kinematics::jacobianChangeBase(jac0, kinematic_info_->world_to_base);
     tesseract_kinematics::jacobianChangeRefPoint(
         jac0,
-        (kinematic_info_->world_to_base_ * tf0).linear() *
-            (kinematic_info_->kin_link_->transform * kinematic_info_->tcp_).translation());
+        (kinematic_info_->world_to_base * tf0).linear() *
+            (kinematic_info_->kin_link->transform * kinematic_info_->tcp).translation());
     tesseract_kinematics::jacobianChangeBase(jac0, target_pose_inv_);
 
     // Paper:
@@ -172,14 +173,12 @@ void CartPosConstraint::SetTargetPose(const Eigen::Isometry3d& target_pose)
   target_pose_inv_ = target_pose.inverse();
 }
 
-Eigen::Isometry3d CartPosConstraint::GetTargetPose() const { return target_pose_; }
-
 Eigen::Isometry3d CartPosConstraint::GetCurrentPose() const
 {
   VectorXd joint_vals = this->GetVariables()->GetComponent(position_var_->GetName())->GetValues();
   Eigen::Isometry3d new_pose;
-  kinematic_info_->manip_->calcFwdKin(new_pose, joint_vals, kinematic_info_->kin_link_->link_name);
-  new_pose = kinematic_info_->world_to_base_ * new_pose * kinematic_info_->kin_link_->transform * kinematic_info_->tcp_;
+  kinematic_info_->manip->calcFwdKin(new_pose, joint_vals, kinematic_info_->kin_link->link_name);
+  new_pose = kinematic_info_->world_to_base * new_pose * kinematic_info_->kin_link->transform * kinematic_info_->tcp;
   return new_pose;
 }
 }  // namespace trajopt

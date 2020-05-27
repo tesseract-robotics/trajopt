@@ -94,7 +94,7 @@ public:
     //    target_pose = world_to_base * target_pose;
 
     // 3) Add Variables
-    std::vector<trajopt::JointPosition::Ptr> vars;
+    std::vector<trajopt::JointPosition::ConstPtr> vars;
     for (int ind = 0; ind < 1; ind++)
     {
       auto zero = Eigen::VectorXd::Zero(7);
@@ -109,9 +109,6 @@ public:
     {
       auto cnt = std::make_shared<trajopt::CartPosConstraint>(target_pose, kinematic_info, var);
       nlp_.AddConstraintSet(cnt);
-      //    cnt->LinkWithVariables(nlp_.GetOptVariables());
-      //    auto cost = std::make_shared<trajopt::SquaredCost>(cnt);
-      //    nlp_.AddCostSet(cost);
     }
 
     if (DEBUG)
@@ -123,36 +120,9 @@ public:
 };
 
 /**
- * @brief Applies a cartesian position constraint and solves the problem with IPOPT
- */
-// TEST_F(CartPositionOptimization, cart_position_optimization_ipopt)
-//{
-//  ifopt::Problem nlp_ipopt(nlp_);
-//  ifopt::IpoptSolver solver;
-//  solver.SetOption("derivative_test", "first-order");
-//  solver.SetOption("linear_solver", "mumps");
-//  //  ipopt.SetOption("jacobian_approximation", "finite-difference-values");
-//  solver.SetOption("jacobian_approximation", "exact");
-//  solver.SetOption("print_level", 5);
-
-//  // solve
-//  solver.Solve(nlp_ipopt);
-//  Eigen::VectorXd x = nlp_ipopt.GetOptVariables()->GetValues();
-
-//  for (Eigen::Index i = 0; i < joint_target_.size(); i++)
-//    EXPECT_NEAR(x[i], joint_target_[i], 1e-5);
-
-//  if (DEBUG)
-//  {
-//    std::cout << x.transpose() << std::endl;
-//    nlp_ipopt.PrintCurrent();
-//  }
-//}
-
-/**
  * @brief Applies a cartesian position constraint and solves the problem with trajopt_sqp
  */
-TEST_F(CartPositionOptimization, cart_position_optimization_trajopt_sqp)
+TEST_F(CartPositionOptimization, cart_position_optimization_trajopt_sqp)  // NOLINT
 {
   ifopt::Problem nlp_trajopt_sqp(nlp_);
   auto qp_solver = std::make_shared<trajopt_sqp::OSQPEigenSolver>();
@@ -166,7 +136,7 @@ TEST_F(CartPositionOptimization, cart_position_optimization_trajopt_sqp)
   qp_solver->solver_.settings()->setRelativeTolerance(1e-6);
 
   // solve
-  solver.verbose_ = DEBUG;
+  solver.verbose = DEBUG;
   solver.Solve(nlp_trajopt_sqp);
   Eigen::VectorXd x = nlp_trajopt_sqp.GetOptVariables()->GetValues();
 

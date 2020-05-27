@@ -3,7 +3,7 @@ find_package(GTest REQUIRED)
 macro(add_gtest test_name test_file)
   add_executable(${test_name} ${test_file})
   trajopt_target_compile_options(${test_name} PRIVATE)
-#  trajopt_clang_tidy(${test_name})
+  trajopt_clang_tidy(${test_name})
   target_compile_definitions(${test_name} PRIVATE TRAJOPT_IFOPT_DIR="${CMAKE_SOURCE_DIR}")
   target_link_libraries(${test_name}
       ${PROJECT_NAME}

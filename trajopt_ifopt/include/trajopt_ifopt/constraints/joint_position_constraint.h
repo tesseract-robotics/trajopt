@@ -53,7 +53,7 @@ public:
    * @param name Name of the constraint
    */
   JointPosConstraint(const Eigen::VectorXd& targets,
-                     const std::vector<JointPosition::Ptr>& position_vars,
+                     const std::vector<JointPosition::ConstPtr>& position_vars,
                      const std::string& name = "JointPos");
 
   /**
@@ -63,7 +63,7 @@ public:
    * @param name Name of the constraint
    */
   JointPosConstraint(const std::vector<ifopt::Bounds>& bounds,
-                     const std::vector<JointPosition::Ptr>& position_vars,
+                     const std::vector<JointPosition::ConstPtr>& position_vars,
                      const std::string& name = "JointPos");
 
   /**
@@ -98,7 +98,7 @@ private:
   /** @brief Pointers to the vars used by this constraint.
    *
    * Do not access them directly. Instead use this->GetVariables()->GetComponent(position_var->GetName())->GetValues()*/
-  std::vector<JointPosition::Ptr> position_vars_;
+  std::vector<JointPosition::ConstPtr> position_vars_;
 };
 };  // namespace trajopt
 #endif

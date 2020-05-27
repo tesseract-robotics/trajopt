@@ -55,7 +55,7 @@ inline std::string locateResource(const std::string& url)
 
 // This is example is made to pair with cart_position_example.cpp. This is the same motion planning problem in the
 // trajopt_sco framework
-TEST(CartPositionOptimizationTrajoptSCO, cart_position_optimization_trajopt_sco)
+TEST(CartPositionOptimizationTrajoptSCO, cart_position_optimization_trajopt_sco)  // NOLINT
 {
   if (DEBUG)
   {
@@ -111,6 +111,7 @@ TEST(CartPositionOptimizationTrajoptSCO, cart_position_optimization_trajopt_sco)
   forward_kinematics->calcFwdKin(target_pose, joint_target);
   auto world_to_base = pci.env->getCurrentState()->link_transforms.at(forward_kinematics->getBaseLinkName());
   target_pose = world_to_base * target_pose;
+
   if (DEBUG)
     std::cout << "target_pose:\n" << target_pose.matrix() << std::endl;
 

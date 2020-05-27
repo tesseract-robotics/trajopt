@@ -103,11 +103,24 @@ public:
   /** @brief Prints all members to the terminal in a human readable form */
   void print() const;
 
+  const Eigen::Index& getNumNLPVars() { return num_nlp_vars_; };
+  const Eigen::Index& getNumNLPConstraints() { return num_nlp_cnts_; };
+  const Eigen::Index& getNumQPVars() { return num_qp_vars_; };
+  const Eigen::Index& getNumQPConstraints() { return num_qp_cnts_; };
+
+  const Eigen::Ref<const Eigen::VectorXd> getBoxSize() { return box_size_; };
+  const Eigen::Ref<const Eigen::VectorXd> getConstraintMeritCoeff() { return constraint_merit_coeff_; };
+
+  const Eigen::Ref<const Eigen::SparseMatrix<double>> getHessian() { return hessian_; };
+  const Eigen::Ref<const Eigen::VectorXd> getGradient() { return gradient_; };
+
+  const Eigen::Ref<const Eigen::SparseMatrix<double>> getConstraintMatrix() { return constraint_matrix_; };
+  const Eigen::Ref<const Eigen::VectorXd> getBoundsLower() { return bounds_lower_; };
+  const Eigen::Ref<const Eigen::VectorXd> getBoundsUpper() { return bounds_upper_; };
+
 protected:
   ifopt::Problem* nlp_;
 
-  // TODO: I don't really want people to have write access to these. make const getters
-public:
   Eigen::Index num_nlp_vars_;
   Eigen::Index num_nlp_cnts_;
   Eigen::Index num_qp_vars_;

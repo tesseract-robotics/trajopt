@@ -57,31 +57,31 @@ struct InverseKinematicsInfo
                         const Eigen::Isometry3d& world_to_base,
                         std::string link,
                         const Eigen::Isometry3d& tcp = Eigen::Isometry3d::Identity())
-    : inverse_kinematics_(std::move(inverse_kinematics))
-    , adjacency_map_(std::move(adjacency_map))
-    , world_to_base_(world_to_base)
-    , link_(std::move(link))
-    , tcp_(tcp)
+    : inverse_kinematics(std::move(inverse_kinematics))
+    , adjacency_map(std::move(adjacency_map))
+    , world_to_base(world_to_base)
+    , link(std::move(link))
+    , tcp(tcp)
   {
-    kin_link_ = adjacency_map_->getLinkMapping(link_);
-    if (kin_link_ == nullptr)
+    this->kin_link = this->adjacency_map->getLinkMapping(this->link);
+    if (this->kin_link == nullptr)
     {
-      CONSOLE_BRIDGE_logError("Link name '%s' provided does not exist.", link_.c_str());
+      CONSOLE_BRIDGE_logError("Link name '%s' provided does not exist.", this->link.c_str());
       assert(false);
     }
   }
 
-  tesseract_kinematics::InverseKinematics::ConstPtr inverse_kinematics_;
+  tesseract_kinematics::InverseKinematics::ConstPtr inverse_kinematics;
   /** @brief Not currently respected */
-  tesseract_environment::AdjacencyMap::ConstPtr adjacency_map_;
+  tesseract_environment::AdjacencyMap::ConstPtr adjacency_map;
   /** @brief Not currently respected */
-  Eigen::Isometry3d world_to_base_;
+  Eigen::Isometry3d world_to_base;
   /** @brief Not currently respected */
-  std::string link_;
+  std::string link;
   /** @brief Not currently respected */
-  tesseract_environment::AdjacencyMapPair::ConstPtr kin_link_;
+  tesseract_environment::AdjacencyMapPair::ConstPtr kin_link;
   /** @brief Not currently respected */
-  Eigen::Isometry3d tcp_;
+  Eigen::Isometry3d tcp;
 };
 
 /**
@@ -102,8 +102,8 @@ public:
 
   InverseKinematicsConstraint(const Eigen::Isometry3d& target_pose,
                               InverseKinematicsInfo::ConstPtr kinematic_info,
-                              JointPosition::Ptr constraint_var,
-                              JointPosition::Ptr seed_var,
+                              JointPosition::ConstPtr constraint_var,
+                              JointPosition::ConstPtr seed_var,
                               const std::string& name = "InverseKinematics");
 
   /**
@@ -145,7 +145,17 @@ public:
    */
   void FillJacobianBlock(std::string var_set, Jacobian& jac_block) const override;
 
+  /**
+   * @brief Sets the target pose for the TCP
+   * @param target_pose Target pose for the TCP. Currently in robot frame since world_to_base_ has not been implemented
+   */
   void SetTargetPose(const Eigen::Isometry3d& target_pose);
+
+  /**
+   * @brief Gets the kinematic info used to create this constraint
+   * @return The kinematic info used to create this constraint
+   */
+  const InverseKinematicsInfo::ConstPtr& getKinematicInfo() { return kinematic_info_; }
 
 private:
   /** @brief The number of joints in a single JointPosition */
@@ -157,12 +167,13 @@ private:
   /** @brief Pointer to the var used by this constraint.
    *
    * Do not access them directly. Instead use this->GetVariables()->GetComponent(position_var->GetName())->GetValues()*/
-  JointPosition::Ptr constraint_var_;
+  JointPosition::ConstPtr constraint_var_;
   /** @brief Pointer to the var used as a seed when calculating IK. This will usually be a adjacent point in the
    * trajectory*/
-  JointPosition::Ptr seed_var_;
-
+  JointPosition::ConstPtr seed_var_;
+  /** @brief Target pose for the TCP. Currently in robot frame since world_to_base_ has not been implemented */
   Eigen::Isometry3d target_pose_;
+  /** @brief The kinematic info used to create this constraint */
   InverseKinematicsInfo::ConstPtr kinematic_info_;
 };
 };  // namespace trajopt

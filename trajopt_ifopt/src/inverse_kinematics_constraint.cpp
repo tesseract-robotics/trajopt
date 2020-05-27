@@ -34,8 +34,8 @@ namespace trajopt
 {
 InverseKinematicsConstraint::InverseKinematicsConstraint(const Eigen::Isometry3d& target_pose,
                                                          InverseKinematicsInfo::ConstPtr kinematic_info,
-                                                         JointPosition::Ptr constraint_var,
-                                                         JointPosition::Ptr seed_var,
+                                                         JointPosition::ConstPtr constraint_var,
+                                                         JointPosition::ConstPtr seed_var,
                                                          const std::string& name)
   : ifopt::ConstraintSet(constraint_var->GetRows(), name)
   , constraint_var_(std::move(constraint_var))
@@ -46,7 +46,7 @@ InverseKinematicsConstraint::InverseKinematicsConstraint(const Eigen::Isometry3d
   // Set the n_dof and n_vars for convenience
   n_dof_ = constraint_var_->GetRows();
   assert(n_dof_ > 0);
-  if (static_cast<std::size_t>(constraint_var_->GetRows()) != kinematic_info_->inverse_kinematics_->numJoints())
+  if (static_cast<std::size_t>(constraint_var_->GetRows()) != kinematic_info_->inverse_kinematics->numJoints())
     CONSOLE_BRIDGE_logError("Inverse kinematics has a different number of joints than the given variable set");
 
   bounds_ = std::vector<ifopt::Bounds>(static_cast<std::size_t>(n_dof_), ifopt::BoundZero);
@@ -57,7 +57,7 @@ Eigen::VectorXd InverseKinematicsConstraint::CalcValues(const Eigen::Ref<Eigen::
 {
   // Get joint position using IK and the seed variable
   Eigen::VectorXd target_joint_position;
-  kinematic_info_->inverse_kinematics_->calcInvKin(target_joint_position, target_pose_, seed_joint_position);
+  kinematic_info_->inverse_kinematics->calcInvKin(target_joint_position, target_pose_, seed_joint_position);
 
   // Calculate joint error
   Eigen::VectorXd error = target_joint_position - joint_vals;

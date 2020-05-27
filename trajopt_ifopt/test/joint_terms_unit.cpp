@@ -12,11 +12,11 @@ using namespace std;
 /**
  * @brief Tests the Joint Position Constraint
  */
-TEST(JointTermsUnit, joint_pos_constraint_1)
+TEST(JointTermsUnit, joint_pos_constraint_1)  // NOLINT
 {
   CONSOLE_BRIDGE_logDebug("JointTermsUnit, JointPosConstraint_1");
 
-  std::vector<JointPosition::Ptr> position_vars;
+  std::vector<JointPosition::ConstPtr> position_vars;
   std::vector<std::string> joint_names(10, "name");
   Eigen::VectorXd init1(10);
   init1 << 0, 1, 2, 3, 4, 5, 6, 7, 8, 9;

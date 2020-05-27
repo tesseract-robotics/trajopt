@@ -32,42 +32,52 @@
 
 namespace trajopt_sqp
 {
+/**
+ * @brief An Interface to the OSQPEigen QP Solver
+ */
 class OSQPEigenSolver : public QPSolver
 {
 public:
   using Ptr = std::shared_ptr<OSQPEigenSolver>;
   using ConstPtr = std::shared_ptr<const OSQPEigenSolver>;
 
-  bool init(Eigen::Index num_vars, Eigen::Index num_cnts);
+  OSQPEigenSolver();
 
-  bool clear();
+  bool init(Eigen::Index num_vars, Eigen::Index num_cnts) override;
 
-  bool solve();
+  bool clear() override;
 
-  Eigen::VectorXd getSolution();
+  bool solve() override;
 
-  bool updateHessianMatrix(const Hessian& hessian);
+  Eigen::VectorXd getSolution() override;
 
-  bool updateGradient(const Eigen::Ref<Eigen::VectorXd>& gradient);
+  bool updateHessianMatrix(const Hessian& hessian) override;
 
-  bool updateLowerBound(const Eigen::Ref<const Eigen::VectorXd>& lowerBound);
+  bool updateGradient(const Eigen::Ref<const Eigen::VectorXd>& gradient) override;
 
-  bool updateUpperBound(const Eigen::Ref<const Eigen::VectorXd>& upperBound);
+  bool updateLowerBound(const Eigen::Ref<const Eigen::VectorXd>& lowerBound) override;
+
+  bool updateUpperBound(const Eigen::Ref<const Eigen::VectorXd>& upperBound) override;
 
   bool updateBounds(const Eigen::Ref<const Eigen::VectorXd>& lowerBound,
-                    const Eigen::Ref<const Eigen::VectorXd>& upperBound);
+                    const Eigen::Ref<const Eigen::VectorXd>& upperBound) override;
 
-  bool updateLinearConstraintsMatrix(const Jacobian& linearConstraintsMatrix);
+  bool updateLinearConstraintsMatrix(const Jacobian& linearConstraintsMatrix) override;
 
-  QP_SOLVER_STATUS getSolverStatus();
+  QP_SOLVER_STATUS getSolverStatus() const override { return solver_status_; };
 
   OsqpEigen::Solver solver_;
 
 private:
+  // Depending on what they decide to do with this issue, these could be dropped
+  // https://github.com/robotology/osqp-eigen/issues/17
   Eigen::VectorXd bounds_lower_;
   Eigen::VectorXd bounds_upper_;
+  Eigen::VectorXd gradient_;
   Eigen::Index num_vars_;
   Eigen::Index num_cnts_;
+
+  QP_SOLVER_STATUS solver_status_{ QP_SOLVER_STATUS::UNITIALIZED };
 };
 
 }  // namespace trajopt_sqp

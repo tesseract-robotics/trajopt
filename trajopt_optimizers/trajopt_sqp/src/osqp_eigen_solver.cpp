@@ -29,6 +29,20 @@
 
 namespace trajopt_sqp
 {
+OSQPEigenSolver::OSQPEigenSolver()
+{
+  if (verbosity > 0)
+    solver_.settings()->setVerbosity(true);
+  else
+    solver_.settings()->setVerbosity(false);
+  solver_.settings()->setWarmStart(true);
+  solver_.settings()->setPolish(true);
+  solver_.settings()->setAdaptiveRho(false);
+  solver_.settings()->setMaxIteraction(8192);
+  solver_.settings()->setAbsoluteTolerance(1e-4);
+  solver_.settings()->setRelativeTolerance(1e-6);
+}
+
 bool OSQPEigenSolver::init(Eigen::Index num_vars, Eigen::Index num_cnts)
 {
   // Set the solver size
@@ -37,11 +51,7 @@ bool OSQPEigenSolver::init(Eigen::Index num_vars, Eigen::Index num_cnts)
   solver_.data()->setNumberOfVariables(static_cast<int>(num_vars_));
   solver_.data()->setNumberOfConstraints(static_cast<int>(num_cnts_));
 
-  // Initialize the bounds
-  bounds_lower_ = Eigen::VectorXd::Ones(num_cnts_) * -OSQP_INFTY;
-  bounds_upper_ = Eigen::VectorXd::Ones(num_cnts_) * OSQP_INFTY;
-
-  return solver_.initSolver();
+  return true;
 }
 
 bool OSQPEigenSolver::clear()
@@ -53,7 +63,54 @@ bool OSQPEigenSolver::clear()
   return true;
 }
 
-bool OSQPEigenSolver::solve() { return solver_.solve(); }
+bool OSQPEigenSolver::solve()
+{
+  // In order to call initSolver, everything must have already been set, so we call it right before solving
+  solver_.initSolver();
+  if (solver_.solve())
+    return true;
+
+  if (verbosity > 0)
+  {
+    // If primal infeasible
+    if (solver_.workspace()->info->status_val == -3)
+    {
+      Eigen::Map<Eigen::VectorXd> primal_certificate(solver_.workspace()->delta_x, num_cnts_, 1);
+      std::cout << "OSQP Status: " << solver_.workspace()->info->status << std::endl;
+      std::cout << "\n---------------------------------------\n";
+      std::cout << std::scientific << "Primal Certificate (v): " << primal_certificate.transpose() << std::endl;
+
+      double first = bounds_lower_.transpose() * primal_certificate;
+      double second = bounds_upper_.transpose() * primal_certificate;
+
+      std::cout << "A.transpose() * v = 0\n"
+                << "l.transpose() * v = " << first << "    u.transpose() * v = " << second << std::endl;
+      std::cout << "l.transpose() * v + u.transpose() * v  = " << first + second << " < 0\n";
+      std::cout << "Bounds_lower: " << bounds_lower_.transpose() << std::endl;
+      std::cout << "Bounds_upper: " << bounds_upper_.transpose() << std::endl;
+      std::cout << std::fixed;
+      std::cout << "\n---------------------------------------\n";
+    }
+
+    // If dual infeasible
+    if (solver_.workspace()->info->status_val == -4)
+    {
+      Eigen::Map<Eigen::VectorXd> dual_certificate(solver_.workspace()->delta_y, num_vars_, 1);
+      std::cout << "OSQP Status: " << solver_.workspace()->info->status << std::endl;
+      std::cout << "\n---------------------------------------\n";
+      std::cout << "Dual Certificate (x): " << dual_certificate.transpose() << std::endl;
+
+      // TODO: Find a way to get the hessian here
+      //        std::cout << "P*x = " << (qp_problem_->getHessian() * dual_certificate).transpose() << " = 0" <<
+      //        std::endl;
+      std::cout << "q.transpose() * x = " << gradient_.transpose() * dual_certificate << " < 0" << std::endl;
+      std::cout << std::fixed;
+      std::cout << "\n---------------------------------------\n";
+    }
+  }
+
+  return false;
+}
 
 Eigen::VectorXd OSQPEigenSolver::getSolution()
 {
@@ -63,21 +120,24 @@ Eigen::VectorXd OSQPEigenSolver::getSolution()
 
 bool OSQPEigenSolver::updateHessianMatrix(const Hessian& hessian)
 {
+  // Clean up values close to 0
+  Hessian cleaned = hessian.pruned(1e-7);
+
   if (solver_.isInitialized())
     return solver_.updateHessianMatrix(hessian);
-  solver_.data()->clearHessianMatrix();
-  Hessian cleaned = hessian.pruned(1e-7);
-  std::cout << "Hessian nonzero: " << cleaned.nonZeros() << std::endl;
 
+  solver_.data()->clearHessianMatrix();
   return solver_.data()->setHessianMatrix(cleaned);
 }
 
-bool OSQPEigenSolver::updateGradient(const Eigen::Ref<Eigen::VectorXd>& gradient)
+bool OSQPEigenSolver::updateGradient(const Eigen::Ref<const Eigen::VectorXd>& gradient)
 {
-  if (solver_.isInitialized())
-    return solver_.updateGradient(gradient);
+  gradient_ = gradient;
 
-  return solver_.data()->setGradient(gradient);
+  if (solver_.isInitialized())
+    return solver_.updateGradient(gradient_);
+
+  return solver_.data()->setGradient(gradient_);
 }
 
 bool OSQPEigenSolver::updateLowerBound(const Eigen::Ref<const Eigen::VectorXd>& lowerBound)
@@ -97,23 +157,27 @@ bool OSQPEigenSolver::updateBounds(const Eigen::Ref<const Eigen::VectorXd>& lowe
 {
   bounds_lower_ = lowerBound.cwiseMax(Eigen::VectorXd::Ones(num_cnts_) * -OSQP_INFTY);
   bounds_upper_ = upperBound.cwiseMin(Eigen::VectorXd::Ones(num_cnts_) * OSQP_INFTY);
+
   if (solver_.isInitialized())
     return solver_.updateBounds(bounds_lower_, bounds_upper_);
 
-  solver_.data()->setLowerBound(bounds_lower_);
-  solver_.data()->setUpperBound(bounds_upper_);
-  return true;
+  bool success = solver_.data()->setLowerBound(bounds_lower_);
+  success &= solver_.data()->setUpperBound(bounds_upper_);
+  return success;
 }
 
 bool OSQPEigenSolver::updateLinearConstraintsMatrix(const Jacobian& linearConstraintsMatrix)
 {
+  assert(num_cnts_ == linearConstraintsMatrix.rows());
+  assert(num_vars_ == linearConstraintsMatrix.cols());
+
   solver_.data()->clearLinearConstraintsMatrix();
   Jacobian cleaned = linearConstraintsMatrix.pruned(1e-7);
-  std::cout << "Constraint Matrix nonzero: " << cleaned.nonZeros() << std::endl;
-  return solver_.data()->setLinearConstraintsMatrix(cleaned);
-  //  return solver_.updateLinearConstraintsMatrix(linearConstraintsMatrix);
-}
 
-QP_SOLVER_STATUS OSQPEigenSolver::getSolverStatus() { return QP_SOLVER_STATUS::INITIALIZED; }
+  if (solver_.isInitialized())
+    return solver_.updateLinearConstraintsMatrix(linearConstraintsMatrix);
+
+  return solver_.data()->setLinearConstraintsMatrix(cleaned);
+}
 
 }  // namespace trajopt_sqp
