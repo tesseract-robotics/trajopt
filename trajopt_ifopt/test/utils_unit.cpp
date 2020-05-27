@@ -9,7 +9,7 @@ TRAJOPT_IGNORE_WARNINGS_POP
 using namespace trajopt;
 using namespace std;
 
-TEST(UtilsUnit, toBounds)
+TEST(UtilsUnit, toBounds)  // NOLINT
 {
   CONSOLE_BRIDGE_logDebug("UtilsUnit, toBounds");
 
@@ -28,7 +28,7 @@ TEST(UtilsUnit, toBounds)
   }
 }
 
-TEST(UtilsUnit, interpolate)
+TEST(UtilsUnit, interpolate)  // NOLINT
 {
   CONSOLE_BRIDGE_logDebug("UtilsUnit, interpolate");
 
@@ -50,7 +50,7 @@ TEST(UtilsUnit, interpolate)
 }
 
 /** @brief Tests getClosestValidPoint: Input within Finite bounds*/
-TEST(UtilsUnit, getClosestValidPoint1)
+TEST(UtilsUnit, getClosestValidPoint1)  // NOLINT
 {
   ifopt::Bounds bound(-2.0, 2.0);
   std::vector<ifopt::Bounds> bounds(3, bound);
@@ -59,7 +59,7 @@ TEST(UtilsUnit, getClosestValidPoint1)
   EXPECT_TRUE(output.isApprox(input));
 }
 /** @brief Tests getClosestValidPoint: Input greater than Finite bounds*/
-TEST(UtilsUnit, getClosestValidPoint2)
+TEST(UtilsUnit, getClosestValidPoint2)  // NOLINT
 {
   ifopt::Bounds bound(-2.0, 2.0);
   std::vector<ifopt::Bounds> bounds(3, bound);
@@ -69,7 +69,7 @@ TEST(UtilsUnit, getClosestValidPoint2)
   EXPECT_TRUE(output.isApprox(desired_results));
 }
 /** @brief Tests getClosestValidPoint: Input less than Finite bounds*/
-TEST(UtilsUnit, getClosestValidPoint3)
+TEST(UtilsUnit, getClosestValidPoint3)  // NOLINT
 {
   ifopt::Bounds bound(-2.0, 2.0);
   std::vector<ifopt::Bounds> bounds(3, bound);
@@ -79,7 +79,7 @@ TEST(UtilsUnit, getClosestValidPoint3)
   EXPECT_TRUE(output.isApprox(desired_results));
 }
 /** @brief Tests getClosestValidPoint: Input within BoundGreaterZero*/
-TEST(UtilsUnit, getClosestValidPoint4)
+TEST(UtilsUnit, getClosestValidPoint4)  // NOLINT
 {
   ifopt::Bounds bound(ifopt::BoundGreaterZero);
   std::vector<ifopt::Bounds> bounds(3, bound);
@@ -88,7 +88,7 @@ TEST(UtilsUnit, getClosestValidPoint4)
   EXPECT_TRUE(output.isApprox(input));
 }
 /** @brief Tests getClosestValidPoint: Input within BoundSmallerZero*/
-TEST(UtilsUnit, getClosestValidPoint5)
+TEST(UtilsUnit, getClosestValidPoint5)  // NOLINT
 {
   ifopt::Bounds bound(ifopt::BoundSmallerZero);
   std::vector<ifopt::Bounds> bounds(3, bound);

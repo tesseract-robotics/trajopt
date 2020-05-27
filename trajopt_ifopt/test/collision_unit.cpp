@@ -29,10 +29,10 @@ using namespace tesseract_geometry;
 class CollisionUnit : public testing::TestWithParam<const char*>
 {
 public:
-  Tesseract::Ptr tesseract_ = std::make_shared<Tesseract>(); /**< Tesseract */
-  trajopt::SingleTimestepCollisionEvaluator::Ptr collision_evaluator_;
-  ifopt::Problem nlp_;
-  std::shared_ptr<trajopt::CollisionConstraintIfopt> constraint_;
+  Tesseract::Ptr tesseract = std::make_shared<Tesseract>(); /**< Tesseract */
+  trajopt::SingleTimestepCollisionEvaluator::Ptr collision_evaluator;
+  ifopt::Problem nlp;
+  std::shared_ptr<trajopt::CollisionConstraintIfopt> constraint;
 
   void SetUp() override
   {
@@ -40,13 +40,13 @@ public:
     boost::filesystem::path srdf_file(std::string(TRAJOPT_DIR) + "/test/data/boxbot.srdf");
 
     ResourceLocator::Ptr locator = std::make_shared<SimpleResourceLocator>(locateResource);
-    EXPECT_TRUE(tesseract_->init(urdf_file, srdf_file, locator));
+    EXPECT_TRUE(tesseract->init(urdf_file, srdf_file, locator));
 
     gLogLevel = util::LevelError;
 
     // Set up collision evaluator
-    auto env = tesseract_->getEnvironmentConst();
-    auto kin = tesseract_->getFwdKinematicsManagerConst()->getFwdKinematicSolver("manipulator");
+    auto env = tesseract->getEnvironmentConst();
+    auto kin = tesseract->getFwdKinematicsManagerConst()->getFwdKinematicSolver("manipulator");
     auto adj_map = std::make_shared<tesseract_environment::AdjacencyMap>(
         env->getSceneGraph(), kin->getActiveLinkNames(), env->getCurrentState()->link_transforms);
 
@@ -56,7 +56,7 @@ public:
     double safety_margin_buffer = 0.00;
     sco::VarVector var_vector;  // unused
 
-    collision_evaluator_ = std::make_shared<trajopt::SingleTimestepCollisionEvaluator>(
+    collision_evaluator = std::make_shared<trajopt::SingleTimestepCollisionEvaluator>(
         kin,
         env,
         adj_map,
@@ -71,10 +71,10 @@ public:
     Eigen::VectorXd pos(2);
     pos << -1.9, 0;
     auto var0 = std::make_shared<trajopt::JointPosition>(pos, kin->getJointNames(), "Joint_Position_0");
-    nlp_.AddVariableSet(var0);
+    nlp.AddVariableSet(var0);
 
-    constraint_ = std::make_shared<trajopt::CollisionConstraintIfopt>(collision_evaluator_, var0);
-    nlp_.AddConstraintSet(constraint_);
+    constraint = std::make_shared<trajopt::CollisionConstraintIfopt>(collision_evaluator, var0);
+    nlp.AddConstraintSet(constraint);
   }
 };
 
@@ -90,13 +90,13 @@ TEST_F(CollisionUnit, GetValueFillJacobian)  // NOLINT
     Eigen::VectorXd pos(2);
     // Small offset in y is to avoid numeric instabilites with perfectly aligning edges
     pos << -1.9, 0.01;
-    nlp_.SetVariables(pos.data());
-    Eigen::VectorXd values = constraint_->GetValues();
+    nlp.SetVariables(pos.data());
+    Eigen::VectorXd values = constraint->GetValues();
     EXPECT_NEAR(values[0], 0.0, 1e-6);
 
     ifopt::ConstraintSet::Jacobian jac_block;
     jac_block.resize(1, 2);
-    constraint_->FillJacobianBlock("Joint_Position_0", jac_block);
+    constraint->FillJacobianBlock("Joint_Position_0", jac_block);
     double dx = jac_block.coeff(0, 0);
     double dy = jac_block.coeff(0, 1);
     EXPECT_NEAR(dx, 0.0, 1e-6);
@@ -107,13 +107,13 @@ TEST_F(CollisionUnit, GetValueFillJacobian)  // NOLINT
   {
     Eigen::VectorXd pos(2);
     pos << -1.0, 0.01;
-    nlp_.SetVariables(pos.data());
-    Eigen::VectorXd values = constraint_->GetValues();
+    nlp.SetVariables(pos.data());
+    Eigen::VectorXd values = constraint->GetValues();
     EXPECT_NEAR(values[0], 0.1, 1e-6);
 
     ifopt::ConstraintSet::Jacobian jac_block;
     jac_block.resize(1, 2);
-    constraint_->FillJacobianBlock("Joint_Position_0", jac_block);
+    constraint->FillJacobianBlock("Joint_Position_0", jac_block);
     double dx = jac_block.coeff(0, 0);
     double dy = jac_block.coeff(0, 1);
     EXPECT_NEAR(dx, 1.0, 1e-6);
@@ -122,13 +122,13 @@ TEST_F(CollisionUnit, GetValueFillJacobian)  // NOLINT
   {
     Eigen::VectorXd pos(2);
     pos << 0.01, 1.0;
-    nlp_.SetVariables(pos.data());
-    Eigen::VectorXd values = constraint_->GetValues();
+    nlp.SetVariables(pos.data());
+    Eigen::VectorXd values = constraint->GetValues();
     EXPECT_NEAR(values[0], 0.1, 1e-6);
 
     ifopt::ConstraintSet::Jacobian jac_block;
     jac_block.resize(1, 2);
-    constraint_->FillJacobianBlock("Joint_Position_0", jac_block);
+    constraint->FillJacobianBlock("Joint_Position_0", jac_block);
     double dx = jac_block.coeff(0, 0);
     double dy = jac_block.coeff(0, 1);
     EXPECT_NEAR(dx, 0.0, 1e-6);
@@ -139,13 +139,13 @@ TEST_F(CollisionUnit, GetValueFillJacobian)  // NOLINT
   {
     Eigen::VectorXd pos(2);
     pos << -0.9, 0.01;
-    nlp_.SetVariables(pos.data());
-    Eigen::VectorXd values = constraint_->GetValues();
+    nlp.SetVariables(pos.data());
+    Eigen::VectorXd values = constraint->GetValues();
     EXPECT_NEAR(values[0], 0.2, 1e-6);
 
     ifopt::ConstraintSet::Jacobian jac_block;
     jac_block.resize(1, 2);
-    constraint_->FillJacobianBlock("Joint_Position_0", jac_block);
+    constraint->FillJacobianBlock("Joint_Position_0", jac_block);
     double dx = jac_block.coeff(0, 0);
     double dy = jac_block.coeff(0, 1);
     EXPECT_NEAR(dx, 1.0, 1e-6);
@@ -167,7 +167,7 @@ TEST_F(CollisionUnit, GetSetBounds)  // NOLINT
     std::vector<std::string> joint_names(2, "names");
     auto var0 = std::make_shared<trajopt::JointPosition>(pos, joint_names, "Joint_Position_0");
 
-    auto constraint_2 = std::make_shared<trajopt::CollisionConstraintIfopt>(collision_evaluator_, var0);
+    auto constraint_2 = std::make_shared<trajopt::CollisionConstraintIfopt>(collision_evaluator, var0);
     ifopt::Bounds bounds(-0.1234, 0.5678);
     std::vector<ifopt::Bounds> bounds_vec = std::vector<ifopt::Bounds>(1, bounds);
     constraint_2->SetBounds(bounds_vec);
@@ -191,7 +191,7 @@ TEST_F(CollisionUnit, IgnoreVariables)  // NOLINT
   {
     ifopt::ConstraintSet::Jacobian jac_block_input;
     jac_block_input.resize(1, 2);
-    constraint_->FillJacobianBlock("another_var", jac_block_input);
+    constraint->FillJacobianBlock("another_var", jac_block_input);
     EXPECT_EQ(jac_block_input.nonZeros(), 0);
   }
 }

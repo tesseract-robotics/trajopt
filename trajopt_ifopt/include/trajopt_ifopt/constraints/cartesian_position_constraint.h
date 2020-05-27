@@ -2,6 +2,7 @@
  * @file cartesian_position_constraint.h
  * @brief The cartesian position constraint
  *
+ * @author Levi Armstrong
  * @author Matthew Powelson
  * @date May 18, 2020
  * @version TODO
@@ -57,26 +58,26 @@ struct CartPosKinematicInfo
                        const Eigen::Isometry3d& world_to_base,
                        std::string link,
                        const Eigen::Isometry3d& tcp = Eigen::Isometry3d::Identity())
-    : manip_(std::move(manip))
-    , adjacency_map_(std::move(adjacency_map))
-    , world_to_base_(world_to_base)
-    , link_(std::move(link))
-    , tcp_(tcp)
+    : manip(std::move(manip))
+    , adjacency_map(std::move(adjacency_map))
+    , world_to_base(world_to_base)
+    , link(std::move(link))
+    , tcp(tcp)
   {
-    kin_link_ = adjacency_map_->getLinkMapping(link_);
-    if (kin_link_ == nullptr)
+    this->kin_link = this->adjacency_map->getLinkMapping(this->link);
+    if (this->kin_link == nullptr)
     {
-      CONSOLE_BRIDGE_logError("Link name '%s' provided does not exist.", link_.c_str());
+      CONSOLE_BRIDGE_logError("Link name '%s' provided does not exist.", this->link.c_str());
       assert(false);
     }
   }
 
-  tesseract_kinematics::ForwardKinematics::ConstPtr manip_;
-  tesseract_environment::AdjacencyMap::ConstPtr adjacency_map_;
-  Eigen::Isometry3d world_to_base_;
-  std::string link_;
-  tesseract_environment::AdjacencyMapPair::ConstPtr kin_link_;
-  Eigen::Isometry3d tcp_;
+  tesseract_kinematics::ForwardKinematics::ConstPtr manip;
+  tesseract_environment::AdjacencyMap::ConstPtr adjacency_map;
+  Eigen::Isometry3d world_to_base;
+  std::string link;
+  tesseract_environment::AdjacencyMapPair::ConstPtr kin_link;
+  Eigen::Isometry3d tcp;
 };
 
 class CartPosConstraint : public ifopt::ConstraintSet
@@ -89,7 +90,7 @@ public:
 
   CartPosConstraint(const Eigen::Isometry3d& target_pose,
                     CartPosKinematicInfo::ConstPtr kinematic_info,
-                    JointPosition::Ptr position_var,
+                    JointPosition::ConstPtr position_var,
                     const std::string& name = "CartPos");
 
   /**
@@ -128,13 +129,30 @@ public:
 
   void SetTargetPose(const Eigen::Isometry3d& target_pose);
 
+  /**
+   * @brief Gets the kinematic info used to create this constraint
+   * @return The kinematic info used to create this constraint
+   */
   const CartPosKinematicInfo::ConstPtr& getKinematicInfo() { return kinematic_info_; }
 
-  Eigen::Isometry3d GetTargetPose() const;
+  /**
+   * @brief Returns the target pose for the constraint
+   * @return The target pose for the constraint
+   */
+  Eigen::Isometry3d GetTargetPose() const { return target_pose_; }
 
+  /**
+   * @brief Returns the current TCP pose in world frame given the input kinematic info and the current variable values
+   * @return The current TCP pose given the input kinematic info and the current variable values
+   */
   Eigen::Isometry3d GetCurrentPose() const;
 
-  bool use_numeric_differentiation_ = true;
+  /** @brief If true, numeric differentiation will be used. Default: true
+   *
+   * Note: While the logic for using the jacobian from KDL will be used if set to false, this has been buggy. Set this
+   * to false at your own risk.
+   */
+  bool use_numeric_differentiation{ true };
 
 private:
   /** @brief The number of joints in a single JointPosition */
@@ -146,10 +164,13 @@ private:
   /** @brief Pointers to the vars used by this constraint.
    *
    * Do not access them directly. Instead use this->GetVariables()->GetComponent(position_var->GetName())->GetValues()*/
-  JointPosition::Ptr position_var_;
+  JointPosition::ConstPtr position_var_;
 
+  /** @brief The target TCP pose in world frame. Not used for calculation. Stored for convenience */
   Eigen::Isometry3d target_pose_;
+  /** @brief The inverse of target_pose_ used for error calculations */
   Eigen::Isometry3d target_pose_inv_;
+  /** @brief The kinematic information used when calculating error */
   CartPosKinematicInfo::ConstPtr kinematic_info_;
 };
 };  // namespace trajopt

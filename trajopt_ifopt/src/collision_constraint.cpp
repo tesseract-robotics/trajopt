@@ -2,6 +2,7 @@
  * @file collision_constraint.cpp
  * @brief The collision position constraint
  *
+ * @author Levi Armstrong
  * @author Matthew Powelson
  * @date May 18, 2020
  * @version TODO
@@ -34,7 +35,7 @@ TRAJOPT_IGNORE_WARNINGS_POP
 namespace trajopt
 {
 CollisionConstraintIfopt::CollisionConstraintIfopt(SingleTimestepCollisionEvaluator::Ptr collision_evaluator,
-                                                   JointPosition::Ptr position_var,
+                                                   JointPosition::ConstPtr position_var,
                                                    const std::string& name)
   : ifopt::ConstraintSet(1, name)
   , position_var_(std::move(position_var))

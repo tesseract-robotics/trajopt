@@ -35,7 +35,6 @@
 #include <ifopt/solver.h>
 #include <trajopt_sqp/qp_problem.h>
 #include <trajopt_sqp/qp_solver.h>
-#include <trajopt_sqp/osqp_eigen_solver.h>
 #include <trajopt_sqp/sqp_callback.h>
 
 namespace trajopt_sqp
@@ -49,7 +48,7 @@ public:
   using Ptr = std::shared_ptr<TrustRegionSQPSolver>;
   using ConstPtr = std::shared_ptr<const TrustRegionSQPSolver>;
 
-  TrustRegionSQPSolver(OSQPEigenSolver::Ptr qp_solver);
+  TrustRegionSQPSolver(QPSolver::Ptr qp_solver);
 
   void Solve(ifopt::Problem& nlp) override;
 
@@ -59,21 +58,39 @@ public:
    */
   bool stepOptimization(ifopt::Problem& nlp);
 
+  /**
+   * @brief Calls all registered callbacks with the current state of of the problem
+   * @return Returns false if any single callback returned false
+   */
   bool callCallbacks();
 
+  /** @brief Prints info about the current state of of the optimization */
   void printStepInfo() const;
 
+  /** @brief Registers an optimization callback */
+  void registerCallback(const SQPCallback::Ptr& callback) { callbacks_.push_back(callback); };
+
+  /** @brief If true then debug information will be printed to the terminal */
+  bool verbose{ false };
+
+  /** @brief Contains parameters that control the SQP optimization */
+  SQPParameters params;
+
+  /** @brief Gets the optimization status (currently unset) */
+  const SQPStatus& getStatus() { return status_; };
+
+  /** @brief Gets the SQP optimization results */
+  const SQPResults& getResults() { return results_; };
+
+  /** @brief The QP Solver used to solve a single step of the SQP routine  */
+  QPSolver::Ptr qp_solver;
+  /** @brief The QP problem created from the NLP */
+  QPProblem::Ptr qp_problem;
+
+protected:
   SQPStatus status_;
   SQPResults results_;
-  SQPParameters params_;
-
-  void registerCallback(const SQPCallback::Ptr& callback) { callbacks_.push_back(callback); };
   std::vector<SQPCallback::Ptr> callbacks_;
-
-  OSQPEigenSolver::Ptr qp_solver_;
-  QPProblem::Ptr qp_problem_;
-
-  bool verbose_{ false };
 
 private:
   ifopt::Problem* nlp_;

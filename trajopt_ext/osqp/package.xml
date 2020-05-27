@@ -4,7 +4,7 @@
   <version>0.1.0</version>
   <description>OSQP Package</description>
   <maintainer email="levi.armstrong@swri.org">Levi Armstrong</maintainer>
-  <license>Unknown</license>
+  <license>Apache 2.0</license>
 
   <export>
     <build_type>cmake</build_type>

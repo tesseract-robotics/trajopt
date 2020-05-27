@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file trust_region_sqp_solver.cpp
  * @brief Contains the main trust region SQP solver. While it is based on the paper below, it has been completely
  * rewritten from trajopt_sco
@@ -36,9 +36,9 @@ namespace trajopt_sqp
 {
 const bool SUPER_DEBUG_MODE = false;
 
-TrustRegionSQPSolver::TrustRegionSQPSolver(OSQPEigenSolver::Ptr qp_solver) : qp_solver_(std::move(qp_solver))
+TrustRegionSQPSolver::TrustRegionSQPSolver(QPSolver::Ptr qp_solver) : qp_solver(std::move(qp_solver))
 {
-  qp_problem_ = std::make_shared<QPProblem>();
+  qp_problem = std::make_shared<QPProblem>();
 }
 
 void TrustRegionSQPSolver::Solve(ifopt::Problem& nlp)
@@ -46,72 +46,43 @@ void TrustRegionSQPSolver::Solve(ifopt::Problem& nlp)
   console_bridge::setLogLevel(console_bridge::LogLevel::CONSOLE_BRIDGE_LOG_INFO);
   nlp_ = &nlp;
 
-  qp_problem_->init(nlp);
-  qp_problem_->convexify();
-
-  // TODO: Clean up the solver interface and switch to using base class here.
-  qp_solver_->solver_.data()->setNumberOfVariables(static_cast<int>(qp_problem_->num_qp_vars_));
-  qp_solver_->solver_.data()->setNumberOfConstraints(static_cast<int>(qp_problem_->num_qp_cnts_));
-  qp_solver_->solver_.data()->setHessianMatrix(qp_problem_->hessian_);
-  qp_solver_->solver_.data()->setGradient(qp_problem_->gradient_);
-  Jacobian cleaned = qp_problem_->constraint_matrix_.pruned(1e-7);
-  qp_solver_->solver_.data()->setLinearConstraintsMatrix(cleaned);
-  qp_solver_->solver_.data()->setUpperBound(qp_problem_->bounds_upper_);
-  qp_solver_->solver_.data()->setLowerBound(qp_problem_->bounds_lower_);
-
-  //  qp_solver_->updateHessianMatrix(qp_problem_->hessian_);
-  //  qp_solver_->updateGradient(qp_problem_->gradient_);
-  //  qp_solver_->updateLinearConstraintsMatrix(qp_problem_->constraint_matrix_);
-  //  qp_solver_->updateBounds(qp_problem_->bounds_lower_, qp_problem_->bounds_upper_);
-  qp_solver_->init(qp_problem_->num_qp_vars_, qp_problem_->num_qp_cnts_);
+  qp_problem->init(nlp);
 
   // Initialize optimization parameters
   results_ = SQPResults(nlp.GetNumberOfOptimizationVariables(), nlp.GetNumberOfConstraints());
-  results_.box_size = Eigen::VectorXd::Ones(nlp.GetNumberOfOptimizationVariables()) * params_.initial_trust_box_size;
-  qp_problem_->setBoxSize(results_.box_size);
+  results_.box_size = Eigen::VectorXd::Ones(nlp.GetNumberOfOptimizationVariables()) * params.initial_trust_box_size;
+  qp_problem->setBoxSize(results_.box_size);
 
   // ---------------------------
   // Penalty Iteration Loop
   // ---------------------------
-  for (int penalty_iteration = 0; penalty_iteration < params_.max_merit_coeff_increases; penalty_iteration++)
+  for (int penalty_iteration = 0; penalty_iteration < params.max_merit_coeff_increases; penalty_iteration++)
   {
     // ---------------------------
     // Convexification loop
     // ---------------------------
     for (int convex_iteration = 0; convex_iteration < 100; convex_iteration++)
     {
-      qp_problem_->convexify();
+      qp_problem->convexify();
 
-      //      qp_solver_->clear();
-      //      qp_solver_->updateHessianMatrix(qp_problem_->hessian_);
-      //      qp_solver_->updateGradient(qp_problem_->gradient_);
-      //      qp_solver_->updateLinearConstraintsMatrix(qp_problem_->constraint_matrix_);
-      //      qp_solver_->updateBounds(qp_problem_->bounds_lower_, qp_problem_->bounds_upper_);
-      //      qp_solver_->init(qp_problem_->num_qp_vars_, qp_problem_->num_qp_cnts_);
+      // TODO: Look into not clearing and reinitializing the workspace each iteration. It should be as simple as
+      // removing this
+      qp_solver->clear();
 
       // Convexify the costs and constraints around their current values
-      qp_solver_->solver_.clearSolver();
-      qp_solver_->solver_.data()->clearHessianMatrix();
-      qp_solver_->solver_.data()->clearLinearConstraintsMatrix();
-
-      qp_solver_->solver_.data()->setNumberOfVariables(static_cast<int>(qp_problem_->num_qp_vars_));
-      qp_solver_->solver_.data()->setNumberOfConstraints(static_cast<int>(qp_problem_->num_qp_cnts_));
-      qp_solver_->solver_.data()->setHessianMatrix(qp_problem_->hessian_);
-      qp_solver_->solver_.data()->setGradient(qp_problem_->gradient_);
-      Jacobian cleaned = qp_problem_->constraint_matrix_.pruned(1e-7);
-
-      qp_solver_->solver_.data()->setLinearConstraintsMatrix(cleaned);
-      qp_solver_->solver_.data()->setUpperBound(qp_problem_->bounds_upper_);
-      qp_solver_->solver_.data()->setLowerBound(qp_problem_->bounds_lower_);
-      qp_solver_->init(qp_problem_->num_qp_vars_, qp_problem_->num_qp_cnts_);
+      qp_solver->init(qp_problem->getNumQPVars(), qp_problem->getNumQPConstraints());
+      qp_solver->updateHessianMatrix(qp_problem->getHessian());
+      qp_solver->updateGradient(qp_problem->getGradient());
+      qp_solver->updateLinearConstraintsMatrix(qp_problem->getConstraintMatrix());
+      qp_solver->updateBounds(qp_problem->getBoundsLower(), qp_problem->getBoundsUpper());
 
       if (SUPER_DEBUG_MODE)
-        qp_problem_->print();
+        qp_problem->print();
 
       // ---------------------------
       // Trust region loop
       // ---------------------------
-      for (int trust_region_iteration = 0; trust_region_iteration < params_.max_trust_region_expansions;
+      for (int trust_region_iteration = 0; trust_region_iteration < params.max_trust_region_expansions;
            trust_region_iteration++)
       {
         results_.overall_iteration++;
@@ -134,31 +105,31 @@ void TrustRegionSQPSolver::Solve(ifopt::Problem& nlp)
                                   "zeroth order)",
                                   results_.approx_merit_improve);
         }
-        if (results_.approx_merit_improve < params_.min_approx_improve)
+        if (results_.approx_merit_improve < params.min_approx_improve)
         {
           CONSOLE_BRIDGE_logInform("Converged because improvement was small (%.3e < %.3e)",
                                    results_.approx_merit_improve,
-                                   params_.min_approx_improve);
+                                   params.min_approx_improve);
           status_ = SQPStatus::NLP_CONVERGED;
           break;
         }
-        if (results_.approx_merit_improve / results_.best_exact_merit < params_.min_approx_improve_frac)
+        if (results_.approx_merit_improve / results_.best_exact_merit < params.min_approx_improve_frac)
         {
           CONSOLE_BRIDGE_logInform("Converged because improvement ratio was small (%.3e < %.3e)",
                                    results_.approx_merit_improve / results_.best_exact_merit,
-                                   params_.min_approx_improve_frac);
+                                   params.min_approx_improve_frac);
           status_ = SQPStatus::NLP_CONVERGED;
           break;
         }
 
         // Check if the bounding trust region needs to be shrunk
         // This happens if the exact solution got worse or if the QP approximation deviates from the exact by too much
-        if (results_.exact_merit_improve < 0 || results_.merit_improve_ratio < params_.improve_ratio_threshold)
+        if (results_.exact_merit_improve < 0 || results_.merit_improve_ratio < params.improve_ratio_threshold)
         {
-          qp_problem_->scaleBoxSize(params_.trust_shrink_ratio);
-          qp_problem_->updateNLPVariableBounds();
-          qp_solver_->updateBounds(qp_problem_->bounds_lower_, qp_problem_->bounds_upper_);
-          results_.box_size = qp_problem_->getBoxSize();
+          qp_problem->scaleBoxSize(params.trust_shrink_ratio);
+          qp_problem->updateNLPVariableBounds();
+          qp_solver->updateBounds(qp_problem->getBoundsLower(), qp_problem->getBoundsUpper());
+          results_.box_size = qp_problem->getBoxSize();
 
           CONSOLE_BRIDGE_logInform("Shrunk trust region. new box size: %.4f", results_.box_size[0]);
         }
@@ -168,9 +139,9 @@ void TrustRegionSQPSolver::Solve(ifopt::Problem& nlp)
           results_.best_exact_merit = results_.new_exact_merit;
           results_.best_approx_merit = results_.best_approx_merit;
 
-          qp_problem_->scaleBoxSize(params_.trust_expand_ratio);
-          qp_problem_->updateNLPVariableBounds();
-          results_.box_size = qp_problem_->getBoxSize();
+          qp_problem->scaleBoxSize(params.trust_expand_ratio);
+          qp_problem->updateNLPVariableBounds();
+          results_.box_size = qp_problem->getBoxSize();
           CONSOLE_BRIDGE_logInform("Expanded trust region. new box size: %.4f", results_.box_size[0]);
           break;
         }
@@ -179,13 +150,13 @@ void TrustRegionSQPSolver::Solve(ifopt::Problem& nlp)
       // Check if the NLP has converged
       if (status_ == SQPStatus::NLP_CONVERGED)
         break;
-      if (results_.box_size.maxCoeff() < params_.min_trust_box_size)
+      if (results_.box_size.maxCoeff() < params.min_trust_box_size)
       {
         CONSOLE_BRIDGE_logInform("Converged because trust region is tiny");
         status_ = SQPStatus::NLP_CONVERGED;
         break;
       }
-      if (results_.overall_iteration >= params_.max_iterations)
+      if (results_.overall_iteration >= params.max_iterations)
       {
         CONSOLE_BRIDGE_logInform("Iteration limit");
         status_ = SQPStatus::ITERATION_LIMIT;
@@ -204,31 +175,31 @@ void TrustRegionSQPSolver::Solve(ifopt::Problem& nlp)
       break;
     }
 
-    if (results_.new_constraint_violations.maxCoeff() < params_.cnt_tolerance)
+    if (results_.new_constraint_violations.maxCoeff() < params.cnt_tolerance)
     {
-      CONSOLE_BRIDGE_logInform("woo-hoo! constraints are satisfied (to tolerance %.2e)", params_.cnt_tolerance);
+      CONSOLE_BRIDGE_logInform("woo-hoo! constraints are satisfied (to tolerance %.2e)", params.cnt_tolerance);
       break;
     }
 
-    if (params_.inflate_constraints_individually)
+    if (params.inflate_constraints_individually)
     {
       assert(results_.new_constraint_violations.size() == results_.merit_error_coeffs.size());
       for (Eigen::Index idx = 0; idx < results_.new_constraint_violations.size(); idx++)
       {
-        if (results_.new_constraint_violations[idx] > params_.cnt_tolerance)
+        if (results_.new_constraint_violations[idx] > params.cnt_tolerance)
         {
           CONSOLE_BRIDGE_logInform("Not all constraints are satisfied. Increasing constraint penalties for %d", idx);
-          results_.merit_error_coeffs[idx] *= params_.merit_coeff_increase_ratio;
+          results_.merit_error_coeffs[idx] *= params.merit_coeff_increase_ratio;
         }
       }
     }
     else
     {
       CONSOLE_BRIDGE_logInform("Not all constraints are satisfied. Increasing constraint penalties uniformly");
-      results_.merit_error_coeffs *= params_.merit_coeff_increase_ratio;
+      results_.merit_error_coeffs *= params.merit_coeff_increase_ratio;
     }
     results_.box_size = Eigen::VectorXd::Ones(results_.box_size.size()) *
-                        fmax(results_.box_size[0], params_.min_trust_box_size / params_.trust_shrink_ratio * 1.5);
+                        fmax(results_.box_size[0], params.min_trust_box_size / params.trust_shrink_ratio * 1.5);
 
   }  // Penalty adjustment loop
 
@@ -242,18 +213,18 @@ bool TrustRegionSQPSolver::stepOptimization(ifopt::Problem& nlp)
   nlp_ = &nlp;
 
   // Solve the QP
-  bool succeed = qp_solver_->solve();
+  bool succeed = qp_solver->solve();
   if (succeed)
   {
-    results_.new_var_vals = qp_solver_->getSolution();
+    results_.new_var_vals = qp_solver->getSolution();
 
     // Calculate approximate QP merits (cheap)
     nlp.SetVariables(results_.new_var_vals.data());
-    results_.new_approx_merit = qp_problem_->evaluateTotalConvexCost(results_.new_var_vals);
+    results_.new_approx_merit = qp_problem->evaluateTotalConvexCost(results_.new_var_vals);
     results_.approx_merit_improve = results_.best_approx_merit - results_.new_approx_merit;
 
     // Evaluate exact constraint violations (expensive)
-    results_.new_constraint_violations = qp_problem_->getExactConstraintViolations();
+    results_.new_constraint_violations = qp_problem->getExactConstraintViolations();
 
     // Calculate exact NLP merits (expensive) - TODO: Look into caching for qp_solver->Convexify()
     results_.new_exact_merit = nlp.EvaluateCostFunction(results_.new_var_vals.data()) +
@@ -262,7 +233,7 @@ bool TrustRegionSQPSolver::stepOptimization(ifopt::Problem& nlp)
     results_.merit_improve_ratio = results_.exact_merit_improve / results_.approx_merit_improve;
 
     // Print debugging info
-    if (verbose_)
+    if (verbose)
       printStepInfo();
 
     // Call callbacks
@@ -283,39 +254,6 @@ bool TrustRegionSQPSolver::stepOptimization(ifopt::Problem& nlp)
   else
   {
     CONSOLE_BRIDGE_logError("Solver Failure");
-
-    //    // If primal infeasible
-    //    {
-    //      Eigen::Map<Eigen::VectorXd> primal_certificate(
-    //          qp_solver_->solver_.workspace()->delta_x, qp_problem_->num_qp_cnts_, 1);
-    //      std::cout << "\n---------------------------------------\n";
-    //      std::cout << std::scientific << "Primal Certificate (v): " << primal_certificate.transpose() << std::endl;
-
-    //      double first = qp_problem_->bounds_lower_.transpose() * primal_certificate;
-    //      double second = qp_problem_->bounds_upper_.transpose() * primal_certificate;
-
-    //      std::cout << "A.transpose() * v = 0\n"
-    //                << "l.transpose() * v = " << first << "    u.transpose() * v = " << second << std::endl;
-    //      std::cout << "l.transpose() * v + u.transpose() * v  = " << first + second << " < 0\n";
-    //      std::cout << "Bounds_lower: " << qp_problem_->bounds_lower_.transpose() << std::endl;
-    //      std::cout << "Bounds_upper: " << qp_problem_->bounds_upper_.transpose() << std::endl;
-    //      std::cout << std::fixed;
-    //      std::cout << "\n---------------------------------------\n";
-    //    }
-
-    //    // If dual infeasible
-    //    {
-    //      Eigen::Map<Eigen::VectorXd> dual_certificate(
-    //          qp_solver_->solver_.workspace()->delta_y, qp_problem_->num_qp_vars_, 1);
-    //      std::cout << "\n---------------------------------------\n";
-    //      std::cout << "Dual Certificate (x): " << dual_certificate.transpose() << std::endl;
-
-    //      std::cout << "P*x = " << (qp_problem_->hessian_ * dual_certificate).transpose() << " = 0" << std::endl;
-    //      std::cout << "q.transpose() * x = " << qp_problem_->gradient_.transpose() * dual_certificate << " < 0"
-    //                << std::endl;
-    //      std::cout << std::fixed;
-    //      std::cout << "\n---------------------------------------\n";
-    //    }
   }
 
   return succeed;

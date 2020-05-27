@@ -38,7 +38,7 @@ using namespace tesseract_geometry;
 class CastTest : public testing::TestWithParam<const char*>
 {
 public:
-  Tesseract::Ptr tesseract_ = std::make_shared<Tesseract>(); /**< Tesseract */
+  Tesseract::Ptr tesseract = std::make_shared<Tesseract>(); /**< Tesseract */
 
   void SetUp() override
   {
@@ -48,7 +48,7 @@ public:
     std::cout << tmp;
 
     ResourceLocator::Ptr locator = std::make_shared<SimpleResourceLocator>(locateResource);
-    EXPECT_TRUE(tesseract_->init(urdf_file, srdf_file, locator));
+    EXPECT_TRUE(tesseract->init(urdf_file, srdf_file, locator));
 
     gLogLevel = util::LevelError;
   }
@@ -61,16 +61,16 @@ TEST_F(CastTest, boxes)  // NOLINT
   std::unordered_map<std::string, double> ipos;
   ipos["boxbot_x_joint"] = -1.9;
   ipos["boxbot_y_joint"] = 0;
-  tesseract_->getEnvironment()->setState(ipos);
+  tesseract->getEnvironment()->setState(ipos);
 
   std::vector<ContactResultMap> collisions;
-  tesseract_environment::StateSolver::Ptr state_solver = tesseract_->getEnvironment()->getStateSolver();
-  DiscreteContactManager::Ptr manager = tesseract_->getEnvironment()->getDiscreteContactManager();
-  auto forward_kinematics = tesseract_->getFwdKinematicsManager()->getFwdKinematicSolver("manipulator");
+  tesseract_environment::StateSolver::Ptr state_solver = tesseract->getEnvironment()->getStateSolver();
+  DiscreteContactManager::Ptr manager = tesseract->getEnvironment()->getDiscreteContactManager();
+  auto forward_kinematics = tesseract->getFwdKinematicsManager()->getFwdKinematicSolver("manipulator");
   AdjacencyMap::Ptr adjacency_map =
-      std::make_shared<AdjacencyMap>(tesseract_->getEnvironment()->getSceneGraph(),
+      std::make_shared<AdjacencyMap>(tesseract->getEnvironment()->getSceneGraph(),
                                      forward_kinematics->getActiveLinkNames(),
-                                     tesseract_->getEnvironment()->getCurrentState()->link_transforms);
+                                     tesseract->getEnvironment()->getCurrentState()->link_transforms);
 
   manager->setActiveCollisionObjects(adjacency_map->getActiveLinkNames());
   manager->setContactDistanceThreshold(0);
@@ -81,7 +81,7 @@ TEST_F(CastTest, boxes)  // NOLINT
   ifopt::Problem nlp;
 
   // 3) Add Variables
-  std::vector<trajopt::JointPosition::Ptr> vars;
+  std::vector<trajopt::JointPosition::ConstPtr> vars;
   {
     Eigen::VectorXd pos(2);
     pos << -1.9, 0;
@@ -105,8 +105,8 @@ TEST_F(CastTest, boxes)  // NOLINT
   }
 
   // Step 3: Setup collision
-  auto env = tesseract_->getEnvironmentConst();
-  auto kin = tesseract_->getFwdKinematicsManagerConst()->getFwdKinematicSolver("manipulator");
+  auto env = tesseract->getEnvironmentConst();
+  auto kin = tesseract->getFwdKinematicsManagerConst()->getFwdKinematicSolver("manipulator");
   auto adj_map = std::make_shared<tesseract_environment::AdjacencyMap>(
       env->getSceneGraph(), kin->getActiveLinkNames(), env->getCurrentState()->link_transforms);
 

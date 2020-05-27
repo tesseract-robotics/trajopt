@@ -2,6 +2,7 @@
  * @file collision_constraint.h
  * @brief The collision position constraint
  *
+ * @author Levi Armstrong
  * @author Matthew Powelson
  * @date May 18, 2020
  * @version TODO
@@ -45,7 +46,7 @@ public:
   using ConstPtr = std::shared_ptr<const CollisionConstraintIfopt>;
 
   CollisionConstraintIfopt(SingleTimestepCollisionEvaluator::Ptr collision_evaluator,
-                           JointPosition::Ptr position_var,
+                           JointPosition::ConstPtr position_var,
                            const std::string& name = "Collision");
 
   /** @brief Calculates the values associated with the constraint */
@@ -90,7 +91,7 @@ private:
   /** @brief Pointers to the vars used by this constraint.
    *
    * Do not access them directly. Instead use this->GetVariables()->GetComponent(position_var->GetName())->GetValues()*/
-  JointPosition::Ptr position_var_;
+  JointPosition::ConstPtr position_var_;
 
   SingleTimestepCollisionEvaluator::Ptr collision_evaluator_;
 };

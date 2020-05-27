@@ -32,7 +32,7 @@ public:
     ifopt::Problem nlp;
 
     // 2) Add Variables
-    std::vector<trajopt::JointPosition::Ptr> vars;
+    std::vector<trajopt::JointPosition::ConstPtr> vars;
     for (int ind = 0; ind < 2; ind++)
     {
       auto pos = Eigen::VectorXd::Zero(7);
@@ -44,14 +44,14 @@ public:
 
     // 3) Add constraints
     Eigen::VectorXd start_pos = Eigen::VectorXd::Zero(7);
-    std::vector<trajopt::JointPosition::Ptr> start;
+    std::vector<trajopt::JointPosition::ConstPtr> start;
     start.push_back(vars.front());
 
     auto start_constraint = std::make_shared<trajopt::JointPosConstraint>(start_pos, start, "StartPosition");
     nlp_.AddConstraintSet(start_constraint);
 
     Eigen::VectorXd end_pos = Eigen::VectorXd::Ones(7);
-    std::vector<trajopt::JointPosition::Ptr> end;
+    std::vector<trajopt::JointPosition::ConstPtr> end;
     end.push_back(vars.back());
     auto end_constraint = std::make_shared<trajopt::JointPosConstraint>(end_pos, end, "EndPosition");
     nlp_.AddConstraintSet(end_constraint);
@@ -67,7 +67,7 @@ public:
 /**
  * @brief Applies a joint position constraint and solves the problem with IPOPT
  */
-TEST_F(JointPositionOptimization, joint_position_optimization_ipopt)
+TEST_F(JointPositionOptimization, joint_position_optimization_ipopt)  // NOLINT
 {
   ifopt::Problem nlp_ipopt(nlp_);
   ifopt::IpoptSolver solver;
@@ -93,7 +93,7 @@ TEST_F(JointPositionOptimization, joint_position_optimization_ipopt)
 /**
  * @brief Applies a joint position constraint and solves the problem with trajopt_sqp
  */
-TEST_F(JointPositionOptimization, joint_position_optimization_trajopt_sqp)
+TEST_F(JointPositionOptimization, joint_position_optimization_trajopt_sqp)  // NOLINT
 {
   ifopt::Problem nlp_trajopt_sqp(nlp_);
   auto qp_solver = std::make_shared<trajopt_sqp::OSQPEigenSolver>();
@@ -107,7 +107,7 @@ TEST_F(JointPositionOptimization, joint_position_optimization_trajopt_sqp)
   qp_solver->solver_.settings()->setRelativeTolerance(1e-6);
 
   // solve
-  solver.verbose_ = DEBUG;
+  solver.verbose = DEBUG;
   solver.Solve(nlp_trajopt_sqp);
   Eigen::VectorXd x = nlp_trajopt_sqp.GetOptVariables()->GetValues();
 

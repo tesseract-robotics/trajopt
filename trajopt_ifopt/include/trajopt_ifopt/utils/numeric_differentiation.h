@@ -48,13 +48,13 @@ inline Jacobian calcForwardNumJac(const ErrorCalculator& f, const Eigen::Ref<Eig
 {
   Eigen::VectorXd y = f(x);
   Eigen::MatrixXd out(y.size(), x.size());
-  Eigen::VectorXd xpert = x;
+  Eigen::VectorXd x_perturbed = x;
   for (int i = 0; i < x.size(); ++i)
   {
-    xpert(i) = x(i) + epsilon;
-    Eigen::VectorXd ypert = f(xpert);
-    out.col(i) = (ypert - y) / epsilon;
-    xpert(i) = x(i);
+    x_perturbed(i) = x(i) + epsilon;
+    Eigen::VectorXd y_perturbed = f(x_perturbed);
+    out.col(i) = (y_perturbed - y) / epsilon;
+    x_perturbed(i) = x(i);
   }
   return out.sparseView();
 }

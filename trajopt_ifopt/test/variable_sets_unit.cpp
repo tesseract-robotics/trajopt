@@ -12,7 +12,7 @@ using namespace std;
 /**
  * @brief Tests the joint position variable
  */
-TEST(VariableSetsUnit, joint_position_1)
+TEST(VariableSetsUnit, joint_position_1)  // NOLINT
 {
   CONSOLE_BRIDGE_logDebug("VariableSetsUnit, joint_position_1");
 
