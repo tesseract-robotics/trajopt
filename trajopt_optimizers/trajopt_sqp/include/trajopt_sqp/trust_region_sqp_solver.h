@@ -50,6 +50,8 @@ public:
 
   TrustRegionSQPSolver(QPSolver::Ptr qp_solver);
 
+  bool init(ifopt::Problem& nlp);
+
   void Solve(ifopt::Problem& nlp) override;
 
   /**
