@@ -41,7 +41,7 @@ TrustRegionSQPSolver::TrustRegionSQPSolver(QPSolver::Ptr qp_solver) : qp_solver(
   qp_problem = std::make_shared<QPProblem>();
 }
 
-void TrustRegionSQPSolver::Solve(ifopt::Problem& nlp)
+bool TrustRegionSQPSolver::init(ifopt::Problem& nlp)
 {
   console_bridge::setLogLevel(console_bridge::LogLevel::CONSOLE_BRIDGE_LOG_INFO);
   nlp_ = &nlp;
@@ -52,6 +52,13 @@ void TrustRegionSQPSolver::Solve(ifopt::Problem& nlp)
   results_ = SQPResults(nlp.GetNumberOfOptimizationVariables(), nlp.GetNumberOfConstraints());
   results_.box_size = Eigen::VectorXd::Ones(nlp.GetNumberOfOptimizationVariables()) * params.initial_trust_box_size;
   qp_problem->setBoxSize(results_.box_size);
+  return true;
+}
+
+void TrustRegionSQPSolver::Solve(ifopt::Problem& nlp)
+{
+  // Initialize solver
+  init(nlp);
 
   // ---------------------------
   // Penalty Iteration Loop
