@@ -29,7 +29,7 @@ env:
     - CMAKE_ARGS="-DCMAKE_BUILD_TYPE=Debug -DTRAJOPT_ENABLE_TESTING=ON -DTRAJOPT_ENABLE_RUN_TESTING=OFF"
     - ROSDEP_SKIP_KEYS="bullet3 fcl"
     - BUILD_PKGS_WHITELIST="trajopt trajopt_sco trajopt_tools trajopt_utils trajopt_ifopt trajopt_sqp"
-    - AFTER_SCRIPT='catkin test -w $CATKIN_WORKSPACE --no-deps trajopt trajopt_sco'
+    - AFTER_SCRIPT='catkin test -w $CATKIN_WORKSPACE --no-deps trajopt trajopt_ifopt trajopt_sco trajopt_sqp'
     - PKGS_DOWNSTREAM=''
 
 matrix:
