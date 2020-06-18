@@ -3,7 +3,7 @@ project(trajopt_utils VERSION 0.1.0 LANGUAGES CXX)
 include(cmake/trajopt_macros.cmake)
 
 find_package(Eigen3 REQUIRED)
-find_package(Boost COMPONENTS system python thread program_options REQUIRED)
+find_package(Boost COMPONENTS system thread program_options REQUIRED)
 
 set(UTILS_SOURCE_FILES
     src/stl_to_string.cpp
