@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.5.0)
 project(trajopt VERSION 0.1.0 LANGUAGES CXX)
 
 find_package(Eigen3 REQUIRED)
-find_package(Boost COMPONENTS system python thread program_options REQUIRED)
+find_package(Boost COMPONENTS system thread program_options REQUIRED)
 find_package(console_bridge REQUIRED)
 find_package(trajopt_sco REQUIRED)
 find_package(trajopt_utils REQUIRED)
