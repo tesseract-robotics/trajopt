@@ -1,0 +1,3 @@
+{
+    "hooks": ["share/trajopt_utils/hook/ament_prefix_path.dsv", "share/trajopt_utils/hook/ros_package_path.dsv"]
+}
