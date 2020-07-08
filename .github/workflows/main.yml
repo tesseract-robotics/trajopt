@@ -29,7 +29,7 @@ jobs:
               ROS_DISTRO: noetic,
               ROS_REPO: main,
               UPSTREAM_WORKSPACE: "github:swri-robotics/descartes_light#master github:Jmeyer1292/opw_kinematics#master github:ethz-adrl/ifopt#master",
-              TARGET_WORKSPACE: ". github:brisa-robotics/tesseract#noetic",
+              TARGET_WORKSPACE: ". github:ros-industrial-consortium/tesseract#master",
               ROSDEP_SKIP_KEYS: "bullet3 descartes_opw descartes_samplers descartes_light opw_kinematics fcl ifopt",
               DOCKER_IMAGE: "lharmstrong/tesseract:noetic",
               PARALLEL_TESTS: false,
