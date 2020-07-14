@@ -1,4 +1,4 @@
-﻿#include <trajopt_utils/macros.h>
+#include <trajopt_utils/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <gtest/gtest.h>
 #include <iostream>
@@ -8,23 +8,16 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <console_bridge/console.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
-//Solver Files
-#include <trajopt_sqp/trust_region_sqp_solver.h>
-#include <trajopt_sqp/osqp_eigen_solver.h>
-#include <trajopt_ifopt/constraints/joint_position_constraint.h>
-#include <trajopt_ifopt/variable_sets/joint_position_variable.h>
-
-#include <joint_position_optimization_unit.hpp>
+// Problem Header Files
+#include <basic_optimization_unit.hpp>
 
 /**
- * @brief Applies a joint position constraint and solves the problem with IPOPT
+ * @brief Solves the basic optimization problem with the ipopt solver using exact jacobian approximation
  */
-TEST_F(JointPositionOptimization, joint_position_optimization_ipopt)
+TEST_F(BasicOptimization, basic_optimization_ipopt_jacobian_approximation)
 {
   ifopt::IpoptSolver solver;
-  solver.SetOption("derivative_test", "first-order");
   solver.SetOption("linear_solver", "mumps");
-  //  ipopt.SetOption("jacobian_approximation", "finite-difference-values");
   solver.SetOption("jacobian_approximation", "exact");
   solver.SetOption("print_level", 5);
 
@@ -32,9 +25,23 @@ TEST_F(JointPositionOptimization, joint_position_optimization_ipopt)
 }
 
 /**
- * @brief Applies a joint position constraint and solves the problem with trajopt_sqp
+ * @brief Solves the basic optimization problem with the ipopt solver using finite difference values
  */
-TEST_F(JointPositionOptimization, joint_position_optimization_trajopt_sqp)
+TEST_F(BasicOptimization, basic_optimization_ipopt_finite_difference_values)
+{
+  ifopt::IpoptSolver solver;
+  solver.SetOption("linear_solver", "mumps");
+  solver.SetOption("jacobian_approximation", "finite-difference-values");
+  solver.SetOption("print_level", 5);
+
+  runTests<ifopt::IpoptSolver>(solver, nlp_);
+}
+
+/**
+ * @brief Solves the basic optimization problem with the trajopt_sqp solver
+ * NOTE: CURRENTLY BROKEN
+ */
+TEST_F(BasicOptimization, basic_optimization_trajopt_sqp)
 {
   auto qp_solver = std::make_shared<trajopt_sqp::OSQPEigenSolver>();
   trajopt_sqp::TrustRegionSQPSolver solver(qp_solver);
@@ -46,7 +53,6 @@ TEST_F(JointPositionOptimization, joint_position_optimization_trajopt_sqp)
   qp_solver->solver_.settings()->setAbsoluteTolerance(1e-4);
   qp_solver->solver_.settings()->setRelativeTolerance(1e-6);
 
-  // solve
   solver.verbose = DEBUG;
   runTests<trajopt_sqp::TrustRegionSQPSolver>(solver, nlp_);
 }

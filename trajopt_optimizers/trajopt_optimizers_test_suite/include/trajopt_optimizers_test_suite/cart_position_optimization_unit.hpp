@@ -119,8 +119,9 @@ public:
   }
 };
 
-template <class T> //Allows for any solver. The solver has to have a .Solve(ifopt::Problem&) function
-inline void runTests(T solver, ifopt::Problem nlp_opt, Eigen::VectorXd joint_targets){
+template <class T>  // Allows for any solver. The solver has to have a .Solve(ifopt::Problem&) function
+inline void runTests(T solver, ifopt::Problem nlp_opt, Eigen::VectorXd joint_targets)
+{
   solver.Solve(nlp_opt);
   Eigen::VectorXd x = nlp_opt.GetOptVariables()->GetValues();
 

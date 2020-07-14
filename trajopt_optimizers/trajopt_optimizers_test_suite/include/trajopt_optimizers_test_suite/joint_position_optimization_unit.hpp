@@ -28,10 +28,7 @@ public:
     else
       console_bridge::setLogLevel(console_bridge::LogLevel::CONSOLE_BRIDGE_LOG_NONE);
 
-    // 1) Create the problem
-    // ifopt::Problem nlp;
-
-    // 2) Add Variables
+    // Add Variables
     std::vector<trajopt::JointPosition::ConstPtr> vars;
     for (int ind = 0; ind < 2; ind++)
     {
@@ -42,7 +39,7 @@ public:
       nlp_.AddVariableSet(var);
     }
 
-    // 3) Add constraints
+    // Add constraints
     Eigen::VectorXd start_pos = Eigen::VectorXd::Zero(7);
     std::vector<trajopt::JointPosition::ConstPtr> start;
     start.push_back(vars.front());
@@ -64,10 +61,10 @@ public:
   }
 };
 
-template <class T> //Allows for any solver. The solver has to have a .Solve(ifopt::Problem&) function
-inline void runTests(T solver, ifopt::Problem nlp_opt){
-
-  //Solve and test nlp
+template <class T>  // Allows for any solver. The solver has to have a .Solve(ifopt::Problem&) function
+inline void runTests(T solver, ifopt::Problem nlp_opt)
+{
+  // Solve and test nlp
   solver.Solve(nlp_opt);
   Eigen::VectorXd x = nlp_opt.GetOptVariables()->GetValues();
   for (Eigen::Index i = 0; i < 7; i++)

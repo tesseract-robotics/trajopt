@@ -84,7 +84,8 @@ public:
 };
 
 template <class T>
-inline void runTests(T solver, ifopt::Problem nlp_opt){
+inline void runTests(T solver, ifopt::Problem nlp_opt)
+{
   solver.Solve(nlp_opt);
   Eigen::VectorXd x = nlp_opt.GetOptVariables()->GetValues();
 
