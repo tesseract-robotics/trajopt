@@ -39,9 +39,6 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <ifopt/constraint_set.h>
 #include <ifopt/cost_term.h>
 
-#include <trajopt_sqp/trust_region_sqp_solver.h>
-#include <trajopt_sqp/osqp_eigen_solver.h>
-
 TRAJOPT_IGNORE_WARNINGS_POP
 
 const bool DEBUG = false;
@@ -79,7 +76,7 @@ public:
   // Each variable has an upper and lower bound set here
   VecBound GetBounds() const override
   {
-    VecBound bounds(GetRows());
+    VecBound bounds(static_cast<size_t>(GetRows()));
     bounds.at(0) = Bounds(-1.0, 1.0);
     bounds.at(1) = NoBound;
     return bounds;
@@ -101,7 +98,7 @@ public:
   // The constraint value minus the constant value "1", moved to bounds.
   VectorXd GetValues() const override
   {
-    VectorXd g(GetRows());
+    VectorXd g(static_cast<size_t>(GetRows()));
     Vector2d x = GetVariables()->GetComponent("var_set1")->GetValues();
     g(0) = std::pow(x(0), 2) + x(1);
     return g;
@@ -112,7 +109,7 @@ public:
   // For inequality constraints (<,>), use Bounds(x, inf) or Bounds(-inf, x).
   VecBound GetBounds() const override
   {
-    VecBound b(GetRows());
+    VecBound b(static_cast<size_t>(GetRows()));
     b.at(0) = Bounds(1.0, 1.0);
     return b;
   }
