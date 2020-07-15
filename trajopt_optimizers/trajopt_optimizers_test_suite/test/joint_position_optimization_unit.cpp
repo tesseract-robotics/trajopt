@@ -17,7 +17,7 @@ TRAJOPT_IGNORE_WARNINGS_POP
 /**
  * @brief Applies a joint position constraint and solves the problem with IPOPT using exact jacobian approximation
  */
-TEST_F(JointPositionOptimization, joint_position_optimization_ipopt_exact)
+TEST_F(JointPositionOptimization, joint_position_optimization_ipopt_exact)  // NOLINT
 {
   ifopt::IpoptSolver solver;
   solver.SetOption("derivative_test", "first-order");
@@ -31,7 +31,7 @@ TEST_F(JointPositionOptimization, joint_position_optimization_ipopt_exact)
 /**
  * @brief Applies a joint position constraint and solves the problem with IPOPT, using finite difference values
  */
-TEST_F(JointPositionOptimization, joint_position_optimization_ipopt_fdv)
+TEST_F(JointPositionOptimization, joint_position_optimization_ipopt_fdv)  // NOLINT
 {
   ifopt::IpoptSolver solver;
   solver.SetOption("derivative_test", "first-order");

@@ -14,7 +14,7 @@ TRAJOPT_IGNORE_WARNINGS_POP
 /**
  * @brief Solves the basic optimization problem with the ipopt solver using exact jacobian approximation
  */
-TEST_F(BasicOptimization, basic_optimization_ipopt_jacobian_approximation)
+TEST_F(BasicOptimization, basic_optimization_ipopt_jacobian_approximation) // NOLINT
 {
   ifopt::IpoptSolver solver;
   solver.SetOption("linear_solver", "mumps");
@@ -27,7 +27,7 @@ TEST_F(BasicOptimization, basic_optimization_ipopt_jacobian_approximation)
 /**
  * @brief Solves the basic optimization problem with the ipopt solver using finite difference values
  */
-TEST_F(BasicOptimization, basic_optimization_ipopt_finite_difference_values)
+TEST_F(BasicOptimization, basic_optimization_ipopt_finite_difference_values) // NOLINT
 {
   ifopt::IpoptSolver solver;
   solver.SetOption("linear_solver", "mumps");
@@ -41,7 +41,7 @@ TEST_F(BasicOptimization, basic_optimization_ipopt_finite_difference_values)
  * @brief Solves the basic optimization problem with the trajopt_sqp solver
  * NOTE: CURRENTLY BROKEN
  */
-TEST_F(BasicOptimization, basic_optimization_trajopt_sqp)
+TEST_F(BasicOptimization, basic_optimization_trajopt_sqp) // NOLINT
 {
   auto qp_solver = std::make_shared<trajopt_sqp::OSQPEigenSolver>();
   trajopt_sqp::TrustRegionSQPSolver solver(qp_solver);

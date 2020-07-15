@@ -24,6 +24,6 @@ macro(add_gtest test_name test_file)
 endmacro()
 
 add_gtest(${PROJECT_NAME}_joint_position_optimization_unit joint_position_optimization_unit.cpp)
-# add_gtest(${PROJECT_NAME}_joint_velocity_optimization_unit joint_velocity_optimization_unit.cpp)
+add_gtest(${PROJECT_NAME}_joint_velocity_optimization_unit joint_velocity_optimization_unit.cpp)
 # add_gtest(${PROJECT_NAME}_cart_position_optimization_unit cart_position_optimization_unit.cpp)
 # add_gtest(${PROJECT_NAME}_basic_optimization_unit basic_optimization_unit.cpp)

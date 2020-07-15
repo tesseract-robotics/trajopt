@@ -20,7 +20,7 @@ TRAJOPT_IGNORE_WARNINGS_POP
 /**
 @brief Joint position constraints with a squared velocity cost in between. Optimized using ipopt
  */
-TEST_F(VelocityConstraintOptimization, velocity_constraint_optimization_ipopt)
+TEST_F(VelocityConstraintOptimization, velocity_constraint_optimization_ipopt)  // NOLINT
 {
   ifopt::IpoptSolver solver;
   solver.SetOption("derivative_test", "first-order");
@@ -34,7 +34,7 @@ TEST_F(VelocityConstraintOptimization, velocity_constraint_optimization_ipopt)
 /**
  @brief Joint position constraints with a squared velocity cost in between. Optimized using trajopt_sqp
  */
-TEST_F(VelocityConstraintOptimization, velocity_constraint_optimization_trajopt_sqp)
+TEST_F(VelocityConstraintOptimization, velocity_constraint_optimization_trajopt_sqp)  // NOLINT
 {
   auto qp_solver = std::make_shared<trajopt_sqp::OSQPEigenSolver>();
   trajopt_sqp::TrustRegionSQPSolver solver(qp_solver);
