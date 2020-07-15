@@ -17,7 +17,7 @@ TRAJOPT_IGNORE_WARNINGS_POP
 /**
  * @brief Applies a cartesian position constraint and solves the problem with trajopt_sqp
  */
-TEST_F(CartPositionOptimization, cart_position_optimization_trajopt_sqp) // NOLINT
+TEST_F(CartPositionOptimization, cart_position_optimization_trajopt_sqp)  // NOLINT
 {
   auto qp_solver = std::make_shared<trajopt_sqp::OSQPEigenSolver>();
   trajopt_sqp::TrustRegionSQPSolver solver(qp_solver);
