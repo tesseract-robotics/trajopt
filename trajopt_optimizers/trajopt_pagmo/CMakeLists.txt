@@ -1,22 +1,20 @@
 cmake_minimum_required(VERSION 3.5.0)
-project(trajopt_optimizers_test_suite VERSION 0.1.0 LANGUAGES CXX)
+project(trajopt_pagmo VERSION 0.1.0 LANGUAGES CXX)
 
 find_package(console_bridge REQUIRED)
-find_package(Eigen3 REQUIRED)
-find_package(ifopt REQUIRED)
-find_package(OsqpEigen REQUIRED)
 find_package(Pagmo REQUIRED)
-find_package(trajopt_ifopt REQUIRED)
 find_package(trajopt_utils REQUIRED)
-find_package(trajopt_sqp REQUIRED)
-find_package(trajopt_pagmo REQUIRED)
+find_package(ifopt REQUIRED)
+find_package(Eigen3 REQUIRED)
+
 
 ###########
 ## Build ##
 ###########
 
 add_library(${PROJECT_NAME} SHARED
-    src/run_tests.cpp
+    src/pagmo_problem_interface.cpp
+    src/pagmo_solver.cpp
 )
 target_include_directories(${PROJECT_NAME}
   PUBLIC
@@ -24,8 +22,9 @@ target_include_directories(${PROJECT_NAME}
     $<INSTALL_INTERFACE:include>
 )
 target_link_libraries(${PROJECT_NAME} PUBLIC
+    ifopt::ifopt_core
     console_bridge
-    trajopt::trajopt_utils
+    Pagmo::pagmo
 )
 trajopt_target_compile_options(${PROJECT_NAME} PUBLIC)
 trajopt_clang_tidy(${PROJECT_NAME})
@@ -44,15 +43,3 @@ install(DIRECTORY include/${PROJECT_NAME}
   FILES_MATCHING PATTERN "*.h" PATTERN "*.hpp"
   PATTERN ".svn" EXCLUDE
  )
-
- #############
- ## Testing ##
- #############
-
- if (TRAJOPT_ENABLE_TESTING)
-   enable_testing()
-   add_custom_target(run_tests ALL
-       WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-       COMMAND ${CMAKE_CTEST_COMMAND} -C $<CONFIGURATION> -V)
-   add_subdirectory(test)
- endif()

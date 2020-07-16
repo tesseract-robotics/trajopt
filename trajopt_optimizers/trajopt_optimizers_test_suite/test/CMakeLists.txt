@@ -11,6 +11,8 @@ macro(add_gtest test_name test_file)
       trajopt::trajopt_ifopt
       trajopt::trajopt_test_data
       trajopt::trajopt_sqp
+      trajopt::trajopt_pagmo
+      Pagmo::pagmo
       GTest::GTest
       GTest::Main)
   target_include_directories(${test_name} PRIVATE
