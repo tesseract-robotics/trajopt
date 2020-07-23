@@ -71,6 +71,7 @@ void PagmoProblemInterface::init(ifopt::Problem& nlp)
   // Convert constraint bounds to VectorXd
   std::vector<ifopt::Bounds> var_bounds = nlp_->GetBoundsOnOptimizationVariables();
   for (std::size_t i = 0; i < static_cast<std::size_t>(nlp.GetNumberOfConstraints()); i++)
+  // for (std::size_t i = 0; i < static_cast<std::size_t>(nlp.GetNumberOfOptimizationVariables()); i++)
   {
     var_bounds_lower_[i] = var_bounds[i].lower_;
     var_bounds_upper_[i] = var_bounds[i].upper_;
@@ -83,6 +84,14 @@ std::vector<double>::size_type PagmoProblemInterface::get_nic() const { return i
 
 std::vector<double> PagmoProblemInterface::fitness(const std::vector<double>& decision_vec) const
 {
+  std::cout.precision(4);
+  std::cout << "Vec: [ ";
+  for(auto i : decision_vec)
+  {
+    std::cout << i << ' ';
+  }
+  std::cout << "]" << "\t\t";
+
   std::vector<double> f(1 + eq_cnt_idx_.size() + ineq_cnt_idx_.size(), 0.);
 
   // Evaluate objective function
@@ -108,6 +117,12 @@ std::vector<double> PagmoProblemInterface::fitness(const std::vector<double>& de
     j++;
   }
 
+  std::cout << "Fit: [ ";
+  for(auto i : f)
+  {
+    std::cout << i << ' ';
+  }
+  std::cout << "]" << std::endl;
   return f;
 }
 
@@ -118,8 +133,19 @@ std::pair<std::vector<double>, std::vector<double>> PagmoProblemInterface::get_b
 
 std::vector<double> PagmoProblemInterface::gradient(const std::vector<double>& decision_vec) const
 {
-  Eigen::VectorXd grad = nlp_->EvaluateCostFunctionGradient(decision_vec.data());
-  std::vector<double> grad_vec(grad.data(), grad.data() + grad.rows() * grad.cols());
+
+  Eigen::VectorXd cost_grad = nlp_->EvaluateCostFunctionGradient(decision_vec.data());
+  std::vector<double> grad_vec(cost_grad.data(), cost_grad.data() + cost_grad.rows() * cost_grad.cols());
+
+  if (nlp_->GetConstraints().GetRows()>0) {
+    ifopt::Problem::Jacobian jac = ifopt::Problem::Jacobian(1,nlp_->GetNumberOfOptimizationVariables());
+    nlp_->SetVariables(decision_vec.data());
+    jac = nlp_->GetConstraints().GetJacobian();
+    Eigen::VectorXd constraint_grad = jac.row(0).transpose();
+    std::vector<double> cg(constraint_grad.data(), constraint_grad.data() + constraint_grad.rows() * constraint_grad.cols());
+    grad_vec.insert(grad_vec.end(), cg.begin(), cg.end());
+  }
+
   return grad_vec;
 };
 

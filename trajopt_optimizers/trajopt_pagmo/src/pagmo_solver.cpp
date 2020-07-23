@@ -42,51 +42,43 @@ PagmoSolver::PagmoSolver(pagmo::algorithm& pagmo_algorithm) { pagmo_algorithm_ =
 
 void PagmoSolver::Solve(ifopt::Problem& nlp)
 {
+  size_t pop_size = 1;
   // 1 - Instantiate a pagmo problem constructing it from a UDP
   // (user defined problem).
   PagmoProblemInterface pagmo_interface{};
   pagmo_interface.init(nlp);
-  pagmo_interface.use_gradient_ = config_.use_gradient_;
+  // pagmo_interface.use_gradient_ = config_.use_gradient_;
+  pagmo_interface.use_gradient_ = true;
   pagmo::problem pagmo_problem{ pagmo_interface };
 
 
   // 3 - Instantiate a population
-  pagmo::population pop{ pagmo_problem, config_.population_size_, 0u};
-  std::vector<double> initial_conditions(2);
-  initial_conditions[0] = 1;
-  initial_conditions[1] = 1;
-  // pop.set_x(0,initial_conditions);
-  // for(size_t i = 0; i < config_.population_size_/2 ; i++){
-  //     pop.set_x(i,initial_conditions);
+  // pagmo::population pop{ pagmo_problem, config_.population_size_, 0u};
+  pagmo::population pop{ pagmo_problem, pop_size};
+  // for(size_t i = 0; i < pop_size ; i++){
+  //     pop.set_x(i,{-1,1});
   // }
+  pop.set_x(0,{-0.1,0});
+  // pop.set_x(1,{0,1});
 
-  std::cout << pagmo_problem << '\n';
-  std::cout << "# Equality Constraints: " << pagmo_problem.get_nec() << '\n';
-  std::cout << "# Inequality Constraints: " << pagmo_problem.get_nic() << '\n';
-  // std::cout << "Contents of x" << '\n';
-  // std::vector<std::vector<double>> x_vals = pop.get_x();
-  // std::cout << "x0 : ";
-  // for(size_t i = 0; i < config_.population_size_; i++){
-  //   std::vector<double> v = x_vals[i];
-  //   std::cout << v[0] << " ";
-  // }
-  // std::cout << '\n';
-  // std::cout << "x1 : ";
-  // for(size_t i = 0; i < config_.population_size_; i++){
-  //   std::vector<double> v = x_vals[i];
-  //   std::cout << v[1] << " ";
-  // }
-  std::cout << "Initial Guess [x0,x1]: " << "[" << pop.champion_x()[0] << "," << pop.champion_x()[1] << "]"<< '\n';
-  // std::cout << "Value of the objfun in (0,1): " << pagmo_problem.fitness({0,1})[0] << '\n';
+  Debug(pagmo_problem, pop);
 
   // 4 - Evolve the population
   pop = pagmo_algorithm_->evolve(pop);
 
   // 5 - Set the results
-  pagmo::vector_double results = pop.champion_x();
-  std::cout << "Final Answer [x0,x1]: " << "[" << pop.champion_x()[0] << "," << pop.champion_x()[1] << "]"<< '\n';
+  // pagmo::vector_double results = pop.champion_x();
+  std::cout << "Final Answer Value   [x0,x1]: " << "[" << pop.champion_x()[0] << "," << pop.champion_x()[1] << "]"<< '\n';
+  std::cout << "Final Answer Fitness [x0,x1]: " << "[" << pop.champion_f()[0] << "," << pop.champion_f()[1] << "]"<< '\n';
   std::cout << '\n';
-  nlp.SetVariables(results.data());
+  // nlp.SetVariables(results.data());
+}
+
+inline void PagmoSolver::Debug(pagmo::problem& prob, pagmo::population& pop)
+{
+  std::cout << prob << '\n';
+  std::cout << pop << '\n';
+  std::cout << std::endl;
 }
 
 }  // namespace trajopt_pagmo

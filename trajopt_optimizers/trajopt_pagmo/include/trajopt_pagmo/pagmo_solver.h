@@ -76,6 +76,13 @@ public:
   void Solve(ifopt::Problem& nlp) override;
 
   /**
+   * @brief Debugs the problem and population of the solver
+   * @param prob pagmo::problem of problem we are using
+   * @param pop pagmo::population that we are operating on
+   */
+  void Debug(pagmo::problem& prob, pagmo::population& pop);
+
+  /**
    * @brief Config used to set up Pagmo
    */
   PagmoSolverConfig config_;

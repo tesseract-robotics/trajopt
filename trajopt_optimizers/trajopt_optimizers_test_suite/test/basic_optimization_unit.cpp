@@ -21,87 +21,87 @@ TRAJOPT_IGNORE_WARNINGS_POP
 // Problem Header Files
 #include <trajopt_optimizers_test_suite/basic_optimization_unit.hpp>
 
-/**
- * @brief Solves the basic optimization problem with the ipopt solver using exact jacobian approximation
- */
-TEST_F(BasicOptimization, basic_optimization_ipopt_jacobian_approximation)  // NOLINT
-{
-  ifopt::IpoptSolver solver;
-  solver.SetOption("linear_solver", "mumps");
-  solver.SetOption("jacobian_approximation", "exact");
-  solver.SetOption("print_level", 5);
+// /**
+//  * @brief Solves the basic optimization problem with the ipopt solver using exact jacobian approximation
+//  */
+// TEST_F(BasicOptimization, basic_optimization_ipopt_jacobian_approximation)  // NOLINT
+// {
+//   ifopt::IpoptSolver solver;
+//   solver.SetOption("linear_solver", "mumps");
+//   solver.SetOption("jacobian_approximation", "exact");
+//   solver.SetOption("print_level", 5);
+//
+//   runTests<ifopt::IpoptSolver>(solver, nlp_);
+// }
+//
+// /**
+//  * @brief Solves the basic optimization problem with the ipopt solver using finite difference values
+//  */
+// TEST_F(BasicOptimization, basic_optimization_ipopt_finite_difference_values)  // NOLINT
+// {
+//   ifopt::IpoptSolver solver;
+//   solver.SetOption("linear_solver", "mumps");
+//   solver.SetOption("jacobian_approximation", "finite-difference-values");
+//   solver.SetOption("print_level", 5);
+//
+//   runTests<ifopt::IpoptSolver>(solver, nlp_);
+// }
+//
+// /**
+//  * @brief Solves the basic optimization problem with the trajopt_sqp solver
+//  * NOTE: CURRENTLY BROKEN
+//  */
+// TEST_F(BasicOptimization, basic_optimization_trajopt_sqp) // NOLINT
+// {
+//   auto qp_solver = std::make_shared<trajopt_sqp::OSQPEigenSolver>();
+//   trajopt_sqp::TrustRegionSQPSolver solver(qp_solver);
+//   qp_solver->solver_.settings()->setVerbosity(DEBUG);
+//   qp_solver->solver_.settings()->setWarmStart(true);
+//   qp_solver->solver_.settings()->setPolish(true);
+//   qp_solver->solver_.settings()->setAdaptiveRho(false);
+//   qp_solver->solver_.settings()->setMaxIteraction(8192);
+//   qp_solver->solver_.settings()->setAbsoluteTolerance(1e-4);
+//   qp_solver->solver_.settings()->setRelativeTolerance(1e-6);
+//
+//   solver.verbose = DEBUG;
+//   runTests<trajopt_sqp::TrustRegionSQPSolver>(solver, nlp_);
+// }
 
-  runTests<ifopt::IpoptSolver>(solver, nlp_);
-}
+// TEST_F(BasicOptimization, basic_optimization_trajopt_pagmo_compass) // NOLINT
+// {
+//   pagmo::compass_search uda(5000, 0.1, 1e-4, 0.5);
+//   uda.set_verbosity(false);
+//   pagmo::algorithm algo{ uda };
+//   // if(algo.has_set_seed()) { algo.set_seed(123u); };
+//   trajopt_pagmo::PagmoSolver solver{ algo };
+//
+//   runTests<trajopt_pagmo::PagmoSolver>(solver, nlp_);
+// }
 
-/**
- * @brief Solves the basic optimization problem with the ipopt solver using finite difference values
- */
-TEST_F(BasicOptimization, basic_optimization_ipopt_finite_difference_values)  // NOLINT
-{
-  ifopt::IpoptSolver solver;
-  solver.SetOption("linear_solver", "mumps");
-  solver.SetOption("jacobian_approximation", "finite-difference-values");
-  solver.SetOption("print_level", 5);
-
-  runTests<ifopt::IpoptSolver>(solver, nlp_);
-}
-
-/**
- * @brief Solves the basic optimization problem with the trajopt_sqp solver
- * NOTE: CURRENTLY BROKEN
- */
-TEST_F(BasicOptimization, basic_optimization_trajopt_sqp) // NOLINT
-{
-  auto qp_solver = std::make_shared<trajopt_sqp::OSQPEigenSolver>();
-  trajopt_sqp::TrustRegionSQPSolver solver(qp_solver);
-  qp_solver->solver_.settings()->setVerbosity(DEBUG);
-  qp_solver->solver_.settings()->setWarmStart(true);
-  qp_solver->solver_.settings()->setPolish(true);
-  qp_solver->solver_.settings()->setAdaptiveRho(false);
-  qp_solver->solver_.settings()->setMaxIteraction(8192);
-  qp_solver->solver_.settings()->setAbsoluteTolerance(1e-4);
-  qp_solver->solver_.settings()->setRelativeTolerance(1e-6);
-
-  solver.verbose = DEBUG;
-  runTests<trajopt_sqp::TrustRegionSQPSolver>(solver, nlp_);
-}
-
-TEST_F(BasicOptimization, basic_optimization_trajopt_pagmo_compass) // NOLINT
-{
-  pagmo::compass_search uda(5000, 0.1, 1e-4, 0.5);
-  uda.set_verbosity(false);
-  pagmo::algorithm algo{ uda };
-  // if(algo.has_set_seed()) { algo.set_seed(123u); };
-  trajopt_pagmo::PagmoSolver solver{ algo };
-
-  runTests<trajopt_pagmo::PagmoSolver>(solver, nlp_);
-}
-
-TEST_F(BasicOptimization, basic_optimization_trajopt_pagmo_gaco) // NOLINT
-{
-  pagmo::gaco uda(1000);
-  uda.set_verbosity(false);
-  pagmo::algorithm algo{ uda };
-  // if(algo.has_set_seed()) { algo.set_seed(123u); };
-  trajopt_pagmo::PagmoSolver solver{ algo };
-  // Apparently Extended Ant Colony Optimization (GACO) works best with a lot of ants
-  solver.config_.population_size_ = 1000;
-
-  runTests<trajopt_pagmo::PagmoSolver>(solver, nlp_);
-}
-
-TEST_F(BasicOptimization, basic_optimization_trajopt_pagmo_ihs) // NOLINT
-{
-  pagmo::ihs uda(100);
-  uda.set_verbosity(false);
-  pagmo::algorithm algo{ uda };
-  // if(algo.has_set_seed()) { algo.set_seed(123u); };
-  trajopt_pagmo::PagmoSolver solver{ algo };
-
-  runTests<trajopt_pagmo::PagmoSolver>(solver, nlp_);
-}
-
+// TEST_F(BasicOptimization, basic_optimization_trajopt_pagmo_gaco) // NOLINT
+// {
+//   pagmo::gaco uda(10,1000);
+//   uda.set_verbosity(false);
+//   pagmo::algorithm algo{ uda };
+//   // if(algo.has_set_seed()) { algo.set_seed(123u); };
+//   trajopt_pagmo::PagmoSolver solver{ algo };
+//   // Apparently Extended Ant Colony Optimization (GACO) works best with a lot of ants
+//   solver.config_.population_size_ = 1000;
+//
+//   runTests<trajopt_pagmo::PagmoSolver>(solver, nlp_);
+// }
+//
+// TEST_F(BasicOptimization, basic_optimization_trajopt_pagmo_ihs) // NOLINT
+// {
+//   pagmo::ihs uda(100);
+//   uda.set_verbosity(false);
+//   pagmo::algorithm algo{ uda };
+//   // if(algo.has_set_seed()) { algo.set_seed(123u); };
+//   trajopt_pagmo::PagmoSolver solver{ algo };
+//
+//   runTests<trajopt_pagmo::PagmoSolver>(solver, nlp_);
+// }
+//
 TEST_F(BasicOptimization, basic_optimization_trajopt_pagmo_slsqp) // NOLINT
 {
   pagmo::nlopt uda("slsqp");
