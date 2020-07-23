@@ -84,13 +84,6 @@ std::vector<double>::size_type PagmoProblemInterface::get_nic() const { return i
 
 std::vector<double> PagmoProblemInterface::fitness(const std::vector<double>& decision_vec) const
 {
-  std::cout.precision(4);
-  std::cout << "Vec: [ ";
-  for(auto i : decision_vec)
-  {
-    std::cout << i << ' ';
-  }
-  std::cout << "]" << "\t\t";
 
   std::vector<double> f(1 + eq_cnt_idx_.size() + ineq_cnt_idx_.size(), 0.);
 
@@ -116,13 +109,6 @@ std::vector<double> PagmoProblemInterface::fitness(const std::vector<double>& de
     f[j] = fmax(dist_lower, dist_upper);
     j++;
   }
-
-  std::cout << "Fit: [ ";
-  for(auto i : f)
-  {
-    std::cout << i << ' ';
-  }
-  std::cout << "]" << std::endl;
   return f;
 }
 

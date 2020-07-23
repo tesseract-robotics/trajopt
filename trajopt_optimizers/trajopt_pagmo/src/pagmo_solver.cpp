@@ -42,36 +42,33 @@ PagmoSolver::PagmoSolver(pagmo::algorithm& pagmo_algorithm) { pagmo_algorithm_ =
 
 void PagmoSolver::Solve(ifopt::Problem& nlp)
 {
-  size_t pop_size = 1;
   // 1 - Instantiate a pagmo problem constructing it from a UDP
   // (user defined problem).
   PagmoProblemInterface pagmo_interface{};
   pagmo_interface.init(nlp);
-  // pagmo_interface.use_gradient_ = config_.use_gradient_;
-  pagmo_interface.use_gradient_ = true;
+  pagmo_interface.use_gradient_ = config_.use_gradient_;
   pagmo::problem pagmo_problem{ pagmo_interface };
 
 
   // 3 - Instantiate a population
-  // pagmo::population pop{ pagmo_problem, config_.population_size_, 0u};
-  pagmo::population pop{ pagmo_problem, pop_size};
-  // for(size_t i = 0; i < pop_size ; i++){
-  //     pop.set_x(i,{-1,1});
-  // }
-  pop.set_x(0,{-0.1,0});
-  // pop.set_x(1,{0,1});
+  pagmo::population pop{ pagmo_problem, config_.population_size_, 0u};
+  if(config_.use_initial_vals_) {
+    for(size_t i = 0; i < config_.population_size_ ; i++){
+        pop.set_x(i,config_.initial_guess_);
+    }
+  }
 
-  Debug(pagmo_problem, pop);
+  // Debug(pagmo_problem, pop);
 
   // 4 - Evolve the population
   pop = pagmo_algorithm_->evolve(pop);
 
   // 5 - Set the results
-  // pagmo::vector_double results = pop.champion_x();
-  std::cout << "Final Answer Value   [x0,x1]: " << "[" << pop.champion_x()[0] << "," << pop.champion_x()[1] << "]"<< '\n';
-  std::cout << "Final Answer Fitness [x0,x1]: " << "[" << pop.champion_f()[0] << "," << pop.champion_f()[1] << "]"<< '\n';
-  std::cout << '\n';
-  // nlp.SetVariables(results.data());
+  pagmo::vector_double results = pop.champion_x();
+  // std::cout << "Final Answer Value   [x0,x1]: " << "[" << pop.champion_x()[0] << "," << pop.champion_x()[1] << "]"<< '\n';
+  // std::cout << "Final Answer Fitness [x0,x1]: " << "[" << pop.champion_f()[0] << "," << pop.champion_f()[1] << "]"<< '\n';
+  // std::cout << '\n';
+  nlp.SetVariables(results.data());
 }
 
 inline void PagmoSolver::Debug(pagmo::problem& prob, pagmo::population& pop)

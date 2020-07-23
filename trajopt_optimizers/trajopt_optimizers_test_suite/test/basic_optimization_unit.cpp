@@ -110,5 +110,7 @@ TEST_F(BasicOptimization, basic_optimization_trajopt_pagmo_slsqp) // NOLINT
   // if(algo.has_set_seed()) { algo.set_seed(123u); };
   trajopt_pagmo::PagmoSolver solver{ algo };
   solver.config_.population_size_ = 100;
+  solver.config_.use_initial_vals_ = true;
+  solver.config_.initial_guess_ = {0.1,0};
   runTests<trajopt_pagmo::PagmoSolver>(solver, nlp_);
 }
