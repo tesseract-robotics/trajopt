@@ -119,16 +119,16 @@ std::pair<std::vector<double>, std::vector<double>> PagmoProblemInterface::get_b
 
 std::vector<double> PagmoProblemInterface::gradient(const std::vector<double>& decision_vec) const
 {
-
+  // Add Cost Gradients
   Eigen::VectorXd cost_grad = nlp_->EvaluateCostFunctionGradient(decision_vec.data());
   std::vector<double> grad_vec(cost_grad.data(), cost_grad.data() + cost_grad.rows() * cost_grad.cols());
 
-  if (nlp_->GetConstraints().GetRows()>0) {
-    ifopt::Problem::Jacobian jac = ifopt::Problem::Jacobian(1,nlp_->GetNumberOfOptimizationVariables());
-    nlp_->SetVariables(decision_vec.data());
-    jac = nlp_->GetConstraints().GetJacobian();
-    Eigen::VectorXd constraint_grad = jac.row(0).transpose();
-    std::vector<double> cg(constraint_grad.data(), constraint_grad.data() + constraint_grad.rows() * constraint_grad.cols());
+  // Add Constraint Gradients
+  ifopt::Problem::Jacobian prob_jac = nlp_->GetJacobianOfConstraints();
+  int num_const = nlp_->GetNumberOfConstraints();
+  for(int i = 0; i < num_const; i++){
+    Eigen::VectorXd jac_grad_vec = prob_jac.row(i).transpose();
+    std::vector<double> cg(jac_grad_vec.data(), jac_grad_vec.data() + jac_grad_vec.rows() * jac_grad_vec.cols());
     grad_vec.insert(grad_vec.end(), cg.begin(), cg.end());
   }
 

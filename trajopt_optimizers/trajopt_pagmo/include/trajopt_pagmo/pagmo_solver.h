@@ -46,7 +46,6 @@ struct PagmoSolverConfig
   int verbose_{ 0 };
   bool use_gradient_{true};
   bool use_initial_vals_{false};
-  std::vector<double> initial_guess_ = {0};
   std::size_t population_size_ = 24;
 };
 

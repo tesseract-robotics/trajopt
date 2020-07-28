@@ -46,28 +46,27 @@ void PagmoSolver::Solve(ifopt::Problem& nlp)
   // (user defined problem).
   PagmoProblemInterface pagmo_interface{};
   pagmo_interface.init(nlp);
-  pagmo_interface.use_gradient_ = config_.use_gradient_;
+  pagmo_interface.use_gradient_ = false;//config_.use_gradient_;
   pagmo::problem pagmo_problem{ pagmo_interface };
 
 
-  // 3 - Instantiate a population
+  // 2 - Instantiate a population
   pagmo::population pop{ pagmo_problem, config_.population_size_, 0u};
+
+  // 3 - Set Initial Values
+  Eigen::VectorXd var_vals = nlp.GetVariableValues();
+  std::vector<double> init_vals(var_vals.data(), var_vals.data() + var_vals.rows() * var_vals.cols());
   if(config_.use_initial_vals_) {
     for(size_t i = 0; i < config_.population_size_ ; i++){
-        pop.set_x(i,config_.initial_guess_);
+        pop.set_x(i,init_vals);
     }
   }
-
-  // Debug(pagmo_problem, pop);
 
   // 4 - Evolve the population
   pop = pagmo_algorithm_->evolve(pop);
 
   // 5 - Set the results
   pagmo::vector_double results = pop.champion_x();
-  // std::cout << "Final Answer Value   [x0,x1]: " << "[" << pop.champion_x()[0] << "," << pop.champion_x()[1] << "]"<< '\n';
-  // std::cout << "Final Answer Fitness [x0,x1]: " << "[" << pop.champion_f()[0] << "," << pop.champion_f()[1] << "]"<< '\n';
-  // std::cout << '\n';
   nlp.SetVariables(results.data());
 }
 

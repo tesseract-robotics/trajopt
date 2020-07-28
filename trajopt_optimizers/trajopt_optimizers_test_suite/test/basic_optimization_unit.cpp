@@ -78,39 +78,38 @@ TRAJOPT_IGNORE_WARNINGS_POP
 //   runTests<trajopt_pagmo::PagmoSolver>(solver, nlp_);
 // }
 
-// TEST_F(BasicOptimization, basic_optimization_trajopt_pagmo_gaco) // NOLINT
-// {
-//   pagmo::gaco uda(10,1000);
-//   uda.set_verbosity(false);
-//   pagmo::algorithm algo{ uda };
-//   // if(algo.has_set_seed()) { algo.set_seed(123u); };
-//   trajopt_pagmo::PagmoSolver solver{ algo };
-//   // Apparently Extended Ant Colony Optimization (GACO) works best with a lot of ants
-//   solver.config_.population_size_ = 1000;
-//
-//   runTests<trajopt_pagmo::PagmoSolver>(solver, nlp_);
-// }
-//
-// TEST_F(BasicOptimization, basic_optimization_trajopt_pagmo_ihs) // NOLINT
-// {
-//   pagmo::ihs uda(100);
-//   uda.set_verbosity(false);
-//   pagmo::algorithm algo{ uda };
-//   // if(algo.has_set_seed()) { algo.set_seed(123u); };
-//   trajopt_pagmo::PagmoSolver solver{ algo };
-//
-//   runTests<trajopt_pagmo::PagmoSolver>(solver, nlp_);
-// }
-//
+TEST_F(BasicOptimization, basic_optimization_trajopt_pagmo_gaco) // NOLINT
+{
+  pagmo::gaco uda(10,1000);
+  uda.set_verbosity(true);
+  pagmo::algorithm algo{ uda };
+  // if(algo.has_set_seed()) { algo.set_seed(123u); };
+  trajopt_pagmo::PagmoSolver solver{ algo };
+  // Apparently Extended Ant Colony Optimization (GACO) works best with a lot of ants
+  solver.config_.population_size_ = 1000;
+
+  runTests<trajopt_pagmo::PagmoSolver>(solver, nlp_);
+}
+
+TEST_F(BasicOptimization, basic_optimization_trajopt_pagmo_ihs) // NOLINT
+{
+  pagmo::ihs uda(100);
+  uda.set_verbosity(true);
+  pagmo::algorithm algo{ uda };
+  // if(algo.has_set_seed()) { algo.set_seed(123u); };
+  trajopt_pagmo::PagmoSolver solver{ algo };
+
+  runTests<trajopt_pagmo::PagmoSolver>(solver, nlp_);
+}
+
 TEST_F(BasicOptimization, basic_optimization_trajopt_pagmo_slsqp) // NOLINT
 {
   pagmo::nlopt uda("slsqp");
-  uda.set_verbosity(false);
+  uda.set_verbosity(true);
   pagmo::algorithm algo{ uda };
   // if(algo.has_set_seed()) { algo.set_seed(123u); };
   trajopt_pagmo::PagmoSolver solver{ algo };
   solver.config_.population_size_ = 100;
   solver.config_.use_initial_vals_ = true;
-  solver.config_.initial_guess_ = {0.1,0};
   runTests<trajopt_pagmo::PagmoSolver>(solver, nlp_);
 }
