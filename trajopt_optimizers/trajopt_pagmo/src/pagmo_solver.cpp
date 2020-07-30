@@ -46,7 +46,7 @@ void PagmoSolver::Solve(ifopt::Problem& nlp)
   // (user defined problem).
   PagmoProblemInterface pagmo_interface{};
   pagmo_interface.init(nlp);
-  pagmo_interface.use_gradient_ = false;//config_.use_gradient_;
+  pagmo_interface.use_gradient_ = true;//config_.use_gradient_;
   pagmo::problem pagmo_problem{ pagmo_interface };
 
 
@@ -56,6 +56,13 @@ void PagmoSolver::Solve(ifopt::Problem& nlp)
   // 3 - Set Initial Values
   Eigen::VectorXd var_vals = nlp.GetVariableValues();
   std::vector<double> init_vals(var_vals.data(), var_vals.data() + var_vals.rows() * var_vals.cols());
+
+  for(auto i : init_vals)
+  {
+    std::cout << i << " ";
+  }
+  std::cout << '\n';
+
   if(config_.use_initial_vals_) {
     for(size_t i = 0; i < config_.population_size_ ; i++){
         pop.set_x(i,init_vals);
