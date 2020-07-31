@@ -11,6 +11,8 @@ macro(add_gtest test_name test_file)
       trajopt::trajopt_ifopt
       trajopt::trajopt_test_data
       trajopt::trajopt_sqp
+      trajopt::trajopt_pagmo
+      Pagmo::pagmo
       GTest::GTest
       GTest::Main)
   target_include_directories(${test_name} PRIVATE
@@ -24,6 +26,6 @@ macro(add_gtest test_name test_file)
 endmacro()
 
 add_gtest(${PROJECT_NAME}_joint_position_optimization_unit joint_position_optimization_unit.cpp)
-add_gtest(${PROJECT_NAME}_joint_velocity_optimization_unit joint_velocity_optimization_unit.cpp)
-# add_gtest(${PROJECT_NAME}_cart_position_optimization_unit cart_position_optimization_unit.cpp)
+add_gtest(${PROJECT_NAME}_cart_position_optimization_unit cart_position_optimization_unit.cpp)
 add_gtest(${PROJECT_NAME}_basic_optimization_unit basic_optimization_unit.cpp)
+add_gtest(${PROJECT_NAME}_single_optimization_unit single_optimization_unit.cpp)

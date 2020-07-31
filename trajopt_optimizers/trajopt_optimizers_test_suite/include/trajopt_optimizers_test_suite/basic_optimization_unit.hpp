@@ -41,7 +41,7 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 
 TRAJOPT_IGNORE_WARNINGS_POP
 
-const bool DEBUG = false;
+const bool DEBUG = true;
 
 namespace ifopt
 {
@@ -56,8 +56,8 @@ public:
   ExVariables(const std::string& name) : VariableSet(2, name)
   {
     // the initial values where the NLP starts iterating from
-    x0_ = 3.5;
-    x1_ = 1.5;
+    x0_ = 0.3;
+    x1_ = 0;
   }
 
   // Here is where you can transform the Eigen::Vector into whatever
