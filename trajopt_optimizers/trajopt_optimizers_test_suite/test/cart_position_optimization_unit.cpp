@@ -22,30 +22,12 @@ TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt_optimizers_test_suite/cart_position_optimization_unit.hpp>
 
-const bool VERBOSITY=false;
+const bool VERBOSITY = false;
 
-// /**
-//  * @brief Applies a cartesian position constraint and solves the problem with trajopt_sqp
-//  */
-// TEST_F(CartPositionOptimization, cart_position_optimization_trajopt_sqp)  // NOLINT
-// {
-//   auto qp_solver = std::make_shared<trajopt_sqp::OSQPEigenSolver>();
-//   trajopt_sqp::TrustRegionSQPSolver solver(qp_solver);
-//   qp_solver->solver_.settings()->setVerbosity(DEBUG);
-//   qp_solver->solver_.settings()->setWarmStart(true);
-//   qp_solver->solver_.settings()->setPolish(true);
-//   qp_solver->solver_.settings()->setAdaptiveRho(false);
-//   qp_solver->solver_.settings()->setMaxIteraction(8192);
-//   qp_solver->solver_.settings()->setAbsoluteTolerance(1e-4);
-//   qp_solver->solver_.settings()->setRelativeTolerance(1e-6);
-//
-//   // runTests<trajopt_sqp::TrustRegionSQPSolver>(solver, nlp_, joint_target_);
-//   runTests<trajopt_sqp::TrustRegionSQPSolver>(solver, nlp_, joint_target_);
-// }
-//
-// /**
-//  * @brief Applies a cart position constraint and solves the problem with IPOPT using exact jacobian approximation
-//  */
+/**
+ * @brief Applies a cart position constraint and solves the problem with IPOPT using exact jacobian approximation
+ * NOTE: CURRENTLY BROKEN
+ */
 // TEST_F(CartPositionOptimization, cart_position_optimization_ipopt_exact)  // NOLINT
 // {
 //   ifopt::IpoptSolver solver;
@@ -55,10 +37,11 @@ const bool VERBOSITY=false;
 //   solver.SetOption("print_level", 5);
 //   runTests<ifopt::IpoptSolver>(solver, nlp_, joint_target_);
 // }
-//
-// /**
-//  * @brief Applies a cart position constraint and solves the problem with IPOPT, using finite difference values
-//  */
+
+/**
+ * @brief Applies a cart position constraint and solves the problem with IPOPT, using finite difference values
+ * NOTE: CURRENTLY BROKEN
+ */
 // TEST_F(CartPositionOptimization, cart_position_optimization_ipopt_fdv)  // NOLINT
 // {
 //   ifopt::IpoptSolver solver;
@@ -68,20 +51,27 @@ const bool VERBOSITY=false;
 //   solver.SetOption("print_level", 5);
 //   runTests<ifopt::IpoptSolver>(solver, nlp_, joint_target_);
 // }
-//
-TEST_F(CartPositionOptimization, basic_optimization_trajopt_pagmo_compass) // NOLINT
-{
-  pagmo::compass_search uda(500, 0.1, 1e-7, 0.5);
-  uda.set_verbosity(VERBOSITY);
-  pagmo::algorithm algo{ uda };
-  trajopt_pagmo::PagmoSolver solver{ algo };
-  solver.config_.use_initial_vals_ = true;
-  runTests<trajopt_pagmo::PagmoSolver>(solver, nlp_, joint_target_);
-}
-//
+
+/**
+ * @brief Solves the basic optimization problem with Pagmo's Compass algorithm
+ * NOTE: CURRENTLY BROKEN
+ */
+// TEST_F(CartPositionOptimization, cart_optimization_trajopt_pagmo_compass) // NOLINT
+// {
+//   pagmo::compass_search uda(500, 0.1, 1e-7, 0.5);
+//   uda.set_verbosity(VERBOSITY);
+//   pagmo::algorithm algo{ uda };
+//   trajopt_pagmo::PagmoSolver solver{ algo };
+//   solver.config_.use_initial_vals_ = true;
+//   runTests<trajopt_pagmo::PagmoSolver>(solver, nlp_, joint_target_);
+// }
+
+/**
+ * @brief Solves the basic optimization problem with Pagmo's Extended Ant Colony algorithm
+ * NOTE: CURRENTLY BROKEN
+ */
 // TEST_F(CartPositionOptimization, cart_position_trajopt_pagmo_gaco) // NOLINT
 // {
-//   // pagmo::gaco uda(500,100, 0.5);
 //   pagmo::gaco uda(100);
 //   uda.set_verbosity(VERBOSITY);
 //   pagmo::algorithm algo{ uda };
@@ -91,7 +81,11 @@ TEST_F(CartPositionOptimization, basic_optimization_trajopt_pagmo_compass) // NO
 //   solver.config_.use_initial_vals_ = true;
 //   runTests<trajopt_pagmo::PagmoSolver>(solver, nlp_, joint_target_);
 // }
-//
+
+/**
+ * @brief Solves the basic optimization problem with Pagmo's Improved Harmony Search
+ * NOTE: CURRENTLY BROKEN
+ */
 // TEST_F(CartPositionOptimization, cart_position_trajopt_pagmo_ihs) // NOLINT
 // {
 //   pagmo::ihs uda(50);
@@ -101,18 +95,26 @@ TEST_F(CartPositionOptimization, basic_optimization_trajopt_pagmo_compass) // NO
 //   solver.config_.use_initial_vals_ = true;
 //   runTests<trajopt_pagmo::PagmoSolver>(solver, nlp_, joint_target_);
 // }
-//
-TEST_F(CartPositionOptimization, cart_position_trajopt_pagmo_slsqp) // NOLINT
-{
-  pagmo::nlopt uda("slsqp");
-  uda.set_verbosity(VERBOSITY);
-  pagmo::algorithm algo{ uda };
-  trajopt_pagmo::PagmoSolver solver{ algo };
-  solver.config_.population_size_ = 500;
-  solver.config_.use_initial_vals_ = true;
-  runTests<trajopt_pagmo::PagmoSolver>(solver, nlp_, joint_target_);
-}
-//
+
+/**
+ * @brief Solves the basic optimization problem with Pagmo's implementation of NLopt's SQP solver
+ * NOTE: CURRENTLY BROKEN
+ */
+// TEST_F(CartPositionOptimization, cart_position_trajopt_pagmo_slsqp) // NOLINT
+// {
+//   pagmo::nlopt uda("slsqp");
+//   uda.set_verbosity(VERBOSITY);
+//   pagmo::algorithm algo{ uda };
+//   trajopt_pagmo::PagmoSolver solver{ algo };
+//   solver.config_.population_size_ = 500;
+//   solver.config_.use_initial_vals_ = true;
+//   runTests<trajopt_pagmo::PagmoSolver>(solver, nlp_, joint_target_);
+// }
+
+/**
+ * @brief Solves the basic optimization problem with Pagmo's implementation of NLopt's COBYLA solver
+ * NOTE: CURRENTLY BROKEN
+ */
 // TEST_F(CartPositionOptimization, cart_position_trajopt_pagmo_cobyla) // NOLINT
 // {
 //   pagmo::nlopt uda("cobyla");

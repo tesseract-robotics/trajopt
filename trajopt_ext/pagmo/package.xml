@@ -8,6 +8,7 @@
 
   <build_depend>eigen</build_depend>
   <build_depend>coinor-libipopt-dev</build_depend>
+  <depend>NLopt</depend>
 
   <export>
     <build_type>cmake</build_type>

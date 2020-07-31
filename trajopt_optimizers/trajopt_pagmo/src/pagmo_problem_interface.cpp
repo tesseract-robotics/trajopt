@@ -71,7 +71,6 @@ void PagmoProblemInterface::init(ifopt::Problem& nlp)
   // Convert constraint bounds to VectorXd
   std::vector<ifopt::Bounds> var_bounds = nlp_->GetBoundsOnOptimizationVariables();
   for (std::size_t i = 0; i < static_cast<std::size_t>(nlp.GetNumberOfConstraints()); i++)
-  // for (std::size_t i = 0; i < static_cast<std::size_t>(nlp.GetNumberOfOptimizationVariables()); i++)
   {
     var_bounds_lower_[i] = var_bounds[i].lower_;
     var_bounds_upper_[i] = var_bounds[i].upper_;
@@ -84,7 +83,6 @@ std::vector<double>::size_type PagmoProblemInterface::get_nic() const { return i
 
 std::vector<double> PagmoProblemInterface::fitness(const std::vector<double>& decision_vec) const
 {
-
   std::vector<double> f(1 + eq_cnt_idx_.size() + ineq_cnt_idx_.size(), 0.);
 
   // Evaluate objective function
@@ -123,10 +121,10 @@ std::vector<double> PagmoProblemInterface::gradient(const std::vector<double>& d
   Eigen::VectorXd cost_grad = nlp_->EvaluateCostFunctionGradient(decision_vec.data());
   std::vector<double> grad_vec(cost_grad.data(), cost_grad.data() + cost_grad.rows() * cost_grad.cols());
 
-  // Add Constraint Gradients
+  // Add Constraint Gradients. Goes row by row in the jacobian and turns them into an nx1 vector
   ifopt::Problem::Jacobian prob_jac = nlp_->GetJacobianOfConstraints();
-  int num_const = nlp_->GetNumberOfConstraints();
-  for(int i = 0; i < num_const; i++){
+  for (int i = 0; i < nlp_->GetNumberOfConstraints(); i++)
+  {
     Eigen::VectorXd jac_grad_vec = prob_jac.row(i).transpose();
     std::vector<double> cg(jac_grad_vec.data(), jac_grad_vec.data() + jac_grad_vec.rows() * jac_grad_vec.cols());
     grad_vec.insert(grad_vec.end(), cg.begin(), cg.end());

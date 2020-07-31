@@ -15,19 +15,17 @@ find_package(trajopt_pagmo REQUIRED)
 ## Build ##
 ###########
 
-add_library(${PROJECT_NAME} SHARED
-    src/run_tests.cpp
-)
+add_library(${PROJECT_NAME} INTERFACE)
 target_include_directories(${PROJECT_NAME}
-  PUBLIC
+  INTERFACE
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:include>
 )
-target_link_libraries(${PROJECT_NAME} PUBLIC
+target_link_libraries(${PROJECT_NAME} INTERFACE
     console_bridge
     trajopt::trajopt_utils
 )
-trajopt_target_compile_options(${PROJECT_NAME} PUBLIC)
+trajopt_target_compile_options(${PROJECT_NAME} INTERFACE)
 trajopt_clang_tidy(${PROJECT_NAME})
 list (APPEND PACKAGE_LIBRARIES ${PROJECT_NAME})
 

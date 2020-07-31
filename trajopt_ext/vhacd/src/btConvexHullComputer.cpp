@@ -115,8 +115,8 @@ public:
       Int128 result;
       __asm__("addq %[bl], %[rl]\n\t"
               "adcq %[bh], %[rh]\n\t"
-              : [rl] "=r"(result.low), [rh] "=r"(result.high)
-              : "0"(low), "1"(high), [bl] "g"(b.low), [bh] "g"(b.high)
+              : [ rl ] "=r"(result.low), [ rh ] "=r"(result.high)
+              : "0"(low), "1"(high), [ bl ] "g"(b.low), [ bh ] "g"(b.high)
               : "cc");
       return result;
 #else
@@ -131,8 +131,8 @@ public:
       Int128 result;
       __asm__("subq %[bl], %[rl]\n\t"
               "sbbq %[bh], %[rh]\n\t"
-              : [rl] "=r"(result.low), [rh] "=r"(result.high)
-              : "0"(low), "1"(high), [bl] "g"(b.low), [bh] "g"(b.high)
+              : [ rl ] "=r"(result.low), [ rh ] "=r"(result.high)
+              : "0"(low), "1"(high), [ bl ] "g"(b.low), [ bh ] "g"(b.high)
               : "cc");
       return result;
 #else
@@ -145,8 +145,8 @@ public:
 #ifdef USE_X86_64_ASM
       __asm__("addq %[bl], %[rl]\n\t"
               "adcq %[bh], %[rh]\n\t"
-              : [rl] "=r"(low), [rh] "=r"(high)
-              : "0"(low), "1"(high), [bl] "g"(b.low), [bh] "g"(b.high)
+              : [ rl ] "=r"(low), [ rh ] "=r"(high)
+              : "0"(low), "1"(high), [ bl ] "g"(b.low), [ bh ] "g"(b.high)
               : "cc");
 #else
       uint64_t lo = low + b.low;
@@ -705,7 +705,7 @@ btConvexHullInternal::Int128 btConvexHullInternal::Int128::mul(int64_t a, int64_
   Int128 result;
 
 #ifdef USE_X86_64_ASM
-  __asm__("imulq %[b]" : "=a"(result.low), "=d"(result.high) : "0"(a), [b] "r"(b) : "cc");
+  __asm__("imulq %[b]" : "=a"(result.low), "=d"(result.high) : "0"(a), [ b ] "r"(b) : "cc");
   return result;
 
 #else
@@ -729,7 +729,7 @@ btConvexHullInternal::Int128 btConvexHullInternal::Int128::mul(uint64_t a, uint6
   Int128 result;
 
 #ifdef USE_X86_64_ASM
-  __asm__("mulq %[b]" : "=a"(result.low), "=d"(result.high) : "0"(a), [b] "r"(b) : "cc");
+  __asm__("mulq %[b]" : "=a"(result.low), "=d"(result.high) : "0"(a), [ b ] "r"(b) : "cc");
 
 #else
   DMul<uint64_t, uint32_t>::mul(a, b, result.low, result.high);
@@ -771,8 +771,8 @@ int32_t btConvexHullInternal::Rational64::compare(const Rational64& b) const
           "decb %%bh\n\t"    // now bx=0x0000 if difference is zero, 0xff01 if it is negative, 0x0001 if it is positive
                              // (i.e., same sign as difference)
           "shll $16, %%ebx\n\t"  // ebx has same sign as difference
-          : "=&b"(result), [tmp] "=&r"(tmp), "=a"(dummy)
-          : "a"(denominator), [bn] "g"(b.numerator), [tn] "g"(numerator), [bd] "g"(b.denominator)
+          : "=&b"(result), [ tmp ] "=&r"(tmp), "=a"(dummy)
+          : "a"(denominator), [ bn ] "g"(b.numerator), [ tn ] "g"(numerator), [ bd ] "g"(b.denominator)
           : "%rdx", "cc");
   return result ? result ^ sign  // if sign is +1, only bit 0 of result is inverted, which does not change the sign of
                                  // result (and cannot result in zero)

@@ -51,15 +51,9 @@ class ExVariables : public VariableSet
 {
 public:
   ExVariables() : ExVariables("var_set1"){};
-  ExVariables(const std::string& name) : VariableSet(1, name)
-  {
-    x0_ = 1;
-  }
+  ExVariables(const std::string& name) : VariableSet(1, name) { x0_ = 1; }
 
-  void SetVariables(const VectorXd& x) override
-  {
-    x0_ = x(0);
-  };
+  void SetVariables(const VectorXd& x) override { x0_ = x(0); };
 
   VectorXd GetValues() const override
   {
@@ -97,7 +91,7 @@ public:
     {
       VectorXd x = GetVariables()->GetComponent("var_set1")->GetValues();
 
-      jac.coeffRef(0, 0) = 1;                  // derivative of cost w.r.t x0
+      jac.coeffRef(0, 0) = 1;  // derivative of cost w.r.t x0
     }
   }
 };

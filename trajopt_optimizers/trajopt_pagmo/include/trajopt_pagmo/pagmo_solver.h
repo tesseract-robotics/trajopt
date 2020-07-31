@@ -44,8 +44,8 @@ struct PagmoSolverConfig
   using ConstPtr = std::shared_ptr<const PagmoSolverConfig>;
 
   int verbose_{ 0 };
-  bool use_gradient_{true};
-  bool use_initial_vals_{false};
+  bool use_gradient_{ true };
+  bool use_initial_vals_{ false };
   std::size_t population_size_ = 24;
 };
 

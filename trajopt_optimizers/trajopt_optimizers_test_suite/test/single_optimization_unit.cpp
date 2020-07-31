@@ -51,7 +51,7 @@ TEST_F(SingleOptimization, single_optimization_ipopt_finite_difference_values)  
  * @brief Solves the basic optimization problem with the trajopt_sqp solver
  * NOTE: CURRENTLY BROKEN
  */
-TEST_F(SingleOptimization, single_optimization_trajopt_sqp) // NOLINT
+TEST_F(SingleOptimization, single_optimization_trajopt_sqp)  // NOLINT
 {
   auto qp_solver = std::make_shared<trajopt_sqp::OSQPEigenSolver>();
   trajopt_sqp::TrustRegionSQPSolver solver(qp_solver);
@@ -67,41 +67,54 @@ TEST_F(SingleOptimization, single_optimization_trajopt_sqp) // NOLINT
   runTests<trajopt_sqp::TrustRegionSQPSolver>(solver, nlp_);
 }
 
-TEST_F(SingleOptimization, single_optimization_trajopt_pagmo_compass) // NOLINT
-{
-  pagmo::compass_search uda(5000, 0.1, 1e-4, 0.5);
-  uda.set_verbosity(false);
-  pagmo::algorithm algo{ uda };
-  // if(algo.has_set_seed()) { algo.set_seed(123u); };
-  trajopt_pagmo::PagmoSolver solver{ algo };
+/**
+ * @brief Solves the basic optimization problem with Pagmo's Compass algorithm
+ * NOTE: CURRENTLY BROKEN
+ */
+// TEST_F(SingleOptimization, single_optimization_trajopt_pagmo_compass) // NOLINT
+// {
+//   pagmo::compass_search uda(5000, 0.1, 1e-4, 0.5);
+//   uda.set_verbosity(false);
+//   pagmo::algorithm algo{ uda };
+//   trajopt_pagmo::PagmoSolver solver{ algo };
+//
+//   runTests<trajopt_pagmo::PagmoSolver>(solver, nlp_);
+// }
 
-  runTests<trajopt_pagmo::PagmoSolver>(solver, nlp_);
-}
-
+/**
+ * @brief Solves the basic optimization problem with Pagmo's Extended Ant Colony algorithm
+ * NOTE: CURRENTLY BROKEN
+ */
 // TEST_F(SingleOptimization, single_optimization_trajopt_pagmo_gaco) // NOLINT
 // {
 //   pagmo::gaco uda(10);
 //   uda.set_verbosity(false);
 //   pagmo::algorithm algo{ uda };
-//   // if(algo.has_set_seed()) { algo.set_seed(123u); };
 //   trajopt_pagmo::PagmoSolver solver{ algo };
 //   // Apparently Extended Ant Colony Optimization (GACO) works best with a lot of ants
 //   solver.config_.population_size_ = 1000;
 //
 //   runTests<trajopt_pagmo::PagmoSolver>(solver, nlp_);
 // }
-//
+
+/**
+ * @brief Solves the basic optimization problem with Pagmo's Improved Harmony Search algorithm
+ * NOTE: CURRENTLY BROKEN
+ */
 // TEST_F(SingleOptimization, single_optimization_trajopt_pagmo_ihs) // NOLINT
 // {
 //   pagmo::ihs uda(100);
 //   uda.set_verbosity(false);
 //   pagmo::algorithm algo{ uda };
-//   // if(algo.has_set_seed()) { algo.set_seed(123u); };
 //   trajopt_pagmo::PagmoSolver solver{ algo };
 //
 //   runTests<trajopt_pagmo::PagmoSolver>(solver, nlp_);
 // }
-//
+
+/**
+ * @brief Solves the basic optimization problem with Pagmo's implementation of NLopt's SQP solver
+ * NOTE: CURRENTLY BROKEN
+ */
 // TEST_F(SingleOptimization, single_optimization_trajopt_pagmo_slsqp) // NOLINT
 // {
 //   pagmo::nlopt uda("slsqp");
