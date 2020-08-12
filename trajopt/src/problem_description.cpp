@@ -528,7 +528,7 @@ TrajOptProb::Ptr ConstructProblem(const Json::Value& root, const tesseract::Tess
 TrajOptProb::TrajOptProb(int n_steps, const ProblemConstructionInfo& pci)
   : OptProb(pci.basic_info.convex_solver), m_kin(pci.kin), m_env(pci.env)
 {
-  const Eigen::MatrixX2d& limits = m_kin->getLimits();
+  const Eigen::MatrixX2d& limits = m_kin->getLimits().joint_limits;
   auto n_dof = static_cast<int>(m_kin->numJoints());
   Eigen::VectorXd lower, upper;
   lower = limits.col(0);
