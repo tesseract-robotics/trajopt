@@ -351,7 +351,8 @@ bool VHACD::OCLInit(void* const oclDevice, IUserLogger* const logger)
 
   for (int32_t k = 0; k < m_ompNumProcessors; ++k)
   {
-    m_oclQueue[k] = clCreateCommandQueue(m_oclContext, *m_oclDevice, 0 /*CL_QUEUE_PROFILING_ENABLE*/, &error);
+    m_oclQueue[k] =
+        clCreateCommandQueueWithProperties(m_oclContext, *m_oclDevice, nullptr /*CL_QUEUE_PROFILING_ENABLE*/, &error);
     if (error != CL_SUCCESS)
     {
       if (logger)

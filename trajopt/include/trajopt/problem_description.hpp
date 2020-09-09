@@ -202,13 +202,13 @@ public:
   tesseract_kinematics::ForwardKinematics::ConstPtr kin;
 
   ProblemConstructionInfo(const tesseract::Tesseract::ConstPtr& tesseract)
-    : env(tesseract->getEnvironmentConst()), tesseract_(tesseract)
+    : env(tesseract->getEnvironment()), tesseract_(tesseract)
   {
   }
 
   tesseract_kinematics::ForwardKinematics::ConstPtr getManipulator(const std::string& name) const
   {
-    return tesseract_->getFwdKinematicsManagerConst()->getFwdKinematicSolver(name);
+    return tesseract_->getManipulatorManager()->getFwdKinematicSolver(name);
   }
 
   void fromJson(const Json::Value& v);
