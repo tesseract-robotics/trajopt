@@ -77,7 +77,7 @@ TEST(CartPositionOptimizationTrajoptSCO, cart_position_optimization_trajopt_sco)
   tesseract->init(urdf_file, srdf_file, locator);
 
   // Extract necessary kinematic information
-  auto forward_kinematics = tesseract->getFwdKinematicsManager()->getFwdKinematicSolver("right_arm");
+  auto forward_kinematics = tesseract->getManipulatorManager()->getFwdKinematicSolver("right_arm");
   tesseract_environment::AdjacencyMap::Ptr adjacency_map = std::make_shared<tesseract_environment::AdjacencyMap>(
       tesseract->getEnvironment()->getSceneGraph(),
       forward_kinematics->getActiveLinkNames(),
@@ -99,7 +99,7 @@ TEST(CartPositionOptimizationTrajoptSCO, cart_position_optimization_trajopt_sco)
   Eigen::VectorXd start_pos(forward_kinematics->numJoints());
   start_pos << 0, 0, 0, -1.0, 0, -1, 0.0;
   if (DEBUG)
-    std::cout << "Joint Limits:\n" << forward_kinematics->getLimits().transpose() << std::endl;
+    std::cout << "Joint Limits:\n" << forward_kinematics->getLimits().joint_limits.transpose() << std::endl;
 
   pci.init_info.type = InitInfo::GIVEN_TRAJ;
   pci.init_info.data = tesseract_common::TrajArray(1, pci.kin->numJoints());

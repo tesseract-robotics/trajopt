@@ -69,6 +69,7 @@ public:
     new_link.collision.push_back(collision);
 
     Joint new_joint("box_world-base_link");
+    new_joint.type = JointType::FIXED;
     new_joint.parent_link_name = "base_link";
     new_joint.child_link_name = "box_world";
 
