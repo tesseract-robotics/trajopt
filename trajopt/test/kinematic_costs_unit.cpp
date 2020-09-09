@@ -78,7 +78,7 @@ TEST_F(KinematicCostsTest, CartPoseJacCalculator)  // NOLINT
   CONSOLE_BRIDGE_logDebug("KinematicCostsTest, CartPoseJacCalculator");
 
   auto env = tesseract_->getEnvironment();
-  auto kin = tesseract_->getFwdKinematicsManager()->getFwdKinematicSolver("right_arm");
+  auto kin = tesseract_->getManipulatorManager()->getFwdKinematicSolver("right_arm");
   auto world_to_base = env->getCurrentState()->link_transforms.at(kin->getBaseLinkName());
   auto adjacency_map = std::make_shared<tesseract_environment::AdjacencyMap>(
       env->getSceneGraph(), kin->getActiveLinkNames(), env->getCurrentState()->link_transforms);
@@ -101,7 +101,7 @@ TEST_F(KinematicCostsTest, CartPoseJacCalculator)  // NOLINT
 //  CONSOLE_BRIDGE_logDebug("KinematicCostsTest, DynamicCartPoseJacCalculator");
 
 //  auto env = tesseract_->getEnvironment();
-//  auto kin = tesseract_->getFwdKinematicsManager()->getFwdKinematicSolver("full_body");
+//  auto kin = tesseract_->getManipulatorManager()->getFwdKinematicSolver("full_body");
 //  std::unordered_map<std::string, double> j;
 //  j["l_elbow_flex_joint"] = -0.15;
 //  env->setState(j);

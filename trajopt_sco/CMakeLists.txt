@@ -44,7 +44,6 @@ if (HAVE_BPMPD)
   target_include_directories(bpmpd_caller SYSTEM PUBLIC
       $<TARGET_PROPERTY:trajopt::trajopt_utils,INTERFACE_INCLUDE_DIRECTORIES>)
 
-  set_property(SOURCE src/solver_interface.cpp APPEND PROPERTY COMPILE_DEFINITIONS HAVE_BPMPD)
   list(APPEND SCO_SOURCE_FILES src/bpmpd_interface.cpp)
 
   install(TARGETS bpmpd_caller RUNTIME DESTINATION bin LIBRARY DESTINATION lib ARCHIVE DESTINATION lib)

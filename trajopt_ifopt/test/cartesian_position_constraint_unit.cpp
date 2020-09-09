@@ -52,8 +52,8 @@ public:
     EXPECT_TRUE(tesseract->init(urdf_file, srdf_file, locator));
 
     // Extract necessary kinematic information
-    forward_kinematics = tesseract->getFwdKinematicsManager()->getFwdKinematicSolver("right_arm");
-    inverse_kinematics = tesseract->getInvKinematicsManager()->getInvKinematicSolver("right_arm");
+    forward_kinematics = tesseract->getManipulatorManager()->getFwdKinematicSolver("right_arm");
+    inverse_kinematics = tesseract->getManipulatorManager()->getInvKinematicSolver("right_arm");
     n_dof = forward_kinematics->numJoints();
 
     tesseract_environment::AdjacencyMap::Ptr adjacency_map = std::make_shared<tesseract_environment::AdjacencyMap>(

@@ -45,8 +45,8 @@ public:
     gLogLevel = util::LevelError;
 
     // Set up collision evaluator
-    auto env = tesseract->getEnvironmentConst();
-    auto kin = tesseract->getFwdKinematicsManagerConst()->getFwdKinematicSolver("manipulator");
+    auto env = tesseract->getEnvironment();
+    auto kin = tesseract->getManipulatorManager()->getFwdKinematicSolver("manipulator");
     auto adj_map = std::make_shared<tesseract_environment::AdjacencyMap>(
         env->getSceneGraph(), kin->getActiveLinkNames(), env->getCurrentState()->link_transforms);
 
