@@ -212,6 +212,8 @@ public:
     return tesseract_->getManipulatorManager()->getFwdKinematicSolver(name);
   }
 
+  tesseract::Tesseract::ConstPtr getTesseract() const { return tesseract_; }
+
   void fromJson(const Json::Value& v);
 
 private:
