@@ -193,6 +193,9 @@ void OSQPModel::createOrUpdateSolver()
   auto ret = osqp_setup(&osqp_workspace_, &osqp_data_, &osqp_settings_);
   if (ret)
   {
+    // In this case, no data got allocated, so don't try to free it.
+    if (ret == OSQP_DATA_VALIDATION_ERROR || ret == OSQP_SETTINGS_VALIDATION_ERROR)
+      osqp_workspace_ = nullptr;
     throw std::runtime_error("Could not initialize OSQP: error " + std::to_string(ret));
   }
 }
@@ -264,7 +267,15 @@ DblVec OSQPModel::getVarValues(const VarVector& vars) const
 CvxOptStatus OSQPModel::optimize()
 {
   update();
-  createOrUpdateSolver();
+  try
+  {
+    createOrUpdateSolver();
+  }
+  catch (std::exception& e)
+  {
+    std::cout << "OSQP Setup failed with error: " << e.what() << std::endl;
+    return CVX_FAILED;
+  }
 
   // Solve Problem
   const c_int retcode = osqp_solve(osqp_workspace_);
