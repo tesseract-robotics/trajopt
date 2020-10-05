@@ -2,6 +2,7 @@
 
 namespace util
 {
+// NOLINTNEXTLINE
 void CommandParser::read(int argc, char* argv[])
 {
   // create boost options_description based on variables, parser
