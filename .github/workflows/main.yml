@@ -10,32 +10,48 @@ jobs:
       fail-fast: false
       matrix:
         env:
+          - {CI_NAME: Xenial-Build,
+              OS_NAME: ubuntu,
+              OS_CODE_NAME: xenial,
+              ROS_DISTRO: kinetic,
+              ROS_REPO: main,
+              UPSTREAM_WORKSPACE: "github:swri-robotics/descartes_light#master github:Jmeyer1292/opw_kinematics#master github:ethz-adrl/ifopt#master github:ros-industrial/cmake_common_scripts#master",
+              TARGET_WORKSPACE: ". github:ros-industrial-consortium/tesseract#master",
+              ROSDEP_SKIP_KEYS: "bullet3 descartes_opw descartes_samplers descartes_light opw_kinematics cmake_common_scripts fcl ifopt benchmark",
+              DOCKER_IMAGE: "rosindustrial/tesseract:kinetic",
+              PARALLEL_TESTS: false,
+              CCACHE_DIR: "/home/runner/work/trajopt_ros/trajopt_ros/Xenial-Build/.ccache",
+              UPSTREAM_CMAKE_ARGS: "-DCMAKE_BUILD_TYPE=Release",
+              TARGET_CMAKE_ARGS: "-DCMAKE_BUILD_TYPE=Debug -DTRAJOPT_ENABLE_TESTING=ON",
+              AFTER_SCRIPT: 'catkin build -w $target_ws --no-deps --verbose trajopt trajopt_ifopt trajopt_sco trajopt_sqp --make-args test'}
           - {CI_NAME: Bionic-Build,
               OS_NAME: ubuntu,
               OS_CODE_NAME: bionic,
               ROS_DISTRO: melodic,
               ROS_REPO: main,
-              UPSTREAM_WORKSPACE: "github:swri-robotics/descartes_light#master github:Jmeyer1292/opw_kinematics#master github:ethz-adrl/ifopt#master",
+              UPSTREAM_WORKSPACE: "github:swri-robotics/descartes_light#master github:Jmeyer1292/opw_kinematics#master github:ethz-adrl/ifopt#master github:ros-industrial/cmake_common_scripts#master",
               TARGET_WORKSPACE: ". github:ros-industrial-consortium/tesseract#master",
-              ROSDEP_SKIP_KEYS: "bullet3 fcl",
-              DOCKER_IMAGE: "lharmstrong/tesseract:melodic",
+              ROSDEP_SKIP_KEYS: "bullet3 descartes_opw descartes_samplers descartes_light opw_kinematics cmake_common_scripts fcl ifopt",
+              DOCKER_IMAGE: "rosindustrial/tesseract:melodic",
               PARALLEL_TESTS: false,
               CCACHE_DIR: "/home/runner/work/trajopt_ros/trajopt_ros/Bionic-Build/.ccache",
               UPSTREAM_CMAKE_ARGS: "-DCMAKE_BUILD_TYPE=Release",
-              TARGET_CMAKE_ARGS: "-DCMAKE_BUILD_TYPE=Debug"}
+              TARGET_CMAKE_ARGS: "-DCMAKE_BUILD_TYPE=Debug -DTRAJOPT_ENABLE_TESTING=ON",
+              AFTER_SCRIPT: 'catkin build -w $target_ws --no-deps --verbose trajopt trajopt_ifopt trajopt_sco trajopt_sqp --make-args test'}
           - {CI_NAME: Focal-Build,
               OS_NAME: ubuntu,
               OS_CODE_NAME: focal,
               ROS_DISTRO: noetic,
               ROS_REPO: main,
-              UPSTREAM_WORKSPACE: "github:swri-robotics/descartes_light#master github:Jmeyer1292/opw_kinematics#master github:ethz-adrl/ifopt#master",
+              UPSTREAM_WORKSPACE: "github:swri-robotics/descartes_light#master github:Jmeyer1292/opw_kinematics#master github:ethz-adrl/ifopt#master github:ros-industrial/cmake_common_scripts#master",
               TARGET_WORKSPACE: ". github:ros-industrial-consortium/tesseract#master",
-              ROSDEP_SKIP_KEYS: "bullet3 descartes_opw descartes_samplers descartes_light opw_kinematics fcl ifopt",
-              DOCKER_IMAGE: "lharmstrong/tesseract:noetic",
+              ROSDEP_SKIP_KEYS: "bullet3 descartes_opw descartes_samplers descartes_light opw_kinematics cmake_common_scripts fcl ifopt",
+              DOCKER_IMAGE: "rosindustrial/tesseract:noetic",
               PARALLEL_TESTS: false,
               CCACHE_DIR: "/home/runner/work/trajopt_ros/trajopt_ros/Focal-Build/.ccache",
               UPSTREAM_CMAKE_ARGS: "-DCMAKE_BUILD_TYPE=Release",
-              TARGET_CMAKE_ARGS: "-DCMAKE_BUILD_TYPE=Debug"}
+              TARGET_CMAKE_ARGS: "-DCMAKE_BUILD_TYPE=Debug -DTRAJOPT_ENABLE_TESTING=ON",
+              AFTER_SCRIPT: 'catkin build -w $target_ws --no-deps --verbose trajopt trajopt_ifopt trajopt_sco trajopt_sqp --make-args test'}
     steps:
       - uses: actions/checkout@v1
       - name: Free Disk Space
