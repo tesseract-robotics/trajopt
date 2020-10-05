@@ -1,6 +1,6 @@
 # trajopt_ros
 
-[![Build Status](https://travis-ci.com/ros-industrial-consortium/trajopt_ros.svg?branch=master)](https://travis-ci.com/ros-industrial-consortium/trajopt_ros)
+[![Build Status](https://github.com/ros-industrial-consortium/trajopt_ros/workflows/CI/badge.svg)](https://github.com/ros-industrial-consortium/trajopt_ros/actions?query=branch%3Amaster+)
 [![Github Issues](https://img.shields.io/github/issues/ros-industrial-consortium/trajopt_ros.svg)](http://github.com/ros-industrial-consortium/trajopt_ros/issues)
 
 [![license - apache 2.0](https://img.shields.io/:license-Apache%202.0-yellowgreen.svg)](https://opensource.org/licenses/Apache-2.0)
