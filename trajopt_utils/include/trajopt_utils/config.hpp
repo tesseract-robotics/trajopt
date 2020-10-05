@@ -34,7 +34,10 @@ template <typename T>
 struct ParameterVec : ParameterBase
 {
   std::vector<T>* m_value;
-  ParameterVec(std::string name, std::vector<T>* value, std::string desc) : ParameterBase(name, desc), m_value(value) {}
+  ParameterVec(const std::string& name, std::vector<T>* value, const std::string& desc)
+    : ParameterBase(name, desc), m_value(value)
+  {
+  }
   void addToBoost(po::options_description& od) override
   {
     od.add_options()(
@@ -46,7 +49,7 @@ template <typename T>
 struct Parameter : ParameterBase
 {
   T* m_value;
-  Parameter(std::string name, T* value, std::string desc) : ParameterBase(name, desc), m_value(value) {}
+  Parameter(const std::string& name, T* value, const std::string& desc) : ParameterBase(name, desc), m_value(value) {}
   void addToBoost(po::options_description& od) override
   {
     od.add_options()(m_name.c_str(), po::value(m_value)->default_value(*m_value, Str(*m_value)), m_desc.c_str());
@@ -64,6 +67,6 @@ struct CommandParser
   std::vector<Config> configs;
   void addGroup(const Config& config) { configs.push_back(config); }
   CommandParser(const Config& config) { addGroup(config); }
-  void read(int argc, char* argv[]);
+  void read(int argc, char* argv[]);  // NOLINT
 };
 }  // namespace util
