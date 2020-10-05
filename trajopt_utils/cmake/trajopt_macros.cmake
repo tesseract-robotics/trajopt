@@ -94,7 +94,7 @@ macro(trajopt_clang_tidy target)
 
   # Add clang tidy
   if (NOT ${${target}_type} STREQUAL "INTERFACE_LIBRARY")
-    if (TRAJOPT_ENABLE_CLANG_TIDY OR TRAJOPT_ENABLE_TESTING)
+    if (TRAJOPT_ENABLE_CLANG_TIDY)
       find_program(CLANG_TIDY_EXE NAMES "clang-tidy" DOC "Path to clang-tidy executable")
       if(NOT CLANG_TIDY_EXE)
         message(WARNING "clang-tidy not found.")
