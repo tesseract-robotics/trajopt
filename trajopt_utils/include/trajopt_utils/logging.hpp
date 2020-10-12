@@ -16,7 +16,8 @@ enum LogLevel
   LevelTrace = 5
 };
 
-extern LogLevel gLogLevel;
+extern TRAJOPT_API LogLevel gLogLevel;
+
 inline LogLevel GetLogLevel() { return gLogLevel; }
 #define FATAL_PREFIX "\x1b[31m[FATAL] "
 #define ERROR_PREFIX "\x1b[31m[ERROR] "

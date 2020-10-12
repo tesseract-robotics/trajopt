@@ -1,5 +1,9 @@
-cmake_minimum_required(VERSION 3.5.0)
+cmake_minimum_required(VERSION 3.10.0)
 project(trajopt VERSION 0.1.0 LANGUAGES CXX)
+
+if(WIN32)
+  set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
+endif()
 
 find_package(Eigen3 REQUIRED)
 find_package(Boost COMPONENTS system thread program_options REQUIRED)
@@ -9,6 +13,10 @@ find_package(trajopt_utils REQUIRED)
 find_package(tesseract REQUIRED)
 find_package(tesseract_visualization REQUIRED)
 find_package(jsoncpp REQUIRED)
+find_package(cmake_common_scripts REQUIRED)
+
+# Load variable for clang tidy args, compiler options and cxx version
+trajopt_variables()
 
 link_directories(
     /usr/local/lib
@@ -26,7 +34,7 @@ set(TRAJOPT_SOURCE_FILES
     src/file_write_callback.cpp
 )
 
-add_library(${PROJECT_NAME} SHARED ${TRAJOPT_SOURCE_FILES})
+add_library(${PROJECT_NAME} ${TRAJOPT_SOURCE_FILES})
 target_link_libraries(${PROJECT_NAME} PUBLIC
     trajopt::trajopt_sco
     trajopt::trajopt_utils
@@ -35,8 +43,8 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
     console_bridge
     ${Boost_SYSTEM_LIBRARY}
     jsoncpp_lib)
-trajopt_target_compile_options(${PROJECT_NAME} PUBLIC)
-trajopt_clang_tidy(${PROJECT_NAME})
+target_compile_definitions(${PROJECT_NAME} PUBLIC ${TRAJOPT_COMPILE_DEFINITIONS})
+target_cxx_version(${PROJECT_NAME} PUBLIC VERSION ${TRAJOPT_CXX_VERSION})
 target_include_directories(${PROJECT_NAME} PUBLIC
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
     "$<INSTALL_INTERFACE:include>")
@@ -44,15 +52,13 @@ target_include_directories(${PROJECT_NAME} SYSTEM PUBLIC
     ${EIGEN3_INCLUDE_DIRS}
     ${Boost_INCLUDE_DIRS})
 
-trajopt_configure_package(${PROJECT_NAME})
-
 # Install test data directory for use in other packages
 add_library(${PROJECT_NAME}_test_data INTERFACE)
 target_link_libraries(${PROJECT_NAME}_test_data INTERFACE)
-target_compile_definitions(${PROJECT_NAME}_test_data INTERFACE TRAJOPT_DIR="${CMAKE_INSTALL_PREFIX}/share/${PROJECT_NAME}")
+target_compile_definitions(${PROJECT_NAME}_test_data INTERFACE ${TRAJOPT_COMPILE_DEFINITIONS} TRAJOPT_DIR="${CMAKE_INSTALL_PREFIX}/share/${PROJECT_NAME}")
+target_cxx_version(${PROJECT_NAME}_test_data INTERFACE VERSION ${TRAJOPT_CXX_VERSION})
 
-trajopt_target_compile_options(${PROJECT_NAME}_test_data INTERFACE)
-trajopt_configure_package(${PROJECT_NAME}_test_data)
+configure_package(NAMESPACE trajopt TARGETS ${PROJECT_NAME} ${PROJECT_NAME}_test_data)
 
 foreach(dir test/data)
    install(DIRECTORY ${dir}/
@@ -69,7 +75,7 @@ install(DIRECTORY include/${PROJECT_NAME}
 
 if (TRAJOPT_ENABLE_TESTING)
   enable_testing()
-  trajopt_add_run_tests_target()
+  add_run_tests_target(ENABLE ${TRAJOPT_ENABLE_RUN_TESTING})
   add_subdirectory(test)
 endif()
 

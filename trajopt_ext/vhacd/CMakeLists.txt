@@ -1,10 +1,14 @@
-cmake_minimum_required(VERSION 3.5.0)
+cmake_minimum_required(VERSION 3.10.0)
 project(vhacd VERSION 0.1.0 LANGUAGES CXX)
 
 find_package(Bullet REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(OpenMP REQUIRED)
 find_package(trajopt_utils REQUIRED)
+find_package(cmake_common_scripts REQUIRED)
+
+# Load variable for clang tidy args, compiler options and cxx version
+trajopt_variables()
 
 option(NO_OPENCL "NO_OPENCL" OFF)
 message("NO_OPENCL " ${NO_OPENCL})
@@ -27,8 +31,8 @@ if(NOT TARGET OpenMP::OpenMP_CXX)
 
 endif()
 
-add_library(${PROJECT_NAME} SHARED ${PROJECT_CPP_FILES} ${PROJECT_C_FILES} ${PROJECT_INC_FILES} ${PROJECT_INL_FILES} ${PROJECT_CL_FILES})
-trajopt_target_compile_options(${PROJECT_NAME} PUBLIC)
+add_library(${PROJECT_NAME} ${PROJECT_CPP_FILES} ${PROJECT_C_FILES} ${PROJECT_INC_FILES} ${PROJECT_INL_FILES} ${PROJECT_CL_FILES})
+target_cxx_version(${PROJECT_NAME} PUBLIC VERSION ${TRAJOPT_CXX_VERSION})
 
 if (OpenCL_FOUND)
     target_include_directories(${PROJECT_NAME} PRIVATE "${OpenCL_INCLUDE_DIR}")
@@ -46,7 +50,7 @@ target_include_directories(${PROJECT_NAME} SYSTEM PUBLIC
     ${EIGEN3_INCLUDE_DIRS}
     ${BULLET_INCLUDE_DIRS})
 
-trajopt_configure_package(${PROJECT_NAME})
+configure_package(NAMESPACE trajopt TARGETS ${PROJECT_NAME})
 
 install(FILES ${PROJECT_INC_FILES} DESTINATION include/${PROJECT_NAME})
 install(FILES ${PROJECT_INL_FILES} DESTINATION include/${PROJECT_NAME})

@@ -8,6 +8,7 @@
   <author>Levi Armstrong</author>
   <author>Matthew Powelson</author>
 
+  <build_depend>cmake_common_scripts</build_depend>
   <depend>libconsole-bridge-dev</depend>
   <depend>ifopt</depend>
   <depend>osqp_eigen</depend>

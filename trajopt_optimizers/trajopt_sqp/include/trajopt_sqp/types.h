@@ -77,6 +77,8 @@ struct SQPParameters
 /** @brief This struct contains information and results for the SQP problem */
 struct SQPResults
 {
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
   SQPResults(Eigen::Index num_vars, Eigen::Index num_cnts)
   {
     best_constraint_violations = Eigen::VectorXd::Zero(num_cnts);

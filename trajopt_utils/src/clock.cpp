@@ -1,40 +1,25 @@
 #include <trajopt_utils/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
-#include <sys/time.h>
-#include <ctime>
+#include <chrono>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt_utils/clock.hpp>
 
 namespace util
 {
-static long unsigned int startTime = 0;
+static thread_local std::chrono::time_point<std::chrono::high_resolution_clock> start_time;
 
 /*
  * Starts the clock!  Call this once at the beginning of the program.
- * Calling again will reset the clock to 0;  but doing so is not
- * thread-safe if other threads may be calling GetClock(); (which
- * is thread-safe since it only reads values and calls thread-safe
- * functions in the kernel).
+ * Calling again will reset the clock to 0. It store the time in a thread local.
  */
-// time in units of seconds since some time in the past
-void StartClock()
-{
-  // determine start time
-  struct timeval startTimeStruct;
-  gettimeofday(&startTimeStruct, nullptr);
-  startTime = static_cast<unsigned long>(startTimeStruct.tv_sec * 1e6l + startTimeStruct.tv_usec);
-}
+// time in units of milliseconds since some time in the past
+void StartClock() { start_time = std::chrono::high_resolution_clock::now(); }
 
-/*
- * Returns the current time since the call to StartClock();
- */
+/** @brief Returns the current time since the call to StartClock() in milliseconds */
 double GetClock()
 {
-  struct timeval startTimeStruct;
-  unsigned long int curTime;
-  gettimeofday(&startTimeStruct, nullptr);
-  curTime = static_cast<unsigned long>(startTimeStruct.tv_sec * 1e6l + startTimeStruct.tv_usec);
-  return (1e-6) * static_cast<double>(curTime - startTime);
+  auto current_time = std::chrono::high_resolution_clock::now();
+  return std::chrono::duration<double, std::milli>(current_time - start_time).count();
 }
 }  // namespace util

@@ -30,9 +30,9 @@ public:
   using Ptr = std::shared_ptr<ConvexObjective>;
 
   ConvexObjective(Model* model) : model_(model) {}
-  ~ConvexObjective();
-  ConvexObjective(const ConvexObjective&) = default;
-  ConvexObjective& operator=(const ConvexObjective&) = default;
+  virtual ~ConvexObjective();
+  ConvexObjective(const ConvexObjective&) = delete;
+  ConvexObjective& operator=(const ConvexObjective&) = delete;
   ConvexObjective(ConvexObjective&&) = default;
   ConvexObjective& operator=(ConvexObjective&&) = default;
 
@@ -59,10 +59,6 @@ public:
   // INEQ Constraints
   AffExprVector ineqs_;
   CntVector cnts_;
-
-private:
-  ConvexObjective() = default;
-  ConvexObjective(ConvexObjective&) {}
 };
 
 /**
@@ -75,6 +71,8 @@ public:
   using Ptr = std::shared_ptr<ConvexConstraints>;
 
   ConvexConstraints(Model* model) : model_(model) {}
+  virtual ~ConvexConstraints();
+
   /** Expression that should == 0 */
   void addEqCnt(const AffExpr&);
   /** Expression that should <= 0 */
@@ -91,7 +89,6 @@ public:
   DblVec violations(const DblVec& x);
   double violation(const DblVec& x);
 
-  ~ConvexConstraints();
   AffExprVector eqs_;
   AffExprVector ineqs_;
 
@@ -202,8 +199,8 @@ public:
 
   OptProb(ModelType convex_solver = ModelType::AUTO_SOLVER);
   virtual ~OptProb() = default;
-  OptProb(const OptProb&) = default;
-  OptProb& operator=(const OptProb&) = default;
+  OptProb(const OptProb&) = delete;
+  OptProb& operator=(const OptProb&) = delete;
   OptProb(OptProb&&) = default;
   OptProb& operator=(OptProb&&) = default;
 
@@ -264,8 +261,6 @@ protected:
   std::vector<Cost::Ptr> costs_;
   std::vector<Constraint::Ptr> eqcnts_;
   std::vector<Constraint::Ptr> ineqcnts_;
-
-  OptProb(OptProb&);
 };
 
 template <typename VecType>

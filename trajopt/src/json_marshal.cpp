@@ -1,6 +1,6 @@
 #include <trajopt_utils/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
-#include <jsoncpp/json/json.h>
+#include <json/json.h>
 #include <stdexcept>
 TRAJOPT_IGNORE_WARNINGS_POP
 
