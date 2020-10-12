@@ -182,8 +182,10 @@ BasicTrustRegionSQPParameters::BasicTrustRegionSQPParameters()
   log_dir = "/tmp";
 }
 
-BasicTrustRegionSQP::BasicTrustRegionSQP(OptProb::Ptr prob) { setProblem(std::move(prob)); }
-void BasicTrustRegionSQP::setProblem(OptProb::Ptr prob)
+BasicTrustRegionSQP::BasicTrustRegionSQP(const OptProb::Ptr& prob) { ctor(prob); }
+void BasicTrustRegionSQP::setProblem(OptProb::Ptr prob) { ctor(prob); }
+
+void BasicTrustRegionSQP::ctor(const OptProb::Ptr& prob)
 {
   Optimizer::setProblem(prob);
   model_ = prob->getModel();

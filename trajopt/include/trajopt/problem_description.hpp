@@ -39,7 +39,7 @@ enum TermType
  * Holds all the data for a trajectory optimization problem
  * so you can modify it programmatically, e.g. add your own costs
  */
-class TRAJOPT_API TrajOptProb : public sco::OptProb
+class TrajOptProb : public sco::OptProb
 {
 public:
   using Ptr = std::shared_ptr<TrajOptProb>;
@@ -47,8 +47,8 @@ public:
   TrajOptProb();
   TrajOptProb(int n_steps, const ProblemConstructionInfo& pci);
   ~TrajOptProb() override = default;
-  TrajOptProb(const TrajOptProb&) = default;
-  TrajOptProb& operator=(const TrajOptProb&) = default;
+  TrajOptProb(const TrajOptProb&) = delete;
+  TrajOptProb& operator=(const TrajOptProb&) = delete;
   TrajOptProb(TrajOptProb&&) = default;
   TrajOptProb& operator=(TrajOptProb&&) = default;
 
@@ -80,10 +80,10 @@ private:
   TrajArray m_init_traj;
 };
 
-// void TRAJOPT_API SetupPlotting(TrajOptProb& prob, Optimizer& opt); TODO: Levi
+// void  SetupPlotting(TrajOptProb& prob, Optimizer& opt); TODO: Levi
 // Fix
 
-struct TRAJOPT_API TrajOptResult
+struct TrajOptResult
 {
   using Ptr = std::shared_ptr<TrajOptResult>;
 
@@ -142,10 +142,10 @@ struct InitInfo
   double dt = 1.0;
 };
 
-struct TRAJOPT_API MakesCost
+struct MakesCost
 {
 };
-struct TRAJOPT_API MakesConstraint
+struct MakesConstraint
 {
 };
 
@@ -154,7 +154,7 @@ When cost or constraint element of JSON doc is read, one of these guys gets
 constructed to hold the parameters.
 Then it later gets converted to a Cost object by the hatch method
 */
-struct TRAJOPT_API TermInfo
+struct TermInfo
 {
   using Ptr = std::shared_ptr<TermInfo>;
 
@@ -190,7 +190,7 @@ private:
 /**
 This object holds all the data that's read from the JSON document
 */
-struct TRAJOPT_API ProblemConstructionInfo
+struct ProblemConstructionInfo
 {
 public:
   BasicInfo basic_info;
@@ -616,10 +616,10 @@ struct TotalTimeTermInfo : public TermInfo
   TotalTimeTermInfo() : TermInfo(TT_COST | TT_CNT | TT_USE_TIME) {}
 };
 
-TrajOptProb::Ptr TRAJOPT_API ConstructProblem(const ProblemConstructionInfo&);
-TrajOptProb::Ptr TRAJOPT_API ConstructProblem(const Json::Value&, const tesseract::Tesseract::ConstPtr& tesseract);
-TrajOptResult::Ptr TRAJOPT_API OptimizeProblem(const TrajOptProb::Ptr&,
-                                               const tesseract_visualization::Visualization::Ptr& plotter = nullptr);
+TrajOptProb::Ptr ConstructProblem(const ProblemConstructionInfo&);
+TrajOptProb::Ptr ConstructProblem(const Json::Value&, const tesseract::Tesseract::ConstPtr& tesseract);
+TrajOptResult::Ptr OptimizeProblem(const TrajOptProb::Ptr&,
+                                   const tesseract_visualization::Visualization::Ptr& plotter = nullptr);
 
 /**
  * @brief Applies a cost to avoid kinematic singularities

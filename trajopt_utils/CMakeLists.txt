@@ -1,9 +1,18 @@
-cmake_minimum_required(VERSION 3.5.0)
+cmake_minimum_required(VERSION 3.10.0)
 project(trajopt_utils VERSION 0.1.0 LANGUAGES CXX)
+
 include(cmake/trajopt_macros.cmake)
+
+if(WIN32)
+  set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
+endif()
 
 find_package(Eigen3 REQUIRED)
 find_package(Boost COMPONENTS system thread program_options REQUIRED)
+find_package(cmake_common_scripts REQUIRED)
+
+# Load variable for clang tidy args, compiler options and cxx version
+trajopt_variables()
 
 set(UTILS_SOURCE_FILES
     src/stl_to_string.cpp
@@ -12,10 +21,12 @@ set(UTILS_SOURCE_FILES
     src/logging.cpp
 )
 
-add_library(${PROJECT_NAME} SHARED ${UTILS_SOURCE_FILES})
+add_library(${PROJECT_NAME} ${UTILS_SOURCE_FILES})
 target_link_libraries(${PROJECT_NAME} PUBLIC ${Boost_LIBRARIES})
-trajopt_target_compile_options(${PROJECT_NAME} PUBLIC)
-trajopt_clang_tidy(${PROJECT_NAME})
+target_compile_options(${PROJECT_NAME} PRIVATE ${TRAJOPT_COMPILE_OPTIONS_PRIVATE})
+target_compile_definitions(${PROJECT_NAME} PUBLIC ${TRAJOPT_COMPILE_DEFINITIONS})
+target_cxx_version(${PROJECT_NAME} PUBLIC VERSION ${TRAJOPT_CXX_VERSION})
+target_clang_tidy(${PROJECT_NAME} ARGUMENTS ${TRAJOPT_CLANG_TIDY_ARGS} ENABLE ${TRAJOPT_ENABLE_CLANG_TIDY})
 target_include_directories(${PROJECT_NAME} PUBLIC
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
     "$<INSTALL_INTERFACE:include>")
@@ -23,7 +34,7 @@ target_include_directories(${PROJECT_NAME} SYSTEM PUBLIC
     ${EIGEN3_INCLUDE_DIRS}
     ${Boost_INCLUDE_DIRS})
 
-trajopt_configure_package(${PROJECT_NAME})
+configure_package(NAMESPACE trajopt TARGETS ${PROJECT_NAME})
 
 # Mark cpp header files for installation
 install(DIRECTORY include/${PROJECT_NAME}

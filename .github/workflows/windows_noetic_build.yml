@@ -1,0 +1,47 @@
+name: Windows-Noetic-Build
+
+on:
+  push:
+    branches:
+      - master
+      - feature/CommandLanguage
+  pull_request:
+  schedule:
+    - cron: '0 5 * * *'
+
+jobs:
+  windows_ci:
+    name: Noetic
+    runs-on: windows-latest
+    env:
+      ROS_DISTRO: noetic
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        submodules: recursive
+        path: src/trajopt_ros
+    - name: Build
+      shell: cmd
+      run: |
+        choco sources add -n=roswin -s https://aka.ms/ros/public --priority 1
+        choco install ros-%ROS_DISTRO%-desktop_full -y --no-progress
+
+        call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\Tools\VsDevCmd.bat" -arch=amd64 -host_arch=amd64
+        call "C:\opt\ros\%ROS_DISTRO%\x64\setup.bat"
+
+        choco install console_bridge -y --no-progress
+        choco install clapack -y --no-progress
+        choco install openblas -y --no-progress
+
+        set PATH=D:\a\trajopt_ros\trajopt_ros\install_isolated\bin;C:\opt\rosdeps\x64\bin;C:\opt\rosdeps\x64\lib;%PATH%
+        set LD_LIBRARY_PATH=D:\a\trajopt_ros\trajopt_ros\install_isolated\lib;C:\opt\rosdeps\x64\lib;%LD_LIBRARY_PATH%
+        set CMAKE_PREFIX_PATH=D:\a\trajopt_ros\trajopt_ros\install_isolated\CMake;C:\opt\rosdeps\x64;%CMAKE_PREFIX_PATH%
+        set PKG_CONFIG_PATH=D:\a\trajopt_ros\trajopt_ros\install_isolated\lib\pkgconfig;C:\opt\rosdeps\x64\lib\pkgconfig;%PKG_CONFIG_PATH%
+
+        set
+
+        vcs import --input "${{ github.workspace }}/src/trajopt_ros/dependencies.rosinstall" src/
+
+        catkin_make_isolated --install --force-cmake --only-pkg-with-deps trajopt trajopt_ifopt trajopt_sco trajopt_sqp --cmake-args -DCMAKE_BUILD_TYPE=Release -DBUILD_IPOPT=OFF -DBUILD_SNOPT=OFF
+        call "D:\a\trajopt_ros\trajopt_ros\install_isolated\setup.bat"
+        catkin_make_isolated --install --force-cmake --pkg trajopt trajopt_sco --cmake-args -DCMAKE_BUILD_TYPE=Release -DBUILD_IPOPT=OFF -DBUILD_SNOPT=OFF -DTRAJOPT_ENABLE_TESTING=ON --make-args test

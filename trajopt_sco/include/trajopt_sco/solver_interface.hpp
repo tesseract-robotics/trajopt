@@ -1,14 +1,16 @@
 #pragma once
+
 #include <trajopt_utils/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <cassert>
 #include <iosfwd>
-#include <jsoncpp/json/json.h>
+#include <json/json.h>
 #include <limits>
 #include <string>
 #include <vector>
 #include <memory>
 TRAJOPT_IGNORE_WARNINGS_POP
+
 #include <trajopt_sco/sco_common.hpp>
 
 /**

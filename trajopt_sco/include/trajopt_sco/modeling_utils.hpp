@@ -2,6 +2,7 @@
 #include <trajopt_sco/modeling.hpp>
 #include <trajopt_sco/num_diff.hpp>
 #include <trajopt_sco/sco_common.hpp>
+
 /**
 @file modeling_utils.hpp
 @brief Build problem from user-defined functions

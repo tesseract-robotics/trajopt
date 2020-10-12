@@ -6,6 +6,7 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt_sco/modeling.hpp>
+
 /*
  * Algorithms for non-convex, constrained optimization
  */
@@ -45,6 +46,7 @@ struct OptResults
   }
   OptResults() { clear(); }
 };
+
 std::ostream& operator<<(std::ostream& o, const OptResults& r);
 
 class Optimizer
@@ -228,7 +230,7 @@ public:
   using Ptr = std::shared_ptr<BasicTrustRegionSQP>;
 
   BasicTrustRegionSQP() = default;
-  BasicTrustRegionSQP(OptProb::Ptr prob);
+  BasicTrustRegionSQP(const OptProb::Ptr& prob);
   void setProblem(OptProb::Ptr prob) override;
   void setParameters(const BasicTrustRegionSQPParameters& param) { param_ = param; }
   const BasicTrustRegionSQPParameters& getParameters() const { return param_; }
@@ -236,6 +238,7 @@ public:
   OptStatus optimize() override;
 
 protected:
+  void ctor(const OptProb::Ptr& prob);
   void adjustTrustRegion(double ratio);
   void setTrustBoxConstraints(const DblVec& x);
   Model::Ptr model_;

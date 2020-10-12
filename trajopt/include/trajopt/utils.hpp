@@ -12,8 +12,8 @@ namespace trajopt
 /**
 Extract trajectory array from solution vector x using indices in array vars
 */
-TrajArray TRAJOPT_API getTraj(const DblVec& x, const VarArray& vars);
-TrajArray TRAJOPT_API getTraj(const DblVec& x, const AffArray& arr);
+TrajArray getTraj(const DblVec& x, const VarArray& vars);
+TrajArray getTraj(const DblVec& x, const AffArray& arr);
 
 inline DblVec trajToDblVec(const TrajArray& x) { return DblVec(x.data(), x.data() + x.rows() * x.cols()); }
 inline Eigen::VectorXd concat(const Eigen::VectorXd& a, const Eigen::VectorXd& b)
@@ -40,13 +40,13 @@ std::vector<T> singleton(const T& x)
   return std::vector<T>(1, x);
 }
 
-void TRAJOPT_API AddVarArrays(sco::OptProb& prob,
-                              int rows,
-                              const std::vector<int>& cols,
-                              const std::vector<std::string>& name_prefix,
-                              const std::vector<VarArray*>& newvars);
+void AddVarArrays(sco::OptProb& prob,
+                  int rows,
+                  const std::vector<int>& cols,
+                  const std::vector<std::string>& name_prefix,
+                  const std::vector<VarArray*>& newvars);
 
-void TRAJOPT_API AddVarArray(sco::OptProb& prob, int rows, int cols, const std::string& name_prefix, VarArray& newvars);
+void AddVarArray(sco::OptProb& prob, int rows, int cols, const std::string& name_prefix, VarArray& newvars);
 
 /** @brief Store Safety Margin Data for a given timestep */
 struct SafetyMarginData

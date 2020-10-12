@@ -1,0 +1,57 @@
+name: Focal-Build
+
+on:
+  push:
+    branches:
+      - master
+      - feature/CommandLanguage
+  pull_request:
+  schedule:
+    - cron: '0 5 * * *'
+
+jobs:
+  industrial_ci:
+    name: Noetic
+    runs-on: ubuntu-latest
+    env:
+      CI_NAME: Focal-Build
+      OS_NAME: ubuntu
+      OS_CODE_NAME: focal
+      ROS_DISTRO: noetic
+      ROS_REPO: main
+      UPSTREAM_WORKSPACE: "github:swri-robotics/descartes_light#feature/CommandLanguage github:Jmeyer1292/opw_kinematics#master github:ethz-adrl/ifopt#master github:ros-industrial/cmake_common_scripts#master"
+      TARGET_WORKSPACE: ". github:ros-industrial-consortium/tesseract#feature/CommandLanguage"
+      ROSDEP_SKIP_KEYS: "bullet3 descartes_opw descartes_samplers descartes_light opw_kinematics cmake_common_scripts fcl ifopt taskflow"
+      DOCKER_IMAGE: "rosindustrial/tesseract:noetic"
+      PARALLEL_TESTS: false
+      CCACHE_DIR: "/home/runner/work/trajopt_ros/trajopt_ros/Focal-Build/.ccache"
+      UPSTREAM_CMAKE_ARGS: "-DCMAKE_BUILD_TYPE=Release"
+      TARGET_CMAKE_ARGS: "-DCMAKE_BUILD_TYPE=Debug -DTRAJOPT_ENABLE_TESTING=ON"
+    steps:
+      - uses: actions/checkout@v1
+
+      - name: Free Disk Space
+        run: |
+          sudo swapoff -a
+          sudo rm -f /swapfile
+          sudo apt clean
+          docker rmi $(docker image ls -aq)
+          df -h
+
+      - name: Prepare ccache timestamp
+        id: ccache_cache_timestamp
+        shell: cmake -P {0}
+        run: |
+          string(TIMESTAMP current_date "%Y-%m-%d-%H;%M;%S" UTC)
+          message("::set-output name=timestamp::${current_date}")
+
+      - name: ccache cache files
+        uses: actions/cache@v1.1.0
+        with:
+          path: ${{ env.CI_NAME }}/.ccache
+          key: ${{ env.CI_NAME }}-ccache-${{ steps.ccache_cache_timestamp.outputs.timestamp }}
+          restore-keys: |
+            ${{ env.CI_NAME }}-ccache-
+
+      - uses: 'ros-industrial/industrial_ci@master'
+        env: ${{env}}
