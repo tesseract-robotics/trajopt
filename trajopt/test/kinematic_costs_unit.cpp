@@ -13,7 +13,6 @@ TRAJOPT_IGNORE_WARNINGS_POP
 #include <trajopt/problem_description.hpp>
 #include <trajopt_sco/optimizers.hpp>
 #include <trajopt_test_utils.hpp>
-#include <trajopt_utils/clock.hpp>
 #include <trajopt_utils/config.hpp>
 #include <trajopt_utils/eigen_conversions.hpp>
 #include <trajopt_utils/logging.hpp>

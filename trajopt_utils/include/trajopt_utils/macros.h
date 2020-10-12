@@ -2,17 +2,47 @@
 #include <iostream>
 
 // clang-format off
+#if defined(__GNUC__) || defined(__clang__)
+
+#define DEPRECATED(X) __attribute__((deprecated(X)))
+
+#if defined(__clang__)
+#define TRAJOPT_IGNORE_WARNINGS_PUSH				                                                                           \
+  _Pragma("GCC diagnostic push") _Pragma("GCC diagnostic ignored \"-Wall\"")                                           \
+     _Pragma("GCC diagnostic ignored \"-Wint-to-pointer-cast\"")		                                                   \
+         _Pragma("GCC diagnostic ignored \"-Wunused-parameter\"")		                                                   \
+             _Pragma("GCC diagnostic ignored \"-Winconsistent-missing-override\"")	                                   \
+                 _Pragma("GCC diagnostic ignored \"-Wconversion\"")			                                               \
+                     _Pragma("GCC diagnostic ignored \"-Wfloat-conversion\"")		                                       \
+                         _Pragma("GCC diagnostic ignored \"-Wignored-qualifiers\"")                                    \
+                             _Pragma("GCC diagnostic ignored \"-Wclass-memaccess\"")                                   \
+                                 _Pragma("GCC diagnostic ignored \"-Wsign-conversion\"")
+#else
 #define TRAJOPT_IGNORE_WARNINGS_PUSH                                                                                   \
   _Pragma("GCC diagnostic push") _Pragma("GCC diagnostic ignored \"-Wall\"")                                           \
       _Pragma("GCC diagnostic ignored \"-Wint-to-pointer-cast\"")                                                      \
           _Pragma("GCC diagnostic ignored \"-Wunused-parameter\"")                                                     \
-              _Pragma("GCC diagnostic ignored \"-Wconversion\"")                                                       \
-                  _Pragma("GCC diagnostic ignored \"-Wfloat-conversion\"")                                             \
-                      _Pragma("GCC diagnostic ignored \"-Wsign-conversion\"")                                          \
-                           _Pragma("GCC diagnostic ignored \"-Wstrict-aliasing\"")                                     \
-                               _Pragma("GCC diagnostic ignored \"-Wimplicit-fallthrough\"")
+              _Pragma("GCC diagnostic ignored \"-Wsuggest-override\"")                                                 \
+                  _Pragma("GCC diagnostic ignored \"-Wconversion\"")                                                   \
+                      _Pragma("GCC diagnostic ignored \"-Wfloat-conversion\"")                                         \
+                          _Pragma("GCC diagnostic ignored \"-Wsign-conversion\"")                                      \
+                              _Pragma("GCC diagnostic ignored \"-Wstrict-aliasing\"")                                  \
+                                  _Pragma("GCC diagnostic ignored \"-Wignored-qualifiers\"")                           \
+                                      _Pragma("GCC diagnostic ignored \"-Wimplicit-fallthrough\"")
+#endif
 
 #define TRAJOPT_IGNORE_WARNINGS_POP _Pragma("GCC diagnostic pop")
+
+#elif defined(_MSC_VER)
+#define DEPRECATED(X) __declspec(deprecated(X))
+#define TRAJOPT_IGNORE_WARNINGS_PUSH
+#define TRAJOPT_IGNORE_WARNINGS_POP
+#else
+#pragma message("WARNING: You need to implement MACROS for this compiler")
+#define DEPRECATED(X)
+#define TRAJOPT_IGNORE_WARNINGS_PUSH
+#define TRAJOPT_IGNORE_WARNINGS_POP
+#endif
 
 #define UNUSED(x) (void)(x)
 
@@ -55,10 +85,10 @@
 #define PRINT_AND_THROW(s)                                                                                             \
   do                                                                                                                   \
   {                                                                                                                    \
-    std::cerr << "\033[1;31mERROR " << (s) << "\033[0m\n";                                                               \
+    std::cerr << "\033[1;31mERROR " << (s) << "\033[0m\n";                                                             \
     std::cerr << "at " << __FILE__ << ":" << __LINE__ << std::endl;                                                    \
     std::stringstream ss;                                                                                              \
-    ss << (s);                                                                                                           \
+    ss << (s);                                                                                                         \
     throw std::runtime_error(ss.str());                                                                                \
   } while (0)
 #define FAIL_IF_FALSE(expr)                                                                                            \

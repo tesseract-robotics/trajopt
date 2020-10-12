@@ -55,6 +55,12 @@ bool TrustRegionSQPSolver::init(ifopt::Problem& nlp)
   return true;
 }
 
+void TrustRegionSQPSolver::registerCallback(const SQPCallback::Ptr& callback) { callbacks_.push_back(callback); }
+
+const SQPStatus& TrustRegionSQPSolver::getStatus() { return status_; }
+
+const SQPResults& TrustRegionSQPSolver::getResults() { return results_; }
+
 void TrustRegionSQPSolver::Solve(ifopt::Problem& nlp)
 {
   // Initialize solver

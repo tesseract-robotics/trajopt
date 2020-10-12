@@ -1,6 +1,5 @@
 #pragma once
 #include <trajopt_sco/solver_interface.hpp>
-#include <trajopt_utils/macros.h>
 
 namespace sco
 {

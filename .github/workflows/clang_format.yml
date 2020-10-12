@@ -1,0 +1,53 @@
+name: Clang-Format
+
+on:
+  push:
+    branches:
+      - master
+      - feature/CommandLanguage
+  pull_request:
+  schedule:
+    - cron: '0 5 * * *'
+
+jobs:
+  industrial_ci:
+    name: Format
+    runs-on: ubuntu-latest
+    env:
+      CI_NAME: Clang-Format
+      OS_NAME: ubuntu
+      OS_CODE_NAME: bionic
+      ROS_DISTRO: melodic
+      ROS_REPO: main
+      ROSDEP_SKIP_KEYS: "bullet3 descartes_opw descartes_samplers descartes_light opw_kinematics cmake_common_scripts fcl ifopt taskflow benchmark"
+      CLANG_FORMAT_CHECK: file
+      CLANG_FORMAT_VERSION: 8
+      DOCKER_IMAGE: "rosindustrial/tesseract:melodic"
+    steps:
+      - uses: actions/checkout@v1
+
+      - name: Free Disk Space
+        run: |
+          sudo swapoff -a
+          sudo rm -f /swapfile
+          sudo apt clean
+          docker rmi $(docker image ls -aq)
+          df -h
+
+      - name: Prepare ccache timestamp
+        id: ccache_cache_timestamp
+        shell: cmake -P {0}
+        run: |
+          string(TIMESTAMP current_date "%Y-%m-%d-%H;%M;%S" UTC)
+          message("::set-output name=timestamp::${current_date}")
+
+      - name: ccache cache files
+        uses: actions/cache@v1.1.0
+        with:
+          path: ${{ env.CI_NAME }}/.ccache
+          key: ${{ env.CI_NAME }}-ccache-${{ steps.ccache_cache_timestamp.outputs.timestamp }}
+          restore-keys: |
+            ${{ env.CI_NAME }}-ccache-
+
+      - uses: 'ros-industrial/industrial_ci@master'
+        env: ${{env}}

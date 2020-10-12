@@ -3,7 +3,7 @@
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <Eigen/Eigen>
 #include <boost/format.hpp>
-#include <jsoncpp/json/json.h>
+#include <json/json.h>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -11,12 +11,12 @@ TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace json_marshal
 {
-TRAJOPT_API void fromJson(const Json::Value& v, bool& ref);
-TRAJOPT_API void fromJson(const Json::Value& v, int& ref);
-TRAJOPT_API void fromJson(const Json::Value& v, double& ref);
-TRAJOPT_API void fromJson(const Json::Value& v, std::string& ref);
-TRAJOPT_API void fromJson(const Json::Value& v, Eigen::Vector3d& ref);
-TRAJOPT_API void fromJson(const Json::Value& v, Eigen::Vector4d& ref);
+void fromJson(const Json::Value& v, bool& ref);
+void fromJson(const Json::Value& v, int& ref);
+void fromJson(const Json::Value& v, double& ref);
+void fromJson(const Json::Value& v, std::string& ref);
+void fromJson(const Json::Value& v, Eigen::Vector3d& ref);
+void fromJson(const Json::Value& v, Eigen::Vector4d& ref);
 
 template <class T>
 inline void fromJson(const Json::Value& v, T& ref)

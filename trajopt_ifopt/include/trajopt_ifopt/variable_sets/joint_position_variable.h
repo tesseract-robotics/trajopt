@@ -26,11 +26,14 @@
 #ifndef TRAJOPT_IFOPT_JOINT_POSITION_VARIABLE_H
 #define TRAJOPT_IFOPT_JOINT_POSITION_VARIABLE_H
 
+#include <trajopt_utils/macros.h>
+TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <ifopt/variable_set.h>
 #include <ifopt/bounds.h>
-#include <trajopt_ifopt/utils/ifopt_utils.h>
-
 #include <Eigen/Eigen>
+TRAJOPT_IGNORE_WARNINGS_POP
+
+#include <trajopt_ifopt/utils/ifopt_utils.h>
 
 namespace trajopt
 {

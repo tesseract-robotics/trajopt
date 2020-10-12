@@ -60,10 +60,7 @@
 #endif
 
 #if defined(__linux__)
-//#include <sys/time.h>
-#include <errno.h>
-#include <time.h>
-#include <unistd.h>
+#include <ctime>
 #include <cassert>
 #define __stdcall
 #endif

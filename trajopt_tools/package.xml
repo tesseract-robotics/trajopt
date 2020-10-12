@@ -9,8 +9,10 @@
 
   <depend>trajopt_utils</depend>
 
-  <depend>bullet3</depend>
+  <build_depend>cmake_common_scripts</build_depend>
   <build_depend>eigen</build_depend>
+  <build_export_depend>eigen</build_export_depend>
+  <depend>bullet3</depend>
   <depend>libconsole-bridge-dev</depend>
   <depend>vhacd</depend>
 

@@ -11,7 +11,6 @@ TRAJOPT_IGNORE_WARNINGS_POP
 #include <trajopt_sco/modeling.hpp>
 #include <trajopt_sco/modeling_utils.hpp>
 #include <trajopt_utils/basic_array.hpp>
-#include <trajopt_utils/macros.h>
 
 namespace trajopt
 {
