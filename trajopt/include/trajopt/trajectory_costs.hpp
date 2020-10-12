@@ -10,7 +10,7 @@ Simple quadratic costs on trajectory
 
 namespace trajopt
 {
-class TRAJOPT_API JointPosEqCost : public sco::Cost
+class JointPosEqCost : public sco::Cost
 {
 public:
   /** @brief Forms error in QuadExpr - independent of penalty type */
@@ -44,7 +44,7 @@ private:
  * @brief The JointVelIneqCost class
  * Assumes that the target is ...
  */
-class TRAJOPT_API JointPosIneqCost : public sco::Cost
+class JointPosIneqCost : public sco::Cost
 {
 public:
   /** @brief Forms error in QuadExpr - independent of penalty type */
@@ -80,7 +80,7 @@ private:
   std::vector<sco::AffExpr> expr_vec_;
 };
 
-class TRAJOPT_API JointPosEqConstraint : public sco::EqConstraint
+class JointPosEqConstraint : public sco::EqConstraint
 {
 public:
   /** @brief Forms error in QuadExpr - independent of penalty type */
@@ -111,7 +111,7 @@ private:
   int last_step_;
 };
 
-class TRAJOPT_API JointPosIneqConstraint : public sco::IneqConstraint
+class JointPosIneqConstraint : public sco::IneqConstraint
 {
 public:
   /** @brief Forms error in QuadExpr - independent of penalty type */
@@ -147,7 +147,7 @@ private:
   std::vector<sco::AffExpr> expr_vec_;
 };
 
-class TRAJOPT_API JointVelEqCost : public sco::Cost
+class JointVelEqCost : public sco::Cost
 {
 public:
   /** @brief Forms error in QuadExpr - independent of penalty type */
@@ -177,7 +177,7 @@ private:
   int last_step_;
 };
 
-class TRAJOPT_API JointVelIneqCost : public sco::Cost
+class JointVelIneqCost : public sco::Cost
 {
 public:
   /** @brief Forms error in QuadExpr - independent of penalty type */
@@ -213,7 +213,7 @@ private:
   std::vector<sco::AffExpr> expr_vec_;
 };
 
-class TRAJOPT_API JointVelEqConstraint : public sco::EqConstraint
+class JointVelEqConstraint : public sco::EqConstraint
 {
 public:
   /** @brief Forms error in QuadExpr - independent of penalty type */
@@ -244,7 +244,7 @@ private:
   int last_step_;
 };
 
-class TRAJOPT_API JointVelIneqConstraint : public sco::IneqConstraint
+class JointVelIneqConstraint : public sco::IneqConstraint
 {
 public:
   /** @brief Forms error in QuadExpr - independent of penalty type */
@@ -280,7 +280,7 @@ private:
   std::vector<sco::AffExpr> expr_vec_;
 };
 
-class TRAJOPT_API JointAccEqCost : public sco::Cost
+class JointAccEqCost : public sco::Cost
 {
 public:
   /** @brief Forms error in QuadExpr - independent of penalty type */
@@ -310,7 +310,7 @@ private:
   int last_step_;
 };
 
-class TRAJOPT_API JointAccIneqCost : public sco::Cost
+class JointAccIneqCost : public sco::Cost
 {
 public:
   /** @brief Forms error in a vector of AffExpr - independent of penalty type */
@@ -346,7 +346,7 @@ private:
   std::vector<sco::AffExpr> expr_vec_;
 };
 
-class TRAJOPT_API JointAccEqConstraint : public sco::EqConstraint
+class JointAccEqConstraint : public sco::EqConstraint
 {
 public:
   /** @brief Forms error in a vector of AffExpr - independent of penalty type */
@@ -377,7 +377,7 @@ private:
   int last_step_;
 };
 
-class TRAJOPT_API JointAccIneqConstraint : public sco::IneqConstraint
+class JointAccIneqConstraint : public sco::IneqConstraint
 {
 public:
   /** @brief Forms error in a vector of AffExpr - independent of penalty type */
@@ -413,7 +413,7 @@ private:
   std::vector<sco::AffExpr> expr_vec_;
 };
 
-class TRAJOPT_API JointJerkEqCost : public sco::Cost
+class JointJerkEqCost : public sco::Cost
 {
 public:
   /** @brief Forms error in QuadExpr - independent of penalty type */
@@ -443,7 +443,7 @@ private:
   int last_step_;
 };
 
-class TRAJOPT_API JointJerkIneqCost : public sco::Cost
+class JointJerkIneqCost : public sco::Cost
 {
 public:
   /** @brief Forms error in a vector of AffExpr - independent of penalty type */
@@ -479,7 +479,7 @@ private:
   std::vector<sco::AffExpr> expr_vec_;
 };
 
-class TRAJOPT_API JointJerkEqConstraint : public sco::EqConstraint
+class JointJerkEqConstraint : public sco::EqConstraint
 {
 public:
   /** @brief Forms error in a vector of AffExpr - independent of penalty type */
@@ -510,7 +510,7 @@ private:
   int last_step_;
 };
 
-class TRAJOPT_API JointJerkIneqConstraint : public sco::IneqConstraint
+class JointJerkIneqConstraint : public sco::IneqConstraint
 {
 public:
   /** @brief Forms error in a vector of AffExpr - independent of penalty type */

@@ -6,6 +6,7 @@
   <maintainer email="levi.armstrong@swri.org">Levi Armstrong</maintainer>
   <license>BSD</license>
 
+  <build_depend>cmake_common_scripts</build_depend>
   <depend>bullet3</depend>
   <depend>trajopt_utils</depend>
 

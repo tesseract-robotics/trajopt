@@ -6,7 +6,7 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <tesseract/tesseract.h>
 #include <tesseract_scene_graph/resource_locator.h>
 #include <tesseract_common/macros.h>
-#include <jsoncpp/json/json.h>
+#include <json/json.h>
 
 #include <boost/filesystem/path.hpp>
 #include <console_bridge/console.h>

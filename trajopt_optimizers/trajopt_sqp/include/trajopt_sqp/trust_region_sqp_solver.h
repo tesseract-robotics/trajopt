@@ -70,7 +70,7 @@ public:
   void printStepInfo() const;
 
   /** @brief Registers an optimization callback */
-  void registerCallback(const SQPCallback::Ptr& callback) { callbacks_.push_back(callback); };
+  void registerCallback(const SQPCallback::Ptr& callback);
 
   /** @brief If true then debug information will be printed to the terminal */
   bool verbose{ false };
@@ -79,10 +79,10 @@ public:
   SQPParameters params;
 
   /** @brief Gets the optimization status (currently unset) */
-  const SQPStatus& getStatus() { return status_; };
+  const SQPStatus& getStatus();
 
   /** @brief Gets the SQP optimization results */
-  const SQPResults& getResults() { return results_; };
+  const SQPResults& getResults();
 
   /** @brief The QP Solver used to solve a single step of the SQP routine  */
   QPSolver::Ptr qp_solver;

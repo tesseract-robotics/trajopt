@@ -1,6 +1,14 @@
 # trajopt_ros
 
-[![Build Status](https://github.com/ros-industrial-consortium/trajopt_ros/workflows/CI/badge.svg)](https://github.com/ros-industrial-consortium/trajopt_ros/actions?query=branch%3Amaster+)
+Platform             | CI Status
+---------------------|:---------
+Linux (Focal)        | [![Build Status](https://github.com/ros-industrial-consortium/trajopt_ros/workflows/Focal-Build/badge.svg)](https://github.com/ros-industrial-consortium/trajopt_ros/actions)
+Linux (Bionic)       | [![Build Status](https://github.com/ros-industrial-consortium/trajopt_ros/workflows/Bionic-Build/badge.svg)](https://github.com/ros-industrial-consortium/trajopt_ros/actions)
+Linux (Xenial)       | [![Build Status](https://github.com/ros-industrial-consortium/trajopt_ros/workflows/Xenial-Build/badge.svg)](https://github.com/ros-industrial-consortium/trajopt_ros/actions)
+Windows              | [![Build Status](https://github.com/ros-industrial-consortium/trajopt_ros/workflows/Windows-Noetic-Build/badge.svg)](https://github.com/ros-industrial-consortium/trajopt_ros/actions)
+Lint  (Clang-Format) | [![Build Status](https://github.com/ros-industrial-consortium/trajopt_ros/workflows/Clang-Format/badge.svg)](https://github.com/ros-industrial-consortium/trajopt_ros/actions)
+
+
 [![Github Issues](https://img.shields.io/github/issues/ros-industrial-consortium/trajopt_ros.svg)](http://github.com/ros-industrial-consortium/trajopt_ros/issues)
 
 [![license - apache 2.0](https://img.shields.io/:license-Apache%202.0-yellowgreen.svg)](https://opensource.org/licenses/Apache-2.0)

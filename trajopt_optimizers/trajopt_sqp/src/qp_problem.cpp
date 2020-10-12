@@ -25,7 +25,6 @@
  */
 #include <trajopt_sqp/qp_problem.h>
 #include <iostream>
-#include <console_bridge/console.h>
 
 namespace trajopt_sqp
 {

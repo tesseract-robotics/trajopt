@@ -30,6 +30,7 @@ public:
   using func = std::function<double(const Eigen::VectorXd&)>;
   static ScalarOfVector::Ptr construct(func f);
 };
+
 class VectorOfVector
 {
 public:
@@ -48,6 +49,7 @@ public:
   using func = std::function<Eigen::VectorXd(const Eigen::VectorXd&)>;
   static VectorOfVector::Ptr construct(func f);
 };
+
 class MatrixOfVector
 {
 public:

@@ -3,7 +3,6 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <cerrno>
 #include <iostream>
 #include <cstring>
-#include <unistd.h>
 #include <trajopt_sco/bpmpd_io.hpp>
 TRAJOPT_IGNORE_WARNINGS_POP
 

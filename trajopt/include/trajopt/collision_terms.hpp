@@ -497,7 +497,7 @@ private:
   std::function<void(const DblVec&, sco::AffExprVector&, AlignedVector<Eigen::Vector2d>&)> fn_;
 };
 
-class TRAJOPT_API CollisionCost : public sco::Cost, public Plotter
+class CollisionCost : public sco::Cost, public Plotter
 {
 public:
   /* constructor for single timestep */
@@ -532,7 +532,7 @@ private:
   CollisionEvaluator::Ptr m_calc;
 };
 
-class TRAJOPT_API CollisionConstraint : public sco::IneqConstraint
+class CollisionConstraint : public sco::IneqConstraint
 {
 public:
   /* constructor for single timestep */

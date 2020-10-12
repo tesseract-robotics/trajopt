@@ -7,9 +7,13 @@
     uri: https://github.com/ros-industrial-consortium/tesseract.git
     version: feature/CommandLanguage
 - git:
+    local-name: tesseract_ext
+    uri: https://github.com/ros-industrial-consortium/tesseract_ext.git
+    version: master
+- git:
     local-name: descartes_light
     uri: https://github.com/swri-robotics/descartes_light.git
-    version: master
+    version: feature/CommandLanguage
 - git:
     local-name: opw_kinematics
     uri: https://github.com/Jmeyer1292/opw_kinematics.git
