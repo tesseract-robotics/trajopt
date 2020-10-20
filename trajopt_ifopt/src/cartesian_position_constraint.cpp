@@ -51,7 +51,7 @@ CartPosConstraint::CartPosConstraint(const Eigen::Isometry3d& target_pose,
   bounds_ = std::vector<ifopt::Bounds>(6, ifopt::BoundZero);
 }
 
-Eigen::VectorXd CartPosConstraint::CalcValues(const Eigen::Ref<Eigen::VectorXd>& joint_vals) const
+Eigen::VectorXd CartPosConstraint::CalcValues(const Eigen::Ref<const Eigen::VectorXd>& joint_vals) const
 {
   Eigen::Isometry3d new_pose;
   kinematic_info_->manip->calcFwdKin(new_pose, joint_vals, kinematic_info_->kin_link->link_name);
@@ -79,11 +79,11 @@ void CartPosConstraint::SetBounds(const std::vector<ifopt::Bounds>& bounds)
   bounds_ = bounds;
 }
 
-void CartPosConstraint::CalcJacobianBlock(const Eigen::Ref<Eigen::VectorXd>& joint_vals, Jacobian& jac_block) const
+void CartPosConstraint::CalcJacobianBlock(const Eigen::Ref<const Eigen::VectorXd>& joint_vals, Jacobian& jac_block) const
 {
   if (use_numeric_differentiation)
   {
-    auto error_calculator = [&](const Eigen::Ref<Eigen::VectorXd>& x) { return this->CalcValues(x); };
+    auto error_calculator = [&](const Eigen::Ref<const Eigen::VectorXd>& x) { return this->CalcValues(x); };
     Jacobian jac0(6, n_dof_);
     jac0 = calcForwardNumJac(error_calculator, joint_vals, 1e-5);
 

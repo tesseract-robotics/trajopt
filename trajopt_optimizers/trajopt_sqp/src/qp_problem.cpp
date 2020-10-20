@@ -264,14 +264,14 @@ void QPProblem::updateSlackVariableBounds()
   }
 }
 
-double QPProblem::evaluateTotalConvexCost(const Eigen::Ref<Eigen::VectorXd>& var_vals)
+double QPProblem::evaluateTotalConvexCost(const Eigen::Ref<const Eigen::VectorXd>& var_vals)
 {
   double result_quad = var_vals.transpose() * hessian_ * var_vals;
   double result_lin = gradient_.transpose() * var_vals;
   return result_quad + result_lin;
 }
 
-Eigen::VectorXd QPProblem::evaluateConvexCosts(const Eigen::Ref<Eigen::VectorXd>& /*var_vals*/)
+Eigen::VectorXd QPProblem::evaluateConvexCosts(const Eigen::Ref<const Eigen::VectorXd>& /*var_vals*/)
 {
   return Eigen::VectorXd();
 }

@@ -953,7 +953,7 @@ void SingleTimestepCollisionEvaluator::CalcCollisions(const DblVec& x,
   CalcCollisions(joint_vals, dist_results);
 }
 
-void SingleTimestepCollisionEvaluator::CalcCollisions(const Eigen::Ref<Eigen::VectorXd>& dof_vals,
+void SingleTimestepCollisionEvaluator::CalcCollisions(const Eigen::Ref<const Eigen::VectorXd>& dof_vals,
                                                       tesseract_collision::ContactResultMap& dist_results)
 {
   tesseract_environment::EnvState::Ptr state = get_state_fn_(manip_->getJointNames(), dof_vals);
@@ -1123,8 +1123,8 @@ void DiscreteCollisionEvaluator::CalcCollisions(const DblVec& x, tesseract_colli
   CalcCollisions(s0, s1, dist_results);
 }
 
-void DiscreteCollisionEvaluator::CalcCollisions(const Eigen::Ref<Eigen::VectorXd>& dof_vals0,
-                                                const Eigen::Ref<Eigen::VectorXd>& dof_vals1,
+void DiscreteCollisionEvaluator::CalcCollisions(const Eigen::Ref<const Eigen::VectorXd>& dof_vals0,
+                                                const Eigen::Ref<const Eigen::VectorXd>& dof_vals1,
                                                 tesseract_collision::ContactResultMap& dist_results)
 {
   // The first step is to see if the distance between two states is larger than the longest valid segment. If larger
@@ -1358,8 +1358,8 @@ void CastCollisionEvaluator::CalcCollisions(const DblVec& x, tesseract_collision
   CalcCollisions(s0, s1, dist_results);
 }
 
-void CastCollisionEvaluator::CalcCollisions(const Eigen::Ref<Eigen::VectorXd>& dof_vals0,
-                                            const Eigen::Ref<Eigen::VectorXd>& dof_vals1,
+void CastCollisionEvaluator::CalcCollisions(const Eigen::Ref<const Eigen::VectorXd>& dof_vals0,
+                                            const Eigen::Ref<const Eigen::VectorXd>& dof_vals1,
                                             tesseract_collision::ContactResultMap& dist_results)
 {
   // The first step is to see if the distance between two states is larger than the longest valid segment. If larger
