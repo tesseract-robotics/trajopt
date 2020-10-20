@@ -34,17 +34,17 @@ TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace trajopt
 {
-using ErrorCalculator = std::function<Eigen::VectorXd(const Eigen::Ref<Eigen::VectorXd>&)>;
+using ErrorCalculator = std::function<Eigen::VectorXd(const Eigen::Ref<const Eigen::VectorXd>&)>;
 using Jacobian = Eigen::SparseMatrix<double, Eigen::RowMajor>;
 
 /**
  * @brief Calculates the jacobian of the given error calculator using forward numeric differentiation
- * @param f Input error calculator, Eigen::VectorXd(const Eigen::Ref<Eigen::VectorXd>&)
+ * @param f Input error calculator, Eigen::VectorXd(const Eigen::Ref<const Eigen::VectorXd>&)
  * @param x Point about which f is calculated
  * @param epsilon Amount x is perturbed
  * @return The resulting jacobian. If f(x) = y, jac.size = [y.size(), x.size()]
  */
-inline Jacobian calcForwardNumJac(const ErrorCalculator& f, const Eigen::Ref<Eigen::VectorXd>& x, double epsilon)
+inline Jacobian calcForwardNumJac(const ErrorCalculator& f, const Eigen::Ref<const Eigen::VectorXd>& x, double epsilon)
 {
   Eigen::VectorXd y = f(x);
   Eigen::MatrixXd out(y.size(), x.size());

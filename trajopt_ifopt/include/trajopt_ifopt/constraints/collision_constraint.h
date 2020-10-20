@@ -50,7 +50,7 @@ public:
                            const std::string& name = "Collision");
 
   /** @brief Calculates the values associated with the constraint */
-  Eigen::VectorXd CalcValues(const Eigen::Ref<Eigen::VectorXd>& joint_vals) const;
+  Eigen::VectorXd CalcValues(const Eigen::Ref<const Eigen::VectorXd>& joint_vals) const;
   /**
    * @brief Returns the values associated with the constraint.
    * @return
@@ -73,7 +73,7 @@ public:
    * @brief Fills the jacobian block associated with the constraint
    * @param jac_block Block of the overall jacobian associated with these constraints
    */
-  void CalcJacobianBlock(const Eigen::Ref<Eigen::VectorXd>& joint_vals, Jacobian& jac_block) const;
+  void CalcJacobianBlock(const Eigen::Ref<const Eigen::VectorXd>& joint_vals, Jacobian& jac_block) const;
   /**
    * @brief Fills the jacobian block associated with the given var_set.
    * @param var_set Name of the var_set to which the jac_block is associated

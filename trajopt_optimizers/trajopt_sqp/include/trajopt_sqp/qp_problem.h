@@ -70,14 +70,14 @@ public:
   /** @brief Evaluates the cost of the convexified function (ie using the stored gradient and hessian) at var_vals
    * @param var_vals Point at which the convex cost is calculated. Should be size num_qp_vars
    */
-  double evaluateTotalConvexCost(const Eigen::Ref<Eigen::VectorXd>& var_vals);
+  double evaluateTotalConvexCost(const Eigen::Ref<const Eigen::VectorXd>& var_vals);
   /** @brief TODO: This is unimplemented, but it will return the cost associated with each of the costs. Note this will
    * be relatively computationally expensive, as we will have to loop through all the cost components in the problem and
    * calculate their values manually.
    * @param var_vals Point at which the convex cost is calculated. Should be size num_qp_vars
    * @return Cost associated with each cost term in the problem (for debugging)
    */
-  Eigen::VectorXd evaluateConvexCosts(const Eigen::Ref<Eigen::VectorXd>& var_vals);
+  Eigen::VectorXd evaluateConvexCosts(const Eigen::Ref<const Eigen::VectorXd>& var_vals);
 
   /**
    * @brief get the current NLP constraint violations. Values > 0 are violations
