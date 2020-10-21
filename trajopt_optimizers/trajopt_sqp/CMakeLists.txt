@@ -37,6 +37,7 @@ target_include_directories(${PROJECT_NAME}
 # This is required for windows not sure why targets are not working on windows.
 target_include_directories(${PROJECT_NAME} SYSTEM PUBLIC ${console_bridge_INCLUDE_DIRS})
 target_compile_options(${PROJECT_NAME} PRIVATE ${TRAJOPT_COMPILE_OPTIONS_PRIVATE})
+target_compile_options(${PROJECT_NAME} PUBLIC ${TRAJOPT_COMPILE_OPTIONS_PUBLIC})
 target_compile_definitions(${PROJECT_NAME} PUBLIC ${TRAJOPT_COMPILE_DEFINITIONS})
 #target_clang_tidy(${PROJECT_NAME} ARGUMENTS ${TRAJOPT_CLANG_TIDY_ARGS} ENABLE ${TRAJOPT_ENABLE_CLANG_TIDY})
 target_cxx_version(${PROJECT_NAME} PUBLIC VERSION ${TRAJOPT_CXX_VERSION})
@@ -55,6 +56,7 @@ target_include_directories(${PROJECT_NAME}_callbacks
 )
 target_link_libraries(${PROJECT_NAME}_callbacks PUBLIC trajopt::trajopt_ifopt tesseract::tesseract_visualization console_bridge osqp::osqp)
 target_compile_options(${PROJECT_NAME}_callbacks PRIVATE ${TRAJOPT_COMPILE_OPTIONS_PRIVATE})
+target_compile_options(${PROJECT_NAME}_callbacks PUBLIC ${TRAJOPT_COMPILE_OPTIONS_PUBLIC})
 target_compile_definitions(${PROJECT_NAME}_callbacks PUBLIC ${TRAJOPT_COMPILE_DEFINITIONS})
 #target_clang_tidy(${PROJECT_NAME}_callbacks ARGUMENTS ${TRAJOPT_CLANG_TIDY_ARGS} ENABLE ${TRAJOPT_ENABLE_CLANG_TIDY})
 target_cxx_version(${PROJECT_NAME}_callbacks PUBLIC VERSION ${TRAJOPT_CXX_VERSION})
