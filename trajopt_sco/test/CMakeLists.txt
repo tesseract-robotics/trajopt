@@ -42,7 +42,7 @@ target_link_libraries(${PROJECT_NAME}-test GTest::GTest GTest::Main ${PROJECT_NA
 if (osqp_FOUND)
     target_link_libraries(${PROJECT_NAME}-test osqp::osqpstatic)
 endif()
-target_compile_options(${PROJECT_NAME}-test PRIVATE ${TRAJOPT_COMPILE_OPTIONS_PRIVATE})
+target_compile_options(${PROJECT_NAME}-test PRIVATE ${TRAJOPT_COMPILE_OPTIONS_PRIVATE} ${TRAJOPT_COMPILE_OPTIONS_PUBLIC})
 target_compile_definitions(${PROJECT_NAME}-test PRIVATE ${TRAJOPT_COMPILE_DEFINITIONS} TRAJOPT_IFOPT_DIR="${CMAKE_SOURCE_DIR}")
 target_cxx_version(${PROJECT_NAME}-test PRIVATE VERSION ${TRAJOPT_CXX_VERSION})
 #target_clang_tidy(${PROJECT_NAME}-test ARGUMENTS ${TRAJOPT_CLANG_TIDY_ARGS} ENABLE ${TRAJOPT_ENABLE_CLANG_TIDY})
