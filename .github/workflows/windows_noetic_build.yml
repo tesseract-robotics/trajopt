@@ -39,8 +39,8 @@ jobs:
 
         catkin_make_isolated --install --force-cmake --only-pkg-with-deps trajopt trajopt_ifopt trajopt_sco trajopt_sqp trajopt_utils --cmake-args -DCMAKE_BUILD_TYPE=Release -DBUILD_IPOPT=OFF -DBUILD_SNOPT=OFF
 
-        : call "D:\a\trajopt_ros\trajopt_ros\install_isolated\setup.bat"
+        call "D:\a\trajopt_ros\trajopt_ros\install_isolated\setup.bat"
 
-        : set
+        set
 
-        : catkin_make_isolated --install --force-cmake --pkg trajopt trajopt_sco --cmake-args -DCMAKE_BUILD_TYPE=Release -DBUILD_IPOPT=OFF -DBUILD_SNOPT=OFF -DTRAJOPT_ENABLE_TESTING=ON --make-args test
+        catkin_make_isolated --install --force-cmake --pkg trajopt trajopt_sco --cmake-args -DCMAKE_BUILD_TYPE=Release -DBUILD_IPOPT=OFF -DBUILD_SNOPT=OFF -DTRAJOPT_ENABLE_TESTING=ON --make-args test
