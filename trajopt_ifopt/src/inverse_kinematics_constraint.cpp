@@ -52,8 +52,9 @@ InverseKinematicsConstraint::InverseKinematicsConstraint(const Eigen::Isometry3d
   bounds_ = std::vector<ifopt::Bounds>(static_cast<std::size_t>(n_dof_), ifopt::BoundZero);
 }
 
-Eigen::VectorXd InverseKinematicsConstraint::CalcValues(const Eigen::Ref<Eigen::VectorXd>& joint_vals,
-                                                        const Eigen::Ref<Eigen::VectorXd>& seed_joint_position) const
+Eigen::VectorXd
+InverseKinematicsConstraint::CalcValues(const Eigen::Ref<const Eigen::VectorXd>& joint_vals,
+                                        const Eigen::Ref<const Eigen::VectorXd>& seed_joint_position) const
 {
   // Get joint position using IK and the seed variable
   Eigen::VectorXd target_joint_position;

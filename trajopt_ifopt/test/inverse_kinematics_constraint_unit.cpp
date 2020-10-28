@@ -106,7 +106,7 @@ TEST_F(InverseKinematicsConstraintUnit, GetValue)  // NOLINT
       EXPECT_EQ(jac_block.coeff(i, i), -1.0);
 
     // Check against numeric differentiation
-    auto error_calculator = [&](const Eigen::Ref<Eigen::VectorXd>& x) {
+    auto error_calculator = [&](const Eigen::Ref<const Eigen::VectorXd>& x) {
       return constraint->CalcValues(x, joint_position_single);
     };
     trajopt::Jacobian num_jac_block = trajopt::calcForwardNumJac(error_calculator, joint_position_single, 1e-4);
