@@ -39,7 +39,7 @@ namespace trajopt
  * @param limits MatrixX2d of bounds. Column 0 will be lower bound. Column 1 will be upper bound
  * @return Vector of ifopt::Bounds
  */
-inline std::vector<ifopt::Bounds> toBounds(const Eigen::Ref<Eigen::MatrixX2d>& limits)
+inline std::vector<ifopt::Bounds> toBounds(const Eigen::Ref<const Eigen::MatrixX2d>& limits)
 {
   std::vector<ifopt::Bounds> bounds;
   for (Eigen::Index i = 0; i < limits.rows(); i++)
@@ -54,8 +54,8 @@ inline std::vector<ifopt::Bounds> toBounds(const Eigen::Ref<Eigen::MatrixX2d>& l
  * @param steps Length of the returned vector
  * @return A vector of Eigen vectors interpolated from start to end
  */
-inline std::vector<Eigen::VectorXd> interpolate(const Eigen::Ref<Eigen::VectorXd>& start,
-                                                const Eigen::Ref<Eigen::VectorXd>& end,
+inline std::vector<Eigen::VectorXd> interpolate(const Eigen::Ref<const Eigen::VectorXd>& start,
+                                                const Eigen::Ref<const Eigen::VectorXd>& end,
                                                 Eigen::Index steps)
 {
   assert(start.size() == end.size());
@@ -76,7 +76,8 @@ inline std::vector<Eigen::VectorXd> interpolate(const Eigen::Ref<Eigen::VectorXd
  * @param bounds Bounds on that vector
  * @return Output vector. If input is outside a bound, force it to the boundary
  */
-inline Eigen::VectorXd getClosestValidPoint(const Eigen::Ref<Eigen::VectorXd>& input, std::vector<ifopt::Bounds> bounds)
+inline Eigen::VectorXd getClosestValidPoint(const Eigen::Ref<const Eigen::VectorXd>& input,
+                                            std::vector<ifopt::Bounds> bounds)
 {
   // Convert Bounds to VectorXds
   Eigen::VectorXd bound_lower(static_cast<Eigen::Index>(bounds.size()));

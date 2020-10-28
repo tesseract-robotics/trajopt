@@ -86,7 +86,7 @@ public:
    * second column being upper bound
    * @param bounds Columns 1/2 are lower/upper bounds. You probably will get this from forward_kinematics->getLimits()
    */
-  void SetBounds(const Eigen::Ref<Eigen::MatrixX2d>& bounds) { bounds_ = toBounds(bounds); }
+  void SetBounds(const Eigen::Ref<const Eigen::MatrixX2d>& bounds) { bounds_ = toBounds(bounds); }
 
   /**
    * @brief Get the joint names associated with this variable set

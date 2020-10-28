@@ -112,8 +112,8 @@ public:
    * @param seed_joint_position Joint values used as the seed when calculating IK
    * @return Distance of each joint from the IK solution
    */
-  Eigen::VectorXd CalcValues(const Eigen::Ref<Eigen::VectorXd>& joint_vals,
-                             const Eigen::Ref<Eigen::VectorXd>& seed_joint_position) const;
+  Eigen::VectorXd CalcValues(const Eigen::Ref<const Eigen::VectorXd>& joint_vals,
+                             const Eigen::Ref<const Eigen::VectorXd>& seed_joint_position) const;
   /**
    * @brief Returns the values associated with the constraint. This is the joint distance from the target joint position
    * (size n_dof_)
@@ -134,7 +134,7 @@ public:
    * @brief Fills the jacobian block associated with the constraint
    * @param jac_block Block of the overall jacobian associated with these constraints
    */
-  void CalcJacobianBlock(const Eigen::Ref<Eigen::VectorXd>& joint_vals, Jacobian& jac_block) const;
+  void CalcJacobianBlock(const Eigen::Ref<const Eigen::VectorXd>& joint_vals, Jacobian& jac_block) const;
   /**
    * @brief Fills the jacobian block associated with the given var_set.
    *

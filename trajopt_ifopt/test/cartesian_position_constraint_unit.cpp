@@ -146,7 +146,7 @@ TEST_F(CartesianPositionConstraintUnit, FillJacobian)  // NOLINT
     nlp.SetVariables(joint_position_mod.data());
 
     // Calculate jacobian numerically
-    auto error_calculator = [&](const Eigen::Ref<Eigen::VectorXd>& x) { return constraint->CalcValues(x); };
+    auto error_calculator = [&](const Eigen::Ref<const Eigen::VectorXd>& x) { return constraint->CalcValues(x); };
     trajopt::Jacobian num_jac_block = trajopt::calcForwardNumJac(error_calculator, joint_position_mod, 1e-4);
 
     // Compare to constraint jacobian

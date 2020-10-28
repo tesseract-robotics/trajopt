@@ -48,7 +48,7 @@ CollisionConstraintIfopt::CollisionConstraintIfopt(SingleTimestepCollisionEvalua
   bounds_ = std::vector<ifopt::Bounds>(1, ifopt::BoundSmallerZero);
 }
 
-Eigen::VectorXd CollisionConstraintIfopt::CalcValues(const Eigen::Ref<Eigen::VectorXd>& joint_vals) const
+Eigen::VectorXd CollisionConstraintIfopt::CalcValues(const Eigen::Ref<const Eigen::VectorXd>& joint_vals) const
 {
   Eigen::VectorXd err = Eigen::VectorXd::Zero(1);
 
@@ -89,7 +89,7 @@ void CollisionConstraintIfopt::SetBounds(const std::vector<ifopt::Bounds>& bound
   bounds_ = bounds;
 }
 
-void CollisionConstraintIfopt::CalcJacobianBlock(const Eigen::Ref<Eigen::VectorXd>& joint_vals,
+void CollisionConstraintIfopt::CalcJacobianBlock(const Eigen::Ref<const Eigen::VectorXd>& joint_vals,
                                                  Jacobian& jac_block) const
 {
   // Reserve enough room in the sparse matrix
