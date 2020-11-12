@@ -35,7 +35,7 @@ TRAJOPT_IGNORE_WARNINGS_POP
 namespace trajopt
 {
 /**
- * @brief Converts a MatrixX2d (e.g. from forward_kinematics->getLimits()) to a vector of ifopt Boounds
+ * @brief Converts a MatrixX2d (e.g. from forward_kinematics->getLimits()) to a vector of ifopt Bounds
  * @param limits MatrixX2d of bounds. Column 0 will be lower bound. Column 1 will be upper bound
  * @return Vector of ifopt::Bounds
  */
@@ -45,6 +45,22 @@ inline std::vector<ifopt::Bounds> toBounds(const Eigen::Ref<const Eigen::MatrixX
   for (Eigen::Index i = 0; i < limits.rows(); i++)
     bounds.emplace_back(limits(i, 0), limits(i, 1));
   return bounds;
+}
+
+/**
+ * @brief Converts 2 VectorXd to a vector of ifopt Bounds
+ * @param lower_limits Lower limits
+ * @param upper_limits Upper limits
+ * @return  Vector of ifopt::Bounds
+ */
+inline std::vector<ifopt::Bounds> toBounds(const Eigen::Ref<const Eigen::VectorXd>& lower_limits,
+                                           const Eigen::Ref<const Eigen::VectorXd>& upper_limits)
+{
+  assert(lower_limits.size() == upper_limits.size());
+  Eigen::MatrixX2d limits(lower_limits.rows(), 2);
+  limits.col(0) = lower_limits;
+  limits.col(1) = upper_limits;
+  return toBounds(limits);
 }
 
 /**
