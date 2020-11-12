@@ -9,9 +9,9 @@ TRAJOPT_IGNORE_WARNINGS_POP
 using namespace trajopt;
 using namespace std;
 
-TEST(UtilsUnit, toBounds)  // NOLINT
+TEST(UtilsUnit, toBoundsMatrixX2d)  // NOLINT
 {
-  CONSOLE_BRIDGE_logDebug("UtilsUnit, toBounds");
+  CONSOLE_BRIDGE_logDebug("UtilsUnit, toBoundsMatrixX2d");
 
   Eigen::MatrixX2d input_bounds(5, 2);
   input_bounds << -1, 1, -2, 2, -3, 3, -4, 4, -5, 5;
@@ -25,6 +25,27 @@ TEST(UtilsUnit, toBounds)  // NOLINT
   {
     EXPECT_EQ(input_bounds(i, 0), results[static_cast<std::size_t>(i)].lower_);
     EXPECT_EQ(input_bounds(i, 1), results[static_cast<std::size_t>(i)].upper_);
+  }
+}
+
+TEST(UtilsUnit, toBoundsVectorXd)  // NOLINT
+{
+  CONSOLE_BRIDGE_logDebug("UtilsUnit, toBoundsVectorXd");
+
+  Eigen::VectorXd lower_bounds(5);
+  Eigen::VectorXd upper_bounds(5);
+  lower_bounds << -1, -2, -3, -4, -5;
+  upper_bounds << 1, 2, 3, 4, 5;
+  std::vector<ifopt::Bounds> results = toBounds(lower_bounds, upper_bounds);
+
+  // Check that the results are the correct size
+  EXPECT_EQ(results.size(), lower_bounds.rows());
+
+  // Check that all bounds were set correctly
+  for (Eigen::Index i = 0; i < lower_bounds.rows(); i++)
+  {
+    EXPECT_EQ(lower_bounds(i), results[static_cast<std::size_t>(i)].lower_);
+    EXPECT_EQ(upper_bounds(i), results[static_cast<std::size_t>(i)].upper_);
   }
 }
 
