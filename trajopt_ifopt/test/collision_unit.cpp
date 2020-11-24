@@ -12,7 +12,6 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt_test_utils.hpp>
-#include <trajopt_utils/logging.hpp>
 #include <trajopt_ifopt/constraints/collision_constraint.h>
 
 using namespace trajopt;
@@ -29,7 +28,7 @@ class CollisionUnit : public testing::TestWithParam<const char*>
 {
 public:
   Environment::Ptr env = std::make_shared<Environment>(); /**< Tesseract */
-  trajopt::SingleTimestepCollisionEvaluator::Ptr collision_evaluator;
+  trajopt::DiscreteCollisionEvaluator::Ptr collision_evaluator;
   ifopt::Problem nlp;
   std::shared_ptr<trajopt::CollisionConstraintIfopt> constraint;
 
@@ -41,29 +40,15 @@ public:
     ResourceLocator::Ptr locator = std::make_shared<SimpleResourceLocator>(locateResource);
     EXPECT_TRUE(env->init<OFKTStateSolver>(urdf_file, srdf_file, locator));
 
-    gLogLevel = util::LevelError;
-
     // Set up collision evaluator
     auto kin = env->getManipulatorManager()->getFwdKinematicSolver("manipulator");
     auto adj_map = std::make_shared<tesseract_environment::AdjacencyMap>(
         env->getSceneGraph(), kin->getActiveLinkNames(), env->getCurrentState()->link_transforms);
 
-    double margin_coeff = 1;
-    double margin = 0.1;
-    trajopt::SafetyMarginData::ConstPtr margin_data = std::make_shared<trajopt::SafetyMarginData>(margin, margin_coeff);
-    double safety_margin_buffer = 0.00;
-    sco::VarVector var_vector;  // unused
+    trajopt::TrajOptCollisionConfig config(0.1, 1);
 
-    collision_evaluator = std::make_shared<trajopt::SingleTimestepCollisionEvaluator>(
-        kin,
-        env,
-        adj_map,
-        Eigen::Isometry3d::Identity(),
-        margin_data,
-        tesseract_collision::ContactTestType::CLOSEST,
-        var_vector,
-        trajopt::CollisionExpressionEvaluatorType::SINGLE_TIME_STEP,
-        safety_margin_buffer);
+    collision_evaluator =
+        std::make_shared<trajopt::DiscreteCollisionEvaluator>(kin, env, adj_map, Eigen::Isometry3d::Identity(), config);
 
     // 3) Add Variables
     Eigen::VectorXd pos(2);

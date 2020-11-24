@@ -25,7 +25,6 @@
  * limitations under the License.
  */
 #include <trajopt_ifopt/constraints/collision_constraint.h>
-#include <trajopt/collision_terms.hpp>
 
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <tesseract_kinematics/core/utils.h>
@@ -34,7 +33,7 @@ TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace trajopt
 {
-CollisionConstraintIfopt::CollisionConstraintIfopt(SingleTimestepCollisionEvaluator::Ptr collision_evaluator,
+CollisionConstraintIfopt::CollisionConstraintIfopt(DiscreteCollisionEvaluator::Ptr collision_evaluator,
                                                    JointPosition::ConstPtr position_var,
                                                    const std::string& name)
   : ifopt::ConstraintSet(1, name)
@@ -63,11 +62,14 @@ Eigen::VectorXd CollisionConstraintIfopt::CalcValues(const Eigen::Ref<const Eige
   for (tesseract_collision::ContactResult& dist_result : dist_results)
   {
     // Contains the contact distance threshold and coefficient for the given link pair
-    const Eigen::Vector2d& data = collision_evaluator_->getSafetyMarginData()->getPairSafetyMarginData(
+    double dist = collision_evaluator_->getCollisionConfig().collision_margin_data.getPairCollisionMarginData(
         dist_result.link_names[0], dist_result.link_names[1]);
+    double coeff = collision_evaluator_->getCollisionConfig().collision_coeff_data.getPairCollisionCoeff(
+        dist_result.link_names[0], dist_result.link_names[1]);
+    const Eigen::Vector2d& data = { dist, coeff };
     // distance will be distance from threshold with negative being greater (further) than the threshold times the
     // coeff
-    err[0] += sco::pospart((data[0] - dist_result.distance) * data[1]);
+    err[0] += std::max<double>(((data[0] - dist_result.distance) * data[1]), 0.);
   }
   return err;
 }
@@ -109,8 +111,11 @@ void CollisionConstraintIfopt::CalcJacobianBlock(const Eigen::Ref<const Eigen::V
   for (tesseract_collision::ContactResult& dist_result : dist_results)
   {
     // Contains the contact distance threshold and coefficient for the given link pair
-    const Eigen::Vector2d& data = collision_evaluator_->getSafetyMarginData()->getPairSafetyMarginData(
+    double dist = collision_evaluator_->getCollisionConfig().collision_margin_data.getPairCollisionMarginData(
         dist_result.link_names[0], dist_result.link_names[1]);
+    double coeff = collision_evaluator_->getCollisionConfig().collision_coeff_data.getPairCollisionCoeff(
+        dist_result.link_names[0], dist_result.link_names[1]);
+    const Eigen::Vector2d& data = { dist, coeff };
     grad_results.push_back(collision_evaluator_->GetGradient(joint_vals, dist_result, data, true));
   }
 
