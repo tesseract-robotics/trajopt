@@ -11,11 +11,6 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <ifopt/ipopt_solver.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
-#include <trajopt/collision_terms.hpp>
-#include <trajopt/common.hpp>
-#include <trajopt/plot_callback.hpp>
-#include <trajopt/problem_description.hpp>
-#include <trajopt_sco/optimizers.hpp>
 #include <trajopt_test_utils.hpp>
 #include <trajopt_utils/config.hpp>
 #include <trajopt_utils/eigen_conversions.hpp>
@@ -107,22 +102,12 @@ TEST_F(CastTest, boxes)  // NOLINT
 
   double margin_coeff = 20;
   double margin = 0.3;
-  trajopt::SafetyMarginData::ConstPtr margin_data = std::make_shared<trajopt::SafetyMarginData>(margin, margin_coeff);
-  double safety_margin_buffer = 0.05;
-  sco::VarVector var_vector;  // unused
+  trajopt::TrajOptCollisionConfig trajopt_collision_config(margin, margin_coeff);
+  trajopt_collision_config.collision_margin_buffer = 0.05;
 
   /** @todo This needs to be update to leverage the CastCollisionEvaluator when available */
-  trajopt::SingleTimestepCollisionEvaluator::Ptr collision_evaluator =
-      std::make_shared<trajopt::SingleTimestepCollisionEvaluator>(
-          kin,
-          env,
-          adj_map,
-          Eigen::Isometry3d::Identity(),
-          margin_data,
-          tesseract_collision::ContactTestType::CLOSEST,
-          var_vector,
-          trajopt::CollisionExpressionEvaluatorType::SINGLE_TIME_STEP,
-          safety_margin_buffer);
+  trajopt::DiscreteCollisionEvaluator::Ptr collision_evaluator = std::make_shared<trajopt::DiscreteCollisionEvaluator>(
+      kin, env, adj_map, Eigen::Isometry3d::Identity(), trajopt_collision_config);
 
   // 4) Add constraints
   for (const auto& var : vars)

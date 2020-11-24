@@ -33,8 +33,7 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <ifopt/constraint_set.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
-#include <trajopt/utils.hpp>
-#include <trajopt/collision_terms.hpp>
+#include <trajopt_ifopt/constraints/collision_evaluators.h>
 #include <trajopt_ifopt/variable_sets/joint_position_variable.h>
 
 namespace trajopt
@@ -45,7 +44,7 @@ public:
   using Ptr = std::shared_ptr<CollisionConstraintIfopt>;
   using ConstPtr = std::shared_ptr<const CollisionConstraintIfopt>;
 
-  CollisionConstraintIfopt(SingleTimestepCollisionEvaluator::Ptr collision_evaluator,
+  CollisionConstraintIfopt(DiscreteCollisionEvaluator::Ptr collision_evaluator,
                            JointPosition::ConstPtr position_var,
                            const std::string& name = "Collision");
 
@@ -93,7 +92,7 @@ private:
    * Do not access them directly. Instead use this->GetVariables()->GetComponent(position_var->GetName())->GetValues()*/
   JointPosition::ConstPtr position_var_;
 
-  SingleTimestepCollisionEvaluator::Ptr collision_evaluator_;
+  DiscreteCollisionEvaluator::Ptr collision_evaluator_;
 };
 };  // namespace trajopt
 #endif
