@@ -12,6 +12,7 @@
   <depend>eigen</depend>
   <depend>ifopt</depend>
   <depend>libconsole-bridge-dev</depend>
+  <depend>tesseract_collision</depend>
   <depend>tesseract_environment</depend>
   <depend>trajopt</depend>
   <depend>trajopt_utils</depend>
