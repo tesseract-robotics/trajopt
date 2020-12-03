@@ -85,7 +85,8 @@ install(
 
 if(TRAJOPT_ENABLE_TESTING)
   enable_testing()
-  add_run_tests_target(ENABLE ${TRAJOPT_ENABLE_RUN_TESTING})
+#  add_run_tests_target(ENABLE ${TRAJOPT_ENABLE_RUN_TESTING})
+  add_custom_target(run_tests)
   add_subdirectory(test)
 endif()
 

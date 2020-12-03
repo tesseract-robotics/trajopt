@@ -54,7 +54,9 @@ set(TRAJOPT_IFOPT_SOURCE_FILES
     src/utils/ifopt_utils.cpp
     src/utils/numeric_differentiation.cpp
     src/utils/trajopt_utils.cpp
-    src/variable_sets/joint_position_variable.cpp)
+    src/variable_sets/joint_position_variable.cpp
+    src/cartesian_line_constraint.cpp
+)
 
 add_library(${PROJECT_NAME} ${TRAJOPT_IFOPT_SOURCE_FILES})
 target_link_libraries(
@@ -94,6 +96,7 @@ install(
 
 if(TRAJOPT_ENABLE_TESTING)
   enable_testing()
-  add_run_tests_target(ENABLE ${TRAJOPT_ENABLE_RUN_TESTING})
+  #  add_run_tests_target(ENABLE ${TRAJOPT_ENABLE_RUN_TESTING})
+  add_custom_target(run_tests)
   add_subdirectory(test)
 endif()
