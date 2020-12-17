@@ -154,13 +154,15 @@ TEST_F(CastTest, boxes)  // NOLINT
   inputs << -1.9, 0, 0, 0.0, 1.9, 3.8;
   Eigen::Map<TrajArray> results(x.data(), 3, 2);
 
-  bool found = checkTrajectory(collisions, *manager, *state_solver, forward_kinematics->getJointNames(), inputs);
+  tesseract_collision::CollisionCheckConfig config;
+  bool found =
+      checkTrajectory(collisions, *manager, *state_solver, forward_kinematics->getJointNames(), inputs, config);
 
   EXPECT_TRUE(found);
   CONSOLE_BRIDGE_logWarn((found) ? ("Initial trajectory is in collision") : ("Initial trajectory is collision free"));
 
   collisions.clear();
-  found = checkTrajectory(collisions, *manager, *state_solver, forward_kinematics->getJointNames(), results);
+  found = checkTrajectory(collisions, *manager, *state_solver, forward_kinematics->getJointNames(), results, config);
 
   EXPECT_FALSE(found);
   CONSOLE_BRIDGE_logWarn((found) ? ("Final trajectory is in collision") : ("Final trajectory is collision free"));
