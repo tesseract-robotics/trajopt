@@ -209,7 +209,7 @@ public:
 
   tesseract_kinematics::ForwardKinematics::ConstPtr getManipulator(const std::string& name) const
   {
-    return tesseract_->getManipulatorManager()->getFwdKinematicSolver(name);
+    return tesseract_->getEnvironment()->getManipulatorManager()->getFwdKinematicSolver(name);
   }
 
   tesseract::Tesseract::ConstPtr getTesseract() const { return tesseract_; }
