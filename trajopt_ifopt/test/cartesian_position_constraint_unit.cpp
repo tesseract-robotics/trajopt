@@ -6,7 +6,8 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <console_bridge/console.h>
 #include <ifopt/problem.h>
 
-#include <tesseract/tesseract.h>
+#include <tesseract_environment/core/environment.h>
+#include <tesseract_environment/ofkt/ofkt_state_solver.h>
 #include <tesseract_kinematics/core/forward_kinematics.h>
 #include <tesseract_environment/core/environment.h>
 #include <tesseract_environment/core/utils.h>
@@ -19,7 +20,6 @@ TRAJOPT_IGNORE_WARNINGS_POP
 using namespace trajopt;
 using namespace std;
 using namespace util;
-using namespace tesseract;
 using namespace tesseract_environment;
 using namespace tesseract_kinematics;
 using namespace tesseract_collision;
@@ -30,7 +30,7 @@ using namespace tesseract_geometry;
 class CartesianPositionConstraintUnit : public testing::TestWithParam<const char*>
 {
 public:
-  tesseract::Tesseract::Ptr tesseract = std::make_shared<Tesseract>();
+  Environment::Ptr env = std::make_shared<Environment>();
   ifopt::Problem nlp;
 
   tesseract_kinematics::ForwardKinematics::Ptr forward_kinematics;
@@ -47,19 +47,17 @@ public:
     boost::filesystem::path srdf_file(std::string(TRAJOPT_DIR) + "/test/data/pr2.srdf");
     tesseract_scene_graph::ResourceLocator::Ptr locator =
         std::make_shared<tesseract_scene_graph::SimpleResourceLocator>(locateResource);
-    auto tesseract = std::make_shared<tesseract::Tesseract>();
-    tesseract->init(urdf_file, srdf_file, locator);
-    EXPECT_TRUE(tesseract->init(urdf_file, srdf_file, locator));
+    auto env = std::make_shared<Environment>();
+    bool status = env->init<OFKTStateSolver>(urdf_file, srdf_file, locator);
+    EXPECT_TRUE(status);
 
     // Extract necessary kinematic information
-    forward_kinematics = tesseract->getManipulatorManager()->getFwdKinematicSolver("right_arm");
-    inverse_kinematics = tesseract->getManipulatorManager()->getInvKinematicSolver("right_arm");
+    forward_kinematics = env->getManipulatorManager()->getFwdKinematicSolver("right_arm");
+    inverse_kinematics = env->getManipulatorManager()->getInvKinematicSolver("right_arm");
     n_dof = forward_kinematics->numJoints();
 
     tesseract_environment::AdjacencyMap::Ptr adjacency_map = std::make_shared<tesseract_environment::AdjacencyMap>(
-        tesseract->getEnvironment()->getSceneGraph(),
-        forward_kinematics->getActiveLinkNames(),
-        tesseract->getEnvironment()->getCurrentState()->link_transforms);
+        env->getSceneGraph(), forward_kinematics->getActiveLinkNames(), env->getCurrentState()->link_transforms);
     kinematic_info = std::make_shared<trajopt::CartPosKinematicInfo>(
         forward_kinematics, adjacency_map, Eigen::Isometry3d::Identity(), forward_kinematics->getTipLinkName());
 

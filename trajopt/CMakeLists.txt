@@ -10,7 +10,7 @@ find_package(Boost COMPONENTS system thread program_options REQUIRED)
 find_package(console_bridge REQUIRED)
 find_package(trajopt_sco REQUIRED)
 find_package(trajopt_utils REQUIRED)
-find_package(tesseract REQUIRED)
+find_package(tesseract_environment REQUIRED)
 find_package(tesseract_visualization REQUIRED)
 find_package(jsoncpp REQUIRED)
 find_package(cmake_common_scripts REQUIRED)
@@ -49,7 +49,7 @@ add_library(${PROJECT_NAME} ${TRAJOPT_SOURCE_FILES})
 target_link_libraries(${PROJECT_NAME} PUBLIC
     trajopt::trajopt_sco
     trajopt::trajopt_utils
-    tesseract::tesseract
+    tesseract::tesseract_environment_core
     tesseract::tesseract_visualization
     console_bridge::console_bridge
     ${Boost_SYSTEM_LIBRARY}

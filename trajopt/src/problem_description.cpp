@@ -518,9 +518,9 @@ TrajOptProb::Ptr ConstructProblem(const ProblemConstructionInfo& pci)
   return prob;
 }
 
-TrajOptProb::Ptr ConstructProblem(const Json::Value& root, const tesseract::Tesseract::ConstPtr& tesseract)
+TrajOptProb::Ptr ConstructProblem(const Json::Value& root, const tesseract_environment::Environment::ConstPtr& env)
 {
-  ProblemConstructionInfo pci(tesseract);
+  ProblemConstructionInfo pci(env);
   pci.fromJson(root);
   return ConstructProblem(pci);
 }

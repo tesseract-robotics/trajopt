@@ -2,8 +2,8 @@
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <ctime>
 #include <gtest/gtest.h>
-#include <tesseract/tesseract.h>
-
+#include <tesseract_environment/core/environment.h>
+#include <tesseract_environment/ofkt/ofkt_state_solver.h>
 #include <tesseract_environment/core/utils.h>
 #include <tesseract_visualization/visualization.h>
 #include <tesseract_scene_graph/utils.h>
@@ -18,7 +18,6 @@ TRAJOPT_IGNORE_WARNINGS_POP
 using namespace trajopt;
 using namespace std;
 using namespace util;
-using namespace tesseract;
 using namespace tesseract_environment;
 using namespace tesseract_kinematics;
 using namespace tesseract_collision;
@@ -29,7 +28,7 @@ using namespace tesseract_geometry;
 class CollisionUnit : public testing::TestWithParam<const char*>
 {
 public:
-  Tesseract::Ptr tesseract = std::make_shared<Tesseract>(); /**< Tesseract */
+  Environment::Ptr env = std::make_shared<Environment>(); /**< Tesseract */
   trajopt::SingleTimestepCollisionEvaluator::Ptr collision_evaluator;
   ifopt::Problem nlp;
   std::shared_ptr<trajopt::CollisionConstraintIfopt> constraint;
@@ -40,13 +39,12 @@ public:
     boost::filesystem::path srdf_file(std::string(TRAJOPT_DIR) + "/test/data/boxbot.srdf");
 
     ResourceLocator::Ptr locator = std::make_shared<SimpleResourceLocator>(locateResource);
-    EXPECT_TRUE(tesseract->init(urdf_file, srdf_file, locator));
+    EXPECT_TRUE(env->init<OFKTStateSolver>(urdf_file, srdf_file, locator));
 
     gLogLevel = util::LevelError;
 
     // Set up collision evaluator
-    auto env = tesseract->getEnvironment();
-    auto kin = tesseract->getManipulatorManager()->getFwdKinematicSolver("manipulator");
+    auto kin = env->getManipulatorManager()->getFwdKinematicSolver("manipulator");
     auto adj_map = std::make_shared<tesseract_environment::AdjacencyMap>(
         env->getSceneGraph(), kin->getActiveLinkNames(), env->getCurrentState()->link_transforms);
 
