@@ -10,7 +10,7 @@ find_package(trajopt)
 find_package(console_bridge REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(ifopt REQUIRED)
-find_package(tesseract REQUIRED)
+find_package(tesseract_environment REQUIRED)
 find_package(cmake_common_scripts REQUIRED)
 
 if(NOT TARGET console_bridge::console_bridge)
@@ -46,7 +46,7 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
   ifopt::ifopt_core
   trajopt::trajopt_utils
   trajopt::trajopt
-  tesseract::tesseract)
+  tesseract::tesseract_environment_core)
 target_compile_options(${PROJECT_NAME} PRIVATE ${TRAJOPT_COMPILE_OPTIONS_PRIVATE})
 target_compile_options(${PROJECT_NAME} PUBLIC ${TRAJOPT_COMPILE_OPTIONS_PUBLIC})
 target_compile_definitions(${PROJECT_NAME} PUBLIC ${TRAJOPT_COMPILE_DEFINITIONS})

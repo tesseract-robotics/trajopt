@@ -6,7 +6,8 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <ifopt/problem.h>
 #include <ifopt/ipopt_solver.h>
 
-#include <tesseract/tesseract.h>
+#include <tesseract_environment/core/environment.h>
+#include <tesseract_environment/ofkt/ofkt_state_solver.h>
 #include <tesseract_scene_graph/resource_locator.h>
 #include <boost/filesystem/path.hpp>
 #include <console_bridge/console.h>
@@ -68,17 +69,14 @@ public:
     boost::filesystem::path srdf_file(std::string(TRAJOPT_DIR) + "/test/data/pr2.srdf");
     tesseract_scene_graph::ResourceLocator::Ptr locator =
         std::make_shared<tesseract_scene_graph::SimpleResourceLocator>(locateResource);
-    auto tesseract = std::make_shared<tesseract::Tesseract>();
-    tesseract->init(urdf_file, srdf_file, locator);
+    auto env = std::make_shared<tesseract_environment::Environment>();
+    env->init<tesseract_environment::OFKTStateSolver>(urdf_file, srdf_file, locator);
 
     // Extract necessary kinematic information
-    auto forward_kinematics = tesseract->getManipulatorManager()->getFwdKinematicSolver("right_arm");
-    auto world_to_base =
-        tesseract->getEnvironment()->getCurrentState()->link_transforms.at(forward_kinematics->getBaseLinkName());
+    auto forward_kinematics = env->getManipulatorManager()->getFwdKinematicSolver("right_arm");
+    auto world_to_base = env->getCurrentState()->link_transforms.at(forward_kinematics->getBaseLinkName());
     tesseract_environment::AdjacencyMap::Ptr adjacency_map = std::make_shared<tesseract_environment::AdjacencyMap>(
-        tesseract->getEnvironment()->getSceneGraph(),
-        forward_kinematics->getActiveLinkNames(),
-        tesseract->getEnvironment()->getCurrentState()->link_transforms);
+        env->getSceneGraph(), forward_kinematics->getActiveLinkNames(), env->getCurrentState()->link_transforms);
     auto kinematic_info = std::make_shared<trajopt::CartPosKinematicInfo>(
         forward_kinematics, adjacency_map, world_to_base, forward_kinematics->getTipLinkName());
 

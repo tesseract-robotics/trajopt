@@ -4,7 +4,7 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <unordered_map>
 TRAJOPT_IGNORE_WARNINGS_POP
 
-#include <tesseract/tesseract.h>
+#include <tesseract_environment/core/environment.h>
 #include <trajopt/common.hpp>
 #include <trajopt/json_marshal.hpp>
 #include <trajopt_sco/optimizers.hpp>
@@ -202,17 +202,12 @@ public:
   tesseract_environment::Environment::ConstPtr env;
   tesseract_kinematics::ForwardKinematics::ConstPtr kin;
 
-  ProblemConstructionInfo(const tesseract::Tesseract::ConstPtr& tesseract)
-    : env(tesseract->getEnvironment()), tesseract_(tesseract)
-  {
-  }
+  ProblemConstructionInfo(tesseract_environment::Environment::ConstPtr env) : env(std::move(env)) {}
 
   tesseract_kinematics::ForwardKinematics::ConstPtr getManipulator(const std::string& name) const
   {
-    return tesseract_->getEnvironment()->getManipulatorManager()->getFwdKinematicSolver(name);
+    return env->getManipulatorManager()->getFwdKinematicSolver(name);
   }
-
-  tesseract::Tesseract::ConstPtr getTesseract() const { return tesseract_; }
 
   void fromJson(const Json::Value& v);
 
@@ -222,8 +217,6 @@ private:
   void readCosts(const Json::Value& v);
   void readConstraints(const Json::Value& v);
   void readInitInfo(const Json::Value& v);
-
-  tesseract::Tesseract::ConstPtr tesseract_;
 };
 
 /** @brief User defined error function that is set as a constraint or cost for each timestep.
@@ -617,7 +610,7 @@ struct TotalTimeTermInfo : public TermInfo
 };
 
 TrajOptProb::Ptr ConstructProblem(const ProblemConstructionInfo&);
-TrajOptProb::Ptr ConstructProblem(const Json::Value&, const tesseract::Tesseract::ConstPtr& tesseract);
+TrajOptProb::Ptr ConstructProblem(const Json::Value&, const tesseract_environment::Environment::ConstPtr& env);
 TrajOptResult::Ptr OptimizeProblem(const TrajOptProb::Ptr&,
                                    const tesseract_visualization::Visualization::Ptr& plotter = nullptr);
 

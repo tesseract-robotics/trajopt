@@ -6,7 +6,8 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <octomap/OcTree.h>
 #include <boost/filesystem/path.hpp>
 
-#include <tesseract/tesseract.h>
+#include <tesseract_environment/core/environment.h>
+#include <tesseract_environment/ofkt/ofkt_state_solver.h>
 #include <tesseract_environment/core/utils.h>
 #include <tesseract_scene_graph/utils.h>
 TRAJOPT_IGNORE_WARNINGS_POP
@@ -25,7 +26,6 @@ TRAJOPT_IGNORE_WARNINGS_POP
 using namespace trajopt;
 using namespace std;
 using namespace util;
-using namespace tesseract;
 using namespace tesseract_environment;
 using namespace tesseract_kinematics;
 using namespace tesseract_collision;
@@ -38,8 +38,8 @@ static bool plotting = false;
 class CastOctomapTest : public testing::TestWithParam<const char*>
 {
 public:
-  Tesseract::Ptr tesseract_ = std::make_shared<Tesseract>(); /**< Tesseract */
-  Visualization::Ptr plotter_;                               /**< Trajopt Plotter */
+  Environment::Ptr env_ = std::make_shared<Environment>(); /**< Tesseract */
+  Visualization::Ptr plotter_;                             /**< Trajopt Plotter */
 
   void SetUp() override
   {
@@ -47,7 +47,7 @@ public:
     boost::filesystem::path srdf_file(std::string(TRAJOPT_DIR) + "/test/data/boxbot.srdf");
 
     ResourceLocator::Ptr locator = std::make_shared<SimpleResourceLocator>(locateResource);
-    EXPECT_TRUE(tesseract_->init(urdf_file, srdf_file, locator));
+    EXPECT_TRUE(env_->init<OFKTStateSolver>(urdf_file, srdf_file, locator));
 
     gLogLevel = util::LevelError;
 
@@ -89,7 +89,7 @@ public:
     new_joint.parent_link_name = "base_link";
     new_joint.child_link_name = "octomap_attached";
 
-    tesseract_->getEnvironment()->addLink(std::move(new_link), std::move(new_joint));
+    env_->addLink(std::move(new_link), std::move(new_joint));
   }
 };
 
@@ -102,24 +102,24 @@ TEST_F(CastOctomapTest, boxes)  // NOLINT
   std::unordered_map<std::string, double> ipos;
   ipos["boxbot_x_joint"] = -1.9;
   ipos["boxbot_y_joint"] = 0;
-  tesseract_->getEnvironment()->setState(ipos);
+  env_->setState(ipos);
 
   //  plotter_->plotScene();
 
-  TrajOptProb::Ptr prob = ConstructProblem(root, tesseract_);
+  TrajOptProb::Ptr prob = ConstructProblem(root, env_);
   ASSERT_TRUE(!!prob);
 
   std::vector<ContactResultMap> collisions;
   tesseract_environment::StateSolver::Ptr state_solver = prob->GetEnv()->getStateSolver();
   ContinuousContactManager::Ptr manager = prob->GetEnv()->getContinuousContactManager();
-  AdjacencyMap::Ptr adjacency_map = std::make_shared<AdjacencyMap>(tesseract_->getEnvironment()->getSceneGraph(),
-                                                                   prob->GetKin()->getActiveLinkNames(),
-                                                                   prob->GetEnv()->getCurrentState()->link_transforms);
+  AdjacencyMap::Ptr adjacency_map = std::make_shared<AdjacencyMap>(
+      env_->getSceneGraph(), prob->GetKin()->getActiveLinkNames(), prob->GetEnv()->getCurrentState()->link_transforms);
 
   manager->setActiveCollisionObjects(adjacency_map->getActiveLinkNames());
-  manager->setContactDistanceThreshold(0);
+  manager->setDefaultCollisionMarginData(0);
 
   tesseract_collision::CollisionCheckConfig config;
+  config.type = tesseract_collision::CollisionEvaluatorType::CONTINUOUS;
   bool found = checkTrajectory(
       collisions, *manager, *state_solver, prob->GetKin()->getJointNames(), prob->GetInitTraj(), config);
 
