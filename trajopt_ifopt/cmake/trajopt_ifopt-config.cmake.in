@@ -11,7 +11,7 @@ find_dependency(ifopt)
 find_dependency(Eigen3)
 find_dependency(trajopt)
 find_dependency(trajopt_utils)
-find_dependency(tesseract)
+find_dependency(tesseract_environment)
 
 if(NOT TARGET console_bridge::console_bridge)
   add_library(console_bridge::console_bridge INTERFACE IMPORTED)

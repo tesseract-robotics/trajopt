@@ -38,6 +38,7 @@ macro(add_gtest test_name test_file)
   target_clang_tidy(${test_name} ARGUMENTS ${TRAJOPT_CLANG_TIDY_ARGS} ENABLE ${TRAJOPT_ENABLE_CLANG_TIDY})
   target_link_libraries(${test_name}
       ${PROJECT_NAME}
+      tesseract::tesseract_environment_ofkt
       console_bridge
       ifopt::ifopt_ipopt
       trajopt::trajopt_ifopt

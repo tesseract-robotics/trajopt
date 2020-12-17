@@ -3,7 +3,8 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <ctime>
 #include <gtest/gtest.h>
 #include <boost/filesystem/path.hpp>
-#include <tesseract/tesseract.h>
+#include <tesseract_environment/core/environment.h>
+#include <tesseract_environment/ofkt/ofkt_state_solver.h>
 #include <tesseract_environment/core/utils.h>
 #include <tesseract_scene_graph/utils.h>
 TRAJOPT_IGNORE_WARNINGS_POP
@@ -24,7 +25,6 @@ TRAJOPT_IGNORE_WARNINGS_POP
 using namespace trajopt;
 using namespace std;
 using namespace util;
-using namespace tesseract;
 using namespace tesseract_environment;
 using namespace tesseract_collision;
 using namespace tesseract_kinematics;
@@ -34,7 +34,7 @@ using namespace tesseract_scene_graph;
 class KinematicCostsTest : public testing::Test
 {
 public:
-  Tesseract::Ptr tesseract_ = std::make_shared<Tesseract>(); /**< Trajopt Basic Environment */
+  Environment::Ptr env_ = std::make_shared<Environment>(); /**< Trajopt Basic Environment */
 
   void SetUp() override
   {
@@ -42,7 +42,7 @@ public:
     boost::filesystem::path srdf_file(std::string(TRAJOPT_DIR) + "/test/data/pr2.srdf");
 
     ResourceLocator::Ptr locator = std::make_shared<SimpleResourceLocator>(locateResource);
-    EXPECT_TRUE(tesseract_->init(urdf_file, srdf_file, locator));
+    EXPECT_TRUE(env_->init<OFKTStateSolver>(urdf_file, srdf_file, locator));
 
     gLogLevel = util::LevelError;
   }
@@ -76,14 +76,13 @@ TEST_F(KinematicCostsTest, CartPoseJacCalculator)  // NOLINT
 {
   CONSOLE_BRIDGE_logDebug("KinematicCostsTest, CartPoseJacCalculator");
 
-  auto env = tesseract_->getEnvironment();
-  auto kin = tesseract_->getManipulatorManager()->getFwdKinematicSolver("right_arm");
-  auto world_to_base = env->getCurrentState()->link_transforms.at(kin->getBaseLinkName());
+  auto kin = env_->getManipulatorManager()->getFwdKinematicSolver("right_arm");
+  auto world_to_base = env_->getCurrentState()->link_transforms.at(kin->getBaseLinkName());
   auto adjacency_map = std::make_shared<tesseract_environment::AdjacencyMap>(
-      env->getSceneGraph(), kin->getActiveLinkNames(), env->getCurrentState()->link_transforms);
+      env_->getSceneGraph(), kin->getActiveLinkNames(), env_->getCurrentState()->link_transforms);
 
   std::string link = "r_gripper_tool_frame";
-  Eigen::Isometry3d input_pose = tesseract_->getEnvironment()->getCurrentState()->link_transforms.at(link);
+  Eigen::Isometry3d input_pose = env_->getCurrentState()->link_transforms.at(link);
   Eigen::Isometry3d tcp = Eigen::Isometry3d::Identity();
 
   Eigen::VectorXd values(7);
@@ -99,8 +98,8 @@ TEST_F(KinematicCostsTest, CartPoseJacCalculator)  // NOLINT
 //{
 //  CONSOLE_BRIDGE_logDebug("KinematicCostsTest, DynamicCartPoseJacCalculator");
 
-//  auto env = tesseract_->getEnvironment();
-//  auto kin = tesseract_->getManipulatorManager()->getFwdKinematicSolver("full_body");
+//  auto env = env_->getEnvironment();
+//  auto kin = env_->getManipulatorManager()->getFwdKinematicSolver("full_body");
 //  std::unordered_map<std::string, double> j;
 //  j["l_elbow_flex_joint"] = -0.15;
 //  env->setState(j);

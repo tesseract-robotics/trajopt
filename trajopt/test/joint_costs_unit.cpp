@@ -3,7 +3,8 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <ctime>
 #include <gtest/gtest.h>
 #include <boost/filesystem/path.hpp>
-#include <tesseract/tesseract.h>
+#include <tesseract_environment/core/environment.h>
+#include <tesseract_environment/ofkt/ofkt_state_solver.h>
 #include <tesseract_environment/core/utils.h>
 #include <tesseract_scene_graph/utils.h>
 TRAJOPT_IGNORE_WARNINGS_POP
@@ -22,7 +23,6 @@ TRAJOPT_IGNORE_WARNINGS_POP
 using namespace trajopt;
 using namespace std;
 using namespace util;
-using namespace tesseract;
 using namespace tesseract_environment;
 using namespace tesseract_collision;
 using namespace tesseract_kinematics;
@@ -34,8 +34,8 @@ static bool plotting = false; /**< Enable plotting */
 class CostsTest : public testing::TestWithParam<const char*>
 {
 public:
-  Tesseract::Ptr tesseract_ = std::make_shared<Tesseract>(); /**< Trajopt Basic Environment */
-  Visualization::Ptr plotter_;                               /**< Trajopt Plotter */
+  Environment::Ptr env_ = std::make_shared<Environment>(); /**< Trajopt Basic Environment */
+  Visualization::Ptr plotter_;                             /**< Trajopt Plotter */
 
   void SetUp() override
   {
@@ -43,7 +43,7 @@ public:
     boost::filesystem::path srdf_file(std::string(TRAJOPT_DIR) + "/test/data/pr2.srdf");
 
     ResourceLocator::Ptr locator = std::make_shared<SimpleResourceLocator>(locateResource);
-    EXPECT_TRUE(tesseract_->init(urdf_file, srdf_file, locator));
+    EXPECT_TRUE(env_->init<OFKTStateSolver>(urdf_file, srdf_file, locator));
 
     gLogLevel = util::LevelError;
   }
@@ -68,7 +68,7 @@ TEST_F(CostsTest, equality_jointPos)  // NOLINT
   const double cost_tol = 0.01;
   const double cnt_tol = 0.0001;
 
-  ProblemConstructionInfo pci(tesseract_);
+  ProblemConstructionInfo pci(env_);
 
   // Populate Basic Info
   pci.basic_info.n_steps = steps;
@@ -76,7 +76,7 @@ TEST_F(CostsTest, equality_jointPos)  // NOLINT
   pci.basic_info.start_fixed = false;
 
   // Create Kinematic Object
-  pci.kin = tesseract_->getManipulatorManager()->getFwdKinematicSolver(pci.basic_info.manip);
+  pci.kin = env_->getManipulatorManager()->getFwdKinematicSolver(pci.basic_info.manip);
 
   // Populate Init Info
   Eigen::VectorXd start_pos = pci.env->getCurrentJointValues(pci.kin->getJointNames());
@@ -160,7 +160,7 @@ TEST_F(CostsTest, inequality_jointPos)  // NOLINT
   const int steps = 10;
   const double cnt_tol = 0.0001;
 
-  ProblemConstructionInfo pci(tesseract_);
+  ProblemConstructionInfo pci(env_);
 
   // Populate Basic Info
   pci.basic_info.n_steps = steps;
@@ -169,7 +169,7 @@ TEST_F(CostsTest, inequality_jointPos)  // NOLINT
   pci.basic_info.use_time = false;
 
   // Create Kinematic Object
-  pci.kin = tesseract_->getManipulatorManager()->getFwdKinematicSolver(pci.basic_info.manip);
+  pci.kin = env_->getManipulatorManager()->getFwdKinematicSolver(pci.basic_info.manip);
 
   // Populate Init Info
   Eigen::VectorXd start_pos = pci.env->getCurrentJointValues(pci.kin->getJointNames());
@@ -271,7 +271,7 @@ TEST_F(CostsTest, equality_jointVel)  // NOLINT
   const double cost_tol = 0.01;
   const double cnt_tol = 0.0001;
 
-  ProblemConstructionInfo pci(tesseract_);
+  ProblemConstructionInfo pci(env_);
 
   // Populate Basic Info
   pci.basic_info.n_steps = steps;
@@ -280,7 +280,7 @@ TEST_F(CostsTest, equality_jointVel)  // NOLINT
   pci.basic_info.use_time = false;
 
   // Create Kinematic Object
-  pci.kin = tesseract_->getManipulatorManager()->getFwdKinematicSolver(pci.basic_info.manip);
+  pci.kin = env_->getManipulatorManager()->getFwdKinematicSolver(pci.basic_info.manip);
 
   // Populate Init Info
   Eigen::VectorXd start_pos = pci.env->getCurrentJointValues(pci.kin->getJointNames());
@@ -364,7 +364,7 @@ TEST_F(CostsTest, inequality_jointVel)  // NOLINT
   const int steps = 10;
   const double cnt_tol = 0.0001;
 
-  ProblemConstructionInfo pci(tesseract_);
+  ProblemConstructionInfo pci(env_);
 
   // Populate Basic Info
   pci.basic_info.n_steps = steps;
@@ -373,7 +373,7 @@ TEST_F(CostsTest, inequality_jointVel)  // NOLINT
   pci.basic_info.use_time = false;
 
   // Create Kinematic Object
-  pci.kin = tesseract_->getManipulatorManager()->getFwdKinematicSolver(pci.basic_info.manip);
+  pci.kin = env_->getManipulatorManager()->getFwdKinematicSolver(pci.basic_info.manip);
 
   // Populate Init Info
   Eigen::VectorXd start_pos = pci.env->getCurrentJointValues(pci.kin->getJointNames());
@@ -476,7 +476,7 @@ TEST_F(CostsTest, equality_jointVel_time)  // NOLINT
   const double dt_lower = 0.01234;
   const double dt_upper = 1.5678;
 
-  ProblemConstructionInfo pci(tesseract_);
+  ProblemConstructionInfo pci(env_);
 
   // Populate Basic Info
   pci.basic_info.n_steps = steps;
@@ -487,7 +487,7 @@ TEST_F(CostsTest, equality_jointVel_time)  // NOLINT
   pci.basic_info.dt_upper_lim = dt_upper;
 
   // Create Kinematic Object
-  pci.kin = tesseract_->getManipulatorManager()->getFwdKinematicSolver(pci.basic_info.manip);
+  pci.kin = env_->getManipulatorManager()->getFwdKinematicSolver(pci.basic_info.manip);
 
   // Populate Init Info
   pci.init_info.type = InitInfo::STATIONARY;
@@ -576,7 +576,7 @@ TEST_F(CostsTest, inequality_jointVel_time)  // NOLINT
   const int steps = 10;
   const double cnt_tol = 0.0001;
 
-  ProblemConstructionInfo pci(tesseract_);
+  ProblemConstructionInfo pci(env_);
 
   // Populate Basic Info
   pci.basic_info.n_steps = steps;
@@ -587,7 +587,7 @@ TEST_F(CostsTest, inequality_jointVel_time)  // NOLINT
   pci.basic_info.dt_upper_lim = dt_upper;
 
   // Create Kinematic Object
-  pci.kin = tesseract_->getManipulatorManager()->getFwdKinematicSolver(pci.basic_info.manip);
+  pci.kin = env_->getManipulatorManager()->getFwdKinematicSolver(pci.basic_info.manip);
 
   // Populate Init Info
   pci.init_info.type = InitInfo::STATIONARY;
@@ -688,7 +688,7 @@ TEST_F(CostsTest, equality_jointAcc)  // NOLINT
   const double cost_tol = 0.01;
   const double cnt_tol = 0.0001;
 
-  ProblemConstructionInfo pci(tesseract_);
+  ProblemConstructionInfo pci(env_);
 
   // Populate Basic Info
   pci.basic_info.n_steps = steps;
@@ -697,7 +697,7 @@ TEST_F(CostsTest, equality_jointAcc)  // NOLINT
   pci.basic_info.use_time = false;
 
   // Create Kinematic Object
-  pci.kin = tesseract_->getManipulatorManager()->getFwdKinematicSolver(pci.basic_info.manip);
+  pci.kin = env_->getManipulatorManager()->getFwdKinematicSolver(pci.basic_info.manip);
 
   // Populate Init Info
   Eigen::VectorXd start_pos = pci.env->getCurrentJointValues(pci.kin->getJointNames());
@@ -782,7 +782,7 @@ TEST_F(CostsTest, inequality_jointAcc)  // NOLINT
   const int steps = 10;
   const double cnt_tol = 0.0001;
 
-  ProblemConstructionInfo pci(tesseract_);
+  ProblemConstructionInfo pci(env_);
 
   // Populate Basic Info
   pci.basic_info.n_steps = steps;
@@ -791,7 +791,7 @@ TEST_F(CostsTest, inequality_jointAcc)  // NOLINT
   pci.basic_info.use_time = false;
 
   // Create Kinematic Object
-  pci.kin = tesseract_->getManipulatorManager()->getFwdKinematicSolver(pci.basic_info.manip);
+  pci.kin = env_->getManipulatorManager()->getFwdKinematicSolver(pci.basic_info.manip);
 
   // Populate Init Info
   Eigen::VectorXd start_pos = pci.env->getCurrentJointValues(pci.kin->getJointNames());
