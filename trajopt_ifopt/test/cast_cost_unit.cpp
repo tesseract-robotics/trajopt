@@ -2,8 +2,8 @@
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <ctime>
 #include <gtest/gtest.h>
-#include <tesseract/tesseract.h>
-
+#include <tesseract_environment/core/environment.h>
+#include <tesseract_environment/ofkt/ofkt_state_solver.h>
 #include <tesseract_environment/core/utils.h>
 #include <tesseract_visualization/visualization.h>
 #include <tesseract_scene_graph/utils.h>
@@ -26,7 +26,6 @@ TRAJOPT_IGNORE_WARNINGS_POP
 using namespace trajopt;
 using namespace std;
 using namespace util;
-using namespace tesseract;
 using namespace tesseract_environment;
 using namespace tesseract_kinematics;
 using namespace tesseract_collision;
@@ -37,7 +36,7 @@ using namespace tesseract_geometry;
 class CastTest : public testing::TestWithParam<const char*>
 {
 public:
-  Tesseract::Ptr tesseract = std::make_shared<Tesseract>(); /**< Tesseract */
+  Environment::Ptr env = std::make_shared<Environment>(); /**< Tesseract */
 
   void SetUp() override
   {
@@ -47,7 +46,7 @@ public:
     std::cout << tmp;
 
     ResourceLocator::Ptr locator = std::make_shared<SimpleResourceLocator>(locateResource);
-    EXPECT_TRUE(tesseract->init(urdf_file, srdf_file, locator));
+    EXPECT_TRUE(env->init<OFKTStateSolver>(urdf_file, srdf_file, locator));
 
     gLogLevel = util::LevelError;
   }
@@ -60,19 +59,17 @@ TEST_F(CastTest, boxes)  // NOLINT
   std::unordered_map<std::string, double> ipos;
   ipos["boxbot_x_joint"] = -1.9;
   ipos["boxbot_y_joint"] = 0;
-  tesseract->getEnvironment()->setState(ipos);
+  env->setState(ipos);
 
   std::vector<ContactResultMap> collisions;
-  tesseract_environment::StateSolver::Ptr state_solver = tesseract->getEnvironment()->getStateSolver();
-  DiscreteContactManager::Ptr manager = tesseract->getEnvironment()->getDiscreteContactManager();
-  auto forward_kinematics = tesseract->getManipulatorManager()->getFwdKinematicSolver("manipulator");
-  AdjacencyMap::Ptr adjacency_map =
-      std::make_shared<AdjacencyMap>(tesseract->getEnvironment()->getSceneGraph(),
-                                     forward_kinematics->getActiveLinkNames(),
-                                     tesseract->getEnvironment()->getCurrentState()->link_transforms);
+  tesseract_environment::StateSolver::Ptr state_solver = env->getStateSolver();
+  DiscreteContactManager::Ptr manager = env->getDiscreteContactManager();
+  auto forward_kinematics = env->getManipulatorManager()->getFwdKinematicSolver("manipulator");
+  AdjacencyMap::Ptr adjacency_map = std::make_shared<AdjacencyMap>(
+      env->getSceneGraph(), forward_kinematics->getActiveLinkNames(), env->getCurrentState()->link_transforms);
 
   manager->setActiveCollisionObjects(adjacency_map->getActiveLinkNames());
-  manager->setContactDistanceThreshold(0);
+  manager->setDefaultCollisionMarginData(0);
 
   collisions.clear();
 
@@ -104,8 +101,7 @@ TEST_F(CastTest, boxes)  // NOLINT
   }
 
   // Step 3: Setup collision
-  auto env = tesseract->getEnvironment();
-  auto kin = tesseract->getManipulatorManager()->getFwdKinematicSolver("manipulator");
+  auto kin = env->getManipulatorManager()->getFwdKinematicSolver("manipulator");
   auto adj_map = std::make_shared<tesseract_environment::AdjacencyMap>(
       env->getSceneGraph(), kin->getActiveLinkNames(), env->getCurrentState()->link_transforms);
 
@@ -115,6 +111,7 @@ TEST_F(CastTest, boxes)  // NOLINT
   double safety_margin_buffer = 0.05;
   sco::VarVector var_vector;  // unused
 
+  /** @todo This needs to be update to leverage the CastCollisionEvaluator when available */
   trajopt::SingleTimestepCollisionEvaluator::Ptr collision_evaluator =
       std::make_shared<trajopt::SingleTimestepCollisionEvaluator>(
           kin,
@@ -155,6 +152,7 @@ TEST_F(CastTest, boxes)  // NOLINT
   Eigen::Map<TrajArray> results(x.data(), 3, 2);
 
   tesseract_collision::CollisionCheckConfig config;
+  config.type = tesseract_collision::CollisionEvaluatorType::DISCRETE;
   bool found =
       checkTrajectory(collisions, *manager, *state_solver, forward_kinematics->getJointNames(), inputs, config);
 

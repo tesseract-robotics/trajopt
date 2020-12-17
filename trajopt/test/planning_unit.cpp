@@ -5,7 +5,8 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <gtest/gtest.h>
 #include <boost/filesystem/path.hpp>
 
-#include <tesseract/tesseract.h>
+#include <tesseract_environment/core/environment.h>
+#include <tesseract_environment/ofkt/ofkt_state_solver.h>
 #include <tesseract_environment/core/utils.h>
 #include <tesseract_scene_graph/utils.h>
 TRAJOPT_IGNORE_WARNINGS_POP
@@ -24,7 +25,6 @@ TRAJOPT_IGNORE_WARNINGS_POP
 using namespace trajopt;
 using namespace std;
 using namespace util;
-using namespace tesseract;
 using namespace tesseract_environment;
 using namespace tesseract_collision;
 using namespace tesseract_kinematics;
@@ -37,22 +37,22 @@ static const double LONGEST_VALID_SEGMENT_LENGTH = 0.05;
 class PlanningTest : public testing::TestWithParam<const char*>
 {
 public:
-  Tesseract::Ptr tesseract_ = std::make_shared<Tesseract>(); /**< Tesseract */
-  Visualization::Ptr plotter_;                               /**< Trajopt Plotter */
+  Environment::Ptr env_ = std::make_shared<Environment>(); /**< Tesseract */
+  Visualization::Ptr plotter_;                             /**< Trajopt Plotter */
   void SetUp() override
   {
     boost::filesystem::path urdf_file(std::string(TRAJOPT_DIR) + "/test/data/arm_around_table.urdf");
     boost::filesystem::path srdf_file(std::string(TRAJOPT_DIR) + "/test/data/pr2.srdf");
 
     ResourceLocator::Ptr locator = std::make_shared<SimpleResourceLocator>(locateResource);
-    EXPECT_TRUE(tesseract_->init(urdf_file, srdf_file, locator));
+    EXPECT_TRUE(env_->init<OFKTStateSolver>(urdf_file, srdf_file, locator));
 
     // Create plotting tool
     //    plotter_.reset(new tesseract_ros::ROSBasicPlotting(env_));
 
     std::unordered_map<std::string, double> ipos;
     ipos["torso_lift_joint"] = 0.0;
-    tesseract_->getEnvironment()->setState(ipos);
+    env_->setState(ipos);
 
     gLogLevel = util::LevelError;
   }
@@ -66,7 +66,7 @@ TEST_F(PlanningTest, numerical_ik1)  // NOLINT
 
   //  plotter_->plotScene();
 
-  ProblemConstructionInfo pci(tesseract_);
+  ProblemConstructionInfo pci(env_);
   pci.fromJson(root);
   pci.basic_info.convex_solver = sco::ModelType::BPMPD;
   TrajOptProb::Ptr prob = ConstructProblem(pci);
@@ -137,11 +137,11 @@ TEST_F(PlanningTest, arm_around_table)  // NOLINT
   ipos["r_forearm_roll_joint"] = -1.1;
   ipos["r_wrist_flex_joint"] = -1.926;
   ipos["r_wrist_roll_joint"] = 3.074;
-  tesseract_->getEnvironment()->setState(ipos);
+  env_->setState(ipos);
 
   //  plotter_->plotScene();
 
-  ProblemConstructionInfo pci(tesseract_);
+  ProblemConstructionInfo pci(env_);
   pci.fromJson(root);
   pci.basic_info.convex_solver = sco::ModelType::OSQP;
   TrajOptProb::Ptr prob = ConstructProblem(pci);
@@ -150,19 +150,17 @@ TEST_F(PlanningTest, arm_around_table)  // NOLINT
   std::vector<ContactResultMap> collisions;
   tesseract_environment::StateSolver::Ptr state_solver = prob->GetEnv()->getStateSolver();
   ContinuousContactManager::Ptr manager = prob->GetEnv()->getContinuousContactManager();
-  AdjacencyMap::Ptr adjacency_map = std::make_shared<AdjacencyMap>(tesseract_->getEnvironment()->getSceneGraph(),
-                                                                   prob->GetKin()->getActiveLinkNames(),
-                                                                   prob->GetEnv()->getCurrentState()->link_transforms);
+  AdjacencyMap::Ptr adjacency_map = std::make_shared<AdjacencyMap>(
+      env_->getSceneGraph(), prob->GetKin()->getActiveLinkNames(), prob->GetEnv()->getCurrentState()->link_transforms);
 
   manager->setActiveCollisionObjects(adjacency_map->getActiveLinkNames());
-  manager->setContactDistanceThreshold(0);
+  manager->setDefaultCollisionMarginData(0);
 
-  bool found = checkTrajectory(collisions,
-                               *manager,
-                               *state_solver,
-                               prob->GetKin()->getJointNames(),
-                               prob->GetInitTraj(),
-                               LONGEST_VALID_SEGMENT_LENGTH);
+  tesseract_collision::CollisionCheckConfig config;
+  config.type = tesseract_collision::CollisionEvaluatorType::CONTINUOUS;
+  config.longest_valid_segment_length = LONGEST_VALID_SEGMENT_LENGTH;
+  bool found = checkTrajectory(
+      collisions, *manager, *state_solver, prob->GetKin()->getJointNames(), prob->GetInitTraj(), config);
 
   EXPECT_TRUE(found);
   CONSOLE_BRIDGE_logDebug((found) ? ("Initial trajectory is in collision") : ("Initial trajectory is collision free"));
@@ -197,12 +195,8 @@ TEST_F(PlanningTest, arm_around_table)  // NOLINT
   //  }
 
   collisions.clear();
-  found = checkTrajectory(collisions,
-                          *manager,
-                          *state_solver,
-                          prob->GetKin()->getJointNames(),
-                          getTraj(opt.x(), prob->GetVars()),
-                          LONGEST_VALID_SEGMENT_LENGTH);
+  found = checkTrajectory(
+      collisions, *manager, *state_solver, prob->GetKin()->getJointNames(), getTraj(opt.x(), prob->GetVars()), config);
 
   EXPECT_FALSE(found);
   CONSOLE_BRIDGE_logDebug((found) ? ("Final trajectory is in collision") : ("Final trajectory is collision free"));

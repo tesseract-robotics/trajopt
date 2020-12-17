@@ -14,7 +14,7 @@ endif()
 find_dependency(console_bridge)
 find_dependency(trajopt_sco)
 find_dependency(trajopt_utils)
-find_dependency(tesseract)
+find_dependency(tesseract_environment)
 find_dependency(tesseract_visualization)
 find_dependency(jsoncpp)
 

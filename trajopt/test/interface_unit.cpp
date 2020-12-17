@@ -4,7 +4,8 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <gtest/gtest.h>
 #include <boost/filesystem/path.hpp>
 
-#include <tesseract/tesseract.h>
+#include <tesseract_environment/core/environment.h>
+#include <tesseract_environment/ofkt/ofkt_state_solver.h>
 #include <tesseract_environment/core/utils.h>
 #include <tesseract_scene_graph/utils.h>
 TRAJOPT_IGNORE_WARNINGS_POP
@@ -19,7 +20,6 @@ TRAJOPT_IGNORE_WARNINGS_POP
 using namespace trajopt;
 using namespace std;
 using namespace util;
-using namespace tesseract;
 using namespace tesseract_environment;
 using namespace tesseract_collision;
 using namespace tesseract_kinematics;
@@ -31,15 +31,15 @@ static bool plotting = false; /**< Enable plotting */
 class InterfaceTest : public testing::TestWithParam<const char*>
 {
 public:
-  Tesseract::Ptr tesseract_ = std::make_shared<Tesseract>(); /**< Tesseract */
-  Visualization::Ptr plotter_;                               /**< Trajopt Plotter */
+  Environment::Ptr env_ = std::make_shared<Environment>(); /**< Tesseract */
+  Visualization::Ptr plotter_;                             /**< Trajopt Plotter */
   void SetUp() override
   {
     boost::filesystem::path urdf_file(std::string(TRAJOPT_DIR) + "/test/data/arm_around_table.urdf");
     boost::filesystem::path srdf_file(std::string(TRAJOPT_DIR) + "/test/data/pr2.srdf");
 
     ResourceLocator::Ptr locator = std::make_shared<SimpleResourceLocator>(locateResource);
-    EXPECT_TRUE(tesseract_->init(urdf_file, srdf_file, locator));
+    EXPECT_TRUE(env_->init(urdf_file, srdf_file, locator));
 
     gLogLevel = util::LevelError;
   }
@@ -56,7 +56,7 @@ TEST_F(InterfaceTest, initial_trajectory_cpp_interface)
 
   const int steps = 13;
 
-  ProblemConstructionInfo pci(tesseract_->getEnvironment(), tesseract_->getFwdKinematics());
+  ProblemConstructionInfo pci(env_, env_->getFwdKinematics());
 
   // Populate Basic Info
   pci.basic_info.n_steps = steps;
@@ -65,7 +65,7 @@ TEST_F(InterfaceTest, initial_trajectory_cpp_interface)
   pci.basic_info.use_time = false;
 
   // Create Kinematic Object
-  pci.kin = tesseract_->getFwdKinematics(pci.basic_info.manip);
+  pci.kin = env_->getFwdKinematics(pci.basic_info.manip);
 
   // Populate Init Info
   Eigen::VectorXd start_pos = pci.env->getCurrentJointValues(pci.kin->getJointNames());
@@ -104,7 +104,7 @@ TEST_F(InterfaceTest, initial_trajectory_time_cpp_interface)
   const double dt = 0.12341234;
   const double end = 3;
 
-  ProblemConstructionInfo pci(tesseract_->getEnvironment(), tesseract_->getFwdKinematics());
+  ProblemConstructionInfo pci(env_, env_->getFwdKinematics());
 
   // Populate Basic Info
   pci.basic_info.n_steps = steps;
@@ -113,7 +113,7 @@ TEST_F(InterfaceTest, initial_trajectory_time_cpp_interface)
   pci.basic_info.use_time = true;
 
   // Create Kinematic Object
-  pci.kin = tesseract_->getFwdKinematics(pci.basic_info.manip);
+  pci.kin = env_->getFwdKinematics(pci.basic_info.manip);
 
   // Populate Init Info
   Eigen::VectorXd start_pos = pci.env->getCurrentJointValues(pci.kin->getJointNames());
@@ -174,9 +174,9 @@ TEST_F(InterfaceTest, initial_trajectory_json_interface)
   ipos["r_forearm_roll_joint"] = 0;
   ipos["r_wrist_flex_joint"] = 0;
   ipos["r_wrist_roll_joint"] = 0;
-  tesseract_->getEnvironment()->setState(ipos);
+  env_->setState(ipos);
 
-  TrajOptProb::Ptr prob = ConstructProblem(root, tesseract_->getEnvironment(), tesseract_->getFwdKinematics());
+  TrajOptProb::Ptr prob = ConstructProblem(root, env_, env_->getFwdKinematics());
   ASSERT_TRUE(!!prob);
 
   trajopt::TrajArray initial_trajectory = prob->GetInitTraj();
@@ -209,9 +209,9 @@ TEST_F(InterfaceTest, initial_trajectory_time_json_interface)
   ipos["r_forearm_roll_joint"] = 0;
   ipos["r_wrist_flex_joint"] = 0;
   ipos["r_wrist_roll_joint"] = 0;
-  tesseract_->getEnvironment()->setState(ipos);
+  env_->setState(ipos);
 
-  TrajOptProb::Ptr prob = ConstructProblem(root, tesseract_->getEnvironment(), tesseract_->getFwdKinematics());
+  TrajOptProb::Ptr prob = ConstructProblem(root, env_, env_->getFwdKinematics());
   ASSERT_TRUE(!!prob);
 
   trajopt::TrajArray initial_trajectory = prob->GetInitTraj();

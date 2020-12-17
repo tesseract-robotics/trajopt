@@ -3,7 +3,8 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <gtest/gtest.h>
 #include <iostream>
 
-#include <tesseract/tesseract.h>
+#include <tesseract_environment/core/environment.h>
+#include <tesseract_environment/ofkt/ofkt_state_solver.h>
 #include <tesseract_scene_graph/resource_locator.h>
 #include <tesseract_common/macros.h>
 #include <json/json.h>
@@ -19,7 +20,6 @@ TRAJOPT_IGNORE_WARNINGS_POP
 #include <trajopt_utils/logging.hpp>
 
 using namespace trajopt;
-using namespace tesseract;
 using namespace tesseract_environment;
 using namespace tesseract_scene_graph;
 using namespace tesseract_collision;
@@ -73,17 +73,15 @@ TEST(CartPositionOptimizationTrajoptSCO, cart_position_optimization_trajopt_sco)
   boost::filesystem::path srdf_file(std::string(TRAJOPT_DIR) + "/test/data/pr2.srdf");
   tesseract_scene_graph::ResourceLocator::Ptr locator =
       std::make_shared<tesseract_scene_graph::SimpleResourceLocator>(locateResource);
-  auto tesseract = std::make_shared<tesseract::Tesseract>();
-  tesseract->init(urdf_file, srdf_file, locator);
+  auto env = std::make_shared<Environment>();
+  env->init<OFKTStateSolver>(urdf_file, srdf_file, locator);
 
   // Extract necessary kinematic information
-  auto forward_kinematics = tesseract->getManipulatorManager()->getFwdKinematicSolver("right_arm");
+  auto forward_kinematics = env->getManipulatorManager()->getFwdKinematicSolver("right_arm");
   tesseract_environment::AdjacencyMap::Ptr adjacency_map = std::make_shared<tesseract_environment::AdjacencyMap>(
-      tesseract->getEnvironment()->getSceneGraph(),
-      forward_kinematics->getActiveLinkNames(),
-      tesseract->getEnvironment()->getCurrentState()->link_transforms);
+      env->getSceneGraph(), forward_kinematics->getActiveLinkNames(), env->getCurrentState()->link_transforms);
 
-  ProblemConstructionInfo pci(tesseract);
+  ProblemConstructionInfo pci(env);
 
   // Populate Basic Info
   pci.basic_info.n_steps = 1;
