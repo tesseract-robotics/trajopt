@@ -917,7 +917,8 @@ SingleTimestepCollisionEvaluator::SingleTimestepCollisionEvaluator(
 
   contact_manager_ = env_->getDiscreteContactManager();
   contact_manager_->setActiveCollisionObjects(adjacency_map_->getActiveLinkNames());
-  contact_manager_->setContactDistanceThreshold(safety_margin_data_->getMaxSafetyMargin() + safety_margin_buffer_);
+  /** @todo Should remove trajopt safety margin data structure and use the one from tesseract */
+  contact_manager_->setDefaultCollisionMarginData(safety_margin_data_->getMaxSafetyMargin() + safety_margin_buffer_);
 
   switch (evaluator_type_)
   {
@@ -1051,7 +1052,8 @@ DiscreteCollisionEvaluator::DiscreteCollisionEvaluator(tesseract_kinematics::For
 
   contact_manager_ = env_->getDiscreteContactManager();
   contact_manager_->setActiveCollisionObjects(adjacency_map_->getActiveLinkNames());
-  contact_manager_->setContactDistanceThreshold(safety_margin_data_->getMaxSafetyMargin() + safety_margin_buffer_);
+  /** @todo Should remove trajopt safety margin data structure and use the one from tesseract */
+  contact_manager_->setDefaultCollisionMarginData(safety_margin_data_->getMaxSafetyMargin() + safety_margin_buffer_);
 
   switch (evaluator_type_)
   {
@@ -1286,7 +1288,8 @@ CastCollisionEvaluator::CastCollisionEvaluator(tesseract_kinematics::ForwardKine
 
   contact_manager_ = env_->getContinuousContactManager();
   contact_manager_->setActiveCollisionObjects(adjacency_map_->getActiveLinkNames());
-  contact_manager_->setContactDistanceThreshold(safety_margin_data_->getMaxSafetyMargin() + safety_margin_buffer_);
+  /** @todo Should remove trajopt safety margin data structure and use the one from tesseract */
+  contact_manager_->setDefaultCollisionMarginData(safety_margin_data_->getMaxSafetyMargin() + safety_margin_buffer_);
 
   switch (evaluator_type_)
   {
