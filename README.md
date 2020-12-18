@@ -4,7 +4,6 @@ Platform             | CI Status
 ---------------------|:---------
 Linux (Focal)        | [![Build Status](https://github.com/ros-industrial-consortium/trajopt_ros/workflows/Focal-Build/badge.svg)](https://github.com/ros-industrial-consortium/trajopt_ros/actions)
 Linux (Bionic)       | [![Build Status](https://github.com/ros-industrial-consortium/trajopt_ros/workflows/Bionic-Build/badge.svg)](https://github.com/ros-industrial-consortium/trajopt_ros/actions)
-Linux (Xenial)       | [![Build Status](https://github.com/ros-industrial-consortium/trajopt_ros/workflows/Xenial-Build/badge.svg)](https://github.com/ros-industrial-consortium/trajopt_ros/actions)
 Windows              | [![Build Status](https://github.com/ros-industrial-consortium/trajopt_ros/workflows/Windows-Noetic-Build/badge.svg)](https://github.com/ros-industrial-consortium/trajopt_ros/actions)
 Lint  (Clang-Format) | [![Build Status](https://github.com/ros-industrial-consortium/trajopt_ros/workflows/Clang-Format/badge.svg)](https://github.com/ros-industrial-consortium/trajopt_ros/actions)
 
