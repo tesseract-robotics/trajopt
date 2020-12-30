@@ -55,7 +55,8 @@ Eigen::VectorXd CollisionConstraintIfopt::CalcValues(const Eigen::Ref<const Eige
   tesseract_collision::ContactResultVector dist_results;
   {
     tesseract_collision::ContactResultMap dist_results_map;
-    collision_evaluator_->CalcCollisions(joint_vals, dist_results_map);
+    const std::vector<double> joint_vector(joint_vals.data(), joint_vals.data() + joint_vals.size());
+    collision_evaluator_->GetCollisionsCached(joint_vector, dist_results_map);
     tesseract_collision::flattenMoveResults(std::move(dist_results_map), dist_results);
   }
 
