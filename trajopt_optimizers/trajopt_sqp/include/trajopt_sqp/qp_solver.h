@@ -31,11 +31,11 @@
 
 namespace trajopt_sqp
 {
-enum class QP_SOLVER_STATUS
+enum class QPSolverStatus
 {
   UNITIALIZED,
   INITIALIZED,
-  ERROR
+  QP_ERROR
 };
 
 /**
@@ -132,7 +132,7 @@ public:
    * @brief Returns the solver status
    * @return The solver status
    */
-  virtual QP_SOLVER_STATUS getSolverStatus() const = 0;
+  virtual QPSolverStatus getSolverStatus() const = 0;
 
   /** @brief verbose if > 0. Default: 0 */
   int verbosity{ 0 };

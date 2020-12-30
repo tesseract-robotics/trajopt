@@ -51,6 +51,8 @@ bool OSQPEigenSolver::init(Eigen::Index num_vars, Eigen::Index num_cnts)
   solver_.data()->setNumberOfVariables(static_cast<int>(num_vars_));
   solver_.data()->setNumberOfConstraints(static_cast<int>(num_cnts_));
 
+  solver_status_ = QPSolverStatus::INITIALIZED;
+
   return true;
 }
 
@@ -109,6 +111,7 @@ bool OSQPEigenSolver::solve()
     }
   }
 
+  solver_status_ = QPSolverStatus::QP_ERROR;
   return false;
 }
 
