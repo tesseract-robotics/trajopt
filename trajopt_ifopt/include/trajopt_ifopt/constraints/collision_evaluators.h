@@ -211,21 +211,21 @@ struct CollisionEvaluator
 
   /**
    * @brief This function calls GetCollisionsCached and stores the distances in a vector
-   * @param x Optimizer variables
+   * @param x Joint values. For contact managers that use more than one state, the states should be appended
    * @param dists Returned distance values
    */
   virtual void CalcDists(const std::vector<double>& x, std::vector<double>& dists);
 
   /**
    * @brief Given optimizer parameters calculate the collision results for this evaluator
-   * @param x Optimizer variables
+   * @param x Joint values. For contact managers that use more than one state, the states should be appended
    * @param dist_results Contact results map
    */
   virtual void CalcCollisions(const std::vector<double>& x, tesseract_collision::ContactResultMap& dist_results) = 0;
 
   /**
    * @brief Given optimizer parameters calculate the collision results for this evaluator
-   * @param x Optimizer variables
+   * @param x Joint values. For contact managers that use more than one state, the states should be appended
    * @param dist_map Contact results map
    * @param dist_map Contact results vector
    */
@@ -236,14 +236,14 @@ struct CollisionEvaluator
   /**
    * @brief This function checks to see if results are cached for input variable x. If not it calls CalcCollisions and
    * caches the results vector with x as the key.
-   * @param x Optimizer variables
+   * @param x Joint values. For contact managers that use more than one state, the states should be appended
    */
   void GetCollisionsCached(const std::vector<double>& x, tesseract_collision::ContactResultVector&);
 
   /**
    * @brief This function checks to see if results are cached for input variable x. If not it calls CalcCollisions and
    * caches the results with x as the key.
-   * @param x Optimizer variables
+   * @param x Joint values. For contact managers that use more than one state, the states should be appended
    */
   void GetCollisionsCached(const std::vector<double>& x, tesseract_collision::ContactResultMap&);
 
@@ -412,47 +412,38 @@ private:
 //  std::function<void(const std::vector<double>&, sco::AffExprVector&, AlignedVector<Eigen::Vector2d>&)> fn_;
 //};
 
-///**
-// * @brief This collision evaluator operates on two states and checks for collision between the two states using a
-// * descrete collision objects at each intermediate interpolated states.
-// */
-// struct LVSDiscreteCollisionEvaluator : public CollisionEvaluator
-//{
-// public:
-//  using Ptr = std::shared_ptr<DiscreteCollisionEvaluator>;
-//  using ConstPtr = std::shared_ptr<const DiscreteCollisionEvaluator>;
+/**
+ * @brief This collision evaluator operates on two states and checks for collision between the two states using a
+ * descrete collision objects at each intermediate interpolated states.
+ */
+struct LVSDiscreteCollisionEvaluator : public CollisionEvaluator
+{
+public:
+  using Ptr = std::shared_ptr<LVSDiscreteCollisionEvaluator>;
+  using ConstPtr = std::shared_ptr<const LVSDiscreteCollisionEvaluator>;
 
-//  DiscreteCollisionEvaluator(tesseract_kinematics::ForwardKinematics::ConstPtr manip,
-//                             tesseract_environment::Environment::ConstPtr env,
-//                             tesseract_environment::AdjacencyMap::ConstPtr adjacency_map,
-//                             const Eigen::Isometry3d& world_to_base,
-//                             SafetyMarginData::ConstPtr safety_margin_data,
-//                             tesseract_collision::ContactTestType contact_test_type,
-//                             double longest_valid_segment_length,
-//                             sco::VarVector vars0,
-//                             sco::VarVector vars1,
-//                             CollisionExpressionEvaluatorType type,
-//                             double safety_margin_buffer);
-//  void CalcDistExpressions(const std::vector<double>& x,
-//                           sco::AffExprVector& exprs,
-//                           AlignedVector<Eigen::Vector2d>& exprs_data) override;
-//  void CalcCollisions(const std::vector<double>& x, tesseract_collision::ContactResultMap& dist_results) override;
-//  /**
-//   * @brief Given joint names and values calculate the collision results for this evaluator
-//   * @param dof_vals0 Joint values for state0
-//   * @param dof_vals1 Joint values for state1
-//   * @param dist_results Contact Results Map
-//   */
-//  void CalcCollisions(const Eigen::Ref<const Eigen::VectorXd>& dof_vals0,
-//                      const Eigen::Ref<const Eigen::VectorXd>& dof_vals1,
-//                      tesseract_collision::ContactResultMap& dist_results);
-//  void Plot(const tesseract_visualization::Visualization::Ptr& plotter, const std::vector<double>& x) override;
-//  sco::VarVector GetVars() override { return concat(vars0_, vars1_); }
+  LVSDiscreteCollisionEvaluator(tesseract_kinematics::ForwardKinematics::ConstPtr manip,
+                                tesseract_environment::Environment::ConstPtr env,
+                                tesseract_environment::AdjacencyMap::ConstPtr adjacency_map,
+                                const Eigen::Isometry3d& world_to_base,
+                                const TrajOptCollisionConfig& collision_config,
+                                bool dynamic_environment = false);
 
-// private:
-//  tesseract_collision::DiscreteContactManager::Ptr contact_manager_;
-//  std::function<void(const std::vector<double>&, sco::AffExprVector&, AlignedVector<Eigen::Vector2d>&)> fn_;
-//};
+  void CalcCollisions(const std::vector<double>& dof_vals,
+                      tesseract_collision::ContactResultMap& dist_results) override;
+  /**
+   * @brief Given joint names and values calculate the collision results for this evaluator
+   * @param dof_vals0 Joint values for state0
+   * @param dof_vals1 Joint values for state1
+   * @param dist_results Contact Results Map
+   */
+  void CalcCollisions(const Eigen::Ref<const Eigen::VectorXd>& dof_vals0,
+                      const Eigen::Ref<const Eigen::VectorXd>& dof_vals1,
+                      tesseract_collision::ContactResultMap& dist_results);
+
+private:
+  tesseract_collision::DiscreteContactManager::Ptr contact_manager_;
+};
 
 }  // namespace trajopt
 
