@@ -58,7 +58,7 @@ public:
    * @brief Take a single QP optimization step, storing the results and calling callbacks
    * @param nlp
    */
-  bool stepOptimization(ifopt::Problem& nlp);
+  SQPStatus stepOptimization(ifopt::Problem& nlp);
 
   /**
    * @brief Calls all registered callbacks with the current state of of the problem
