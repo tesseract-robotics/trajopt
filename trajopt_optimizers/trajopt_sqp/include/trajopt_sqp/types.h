@@ -151,14 +151,16 @@ struct SQPResults
   };
 };
 
+/**
+ * @brief Status codes for the SQP Optimization
+ */
 enum class SQPStatus
 {
-  RUNNING,
-  TRUST_REGION_CONVERGED,
-  NLP_CONVERGED,
-  ITERATION_LIMIT,
-  ERROR,
-  CALLBACK_STOPPED
+  RUNNING,         /**< Optimization is currently running */
+  NLP_CONVERGED,   /**< NLP Successfully converged */
+  ITERATION_LIMIT, /**< SQP Optimization reached iteration limit */
+  QP_SOLVER_ERROR, /**< QP Solver failed */
+  CALLBACK_STOPPED /**< Optimization stopped because callback returned false */
 };
 
 }  // namespace trajopt_sqp
