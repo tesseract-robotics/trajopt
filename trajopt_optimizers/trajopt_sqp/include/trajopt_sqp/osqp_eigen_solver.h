@@ -64,7 +64,7 @@ public:
 
   bool updateLinearConstraintsMatrix(const Jacobian& linearConstraintsMatrix) override;
 
-  QP_SOLVER_STATUS getSolverStatus() const override { return solver_status_; };
+  QPSolverStatus getSolverStatus() const override { return solver_status_; };
 
   OsqpEigen::Solver solver_;
 
@@ -77,7 +77,7 @@ private:
   Eigen::Index num_vars_;
   Eigen::Index num_cnts_;
 
-  QP_SOLVER_STATUS solver_status_{ QP_SOLVER_STATUS::UNITIALIZED };
+  QPSolverStatus solver_status_{ QPSolverStatus::UNITIALIZED };
 };
 
 }  // namespace trajopt_sqp
