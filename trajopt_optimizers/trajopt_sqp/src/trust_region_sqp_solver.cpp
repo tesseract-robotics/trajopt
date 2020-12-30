@@ -63,6 +63,8 @@ const SQPResults& TrustRegionSQPSolver::getResults() { return results_; }
 
 void TrustRegionSQPSolver::Solve(ifopt::Problem& nlp)
 {
+  status_ = SQPStatus::RUNNING;
+
   // Initialize solver
   init(nlp);
 
@@ -104,10 +106,10 @@ void TrustRegionSQPSolver::Solve(ifopt::Problem& nlp)
         results_.trust_region_iteration = trust_region_iteration;
 
         // Take a single step (one QP solve)
-        if (!stepOptimization(nlp))
+        status_ = stepOptimization(nlp);
+        if (status_ != SQPStatus::RUNNING)
         {
           nlp.SetVariables(results_.best_var_vals.data());
-          status_ = SQPStatus::CALLBACK_STOPPED;
           return;
         }
 
@@ -220,7 +222,7 @@ void TrustRegionSQPSolver::Solve(ifopt::Problem& nlp)
   nlp.SetVariables(results_.best_var_vals.data());
 }
 
-bool TrustRegionSQPSolver::stepOptimization(ifopt::Problem& nlp)
+SQPStatus TrustRegionSQPSolver::stepOptimization(ifopt::Problem& nlp)
 {
   // TODO: Think about removing nlp_
   nlp_ = &nlp;
@@ -267,9 +269,16 @@ bool TrustRegionSQPSolver::stepOptimization(ifopt::Problem& nlp)
   else
   {
     CONSOLE_BRIDGE_logError("Solver Failure");
+    return SQPStatus::QP_SOLVER_ERROR;
   }
 
-  return succeed;
+  // Check if any callbacks returned false
+  if (!succeed)
+  {
+    return SQPStatus::CALLBACK_STOPPED;
+  }
+
+  return SQPStatus::RUNNING;
 }
 
 bool TrustRegionSQPSolver::callCallbacks()
