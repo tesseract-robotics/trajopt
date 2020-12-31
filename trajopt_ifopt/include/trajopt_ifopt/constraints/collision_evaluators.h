@@ -370,47 +370,37 @@ private:
   tesseract_collision::DiscreteContactManager::Ptr contact_manager_;
 };
 
-///**
-// * @brief This collision evaluator operates on two states and checks for collision between the two states using a
-// * casted collision objects between to intermediate interpolated states.
-// */
-// struct LVSContinuousCollisionEvaluator : public CollisionEvaluator
-//{
-// public:
-//  using Ptr = std::shared_ptr<CastCollisionEvaluator>;
-//  using ConstPtr = std::shared_ptr<const CastCollisionEvaluator>;
+/**
+ * @brief This collision evaluator operates on two states and checks for collision between the two states using a
+ * casted collision objects between to intermediate interpolated states.
+ */
+struct LVSContinuousCollisionEvaluator : public CollisionEvaluator
+{
+public:
+  using Ptr = std::shared_ptr<LVSContinuousCollisionEvaluator>;
+  using ConstPtr = std::shared_ptr<const LVSContinuousCollisionEvaluator>;
 
-//  CastCollisionEvaluator(tesseract_kinematics::ForwardKinematics::ConstPtr manip,
-//                         tesseract_environment::Environment::ConstPtr env,
-//                         tesseract_environment::AdjacencyMap::ConstPtr adjacency_map,
-//                         const Eigen::Isometry3d& world_to_base,
-//                         SafetyMarginData::ConstPtr safety_margin_data,
-//                         tesseract_collision::ContactTestType contact_test_type,
-//                         double longest_valid_segment_length,
-//                         sco::VarVector vars0,
-//                         sco::VarVector vars1,
-//                         CollisionExpressionEvaluatorType type,
-//                         double safety_margin_buffer);
-//  void CalcDistExpressions(const std::vector<double>& x,
-//                           sco::AffExprVector& exprs,
-//                           AlignedVector<Eigen::Vector2d>& exprs_data) override;
-//  void CalcCollisions(const std::vector<double>& x, tesseract_collision::ContactResultMap& dist_results) override;
-//  /**
-//   * @brief Given joint names and values calculate the collision results for this evaluator
-//   * @param dof_vals0 Joint values for state0
-//   * @param dof_vals1 Joint values for state1
-//   * @param dist_results Contact Results Map
-//   */
-//  void CalcCollisions(const Eigen::Ref<const Eigen::VectorXd>& dof_vals0,
-//                      const Eigen::Ref<const Eigen::VectorXd>& dof_vals1,
-//                      tesseract_collision::ContactResultMap& dist_results);
-//  void Plot(const tesseract_visualization::Visualization::Ptr& plotter, const std::vector<double>& x) override;
-//  sco::VarVector GetVars() override { return concat(vars0_, vars1_); }
+  LVSContinuousCollisionEvaluator(tesseract_kinematics::ForwardKinematics::ConstPtr manip,
+                                  tesseract_environment::Environment::ConstPtr env,
+                                  tesseract_environment::AdjacencyMap::ConstPtr adjacency_map,
+                                  const Eigen::Isometry3d& world_to_base,
+                                  const TrajOptCollisionConfig& collision_config,
+                                  bool dynamic_environment = false);
 
-// private:
-//  tesseract_collision::ContinuousContactManager::Ptr contact_manager_;
-//  std::function<void(const std::vector<double>&, sco::AffExprVector&, AlignedVector<Eigen::Vector2d>&)> fn_;
-//};
+  void CalcCollisions(const std::vector<double>& x, tesseract_collision::ContactResultMap& dist_results) override;
+  /**
+   * @brief Given joint names and values calculate the collision results for this evaluator
+   * @param dof_vals0 Joint values for state0
+   * @param dof_vals1 Joint values for state1
+   * @param dist_results Contact Results Map
+   */
+  void CalcCollisions(const Eigen::Ref<const Eigen::VectorXd>& dof_vals0,
+                      const Eigen::Ref<const Eigen::VectorXd>& dof_vals1,
+                      tesseract_collision::ContactResultMap& dist_results);
+
+private:
+  tesseract_collision::ContinuousContactManager::Ptr contact_manager_;
+};
 
 /**
  * @brief This collision evaluator operates on two states and checks for collision between the two states using a
