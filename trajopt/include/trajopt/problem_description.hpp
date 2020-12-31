@@ -102,7 +102,8 @@ struct BasicInfo
   int n_steps;
   std::string manip;
   std::string robot;             // optional
-  IntVec dofs_fixed;             // optional
+  /** @brief Timesteps at which to apply a fixed joint constraint */
+  IntVec fixed_timesteps;
   sco::ModelType convex_solver;  // which convex solver to use
 
   /** @brief If true, the last column in the optimization matrix will be 1/dt */
