@@ -596,6 +596,102 @@ void DiscreteCollisionEvaluator::CalcCollisions(const Eigen::Ref<const Eigen::Ve
 
 //////////////////////////////////////////
 
+LVSContinuousCollisionEvaluator::LVSContinuousCollisionEvaluator(
+    tesseract_kinematics::ForwardKinematics::ConstPtr manip,
+    tesseract_environment::Environment::ConstPtr env,
+    tesseract_environment::AdjacencyMap::ConstPtr adjacency_map,
+    const Eigen::Isometry3d& world_to_base,
+    const TrajOptCollisionConfig& collision_config,
+    bool dynamic_environment)
+  : CollisionEvaluator(std::move(manip),
+                       std::move(env),
+                       std::move(adjacency_map),
+                       world_to_base,
+                       std::move(collision_config),
+                       dynamic_environment)
+{
+  contact_manager_ = env_->getContinuousContactManager();
+  contact_manager_->setActiveCollisionObjects(adjacency_map_->getActiveLinkNames());
+  contact_manager_->setCollisionMarginData(collision_config.collision_margin_data);
+}
+
+void LVSContinuousCollisionEvaluator::CalcCollisions(const std::vector<double>& x,
+                                                     tesseract_collision::ContactResultMap& dist_results)
+{
+  auto dof = static_cast<Eigen::Index>(x.size()) / 2;
+  const Eigen::Map<const Eigen::VectorXd> joint_vals_1(x.data(), dof);
+  const Eigen::Map<const Eigen::VectorXd> joint_vals_2(x.data() + dof, dof);
+  CalcCollisions(joint_vals_1, joint_vals_2, dist_results);
+}
+
+void LVSContinuousCollisionEvaluator::CalcCollisions(const Eigen::Ref<const Eigen::VectorXd>& dof_vals0,
+                                                     const Eigen::Ref<const Eigen::VectorXd>& dof_vals1,
+                                                     tesseract_collision::ContactResultMap& dist_results)
+{
+  // The first step is to see if the distance between two states is larger than the longest valid segment. If larger
+  // the collision checking is broken up into multiple casted collision checks such that each check is less then
+  // the longest valid segment length.
+  double dist = (dof_vals1 - dof_vals0).norm();
+  if (dist > collision_config_.longest_valid_segment_length)
+  {
+    // Calculate the number state to interpolate
+    long cnt = static_cast<long>(std::ceil(dist / collision_config_.longest_valid_segment_length)) + 1;
+
+    // Create interpolated trajectory between two states that satisfies the longest valid segment length.
+    tesseract_common::TrajArray subtraj(cnt, dof_vals0.size());
+    for (long i = 0; i < dof_vals0.size(); ++i)
+      subtraj.col(i) = Eigen::VectorXd::LinSpaced(cnt, dof_vals0(i), dof_vals1(i));
+
+    // Perform casted collision checking for sub trajectory and store results in contacts_vector
+    std::vector<tesseract_collision::ContactResultMap> contacts_vector;
+    contacts_vector.reserve(static_cast<size_t>(subtraj.rows()));
+    bool contact_found = false;
+    for (int i = 0; i < subtraj.rows() - 1; ++i)
+    {
+      tesseract_collision::ContactResultMap contacts;
+      tesseract_environment::EnvState::Ptr state0 = state_solver_->getState(manip_->getJointNames(), subtraj.row(i));
+      tesseract_environment::EnvState::Ptr state1 =
+          state_solver_->getState(manip_->getJointNames(), subtraj.row(i + 1));
+
+      for (const auto& link_name : adjacency_map_->getActiveLinkNames())
+        contact_manager_->setCollisionObjectsTransform(
+            link_name, state0->link_transforms[link_name], state1->link_transforms[link_name]);
+
+      contact_manager_->contactTest(contacts, collision_config_.contact_request);
+      if (!contacts.empty())
+        contact_found = true;
+
+      contacts_vector.push_back(contacts);
+    }
+
+    if (contact_found)
+      processInterpolatedCollisionResults(contacts_vector, dist_results, 1.0 / double(subtraj.rows() - 1));
+  }
+  else
+  {
+    tesseract_environment::EnvState::Ptr state0 = state_solver_->getState(manip_->getJointNames(), dof_vals0);
+    tesseract_environment::EnvState::Ptr state1 = state_solver_->getState(manip_->getJointNames(), dof_vals1);
+    for (const auto& link_name : adjacency_map_->getActiveLinkNames())
+      contact_manager_->setCollisionObjectsTransform(
+          link_name, state0->link_transforms[link_name], state1->link_transforms[link_name]);
+
+    contact_manager_->contactTest(dist_results, collision_config_.contact_request);
+
+    // Dont include contacts at the fixed state
+    for (auto& pair : dist_results)
+    {
+      // Contains the contact distance threshold and coefficient for the given link pair
+      double dist =
+          collision_config_.collision_margin_data.getPairCollisionMarginData(pair.first.first, pair.first.second);
+      double coeff = collision_config_.collision_coeff_data.getPairCollisionCoeff(pair.first.first, pair.first.second);
+      const Eigen::Vector2d data = { dist, coeff };
+      removeInvalidContactResults(pair.second, data);
+    }
+  }
+}
+
+//////////////////////////////////////////
+
 LVSDiscreteCollisionEvaluator::LVSDiscreteCollisionEvaluator(
     tesseract_kinematics::ForwardKinematics::ConstPtr manip,
     tesseract_environment::Environment::ConstPtr env,
@@ -669,475 +765,4 @@ void LVSDiscreteCollisionEvaluator::CalcCollisions(const Eigen::Ref<const Eigen:
   if (contact_found)
     processInterpolatedCollisionResults(contacts_vector, dist_results, 1.0 / double(subtraj.rows() - 1));
 }
-
-//////////////////////////////////////////
-
-// CastCollisionEvaluator::CastCollisionEvaluator(tesseract_kinematics::ForwardKinematics::ConstPtr manip,
-//                                               tesseract_environment::Environment::ConstPtr env,
-//                                               tesseract_environment::AdjacencyMap::ConstPtr adjacency_map,
-//                                               const Eigen::Isometry3d& world_to_base,
-//                                               SafetyMarginData::ConstPtr safety_margin_data,
-//                                               tesseract_collision::ContactTestType contact_test_type,
-//                                               double longest_valid_segment_length,
-//                                               sco::VarVector vars0,
-//                                               sco::VarVector vars1,
-//                                               CollisionExpressionEvaluatorType type,
-//                                               double safety_margin_buffer)
-//  : CollisionEvaluator(std::move(manip),
-//                       std::move(env),
-//                       std::move(adjacency_map),
-//                       world_to_base,
-//                       std::move(safety_margin_data),
-//                       contact_test_type,
-//                       longest_valid_segment_length,
-//                       safety_margin_buffer)
-//{
-//  vars0_ = std::move(vars0);
-//  vars1_ = std::move(vars1);
-//  evaluator_type_ = type;
-
-//  contact_manager_ = env_->getContinuousContactManager();
-//  contact_manager_->setActiveCollisionObjects(adjacency_map_->getActiveLinkNames());
-//  contact_manager_->setContactDistanceThreshold(safety_margin_data_->getMaxSafetyMargin() + safety_margin_buffer_);
-
-//  switch (evaluator_type_)
-//  {
-//    case CollisionExpressionEvaluatorType::START_FREE_END_FREE:
-//    {
-//      fn_ = std::bind(&CastCollisionEvaluator::CalcDistExpressionsBothFree,
-//                      this,
-//                      std::placeholders::_1,
-//                      std::placeholders::_2,
-//                      std::placeholders::_3);
-//      break;
-//    }
-//    case CollisionExpressionEvaluatorType::START_FIXED_END_FREE:
-//    {
-//      fn_ = std::bind(&CastCollisionEvaluator::CalcDistExpressionsEndFree,
-//                      this,
-//                      std::placeholders::_1,
-//                      std::placeholders::_2,
-//                      std::placeholders::_3);
-//      break;
-//    }
-//    case CollisionExpressionEvaluatorType::START_FREE_END_FIXED:
-//    {
-//      fn_ = std::bind(&CastCollisionEvaluator::CalcDistExpressionsStartFree,
-//                      this,
-//                      std::placeholders::_1,
-//                      std::placeholders::_2,
-//                      std::placeholders::_3);
-//      break;
-//    }
-//    case CollisionExpressionEvaluatorType::START_FREE_END_FREE_WEIGHTED_SUM:
-//    {
-//      fn_ = std::bind(&CastCollisionEvaluator::CalcDistExpressionsBothFreeW,
-//                      this,
-//                      std::placeholders::_1,
-//                      std::placeholders::_2,
-//                      std::placeholders::_3);
-//      break;
-//    }
-//    case CollisionExpressionEvaluatorType::START_FIXED_END_FREE_WEIGHTED_SUM:
-//    {
-//      fn_ = std::bind(&CastCollisionEvaluator::CalcDistExpressionsEndFreeW,
-//                      this,
-//                      std::placeholders::_1,
-//                      std::placeholders::_2,
-//                      std::placeholders::_3);
-//      break;
-//    }
-//    case CollisionExpressionEvaluatorType::START_FREE_END_FIXED_WEIGHTED_SUM:
-//    {
-//      fn_ = std::bind(&CastCollisionEvaluator::CalcDistExpressionsStartFreeW,
-//                      this,
-//                      std::placeholders::_1,
-//                      std::placeholders::_2,
-//                      std::placeholders::_3);
-//      break;
-//    }
-//    default:
-//    {
-//      PRINT_AND_THROW("Invalid CollisionExpressionEvaluatorType for CastCollisionEvaluator!");
-//    }
-//  };
-//}
-
-// void CastCollisionEvaluator::CalcCollisions(const std::vector<double>& x, tesseract_collision::ContactResultMap&
-// dist_results)
-//{
-//  Eigen::VectorXd s0 = sco::getVec(x, vars0_);
-//  Eigen::VectorXd s1 = sco::getVec(x, vars1_);
-//  CalcCollisions(s0, s1, dist_results);
-//}
-
-// void CastCollisionEvaluator::CalcCollisions(const Eigen::Ref<const Eigen::VectorXd>& dof_vals0,
-//                                            const Eigen::Ref<const Eigen::VectorXd>& dof_vals1,
-//                                            tesseract_collision::ContactResultMap& dist_results)
-//{
-//  // The first step is to see if the distance between two states is larger than the longest valid segment. If larger
-//  // the collision checking is broken up into multiple casted collision checks such that each check is less then
-//  // the longest valid segment length.
-//  double dist = (dof_vals1 - dof_vals0).norm();
-//  if (dist > longest_valid_segment_length_)
-//  {
-//    // Calculate the number state to interpolate
-//    long cnt = static_cast<long>(std::ceil(dist / longest_valid_segment_length_)) + 1;
-
-//    // Create interpolated trajectory between two states that satisfies the longest valid segment length.
-//    tesseract_common::TrajArray subtraj(cnt, dof_vals0.size());
-//    for (long i = 0; i < dof_vals0.size(); ++i)
-//      subtraj.col(i) = Eigen::VectorXd::LinSpaced(cnt, dof_vals0(i), dof_vals1(i));
-
-//    // Perform casted collision checking for sub trajectory and store results in contacts_vector
-//    std::vector<tesseract_collision::ContactResultMap> contacts_vector;
-//    contacts_vector.reserve(static_cast<size_t>(subtraj.rows()));
-//    bool contact_found = false;
-//    for (int i = 0; i < subtraj.rows() - 1; ++i)
-//    {
-//      tesseract_collision::ContactResultMap contacts;
-//      tesseract_environment::EnvState::Ptr state0 = state_solver_->getState(manip_->getJointNames(), subtraj.row(i));
-//      tesseract_environment::EnvState::Ptr state1 =
-//          state_solver_->getState(manip_->getJointNames(), subtraj.row(i + 1));
-
-//      for (const auto& link_name : adjacency_map_->getActiveLinkNames())
-//        contact_manager_->setCollisionObjectsTransform(
-//            link_name, state0->link_transforms[link_name], state1->link_transforms[link_name]);
-
-//      contact_manager_->contactTest(contacts, contact_test_type_);
-//      if (!contacts.empty())
-//        contact_found = true;
-
-//      contacts_vector.push_back(contacts);
-//    }
-
-//    if (contact_found)
-//      processInterpolatedCollisionResults(contacts_vector, dist_results, 1.0 / double(subtraj.rows() - 1));
-//  }
-//  else
-//  {
-//    tesseract_environment::EnvState::Ptr state0 = state_solver_->getState(manip_->getJointNames(), dof_vals0);
-//    tesseract_environment::EnvState::Ptr state1 = state_solver_->getState(manip_->getJointNames(), dof_vals1);
-//    for (const auto& link_name : adjacency_map_->getActiveLinkNames())
-//      contact_manager_->setCollisionObjectsTransform(
-//          link_name, state0->link_transforms[link_name], state1->link_transforms[link_name]);
-
-//    contact_manager_->contactTest(dist_results, contact_test_type_);
-
-//    // Dont include contacts at the fixed state
-//    for (auto& pair : dist_results)
-//    {
-//      // Contains the contact distance threshold and coefficient for the given link pair
-//      const Eigen::Vector2d& data = getSafetyMarginData()->getPairSafetyMarginData(pair.first.first,
-//      pair.first.second); removeInvalidContactResults(pair.second, data);
-//    }
-//  }
-//}
-
-// void CastCollisionEvaluator::CalcDistExpressions(const std::vector<double>& x,
-//                                                 sco::AffExprVector& exprs,
-//                                                 AlignedVector<Eigen::Vector2d>& exprs_data)
-//{
-//  fn_(x, exprs, exprs_data);
-//}
-
-// void CastCollisionEvaluator::Plot(const tesseract_visualization::Visualization::Ptr& plotter, const
-// std::vector<double>& x)
-//{
-//  tesseract_collision::ContactResultVector dist_results;
-//  GetCollisionsCached(x, dist_results);
-//  Eigen::VectorXd dofvals = sco::getVec(x, vars0_);
-
-//  Eigen::VectorXd safety_distance(dist_results.size());
-//  for (auto i = 0u; i < dist_results.size(); ++i)
-//  {
-//    const tesseract_collision::ContactResult& res = dist_results[i];
-//    // Contains the contact distance threshold and coefficient for the given link pair
-//    const Eigen::Vector2d& data = getSafetyMarginData()->getPairSafetyMarginData(res.link_names[0],
-//    res.link_names[1]); safety_distance[i] = data[0];
-
-//    tesseract_environment::AdjacencyMapPair::ConstPtr itA = adjacency_map_->getLinkMapping(res.link_names[0]);
-//    if (itA != nullptr)
-//    {
-//      Eigen::MatrixXd jac;
-//      Eigen::VectorXd dist_grad;
-//      Eigen::Isometry3d pose, pose2;
-//      jac.resize(6, manip_->numJoints());
-//      manip_->calcFwdKin(pose, dofvals, itA->link_name);
-//      pose = world_to_base_ * pose;
-
-//      manip_->calcJacobian(jac, dofvals, itA->link_name);
-//      tesseract_kinematics::jacobianChangeBase(jac, world_to_base_);
-//      tesseract_kinematics::jacobianChangeRefPoint(jac, pose.linear() * res.nearest_points_local[0]);
-
-//      // Eigen::MatrixXd jac_test;
-//      // jac_test.resize(6, manip_->numJoints());
-//      // tesseract_kinematics::numericalJacobian(jac_test, world_to_base_, *manip_, dofvals, itA->link_name,
-//      // res.nearest_points_local[0]); bool check = jac.isApprox(jac_test, 1e-3); assert(check == true);
-
-//      dist_grad = -res.normal.transpose() * jac.topRows(3);
-
-//      manip_->calcFwdKin(pose2, dofvals + dist_grad, itA->link_name);
-//      pose2 = world_to_base_ * pose2 * itA->transform;
-//      plotter->plotArrow(
-//          res.nearest_points[0], pose2 * res.nearest_points_local[0], Eigen::Vector4d(1, 1, 1, 1), 0.005);
-//    }
-
-//    tesseract_environment::AdjacencyMapPair::ConstPtr itB = adjacency_map_->getLinkMapping(res.link_names[1]);
-//    if (itB != nullptr)
-//    {
-//      Eigen::MatrixXd jac;
-//      Eigen::VectorXd dist_grad;
-//      Eigen::Isometry3d pose, pose2;
-//      jac.resize(6, manip_->numJoints());
-//      manip_->calcFwdKin(pose, dofvals, itB->link_name);
-//      pose = world_to_base_ * pose;
-
-//      // Calculate Jacobian
-//      manip_->calcJacobian(jac, dofvals, itB->link_name);
-//      tesseract_kinematics::jacobianChangeBase(jac, world_to_base_);
-//      tesseract_kinematics::jacobianChangeRefPoint(jac, pose.linear() * res.nearest_points_local[1]);
-
-//      // Eigen::MatrixXd jac_test;
-//      // jac_test.resize(6, manip_->numJoints());
-//      // tesseract_kinematics::numericalJacobian(jac_test, world_to_base_, *manip_, dofvals, itB->link_name,
-//      // res.nearest_points_local[1]); bool check = jac.isApprox(jac_test, 1e-3); assert(check == true)
-
-//      dist_grad = res.normal.transpose() * jac.topRows(3);
-
-//      manip_->calcFwdKin(pose2, dofvals + dist_grad, itB->link_name);
-//      pose2 = world_to_base_ * pose2 * itB->transform;
-//      plotter->plotArrow(
-//          res.nearest_points[1], pose2 * res.nearest_points_local[1], Eigen::Vector4d(1, 1, 1, 1), 0.005);
-//    }
-//  }
-
-//  plotter->plotContactResults(adjacency_map_->getActiveLinkNames(), dist_results, safety_distance);
-//}
-
-////////////////////////////////////////////
-
-// CollisionCost::CollisionCost(tesseract_kinematics::ForwardKinematics::ConstPtr manip,
-//                             tesseract_environment::Environment::ConstPtr env,
-//                             tesseract_environment::AdjacencyMap::ConstPtr adjacency_map,
-//                             const Eigen::Isometry3d& world_to_base,
-//                             SafetyMarginData::ConstPtr safety_margin_data,
-//                             tesseract_collision::ContactTestType contact_test_type,
-//                             sco::VarVector vars,
-//                             CollisionExpressionEvaluatorType type,
-//                             double safety_margin_buffer)
-//  : Cost("collision")
-//{
-//  m_calc = std::make_shared<DiscreteCollisionEvaluator>(std::move(manip),
-//                                                              std::move(env),
-//                                                              std::move(adjacency_map),
-//                                                              world_to_base,
-//                                                              std::move(safety_margin_data),
-//                                                              contact_test_type,
-//                                                              std::move(vars),
-//                                                              type,
-//                                                              safety_margin_buffer);
-//}
-
-// CollisionCost::CollisionCost(tesseract_kinematics::ForwardKinematics::ConstPtr manip,
-//                             tesseract_environment::Environment::ConstPtr env,
-//                             tesseract_environment::AdjacencyMap::ConstPtr adjacency_map,
-//                             const Eigen::Isometry3d& world_to_base,
-//                             SafetyMarginData::ConstPtr safety_margin_data,
-//                             tesseract_collision::ContactTestType contact_test_type,
-//                             double longest_valid_segment_length,
-//                             sco::VarVector vars0,
-//                             sco::VarVector vars1,
-//                             CollisionExpressionEvaluatorType type,
-//                             bool discrete,
-//                             double safety_margin_buffer)
-//{
-//  if (discrete)
-//  {
-//    name_ = "discrete_continuous_collision";
-//    m_calc = std::make_shared<DiscreteCollisionEvaluator>(std::move(manip),
-//                                                          std::move(env),
-//                                                          std::move(adjacency_map),
-//                                                          world_to_base,
-//                                                          std::move(safety_margin_data),
-//                                                          contact_test_type,
-//                                                          longest_valid_segment_length,
-//                                                          std::move(vars0),
-//                                                          std::move(vars1),
-//                                                          type,
-//                                                          safety_margin_buffer);
-//  }
-//  else
-//  {
-//    name_ = "cast_continuous_collision";
-//    m_calc = std::make_shared<CastCollisionEvaluator>(std::move(manip),
-//                                                      std::move(env),
-//                                                      std::move(adjacency_map),
-//                                                      world_to_base,
-//                                                      std::move(safety_margin_data),
-//                                                      contact_test_type,
-//                                                      longest_valid_segment_length,
-//                                                      std::move(vars0),
-//                                                      std::move(vars1),
-//                                                      type,
-//                                                      safety_margin_buffer);
-//  }
-//}
-
-// sco::ConvexObjective::Ptr CollisionCost::convex(const sco::std::vector<double>& x, sco::Model* model)
-//{
-//  sco::ConvexObjective::Ptr out(new sco::ConvexObjective(model));
-//  sco::AffExprVector exprs;
-//  AlignedVector<Eigen::Vector2d> exprs_data;
-
-//  m_calc->CalcDistExpressions(x, exprs, exprs_data);
-//  assert(exprs.size() == exprs_data.size());
-
-//  tesseract_collision::ContactResultVector dist_results;
-//  m_calc->GetCollisionsCached(x, dist_results);
-//  for (std::size_t i = 0; i < exprs.size(); ++i)
-//  {
-//    // Contains the contact distance threshold and coefficient for the given link pair
-//    const Eigen::Vector2d& data = exprs_data[i];
-
-//    sco::AffExpr viol = sco::exprSub(sco::AffExpr(data[0]), exprs[i]);
-//    out->addHinge(viol, data[1]);
-//  }
-//  return out;
-//}
-
-// double CollisionCost::value(const sco::std::vector<double>& x)
-//{
-//  std::vector<double> dists;
-//  m_calc->CalcDists(x, dists);
-
-//  tesseract_collision::ContactResultVector dist_results;
-//  m_calc->GetCollisionsCached(x, dist_results);
-//  double out = 0;
-//  for (std::size_t i = 0; i < dists.size(); ++i)
-//  {
-//    // Contains the contact distance threshold and coefficient for the given link pair
-//    const Eigen::Vector2d& data =
-//    m_calc->getSafetyMarginData()->getPairSafetyMarginData(dist_results[i].link_names[0],
-//                                                                                         dist_results[i].link_names[1]);
-//    out += sco::pospart(data[0] - dists[i]) * data[1];
-//  }
-//  return out;
-//}
-
-// void CollisionCost::Plot(const tesseract_visualization::Visualization::Ptr& plotter, const std::vector<double>& x)
-//{
-//  m_calc->Plot(plotter, x);
-//}
-//// ALMOST EXACTLY COPIED FROM CollisionCost
-
-// CollisionConstraint::CollisionConstraint(tesseract_kinematics::ForwardKinematics::ConstPtr manip,
-//                                         tesseract_environment::Environment::ConstPtr env,
-//                                         tesseract_environment::AdjacencyMap::ConstPtr adjacency_map,
-//                                         const Eigen::Isometry3d& world_to_base,
-//                                         SafetyMarginData::ConstPtr safety_margin_data,
-//                                         tesseract_collision::ContactTestType contact_test_type,
-//                                         sco::VarVector vars,
-//                                         CollisionExpressionEvaluatorType type,
-//                                         double safety_margin_buffer)
-//{
-//  name_ = "collision";
-//  m_calc = std::make_shared<DiscreteCollisionEvaluator>(std::move(manip),
-//                                                              std::move(env),
-//                                                              std::move(adjacency_map),
-//                                                              world_to_base,
-//                                                              std::move(safety_margin_data),
-//                                                              contact_test_type,
-//                                                              std::move(vars),
-//                                                              type,
-//                                                              safety_margin_buffer);
-//}
-
-// CollisionConstraint::CollisionConstraint(tesseract_kinematics::ForwardKinematics::ConstPtr manip,
-//                                         tesseract_environment::Environment::ConstPtr env,
-//                                         tesseract_environment::AdjacencyMap::ConstPtr adjacency_map,
-//                                         const Eigen::Isometry3d& world_to_base,
-//                                         SafetyMarginData::ConstPtr safety_margin_data,
-//                                         tesseract_collision::ContactTestType contact_test_type,
-//                                         double longest_valid_segment_length,
-//                                         sco::VarVector vars0,
-//                                         sco::VarVector vars1,
-//                                         CollisionExpressionEvaluatorType type,
-//                                         bool discrete,
-//                                         double safety_margin_buffer)
-//{
-//  if (discrete)
-//  {
-//    name_ = "discrete_continuous_collision";
-//    m_calc = std::make_shared<DiscreteCollisionEvaluator>(std::move(manip),
-//                                                          std::move(env),
-//                                                          std::move(adjacency_map),
-//                                                          world_to_base,
-//                                                          std::move(safety_margin_data),
-//                                                          contact_test_type,
-//                                                          longest_valid_segment_length,
-//                                                          std::move(vars0),
-//                                                          std::move(vars1),
-//                                                          type,
-//                                                          safety_margin_buffer);
-//  }
-//  else
-//  {
-//    name_ = "cast_continuous_collision";
-//    m_calc = std::make_shared<CastCollisionEvaluator>(std::move(manip),
-//                                                      std::move(env),
-//                                                      std::move(adjacency_map),
-//                                                      world_to_base,
-//                                                      std::move(safety_margin_data),
-//                                                      contact_test_type,
-//                                                      longest_valid_segment_length,
-//                                                      std::move(vars0),
-//                                                      std::move(vars1),
-//                                                      type,
-//                                                      safety_margin_buffer);
-//  }
-//}
-
-// sco::ConvexConstraints::Ptr CollisionConstraint::convex(const sco::std::vector<double>& x, sco::Model* model)
-//{
-//  sco::ConvexConstraints::Ptr out(new sco::ConvexConstraints(model));
-//  sco::AffExprVector exprs;
-//  AlignedVector<Eigen::Vector2d> exprs_data;
-
-//  m_calc->CalcDistExpressions(x, exprs, exprs_data);
-//  assert(exprs.size() == exprs_data.size());
-
-//  tesseract_collision::ContactResultVector dist_results;
-//  m_calc->GetCollisionsCached(x, dist_results);
-//  for (std::size_t i = 0; i < exprs.size(); ++i)
-//  {
-//    // Contains the contact distance threshold and coefficient for the given link pair
-//    const Eigen::Vector2d& data = exprs_data[i];
-
-//    sco::AffExpr viol = sco::exprSub(sco::AffExpr(data[0]), exprs[i]);
-//    out->addIneqCnt(sco::exprMult(viol, data[1]));
-//  }
-//  return out;
-//}
-
-// std::vector<double> CollisionConstraint::value(const sco::std::vector<double>& x)
-//{
-//  std::vector<double> dists;
-//  m_calc->CalcDists(x, dists);
-
-//  tesseract_collision::ContactResultVector dist_results;
-//  m_calc->GetCollisionsCached(x, dist_results);
-//  std::vector<double> out(dists.size());
-//  for (std::size_t i = 0; i < dists.size(); ++i)
-//  {
-//    // Contains the contact distance threshold and coefficient for the given link pair
-//    const Eigen::Vector2d& data =
-//    m_calc->getSafetyMarginData()->getPairSafetyMarginData(dist_results[i].link_names[0],
-//                                                                                         dist_results[i].link_names[1]);
-
-//    out[i] = sco::pospart(data[0] - dists[i]) * data[1];
-//  }
-//  return out;
-//}
-//}  // namespace trajopt
 }  // namespace trajopt
