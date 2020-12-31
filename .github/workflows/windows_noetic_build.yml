@@ -43,4 +43,4 @@ jobs:
 
         set
 
-        catkin_make_isolated --install --force-cmake --pkg trajopt trajopt_sco --cmake-args -DCMAKE_BUILD_TYPE=Release -DBUILD_IPOPT=OFF -DBUILD_SNOPT=OFF -DTRAJOPT_ENABLE_TESTING=ON --make-args test
+        catkin_make_isolated --install --force-cmake --pkg trajopt trajopt_sco --cmake-args -DCMAKE_BUILD_TYPE=Release -DBUILD_IPOPT=OFF -DBUILD_SNOPT=OFF -DTRAJOPT_ENABLE_TESTING=ON
