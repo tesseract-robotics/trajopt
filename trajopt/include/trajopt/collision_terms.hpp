@@ -404,7 +404,8 @@ public:
    * @param dof_vals Joint values set prior to collision checking
    * @param dist_results Contact Results Map
    */
-  void CalcCollisions(const Eigen::Ref<const Eigen::VectorXd>& dof_vals, tesseract_collision::ContactResultMap& dist_results);
+  void CalcCollisions(const Eigen::Ref<const Eigen::VectorXd>& dof_vals,
+                      tesseract_collision::ContactResultMap& dist_results);
   void Plot(const tesseract_visualization::Visualization::Ptr& plotter, const DblVec& x) override;
   sco::VarVector GetVars() override { return vars0_; }
 

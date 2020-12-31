@@ -79,7 +79,8 @@ void CartPosConstraint::SetBounds(const std::vector<ifopt::Bounds>& bounds)
   bounds_ = bounds;
 }
 
-void CartPosConstraint::CalcJacobianBlock(const Eigen::Ref<const Eigen::VectorXd>& joint_vals, Jacobian& jac_block) const
+void CartPosConstraint::CalcJacobianBlock(const Eigen::Ref<const Eigen::VectorXd>& joint_vals,
+                                          Jacobian& jac_block) const
 {
   if (use_numeric_differentiation)
   {

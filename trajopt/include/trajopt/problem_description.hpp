@@ -101,7 +101,7 @@ struct BasicInfo
   /** @brief Number of time steps (rows) in the optimization matrix */
   int n_steps;
   std::string manip;
-  std::string robot;             // optional
+  std::string robot;  // optional
   /** @brief Timesteps at which to apply a fixed joint constraint */
   IntVec fixed_timesteps;
   sco::ModelType convex_solver;  // which convex solver to use
