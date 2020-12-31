@@ -76,7 +76,8 @@ inline std::vector<Eigen::VectorXd> interpolate(const Eigen::Ref<const Eigen::Ve
  * @param bounds Bounds on that vector
  * @return Output vector. If input is outside a bound, force it to the boundary
  */
-inline Eigen::VectorXd getClosestValidPoint(const Eigen::Ref<const Eigen::VectorXd>& input, std::vector<ifopt::Bounds> bounds)
+inline Eigen::VectorXd getClosestValidPoint(const Eigen::Ref<const Eigen::VectorXd>& input,
+                                            std::vector<ifopt::Bounds> bounds)
 {
   // Convert Bounds to VectorXds
   Eigen::VectorXd bound_lower(static_cast<Eigen::Index>(bounds.size()));
