@@ -114,7 +114,7 @@ void ProblemConstructionInfo::readBasicInfo(const Json::Value& v)
   json_marshal::childFromJson(v, basic_info.n_steps, "n_steps");
   json_marshal::childFromJson(v, basic_info.manip, "manip");
   json_marshal::childFromJson(v, basic_info.robot, "robot", std::string(""));
-  json_marshal::childFromJson(v, basic_info.dofs_fixed, "dofs_fixed", IntVec());
+  json_marshal::childFromJson(v, basic_info.fixed_timesteps, "fixed_timesteps", IntVec());
   json_marshal::childFromJson(v, basic_info.convex_solver, "convex_solver", basic_info.convex_solver);
   json_marshal::childFromJson(v, basic_info.dt_lower_lim, "dt_lower_lim", 1.0);
   json_marshal::childFromJson(v, basic_info.dt_upper_lim, "dt_upper_lim", 1.0);
@@ -493,10 +493,10 @@ TrajOptProb::Ptr ConstructProblem(const ProblemConstructionInfo& pci)
     }
   }
 
-  // Apply constraint to each fixed dof to its initial value for all timesteps (freeze that column)
-  if (!bi.dofs_fixed.empty())
+  // Apply a constraint to each fixed timestep to set the variables of that timestep equal to their initial values
+  if (!bi.fixed_timesteps.empty())
   {
-    for (const int& dof_ind : bi.dofs_fixed)
+    for (const int& dof_ind : bi.fixed_timesteps)
     {
       for (int i = 1; i < prob->GetNumSteps(); ++i)
       {
@@ -1941,15 +1941,16 @@ void AvoidSingularityTermInfo::hatch(TrajOptProb& prob)
   // Apply error calculator as either cost or constraint
   for (int i = first_step; i <= last_step; ++i)
   {
+    const std::string idx_name = name + "_" + std::to_string(i);
     if (term_type & TT_COST)
     {
-      prob.addCost(sco::Cost::Ptr(
-          new TrajOptCostFromErrFunc(f, dfdx, prob.GetVarRow(i, 0, n_dof), util::toVectorXd(coeffs), sco::ABS, name)));
+      prob.addCost(sco::Cost::Ptr(new TrajOptCostFromErrFunc(
+          f, dfdx, prob.GetVarRow(i, 0, n_dof), util::toVectorXd(coeffs), sco::ABS, idx_name)));
     }
     else if (term_type & TT_CNT)
     {
       prob.addConstraint(sco::Constraint::Ptr(new TrajOptConstraintFromErrFunc(
-          f, dfdx, prob.GetVarRow(i, 0, n_dof), util::toVectorXd(coeffs), sco::INEQ, name)));
+          f, dfdx, prob.GetVarRow(i, 0, n_dof), util::toVectorXd(coeffs), sco::INEQ, idx_name)));
     }
     else
     {
