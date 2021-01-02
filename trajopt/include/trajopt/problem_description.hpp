@@ -96,20 +96,33 @@ struct TrajOptResult
 
 struct BasicInfo
 {
-  /** @brief If true first time step is fixed with a joint level constraint*/
-  bool start_fixed;
   /** @brief Number of time steps (rows) in the optimization matrix */
   int n_steps;
+
+  /** @brief The manipulator name */
   std::string manip;
-  std::string robot;  // optional
-  /** @brief Timesteps at which to apply a fixed joint constraint */
+
+  /**
+   * @brief Timesteps at which to apply a fixed joint constraint
+   * @details It binds the timestep to the value provided in the initial trajectory
+   */
   IntVec fixed_timesteps;
-  sco::ModelType convex_solver;  // which convex solver to use
+
+  /**
+   * @brief DOF(aka. Joint) to apply a fixed joint constraint for all timesteps
+   * @details It binds the DOF(aka. Joint) to the value provided in the initial trajectory
+   */
+  IntVec fixed_dofs;
+
+  /** @brief The convex solver to use */
+  sco::ModelType convex_solver;
 
   /** @brief If true, the last column in the optimization matrix will be 1/dt */
   bool use_time = false;
+
   /** @brief The upper limit of 1/dt values allowed in the optimization*/
   double dt_upper_lim = 1.0;
+
   /** @brief The lower limit of 1/dt values allowed in the optimization*/
   double dt_lower_lim = 1.0;
 };
