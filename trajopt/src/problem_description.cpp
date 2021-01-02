@@ -110,11 +110,10 @@ TermInfo::Ptr TermInfo::fromName(const std::string& type)
 
 void ProblemConstructionInfo::readBasicInfo(const Json::Value& v)
 {
-  json_marshal::childFromJson(v, basic_info.start_fixed, "start_fixed", true);
   json_marshal::childFromJson(v, basic_info.n_steps, "n_steps");
   json_marshal::childFromJson(v, basic_info.manip, "manip");
-  json_marshal::childFromJson(v, basic_info.robot, "robot", std::string(""));
   json_marshal::childFromJson(v, basic_info.fixed_timesteps, "fixed_timesteps", IntVec());
+  json_marshal::childFromJson(v, basic_info.fixed_dofs, "fixed_dofs", IntVec());
   json_marshal::childFromJson(v, basic_info.convex_solver, "convex_solver", basic_info.convex_solver);
   json_marshal::childFromJson(v, basic_info.dt_lower_lim, "dt_lower_lim", 1.0);
   json_marshal::childFromJson(v, basic_info.dt_upper_lim, "dt_upper_lim", 1.0);
@@ -473,35 +472,50 @@ TrajOptProb::Ptr ConstructProblem(const ProblemConstructionInfo& pci)
   }
   prob->SetInitTraj(init_traj);
 
-  // If start_fixed, constrain the joint values for the first time step to be their initialized values
-  if (bi.start_fixed)
-  {
-    if (init_traj.rows() < 1)
-    {
-      PRINT_AND_THROW("Initial trajectory must contain at least the start state.");
-    }
-
-    if (init_traj.cols() != (n_dof + (use_time ? 1 : 0)))
-    {
-      PRINT_AND_THROW("robot dof values don't match initialization. I don't "
-                      "know what you want me to use for the dof values");
-    }
-
-    for (int j = 0; j < static_cast<int>(n_dof); ++j)
-    {
-      prob->addLinearConstraint(sco::exprSub(sco::AffExpr(prob->m_traj_vars(0, j)), init_traj(0, j)), sco::EQ);
-    }
-  }
-
   // Apply a constraint to each fixed timestep to set the variables of that timestep equal to their initial values
   if (!bi.fixed_timesteps.empty())
   {
-    for (const int& dof_ind : bi.fixed_timesteps)
+    for (const int& t_idx : bi.fixed_timesteps)
     {
-      for (int i = 1; i < prob->GetNumSteps(); ++i)
+      if (init_traj.rows() < t_idx)
       {
+        PRINT_AND_THROW("Fixed timestep indice is outside the bounds of the initial trajectory.");
+      }
+
+      if (init_traj.cols() != (n_dof + (use_time ? 1 : 0)))
+      {
+        PRINT_AND_THROW("robot dof values don't match initialization. I don't "
+                        "know what you want me to use for the dof values");
+      }
+
+      for (int j = 0; j < static_cast<int>(n_dof); ++j)
+      {
+        prob->addLinearConstraint(sco::exprSub(sco::AffExpr(prob->m_traj_vars(t_idx, j)), init_traj(t_idx, j)),
+                                  sco::EQ);
+      }
+    }
+  }
+
+  // Apply a constraint to a given DOF(aka Joint) for all timesteps equal to their initial values
+  if (!bi.fixed_dofs.empty())
+  {
+    for (const int& dof_ind : bi.fixed_dofs)
+    {
+      if (static_cast<int>(n_dof) < dof_ind)
+      {
+        PRINT_AND_THROW("DOF(aka Joint) indice is greater than the number of DOF available.");
+      }
+
+      for (int i = 0; i < prob->GetNumSteps(); ++i)
+      {
+        // Need to check if the timesteps is in the fixed_timesteps, do not want to apply two of the same linear
+        // constraints
+        if (!bi.fixed_timesteps.empty() &&
+            std::any_of(bi.fixed_timesteps.begin(), bi.fixed_timesteps.end(), [i](int d) { return d == i; }))
+          continue;
+
         prob->addLinearConstraint(
-            sco::exprSub(sco::AffExpr(prob->m_traj_vars(i, dof_ind)), sco::AffExpr(init_traj(0, dof_ind))), sco::EQ);
+            sco::exprSub(sco::AffExpr(prob->m_traj_vars(i, dof_ind)), sco::AffExpr(init_traj(i, dof_ind))), sco::EQ);
       }
     }
   }
