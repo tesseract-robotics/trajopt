@@ -112,8 +112,8 @@ void ProblemConstructionInfo::readBasicInfo(const Json::Value& v)
 {
   json_marshal::childFromJson(v, basic_info.n_steps, "n_steps");
   json_marshal::childFromJson(v, basic_info.manip, "manip");
+  json_marshal::childFromJson(v, basic_info.robot, "robot", std::string(""));
   json_marshal::childFromJson(v, basic_info.fixed_timesteps, "fixed_timesteps", IntVec());
-  json_marshal::childFromJson(v, basic_info.fixed_dofs, "fixed_dofs", IntVec());
   json_marshal::childFromJson(v, basic_info.convex_solver, "convex_solver", basic_info.convex_solver);
   json_marshal::childFromJson(v, basic_info.dt_lower_lim, "dt_lower_lim", 1.0);
   json_marshal::childFromJson(v, basic_info.dt_upper_lim, "dt_upper_lim", 1.0);
@@ -496,10 +496,10 @@ TrajOptProb::Ptr ConstructProblem(const ProblemConstructionInfo& pci)
     }
   }
 
-  // Apply a constraint to a given DOF(aka Joint) for all timesteps equal to their initial values
-  if (!bi.fixed_dofs.empty())
+  // Apply a constraint to each fixed timestep to set the variables of that timestep equal to their initial values
+  if (!bi.fixed_timesteps.empty())
   {
-    for (const int& dof_ind : bi.fixed_dofs)
+    for (const int& dof_ind : bi.fixed_timesteps)
     {
       if (static_cast<int>(n_dof) < dof_ind)
       {

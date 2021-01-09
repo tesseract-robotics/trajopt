@@ -101,6 +101,10 @@ struct BasicInfo
 
   /** @brief The manipulator name */
   std::string manip;
+  std::string robot;  // optional
+  /** @brief Timesteps at which to apply a fixed joint constraint */
+  IntVec fixed_timesteps;
+  sco::ModelType convex_solver;  // which convex solver to use
 
   /**
    * @brief Timesteps at which to apply a fixed joint constraint
