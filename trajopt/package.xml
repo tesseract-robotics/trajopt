@@ -9,8 +9,9 @@
   <author>Levi Armstrong</author>
   <author>John Schulman</author>
 
-  <depend>trajopt_sco</depend>
-  <depend>trajopt_utils</depend>
+  <!-- Following recommendations of REP 136 -->
+  <exec_depend>catkin</exec_depend>
+  <buildtool_depend>cmake</buildtool_depend>
 
   <build_depend>cmake_common_scripts</build_depend>
   <build_depend>eigen</build_depend>
@@ -19,6 +20,8 @@
   <depend>libjsoncpp-dev</depend>
   <depend>tesseract_environment</depend>
   <depend>tesseract_visualization</depend>
+  <depend>trajopt_sco</depend>
+  <depend>trajopt_utils</depend>
 
   <test_depend>benchmark</test_depend>
   <test_depend>gtest</test_depend>

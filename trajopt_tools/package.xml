@@ -7,7 +7,9 @@
   <license>Apache 2.0</license>
   <author >Levi Armstrong</author>
 
-  <depend>trajopt_utils</depend>
+  <!-- Following recommendations of REP 136 -->
+  <exec_depend>catkin</exec_depend>
+  <buildtool_depend>cmake</buildtool_depend>
 
   <build_depend>cmake_common_scripts</build_depend>
   <build_depend>eigen</build_depend>
@@ -16,6 +18,7 @@
   <depend>bullet-extras</depend>
   <depend>libconsole-bridge-dev</depend>
   <depend>vhacd</depend>
+  <depend>trajopt_utils</depend>
 
   <export>
     <build_type>cmake</build_type>
