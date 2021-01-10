@@ -33,7 +33,7 @@ jobs:
 
         rosdep update
 
-        vcs import --input "${{ github.workspace }}/src/trajopt_ros/dependencies.rosinstall" src/
+        vcs import --input "${{ github.workspace }}/src/trajopt_ros/dependencies_with_ext.rosinstall" src/
 
         rosdep install -q --from-paths . --ignore-src -y
 
