@@ -19,7 +19,7 @@ jobs:
       OS_CODE_NAME: bionic
       ROS_DISTRO: melodic
       ROS_REPO: main
-      ROSDEP_SKIP_KEYS: "bullet3 descartes_opw descartes_samplers descartes_light opw_kinematics cmake_common_scripts fcl ifopt taskflow benchmark"
+      ROSDEP_SKIP_KEYS: "bullet bullet-extras opw_kinematics cmake_common_scripts fcl ifopt benchmark"
       CLANG_FORMAT_CHECK: file
       CLANG_FORMAT_VERSION: 8
       DOCKER_IMAGE: "rosindustrial/tesseract:melodic"

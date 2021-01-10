@@ -7,6 +7,10 @@
     uri: https://github.com/ros-industrial-consortium/tesseract.git
     version: master
 - git:
+    local-name: tesseract_ext
+    uri: https://github.com/ros-industrial-consortium/tesseract_ext.git
+    version: master
+- git:
     local-name: opw_kinematics
     uri: https://github.com/Jmeyer1292/opw_kinematics.git
     version: master
