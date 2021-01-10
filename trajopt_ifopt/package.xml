@@ -8,6 +8,10 @@
   <author>Levi Armstrong</author>
   <author>Matthew Powelson</author>
 
+  <!-- Following recommendations of REP 136 -->
+  <exec_depend>catkin</exec_depend>
+  <buildtool_depend>cmake</buildtool_depend>
+
   <build_depend>cmake_common_scripts</build_depend>
   <depend>eigen</depend>
   <depend>ifopt</depend>
