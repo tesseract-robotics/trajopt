@@ -3,6 +3,7 @@
   <name>vhacd</name>
   <version>0.1.0</version>
   <description>The vhacd package</description>
+  <author>Khaled Mammou</author>
   <maintainer email="levi.armstrong@swri.org">Levi Armstrong</maintainer>
   <license>BSD</license>
 
