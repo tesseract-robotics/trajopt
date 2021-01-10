@@ -86,7 +86,6 @@ TEST(CartPositionOptimizationTrajoptSCO, cart_position_optimization_trajopt_sco)
   // Populate Basic Info
   pci.basic_info.n_steps = 1;
   pci.basic_info.manip = "right_arm";
-  pci.basic_info.start_fixed = false;
   pci.basic_info.use_time = false;
 
   // Create Kinematic Object
