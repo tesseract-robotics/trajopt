@@ -73,7 +73,6 @@ TEST_F(CostsTest, equality_jointPos)  // NOLINT
   // Populate Basic Info
   pci.basic_info.n_steps = steps;
   pci.basic_info.manip = "right_arm";
-  pci.basic_info.start_fixed = false;
 
   // Create Kinematic Object
   pci.kin = env_->getManipulatorManager()->getFwdKinematicSolver(pci.basic_info.manip);
@@ -165,7 +164,6 @@ TEST_F(CostsTest, inequality_jointPos)  // NOLINT
   // Populate Basic Info
   pci.basic_info.n_steps = steps;
   pci.basic_info.manip = "right_arm";
-  pci.basic_info.start_fixed = false;
   pci.basic_info.use_time = false;
 
   // Create Kinematic Object
@@ -276,7 +274,6 @@ TEST_F(CostsTest, equality_jointVel)  // NOLINT
   // Populate Basic Info
   pci.basic_info.n_steps = steps;
   pci.basic_info.manip = "right_arm";
-  pci.basic_info.start_fixed = false;
   pci.basic_info.use_time = false;
 
   // Create Kinematic Object
@@ -369,7 +366,6 @@ TEST_F(CostsTest, inequality_jointVel)  // NOLINT
   // Populate Basic Info
   pci.basic_info.n_steps = steps;
   pci.basic_info.manip = "right_arm";
-  pci.basic_info.start_fixed = false;
   pci.basic_info.use_time = false;
 
   // Create Kinematic Object
@@ -481,7 +477,6 @@ TEST_F(CostsTest, equality_jointVel_time)  // NOLINT
   // Populate Basic Info
   pci.basic_info.n_steps = steps;
   pci.basic_info.manip = "right_arm";
-  pci.basic_info.start_fixed = false;
   pci.basic_info.use_time = true;
   pci.basic_info.dt_lower_lim = dt_lower;
   pci.basic_info.dt_upper_lim = dt_upper;
@@ -581,7 +576,6 @@ TEST_F(CostsTest, inequality_jointVel_time)  // NOLINT
   // Populate Basic Info
   pci.basic_info.n_steps = steps;
   pci.basic_info.manip = "right_arm";
-  pci.basic_info.start_fixed = false;
   pci.basic_info.use_time = true;
   pci.basic_info.dt_lower_lim = dt_lower;
   pci.basic_info.dt_upper_lim = dt_upper;
@@ -693,7 +687,6 @@ TEST_F(CostsTest, equality_jointAcc)  // NOLINT
   // Populate Basic Info
   pci.basic_info.n_steps = steps;
   pci.basic_info.manip = "right_arm";
-  pci.basic_info.start_fixed = false;
   pci.basic_info.use_time = false;
 
   // Create Kinematic Object
@@ -787,7 +780,6 @@ TEST_F(CostsTest, inequality_jointAcc)  // NOLINT
   // Populate Basic Info
   pci.basic_info.n_steps = steps;
   pci.basic_info.manip = "right_arm";
-  pci.basic_info.start_fixed = false;
   pci.basic_info.use_time = false;
 
   // Create Kinematic Object

@@ -7,7 +7,8 @@
   <license>BSD</license>
 
   <build_depend>cmake_common_scripts</build_depend>
-  <depend>bullet3</depend>
+  <depend>bullet</depend>
+  <depend>bullet-extras</depend>
   <depend>trajopt_utils</depend>
 
   <export>

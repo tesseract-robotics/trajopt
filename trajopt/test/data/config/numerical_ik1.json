@@ -2,7 +2,6 @@
   "basic_info" : {
     "n_steps" : 1,
     "manip" : "left_arm",
-    "start_fixed" : false,
     "convex_solver" : "AUTO_SOLVER"
   },
   "costs" : [
