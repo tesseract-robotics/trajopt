@@ -27,7 +27,7 @@ TEST(solver_utils, exprToEigen)  // NOLINT
     var_name << "x_" << i;
     VarRep::Ptr x_el(std::make_shared<VarRep>(i, var_name.str(), nullptr));
     x_info.push_back(x_el);
-    x.push_back(Var(x_el.get()));
+    x.push_back(Var(x_el));
   }
 
   // x_affine = [3, 2]*x + 1

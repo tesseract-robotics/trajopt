@@ -72,7 +72,7 @@ public:
     Octree::Ptr coll_octree = std::make_shared<Octree>(octree, Octree::SubType::BOX);
     auto vis_box = std::make_shared<Box>(1.0, 1.0, 1.0);
 
-    auto visual = std::make_shared<Visual>(;
+    auto visual = std::make_shared<Visual>();
     visual->geometry = vis_box;
     visual->origin = Eigen::Isometry3d::Identity();
 
