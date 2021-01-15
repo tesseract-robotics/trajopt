@@ -42,6 +42,13 @@ OSQPModel::~OSQPModel()
   // The osqp_workspace_ is managed by osqp but its members are not so must clean up.
   if (osqp_workspace_ != nullptr)
     osqp_cleanup(osqp_workspace_);
+
+  // Clean up memory
+  for (Var& var : vars_)
+    var.var_rep->removed = true;
+  for (Cnt& cnt : cnts_)
+    cnt.cnt_rep->removed = true;
+  update();
 }
 
 Var OSQPModel::addVar(const std::string& name)
