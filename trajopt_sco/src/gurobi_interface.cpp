@@ -85,14 +85,14 @@ Var GurobiModel::addVar(const std::string& name)
 {
   ENSURE_SUCCESS(GRBaddvar(
       m_model, 0, nullptr, nullptr, 0, -GRB_INFINITY, GRB_INFINITY, GRB_CONTINUOUS, const_cast<char*>(name.c_str())));
-  m_vars.push_back(new VarRep(m_vars.size(), name, this));
+  m_vars.push_back(std::make_shared<VarRep>(m_vars.size(), name, this));
   return m_vars.back();
 }
 
 Var GurobiModel::addVar(const std::string& name, double lb, double ub)
 {
   ENSURE_SUCCESS(GRBaddvar(m_model, 0, nullptr, nullptr, 0, lb, ub, GRB_CONTINUOUS, const_cast<char*>(name.c_str())));
-  m_vars.push_back(new VarRep(m_vars.size(), name, this));
+  m_vars.push_back(std::make_shared<VarRep>(m_vars.size(), name, this));
   return m_vars.back();
 }
 
@@ -110,7 +110,7 @@ Cnt GurobiModel::addEqCnt(const AffExpr& expr, const std::string& name)
                               GRB_EQUAL,
                               -expr.constant,
                               const_cast<char*>(name.c_str())));
-  m_cnts.push_back(new CntRep(m_cnts.size(), this));
+  m_cnts.push_back(std::make_shared<CntRep>(m_cnts.size(), this));
   return m_cnts.back();
 }
 Cnt GurobiModel::addIneqCnt(const AffExpr& expr, const std::string& name)
@@ -127,7 +127,7 @@ Cnt GurobiModel::addIneqCnt(const AffExpr& expr, const std::string& name)
                               GRB_LESS_EQUAL,
                               -expr.constant,
                               const_cast<char*>(name.c_str())));
-  m_cnts.push_back(new CntRep(m_cnts.size(), this));
+  m_cnts.push_back(std::make_shared<CntRep>(m_cnts.size(), this));
   return m_cnts.back();
 }
 Cnt GurobiModel::addIneqCnt(const QuadExpr& qexpr, const std::string& name)
@@ -287,7 +287,7 @@ void GurobiModel::update()
 
   {
     size_t inew = 0;
-    for (const Var& var : m_vars)
+    for (Var& var : m_vars)
     {
       if (!var.var_rep->removed)
       {
@@ -296,13 +296,15 @@ void GurobiModel::update()
         ++inew;
       }
       else
-        delete var.var_rep;
+      {
+        var.var_rep = nullptr;
+      }
     }
     m_vars.resize(inew);
   }
   {
     size_t inew = 0;
-    for (const Cnt& cnt : m_cnts)
+    for (Cnt& cnt : m_cnts)
     {
       if (!cnt.cnt_rep->removed)
       {
@@ -311,7 +313,9 @@ void GurobiModel::update()
         ++inew;
       }
       else
-        delete cnt.cnt_rep;
+      {
+        cnt.cnt_rep = nullptr;
+      }
     }
     m_cnts.resize(inew);
   }

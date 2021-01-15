@@ -235,30 +235,30 @@ BPMPDModel::BPMPDModel()
 
 Var BPMPDModel::addVar(const std::string& name)
 {
-  m_vars.push_back(new VarRep(m_vars.size(), name, this));
+  m_vars.push_back(std::make_shared<VarRep>(m_vars.size(), name, this));
   m_lbs.push_back(-BPMPD_BIG);
   m_ubs.push_back(BPMPD_BIG);
   return m_vars.back();
 }
 Cnt BPMPDModel::addEqCnt(const AffExpr& expr, const std::string& /*name*/)
 {
-  m_cnts.push_back(new CntRep(m_cnts.size(), this));
+  m_cnts.push_back(std::make_shared<CntRep>(m_cnts.size(), this));
   m_cntExprs.push_back(expr);
   m_cntTypes.push_back(EQ);
   return m_cnts.back();
 }
 Cnt BPMPDModel::addIneqCnt(const AffExpr& expr, const std::string& /*name*/)
 {
-  m_cnts.push_back(new CntRep(m_cnts.size(), this));
+  m_cnts.push_back(std::make_shared<CntRep>(m_cnts.size(), this));
   m_cntExprs.push_back(expr);
   m_cntTypes.push_back(INEQ);
   return m_cnts.back();
 }
 Cnt BPMPDModel::addIneqCnt(const QuadExpr&, const std::string& /*name*/)
 {
-  assert(0 && "NOT IMPLEMENTED");
-  return nullptr;
+  throw std::runtime_error("BPMPDModel::addIneqCnt is not implemented yet!");
 }
+
 void BPMPDModel::removeVars(const VarVector& vars)
 {
   SizeTVec inds;
@@ -281,7 +281,7 @@ void BPMPDModel::update()
     size_t inew = 0;
     for (unsigned iold = 0; iold < m_vars.size(); ++iold)
     {
-      const Var& var = m_vars[iold];
+      Var& var = m_vars[iold];
       if (!var.var_rep->removed)
       {
         m_vars[inew] = var;
@@ -291,7 +291,9 @@ void BPMPDModel::update()
         ++inew;
       }
       else
-        delete var.var_rep;
+      {
+        var.var_rep = nullptr;
+      }
     }
     m_vars.resize(inew);
     m_lbs.resize(inew);
@@ -301,7 +303,7 @@ void BPMPDModel::update()
     size_t inew = 0;
     for (unsigned iold = 0; iold < m_cnts.size(); ++iold)
     {
-      const Cnt& cnt = m_cnts[iold];
+      Cnt& cnt = m_cnts[iold];
       if (!cnt.cnt_rep->removed)
       {
         m_cnts[inew] = cnt;
@@ -311,7 +313,9 @@ void BPMPDModel::update()
         ++inew;
       }
       else
-        delete cnt.cnt_rep;
+      {
+        cnt.cnt_rep = nullptr;
+      }
     }
     m_cnts.resize(inew);
     m_cntExprs.resize(inew);
