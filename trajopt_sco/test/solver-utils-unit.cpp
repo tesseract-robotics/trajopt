@@ -25,7 +25,7 @@ TEST(solver_utils, exprToEigen)  // NOLINT
   {
     std::stringstream var_name;
     var_name << "x_" << i;
-    VarRep::Ptr x_el(new VarRep(i, var_name.str(), nullptr));
+    VarRep::Ptr x_el(std::make_shared<VarRep>(i, var_name.str(), nullptr));
     x_info.push_back(x_el);
     x.push_back(Var(x_el.get()));
   }

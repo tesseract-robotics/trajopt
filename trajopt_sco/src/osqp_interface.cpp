@@ -53,7 +53,7 @@ OSQPModel::~OSQPModel()
 
 Var OSQPModel::addVar(const std::string& name)
 {
-  vars_.push_back(new VarRep(vars_.size(), name, this));
+  vars_.push_back(std::make_shared<VarRep>(vars_.size(), name, this));
   lbs_.push_back(-OSQP_INFINITY);
   ubs_.push_back(OSQP_INFINITY);
   return vars_.back();
@@ -61,7 +61,7 @@ Var OSQPModel::addVar(const std::string& name)
 
 Cnt OSQPModel::addEqCnt(const AffExpr& expr, const std::string& /*name*/)
 {
-  cnts_.push_back(new CntRep(cnts_.size(), this));
+  cnts_.push_back(std::make_shared<CntRep>(cnts_.size(), this));
   cnt_exprs_.push_back(expr);
   cnt_types_.push_back(EQ);
   return cnts_.back();
@@ -69,17 +69,13 @@ Cnt OSQPModel::addEqCnt(const AffExpr& expr, const std::string& /*name*/)
 
 Cnt OSQPModel::addIneqCnt(const AffExpr& expr, const std::string& /*name*/)
 {
-  cnts_.push_back(new CntRep(cnts_.size(), this));
+  cnts_.push_back(std::make_shared<CntRep>(cnts_.size(), this));
   cnt_exprs_.push_back(expr);
   cnt_types_.push_back(INEQ);
   return cnts_.back();
 }
 
-Cnt OSQPModel::addIneqCnt(const QuadExpr&, const std::string& /*name*/)
-{
-  throw std::runtime_error("NOT IMPLEMENTED");
-  return Cnt{};
-}
+Cnt OSQPModel::addIneqCnt(const QuadExpr&, const std::string& /*name*/) { throw std::runtime_error("NOT IMPLEMENTED"); }
 
 void OSQPModel::removeVars(const VarVector& vars)
 {
@@ -213,7 +209,7 @@ void OSQPModel::update()
     std::size_t inew = 0;
     for (std::size_t iold = 0; iold < vars_.size(); ++iold)
     {
-      const Var& var = vars_[iold];
+      Var& var = vars_[iold];
       if (!var.var_rep->removed)
       {
         vars_[inew] = var;
@@ -223,7 +219,9 @@ void OSQPModel::update()
         ++inew;
       }
       else
-        delete var.var_rep;
+      {
+        var.var_rep = nullptr;
+      }
     }
     vars_.resize(inew);
     lbs_.resize(inew);
@@ -233,7 +231,7 @@ void OSQPModel::update()
     std::size_t inew = 0;
     for (std::size_t iold = 0; iold < cnts_.size(); ++iold)
     {
-      const Cnt& cnt = cnts_[iold];
+      Cnt& cnt = cnts_[iold];
       if (!cnt.cnt_rep->removed)
       {
         cnts_[inew] = cnt;
@@ -243,7 +241,9 @@ void OSQPModel::update()
         ++inew;
       }
       else
-        delete cnt.cnt_rep;
+      {
+        cnt.cnt_rep = nullptr;
+      }
     }
     cnts_.resize(inew);
     cnt_exprs_.resize(inew);

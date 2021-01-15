@@ -38,7 +38,7 @@ qpOASESModel::qpOASESModel()
 qpOASESModel::~qpOASESModel() {}
 Var qpOASESModel::addVar(const std::string& name)
 {
-  vars_.push_back(new VarRep(vars_.size(), name, this));
+  vars_.push_back(std::make_shared<VarRep>(vars_.size(), name, this));
   lb_.push_back(-QPOASES_INFTY);
   ub_.push_back(QPOASES_INFTY);
   return vars_.back();
@@ -46,7 +46,7 @@ Var qpOASESModel::addVar(const std::string& name)
 
 Cnt qpOASESModel::addEqCnt(const AffExpr& expr, const std::string& /*name*/)
 {
-  cnts_.push_back(new CntRep(cnts_.size(), this));
+  cnts_.push_back(std::make_shared<CntRep>(cnts_.size(), this));
   cnt_exprs_.push_back(expr);
   cnt_types_.push_back(EQ);
   return cnts_.back();
@@ -54,7 +54,7 @@ Cnt qpOASESModel::addEqCnt(const AffExpr& expr, const std::string& /*name*/)
 
 Cnt qpOASESModel::addIneqCnt(const AffExpr& expr, const std::string& /*name*/)
 {
-  cnts_.push_back(new CntRep(cnts_.size(), this));
+  cnts_.push_back(std::make_shared<CntRep>(cnts_.size(), this));
   cnt_exprs_.push_back(expr);
   cnt_types_.push_back(INEQ);
   return cnts_.back();
@@ -143,7 +143,7 @@ void qpOASESModel::update()
     int inew = 0;
     for (unsigned iold = 0; iold < vars_.size(); ++iold)
     {
-      const Var& var = vars_[iold];
+      Var& var = vars_[iold];
       if (!var.var_rep->removed)
       {
         vars_[inew] = var;
@@ -153,7 +153,9 @@ void qpOASESModel::update()
         ++inew;
       }
       else
-        delete var.var_rep;
+      {
+        var.var_rep = nullptr;
+      }
     }
     vars_.resize(inew);
     lb_.resize(inew, QPOASES_INFTY);
@@ -173,7 +175,9 @@ void qpOASESModel::update()
         ++inew;
       }
       else
-        delete cnt.cnt_rep;
+      {
+        cnt.cnt_rep = nullptr;
+      }
     }
     cnts_.resize(inew);
     cnt_exprs_.resize(inew);
