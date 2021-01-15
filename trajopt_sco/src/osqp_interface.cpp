@@ -20,7 +20,7 @@ const bool SUPER_DEBUG_MODE = false;
 
 Model::Ptr createOSQPModel()
 {
-  Model::Ptr out(new OSQPModel());
+  auto out = std::make_shared<OSQPModel>();
   return out;
 }
 

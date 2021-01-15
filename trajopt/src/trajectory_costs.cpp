@@ -59,7 +59,7 @@ double JointPosEqCost::value(const DblVec& xvec)
 }
 sco::ConvexObjective::Ptr JointPosEqCost::convex(const DblVec& /*x*/, sco::Model* model)
 {
-  sco::ConvexObjective::Ptr out(new sco::ConvexObjective(model));
+  auto out = std::make_shared<sco::ConvexObjective>(model);
   out->addQuadExpr(expr_);
   return out;
 }
@@ -122,10 +122,10 @@ double JointPosIneqCost::value(const DblVec& xvec)
 
 sco::ConvexObjective::Ptr JointPosIneqCost::convex(const DblVec& /*x*/, sco::Model* model)
 {
-  sco::ConvexObjective::Ptr out(new sco::ConvexObjective(model));
+  auto out = std::make_shared<sco::ConvexObjective>(model);
   // Add hinge cost. Set the coefficient to 1 here since we include it in the AffExpr already
   // This is necessary since we want a seperate coefficient per joint
-  for (sco::AffExpr& expr : expr_vec_)
+  for (const sco::AffExpr& expr : expr_vec_)
   {
     out->addHinge(expr, 1);
   }
@@ -170,8 +170,8 @@ DblVec JointPosEqConstraint::value(const DblVec& xvec)
 }
 sco::ConvexConstraints::Ptr JointPosEqConstraint::convex(const DblVec& /*x*/, sco::Model* model)
 {
-  sco::ConvexConstraints::Ptr out(new sco::ConvexConstraints(model));
-  for (sco::AffExpr& expr : expr_vec_)
+  auto out = std::make_shared<sco::ConvexConstraints>(model);
+  for (const sco::AffExpr& expr : expr_vec_)
   {
     out->addEqCnt(expr);
   }
@@ -238,10 +238,10 @@ DblVec JointPosIneqConstraint::value(const DblVec& xvec)
 
 sco::ConvexConstraints::Ptr JointPosIneqConstraint::convex(const DblVec& /*x*/, sco::Model* model)
 {
-  sco::ConvexConstraints::Ptr out(new sco::ConvexConstraints(model));
+  auto out = std::make_shared<sco::ConvexConstraints>(model);
   // Add hinge cost. Set the coefficient to 1 here since we include it in the AffExpr already
   // This is necessary since we want a seperate coefficient per joint
-  for (sco::AffExpr& expr : expr_vec_)
+  for (const sco::AffExpr& expr : expr_vec_)
   {
     out->addIneqCnt(expr);
   }
@@ -287,7 +287,7 @@ double JointVelEqCost::value(const DblVec& xvec)
 }
 sco::ConvexObjective::Ptr JointVelEqCost::convex(const DblVec& /*x*/, sco::Model* model)
 {
-  sco::ConvexObjective::Ptr out(new sco::ConvexObjective(model));
+  auto out = std::make_shared<sco::ConvexObjective>(model);
   out->addQuadExpr(expr_);
   return out;
 }
@@ -352,10 +352,10 @@ double JointVelIneqCost::value(const DblVec& xvec)
 
 sco::ConvexObjective::Ptr JointVelIneqCost::convex(const DblVec& /*x*/, sco::Model* model)
 {
-  sco::ConvexObjective::Ptr out(new sco::ConvexObjective(model));
+  auto out = std::make_shared<sco::ConvexObjective>(model);
   // Add hinge cost. Set the coefficient to 1 here since we include it in the AffExpr already
   // This is necessary since we want a seperate coefficient per joint
-  for (sco::AffExpr& expr : expr_vec_)
+  for (const sco::AffExpr& expr : expr_vec_)
   {
     out->addHinge(expr, 1);
   }
@@ -401,8 +401,8 @@ DblVec JointVelEqConstraint::value(const DblVec& xvec)
 }
 sco::ConvexConstraints::Ptr JointVelEqConstraint::convex(const DblVec& /*x*/, sco::Model* model)
 {
-  sco::ConvexConstraints::Ptr out(new sco::ConvexConstraints(model));
-  for (sco::AffExpr& expr : expr_vec_)
+  auto out = std::make_shared<sco::ConvexConstraints>(model);
+  for (const sco::AffExpr& expr : expr_vec_)
   {
     out->addEqCnt(expr);
   }
@@ -471,10 +471,10 @@ DblVec JointVelIneqConstraint::value(const DblVec& xvec)
 
 sco::ConvexConstraints::Ptr JointVelIneqConstraint::convex(const DblVec& /*x*/, sco::Model* model)
 {
-  sco::ConvexConstraints::Ptr out(new sco::ConvexConstraints(model));
+  auto out = std::make_shared<sco::ConvexConstraints>(model);
   // Add hinge cost. Set the coefficient to 1 here since we include it in the AffExpr already
   // This is necessary since we want a seperate coefficient per joint
-  for (sco::AffExpr& expr : expr_vec_)
+  for (const sco::AffExpr& expr : expr_vec_)
   {
     out->addIneqCnt(expr);
   }
@@ -523,7 +523,7 @@ double JointAccEqCost::value(const DblVec& xvec)
 }
 sco::ConvexObjective::Ptr JointAccEqCost::convex(const DblVec& /*x*/, sco::Model* model)
 {
-  sco::ConvexObjective::Ptr out(new sco::ConvexObjective(model));
+  auto out = std::make_shared<sco::ConvexObjective>(model);
   out->addQuadExpr(expr_);
   return out;
 }
@@ -589,10 +589,10 @@ double JointAccIneqCost::value(const DblVec& xvec)
 
 sco::ConvexObjective::Ptr JointAccIneqCost::convex(const DblVec& /*x*/, sco::Model* model)
 {
-  sco::ConvexObjective::Ptr out(new sco::ConvexObjective(model));
+  auto out = std::make_shared<sco::ConvexObjective>(model);
   // Add hinge cost. Set the coefficient to 1 here since we include it in the AffExpr already
   // This is necessary since we want a seperate coefficient per joint
-  for (sco::AffExpr& expr : expr_vec_)
+  for (const sco::AffExpr& expr : expr_vec_)
   {
     out->addHinge(expr, 1);
   }
@@ -641,8 +641,8 @@ DblVec JointAccEqConstraint::value(const DblVec& xvec)
 }
 sco::ConvexConstraints::Ptr JointAccEqConstraint::convex(const DblVec& /*x*/, sco::Model* model)
 {
-  sco::ConvexConstraints::Ptr out(new sco::ConvexConstraints(model));
-  for (sco::AffExpr& expr : expr_vec_)
+  auto out = std::make_shared<sco::ConvexConstraints>(model);
+  for (const sco::AffExpr& expr : expr_vec_)
   {
     out->addEqCnt(expr);
   }
@@ -713,10 +713,10 @@ DblVec JointAccIneqConstraint::value(const DblVec& xvec)
 
 sco::ConvexConstraints::Ptr JointAccIneqConstraint::convex(const DblVec& /*x*/, sco::Model* model)
 {
-  sco::ConvexConstraints::Ptr out(new sco::ConvexConstraints(model));
+  auto out = std::make_shared<sco::ConvexConstraints>(model);
   // Add hinge cost. Set the coefficient to 1 here since we include it in the AffExpr already
   // This is necessary since we want a seperate coefficient per joint
-  for (sco::AffExpr& expr : expr_vec_)
+  for (const sco::AffExpr& expr : expr_vec_)
   {
     out->addIneqCnt(expr);
   }
@@ -767,7 +767,7 @@ double JointJerkEqCost::value(const DblVec& xvec)
 }
 sco::ConvexObjective::Ptr JointJerkEqCost::convex(const DblVec& /*x*/, sco::Model* model)
 {
-  sco::ConvexObjective::Ptr out(new sco::ConvexObjective(model));
+  auto out = std::make_shared<sco::ConvexObjective>(model);
   out->addQuadExpr(expr_);
   return out;
 }
@@ -835,10 +835,10 @@ double JointJerkIneqCost::value(const DblVec& xvec)
 
 sco::ConvexObjective::Ptr JointJerkIneqCost::convex(const DblVec& /*x*/, sco::Model* model)
 {
-  sco::ConvexObjective::Ptr out(new sco::ConvexObjective(model));
+  auto out = std::make_shared<sco::ConvexObjective>(model);
   // Add hinge cost. Set the coefficient to 1 here since we include it in the AffExpr already
   // This is necessary since we want a seperate coefficient per joint
-  for (sco::AffExpr& expr : expr_vec_)
+  for (const sco::AffExpr& expr : expr_vec_)
   {
     out->addHinge(expr, 1);
   }
@@ -889,8 +889,8 @@ DblVec JointJerkEqConstraint::value(const DblVec& xvec)
 }
 sco::ConvexConstraints::Ptr JointJerkEqConstraint::convex(const DblVec& /*x*/, sco::Model* model)
 {
-  sco::ConvexConstraints::Ptr out(new sco::ConvexConstraints(model));
-  for (sco::AffExpr& expr : expr_vec_)
+  auto out = std::make_shared<sco::ConvexConstraints>(model);
+  for (const sco::AffExpr& expr : expr_vec_)
   {
     out->addEqCnt(expr);
   }
@@ -961,10 +961,10 @@ DblVec JointJerkIneqConstraint::value(const DblVec& xvec)
 
 sco::ConvexConstraints::Ptr JointJerkIneqConstraint::convex(const DblVec& /*x*/, sco::Model* model)
 {
-  sco::ConvexConstraints::Ptr out(new sco::ConvexConstraints(model));
+  auto out = std::make_shared<sco::ConvexConstraints>(model);
   // Add hinge cost. Set the coefficient to 1 here since we include it in the AffExpr already
   // This is necessary since we want a seperate coefficient per joint
-  for (sco::AffExpr& expr : expr_vec_)
+  for (const sco::AffExpr& expr : expr_vec_)
   {
     out->addIneqCnt(expr);
   }

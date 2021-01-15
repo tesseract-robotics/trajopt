@@ -442,7 +442,7 @@ TrajOptProb::Ptr ConstructProblem(const ProblemConstructionInfo& pci)
   if (!use_time && pci.basic_info.use_time)
     PRINT_AND_THROW("No terms use time and basic_info is not set correctly. Try basic_info.use_time = false");
 
-  TrajOptProb::Ptr prob(new TrajOptProb(n_steps, pci));
+  auto prob = std::make_shared<TrajOptProb>(n_steps, pci);
   unsigned n_dof = prob->GetKin()->numJoints();
 
   // Generate initial trajectory and check its size
@@ -750,23 +750,23 @@ void DynamicCartPoseTermInfo::hatch(TrajOptProb& prob)
     tesseract_environment::AdjacencyMap::Ptr adjacency_map = std::make_shared<tesseract_environment::AdjacencyMap>(
         prob.GetEnv()->getSceneGraph(), prob.GetKin()->getActiveLinkNames(), state->link_transforms);
 
-    sco::VectorOfVector::Ptr f(new DynamicCartPoseErrCalculator(
-        target, prob.GetKin(), adjacency_map, world_to_base, link, tcp, target_tcp, indices));
+    auto f = std::make_shared<DynamicCartPoseErrCalculator>(
+        target, prob.GetKin(), adjacency_map, world_to_base, link, tcp, target_tcp, indices);
 
     // This is currently not being used. There is an intermittent bug that needs to be tracked down it is not used.
-    sco::MatrixOfVector::Ptr dfdx(new DynamicCartPoseJacCalculator(
-        target, prob.GetKin(), adjacency_map, world_to_base, link, tcp, target_tcp, indices));
+    auto dfdx = std::make_shared<DynamicCartPoseJacCalculator>(
+        target, prob.GetKin(), adjacency_map, world_to_base, link, tcp, target_tcp, indices);
 
     // Apply error calculator as either cost or constraint
     if (term_type & TT_COST)
     {
       prob.addCost(
-          sco::Cost::Ptr(new TrajOptCostFromErrFunc(f, prob.GetVarRow(timestep, 0, n_dof), coeff, sco::ABS, name)));
+          std::make_shared<TrajOptCostFromErrFunc>(f, prob.GetVarRow(timestep, 0, n_dof), coeff, sco::ABS, name));
     }
     else if (term_type & TT_CNT)
     {
-      prob.addConstraint(sco::Constraint::Ptr(
-          new TrajOptConstraintFromErrFunc(f, prob.GetVarRow(timestep, 0, n_dof), coeff, sco::EQ, name)));
+      prob.addConstraint(
+          std::make_shared<TrajOptConstraintFromErrFunc>(f, prob.GetVarRow(timestep, 0, n_dof), coeff, sco::EQ, name));
     }
     else
     {
@@ -900,25 +900,25 @@ void CartPoseTermInfo::hatch(TrajOptProb& prob)
   }
   else if ((term_type & TT_COST) && ~(term_type | ~TT_USE_TIME))
   {
-    sco::VectorOfVector::Ptr f(new CartPoseErrCalculator(
-        world_to_target * input_pose, prob.GetKin(), adjacency_map, world_to_base, link, tcp, indices));
+    auto f = std::make_shared<CartPoseErrCalculator>(
+        world_to_target * input_pose, prob.GetKin(), adjacency_map, world_to_base, link, tcp, indices);
 
     // This is currently not being used. There is an intermittent bug that needs to be tracked down it is not used.
-    sco::MatrixOfVector::Ptr dfdx(
-        new CartPoseJacCalculator(input_pose, prob.GetKin(), adjacency_map, world_to_base, link, tcp, indices));
+    auto dfdx = std::make_shared<CartPoseJacCalculator>(
+        input_pose, prob.GetKin(), adjacency_map, world_to_base, link, tcp, indices);
     prob.addCost(
-        sco::Cost::Ptr(new TrajOptCostFromErrFunc(f, prob.GetVarRow(timestep, 0, n_dof), coeff, sco::ABS, name)));
+        std::make_shared<TrajOptCostFromErrFunc>(f, prob.GetVarRow(timestep, 0, n_dof), coeff, sco::ABS, name));
   }
   else if ((term_type & TT_CNT) && ~(term_type | ~TT_USE_TIME))
   {
-    sco::VectorOfVector::Ptr f(new CartPoseErrCalculator(
-        world_to_target * input_pose, prob.GetKin(), adjacency_map, world_to_base, link, tcp, indices));
+    auto f = std::make_shared<CartPoseErrCalculator>(
+        world_to_target * input_pose, prob.GetKin(), adjacency_map, world_to_base, link, tcp, indices);
 
     // This is currently not being used. There is an intermittent bug that needs to be tracked down it is not used.
-    sco::MatrixOfVector::Ptr dfdx(
-        new CartPoseJacCalculator(input_pose, prob.GetKin(), adjacency_map, world_to_base, link, tcp, indices));
-    prob.addConstraint(sco::Constraint::Ptr(
-        new TrajOptConstraintFromErrFunc(f, prob.GetVarRow(timestep, 0, n_dof), coeff, sco::EQ, name)));
+    auto dfdx = std::make_shared<CartPoseJacCalculator>(
+        input_pose, prob.GetKin(), adjacency_map, world_to_base, link, tcp, indices);
+    prob.addConstraint(
+        std::make_shared<TrajOptConstraintFromErrFunc>(f, prob.GetVarRow(timestep, 0, n_dof), coeff, sco::EQ, name));
   }
   else
   {
@@ -978,30 +978,34 @@ void CartVelTermInfo::hatch(TrajOptProb& prob)
   {
     for (int iStep = first_step; iStep <= last_step; ++iStep)
     {
-      prob.addCost(sco::Cost::Ptr(new TrajOptCostFromErrFunc(
-          sco::VectorOfVector::Ptr(
-              new CartVelErrCalculator(prob.GetKin(), adjacency_map, world_to_base, link, max_displacement)),
-          sco::MatrixOfVector::Ptr(
-              new CartVelJacCalculator(prob.GetKin(), adjacency_map, world_to_base, link, max_displacement)),
+      auto f =
+          std::make_shared<CartVelErrCalculator>(prob.GetKin(), adjacency_map, world_to_base, link, max_displacement);
+      auto dfdx =
+          std::make_shared<CartVelJacCalculator>(prob.GetKin(), adjacency_map, world_to_base, link, max_displacement);
+      prob.addCost(std::make_shared<TrajOptCostFromErrFunc>(
+          f,
+          dfdx,
           concat(prob.GetVarRow(iStep, 0, n_dof), prob.GetVarRow(iStep + 1, 0, n_dof)),
           Eigen::VectorXd::Ones(0),
           sco::ABS,
-          name)));
+          name));
     }
   }
   else if ((term_type & TT_CNT) && ~(term_type | ~TT_USE_TIME))
   {
     for (int iStep = first_step; iStep <= last_step; ++iStep)
     {
-      prob.addConstraint(sco::Constraint::Ptr(new TrajOptConstraintFromErrFunc(
-          sco::VectorOfVector::Ptr(
-              new CartVelErrCalculator(prob.GetKin(), adjacency_map, world_to_base, link, max_displacement)),
-          sco::MatrixOfVector::Ptr(
-              new CartVelJacCalculator(prob.GetKin(), adjacency_map, world_to_base, link, max_displacement)),
+      auto f =
+          std::make_shared<CartVelErrCalculator>(prob.GetKin(), adjacency_map, world_to_base, link, max_displacement);
+      auto dfdx =
+          std::make_shared<CartVelJacCalculator>(prob.GetKin(), adjacency_map, world_to_base, link, max_displacement);
+      prob.addConstraint(std::make_shared<TrajOptConstraintFromErrFunc>(
+          f,
+          dfdx,
           concat(prob.GetVarRow(iStep, 0, n_dof), prob.GetVarRow(iStep + 1, 0, n_dof)),
           Eigen::VectorXd::Ones(0),
           sco::INEQ,
-          "CartVel")));
+          "CartVel"));
     }
   }
   else
@@ -1083,8 +1087,8 @@ void JointPosTermInfo::hatch(TrajOptProb& prob)
     // If the tolerances are 0, an equality cost is set. Otherwise it's a hinged "inequality" cost
     if (is_upper_zeros && is_lower_zeros)
     {
-      prob.addCost(sco::Cost::Ptr(
-          new JointPosEqCost(joint_vars, util::toVectorXd(coeffs), util::toVectorXd(targets), first_step, last_step)));
+      prob.addCost(std::make_shared<JointPosEqCost>(
+          joint_vars, util::toVectorXd(coeffs), util::toVectorXd(targets), first_step, last_step));
       prob.getCosts().back()->setName(name);
     }
     else
@@ -1210,25 +1214,27 @@ void JointVelTermInfo::hatch(TrajOptProb& prob)
       if (is_upper_zeros && is_lower_zeros)
       {
         DblVec single_jnt_coeffs = DblVec(num_vels * 2, coeffs[j]);
-        prob.addCost(sco::Cost::Ptr(new TrajOptCostFromErrFunc(
-            sco::VectorOfVector::Ptr(new JointVelErrCalculator(targets[j], upper_tols[j], lower_tols[j])),
-            sco::MatrixOfVector::Ptr(new JointVelJacCalculator()),
-            concat(joint_vars_vec, time_vars_vec),
-            util::toVectorXd(single_jnt_coeffs),
-            sco::SQUARED,
-            name + "_j" + std::to_string(j))));
+        auto f = std::make_shared<JointVelErrCalculator>(targets[j], upper_tols[j], lower_tols[j]);
+        auto dfdx = std::make_shared<JointVelJacCalculator>();
+        prob.addCost(std::make_shared<TrajOptCostFromErrFunc>(f,
+                                                              dfdx,
+                                                              concat(joint_vars_vec, time_vars_vec),
+                                                              util::toVectorXd(single_jnt_coeffs),
+                                                              sco::SQUARED,
+                                                              name + "_j" + std::to_string(j)));
       }
       // Otherwise it's a hinged "inequality" cost
       else
       {
         DblVec single_jnt_coeffs = DblVec(num_vels * 2, coeffs[j]);
-        prob.addCost(sco::Cost::Ptr(new TrajOptCostFromErrFunc(
-            sco::VectorOfVector::Ptr(new JointVelErrCalculator(targets[j], upper_tols[j], lower_tols[j])),
-            sco::MatrixOfVector::Ptr(new JointVelJacCalculator()),
-            concat(joint_vars_vec, time_vars_vec),
-            util::toVectorXd(single_jnt_coeffs),
-            sco::HINGE,
-            name + "_j" + std::to_string(j))));
+        auto f = std::make_shared<JointVelErrCalculator>(targets[j], upper_tols[j], lower_tols[j]);
+        auto dfdx = std::make_shared<JointVelJacCalculator>();
+        prob.addCost(std::make_shared<TrajOptCostFromErrFunc>(f,
+                                                              dfdx,
+                                                              concat(joint_vars_vec, time_vars_vec),
+                                                              util::toVectorXd(single_jnt_coeffs),
+                                                              sco::HINGE,
+                                                              name + "_j" + std::to_string(j)));
       }
     }
   }
@@ -1247,25 +1253,27 @@ void JointVelTermInfo::hatch(TrajOptProb& prob)
       if (is_upper_zeros && is_lower_zeros)
       {
         DblVec single_jnt_coeffs = DblVec(num_vels * 2, coeffs[j]);
-        prob.addConstraint(sco::Constraint::Ptr(new TrajOptConstraintFromErrFunc(
-            sco::VectorOfVector::Ptr(new JointVelErrCalculator(targets[j], upper_tols[j], lower_tols[j])),
-            sco::MatrixOfVector::Ptr(new JointVelJacCalculator()),
-            concat(joint_vars_vec, time_vars_vec),
-            util::toVectorXd(single_jnt_coeffs),
-            sco::EQ,
-            name + "_j" + std::to_string(j))));
+        auto f = std::make_shared<JointVelErrCalculator>(targets[j], upper_tols[j], lower_tols[j]);
+        auto dfdx = std::make_shared<JointVelJacCalculator>();
+        prob.addConstraint(std::make_shared<TrajOptConstraintFromErrFunc>(f,
+                                                                          dfdx,
+                                                                          concat(joint_vars_vec, time_vars_vec),
+                                                                          util::toVectorXd(single_jnt_coeffs),
+                                                                          sco::EQ,
+                                                                          name + "_j" + std::to_string(j)));
       }
       // Otherwise it's a hinged "inequality" constraint
       else
       {
         DblVec single_jnt_coeffs = DblVec(num_vels * 2, coeffs[j]);
-        prob.addConstraint(sco::Constraint::Ptr(new TrajOptConstraintFromErrFunc(
-            sco::VectorOfVector::Ptr(new JointVelErrCalculator(targets[j], upper_tols[j], lower_tols[j])),
-            sco::MatrixOfVector::Ptr(new JointVelJacCalculator()),
-            concat(joint_vars_vec, time_vars_vec),
-            util::toVectorXd(single_jnt_coeffs),
-            sco::INEQ,
-            name + "_j" + std::to_string(j))));
+        auto f = std::make_shared<JointVelErrCalculator>(targets[j], upper_tols[j], lower_tols[j]);
+        auto dfdx = std::make_shared<JointVelJacCalculator>();
+        prob.addConstraint(std::make_shared<TrajOptConstraintFromErrFunc>(f,
+                                                                          dfdx,
+                                                                          concat(joint_vars_vec, time_vars_vec),
+                                                                          util::toVectorXd(single_jnt_coeffs),
+                                                                          sco::INEQ,
+                                                                          name + "_j" + std::to_string(j)));
       }
     }
   }
@@ -1274,19 +1282,19 @@ void JointVelTermInfo::hatch(TrajOptProb& prob)
     // If the tolerances are 0, an equality cost is set. Otherwise it's a hinged "inequality" cost
     if (is_upper_zeros && is_lower_zeros)
     {
-      prob.addCost(sco::Cost::Ptr(
-          new JointVelEqCost(joint_vars, util::toVectorXd(coeffs), util::toVectorXd(targets), first_step, last_step)));
+      prob.addCost(std::make_shared<JointVelEqCost>(
+          joint_vars, util::toVectorXd(coeffs), util::toVectorXd(targets), first_step, last_step));
       prob.getCosts().back()->setName(name);
     }
     else
     {
-      prob.addCost(sco::Cost::Ptr(new JointVelIneqCost(joint_vars,
-                                                       util::toVectorXd(coeffs),
-                                                       util::toVectorXd(targets),
-                                                       util::toVectorXd(upper_tols),
-                                                       util::toVectorXd(lower_tols),
-                                                       first_step,
-                                                       last_step)));
+      prob.addCost(std::make_shared<JointVelIneqCost>(joint_vars,
+                                                      util::toVectorXd(coeffs),
+                                                      util::toVectorXd(targets),
+                                                      util::toVectorXd(upper_tols),
+                                                      util::toVectorXd(lower_tols),
+                                                      first_step,
+                                                      last_step));
       prob.getCosts().back()->setName(name);
     }
   }
@@ -1295,19 +1303,19 @@ void JointVelTermInfo::hatch(TrajOptProb& prob)
     // If the tolerances are 0, an equality cnt is set. Otherwise it's an inequality constraint
     if (is_upper_zeros && is_lower_zeros)
     {
-      prob.addConstraint(sco::Constraint::Ptr(new JointVelEqConstraint(
-          joint_vars, util::toVectorXd(coeffs), util::toVectorXd(targets), first_step, last_step)));
+      prob.addConstraint(std::make_shared<JointVelEqConstraint>(
+          joint_vars, util::toVectorXd(coeffs), util::toVectorXd(targets), first_step, last_step));
       prob.getConstraints().back()->setName(name);
     }
     else
     {
-      prob.addConstraint(sco::Constraint::Ptr(new JointVelIneqConstraint(joint_vars,
-                                                                         util::toVectorXd(coeffs),
-                                                                         util::toVectorXd(targets),
-                                                                         util::toVectorXd(upper_tols),
-                                                                         util::toVectorXd(lower_tols),
-                                                                         first_step,
-                                                                         last_step)));
+      prob.addConstraint(std::make_shared<JointVelIneqConstraint>(joint_vars,
+                                                                  util::toVectorXd(coeffs),
+                                                                  util::toVectorXd(targets),
+                                                                  util::toVectorXd(upper_tols),
+                                                                  util::toVectorXd(lower_tols),
+                                                                  first_step,
+                                                                  last_step));
       prob.getConstraints().back()->setName(name);
     }
   }
@@ -1395,19 +1403,19 @@ void JointAccTermInfo::hatch(TrajOptProb& prob)
     // If the tolerances are 0, an equality cost is set. Otherwise it's a hinged "inequality" cost
     if (is_upper_zeros && is_lower_zeros)
     {
-      prob.addCost(sco::Cost::Ptr(
-          new JointAccEqCost(joint_vars, util::toVectorXd(coeffs), util::toVectorXd(targets), first_step, last_step)));
+      prob.addCost(std::make_shared<JointAccEqCost>(
+          joint_vars, util::toVectorXd(coeffs), util::toVectorXd(targets), first_step, last_step));
       prob.getCosts().back()->setName(name);
     }
     else
     {
-      prob.addCost(sco::Cost::Ptr(new JointAccIneqCost(joint_vars,
-                                                       util::toVectorXd(coeffs),
-                                                       util::toVectorXd(targets),
-                                                       util::toVectorXd(upper_tols),
-                                                       util::toVectorXd(lower_tols),
-                                                       first_step,
-                                                       last_step)));
+      prob.addCost(std::make_shared<JointAccIneqCost>(joint_vars,
+                                                      util::toVectorXd(coeffs),
+                                                      util::toVectorXd(targets),
+                                                      util::toVectorXd(upper_tols),
+                                                      util::toVectorXd(lower_tols),
+                                                      first_step,
+                                                      last_step));
       prob.getCosts().back()->setName(name);
     }
   }
@@ -1416,19 +1424,19 @@ void JointAccTermInfo::hatch(TrajOptProb& prob)
     // If the tolerances are 0, an equality cnt is set. Otherwise it's an inequality constraint
     if (is_upper_zeros && is_lower_zeros)
     {
-      prob.addConstraint(sco::Constraint::Ptr(new JointAccEqConstraint(
-          joint_vars, util::toVectorXd(coeffs), util::toVectorXd(targets), first_step, last_step)));
+      prob.addConstraint(std::make_shared<JointAccEqConstraint>(
+          joint_vars, util::toVectorXd(coeffs), util::toVectorXd(targets), first_step, last_step));
       prob.getConstraints().back()->setName(name);
     }
     else
     {
-      prob.addConstraint(sco::Constraint::Ptr(new JointAccIneqConstraint(joint_vars,
-                                                                         util::toVectorXd(coeffs),
-                                                                         util::toVectorXd(targets),
-                                                                         util::toVectorXd(upper_tols),
-                                                                         util::toVectorXd(lower_tols),
-                                                                         first_step,
-                                                                         last_step)));
+      prob.addConstraint(std::make_shared<JointAccIneqConstraint>(joint_vars,
+                                                                  util::toVectorXd(coeffs),
+                                                                  util::toVectorXd(targets),
+                                                                  util::toVectorXd(upper_tols),
+                                                                  util::toVectorXd(lower_tols),
+                                                                  first_step,
+                                                                  last_step));
       prob.getConstraints().back()->setName(name);
     }
   }
@@ -1517,19 +1525,19 @@ void JointJerkTermInfo::hatch(TrajOptProb& prob)
     // If the tolerances are 0, an equality cost is set. Otherwise it's a hinged "inequality" cost
     if (is_upper_zeros && is_lower_zeros)
     {
-      prob.addCost(sco::Cost::Ptr(
-          new JointJerkEqCost(joint_vars, util::toVectorXd(coeffs), util::toVectorXd(targets), first_step, last_step)));
+      prob.addCost(std::make_shared<JointJerkEqCost>(
+          joint_vars, util::toVectorXd(coeffs), util::toVectorXd(targets), first_step, last_step));
       prob.getCosts().back()->setName(name);
     }
     else
     {
-      prob.addCost(sco::Cost::Ptr(new JointJerkIneqCost(joint_vars,
-                                                        util::toVectorXd(coeffs),
-                                                        util::toVectorXd(targets),
-                                                        util::toVectorXd(upper_tols),
-                                                        util::toVectorXd(lower_tols),
-                                                        first_step,
-                                                        last_step)));
+      prob.addCost(std::make_shared<JointJerkIneqCost>(joint_vars,
+                                                       util::toVectorXd(coeffs),
+                                                       util::toVectorXd(targets),
+                                                       util::toVectorXd(upper_tols),
+                                                       util::toVectorXd(lower_tols),
+                                                       first_step,
+                                                       last_step));
       prob.getCosts().back()->setName(name);
     }
   }
@@ -1538,19 +1546,19 @@ void JointJerkTermInfo::hatch(TrajOptProb& prob)
     // If the tolerances are 0, an equality cnt is set. Otherwise it's an inequality constraint
     if (is_upper_zeros && is_lower_zeros)
     {
-      prob.addConstraint(sco::Constraint::Ptr(new JointJerkEqConstraint(
-          joint_vars, util::toVectorXd(coeffs), util::toVectorXd(targets), first_step, last_step)));
+      prob.addConstraint(std::make_shared<JointJerkEqConstraint>(
+          joint_vars, util::toVectorXd(coeffs), util::toVectorXd(targets), first_step, last_step));
       prob.getConstraints().back()->setName(name);
     }
     else
     {
-      prob.addConstraint(sco::Constraint::Ptr(new JointJerkIneqConstraint(joint_vars,
-                                                                          util::toVectorXd(coeffs),
-                                                                          util::toVectorXd(targets),
-                                                                          util::toVectorXd(upper_tols),
-                                                                          util::toVectorXd(lower_tols),
-                                                                          first_step,
-                                                                          last_step)));
+      prob.addConstraint(std::make_shared<JointJerkIneqConstraint>(joint_vars,
+                                                                   util::toVectorXd(coeffs),
+                                                                   util::toVectorXd(targets),
+                                                                   util::toVectorXd(upper_tols),
+                                                                   util::toVectorXd(lower_tols),
+                                                                   first_step,
+                                                                   last_step));
       prob.getConstraints().back()->setName(name);
     }
   }
@@ -1620,7 +1628,7 @@ void CollisionTermInfo::fromJson(ProblemConstructionInfo& pci, const Json::Value
   for (int i = first_step; i <= last_step; ++i)
   {
     auto index = static_cast<size_t>(i - first_step);
-    SafetyMarginData::Ptr data(new SafetyMarginData(dist_pen[index], coeffs[index]));
+    auto data = std::make_shared<SafetyMarginData>(dist_pen[index], coeffs[index]);
     info.push_back(data);
   }
 
@@ -1900,24 +1908,16 @@ void TotalTimeTermInfo::hatch(TrajOptProb& prob)
     constraint_type = sco::INEQ;
   }
 
+  auto f = std::make_shared<TimeCostCalculator>(limit);
+  auto dfdx = std::make_shared<TimeCostJacCalculator>();
   if (term_type & TT_COST)
   {
-    prob.addCost(sco::Cost::Ptr(new TrajOptCostFromErrFunc(sco::VectorOfVector::Ptr(new TimeCostCalculator(limit)),
-                                                           sco::MatrixOfVector::Ptr(new TimeCostJacCalculator()),
-                                                           time_vars,
-                                                           coeff_vec,
-                                                           penalty_type,
-                                                           name)));
+    prob.addCost(std::make_shared<TrajOptCostFromErrFunc>(f, dfdx, time_vars, coeff_vec, penalty_type, name));
   }
   else if (term_type & TT_CNT)
   {
     prob.addConstraint(
-        sco::Constraint::Ptr(new TrajOptConstraintFromErrFunc(sco::VectorOfVector::Ptr(new TimeCostCalculator(limit)),
-                                                              sco::MatrixOfVector::Ptr(new TimeCostJacCalculator()),
-                                                              time_vars,
-                                                              coeff_vec,
-                                                              constraint_type,
-                                                              name)));
+        std::make_shared<TrajOptConstraintFromErrFunc>(f, dfdx, time_vars, coeff_vec, constraint_type, name));
   }
   else
   {
@@ -1958,13 +1958,13 @@ void AvoidSingularityTermInfo::hatch(TrajOptProb& prob)
     const std::string idx_name = name + "_" + std::to_string(i);
     if (term_type & TT_COST)
     {
-      prob.addCost(sco::Cost::Ptr(new TrajOptCostFromErrFunc(
-          f, dfdx, prob.GetVarRow(i, 0, n_dof), util::toVectorXd(coeffs), sco::ABS, idx_name)));
+      prob.addCost(std::make_shared<TrajOptCostFromErrFunc>(
+          f, dfdx, prob.GetVarRow(i, 0, n_dof), util::toVectorXd(coeffs), sco::ABS, idx_name));
     }
     else if (term_type & TT_CNT)
     {
-      prob.addConstraint(sco::Constraint::Ptr(new TrajOptConstraintFromErrFunc(
-          f, dfdx, prob.GetVarRow(i, 0, n_dof), util::toVectorXd(coeffs), sco::INEQ, idx_name)));
+      prob.addConstraint(std::make_shared<TrajOptConstraintFromErrFunc>(
+          f, dfdx, prob.GetVarRow(i, 0, n_dof), util::toVectorXd(coeffs), sco::INEQ, idx_name));
     }
     else
     {

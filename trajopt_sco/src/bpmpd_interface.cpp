@@ -154,7 +154,7 @@ static double BPMPD_BIG = 1e+30;
 
 Model::Ptr createBPMPDModel()
 {
-  Model::Ptr out(new BPMPDModel());
+  auto out = std::make_shared<BPMPDModel>();
   return out;
 }
 

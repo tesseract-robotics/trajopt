@@ -19,7 +19,7 @@ double QPOASES_INFTY = qpOASES::INFTY;
 
 Model::Ptr createqpOASESModel()
 {
-  Model::Ptr out(new qpOASESModel());
+  auto out = std::make_shared<qpOASESModel>();
   return out;
 }
 
@@ -124,7 +124,7 @@ bool qpOASESModel::updateSolver()
   if (!qpoases_problem_ || vars_.size() != qpoases_problem_->getNV() || cnts_.size() != qpoases_problem_->getNC())
   {
     // Create Problem - this should be called only once
-    qpoases_problem_.reset(new SQProblem(vars_.size(), cnts_.size()));
+    qpoases_problem_ = std::make_shared<SQProblem>(vars_.size(), cnts_.size());
     qpoases_problem_->setOptions(qpoases_options_);
     solver_updated = true;
   }

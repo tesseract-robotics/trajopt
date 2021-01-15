@@ -222,11 +222,11 @@ public:
    * problem. */
   void addLinearConstraint(const AffExpr&, ConstraintType type);
   /** Add nonlinear cost function */
-  void addCost(const Cost::Ptr&);
+  void addCost(Cost::Ptr);
   /** Add nonlinear constraint function */
-  void addConstraint(const Constraint::Ptr&);
-  void addEqConstraint(const Constraint::Ptr&);
-  void addIneqConstraint(const Constraint::Ptr&);
+  void addConstraint(Constraint::Ptr);
+  void addEqConstraint(Constraint::Ptr);
+  void addIneqConstraint(Constraint::Ptr);
   /** Find closest point to solution vector x that satisfies linear inequality
    * constraints */
   DblVec getCentralFeasiblePoint(const DblVec& x);

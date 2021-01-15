@@ -29,7 +29,7 @@ protected:
 
 void setupProblem(OptProb::Ptr& probptr, size_t nvars, ModelType convex_solver)
 {
-  probptr.reset(new OptProb(convex_solver));
+  probptr = std::make_shared<OptProb>(convex_solver);
   vector<string> var_names;
   for (size_t i = 0; i < nvars; ++i)
   {
@@ -53,7 +53,7 @@ TEST_P(SQP, QuadraticSeparable)  // NOLINT
   // if the problem is exactly a QP, it should be solved in one iteration
   OptProb::Ptr prob;
   setupProblem(prob, 3, GetParam());
-  prob->addCost(Cost::Ptr(new CostFromFunc(ScalarOfVector::construct(&f_QuadraticSeparable), prob->getVars(), "f")));
+  prob->addCost(std::make_shared<CostFromFunc>(ScalarOfVector::construct(&f_QuadraticSeparable), prob->getVars(), "f"));
   BasicTrustRegionSQP solver(prob);
   BasicTrustRegionSQPParameters& params = solver.getParameters();
   params.trust_box_size = 100;
@@ -95,9 +95,9 @@ void testProblem(ScalarOfVector::Ptr f,
   size_t n = init.size();
   assert(sol.size() == n);
   setupProblem(prob, n, convex_solver);
-  prob->addCost(Cost::Ptr(new CostFromFunc(std::move(f), prob->getVars(), "f", true)));
+  prob->addCost(std::make_shared<CostFromFunc>(std::move(f), prob->getVars(), "f", true));
   prob->addConstraint(
-      Constraint::Ptr(new ConstraintFromErrFunc(std::move(g), prob->getVars(), VectorXd(), cnt_type, "g")));
+      std::make_shared<ConstraintFromErrFunc>(std::move(g), prob->getVars(), VectorXd(), cnt_type, "g"));
   BasicTrustRegionSQP solver(prob);
   BasicTrustRegionSQPParameters& params = solver.getParameters();
   params.max_iter = 1000;

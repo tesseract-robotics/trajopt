@@ -64,7 +64,7 @@ void simplify(IntVec& inds, DblVec& vals) {
 
 Model::Ptr createGurobiModel()
 {
-  Model::Ptr out(new GurobiModel());
+  auto out = std::make_shared<GurobiModel>();
   return out;
 }
 
