@@ -104,7 +104,6 @@ struct Var
 {
   using Ptr = std::shared_ptr<Var>;
 
-  /** @todo Who is deleting this? */
   VarRep::Ptr var_rep{ nullptr };
   Var() = default;
   ~Var() = default;
