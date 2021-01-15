@@ -126,7 +126,7 @@ std::vector<ConvexObjective::Ptr> cntsToCosts(const std::vector<ConvexConstraint
   std::vector<ConvexObjective::Ptr> out;
   for (std::size_t c = 0; c < cnts.size(); ++c)
   {
-    ConvexObjective::Ptr obj(new ConvexObjective(model));
+    auto obj = std::make_shared<ConvexObjective>(model);
     for (std::size_t idx = 0; idx < cnts[c]->eqs_.size(); ++idx)
     {
       const AffExpr& aff = cnts[c]->eqs_[idx];

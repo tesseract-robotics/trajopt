@@ -29,11 +29,7 @@ enum TermType
 };
 
 #define DEFINE_CREATE(classname)                                                                                       \
-  static TermInfo::Ptr create()                                                                                        \
-  {                                                                                                                    \
-    TermInfo::Ptr out(new classname());                                                                                \
-    return out;                                                                                                        \
-  }
+  static TermInfo::Ptr create() { return std::make_shared<classname>(); }
 
 /**
  * Holds all the data for a trajectory optimization problem

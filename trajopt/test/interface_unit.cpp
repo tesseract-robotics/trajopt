@@ -71,7 +71,7 @@ TEST_F(InterfaceTest, initial_trajectory_cpp_interface)
   Eigen::VectorXd start_pos = pci.env->getCurrentJointValues(pci.kin->getJointNames());
   pci.init_info.type = InitInfo::STATIONARY;
 
-  std::shared_ptr<JointPosTermInfo> jv = std::shared_ptr<JointPosTermInfo>(new JointPosTermInfo);
+  auto jv = std::make_shared<JointPosTermInfo>();
   jv->coeffs = std::vector<double>(7, 10.0);
   jv->targets = std::vector<double>(7.0, 0);
   jv->first_step = 0;
@@ -121,7 +121,7 @@ TEST_F(InterfaceTest, initial_trajectory_time_cpp_interface)
   pci.init_info.data = Eigen::VectorXd::Constant(7, 1, end);
   pci.init_info.dt = dt;
 
-  std::shared_ptr<JointPosTermInfo> jv = std::shared_ptr<JointPosTermInfo>(new JointPosTermInfo);
+  auto jv = std::make_shared<JointPosTermInfo>();
   jv->coeffs = std::vector<double>(7, 10.0);
   jv->targets = std::vector<double>(7.0, 0);
   jv->first_step = 0;

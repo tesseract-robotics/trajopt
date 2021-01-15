@@ -10,8 +10,8 @@ ScalarOfVector::Ptr ScalarOfVector::construct(func f)
     F(func _f) : f(std::move(_f)) {}
     double operator()(const Eigen::VectorXd& x) const override { return f(x); }
   };
-  ScalarOfVector* sov = new F(std::move(f));  // to avoid erroneous clang warning
-  return ScalarOfVector::Ptr(sov);
+  auto sov = std::make_shared<F>(std::move(f));
+  return sov;
 }
 
 VectorOfVector::Ptr VectorOfVector::construct(func f)
@@ -22,8 +22,8 @@ VectorOfVector::Ptr VectorOfVector::construct(func f)
     F(func _f) : f(std::move(_f)) {}
     Eigen::VectorXd operator()(const Eigen::VectorXd& x) const override { return f(x); }
   };
-  VectorOfVector* vov = new F(std::move(f));  // to avoid erroneous clang warning
-  return VectorOfVector::Ptr(vov);
+  auto vov = std::make_shared<F>(std::move(f));
+  return vov;
 }
 
 MatrixOfVector::Ptr MatrixOfVector::construct(func f)
@@ -34,8 +34,8 @@ MatrixOfVector::Ptr MatrixOfVector::construct(func f)
     F(func _f) : f(std::move(_f)) {}
     Eigen::MatrixXd operator()(const Eigen::VectorXd& x) const override { return f(x); }
   };
-  MatrixOfVector* mov = new F(std::move(f));  // to avoid erroneous clang warning
-  return MatrixOfVector::Ptr(mov);
+  auto mov = std::make_shared<F>(std::move(f));
+  return mov;
 }
 
 Eigen::VectorXd calcForwardNumGrad(const ScalarOfVector& f, const Eigen::VectorXd& x, double epsilon)
@@ -122,10 +122,10 @@ struct ForwardNumJac : public MatrixOfVector
 
 VectorOfVector::Ptr forwardNumGrad(ScalarOfVector::Ptr f, double epsilon)
 {
-  return VectorOfVector::Ptr(new ForwardNumGrad(std::move(f), epsilon));
+  return std::make_shared<ForwardNumGrad>(std::move(f), epsilon);
 }
 MatrixOfVector::Ptr forwardNumJac(VectorOfVector::Ptr f, double epsilon)
 {
-  return MatrixOfVector::Ptr(new ForwardNumJac(std::move(f), epsilon));
+  return std::make_shared<ForwardNumJac>(std::move(f), epsilon);
 }
 }  // namespace sco
