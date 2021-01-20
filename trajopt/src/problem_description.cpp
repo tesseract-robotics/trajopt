@@ -1112,7 +1112,7 @@ void JointPosTermInfo::hatch(TrajOptProb& prob)
       auto c = std::make_shared<JointPosEqConstraint>(
           joint_vars, util::toVectorXd(coeffs), util::toVectorXd(targets), first_step, last_step);
       prob.addConstraint(c);
-      prob.getConstraints().back()->setName(name);
+      prob.getEqConstraints().back()->setName(name);
     }
     else
     {
@@ -1124,7 +1124,7 @@ void JointPosTermInfo::hatch(TrajOptProb& prob)
                                                         first_step,
                                                         last_step);
       prob.addConstraint(c);
-      prob.getConstraints().back()->setName(name);
+      prob.getIneqConstraints().back()->setName(name);
     }
   }
   else
@@ -1305,7 +1305,7 @@ void JointVelTermInfo::hatch(TrajOptProb& prob)
     {
       prob.addConstraint(std::make_shared<JointVelEqConstraint>(
           joint_vars, util::toVectorXd(coeffs), util::toVectorXd(targets), first_step, last_step));
-      prob.getConstraints().back()->setName(name);
+      prob.getEqConstraints().back()->setName(name);
     }
     else
     {
@@ -1316,7 +1316,7 @@ void JointVelTermInfo::hatch(TrajOptProb& prob)
                                                                   util::toVectorXd(lower_tols),
                                                                   first_step,
                                                                   last_step));
-      prob.getConstraints().back()->setName(name);
+      prob.getIneqConstraints().back()->setName(name);
     }
   }
   else
@@ -1426,7 +1426,7 @@ void JointAccTermInfo::hatch(TrajOptProb& prob)
     {
       prob.addConstraint(std::make_shared<JointAccEqConstraint>(
           joint_vars, util::toVectorXd(coeffs), util::toVectorXd(targets), first_step, last_step));
-      prob.getConstraints().back()->setName(name);
+      prob.getEqConstraints().back()->setName(name);
     }
     else
     {
@@ -1437,7 +1437,7 @@ void JointAccTermInfo::hatch(TrajOptProb& prob)
                                                                   util::toVectorXd(lower_tols),
                                                                   first_step,
                                                                   last_step));
-      prob.getConstraints().back()->setName(name);
+      prob.getIneqConstraints().back()->setName(name);
     }
   }
   else
@@ -1548,7 +1548,7 @@ void JointJerkTermInfo::hatch(TrajOptProb& prob)
     {
       prob.addConstraint(std::make_shared<JointJerkEqConstraint>(
           joint_vars, util::toVectorXd(coeffs), util::toVectorXd(targets), first_step, last_step));
-      prob.getConstraints().back()->setName(name);
+      prob.getEqConstraints().back()->setName(name);
     }
     else
     {
@@ -1559,7 +1559,7 @@ void JointJerkTermInfo::hatch(TrajOptProb& prob)
                                                                    util::toVectorXd(lower_tols),
                                                                    first_step,
                                                                    last_step));
-      prob.getConstraints().back()->setName(name);
+      prob.getIneqConstraints().back()->setName(name);
     }
   }
   else
