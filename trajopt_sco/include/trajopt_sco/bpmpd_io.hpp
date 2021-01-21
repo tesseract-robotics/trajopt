@@ -58,7 +58,7 @@ void ser(int fp, std::vector<T>& x, SerMode mode)
     {
       x.resize(size);
       long n = read(fp, x.data(), sizeof(T) * size);
-      assert(static_cast<unsigned>(n) == sizeof(T) * size);
+      assert(static_cast<unsigned long>(n) == sizeof(T) * size);
       UNUSED(n);
       break;
     }

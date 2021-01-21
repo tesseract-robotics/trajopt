@@ -27,6 +27,9 @@
 #include <trajopt_ifopt/utils/trajopt_utils.h>
 #include <trajopt/typedefs.hpp>
 
+#include <tesseract_visualization/markers/arrow_marker.h>
+#include <tesseract_visualization/markers/axis_marker.h>
+
 using namespace trajopt_sqp;
 
 CartesianErrorPlottingCallback::CartesianErrorPlottingCallback(tesseract_visualization::Visualization::Ptr plotter)
@@ -43,9 +46,18 @@ void CartesianErrorPlottingCallback::plot(const ifopt::Problem& /*nlp*/)
 
     if (plotter_)
     {
-      plotter_->plotAxis(current_pose, 0.05);
-      plotter_->plotAxis(target_pose, 0.05);
-      plotter_->plotArrow(current_pose.translation(), target_pose.translation(), Eigen::Vector4d(1, 0, 1, 1), 0.005);
+      tesseract_visualization::AxisMarker m1(current_pose);
+      m1.setScale(Eigen::Vector3d::Constant(0.05));
+      plotter_->plotMarker(m1);
+
+      tesseract_visualization::AxisMarker m2(target_pose);
+      m2.setScale(Eigen::Vector3d::Constant(0.05));
+      plotter_->plotMarker(m2);
+
+      tesseract_visualization::ArrowMarker m3(current_pose.translation(), target_pose.translation());
+      m3.material = std::make_shared<tesseract_scene_graph::Material>("cart_pose_error_material");
+      m3.material->color << 1, 0, 1, 1;
+      plotter_->plotMarker(m3);
     }
   }
 }

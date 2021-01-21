@@ -28,17 +28,18 @@
 
 using namespace trajopt_sqp;
 
-JointStatePlottingCallback::JointStatePlottingCallback(tesseract_visualization::Visualization::Ptr plotter)
-  : plotter_(std::move(plotter))
+JointStatePlottingCallback::JointStatePlottingCallback(tesseract_visualization::Visualization::Ptr plotter,
+                                                       tesseract_environment::StateSolver::Ptr state_solver)
+  : plotter_(std::move(plotter)), state_solver_(std::move(state_solver))
 {
 }
 
 void JointStatePlottingCallback::plot(const ifopt::Problem& /*nlp*/)
 {
-  trajopt::TrajArray trajectory = trajopt::toTrajArray(joint_positions_);
+  tesseract_common::JointTrajectory trajectory = trajopt::toJointTrajectory(joint_positions_);
 
   if (plotter_)
-    plotter_->plotTrajectory(joint_positions_[0]->GetJointNames(), trajectory);
+    plotter_->plotTrajectory(trajectory, state_solver_);
 }
 
 void JointStatePlottingCallback::addVariableSet(const trajopt::JointPosition::ConstPtr& joint_position)

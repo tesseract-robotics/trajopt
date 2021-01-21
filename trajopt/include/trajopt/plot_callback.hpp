@@ -19,6 +19,7 @@ sco::Optimizer::Callback PlotCallback(TrajOptProb& prob, const tesseract_visuali
  * @return
  */
 sco::Optimizer::Callback PlotProbCallback(const tesseract_visualization::Visualization::Ptr& plotter,
+                                          const tesseract_environment::StateSolver::Ptr& state_solver,
                                           const std::vector<std::string>& joint_names);
 
 }  // namespace trajopt

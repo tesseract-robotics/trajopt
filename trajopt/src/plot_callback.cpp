@@ -14,6 +14,7 @@ TRAJOPT_IGNORE_WARNINGS_POP
 namespace trajopt
 {
 void PlotCosts(const tesseract_visualization::Visualization::Ptr& plotter,
+               const tesseract_environment::StateSolver::Ptr& state_solver,
                const std::vector<std::string>& joint_names,
                const std::vector<sco::Cost::Ptr>& costs,
                const std::vector<sco::Constraint::Ptr>& cnts,
@@ -38,7 +39,12 @@ void PlotCosts(const tesseract_visualization::Visualization::Ptr& plotter,
     }
   }
 
-  plotter->plotTrajectory(joint_names, getTraj(results.x, vars));
+  auto traj = getTraj(results.x, vars);
+  tesseract_common::JointTrajectory joint_trajectory;
+  for (long i = 0; i < traj.rows(); ++i)
+    joint_trajectory.emplace_back(joint_names, traj.row(i));
+
+  plotter->plotTrajectory(joint_trajectory, state_solver);
   plotter->waitForInput();
 }
 
@@ -47,6 +53,7 @@ sco::Optimizer::Callback PlotCallback(TrajOptProb& prob, const tesseract_visuali
   std::vector<sco::Constraint::Ptr> cnts = prob.getConstraints();
   return std::bind(&PlotCosts,
                    plotter,
+                   prob.GetEnv()->getStateSolver(),
                    prob.GetKin()->getJointNames(),
                    std::ref(prob.getCosts()),
                    cnts,
@@ -55,6 +62,7 @@ sco::Optimizer::Callback PlotCallback(TrajOptProb& prob, const tesseract_visuali
 }
 
 void PlotProb(const tesseract_visualization::Visualization::Ptr& plotter,
+              const tesseract_environment::StateSolver::Ptr& state_solver,
               const std::vector<std::string>& joint_names,
               sco::OptProb* prob,
               const sco::OptResults& results)
@@ -83,14 +91,20 @@ void PlotProb(const tesseract_visualization::Visualization::Ptr& plotter,
   var_array.m_nCol = static_cast<int>(joint_names.size());
   var_array.m_nRow = static_cast<int>(var_vec.size()) / var_array.cols();
 
-  plotter->plotTrajectory(joint_names, getTraj(results.x, var_array));
+  auto traj = getTraj(results.x, var_array);
+  tesseract_common::JointTrajectory joint_trajectory;
+  for (long i = 0; i < traj.rows(); ++i)
+    joint_trajectory.emplace_back(joint_names, traj.row(i));
+
+  plotter->plotTrajectory(joint_trajectory, state_solver);
   plotter->waitForInput();
 }
 
 sco::Optimizer::Callback PlotProbCallback(const tesseract_visualization::Visualization::Ptr& plotter,
+                                          const tesseract_environment::StateSolver::Ptr& state_solver,
                                           const std::vector<std::string>& joint_names)
 {
-  return std::bind(&PlotProb, plotter, joint_names, std::placeholders::_1, std::placeholders::_2);
+  return std::bind(&PlotProb, plotter, state_solver, joint_names, std::placeholders::_1, std::placeholders::_2);
 }
 
 }  // namespace trajopt
