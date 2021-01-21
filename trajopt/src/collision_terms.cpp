@@ -3,6 +3,8 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <boost/functional/hash.hpp>
 #include <tesseract_kinematics/core/forward_kinematics.h>
 #include <tesseract_kinematics/core/utils.h>
+#include <tesseract_visualization/markers/arrow_marker.h>
+#include <tesseract_visualization/markers/contact_results_marker.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt/collision_terms.hpp>
@@ -1017,11 +1019,20 @@ void SingleTimestepCollisionEvaluator::Plot(const tesseract_visualization::Visua
 
       manip_->calcFwdKin(pose2, dofvals + dist_grad, itA->link_name);
       pose2 = world_to_base_ * pose2 * itA->transform;
-      plotter->plotArrow(res.nearest_points[0], pose2 * local_link_point, Eigen::Vector4d(1, 1, 1, 1), 0.005);
+
+      tesseract_visualization::ArrowMarker am(res.nearest_points[0], pose2 * local_link_point);
+      am.material = std::make_shared<tesseract_scene_graph::Material>("collision_error_material");
+      am.material->color << 1, 1, 1, 1;
+      plotter->plotMarker(am);
     }
   }
 
-  plotter->plotContactResults(adjacency_map_->getActiveLinkNames(), dist_results, safety_distance);
+  auto margin_fn = [=](const std::string& link1, const std::string& link2) {
+    return getSafetyMarginData()->getPairSafetyMarginData(link1, link2)[0];
+  };
+
+  tesseract_visualization::ContactResultsMarker cm(adjacency_map_->getActiveLinkNames(), dist_results, margin_fn);
+  plotter->plotMarker(cm);
 }
 
 ////////////////////////////////////////
@@ -1220,8 +1231,11 @@ void DiscreteCollisionEvaluator::Plot(const tesseract_visualization::Visualizati
 
       manip_->calcFwdKin(pose2, dofvals0 + dist_grad, itA->link_name);
       pose2 = world_to_base_ * pose2 * itA->transform;
-      plotter->plotArrow(
-          res.nearest_points[0], pose2 * res.nearest_points_local[0], Eigen::Vector4d(1, 1, 1, 1), 0.005);
+
+      tesseract_visualization::ArrowMarker am(res.nearest_points[0], pose2 * res.nearest_points_local[0]);
+      am.material = std::make_shared<tesseract_scene_graph::Material>("collision_error_material");
+      am.material->color << 1, 1, 1, 1;
+      plotter->plotMarker(am);
     }
 
     tesseract_environment::AdjacencyMapPair::ConstPtr itB = adjacency_map_->getLinkMapping(res.link_names[1]);
@@ -1252,12 +1266,20 @@ void DiscreteCollisionEvaluator::Plot(const tesseract_visualization::Visualizati
 
       manip_->calcFwdKin(pose2, dofvals0 + dist_grad, itB->link_name);
       pose2 = world_to_base_ * pose2 * itB->transform;
-      plotter->plotArrow(
-          res.nearest_points[1], pose2 * res.nearest_points_local[1], Eigen::Vector4d(1, 1, 1, 1), 0.005);
+
+      tesseract_visualization::ArrowMarker am(res.nearest_points[1], pose2 * res.nearest_points_local[1]);
+      am.material = std::make_shared<tesseract_scene_graph::Material>("collision_error_material");
+      am.material->color << 1, 1, 1, 1;
+      plotter->plotMarker(am);
     }
   }
 
-  plotter->plotContactResults(adjacency_map_->getActiveLinkNames(), dist_results, safety_distance);
+  auto margin_fn = [=](const std::string& link1, const std::string& link2) {
+    return getSafetyMarginData()->getPairSafetyMarginData(link1, link2)[0];
+  };
+
+  tesseract_visualization::ContactResultsMarker cm(adjacency_map_->getActiveLinkNames(), dist_results, margin_fn);
+  plotter->plotMarker(cm);
 }
 
 ////////////////////////////////////////
@@ -1468,8 +1490,11 @@ void CastCollisionEvaluator::Plot(const tesseract_visualization::Visualization::
 
       manip_->calcFwdKin(pose2, dofvals + dist_grad, itA->link_name);
       pose2 = world_to_base_ * pose2 * itA->transform;
-      plotter->plotArrow(
-          res.nearest_points[0], pose2 * res.nearest_points_local[0], Eigen::Vector4d(1, 1, 1, 1), 0.005);
+
+      tesseract_visualization::ArrowMarker am(res.nearest_points[0], pose2 * res.nearest_points_local[0]);
+      am.material = std::make_shared<tesseract_scene_graph::Material>("collision_error_material");
+      am.material->color << 1, 1, 1, 1;
+      plotter->plotMarker(am);
     }
 
     tesseract_environment::AdjacencyMapPair::ConstPtr itB = adjacency_map_->getLinkMapping(res.link_names[1]);
@@ -1496,12 +1521,20 @@ void CastCollisionEvaluator::Plot(const tesseract_visualization::Visualization::
 
       manip_->calcFwdKin(pose2, dofvals + dist_grad, itB->link_name);
       pose2 = world_to_base_ * pose2 * itB->transform;
-      plotter->plotArrow(
-          res.nearest_points[1], pose2 * res.nearest_points_local[1], Eigen::Vector4d(1, 1, 1, 1), 0.005);
+
+      tesseract_visualization::ArrowMarker am(res.nearest_points[1], pose2 * res.nearest_points_local[1]);
+      am.material = std::make_shared<tesseract_scene_graph::Material>("collision_error_material");
+      am.material->color << 1, 1, 1, 1;
+      plotter->plotMarker(am);
     }
   }
 
-  plotter->plotContactResults(adjacency_map_->getActiveLinkNames(), dist_results, safety_distance);
+  auto margin_fn = [=](const std::string& link1, const std::string& link2) {
+    return getSafetyMarginData()->getPairSafetyMarginData(link1, link2)[0];
+  };
+
+  tesseract_visualization::ContactResultsMarker cm(adjacency_map_->getActiveLinkNames(), dist_results, margin_fn);
+  plotter->plotMarker(cm);
 }
 
 //////////////////////////////////////////

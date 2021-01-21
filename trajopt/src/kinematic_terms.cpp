@@ -5,6 +5,8 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <boost/format.hpp>
 #include <iostream>
 #include <tesseract_kinematics/core/utils.h>
+#include <tesseract_visualization/markers/axis_marker.h>
+#include <tesseract_visualization/markers/arrow_marker.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt/kinematic_terms.hpp>
@@ -79,9 +81,18 @@ void DynamicCartPoseErrCalculator::Plot(const tesseract_visualization::Visualiza
   Eigen::Isometry3d cur_tf = world_to_base_ * cur_pose * kin_link_->transform * tcp_;
   Eigen::Isometry3d target_tf = world_to_base_ * target_pose * kin_target_->transform * target_tcp_;
 
-  plotter->plotAxis(cur_tf, 0.05);
-  plotter->plotAxis(target_tf, 0.05);
-  plotter->plotArrow(cur_tf.translation(), target_tf.translation(), Eigen::Vector4d(1, 0, 1, 1), 0.005);
+  tesseract_visualization::AxisMarker m1(cur_tf);
+  m1.setScale(Eigen::Vector3d::Constant(0.05));
+  plotter->plotMarker(m1);
+
+  tesseract_visualization::AxisMarker m2(target_tf);
+  m2.setScale(Eigen::Vector3d::Constant(0.05));
+  plotter->plotMarker(m2);
+
+  tesseract_visualization::ArrowMarker m3(cur_tf.translation(), target_tf.translation());
+  m3.material = std::make_shared<tesseract_scene_graph::Material>("cart_pose_error_material");
+  m3.material->color << 1, 0, 1, 1;
+  plotter->plotMarker(m3);
 }
 
 MatrixXd DynamicCartPoseJacCalculator::operator()(const VectorXd& dof_vals) const
@@ -170,9 +181,18 @@ void CartPoseErrCalculator::Plot(const tesseract_visualization::Visualization::P
 
   Isometry3d target = pose_inv_.inverse();
 
-  plotter->plotAxis(cur_pose, 0.05);
-  plotter->plotAxis(target, 0.05);
-  plotter->plotArrow(cur_pose.translation(), target.translation(), Eigen::Vector4d(1, 0, 1, 1), 0.005);
+  tesseract_visualization::AxisMarker m1(cur_pose);
+  m1.setScale(Eigen::Vector3d::Constant(0.05));
+  plotter->plotMarker(m1);
+
+  tesseract_visualization::AxisMarker m2(target);
+  m2.setScale(Eigen::Vector3d::Constant(0.05));
+  plotter->plotMarker(m2);
+
+  tesseract_visualization::ArrowMarker m3(cur_pose.translation(), target.translation());
+  m3.material = std::make_shared<tesseract_scene_graph::Material>("cart_pose_error_material");
+  m3.material->color << 1, 0, 1, 1;
+  plotter->plotMarker(m3);
 }
 
 MatrixXd CartPoseJacCalculator::operator()(const VectorXd& dof_vals) const
