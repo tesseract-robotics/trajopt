@@ -10,7 +10,7 @@ find_package(ifopt REQUIRED)
 find_package(OsqpEigen REQUIRED)
 find_package(trajopt_ifopt REQUIRED)
 find_package(trajopt_utils REQUIRED)
-find_package(cmake_common_scripts REQUIRED)
+find_package(ros_industrial_cmake_boilerplate REQUIRED)
 
 if(NOT TARGET console_bridge::console_bridge)
   add_library(console_bridge::console_bridge INTERFACE IMPORTED)

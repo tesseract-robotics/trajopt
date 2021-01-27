@@ -13,7 +13,7 @@ find_package(qpOASES QUIET)
 find_package(Eigen3 REQUIRED)
 find_package(trajopt_utils REQUIRED)
 find_package(jsoncpp REQUIRED)
-find_package(cmake_common_scripts REQUIRED)
+find_package(ros_industrial_cmake_boilerplate REQUIRED)
 
 # Load variable for clang tidy args, compiler options and cxx version
 trajopt_variables()

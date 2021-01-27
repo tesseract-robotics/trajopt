@@ -1,6 +1,6 @@
 - git:
-    local-name: cmake_common_scripts
-    uri: https://github.com/ros-industrial/cmake_common_scripts.git
+    local-name: ros_industrial_cmake_boilerplate
+    uri: https://github.com/ros-industrial/ros_industrial_cmake_boilerplate.git
     version: master
 - git:
     local-name: tesseract

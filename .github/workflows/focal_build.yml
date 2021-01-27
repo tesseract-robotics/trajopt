@@ -20,7 +20,7 @@ jobs:
       ROS_DISTRO: noetic
       ROS_REPO: main
       UPSTREAM_WORKSPACE: "dependencies.rosinstall"
-      ROSDEP_SKIP_KEYS: "bullet bullet-extras opw_kinematics cmake_common_scripts fcl ifopt"
+      ROSDEP_SKIP_KEYS: "bullet bullet-extras opw_kinematics ros_industrial_cmake_boilerplate fcl ifopt"
       DOCKER_IMAGE: "rosindustrial/tesseract:noetic"
       PARALLEL_TESTS: false
       CCACHE_DIR: "/home/runner/work/trajopt_ros/trajopt_ros/Focal-Build/.ccache"
