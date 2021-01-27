@@ -20,7 +20,7 @@ jobs:
       ROS_DISTRO: melodic
       ROS_REPO: main
       UPSTREAM_WORKSPACE: "dependencies_with_ext.rosinstall"
-      ROSDEP_SKIP_KEYS: "bullet bullet-extras opw_kinematics cmake_common_scripts fcl ifopt taskflow"
+      ROSDEP_SKIP_KEYS: "bullet bullet-extras opw_kinematics ros_industrial_cmake_boilerplate fcl ifopt taskflow"
       DOCKER_IMAGE: "rosindustrial/tesseract:melodic"
       PARALLEL_TESTS: false
       CCACHE_DIR: "/home/runner/work/trajopt_ros/trajopt_ros/Bionic-Build/.ccache"

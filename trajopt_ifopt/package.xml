@@ -12,7 +12,7 @@
   <exec_depend>catkin</exec_depend>
   <buildtool_depend>cmake</buildtool_depend>
 
-  <build_depend>cmake_common_scripts</build_depend>
+  <build_depend>ros_industrial_cmake_boilerplate</build_depend>
   <depend>eigen</depend>
   <depend>ifopt</depend>
   <depend>libconsole-bridge-dev</depend>

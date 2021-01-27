@@ -9,7 +9,7 @@ endif()
 
 find_package(Eigen3 REQUIRED)
 find_package(Boost COMPONENTS system thread program_options REQUIRED)
-find_package(cmake_common_scripts REQUIRED)
+find_package(ros_industrial_cmake_boilerplate REQUIRED)
 
 # Load variable for clang tidy args, compiler options and cxx version
 trajopt_variables()

@@ -5,7 +5,7 @@ find_package(Bullet REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(OpenMP REQUIRED)
 find_package(trajopt_utils REQUIRED)
-find_package(cmake_common_scripts REQUIRED)
+find_package(ros_industrial_cmake_boilerplate REQUIRED)
 
 # Load variable for clang tidy args, compiler options and cxx version
 trajopt_variables()
