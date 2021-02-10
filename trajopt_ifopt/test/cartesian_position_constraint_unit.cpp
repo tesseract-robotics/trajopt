@@ -2,7 +2,6 @@
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <ctime>
 #include <gtest/gtest.h>
-#include <boost/filesystem.hpp>
 #include <console_bridge/console.h>
 #include <ifopt/problem.h>
 
@@ -11,6 +10,7 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <tesseract_kinematics/core/forward_kinematics.h>
 #include <tesseract_environment/core/environment.h>
 #include <tesseract_environment/core/utils.h>
+#include <tesseract_common/types.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt_ifopt/constraints/cartesian_position_constraint.h>
@@ -43,8 +43,8 @@ public:
   void SetUp() override
   {
     // Initialize Tesseract
-    boost::filesystem::path urdf_file(std::string(TRAJOPT_DIR) + "/test/data/arm_around_table.urdf");
-    boost::filesystem::path srdf_file(std::string(TRAJOPT_DIR) + "/test/data/pr2.srdf");
+    tesseract_common::fs::path urdf_file(std::string(TRAJOPT_DIR) + "/test/data/arm_around_table.urdf");
+    tesseract_common::fs::path srdf_file(std::string(TRAJOPT_DIR) + "/test/data/pr2.srdf");
     tesseract_scene_graph::ResourceLocator::Ptr locator =
         std::make_shared<tesseract_scene_graph::SimpleResourceLocator>(locateResource);
     auto env = std::make_shared<Environment>();
