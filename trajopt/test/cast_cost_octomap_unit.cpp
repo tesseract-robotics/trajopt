@@ -89,7 +89,7 @@ public:
     new_joint.parent_link_name = "base_link";
     new_joint.child_link_name = "octomap_attached";
 
-    env_->addLink(std::move(new_link), std::move(new_joint));
+    env_->addLink(new_link, new_joint);
   }
 };
 

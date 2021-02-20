@@ -80,8 +80,7 @@ TEST_F(InverseKinematicsConstraintUnit, GetValue)  // NOLINT
 
   // Run FK to get target pose
   Eigen::VectorXd joint_position_single = Eigen::VectorXd::Ones(forward_kinematics->numJoints());
-  auto target_pose = Eigen::Isometry3d::Identity();
-  forward_kinematics->calcFwdKin(target_pose, joint_position_single);
+  auto target_pose = forward_kinematics->calcFwdKin(joint_position_single);
   constraint->SetTargetPose(target_pose);
 
   // Set the joints to that joint position

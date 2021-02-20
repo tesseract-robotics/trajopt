@@ -86,9 +86,8 @@ public:
     if (DEBUG)
       std::cout << "Joint Limits:\n" << forward_kinematics->getLimits().joint_limits.transpose() << std::endl;
 
-    auto target_pose = Eigen::Isometry3d::Identity();
     joint_target_ = start_pos;
-    forward_kinematics->calcFwdKin(target_pose, joint_target_);
+    Eigen::Isometry3d target_pose = forward_kinematics->calcFwdKin(joint_target_);
     target_pose = world_to_base * target_pose;
 
     // 3) Add Variables

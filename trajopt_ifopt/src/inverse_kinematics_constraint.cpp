@@ -57,11 +57,22 @@ InverseKinematicsConstraint::CalcValues(const Eigen::Ref<const Eigen::VectorXd>&
                                         const Eigen::Ref<const Eigen::VectorXd>& seed_joint_position) const
 {
   // Get joint position using IK and the seed variable
-  Eigen::VectorXd target_joint_position;
-  kinematic_info_->inverse_kinematics->calcInvKin(target_joint_position, target_pose_, seed_joint_position);
+  tesseract_kinematics::IKSolutions target_joint_position =
+      kinematic_info_->inverse_kinematics->calcInvKin(target_pose_, seed_joint_position);
 
   // Calculate joint error
-  Eigen::VectorXd error = target_joint_position - joint_vals;
+  Eigen::VectorXd error = Eigen::VectorXd::Zero(joint_vals.rows());
+  double error_norm = std::numeric_limits<double>::max();
+  for (const auto& sol : target_joint_position)
+  {
+    Eigen::VectorXd cur_error = sol - joint_vals;
+    double cur_error_norm = cur_error.norm();
+    if (cur_error_norm < error_norm)
+    {
+      error_norm = cur_error_norm;
+      error = cur_error;
+    }
+  }
   return error;
 }
 

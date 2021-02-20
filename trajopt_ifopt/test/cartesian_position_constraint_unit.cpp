@@ -79,8 +79,7 @@ TEST_F(CartesianPositionConstraintUnit, GetValue)  // NOLINT
 
   // Run FK to get target pose
   Eigen::VectorXd joint_position = Eigen::VectorXd::Ones(n_dof);
-  Eigen::Isometry3d target_pose;
-  forward_kinematics->calcFwdKin(target_pose, joint_position);
+  Eigen::Isometry3d target_pose = forward_kinematics->calcFwdKin(joint_position);
   constraint->SetTargetPose(target_pose);
 
   // Set the joints to the joint position that should satisfy it
@@ -131,8 +130,7 @@ TEST_F(CartesianPositionConstraintUnit, FillJacobian)  // NOLINT
 
   // Run FK to get target pose
   Eigen::VectorXd joint_position = Eigen::VectorXd::Ones(n_dof);
-  Eigen::Isometry3d target_pose;
-  forward_kinematics->calcFwdKin(target_pose, joint_position);
+  Eigen::Isometry3d target_pose = forward_kinematics->calcFwdKin(joint_position);
   constraint->SetTargetPose(target_pose);
 
   // Modify one joint at a time
