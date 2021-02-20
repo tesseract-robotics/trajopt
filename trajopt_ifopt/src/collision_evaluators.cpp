@@ -195,11 +195,8 @@ GradientResults CollisionEvaluator::GetGradient(const Eigen::VectorXd& dofvals,
     {
       results.gradients[i].has_gradient = true;
 
-      Eigen::MatrixXd jac;
-      jac.resize(6, manip_->numJoints());
-
       // Calculate Jacobian
-      manip_->calcJacobian(jac, dofvals, it->link_name);
+      Eigen::MatrixXd jac = manip_->calcJacobian(dofvals, it->link_name);
 
       // Need to change the base and ref point of the jacobian.
       // When changing ref point you must provide a vector from the current ref
@@ -265,9 +262,6 @@ GradientResults CollisionEvaluator::GetGradient(const Eigen::VectorXd& dofvals0,
     {
       results.gradients[i].has_gradient = true;
 
-      Eigen::MatrixXd jac;
-      jac.resize(6, manip_->numJoints());
-
       if (contact_result.cc_type[i] == tesseract_collision::ContinuousCollisionType::CCType_Time0)
         dofvalst = dofvals0;
       else if (contact_result.cc_type[i] == tesseract_collision::ContinuousCollisionType::CCType_Time1)
@@ -276,7 +270,7 @@ GradientResults CollisionEvaluator::GetGradient(const Eigen::VectorXd& dofvals0,
         dofvalst = dofvals0 + (dofvals1 - dofvals0) * contact_result.cc_time[i];
 
       // Calculate Jacobian
-      manip_->calcJacobian(jac, dofvalst, it->link_name);
+      Eigen::MatrixXd jac = manip_->calcJacobian(dofvalst, it->link_name);
 
       // Need to change the base and ref point of the jacobian.
       // When changing ref point you must provide a vector from the current ref

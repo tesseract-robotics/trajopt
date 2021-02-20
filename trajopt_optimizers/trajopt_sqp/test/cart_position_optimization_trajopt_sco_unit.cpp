@@ -103,9 +103,8 @@ TEST(CartPositionOptimizationTrajoptSCO, cart_position_optimization_trajopt_sco)
   auto zero = Eigen::VectorXd::Zero(7);
   pci.init_info.data = zero.transpose();
 
-  auto target_pose = Eigen::Isometry3d::Identity();
   auto joint_target = start_pos;
-  forward_kinematics->calcFwdKin(target_pose, joint_target);
+  auto target_pose = forward_kinematics->calcFwdKin(joint_target);
   auto world_to_base = pci.env->getCurrentState()->link_transforms.at(forward_kinematics->getBaseLinkName());
   target_pose = world_to_base * target_pose;
 

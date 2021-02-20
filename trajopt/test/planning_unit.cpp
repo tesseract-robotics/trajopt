@@ -85,9 +85,8 @@ TEST_F(PlanningTest, numerical_ik1)  // NOLINT
   std::stringstream ss;
   ss << toVectorXd(opt.x()).transpose();
   CONSOLE_BRIDGE_logDebug("Initial Vars: %s", ss.str().c_str());
-  Eigen::Isometry3d initial_pose, final_pose, change_base;
-  change_base = prob->GetEnv()->getLinkTransform(prob->GetKin()->getBaseLinkName());
-  prob->GetKin()->calcFwdKin(initial_pose, toVectorXd(opt.x()));
+  Eigen::Isometry3d change_base = prob->GetEnv()->getLinkTransform(prob->GetKin()->getBaseLinkName());
+  Eigen::Isometry3d initial_pose = prob->GetKin()->calcFwdKin(toVectorXd(opt.x()));
   initial_pose = change_base * initial_pose;
 
   ss = std::stringstream();
@@ -95,7 +94,7 @@ TEST_F(PlanningTest, numerical_ik1)  // NOLINT
   CONSOLE_BRIDGE_logDebug("Initial Position: %s", ss.str().c_str());
   sco::OptStatus status = opt.optimize();
   CONSOLE_BRIDGE_logDebug("Status: %s", sco::statusToString(status).c_str());
-  prob->GetKin()->calcFwdKin(final_pose, toVectorXd(opt.x()));
+  Eigen::Isometry3d final_pose = prob->GetKin()->calcFwdKin(toVectorXd(opt.x()));
   final_pose = change_base * final_pose;
 
   Eigen::Isometry3d goal;

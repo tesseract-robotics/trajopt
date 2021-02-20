@@ -55,9 +55,8 @@ namespace trajopt
 {
 VectorXd DynamicCartPoseErrCalculator::operator()(const VectorXd& dof_vals) const
 {
-  Isometry3d new_pose, target_pose;
-  manip_->calcFwdKin(new_pose, dof_vals, kin_link_->link_name);
-  manip_->calcFwdKin(target_pose, dof_vals, kin_target_->link_name);
+  Isometry3d new_pose = manip_->calcFwdKin(dof_vals, kin_link_->link_name);
+  Isometry3d target_pose = manip_->calcFwdKin(dof_vals, kin_target_->link_name);
 
   Eigen::Isometry3d link_tf = world_to_base_ * new_pose * kin_link_->transform * tcp_;
   Eigen::Isometry3d target_tf = world_to_base_ * target_pose * kin_target_->transform * target_tcp_;
@@ -73,10 +72,8 @@ VectorXd DynamicCartPoseErrCalculator::operator()(const VectorXd& dof_vals) cons
 void DynamicCartPoseErrCalculator::Plot(const tesseract_visualization::Visualization::Ptr& plotter,
                                         const VectorXd& dof_vals)
 {
-  Isometry3d cur_pose, target_pose;
-
-  manip_->calcFwdKin(cur_pose, dof_vals, kin_link_->link_name);
-  manip_->calcFwdKin(target_pose, dof_vals, kin_target_->link_name);
+  Isometry3d cur_pose = manip_->calcFwdKin(dof_vals, kin_link_->link_name);
+  Isometry3d target_pose = manip_->calcFwdKin(dof_vals, kin_target_->link_name);
 
   Eigen::Isometry3d cur_tf = world_to_base_ * cur_pose * kin_link_->transform * tcp_;
   Eigen::Isometry3d target_tf = world_to_base_ * target_pose * kin_target_->transform * target_tcp_;
@@ -98,32 +95,28 @@ void DynamicCartPoseErrCalculator::Plot(const tesseract_visualization::Visualiza
 MatrixXd DynamicCartPoseJacCalculator::operator()(const VectorXd& dof_vals) const
 {
   auto n_dof = static_cast<int>(manip_->numJoints());
-  MatrixXd jac_link(6, n_dof), jac_target(6, n_dof), jac0(6, n_dof);
-
-  Isometry3d cur_pose, target_pose;
-
-  manip_->calcFwdKin(cur_pose, dof_vals, kin_link_->link_name);
-  manip_->calcFwdKin(target_pose, dof_vals, kin_target_->link_name);
+  Isometry3d cur_pose = manip_->calcFwdKin(dof_vals, kin_link_->link_name);
+  Isometry3d target_pose = manip_->calcFwdKin(dof_vals, kin_target_->link_name);
 
   Eigen::Isometry3d cur_tf = world_to_base_ * cur_pose * kin_link_->transform * tcp_;
   Eigen::Isometry3d target_tf = world_to_base_ * target_pose * kin_target_->transform * target_tcp_;
 
   // Get the jacobian of link in the targets coordinate system
-  manip_->calcJacobian(jac_link, dof_vals, kin_link_->link_name);
+  MatrixXd jac_link = manip_->calcJacobian(dof_vals, kin_link_->link_name);
   tesseract_kinematics::jacobianChangeBase(jac_link, world_to_base_);
   tesseract_kinematics::jacobianChangeRefPoint(
       jac_link, (world_to_base_ * cur_pose).linear() * (kin_link_->transform * tcp_).translation());
   tesseract_kinematics::jacobianChangeBase(jac_link, target_tf.inverse());
 
   // Get the jacobian of the target in the targets coordinate system
-  manip_->calcJacobian(jac_target, dof_vals, kin_target_->link_name);
+  MatrixXd jac_target = manip_->calcJacobian(dof_vals, kin_target_->link_name);
   tesseract_kinematics::jacobianChangeBase(jac_target, world_to_base_);
   tesseract_kinematics::jacobianChangeRefPoint(
       jac_target, (world_to_base_ * target_pose).linear() * (kin_target_->transform * target_tcp_).translation());
   tesseract_kinematics::jacobianChangeBase(jac_target, target_tf.inverse());
   tesseract_kinematics::jacobianChangeRefPoint(jac_target, (target_tf.inverse() * cur_tf).translation());
 
-  jac0 = jac_link - jac_target;
+  MatrixXd jac0 = jac_link - jac_target;
 
   // Paper:
   // https://ethz.ch/content/dam/ethz/special-interest/mavt/robotics-n-intelligent-systems/rsl-dam/documents/RobotDynamics2016/RD2016script.pdf
@@ -158,8 +151,7 @@ MatrixXd DynamicCartPoseJacCalculator::operator()(const VectorXd& dof_vals) cons
 
 VectorXd CartPoseErrCalculator::operator()(const VectorXd& dof_vals) const
 {
-  Isometry3d new_pose;
-  manip_->calcFwdKin(new_pose, dof_vals, kin_link_->link_name);
+  Isometry3d new_pose = manip_->calcFwdKin(dof_vals, kin_link_->link_name);
 
   new_pose = world_to_base_ * new_pose * kin_link_->transform * tcp_;
 
@@ -174,9 +166,7 @@ VectorXd CartPoseErrCalculator::operator()(const VectorXd& dof_vals) const
 
 void CartPoseErrCalculator::Plot(const tesseract_visualization::Visualization::Ptr& plotter, const VectorXd& dof_vals)
 {
-  Isometry3d cur_pose;
-  manip_->calcFwdKin(cur_pose, dof_vals, kin_link_->link_name);
-
+  Isometry3d cur_pose = manip_->calcFwdKin(dof_vals, kin_link_->link_name);
   cur_pose = world_to_base_ * cur_pose * kin_link_->transform * tcp_;
 
   Isometry3d target = pose_inv_.inverse();
@@ -197,12 +187,8 @@ void CartPoseErrCalculator::Plot(const tesseract_visualization::Visualization::P
 
 MatrixXd CartPoseJacCalculator::operator()(const VectorXd& dof_vals) const
 {
-  auto n_dof = static_cast<int>(manip_->numJoints());
-  MatrixXd jac0(6, n_dof);
-  Eigen::Isometry3d tf0;
-
-  manip_->calcFwdKin(tf0, dof_vals, kin_link_->link_name);
-  manip_->calcJacobian(jac0, dof_vals, kin_link_->link_name);
+  Eigen::Isometry3d tf0 = manip_->calcFwdKin(dof_vals, kin_link_->link_name);
+  MatrixXd jac0 = manip_->calcJacobian(dof_vals, kin_link_->link_name);
   tesseract_kinematics::jacobianChangeBase(jac0, world_to_base_);
   tesseract_kinematics::jacobianChangeRefPoint(
       jac0, (world_to_base_ * tf0).linear() * (kin_link_->transform * tcp_).translation());
@@ -232,7 +218,7 @@ MatrixXd CartPoseJacCalculator::operator()(const VectorXd& dof_vals) const
     jac0.col(c).tail(3) = ((new_rot_err - rot_err) / 1e-5);
   }
 
-  MatrixXd reduced_jac(indices_.size(), n_dof);
+  MatrixXd reduced_jac(indices_.size(), manip_->numJoints());
   for (int i = 0; i < indices_.size(); ++i)
     reduced_jac.row(i) = jac0.row(indices_[i]);
 
@@ -252,28 +238,28 @@ MatrixXd CartVelJacCalculator::operator()(const VectorXd& dof_vals) const
 
   if (tcp_.translation().isZero())
   {
-    manip_->calcFwdKin(tf0, dof_vals.topRows(n_dof), kin_link_->link_name);
-    manip_->calcJacobian(jac0, dof_vals.topRows(n_dof), kin_link_->link_name);
+    tf0 = manip_->calcFwdKin(dof_vals.topRows(n_dof), kin_link_->link_name);
+    jac0 = manip_->calcJacobian(dof_vals.topRows(n_dof), kin_link_->link_name);
     tesseract_kinematics::jacobianChangeBase(jac0, world_to_base_);
     tesseract_kinematics::jacobianChangeRefPoint(jac0,
                                                  (world_to_base_ * tf0).linear() * kin_link_->transform.translation());
 
-    manip_->calcFwdKin(tf1, dof_vals.bottomRows(n_dof), kin_link_->link_name);
-    manip_->calcJacobian(jac1, dof_vals.bottomRows(n_dof), kin_link_->link_name);
+    tf1 = manip_->calcFwdKin(dof_vals.bottomRows(n_dof), kin_link_->link_name);
+    jac1 = manip_->calcJacobian(dof_vals.bottomRows(n_dof), kin_link_->link_name);
     tesseract_kinematics::jacobianChangeBase(jac1, world_to_base_);
     tesseract_kinematics::jacobianChangeRefPoint(jac1,
                                                  (world_to_base_ * tf1).linear() * kin_link_->transform.translation());
   }
   else
   {
-    manip_->calcFwdKin(tf0, dof_vals.topRows(n_dof), kin_link_->link_name);
-    manip_->calcJacobian(jac0, dof_vals.topRows(n_dof), kin_link_->link_name);
+    tf0 = manip_->calcFwdKin(dof_vals.topRows(n_dof), kin_link_->link_name);
+    jac0 = manip_->calcJacobian(dof_vals.topRows(n_dof), kin_link_->link_name);
     tesseract_kinematics::jacobianChangeBase(jac0, world_to_base_);
     tesseract_kinematics::jacobianChangeRefPoint(
         jac0, (world_to_base_ * tf0).linear() * (kin_link_->transform * tcp_).translation());
 
-    manip_->calcFwdKin(tf1, dof_vals.bottomRows(n_dof), kin_link_->link_name);
-    manip_->calcJacobian(jac1, dof_vals.bottomRows(n_dof), kin_link_->link_name);
+    tf1 = manip_->calcFwdKin(dof_vals.bottomRows(n_dof), kin_link_->link_name);
+    jac1 = manip_->calcJacobian(dof_vals.bottomRows(n_dof), kin_link_->link_name);
     tesseract_kinematics::jacobianChangeBase(jac1, world_to_base_);
     tesseract_kinematics::jacobianChangeRefPoint(
         jac1, (world_to_base_ * tf1).linear() * (kin_link_->transform * tcp_).translation());
@@ -289,10 +275,8 @@ MatrixXd CartVelJacCalculator::operator()(const VectorXd& dof_vals) const
 VectorXd CartVelErrCalculator::operator()(const VectorXd& dof_vals) const
 {
   auto n_dof = static_cast<int>(manip_->numJoints());
-  Isometry3d pose0, pose1;
-
-  manip_->calcFwdKin(pose0, dof_vals.topRows(n_dof), kin_link_->link_name);
-  manip_->calcFwdKin(pose1, dof_vals.bottomRows(n_dof), kin_link_->link_name);
+  Isometry3d pose0 = manip_->calcFwdKin(dof_vals.topRows(n_dof), kin_link_->link_name);
+  Isometry3d pose1 = manip_->calcFwdKin(dof_vals.bottomRows(n_dof), kin_link_->link_name);
 
   pose0 = world_to_base_ * pose0 * kin_link_->transform * tcp_;
   pose1 = world_to_base_ * pose1 * kin_link_->transform * tcp_;
@@ -465,12 +449,7 @@ MatrixXd TimeCostJacCalculator::operator()(const VectorXd& var_vals) const
 VectorXd AvoidSingularityErrCalculator::operator()(const VectorXd& var_vals) const
 {
   // Calculate the SVD of the jacobian at this joint state
-  MatrixXd jacobian(6, fwd_kin_->numJoints());
-  if (!fwd_kin_->calcJacobian(jacobian, var_vals, link_name_))
-  {
-    std::cout << "Could not calculate jacobian for link '" << link_name_ << "' in AvoidSingularities" << std::endl;
-    return Eigen::VectorXd::Zero(1);
-  }
+  MatrixXd jacobian = fwd_kin_->calcJacobian(var_vals, link_name_);
   JacobiSVD<MatrixXd> svd(jacobian, Eigen::ComputeThinU | Eigen::ComputeThinV);
 
   // Get the U and V vectors for the smallest singular value
@@ -501,12 +480,7 @@ MatrixXd AvoidSingularityJacCalculator::jacobianPartialDerivative(const VectorXd
     joints(jntIdx) += 2 * eps;
   }
 
-  MatrixXd jacobian_increment(6, fwd_kin_->numJoints());
-  if (!fwd_kin_->calcJacobian(jacobian_increment, joints, link_name_))
-  {
-    std::cout << "Could not calculate jacobian for link '" << link_name_ << "' in AvoidSingularities" << std::endl;
-    return MatrixXd::Zero(6, fwd_kin_->numJoints());
-  }
+  MatrixXd jacobian_increment = fwd_kin_->calcJacobian(joints, link_name_);
   return (jacobian_increment - jacobian) / eps;
 }
 
@@ -516,12 +490,7 @@ MatrixXd AvoidSingularityJacCalculator::operator()(const VectorXd& var_vals) con
   cost_jacobian.resize(1, var_vals.size());
 
   // Calculate the SVD of the jacobian at this joint state
-  MatrixXd jacobian(6, fwd_kin_->numJoints());
-  if (!fwd_kin_->calcJacobian(jacobian, var_vals, link_name_))
-  {
-    std::cout << "Could not calculate jacobian for link '" << link_name_ << "' in AvoidSingularities" << std::endl;
-    return MatrixXd::Zero(1, var_vals.size());
-  }
+  MatrixXd jacobian = fwd_kin_->calcJacobian(var_vals, link_name_);
   JacobiSVD<MatrixXd> svd(jacobian, Eigen::ComputeThinU | Eigen::ComputeThinV);
 
   // Get the U and V vectors for the smallest singular value

@@ -53,8 +53,7 @@ CartPosConstraint::CartPosConstraint(const Eigen::Isometry3d& target_pose,
 
 Eigen::VectorXd CartPosConstraint::CalcValues(const Eigen::Ref<const Eigen::VectorXd>& joint_vals) const
 {
-  Eigen::Isometry3d new_pose;
-  kinematic_info_->manip->calcFwdKin(new_pose, joint_vals, kinematic_info_->kin_link->link_name);
+  Eigen::Isometry3d new_pose = kinematic_info_->manip->calcFwdKin(joint_vals, kinematic_info_->kin_link->link_name);
 
   new_pose = kinematic_info_->world_to_base * new_pose * kinematic_info_->kin_link->transform * kinematic_info_->tcp;
 
@@ -103,12 +102,9 @@ void CartPosConstraint::CalcJacobianBlock(const Eigen::Ref<const Eigen::VectorXd
     // Reserve enough room in the sparse matrix
     jac_block.reserve(n_dof_ * 6);
 
-    Eigen::MatrixXd jac0(6, n_dof_);
-    Eigen::Isometry3d tf0;
-
     // Calculate the jacobian
-    kinematic_info_->manip->calcFwdKin(tf0, joint_vals, kinematic_info_->kin_link->link_name);
-    kinematic_info_->manip->calcJacobian(jac0, joint_vals, kinematic_info_->kin_link->link_name);
+    Eigen::Isometry3d tf0 = kinematic_info_->manip->calcFwdKin(joint_vals, kinematic_info_->kin_link->link_name);
+    Eigen::MatrixXd jac0 = kinematic_info_->manip->calcJacobian(joint_vals, kinematic_info_->kin_link->link_name);
     tesseract_kinematics::jacobianChangeBase(jac0, kinematic_info_->world_to_base);
     tesseract_kinematics::jacobianChangeRefPoint(
         jac0,
@@ -177,8 +173,7 @@ void CartPosConstraint::SetTargetPose(const Eigen::Isometry3d& target_pose)
 Eigen::Isometry3d CartPosConstraint::GetCurrentPose() const
 {
   VectorXd joint_vals = this->GetVariables()->GetComponent(position_var_->GetName())->GetValues();
-  Eigen::Isometry3d new_pose;
-  kinematic_info_->manip->calcFwdKin(new_pose, joint_vals, kinematic_info_->kin_link->link_name);
+  Eigen::Isometry3d new_pose = kinematic_info_->manip->calcFwdKin(joint_vals, kinematic_info_->kin_link->link_name);
   new_pose = kinematic_info_->world_to_base * new_pose * kinematic_info_->kin_link->transform * kinematic_info_->tcp;
   return new_pose;
 }

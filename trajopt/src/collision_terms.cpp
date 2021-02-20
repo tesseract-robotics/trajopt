@@ -174,11 +174,8 @@ GradientResults CollisionEvaluator::GetGradient(const Eigen::VectorXd& dofvals,
     {
       results.gradients[i].has_gradient = true;
 
-      Eigen::MatrixXd jac;
-      jac.resize(6, manip_->numJoints());
-
       // Calculate Jacobian
-      manip_->calcJacobian(jac, dofvals, it->link_name);
+      Eigen::MatrixXd jac = manip_->calcJacobian(dofvals, it->link_name);
 
       // Need to change the base and ref point of the jacobian.
       // When changing ref point you must provide a vector from the current ref
@@ -240,9 +237,6 @@ GradientResults CollisionEvaluator::GetGradient(const Eigen::VectorXd& dofvals0,
     {
       results.gradients[i].has_gradient = true;
 
-      Eigen::MatrixXd jac;
-      jac.resize(6, manip_->numJoints());
-
       if (contact_result.cc_type[i] == tesseract_collision::ContinuousCollisionType::CCType_Time0)
         dofvalst = dofvals0;
       else if (contact_result.cc_type[i] == tesseract_collision::ContinuousCollisionType::CCType_Time1)
@@ -251,7 +245,7 @@ GradientResults CollisionEvaluator::GetGradient(const Eigen::VectorXd& dofvals0,
         dofvalst = dofvals0 + (dofvals1 - dofvals0) * contact_result.cc_time[i];
 
       // Calculate Jacobian
-      manip_->calcJacobian(jac, dofvalst, it->link_name);
+      Eigen::MatrixXd jac = manip_->calcJacobian(dofvalst, it->link_name);
 
       // Need to change the base and ref point of the jacobian.
       // When changing ref point you must provide a vector from the current ref
@@ -1002,22 +996,19 @@ void SingleTimestepCollisionEvaluator::Plot(const tesseract_visualization::Visua
     tesseract_environment::AdjacencyMapPair::ConstPtr itA = adjacency_map_->getLinkMapping(res.link_names[0]);
     if (itA != nullptr)
     {
-      Eigen::MatrixXd jac;
       Eigen::VectorXd dist_grad;
-      Eigen::Isometry3d pose, pose2;
-      jac.resize(6, manip_->numJoints());
-      manip_->calcFwdKin(pose, dofvals, itA->link_name);
+      Eigen::Isometry3d pose = manip_->calcFwdKin(dofvals, itA->link_name);
       pose = world_to_base_ * pose;
 
       Eigen::Vector3d local_link_point = pose.inverse() * res.nearest_points[0];
 
-      manip_->calcJacobian(jac, dofvals, itA->link_name);
+      Eigen::MatrixXd jac = manip_->calcJacobian(dofvals, itA->link_name);
       tesseract_kinematics::jacobianChangeBase(jac, world_to_base_);
       tesseract_kinematics::jacobianChangeRefPoint(jac, pose.linear() * local_link_point);
 
       dist_grad = -res.normal.transpose() * jac.topRows(3);
 
-      manip_->calcFwdKin(pose2, dofvals + dist_grad, itA->link_name);
+      Eigen::Isometry3d pose2 = manip_->calcFwdKin(dofvals + dist_grad, itA->link_name);
       pose2 = world_to_base_ * pose2 * itA->transform;
 
       tesseract_visualization::ArrowMarker am(res.nearest_points[0], pose2 * local_link_point);
@@ -1207,18 +1198,15 @@ void DiscreteCollisionEvaluator::Plot(const tesseract_visualization::Visualizati
     tesseract_environment::AdjacencyMapPair::ConstPtr itA = adjacency_map_->getLinkMapping(res.link_names[0]);
     if (itA != nullptr)
     {
-      Eigen::MatrixXd jac;
       Eigen::VectorXd dist_grad;
-      Eigen::Isometry3d pose, pose2, pose3;
-      jac.resize(6, manip_->numJoints());
-      manip_->calcFwdKin(pose, dofvals0, itA->link_name);
+      Eigen::Isometry3d pose = manip_->calcFwdKin(dofvals0, itA->link_name);
       pose = world_to_base_ * pose;
 
       // For descrete continuous we need to populate cc_transform for plotting to work correctly
-      manip_->calcFwdKin(pose3, dofvals1, itA->link_name);
+      Eigen::Isometry3d pose3 = manip_->calcFwdKin(dofvals1, itA->link_name);
       res.cc_transform[0] = world_to_base_ * pose3;
 
-      manip_->calcJacobian(jac, dofvals0, itA->link_name);
+      Eigen::MatrixXd jac = manip_->calcJacobian(dofvals0, itA->link_name);
       tesseract_kinematics::jacobianChangeBase(jac, world_to_base_);
       tesseract_kinematics::jacobianChangeRefPoint(jac, pose.linear() * res.nearest_points_local[0]);
 
@@ -1229,7 +1217,7 @@ void DiscreteCollisionEvaluator::Plot(const tesseract_visualization::Visualizati
 
       dist_grad = -res.normal.transpose() * jac.topRows(3);
 
-      manip_->calcFwdKin(pose2, dofvals0 + dist_grad, itA->link_name);
+      Eigen::Isometry3d pose2 = manip_->calcFwdKin(dofvals0 + dist_grad, itA->link_name);
       pose2 = world_to_base_ * pose2 * itA->transform;
 
       tesseract_visualization::ArrowMarker am(res.nearest_points[0], pose2 * res.nearest_points_local[0]);
@@ -1241,19 +1229,16 @@ void DiscreteCollisionEvaluator::Plot(const tesseract_visualization::Visualizati
     tesseract_environment::AdjacencyMapPair::ConstPtr itB = adjacency_map_->getLinkMapping(res.link_names[1]);
     if (itB != nullptr)
     {
-      Eigen::MatrixXd jac;
       Eigen::VectorXd dist_grad;
-      Eigen::Isometry3d pose, pose2, pose3;
-      jac.resize(6, manip_->numJoints());
-      manip_->calcFwdKin(pose, dofvals0, itB->link_name);
+      Eigen::Isometry3d pose = manip_->calcFwdKin(dofvals0, itB->link_name);
       pose = world_to_base_ * pose;
 
       // For descrete continuous we need to populate cc_transform for plotting to work correctly
-      manip_->calcFwdKin(pose3, dofvals1, itB->link_name);
+      Eigen::Isometry3d pose3 = manip_->calcFwdKin(dofvals1, itB->link_name);
       res.cc_transform[1] = world_to_base_ * pose3;
 
       // Calculate Jacobian
-      manip_->calcJacobian(jac, dofvals0, itB->link_name);
+      Eigen::MatrixXd jac = manip_->calcJacobian(dofvals0, itB->link_name);
       tesseract_kinematics::jacobianChangeBase(jac, world_to_base_);
       tesseract_kinematics::jacobianChangeRefPoint(jac, pose.linear() * res.nearest_points_local[1]);
 
@@ -1264,7 +1249,7 @@ void DiscreteCollisionEvaluator::Plot(const tesseract_visualization::Visualizati
 
       dist_grad = res.normal.transpose() * jac.topRows(3);
 
-      manip_->calcFwdKin(pose2, dofvals0 + dist_grad, itB->link_name);
+      Eigen::Isometry3d pose2 = manip_->calcFwdKin(dofvals0 + dist_grad, itB->link_name);
       pose2 = world_to_base_ * pose2 * itB->transform;
 
       tesseract_visualization::ArrowMarker am(res.nearest_points[1], pose2 * res.nearest_points_local[1]);
@@ -1470,14 +1455,11 @@ void CastCollisionEvaluator::Plot(const tesseract_visualization::Visualization::
     tesseract_environment::AdjacencyMapPair::ConstPtr itA = adjacency_map_->getLinkMapping(res.link_names[0]);
     if (itA != nullptr)
     {
-      Eigen::MatrixXd jac;
       Eigen::VectorXd dist_grad;
-      Eigen::Isometry3d pose, pose2;
-      jac.resize(6, manip_->numJoints());
-      manip_->calcFwdKin(pose, dofvals, itA->link_name);
+      Eigen::Isometry3d pose = manip_->calcFwdKin(dofvals, itA->link_name);
       pose = world_to_base_ * pose;
 
-      manip_->calcJacobian(jac, dofvals, itA->link_name);
+      Eigen::MatrixXd jac = manip_->calcJacobian(dofvals, itA->link_name);
       tesseract_kinematics::jacobianChangeBase(jac, world_to_base_);
       tesseract_kinematics::jacobianChangeRefPoint(jac, pose.linear() * res.nearest_points_local[0]);
 
@@ -1488,7 +1470,7 @@ void CastCollisionEvaluator::Plot(const tesseract_visualization::Visualization::
 
       dist_grad = -res.normal.transpose() * jac.topRows(3);
 
-      manip_->calcFwdKin(pose2, dofvals + dist_grad, itA->link_name);
+      Eigen::Isometry3d pose2 = manip_->calcFwdKin(dofvals + dist_grad, itA->link_name);
       pose2 = world_to_base_ * pose2 * itA->transform;
 
       tesseract_visualization::ArrowMarker am(res.nearest_points[0], pose2 * res.nearest_points_local[0]);
@@ -1500,15 +1482,12 @@ void CastCollisionEvaluator::Plot(const tesseract_visualization::Visualization::
     tesseract_environment::AdjacencyMapPair::ConstPtr itB = adjacency_map_->getLinkMapping(res.link_names[1]);
     if (itB != nullptr)
     {
-      Eigen::MatrixXd jac;
       Eigen::VectorXd dist_grad;
-      Eigen::Isometry3d pose, pose2;
-      jac.resize(6, manip_->numJoints());
-      manip_->calcFwdKin(pose, dofvals, itB->link_name);
+      Eigen::Isometry3d pose = manip_->calcFwdKin(dofvals, itB->link_name);
       pose = world_to_base_ * pose;
 
       // Calculate Jacobian
-      manip_->calcJacobian(jac, dofvals, itB->link_name);
+      Eigen::MatrixXd jac = manip_->calcJacobian(dofvals, itB->link_name);
       tesseract_kinematics::jacobianChangeBase(jac, world_to_base_);
       tesseract_kinematics::jacobianChangeRefPoint(jac, pose.linear() * res.nearest_points_local[1]);
 
@@ -1519,7 +1498,7 @@ void CastCollisionEvaluator::Plot(const tesseract_visualization::Visualization::
 
       dist_grad = res.normal.transpose() * jac.topRows(3);
 
-      manip_->calcFwdKin(pose2, dofvals + dist_grad, itB->link_name);
+      Eigen::Isometry3d pose2 = manip_->calcFwdKin(dofvals + dist_grad, itB->link_name);
       pose2 = world_to_base_ * pose2 * itB->transform;
 
       tesseract_visualization::ArrowMarker am(res.nearest_points[1], pose2 * res.nearest_points_local[1]);

@@ -48,8 +48,7 @@ void WriteFile(const std::shared_ptr<std::ofstream>& file,
     }
 
     // Calc cartesian pose
-    Eigen::Isometry3d pose;
-    manip->calcFwdKin(pose, joint_angles);
+    Eigen::Isometry3d pose = manip->calcFwdKin(joint_angles);
     pose = change_base * pose;
 
     Eigen::Vector4d rot_vec;
