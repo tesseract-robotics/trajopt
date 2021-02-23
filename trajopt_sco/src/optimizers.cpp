@@ -2,6 +2,7 @@
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <boost/format.hpp>
 #include <cmath>
+#include <chrono>
 #include <cstdio>
 TRAJOPT_IGNORE_WARNINGS_POP
 
@@ -584,10 +585,20 @@ OptStatus BasicTrustRegionSQP::optimize()
 
   OptStatus retval = INVALID;
 
+  using Clock = std::chrono::high_resolution_clock;
+  auto start_time = Clock::now();
+
   for (int merit_increases = 0; merit_increases < param_.max_merit_coeff_increases; ++merit_increases)
   { /* merit adjustment loop */
     for (int iter = 1;; ++iter)
     { /* sqp loop */
+      double elapsed_time = std::chrono::duration<double, std::milli>(Clock::now() - start_time).count() / 1000.0;
+      if (elapsed_time > param_.max_time)
+      {
+        LOG_INFO("Elapsed time %f has exceeded max time %f", elapsed_time, param_.max_time);
+        retval = OPT_TIME_LIMIT;
+        goto cleanup;
+      }
       callCallbacks();
 
       LOG_DEBUG("current iterate: %s", CSTR(results_.x));
