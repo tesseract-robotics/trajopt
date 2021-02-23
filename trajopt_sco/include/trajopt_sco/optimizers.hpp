@@ -18,6 +18,7 @@ enum OptStatus
   OPT_CONVERGED,
   OPT_SCO_ITERATION_LIMIT,  // hit iteration limit before convergence
   OPT_PENALTY_ITERATION_LIMIT,
+  OPT_TIME_LIMIT,
   OPT_FAILED,
   INVALID
 };
@@ -101,7 +102,8 @@ struct BasicTrustRegionSQPParameters
   double max_merit_coeff_increases;
 
   double merit_coeff_increase_ratio;  // ratio that we increate coeff each time
-  double max_time;                    // not yet implemented
+  /** @brief Max time in seconds that the optimizer will run*/
+  double max_time;
   /** @brief Initial coefficient that is used to scale the constraints. The total constaint cost is constaint_value *
    * coeff * merit_coeff */
   double initial_merit_error_coeff;
