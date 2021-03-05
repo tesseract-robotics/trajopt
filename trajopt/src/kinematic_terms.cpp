@@ -474,12 +474,6 @@ MatrixXd AvoidSingularityJacCalculator::jacobianPartialDerivative(const VectorXd
   double eps = eps_;
   joints(jntIdx) += eps;
 
-  if (!fwd_kin_->checkJoints(joints))
-  {
-    eps = -eps;
-    joints(jntIdx) += 2 * eps;
-  }
-
   MatrixXd jacobian_increment = fwd_kin_->calcJacobian(joints, link_name_);
   return (jacobian_increment - jacobian) / eps;
 }
