@@ -10,7 +10,7 @@ if (NOT ${osqp_FOUND})
 
   ExternalProject_Add(osqp
     GIT_REPOSITORY    https://github.com/oxfordcontrol/osqp
-    GIT_TAG           v0.6.0
+    GIT_TAG           v0.6.2
     SOURCE_DIR        ${CMAKE_BINARY_DIR}/../trajopt_ext/osqp-src
     BINARY_DIR        ${CMAKE_BINARY_DIR}/../trajopt_ext/osqp-build
     CMAKE_CACHE_ARGS
