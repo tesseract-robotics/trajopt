@@ -238,8 +238,8 @@ GradientResults CollisionEvaluator::GetGradient(const Eigen::VectorXd& dofvals,
                                                 bool isTimestep1)
 {
   // Contains the contact distance threshold and coefficient for the given link pair
-  double dist = collision_config_.collision_margin_data.getPairCollisionMarginData(contact_result.link_names[0],
-                                                                                   contact_result.link_names[1]);
+  double dist = collision_config_.collision_margin_data.getPairCollisionMargin(contact_result.link_names[0],
+                                                                               contact_result.link_names[1]);
   double coeff = collision_config_.collision_coeff_data.getPairCollisionCoeff(contact_result.link_names[0],
                                                                               contact_result.link_names[1]);
   const Eigen::Vector2d data = { dist, coeff };
@@ -315,8 +315,8 @@ GradientResults CollisionEvaluator::GetGradient(const Eigen::VectorXd& dofvals0,
                                                 bool isTimestep1)
 {
   // Contains the contact distance threshold and coefficient for the given link pair
-  double dist = collision_config_.collision_margin_data.getPairCollisionMarginData(contact_result.link_names[0],
-                                                                                   contact_result.link_names[1]);
+  double dist = collision_config_.collision_margin_data.getPairCollisionMargin(contact_result.link_names[0],
+                                                                               contact_result.link_names[1]);
   double coeff = collision_config_.collision_coeff_data.getPairCollisionCoeff(contact_result.link_names[0],
                                                                               contact_result.link_names[1]);
   const Eigen::Vector2d data = { dist, coeff };
@@ -421,8 +421,7 @@ void CollisionEvaluator::processInterpolatedCollisionResults(
       auto p = contact_results.find(pair.first);
 
       // Contains the contact distance threshold and coefficient for the given link pair
-      double dist =
-          collision_config_.collision_margin_data.getPairCollisionMarginData(pair.first.first, pair.first.second);
+      double dist = collision_config_.collision_margin_data.getPairCollisionMargin(pair.first.first, pair.first.second);
       double coeff = collision_config_.collision_coeff_data.getPairCollisionCoeff(pair.first.first, pair.first.second);
       const Eigen::Vector2d data = { dist, coeff };
 
@@ -576,8 +575,7 @@ void DiscreteCollisionEvaluator::CalcCollisions(const Eigen::Ref<const Eigen::Ve
   for (auto& pair : dist_results)
   {
     // Contains the contact distance threshold and coefficient for the given link pair
-    double dist =
-        collision_config_.collision_margin_data.getPairCollisionMarginData(pair.first.first, pair.first.second);
+    double dist = collision_config_.collision_margin_data.getPairCollisionMargin(pair.first.first, pair.first.second);
     double coeff = collision_config_.collision_coeff_data.getPairCollisionCoeff(pair.first.first, pair.first.second);
     const Eigen::Vector2d data = { dist, coeff };
     auto end = std::remove_if(
@@ -675,8 +673,7 @@ void LVSContinuousCollisionEvaluator::CalcCollisions(const Eigen::Ref<const Eige
     for (auto& pair : dist_results)
     {
       // Contains the contact distance threshold and coefficient for the given link pair
-      double dist =
-          collision_config_.collision_margin_data.getPairCollisionMarginData(pair.first.first, pair.first.second);
+      double dist = collision_config_.collision_margin_data.getPairCollisionMargin(pair.first.first, pair.first.second);
       double coeff = collision_config_.collision_coeff_data.getPairCollisionCoeff(pair.first.first, pair.first.second);
       const Eigen::Vector2d data = { dist, coeff };
       removeInvalidContactResults(pair.second, data);
