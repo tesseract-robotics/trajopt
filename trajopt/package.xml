@@ -10,7 +10,6 @@
   <author>John Schulman</author>
 
   <!-- Following recommendations of REP 136 -->
-  <exec_depend>catkin</exec_depend>
   <buildtool_depend>cmake</buildtool_depend>
 
   <build_depend>ros_industrial_cmake_boilerplate</build_depend>
@@ -22,6 +21,7 @@
   <depend>tesseract_visualization</depend>
   <depend>trajopt_sco</depend>
   <depend>trajopt_utils</depend>
+  <depend>boost</depend>
 
   <test_depend>benchmark</test_depend>
   <test_depend>gtest</test_depend>

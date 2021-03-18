@@ -9,7 +9,7 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <tesseract_environment/core/environment.h>
 #include <tesseract_environment/ofkt/ofkt_state_solver.h>
 #include <tesseract_scene_graph/resource_locator.h>
-#include <boost/filesystem/path.hpp>
+#include <tesseract_common/types.h>
 #include <console_bridge/console.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
@@ -65,8 +65,8 @@ public:
       console_bridge::setLogLevel(console_bridge::LogLevel::CONSOLE_BRIDGE_LOG_NONE);
 
     // 1)  Load Robot
-    boost::filesystem::path urdf_file(std::string(TRAJOPT_DIR) + "/test/data/arm_around_table.urdf");
-    boost::filesystem::path srdf_file(std::string(TRAJOPT_DIR) + "/test/data/pr2.srdf");
+    tesseract_common::fs::path urdf_file(std::string(TRAJOPT_DIR) + "/test/data/arm_around_table.urdf");
+    tesseract_common::fs::path srdf_file(std::string(TRAJOPT_DIR) + "/test/data/pr2.srdf");
     tesseract_scene_graph::ResourceLocator::Ptr locator =
         std::make_shared<tesseract_scene_graph::SimpleResourceLocator>(locateResource);
     auto env = std::make_shared<tesseract_environment::Environment>();

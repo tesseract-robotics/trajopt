@@ -16,6 +16,7 @@
   <depend>libjsoncpp-dev</depend>
   <depend>osqp</depend>
   <depend>trajopt_utils</depend>
+  <depend>boost</depend>
 
   <test_depend>gtest</test_depend>
 

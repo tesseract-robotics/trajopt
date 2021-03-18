@@ -1,11 +1,18 @@
 cmake_minimum_required(VERSION 3.10.0)
 project(vhacd VERSION 0.1.0 LANGUAGES CXX)
 
-find_package(Bullet REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(OpenMP REQUIRED)
 find_package(trajopt_utils REQUIRED)
 find_package(ros_industrial_cmake_boilerplate REQUIRED)
+find_package(Bullet REQUIRED CONFIGS BulletConfig-float64.cmake BulletConfig.cmake)
+
+IF(NOT ${BULLET_DEFINITIONS} MATCHES ".*-DBT_USE_DOUBLE_PRECISION.*")
+  message(WARNING "Bullet does not appear to be build with double precision, current definitions: ${BULLET_DEFINITIONS}")
+endif()
+
+include_directories(BEFORE "${BULLET_ROOT_DIR}/${BULLET_INCLUDE_DIRS}")
+link_directories(BEFORE "${BULLET_ROOT_DIR}/${BULLET_LIBRARY_DIRS}")
 
 # Load variable for clang tidy args, compiler options and cxx version
 trajopt_variables()
@@ -42,13 +49,12 @@ if (OpenCL_FOUND)
 endif()
 
 
-target_link_libraries(${PROJECT_NAME} PUBLIC OpenMP::OpenMP_CXX trajopt::trajopt_utils)
+target_link_libraries(${PROJECT_NAME} PUBLIC OpenMP::OpenMP_CXX trajopt::trajopt_utils Eigen3::Eigen)
 target_include_directories(${PROJECT_NAME} PUBLIC
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
     "$<INSTALL_INTERFACE:include>")
 target_include_directories(${PROJECT_NAME} SYSTEM PUBLIC
-    ${EIGEN3_INCLUDE_DIRS}
-    ${BULLET_INCLUDE_DIRS})
+    "${BULLET_ROOT_DIR}/${BULLET_INCLUDE_DIRS}")
 
 configure_package(NAMESPACE trajopt TARGETS ${PROJECT_NAME})
 

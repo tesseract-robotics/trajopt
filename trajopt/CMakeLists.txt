@@ -6,7 +6,7 @@ if(WIN32)
 endif()
 
 find_package(Eigen3 REQUIRED)
-find_package(Boost COMPONENTS system thread program_options REQUIRED)
+find_package(Boost REQUIRED)
 find_package(console_bridge REQUIRED)
 find_package(trajopt_sco REQUIRED)
 find_package(trajopt_utils REQUIRED)
@@ -52,16 +52,14 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
     tesseract::tesseract_environment_core
     tesseract::tesseract_visualization
     console_bridge::console_bridge
-    ${Boost_SYSTEM_LIBRARY}
+    Boost::boost
+    Eigen3::Eigen
     jsoncpp_lib)
 target_compile_definitions(${PROJECT_NAME} PUBLIC ${TRAJOPT_COMPILE_DEFINITIONS})
 target_cxx_version(${PROJECT_NAME} PUBLIC VERSION ${TRAJOPT_CXX_VERSION})
 target_include_directories(${PROJECT_NAME} PUBLIC
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
     "$<INSTALL_INTERFACE:include>")
-target_include_directories(${PROJECT_NAME} SYSTEM PUBLIC
-    ${EIGEN3_INCLUDE_DIRS}
-    ${Boost_INCLUDE_DIRS})
 
 # Install test data directory for use in other packages
 add_library(${PROJECT_NAME}_test_data INTERFACE)

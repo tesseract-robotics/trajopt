@@ -14,6 +14,7 @@ find_package(Eigen3 REQUIRED)
 find_package(trajopt_utils REQUIRED)
 find_package(jsoncpp REQUIRED)
 find_package(ros_industrial_cmake_boilerplate REQUIRED)
+find_package(Boost REQUIRED)
 
 # Load variable for clang tidy args, compiler options and cxx version
 trajopt_variables()
@@ -90,7 +91,12 @@ if (qpOASES_FOUND)
   target_compile_definitions(${PROJECT_NAME} PRIVATE HAVE_QPOASES=ON)
 endif()
 
-target_link_libraries(${PROJECT_NAME} PUBLIC trajopt::trajopt_utils ${CMAKE_DL_LIBS} jsoncpp_lib)
+target_link_libraries(${PROJECT_NAME} PUBLIC
+  trajopt::trajopt_utils
+  Boost::boost
+  Eigen3::Eigen
+  ${CMAKE_DL_LIBS}
+  jsoncpp_lib)
 target_compile_options(${PROJECT_NAME} PRIVATE ${TRAJOPT_COMPILE_OPTIONS_PRIVATE})
 target_compile_options(${PROJECT_NAME} PUBLIC ${TRAJOPT_COMPILE_OPTIONS_PUBLIC})
 target_compile_definitions(${PROJECT_NAME} PUBLIC ${TRAJOPT_COMPILE_DEFINITIONS})
@@ -99,8 +105,6 @@ target_cxx_version(${PROJECT_NAME} PUBLIC VERSION ${TRAJOPT_CXX_VERSION})
 target_include_directories(${PROJECT_NAME} PUBLIC
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
     "$<INSTALL_INTERFACE:include>")
-target_include_directories(${PROJECT_NAME} SYSTEM PUBLIC
-    ${EIGEN3_INCLUDE_DIRS})
 
 configure_package(NAMESPACE trajopt TARGETS ${PROJECT_NAME})
 

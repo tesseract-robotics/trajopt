@@ -19,6 +19,7 @@
   <depend>libconsole-bridge-dev</depend>
   <depend>vhacd</depend>
   <depend>trajopt_utils</depend>
+  <depend>boost</depend>
 
   <export>
     <build_type>cmake</build_type>

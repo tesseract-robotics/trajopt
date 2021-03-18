@@ -11,6 +11,8 @@ find_package(OsqpEigen REQUIRED)
 find_package(trajopt_ifopt REQUIRED)
 find_package(trajopt_utils REQUIRED)
 find_package(ros_industrial_cmake_boilerplate REQUIRED)
+find_package(tesseract_common REQUIRED)
+find_package(tesseract_visualization REQUIRED)
 
 if(NOT TARGET console_bridge::console_bridge)
   add_library(console_bridge::console_bridge INTERFACE IMPORTED)
@@ -63,7 +65,12 @@ target_include_directories(${PROJECT_NAME}_callbacks
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:include>
 )
-target_link_libraries(${PROJECT_NAME}_callbacks PUBLIC trajopt::trajopt_ifopt tesseract::tesseract_visualization console_bridge::console_bridge osqp::osqp)
+target_link_libraries(${PROJECT_NAME}_callbacks PUBLIC
+  trajopt::trajopt_ifopt
+  tesseract::tesseract_visualization
+  tesseract::tesseract_common
+  console_bridge::console_bridge
+  osqp::osqp)
 target_compile_options(${PROJECT_NAME}_callbacks PRIVATE ${TRAJOPT_COMPILE_OPTIONS_PRIVATE})
 target_compile_options(${PROJECT_NAME}_callbacks PUBLIC ${TRAJOPT_COMPILE_OPTIONS_PUBLIC})
 target_compile_definitions(${PROJECT_NAME}_callbacks PUBLIC ${TRAJOPT_COMPILE_DEFINITIONS})

@@ -12,6 +12,7 @@ find_package(Eigen3 REQUIRED)
 find_package(ifopt REQUIRED)
 find_package(tesseract_environment REQUIRED)
 find_package(ros_industrial_cmake_boilerplate REQUIRED)
+find_package(Boost REQUIRED)
 
 if(NOT TARGET console_bridge::console_bridge)
   add_library(console_bridge::console_bridge INTERFACE IMPORTED)
@@ -47,7 +48,9 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
   ifopt::ifopt_core
   trajopt::trajopt_utils
   trajopt::trajopt
-  tesseract::tesseract_environment_core)
+  tesseract::tesseract_environment_core
+  Eigen3::Eigen
+  Boost::boost)
 target_compile_options(${PROJECT_NAME} PRIVATE ${TRAJOPT_COMPILE_OPTIONS_PRIVATE})
 target_compile_options(${PROJECT_NAME} PUBLIC ${TRAJOPT_COMPILE_OPTIONS_PUBLIC})
 target_compile_definitions(${PROJECT_NAME} PUBLIC ${TRAJOPT_COMPILE_DEFINITIONS})
@@ -55,8 +58,6 @@ target_cxx_version(${PROJECT_NAME} PUBLIC VERSION ${TRAJOPT_CXX_VERSION})
 target_include_directories(${PROJECT_NAME} PUBLIC
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
     "$<INSTALL_INTERFACE:include>")
-target_include_directories(${PROJECT_NAME} SYSTEM PUBLIC
-    ${EIGEN3_INCLUDE_DIRS})
 
 #############
 ## Install ##
