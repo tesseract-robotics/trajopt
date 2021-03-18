@@ -42,8 +42,7 @@ macro(add_gtest test_name test_file)
       tesseract::tesseract_environment_ofkt
       GTest::GTest
       GTest::Main
-      ${Boost_SYSTEM_LIBRARY}
-      ${Boost_PROGRAM_OPTIONS_LIBRARY})
+      Boost::boost)
   target_include_directories(${test_name} PRIVATE
       "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>"
       ${GTEST_INCLUDE_DIRS})

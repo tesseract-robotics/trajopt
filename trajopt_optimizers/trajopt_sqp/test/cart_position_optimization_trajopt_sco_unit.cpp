@@ -2,14 +2,12 @@
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <gtest/gtest.h>
 #include <iostream>
-
 #include <tesseract_environment/core/environment.h>
 #include <tesseract_environment/ofkt/ofkt_state_solver.h>
 #include <tesseract_scene_graph/resource_locator.h>
+#include <tesseract_common/types.h>
 #include <tesseract_common/macros.h>
 #include <json/json.h>
-
-#include <boost/filesystem/path.hpp>
 #include <console_bridge/console.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
@@ -69,8 +67,8 @@ TEST(CartPositionOptimizationTrajoptSCO, cart_position_optimization_trajopt_sco)
   }
 
   // 1)  Load Robot
-  boost::filesystem::path urdf_file(std::string(TRAJOPT_DIR) + "/test/data/arm_around_table.urdf");
-  boost::filesystem::path srdf_file(std::string(TRAJOPT_DIR) + "/test/data/pr2.srdf");
+  tesseract_common::fs::path urdf_file(std::string(TRAJOPT_DIR) + "/test/data/arm_around_table.urdf");
+  tesseract_common::fs::path srdf_file(std::string(TRAJOPT_DIR) + "/test/data/pr2.srdf");
   tesseract_scene_graph::ResourceLocator::Ptr locator =
       std::make_shared<tesseract_scene_graph::SimpleResourceLocator>(locateResource);
   auto env = std::make_shared<Environment>();

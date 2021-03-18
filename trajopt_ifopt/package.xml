@@ -20,6 +20,7 @@
   <depend>tesseract_environment</depend>
   <depend>trajopt</depend>
   <depend>trajopt_utils</depend>
+  <depend>boost</depend>
 
   <test_depend>gtest</test_depend>
 

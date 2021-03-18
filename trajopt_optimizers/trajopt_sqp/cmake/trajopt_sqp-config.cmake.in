@@ -10,6 +10,8 @@ find_dependency(ifopt)
 find_dependency(OsqpEigen)
 find_dependency(trajopt_ifopt)
 find_dependency(trajopt_utils)
+find_dependency(tesseract_common)
+find_dependency(tesseract_visualization)
 
 if(NOT TARGET console_bridge::console_bridge)
   add_library(console_bridge::console_bridge INTERFACE IMPORTED)

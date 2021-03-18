@@ -6,9 +6,16 @@ set_and_check(@PROJECT_NAME@_LIBRARY_DIRS "${PACKAGE_PREFIX_DIR}/lib")
 
 include(CMakeFindDependencyMacro)
 find_dependency(Eigen3)
-find_dependency(Bullet)
 find_dependency(OpenMP)
 find_dependency(trajopt_utils)
+
+find_package(Bullet REQUIRED CONFIGS BulletConfig-float64.cmake BulletConfig.cmake)
+IF(NOT ${BULLET_DEFINITIONS} MATCHES ".*-DBT_USE_DOUBLE_PRECISION.*")
+  message(WARNING "Bullet does not appear to be build with double precision, current definitions: ${BULLET_DEFINITIONS}")
+endif()
+
+include_directories(BEFORE "${BULLET_ROOT_DIR}/${BULLET_INCLUDE_DIRS}")
+link_directories(BEFORE "${BULLET_ROOT_DIR}/${BULLET_LIBRARY_DIRS}")
 
 if(NOT TARGET OpenMP::OpenMP_CXX)
     find_package(Threads REQUIRED)

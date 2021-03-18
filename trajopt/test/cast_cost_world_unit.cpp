@@ -2,8 +2,7 @@
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <ctime>
 #include <gtest/gtest.h>
-#include <boost/filesystem/path.hpp>
-
+#include <tesseract_common/types.h>
 #include <tesseract_environment/core/environment.h>
 #include <tesseract_environment/ofkt/ofkt_state_solver.h>
 #include <tesseract_environment/core/utils.h>
@@ -41,8 +40,8 @@ public:
 
   void SetUp() override
   {
-    boost::filesystem::path urdf_file(std::string(TRAJOPT_DIR) + "/test/data/boxbot_world.urdf");
-    boost::filesystem::path srdf_file(std::string(TRAJOPT_DIR) + "/test/data/boxbot.srdf");
+    tesseract_common::fs::path urdf_file(std::string(TRAJOPT_DIR) + "/test/data/boxbot_world.urdf");
+    tesseract_common::fs::path srdf_file(std::string(TRAJOPT_DIR) + "/test/data/boxbot.srdf");
 
     ResourceLocator::Ptr locator = std::make_shared<SimpleResourceLocator>(locateResource);
     EXPECT_TRUE(env_->init<OFKTStateSolver>(urdf_file, srdf_file, locator));
