@@ -63,7 +63,7 @@ Eigen::VectorXd CollisionConstraintIfopt::CalcValues(const Eigen::Ref<const Eige
   for (tesseract_collision::ContactResult& dist_result : dist_results)
   {
     // Contains the contact distance threshold and coefficient for the given link pair
-    double dist = collision_evaluator_->getCollisionConfig().collision_margin_data.getPairCollisionMarginData(
+    double dist = collision_evaluator_->getCollisionConfig().collision_margin_data.getPairCollisionMargin(
         dist_result.link_names[0], dist_result.link_names[1]);
     double coeff = collision_evaluator_->getCollisionConfig().collision_coeff_data.getPairCollisionCoeff(
         dist_result.link_names[0], dist_result.link_names[1]);
@@ -112,7 +112,7 @@ void CollisionConstraintIfopt::CalcJacobianBlock(const Eigen::Ref<const Eigen::V
   for (tesseract_collision::ContactResult& dist_result : dist_results)
   {
     // Contains the contact distance threshold and coefficient for the given link pair
-    double dist = collision_evaluator_->getCollisionConfig().collision_margin_data.getPairCollisionMarginData(
+    double dist = collision_evaluator_->getCollisionConfig().collision_margin_data.getPairCollisionMargin(
         dist_result.link_names[0], dist_result.link_names[1]);
     double coeff = collision_evaluator_->getCollisionConfig().collision_coeff_data.getPairCollisionCoeff(
         dist_result.link_names[0], dist_result.link_names[1]);
