@@ -35,8 +35,8 @@ jobs:
 
         rosdep install -q --from-paths . --ignore-src -y
 
-        catkin_make_isolated --install --force-cmake --make-args -w dupbuild=warn --only-pkg-with-deps trajopt trajopt_ifopt trajopt_sco trajopt_sqp trajopt_utils --cmake-args -DCMAKE_BUILD_TYPE=Release -DBUILD_IPOPT=OFF -DBUILD_SNOPT=OFF -DINSTALL_FCL=ON -DINSTALL_BULLET=ON
+        catkin_make_isolated --install --force-cmake --make-args "-w dupbuild=warn" --only-pkg-with-deps trajopt trajopt_ifopt trajopt_sco trajopt_sqp trajopt_utils --cmake-args -DCMAKE_BUILD_TYPE=Release -DBUILD_IPOPT=OFF -DBUILD_SNOPT=OFF -DINSTALL_FCL=ON -DINSTALL_BULLET=ON
 
         call "D:\a\trajopt_ros\trajopt_ros\install_isolated\setup.bat"
 
-        catkin_make_isolated --install --force-cmake --make-args -w dupbuild=warn --pkg trajopt trajopt_sco --cmake-args -DCMAKE_BUILD_TYPE=Release -DBUILD_IPOPT=OFF -DBUILD_SNOPT=OFF -DTRAJOPT_ENABLE_TESTING=ON -DINSTALL_FCL=ON -DINSTALL_BULLET=ON
+        catkin_make_isolated --install --force-cmake --make-args "-w dupbuild=warn" --pkg trajopt trajopt_sco --cmake-args -DCMAKE_BUILD_TYPE=Release -DBUILD_IPOPT=OFF -DBUILD_SNOPT=OFF -DTRAJOPT_ENABLE_TESTING=ON -DINSTALL_FCL=ON -DINSTALL_BULLET=ON
