@@ -24,6 +24,7 @@ jobs:
       shell: cmd
       run: |
         choco sources add -n=roswin -s https://aka.ms/ros/public --priority 1
+        choco install make
         choco install ros-%ROS_DISTRO%-desktop_full -y --no-progress
 
         call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\Tools\VsDevCmd.bat" -arch=amd64 -host_arch=amd64
@@ -35,8 +36,8 @@ jobs:
 
         rosdep install -q --from-paths . --ignore-src -y
 
-        catkin_make_isolated --install --force-cmake --only-pkg-with-deps trajopt trajopt_ifopt trajopt_sco trajopt_sqp trajopt_utils --cmake-args -DCMAKE_BUILD_TYPE=Release -DBUILD_IPOPT=OFF -DBUILD_SNOPT=OFF -DINSTALL_FCL=ON -DINSTALL_BULLET=ON --make-args -w dupbuild=warn
+        catkin_make_isolated --install --force-cmake --only-pkg-with-deps trajopt trajopt_ifopt trajopt_sco trajopt_sqp trajopt_utils --cmake-args -DCMAKE_BUILD_TYPE=Release -DBUILD_IPOPT=OFF -DBUILD_SNOPT=OFF -DINSTALL_FCL=ON -DINSTALL_BULLET=ON
 
         call "D:\a\trajopt_ros\trajopt_ros\install_isolated\setup.bat"
 
-        catkin_make_isolated --install --force-cmake --pkg trajopt trajopt_sco --cmake-args -DCMAKE_BUILD_TYPE=Release -DBUILD_IPOPT=OFF -DBUILD_SNOPT=OFF -DTRAJOPT_ENABLE_TESTING=ON -DINSTALL_FCL=ON -DINSTALL_BULLET=ON --make-args -w dupbuild=warn
+        catkin_make_isolated --install --force-cmake --pkg trajopt trajopt_sco --cmake-args -DCMAKE_BUILD_TYPE=Release -DBUILD_IPOPT=OFF -DBUILD_SNOPT=OFF -DTRAJOPT_ENABLE_TESTING=ON -DINSTALL_FCL=ON -DINSTALL_BULLET=ON
