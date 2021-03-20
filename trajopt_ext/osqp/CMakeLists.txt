@@ -16,6 +16,7 @@ if (NOT ${osqp_FOUND})
     CMAKE_CACHE_ARGS
             -DCMAKE_INSTALL_PREFIX:STRING=${CMAKE_INSTALL_PREFIX}
             -DCMAKE_BUILD_TYPE:STRING=Release
+            -DCMAKE_CXX_FLAGS:STRING="-w dupbuild=warn"
   )
 endif()
 
