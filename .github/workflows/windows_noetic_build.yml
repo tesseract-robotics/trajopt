@@ -29,16 +29,14 @@ jobs:
         call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\Tools\VsDevCmd.bat" -arch=amd64 -host_arch=amd64
         call "C:\opt\ros\%ROS_DISTRO%\x64\setup.bat"
 
-        set
-
         rosdep update
 
         vcs import --input "${{ github.workspace }}/src/trajopt_ros/dependencies_with_ext.rosinstall" src/
 
         rosdep install -q --from-paths . --ignore-src -y
 
-        catkin_make_isolated --install --force-cmake --only-pkg-with-deps trajopt trajopt_ifopt trajopt_sco trajopt_sqp trajopt_utils --cmake-args -DCMAKE_BUILD_TYPE=Release -DBUILD_IPOPT=OFF -DBUILD_SNOPT=OFF -DINSTALL_FCL=ON -DINSTALL_BULLET=ON
+        catkin_make_isolated --install --force-cmake --make-args -w dupbuild=warn --only-pkg-with-deps trajopt trajopt_ifopt trajopt_sco trajopt_sqp trajopt_utils --cmake-args -DCMAKE_BUILD_TYPE=Release -DBUILD_IPOPT=OFF -DBUILD_SNOPT=OFF -DINSTALL_FCL=ON -DINSTALL_BULLET=ON
 
         call "D:\a\trajopt_ros\trajopt_ros\install_isolated\setup.bat"
 
-        catkin_make_isolated --install --force-cmake --pkg trajopt trajopt_sco --cmake-args -DCMAKE_BUILD_TYPE=Release -DBUILD_IPOPT=OFF -DBUILD_SNOPT=OFF -DTRAJOPT_ENABLE_TESTING=ON -DINSTALL_FCL=ON -DINSTALL_BULLET=ON
+        catkin_make_isolated --install --force-cmake --make-args -w dupbuild=warn --pkg trajopt trajopt_sco --cmake-args -DCMAKE_BUILD_TYPE=Release -DBUILD_IPOPT=OFF -DBUILD_SNOPT=OFF -DTRAJOPT_ENABLE_TESTING=ON -DINSTALL_FCL=ON -DINSTALL_BULLET=ON
