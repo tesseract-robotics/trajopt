@@ -14,7 +14,7 @@ jobs:
     name: Noetic
     runs-on: windows-latest
     env:
-      ROS_DISTRO: noetic
+      ROS_DISTRO: melodic
     steps:
     - uses: actions/checkout@v2
       with:
@@ -24,8 +24,7 @@ jobs:
       shell: cmd
       run: |
         choco sources add -n=roswin -s https://aka.ms/ros/public --priority 1
-        choco install make
-        choco install ros-%ROS_DISTRO%-desktop_full -y --no-progress
+        choco upgrade ros-%ROS_DISTRO%-desktop_full --pre-release -y --no-progress
 
         call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\Tools\VsDevCmd.bat" -arch=amd64 -host_arch=amd64
         call "C:\opt\ros\%ROS_DISTRO%\x64\setup.bat"
