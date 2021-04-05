@@ -152,7 +152,7 @@ TEST_F(CostsTest, inequality_jointPos)  // NOLINT
   CONSOLE_BRIDGE_logDebug("CostsTest, inequality_cnt_jointPos");
 
   const double lower_tol = -0.1;
-  const double upper_tol = 0.1;
+  const double upper_tol = 0.2;
   const double cost_targ1 = 0.5;
   const double cost_targ2 = -0.5;
 
@@ -174,7 +174,7 @@ TEST_F(CostsTest, inequality_jointPos)  // NOLINT
   pci.init_info.type = InitInfo::STATIONARY;
   pci.init_info.data = start_pos.transpose().replicate(pci.basic_info.n_steps, 1);
 
-  // Constraint that limits velocity
+  // Constraint that limits position
   auto jv = std::make_shared<JointPosTermInfo>();
   jv->coeffs = std::vector<double>(7, 1.0);
   jv->targets = std::vector<double>(7.0, 0);
@@ -354,7 +354,7 @@ TEST_F(CostsTest, inequality_jointVel)  // NOLINT
   CONSOLE_BRIDGE_logDebug("CostsTest, inequality_cnt_jointVel");
 
   const double lower_tol = -0.1;
-  const double upper_tol = 0.1;
+  const double upper_tol = 0.2;
   const double cost_targ1 = 0.5;
   const double cost_targ2 = -0.5;
 
@@ -562,7 +562,7 @@ TEST_F(CostsTest, inequality_jointVel_time)  // NOLINT
   CONSOLE_BRIDGE_logDebug("CostsTest, inequality_cnt_jointVel_time");
 
   const double lower_tol = -0.1;
-  const double upper_tol = 0.1;
+  const double upper_tol = 0.2;
   const double cost_targ1 = 0.5;
   const double cost_targ2 = -0.5;
   const double dt_lower = 0.01234;
@@ -768,7 +768,7 @@ TEST_F(CostsTest, inequality_jointAcc)  // NOLINT
   CONSOLE_BRIDGE_logDebug("CostsTest, inequality_cnt_jointVel");
 
   const double lower_tol = -0.1;
-  const double upper_tol = 0.1;
+  const double upper_tol = 0.2;
   const double cost_targ1 = 0.5;
   const double cost_targ2 = -0.5;
 

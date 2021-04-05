@@ -110,7 +110,7 @@ double JointPosIneqCost::value(const DblVec& xvec)
 {
   // Convert vector from optimization to trajectory
   Eigen::MatrixXd traj = getTraj(xvec, vars_);
-  // Takes diff b/n the subsequent rows to get velocity
+  // Get the correct rows
   Eigen::MatrixXd pos = traj.block(first_step_, 0, last_step_ - first_step_ + 1, traj.cols());
   // Subtract targets to center about 0 and then subtract from tolerance
   Eigen::MatrixXd diff0 = (pos.rowwise() - targets_.transpose());
@@ -199,22 +199,23 @@ JointPosIneqConstraint::JointPosIneqConstraint(VarArray vars,
   {
     for (int j = 0; j < vars_.cols(); ++j)
     {
-      sco::AffExpr expr;
-      sco::AffExpr expr_neg;
       // pos = x1 - targ
       sco::AffExpr pos;
       sco::exprInc(pos, sco::exprMult(vars_(i, j), 1));
-      sco::exprDec(pos, targets_[j]);
-      sco::exprInc(expr, upper_tols_[j]);  // expr_ = upper_tol
+      sco::exprDec(pos, targets_[j]);  // centers about 0.
 
-      // Form upper limit expr = - (upper_tol-(vel-targ))
-      sco::exprDec(expr, pos);            // expr = upper_tol_- (vel - targets_)
-      sco::exprScale(expr, -coeffs_[j]);  // expr = - (upper_tol_- (vel - targets_)) * coeffs_
+      // Form upper limit: expr = (pos - upper_tol) * coeff
+      sco::AffExpr expr;
+      sco::exprInc(expr, pos);
+      sco::exprDec(expr, upper_tols_[j]);
+      sco::exprScale(expr, coeffs_[j]);
       expr_vec_.push_back(expr);
 
-      // Form lower limit expr = (upper_tol-(vel-targ))
-      sco::exprDec(expr_neg, pos);           // expr = lower_tol_- (vel - targets_)
-      sco::exprScale(expr_neg, coeffs_[j]);  // expr = (lower_tol_- (vel - targets_)) * coeffs_
+      // Form lower limit: expr = (lower_tol - pos) * coeff
+      sco::AffExpr expr_neg;
+      sco::exprInc(expr_neg, lower_tols_[j]);
+      sco::exprDec(expr_neg, pos);
+      sco::exprScale(expr_neg, coeffs_[j]);
       expr_vec_.push_back(expr_neg);
     }
   }
@@ -224,8 +225,8 @@ DblVec JointPosIneqConstraint::value(const DblVec& xvec)
 {
   // Convert vector from optimization to trajectory
   Eigen::MatrixXd traj = getTraj(xvec, vars_);
-  // Takes diff b/n the subsequent rows to get velocity
-  Eigen::MatrixXd pos = diffAxis0(traj.block(first_step_, 0, last_step_ - first_step_ + 1, traj.cols()));
+  // Get the correct rows
+  Eigen::MatrixXd pos = traj.block(first_step_, 0, last_step_ - first_step_ + 1, traj.cols());
   // Subtract targets to center about 0 and then subtract from tolerance
   Eigen::MatrixXd diff0 = (pos.rowwise() - targets_.transpose());
   Eigen::MatrixXd diff1 = (diff0.rowwise() - upper_tols_.transpose()) * coeffs_.asDiagonal();
