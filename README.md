@@ -35,7 +35,7 @@ Once `trajopt_ros` is compiled with support for a specific solver, you can selec
 The selection to `AUTO_SOLVER` is the default and automatically picks the best between the available solvers.
 
 ## TrajOpt Examples
-If you're new to TrajOpt, a great place to start is [trajopt_examples](https://github.com/ros-industrial-consortium/tesseract_ros/tree/master/tesseract_ros/tesseract_examples/tesseract_ros_examples). This contains a number of examples to get you started.
+If you're new to TrajOpt, a great place to start is [tesseract_ros_examples](https://github.com/ros-industrial-consortium/tesseract_ros/tree/master/tesseract_ros_examples). This contains a number of examples to get you started.
 This package is no longer part of this repository, but is maintained over at `ros-industrial-consortium/tesseract_ros`.
 
 Additionally, there is an industrial training module that covers TrajOpt for a pick and place application. That module can be found [HERE](https://industrial-training-master.readthedocs.io/en/melodic/_source/demo3/index.html).
