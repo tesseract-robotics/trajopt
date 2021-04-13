@@ -100,6 +100,8 @@ struct BasicTrustRegionSQPParameters
   // constraint violation is less than this, we're done
   /** @brief Max number of times that the constraints' cost will be increased */
   double max_merit_coeff_increases;
+  /** @brief Max number of times the QP solver can fail before optimization is aborted*/
+  int max_qp_solver_failures;
 
   double merit_coeff_increase_ratio;  // ratio that we increate coeff each time
   /** @brief Max time in seconds that the optimizer will run*/
