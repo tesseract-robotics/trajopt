@@ -46,13 +46,6 @@ The pick and place example is great place to start because it shows a complete e
 
 ![Pick and Place](gh_pages/_static/example_gifs/pick_and_place.gif)
 
-### Raster Path Plan
-Raster path plan also has a launch file. It demonstrates the Tesseract TrajOpt Freespace and Array planners. These planners wrap TrajOpt for two common problems - freespace motion planning and following a process path.
-
-```roslaunch trajopt_examples raster_path_plan.launch```
-
-![Raster Path Plan](gh_pages/_static/example_gifs/raster_path.gif)
-
 ### Basic Cartesian
 Basic Cartesian shows how to use TrajOpt directly. It also shows doing collision checking against an octomap generated from a point cloud
 
