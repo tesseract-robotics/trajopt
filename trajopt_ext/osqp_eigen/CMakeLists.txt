@@ -9,8 +9,8 @@ if (NOT ${OsqpEigen_FOUND})
   include(ExternalProject)  
 
   ExternalProject_Add(osqp_eigen
-    GIT_REPOSITORY    https://github.com/mpowelson/osqp-eigen
-    GIT_TAG           trajopt_xenial
+    GIT_REPOSITORY    https://github.com/robotology/osqp-eigen
+    GIT_TAG           v0.6.3
     SOURCE_DIR        ${CMAKE_BINARY_DIR}/../trajopt_ext/osqp_eigen-src
     BINARY_DIR        ${CMAKE_BINARY_DIR}/../trajopt_ext/osqp_eigen-build
     CMAKE_CACHE_ARGS
