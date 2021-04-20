@@ -79,12 +79,12 @@ TEST_F(InverseKinematicsConstraintUnit, GetValue)  // NOLINT
   CONSOLE_BRIDGE_logDebug("InverseKinematicsConstraintUnit, GetValue");
 
   // Run FK to get target pose
-  Eigen::VectorXd joint_position_single = Eigen::VectorXd::Ones(forward_kinematics->numJoints());
+  Eigen::VectorXd joint_position_single = Eigen::VectorXd::Zero(forward_kinematics->numJoints());
   auto target_pose = forward_kinematics->calcFwdKin(joint_position_single);
   constraint->SetTargetPose(target_pose);
 
   // Set the joints to that joint position
-  Eigen::VectorXd joint_position = Eigen::VectorXd::Ones(n_dof * 2);
+  Eigen::VectorXd joint_position = Eigen::VectorXd::Zero(n_dof * 2);
   nlp.SetVariables(joint_position.data());
 
   // Get the value (distance from IK position)

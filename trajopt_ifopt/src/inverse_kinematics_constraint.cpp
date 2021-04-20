@@ -59,6 +59,7 @@ InverseKinematicsConstraint::CalcValues(const Eigen::Ref<const Eigen::VectorXd>&
   // Get joint position using IK and the seed variable
   tesseract_kinematics::IKSolutions target_joint_position =
       kinematic_info_->inverse_kinematics->calcInvKin(target_pose_, seed_joint_position);
+  assert(!target_joint_position.empty());
 
   // Calculate joint error
   Eigen::VectorXd error = Eigen::VectorXd::Zero(joint_vals.rows());
