@@ -32,22 +32,14 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <Eigen/Eigen>
 TRAJOPT_IGNORE_WARNINGS_POP
 
-<<<<<<< HEAD
 #include <trajopt_ifopt/variable_sets/joint_position_variable.h>
-=======
-#include <trajopt_ifopt/variable_sets/joint_velocity_variable.h>
->>>>>>> add joint acceleration constraint
 
 namespace trajopt
 {
 /**
  * @brief This creates a joint acceleration constraint and allows bounds to be set on a joint position
  *
-<<<<<<< HEAD
  * Joint acceleration is calculated as a = th_2 - 2th_1 + th_0
-=======
- * Joint acceleration is calculated as a = th_1 - th_0
->>>>>>> add joint acceleration constraint
  */
 class JointAccelConstraint : public ifopt::ConstraintSet
 {
@@ -58,22 +50,13 @@ public:
   /**
    * @brief Constructs a acceleration contraint from these variables, setting the bounds to the target
    * @param targets Joint Acceleration targets (length should be n_dof). Upper and lower bounds are set to this value
-<<<<<<< HEAD
    * @param position_vars Joint positions used to calculate acceleration. These vars are assumed to be continuous and in
-=======
-   * @param position_vars Joint velocities used to calculate acceleration. These vars are assumed to be continuous and in
->>>>>>> add joint acceleration constraint
    * order.
    * @param name Name of the constraint
    */
   JointAccelConstraint(const Eigen::VectorXd& targets,
-<<<<<<< HEAD
                        std::vector<JointPosition::ConstPtr> position_vars,
                        const std::string& name = "JointAccel");
-=======
-                     std::vector<JointVelocity::ConstPtr> position_vars,
-                     const std::string& name = "JointAccel");
->>>>>>> add joint acceleration constraint
 
   /**
    * @brief Constructs a acceleration contraint from these variables, setting the bounds to those passed in.
@@ -83,13 +66,8 @@ public:
    * @param name Name of the constraint
    */
   JointAccelConstraint(const std::vector<ifopt::Bounds>& bounds,
-<<<<<<< HEAD
                        std::vector<JointPosition::ConstPtr> position_vars,
                        const std::string& name = "JointAccel");
-=======
-                     std::vector<JointVelocity::ConstPtr> position_vars,
-                     const std::string& name = "JointAccel");
->>>>>>> add joint acceleration constraint
 
   /**
    * @brief Returns the values associated with the constraint. In this case that is the approximate joint acceleration.
@@ -111,15 +89,9 @@ public:
   void FillJacobianBlock(std::string var_set, Jacobian& jac_block) const override;
 
 private:
-<<<<<<< HEAD
   /** @brief The number of joints in a single JointPosition */
   long n_dof_;
   /** @brief The number of JointPositions passed in */
-=======
-  /** @brief The number of joints in a single JointVelocity */
-  long n_dof_;
-  /** @brief The number of JointVelocitys passed in */
->>>>>>> add joint acceleration constraint
   long n_vars_;
 
   /** @brief Bounds on the velocities of each joint */
@@ -128,13 +100,9 @@ private:
   /** @brief Pointers to the vars used by this constraint.
    *
    * Do not access them directly. Instead use this->GetVariables()->GetComponent(position_var->GetName())->GetValues()*/
-<<<<<<< HEAD
   std::vector<JointPosition::ConstPtr> position_vars_;
   std::unordered_map<std::string, Eigen::Index> index_map_;
 
-=======
-  std::vector<JointVelocity::ConstPtr> velocity_vars_;
->>>>>>> add joint acceleration constraint
 };
 };  // namespace trajopt
 #endif
