@@ -1,6 +1,6 @@
 /**
- * @file discrete_collision_constraint.h
- * @brief The single timestep collision position constraint
+ * @file lvs_collision_constraint.h
+ * @brief The longest valid segment collision position constraint
  *
  * @author Levi Armstrong
  * @author Matthew Powelson
@@ -24,42 +24,33 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef TRAJOPT_IFOPT_COLLISION_CONSTRAINT_V3_H
-#define TRAJOPT_IFOPT_COLLISION_CONSTRAINT_V3_H
-
+#ifndef TRAJOPT_IFOPT_LVS_COLLISION_CONSTRAINT_H
+#define TRAJOPT_IFOPT_LVS_COLLISION_CONSTRAINT_H
 #include <trajopt_utils/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <Eigen/Eigen>
 #include <ifopt/constraint_set.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
-#include <trajopt_ifopt/constraints/collision/discrete_collision_evaluators.h>
+#include <trajopt_ifopt/constraints/lvs_collision_evaluators.h>
 #include <trajopt_ifopt/variable_sets/joint_position_variable.h>
-#include <tesseract_collision/core/common.h>
 
-namespace trajopt_ifopt
+namespace trajopt
 {
-class DiscreteCollisionConstraint : public ifopt::ConstraintSet
+class LVSCollisionConstraintIfopt : public ifopt::ConstraintSet
 {
 public:
-  using Ptr = std::shared_ptr<DiscreteCollisionConstraint>;
-  using ConstPtr = std::shared_ptr<const DiscreteCollisionConstraint>;
+  using Ptr = std::shared_ptr<LVSCollisionConstraintIfopt>;
+  using ConstPtr = std::shared_ptr<const LVSCollisionConstraintIfopt>;
 
-  DiscreteCollisionConstraint(DiscreteCollisionEvaluator::Ptr collision_evaluator,
-                              JointPosition::ConstPtr position_var,
-                              int max_num_cnt = 1,
-                              const std::string& name = "DiscreteCollisionV3");
+  LVSCollisionConstraintIfopt(LVSCollisionEvaluator::Ptr collision_evaluator,
+                              JointPosition::ConstPtr position_var0,
+                              JointPosition::ConstPtr position_var1,
+                              const std::string& name = "LVSCollision");
 
   /**
    * @brief Returns the values associated with the constraint.
-   * @warning Make sure that the values returns are not just the violation but the constraint values.
-   * Remember the values are the constant in the quadratic function, so if you only return the
-   * violation then if it is not violating the constraint this would be zero which means it
-   * will always appear to be on the constraint boundary which will cause issue when solving.
-   * If it is not voliating the constraint then return the max negative number.
-   * If no contacts are found return the negative of the collision margin buffer. This is why
-   * it is important to not set the collision margin buffer to zero.
-   * @return The constraint values not the violations
+   * @return
    */
   Eigen::VectorXd GetValues() const override;
 
@@ -68,7 +59,6 @@ public:
    * @return Returns the "bounds" of this constraint
    */
   std::vector<ifopt::Bounds> GetBounds() const override;
-
   /**
    * @brief Fills the jacobian block associated with the given var_set.
    * @param var_set Name of the var_set to which the jac_block is associated
@@ -77,8 +67,8 @@ public:
   void FillJacobianBlock(std::string var_set, Jacobian& jac_block) const override;
 
   /** @brief Calculates the values associated with the constraint */
-  Eigen::VectorXd CalcValues(const Eigen::Ref<const Eigen::VectorXd>& joint_vals) const;
-
+  Eigen::VectorXd CalcValues(const Eigen::Ref<const Eigen::VectorXd>& joint_vals0,
+                             const Eigen::Ref<const Eigen::VectorXd>& joint_vals1) const;
   /**
    * @brief Sets the bounds on the collision distance
    * @param bounds New bounds that will be set. Should be size 1
@@ -86,16 +76,10 @@ public:
   void SetBounds(const std::vector<ifopt::Bounds>& bounds);
 
   /**
-   * @brief Fills the jacobian block associated with the constraint
-   * @param jac_block Block of the overall jacobian associated with these constraints
-   */
-  void CalcJacobianBlock(const Eigen::Ref<const Eigen::VectorXd>& joint_vals, Jacobian& jac_block) const;
-
-  /**
    * @brief Get the collision evaluator. This exposed for plotter callbacks
    * @return The collision evaluator
    */
-  DiscreteCollisionEvaluator::Ptr GetCollisionEvaluator() const;
+  LVSCollisionEvaluator::Ptr GetCollisionEvaluator() const;
 
 private:
   /** @brief The number of joints in a single JointPosition */
@@ -108,9 +92,24 @@ private:
    * @brief Pointers to the vars used by this constraint.
    * Do not access them directly. Instead use this->GetVariables()->GetComponent(position_var->GetName())->GetValues()
    */
-  JointPosition::ConstPtr position_var_;
+  JointPosition::ConstPtr position_var0_;
+  JointPosition::ConstPtr position_var1_;
 
-  DiscreteCollisionEvaluator::Ptr collision_evaluator_;
+  LVSCollisionEvaluator::Ptr collision_evaluator_;
+
+  void CalcJacobianBlockStartFree(Jacobian& jac_block,
+                                  const Eigen::Ref<const Eigen::VectorXd>& joint_vals0,
+                                  const Eigen::Ref<const Eigen::VectorXd>& joint_vals1) const;
+
+  void CalcJacobianBlockEndFree(Jacobian& jac_block,
+                                const Eigen::Ref<const Eigen::VectorXd>& joint_vals0,
+                                const Eigen::Ref<const Eigen::VectorXd>& joint_vals1) const;
+
+  void CalcJacobianBlockBothFree(Jacobian& jac_block,
+                                 const Eigen::Ref<const Eigen::VectorXd>& joint_vals0,
+                                 const Eigen::Ref<const Eigen::VectorXd>& joint_vals1,
+                                 bool isTimestep1) const;
 };
-};  // namespace trajopt_ifopt
-#endif
+};  // namespace trajopt
+
+#endif  // TRAJOPT_IFOPT_LVS_COLLISION_CONSTRAINT_H

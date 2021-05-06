@@ -39,6 +39,7 @@ set(TRAJOPT_IFOPT_SOURCE_FILES
     src/constraints/inverse_kinematics_constraint.cpp
     src/constraints/joint_position_constraint.cpp
     src/constraints/joint_velocity_constraint.cpp
+    src/constraints/joint_acceleration_constraint.cpp
     src/constraints/collision/collision_types.cpp
     src/constraints/collision/collision_utils.cpp
     src/constraints/collision/discrete_collision_evaluators.cpp
