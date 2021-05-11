@@ -3,6 +3,7 @@
     "n_steps" : 1,
     "manip" : "manipulator"
   },
+<<<<<<< HEAD
   "costs" : [
   {
     "type" : "collision",
@@ -24,11 +25,17 @@
     }
   }
   ],
+=======
+>>>>>>> fixup
   "constraints" : [
   {
     "type" : "collision",
     "params" : {
+<<<<<<< HEAD
       "coeffs" : [1],
+=======
+      "coeffs" : [10],
+>>>>>>> fixup
       "dist_pen" : [0.2],
       "evaluator_type" : 0,
       "longest_valid_segment_length" : 0.05
