@@ -174,12 +174,13 @@ TEST_F(CastTest, boxes)  // NOLINT
   }
 
   // Collision Constraints
-//  for (const auto& var : vars)
-//  {
-//    auto cnt = std::make_shared<trajopt::DiscreteCollisionConstraintIfopt>(collision_evaluator, var);
-//    nlp.AddConstraintSet(cnt);
-//  }
-  auto cnt = std::make_shared<trajopt::DiscreteCollisionConstraintIfopt>(collision_evaluator, GradientCombineMethod::SUM, vars[1]);
+  //  for (const auto& var : vars)
+  //  {
+  //    auto cnt = std::make_shared<trajopt::DiscreteCollisionConstraintIfopt>(collision_evaluator, var);
+  //    nlp.AddConstraintSet(cnt);
+  //  }
+  auto cnt = std::make_shared<trajopt::DiscreteCollisionConstraintIfopt>(
+      collision_evaluator, GradientCombineMethod::SUM, vars[1]);
   nlp.AddConstraintSet(cnt);
 
   nlp.PrintCurrent();

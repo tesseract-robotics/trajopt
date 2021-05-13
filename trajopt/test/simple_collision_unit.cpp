@@ -33,11 +33,7 @@ using namespace tesseract_geometry;
 
 static bool plotting = false;
 
-<<<<<<< HEAD
 class SimpleCollisionTest : public testing::TestWithParam<const char*>
-=======
-class CastTest : public testing::TestWithParam<const char*>
->>>>>>> fixup
 {
 public:
   Environment::Ptr env_ = std::make_shared<Environment>(); /**< Tesseract */
@@ -51,26 +47,16 @@ public:
     ResourceLocator::Ptr locator = std::make_shared<SimpleResourceLocator>(locateResource);
     EXPECT_TRUE(env_->init<OFKTStateSolver>(urdf_file, srdf_file, locator));
 
-<<<<<<< HEAD
     gLogLevel = util::LevelDebug;
-=======
-    gLogLevel = util::LevelError;
->>>>>>> fixup
 
     // Create plotting tool
     //    plotter_.reset(new tesseract_ros::ROSBasicPlotting(env_));
   }
 };
 
-<<<<<<< HEAD
 TEST_F(SimpleCollisionTest, spheres)  // NOLINT
 {
   CONSOLE_BRIDGE_logDebug("SimpleCollisionTest, spheres");
-=======
-TEST_F(CastTest, boxes)  // NOLINT
-{
-  CONSOLE_BRIDGE_logDebug("CastTest, boxes");
->>>>>>> fixup
 
   Json::Value root = readJsonFile(std::string(TRAJOPT_DIR) + "/test/data/config/simple_collision_test.json");
 
@@ -86,11 +72,7 @@ TEST_F(CastTest, boxes)  // NOLINT
 
   std::vector<ContactResultMap> collisions;
   tesseract_environment::StateSolver::Ptr state_solver = prob->GetEnv()->getStateSolver();
-<<<<<<< HEAD
   DiscreteContactManager::Ptr manager = prob->GetEnv()->getDiscreteContactManager();
-=======
-  ContinuousContactManager::Ptr manager = prob->GetEnv()->getContinuousContactManager();
->>>>>>> fixup
   AdjacencyMap::Ptr adjacency_map = std::make_shared<AdjacencyMap>(
       env_->getSceneGraph(), prob->GetKin()->getActiveLinkNames(), prob->GetEnv()->getCurrentState()->link_transforms);
 
@@ -99,11 +81,7 @@ TEST_F(CastTest, boxes)  // NOLINT
 
   collisions.clear();
   tesseract_collision::CollisionCheckConfig config;
-<<<<<<< HEAD
   config.type = tesseract_collision::CollisionEvaluatorType::DISCRETE;
-=======
-  config.type = tesseract_collision::CollisionEvaluatorType::CONTINUOUS;
->>>>>>> fixup
   bool found = checkTrajectory(
       collisions, *manager, *state_solver, prob->GetKin()->getJointNames(), prob->GetInitTraj(), config);
 
