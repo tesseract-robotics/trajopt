@@ -92,6 +92,20 @@ public:
     }
   }
 
+  JointPosition(const Eigen::Ref<const Eigen::VectorXd>& init_value,
+                std::vector<std::string> joint_names,
+                const tesseract_common::KinematicLimits& bounds,
+                const std::string& name = "Joint_Position")
+    : ifopt::VariableSet(static_cast<int>(init_value.size()), name), joint_names_(std::move(joint_names))
+  {
+    /** @todo Print warning if init value is not within bounds */
+    bounds_ = std::vector<ifopt::Bounds>(static_cast<size_t>(init_value.size()), ifopt::NoBound);
+    for (Eigen::Index i = 0; i < init_value.size(); ++i)
+      bounds_[static_cast<std::size_t>(i)] = ifopt::Bounds(bounds.joint_limits(i, 0), bounds.joint_limits(i, 1));
+
+    values_ = init_value;
+  }
+
   /**
    * @brief Sets this variable to the given joint position
    * @param x Joint Position to which this variable will be set.
