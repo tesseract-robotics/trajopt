@@ -1,13 +1,13 @@
 /**
- * @file squared_cost.cpp
- * @brief The squared cost. Converts a constraint into a cost.
+ * @file absolute_cost.cpp
+ * @brief The absolute cost. Converts a constraint into a cost.
  *
- * @author Matthew Powelson
- * @date May 18, 2020
+ * @author Levi Armstrong
+ * @date May 20, 20201
  * @version TODO
  * @bug No known bugs
  *
- * @copyright Copyright (c) 2020, Southwest Research Institute
+ * @copyright Copyright (c) 2021, Southwest Research Institute
  *
  * @par License
  * Software License Agreement (Apache License)
@@ -23,7 +23,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <trajopt_ifopt/costs/squared_cost.h>
+#include <trajopt_ifopt/costs/absolute_cost.h>
 #include <trajopt_ifopt/utils/ifopt_utils.h>
 
 TRAJOPT_IGNORE_WARNINGS_PUSH
@@ -32,27 +32,28 @@ TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace trajopt
 {
-SquaredCost::SquaredCost(ifopt::ConstraintSet::Ptr constraint)
-  : SquaredCost(std::move(constraint), Eigen::VectorXd::Ones(constraint->GetRows()))
+AbsoluteCost::AbsoluteCost(ifopt::ConstraintSet::Ptr constraint)
+  : AbsoluteCost(std::move(constraint), Eigen::VectorXd::Ones(constraint->GetRows()))
 {
 }
 
-SquaredCost::SquaredCost(ifopt::ConstraintSet::Ptr constraint, const Eigen::Ref<const Eigen::VectorXd>& weights)
-  : CostTerm(constraint->GetName() + "_squared_cost")
+AbsoluteCost::AbsoluteCost(ifopt::ConstraintSet::Ptr constraint, const Eigen::Ref<const Eigen::VectorXd>& weights)
+  : CostTerm(constraint->GetName() + "_absolute_cost")
   , constraint_(std::move(constraint))
   , n_constraints_(constraint_->GetRows())
-  , weights_(weights.cwiseAbs())
+  , weights_(weights.cwiseAbs())  // must be positive
 {
 }
 
-double SquaredCost::GetCost() const
+double AbsoluteCost::GetCost() const
 {
-  Eigen::VectorXd error = calcBoundsErrors(constraint_->GetValues(), constraint_->GetBounds());
-  double cost = error.transpose() * weights_.asDiagonal() * error;
+  // This takes the absolute value of the errors
+  Eigen::VectorXd error = calcBoundsViolations(constraint_->GetValues(), constraint_->GetBounds());
+  double cost = weights_.transpose() * error;
   return cost;
 }
 
-void SquaredCost::FillJacobianBlock(std::string var_set, Jacobian& jac_block) const
+void AbsoluteCost::FillJacobianBlock(std::string var_set, Jacobian& jac_block) const
 {
   // Get a Jacobian block the size necessary for the constraint
   Jacobian cnt_jac_block;
@@ -69,8 +70,14 @@ void SquaredCost::FillJacobianBlock(std::string var_set, Jacobian& jac_block) co
   constraint_->FillJacobianBlock(var_set, cnt_jac_block);
 
   // Apply the chain rule. See doxygen for this class
-  Eigen::VectorXd error = calcBoundsErrors(constraint_->GetValues(), constraint_->GetBounds());
-  jac_block = 2 * error.transpose().sparseView() * weights_.asDiagonal() * cnt_jac_block;
+  // There are two w's that cancel out resulting in w_error / error.abs().
+  // This breaks down if the weights are not positive but the constructor takes the absolute
+  // value of the weights to avoid this issue.
+  Eigen::ArrayXd error = calcBoundsErrors(constraint_->GetValues(), constraint_->GetBounds());
+  Eigen::ArrayXd w_error = error * weights_.array();
+  Eigen::VectorXd coeff = w_error / error.abs();
+
+  jac_block = coeff.sparseView() * cnt_jac_block;
 }
 
 }  // namespace trajopt
