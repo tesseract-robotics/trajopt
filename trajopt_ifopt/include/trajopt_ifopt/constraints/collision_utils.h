@@ -65,6 +65,10 @@ void removeInvalidContactResults(tesseract_collision::ContactResultVector& conta
 
 /**
  * @brief This takes a vector of gradient results and outputs a single gradient using least squares
+ * @details The gradient results stores the gradient calculated at the point between two states where the contact
+ * occured. This is not the gradient for changing the start or end state, so you must use the scale term associated
+ * with the gradient results to correctly calculate the gradient for the start or end state. This is already being done
+ * internal to this function.
  * @param grad_results A vector of gradient results
  * @param dof The DOF of the system
  * @param num_eq The number equations
@@ -75,6 +79,10 @@ Eigen::VectorXd getLeastSquaresGradient(std::vector<trajopt::GradientResults> gr
 /**
  * @brief This takes a vector of gradient results and outputs a single gradient using weighted least squares
  * where the weights are the error
+ * @details The gradient results stores the gradient calculated at the point between two states where the contact
+ * occured. This is not the gradient for changing the start or end state, so you must use the scale term associated
+ * with the gradient results to correctly calculate the gradient for the start or end state. This is already being done
+ * internal to this function.
  * @param grad_results A vector of gradient results
  * @param dof The DOF of the system
  * @param num_eq The number equations
