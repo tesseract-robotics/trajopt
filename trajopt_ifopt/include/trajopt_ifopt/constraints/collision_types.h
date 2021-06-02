@@ -29,6 +29,7 @@
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <Eigen/Eigen>
 #include <array>
+#include <memory>
 #include <tesseract_collision/core/types.h>
 #include <tesseract_environment/core/environment.h>
 TRAJOPT_IGNORE_WARNINGS_POP
@@ -51,21 +52,6 @@ enum class GradientCombineMethod
   WEIGHTED_SUM = 1,
   LEAST_SQUARES = 2,
   WEIGHTED_LEAST_SQUARES = 3
-};
-
-/**
- * @brief This contains the different types of expression evaluators used when performing continuous collision checking.
- */
-enum class ContinuousCollisionEvaluatorType
-{
-  /** @brief Both start and end state variables are free to be adjusted */
-  START_FREE_END_FREE = 0,
-
-  /** @brief Only start state variables are free to be adjusted */
-  START_FREE_END_FIXED = 1,
-
-  /** @brief Only end state variables are free to be adjusted */
-  START_FIXED_END_FREE = 2,
 };
 
 /** @brief Stores information about how the margins allowed between collision objects */
@@ -156,7 +142,11 @@ struct GradientResults
    */
   GradientResults(const Eigen::Vector3d& data);
 
-  /** @brief The gradient results data for LinkA and LinkB */
+  /**
+   * @brief The gradient results data for LinkA and LinkB
+   * @details This is used by both discrete and continuous collision checking.
+   * In the case of continuous collision checking this is the gradient at timestep0
+   */
   std::array<LinkGradientResults, 2> gradients;
 
   /** @brief The error std::max<double>(((dist - dist_result.distance) * coeff), 0.) */

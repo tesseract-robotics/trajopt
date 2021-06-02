@@ -80,62 +80,59 @@ Eigen::VectorXd DiscreteCollisionConstraintIfopt::CalcValues(const Eigen::Ref<co
   Eigen::VectorXd err = Eigen::VectorXd::Zero(1);
 
   // Check the collisions
-  tesseract_collision::ContactResultVector dist_results;
-  collision_evaluator_->CalcCollisions(joint_vals, dist_results);
+  CollisionCacheData::ConstPtr collision_data = collision_evaluator_->CalcCollisions(joint_vals);
 
-  if (dist_results.empty())
+  if (collision_data->contact_results_vector.empty() || !(collision_data->gradient_results_set.max_error > 0))
     return err;
 
   switch (gradient_method_)
   {
     case GradientCombineMethod::SUM:
     {
-      for (tesseract_collision::ContactResult& dist_result : dist_results)
-      {
-        double dist = collision_evaluator_->GetCollisionConfig().collision_margin_data.getPairCollisionMargin(
-            dist_result.link_names[0], dist_result.link_names[1]);
-        double coeff = collision_evaluator_->GetCollisionConfig().collision_coeff_data.getPairCollisionCoeff(
-            dist_result.link_names[0], dist_result.link_names[1]);
-        err[0] += std::max<double>(((dist - dist_result.distance) * coeff), 0.);
-      }
+      for (const GradientResults& grad_result : collision_data->gradient_results_set.results)
+        err[0] += std::max<double>(grad_result.error * grad_result.data[2], 0.);
+
       break;
     }
     case GradientCombineMethod::WEIGHTED_SUM:
     {
-      for (tesseract_collision::ContactResult& dist_result : dist_results)
+      for (const GradientResults& grad_result : collision_data->gradient_results_set.results)
       {
-        double dist = collision_evaluator_->GetCollisionConfig().collision_margin_data.getPairCollisionMargin(
-            dist_result.link_names[0], dist_result.link_names[1]);
-        double coeff = collision_evaluator_->GetCollisionConfig().collision_coeff_data.getPairCollisionCoeff(
-            dist_result.link_names[0], dist_result.link_names[1]);
-        err[0] += std::pow(std::max<double>((dist - dist_result.distance) * coeff, 0.), 2);
+        double e = grad_result.error * grad_result.data[2];
+        if (e > 0)
+        {
+          //          assert(collision_data->gradient_results_set.max_weighted_error_with_buffer > 0);
+          //          double eb = std::max<double>(grad_result.error_with_buffer * grad_result.data[2], 0.);
+          //          double we = eb / collision_data->gradient_results_set.max_weighted_error_with_buffer;
+          err[0] += std::max<double>(e, 0.);
+        }
       }
+
       break;
     }
     case GradientCombineMethod::LEAST_SQUARES:
     {
-      for (tesseract_collision::ContactResult& dist_result : dist_results)
+      long cnt{ 0 };
+      for (const GradientResults& grad_result : collision_data->gradient_results_set.results)
       {
-        double dist = collision_evaluator_->GetCollisionConfig().collision_margin_data.getPairCollisionMargin(
-            dist_result.link_names[0], dist_result.link_names[1]);
-        double coeff = collision_evaluator_->GetCollisionConfig().collision_coeff_data.getPairCollisionCoeff(
-            dist_result.link_names[0], dist_result.link_names[1]);
-        err[0] += std::max<double>(((dist - dist_result.distance) * coeff), 0.);
+        double e = grad_result.error * grad_result.data[2];
+        if (e > 0)
+        {
+          err[0] += std::max<double>(e, 0.);
+          ++cnt;
+        }
       }
-      err[0] = err[0] / static_cast<double>(dist_results.size());
+
+      (cnt == 0) ? err[0] = 0 : err[0] = err[0] / double(cnt);
+
       break;
     }
     case GradientCombineMethod::WEIGHTED_LEAST_SQUARES:
     {
-      for (tesseract_collision::ContactResult& dist_result : dist_results)
-      {
-        double dist = collision_evaluator_->GetCollisionConfig().collision_margin_data.getPairCollisionMargin(
-            dist_result.link_names[0], dist_result.link_names[1]);
-        double coeff = collision_evaluator_->GetCollisionConfig().collision_coeff_data.getPairCollisionCoeff(
-            dist_result.link_names[0], dist_result.link_names[1]);
-        err[0] += std::pow(std::max<double>((dist - dist_result.distance) * coeff, 0.), 2);
-      }
-      err[0] = err[0] / static_cast<double>(dist_results.size());
+      for (const GradientResults& grad_result : collision_data->gradient_results_set.results)
+        err[0] += std::pow(std::max<double>(grad_result.error * grad_result.data[2], 0.), 2);
+
+      err[0] = err[0] / static_cast<double>(collision_data->gradient_results_set.results.size());
       break;
     }
   }

@@ -38,30 +38,64 @@ namespace trajopt
 ContinuousCollisionConstraintIfopt::ContinuousCollisionConstraintIfopt(
     ContinuousCollisionEvaluator::Ptr collision_evaluator,
     GradientCombineMethod gradient_method,
-    JointPosition::ConstPtr position_var0,
-    JointPosition::ConstPtr position_var1,
+    std::array<JointPosition::ConstPtr, 3> position_vars,
     const std::string& name)
   : ifopt::ConstraintSet(1, name)
-  , position_var0_(std::move(position_var0))
-  , position_var1_(std::move(position_var1))
+  , position_vars_(std::move(position_vars))
   , collision_evaluator_(std::move(collision_evaluator))
   , gradient_method_(gradient_method)
 {
+  if (position_vars_[1] == nullptr)
+    throw std::runtime_error("position_vars index 1 should not be a nullptr!");
+
+  if (position_vars_[0] == nullptr && position_vars_[2] == nullptr)
+    throw std::runtime_error("position_vars index 0 and 2 are nullptr, atleast one should not be!");
+
   // Set n_dof_ for convenience
-  n_dof_ = position_var0_->GetRows();
-  assert(n_dof_ > 0);
-  assert(position_var0_->GetRows() == position_var1_->GetRows());
+  n_dof_ = position_vars_[1]->GetRows();
+  if (!(n_dof_ > 0))
+    throw std::runtime_error("position_vars index 1 is empty!");
+
+  if (position_vars_[0] != nullptr && position_vars_[0]->GetRows() != position_vars_[1]->GetRows())
+    throw std::runtime_error("position_vars index 0 and 1 are not the same size!");
+
+  if (position_vars_[2] != nullptr && position_vars_[2]->GetRows() != position_vars_[1]->GetRows())
+    throw std::runtime_error("position_vars index 1 and 2 are not the same size!");
+
+  if (position_vars_[0] != nullptr && position_vars_[2] != nullptr)
+    mode_ = 0;  // central
+  else if (position_vars_[2] != nullptr)
+    mode_ = 1;  // forward
+  else if (position_vars_[0] != nullptr)
+    mode_ = 2;  // backward
 
   bounds_ = std::vector<ifopt::Bounds>(1, ifopt::BoundSmallerZero);
 }
 
 Eigen::VectorXd ContinuousCollisionConstraintIfopt::GetValues() const
 {
+  Eigen::VectorXd err = Eigen::VectorXd::Zero(1);
   // Get current joint values
-  Eigen::VectorXd joint_vals0 = this->GetVariables()->GetComponent(position_var0_->GetName())->GetValues();
-  Eigen::VectorXd joint_vals1 = this->GetVariables()->GetComponent(position_var1_->GetName())->GetValues();
-
-  return CalcValues(joint_vals0, joint_vals1);
+  if (mode_ == 0)  // central, this will be the most common mode
+  {
+    Eigen::VectorXd joint_vals0 = this->GetVariables()->GetComponent(position_vars_[0]->GetName())->GetValues();
+    Eigen::VectorXd joint_vals1 = this->GetVariables()->GetComponent(position_vars_[1]->GetName())->GetValues();
+    Eigen::VectorXd joint_vals2 = this->GetVariables()->GetComponent(position_vars_[2]->GetName())->GetValues();
+    err = CalcValuesCent(joint_vals0, joint_vals1, joint_vals2);
+  }
+  else if (mode_ == 1)  // Post
+  {
+    Eigen::VectorXd joint_vals1 = this->GetVariables()->GetComponent(position_vars_[1]->GetName())->GetValues();
+    Eigen::VectorXd joint_vals2 = this->GetVariables()->GetComponent(position_vars_[2]->GetName())->GetValues();
+    err = CalcValuesPost(joint_vals1, joint_vals2);
+  }
+  else if (mode_ == 2)  // Previous
+  {
+    Eigen::VectorXd joint_vals0 = this->GetVariables()->GetComponent(position_vars_[0]->GetName())->GetValues();
+    Eigen::VectorXd joint_vals1 = this->GetVariables()->GetComponent(position_vars_[1]->GetName())->GetValues();
+    err = CalcValuesPrev(joint_vals0, joint_vals1);
+  }
+  return err;
 }
 
 // Set the limits on the constraint values
@@ -70,62 +104,169 @@ std::vector<ifopt::Bounds> ContinuousCollisionConstraintIfopt::GetBounds() const
 void ContinuousCollisionConstraintIfopt::FillJacobianBlock(std::string var_set, Jacobian& jac_block) const
 {
   // Only modify the jacobian if this constraint uses var_set
-  if (var_set == position_var0_->GetName() &&
-      collision_evaluator_->GetEvaluatorType() != ContinuousCollisionEvaluatorType::START_FIXED_END_FREE)
+  if (var_set == position_vars_[1]->GetName())
   {
-    // Get current joint values
-    VectorXd joint_vals0 = this->GetVariables()->GetComponent(position_var0_->GetName())->GetValues();
-    VectorXd joint_vals1 = this->GetVariables()->GetComponent(position_var1_->GetName())->GetValues();
-
-    if (collision_evaluator_->GetEvaluatorType() == ContinuousCollisionEvaluatorType::START_FREE_END_FREE)
-      CalcJacobianBlockBothFree(jac_block, joint_vals0, joint_vals1, false);
-    else
-      CalcJacobianBlockStartFree(jac_block, joint_vals0, joint_vals1);
+    if (mode_ == 0)  // central, this will be the most common mode
+    {
+      Eigen::VectorXd joint_vals0 = this->GetVariables()->GetComponent(position_vars_[0]->GetName())->GetValues();
+      Eigen::VectorXd joint_vals1 = this->GetVariables()->GetComponent(position_vars_[1]->GetName())->GetValues();
+      Eigen::VectorXd joint_vals2 = this->GetVariables()->GetComponent(position_vars_[2]->GetName())->GetValues();
+      CalcJacobianBlockCent(jac_block, joint_vals0, joint_vals1, joint_vals2);
+    }
+    else if (mode_ == 1)  // Post
+    {
+      Eigen::VectorXd joint_vals1 = this->GetVariables()->GetComponent(position_vars_[1]->GetName())->GetValues();
+      Eigen::VectorXd joint_vals2 = this->GetVariables()->GetComponent(position_vars_[2]->GetName())->GetValues();
+      CalcJacobianBlockPost(jac_block, joint_vals1, joint_vals2);
+    }
+    else if (mode_ == 2)  // Previous
+    {
+      Eigen::VectorXd joint_vals0 = this->GetVariables()->GetComponent(position_vars_[0]->GetName())->GetValues();
+      Eigen::VectorXd joint_vals1 = this->GetVariables()->GetComponent(position_vars_[1]->GetName())->GetValues();
+      CalcJacobianBlockPrev(jac_block, joint_vals0, joint_vals1);
+    }
   }
-  else if (var_set == position_var1_->GetName() &&
-           collision_evaluator_->GetEvaluatorType() != ContinuousCollisionEvaluatorType::START_FREE_END_FIXED)
-  {
-    // Get current joint values
-    VectorXd joint_vals0 = this->GetVariables()->GetComponent(position_var0_->GetName())->GetValues();
-    VectorXd joint_vals1 = this->GetVariables()->GetComponent(position_var1_->GetName())->GetValues();
 
-    if (collision_evaluator_->GetEvaluatorType() == ContinuousCollisionEvaluatorType::START_FREE_END_FREE)
-      CalcJacobianBlockBothFree(jac_block, joint_vals0, joint_vals1, true);
-    else
-      CalcJacobianBlockEndFree(jac_block, joint_vals0, joint_vals1);
-  }
+  //  if (var_set == position_var0_->GetName() &&
+  //      collision_evaluator_->GetEvaluatorType() != ContinuousCollisionEvaluatorType::START_FIXED_END_FREE)
+  //  {
+  //    // Get current joint values
+  //    VectorXd joint_vals0 = this->GetVariables()->GetComponent(position_var0_->GetName())->GetValues();
+  //    VectorXd joint_vals1 = this->GetVariables()->GetComponent(position_var1_->GetName())->GetValues();
+
+  //    if (collision_evaluator_->GetEvaluatorType() == ContinuousCollisionEvaluatorType::START_FREE_END_FREE)
+  //      CalcJacobianBlockBothFree(jac_block, joint_vals0, joint_vals1);
+  //    else
+  //      CalcJacobianBlockStartFree(jac_block, joint_vals0, joint_vals1);
+  //  }
+  //  else if (var_set == position_var1_->GetName() &&
+  //           collision_evaluator_->GetEvaluatorType() != ContinuousCollisionEvaluatorType::START_FREE_END_FIXED)
+  //  {
+  //    // Get current joint values
+  //    VectorXd joint_vals0 = this->GetVariables()->GetComponent(position_var0_->GetName())->GetValues();
+  //    VectorXd joint_vals1 = this->GetVariables()->GetComponent(position_var1_->GetName())->GetValues();
+
+  //    if (collision_evaluator_->GetEvaluatorType() == ContinuousCollisionEvaluatorType::START_FREE_END_FREE)
+  //      CalcJacobianBlockBothFree(jac_block, joint_vals0, joint_vals1);
+  //    else
+  //      CalcJacobianBlockEndFree(jac_block, joint_vals0, joint_vals1);
+  //  }
 }
 
 Eigen::VectorXd
-ContinuousCollisionConstraintIfopt::CalcValues(const Eigen::Ref<const Eigen::VectorXd>& joint_vals0,
-                                               const Eigen::Ref<const Eigen::VectorXd>& joint_vals1) const
+ContinuousCollisionConstraintIfopt::CalcValuesPost(const Eigen::Ref<const Eigen::VectorXd>& joint_vals,
+                                                   const Eigen::Ref<const Eigen::VectorXd>& joint_vals_post) const
 {
   Eigen::VectorXd err = Eigen::VectorXd::Zero(1);
 
   // Check the collisions
-  tesseract_collision::ContactResultVector dist_results;
-  collision_evaluator_->CalcCollisions(joint_vals0, joint_vals1, dist_results);
+  CollisionCacheData::ConstPtr collision_data = collision_evaluator_->CalcCollisionData(joint_vals, joint_vals_post);
 
-  if (dist_results.empty())
+  if (collision_data->contact_results_vector.empty() || !(collision_data->gradient_results_set.max_error > 0))
     return err;
 
   switch (gradient_method_)
   {
     case GradientCombineMethod::SUM:
     {
-      for (tesseract_collision::ContactResult& dist_result : dist_results)
-      {
-        double dist = collision_evaluator_->GetCollisionConfig().collision_margin_data.getPairCollisionMargin(
-            dist_result.link_names[0], dist_result.link_names[1]);
-        double coeff = collision_evaluator_->GetCollisionConfig().collision_coeff_data.getPairCollisionCoeff(
-            dist_result.link_names[0], dist_result.link_names[1]);
-        err[0] += std::max<double>(((dist - dist_result.distance) * coeff), 0.);
-      }
+      for (const GradientResults& grad_result : collision_data->gradient_results_set.results)
+        err[0] += std::max<double>(grad_result.error * grad_result.data[2], 0.);
+
       break;
     }
     case GradientCombineMethod::WEIGHTED_SUM:
     {
-      for (tesseract_collision::ContactResult& dist_result : dist_results)
+      for (const GradientResults& grad_result : collision_data->gradient_results_set.results)
+      {
+        double e = grad_result.error * grad_result.data[2];
+        if (e > 0)
+        {
+          assert(collision_data->gradient_results_set.max_error_with_buffer > 0);
+          double eb = std::max<double>(grad_result.error_with_buffer * grad_result.data[2], 0.);
+          double we = eb / collision_data->gradient_results_set.max_error_with_buffer;
+          err[0] += we * std::max<double>(e, 0.);
+        }
+      }
+
+      break;
+    }
+    case GradientCombineMethod::AVERAGE:
+    {
+      long cnt{ 0 };
+      for (const GradientResults& grad_result : collision_data->gradient_results_set.results)
+      {
+        double e = grad_result.error * grad_result.data[2];
+        if (e > 0)
+        {
+          err[0] += std::max<double>(e, 0.);
+          ++cnt;
+        }
+      }
+
+      (cnt == 0) ? err[0] = 0 : err[0] = err[0] / double(cnt);
+
+      break;
+    }
+    case GradientCombineMethod::WEIGHTED_AVERAGE:
+    {
+      double total_weight{ 0 };
+      for (const GradientResults& grad_result : collision_data->gradient_results_set.results)
+      {
+        double d = std::max<double>(grad_result.error, 0.) * grad_result.data[2];
+        double w = (std::max(grad_result.error_with_buffer * grad_result.data[2], 0.) /
+                    collision_data->gradient_results_set.max_weighted_error_with_buffer);
+        total_weight += w;
+        err[0] += (w * d);
+      }
+      assert(total_weight > 0);
+      err[0] = err[0] / total_weight;
+      break;
+    }
+    case GradientCombineMethod::LEAST_SQUARES:
+    {
+      for (const GradientResults& grad_result : collision_data->gradient_results_set.results)
+        err[0] += std::max<double>(grad_result.error * grad_result.data[2], 0.);
+
+      err[0] = err[0] / static_cast<double>(collision_data->gradient_results_set.results.size());
+      break;
+    }
+    case GradientCombineMethod::WEIGHTED_LEAST_SQUARES:
+    {
+      for (const GradientResults& grad_result : collision_data->gradient_results_set.results)
+        err[0] += std::pow(std::max<double>(grad_result.error * grad_result.data[2], 0.), 2);
+
+      err[0] = err[0] / static_cast<double>(collision_data->gradient_results_set.results.size());
+      break;
+    }
+  }
+
+  return err;
+}
+
+Eigen::VectorXd
+ContinuousCollisionConstraintIfopt::CalcValuesPrev(const Eigen::Ref<const Eigen::VectorXd>& joint_vals_prev,
+                                                   const Eigen::Ref<const Eigen::VectorXd>& joint_vals) const
+{
+  Eigen::VectorXd err = Eigen::VectorXd::Zero(1);
+
+  // Check the collisions
+  CollisionCacheData::ConstPtr collision_data = collision_evaluator_->CalcCollisionData(joint_vals_prev, joint_vals);
+
+  if (collision_data->contact_results_vector.empty() || !(collision_data->gradient_results_set.max_error > 0))
+    return err;
+
+  switch (gradient_method_)
+  {
+    case GradientCombineMethod::SUM:
+    {
+      for (const GradientResults& grad_result : collision_data->gradient_results_set.results)
+        err[0] += std::max<double>(grad_result.error * grad_result.data[2], 0.);
+
+      break;
+    }
+    case GradientCombineMethod::WEIGHTED_SUM:
+    {
+      for (const GradientResults& grad_result : collision_data->gradient_results_set.results)
       {
         double dist = collision_evaluator_->GetCollisionConfig().collision_margin_data.getPairCollisionMargin(
             dist_result.link_names[0], dist_result.link_names[1]);
@@ -133,33 +274,37 @@ ContinuousCollisionConstraintIfopt::CalcValues(const Eigen::Ref<const Eigen::Vec
             dist_result.link_names[0], dist_result.link_names[1]);
         err[0] += std::max<double>((std::pow(dist - dist_result.distance, 2) * coeff), 0.);
       }
+      assert(total_weight > 0);
+      err[0] = err[0] / total_weight;
       break;
     }
     case GradientCombineMethod::LEAST_SQUARES:
     {
-      for (tesseract_collision::ContactResult& dist_result : dist_results)
+      for (std::size_t i = 0; i < 2; ++i)
       {
-        double dist = collision_evaluator_->GetCollisionConfig().collision_margin_data.getPairCollisionMargin(
-            dist_result.link_names[0], dist_result.link_names[1]);
-        double coeff = collision_evaluator_->GetCollisionConfig().collision_coeff_data.getPairCollisionCoeff(
-            dist_result.link_names[0], dist_result.link_names[1]);
-        err[0] += std::max<double>(((dist - dist_result.distance) * coeff), 0.);
+        for (const GradientResults& grad_result : collision_data[i]->gradient_results_set.results)
+          err[0] += std::max<double>(grad_result.error * grad_result.data[2], 0.);
       }
-      err[0] = err[0] / static_cast<double>(dist_results.size());
+
+      err[0] = err[0] / static_cast<double>(collision_data[0]->gradient_results_set.results.size() +
+                                            collision_data[1]->gradient_results_set.results.size());
       break;
     }
     case GradientCombineMethod::WEIGHTED_LEAST_SQUARES:
     {
-      for (tesseract_collision::ContactResult& dist_result : dist_results)
+      for (std::size_t i = 0; i < 2; ++i)
       {
-        double dist = collision_evaluator_->GetCollisionConfig().collision_margin_data.getPairCollisionMargin(
-            dist_result.link_names[0], dist_result.link_names[1]);
-        double coeff = collision_evaluator_->GetCollisionConfig().collision_coeff_data.getPairCollisionCoeff(
-            dist_result.link_names[0], dist_result.link_names[1]);
-        err[0] += std::pow(std::max<double>((dist - dist_result.distance) * coeff, 0.), 2);
+        for (const GradientResults& grad_result : collision_data[i]->gradient_results_set.results)
+          err[0] += std::pow(std::max<double>(grad_result.error * grad_result.data[2], 0.), 2);
       }
-      err[0] = err[0] / static_cast<double>(dist_results.size());
+
+      err[0] = err[0] / static_cast<double>(collision_data[0]->gradient_results_set.results.size() +
+                                            collision_data[1]->gradient_results_set.results.size());
       break;
+    }
+    default:
+    {
+      throw std::runtime_error("Invalid GradientCombineMethod.");
     }
   }
 
@@ -172,10 +317,10 @@ void ContinuousCollisionConstraintIfopt::SetBounds(const std::vector<ifopt::Boun
   bounds_ = bounds;
 }
 
-void ContinuousCollisionConstraintIfopt::CalcJacobianBlockStartFree(
+void ContinuousCollisionConstraintIfopt::CalcJacobianBlockPost(
     Jacobian& jac_block,
-    const Eigen::Ref<const Eigen::VectorXd>& joint_vals0,
-    const Eigen::Ref<const Eigen::VectorXd>& joint_vals1) const
+    const Eigen::Ref<const Eigen::VectorXd>& joint_vals,
+    const Eigen::Ref<const Eigen::VectorXd>& joint_vals_post) const
 {
   // Reserve enough room in the sparse matrix
   jac_block.reserve(n_dof_);
@@ -220,6 +365,10 @@ void ContinuousCollisionConstraintIfopt::CalcJacobianBlockStartFree(
       // grad_vec = getWeightedLeastSquaresGradient2(grad_results, n_dof_, num_eq);
       break;
     }
+    default:
+    {
+      throw std::runtime_error("Invalid GradientCombineMethod.");
+    }
   }
 
   // This does work but could be faster
@@ -230,10 +379,11 @@ void ContinuousCollisionConstraintIfopt::CalcJacobianBlockStartFree(
   }
 }
 
-void ContinuousCollisionConstraintIfopt::CalcJacobianBlockEndFree(
+void ContinuousCollisionConstraintIfopt::CalcJacobianBlockCent(
     Jacobian& jac_block,
-    const Eigen::Ref<const Eigen::VectorXd>& joint_vals0,
-    const Eigen::Ref<const Eigen::VectorXd>& joint_vals1) const
+    const Eigen::Ref<const Eigen::VectorXd>& joint_vals_prev,
+    const Eigen::Ref<const Eigen::VectorXd>& joint_vals,
+    const Eigen::Ref<const Eigen::VectorXd>& joint_vals_post) const
 {
   // Reserve enough room in the sparse matrix
   jac_block.reserve(n_dof_);
@@ -278,6 +428,10 @@ void ContinuousCollisionConstraintIfopt::CalcJacobianBlockEndFree(
       // grad_vec = getWeightedLeastSquaresGradient2(grad_results, n_dof_, num_eq);
       break;
     }
+    default:
+    {
+      throw std::runtime_error("Invalid GradientCombineMethod.");
+    }
   }
 
   // This does work but could be faster
@@ -288,10 +442,10 @@ void ContinuousCollisionConstraintIfopt::CalcJacobianBlockEndFree(
   }
 }
 
-void ContinuousCollisionConstraintIfopt::CalcJacobianBlockBothFree(Jacobian& jac_block,
-                                                                   const Eigen::Ref<const Eigen::VectorXd>& joint_vals0,
-                                                                   const Eigen::Ref<const Eigen::VectorXd>& joint_vals1,
-                                                                   bool isTimestep1) const
+void ContinuousCollisionConstraintIfopt::CalcJacobianBlockPrev(
+    Jacobian& jac_block,
+    const Eigen::Ref<const Eigen::VectorXd>& joint_vals_pre,
+    const Eigen::Ref<const Eigen::VectorXd>& joint_vals) const
 {
   // Reserve enough room in the sparse matrix
   jac_block.reserve(n_dof_);
@@ -336,6 +490,10 @@ void ContinuousCollisionConstraintIfopt::CalcJacobianBlockBothFree(Jacobian& jac
       grad_vec = getWeightedLeastSquaresGradient(grad_results, n_dof_, num_eq);
       // grad_vec = getWeightedLeastSquaresGradient2(grad_results, n_dof_, num_eq);
       break;
+    }
+    default:
+    {
+      throw std::runtime_error("Invalid GradientCombineMethod.");
     }
   }
 

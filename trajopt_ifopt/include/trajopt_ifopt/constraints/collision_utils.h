@@ -51,7 +51,6 @@ void processInterpolatedCollisionResults(std::vector<tesseract_collision::Contac
                                          tesseract_collision::ContactResultMap& contact_results,
                                          const std::vector<std::string>& active_links,
                                          const TrajOptCollisionConfig& collision_config,
-                                         ContinuousCollisionEvaluatorType evaluator_type,
                                          double dt);
 
 /**
@@ -60,8 +59,7 @@ void processInterpolatedCollisionResults(std::vector<tesseract_collision::Contac
  * @param contact_results Contact results vector to process.
  */
 void removeInvalidContactResults(tesseract_collision::ContactResultVector& contact_results,
-                                 const Eigen::Vector3d& data,
-                                 ContinuousCollisionEvaluatorType evaluator_type);
+                                 const Eigen::Vector3d& data);
 
 /**
  * @brief This takes a vector of gradient results and outputs a single gradient using least squares
@@ -71,7 +69,6 @@ void removeInvalidContactResults(tesseract_collision::ContactResultVector& conta
  * internal to this function.
  * @param grad_results A vector of gradient results
  * @param dof The DOF of the system
- * @param num_eq The number equations
  * @return A gradient
  */
 Eigen::VectorXd getLeastSquaresGradient(std::vector<trajopt::GradientResults> grad_results, long dof, long num_eq);
@@ -129,8 +126,7 @@ GradientResults getGradient(const Eigen::VectorXd& dofvals0,
                             const Eigen::Vector3d& data,
                             const tesseract_kinematics::ForwardKinematics::ConstPtr& manip,
                             const tesseract_environment::AdjacencyMap::ConstPtr& adjacency_map,
-                            const Eigen::Isometry3d& world_to_base,
-                            bool isTimestep1);
+                            const Eigen::Isometry3d& world_to_base);
 
 void collisionsToDistances(const tesseract_collision::ContactResultVector& dist_results, std::vector<double>& dists);
 
