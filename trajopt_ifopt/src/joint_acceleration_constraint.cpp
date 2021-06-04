@@ -93,7 +93,7 @@ void JointAccelConstraint::FillJacobianBlock(std::string var_set, Jacobian& jac_
     if (var_set == position_vars_[static_cast<size_t>(i)]->GetName())
     {
       // Reserve enough room in the sparse matrix
-      jac_block.reserve(n_dof_ * 2);
+      jac_block.reserve(n_dof_ * 3);
 
       // jac block will be (n_vars-1)*n_dof x n_dof
       for (int j = 0; j < n_dof_; j++)
