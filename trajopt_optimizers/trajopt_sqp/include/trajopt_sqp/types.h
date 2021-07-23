@@ -32,6 +32,7 @@
 namespace trajopt_sqp
 {
 using SparseMatrix = Eigen::SparseMatrix<double, Eigen::RowMajor>;
+using SparseVector = Eigen::SparseVector<double, Eigen::RowMajor>;
 
 enum class ConstraintType
 {
@@ -43,7 +44,7 @@ enum class CostPenaltyType
 {
   SQUARED,
   ABSOLUTE,
-  HING
+  HINGE
 };
 
 /**
@@ -214,42 +215,6 @@ enum class SQPStatus
   QP_SOLVER_ERROR, /**< QP Solver failed */
   CALLBACK_STOPPED /**< Optimization stopped because callback returned false */
 };
-
-///**
-// * @brief An affine expression
-// */
-// struct AffExpr
-//{
-
-//  double constant{ 0 };
-//  Eigen::VectorXd coeffs;
-
-//  AffExpr() = default;
-//  ~AffExpr() = default;
-//  AffExpr(const AffExpr& other) = default;
-//  AffExpr& operator=(const AffExpr&) = default;
-//  AffExpr(AffExpr&&) = default;
-//  AffExpr& operator=(AffExpr&&) = default;
-
-//  /**
-//   * @brief Create aff expression from value and gradient of function
-//   * @param y The value of the function
-//   * @param dydx The gradient of the function
-//   * @param x The current values at which the y and dydx were calculated
-//   */
-//  explicit AffExpr(double y, const Eigen::Ref<const Eigen::VectorXd>& dydx, const Eigen::Ref<const Eigen::VectorXd>&
-//  x)
-//    : coeffs(dydx)
-//  {
-//    constant = y - coeffs.dot(x);
-//  }
-
-//  Eigen::Index size() const { return coeffs.size(); }
-//  double value(const Eigen::Ref<const Eigen::VectorXd>& x) const
-//  {
-//    return (constant + coeffs.dot(x));
-//  }
-//};
 
 }  // namespace trajopt_sqp
 

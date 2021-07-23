@@ -80,7 +80,11 @@ protected:
   ifopt::Composite constraints_;
   ifopt::Composite squared_costs_;
   ifopt::Composite abs_costs_;
-  ifopt::Composite hing_costs_;
+  ifopt::Composite hinge_costs_;
+  ifopt::Composite hinge_constraints_;
+  Eigen::VectorXd squared_costs_target_;
+  Eigen::VectorXd abs_costs_target_;
+
   std::vector<ConstraintType> constraint_types_;
 
   Eigen::Index num_qp_vars_;
@@ -95,7 +99,7 @@ protected:
 
   SparseMatrix hessian_;
   Eigen::VectorXd gradient_;
-  QuadExprs objective_nlp_;
+  QuadExprs squared_objective_nlp_;
 
   SparseMatrix constraint_matrix_;
   Eigen::VectorXd bounds_lower_;

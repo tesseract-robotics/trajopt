@@ -26,7 +26,7 @@ Eigen::VectorXd QuadExprs::values(const Eigen::Ref<Eigen::VectorXd>& x) const
   return result_quad;
 }
 
-AffExprs createAffExprs(const Eigen::Ref<Eigen::VectorXd>& func_error,
+AffExprs createAffExprs(const Eigen::Ref<const Eigen::VectorXd>& func_error,
                         const Eigen::Ref<const SparseMatrix>& func_jacobian,
                         const Eigen::Ref<const Eigen::VectorXd>& x)
 {
@@ -38,7 +38,7 @@ AffExprs createAffExprs(const Eigen::Ref<Eigen::VectorXd>& func_error,
   return aff_expr;
 }
 
-QuadExprs createQuadExprs(const Eigen::Ref<Eigen::VectorXd>& func_errors,
+QuadExprs createQuadExprs(const Eigen::Ref<const Eigen::VectorXd>& func_errors,
                           const Eigen::Ref<const SparseMatrix>& func_jacobian,
                           const std::vector<SparseMatrix>& func_hessians,
                           const Eigen::Ref<const Eigen::VectorXd>& x)
