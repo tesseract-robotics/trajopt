@@ -175,8 +175,20 @@ void OSQPModel::updateConstraints()
   {
     Eigen::Map<Eigen::VectorXd> l_vec(l_.data(), static_cast<Eigen::Index>(l_.size()));
     Eigen::Map<Eigen::VectorXd> u_vec(u_.data(), static_cast<Eigen::Index>(u_.size()));
-    std::cout << "OSQP Lower Bounds: " << l_vec.transpose() << std::endl;
-    std::cout << "OSQP Upper Bounds: " << u_vec.transpose() << std::endl;
+    std::cout << "OSQP Constraint Lower Bounds: " << l_vec.head(static_cast<Eigen::Index>(m)).transpose() << std::endl;
+    std::cout << "OSQP Constraint Upper Bounds: " << u_vec.head(static_cast<Eigen::Index>(m)).transpose() << std::endl;
+
+    std::vector<std::string> vars_names(vars_.size());
+    for (const auto& var : vars_)
+      vars_names[var.var_rep->index] = var.var_rep->name;
+
+    std::cout << "OSQP Variable Names: ";
+    for (const auto& var_name : vars_names)
+      std::cout << var_name << ",";
+    std::cout << std::endl;
+
+    std::cout << "OSQP Variable Lower Bounds: " << l_vec.tail(static_cast<Eigen::Index>(n)).transpose() << std::endl;
+    std::cout << "OSQP Variable Upper Bounds: " << u_vec.tail(static_cast<Eigen::Index>(n)).transpose() << std::endl;
   }
   osqp_data_.l = l_.data();
   osqp_data_.u = u_.data();

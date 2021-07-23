@@ -353,8 +353,7 @@ void TrustRegionSQPSolver::printStepInfo() const
               results_.box_size(0),
               std::string(27, ' ').c_str());
   std::printf("| %s |\n", std::string(88, '-').c_str());
-  std::printf("| %14s: %-4d | %14s: %-4d | %15s: %-3d | %14s: %-3d"
-              "d |\n",
+  std::printf("| %14s: %-4d | %14s: %-4d | %15s: %-3d | %14s: %-3d |\n",
               "Overall",
               results_.overall_iteration,
               "Convexify",
@@ -384,7 +383,7 @@ void TrustRegionSQPSolver::printStepInfo() const
     double approx_improve = results_.best_costs[cost_number] - results_.new_approx_costs[cost_number];
     double exact_improve = results_.best_costs[cost_number] - results_.new_costs[cost_number];
     if (fabs(approx_improve) > 1e-8)
-      std::printf("| %10s | %10.3e | %10.3e | %10.3e | %10.3e | %10.3e | %10.3e | %-15s \n",
+      std::printf("| %10s | %10.3e | %10.3e | %10.3e | %10.3e | %10.3e | %10.3e | %-15s\n",
                   "----------",
                   results_.best_costs[cost_number],
                   results_.new_costs[cost_number],
@@ -406,8 +405,8 @@ void TrustRegionSQPSolver::printStepInfo() const
   }
 
   // Sum Cost
-  std::printf("| %s | SUM COSTS\n", std::string(88, '-').c_str());
-  std::printf("| %10s | %10.3e | %10.3e | %10.3e | %10s | %10s | %10s |\n",
+  std::printf("| %s |\n", std::string(88, '=').c_str());
+  std::printf("| %10s | %10.3e | %10.3e | %10.3e | %10s | %10s | %10s | SUM COSTS\n",
               "----------",
               results_.best_costs.sum(),
               results_.new_costs.sum(),
@@ -453,8 +452,8 @@ void TrustRegionSQPSolver::printStepInfo() const
   }
 
   // Constraint
-  std::printf("| %s | SUM CONSTRAINTS\n", std::string(88, '-').c_str());
-  std::printf("| %10s | %10.3e | %10.3e | %10.3e | %10s | %10s | %10s |\n",
+  std::printf("| %s |\n", std::string(88, '=').c_str());
+  std::printf("| %10s | %10.3e | %10.3e | %10.3e | %10s | %10s | %10s | SUM CONSTRAINTS\n",
               "----------",
               results_.best_constraint_violations.sum(),
               results_.new_constraint_violations.sum(),

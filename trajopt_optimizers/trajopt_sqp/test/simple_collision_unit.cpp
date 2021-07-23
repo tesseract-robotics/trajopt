@@ -247,23 +247,30 @@ void runSimpleCollisionTest(trajopt_sqp::QPProblem::Ptr qp_problem, Environment:
   auto adj_map = std::make_shared<tesseract_environment::AdjacencyMap>(
       env->getSceneGraph(), kin->getActiveLinkNames(), env->getCurrentState()->link_transforms);
 
-  double margin_coeff = 10;
-  double margin = 0.2;
-  auto trajopt_collision_config = std::make_shared<trajopt_ifopt::TrajOptCollisionConfig>(margin, margin_coeff);
-  trajopt_collision_config->collision_margin_buffer = 0.05;
+  auto trajopt_collision_cnt_config = std::make_shared<trajopt_ifopt::TrajOptCollisionConfig>(0.2, 1);
+  trajopt_collision_cnt_config->collision_margin_buffer = 0.05;
 
-  auto collision_cache = std::make_shared<trajopt_ifopt::CollisionCache>(100);
-  trajopt_ifopt::DiscreteCollisionEvaluator::Ptr collision_evaluator =
+  auto collision_cnt_cache = std::make_shared<trajopt_ifopt::CollisionCache>(100);
+  trajopt_ifopt::DiscreteCollisionEvaluator::Ptr collision_cnt_evaluator =
       std::make_shared<trajopt_ifopt::SingleTimestepCollisionEvaluator>(
-          collision_cache, kin, env, adj_map, Eigen::Isometry3d::Identity(), trajopt_collision_config);
+          collision_cnt_cache, kin, env, adj_map, Eigen::Isometry3d::Identity(), trajopt_collision_cnt_config);
+  auto collision_cnt = std::make_shared<SimpleCollisionConstraintIfopt>(collision_cnt_evaluator, vars[0]);
+  qp_problem->addConstraintSet(collision_cnt);
 
-  auto cnt = std::make_shared<SimpleCollisionConstraintIfopt>(collision_evaluator, vars[0]);
-  qp_problem->addConstraintSet(cnt);
+  auto trajopt_collision_cost_config = std::make_shared<trajopt_ifopt::TrajOptCollisionConfig>(0.3, 1);
+  trajopt_collision_cost_config->collision_margin_buffer = 0.05;
+
+  auto collision_cost_cache = std::make_shared<trajopt_ifopt::CollisionCache>(100);
+  trajopt_ifopt::DiscreteCollisionEvaluator::Ptr collision_cost_evaluator =
+      std::make_shared<trajopt_ifopt::SingleTimestepCollisionEvaluator>(
+          collision_cost_cache, kin, env, adj_map, Eigen::Isometry3d::Identity(), trajopt_collision_cost_config);
+  auto collision_cost = std::make_shared<SimpleCollisionConstraintIfopt>(collision_cost_evaluator, vars[0]);
+  qp_problem->addCostSet(collision_cost, trajopt_sqp::CostPenaltyType::HINGE);
 
   qp_problem->setup();
   qp_problem->print();
 
-  auto error_calculator = [&](const Eigen::Ref<const Eigen::VectorXd>& x) { return cnt->CalcValues(x); };
+  auto error_calculator = [&](const Eigen::Ref<const Eigen::VectorXd>& x) { return collision_cnt->CalcValues(x); };
   trajopt_ifopt::SparseMatrix num_jac_block = trajopt_ifopt::calcForwardNumJac(error_calculator, positions[0], 1e-4);
   std::cout << "Numerical Jacobian: \n" << num_jac_block << std::endl;
 
@@ -290,25 +297,25 @@ void runSimpleCollisionTest(trajopt_sqp::QPProblem::Ptr qp_problem, Environment:
   Eigen::Map<tesseract_common::TrajArray> results(x.data(), 1, 2);
 
   bool found = checkTrajectory(
-      collisions, *manager, *state_solver, forward_kinematics->getJointNames(), inputs, *trajopt_collision_config);
+      collisions, *manager, *state_solver, forward_kinematics->getJointNames(), inputs, *trajopt_collision_cnt_config);
 
   EXPECT_TRUE(found);
   CONSOLE_BRIDGE_logWarn((found) ? ("Initial trajectory is in collision") : ("Initial trajectory is collision free"));
 
   collisions.clear();
   found = checkTrajectory(
-      collisions, *manager, *state_solver, forward_kinematics->getJointNames(), results, *trajopt_collision_config);
+      collisions, *manager, *state_solver, forward_kinematics->getJointNames(), results, *trajopt_collision_cnt_config);
 
   EXPECT_FALSE(found);
   CONSOLE_BRIDGE_logWarn((found) ? ("Final trajectory is in collision") : ("Final trajectory is collision free"));
 }
 
-TEST_F(SimpleCollisionTest, spheres_ifopt_problem)  // NOLINT
-{
-  CONSOLE_BRIDGE_logDebug("SimpleCollisionTest, spheres_ifopt_problem");
-  auto qp_problem = std::make_shared<trajopt_sqp::IfoptQPProblem>();
-  runSimpleCollisionTest(qp_problem, env);
-}
+// TEST_F(SimpleCollisionTest, spheres_ifopt_problem)  // NOLINT
+//{
+//  CONSOLE_BRIDGE_logDebug("SimpleCollisionTest, spheres_ifopt_problem");
+//  auto qp_problem = std::make_shared<trajopt_sqp::IfoptQPProblem>();
+//  runSimpleCollisionTest(qp_problem, env);
+//}
 
 TEST_F(SimpleCollisionTest, spheres_trajopt_problem)  // NOLINT
 {

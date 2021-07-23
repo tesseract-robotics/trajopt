@@ -48,6 +48,25 @@ TEST(ExpressionsTest, AffExprs)  // NOLINT
   EXPECT_NEAR(aff_exprs.values(x)(0), e(0), 1e-8);
 }
 
+TEST(ExpressionsTest, AffExprsWithWeights)  // NOLINT
+{
+  CONSOLE_BRIDGE_logDebug("ExpressionsTest, AffExprsWithWeights");
+  // f = (x(0) - x(1))^2
+  // weight = 5
+  double w = 5;
+  Eigen::Vector2d x(5, 1);
+  Eigen::VectorXd e(1);
+  e(0) = 16;
+  Eigen::Vector2d J(8, -8);
+
+  AffExprs aff_exprs1 = trajopt_sqp::createAffExprs(w * e, (w * J).transpose().sparseView(), x);
+  AffExprs aff_exprs2 = trajopt_sqp::createAffExprs(e, J.transpose().sparseView(), x);
+  EXPECT_NEAR(aff_exprs1.constants(0), w * aff_exprs2.constants(0), 1e-8);
+  EXPECT_NEAR(aff_exprs1.linear_coeffs.coeff(0, 0), w * aff_exprs2.linear_coeffs.coeff(0, 0), 1e-8);
+  EXPECT_NEAR(aff_exprs1.linear_coeffs.coeff(0, 1), w * aff_exprs2.linear_coeffs.coeff(0, 0), 1e-8);
+  EXPECT_NEAR(aff_exprs1.values(x)(0), w * e(0), 1e-8);
+}
+
 TEST(ExpressionsTest, QuadExprs)  // NOLINT
 {
   CONSOLE_BRIDGE_logDebug("ExpressionsTest, QuadExprs");

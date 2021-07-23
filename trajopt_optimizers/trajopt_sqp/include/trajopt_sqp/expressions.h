@@ -76,7 +76,7 @@ struct QuadExprs : Exprs
  * @param x The value used to calculate the error and jacobian
  * @return A linear approximation
  */
-AffExprs createAffExprs(const Eigen::Ref<Eigen::VectorXd>& func_error,
+AffExprs createAffExprs(const Eigen::Ref<const Eigen::VectorXd>& func_error,
                         const Eigen::Ref<const SparseMatrix>& func_jacobian,
                         const Eigen::Ref<const Eigen::VectorXd>& x);
 
@@ -102,7 +102,7 @@ AffExprs createAffExprs(const Eigen::Ref<Eigen::VectorXd>& func_error,
  * @param x The value used to calculate the error, jacobian and hessian
  * @return A quadratic approximation
  */
-QuadExprs createQuadExprs(const Eigen::Ref<Eigen::VectorXd>& func_errors,
+QuadExprs createQuadExprs(const Eigen::Ref<const Eigen::VectorXd>& func_errors,
                           const Eigen::Ref<const SparseMatrix>& func_jacobian,
                           const std::vector<SparseMatrix>& func_hessians,
                           const Eigen::Ref<const Eigen::VectorXd>& x);

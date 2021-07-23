@@ -47,7 +47,7 @@ public:
     ResourceLocator::Ptr locator = std::make_shared<SimpleResourceLocator>(locateResource);
     EXPECT_TRUE(env_->init<OFKTStateSolver>(urdf_file, srdf_file, locator));
 
-    gLogLevel = util::LevelError;
+    gLogLevel = util::LevelDebug;
 
     // Create plotting tool
     //    plotter_.reset(new tesseract_ros::ROSBasicPlotting(env_));
@@ -72,7 +72,7 @@ TEST_F(SimpleCollisionTest, spheres)  // NOLINT
 
   std::vector<ContactResultMap> collisions;
   tesseract_environment::StateSolver::Ptr state_solver = prob->GetEnv()->getStateSolver();
-  ContinuousContactManager::Ptr manager = prob->GetEnv()->getContinuousContactManager();
+  DiscreteContactManager::Ptr manager = prob->GetEnv()->getDiscreteContactManager();
   AdjacencyMap::Ptr adjacency_map = std::make_shared<AdjacencyMap>(
       env_->getSceneGraph(), prob->GetKin()->getActiveLinkNames(), prob->GetEnv()->getCurrentState()->link_transforms);
 
@@ -81,7 +81,7 @@ TEST_F(SimpleCollisionTest, spheres)  // NOLINT
 
   collisions.clear();
   tesseract_collision::CollisionCheckConfig config;
-  config.type = tesseract_collision::CollisionEvaluatorType::CONTINUOUS;
+  config.type = tesseract_collision::CollisionEvaluatorType::DISCRETE;
   bool found = checkTrajectory(
       collisions, *manager, *state_solver, prob->GetKin()->getJointNames(), prob->GetInitTraj(), config);
 

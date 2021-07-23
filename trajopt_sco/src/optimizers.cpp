@@ -370,14 +370,14 @@ void BasicTrustRegionSQPResults::print() const
     }
   }
   std::printf("| %s |\n", std::string(75, '=').c_str());
-  std::printf("%15s | %10s | %10.3e | %10.3e | %10.3e | %10.3e | %10.3e\n",
-              "TOTAL",
+  std::printf("| %10s | %10.3e | %10.3e | %10.3e | %10.3e | %10.3e | %15s\n",
               "----------",
               old_merit,
               new_merit,
               approx_merit_improve,
               exact_merit_improve,
-              merit_improve_ratio);
+              merit_improve_ratio,
+              "TOTAL");
 }
 
 void BasicTrustRegionSQPResults::writeSolver(std::FILE* stream, bool header) const

@@ -35,6 +35,58 @@ TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace trajopt_ifopt
 {
+inline bool isFinite(double value) { return std::isfinite(value) && (value < ifopt::inf) && (value > -ifopt::inf); }
+
+/**
+ * @brief Check if bounds are equality where upper and lower are finite and equal
+ * @param bounds The bounds to check
+ * @return True if equality bounds, otherwise false
+ */
+inline bool isBoundsEquality(const ifopt::Bounds& bounds)
+{
+  return isFinite(bounds.lower_) && isFinite(bounds.upper_) && (std::abs(bounds.upper_ - bounds.lower_) < 1e-8);
+}
+
+/**
+ * @brief Check if bounds are [finite, ifopt::inf]
+ * @param bounds The bounds to check
+ * @return True if bounds are [finite, ifopt::inf], otherwise false
+ */
+inline bool isBoundsGreaterFinite(const ifopt::Bounds& bounds)
+{
+  return (isFinite(bounds.lower_) && !isFinite(bounds.upper_));
+}
+
+/**
+ * @brief Check if bounds are [-ifopt::inf, finite]
+ * @param bounds The bounds to check
+ * @return True if bounds are [-ifopt::inf, finite], otherwise false
+ */
+inline bool isBoundsSmallerFinite(const ifopt::Bounds& bounds)
+{
+  return (std::isfinite(bounds.upper_) && !isFinite(bounds.lower_));
+}
+
+/**
+ * @brief Check if bounds are [finite, ifopt::inf] or [-ifopt::inf, finite]
+ * @param bounds The bounds to check
+ * @return True if bounds are [finite, ifopt::inf] or [-ifopt::inf, finite], otherwise false
+ */
+inline bool isBoundsInEquality(const ifopt::Bounds& bounds)
+{
+  return isBoundsGreaterFinite(bounds) || isBoundsSmallerFinite(bounds);
+}
+
+/**
+ * @brief Check if bounds are [finite, finite]
+ * @param bounds The bounds to check
+ * @return True if bounds are [finite, finite], otherwise false
+ */
+inline bool isBoundsFiniteFinite(const ifopt::Bounds& bounds)
+{
+  return (isFinite(bounds.upper_) && isFinite(bounds.upper_));
+}
+
 /**
  * @brief Converts a MatrixX2d (e.g. from forward_kinematics->getLimits()) to a vector of ifopt Bounds
  * @param limits MatrixX2d of bounds. Column 0 will be lower bound. Column 1 will be upper bound

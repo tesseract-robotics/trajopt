@@ -3,11 +3,22 @@
     "n_steps" : 1,
     "manip" : "manipulator"
   },
+  "costs" : [
+  {
+    "type" : "collision",
+    "params" : {
+      "coeffs" : [1],
+      "dist_pen" : [0.3],
+      "evaluator_type" : 0,
+      "longest_valid_segment_length" : 0.05
+    }
+  }
+  ],
   "constraints" : [
   {
     "type" : "collision",
     "params" : {
-      "coeffs" : [10],
+      "coeffs" : [1],
       "dist_pen" : [0.2],
       "evaluator_type" : 0,
       "longest_valid_segment_length" : 0.05
