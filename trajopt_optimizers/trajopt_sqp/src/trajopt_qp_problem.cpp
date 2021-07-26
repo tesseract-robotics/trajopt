@@ -649,9 +649,7 @@ Eigen::VectorXd TrajOptQPProblem::evaluateConvexCosts(const Eigen::Ref<const Eig
     auto hinge_cnt_jac = constraint_matrix_.block(0, 0, hinge_constraints_.GetRows(), getNumNLPVars());
 
     Eigen::VectorXd hinge_convex_value = hinge_cnt_constant + hinge_cnt_jac * var_block;
-    Eigen::VectorXd hinge_cost = trajopt_ifopt::calcBoundsErrors(
-        hinge_convex_value,
-        hinge_costs_.GetBounds());  // @todo Should this be .cwiseMax(0)? Need to track original version of trajopt
+    Eigen::VectorXd hinge_cost = trajopt_ifopt::calcBoundsViolations(hinge_convex_value, hinge_costs_.GetBounds());
 
     costs.middleRows(squared_costs_.GetRows(), hinge_costs_.GetRows()) = hinge_cost;
     assert(!(costs.middleRows(squared_costs_.GetRows(), hinge_costs_.GetRows()).array() < 0).any());
@@ -663,9 +661,7 @@ Eigen::VectorXd TrajOptQPProblem::evaluateConvexCosts(const Eigen::Ref<const Eig
     auto abs_cnt_jac = constraint_matrix_.block(hinge_costs_.GetRows(), 0, abs_constraints_.GetRows(), getNumNLPVars());
 
     Eigen::VectorXd abs_convex_value = abs_cnt_constant + abs_cnt_jac * var_block;
-    Eigen::VectorXd abs_cost =
-        trajopt_ifopt::calcBoundsErrors(abs_convex_value, abs_costs_.GetBounds()).cwiseAbs();  // @todo Should this be
-                                                                                               // .cwiseAbs?
+    Eigen::VectorXd abs_cost = trajopt_ifopt::calcBoundsViolations(abs_convex_value, abs_costs_.GetBounds()).cwiseAbs();
 
     costs.middleRows(squared_costs_.GetRows() + hinge_costs_.GetRows(), abs_costs_.GetRows()) = abs_cost;
     assert(
@@ -691,7 +687,8 @@ double TrajOptQPProblem::evaluateTotalExactCost(const Eigen::Ref<const Eigen::Ve
 
   if (abs_costs_.GetRows() > 0)
   {
-    Eigen::VectorXd error = trajopt_ifopt::calcBoundsViolations(abs_costs_.GetValues(), abs_costs_.GetBounds());
+    Eigen::VectorXd error =
+        trajopt_ifopt::calcBoundsViolations(abs_costs_.GetValues(), abs_costs_.GetBounds()).cwiseAbs();
     assert((error.array() < 0).any() == false);
     g += error.sum();
   }
