@@ -267,6 +267,9 @@ void runSimpleCollisionTest(trajopt_sqp::QPProblem::Ptr qp_problem, Environment:
   auto collision_cost = std::make_shared<SimpleCollisionConstraintIfopt>(collision_cost_evaluator, vars[0]);
   qp_problem->addCostSet(collision_cost, trajopt_sqp::CostPenaltyType::HINGE);
 
+  auto jp_cost = std::make_shared<trajopt_ifopt::JointPosConstraint>(Eigen::Vector2d(0, 0), vars);
+  qp_problem->addCostSet(jp_cost, trajopt_sqp::CostPenaltyType::SQUARED);
+
   qp_problem->setup();
   qp_problem->print();
 
@@ -319,6 +322,12 @@ void runSimpleCollisionTest(trajopt_sqp::QPProblem::Ptr qp_problem, Environment:
 
 TEST_F(SimpleCollisionTest, spheres_trajopt_problem)  // NOLINT
 {
+  /**
+   * @todo This test should produce the same table for cost and constraints but they do not.
+   * Though this is the same as the older trajopt, it should be corrected. I believe there
+   * is something different in how we calculate the merit for constraints compared to costs.
+   * Constraints use violation versus cost uses the error.
+   */
   CONSOLE_BRIDGE_logDebug("SimpleCollisionTest, spheres_trajopt_problem");
   auto qp_problem = std::make_shared<trajopt_sqp::TrajOptQPProblem>();
   runSimpleCollisionTest(qp_problem, env);

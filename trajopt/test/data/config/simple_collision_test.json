@@ -12,6 +12,16 @@
       "evaluator_type" : 0,
       "longest_valid_segment_length" : 0.05
     }
+  },
+  {
+    "type" : "joint_pos",
+    "name" : "joint0",
+    "params" : {
+       "coeffs": [1, 1],
+       "targets" : [0.0, 0.0],
+       "first_step": 0,
+       "last_step": 0
+    }
   }
   ],
   "constraints" : [

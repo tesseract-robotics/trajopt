@@ -79,11 +79,11 @@ protected:
   ifopt::Composite::Ptr variables_;
   ifopt::Composite constraints_;
   ifopt::Composite squared_costs_;
-  ifopt::Composite abs_costs_;
   ifopt::Composite hinge_costs_;
   ifopt::Composite hinge_constraints_;
+  ifopt::Composite abs_costs_;
+  ifopt::Composite abs_constraints_;
   Eigen::VectorXd squared_costs_target_;
-  Eigen::VectorXd abs_costs_target_;
 
   std::vector<ConstraintType> constraint_types_;
 
