@@ -32,7 +32,7 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <tesseract_environment/core/types.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
-#include <trajopt_ifopt/constraints/collision_types.h>
+#include <trajopt_ifopt/constraints/collision/collision_types.h>
 
 namespace trajopt_ifopt
 {

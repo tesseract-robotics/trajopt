@@ -37,7 +37,7 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <ifopt/ipopt_solver.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
-#include <trajopt_ifopt/constraints/discrete_collision_constraint.h>
+#include <trajopt_ifopt/constraints/collision/discrete_collision_constraint.h>
 #include "trajopt_test_utils.hpp"
 
 using namespace trajopt_ifopt;

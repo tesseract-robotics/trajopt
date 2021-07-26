@@ -32,7 +32,7 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <tesseract_visualization/visualization.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
-#include <trajopt_ifopt/constraints/discrete_collision_constraint.h>
+#include <trajopt_ifopt/constraints/collision/discrete_collision_constraint.h>
 #include <trajopt_sqp/sqp_callback.h>
 #include <trajopt_sqp/trust_region_sqp_solver.h>
 #include <trajopt_sqp/types.h>

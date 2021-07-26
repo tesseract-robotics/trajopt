@@ -24,7 +24,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <trajopt_ifopt/constraints/continuous_collision_constraint.h>
+#include <trajopt_ifopt/constraints/collision/continuous_collision_constraint.h>
 
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <tesseract_kinematics/core/utils.h>

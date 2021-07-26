@@ -35,7 +35,7 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <tesseract_kinematics/core/forward_kinematics.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
-#include <trajopt_ifopt/constraints/collision_types.h>
+#include <trajopt_ifopt/constraints/collision/collision_types.h>
 #include <trajopt_ifopt/variable_sets/joint_position_variable.h>
 #include <trajopt/cache.hxx>
 

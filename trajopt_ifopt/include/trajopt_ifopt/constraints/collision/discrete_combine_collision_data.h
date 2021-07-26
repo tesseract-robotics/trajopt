@@ -26,7 +26,7 @@
 #ifndef TRAJOPT_IFOPT_DISCRETE_COMBINE_COLLISION_DATA_H
 #define TRAJOPT_IFOPT_DISCRETE_COMBINE_COLLISION_DATA_H
 
-#include <trajopt_ifopt/constraints/collision_types.h>
+#include <trajopt_ifopt/constraints/collision/collision_types.h>
 
 namespace trajopt_ifopt
 {

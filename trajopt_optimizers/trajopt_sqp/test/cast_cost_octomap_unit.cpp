@@ -38,8 +38,8 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <tesseract_scene_graph/utils.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
-#include <trajopt_ifopt/constraints/continuous_collision_constraint.h>
-#include <trajopt_ifopt/constraints/continuous_collision_evaluators.h>
+#include <trajopt_ifopt/constraints/collision/continuous_collision_constraint.h>
+#include <trajopt_ifopt/constraints/collision/continuous_collision_evaluators.h>
 #include <trajopt_ifopt/constraints/joint_position_constraint.h>
 #include <trajopt_ifopt/costs/squared_cost.h>
 

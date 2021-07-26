@@ -23,8 +23,8 @@
  * limitations under the License.
  */
 
-#include <trajopt_ifopt/constraints/continuous_collision_constraint.h>
-#include <trajopt_ifopt/constraints/collision_utils.h>
+#include <trajopt_ifopt/constraints/collision/continuous_collision_constraint.h>
+#include <trajopt_ifopt/constraints/collision/collision_utils.h>
 
 namespace trajopt_ifopt
 {

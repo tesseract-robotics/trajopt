@@ -33,20 +33,20 @@ trajopt_variables()
 ###########
 
 set(TRAJOPT_IFOPT_SOURCE_FILES
-    src/absolute_cost.cpp
-    src/cartesian_position_constraint.cpp
-    src/collision_types.cpp
-    src/collision_utils.cpp
-    src/discrete_collision_constraint.cpp
-    src/discrete_collision_evaluators.cpp
-    src/discrete_combine_collision_data.cpp
-    src/continuous_collision_constraint.cpp
-    src/continuous_collision_evaluators.cpp
-    src/continuous_combine_collision_data.cpp
-    src/inverse_kinematics_constraint.cpp
-    src/joint_position_constraint.cpp
-    src/joint_velocity_constraint.cpp
-    src/squared_cost.cpp
+    src/costs/absolute_cost.cpp
+    src/costs/squared_cost.cpp
+    src/constraints/cartesian_position_constraint.cpp
+    src/constraints/inverse_kinematics_constraint.cpp
+    src/constraints/joint_position_constraint.cpp
+    src/constraints/joint_velocity_constraint.cpp
+    src/constraints/collision/collision_types.cpp
+    src/constraints/collision/collision_utils.cpp
+    src/constraints/collision/discrete_collision_constraint.cpp
+    src/constraints/collision/discrete_collision_evaluators.cpp
+    src/constraints/collision/discrete_combine_collision_data.cpp
+    src/constraints/collision/continuous_collision_constraint.cpp
+    src/constraints/collision/continuous_collision_evaluators.cpp
+    src/constraints/collision/continuous_combine_collision_data.cpp
 )
 
 add_library(${PROJECT_NAME} ${TRAJOPT_IFOPT_SOURCE_FILES})
