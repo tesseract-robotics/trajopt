@@ -24,8 +24,8 @@
  * limitations under the License.
  */
 
-#include <trajopt_ifopt/constraints/continuous_combine_collision_data.h>
-#include <trajopt_ifopt/constraints/collision_utils.h>
+#include <trajopt_ifopt/constraints/collision/continuous_combine_collision_data.h>
+#include <trajopt_ifopt/constraints/collision/collision_utils.h>
 
 namespace trajopt_ifopt
 {

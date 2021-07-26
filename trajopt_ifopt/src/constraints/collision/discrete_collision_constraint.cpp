@@ -24,14 +24,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <trajopt_ifopt/constraints/discrete_collision_constraint.h>
 
+#include <trajopt_utils/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <tesseract_kinematics/core/utils.h>
 #include <console_bridge/console.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
-#include <trajopt_ifopt/constraints/collision_utils.h>
+#include <trajopt_ifopt/constraints/collision/discrete_collision_constraint.h>
+#include <trajopt_ifopt/constraints/collision/collision_utils.h>
 #include <trajopt_ifopt/utils/numeric_differentiation.h>
 
 namespace trajopt_ifopt

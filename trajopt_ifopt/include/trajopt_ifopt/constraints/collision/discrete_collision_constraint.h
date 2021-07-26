@@ -33,8 +33,8 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <ifopt/constraint_set.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
-#include <trajopt_ifopt/constraints/discrete_collision_evaluators.h>
-#include <trajopt_ifopt/constraints/discrete_combine_collision_data.h>
+#include <trajopt_ifopt/constraints/collision/discrete_collision_evaluators.h>
+#include <trajopt_ifopt/constraints/collision/discrete_combine_collision_data.h>
 #include <trajopt_ifopt/variable_sets/joint_position_variable.h>
 
 namespace trajopt_ifopt

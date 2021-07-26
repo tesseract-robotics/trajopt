@@ -42,8 +42,8 @@ TRAJOPT_IGNORE_WARNINGS_POP
 #include <trajopt_utils/eigen_conversions.hpp>
 #include <trajopt_utils/logging.hpp>
 #include <trajopt_utils/stl_to_string.hpp>
-#include <trajopt_ifopt/constraints/continuous_collision_constraint.h>
-#include <trajopt_ifopt/constraints/continuous_collision_evaluators.h>
+#include <trajopt_ifopt/constraints/collision/continuous_collision_constraint.h>
+#include <trajopt_ifopt/constraints/collision/continuous_collision_evaluators.h>
 #include <trajopt_ifopt/constraints/joint_position_constraint.h>
 #include <trajopt_ifopt/utils/numeric_differentiation.h>
 

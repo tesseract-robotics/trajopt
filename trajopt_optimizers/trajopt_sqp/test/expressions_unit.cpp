@@ -63,7 +63,7 @@ TEST(ExpressionsTest, AffExprsWithWeights)  // NOLINT
   AffExprs aff_exprs2 = trajopt_sqp::createAffExprs(e, J.transpose().sparseView(), x);
   EXPECT_NEAR(aff_exprs1.constants(0), w * aff_exprs2.constants(0), 1e-8);
   EXPECT_NEAR(aff_exprs1.linear_coeffs.coeff(0, 0), w * aff_exprs2.linear_coeffs.coeff(0, 0), 1e-8);
-  EXPECT_NEAR(aff_exprs1.linear_coeffs.coeff(0, 1), w * aff_exprs2.linear_coeffs.coeff(0, 0), 1e-8);
+  EXPECT_NEAR(aff_exprs1.linear_coeffs.coeff(0, 1), w * aff_exprs2.linear_coeffs.coeff(0, 1), 1e-8);
   EXPECT_NEAR(aff_exprs1.values(x)(0), w * e(0), 1e-8);
 }
 
