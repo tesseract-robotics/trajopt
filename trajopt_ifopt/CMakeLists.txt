@@ -47,6 +47,8 @@ set(TRAJOPT_IFOPT_SOURCE_FILES
     src/constraints/collision/continuous_collision_constraint.cpp
     src/constraints/collision/continuous_collision_evaluators.cpp
     src/constraints/collision/continuous_combine_collision_data.cpp
+    src/constraints/collision_v2/discrete_collision_constraint_v2.cpp
+    src/constraints/collision_v2/discrete_collision_constraint_v3.cpp
 )
 
 add_library(${PROJECT_NAME} ${TRAJOPT_IFOPT_SOURCE_FILES})
