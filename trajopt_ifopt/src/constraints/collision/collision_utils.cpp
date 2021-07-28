@@ -1033,6 +1033,7 @@ Eigen::VectorXd getWeightedAvgGradientPost(const GradientResultsSet& grad_result
       {
         double w = ((std::max(grad.error_with_buffer, 0.0) * grad.data[2]) /
                     grad_results_set_post.max_weighted_error_with_buffer);
+        assert(!(w < 0));
         total_weight += w;
         grad_vec += w * grad.data[2] * (grad.gradients[i].scale * grad.gradients[i].gradient);
       }

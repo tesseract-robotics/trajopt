@@ -254,6 +254,7 @@ struct CollisionCacheData
 
   tesseract_collision::ContactResultMap contact_results_map;
   tesseract_collision::ContactResultVector contact_results_vector;
+  std::map<std::pair<std::string, std::string>, GradientResultsSet> gradient_results_set_map;
   GradientResultsSet gradient_results_set;
 };
 
