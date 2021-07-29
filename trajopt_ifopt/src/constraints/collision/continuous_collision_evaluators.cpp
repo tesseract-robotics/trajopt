@@ -88,14 +88,32 @@ LVSContinuousCollisionEvaluator::CalcCollisionData(const Eigen::Ref<const Eigen:
   data->gradient_results_set.results.reserve(data->contact_results_vector.size());
   data->gradient_results_set.dof = static_cast<int>(dof_vals0.size());
   data->gradient_results_set.collision_margin_buffer = collision_config_->collision_margin_buffer;
-  for (tesseract_collision::ContactResult& dist_result : data->contact_results_vector)
+  //  for (tesseract_collision::ContactResult& dist_result : data->contact_results_vector)
+  //  {
+  //    GradientResults result = CalcGradientData(dof_vals0, dof_vals1, dist_result);
+  //    data->gradient_results_set.num_equations += (result.gradients[0].has_gradient +
+  //    result.gradients[1].has_gradient); data->gradient_results_set.cc_num_equations +=
+  //        (result.cc_gradients[0].has_gradient + result.cc_gradients[1].has_gradient);
+  //    data->gradient_results_set.add(result);
+  //  }
+  for (const auto& pair : data->contact_results_map)
   {
-    GradientResults result = CalcGradientData(dof_vals0, dof_vals1, dist_result);
-    data->gradient_results_set.num_equations += (result.gradients[0].has_gradient + result.gradients[1].has_gradient);
-    data->gradient_results_set.cc_num_equations +=
-        (result.cc_gradients[0].has_gradient + result.cc_gradients[1].has_gradient);
-    data->gradient_results_set.add(result);
+    GradientResultsSet grs;
+    grs.results.reserve(pair.second.size());
+    for (const tesseract_collision::ContactResult& dist_result : pair.second)
+    {
+      GradientResults result = CalcGradientData(dof_vals0, dof_vals1, dist_result);
+      grs.dof = static_cast<int>(dof_vals0.size());
+      grs.collision_margin_buffer = collision_config_->collision_margin_buffer;
+      grs.num_equations += (result.gradients[0].has_gradient + result.gradients[1].has_gradient);
+      grs.add(result);
+
+      data->gradient_results_set.num_equations += (result.gradients[0].has_gradient + result.gradients[1].has_gradient);
+      data->gradient_results_set.add(result);
+    }
+    data->gradient_results_set_map[pair.first] = grs;
   }
+
   collision_cache_->put(key, data);
   return data;
 }
@@ -253,14 +271,32 @@ LVSDiscreteCollisionEvaluator::CalcCollisionData(const Eigen::Ref<const Eigen::V
   data->gradient_results_set.results.reserve(data->contact_results_vector.size());
   data->gradient_results_set.dof = static_cast<int>(dof_vals0.size());
   data->gradient_results_set.collision_margin_buffer = collision_config_->collision_margin_buffer;
-  for (tesseract_collision::ContactResult& dist_result : data->contact_results_vector)
+  //  for (tesseract_collision::ContactResult& dist_result : data->contact_results_vector)
+  //  {
+  //    GradientResults result = CalcGradientData(dof_vals0, dof_vals1, dist_result);
+  //    data->gradient_results_set.num_equations += (result.gradients[0].has_gradient +
+  //    result.gradients[1].has_gradient); data->gradient_results_set.cc_num_equations +=
+  //        (result.cc_gradients[0].has_gradient + result.cc_gradients[1].has_gradient);
+  //    data->gradient_results_set.add(result);
+  //  }
+  for (const auto& pair : data->contact_results_map)
   {
-    GradientResults result = CalcGradientData(dof_vals0, dof_vals1, dist_result);
-    data->gradient_results_set.num_equations += (result.gradients[0].has_gradient + result.gradients[1].has_gradient);
-    data->gradient_results_set.cc_num_equations +=
-        (result.cc_gradients[0].has_gradient + result.cc_gradients[1].has_gradient);
-    data->gradient_results_set.add(result);
+    GradientResultsSet grs;
+    grs.results.reserve(pair.second.size());
+    for (const tesseract_collision::ContactResult& dist_result : pair.second)
+    {
+      GradientResults result = CalcGradientData(dof_vals0, dof_vals1, dist_result);
+      grs.dof = static_cast<int>(dof_vals0.size());
+      grs.collision_margin_buffer = collision_config_->collision_margin_buffer;
+      grs.num_equations += (result.gradients[0].has_gradient + result.gradients[1].has_gradient);
+      grs.add(result);
+
+      data->gradient_results_set.num_equations += (result.gradients[0].has_gradient + result.gradients[1].has_gradient);
+      data->gradient_results_set.add(result);
+    }
+    data->gradient_results_set_map[pair.first] = grs;
   }
+
   collision_cache_->put(key, data);
   return data;
 }

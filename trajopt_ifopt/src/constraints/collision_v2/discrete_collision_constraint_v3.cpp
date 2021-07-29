@@ -39,20 +39,19 @@ namespace trajopt_ifopt
 {
 DiscreteCollisionConstraintIfoptV3::DiscreteCollisionConstraintIfoptV3(
     DiscreteCollisionEvaluator::Ptr collision_evaluator,
-    std::vector<tesseract_collision::ObjectPairKey> collision_object_pairs,
-    int max_num_cnt,
     JointPosition::ConstPtr position_var,
+    int max_num_cnt,
+    const std::vector<tesseract_collision::ObjectPairKey>& collision_object_pairs,
     const std::string& name)
   : ifopt::ConstraintSet(std::min(static_cast<int>(collision_object_pairs.size()), max_num_cnt), name)
   , position_var_(std::move(position_var))
   , collision_evaluator_(std::move(collision_evaluator))
-  , collision_object_pairs_(std::move(collision_object_pairs))
 {
   // Set n_dof_ for convenience
   n_dof_ = position_var_->GetRows();
   assert(n_dof_ > 0);
 
-  bounds_ = std::vector<ifopt::Bounds>(std::min(collision_object_pairs_.size(), static_cast<std::size_t>(max_num_cnt)),
+  bounds_ = std::vector<ifopt::Bounds>(std::min(collision_object_pairs.size(), static_cast<std::size_t>(max_num_cnt)),
                                        ifopt::BoundSmallerZero);
 }
 

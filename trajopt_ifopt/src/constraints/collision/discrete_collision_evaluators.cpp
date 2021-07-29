@@ -101,13 +101,11 @@ SingleTimestepCollisionEvaluator::CalcCollisions(const Eigen::Ref<const Eigen::V
       grs.num_equations += (result.gradients[0].has_gradient + result.gradients[1].has_gradient);
       grs.add(result);
 
-      data->gradient_results_set_map[pair.first] = grs;
-
       data->gradient_results_set.num_equations += (result.gradients[0].has_gradient + result.gradients[1].has_gradient);
       data->gradient_results_set.add(result);
     }
 
-    //    collision_config_->collision_margin_data.getPairCollisionMargin(pair.first.first, pair.first.second);
+    data->gradient_results_set_map[pair.first] = grs;
   }
 
   collision_cache_->put(key, data);

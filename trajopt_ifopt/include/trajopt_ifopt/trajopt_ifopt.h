@@ -31,6 +31,7 @@
 #include <trajopt_ifopt/constraints/collision/collision_utils.h>
 #include <trajopt_ifopt/constraints/collision/collision_types.h>
 
+#include <trajopt_ifopt/constraints/collision_v2/continuous_collision_constraint_v2.h>
 #include <trajopt_ifopt/constraints/collision_v2/discrete_collision_constraint_v2.h>
 #include <trajopt_ifopt/constraints/collision_v2/discrete_collision_constraint_v3.h>
 
