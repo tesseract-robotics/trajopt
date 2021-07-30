@@ -33,27 +33,30 @@ TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt_ifopt/constraints/collision/discrete_collision_constraint.h>
 #include <trajopt_ifopt/constraints/collision/collision_utils.h>
+#include <trajopt_ifopt/constraints/collision/weighted_average_methods.h>
 #include <trajopt_ifopt/utils/numeric_differentiation.h>
 
 namespace trajopt_ifopt
 {
-DiscreteCollisionConstraintIfopt::DiscreteCollisionConstraintIfopt(DiscreteCollisionEvaluator::Ptr collision_evaluator,
-                                                                   DiscreteCombineCollisionData combine_methods,
-                                                                   JointPosition::ConstPtr position_var,
-                                                                   const std::string& name)
-  : ifopt::ConstraintSet(1, name)
+DiscreteCollisionConstraint::DiscreteCollisionConstraint(DiscreteCollisionEvaluator::Ptr collision_evaluator,
+                                                         JointPosition::ConstPtr position_var,
+                                                         int max_num_cnt,
+                                                         const std::string& name)
+  : ifopt::ConstraintSet(max_num_cnt, name)
   , position_var_(std::move(position_var))
   , collision_evaluator_(std::move(collision_evaluator))
-  , combine_methods_(combine_methods)
 {
   // Set n_dof_ for convenience
   n_dof_ = position_var_->GetRows();
   assert(n_dof_ > 0);
 
-  bounds_ = std::vector<ifopt::Bounds>(1, ifopt::BoundSmallerZero);
+  if (max_num_cnt < 1)
+    throw std::runtime_error("max_num_cnt must be greater than zero!");
+
+  bounds_ = std::vector<ifopt::Bounds>(static_cast<std::size_t>(max_num_cnt), ifopt::BoundSmallerZero);
 }
 
-Eigen::VectorXd DiscreteCollisionConstraintIfopt::GetValues() const
+Eigen::VectorXd DiscreteCollisionConstraint::GetValues() const
 {
   // Get current joint values
   Eigen::VectorXd joint_vals = this->GetVariables()->GetComponent(position_var_->GetName())->GetValues();
@@ -62,9 +65,9 @@ Eigen::VectorXd DiscreteCollisionConstraintIfopt::GetValues() const
 }
 
 // Set the limits on the constraint values
-std::vector<ifopt::Bounds> DiscreteCollisionConstraintIfopt::GetBounds() const { return bounds_; }
+std::vector<ifopt::Bounds> DiscreteCollisionConstraint::GetBounds() const { return bounds_; }
 
-void DiscreteCollisionConstraintIfopt::FillJacobianBlock(std::string var_set, Jacobian& jac_block) const
+void DiscreteCollisionConstraint::FillJacobianBlock(std::string var_set, Jacobian& jac_block) const
 {
   // Only modify the jacobian if this constraint uses var_set
   if (var_set == position_var_->GetName())
@@ -76,28 +79,97 @@ void DiscreteCollisionConstraintIfopt::FillJacobianBlock(std::string var_set, Ja
   }
 }
 
-Eigen::VectorXd DiscreteCollisionConstraintIfopt::CalcValues(const Eigen::Ref<const Eigen::VectorXd>& joint_vals) const
+Eigen::VectorXd DiscreteCollisionConstraint::CalcValues(const Eigen::Ref<const Eigen::VectorXd>& joint_vals) const
 {
   // Check the collisions
   CollisionCacheData::ConstPtr collision_data = collision_evaluator_->CalcCollisions(joint_vals);
-  return combine_methods_.combine_values(*collision_data);
+  double margin_buffer = collision_evaluator_->GetCollisionConfig().collision_margin_buffer;
+  Eigen::VectorXd values = Eigen::VectorXd::Constant(static_cast<Eigen::Index>(bounds_.size()), -margin_buffer);
+
+  if (collision_data->gradient_results_set_map.empty())
+    return values;
+
+  if (collision_data->gradient_results_set_map.size() <= bounds_.size())
+  {
+    Eigen::Index i{ 0 };
+    for (const auto& grs : collision_data->gradient_results_set_map)
+      values(i++) = getWeightedAvgValues(grs.second, margin_buffer)[0];
+  }
+  else
+  {
+    std::vector<GradientResultsSet> rs;
+    rs.reserve(collision_data->gradient_results_set_map.size());
+    std::transform(collision_data->gradient_results_set_map.begin(),
+                   collision_data->gradient_results_set_map.end(),
+                   std::back_inserter(rs),
+                   std::bind(&std::map<std::pair<std::string, std::string>, GradientResultsSet>::value_type::second,
+                             std::placeholders::_1));
+    std::sort(rs.begin(), rs.end(), [](const GradientResultsSet& a, const GradientResultsSet& b) {
+      return a.max_error > b.max_error;
+    });
+
+    for (std::size_t i = 0; i < bounds_.size(); ++i)
+      values(static_cast<Eigen::Index>(i)) = getWeightedAvgValues(rs[i], margin_buffer)[0];
+  }
+
+  return values;
 }
 
-void DiscreteCollisionConstraintIfopt::SetBounds(const std::vector<ifopt::Bounds>& bounds)
+void DiscreteCollisionConstraint::SetBounds(const std::vector<ifopt::Bounds>& bounds)
 {
   assert(bounds.size() == 1);
   bounds_ = bounds;
 }
 
-void DiscreteCollisionConstraintIfopt::CalcJacobianBlock(const Eigen::Ref<const Eigen::VectorXd>& joint_vals,
-                                                         Jacobian& jac_block) const
+void DiscreteCollisionConstraint::CalcJacobianBlock(const Eigen::Ref<const Eigen::VectorXd>& joint_vals,
+                                                    Jacobian& jac_block) const
 {
   // Calculate collisions
   CollisionCacheData::ConstPtr collision_data = collision_evaluator_->CalcCollisions(joint_vals);
-  return combine_methods_.combine_jacobian(jac_block, *collision_data);
+  if (collision_data->gradient_results_set_map.empty())
+    return;
+
+  jac_block.reserve(static_cast<Eigen::Index>(bounds_.size()) * position_var_->GetRows());
+
+  if (collision_data->gradient_results_set_map.size() <= bounds_.size())
+  {
+    Eigen::Index i{ 0 };
+    for (const auto& grs : collision_data->gradient_results_set_map)
+    {
+      Eigen::VectorXd grad_vec = getWeightedAvgGradientT0(grs.second, position_var_->GetRows());
+
+      // Collision is 1 x n_dof
+      for (int j = 0; j < n_dof_; j++)
+        jac_block.coeffRef(i, j) = -1.0 * grad_vec[j];
+
+      ++i;
+    }
+  }
+  else
+  {
+    std::vector<GradientResultsSet> rs;
+    rs.reserve(collision_data->gradient_results_set_map.size());
+    std::transform(collision_data->gradient_results_set_map.begin(),
+                   collision_data->gradient_results_set_map.end(),
+                   std::back_inserter(rs),
+                   std::bind(&std::map<std::pair<std::string, std::string>, GradientResultsSet>::value_type::second,
+                             std::placeholders::_1));
+    std::sort(rs.begin(), rs.end(), [](const GradientResultsSet& a, const GradientResultsSet& b) {
+      return a.max_error > b.max_error;
+    });
+
+    for (std::size_t i = 0; i < bounds_.size(); ++i)
+    {
+      Eigen::VectorXd grad_vec = getWeightedAvgGradientT0(rs[i], position_var_->GetRows());
+
+      // Collision is 1 x n_dof
+      for (int j = 0; j < n_dof_; j++)
+        jac_block.coeffRef(static_cast<int>(i), j) = -1.0 * grad_vec[j];
+    }
+  }
 }
 
-DiscreteCollisionEvaluator::Ptr DiscreteCollisionConstraintIfopt::GetCollisionEvaluator() const
+DiscreteCollisionEvaluator::Ptr DiscreteCollisionConstraint::GetCollisionEvaluator() const
 {
   return collision_evaluator_;
 }

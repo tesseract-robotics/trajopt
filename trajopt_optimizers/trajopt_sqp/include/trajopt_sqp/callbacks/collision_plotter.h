@@ -49,15 +49,14 @@ public:
 
   void plot(const ifopt::Problem& nlp);
 
-  void addConstraintSet(const trajopt_ifopt::DiscreteCollisionConstraintIfopt::ConstPtr& collision_constraint);
+  void addConstraintSet(const trajopt_ifopt::DiscreteCollisionConstraint::ConstPtr& collision_constraint);
 
-  void
-  addConstraintSet(const std::vector<trajopt_ifopt::DiscreteCollisionConstraintIfopt::ConstPtr>& collision_constraints);
+  void addConstraintSet(const std::vector<trajopt_ifopt::DiscreteCollisionConstraint::ConstPtr>& collision_constraints);
 
   bool execute(const ifopt::Problem& nlp, const trajopt_sqp::SQPResults& sqp_results) override;
 
 protected:
-  std::vector<trajopt_ifopt::DiscreteCollisionConstraintIfopt::ConstPtr> collision_constraints_;
+  std::vector<trajopt_ifopt::DiscreteCollisionConstraint::ConstPtr> collision_constraints_;
   tesseract_visualization::Visualization::Ptr plotter_;
 };
 }  // namespace trajopt_sqp

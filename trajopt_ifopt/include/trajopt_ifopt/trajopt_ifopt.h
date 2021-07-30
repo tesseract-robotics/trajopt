@@ -30,10 +30,7 @@
 #include <trajopt_ifopt/constraints/collision/continuous_collision_evaluators.h>
 #include <trajopt_ifopt/constraints/collision/collision_utils.h>
 #include <trajopt_ifopt/constraints/collision/collision_types.h>
-
-#include <trajopt_ifopt/constraints/collision_v2/continuous_collision_constraint_v2.h>
-#include <trajopt_ifopt/constraints/collision_v2/discrete_collision_constraint_v2.h>
-#include <trajopt_ifopt/constraints/collision_v2/discrete_collision_constraint_v3.h>
+#include <trajopt_ifopt/constraints/collision/weighted_average_methods.h>
 
 #include <trajopt_ifopt/constraints/cartesian_position_constraint.h>
 #include <trajopt_ifopt/constraints/inverse_kinematics_constraint.h>

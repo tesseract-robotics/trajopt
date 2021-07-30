@@ -107,17 +107,20 @@ public:
     // Check the collisions
     CollisionCacheData::ConstPtr cdata = collision_evaluator_->CalcCollisions(joint_vals);
 
-    if (cdata->contact_results_vector.empty())
+    if (cdata->contact_results_map.empty())
       return err;
 
-    for (std::size_t i = 0; i < cdata->contact_results_vector.size(); ++i)
+    Eigen::Index i{ 0 };
+    for (const auto& pair : cdata->contact_results_map)
     {
-      const tesseract_collision::ContactResult& dist_result = cdata->contact_results_vector[i];
-      double dist = collision_evaluator_->GetCollisionConfig().collision_margin_data.getPairCollisionMargin(
-          dist_result.link_names[0], dist_result.link_names[1]);
-      double coeff = collision_evaluator_->GetCollisionConfig().collision_coeff_data.getPairCollisionCoeff(
-          dist_result.link_names[0], dist_result.link_names[1]);
-      err[static_cast<Eigen::Index>(i)] += std::max<double>(((dist - dist_result.distance) * coeff), 0.);
+      for (const auto& dist_result : pair.second)
+      {
+        double dist = collision_evaluator_->GetCollisionConfig().collision_margin_data.getPairCollisionMargin(
+            dist_result.link_names[0], dist_result.link_names[1]);
+        double coeff = collision_evaluator_->GetCollisionConfig().collision_coeff_data.getPairCollisionCoeff(
+            dist_result.link_names[0], dist_result.link_names[1]);
+        err[i++] += std::max<double>(((dist - dist_result.distance) * coeff), 0.);
+      }
     }
 
     return err;
@@ -140,11 +143,13 @@ public:
     // Get gradients for all contacts
     /** @todo Use the cdata gradient results */
     std::vector<trajopt_ifopt::GradientResults> grad_results;
-    grad_results.reserve(cdata->contact_results_vector.size());
-    for (const tesseract_collision::ContactResult& dist_result : cdata->contact_results_vector)
+    for (const auto& pair : cdata->contact_results_map)
     {
-      trajopt_ifopt::GradientResults result = collision_evaluator_->GetGradient(joint_vals, dist_result);
-      grad_results.push_back(result);
+      for (const auto& dist_result : pair.second)
+      {
+        trajopt_ifopt::GradientResults result = collision_evaluator_->GetGradient(joint_vals, dist_result);
+        grad_results.push_back(result);
+      }
     }
 
     for (std::size_t i = 0; i < grad_results.size(); ++i)
