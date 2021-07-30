@@ -43,22 +43,6 @@ using GetStateFn =
     std::function<tesseract_environment::EnvState::Ptr(const std::vector<std::string>& joint_names,
                                                        const Eigen::Ref<const Eigen::VectorXd>& joint_values)>;
 
-/**
- * @brief IFOPT does not support dynamically changing the constraint size so
- * all collision gradient data must be combined into a single gradient and error.
- * This allows switching between different methods for calculating a single gradient and error.
- * @note Currently the WEIGHTED_AVERAGE method works the best, but may change after further testing.
- */
-enum class CombineCollisionDataMethod
-{
-  SUM = 0,
-  WEIGHTED_SUM = 1,
-  AVERAGE = 2,
-  WEIGHTED_AVERAGE = 3,
-  LEAST_SQUARES = 4,
-  WEIGHTED_LEAST_SQUARES = 5
-};
-
 /** @brief Stores information about how the margins allowed between collision objects */
 struct CollisionCoeffData
 {
@@ -117,6 +101,13 @@ struct TrajOptCollisionConfig : public tesseract_collision::CollisionCheckConfig
   /** @brief Additional collision margin that is added for the collision check but is not used when calculating the
    * error */
   double collision_margin_buffer{ 0 };
+
+  /**
+   * @brief This is only used by trajopt_ifopt because the constraints size must be fixed.
+   * This define the max number of link pairs to be considered.
+   * It still finds all contacts but sorts based on the worst uses those up to the max_num_cnt.
+   */
+  int max_num_cnt{ 3 };
 };
 
 /** @brief A data structure to contain a links gradient results */
@@ -163,10 +154,10 @@ struct GradientResults
    */
   std::array<LinkGradientResults, 2> cc_gradients;
 
-  /** @brief The error (dist - dist_result.distance) */
+  /** @brief The error (margin - dist_result.distance) */
   double error{ 0 };
 
-  /** @brief The error (dist + buffer - dist_result.distance) */
+  /** @brief The error (margin + margin_buffer - dist_result.distance) */
   double error_with_buffer{ 0 };
 
   /**
@@ -183,12 +174,6 @@ struct GradientResultsSet
 {
   GradientResultsSet() = default;
   GradientResultsSet(std::size_t reserve) { results.reserve(reserve); }
-
-  /** @brief The number of dof */
-  int dof{ -1 };
-
-  /** @brief The collision margin buffer used when calculating the results */
-  double collision_margin_buffer{ 0 };
 
   /**
    * @brief Indicate if this set is from a continuous contact checker
@@ -207,21 +192,6 @@ struct GradientResultsSet
 
   /** @brief The max weighted error (error * coeff) with buffer in the gradient_results */
   double max_weighted_error_with_buffer{ 0 };
-
-  /**
-   * @brief The number of equations that would be generated
-   * @details Each GradientResults has the potential to generate one or two equations
-   * In the case of continuous collision checking this is the number of equations at timestep0
-   */
-  long num_equations{ 0 };
-
-  /**
-   * @brief The number of equations that would be generated
-   * @details Each GradientResults has the potential to generate one or two equations
-   * This is used by both discrete and continuous collision checking.
-   * In the case of continuous collision checking this is the number of equations at timestep0
-   */
-  long cc_num_equations{ 0 };
 
   /** @brief The stored gradient results for this set */
   std::vector<GradientResults> results;
@@ -253,25 +223,10 @@ struct CollisionCacheData
   using ConstPtr = std::shared_ptr<const CollisionCacheData>;
 
   tesseract_collision::ContactResultMap contact_results_map;
-  tesseract_collision::ContactResultVector contact_results_vector;
   std::map<std::pair<std::string, std::string>, GradientResultsSet> gradient_results_set_map;
-  GradientResultsSet gradient_results_set;
 };
 
 using CollisionCache = Cache<size_t, CollisionCacheData::ConstPtr>;
-
-using CombineValuesPrevFn = std::function<Eigen::VectorXd(const CollisionCacheData& collision_data_prev)>;
-using CombineValuesCentFn = std::function<Eigen::VectorXd(const CollisionCacheData& collision_data_prev,
-                                                          const CollisionCacheData& collision_data_post)>;
-using CombineValuesPostFn = std::function<Eigen::VectorXd(const CollisionCacheData& collision_data_post)>;
-
-using CombineJacobianPrevFn =
-    std::function<void(ifopt::Component::Jacobian& jac_block, const CollisionCacheData& collision_data_prev)>;
-using CombineJacobianPostFn =
-    std::function<void(ifopt::Component::Jacobian& jac_block, const CollisionCacheData& collision_data_post)>;
-using CombineJacobianCentFn = std::function<void(ifopt::Component::Jacobian& jac_block,
-                                                 const CollisionCacheData& collision_data_prev,
-                                                 const CollisionCacheData& collision_data_post)>;
 
 }  // namespace trajopt_ifopt
 #endif  // TRAJOPT_IFOPT_COLLISION_TYPES_H

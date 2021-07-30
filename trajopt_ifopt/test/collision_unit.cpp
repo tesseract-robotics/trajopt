@@ -54,7 +54,7 @@ public:
   Environment::Ptr env = std::make_shared<Environment>(); /**< Tesseract */
   trajopt_ifopt::DiscreteCollisionEvaluator::Ptr collision_evaluator;
   ifopt::Problem nlp;
-  std::shared_ptr<trajopt_ifopt::DiscreteCollisionConstraintIfopt> constraint;
+  std::shared_ptr<trajopt_ifopt::DiscreteCollisionConstraint> constraint;
 
   void SetUp() override
   {
@@ -81,8 +81,7 @@ public:
     auto var0 = std::make_shared<trajopt_ifopt::JointPosition>(pos, kin->getJointNames(), "Joint_Position_0");
     nlp.AddVariableSet(var0);
 
-    constraint = std::make_shared<trajopt_ifopt::DiscreteCollisionConstraintIfopt>(
-        collision_evaluator, DiscreteCombineCollisionData(CombineCollisionDataMethod::WEIGHTED_AVERAGE), var0);
+    constraint = std::make_shared<trajopt_ifopt::DiscreteCollisionConstraint>(collision_evaluator, var0, 3);
     nlp.AddConstraintSet(constraint);
   }
 };
@@ -176,8 +175,7 @@ TEST_F(CollisionUnit, GetSetBounds)  // NOLINT
     std::vector<std::string> joint_names(2, "names");
     auto var0 = std::make_shared<trajopt_ifopt::JointPosition>(pos, joint_names, "Joint_Position_0");
 
-    auto constraint_2 = std::make_shared<trajopt_ifopt::DiscreteCollisionConstraintIfopt>(
-        collision_evaluator, DiscreteCombineCollisionData(CombineCollisionDataMethod::WEIGHTED_AVERAGE), var0);
+    auto constraint_2 = std::make_shared<trajopt_ifopt::DiscreteCollisionConstraint>(collision_evaluator, var0, 3);
     ifopt::Bounds bounds(-0.1234, 0.5678);
     std::vector<ifopt::Bounds> bounds_vec = std::vector<ifopt::Bounds>(1, bounds);
     constraint_2->SetBounds(bounds_vec);

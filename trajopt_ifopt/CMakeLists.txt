@@ -41,16 +41,11 @@ set(TRAJOPT_IFOPT_SOURCE_FILES
     src/constraints/joint_velocity_constraint.cpp
     src/constraints/collision/collision_types.cpp
     src/constraints/collision/collision_utils.cpp
-    src/constraints/collision/discrete_collision_constraint.cpp
     src/constraints/collision/discrete_collision_evaluators.cpp
-    src/constraints/collision/discrete_combine_collision_data.cpp
-    src/constraints/collision/continuous_collision_constraint.cpp
     src/constraints/collision/continuous_collision_evaluators.cpp
-    src/constraints/collision/continuous_combine_collision_data.cpp
     src/constraints/collision/weighted_average_methods.cpp
-    src/constraints/collision_v2/discrete_collision_constraint_v2.cpp
-    src/constraints/collision_v2/discrete_collision_constraint_v3.cpp
-    src/constraints/collision_v2/continuous_collision_constraint_v2.cpp
+    src/constraints/collision/discrete_collision_constraint.cpp
+    src/constraints/collision/continuous_collision_constraint.cpp
 )
 
 add_library(${PROJECT_NAME} ${TRAJOPT_IFOPT_SOURCE_FILES})

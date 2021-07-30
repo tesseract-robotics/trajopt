@@ -24,8 +24,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef TRAJOPT_IFOPT_COLLISION_CONSTRAINT_H
-#define TRAJOPT_IFOPT_COLLISION_CONSTRAINT_H
+#ifndef TRAJOPT_IFOPT_COLLISION_CONSTRAINT_V3_H
+#define TRAJOPT_IFOPT_COLLISION_CONSTRAINT_V3_H
 
 #include <trajopt_utils/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
@@ -34,21 +34,21 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt_ifopt/constraints/collision/discrete_collision_evaluators.h>
-#include <trajopt_ifopt/constraints/collision/discrete_combine_collision_data.h>
 #include <trajopt_ifopt/variable_sets/joint_position_variable.h>
+#include <tesseract_collision/core/common.h>
 
 namespace trajopt_ifopt
 {
-class DiscreteCollisionConstraintIfopt : public ifopt::ConstraintSet
+class DiscreteCollisionConstraint : public ifopt::ConstraintSet
 {
 public:
-  using Ptr = std::shared_ptr<DiscreteCollisionConstraintIfopt>;
-  using ConstPtr = std::shared_ptr<const DiscreteCollisionConstraintIfopt>;
+  using Ptr = std::shared_ptr<DiscreteCollisionConstraint>;
+  using ConstPtr = std::shared_ptr<const DiscreteCollisionConstraint>;
 
-  DiscreteCollisionConstraintIfopt(DiscreteCollisionEvaluator::Ptr collision_evaluator,
-                                   DiscreteCombineCollisionData combine_methods,
-                                   JointPosition::ConstPtr position_var,
-                                   const std::string& name = "DiscreteCollision");
+  DiscreteCollisionConstraint(DiscreteCollisionEvaluator::Ptr collision_evaluator,
+                              JointPosition::ConstPtr position_var,
+                              int max_num_cnt = 1,
+                              const std::string& name = "DiscreteCollisionV3");
 
   /**
    * @brief Returns the values associated with the constraint.
@@ -111,7 +111,6 @@ private:
   JointPosition::ConstPtr position_var_;
 
   DiscreteCollisionEvaluator::Ptr collision_evaluator_;
-  DiscreteCombineCollisionData combine_methods_;
 };
 };  // namespace trajopt_ifopt
 #endif
