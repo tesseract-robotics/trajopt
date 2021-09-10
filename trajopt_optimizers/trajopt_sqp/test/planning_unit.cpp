@@ -79,7 +79,7 @@ public:
   }
 };
 
-void runPlanningTest(trajopt_sqp::QPProblem::Ptr qp_problem, Environment::Ptr env)
+void runPlanningTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const Environment::Ptr& env)
 {
   std::unordered_map<std::string, double> ipos;
   ipos["torso_lift_joint"] = 0;

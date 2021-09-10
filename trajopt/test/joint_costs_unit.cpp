@@ -120,7 +120,7 @@ TEST_F(CostsTest, equality_jointPos)  // NOLINT
   std::cout << "Trajectory: \n" << output << "\n";
 
   // Check position constraint is satisfied
-  double pos;
+  double pos{ std::numeric_limits<double>::max() };
   for (auto j = 0; j < output.cols(); ++j)
   {
     pos = output(0, j);
@@ -228,7 +228,7 @@ TEST_F(CostsTest, inequality_jointPos)  // NOLINT
   std::cout << "Trajectory: \n" << output << "\n";
 
   // Check pos cost is working
-  double pos;
+  double pos{ std::numeric_limits<double>::max() };
   for (auto i = 0; i < (output.rows()) / 2; ++i)
   {
     for (auto j = 0; j < output.cols(); ++j)
@@ -322,7 +322,7 @@ TEST_F(CostsTest, equality_jointVel)  // NOLINT
   std::cout << "Trajectory: \n" << output << "\n";
 
   // Check velocity constraint is satisfied
-  double velocity;
+  double velocity{ std::numeric_limits<double>::max() };
   for (auto j = 0; j < output.cols(); ++j)
   {
     velocity = output(1, j) - output(0, j);
@@ -430,7 +430,7 @@ TEST_F(CostsTest, inequality_jointVel)  // NOLINT
   std::cout << "Trajectory: \n" << output << "\n";
 
   // Check velocity cost is working
-  double velocity;
+  double velocity{ std::numeric_limits<double>::max() };
   for (auto i = 0; i < (output.rows()) / 2; ++i)
   {
     for (auto j = 0; j < output.cols(); ++j)
@@ -527,7 +527,7 @@ TEST_F(CostsTest, equality_jointVel_time)  // NOLINT
   std::cout << "Trajectory: \n" << output << "\n";
 
   // Check velocity constraint is satisfied
-  double velocity;
+  double velocity{ std::numeric_limits<double>::max() };
   for (auto j = 0; j < output.cols() - 1; ++j)
   {
     velocity = (output(1, j) - output(0, j)) * output(0 + 1, output.cols() - 1);
@@ -641,7 +641,7 @@ TEST_F(CostsTest, inequality_jointVel_time)  // NOLINT
   std::cout << "Trajectory: \n" << output << "\n";
 
   // Check velocity cost is working
-  double velocity;
+  double velocity{ std::numeric_limits<double>::max() };
   for (auto i = 0; i < (output.rows()) / 2; ++i)
   {
     for (auto j = 0; j < output.cols() - 1; ++j)
@@ -735,7 +735,7 @@ TEST_F(CostsTest, equality_jointAcc)  // NOLINT
   std::cout << "Trajectory: \n" << output << "\n";
 
   // Check acceleration constraint is satisfied
-  double accel;
+  double accel{ std::numeric_limits<double>::max() };
   for (auto j = 0; j < output.cols(); ++j)
   {
     int i = 0;
@@ -844,7 +844,7 @@ TEST_F(CostsTest, inequality_jointAcc)  // NOLINT
   std::cout << "Trajectory: \n" << output << "\n";
 
   // Check accel cost is working
-  double accel;
+  double accel{ std::numeric_limits<double>::max() };
   for (auto i = 0; i < (output.rows()) / 2; ++i)
   {
     for (auto j = 0; j < output.cols(); ++j)

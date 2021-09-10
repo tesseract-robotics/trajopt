@@ -17,7 +17,7 @@ void CommandParser::read(int argc, char* argv[])
   }
   po::variables_map vm;
   po::store(po::command_line_parser(argc, argv).options(od).run(), vm);
-  if (vm.count("help"))
+  if (vm.count("help") != 0U)
   {
     std::cout << "usage: " << argv[0] << " [options]" << std::endl;
     std::cout << od << std::endl;

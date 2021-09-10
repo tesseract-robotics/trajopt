@@ -147,15 +147,15 @@ public:
   virtual const std::vector<std::string>& getNLPConstraintNames() const = 0;
   virtual const std::vector<std::string>& getNLPCostNames() const = 0;
 
-  virtual const Eigen::Ref<const Eigen::VectorXd> getBoxSize() = 0;
-  virtual const Eigen::Ref<const Eigen::VectorXd> getConstraintMeritCoeff() = 0;
+  virtual Eigen::Ref<const Eigen::VectorXd> getBoxSize() = 0;
+  virtual Eigen::Ref<const Eigen::VectorXd> getConstraintMeritCoeff() = 0;
 
-  virtual const Eigen::Ref<const SparseMatrix> getHessian() = 0;
-  virtual const Eigen::Ref<const Eigen::VectorXd> getGradient() = 0;
+  virtual Eigen::Ref<const SparseMatrix> getHessian() = 0;
+  virtual Eigen::Ref<const Eigen::VectorXd> getGradient() = 0;
 
-  virtual const Eigen::Ref<const SparseMatrix> getConstraintMatrix() = 0;
-  virtual const Eigen::Ref<const Eigen::VectorXd> getBoundsLower() = 0;
-  virtual const Eigen::Ref<const Eigen::VectorXd> getBoundsUpper() = 0;
+  virtual Eigen::Ref<const SparseMatrix> getConstraintMatrix() = 0;
+  virtual Eigen::Ref<const Eigen::VectorXd> getBoundsLower() = 0;
+  virtual Eigen::Ref<const Eigen::VectorXd> getBoundsUpper() = 0;
 };
 
 }  // namespace trajopt_sqp

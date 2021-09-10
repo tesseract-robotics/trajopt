@@ -64,7 +64,7 @@ public:
   KinematicsInfo::Ptr kinematics_info;
   CartPosConstraint::Ptr constraint;
 
-  Eigen::Index n_dof;
+  Eigen::Index n_dof{ -1 };
 
   void SetUp() override
   {

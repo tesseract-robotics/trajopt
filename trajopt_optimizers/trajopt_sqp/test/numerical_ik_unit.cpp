@@ -78,7 +78,7 @@ public:
   }
 };
 
-void runNumericalIKTest(trajopt_sqp::QPProblem::Ptr qp_problem, Environment::Ptr env)
+void runNumericalIKTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const Environment::Ptr& env)
 {
   tesseract_environment::StateSolver::Ptr state_solver = env->getStateSolver();
   ContinuousContactManager::Ptr manager = env->getContinuousContactManager();

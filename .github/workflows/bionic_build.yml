@@ -25,7 +25,7 @@ jobs:
       PARALLEL_TESTS: false
       CCACHE_DIR: "/home/runner/work/trajopt_ros/trajopt_ros/Bionic-Build/.ccache"
       UPSTREAM_CMAKE_ARGS: "-DCMAKE_BUILD_TYPE=Release"
-      TARGET_CMAKE_ARGS: "-DCMAKE_BUILD_TYPE=Debug -DTRAJOPT_ENABLE_TESTING=ON -DTRAJOPT_ENABLE_CLANG_TIDY=ON"
+      TARGET_CMAKE_ARGS: "-DCMAKE_BUILD_TYPE=Debug -DTRAJOPT_ENABLE_TESTING=ON"
       AFTER_SCRIPT: 'catkin build -w $target_ws --no-deps --verbose trajopt trajopt_ifopt trajopt_sco trajopt_sqp --make-args test'
     steps:
       - uses: actions/checkout@v1

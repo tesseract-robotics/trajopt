@@ -56,7 +56,7 @@ public:
   }
 };
 
-void runJointPositionOptimizationTest(trajopt_sqp::QPProblem::Ptr qp_problem)
+void runJointPositionOptimizationTest(const trajopt_sqp::QPProblem::Ptr& qp_problem)
 {
   auto qp_solver = std::make_shared<trajopt_sqp::OSQPEigenSolver>();
   trajopt_sqp::TrustRegionSQPSolver solver(qp_solver);

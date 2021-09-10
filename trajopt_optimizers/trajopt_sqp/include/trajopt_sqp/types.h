@@ -82,7 +82,7 @@ struct SQPParameters
   /** @brief Initial size of the trust region */
   double initial_trust_box_size = 1e-1;
   /** @brief Unused */
-  double log_results = false;
+  bool log_results = false;
   /** @brief Unused */
   std::string log_dir = "/tmp";
 };
