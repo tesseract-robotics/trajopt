@@ -60,9 +60,9 @@ public:
     for (int x = 0; x < length; ++x)
       for (int y = 0; y < length; ++y)
         for (int z = 0; z < length; ++z)
-          point_cloud.push_back(-0.5f + static_cast<float>(x * delta),
-                                -0.5f + static_cast<float>(y * delta),
-                                -0.5f + static_cast<float>(z * delta));
+          point_cloud.push_back(-0.5F + static_cast<float>(x * delta),
+                                -0.5F + static_cast<float>(y * delta),
+                                -0.5F + static_cast<float>(z * delta));
 
     std::shared_ptr<octomap::OcTree> octree = std::make_shared<octomap::OcTree>(2 * delta);
     octree->insertPointCloud(point_cloud, octomap::point3d(0, 0, 0));

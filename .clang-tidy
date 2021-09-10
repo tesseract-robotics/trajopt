@@ -1,0 +1,68 @@
+---
+Checks: >
+    -*,
+    clang-diagnostic-*,
+    -clang-diagnostic-unknown-warning-option,
+    clang-analyzer-*,
+    -clang-analyzer-cplusplus*,
+    bugprone-*,
+    cppcoreguidelines-*,
+    -cppcoreguidelines-macro-usage,
+    -cppcoreguidelines-pro-type-static-cast-downcast,
+    -cppcoreguidelines-pro-type-vararg,
+    -cppcoreguidelines-pro-type-union-access,
+    -cppcoreguidelines-pro-bounds-array-to-pointer-decay,
+    -cppcoreguidelines-pro-bounds-pointer-arithmetic,
+    -cppcoreguidelines-pro-bounds-constant-array-index,
+    -cppcoreguidelines-avoid-magic-numbers,
+    -cppcoreguidelines-non-private-member-variables-in-classes,
+    misc-*,
+    -misc-non-private-member-variables-in-classes,
+    modernize-*,
+    -modernize-use-trailing-return-type,
+    -modernize-use-nodiscard,
+    performance-*,
+    readability-*,
+    -readability-braces-around-statements,
+    -readability-named-parameter,
+    -readability-magic-numbers,
+    -readability-isolate-declaration
+WarningsAsErrors: >
+    -*,
+    clang-diagnostic-*,
+    -clang-diagnostic-unknown-warning-option,
+    clang-analyzer-*,
+    -clang-analyzer-cplusplus*,
+    bugprone-*,
+    cppcoreguidelines-*,
+    -cppcoreguidelines-macro-usage,
+    -cppcoreguidelines-pro-type-static-cast-downcast,
+    -cppcoreguidelines-pro-type-vararg,
+    -cppcoreguidelines-pro-type-union-access,
+    -cppcoreguidelines-pro-bounds-array-to-pointer-decay,
+    -cppcoreguidelines-pro-bounds-pointer-arithmetic,
+    -cppcoreguidelines-pro-bounds-constant-array-index,
+    -cppcoreguidelines-avoid-magic-numbers,
+    -cppcoreguidelines-non-private-member-variables-in-classes,
+    misc-*,
+    -misc-non-private-member-variables-in-classes,
+    modernize-*,
+    -modernize-use-trailing-return-type,
+    -modernize-use-nodiscard,
+    performance-*,
+    readability-*,
+    -readability-braces-around-statements,
+    -readability-named-parameter,
+    -readability-magic-numbers,
+    -readability-isolate-declaration
+HeaderFilterRegex: '.*'
+AnalyzeTemporaryDtors: false
+FormatStyle:     none
+CheckOptions:
+  - key:             modernize-use-override.AllowOverrideAndFinal
+    value:           '1'
+  - key:             cppcoreguidelines-explicit-virtual-functions.AllowOverrideAndFinal
+    value:           '1'
+  - key:             cppcoreguidelines-special-member-functions.AllowSoleDefaultDtor
+    value:           '1'
+...

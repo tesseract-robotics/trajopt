@@ -35,7 +35,7 @@ macro(add_gtest test_name test_file)
   target_compile_options(${test_name} PRIVATE ${TRAJOPT_COMPILE_OPTIONS_PRIVATE} ${TRAJOPT_COMPILE_OPTIONS_PUBLIC})
   target_compile_definitions(${test_name} PRIVATE ${TRAJOPT_COMPILE_DEFINITIONS} TRAJOPT_IFOPT_DIR="${CMAKE_SOURCE_DIR}")
   target_cxx_version(${test_name} PRIVATE VERSION ${TRAJOPT_CXX_VERSION})
-  target_clang_tidy(${test_name} ARGUMENTS ${TRAJOPT_CLANG_TIDY_ARGS} ENABLE ${TRAJOPT_ENABLE_CLANG_TIDY})
+  target_clang_tidy(${test_name} ENABLE ${TRAJOPT_ENABLE_CLANG_TIDY})
   target_link_libraries(${test_name}
       ${PROJECT_NAME}
       tesseract::tesseract_environment_ofkt

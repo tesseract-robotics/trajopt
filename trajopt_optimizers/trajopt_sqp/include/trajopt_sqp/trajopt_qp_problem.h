@@ -64,15 +64,15 @@ public:
   const std::vector<std::string>& getNLPConstraintNames() const override;
   const std::vector<std::string>& getNLPCostNames() const override;
 
-  const Eigen::Ref<const Eigen::VectorXd> getBoxSize() override;
-  const Eigen::Ref<const Eigen::VectorXd> getConstraintMeritCoeff() override;
+  Eigen::Ref<const Eigen::VectorXd> getBoxSize() override;
+  Eigen::Ref<const Eigen::VectorXd> getConstraintMeritCoeff() override;
 
-  const Eigen::Ref<const SparseMatrix> getHessian() override;
-  const Eigen::Ref<const Eigen::VectorXd> getGradient() override;
+  Eigen::Ref<const SparseMatrix> getHessian() override;
+  Eigen::Ref<const Eigen::VectorXd> getGradient() override;
 
-  const Eigen::Ref<const SparseMatrix> getConstraintMatrix() override;
-  const Eigen::Ref<const Eigen::VectorXd> getBoundsLower() override;
-  const Eigen::Ref<const Eigen::VectorXd> getBoundsUpper() override;
+  Eigen::Ref<const SparseMatrix> getConstraintMatrix() override;
+  Eigen::Ref<const Eigen::VectorXd> getBoundsLower() override;
+  Eigen::Ref<const Eigen::VectorXd> getBoundsUpper() override;
 
 protected:
   bool initialized_{ false };

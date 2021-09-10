@@ -114,7 +114,7 @@ TEST(CostWrapperUnit, SquaredCost)  // NOLINT
   nlp.AddCostSet(cost);
 
   auto exact_jac = nlp.EvaluateCostFunctionGradient(positions[0].data());
-  auto numerical_jac = nlp.EvaluateCostFunctionGradient(positions[0].data(), true, 1e-8);
+  auto numerical_jac = trajopt_ifopt::calcNumericalCostGradient(positions[0].data(), nlp, 1e-8);
 
   EXPECT_NEAR(exact_jac(0, 0), numerical_jac(0, 0), 1e-6);
 
@@ -155,7 +155,7 @@ TEST(CostWrapperUnit, WeightedSquaredCost)  // NOLINT
   nlp.AddCostSet(cost);
 
   auto exact_jac = nlp.EvaluateCostFunctionGradient(positions[0].data());
-  auto numerical_jac = nlp.EvaluateCostFunctionGradient(positions[0].data(), true, 1e-8);
+  auto numerical_jac = trajopt_ifopt::calcNumericalCostGradient(positions[0].data(), nlp, 1e-8);
 
   EXPECT_NEAR(exact_jac(0, 0), numerical_jac(0, 0), 1e-6);
 
@@ -194,7 +194,7 @@ TEST(CostWrapperUnit, AbsoluteCost)  // NOLINT
   nlp.AddCostSet(cost);
 
   auto exact_jac = nlp.EvaluateCostFunctionGradient(positions[0].data());
-  auto numerical_jac = nlp.EvaluateCostFunctionGradient(positions[0].data(), true, 1e-8);
+  auto numerical_jac = trajopt_ifopt::calcNumericalCostGradient(positions[0].data(), nlp, 1e-8);
 
   EXPECT_NEAR(exact_jac(0, 0), numerical_jac(0, 0), 1e-6);
 
@@ -235,7 +235,7 @@ TEST(CostWrapperUnit, WeightedAbsoluteCost)  // NOLINT
   nlp.AddCostSet(cost);
 
   auto exact_jac = nlp.EvaluateCostFunctionGradient(positions[0].data());
-  auto numerical_jac = nlp.EvaluateCostFunctionGradient(positions[0].data(), true, 1e-8);
+  auto numerical_jac = trajopt_ifopt::calcNumericalCostGradient(positions[0].data(), nlp, 1e-8);
 
   EXPECT_NEAR(exact_jac(0, 0), numerical_jac(0, 0), 1e-6);
 

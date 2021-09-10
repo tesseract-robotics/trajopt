@@ -96,7 +96,6 @@ void TrajOptQPProblem::addCostSet(ifopt::ConstraintSet::Ptr constraint_set, Cost
     default:
     {
       throw std::runtime_error("Unsupport CostPenaltyType!");
-      break;
     }
   }
 
@@ -831,14 +830,14 @@ Eigen::Index TrajOptQPProblem::getNumQPConstraints() const { return num_qp_cnts_
 const std::vector<std::string>& TrajOptQPProblem::getNLPConstraintNames() const { return constraint_names_; }
 const std::vector<std::string>& TrajOptQPProblem::getNLPCostNames() const { return cost_names_; }
 
-const Eigen::Ref<const Eigen::VectorXd> TrajOptQPProblem::getBoxSize() { return box_size_; }
-const Eigen::Ref<const Eigen::VectorXd> TrajOptQPProblem::getConstraintMeritCoeff() { return constraint_merit_coeff_; }
+Eigen::Ref<const Eigen::VectorXd> TrajOptQPProblem::getBoxSize() { return box_size_; }
+Eigen::Ref<const Eigen::VectorXd> TrajOptQPProblem::getConstraintMeritCoeff() { return constraint_merit_coeff_; }
 
-const Eigen::Ref<const SparseMatrix> TrajOptQPProblem::getHessian() { return hessian_; }
-const Eigen::Ref<const Eigen::VectorXd> TrajOptQPProblem::getGradient() { return gradient_; }
+Eigen::Ref<const SparseMatrix> TrajOptQPProblem::getHessian() { return hessian_; }
+Eigen::Ref<const Eigen::VectorXd> TrajOptQPProblem::getGradient() { return gradient_; }
 
-const Eigen::Ref<const SparseMatrix> TrajOptQPProblem::getConstraintMatrix() { return constraint_matrix_; }
-const Eigen::Ref<const Eigen::VectorXd> TrajOptQPProblem::getBoundsLower() { return bounds_lower_; }
-const Eigen::Ref<const Eigen::VectorXd> TrajOptQPProblem::getBoundsUpper() { return bounds_upper_; }
+Eigen::Ref<const SparseMatrix> TrajOptQPProblem::getConstraintMatrix() { return constraint_matrix_; }
+Eigen::Ref<const Eigen::VectorXd> TrajOptQPProblem::getBoundsLower() { return bounds_lower_; }
+Eigen::Ref<const Eigen::VectorXd> TrajOptQPProblem::getBoundsUpper() { return bounds_upper_; }
 
 }  // namespace trajopt_sqp

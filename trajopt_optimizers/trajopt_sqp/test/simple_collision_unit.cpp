@@ -205,15 +205,12 @@ public:
   {
     boost::filesystem::path urdf_file(std::string(TRAJOPT_DIR) + "/test/data/spherebot.urdf");
     boost::filesystem::path srdf_file(std::string(TRAJOPT_DIR) + "/test/data/spherebot.srdf");
-    auto tmp = TRAJOPT_DIR;
-    std::cout << tmp;
-
     ResourceLocator::Ptr locator = std::make_shared<SimpleResourceLocator>(locateResource);
     EXPECT_TRUE(env->init<OFKTStateSolver>(urdf_file, srdf_file, locator));
   }
 };
 
-void runSimpleCollisionTest(trajopt_sqp::QPProblem::Ptr qp_problem, Environment::Ptr env)
+void runSimpleCollisionTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const Environment::Ptr& env)
 {
   std::unordered_map<std::string, double> ipos;
   ipos["spherebot_x_joint"] = -0.75;

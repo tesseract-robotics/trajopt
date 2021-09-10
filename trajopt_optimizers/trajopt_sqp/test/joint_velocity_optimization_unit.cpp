@@ -58,7 +58,7 @@ public:
   }
 };
 
-void runVelocityConstraintOptimizationTest(trajopt_sqp::QPProblem::Ptr qp_problem)
+void runVelocityConstraintOptimizationTest(const trajopt_sqp::QPProblem::Ptr& qp_problem)
 {
   auto qp_solver = std::make_shared<trajopt_sqp::OSQPEigenSolver>();
   trajopt_sqp::TrustRegionSQPSolver solver(qp_solver);

@@ -91,15 +91,15 @@ public:
   const std::vector<std::string>& getNLPConstraintNames() const override { return constraint_names_; }
   const std::vector<std::string>& getNLPCostNames() const override { return cost_names_; }
 
-  const Eigen::Ref<const Eigen::VectorXd> getBoxSize() override { return box_size_; }
-  const Eigen::Ref<const Eigen::VectorXd> getConstraintMeritCoeff() override { return constraint_merit_coeff_; }
+  Eigen::Ref<const Eigen::VectorXd> getBoxSize() override { return box_size_; }
+  Eigen::Ref<const Eigen::VectorXd> getConstraintMeritCoeff() override { return constraint_merit_coeff_; }
 
-  const Eigen::Ref<const SparseMatrix> getHessian() override { return hessian_; }
-  const Eigen::Ref<const Eigen::VectorXd> getGradient() override { return gradient_; }
+  Eigen::Ref<const SparseMatrix> getHessian() override { return hessian_; }
+  Eigen::Ref<const Eigen::VectorXd> getGradient() override { return gradient_; }
 
-  const Eigen::Ref<const SparseMatrix> getConstraintMatrix() override { return constraint_matrix_; }
-  const Eigen::Ref<const Eigen::VectorXd> getBoundsLower() override { return bounds_lower_; }
-  const Eigen::Ref<const Eigen::VectorXd> getBoundsUpper() override { return bounds_upper_; }
+  Eigen::Ref<const SparseMatrix> getConstraintMatrix() override { return constraint_matrix_; }
+  Eigen::Ref<const Eigen::VectorXd> getBoundsLower() override { return bounds_lower_; }
+  Eigen::Ref<const Eigen::VectorXd> getBoundsUpper() override { return bounds_upper_; }
 
 protected:
   std::shared_ptr<ifopt::Problem> nlp_;

@@ -98,7 +98,7 @@ public:
   }
 };
 
-void runCastWorldTest(trajopt_sqp::QPProblem::Ptr qp_problem, Environment::Ptr env)
+void runCastWorldTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const Environment::Ptr& env)
 {
   std::unordered_map<std::string, double> ipos;
   ipos["boxbot_x_joint"] = -1.9;

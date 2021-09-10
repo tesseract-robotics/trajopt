@@ -63,7 +63,7 @@ public:
   TrajArray GetInitTraj() { return m_init_traj; }
   friend TrajOptProb::Ptr ConstructProblem(const ProblemConstructionInfo&);
   /** @brief Returns TrajOptProb.has_time */
-  bool GetHasTime() { return has_time; }
+  bool GetHasTime() const { return has_time; }
   /** @brief Sets TrajOptProb.has_time  */
   void SetHasTime(bool tmp) { has_time = tmp; }
 
@@ -93,7 +93,7 @@ struct TrajOptResult
 struct BasicInfo
 {
   /** @brief Number of time steps (rows) in the optimization matrix */
-  int n_steps;
+  int n_steps{ -1 };
 
   /** @brief The manipulator name */
   std::string manip;
@@ -144,11 +144,11 @@ struct InitInfo
     GIVEN_TRAJ,
   };
   /** @brief Specifies the type of initialization to use */
-  Type type;
+  Type type{ STATIONARY };
   /** @brief Data used during initialization. Use depends on the initialization selected. */
   TrajArray data;
   /** @brief Default value the final column of the optimization is initialized too if time is being used */
-  double dt = 1.0;
+  double dt{ 1.0 };
 };
 
 struct MakesCost
@@ -168,8 +168,8 @@ struct TermInfo
   using Ptr = std::shared_ptr<TermInfo>;
 
   std::string name;
-  int term_type;
-  int getSupportedTypes() { return supported_term_types_; }
+  int term_type{ -1 };
+  int getSupportedTypes() const { return supported_term_types_; }
   virtual void fromJson(ProblemConstructionInfo& pci, const Json::Value& v) = 0;
   virtual void hatch(TrajOptProb& prob) = 0;
 
@@ -248,7 +248,7 @@ struct UserDefinedTermInfo : public TermInfo
   std::string name = "UserDefined";
 
   /** @brief Timesteps over which to apply term */
-  int first_step, last_step;
+  int first_step{ -1 }, last_step{ -1 };
 
   /** @brief Indicated if a step is fixed and its variables cannot be changed */
   std::vector<int> fixed_steps;
@@ -347,10 +347,10 @@ struct CartPoseTermInfo : public TermInfo
 struct CartVelTermInfo : public TermInfo
 {
   /** @brief Timesteps over which to apply term */
-  int first_step, last_step;
+  int first_step{ -1 }, last_step{ -1 };
   /** @brief Link to which the term is applied */
   std::string link;
-  double max_displacement;
+  double max_displacement{ 0 };
   /** @brief Used to add term to pci from json */
   void fromJson(ProblemConstructionInfo& pci, const Json::Value& v) override;
   /** @brief Converts term info into cost/constraint and adds it to trajopt problem */
@@ -557,16 +557,16 @@ links. Currently self-collisions are not included.
 struct CollisionTermInfo : public TermInfo
 {
   /** @brief first_step and last_step are inclusive */
-  int first_step, last_step;
+  int first_step{ -1 }, last_step{ -1 };
 
   /** @brief Indicate the type of collision checking that should be used. */
-  CollisionEvaluatorType evaluator_type;
+  CollisionEvaluatorType evaluator_type{ CollisionEvaluatorType::SINGLE_TIMESTEP };
 
   /**
    * @brief Use the weighted sum for each link pair. This reduces the number equations added to the problem
    * When enable it is good to start with a coefficient of 1 otherwise 20 is a good starting point.
    */
-  bool use_weighted_sum = false;
+  bool use_weighted_sum{ false };
 
   /** @brief Indicated if a step is fixed and its variables cannot be changed */
   std::vector<int> fixed_steps;
@@ -577,13 +577,13 @@ struct CollisionTermInfo : public TermInfo
    * Note: This gets converted to longest_valid_segment_fraction.
    *       longest_valid_segment_fraction = longest_valid_segment_length / state_space.getMaximumExtent()
    */
-  double longest_valid_segment_length = 0.5;
+  double longest_valid_segment_length{ 0.5 };
 
   /** @brief A buffer added to the collision margin distance. Contact results that are within the safety margin buffer
   distance but greater than the safety margin distance (i.e. close but not in collision) will be evaluated but will not
   contribute costs to the optimization problem. This helps keep the solution away from collision constraint conditions
   when the safety margin distance is small.*/
-  double safety_margin_buffer = 0.05;
+  double safety_margin_buffer{ 0.05 };
 
   /** @brief Set the contact test type that should be used. */
   tesseract_collision::ContactTestType contact_test_type = tesseract_collision::ContactTestType::ALL;
@@ -632,11 +632,11 @@ struct AvoidSingularityTermInfo : public TermInfo
   tesseract_kinematics::ForwardKinematics::ConstPtr subset_kin_;
   /** @brief Damping factor used to prevent numerical instability in the singularity avoidance cost as the smallest
    * singular value approaches zero */
-  double lambda;
+  double lambda{ 0.1 };
   /** @brief The robot link with which to calculate the robot jacobian (required because of kinematic trees) */
   std::string link;
-  int first_step;
-  int last_step;
+  int first_step{ -1 };
+  int last_step{ -1 };
   DblVec coeffs;
 
   void hatch(TrajOptProb& prob) override;

@@ -101,7 +101,8 @@ public:
   }
 };
 
-void runCartPositionOptimization(trajopt_sqp::QPProblem::Ptr qp_problem, tesseract_environment::Environment::Ptr env)
+void runCartPositionOptimization(const trajopt_sqp::QPProblem::Ptr& qp_problem,
+                                 const tesseract_environment::Environment::Ptr& env)
 {
   auto qp_solver = std::make_shared<trajopt_sqp::OSQPEigenSolver>();
   trajopt_sqp::TrustRegionSQPSolver solver(qp_solver);

@@ -214,7 +214,7 @@ struct CollisionEvaluator
    * @brief Get the safety margin information.
    * @return Safety margin information
    */
-  const SafetyMarginData::ConstPtr getSafetyMarginData() const { return safety_margin_data_; }
+  SafetyMarginData::ConstPtr getSafetyMarginData() const { return safety_margin_data_; }
 
   Cache<std::size_t, std::pair<tesseract_collision::ContactResultMap, tesseract_collision::ContactResultVector>>
       m_cache{ 10 };
@@ -223,19 +223,19 @@ protected:
   tesseract_kinematics::ForwardKinematics::ConstPtr manip_;
   tesseract_environment::Environment::ConstPtr env_;
   tesseract_environment::AdjacencyMap::ConstPtr adjacency_map_;
-  Eigen::Isometry3d world_to_base_;
+  Eigen::Isometry3d world_to_base_{ Eigen::Isometry3d::Identity() };
   SafetyMarginData::ConstPtr safety_margin_data_;
-  double safety_margin_buffer_;
-  tesseract_collision::ContactTestType contact_test_type_;
-  double longest_valid_segment_length_;
+  double safety_margin_buffer_{ 0 };
+  tesseract_collision::ContactTestType contact_test_type_{ tesseract_collision::ContactTestType::ALL };
+  double longest_valid_segment_length_{ 0.05 };
   tesseract_environment::StateSolver::Ptr state_solver_;
   sco::VarVector vars0_;
   sco::VarVector vars1_;
-  CollisionExpressionEvaluatorType evaluator_type_;
+  CollisionExpressionEvaluatorType evaluator_type_{ CollisionExpressionEvaluatorType::START_FREE_END_FREE };
   std::function<tesseract_environment::EnvState::Ptr(const std::vector<std::string>& joint_names,
                                                      const Eigen::Ref<const Eigen::VectorXd>& joint_values)>
       get_state_fn_;
-  bool dynamic_environment_;
+  bool dynamic_environment_{ false };
 
   void CollisionsToDistanceExpressions(sco::AffExprVector& exprs,
                                        AlignedVector<Eigen::Vector2d>& exprs_data,

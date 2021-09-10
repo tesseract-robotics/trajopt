@@ -84,7 +84,7 @@ inline bool isBoundsInEquality(const ifopt::Bounds& bounds)
  */
 inline bool isBoundsFiniteFinite(const ifopt::Bounds& bounds)
 {
-  return (isFinite(bounds.upper_) && isFinite(bounds.upper_));
+  return (isFinite(bounds.lower_) && isFinite(bounds.upper_));
 }
 
 /**

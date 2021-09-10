@@ -112,7 +112,7 @@ public:
   }
 };
 
-void runCastAttachedLinkWithGeomTest(trajopt_sqp::QPProblem::Ptr qp_problem, Environment::Ptr env)
+void runCastAttachedLinkWithGeomTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const Environment::Ptr& env)
 {
   env->setLinkCollisionEnabled("box_attached", true);
 
@@ -239,7 +239,7 @@ void runCastAttachedLinkWithGeomTest(trajopt_sqp::QPProblem::Ptr qp_problem, Env
   CONSOLE_BRIDGE_logWarn((found) ? ("Final trajectory is in collision") : ("Final trajectory is collision free"));
 }
 
-void runCastAttachedLinkWithoutGeomTest(trajopt_sqp::QPProblem::Ptr qp_problem, Environment::Ptr env)
+void runCastAttachedLinkWithoutGeomTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const Environment::Ptr& env)
 {
   env->setLinkCollisionEnabled("box_attached2", true);
 
