@@ -125,11 +125,15 @@ void DiscreteCollisionConstraint::CalcJacobianBlock(const Eigen::Ref<const Eigen
                                                     Jacobian& jac_block) const
 {
   // Calculate collisions
+  jac_block.reserve(static_cast<Eigen::Index>(bounds_.size()) * position_var_->GetRows());
+  // Setting to zeros because snopt sparsity cannot change
+  for (Eigen::Index i = 0; i < static_cast<Eigen::Index>(bounds_.size()); i++)
+    for (Eigen::Index j = 0; j < n_dof_; j++)
+      jac_block.coeffRef(i, j) = 0;
+
   CollisionCacheData::ConstPtr collision_data = collision_evaluator_->CalcCollisions(joint_vals);
   if (collision_data->gradient_results_set_map.empty())
     return;
-
-  jac_block.reserve(static_cast<Eigen::Index>(bounds_.size()) * position_var_->GetRows());
 
   if (collision_data->gradient_results_set_map.size() <= bounds_.size())
   {

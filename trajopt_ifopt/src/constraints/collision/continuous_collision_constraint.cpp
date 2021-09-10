@@ -138,6 +138,13 @@ std::vector<ifopt::Bounds> ContinuousCollisionConstraint::GetBounds() const { re
 void ContinuousCollisionConstraint::FillJacobianBlock(std::string var_set, Jacobian& jac_block) const
 {
   // Only modify the jacobian if this constraint uses var_set
+  jac_block.reserve(static_cast<Eigen::Index>(bounds_.size()) * position_vars_[0]->GetRows());
+
+  // Setting to zeros because snopt sparsity cannot change
+  for (Eigen::Index i = 0; i < static_cast<Eigen::Index>(bounds_.size()); i++)
+    for (Eigen::Index j = 0; j < n_dof_; j++)
+      jac_block.coeffRef(i, j) = 0;
+
   if (var_set == position_vars_[0]->GetName() && !position_vars_fixed_[0])
   {
     // Calculate collisions
@@ -147,8 +154,6 @@ void ContinuousCollisionConstraint::FillJacobianBlock(std::string var_set, Jacob
     CollisionCacheData::ConstPtr collision_data = collision_evaluator_->CalcCollisionData(joint_vals0, joint_vals1);
     if (collision_data->gradient_results_set_map.empty())
       return;
-
-    jac_block.reserve(static_cast<Eigen::Index>(bounds_.size()) * position_vars_[0]->GetRows());
 
     if (collision_data->gradient_results_set_map.size() <= bounds_.size())
     {
@@ -196,8 +201,6 @@ void ContinuousCollisionConstraint::FillJacobianBlock(std::string var_set, Jacob
     CollisionCacheData::ConstPtr collision_data = collision_evaluator_->CalcCollisionData(joint_vals0, joint_vals1);
     if (collision_data->gradient_results_set_map.empty())
       return;
-
-    jac_block.reserve(static_cast<Eigen::Index>(bounds_.size()) * position_vars_[0]->GetRows());
 
     if (collision_data->gradient_results_set_map.size() <= bounds_.size())
     {
