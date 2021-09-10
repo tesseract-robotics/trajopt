@@ -136,10 +136,10 @@ TEST_F(CastTest, boxes)  // NOLINT
   auto adj_map = std::make_shared<tesseract_environment::AdjacencyMap>(
       env->getSceneGraph(), kin->getActiveLinkNames(), env->getCurrentState()->link_transforms);
 
-  double margin_coeff = 1;
+  double margin_coeff = 10;
   double margin = 0.02;
   auto trajopt_collision_config = std::make_shared<trajopt_ifopt::TrajOptCollisionConfig>(margin, margin_coeff);
-  trajopt_collision_config->collision_margin_buffer = 0.05;
+  trajopt_collision_config->collision_margin_buffer = 0.00;
 
   // 4) Add constraints
   {  // Fix start position
@@ -155,16 +155,20 @@ TEST_F(CastTest, boxes)  // NOLINT
   }
 
   auto collision_cache = std::make_shared<trajopt_ifopt::CollisionCache>(100);
+  std::array<bool, 2> position_vars_fixed{ true, false };
   for (std::size_t i = 1; i < (vars.size()); ++i)
   {
     auto collision_evaluator = std::make_shared<trajopt_ifopt::LVSContinuousCollisionEvaluator>(
         collision_cache, kin, env, adj_map, Eigen::Isometry3d::Identity(), trajopt_collision_config);
 
     std::array<JointPosition::ConstPtr, 2> position_vars{ vars[i - 1], vars[i] };
-    std::array<bool, 2> position_vars_fixed{ false, false };
     auto cnt = std::make_shared<trajopt_ifopt::ContinuousCollisionConstraint>(
-        collision_evaluator, position_vars, position_vars_fixed, 3);
+        collision_evaluator, position_vars, position_vars_fixed, 1);
     nlp.AddConstraintSet(cnt);
+    if (i == vars.size() - 1)
+      position_vars_fixed = { false, true };
+    else
+      position_vars_fixed = { false, false };
   }
 
   nlp.PrintCurrent();

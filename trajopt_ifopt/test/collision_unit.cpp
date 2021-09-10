@@ -81,7 +81,7 @@ public:
     auto var0 = std::make_shared<trajopt_ifopt::JointPosition>(pos, kin->getJointNames(), "Joint_Position_0");
     nlp.AddVariableSet(var0);
 
-    constraint = std::make_shared<trajopt_ifopt::DiscreteCollisionConstraint>(collision_evaluator, var0, 3);
+    constraint = std::make_shared<trajopt_ifopt::DiscreteCollisionConstraint>(collision_evaluator, var0, 1);
     nlp.AddConstraintSet(constraint);
   }
 };
