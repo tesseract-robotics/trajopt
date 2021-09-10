@@ -235,7 +235,7 @@ TEST(CostWrapperUnit, WeightedAbsoluteCost)  // NOLINT
   nlp.AddCostSet(cost);
 
   auto exact_jac = nlp.EvaluateCostFunctionGradient(positions[0].data());
-  auto numerical_jac = trajopt_ifopt::calcNumericalCostGradient(positions[0].data(), nlp, 1e-8);
+  auto numerical_jac = trajopt_ifopt::calcNumericalCostGradient(positions[0].data(), nlp, 1e-8);  // NOLINT
 
   EXPECT_NEAR(exact_jac(0, 0), numerical_jac(0, 0), 1e-6);
 
