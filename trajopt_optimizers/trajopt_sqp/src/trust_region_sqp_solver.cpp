@@ -292,7 +292,7 @@ bool TrustRegionSQPSolver::callCallbacks()
 void TrustRegionSQPSolver::printStepInfo() const
 {
   // Print Header
-  std::printf("\n%15s | %10s===%10s===%10s===%10s===%10s===%10s\n",
+  std::printf("\n%20s | %10s===%10s===%10s===%10s===%10s===%10s\n",
               "",
               "==========",
               "==========",
@@ -302,7 +302,7 @@ void TrustRegionSQPSolver::printStepInfo() const
               "==========");
   std::printf("                |                              ROS Industrial \n");
   std::printf("                |                         TrajOpt Motion Planning \n");
-  std::printf("%15s | %10s===%10s===%10s===%10s===%10s===%10s\n",
+  std::printf("%20s | %10s===%10s===%10s===%10s===%10s===%10s\n",
               "",
               "==========",
               "==========",
@@ -310,14 +310,14 @@ void TrustRegionSQPSolver::printStepInfo() const
               "==========",
               "==========",
               "==========");
-  std::printf("%15s | %11s %1d/%2d/%2d/%3d\n",
+  std::printf("%20s | %11s %1d/%2d/%2d/%3d\n",
               "",
               "Iteration:",
               results_.penalty_iteration,
               results_.convexify_iteration,
               results_.trust_region_iteration,
               results_.overall_iteration);
-  std::printf("%15s | %10s===%10s===%10s===%10s===%10s===%10s\n",
+  std::printf("%20s | %10s===%10s===%10s===%10s===%10s===%10s\n",
               "",
               "==========",
               "==========",
@@ -325,7 +325,7 @@ void TrustRegionSQPSolver::printStepInfo() const
               "==========",
               "==========",
               "==========");
-  std::printf("%15s | %10s | %10s | %10s | %10s | %10s | %10s\n",
+  std::printf("%20s | %10s | %10s | %10s | %10s | %10s | %10s\n",
               "",
               "merit",
               "oldexact",
@@ -334,7 +334,7 @@ void TrustRegionSQPSolver::printStepInfo() const
               "dexact",
               "ratio");
   // Costs
-  std::printf("%15s | %10s---%10s---%10s---%10s---%10s---%10s\n",
+  std::printf("%20s | %10s---%10s---%10s---%10s---%10s---%10s\n",
               "COSTS",
               "----------",
               "----------",
@@ -353,7 +353,7 @@ void TrustRegionSQPSolver::printStepInfo() const
       double approx_improve = 0;  // old_cost_vals[i] - model_cost_vals[i];
       double exact_improve = 0;   // old_cost_vals[i] - new_cost_vals[i];
       if (fabs(approx_improve) > 1e-8)
-        std::printf("%15s | %10s | %10.3e | %10.3e | %10.3e | %10.3e | %10.3e\n",
+        std::printf("%20s | %10s | %10.3e | %10.3e | %10.3e | %10.3e | %10.3e\n",
                     (cost->GetName() + "_" + std::to_string(j)).c_str(),
                     "----------",
                     results_.best_exact_merit,
@@ -362,7 +362,7 @@ void TrustRegionSQPSolver::printStepInfo() const
                     exact_improve,
                     exact_improve / approx_improve);
       else
-        std::printf("%15s | %10s | %10.3e | %10.3e | %10.3e | %10.3e | %10s\n",
+        std::printf("%20s | %10s | %10.3e | %10.3e | %10.3e | %10.3e | %10s\n",
                     (cost->GetName() + "_" + std::to_string(j)).c_str(),
                     "----------",
                     results_.best_exact_merit,
@@ -378,7 +378,7 @@ void TrustRegionSQPSolver::printStepInfo() const
   // If we want to print the names we will have to add a getConstraints function to IFOPT
   if (results_.new_constraint_violations.size() != 0)
   {
-    std::printf("%15s | %10s---%10s---%10s---%10s---%10s---%10s\n",
+    std::printf("%20s | %10s---%10s---%10s---%10s---%10s---%10s\n",
                 "CONSTRAINTS",
                 "----------",
                 "----------",
@@ -397,7 +397,7 @@ void TrustRegionSQPSolver::printStepInfo() const
       {
         double approx_improve = 0;  // old_cnt_viols[i] - model_cnt_viols[i];  // TODO
         if (fabs(approx_improve) > 1e-8)
-          std::printf("%15s | %10.3e | %10.3e | %10.3e | %10s | %10.3e | %10.3e\n",
+          std::printf("%20s | %10.3e | %10.3e | %10.3e | %10s | %10.3e | %10.3e\n",
                       (cnt->GetName() + "_" + std::to_string(j)).c_str(),
                       results_.merit_error_coeffs[cnt_number],
                       results_.merit_error_coeffs[cnt_number] * results_.best_constraint_violations[cnt_number],
@@ -406,7 +406,7 @@ void TrustRegionSQPSolver::printStepInfo() const
                       results_.merit_error_coeffs[cnt_number] * exact_cnt_improve[cnt_number],
                       exact_cnt_improve[cnt_number] / approx_improve);
         else
-          std::printf("%15s | %10.3e | %10.3e | %10.3e | %10s | %10.3e | %10s\n",
+          std::printf("%20s | %10.3e | %10.3e | %10.3e | %10s | %10.3e | %10s\n",
                       (cnt->GetName() + "_" + std::to_string(j)).c_str(),
                       results_.merit_error_coeffs[cnt_number],
                       results_.merit_error_coeffs[cnt_number] * results_.best_constraint_violations[cnt_number],
@@ -420,7 +420,7 @@ void TrustRegionSQPSolver::printStepInfo() const
   }
 
   // Total
-  std::printf("%15s | %10s===%10s===%10s===%10s===%10s===%10s\n",
+  std::printf("%20s | %10s===%10s===%10s===%10s===%10s===%10s\n",
               "",
               "==========",
               "==========",
@@ -428,7 +428,7 @@ void TrustRegionSQPSolver::printStepInfo() const
               "==========",
               "==========",
               "==========");
-  std::printf("%15s | %10s | %10.3e | %10.3e | %10.3e | %10.3e | %10.3e\n",
+  std::printf("%20s | %10s | %10.3e | %10.3e | %10.3e | %10.3e | %10.3e\n",
               "TOTAL",
               "----------",
               results_.best_exact_merit,
