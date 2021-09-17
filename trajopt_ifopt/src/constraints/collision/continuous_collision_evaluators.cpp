@@ -87,6 +87,7 @@ LVSContinuousCollisionEvaluator::CalcCollisionData(const Eigen::Ref<const Eigen:
   for (const auto& pair : data->contact_results_map)
   {
     GradientResultsSet grs;
+    grs.key = pair.first;
     grs.is_continuous = true;
     grs.results.reserve(pair.second.size());
     for (const tesseract_collision::ContactResult& dist_result : pair.second)
@@ -250,6 +251,7 @@ LVSDiscreteCollisionEvaluator::CalcCollisionData(const Eigen::Ref<const Eigen::V
   for (const auto& pair : data->contact_results_map)
   {
     GradientResultsSet grs;
+    grs.key = pair.first;
     grs.is_continuous = true;
     grs.results.reserve(pair.second.size());
     for (const tesseract_collision::ContactResult& dist_result : pair.second)
