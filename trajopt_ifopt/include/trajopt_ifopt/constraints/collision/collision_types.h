@@ -175,6 +175,9 @@ struct GradientResultsSet
   GradientResultsSet() = default;
   GradientResultsSet(std::size_t reserve) { results.reserve(reserve); }
 
+  /** @brief They map key from contact results map */
+  std::pair<std::string, std::string> key;
+
   /**
    * @brief Indicate if this set is from a continuous contact checker
    * @details If false, the data is from a discrete contact checker

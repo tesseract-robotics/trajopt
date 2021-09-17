@@ -1,6 +1,6 @@
 /**
- * @file continuous_collision_constraint.cpp
- * @brief The continuous collision position constraint
+ * @file continuous_collision_numerical_constraint.cpp
+ * @brief The continuous collision numerical constraint
  *
  * @author Levi Armstrong
  * @author Matthew Powelson
@@ -32,16 +32,17 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <tesseract_collision/core/common.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
-#include <trajopt_ifopt/constraints/collision/continuous_collision_constraint.h>
+#include <trajopt_ifopt/constraints/collision/continuous_collision_numerical_constraint.h>
 #include <trajopt_ifopt/constraints/collision/weighted_average_methods.h>
 
 namespace trajopt_ifopt
 {
-ContinuousCollisionConstraint::ContinuousCollisionConstraint(ContinuousCollisionEvaluator::Ptr collision_evaluator,
-                                                             std::array<JointPosition::ConstPtr, 2> position_vars,
-                                                             std::array<bool, 2> position_vars_fixed,
-                                                             int max_num_cnt,
-                                                             const std::string& name)
+ContinuousCollisionNumericalConstraint::ContinuousCollisionNumericalConstraint(
+    ContinuousCollisionEvaluator::Ptr collision_evaluator,
+    std::array<JointPosition::ConstPtr, 2> position_vars,
+    std::array<bool, 2> position_vars_fixed,
+    int max_num_cnt,
+    const std::string& name)
   : ifopt::ConstraintSet(max_num_cnt, name)
   , position_vars_(std::move(position_vars))
   , position_vars_fixed_(std::move(position_vars_fixed))
@@ -67,7 +68,7 @@ ContinuousCollisionConstraint::ContinuousCollisionConstraint(ContinuousCollision
   bounds_ = std::vector<ifopt::Bounds>(static_cast<std::size_t>(max_num_cnt), ifopt::BoundSmallerZero);
 }
 
-Eigen::VectorXd ContinuousCollisionConstraint::GetValues() const
+Eigen::VectorXd ContinuousCollisionNumericalConstraint::GetValues() const
 {
   // Get current joint values
   Eigen::VectorXd joint_vals0 = this->GetVariables()->GetComponent(position_vars_[0]->GetName())->GetValues();
@@ -80,24 +81,12 @@ Eigen::VectorXd ContinuousCollisionConstraint::GetValues() const
   if (collision_data->gradient_results_set_map.empty())
     return values;
 
+  // TODO should update to handle fixed states
   if (collision_data->gradient_results_set_map.size() <= bounds_.size())
   {
     Eigen::Index i{ 0 };
-    if (!position_vars_fixed_[0] && !position_vars_fixed_[1])
-    {
-      for (const auto& grs : collision_data->gradient_results_set_map)
-        values(i++) = getWeightedAvgValues(grs.second, margin_buffer)[0];
-    }
-    else if (!position_vars_fixed_[0])
-    {
-      for (const auto& grs : collision_data->gradient_results_set_map)
-        values(i++) = getWeightedAvgValuesT0(grs.second, margin_buffer)[0];
-    }
-    else
-    {
-      for (const auto& grs : collision_data->gradient_results_set_map)
-        values(i++) = getWeightedAvgValuesT1(grs.second, margin_buffer)[0];
-    }
+    for (const auto& grs : collision_data->gradient_results_set_map)
+      values(i++) = grs.second.max_error;
   }
   else
   {
@@ -112,30 +101,17 @@ Eigen::VectorXd ContinuousCollisionConstraint::GetValues() const
       return a.max_error > b.max_error;
     });
 
-    if (!position_vars_fixed_[0] && !position_vars_fixed_[1])
-    {
-      for (std::size_t i = 0; i < bounds_.size(); ++i)
-        values(static_cast<Eigen::Index>(i)) = getWeightedAvgValues(rs[i], margin_buffer)[0];
-    }
-    else if (!position_vars_fixed_[0])
-    {
-      for (std::size_t i = 0; i < bounds_.size(); ++i)
-        values(static_cast<Eigen::Index>(i)) = getWeightedAvgValuesT0(rs[i], margin_buffer)[0];
-    }
-    else
-    {
-      for (std::size_t i = 0; i < bounds_.size(); ++i)
-        values(static_cast<Eigen::Index>(i)) = getWeightedAvgValuesT1(rs[i], margin_buffer)[0];
-    }
+    for (std::size_t i = 0; i < bounds_.size(); ++i)
+      values(static_cast<Eigen::Index>(i)) = rs[i].max_error;
   }
 
   return values;
 }
 
 // Set the limits on the constraint values
-std::vector<ifopt::Bounds> ContinuousCollisionConstraint::GetBounds() const { return bounds_; }
+std::vector<ifopt::Bounds> ContinuousCollisionNumericalConstraint::GetBounds() const { return bounds_; }
 
-void ContinuousCollisionConstraint::FillJacobianBlock(std::string var_set, Jacobian& jac_block) const
+void ContinuousCollisionNumericalConstraint::FillJacobianBlock(std::string var_set, Jacobian& jac_block) const
 {
   // Only modify the jacobian if this constraint uses var_set
   jac_block.reserve(static_cast<Eigen::Index>(bounds_.size()) * position_vars_[0]->GetRows());
@@ -157,16 +133,28 @@ void ContinuousCollisionConstraint::FillJacobianBlock(std::string var_set, Jacob
 
     if (collision_data->gradient_results_set_map.size() <= bounds_.size())
     {
-      Eigen::Index i{ 0 };
-      for (const auto& grs : collision_data->gradient_results_set_map)
+      Eigen::VectorXd jv = joint_vals0;
+      double delta = 1e-8;
+      for (int j = 0; j < n_dof_; j++)
       {
-        Eigen::VectorXd grad_vec = getWeightedAvgGradientT0(grs.second, position_vars_[0]->GetRows());
-
-        // Collision is 1 x n_dof
-        for (int j = 0; j < n_dof_; j++)
-          jac_block.coeffRef(i, j) = -1.0 * grad_vec[j];
-
-        ++i;
+        jv(j) = joint_vals0(j) + delta;
+        CollisionCacheData::ConstPtr collision_data_delta = collision_evaluator_->CalcCollisionData(jv, joint_vals1);
+        int idx{ 0 };
+        for (const auto& grs : collision_data->gradient_results_set_map)
+        {
+          auto it = collision_data_delta->gradient_results_set_map.find(grs.first);
+          if (it != collision_data_delta->gradient_results_set_map.end())
+          {
+            double dist_delta = it->second.max_error - grs.second.max_error;
+            jac_block.coeffRef(idx++, j) = dist_delta / delta;
+          }
+          else
+          {
+            double dist_delta = 0 - grs.second.max_error;
+            jac_block.coeffRef(idx++, j) = dist_delta / delta;
+          }
+        }
+        jv(j) = joint_vals0(j);
       }
     }
     else
@@ -182,13 +170,28 @@ void ContinuousCollisionConstraint::FillJacobianBlock(std::string var_set, Jacob
         return a.max_error > b.max_error;
       });
 
-      for (std::size_t i = 0; i < bounds_.size(); ++i)
+      Eigen::VectorXd jv = joint_vals0;
+      double delta = 0.001;
+      for (int j = 0; j < n_dof_; j++)
       {
-        Eigen::VectorXd grad_vec = getWeightedAvgGradientT0(rs[i], position_vars_[0]->GetRows());
-
-        // Collision is 1 x n_dof
-        for (int j = 0; j < n_dof_; j++)
-          jac_block.coeffRef(static_cast<int>(i), j) = -1.0 * grad_vec[j];
+        jv(j) = joint_vals0(j) + delta;
+        CollisionCacheData::ConstPtr collision_data_delta = collision_evaluator_->CalcCollisionData(jv, joint_vals1);
+        for (int i = 0; i < static_cast<int>(bounds_.size()); ++i)
+        {
+          GradientResultsSet& r = rs[static_cast<std::size_t>(i)];
+          auto it = collision_data_delta->gradient_results_set_map.find(r.key);
+          if (it != collision_data_delta->gradient_results_set_map.end())
+          {
+            double dist_delta = it->second.max_error - r.max_error;
+            jac_block.coeffRef(i, j) = dist_delta / delta;
+          }
+          else
+          {
+            double dist_delta = 0 - r.max_error;
+            jac_block.coeffRef(i, j) = dist_delta / delta;
+          }
+        }
+        jv(j) = joint_vals0(j);
       }
     }
   }
@@ -204,16 +207,28 @@ void ContinuousCollisionConstraint::FillJacobianBlock(std::string var_set, Jacob
 
     if (collision_data->gradient_results_set_map.size() <= bounds_.size())
     {
-      Eigen::Index i{ 0 };
-      for (const auto& grs : collision_data->gradient_results_set_map)
+      Eigen::VectorXd jv = joint_vals1;
+      double delta = 1e-8;
+      for (int j = 0; j < n_dof_; j++)
       {
-        Eigen::VectorXd grad_vec = getWeightedAvgGradientT1(grs.second, position_vars_[1]->GetRows());
-
-        // Collision is 1 x n_dof
-        for (int j = 0; j < n_dof_; j++)
-          jac_block.coeffRef(i, j) = -1.0 * grad_vec[j];
-
-        ++i;
+        jv(j) = joint_vals1(j) + delta;
+        CollisionCacheData::ConstPtr collision_data_delta = collision_evaluator_->CalcCollisionData(joint_vals0, jv);
+        int idx{ 0 };
+        for (const auto& grs : collision_data->gradient_results_set_map)
+        {
+          auto it = collision_data_delta->gradient_results_set_map.find(grs.first);
+          if (it != collision_data_delta->gradient_results_set_map.end())
+          {
+            double dist_delta = it->second.max_error - grs.second.max_error;
+            jac_block.coeffRef(idx++, j) = dist_delta / delta;
+          }
+          else
+          {
+            double dist_delta = 0 - grs.second.max_error;
+            jac_block.coeffRef(idx++, j) = dist_delta / delta;
+          }
+        }
+        jv(j) = joint_vals1(j);
       }
     }
     else
@@ -229,25 +244,40 @@ void ContinuousCollisionConstraint::FillJacobianBlock(std::string var_set, Jacob
         return a.max_error > b.max_error;
       });
 
-      for (std::size_t i = 0; i < bounds_.size(); ++i)
+      Eigen::VectorXd jv = joint_vals1;
+      double delta = 0.001;
+      for (int j = 0; j < n_dof_; j++)
       {
-        Eigen::VectorXd grad_vec = getWeightedAvgGradientT1(rs[i], position_vars_[1]->GetRows());
-
-        // Collision is 1 x n_dof
-        for (int j = 0; j < n_dof_; j++)
-          jac_block.coeffRef(static_cast<int>(i), j) = -1.0 * grad_vec[j];
+        jv(j) = joint_vals1(j) + delta;
+        CollisionCacheData::ConstPtr collision_data_delta = collision_evaluator_->CalcCollisionData(joint_vals0, jv);
+        for (int i = 0; i < static_cast<int>(bounds_.size()); ++i)
+        {
+          GradientResultsSet& r = rs[static_cast<std::size_t>(i)];
+          auto it = collision_data_delta->gradient_results_set_map.find(r.key);
+          if (it != collision_data_delta->gradient_results_set_map.end())
+          {
+            double dist_delta = it->second.max_error - r.max_error;
+            jac_block.coeffRef(i, j) = dist_delta / delta;
+          }
+          else
+          {
+            double dist_delta = 0 - r.max_error;
+            jac_block.coeffRef(i, j) = dist_delta / delta;
+          }
+        }
+        jv(j) = joint_vals1(j);
       }
     }
   }
 }
 
-void ContinuousCollisionConstraint::SetBounds(const std::vector<ifopt::Bounds>& bounds)
+void ContinuousCollisionNumericalConstraint::SetBounds(const std::vector<ifopt::Bounds>& bounds)
 {
   assert(bounds.size() == 1);
   bounds_ = bounds;
 }
 
-ContinuousCollisionEvaluator::Ptr ContinuousCollisionConstraint::GetCollisionEvaluator() const
+ContinuousCollisionEvaluator::Ptr ContinuousCollisionNumericalConstraint::GetCollisionEvaluator() const
 {
   return collision_evaluator_;
 }
