@@ -81,12 +81,24 @@ Eigen::VectorXd ContinuousCollisionNumericalConstraint::GetValues() const
   if (collision_data->gradient_results_set_map.empty())
     return values;
 
-  // TODO should update to handle fixed states
   if (collision_data->gradient_results_set_map.size() <= bounds_.size())
   {
     Eigen::Index i{ 0 };
-    for (const auto& grs : collision_data->gradient_results_set_map)
-      values(i++) = grs.second.max_error;
+    if (!position_vars_fixed_[0] && !position_vars_fixed_[1])
+    {
+      for (const auto& grs : collision_data->gradient_results_set_map)
+        values(i++) = grs.second.coeff * grs.second.getMaxError();
+    }
+    else if (!position_vars_fixed_[0])
+    {
+      for (const auto& grs : collision_data->gradient_results_set_map)
+        values(i++) = grs.second.coeff * grs.second.getMaxErrorT0();
+    }
+    else
+    {
+      for (const auto& grs : collision_data->gradient_results_set_map)
+        values(i++) = grs.second.coeff * grs.second.getMaxErrorT1();
+    }
   }
   else
   {
@@ -98,11 +110,26 @@ Eigen::VectorXd ContinuousCollisionNumericalConstraint::GetValues() const
                    std::bind(&std::map<std::pair<std::string, std::string>, GradientResultsSet>::value_type::second,
                              std::placeholders::_1));
     std::sort(rs.begin(), rs.end(), [](const GradientResultsSet& a, const GradientResultsSet& b) {
-      return a.max_error > b.max_error;
+      return (a.getMaxError() > b.getMaxError());
+      // must use the same error regardless if it is fixed because the sort must be the same so error aligns with
+      // gradient
     });
 
-    for (std::size_t i = 0; i < bounds_.size(); ++i)
-      values(static_cast<Eigen::Index>(i)) = rs[i].max_error;
+    if (!position_vars_fixed_[0] && !position_vars_fixed_[1])
+    {
+      for (std::size_t i = 0; i < bounds_.size(); ++i)
+        values(static_cast<Eigen::Index>(i)) = rs[i].coeff * rs[i].getMaxError();
+    }
+    else if (!position_vars_fixed_[0])
+    {
+      for (std::size_t i = 0; i < bounds_.size(); ++i)
+        values(static_cast<Eigen::Index>(i)) = rs[i].coeff * rs[i].getMaxErrorT0();
+    }
+    else
+    {
+      for (std::size_t i = 0; i < bounds_.size(); ++i)
+        values(static_cast<Eigen::Index>(i)) = rs[i].coeff * rs[i].getMaxErrorT1();
+    }
   }
 
   return values;
@@ -146,12 +173,12 @@ void ContinuousCollisionNumericalConstraint::FillJacobianBlock(std::string var_s
           auto it = collision_data_delta->gradient_results_set_map.find(grs.first);
           if (it != collision_data_delta->gradient_results_set_map.end())
           {
-            double dist_delta = grs.second.coeff * (it->second.max_error - grs.second.max_error);
+            double dist_delta = grs.second.coeff * (it->second.getMaxErrorT0() - grs.second.getMaxErrorT0());
             jac_block.coeffRef(idx++, j) = dist_delta / delta;
           }
           else
           {
-            double dist_delta = grs.second.coeff * ((-1.0 * margin_buffer) - grs.second.max_error);
+            double dist_delta = grs.second.coeff * ((-1.0 * margin_buffer) - grs.second.getMaxErrorT0());
             jac_block.coeffRef(idx++, j) = dist_delta / delta;
           }
         }
@@ -168,7 +195,9 @@ void ContinuousCollisionNumericalConstraint::FillJacobianBlock(std::string var_s
                      std::bind(&std::map<std::pair<std::string, std::string>, GradientResultsSet>::value_type::second,
                                std::placeholders::_1));
       std::sort(rs.begin(), rs.end(), [](const GradientResultsSet& a, const GradientResultsSet& b) {
-        return a.max_error > b.max_error;
+        return a.getMaxError() > b.getMaxError();
+        // must use the same error regardless if it is fixed because the sort must be the same so error aligns with
+        // gradient
       });
 
       Eigen::VectorXd jv = joint_vals0;
@@ -183,12 +212,12 @@ void ContinuousCollisionNumericalConstraint::FillJacobianBlock(std::string var_s
           auto it = collision_data_delta->gradient_results_set_map.find(r.key);
           if (it != collision_data_delta->gradient_results_set_map.end())
           {
-            double dist_delta = r.coeff * (it->second.max_error - r.max_error);
+            double dist_delta = r.coeff * (it->second.getMaxErrorT0() - r.getMaxErrorT0());
             jac_block.coeffRef(i, j) = dist_delta / delta;
           }
           else
           {
-            double dist_delta = r.coeff * ((-1.0 * margin_buffer) - r.max_error);
+            double dist_delta = r.coeff * ((-1.0 * margin_buffer) - r.getMaxErrorT0());
             jac_block.coeffRef(i, j) = dist_delta / delta;
           }
         }
@@ -220,12 +249,12 @@ void ContinuousCollisionNumericalConstraint::FillJacobianBlock(std::string var_s
           auto it = collision_data_delta->gradient_results_set_map.find(grs.first);
           if (it != collision_data_delta->gradient_results_set_map.end())
           {
-            double dist_delta = grs.second.coeff * (it->second.max_error - grs.second.max_error);
+            double dist_delta = grs.second.coeff * (it->second.getMaxErrorT1() - grs.second.getMaxErrorT1());
             jac_block.coeffRef(idx++, j) = dist_delta / delta;
           }
           else
           {
-            double dist_delta = grs.second.coeff * ((-1.0 * margin_buffer) - grs.second.max_error);
+            double dist_delta = grs.second.coeff * ((-1.0 * margin_buffer) - grs.second.getMaxErrorT1());
             jac_block.coeffRef(idx++, j) = dist_delta / delta;
           }
         }
@@ -242,7 +271,9 @@ void ContinuousCollisionNumericalConstraint::FillJacobianBlock(std::string var_s
                      std::bind(&std::map<std::pair<std::string, std::string>, GradientResultsSet>::value_type::second,
                                std::placeholders::_1));
       std::sort(rs.begin(), rs.end(), [](const GradientResultsSet& a, const GradientResultsSet& b) {
-        return a.max_error > b.max_error;
+        return a.getMaxError() > b.getMaxError();
+        // must use the same error regardless if it is fixed because the sort must be the same so error aligns with
+        // gradient
       });
 
       Eigen::VectorXd jv = joint_vals1;
@@ -257,12 +288,12 @@ void ContinuousCollisionNumericalConstraint::FillJacobianBlock(std::string var_s
           auto it = collision_data_delta->gradient_results_set_map.find(r.key);
           if (it != collision_data_delta->gradient_results_set_map.end())
           {
-            double dist_delta = r.coeff * (it->second.max_error - r.max_error);
+            double dist_delta = r.coeff * (it->second.getMaxErrorT1() - r.getMaxErrorT1());
             jac_block.coeffRef(i, j) = dist_delta / delta;
           }
           else
           {
-            double dist_delta = r.coeff * ((-1.0 * margin_buffer) - r.max_error);
+            double dist_delta = r.coeff * ((-1.0 * margin_buffer) - r.getMaxErrorT1());
             jac_block.coeffRef(i, j) = dist_delta / delta;
           }
         }

@@ -155,13 +155,39 @@ struct GradientResults
   double error_with_buffer{ 0 };
 };
 
-struct MaxError
+struct LinkMaxError
 {
-  /** @brief The max error in the gradient_results */
-  double error{ std::numeric_limits<double>::lowest() };
+  /** @brief Indicate if T0 or T1 has error */
+  std::array<bool, 2> has_error{ false, false };
 
-  /** @brief The max error with buffer in the gradient_results */
-  double error_with_buffer{ std::numeric_limits<double>::lowest() };
+  /**
+   * @brief The max error in the gradient_results
+   * @details
+   * [0] is the link max error excluding any values at T1
+   * [1] is the link max error excluding any values at T0
+   */
+  std::array<double, 2> error{ std::numeric_limits<double>::lowest(), std::numeric_limits<double>::lowest() };
+
+  /**
+   * @brief The max error with buffer in the gradient_results
+   * @details
+   * [0] is the link max error excluding any values at T1
+   * [1] is the link max error excluding any values at T0
+   */
+  std::array<double, 2> error_with_buffer{ std::numeric_limits<double>::lowest(),
+                                           std::numeric_limits<double>::lowest() };
+
+  /**
+   * @brief Get the max error including both T1 and T0 data
+   * @return The max error including T1 and T0 data
+   */
+  double getMaxError() const;
+
+  /**
+   * @brief Get the max error with buffer including both T1 and T0 data
+   * @return The max error with buffer including T1 and T0 data
+   */
+  double getMaxErrorWithBuffer() const;
 };
 
 /** @brief A set of gradient results */
@@ -182,25 +208,41 @@ struct GradientResultsSet
    */
   bool is_continuous{ false };
 
-  /** @brief The max error in the gradient_results */
-  double max_error{ std::numeric_limits<double>::lowest() };
-
-  /** @brief The max error with buffer in the gradient_results */
-  double max_error_with_buffer{ std::numeric_limits<double>::lowest() };
+  /**
+   * @brief The max errors
+   * @details
+   *   [0] Errors related to LinkA
+   *   [1] Errors related to LinkB
+   */
+  std::array<LinkMaxError, 2> max_error;
 
   /** @brief The stored gradient results for this set */
   std::vector<GradientResults> results;
 
-  void add(const GradientResults& gradient_result)
-  {
-    if (gradient_result.error > max_error)
-      max_error = gradient_result.error;
+  /**
+   * @brief Add bradient results to the set
+   * @brief This updates max error data
+   * @param gradient_result The gradient results to add
+   */
+  void add(const GradientResults& gradient_result);
 
-    if (gradient_result.error_with_buffer > max_error_with_buffer)
-      max_error_with_buffer = gradient_result.error_with_buffer;
+  /** @brief Get the max error including T0 and T1 */
+  double getMaxError() const;
 
-    results.push_back(gradient_result);
-  }
+  /** @brief Get the max error including excluding errors at T1 */
+  double getMaxErrorT0() const;
+
+  /** @brief Get the max error including excluding errors at T0 */
+  double getMaxErrorT1() const;
+
+  /** @brief Get the max error with buffer including T0 and T1 */
+  double getMaxErrorWithBuffer() const;
+
+  /** @brief Get the max error with buffer excluding errors at T1 */
+  double getMaxErrorWithBufferT0() const;
+
+  /** @brief Get the max error with buffer excluding errors at T0 */
+  double getMaxErrorWithBufferT1() const;
 };
 
 /** @brief The data structure used to cache collision results data for discrete collision evaluator */

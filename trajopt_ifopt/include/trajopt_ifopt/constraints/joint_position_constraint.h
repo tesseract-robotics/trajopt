@@ -50,6 +50,7 @@ public:
    * @param targets Target joint position (length should be n_dof). Upper and lower bounds are set to this value
    * @param position_vars Variables to which this constraint is applied. Note that all variables should have the same
    * number of components (joint DOF)
+   * @param coeffs The joint coefficients to use as weights. If size of 1 then the values is replicated for each joint.
    * @param name Name of the constraint
    */
   JointPosConstraint(const Eigen::VectorXd& targets,
@@ -61,6 +62,7 @@ public:
    * @brief JointPosConstraint
    * @param bounds Bounds on target joint position (length should be n_dof)
    * @param position_vars Variables to which this constraint is applied
+   * @param coeffs The joint coefficients to use as weights. If size of 1 then the values is replicated for each joint.
    * @param name Name of the constraint
    */
   JointPosConstraint(const std::vector<ifopt::Bounds>& bounds,
@@ -95,7 +97,7 @@ private:
   long n_vars_;
 
   /** @brief The coeff to apply to error and gradient */
-  Eigen::VectorXd coeff_;
+  Eigen::VectorXd coeffs_;
 
   /** @brief Bounds on the positions of each joint */
   std::vector<ifopt::Bounds> bounds_;

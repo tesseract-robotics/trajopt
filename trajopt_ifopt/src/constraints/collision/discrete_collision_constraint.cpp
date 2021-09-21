@@ -93,7 +93,7 @@ Eigen::VectorXd DiscreteCollisionConstraint::CalcValues(const Eigen::Ref<const E
   {
     Eigen::Index i{ 0 };
     for (const auto& grs : collision_data->gradient_results_set_map)
-      values(i++) = grs.second.coeff * grs.second.max_error;
+      values(i++) = grs.second.coeff * grs.second.getMaxErrorT0();
   }
   else
   {
@@ -105,11 +105,11 @@ Eigen::VectorXd DiscreteCollisionConstraint::CalcValues(const Eigen::Ref<const E
                    std::bind(&std::map<std::pair<std::string, std::string>, GradientResultsSet>::value_type::second,
                              std::placeholders::_1));
     std::sort(rs.begin(), rs.end(), [](const GradientResultsSet& a, const GradientResultsSet& b) {
-      return a.max_error > b.max_error;
+      return a.max_error[0].error > b.max_error[0].error;
     });
 
     for (std::size_t i = 0; i < bounds_.size(); ++i)
-      values(static_cast<Eigen::Index>(i)) = rs[i].coeff * rs[i].max_error;
+      values(static_cast<Eigen::Index>(i)) = rs[i].coeff * rs[i].getMaxErrorT0();
   }
 
   return values;
@@ -159,7 +159,7 @@ void DiscreteCollisionConstraint::CalcJacobianBlock(const Eigen::Ref<const Eigen
                    std::bind(&std::map<std::pair<std::string, std::string>, GradientResultsSet>::value_type::second,
                              std::placeholders::_1));
     std::sort(rs.begin(), rs.end(), [](const GradientResultsSet& a, const GradientResultsSet& b) {
-      return a.max_error > b.max_error;
+      return a.max_error[0].error > b.max_error[0].error;
     });
 
     for (std::size_t i = 0; i < bounds_.size(); ++i)
