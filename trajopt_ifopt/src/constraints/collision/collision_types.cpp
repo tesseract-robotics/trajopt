@@ -57,4 +57,201 @@ TrajOptCollisionConfig::TrajOptCollisionConfig(double margin, double coeff)
 {
 }
 
+double LinkMaxError::getMaxError() const
+{
+  if (has_error[0] && has_error[1])
+    return std::max(error[0], error[1]);
+
+  if (has_error[0])
+    return error[0];
+
+  if (has_error[1])
+    return error[1];
+
+  throw std::runtime_error("Invalid LinkMaxError");
+}
+
+double LinkMaxError::getMaxErrorWithBuffer() const
+{
+  if (has_error[0] && has_error[1])
+    return std::max(error_with_buffer[0], error_with_buffer[1]);
+
+  if (has_error[0])
+    return error_with_buffer[0];
+
+  if (has_error[1])
+    return error_with_buffer[1];
+
+  throw std::runtime_error("Invalid LinkMaxError");
+}
+
+void GradientResultsSet::add(const GradientResults& gradient_result)
+{
+  // Update max error for LinkA and LinkB excluding values at T1
+  for (std::size_t i = 0; i < 2; ++i)
+  {
+    if (gradient_result.gradients[i].has_gradient &&
+        gradient_result.gradients[i].cc_type != tesseract_collision::ContinuousCollisionType::CCType_Time1)
+    {
+      max_error[i].has_error[0] = true;
+
+      if (gradient_result.error > max_error[i].error[0])
+        max_error[i].error[0] = gradient_result.error;
+
+      if (gradient_result.error_with_buffer > max_error[i].error_with_buffer[0])
+        max_error[i].error_with_buffer[0] = gradient_result.error_with_buffer;
+    }
+  }
+
+  // Update max error for LinkA and LinkB excluding values at T0
+  for (std::size_t i = 0; i < 2; ++i)
+  {
+    if (gradient_result.gradients[i].has_gradient &&
+        gradient_result.gradients[i].cc_type != tesseract_collision::ContinuousCollisionType::CCType_Time0)
+    {
+      max_error[i].has_error[1] = true;
+
+      if (gradient_result.error > max_error[i].error[1])
+        max_error[i].error[1] = gradient_result.error;
+
+      if (gradient_result.error_with_buffer > max_error[i].error_with_buffer[1])
+        max_error[i].error_with_buffer[1] = gradient_result.error_with_buffer;
+    }
+  }
+
+  results.push_back(gradient_result);
+}
+
+double GradientResultsSet::getMaxError() const
+{
+  double e{ std::numeric_limits<double>::lowest() };
+  bool found{ false };
+  for (std::size_t i = 0; i < 2; ++i)
+  {
+    if (max_error[i].has_error[0] && max_error[i].error[0] > e)
+    {
+      e = max_error[i].error[0];
+      found = true;
+    }
+
+    if (max_error[i].has_error[1] && max_error[i].error[1] > e)
+    {
+      e = max_error[i].error[1];
+      found = true;
+    }
+  }
+
+  if (!found)
+    throw std::runtime_error("Max error does not exist.");
+
+  assert(e > (std::numeric_limits<double>::lowest() / 2.0));
+  return e;
+}
+
+double GradientResultsSet::getMaxErrorT0() const
+{
+  double e{ std::numeric_limits<double>::lowest() };
+  bool found{ false };
+  for (std::size_t i = 0; i < 2; ++i)
+  {
+    if (max_error[i].has_error[0] && max_error[i].error[0] > e)
+    {
+      e = max_error[i].error[0];
+      found = true;
+    }
+  }
+
+  if (!found)
+    throw std::runtime_error("Max error at T0 does not exist.");
+
+  assert(e > (std::numeric_limits<double>::lowest() / 2.0));
+  return e;
+}
+
+double GradientResultsSet::getMaxErrorT1() const
+{
+  double e{ std::numeric_limits<double>::lowest() };
+  bool found{ false };
+  for (std::size_t i = 0; i < 2; ++i)
+  {
+    if (max_error[i].has_error[1] && max_error[i].error[1] > e)
+    {
+      e = max_error[i].error[1];
+      found = true;
+    }
+  }
+
+  if (!found)
+    throw std::runtime_error("Max error at T1 does not exist.");
+
+  assert(e > (std::numeric_limits<double>::lowest() / 2.0));
+  return e;
+}
+
+double GradientResultsSet::getMaxErrorWithBuffer() const
+{
+  double e{ std::numeric_limits<double>::lowest() };
+  bool found{ false };
+  for (std::size_t i = 0; i < 2; ++i)
+  {
+    if (max_error[i].has_error[0] && max_error[i].error_with_buffer[0] > e)
+    {
+      e = max_error[i].error_with_buffer[0];
+      found = true;
+    }
+
+    if (max_error[i].has_error[1] && max_error[i].error_with_buffer[1] > e)
+    {
+      e = max_error[i].error_with_buffer[1];
+      found = true;
+    }
+  }
+
+  if (!found)
+    throw std::runtime_error("Max error with buffer does not exist.");
+
+  assert(e > (std::numeric_limits<double>::lowest() / 2.0));
+  return e;
+}
+
+double GradientResultsSet::getMaxErrorWithBufferT0() const
+{
+  double e{ std::numeric_limits<double>::lowest() };
+  bool found{ false };
+  for (std::size_t i = 0; i < 2; ++i)
+  {
+    if (max_error[i].has_error[0] && max_error[i].error_with_buffer[0] > e)
+    {
+      e = max_error[i].error_with_buffer[0];
+      found = true;
+    }
+  }
+
+  if (!found)
+    throw std::runtime_error("Max error with buffer at T0 does not exist.");
+
+  assert(e > (std::numeric_limits<double>::lowest() / 2.0));
+  return e;
+}
+
+double GradientResultsSet::getMaxErrorWithBufferT1() const
+{
+  double e{ std::numeric_limits<double>::lowest() };
+  bool found{ false };
+  for (std::size_t i = 0; i < 2; ++i)
+  {
+    if (max_error[i].has_error[1] && max_error[i].error_with_buffer[1] > e)
+    {
+      e = max_error[i].error_with_buffer[1];
+      found = true;
+    }
+  }
+
+  if (!found)
+    throw std::runtime_error("Max error with buffer at T1 does not exist.");
+
+  assert(e > (std::numeric_limits<double>::lowest() / 2.0));
+  return e;
+}
+
 }  // namespace trajopt_ifopt

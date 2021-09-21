@@ -171,7 +171,8 @@ void calcGradient(GradientResults& results,
     link_transform = (isTimestep1) ? contact_result.cc_transform[i] : contact_result.transform[i];
     /**
      * @todo Look at decoupling this from the cc_transforms so we only have one gradient for timestep0 and timestep1
-     * This will simplify a lot of the data structures if you have a single gradient where you only scale is different
+     * This will simplify a lot of the data structures if you have a single gradient where you only the scale is
+     * different
      */
   }
   tesseract_kinematics::jacobianChangeBase(jac, world_to_base);

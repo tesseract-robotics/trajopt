@@ -149,6 +149,7 @@ void runPlanningTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const Enviro
   }
 
   auto collision_cache = std::make_shared<trajopt_ifopt::CollisionCache>(100);
+  std::array<bool, 2> position_vars_fixed{ false, false };
   for (std::size_t i = 1; i < (vars.size() - 1); ++i)
   {
     auto collision_evaluator =
@@ -160,7 +161,14 @@ void runPlanningTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const Enviro
                                                                          trajopt_collision_config);
 
     std::array<JointPosition::ConstPtr, 2> position_vars{ vars[i - 1], vars[i] };
-    std::array<bool, 2> position_vars_fixed{ false, false };
+
+    if (i == 1)
+      position_vars_fixed = { true, false };
+    else if (i == (vars.size() - 1))
+      position_vars_fixed = { false, true };
+    else
+      position_vars_fixed = { false, false };
+
     auto cnt = std::make_shared<trajopt_ifopt::ContinuousCollisionConstraint>(
         collision_evaluator, position_vars, position_vars_fixed, 5);
 
