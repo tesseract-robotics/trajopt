@@ -63,7 +63,8 @@ void processInterpolatedCollisionResults(std::vector<tesseract_collision::Contac
                                          tesseract_collision::ContactResultMap& contact_results,
                                          const std::vector<std::string>& active_links,
                                          const TrajOptCollisionConfig& collision_config,
-                                         double dt)
+                                         double dt,
+                                         bool discrete_continuous)
 {
   // If contact is found the actual dt between the original two state must be recalculated based on where it
   // occured in the subtrajectory. Also the cc_type must also be recalculated but does not appear to be used
@@ -99,6 +100,9 @@ void processInterpolatedCollisionResults(std::vector<tesseract_collision::Contac
               r.cc_type[j] = tesseract_collision::ContinuousCollisionType::CCType_Time1;
             else
               r.cc_type[j] = tesseract_collision::ContinuousCollisionType::CCType_Between;
+
+            if (discrete_continuous)
+              r.cc_transform = r.transform;
           }
         }
       }
@@ -175,32 +179,35 @@ void calcGradient(GradientResults& results,
                                                (link_transform * it->transform.inverse()).linear() *
                                                    (it->transform * contact_result.nearest_points_local[i]));
 
-  //      Eigen::Isometry3d test_link_transform, temp1, temp2;
-  //      manip_->calcFwdKin(test_link_transform, dofvals, it->link_name);
-  //      temp1 = world_to_base_ * test_link_transform;
-  //      temp2 = link_transform * it->transform.inverse();
-  //      assert(temp1.isApprox(temp2, 0.0001));
-
-  //      Eigen::MatrixXd jac_test;
-  //      jac_test.resize(6, manip_->numJoints());
-  //      tesseract_kinematics::numericalJacobian(jac_test, world_to_base_, *manip_, dofvals, it->link_name,
-  //      contact_result.nearest_points_local[i]); bool check = jac.isApprox(jac_test, 1e-3); assert(check == true);
-
   link_gradient.translation_vector = ((i == 0) ? -1.0 : 1.0) * contact_result.normal;
   link_gradient.jacobian = jac.topRows(3);
-  link_gradient.gradient = results.gradients[i].translation_vector.transpose() * results.gradients[i].jacobian;
+  link_gradient.gradient = link_gradient.translation_vector.transpose() * link_gradient.jacobian;
+
+  //#ifndef NDEBUG // This is good for checking discrete evaluators
+  //  Eigen::Isometry3d test_link_transform = manip->calcFwdKin(dofvals, it->link_name);
+  //  Eigen::Isometry3d temp1 = world_to_base * test_link_transform;
+  //  Eigen::Isometry3d temp2 = link_transform * it->transform.inverse();
+  //  assert(temp1.isApprox(temp2, 0.0001));
+
+  //  Eigen::MatrixXd jac_test;
+  //  jac_test.resize(6, manip->numJoints());
+  //  tesseract_kinematics::numericalJacobian(jac_test, world_to_base, *manip, dofvals, it->link_name,
+  //  contact_result.nearest_points_local[i]); bool check = link_gradient.jacobian.isApprox(jac_test.topRows(3), 1e-3);
+  //  assert(check == true);
+  //#endif
 }
 
 GradientResults getGradient(const Eigen::VectorXd& dofvals,
                             const tesseract_collision::ContactResult& contact_result,
-                            const Eigen::Vector3d& data,
+                            double margin,
+                            double margin_buffer,
                             const tesseract_kinematics::ForwardKinematics::ConstPtr& manip,
                             const tesseract_environment::AdjacencyMap::ConstPtr& adjacency_map,
                             const Eigen::Isometry3d& world_to_base)
 {
-  GradientResults results(data);
-  results.error = (data[0] - contact_result.distance);
-  results.error_with_buffer = (data[0] + data[1] - contact_result.distance);
+  GradientResults results;
+  results.error = (margin - contact_result.distance);
+  results.error_with_buffer = (margin + margin_buffer - contact_result.distance);
   for (std::size_t i = 0; i < 2; ++i)
   {
     tesseract_environment::AdjacencyMapPair::ConstPtr it = adjacency_map->getLinkMapping(contact_result.link_names[i]);
@@ -215,14 +222,15 @@ GradientResults getGradient(const Eigen::VectorXd& dofvals,
 GradientResults getGradient(const Eigen::VectorXd& dofvals0,
                             const Eigen::VectorXd& dofvals1,
                             const tesseract_collision::ContactResult& contact_result,
-                            const Eigen::Vector3d& data,
+                            double margin,
+                            double margin_buffer,
                             const tesseract_kinematics::ForwardKinematics::ConstPtr& manip,
                             const tesseract_environment::AdjacencyMap::ConstPtr& adjacency_map,
                             const Eigen::Isometry3d& world_to_base)
 {
-  GradientResults results(data);
-  results.error = (data[0] - contact_result.distance);
-  results.error_with_buffer = (data[0] + data[1] - contact_result.distance);
+  GradientResults results;
+  results.error = (margin - contact_result.distance);
+  results.error_with_buffer = (margin + margin_buffer - contact_result.distance);
 
   Eigen::VectorXd dofvalst = Eigen::VectorXd::Zero(dofvals0.size());
   for (std::size_t i = 0; i < 2; ++i)
@@ -245,14 +253,6 @@ GradientResults getGradient(const Eigen::VectorXd& dofvals0,
   // DebugPrintInfo(res, results.gradients[0], results.gradients[1], dofvals, &res == &(dist_results.front()));
 
   return results;
-}
-
-void collisionsToDistances(const tesseract_collision::ContactResultVector& dist_results, std::vector<double>& dists)
-{
-  dists.clear();
-  dists.reserve(dist_results.size());
-  for (const auto& dist_result : dist_results)
-    dists.push_back(dist_result.distance);
 }
 
 void debugPrintInfo(const tesseract_collision::ContactResult& res,

@@ -136,12 +136,6 @@ struct LinkGradientResults
 struct GradientResults
 {
   /**
-   * @brief Construct the GradientResults
-   * @param data The link pair safety margin data
-   */
-  GradientResults(const Eigen::Vector3d& data);
-
-  /**
    * @brief The gradient results data for LinkA and LinkB
    * @details This is used by both discrete and continuous collision checking.
    * In the case of continuous collision checking this is the gradient at timestep0
@@ -159,14 +153,15 @@ struct GradientResults
 
   /** @brief The error (margin + margin_buffer - dist_result.distance) */
   double error_with_buffer{ 0 };
+};
 
-  /**
-   * @brief The link pair safety margin data
-   * [0] safety margin
-   * [1] safety margin buffer
-   * [2] coefficent
-   */
-  Eigen::Vector3d data;
+struct MaxError
+{
+  /** @brief The max error in the gradient_results */
+  double error{ std::numeric_limits<double>::lowest() };
+
+  /** @brief The max error with buffer in the gradient_results */
+  double error_with_buffer{ std::numeric_limits<double>::lowest() };
 };
 
 /** @brief A set of gradient results */
@@ -175,8 +170,11 @@ struct GradientResultsSet
   GradientResultsSet() = default;
   GradientResultsSet(std::size_t reserve) { results.reserve(reserve); }
 
-  /** @brief They map key from contact results map */
+  /** @brief The map key from contact results map */
   std::pair<std::string, std::string> key;
+
+  /** @brief The pair coeff */
+  double coeff{ 1 };
 
   /**
    * @brief Indicate if this set is from a continuous contact checker
@@ -185,16 +183,10 @@ struct GradientResultsSet
   bool is_continuous{ false };
 
   /** @brief The max error in the gradient_results */
-  double max_error{ 0 };
+  double max_error{ std::numeric_limits<double>::lowest() };
 
   /** @brief The max error with buffer in the gradient_results */
-  double max_error_with_buffer{ 0 };
-
-  /** @brief The max weighted error (error * coeff) in the gradient_results */
-  double max_weighted_error{ 0 };
-
-  /** @brief The max weighted error (error * coeff) with buffer in the gradient_results */
-  double max_weighted_error_with_buffer{ 0 };
+  double max_error_with_buffer{ std::numeric_limits<double>::lowest() };
 
   /** @brief The stored gradient results for this set */
   std::vector<GradientResults> results;
@@ -206,14 +198,6 @@ struct GradientResultsSet
 
     if (gradient_result.error_with_buffer > max_error_with_buffer)
       max_error_with_buffer = gradient_result.error_with_buffer;
-
-    double we = gradient_result.error * gradient_result.data[2];
-    if (we > max_weighted_error)
-      max_weighted_error = we;
-
-    we = gradient_result.error_with_buffer * gradient_result.data[2];
-    if (we > max_weighted_error_with_buffer)
-      max_weighted_error_with_buffer = we;
 
     results.push_back(gradient_result);
   }

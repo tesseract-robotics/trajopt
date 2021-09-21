@@ -88,6 +88,7 @@ LVSContinuousCollisionEvaluator::CalcCollisionData(const Eigen::Ref<const Eigen:
   {
     GradientResultsSet grs;
     grs.key = pair.first;
+    grs.coeff = collision_config_->collision_coeff_data.getPairCollisionCoeff(grs.key.first, grs.key.second);
     grs.is_continuous = true;
     grs.results.reserve(pair.second.size());
     for (const tesseract_collision::ContactResult& dist_result : pair.second)
@@ -145,7 +146,8 @@ void LVSContinuousCollisionEvaluator::CalcCollisionsHelper(const Eigen::Ref<cons
                                           dist_results,
                                           adjacency_map_->getActiveLinkNames(),
                                           *collision_config_,
-                                          1.0 / double(subtraj.rows() - 1));
+                                          1.0 / double(subtraj.rows() - 1),
+                                          false);
   }
   else
   {
@@ -176,14 +178,17 @@ LVSContinuousCollisionEvaluator::CalcGradientData(const Eigen::Ref<const Eigen::
                                                   const tesseract_collision::ContactResult& contact_results)
 {
   // Contains the contact distance threshold and coefficient for the given link pair
-  double dist = collision_config_->collision_margin_data.getPairCollisionMargin(contact_results.link_names[0],
-                                                                                contact_results.link_names[1]);
-  double coeff = collision_config_->collision_coeff_data.getPairCollisionCoeff(contact_results.link_names[0],
-                                                                               contact_results.link_names[1]);
+  double margin = collision_config_->collision_margin_data.getPairCollisionMargin(contact_results.link_names[0],
+                                                                                  contact_results.link_names[1]);
 
-  const Eigen::Vector3d data = { dist, collision_config_->collision_margin_buffer, coeff };
-
-  return getGradient(dof_vals0, dof_vals1, contact_results, data, manip_, adjacency_map_, world_to_base_);
+  return getGradient(dof_vals0,
+                     dof_vals1,
+                     contact_results,
+                     margin,
+                     collision_config_->collision_margin_buffer,
+                     manip_,
+                     adjacency_map_,
+                     world_to_base_);
 }
 
 const trajopt_ifopt::TrajOptCollisionConfig& LVSContinuousCollisionEvaluator::GetCollisionConfig() const
@@ -252,6 +257,7 @@ LVSDiscreteCollisionEvaluator::CalcCollisionData(const Eigen::Ref<const Eigen::V
   {
     GradientResultsSet grs;
     grs.key = pair.first;
+    grs.coeff = collision_config_->collision_coeff_data.getPairCollisionCoeff(grs.key.first, grs.key.second);
     grs.is_continuous = true;
     grs.results.reserve(pair.second.size());
     for (const tesseract_collision::ContactResult& dist_result : pair.second)
@@ -311,7 +317,8 @@ void LVSDiscreteCollisionEvaluator::CalcCollisionsHelper(const Eigen::Ref<const 
                                         dist_results,
                                         adjacency_map_->getActiveLinkNames(),
                                         *collision_config_,
-                                        1.0 / double(subtraj.rows() - 1));
+                                        1.0 / double(subtraj.rows() - 1),
+                                        true);
 }
 
 GradientResults
@@ -320,14 +327,17 @@ LVSDiscreteCollisionEvaluator::CalcGradientData(const Eigen::Ref<const Eigen::Ve
                                                 const tesseract_collision::ContactResult& contact_results)
 {
   // Contains the contact distance threshold and coefficient for the given link pair
-  double dist = collision_config_->collision_margin_data.getPairCollisionMargin(contact_results.link_names[0],
-                                                                                contact_results.link_names[1]);
-  double coeff = collision_config_->collision_coeff_data.getPairCollisionCoeff(contact_results.link_names[0],
-                                                                               contact_results.link_names[1]);
+  double margin = collision_config_->collision_margin_data.getPairCollisionMargin(contact_results.link_names[0],
+                                                                                  contact_results.link_names[1]);
 
-  const Eigen::Vector3d data = { dist, collision_config_->collision_margin_buffer, coeff };
-
-  return getGradient(dof_vals0, dof_vals1, contact_results, data, manip_, adjacency_map_, world_to_base_);
+  return getGradient(dof_vals0,
+                     dof_vals1,
+                     contact_results,
+                     margin,
+                     collision_config_->collision_margin_buffer,
+                     manip_,
+                     adjacency_map_,
+                     world_to_base_);
 }
 
 const trajopt_ifopt::TrajOptCollisionConfig& LVSDiscreteCollisionEvaluator::GetCollisionConfig() const

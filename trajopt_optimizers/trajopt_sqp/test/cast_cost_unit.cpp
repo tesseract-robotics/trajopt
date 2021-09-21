@@ -131,27 +131,32 @@ void runCastTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const Environmen
   // 4) Add constraints
   {  // Fix start position
     std::vector<trajopt_ifopt::JointPosition::ConstPtr> fixed_vars = { vars[0] };
-    auto cnt = std::make_shared<trajopt_ifopt::JointPosConstraint>(positions[0], fixed_vars);
+    Eigen::VectorXd coeffs = Eigen::VectorXd::Constant(kin->numJoints(), 5);
+    auto cnt = std::make_shared<trajopt_ifopt::JointPosConstraint>(positions[0], fixed_vars, coeffs);
     qp_problem->addConstraintSet(cnt);
   }
 
   {  // Fix end position
     std::vector<trajopt_ifopt::JointPosition::ConstPtr> fixed_vars = { vars[2] };
-    auto cnt = std::make_shared<trajopt_ifopt::JointPosConstraint>(positions[2], fixed_vars);
+    Eigen::VectorXd coeffs = Eigen::VectorXd::Constant(kin->numJoints(), 5);
+    auto cnt = std::make_shared<trajopt_ifopt::JointPosConstraint>(positions[2], fixed_vars, coeffs);
     qp_problem->addConstraintSet(cnt);
   }
 
   auto collision_cache = std::make_shared<trajopt_ifopt::CollisionCache>(100);
-  for (std::size_t i = 1; i < (vars.size() - 1); ++i)
+  std::array<bool, 2> position_vars_fixed{ true, false };
+  for (std::size_t i = 1; i < vars.size(); ++i)
   {
     auto collision_evaluator = std::make_shared<trajopt_ifopt::LVSContinuousCollisionEvaluator>(
         collision_cache, kin, env, adj_map, Eigen::Isometry3d::Identity(), trajopt_collision_config);
 
     std::array<JointPosition::ConstPtr, 2> position_vars{ vars[i - 1], vars[i] };
-    std::array<bool, 2> position_vars_fixed{ false, false };
+
     auto cnt = std::make_shared<trajopt_ifopt::ContinuousCollisionConstraint>(
         collision_evaluator, position_vars, position_vars_fixed, 3);
     qp_problem->addConstraintSet(cnt);
+
+    position_vars_fixed = { false, true };
   }
 
   qp_problem->setup();

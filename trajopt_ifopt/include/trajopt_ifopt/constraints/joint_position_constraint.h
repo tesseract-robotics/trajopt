@@ -54,6 +54,7 @@ public:
    */
   JointPosConstraint(const Eigen::VectorXd& targets,
                      const std::vector<JointPosition::ConstPtr>& position_vars,
+                     const Eigen::VectorXd& coeffs,
                      const std::string& name = "JointPos");
 
   /**
@@ -64,6 +65,7 @@ public:
    */
   JointPosConstraint(const std::vector<ifopt::Bounds>& bounds,
                      const std::vector<JointPosition::ConstPtr>& position_vars,
+                     const Eigen::VectorXd& coeffs,
                      const std::string& name = "JointPos");
 
   /**
@@ -91,6 +93,9 @@ private:
   long n_dof_;
   /** @brief The number of JointPositions passed in */
   long n_vars_;
+
+  /** @brief The coeff to apply to error and gradient */
+  Eigen::VectorXd coeff_;
 
   /** @brief Bounds on the positions of each joint */
   std::vector<ifopt::Bounds> bounds_;

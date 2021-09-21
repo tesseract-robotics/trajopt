@@ -193,10 +193,9 @@ GradientResults CollisionEvaluator::GetGradient(const Eigen::VectorXd& dofvals,
                                                    (link_transform * it->transform.inverse()).linear() *
                                                        (it->transform * contact_result.nearest_points_local[i]));
 
-      //      Eigen::Isometry3d test_link_transform, temp1, temp2;
-      //      manip_->calcFwdKin(test_link_transform, dofvals, it->link_name);
-      //      temp1 = world_to_base_ * test_link_transform;
-      //      temp2 = link_transform * it->transform.inverse();
+      //      Eigen::Isometry3d test_link_transform = manip_->calcFwdKin(dofvals, it->link_name);
+      //      Eigen::Isometry3d temp1 = world_to_base_ * test_link_transform;
+      //      Eigen::Isometry3d temp2 = link_transform * it->transform.inverse();
       //      assert(temp1.isApprox(temp2, 0.0001));
 
       //      Eigen::MatrixXd jac_test;
@@ -262,18 +261,19 @@ GradientResults CollisionEvaluator::GetGradient(const Eigen::VectorXd& dofvals0,
                                                    (link_transform * it->transform.inverse()).linear() *
                                                        (it->transform * contact_result.nearest_points_local[i]));
 
-      //      Eigen::Isometry3d test_link_transform, temp1, temp2;
-      //      manip_->calcFwdKin(test_link_transform, dofvalst, it->link_name);
-      //      temp1 = world_to_base_ * test_link_transform;
-      //      temp2 = link_transform * it->transform.inverse();
-      //      assert(temp1.isApprox(temp2, 0.0001));
+#ifndef NDEBUG
+      Eigen::Isometry3d test_link_transform = manip_->calcFwdKin(dofvalst, it->link_name);
+      Eigen::Isometry3d temp1 = world_to_base_ * test_link_transform;
+      Eigen::Isometry3d temp2 = link_transform * it->transform.inverse();
+      assert(temp1.isApprox(temp2, 0.0001));
 
-      //      Eigen::MatrixXd jac_test;
-      //      jac_test.resize(6, manip_->numJoints());
-      //      tesseract_kinematics::numericalJacobian(jac_test, world_to_base_, *manip_, dofvalst, it->link_name,
-      //      contact_result.nearest_points_local[i]);
-      //      bool check = jac.isApprox(jac_test, 1e-3);
-      //      assert(check == true);
+      Eigen::MatrixXd jac_test;
+      jac_test.resize(6, manip_->numJoints());
+      tesseract_kinematics::numericalJacobian(
+          jac_test, world_to_base_, *manip_, dofvalst, it->link_name, contact_result.nearest_points_local[i]);
+      bool check = jac.isApprox(jac_test, 1e-3);
+      assert(check == true);
+#endif
 
       results.gradients[i].gradient = ((i == 0) ? -1.0 : 1.0) * contact_result.normal.transpose() * jac.topRows(3);
     }

@@ -88,6 +88,7 @@ SingleTimestepCollisionEvaluator::CalcCollisions(const Eigen::Ref<const Eigen::V
   {
     GradientResultsSet grs;
     grs.key = pair.first;
+    grs.coeff = collision_config_->collision_coeff_data.getPairCollisionCoeff(grs.key.first, grs.key.second);
     grs.results.reserve(pair.second.size());
     for (const tesseract_collision::ContactResult& dist_result : pair.second)
       grs.add(GetGradient(dof_vals, dist_result));
@@ -127,13 +128,16 @@ GradientResults SingleTimestepCollisionEvaluator::GetGradient(const Eigen::Vecto
                                                               const tesseract_collision::ContactResult& contact_result)
 {
   // Contains the contact distance threshold and coefficient for the given link pair
-  double dist = collision_config_->collision_margin_data.getPairCollisionMargin(contact_result.link_names[0],
-                                                                                contact_result.link_names[1]);
-  double coeff = collision_config_->collision_coeff_data.getPairCollisionCoeff(contact_result.link_names[0],
-                                                                               contact_result.link_names[1]);
-  const Eigen::Vector3d data = { dist, collision_config_->collision_margin_buffer, coeff };
+  double margin = collision_config_->collision_margin_data.getPairCollisionMargin(contact_result.link_names[0],
+                                                                                  contact_result.link_names[1]);
 
-  return getGradient(dofvals, contact_result, data, manip_, adjacency_map_, world_to_base_);
+  return getGradient(dofvals,
+                     contact_result,
+                     margin,
+                     collision_config_->collision_margin_buffer,
+                     manip_,
+                     adjacency_map_,
+                     world_to_base_);
 }
 
 const TrajOptCollisionConfig& SingleTimestepCollisionEvaluator::GetCollisionConfig() const

@@ -160,8 +160,7 @@ public:
         for (int j = 0; j < n_dof_; j++)
         {
           // Collision is 1 x n_dof
-          jac_block.coeffRef(static_cast<Eigen::Index>(i), j) =
-              -1.0 * grad_results[i].data[2] * grad_results[i].gradients[0].gradient[j];
+          jac_block.coeffRef(static_cast<Eigen::Index>(i), j) = -1.0 * grad_results[i].gradients[0].gradient[j];
         }
       }
       else if (grad_results[i].gradients[1].has_gradient)
@@ -170,8 +169,7 @@ public:
         for (int j = 0; j < n_dof_; j++)
         {
           // Collision is 1 x n_dof
-          jac_block.coeffRef(static_cast<Eigen::Index>(i), j) =
-              -1.0 * grad_results[i].data[2] * grad_results[i].gradients[1].gradient[j];
+          jac_block.coeffRef(static_cast<Eigen::Index>(i), j) = -1.0 * grad_results[i].gradients[1].gradient[j];
         }
       }
     }
@@ -269,7 +267,8 @@ void runSimpleCollisionTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const
   auto collision_cost = std::make_shared<SimpleCollisionConstraintIfopt>(collision_cost_evaluator, vars[0]);
   qp_problem->addCostSet(collision_cost, trajopt_sqp::CostPenaltyType::HINGE);
 
-  auto jp_cost = std::make_shared<trajopt_ifopt::JointPosConstraint>(Eigen::Vector2d(0, 0), vars);
+  Eigen::VectorXd coeffs = Eigen::VectorXd::Constant(2, 1);
+  auto jp_cost = std::make_shared<trajopt_ifopt::JointPosConstraint>(Eigen::Vector2d(0, 0), vars, coeffs);
   qp_problem->addCostSet(jp_cost, trajopt_sqp::CostPenaltyType::SQUARED);
 
   qp_problem->setup();

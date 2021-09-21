@@ -93,7 +93,7 @@ Eigen::VectorXd DiscreteCollisionConstraint::CalcValues(const Eigen::Ref<const E
   {
     Eigen::Index i{ 0 };
     for (const auto& grs : collision_data->gradient_results_set_map)
-      values(i++) = getWeightedAvgValues(grs.second, margin_buffer)[0];
+      values(i++) = grs.second.coeff * grs.second.max_error;
   }
   else
   {
@@ -109,7 +109,7 @@ Eigen::VectorXd DiscreteCollisionConstraint::CalcValues(const Eigen::Ref<const E
     });
 
     for (std::size_t i = 0; i < bounds_.size(); ++i)
-      values(static_cast<Eigen::Index>(i)) = getWeightedAvgValues(rs[i], margin_buffer)[0];
+      values(static_cast<Eigen::Index>(i)) = rs[i].coeff * rs[i].max_error;
   }
 
   return values;

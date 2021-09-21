@@ -54,7 +54,8 @@ TEST(JointTermsUnit, joint_pos_constraint_1)  // NOLINT
   targets << 20, 21, 22, 23, 24, 25, 26, 27, 28, 29;
 
   std::string name("test_cnt");
-  JointPosConstraint position_cnt(targets, position_vars, name);
+  Eigen::VectorXd coeffs = Eigen::VectorXd::Constant(10, 1);
+  JointPosConstraint position_cnt(targets, position_vars, coeffs, name);
 
   EXPECT_EQ(position_cnt.GetRows(), targets.size() * static_cast<Eigen::Index>(position_vars.size()));
   EXPECT_EQ(position_cnt.GetName(), name);
