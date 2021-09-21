@@ -83,21 +83,24 @@ Eigen::VectorXd ContinuousCollisionConstraint::GetValues() const
   if (collision_data->gradient_results_set_map.size() <= bounds_.size())
   {
     Eigen::Index i{ 0 };
-    if (!position_vars_fixed_[0] && !position_vars_fixed_[1])
-    {
-      for (const auto& grs : collision_data->gradient_results_set_map)
-        values(i++) = getWeightedAvgValues(grs.second, margin_buffer)[0];
-    }
-    else if (!position_vars_fixed_[0])
-    {
-      for (const auto& grs : collision_data->gradient_results_set_map)
-        values(i++) = getWeightedAvgValuesT0(grs.second, margin_buffer)[0];
-    }
-    else
-    {
-      for (const auto& grs : collision_data->gradient_results_set_map)
-        values(i++) = getWeightedAvgValuesT1(grs.second, margin_buffer)[0];
-    }
+    for (const auto& grs : collision_data->gradient_results_set_map)
+      values(i++) = grs.second.coeff * grs.second.max_error;
+
+    //    if (!position_vars_fixed_[0] && !position_vars_fixed_[1])
+    //    {
+    //      for (const auto& grs : collision_data->gradient_results_set_map)
+    //        values(i++) = getWeightedAvgValues(grs.second, margin_buffer)[0];
+    //    }
+    //    else if (!position_vars_fixed_[0])
+    //    {
+    //      for (const auto& grs : collision_data->gradient_results_set_map)
+    //        values(i++) = getWeightedAvgValuesT0(grs.second, margin_buffer)[0];
+    //    }
+    //    else
+    //    {
+    //      for (const auto& grs : collision_data->gradient_results_set_map)
+    //        values(i++) = getWeightedAvgValuesT1(grs.second, margin_buffer)[0];
+    //    }
   }
   else
   {
@@ -112,21 +115,24 @@ Eigen::VectorXd ContinuousCollisionConstraint::GetValues() const
       return a.max_error > b.max_error;
     });
 
-    if (!position_vars_fixed_[0] && !position_vars_fixed_[1])
-    {
-      for (std::size_t i = 0; i < bounds_.size(); ++i)
-        values(static_cast<Eigen::Index>(i)) = getWeightedAvgValues(rs[i], margin_buffer)[0];
-    }
-    else if (!position_vars_fixed_[0])
-    {
-      for (std::size_t i = 0; i < bounds_.size(); ++i)
-        values(static_cast<Eigen::Index>(i)) = getWeightedAvgValuesT0(rs[i], margin_buffer)[0];
-    }
-    else
-    {
-      for (std::size_t i = 0; i < bounds_.size(); ++i)
-        values(static_cast<Eigen::Index>(i)) = getWeightedAvgValuesT1(rs[i], margin_buffer)[0];
-    }
+    for (std::size_t i = 0; i < bounds_.size(); ++i)
+      values(static_cast<Eigen::Index>(i)) = rs[i].coeff * rs[i].max_error;
+
+    //    if (!position_vars_fixed_[0] && !position_vars_fixed_[1])
+    //    {
+    //      for (std::size_t i = 0; i < bounds_.size(); ++i)
+    //        values(static_cast<Eigen::Index>(i)) = getWeightedAvgValues(rs[i], margin_buffer)[0];
+    //    }
+    //    else if (!position_vars_fixed_[0])
+    //    {
+    //      for (std::size_t i = 0; i < bounds_.size(); ++i)
+    //        values(static_cast<Eigen::Index>(i)) = getWeightedAvgValuesT0(rs[i], margin_buffer)[0];
+    //    }
+    //    else
+    //    {
+    //      for (std::size_t i = 0; i < bounds_.size(); ++i)
+    //        values(static_cast<Eigen::Index>(i)) = getWeightedAvgValuesT1(rs[i], margin_buffer)[0];
+    //    }
   }
 
   return values;

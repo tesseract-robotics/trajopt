@@ -121,11 +121,11 @@ void runPlanningTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const Enviro
     qp_problem->addVariableSet(var);
   }
 
-  double margin_coeff = 50;
+  double margin_coeff = 20;
   double margin = 0.025;
   auto trajopt_collision_config = std::make_shared<trajopt_ifopt::TrajOptCollisionConfig>(margin, margin_coeff);
-  trajopt_collision_config->collision_margin_buffer = 0.02;
-  trajopt_collision_config->longest_valid_segment_length = 0.005;
+  trajopt_collision_config->collision_margin_buffer = 0.01;
+  trajopt_collision_config->longest_valid_segment_length = 0.02;
 
   // Add costs
   {
@@ -136,13 +136,15 @@ void runPlanningTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const Enviro
   // Add constraints
   {  // Fix start position
     std::vector<JointPosition::ConstPtr> fixed_vars = { vars[0] };
-    auto cnt = std::make_shared<JointPosConstraint>(trajectory.row(0), fixed_vars);
+    Eigen::VectorXd coeffs = Eigen::VectorXd::Constant(forward_kinematics->numJoints(), 5);
+    auto cnt = std::make_shared<JointPosConstraint>(trajectory.row(0), fixed_vars, coeffs);
     qp_problem->addConstraintSet(cnt);
   }
 
   {  // Fix end position
     std::vector<trajopt_ifopt::JointPosition::ConstPtr> fixed_vars = { vars[5] };
-    auto cnt = std::make_shared<trajopt_ifopt::JointPosConstraint>(trajectory.row(5), fixed_vars);
+    Eigen::VectorXd coeffs = Eigen::VectorXd::Constant(forward_kinematics->numJoints(), 5);
+    auto cnt = std::make_shared<trajopt_ifopt::JointPosConstraint>(trajectory.row(5), fixed_vars, coeffs);
     qp_problem->addConstraintSet(cnt);
   }
 
@@ -160,8 +162,9 @@ void runPlanningTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const Enviro
     std::array<JointPosition::ConstPtr, 2> position_vars{ vars[i - 1], vars[i] };
     std::array<bool, 2> position_vars_fixed{ false, false };
     auto cnt = std::make_shared<trajopt_ifopt::ContinuousCollisionConstraint>(
-        collision_evaluator, position_vars, position_vars_fixed, 3);
-    qp_problem->addConstraintSet(cnt);
+        collision_evaluator, position_vars, position_vars_fixed, 5);
+
+    qp_problem->addCostSet(cnt, trajopt_sqp::CostPenaltyType::HINGE);
   }
 
   qp_problem->setup();
@@ -203,12 +206,13 @@ void runPlanningTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const Enviro
   CONSOLE_BRIDGE_logWarn((found) ? ("Final trajectory is in collision") : ("Final trajectory is collision free"));
 }
 
-TEST_F(PlanningTest, arm_around_table_ifopt_problem)  // NOLINT
-{
-  CONSOLE_BRIDGE_logDebug("PlanningTest, arm_around_table");
-  auto qp_problem = std::make_shared<trajopt_sqp::IfoptQPProblem>();
-  runPlanningTest(qp_problem, env);
-}
+// TrajOpt Ifopt Problem does not work because it does not support Hinge Costs
+// TEST_F(PlanningTest, arm_around_table_ifopt_problem)  // NOLINT
+//{
+//  CONSOLE_BRIDGE_logDebug("PlanningTest, arm_around_table");
+//  auto qp_problem = std::make_shared<trajopt_sqp::IfoptQPProblem>();
+//  runPlanningTest(qp_problem, env);
+//}
 
 TEST_F(PlanningTest, arm_around_table_trajopt_problem)  // NOLINT
 {

@@ -137,6 +137,7 @@ void DiscreteCollisionNumericalConstraint::CalcJacobianBlock(const Eigen::Ref<co
   if (collision_data->gradient_results_set_map.empty())
     return;
 
+  double margin_buffer = collision_evaluator_->GetCollisionConfig().collision_margin_buffer;
   if (collision_data->gradient_results_set_map.size() <= bounds_.size())
   {
     Eigen::VectorXd jv = joint_vals;
@@ -151,17 +152,32 @@ void DiscreteCollisionNumericalConstraint::CalcJacobianBlock(const Eigen::Ref<co
         auto it = collision_data_delta->gradient_results_set_map.find(grs.first);
         if (it != collision_data_delta->gradient_results_set_map.end())
         {
-          double dist_delta = it->second.max_error - grs.second.max_error;
+          double dist_delta = grs.second.coeff * (it->second.max_error - grs.second.max_error);
           jac_block.coeffRef(idx++, j) = dist_delta / delta;
         }
         else
         {
-          double dist_delta = 0 - grs.second.max_error;
+          double dist_delta = grs.second.coeff * ((-1.0 * margin_buffer) - grs.second.max_error);
           jac_block.coeffRef(idx++, j) = dist_delta / delta;
         }
       }
       jv(j) = joint_vals(j);
     }
+
+    //    //#ifdef 0
+    //    Jacobian jac_block_debug(static_cast<Eigen::Index>(bounds_.size()), position_var_->GetRows());
+    //    jac_block_debug.reserve(static_cast<Eigen::Index>(bounds_.size()) * position_var_->GetRows());
+    //    Eigen::Index i{ 0 };
+    //    for (const auto& grs : collision_data->gradient_results_set_map)
+    //    {
+    //      Eigen::VectorXd grad_vec = getWeightedAvgGradientT0(grs.second, position_var_->GetRows());
+    //      for (int j = 0; j < n_dof_; j++)
+    //        jac_block_debug.coeffRef(static_cast<int>(i), j) = -1.0 * grad_vec[j];
+    //      ++i;
+    //    }
+    //    std::cout << "Numerical Jacobian:" << std::endl << jac_block << std::endl;
+    //    std::cout << "Col Grad Jacobian:" << std::endl << jac_block_debug << std::endl;
+    //    //#endif
   }
   else
   {
@@ -188,17 +204,31 @@ void DiscreteCollisionNumericalConstraint::CalcJacobianBlock(const Eigen::Ref<co
         auto it = collision_data_delta->gradient_results_set_map.find(r.key);
         if (it != collision_data_delta->gradient_results_set_map.end())
         {
-          double dist_delta = it->second.max_error - r.max_error;
+          double dist_delta = r.coeff * (it->second.max_error - r.max_error);
           jac_block.coeffRef(i, j) = dist_delta / delta;
         }
         else
         {
-          double dist_delta = 0 - r.max_error;
+          double dist_delta = r.coeff * ((-1.0 * margin_buffer) - r.max_error);
           jac_block.coeffRef(i, j) = dist_delta / delta;
         }
       }
       jv(j) = joint_vals(j);
     }
+
+    //    //#ifdef 0
+    //    Jacobian jac_block_debug(static_cast<Eigen::Index>(bounds_.size()), position_var_->GetRows());
+    //    jac_block_debug.reserve(static_cast<Eigen::Index>(bounds_.size()) * position_var_->GetRows());
+    //    for (int i = 0; i < static_cast<int>(bounds_.size()); ++i)
+    //    {
+    //      GradientResultsSet& r = rs[static_cast<std::size_t>(i)];
+    //      Eigen::VectorXd grad_vec = getWeightedAvgGradientT0(r, position_var_->GetRows());
+    //      for (int j = 0; j < n_dof_; j++)
+    //        jac_block_debug.coeffRef(static_cast<int>(i), j) = -1.0 * grad_vec[j];
+    //    }
+    //    std::cout << "Numerical Jacobian:" << std::endl << jac_block << std::endl;
+    //    std::cout << "Col Grad Jacobian:" << std::endl << jac_block_debug << std::endl;
+    //    //#endif
   }
 }
 

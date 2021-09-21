@@ -33,22 +33,30 @@ namespace trajopt_ifopt
 {
 JointPosConstraint::JointPosConstraint(const Eigen::VectorXd& targets,
                                        const std::vector<JointPosition::ConstPtr>& position_vars,
+                                       const Eigen::VectorXd& coeffs,
                                        const std::string& name)
   : ifopt::ConstraintSet(static_cast<int>(targets.size()) * static_cast<int>(position_vars.size()), name)
+  , coeff_(coeffs)
   , position_vars_(position_vars)
 {
+  // Set the n_dof and n_vars for convenience
+  n_dof_ = targets.size();
+  n_vars_ = static_cast<long>(position_vars.size());
+  assert(n_dof_ > 0);
+  assert(n_vars_ > 0);
+
+  if (!(coeff_.array() > 0).all())
+    throw std::runtime_error("JointPosConstraint, coeff must be greater than zero.");
+
+  if (coeff_.rows() != n_dof_)
+    throw std::runtime_error("JointPosConstraint, coeff must be the same size of the joint postion.");
+
   // Check and make sure the targets size aligns with the vars passed in
   for (auto& position_var : position_vars)
   {
     if (targets.size() != position_var->GetRows())
       CONSOLE_BRIDGE_logError("Targets size does not align with variables provided");
   }
-
-  // Set the n_dof and n_vars for convenience
-  n_dof_ = targets.size();
-  n_vars_ = static_cast<long>(position_vars.size());
-  assert(n_dof_ > 0);
-  assert(n_vars_ > 0);
 
   // Set the bounds to the input targets
   std::vector<ifopt::Bounds> bounds(static_cast<size_t>(GetRows()));
@@ -57,7 +65,8 @@ JointPosConstraint::JointPosConstraint(const Eigen::VectorXd& targets,
   {
     for (long i = 0; i < n_dof_; i++)
     {
-      bounds[static_cast<size_t>(i + j * n_dof_)] = ifopt::Bounds(targets[i], targets[i]);
+      double w_target = coeff_[i] * targets[i];
+      bounds[static_cast<size_t>(i + j * n_dof_)] = ifopt::Bounds(w_target, w_target);
     }
   }
   bounds_ = bounds;
@@ -65,23 +74,31 @@ JointPosConstraint::JointPosConstraint(const Eigen::VectorXd& targets,
 
 JointPosConstraint::JointPosConstraint(const std::vector<ifopt::Bounds>& bounds,
                                        const std::vector<JointPosition::ConstPtr>& position_vars,
+                                       const Eigen::VectorXd& coeffs,
                                        const std::string& name)
   : ifopt::ConstraintSet(static_cast<int>(bounds.size()) * static_cast<int>(position_vars.size()), name)
+  , coeff_(coeffs)
   , bounds_(bounds)
   , position_vars_(position_vars)
 {
+  // Set the n_dof and n_vars for convenience
+  n_dof_ = static_cast<long>(bounds_.size());
+  n_vars_ = static_cast<long>(position_vars_.size());
+  assert(n_dof_ > 0);
+  assert(n_vars_ > 0);
+
+  if (!(coeff_.array() > 0).all())
+    throw std::runtime_error("JointPosConstraint, coeff must be greater than zero.");
+
+  if (coeff_.rows() != n_dof_)
+    throw std::runtime_error("JointPosConstraint, coeff must be the same size of the joint postion.");
+
   // Check and make sure the targets size aligns with the vars passed in
   for (auto& position_var : position_vars_)
   {
     if (static_cast<long>(bounds_.size()) != position_var->GetRows())
       CONSOLE_BRIDGE_logError("Bounds size does not align with variables provided");
   }
-
-  // Set the n_dof and n_vars for convenience
-  n_dof_ = static_cast<long>(bounds_.size());
-  n_vars_ = static_cast<long>(position_vars_.size());
-  assert(n_dof_ > 0);
-  assert(n_vars_ > 0);
 }
 
 Eigen::VectorXd JointPosConstraint::GetValues() const
@@ -89,7 +106,7 @@ Eigen::VectorXd JointPosConstraint::GetValues() const
   // Get the correct variables
   Eigen::VectorXd values(static_cast<size_t>(n_dof_ * n_vars_));
   for (auto& position_var : position_vars_)
-    values << this->GetVariables()->GetComponent(position_var->GetName())->GetValues();
+    values << coeff_.cwiseProduct(this->GetVariables()->GetComponent(position_var->GetName())->GetValues());
 
   return values;
 }
@@ -112,7 +129,7 @@ void JointPosConstraint::FillJacobianBlock(std::string var_set, Jacobian& jac_bl
       {
         // Each jac_block will be for a single variable but for all timesteps. Therefore we must index down to the
         // correct timestep for this variable
-        jac_block.coeffRef(i * n_dof_ * 0 + j, j) = 1.0;
+        jac_block.coeffRef(i * n_dof_ * 0 + j, j) = coeff_[j] * 1.0;
       }
     }
   }

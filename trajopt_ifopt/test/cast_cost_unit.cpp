@@ -136,21 +136,23 @@ TEST_F(CastTest, boxes)  // NOLINT
   auto adj_map = std::make_shared<tesseract_environment::AdjacencyMap>(
       env->getSceneGraph(), kin->getActiveLinkNames(), env->getCurrentState()->link_transforms);
 
-  double margin_coeff = 10;
+  double margin_coeff = 1;
   double margin = 0.02;
   auto trajopt_collision_config = std::make_shared<trajopt_ifopt::TrajOptCollisionConfig>(margin, margin_coeff);
-  trajopt_collision_config->collision_margin_buffer = 0.00;
+  trajopt_collision_config->collision_margin_buffer = 0.05;
 
   // 4) Add constraints
   {  // Fix start position
     std::vector<trajopt_ifopt::JointPosition::ConstPtr> fixed_vars = { vars[0] };
-    auto cnt = std::make_shared<trajopt_ifopt::JointPosConstraint>(positions[0], fixed_vars);
+    Eigen::VectorXd coeffs = Eigen::VectorXd::Constant(kin->numJoints(), 1);
+    auto cnt = std::make_shared<trajopt_ifopt::JointPosConstraint>(positions[0], fixed_vars, coeffs);
     nlp.AddConstraintSet(cnt);
   }
 
   {  // Fix end position
     std::vector<trajopt_ifopt::JointPosition::ConstPtr> fixed_vars = { vars[2] };
-    auto cnt = std::make_shared<trajopt_ifopt::JointPosConstraint>(positions[2], fixed_vars);
+    Eigen::VectorXd coeffs = Eigen::VectorXd::Constant(kin->numJoints(), 1);
+    auto cnt = std::make_shared<trajopt_ifopt::JointPosConstraint>(positions[2], fixed_vars, coeffs);
     nlp.AddConstraintSet(cnt);
   }
 

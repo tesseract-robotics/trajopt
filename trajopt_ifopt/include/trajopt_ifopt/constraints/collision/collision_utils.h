@@ -52,7 +52,8 @@ void processInterpolatedCollisionResults(std::vector<tesseract_collision::Contac
                                          tesseract_collision::ContactResultMap& contact_results,
                                          const std::vector<std::string>& active_links,
                                          const TrajOptCollisionConfig& collision_config,
-                                         double dt);
+                                         double dt,
+                                         bool discrete_continuous);
 
 /**
  * @brief Remove any results that are invalid.
@@ -72,7 +73,8 @@ void removeInvalidContactResults(tesseract_collision::ContactResultVector& conta
  */
 GradientResults getGradient(const Eigen::VectorXd& dofvals,
                             const tesseract_collision::ContactResult& contact_result,
-                            const Eigen::Vector3d& data,
+                            double margin,
+                            double margin_buffer,
                             const tesseract_kinematics::ForwardKinematics::ConstPtr& manip,
                             const tesseract_environment::AdjacencyMap::ConstPtr& adjacency_map,
                             const Eigen::Isometry3d& world_to_base);
@@ -88,17 +90,25 @@ GradientResults getGradient(const Eigen::VectorXd& dofvals,
 GradientResults getGradient(const Eigen::VectorXd& dofvals0,
                             const Eigen::VectorXd& dofvals1,
                             const tesseract_collision::ContactResult& contact_result,
-                            const Eigen::Vector3d& data,
+                            double margin,
+                            double margin_buffer,
                             const tesseract_kinematics::ForwardKinematics::ConstPtr& manip,
                             const tesseract_environment::AdjacencyMap::ConstPtr& adjacency_map,
                             const Eigen::Isometry3d& world_to_base);
 
-void collisionsToDistances(const tesseract_collision::ContactResultVector& dist_results, std::vector<double>& dists);
-
+/**
+ * @brief Print debug gradient information
+ * @param res Contact Results
+ * @param dist_grad_A Object A gradient
+ * @param dist_grad_B Object B gradient
+ * @param dof_vals The joint values
+ * @param header If true, header is printed
+ */
 void debugPrintInfo(const tesseract_collision::ContactResult& res,
                     const Eigen::VectorXd& dist_grad_A,
                     const Eigen::VectorXd& dist_grad_B,
                     const Eigen::VectorXd& dof_vals,
                     bool header = false);
+
 }  // namespace trajopt_ifopt
 #endif  // TRAJOPT_IFOPT_COLLISION_UTILS_H
