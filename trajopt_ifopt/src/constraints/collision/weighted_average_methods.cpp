@@ -26,12 +26,15 @@
 
 namespace trajopt_ifopt
 {
-Eigen::VectorXd getWeightedAvgGradientT0(const GradientResultsSet& grad_results_set, Eigen::Index size)
+Eigen::VectorXd getWeightedAvgGradientT0(const GradientResultsSet& grad_results_set,
+                                         double max_error_with_buffer,
+                                         Eigen::Index size)
 {
   Eigen::VectorXd grad_vec = Eigen::VectorXd::Zero(size);
   if (grad_results_set.results.empty())
     return grad_vec;
 
+  assert(max_error_with_buffer > 0);
   double total_weight = 0;
   long cnt{ 0 };
   for (const auto& grad : grad_results_set.results)
@@ -44,7 +47,7 @@ Eigen::VectorXd getWeightedAvgGradientT0(const GradientResultsSet& grad_results_
         if (grad_results_set.max_error[i].error_with_buffer[0] > 0)
         {
           assert(grad_results_set.max_error[i].has_error[0]);
-          double w = (std::max(grad.error_with_buffer, 0.0) / grad_results_set.getMaxErrorWithBuffer());
+          double w = (std::max(grad.error_with_buffer, 0.0) / max_error_with_buffer);
           assert(!(w < 0));
           total_weight += w;
           grad_vec += w * (grad.cc_gradients[i].scale * grad.gradients[i].gradient);
@@ -61,12 +64,15 @@ Eigen::VectorXd getWeightedAvgGradientT0(const GradientResultsSet& grad_results_
   return (1.0 / total_weight) * grad_results_set.coeff * grad_vec;
 }
 
-Eigen::VectorXd getWeightedAvgGradientT1(const GradientResultsSet& grad_results_set, Eigen::Index size)
+Eigen::VectorXd getWeightedAvgGradientT1(const GradientResultsSet& grad_results_set,
+                                         double max_error_with_buffer,
+                                         Eigen::Index size)
 {
   Eigen::VectorXd grad_vec = Eigen::VectorXd::Zero(size);
   if (grad_results_set.results.empty())
     return grad_vec;
 
+  assert(max_error_with_buffer > 0);
   double total_weight = 0;
   long cnt{ 0 };
   for (auto& grad : grad_results_set.results)
@@ -79,7 +85,7 @@ Eigen::VectorXd getWeightedAvgGradientT1(const GradientResultsSet& grad_results_
         if (grad_results_set.max_error[i].error_with_buffer[1] > 0)
         {
           assert(grad_results_set.max_error[i].has_error[1]);
-          double w = (std::max(grad.error_with_buffer, 0.0) / grad_results_set.getMaxErrorWithBuffer());
+          double w = (std::max(grad.error_with_buffer, 0.0) / max_error_with_buffer);
           assert(!(w < 0));
           total_weight += w;
           grad_vec += w * (grad.gradients[i].scale * grad.gradients[i].gradient);

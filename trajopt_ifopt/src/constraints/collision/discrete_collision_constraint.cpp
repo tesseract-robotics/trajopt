@@ -140,7 +140,8 @@ void DiscreteCollisionConstraint::CalcJacobianBlock(const Eigen::Ref<const Eigen
     Eigen::Index i{ 0 };
     for (const auto& grs : collision_data->gradient_results_set_map)
     {
-      Eigen::VectorXd grad_vec = getWeightedAvgGradientT0(grs.second, position_var_->GetRows());
+      Eigen::VectorXd grad_vec =
+          getWeightedAvgGradientT0(grs.second, grs.second.getMaxErrorWithBufferT0(), position_var_->GetRows());
 
       // Collision is 1 x n_dof
       for (int j = 0; j < n_dof_; j++)
@@ -164,7 +165,8 @@ void DiscreteCollisionConstraint::CalcJacobianBlock(const Eigen::Ref<const Eigen
 
     for (std::size_t i = 0; i < bounds_.size(); ++i)
     {
-      Eigen::VectorXd grad_vec = getWeightedAvgGradientT0(rs[i], position_var_->GetRows());
+      GradientResultsSet& r = rs[i];
+      Eigen::VectorXd grad_vec = getWeightedAvgGradientT0(r, r.getMaxErrorWithBufferT0(), position_var_->GetRows());
 
       // Collision is 1 x n_dof
       for (int j = 0; j < n_dof_; j++)
