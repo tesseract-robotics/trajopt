@@ -33,7 +33,11 @@ TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace trajopt_ifopt
 {
-Eigen::VectorXd getWeightedAvgGradientT0(const GradientResultsSet& grad_results_set, Eigen::Index size);
-Eigen::VectorXd getWeightedAvgGradientT1(const GradientResultsSet& grad_results_set, Eigen::Index size);
+Eigen::VectorXd getWeightedAvgGradientT0(const GradientResultsSet& grad_results_set,
+                                         double max_error_with_buffer,
+                                         Eigen::Index size);
+Eigen::VectorXd getWeightedAvgGradientT1(const GradientResultsSet& grad_results_set,
+                                         double max_error_with_buffer,
+                                         Eigen::Index size);
 }  // namespace trajopt_ifopt
 #endif  // TRAJOPT_IFOPT_COLLISION_WEIGHTED_AVERAGE_METHODS_H
