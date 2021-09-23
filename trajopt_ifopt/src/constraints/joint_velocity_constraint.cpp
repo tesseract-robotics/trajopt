@@ -79,8 +79,8 @@ Eigen::VectorXd JointVelConstraint::GetValues() const
   Eigen::VectorXd velocity(static_cast<size_t>(n_dof_) * (position_vars_.size() - 1));
   for (std::size_t ind = 0; ind < position_vars_.size() - 1; ind++)
   {
-    auto vals1 = GetVariables()->GetComponent(position_vars_[ind]->GetName())->GetValues();
-    auto vals2 = GetVariables()->GetComponent(position_vars_[ind + 1]->GetName())->GetValues();
+    auto vals1 = this->GetVariables()->GetComponent(position_vars_[ind]->GetName())->GetValues();
+    auto vals2 = this->GetVariables()->GetComponent(position_vars_[ind + 1]->GetName())->GetValues();
     Eigen::VectorXd single_step = vals2 - vals1;
     velocity.block(n_dof_ * static_cast<Eigen::Index>(ind), 0, n_dof_, 1) = single_step;
   }
@@ -111,9 +111,9 @@ void JointVelConstraint::FillJacobianBlock(std::string var_set, Jacobian& jac_bl
       // The first and last variable are special and only effect the first and last constraint. Everything else
       // effects 2
       if (i < n_vars_ - 1)
-        jac_block.coeffRef(i * n_dof_ + j, j) = -1.0;
+        jac_block.coeffRef((i * n_dof_) + j, j) = -1.0;
       if (i > 0)
-        jac_block.coeffRef((i - 1) * n_dof_ + j, j) = 1.0;
+        jac_block.coeffRef(((i - 1) * n_dof_) + j, j) = 1.0;
     }
   }
 }
