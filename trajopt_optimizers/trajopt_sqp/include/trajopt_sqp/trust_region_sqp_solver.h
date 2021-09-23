@@ -50,7 +50,7 @@ public:
 
   bool init(QPProblem::Ptr qp_prob);
 
-  void solve(QPProblem::Ptr qp_prob);
+  void solve(const QPProblem::Ptr& qp_prob);
 
   /**
    * @brief Run a single convexification step which calls runTrustRegionLoop
@@ -122,7 +122,7 @@ public:
   QPProblem::Ptr qp_problem;
 
 protected:
-  SQPStatus status_;
+  SQPStatus status_{ SQPStatus::QP_SOLVER_ERROR };
   SQPResults results_;
   std::vector<SQPCallback::Ptr> callbacks_;
 };

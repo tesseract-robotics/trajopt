@@ -99,19 +99,20 @@ DiscreteCollisionNumericalConstraint::CalcValues(const Eigen::Ref<const Eigen::V
   }
   else
   {
-    std::vector<GradientResultsSet> rs;
+    std::vector<std::reference_wrapper<const GradientResultsSet>> rs;
     rs.reserve(collision_data->gradient_results_set_map.size());
     std::transform(collision_data->gradient_results_set_map.begin(),
                    collision_data->gradient_results_set_map.end(),
                    std::back_inserter(rs),
-                   std::bind(&std::map<std::pair<std::string, std::string>, GradientResultsSet>::value_type::second,
-                             std::placeholders::_1));
+                   [](const std::map<std::pair<std::string, std::string>, GradientResultsSet>::value_type& val) {
+                     return std::cref(val.second);
+                   });
     std::sort(rs.begin(), rs.end(), [](const GradientResultsSet& a, const GradientResultsSet& b) {
       return a.max_error[0].error > b.max_error[0].error;
     });
 
     for (std::size_t i = 0; i < bounds_.size(); ++i)
-      values(static_cast<Eigen::Index>(i)) = rs[i].getMaxErrorT0();
+      values(static_cast<Eigen::Index>(i)) = rs[i].get().getMaxErrorT0();
   }
 
   return values;
@@ -181,13 +182,14 @@ void DiscreteCollisionNumericalConstraint::CalcJacobianBlock(const Eigen::Ref<co
   }
   else
   {
-    std::vector<GradientResultsSet> rs;
+    std::vector<std::reference_wrapper<const GradientResultsSet>> rs;
     rs.reserve(collision_data->gradient_results_set_map.size());
     std::transform(collision_data->gradient_results_set_map.begin(),
                    collision_data->gradient_results_set_map.end(),
                    std::back_inserter(rs),
-                   std::bind(&std::map<std::pair<std::string, std::string>, GradientResultsSet>::value_type::second,
-                             std::placeholders::_1));
+                   [](const std::map<std::pair<std::string, std::string>, GradientResultsSet>::value_type& val) {
+                     return std::cref(val.second);
+                   });
     std::sort(rs.begin(), rs.end(), [](const GradientResultsSet& a, const GradientResultsSet& b) {
       return a.max_error[0].error > b.max_error[0].error;
     });
@@ -200,7 +202,7 @@ void DiscreteCollisionNumericalConstraint::CalcJacobianBlock(const Eigen::Ref<co
       CollisionCacheData::ConstPtr collision_data_delta = collision_evaluator_->CalcCollisions(jv);
       for (int i = 0; i < static_cast<int>(bounds_.size()); ++i)
       {
-        GradientResultsSet& r = rs[static_cast<std::size_t>(i)];
+        const GradientResultsSet& r = rs[static_cast<std::size_t>(i)].get();
         auto it = collision_data_delta->gradient_results_set_map.find(r.key);
         if (it != collision_data_delta->gradient_results_set_map.end())
         {

@@ -34,7 +34,7 @@ CollisionPlottingCallback::CollisionPlottingCallback(tesseract_visualization::Vi
 {
 }
 
-void CollisionPlottingCallback::plot(const ifopt::Problem& /*nlp*/)
+void CollisionPlottingCallback::plot(const QPProblem& /*problem*/)  // NOLINT Remove after implementation
 {
   std::cout << "Collision plotting has not been implemented. PRs welcome" << std::endl;
 }
@@ -52,8 +52,8 @@ void CollisionPlottingCallback::addConstraintSet(
     collision_constraints_.push_back(cnt);
 }
 
-bool CollisionPlottingCallback::execute(const ifopt::Problem& nlp, const trajopt_sqp::SQPResults&)
+bool CollisionPlottingCallback::execute(const QPProblem& problem, const trajopt_sqp::SQPResults&)
 {
-  plot(nlp);
+  plot(problem);
   return true;
 }

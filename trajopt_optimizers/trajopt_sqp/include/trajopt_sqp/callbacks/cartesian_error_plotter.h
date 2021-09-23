@@ -59,7 +59,7 @@ public:
    * @brief Plots the error
    * @param nlp Unused
    */
-  void plot(const ifopt::Problem& nlp);
+  void plot(const QPProblem& problem);
 
   /**
    * @brief addConstraintSet Adds a constraint set to be plotted
@@ -73,7 +73,7 @@ public:
    */
   void addConstraintSet(const std::vector<trajopt_ifopt::CartPosConstraint::ConstPtr>& cart_position_cnts);
 
-  bool execute(const ifopt::Problem& nlp, const trajopt_sqp::SQPResults& /*sqp_results*/) override;
+  bool execute(const QPProblem& problem, const trajopt_sqp::SQPResults& sqp_results) override;
 
 protected:
   std::vector<trajopt_ifopt::CartPosConstraint::ConstPtr> cart_position_cnts_;

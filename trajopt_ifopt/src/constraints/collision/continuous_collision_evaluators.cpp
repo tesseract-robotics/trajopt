@@ -36,7 +36,7 @@ LVSContinuousCollisionEvaluator::LVSContinuousCollisionEvaluator(
     const Eigen::Isometry3d& world_to_base,
     trajopt_ifopt::TrajOptCollisionConfig::ConstPtr collision_config,
     bool dynamic_environment)
-  : collision_cache_(collision_cache)
+  : collision_cache_(std::move(collision_cache))
   , manip_(std::move(manip))
   , env_(std::move(env))
   , adjacency_map_(std::move(adjacency_map))
@@ -74,7 +74,7 @@ LVSContinuousCollisionEvaluator::CalcCollisionData(const Eigen::Ref<const Eigen:
                                                    const Eigen::Ref<const Eigen::VectorXd>& dof_vals1)
 {
   size_t key = getHash(*collision_config_, dof_vals0, dof_vals1);
-  auto it = collision_cache_->get(key);
+  auto* it = collision_cache_->get(key);
   if (it != nullptr)
   {
     CONSOLE_BRIDGE_logDebug("Using cached collision check");
@@ -206,7 +206,7 @@ LVSDiscreteCollisionEvaluator::LVSDiscreteCollisionEvaluator(
     const Eigen::Isometry3d& world_to_base,
     trajopt_ifopt::TrajOptCollisionConfig::ConstPtr collision_config,
     bool dynamic_environment)
-  : collision_cache_(collision_cache)
+  : collision_cache_(std::move(collision_cache))
   , manip_(std::move(manip))
   , env_(std::move(env))
   , adjacency_map_(std::move(adjacency_map))
@@ -244,7 +244,7 @@ LVSDiscreteCollisionEvaluator::CalcCollisionData(const Eigen::Ref<const Eigen::V
                                                  const Eigen::Ref<const Eigen::VectorXd>& dof_vals1)
 {
   size_t key = getHash(*collision_config_, dof_vals0, dof_vals1);
-  auto it = collision_cache_->get(key);
+  auto* it = collision_cache_->get(key);
   if (it != nullptr)
   {
     CONSOLE_BRIDGE_logDebug("Using cached collision check");

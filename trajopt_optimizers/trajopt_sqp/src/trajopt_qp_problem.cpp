@@ -212,12 +212,12 @@ Eigen::VectorXd TrajOptQPProblem::getVariableValues() const { return variables_-
 
 void TrajOptQPProblem::convexify()
 {
-  assert(initialized_);
+  assert(initialized_);  // NOLINT
 
   // This must be called prior to updateGradient
-  convexifyCosts();
+  convexifyCosts();  // NOLINT
 
-  linearizeConstraints();
+  linearizeConstraints();  // NOLINT
 
   // The three above must be called before rest to update internal data
 
@@ -251,7 +251,6 @@ void TrajOptQPProblem::convexifyCosts()
 
   // Process Squared Costs
   /** @note See CostFromFunc::convex in modeling_utils.cpp. */
-  Eigen::Index grad_start_index{ 0 };
   if (squared_costs_.GetRows() > 0)
   {
     squared_objective_nlp_ = QuadExprs(squared_costs_.GetRows(), getNumNLPVars());
@@ -284,7 +283,7 @@ void TrajOptQPProblem::convexifyCosts()
       for (int k = 0; k < cost_quad_expr.linear_coeffs.outerSize(); ++k)
       {
         for (SparseMatrix::InnerIterator it(cost_quad_expr.linear_coeffs, k); it; ++it)
-          grad_triplet_list.emplace_back(grad_start_index + it.row(), it.col(), it.value());
+          grad_triplet_list.emplace_back(it.row(), it.col(), it.value());
       }
     }
 
@@ -294,7 +293,7 @@ void TrajOptQPProblem::convexifyCosts()
                                                    cost_quad_expr.quadratic_coeffs.end());
 
     // Store individual equations linear coefficients
-    squared_objective_nlp_.linear_coeffs.setFromTriplets(grad_triplet_list.begin(), grad_triplet_list.end());
+    squared_objective_nlp_.linear_coeffs.setFromTriplets(grad_triplet_list.begin(), grad_triplet_list.end());  // NOLINT
 
     // Insert QP Problem Objective Linear Coefficients
     gradient_.head(getNumNLPVars()) = squared_objective_nlp_.objective_linear_coeffs;
@@ -309,8 +308,6 @@ void TrajOptQPProblem::convexifyCosts()
           hessian_.coeffRef(it.row(), it.col()) += it.value();
       }
     }
-
-    grad_start_index += cnt_vals.rows();
   }
 
   // Hinge and Asolute costs are handled differently than squared cost because they add constraints to the qp problem
@@ -392,7 +389,6 @@ void TrajOptQPProblem::linearizeConstraints()
   }
 
   // Add the hinge variables to each hinge constraint
-  current_row_index = 0;
   Eigen::Index current_column_index = getNumNLPVars();
   for (Eigen::Index i = 0; i < static_cast<Eigen::Index>(hinge_costs_.GetRows()); i++)
     tripletList.emplace_back(i, current_column_index++, -1);
@@ -429,7 +425,7 @@ void TrajOptQPProblem::linearizeConstraints()
   // Insert the triplet list into the sparse matrix
   constraint_matrix_.resize(num_qp_cnts_, num_qp_vars_);
   constraint_matrix_.reserve(nlp_cnt_jac.nonZeros() + hinge_cnt_jac.nonZeros() + abs_cnt_jac.nonZeros() + num_qp_vars_);
-  constraint_matrix_.setFromTriplets(tripletList.begin(), tripletList.end());
+  constraint_matrix_.setFromTriplets(tripletList.begin(), tripletList.end());  // NOLINT
 }
 
 void TrajOptQPProblem::updateConstraintsConstantExpression()
@@ -729,7 +725,6 @@ Eigen::VectorXd TrajOptQPProblem::evaluateExactCosts(const Eigen::Ref<const Eige
   {
     g.middleRows(start_index, hinge_costs_.GetRows()) =
         trajopt_ifopt::calcBoundsViolations(hinge_costs_.GetValues(), hinge_costs_.GetBounds());
-    start_index += hinge_costs_.GetRows();
   }
 
   return g;
@@ -755,7 +750,7 @@ Eigen::VectorXd TrajOptQPProblem::evaluateExactConstraintViolations(const Eigen:
 
 Eigen::VectorXd TrajOptQPProblem::getExactConstraintViolations()
 {
-  return evaluateExactConstraintViolations(variables_->GetValues());
+  return evaluateExactConstraintViolations(variables_->GetValues());  // NOLINT
 }
 
 void TrajOptQPProblem::scaleBoxSize(double& scale)

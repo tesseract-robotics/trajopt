@@ -59,7 +59,7 @@ public:
    * @brief Plot the joint_position variables as a tesseract trajectory
    * @param nlp Unused
    */
-  void plot(const ifopt::Problem& nlp);
+  void plot(const QPProblem& problem);
 
   /**
    * @brief Add a variable set to be plotted
@@ -73,7 +73,7 @@ public:
    */
   void addVariableSet(const std::vector<trajopt_ifopt::JointPosition::ConstPtr>& joint_positions);
 
-  bool execute(const ifopt::Problem& nlp, const trajopt_sqp::SQPResults& /*sqp_results*/) override;
+  bool execute(const QPProblem& problem, const trajopt_sqp::SQPResults& sqp_results) override;
 
 protected:
   std::vector<trajopt_ifopt::JointPosition::ConstPtr> joint_positions_;

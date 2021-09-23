@@ -29,7 +29,6 @@
 
 #include <trajopt_utils/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
-#include <ifopt/problem.h>
 #include <tesseract_visualization/visualization.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
@@ -51,7 +50,7 @@ public:
 
   ClearPlotterCallback(tesseract_visualization::Visualization::Ptr plotter);
 
-  bool execute(const ifopt::Problem& nlp, const trajopt_sqp::SQPResults& sqp_results) override;
+  bool execute(const QPProblem& problem, const trajopt_sqp::SQPResults& sqp_results) override;
 
 protected:
   tesseract_visualization::Visualization::Ptr plotter_;

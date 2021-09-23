@@ -34,7 +34,7 @@ WaitForInputCallback::WaitForInputCallback(tesseract_visualization::Visualizatio
 {
 }
 
-bool WaitForInputCallback::execute(const ifopt::Problem& /*nlp*/, const trajopt_sqp::SQPResults&)
+bool WaitForInputCallback::execute(const QPProblem& /*problem*/, const trajopt_sqp::SQPResults&)
 {
   plotter_->waitForInput();
   return true;

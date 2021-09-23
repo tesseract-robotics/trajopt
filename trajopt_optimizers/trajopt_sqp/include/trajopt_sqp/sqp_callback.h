@@ -27,7 +27,7 @@
 #define TRAJOPT_SQP_INCLUDE_SQP_CALLBACK_H_
 
 #include <trajopt_sqp/types.h>
-#include <ifopt/problem.h>
+#include <trajopt_sqp/qp_problem.h>
 
 namespace trajopt_sqp
 {
@@ -46,7 +46,7 @@ public:
    * @param sqp_results The latest SQPResults
    * @return Returning false will stop the optimization
    */
-  virtual bool execute(const ifopt::Problem& nlp, const SQPResults& sqp_results) = 0;
+  virtual bool execute(const QPProblem& problem, const SQPResults& sqp_results) = 0;
 };
 }  // namespace trajopt_sqp
 

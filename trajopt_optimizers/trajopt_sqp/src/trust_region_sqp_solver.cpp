@@ -40,7 +40,7 @@ TrustRegionSQPSolver::TrustRegionSQPSolver(QPSolver::Ptr qp_solver) : qp_solver(
 
 bool TrustRegionSQPSolver::init(QPProblem::Ptr qp_prob)
 {
-  qp_problem = qp_prob;
+  qp_problem = std::move(qp_prob);
 
   // Initialize optimization parameters
   results_ = SQPResults(qp_problem->getNumNLPVars(), qp_problem->getNumNLPConstraints(), qp_problem->getNumNLPCosts());
@@ -72,7 +72,7 @@ const SQPStatus& TrustRegionSQPSolver::getStatus() { return status_; }
 
 const SQPResults& TrustRegionSQPSolver::getResults() { return results_; }
 
-void TrustRegionSQPSolver::solve(QPProblem::Ptr qp_problem)
+void TrustRegionSQPSolver::solve(const QPProblem::Ptr& qp_problem)
 {
   status_ = SQPStatus::RUNNING;
 
@@ -335,8 +335,8 @@ SQPStatus TrustRegionSQPSolver::solveQPProblem()
 bool TrustRegionSQPSolver::callCallbacks()
 {
   bool success = true;
-  //  for (const auto& callback : callbacks_)
-  //    success &= callback->execute(*nlp_, results_);
+  for (const auto& callback : callbacks_)
+    success &= callback->execute(*qp_problem, results_);
   return success;
 }
 

@@ -97,19 +97,23 @@ Eigen::VectorXd DiscreteCollisionConstraint::CalcValues(const Eigen::Ref<const E
   }
   else
   {
-    std::vector<GradientResultsSet> rs;
+    std::vector<std::reference_wrapper<const GradientResultsSet>> rs;
     rs.reserve(collision_data->gradient_results_set_map.size());
     std::transform(collision_data->gradient_results_set_map.begin(),
                    collision_data->gradient_results_set_map.end(),
                    std::back_inserter(rs),
-                   std::bind(&std::map<std::pair<std::string, std::string>, GradientResultsSet>::value_type::second,
-                             std::placeholders::_1));
+                   [](const std::map<std::pair<std::string, std::string>, GradientResultsSet>::value_type& val) {
+                     return std::cref(val.second);
+                   });
     std::sort(rs.begin(), rs.end(), [](const GradientResultsSet& a, const GradientResultsSet& b) {
       return a.max_error[0].error > b.max_error[0].error;
     });
 
     for (std::size_t i = 0; i < bounds_.size(); ++i)
-      values(static_cast<Eigen::Index>(i)) = rs[i].coeff * rs[i].getMaxErrorT0();
+    {
+      const GradientResultsSet& r = rs[i].get();
+      values(static_cast<Eigen::Index>(i)) = r.coeff * r.getMaxErrorT0();
+    }
   }
 
   return values;
@@ -152,20 +156,21 @@ void DiscreteCollisionConstraint::CalcJacobianBlock(const Eigen::Ref<const Eigen
   }
   else
   {
-    std::vector<GradientResultsSet> rs;
+    std::vector<std::reference_wrapper<const GradientResultsSet>> rs;
     rs.reserve(collision_data->gradient_results_set_map.size());
     std::transform(collision_data->gradient_results_set_map.begin(),
                    collision_data->gradient_results_set_map.end(),
                    std::back_inserter(rs),
-                   std::bind(&std::map<std::pair<std::string, std::string>, GradientResultsSet>::value_type::second,
-                             std::placeholders::_1));
+                   [](const std::map<std::pair<std::string, std::string>, GradientResultsSet>::value_type& val) {
+                     return std::cref(val.second);
+                   });
     std::sort(rs.begin(), rs.end(), [](const GradientResultsSet& a, const GradientResultsSet& b) {
       return a.max_error[0].error > b.max_error[0].error;
     });
 
     for (std::size_t i = 0; i < bounds_.size(); ++i)
     {
-      GradientResultsSet& r = rs[i];
+      const GradientResultsSet& r = rs[i];
       Eigen::VectorXd grad_vec = getWeightedAvgGradientT0(r, r.getMaxErrorWithBufferT0(), position_var_->GetRows());
 
       // Collision is 1 x n_dof
