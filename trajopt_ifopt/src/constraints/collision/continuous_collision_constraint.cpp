@@ -44,7 +44,7 @@ ContinuousCollisionConstraint::ContinuousCollisionConstraint(ContinuousCollision
                                                              const std::string& name)
   : ifopt::ConstraintSet(max_num_cnt, name)
   , position_vars_(std::move(position_vars))
-  , position_vars_fixed_(std::move(position_vars_fixed))
+  , position_vars_fixed_(position_vars_fixed)
   , collision_evaluator_(std::move(collision_evaluator))
 {
   if (position_vars_[0] == nullptr && position_vars_[1] == nullptr)
@@ -101,53 +101,50 @@ Eigen::VectorXd ContinuousCollisionConstraint::GetValues() const
   }
   else
   {
+    std::vector<std::reference_wrapper<const GradientResultsSet>> rs;
+    rs.reserve(collision_data->gradient_results_set_map.size());
+    std::transform(collision_data->gradient_results_set_map.begin(),
+                   collision_data->gradient_results_set_map.end(),
+                   std::back_inserter(rs),
+                   [](const std::map<std::pair<std::string, std::string>, GradientResultsSet>::value_type& val) {
+                     return std::cref(val.second);
+                   });
+
     if (!position_vars_fixed_[0] && !position_vars_fixed_[1])
     {
-      std::vector<GradientResultsSet> rs;
-      rs.reserve(collision_data->gradient_results_set_map.size());
-      std::transform(collision_data->gradient_results_set_map.begin(),
-                     collision_data->gradient_results_set_map.end(),
-                     std::back_inserter(rs),
-                     std::bind(&std::map<std::pair<std::string, std::string>, GradientResultsSet>::value_type::second,
-                               std::placeholders::_1));
       std::sort(rs.begin(), rs.end(), [](const GradientResultsSet& a, const GradientResultsSet& b) {
         return (a.getMaxError() > b.getMaxError());
       });
 
       for (std::size_t i = 0; i < bounds_.size(); ++i)
-        values(static_cast<Eigen::Index>(i)) = rs[i].coeff * rs[i].getMaxError();
+      {
+        const GradientResultsSet& r = rs[i].get();
+        values(static_cast<Eigen::Index>(i)) = r.coeff * r.getMaxError();
+      }
     }
     else if (!position_vars_fixed_[0])
     {
-      std::vector<GradientResultsSet> rs;
-      rs.reserve(collision_data->gradient_results_set_map.size());
-      std::transform(collision_data->gradient_results_set_map.begin(),
-                     collision_data->gradient_results_set_map.end(),
-                     std::back_inserter(rs),
-                     std::bind(&std::map<std::pair<std::string, std::string>, GradientResultsSet>::value_type::second,
-                               std::placeholders::_1));
       std::sort(rs.begin(), rs.end(), [](const GradientResultsSet& a, const GradientResultsSet& b) {
         return (a.getMaxErrorT0() > b.getMaxErrorT0());
       });
 
       for (std::size_t i = 0; i < bounds_.size(); ++i)
-        values(static_cast<Eigen::Index>(i)) = rs[i].coeff * rs[i].getMaxErrorT0();
+      {
+        const GradientResultsSet& r = rs[i].get();
+        values(static_cast<Eigen::Index>(i)) = r.coeff * r.getMaxErrorT0();
+      }
     }
     else
     {
-      std::vector<GradientResultsSet> rs;
-      rs.reserve(collision_data->gradient_results_set_map.size());
-      std::transform(collision_data->gradient_results_set_map.begin(),
-                     collision_data->gradient_results_set_map.end(),
-                     std::back_inserter(rs),
-                     std::bind(&std::map<std::pair<std::string, std::string>, GradientResultsSet>::value_type::second,
-                               std::placeholders::_1));
       std::sort(rs.begin(), rs.end(), [](const GradientResultsSet& a, const GradientResultsSet& b) {
         return (a.getMaxErrorT1() > b.getMaxErrorT1());
       });
 
       for (std::size_t i = 0; i < bounds_.size(); ++i)
-        values(static_cast<Eigen::Index>(i)) = rs[i].coeff * rs[i].getMaxErrorT1();
+      {
+        const GradientResultsSet& r = rs[i].get();
+        values(static_cast<Eigen::Index>(i)) = r.coeff * r.getMaxErrorT1();
+      }
     }
   }
 
@@ -198,27 +195,22 @@ void ContinuousCollisionConstraint::FillJacobianBlock(std::string var_set, Jacob
     }
     else
     {
-      std::vector<GradientResultsSet> rs;
+      std::vector<std::reference_wrapper<const GradientResultsSet>> rs;
+      rs.reserve(collision_data->gradient_results_set_map.size());
+      std::transform(collision_data->gradient_results_set_map.begin(),
+                     collision_data->gradient_results_set_map.end(),
+                     std::back_inserter(rs),
+                     [](const std::map<std::pair<std::string, std::string>, GradientResultsSet>::value_type& val) {
+                       return std::cref(val.second);
+                     });
       if (!position_vars_fixed_[1])
       {
-        rs.reserve(collision_data->gradient_results_set_map.size());
-        std::transform(collision_data->gradient_results_set_map.begin(),
-                       collision_data->gradient_results_set_map.end(),
-                       std::back_inserter(rs),
-                       std::bind(&std::map<std::pair<std::string, std::string>, GradientResultsSet>::value_type::second,
-                                 std::placeholders::_1));
         std::sort(rs.begin(), rs.end(), [](const GradientResultsSet& a, const GradientResultsSet& b) {
           return (a.getMaxError() > b.getMaxError());
         });
       }
       else
       {
-        rs.reserve(collision_data->gradient_results_set_map.size());
-        std::transform(collision_data->gradient_results_set_map.begin(),
-                       collision_data->gradient_results_set_map.end(),
-                       std::back_inserter(rs),
-                       std::bind(&std::map<std::pair<std::string, std::string>, GradientResultsSet>::value_type::second,
-                                 std::placeholders::_1));
         std::sort(rs.begin(), rs.end(), [](const GradientResultsSet& a, const GradientResultsSet& b) {
           return (a.getMaxErrorT0() > b.getMaxErrorT0());
         });
@@ -226,7 +218,7 @@ void ContinuousCollisionConstraint::FillJacobianBlock(std::string var_set, Jacob
 
       for (std::size_t i = 0; i < bounds_.size(); ++i)
       {
-        GradientResultsSet& r = rs[i];
+        const GradientResultsSet& r = rs[i].get();
         double max_error_with_buffer = r.getMaxErrorWithBufferT0();
         if (!position_vars_fixed_[1])
           max_error_with_buffer = r.getMaxErrorWithBuffer();
@@ -270,28 +262,22 @@ void ContinuousCollisionConstraint::FillJacobianBlock(std::string var_set, Jacob
     }
     else
     {
-      std::vector<GradientResultsSet> rs;
-
+      std::vector<std::reference_wrapper<const GradientResultsSet>> rs;
+      rs.reserve(collision_data->gradient_results_set_map.size());
+      std::transform(collision_data->gradient_results_set_map.begin(),
+                     collision_data->gradient_results_set_map.end(),
+                     std::back_inserter(rs),
+                     [](const std::map<std::pair<std::string, std::string>, GradientResultsSet>::value_type& val) {
+                       return std::cref(val.second);
+                     });
       if (!position_vars_fixed_[0])
       {
-        rs.reserve(collision_data->gradient_results_set_map.size());
-        std::transform(collision_data->gradient_results_set_map.begin(),
-                       collision_data->gradient_results_set_map.end(),
-                       std::back_inserter(rs),
-                       std::bind(&std::map<std::pair<std::string, std::string>, GradientResultsSet>::value_type::second,
-                                 std::placeholders::_1));
         std::sort(rs.begin(), rs.end(), [](const GradientResultsSet& a, const GradientResultsSet& b) {
           return (a.getMaxError() > b.getMaxError());
         });
       }
       else
       {
-        rs.reserve(collision_data->gradient_results_set_map.size());
-        std::transform(collision_data->gradient_results_set_map.begin(),
-                       collision_data->gradient_results_set_map.end(),
-                       std::back_inserter(rs),
-                       std::bind(&std::map<std::pair<std::string, std::string>, GradientResultsSet>::value_type::second,
-                                 std::placeholders::_1));
         std::sort(rs.begin(), rs.end(), [](const GradientResultsSet& a, const GradientResultsSet& b) {
           return (a.getMaxErrorT1() > b.getMaxErrorT1());
         });
@@ -299,7 +285,7 @@ void ContinuousCollisionConstraint::FillJacobianBlock(std::string var_set, Jacob
 
       for (std::size_t i = 0; i < bounds_.size(); ++i)
       {
-        GradientResultsSet& r = rs[i];
+        const GradientResultsSet& r = rs[i].get();
         double max_error_with_buffer = r.getMaxErrorWithBufferT1();
         if (!position_vars_fixed_[0])
           max_error_with_buffer = r.getMaxErrorWithBuffer();

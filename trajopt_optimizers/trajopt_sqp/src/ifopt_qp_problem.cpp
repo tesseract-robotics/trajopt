@@ -138,7 +138,7 @@ void IfoptQPProblem::convexify()
 
   updateGradient();
 
-  linearizeConstraints();
+  linearizeConstraints();  // NOLINT
 
   // The three above must be called before rest to update internal data
 
@@ -252,7 +252,7 @@ void IfoptQPProblem::linearizeConstraints()
   tripletList.reserve(static_cast<std::size_t>(jac.nonZeros() + num_qp_vars_) * 3);
 
   // Add jacobian to triplet list
-  for (int k = 0; k < jac.outerSize(); ++k)
+  for (int k = 0; k < jac.outerSize(); ++k)  // NOLINT
   {
     for (SparseMatrix::InnerIterator it(jac, k); it; ++it)
     {
@@ -285,7 +285,7 @@ void IfoptQPProblem::linearizeConstraints()
   // Insert the triplet list into the sparse matrix
   constraint_matrix_.resize(num_qp_cnts_, num_qp_vars_);
   constraint_matrix_.reserve(jac.nonZeros() + num_qp_vars_);
-  constraint_matrix_.setFromTriplets(tripletList.begin(), tripletList.end());
+  constraint_matrix_.setFromTriplets(tripletList.begin(), tripletList.end());  // NOLINT
 }
 
 void IfoptQPProblem::updateCostsConstantExpression()
@@ -469,7 +469,7 @@ Eigen::VectorXd IfoptQPProblem::evaluateExactConstraintViolations(const Eigen::R
 
 Eigen::VectorXd IfoptQPProblem::getExactConstraintViolations()
 {
-  return evaluateExactConstraintViolations(nlp_->GetOptVariables()->GetValues());
+  return evaluateExactConstraintViolations(nlp_->GetOptVariables()->GetValues());  // NOLINT
 }
 
 void IfoptQPProblem::scaleBoxSize(double& scale)

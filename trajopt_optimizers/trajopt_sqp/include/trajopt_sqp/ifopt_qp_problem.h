@@ -104,11 +104,11 @@ public:
 protected:
   std::shared_ptr<ifopt::Problem> nlp_;
 
-  Eigen::Index num_nlp_vars_;
-  Eigen::Index num_nlp_cnts_;
-  Eigen::Index num_nlp_costs_;
-  Eigen::Index num_qp_vars_;
-  Eigen::Index num_qp_cnts_;
+  Eigen::Index num_nlp_vars_{ 0 };
+  Eigen::Index num_nlp_cnts_{ 0 };
+  Eigen::Index num_nlp_costs_{ 0 };
+  Eigen::Index num_qp_vars_{ 0 };
+  Eigen::Index num_qp_cnts_{ 0 };
   std::vector<std::string> constraint_names_;
   std::vector<std::string> cost_names_;
 

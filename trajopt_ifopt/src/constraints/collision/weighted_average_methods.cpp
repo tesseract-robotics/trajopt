@@ -75,7 +75,7 @@ Eigen::VectorXd getWeightedAvgGradientT1(const GradientResultsSet& grad_results_
   assert(max_error_with_buffer > 0);
   double total_weight = 0;
   long cnt{ 0 };
-  for (auto& grad : grad_results_set.results)
+  for (const auto& grad : grad_results_set.results)
   {
     for (std::size_t i = 0; i < 2; ++i)
     {

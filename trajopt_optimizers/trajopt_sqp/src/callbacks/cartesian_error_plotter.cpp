@@ -37,7 +37,7 @@ CartesianErrorPlottingCallback::CartesianErrorPlottingCallback(tesseract_visuali
 {
 }
 
-void CartesianErrorPlottingCallback::plot(const ifopt::Problem& /*nlp*/)
+void CartesianErrorPlottingCallback::plot(const QPProblem& /*problem*/)
 {
   for (const auto& cnt : cart_position_cnts_)
   {
@@ -75,8 +75,8 @@ void CartesianErrorPlottingCallback::addConstraintSet(
     cart_position_cnts_.push_back(cnt);
 }
 
-bool CartesianErrorPlottingCallback::execute(const ifopt::Problem& nlp, const trajopt_sqp::SQPResults&)
+bool CartesianErrorPlottingCallback::execute(const QPProblem& problem, const trajopt_sqp::SQPResults& /*sqp_results*/)
 {
-  plot(nlp);
+  plot(problem);
   return true;
 };

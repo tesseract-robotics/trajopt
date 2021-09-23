@@ -17,11 +17,12 @@ Eigen::VectorXd QuadExprs::values(const Eigen::Ref<Eigen::VectorXd>& x) const
 {
   Eigen::VectorXd result_lin = constants + (linear_coeffs * x);
   Eigen::VectorXd result_quad = result_lin;
+  assert(result_quad.rows() == static_cast<Eigen::Index>(quadratic_coeffs.size()));
   for (std::size_t i = 0; i < quadratic_coeffs.size(); ++i)
   {
     const auto& eq_quad_coeffs = quadratic_coeffs[i];
     if (eq_quad_coeffs.nonZeros() > 0)
-      result_quad(static_cast<Eigen::Index>(i)) += (x.transpose() * eq_quad_coeffs * x);
+      result_quad(static_cast<Eigen::Index>(i)) += (x.transpose() * eq_quad_coeffs * x);  // NOLINT
   }
   return result_quad;
 }

@@ -36,7 +36,7 @@ SingleTimestepCollisionEvaluator::SingleTimestepCollisionEvaluator(
     const Eigen::Isometry3d& world_to_base,
     TrajOptCollisionConfig::ConstPtr collision_config,
     bool dynamic_environment)
-  : collision_cache_(collision_cache)
+  : collision_cache_(std::move(collision_cache))
   , manip_(std::move(manip))
   , env_(std::move(env))
   , adjacency_map_(std::move(adjacency_map))
@@ -73,7 +73,7 @@ CollisionCacheData::ConstPtr
 SingleTimestepCollisionEvaluator::CalcCollisions(const Eigen::Ref<const Eigen::VectorXd>& dof_vals)
 {
   size_t key = getHash(*collision_config_, dof_vals);
-  auto it = collision_cache_->get(key);
+  auto* it = collision_cache_->get(key);
   if (it != nullptr)
   {
     CONSOLE_BRIDGE_logDebug("Using cached collision check");

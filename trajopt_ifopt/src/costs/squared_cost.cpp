@@ -59,18 +59,20 @@ void SquaredCost::FillJacobianBlock(std::string var_set, Jacobian& jac_block) co
   int var_size = 0;
   for (const auto& vars : GetVariables()->GetComponents())
   {
-    if (vars->GetName() == var_set)
+    if (vars->GetName() == var_set)  // NOLINT
       var_size = vars->GetRows();
   }
-  assert(var_size > 0);
-  cnt_jac_block.resize(constraint_->GetRows(), var_size);
+  if (var_size == 0)  // NOLINT
+    throw std::runtime_error("Unable to find var_set.");
+
+  cnt_jac_block.resize(constraint_->GetRows(), var_size);  // NOLINT
 
   // Get the Jacobian Block from the constraint
   constraint_->FillJacobianBlock(var_set, cnt_jac_block);
 
   // Apply the chain rule. See doxygen for this class
   Eigen::VectorXd error = calcBoundsErrors(constraint_->GetValues(), constraint_->GetBounds());
-  jac_block = 2 * error.transpose().sparseView() * weights_.asDiagonal() * cnt_jac_block;
+  jac_block = 2 * error.transpose().sparseView() * weights_.asDiagonal() * cnt_jac_block;  // NOLINT
 }
 
 }  // namespace trajopt_ifopt

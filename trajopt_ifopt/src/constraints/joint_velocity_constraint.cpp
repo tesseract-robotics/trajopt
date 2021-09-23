@@ -98,7 +98,7 @@ void JointVelConstraint::FillJacobianBlock(std::string var_set, Jacobian& jac_bl
   // Check if this constraint use the var_set
   // Only modify the jacobian if this constraint uses var_set
   auto it = index_map_.find(var_set);
-  if (it != index_map_.end())
+  if (it != index_map_.end())  // NOLINT
   {
     Eigen::Index i = it->second;
 

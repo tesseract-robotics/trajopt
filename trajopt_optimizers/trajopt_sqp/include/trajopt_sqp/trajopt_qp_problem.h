@@ -87,8 +87,8 @@ protected:
 
   std::vector<ConstraintType> constraint_types_;
 
-  Eigen::Index num_qp_vars_;
-  Eigen::Index num_qp_cnts_;
+  Eigen::Index num_qp_vars_{ 0 };
+  Eigen::Index num_qp_cnts_{ 0 };
 
   std::vector<std::string> constraint_names_;
   std::vector<std::string> cost_names_;

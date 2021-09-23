@@ -74,8 +74,8 @@ private:
   Eigen::VectorXd bounds_lower_;
   Eigen::VectorXd bounds_upper_;
   Eigen::VectorXd gradient_;
-  Eigen::Index num_vars_;
-  Eigen::Index num_cnts_;
+  Eigen::Index num_vars_{ 0 };
+  Eigen::Index num_cnts_{ 0 };
 
   QPSolverStatus solver_status_{ QPSolverStatus::UNITIALIZED };
 };

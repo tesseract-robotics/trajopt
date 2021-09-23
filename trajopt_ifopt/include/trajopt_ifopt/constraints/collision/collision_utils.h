@@ -38,8 +38,8 @@ namespace trajopt_ifopt
 {
 std::size_t getHash(const TrajOptCollisionConfig& collision_config, const Eigen::Ref<const Eigen::VectorXd>& dof_vals);
 std::size_t getHash(const TrajOptCollisionConfig& collision_config,
-                    const Eigen::Ref<const Eigen::VectorXd>& dofvals0,
-                    const Eigen::Ref<const Eigen::VectorXd>& dofvals1);
+                    const Eigen::Ref<const Eigen::VectorXd>& dof_vals0,
+                    const Eigen::Ref<const Eigen::VectorXd>& dof_vals1);
 
 /**
  * @brief This takes contacts results at each interpolated timestep and creates a single contact results map.

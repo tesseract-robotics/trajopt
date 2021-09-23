@@ -55,7 +55,7 @@ JointPosConstraint::JointPosConstraint(const Eigen::VectorXd& targets,
     throw std::runtime_error("JointPosConstraint, coeff must be the same size of the joint postion.");
 
   // Check and make sure the targets size aligns with the vars passed in
-  for (auto& position_var : position_vars)
+  for (const auto& position_var : position_vars)
   {
     if (targets.size() != position_var->GetRows())
       CONSOLE_BRIDGE_logError("Targets size does not align with variables provided");
@@ -111,7 +111,7 @@ Eigen::VectorXd JointPosConstraint::GetValues() const
 {
   // Get the correct variables
   Eigen::VectorXd values(static_cast<size_t>(n_dof_ * n_vars_));
-  for (auto& position_var : position_vars_)
+  for (const auto& position_var : position_vars_)
     values << coeffs_.cwiseProduct(this->GetVariables()->GetComponent(position_var->GetName())->GetValues());
 
   return values;

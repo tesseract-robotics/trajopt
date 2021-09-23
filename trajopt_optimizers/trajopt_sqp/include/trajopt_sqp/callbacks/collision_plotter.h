@@ -47,13 +47,13 @@ public:
 
   CollisionPlottingCallback(tesseract_visualization::Visualization::Ptr plotter);
 
-  void plot(const ifopt::Problem& nlp);
+  void plot(const QPProblem& problem);
 
   void addConstraintSet(const trajopt_ifopt::DiscreteCollisionConstraint::ConstPtr& collision_constraint);
 
   void addConstraintSet(const std::vector<trajopt_ifopt::DiscreteCollisionConstraint::ConstPtr>& collision_constraints);
 
-  bool execute(const ifopt::Problem& nlp, const trajopt_sqp::SQPResults& sqp_results) override;
+  bool execute(const QPProblem& problem, const trajopt_sqp::SQPResults& sqp_results) override;
 
 protected:
   std::vector<trajopt_ifopt::DiscreteCollisionConstraint::ConstPtr> collision_constraints_;

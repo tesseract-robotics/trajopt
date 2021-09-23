@@ -54,7 +54,7 @@ CartPosConstraint::CartPosConstraint(CartPosInfo info,
 }
 
 CartPosConstraint::CartPosConstraint(CartPosInfo info, JointPosition::ConstPtr position_var, const std::string& name)
-  : CartPosConstraint(info, position_var, Eigen::VectorXd::Ones(info.indices.rows()), name)
+  : CartPosConstraint(std::move(info), std::move(position_var), Eigen::VectorXd::Ones(info.indices.rows()), name)
 {
 }
 
