@@ -32,7 +32,7 @@ TRAJOPT_IGNORE_WARNINGS_POP
 namespace trajopt
 {
 JointAccelConstraint::JointAccelConstraint(const Eigen::VectorXd& targets,
-                                           std::vector<JointPosition::ConstPtr> position_vars,
+                                           std::vector<trajopt_ifopt::JointPosition::ConstPtr> position_vars,
                                            const std::string& name)
   : ifopt::ConstraintSet(static_cast<int>(targets.size()) * static_cast<int>(position_vars.size() - 2), name)
   , position_vars_(position_vars)

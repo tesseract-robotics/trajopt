@@ -55,7 +55,7 @@ public:
    * @param name Name of the constraint
    */
   JointAccelConstraint(const Eigen::VectorXd& targets,
-                       std::vector<JointPosition::ConstPtr> position_vars,
+                       std::vector<trajopt_ifopt::JointPosition::ConstPtr> position_vars,
                        const std::string& name = "JointAccel");
 
   /**
@@ -66,7 +66,7 @@ public:
    * @param name Name of the constraint
    */
   JointAccelConstraint(const std::vector<ifopt::Bounds>& bounds,
-                       std::vector<JointPosition::ConstPtr> position_vars,
+                       std::vector<trajopt_ifopt::JointPosition::ConstPtr> position_vars,
                        const std::string& name = "JointAccel");
 
   /**
@@ -100,7 +100,7 @@ private:
   /** @brief Pointers to the vars used by this constraint.
    *
    * Do not access them directly. Instead use this->GetVariables()->GetComponent(position_var->GetName())->GetValues()*/
-  std::vector<JointPosition::ConstPtr> position_vars_;
+  std::vector<trajopt_ifopt::JointPosition::ConstPtr> position_vars_;
   std::unordered_map<std::string, Eigen::Index> index_map_;
 
 };
