@@ -1,7 +1,6 @@
 /**
- * @file clear_plotter.h
- * @brief A callback to clear the plotter passed in. Add this callback before plotting callbacks to clear the plotter
- * before plotting new results
+ * @file numeric_differentiation.cpp
+ * @brief Contains numeric differentiation code
  *
  * @author Matthew Powelson
  * @date May 18, 2020
@@ -24,18 +23,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <trajopt_sqp/callbacks/clear_plotter.h>
-#include <trajopt_ifopt/utils/trajopt_utils.h>
+#include <trajopt_ifopt/utils/numeric_differentiation.h>
 
-using namespace trajopt_sqp;
-
-ClearPlotterCallback::ClearPlotterCallback(tesseract_visualization::Visualization::Ptr plotter)
-  : plotter_(std::move(plotter))
+namespace trajopt_ifopt
 {
-}
-
-bool ClearPlotterCallback::execute(const QPProblem& /*problem*/, const trajopt_sqp::SQPResults&)
+SparseMatrix calcForwardNumJac(const ErrorCalculator& f, const Eigen::Ref<const Eigen::VectorXd>& x, double epsilon)
 {
-  plotter_->clear();
-  return true;
+  Eigen::VectorXd y = f(x);
+  Eigen::MatrixXd out(y.size(), x.size());
+  Eigen::VectorXd x_perturbed = x;
+  for (int i = 0; i < x.size(); ++i)
+  {
+    x_perturbed(i) = x(i) + epsilon;
+    Eigen::VectorXd y_perturbed = f(x_perturbed);
+    out.col(i) = (y_perturbed - y) / epsilon;
+    x_perturbed(i) = x(i);
+  }
+
+  return out.sparseView();
 }
+}  // namespace trajopt_ifopt

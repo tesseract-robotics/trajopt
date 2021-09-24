@@ -1,4 +1,5 @@
 find_package(GTest REQUIRED)
+find_package(trajopt REQUIRED)
 
 if(NOT TARGET GTest::GTest)
   add_library(GTest::GTest INTERFACE IMPORTED)
@@ -43,6 +44,7 @@ macro(add_gtest test_name test_file)
       ifopt::ifopt_ipopt
       trajopt::trajopt_ifopt
       trajopt::trajopt_test_data
+      trajopt::trajopt
       GTest::GTest
       GTest::Main
       trajopt::trajopt_test_data)

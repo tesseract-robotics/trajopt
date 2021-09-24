@@ -6,7 +6,6 @@ if(WIN32)
 endif()
 
 find_package(trajopt_utils)
-find_package(trajopt)
 find_package(console_bridge REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(ifopt REQUIRED)
@@ -48,6 +47,10 @@ set(TRAJOPT_IFOPT_SOURCE_FILES
     src/constraints/collision/discrete_collision_numerical_constraint.cpp
     src/constraints/collision/continuous_collision_constraint.cpp
     src/constraints/collision/continuous_collision_numerical_constraint.cpp
+    src/utils/ifopt_utils.cpp
+    src/utils/numeric_differentiation.cpp
+    src/utils/trajopt_utils.cpp
+    src/variable_sets/joint_position_variable.cpp
 )
 
 add_library(${PROJECT_NAME} ${TRAJOPT_IFOPT_SOURCE_FILES})
@@ -55,7 +58,6 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
   console_bridge::console_bridge
   ifopt::ifopt_core
   trajopt::trajopt_utils
-  trajopt::trajopt
   tesseract::tesseract_environment_core
   Eigen3::Eigen
   Boost::boost)

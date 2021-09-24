@@ -25,7 +25,6 @@
  */
 #include <trajopt_sqp/callbacks/wait_for_input.h>
 #include <trajopt_ifopt/utils/trajopt_utils.h>
-#include <trajopt/typedefs.hpp>
 
 using namespace trajopt_sqp;
 

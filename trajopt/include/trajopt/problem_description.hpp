@@ -8,6 +8,7 @@ TRAJOPT_IGNORE_WARNINGS_POP
 #include <trajopt/common.hpp>
 #include <trajopt/json_marshal.hpp>
 #include <trajopt_sco/optimizers.hpp>
+#include <trajopt_utils/utils.hpp>
 
 namespace sco
 {
@@ -590,7 +591,7 @@ struct CollisionTermInfo : public TermInfo
 
   /** @brief Contains distance penalization data: Safety Margin, Coeff used during */
   /** @brief optimization, etc. */
-  std::vector<SafetyMarginData::Ptr> info;
+  std::vector<util::SafetyMarginData::Ptr> info;
 
   /** @brief Used to add term to pci from json */
   void fromJson(ProblemConstructionInfo& pci, const Json::Value& v) override;

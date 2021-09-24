@@ -34,7 +34,6 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <tesseract_scene_graph/resource_locator.h>
 #include <tesseract_common/types.h>
 #include <tesseract_common/macros.h>
-#include <json/json.h>
 #include <console_bridge/console.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 

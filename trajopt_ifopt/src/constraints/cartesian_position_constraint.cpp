@@ -26,6 +26,8 @@
  */
 #include <trajopt_ifopt/constraints/cartesian_position_constraint.h>
 #include <trajopt_ifopt/utils/numeric_differentiation.h>
+#include <trajopt_ifopt/utils/trajopt_utils.h>
+#include <trajopt_utils/utils.hpp>
 
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <tesseract_kinematics/core/utils.h>
@@ -65,7 +67,7 @@ Eigen::VectorXd CartPosConstraint::CalcValues(const Eigen::Ref<const Eigen::Vect
   new_pose = info_.kin_info->world_to_base * new_pose * info_.source_kin_link->transform * info_.source_tcp;
 
   Eigen::Isometry3d pose_err = info_.target_pose_inv * new_pose;
-  Eigen::VectorXd err = trajopt::concat(pose_err.translation(), trajopt::calcRotationalError(pose_err.rotation()));
+  Eigen::VectorXd err = util::concat(pose_err.translation(), util::calcRotationalError(pose_err.rotation()));
 
   Eigen::VectorXd reduced_err(info_.indices.size());
   for (int i = 0; i < info_.indices.size(); ++i)
@@ -105,7 +107,7 @@ void CartPosConstraint::CalcJacobianBlock(const Eigen::Ref<const Eigen::VectorXd
   {
     auto error_calculator = [&](const Eigen::Ref<const Eigen::VectorXd>& x) {
       Eigen::Isometry3d pose_err = pose_error_calculator(x);
-      Eigen::VectorXd err = trajopt::concat(pose_err.translation(), trajopt::calcRotationalError2(pose_err.rotation()));
+      Eigen::VectorXd err = util::concat(pose_err.translation(), util::calcRotationalError2(pose_err.rotation()));
       return err;
     };
     Jacobian jac0 = calcForwardNumJac(error_calculator, joint_vals, 1e-5);
@@ -148,11 +150,11 @@ void CartPosConstraint::CalcJacobianBlock(const Eigen::Ref<const Eigen::VectorXd
     // the partial derivative of the error function. Note that the rotational portion is the only part
     // that is required to be modified per the paper.
     Eigen::Isometry3d pose_err = info_.target_pose_inv * tf0;
-    Eigen::Vector3d rot_err = trajopt::calcRotationalError2(pose_err.rotation());
+    Eigen::Vector3d rot_err = util::calcRotationalError2(pose_err.rotation());
     for (int c = 0; c < jac0.cols(); ++c)
     {
-      auto new_pose_err = trajopt::addTwist(pose_err, jac0.col(c), 1e-5);
-      Eigen::VectorXd new_rot_err = trajopt::calcRotationalError2(new_pose_err.rotation());
+      auto new_pose_err = util::addTwist(pose_err, jac0.col(c), 1e-5);
+      Eigen::VectorXd new_rot_err = util::calcRotationalError2(new_pose_err.rotation());
       jac0.col(c).tail(3) = ((new_rot_err - rot_err) / 1e-5);
     }
 

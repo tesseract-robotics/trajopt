@@ -1,4 +1,5 @@
 find_package(GTest REQUIRED)
+find_package(trajopt REQUIRED)
 
 if(NOT TARGET GTest::GTest)
   add_library(GTest::GTest INTERFACE IMPORTED)

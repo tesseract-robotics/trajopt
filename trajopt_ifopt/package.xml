@@ -18,11 +18,11 @@
   <depend>libconsole-bridge-dev</depend>
   <depend>tesseract_collision</depend>
   <depend>tesseract_environment</depend>
-  <depend>trajopt</depend>
   <depend>trajopt_utils</depend>
   <depend>boost</depend>
 
   <test_depend>gtest</test_depend>
+  <test_depend>trajopt</test_depend>
 
   <export>
     <build_type>cmake</build_type>

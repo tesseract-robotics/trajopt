@@ -25,7 +25,6 @@
  */
 #include <trajopt_sqp/callbacks/cartesian_error_plotter.h>
 #include <trajopt_ifopt/utils/trajopt_utils.h>
-#include <trajopt/typedefs.hpp>
 
 #include <tesseract_visualization/markers/arrow_marker.h>
 #include <tesseract_visualization/markers/axis_marker.h>

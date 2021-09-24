@@ -16,13 +16,13 @@
   <depend>libconsole-bridge-dev</depend>
   <depend>ifopt</depend>
   <depend>osqp_eigen</depend>
-  <depend>trajopt</depend>
   <depend>trajopt_ifopt</depend>
   <depend>trajopt_utils</depend>
   <depend>tesseract_common</depend>
   <depend>tesseract_visualization</depend>
 
   <test_depend>gtest</test_depend>
+  <test_depend>trajopt</test_depend>
 
   <export>
     <build_type>cmake</build_type>

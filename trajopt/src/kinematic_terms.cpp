@@ -17,39 +17,12 @@ TRAJOPT_IGNORE_WARNINGS_POP
 #include <trajopt_utils/eigen_slicing.hpp>
 #include <trajopt_utils/logging.hpp>
 #include <trajopt_utils/stl_to_string.hpp>
+#include <trajopt_utils/utils.hpp>
 
 using namespace std;
 using namespace sco;
 using namespace Eigen;
 using namespace util;
-
-namespace
-{
-#if 0
-Vector3d rotVec(const Matrix3d& m) {
-  Quaterniond q; q = m;
-  return Vector3d(q.x(), q.y(), q.z());
-}
-#endif
-
-#if 0
-VectorXd concat(const VectorXd& a, const VectorXd& b) {
-  VectorXd out(a.size()+b.size());
-  out.topRows(a.size()) = a;
-  out.middleRows(a.size(), b.size()) = b;
-  return out;
-}
-
-template <typename T>
-vector<T> concat(const vector<T>& a, const vector<T>& b) {
-  vector<T> out;
-  vector<int> x;
-  out.insert(out.end(), a.begin(), a.end());
-  out.insert(out.end(), b.begin(), b.end());
-  return out;
-}
-#endif
-}  // namespace
 
 namespace trajopt
 {
@@ -61,7 +34,7 @@ VectorXd DynamicCartPoseErrCalculator::operator()(const VectorXd& dof_vals) cons
   Eigen::Isometry3d link_tf = world_to_base_ * new_pose * kin_link_->transform * tcp_;
   Eigen::Isometry3d target_tf = world_to_base_ * target_pose * kin_target_->transform * target_tcp_;
 
-  Eigen::VectorXd err = calcTransformError(target_tf, link_tf);
+  Eigen::VectorXd err = util::calcTransformError(target_tf, link_tf);
   Eigen::VectorXd reduced_err(indices_.size());
   for (int i = 0; i < indices_.size(); ++i)
     reduced_err[i] = err[indices_[i]];
@@ -134,11 +107,11 @@ MatrixXd DynamicCartPoseJacCalculator::operator()(const VectorXd& dof_vals) cons
   // the partial derivative of the error function. Note that the rotational portion is the only part
   // that is required to be modified per the paper.
   Isometry3d pose_err = target_tf.inverse() * cur_tf;
-  Eigen::Vector3d rot_err = calcRotationalError(pose_err.rotation());
+  Eigen::Vector3d rot_err = util::calcRotationalError(pose_err.rotation());
   for (int c = 0; c < jac0.cols(); ++c)
   {
-    auto new_pose_err = addTwist(pose_err, jac0.col(c), 1e-5);
-    Eigen::VectorXd new_rot_err = calcRotationalError(new_pose_err.rotation());
+    auto new_pose_err = util::addTwist(pose_err, jac0.col(c), 1e-5);
+    Eigen::VectorXd new_rot_err = util::calcRotationalError(new_pose_err.rotation());
     jac0.col(c).tail(3) = ((new_rot_err - rot_err) / 1e-5);
   }
 
@@ -156,7 +129,7 @@ VectorXd CartPoseErrCalculator::operator()(const VectorXd& dof_vals) const
   new_pose = world_to_base_ * new_pose * kin_link_->transform * tcp_;
 
   Isometry3d pose_err = pose_inv_ * new_pose;
-  Eigen::VectorXd err = concat(pose_err.translation(), calcRotationalError(pose_err.rotation()));
+  Eigen::VectorXd err = concat(pose_err.translation(), util::calcRotationalError(pose_err.rotation()));
   Eigen::VectorXd reduced_err(indices_.size());
   for (int i = 0; i < indices_.size(); ++i)
     reduced_err[i] = err[indices_[i]];
@@ -210,11 +183,11 @@ MatrixXd CartPoseJacCalculator::operator()(const VectorXd& dof_vals) const
   // the partial derivative of the error function. Note that the rotational portion is the only part
   // that is required to be modified per the paper.
   Isometry3d pose_err = pose_inv_ * tf0;
-  Eigen::Vector3d rot_err = calcRotationalError(pose_err.rotation());
+  Eigen::Vector3d rot_err = util::calcRotationalError(pose_err.rotation());
   for (int c = 0; c < jac0.cols(); ++c)
   {
-    auto new_pose_err = addTwist(pose_err, jac0.col(c), 1e-5);
-    Eigen::VectorXd new_rot_err = calcRotationalError(new_pose_err.rotation());
+    auto new_pose_err = util::addTwist(pose_err, jac0.col(c), 1e-5);
+    Eigen::VectorXd new_rot_err = util::calcRotationalError(new_pose_err.rotation());
     jac0.col(c).tail(3) = ((new_rot_err - rot_err) / 1e-5);
   }
 

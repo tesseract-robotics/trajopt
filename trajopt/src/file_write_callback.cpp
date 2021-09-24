@@ -21,6 +21,7 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt/file_write_callback.hpp>
+#include <trajopt_utils/utils.hpp>
 
 namespace trajopt
 {
@@ -59,7 +60,7 @@ void WriteFile(const std::shared_ptr<std::ofstream>& file,
     rot_vec(3) = q.z();
 
     // Write cartesian pose to file
-    Eigen::VectorXd pose_vec = concat(pose.translation(), rot_vec);
+    Eigen::VectorXd pose_vec = util::concat(pose.translation(), rot_vec);
     for (auto i = 0; i < pose_vec.size(); i++)
     {
       *file << ',' << pose_vec(i);

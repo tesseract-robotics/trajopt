@@ -35,6 +35,7 @@ TRAJOPT_IGNORE_WARNINGS_POP
 #include <trajopt_ifopt/variable_sets/joint_position_variable.h>
 #include <trajopt_ifopt/costs/absolute_cost.h>
 #include <trajopt_ifopt/costs/squared_cost.h>
+#include <trajopt_ifopt/utils/ifopt_utils.h>
 
 /**
  * @brief The SimpleTestConstraint class
