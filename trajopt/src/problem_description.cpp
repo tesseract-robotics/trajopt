@@ -985,7 +985,7 @@ void CartVelTermInfo::hatch(TrajOptProb& prob)
       prob.addCost(std::make_shared<TrajOptCostFromErrFunc>(
           f,
           dfdx,
-          concat(prob.GetVarRow(iStep, 0, n_dof), prob.GetVarRow(iStep + 1, 0, n_dof)),
+          util::concat(prob.GetVarRow(iStep, 0, n_dof), prob.GetVarRow(iStep + 1, 0, n_dof)),
           Eigen::VectorXd::Ones(0),
           sco::ABS,
           name));
@@ -1002,7 +1002,7 @@ void CartVelTermInfo::hatch(TrajOptProb& prob)
       prob.addConstraint(std::make_shared<TrajOptConstraintFromErrFunc>(
           f,
           dfdx,
-          concat(prob.GetVarRow(iStep, 0, n_dof), prob.GetVarRow(iStep + 1, 0, n_dof)),
+          util::concat(prob.GetVarRow(iStep, 0, n_dof), prob.GetVarRow(iStep + 1, 0, n_dof)),
           Eigen::VectorXd::Ones(0),
           sco::INEQ,
           "CartVel"));
@@ -1218,7 +1218,7 @@ void JointVelTermInfo::hatch(TrajOptProb& prob)
         auto dfdx = std::make_shared<JointVelJacCalculator>();
         prob.addCost(std::make_shared<TrajOptCostFromErrFunc>(f,
                                                               dfdx,
-                                                              concat(joint_vars_vec, time_vars_vec),
+                                                              util::concat(joint_vars_vec, time_vars_vec),
                                                               util::toVectorXd(single_jnt_coeffs),
                                                               sco::SQUARED,
                                                               name + "_j" + std::to_string(j)));
@@ -1231,7 +1231,7 @@ void JointVelTermInfo::hatch(TrajOptProb& prob)
         auto dfdx = std::make_shared<JointVelJacCalculator>();
         prob.addCost(std::make_shared<TrajOptCostFromErrFunc>(f,
                                                               dfdx,
-                                                              concat(joint_vars_vec, time_vars_vec),
+                                                              util::concat(joint_vars_vec, time_vars_vec),
                                                               util::toVectorXd(single_jnt_coeffs),
                                                               sco::HINGE,
                                                               name + "_j" + std::to_string(j)));
@@ -1257,7 +1257,7 @@ void JointVelTermInfo::hatch(TrajOptProb& prob)
         auto dfdx = std::make_shared<JointVelJacCalculator>();
         prob.addConstraint(std::make_shared<TrajOptConstraintFromErrFunc>(f,
                                                                           dfdx,
-                                                                          concat(joint_vars_vec, time_vars_vec),
+                                                                          util::concat(joint_vars_vec, time_vars_vec),
                                                                           util::toVectorXd(single_jnt_coeffs),
                                                                           sco::EQ,
                                                                           name + "_j" + std::to_string(j)));
@@ -1270,7 +1270,7 @@ void JointVelTermInfo::hatch(TrajOptProb& prob)
         auto dfdx = std::make_shared<JointVelJacCalculator>();
         prob.addConstraint(std::make_shared<TrajOptConstraintFromErrFunc>(f,
                                                                           dfdx,
-                                                                          concat(joint_vars_vec, time_vars_vec),
+                                                                          util::concat(joint_vars_vec, time_vars_vec),
                                                                           util::toVectorXd(single_jnt_coeffs),
                                                                           sco::INEQ,
                                                                           name + "_j" + std::to_string(j)));
@@ -1628,7 +1628,7 @@ void CollisionTermInfo::fromJson(ProblemConstructionInfo& pci, const Json::Value
   for (int i = first_step; i <= last_step; ++i)
   {
     auto index = static_cast<size_t>(i - first_step);
-    auto data = std::make_shared<SafetyMarginData>(dist_pen[index], coeffs[index]);
+    auto data = std::make_shared<util::SafetyMarginData>(dist_pen[index], coeffs[index]);
     info.push_back(data);
   }
 
@@ -1676,7 +1676,7 @@ void CollisionTermInfo::fromJson(ProblemConstructionInfo& pci, const Json::Value
       for (auto i = first_step; i <= last_step; ++i)
       {
         auto index = static_cast<size_t>(i - first_step);
-        SafetyMarginData::Ptr& data = info[index];
+        util::SafetyMarginData::Ptr& data = info[index];
         for (const auto& p : pair)
         {
           data->setPairSafetyMarginData(link, p, pair_dist_pen[index], pair_coeffs[index]);

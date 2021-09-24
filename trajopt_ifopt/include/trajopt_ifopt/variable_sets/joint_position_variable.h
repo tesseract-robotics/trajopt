@@ -32,10 +32,7 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <ifopt/bounds.h>
 #include <tesseract_common/types.h>
 #include <Eigen/Eigen>
-#include <console_bridge/console.h>
 TRAJOPT_IGNORE_WARNINGS_POP
-
-#include <trajopt_ifopt/utils/ifopt_utils.h>
 
 namespace trajopt_ifopt
 {
@@ -48,86 +45,54 @@ public:
 
   JointPosition(const Eigen::Ref<const Eigen::VectorXd>& init_value,
                 std::vector<std::string> joint_names,
-                const std::string& name = "Joint_Position")
-    : ifopt::VariableSet(static_cast<int>(init_value.size()), name), joint_names_(std::move(joint_names))
-  {
-    bounds_ = std::vector<ifopt::Bounds>(static_cast<size_t>(init_value.size()), ifopt::NoBound);
-    values_ = init_value;
-  }
+                const std::string& name = "Joint_Position");
 
   JointPosition(const Eigen::Ref<const Eigen::VectorXd>& init_value,
                 std::vector<std::string> joint_names,
                 const ifopt::Bounds& bounds,
-                const std::string& name = "Joint_Position")
-    : ifopt::VariableSet(static_cast<int>(init_value.size()), name), joint_names_(std::move(joint_names))
-  {
-    /** @todo Print warning if init value is not within bounds */
-    bounds_ = std::vector<ifopt::Bounds>(static_cast<size_t>(init_value.size()), bounds);
-    values_ = trajopt_ifopt::getClosestValidPoint(init_value, bounds_);
-
-    if (!values_.isApprox(init_value, 1e-10))
-    {
-      CONSOLE_BRIDGE_logWarn("The initial values are not within the provided bounds. Adjusting to be within the "
-                             "bounds.");
-    }
-  }
+                const std::string& name = "Joint_Position");
 
   JointPosition(const Eigen::Ref<const Eigen::VectorXd>& init_value,
                 std::vector<std::string> joint_names,
                 const tesseract_common::KinematicLimits& bounds,
-                const std::string& name = "Joint_Position")
-    : ifopt::VariableSet(static_cast<int>(init_value.size()), name), joint_names_(std::move(joint_names))
-  {
-    /** @todo Print warning if init value is not within bounds */
-    bounds_ = std::vector<ifopt::Bounds>(static_cast<size_t>(init_value.size()), ifopt::NoBound);
-    for (Eigen::Index i = 0; i < init_value.size(); ++i)
-      bounds_[static_cast<std::size_t>(i)] = ifopt::Bounds(bounds.joint_limits(i, 0), bounds.joint_limits(i, 1));
-
-    values_ = trajopt_ifopt::getClosestValidPoint(init_value, bounds_);
-
-    if (!values_.isApprox(init_value, 1e-10))
-    {
-      CONSOLE_BRIDGE_logWarn("The initial values are not within the provided bounds. Adjusting to be within the "
-                             "bounds.");
-    }
-  }
+                const std::string& name = "Joint_Position");
 
   /**
    * @brief Sets this variable to the given joint position
    * @param x Joint Position to which this variable will be set.
    */
-  void SetVariables(const Eigen::VectorXd& x) override { values_ = x; }
+  void SetVariables(const Eigen::VectorXd& x) override;
 
   /**
    * @brief Gets the joint position associated with this variable
    * @return This variable's joint position
    */
-  Eigen::VectorXd GetValues() const override { return values_; }
+  Eigen::VectorXd GetValues() const override;
 
   /**
    * @brief Gets the bounds on this variable
    * @return Bounds on this variable
    */
-  VecBound GetBounds() const override { return bounds_; }
+  VecBound GetBounds() const override;
 
   /**
    * @brief Sets the bounds for the joints in this variable.
    * @param new_bounds New bounds for the joints
    */
-  void SetBounds(VecBound& new_bounds) { bounds_ = new_bounds; }
+  void SetBounds(VecBound& new_bounds);
 
   /**
    * @brief Sets the bounds for the joints in this variable from a MatrixX2d with the first column being lower bound and
    * second column being upper bound
    * @param bounds Columns 1/2 are lower/upper bounds. You probably will get this from forward_kinematics->getLimits()
    */
-  void SetBounds(const Eigen::Ref<const Eigen::MatrixX2d>& bounds) { bounds_ = toBounds(bounds); }
+  void SetBounds(const Eigen::Ref<const Eigen::MatrixX2d>& bounds);
 
   /**
    * @brief Get the joint names associated with this variable set
    * @return The joint names
    */
-  std::vector<std::string> GetJointNames() const { return joint_names_; }
+  std::vector<std::string> GetJointNames() const;
 
 private:
   VecBound bounds_;

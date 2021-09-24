@@ -38,6 +38,7 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt_ifopt/utils/numeric_differentiation.h>
+#include <trajopt_ifopt/utils/ifopt_utils.h>
 #include <trajopt_ifopt/constraints/collision/continuous_collision_constraint.h>
 #include <trajopt_ifopt/constraints/collision/continuous_collision_evaluators.h>
 #include <trajopt_ifopt/constraints/collision/discrete_collision_constraint.h>
@@ -153,7 +154,8 @@ void runDiscreteGradientTest(const Environment::Ptr& env, double coeff)
 
   std::cout << "Jacobian: \n" << nlp.GetJacobianOfConstraints().toDense() << std::endl;
 
-  trajopt_ifopt::SparseMatrix num_jac_block = calcNumericalConstraintGradient(positions[0].data(), nlp, 1e-8);
+  trajopt_ifopt::SparseMatrix num_jac_block =
+      trajopt_ifopt::calcNumericalConstraintGradient(positions[0].data(), nlp, 1e-8);
   std::cout << "Numerical Jacobian: \n" << num_jac_block.toDense() << std::endl;
 }
 

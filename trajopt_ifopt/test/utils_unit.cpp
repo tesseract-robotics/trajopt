@@ -28,9 +28,9 @@
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <ctime>
 #include <gtest/gtest.h>
-#include <trajopt/utils.hpp>
 TRAJOPT_IGNORE_WARNINGS_POP
 #include <trajopt_ifopt/utils/ifopt_utils.h>
+#include <trajopt_utils/utils.hpp>
 #include <console_bridge/console.h>
 
 using namespace trajopt_ifopt;
@@ -260,24 +260,24 @@ TEST(UtilsUnit, calcRotationalError)  // NOLINT
 {
   Eigen::Isometry3d identity = Eigen::Isometry3d::Identity();
   Eigen::Isometry3d pi_rot = identity * Eigen::AngleAxisd(M_PI - 0.0001, Eigen::Vector3d::UnitZ());
-  Eigen::Vector3d rot_err = trajopt::calcRotationalError(pi_rot.rotation());
+  Eigen::Vector3d rot_err = util::calcRotationalError(pi_rot.rotation());
   EXPECT_NEAR(rot_err.norm(), M_PI - 0.0001, 1e-6);
   EXPECT_TRUE(rot_err.normalized().isApprox(Eigen::Vector3d::UnitZ(), 1e-6));
 
   pi_rot = identity * Eigen::AngleAxisd(-M_PI + 0.0001, Eigen::Vector3d::UnitZ());
-  rot_err = trajopt::calcRotationalError(pi_rot.rotation());
+  rot_err = util::calcRotationalError(pi_rot.rotation());
   EXPECT_NEAR(rot_err.norm(), M_PI - 0.0001, 1e-6);
   EXPECT_TRUE(rot_err.normalized().isApprox(-Eigen::Vector3d::UnitZ(), 1e-6));
 
   // Test greater than PI
   pi_rot = identity * Eigen::AngleAxisd(3 * M_PI_2, Eigen::Vector3d::UnitZ());
-  rot_err = trajopt::calcRotationalError(pi_rot.rotation());
+  rot_err = util::calcRotationalError(pi_rot.rotation());
   EXPECT_NEAR(rot_err.norm(), M_PI_2, 1e-6);
   EXPECT_TRUE(rot_err.normalized().isApprox(-Eigen::Vector3d::UnitZ(), 1e-6));
 
   // Test lessthan than -PI
   pi_rot = identity * Eigen::AngleAxisd(-3 * M_PI_2, Eigen::Vector3d::UnitZ());
-  rot_err = trajopt::calcRotationalError(pi_rot.rotation());
+  rot_err = util::calcRotationalError(pi_rot.rotation());
   EXPECT_NEAR(rot_err.norm(), M_PI_2, 1e-6);
   EXPECT_TRUE(rot_err.normalized().isApprox(Eigen::Vector3d::UnitZ(), 1e-6));
 
@@ -285,35 +285,31 @@ TEST(UtilsUnit, calcRotationalError)  // NOLINT
   Eigen::Isometry3d pi_rot_plus = identity * Eigen::AngleAxisd(M_PI_2 + 0.001, Eigen::Vector3d::UnitZ());
   Eigen::Isometry3d pi_rot_minus = identity * Eigen::AngleAxisd(M_PI_2 - 0.001, Eigen::Vector3d::UnitZ());
   Eigen::Vector3d pi_rot_delta =
-      trajopt::calcRotationalError(pi_rot_plus.rotation()) - trajopt::calcRotationalError(pi_rot_minus.rotation());
+      util::calcRotationalError(pi_rot_plus.rotation()) - util::calcRotationalError(pi_rot_minus.rotation());
   EXPECT_NEAR(pi_rot_delta.norm(), 0.002, 1e-6);
 
   // Test for angle between [-PI, 0]
   pi_rot_plus = identity * Eigen::AngleAxisd(-M_PI_2 + 0.001, Eigen::Vector3d::UnitZ());
   pi_rot_minus = identity * Eigen::AngleAxisd(-M_PI_2 - 0.001, Eigen::Vector3d::UnitZ());
-  pi_rot_delta =
-      trajopt::calcRotationalError(pi_rot_plus.rotation()) - trajopt::calcRotationalError(pi_rot_minus.rotation());
+  pi_rot_delta = util::calcRotationalError(pi_rot_plus.rotation()) - util::calcRotationalError(pi_rot_minus.rotation());
   EXPECT_NEAR(pi_rot_delta.norm(), 0.002, 1e-6);
 
   // Test for angle at 0
   pi_rot_plus = identity * Eigen::AngleAxisd(0.001, Eigen::Vector3d::UnitZ());
   pi_rot_minus = identity * Eigen::AngleAxisd(-0.001, Eigen::Vector3d::UnitZ());
-  pi_rot_delta =
-      trajopt::calcRotationalError(pi_rot_plus.rotation()) - trajopt::calcRotationalError(pi_rot_minus.rotation());
+  pi_rot_delta = util::calcRotationalError(pi_rot_plus.rotation()) - util::calcRotationalError(pi_rot_minus.rotation());
   EXPECT_NEAR(pi_rot_delta.norm(), 0.002, 1e-6);
 
   // Test for angle at PI
   pi_rot_plus = identity * Eigen::AngleAxisd(M_PI + 0.001, Eigen::Vector3d::UnitZ());
   pi_rot_minus = identity * Eigen::AngleAxisd(M_PI - 0.001, Eigen::Vector3d::UnitZ());
-  pi_rot_delta =
-      trajopt::calcRotationalError(pi_rot_plus.rotation()) - trajopt::calcRotationalError(pi_rot_minus.rotation());
+  pi_rot_delta = util::calcRotationalError(pi_rot_plus.rotation()) - util::calcRotationalError(pi_rot_minus.rotation());
   EXPECT_TRUE(pi_rot_delta.norm() > M_PI);  // This is because calcRotationalError breaks down at PI or -PI
 
   // Test for angle at -PI
   pi_rot_plus = identity * Eigen::AngleAxisd(-M_PI + 0.001, Eigen::Vector3d::UnitZ());
   pi_rot_minus = identity * Eigen::AngleAxisd(-M_PI - 0.001, Eigen::Vector3d::UnitZ());
-  pi_rot_delta =
-      trajopt::calcRotationalError(pi_rot_plus.rotation()) - trajopt::calcRotationalError(pi_rot_minus.rotation());
+  pi_rot_delta = util::calcRotationalError(pi_rot_plus.rotation()) - util::calcRotationalError(pi_rot_minus.rotation());
   EXPECT_TRUE(pi_rot_delta.norm() > M_PI);  // This is because calcRotationalError breaks down at PI or -PI
 
   // Test random axis
@@ -327,8 +323,8 @@ TEST(UtilsUnit, calcRotationalError)  // NOLINT
     {
       pi_rot_plus = identity * Eigen::AngleAxisd(angles(j) + 0.001, axis);
       pi_rot_minus = identity * Eigen::AngleAxisd(angles(j) - 0.001, axis);
-      Eigen::Vector3d e1 = trajopt::calcRotationalError(pi_rot_plus.rotation());
-      Eigen::Vector3d e2 = trajopt::calcRotationalError(pi_rot_minus.rotation());
+      Eigen::Vector3d e1 = util::calcRotationalError(pi_rot_plus.rotation());
+      Eigen::Vector3d e2 = util::calcRotationalError(pi_rot_minus.rotation());
       EXPECT_FALSE((e1.norm() < -M_PI));
       EXPECT_FALSE((e1.norm() > M_PI));
       EXPECT_FALSE((e2.norm() < -M_PI));
@@ -343,8 +339,8 @@ TEST(UtilsUnit, calcRotationalError)  // NOLINT
     {
       pi_rot_plus = identity * Eigen::AngleAxisd(angles(j) + 0.001, axis);
       pi_rot_minus = identity * Eigen::AngleAxisd(angles(j) - 0.001, axis);
-      Eigen::Vector3d e1 = trajopt::calcRotationalError(pi_rot_plus.rotation());
-      Eigen::Vector3d e2 = trajopt::calcRotationalError(pi_rot_minus.rotation());
+      Eigen::Vector3d e1 = util::calcRotationalError(pi_rot_plus.rotation());
+      Eigen::Vector3d e2 = util::calcRotationalError(pi_rot_minus.rotation());
       EXPECT_FALSE((e1.norm() < -M_PI));
       EXPECT_FALSE((e1.norm() > M_PI));
       EXPECT_FALSE((e2.norm() < -M_PI));
@@ -359,8 +355,8 @@ TEST(UtilsUnit, calcRotationalError)  // NOLINT
     {
       pi_rot_plus = identity * Eigen::AngleAxisd(angles(j) + 0.001, axis);
       pi_rot_minus = identity * Eigen::AngleAxisd(angles(j) - 0.001, axis);
-      Eigen::Vector3d e1 = trajopt::calcRotationalError(pi_rot_plus.rotation());
-      Eigen::Vector3d e2 = trajopt::calcRotationalError(pi_rot_minus.rotation());
+      Eigen::Vector3d e1 = util::calcRotationalError(pi_rot_plus.rotation());
+      Eigen::Vector3d e2 = util::calcRotationalError(pi_rot_minus.rotation());
       EXPECT_FALSE((e1.norm() < -M_PI));
       EXPECT_FALSE((e1.norm() > M_PI));
       EXPECT_FALSE((e2.norm() < -M_PI));
@@ -373,8 +369,8 @@ TEST(UtilsUnit, calcRotationalError)  // NOLINT
     {
       pi_rot_plus = identity * Eigen::AngleAxisd(M_PI + 0.001, axis);
       pi_rot_minus = identity * Eigen::AngleAxisd(M_PI - 0.001, axis);
-      Eigen::Vector3d e1 = trajopt::calcRotationalError(pi_rot_plus.rotation());
-      Eigen::Vector3d e2 = trajopt::calcRotationalError(pi_rot_minus.rotation());
+      Eigen::Vector3d e1 = util::calcRotationalError(pi_rot_plus.rotation());
+      Eigen::Vector3d e2 = util::calcRotationalError(pi_rot_minus.rotation());
       EXPECT_FALSE((e1.norm() < -M_PI));
       EXPECT_FALSE((e1.norm() > M_PI));
       EXPECT_FALSE((e2.norm() < -M_PI));
@@ -385,8 +381,8 @@ TEST(UtilsUnit, calcRotationalError)  // NOLINT
     {
       pi_rot_plus = identity * Eigen::AngleAxisd(-M_PI + 0.001, axis);
       pi_rot_minus = identity * Eigen::AngleAxisd(-M_PI - 0.001, axis);
-      Eigen::Vector3d e1 = trajopt::calcRotationalError(pi_rot_plus.rotation());
-      Eigen::Vector3d e2 = trajopt::calcRotationalError(pi_rot_minus.rotation());
+      Eigen::Vector3d e1 = util::calcRotationalError(pi_rot_plus.rotation());
+      Eigen::Vector3d e2 = util::calcRotationalError(pi_rot_minus.rotation());
       EXPECT_FALSE((e1.norm() < -M_PI));
       EXPECT_FALSE((e1.norm() > M_PI));
       EXPECT_FALSE((e2.norm() < -M_PI));
@@ -406,24 +402,24 @@ TEST(UtilsUnit, calcRotationalError2)  // NOLINT
   };
   Eigen::Isometry3d identity = Eigen::Isometry3d::Identity();
   Eigen::Isometry3d pi_rot = identity * Eigen::AngleAxisd(3 * M_PI_2, Eigen::Vector3d::UnitZ());
-  Eigen::Vector3d rot_err = trajopt::calcRotationalError2(pi_rot.rotation());
+  Eigen::Vector3d rot_err = util::calcRotationalError2(pi_rot.rotation());
   EXPECT_NEAR(rot_err.norm(), M_PI_2, 1e-6);
   EXPECT_TRUE(check_axis(rot_err.normalized()));
 
   pi_rot = identity * Eigen::AngleAxisd(0.0001, Eigen::Vector3d::UnitZ());
-  rot_err = trajopt::calcRotationalError2(pi_rot.rotation());
+  rot_err = util::calcRotationalError2(pi_rot.rotation());
   EXPECT_NEAR(rot_err.norm(), 0.0001, 1e-6);
   EXPECT_TRUE(check_axis(rot_err.normalized()));
 
   // Test greater than 2 * PI
   pi_rot = identity * Eigen::AngleAxisd(3 * M_PI, Eigen::Vector3d::UnitZ());
-  rot_err = trajopt::calcRotationalError2(pi_rot.rotation());
+  rot_err = util::calcRotationalError2(pi_rot.rotation());
   EXPECT_NEAR(rot_err.norm(), M_PI, 1e-6);
   EXPECT_TRUE(check_axis(rot_err.normalized()));
 
   // Test lessthan than 0
   pi_rot = identity * Eigen::AngleAxisd(-M_PI, Eigen::Vector3d::UnitZ());
-  rot_err = trajopt::calcRotationalError2(pi_rot.rotation());
+  rot_err = util::calcRotationalError2(pi_rot.rotation());
   EXPECT_NEAR(rot_err.norm(), M_PI, 1e-6);
   EXPECT_TRUE(check_axis(rot_err.normalized()));
 
@@ -431,21 +427,21 @@ TEST(UtilsUnit, calcRotationalError2)  // NOLINT
   Eigen::Isometry3d pi_rot_plus = identity * Eigen::AngleAxisd(M_PI + 0.001, Eigen::Vector3d::UnitZ());
   Eigen::Isometry3d pi_rot_minus = identity * Eigen::AngleAxisd(M_PI - 0.001, Eigen::Vector3d::UnitZ());
   Eigen::Vector3d pi_rot_delta =
-      trajopt::calcRotationalError2(pi_rot_plus.rotation()) - trajopt::calcRotationalError2(pi_rot_minus.rotation());
+      util::calcRotationalError2(pi_rot_plus.rotation()) - util::calcRotationalError2(pi_rot_minus.rotation());
   EXPECT_NEAR(pi_rot_delta.norm(), 0.002, 1e-6);
 
   // Test for angle at 0
   pi_rot_plus = identity * Eigen::AngleAxisd(0.001, Eigen::Vector3d::UnitZ());
   pi_rot_minus = identity * Eigen::AngleAxisd(-0.001, Eigen::Vector3d::UnitZ());
   pi_rot_delta =
-      trajopt::calcRotationalError2(pi_rot_plus.rotation()) - trajopt::calcRotationalError2(pi_rot_minus.rotation());
+      util::calcRotationalError2(pi_rot_plus.rotation()) - util::calcRotationalError2(pi_rot_minus.rotation());
   EXPECT_NEAR(pi_rot_delta.norm(), 0.002, 1e-6);
 
   // Test for angle at 2 * PI
   pi_rot_plus = identity * Eigen::AngleAxisd((2 * M_PI) + 0.001, Eigen::Vector3d::UnitZ());
   pi_rot_minus = identity * Eigen::AngleAxisd((2 * M_PI) - 0.001, Eigen::Vector3d::UnitZ());
   pi_rot_delta =
-      trajopt::calcRotationalError2(pi_rot_plus.rotation()) - trajopt::calcRotationalError2(pi_rot_minus.rotation());
+      util::calcRotationalError2(pi_rot_plus.rotation()) - util::calcRotationalError2(pi_rot_minus.rotation());
   EXPECT_NEAR(pi_rot_delta.norm(), 0.002, 1e-6);
 
   // Test random axis
@@ -459,8 +455,8 @@ TEST(UtilsUnit, calcRotationalError2)  // NOLINT
     {
       pi_rot_plus = identity * Eigen::AngleAxisd(angles(j) + 0.001, axis);
       pi_rot_minus = identity * Eigen::AngleAxisd(angles(j) - 0.001, axis);
-      Eigen::Vector3d e1 = trajopt::calcRotationalError2(pi_rot_plus.rotation());
-      Eigen::Vector3d e2 = trajopt::calcRotationalError2(pi_rot_minus.rotation());
+      Eigen::Vector3d e1 = util::calcRotationalError2(pi_rot_plus.rotation());
+      Eigen::Vector3d e2 = util::calcRotationalError2(pi_rot_minus.rotation());
       EXPECT_FALSE((e1.norm() < 0));
       EXPECT_FALSE((e1.norm() > 2 * M_PI));
       EXPECT_FALSE((e2.norm() < 0));

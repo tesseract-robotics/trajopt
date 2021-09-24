@@ -46,6 +46,7 @@ TRAJOPT_IGNORE_WARNINGS_POP
 #include <trajopt_ifopt/constraints/collision/continuous_collision_evaluators.h>
 #include <trajopt_ifopt/constraints/joint_position_constraint.h>
 #include <trajopt_ifopt/utils/numeric_differentiation.h>
+#include <trajopt_ifopt/utils/ifopt_utils.h>
 
 using namespace trajopt_ifopt;
 using namespace std;
@@ -155,7 +156,8 @@ void runContinuousGradientTest(const Environment::Ptr& env, double coeff)
 
   std::cout << "Jacobian: \n" << nlp.GetJacobianOfConstraints().toDense() << std::endl;
   std::vector<double> init_vals{ -1.9, 0, 0, 1.9, 1.9, 3.8 };
-  trajopt_ifopt::SparseMatrix num_jac_block = calcNumericalConstraintGradient(init_vals.data(), nlp, 1e-8);
+  trajopt_ifopt::SparseMatrix num_jac_block =
+      trajopt_ifopt::calcNumericalConstraintGradient(init_vals.data(), nlp, 1e-8);
   std::cout << "Numerical Jacobian: \n" << num_jac_block.toDense() << std::endl;
 }
 
