@@ -28,8 +28,7 @@
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <Eigen/Eigen>
 #include <tesseract_collision/core/types.h>
-#include <tesseract_kinematics/core/forward_kinematics.h>
-#include <tesseract_environment/core/types.h>
+#include <tesseract_kinematics/core/joint_group.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt_ifopt/constraints/collision/collision_types.h>
@@ -75,9 +74,7 @@ GradientResults getGradient(const Eigen::VectorXd& dofvals,
                             const tesseract_collision::ContactResult& contact_result,
                             double margin,
                             double margin_buffer,
-                            const tesseract_kinematics::ForwardKinematics::ConstPtr& manip,
-                            const tesseract_environment::AdjacencyMap::ConstPtr& adjacency_map,
-                            const Eigen::Isometry3d& world_to_base);
+                            const tesseract_kinematics::JointGroup::ConstPtr& manip);
 
 /**
  * @brief Extracts the gradient information based on the contact results
@@ -92,9 +89,7 @@ GradientResults getGradient(const Eigen::VectorXd& dofvals0,
                             const tesseract_collision::ContactResult& contact_result,
                             double margin,
                             double margin_buffer,
-                            const tesseract_kinematics::ForwardKinematics::ConstPtr& manip,
-                            const tesseract_environment::AdjacencyMap::ConstPtr& adjacency_map,
-                            const Eigen::Isometry3d& world_to_base);
+                            const tesseract_kinematics::JointGroup::ConstPtr& manip);
 
 /**
  * @brief Print debug gradient information

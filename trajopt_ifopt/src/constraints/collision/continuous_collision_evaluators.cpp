@@ -30,39 +30,44 @@ namespace trajopt_ifopt
 {
 LVSContinuousCollisionEvaluator::LVSContinuousCollisionEvaluator(
     std::shared_ptr<CollisionCache> collision_cache,
-    tesseract_kinematics::ForwardKinematics::ConstPtr manip,
+    tesseract_kinematics::JointGroup::ConstPtr manip,
     tesseract_environment::Environment::ConstPtr env,
-    tesseract_environment::AdjacencyMap::ConstPtr adjacency_map,
-    const Eigen::Isometry3d& world_to_base,
     trajopt_ifopt::TrajOptCollisionConfig::ConstPtr collision_config,
     bool dynamic_environment)
   : collision_cache_(std::move(collision_cache))
   , manip_(std::move(manip))
   , env_(std::move(env))
-  , adjacency_map_(std::move(adjacency_map))
-  , world_to_base_(world_to_base)
   , collision_config_(std::move(collision_config))
-  , state_solver_(env_->getStateSolver())
   , dynamic_environment_(dynamic_environment)
 {
+  manip_active_link_names_ = manip_->getActiveLinkNames();
+
   // If the environment is not expected to change, then the cloned state solver may be used each time.
   if (dynamic_environment_)
   {
-    get_state_fn_ = [&](const std::vector<std::string>& joint_names,
-                        const Eigen::Ref<const Eigen::VectorXd>& joint_values) {
-      return env_->getState(joint_names, joint_values);
+    get_state_fn_ = [&](const Eigen::Ref<const Eigen::VectorXd>& joint_values) {
+      return env_->getState(manip_->getJointNames(), joint_values).link_transforms;
     };
+    env_active_link_names_ = env_->getActiveLinkNames();
+
+    std::sort(manip_active_link_names_.begin(), manip_active_link_names_.end());
+    std::sort(env_active_link_names_.begin(), env_active_link_names_.end());
+    std::set_difference(env_active_link_names_.begin(),
+                        env_active_link_names_.end(),
+                        manip_active_link_names_.begin(),
+                        manip_active_link_names_.end(),
+                        std::inserter(diff_active_link_names_, diff_active_link_names_.begin()));
   }
   else
   {
-    get_state_fn_ = [&](const std::vector<std::string>& joint_names,
-                        const Eigen::Ref<const Eigen::VectorXd>& joint_values) {
-      return state_solver_->getState(joint_names, joint_values);
+    get_state_fn_ = [&](const Eigen::Ref<const Eigen::VectorXd>& joint_values) {
+      return manip_->calcFwdKin(joint_values);
     };
+    env_active_link_names_ = manip_->getActiveLinkNames();
   }
 
   contact_manager_ = env_->getContinuousContactManager();
-  contact_manager_->setActiveCollisionObjects(adjacency_map_->getActiveLinkNames());
+  contact_manager_->setActiveCollisionObjects(manip_active_link_names_);
   contact_manager_->setCollisionMarginData(collision_config_->collision_margin_data);
   // Increase the default by the buffer
   contact_manager_->setDefaultCollisionMarginData(collision_config_->collision_margin_data.getMaxCollisionMargin() +
@@ -109,6 +114,15 @@ void LVSContinuousCollisionEvaluator::CalcCollisionsHelper(const Eigen::Ref<cons
   // the collision checking is broken up into multiple casted collision checks such that each check is less then
   // the longest valid segment length.
   double dist = (dof_vals1 - dof_vals0).norm();
+
+  // If not empty then there are links that are not part of the kinematics object that can move (dynamic environment)
+  if (!diff_active_link_names_.empty())
+  {
+    tesseract_common::TransformMap state = get_state_fn_(dof_vals0);
+    for (const auto& link_name : diff_active_link_names_)
+      contact_manager_->setCollisionObjectsTransform(link_name, state[link_name]);
+  }
+
   if (dist > collision_config_->longest_valid_segment_length)
   {
     // Calculate the number state to interpolate
@@ -126,13 +140,11 @@ void LVSContinuousCollisionEvaluator::CalcCollisionsHelper(const Eigen::Ref<cons
     for (int i = 0; i < subtraj.rows() - 1; ++i)
     {
       tesseract_collision::ContactResultMap contacts;
-      tesseract_environment::EnvState::Ptr state0 = state_solver_->getState(manip_->getJointNames(), subtraj.row(i));
-      tesseract_environment::EnvState::Ptr state1 =
-          state_solver_->getState(manip_->getJointNames(), subtraj.row(i + 1));
+      tesseract_common::TransformMap state0 = get_state_fn_(subtraj.row(i));
+      tesseract_common::TransformMap state1 = get_state_fn_(subtraj.row(i + 1));
 
-      for (const auto& link_name : adjacency_map_->getActiveLinkNames())
-        contact_manager_->setCollisionObjectsTransform(
-            link_name, state0->link_transforms[link_name], state1->link_transforms[link_name]);
+      for (const auto& link_name : manip_active_link_names_)
+        contact_manager_->setCollisionObjectsTransform(link_name, state0[link_name], state1[link_name]);
 
       contact_manager_->contactTest(contacts, collision_config_->contact_request);
       if (!contacts.empty())
@@ -144,22 +156,21 @@ void LVSContinuousCollisionEvaluator::CalcCollisionsHelper(const Eigen::Ref<cons
     if (contact_found)
       processInterpolatedCollisionResults(contacts_vector,
                                           dist_results,
-                                          adjacency_map_->getActiveLinkNames(),
+                                          manip_active_link_names_,
                                           *collision_config_,
                                           1.0 / double(subtraj.rows() - 1),
                                           false);
   }
   else
   {
-    tesseract_environment::EnvState::Ptr state0 = state_solver_->getState(manip_->getJointNames(), dof_vals0);
-    tesseract_environment::EnvState::Ptr state1 = state_solver_->getState(manip_->getJointNames(), dof_vals1);
-    for (const auto& link_name : adjacency_map_->getActiveLinkNames())
-      contact_manager_->setCollisionObjectsTransform(
-          link_name, state0->link_transforms[link_name], state1->link_transforms[link_name]);
+    tesseract_common::TransformMap state0 = get_state_fn_(dof_vals0);
+    tesseract_common::TransformMap state1 = get_state_fn_(dof_vals1);
+    for (const auto& link_name : manip_active_link_names_)
+      contact_manager_->setCollisionObjectsTransform(link_name, state0[link_name], state1[link_name]);
 
     contact_manager_->contactTest(dist_results, collision_config_->contact_request);
 
-    // Dont include contacts at the fixed state
+    // Don't include contacts at the fixed state
     for (auto& pair : dist_results)
     {
       // Contains the contact distance threshold and coefficient for the given link pair
@@ -181,14 +192,7 @@ LVSContinuousCollisionEvaluator::CalcGradientData(const Eigen::Ref<const Eigen::
   double margin = collision_config_->collision_margin_data.getPairCollisionMargin(contact_results.link_names[0],
                                                                                   contact_results.link_names[1]);
 
-  return getGradient(dof_vals0,
-                     dof_vals1,
-                     contact_results,
-                     margin,
-                     collision_config_->collision_margin_buffer,
-                     manip_,
-                     adjacency_map_,
-                     world_to_base_);
+  return getGradient(dof_vals0, dof_vals1, contact_results, margin, collision_config_->collision_margin_buffer, manip_);
 }
 
 const trajopt_ifopt::TrajOptCollisionConfig& LVSContinuousCollisionEvaluator::GetCollisionConfig() const
@@ -200,39 +204,44 @@ const trajopt_ifopt::TrajOptCollisionConfig& LVSContinuousCollisionEvaluator::Ge
 
 LVSDiscreteCollisionEvaluator::LVSDiscreteCollisionEvaluator(
     std::shared_ptr<CollisionCache> collision_cache,
-    tesseract_kinematics::ForwardKinematics::ConstPtr manip,
+    tesseract_kinematics::JointGroup::ConstPtr manip,
     tesseract_environment::Environment::ConstPtr env,
-    tesseract_environment::AdjacencyMap::ConstPtr adjacency_map,
-    const Eigen::Isometry3d& world_to_base,
     trajopt_ifopt::TrajOptCollisionConfig::ConstPtr collision_config,
     bool dynamic_environment)
   : collision_cache_(std::move(collision_cache))
   , manip_(std::move(manip))
   , env_(std::move(env))
-  , adjacency_map_(std::move(adjacency_map))
-  , world_to_base_(world_to_base)
   , collision_config_(std::move(collision_config))
-  , state_solver_(env_->getStateSolver())
   , dynamic_environment_(dynamic_environment)
 {
+  manip_active_link_names_ = manip_->getActiveLinkNames();
+
   // If the environment is not expected to change, then the cloned state solver may be used each time.
   if (dynamic_environment_)
   {
-    get_state_fn_ = [&](const std::vector<std::string>& joint_names,
-                        const Eigen::Ref<const Eigen::VectorXd>& joint_values) {
-      return env_->getState(joint_names, joint_values);
+    get_state_fn_ = [&](const Eigen::Ref<const Eigen::VectorXd>& joint_values) {
+      return env_->getState(manip_->getJointNames(), joint_values).link_transforms;
     };
+    env_active_link_names_ = env_->getActiveLinkNames();
+
+    std::sort(manip_active_link_names_.begin(), manip_active_link_names_.end());
+    std::sort(env_active_link_names_.begin(), env_active_link_names_.end());
+    std::set_difference(env_active_link_names_.begin(),
+                        env_active_link_names_.end(),
+                        manip_active_link_names_.begin(),
+                        manip_active_link_names_.end(),
+                        std::inserter(diff_active_link_names_, diff_active_link_names_.begin()));
   }
   else
   {
-    get_state_fn_ = [&](const std::vector<std::string>& joint_names,
-                        const Eigen::Ref<const Eigen::VectorXd>& joint_values) {
-      return state_solver_->getState(joint_names, joint_values);
+    get_state_fn_ = [&](const Eigen::Ref<const Eigen::VectorXd>& joint_values) {
+      return manip_->calcFwdKin(joint_values);
     };
+    env_active_link_names_ = manip_->getActiveLinkNames();
   }
 
   contact_manager_ = env_->getDiscreteContactManager();
-  contact_manager_->setActiveCollisionObjects(adjacency_map_->getActiveLinkNames());
+  contact_manager_->setActiveCollisionObjects(manip_active_link_names_);
   contact_manager_->setCollisionMarginData(collision_config_->collision_margin_data);
   // Increase the default by the buffer
   contact_manager_->setDefaultCollisionMarginData(collision_config_->collision_margin_data.getMaxCollisionMargin() +
@@ -274,6 +283,14 @@ void LVSDiscreteCollisionEvaluator::CalcCollisionsHelper(const Eigen::Ref<const 
                                                          const Eigen::Ref<const Eigen::VectorXd>& dof_vals1,
                                                          tesseract_collision::ContactResultMap& dist_results)
 {
+  // If not empty then there are links that are not part of the kinematics object that can move (dynamic environment)
+  if (!diff_active_link_names_.empty())
+  {
+    tesseract_common::TransformMap state = get_state_fn_(dof_vals0);
+    for (const auto& link_name : diff_active_link_names_)
+      contact_manager_->setCollisionObjectsTransform(link_name, state[link_name]);
+  }
+
   // The first step is to see if the distance between two states is larger than the longest valid segment. If larger
   // the collision checking is broken up into multiple casted collision checks such that each check is less then
   // the longest valid segment length.
@@ -284,9 +301,6 @@ void LVSDiscreteCollisionEvaluator::CalcCollisionsHelper(const Eigen::Ref<const 
     // Calculate the number state to interpolate
     cnt = static_cast<long>(std::ceil(dist / collision_config_->longest_valid_segment_length)) + 1;
   }
-
-  // Get active link names
-  const std::vector<std::string>& active_links = adjacency_map_->getActiveLinkNames();
 
   // Create interpolated trajectory between two states that satisfies the longest valid segment length.
   tesseract_common::TrajArray subtraj(cnt, dof_vals0.size());
@@ -300,10 +314,10 @@ void LVSDiscreteCollisionEvaluator::CalcCollisionsHelper(const Eigen::Ref<const 
   for (int i = 0; i < subtraj.rows(); ++i)
   {
     tesseract_collision::ContactResultMap contacts;
-    tesseract_environment::EnvState::Ptr state0 = state_solver_->getState(manip_->getJointNames(), subtraj.row(i));
+    tesseract_common::TransformMap state0 = get_state_fn_(subtraj.row(i));
 
-    for (const auto& link_name : active_links)
-      contact_manager_->setCollisionObjectsTransform(link_name, state0->link_transforms[link_name]);
+    for (const auto& link_name : manip_active_link_names_)
+      contact_manager_->setCollisionObjectsTransform(link_name, state0[link_name]);
 
     contact_manager_->contactTest(contacts, collision_config_->contact_request);
     if (!contacts.empty())
@@ -315,7 +329,7 @@ void LVSDiscreteCollisionEvaluator::CalcCollisionsHelper(const Eigen::Ref<const 
   if (contact_found)
     processInterpolatedCollisionResults(contacts_vector,
                                         dist_results,
-                                        adjacency_map_->getActiveLinkNames(),
+                                        manip_active_link_names_,
                                         *collision_config_,
                                         1.0 / double(subtraj.rows() - 1),
                                         true);
@@ -330,14 +344,7 @@ LVSDiscreteCollisionEvaluator::CalcGradientData(const Eigen::Ref<const Eigen::Ve
   double margin = collision_config_->collision_margin_data.getPairCollisionMargin(contact_results.link_names[0],
                                                                                   contact_results.link_names[1]);
 
-  return getGradient(dof_vals0,
-                     dof_vals1,
-                     contact_results,
-                     margin,
-                     collision_config_->collision_margin_buffer,
-                     manip_,
-                     adjacency_map_,
-                     world_to_base_);
+  return getGradient(dof_vals0, dof_vals1, contact_results, margin, collision_config_->collision_margin_buffer, manip_);
 }
 
 const trajopt_ifopt::TrajOptCollisionConfig& LVSDiscreteCollisionEvaluator::GetCollisionConfig() const

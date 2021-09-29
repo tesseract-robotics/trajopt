@@ -70,6 +70,7 @@ target_include_directories(${PROJECT_NAME}_callbacks
 )
 target_link_libraries(${PROJECT_NAME}_callbacks PUBLIC
   trajopt::trajopt_ifopt
+  trajopt::trajopt_utils
   tesseract::tesseract_visualization
   tesseract::tesseract_common
   console_bridge::console_bridge

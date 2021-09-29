@@ -49,7 +49,7 @@ add_library(${PROJECT_NAME} ${TRAJOPT_SOURCE_FILES})
 target_link_libraries(${PROJECT_NAME} PUBLIC
     trajopt::trajopt_sco
     trajopt::trajopt_utils
-    tesseract::tesseract_environment_core
+    tesseract::tesseract_environment
     tesseract::tesseract_visualization
     console_bridge::console_bridge
     Boost::boost

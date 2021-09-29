@@ -30,10 +30,9 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <sstream>
 #include <gtest/gtest.h>
 #include <tesseract_common/types.h>
-#include <tesseract_environment/core/environment.h>
-#include <tesseract_environment/ofkt/ofkt_state_solver.h>
+#include <tesseract_environment/environment.h>
+#include <tesseract_environment/utils.h>
 #include <tesseract_visualization/visualization.h>
-#include <tesseract_environment/core/utils.h>
 #include <tesseract_scene_graph/utils.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
@@ -54,6 +53,7 @@ using namespace tesseract_collision;
 using namespace tesseract_kinematics;
 using namespace tesseract_visualization;
 using namespace tesseract_scene_graph;
+using namespace tesseract_common;
 
 class NumericalIKTest : public testing::TestWithParam<const char*>
 {
@@ -67,7 +67,7 @@ public:
     tesseract_common::fs::path srdf_file(std::string(TRAJOPT_DIR) + "/test/data/pr2.srdf");
 
     ResourceLocator::Ptr locator = std::make_shared<SimpleResourceLocator>(locateResource);
-    EXPECT_TRUE(env->init<OFKTStateSolver>(urdf_file, srdf_file, locator));
+    EXPECT_TRUE(env->init(urdf_file, srdf_file, locator));
 
     // Create plotting tool
     //    plotter_.reset(new tesseract_ros::ROSBasicPlotting(env_));
@@ -80,21 +80,18 @@ public:
 
 void runNumericalIKTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const Environment::Ptr& env)
 {
-  tesseract_environment::StateSolver::Ptr state_solver = env->getStateSolver();
+  tesseract_scene_graph::StateSolver::Ptr state_solver = env->getStateSolver();
   ContinuousContactManager::Ptr manager = env->getContinuousContactManager();
-  auto forward_kinematics = env->getManipulatorManager()->getFwdKinematicSolver("left_arm");
-  AdjacencyMap::Ptr adjacency_map = std::make_shared<AdjacencyMap>(
-      env->getSceneGraph(), forward_kinematics->getActiveLinkNames(), env->getCurrentState()->link_transforms);
-  Eigen::Isometry3d change_base = env->getLinkTransform(forward_kinematics->getBaseLinkName());
+  tesseract_kinematics::JointGroup::ConstPtr manip = env->getJointGroup("left_arm");
 
-  manager->setActiveCollisionObjects(adjacency_map->getActiveLinkNames());
+  manager->setActiveCollisionObjects(manip->getActiveLinkNames());
   manager->setDefaultCollisionMarginData(0);
 
   // 3) Add Variables
   Eigen::VectorXd cur_position(7);  // env->getCurrentJointValues(forward_kinematics->getJointNames());
   cur_position << 0, 0, 0, -0.001, 0, -0.001, 0;
   auto var = std::make_shared<trajopt_ifopt::JointPosition>(
-      cur_position, forward_kinematics->getJointNames(), forward_kinematics->getLimits(), "Joint_Position_0");
+      cur_position, manip->getJointNames(), manip->getLimits(), "Joint_Position_0");
   qp_problem->addVariableSet(var);
 
   // 4) Add constraints
@@ -102,8 +99,7 @@ void runNumericalIKTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const Env
   target_pose.linear() = Eigen::Quaterniond(0, 0, 1, 0).toRotationMatrix();
   target_pose.translation() = Eigen::Vector3d(0.4, 0, 0.8);
 
-  auto kinematic_info = std::make_shared<KinematicsInfo>(forward_kinematics, adjacency_map, change_base);
-  CartPosInfo cart_info(kinematic_info, target_pose, "l_gripper_tool_frame");
+  CartPosInfo cart_info(manip, target_pose, "l_gripper_tool_frame", Eigen::Isometry3d::Identity());
   auto cnt = std::make_shared<trajopt_ifopt::CartPosConstraint>(cart_info, var);
   qp_problem->addConstraintSet(cnt);
 
@@ -114,8 +110,7 @@ void runNumericalIKTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const Env
   ss << cur_position;
   CONSOLE_BRIDGE_logDebug("Initial Vars: %s", ss.str().c_str());
 
-  Eigen::Isometry3d initial_pose = forward_kinematics->calcFwdKin(cur_position);
-  initial_pose = change_base * initial_pose;
+  Eigen::Isometry3d initial_pose = manip->calcFwdKin(cur_position).at("l_gripper_tool_frame");
 
   ss = std::stringstream();
   ss << initial_pose.translation().transpose();
@@ -139,8 +134,7 @@ void runNumericalIKTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const Env
 
   EXPECT_TRUE(solver.getStatus() == trajopt_sqp::SQPStatus::NLP_CONVERGED);
 
-  Eigen::Isometry3d final_pose = forward_kinematics->calcFwdKin(x);
-  final_pose = change_base * final_pose;
+  Eigen::Isometry3d final_pose = manip->calcFwdKin(x).at("l_gripper_tool_frame");
 
   for (auto i = 0; i < 4; ++i)
   {

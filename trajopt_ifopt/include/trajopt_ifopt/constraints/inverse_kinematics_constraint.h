@@ -32,8 +32,8 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <ifopt/constraint_set.h>
 
 #include <tesseract_kinematics/core/inverse_kinematics.h>
-#include <tesseract_environment/core/environment.h>
-#include <tesseract_environment/core/utils.h>
+#include <tesseract_environment/environment.h>
+#include <tesseract_environment/utils.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt_ifopt/variable_sets/joint_position_variable.h>
@@ -51,34 +51,27 @@ struct InverseKinematicsInfo
   using ConstPtr = std::shared_ptr<const InverseKinematicsInfo>;
 
   InverseKinematicsInfo() = default;
-  InverseKinematicsInfo(tesseract_kinematics::InverseKinematics::ConstPtr inverse_kinematics,
-                        tesseract_environment::AdjacencyMap::ConstPtr adjacency_map,
-                        const Eigen::Isometry3d& world_to_base,
+  InverseKinematicsInfo(tesseract_kinematics::KinematicGroup::ConstPtr manip,
+                        std::string working_frame,
                         std::string link,
                         const Eigen::Isometry3d& tcp = Eigen::Isometry3d::Identity())
-    : inverse_kinematics(std::move(inverse_kinematics))
-    , adjacency_map(std::move(adjacency_map))
-    , world_to_base(world_to_base)
-    , link(std::move(link))
-    , tcp(tcp)
+    : manip(std::move(manip)), working_frame(std::move(working_frame)), link(std::move(link)), tcp(tcp)
   {
-    this->kin_link = this->adjacency_map->getLinkMapping(this->link);
-    if (this->kin_link == nullptr)
+    if (this->manip->hasLinkName(this->link))
     {
       CONSOLE_BRIDGE_logError("Link name '%s' provided does not exist.", this->link.c_str());
       assert(false);
     }
   }
 
-  tesseract_kinematics::InverseKinematics::ConstPtr inverse_kinematics;
+  tesseract_kinematics::KinematicGroup::ConstPtr manip;
+
   /** @brief Not currently respected */
-  tesseract_environment::AdjacencyMap::ConstPtr adjacency_map;
-  /** @brief Not currently respected */
-  Eigen::Isometry3d world_to_base;
+  std::string working_frame;
+
   /** @brief Not currently respected */
   std::string link;
-  /** @brief Not currently respected */
-  tesseract_environment::AdjacencyMapPair::ConstPtr kin_link;
+
   /** @brief Not currently respected */
   Eigen::Isometry3d tcp;
 };
@@ -140,7 +133,7 @@ public:
    * Since the value of this constraint is the joint distance from the joint position acquired with IK, the jacobian is
    * the same as that for the joint position constraint.
    * @param var_set Name of the var_set to which the jac_block is associated
-   * @param jac_block Block of the overal jacobian associated with these constraints and the var_set variable
+   * @param jac_block Block of the overall jacobian associated with these constraints and the var_set variable
    */
   void FillJacobianBlock(std::string var_set, Jacobian& jac_block) const override;
 

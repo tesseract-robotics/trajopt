@@ -28,9 +28,8 @@
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <ctime>
 #include <gtest/gtest.h>
-#include <tesseract_environment/core/environment.h>
-#include <tesseract_environment/ofkt/ofkt_state_solver.h>
-#include <tesseract_environment/core/utils.h>
+#include <tesseract_environment/environment.h>
+#include <tesseract_environment/utils.h>
 #include <tesseract_visualization/visualization.h>
 #include <tesseract_scene_graph/utils.h>
 #include <ifopt/problem.h>
@@ -57,6 +56,7 @@ using namespace tesseract_collision;
 using namespace tesseract_visualization;
 using namespace tesseract_scene_graph;
 using namespace tesseract_geometry;
+using namespace tesseract_common;
 
 class ContinuousCollisionGradientTest : public testing::TestWithParam<const char*>
 {
@@ -70,7 +70,7 @@ public:
     boost::filesystem::path srdf_file(std::string(TRAJOPT_DIR) + "/test/data/spherebot.srdf");
 
     ResourceLocator::Ptr locator = std::make_shared<SimpleResourceLocator>(locateResource);
-    EXPECT_TRUE(env->init<OFKTStateSolver>(urdf_file, srdf_file, locator));
+    EXPECT_TRUE(env->init(urdf_file, srdf_file, locator));
 
     gLogLevel = util::LevelError;
   }
@@ -86,13 +86,11 @@ void runContinuousGradientTest(const Environment::Ptr& env, double coeff)
   //  plotter_->plotScene();
 
   std::vector<ContactResultMap> collisions;
-  tesseract_environment::StateSolver::Ptr state_solver = env->getStateSolver();
+  tesseract_scene_graph::StateSolver::Ptr state_solver = env->getStateSolver();
   ContinuousContactManager::Ptr manager = env->getContinuousContactManager();
-  auto forward_kinematics = env->getManipulatorManager()->getFwdKinematicSolver("manipulator");
-  AdjacencyMap::Ptr adjacency_map = std::make_shared<AdjacencyMap>(
-      env->getSceneGraph(), forward_kinematics->getActiveLinkNames(), env->getCurrentState()->link_transforms);
+  tesseract_kinematics::JointGroup::ConstPtr manip = env->getJointGroup("manipulator");
 
-  manager->setActiveCollisionObjects(adjacency_map->getActiveLinkNames());
+  manager->setActiveCollisionObjects(manip->getActiveLinkNames());
   manager->setDefaultCollisionMarginData(0);
 
   collisions.clear();
@@ -107,8 +105,7 @@ void runContinuousGradientTest(const Environment::Ptr& env, double coeff)
     Eigen::VectorXd pos(2);
     pos << -1.9, 0;
     positions.push_back(pos);
-    auto var =
-        std::make_shared<trajopt_ifopt::JointPosition>(pos, forward_kinematics->getJointNames(), "Joint_Position_0");
+    auto var = std::make_shared<trajopt_ifopt::JointPosition>(pos, manip->getJointNames(), "Joint_Position_0");
     vars.push_back(var);
     nlp.AddVariableSet(var);
   }
@@ -116,8 +113,7 @@ void runContinuousGradientTest(const Environment::Ptr& env, double coeff)
     Eigen::VectorXd pos(2);
     pos << 0, 1.9;
     positions.push_back(pos);
-    auto var =
-        std::make_shared<trajopt_ifopt::JointPosition>(pos, forward_kinematics->getJointNames(), "Joint_Position_1");
+    auto var = std::make_shared<trajopt_ifopt::JointPosition>(pos, manip->getJointNames(), "Joint_Position_1");
     vars.push_back(var);
     nlp.AddVariableSet(var);
   }
@@ -125,17 +121,12 @@ void runContinuousGradientTest(const Environment::Ptr& env, double coeff)
     Eigen::VectorXd pos(2);
     pos << 1.9, 3.8;
     positions.push_back(pos);
-    auto var =
-        std::make_shared<trajopt_ifopt::JointPosition>(pos, forward_kinematics->getJointNames(), "Joint_Position_2");
+    auto var = std::make_shared<trajopt_ifopt::JointPosition>(pos, manip->getJointNames(), "Joint_Position_2");
     vars.push_back(var);
     nlp.AddVariableSet(var);
   }
 
   // Step 3: Setup collision
-  auto kin = env->getManipulatorManager()->getFwdKinematicSolver("manipulator");
-  auto adj_map = std::make_shared<tesseract_environment::AdjacencyMap>(
-      env->getSceneGraph(), kin->getActiveLinkNames(), env->getCurrentState()->link_transforms);
-
   double margin_coeff = coeff;
   double margin = 0.02;
   auto trajopt_collision_config = std::make_shared<trajopt_ifopt::TrajOptCollisionConfig>(margin, margin_coeff);
@@ -145,7 +136,7 @@ void runContinuousGradientTest(const Environment::Ptr& env, double coeff)
   for (std::size_t i = 1; i < vars.size(); ++i)
   {
     auto collision_evaluator = std::make_shared<trajopt_ifopt::LVSContinuousCollisionEvaluator>(
-        collision_cache, kin, env, adj_map, Eigen::Isometry3d::Identity(), trajopt_collision_config);
+        collision_cache, manip, env, trajopt_collision_config);
 
     std::array<JointPosition::ConstPtr, 2> position_vars{ vars[i - 1], vars[i] };
     std::array<bool, 2> position_vars_fixed{ false, false };

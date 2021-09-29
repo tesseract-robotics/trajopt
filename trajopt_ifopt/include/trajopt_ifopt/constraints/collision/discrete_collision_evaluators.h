@@ -30,9 +30,9 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <Eigen/Eigen>
 
 #include <tesseract_collision/core/types.h>
-#include <tesseract_environment/core/environment.h>
-#include <tesseract_environment/core/utils.h>
-#include <tesseract_kinematics/core/forward_kinematics.h>
+#include <tesseract_environment/environment.h>
+#include <tesseract_environment/utils.h>
+#include <tesseract_kinematics/core/joint_group.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt_ifopt/constraints/collision/collision_types.h>
@@ -97,10 +97,8 @@ public:
   using ConstPtr = std::shared_ptr<const SingleTimestepCollisionEvaluator>;
 
   SingleTimestepCollisionEvaluator(std::shared_ptr<CollisionCache> collision_cache,
-                                   tesseract_kinematics::ForwardKinematics::ConstPtr manip,
+                                   tesseract_kinematics::JointGroup::ConstPtr manip,
                                    tesseract_environment::Environment::ConstPtr env,
-                                   tesseract_environment::AdjacencyMap::ConstPtr adjacency_map,
-                                   const Eigen::Isometry3d& world_to_base,
                                    TrajOptCollisionConfig::ConstPtr collision_config,
                                    bool dynamic_environment = false);
 
@@ -113,12 +111,12 @@ public:
 
 private:
   std::shared_ptr<CollisionCache> collision_cache_;
-  tesseract_kinematics::ForwardKinematics::ConstPtr manip_;
+  tesseract_kinematics::JointGroup::ConstPtr manip_;
   tesseract_environment::Environment::ConstPtr env_;
-  tesseract_environment::AdjacencyMap::ConstPtr adjacency_map_;
-  Eigen::Isometry3d world_to_base_;
   TrajOptCollisionConfig::ConstPtr collision_config_;
-  tesseract_environment::StateSolver::Ptr state_solver_;
+  std::vector<std::string> env_active_link_names_;
+  std::vector<std::string> manip_active_link_names_;
+  std::vector<std::string> diff_active_link_names_;
   GetStateFn get_state_fn_;
   bool dynamic_environment_;
   tesseract_collision::DiscreteContactManager::Ptr contact_manager_;

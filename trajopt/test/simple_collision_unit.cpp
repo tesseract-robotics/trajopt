@@ -2,10 +2,8 @@
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <ctime>
 #include <gtest/gtest.h>
-#include <tesseract_environment/core/environment.h>
-#include <tesseract_environment/ofkt/ofkt_state_solver.h>
-
-#include <tesseract_environment/core/utils.h>
+#include <tesseract_environment/environment.h>
+#include <tesseract_environment/utils.h>
 #include <tesseract_visualization/visualization.h>
 #include <tesseract_scene_graph/utils.h>
 TRAJOPT_IGNORE_WARNINGS_POP
@@ -30,6 +28,7 @@ using namespace tesseract_collision;
 using namespace tesseract_visualization;
 using namespace tesseract_scene_graph;
 using namespace tesseract_geometry;
+using namespace tesseract_common;
 
 static bool plotting = false;
 
@@ -45,7 +44,7 @@ public:
     boost::filesystem::path srdf_file(std::string(TRAJOPT_DIR) + "/test/data/spherebot.srdf");
 
     ResourceLocator::Ptr locator = std::make_shared<SimpleResourceLocator>(locateResource);
-    EXPECT_TRUE(env_->init<OFKTStateSolver>(urdf_file, srdf_file, locator));
+    EXPECT_TRUE(env_->init(urdf_file, srdf_file, locator));
 
     gLogLevel = util::LevelDebug;
 
@@ -71,12 +70,10 @@ TEST_F(SimpleCollisionTest, spheres)  // NOLINT
   ASSERT_TRUE(!!prob);
 
   std::vector<ContactResultMap> collisions;
-  tesseract_environment::StateSolver::Ptr state_solver = prob->GetEnv()->getStateSolver();
+  tesseract_scene_graph::StateSolver::UPtr state_solver = prob->GetEnv()->getStateSolver();
   DiscreteContactManager::Ptr manager = prob->GetEnv()->getDiscreteContactManager();
-  AdjacencyMap::Ptr adjacency_map = std::make_shared<AdjacencyMap>(
-      env_->getSceneGraph(), prob->GetKin()->getActiveLinkNames(), prob->GetEnv()->getCurrentState()->link_transforms);
 
-  manager->setActiveCollisionObjects(adjacency_map->getActiveLinkNames());
+  manager->setActiveCollisionObjects(prob->GetKin()->getActiveLinkNames());
   manager->setDefaultCollisionMarginData(0.2);
 
   collisions.clear();

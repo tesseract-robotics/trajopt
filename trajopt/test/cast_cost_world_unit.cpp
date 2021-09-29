@@ -3,9 +3,8 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <ctime>
 #include <gtest/gtest.h>
 #include <tesseract_common/types.h>
-#include <tesseract_environment/core/environment.h>
-#include <tesseract_environment/ofkt/ofkt_state_solver.h>
-#include <tesseract_environment/core/utils.h>
+#include <tesseract_environment/environment.h>
+#include <tesseract_environment/utils.h>
 #include <tesseract_scene_graph/utils.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
@@ -29,6 +28,7 @@ using namespace tesseract_kinematics;
 using namespace tesseract_visualization;
 using namespace tesseract_scene_graph;
 using namespace tesseract_geometry;
+using namespace tesseract_common;
 
 static bool plotting = false;
 
@@ -44,7 +44,7 @@ public:
     tesseract_common::fs::path srdf_file(std::string(TRAJOPT_DIR) + "/test/data/boxbot.srdf");
 
     ResourceLocator::Ptr locator = std::make_shared<SimpleResourceLocator>(locateResource);
-    EXPECT_TRUE(env_->init<OFKTStateSolver>(urdf_file, srdf_file, locator));
+    EXPECT_TRUE(env_->init(urdf_file, srdf_file, locator));
 
     gLogLevel = util::LevelError;
 
@@ -71,7 +71,7 @@ public:
     new_joint.parent_link_name = "base_link";
     new_joint.child_link_name = "box_world";
 
-    env_->addLink(new_link, new_joint);
+    env_->applyCommand(std::make_shared<AddLinkCommand>(new_link, new_joint));
 
     // TODO: Need to add method to environment to disable collision and hid objects
   }
@@ -94,13 +94,10 @@ TEST_F(CastWorldTest, boxes)  // NOLINT
   ASSERT_TRUE(!!prob);
 
   std::vector<ContactResultMap> collisions;
-  tesseract_environment::StateSolver::Ptr state_solver = prob->GetEnv()->getStateSolver();
+  tesseract_scene_graph::StateSolver::UPtr state_solver = prob->GetEnv()->getStateSolver();
   ContinuousContactManager::Ptr manager = prob->GetEnv()->getContinuousContactManager();
 
-  AdjacencyMap::Ptr adjacency_map = std::make_shared<AdjacencyMap>(
-      env_->getSceneGraph(), prob->GetKin()->getActiveLinkNames(), prob->GetEnv()->getCurrentState()->link_transforms);
-
-  manager->setActiveCollisionObjects(adjacency_map->getActiveLinkNames());
+  manager->setActiveCollisionObjects(prob->GetKin()->getActiveLinkNames());
   manager->setDefaultCollisionMarginData(0);
 
   tesseract_collision::CollisionCheckConfig config;

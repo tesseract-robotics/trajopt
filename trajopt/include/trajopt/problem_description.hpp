@@ -4,7 +4,7 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <unordered_map>
 TRAJOPT_IGNORE_WARNINGS_POP
 
-#include <tesseract_environment/core/environment.h>
+#include <tesseract_environment/environment.h>
 #include <trajopt/common.hpp>
 #include <trajopt/json_marshal.hpp>
 #include <trajopt_sco/optimizers.hpp>
@@ -55,10 +55,10 @@ public:
   VarArray& GetVars() { return m_traj_vars; }
   /** @brief Returns the number of steps in the problem. This is the number of rows in the optimization matrix.*/
   int GetNumSteps() { return m_traj_vars.rows(); }
-  /** @brief Returns the problem DOF. This is the number of columns in the optization matrix.
+  /** @brief Returns the problem DOF. This is the number of columns in the optimization matrix.
    * Note that this is not necessarily the same as the kinematic DOF.*/
   int GetNumDOF() { return m_traj_vars.cols(); }
-  tesseract_kinematics::ForwardKinematics::ConstPtr GetKin() { return m_kin; }
+  tesseract_kinematics::JointGroup::ConstPtr GetKin() { return m_kin; }
   tesseract_environment::Environment::ConstPtr GetEnv() { return m_env; }
   void SetInitTraj(const TrajArray& x) { m_init_traj = x; }
   TrajArray GetInitTraj() { return m_init_traj; }
@@ -72,7 +72,7 @@ private:
   /** @brief If true, the last column in the optimization matrix will be 1/dt */
   bool has_time;
   VarArray m_traj_vars;
-  tesseract_kinematics::ForwardKinematics::ConstPtr m_kin;
+  tesseract_kinematics::JointGroup::ConstPtr m_kin;
   tesseract_environment::Environment::ConstPtr m_env;
   TrajArray m_init_traj;
 };
@@ -210,14 +210,9 @@ public:
   InitInfo init_info;
 
   tesseract_environment::Environment::ConstPtr env;
-  tesseract_kinematics::ForwardKinematics::ConstPtr kin;
+  tesseract_kinematics::JointGroup::ConstPtr kin;
 
   ProblemConstructionInfo(tesseract_environment::Environment::ConstPtr env) : env(std::move(env)) {}
-
-  tesseract_kinematics::ForwardKinematics::ConstPtr getManipulator(const std::string& name) const
-  {
-    return env->getManipulatorManager()->getFwdKinematicSolver(name);
-  }
 
   void fromJson(const Json::Value& v);
 
@@ -630,7 +625,7 @@ TrajOptResult::Ptr OptimizeProblem(const TrajOptProb::Ptr&,
 struct AvoidSingularityTermInfo : public TermInfo
 {
   /** @brief The forward kinematics solver used to calculate the jacobian for which to do singularity avoidance */
-  tesseract_kinematics::ForwardKinematics::ConstPtr subset_kin_;
+  tesseract_kinematics::JointGroup::ConstPtr subset_kin_;
   /** @brief Damping factor used to prevent numerical instability in the singularity avoidance cost as the smallest
    * singular value approaches zero */
   double lambda{ 0.1 };
@@ -644,7 +639,7 @@ struct AvoidSingularityTermInfo : public TermInfo
   void fromJson(ProblemConstructionInfo& pci, const Json::Value& v) override;
   DEFINE_CREATE(AvoidSingularityTermInfo)
 
-  AvoidSingularityTermInfo(tesseract_kinematics::ForwardKinematics::ConstPtr subset_kin = nullptr, double lambda_ = 0.1)
+  AvoidSingularityTermInfo(tesseract_kinematics::JointGroup::ConstPtr subset_kin = nullptr, double lambda_ = 0.1)
     : TermInfo(TT_COST | TT_CNT), subset_kin_(std::move(subset_kin)), lambda(lambda_)
   {
   }

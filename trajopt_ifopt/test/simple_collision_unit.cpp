@@ -28,9 +28,8 @@
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <ctime>
 #include <gtest/gtest.h>
-#include <tesseract_environment/core/environment.h>
-#include <tesseract_environment/ofkt/ofkt_state_solver.h>
-#include <tesseract_environment/core/utils.h>
+#include <tesseract_environment/environment.h>
+#include <tesseract_environment/utils.h>
 #include <tesseract_visualization/visualization.h>
 #include <tesseract_scene_graph/utils.h>
 #include <ifopt/problem.h>
@@ -52,6 +51,7 @@ using namespace tesseract_collision;
 using namespace tesseract_visualization;
 using namespace tesseract_scene_graph;
 using namespace tesseract_geometry;
+using namespace tesseract_common;
 
 inline std::string locateResource(const std::string& url)
 {
@@ -91,7 +91,7 @@ public:
     boost::filesystem::path urdf_file(std::string(TRAJOPT_DIR) + "/test/data/spherebot.urdf");
     boost::filesystem::path srdf_file(std::string(TRAJOPT_DIR) + "/test/data/spherebot.srdf");
     ResourceLocator::Ptr locator = std::make_shared<SimpleResourceLocator>(locateResource);
-    EXPECT_TRUE(env->init<OFKTStateSolver>(urdf_file, srdf_file, locator));
+    EXPECT_TRUE(env->init(urdf_file, srdf_file, locator));
   }
 };
 
@@ -107,13 +107,11 @@ TEST_F(SimpleCollisionTest, spheres)  // NOLINT
   //  plotter_->plotScene();
 
   std::vector<ContactResultMap> collisions;
-  tesseract_environment::StateSolver::Ptr state_solver = env->getStateSolver();
+  auto state_solver = env->getStateSolver();
   DiscreteContactManager::Ptr manager = env->getDiscreteContactManager();
-  auto forward_kinematics = env->getManipulatorManager()->getFwdKinematicSolver("manipulator");
-  AdjacencyMap::Ptr adjacency_map = std::make_shared<AdjacencyMap>(
-      env->getSceneGraph(), forward_kinematics->getActiveLinkNames(), env->getCurrentState()->link_transforms);
+  tesseract_kinematics::JointGroup::ConstPtr manip = env->getJointGroup("manipulator");
 
-  manager->setActiveCollisionObjects(adjacency_map->getActiveLinkNames());
+  manager->setActiveCollisionObjects(manip->getActiveLinkNames());
   manager->setDefaultCollisionMarginData(0);
 
   collisions.clear();
@@ -128,17 +126,12 @@ TEST_F(SimpleCollisionTest, spheres)  // NOLINT
     Eigen::VectorXd pos(2);
     pos << -0.75, 0.75;
     positions.push_back(pos);
-    auto var =
-        std::make_shared<trajopt_ifopt::JointPosition>(pos, forward_kinematics->getJointNames(), "Joint_Position_0");
+    auto var = std::make_shared<trajopt_ifopt::JointPosition>(pos, manip->getJointNames(), "Joint_Position_0");
     vars.push_back(var);
     nlp.AddVariableSet(var);
   }
 
   // Step 3: Setup collision
-  auto kin = env->getManipulatorManager()->getFwdKinematicSolver("manipulator");
-  auto adj_map = std::make_shared<tesseract_environment::AdjacencyMap>(
-      env->getSceneGraph(), kin->getActiveLinkNames(), env->getCurrentState()->link_transforms);
-
   double margin_coeff = 10;
   double margin = 0.2;
   auto trajopt_collision_config = std::make_shared<trajopt_ifopt::TrajOptCollisionConfig>(margin, margin_coeff);
@@ -147,7 +140,7 @@ TEST_F(SimpleCollisionTest, spheres)  // NOLINT
   auto collision_cache = std::make_shared<trajopt_ifopt::CollisionCache>(100);
   trajopt_ifopt::DiscreteCollisionEvaluator::Ptr collision_evaluator =
       std::make_shared<trajopt_ifopt::SingleTimestepCollisionEvaluator>(
-          collision_cache, kin, env, adj_map, Eigen::Isometry3d::Identity(), trajopt_collision_config);
+          collision_cache, manip, env, trajopt_collision_config);
 
   auto cnt = std::make_shared<trajopt_ifopt::DiscreteCollisionConstraint>(collision_evaluator, vars[0], 3);
   nlp.AddConstraintSet(cnt);
@@ -178,15 +171,15 @@ TEST_F(SimpleCollisionTest, spheres)  // NOLINT
   inputs << -0.75, 0.75;
   Eigen::Map<tesseract_common::TrajArray> results(x.data(), 1, 2);
 
-  bool found = checkTrajectory(
-      collisions, *manager, *state_solver, forward_kinematics->getJointNames(), inputs, *trajopt_collision_config);
+  bool found =
+      checkTrajectory(collisions, *manager, *state_solver, manip->getJointNames(), inputs, *trajopt_collision_config);
 
   EXPECT_TRUE(found);
   CONSOLE_BRIDGE_logWarn((found) ? ("Initial trajectory is in collision") : ("Initial trajectory is collision free"));
 
   collisions.clear();
-  found = checkTrajectory(
-      collisions, *manager, *state_solver, forward_kinematics->getJointNames(), results, *trajopt_collision_config);
+  found =
+      checkTrajectory(collisions, *manager, *state_solver, manip->getJointNames(), results, *trajopt_collision_config);
 
   EXPECT_FALSE(found);
   CONSOLE_BRIDGE_logWarn((found) ? ("Final trajectory is in collision") : ("Final trajectory is collision free"));

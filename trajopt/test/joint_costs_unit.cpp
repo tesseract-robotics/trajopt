@@ -3,9 +3,8 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <ctime>
 #include <gtest/gtest.h>
 #include <tesseract_common/types.h>
-#include <tesseract_environment/core/environment.h>
-#include <tesseract_environment/ofkt/ofkt_state_solver.h>
-#include <tesseract_environment/core/utils.h>
+#include <tesseract_environment/environment.h>
+#include <tesseract_environment/utils.h>
 #include <tesseract_scene_graph/utils.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
@@ -28,6 +27,7 @@ using namespace tesseract_collision;
 using namespace tesseract_kinematics;
 using namespace tesseract_visualization;
 using namespace tesseract_scene_graph;
+using namespace tesseract_common;
 
 static bool plotting = false; /**< Enable plotting */
 
@@ -43,7 +43,7 @@ public:
     tesseract_common::fs::path srdf_file(std::string(TRAJOPT_DIR) + "/test/data/pr2.srdf");
 
     ResourceLocator::Ptr locator = std::make_shared<SimpleResourceLocator>(locateResource);
-    EXPECT_TRUE(env_->init<OFKTStateSolver>(urdf_file, srdf_file, locator));
+    EXPECT_TRUE(env_->init(urdf_file, srdf_file, locator));
 
     gLogLevel = util::LevelError;
   }
@@ -75,7 +75,7 @@ TEST_F(CostsTest, equality_jointPos)  // NOLINT
   pci.basic_info.manip = "right_arm";
 
   // Create Kinematic Object
-  pci.kin = env_->getManipulatorManager()->getFwdKinematicSolver(pci.basic_info.manip);
+  pci.kin = env_->getJointGroup(pci.basic_info.manip);
 
   // Populate Init Info
   Eigen::VectorXd start_pos = pci.env->getCurrentJointValues(pci.kin->getJointNames());
@@ -167,7 +167,7 @@ TEST_F(CostsTest, inequality_jointPos)  // NOLINT
   pci.basic_info.use_time = false;
 
   // Create Kinematic Object
-  pci.kin = env_->getManipulatorManager()->getFwdKinematicSolver(pci.basic_info.manip);
+  pci.kin = env_->getJointGroup(pci.basic_info.manip);
 
   // Populate Init Info
   Eigen::VectorXd start_pos = pci.env->getCurrentJointValues(pci.kin->getJointNames());
@@ -277,7 +277,7 @@ TEST_F(CostsTest, equality_jointVel)  // NOLINT
   pci.basic_info.use_time = false;
 
   // Create Kinematic Object
-  pci.kin = env_->getManipulatorManager()->getFwdKinematicSolver(pci.basic_info.manip);
+  pci.kin = env_->getJointGroup(pci.basic_info.manip);
 
   // Populate Init Info
   Eigen::VectorXd start_pos = pci.env->getCurrentJointValues(pci.kin->getJointNames());
@@ -369,7 +369,7 @@ TEST_F(CostsTest, inequality_jointVel)  // NOLINT
   pci.basic_info.use_time = false;
 
   // Create Kinematic Object
-  pci.kin = env_->getManipulatorManager()->getFwdKinematicSolver(pci.basic_info.manip);
+  pci.kin = env_->getJointGroup(pci.basic_info.manip);
 
   // Populate Init Info
   Eigen::VectorXd start_pos = pci.env->getCurrentJointValues(pci.kin->getJointNames());
@@ -482,7 +482,7 @@ TEST_F(CostsTest, equality_jointVel_time)  // NOLINT
   pci.basic_info.dt_upper_lim = dt_upper;
 
   // Create Kinematic Object
-  pci.kin = env_->getManipulatorManager()->getFwdKinematicSolver(pci.basic_info.manip);
+  pci.kin = env_->getJointGroup(pci.basic_info.manip);
 
   // Populate Init Info
   pci.init_info.type = InitInfo::STATIONARY;
@@ -581,7 +581,7 @@ TEST_F(CostsTest, inequality_jointVel_time)  // NOLINT
   pci.basic_info.dt_upper_lim = dt_upper;
 
   // Create Kinematic Object
-  pci.kin = env_->getManipulatorManager()->getFwdKinematicSolver(pci.basic_info.manip);
+  pci.kin = env_->getJointGroup(pci.basic_info.manip);
 
   // Populate Init Info
   pci.init_info.type = InitInfo::STATIONARY;
@@ -690,7 +690,7 @@ TEST_F(CostsTest, equality_jointAcc)  // NOLINT
   pci.basic_info.use_time = false;
 
   // Create Kinematic Object
-  pci.kin = env_->getManipulatorManager()->getFwdKinematicSolver(pci.basic_info.manip);
+  pci.kin = env_->getJointGroup(pci.basic_info.manip);
 
   // Populate Init Info
   Eigen::VectorXd start_pos = pci.env->getCurrentJointValues(pci.kin->getJointNames());
@@ -783,7 +783,7 @@ TEST_F(CostsTest, inequality_jointAcc)  // NOLINT
   pci.basic_info.use_time = false;
 
   // Create Kinematic Object
-  pci.kin = env_->getManipulatorManager()->getFwdKinematicSolver(pci.basic_info.manip);
+  pci.kin = env_->getJointGroup(pci.basic_info.manip);
 
   // Populate Init Info
   Eigen::VectorXd start_pos = pci.env->getCurrentJointValues(pci.kin->getJointNames());

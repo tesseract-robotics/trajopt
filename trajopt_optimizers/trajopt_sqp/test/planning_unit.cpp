@@ -31,10 +31,9 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <memory>
 #include <gtest/gtest.h>
 #include <tesseract_common/types.h>
-#include <tesseract_environment/core/environment.h>
-#include <tesseract_environment/ofkt/ofkt_state_solver.h>
+#include <tesseract_environment/environment.h>
+#include <tesseract_environment/utils.h>
 #include <tesseract_visualization/visualization.h>
-#include <tesseract_environment/core/utils.h>
 #include <tesseract_scene_graph/utils.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
@@ -56,6 +55,7 @@ using namespace tesseract_collision;
 using namespace tesseract_kinematics;
 using namespace tesseract_visualization;
 using namespace tesseract_scene_graph;
+using namespace tesseract_common;
 
 class PlanningTest : public testing::TestWithParam<const char*>
 {
@@ -68,7 +68,7 @@ public:
     tesseract_common::fs::path srdf_file(std::string(TRAJOPT_DIR) + "/test/data/pr2.srdf");
 
     ResourceLocator::Ptr locator = std::make_shared<SimpleResourceLocator>(locateResource);
-    EXPECT_TRUE(env->init<OFKTStateSolver>(urdf_file, srdf_file, locator));
+    EXPECT_TRUE(env->init(urdf_file, srdf_file, locator));
 
     // Create plotting tool
     //    plotter_.reset(new tesseract_ros::ROSBasicPlotting(env_));
@@ -93,13 +93,11 @@ void runPlanningTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const Enviro
   env->setState(ipos);
 
   std::vector<ContactResultMap> collisions;
-  tesseract_environment::StateSolver::Ptr state_solver = env->getStateSolver();
+  tesseract_scene_graph::StateSolver::Ptr state_solver = env->getStateSolver();
   ContinuousContactManager::Ptr manager = env->getContinuousContactManager();
-  auto forward_kinematics = env->getManipulatorManager()->getFwdKinematicSolver("right_arm");
-  AdjacencyMap::Ptr adjacency_map = std::make_shared<AdjacencyMap>(
-      env->getSceneGraph(), forward_kinematics->getActiveLinkNames(), env->getCurrentState()->link_transforms);
+  tesseract_kinematics::JointGroup::ConstPtr manip = env->getJointGroup("right_arm");
 
-  manager->setActiveCollisionObjects(adjacency_map->getActiveLinkNames());
+  manager->setActiveCollisionObjects(manip->getActiveLinkNames());
   manager->setDefaultCollisionMarginData(0);
 
   // Initial trajectory
@@ -116,7 +114,7 @@ void runPlanningTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const Enviro
   for (Eigen::Index i = 0; i < 6; ++i)
   {
     auto var = std::make_shared<trajopt_ifopt::JointPosition>(
-        trajectory.row(i), forward_kinematics->getJointNames(), "Joint_Position_" + std::to_string(i));
+        trajectory.row(i), manip->getJointNames(), "Joint_Position_" + std::to_string(i));
     vars.push_back(var);
     qp_problem->addVariableSet(var);
   }
@@ -136,14 +134,14 @@ void runPlanningTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const Enviro
   // Add constraints
   {  // Fix start position
     std::vector<JointPosition::ConstPtr> fixed_vars = { vars[0] };
-    Eigen::VectorXd coeffs = Eigen::VectorXd::Constant(forward_kinematics->numJoints(), 5);
+    Eigen::VectorXd coeffs = Eigen::VectorXd::Constant(manip->numJoints(), 5);
     auto cnt = std::make_shared<JointPosConstraint>(trajectory.row(0), fixed_vars, coeffs);
     qp_problem->addConstraintSet(cnt);
   }
 
   {  // Fix end position
     std::vector<trajopt_ifopt::JointPosition::ConstPtr> fixed_vars = { vars[5] };
-    Eigen::VectorXd coeffs = Eigen::VectorXd::Constant(forward_kinematics->numJoints(), 5);
+    Eigen::VectorXd coeffs = Eigen::VectorXd::Constant(manip->numJoints(), 5);
     auto cnt = std::make_shared<trajopt_ifopt::JointPosConstraint>(trajectory.row(5), fixed_vars, coeffs);
     qp_problem->addConstraintSet(cnt);
   }
@@ -152,13 +150,8 @@ void runPlanningTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const Enviro
   std::array<bool, 2> position_vars_fixed{ false, false };
   for (std::size_t i = 1; i < (vars.size() - 1); ++i)
   {
-    auto collision_evaluator =
-        std::make_shared<trajopt_ifopt::LVSContinuousCollisionEvaluator>(collision_cache,
-                                                                         forward_kinematics,
-                                                                         env,
-                                                                         adjacency_map,
-                                                                         Eigen::Isometry3d::Identity(),
-                                                                         trajopt_collision_config);
+    auto collision_evaluator = std::make_shared<trajopt_ifopt::LVSContinuousCollisionEvaluator>(
+        collision_cache, manip, env, trajopt_collision_config);
 
     std::array<JointPosition::ConstPtr, 2> position_vars{ vars[i - 1], vars[i] };
 
@@ -201,14 +194,13 @@ void runPlanningTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const Enviro
 
   tesseract_collision::CollisionCheckConfig config;
   config.type = tesseract_collision::CollisionEvaluatorType::CONTINUOUS;
-  bool found =
-      checkTrajectory(collisions, *manager, *state_solver, forward_kinematics->getJointNames(), trajectory, config);
+  bool found = checkTrajectory(collisions, *manager, *state_solver, manip->getJointNames(), trajectory, config);
 
   EXPECT_TRUE(found);
   CONSOLE_BRIDGE_logWarn((found) ? ("Initial trajectory is in collision") : ("Initial trajectory is collision free"));
 
   collisions.clear();
-  found = checkTrajectory(collisions, *manager, *state_solver, forward_kinematics->getJointNames(), results, config);
+  found = checkTrajectory(collisions, *manager, *state_solver, manip->getJointNames(), results, config);
 
   EXPECT_FALSE(found);
   CONSOLE_BRIDGE_logWarn((found) ? ("Final trajectory is in collision") : ("Final trajectory is collision free"));

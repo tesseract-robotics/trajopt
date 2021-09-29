@@ -4,8 +4,7 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <set>
 TRAJOPT_IGNORE_WARNINGS_POP
 
-#include <tesseract_environment/core/environment.h>
-#include <tesseract_kinematics/core/forward_kinematics.h>
+#include <tesseract_environment/environment.h>
 #include <trajopt/common.hpp>
 #include <trajopt/plot_callback.hpp>
 #include <trajopt/problem_description.hpp>
@@ -14,7 +13,7 @@ TRAJOPT_IGNORE_WARNINGS_POP
 namespace trajopt
 {
 void PlotCosts(const tesseract_visualization::Visualization::Ptr& plotter,
-               const tesseract_environment::StateSolver::Ptr& state_solver,
+               const tesseract_scene_graph::StateSolver& state_solver,
                const std::vector<std::string>& joint_names,
                const std::vector<sco::Cost::Ptr>& costs,
                const std::vector<sco::Constraint::Ptr>& cnts,
@@ -50,19 +49,20 @@ void PlotCosts(const tesseract_visualization::Visualization::Ptr& plotter,
 
 sco::Optimizer::Callback PlotCallback(TrajOptProb& prob, const tesseract_visualization::Visualization::Ptr& plotter)
 {
-  std::vector<sco::Constraint::Ptr> cnts = prob.getConstraints();
-  return std::bind(&PlotCosts,
-                   plotter,
-                   prob.GetEnv()->getStateSolver(),
-                   prob.GetKin()->getJointNames(),
-                   std::ref(prob.getCosts()),
-                   cnts,
-                   std::ref(prob.GetVars()),
-                   std::placeholders::_2);
+  return [&prob, plotter](sco::OptProb*, sco::OptResults& results) {
+    auto state_solver = prob.GetEnv()->getStateSolver();
+    PlotCosts(plotter,
+              *state_solver,
+              prob.GetKin()->getJointNames(),
+              std::ref(prob.getCosts()),
+              prob.getConstraints(),
+              std::ref(prob.GetVars()),
+              results);
+  };
 }
 
 void PlotProb(const tesseract_visualization::Visualization::Ptr& plotter,
-              const tesseract_environment::StateSolver::Ptr& state_solver,
+              const tesseract_scene_graph::StateSolver& state_solver,
               const std::vector<std::string>& joint_names,
               sco::OptProb* prob,
               const sco::OptResults& results)
@@ -101,10 +101,12 @@ void PlotProb(const tesseract_visualization::Visualization::Ptr& plotter,
 }
 
 sco::Optimizer::Callback PlotProbCallback(const tesseract_visualization::Visualization::Ptr& plotter,
-                                          const tesseract_environment::StateSolver::Ptr& state_solver,
+                                          const tesseract_scene_graph::StateSolver& state_solver,
                                           const std::vector<std::string>& joint_names)
 {
-  return std::bind(&PlotProb, plotter, state_solver, joint_names, std::placeholders::_1, std::placeholders::_2);
+  return [plotter, &state_solver, &joint_names](sco::OptProb* opt_problem, sco::OptResults& opt_results) {
+    PlotProb(plotter, state_solver, joint_names, opt_problem, opt_results);
+  };
 }
 
 }  // namespace trajopt

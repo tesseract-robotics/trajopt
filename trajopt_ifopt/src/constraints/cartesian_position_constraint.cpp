@@ -46,7 +46,7 @@ CartPosConstraint::CartPosConstraint(CartPosInfo info,
   , info_(std::move(info))
 {
   // Set the n_dof and n_vars for convenience
-  n_dof_ = info_.kin_info->manip->numJoints();
+  n_dof_ = info_.manip->numJoints();
   assert(n_dof_ > 0);
 
   bounds_ = std::vector<ifopt::Bounds>(static_cast<std::size_t>(info_.indices.rows()), ifopt::BoundZero);
@@ -62,12 +62,10 @@ CartPosConstraint::CartPosConstraint(CartPosInfo info, JointPosition::ConstPtr p
 
 Eigen::VectorXd CartPosConstraint::CalcValues(const Eigen::Ref<const Eigen::VectorXd>& joint_vals) const
 {
-  Eigen::Isometry3d new_pose = info_.kin_info->manip->calcFwdKin(joint_vals, info_.source_kin_link->link_name);
-
-  new_pose = info_.kin_info->world_to_base * new_pose * info_.source_kin_link->transform * info_.source_tcp;
-
+  Eigen::Isometry3d new_pose = info_.manip->calcFwdKin(joint_vals)[info_.source_link] * info_.source_tcp;
   Eigen::Isometry3d pose_err = info_.target_pose_inv * new_pose;
-  Eigen::VectorXd err = util::concat(pose_err.translation(), util::calcRotationalError(pose_err.rotation()));
+  Eigen::VectorXd err =
+      tesseract_common::concat(pose_err.translation(), tesseract_common::calcRotationalError(pose_err.rotation()));
 
   Eigen::VectorXd reduced_err(info_.indices.size());
   for (int i = 0; i < info_.indices.size(); ++i)
@@ -95,8 +93,7 @@ void CartPosConstraint::CalcJacobianBlock(const Eigen::Ref<const Eigen::VectorXd
                                           Jacobian& jac_block) const
 {
   auto pose_error_calculator = [&](const Eigen::Ref<const Eigen::VectorXd>& x) {
-    Eigen::Isometry3d new_pose = info_.kin_info->manip->calcFwdKin(x, info_.source_kin_link->link_name);
-    new_pose = info_.kin_info->world_to_base * new_pose * info_.source_kin_link->transform * info_.source_tcp;
+    Eigen::Isometry3d new_pose = info_.manip->calcFwdKin(x)[info_.source_link] * info_.source_tcp;
     return info_.target_pose_inv * new_pose;
   };
 
@@ -107,7 +104,8 @@ void CartPosConstraint::CalcJacobianBlock(const Eigen::Ref<const Eigen::VectorXd
   {
     auto error_calculator = [&](const Eigen::Ref<const Eigen::VectorXd>& x) {
       Eigen::Isometry3d pose_err = pose_error_calculator(x);
-      Eigen::VectorXd err = util::concat(pose_err.translation(), util::calcRotationalError2(pose_err.rotation()));
+      Eigen::VectorXd err =
+          tesseract_common::concat(pose_err.translation(), tesseract_common::calcRotationalError2(pose_err.rotation()));
       return err;
     };
     Jacobian jac0 = calcForwardNumJac(error_calculator, joint_vals, 1e-5);
@@ -125,14 +123,8 @@ void CartPosConstraint::CalcJacobianBlock(const Eigen::Ref<const Eigen::VectorXd
   else
   {
     // Calculate the jacobian
-    Eigen::Isometry3d tf0 = info_.kin_info->manip->calcFwdKin(joint_vals, info_.source_kin_link->link_name);
-    Eigen::MatrixXd jac0 = info_.kin_info->manip->calcJacobian(joint_vals, info_.source_kin_link->link_name);
-    tesseract_kinematics::jacobianChangeBase(jac0, info_.kin_info->world_to_base);
-    tesseract_kinematics::jacobianChangeRefPoint(
-        jac0,
-        (info_.kin_info->world_to_base * tf0).linear() *
-            (info_.source_kin_link->transform * info_.source_tcp).translation());
-    tesseract_kinematics::jacobianChangeBase(jac0, info_.target_pose_inv);
+    Eigen::MatrixXd jac0 = info_.manip->calcJacobian(joint_vals, info_.source_link, info_.source_tcp.translation());
+    tesseract_common::jacobianChangeBase(jac0, info_.target_pose_inv);
 
     // Paper:
     // https://ethz.ch/content/dam/ethz/special-interest/mavt/robotics-n-intelligent-systems/rsl-dam/documents/RobotDynamics2016/RD2016script.pdf
@@ -149,12 +141,13 @@ void CartPosConstraint::CalcJacobianBlock(const Eigen::Ref<const Eigen::VectorXd
     // The approach below leverages the geometric jacobian and a small step in time to approximate
     // the partial derivative of the error function. Note that the rotational portion is the only part
     // that is required to be modified per the paper.
+    Eigen::Isometry3d tf0 = info_.manip->calcFwdKin(joint_vals)[info_.source_link] * info_.source_tcp;
     Eigen::Isometry3d pose_err = info_.target_pose_inv * tf0;
-    Eigen::Vector3d rot_err = util::calcRotationalError2(pose_err.rotation());
+    Eigen::Vector3d rot_err = tesseract_common::calcRotationalError2(pose_err.rotation());
     for (int c = 0; c < jac0.cols(); ++c)
     {
       auto new_pose_err = util::addTwist(pose_err, jac0.col(c), 1e-5);
-      Eigen::VectorXd new_rot_err = util::calcRotationalError2(new_pose_err.rotation());
+      Eigen::VectorXd new_rot_err = tesseract_common::calcRotationalError2(new_pose_err.rotation());
       jac0.col(c).tail(3) = ((new_rot_err - rot_err) / 1e-5);
     }
 
@@ -185,8 +178,6 @@ void CartPosConstraint::FillJacobianBlock(std::string var_set, Jacobian& jac_blo
 Eigen::Isometry3d CartPosConstraint::GetCurrentPose() const
 {
   VectorXd joint_vals = this->GetVariables()->GetComponent(position_var_->GetName())->GetValues();
-  Eigen::Isometry3d new_pose = info_.kin_info->manip->calcFwdKin(joint_vals, info_.source_kin_link->link_name);
-  new_pose = info_.kin_info->world_to_base * new_pose * info_.source_kin_link->transform * info_.source_tcp;
-  return new_pose;
+  return info_.manip->calcFwdKin(joint_vals)[info_.source_link] * info_.source_tcp;
 }
 }  // namespace trajopt_ifopt

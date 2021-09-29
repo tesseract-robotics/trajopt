@@ -1,7 +1,7 @@
 #pragma once
-#include <tesseract_environment/core/environment.h>
-#include <tesseract_environment/core/utils.h>
-#include <tesseract_kinematics/core/forward_kinematics.h>
+#include <tesseract_environment/environment.h>
+#include <tesseract_environment/utils.h>
+#include <tesseract_kinematics/core/joint_group.h>
 #include <trajopt/cache.hxx>
 #include <trajopt/common.hpp>
 #include <trajopt_sco/modeling.hpp>
@@ -85,10 +85,8 @@ struct CollisionEvaluator
   using Ptr = std::shared_ptr<CollisionEvaluator>;
   using ConstPtr = std::shared_ptr<const CollisionEvaluator>;
 
-  CollisionEvaluator(tesseract_kinematics::ForwardKinematics::ConstPtr manip,
+  CollisionEvaluator(tesseract_kinematics::JointGroup::ConstPtr manip,
                      tesseract_environment::Environment::ConstPtr env,
-                     tesseract_environment::AdjacencyMap::ConstPtr adjacency_map,
-                     const Eigen::Isometry3d& world_to_base,
                      util::SafetyMarginData::ConstPtr safety_margin_data,
                      tesseract_collision::ContactTestType contact_test_type,
                      double longest_valid_segment_length,
@@ -221,21 +219,19 @@ struct CollisionEvaluator
       m_cache{ 10 };
 
 protected:
-  tesseract_kinematics::ForwardKinematics::ConstPtr manip_;
+  tesseract_kinematics::JointGroup::ConstPtr manip_;
   tesseract_environment::Environment::ConstPtr env_;
-  tesseract_environment::AdjacencyMap::ConstPtr adjacency_map_;
-  Eigen::Isometry3d world_to_base_{ Eigen::Isometry3d::Identity() };
+  std::vector<std::string> env_active_link_names_;
+  std::vector<std::string> manip_active_link_names_;
+  std::vector<std::string> diff_active_link_names_;
   util::SafetyMarginData::ConstPtr safety_margin_data_;
   double safety_margin_buffer_{ 0 };
   tesseract_collision::ContactTestType contact_test_type_{ tesseract_collision::ContactTestType::ALL };
   double longest_valid_segment_length_{ 0.05 };
-  tesseract_environment::StateSolver::Ptr state_solver_;
   sco::VarVector vars0_;
   sco::VarVector vars1_;
   CollisionExpressionEvaluatorType evaluator_type_{ CollisionExpressionEvaluatorType::START_FREE_END_FREE };
-  std::function<tesseract_environment::EnvState::Ptr(const std::vector<std::string>& joint_names,
-                                                     const Eigen::Ref<const Eigen::VectorXd>& joint_values)>
-      get_state_fn_;
+  std::function<tesseract_common::TransformMap(const Eigen::Ref<const Eigen::VectorXd>& joint_values)> get_state_fn_;
   bool dynamic_environment_{ false };
 
   void CollisionsToDistanceExpressions(sco::AffExprVector& exprs,
@@ -381,10 +377,8 @@ public:
   using Ptr = std::shared_ptr<SingleTimestepCollisionEvaluator>;
   using ConstPtr = std::shared_ptr<const SingleTimestepCollisionEvaluator>;
 
-  SingleTimestepCollisionEvaluator(tesseract_kinematics::ForwardKinematics::ConstPtr manip,
+  SingleTimestepCollisionEvaluator(tesseract_kinematics::JointGroup::ConstPtr manip,
                                    tesseract_environment::Environment::ConstPtr env,
-                                   tesseract_environment::AdjacencyMap::ConstPtr adjacency_map,
-                                   const Eigen::Isometry3d& world_to_base,
                                    util::SafetyMarginData::ConstPtr safety_margin_data,
                                    tesseract_collision::ContactTestType contact_test_type,
                                    sco::VarVector vars,
@@ -427,10 +421,8 @@ public:
   using Ptr = std::shared_ptr<CastCollisionEvaluator>;
   using ConstPtr = std::shared_ptr<const CastCollisionEvaluator>;
 
-  CastCollisionEvaluator(tesseract_kinematics::ForwardKinematics::ConstPtr manip,
+  CastCollisionEvaluator(tesseract_kinematics::JointGroup::ConstPtr manip,
                          tesseract_environment::Environment::ConstPtr env,
-                         tesseract_environment::AdjacencyMap::ConstPtr adjacency_map,
-                         const Eigen::Isometry3d& world_to_base,
                          util::SafetyMarginData::ConstPtr safety_margin_data,
                          tesseract_collision::ContactTestType contact_test_type,
                          double longest_valid_segment_length,
@@ -461,7 +453,7 @@ private:
 
 /**
  * @brief This collision evaluator operates on two states and checks for collision between the two states using a
- * descrete collision objects at each intermediate interpolated states.
+ * discrete collision objects at each intermediate interpolated states.
  */
 struct DiscreteCollisionEvaluator : public CollisionEvaluator
 {
@@ -469,10 +461,8 @@ public:
   using Ptr = std::shared_ptr<DiscreteCollisionEvaluator>;
   using ConstPtr = std::shared_ptr<const DiscreteCollisionEvaluator>;
 
-  DiscreteCollisionEvaluator(tesseract_kinematics::ForwardKinematics::ConstPtr manip,
+  DiscreteCollisionEvaluator(tesseract_kinematics::JointGroup::ConstPtr manip,
                              tesseract_environment::Environment::ConstPtr env,
-                             tesseract_environment::AdjacencyMap::ConstPtr adjacency_map,
-                             const Eigen::Isometry3d& world_to_base,
                              util::SafetyMarginData::ConstPtr safety_margin_data,
                              tesseract_collision::ContactTestType contact_test_type,
                              double longest_valid_segment_length,
@@ -505,20 +495,16 @@ class CollisionCost : public sco::Cost, public Plotter
 {
 public:
   /* constructor for single timestep */
-  CollisionCost(tesseract_kinematics::ForwardKinematics::ConstPtr manip,
+  CollisionCost(tesseract_kinematics::JointGroup::ConstPtr manip,
                 tesseract_environment::Environment::ConstPtr env,
-                tesseract_environment::AdjacencyMap::ConstPtr adjacency_map,
-                const Eigen::Isometry3d& world_to_base,
                 util::SafetyMarginData::ConstPtr safety_margin_data,
                 tesseract_collision::ContactTestType contact_test_type,
                 sco::VarVector vars,
                 CollisionExpressionEvaluatorType type,
                 double safety_margin_buffer);
   /* constructor for discrete continuous and cast continuous cost */
-  CollisionCost(tesseract_kinematics::ForwardKinematics::ConstPtr manip,
+  CollisionCost(tesseract_kinematics::JointGroup::ConstPtr manip,
                 tesseract_environment::Environment::ConstPtr env,
-                tesseract_environment::AdjacencyMap::ConstPtr adjacency_map,
-                const Eigen::Isometry3d& world_to_base,
                 util::SafetyMarginData::ConstPtr safety_margin_data,
                 tesseract_collision::ContactTestType contact_test_type,
                 double longest_valid_segment_length,
@@ -540,20 +526,16 @@ class CollisionConstraint : public sco::IneqConstraint
 {
 public:
   /* constructor for single timestep */
-  CollisionConstraint(tesseract_kinematics::ForwardKinematics::ConstPtr manip,
+  CollisionConstraint(tesseract_kinematics::JointGroup::ConstPtr manip,
                       tesseract_environment::Environment::ConstPtr env,
-                      tesseract_environment::AdjacencyMap::ConstPtr adjacency_map,
-                      const Eigen::Isometry3d& world_to_base,
                       util::SafetyMarginData::ConstPtr safety_margin_data,
                       tesseract_collision::ContactTestType contact_test_type,
                       sco::VarVector vars,
                       CollisionExpressionEvaluatorType type,
                       double safety_margin_buffer);
   /* constructor for discrete continuous and cast continuous cost */
-  CollisionConstraint(tesseract_kinematics::ForwardKinematics::ConstPtr manip,
+  CollisionConstraint(tesseract_kinematics::JointGroup::ConstPtr manip,
                       tesseract_environment::Environment::ConstPtr env,
-                      tesseract_environment::AdjacencyMap::ConstPtr adjacency_map,
-                      const Eigen::Isometry3d& world_to_base,
                       util::SafetyMarginData::ConstPtr safety_margin_data,
                       tesseract_collision::ContactTestType contact_test_type,
                       double longest_valid_segment_length,

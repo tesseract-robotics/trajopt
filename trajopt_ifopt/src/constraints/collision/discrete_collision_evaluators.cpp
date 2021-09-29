@@ -28,41 +28,45 @@
 
 namespace trajopt_ifopt
 {
-SingleTimestepCollisionEvaluator::SingleTimestepCollisionEvaluator(
-    std::shared_ptr<CollisionCache> collision_cache,
-    tesseract_kinematics::ForwardKinematics::ConstPtr manip,
-    tesseract_environment::Environment::ConstPtr env,
-    tesseract_environment::AdjacencyMap::ConstPtr adjacency_map,
-    const Eigen::Isometry3d& world_to_base,
-    TrajOptCollisionConfig::ConstPtr collision_config,
-    bool dynamic_environment)
+SingleTimestepCollisionEvaluator::SingleTimestepCollisionEvaluator(std::shared_ptr<CollisionCache> collision_cache,
+                                                                   tesseract_kinematics::JointGroup::ConstPtr manip,
+                                                                   tesseract_environment::Environment::ConstPtr env,
+                                                                   TrajOptCollisionConfig::ConstPtr collision_config,
+                                                                   bool dynamic_environment)
   : collision_cache_(std::move(collision_cache))
   , manip_(std::move(manip))
   , env_(std::move(env))
-  , adjacency_map_(std::move(adjacency_map))
-  , world_to_base_(world_to_base)
   , collision_config_(std::move(collision_config))
-  , state_solver_(env_->getStateSolver())
   , dynamic_environment_(dynamic_environment)
 {
+  manip_active_link_names_ = manip_->getActiveLinkNames();
+
   // If the environment is not expected to change, then the cloned state solver may be used each time.
   if (dynamic_environment_)
   {
-    get_state_fn_ = [&](const std::vector<std::string>& joint_names,
-                        const Eigen::Ref<const Eigen::VectorXd>& joint_values) {
-      return env_->getState(joint_names, joint_values);
+    get_state_fn_ = [&](const Eigen::Ref<const Eigen::VectorXd>& joint_values) {
+      return env_->getState(manip_->getJointNames(), joint_values).link_transforms;
     };
+    env_active_link_names_ = env_->getActiveLinkNames();
+
+    std::sort(manip_active_link_names_.begin(), manip_active_link_names_.end());
+    std::sort(env_active_link_names_.begin(), env_active_link_names_.end());
+    std::set_difference(env_active_link_names_.begin(),
+                        env_active_link_names_.end(),
+                        manip_active_link_names_.begin(),
+                        manip_active_link_names_.end(),
+                        std::inserter(diff_active_link_names_, diff_active_link_names_.begin()));
   }
   else
   {
-    get_state_fn_ = [&](const std::vector<std::string>& joint_names,
-                        const Eigen::Ref<const Eigen::VectorXd>& joint_values) {
-      return state_solver_->getState(joint_names, joint_values);
+    get_state_fn_ = [&](const Eigen::Ref<const Eigen::VectorXd>& joint_values) {
+      return manip_->calcFwdKin(joint_values);
     };
+    env_active_link_names_ = manip_->getActiveLinkNames();
   }
 
   contact_manager_ = env_->getDiscreteContactManager();
-  contact_manager_->setActiveCollisionObjects(adjacency_map_->getActiveLinkNames());
+  contact_manager_->setActiveCollisionObjects(manip_active_link_names_);
   contact_manager_->setCollisionMarginData(collision_config_->collision_margin_data);
   // Increase the default by the buffer
   contact_manager_->setDefaultCollisionMarginData(collision_config_->collision_margin_data.getMaxCollisionMargin() +
@@ -103,10 +107,14 @@ SingleTimestepCollisionEvaluator::CalcCollisions(const Eigen::Ref<const Eigen::V
 void SingleTimestepCollisionEvaluator::CalcCollisionsHelper(const Eigen::Ref<const Eigen::VectorXd>& dof_vals,
                                                             tesseract_collision::ContactResultMap& dist_results)
 {
-  tesseract_environment::EnvState::Ptr state = get_state_fn_(manip_->getJointNames(), dof_vals);
+  tesseract_common::TransformMap state = get_state_fn_(dof_vals);
 
-  for (const auto& link_name : env_->getActiveLinkNames())
-    contact_manager_->setCollisionObjectsTransform(link_name, state->link_transforms[link_name]);
+  // If not empty then there are links that are not part of the kinematics object that can move (dynamic environment)
+  for (const auto& link_name : diff_active_link_names_)
+    contact_manager_->setCollisionObjectsTransform(link_name, state[link_name]);
+
+  for (const auto& link_name : manip_active_link_names_)
+    contact_manager_->setCollisionObjectsTransform(link_name, state[link_name]);
 
   contact_manager_->contactTest(dist_results, collision_config_->contact_request);
 
@@ -131,13 +139,7 @@ GradientResults SingleTimestepCollisionEvaluator::GetGradient(const Eigen::Vecto
   double margin = collision_config_->collision_margin_data.getPairCollisionMargin(contact_result.link_names[0],
                                                                                   contact_result.link_names[1]);
 
-  return getGradient(dofvals,
-                     contact_result,
-                     margin,
-                     collision_config_->collision_margin_buffer,
-                     manip_,
-                     adjacency_map_,
-                     world_to_base_);
+  return getGradient(dofvals, contact_result, margin, collision_config_->collision_margin_buffer, manip_);
 }
 
 const TrajOptCollisionConfig& SingleTimestepCollisionEvaluator::GetCollisionConfig() const

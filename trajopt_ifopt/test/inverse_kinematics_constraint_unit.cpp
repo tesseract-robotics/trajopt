@@ -31,11 +31,9 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <console_bridge/console.h>
 #include <ifopt/problem.h>
 
-#include <tesseract_environment/core/environment.h>
-#include <tesseract_environment/ofkt/ofkt_state_solver.h>
-#include <tesseract_kinematics/core/forward_kinematics.h>
-#include <tesseract_environment/core/environment.h>
-#include <tesseract_environment/core/utils.h>
+#include <tesseract_kinematics/core/kinematic_group.h>
+#include <tesseract_environment/environment.h>
+#include <tesseract_environment/utils.h>
 #include <tesseract_common/types.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
@@ -50,6 +48,7 @@ using namespace tesseract_kinematics;
 using namespace tesseract_collision;
 using namespace tesseract_scene_graph;
 using namespace tesseract_geometry;
+using namespace tesseract_common;
 
 class InverseKinematicsConstraintUnit : public testing::TestWithParam<const char*>
 {
@@ -57,8 +56,7 @@ public:
   Environment::Ptr env = std::make_shared<Environment>();
   ifopt::Problem nlp;
 
-  tesseract_kinematics::ForwardKinematics::Ptr forward_kinematics;
-  tesseract_kinematics::InverseKinematics::Ptr inverse_kinematics;
+  tesseract_kinematics::KinematicGroup::Ptr kin_group;
   InverseKinematicsInfo::Ptr kinematic_info;
   InverseKinematicsConstraint::Ptr constraint;
 
@@ -69,27 +67,20 @@ public:
     // Initialize Tesseract
     tesseract_common::fs::path urdf_file(std::string(TRAJOPT_DIR) + "/test/data/arm_around_table.urdf");
     tesseract_common::fs::path srdf_file(std::string(TRAJOPT_DIR) + "/test/data/pr2.srdf");
-    tesseract_scene_graph::ResourceLocator::Ptr locator =
-        std::make_shared<tesseract_scene_graph::SimpleResourceLocator>(locateResource);
+    ResourceLocator::Ptr locator = std::make_shared<SimpleResourceLocator>(locateResource);
     auto env = std::make_shared<Environment>();
-    bool status = env->init<OFKTStateSolver>(urdf_file, srdf_file, locator);
+    bool status = env->init(urdf_file, srdf_file, locator);
     EXPECT_TRUE(status);
 
     // Extract necessary kinematic information
-    forward_kinematics = env->getManipulatorManager()->getFwdKinematicSolver("right_arm");
-    inverse_kinematics = env->getManipulatorManager()->getInvKinematicSolver("right_arm");
-    n_dof = forward_kinematics->numJoints();
+    kin_group = env->getKinematicGroup("right_arm");
+    n_dof = kin_group->numJoints();
 
-    tesseract_environment::AdjacencyMap::Ptr adjacency_map = std::make_shared<tesseract_environment::AdjacencyMap>(
-        env->getSceneGraph(), forward_kinematics->getActiveLinkNames(), env->getCurrentState()->link_transforms);
-    kinematic_info = std::make_shared<trajopt_ifopt::InverseKinematicsInfo>(
-        inverse_kinematics, adjacency_map, Eigen::Isometry3d::Identity(), forward_kinematics->getTipLinkName());
+    kinematic_info = std::make_shared<trajopt_ifopt::InverseKinematicsInfo>(kin_group, "world", "r_gripper_tool_frame");
 
-    auto pos = Eigen::VectorXd::Ones(forward_kinematics->numJoints());
-    auto var0 =
-        std::make_shared<trajopt_ifopt::JointPosition>(pos, forward_kinematics->getJointNames(), "Joint_Position_0");
-    auto var1 =
-        std::make_shared<trajopt_ifopt::JointPosition>(pos, forward_kinematics->getJointNames(), "Joint_Position_1");
+    auto pos = Eigen::VectorXd::Ones(kin_group->numJoints());
+    auto var0 = std::make_shared<trajopt_ifopt::JointPosition>(pos, kin_group->getJointNames(), "Joint_Position_0");
+    auto var1 = std::make_shared<trajopt_ifopt::JointPosition>(pos, kin_group->getJointNames(), "Joint_Position_1");
     nlp.AddVariableSet(var0);
     nlp.AddVariableSet(var1);
 
@@ -105,8 +96,8 @@ TEST_F(InverseKinematicsConstraintUnit, GetValue)  // NOLINT
   CONSOLE_BRIDGE_logDebug("InverseKinematicsConstraintUnit, GetValue");
 
   // Run FK to get target pose
-  Eigen::VectorXd joint_position_single = Eigen::VectorXd::Zero(forward_kinematics->numJoints());
-  auto target_pose = forward_kinematics->calcFwdKin(joint_position_single);
+  Eigen::VectorXd joint_position_single = Eigen::VectorXd::Zero(kin_group->numJoints());
+  auto target_pose = kin_group->calcFwdKin(joint_position_single).at("r_gripper_tool_frame");
   constraint->SetTargetPose(target_pose);
 
   // Set the joints to that joint position
@@ -156,10 +147,8 @@ TEST_F(InverseKinematicsConstraintUnit, GetSetBounds)  // NOLINT
   // Check that setting bounds works
   {
     Eigen::VectorXd pos = Eigen::VectorXd::Ones(n_dof);
-    auto var0 =
-        std::make_shared<trajopt_ifopt::JointPosition>(pos, forward_kinematics->getJointNames(), "Joint_Position_0");
-    auto var1 =
-        std::make_shared<trajopt_ifopt::JointPosition>(pos, forward_kinematics->getJointNames(), "Joint_Position_1");
+    auto var0 = std::make_shared<trajopt_ifopt::JointPosition>(pos, kin_group->getJointNames(), "Joint_Position_0");
+    auto var1 = std::make_shared<trajopt_ifopt::JointPosition>(pos, kin_group->getJointNames(), "Joint_Position_1");
 
     auto target_pose = Eigen::Isometry3d::Identity();
     auto constraint_2 =
