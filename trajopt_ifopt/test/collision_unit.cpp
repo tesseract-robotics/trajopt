@@ -28,9 +28,8 @@
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <ctime>
 #include <gtest/gtest.h>
-#include <tesseract_environment/core/environment.h>
-#include <tesseract_environment/ofkt/ofkt_state_solver.h>
-#include <tesseract_environment/core/utils.h>
+#include <tesseract_environment/environment.h>
+#include <tesseract_environment/utils.h>
 #include <tesseract_visualization/visualization.h>
 #include <tesseract_scene_graph/utils.h>
 #include <ifopt/problem.h>
@@ -47,6 +46,7 @@ using namespace tesseract_collision;
 using namespace tesseract_visualization;
 using namespace tesseract_scene_graph;
 using namespace tesseract_geometry;
+using namespace tesseract_common;
 
 class CollisionUnit : public testing::TestWithParam<const char*>
 {
@@ -62,18 +62,15 @@ public:
     boost::filesystem::path srdf_file(std::string(TRAJOPT_DIR) + "/test/data/boxbot.srdf");
 
     ResourceLocator::Ptr locator = std::make_shared<SimpleResourceLocator>(locateResource);
-    EXPECT_TRUE(env->init<OFKTStateSolver>(urdf_file, srdf_file, locator));
+    EXPECT_TRUE(env->init(urdf_file, srdf_file, locator));
 
     // Set up collision evaluator
-    auto kin = env->getManipulatorManager()->getFwdKinematicSolver("manipulator");
-    auto adj_map = std::make_shared<tesseract_environment::AdjacencyMap>(
-        env->getSceneGraph(), kin->getActiveLinkNames(), env->getCurrentState()->link_transforms);
-
+    tesseract_kinematics::JointGroup::ConstPtr kin = env->getJointGroup("manipulator");
     auto config = std::make_shared<trajopt_ifopt::TrajOptCollisionConfig>(0.1, 1);
     auto collision_cache = std::make_shared<trajopt_ifopt::CollisionCache>(100);
 
-    collision_evaluator = std::make_shared<trajopt_ifopt::SingleTimestepCollisionEvaluator>(
-        collision_cache, kin, env, adj_map, Eigen::Isometry3d::Identity(), config);
+    collision_evaluator =
+        std::make_shared<trajopt_ifopt::SingleTimestepCollisionEvaluator>(collision_cache, kin, env, config);
 
     // 3) Add Variables
     Eigen::VectorXd pos(2);

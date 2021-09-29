@@ -31,11 +31,9 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <console_bridge/console.h>
 #include <ifopt/problem.h>
 
-#include <tesseract_environment/core/environment.h>
-#include <tesseract_environment/ofkt/ofkt_state_solver.h>
-#include <tesseract_kinematics/core/forward_kinematics.h>
-#include <tesseract_environment/core/environment.h>
-#include <tesseract_environment/core/utils.h>
+#include <tesseract_kinematics/core/joint_group.h>
+#include <tesseract_environment/environment.h>
+#include <tesseract_environment/utils.h>
 #include <tesseract_common/types.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
@@ -52,6 +50,7 @@ using namespace tesseract_kinematics;
 using namespace tesseract_collision;
 using namespace tesseract_scene_graph;
 using namespace tesseract_geometry;
+using namespace tesseract_common;
 
 class CartesianPositionConstraintUnit : public testing::TestWithParam<const char*>
 {
@@ -59,9 +58,7 @@ public:
   Environment::Ptr env = std::make_shared<Environment>();
   ifopt::Problem nlp;
 
-  tesseract_kinematics::ForwardKinematics::Ptr forward_kinematics;
-  tesseract_kinematics::InverseKinematics::Ptr inverse_kinematics;
-  KinematicsInfo::Ptr kinematics_info;
+  tesseract_kinematics::JointGroup::Ptr kin_group;
   CartPosConstraint::Ptr constraint;
 
   Eigen::Index n_dof{ -1 };
@@ -71,29 +68,21 @@ public:
     // Initialize Tesseract
     tesseract_common::fs::path urdf_file(std::string(TRAJOPT_DIR) + "/test/data/arm_around_table.urdf");
     tesseract_common::fs::path srdf_file(std::string(TRAJOPT_DIR) + "/test/data/pr2.srdf");
-    tesseract_scene_graph::ResourceLocator::Ptr locator =
-        std::make_shared<tesseract_scene_graph::SimpleResourceLocator>(locateResource);
+    auto locator = std::make_shared<SimpleResourceLocator>(locateResource);
     auto env = std::make_shared<Environment>();
-    bool status = env->init<OFKTStateSolver>(urdf_file, srdf_file, locator);
+    bool status = env->init(urdf_file, srdf_file, locator);
     EXPECT_TRUE(status);
 
     // Extract necessary kinematic information
-    forward_kinematics = env->getManipulatorManager()->getFwdKinematicSolver("right_arm");
-    inverse_kinematics = env->getManipulatorManager()->getInvKinematicSolver("right_arm");
-    n_dof = forward_kinematics->numJoints();
+    kin_group = env->getJointGroup("right_arm");
+    n_dof = kin_group->numJoints();
 
-    tesseract_environment::AdjacencyMap::Ptr adjacency_map = std::make_shared<tesseract_environment::AdjacencyMap>(
-        env->getSceneGraph(), forward_kinematics->getActiveLinkNames(), env->getCurrentState()->link_transforms);
-    kinematics_info =
-        std::make_shared<KinematicsInfo>(forward_kinematics, adjacency_map, Eigen::Isometry3d::Identity());
-
-    auto pos = Eigen::VectorXd::Ones(forward_kinematics->numJoints());
-    auto var0 =
-        std::make_shared<trajopt_ifopt::JointPosition>(pos, forward_kinematics->getJointNames(), "Joint_Position_0");
+    auto pos = Eigen::VectorXd::Ones(kin_group->numJoints());
+    auto var0 = std::make_shared<trajopt_ifopt::JointPosition>(pos, kin_group->getJointNames(), "Joint_Position_0");
     nlp.AddVariableSet(var0);
 
     // 4) Add constraints
-    CartPosInfo cart_info(kinematics_info, Eigen::Isometry3d::Identity(), forward_kinematics->getTipLinkName());
+    CartPosInfo cart_info(kin_group, Eigen::Isometry3d::Identity(), "r_gripper_tool_frame");
     constraint = std::make_shared<trajopt_ifopt::CartPosConstraint>(cart_info, var0);
     nlp.AddConstraintSet(constraint);
   }
@@ -106,7 +95,7 @@ TEST_F(CartesianPositionConstraintUnit, GetValue)  // NOLINT
 
   // Run FK to get target pose
   Eigen::VectorXd joint_position = Eigen::VectorXd::Ones(n_dof);
-  Eigen::Isometry3d target_pose = forward_kinematics->calcFwdKin(joint_position);
+  Eigen::Isometry3d target_pose = kin_group->calcFwdKin(joint_position).at("r_gripper_tool_frame");
   constraint->SetTargetPose(target_pose);
 
   // Set the joints to the joint position that should satisfy it
@@ -157,7 +146,7 @@ TEST_F(CartesianPositionConstraintUnit, FillJacobian)  // NOLINT
 
   // Run FK to get target pose
   Eigen::VectorXd joint_position = Eigen::VectorXd::Ones(n_dof);
-  Eigen::Isometry3d target_pose = forward_kinematics->calcFwdKin(joint_position);
+  Eigen::Isometry3d target_pose = kin_group->calcFwdKin(joint_position).at("r_gripper_tool_frame");
   constraint->SetTargetPose(target_pose);
 
   // Modify one joint at a time
@@ -200,11 +189,10 @@ TEST_F(CartesianPositionConstraintUnit, GetSetBounds)  // NOLINT
 
   // Check that setting bounds works
   {
-    Eigen::VectorXd pos = Eigen::VectorXd::Ones(forward_kinematics->numJoints());
-    auto var0 =
-        std::make_shared<trajopt_ifopt::JointPosition>(pos, forward_kinematics->getJointNames(), "Joint_Position_0");
+    Eigen::VectorXd pos = Eigen::VectorXd::Ones(kin_group->numJoints());
+    auto var0 = std::make_shared<trajopt_ifopt::JointPosition>(pos, kin_group->getJointNames(), "Joint_Position_0");
 
-    CartPosInfo cart_info(kinematics_info, Eigen::Isometry3d::Identity(), kinematics_info->manip->getTipLinkName());
+    CartPosInfo cart_info(kin_group, Eigen::Isometry3d::Identity(), "r_gripper_tool_frame");
     auto constraint_2 = std::make_shared<trajopt_ifopt::CartPosConstraint>(cart_info, var0);
 
     ifopt::Bounds bounds(-0.1234, 0.5678);

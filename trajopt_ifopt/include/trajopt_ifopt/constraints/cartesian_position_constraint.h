@@ -32,13 +32,12 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <Eigen/Eigen>
 #include <ifopt/constraint_set.h>
 
-#include <tesseract_kinematics/core/forward_kinematics.h>
-#include <tesseract_environment/core/environment.h>
-#include <tesseract_environment/core/utils.h>
+#include <tesseract_kinematics/core/joint_group.h>
+#include <tesseract_environment/environment.h>
+#include <tesseract_environment/utils.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt_ifopt/variable_sets/joint_position_variable.h>
-#include <trajopt_ifopt/kinematics_info.h>
 
 namespace trajopt_ifopt
 {
@@ -51,41 +50,37 @@ struct CartPosInfo
   using ConstPtr = std::shared_ptr<const CartPosInfo>;
 
   CartPosInfo() = default;
-  CartPosInfo(KinematicsInfo::ConstPtr kin_info,
+  CartPosInfo(tesseract_kinematics::JointGroup::ConstPtr manip,
               const Eigen::Isometry3d& target_pose,
               std::string source_link,
               const Eigen::Isometry3d& source_tcp = Eigen::Isometry3d::Identity(),
               Eigen::VectorXi indices = Eigen::Matrix<int, 1, 6>(std::vector<int>({ 0, 1, 2, 3, 4, 5 }).data()))
-    : kin_info(std::move(kin_info))
+    : manip(std::move(manip))
     , source_link(std::move(source_link))
     , source_tcp(source_tcp)
     , target_pose(target_pose)
     , target_pose_inv(target_pose.inverse())
     , indices(std::move(indices))
   {
-    this->source_kin_link = this->kin_info->adjacency_map->getLinkMapping(this->source_link);
-    if (this->source_kin_link == nullptr)
+    if (!this->manip->hasLinkName(this->source_link))
       throw std::runtime_error("CartPosKinematicInfo: Source Link name '" + this->source_link +
                                "' provided does not exist.");
 
     if (this->indices.size() > 6)
-      throw std::runtime_error("CartPosKinematicInfo: The indicies list length cannot be larger than six.");
+      throw std::runtime_error("CartPosKinematicInfo: The indices list length cannot be larger than six.");
 
     if (this->indices.size() == 0)
-      throw std::runtime_error("CartPosKinematicInfo: The indicies list length is zero.");
+      throw std::runtime_error("CartPosKinematicInfo: The indices list length is zero.");
   }
 
-  /** @brief The kinematics information */
-  KinematicsInfo::ConstPtr kin_info;
+  /** @brief The joint group */
+  tesseract_kinematics::JointGroup::ConstPtr manip;
 
   /** @brief Link which should reach desired pos */
   std::string source_link;
 
   /** @brief Static transform applied to the link_ location */
   Eigen::Isometry3d source_tcp;
-
-  /** @brief This is a map containing the transform from link_ to its adjacent moving link in the kinematics object */
-  tesseract_environment::AdjacencyMapPair::ConstPtr source_kin_link;
 
   /** @brief The target TCP pose in world frame. Not used for calculation. Stored for convenience */
   Eigen::Isometry3d target_pose;
@@ -147,7 +142,7 @@ public:
   /**
    * @brief Fills the jacobian block associated with the given var_set.
    * @param var_set Name of the var_set to which the jac_block is associated
-   * @param jac_block Block of the overal jacobian associated with these constraints and the var_set variable
+   * @param jac_block Block of the overall jacobian associated with these constraints and the var_set variable
    */
   void FillJacobianBlock(std::string var_set, Jacobian& jac_block) const override;
 

@@ -3,9 +3,9 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <ctime>
 #include <gtest/gtest.h>
 #include <tesseract_common/types.h>
-#include <tesseract_environment/core/environment.h>
-#include <tesseract_environment/ofkt/ofkt_state_solver.h>
-#include <tesseract_environment/core/utils.h>
+#include <tesseract_environment/environment.h>
+#include <tesseract_environment/commands.h>
+#include <tesseract_environment/utils.h>
 #include <tesseract_scene_graph/utils.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
@@ -29,6 +29,7 @@ using namespace tesseract_kinematics;
 using namespace tesseract_visualization;
 using namespace tesseract_scene_graph;
 using namespace tesseract_geometry;
+using namespace tesseract_common;
 
 static bool plotting = false;
 
@@ -44,7 +45,7 @@ public:
     tesseract_common::fs::path srdf_file(std::string(TRAJOPT_DIR) + "/test/data/boxbot.srdf");
 
     ResourceLocator::Ptr locator = std::make_shared<SimpleResourceLocator>(locateResource);
-    EXPECT_TRUE(env_->init<OFKTStateSolver>(urdf_file, srdf_file, locator));
+    EXPECT_TRUE(env_->init(urdf_file, srdf_file, locator));
 
     gLogLevel = util::LevelError;
 
@@ -71,9 +72,9 @@ public:
     box_attached_joint.child_link_name = "box_attached";
     box_attached_joint.parent_to_joint_origin_transform.translation() = Eigen::Vector3d(0.5, -0.5, 0);
 
-    env_->addLink(box_attached_link, box_attached_joint);
-    env_->setLinkCollisionEnabled("box_attached", false);
-    env_->addAllowedCollision("box_attached", "boxbot_link", "Adjacent");
+    env_->applyCommand(std::make_shared<AddLinkCommand>(box_attached_link, box_attached_joint));
+    env_->applyCommand(std::make_shared<ChangeLinkCollisionEnabledCommand>("box_attached", false));
+    env_->applyCommand(std::make_shared<AddAllowedCollisionCommand>("box_attached", "boxbot_link", "Adjacent"));
 
     Link box_attached2_link("box_attached2");
     box_attached2_link.visual.push_back(visual);
@@ -85,9 +86,9 @@ public:
     box_attached2_joint.child_link_name = "box_attached2";
     box_attached2_joint.parent_to_joint_origin_transform.translation() = Eigen::Vector3d(0, 0, 0);
 
-    env_->addLink(box_attached2_link, box_attached2_joint);
-    env_->setLinkCollisionEnabled("box_attached2", false);
-    env_->addAllowedCollision("box_attached2", "boxbot_link", "Adjacent");
+    env_->applyCommand(std::make_shared<AddLinkCommand>(box_attached2_link, box_attached2_joint));
+    env_->applyCommand(std::make_shared<ChangeLinkCollisionEnabledCommand>("box_attached2", false));
+    env_->applyCommand(std::make_shared<AddAllowedCollisionCommand>("box_attached2", "boxbot_link", "Adjacent"));
   }
 };
 
@@ -95,7 +96,7 @@ TEST_F(CastAttachedTest, LinkWithGeom)  // NOLINT
 {
   CONSOLE_BRIDGE_logDebug("CastAttachedTest, LinkWithGeom");
 
-  env_->setLinkCollisionEnabled("box_attached", true);
+  env_->applyCommand(std::make_shared<ChangeLinkCollisionEnabledCommand>("box_attached", true));
 
   Json::Value root = readJsonFile(std::string(TRAJOPT_DIR) + "/test/data/config/box_cast_test.json");
 
@@ -110,12 +111,10 @@ TEST_F(CastAttachedTest, LinkWithGeom)  // NOLINT
   ASSERT_TRUE(!!prob);
 
   std::vector<ContactResultMap> collisions;
-  tesseract_environment::StateSolver::Ptr state_solver = prob->GetEnv()->getStateSolver();
+  tesseract_scene_graph::StateSolver::UPtr state_solver = prob->GetEnv()->getStateSolver();
   ContinuousContactManager::Ptr manager = prob->GetEnv()->getContinuousContactManager();
-  AdjacencyMap::Ptr adjacency_map = std::make_shared<AdjacencyMap>(
-      env_->getSceneGraph(), prob->GetKin()->getActiveLinkNames(), prob->GetEnv()->getCurrentState()->link_transforms);
 
-  manager->setActiveCollisionObjects(adjacency_map->getActiveLinkNames());
+  manager->setActiveCollisionObjects(prob->GetKin()->getActiveLinkNames());
   manager->setDefaultCollisionMarginData(0);
 
   tesseract_collision::CollisionCheckConfig config;
@@ -147,7 +146,7 @@ TEST_F(CastAttachedTest, LinkWithoutGeom)  // NOLINT
 {
   CONSOLE_BRIDGE_logDebug("CastAttachedTest, LinkWithGeom");
 
-  env_->setLinkCollisionEnabled("box_attached2", true);
+  env_->applyCommand(std::make_shared<ChangeLinkCollisionEnabledCommand>("box_attached2", true));
 
   Json::Value root = readJsonFile(std::string(TRAJOPT_DIR) + "/test/data/config/box_cast_test.json");
 
@@ -162,12 +161,10 @@ TEST_F(CastAttachedTest, LinkWithoutGeom)  // NOLINT
   ASSERT_TRUE(!!prob);
 
   std::vector<ContactResultMap> collisions;
-  tesseract_environment::StateSolver::Ptr state_solver = prob->GetEnv()->getStateSolver();
+  tesseract_scene_graph::StateSolver::UPtr state_solver = prob->GetEnv()->getStateSolver();
   ContinuousContactManager::Ptr manager = prob->GetEnv()->getContinuousContactManager();
-  AdjacencyMap::Ptr adjacency_map = std::make_shared<AdjacencyMap>(
-      env_->getSceneGraph(), prob->GetKin()->getActiveLinkNames(), prob->GetEnv()->getCurrentState()->link_transforms);
 
-  manager->setActiveCollisionObjects(adjacency_map->getActiveLinkNames());
+  manager->setActiveCollisionObjects(prob->GetKin()->getActiveLinkNames());
   manager->setDefaultCollisionMarginData(0);
 
   tesseract_collision::CollisionCheckConfig config;

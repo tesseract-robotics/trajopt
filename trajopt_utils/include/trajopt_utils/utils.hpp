@@ -122,14 +122,6 @@ inline std::vector<SafetyMarginData::Ptr> createSafetyMarginDataVector(int num_e
   return info;
 }
 
-inline Eigen::VectorXd concat(const Eigen::VectorXd& a, const Eigen::VectorXd& b)
-{
-  Eigen::VectorXd out(a.size() + b.size());
-  out.topRows(a.size()) = a;
-  out.middleRows(a.size(), b.size()) = b;
-  return out;
-}
-
 template <typename T>
 std::vector<T> concat(const std::vector<T>& a, const std::vector<T>& b)
 {
@@ -138,93 +130,6 @@ std::vector<T> concat(const std::vector<T>& a, const std::vector<T>& b)
   out.insert(out.end(), a.begin(), a.end());
   out.insert(out.end(), b.begin(), b.end());
   return out;
-}
-
-/**
- * @brief Calculate the rotation error vector given a rotation error matrix where the angle is between [-pi, pi]
- * @details This should be used only for calculating the error. Do not use for numerically calculating jacobians
- * because it breaks down a -PI and PI
- * @param R rotation error matrix
- * @return Rotation error vector = Eigen::AngleAxisd.axis() * Eigen::AngleAxisd.angle()
- */
-inline Eigen::Vector3d calcRotationalError(const Eigen::Ref<const Eigen::Matrix3d>& R)
-{
-  Eigen::Quaterniond q(R);
-  Eigen::AngleAxisd r12(q);
-
-  // Eigen angle axis flips the sign of axis so rotation is always positive which is
-  // not ideal for numerical differentiation.
-  int s = (q.vec().dot(r12.axis()) < 0) ? -1 : 1;
-
-  // Make sure that the angle is on [-pi, pi]
-  const static double two_pi = 2.0 * M_PI;
-  double angle = s * r12.angle();
-  Eigen::Vector3d axis = s * r12.axis();
-  angle = copysign(fmod(fabs(angle), two_pi), angle);
-  if (angle < -M_PI)
-    angle += two_pi;
-  else if (angle > M_PI)
-    angle -= two_pi;
-
-  assert(std::abs(angle) <= M_PI);
-
-  return axis * angle;
-}
-
-/**
- * @brief Calculate the rotation error vector given a rotation error matrix where the angle is between [0, 2 * pi]
- * @details This function does not break down when the angle is near zero or 2pi when calculating the numerical
- * jacobian. This is because when using Eigen's angle axis it converts the angle to be between [0, PI] where internally
- * if the angle is between [-PI, 0] it flips the sign of the axis. Both this function and calcRotationalError both check
- * for this flip and reverts it. Since the angle is always between [-PI, PI], switching the range to [0, PI] will
- * never be close to 2PI. In the case of zero, it also does not break down because we are making sure that the angle
- * axis aligns with the quaternion axis eliminating this issue. As you can see the quaternion keeps the angle small but
- * flips the axis so the correct delta rotation is calculated.
- *
- * Angle: 0.001 results in an axis: [0, 0, 1]
- * Angle: -0.001 results in and axis: [0, 0, -1]
- * e1 = angle * axis = [0, 0, 0.001]
- * e2 = angle * axis = [0, 0, -0.001]
- * delta = e2 - e1 = [0, 0, 0.002]
- *
- * @details This should be used when numerically calculating rotation jacobians
- * @param R rotation error matrix
- * @return Rotation error vector = Eigen::AngleAxisd.axis() * Eigen::AngleAxisd.angle()
- */
-inline Eigen::Vector3d calcRotationalError2(const Eigen::Ref<const Eigen::Matrix3d>& R)
-{
-  Eigen::Quaterniond q(R);
-  Eigen::AngleAxisd r12(q);
-
-  // Eigen angle axis flips the sign of axis so rotation is always positive which is
-  // not ideal for numerical differentiation.
-  int s = (q.vec().dot(r12.axis()) < 0) ? -1 : 1;
-
-  // Make sure that the angle is on [0, 2 * pi]
-  const static double two_pi = 2.0 * M_PI;
-  double angle = s * r12.angle();
-  Eigen::Vector3d axis = s * r12.axis();
-  angle = copysign(fmod(fabs(angle), two_pi), angle);
-  if (angle < 0)
-    angle += two_pi;
-  else if (angle > two_pi)
-    angle -= two_pi;
-
-  assert(angle <= two_pi && angle >= 0);
-
-  return axis * angle;
-}
-
-/**
- * @brief Calculate error between two transfroms expressed in t1 coordinate system
- * @param t1 Target Transform
- * @param t2 Current Transform
- * @return error [Position, Rotational(Angle Axis)]
- */
-inline Eigen::VectorXd calcTransformError(const Eigen::Isometry3d& t1, const Eigen::Isometry3d& t2)
-{
-  Eigen::Isometry3d pose_err = t1.inverse() * t2;
-  return concat(pose_err.translation(), calcRotationalError(pose_err.rotation()));
 }
 
 /**

@@ -28,9 +28,8 @@
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <ctime>
 #include <gtest/gtest.h>
-#include <tesseract_environment/core/environment.h>
-#include <tesseract_environment/ofkt/ofkt_state_solver.h>
-#include <tesseract_environment/core/utils.h>
+#include <tesseract_environment/environment.h>
+#include <tesseract_environment/utils.h>
 #include <tesseract_visualization/visualization.h>
 #include <tesseract_scene_graph/utils.h>
 #include <ifopt/problem.h>
@@ -59,6 +58,7 @@ using namespace tesseract_collision;
 using namespace tesseract_visualization;
 using namespace tesseract_scene_graph;
 using namespace tesseract_geometry;
+using namespace tesseract_common;
 
 class SimpleCollisionConstraintIfopt : public ifopt::ConstraintSet
 {
@@ -204,7 +204,7 @@ public:
     boost::filesystem::path urdf_file(std::string(TRAJOPT_DIR) + "/test/data/spherebot.urdf");
     boost::filesystem::path srdf_file(std::string(TRAJOPT_DIR) + "/test/data/spherebot.srdf");
     ResourceLocator::Ptr locator = std::make_shared<SimpleResourceLocator>(locateResource);
-    EXPECT_TRUE(env->init<OFKTStateSolver>(urdf_file, srdf_file, locator));
+    EXPECT_TRUE(env->init(urdf_file, srdf_file, locator));
   }
 };
 
@@ -218,13 +218,11 @@ void runSimpleCollisionTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const
   //  plotter_->plotScene();
 
   std::vector<ContactResultMap> collisions;
-  tesseract_environment::StateSolver::Ptr state_solver = env->getStateSolver();
+  tesseract_scene_graph::StateSolver::Ptr state_solver = env->getStateSolver();
   DiscreteContactManager::Ptr manager = env->getDiscreteContactManager();
-  auto forward_kinematics = env->getManipulatorManager()->getFwdKinematicSolver("manipulator");
-  AdjacencyMap::Ptr adjacency_map = std::make_shared<AdjacencyMap>(
-      env->getSceneGraph(), forward_kinematics->getActiveLinkNames(), env->getCurrentState()->link_transforms);
+  tesseract_kinematics::JointGroup::ConstPtr manip = env->getJointGroup("manipulator");
 
-  manager->setActiveCollisionObjects(adjacency_map->getActiveLinkNames());
+  manager->setActiveCollisionObjects(manip->getActiveLinkNames());
   manager->setDefaultCollisionMarginData(0);
 
   collisions.clear();
@@ -236,24 +234,19 @@ void runSimpleCollisionTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const
     Eigen::VectorXd pos(2);
     pos << -0.75, 0.75;
     positions.push_back(pos);
-    auto var =
-        std::make_shared<trajopt_ifopt::JointPosition>(pos, forward_kinematics->getJointNames(), "Joint_Position_0");
+    auto var = std::make_shared<trajopt_ifopt::JointPosition>(pos, manip->getJointNames(), "Joint_Position_0");
     vars.push_back(var);
     qp_problem->addVariableSet(var);
   }
 
   // Step 3: Setup collision
-  auto kin = env->getManipulatorManager()->getFwdKinematicSolver("manipulator");
-  auto adj_map = std::make_shared<tesseract_environment::AdjacencyMap>(
-      env->getSceneGraph(), kin->getActiveLinkNames(), env->getCurrentState()->link_transforms);
-
   auto trajopt_collision_cnt_config = std::make_shared<trajopt_ifopt::TrajOptCollisionConfig>(0.2, 1);
   trajopt_collision_cnt_config->collision_margin_buffer = 0.05;
 
   auto collision_cnt_cache = std::make_shared<trajopt_ifopt::CollisionCache>(100);
   trajopt_ifopt::DiscreteCollisionEvaluator::Ptr collision_cnt_evaluator =
       std::make_shared<trajopt_ifopt::SingleTimestepCollisionEvaluator>(
-          collision_cnt_cache, kin, env, adj_map, Eigen::Isometry3d::Identity(), trajopt_collision_cnt_config);
+          collision_cnt_cache, manip, env, trajopt_collision_cnt_config);
   auto collision_cnt = std::make_shared<SimpleCollisionConstraintIfopt>(collision_cnt_evaluator, vars[0]);
   qp_problem->addConstraintSet(collision_cnt);
 
@@ -263,7 +256,7 @@ void runSimpleCollisionTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const
   auto collision_cost_cache = std::make_shared<trajopt_ifopt::CollisionCache>(100);
   trajopt_ifopt::DiscreteCollisionEvaluator::Ptr collision_cost_evaluator =
       std::make_shared<trajopt_ifopt::SingleTimestepCollisionEvaluator>(
-          collision_cost_cache, kin, env, adj_map, Eigen::Isometry3d::Identity(), trajopt_collision_cost_config);
+          collision_cost_cache, manip, env, trajopt_collision_cost_config);
   auto collision_cost = std::make_shared<SimpleCollisionConstraintIfopt>(collision_cost_evaluator, vars[0]);
   qp_problem->addCostSet(collision_cost, trajopt_sqp::CostPenaltyType::HINGE);
 
@@ -301,14 +294,14 @@ void runSimpleCollisionTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const
   Eigen::Map<tesseract_common::TrajArray> results(x.data(), 1, 2);
 
   bool found = checkTrajectory(
-      collisions, *manager, *state_solver, forward_kinematics->getJointNames(), inputs, *trajopt_collision_cnt_config);
+      collisions, *manager, *state_solver, manip->getJointNames(), inputs, *trajopt_collision_cnt_config);
 
   EXPECT_TRUE(found);
   CONSOLE_BRIDGE_logWarn((found) ? ("Initial trajectory is in collision") : ("Initial trajectory is collision free"));
 
   collisions.clear();
   found = checkTrajectory(
-      collisions, *manager, *state_solver, forward_kinematics->getJointNames(), results, *trajopt_collision_cnt_config);
+      collisions, *manager, *state_solver, manip->getJointNames(), results, *trajopt_collision_cnt_config);
 
   EXPECT_FALSE(found);
   CONSOLE_BRIDGE_logWarn((found) ? ("Final trajectory is in collision") : ("Final trajectory is collision free"));

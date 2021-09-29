@@ -58,7 +58,7 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
   console_bridge::console_bridge
   ifopt::ifopt_core
   trajopt::trajopt_utils
-  tesseract::tesseract_environment_core
+  tesseract::tesseract_environment
   Eigen3::Eigen
   Boost::boost)
 target_compile_options(${PROJECT_NAME} PRIVATE ${TRAJOPT_COMPILE_OPTIONS_PRIVATE})

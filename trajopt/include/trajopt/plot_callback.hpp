@@ -1,6 +1,7 @@
 #pragma once
 #include <trajopt/common.hpp>
 #include <trajopt_sco/optimizers.hpp>
+#include <tesseract_state_solver/state_solver.h>
 
 namespace trajopt
 {
@@ -19,7 +20,7 @@ sco::Optimizer::Callback PlotCallback(TrajOptProb& prob, const tesseract_visuali
  * @return
  */
 sco::Optimizer::Callback PlotProbCallback(const tesseract_visualization::Visualization::Ptr& plotter,
-                                          const tesseract_environment::StateSolver::Ptr& state_solver,
+                                          const tesseract_scene_graph::StateSolver& state_solver,
                                           const std::vector<std::string>& joint_names);
 
 }  // namespace trajopt

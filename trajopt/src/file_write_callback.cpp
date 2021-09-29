@@ -26,8 +26,7 @@ TRAJOPT_IGNORE_WARNINGS_POP
 namespace trajopt
 {
 void WriteFile(const std::shared_ptr<std::ofstream>& file,
-               const Eigen::Isometry3d& change_base,
-               const tesseract_kinematics::ForwardKinematics::ConstPtr& manip,
+               const tesseract_kinematics::JointGroup::ConstPtr& manip,
                const trajopt::VarArray& vars,
                const sco::OptResults& results)
 {
@@ -49,21 +48,24 @@ void WriteFile(const std::shared_ptr<std::ofstream>& file,
     }
 
     // Calc cartesian pose
-    Eigen::Isometry3d pose = manip->calcFwdKin(joint_angles);
-    pose = change_base * pose;
+    tesseract_common::TransformMap state = manip->calcFwdKin(joint_angles);
 
-    Eigen::Vector4d rot_vec;
-    Eigen::Quaterniond q(pose.rotation());
-    rot_vec(0) = q.w();
-    rot_vec(1) = q.x();
-    rot_vec(2) = q.y();
-    rot_vec(3) = q.z();
-
-    // Write cartesian pose to file
-    Eigen::VectorXd pose_vec = util::concat(pose.translation(), rot_vec);
-    for (auto i = 0; i < pose_vec.size(); i++)
+    for (const auto& it : state)
     {
-      *file << ',' << pose_vec(i);
+      Eigen::Vector4d rot_vec;
+      Eigen::Quaterniond q(it.second.rotation());
+      rot_vec(0) = q.w();
+      rot_vec(1) = q.x();
+      rot_vec(2) = q.y();
+      rot_vec(3) = q.z();
+
+      // Write cartesian pose to file
+      *file << it.first << ": ";
+      Eigen::VectorXd pose_vec = tesseract_common::concat(it.second.translation(), rot_vec);
+      for (auto i = 0; i < pose_vec.size(); i++)
+      {
+        *file << ',' << pose_vec(i);
+      }
     }
 
     // Write costs to file
@@ -100,7 +102,7 @@ sco::Optimizer::Callback WriteCallback(std::shared_ptr<std::ofstream> file, cons
     {
       *file << ',';
     }
-    *file << joint_names.at(i);
+    *file << joint_names[i];
   }
 
   // Write cartesian pose labels
@@ -127,8 +129,6 @@ sco::Optimizer::Callback WriteCallback(std::shared_ptr<std::ofstream> file, cons
   *file << std::endl;
 
   // return callback function
-  const tesseract_kinematics::ForwardKinematics::ConstPtr manip = prob->GetKin();
-  const Eigen::Isometry3d change_base = prob->GetEnv()->getLinkTransform(manip->getBaseLinkName());
-  return bind(&WriteFile, file, change_base, manip, std::ref(prob->GetVars()), std::placeholders::_2);
+  return bind(&WriteFile, file, prob->GetKin(), std::ref(prob->GetVars()), std::placeholders::_2);
 }
 }  // namespace trajopt

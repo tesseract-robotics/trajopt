@@ -39,7 +39,7 @@ macro(add_gtest test_name test_file)
   target_clang_tidy(${test_name} ENABLE ${TRAJOPT_ENABLE_CLANG_TIDY})
   target_link_libraries(${test_name}
       ${PROJECT_NAME}
-      tesseract::tesseract_environment_ofkt
+      tesseract::tesseract_environment
       ifopt::ifopt_ipopt
       GTest::GTest
       GTest::Main

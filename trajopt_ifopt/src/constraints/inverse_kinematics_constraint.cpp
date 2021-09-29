@@ -46,7 +46,7 @@ InverseKinematicsConstraint::InverseKinematicsConstraint(const Eigen::Isometry3d
   // Set the n_dof and n_vars for convenience
   n_dof_ = constraint_var_->GetRows();
   assert(n_dof_ > 0);
-  if (static_cast<std::size_t>(constraint_var_->GetRows()) != kinematic_info_->inverse_kinematics->numJoints())
+  if (static_cast<std::size_t>(constraint_var_->GetRows()) != kinematic_info_->manip->numJoints())
     CONSOLE_BRIDGE_logError("Inverse kinematics has a different number of joints than the given variable set");
 
   bounds_ = std::vector<ifopt::Bounds>(static_cast<std::size_t>(n_dof_), ifopt::BoundZero);
@@ -57,8 +57,11 @@ InverseKinematicsConstraint::CalcValues(const Eigen::Ref<const Eigen::VectorXd>&
                                         const Eigen::Ref<const Eigen::VectorXd>& seed_joint_position) const
 {
   // Get joint position using IK and the seed variable
+  tesseract_kinematics::KinGroupIKInputs inputs;
+  inputs.emplace_back(target_pose_, kinematic_info_->working_frame, kinematic_info_->link);
+
   tesseract_kinematics::IKSolutions target_joint_position =
-      kinematic_info_->inverse_kinematics->calcInvKin(target_pose_, seed_joint_position);
+      kinematic_info_->manip->calcInvKin(inputs, seed_joint_position);
   assert(!target_joint_position.empty());
 
   // Calculate joint error

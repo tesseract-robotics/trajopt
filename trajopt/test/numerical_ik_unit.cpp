@@ -4,9 +4,8 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <sstream>
 #include <gtest/gtest.h>
 #include <tesseract_common/types.h>
-#include <tesseract_environment/core/environment.h>
-#include <tesseract_environment/ofkt/ofkt_state_solver.h>
-#include <tesseract_environment/core/utils.h>
+#include <tesseract_environment/environment.h>
+#include <tesseract_environment/utils.h>
 #include <tesseract_scene_graph/utils.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
@@ -29,6 +28,7 @@ using namespace tesseract_collision;
 using namespace tesseract_kinematics;
 using namespace tesseract_visualization;
 using namespace tesseract_scene_graph;
+using namespace tesseract_common;
 
 class NumericalIKTest : public testing::TestWithParam<const char*>
 {
@@ -41,7 +41,7 @@ public:
     tesseract_common::fs::path srdf_file(std::string(TRAJOPT_DIR) + "/test/data/pr2.srdf");
 
     ResourceLocator::Ptr locator = std::make_shared<SimpleResourceLocator>(locateResource);
-    EXPECT_TRUE(env_->init<OFKTStateSolver>(urdf_file, srdf_file, locator));
+    EXPECT_TRUE(env_->init(urdf_file, srdf_file, locator));
 
     // Create plotting tool
     //    plotter_.reset(new tesseract_ros::ROSBasicPlotting(env_));
@@ -82,7 +82,7 @@ TEST_F(NumericalIKTest, numerical_ik1)  // NOLINT
   ss << toVectorXd(opt.x()).transpose();
   CONSOLE_BRIDGE_logDebug("Initial Vars: %s", ss.str().c_str());
   Eigen::Isometry3d change_base = prob->GetEnv()->getLinkTransform(prob->GetKin()->getBaseLinkName());
-  Eigen::Isometry3d initial_pose = prob->GetKin()->calcFwdKin(toVectorXd(opt.x()));
+  Eigen::Isometry3d initial_pose = prob->GetKin()->calcFwdKin(toVectorXd(opt.x())).at("l_gripper_tool_frame");
   initial_pose = change_base * initial_pose;
 
   ss = std::stringstream();
@@ -90,7 +90,7 @@ TEST_F(NumericalIKTest, numerical_ik1)  // NOLINT
   CONSOLE_BRIDGE_logDebug("Initial Position: %s", ss.str().c_str());
   sco::OptStatus status = opt.optimize();
   CONSOLE_BRIDGE_logDebug("Status: %s", sco::statusToString(status).c_str());
-  Eigen::Isometry3d final_pose = prob->GetKin()->calcFwdKin(toVectorXd(opt.x()));
+  Eigen::Isometry3d final_pose = prob->GetKin()->calcFwdKin(toVectorXd(opt.x())).at("l_gripper_tool_frame");
   final_pose = change_base * final_pose;
 
   Eigen::Isometry3d goal;

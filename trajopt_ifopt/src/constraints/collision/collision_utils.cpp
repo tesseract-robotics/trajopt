@@ -26,7 +26,7 @@
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <boost/functional/hash.hpp>
 #include <console_bridge/console.h>
-#include <tesseract_kinematics/core/forward_kinematics.h>
+#include <tesseract_kinematics/core/joint_group.h>
 #include <tesseract_kinematics/core/utils.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
@@ -142,18 +142,16 @@ void removeInvalidContactResults(tesseract_collision::ContactResultVector& conta
 
 void calcGradient(GradientResults& results,
                   std::size_t i,
-                  const tesseract_environment::AdjacencyMapPair::ConstPtr& it,
                   const Eigen::VectorXd& dofvals,
                   const tesseract_collision::ContactResult& contact_result,
-                  const tesseract_kinematics::ForwardKinematics::ConstPtr& manip,
-                  const Eigen::Isometry3d& world_to_base,
+                  const tesseract_kinematics::JointGroup::ConstPtr& manip,
                   bool isTimestep1)
 {
   LinkGradientResults& link_gradient = (isTimestep1) ? results.cc_gradients[i] : results.gradients[i];
   link_gradient.has_gradient = true;
 
   // Calculate Jacobian
-  Eigen::MatrixXd jac = manip->calcJacobian(dofvals, it->link_name);
+  Eigen::MatrixXd jac = manip->calcJacobian(dofvals, contact_result.link_names[i]);
 
   // Need to change the base and ref point of the jacobian.
   // When changing ref point you must provide a vector from the current ref
@@ -175,10 +173,8 @@ void calcGradient(GradientResults& results,
      * different
      */
   }
-  tesseract_kinematics::jacobianChangeBase(jac, world_to_base);
-  tesseract_kinematics::jacobianChangeRefPoint(jac,
-                                               (link_transform * it->transform.inverse()).linear() *
-                                                   (it->transform * contact_result.nearest_points_local[i]));
+  // Since the link transform is known then do not call calcJacobian with link point
+  tesseract_common::jacobianChangeRefPoint(jac, link_transform.linear() * contact_result.nearest_points_local[i]);
 
   link_gradient.translation_vector = ((i == 0) ? -1.0 : 1.0) * contact_result.normal;
   link_gradient.jacobian = jac.topRows(3);
@@ -202,18 +198,15 @@ GradientResults getGradient(const Eigen::VectorXd& dofvals,
                             const tesseract_collision::ContactResult& contact_result,
                             double margin,
                             double margin_buffer,
-                            const tesseract_kinematics::ForwardKinematics::ConstPtr& manip,
-                            const tesseract_environment::AdjacencyMap::ConstPtr& adjacency_map,
-                            const Eigen::Isometry3d& world_to_base)
+                            const tesseract_kinematics::JointGroup::ConstPtr& manip)
 {
   GradientResults results;
   results.error = (margin - contact_result.distance);
   results.error_with_buffer = (margin + margin_buffer - contact_result.distance);
   for (std::size_t i = 0; i < 2; ++i)
   {
-    tesseract_environment::AdjacencyMapPair::ConstPtr it = adjacency_map->getLinkMapping(contact_result.link_names[i]);
-    if (it != nullptr)
-      calcGradient(results, i, it, dofvals, contact_result, manip, world_to_base, false);
+    if (manip->isActiveLinkName(contact_result.link_names[i]))
+      calcGradient(results, i, dofvals, contact_result, manip, false);
   }
   // DebugPrintInfo(res, results.gradients[0], results.gradients[1], dofvals, &res == &(dist_results.front()));
 
@@ -225,9 +218,7 @@ GradientResults getGradient(const Eigen::VectorXd& dofvals0,
                             const tesseract_collision::ContactResult& contact_result,
                             double margin,
                             double margin_buffer,
-                            const tesseract_kinematics::ForwardKinematics::ConstPtr& manip,
-                            const tesseract_environment::AdjacencyMap::ConstPtr& adjacency_map,
-                            const Eigen::Isometry3d& world_to_base)
+                            const tesseract_kinematics::JointGroup::ConstPtr& manip)
 {
   GradientResults results;
   results.error = (margin - contact_result.distance);
@@ -236,8 +227,7 @@ GradientResults getGradient(const Eigen::VectorXd& dofvals0,
   Eigen::VectorXd dofvalst = Eigen::VectorXd::Zero(dofvals0.size());
   for (std::size_t i = 0; i < 2; ++i)
   {
-    tesseract_environment::AdjacencyMapPair::ConstPtr it = adjacency_map->getLinkMapping(contact_result.link_names[i]);
-    if (it != nullptr)
+    if (manip->isActiveLinkName(contact_result.link_names[i]))
     {
       if (contact_result.cc_type[i] == tesseract_collision::ContinuousCollisionType::CCType_Time0)
         dofvalst = dofvals0;
@@ -246,8 +236,8 @@ GradientResults getGradient(const Eigen::VectorXd& dofvals0,
       else
         dofvalst = dofvals0 + (dofvals1 - dofvals0) * contact_result.cc_time[i];
 
-      calcGradient(results, i, it, dofvalst, contact_result, manip, world_to_base, false);
-      calcGradient(results, i, it, dofvalst, contact_result, manip, world_to_base, true);
+      calcGradient(results, i, dofvalst, contact_result, manip, false);
+      calcGradient(results, i, dofvalst, contact_result, manip, true);
     }
   }
 

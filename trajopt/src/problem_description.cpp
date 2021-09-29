@@ -278,7 +278,7 @@ void ProblemConstructionInfo::fromJson(const Json::Value& v)
     readOptInfo(v["opt_info"]);
   }
 
-  kin = getManipulator(basic_info.manip);
+  kin = env->getJointGroup(basic_info.manip);
 
   if (kin == nullptr)
   {
@@ -308,7 +308,7 @@ void generateInitTraj(TrajArray& init_traj, const ProblemConstructionInfo& pci)
   // initialize based on type specified
   if (init_info.type == InitInfo::STATIONARY)
   {
-    tesseract_environment::EnvState state(*(pci.env->getCurrentState()));
+    tesseract_scene_graph::SceneState state = pci.env->getState();
     Eigen::VectorXd start_pos(pci.kin->numJoints());
     int i = 0;
     for (const auto& joint : pci.kin->getJointNames())
@@ -322,7 +322,7 @@ void generateInitTraj(TrajArray& init_traj, const ProblemConstructionInfo& pci)
   }
   else if (init_info.type == InitInfo::JOINT_INTERPOLATED)
   {
-    tesseract_environment::EnvState state(*(pci.env->getCurrentState()));
+    tesseract_scene_graph::SceneState state = pci.env->getState();
     Eigen::VectorXd start_pos(pci.kin->numJoints());
     int i = 0;
     for (const auto& joint : pci.kin->getJointNames())
@@ -443,7 +443,7 @@ TrajOptProb::Ptr ConstructProblem(const ProblemConstructionInfo& pci)
     PRINT_AND_THROW("No terms use time and basic_info is not set correctly. Try basic_info.use_time = false");
 
   auto prob = std::make_shared<TrajOptProb>(n_steps, pci);
-  unsigned n_dof = prob->GetKin()->numJoints();
+  Eigen::Index n_dof = prob->GetKin()->numJoints();
 
   // Generate initial trajectory and check its size
   TrajArray init_traj;
@@ -479,7 +479,7 @@ TrajOptProb::Ptr ConstructProblem(const ProblemConstructionInfo& pci)
     {
       if (init_traj.rows() < t_idx)
       {
-        PRINT_AND_THROW("Fixed timestep indice is outside the bounds of the initial trajectory.");
+        PRINT_AND_THROW("Fixed timestep index is outside the bounds of the initial trajectory.");
       }
 
       if (init_traj.cols() != (n_dof + (use_time ? 1 : 0)))
@@ -737,25 +737,10 @@ void DynamicCartPoseTermInfo::hatch(TrajOptProb& prob)
   }
   else
   {
-    tesseract_environment::EnvState::ConstPtr state = prob.GetEnv()->getCurrentState();
-    Eigen::Isometry3d world_to_base = Eigen::Isometry3d::Identity();
-    try
-    {
-      world_to_base = state->link_transforms.at(prob.GetKin()->getBaseLinkName());
-    }
-    catch (const std::exception&)
-    {
-      PRINT_AND_THROW(boost::format("Failed to find transform for link '%s'") % prob.GetKin()->getBaseLinkName());
-    }
-    tesseract_environment::AdjacencyMap::Ptr adjacency_map = std::make_shared<tesseract_environment::AdjacencyMap>(
-        prob.GetEnv()->getSceneGraph(), prob.GetKin()->getActiveLinkNames(), state->link_transforms);
-
-    auto f = std::make_shared<DynamicCartPoseErrCalculator>(
-        target, prob.GetKin(), adjacency_map, world_to_base, link, tcp, target_tcp, indices);
+    auto f = std::make_shared<DynamicCartPoseErrCalculator>(target, prob.GetKin(), link, tcp, target_tcp, indices);
 
     // This is currently not being used. There is an intermittent bug that needs to be tracked down it is not used.
-    auto dfdx = std::make_shared<DynamicCartPoseJacCalculator>(
-        target, prob.GetKin(), adjacency_map, world_to_base, link, tcp, target_tcp, indices);
+    auto dfdx = std::make_shared<DynamicCartPoseJacCalculator>(target, prob.GetKin(), link, tcp, target_tcp, indices);
 
     // Apply error calculator as either cost or constraint
     if (term_type & TT_COST)
@@ -832,28 +817,18 @@ void CartPoseTermInfo::hatch(TrajOptProb& prob)
 {
   int n_dof = static_cast<int>(prob.GetKin()->numJoints());
 
-  Eigen::Isometry3d input_pose;
+  Eigen::Isometry3d input_pose{ Eigen::Isometry3d::Identity() };
   Eigen::Quaterniond q(wxyz(0), wxyz(1), wxyz(2), wxyz(3));
   input_pose.linear() = q.matrix();
   input_pose.translation() = xyz;
 
-  tesseract_environment::EnvState::ConstPtr state = prob.GetEnv()->getCurrentState();
-  Eigen::Isometry3d world_to_base = Eigen::Isometry3d::Identity();
-  try
-  {
-    world_to_base = state->link_transforms.at(prob.GetKin()->getBaseLinkName());
-  }
-  catch (const std::exception&)
-  {
-    PRINT_AND_THROW(boost::format("Failed to find transform for link '%s'") % prob.GetKin()->getBaseLinkName());
-  }
-
-  Eigen::Isometry3d world_to_target = Eigen::Isometry3d::Identity();
+  tesseract_scene_graph::SceneState state = prob.GetEnv()->getState();
+  Eigen::Isometry3d world_to_target{ Eigen::Isometry3d::Identity() };
   if (!target.empty())
   {
     try
     {
-      world_to_target = state->link_transforms.at(target);
+      world_to_target = state.link_transforms.at(target);
     }
     catch (const std::exception& ex)
     {
@@ -861,10 +836,7 @@ void CartPoseTermInfo::hatch(TrajOptProb& prob)
     }
   }
 
-  tesseract_environment::AdjacencyMap::Ptr adjacency_map = std::make_shared<tesseract_environment::AdjacencyMap>(
-      prob.GetEnv()->getSceneGraph(), prob.GetKin()->getActiveLinkNames(), state->link_transforms);
-
-  // Next parse the coeff and if not zero add the indice and coeff
+  // Next parse the coeff and if not zero add the index and coeff
   std::vector<int> ic;
   std::vector<double> c;
   ic.reserve(6);
@@ -900,23 +872,21 @@ void CartPoseTermInfo::hatch(TrajOptProb& prob)
   }
   else if ((term_type & TT_COST) && ~(term_type | ~TT_USE_TIME))
   {
-    auto f = std::make_shared<CartPoseErrCalculator>(
-        world_to_target * input_pose, prob.GetKin(), adjacency_map, world_to_base, link, tcp, indices);
+    auto f = std::make_shared<CartPoseErrCalculator>(world_to_target * input_pose, prob.GetKin(), link, tcp, indices);
 
     // This is currently not being used. There is an intermittent bug that needs to be tracked down it is not used.
-    auto dfdx = std::make_shared<CartPoseJacCalculator>(
-        input_pose, prob.GetKin(), adjacency_map, world_to_base, link, tcp, indices);
+    auto dfdx =
+        std::make_shared<CartPoseJacCalculator>(world_to_target * input_pose, prob.GetKin(), link, tcp, indices);
     prob.addCost(
         std::make_shared<TrajOptCostFromErrFunc>(f, prob.GetVarRow(timestep, 0, n_dof), coeff, sco::ABS, name));
   }
   else if ((term_type & TT_CNT) && ~(term_type | ~TT_USE_TIME))
   {
-    auto f = std::make_shared<CartPoseErrCalculator>(
-        world_to_target * input_pose, prob.GetKin(), adjacency_map, world_to_base, link, tcp, indices);
+    auto f = std::make_shared<CartPoseErrCalculator>(world_to_target * input_pose, prob.GetKin(), link, tcp, indices);
 
     // This is currently not being used. There is an intermittent bug that needs to be tracked down it is not used.
-    auto dfdx = std::make_shared<CartPoseJacCalculator>(
-        input_pose, prob.GetKin(), adjacency_map, world_to_base, link, tcp, indices);
+    auto dfdx =
+        std::make_shared<CartPoseJacCalculator>(world_to_target * input_pose, prob.GetKin(), link, tcp, indices);
     prob.addConstraint(
         std::make_shared<TrajOptConstraintFromErrFunc>(f, prob.GetVarRow(timestep, 0, n_dof), coeff, sco::EQ, name));
   }
@@ -952,20 +922,6 @@ void CartVelTermInfo::hatch(TrajOptProb& prob)
 {
   int n_dof = static_cast<int>(prob.GetKin()->numJoints());
 
-  tesseract_environment::EnvState::ConstPtr state = prob.GetEnv()->getCurrentState();
-  Eigen::Isometry3d world_to_base = Eigen::Isometry3d::Identity();
-  try
-  {
-    world_to_base = state->link_transforms.at(prob.GetKin()->getBaseLinkName());
-  }
-  catch (const std::exception&)
-  {
-    PRINT_AND_THROW(boost::format("Failed to find transform for link '%s'") % prob.GetKin()->getBaseLinkName());
-  }
-
-  tesseract_environment::AdjacencyMap::Ptr adjacency_map = std::make_shared<tesseract_environment::AdjacencyMap>(
-      prob.GetEnv()->getSceneGraph(), prob.GetKin()->getActiveLinkNames(), state->link_transforms);
-
   if (term_type == (TT_COST | TT_USE_TIME))
   {
     CONSOLE_BRIDGE_logError("Use time version of this term has not been defined.");
@@ -978,10 +934,8 @@ void CartVelTermInfo::hatch(TrajOptProb& prob)
   {
     for (int iStep = first_step; iStep <= last_step; ++iStep)
     {
-      auto f =
-          std::make_shared<CartVelErrCalculator>(prob.GetKin(), adjacency_map, world_to_base, link, max_displacement);
-      auto dfdx =
-          std::make_shared<CartVelJacCalculator>(prob.GetKin(), adjacency_map, world_to_base, link, max_displacement);
+      auto f = std::make_shared<CartVelErrCalculator>(prob.GetKin(), link, max_displacement);
+      auto dfdx = std::make_shared<CartVelJacCalculator>(prob.GetKin(), link, max_displacement);
       prob.addCost(std::make_shared<TrajOptCostFromErrFunc>(
           f,
           dfdx,
@@ -995,10 +949,8 @@ void CartVelTermInfo::hatch(TrajOptProb& prob)
   {
     for (int iStep = first_step; iStep <= last_step; ++iStep)
     {
-      auto f =
-          std::make_shared<CartVelErrCalculator>(prob.GetKin(), adjacency_map, world_to_base, link, max_displacement);
-      auto dfdx =
-          std::make_shared<CartVelJacCalculator>(prob.GetKin(), adjacency_map, world_to_base, link, max_displacement);
+      auto f = std::make_shared<CartVelErrCalculator>(prob.GetKin(), link, max_displacement);
+      auto dfdx = std::make_shared<CartVelJacCalculator>(prob.GetKin(), link, max_displacement);
       prob.addConstraint(std::make_shared<TrajOptConstraintFromErrFunc>(
           f,
           dfdx,
@@ -1702,19 +1654,6 @@ void CollisionTermInfo::fromJson(ProblemConstructionInfo& pci, const Json::Value
 void CollisionTermInfo::hatch(TrajOptProb& prob)
 {
   int n_dof = static_cast<int>(prob.GetKin()->numJoints());
-  tesseract_environment::EnvState::ConstPtr state = prob.GetEnv()->getCurrentState();
-  Eigen::Isometry3d world_to_base = Eigen::Isometry3d::Identity();
-  try
-  {
-    world_to_base = state->link_transforms.at(prob.GetKin()->getBaseLinkName());
-  }
-  catch (const std::exception&)
-  {
-    PRINT_AND_THROW(boost::format("Failed to find transform for link '%s'") % prob.GetKin()->getBaseLinkName());
-  }
-
-  tesseract_environment::AdjacencyMap::Ptr adjacency_map = std::make_shared<tesseract_environment::AdjacencyMap>(
-      prob.GetEnv()->getSceneGraph(), prob.GetKin()->getActiveLinkNames(), state->link_transforms);
 
   if (term_type == TT_COST)
   {
@@ -1752,8 +1691,6 @@ void CollisionTermInfo::hatch(TrajOptProb& prob)
 
         auto c = std::make_shared<CollisionCost>(prob.GetKin(),
                                                  prob.GetEnv(),
-                                                 adjacency_map,
-                                                 world_to_base,
                                                  info[static_cast<size_t>(i - first_step)],
                                                  contact_test_type,
                                                  longest_valid_segment_length,
@@ -1778,8 +1715,6 @@ void CollisionTermInfo::hatch(TrajOptProb& prob)
         {
           auto c = std::make_shared<CollisionCost>(prob.GetKin(),
                                                    prob.GetEnv(),
-                                                   adjacency_map,
-                                                   world_to_base,
                                                    info[static_cast<size_t>(i - first_step)],
                                                    contact_test_type,
                                                    prob.GetVarRow(i, 0, n_dof),
@@ -1828,8 +1763,6 @@ void CollisionTermInfo::hatch(TrajOptProb& prob)
 
         auto c = std::make_shared<CollisionConstraint>(prob.GetKin(),
                                                        prob.GetEnv(),
-                                                       adjacency_map,
-                                                       world_to_base,
                                                        info[static_cast<size_t>(i - first_step)],
                                                        contact_test_type,
                                                        longest_valid_segment_length,
@@ -1854,8 +1787,6 @@ void CollisionTermInfo::hatch(TrajOptProb& prob)
         {
           auto c = std::make_shared<CollisionConstraint>(prob.GetKin(),
                                                          prob.GetEnv(),
-                                                         adjacency_map,
-                                                         world_to_base,
                                                          info[static_cast<size_t>(i - first_step)],
                                                          contact_test_type,
                                                          prob.GetVarRow(i, 0, n_dof),
@@ -1933,7 +1864,7 @@ void AvoidSingularityTermInfo::fromJson(ProblemConstructionInfo&, const Json::Va
 
 void AvoidSingularityTermInfo::hatch(TrajOptProb& prob)
 {
-  tesseract_kinematics::ForwardKinematics::ConstPtr kin = prob.GetKin();
+  tesseract_kinematics::JointGroup::ConstPtr kin = prob.GetKin();
   sco::VectorOfVector::Ptr f;
   sco::MatrixOfVector::Ptr dfdx;
 

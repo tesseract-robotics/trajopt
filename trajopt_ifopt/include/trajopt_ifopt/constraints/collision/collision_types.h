@@ -31,7 +31,7 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <array>
 #include <memory>
 #include <tesseract_collision/core/types.h>
-#include <tesseract_environment/core/environment.h>
+#include <tesseract_environment/environment.h>
 #include <ifopt/composite.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
@@ -39,9 +39,7 @@ TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace trajopt_ifopt
 {
-using GetStateFn =
-    std::function<tesseract_environment::EnvState::Ptr(const std::vector<std::string>& joint_names,
-                                                       const Eigen::Ref<const Eigen::VectorXd>& joint_values)>;
+using GetStateFn = std::function<tesseract_common::TransformMap(const Eigen::Ref<const Eigen::VectorXd>& joint_values)>;
 
 /** @brief Stores information about how the margins allowed between collision objects */
 struct CollisionCoeffData
