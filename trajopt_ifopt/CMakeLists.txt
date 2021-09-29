@@ -43,6 +43,7 @@ set(TRAJOPT_IFOPT_SOURCE_FILES
     src/constraints/joint_position_constraint.cpp
     src/constraints/joint_velocity_constraint.cpp
     src/constraints/collision/collision_types.cpp
+    src/constraints/cartesian_line_constraint.cpp
     src/constraints/collision/collision_utils.cpp
     src/constraints/collision/discrete_collision_evaluators.cpp
     src/constraints/collision/continuous_collision_evaluators.cpp
@@ -51,11 +52,6 @@ set(TRAJOPT_IFOPT_SOURCE_FILES
     src/constraints/collision/discrete_collision_numerical_constraint.cpp
     src/constraints/collision/continuous_collision_constraint.cpp
     src/constraints/collision/continuous_collision_numerical_constraint.cpp
-    src/utils/ifopt_utils.cpp
-    src/utils/numeric_differentiation.cpp
-    src/utils/trajopt_utils.cpp
-    src/variable_sets/joint_position_variable.cpp
-    src/cartesian_line_constraint.cpp
 )
 
 add_library(${PROJECT_NAME} ${TRAJOPT_IFOPT_SOURCE_FILES})
@@ -96,7 +92,6 @@ install(
 
 if(TRAJOPT_ENABLE_TESTING)
   enable_testing()
-  #  add_run_tests_target(ENABLE ${TRAJOPT_ENABLE_RUN_TESTING})
   add_custom_target(run_tests)
   add_subdirectory(test)
 endif()

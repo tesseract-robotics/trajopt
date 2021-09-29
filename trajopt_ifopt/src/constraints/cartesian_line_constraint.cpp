@@ -33,7 +33,7 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <console_bridge/console.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
-namespace trajopt
+namespace trajopt_ifopt
 {
 CartLineConstraint::CartLineConstraint(const Eigen::Isometry3d& origin_pose,
                                        const Eigen::Isometry3d& target_pose,
@@ -67,7 +67,7 @@ Eigen::VectorXd CartLineConstraint::CalcValues(const Eigen::Ref<const Eigen::Vec
   // the below method is equivalent to the position constraint; using the line point as the target point
   Eigen::Isometry3d pose_err = line_point.inverse() * new_pose;
   Eigen::Vector3d cart_pose_err = (line_point.translation() - new_pose.translation()).array().abs();
-  Eigen::VectorXd err = concat(cart_pose_err, calcRotationalError(pose_err.rotation()));
+  Eigen::VectorXd err = trajopt::concat(cart_pose_err, trajopt::calcRotationalError(pose_err.rotation()));
   return err;
 }
 
@@ -141,11 +141,11 @@ void CartLineConstraint::CalcJacobianBlock(const Eigen::Ref<const Eigen::VectorX
     // the partial derivative of the error function. Note that the rotational portion is the only part
     // that is required to be modified per the paper.
     Eigen::Isometry3d pose_err = line_point_inv * tf0;
-    Eigen::Vector3d rot_err = calcRotationalError(pose_err.rotation());
+    Eigen::Vector3d rot_err = trajopt::calcRotationalError(pose_err.rotation());
     for (int c = 0; c < jac0.cols(); ++c)
     {
-      auto new_pose_err = addTwist(pose_err, jac0.col(c), 1e-5);
-      Eigen::VectorXd new_rot_err = calcRotationalError(new_pose_err.rotation());
+      auto new_pose_err = trajopt::addTwist(pose_err, jac0.col(c), 1e-5);
+      Eigen::VectorXd new_rot_err = trajopt::calcRotationalError(new_pose_err.rotation());
       jac0.col(c).tail(3) = ((new_rot_err - rot_err) / 1e-5);
     }
 
@@ -231,4 +231,4 @@ Eigen::Isometry3d CartLineConstraint::GetLinePoint(const Eigen::Isometry3d& test
 
   return line_point;
 }
-}  // namespace trajopt
+}  // namespace trajopt_ifopt

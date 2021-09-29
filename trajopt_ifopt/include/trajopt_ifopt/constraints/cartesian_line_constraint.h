@@ -40,8 +40,9 @@ TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt/utils.hpp>
 #include <trajopt_ifopt/variable_sets/joint_position_variable.h>
+#include <trajopt_ifopt/kinematics_info.h>
 
-namespace trajopt
+namespace trajopt_ifopt
 {
 /**
  * @brief Contains kinematic information for the cartesian position cost; inlude cart point .h & remove?
@@ -196,5 +197,5 @@ private:
   /** @brief The kinematic information used when calculating error */
   CartLineKinematicInfo::ConstPtr kinematic_info_;
 };
-};  // namespace trajopt
+};  // namespace trajopt_ifopt
 #endif

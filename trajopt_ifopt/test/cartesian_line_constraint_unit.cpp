@@ -11,13 +11,14 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <tesseract_kinematics/core/forward_kinematics.h>
 #include <tesseract_environment/core/environment.h>
 #include <tesseract_environment/core/utils.h>
+#include <tesseract_common/types.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt_ifopt/constraints/cartesian_line_constraint.h>
 #include <trajopt_ifopt/utils/numeric_differentiation.h>
 #include <trajopt_test_utils.hpp>
 
-using namespace trajopt;
+using namespace trajopt_ifopt;
 using namespace std;
 using namespace util;
 using namespace tesseract_environment;
@@ -58,11 +59,12 @@ public:
 
     tesseract_environment::AdjacencyMap::Ptr adjacency_map = std::make_shared<tesseract_environment::AdjacencyMap>(
         env->getSceneGraph(), forward_kinematics->getActiveLinkNames(), env->getCurrentState()->link_transforms);
-    kinematic_info = std::make_shared<trajopt::CartLineKinematicInfo>(
+    kinematic_info = std::make_shared<trajopt_ifopt::CartLineKinematicInfo>(
         forward_kinematics, adjacency_map, Eigen::Isometry3d::Identity(), forward_kinematics->getTipLinkName());
 
     auto pos = Eigen::VectorXd::Ones(forward_kinematics->numJoints());
-    auto var0 = std::make_shared<trajopt::JointPosition>(pos, forward_kinematics->getJointNames(), "Joint_Position_0");
+    auto var0 =
+        std::make_shared<trajopt_ifopt::JointPosition>(pos, forward_kinematics->getJointNames(), "Joint_Position_0");
     nlp.AddVariableSet(var0);
 
     // Add constraints
@@ -74,7 +76,8 @@ public:
     Eigen::Isometry3d line_end_pose = target_pose;
     line_end_pose.translation() = line_end_pose.translation() + Eigen::Vector3d(0.5, 0.0, 0.0);
 
-    constraint = std::make_shared<trajopt::CartLineConstraint>(line_start_pose, line_end_pose, kinematic_info, var0);
+    constraint =
+        std::make_shared<trajopt_ifopt::CartLineConstraint>(line_start_pose, line_end_pose, kinematic_info, var0);
     nlp.AddConstraintSet(constraint);
   }
 };
@@ -149,16 +152,17 @@ TEST_F(CartesianLineConstraintUnit, FillJacobian)  // NOLINT
 
     // Calculate jacobian numerically
     auto error_calculator = [&](const Eigen::Ref<const Eigen::VectorXd>& x) { return constraint->CalcValues(x); };
-    trajopt::Jacobian num_jac_block = trajopt::calcForwardNumJac(error_calculator, joint_position_mod, 1e-4);
+    ifopt::ConstraintSet::Jacobian num_jac_block =
+        trajopt_ifopt::calcForwardNumJac(error_calculator, joint_position_mod, 1e-4);
 
     // Compare to constraint jacobian
     {
-      trajopt::Jacobian jac_block(num_jac_block.rows(), num_jac_block.cols());
+      ifopt::ConstraintSet::Jacobian jac_block(num_jac_block.rows(), num_jac_block.cols());
       constraint->CalcJacobianBlock(joint_position_mod, jac_block);
       EXPECT_TRUE(jac_block.isApprox(num_jac_block, 1e-3));
     }
     {
-      trajopt::Jacobian jac_block(num_jac_block.rows(), num_jac_block.cols());
+      ifopt::ConstraintSet::Jacobian jac_block(num_jac_block.rows(), num_jac_block.cols());
       constraint->FillJacobianBlock("Joint_Position_0", jac_block);
       EXPECT_TRUE(jac_block.toDense().isApprox(num_jac_block.toDense(), 1e-3));
     }
@@ -175,7 +179,8 @@ TEST_F(CartesianLineConstraintUnit, GetSetBounds)  // NOLINT
   // Check that setting bounds works
   {
     Eigen::VectorXd pos = Eigen::VectorXd::Ones(forward_kinematics->numJoints());
-    auto var0 = std::make_shared<trajopt::JointPosition>(pos, forward_kinematics->getJointNames(), "Joint_Position_0");
+    auto var0 =
+        std::make_shared<trajopt_ifopt::JointPosition>(pos, forward_kinematics->getJointNames(), "Joint_Position_0");
 
     ifopt::Bounds bounds(-0.1234, 0.5678);
     std::vector<ifopt::Bounds> bounds_vec = std::vector<ifopt::Bounds>(6, bounds);
