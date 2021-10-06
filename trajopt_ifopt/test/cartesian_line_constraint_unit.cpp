@@ -20,11 +20,9 @@ TRAJOPT_IGNORE_WARNINGS_POP
 
 using namespace trajopt_ifopt;
 using namespace std;
-using namespace util;
 using namespace tesseract_environment;
 using namespace tesseract_kinematics;
 using namespace tesseract_collision;
-using namespace tesseract_visualization;
 using namespace tesseract_scene_graph;
 using namespace tesseract_geometry;
 

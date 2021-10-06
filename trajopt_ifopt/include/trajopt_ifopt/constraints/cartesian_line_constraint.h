@@ -38,7 +38,6 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <tesseract_environment/core/utils.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
-#include <trajopt/utils.hpp>
 #include <trajopt_ifopt/variable_sets/joint_position_variable.h>
 #include <trajopt_ifopt/kinematics_info.h>
 
