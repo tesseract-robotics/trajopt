@@ -99,7 +99,7 @@ void runNumericalIKTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const Env
   target_pose.linear() = Eigen::Quaterniond(0, 0, 1, 0).toRotationMatrix();
   target_pose.translation() = Eigen::Vector3d(0.4, 0, 0.8);
 
-  CartPosInfo cart_info(manip, target_pose, "l_gripper_tool_frame", Eigen::Isometry3d::Identity());
+  CartPosInfo cart_info(manip, "l_gripper_tool_frame", "base_footprint", Eigen::Isometry3d::Identity(), target_pose);
   auto cnt = std::make_shared<trajopt_ifopt::CartPosConstraint>(cart_info, var);
   qp_problem->addConstraintSet(cnt);
 

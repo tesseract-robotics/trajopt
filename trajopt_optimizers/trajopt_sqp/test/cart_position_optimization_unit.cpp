@@ -139,7 +139,8 @@ void runCartPositionOptimization(const trajopt_sqp::QPProblem::Ptr& qp_problem,
   // 4) Add constraints
   for (const auto& var : vars)
   {
-    trajopt_ifopt::CartPosInfo cart_info(manip, target_pose, "r_gripper_tool_frame");
+    trajopt_ifopt::CartPosInfo cart_info(
+        manip, "r_gripper_tool_frame", "base_footprint", Eigen::Isometry3d::Identity(), target_pose);
     auto cnt = std::make_shared<trajopt_ifopt::CartPosConstraint>(cart_info, var);
     qp_problem->addConstraintSet(cnt);
   }

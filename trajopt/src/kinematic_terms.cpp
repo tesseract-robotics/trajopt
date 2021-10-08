@@ -32,10 +32,10 @@ namespace trajopt
 VectorXd DynamicCartPoseErrCalculator::operator()(const VectorXd& dof_vals) const
 {
   tesseract_common::TransformMap state = manip_->calcFwdKin(dof_vals);
-  Isometry3d link_tf = state[link_] * tcp_;
-  Isometry3d target_tf = state[target_] * target_tcp_;
+  Isometry3d source_tf = state[source_frame_] * source_frame_offset_;
+  Isometry3d target_tf = state[target_frame_] * target_frame_offset_;
 
-  VectorXd err = tesseract_common::calcTransformError(target_tf, link_tf);
+  VectorXd err = tesseract_common::calcTransformError(target_tf, source_tf);
   VectorXd reduced_err(indices_.size());
   for (int i = 0; i < indices_.size(); ++i)
     reduced_err[i] = err[indices_[i]];
@@ -47,10 +47,10 @@ void DynamicCartPoseErrCalculator::Plot(const tesseract_visualization::Visualiza
                                         const VectorXd& dof_vals)
 {
   tesseract_common::TransformMap state = manip_->calcFwdKin(dof_vals);
-  Eigen::Isometry3d cur_tf = state[link_] * tcp_;
-  Eigen::Isometry3d target_tf = state[target_] * target_tcp_;
+  Eigen::Isometry3d source_tf = state[source_frame_] * source_frame_offset_;
+  Eigen::Isometry3d target_tf = state[target_frame_] * target_frame_offset_;
 
-  tesseract_visualization::AxisMarker m1(cur_tf);
+  tesseract_visualization::AxisMarker m1(source_tf);
   m1.setScale(Eigen::Vector3d::Constant(0.05));
   plotter->plotMarker(m1);
 
@@ -58,7 +58,7 @@ void DynamicCartPoseErrCalculator::Plot(const tesseract_visualization::Visualiza
   m2.setScale(Eigen::Vector3d::Constant(0.05));
   plotter->plotMarker(m2);
 
-  tesseract_visualization::ArrowMarker m3(cur_tf.translation(), target_tf.translation());
+  tesseract_visualization::ArrowMarker m3(source_tf.translation(), target_tf.translation());
   m3.material = std::make_shared<tesseract_scene_graph::Material>("cart_pose_error_material");
   m3.material->color << 1, 0, 1, 1;
   plotter->plotMarker(m3);
@@ -69,17 +69,19 @@ MatrixXd DynamicCartPoseJacCalculator::operator()(const VectorXd& dof_vals) cons
   auto n_dof = static_cast<int>(manip_->numJoints());
   tesseract_common::TransformMap state = manip_->calcFwdKin(dof_vals);
 
-  Eigen::Isometry3d cur_tf = state[link_] * tcp_;
-  Eigen::Isometry3d target_tf = state[target_] * target_tcp_;
+  Eigen::Isometry3d source_tf = state[source_frame_] * source_frame_offset_;
+  Eigen::Isometry3d target_tf = state[target_frame_] * target_frame_offset_;
 
   // Get the jacobian of link in the targets coordinate system
-  MatrixXd jac_link = manip_->calcJacobian(dof_vals, manip_->getBaseLinkName(), link_, tcp_.translation());
+  MatrixXd jac_link =
+      manip_->calcJacobian(dof_vals, manip_->getBaseLinkName(), source_frame_, source_frame_offset_.translation());
   tesseract_common::jacobianChangeBase(jac_link, target_tf.inverse());
 
   // Get the jacobian of the target in the targets coordinate system
-  MatrixXd jac_target = manip_->calcJacobian(dof_vals, manip_->getBaseLinkName(), target_, target_tcp_.translation());
+  MatrixXd jac_target =
+      manip_->calcJacobian(dof_vals, manip_->getBaseLinkName(), target_frame_, target_frame_offset_.translation());
   tesseract_common::jacobianChangeBase(jac_target, target_tf.inverse());
-  tesseract_common::jacobianChangeRefPoint(jac_target, (target_tf.inverse() * cur_tf).translation());
+  tesseract_common::jacobianChangeRefPoint(jac_target, (target_tf.inverse() * source_tf).translation());
 
   MatrixXd jac0 = jac_link - jac_target;
 
@@ -98,7 +100,7 @@ MatrixXd DynamicCartPoseJacCalculator::operator()(const VectorXd& dof_vals) cons
   // The approach below leverages the geometric jacobian and a small step in time to approximate
   // the partial derivative of the error function. Note that the rotational portion is the only part
   // that is required to be modified per the paper.
-  Isometry3d pose_err = target_tf.inverse() * cur_tf;
+  Isometry3d pose_err = target_tf.inverse() * source_tf;
   Eigen::Vector3d rot_err = tesseract_common::calcRotationalError(pose_err.rotation());
   for (int c = 0; c < jac0.cols(); ++c)
   {
@@ -117,13 +119,16 @@ MatrixXd DynamicCartPoseJacCalculator::operator()(const VectorXd& dof_vals) cons
 VectorXd CartPoseErrCalculator::operator()(const VectorXd& dof_vals) const
 {
   tesseract_common::TransformMap state = manip_->calcFwdKin(dof_vals);
-  assert(state.find(link_) != state.end());
-  Isometry3d new_pose = state[link_] * tcp_;
+  Isometry3d source_tf = state[source_frame_] * source_frame_offset_;
+  Isometry3d target_tf = state[target_frame_] * target_frame_offset_;
 
-  Isometry3d pose_err = pose_inv_ * new_pose;
-  Eigen::VectorXd err =
-      tesseract_common::concat(pose_err.translation(), tesseract_common::calcRotationalError(pose_err.rotation()));
-  Eigen::VectorXd reduced_err(indices_.size());
+  VectorXd err;
+  if (is_target_active_)
+    err = tesseract_common::calcTransformError(source_tf, target_tf);
+  else
+    err = tesseract_common::calcTransformError(target_tf, source_tf);
+
+  VectorXd reduced_err(indices_.size());
   for (int i = 0; i < indices_.size(); ++i)
     reduced_err[i] = err[indices_[i]];
 
@@ -133,19 +138,18 @@ VectorXd CartPoseErrCalculator::operator()(const VectorXd& dof_vals) const
 void CartPoseErrCalculator::Plot(const tesseract_visualization::Visualization::Ptr& plotter, const VectorXd& dof_vals)
 {
   tesseract_common::TransformMap state = manip_->calcFwdKin(dof_vals);
-  Isometry3d cur_pose = state[link_] * tcp_;
+  Eigen::Isometry3d source_tf = state[source_frame_] * source_frame_offset_;
+  Eigen::Isometry3d target_tf = state[target_frame_] * target_frame_offset_;
 
-  Isometry3d target = pose_inv_.inverse();
-
-  tesseract_visualization::AxisMarker m1(cur_pose);
+  tesseract_visualization::AxisMarker m1(source_tf);
   m1.setScale(Eigen::Vector3d::Constant(0.05));
   plotter->plotMarker(m1);
 
-  tesseract_visualization::AxisMarker m2(target);
+  tesseract_visualization::AxisMarker m2(target_tf);
   m2.setScale(Eigen::Vector3d::Constant(0.05));
   plotter->plotMarker(m2);
 
-  tesseract_visualization::ArrowMarker m3(cur_pose.translation(), target.translation());
+  tesseract_visualization::ArrowMarker m3(source_tf.translation(), target_tf.translation());
   m3.material = std::make_shared<tesseract_scene_graph::Material>("cart_pose_error_material");
   m3.material->color << 1, 0, 1, 1;
   plotter->plotMarker(m3);
@@ -154,9 +158,24 @@ void CartPoseErrCalculator::Plot(const tesseract_visualization::Visualization::P
 MatrixXd CartPoseJacCalculator::operator()(const VectorXd& dof_vals) const
 {
   tesseract_common::TransformMap state = manip_->calcFwdKin(dof_vals);
-  Eigen::Isometry3d tf0 = state[link_];
-  MatrixXd jac0 = manip_->calcJacobian(dof_vals, manip_->getBaseLinkName(), link_, tcp_.translation());
-  tesseract_common::jacobianChangeBase(jac0, pose_inv_);
+  Eigen::Isometry3d pose_inv{ Eigen::Isometry3d::Identity() };
+  Eigen::Isometry3d tf0{ Eigen::Isometry3d::Identity() };
+  Eigen::MatrixXd jac0;
+
+  if (is_target_active_)
+  {
+    pose_inv = (state[source_frame_] * source_frame_offset_).inverse();
+    tf0 = state[target_frame_] * target_frame_offset_;
+    jac0 = manip_->calcJacobian(dof_vals, manip_->getBaseLinkName(), target_frame_, target_frame_offset_.translation());
+    tesseract_common::jacobianChangeBase(jac0, pose_inv);
+  }
+  else
+  {
+    pose_inv = (state[target_frame_] * target_frame_offset_).inverse();
+    tf0 = state[source_frame_] * source_frame_offset_;
+    jac0 = manip_->calcJacobian(dof_vals, manip_->getBaseLinkName(), source_frame_, source_frame_offset_.translation());
+    tesseract_common::jacobianChangeBase(jac0, pose_inv);
+  }
 
   // Paper:
   // https://ethz.ch/content/dam/ethz/special-interest/mavt/robotics-n-intelligent-systems/rsl-dam/documents/RobotDynamics2016/RD2016script.pdf
@@ -173,7 +192,7 @@ MatrixXd CartPoseJacCalculator::operator()(const VectorXd& dof_vals) const
   // The approach below leverages the geometric jacobian and a small step in time to approximate
   // the partial derivative of the error function. Note that the rotational portion is the only part
   // that is required to be modified per the paper.
-  Isometry3d pose_err = pose_inv_ * tf0;
+  Isometry3d pose_err = pose_inv * tf0;
   Eigen::Vector3d rot_err = tesseract_common::calcRotationalError(pose_err.rotation());
   for (int c = 0; c < jac0.cols(); ++c)
   {

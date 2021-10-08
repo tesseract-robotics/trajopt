@@ -26,17 +26,17 @@ struct DynamicCartPoseErrCalculator : public TrajOptVectorOfVector
   /** @brief Manipulator kinematics object */
   tesseract_kinematics::JointGroup::ConstPtr manip_;
 
-  /** @brief The name of the link to track relative to target_*/
-  std::string link_;
+  /** @brief The name of the link to track relative to target_frame_*/
+  std::string source_frame_;
 
-  /** @brief The tcp transform to apply to link_ location */
-  Eigen::Isometry3d tcp_;
+  /** @brief The name of the target frame to track relative to source_frame_ */
+  std::string target_frame_;
 
-  /** @brief The name of the target link to track relative to link_ */
-  std::string target_;
+  /** @brief The offset transform to apply to source_frame_ location */
+  Eigen::Isometry3d source_frame_offset_;
 
-  /** @brief A tcp transform to be applied to target_ location */
-  Eigen::Isometry3d target_tcp_;
+  /** @brief A offset transform to be applied to target_frame_ location */
+  Eigen::Isometry3d target_frame_offset_;
 
   /**
    * @brief This is a vector of indices to be returned Default: {0, 1, 2, 3, 4, 5}
@@ -47,17 +47,17 @@ struct DynamicCartPoseErrCalculator : public TrajOptVectorOfVector
   Eigen::VectorXi indices_;
 
   DynamicCartPoseErrCalculator(
-      std::string target,
       tesseract_kinematics::JointGroup::ConstPtr manip,
-      std::string link,
-      const Eigen::Isometry3d& tcp = Eigen::Isometry3d::Identity(),
-      const Eigen::Isometry3d& target_tcp = Eigen::Isometry3d::Identity(),
+      std::string source_frame,
+      std::string target_frame,
+      const Eigen::Isometry3d& source_frame_offset = Eigen::Isometry3d::Identity(),
+      const Eigen::Isometry3d& target_frame_offset = Eigen::Isometry3d::Identity(),
       Eigen::VectorXi indices = Eigen::Matrix<int, 1, 6>(std::vector<int>({ 0, 1, 2, 3, 4, 5 }).data()))
     : manip_(std::move(manip))
-    , link_(std::move(link))
-    , tcp_(tcp)
-    , target_(std::move(target))
-    , target_tcp_(target_tcp)
+    , source_frame_(std::move(source_frame))
+    , target_frame_(std::move(target_frame))
+    , source_frame_offset_(source_frame_offset)
+    , target_frame_offset_(target_frame_offset)
     , indices_(std::move(indices))
   {
     assert(indices_.size() <= 6);
@@ -76,17 +76,17 @@ struct DynamicCartPoseJacCalculator : sco::MatrixOfVector
   /** @brief Manipulator kinematics object */
   tesseract_kinematics::JointGroup::ConstPtr manip_;
 
-  /** @brief The name of the link to track relative to target_*/
-  std::string link_;
+  /** @brief The name of the link to track relative to target_frame_*/
+  std::string source_frame_;
 
-  /** @brief The tcp transform to apply to link_ location */
-  Eigen::Isometry3d tcp_;
+  /** @brief The offset transform to apply to source_frame_ location */
+  Eigen::Isometry3d source_frame_offset_;
 
-  /** @brief The name of the target link to track relative to link_ */
-  std::string target_;
+  /** @brief The name of the target frame to track relative to source_frame_ */
+  std::string target_frame_;
 
-  /** @brief A tcp transform to be applied to target_ location */
-  Eigen::Isometry3d target_tcp_;
+  /** @brief A offset transform to be applied to target_frame_ location */
+  Eigen::Isometry3d target_frame_offset_;
 
   /**
    * @brief This is a vector of indices to be returned Default: {0, 1, 2, 3, 4, 5}
@@ -97,17 +97,17 @@ struct DynamicCartPoseJacCalculator : sco::MatrixOfVector
   Eigen::VectorXi indices_;
 
   DynamicCartPoseJacCalculator(
-      std::string target,
       tesseract_kinematics::JointGroup::ConstPtr manip,
-      std::string link,
-      const Eigen::Isometry3d& tcp = Eigen::Isometry3d::Identity(),
-      const Eigen::Isometry3d& target_tcp = Eigen::Isometry3d::Identity(),
+      std::string source_frame,
+      std::string target_frame,
+      const Eigen::Isometry3d& source_frame_offset = Eigen::Isometry3d::Identity(),
+      const Eigen::Isometry3d& target_frame_offset = Eigen::Isometry3d::Identity(),
       Eigen::VectorXi indices = Eigen::Matrix<int, 1, 6>(std::vector<int>({ 0, 1, 2, 3, 4, 5 }).data()))
     : manip_(std::move(manip))
-    , link_(std::move(link))
-    , tcp_(tcp)
-    , target_(std::move(target))
-    , target_tcp_(target_tcp)
+    , source_frame_(std::move(source_frame))
+    , source_frame_offset_(source_frame_offset)
+    , target_frame_(std::move(target_frame))
+    , target_frame_offset_(target_frame_offset)
     , indices_(std::move(indices))
   {
     assert(indices_.size() <= 6);
@@ -123,10 +123,22 @@ struct DynamicCartPoseJacCalculator : sco::MatrixOfVector
 struct CartPoseErrCalculator : public TrajOptVectorOfVector
 {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-  Eigen::Isometry3d pose_inv_;
   tesseract_kinematics::JointGroup::ConstPtr manip_;
-  std::string link_;
-  Eigen::Isometry3d tcp_;
+
+  /** @brief The name of the link to track relative to target_frame_*/
+  std::string source_frame_;
+
+  /** @brief The offset transform to apply to source_frame_ location */
+  Eigen::Isometry3d source_frame_offset_;
+
+  /** @brief The name of the target link to track relative to source_frame_ */
+  std::string target_frame_;
+
+  /** @brief A offset transform to be applied to target_frame_ location */
+  Eigen::Isometry3d target_frame_offset_;
+
+  /** @brief indicates which link is active */
+  bool is_target_active_{ true };
 
   /**
    * @brief This is a vector of indices to be returned Default: {0, 1, 2, 3, 4, 5}
@@ -137,17 +149,20 @@ struct CartPoseErrCalculator : public TrajOptVectorOfVector
   Eigen::VectorXi indices_;
 
   CartPoseErrCalculator(
-      const Eigen::Isometry3d& pose,
       tesseract_kinematics::JointGroup::ConstPtr manip,
-      std::string link,
-      const Eigen::Isometry3d& tcp = Eigen::Isometry3d::Identity(),
+      std::string source_frame,
+      std::string target_frame,
+      const Eigen::Isometry3d& source_frame_offset = Eigen::Isometry3d::Identity(),
+      const Eigen::Isometry3d& target_frame_offset = Eigen::Isometry3d::Identity(),
       Eigen::VectorXi indices = Eigen::Matrix<int, 1, 6>(std::vector<int>({ 0, 1, 2, 3, 4, 5 }).data()))
-    : pose_inv_(pose.inverse())
-    , manip_(std::move(manip))
-    , link_(std::move(link))
-    , tcp_(tcp)
+    : manip_(std::move(manip))
+    , source_frame_(std::move(source_frame))
+    , source_frame_offset_(source_frame_offset)
+    , target_frame_(std::move(target_frame))
+    , target_frame_offset_(target_frame_offset)
     , indices_(std::move(indices))
   {
+    is_target_active_ = manip_->isActiveLinkName(target_frame_);
     assert(indices_.size() <= 6);
   }
 
@@ -161,10 +176,22 @@ struct CartPoseJacCalculator : sco::MatrixOfVector
 {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-  Eigen::Isometry3d pose_inv_;
   tesseract_kinematics::JointGroup::ConstPtr manip_;
-  std::string link_;
-  Eigen::Isometry3d tcp_;
+
+  /** @brief The name of the link to track relative to target_frame_*/
+  std::string source_frame_;
+
+  /** @brief The offset transform to apply to source_frame_ location */
+  Eigen::Isometry3d source_frame_offset_;
+
+  /** @brief The name of the target link to track relative to source_frame_ */
+  std::string target_frame_;
+
+  /** @brief A offset transform to be applied to target_frame_ location */
+  Eigen::Isometry3d target_frame_offset_;
+
+  /** @brief indicates which link is active */
+  bool is_target_active_{ true };
 
   /**
    * @brief This is a vector of indices to be returned Default: {0, 1, 2, 3, 4, 5}
@@ -175,17 +202,20 @@ struct CartPoseJacCalculator : sco::MatrixOfVector
   Eigen::VectorXi indices_;
 
   CartPoseJacCalculator(
-      const Eigen::Isometry3d& pose,
       tesseract_kinematics::JointGroup::ConstPtr manip,
-      std::string link,
-      const Eigen::Isometry3d& tcp = Eigen::Isometry3d::Identity(),
+      std::string source_frame,
+      std::string target_frame,
+      const Eigen::Isometry3d& source_frame_offset = Eigen::Isometry3d::Identity(),
+      const Eigen::Isometry3d& target_frame_offset = Eigen::Isometry3d::Identity(),
       Eigen::VectorXi indices = Eigen::Matrix<int, 1, 6>(std::vector<int>({ 0, 1, 2, 3, 4, 5 }).data()))
-    : pose_inv_(pose.inverse())
-    , manip_(std::move(manip))
-    , link_(std::move(link))
-    , tcp_(tcp)
+    : manip_(std::move(manip))
+    , source_frame_(std::move(source_frame))
+    , source_frame_offset_(source_frame_offset)
+    , target_frame_(std::move(target_frame))
+    , target_frame_offset_(target_frame_offset)
     , indices_(std::move(indices))
   {
+    is_target_active_ = manip_->isActiveLinkName(target_frame_);
     assert(indices_.size() <= 6);
   }
 
@@ -200,14 +230,14 @@ struct CartVelJacCalculator : sco::MatrixOfVector
 {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   tesseract_kinematics::JointGroup::ConstPtr manip_;
-  std::string link_;
   double limit_;
+  std::string link_;
   Eigen::Isometry3d tcp_;
   CartVelJacCalculator(tesseract_kinematics::JointGroup::ConstPtr manip,
                        std::string link,
                        double limit,
                        const Eigen::Isometry3d& tcp = Eigen::Isometry3d::Identity())
-    : manip_(std::move(manip)), link_(std::move(link)), limit_(limit), tcp_(tcp)
+    : manip_(std::move(manip)), limit_(limit), link_(std::move(link)), tcp_(tcp)
   {
   }
 
