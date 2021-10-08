@@ -78,19 +78,20 @@ TEST_F(KinematicCostsTest, CartPoseJacCalculator)  // NOLINT
 
   tesseract_kinematics::JointGroup::Ptr kin = env_->getJointGroup("right_arm");
 
-  std::string link = "r_gripper_tool_frame";
-  Eigen::Isometry3d input_pose = env_->getState().link_transforms.at(link);
-  Eigen::Isometry3d tcp = Eigen::Isometry3d::Identity();
+  std::string source_frame = env_->getRootLinkName();
+  std::string target_frame = "r_gripper_tool_frame";
+  Eigen::Isometry3d source_frame_offset = env_->getState().link_transforms.at(target_frame);
+  Eigen::Isometry3d target_frame_offset = Eigen::Isometry3d::Identity();
 
   Eigen::VectorXd values(7);
   values << -1.1, 1.2, -3.3, -1.4, 5.5, -1.6, 7.7;
 
-  CartPoseErrCalculator f(input_pose, kin, link, tcp);
-  CartPoseJacCalculator dfdx(input_pose, kin, link, tcp);
+  CartPoseErrCalculator f(kin, source_frame, target_frame, source_frame_offset, target_frame_offset);
+  CartPoseJacCalculator dfdx(kin, source_frame, target_frame, source_frame_offset, target_frame_offset);
   checkJacobian(f, dfdx, values, 1.0e-5);
 }
 
-// This has known issues and is not being used. Disabled due to sefaults in CI
+// This has known issues and is not being used. Disabled due to segfaults in CI
 // TEST_F(KinematicCostsTest, DynamicCartPoseJacCalculator)  // NOLINT
 //{
 //  CONSOLE_BRIDGE_logDebug("KinematicCostsTest, DynamicCartPoseJacCalculator");

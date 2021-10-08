@@ -134,12 +134,10 @@ TEST(CartPositionOptimizationTrajoptSCO, cart_position_optimization_trajopt_sco)
     auto pose = std::make_shared<CartPoseTermInfo>();
     pose->term_type = TT_CNT;
     pose->name = "waypoint_cart_0";
-    pose->link = "r_gripper_tool_frame";
     pose->timestep = 0;
-
-    pose->xyz = target_pose.translation();
-    Eigen::Quaterniond q(target_pose.linear());
-    pose->wxyz = Eigen::Vector4d(q.w(), q.x(), q.y(), q.z());
+    pose->source_frame = "r_gripper_tool_frame";
+    pose->target_frame = "base_footprint";
+    pose->target_frame_offset = target_pose;
     pose->pos_coeffs = Eigen::Vector3d(1, 1, 1);
     pose->rot_coeffs = Eigen::Vector3d(1, 1, 1);
 

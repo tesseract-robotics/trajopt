@@ -82,7 +82,7 @@ public:
     nlp.AddVariableSet(var0);
 
     // 4) Add constraints
-    CartPosInfo cart_info(kin_group, Eigen::Isometry3d::Identity(), "r_gripper_tool_frame");
+    CartPosInfo cart_info(kin_group, "r_gripper_tool_frame", "base_footprint");
     constraint = std::make_shared<trajopt_ifopt::CartPosConstraint>(cart_info, var0);
     nlp.AddConstraintSet(constraint);
   }
@@ -192,7 +192,7 @@ TEST_F(CartesianPositionConstraintUnit, GetSetBounds)  // NOLINT
     Eigen::VectorXd pos = Eigen::VectorXd::Ones(kin_group->numJoints());
     auto var0 = std::make_shared<trajopt_ifopt::JointPosition>(pos, kin_group->getJointNames(), "Joint_Position_0");
 
-    CartPosInfo cart_info(kin_group, Eigen::Isometry3d::Identity(), "r_gripper_tool_frame");
+    CartPosInfo cart_info(kin_group, "r_gripper_tool_frame", "base_footprint");
     auto constraint_2 = std::make_shared<trajopt_ifopt::CartPosConstraint>(cart_info, var0);
 
     ifopt::Bounds bounds(-0.1234, 0.5678);

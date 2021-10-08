@@ -281,16 +281,16 @@ struct DynamicCartPoseTermInfo : public TermInfo
 
   /** @brief Timestep at which to apply term */
   int timestep;
-  /** @brief The link relative to which the target_tcp is defined */
-  std::string target;
   /** @brief Coefficients for position and rotation */
   Eigen::Vector3d pos_coeffs, rot_coeffs;
   /** @brief Link which should reach desired pos */
-  std::string link;
+  std::string source_frame;
+  /** @brief The link relative to which the target_tcp is defined */
+  std::string target_frame;
   /** @brief Static transform applied to the link_ location */
-  Eigen::Isometry3d tcp;
-  /** @brief A Static tranform to be applied to target_ location */
-  Eigen::Isometry3d target_tcp;
+  Eigen::Isometry3d source_frame_offset;
+  /** @brief A Static transform to be applied to target_ location */
+  Eigen::Isometry3d target_frame_offset;
 
   DynamicCartPoseTermInfo();
 
@@ -311,19 +311,16 @@ struct CartPoseTermInfo : public TermInfo
 
   /** @brief Timestep at which to apply term */
   int timestep;
-  /** @brief  Cartesian position */
-  Eigen::Vector3d xyz;
-  /** @brief Rotation quaternion */
-  Eigen::Vector4d wxyz;
-  /** @brief coefficients for position and rotation */
   Eigen::Vector3d pos_coeffs, rot_coeffs;
-  /** @brief Link which should reach desired pose */
-  std::string link;
-  /** @brief Static transform applied to the link */
-  Eigen::Isometry3d tcp;
-  /** @brief The frame relative to which the target position is defined. If empty, frame is assumed to the root,
-   * "world", frame */
-  std::string target;
+
+  /** @brief Link which should reach desired pos */
+  std::string source_frame;
+  /** @brief The link relative to which the target_tcp is defined */
+  std::string target_frame;
+  /** @brief Static transform applied to the link_ location */
+  Eigen::Isometry3d source_frame_offset;
+  /** @brief A Static transform to be applied to target_ location */
+  Eigen::Isometry3d target_frame_offset;
 
   CartPoseTermInfo();
 

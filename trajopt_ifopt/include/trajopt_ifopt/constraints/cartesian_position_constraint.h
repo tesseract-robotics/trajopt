@@ -51,19 +51,24 @@ struct CartPosInfo
 
   CartPosInfo() = default;
   CartPosInfo(tesseract_kinematics::JointGroup::ConstPtr manip,
-              const Eigen::Isometry3d& target_pose,
-              std::string source_link,
-              const Eigen::Isometry3d& source_tcp = Eigen::Isometry3d::Identity(),
+              std::string source_frame,
+              std::string target_frame,
+              const Eigen::Isometry3d& source_frame_offset = Eigen::Isometry3d::Identity(),
+              const Eigen::Isometry3d& target_frame_offset = Eigen::Isometry3d::Identity(),
               Eigen::VectorXi indices = Eigen::Matrix<int, 1, 6>(std::vector<int>({ 0, 1, 2, 3, 4, 5 }).data()))
     : manip(std::move(manip))
-    , source_link(std::move(source_link))
-    , source_tcp(source_tcp)
-    , target_pose(target_pose)
-    , target_pose_inv(target_pose.inverse())
+    , source_frame(std::move(source_frame))
+    , target_frame(std::move(target_frame))
+    , source_frame_offset(source_frame_offset)
+    , target_frame_offset(target_frame_offset)
     , indices(std::move(indices))
   {
-    if (!this->manip->hasLinkName(this->source_link))
-      throw std::runtime_error("CartPosKinematicInfo: Source Link name '" + this->source_link +
+    if (!this->manip->hasLinkName(this->source_frame))
+      throw std::runtime_error("CartPosKinematicInfo: Source Link name '" + this->source_frame +
+                               "' provided does not exist.");
+
+    if (!this->manip->hasLinkName(this->target_frame))
+      throw std::runtime_error("CartPosKinematicInfo: Target Link name '" + this->target_frame +
                                "' provided does not exist.");
 
     if (this->indices.size() > 6)
@@ -71,22 +76,27 @@ struct CartPosInfo
 
     if (this->indices.size() == 0)
       throw std::runtime_error("CartPosKinematicInfo: The indices list length is zero.");
+
+    is_target_active = this->manip->isActiveLinkName(this->target_frame);
   }
 
   /** @brief The joint group */
   tesseract_kinematics::JointGroup::ConstPtr manip;
 
   /** @brief Link which should reach desired pos */
-  std::string source_link;
+  std::string source_frame;
 
-  /** @brief Static transform applied to the link_ location */
-  Eigen::Isometry3d source_tcp;
+  /** @brief The target frame that should be reached by the source */
+  std::string target_frame;
 
-  /** @brief The target TCP pose in world frame. Not used for calculation. Stored for convenience */
-  Eigen::Isometry3d target_pose;
+  /** @brief Static transform applied to the source_frame location */
+  Eigen::Isometry3d source_frame_offset;
 
-  /** @brief The inverse of target_pose_ used for error calculations */
-  Eigen::Isometry3d target_pose_inv;
+  /** @brief Static transform applied to the target_frame location */
+  Eigen::Isometry3d target_frame_offset;
+
+  /** @brief indicates which link is active */
+  bool is_target_active{ true };
 
   /**
    * @brief This is a vector of indices to be returned Default: {0, 1, 2, 3, 4, 5}
@@ -157,17 +167,13 @@ public:
    * @brief Set the target pose
    * @param pose
    */
-  void SetTargetPose(const Eigen::Isometry3d& pose)
-  {
-    info_.target_pose = pose;
-    info_.target_pose_inv = pose.inverse();
-  }
+  void SetTargetPose(const Eigen::Isometry3d& target_frame_offset) { info_.target_frame_offset = target_frame_offset; }
 
   /**
    * @brief Returns the target pose for the constraint
    * @return The target pose for the constraint
    */
-  Eigen::Isometry3d GetTargetPose() const { return info_.target_pose; }
+  Eigen::Isometry3d GetTargetPose() const { return info_.target_frame_offset; }
 
   /**
    * @brief Returns the current TCP pose in world frame given the input kinematic info and the current variable values

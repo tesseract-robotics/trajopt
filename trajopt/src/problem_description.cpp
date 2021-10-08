@@ -659,45 +659,73 @@ DynamicCartPoseTermInfo::DynamicCartPoseTermInfo() : TermInfo(TT_COST | TT_CNT)
 {
   pos_coeffs = Eigen::Vector3d::Ones();
   rot_coeffs = Eigen::Vector3d::Ones();
-  tcp.setIdentity();
-  target_tcp.setIdentity();
+  source_frame_offset.setIdentity();
+  target_frame_offset.setIdentity();
 }
 
 void DynamicCartPoseTermInfo::fromJson(ProblemConstructionInfo& pci, const Json::Value& v)
 {
   FAIL_IF_FALSE(v.isMember("params"));
-  Eigen::Vector3d tcp_xyz = Eigen::Vector3d::Zero();
-  Eigen::Vector4d tcp_wxyz = Eigen::Vector4d(1, 0, 0, 0);
-  Eigen::Vector3d target_tcp_xyz = Eigen::Vector3d::Zero();
-  Eigen::Vector4d target_tcp_wxyz = Eigen::Vector4d(1, 0, 0, 0);
+  Eigen::Vector3d source_frame_offset_xyz = Eigen::Vector3d::Zero();
+  Eigen::Vector4d source_frame_offset_wxyz = Eigen::Vector4d(1, 0, 0, 0);
+  Eigen::Vector3d target_frame_offset_xyz = Eigen::Vector3d::Zero();
+  Eigen::Vector4d target_frame_offset_wxyz = Eigen::Vector4d(1, 0, 0, 0);
 
   const Json::Value& params = v["params"];
   json_marshal::childFromJson(params, timestep, "timestep", pci.basic_info.n_steps - 1);
-  json_marshal::childFromJson(params, target, "target");
   json_marshal::childFromJson(params, pos_coeffs, "pos_coeffs", Eigen::Vector3d(1, 1, 1));
   json_marshal::childFromJson(params, rot_coeffs, "rot_coeffs", Eigen::Vector3d(1, 1, 1));
-  json_marshal::childFromJson(params, link, "link");
-  json_marshal::childFromJson(params, tcp_xyz, "tcp_xyz", Eigen::Vector3d(0, 0, 0));
-  json_marshal::childFromJson(params, tcp_wxyz, "tcp_wxyz", Eigen::Vector4d(1, 0, 0, 0));
-  json_marshal::childFromJson(params, target_tcp_xyz, "target_tcp_xyz", Eigen::Vector3d(0, 0, 0));
-  json_marshal::childFromJson(params, target_tcp_wxyz, "target_tcp_wxyz", Eigen::Vector4d(1, 0, 0, 0));
+  json_marshal::childFromJson(params, source_frame, "source_frame");
+  json_marshal::childFromJson(params, target_frame, "target_frame");
+  json_marshal::childFromJson(params, source_frame_offset_xyz, "source_frame_offset_xyz", Eigen::Vector3d(0, 0, 0));
+  json_marshal::childFromJson(
+      params, source_frame_offset_wxyz, "source_frame_offset_wxyz", Eigen::Vector4d(1, 0, 0, 0));
+  json_marshal::childFromJson(params, target_frame_offset_xyz, "target_frame_offset_xyz", Eigen::Vector3d(0, 0, 0));
+  json_marshal::childFromJson(
+      params, target_frame_offset_wxyz, "target_frame_offset_wxyz", Eigen::Vector4d(1, 0, 0, 0));
 
-  Eigen::Quaterniond q(tcp_wxyz(0), tcp_wxyz(1), tcp_wxyz(2), tcp_wxyz(3));
-  tcp.linear() = q.matrix();
-  tcp.translation() = tcp_xyz;
+  Eigen::Quaterniond q(source_frame_offset_wxyz(0),
+                       source_frame_offset_wxyz(1),
+                       source_frame_offset_wxyz(2),
+                       source_frame_offset_wxyz(3));
+  source_frame_offset.linear() = q.matrix();
+  source_frame_offset.translation() = source_frame_offset_xyz;
 
-  Eigen::Quaterniond target_q(target_tcp_wxyz(0), target_tcp_wxyz(1), target_tcp_wxyz(2), target_tcp_wxyz(3));
-  target_tcp.linear() = target_q.matrix();
-  target_tcp.translation() = target_tcp_xyz;
+  Eigen::Quaterniond target_q(target_frame_offset_wxyz(0),
+                              target_frame_offset_wxyz(1),
+                              target_frame_offset_wxyz(2),
+                              target_frame_offset_wxyz(3));
+  target_frame_offset.linear() = target_q.matrix();
+  target_frame_offset.translation() = target_frame_offset_xyz;
 
-  const std::vector<std::string>& link_names = pci.kin->getActiveLinkNames();
-  if (std::find(link_names.begin(), link_names.end(), link) == link_names.end())
+  if (!pci.kin->hasLinkName(source_frame))
   {
-    PRINT_AND_THROW(boost::format("invalid link name: %s") % link);
+    PRINT_AND_THROW(boost::format("invalid source frame: %s") % source_frame);
   }
 
-  const char* all_fields[] = { "timestep", "target",   "pos_coeffs",     "rot_coeffs",     "link",
-                               "tcp_xyz",  "tcp_wxyz", "target_tcp_xyz", "target_tcp_wxyz" };
+  if (!pci.kin->hasLinkName(target_frame))
+  {
+    PRINT_AND_THROW(boost::format("invalid target frame: %s") % target_frame);
+  }
+
+  bool source_active = pci.kin->isActiveLinkName(source_frame);
+  bool target_active = pci.kin->isActiveLinkName(target_frame);
+
+  if (!(source_active && target_active))
+  {
+    PRINT_AND_THROW(boost::format("source '%s' and target '%s' are not both active links") % source_frame %
+                    target_frame);
+  }
+
+  const char* all_fields[] = { "timestep",
+                               "pos_coeffs",
+                               "rot_coeffs",
+                               "source_frame",
+                               "target_frame",
+                               "source_frame_offset_xyz",
+                               "source_frame_offset_wxyz",
+                               "target_frame_offset_xyz",
+                               "target_frame_offset_wxyz" };
   ensure_only_members(params, all_fields, sizeof(all_fields) / sizeof(char*));
 }
 
@@ -737,10 +765,12 @@ void DynamicCartPoseTermInfo::hatch(TrajOptProb& prob)
   }
   else
   {
-    auto f = std::make_shared<DynamicCartPoseErrCalculator>(target, prob.GetKin(), link, tcp, target_tcp, indices);
+    auto f = std::make_shared<DynamicCartPoseErrCalculator>(
+        prob.GetKin(), source_frame, target_frame, source_frame_offset, target_frame_offset, indices);
 
     // This is currently not being used. There is an intermittent bug that needs to be tracked down it is not used.
-    auto dfdx = std::make_shared<DynamicCartPoseJacCalculator>(target, prob.GetKin(), link, tcp, target_tcp, indices);
+    auto dfdx = std::make_shared<DynamicCartPoseJacCalculator>(
+        prob.GetKin(), source_frame, target_frame, source_frame_offset, target_frame_offset, indices);
 
     // Apply error calculator as either cost or constraint
     if (term_type & TT_COST)
@@ -765,76 +795,82 @@ CartPoseTermInfo::CartPoseTermInfo() : TermInfo(TT_COST | TT_CNT)
 {
   pos_coeffs = Eigen::Vector3d::Ones();
   rot_coeffs = Eigen::Vector3d::Ones();
-  tcp.setIdentity();
+  source_frame_offset.setIdentity();
+  target_frame_offset.setIdentity();
 }
 
 void CartPoseTermInfo::fromJson(ProblemConstructionInfo& pci, const Json::Value& v)
 {
   FAIL_IF_FALSE(v.isMember("params"));
-  Eigen::Vector3d tcp_xyz = Eigen::Vector3d::Zero();
-  Eigen::Vector4d tcp_wxyz = Eigen::Vector4d(1, 0, 0, 0);
+  Eigen::Vector3d source_frame_offset_xyz = Eigen::Vector3d::Zero();
+  Eigen::Vector4d source_frame_offset_wxyz = Eigen::Vector4d(1, 0, 0, 0);
+  Eigen::Vector3d target_frame_offset_xyz = Eigen::Vector3d::Zero();
+  Eigen::Vector4d target_frame_offset_wxyz = Eigen::Vector4d(1, 0, 0, 0);
 
   const Json::Value& params = v["params"];
   json_marshal::childFromJson(params, timestep, "timestep", pci.basic_info.n_steps - 1);
-  json_marshal::childFromJson(params, xyz, "xyz");
-  json_marshal::childFromJson(params, wxyz, "wxyz");
   json_marshal::childFromJson(params, pos_coeffs, "pos_coeffs", Eigen::Vector3d(1, 1, 1));
   json_marshal::childFromJson(params, rot_coeffs, "rot_coeffs", Eigen::Vector3d(1, 1, 1));
-  json_marshal::childFromJson(params, link, "link");
-  json_marshal::childFromJson(params, tcp_xyz, "tcp_xyz", Eigen::Vector3d(0, 0, 0));
-  json_marshal::childFromJson(params, tcp_wxyz, "tcp_wxyz", Eigen::Vector4d(1, 0, 0, 0));
-  json_marshal::childFromJson(params, target, "target", std::string(""));
+  json_marshal::childFromJson(params, source_frame, "source_frame");
+  json_marshal::childFromJson(params, target_frame, "target_frame");
+  json_marshal::childFromJson(params, source_frame_offset_xyz, "source_frame_offset_xyz", Eigen::Vector3d(0, 0, 0));
+  json_marshal::childFromJson(
+      params, source_frame_offset_wxyz, "source_frame_offset_wxyz", Eigen::Vector4d(1, 0, 0, 0));
+  json_marshal::childFromJson(params, target_frame_offset_xyz, "target_frame_offset_xyz", Eigen::Vector3d(0, 0, 0));
+  json_marshal::childFromJson(
+      params, target_frame_offset_wxyz, "target_frame_offset_wxyz", Eigen::Vector4d(1, 0, 0, 0));
 
-  Eigen::Quaterniond q(tcp_wxyz(0), tcp_wxyz(1), tcp_wxyz(2), tcp_wxyz(3));
-  tcp.linear() = q.matrix();
-  tcp.translation() = tcp_xyz;
+  Eigen::Quaterniond q(source_frame_offset_wxyz(0),
+                       source_frame_offset_wxyz(1),
+                       source_frame_offset_wxyz(2),
+                       source_frame_offset_wxyz(3));
+  source_frame_offset.linear() = q.matrix();
+  source_frame_offset.translation() = source_frame_offset_xyz;
 
-  const std::vector<std::string>& link_names = pci.kin->getActiveLinkNames();
-  if (std::find(link_names.begin(), link_names.end(), link) == link_names.end())
+  Eigen::Quaterniond target_q(target_frame_offset_wxyz(0),
+                              target_frame_offset_wxyz(1),
+                              target_frame_offset_wxyz(2),
+                              target_frame_offset_wxyz(3));
+  target_frame_offset.linear() = target_q.matrix();
+  target_frame_offset.translation() = target_frame_offset_xyz;
+
+  if (!pci.kin->hasLinkName(source_frame))
   {
-    PRINT_AND_THROW(boost::format("invalid link name: %s") % link);
+    PRINT_AND_THROW(boost::format("invalid source frame: %s") % source_frame);
   }
 
-  if (target.empty())
+  if (!pci.kin->hasLinkName(target_frame))
   {
-    target = pci.env->getRootLinkName();
-  }
-  else
-  {
-    const std::vector<std::string>& all_links = pci.env->getLinkNames();
-    if (std::find(all_links.begin(), all_links.end(), target) == all_links.end())
-    {
-      PRINT_AND_THROW(boost::format("invalid target link name: %s") % target);
-    }
+    PRINT_AND_THROW(boost::format("invalid target frame: %s") % target_frame);
   }
 
-  const char* all_fields[] = { "timestep", "xyz",     "wxyz",     "pos_coeffs", "rot_coeffs",
-                               "link",     "tcp_xyz", "tcp_wxyz", "target" };
+  bool source_active = pci.kin->isActiveLinkName(source_frame);
+  bool target_active = pci.kin->isActiveLinkName(target_frame);
+  if (source_active && target_active)
+  {
+    PRINT_AND_THROW(boost::format("source '%s' and target '%s' are both active") % source_frame % target_frame);
+  }
+
+  if (!source_active && !target_active)
+  {
+    PRINT_AND_THROW(boost::format("source '%s' and target '%s' are both static") % source_frame % target_frame);
+  }
+
+  const char* all_fields[] = { "timestep",
+                               "pos_coeffs",
+                               "rot_coeffs",
+                               "source_frame",
+                               "target_frame",
+                               "source_frame_offset_xyz",
+                               "source_frame_offset_wxyz",
+                               "target_frame_offset_xyz",
+                               "target_frame_offset_wxyz" };
   ensure_only_members(params, all_fields, sizeof(all_fields) / sizeof(char*));
 }
 
 void CartPoseTermInfo::hatch(TrajOptProb& prob)
 {
   int n_dof = static_cast<int>(prob.GetKin()->numJoints());
-
-  Eigen::Isometry3d input_pose{ Eigen::Isometry3d::Identity() };
-  Eigen::Quaterniond q(wxyz(0), wxyz(1), wxyz(2), wxyz(3));
-  input_pose.linear() = q.matrix();
-  input_pose.translation() = xyz;
-
-  tesseract_scene_graph::SceneState state = prob.GetEnv()->getState();
-  Eigen::Isometry3d world_to_target{ Eigen::Isometry3d::Identity() };
-  if (!target.empty())
-  {
-    try
-    {
-      world_to_target = state.link_transforms.at(target);
-    }
-    catch (const std::exception& ex)
-    {
-      PRINT_AND_THROW(boost::format("Failed to find transform for link '%s'") % target);
-    }
-  }
 
   // Next parse the coeff and if not zero add the index and coeff
   std::vector<int> ic;
@@ -872,21 +908,23 @@ void CartPoseTermInfo::hatch(TrajOptProb& prob)
   }
   else if ((term_type & TT_COST) && ~(term_type | ~TT_USE_TIME))
   {
-    auto f = std::make_shared<CartPoseErrCalculator>(world_to_target * input_pose, prob.GetKin(), link, tcp, indices);
+    auto f = std::make_shared<CartPoseErrCalculator>(
+        prob.GetKin(), source_frame, target_frame, source_frame_offset, target_frame_offset, indices);
 
     // This is currently not being used. There is an intermittent bug that needs to be tracked down it is not used.
-    auto dfdx =
-        std::make_shared<CartPoseJacCalculator>(world_to_target * input_pose, prob.GetKin(), link, tcp, indices);
+    auto dfdx = std::make_shared<CartPoseJacCalculator>(
+        prob.GetKin(), source_frame, target_frame, source_frame_offset, target_frame_offset, indices);
     prob.addCost(
         std::make_shared<TrajOptCostFromErrFunc>(f, prob.GetVarRow(timestep, 0, n_dof), coeff, sco::ABS, name));
   }
   else if ((term_type & TT_CNT) && ~(term_type | ~TT_USE_TIME))
   {
-    auto f = std::make_shared<CartPoseErrCalculator>(world_to_target * input_pose, prob.GetKin(), link, tcp, indices);
+    auto f = std::make_shared<CartPoseErrCalculator>(
+        prob.GetKin(), source_frame, target_frame, source_frame_offset, target_frame_offset, indices);
 
     // This is currently not being used. There is an intermittent bug that needs to be tracked down it is not used.
-    auto dfdx =
-        std::make_shared<CartPoseJacCalculator>(world_to_target * input_pose, prob.GetKin(), link, tcp, indices);
+    auto dfdx = std::make_shared<CartPoseJacCalculator>(
+        prob.GetKin(), source_frame, target_frame, source_frame_offset, target_frame_offset, indices);
     prob.addConstraint(
         std::make_shared<TrajOptConstraintFromErrFunc>(f, prob.GetVarRow(timestep, 0, n_dof), coeff, sco::EQ, name));
   }
