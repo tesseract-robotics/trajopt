@@ -92,8 +92,8 @@ public:
   using Ptr = std::shared_ptr<CartLineConstraint>;
   using ConstPtr = std::shared_ptr<const CartLineConstraint>;
 
-  CartLineConstraint(const Eigen::Isometry3d& Point_A,
-                     const Eigen::Isometry3d& Point_B,
+  CartLineConstraint(const Eigen::Isometry3d& point_a_,
+                     const Eigen::Isometry3d& point_b_,
                      CartLineKinematicInfo::ConstPtr kinematic_info,
                      JointPosition::ConstPtr position_var,
                      const std::string& name = "CartLine");
