@@ -107,7 +107,7 @@ void processInterpolatedCollisionResults(std::vector<tesseract_collision::Contac
         }
       }
 
-      // Dont include contacts outside the buffer distance @todo Should this be done? Levi
+      // Don't include contacts outside the buffer distance @todo Should this be done? Levi
       removeInvalidContactResults(pair.second, data);
 
       // If the contact pair does not exist in contact_results add it

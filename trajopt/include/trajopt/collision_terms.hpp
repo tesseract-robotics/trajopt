@@ -353,7 +353,8 @@ protected:
    */
   void processInterpolatedCollisionResults(std::vector<tesseract_collision::ContactResultMap>& contacts_vector,
                                            tesseract_collision::ContactResultMap& contact_results,
-                                           double dt) const;
+                                           double dt,
+                                           bool discrete) const;
 
   /**
    * @brief Remove any results that are invalid.
