@@ -27,77 +27,76 @@ void CollisionsToDistances(const tesseract_collision::ContactResultVector& dist_
     dists.push_back(dist_result.distance);
 }
 
+void DebugPrintInfoHeader(Eigen::Index dof)
+{
+  std::printf("\n");
+  std::printf("DistanceResult| %30s | %30s | %6s | %6s, %6s, %6s | %6s, %6s, "
+              "%6s | %6s, %6s, %6s | %6s, %6s, %6s | %6s, %6s, %6s | %10s %10s |",
+              "LINK A",
+              "LINK B",
+              "DIST",
+              "Nx",
+              "Ny",
+              "Nz",
+              "PAx",
+              "PAy",
+              "PAz",
+              "PBx",
+              "PBy",
+              "PBz",
+              "LPAx",
+              "LPAy",
+              "LPAz",
+              "LPBx",
+              "LPBy",
+              "LPBz",
+              "CC TIME A",
+              "CC TIME B");
+
+  for (auto i = 0; i < dof; ++i)
+  {
+    if (i == dof - 1)
+    {
+      std::printf(" %6s |", ("dA" + std::to_string(i)).c_str());
+    }
+    else
+    {
+      std::printf(" %6s,", ("dA" + std::to_string(i)).c_str());
+    }
+  }
+
+  for (auto i = 0; i < dof; ++i)
+  {
+    if (i == dof - 1)
+    {
+      std::printf(" %6s |", ("dB" + std::to_string(i)).c_str());
+    }
+    else
+    {
+      std::printf(" %6s,", ("dB" + std::to_string(i)).c_str());
+    }
+  }
+
+  for (auto i = 0; i < dof; ++i)
+  {
+    if (i == dof - 1)
+    {
+      std::printf(" %6s |", ("J" + std::to_string(i)).c_str());
+    }
+    else
+    {
+      std::printf(" %6s,", ("J" + std::to_string(i)).c_str());
+    }
+  }
+
+  std::printf("\n");
+}
+
 void DebugPrintInfo(const tesseract_collision::ContactResult& res,
                     const Eigen::VectorXd& dist_grad_A,
                     const Eigen::VectorXd& dist_grad_B,
-                    const Eigen::VectorXd& dof_vals,
-                    bool header = false)
+                    const Eigen::VectorXd& dof_vals)
 {
-  if (header)
-  {
-    std::printf("\n");
-    std::printf("DistanceResult| %30s | %30s | %6s | %6s, %6s, %6s | %6s, %6s, "
-                "%6s | %6s, %6s, %6s | %6s, %6s, %6s | %6s, %6s, %6s | %10s %10s |",
-                "LINK A",
-                "LINK B",
-                "DIST",
-                "Nx",
-                "Ny",
-                "Nz",
-                "PAx",
-                "PAy",
-                "PAz",
-                "PBx",
-                "PBy",
-                "PBz",
-                "LPAx",
-                "LPAy",
-                "LPAz",
-                "LPBx",
-                "LPBy",
-                "LPBz",
-                "CC TIME A",
-                "CC TIME B");
-
-    for (auto i = 0; i < dist_grad_A.size(); ++i)
-    {
-      if (i == dist_grad_A.size() - 1)
-      {
-        std::printf(" %6s |", ("dA" + std::to_string(i)).c_str());
-      }
-      else
-      {
-        std::printf(" %6s,", ("dA" + std::to_string(i)).c_str());
-      }
-    }
-
-    for (auto i = 0; i < dist_grad_B.size(); ++i)
-    {
-      if (i == dist_grad_B.size() - 1)
-      {
-        std::printf(" %6s |", ("dB" + std::to_string(i)).c_str());
-      }
-      else
-      {
-        std::printf(" %6s,", ("dB" + std::to_string(i)).c_str());
-      }
-    }
-
-    for (auto i = 0; i < dof_vals.size(); ++i)
-    {
-      if (i == dof_vals.size() - 1)
-      {
-        std::printf(" %6s |", ("J" + std::to_string(i)).c_str());
-      }
-      else
-      {
-        std::printf(" %6s,", ("J" + std::to_string(i)).c_str());
-      }
-    }
-
-    std::printf("\n");
-  }
-
   std::printf("DistanceResult| %30s | %30s | %6.3f | %6.3f, %6.3f, %6.3f | "
               "%6.3f, %6.3f, %6.3f | %6.3f, %6.3f, %6.3f | %6.3f, "
               "%6.3f, %6.3f | %6.3f, %6.3f, %6.3f | %10.3f %10.3f |",
@@ -122,27 +121,55 @@ void DebugPrintInfo(const tesseract_collision::ContactResult& res,
               res.cc_time[0],
               res.cc_time[1]);
 
-  for (auto i = 0; i < dist_grad_A.size(); ++i)
+  for (auto i = 0; i < dof_vals.size(); ++i)
   {
-    if (i == dist_grad_A.size() - 1)
+    if (dist_grad_A.size() == dof_vals.size())
     {
-      std::printf(" %6.3f |", dist_grad_A(i));
+      if (i == dof_vals.size() - 1)
+      {
+        std::printf(" %6.3f |", dist_grad_A(i));
+      }
+      else
+      {
+        std::printf(" %6.3f,", dist_grad_A(i));
+      }
     }
     else
     {
-      std::printf(" %6.3f,", dist_grad_A(i));
+      if (i == dof_vals.size() - 1)
+      {
+        std::printf(" %6s |", "NA");
+      }
+      else
+      {
+        std::printf(" %6s,", "NA");
+      }
     }
   }
 
   for (auto i = 0; i < dist_grad_B.size(); ++i)
   {
-    if (i == dist_grad_B.size() - 1)
+    if (dist_grad_B.size() == dof_vals.size())
     {
-      std::printf(" %6.3f |", dist_grad_B(i));
+      if (i == dof_vals.size() - 1)
+      {
+        std::printf(" %6.3f |", dist_grad_B(i));
+      }
+      else
+      {
+        std::printf(" %6.3f,", dist_grad_B(i));
+      }
     }
     else
     {
-      std::printf(" %6.3f,", dist_grad_B(i));
+      if (i == dof_vals.size() - 1)
+      {
+        std::printf(" %6s |", "NA");
+      }
+      else
+      {
+        std::printf(" %6s,", "NA");
+      }
     }
   }
 
@@ -190,20 +217,21 @@ GradientResults CollisionEvaluator::GetGradient(const Eigen::VectorXd& dofvals,
       // Since the link transform is known do not call calcJacobian with link point
       tesseract_common::jacobianChangeRefPoint(jac, link_transform.linear() * contact_result.nearest_points_local[i]);
 
-      //      Eigen::Isometry3d test_link_transform = manip_->calcFwdKin(dofvals, it->link_name);
-      //      Eigen::Isometry3d temp1 = world_to_base_ * test_link_transform;
-      //      Eigen::Isometry3d temp2 = link_transform * it->transform.inverse();
-      //      assert(temp1.isApprox(temp2, 0.0001));
+#ifndef NDEBUG
+//      Eigen::Isometry3d test_link_transform = manip_->calcFwdKin(dofvals).at(contact_result.link_names[i]);
+//      assert(test_link_transform.isApprox(link_transform, 0.0001));
 
-      //      Eigen::MatrixXd jac_test;
-      //      jac_test.resize(6, manip_->numJoints());
-      //      tesseract_kinematics::numericalJacobian(jac_test, world_to_base_, *manip_, dofvals, it->link_name,
-      //      contact_result.nearest_points_local[i]); bool check = jac.isApprox(jac_test, 1e-3); assert(check == true);
+//      Eigen::MatrixXd jac_test;
+//      jac_test.resize(6, manip_->numJoints());
+//      tesseract_kinematics::numericalJacobian(jac_test, *manip_, dofvals, contact_result.link_names[i],
+//      contact_result.nearest_points_local[i]); bool check = jac.isApprox(jac_test, 1e-3); assert(check == true);
+#endif
 
       results.gradients[i].gradient = ((i == 0) ? -1.0 : 1.0) * contact_result.normal.transpose() * jac.topRows(3);
     }
   }
-  // DebugPrintInfo(res, results.gradients[0], results.gradients[1], dofvals, &res == &(dist_results.front()));
+
+  // DebugPrintInfo(contact_result, results.gradients[0].gradient, results.gradients[1].gradient, dofvals);
 
   return results;
 }
@@ -271,7 +299,7 @@ GradientResults CollisionEvaluator::GetGradient(const Eigen::VectorXd& dofvals0,
     }
   }
 
-  // DebugPrintInfo(res, results.gradients[0], results.gradients[1], dofvals, &res == &(dist_results.front()));
+  // DebugPrintInfo(contact_result, results.gradients[0].gradient, results.gradients[1].gradient, dofvalst);
 
   return results;
 }
@@ -761,7 +789,8 @@ void CollisionEvaluator::CalcDistExpressionsSingleTimeStepW(const DblVec& x,
 void CollisionEvaluator::processInterpolatedCollisionResults(
     std::vector<tesseract_collision::ContactResultMap>& contacts_vector,
     tesseract_collision::ContactResultMap& contact_results,
-    double dt) const
+    double dt,
+    bool discrete) const
 {
   // If contact is found the actual dt between the original two state must be recalculated based on where it
   // occurred in the sub-trajectory. Also the cc_type must also be recalculated but does not appear to be used
@@ -794,6 +823,10 @@ void CollisionEvaluator::processInterpolatedCollisionResults(
               r.cc_type[j] = tesseract_collision::ContinuousCollisionType::CCType_Time1;
             else
               r.cc_type[j] = tesseract_collision::ContinuousCollisionType::CCType_Between;
+
+            // If discrete set cc_transform for discrete continuous
+            if (discrete)
+              r.cc_transform = r.transform;
           }
         }
       }
@@ -1163,7 +1196,7 @@ void DiscreteCollisionEvaluator::CalcCollisions(const Eigen::Ref<const Eigen::Ve
   }
 
   if (contact_found)
-    processInterpolatedCollisionResults(contacts_vector, dist_results, 1.0 / double(subtraj.rows() - 1));
+    processInterpolatedCollisionResults(contacts_vector, dist_results, 1.0 / double(subtraj.rows() - 1), true);
 }
 
 void DiscreteCollisionEvaluator::CalcDistExpressions(const DblVec& x,
@@ -1193,14 +1226,11 @@ void DiscreteCollisionEvaluator::Plot(const tesseract_visualization::Visualizati
 
     if (manip_->isActiveLinkName(res.link_names[0]))
     {
-      // For discrete continuous we need to populate cc_transform for plotting to work correctly
-      res.cc_transform[0] = state1[res.link_names[0]];
-
       Eigen::MatrixXd jac = manip_->calcJacobian(dofvals0, res.link_names[0], res.nearest_points_local[0]);
 
       // Eigen::MatrixXd jac_test;
       // jac_test.resize(6, manip_->numJoints());
-      // tesseract_kinematics::numericalJacobian(jac_test, world_to_base_, *manip_, dofvals, itA->link_name,
+      // tesseract_kinematics::numericalJacobian(jac_test, *manip_, dofvals0, res.link_names[0],
       // res.nearest_points_local[0]); bool check = jac.isApprox(jac_test, 1e-3); assert(check == true);
 
       Eigen::VectorXd dist_grad = -res.normal.transpose() * jac.topRows(3);
@@ -1215,16 +1245,13 @@ void DiscreteCollisionEvaluator::Plot(const tesseract_visualization::Visualizati
 
     if (manip_->isActiveLinkName(res.link_names[1]))
     {
-      // For discrete continuous we need to populate cc_transform for plotting to work correctly
-      res.cc_transform[1] = state1[res.link_names[1]];
-
       // Calculate Jacobian
       Eigen::MatrixXd jac = manip_->calcJacobian(dofvals0, res.link_names[1], res.nearest_points_local[1]);
 
       // Eigen::MatrixXd jac_test;
       // jac_test.resize(6, manip_->numJoints());
-      // tesseract_kinematics::numericalJacobian(jac_test, world_to_base_, *manip_, dofvals, itB->link_name,
-      // res.nearest_points_local[1]); bool check = jac.isApprox(jac_test, 1e-3); assert(check == true)
+      // tesseract_kinematics::numericalJacobian(jac_test, *manip_, dofvals0, res.link_names[1],
+      // res.nearest_points_local[1]); bool check = jac.isApprox(jac_test, 1e-3); assert(check == true);
 
       Eigen::VectorXd dist_grad = res.normal.transpose() * jac.topRows(3);
 
@@ -1390,7 +1417,7 @@ void CastCollisionEvaluator::CalcCollisions(const Eigen::Ref<const Eigen::Vector
     }
 
     if (contact_found)
-      processInterpolatedCollisionResults(contacts_vector, dist_results, 1.0 / double(subtraj.rows() - 1));
+      processInterpolatedCollisionResults(contacts_vector, dist_results, 1.0 / double(subtraj.rows() - 1), false);
   }
   else
   {
