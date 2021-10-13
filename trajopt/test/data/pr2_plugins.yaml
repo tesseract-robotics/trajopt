@@ -1,0 +1,18 @@
+kinematic_plugins:
+  search_libraries:
+    - tesseract_kinematics_kdl_factories
+  inv_kin_plugins:
+    left_arm:
+      KDLInvKinChainLMA:
+        class: KDLInvKinChainLMAFactory
+        default: true
+        config:
+          base_link: torso_lift_link
+          tip_link: l_gripper_tool_frame
+    right_arm:
+      KDLInvKinChainLMA:
+        class: KDLInvKinChainLMAFactory
+        default: true
+        config:
+          base_link: torso_lift_link
+          tip_link: r_gripper_tool_frame

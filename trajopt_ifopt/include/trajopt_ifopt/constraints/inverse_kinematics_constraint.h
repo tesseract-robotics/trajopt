@@ -53,15 +53,15 @@ struct InverseKinematicsInfo
   InverseKinematicsInfo() = default;
   InverseKinematicsInfo(tesseract_kinematics::KinematicGroup::ConstPtr manip,
                         std::string working_frame,
-                        std::string link,
-                        const Eigen::Isometry3d& tcp = Eigen::Isometry3d::Identity())
-    : manip(std::move(manip)), working_frame(std::move(working_frame)), link(std::move(link)), tcp(tcp)
+                        std::string tcp_frame,
+                        const Eigen::Isometry3d& tcp_offset = Eigen::Isometry3d::Identity())
+    : manip(std::move(manip))
+    , working_frame(std::move(working_frame))
+    , tcp_frame(std::move(tcp_frame))
+    , tcp_offset(tcp_offset)
   {
-    if (this->manip->hasLinkName(this->link))
-    {
-      CONSOLE_BRIDGE_logError("Link name '%s' provided does not exist.", this->link.c_str());
-      assert(false);
-    }
+    if (!this->manip->hasLinkName(this->tcp_frame))
+      throw std::runtime_error("Link name '" + this->tcp_frame + "' provided does not exist.");
   }
 
   tesseract_kinematics::KinematicGroup::ConstPtr manip;
@@ -70,10 +70,10 @@ struct InverseKinematicsInfo
   std::string working_frame;
 
   /** @brief Not currently respected */
-  std::string link;
+  std::string tcp_frame;
 
   /** @brief Not currently respected */
-  Eigen::Isometry3d tcp;
+  Eigen::Isometry3d tcp_offset;
 };
 
 /**
