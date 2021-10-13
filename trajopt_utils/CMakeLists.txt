@@ -18,8 +18,7 @@ set(UTILS_SOURCE_FILES
     src/stl_to_string.cpp
     src/clock.cpp
     src/config.cpp
-    src/logging.cpp
-)
+    src/logging.cpp)
 
 add_library(${PROJECT_NAME} ${UTILS_SOURCE_FILES})
 target_link_libraries(${PROJECT_NAME} PUBLIC Eigen3::Eigen Boost::program_options)
@@ -28,19 +27,18 @@ target_compile_options(${PROJECT_NAME} PUBLIC ${TRAJOPT_COMPILE_OPTIONS_PUBLIC})
 target_compile_definitions(${PROJECT_NAME} PUBLIC ${TRAJOPT_COMPILE_DEFINITIONS})
 target_cxx_version(${PROJECT_NAME} PUBLIC VERSION ${TRAJOPT_CXX_VERSION})
 target_clang_tidy(${PROJECT_NAME} ENABLE ${TRAJOPT_ENABLE_CLANG_TIDY})
-target_include_directories(${PROJECT_NAME} PUBLIC
-    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
-    "$<INSTALL_INTERFACE:include>")
+target_include_directories(${PROJECT_NAME} PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+                                                  "$<INSTALL_INTERFACE:include>")
 
 configure_package(NAMESPACE trajopt TARGETS ${PROJECT_NAME})
 
 # Mark cpp header files for installation
-install(DIRECTORY include/${PROJECT_NAME}
+install(
+  DIRECTORY include/${PROJECT_NAME}
   DESTINATION include
-  FILES_MATCHING PATTERN "*.h" PATTERN "*.hpp"
-  PATTERN ".svn" EXCLUDE
- )
+  FILES_MATCHING
+  PATTERN "*.h"
+  PATTERN "*.hpp"
+  PATTERN ".svn" EXCLUDE)
 
-install(FILES
-  "${CMAKE_CURRENT_LIST_DIR}/cmake/trajopt_macros.cmake"
-  DESTINATION lib/cmake/${PROJECT_NAME})
+install(FILES "${CMAKE_CURRENT_LIST_DIR}/cmake/trajopt_macros.cmake" DESTINATION lib/cmake/${PROJECT_NAME})
