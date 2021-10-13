@@ -56,7 +56,7 @@ public:
   Environment::Ptr env = std::make_shared<Environment>();
   ifopt::Problem nlp;
 
-  tesseract_kinematics::KinematicGroup::Ptr kin_group;
+  tesseract_kinematics::KinematicGroup::ConstPtr kin_group;
   InverseKinematicsInfo::Ptr kinematic_info;
   InverseKinematicsConstraint::Ptr constraint;
 
@@ -68,7 +68,6 @@ public:
     tesseract_common::fs::path urdf_file(std::string(TRAJOPT_DIR) + "/test/data/arm_around_table.urdf");
     tesseract_common::fs::path srdf_file(std::string(TRAJOPT_DIR) + "/test/data/pr2.srdf");
     ResourceLocator::Ptr locator = std::make_shared<SimpleResourceLocator>(locateResource);
-    auto env = std::make_shared<Environment>();
     bool status = env->init(urdf_file, srdf_file, locator);
     EXPECT_TRUE(status);
 
@@ -76,7 +75,8 @@ public:
     kin_group = env->getKinematicGroup("right_arm");
     n_dof = kin_group->numJoints();
 
-    kinematic_info = std::make_shared<trajopt_ifopt::InverseKinematicsInfo>(kin_group, "world", "r_gripper_tool_frame");
+    kinematic_info =
+        std::make_shared<trajopt_ifopt::InverseKinematicsInfo>(kin_group, "base_footprint", "r_gripper_tool_frame");
 
     auto pos = Eigen::VectorXd::Ones(kin_group->numJoints());
     auto var0 = std::make_shared<trajopt_ifopt::JointPosition>(pos, kin_group->getJointNames(), "Joint_Position_0");

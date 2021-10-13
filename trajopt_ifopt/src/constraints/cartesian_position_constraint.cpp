@@ -103,8 +103,8 @@ void CartPosConstraint::CalcJacobianBlock(const Eigen::Ref<const Eigen::VectorXd
     Eigen::Isometry3d target_tf = state[info_.target_frame] * info_.target_frame_offset;
     if (info_.is_target_active)
       return source_tf.inverse() * target_tf;
-    else
-      return target_tf.inverse() * source_tf;
+
+    return target_tf.inverse() * source_tf;
   };
 
   // Reserve enough room in the sparse matrix

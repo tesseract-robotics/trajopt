@@ -15,6 +15,10 @@
     <group name="right_arm">
         <chain base_link="torso_lift_link" tip_link="r_gripper_tool_frame" />
     </group>
+
+    <!--Groups kinematic plugins -->
+    <kinematics_plugin_config filename="package://trajopt/test/data/pr2_plugins.yaml"/>
+
     <group name="right_gripper">
         <link name="r_gripper_palm_link" />
         <link name="r_gripper_led_frame" />
