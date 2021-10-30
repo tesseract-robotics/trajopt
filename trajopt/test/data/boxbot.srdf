@@ -3,5 +3,9 @@
     <group name="manipulator">
         <chain base_link="base_link" tip_link="boxbot_link" />
     </group>
+
+    <!--Contact Managers plugins -->
+    <contact_managers_plugin_config filename="package://trajopt/test/data/contact_manager_plugins.yaml"/>
+
     <virtual_joint name="world_joint" type="fixed" parent_frame="world" child_link="base_link" />
 </robot>
