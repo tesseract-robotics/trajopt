@@ -37,8 +37,11 @@ JointVelConstraint::JointVelConstraint(const Eigen::VectorXd& targets,
   : ifopt::ConstraintSet(static_cast<int>(targets.size()) * static_cast<int>(position_vars.size() - 1), name)
   , position_vars_(position_vars)
 {
+  if (position_vars_.size() < 2)
+    throw std::runtime_error("JointVelConstraint, requires minimum of three position variables!");
+
   // Check and make sure the targets size aligns with the vars passed in
-  for (auto& position_var : position_vars)
+  for (auto& position_var : position_vars_)
   {
     if (targets.size() != position_var->GetRows())
       CONSOLE_BRIDGE_logError("Targets size does not align with variables provided");
@@ -46,7 +49,7 @@ JointVelConstraint::JointVelConstraint(const Eigen::VectorXd& targets,
 
   // Set n_dof and n_vars
   n_dof_ = targets.size();
-  n_vars_ = static_cast<long>(position_vars.size());
+  n_vars_ = static_cast<long>(position_vars_.size());
   assert(n_dof_ > 0);
   assert(n_vars_ > 0);
   //  assert(n_vars_ == 2);
@@ -56,14 +59,13 @@ JointVelConstraint::JointVelConstraint(const Eigen::VectorXd& targets,
   // All of the positions should be exactly at their targets
   for (long j = 0; j < n_vars_ - 1; j++)
   {
-    index_map_[position_vars[static_cast<std::size_t>(j)]->GetName()] = j;
+    index_map_[position_vars_[static_cast<std::size_t>(j)]->GetName()] = j;
     for (long i = 0; i < n_dof_; i++)
     {
       bounds[static_cast<size_t>(i + j * n_dof_)] = ifopt::Bounds(targets[i], targets[i]);
     }
   }
-  /** @todo should include last timestep using backward fiff */
-  index_map_[position_vars.back()->GetName()] = static_cast<Eigen::Index>(position_vars.size()) - 1;
+  index_map_[position_vars_.back()->GetName()] = (n_vars_ - 1);
   bounds_ = bounds;
 }
 
@@ -76,12 +78,14 @@ Eigen::VectorXd JointVelConstraint::GetValues() const
   // vel(var[1, 1]) - represents the joint velocity of DOF index 1 at timestep 1
   //
   // Velocity V = vel(var[0, 0]), vel(var[0, 1]), vel(var[0, 2]), vel(var[1, 0]), vel(var[1, 1]), vel(var[1, 2]), etc
-  Eigen::VectorXd velocity(static_cast<size_t>(n_dof_) * (position_vars_.size() - 1));
+  Eigen::VectorXd velocity(static_cast<size_t>(n_dof_) * (static_cast<size_t>(n_vars_) - 1));
+
+  // Forward differentiation for the first point
   for (std::size_t ind = 0; ind < position_vars_.size() - 1; ind++)
   {
     auto vals1 = this->GetVariables()->GetComponent(position_vars_[ind]->GetName())->GetValues();
     auto vals2 = this->GetVariables()->GetComponent(position_vars_[ind + 1]->GetName())->GetValues();
-    Eigen::VectorXd single_step = vals2 - vals1;
+    Eigen::VectorXd single_step = (vals2 - vals1);
     velocity.block(n_dof_ * static_cast<Eigen::Index>(ind), 0, n_dof_, 1) = single_step;
   }
 
@@ -103,15 +107,14 @@ void JointVelConstraint::FillJacobianBlock(std::string var_set, Jacobian& jac_bl
     Eigen::Index i = it->second;
 
     // Reserve enough room in the sparse matrix
-    jac_block.reserve(n_dof_ * 2);
-
-    // jac block will be (n_vars-1)*n_dof x n_dof
+    jac_block.reserve(3 * n_dof_);
     for (int j = 0; j < n_dof_; j++)
     {
       // The first and last variable are special and only effect the first and last constraint. Everything else
       // effects 2
       if (i < n_vars_ - 1)
         jac_block.coeffRef((i * n_dof_) + j, j) = -1.0;
+
       if (i > 0)
         jac_block.coeffRef(((i - 1) * n_dof_) + j, j) = 1.0;
     }

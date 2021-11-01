@@ -126,9 +126,36 @@ Eigen::VectorXd calcBoundsErrors(const Eigen::Ref<const Eigen::VectorXd>& input,
 Eigen::VectorXd calcBoundsViolations(const Eigen::Ref<const Eigen::VectorXd>& input,
                                      const std::vector<ifopt::Bounds>& bounds);
 
+/**
+ * @brief Calculate the numerical cost gradient at the provided values
+ * @param x The variable values to calculate the gradient about
+ * @param nlp The nlp problem
+ * @param epsilon The epsilon to leverage for perturbing the values
+ * @return The numerical cost gradient
+ */
 ifopt::Problem::VectorXd calcNumericalCostGradient(const double* x, ifopt::Problem& nlp, double epsilon = 1e-8);
 
+/**
+ * @brief Calculate the numerical constraint gradient at the provided values
+ * @param x The variable values to calculate the gradient about
+ * @param nlp The nlp problem
+ * @param epsilon The epsilon to leverage for perturbing the values
+ * @return The numerical constraint gradient
+ */
 ifopt::Problem::Jacobian calcNumericalConstraintGradient(const double* x, ifopt::Problem& nlp, double epsilon = 1e-8);
+
+/**
+ * @brief Calculate the numerical constraint gradient at the provided values
+ * @details This is primarily used buy unit tests to avoid needing to create a problem to calculate the gradient of a
+ * single constraint.
+ * @param variables The variable values to calculate the gradient about
+ * @param constraint_set The constraint to numerically calculate the gradient for
+ * @param epsilon The epsilon to leverage for perturbing the values
+ * @return The numerical constraint gradient
+ */
+ifopt::Problem::Jacobian calcNumericalConstraintGradient(ifopt::Component& variables,
+                                                         ifopt::ConstraintSet& constraint_set,
+                                                         double epsilon = 1e-8);
 
 }  // namespace trajopt_ifopt
 #endif

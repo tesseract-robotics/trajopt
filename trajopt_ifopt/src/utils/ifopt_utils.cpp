@@ -196,4 +196,40 @@ ifopt::Problem::Jacobian calcNumericalConstraintGradient(const double* x, ifopt:
 
   return jac;
 }
+
+ifopt::Problem::Jacobian calcNumericalConstraintGradient(ifopt::Component& variables,
+                                                         ifopt::ConstraintSet& constraint_set,
+                                                         double epsilon)
+{
+  Eigen::VectorXd x = variables.GetValues();
+
+  int n = variables.GetRows();
+  int m = constraint_set.GetRows();
+  ifopt::Problem::Jacobian jac(m, n);
+  jac.reserve(m * n);
+
+  if (constraint_set.GetBounds().size() > 0)
+  {
+    // calculate forward difference by disturbing each optimization variable
+    ifopt::Problem::VectorXd g = constraint_set.GetValues();
+    Eigen::VectorXd x_new = x;
+    for (Eigen::Index i = 0; i < n; ++i)
+    {
+      x_new[i] += epsilon;  // disturb
+      variables.SetVariables(x_new);
+      ifopt::Problem::VectorXd g_new = constraint_set.GetValues();
+      ifopt::Problem::VectorXd delta_g = (g_new - g) / epsilon;
+
+      for (int j = 0; j < m; ++j)
+        jac.coeffRef(j, i) = delta_g(j);
+
+      x_new[i] = x[i];  // reset for next iteration
+    }
+  }
+
+  // Set problem values back to the original values.
+  variables.SetVariables(x);
+
+  return jac;
+}
 }  // namespace trajopt_ifopt

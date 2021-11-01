@@ -38,6 +38,8 @@ set(TRAJOPT_IFOPT_SOURCE_FILES
     src/costs/squared_cost.cpp
     src/constraints/cartesian_position_constraint.cpp
     src/constraints/inverse_kinematics_constraint.cpp
+    src/constraints/joint_acceleration_constraint.cpp
+    src/constraints/joint_jerk_constraint.cpp
     src/constraints/joint_position_constraint.cpp
     src/constraints/joint_velocity_constraint.cpp
     src/constraints/collision/collision_types.cpp
