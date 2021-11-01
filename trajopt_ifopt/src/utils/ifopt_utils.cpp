@@ -208,14 +208,14 @@ ifopt::Problem::Jacobian calcNumericalConstraintGradient(ifopt::Component& varia
   ifopt::Problem::Jacobian jac(m, n);
   jac.reserve(m * n);
 
-  if (constraint_set.GetBounds().size() > 0)
+  if (!constraint_set.GetBounds().empty())
   {
     // calculate forward difference by disturbing each optimization variable
     ifopt::Problem::VectorXd g = constraint_set.GetValues();
     Eigen::VectorXd x_new = x;
     for (Eigen::Index i = 0; i < n; ++i)
     {
-      x_new[i] += epsilon;  // disturb
+      x_new(i) = x(i) + epsilon;  // disturb
       variables.SetVariables(x_new);
       ifopt::Problem::VectorXd g_new = constraint_set.GetValues();
       ifopt::Problem::VectorXd delta_g = (g_new - g) / epsilon;
@@ -223,7 +223,7 @@ ifopt::Problem::Jacobian calcNumericalConstraintGradient(ifopt::Component& varia
       for (int j = 0; j < m; ++j)
         jac.coeffRef(j, i) = delta_g(j);
 
-      x_new[i] = x[i];  // reset for next iteration
+      x_new(i) = x(i);  // reset for next iteration
     }
   }
 
