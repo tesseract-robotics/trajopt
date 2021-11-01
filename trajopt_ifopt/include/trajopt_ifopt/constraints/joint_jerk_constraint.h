@@ -55,7 +55,7 @@ public:
    * @param name Name of the constraint
    */
   JointJerkConstraint(const Eigen::VectorXd& targets,
-                      std::vector<trajopt_ifopt::JointPosition::ConstPtr> position_vars,
+                      const std::vector<trajopt_ifopt::JointPosition::ConstPtr>& position_vars,
                       const std::string& name = "JointJerk");
 
   /**
@@ -66,7 +66,7 @@ public:
    * @param name Name of the constraint
    */
   JointJerkConstraint(const std::vector<ifopt::Bounds>& bounds,
-                      std::vector<trajopt_ifopt::JointPosition::ConstPtr> position_vars,
+                      const std::vector<trajopt_ifopt::JointPosition::ConstPtr>& position_vars,
                       const std::string& name = "JointJerk");
 
   /**

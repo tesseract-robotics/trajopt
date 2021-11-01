@@ -55,7 +55,7 @@ public:
    * @param name Name of the constraint
    */
   JointVelConstraint(const Eigen::VectorXd& targets,
-                     std::vector<JointPosition::ConstPtr> position_vars,
+                     const std::vector<JointPosition::ConstPtr>& position_vars,
                      const std::string& name = "JointVel");
 
   /**
@@ -66,7 +66,7 @@ public:
    * @param name Name of the constraint
    */
   JointVelConstraint(const std::vector<ifopt::Bounds>& bounds,
-                     std::vector<JointPosition::ConstPtr> position_vars,
+                     const std::vector<JointPosition::ConstPtr>& position_vars,
                      const std::string& name = "JointVel");
 
   /**

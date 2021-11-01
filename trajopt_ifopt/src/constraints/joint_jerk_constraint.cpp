@@ -32,7 +32,7 @@ TRAJOPT_IGNORE_WARNINGS_POP
 namespace trajopt_ifopt
 {
 JointJerkConstraint::JointJerkConstraint(const Eigen::VectorXd& targets,
-                                         std::vector<trajopt_ifopt::JointPosition::ConstPtr> position_vars,
+                                         const std::vector<JointPosition::ConstPtr>& position_vars,
                                          const std::string& name)
   : ifopt::ConstraintSet(static_cast<int>(targets.size()) * static_cast<int>(position_vars.size()), name)
   , position_vars_(position_vars)
@@ -59,7 +59,7 @@ JointJerkConstraint::JointJerkConstraint(const Eigen::VectorXd& targets,
   // All of the positions should be exactly at their targets
   for (long j = 0; j < n_vars_; j++)
   {
-    index_map_[position_vars[static_cast<std::size_t>(j)]->GetName()] = j;
+    index_map_[position_vars_[static_cast<std::size_t>(j)]->GetName()] = j;
     for (long i = 0; i < n_dof_; i++)
     {
       bounds[static_cast<size_t>(i + j * n_dof_)] = ifopt::Bounds(targets[i], targets[i]);

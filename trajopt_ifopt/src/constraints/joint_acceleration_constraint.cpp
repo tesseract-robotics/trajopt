@@ -32,7 +32,7 @@ TRAJOPT_IGNORE_WARNINGS_POP
 namespace trajopt_ifopt
 {
 JointAccelConstraint::JointAccelConstraint(const Eigen::VectorXd& targets,
-                                           std::vector<trajopt_ifopt::JointPosition::ConstPtr> position_vars,
+                                           const std::vector<JointPosition::ConstPtr>& position_vars,
                                            const std::string& name)
   : ifopt::ConstraintSet(static_cast<int>(targets.size()) * static_cast<int>(position_vars.size()), name)
   , position_vars_(position_vars)
@@ -41,7 +41,7 @@ JointAccelConstraint::JointAccelConstraint(const Eigen::VectorXd& targets,
     throw std::runtime_error("JointAccelConstraint requires a minimum of four position variables!");
 
   // Check and make sure the targets size aligns with the vars passed in
-  for (auto& position_var : position_vars)
+  for (auto& position_var : position_vars_)
   {
     if (targets.size() != position_var->GetRows())
       CONSOLE_BRIDGE_logError("Targets size does not align with variables provided");
@@ -59,7 +59,7 @@ JointAccelConstraint::JointAccelConstraint(const Eigen::VectorXd& targets,
   // All of the positions should be exactly at their targets
   for (long j = 0; j < n_vars_; j++)
   {
-    index_map_[position_vars[static_cast<std::size_t>(j)]->GetName()] = j;
+    index_map_[position_vars_[static_cast<std::size_t>(j)]->GetName()] = j;
     for (long i = 0; i < n_dof_; i++)
     {
       bounds[static_cast<size_t>(i + j * n_dof_)] = ifopt::Bounds(targets[i], targets[i]);
