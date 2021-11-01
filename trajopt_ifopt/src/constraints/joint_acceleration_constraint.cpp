@@ -41,7 +41,7 @@ JointAccelConstraint::JointAccelConstraint(const Eigen::VectorXd& targets,
     throw std::runtime_error("JointAccelConstraint requires a minimum of four position variables!");
 
   // Check and make sure the targets size aligns with the vars passed in
-  for (auto& position_var : position_vars_)
+  for (const auto& position_var : position_vars_)
   {
     if (targets.size() != position_var->GetRows())
       CONSOLE_BRIDGE_logError("Targets size does not align with variables provided");
