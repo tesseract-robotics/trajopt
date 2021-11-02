@@ -635,7 +635,7 @@ Eigen::VectorXd TrajOptQPProblem::evaluateConvexCosts(const Eigen::Ref<const Eig
   if (squared_costs_.GetRows() > 0)
   {
     costs.head(squared_costs_.GetRows()) = squared_objective_nlp_.values(var_block);
-    assert(!(costs.head(squared_costs_.GetRows()).array() < 0).any());
+    assert(!(costs.head(squared_costs_.GetRows()).array() < -1e-8).any());
   }
 
   if (hinge_costs_.GetRows() > 0)
@@ -647,7 +647,7 @@ Eigen::VectorXd TrajOptQPProblem::evaluateConvexCosts(const Eigen::Ref<const Eig
     Eigen::VectorXd hinge_cost = trajopt_ifopt::calcBoundsViolations(hinge_convex_value, hinge_costs_.GetBounds());
 
     costs.middleRows(squared_costs_.GetRows(), hinge_costs_.GetRows()) = hinge_cost;
-    assert(!(costs.middleRows(squared_costs_.GetRows(), hinge_costs_.GetRows()).array() < 0).any());
+    assert(!(costs.middleRows(squared_costs_.GetRows(), hinge_costs_.GetRows()).array() < -1e-8).any());
   }
 
   if (abs_costs_.GetRows() > 0)
@@ -659,8 +659,8 @@ Eigen::VectorXd TrajOptQPProblem::evaluateConvexCosts(const Eigen::Ref<const Eig
     Eigen::VectorXd abs_cost = trajopt_ifopt::calcBoundsViolations(abs_convex_value, abs_costs_.GetBounds()).cwiseAbs();
 
     costs.middleRows(squared_costs_.GetRows() + hinge_costs_.GetRows(), abs_costs_.GetRows()) = abs_cost;
-    assert(
-        !(costs.middleRows(squared_costs_.GetRows() + hinge_costs_.GetRows(), abs_costs_.GetRows()).array() < 0).any());
+    assert(!(costs.middleRows(squared_costs_.GetRows() + hinge_costs_.GetRows(), abs_costs_.GetRows()).array() < -1e-8)
+                .any());
   }
   return costs;
 }

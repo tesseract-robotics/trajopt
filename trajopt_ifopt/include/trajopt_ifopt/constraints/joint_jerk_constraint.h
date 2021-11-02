@@ -1,13 +1,13 @@
 /**
- * @file joint_velocity_constraint.h
- * @brief The joint_velocity constraint
+ * @file joint_jerk_constraint.h
+ * @brief The join jerk constraint
  *
- * @author Matthew Powelson
- * @date May 18, 2020
+ * @author Levi Armstrong
+ * @date November 1, 2021
  * @version TODO
  * @bug No known bugs
  *
- * @copyright Copyright (c) 2020, Southwest Research Institute
+ * @copyright Copyright (c) 2021, Southwest Research Institute
  *
  * @par License
  * Software License Agreement (Apache License)
@@ -23,8 +23,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef TRAJOPT_IFOPT_JOINT_JOINT_VELOCITY_CONSTRAINT_H
-#define TRAJOPT_IFOPT_JOINT_JOINT_VELOCITY_CONSTRAINT_H
+#ifndef TRAJOPT_IFOPT_JOINT_JOINT_JERK_CONSTRAINT_H
+#define TRAJOPT_IFOPT_JOINT_JOINT_JERK_CONSTRAINT_H
 
 #include <trajopt_utils/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
@@ -37,41 +37,41 @@ TRAJOPT_IGNORE_WARNINGS_POP
 namespace trajopt_ifopt
 {
 /**
- * @brief This creates a joint velocity constraint and allows bounds to be set on a joint position
+ * @brief This creates a joint acceleration constraint and allows bounds to be set on a joint position
  *
- * Joint velocity is calculated as v = th_1 - th_0
+ * Joint acceleration is calculated as a = th_2 - 2th_1 + th_0
  */
-class JointVelConstraint : public ifopt::ConstraintSet
+class JointJerkConstraint : public ifopt::ConstraintSet
 {
 public:
-  using Ptr = std::shared_ptr<JointVelConstraint>;
-  using ConstPtr = std::shared_ptr<const JointVelConstraint>;
+  using Ptr = std::shared_ptr<JointJerkConstraint>;
+  using ConstPtr = std::shared_ptr<const JointJerkConstraint>;
 
   /**
-   * @brief Constructs a velocity constraint from these variables, setting the bounds to the target
-   * @param targets Joint Velocity targets (length should be n_dof). Upper and lower bounds are set to this value
-   * @param position_vars Joint positions used to calculate velocity. These vars are assumed to be continuous and in
+   * @brief Constructs a jerk constraint from these variables, setting the bounds to the target
+   * @param targets Joint Jerk targets (length should be n_dof). Upper and lower bounds are set to this value
+   * @param position_vars Joint positions used to calculate acceleration. These vars are assumed to be continuous and in
    * order.
    * @param name Name of the constraint
    */
-  JointVelConstraint(const Eigen::VectorXd& targets,
-                     const std::vector<JointPosition::ConstPtr>& position_vars,
-                     const std::string& name = "JointVel");
+  JointJerkConstraint(const Eigen::VectorXd& targets,
+                      const std::vector<trajopt_ifopt::JointPosition::ConstPtr>& position_vars,
+                      const std::string& name = "JointJerk");
 
   /**
-   * @brief Constructs a velocity constraint from these variables, setting the bounds to those passed in.
-   * @param bounds Bounds on target joint velocity (length should be n_dof)
-   * @param position_vars Joint positions used to calculate velocity. These vars are assumed to be continuous and in
+   * @brief Constructs a jerk constraint from these variables, setting the bounds to those passed in.
+   * @param bounds Bounds on target joint acceleration (length should be n_dof)
+   * @param position_vars Joint positions used to calculate acceleration. These vars are assumed to be continuous and in
    * order.
    * @param name Name of the constraint
    */
-  JointVelConstraint(const std::vector<ifopt::Bounds>& bounds,
-                     const std::vector<JointPosition::ConstPtr>& position_vars,
-                     const std::string& name = "JointVel");
+  JointJerkConstraint(const std::vector<ifopt::Bounds>& bounds,
+                      const std::vector<trajopt_ifopt::JointPosition::ConstPtr>& position_vars,
+                      const std::string& name = "JointJerk");
 
   /**
-   * @brief Returns the values associated with the constraint. In this case that is the approximate joint velocity.
-   * @return Returns jointVelocity. Length is n_dof_ * (n_vars - 1)
+   * @brief Returns the values associated with the constraint. In this case that is the approximate joint jerk.
+   * @return Returns joint jerk. Length is n_dof_ * n_vars
    */
   Eigen::VectorXd GetValues() const override;
 
@@ -100,7 +100,7 @@ private:
   /** @brief Pointers to the vars used by this constraint.
    *
    * Do not access them directly. Instead use this->GetVariables()->GetComponent(position_var->GetName())->GetValues()*/
-  std::vector<JointPosition::ConstPtr> position_vars_;
+  std::vector<trajopt_ifopt::JointPosition::ConstPtr> position_vars_;
   std::unordered_map<std::string, Eigen::Index> index_map_;
 };
 };  // namespace trajopt_ifopt
