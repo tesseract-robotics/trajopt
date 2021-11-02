@@ -55,30 +55,7 @@ struct CartPosInfo
               std::string target_frame,
               const Eigen::Isometry3d& source_frame_offset = Eigen::Isometry3d::Identity(),
               const Eigen::Isometry3d& target_frame_offset = Eigen::Isometry3d::Identity(),
-              Eigen::VectorXi indices = Eigen::Matrix<int, 1, 6>(std::vector<int>({ 0, 1, 2, 3, 4, 5 }).data()))
-    : manip(std::move(manip))
-    , source_frame(std::move(source_frame))
-    , target_frame(std::move(target_frame))
-    , source_frame_offset(source_frame_offset)
-    , target_frame_offset(target_frame_offset)
-    , indices(std::move(indices))
-  {
-    if (!this->manip->hasLinkName(this->source_frame))
-      throw std::runtime_error("CartPosKinematicInfo: Source Link name '" + this->source_frame +
-                               "' provided does not exist.");
-
-    if (!this->manip->hasLinkName(this->target_frame))
-      throw std::runtime_error("CartPosKinematicInfo: Target Link name '" + this->target_frame +
-                               "' provided does not exist.");
-
-    if (this->indices.size() > 6)
-      throw std::runtime_error("CartPosKinematicInfo: The indices list length cannot be larger than six.");
-
-    if (this->indices.size() == 0)
-      throw std::runtime_error("CartPosKinematicInfo: The indices list length is zero.");
-
-    is_target_active = this->manip->isActiveLinkName(this->target_frame);
-  }
+              const Eigen::VectorXi& indices = Eigen::Matrix<int, 1, 6>(std::vector<int>({ 0, 1, 2, 3, 4, 5 }).data()));
 
   /** @brief The joint group */
   tesseract_kinematics::JointGroup::ConstPtr manip;
@@ -160,20 +137,20 @@ public:
    * @brief Gets the Cartesian Pose info used to create this constraint
    * @return The Cartesian Pose info used to create this constraint
    */
-  const CartPosInfo& GetInfo() const { return info_; }
-  CartPosInfo& GetInfo() { return info_; }
+  const CartPosInfo& GetInfo() const;
+  CartPosInfo& GetInfo();
 
   /**
    * @brief Set the target pose
    * @param pose
    */
-  void SetTargetPose(const Eigen::Isometry3d& target_frame_offset) { info_.target_frame_offset = target_frame_offset; }
+  void SetTargetPose(const Eigen::Isometry3d& target_frame_offset);
 
   /**
    * @brief Returns the target pose for the constraint
    * @return The target pose for the constraint
    */
-  Eigen::Isometry3d GetTargetPose() const { return info_.target_frame_offset; }
+  Eigen::Isometry3d GetTargetPose() const;
 
   /**
    * @brief Returns the current TCP pose in world frame given the input kinematic info and the current variable values

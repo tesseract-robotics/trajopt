@@ -36,40 +36,75 @@ TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace trajopt_ifopt
 {
-CartLineConstraint::CartLineConstraint(const Eigen::Isometry3d& origin_pose,
-                                       const Eigen::Isometry3d& target_pose,
-                                       CartLineKinematicInfo::ConstPtr kinematic_info,
+CartLineInfo::CartLineInfo(tesseract_kinematics::JointGroup::ConstPtr manip,
+                           std::string source_frame,
+                           std::string target_frame,
+                           const Eigen::Isometry3d& target_frame_offset1,  // NOLINT
+                           const Eigen::Isometry3d& target_frame_offset2,  // NOLINT
+                           const Eigen::Isometry3d& source_frame_offset,   // NOLINT
+                           const Eigen::VectorXi& indices)                 // NOLINT
+  : manip(std::move(manip))
+  , source_frame(std::move(source_frame))
+  , target_frame(std::move(target_frame))
+  , source_frame_offset(source_frame_offset)
+  , target_frame_offset1(target_frame_offset1)
+  , target_frame_offset2(target_frame_offset2)
+  , indices(indices)
+{
+  if (!this->manip->hasLinkName(this->source_frame))
+    throw std::runtime_error("CartLineInfo: Source Link name '" + this->source_frame + "' provided does not exist.");
+
+  if (!this->manip->hasLinkName(this->target_frame))
+    throw std::runtime_error("CartLineInfo: Target Link name '" + this->target_frame + "' provided does not exist.");
+
+  if (this->target_frame_offset1.isApprox(target_frame_offset2))
+    throw std::runtime_error("CartLineInfo: The start and end point are the same!");
+
+  if (this->indices.size() > 6)
+    throw std::runtime_error("CartLineInfo: The indices list length cannot be larger than six.");
+
+  if (this->indices.size() == 0)
+    throw std::runtime_error("CartLineInfo: The indices list length is zero.");
+}
+
+CartLineConstraint::CartLineConstraint(CartLineInfo info,
                                        JointPosition::ConstPtr position_var,
+                                       const Eigen::VectorXd& coeffs,  // NOLINT
                                        const std::string& name)
-  : ifopt::ConstraintSet(6, name)
+  : ifopt::ConstraintSet(static_cast<int>(info.indices.rows()), name)
+  , coeffs_(coeffs)
   , position_var_(std::move(position_var))
-  , point_a_(origin_pose)
-  , point_b_(target_pose)
-  , kinematic_info_(std::move(kinematic_info))
+  , info_(std::move(info))
 {
   // Set the n_dof and n_vars for convenience
-  n_dof_ = kinematic_info_->manip->numJoints();
+  n_dof_ = info_.manip->numJoints();
   assert(n_dof_ > 0);
 
-  bounds_ = std::vector<ifopt::Bounds>(6, ifopt::BoundZero);
+  bounds_ = std::vector<ifopt::Bounds>(static_cast<std::size_t>(info_.indices.rows()), ifopt::BoundZero);
 
-  // calculate the equation of the constraint line
-  line_ = point_b_.translation() - point_a_.translation();
+  if (coeffs_.rows() != info_.indices.rows())
+    std::runtime_error("The number of coeffs does not match the number of constraints.");
 }
 
 Eigen::VectorXd CartLineConstraint::CalcValues(const Eigen::Ref<const Eigen::VectorXd>& joint_vals) const
 {
-  Eigen::Isometry3d new_pose = kinematic_info_->manip->calcFwdKin(joint_vals);
-  new_pose = kinematic_info_->world_to_base * new_pose * kinematic_info_->kin_link->transform * kinematic_info_->tcp;
+  tesseract_common::TransformMap state = info_.manip->calcFwdKin(joint_vals);
+  Eigen::Isometry3d source_tf = state[info_.source_frame] * info_.source_frame_offset;
+  Eigen::Isometry3d target_tf1 = state[info_.target_frame] * info_.target_frame_offset1;
+  Eigen::Isometry3d target_tf2 = state[info_.target_frame] * info_.target_frame_offset2;
 
   // For Jacobian Calc, we need the inverse of the nearest point, D, to new Pose, C, on the constraint line AB
-  Eigen::Isometry3d line_point = GetLinePoint(new_pose);
+  Eigen::Isometry3d target_tf = GetLinePoint(source_tf, target_tf1, target_tf2);
+
   // pose error is the vector from the new_pose to nearest point on line AB, line_point
   // the below method is equivalent to the position constraint; using the line point as the target point
-  Eigen::Isometry3d pose_err = line_point.inverse() * new_pose;
-  Eigen::Vector3d cart_pose_err = (line_point.translation() - new_pose.translation()).array().abs();
-  Eigen::VectorXd err = util::concat(cart_pose_err, util::calcRotationalError(pose_err.rotation()));
-  return err;
+  VectorXd err = tesseract_common::calcTransformError(target_tf, source_tf);
+
+  VectorXd reduced_err(info_.indices.size());
+  for (int i = 0; i < info_.indices.size(); ++i)
+    reduced_err[i] = err[info_.indices[i]];
+
+  return coeffs_.cwiseProduct(reduced_err);  // This is available in 3.4 err(indices_, Eigen::all);
 }
 
 Eigen::VectorXd CartLineConstraint::GetValues() const
@@ -90,11 +125,27 @@ void CartLineConstraint::SetBounds(const std::vector<ifopt::Bounds>& bounds)
 void CartLineConstraint::CalcJacobianBlock(const Eigen::Ref<const Eigen::VectorXd>& joint_vals,
                                            Jacobian& jac_block) const
 {
+  auto pose_error_calculator = [&](const Eigen::Ref<const Eigen::VectorXd>& x) {
+    tesseract_common::TransformMap state = info_.manip->calcFwdKin(x);
+    Eigen::Isometry3d source_tf = state[info_.source_frame] * info_.source_frame_offset;
+    Eigen::Isometry3d target_tf1 = state[info_.target_frame] * info_.target_frame_offset1;
+    Eigen::Isometry3d target_tf2 = state[info_.target_frame] * info_.target_frame_offset2;
+
+    // For Jacobian Calc, we need the inverse of the nearest point, D, to new Pose, C, on the constraint line AB
+    Eigen::Isometry3d target_tf = GetLinePoint(source_tf, target_tf1, target_tf2);
+
+    return target_tf.inverse() * source_tf;
+  };
+
   if (use_numeric_differentiation)
   {
-    auto error_calculator = [&](const Eigen::Ref<const Eigen::VectorXd>& x) { return this->CalcValues(x); };
-    Jacobian jac0(6, n_dof_);
-    jac0 = calcForwardNumJac(error_calculator, joint_vals, 1e-5);
+    auto error_calculator = [&](const Eigen::Ref<const Eigen::VectorXd>& x) {
+      Eigen::Isometry3d pose_err = pose_error_calculator(x);
+      Eigen::VectorXd err =
+          tesseract_common::concat(pose_err.translation(), tesseract_common::calcRotationalError2(pose_err.rotation()));
+      return err;
+    };
+    Jacobian jac0 = calcForwardNumJac(error_calculator, joint_vals, 1e-5);
 
     for (int i = 0; i < 6; i++)
     {
@@ -102,29 +153,26 @@ void CartLineConstraint::CalcJacobianBlock(const Eigen::Ref<const Eigen::VectorX
       {
         // Each jac_block will be for a single variable but for all timesteps. Therefore we must index down to the
         // correct timestep for this variable
-        jac_block.coeffRef(i, j) = jac0.coeffRef(i, j);
+        jac_block.coeffRef(i, j) = coeffs_(i) * jac0.coeffRef(info_.indices[i], j);
       }
     }
   }
   else
   {
     // Reserve enough room in the sparse matrix
-    jac_block.reserve(n_dof_ * 6);
+    tesseract_common::TransformMap state = info_.manip->calcFwdKin(joint_vals);
+    Eigen::Isometry3d source_tf = state[info_.source_frame] * info_.source_frame_offset;
+    Eigen::Isometry3d target_tf1 = state[info_.target_frame] * info_.target_frame_offset1;
+    Eigen::Isometry3d target_tf2 = state[info_.target_frame] * info_.target_frame_offset2;
 
-    Eigen::MatrixXd jac0(6, n_dof_);
-    Eigen::Isometry3d tf0;
+    // For Jacobian Calc, we need the inverse of the nearest point, D, to new Pose, C, on the constraint line AB
+    Eigen::Isometry3d target_tf = GetLinePoint(source_tf, target_tf1, target_tf2);
 
-    // Calculate the jacobian
-    tf0 = kinematic_info_->manip->calcFwdKin(joint_vals);
-    Eigen::Isometry3d line_point_inv = GetLinePoint(tf0).inverse();
+    Eigen::Isometry3d pose_err = target_tf.inverse() * source_tf;
 
-    jac0 = kinematic_info_->manip->calcJacobian(joint_vals, kinematic_info_->kin_link->link_name);
-    tesseract_kinematics::jacobianChangeBase(jac0, kinematic_info_->world_to_base);
-    tesseract_kinematics::jacobianChangeRefPoint(
-        jac0,
-        (kinematic_info_->world_to_base * tf0).linear() *
-            (kinematic_info_->kin_link->transform * kinematic_info_->tcp).translation());
-    tesseract_kinematics::jacobianChangeBase(jac0, line_point_inv);
+    Eigen::MatrixXd jac0 =
+        info_.manip->calcJacobian(joint_vals, info_.source_frame, info_.source_frame_offset.translation());
+    tesseract_common::jacobianChangeBase(jac0, target_tf.inverse());
 
     // Paper:
     // https://ethz.ch/content/dam/ethz/special-interest/mavt/robotics-n-intelligent-systems/rsl-dam/documents/RobotDynamics2016/RD2016script.pdf
@@ -141,12 +189,11 @@ void CartLineConstraint::CalcJacobianBlock(const Eigen::Ref<const Eigen::VectorX
     // The approach below leverages the geometric jacobian and a small step in time to approximate
     // the partial derivative of the error function. Note that the rotational portion is the only part
     // that is required to be modified per the paper.
-    Eigen::Isometry3d pose_err = line_point_inv * tf0;
-    Eigen::Vector3d rot_err = util::calcRotationalError(pose_err.rotation());
+    Eigen::Vector3d rot_err = tesseract_common::calcRotationalError2(pose_err.rotation());
     for (int c = 0; c < jac0.cols(); ++c)
     {
       auto new_pose_err = util::addTwist(pose_err, jac0.col(c), 1e-5);
-      Eigen::VectorXd new_rot_err = util::calcRotationalError(new_pose_err.rotation());
+      Eigen::VectorXd new_rot_err = tesseract_common::calcRotationalError2(new_pose_err.rotation());
       jac0.col(c).tail(3) = ((new_rot_err - rot_err) / 1e-5);
     }
 
@@ -161,7 +208,7 @@ void CartLineConstraint::CalcJacobianBlock(const Eigen::Ref<const Eigen::VectorX
       {
         // Each jac_block will be for a single variable but for all timesteps. Therefore we must index down to the
         // correct timestep for this variable
-        jac_block.coeffRef(i, j) = jac0(i, j);
+        jac_block.coeffRef(i, j) = coeffs_(i) * jac0(info_.indices[i], j);
       }
     }
   }
@@ -178,55 +225,47 @@ void CartLineConstraint::FillJacobianBlock(std::string var_set, Jacobian& jac_bl
   }
 }
 
-void CartLineConstraint::SetLine(const Eigen::Isometry3d& Point_A, const Eigen::Isometry3d& Point_B)
+std::pair<Eigen::Isometry3d, Eigen::Isometry3d> CartLineConstraint::GetLine() const
 {
-  point_b_ = Point_B;
-  point_a_ = Point_A;
-  line_ = point_b_.translation() - point_a_.translation();
+  return std::make_pair(info_.target_frame_offset1, info_.target_frame_offset2);
 }
 
-std::pair<Eigen::Isometry3d, Eigen::Isometry3d> CartLineConstraint::GetLine()
-{
-  return std::make_pair(point_a_, point_b_);
-}
-
-Eigen::Isometry3d CartLineConstraint::GetCurrentPose()
-{
-  Eigen::VectorXd joint_vals = this->GetVariables()->GetComponent(position_var_->GetName())->GetValues();
-  Eigen::Isometry3d new_pose = kinematic_info_->manip->calcFwdKin(joint_vals);
-  new_pose = kinematic_info_->world_to_base * new_pose * kinematic_info_->kin_link->transform * kinematic_info_->tcp;
-  return new_pose;
-}
+const CartLineInfo& CartLineConstraint::GetInfo() const { return info_; }
 
 // this has to be const because it is used in const functions, it would be nicer if this could store a member
-Eigen::Isometry3d CartLineConstraint::GetLinePoint(const Eigen::Isometry3d& test_point) const
+Eigen::Isometry3d CartLineConstraint::GetLinePoint(const Eigen::Isometry3d& source_tf,
+                                                   const Eigen::Isometry3d& target_tf1,
+                                                   const Eigen::Isometry3d& target_tf2) const
 {
   // distance 1; distance from new pose to first point on line
-  Eigen::Vector3d d1 = (test_point.translation() - point_b_.translation()).array().abs();
+  Eigen::Vector3d d1 = (source_tf.translation() - target_tf1.translation()).array().abs();
+
+  // Get the line
+  Eigen::Vector3d line = target_tf2.translation() - target_tf1.translation();
 
   // Point D, the nearest point on line AB to point C, can be found with:
   // (AC - (AC * AB)) * AB
   Eigen::Isometry3d line_point;
-  Eigen::Vector3d line_norm = line_ / line_.squaredNorm();
+  Eigen::Vector3d line_norm = line.normalized();
   double mag = d1.dot(line_norm);
 
   // If point C is not between the line endpoints, set nearest point to endpoint
   if (mag > 1.0)
   {
-    line_point.translation() = point_b_.translation();
+    line_point.translation() = info_.target_frame_offset2.translation();
   }
   else if (mag < 0)
   {
-    line_point.translation() = point_a_.translation();
+    line_point.translation() = info_.target_frame_offset1.translation();
   }
   else
   {
-    line_point.translation() = point_a_.translation() + mag * line_norm;
+    line_point.translation() = info_.target_frame_offset1.translation() + mag * line_norm;
   }
 
   // The orientation of the line_point is found using quaternion SLERP
-  Eigen::Quaterniond quat_a(point_a_.rotation());
-  Eigen::Quaterniond quat_b(point_b_.rotation());
+  Eigen::Quaterniond quat_a(target_tf1.rotation());
+  Eigen::Quaterniond quat_b(target_tf2.rotation());
   Eigen::Quaterniond slerp = quat_a.slerp(mag, quat_b);
   line_point.linear() = slerp.toRotationMatrix();
 

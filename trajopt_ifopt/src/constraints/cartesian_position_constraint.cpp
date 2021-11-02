@@ -36,9 +36,37 @@ TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace trajopt_ifopt
 {
+CartPosInfo::CartPosInfo(tesseract_kinematics::JointGroup::ConstPtr manip,
+                         std::string source_frame,
+                         std::string target_frame,
+                         const Eigen::Isometry3d& source_frame_offset,  // NOLINT
+                         const Eigen::Isometry3d& target_frame_offset,  // NOLINT
+                         const Eigen::VectorXi& indices)                // NOLINT
+  : manip(std::move(manip))
+  , source_frame(std::move(source_frame))
+  , target_frame(std::move(target_frame))
+  , source_frame_offset(source_frame_offset)
+  , target_frame_offset(target_frame_offset)
+  , indices(indices)
+{
+  if (!this->manip->hasLinkName(this->source_frame))
+    throw std::runtime_error("CartPosInfo: Source Link name '" + this->source_frame + "' provided does not exist.");
+
+  if (!this->manip->hasLinkName(this->target_frame))
+    throw std::runtime_error("CartPosInfo: Target Link name '" + this->target_frame + "' provided does not exist.");
+
+  if (this->indices.size() > 6)
+    throw std::runtime_error("CartPosInfo: The indices list length cannot be larger than six.");
+
+  if (this->indices.size() == 0)
+    throw std::runtime_error("CartPosInfo: The indices list length is zero.");
+
+  is_target_active = this->manip->isActiveLinkName(this->target_frame);
+}
+
 CartPosConstraint::CartPosConstraint(CartPosInfo info,
                                      JointPosition::ConstPtr position_var,
-                                     const Eigen::VectorXd& coeffs,
+                                     const Eigen::VectorXd& coeffs,  // NOLINT
                                      const std::string& name)
   : ifopt::ConstraintSet(static_cast<int>(info.indices.rows()), name)
   , coeffs_(coeffs)
@@ -51,7 +79,7 @@ CartPosConstraint::CartPosConstraint(CartPosInfo info,
 
   bounds_ = std::vector<ifopt::Bounds>(static_cast<std::size_t>(info_.indices.rows()), ifopt::BoundZero);
 
-  if (coeffs.rows() != info_.indices.rows())
+  if (coeffs_.rows() != info_.indices.rows())
     std::runtime_error("The number of coeffs does not match the number of constraints.");
 }
 
@@ -198,6 +226,16 @@ void CartPosConstraint::FillJacobianBlock(std::string var_set, Jacobian& jac_blo
     CalcJacobianBlock(joint_vals, jac_block);
   }
 }
+
+const CartPosInfo& CartPosConstraint::GetInfo() const { return info_; }
+CartPosInfo& CartPosConstraint::GetInfo() { return info_; }
+
+void CartPosConstraint::SetTargetPose(const Eigen::Isometry3d& target_frame_offset)
+{
+  info_.target_frame_offset = target_frame_offset;
+}
+
+Eigen::Isometry3d CartPosConstraint::GetTargetPose() const { return info_.target_frame_offset; }
 
 Eigen::Isometry3d CartPosConstraint::GetCurrentPose() const
 {

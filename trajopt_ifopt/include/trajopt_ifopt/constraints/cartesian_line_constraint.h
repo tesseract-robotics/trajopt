@@ -33,52 +33,60 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <Eigen/Eigen>
 #include <ifopt/constraint_set.h>
 
-#include <tesseract_kinematics/core/forward_kinematics.h>
-#include <tesseract_environment/core/environment.h>
-#include <tesseract_environment/core/utils.h>
+#include <tesseract_kinematics/core/joint_group.h>
+#include <tesseract_environment/environment.h>
+#include <tesseract_environment/utils.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt_ifopt/variable_sets/joint_position_variable.h>
-#include <trajopt_ifopt/kinematics_info.h>
 
 namespace trajopt_ifopt
 {
 /**
- * @brief Contains kinematic information for the cartesian position cost; inlude cart point .h & remove?
+ * @brief Contains kinematic information for the cartesian position cost; include cart point .h & remove?
  */
-struct CartLineKinematicInfo
+struct CartLineInfo
 {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-  using Ptr = std::shared_ptr<CartLineKinematicInfo>;
-  using ConstPtr = std::shared_ptr<const CartLineKinematicInfo>;
+  using Ptr = std::shared_ptr<CartLineInfo>;
+  using ConstPtr = std::shared_ptr<const CartLineInfo>;
 
-  CartLineKinematicInfo() = default;
-  CartLineKinematicInfo(tesseract_kinematics::ForwardKinematics::ConstPtr manip,
-                        tesseract_environment::AdjacencyMap::ConstPtr adjacency_map,
-                        const Eigen::Isometry3d& world_to_base,
-                        std::string link,
-                        const Eigen::Isometry3d& tcp = Eigen::Isometry3d::Identity())
-    : manip(std::move(manip))
-    , adjacency_map(std::move(adjacency_map))
-    , world_to_base(world_to_base)
-    , link(std::move(link))
-    , tcp(tcp)
-  {
-    this->kin_link = this->adjacency_map->getLinkMapping(this->link);
-    if (this->kin_link == nullptr)
-    {
-      CONSOLE_BRIDGE_logError("Link name '%s' provided does not exist.", this->link.c_str());
-      assert(false);
-    }
-  }
+  CartLineInfo() = default;
+  CartLineInfo(
+      tesseract_kinematics::JointGroup::ConstPtr manip,
+      std::string source_frame,
+      std::string target_frame,
+      const Eigen::Isometry3d& target_frame_offset1,
+      const Eigen::Isometry3d& target_frame_offset2,
+      const Eigen::Isometry3d& source_frame_offset = Eigen::Isometry3d::Identity(),
+      const Eigen::VectorXi& indices = Eigen::Matrix<int, 1, 6>(std::vector<int>({ 0, 1, 2, 3, 4, 5 }).data()));
 
-  tesseract_kinematics::ForwardKinematics::ConstPtr manip;
-  tesseract_environment::AdjacencyMap::ConstPtr adjacency_map;
-  Eigen::Isometry3d world_to_base;
-  std::string link;
-  tesseract_environment::AdjacencyMapPair::ConstPtr kin_link;
-  Eigen::Isometry3d tcp;
+  /** @brief The joint group */
+  tesseract_kinematics::JointGroup::ConstPtr manip;
+
+  /** @brief Link which should reach desired pos */
+  std::string source_frame;
+
+  /** @brief The target frame that should be reached by the source */
+  std::string target_frame;
+
+  /** @brief Static transform applied to the source_frame location */
+  Eigen::Isometry3d source_frame_offset;
+
+  /** @brief Static transform applied to the target_frame location defining the starting point of the line */
+  Eigen::Isometry3d target_frame_offset1;
+
+  /** @brief Static transform applied to the target_frame location defining the ending point of the line */
+  Eigen::Isometry3d target_frame_offset2;
+
+  /**
+   * @brief This is a vector of indices to be returned Default: {0, 1, 2, 3, 4, 5}
+   *
+   * If you only care about x, y and z error, this is {0, 1, 2}
+   * If you only care about rotation error around x, y and z, this is {3, 4, 5}
+   */
+  Eigen::VectorXi indices;
 };
 
 /**
@@ -92,10 +100,9 @@ public:
   using Ptr = std::shared_ptr<CartLineConstraint>;
   using ConstPtr = std::shared_ptr<const CartLineConstraint>;
 
-  CartLineConstraint(const Eigen::Isometry3d& point_a_,
-                     const Eigen::Isometry3d& point_b_,
-                     CartLineKinematicInfo::ConstPtr kinematic_info,
+  CartLineConstraint(CartLineInfo info,
                      JointPosition::ConstPtr position_var,
+                     const Eigen::VectorXd& coeffs,
                      const std::string& name = "CartLine");
 
   /**
@@ -128,33 +135,21 @@ public:
   /**
    * @brief Fills the jacobian block associated with the given var_set.
    * @param var_set Name of the var_set to which the jac_block is associated
-   * @param jac_block Block of the overal jacobian associated with these constraints and the var_set variable
+   * @param jac_block Block of the overall jacobian associated with these constraints and the var_set variable
    */
   void FillJacobianBlock(std::string var_set, Jacobian& jac_block) const override;
 
-  void SetLine(const Eigen::Isometry3d& Point_A, const Eigen::Isometry3d& Point_B);
-
-  std::pair<Eigen::Isometry3d, Eigen::Isometry3d> GetLine();
-
-  void SetTargetPose(const Eigen::Isometry3d& target_pose);
+  /**
+   * @brief Get the two poses defining the line
+   * @return A std::pair of poses
+   */
+  std::pair<Eigen::Isometry3d, Eigen::Isometry3d> GetLine() const;
 
   /**
    * @brief Gets the kinematic info used to create this constraint
    * @return The kinematic info used to create this constraint
    */
-  const CartLineKinematicInfo::ConstPtr& getKinematicInfo() { return kinematic_info_; }
-
-  /**
-   * @brief Returns the target pose for the constraint
-   * @return The target pose for the constraint
-   */
-  Eigen::Vector3d GetTargetPose() const { return line_; }
-
-  /**
-   * @brief Returns the current TCP pose in world frame given the input kinematic info and the current variable values
-   * @return The current TCP pose given the input kinematic info and the current variable values
-   */
-  Eigen::Isometry3d GetCurrentPose();
+  const CartLineInfo& GetInfo() const;
 
   /** @brief If true, numeric differentiation will be used. Default: true
    *
@@ -162,39 +157,39 @@ public:
    * to false at your own risk.
    */
   bool use_numeric_differentiation{ true };
+
   /**
    * @brief GetLinePoint Finds the nearest point on the line between Isometry a,b
    * to a test point
-   * @param test_point input location, orientation to comapre to the line
+   * @param source_tf input location, orientation to compare to the line
    * note that only cartesian proximity is used to determine nearness;
    * LinePoint orientation is determined by a SLERP between Isometry a, b
-   * @return
+   * @param target_tf1 The location of the start of the line
+   * @param target_tf2 The location of the end of the line
+   * @return The nearest point on the line to the source_tf
    */
-  Eigen::Isometry3d GetLinePoint(const Eigen::Isometry3d& test_point) const;
+  Eigen::Isometry3d GetLinePoint(const Eigen::Isometry3d& source_tf,
+                                 const Eigen::Isometry3d& target_tf1,
+                                 const Eigen::Isometry3d& target_tf2) const;
 
 private:
   /** @brief The number of joints in a single JointPosition */
   long n_dof_;
+
+  /** @brief The constraint coefficients */
+  Eigen::VectorXd coeffs_;
 
   /** @brief Bounds on the positions of each joint */
   std::vector<ifopt::Bounds> bounds_;
 
   /** @brief Pointers to the vars used by this constraint.
    *
-   * Do not access them directly. Instead use this->GetVariables()->GetComponent(position_var->GetName())->GetValues()*/
+   * Do not access them directly. Instead use this->GetVariables()->GetComponent(position_var->GetName())->GetValues()
+   */
   JointPosition::ConstPtr position_var_;
 
-  /** @brief The first point in the target line.*/
-  Eigen::Isometry3d point_a_;
-
-  /** @brief The second point of the target line. Stored for convenience */
-  Eigen::Isometry3d point_b_;
-
-  /** @brief The line vector used for operation **/
-  Eigen::Vector3d line_;
-
-  /** @brief The kinematic information used when calculating error */
-  CartLineKinematicInfo::ConstPtr kinematic_info_;
+  /** @brief The cartesian line information used when calculating error */
+  CartLineInfo info_;
 };
 };  // namespace trajopt_ifopt
 #endif
