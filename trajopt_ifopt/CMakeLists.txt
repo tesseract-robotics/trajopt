@@ -55,8 +55,7 @@ set(TRAJOPT_IFOPT_SOURCE_FILES
     src/utils/ifopt_utils.cpp
     src/utils/numeric_differentiation.cpp
     src/utils/trajopt_utils.cpp
-    src/variable_sets/joint_position_variable.cpp
-)
+    src/variable_sets/joint_position_variable.cpp)
 
 add_library(${PROJECT_NAME} ${TRAJOPT_IFOPT_SOURCE_FILES})
 target_link_libraries(
