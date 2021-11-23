@@ -592,6 +592,14 @@ OptStatus BasicTrustRegionSQP::optimize()
       {
         LOG_INFO("Elapsed time %f has exceeded max time %f", elapsed_time, param_.max_time);
         retval = OPT_TIME_LIMIT;
+
+        if (results_.cnt_viols.empty() || vecMax(results_.cnt_viols) < param_.cnt_tolerance)
+        {
+          retval = OPT_CONVERGED;
+          if (!results_.cnt_viols.empty())
+            LOG_INFO("woo-hoo! constraints are satisfied (to tolerance %.2e)", param_.cnt_tolerance);
+        }
+
         goto cleanup;
       }
       callCallbacks();
