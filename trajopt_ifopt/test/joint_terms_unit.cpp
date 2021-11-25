@@ -94,8 +94,8 @@ TEST(JointTermsUnit, JointVelConstraintUnit)  // NOLINT
   Eigen::VectorXd targets(2);
   targets << 0, 0;
   std::string name("test_joint_vel_cnt");
-  Eigen::VectorXd coeffs = Eigen::VectorXd::Constant(1, 2);
-  JointVelConstraint velocity_cnt(targets, position_vars, name);
+  Eigen::VectorXd coeffs = Eigen::VectorXd::Constant(1, 1);
+  JointVelConstraint velocity_cnt(targets, position_vars, coeffs, name);
 
   // Must link with variables or GetValues and GetJacobian throw exception.
   velocity_cnt.LinkWithVariables(variables);
@@ -160,8 +160,8 @@ TEST(JointTermsUnit, JointVelConstraintMinimumUnit)  // NOLINT
   Eigen::VectorXd targets(2);
   targets << 0, 0;
   std::string name("test_joint_vel_cnt");
-  Eigen::VectorXd coeffs = Eigen::VectorXd::Constant(1, 2);
-  JointVelConstraint velocity_cnt(targets, position_vars, name);
+  Eigen::VectorXd coeffs = Eigen::VectorXd::Constant(1, 1);
+  JointVelConstraint velocity_cnt(targets, position_vars, coeffs, name);
 
   // Must link with variables or GetValues and GetJacobian throw exception.
   velocity_cnt.LinkWithVariables(variables);
@@ -226,8 +226,8 @@ TEST(JointTermsUnit, JointAccelConstraintUnit)  // NOLINT
   Eigen::VectorXd targets(2);
   targets << 0, 0;
   std::string name("test_joint_accel_cnt");
-  Eigen::VectorXd coeffs = Eigen::VectorXd::Constant(1, 2);
-  JointAccelConstraint accel_cnt(targets, position_vars, name);
+  Eigen::VectorXd coeffs = Eigen::VectorXd::Constant(1, 1);
+  JointAccelConstraint accel_cnt(targets, position_vars, coeffs, name);
 
   // Must link with variables or GetValues and GetJacobian throw exception.
   accel_cnt.LinkWithVariables(variables);
@@ -302,8 +302,8 @@ TEST(JointTermsUnit, JointAccelConstraintMinimumUnit)  // NOLINT
   Eigen::VectorXd targets(2);
   targets << 0, 0;
   std::string name("test_joint_accel_cnt");
-  Eigen::VectorXd coeffs = Eigen::VectorXd::Constant(1, 3);
-  JointAccelConstraint accel_cnt(targets, position_vars, name);
+  Eigen::VectorXd coeffs = Eigen::VectorXd::Constant(1, 1);
+  JointAccelConstraint accel_cnt(targets, position_vars, coeffs, name);
 
   // Must link with variables or GetValues and GetJacobian throw exception.
   accel_cnt.LinkWithVariables(variables);
@@ -378,8 +378,8 @@ TEST(JointTermsUnit, JointJerkConstraintUnit)  // NOLINT
   Eigen::VectorXd targets(2);
   targets << 0, 0;
   std::string name("test_joint_jerk_cnt");
-  Eigen::VectorXd coeffs = Eigen::VectorXd::Constant(1, 2);
-  JointJerkConstraint jerk_cnt(targets, position_vars, name);
+  Eigen::VectorXd coeffs = Eigen::VectorXd::Constant(1, 1);
+  JointJerkConstraint jerk_cnt(targets, position_vars, coeffs, name);
 
   // Must link with variables or GetValues and GetJacobian throw exception.
   jerk_cnt.LinkWithVariables(variables);
@@ -454,8 +454,8 @@ TEST(JointTermsUnit, JointJerkConstraintMinimumUnit)  // NOLINT
   Eigen::VectorXd targets(2);
   targets << 0, 0;
   std::string name("test_joint_jerk_cnt");
-  Eigen::VectorXd coeffs = Eigen::VectorXd::Constant(1, 2);
-  JointJerkConstraint jerk_cnt(targets, position_vars, name);
+  Eigen::VectorXd coeffs = Eigen::VectorXd::Constant(1, 1);
+  JointJerkConstraint jerk_cnt(targets, position_vars, coeffs, name);
 
   // Must link with variables or GetValues and GetJacobian throw exception.
   jerk_cnt.LinkWithVariables(variables);

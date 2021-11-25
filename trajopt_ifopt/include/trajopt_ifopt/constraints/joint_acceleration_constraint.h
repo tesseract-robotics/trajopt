@@ -52,10 +52,12 @@ public:
    * @param targets Joint Acceleration targets (length should be n_dof). Upper and lower bounds are set to this value
    * @param position_vars Joint positions used to calculate acceleration. These vars are assumed to be continuous and in
    * order.
+   * @param coeffs The joint coefficients to use as weights. If size of 1 then the values is replicated for each joint.
    * @param name Name of the constraint
    */
   JointAccelConstraint(const Eigen::VectorXd& targets,
                        const std::vector<trajopt_ifopt::JointPosition::ConstPtr>& position_vars,
+                       const Eigen::VectorXd& coeffs,
                        const std::string& name = "JointAccel");
 
   /**
@@ -63,10 +65,12 @@ public:
    * @param bounds Bounds on target joint acceleration (length should be n_dof)
    * @param position_vars Joint positions used to calculate acceleration. These vars are assumed to be continuous and in
    * order.
+   * @param coeffs The joint coefficients to use as weights. If size of 1 then the values is replicated for each joint.
    * @param name Name of the constraint
    */
   JointAccelConstraint(const std::vector<ifopt::Bounds>& bounds,
                        const std::vector<trajopt_ifopt::JointPosition::ConstPtr>& position_vars,
+                       const Eigen::VectorXd& coeffs,
                        const std::string& name = "JointAccel");
 
   /**
@@ -93,6 +97,9 @@ private:
   long n_dof_;
   /** @brief The number of JointPositions passed in */
   long n_vars_;
+
+  /** @brief The coeff to apply to error and gradient */
+  Eigen::VectorXd coeffs_;
 
   /** @brief Bounds on the velocities of each joint */
   std::vector<ifopt::Bounds> bounds_;

@@ -109,7 +109,8 @@ void runVelocityConstraintOptimizationTest(const trajopt_sqp::QPProblem::Ptr& qp
 
   // 4) Add costs
   Eigen::VectorXd vel_target = Eigen::VectorXd::Zero(7);
-  auto vel_constraint = std::make_shared<trajopt_ifopt::JointVelConstraint>(vel_target, vars, "jv");
+  coeffs = Eigen::VectorXd::Constant(1, 1);
+  auto vel_constraint = std::make_shared<trajopt_ifopt::JointVelConstraint>(vel_target, vars, coeffs, "jv");
   qp_problem->addCostSet(vel_constraint, trajopt_sqp::CostPenaltyType::SQUARED);
 
   qp_problem->setup();
@@ -176,7 +177,8 @@ TEST_F(VelocityConstraintOptimization, velocity_constraint_optimization_ipopt)  
 
   // 4) Add costs
   Eigen::VectorXd vel_target = Eigen::VectorXd::Zero(7);
-  auto vel_constraint = std::make_shared<trajopt_ifopt::JointVelConstraint>(vel_target, vars, "jv");
+  coeffs = Eigen::VectorXd::Constant(1, 1);
+  auto vel_constraint = std::make_shared<trajopt_ifopt::JointVelConstraint>(vel_target, vars, coeffs, "jv");
 
   // Must link the variables to the constraint since that happens in AddConstraintSet
   vel_constraint->LinkWithVariables(nlp_ipopt.GetOptVariables());
