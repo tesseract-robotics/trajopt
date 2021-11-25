@@ -109,7 +109,8 @@ void runAccelerationConstraintOptimizationTest(const trajopt_sqp::QPProblem::Ptr
 
   // 4) Add costs
   Eigen::VectorXd accel_target = Eigen::VectorXd::Zero(7);
-  auto accel_constraint = std::make_shared<trajopt_ifopt::JointAccelConstraint>(accel_target, vars, "ja");
+  coeffs = Eigen::VectorXd::Constant(1, 1);
+  auto accel_constraint = std::make_shared<trajopt_ifopt::JointAccelConstraint>(accel_target, vars, coeffs, "ja");
   qp_problem->addCostSet(accel_constraint, trajopt_sqp::CostPenaltyType::SQUARED);
 
   qp_problem->setup();
@@ -178,7 +179,8 @@ TEST_F(AccelerationConstraintOptimization, acceleration_constraint_optimization_
 
   // 4) Add costs
   Eigen::VectorXd accel_target = Eigen::VectorXd::Zero(7);
-  auto accel_constraint = std::make_shared<trajopt_ifopt::JointAccelConstraint>(accel_target, vars, "jv");
+  coeffs = Eigen::VectorXd::Constant(1, 1);
+  auto accel_constraint = std::make_shared<trajopt_ifopt::JointAccelConstraint>(accel_target, vars, coeffs, "jv");
 
   // Must link the variables to the constraint since that happens in AddConstraintSet
   accel_constraint->LinkWithVariables(nlp_ipopt.GetOptVariables());

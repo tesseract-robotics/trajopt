@@ -127,7 +127,8 @@ void runPlanningTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const Enviro
 
   // Add costs
   {
-    auto cnt = std::make_shared<JointVelConstraint>(Eigen::VectorXd::Zero(7), vars);
+    Eigen::VectorXd coeffs = Eigen::VectorXd::Constant(1, 1);
+    auto cnt = std::make_shared<JointVelConstraint>(Eigen::VectorXd::Zero(7), vars, coeffs);
     qp_problem->addCostSet(cnt, trajopt_sqp::CostPenaltyType::SQUARED);
   }
 

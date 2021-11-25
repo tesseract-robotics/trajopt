@@ -33,8 +33,10 @@ namespace trajopt_ifopt
 {
 JointJerkConstraint::JointJerkConstraint(const Eigen::VectorXd& targets,
                                          const std::vector<JointPosition::ConstPtr>& position_vars,
+                                         const Eigen::VectorXd& coeffs,
                                          const std::string& name)
   : ifopt::ConstraintSet(static_cast<int>(targets.size()) * static_cast<int>(position_vars.size()), name)
+  , coeffs_(coeffs)
   , position_vars_(position_vars)
 {
   if (position_vars_.size() < 6)
@@ -53,6 +55,15 @@ JointJerkConstraint::JointJerkConstraint(const Eigen::VectorXd& targets,
   assert(n_dof_ > 0);
   assert(n_vars_ > 0);
   //  assert(n_vars_ == 2);
+
+  if (!(coeffs_.array() > 0).all())
+    throw std::runtime_error("JointJerkConstraint, coeff must be greater than zero.");
+
+  if (coeffs_.rows() == 1)
+    coeffs_ = Eigen::VectorXd::Constant(n_dof_, coeffs(0));
+
+  if (coeffs_.rows() != n_dof_)
+    throw std::runtime_error("JointJerkConstraint, coeff must be the same size of the joint postion.");
 
   // Set the bounds to the input targets
   std::vector<ifopt::Bounds> bounds(static_cast<size_t>(GetRows()));
@@ -79,7 +90,7 @@ Eigen::VectorXd JointJerkConstraint::GetValues() const
     auto vals3 = GetVariables()->GetComponent(position_vars_[ind + 2]->GetName())->GetValues();
     auto vals4 = GetVariables()->GetComponent(position_vars_[ind + 3]->GetName())->GetValues();
     Eigen::VectorXd single_step = (3.0 * vals2) - (3.0 * vals3) - vals1 + vals4;
-    acceleration.block(n_dof_ * static_cast<Eigen::Index>(ind), 0, n_dof_, 1) = single_step;
+    acceleration.block(n_dof_ * static_cast<Eigen::Index>(ind), 0, n_dof_, 1) = coeffs_.cwiseProduct(single_step);
   }
 
   // Backward Diff
@@ -90,7 +101,7 @@ Eigen::VectorXd JointJerkConstraint::GetValues() const
     auto vals3 = GetVariables()->GetComponent(position_vars_[ind - 2]->GetName())->GetValues();
     auto vals4 = GetVariables()->GetComponent(position_vars_[ind - 3]->GetName())->GetValues();
     Eigen::VectorXd single_step = vals1 - (3.0 * vals2) + (3.0 * vals3) - vals4;
-    acceleration.block(n_dof_ * static_cast<Eigen::Index>(ind), 0, n_dof_, 1) = single_step;
+    acceleration.block(n_dof_ * static_cast<Eigen::Index>(ind), 0, n_dof_, 1) = coeffs_.cwiseProduct(single_step);
   }
 
   return acceleration;
@@ -117,28 +128,28 @@ void JointJerkConstraint::FillJacobianBlock(std::string var_set, Jacobian& jac_b
       // The last two variable are special and only effect the last two constraints. Everything else
       // effects 3
       if (i < n_vars_ - 3)
-        jac_block.coeffRef(i * n_dof_ + j, j) = -1.0;
+        jac_block.coeffRef(i * n_dof_ + j, j) = -1.0 * coeffs_[j];
 
       if (i > 0 && i < n_vars_ - 2)
-        jac_block.coeffRef((i - 1) * n_dof_ + j, j) = 3.0;
+        jac_block.coeffRef((i - 1) * n_dof_ + j, j) = 3.0 * coeffs_[j];
 
       if (i > 1 && i < n_vars_ - 1)
-        jac_block.coeffRef((i - 2) * n_dof_ + j, j) = -3.0;
+        jac_block.coeffRef((i - 2) * n_dof_ + j, j) = -3.0 * coeffs_[j];
 
       if (i > 2)
-        jac_block.coeffRef((i - 3) * n_dof_ + j, j) = 1.0;
+        jac_block.coeffRef((i - 3) * n_dof_ + j, j) = 1.0 * coeffs_[j];
 
       if (i >= (n_vars_ - 3) && i <= (n_vars_ - 1))
-        jac_block.coeffRef((i * n_dof_) + j, j) = 1.0;
+        jac_block.coeffRef((i * n_dof_) + j, j) = 1.0 * coeffs_[j];
 
       if (i >= (n_vars_ - 4) && i <= (n_vars_ - 2))
-        jac_block.coeffRef(((i + 1) * n_dof_) + j, j) = -3.0;
+        jac_block.coeffRef(((i + 1) * n_dof_) + j, j) = -3.0 * coeffs_[j];
 
       if (i >= (n_vars_ - 5) && i <= (n_vars_ - 3))
-        jac_block.coeffRef(((i + 2) * n_dof_) + j, j) = 3.0;
+        jac_block.coeffRef(((i + 2) * n_dof_) + j, j) = 3.0 * coeffs_[j];
 
       if (i >= (n_vars_ - 6) && i <= (n_vars_ - 4))
-        jac_block.coeffRef(((i + 3) * n_dof_) + j, j) = -1.0;
+        jac_block.coeffRef(((i + 3) * n_dof_) + j, j) = -1.0 * coeffs_[j];
     }
   }
 }

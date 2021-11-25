@@ -33,8 +33,10 @@ namespace trajopt_ifopt
 {
 JointVelConstraint::JointVelConstraint(const Eigen::VectorXd& targets,
                                        const std::vector<JointPosition::ConstPtr>& position_vars,
+                                       const Eigen::VectorXd& coeffs,
                                        const std::string& name)
   : ifopt::ConstraintSet(static_cast<int>(targets.size()) * static_cast<int>(position_vars.size() - 1), name)
+  , coeffs_(coeffs)
   , position_vars_(position_vars)
 {
   if (position_vars_.size() < 2)
@@ -53,6 +55,15 @@ JointVelConstraint::JointVelConstraint(const Eigen::VectorXd& targets,
   assert(n_dof_ > 0);
   assert(n_vars_ > 0);
   //  assert(n_vars_ == 2);
+
+  if (!(coeffs_.array() > 0).all())
+    throw std::runtime_error("JointVelConstraint, coeff must be greater than zero.");
+
+  if (coeffs_.rows() == 1)
+    coeffs_ = Eigen::VectorXd::Constant(n_dof_, coeffs(0));
+
+  if (coeffs_.rows() != n_dof_)
+    throw std::runtime_error("JointVelConstraint, coeff must be the same size of the joint postion.");
 
   // Set the bounds to the input targets
   std::vector<ifopt::Bounds> bounds(static_cast<size_t>(GetRows()));
@@ -86,7 +97,7 @@ Eigen::VectorXd JointVelConstraint::GetValues() const
     auto vals1 = this->GetVariables()->GetComponent(position_vars_[ind]->GetName())->GetValues();
     auto vals2 = this->GetVariables()->GetComponent(position_vars_[ind + 1]->GetName())->GetValues();
     Eigen::VectorXd single_step = (vals2 - vals1);
-    velocity.block(n_dof_ * static_cast<Eigen::Index>(ind), 0, n_dof_, 1) = single_step;
+    velocity.block(n_dof_ * static_cast<Eigen::Index>(ind), 0, n_dof_, 1) = coeffs_.cwiseProduct(single_step);
   }
 
   return velocity;
@@ -113,10 +124,10 @@ void JointVelConstraint::FillJacobianBlock(std::string var_set, Jacobian& jac_bl
       // The first and last variable are special and only effect the first and last constraint. Everything else
       // effects 2
       if (i < n_vars_ - 1)
-        jac_block.coeffRef((i * n_dof_) + j, j) = -1.0;
+        jac_block.coeffRef((i * n_dof_) + j, j) = -1.0 * coeffs_[j];
 
       if (i > 0)
-        jac_block.coeffRef(((i - 1) * n_dof_) + j, j) = 1.0;
+        jac_block.coeffRef(((i - 1) * n_dof_) + j, j) = 1.0 * coeffs_[j];
     }
   }
 }
