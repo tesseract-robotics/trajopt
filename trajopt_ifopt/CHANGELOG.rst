@@ -2,8 +2,8 @@
 Changelog for package trajopt_ifopt
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.1.1 (2021-11-29)
+------------------
 * Add coeffs to Vel, Accel, and Jerk Ifopt constraint
 * Contributors: Levi Armstrong
 

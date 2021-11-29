@@ -2,8 +2,8 @@
 Changelog for package trajopt_sco
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.1.1 (2021-11-29)
+------------------
 * TrajOpt timeout check constraint convergence and if satisfied report converged
 * Contributors: Levi Armstrong
 
