@@ -157,12 +157,15 @@ std::vector<ifopt::Bounds> ContinuousCollisionConstraint::GetBounds() const { re
 void ContinuousCollisionConstraint::FillJacobianBlock(std::string var_set, Jacobian& jac_block) const
 {
   // Only modify the jacobian if this constraint uses var_set
-  jac_block.reserve(static_cast<Eigen::Index>(bounds_.size()) * position_vars_[0]->GetRows());
+  std::vector<Eigen::Triplet<double>> triplet_list;
+  triplet_list.reserve(bounds_.size() * static_cast<std::size_t>(position_vars_[0]->GetRows()));
 
   // Setting to zeros because snopt sparsity cannot change
   for (Eigen::Index i = 0; i < static_cast<Eigen::Index>(bounds_.size()); i++)
     for (Eigen::Index j = 0; j < n_dof_; j++)
-      jac_block.coeffRef(i, j) = 0;
+      triplet_list.emplace_back(i, j, 0);
+
+  jac_block.setFromTriplets(triplet_list.begin(), triplet_list.end());  // NOLINT
 
   if (var_set == position_vars_[0]->GetName() && !position_vars_fixed_[0])
   {

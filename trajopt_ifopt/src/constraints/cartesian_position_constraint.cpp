@@ -135,8 +135,8 @@ void CartPosConstraint::CalcJacobianBlock(const Eigen::Ref<const Eigen::VectorXd
     return target_tf.inverse() * source_tf;
   };
 
-  // Reserve enough room in the sparse matrix
-  jac_block.reserve(n_dof_ * info_.indices.size());
+  std::vector<Eigen::Triplet<double> > triplet_list;
+  triplet_list.reserve(static_cast<std::size_t>(n_dof_ * info_.indices.size()));
 
   if (use_numeric_differentiation)
   {
@@ -154,7 +154,7 @@ void CartPosConstraint::CalcJacobianBlock(const Eigen::Ref<const Eigen::VectorXd
       {
         // Each jac_block will be for a single variable but for all timesteps. Therefore we must index down to the
         // correct timestep for this variable
-        jac_block.coeffRef(i, j) = coeffs_(i) * jac0.coeffRef(info_.indices[i], j);
+        triplet_list.emplace_back(i, j, coeffs_(i) * jac0.coeffRef(info_.indices[i], j));
       }
     }
   }
@@ -210,10 +210,11 @@ void CartPosConstraint::CalcJacobianBlock(const Eigen::Ref<const Eigen::VectorXd
       {
         // Each jac_block will be for a single variable but for all timesteps. Therefore we must index down to the
         // correct timestep for this variable
-        jac_block.coeffRef(i, j) = coeffs_(i) * jac0(info_.indices[i], j);
+        triplet_list.emplace_back(i, j, coeffs_(i) * jac0(info_.indices[i], j));
       }
     }
   }
+  jac_block.setFromTriplets(triplet_list.begin(), triplet_list.end());  // NOLINT
 }
 
 void CartPosConstraint::FillJacobianBlock(std::string var_set, Jacobian& jac_block) const

@@ -117,8 +117,8 @@ void JointAccelConstraint::FillJacobianBlock(std::string var_set, Jacobian& jac_
   {
     Eigen::Index i = it->second;
 
-    // Reserve enough room in the sparse matrix
-    jac_block.reserve(n_dof_ * 3);
+    std::vector<Eigen::Triplet<double> > triplet_list;
+    triplet_list.reserve(static_cast<std::size_t>(n_dof_ * 3));
 
     // jac block will be (n_vars-1)*n_dof x n_dof
     for (int j = 0; j < n_dof_; j++)
@@ -126,23 +126,25 @@ void JointAccelConstraint::FillJacobianBlock(std::string var_set, Jacobian& jac_
       // The last two variable are special and only effect the last two constraints. Everything else
       // effects 3
       if (i < n_vars_ - 1)
-        jac_block.coeffRef(i * n_dof_ + j, j) = 1.0 * coeffs_[j];
+        triplet_list.emplace_back(i * n_dof_ + j, j, 1.0 * coeffs_[j]);
 
       if (i > 0 && i < n_vars_ - 1)
-        jac_block.coeffRef((i - 1) * n_dof_ + j, j) = -2.0 * coeffs_[j];
+        triplet_list.emplace_back((i - 1) * n_dof_ + j, j, -2.0 * coeffs_[j]);
 
       if (i > 1)
-        jac_block.coeffRef((i - 2) * n_dof_ + j, j) = 1.0 * coeffs_[j];
+        triplet_list.emplace_back((i - 2) * n_dof_ + j, j, 1.0 * coeffs_[j]);
 
       if (i == (n_vars_ - 1))
-        jac_block.coeffRef((i * n_dof_) + j, j) = 1.0 * coeffs_[j];
+        triplet_list.emplace_back((i * n_dof_) + j, j, 1.0 * coeffs_[j]);
 
       if (i >= (n_vars_ - 3) && i <= (n_vars_ - 2))
-        jac_block.coeffRef(((i + 1) * n_dof_) + j, j) = -2.0 * coeffs_[j];
+        triplet_list.emplace_back(((i + 1) * n_dof_) + j, j, -2.0 * coeffs_[j]);
 
       if (i >= (n_vars_ - 4) && i <= (n_vars_ - 3))
-        jac_block.coeffRef(((i + 2) * n_dof_) + j, j) = 1.0 * coeffs_[j];
+        triplet_list.emplace_back(((i + 2) * n_dof_) + j, j, 1.0 * coeffs_[j]);
     }
+
+    jac_block.setFromTriplets(triplet_list.begin(), triplet_list.end());  // NOLINT
   }
 }
 
