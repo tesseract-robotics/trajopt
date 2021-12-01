@@ -53,8 +53,8 @@ bool TrustRegionSQPSolver::init(QPProblem::Ptr qp_prob)
   results_.best_constraint_violations = qp_problem->getExactConstraintViolations();
 
   // Calculate exact NLP merits (expensive) - TODO: Look into caching for qp_solver->Convexify()
-  results_.best_exact_merit = qp_problem->evaluateTotalExactCost(results_.best_var_vals) +
-                              results_.best_constraint_violations.dot(results_.merit_error_coeffs);
+  results_.best_exact_merit =
+      results_.best_costs.sum() + results_.best_constraint_violations.dot(results_.merit_error_coeffs);
 
   setBoxSize(params.initial_trust_box_size);
   return true;
@@ -119,14 +119,14 @@ void TrustRegionSQPSolver::solve(const QPProblem::Ptr& qp_problem)
 
 bool TrustRegionSQPSolver::verifySQPSolverConvergence()
 {
-  // Check if constrainsts are satisfied
-  if (results_.new_constraint_violations.size() == 0)
+  // Check if constraints are satisfied
+  if (results_.best_constraint_violations.size() == 0)
   {
     CONSOLE_BRIDGE_logInform("Optimization has converged and there are no constraints");
     return true;
   }
 
-  if (results_.new_constraint_violations.maxCoeff() < params.cnt_tolerance)
+  if (results_.best_constraint_violations.maxCoeff() < params.cnt_tolerance)
   {
     CONSOLE_BRIDGE_logInform("woo-hoo! constraints are satisfied (to tolerance %.2e)", params.cnt_tolerance);
     return true;
@@ -139,10 +139,10 @@ void TrustRegionSQPSolver::adjustPenalty()
 {
   if (params.inflate_constraints_individually)
   {
-    assert(results_.new_constraint_violations.size() == results_.merit_error_coeffs.size());
-    for (Eigen::Index idx = 0; idx < results_.new_constraint_violations.size(); idx++)
+    assert(results_.best_constraint_violations.size() == results_.merit_error_coeffs.size());
+    for (Eigen::Index idx = 0; idx < results_.best_constraint_violations.size(); idx++)
     {
-      if (results_.new_constraint_violations[idx] > params.cnt_tolerance)
+      if (results_.best_constraint_violations[idx] > params.cnt_tolerance)
       {
         CONSOLE_BRIDGE_logInform("Not all constraints are satisfied. Increasing constraint penalties for %d", idx);
         results_.merit_error_coeffs[idx] *= params.merit_coeff_increase_ratio;
@@ -414,6 +414,7 @@ void TrustRegionSQPSolver::printStepInfo() const
               "----------",
               "----------",
               "----------");
+  std::printf("| %s |\n", std::string(88, '=').c_str());
 
   // Individual Constraints
   // If we want to print the names we will have to add a getConstraints function to IFOPT
@@ -452,19 +453,24 @@ void TrustRegionSQPSolver::printStepInfo() const
   }
 
   // Constraint
+  std::string constraints_satisfied =
+      (results_.new_constraint_violations.maxCoeff() < params.cnt_tolerance) ? "True" : "False";
   std::printf("| %s |\n", std::string(88, '=').c_str());
-  std::printf("| %10s | %10.3e | %10.3e | %10.3e | %10s | %10s | %10s | SUM CONSTRAINTS\n",
+  std::printf("| %10s | %10.3e | %10.3e | %10.3e | %10s | %10s | %10s | SUM CONSTRAINTS (WITHOUT MERIT), Satisfied "
+              "(%s)\n",
               "----------",
               results_.best_constraint_violations.sum(),
               results_.new_constraint_violations.sum(),
               results_.new_approx_constraint_violations.sum(),
               "----------",
               "----------",
-              "----------");
+              "----------",
+              constraints_satisfied.c_str());
 
   // Total
   std::printf("| %s |\n", std::string(88, '=').c_str());
-  std::printf("| %10s | %10.3e | %10.3e | %10s | %10.3e | %10.3e | %10.3e | TOTAL (SUM COSTS + SUM CONSTRAINTS)\n",
+  std::printf("| %10s | %10.3e | %10.3e | %10s | %10.3e | %10.3e | %10.3e | TOTAL = SUM COSTS + SUM CONSTRAINTS (WITH "
+              "MERIT)\n",
               "----------",
               results_.best_exact_merit,
               results_.new_exact_merit,
