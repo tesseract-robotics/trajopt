@@ -115,7 +115,7 @@ void exprToEigen(const AffExprVector& expr_vec,
       }
     }
   }
-  sparse_matrix.setFromTriplets(triplets.begin(), triplets.end());
+  sparse_matrix.setFromTriplets(triplets.begin(), triplets.end());  // NOLINT
 }
 
 void tripletsToEigen(const IntVec& rows_i,
@@ -129,7 +129,7 @@ void tripletsToEigen(const IntVec& rows_i,
   {
     triplets.emplace_back(rows_i[i], cols_j[i], values_ij[i]);
   }
-  sparse_matrix.setFromTriplets(triplets.begin(), triplets.end());
+  sparse_matrix.setFromTriplets(triplets.begin(), triplets.end());  // NOLINT
 }
 
 void eigenToTriplets(const Eigen::SparseMatrix<double>& sparse_matrix,

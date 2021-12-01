@@ -63,7 +63,7 @@ JointVelConstraint::JointVelConstraint(const Eigen::VectorXd& targets,
     coeffs_ = Eigen::VectorXd::Constant(n_dof_, coeffs(0));
 
   if (coeffs_.rows() != n_dof_)
-    throw std::runtime_error("JointVelConstraint, coeff must be the same size of the joint postion.");
+    throw std::runtime_error("JointVelConstraint, coeff must be the same size of the joint position.");
 
   // Set the bounds to the input targets
   std::vector<ifopt::Bounds> bounds(static_cast<size_t>(GetRows()));
@@ -118,17 +118,20 @@ void JointVelConstraint::FillJacobianBlock(std::string var_set, Jacobian& jac_bl
     Eigen::Index i = it->second;
 
     // Reserve enough room in the sparse matrix
-    jac_block.reserve(3 * n_dof_);
+    std::vector<Eigen::Triplet<double> > triplet_list;
+    triplet_list.reserve(static_cast<std::size_t>(3 * n_dof_));
+
     for (int j = 0; j < n_dof_; j++)
     {
       // The first and last variable are special and only effect the first and last constraint. Everything else
       // effects 2
       if (i < n_vars_ - 1)
-        jac_block.coeffRef((i * n_dof_) + j, j) = -1.0 * coeffs_[j];
+        triplet_list.emplace_back((i * n_dof_) + j, j, -1.0 * coeffs_[j]);
 
       if (i > 0)
-        jac_block.coeffRef(((i - 1) * n_dof_) + j, j) = 1.0 * coeffs_[j];
+        triplet_list.emplace_back(((i - 1) * n_dof_) + j, j, 1.0 * coeffs_[j]);
     }
+    jac_block.setFromTriplets(triplet_list.begin(), triplet_list.end());  // NOLINT
   }
 }
 

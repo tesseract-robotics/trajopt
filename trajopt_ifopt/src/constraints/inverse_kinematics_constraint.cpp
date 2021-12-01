@@ -105,14 +105,15 @@ void InverseKinematicsConstraint::FillJacobianBlock(std::string var_set, Jacobia
   // Only modify the jacobian if this constraint uses var_set
   if (var_set == constraint_var_->GetName())
   {
-    // Reserve enough room in the sparse matrix
-    jac_block.reserve(n_dof_);
+    std::vector<Eigen::Triplet<double> > triplet_list;
+    triplet_list.reserve(static_cast<std::size_t>(n_dof_));
 
     for (int j = 0; j < n_dof_; j++)
     {
       // err = target - x =? derr/dx = -1
-      jac_block.coeffRef(j, j) = -1;
+      triplet_list.emplace_back(j, j, -1);
     }
+    jac_block.setFromTriplets(triplet_list.begin(), triplet_list.end());  // NOLINT
   }
 }
 

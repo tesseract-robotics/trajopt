@@ -129,14 +129,16 @@ void JointPosConstraint::FillJacobianBlock(std::string var_set, Jacobian& jac_bl
     if (var_set == position_vars_[static_cast<std::size_t>(i)]->GetName())
     {
       // Reserve enough room in the sparse matrix
-      jac_block.reserve(Eigen::VectorXd::Constant(n_dof_, 1));
+      std::vector<Eigen::Triplet<double> > triplet_list;
+      triplet_list.reserve(static_cast<std::size_t>(n_dof_));
 
       for (int j = 0; j < n_dof_; j++)
       {
         // Each jac_block will be for a single variable but for all timesteps. Therefore we must index down to the
         // correct timestep for this variable
-        jac_block.coeffRef(i * n_dof_ * 0 + j, j) = coeffs_[j] * 1.0;
+        triplet_list.emplace_back(i * n_dof_ * 0 + j, j, coeffs_[j] * 1.0);
       }
+      jac_block.setFromTriplets(triplet_list.begin(), triplet_list.end());  // NOLINT
     }
   }
 }
