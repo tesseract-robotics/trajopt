@@ -67,10 +67,11 @@ SingleTimestepCollisionEvaluator::SingleTimestepCollisionEvaluator(std::shared_p
 
   contact_manager_ = env_->getDiscreteContactManager();
   contact_manager_->setActiveCollisionObjects(manip_active_link_names_);
-  contact_manager_->setCollisionMarginData(collision_config_->collision_margin_data);
+  contact_manager_->setCollisionMarginData(collision_config_->contact_manager_config.collision_margin_data);
   // Increase the default by the buffer
-  contact_manager_->setDefaultCollisionMarginData(collision_config_->collision_margin_data.getMaxCollisionMargin() +
-                                                  collision_config_->collision_margin_buffer);
+  contact_manager_->setDefaultCollisionMarginData(
+      collision_config_->contact_manager_config.collision_margin_data.getMaxCollisionMargin() +
+      collision_config_->collision_margin_buffer);
 }
 
 CollisionCacheData::ConstPtr
@@ -121,7 +122,8 @@ void SingleTimestepCollisionEvaluator::CalcCollisionsHelper(const Eigen::Ref<con
   for (auto& pair : dist_results)
   {
     // Contains the contact distance threshold and coefficient for the given link pair
-    double dist = collision_config_->collision_margin_data.getPairCollisionMargin(pair.first.first, pair.first.second);
+    double dist = collision_config_->contact_manager_config.collision_margin_data.getPairCollisionMargin(
+        pair.first.first, pair.first.second);
     double coeff = collision_config_->collision_coeff_data.getPairCollisionCoeff(pair.first.first, pair.first.second);
     const Eigen::Vector2d data = { dist, coeff };
     auto end = std::remove_if(
@@ -136,8 +138,8 @@ GradientResults SingleTimestepCollisionEvaluator::GetGradient(const Eigen::Vecto
                                                               const tesseract_collision::ContactResult& contact_result)
 {
   // Contains the contact distance threshold and coefficient for the given link pair
-  double margin = collision_config_->collision_margin_data.getPairCollisionMargin(contact_result.link_names[0],
-                                                                                  contact_result.link_names[1]);
+  double margin = collision_config_->contact_manager_config.collision_margin_data.getPairCollisionMargin(
+      contact_result.link_names[0], contact_result.link_names[1]);
 
   return getGradient(dofvals, contact_result, margin, collision_config_->collision_margin_buffer, manip_);
 }
