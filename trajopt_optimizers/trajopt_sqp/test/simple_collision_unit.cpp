@@ -96,7 +96,7 @@ public:
       // Get current joint values
       VectorXd joint_vals = this->GetVariables()->GetComponent(position_var_->GetName())->GetValues();
 
-      CalcJacobianBlock(joint_vals, jac_block);
+      CalcJacobianBlock(joint_vals, jac_block);  // NOLINT
     }
   }
 

@@ -165,7 +165,7 @@ TEST_F(CartesianPositionConstraintUnit, FillJacobian)  // NOLINT
     // Compare to constraint jacobian
     {
       trajopt_ifopt::SparseMatrix jac_block(num_jac_block.rows(), num_jac_block.cols());
-      constraint->CalcJacobianBlock(joint_position_mod, jac_block);
+      constraint->CalcJacobianBlock(joint_position_mod, jac_block);  // NOLINT
       EXPECT_TRUE(jac_block.isApprox(num_jac_block, 1e-3));
       //      std::cout << "Numeric:\n" << num_jac_block.toDense() << std::endl;
       //      std::cout << "Analytic:\n" << jac_block.toDense() << std::endl;
