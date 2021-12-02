@@ -158,10 +158,11 @@ void ContinuousCollisionConstraint::FillJacobianBlock(std::string var_set, Jacob
 {
   // Only modify the jacobian if this constraint uses var_set
   std::vector<Eigen::Triplet<double>> triplet_list;
-  triplet_list.reserve(bounds_.size() * static_cast<std::size_t>(position_vars_[0]->GetRows()));
+  triplet_list.reserve(static_cast<std::size_t>(bounds_.size()) *
+                       static_cast<std::size_t>(position_vars_[0]->GetRows()));
 
   // Setting to zeros because snopt sparsity cannot change
-  for (Eigen::Index i = 0; i < static_cast<Eigen::Index>(bounds_.size()); i++)
+  for (Eigen::Index i = 0; i < static_cast<Eigen::Index>(bounds_.size()); i++)  // NOLINT
     for (Eigen::Index j = 0; j < n_dof_; j++)
       triplet_list.emplace_back(i, j, 0);
 

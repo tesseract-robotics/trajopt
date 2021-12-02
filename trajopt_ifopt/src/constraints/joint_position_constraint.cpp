@@ -123,16 +123,16 @@ std::vector<ifopt::Bounds> JointPosConstraint::GetBounds() const { return bounds
 void JointPosConstraint::FillJacobianBlock(std::string var_set, Jacobian& jac_block) const
 {
   // Loop over all of the variables this constraint uses
-  for (long i = 0; i < n_vars_; i++)
+  for (long i = 0; i < n_vars_; i++)  // NOLINT
   {
     // Only modify the jacobian if this constraint uses var_set
-    if (var_set == position_vars_[static_cast<std::size_t>(i)]->GetName())
+    if (var_set == position_vars_[static_cast<std::size_t>(i)]->GetName())  // NOLINT
     {
       // Reserve enough room in the sparse matrix
       std::vector<Eigen::Triplet<double> > triplet_list;
       triplet_list.reserve(static_cast<std::size_t>(n_dof_));
 
-      for (int j = 0; j < n_dof_; j++)
+      for (int j = 0; j < n_dof_; j++)  // NOLINT
       {
         // Each jac_block will be for a single variable but for all timesteps. Therefore we must index down to the
         // correct timestep for this variable

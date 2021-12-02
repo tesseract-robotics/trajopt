@@ -151,7 +151,7 @@ TEST_F(CartesianLineConstraintUnit, FillJacobian)  // NOLINT
     // Compare to constraint jacobian
     {
       ifopt::ConstraintSet::Jacobian jac_block(num_jac_block.rows(), num_jac_block.cols());
-      constraint->CalcJacobianBlock(joint_position_mod, jac_block);
+      constraint->CalcJacobianBlock(joint_position_mod, jac_block);  // NOLINT
       EXPECT_TRUE(jac_block.isApprox(num_jac_block, 1e-3));
     }
     {

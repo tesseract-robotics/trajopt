@@ -71,12 +71,12 @@ std::vector<ifopt::Bounds> DiscreteCollisionNumericalConstraint::GetBounds() con
 void DiscreteCollisionNumericalConstraint::FillJacobianBlock(std::string var_set, Jacobian& jac_block) const
 {
   // Only modify the jacobian if this constraint uses var_set
-  if (var_set == position_var_->GetName())
+  if (var_set == position_var_->GetName())  // NOLINT
   {
     // Get current joint values
     VectorXd joint_vals = this->GetVariables()->GetComponent(position_var_->GetName())->GetValues();
 
-    CalcJacobianBlock(joint_vals, jac_block);
+    CalcJacobianBlock(joint_vals, jac_block);  // NOLINT
   }
 }
 
@@ -129,7 +129,7 @@ void DiscreteCollisionNumericalConstraint::CalcJacobianBlock(const Eigen::Ref<co
 {
   // Calculate collisions
   std::vector<Eigen::Triplet<double>> triplet_list;
-  triplet_list.reserve(bounds_.size() * static_cast<std::size_t>(position_var_->GetRows()));
+  triplet_list.reserve(static_cast<std::size_t>(bounds_.size()) * static_cast<std::size_t>(position_var_->GetRows()));
 
   // Setting to zeros because snopt sparsity cannot change
   for (Eigen::Index i = 0; i < static_cast<Eigen::Index>(bounds_.size()); i++)
