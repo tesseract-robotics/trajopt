@@ -193,7 +193,7 @@ protected:
   TermInfo(int supported_term_types) : supported_term_types_(supported_term_types) {}
 
 private:
-  static std::map<std::string, MakerFunc> name2maker;
+  static std::map<std::string, MakerFunc> name2maker;  // NOLINT
   int supported_term_types_;
 };
 

@@ -29,7 +29,6 @@ using namespace tesseract_visualization;
 using namespace tesseract_scene_graph;
 using namespace tesseract_common;
 
-bool plotting = false; /**< Enable plotting */
 static const double LONGEST_VALID_SEGMENT_LENGTH = 0.05;
 
 class PlanningTest : public testing::TestWithParam<const char*>

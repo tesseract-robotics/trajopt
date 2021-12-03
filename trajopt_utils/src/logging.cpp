@@ -9,7 +9,7 @@ TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace util
 {
-LogLevel gLogLevel;
+LogLevel gLogLevel;  // NOLINT
 
 int LoggingInit()
 {
@@ -50,5 +50,5 @@ int LoggingInit()
   }
   return 1;
 }
-int this_is_a_hack_but_rhs_executes_on_library_load = LoggingInit();
+int this_is_a_hack_but_rhs_executes_on_library_load = LoggingInit();  // NOLINT
 }  // namespace util
