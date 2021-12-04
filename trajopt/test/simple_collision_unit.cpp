@@ -29,7 +29,7 @@ using namespace tesseract_scene_graph;
 using namespace tesseract_geometry;
 using namespace tesseract_common;
 
-static bool plotting = false;
+static const bool plotting = false;
 
 class SimpleCollisionTest : public testing::TestWithParam<const char*>
 {

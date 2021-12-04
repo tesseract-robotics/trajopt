@@ -114,8 +114,9 @@ public:
     {
       for (const auto& dist_result : pair.second)
       {
-        double dist = collision_evaluator_->GetCollisionConfig().collision_margin_data.getPairCollisionMargin(
-            dist_result.link_names[0], dist_result.link_names[1]);
+        double dist =
+            collision_evaluator_->GetCollisionConfig().contact_manager_config.margin_data.getPairCollisionMargin(
+                dist_result.link_names[0], dist_result.link_names[1]);
         double coeff = collision_evaluator_->GetCollisionConfig().collision_coeff_data.getPairCollisionCoeff(
             dist_result.link_names[0], dist_result.link_names[1]);
         err[i++] += std::max<double>(((dist - dist_result.distance) * coeff), 0.);

@@ -77,7 +77,8 @@ void processInterpolatedCollisionResults(std::vector<tesseract_collision::Contac
       auto p = contact_results.find(pair.first);
 
       // Contains the contact distance threshold and coefficient for the given link pair
-      double dist = collision_config.collision_margin_data.getPairCollisionMargin(pair.first.first, pair.first.second);
+      double dist = collision_config.contact_manager_config.margin_data.getPairCollisionMargin(pair.first.first,
+                                                                                               pair.first.second);
       double coeff = collision_config.collision_coeff_data.getPairCollisionCoeff(pair.first.first, pair.first.second);
       const Eigen::Vector3d data = { dist, collision_config.collision_margin_buffer, coeff };
 

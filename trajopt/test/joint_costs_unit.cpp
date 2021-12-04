@@ -28,7 +28,7 @@ using namespace tesseract_visualization;
 using namespace tesseract_scene_graph;
 using namespace tesseract_common;
 
-static bool plotting = false; /**< Enable plotting */
+static const bool plotting = false; /**< Enable plotting */
 
 class CostsTest : public testing::TestWithParam<const char*>
 {

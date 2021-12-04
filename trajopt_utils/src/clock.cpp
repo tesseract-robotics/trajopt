@@ -7,7 +7,7 @@ TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace util
 {
-static thread_local std::chrono::time_point<std::chrono::high_resolution_clock> start_time;
+static thread_local std::chrono::time_point<std::chrono::high_resolution_clock> start_time;  // NOLINT
 
 /*
  * Starts the clock!  Call this once at the beginning of the program.

@@ -85,6 +85,7 @@ struct CollisionEvaluator
   using Ptr = std::shared_ptr<CollisionEvaluator>;
   using ConstPtr = std::shared_ptr<const CollisionEvaluator>;
 
+  // NOLINTNEXTLINE
   CollisionEvaluator(tesseract_kinematics::JointGroup::ConstPtr manip,
                      tesseract_environment::Environment::ConstPtr env,
                      util::SafetyMarginData::ConstPtr safety_margin_data,

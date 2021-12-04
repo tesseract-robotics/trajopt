@@ -6,7 +6,6 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <tesseract_environment/environment.h>
 #include <tesseract_environment/commands.h>
 #include <tesseract_environment/utils.h>
-#include <tesseract_scene_graph/utils.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt/collision_terms.hpp>
@@ -31,7 +30,7 @@ using namespace tesseract_scene_graph;
 using namespace tesseract_geometry;
 using namespace tesseract_common;
 
-static bool plotting = false;
+static const bool plotting = false;
 
 class CastAttachedTest : public testing::TestWithParam<const char*>
 {

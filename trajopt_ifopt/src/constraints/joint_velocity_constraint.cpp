@@ -113,26 +113,26 @@ void JointVelConstraint::FillJacobianBlock(std::string var_set, Jacobian& jac_bl
   // Check if this constraint use the var_set
   // Only modify the jacobian if this constraint uses var_set
   auto it = index_map_.find(var_set);
-  if (it != index_map_.end())  // NOLINT
+  if (it == index_map_.end())  // NOLINT
+    return;
+
+  Eigen::Index i = it->second;
+
+  // Reserve enough room in the sparse matrix
+  std::vector<Eigen::Triplet<double> > triplet_list;
+  triplet_list.reserve(static_cast<std::size_t>(3 * n_dof_));
+
+  for (int j = 0; j < n_dof_; j++)
   {
-    Eigen::Index i = it->second;
+    // The first and last variable are special and only effect the first and last constraint. Everything else
+    // effects 2
+    if (i < n_vars_ - 1)
+      triplet_list.emplace_back((i * n_dof_) + j, j, -1.0 * coeffs_[j]);
 
-    // Reserve enough room in the sparse matrix
-    std::vector<Eigen::Triplet<double> > triplet_list;
-    triplet_list.reserve(static_cast<std::size_t>(3 * n_dof_));
-
-    for (int j = 0; j < n_dof_; j++)
-    {
-      // The first and last variable are special and only effect the first and last constraint. Everything else
-      // effects 2
-      if (i < n_vars_ - 1)
-        triplet_list.emplace_back((i * n_dof_) + j, j, -1.0 * coeffs_[j]);
-
-      if (i > 0)
-        triplet_list.emplace_back(((i - 1) * n_dof_) + j, j, 1.0 * coeffs_[j]);
-    }
-    jac_block.setFromTriplets(triplet_list.begin(), triplet_list.end());  // NOLINT
+    if (i > 0)
+      triplet_list.emplace_back(((i - 1) * n_dof_) + j, j, 1.0 * coeffs_[j]);
   }
+  jac_block.setFromTriplets(triplet_list.begin(), triplet_list.end());  // NOLINT
 }
 
 }  // namespace trajopt_ifopt

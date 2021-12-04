@@ -26,7 +26,8 @@ Checks: >
     -readability-braces-around-statements,
     -readability-named-parameter,
     -readability-magic-numbers,
-    -readability-isolate-declaration
+    -readability-isolate-declaration,
+    -readability-function-cognitive-complexity
 WarningsAsErrors: >
     -*,
     clang-diagnostic-*,
@@ -54,7 +55,8 @@ WarningsAsErrors: >
     -readability-braces-around-statements,
     -readability-named-parameter,
     -readability-magic-numbers,
-    -readability-isolate-declaration
+    -readability-isolate-declaration,
+    -readability-function-cognitive-complexity
 HeaderFilterRegex: '.*'
 AnalyzeTemporaryDtors: false
 FormatStyle:     none
