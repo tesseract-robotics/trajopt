@@ -2,8 +2,8 @@
 Changelog for package trajopt_sco
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.2.0 (2021-12-04)
+------------------
 * Update trajopt ifopt constraints to leverage setFromTriplets
 * Update legacy trajopt print table
 * Contributors: Levi Armstrong
