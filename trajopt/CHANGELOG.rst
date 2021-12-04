@@ -2,6 +2,13 @@
 Changelog for package trajopt
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Add ContactManagerConfig inside CollisionCheckConfig (`#280 <https://github.com/tesseract-robotics/trajopt/issues/280>`_)
+  Co-authored-by: Levi Armstrong <levi.armstrong@gmail.com>
+* Remove unused header
+* Contributors: Matthew Powelson
+
 0.1.1 (2021-11-29)
 ------------------
 

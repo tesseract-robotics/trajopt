@@ -2,6 +2,15 @@
 Changelog for package trajopt_sqp
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Add ContactManagerConfig inside CollisionCheckConfig (`#280 <https://github.com/tesseract-robotics/trajopt/issues/280>`_)
+  Co-authored-by: Levi Armstrong <levi.armstrong@gmail.com>
+* Fix clang-tidy errors
+* Fix bug in verifySQPSolverConvergence and adjustPenalty
+* Remove unused header
+* Contributors: Levi Armstrong, Matthew Powelson
+
 0.1.1 (2021-11-29)
 ------------------
 * Add coeffs to Vel, Accel, and Jerk Ifopt constraint

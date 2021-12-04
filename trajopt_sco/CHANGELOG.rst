@@ -2,6 +2,12 @@
 Changelog for package trajopt_sco
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Update trajopt ifopt constraints to leverage setFromTriplets
+* Update legacy trajopt print table
+* Contributors: Levi Armstrong
+
 0.1.1 (2021-11-29)
 ------------------
 * TrajOpt timeout check constraint convergence and if satisfied report converged
