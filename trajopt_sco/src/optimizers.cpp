@@ -601,7 +601,6 @@ OptStatus BasicTrustRegionSQP::optimize()
   using Clock = std::chrono::high_resolution_clock;
   auto start_time = Clock::now();
 
-  int qp_solver_failures = 0;
   for (int merit_increases = 0; merit_increases < param_.max_merit_coeff_increases; ++merit_increases)
   { /* merit adjustment loop */
     for (int iter = 1;; ++iter)
@@ -675,6 +674,7 @@ OptStatus BasicTrustRegionSQP::optimize()
       //      printer(model_cost_vals), printer(cost_vals));
       //    }
 
+      int qp_solver_failures = 0;
       while (param_.trust_box_size >= param_.min_trust_box_size)
       {
         setTrustBoxConstraints(results_.x);
@@ -693,7 +693,7 @@ OptStatus BasicTrustRegionSQP::optimize()
             adjustTrustRegion(param_.trust_shrink_ratio);
             LOG_INFO("shrunk trust region. new box size: %.4f", param_.trust_box_size);
             qp_solver_failures++;
-            break;
+            continue;
           }
           else if (qp_solver_failures == (param_.max_qp_solver_failures - 1))
           {
@@ -701,7 +701,7 @@ OptStatus BasicTrustRegionSQP::optimize()
             setTrustRegionSize(param_.min_trust_box_size);
             LOG_INFO("shrunk trust region. new box size: %.4f", param_.trust_box_size);
             qp_solver_failures++;
-            break;
+            continue;
           }
           LOG_ERROR("The convex solver failed you one too many times.");
           retval = OPT_FAILED;
