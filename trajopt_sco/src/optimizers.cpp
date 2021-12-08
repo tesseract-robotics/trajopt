@@ -193,7 +193,8 @@ void BasicTrustRegionSQP::ctor(const OptProb::Ptr& prob)
   model_ = prob->getModel();
 }
 
-void BasicTrustRegionSQP::adjustTrustRegion(double ratio) { param_.trust_box_size *= ratio; }
+void BasicTrustRegionSQP::adjustTrustRegion(double ratio) { setTrustRegionSize(param_.trust_box_size * ratio); }
+void BasicTrustRegionSQP::setTrustRegionSize(double trust_box_size) { param_.trust_box_size = trust_box_size; }
 void BasicTrustRegionSQP::setTrustBoxConstraints(const DblVec& x)
 {
   const VarVector& vars = prob_->getVars();
@@ -687,9 +688,17 @@ OptStatus BasicTrustRegionSQP::optimize()
                     "/tmp/fail.ilp");
           model_->writeToFile("/tmp/fail.lp");
           model_->writeToFile("/tmp/fail.ilp");
-          if (qp_solver_failures < param_.max_qp_solver_failures)
+          if (qp_solver_failures < (param_.max_qp_solver_failures - 1))
           {
             adjustTrustRegion(param_.trust_shrink_ratio);
+            LOG_INFO("shrunk trust region. new box size: %.4f", param_.trust_box_size);
+            qp_solver_failures++;
+            break;
+          }
+          else if (qp_solver_failures == (param_.max_qp_solver_failures - 1))
+          {
+            // convex solver failed and this is the last attempt so setting the trust region to the minimum.
+            setTrustRegionSize(param_.min_trust_box_size);
             LOG_INFO("shrunk trust region. new box size: %.4f", param_.trust_box_size);
             qp_solver_failures++;
             break;
