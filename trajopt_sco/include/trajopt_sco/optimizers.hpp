@@ -244,6 +244,7 @@ public:
 protected:
   void ctor(const OptProb::Ptr& prob);
   void adjustTrustRegion(double ratio);
+  void setTrustRegionSize(double trust_box_size);
   void setTrustBoxConstraints(const DblVec& x);
   Model::Ptr model_;
   BasicTrustRegionSQPParameters param_;
