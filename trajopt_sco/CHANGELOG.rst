@@ -2,8 +2,8 @@
 Changelog for package trajopt_sco
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.2.1 (2021-12-16)
+------------------
 * On final convex solver failure attempt set trust region to minimum (`#281 <https://github.com/tesseract-robotics/trajopt/issues/281>`_)
 * Contributors: Levi Armstrong
 
