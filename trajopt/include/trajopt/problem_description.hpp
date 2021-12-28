@@ -114,6 +114,9 @@ struct BasicInfo
   /** @brief The convex solver to use */
   sco::ModelType convex_solver;
 
+  /** @brief The convex solver configuration settings */
+  sco::ModelConfig::Ptr convex_solver_config;
+
   /** @brief If true, the last column in the optimization matrix will be 1/dt */
   bool use_time = false;
 

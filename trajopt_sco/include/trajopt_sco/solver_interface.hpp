@@ -86,6 +86,13 @@ public:
   virtual VarVector getVars() const = 0;
 };
 
+struct ModelConfig
+{
+  using Ptr = std::shared_ptr<ModelConfig>;
+  using ConstPtr = std::shared_ptr<const ModelConfig>;
+  virtual ~ModelConfig() = default;
+};
+
 struct VarRep
 {
   using Ptr = std::shared_ptr<VarRep>;
@@ -232,7 +239,8 @@ std::vector<ModelType> availableSolvers();
 
 std::ostream& operator<<(std::ostream& os, const ModelType& cs);
 
-Model::Ptr createModel(ModelType model_type = ModelType::AUTO_SOLVER);
+Model::Ptr createModel(ModelType model_type = ModelType::AUTO_SOLVER,
+                       const ModelConfig::ConstPtr& model_config = nullptr);
 
 void vars2inds(const VarVector& vars, SizeTVec& inds);
 

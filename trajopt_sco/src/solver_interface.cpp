@@ -276,13 +276,13 @@ std::vector<ModelType> availableSolvers()
   return available_solvers;
 }
 
-Model::Ptr createModel(ModelType model_type)
+Model::Ptr createModel(ModelType model_type, const ModelConfig::ConstPtr& model_config)
 {
 #ifdef HAVE_GUROBI
   extern Model::Ptr createGurobiModel();
 #endif
 #ifdef HAVE_OSQP
-  extern Model::Ptr createOSQPModel();
+  extern Model::Ptr createOSQPModel(const ModelConfig::ConstPtr& config);
 #endif
 #ifdef HAVE_BPMPD
   extern Model::Ptr createBPMPDModel();
@@ -337,7 +337,7 @@ Model::Ptr createModel(ModelType model_type)
 #endif
 #ifdef HAVE_OSQP
   if (solver == ModelType::OSQP)
-    return createOSQPModel();
+    return createOSQPModel(model_config);
 #endif
 #ifdef HAVE_BPMPD
   if (solver == ModelType::BPMPD)
