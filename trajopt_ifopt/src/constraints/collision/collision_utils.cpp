@@ -94,10 +94,12 @@ void processInterpolatedCollisionResults(std::vector<tesseract_collision::Contac
                                                 (static_cast<double>(i) * dt) + (r.cc_time[j] * dt);
             assert(r.cc_time[j] > 0.0 || tesseract_common::almostEqualRelativeAndAbs(r.cc_time[j], 0.0));
             assert(r.cc_time[j] < 1.0 || tesseract_common::almostEqualRelativeAndAbs(r.cc_time[j], 1.0));
-            if (i == 0 && r.cc_type[j] == tesseract_collision::ContinuousCollisionType::CCType_Time0)
+            if (i == 0 &&
+                (r.cc_type[j] == tesseract_collision::ContinuousCollisionType::CCType_Time0 || discrete_continuous))
               r.cc_type[j] = tesseract_collision::ContinuousCollisionType::CCType_Time0;
             else if (i == (contacts_vector.size() - 1) &&
-                     r.cc_type[j] == tesseract_collision::ContinuousCollisionType::CCType_Time1)
+                     (r.cc_type[j] == tesseract_collision::ContinuousCollisionType::CCType_Time1 ||
+                      discrete_continuous))
               r.cc_type[j] = tesseract_collision::ContinuousCollisionType::CCType_Time1;
             else
               r.cc_type[j] = tesseract_collision::ContinuousCollisionType::CCType_Between;
