@@ -816,10 +816,10 @@ void CollisionEvaluator::processInterpolatedCollisionResults(
             r.cc_time[j] = (r.cc_time[j] < 0) ? (static_cast<double>(i) * dt) :
                                                 (static_cast<double>(i) * dt) + (r.cc_time[j] * dt);
             assert(r.cc_time[j] >= 0.0 && r.cc_time[j] <= 1.0);
-            if (i == 0 && r.cc_type[j] == tesseract_collision::ContinuousCollisionType::CCType_Time0)
+            if (i == 0 && (r.cc_type[j] == tesseract_collision::ContinuousCollisionType::CCType_Time0 || discrete))
               r.cc_type[j] = tesseract_collision::ContinuousCollisionType::CCType_Time0;
             else if (i == (contacts_vector.size() - 1) &&
-                     r.cc_type[j] == tesseract_collision::ContinuousCollisionType::CCType_Time1)
+                     (r.cc_type[j] == tesseract_collision::ContinuousCollisionType::CCType_Time1 || discrete))
               r.cc_type[j] = tesseract_collision::ContinuousCollisionType::CCType_Time1;
             else
               r.cc_type[j] = tesseract_collision::ContinuousCollisionType::CCType_Between;
