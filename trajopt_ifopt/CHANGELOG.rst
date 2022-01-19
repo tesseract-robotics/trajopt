@@ -2,6 +2,11 @@
 Changelog for package trajopt_ifopt
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Fix processInterpolatedCollisionResults cc_type for discrete continuous
+* Contributors: Levi Armstrong
+
 0.2.1 (2021-12-16)
 ------------------
 
