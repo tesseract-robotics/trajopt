@@ -152,8 +152,11 @@ void runCartPositionOptimization(const trajopt_sqp::QPProblem::Ptr& qp_problem,
   solver.solve(qp_problem);
   Eigen::VectorXd x = qp_problem->getVariableValues();
 
-  for (Eigen::Index i = 0; i < joint_target.size(); i++)
-    EXPECT_NEAR(x[i], joint_target[i], 1.1e-3);
+  auto optimized_pose = manip->calcFwdKin(x).at("r_gripper_tool_frame");
+  EXPECT_TRUE(target_pose.translation().isApprox(optimized_pose.translation(), 1e-4));
+  Eigen::Quaterniond target_q(target_pose.rotation());
+  Eigen::Quaterniond optimized_q(optimized_pose.rotation());
+  EXPECT_TRUE(target_q.isApprox(optimized_q, 1e-5));
 
   if (DEBUG)
   {

@@ -197,7 +197,8 @@ class OptProb
 public:
   using Ptr = std::shared_ptr<OptProb>;
 
-  OptProb(ModelType convex_solver = ModelType::AUTO_SOLVER);
+  OptProb(ModelType convex_solver = ModelType::AUTO_SOLVER,
+          const ModelConfig::ConstPtr& convex_solver_config = nullptr);
   virtual ~OptProb() = default;
   OptProb(const OptProb&) = delete;
   OptProb& operator=(const OptProb&) = delete;

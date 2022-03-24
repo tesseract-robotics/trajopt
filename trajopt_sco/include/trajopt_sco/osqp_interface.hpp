@@ -9,6 +9,17 @@ TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace sco
 {
+/** @brief The OSQP configuration settings */
+struct OSQPModelConfig : public ModelConfig
+{
+  using Ptr = std::shared_ptr<OSQPModelConfig>;
+  using ConstPtr = std::shared_ptr<const OSQPModelConfig>;
+
+  OSQPModelConfig();
+
+  OSQPSettings settings;
+};
+
 /**
  * OSQPModel uses the BSD solver OSQP to solve a linearly constrained QP.
  * OSQP solves a problem in the form:
@@ -22,9 +33,8 @@ namespace sco
  */
 class OSQPModel : public Model
 {
-  OSQPSettings osqp_settings_; /**< OSQP Settings */
-                               /** OSQPData. Some fields here (`osp_data_.A` and `osp_data_.P`) are
-                                *  automatically allocated by OSQP, but deallocated by us. */
+  /** OSQPData. Some fields here (`osp_data_.A` and `osp_data_.P`) are *  automatically allocated by OSQP, but
+   * deallocated by us. */
   OSQPData osqp_data_;
 
   /** OSQP Workspace. Memory here is managed by OSQP */
@@ -63,8 +73,10 @@ class OSQPModel : public Model
 
   QuadExpr objective_; /**< objective QuadExpr expression */
 
+  OSQPModelConfig config_; /**< The configuration settings */
+
 public:
-  OSQPModel();
+  OSQPModel(const ModelConfig::ConstPtr& config = nullptr);
   ~OSQPModel() override;
   OSQPModel(const OSQPModel& model) = delete;
   OSQPModel& operator=(const OSQPModel& model) = delete;

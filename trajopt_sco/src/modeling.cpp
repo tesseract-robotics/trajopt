@@ -160,7 +160,10 @@ DblVec Constraint::violations(const DblVec& x)
 }
 
 double Constraint::violation(const DblVec& x) { return vecSum(violations(x)); }
-OptProb::OptProb(ModelType convex_solver) : model_(createModel(convex_solver)) {}
+OptProb::OptProb(ModelType convex_solver, const ModelConfig::ConstPtr& convex_solver_config)
+  : model_(createModel(convex_solver, convex_solver_config))
+{
+}
 VarVector OptProb::createVariables(const std::vector<std::string>& names)
 {
   return createVariables(names, DblVec(names.size(), -INFINITY), DblVec(names.size(), INFINITY));

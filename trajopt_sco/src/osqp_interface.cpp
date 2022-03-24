@@ -18,25 +18,31 @@ namespace sco
 const double OSQP_INFINITY = std::numeric_limits<double>::infinity();
 const bool SUPER_DEBUG_MODE = false;
 
-Model::Ptr createOSQPModel()
-{
-  auto out = std::make_shared<OSQPModel>();
-  return out;
-}
-
-OSQPModel::OSQPModel() : P_(nullptr), A_(nullptr)
+OSQPModelConfig::OSQPModelConfig()
 {
   // Define Solver settings as default
   // see https://osqp.org/docs/interfaces/solver_settings.html#solver-settings
-  osqp_set_default_settings(&osqp_settings_);
-  // tuning parameters to be less accurate, but add a polishing step
-  osqp_settings_.eps_abs = 1e-4;
-  osqp_settings_.eps_rel = 1e-6;
-  osqp_settings_.max_iter = 8192;
-  osqp_settings_.polish = 1;
-  osqp_settings_.verbose = SUPER_DEBUG_MODE;
-  osqp_settings_.adaptive_rho = false;
+  osqp_set_default_settings(&settings);
+  settings.eps_abs = 1e-4;
+  settings.eps_rel = 1e-6;
+  settings.max_iter = 8192;
+  settings.polish = 1;
+  settings.adaptive_rho = true;
+  settings.verbose = SUPER_DEBUG_MODE;
 }
+
+Model::Ptr createOSQPModel(const ModelConfig::ConstPtr& config = nullptr)
+{
+  return std::make_shared<OSQPModel>(config);
+}
+
+OSQPModel::OSQPModel(const ModelConfig::ConstPtr& config) : P_(nullptr), A_(nullptr)
+{
+  // tuning parameters to be less accurate, but add a polishing step
+  if (config != nullptr)
+    config_.settings = std::dynamic_pointer_cast<const OSQPModelConfig>(config)->settings;
+}
+
 OSQPModel::~OSQPModel()
 {
   // The osqp_workspace_ is managed by osqp but its members are not so must clean up.
@@ -205,7 +211,7 @@ void OSQPModel::createOrUpdateSolver()
     osqp_cleanup(osqp_workspace_);
 
   // Setup workspace - this should be called only once
-  auto ret = osqp_setup(&osqp_workspace_, &osqp_data_, &osqp_settings_);
+  auto ret = osqp_setup(&osqp_workspace_, &osqp_data_, &config_.settings);
   if (ret)
   {
     // In this case, no data got allocated, so don't try to free it.

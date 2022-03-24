@@ -539,8 +539,10 @@ TrajOptProb::Ptr ConstructProblem(const Json::Value& root, const tesseract_envir
   return ConstructProblem(pci);
 }
 
+TrajOptProb::TrajOptProb() = default;
+
 TrajOptProb::TrajOptProb(int n_steps, const ProblemConstructionInfo& pci)
-  : OptProb(pci.basic_info.convex_solver), m_kin(pci.kin), m_env(pci.env)
+  : OptProb(pci.basic_info.convex_solver, pci.basic_info.convex_solver_config), m_kin(pci.kin), m_env(pci.env)
 {
   const Eigen::MatrixX2d& limits = m_kin->getLimits().joint_limits;
   auto n_dof = static_cast<int>(m_kin->numJoints());
@@ -569,8 +571,6 @@ TrajOptProb::TrajOptProb(int n_steps, const ProblemConstructionInfo& pci)
   sco::VarVector trajvarvec = createVariables(names, vlower, vupper);
   m_traj_vars = VarArray(n_steps, n_dof + (pci.basic_info.use_time ? 1 : 0), trajvarvec.data());
 }
-
-TrajOptProb::TrajOptProb() = default;
 
 void UserDefinedTermInfo::fromJson(ProblemConstructionInfo& /*pci*/, const Json::Value& /*v*/)
 {
