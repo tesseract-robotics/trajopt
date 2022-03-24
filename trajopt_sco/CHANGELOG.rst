@@ -2,6 +2,15 @@
 Changelog for package trajopt_sco
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Expose convex solver settings and set ospq adaptive_rho to default value (`#285 <https://github.com/tesseract-robotics/trajopt/issues/285>`_)
+  * Expose convex solver settings and set ospq adaptive_rho to default value
+  * Fix windows CI build
+  * Fix unit tests
+  Co-authored-by: Tyler Marr <tylermarr17@gmail.com>
+* Contributors: Levi Armstrong
+
 0.2.2 (2022-01-19)
 ------------------
 
