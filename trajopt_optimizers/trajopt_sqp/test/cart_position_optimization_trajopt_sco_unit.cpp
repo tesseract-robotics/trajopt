@@ -155,8 +155,11 @@ TEST(CartPositionOptimizationTrajoptSCO, cart_position_optimization_trajopt_sco)
 
   tesseract_common::TrajArray traj = getTraj(opt.x(), prob->GetVars());
 
-  for (Eigen::Index i = 0; i < traj.cols(); i++)
-    EXPECT_NEAR(traj(0, i), joint_target[i], 1.1e-3);
+  auto optimized_pose = manip->calcFwdKin(traj.row(0)).at("r_gripper_tool_frame");
+  EXPECT_TRUE(target_pose.translation().isApprox(optimized_pose.translation(), 1e-4));
+  Eigen::Quaterniond target_q(target_pose.rotation());
+  Eigen::Quaterniond optimized_q(optimized_pose.rotation());
+  EXPECT_TRUE(target_q.isApprox(optimized_q, 1e-5));
 
   if (DEBUG)
   {
