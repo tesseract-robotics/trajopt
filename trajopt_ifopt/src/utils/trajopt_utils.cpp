@@ -47,7 +47,7 @@ toJointTrajectory(const std::vector<trajopt_ifopt::JointPosition::ConstPtr>& joi
     joint_trajectory.reserve(joint_positions.size());
 
   for (const auto& jp : joint_positions)
-    joint_trajectory.emplace_back(jp->GetJointNames(), jp->GetValues());
+    joint_trajectory.states.emplace_back(jp->GetJointNames(), jp->GetValues());
 
   return joint_trajectory;
 }

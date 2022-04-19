@@ -41,7 +41,7 @@ void PlotCosts(const tesseract_visualization::Visualization::Ptr& plotter,
   auto traj = getTraj(results.x, vars);
   tesseract_common::JointTrajectory joint_trajectory;
   for (long i = 0; i < traj.rows(); ++i)
-    joint_trajectory.emplace_back(joint_names, traj.row(i));
+    joint_trajectory.states.emplace_back(joint_names, traj.row(i));
 
   plotter->plotTrajectory(joint_trajectory, state_solver);
   plotter->waitForInput();
@@ -94,7 +94,7 @@ void PlotProb(const tesseract_visualization::Visualization::Ptr& plotter,
   auto traj = getTraj(results.x, var_array);
   tesseract_common::JointTrajectory joint_trajectory;
   for (long i = 0; i < traj.rows(); ++i)
-    joint_trajectory.emplace_back(joint_names, traj.row(i));
+    joint_trajectory.states.emplace_back(joint_names, traj.row(i));
 
   plotter->plotTrajectory(joint_trajectory, state_solver);
   plotter->waitForInput();
