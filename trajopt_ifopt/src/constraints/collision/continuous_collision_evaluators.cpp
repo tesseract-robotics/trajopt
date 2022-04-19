@@ -272,7 +272,14 @@ LVSDiscreteCollisionEvaluator::CalcCollisionData(const Eigen::Ref<const Eigen::V
     grs.is_continuous = true;
     grs.results.reserve(pair.second.size());
     for (const tesseract_collision::ContactResult& dist_result : pair.second)
-      grs.add(CalcGradientData(dof_vals0, dof_vals1, dist_result));
+    {
+      GradientResults data = CalcGradientData(dof_vals0, dof_vals1, dist_result);
+      //      assert(data.gradients[0].has_gradient || data.gradients[1].has_gradient);
+      grs.add(data);
+    }
+
+    //    assert(grs.max_error[0].has_error[0] || grs.max_error[1].has_error[0]);
+    //    assert(grs.max_error[0].has_error[1] || grs.max_error[1].has_error[1]);
 
     data->gradient_results_set_map[pair.first] = grs;
   }

@@ -42,6 +42,7 @@ TRAJOPT_IGNORE_WARNINGS_POP
 #include <trajopt_ifopt/constraints/collision/discrete_collision_evaluators.h>
 #include <trajopt_ifopt/constraints/joint_position_constraint.h>
 #include <trajopt_ifopt/costs/squared_cost.h>
+#include "trajopt_test_utils.hpp"
 
 using namespace trajopt_ifopt;
 using namespace tesseract_environment;
@@ -51,33 +52,6 @@ using namespace tesseract_visualization;
 using namespace tesseract_scene_graph;
 using namespace tesseract_geometry;
 using namespace tesseract_common;
-
-inline std::string locateResource(const std::string& url)
-{
-  std::string mod_url = url;
-  if (url.find("package://trajopt") == 0)
-  {
-    mod_url.erase(0, strlen("package://trajopt"));
-    size_t pos = mod_url.find('/');
-    if (pos == std::string::npos)
-    {
-      return std::string();
-    }
-
-    std::string package = mod_url.substr(0, pos);
-    mod_url.erase(0, pos);
-    std::string package_path = std::string(TRAJOPT_DIR);
-
-    if (package_path.empty())
-    {
-      return std::string();
-    }
-
-    mod_url = package_path + mod_url;
-  }
-
-  return mod_url;
-}
 
 class SimpleCollisionTest : public testing::TestWithParam<const char*>
 {
@@ -89,7 +63,7 @@ public:
   {
     boost::filesystem::path urdf_file(std::string(TRAJOPT_DIR) + "/test/data/spherebot.urdf");
     boost::filesystem::path srdf_file(std::string(TRAJOPT_DIR) + "/test/data/spherebot.srdf");
-    ResourceLocator::Ptr locator = std::make_shared<SimpleResourceLocator>(locateResource);
+    ResourceLocator::Ptr locator = std::make_shared<TrajOptSupportResourceLocator>();
     EXPECT_TRUE(env->init(urdf_file, srdf_file, locator));
   }
 };
