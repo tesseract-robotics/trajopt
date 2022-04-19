@@ -41,6 +41,7 @@ TRAJOPT_IGNORE_WARNINGS_POP
 #include <trajopt/problem_description.hpp>
 #include <trajopt_utils/config.hpp>
 #include <trajopt_utils/logging.hpp>
+#include "test_suite_utils.hpp"
 
 using namespace trajopt;
 using namespace tesseract_environment;
@@ -49,33 +50,6 @@ using namespace tesseract_collision;
 using namespace tesseract_common;
 
 const bool DEBUG = true;
-
-inline std::string locateResource(const std::string& url)
-{
-  std::string mod_url = url;
-  if (url.find("package://trajopt") == 0)
-  {
-    mod_url.erase(0, strlen("package://trajopt"));
-    size_t pos = mod_url.find('/');
-    if (pos == std::string::npos)
-    {
-      return std::string();
-    }
-
-    std::string package = mod_url.substr(0, pos);
-    mod_url.erase(0, pos);
-    std::string package_path = std::string(TRAJOPT_DIR);
-
-    if (package_path.empty())
-    {
-      return std::string();
-    }
-
-    mod_url = package_path + mod_url;
-  }
-
-  return mod_url;
-}
 
 // This is example is made to pair with cart_position_example.cpp. This is the same motion planning problem in the
 // trajopt_sco framework
@@ -95,7 +69,7 @@ TEST(CartPositionOptimizationTrajoptSCO, cart_position_optimization_trajopt_sco)
   // 1)  Load Robot
   tesseract_common::fs::path urdf_file(std::string(TRAJOPT_DIR) + "/test/data/arm_around_table.urdf");
   tesseract_common::fs::path srdf_file(std::string(TRAJOPT_DIR) + "/test/data/pr2.srdf");
-  ResourceLocator::Ptr locator = std::make_shared<SimpleResourceLocator>(locateResource);
+  ResourceLocator::Ptr locator = std::make_shared<TrajOptSupportResourceLocator>();
   auto env = std::make_shared<Environment>();
   env->init(urdf_file, srdf_file, locator);
 

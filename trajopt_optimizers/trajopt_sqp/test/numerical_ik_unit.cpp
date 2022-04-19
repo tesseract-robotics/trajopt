@@ -65,7 +65,7 @@ public:
     tesseract_common::fs::path urdf_file(std::string(TRAJOPT_DIR) + "/test/data/arm_around_table.urdf");
     tesseract_common::fs::path srdf_file(std::string(TRAJOPT_DIR) + "/test/data/pr2.srdf");
 
-    ResourceLocator::Ptr locator = std::make_shared<SimpleResourceLocator>(locateResource);
+    ResourceLocator::Ptr locator = std::make_shared<TrajOptSupportResourceLocator>();
     EXPECT_TRUE(env->init(urdf_file, srdf_file, locator));
 
     // Create plotting tool

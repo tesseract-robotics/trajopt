@@ -68,7 +68,7 @@ public:
     // Initialize Tesseract
     tesseract_common::fs::path urdf_file(std::string(TRAJOPT_DIR) + "/test/data/arm_around_table.urdf");
     tesseract_common::fs::path srdf_file(std::string(TRAJOPT_DIR) + "/test/data/pr2.srdf");
-    auto locator = std::make_shared<SimpleResourceLocator>(locateResource);
+    auto locator = std::make_shared<TrajOptSupportResourceLocator>();
     auto env = std::make_shared<Environment>();
     bool status = env->init(urdf_file, srdf_file, locator);
     EXPECT_TRUE(status);

@@ -27,31 +27,39 @@
 #include <trajopt_utils/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <string>
+#include <tesseract_common/resource_locator.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
-inline std::string locateResource(const std::string& url)
+class TrajOptSupportResourceLocator : public tesseract_common::ResourceLocator
 {
-  std::string mod_url = url;
-  if (url.find("package://trajopt") == 0)
+public:
+  using Ptr = std::shared_ptr<TrajOptSupportResourceLocator>;
+  using ConstPtr = std::shared_ptr<const TrajOptSupportResourceLocator>;
+
+  std::shared_ptr<tesseract_common::Resource> locateResource(const std::string& url) const override
   {
-    mod_url.erase(0, std::string("package://trajopt").length());
-    size_t pos = mod_url.find('/');
-    if (pos == std::string::npos)
+    std::string mod_url = url;
+    if (url.find("package://trajopt") == 0)
     {
-      return std::string();
+      mod_url.erase(0, strlen("package://trajopt"));
+      size_t pos = mod_url.find('/');
+      if (pos == std::string::npos)
+        return nullptr;
+
+      std::string package = mod_url.substr(0, pos);
+      mod_url.erase(0, pos);
+      std::string package_path = std::string(TRAJOPT_DIR);
+
+      if (package_path.empty())
+        return nullptr;
+
+      mod_url = package_path + mod_url;
     }
 
-    std::string package = mod_url.substr(0, pos);
-    mod_url.erase(0, pos);
-    std::string package_path = std::string(TRAJOPT_DIR);
+    if (!tesseract_common::fs::path(mod_url).is_complete())
+      return nullptr;
 
-    if (package_path.empty())
-    {
-      return std::string();
-    }
-
-    mod_url = package_path + mod_url;
+    return std::make_shared<tesseract_common::SimpleLocatedResource>(
+        url, mod_url, std::make_shared<TrajOptSupportResourceLocator>(*this));
   }
-
-  return mod_url;
-}
+};

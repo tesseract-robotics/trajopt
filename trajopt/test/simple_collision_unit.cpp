@@ -42,7 +42,7 @@ public:
     boost::filesystem::path urdf_file(std::string(TRAJOPT_DIR) + "/test/data/spherebot.urdf");
     boost::filesystem::path srdf_file(std::string(TRAJOPT_DIR) + "/test/data/spherebot.srdf");
 
-    ResourceLocator::Ptr locator = std::make_shared<SimpleResourceLocator>(locateResource);
+    ResourceLocator::Ptr locator = std::make_shared<TrajOptSupportResourceLocator>();
     EXPECT_TRUE(env_->init(urdf_file, srdf_file, locator));
 
     gLogLevel = util::LevelDebug;

@@ -48,35 +48,9 @@ TRAJOPT_IGNORE_WARNINGS_POP
 #include <trajopt_ifopt/variable_sets/joint_position_variable.h>
 #include <trajopt_ifopt/costs/squared_cost.h>
 #include <trajopt_ifopt/utils/trajopt_utils.h>
+#include "test_suite_utils.hpp"
 
 const bool DEBUG = false;
-
-inline std::string locateResource(const std::string& url)
-{
-  std::string mod_url = url;
-  if (url.find("package://trajopt") == 0)
-  {
-    mod_url.erase(0, strlen("package://trajopt"));
-    size_t pos = mod_url.find('/');
-    if (pos == std::string::npos)
-    {
-      return std::string();
-    }
-
-    std::string package = mod_url.substr(0, pos);
-    mod_url.erase(0, pos);
-    std::string package_path = std::string(TRAJOPT_DIR);
-
-    if (package_path.empty())
-    {
-      return std::string();
-    }
-
-    mod_url = package_path + mod_url;
-  }
-
-  return mod_url;
-}
 
 class CartPositionOptimization : public testing::TestWithParam<const char*>
 {
@@ -93,8 +67,7 @@ public:
     // 1)  Load Robot
     tesseract_common::fs::path urdf_file(std::string(TRAJOPT_DIR) + "/test/data/arm_around_table.urdf");
     tesseract_common::fs::path srdf_file(std::string(TRAJOPT_DIR) + "/test/data/pr2.srdf");
-    tesseract_common::ResourceLocator::Ptr locator =
-        std::make_shared<tesseract_common::SimpleResourceLocator>(locateResource);
+    tesseract_common::ResourceLocator::Ptr locator = std::make_shared<TrajOptSupportResourceLocator>();
     env = std::make_shared<tesseract_environment::Environment>();
     env->init(urdf_file, srdf_file, locator);
   }

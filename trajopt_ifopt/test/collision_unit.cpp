@@ -60,7 +60,7 @@ public:
     boost::filesystem::path urdf_file(std::string(TRAJOPT_DIR) + "/test/data/boxbot.urdf");
     boost::filesystem::path srdf_file(std::string(TRAJOPT_DIR) + "/test/data/boxbot.srdf");
 
-    ResourceLocator::Ptr locator = std::make_shared<SimpleResourceLocator>(locateResource);
+    ResourceLocator::Ptr locator = std::make_shared<TrajOptSupportResourceLocator>();
     EXPECT_TRUE(env->init(urdf_file, srdf_file, locator));
 
     // Set up collision evaluator
