@@ -2,6 +2,11 @@
 Changelog for package trajopt_sqp
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Update resource locator for tests
+* Contributors: Levi Armstrong
+
 0.2.3 (2022-03-24)
 ------------------
 * Expose convex solver settings and set ospq adaptive_rho to default value (`#285 <https://github.com/tesseract-robotics/trajopt/issues/285>`_)

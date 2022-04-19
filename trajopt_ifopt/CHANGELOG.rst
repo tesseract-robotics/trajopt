@@ -2,6 +2,12 @@
 Changelog for package trajopt_ifopt
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Update resource locator for tests
+* Update tesseract joint trajectory
+* Contributors: Levi Armstrong
+
 0.2.3 (2022-03-24)
 ------------------
 
