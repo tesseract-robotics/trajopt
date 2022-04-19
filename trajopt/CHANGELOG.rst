@@ -2,8 +2,8 @@
 Changelog for package trajopt
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.2.4 (2022-04-19)
+------------------
 * Update resource locator for tests
 * Update tesseract joint trajectory
 * Contributors: Levi Armstrong
