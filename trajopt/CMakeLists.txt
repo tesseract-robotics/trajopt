@@ -14,7 +14,7 @@ find_package(tesseract_common REQUIRED)
 find_package(tesseract_environment REQUIRED)
 find_package(tesseract_visualization REQUIRED)
 if(NOT TARGET JsonCpp::JsonCpp)
-find_package(jsoncpp REQUIRED)
+  find_package(jsoncpp REQUIRED)
 endif()
 find_package(ros_industrial_cmake_boilerplate REQUIRED)
 
