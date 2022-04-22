@@ -17,7 +17,6 @@ if(NOT TARGET JsonCpp::JsonCpp)
 find_package(jsoncpp REQUIRED)
 endif()
 find_package(ros_industrial_cmake_boilerplate REQUIRED)
-find_package(osqp REQUIRED)
 
 if(NOT TARGET console_bridge::console_bridge)
   add_library(console_bridge::console_bridge INTERFACE IMPORTED)
