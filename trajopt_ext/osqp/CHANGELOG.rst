@@ -2,6 +2,11 @@
 Changelog for package osqp
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Patch OSQP build to fix target output name collision (`#287 <https://github.com/tesseract-robotics/trajopt/issues/287>`_)
+* Contributors: John Wason
+
 0.2.4 (2022-04-19)
 ------------------
 
