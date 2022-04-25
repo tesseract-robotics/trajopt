@@ -80,7 +80,11 @@ void AbsoluteCost::FillJacobianBlock(std::string var_set, Jacobian& jac_block) c
   Eigen::ArrayXd w_error = error * weights_.array();
   Eigen::VectorXd coeff = w_error / error.abs();
 
+#ifdef EIGEN_HAS_OPENMP
+  jac_block = coeff.sparseView() * cnt_jac_block;  // NOLINT
+#else
   jac_block = coeff * cnt_jac_block;  // NOLINT
+#endif
 }
 
 }  // namespace trajopt_ifopt
