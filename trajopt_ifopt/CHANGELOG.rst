@@ -2,6 +2,9 @@
 Changelog for package trajopt_ifopt
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.2.5 (2022-04-24)
+------------------
+
 0.2.4 (2022-04-19)
 ------------------
 * Update resource locator for tests

@@ -2,6 +2,11 @@
 Changelog for package trajopt_sco
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.2.5 (2022-04-24)
+------------------
+* Protect jsoncpp against multiple find_package() calls (`#288 <https://github.com/tesseract-robotics/trajopt/issues/288>`_)
+* Contributors: John Wason
+
 0.2.4 (2022-04-19)
 ------------------
 
