@@ -1,5 +1,9 @@
 cmake_minimum_required(VERSION 3.10.0)
-project(trajopt VERSION 0.1.0 LANGUAGES CXX)
+
+# Extract package name and version
+find_package(ros_industrial_cmake_boilerplate REQUIRED)
+extract_package_metadata(pkg)
+project(${pkg_extracted_name} VERSION ${pkg_extracted_version} LANGUAGES CXX)
 
 if(WIN32)
   set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
@@ -96,4 +100,40 @@ endif()
 
 if(TRAJOPT_ENABLE_BENCHMARKING)
   add_subdirectory(test/benchmarks)
+endif()
+
+if(TRAJOPT_PACKAGE)
+  cpack(
+    VERSION
+    ${pkg_extracted_version}
+    MAINTAINER
+    <https://github.com/tesseract-robotics/trajopt>
+    VENDOR
+    "ROS-Industrial"
+    DESCRIPTION
+    ${pkg_extracted_description}
+    LICENSE_FILE
+    ""
+    README_FILE
+    ${CMAKE_CURRENT_LIST_DIR}/../README.md
+    PACKAGE_PREFIX
+    ${TRAJOPT_PACKAGE_PREFIX}
+    LINUX_DEPENDS
+    "libeigen3-dev"
+    "libboost-dev"
+    "libconsole-bridge-dev"
+    "libjsoncpp-dev"
+    "${TRAJOPT_PACKAGE_PREFIX}trajopt-sco"
+    "${TRAJOPT_PACKAGE_PREFIX}trajopt-utils"
+    "${TESSERACT_PACKAGE_PREFIX}tesseract-environment"
+    "${TESSERACT_PACKAGE_PREFIX}tesseract-visualization"
+    WINDOWS_DEPENDS
+    "Eigen3"
+    "boost"
+    "console-bridge"
+    "jsoncpp"
+    "${TRAJOPT_PACKAGE_PREFIX}trajopt-sco"
+    "${TRAJOPT_PACKAGE_PREFIX}trajopt-utils"
+    "${TESSERACT_PACKAGE_PREFIX}tesseract-environment"
+    "${TESSERACT_PACKAGE_PREFIX}tesseract-visualization")
 endif()
