@@ -47,16 +47,17 @@ void PlotCosts(const tesseract_visualization::Visualization::Ptr& plotter,
   plotter->waitForInput();
 }
 
-sco::Optimizer::Callback PlotCallback(TrajOptProb& prob, const tesseract_visualization::Visualization::Ptr& plotter)
+sco::Optimizer::Callback PlotCallback(const tesseract_visualization::Visualization::Ptr& plotter)
 {
-  return [&prob, plotter](sco::OptProb*, sco::OptResults& results) {
-    auto state_solver = prob.GetEnv()->getStateSolver();
+  return [plotter](sco::OptProb* prob, sco::OptResults& results) {
+    auto& trajopt_prob = dynamic_cast<TrajOptProb&>(*prob);
+    auto state_solver = trajopt_prob.GetEnv()->getStateSolver();
     PlotCosts(plotter,
               *state_solver,
-              prob.GetKin()->getJointNames(),
-              std::ref(prob.getCosts()),
-              prob.getConstraints(),
-              std::ref(prob.GetVars()),
+              trajopt_prob.GetKin()->getJointNames(),
+              std::ref(trajopt_prob.getCosts()),
+              trajopt_prob.getConstraints(),
+              std::ref(trajopt_prob.GetVars()),
               results);
   };
 }

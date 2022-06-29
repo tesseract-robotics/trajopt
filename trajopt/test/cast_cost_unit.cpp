@@ -86,7 +86,7 @@ TEST_F(CastTest, boxes)  // NOLINT
 
   sco::BasicTrustRegionSQP opt(prob);
   if (plotting)
-    opt.addCallback(PlotCallback(*prob, plotter_));
+    opt.addCallback(PlotCallback(plotter_));
   opt.initialize(trajToDblVec(prob->GetInitTraj()));
   opt.optimize();
 

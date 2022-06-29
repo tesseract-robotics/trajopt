@@ -107,7 +107,7 @@ TEST_F(CostsTest, equality_jointPos)  // NOLINT
   sco::BasicTrustRegionSQP opt(prob);
   if (plotting)
   {
-    opt.addCallback(PlotCallback(*prob, plotter_));
+    opt.addCallback(PlotCallback(plotter_));
   }
 
   opt.initialize(trajToDblVec(prob->GetInitTraj()));
@@ -214,7 +214,7 @@ TEST_F(CostsTest, inequality_jointPos)  // NOLINT
   sco::BasicTrustRegionSQP opt(prob);
   if (plotting)
   {
-    opt.addCallback(PlotCallback(*prob, plotter_));
+    opt.addCallback(PlotCallback(plotter_));
   }
 
   opt.initialize(trajToDblVec(prob->GetInitTraj()));
@@ -309,7 +309,7 @@ TEST_F(CostsTest, equality_jointVel)  // NOLINT
   sco::BasicTrustRegionSQP opt(prob);
   if (plotting)
   {
-    opt.addCallback(PlotCallback(*prob, plotter_));
+    opt.addCallback(PlotCallback(plotter_));
   }
 
   opt.initialize(trajToDblVec(prob->GetInitTraj()));
@@ -416,7 +416,7 @@ TEST_F(CostsTest, inequality_jointVel)  // NOLINT
   sco::BasicTrustRegionSQP opt(prob);
   if (plotting)
   {
-    opt.addCallback(PlotCallback(*prob, plotter_));
+    opt.addCallback(PlotCallback(plotter_));
   }
 
   opt.initialize(trajToDblVec(prob->GetInitTraj()));
@@ -514,7 +514,7 @@ TEST_F(CostsTest, equality_jointVel_time)  // NOLINT
   sco::BasicTrustRegionSQP opt(prob);
   if (plotting)
   {
-    opt.addCallback(PlotCallback(*prob, plotter_));
+    opt.addCallback(PlotCallback(plotter_));
   }
 
   opt.initialize(trajToDblVec(prob->GetInitTraj()));
@@ -627,7 +627,7 @@ TEST_F(CostsTest, inequality_jointVel_time)  // NOLINT
   sco::BasicTrustRegionSQP opt(prob);
   if (plotting)
   {
-    opt.addCallback(PlotCallback(*prob, plotter_));
+    opt.addCallback(PlotCallback(plotter_));
   }
 
   opt.initialize(trajToDblVec(prob->GetInitTraj()));
@@ -722,7 +722,7 @@ TEST_F(CostsTest, equality_jointAcc)  // NOLINT
   sco::BasicTrustRegionSQP opt(prob);
   if (plotting)
   {
-    opt.addCallback(PlotCallback(*prob, plotter_));
+    opt.addCallback(PlotCallback(plotter_));
   }
 
   opt.initialize(trajToDblVec(prob->GetInitTraj()));
@@ -831,7 +831,7 @@ TEST_F(CostsTest, inequality_jointAcc)  // NOLINT
   sco::BasicTrustRegionSQP opt(prob);
   if (plotting)
   {
-    opt.addCallback(PlotCallback(*prob, plotter_));
+    opt.addCallback(PlotCallback(plotter_));
   }
 
   opt.initialize(trajToDblVec(prob->GetInitTraj()));

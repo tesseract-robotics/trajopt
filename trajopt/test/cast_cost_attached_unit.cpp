@@ -126,7 +126,7 @@ TEST_F(CastAttachedTest, LinkWithGeom)  // NOLINT
 
   sco::BasicTrustRegionSQP opt(prob);
   if (plotting)
-    opt.addCallback(PlotCallback(*prob, plotter_));
+    opt.addCallback(PlotCallback(plotter_));
   opt.initialize(trajToDblVec(prob->GetInitTraj()));
   opt.optimize();
 
@@ -176,7 +176,7 @@ TEST_F(CastAttachedTest, LinkWithoutGeom)  // NOLINT
 
   sco::BasicTrustRegionSQP opt(prob);
   if (plotting)
-    opt.addCallback(PlotCallback(*prob, plotter_));
+    opt.addCallback(PlotCallback(plotter_));
   opt.initialize(trajToDblVec(prob->GetInitTraj()));
   opt.optimize();
 

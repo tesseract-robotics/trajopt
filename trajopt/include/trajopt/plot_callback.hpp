@@ -12,7 +12,8 @@ Returns a callback function suitable for an Optimizer.
 This callback will plot the trajectory (with translucent copies of the robot) as
 well as all of the Cost and Constraint functions with plot methods
 */
-sco::Optimizer::Callback PlotCallback(TrajOptProb& prob, const tesseract_visualization::Visualization::Ptr& plotter);
+sco::Optimizer::Callback PlotCallback(const tesseract_visualization::Visualization::Ptr& plotter);
+
 /**
  * @brief Returns a callback suitable for an optimizer but does not require the problem
  * @param plotter
