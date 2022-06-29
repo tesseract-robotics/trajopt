@@ -215,6 +215,8 @@ public:
   tesseract_environment::Environment::ConstPtr env;
   tesseract_kinematics::JointGroup::ConstPtr kin;
 
+  std::vector<sco::Optimizer::Callback> callbacks;
+
   ProblemConstructionInfo(tesseract_environment::Environment::ConstPtr env) : env(std::move(env)) {}
 
   void fromJson(const Json::Value& v);
