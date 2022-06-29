@@ -15,7 +15,7 @@
   <build_depend>ros_industrial_cmake_boilerplate</build_depend>
   <depend>libconsole-bridge-dev</depend>
   <depend>ifopt</depend>
-  <depend>OsqpEigen</depend>
+  <depend>osqp_eigen</depend>
   <depend>trajopt_ifopt</depend>
   <depend>trajopt_utils</depend>
   <depend>tesseract_common</depend>
