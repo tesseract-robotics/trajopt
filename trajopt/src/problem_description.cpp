@@ -394,7 +394,7 @@ TrajOptResult::Ptr OptimizeProblem(const TrajOptProb::Ptr& prob,
   param.improve_ratio_threshold = .2;
   param.initial_merit_error_coeff = 20;
   if (plotter)
-    opt.addCallback(PlotCallback(*prob, plotter));
+    opt.addCallback(PlotCallback(plotter));
   opt.initialize(trajToDblVec(prob->GetInitTraj()));
   opt.optimize();
   return std::make_shared<TrajOptResult>(opt.results(), *prob);
