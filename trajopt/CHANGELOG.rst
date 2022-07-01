@@ -2,8 +2,8 @@
 Changelog for package trajopt
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.3.0 (2022-07-01)
+------------------
 * Simplify PlotCallback
 * Add the ability to store sco::Optimizer::Callbacks in ProblemConstructionInfo class
 * Contributors: Levi Armstrong
