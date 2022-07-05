@@ -1,5 +1,9 @@
 cmake_minimum_required(VERSION 3.10.0)
-project(trajopt_utils VERSION 0.1.0 LANGUAGES CXX)
+
+# Extract package name and version
+find_package(ros_industrial_cmake_boilerplate REQUIRED)
+extract_package_metadata(pkg)
+project(${pkg_extracted_name} VERSION ${pkg_extracted_version} LANGUAGES CXX)
 
 include(cmake/trajopt_macros.cmake)
 
@@ -42,3 +46,27 @@ install(
   PATTERN ".svn" EXCLUDE)
 
 install(FILES "${CMAKE_CURRENT_LIST_DIR}/cmake/trajopt_macros.cmake" DESTINATION lib/cmake/${PROJECT_NAME})
+
+if(TRAJOPT_PACKAGE)
+  cpack(
+    VERSION
+    ${pkg_extracted_version}
+    MAINTAINER
+    <https://github.com/tesseract-robotics/trajopt>
+    VENDOR
+    "ROS-Industrial"
+    DESCRIPTION
+    ${pkg_extracted_description}
+    LICENSE_FILE
+    ""
+    README_FILE
+    ${CMAKE_CURRENT_LIST_DIR}/../README.md
+    PACKAGE_PREFIX
+    ${TRAJOPT_PACKAGE_PREFIX}
+    LINUX_DEPENDS
+    "libeigen3-dev"
+    "libboost-program-options-dev"
+    WINDOWS_DEPENDS
+    "Eigen3"
+    "boost-program-options")
+endif()

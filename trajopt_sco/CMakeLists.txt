@@ -1,5 +1,9 @@
 cmake_minimum_required(VERSION 3.10.0)
-project(trajopt_sco VERSION 0.1.0 LANGUAGES CXX)
+
+# Extract package name and version
+find_package(ros_industrial_cmake_boilerplate REQUIRED)
+extract_package_metadata(pkg)
+project(${pkg_extracted_name} VERSION ${pkg_extracted_version} LANGUAGES CXX)
 
 if(WIN32)
   set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
@@ -80,7 +84,7 @@ if(GUROBI_FOUND)
   target_compile_definitions(${PROJECT_NAME} PRIVATE HAVE_GUROBI=ON)
 endif()
 if(HAVE_BPMPD)
-  install(FILES src/bpmpd.par DESTINATION "${CMAKE_INSTALL_PREFIX}/bin")
+  install(FILES src/bpmpd.par DESTINATION bin)
 
   target_link_libraries(${PROJECT_NAME} PRIVATE ${BPMPD_LIBRARY})
   target_compile_definitions(${PROJECT_NAME} PRIVATE BPMPD_CALLER="${CMAKE_INSTALL_PREFIX}/bin/bpmpd_caller"
@@ -137,4 +141,50 @@ if(TRAJOPT_ENABLE_TESTING)
   # add_dependencies(run_tests test_depend) endif()
 
   add_subdirectory(test)
+endif()
+
+if(TRAJOPT_PACKAGE)
+  set(LINUX_DEPENDS
+      "libeigen3-dev"
+      "libboost-dev"
+      "libjsoncpp-dev"
+      "${TRAJOPT_PACKAGE_PREFIX}trajopt-utils")
+  set(WINDOWS_DEPENDS
+      "Eigen3"
+      "boost"
+      "jsoncpp"
+      "${TRAJOPT_PACKAGE_PREFIX}trajopt-utils")
+
+  if(GUROBI_FOUND)
+    # TODO
+  endif()
+
+  if(osqp_FOUND)
+    list(APPEND LINUX_DEPENDS "${TRAJOPT_PACKAGE_PREFIX}osqp")
+    list(APPEND WINDOWS_DEPENDS "${TRAJOPT_PACKAGE_PREFIX}osqp")
+  endif()
+
+  if(qpOASES_FOUND)
+    # TODO
+  endif()
+
+  cpack(
+    VERSION
+    ${pkg_extracted_version}
+    MAINTAINER
+    <https://github.com/tesseract-robotics/trajopt>
+    VENDOR
+    "ROS-Industrial"
+    DESCRIPTION
+    ${pkg_extracted_description}
+    LICENSE_FILE
+    ""
+    README_FILE
+    ${CMAKE_CURRENT_LIST_DIR}/../README.md
+    PACKAGE_PREFIX
+    ${TRAJOPT_PACKAGE_PREFIX}
+    LINUX_DEPENDS
+    ${LINUX_DEPENDS}
+    WINDOWS_DEPENDS
+    ${WINDOWS_DEPENDS})
 endif()

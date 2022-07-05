@@ -1,5 +1,9 @@
 cmake_minimum_required(VERSION 3.10.0)
-project(trajopt_sqp VERSION 0.1.0 LANGUAGES CXX)
+
+# Extract package name and version
+find_package(ros_industrial_cmake_boilerplate REQUIRED)
+extract_package_metadata(pkg)
+project(${pkg_extracted_name} VERSION ${pkg_extracted_version} LANGUAGES CXX)
 
 if(WIN32)
   set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
@@ -101,4 +105,38 @@ if(TRAJOPT_ENABLE_TESTING)
   enable_testing()
   add_run_tests_target(ENABLE ${TRAJOPT_ENABLE_RUN_TESTING})
   add_subdirectory(test)
+endif()
+
+if(TRAJOPT_PACKAGE)
+  cpack(
+    VERSION
+    ${pkg_extracted_version}
+    MAINTAINER
+    <https://github.com/tesseract-robotics/trajopt>
+    VENDOR
+    "ROS-Industrial"
+    DESCRIPTION
+    ${pkg_extracted_description}
+    PACKAGE_PREFIX
+    ${TRAJOPT_PACKAGE_PREFIX}
+    LINUX_DEPENDS
+    "libeigen3-dev"
+    "libboost-dev"
+    "libconsole-bridge-dev"
+    "ifopt"
+    "${TRAJOPT_PACKAGE_PREFIX}osqpeigen"
+    "${TRAJOPT_PACKAGE_PREFIX}trajopt-ifopt"
+    "${TRAJOPT_PACKAGE_PREFIX}trajopt-utils"
+    "${TESSERACT_PACKAGE_PREFIX}tesseract-common"
+    "${TESSERACT_PACKAGE_PREFIX}tesseract-visualization"
+    WINDOWS_DEPENDS
+    "Eigen3"
+    "boost"
+    "console-bridge"
+    "ifopt"
+    "${TRAJOPT_PACKAGE_PREFIX}osqpeigen"
+    "${TRAJOPT_PACKAGE_PREFIX}trajopt-ifopt"
+    "${TRAJOPT_PACKAGE_PREFIX}trajopt-utils"
+    "${TESSERACT_PACKAGE_PREFIX}tesseract-common"
+    "${TESSERACT_PACKAGE_PREFIX}tesseract-visualization")
 endif()
