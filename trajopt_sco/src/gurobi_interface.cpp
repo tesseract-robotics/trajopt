@@ -157,12 +157,12 @@ Cnt GurobiModel::addIneqCnt(const QuadExpr& qexpr, const std::string& name)
 void resetIndices(VarVector& vars)
 {
   for (size_t i = 0; i < vars.size(); ++i)
-    vars[i].var_rep[i].index = i;
+    vars[i].var_rep->index = i;
 }
 void resetIndices(CntVector& cnts)
 {
   for (size_t i = 0; i < cnts.size(); ++i)
-    cnts[i].cnt_rep[i].index = i;
+    cnts[i].cnt_rep->index = i;
 }
 
 void GurobiModel::removeVars(const VarVector& vars)
