@@ -106,7 +106,7 @@ target_link_libraries(
          Boost::boost
          Eigen3::Eigen
          ${CMAKE_DL_LIBS}
-         jsoncpp_lib)
+         JsonCpp::JsonCpp)
 target_compile_options(${PROJECT_NAME} PRIVATE ${TRAJOPT_COMPILE_OPTIONS_PRIVATE})
 target_compile_options(${PROJECT_NAME} PUBLIC ${TRAJOPT_COMPILE_OPTIONS_PUBLIC})
 target_compile_definitions(${PROJECT_NAME} PUBLIC ${TRAJOPT_COMPILE_DEFINITIONS})

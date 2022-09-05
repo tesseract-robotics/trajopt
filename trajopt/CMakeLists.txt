@@ -61,7 +61,7 @@ target_link_libraries(
          console_bridge::console_bridge
          Boost::boost
          Eigen3::Eigen
-         jsoncpp_lib)
+         JsonCpp::JsonCpp)
 target_compile_definitions(${PROJECT_NAME} PUBLIC ${TRAJOPT_COMPILE_DEFINITIONS})
 target_cxx_version(${PROJECT_NAME} PUBLIC VERSION ${TRAJOPT_CXX_VERSION})
 target_include_directories(${PROJECT_NAME} PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
