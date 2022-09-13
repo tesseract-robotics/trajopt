@@ -19,6 +19,8 @@ find_package(tesseract_environment REQUIRED)
 find_package(tesseract_visualization REQUIRED)
 if(NOT TARGET JsonCpp::JsonCpp)
   find_package(jsoncpp REQUIRED)
+elseif(NOT TARGET jsoncpp_lib)
+  add_library(jsoncpp_lib ALIAS JsonCpp::JsonCpp)
 endif()
 find_package(ros_industrial_cmake_boilerplate REQUIRED)
 
@@ -61,7 +63,7 @@ target_link_libraries(
          console_bridge::console_bridge
          Boost::boost
          Eigen3::Eigen
-         JsonCpp::JsonCpp)
+         jsoncpp_lib)
 target_compile_definitions(${PROJECT_NAME} PUBLIC ${TRAJOPT_COMPILE_DEFINITIONS})
 target_cxx_version(${PROJECT_NAME} PUBLIC VERSION ${TRAJOPT_CXX_VERSION})
 target_include_directories(${PROJECT_NAME} PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"

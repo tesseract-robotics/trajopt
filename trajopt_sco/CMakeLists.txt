@@ -18,6 +18,8 @@ find_package(Eigen3 REQUIRED)
 find_package(trajopt_utils REQUIRED)
 if(NOT TARGET JsonCpp::JsonCpp)
   find_package(jsoncpp REQUIRED)
+elseif(NOT TARGET jsoncpp_lib)
+  add_library(jsoncpp_lib ALIAS JsonCpp::JsonCpp)
 endif()
 find_package(ros_industrial_cmake_boilerplate REQUIRED)
 find_package(Boost REQUIRED)
@@ -106,7 +108,7 @@ target_link_libraries(
          Boost::boost
          Eigen3::Eigen
          ${CMAKE_DL_LIBS}
-         JsonCpp::JsonCpp)
+         jsoncpp_lib)
 target_compile_options(${PROJECT_NAME} PRIVATE ${TRAJOPT_COMPILE_OPTIONS_PRIVATE})
 target_compile_options(${PROJECT_NAME} PUBLIC ${TRAJOPT_COMPILE_OPTIONS_PUBLIC})
 target_compile_definitions(${PROJECT_NAME} PUBLIC ${TRAJOPT_COMPILE_DEFINITIONS})
