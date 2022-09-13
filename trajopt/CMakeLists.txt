@@ -19,6 +19,8 @@ find_package(tesseract_environment REQUIRED)
 find_package(tesseract_visualization REQUIRED)
 if(NOT TARGET JsonCpp::JsonCpp)
   find_package(jsoncpp REQUIRED)
+elseif(NOT TARGET jsoncpp_lib)
+  add_library(jsoncpp_lib ALIAS JsonCpp::JsonCpp)
 endif()
 find_package(ros_industrial_cmake_boilerplate REQUIRED)
 
