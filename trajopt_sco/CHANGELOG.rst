@@ -2,8 +2,8 @@
 Changelog for package trajopt_sco
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.3.1 (2022-10-23)
+------------------
 * Fix jsoncpp link targets and sparseview issue (`#299 <https://github.com/tesseract-robotics/trajopt/issues/299>`_)
 * Build Failure with GUROBI support (`#296 <https://github.com/tesseract-robotics/trajopt/issues/296>`_)
   * trajopt_sco: include recent gurobi version

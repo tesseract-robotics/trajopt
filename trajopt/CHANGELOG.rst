@@ -2,8 +2,8 @@
 Changelog for package trajopt
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.3.1 (2022-10-23)
+------------------
 * Fix jsoncpp link targets and sparseview issue (`#299 <https://github.com/tesseract-robotics/trajopt/issues/299>`_)
 * CPack (`#290 <https://github.com/tesseract-robotics/trajopt/issues/290>`_)
 * Contributors: Michael Ripperger, Roelof

@@ -2,8 +2,8 @@
 Changelog for package osqp
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.3.1 (2022-10-23)
+------------------
 * CPack (`#290 <https://github.com/tesseract-robotics/trajopt/issues/290>`_)
 * Update windows CI to leverage colcon
 * Contributors: Levi Armstrong, Michael Ripperger

@@ -2,8 +2,8 @@
 Changelog for package trajopt_ifopt
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.3.1 (2022-10-23)
+------------------
 * Fixes `#289 <https://github.com/tesseract-robotics/trajopt/issues/289>`_
 * CPack (`#290 <https://github.com/tesseract-robotics/trajopt/issues/290>`_)
 * Contributors: Michael Ripperger, Roelof Oomen
