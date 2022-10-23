@@ -2,6 +2,12 @@
 Changelog for package osqp_eigen
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* CPack (`#290 <https://github.com/tesseract-robotics/trajopt/issues/290>`_)
+* Update windows CI to leverage colcon
+* Contributors: Levi Armstrong, Michael Ripperger
+
 0.3.0 (2022-07-01)
 ------------------
 

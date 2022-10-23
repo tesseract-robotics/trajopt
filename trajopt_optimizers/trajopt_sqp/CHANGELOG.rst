@@ -2,6 +2,11 @@
 Changelog for package trajopt_sqp
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* CPack (`#290 <https://github.com/tesseract-robotics/trajopt/issues/290>`_)
+* Contributors: Michael Ripperger
+
 0.3.0 (2022-07-01)
 ------------------
 

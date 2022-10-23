@@ -2,6 +2,12 @@
 Changelog for package trajopt
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Fix jsoncpp link targets and sparseview issue (`#299 <https://github.com/tesseract-robotics/trajopt/issues/299>`_)
+* CPack (`#290 <https://github.com/tesseract-robotics/trajopt/issues/290>`_)
+* Contributors: Michael Ripperger, Roelof
+
 0.3.0 (2022-07-01)
 ------------------
 * Simplify PlotCallback
