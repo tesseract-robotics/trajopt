@@ -37,6 +37,7 @@ std::ostream& operator<<(std::ostream& o, const OptResults& r)
 static DblVec evaluateCosts(const std::vector<Cost::Ptr>& costs, const DblVec& x)
 {
   DblVec out(costs.size());
+  #pragma omp parallel for
   for (size_t i = 0; i < costs.size(); ++i)
   {
     out[i] = costs[i]->value(x);
@@ -46,6 +47,7 @@ static DblVec evaluateCosts(const std::vector<Cost::Ptr>& costs, const DblVec& x
 static DblVec evaluateConstraintViols(const std::vector<Constraint::Ptr>& constraints, const DblVec& x)
 {
   DblVec out(constraints.size());
+  #pragma omp parallel for
   for (size_t i = 0; i < constraints.size(); ++i)
   {
     out[i] = constraints[i]->violation(x);
@@ -57,6 +59,7 @@ static std::vector<ConvexObjective::Ptr> convexifyCosts(const std::vector<Cost::
                                                         Model* model)
 {
   std::vector<ConvexObjective::Ptr> out(costs.size());
+  #pragma omp parallel for
   for (size_t i = 0; i < costs.size(); ++i)
   {
     out[i] = costs[i]->convex(x, model);
@@ -68,6 +71,7 @@ static std::vector<ConvexConstraints::Ptr> convexifyConstraints(const std::vecto
                                                                 Model* model)
 {
   std::vector<ConvexConstraints::Ptr> out(cnts.size());
+  #pragma omp parallel for
   for (size_t i = 0; i < cnts.size(); ++i)
   {
     out[i] = cnts[i]->convex(x, model);
@@ -104,6 +108,7 @@ static std::vector<std::string> getCostNames(const std::vector<Cost::Ptr>& costs
 static std::vector<std::string> getCntNames(const std::vector<Constraint::Ptr>& cnts)
 {
   std::vector<std::string> out(cnts.size());
+  #pragma omp parallel for
   for (size_t i = 0; i < cnts.size(); ++i)
     out[i] = cnts[i]->name();
   return out;

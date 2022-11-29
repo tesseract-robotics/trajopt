@@ -595,6 +595,7 @@ void CollisionEvaluator::CalcCollisions(const DblVec& x,
 inline size_t hash(const DblVec& x) { return boost::hash_range(x.begin(), x.end()); }
 void CollisionEvaluator::GetCollisionsCached(const DblVec& x, tesseract_collision::ContactResultVector& dist_results)
 {
+  std::scoped_lock lock(collision_cache_mutex_);
   size_t key = hash(sco::getDblVec(x, GetVars()));
   auto it = m_cache.get(key);
   if (it != nullptr)
@@ -613,6 +614,7 @@ void CollisionEvaluator::GetCollisionsCached(const DblVec& x, tesseract_collisio
 
 void CollisionEvaluator::GetCollisionsCached(const DblVec& x, tesseract_collision::ContactResultMap& dist_results)
 {
+  std::scoped_lock lock(collision_cache_mutex_);
   size_t key = hash(sco::getDblVec(x, GetVars()));
   auto it = m_cache.get(key);
   if (it != nullptr)
