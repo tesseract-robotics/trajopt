@@ -1,4 +1,5 @@
 #pragma once
+#include <mutex>
 #include <tesseract_environment/environment.h>
 #include <tesseract_environment/utils.h>
 #include <tesseract_kinematics/core/joint_group.h>
@@ -234,6 +235,7 @@ protected:
   CollisionExpressionEvaluatorType evaluator_type_{ CollisionExpressionEvaluatorType::START_FREE_END_FREE };
   std::function<tesseract_common::TransformMap(const Eigen::Ref<const Eigen::VectorXd>& joint_values)> get_state_fn_;
   bool dynamic_environment_{ false };
+  std::mutex collision_cache_mutex_;
 
   void CollisionsToDistanceExpressions(sco::AffExprVector& exprs,
                                        AlignedVector<Eigen::Vector2d>& exprs_data,

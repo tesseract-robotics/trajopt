@@ -17,6 +17,7 @@ if(NOT TARGET JsonCpp::JsonCpp)
 endif()
 find_package(ros_industrial_cmake_boilerplate REQUIRED)
 find_package(Boost REQUIRED)
+find_package(OpenMP REQUIRED)
 
 # Load variable for clang tidy args, compiler options and cxx version
 trajopt_variables()
@@ -102,7 +103,8 @@ target_link_libraries(
          Boost::boost
          Eigen3::Eigen
          ${CMAKE_DL_LIBS}
-         jsoncpp_lib)
+         jsoncpp_lib
+         OpenMP::OpenMP_CXX)
 target_compile_options(${PROJECT_NAME} PRIVATE ${TRAJOPT_COMPILE_OPTIONS_PRIVATE})
 target_compile_options(${PROJECT_NAME} PUBLIC ${TRAJOPT_COMPILE_OPTIONS_PUBLIC})
 target_compile_definitions(${PROJECT_NAME} PUBLIC ${TRAJOPT_COMPILE_DEFINITIONS})
