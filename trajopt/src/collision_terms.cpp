@@ -1582,7 +1582,7 @@ sco::ConvexObjective::Ptr CollisionCost::convex(const sco::DblVec& x, sco::Model
     const Eigen::Vector2d& data = exprs_data[i];
 
     sco::AffExpr viol = sco::exprSub(sco::AffExpr(data[0]), exprs[i]);
-    #pragma omp critical 
+#pragma omp critical
     out->addHinge(viol, data[1]);
   }
   return out;
