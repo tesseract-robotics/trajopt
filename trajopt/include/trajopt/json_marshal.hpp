@@ -3,11 +3,15 @@
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <Eigen/Eigen>
 #include <boost/format.hpp>
-#include <json/json.h>
 #include <sstream>
 #include <string>
 #include <vector>
 TRAJOPT_IGNORE_WARNINGS_POP
+
+namespace Json
+{
+class Value;
+}
 
 namespace json_marshal
 {

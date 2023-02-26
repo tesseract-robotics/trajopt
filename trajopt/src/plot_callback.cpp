@@ -2,6 +2,7 @@
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <functional>
 #include <set>
+#include <json/json.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <tesseract_environment/environment.h>

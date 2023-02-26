@@ -1,8 +1,10 @@
 #include <trajopt_utils/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <boost/algorithm/string.hpp>
+#include <json/json.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
+#include <trajopt/json_marshal.hpp>
 #include <trajopt/collision_terms.hpp>
 #include <trajopt/common.hpp>
 #include <trajopt/kinematic_terms.hpp>
