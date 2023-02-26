@@ -4,7 +4,6 @@
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <cassert>
 #include <iosfwd>
-#include <json/json.h>
 #include <limits>
 #include <string>
 #include <vector>
@@ -12,6 +11,11 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt_sco/sco_common.hpp>
+
+namespace Json
+{
+class Value;
+}
 
 /**
 @file solver_interface.hpp

@@ -6,7 +6,6 @@ TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <tesseract_environment/environment.h>
 #include <trajopt/common.hpp>
-#include <trajopt/json_marshal.hpp>
 #include <trajopt_sco/optimizers.hpp>
 #include <trajopt_utils/utils.hpp>
 
