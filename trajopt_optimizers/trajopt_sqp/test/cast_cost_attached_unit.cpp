@@ -91,9 +91,12 @@ public:
     box_attached_joint.child_link_name = "box_attached";
     box_attached_joint.parent_to_joint_origin_transform.translation() = Eigen::Vector3d(0.5, -0.5, 0);
 
+    tesseract_common::AllowedCollisionMatrix modify_acm;
+    modify_acm.addAllowedCollision("box_attached", "boxbot_link", "Adjacent");
+
     env->applyCommand(std::make_shared<AddLinkCommand>(box_attached_link, box_attached_joint));
     env->applyCommand(std::make_shared<ChangeLinkCollisionEnabledCommand>("box_attached", false));
-    env->applyCommand(std::make_shared<AddAllowedCollisionCommand>("box_attached", "boxbot_link", "Adjacent"));
+    env->applyCommand(std::make_shared<ModifyAllowedCollisionsCommand>(modify_acm, ModifyAllowedCollisionsType::ADD));
 
     Link box_attached2_link("box_attached2");
     box_attached2_link.visual.push_back(visual);
@@ -105,9 +108,12 @@ public:
     box_attached2_joint.child_link_name = "box_attached2";
     box_attached2_joint.parent_to_joint_origin_transform.translation() = Eigen::Vector3d(0, 0, 0);
 
+    tesseract_common::AllowedCollisionMatrix modify_acm2;
+    modify_acm2.addAllowedCollision("box_attached2", "boxbot_link", "Adjacent");
+
     env->applyCommand(std::make_shared<AddLinkCommand>(box_attached2_link, box_attached2_joint));
     env->applyCommand(std::make_shared<ChangeLinkCollisionEnabledCommand>("box_attached2", false));
-    env->applyCommand(std::make_shared<AddAllowedCollisionCommand>("box_attached2", "boxbot_link", "Adjacent"));
+    env->applyCommand(std::make_shared<ModifyAllowedCollisionsCommand>(modify_acm2, ModifyAllowedCollisionsType::ADD));
   }
 };
 

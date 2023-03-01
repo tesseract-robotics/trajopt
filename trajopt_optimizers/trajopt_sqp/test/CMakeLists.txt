@@ -47,8 +47,7 @@ macro(add_gtest test_name test_file)
     trajopt::trajopt_test_data
     trajopt::trajopt
     GTest::GTest
-    GTest::Main
-    trajopt::trajopt_test_data)
+    GTest::Main)
   target_include_directories(${test_name} PRIVATE "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>"
                                                   ${GTEST_INCLUDE_DIRS})
   target_include_directories(${test_name} SYSTEM PRIVATE ${PCL_INCLUDE_DIRS})
