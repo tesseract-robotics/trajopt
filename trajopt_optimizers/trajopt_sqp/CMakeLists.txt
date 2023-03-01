@@ -107,6 +107,10 @@ if(TRAJOPT_ENABLE_TESTING)
   add_subdirectory(test)
 endif()
 
+if(TRAJOPT_ENABLE_BENCHMARKING)
+  add_subdirectory(test/benchmarks)
+endif()
+
 if(TRAJOPT_PACKAGE)
   cpack(
     VERSION
