@@ -2,8 +2,8 @@
 Changelog for package trajopt_sco
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.4.0 (2023-03-03)
+------------------
 * Move json include to cpp files
 * catkin dependency for ROS1 only
 * Contributors: Levi Armstrong, Roelof Oomen

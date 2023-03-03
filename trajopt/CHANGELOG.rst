@@ -2,8 +2,8 @@
 Changelog for package trajopt
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.4.0 (2023-03-03)
+------------------
 * Fix unit tests and add solve benchmarks
 * Move json include to cpp files
 * Contributors: Levi Armstrong
