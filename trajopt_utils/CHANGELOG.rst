@@ -2,6 +2,11 @@
 Changelog for package trajopt_utils
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* catkin dependency for ROS1 only
+* Contributors: Roelof Oomen
+
 0.3.1 (2022-10-23)
 ------------------
 * CPack (`#290 <https://github.com/tesseract-robotics/trajopt/issues/290>`_)

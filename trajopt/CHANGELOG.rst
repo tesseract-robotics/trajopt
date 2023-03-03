@@ -2,6 +2,12 @@
 Changelog for package trajopt
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Fix unit tests and add solve benchmarks
+* Move json include to cpp files
+* Contributors: Levi Armstrong
+
 0.3.1 (2022-10-23)
 ------------------
 * Fix jsoncpp link targets and sparseview issue (`#299 <https://github.com/tesseract-robotics/trajopt/issues/299>`_)

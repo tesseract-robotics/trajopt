@@ -2,6 +2,12 @@
 Changelog for package trajopt_sqp
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Fix unit tests and add solve benchmarks
+* catkin dependency for ROS1 only
+* Contributors: Levi Armstrong, Roelof Oomen
+
 0.3.1 (2022-10-23)
 ------------------
 * CPack (`#290 <https://github.com/tesseract-robotics/trajopt/issues/290>`_)

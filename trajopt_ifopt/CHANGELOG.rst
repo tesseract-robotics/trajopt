@@ -2,6 +2,11 @@
 Changelog for package trajopt_ifopt
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* catkin dependency for ROS1 only
+* Contributors: Roelof Oomen
+
 0.3.1 (2022-10-23)
 ------------------
 * Fixes `#289 <https://github.com/tesseract-robotics/trajopt/issues/289>`_

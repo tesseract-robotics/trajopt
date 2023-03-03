@@ -2,6 +2,12 @@
 Changelog for package trajopt_sco
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Move json include to cpp files
+* catkin dependency for ROS1 only
+* Contributors: Levi Armstrong, Roelof Oomen
+
 0.3.1 (2022-10-23)
 ------------------
 * Fix jsoncpp link targets and sparseview issue (`#299 <https://github.com/tesseract-robotics/trajopt/issues/299>`_)
