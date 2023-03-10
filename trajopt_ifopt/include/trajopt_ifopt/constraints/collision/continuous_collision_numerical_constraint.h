@@ -111,5 +111,5 @@ private:
 
   ContinuousCollisionEvaluator::Ptr collision_evaluator_;
 };
-};      // namespace trajopt_ifopt
+}  // namespace trajopt_ifopt
 #endif  // TRAJOPT_IFOPT_CONTINUOUS_COLLISION_NUMERICAL_CONSTRAINT_H

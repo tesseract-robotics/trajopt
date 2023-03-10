@@ -109,8 +109,11 @@ private:
   std::array<JointPosition::ConstPtr, 2> position_vars_;
   std::array<bool, 2> position_vars_fixed_;
 
+  /** @brief Used to initialize jacobian because snopt sparsity cannot change */
+  std::vector<Eigen::Triplet<double>> triplet_list_;
+
   ContinuousCollisionEvaluator::Ptr collision_evaluator_;
 };
-};  // namespace trajopt_ifopt
+}  // namespace trajopt_ifopt
 
 #endif  // TRAJOPT_IFOPT_CONTINUOUS_COLLISION_CONSTRAINT_H

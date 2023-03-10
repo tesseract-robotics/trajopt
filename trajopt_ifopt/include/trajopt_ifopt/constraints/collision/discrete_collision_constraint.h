@@ -110,7 +110,10 @@ private:
    */
   JointPosition::ConstPtr position_var_;
 
+  /** @brief Used to initialize jacobian because snopt sparsity cannot change */
+  std::vector<Eigen::Triplet<double>> triplet_list_;
+
   DiscreteCollisionEvaluator::Ptr collision_evaluator_;
 };
-};  // namespace trajopt_ifopt
+}  // namespace trajopt_ifopt
 #endif
