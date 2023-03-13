@@ -85,6 +85,9 @@ struct CollisionEvaluator
   using Ptr = std::shared_ptr<CollisionEvaluator>;
   using ConstPtr = std::shared_ptr<const CollisionEvaluator>;
 
+  using ContactResultMapConstPtr = std::shared_ptr<const tesseract_collision::ContactResultMap>;
+  using ContactResultVectorConstPtr = std::shared_ptr<const tesseract_collision::ContactResultVector>;
+
   // NOLINTNEXTLINE
   CollisionEvaluator(tesseract_kinematics::JointGroup::ConstPtr manip,
                      tesseract_environment::Environment::ConstPtr env,
@@ -151,14 +154,14 @@ struct CollisionEvaluator
    * caches the results vector with x as the key.
    * @param x Optimizer variables
    */
-  void GetCollisionsCached(const DblVec& x, tesseract_collision::ContactResultVector&);
+  ContactResultVectorConstPtr GetContactResultVectorCached(const DblVec& x);
 
   /**
    * @brief This function checks to see if results are cached for input variable x. If not it calls CalcCollisions and
    * caches the results with x as the key.
    * @param x Optimizer variables
    */
-  void GetCollisionsCached(const DblVec& x, tesseract_collision::ContactResultMap&);
+  ContactResultMapConstPtr GetContactResultMapCached(const DblVec& x);
 
   /**
    * @brief Extracts the gradient information based on the contact results
@@ -216,8 +219,9 @@ struct CollisionEvaluator
    */
   util::SafetyMarginData::ConstPtr getSafetyMarginData() const { return safety_margin_data_; }
 
-  Cache<std::size_t, std::pair<tesseract_collision::ContactResultMap, tesseract_collision::ContactResultVector>>
-      m_cache{ 10 };
+  /** @brief The collision results cached results */
+
+  Cache<std::size_t, std::pair<ContactResultMapConstPtr, ContactResultVectorConstPtr>> m_cache{ 2 };
 
 protected:
   tesseract_kinematics::JointGroup::ConstPtr manip_;

@@ -579,9 +579,8 @@ CollisionEvaluator::CollisionEvaluator(tesseract_kinematics::JointGroup::ConstPt
 
 void CollisionEvaluator::CalcDists(const DblVec& x, DblVec& dists)
 {
-  tesseract_collision::ContactResultVector dist_results;
-  GetCollisionsCached(x, dist_results);
-  CollisionsToDistances(dist_results, dists);
+  ContactResultVectorConstPtr dist_results = GetContactResultVectorCached(x);
+  CollisionsToDistances(*dist_results, dists);
 }
 
 void CollisionEvaluator::CalcCollisions(const DblVec& x,
@@ -593,48 +592,49 @@ void CollisionEvaluator::CalcCollisions(const DblVec& x,
 }
 
 inline size_t hash(const DblVec& x) { return boost::hash_range(x.begin(), x.end()); }
-void CollisionEvaluator::GetCollisionsCached(const DblVec& x, tesseract_collision::ContactResultVector& dist_results)
+CollisionEvaluator::ContactResultVectorConstPtr CollisionEvaluator::GetContactResultVectorCached(const DblVec& x)
 {
   size_t key = hash(sco::getDblVec(x, GetVars()));
   auto it = m_cache.get(key);
   if (it != nullptr)
   {
     LOG_DEBUG("using cached collision check\n")
-    dist_results = it->second;
+    return it->second;
   }
-  else
-  {
-    LOG_DEBUG("not using cached collision check\n")
-    tesseract_collision::ContactResultMap dist_map;
-    CalcCollisions(x, dist_map, dist_results);
-    m_cache.put(key, std::make_pair(dist_map, dist_results));
-  }
+
+  LOG_DEBUG("not using cached collision check\n")
+  auto dist_map = std::make_shared<tesseract_collision::ContactResultMap>();
+  auto dist_vec = std::make_shared<tesseract_collision::ContactResultVector>();
+  CalcCollisions(x, *dist_map, *dist_vec);
+  m_cache.put(key, std::make_pair(dist_map, dist_vec));
+  return dist_vec;
 }
 
-void CollisionEvaluator::GetCollisionsCached(const DblVec& x, tesseract_collision::ContactResultMap& dist_results)
+CollisionEvaluator::ContactResultMapConstPtr CollisionEvaluator::GetContactResultMapCached(const DblVec& x)
 {
   size_t key = hash(sco::getDblVec(x, GetVars()));
   auto it = m_cache.get(key);
   if (it != nullptr)
   {
     LOG_DEBUG("using cached collision check\n")
-    dist_results = it->first;
+    return it->first;
   }
-  else
-  {
-    LOG_DEBUG("not using cached collision check\n")
-    tesseract_collision::ContactResultVector dist_vector;
-    CalcCollisions(x, dist_results, dist_vector);
-    m_cache.put(key, std::make_pair(dist_results, dist_vector));
-  }
+
+  LOG_DEBUG("not using cached collision check\n")
+  auto dist_map = std::make_shared<tesseract_collision::ContactResultMap>();
+  auto dist_vec = std::make_shared<tesseract_collision::ContactResultVector>();
+
+  CalcCollisions(x, *dist_map, *dist_vec);
+  m_cache.put(key, std::make_pair(dist_map, dist_vec));
+  return dist_map;
 }
 
 void CollisionEvaluator::CalcDistExpressionsStartFree(const DblVec& x,
                                                       sco::AffExprVector& exprs,
                                                       AlignedVector<Eigen::Vector2d>& exprs_data)
 {
-  tesseract_collision::ContactResultVector dist_results;
-  GetCollisionsCached(x, dist_results);
+  ContactResultVectorConstPtr dist_vec = GetContactResultVectorCached(x);
+  const tesseract_collision::ContactResultVector& dist_results = *dist_vec;
 
   sco::AffExprVector exprs0;
   CollisionsToDistanceExpressions(exprs0, exprs_data, dist_results, vars0_, x, false);
@@ -653,8 +653,8 @@ void CollisionEvaluator::CalcDistExpressionsEndFree(const DblVec& x,
                                                     sco::AffExprVector& exprs,
                                                     AlignedVector<Eigen::Vector2d>& exprs_data)
 {
-  tesseract_collision::ContactResultVector dist_results;
-  GetCollisionsCached(x, dist_results);
+  ContactResultVectorConstPtr dist_vec = GetContactResultVectorCached(x);
+  const tesseract_collision::ContactResultVector& dist_results = *dist_vec;
 
   sco::AffExprVector exprs1;
   CollisionsToDistanceExpressions(exprs1, exprs_data, dist_results, vars1_, x, true);
@@ -673,8 +673,8 @@ void CollisionEvaluator::CalcDistExpressionsBothFree(const DblVec& x,
                                                      sco::AffExprVector& exprs,
                                                      AlignedVector<Eigen::Vector2d>& exprs_data)
 {
-  tesseract_collision::ContactResultVector dist_results;
-  GetCollisionsCached(x, dist_results);
+  ContactResultVectorConstPtr dist_vec = GetContactResultVectorCached(x);
+  const tesseract_collision::ContactResultVector& dist_results = *dist_vec;
 
   sco::AffExprVector exprs0, exprs1;
   AlignedVector<Eigen::Vector2d> exprs_data0, exprs_data1;
@@ -699,11 +699,10 @@ void CollisionEvaluator::CalcDistExpressionsStartFreeW(const DblVec& x,
                                                        sco::AffExprVector& exprs,
                                                        AlignedVector<Eigen::Vector2d>& exprs_data)
 {
-  tesseract_collision::ContactResultMap dist_results;
-  GetCollisionsCached(x, dist_results);
+  ContactResultMapConstPtr dist_results = GetContactResultMapCached(x);
 
   sco::AffExprVector exprs0;
-  CollisionsToDistanceExpressionsContinuousW(exprs0, exprs_data, dist_results, vars0_, vars1_, x, false);
+  CollisionsToDistanceExpressionsContinuousW(exprs0, exprs_data, *dist_results, vars0_, vars1_, x, false);
 
   exprs.resize(exprs0.size());
   for (std::size_t i = 0; i < exprs0.size(); ++i)
@@ -718,11 +717,10 @@ void CollisionEvaluator::CalcDistExpressionsEndFreeW(const DblVec& x,
                                                      sco::AffExprVector& exprs,
                                                      AlignedVector<Eigen::Vector2d>& exprs_data)
 {
-  tesseract_collision::ContactResultMap dist_results;
-  GetCollisionsCached(x, dist_results);
+  ContactResultMapConstPtr dist_results = GetContactResultMapCached(x);
 
   sco::AffExprVector exprs1;
-  CollisionsToDistanceExpressionsContinuousW(exprs1, exprs_data, dist_results, vars0_, vars1_, x, true);
+  CollisionsToDistanceExpressionsContinuousW(exprs1, exprs_data, *dist_results, vars0_, vars1_, x, true);
 
   exprs.resize(exprs1.size());
   for (std::size_t i = 0; i < exprs1.size(); ++i)
@@ -737,13 +735,12 @@ void CollisionEvaluator::CalcDistExpressionsBothFreeW(const DblVec& x,
                                                       sco::AffExprVector& exprs,
                                                       AlignedVector<Eigen::Vector2d>& exprs_data)
 {
-  tesseract_collision::ContactResultMap dist_results;
-  GetCollisionsCached(x, dist_results);
+  ContactResultMapConstPtr dist_results = GetContactResultMapCached(x);
 
   sco::AffExprVector exprs0, exprs1;
   AlignedVector<Eigen::Vector2d> exprs_data0, exprs_data1;
-  CollisionsToDistanceExpressionsContinuousW(exprs0, exprs_data0, dist_results, vars0_, vars1_, x, false);
-  CollisionsToDistanceExpressionsContinuousW(exprs1, exprs_data1, dist_results, vars0_, vars1_, x, true);
+  CollisionsToDistanceExpressionsContinuousW(exprs0, exprs_data0, *dist_results, vars0_, vars1_, x, false);
+  CollisionsToDistanceExpressionsContinuousW(exprs1, exprs_data1, *dist_results, vars0_, vars1_, x, true);
 
   exprs_data = exprs_data0;
   exprs.resize(exprs0.size());
@@ -761,8 +758,9 @@ void CollisionEvaluator::CalcDistExpressionsSingleTimeStep(const DblVec& x,
                                                            sco::AffExprVector& exprs,
                                                            AlignedVector<Eigen::Vector2d>& exprs_data)
 {
-  tesseract_collision::ContactResultVector dist_results;
-  GetCollisionsCached(x, dist_results);
+  ContactResultVectorConstPtr dist_vec = GetContactResultVectorCached(x);
+  const tesseract_collision::ContactResultVector& dist_results = *dist_vec;
+
   CollisionsToDistanceExpressions(exprs, exprs_data, dist_results, vars0_, x, false);
   assert(dist_results.size() == exprs.size());
 
@@ -777,9 +775,8 @@ void CollisionEvaluator::CalcDistExpressionsSingleTimeStepW(const DblVec& x,
                                                             sco::AffExprVector& exprs,
                                                             AlignedVector<Eigen::Vector2d>& exprs_data)
 {
-  tesseract_collision::ContactResultMap dist_results;
-  GetCollisionsCached(x, dist_results);
-  CollisionsToDistanceExpressionsW(exprs, exprs_data, dist_results, vars0_, x, false);
+  ContactResultMapConstPtr dist_results = GetContactResultMapCached(x);
+  CollisionsToDistanceExpressionsW(exprs, exprs_data, *dist_results, vars0_, x, false);
   assert(dist_results.size() == exprs.size());
 
   for (auto& expr : exprs)
@@ -1015,8 +1012,9 @@ void SingleTimestepCollisionEvaluator::CalcDistExpressions(const DblVec& x,
 
 void SingleTimestepCollisionEvaluator::Plot(const tesseract_visualization::Visualization::Ptr& plotter, const DblVec& x)
 {
-  tesseract_collision::ContactResultVector dist_results;
-  GetCollisionsCached(x, dist_results);
+  ContactResultVectorConstPtr dist_vec = GetContactResultVectorCached(x);
+  const tesseract_collision::ContactResultVector& dist_results = *dist_vec;
+
   Eigen::VectorXd dofvals = sco::getVec(x, vars0_);
 
   Eigen::VectorXd safety_distance(dist_results.size());
@@ -1208,8 +1206,9 @@ void DiscreteCollisionEvaluator::CalcDistExpressions(const DblVec& x,
 
 void DiscreteCollisionEvaluator::Plot(const tesseract_visualization::Visualization::Ptr& plotter, const DblVec& x)
 {
-  tesseract_collision::ContactResultVector dist_results;
-  GetCollisionsCached(x, dist_results);
+  ContactResultVectorConstPtr dist_vec = GetContactResultVectorCached(x);
+  const tesseract_collision::ContactResultVector& dist_results = *dist_vec;
+
   Eigen::VectorXd dofvals0 = sco::getVec(x, vars0_);
   Eigen::VectorXd dofvals1 = sco::getVec(x, vars1_);
 
@@ -1219,7 +1218,7 @@ void DiscreteCollisionEvaluator::Plot(const tesseract_visualization::Visualizati
   Eigen::VectorXd safety_distance(dist_results.size());
   for (auto i = 0u; i < dist_results.size(); ++i)
   {
-    tesseract_collision::ContactResult& res = dist_results[i];
+    const tesseract_collision::ContactResult& res = dist_results[i];
     // Contains the contact distance threshold and coefficient for the given link pair
     const Eigen::Vector2d& data = getSafetyMarginData()->getPairSafetyMarginData(res.link_names[0], res.link_names[1]);
     safety_distance[i] = data[0];
@@ -1447,8 +1446,9 @@ void CastCollisionEvaluator::CalcDistExpressions(const DblVec& x,
 
 void CastCollisionEvaluator::Plot(const tesseract_visualization::Visualization::Ptr& plotter, const DblVec& x)
 {
-  tesseract_collision::ContactResultVector dist_results;
-  GetCollisionsCached(x, dist_results);
+  ContactResultVectorConstPtr dist_vec = GetContactResultVectorCached(x);
+  const tesseract_collision::ContactResultVector& dist_results = *dist_vec;
+
   Eigen::VectorXd dofvals = sco::getVec(x, vars0_);
 
   Eigen::VectorXd safety_distance(dist_results.size());
@@ -1572,8 +1572,9 @@ sco::ConvexObjective::Ptr CollisionCost::convex(const sco::DblVec& x, sco::Model
   m_calc->CalcDistExpressions(x, exprs, exprs_data);
   assert(exprs.size() == exprs_data.size());
 
-  tesseract_collision::ContactResultVector dist_results;
-  m_calc->GetCollisionsCached(x, dist_results);
+  auto dist_results = m_calc->GetContactResultVectorCached(x);
+  UNUSED(dist_results);
+
   for (std::size_t i = 0; i < exprs.size(); ++i)
   {
     // Contains the contact distance threshold and coefficient for the given link pair
@@ -1590,8 +1591,9 @@ double CollisionCost::value(const sco::DblVec& x)
   DblVec dists;
   m_calc->CalcDists(x, dists);
 
-  tesseract_collision::ContactResultVector dist_results;
-  m_calc->GetCollisionsCached(x, dist_results);
+  auto dist_vec = m_calc->GetContactResultVectorCached(x);
+  const tesseract_collision::ContactResultVector& dist_results = *dist_vec;
+
   double out = 0;
   for (std::size_t i = 0; i < dists.size(); ++i)
   {
@@ -1675,8 +1677,9 @@ sco::ConvexConstraints::Ptr CollisionConstraint::convex(const sco::DblVec& x, sc
   m_calc->CalcDistExpressions(x, exprs, exprs_data);
   assert(exprs.size() == exprs_data.size());
 
-  tesseract_collision::ContactResultVector dist_results;
-  m_calc->GetCollisionsCached(x, dist_results);
+  auto dist_results = m_calc->GetContactResultVectorCached(x);
+  UNUSED(dist_results);
+
   for (std::size_t i = 0; i < exprs.size(); ++i)
   {
     // Contains the contact distance threshold and coefficient for the given link pair
@@ -1693,8 +1696,9 @@ DblVec CollisionConstraint::value(const sco::DblVec& x)
   DblVec dists;
   m_calc->CalcDists(x, dists);
 
-  tesseract_collision::ContactResultVector dist_results;
-  m_calc->GetCollisionsCached(x, dist_results);
+  auto dist_vec = m_calc->GetContactResultVectorCached(x);
+  const tesseract_collision::ContactResultVector& dist_results = *dist_vec;
+
   DblVec out(dists.size());
   for (std::size_t i = 0; i < dists.size(); ++i)
   {
