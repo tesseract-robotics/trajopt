@@ -90,10 +90,10 @@ void exprToEigen(const AffExprVector& expr_vec,
   vector.resize(static_cast<long int>(expr_vec.size()));
   vector.setZero();
   sparse_matrix.resize(static_cast<long int>(expr_vec.size()), n_vars);
-  sparse_matrix.reserve(static_cast<long int>(expr_vec.size()) * n_vars);
 
   using T = Eigen::Triplet<double>;
-  std::vector<T, Eigen::aligned_allocator<T>> triplets;
+  thread_local std::vector<T, Eigen::aligned_allocator<T>> triplets;
+  triplets.clear();
 
   for (int i = 0; i < static_cast<int>(expr_vec.size()); ++i)
   {
