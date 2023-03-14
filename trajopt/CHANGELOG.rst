@@ -2,8 +2,8 @@
 Changelog for package trajopt
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.4.1 (2023-03-14)
+------------------
 * Update CI builds
 * Fix places where reserve should be used to reduce number of memory allocations
 * Update collision cache to use vector of std::reference_wrapper to memory usage
