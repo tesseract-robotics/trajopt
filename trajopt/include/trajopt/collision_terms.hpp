@@ -9,6 +9,10 @@
 
 namespace trajopt
 {
+using ContactResultMapConstPtr = std::shared_ptr<const tesseract_collision::ContactResultMap>;
+using ContactResultVectorWrapper = std::vector<std::reference_wrapper<const tesseract_collision::ContactResult>>;
+using ContactResultVectorConstPtr = std::shared_ptr<const ContactResultVectorWrapper>;
+
 /**
  * @brief This contains the different types of expression evaluators used when performing continuous collision checking.
  */
@@ -85,9 +89,6 @@ struct CollisionEvaluator
   using Ptr = std::shared_ptr<CollisionEvaluator>;
   using ConstPtr = std::shared_ptr<const CollisionEvaluator>;
 
-  using ContactResultMapConstPtr = std::shared_ptr<const tesseract_collision::ContactResultMap>;
-  using ContactResultVectorConstPtr = std::shared_ptr<const tesseract_collision::ContactResultVector>;
-
   // NOLINTNEXTLINE
   CollisionEvaluator(tesseract_kinematics::JointGroup::ConstPtr manip,
                      tesseract_environment::Environment::ConstPtr env,
@@ -147,7 +148,7 @@ struct CollisionEvaluator
    */
   void CalcCollisions(const DblVec& x,
                       tesseract_collision::ContactResultMap& dist_map,
-                      tesseract_collision::ContactResultVector& dist_vector);
+                      ContactResultVectorWrapper& dist_vector);
 
   /**
    * @brief This function checks to see if results are cached for input variable x. If not it calls CalcCollisions and
@@ -241,7 +242,7 @@ protected:
 
   void CollisionsToDistanceExpressions(sco::AffExprVector& exprs,
                                        AlignedVector<Eigen::Vector2d>& exprs_data,
-                                       const tesseract_collision::ContactResultVector& dist_results,
+                                       const ContactResultVectorWrapper& dist_results,
                                        const sco::VarVector& vars,
                                        const DblVec& x,
                                        bool isTimestep1);
