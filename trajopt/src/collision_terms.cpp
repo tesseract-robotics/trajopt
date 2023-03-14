@@ -777,7 +777,7 @@ void CollisionEvaluator::CalcDistExpressionsSingleTimeStepW(const DblVec& x,
 {
   ContactResultMapConstPtr dist_results = GetContactResultMapCached(x);
   CollisionsToDistanceExpressionsW(exprs, exprs_data, *dist_results, vars0_, x, false);
-  assert(dist_results.size() == exprs.size());
+  assert(dist_results->size() == exprs.size());
 
   for (auto& expr : exprs)
     expr = sco::cleanupAff(expr);

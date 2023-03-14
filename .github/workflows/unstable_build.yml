@@ -1,4 +1,4 @@
-name: Focal-Build
+name: Unstable-Build
 
 on:
   push:
@@ -18,7 +18,7 @@ jobs:
       OS_CODE_NAME: focal
       ROS_DISTRO: noetic
       ROS_REPO: main
-      UPSTREAM_WORKSPACE: "dependencies.repos"
+      UPSTREAM_WORKSPACE: "dependencies_unstable.repos"
       ROSDEP_SKIP_KEYS: "bullet bullet-extras opw_kinematics ros_industrial_cmake_boilerplate fcl ifopt"
       DOCKER_IMAGE: "rosindustrial/tesseract:noetic"
       PARALLEL_TESTS: false
