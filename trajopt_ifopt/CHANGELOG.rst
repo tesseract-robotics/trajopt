@@ -2,6 +2,9 @@
 Changelog for package trajopt_ifopt
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+
 0.4.0 (2023-03-03)
 ------------------
 * catkin dependency for ROS1 only

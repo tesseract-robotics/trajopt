@@ -2,6 +2,12 @@
 Changelog for package trajopt_sco
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Fix places where reserve should be used to reduce number of memory allocations
+* Fix trajopt_sco exprToEigen larg heap allocations
+* Contributors: Levi Armstrong
+
 0.4.0 (2023-03-03)
 ------------------
 * Move json include to cpp files

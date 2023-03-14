@@ -2,6 +2,11 @@
 Changelog for package trajopt_sqp
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Fix places where reserve should be used to reduce number of memory allocations
+* Contributors: Levi Armstrong
+
 0.4.0 (2023-03-03)
 ------------------
 * Fix unit tests and add solve benchmarks
