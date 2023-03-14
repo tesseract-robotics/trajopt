@@ -24,7 +24,9 @@ inline void exprInc(AffExpr& a, double b) { a.constant += b; }
 inline void exprInc(AffExpr& a, const AffExpr& b)
 {
   a.constant += b.constant;
+  a.coeffs.reserve(a.coeffs.size() + b.coeffs.size());
   a.coeffs.insert(a.coeffs.end(), b.coeffs.begin(), b.coeffs.end());
+  a.vars.reserve(a.vars.size() + b.vars.size());
   a.vars.insert(a.vars.end(), b.vars.begin(), b.vars.end());
 }
 inline void exprInc(AffExpr& a, const Var& b) { exprInc(a, AffExpr(b)); }
@@ -34,8 +36,11 @@ inline void exprInc(QuadExpr& a, const AffExpr& b) { exprInc(a.affexpr, b); }
 inline void exprInc(QuadExpr& a, const QuadExpr& b)
 {
   exprInc(a.affexpr, b.affexpr);
+  a.coeffs.reserve(a.coeffs.size() + b.coeffs.size());
   a.coeffs.insert(a.coeffs.end(), b.coeffs.begin(), b.coeffs.end());
+  a.vars1.reserve(a.vars1.size() + b.vars1.size());
   a.vars1.insert(a.vars1.end(), b.vars1.begin(), b.vars1.end());
+  a.vars2.reserve(a.vars2.size() + b.vars2.size());
   a.vars2.insert(a.vars2.end(), b.vars2.begin(), b.vars2.end());
 }
 

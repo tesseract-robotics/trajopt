@@ -288,6 +288,8 @@ void TrajOptQPProblem::convexifyCosts()
     }
 
     // Store individual equations quadratic coefficients
+    squared_objective_nlp_.quadratic_coeffs.reserve(squared_objective_nlp_.quadratic_coeffs.size() +
+                                                    cost_quad_expr.quadratic_coeffs.size());
     squared_objective_nlp_.quadratic_coeffs.insert(squared_objective_nlp_.quadratic_coeffs.end(),
                                                    cost_quad_expr.quadratic_coeffs.begin(),
                                                    cost_quad_expr.quadratic_coeffs.end());

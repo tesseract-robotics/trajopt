@@ -115,7 +115,7 @@ int main(int argc, char** argv)
     benchmark::RegisterBenchmark(name.c_str(), BM_SOLVE_FUNC, env, root)
         ->UseRealTime()
         ->Unit(benchmark::TimeUnit::kMillisecond)
-        ->MinTime(6);
+        ->MinTime(100);
   }
 
   benchmark::Initialize(&argc, argv);

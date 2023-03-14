@@ -126,7 +126,7 @@ template <typename T>
 std::vector<T> concat(const std::vector<T>& a, const std::vector<T>& b)
 {
   std::vector<T> out;
-  std::vector<int> x;
+  out.reserve(a.size() + b.size());
   out.insert(out.end(), a.begin(), a.end());
   out.insert(out.end(), b.begin(), b.end());
   return out;
