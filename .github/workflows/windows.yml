@@ -1,0 +1,68 @@
+name: Windows
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    paths:
+      - 'trajopt**'
+      - '.github/workflows/windows.yml'
+      - '.github/workflows/dependencies.repos'
+  schedule:
+    - cron: '0 5 * * *'
+
+jobs:
+  ci:
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-2019]
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        path: workspace/src/trajopt
+
+    - name: vcpkg build
+      uses: johnwason/vcpkg-action@v4
+      with:
+        pkgs: fcl bullet3[multithreading,double-precision,rtti] octomap console-bridge eigen3 yaml-cpp benchmark tinyxml2 assimp orocos-kdl pcl lapack-reference boost-dll boost-filesystem boost-filesystem boost-serialization boost-program-options boost-graph urdfdom ccd[double-precision] gtest
+        triplet: x64-windows-release
+        extra-args: --clean-after-build
+        token: ${{ github.token }}
+
+    - name: install-depends
+      shell: cmd
+      run: |
+        python -m pip install vcstool -q
+        python -m pip install colcon-common-extensions -q
+        python -m pip install ninja -q
+
+    - name: configure-msvc
+      uses: ilammy/msvc-dev-cmd@v1
+      with:
+        arch: x64
+
+    - name: build-workspace
+      working-directory: workspace
+      shell: cmd
+      run: |
+        set PATH=%PATH%;%GITHUB_WORKSPACE%\vcpkg\installed\x64-windows-release\bin
+        set CMAKE_PREFIX_PATH=%GITHUB_WORKSPACE%\vcpkg\installed\x64-windows-release
+        vcs import --input "${{ github.workspace }}/workspace/src/trajopt/dependencies.repos" src/
+        if %ERRORLEVEL% GEQ 1 exit 1
+        colcon build --event-handlers console_direct+ --cmake-args -G "Ninja" -DVCPKG_TARGET_TRIPLET=x64-windows-release -DCMAKE_BUILD_TYPE=Release -DTRAJOPT_ENABLE_TESTING=ON -DBUILD_IPOPT=OFF -DBUILD_SNOPT=OFF
+        if %ERRORLEVEL% GEQ 1 exit 1
+
+    - name: run-test
+      working-directory: workspace
+      shell: cmd
+      run: |
+        call ./install/setup.bat
+        set PATH=%PATH%;%GITHUB_WORKSPACE%\vcpkg\installed\x64-windows-release\bin
+        colcon test --event-handlers console_direct+ --return-code-on-test-failure
+        if %ERRORLEVEL% GEQ 1 exit 1
+        colcon test-result --verbose
+        if %ERRORLEVEL% GEQ 1 exit 1
