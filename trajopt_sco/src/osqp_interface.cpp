@@ -143,8 +143,6 @@ void OSQPModel::updateConstraints()
   Eigen::SparseMatrix<double> sm;
   Eigen::VectorXd v;
   exprToEigen(cnt_exprs_, sm, v, static_cast<int>(n));
-  Eigen::SparseMatrix<double> sm_e(n_int + m_int, n_int);
-  Eigen::SparseMatrix<double> sm_e2 = sm;
   sm.conservativeResize(m_int + n_int, Eigen::NoChange_t(n));
 
   l_.clear();
@@ -158,6 +156,7 @@ void OSQPModel::updateConstraints()
     u_[i_cnt] = v[static_cast<Eigen::Index>(i_cnt)];
   }
 
+  sm.reserve(sm.nonZeros() + static_cast<Eigen::Index>(n));
   for (std::size_t i_bnd = 0; i_bnd < n; ++i_bnd)
   {
     l_[i_bnd + m] = fmax(lbs_[i_bnd], -OSQP_INFINITY);
