@@ -2,6 +2,9 @@
 Changelog for package trajopt_sco
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+
 0.4.1 (2023-03-14)
 ------------------
 * Fix places where reserve should be used to reduce number of memory allocations
