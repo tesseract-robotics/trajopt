@@ -2,8 +2,8 @@
 Changelog for package trajopt_ifopt
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.4.2 (2023-03-15)
+------------------
 * Fix undefined behavior bug in processInterpolatedCollisionResults
 * Contributors: Levi Armstrong
 
