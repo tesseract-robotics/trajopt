@@ -595,7 +595,7 @@ inline size_t hash(const DblVec& x) { return boost::hash_range(x.begin(), x.end(
 ContactResultVectorConstPtr CollisionEvaluator::GetContactResultVectorCached(const DblVec& x)
 {
   size_t key = hash(sco::getDblVec(x, GetVars()));
-  auto it = m_cache.get(key);
+  auto* it = m_cache.get(key);
   if (it != nullptr)
   {
     LOG_DEBUG("using cached collision check\n")
@@ -613,7 +613,7 @@ ContactResultVectorConstPtr CollisionEvaluator::GetContactResultVectorCached(con
 ContactResultMapConstPtr CollisionEvaluator::GetContactResultMapCached(const DblVec& x)
 {
   size_t key = hash(sco::getDblVec(x, GetVars()));
-  auto it = m_cache.get(key);
+  auto* it = m_cache.get(key);
   if (it != nullptr)
   {
     LOG_DEBUG("using cached collision check\n")
@@ -832,19 +832,24 @@ void CollisionEvaluator::processInterpolatedCollisionResults(
       removeInvalidContactResults(pair.second, data);
 
       // If the contact pair does not exist in contact_results add it
-      if (p == contact_results.end() && !pair.second.empty())
-      {
-        contact_results[pair.first] = pair.second;
-      }
-      else
-      {
-        // Note: Must include all contacts throughout the trajectory so the optimizer has all the information
-        //      to understand how to adjust the start and end state to move it out of collision. Originally tried
-        //      keeping the worst case only but ran into edge cases where this does not work in the units tests.
 
-        // If it exists then add addition contacts to the contact_results pair
-        p->second.reserve(p->second.size() + pair.second.size());
-        p->second.insert(p->second.end(), pair.second.begin(), pair.second.end());
+      if (!pair.second.empty())
+      {
+        if (p == contact_results.end())
+        {
+          contact_results[pair.first] = pair.second;
+        }
+        else
+        {
+          assert(p != contact_results.end());
+          // Note: Must include all contacts throughout the trajectory so the optimizer has all the information
+          //      to understand how to adjust the start and end state to move it out of collision. Originally tried
+          //      keeping the worst case only but ran into edge cases where this does not work in the units tests.
+
+          // If it exists then add addition contacts to the contact_results pair
+          p->second.reserve(p->second.size() + pair.second.size());
+          p->second.insert(p->second.end(), pair.second.begin(), pair.second.end());
+        }
       }
     }
   }

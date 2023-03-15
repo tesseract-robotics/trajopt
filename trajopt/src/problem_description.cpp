@@ -555,13 +555,13 @@ TrajOptProb::TrajOptProb(int n_steps, const ProblemConstructionInfo& pci)
   DblVec vlower, vupper;
   if (pci.basic_info.use_time)
   {
-    vlower.reserve(lower.size() * n_steps);
-    vupper.reserve(upper.size() * n_steps);
+    vlower.reserve((lower.size() + 1) * n_steps);
+    vupper.reserve((upper.size() + 1) * n_steps);
   }
   else
   {
-    vlower.reserve((lower.size() + 1) * n_steps);
-    vupper.reserve((upper.size() + 1) * n_steps);
+    vlower.reserve(lower.size() * n_steps);
+    vupper.reserve(upper.size() * n_steps);
   }
   std::vector<std::string> names;
   names.reserve(n_steps * n_dof);
