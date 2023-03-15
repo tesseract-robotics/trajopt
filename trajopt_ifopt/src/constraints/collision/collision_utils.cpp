@@ -114,19 +114,23 @@ void processInterpolatedCollisionResults(std::vector<tesseract_collision::Contac
       removeInvalidContactResults(pair.second, data);
 
       // If the contact pair does not exist in contact_results add it
-      if (p == contact_results.end() && !pair.second.empty())
+      if (!pair.second.empty())
       {
-        contact_results[pair.first] = pair.second;
-      }
-      else
-      {
-        // Note: Must include all contacts throughout the trajectory so the optimizer has all the information
-        //      to understand how to adjust the start and end state to move it out of collision. Originally tried
-        //      keeping the worst case only but ran into edge cases where this does not work in the units tests.
+        if (p == contact_results.end())
+        {
+          contact_results[pair.first] = pair.second;
+        }
+        else
+        {
+          assert(p != contact_results.end());
+          // Note: Must include all contacts throughout the trajectory so the optimizer has all the information
+          //      to understand how to adjust the start and end state to move it out of collision. Originally tried
+          //      keeping the worst case only but ran into edge cases where this does not work in the units tests.
 
-        // If it exists then add addition contacts to the contact_results pair
-        for (auto& r : pair.second)
-          p->second.push_back(r);
+          // If it exists then add addition contacts to the contact_results pair
+          p->second.reserve(p->second.size() + pair.second.size());
+          p->second.insert(p->second.end(), pair.second.begin(), pair.second.end());
+        }
       }
     }
   }
