@@ -5,7 +5,7 @@
 - git:
     local-name: tesseract
     uri: https://github.com/ros-industrial-consortium/tesseract.git
-    version: 0.15.1
+    version: 0.15.2
 - git:
     local-name: opw_kinematics
     uri: https://github.com/Jmeyer1292/opw_kinematics.git
