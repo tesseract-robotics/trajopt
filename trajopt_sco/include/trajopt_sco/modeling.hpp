@@ -29,7 +29,7 @@ class ConvexObjective
 public:
   using Ptr = std::shared_ptr<ConvexObjective>;
 
-  ConvexObjective(Model* model) : model_(model) {}
+  ConvexObjective(Model* model);
   virtual ~ConvexObjective();
   ConvexObjective(const ConvexObjective&) = delete;
   ConvexObjective& operator=(const ConvexObjective&) = delete;
@@ -73,8 +73,10 @@ public:
   ConvexConstraints(Model* model) : model_(model) {}
   virtual ~ConvexConstraints();
 
+  /** @todo Add a vector version to allow using reserve to avoid multiple allocations */
   /** Expression that should == 0 */
   void addEqCnt(const AffExpr&);
+  /** @todo Add a vector version to allow using reserve to avoid multiple allocations */
   /** Expression that should <= 0 */
   void addIneqCnt(const AffExpr&);
   void setModel(Model* model)

@@ -124,6 +124,17 @@ void LVSContinuousCollisionEvaluator::CalcCollisionsHelper(const Eigen::Ref<cons
       contact_manager_->setCollisionObjectsTransform(link_name, state[link_name]);
   }
 
+  // Create filter
+  // Don't include contacts at the fixed state
+  auto filter = [this](tesseract_collision::ContactResultMap::PairType& pair) {
+    // Contains the contact distance threshold and coefficient for the given link pair
+    double dist = collision_config_->contact_manager_config.margin_data.getPairCollisionMargin(pair.first.first,
+                                                                                               pair.first.second);
+    double coeff = collision_config_->collision_coeff_data.getPairCollisionCoeff(pair.first.first, pair.first.second);
+    const Eigen::Vector3d data = { dist, collision_config_->collision_margin_buffer, coeff };
+    removeInvalidContactResults(pair.second, data); /** @todo Should this be removed? levi */
+  };
+
   if (dist > collision_config_->longest_valid_segment_length)
   {
     // Calculate the number state to interpolate
@@ -135,12 +146,11 @@ void LVSContinuousCollisionEvaluator::CalcCollisionsHelper(const Eigen::Ref<cons
       subtraj.col(i) = Eigen::VectorXd::LinSpaced(cnt, dof_vals0(i), dof_vals1(i));
 
     // Perform casted collision checking for sub trajectory and store results in contacts_vector
-    std::vector<tesseract_collision::ContactResultMap> contacts_vector;
-    contacts_vector.reserve(static_cast<size_t>(subtraj.rows()));
-    bool contact_found = false;
+    tesseract_collision::ContactResultMap contacts{ dist_results };
+    int last_state_idx{ static_cast<int>(subtraj.rows()) - 1 };
+    double dt = 1.0 / double(last_state_idx);
     for (int i = 0; i < subtraj.rows() - 1; ++i)
     {
-      tesseract_collision::ContactResultMap contacts;
       tesseract_common::TransformMap state0 = get_state_fn_(subtraj.row(i));
       tesseract_common::TransformMap state1 = get_state_fn_(subtraj.row(i + 1));
 
@@ -149,18 +159,12 @@ void LVSContinuousCollisionEvaluator::CalcCollisionsHelper(const Eigen::Ref<cons
 
       contact_manager_->contactTest(contacts, collision_config_->contact_request);
       if (!contacts.empty())
-        contact_found = true;
-
-      contacts_vector.push_back(contacts);
+      {
+        dist_results.addInterpolatedCollisionResults(
+            contacts, i, last_state_idx, manip_active_link_names_, dt, false, filter);
+      }
+      contacts.clear();
     }
-
-    if (contact_found)
-      processInterpolatedCollisionResults(contacts_vector,
-                                          dist_results,
-                                          manip_active_link_names_,
-                                          *collision_config_,
-                                          1.0 / double(subtraj.rows() - 1),
-                                          false);
   }
   else
   {
@@ -171,16 +175,7 @@ void LVSContinuousCollisionEvaluator::CalcCollisionsHelper(const Eigen::Ref<cons
 
     contact_manager_->contactTest(dist_results, collision_config_->contact_request);
 
-    // Don't include contacts at the fixed state
-    for (auto& pair : dist_results)
-    {
-      // Contains the contact distance threshold and coefficient for the given link pair
-      double dist = collision_config_->contact_manager_config.margin_data.getPairCollisionMargin(pair.first.first,
-                                                                                                 pair.first.second);
-      double coeff = collision_config_->collision_coeff_data.getPairCollisionCoeff(pair.first.first, pair.first.second);
-      const Eigen::Vector3d data = { dist, collision_config_->collision_margin_buffer, coeff };
-      removeInvalidContactResults(pair.second, data); /** @todo Should this be removed? levi */
-    }
+    dist_results.filter(filter);
   }
 }
 
@@ -300,6 +295,18 @@ void LVSDiscreteCollisionEvaluator::CalcCollisionsHelper(const Eigen::Ref<const 
       contact_manager_->setCollisionObjectsTransform(link_name, state[link_name]);
   }
 
+  // Create filter
+  auto filter = [this](tesseract_collision::ContactResultMap::PairType& pair) {
+    // Contains the contact distance threshold and coefficient for the given link pair
+    double dist = collision_config_->contact_manager_config.margin_data.getPairCollisionMargin(pair.first.first,
+                                                                                               pair.first.second);
+    double coeff = collision_config_->collision_coeff_data.getPairCollisionCoeff(pair.first.first, pair.first.second);
+    const Eigen::Vector3d data = { dist, collision_config_->collision_margin_buffer, coeff };
+
+    // Don't include contacts at the fixed state
+    removeInvalidContactResults(pair.second, data);
+  };
+
   // The first step is to see if the distance between two states is larger than the longest valid segment. If larger
   // the collision checking is broken up into multiple casted collision checks such that each check is less then
   // the longest valid segment length.
@@ -317,31 +324,25 @@ void LVSDiscreteCollisionEvaluator::CalcCollisionsHelper(const Eigen::Ref<const 
     subtraj.col(i) = Eigen::VectorXd::LinSpaced(cnt, dof_vals0(i), dof_vals1(i));
 
   // Perform casted collision checking for sub trajectory and store results in contacts_vector
-  std::vector<tesseract_collision::ContactResultMap> contacts_vector;
-  contacts_vector.reserve(static_cast<size_t>(subtraj.rows()));
-  bool contact_found = false;
+  tesseract_collision::ContactResultMap contacts{ dist_results };
+  int last_state_idx{ static_cast<int>(subtraj.rows()) - 1 };
+  double dt = 1.0 / double(last_state_idx);
   for (int i = 0; i < subtraj.rows(); ++i)
   {
-    tesseract_collision::ContactResultMap contacts;
     tesseract_common::TransformMap state0 = get_state_fn_(subtraj.row(i));
 
     for (const auto& link_name : manip_active_link_names_)
       contact_manager_->setCollisionObjectsTransform(link_name, state0[link_name]);
 
     contact_manager_->contactTest(contacts, collision_config_->contact_request);
+
     if (!contacts.empty())
-      contact_found = true;
-
-    contacts_vector.push_back(contacts);
+    {
+      dist_results.addInterpolatedCollisionResults(
+          contacts, i, last_state_idx, manip_active_link_names_, dt, true, filter);
+    }
+    contacts.clear();
   }
-
-  if (contact_found)
-    processInterpolatedCollisionResults(contacts_vector,
-                                        dist_results,
-                                        manip_active_link_names_,
-                                        *collision_config_,
-                                        1.0 / double(subtraj.rows() - 1),
-                                        true);
 }
 
 GradientResults

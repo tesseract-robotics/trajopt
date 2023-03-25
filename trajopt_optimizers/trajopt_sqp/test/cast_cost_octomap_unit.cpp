@@ -34,6 +34,8 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <tesseract_environment/environment.h>
 #include <tesseract_environment/utils.h>
 #include <tesseract_visualization/visualization.h>
+#include <tesseract_geometry/impl/box.h>
+#include <tesseract_geometry/impl/octree.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt_ifopt/constraints/collision/continuous_collision_constraint.h>

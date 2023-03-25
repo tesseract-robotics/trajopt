@@ -41,20 +41,6 @@ std::size_t getHash(const TrajOptCollisionConfig& collision_config,
                     const Eigen::Ref<const Eigen::VectorXd>& dof_vals1);
 
 /**
- * @brief This takes contacts results at each interpolated timestep and creates a single contact results map.
- * This also updates the cc_time and cc_type for the contact results
- * @param contacts_vector Contact results map at each interpolated timestep
- * @param contact_results The merged contact results map
- * @param dt delta time
- */
-void processInterpolatedCollisionResults(std::vector<tesseract_collision::ContactResultMap>& contacts_vector,
-                                         tesseract_collision::ContactResultMap& contact_results,
-                                         const std::vector<std::string>& active_links,
-                                         const TrajOptCollisionConfig& collision_config,
-                                         double dt,
-                                         bool discrete_continuous);
-
-/**
  * @brief Remove any results that are invalid.
  * Invalid state are contacts that occur at fixed states or have distances outside the threshold.
  * @param contact_results Contact results vector to process.

@@ -119,8 +119,8 @@ void SingleTimestepCollisionEvaluator::CalcCollisionsHelper(const Eigen::Ref<con
 
   contact_manager_->contactTest(dist_results, collision_config_->contact_request);
 
-  for (auto& pair : dist_results)
-  {
+  // Don't include contacts at the fixed state
+  auto filter = [this](tesseract_collision::ContactResultMap::PairType& pair) {
     // Contains the contact distance threshold and coefficient for the given link pair
     double dist = collision_config_->contact_manager_config.margin_data.getPairCollisionMargin(pair.first.first,
                                                                                                pair.first.second);
@@ -131,7 +131,9 @@ void SingleTimestepCollisionEvaluator::CalcCollisionsHelper(const Eigen::Ref<con
           return (!((data[0] + collision_config_->collision_margin_buffer) > r.distance));
         });
     pair.second.erase(end, pair.second.end());
-  }
+  };
+
+  dist_results.filter(filter);
 }
 
 GradientResults SingleTimestepCollisionEvaluator::GetGradient(const Eigen::VectorXd& dofvals,
