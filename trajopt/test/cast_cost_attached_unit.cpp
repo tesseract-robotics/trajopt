@@ -6,6 +6,8 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <tesseract_environment/environment.h>
 #include <tesseract_environment/commands.h>
 #include <tesseract_environment/utils.h>
+#include <tesseract_geometry/impl/box.h>
+#include <tesseract_geometry/impl/octree.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt/collision_terms.hpp>
@@ -13,7 +15,7 @@ TRAJOPT_IGNORE_WARNINGS_POP
 #include <trajopt/plot_callback.hpp>
 #include <trajopt/problem_description.hpp>
 #include <trajopt_sco/optimizers.hpp>
-#include <trajopt_test_utils.hpp>
+#include "trajopt_test_utils.hpp"
 #include <trajopt_utils/config.hpp>
 #include <trajopt_utils/eigen_conversions.hpp>
 #include <trajopt_utils/logging.hpp>

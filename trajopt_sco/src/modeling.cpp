@@ -14,6 +14,7 @@ TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace sco
 {
+ConvexObjective::ConvexObjective(Model* model) : model_(model) {}
 void ConvexObjective::addAffExpr(const AffExpr& affexpr) { exprInc(quad_, affexpr); }
 void ConvexObjective::addQuadExpr(const QuadExpr& quadexpr) { exprInc(quad_, quadexpr); }
 void ConvexObjective::addHinge(const AffExpr& affexpr, double coeff)
@@ -36,13 +37,16 @@ void ConvexObjective::addAbs(const AffExpr& affexpr, double coeff)
   // Coeff will be applied whenever neg/pos are not 0
   AffExpr neg_plus_pos;
   neg_plus_pos.coeffs = DblVec(2, coeff);
+  neg_plus_pos.vars.reserve(neg_plus_pos.vars.size() + 2);
   neg_plus_pos.vars.push_back(neg);
   neg_plus_pos.vars.push_back(pos);
   exprInc(quad_, neg_plus_pos);
   // Add neg/pos to problem. They will be nonzero when ABS is not satisfied
   AffExpr affeq = affexpr;
+  affeq.vars.reserve(affeq.vars.size() + 2);
   affeq.vars.push_back(neg);
   affeq.vars.push_back(pos);
+  affeq.coeffs.reserve(affeq.coeffs.size() + 2);
   affeq.coeffs.push_back(1);
   affeq.coeffs.push_back(-1);
   eqs_.push_back(affeq);
@@ -50,12 +54,16 @@ void ConvexObjective::addAbs(const AffExpr& affexpr, double coeff)
 
 void ConvexObjective::addHinges(const AffExprVector& ev)
 {
+  vars_.reserve(vars_.size() + ev.size());
+  ineqs_.reserve(ineqs_.size() + ev.size());
   for (const auto& i : ev)
     addHinge(i, 1);
 }
 
 void ConvexObjective::addL1Norm(const AffExprVector& ev)
 {
+  vars_.reserve(vars_.size() + (2 * ev.size()));
+  eqs_.reserve(eqs_.size() + ev.size());
   for (const auto& i : ev)
     addAbs(i, 1);
 }
@@ -69,6 +77,7 @@ void ConvexObjective::addL2Norm(const AffExprVector& ev)
 void ConvexObjective::addMax(const AffExprVector& ev)
 {
   Var m = model_->addVar("max", -INFINITY, INFINITY);
+  ineqs_.reserve(ineqs_.size() + ev.size());
   for (const auto& i : ev)
   {
     ineqs_.push_back(i);

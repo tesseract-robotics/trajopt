@@ -4,30 +4,22 @@
 #include <trajopt_utils/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <Eigen/Geometry>
+#include <unordered_map>
+#include <memory>
+#include <vector>
+#include <array>
+#include <tesseract_common/types.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace util
 {
-template <typename Key, typename Value>
-using AlignedUnorderedMap = std::unordered_map<Key,
-                                               Value,
-                                               std::hash<Key>,
-                                               std::equal_to<Key>,
-                                               Eigen::aligned_allocator<std::pair<const Key, Value>>>;
-
 /** @brief Store Safety Margin Data for a given timestep */
 struct SafetyMarginData
 {
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-
   using Ptr = std::shared_ptr<SafetyMarginData>;
   using ConstPtr = std::shared_ptr<const SafetyMarginData>;
 
-  SafetyMarginData(const double& default_safety_margin, const double& default_safety_margin_coeff)
-    : default_safety_margin_data_(default_safety_margin, default_safety_margin_coeff)
-    , max_safety_margin_(default_safety_margin)
-  {
-  }
+  SafetyMarginData(double default_safety_margin, double default_safety_margin_coeff);
 
   /**
    * @brief Set the safety margin for a given contact pair
@@ -43,19 +35,8 @@ struct SafetyMarginData
    */
   void setPairSafetyMarginData(const std::string& obj1,
                                const std::string& obj2,
-                               const double& safety_margin,
-                               const double& safety_margin_coeff)
-  {
-    Eigen::Vector2d data(safety_margin, safety_margin_coeff);
-
-    pair_lookup_table_[obj1 + obj2] = data;
-    pair_lookup_table_[obj2 + obj1] = data;
-
-    if (safety_margin > max_safety_margin_)
-    {
-      max_safety_margin_ = safety_margin;
-    }
-  }
+                               double safety_margin,
+                               double safety_margin_coeff);
 
   /**
    * @brief Get the pairs safety margin data
@@ -66,18 +47,7 @@ struct SafetyMarginData
    * @param obj2 The second object name
    * @return A Vector2d[Contact Distance Threshold, Coefficient]
    */
-  const Eigen::Vector2d& getPairSafetyMarginData(const std::string& obj1, const std::string& obj2) const
-  {
-    const std::string& key = obj1 + obj2;
-    auto it = pair_lookup_table_.find(key);
-
-    if (it != pair_lookup_table_.end())
-    {
-      return it->second;
-    }
-
-    return default_safety_margin_data_;
-  }
+  const std::array<double, 2>& getPairSafetyMarginData(const std::string& obj1, const std::string& obj2) const;
 
   /**
    * @brief Get the max safety margin data
@@ -86,20 +56,21 @@ struct SafetyMarginData
    *
    * @return Max contact distance threshold
    */
-  const double& getMaxSafetyMargin() const { return max_safety_margin_; }
+  double getMaxSafetyMargin() const;
 
 private:
   /// The coeff used during optimization
   /// safety margin: contacts with distance < dist_pen are penalized
   /// Stores [dist_pen, coeff]
-  Eigen::Vector2d default_safety_margin_data_;
+  std::array<double, 2> default_safety_margin_data_;
 
   /// This use when requesting collision data because you can only provide a
   /// single contact distance threshold.
   double max_safety_margin_;
 
   /// A map of link pair to contact distance setting [dist_pen, coeff]
-  AlignedUnorderedMap<std::string, Eigen::Vector2d> pair_lookup_table_;
+  std::unordered_map<tesseract_common::LinkNamesPair, std::array<double, 2>, tesseract_common::PairHash>
+      pair_lookup_table_;
 };
 
 /**
@@ -109,18 +80,9 @@ private:
  * @param default_safety_margin_coeff Default safety margin coeff
  * @return A vector of Safety Margin Data
  */
-inline std::vector<SafetyMarginData::Ptr> createSafetyMarginDataVector(int num_elements,
-                                                                       const double& default_safety_margin,
-                                                                       const double& default_safety_margin_coeff)
-{
-  std::vector<SafetyMarginData::Ptr> info;
-  info.reserve(static_cast<size_t>(num_elements));
-  for (auto i = 0; i < num_elements; ++i)
-  {
-    info.push_back(std::make_shared<SafetyMarginData>(default_safety_margin, default_safety_margin_coeff));
-  }
-  return info;
-}
+std::vector<SafetyMarginData::Ptr> createSafetyMarginDataVector(int num_elements,
+                                                                double default_safety_margin,
+                                                                double default_safety_margin_coeff);
 
 template <typename T>
 std::vector<T> concat(const std::vector<T>& a, const std::vector<T>& b)
@@ -139,17 +101,9 @@ std::vector<T> concat(const std::vector<T>& a, const std::vector<T>& b)
  * @param dt The delta time for which the twist is applied
  * @return Transform result of applying a twist for dt.
  */
-inline Eigen::Isometry3d addTwist(const Eigen::Isometry3d& t1,
-                                  const Eigen::Ref<const Eigen::Matrix<double, 6, 1>>& twist,
-                                  double dt)
-{
-  Eigen::Isometry3d t2;
-  t2.setIdentity();
-  Eigen::Vector3d angle_axis = (t1.rotation().inverse() * twist.tail(3)) * dt;
-  t2.linear() = t1.rotation() * Eigen::AngleAxisd(angle_axis.norm(), angle_axis.normalized());
-  t2.translation() = t1.translation() + twist.head(3) * dt;
-  return t2;
-}
+Eigen::Isometry3d addTwist(const Eigen::Isometry3d& t1,
+                           const Eigen::Ref<const Eigen::Matrix<double, 6, 1>>& twist,
+                           double dt);
 }  // namespace util
 
 #endif  // TRAJOPT_UTILS_UTILS_HPP

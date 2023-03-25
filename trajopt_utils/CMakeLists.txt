@@ -14,6 +14,7 @@ endif()
 find_package(Eigen3 REQUIRED)
 find_package(Boost COMPONENTS program_options REQUIRED)
 find_package(ros_industrial_cmake_boilerplate REQUIRED)
+find_package(tesseract_common REQUIRED)
 
 # Load variable for clang tidy args, compiler options and cxx version
 trajopt_variables()
@@ -22,10 +23,11 @@ set(UTILS_SOURCE_FILES
     src/stl_to_string.cpp
     src/clock.cpp
     src/config.cpp
-    src/logging.cpp)
+    src/logging.cpp
+    src/utils.cpp)
 
 add_library(${PROJECT_NAME} ${UTILS_SOURCE_FILES})
-target_link_libraries(${PROJECT_NAME} PUBLIC Eigen3::Eigen Boost::program_options)
+target_link_libraries(${PROJECT_NAME} PUBLIC Eigen3::Eigen Boost::program_options tesseract::tesseract_common)
 target_compile_options(${PROJECT_NAME} PRIVATE ${TRAJOPT_COMPILE_OPTIONS_PRIVATE})
 target_compile_options(${PROJECT_NAME} PUBLIC ${TRAJOPT_COMPILE_OPTIONS_PUBLIC})
 target_compile_definitions(${PROJECT_NAME} PUBLIC ${TRAJOPT_COMPILE_DEFINITIONS})

@@ -9,8 +9,16 @@ contact_manager_plugins:
     plugins:
       BulletDiscreteBVHManager:
         class: BulletDiscreteBVHManagerFactory
+        config:
+          share_pool_allocators: false
+          max_persistent_manifold_pool_size: 100
+          max_collision_algorithm_pool_size: 100
       BulletDiscreteSimpleManager:
         class: BulletDiscreteSimpleManagerFactory
+        config:
+          share_pool_allocators: false
+          max_persistent_manifold_pool_size: 100
+          max_collision_algorithm_pool_size: 100
       FCLDiscreteBVHManager:
         class: FCLDiscreteBVHManagerFactory
   continuous_plugins:
@@ -18,5 +26,13 @@ contact_manager_plugins:
     plugins:
       BulletCastBVHManager:
         class: BulletCastBVHManagerFactory
+        config:
+          share_pool_allocators: false
+          max_persistent_manifold_pool_size: 100
+          max_collision_algorithm_pool_size: 100
       BulletCastSimpleManager:
         class: BulletCastSimpleManagerFactory
+        config:
+          share_pool_allocators: false
+          max_persistent_manifold_pool_size: 100
+          max_collision_algorithm_pool_size: 100
