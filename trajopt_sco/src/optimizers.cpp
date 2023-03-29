@@ -683,9 +683,9 @@ OptStatus BasicTrustRegionSQP::optimize()
         ++results_.n_qp_solves;
         if (status != CVX_SOLVED)
         {
-          LOG_ERROR("convex solver failed! set TRAJOPT_LOG_THRESH=DEBUG to see "
-                    "solver output. saving model to /tmp/fail.lp and IIS to "
-                    "/tmp/fail.ilp");
+          LOG_WARN("convex solver failed! set TRAJOPT_LOG_THRESH=DEBUG to see "
+                   "solver output. saving model to /tmp/fail.lp and IIS to "
+                   "/tmp/fail.ilp");
           model_->writeToFile("/tmp/fail.lp");
           model_->writeToFile("/tmp/fail.ilp");
           if (qp_solver_failures < (param_.max_qp_solver_failures - 1))
@@ -741,9 +741,9 @@ OptStatus BasicTrustRegionSQP::optimize()
 
         if (iteration_results.approx_merit_improve < -1e-5)
         {
-          LOG_ERROR("approximate merit function got worse (%.3e). "
-                    "(convexification is probably wrong to zeroth order)",
-                    iteration_results.approx_merit_improve);
+          LOG_WARN("approximate merit function got worse (%.3e). "
+                   "(convexification is probably wrong to zeroth order)",
+                   iteration_results.approx_merit_improve);
         }
 
         if (iteration_results.approx_merit_improve < param_.min_approx_improve)
