@@ -50,12 +50,14 @@ public:
    * @param position_vars The position vars associated with this constraint.
    * @param position_vars_fixed Indicate if the position var is fixed
    * @param max_num_cnt The max number of constraits to include
+   * @param fixed_sparsity This is mostly need for snopt which requires sparsity to not change
    * @param name
    */
   ContinuousCollisionConstraint(ContinuousCollisionEvaluator::Ptr collision_evaluator,
                                 std::array<JointPosition::ConstPtr, 2> position_vars,
                                 std::array<bool, 2> position_vars_fixed,
                                 int max_num_cnt = 1,
+                                bool fixed_sparsity = false,
                                 const std::string& name = "LVSCollision");
 
   /**

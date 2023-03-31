@@ -41,6 +41,7 @@ ContinuousCollisionConstraint::ContinuousCollisionConstraint(ContinuousCollision
                                                              std::array<JointPosition::ConstPtr, 2> position_vars,
                                                              std::array<bool, 2> position_vars_fixed,
                                                              int max_num_cnt,
+                                                             bool fixed_sparsity,
                                                              const std::string& name)
   : ifopt::ConstraintSet(max_num_cnt, name)
   , position_vars_(std::move(position_vars))
@@ -66,13 +67,16 @@ ContinuousCollisionConstraint::ContinuousCollisionConstraint(ContinuousCollision
 
   bounds_ = std::vector<ifopt::Bounds>(static_cast<std::size_t>(max_num_cnt), ifopt::BoundSmallerZero);
 
-  // Setting to zeros because snopt sparsity cannot change
-  triplet_list_.reserve(static_cast<std::size_t>(bounds_.size()) *
-                        static_cast<std::size_t>(position_vars_[0]->GetRows()));
+  if (fixed_sparsity)
+  {
+    // Setting to zeros because snopt sparsity cannot change
+    triplet_list_.reserve(static_cast<std::size_t>(bounds_.size()) *
+                          static_cast<std::size_t>(position_vars_[0]->GetRows()));
 
-  for (Eigen::Index i = 0; i < static_cast<Eigen::Index>(bounds_.size()); i++)  // NOLINT
-    for (Eigen::Index j = 0; j < n_dof_; j++)
-      triplet_list_.emplace_back(i, j, 0);
+    for (Eigen::Index i = 0; i < static_cast<Eigen::Index>(bounds_.size()); i++)  // NOLINT
+      for (Eigen::Index j = 0; j < n_dof_; j++)
+        triplet_list_.emplace_back(i, j, 0);
+  }
 }
 
 Eigen::VectorXd ContinuousCollisionConstraint::GetValues() const
@@ -130,7 +134,8 @@ void ContinuousCollisionConstraint::FillJacobianBlock(std::string var_set, Jacob
     return;
 
   // Setting to zeros because snopt sparsity cannot change
-  jac_block.setFromTriplets(triplet_list_.begin(), triplet_list_.end());  // NOLINT
+  if (!triplet_list_.empty())
+    jac_block.setFromTriplets(triplet_list_.begin(), triplet_list_.end());  // NOLINT
 
   // Calculate collisions
   Eigen::VectorXd joint_vals0 = this->GetVariables()->GetComponent(position_vars_[0]->GetName())->GetValues();
@@ -142,6 +147,7 @@ void ContinuousCollisionConstraint::FillJacobianBlock(std::string var_set, Jacob
   if (collision_data->gradient_results_sets.empty())
     return;
 
+  /** @todo Should use triplet list and setFromTriplets */
   const std::size_t cnt = std::min(collision_data->gradient_results_sets.size(), bounds_.size());
   if (var_set == position_vars_[0]->GetName() && !position_vars_fixed_[0])
   {

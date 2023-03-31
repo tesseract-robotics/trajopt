@@ -41,6 +41,7 @@ namespace trajopt_ifopt
 DiscreteCollisionConstraint::DiscreteCollisionConstraint(DiscreteCollisionEvaluator::Ptr collision_evaluator,
                                                          JointPosition::ConstPtr position_var,
                                                          int max_num_cnt,
+                                                         bool fixed_sparsity,
                                                          const std::string& name)
   : ifopt::ConstraintSet(max_num_cnt, name)
   , position_var_(std::move(position_var))
@@ -56,10 +57,14 @@ DiscreteCollisionConstraint::DiscreteCollisionConstraint(DiscreteCollisionEvalua
   bounds_ = std::vector<ifopt::Bounds>(static_cast<std::size_t>(max_num_cnt), ifopt::BoundSmallerZero);
 
   // Setting to zeros because snopt sparsity cannot change
-  triplet_list_.reserve(static_cast<std::size_t>(bounds_.size()) * static_cast<std::size_t>(position_var_->GetRows()));
-  for (Eigen::Index i = 0; i < static_cast<Eigen::Index>(bounds_.size()); i++)
-    for (Eigen::Index j = 0; j < n_dof_; j++)
-      triplet_list_.emplace_back(i, j, 0);
+  if (fixed_sparsity == true)
+  {
+    triplet_list_.reserve(static_cast<std::size_t>(bounds_.size()) *
+                          static_cast<std::size_t>(position_var_->GetRows()));
+    for (Eigen::Index i = 0; i < static_cast<Eigen::Index>(bounds_.size()); i++)
+      for (Eigen::Index j = 0; j < n_dof_; j++)
+        triplet_list_.emplace_back(i, j, 0);
+  }
 }
 
 Eigen::VectorXd DiscreteCollisionConstraint::GetValues() const
@@ -115,12 +120,14 @@ void DiscreteCollisionConstraint::CalcJacobianBlock(const Eigen::Ref<const Eigen
                                                     Jacobian& jac_block) const
 {
   // Setting to zeros because snopt sparsity cannot change
-  jac_block.setFromTriplets(triplet_list_.begin(), triplet_list_.end());  // NOLINT
+  if (!triplet_list_.empty())
+    jac_block.setFromTriplets(triplet_list_.begin(), triplet_list_.end());  // NOLINT
 
   CollisionCacheData::ConstPtr collision_data = collision_evaluator_->CalcCollisions(joint_vals, bounds_.size());
   if (collision_data->gradient_results_sets.empty())
     return;
 
+  /** @todo Probably should use a triplet list and setFromTriplets */
   const std::size_t cnt = std::min(bounds_.size(), collision_data->gradient_results_sets.size());
   for (std::size_t i = 0; i < cnt; ++i)
   {

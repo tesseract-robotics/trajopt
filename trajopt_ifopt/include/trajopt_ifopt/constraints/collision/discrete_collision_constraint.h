@@ -48,6 +48,7 @@ public:
   DiscreteCollisionConstraint(DiscreteCollisionEvaluator::Ptr collision_evaluator,
                               JointPosition::ConstPtr position_var,
                               int max_num_cnt = 1,
+                              bool fixed_sparsity = false,
                               const std::string& name = "DiscreteCollisionV3");
 
   /**
