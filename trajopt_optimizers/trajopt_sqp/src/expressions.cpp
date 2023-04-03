@@ -48,9 +48,9 @@ QuadExprs createQuadExprs(const Eigen::Ref<const Eigen::VectorXd>& func_errors,
 
   quad_exprs.quadratic_coeffs.resize(static_cast<std::size_t>(func_errors.rows()));
   quad_exprs.linear_coeffs.resize(func_jacobian.rows(), func_jacobian.cols());
-  quad_exprs.constants = func_errors - (func_jacobian * x);
+  quad_exprs.constants = func_errors - (func_jacobian * x);  // NOLINT
 
-  for (Eigen::Index i = 0; i < func_errors.rows(); ++i)
+  for (Eigen::Index i = 0; i < func_errors.rows(); ++i)  // NOLINT
   {
     const auto& eq_hessian = func_hessians[static_cast<std::size_t>(i)];
     if (eq_hessian.nonZeros() > 0)

@@ -136,7 +136,7 @@ TEST_F(SimpleCollisionTest, spheres)  // NOLINT
   // 6) solve
   ipopt.Solve(nlp);
   Eigen::VectorXd x = nlp.GetOptVariables()->GetValues();
-  std::cout << x.transpose() << std::endl;
+  std::cout << x.transpose() << std::endl;  // NOLINT
 
   EXPECT_TRUE(ipopt.GetReturnStatus() == 0);
 

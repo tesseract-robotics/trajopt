@@ -57,7 +57,7 @@ DiscreteCollisionConstraint::DiscreteCollisionConstraint(DiscreteCollisionEvalua
   bounds_ = std::vector<ifopt::Bounds>(static_cast<std::size_t>(max_num_cnt), ifopt::BoundSmallerZero);
 
   // Setting to zeros because snopt sparsity cannot change
-  if (fixed_sparsity == true)
+  if (fixed_sparsity)
   {
     triplet_list_.reserve(static_cast<std::size_t>(bounds_.size()) *
                           static_cast<std::size_t>(position_var_->GetRows()));
@@ -120,7 +120,7 @@ void DiscreteCollisionConstraint::CalcJacobianBlock(const Eigen::Ref<const Eigen
                                                     Jacobian& jac_block) const
 {
   // Setting to zeros because snopt sparsity cannot change
-  if (!triplet_list_.empty())
+  if (!triplet_list_.empty())                                               // NOLINT
     jac_block.setFromTriplets(triplet_list_.begin(), triplet_list_.end());  // NOLINT
 
   CollisionCacheData::ConstPtr collision_data = collision_evaluator_->CalcCollisions(joint_vals, bounds_.size());

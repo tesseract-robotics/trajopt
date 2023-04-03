@@ -130,11 +130,11 @@ std::vector<ifopt::Bounds> ContinuousCollisionConstraint::GetBounds() const { re
 void ContinuousCollisionConstraint::FillJacobianBlock(std::string var_set, Jacobian& jac_block) const
 {
   // Only modify the jacobian if this constraint uses var_set
-  if (var_set != position_vars_[0]->GetName() && var_set != position_vars_[1]->GetName())
+  if (var_set != position_vars_[0]->GetName() && var_set != position_vars_[1]->GetName())  // NOLINT
     return;
 
   // Setting to zeros because snopt sparsity cannot change
-  if (!triplet_list_.empty())
+  if (!triplet_list_.empty())                                               // NOLINT
     jac_block.setFromTriplets(triplet_list_.begin(), triplet_list_.end());  // NOLINT
 
   // Calculate collisions

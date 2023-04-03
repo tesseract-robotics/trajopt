@@ -68,12 +68,13 @@ bool OSQPEigenSolver::clear()
 bool OSQPEigenSolver::solve()
 {
   // In order to call initSolver, everything must have already been set, so we call it right before solving
-  if (!solver_.isInitialized())
+  if (!solver_.isInitialized())  // NOLINT
     solver_.initSolver();
+
   if (solver_.solve())
     return true;
 
-  if (verbosity > 0)
+  if (verbosity > 0)  // NOLINT
   {
     // If primal infeasible
     if (solver_.workspace()->info->status_val == -3)
@@ -96,12 +97,12 @@ bool OSQPEigenSolver::solve()
     }
 
     // If dual infeasible
-    if (solver_.workspace()->info->status_val == -4)
+    if (solver_.workspace()->info->status_val == -4)  // NOLINT
     {
       Eigen::Map<Eigen::VectorXd> dual_certificate(solver_.workspace()->delta_y, num_vars_, 1);
       std::cout << "OSQP Status: " << solver_.workspace()->info->status << std::endl;
       std::cout << "\n---------------------------------------\n";
-      std::cout << "Dual Certificate (x): " << dual_certificate.transpose() << std::endl;
+      std::cout << "Dual Certificate (x): " << dual_certificate.transpose() << std::endl;  // NOLINT
 
       // TODO: Find a way to get the hessian here
       //        std::cout << "P*x = " << (qp_problem_->getHessian() * dual_certificate).transpose() << " = 0" <<

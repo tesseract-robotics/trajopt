@@ -220,12 +220,12 @@ void CartPosConstraint::CalcJacobianBlock(const Eigen::Ref<const Eigen::VectorXd
 void CartPosConstraint::FillJacobianBlock(std::string var_set, Jacobian& jac_block) const
 {
   // Only modify the jacobian if this constraint uses var_set
-  if (var_set == position_var_->GetName())  // NOLINT
-  {
-    // Get current joint values and calculate jacobian
-    VectorXd joint_vals = this->GetVariables()->GetComponent(position_var_->GetName())->GetValues();
-    CalcJacobianBlock(joint_vals, jac_block);  // NOLINT
-  }
+  if (var_set != position_var_->GetName())  // NOLINT
+    return;
+
+  // Get current joint values and calculate jacobian
+  VectorXd joint_vals = this->GetVariables()->GetComponent(position_var_->GetName())->GetValues();
+  CalcJacobianBlock(joint_vals, jac_block);  // NOLINT
 }
 
 const CartPosInfo& CartPosConstraint::GetInfo() const { return info_; }

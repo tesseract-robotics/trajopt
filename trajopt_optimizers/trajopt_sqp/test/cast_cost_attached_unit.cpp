@@ -386,7 +386,7 @@ TEST_F(CastAttachedTest, LinkWithoutGeomTrajOptProblem)  // NOLINT
 {
   CONSOLE_BRIDGE_logDebug("CastAttachedTest, LinkWithoutGeomTrajOptProblem");
   auto qp_problem = std::make_shared<trajopt_sqp::TrajOptQPProblem>();
-  runCastAttachedLinkWithoutGeomTest(qp_problem, env);
+  runCastAttachedLinkWithoutGeomTest(qp_problem, env);  // NOLINT
 }
 
 int main(int argc, char** argv)

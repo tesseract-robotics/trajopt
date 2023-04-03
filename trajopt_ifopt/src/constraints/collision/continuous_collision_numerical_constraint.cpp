@@ -42,6 +42,7 @@ ContinuousCollisionNumericalConstraint::ContinuousCollisionNumericalConstraint(
     std::array<JointPosition::ConstPtr, 2> position_vars,
     std::array<bool, 2> position_vars_fixed,
     int max_num_cnt,
+    bool fixed_sparsity,
     const std::string& name)
   : ifopt::ConstraintSet(max_num_cnt, name)
   , position_vars_(std::move(position_vars))
@@ -66,6 +67,17 @@ ContinuousCollisionNumericalConstraint::ContinuousCollisionNumericalConstraint(
     throw std::runtime_error("max_num_cnt must be greater than zero!");
 
   bounds_ = std::vector<ifopt::Bounds>(static_cast<std::size_t>(max_num_cnt), ifopt::BoundSmallerZero);
+
+  if (fixed_sparsity)
+  {
+    // Setting to zeros because snopt sparsity cannot change
+    triplet_list_.reserve(static_cast<std::size_t>(bounds_.size()) *
+                          static_cast<std::size_t>(position_vars_[0]->GetRows()));
+
+    for (Eigen::Index i = 0; i < static_cast<Eigen::Index>(bounds_.size()); i++)  // NOLINT
+      for (Eigen::Index j = 0; j < n_dof_; j++)
+        triplet_list_.emplace_back(i, j, 0);
+  }
 }
 
 Eigen::VectorXd ContinuousCollisionNumericalConstraint::GetValues() const
@@ -118,19 +130,12 @@ std::vector<ifopt::Bounds> ContinuousCollisionNumericalConstraint::GetBounds() c
 void ContinuousCollisionNumericalConstraint::FillJacobianBlock(std::string var_set, Jacobian& jac_block) const
 {
   // Only modify the jacobian if this constraint uses var_set
-  if (var_set != position_vars_[0]->GetName() && var_set != position_vars_[1]->GetName())
+  if (var_set != position_vars_[0]->GetName() && var_set != position_vars_[1]->GetName())  // NOLINT
     return;
 
-  std::vector<Eigen::Triplet<double>> triplet_list;
-  triplet_list.reserve(static_cast<std::size_t>(bounds_.size()) *
-                       static_cast<std::size_t>(position_vars_[0]->GetRows()));
-
   // Setting to zeros because snopt sparsity cannot change
-  for (Eigen::Index i = 0; i < static_cast<Eigen::Index>(bounds_.size()); i++)  // NOLINT
-    for (Eigen::Index j = 0; j < n_dof_; j++)
-      triplet_list.emplace_back(i, j, 0);
-
-  jac_block.setFromTriplets(triplet_list.begin(), triplet_list.end());  // NOLINT
+  if (!triplet_list_.empty())                                               // NOLINT
+    jac_block.setFromTriplets(triplet_list_.begin(), triplet_list_.end());  // NOLINT
 
   double margin_buffer = collision_evaluator_->GetCollisionConfig().collision_margin_buffer;
 

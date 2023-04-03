@@ -68,15 +68,15 @@ public:
   void FillJacobianBlock(std::string var_set, Jacobian& jac_block) const final
   {
     // Only modify the jacobian if this constraint uses var_set
-    if (var_set == position_var_->GetName())
-    {
-      // dy = 2x + 4;
-      Eigen::VectorXd joint_vals = this->GetVariables()->GetComponent(position_var_->GetName())->GetValues();
+    if (var_set != position_var_->GetName())  // NOLINT
+      return;
 
-      // Reserve enough room in the sparse matrix
-      jac_block.reserve(1);
-      jac_block.coeffRef(0, 0) = 2 * joint_vals(0) + 4;
-    }
+    // dy = 2x + 4;
+    Eigen::VectorXd joint_vals = this->GetVariables()->GetComponent(position_var_->GetName())->GetValues();
+
+    // Reserve enough room in the sparse matrix
+    jac_block.reserve(1);
+    jac_block.coeffRef(0, 0) = 2 * joint_vals(0) + 4;
   }
 
 private:

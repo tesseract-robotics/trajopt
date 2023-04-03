@@ -42,6 +42,7 @@ DiscreteCollisionNumericalConstraint::DiscreteCollisionNumericalConstraint(
     DiscreteCollisionEvaluator::Ptr collision_evaluator,
     JointPosition::ConstPtr position_var,
     int max_num_cnt,
+    bool fixed_sparsity,
     const std::string& name)
   : ifopt::ConstraintSet(max_num_cnt, name)
   , position_var_(std::move(position_var))
@@ -55,6 +56,16 @@ DiscreteCollisionNumericalConstraint::DiscreteCollisionNumericalConstraint(
     throw std::runtime_error("max_num_cnt must be greater than zero!");
 
   bounds_ = std::vector<ifopt::Bounds>(static_cast<std::size_t>(max_num_cnt), ifopt::BoundSmallerZero);
+
+  // Setting to zeros because snopt sparsity cannot change
+  if (fixed_sparsity)
+  {
+    triplet_list_.reserve(static_cast<std::size_t>(bounds_.size()) *
+                          static_cast<std::size_t>(position_var_->GetRows()));
+    for (Eigen::Index i = 0; i < static_cast<Eigen::Index>(bounds_.size()); i++)
+      for (Eigen::Index j = 0; j < n_dof_; j++)
+        triplet_list_.emplace_back(i, j, 0);
+  }
 }
 
 Eigen::VectorXd DiscreteCollisionNumericalConstraint::GetValues() const
@@ -110,16 +121,9 @@ void DiscreteCollisionNumericalConstraint::SetBounds(const std::vector<ifopt::Bo
 void DiscreteCollisionNumericalConstraint::CalcJacobianBlock(const Eigen::Ref<const Eigen::VectorXd>& joint_vals,
                                                              Jacobian& jac_block) const
 {
-  // Calculate collisions
-  std::vector<Eigen::Triplet<double>> triplet_list;
-  triplet_list.reserve(static_cast<std::size_t>(bounds_.size()) * static_cast<std::size_t>(position_var_->GetRows()));
-
   // Setting to zeros because snopt sparsity cannot change
-  for (Eigen::Index i = 0; i < static_cast<Eigen::Index>(bounds_.size()); i++)
-    for (Eigen::Index j = 0; j < n_dof_; j++)
-      triplet_list.emplace_back(i, j, 0);
-
-  jac_block.setFromTriplets(triplet_list.begin(), triplet_list.end());  // NOLINT
+  if (!triplet_list_.empty())                                               // NOLINT
+    jac_block.setFromTriplets(triplet_list_.begin(), triplet_list_.end());  // NOLINT
 
   CollisionCacheData::ConstPtr collision_data = collision_evaluator_->CalcCollisions(joint_vals, bounds_.size());
   if (collision_data->gradient_results_sets.empty())

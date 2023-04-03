@@ -90,13 +90,13 @@ public:
   void FillJacobianBlock(std::string var_set, Jacobian& jac_block) const final
   {
     // Only modify the jacobian if this constraint uses var_set
-    if (var_set == position_var_->GetName())
-    {
-      // Get current joint values
-      VectorXd joint_vals = this->GetVariables()->GetComponent(position_var_->GetName())->GetValues();
+    if (var_set != position_var_->GetName())  // NOLINT
+      return;
 
-      CalcJacobianBlock(joint_vals, jac_block);  // NOLINT
-    }
+    // Get current joint values
+    VectorXd joint_vals = this->GetVariables()->GetComponent(position_var_->GetName())->GetValues();
+
+    CalcJacobianBlock(joint_vals, jac_block);  // NOLINT
   }
 
   Eigen::VectorXd CalcValues(const Eigen::Ref<const Eigen::VectorXd>& joint_vals) const
@@ -324,7 +324,7 @@ TEST_F(SimpleCollisionTest, spheres_trajopt_problem)  // NOLINT
    */
   CONSOLE_BRIDGE_logDebug("SimpleCollisionTest, spheres_trajopt_problem");
   auto qp_problem = std::make_shared<trajopt_sqp::TrajOptQPProblem>();
-  runSimpleCollisionTest(qp_problem, env);
+  runSimpleCollisionTest(qp_problem, env);  // NOLINT
 }
 
 int main(int argc, char** argv)

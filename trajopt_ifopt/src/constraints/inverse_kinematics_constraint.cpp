@@ -103,18 +103,17 @@ void InverseKinematicsConstraint::SetBounds(const std::vector<ifopt::Bounds>& bo
 void InverseKinematicsConstraint::FillJacobianBlock(std::string var_set, Jacobian& jac_block) const
 {
   // Only modify the jacobian if this constraint uses var_set
-  if (var_set == constraint_var_->GetName())  // NOLINT
-  {
-    std::vector<Eigen::Triplet<double> > triplet_list;
-    triplet_list.reserve(static_cast<std::size_t>(n_dof_));
+  if (var_set != constraint_var_->GetName())  // NOLINT
+    return;
 
-    for (int j = 0; j < n_dof_; j++)  // NOLINT
-    {
-      // err = target - x =? derr/dx = -1
-      triplet_list.emplace_back(j, j, -1);
-    }
-    jac_block.setFromTriplets(triplet_list.begin(), triplet_list.end());  // NOLINT
-  }
+  std::vector<Eigen::Triplet<double> > triplet_list;
+  triplet_list.reserve(static_cast<std::size_t>(n_dof_));
+
+  // err = target - x =? derr/dx = -1
+  for (int j = 0; j < n_dof_; j++)  // NOLINT
+    triplet_list.emplace_back(j, j, -1);
+
+  jac_block.setFromTriplets(triplet_list.begin(), triplet_list.end());  // NOLINT
 }
 
 void InverseKinematicsConstraint::SetTargetPose(const Eigen::Isometry3d& target_pose) { target_pose_ = target_pose; }

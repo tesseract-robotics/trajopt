@@ -125,7 +125,7 @@ SingleTimestepCollisionEvaluator::CalcCollisions(const Eigen::Ref<const Eigen::V
     std::transform(shape_grs.begin(),
                    shape_grs.end(),
                    std::back_inserter(data->gradient_results_sets),
-                   std::bind(&ShapeGrsType::value_type::second, std::placeholders::_1));
+                   std::bind(&ShapeGrsType::value_type::second, std::placeholders::_1));  // NOLINT
   }
 
   if (data->gradient_results_sets.size() > bounds_size)
