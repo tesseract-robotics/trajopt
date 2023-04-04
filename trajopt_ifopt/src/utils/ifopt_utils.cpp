@@ -99,10 +99,7 @@ Eigen::VectorXd getClosestValidPoint(const Eigen::Ref<const Eigen::VectorXd>& in
   }
 
   // If input is outside a bound, force it to the boundary
-  Eigen::VectorXd valid_point(static_cast<Eigen::Index>(bounds.size()));
-  valid_point = input.cwiseMax(bound_lower);
-  valid_point = valid_point.cwiseMin(bound_upper);
-  return valid_point;
+  return input.cwiseMax(bound_lower).cwiseMin(bound_upper);
 }
 
 Eigen::VectorXd calcBoundsErrors(const Eigen::Ref<const Eigen::VectorXd>& input,

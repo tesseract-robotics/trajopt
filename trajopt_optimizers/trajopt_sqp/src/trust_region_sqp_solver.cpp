@@ -206,6 +206,9 @@ void TrustRegionSQPSolver::runTrustRegionLoop()
     if (status_ != SQPStatus::RUNNING)
     {
       qp_problem->setVariables(results_.best_var_vals.data());
+      qp_problem->scaleBoxSize(params.trust_shrink_ratio);
+      qp_solver->updateBounds(qp_problem->getBoundsLower(), qp_problem->getBoundsUpper());
+      results_.box_size = qp_problem->getBoxSize();
       return;
     }
 

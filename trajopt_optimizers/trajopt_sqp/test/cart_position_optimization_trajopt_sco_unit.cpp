@@ -55,7 +55,7 @@ const bool DEBUG = true;
 // trajopt_sco framework
 TEST(CartPositionOptimizationTrajoptSCO, cart_position_optimization_trajopt_sco)  // NOLINT
 {
-  if (DEBUG)
+  if (DEBUG)  // NOLINT
   {
     console_bridge::setLogLevel(console_bridge::LogLevel::CONSOLE_BRIDGE_LOG_DEBUG);
     util::gLogLevel = util::LevelInfo;

@@ -59,6 +59,15 @@ std::size_t getHash(const TrajOptCollisionConfig& collision_config,
   return seed;
 }
 
+std::size_t cantorHash(int shape_id, int subshape_id)
+{
+  assert(shape_id >= 0);
+  if (subshape_id < 0)
+    return static_cast<std::size_t>(shape_id);
+
+  return static_cast<std::size_t>(1 / 2.0 * (shape_id + subshape_id) * (shape_id + subshape_id + 1) + subshape_id);
+}
+
 void removeInvalidContactResults(tesseract_collision::ContactResultVector& contact_results, const Eigen::Vector3d& data)
 {
   auto end = std::remove_if(

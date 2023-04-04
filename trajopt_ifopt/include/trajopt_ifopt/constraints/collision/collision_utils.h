@@ -40,6 +40,9 @@ std::size_t getHash(const TrajOptCollisionConfig& collision_config,
                     const Eigen::Ref<const Eigen::VectorXd>& dof_vals0,
                     const Eigen::Ref<const Eigen::VectorXd>& dof_vals1);
 
+// If this works we will store the shape hash with the shape so it is not calculated everytime
+std::size_t cantorHash(int shape_id, int subshape_id);
+
 /**
  * @brief Remove any results that are invalid.
  * Invalid state are contacts that occur at fixed states or have distances outside the threshold.

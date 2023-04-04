@@ -81,7 +81,7 @@ public:
     Eigen::VectorXd err = Eigen::VectorXd::Zero(3);
 
     // Check the collisions
-    CollisionCacheData::ConstPtr cdata = collision_evaluator_->CalcCollisions(joint_vals);
+    CollisionCacheData::ConstPtr cdata = collision_evaluator_->CalcCollisions(joint_vals, bounds_.size());
 
     if (cdata->contact_results_map.empty())
       return err;
@@ -115,7 +115,7 @@ public:
     jac_block.reserve(n_dof_ * 3);
 
     // Calculate collisions
-    CollisionCacheData::ConstPtr cdata = collision_evaluator_->CalcCollisions(joint_vals);
+    CollisionCacheData::ConstPtr cdata = collision_evaluator_->CalcCollisions(joint_vals, bounds_.size());
 
     // Get gradients for all contacts
     /** @todo Use the cdata gradient results */

@@ -65,7 +65,8 @@ public:
    * @return Collision cache data. If a cache does not exist for the provided joint values it evaluates and stores the
    * data.
    */
-  virtual CollisionCacheData::ConstPtr CalcCollisions(const Eigen::Ref<const Eigen::VectorXd>& dof_vals) = 0;
+  virtual CollisionCacheData::ConstPtr CalcCollisions(const Eigen::Ref<const Eigen::VectorXd>& dof_vals,
+                                                      std::size_t bounds_size) = 0;
 
   /**
    * @brief Get the safety margin information.
@@ -102,7 +103,8 @@ public:
                                    TrajOptCollisionConfig::ConstPtr collision_config,
                                    bool dynamic_environment = false);
 
-  CollisionCacheData::ConstPtr CalcCollisions(const Eigen::Ref<const Eigen::VectorXd>& dof_vals) override;
+  CollisionCacheData::ConstPtr CalcCollisions(const Eigen::Ref<const Eigen::VectorXd>& dof_vals,
+                                              std::size_t bounds_size) override final;
 
   GradientResults GetGradient(const Eigen::VectorXd& dofvals,
                               const tesseract_collision::ContactResult& contact_result) override;

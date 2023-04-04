@@ -245,7 +245,7 @@ TEST_F(CastOctomapTest, boxesTrajOptProblem)  // NOLINT
 {
   CONSOLE_BRIDGE_logDebug("CastOctomapTest, boxesTrajOptProblem");
   auto qp_problem = std::make_shared<trajopt_sqp::TrajOptQPProblem>();
-  runCastOctomapTest(qp_problem, env);
+  runCastOctomapTest(qp_problem, env);  // NOLINT
 }
 
 int main(int argc, char** argv)

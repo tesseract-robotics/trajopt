@@ -142,7 +142,7 @@ void IfoptQPProblem::convexify()
 
   // The three above must be called before rest to update internal data
 
-  updateCostsConstantExpression();
+  updateCostsConstantExpression();  // NOLINT
 
   updateConstraintsConstantExpression();
 
@@ -456,7 +456,7 @@ Eigen::VectorXd IfoptQPProblem::getExactCosts() { return evaluateExactCosts(nlp_
 Eigen::VectorXd IfoptQPProblem::evaluateConvexConstraintViolations(const Eigen::Ref<const Eigen::VectorXd>& var_vals)
 {
   Eigen::VectorXd result_lin =
-      constraint_matrix_.block(0, 0, num_nlp_cnts_, num_nlp_vars_) * var_vals.head(num_nlp_vars_);
+      constraint_matrix_.block(0, 0, num_nlp_cnts_, num_nlp_vars_) * var_vals.head(num_nlp_vars_);  // NOLINT
   Eigen::VectorXd constraint_value = constraint_constant_ + result_lin;
   return trajopt_ifopt::calcBoundsViolations(constraint_value, nlp_->GetBoundsOnConstraints());
 }
@@ -500,7 +500,7 @@ void IfoptQPProblem::print() const
     std::cout << static_cast<int>(cnt) << ", ";
 
   std::cout << std::endl;
-  std::cout << "box_size_: " << box_size_.transpose().format(format) << std::endl;
+  std::cout << "box_size_: " << box_size_.transpose().format(format) << std::endl;  // NOLINT
   std::cout << "constraint_merit_coeff_: " << constraint_merit_coeff_.transpose().format(format) << std::endl;
 
   std::cout << "Hessian:\n" << hessian_.toDense().format(format) << std::endl;

@@ -229,7 +229,7 @@ TEST_F(CastWorldTest, boxesTrajOptProblem)  // NOLINT
 {
   CONSOLE_BRIDGE_logDebug("CastWorldTest, boxesTrajOptProblem");
   auto qp_problem = std::make_shared<trajopt_sqp::TrajOptQPProblem>();
-  runCastWorldTest(qp_problem, env);
+  runCastWorldTest(qp_problem, env);  // NOLINT
 }
 
 int main(int argc, char** argv)

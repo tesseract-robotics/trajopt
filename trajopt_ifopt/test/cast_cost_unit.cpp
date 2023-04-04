@@ -155,7 +155,7 @@ TEST_F(CastTest, boxes)  // NOLINT
 
     std::array<JointPosition::ConstPtr, 2> position_vars{ vars[i - 1], vars[i] };
     auto cnt = std::make_shared<trajopt_ifopt::ContinuousCollisionConstraint>(
-        collision_evaluator, position_vars, position_vars_fixed, 1);
+        collision_evaluator, position_vars, position_vars_fixed, 1, true);
     nlp.AddConstraintSet(cnt);
     if (i == vars.size() - 1)
       position_vars_fixed = { false, true };

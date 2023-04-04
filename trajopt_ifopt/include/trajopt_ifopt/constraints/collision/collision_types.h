@@ -197,6 +197,9 @@ struct GradientResultsSet
   /** @brief The map key from contact results map */
   std::pair<std::string, std::string> key;
 
+  /** @brief For the link pair this is the subshap pair key */
+  std::pair<std::size_t, std::size_t> shape_key;
+
   /** @brief The pair coeff */
   double coeff{ 1 };
 
@@ -250,7 +253,7 @@ struct CollisionCacheData
   using ConstPtr = std::shared_ptr<const CollisionCacheData>;
 
   tesseract_collision::ContactResultMap contact_results_map;
-  std::map<std::pair<std::string, std::string>, GradientResultsSet> gradient_results_set_map;
+  std::vector<GradientResultsSet> gradient_results_sets;
 };
 
 using CollisionCache = Cache<size_t, CollisionCacheData::ConstPtr>;

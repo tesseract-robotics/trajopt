@@ -68,7 +68,9 @@ public:
    * data.
    */
   virtual CollisionCacheData::ConstPtr CalcCollisionData(const Eigen::Ref<const Eigen::VectorXd>& dof_vals0,
-                                                         const Eigen::Ref<const Eigen::VectorXd>& dof_vals1) = 0;
+                                                         const Eigen::Ref<const Eigen::VectorXd>& dof_vals1,
+                                                         const std::array<bool, 2>& position_vars_fixed,
+                                                         std::size_t bounds_size) = 0;
 
   /**
    * @brief Extracts the gradient information based on the contact results for the transition between dof_vals0 and
@@ -109,13 +111,15 @@ public:
                                   bool dynamic_environment = false);
 
   CollisionCacheData::ConstPtr CalcCollisionData(const Eigen::Ref<const Eigen::VectorXd>& dof_vals0,
-                                                 const Eigen::Ref<const Eigen::VectorXd>& dof_vals1) override;
+                                                 const Eigen::Ref<const Eigen::VectorXd>& dof_vals1,
+                                                 const std::array<bool, 2>& position_vars_fixed,
+                                                 std::size_t bounds_size) override final;
 
   GradientResults CalcGradientData(const Eigen::Ref<const Eigen::VectorXd>& dof_vals0,
                                    const Eigen::Ref<const Eigen::VectorXd>& dof_vals1,
-                                   const tesseract_collision::ContactResult& contact_results) override;
+                                   const tesseract_collision::ContactResult& contact_results) override final;
 
-  const TrajOptCollisionConfig& GetCollisionConfig() const override;
+  const TrajOptCollisionConfig& GetCollisionConfig() const override final;
 
 private:
   std::shared_ptr<CollisionCache> collision_cache_;
@@ -156,13 +160,15 @@ public:
                                 bool dynamic_environment = false);
 
   CollisionCacheData::ConstPtr CalcCollisionData(const Eigen::Ref<const Eigen::VectorXd>& dof_vals0,
-                                                 const Eigen::Ref<const Eigen::VectorXd>& dof_vals1) override;
+                                                 const Eigen::Ref<const Eigen::VectorXd>& dof_vals1,
+                                                 const std::array<bool, 2>& position_vars_fixed,
+                                                 std::size_t bounds_size) override final;
 
   GradientResults CalcGradientData(const Eigen::Ref<const Eigen::VectorXd>& dof_vals0,
                                    const Eigen::Ref<const Eigen::VectorXd>& dof_vals1,
-                                   const tesseract_collision::ContactResult& contact_results) override;
+                                   const tesseract_collision::ContactResult& contact_results) override final;
 
-  const TrajOptCollisionConfig& GetCollisionConfig() const override;
+  const TrajOptCollisionConfig& GetCollisionConfig() const override final;
 
 private:
   std::shared_ptr<CollisionCache> collision_cache_;

@@ -16,7 +16,7 @@ struct AffExprs : Exprs
 {
   Eigen::VectorXd constants;
   SparseMatrix linear_coeffs;
-  Eigen::VectorXd values(const Eigen::Ref<Eigen::VectorXd>& x) const override;
+  Eigen::VectorXd values(const Eigen::Ref<Eigen::VectorXd>& x) const override final;
 };
 
 struct QuadExprs : Exprs
@@ -54,7 +54,7 @@ struct QuadExprs : Exprs
    */
   SparseMatrix objective_quadratic_coeffs;
 
-  Eigen::VectorXd values(const Eigen::Ref<Eigen::VectorXd>& x) const override;
+  Eigen::VectorXd values(const Eigen::Ref<Eigen::VectorXd>& x) const override final;
 };
 
 /**

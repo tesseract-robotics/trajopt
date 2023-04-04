@@ -243,7 +243,6 @@ void TrajOptQPProblem::convexifyCosts()
   gradient_ = Eigen::VectorXd::Zero(num_qp_vars_);
 
   Eigen::VectorXd x_initial = variables_->GetValues().head(getNumNLPVars());
-  Eigen::VectorXd cost_initial_value(getNumNLPCosts());
 
   // Create triplet list of nonzero gradients
   std::vector<Eigen::Triplet<double>> grad_triplet_list;
@@ -320,7 +319,7 @@ void TrajOptQPProblem::convexifyCosts()
   ////////////////////////////////////////////////////////
   for (Eigen::Index i = 0; i < hinge_costs_.GetRows(); i++)
   {
-    gradient_[current_var_index++] = 1;  // This should be multiplied by the weight
+    gradient_[current_var_index++] = 1; /** @todo This should be multiplied by the weight */
   }
 
   ////////////////////////////////////////////////////////
@@ -328,7 +327,7 @@ void TrajOptQPProblem::convexifyCosts()
   ////////////////////////////////////////////////////////
   for (Eigen::Index i = 0; i < 2 * abs_costs_.GetRows(); i++)
   {
-    gradient_[current_var_index++] = 1;  // This should be multiplied by the weight
+    gradient_[current_var_index++] = 1; /** @todo This should be multiplied by the weight */
   }
 
   ////////////////////////////////////////////////////////
@@ -669,7 +668,7 @@ Eigen::VectorXd TrajOptQPProblem::evaluateConvexCosts(const Eigen::Ref<const Eig
 
 double TrajOptQPProblem::evaluateTotalExactCost(const Eigen::Ref<const Eigen::VectorXd>& var_vals)
 {
-  if (getNumNLPCosts() == 0)
+  if (getNumNLPCosts() == 0)  // NOLINT
     return 0;
 
   double g{ 0 };
@@ -737,8 +736,9 @@ Eigen::VectorXd TrajOptQPProblem::getExactCosts() { return evaluateExactCosts(va
 Eigen::VectorXd TrajOptQPProblem::evaluateConvexConstraintViolations(const Eigen::Ref<const Eigen::VectorXd>& var_vals)
 {
   Eigen::Index row_index = hinge_constraints_.GetRows() + abs_costs_.GetRows();
-  Eigen::VectorXd result_lin =
-      constraint_matrix_.block(row_index, 0, getNumNLPConstraints(), getNumNLPVars()) * var_vals.head(getNumNLPVars());
+  // NOLINTNEXTLINE
+  Eigen::VectorXd result_lin = constraint_matrix_.block(row_index, 0, getNumNLPConstraints(), getNumNLPVars()) *
+                               var_vals.head(getNumNLPVars());  // NOLINT
   Eigen::VectorXd constraint_value = constraint_constant_.middleRows(row_index, getNumNLPConstraints()) + result_lin;
   return trajopt_ifopt::calcBoundsViolations(constraint_value, constraints_.GetBounds());
 }
@@ -783,7 +783,7 @@ void TrajOptQPProblem::print() const
     std::cout << static_cast<int>(cnt) << ", ";
 
   std::cout << std::endl;
-  std::cout << "Box Size: " << box_size_.transpose().format(format) << std::endl;
+  std::cout << "Box Size: " << box_size_.transpose().format(format) << std::endl;  // NOLINT
   std::cout << "Constraint Merit Coeff: " << constraint_merit_coeff_.transpose().format(format) << std::endl;
 
   std::cout << "Hessian:\n" << hessian_.toDense().format(format) << std::endl;

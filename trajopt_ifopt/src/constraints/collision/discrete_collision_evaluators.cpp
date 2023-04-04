@@ -75,7 +75,8 @@ SingleTimestepCollisionEvaluator::SingleTimestepCollisionEvaluator(std::shared_p
 }
 
 CollisionCacheData::ConstPtr
-SingleTimestepCollisionEvaluator::CalcCollisions(const Eigen::Ref<const Eigen::VectorXd>& dof_vals)
+SingleTimestepCollisionEvaluator::CalcCollisions(const Eigen::Ref<const Eigen::VectorXd>& dof_vals,
+                                                 std::size_t bounds_size)
 {
   size_t key = getHash(*collision_config_, dof_vals);
   auto* it = collision_cache_->get(key);
@@ -91,14 +92,49 @@ SingleTimestepCollisionEvaluator::CalcCollisions(const Eigen::Ref<const Eigen::V
 
   for (const auto& pair : data->contact_results_map)
   {
-    GradientResultsSet grs;
-    grs.key = pair.first;
-    grs.coeff = collision_config_->collision_coeff_data.getPairCollisionCoeff(grs.key.first, grs.key.second);
-    grs.results.reserve(pair.second.size());
+    using ShapeGrsType = std::map<std::pair<std::size_t, std::size_t>, GradientResultsSet>;
+    ShapeGrsType shape_grs;
+    const double coeff =
+        collision_config_->collision_coeff_data.getPairCollisionCoeff(pair.first.first, pair.first.second);
     for (const tesseract_collision::ContactResult& dist_result : pair.second)
-      grs.add(GetGradient(dof_vals, dist_result));
+    {
+      const std::size_t shape_hash0 = cantorHash(dist_result.shape_id[0], dist_result.subshape_id[0]);
+      const std::size_t shape_hash1 = cantorHash(dist_result.shape_id[1], dist_result.subshape_id[1]);
+      auto shape_key = std::make_pair(shape_hash0, shape_hash1);
+      auto it = shape_grs.find(shape_key);
+      if (it == shape_grs.end())
+      {
+        GradientResultsSet grs;
+        grs.key = pair.first;
+        grs.shape_key = shape_key;
+        grs.coeff = coeff;
+        grs.results.reserve(pair.second.size());
+        grs.add(GetGradient(dof_vals, dist_result));
+        shape_grs[shape_key] = grs;
+      }
+      else
+      {
+        it->second.add(GetGradient(dof_vals, dist_result));
+      }
+    }
 
-    data->gradient_results_set_map[pair.first] = grs;
+    // This is not as efficient as it could be. Need to update Tesseract to store per subhshape key
+    const std::size_t new_size = data->gradient_results_sets.size() + shape_grs.size();
+    data->gradient_results_sets.reserve(new_size);
+
+    std::transform(shape_grs.begin(),
+                   shape_grs.end(),
+                   std::back_inserter(data->gradient_results_sets),
+                   std::bind(&ShapeGrsType::value_type::second, std::placeholders::_1));  // NOLINT
+  }
+
+  if (data->gradient_results_sets.size() > bounds_size)
+  {
+    std::sort(data->gradient_results_sets.begin(),
+              data->gradient_results_sets.end(),
+              [](const GradientResultsSet& a, const GradientResultsSet& b) {
+                return a.max_error[0].error > b.max_error[0].error;
+              });
   }
 
   collision_cache_->put(key, data);

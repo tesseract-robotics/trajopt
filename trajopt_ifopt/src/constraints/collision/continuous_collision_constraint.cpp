@@ -41,6 +41,7 @@ ContinuousCollisionConstraint::ContinuousCollisionConstraint(ContinuousCollision
                                                              std::array<JointPosition::ConstPtr, 2> position_vars,
                                                              std::array<bool, 2> position_vars_fixed,
                                                              int max_num_cnt,
+                                                             bool fixed_sparsity,
                                                              const std::string& name)
   : ifopt::ConstraintSet(max_num_cnt, name)
   , position_vars_(std::move(position_vars))
@@ -65,6 +66,17 @@ ContinuousCollisionConstraint::ContinuousCollisionConstraint(ContinuousCollision
     throw std::runtime_error("max_num_cnt must be greater than zero!");
 
   bounds_ = std::vector<ifopt::Bounds>(static_cast<std::size_t>(max_num_cnt), ifopt::BoundSmallerZero);
+
+  if (fixed_sparsity)
+  {
+    // Setting to zeros because snopt sparsity cannot change
+    triplet_list_.reserve(static_cast<std::size_t>(bounds_.size()) *
+                          static_cast<std::size_t>(position_vars_[0]->GetRows()));
+
+    for (Eigen::Index i = 0; i < static_cast<Eigen::Index>(bounds_.size()); i++)  // NOLINT
+      for (Eigen::Index j = 0; j < n_dof_; j++)
+        triplet_list_.emplace_back(i, j, 0);
+  }
 }
 
 Eigen::VectorXd ContinuousCollisionConstraint::GetValues() const
@@ -75,76 +87,37 @@ Eigen::VectorXd ContinuousCollisionConstraint::GetValues() const
   double margin_buffer = collision_evaluator_->GetCollisionConfig().collision_margin_buffer;
   Eigen::VectorXd values = Eigen::VectorXd::Constant(static_cast<Eigen::Index>(bounds_.size()), -margin_buffer);
 
-  CollisionCacheData::ConstPtr collision_data = collision_evaluator_->CalcCollisionData(joint_vals0, joint_vals1);
+  CollisionCacheData::ConstPtr collision_data =
+      collision_evaluator_->CalcCollisionData(joint_vals0, joint_vals1, position_vars_fixed_, bounds_.size());
 
-  if (collision_data->gradient_results_set_map.empty())
+  if (collision_data->gradient_results_sets.empty())
     return values;
 
-  if (collision_data->gradient_results_set_map.size() <= bounds_.size())
+  const std::size_t cnt = std::min(collision_data->gradient_results_sets.size(), bounds_.size());
+  if (!position_vars_fixed_[0] && !position_vars_fixed_[1])
   {
-    Eigen::Index i{ 0 };
-    if (!position_vars_fixed_[0] && !position_vars_fixed_[1])
+    for (std::size_t i = 0; i < cnt; ++i)
     {
-      for (const auto& grs : collision_data->gradient_results_set_map)
-        values(i++) = grs.second.coeff * grs.second.getMaxError();
+      const GradientResultsSet& r = collision_data->gradient_results_sets[i];
+      values(static_cast<Eigen::Index>(i)) = r.coeff * r.getMaxError();
     }
-    else if (!position_vars_fixed_[0])
+  }
+  else if (!position_vars_fixed_[0])
+  {
+    for (std::size_t i = 0; i < cnt; ++i)
     {
-      for (const auto& grs : collision_data->gradient_results_set_map)
-        values(i++) = grs.second.coeff * grs.second.getMaxErrorT0();
-    }
-    else
-    {
-      for (const auto& grs : collision_data->gradient_results_set_map)
-        values(i++) = grs.second.coeff * grs.second.getMaxErrorT1();
+      const GradientResultsSet& r = collision_data->gradient_results_sets[i];
+      if (r.max_error[0].has_error[0] || r.max_error[1].has_error[0])
+        values(static_cast<Eigen::Index>(i)) = r.coeff * r.getMaxErrorT0();
     }
   }
   else
   {
-    std::vector<std::reference_wrapper<const GradientResultsSet>> rs;
-    rs.reserve(collision_data->gradient_results_set_map.size());
-    std::transform(collision_data->gradient_results_set_map.begin(),
-                   collision_data->gradient_results_set_map.end(),
-                   std::back_inserter(rs),
-                   [](const std::map<std::pair<std::string, std::string>, GradientResultsSet>::value_type& val) {
-                     return std::cref(val.second);
-                   });
-
-    if (!position_vars_fixed_[0] && !position_vars_fixed_[1])
+    for (std::size_t i = 0; i < cnt; ++i)
     {
-      std::sort(rs.begin(), rs.end(), [](const GradientResultsSet& a, const GradientResultsSet& b) {
-        return (a.getMaxError() > b.getMaxError());
-      });
-
-      for (std::size_t i = 0; i < bounds_.size(); ++i)
-      {
-        const GradientResultsSet& r = rs[i].get();
-        values(static_cast<Eigen::Index>(i)) = r.coeff * r.getMaxError();
-      }
-    }
-    else if (!position_vars_fixed_[0])
-    {
-      std::sort(rs.begin(), rs.end(), [](const GradientResultsSet& a, const GradientResultsSet& b) {
-        return (a.getMaxErrorT0() > b.getMaxErrorT0());
-      });
-
-      for (std::size_t i = 0; i < bounds_.size(); ++i)
-      {
-        const GradientResultsSet& r = rs[i].get();
-        values(static_cast<Eigen::Index>(i)) = r.coeff * r.getMaxErrorT0();
-      }
-    }
-    else
-    {
-      std::sort(rs.begin(), rs.end(), [](const GradientResultsSet& a, const GradientResultsSet& b) {
-        return (a.getMaxErrorT1() > b.getMaxErrorT1());
-      });
-
-      for (std::size_t i = 0; i < bounds_.size(); ++i)
-      {
-        const GradientResultsSet& r = rs[i].get();
+      const GradientResultsSet& r = collision_data->gradient_results_sets[i];
+      if (r.max_error[0].has_error[1] || r.max_error[1].has_error[1])
         values(static_cast<Eigen::Index>(i)) = r.coeff * r.getMaxErrorT1();
-      }
     }
   }
 
@@ -157,72 +130,32 @@ std::vector<ifopt::Bounds> ContinuousCollisionConstraint::GetBounds() const { re
 void ContinuousCollisionConstraint::FillJacobianBlock(std::string var_set, Jacobian& jac_block) const
 {
   // Only modify the jacobian if this constraint uses var_set
-  std::vector<Eigen::Triplet<double>> triplet_list;
-  triplet_list.reserve(static_cast<std::size_t>(bounds_.size()) *
-                       static_cast<std::size_t>(position_vars_[0]->GetRows()));
+  if (var_set != position_vars_[0]->GetName() && var_set != position_vars_[1]->GetName())  // NOLINT
+    return;
 
   // Setting to zeros because snopt sparsity cannot change
-  for (Eigen::Index i = 0; i < static_cast<Eigen::Index>(bounds_.size()); i++)  // NOLINT
-    for (Eigen::Index j = 0; j < n_dof_; j++)
-      triplet_list.emplace_back(i, j, 0);
+  if (!triplet_list_.empty())                                               // NOLINT
+    jac_block.setFromTriplets(triplet_list_.begin(), triplet_list_.end());  // NOLINT
 
-  jac_block.setFromTriplets(triplet_list.begin(), triplet_list.end());  // NOLINT
+  // Calculate collisions
+  Eigen::VectorXd joint_vals0 = this->GetVariables()->GetComponent(position_vars_[0]->GetName())->GetValues();
+  Eigen::VectorXd joint_vals1 = this->GetVariables()->GetComponent(position_vars_[1]->GetName())->GetValues();
 
+  CollisionCacheData::ConstPtr collision_data =
+      collision_evaluator_->CalcCollisionData(joint_vals0, joint_vals1, position_vars_fixed_, bounds_.size());
+
+  if (collision_data->gradient_results_sets.empty())
+    return;
+
+  /** @todo Should use triplet list and setFromTriplets */
+  const std::size_t cnt = std::min(collision_data->gradient_results_sets.size(), bounds_.size());
   if (var_set == position_vars_[0]->GetName() && !position_vars_fixed_[0])
   {
-    // Calculate collisions
-    Eigen::VectorXd joint_vals0 = this->GetVariables()->GetComponent(position_vars_[0]->GetName())->GetValues();
-    Eigen::VectorXd joint_vals1 = this->GetVariables()->GetComponent(position_vars_[1]->GetName())->GetValues();
-
-    CollisionCacheData::ConstPtr collision_data = collision_evaluator_->CalcCollisionData(joint_vals0, joint_vals1);
-    if (collision_data->gradient_results_set_map.empty())
-      return;
-
-    if (collision_data->gradient_results_set_map.size() <= bounds_.size())
+    for (std::size_t i = 0; i < cnt; ++i)
     {
-      Eigen::Index i{ 0 };
-      for (const auto& grs : collision_data->gradient_results_set_map)
+      const GradientResultsSet& r = collision_data->gradient_results_sets[i];
+      if (r.max_error[0].has_error[0] || r.max_error[1].has_error[0])
       {
-        double max_error_with_buffer = grs.second.getMaxErrorWithBufferT0();
-        if (!position_vars_fixed_[1])
-          max_error_with_buffer = grs.second.getMaxErrorWithBuffer();
-
-        Eigen::VectorXd grad_vec =
-            getWeightedAvgGradientT0(grs.second, max_error_with_buffer, position_vars_[0]->GetRows());
-
-        // Collision is 1 x n_dof
-        for (int j = 0; j < n_dof_; j++)
-          jac_block.coeffRef(i, j) = -1.0 * grad_vec[j];
-
-        ++i;
-      }
-    }
-    else
-    {
-      std::vector<std::reference_wrapper<const GradientResultsSet>> rs;
-      rs.reserve(collision_data->gradient_results_set_map.size());
-      std::transform(collision_data->gradient_results_set_map.begin(),
-                     collision_data->gradient_results_set_map.end(),
-                     std::back_inserter(rs),
-                     [](const std::map<std::pair<std::string, std::string>, GradientResultsSet>::value_type& val) {
-                       return std::cref(val.second);
-                     });
-      if (!position_vars_fixed_[1])
-      {
-        std::sort(rs.begin(), rs.end(), [](const GradientResultsSet& a, const GradientResultsSet& b) {
-          return (a.getMaxError() > b.getMaxError());
-        });
-      }
-      else
-      {
-        std::sort(rs.begin(), rs.end(), [](const GradientResultsSet& a, const GradientResultsSet& b) {
-          return (a.getMaxErrorT0() > b.getMaxErrorT0());
-        });
-      }
-
-      for (std::size_t i = 0; i < bounds_.size(); ++i)
-      {
-        const GradientResultsSet& r = rs[i].get();
         double max_error_with_buffer = r.getMaxErrorWithBufferT0();
         if (!position_vars_fixed_[1])
           max_error_with_buffer = r.getMaxErrorWithBuffer();
@@ -237,59 +170,11 @@ void ContinuousCollisionConstraint::FillJacobianBlock(std::string var_set, Jacob
   }
   else if (var_set == position_vars_[1]->GetName() && !position_vars_fixed_[1])
   {
-    // Calculate collisions
-    Eigen::VectorXd joint_vals0 = this->GetVariables()->GetComponent(position_vars_[0]->GetName())->GetValues();
-    Eigen::VectorXd joint_vals1 = this->GetVariables()->GetComponent(position_vars_[1]->GetName())->GetValues();
-
-    CollisionCacheData::ConstPtr collision_data = collision_evaluator_->CalcCollisionData(joint_vals0, joint_vals1);
-    if (collision_data->gradient_results_set_map.empty())
-      return;
-
-    if (collision_data->gradient_results_set_map.size() <= bounds_.size())
+    for (std::size_t i = 0; i < cnt; ++i)
     {
-      Eigen::Index i{ 0 };
-      for (const auto& grs : collision_data->gradient_results_set_map)
+      const GradientResultsSet& r = collision_data->gradient_results_sets[i];
+      if (r.max_error[0].has_error[1] || r.max_error[1].has_error[1])
       {
-        double max_error_with_buffer = grs.second.getMaxErrorWithBufferT1();
-        if (!position_vars_fixed_[0])
-          max_error_with_buffer = grs.second.getMaxErrorWithBuffer();
-
-        Eigen::VectorXd grad_vec =
-            getWeightedAvgGradientT1(grs.second, max_error_with_buffer, position_vars_[1]->GetRows());
-
-        // Collision is 1 x n_dof
-        for (int j = 0; j < n_dof_; j++)
-          jac_block.coeffRef(i, j) = -1.0 * grad_vec[j];
-
-        ++i;
-      }
-    }
-    else
-    {
-      std::vector<std::reference_wrapper<const GradientResultsSet>> rs;
-      rs.reserve(collision_data->gradient_results_set_map.size());
-      std::transform(collision_data->gradient_results_set_map.begin(),
-                     collision_data->gradient_results_set_map.end(),
-                     std::back_inserter(rs),
-                     [](const std::map<std::pair<std::string, std::string>, GradientResultsSet>::value_type& val) {
-                       return std::cref(val.second);
-                     });
-      if (!position_vars_fixed_[0])
-      {
-        std::sort(rs.begin(), rs.end(), [](const GradientResultsSet& a, const GradientResultsSet& b) {
-          return (a.getMaxError() > b.getMaxError());
-        });
-      }
-      else
-      {
-        std::sort(rs.begin(), rs.end(), [](const GradientResultsSet& a, const GradientResultsSet& b) {
-          return (a.getMaxErrorT1() > b.getMaxErrorT1());
-        });
-      }
-
-      for (std::size_t i = 0; i < bounds_.size(); ++i)
-      {
-        const GradientResultsSet& r = rs[i].get();
         double max_error_with_buffer = r.getMaxErrorWithBufferT1();
         if (!position_vars_fixed_[0])
           max_error_with_buffer = r.getMaxErrorWithBuffer();

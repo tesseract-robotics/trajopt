@@ -77,7 +77,9 @@ LVSContinuousCollisionEvaluator::LVSContinuousCollisionEvaluator(
 
 CollisionCacheData::ConstPtr
 LVSContinuousCollisionEvaluator::CalcCollisionData(const Eigen::Ref<const Eigen::VectorXd>& dof_vals0,
-                                                   const Eigen::Ref<const Eigen::VectorXd>& dof_vals1)
+                                                   const Eigen::Ref<const Eigen::VectorXd>& dof_vals1,
+                                                   const std::array<bool, 2>& position_vars_fixed,
+                                                   std::size_t bounds_size)
 {
   size_t key = getHash(*collision_config_, dof_vals0, dof_vals1);
   auto* it = collision_cache_->get(key);
@@ -92,15 +94,69 @@ LVSContinuousCollisionEvaluator::CalcCollisionData(const Eigen::Ref<const Eigen:
 
   for (const auto& pair : data->contact_results_map)
   {
-    GradientResultsSet grs;
-    grs.key = pair.first;
-    grs.coeff = collision_config_->collision_coeff_data.getPairCollisionCoeff(grs.key.first, grs.key.second);
-    grs.is_continuous = true;
-    grs.results.reserve(pair.second.size());
+    using ShapeGrsType = std::map<std::pair<std::size_t, std::size_t>, GradientResultsSet>;
+    ShapeGrsType shape_grs;
+    const double coeff =
+        collision_config_->collision_coeff_data.getPairCollisionCoeff(pair.first.first, pair.first.second);
     for (const tesseract_collision::ContactResult& dist_result : pair.second)
-      grs.add(CalcGradientData(dof_vals0, dof_vals1, dist_result));
+    {
+      const std::size_t shape_hash0 = cantorHash(dist_result.shape_id[0], dist_result.subshape_id[0]);
+      const std::size_t shape_hash1 = cantorHash(dist_result.shape_id[1], dist_result.subshape_id[1]);
+      auto shape_key = std::make_pair(shape_hash0, shape_hash1);
+      auto it = shape_grs.find(shape_key);
+      if (it == shape_grs.end())
+      {
+        GradientResultsSet grs;
+        grs.key = pair.first;
+        grs.shape_key = shape_key;
+        grs.coeff = coeff;
+        grs.is_continuous = true;
+        grs.results.reserve(pair.second.size());
+        grs.add(CalcGradientData(dof_vals0, dof_vals1, dist_result));
+        shape_grs[shape_key] = grs;
+      }
+      else
+      {
+        it->second.add(CalcGradientData(dof_vals0, dof_vals1, dist_result));
+      }
+    }
 
-    data->gradient_results_set_map[pair.first] = grs;
+    // This is not as efficient as it could be. Need to update Tesseract to store per subhshape key
+    const std::size_t new_size = data->gradient_results_sets.size() + shape_grs.size();
+    data->gradient_results_sets.reserve(new_size);
+
+    std::transform(shape_grs.begin(),
+                   shape_grs.end(),
+                   std::back_inserter(data->gradient_results_sets),
+                   std::bind(&ShapeGrsType::value_type::second, std::placeholders::_1));  // NOLINT
+  }
+
+  if (data->gradient_results_sets.size() > bounds_size)
+  {
+    if (!position_vars_fixed[0] && !position_vars_fixed[1])
+    {
+      std::sort(data->gradient_results_sets.begin(),
+                data->gradient_results_sets.end(),
+                [](const GradientResultsSet& a, const GradientResultsSet& b) {
+                  return a.getMaxErrorWithBuffer() > b.getMaxErrorWithBuffer();
+                });
+    }
+    else if (!position_vars_fixed[0])
+    {
+      std::sort(data->gradient_results_sets.begin(),
+                data->gradient_results_sets.end(),
+                [](const GradientResultsSet& a, const GradientResultsSet& b) {
+                  return a.getMaxErrorWithBufferT0() > b.getMaxErrorWithBufferT0();
+                });
+    }
+    else
+    {
+      std::sort(data->gradient_results_sets.begin(),
+                data->gradient_results_sets.end(),
+                [](const GradientResultsSet& a, const GradientResultsSet& b) {
+                  return a.getMaxErrorWithBufferT1() > b.getMaxErrorWithBufferT1();
+                });
+    }
   }
 
   collision_cache_->put(key, data);
@@ -247,7 +303,9 @@ LVSDiscreteCollisionEvaluator::LVSDiscreteCollisionEvaluator(
 
 CollisionCacheData::ConstPtr
 LVSDiscreteCollisionEvaluator::CalcCollisionData(const Eigen::Ref<const Eigen::VectorXd>& dof_vals0,
-                                                 const Eigen::Ref<const Eigen::VectorXd>& dof_vals1)
+                                                 const Eigen::Ref<const Eigen::VectorXd>& dof_vals1,
+                                                 const std::array<bool, 2>& position_vars_fixed,
+                                                 std::size_t bounds_size)
 {
   size_t key = getHash(*collision_config_, dof_vals0, dof_vals1);
   auto* it = collision_cache_->get(key);
@@ -261,22 +319,69 @@ LVSDiscreteCollisionEvaluator::CalcCollisionData(const Eigen::Ref<const Eigen::V
   CalcCollisionsHelper(dof_vals0, dof_vals1, data->contact_results_map);
   for (const auto& pair : data->contact_results_map)
   {
-    GradientResultsSet grs;
-    grs.key = pair.first;
-    grs.coeff = collision_config_->collision_coeff_data.getPairCollisionCoeff(grs.key.first, grs.key.second);
-    grs.is_continuous = true;
-    grs.results.reserve(pair.second.size());
+    using ShapeGrsType = std::map<std::pair<std::size_t, std::size_t>, GradientResultsSet>;
+    ShapeGrsType shape_grs;
+    const double coeff =
+        collision_config_->collision_coeff_data.getPairCollisionCoeff(pair.first.first, pair.first.second);
     for (const tesseract_collision::ContactResult& dist_result : pair.second)
     {
-      GradientResults data = CalcGradientData(dof_vals0, dof_vals1, dist_result);
-      //      assert(data.gradients[0].has_gradient || data.gradients[1].has_gradient);
-      grs.add(data);
+      const std::size_t shape_hash0 = cantorHash(dist_result.shape_id[0], dist_result.subshape_id[0]);
+      const std::size_t shape_hash1 = cantorHash(dist_result.shape_id[1], dist_result.subshape_id[1]);
+      auto shape_key = std::make_pair(shape_hash0, shape_hash1);
+      auto it = shape_grs.find(shape_key);
+      if (it == shape_grs.end())
+      {
+        GradientResultsSet grs;
+        grs.key = pair.first;
+        grs.shape_key = shape_key;
+        grs.coeff = coeff;
+        grs.is_continuous = true;
+        grs.results.reserve(pair.second.size());
+        grs.add(CalcGradientData(dof_vals0, dof_vals1, dist_result));
+        shape_grs[shape_key] = grs;
+      }
+      else
+      {
+        it->second.add(CalcGradientData(dof_vals0, dof_vals1, dist_result));
+      }
     }
 
-    //    assert(grs.max_error[0].has_error[0] || grs.max_error[1].has_error[0]);
-    //    assert(grs.max_error[0].has_error[1] || grs.max_error[1].has_error[1]);
+    // This is not as efficient as it could be. Need to update Tesseract to store per subhshape key
+    const std::size_t new_size = data->gradient_results_sets.size() + shape_grs.size();
+    data->gradient_results_sets.reserve(new_size);
 
-    data->gradient_results_set_map[pair.first] = grs;
+    std::transform(shape_grs.begin(),
+                   shape_grs.end(),
+                   std::back_inserter(data->gradient_results_sets),
+                   std::bind(&ShapeGrsType::value_type::second, std::placeholders::_1));  // NOLINT
+  }
+
+  if (data->gradient_results_sets.size() > bounds_size)
+  {
+    if (!position_vars_fixed[0] && !position_vars_fixed[1])
+    {
+      std::sort(data->gradient_results_sets.begin(),
+                data->gradient_results_sets.end(),
+                [](const GradientResultsSet& a, const GradientResultsSet& b) {
+                  return a.getMaxErrorWithBuffer() > b.getMaxErrorWithBuffer();
+                });
+    }
+    else if (!position_vars_fixed[0])
+    {
+      std::sort(data->gradient_results_sets.begin(),
+                data->gradient_results_sets.end(),
+                [](const GradientResultsSet& a, const GradientResultsSet& b) {
+                  return a.getMaxErrorWithBufferT0() > b.getMaxErrorWithBufferT0();
+                });
+    }
+    else
+    {
+      std::sort(data->gradient_results_sets.begin(),
+                data->gradient_results_sets.end(),
+                [](const GradientResultsSet& a, const GradientResultsSet& b) {
+                  return a.getMaxErrorWithBufferT1() > b.getMaxErrorWithBufferT1();
+                });
+    }
   }
 
   collision_cache_->put(key, data);

@@ -110,5 +110,5 @@ private:
   std::vector<trajopt_ifopt::JointPosition::ConstPtr> position_vars_;
   std::unordered_map<std::string, Eigen::Index> index_map_;
 };
-};  // namespace trajopt_ifopt
+}  // namespace trajopt_ifopt
 #endif

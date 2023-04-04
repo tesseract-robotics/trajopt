@@ -132,12 +132,11 @@ void JointPosConstraint::FillJacobianBlock(std::string var_set, Jacobian& jac_bl
       std::vector<Eigen::Triplet<double> > triplet_list;
       triplet_list.reserve(static_cast<std::size_t>(n_dof_));
 
+      // Each jac_block will be for a single variable but for all timesteps. Therefore we must index down to the
+      // correct timestep for this variable
       for (int j = 0; j < n_dof_; j++)  // NOLINT
-      {
-        // Each jac_block will be for a single variable but for all timesteps. Therefore we must index down to the
-        // correct timestep for this variable
         triplet_list.emplace_back(i * n_dof_ * 0 + j, j, coeffs_[j] * 1.0);
-      }
+
       jac_block.setFromTriplets(triplet_list.begin(), triplet_list.end());  // NOLINT
     }
   }
