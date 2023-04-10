@@ -2,8 +2,8 @@
 Changelog for package trajopt_ifopt
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.5.0 (2023-04-09)
+------------------
 * Improve trajopt ifopt collision evaluators (`#308 <https://github.com/tesseract-robotics/trajopt/issues/308>`_)
   * Updated trajopt ifopt collision evaluators to create an equation for each shape pair
   * Add fixed_sparsity param to collision constraint classes
