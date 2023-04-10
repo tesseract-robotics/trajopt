@@ -2,6 +2,11 @@
 Changelog for package trajopt
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Update to support new contact results class
+* Contributors: Levi Armstrong
+
 0.4.2 (2023-03-15)
 ------------------
 * Fix undefined behavior bug in processInterpolatedCollisionResults

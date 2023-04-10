@@ -2,6 +2,15 @@
 Changelog for package trajopt_ifopt
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Improve trajopt ifopt collision evaluators (`#308 <https://github.com/tesseract-robotics/trajopt/issues/308>`_)
+  * Updated trajopt ifopt collision evaluators to create an equation for each shape pair
+  * Add fixed_sparsity param to collision constraint classes
+  * Fix clang-tidy errors
+* Update to support new contact results class
+* Contributors: Levi Armstrong
+
 0.4.2 (2023-03-15)
 ------------------
 * Fix undefined behavior bug in processInterpolatedCollisionResults

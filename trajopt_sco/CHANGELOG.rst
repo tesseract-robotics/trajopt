@@ -2,6 +2,12 @@
 Changelog for package trajopt_sco
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Update to support new contact results class
+* updated optimizer error reporting. Downgraded two ERRORs to WARNs
+* Contributors: Levi Armstrong, mike-o
+
 0.4.2 (2023-03-15)
 ------------------
 

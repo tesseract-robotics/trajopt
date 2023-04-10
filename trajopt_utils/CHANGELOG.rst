@@ -2,6 +2,11 @@
 Changelog for package trajopt_utils
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Update to support new contact results class
+* Contributors: Levi Armstrong
+
 0.4.2 (2023-03-15)
 ------------------
 
