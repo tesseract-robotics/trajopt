@@ -289,8 +289,12 @@ GradientResults CollisionEvaluator::GetGradient(const Eigen::VectorXd& dofvals0,
 
       Eigen::MatrixXd jac_test;
       jac_test.resize(6, manip_->numJoints());
-      tesseract_kinematics::numericalJacobian(
-          jac_test, *manip_, dofvalst, contact_result.link_names[i], contact_result.nearest_points_local[i]);
+      tesseract_kinematics::numericalJacobian(jac_test,
+                                              Eigen::Isometry3d::Identity(),
+                                              *manip_,
+                                              dofvalst,
+                                              contact_result.link_names[i],
+                                              contact_result.nearest_points_local[i]);
       bool check = jac.isApprox(jac_test, 1e-3);
       assert(check == true);
 #endif
