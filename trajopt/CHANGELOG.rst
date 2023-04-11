@@ -2,6 +2,11 @@
 Changelog for package trajopt
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Fix debug build
+* Contributors: Levi Armstrong
+
 0.5.0 (2023-04-09)
 ------------------
 * Update to support new contact results class
