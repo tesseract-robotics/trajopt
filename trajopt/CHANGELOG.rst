@@ -2,8 +2,8 @@
 Changelog for package trajopt
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.5.1 (2023-04-11)
+------------------
 * Fix debug build
 * Contributors: Levi Armstrong
 
