@@ -376,6 +376,9 @@ void CollisionEvaluator::CollisionsToDistanceExpressionsW(sco::AffExprVector& ex
   exprs_data.reserve(dist_results.count());
   for (const auto& pair : dist_results)
   {
+    if (pair.second.empty())
+      continue;
+
     double worst_dist{ std::numeric_limits<double>::max() };
     double total_weight[2];
     bool found[2];
@@ -464,6 +467,9 @@ void CollisionEvaluator::CollisionsToDistanceExpressionsContinuousW(
   exprs_data.reserve(dist_results.count());
   for (const auto& pair : dist_results)
   {
+    if (pair.second.empty())
+      continue;
+
     double worst_dist{ std::numeric_limits<double>::max() };
     double total_weight[2];
     bool found[2];
