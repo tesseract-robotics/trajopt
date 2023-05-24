@@ -1128,7 +1128,7 @@ void DiscreteCollisionEvaluator::CalcCollisions(const Eigen::Ref<const Eigen::Ve
   };
 
   // Perform casted collision checking for sub trajectory and store results in contacts_vector
-  long last_state_idx{ subtraj.rows() - 1 };
+  tesseract_common::TrajArray::Index last_state_idx{ subtraj.rows() - 1 };
   double dt = 1.0 / double(last_state_idx);
   /** @todo require this to be passed in to reduce memory allocations */
   tesseract_collision::ContactResultMap contacts{ dist_results };
@@ -1354,17 +1354,17 @@ void CastCollisionEvaluator::CalcCollisions(const Eigen::Ref<const Eigen::Vector
   if (dist > longest_valid_segment_length_)
   {
     // Calculate the number state to interpolate
-    long cnt = static_cast<long>(std::ceil(dist / longest_valid_segment_length_)) + 1;
+    size_t cnt = static_cast<size_t>(std::ceil(dist / longest_valid_segment_length_)) + 1;
 
     // Create interpolated trajectory between two states that satisfies the longest valid segment length.
     tesseract_common::TrajArray subtraj(cnt, dof_vals0.size());
-    for (long i = 0; i < dof_vals0.size(); ++i)
+    for (size_t i = 0; i < dof_vals0.size(); ++i)
       subtraj.col(i) = Eigen::VectorXd::LinSpaced(cnt, dof_vals0(i), dof_vals1(i));
 
     // Perform casted collision checking for sub trajectory and store results in contacts_vector
     /** @todo require this to be passed in to reduce memory allocations */
     tesseract_collision::ContactResultMap contacts{ dist_results };
-    long last_state_idx{ subtraj.rows() - 1 };
+    tesseract_common::TrajArray::Index last_state_idx{ subtraj.rows() - 1 };
     double dt = 1.0 / double(last_state_idx);
     for (int i = 0; i < subtraj.rows() - 1; ++i)
     {
