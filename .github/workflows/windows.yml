@@ -19,7 +19,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-2019]
+        os: [windows-2019,windows-2022]
     steps:
     - uses: actions/checkout@v3
       with:
@@ -28,10 +28,14 @@ jobs:
     - name: vcpkg build
       uses: johnwason/vcpkg-action@v4
       with:
-        pkgs: fcl bullet3[multithreading,double-precision,rtti] octomap console-bridge eigen3 yaml-cpp benchmark tinyxml2 assimp orocos-kdl pcl lapack-reference boost-dll boost-filesystem boost-filesystem boost-serialization boost-program-options boost-graph urdfdom ccd[double-precision] gtest
+        pkgs: >-
+         fcl bullet3[multithreading,double-precision,rtti] octomap console-bridge eigen3 yaml-cpp 
+         benchmark tinyxml2 assimp orocos-kdl pcl lapack-reference boost-dll boost-filesystem boost-filesystem 
+         boost-serialization boost-program-options boost-graph urdfdom ccd[double-precision] gtest jsoncpp
         triplet: x64-windows-release
         extra-args: --clean-after-build
         token: ${{ github.token }}
+        cache-key: ci-${{ matrix.os }}
 
     - name: install-depends
       shell: cmd
@@ -53,7 +57,7 @@ jobs:
         set CMAKE_PREFIX_PATH=%GITHUB_WORKSPACE%\vcpkg\installed\x64-windows-release
         vcs import --input "${{ github.workspace }}/workspace/src/trajopt/dependencies.repos" src/
         if %ERRORLEVEL% GEQ 1 exit 1
-        colcon build --event-handlers console_direct+ --cmake-args -G "Ninja" -DVCPKG_TARGET_TRIPLET=x64-windows-release -DCMAKE_BUILD_TYPE=Release -DTRAJOPT_ENABLE_TESTING=ON -DBUILD_IPOPT=OFF -DBUILD_SNOPT=OFF
+        colcon build --event-handlers console_direct+ --packages-ignore tesseract_examples trajopt_ifopt trajopt_sqp --cmake-args -G "Ninja" -DVCPKG_TARGET_TRIPLET=x64-windows-release -DCMAKE_BUILD_TYPE=Release -DTRAJOPT_ENABLE_TESTING=ON -DBUILD_IPOPT=OFF -DBUILD_SNOPT=OFF
         if %ERRORLEVEL% GEQ 1 exit 1
 
     - name: run-test
@@ -62,7 +66,7 @@ jobs:
       run: |
         call ./install/setup.bat
         set PATH=%PATH%;%GITHUB_WORKSPACE%\vcpkg\installed\x64-windows-release\bin
-        colcon test --event-handlers console_direct+ --return-code-on-test-failure
+        colcon test --event-handlers console_direct+ --packages-ignore tesseract_examples trajopt_ifopt trajopt_sqp --return-code-on-test-failure
         if %ERRORLEVEL% GEQ 1 exit 1
         colcon test-result --verbose
         if %ERRORLEVEL% GEQ 1 exit 1
