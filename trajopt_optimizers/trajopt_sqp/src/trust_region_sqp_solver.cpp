@@ -215,9 +215,9 @@ void TrustRegionSQPSolver::runTrustRegionLoop()
     // Check if the entire NLP Converged
     if (results_.approx_merit_improve < -1e-5)
     {
-      CONSOLE_BRIDGE_logError("Approximate merit function got worse (%.3e). (convexification is probably wrong to "
-                              "zeroth order)",
-                              results_.approx_merit_improve);
+      CONSOLE_BRIDGE_logWarn("Approximate merit function got worse (%.3e). (convexification is probably wrong to "
+                             "zeroth order)",
+                             results_.approx_merit_improve);
     }
 
     if (results_.approx_merit_improve < params.min_approx_improve)
