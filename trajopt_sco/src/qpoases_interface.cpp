@@ -165,7 +165,7 @@ void qpOASESModel::update()
     int inew = 0;
     for (unsigned iold = 0; iold < cnts_.size(); ++iold)
     {
-      const Cnt& cnt = cnts_[iold];
+      Cnt& cnt = cnts_[iold];
       if (!cnt.cnt_rep->removed)
       {
         cnts_[inew] = cnt;
