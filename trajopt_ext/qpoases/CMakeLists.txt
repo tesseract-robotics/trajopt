@@ -6,7 +6,7 @@ project(qpoases VERSION ${pkg_extracted_version} LANGUAGES CXX)
 
 find_package(qpoases QUIET)
 
-if(NOT qpOASES_FOUND)
+if(NOT qpOASES_FOUND AND WIN32)
   message(WARNING "No valid qpOAESES version found. Cloning into build directory")
 
   include(ExternalProject)
@@ -14,15 +14,17 @@ if(NOT qpOASES_FOUND)
   ExternalProject_Add(
     ${PROJECT_NAME}
     GIT_REPOSITORY "https://github.com/coin-or/qpOASES.git"
-    GIT_TAG releases/3.2.1
+    GIT_TAG 0b86dbf00c7fce34420bedc5914f71b176fe79d3
     SOURCE_DIR ${CMAKE_BINARY_DIR}-src
     BINARY_DIR ${CMAKE_BINARY_DIR}-build
+    PATCH_COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_SOURCE_DIR}/patch_qpoases.cmake
     CMAKE_CACHE_ARGS
       -DCMAKE_INSTALL_PREFIX:STRING=${CMAKE_INSTALL_PREFIX}
       -DCMAKE_BUILD_TYPE:STRING=Release
       -DCMAKE_TOOLCHAIN_FILE:STRING=${CMAKE_TOOLCHAIN_FILE}
       -DVCPKG_TARGET_TRIPLET:STRING=${VCPKG_TARGET_TRIPLET}
-      -DBUILD_SHARED_LIBS:BOOL=OFF)
+      -DBUILD_SHARED_LIBS:BOOL=ON
+      -DQPOASES_BUILD_EXAMPLES:BOOL=OFF)
 
   # if(TRAJOPT_PACKAGE)
   #   find_package(ros_industrial_cmake_boilerplate REQUIRED)
