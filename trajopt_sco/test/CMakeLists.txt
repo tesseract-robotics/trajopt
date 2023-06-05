@@ -30,11 +30,11 @@ endif()
 
 include(GoogleTest)
 
-set(SCO_TEST_SOURCE
-    unit.cpp
-    solver-utils-unit.cpp)
-if (HAVE_GUROBI OR HAVE_qpOASES)
-list(APPEND SCO_TEST_SOURCE
+set(SCO_TEST_SOURCE unit.cpp solver-utils-unit.cpp)
+if(HAVE_GUROBI OR HAVE_qpOASES)
+  list(
+    APPEND
+    SCO_TEST_SOURCE
     small-problems-unit.cpp
     solver-interface-unit.cpp)
 endif()
