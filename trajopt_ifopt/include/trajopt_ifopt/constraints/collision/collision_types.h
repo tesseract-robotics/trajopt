@@ -52,19 +52,19 @@ struct CollisionCoeffData
   CollisionCoeffData(const double& default_collision_coeff = 1);
 
   /**
-   * @brief Set the margin for a given contact pair
+   * @brief Set the coefficient for a given contact pair
    *
    * The order of the object names does not matter, that is handled internal to
    * the class.
    *
    * @param obj1 The first object name. Order doesn't matter
    * @param obj2 The Second object name. Order doesn't matter
-   * @param Coeff used for collision pair
+   * @param Coeff Coefficient
    */
-  void setPairCollisionMarginData(const std::string& obj1, const std::string& obj2, const double& collision_coeff);
+  void setPairCollisionCoeff(const std::string& obj1, const std::string& obj2, const double& collision_coeff);
 
   /**
-   * @brief Get the pairs collision coeff
+   * @brief Get the pairs collision coefficient
    *
    * If a collision coeff for the request pair does not exist it returns the default collision coeff
    *
@@ -75,7 +75,7 @@ struct CollisionCoeffData
   const double& getPairCollisionCoeff(const std::string& obj1, const std::string& obj2) const;
 
 private:
-  /// Stores the collision margin used if no pair-specific one is set
+  /// Stores the collision coefficient used if no pair-specific one is set
   double default_collision_coeff_;
 
   /// A map of link pair names to contact distance
