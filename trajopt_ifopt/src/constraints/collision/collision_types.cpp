@@ -32,9 +32,9 @@ CollisionCoeffData::CollisionCoeffData(const double& default_collision_coeff)
 {
 }
 
-void CollisionCoeffData::setPairCollisionMarginData(const std::string& obj1,
-                                                    const std::string& obj2,
-                                                    const double& collision_coeff)
+void CollisionCoeffData::setPairCollisionCoeff(const std::string& obj1,
+                                               const std::string& obj2,
+                                               const double& collision_coeff)
 {
   auto key = tesseract_common::makeOrderedLinkPair(obj1, obj2);
   lookup_table_[key] = collision_coeff;
