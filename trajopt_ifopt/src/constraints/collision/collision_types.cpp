@@ -6,7 +6,6 @@
  * @author Matthew Powelson
  * @date Nov 24, 2020
  * @version TODO
- * @bug Only Discrete Evaluator is implemented
  *
  * @par License
  * Software License Agreement (Apache License)
