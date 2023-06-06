@@ -2,8 +2,8 @@
 Changelog for package trajopt
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.5.2 (2023-06-06)
+------------------
 * MSVC 2022 build fixes (`#323 <https://github.com/tesseract-robotics/trajopt/issues/323>`_)
 * Fix CollisionsToDistanceExpressionsW versions
 * Contributors: John Wason, Levi Armstrong
