@@ -2,6 +2,12 @@
 Changelog for package trajopt_ifopt
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Removed "Only Discrete Evaluator is implemented" messages
+* Rename setPairCollisionMarginData to setPairCollisionCoeff
+* Contributors: Roelof Oomen
+
 0.5.1 (2023-04-11)
 ------------------
 

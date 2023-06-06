@@ -2,6 +2,11 @@
 Changelog for package trajopt_sqp
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Change error into warning for "Approximate merit function got worse [...]"
+* Contributors: Roelof Oomen
+
 0.5.1 (2023-04-11)
 ------------------
 
