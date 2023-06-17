@@ -6,8 +6,8 @@ project(qpoases VERSION ${pkg_extracted_version} LANGUAGES CXX)
 
 find_package(qpoases QUIET)
 
-if(NOT qpOASES_FOUND AND WIN32)
-  message(WARNING "No valid qpOAESES version found. Cloning into build directory")
+if(NOT qpOASES_FOUND)
+  message(WARNING "No valid qpOASES version found. Cloning into build directory")
 
   include(ExternalProject)
 
@@ -26,11 +26,11 @@ if(NOT qpOASES_FOUND AND WIN32)
       -DBUILD_SHARED_LIBS:BOOL=ON
       -DQPOASES_BUILD_EXAMPLES:BOOL=OFF)
 
-  # if(TRAJOPT_PACKAGE) find_package(ros_industrial_cmake_boilerplate REQUIRED) set(CPACK_BUILD_SOURCE_DIRS
-  # "${CMAKE_BINARY_DIR}-src;${CMAKE_BINARY_DIR}-build") set(CPACK_INSTALL_CMAKE_PROJECTS
-  # "${CMAKE_BINARY_DIR}-build;${PROJECT_NAME};ALL;/") cpack( VERSION ${pkg_extracted_version} MAINTAINER
-  # <https://github.com/tesseract-robotics/trajopt> VENDOR "ROS-Industrial" DESCRIPTION ${pkg_extracted_description}
-  # PACKAGE_PREFIX ${TRAJOPT_PACKAGE_PREFIX} LINUX_DEPENDS "libeigen3-dev" WINDOWS_DEPENDS "Eigen3") endif()
+  if(TRAJOPT_PACKAGE) find_package(ros_industrial_cmake_boilerplate REQUIRED) set(CPACK_BUILD_SOURCE_DIRS
+  "${CMAKE_BINARY_DIR}-src;${CMAKE_BINARY_DIR}-build") set(CPACK_INSTALL_CMAKE_PROJECTS
+  "${CMAKE_BINARY_DIR}-build;${PROJECT_NAME};ALL;/") cpack( VERSION ${pkg_extracted_version} MAINTAINER
+  <https://github.com/tesseract-robotics/trajopt> VENDOR "ROS-Industrial" DESCRIPTION ${pkg_extracted_description}
+  PACKAGE_PREFIX ${TRAJOPT_PACKAGE_PREFIX} LINUX_DEPENDS "libeigen3-dev" WINDOWS_DEPENDS "Eigen3") endif()
 endif()
 
 install(FILES package.xml DESTINATION share/${PROJECT_NAME})
