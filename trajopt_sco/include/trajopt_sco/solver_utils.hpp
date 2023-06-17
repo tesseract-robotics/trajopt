@@ -19,7 +19,7 @@ namespace sco
  * @param [in] n_vars the number of variables in expr. It is usually equal
  *                    to `expr.size()`, but it might be larger.
  */
-void exprToEigen(const AffExpr& expr, Eigen::SparseVector<double>& sparse_vector, const int& n_vars);
+void exprToEigen(const AffExpr& expr, Eigen::SparseVector<double>& sparse_vector, const Eigen::Index& n_vars);
 
 /**
  * @brief transform a `QuadExpr` to an `Eigen::SparseMatrix` plus
@@ -40,7 +40,7 @@ void exprToEigen(const AffExpr& expr, Eigen::SparseVector<double>& sparse_vector
 void exprToEigen(const QuadExpr& expr,
                  Eigen::SparseMatrix<double>& sparse_matrix,
                  Eigen::VectorXd& vector,
-                 const int& n_vars,
+                 const Eigen::Index& n_vars,
                  const bool& matrix_is_halved = false,
                  const bool& force_diagonal = false);
 
@@ -64,7 +64,7 @@ void exprToEigen(const QuadExpr& expr,
 void exprToEigen(const AffExprVector& expr_vec,
                  Eigen::SparseMatrix<double>& sparse_matrix,
                  Eigen::VectorXd& vector,
-                 const int& n_vars = -1);
+                 const Eigen::Index& n_vars = -1);
 /**
  * @brief Converts triplets to an `Eigen::SparseMatrix`.
  * @param [in] rows_i a vector of row indices

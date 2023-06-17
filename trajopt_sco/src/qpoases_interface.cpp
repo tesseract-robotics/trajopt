@@ -63,14 +63,14 @@ Cnt qpOASESModel::addIneqCnt(const AffExpr& expr, const std::string& /*name*/)
 Cnt qpOASESModel::addIneqCnt(const QuadExpr&, const std::string& /*name*/)
 {
   assert(0 && "NOT IMPLEMENTED");
-  return 0;
+  return {};
 }
 
 void qpOASESModel::removeVars(const VarVector& vars)
 {
   IntVec inds;
   vars2inds(vars, inds);
-  for (unsigned i = 0; i < vars.size(); ++i)
+  for (size_t i = 0; i < vars.size(); ++i)
     vars[i].var_rep->removed = true;
 }
 
@@ -78,19 +78,19 @@ void qpOASESModel::removeCnts(const CntVector& cnts)
 {
   IntVec inds;
   cnts2inds(cnts, inds);
-  for (unsigned i = 0; i < cnts.size(); ++i)
+  for (size_t i = 0; i < cnts.size(); ++i)
     cnts[i].cnt_rep->removed = true;
 }
 
 void qpOASESModel::updateObjective()
 {
-  const size_t n = vars_.size();
+  const Eigen::Index n = Eigen::Index(vars_.size());
 
   Eigen::SparseMatrix<double> sm;
   exprToEigen(objective_, sm, g_, n, true, true);
   eigenToCSC(sm, H_row_indices_, H_column_pointers_, H_csc_data_);
 
-  H_ = SymSparseMat(vars_.size(), vars_.size(), H_row_indices_.data(), H_column_pointers_.data(), H_csc_data_.data());
+  H_ = SymSparseMat((int)vars_.size(), (int)vars_.size(), H_row_indices_.data(), H_column_pointers_.data(), H_csc_data_.data());
   H_.createDiagInfo();
 }
 
@@ -106,16 +106,16 @@ void qpOASESModel::updateConstraints()
 
   Eigen::SparseMatrix<double> sm;
   Eigen::VectorXd v;
-  exprToEigen(cnt_exprs_, sm, v, n);
+  exprToEigen(cnt_exprs_, sm, v, Eigen::Index(n));
 
-  for (int i_cnt = 0; i_cnt < m; ++i_cnt)
+  for (size_t i_cnt = 0; i_cnt < m; ++i_cnt)
   {
-    lbA_[i_cnt] = (cnt_types_[i_cnt] == INEQ) ? -QPOASES_INFTY : v[i_cnt];
-    ubA_[i_cnt] = v[i_cnt];
+    lbA_[i_cnt] = (cnt_types_[i_cnt] == INEQ) ? -QPOASES_INFTY : v[Eigen::Index(i_cnt)];
+    ubA_[i_cnt] = v[Eigen::Index(i_cnt)];
   }
 
   eigenToCSC(sm, A_row_indices_, A_column_pointers_, A_csc_data_);
-  A_ = SparseMatrix(cnts_.size(), vars_.size(), A_row_indices_.data(), A_column_pointers_.data(), A_csc_data_.data());
+  A_ = SparseMatrix((int)cnts_.size(), (int)vars_.size(), A_row_indices_.data(), A_column_pointers_.data(), A_csc_data_.data());
 }
 
 bool qpOASESModel::updateSolver()
@@ -140,8 +140,8 @@ void qpOASESModel::createSolver()
 void qpOASESModel::update()
 {
   {
-    int inew = 0;
-    for (unsigned iold = 0; iold < vars_.size(); ++iold)
+    size_t inew = 0;
+    for (size_t iold = 0; iold < vars_.size(); ++iold)
     {
       Var& var = vars_[iold];
       if (!var.var_rep->removed)
@@ -162,8 +162,8 @@ void qpOASESModel::update()
     ub_.resize(inew, -QPOASES_INFTY);
   }
   {
-    int inew = 0;
-    for (unsigned iold = 0; iold < cnts_.size(); ++iold)
+    size_t inew = 0;
+    for (size_t iold = 0; iold < cnts_.size(); ++iold)
     {
       Cnt& cnt = cnts_[iold];
       if (!cnt.cnt_rep->removed)
@@ -187,9 +187,9 @@ void qpOASESModel::update()
 
 void qpOASESModel::setVarBounds(const VarVector& vars, const DblVec& lower, const DblVec& upper)
 {
-  for (unsigned i = 0; i < vars.size(); ++i)
+  for (size_t i = 0; i < vars.size(); ++i)
   {
-    const int varind = vars[i].var_rep->index;
+    const size_t varind = vars[i].var_rep->index;
     lb_[varind] = lower[i];
     ub_[varind] = upper[i];
   }
@@ -197,9 +197,9 @@ void qpOASESModel::setVarBounds(const VarVector& vars, const DblVec& lower, cons
 DblVec qpOASESModel::getVarValues(const VarVector& vars) const
 {
   DblVec out(vars.size());
-  for (unsigned i = 0; i < vars.size(); ++i)
+  for (size_t i = 0; i < vars.size(); ++i)
   {
-    const int varind = vars[i].var_rep->index;
+    const size_t varind = vars[i].var_rep->index;
     out[i] = solution_[varind];
   }
   return out;
