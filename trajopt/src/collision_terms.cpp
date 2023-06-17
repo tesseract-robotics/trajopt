@@ -935,7 +935,15 @@ void SingleTimestepCollisionEvaluator::CalcCollisions(const Eigen::Ref<const Eig
 
   contact_manager_->contactTest(dist_results, contact_test_type_);
 
-  auto filter = [this](tesseract_collision::ContactResultMap::PairType& pair) {
+  const auto& zero_coeff_pairs = getSafetyMarginData()->getPairsWithZeroCoeff();
+  auto filter = [this, &zero_coeff_pairs](tesseract_collision::ContactResultMap::PairType& pair) {
+    // Remove pairs with zero coeffs
+    if (std::find(zero_coeff_pairs.begin(), zero_coeff_pairs.end(), pair.first) != zero_coeff_pairs.end())
+    {
+      pair.second.clear();
+      return;
+    }
+
     // Contains the contact distance threshold and coefficient for the given link pair
     const std::array<double, 2>& data =
         getSafetyMarginData()->getPairSafetyMarginData(pair.first.first, pair.first.second);
@@ -1126,10 +1134,18 @@ void DiscreteCollisionEvaluator::CalcCollisions(const Eigen::Ref<const Eigen::Ve
     subtraj.col(i) = Eigen::VectorXd::LinSpaced(cnt, dof_vals0(i), dof_vals1(i));
 
   // Define Filter
-  auto filter = [this](tesseract_collision::ContactResultMap::PairType& pair) {
+  const auto& zero_coeff_pairs = getSafetyMarginData()->getPairsWithZeroCoeff();
+  auto filter = [this, &zero_coeff_pairs](tesseract_collision::ContactResultMap::PairType& pair) {
+    // Remove pairs with zero coeffs
+    if (std::find(zero_coeff_pairs.begin(), zero_coeff_pairs.end(), pair.first) != zero_coeff_pairs.end())
+    {
+      pair.second.clear();
+      return;
+    }
+
+    // Don't include contacts at the fixed state
     const std::array<double, 2>& data =
         getSafetyMarginData()->getPairSafetyMarginData(pair.first.first, pair.first.second);
-    // Don't include contacts at the fixed state
     removeInvalidContactResults(pair.second, data);
   };
 
@@ -1350,10 +1366,18 @@ void CastCollisionEvaluator::CalcCollisions(const Eigen::Ref<const Eigen::Vector
   }
 
   // Define Filter
-  auto filter = [this](tesseract_collision::ContactResultMap::PairType& pair) {
+  const auto& zero_coeff_pairs = getSafetyMarginData()->getPairsWithZeroCoeff();
+  auto filter = [this, &zero_coeff_pairs](tesseract_collision::ContactResultMap::PairType& pair) {
+    // Remove pairs with zero coeffs
+    if (std::find(zero_coeff_pairs.begin(), zero_coeff_pairs.end(), pair.first) != zero_coeff_pairs.end())
+    {
+      pair.second.clear();
+      return;
+    }
+
+    // Don't include contacts at the fixed state
     const std::array<double, 2>& data =
         getSafetyMarginData()->getPairSafetyMarginData(pair.first.first, pair.first.second);
-    // Don't include contacts at the fixed state
     removeInvalidContactResults(pair.second, data);
   };
 
