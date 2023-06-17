@@ -49,7 +49,7 @@ public:
     ipos["torso_lift_joint"] = 0.0;
     env_->setState(ipos);
 
-    gLogLevel = util::LevelDebug;
+    // gLogLevel = util::LevelDebug;
   }
 };
 
