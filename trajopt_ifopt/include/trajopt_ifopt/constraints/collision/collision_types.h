@@ -48,7 +48,7 @@ struct CollisionCoeffData
   using Ptr = std::shared_ptr<CollisionCoeffData>;
   using ConstPtr = std::shared_ptr<const CollisionCoeffData>;
 
-  CollisionCoeffData(const double& default_collision_coeff = 1);
+  CollisionCoeffData(double default_collision_coeff = 1);
 
   /**
    * @brief Set the coefficient for a given contact pair
@@ -60,7 +60,7 @@ struct CollisionCoeffData
    * @param obj2 The Second object name. Order doesn't matter
    * @param Coeff Coefficient
    */
-  void setPairCollisionCoeff(const std::string& obj1, const std::string& obj2, const double& collision_coeff);
+  void setPairCollisionCoeff(const std::string& obj1, const std::string& obj2, double collision_coeff);
 
   /**
    * @brief Get the pairs collision coefficient
@@ -71,7 +71,13 @@ struct CollisionCoeffData
    * @param obj2 The second object name
    * @return Coefficient
    */
-  const double& getPairCollisionCoeff(const std::string& obj1, const std::string& obj2) const;
+  double getPairCollisionCoeff(const std::string& obj1, const std::string& obj2) const;
+
+  /**
+   * @brief Get the pairs with zero coeff
+   * @return A vector of pairs with zero coeff
+   */
+  const std::set<tesseract_common::LinkNamesPair>& getPairsWithZeroCoeff() const;
 
 private:
   /// Stores the collision coefficient used if no pair-specific one is set
@@ -79,6 +85,9 @@ private:
 
   /// A map of link pair names to contact distance
   std::unordered_map<tesseract_common::LinkNamesPair, double, tesseract_common::PairHash> lookup_table_;
+
+  /// Pairs containing zero coeff
+  std::set<tesseract_common::LinkNamesPair> zero_coeff_;
 };
 
 /**

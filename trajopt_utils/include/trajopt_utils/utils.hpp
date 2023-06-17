@@ -58,6 +58,12 @@ struct SafetyMarginData
    */
   double getMaxSafetyMargin() const;
 
+  /**
+   * @brief Get the pairs with zero coeff
+   * @return A vector of pairs with zero coeff
+   */
+  const std::set<tesseract_common::LinkNamesPair>& getPairsWithZeroCoeff() const;
+
 private:
   /// The coeff used during optimization
   /// safety margin: contacts with distance < dist_pen are penalized
@@ -71,6 +77,9 @@ private:
   /// A map of link pair to contact distance setting [dist_pen, coeff]
   std::unordered_map<tesseract_common::LinkNamesPair, std::array<double, 2>, tesseract_common::PairHash>
       pair_lookup_table_;
+
+  /// Pairs containing zero coeff
+  std::set<tesseract_common::LinkNamesPair> zero_coeff_;
 };
 
 /**

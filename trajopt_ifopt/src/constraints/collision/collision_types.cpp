@@ -26,29 +26,36 @@
 
 namespace trajopt_ifopt
 {
-CollisionCoeffData::CollisionCoeffData(const double& default_collision_coeff)
+CollisionCoeffData::CollisionCoeffData(double default_collision_coeff)
   : default_collision_coeff_(default_collision_coeff)
 {
 }
 
-void CollisionCoeffData::setPairCollisionCoeff(const std::string& obj1,
-                                               const std::string& obj2,
-                                               const double& collision_coeff)
+void CollisionCoeffData::setPairCollisionCoeff(const std::string& obj1, const std::string& obj2, double collision_coeff)
 {
   auto key = tesseract_common::makeOrderedLinkPair(obj1, obj2);
   lookup_table_[key] = collision_coeff;
+
+  if (tesseract_common::almostEqualRelativeAndAbs(collision_coeff, 0.0))
+    zero_coeff_.insert(key);
+  else
+    zero_coeff_.erase(key);
 }
 
-const double& CollisionCoeffData::getPairCollisionCoeff(const std::string& obj1, const std::string& obj2) const
+double CollisionCoeffData::getPairCollisionCoeff(const std::string& obj1, const std::string& obj2) const
 {
   auto key = tesseract_common::makeOrderedLinkPair(obj1, obj2);
   const auto it = lookup_table_.find(key);
 
   if (it != lookup_table_.end())
-  {
     return it->second;
-  }
+
   return default_collision_coeff_;
+}
+
+const std::set<tesseract_common::LinkNamesPair>& CollisionCoeffData::getPairsWithZeroCoeff() const
+{
+  return zero_coeff_;
 }
 
 TrajOptCollisionConfig::TrajOptCollisionConfig(double margin, double coeff)

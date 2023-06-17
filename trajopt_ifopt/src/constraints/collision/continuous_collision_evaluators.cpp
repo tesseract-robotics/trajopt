@@ -181,7 +181,16 @@ void LVSContinuousCollisionEvaluator::CalcCollisionsHelper(const Eigen::Ref<cons
 
   // Create filter
   // Don't include contacts at the fixed state
-  auto filter = [this](tesseract_collision::ContactResultMap::PairType& pair) {
+  // Don't include contacts with zero coeffs
+  const auto& zero_coeff_pairs = collision_config_->collision_coeff_data.getPairsWithZeroCoeff();
+  auto filter = [this, &zero_coeff_pairs](tesseract_collision::ContactResultMap::PairType& pair) {
+    // Remove pairs with zero coeffs
+    if (std::find(zero_coeff_pairs.begin(), zero_coeff_pairs.end(), pair.first) != zero_coeff_pairs.end())
+    {
+      pair.second.clear();
+      return;
+    }
+
     // Contains the contact distance threshold and coefficient for the given link pair
     double dist = collision_config_->contact_manager_config.margin_data.getPairCollisionMargin(pair.first.first,
                                                                                                pair.first.second);
@@ -400,7 +409,17 @@ void LVSDiscreteCollisionEvaluator::CalcCollisionsHelper(const Eigen::Ref<const 
   }
 
   // Create filter
-  auto filter = [this](tesseract_collision::ContactResultMap::PairType& pair) {
+  // Don't include contacts at the fixed state
+  // Don't include contacts with zero coeffs
+  const auto& zero_coeff_pairs = collision_config_->collision_coeff_data.getPairsWithZeroCoeff();
+  auto filter = [this, &zero_coeff_pairs](tesseract_collision::ContactResultMap::PairType& pair) {
+    // Remove pairs with zero coeffs
+    if (std::find(zero_coeff_pairs.begin(), zero_coeff_pairs.end(), pair.first) != zero_coeff_pairs.end())
+    {
+      pair.second.clear();
+      return;
+    }
+
     // Contains the contact distance threshold and coefficient for the given link pair
     double dist = collision_config_->contact_manager_config.margin_data.getPairCollisionMargin(pair.first.first,
                                                                                                pair.first.second);

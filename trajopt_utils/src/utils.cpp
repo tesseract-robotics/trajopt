@@ -1,4 +1,5 @@
 #include <trajopt_utils/utils.hpp>
+#include <tesseract_common/utils.h>
 
 namespace util
 {
@@ -19,6 +20,11 @@ void SafetyMarginData::setPairSafetyMarginData(const std::string& obj1,
 
   if (safety_margin > max_safety_margin_)
     max_safety_margin_ = safety_margin;
+
+  if (tesseract_common::almostEqualRelativeAndAbs(safety_margin_coeff, 0.0))
+    zero_coeff_.insert(key);
+  else
+    zero_coeff_.erase(key);
 }
 
 const std::array<double, 2>& SafetyMarginData::getPairSafetyMarginData(const std::string& obj1,
@@ -36,6 +42,8 @@ const std::array<double, 2>& SafetyMarginData::getPairSafetyMarginData(const std
 }
 
 double SafetyMarginData::getMaxSafetyMargin() const { return max_safety_margin_; }
+
+const std::set<tesseract_common::LinkNamesPair>& SafetyMarginData::getPairsWithZeroCoeff() const { return zero_coeff_; }
 
 std::vector<SafetyMarginData::Ptr> createSafetyMarginDataVector(int num_elements,
                                                                 double default_safety_margin,

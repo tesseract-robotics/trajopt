@@ -695,7 +695,8 @@ OptStatus BasicTrustRegionSQP::optimize()
             qp_solver_failures++;
             continue;
           }
-          else if (qp_solver_failures == (param_.max_qp_solver_failures - 1))
+
+          if (qp_solver_failures == (param_.max_qp_solver_failures - 1))
           {
             // convex solver failed and this is the last attempt so setting the trust region to the minimum.
             setTrustRegionSize(param_.min_trust_box_size);
@@ -703,6 +704,7 @@ OptStatus BasicTrustRegionSQP::optimize()
             qp_solver_failures++;
             continue;
           }
+
           LOG_ERROR("The convex solver failed you one too many times.");
           retval = OPT_FAILED;
           goto cleanup;
