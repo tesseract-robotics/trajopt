@@ -3,6 +3,7 @@
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <functional>
 #include <string>
+#include <array>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt_sco/modeling.hpp>
