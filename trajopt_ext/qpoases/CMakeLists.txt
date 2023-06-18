@@ -4,7 +4,7 @@ find_package(ros_industrial_cmake_boilerplate REQUIRED)
 extract_package_metadata(pkg)
 project(qpoases VERSION ${pkg_extracted_version} LANGUAGES CXX)
 
-find_package(qpoases QUIET)
+find_package(qpOASES QUIET)
 
 if(NOT qpOASES_FOUND)
   message(WARNING "No valid qpOASES version found. Cloning into build directory")
