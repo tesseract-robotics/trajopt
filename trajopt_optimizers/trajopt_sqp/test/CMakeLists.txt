@@ -70,10 +70,12 @@ add_gtest(${PROJECT_NAME}_simple_collision_unit simple_collision_unit.cpp)
 add_gtest(${PROJECT_NAME}_cart_position_optimization_unit cart_position_optimization_unit.cpp)
 
 # This is for comparison and should be moved to trajopt
-add_executable(${PROJECT_NAME}_cart_position_optimization_trajopt_sco_unit cart_position_optimization_trajopt_sco_unit.cpp)
-target_compile_options(${PROJECT_NAME}_cart_position_optimization_trajopt_sco_unit PRIVATE ${TRAJOPT_COMPILE_OPTIONS_PRIVATE} ${TRAJOPT_COMPILE_OPTIONS_PUBLIC})
-target_compile_definitions(${PROJECT_NAME}_cart_position_optimization_trajopt_sco_unit PRIVATE ${TRAJOPT_COMPILE_DEFINITIONS}
-                                                TRAJOPT_IFOPT_DIR="${CMAKE_SOURCE_DIR}")
+add_executable(${PROJECT_NAME}_cart_position_optimization_trajopt_sco_unit
+               cart_position_optimization_trajopt_sco_unit.cpp)
+target_compile_options(${PROJECT_NAME}_cart_position_optimization_trajopt_sco_unit
+                       PRIVATE ${TRAJOPT_COMPILE_OPTIONS_PRIVATE} ${TRAJOPT_COMPILE_OPTIONS_PUBLIC})
+target_compile_definitions(${PROJECT_NAME}_cart_position_optimization_trajopt_sco_unit
+                           PRIVATE ${TRAJOPT_COMPILE_DEFINITIONS} TRAJOPT_IFOPT_DIR="${CMAKE_SOURCE_DIR}")
 target_cxx_version(${PROJECT_NAME}_cart_position_optimization_trajopt_sco_unit PRIVATE VERSION ${TRAJOPT_CXX_VERSION})
 target_clang_tidy(${PROJECT_NAME}_cart_position_optimization_trajopt_sco_unit ENABLE ${TRAJOPT_ENABLE_CLANG_TIDY})
 target_link_libraries(
@@ -86,9 +88,10 @@ target_link_libraries(
   trajopt::trajopt
   GTest::GTest
   GTest::Main)
-target_include_directories(${PROJECT_NAME}_cart_position_optimization_trajopt_sco_unit PRIVATE "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>"
-                                                ${GTEST_INCLUDE_DIRS})
-target_include_directories(${PROJECT_NAME}_cart_position_optimization_trajopt_sco_unit SYSTEM PRIVATE ${PCL_INCLUDE_DIRS})
+target_include_directories(${PROJECT_NAME}_cart_position_optimization_trajopt_sco_unit
+                           PRIVATE "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>" ${GTEST_INCLUDE_DIRS})
+target_include_directories(${PROJECT_NAME}_cart_position_optimization_trajopt_sco_unit SYSTEM
+                           PRIVATE ${PCL_INCLUDE_DIRS})
 add_gtest_discover_tests(${PROJECT_NAME}_cart_position_optimization_trajopt_sco_unit)
 add_dependencies(${PROJECT_NAME}_cart_position_optimization_trajopt_sco_unit ${PROJECT_NAME})
 add_dependencies(run_tests ${PROJECT_NAME}_cart_position_optimization_trajopt_sco_unit)
