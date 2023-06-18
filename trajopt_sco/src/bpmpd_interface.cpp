@@ -150,7 +150,7 @@ logfile it generates.
 
 namespace sco
 {
-static double BPMPD_BIG = 1e+30;
+static const double BPMPD_BIG = 1e+30;
 
 Model::Ptr createBPMPDModel()
 {
@@ -202,9 +202,9 @@ pid_t popen2(const char* command, int* infp, int* outfp)
   return pid;
 }
 
-static pid_t gPID = 0;
-static int gPipeIn = 0;
-static int gPipeOut = 0;
+static pid_t gPID = 0;    // NOLINT
+static int gPipeIn = 0;   // NOLINT
+static int gPipeOut = 0;  // NOLINT
 
 void fexit()
 {
@@ -438,8 +438,8 @@ CvxOptStatus BPMPDModel::optimize()
   }
 
 #define VECINC(vec)                                                                                                    \
-  for (unsigned i = 0; i < (vec).size(); ++i)                                                                          \
-    ++(vec)[i];
+  for (auto& v : (vec))                                                                                                \
+    ++v;
   VECINC(acolidx);
   VECINC(qcolidx);
 #undef VECINC
