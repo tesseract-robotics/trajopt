@@ -73,7 +73,11 @@ class qpOASESModel : public Model
 
 public:
   qpOASESModel();
-  virtual ~qpOASESModel();
+  ~qpOASESModel() override;
+  qpOASESModel(const qpOASESModel&) = default;
+  qpOASESModel& operator=(const qpOASESModel&) = default;
+  qpOASESModel(qpOASESModel&&) = default;
+  qpOASESModel& operator=(qpOASESModel&&) = default;
 
   Var addVar(const std::string& name) override;
   Cnt addEqCnt(const AffExpr&, const std::string& name) override;
@@ -85,10 +89,10 @@ public:
   void update() override;
   void setVarBounds(const VarVector& vars, const DblVec& lower, const DblVec& upper) override;
   DblVec getVarValues(const VarVector& vars) const override;
-  virtual CvxOptStatus optimize() override;
-  virtual void setObjective(const AffExpr&) override;
-  virtual void setObjective(const QuadExpr&) override;
-  virtual void writeToFile(const std::string& fname) const override;
-  virtual VarVector getVars() const override;
+  CvxOptStatus optimize() override;
+  void setObjective(const AffExpr&) override;
+  void setObjective(const QuadExpr&) override;
+  void writeToFile(const std::string& fname) const override;
+  VarVector getVars() const override;
 };
 }  // namespace sco

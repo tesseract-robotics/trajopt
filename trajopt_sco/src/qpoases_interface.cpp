@@ -3,7 +3,7 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <cmath>
 #include <Eigen/Eigen>
 #include <fstream>
-#include <signal.h>
+#include <csignal>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt_sco/qpoases_interface.hpp>
@@ -35,7 +35,7 @@ qpOASESModel::qpOASESModel()
   qpoases_options_.ensureConsistency();
 }
 
-qpOASESModel::~qpOASESModel() {}
+qpOASESModel::~qpOASESModel() = default;
 Var qpOASESModel::addVar(const std::string& name)
 {
   vars_.push_back(std::make_shared<VarRep>(vars_.size(), name, this));
@@ -70,28 +70,31 @@ void qpOASESModel::removeVars(const VarVector& vars)
 {
   IntVec inds;
   vars2inds(vars, inds);
-  for (size_t i = 0; i < vars.size(); ++i)
-    vars[i].var_rep->removed = true;
+  for (const auto& var : vars)
+    var.var_rep->removed = true;
 }
 
 void qpOASESModel::removeCnts(const CntVector& cnts)
 {
   IntVec inds;
   cnts2inds(cnts, inds);
-  for (size_t i = 0; i < cnts.size(); ++i)
-    cnts[i].cnt_rep->removed = true;
+  for (const auto& cnt : cnts)
+    cnt.cnt_rep->removed = true;
 }
 
 void qpOASESModel::updateObjective()
 {
-  const Eigen::Index n = Eigen::Index(vars_.size());
+  const auto n = static_cast<Eigen::Index>(vars_.size());
 
   Eigen::SparseMatrix<double> sm;
   exprToEigen(objective_, sm, g_, n, true, true);
   eigenToCSC(sm, H_row_indices_, H_column_pointers_, H_csc_data_);
 
-  H_ = SymSparseMat(
-      (int)vars_.size(), (int)vars_.size(), H_row_indices_.data(), H_column_pointers_.data(), H_csc_data_.data());
+  H_ = SymSparseMat(static_cast<int>(vars_.size()),
+                    static_cast<int>(vars_.size()),
+                    H_row_indices_.data(),
+                    H_column_pointers_.data(),
+                    H_csc_data_.data());
   H_.createDiagInfo();
 }
 
@@ -107,17 +110,20 @@ void qpOASESModel::updateConstraints()
 
   Eigen::SparseMatrix<double> sm;
   Eigen::VectorXd v;
-  exprToEigen(cnt_exprs_, sm, v, Eigen::Index(n));
+  exprToEigen(cnt_exprs_, sm, v, static_cast<Eigen::Index>(n));
 
   for (size_t i_cnt = 0; i_cnt < m; ++i_cnt)
   {
-    lbA_[i_cnt] = (cnt_types_[i_cnt] == INEQ) ? -QPOASES_INFTY : v[Eigen::Index(i_cnt)];
-    ubA_[i_cnt] = v[Eigen::Index(i_cnt)];
+    lbA_[i_cnt] = (cnt_types_[i_cnt] == INEQ) ? -QPOASES_INFTY : v[static_cast<Eigen::Index>(i_cnt)];
+    ubA_[i_cnt] = v[static_cast<Eigen::Index>(i_cnt)];
   }
 
   eigenToCSC(sm, A_row_indices_, A_column_pointers_, A_csc_data_);
-  A_ = SparseMatrix(
-      (int)cnts_.size(), (int)vars_.size(), A_row_indices_.data(), A_column_pointers_.data(), A_csc_data_.data());
+  A_ = SparseMatrix(static_cast<int>(cnts_.size()),
+                    static_cast<int>(vars_.size()),
+                    A_row_indices_.data(),
+                    A_column_pointers_.data(),
+                    A_csc_data_.data());
 }
 
 bool qpOASESModel::updateSolver()
@@ -217,7 +223,7 @@ CvxOptStatus qpOASESModel::optimize()
 
   // Solve Problem
   int nWSR = 255;
-  if (qpoases_problem_->isInitialised())
+  if (qpoases_problem_->isInitialised() == qpOASES::BT_TRUE)
   {
     val = qpoases_problem_->hotstart(
         &H_, g_.data(), &A_, lb_.data(), ub_.data(), lbA_.data(), ubA_.data(), nWSR, nullptr);
@@ -237,23 +243,20 @@ CvxOptStatus qpOASESModel::optimize()
   {
     // opt += m_objective.affexpr.constant;
     solution_.resize(vars_.size(), 0.);
-    val = qpoases_problem_->getPrimalSolution(solution_.data());
+    //    val = qpoases_problem_->getPrimalSolution(solution_.data());
+    qpoases_problem_->getPrimalSolution(solution_.data());
     return CVX_SOLVED;
   }
-  else if (val == qpOASES::RET_INIT_FAILED_INFEASIBILITY)
+
+  if (val == qpOASES::RET_INIT_FAILED_INFEASIBILITY)
   {
     return CVX_INFEASIBLE;
   }
-  else
-  {
-    return CVX_FAILED;
-  }
+
+  return CVX_FAILED;
 }
 void qpOASESModel::setObjective(const AffExpr& expr) { objective_.affexpr = expr; }
 void qpOASESModel::setObjective(const QuadExpr& expr) { objective_ = expr; }
-void qpOASESModel::writeToFile(const std::string& /*fname*/) const
-{
-  return;  // NOT IMPLEMENTED
-}
+void qpOASESModel::writeToFile(const std::string& /*fname*/) const {}
 VarVector qpOASESModel::getVars() const { return vars_; }
 }  // namespace sco

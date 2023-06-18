@@ -518,30 +518,30 @@ void BasicTrustRegionSQPResults::writeConstraints(std::FILE* stream, bool header
 void BasicTrustRegionSQPResults::printRaw() const
 {
   std::cout << "\nmodel_var_vals:";
-  for (auto& i : model_var_vals)
+  for (const auto& i : model_var_vals)
     std::cout << i << ", ";
 
   std::cout << "\nmodel_cost_vals: ";
-  for (auto& i : model_cost_vals)
+  for (const auto& i : model_cost_vals)
     std::cout << i << ", ";
 
   std::cout << "\nmodel_cnt_viols: ";
-  for (auto& i : model_cnt_viols)
+  for (const auto& i : model_cnt_viols)
     std::cout << i << ", ";
   std::cout << "\nnew_x: ";
-  for (auto& i : new_x)
+  for (const auto& i : new_x)
     std::cout << i << ", ";
   std::cout << "\nnew_cost_vals: ";
-  for (auto& i : new_cost_vals)
+  for (const auto& i : new_cost_vals)
     std::cout << i << ", ";
   std::cout << "\nold_cost_vals: ";
-  for (auto& i : old_cost_vals)
+  for (const auto& i : old_cost_vals)
     std::cout << i << ", ";
   std::cout << "\nnew_cnt_viols: ";
-  for (auto& i : new_cnt_viols)
+  for (const auto& i : new_cnt_viols)
     std::cout << i << ", ";
   std::cout << "\nold_cnt_viols: ";
-  for (auto& i : old_cnt_viols)
+  for (const auto& i : old_cnt_viols)
     std::cout << i << ", ";
 
   std::cout << "\nold_merit: " << old_merit << " \n";
@@ -552,16 +552,16 @@ void BasicTrustRegionSQPResults::printRaw() const
   std::cout << "merit_improve_ratio: " << merit_improve_ratio << " \n";
 
   std::cout << "merit_error_coeffs: ";
-  for (auto& i : merit_error_coeffs)
+  for (const auto& i : merit_error_coeffs)
     std::cout << i << ", ";
   std::cout << "\nvar_names: ";
-  for (auto& i : var_names)
+  for (const auto& i : var_names)
     std::cout << i << ", ";
   std::cout << "\ncost_names: ";
-  for (auto& i : cost_names)
+  for (const auto& i : cost_names)
     std::cout << i << ", ";
   std::cout << "\ncnt_names: ";
-  for (auto& i : cnt_names)
+  for (const auto& i : cnt_names)
     std::cout << i << ", ";
 }
 

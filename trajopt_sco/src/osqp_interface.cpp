@@ -27,8 +27,8 @@ OSQPModelConfig::OSQPModelConfig()
   settings.eps_rel = 1e-6;
   settings.max_iter = 8192;
   settings.polish = 1;
-  settings.adaptive_rho = true;
-  settings.verbose = SUPER_DEBUG_MODE;
+  settings.adaptive_rho = 1;
+  settings.verbose = static_cast<c_int>(SUPER_DEBUG_MODE);
 }
 
 Model::Ptr createOSQPModel(const ModelConfig::ConstPtr& config = nullptr)
@@ -54,7 +54,8 @@ OSQPModel::~OSQPModel()
     var.var_rep->removed = true;
   for (Cnt& cnt : cnts_)
     cnt.cnt_rep->removed = true;
-  update();
+
+  OSQPModel::update();
 }
 
 Var OSQPModel::addVar(const std::string& name)
@@ -87,7 +88,7 @@ void OSQPModel::removeVars(const VarVector& vars)
 {
   SizeTVec inds;
   vars2inds(vars, inds);
-  for (auto& var : vars)
+  for (const auto& var : vars)
     var.var_rep->removed = true;
 }
 
@@ -95,7 +96,7 @@ void OSQPModel::removeCnts(const CntVector& cnts)
 {
   SizeTVec inds;
   cnts2inds(cnts, inds);
-  for (auto& cnt : cnts)
+  for (const auto& cnt : cnts)
     cnt.cnt_rep->removed = true;
 }
 
@@ -143,7 +144,7 @@ void OSQPModel::updateConstraints()
   Eigen::SparseMatrix<double> sm;
   Eigen::VectorXd v;
   exprToEigen(cnt_exprs_, sm, v, static_cast<int>(n));
-  sm.conservativeResize(m_int + n_int, Eigen::NoChange_t(n));
+  sm.conservativeResize(m_int + n_int, Eigen::NoChange);
 
   l_.clear();
   l_.resize(m + n, -OSQP_INFINITY);
@@ -211,7 +212,7 @@ void OSQPModel::createOrUpdateSolver()
 
   // Setup workspace - this should be called only once
   auto ret = osqp_setup(&osqp_workspace_, &osqp_data_, &config_.settings);
-  if (ret)
+  if (ret != 0)
   {
     // In this case, no data got allocated, so don't try to free it.
     if (ret == OSQP_DATA_VALIDATION_ERROR || ret == OSQP_SETTINGS_VALIDATION_ERROR)

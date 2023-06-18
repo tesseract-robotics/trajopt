@@ -136,7 +136,7 @@ struct CntRep
 {
   using Ptr = std::shared_ptr<CntRep>;
 
-  CntRep(std::size_t _index, void* _creator) : index(_index), removed(false), creator(_creator) {}
+  CntRep(std::size_t _index, void* _creator) : index(_index), creator(_creator) {}
   CntRep(const CntRep&) = default;
   CntRep& operator=(const CntRep&) = default;
   CntRep(CntRep&&) = default;
@@ -144,9 +144,9 @@ struct CntRep
   ~CntRep() = default;
 
   std::size_t index;
-  bool removed;
+  bool removed{ false };
   void* creator;
-  ConstraintType type;
+  ConstraintType type{ ConstraintType::EQ };
   std::string expr;  // todo placeholder
 };
 
@@ -181,7 +181,7 @@ struct AffExpr
   AffExpr& operator=(AffExpr&&) = default;
 
   explicit AffExpr(double a) : constant(a) {}
-  explicit AffExpr(const Var& v) : constant(0), coeffs(1, 1), vars(1, v) {}
+  explicit AffExpr(const Var& v) : coeffs(1, 1), vars(1, v) {}
 
   size_t size() const { return coeffs.size(); }
   double value(const double* x) const;

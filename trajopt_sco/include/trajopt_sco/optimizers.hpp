@@ -22,24 +22,25 @@ enum OptStatus
   OPT_FAILED,
   INVALID
 };
-static const char* OptStatus_strings[] = { "CONVERGED",
-                                           "SCO_ITERATION_LIMIT",
-                                           "PENALTY_ITERATION_LIMIT",
-                                           "FAILED",
-                                           "INVALID" };
+static const std::array<std::string, 5> OptStatus_strings = { "CONVERGED",
+                                                              "SCO_ITERATION_LIMIT",
+                                                              "PENALTY_ITERATION_LIMIT",
+                                                              "FAILED",
+                                                              "INVALID" };
 inline std::string statusToString(OptStatus status) { return OptStatus_strings[status]; }
 struct OptResults
 {
   DblVec x;  // solution estimate
-  OptStatus status;
-  double total_cost;
+  OptStatus status{ INVALID };
+  double total_cost{ 0 };
   DblVec cost_vals;
   DblVec cnt_viols;
-  int n_func_evals, n_qp_solves;
+  int n_func_evals{ 0 }, n_qp_solves{ 0 };
   void clear()
   {
     x.clear();
     status = INVALID;
+    total_cost = 0;
     cost_vals.clear();
     cnt_viols.clear();
     n_func_evals = 0;

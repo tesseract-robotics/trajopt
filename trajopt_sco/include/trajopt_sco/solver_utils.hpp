@@ -121,7 +121,7 @@ void eigenToCSC(Eigen::SparseMatrix<double>& sparse_matrix,
   if (sizeof(T) != sizeof(int))
   {
     IntVec row_indices_int, column_pointers_int;
-    auto si_p = sm_ref.get().innerIndexPtr();
+    auto* si_p = sm_ref.get().innerIndexPtr();
     row_indices_int.assign(si_p, si_p + sm_ref.get().nonZeros());
     row_indices.clear();
     row_indices.reserve(row_indices_int.size());
@@ -137,7 +137,7 @@ void eigenToCSC(Eigen::SparseMatrix<double>& sparse_matrix,
   }
   else
   {
-    auto si_p = sm_ref.get().innerIndexPtr();
+    auto* si_p = sm_ref.get().innerIndexPtr();
     row_indices.assign(si_p, si_p + sm_ref.get().nonZeros());
 
     si_p = sm_ref.get().outerIndexPtr();
@@ -148,7 +148,7 @@ void eigenToCSC(Eigen::SparseMatrix<double>& sparse_matrix,
   // pointers ends with the number of non-zero elements
   column_pointers.push_back(static_cast<T>(sm_ref.get().nonZeros()));
 
-  auto csc_v = sm_ref.get().valuePtr();
+  auto* csc_v = sm_ref.get().valuePtr();
   values.assign(csc_v, csc_v + sm_ref.get().nonZeros());
 }
 }  // namespace sco

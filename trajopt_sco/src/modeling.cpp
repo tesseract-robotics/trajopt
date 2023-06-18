@@ -76,7 +76,7 @@ void ConvexObjective::addL2Norm(const AffExprVector& ev)
 
 void ConvexObjective::addMax(const AffExprVector& ev)
 {
-  Var m = model_->addVar("max", -INFINITY, INFINITY);
+  Var m = model_->addVar("max", static_cast<double>(-INFINITY), static_cast<double>(INFINITY));
   ineqs_.reserve(ineqs_.size() + ev.size());
   for (const auto& i : ev)
   {
@@ -148,7 +148,7 @@ ConvexConstraints::~ConvexConstraints()
     removeFromModel();
 }
 
-double ConvexObjective::value(const DblVec& x) { return quad_.value(x); }
+double ConvexObjective::value(const DblVec& x) const { return quad_.value(x); }
 DblVec Constraint::violations(const DblVec& x)
 {
   DblVec val = value(x);

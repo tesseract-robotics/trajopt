@@ -39,6 +39,7 @@ void exprToEigen(const QuadExpr& expr,
   vars2inds(expr.vars1, ind1);
   SizeTVec ind2;
   vars2inds(expr.vars2, ind2);
+  assert((ind2.size() == ind1.size()) && (ind1.size() == expr.coeffs.size()));  // NOLINT
   sparse_matrix.resize(n_vars, n_vars);
   sparse_matrix.reserve(static_cast<long int>(2 * expr.size()));
 
@@ -50,12 +51,15 @@ void exprToEigen(const QuadExpr& expr,
   {
     if (expr.coeffs[i] != 0.0)
     {
+      // NOLINTNEXTLINE
       if (ind1[i] == ind2[i])
+      {
         sparse_matrix.coeffRef(static_cast<Eigen::Index>(ind1[i]), static_cast<Eigen::Index>(ind2[i])) +=
             expr.coeffs[i];
+      }
       else
       {
-        Eigen::Index c, r;
+        Eigen::Index c{ 0 }, r{ 0 };
         if (ind1[i] < ind2[i])
         {
           r = static_cast<Eigen::Index>(ind1[i]);
@@ -123,13 +127,20 @@ void tripletsToEigen(const IntVec& rows_i,
                      const DblVec& values_ij,
                      Eigen::SparseMatrix<double>& sparse_matrix)
 {
+  assert((rows_i.size() == cols_j.size()) && (rows_i.size() == values_ij.size()));  // NOLINT
+  sparse_matrix.resize(static_cast<long int>(rows_i.size()), static_cast<long int>(cols_j.size()));
+  sparse_matrix.reserve(static_cast<Eigen::Index>(rows_i.size()));
+
   using T = Eigen::Triplet<double>;
-  std::vector<T, Eigen::aligned_allocator<T>> triplets;
+  thread_local std::vector<T, Eigen::aligned_allocator<T>> triplets;
+  triplets.clear();
+  triplets.reserve(values_ij.size());
+
+  // NOLINTNEXTLINE
   for (unsigned int i = 0; i < values_ij.size(); ++i)
-  {
     triplets.emplace_back(rows_i[i], cols_j[i], values_ij[i]);
-  }
-  sparse_matrix.setFromTriplets(triplets.begin(), triplets.end());  // NOLINT
+
+  sparse_matrix.setFromTriplets(triplets.begin(), triplets.end());
 }
 
 void eigenToTriplets(const Eigen::SparseMatrix<double>& sparse_matrix,
@@ -137,7 +148,7 @@ void eigenToTriplets(const Eigen::SparseMatrix<double>& sparse_matrix,
                      IntVec& cols_j,
                      DblVec& values_ij)
 {
-  auto& sm = sparse_matrix;
+  const auto& sm = sparse_matrix;
   rows_i.reserve(rows_i.size() + static_cast<size_t>(sm.nonZeros()));
   cols_j.reserve(cols_j.size() + static_cast<size_t>(sm.nonZeros()));
   values_ij.reserve(values_ij.size() + static_cast<size_t>(sm.nonZeros()));
