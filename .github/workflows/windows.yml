@@ -25,6 +25,11 @@ jobs:
       with:
         path: workspace/src/trajopt
 
+    - name: configure-msvc
+      uses: ilammy/msvc-dev-cmd@v1
+      with:
+        arch: x64
+
     - name: vcpkg build
       uses: johnwason/vcpkg-action@v4
       with:
@@ -36,6 +41,7 @@ jobs:
         extra-args: --clean-after-build
         token: ${{ github.token }}
         cache-key: ci-${{ matrix.os }}
+        revision: master
 
     - name: install-depends
       shell: cmd
@@ -43,11 +49,6 @@ jobs:
         python -m pip install vcstool -q
         python -m pip install colcon-common-extensions -q
         python -m pip install ninja -q
-
-    - name: configure-msvc
-      uses: ilammy/msvc-dev-cmd@v1
-      with:
-        arch: x64
 
     - name: build-workspace
       working-directory: workspace

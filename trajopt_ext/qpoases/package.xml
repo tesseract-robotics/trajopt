@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>qpoases</name>
+  <version>3.2.1</version>
+  <description>Downloads and builds the qpOASES Library</description>
+  <maintainer email="levi.armstrong@swri.org">Levi Armstrong</maintainer>
+  <license>LGPL</license>
+
+  <build_depend>ros_industrial_cmake_boilerplate</build_depend>
+
+  <export>
+    <build_type>cmake</build_type>
+  </export>
+
+</package>

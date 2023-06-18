@@ -10,7 +10,7 @@ TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace sco
 {
-void exprToEigen(const AffExpr& expr, Eigen::SparseVector<double>& sparse_vector, const int& n_vars)
+void exprToEigen(const AffExpr& expr, Eigen::SparseVector<double>& sparse_vector, const Eigen::Index& n_vars)
 {
   sparse_vector.resize(n_vars);
   sparse_vector.reserve(static_cast<long int>(expr.size()));
@@ -31,7 +31,7 @@ void exprToEigen(const AffExpr& expr, Eigen::SparseVector<double>& sparse_vector
 void exprToEigen(const QuadExpr& expr,
                  Eigen::SparseMatrix<double>& sparse_matrix,
                  Eigen::VectorXd& vector,
-                 const int& n_vars,
+                 const Eigen::Index& n_vars,
                  const bool& matrix_is_halved,
                  const bool& force_diagonal)
 {
@@ -85,7 +85,7 @@ void exprToEigen(const QuadExpr& expr,
 void exprToEigen(const AffExprVector& expr_vec,
                  Eigen::SparseMatrix<double>& sparse_matrix,
                  Eigen::VectorXd& vector,
-                 const int& n_vars)
+                 const Eigen::Index& n_vars)
 {
   vector.resize(static_cast<long int>(expr_vec.size()));
   vector.setZero();

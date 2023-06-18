@@ -46,7 +46,7 @@ public:
     ResourceLocator::Ptr locator = std::make_shared<TrajOptSupportResourceLocator>();
     EXPECT_TRUE(env_->init(urdf_file, srdf_file, locator));
 
-    gLogLevel = util::LevelDebug;
+    // gLogLevel = util::LevelDebug;
 
     // Create plotting tool
     //    plotter_.reset(new tesseract_ros::ROSBasicPlotting(env_));
