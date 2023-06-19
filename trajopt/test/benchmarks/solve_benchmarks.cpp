@@ -58,6 +58,21 @@ static void BM_TRAJOPT_PLANNING_SOLVE(benchmark::State& state, Environment::Ptr 
   }
 }
 
+/** @brief Benchmark trajopt simple collision solve */
+static void BM_TRAJOPT_MULTI_THREADED_SIMPLE_COLLISION_SOLVE(benchmark::State& state,
+                                                             Environment::Ptr env,
+                                                             Json::Value root)
+{
+  for (auto _ : state)
+  {
+    TrajOptProb::Ptr prob = ConstructProblem(root, env);
+    sco::BasicTrustRegionSQPMultiThreaded opt(prob);
+    opt.getParameters().num_threads = 5;
+    opt.initialize(trajToDblVec(prob->GetInitTraj()));
+    opt.optimize();
+  }
+}
+
 /** @brief Benchmark trajopt planning solve */
 static void BM_TRAJOPT_MULTI_THREADED_PLANNING_SOLVE(benchmark::State& state, Environment::Ptr env, Json::Value root)
 {
