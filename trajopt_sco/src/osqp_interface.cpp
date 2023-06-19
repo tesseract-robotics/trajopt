@@ -144,7 +144,7 @@ void OSQPModel::updateConstraints()
   Eigen::SparseMatrix<double> sm;
   Eigen::VectorXd v;
   exprToEigen(cnt_exprs_, sm, v, static_cast<int>(n));
-  sm.conservativeResize(m_int + n_int, Eigen::NoChange);
+  sm.conservativeResize(m_int + n_int, Eigen::NoChange_t(n));
 
   l_.clear();
   l_.resize(m + n, -OSQP_INFINITY);

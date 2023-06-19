@@ -128,8 +128,7 @@ void tripletsToEigen(const IntVec& rows_i,
                      Eigen::SparseMatrix<double>& sparse_matrix)
 {
   assert((rows_i.size() == cols_j.size()) && (rows_i.size() == values_ij.size()));  // NOLINT
-  sparse_matrix.resize(static_cast<long int>(rows_i.size()), static_cast<long int>(cols_j.size()));
-  sparse_matrix.reserve(static_cast<Eigen::Index>(rows_i.size()));
+  sparse_matrix.reserve(static_cast<Eigen::Index>(values_ij.size()));
 
   using T = Eigen::Triplet<double>;
   thread_local std::vector<T, Eigen::aligned_allocator<T>> triplets;
