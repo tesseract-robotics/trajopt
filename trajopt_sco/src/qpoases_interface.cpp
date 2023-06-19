@@ -15,7 +15,7 @@ using namespace qpOASES;
 
 namespace sco
 {
-double QPOASES_INFTY = qpOASES::INFTY;
+static const double QPOASES_INFTY = qpOASES::INFTY;
 
 Model::Ptr createqpOASESModel()
 {
