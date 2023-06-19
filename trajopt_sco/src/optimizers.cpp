@@ -137,8 +137,8 @@ DblVec BasicTrustRegionSQPUtilFunctionsThreaded::evaluateCosts(const std::vector
 {
   DblVec out(costs.size());
 #pragma omp parallel for num_threads(num_threads_)
-  for (size_t i = 0; i < costs.size(); ++i)
-    out[i] = costs[i]->value(x);
+  for (int i = 0; i < costs.size(); ++i)  // NOLINT
+    out[i] = costs[i]->value(x);          // NOLINT
 
   return out;
 }
@@ -149,8 +149,8 @@ BasicTrustRegionSQPUtilFunctionsThreaded::evaluateConstraintViols(const std::vec
 {
   DblVec out(constraints.size());
 #pragma omp parallel for num_threads(num_threads_)
-  for (size_t i = 0; i < constraints.size(); ++i)
-    out[i] = constraints[i]->violation(x);
+  for (int i = 0; i < constraints.size(); ++i)  // NOLINT
+    out[i] = constraints[i]->violation(x);      // NOLINT
 
   return out;
 }
@@ -162,8 +162,8 @@ BasicTrustRegionSQPUtilFunctionsThreaded::convexifyCosts(const std::vector<Cost:
 {
   std::vector<ConvexObjective::Ptr> out(costs.size());
 #pragma omp parallel for num_threads(num_threads_)
-  for (size_t i = 0; i < costs.size(); ++i)
-    out[i] = costs[i]->convex(x, model);
+  for (int i = 0; i < costs.size(); ++i)  // NOLINT
+    out[i] = costs[i]->convex(x, model);  // NOLINT
 
   return out;
 }
@@ -175,8 +175,8 @@ BasicTrustRegionSQPUtilFunctionsThreaded::convexifyConstraints(const std::vector
 {
   std::vector<ConvexConstraints::Ptr> out(cnts.size());
 #pragma omp parallel for num_threads(num_threads_)
-  for (size_t i = 0; i < cnts.size(); ++i)
-    out[i] = cnts[i]->convex(x, model);
+  for (int i = 0; i < cnts.size(); ++i)  // NOLINT
+    out[i] = cnts[i]->convex(x, model);  // NOLINT
 
   return out;
 }
@@ -186,8 +186,8 @@ DblVec BasicTrustRegionSQPUtilFunctionsThreaded::evaluateModelCosts(const std::v
 {
   DblVec out(costs.size());
 #pragma omp parallel for num_threads(num_threads_)
-  for (size_t i = 0; i < costs.size(); ++i)
-    out[i] = costs[i]->value(x);
+  for (int i = 0; i < costs.size(); ++i)  // NOLINT
+    out[i] = costs[i]->value(x);          // NOLINT
 
   return out;
 }
@@ -197,8 +197,8 @@ DblVec BasicTrustRegionSQPUtilFunctionsThreaded::evaluateModelCntViols(const std
 {
   DblVec out(cnts.size());
 #pragma omp parallel for num_threads(num_threads_)
-  for (size_t i = 0; i < cnts.size(); ++i)
-    out[i] = cnts[i]->violation(x);
+  for (int i = 0; i < cnts.size(); ++i)  // NOLINT
+    out[i] = cnts[i]->violation(x);      // NOLINT
 
   return out;
 }
@@ -208,8 +208,8 @@ BasicTrustRegionSQPUtilFunctionsThreaded::getCostNames(const std::vector<Cost::P
 {
   std::vector<std::string> out(costs.size());
 #pragma omp parallel for num_threads(num_threads_)
-  for (size_t i = 0; i < costs.size(); ++i)
-    out[i] = costs[i]->name();
+  for (int i = 0; i < costs.size(); ++i)  // NOLINT
+    out[i] = costs[i]->name();            // NOLINT
 
   return out;
 }
@@ -219,18 +219,18 @@ BasicTrustRegionSQPUtilFunctionsThreaded::getCntNames(const std::vector<Constrai
 {
   std::vector<std::string> out(cnts.size());
 #pragma omp parallel for num_threads(num_threads_)
-  for (size_t i = 0; i < cnts.size(); ++i)
-    out[i] = cnts[i]->name();
+  for (int i = 0; i < cnts.size(); ++i)  // NOLINT
+    out[i] = cnts[i]->name();            // NOLINT
+
   return out;
 }
 
 std::vector<std::string> BasicTrustRegionSQPUtilFunctionsThreaded::getVarNames(const VarVector& vars) const
 {
   std::vector<std::string> out(vars.size());
-  out.reserve(vars.size());
 #pragma omp parallel for num_threads(num_threads_)
-  for (size_t i = 0; i < vars.size(); ++i)
-    out[i] = vars[i].var_rep->name;
+  for (int i = 0; i < vars.size(); ++i)  // NOLINT
+    out[i] = vars[i].var_rep->name;      // NOLINT
 
   return out;
 }

@@ -21,6 +21,7 @@ using AffExprVector = std::vector<AffExpr>;
 using QuadExprVector = std::vector<QuadExpr>;
 using CntVector = std::vector<Cnt>;
 
+// NOLINTNEXTLINE
 inline double vecSum(const DblVec& v)
 {
   double out = 0;
@@ -28,6 +29,8 @@ inline double vecSum(const DblVec& v)
     out += i;
   return out;
 }
+
+// NOLINTNEXTLINE
 inline double vecAbsSum(const DblVec& v)
 {
   double out = 0;
@@ -35,8 +38,14 @@ inline double vecAbsSum(const DblVec& v)
     out += fabs(i);
   return out;
 }
+
+// NOLINTNEXTLINE
 inline double pospart(double x) { return (x > 0) ? x : 0; }
+
+// NOLINTNEXTLINE
 inline double sq(double x) { return x * x; }
+
+// NOLINTNEXTLINE
 inline double vecHingeSum(const DblVec& v)
 {
   double out = 0;
@@ -44,7 +53,11 @@ inline double vecHingeSum(const DblVec& v)
     out += pospart(i);
   return out;
 }
+
+// NOLINTNEXTLINE
 inline double vecMax(const DblVec& v) { return *std::max_element(v.begin(), v.end()); }
+
+// NOLINTNEXTLINE
 inline double vecDot(const DblVec& a, const DblVec& b)
 {
   assert(a.size() == b.size());
