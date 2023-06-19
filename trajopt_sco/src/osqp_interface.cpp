@@ -62,6 +62,7 @@ OSQPModel::~OSQPModel()
 
 Var OSQPModel::addVar(const std::string& name)
 {
+  std::scoped_lock lock(mutex_);
   vars_.push_back(std::make_shared<VarRep>(vars_.size(), name, this));
   lbs_.push_back(-OSQP_INFINITY);
   ubs_.push_back(OSQP_INFINITY);
@@ -70,6 +71,7 @@ Var OSQPModel::addVar(const std::string& name)
 
 Cnt OSQPModel::addEqCnt(const AffExpr& expr, const std::string& /*name*/)
 {
+  std::scoped_lock lock(mutex_);
   cnts_.push_back(std::make_shared<CntRep>(cnts_.size(), this));
   cnt_exprs_.push_back(expr);
   cnt_types_.push_back(EQ);
@@ -78,6 +80,7 @@ Cnt OSQPModel::addEqCnt(const AffExpr& expr, const std::string& /*name*/)
 
 Cnt OSQPModel::addIneqCnt(const AffExpr& expr, const std::string& /*name*/)
 {
+  std::scoped_lock lock(mutex_);
   cnts_.push_back(std::make_shared<CntRep>(cnts_.size(), this));
   cnt_exprs_.push_back(expr);
   cnt_types_.push_back(INEQ);
@@ -88,6 +91,7 @@ Cnt OSQPModel::addIneqCnt(const QuadExpr&, const std::string& /*name*/) { throw 
 
 void OSQPModel::removeVars(const VarVector& vars)
 {
+  std::scoped_lock lock(mutex_);
   SizeTVec inds;
   vars2inds(vars, inds);
   for (const auto& var : vars)
@@ -96,6 +100,7 @@ void OSQPModel::removeVars(const VarVector& vars)
 
 void OSQPModel::removeCnts(const CntVector& cnts)
 {
+  std::scoped_lock lock(mutex_);
   SizeTVec inds;
   cnts2inds(cnts, inds);
   for (const auto& cnt : cnts)

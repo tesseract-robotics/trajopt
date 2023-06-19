@@ -83,6 +83,7 @@ GurobiModel::GurobiModel()
 
 Var GurobiModel::addVar(const std::string& name)
 {
+  std::scoped_lock lock(m_mutex);
   ENSURE_SUCCESS(GRBaddvar(
       m_model, 0, nullptr, nullptr, 0, -GRB_INFINITY, GRB_INFINITY, GRB_CONTINUOUS, const_cast<char*>(name.c_str())));
   m_vars.push_back(std::make_shared<VarRep>(m_vars.size(), name, this));
@@ -91,6 +92,7 @@ Var GurobiModel::addVar(const std::string& name)
 
 Var GurobiModel::addVar(const std::string& name, double lb, double ub)
 {
+  std::scoped_lock lock(m_mutex);
   ENSURE_SUCCESS(GRBaddvar(m_model, 0, nullptr, nullptr, 0, lb, ub, GRB_CONTINUOUS, const_cast<char*>(name.c_str())));
   m_vars.push_back(std::make_shared<VarRep>(m_vars.size(), name, this));
   return m_vars.back();
@@ -98,6 +100,7 @@ Var GurobiModel::addVar(const std::string& name, double lb, double ub)
 
 Cnt GurobiModel::addEqCnt(const AffExpr& expr, const std::string& name)
 {
+  std::scoped_lock lock(m_mutex);
   LOG_TRACE("adding eq constraint: %s = 0", CSTR(expr));
   IntVec inds;
   vars2inds(expr.vars, inds);
@@ -115,6 +118,7 @@ Cnt GurobiModel::addEqCnt(const AffExpr& expr, const std::string& name)
 }
 Cnt GurobiModel::addIneqCnt(const AffExpr& expr, const std::string& name)
 {
+  std::scoped_lock lock(m_mutex);
   LOG_TRACE("adding ineq: %s <= 0", CSTR(expr));
   IntVec inds;
   vars2inds(expr.vars, inds);
@@ -132,6 +136,7 @@ Cnt GurobiModel::addIneqCnt(const AffExpr& expr, const std::string& name)
 }
 Cnt GurobiModel::addIneqCnt(const QuadExpr& qexpr, const std::string& name)
 {
+  std::scoped_lock lock(m_mutex);
   int numlnz = static_cast<int>(qexpr.affexpr.size());
   IntVec linds;
   vars2inds(qexpr.affexpr.vars, linds);
@@ -167,6 +172,7 @@ void resetIndices(CntVector& cnts)
 
 void GurobiModel::removeVars(const VarVector& vars)
 {
+  std::scoped_lock lock(m_mutex);
   IntVec inds;
   vars2inds(vars, inds);
   ENSURE_SUCCESS(GRBdelvars(m_model, static_cast<int>(inds.size()), inds.data()));
@@ -176,6 +182,7 @@ void GurobiModel::removeVars(const VarVector& vars)
 
 void GurobiModel::removeCnts(const CntVector& cnts)
 {
+  std::scoped_lock lock(m_mutex);
   IntVec inds;
   cnts2inds(cnts, inds);
   ENSURE_SUCCESS(GRBdelconstrs(m_model, static_cast<int>(inds.size()), inds.data()));

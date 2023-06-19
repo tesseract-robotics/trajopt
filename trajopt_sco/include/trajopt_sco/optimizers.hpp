@@ -119,7 +119,69 @@ struct BasicTrustRegionSQPParameters
   bool log_results;     // Log results to file
   std::string log_dir;  // Directory to store log results (Default: /tmp)
 
+  /** @brief If greater than one, multi threaded functions are called */
+  int num_threads;
+
   BasicTrustRegionSQPParameters();
+};
+
+struct BasicTrustRegionSQPUtilFunctions
+{
+  virtual ~BasicTrustRegionSQPUtilFunctions() = default;
+
+  virtual DblVec evaluateCosts(const std::vector<Cost::Ptr>& costs, const DblVec& x) const;
+
+  virtual DblVec evaluateConstraintViols(const std::vector<Constraint::Ptr>& constraints, const DblVec& x) const;
+
+  virtual std::vector<ConvexObjective::Ptr> convexifyCosts(const std::vector<Cost::Ptr>& costs,
+                                                           const DblVec& x,
+                                                           Model* model) const;
+
+  virtual std::vector<ConvexConstraints::Ptr> convexifyConstraints(const std::vector<Constraint::Ptr>& cnts,
+                                                                   const DblVec& x,
+                                                                   Model* model) const;
+
+  virtual DblVec evaluateModelCosts(const std::vector<ConvexObjective::Ptr>& costs, const DblVec& x) const;
+
+  virtual DblVec evaluateModelCntViols(const std::vector<ConvexConstraints::Ptr>& cnts, const DblVec& x) const;
+
+  virtual std::vector<std::string> getCostNames(const std::vector<Cost::Ptr>& costs) const;
+
+  virtual std::vector<std::string> getCntNames(const std::vector<Constraint::Ptr>& cnts) const;
+
+  virtual std::vector<std::string> getVarNames(const VarVector& vars) const;
+};
+
+struct BasicTrustRegionSQPUtilFunctionsThreaded : public BasicTrustRegionSQPUtilFunctions
+{
+  BasicTrustRegionSQPUtilFunctionsThreaded();
+  BasicTrustRegionSQPUtilFunctionsThreaded(int num_threads);
+  ~BasicTrustRegionSQPUtilFunctionsThreaded() override = default;
+
+  DblVec evaluateCosts(const std::vector<Cost::Ptr>& costs, const DblVec& x) const override final;
+
+  DblVec evaluateConstraintViols(const std::vector<Constraint::Ptr>& constraints, const DblVec& x) const override final;
+
+  std::vector<ConvexObjective::Ptr> convexifyCosts(const std::vector<Cost::Ptr>& costs,
+                                                   const DblVec& x,
+                                                   Model* model) const override final;
+
+  std::vector<ConvexConstraints::Ptr> convexifyConstraints(const std::vector<Constraint::Ptr>& cnts,
+                                                           const DblVec& x,
+                                                           Model* model) const override final;
+
+  DblVec evaluateModelCosts(const std::vector<ConvexObjective::Ptr>& costs, const DblVec& x) const override final;
+
+  DblVec evaluateModelCntViols(const std::vector<ConvexConstraints::Ptr>& cnts, const DblVec& x) const override final;
+
+  std::vector<std::string> getCostNames(const std::vector<Cost::Ptr>& costs) const override final;
+
+  std::vector<std::string> getCntNames(const std::vector<Constraint::Ptr>& cnts) const override final;
+
+  std::vector<std::string> getVarNames(const VarVector& vars) const override final;
+
+private:
+  int num_threads_;
 };
 
 /**
@@ -183,7 +245,8 @@ struct BasicTrustRegionSQPResults
 
   BasicTrustRegionSQPResults(std::vector<std::string> var_names,
                              std::vector<std::string> cost_names,
-                             std::vector<std::string> cnt_names);
+                             std::vector<std::string> cnt_names,
+                             std::shared_ptr<BasicTrustRegionSQPUtilFunctions> util_funcs);
 
   /**
    * @brief Update the structure data for a new iteration
@@ -217,6 +280,9 @@ struct BasicTrustRegionSQPResults
   void writeConstraints(std::FILE* stream, bool header = false) const;
   /** @brief Prints the raw values to the terminal */
   void printRaw() const;
+
+private:
+  std::shared_ptr<BasicTrustRegionSQPUtilFunctions> util_funcs_;
 };
 
 class BasicTrustRegionSQP : public Optimizer
@@ -238,9 +304,9 @@ public:
   BasicTrustRegionSQP() = default;
   BasicTrustRegionSQP(const OptProb::Ptr& prob);
   void setProblem(OptProb::Ptr prob) override;
-  void setParameters(const BasicTrustRegionSQPParameters& param) { param_ = param; }
-  const BasicTrustRegionSQPParameters& getParameters() const { return param_; }
-  BasicTrustRegionSQPParameters& getParameters() { return param_; }
+  void setParameters(const BasicTrustRegionSQPParameters& param);
+  const BasicTrustRegionSQPParameters& getParameters() const;
+  BasicTrustRegionSQPParameters& getParameters();
   OptStatus optimize() override;
 
 protected:
@@ -248,7 +314,9 @@ protected:
   void adjustTrustRegion(double ratio);
   void setTrustRegionSize(double trust_box_size);
   void setTrustBoxConstraints(const DblVec& x);
+  void updateUtilsFunctions();
   Model::Ptr model_;
   BasicTrustRegionSQPParameters param_;
+  std::shared_ptr<BasicTrustRegionSQPUtilFunctions> util_funcs_;
 };
 }  // namespace sco

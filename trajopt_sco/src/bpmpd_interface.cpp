@@ -235,6 +235,7 @@ BPMPDModel::BPMPDModel()
 
 Var BPMPDModel::addVar(const std::string& name)
 {
+  std::scoped_lock lock(m_mutex);
   m_vars.push_back(std::make_shared<VarRep>(m_vars.size(), name, this));
   m_lbs.push_back(-BPMPD_BIG);
   m_ubs.push_back(BPMPD_BIG);
@@ -242,6 +243,7 @@ Var BPMPDModel::addVar(const std::string& name)
 }
 Cnt BPMPDModel::addEqCnt(const AffExpr& expr, const std::string& /*name*/)
 {
+  std::scoped_lock lock(m_mutex);
   m_cnts.push_back(std::make_shared<CntRep>(m_cnts.size(), this));
   m_cntExprs.push_back(expr);
   m_cntTypes.push_back(EQ);
@@ -249,6 +251,7 @@ Cnt BPMPDModel::addEqCnt(const AffExpr& expr, const std::string& /*name*/)
 }
 Cnt BPMPDModel::addIneqCnt(const AffExpr& expr, const std::string& /*name*/)
 {
+  std::scoped_lock lock(m_mutex);
   m_cnts.push_back(std::make_shared<CntRep>(m_cnts.size(), this));
   m_cntExprs.push_back(expr);
   m_cntTypes.push_back(INEQ);
@@ -261,6 +264,7 @@ Cnt BPMPDModel::addIneqCnt(const QuadExpr&, const std::string& /*name*/)
 
 void BPMPDModel::removeVars(const VarVector& vars)
 {
+  std::scoped_lock lock(m_mutex);
   SizeTVec inds;
   vars2inds(vars, inds);
   for (const auto& var : vars)
@@ -269,6 +273,7 @@ void BPMPDModel::removeVars(const VarVector& vars)
 
 void BPMPDModel::removeCnts(const CntVector& cnts)
 {
+  std::scoped_lock lock(m_mutex);
   SizeTVec inds;
   cnts2inds(cnts, inds);
   for (auto& cnt : cnts)  // NOLINT
