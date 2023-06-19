@@ -218,7 +218,7 @@ std::vector<std::string> BasicTrustRegionSQP::getVarNames(const VarVector& vars)
 DblVec BasicTrustRegionSQPMultiThreaded::evaluateCosts(const std::vector<Cost::Ptr>& costs, const DblVec& x) const
 {
   DblVec out(costs.size());
-#pragma omp parallel for num_threads(param_.num_threads)
+#pragma omp parallel for schedule(dynamic, 1) num_threads(param_.num_threads)
   for (int i = 0; i < static_cast<int>(costs.size()); ++i)
     out[static_cast<std::size_t>(i)] = costs[static_cast<std::size_t>(i)]->value(x);
 
@@ -229,7 +229,7 @@ DblVec BasicTrustRegionSQPMultiThreaded::evaluateConstraintViols(const std::vect
                                                                  const DblVec& x) const
 {
   DblVec out(constraints.size());
-#pragma omp parallel for num_threads(param_.num_threads)
+#pragma omp parallel for schedule(dynamic, 1) num_threads(param_.num_threads)
   for (int i = 0; i < static_cast<int>(constraints.size()); ++i)
     out[static_cast<std::size_t>(i)] = constraints[static_cast<std::size_t>(i)]->violation(x);
 
@@ -241,7 +241,7 @@ std::vector<ConvexObjective::Ptr> BasicTrustRegionSQPMultiThreaded::convexifyCos
                                                                                    Model* model) const
 {
   std::vector<ConvexObjective::Ptr> out(costs.size());
-#pragma omp parallel for num_threads(param_.num_threads)
+#pragma omp parallel for schedule(dynamic, 1) num_threads(param_.num_threads)
   for (int i = 0; i < static_cast<int>(costs.size()); ++i)
     out[static_cast<std::size_t>(i)] = costs[static_cast<std::size_t>(i)]->convex(x, model);
 
@@ -254,7 +254,7 @@ BasicTrustRegionSQPMultiThreaded::convexifyConstraints(const std::vector<Constra
                                                        Model* model) const
 {
   std::vector<ConvexConstraints::Ptr> out(cnts.size());
-#pragma omp parallel for num_threads(param_.num_threads)
+#pragma omp parallel for schedule(dynamic, 1) num_threads(param_.num_threads)
   for (int i = 0; i < static_cast<int>(cnts.size()); ++i)
     out[static_cast<std::size_t>(i)] = cnts[static_cast<std::size_t>(i)]->convex(x, model);
 
@@ -265,7 +265,7 @@ DblVec BasicTrustRegionSQPMultiThreaded::evaluateModelCosts(const std::vector<Co
                                                             const DblVec& x) const
 {
   DblVec out(costs.size());
-#pragma omp parallel for num_threads(param_.num_threads)
+#pragma omp parallel for schedule(dynamic, 1) num_threads(param_.num_threads)
   for (int i = 0; i < static_cast<int>(costs.size()); ++i)
     out[static_cast<std::size_t>(i)] = costs[static_cast<std::size_t>(i)]->value(x);
 
@@ -276,39 +276,9 @@ DblVec BasicTrustRegionSQPMultiThreaded::evaluateModelCntViols(const std::vector
                                                                const DblVec& x) const
 {
   DblVec out(cnts.size());
-#pragma omp parallel for num_threads(param_.num_threads)
+#pragma omp parallel for schedule(dynamic, 1) num_threads(param_.num_threads)
   for (int i = 0; i < static_cast<int>(cnts.size()); ++i)
     out[static_cast<std::size_t>(i)] = cnts[static_cast<std::size_t>(i)]->violation(x);
-
-  return out;
-}
-
-std::vector<std::string> BasicTrustRegionSQPMultiThreaded::getCostNames(const std::vector<Cost::Ptr>& costs) const
-{
-  std::vector<std::string> out(costs.size());
-#pragma omp parallel for num_threads(param_.num_threads)
-  for (int i = 0; i < static_cast<int>(costs.size()); ++i)
-    out[static_cast<std::size_t>(i)] = costs[static_cast<std::size_t>(i)]->name();
-
-  return out;
-}
-
-std::vector<std::string> BasicTrustRegionSQPMultiThreaded::getCntNames(const std::vector<Constraint::Ptr>& cnts) const
-{
-  std::vector<std::string> out(cnts.size());
-#pragma omp parallel for num_threads(param_.num_threads)
-  for (int i = 0; i < static_cast<int>(cnts.size()); ++i)
-    out[static_cast<std::size_t>(i)] = cnts[static_cast<std::size_t>(i)]->name();
-
-  return out;
-}
-
-std::vector<std::string> BasicTrustRegionSQPMultiThreaded::getVarNames(const VarVector& vars) const
-{
-  std::vector<std::string> out(vars.size());
-#pragma omp parallel for num_threads(param_.num_threads)
-  for (int i = 0; i < static_cast<int>(vars.size()); ++i)
-    out[static_cast<std::size_t>(i)] = vars[static_cast<std::size_t>(i)].var_rep->name;
 
   return out;
 }

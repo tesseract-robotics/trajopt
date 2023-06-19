@@ -265,12 +265,6 @@ public:
   DblVec evaluateModelCosts(const std::vector<ConvexObjective::Ptr>& costs, const DblVec& x) const override final;
 
   DblVec evaluateModelCntViols(const std::vector<ConvexConstraints::Ptr>& cnts, const DblVec& x) const override final;
-
-  std::vector<std::string> getCostNames(const std::vector<Cost::Ptr>& costs) const override final;
-
-  std::vector<std::string> getCntNames(const std::vector<Constraint::Ptr>& cnts) const override final;
-
-  std::vector<std::string> getVarNames(const VarVector& vars) const override final;
 };
 
 /**
