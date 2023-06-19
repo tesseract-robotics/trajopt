@@ -40,7 +40,9 @@ OSQPModel::OSQPModel(const ModelConfig::ConstPtr& config) : P_(nullptr), A_(null
 {
   // tuning parameters to be less accurate, but add a polishing step
   if (config != nullptr)
+  {
     config_.settings = std::dynamic_pointer_cast<const OSQPModelConfig>(config)->settings;
+  }
 }
 
 OSQPModel::~OSQPModel()
@@ -136,15 +138,16 @@ void OSQPModel::updateConstraints()
 {
   const size_t n = vars_.size();
   const size_t m = cnts_.size();
-  const auto n_int = static_cast<int>(n);
-  const auto m_int = static_cast<int>(m);
+  const auto n_int = static_cast<Eigen::Index>(n);
+  const auto m_int = static_cast<Eigen::Index>(m);
 
   osqp_data_.m = static_cast<c_int>(m) + static_cast<c_int>(n);
 
   Eigen::SparseMatrix<double> sm;
   Eigen::VectorXd v;
-  exprToEigen(cnt_exprs_, sm, v, static_cast<int>(n));
-  sm.conservativeResize(m_int + n_int, Eigen::NoChange_t(n));
+  exprToEigen(cnt_exprs_, sm, v, n_int);
+  sm.conservativeResize(m_int + n_int,
+                        Eigen::NoChange_t(n_int));  // NOLINT(clang-analyzer-core.UndefinedBinaryOperatorResult)
 
   l_.clear();
   l_.resize(m + n, -OSQP_INFINITY);
@@ -203,7 +206,7 @@ void OSQPModel::updateConstraints()
 void OSQPModel::createOrUpdateSolver()
 {
   updateObjective();
-  updateConstraints();
+  updateConstraints();  // NOLINT(clang-analyzer-core.UndefinedBinaryOperatorResult)
 
   // TODO atm we are not updating the workspace, but recreating it each time.
   // In the future, we will checking sparsity did not change and update instead
@@ -294,7 +297,7 @@ CvxOptStatus OSQPModel::optimize()
   update();
   try
   {
-    createOrUpdateSolver();
+    createOrUpdateSolver();  // NOLINT(clang-analyzer-core.UndefinedBinaryOperatorResult)
   }
   catch (std::exception& e)
   {

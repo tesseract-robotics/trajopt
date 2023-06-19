@@ -64,7 +64,7 @@ void exprToEigen(const QuadExpr& expr,
 void exprToEigen(const AffExprVector& expr_vec,
                  Eigen::SparseMatrix<double>& sparse_matrix,
                  Eigen::VectorXd& vector,
-                 const Eigen::Index& n_vars = -1);
+                 Eigen::Index n_vars = -1);
 /**
  * @brief Converts triplets to an `Eigen::SparseMatrix`.
  * @param [in] rows_i a vector of row indices

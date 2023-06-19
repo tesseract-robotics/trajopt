@@ -89,7 +89,7 @@ void exprToEigen(const QuadExpr& expr,
 void exprToEigen(const AffExprVector& expr_vec,
                  Eigen::SparseMatrix<double>& sparse_matrix,
                  Eigen::VectorXd& vector,
-                 const Eigen::Index& n_vars)
+                 Eigen::Index n_vars)
 {
   vector.resize(static_cast<long int>(expr_vec.size()));
   vector.setZero();
