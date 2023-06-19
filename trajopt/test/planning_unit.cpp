@@ -55,7 +55,7 @@ public:
   }
 };
 
-TEST_F(PlanningTest, arm_around_table)  // NOLINT
+void runTest(const Environment::Ptr& env, bool use_multi_threaded)
 {
   CONSOLE_BRIDGE_logDebug("PlanningTest, arm_around_table");
 
@@ -70,11 +70,11 @@ TEST_F(PlanningTest, arm_around_table)  // NOLINT
   ipos["r_forearm_roll_joint"] = -1.1;
   ipos["r_wrist_flex_joint"] = -1.926;
   ipos["r_wrist_roll_joint"] = 3.074;
-  env_->setState(ipos);
+  env->setState(ipos);
 
   //  plotter_->plotScene();
 
-  ProblemConstructionInfo pci(env_);
+  ProblemConstructionInfo pci(env);
   pci.fromJson(root);
   pci.basic_info.convex_solver = sco::ModelType::OSQP;
   TrajOptProb::Ptr prob = ConstructProblem(pci);
@@ -96,21 +96,31 @@ TEST_F(PlanningTest, arm_around_table)  // NOLINT
   EXPECT_TRUE(found);
   CONSOLE_BRIDGE_logDebug((found) ? ("Initial trajectory is in collision") : ("Initial trajectory is collision free"));
 
-  sco::BasicTrustRegionSQP opt(prob);
+  sco::BasicTrustRegionSQP::Ptr opt;
+  if (use_multi_threaded)
+  {
+    opt = std::make_shared<sco::BasicTrustRegionSQPMultiThreaded>(prob);
+    opt->getParameters().num_threads = 5;
+  }
+  else
+  {
+    opt = std::make_shared<sco::BasicTrustRegionSQP>(prob);
+  }
+
   CONSOLE_BRIDGE_logDebug("DOF: %d", prob->GetNumDOF());
   //  if (plotting)
   //  {
   //    opt.addCallback(PlotCallback(*prob, plotter_));
   //  }
 
-  opt.initialize(trajToDblVec(prob->GetInitTraj()));
+  opt->initialize(trajToDblVec(prob->GetInitTraj()));
   double tStart = GetClock();
-  sco::OptStatus status = opt.optimize();
+  sco::OptStatus status = opt->optimize();
   EXPECT_TRUE(status == sco::OptStatus::OPT_CONVERGED);
   CONSOLE_BRIDGE_logDebug("planning time: %.3f", GetClock() - tStart);
 
   double d = 0;
-  TrajArray traj = getTraj(opt.x(), prob->GetVars());
+  TrajArray traj = getTraj(opt->x(), prob->GetVars());
   for (unsigned i = 1; i < traj.rows(); ++i)
   {
     for (unsigned j = 0; j < traj.cols(); ++j)
@@ -127,10 +137,20 @@ TEST_F(PlanningTest, arm_around_table)  // NOLINT
 
   collisions.clear();
   found = checkTrajectory(
-      collisions, *manager, *state_solver, prob->GetKin()->getJointNames(), getTraj(opt.x(), prob->GetVars()), config);
+      collisions, *manager, *state_solver, prob->GetKin()->getJointNames(), getTraj(opt->x(), prob->GetVars()), config);
 
   EXPECT_FALSE(found);
   CONSOLE_BRIDGE_logDebug((found) ? ("Final trajectory is in collision") : ("Final trajectory is collision free"));
+}
+
+TEST_F(PlanningTest, arm_around_table)  // NOLINT
+{
+  runTest(env_, false);
+}
+
+TEST_F(PlanningTest, arm_around_table_multi_threaded)  // NOLINT
+{
+  runTest(env_, true);
 }
 
 int main(int argc, char** argv)

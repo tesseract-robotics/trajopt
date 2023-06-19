@@ -58,6 +58,22 @@ static void BM_TRAJOPT_PLANNING_SOLVE(benchmark::State& state, Environment::Ptr 
   }
 }
 
+/** @brief Benchmark trajopt planning solve */
+static void BM_TRAJOPT_MULTI_THREADED_PLANNING_SOLVE(benchmark::State& state, Environment::Ptr env, Json::Value root)
+{
+  for (auto _ : state)
+  {
+    ProblemConstructionInfo pci(env);
+    pci.fromJson(root);
+    pci.basic_info.convex_solver = sco::ModelType::OSQP;
+    TrajOptProb::Ptr prob = ConstructProblem(pci);
+    sco::BasicTrustRegionSQPMultiThreaded opt(prob);
+    opt.getParameters().num_threads = 5;
+    opt.initialize(trajToDblVec(prob->GetInitTraj()));
+    opt.optimize();
+  }
+}
+
 int main(int argc, char** argv)
 {
   gLogLevel = util::LevelError;

@@ -99,22 +99,22 @@ public:
   }
 };
 
-TEST_F(CastAttachedTest, LinkWithGeom)  // NOLINT
+void runLinkWithGeomTest(const Environment::Ptr& env, const Visualization::Ptr& plotter, bool use_multi_threaded)
 {
   CONSOLE_BRIDGE_logDebug("CastAttachedTest, LinkWithGeom");
 
-  env_->applyCommand(std::make_shared<ChangeLinkCollisionEnabledCommand>("box_attached", true));
+  env->applyCommand(std::make_shared<ChangeLinkCollisionEnabledCommand>("box_attached", true));
 
   Json::Value root = readJsonFile(std::string(TRAJOPT_DIR) + "/test/data/config/box_cast_test.json");
 
   std::unordered_map<std::string, double> ipos;
   ipos["boxbot_x_joint"] = -1.9;
   ipos["boxbot_y_joint"] = 0;
-  env_->setState(ipos);
+  env->setState(ipos);
 
   //  plotter_->plotScene();
 
-  TrajOptProb::Ptr prob = ConstructProblem(root, env_);
+  TrajOptProb::Ptr prob = ConstructProblem(root, env);
   ASSERT_TRUE(!!prob);
 
   std::vector<ContactResultMap> collisions;
@@ -132,39 +132,49 @@ TEST_F(CastAttachedTest, LinkWithGeom)  // NOLINT
   EXPECT_TRUE(found);
   CONSOLE_BRIDGE_logDebug((found) ? ("Initial trajectory is in collision") : ("Initial trajectory is collision free"));
 
-  sco::BasicTrustRegionSQP opt(prob);
-  if (plotting)
-    opt.addCallback(PlotCallback(plotter_));
-  opt.initialize(trajToDblVec(prob->GetInitTraj()));
-  opt.optimize();
+  sco::BasicTrustRegionSQP::Ptr opt;
+  if (use_multi_threaded)
+  {
+    opt = std::make_shared<sco::BasicTrustRegionSQPMultiThreaded>(prob);
+    opt->getParameters().num_threads = 5;
+  }
+  else
+  {
+    opt = std::make_shared<sco::BasicTrustRegionSQP>(prob);
+  }
 
   if (plotting)
-    plotter_->clear();
+    opt->addCallback(PlotCallback(plotter));
+  opt->initialize(trajToDblVec(prob->GetInitTraj()));
+  opt->optimize();
+
+  if (plotting)
+    plotter->clear();
 
   collisions.clear();
   found = checkTrajectory(
-      collisions, *manager, *state_solver, prob->GetKin()->getJointNames(), getTraj(opt.x(), prob->GetVars()), config);
+      collisions, *manager, *state_solver, prob->GetKin()->getJointNames(), getTraj(opt->x(), prob->GetVars()), config);
 
   EXPECT_FALSE(found);
   CONSOLE_BRIDGE_logDebug((found) ? ("Final trajectory is in collision") : ("Final trajectory is collision free"));
 }
 
-TEST_F(CastAttachedTest, LinkWithoutGeom)  // NOLINT
+void runLinkWithoutGeomTest(const Environment::Ptr& env, const Visualization::Ptr& plotter, bool use_multi_threaded)
 {
   CONSOLE_BRIDGE_logDebug("CastAttachedTest, LinkWithGeom");
 
-  env_->applyCommand(std::make_shared<ChangeLinkCollisionEnabledCommand>("box_attached2", true));
+  env->applyCommand(std::make_shared<ChangeLinkCollisionEnabledCommand>("box_attached2", true));
 
   Json::Value root = readJsonFile(std::string(TRAJOPT_DIR) + "/test/data/config/box_cast_test.json");
 
   std::unordered_map<std::string, double> ipos;
   ipos["boxbot_x_joint"] = -1.9;
   ipos["boxbot_y_joint"] = 0;
-  env_->setState(ipos);
+  env->setState(ipos);
 
   //  plotter_->plotScene();
 
-  TrajOptProb::Ptr prob = ConstructProblem(root, env_);
+  TrajOptProb::Ptr prob = ConstructProblem(root, env);
   ASSERT_TRUE(!!prob);
 
   std::vector<ContactResultMap> collisions;
@@ -182,21 +192,51 @@ TEST_F(CastAttachedTest, LinkWithoutGeom)  // NOLINT
   EXPECT_TRUE(found);
   CONSOLE_BRIDGE_logDebug((found) ? ("Initial trajectory is in collision") : ("Initial trajectory is collision free"));
 
-  sco::BasicTrustRegionSQP opt(prob);
-  if (plotting)
-    opt.addCallback(PlotCallback(plotter_));
-  opt.initialize(trajToDblVec(prob->GetInitTraj()));
-  opt.optimize();
+  sco::BasicTrustRegionSQP::Ptr opt;
+  if (use_multi_threaded)
+  {
+    opt = std::make_shared<sco::BasicTrustRegionSQPMultiThreaded>(prob);
+    opt->getParameters().num_threads = 5;
+  }
+  else
+  {
+    opt = std::make_shared<sco::BasicTrustRegionSQP>(prob);
+  }
 
   if (plotting)
-    plotter_->clear();
+    opt->addCallback(PlotCallback(plotter));
+  opt->initialize(trajToDblVec(prob->GetInitTraj()));
+  opt->optimize();
+
+  if (plotting)
+    plotter->clear();
 
   collisions.clear();
   found = checkTrajectory(
-      collisions, *manager, *state_solver, prob->GetKin()->getJointNames(), getTraj(opt.x(), prob->GetVars()), config);
+      collisions, *manager, *state_solver, prob->GetKin()->getJointNames(), getTraj(opt->x(), prob->GetVars()), config);
 
   EXPECT_FALSE(found);
   CONSOLE_BRIDGE_logDebug((found) ? ("Final trajectory is in collision") : ("Final trajectory is collision free"));
+}
+
+TEST_F(CastAttachedTest, LinkWithGeom)  // NOLINT
+{
+  runLinkWithGeomTest(env_, plotter_, false);
+}
+
+TEST_F(CastAttachedTest, LinkWithGeomMultiThreaded)  // NOLINT
+{
+  runLinkWithGeomTest(env_, plotter_, true);
+}
+
+TEST_F(CastAttachedTest, LinkWithoutGeom)  // NOLINT
+{
+  runLinkWithoutGeomTest(env_, plotter_, false);
+}
+
+TEST_F(CastAttachedTest, LinkWithoutGeomMultiThreaded)  // NOLINT
+{
+  runLinkWithoutGeomTest(env_, plotter_, false);
 }
 
 int main(int argc, char** argv)
