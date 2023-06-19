@@ -45,10 +45,10 @@ public:
   void addL2Norm(const AffExprVector&);
   void addMax(const AffExprVector&);
 
-  bool inModel() { return model_ != nullptr; }
+  bool inModel() const { return model_ != nullptr; }
   void addConstraintsToModel();
   void removeFromModel();
-  double value(const DblVec& x);
+  double value(const DblVec& x) const;
 
   Model* model_;
   /// The objective Function

@@ -67,7 +67,7 @@ void ser(int fp, std::vector<T>& x, SerMode mode)
 
 struct bpmpd_input
 {
-  int m, n, nz, qn, qnz;
+  int m{ 0 }, n{ 0 }, nz{ 0 }, qn{ 0 }, qnz{ 0 };
   std::vector<int> acolcnt, acolidx;
   std::vector<double> acolnzs;
   std::vector<int> qcolcnt, qcolidx;
@@ -114,7 +114,7 @@ const char CHECK_CHAR = 111;
 
 inline void ser(int fp, bpmpd_input& bi, SerMode mode)
 {
-  char scorrect = 'z', s = (mode == SER) ? scorrect : 0;
+  char scorrect = 'z', s = (mode == SER) ? scorrect : 0;  // NOLINT
   ser(fp, s, mode);
   if (s == EXIT_CHAR)
   {
@@ -142,8 +142,8 @@ struct bpmpd_output
 {
   std::vector<double> primal, dual;
   std::vector<int> status;
-  int code;
-  double opt;
+  int code{ 0 };
+  double opt{ 0 };
   bpmpd_output() = default;
   bpmpd_output(std::vector<double> primal, std::vector<double> dual, std::vector<int> status, int code, double opt)
     : primal(std::move(primal)), dual(std::move(dual)), status(std::move(status)), code(code), opt(opt)
@@ -153,7 +153,7 @@ struct bpmpd_output
 
 inline void ser(int fp, bpmpd_output& bo, SerMode mode)
 {
-  char scorrect = CHECK_CHAR, s = (mode == SER) ? scorrect : 0;
+  char scorrect = CHECK_CHAR, s = (mode == SER) ? scorrect : 0;  // NOLINT
   ser(fp, s, mode);
   if (s == EXIT_CHAR)
   {

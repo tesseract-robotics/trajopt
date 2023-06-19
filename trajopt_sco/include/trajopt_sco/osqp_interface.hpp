@@ -17,7 +17,7 @@ struct OSQPModelConfig : public ModelConfig
 
   OSQPModelConfig();
 
-  OSQPSettings settings;
+  OSQPSettings settings{};
 };
 
 /**
@@ -35,7 +35,7 @@ class OSQPModel : public Model
 {
   /** OSQPData. Some fields here (`osp_data_.A` and `osp_data_.P`) are *  automatically allocated by OSQP, but
    * deallocated by us. */
-  OSQPData osqp_data_;
+  OSQPData osqp_data_{};
 
   /** OSQP Workspace. Memory here is managed by OSQP */
   OSQPWorkspace* osqp_workspace_{ nullptr };

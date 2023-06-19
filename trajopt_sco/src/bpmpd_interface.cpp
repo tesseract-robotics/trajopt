@@ -150,7 +150,7 @@ logfile it generates.
 
 namespace sco
 {
-static double BPMPD_BIG = 1e+30;
+static const double BPMPD_BIG = 1e+30;
 
 Model::Ptr createBPMPDModel()
 {
@@ -163,10 +163,10 @@ Model::Ptr createBPMPDModel()
 
 pid_t popen2(const char* command, int* infp, int* outfp)
 {
-  int p_stdin[2], p_stdout[2];
-  pid_t pid;
+  std::array<int, 2> p_stdin{}, p_stdout{};
+  pid_t pid{ 0 };
 
-  if (pipe(p_stdin) != 0 || pipe(p_stdout) != 0)
+  if (pipe(p_stdin.data()) != 0 || pipe(p_stdout.data()) != 0)
     return -1;
 
   pid = fork();
@@ -202,14 +202,14 @@ pid_t popen2(const char* command, int* infp, int* outfp)
   return pid;
 }
 
-static pid_t gPID = 0;
-static int gPipeIn = 0;
-static int gPipeOut = 0;
+static pid_t gPID = 0;    // NOLINT
+static int gPipeIn = 0;   // NOLINT
+static int gPipeOut = 0;  // NOLINT
 
 void fexit()
 {
-  char text[1] = { bpmpd_io::EXIT_CHAR };
-  long n = write(gPipeIn, text, 1);
+  std::array<char, 1> text{ bpmpd_io::EXIT_CHAR };
+  long n = write(gPipeIn, text.data(), 1);
   ALWAYS_ASSERT(n == 1);
 }
 
@@ -271,7 +271,7 @@ void BPMPDModel::removeCnts(const CntVector& cnts)
 {
   SizeTVec inds;
   cnts2inds(cnts, inds);
-  for (auto& cnt : cnts)
+  for (auto& cnt : cnts)  // NOLINT
     cnt.cnt_rep->removed = true;
 }
 
@@ -438,8 +438,8 @@ CvxOptStatus BPMPDModel::optimize()
   }
 
 #define VECINC(vec)                                                                                                    \
-  for (unsigned i = 0; i < (vec).size(); ++i)                                                                          \
-    ++(vec)[i];
+  for (auto& v : (vec))                                                                                                \
+    ++v;
   VECINC(acolidx);
   VECINC(qcolidx);
 #undef VECINC

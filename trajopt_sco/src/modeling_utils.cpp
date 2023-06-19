@@ -57,7 +57,7 @@ ConvexObjective::Ptr CostFromFunc::convex(const DblVec& x, Model* model)
   auto out = std::make_shared<ConvexObjective>(model);
   if (!full_hessian_)
   {
-    double val;
+    double val{ NAN };
     Eigen::VectorXd grad, hess;
     calcGradAndDiagHess(*f_, x_eigen, epsilon_, val, grad, hess);
     hess = hess.cwiseMax(Eigen::VectorXd::Zero(hess.size()));
@@ -71,7 +71,7 @@ ConvexObjective::Ptr CostFromFunc::convex(const DblVec& x, Model* model)
   }
   else
   {
-    double val;
+    double val{ NAN };
     Eigen::VectorXd grad;
     Eigen::MatrixXd hess;
     calcGradHess(f_, x_eigen, epsilon_, val, grad, hess);
@@ -81,8 +81,8 @@ ConvexObjective::Ptr CostFromFunc::convex(const DblVec& x, Model* model)
     Eigen::VectorXd eigvals = es.eigenvalues();
     Eigen::MatrixXd eigvecs = es.eigenvectors();
     for (long int i = 0, end = x_eigen.size(); i != end; ++i)
-    {  // tricky --- eigen size() is signed
-      if (eigvals(i) > 0)
+    {                      // tricky --- eigen size() is signed
+      if (eigvals(i) > 0)  // NOLINT
         pos_hess += eigvals(i) * eigvecs.col(i) * eigvecs.col(i).transpose();
     }
 

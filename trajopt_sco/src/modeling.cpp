@@ -19,7 +19,7 @@ void ConvexObjective::addAffExpr(const AffExpr& affexpr) { exprInc(quad_, affexp
 void ConvexObjective::addQuadExpr(const QuadExpr& quadexpr) { exprInc(quad_, quadexpr); }
 void ConvexObjective::addHinge(const AffExpr& affexpr, double coeff)
 {
-  Var hinge = model_->addVar("hinge", 0, INFINITY);
+  Var hinge = model_->addVar("hinge", 0, static_cast<double>(INFINITY));
   vars_.push_back(hinge);
   ineqs_.push_back(affexpr);
   exprDec(ineqs_.back(), hinge);
@@ -30,8 +30,8 @@ void ConvexObjective::addHinge(const AffExpr& affexpr, double coeff)
 void ConvexObjective::addAbs(const AffExpr& affexpr, double coeff)
 {
   // Add variables that will enforce ABS
-  Var neg = model_->addVar("neg", 0, INFINITY);
-  Var pos = model_->addVar("pos", 0, INFINITY);
+  Var neg = model_->addVar("neg", 0, static_cast<double>(INFINITY));
+  Var pos = model_->addVar("pos", 0, static_cast<double>(INFINITY));
   vars_.push_back(neg);
   vars_.push_back(pos);
   // Coeff will be applied whenever neg/pos are not 0
@@ -76,7 +76,7 @@ void ConvexObjective::addL2Norm(const AffExprVector& ev)
 
 void ConvexObjective::addMax(const AffExprVector& ev)
 {
-  Var m = model_->addVar("max", -INFINITY, INFINITY);
+  Var m = model_->addVar("max", static_cast<double>(-INFINITY), static_cast<double>(INFINITY));
   ineqs_.reserve(ineqs_.size() + ev.size());
   for (const auto& i : ev)
   {
@@ -148,7 +148,7 @@ ConvexConstraints::~ConvexConstraints()
     removeFromModel();
 }
 
-double ConvexObjective::value(const DblVec& x) { return quad_.value(x); }
+double ConvexObjective::value(const DblVec& x) const { return quad_.value(x); }
 DblVec Constraint::violations(const DblVec& x)
 {
   DblVec val = value(x);
@@ -175,7 +175,8 @@ OptProb::OptProb(ModelType convex_solver, const ModelConfig::ConstPtr& convex_so
 }
 VarVector OptProb::createVariables(const std::vector<std::string>& names)
 {
-  return createVariables(names, DblVec(names.size(), -INFINITY), DblVec(names.size(), INFINITY));
+  return createVariables(
+      names, DblVec(names.size(), static_cast<double>(-INFINITY)), DblVec(names.size(), static_cast<double>(INFINITY)));
 }
 
 VarVector OptProb::createVariables(const std::vector<std::string>& names, const DblVec& lb, const DblVec& ub)
