@@ -4,6 +4,7 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <cmath>
 #include <chrono>
 #include <cstdio>
+#include <thread>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt_sco/expr_ops.hpp>
@@ -28,94 +29,6 @@ std::ostream& operator<<(std::ostream& o, const OptResults& r)
     << "n func evals: " << r.n_func_evals << std::endl
     << "n qp solves: " << r.n_qp_solves << std::endl;
   return o;
-}
-
-//////////////////////////////////////////////////
-////////// private utility functions for  sqp /////////
-//////////////////////////////////////////////////
-
-static DblVec evaluateCosts(const std::vector<Cost::Ptr>& costs, const DblVec& x)
-{
-  DblVec out(costs.size());
-  for (size_t i = 0; i < costs.size(); ++i)
-  {
-    out[i] = costs[i]->value(x);
-  }
-  return out;
-}
-static DblVec evaluateConstraintViols(const std::vector<Constraint::Ptr>& constraints, const DblVec& x)
-{
-  DblVec out(constraints.size());
-  for (size_t i = 0; i < constraints.size(); ++i)
-  {
-    out[i] = constraints[i]->violation(x);
-  }
-  return out;
-}
-static std::vector<ConvexObjective::Ptr> convexifyCosts(const std::vector<Cost::Ptr>& costs,
-                                                        const DblVec& x,
-                                                        Model* model)
-{
-  std::vector<ConvexObjective::Ptr> out(costs.size());
-  for (size_t i = 0; i < costs.size(); ++i)
-  {
-    out[i] = costs[i]->convex(x, model);
-  }
-  return out;
-}
-static std::vector<ConvexConstraints::Ptr> convexifyConstraints(const std::vector<Constraint::Ptr>& cnts,
-                                                                const DblVec& x,
-                                                                Model* model)
-{
-  std::vector<ConvexConstraints::Ptr> out(cnts.size());
-  for (size_t i = 0; i < cnts.size(); ++i)
-  {
-    out[i] = cnts[i]->convex(x, model);
-  }
-  return out;
-}
-
-DblVec evaluateModelCosts(const std::vector<ConvexObjective::Ptr>& costs, const DblVec& x)
-{
-  DblVec out(costs.size());
-  for (size_t i = 0; i < costs.size(); ++i)
-  {
-    out[i] = costs[i]->value(x);
-  }
-  return out;
-}
-DblVec evaluateModelCntViols(const std::vector<ConvexConstraints::Ptr>& cnts, const DblVec& x)
-{
-  DblVec out(cnts.size());
-  for (size_t i = 0; i < cnts.size(); ++i)
-  {
-    out[i] = cnts[i]->violation(x);
-  }
-  return out;
-}
-
-static std::vector<std::string> getCostNames(const std::vector<Cost::Ptr>& costs)
-{
-  std::vector<std::string> out(costs.size());
-  for (size_t i = 0; i < costs.size(); ++i)
-    out[i] = costs[i]->name();
-  return out;
-}
-static std::vector<std::string> getCntNames(const std::vector<Constraint::Ptr>& cnts)
-{
-  std::vector<std::string> out(cnts.size());
-  for (size_t i = 0; i < cnts.size(); ++i)
-    out[i] = cnts[i]->name();
-  return out;
-}
-
-static std::vector<std::string> getVarNames(const VarVector& vars)
-{
-  std::vector<std::string> out;
-  out.reserve(vars.size());
-  for (const auto& var : vars)
-    out.push_back(var.var_rep->name);
-  return out;
 }
 
 // todo: use different coeffs for each constraint
@@ -182,11 +95,14 @@ BasicTrustRegionSQPParameters::BasicTrustRegionSQPParameters()
   trust_box_size = 1e-1;
   log_results = false;
   log_dir = "/tmp";
+  num_threads = 0;
 }
 
 BasicTrustRegionSQP::BasicTrustRegionSQP(const OptProb::Ptr& prob) { ctor(prob); }
 void BasicTrustRegionSQP::setProblem(OptProb::Ptr prob) { ctor(prob); }
-
+void BasicTrustRegionSQP::setParameters(const BasicTrustRegionSQPParameters& param) { param_ = param; }
+const BasicTrustRegionSQPParameters& BasicTrustRegionSQP::getParameters() const { return param_; }
+BasicTrustRegionSQPParameters& BasicTrustRegionSQP::getParameters() { return param_; }
 void BasicTrustRegionSQP::ctor(const OptProb::Ptr& prob)
 {
   Optimizer::setProblem(prob);
@@ -207,6 +123,175 @@ void BasicTrustRegionSQP::setTrustBoxConstraints(const DblVec& x)
     ubtrust[i] = fmin(x[i] + param_.trust_box_size, ub[i]);
   }
   model_->setVarBounds(vars, lbtrust, ubtrust);
+}
+
+//////////////////////////////////////////////////
+////// protected utility functions for  sqp //////
+//////////////////////////////////////////////////
+
+DblVec BasicTrustRegionSQP::evaluateCosts(const std::vector<Cost::Ptr>& costs, const DblVec& x) const
+{
+  DblVec out(costs.size());
+  for (size_t i = 0; i < costs.size(); ++i)
+    out[i] = costs[i]->value(x);
+
+  return out;
+}
+
+DblVec BasicTrustRegionSQP::evaluateConstraintViols(const std::vector<Constraint::Ptr>& cnts, const DblVec& x) const
+{
+  DblVec out(cnts.size());
+  for (size_t i = 0; i < cnts.size(); ++i)
+    out[i] = cnts[i]->violation(x);
+
+  return out;
+}
+
+std::vector<ConvexObjective::Ptr> BasicTrustRegionSQP::convexifyCosts(const std::vector<Cost::Ptr>& costs,
+                                                                      const DblVec& x,
+                                                                      Model* model) const
+{
+  std::vector<ConvexObjective::Ptr> out(costs.size());
+  for (size_t i = 0; i < costs.size(); ++i)
+    out[i] = costs[i]->convex(x, model);
+
+  return out;
+}
+
+std::vector<ConvexConstraints::Ptr> BasicTrustRegionSQP::convexifyConstraints(const std::vector<Constraint::Ptr>& cnts,
+                                                                              const DblVec& x,
+                                                                              Model* model) const
+{
+  std::vector<ConvexConstraints::Ptr> out(cnts.size());
+  for (size_t i = 0; i < cnts.size(); ++i)
+    out[i] = cnts[i]->convex(x, model);
+
+  return out;
+}
+
+DblVec BasicTrustRegionSQP::evaluateModelCosts(const std::vector<ConvexObjective::Ptr>& costs, const DblVec& x) const
+{
+  DblVec out(costs.size());
+  for (size_t i = 0; i < costs.size(); ++i)
+    out[i] = costs[i]->value(x);
+
+  return out;
+}
+
+DblVec BasicTrustRegionSQP::evaluateModelCntViols(const std::vector<ConvexConstraints::Ptr>& cnts,
+                                                  const DblVec& x) const
+{
+  DblVec out(cnts.size());
+  for (size_t i = 0; i < cnts.size(); ++i)
+    out[i] = cnts[i]->violation(x);
+
+  return out;
+}
+
+std::vector<std::string> BasicTrustRegionSQP::getCostNames(const std::vector<Cost::Ptr>& costs) const
+{
+  std::vector<std::string> out(costs.size());
+  for (size_t i = 0; i < costs.size(); ++i)
+    out[i] = costs[i]->name();
+
+  return out;
+}
+
+std::vector<std::string> BasicTrustRegionSQP::getCntNames(const std::vector<Constraint::Ptr>& cnts) const
+{
+  std::vector<std::string> out(cnts.size());
+  for (size_t i = 0; i < cnts.size(); ++i)
+    out[i] = cnts[i]->name();
+  return out;
+}
+
+std::vector<std::string> BasicTrustRegionSQP::getVarNames(const VarVector& vars) const
+{
+  std::vector<std::string> out;
+  out.reserve(vars.size());
+  for (const auto& var : vars)
+    out.push_back(var.var_rep->name);
+  return out;
+}
+
+DblVec BasicTrustRegionSQPMultiThreaded::evaluateCosts(const std::vector<Cost::Ptr>& costs, const DblVec& x) const
+{
+  DblVec out(costs.size());
+#pragma omp parallel for schedule(dynamic) num_threads(param_.num_threads) shared(out, costs, x)
+  for (int i = 0; i < static_cast<int>(costs.size()); ++i)
+  {
+    out[static_cast<std::size_t>(i)] = costs[static_cast<std::size_t>(i)]->value(x);
+  }
+
+  return out;
+}
+
+DblVec BasicTrustRegionSQPMultiThreaded::evaluateConstraintViols(const std::vector<Constraint::Ptr>& cnts,
+                                                                 const DblVec& x) const
+{
+  DblVec out(cnts.size());
+#pragma omp parallel for schedule(dynamic) num_threads(param_.num_threads) shared(out, cnts, x)
+  for (int i = 0; i < static_cast<int>(cnts.size()); ++i)
+  {
+    out[static_cast<std::size_t>(i)] = cnts[static_cast<std::size_t>(i)]->violation(x);
+  }
+
+  return out;
+}
+
+std::vector<ConvexObjective::Ptr> BasicTrustRegionSQPMultiThreaded::convexifyCosts(const std::vector<Cost::Ptr>& costs,
+                                                                                   const DblVec& x,
+                                                                                   Model* model) const
+{
+  std::vector<ConvexObjective::Ptr> out(costs.size());
+#pragma omp parallel for schedule(dynamic) num_threads(param_.num_threads) shared(out, costs, x, model)
+  for (int i = 0; i < static_cast<int>(costs.size()); ++i)
+  {
+    out[static_cast<std::size_t>(i)] = costs[static_cast<std::size_t>(i)]->convex(x, model);
+  }
+
+  return out;
+}
+
+std::vector<ConvexConstraints::Ptr>
+BasicTrustRegionSQPMultiThreaded::convexifyConstraints(const std::vector<Constraint::Ptr>& cnts,
+                                                       const DblVec& x,
+                                                       Model* model) const
+{
+  std::vector<ConvexConstraints::Ptr> out(cnts.size());
+#pragma omp parallel for schedule(dynamic) num_threads(param_.num_threads) shared(out, cnts, x, model)
+  for (int i = 0; i < static_cast<int>(cnts.size()); ++i)
+  {
+    out[static_cast<std::size_t>(i)] = cnts[static_cast<std::size_t>(i)]->convex(x, model);
+  }
+
+  return out;
+}
+
+DblVec BasicTrustRegionSQPMultiThreaded::evaluateModelCosts(const std::vector<ConvexObjective::Ptr>& costs,
+                                                            const DblVec& x) const
+{
+  DblVec out(costs.size());
+#pragma omp parallel for schedule(dynamic) num_threads(param_.num_threads) shared(out, costs, x)
+  for (int i = 0; i < static_cast<int>(costs.size()); ++i)
+  {
+    out[static_cast<std::size_t>(i)] = costs[static_cast<std::size_t>(i)]->value(x);
+  }
+
+  return out;
+}
+
+DblVec BasicTrustRegionSQPMultiThreaded::evaluateModelCntViols(const std::vector<ConvexConstraints::Ptr>& cnts,
+                                                               const DblVec& x) const
+{
+  DblVec out(cnts.size());
+#pragma omp parallel for schedule(dynamic) num_threads(param_.num_threads) shared(out, cnts, x)
+  for (int i = 0; i < static_cast<int>(cnts.size()); ++i)
+  {
+    out[static_cast<std::size_t>(i)] = cnts[static_cast<std::size_t>(i)]->violation(x);
+  }
+
+  return out;
 }
 
 #if 0
@@ -233,8 +318,9 @@ struct MultiCritFilter {
 
 BasicTrustRegionSQPResults::BasicTrustRegionSQPResults(std::vector<std::string> var_names,
                                                        std::vector<std::string> cost_names,
-                                                       std::vector<std::string> cnt_names)
-  : var_names(std::move(var_names)), cost_names(std::move(cost_names)), cnt_names(std::move(cnt_names))
+                                                       std::vector<std::string> cnt_names,
+                                                       const BasicTrustRegionSQP& parent)
+  : var_names(std::move(var_names)), cost_names(std::move(cost_names)), cnt_names(std::move(cnt_names)), parent_(parent)
 {
   model_var_vals.clear();
   model_cost_vals.clear();
@@ -250,7 +336,7 @@ BasicTrustRegionSQPResults::BasicTrustRegionSQPResults(std::vector<std::string> 
   approx_merit_improve = 0;
   exact_merit_improve = 0;
   merit_improve_ratio = 0;
-  merit_error_coeffs = std::vector<double>(cnt_names.size(), 0);
+  merit_error_coeffs = std::vector<double>(this->cnt_names.size(), 0);
 }
 
 void BasicTrustRegionSQPResults::update(const OptResults& prev_opt_results,
@@ -264,8 +350,8 @@ void BasicTrustRegionSQPResults::update(const OptResults& prev_opt_results,
 {
   this->merit_error_coeffs = merit_error_coeffs;
   model_var_vals = model.getVarValues(model.getVars());
-  model_cost_vals = evaluateModelCosts(cost_models, model_var_vals);
-  model_cnt_viols = evaluateModelCntViols(cnt_models, model_var_vals);
+  model_cost_vals = parent_.evaluateModelCosts(cost_models, model_var_vals);
+  model_cnt_viols = parent_.evaluateModelCntViols(cnt_models, model_var_vals);
 
   // the n variables of the OptProb happen to be the first n variables in
   // the Model
@@ -273,7 +359,7 @@ void BasicTrustRegionSQPResults::update(const OptResults& prev_opt_results,
 
   if (util::GetLogLevel() >= util::LevelDebug)
   {
-    DblVec cnt_costs1 = evaluateModelCosts(cnt_cost_models, model_var_vals);
+    DblVec cnt_costs1 = parent_.evaluateModelCosts(cnt_cost_models, model_var_vals);
     DblVec cnt_costs2 = model_cnt_viols;
     for (unsigned i = 0; i < cnt_costs2.size(); ++i)
       cnt_costs2[i] *= merit_error_coeffs[i];
@@ -284,8 +370,8 @@ void BasicTrustRegionSQPResults::update(const OptResults& prev_opt_results,
 
   old_cost_vals = prev_opt_results.cost_vals;
   old_cnt_viols = prev_opt_results.cnt_viols;
-  new_cost_vals = evaluateCosts(costs, new_x);
-  new_cnt_viols = evaluateConstraintViols(constraints, new_x);
+  new_cost_vals = parent_.evaluateCosts(costs, new_x);
+  new_cnt_viols = parent_.evaluateConstraintViols(constraints, new_x);
 
   old_merit = vecSum(old_cost_vals) + vecDot(old_cnt_viols, merit_error_coeffs);
   model_merit = vecSum(model_cost_vals) + vecDot(model_cnt_viols, merit_error_coeffs);
@@ -572,7 +658,7 @@ OptStatus BasicTrustRegionSQP::optimize()
   std::vector<Constraint::Ptr> constraints = prob_->getConstraints();
   std::vector<std::string> cnt_names = getCntNames(constraints);
   std::vector<double> merit_error_coeffs(constraints.size(), param_.initial_merit_error_coeff);
-  BasicTrustRegionSQPResults iteration_results(var_names, cost_names, cnt_names);
+  BasicTrustRegionSQPResults iteration_results(var_names, cost_names, cnt_names, *this);
 
   std::FILE* log_solver_stream = nullptr;
   std::FILE* log_vars_stream = nullptr;

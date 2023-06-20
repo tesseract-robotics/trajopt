@@ -3,6 +3,7 @@
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <Eigen/Core>
 #include <osqp.h>
+#include <mutex>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt_sco/solver_interface.hpp>
@@ -75,14 +76,17 @@ class OSQPModel : public Model
 
   OSQPModelConfig config_; /**< The configuration settings */
 
+  std::mutex mutex_; /**< The mutex */
+
 public:
   OSQPModel(const ModelConfig::ConstPtr& config = nullptr);
   ~OSQPModel() override;
   OSQPModel(const OSQPModel& model) = delete;
   OSQPModel& operator=(const OSQPModel& model) = delete;
-  OSQPModel(OSQPModel&&) = default;
-  OSQPModel& operator=(OSQPModel&&) = default;
+  OSQPModel(OSQPModel&&) = delete;
+  OSQPModel& operator=(OSQPModel&&) = delete;
 
+  // Must be threadsafe
   Var addVar(const std::string& name) override;
   Cnt addEqCnt(const AffExpr&, const std::string& name) override;
   Cnt addIneqCnt(const AffExpr&, const std::string& name) override;
@@ -90,13 +94,14 @@ public:
   void removeVars(const VarVector& vars) override;
   void removeCnts(const CntVector& cnts) override;
 
+  // These do not need to be threadsafe
   void update() override;
-  void setVarBounds(const VarVector& vars, const DblVec& lower, const DblVec& upper) override;
-  DblVec getVarValues(const VarVector& vars) const override;
   CvxOptStatus optimize() override;
   void setObjective(const AffExpr&) override;
   void setObjective(const QuadExpr&) override;
-  VarVector getVars() const override;
+  void setVarBounds(const VarVector& vars, const DblVec& lower, const DblVec& upper) override;
+  DblVec getVarValues(const VarVector& vars) const override;
   void writeToFile(const std::string& fname) const override;
+  VarVector getVars() const override;
 };
 }  // namespace sco

@@ -3,6 +3,7 @@
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <Eigen/Core>
 #include <qpOASES.hpp>
+#include <mutex>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt_sco/solver_interface.hpp>
@@ -71,14 +72,17 @@ class qpOASESModel : public Model
 
   QuadExpr objective_; /**< objective QuadExpr expression */
 
+  std::mutex mutex_; /**< The mutex */
+
 public:
   qpOASESModel();
   ~qpOASESModel() override;
-  qpOASESModel(const qpOASESModel&) = default;
-  qpOASESModel& operator=(const qpOASESModel&) = default;
-  qpOASESModel(qpOASESModel&&) = default;
-  qpOASESModel& operator=(qpOASESModel&&) = default;
+  qpOASESModel(const qpOASESModel&) = delete;
+  qpOASESModel& operator=(const qpOASESModel&) = delete;
+  qpOASESModel(qpOASESModel&&) = delete;
+  qpOASESModel& operator=(qpOASESModel&&) = delete;
 
+  // Must be thread safe
   Var addVar(const std::string& name) override;
   Cnt addEqCnt(const AffExpr&, const std::string& name) override;
   Cnt addIneqCnt(const AffExpr&, const std::string& name) override;
@@ -86,12 +90,13 @@ public:
   void removeVars(const VarVector& vars) override;
   void removeCnts(const CntVector& cnts) override;
 
+  // These do not need to be threadsafe
   void update() override;
-  void setVarBounds(const VarVector& vars, const DblVec& lower, const DblVec& upper) override;
-  DblVec getVarValues(const VarVector& vars) const override;
   CvxOptStatus optimize() override;
   void setObjective(const AffExpr&) override;
   void setObjective(const QuadExpr&) override;
+  void setVarBounds(const VarVector& vars, const DblVec& lower, const DblVec& upper) override;
+  DblVec getVarValues(const VarVector& vars) const override;
   void writeToFile(const std::string& fname) const override;
   VarVector getVars() const override;
 };

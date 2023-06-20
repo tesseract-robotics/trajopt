@@ -53,7 +53,7 @@ public:
   }
 };
 
-TEST_F(NumericalIKTest, numerical_ik1)  // NOLINT
+void runTest(const Environment::Ptr& env, const Visualization::Ptr& /*plotter*/, bool use_multi_threaded)
 {
   CONSOLE_BRIDGE_logDebug("NumericalIKTest, numerical_ik1");
 
@@ -61,35 +61,45 @@ TEST_F(NumericalIKTest, numerical_ik1)  // NOLINT
 
   //  plotter_->plotScene();
 
-  ProblemConstructionInfo pci(env_);
+  ProblemConstructionInfo pci(env);
   pci.fromJson(root);
   pci.basic_info.convex_solver = sco::ModelType::OSQP;
   TrajOptProb::Ptr prob = ConstructProblem(pci);
   ASSERT_TRUE(!!prob);
 
-  sco::BasicTrustRegionSQP opt(prob);
+  sco::BasicTrustRegionSQP::Ptr opt;
+  if (use_multi_threaded)
+  {
+    opt = std::make_shared<sco::BasicTrustRegionSQPMultiThreaded>(prob);
+    opt->getParameters().num_threads = 5;
+  }
+  else
+  {
+    opt = std::make_shared<sco::BasicTrustRegionSQP>(prob);
+  }
+
   //  if (plotting)
   //  {
-  //    opt.addCallback(PlotCallback(*prob, plotter_));
+  //    opt.addCallback(PlotCallback(*prob, plotter));
   //  }
 
   CONSOLE_BRIDGE_logDebug("DOF: %d", prob->GetNumDOF());
-  opt.initialize(DblVec(static_cast<size_t>(prob->GetNumDOF()), 0));
+  opt->initialize(DblVec(static_cast<size_t>(prob->GetNumDOF()), 0));
   double tStart = GetClock();
-  CONSOLE_BRIDGE_logDebug("Size: %d", opt.x().size());
+  CONSOLE_BRIDGE_logDebug("Size: %d", opt->x().size());
   std::stringstream ss;
-  ss << toVectorXd(opt.x()).transpose();
+  ss << toVectorXd(opt->x()).transpose();
   CONSOLE_BRIDGE_logDebug("Initial Vars: %s", ss.str().c_str());
   Eigen::Isometry3d change_base = prob->GetEnv()->getLinkTransform(prob->GetKin()->getBaseLinkName());
-  Eigen::Isometry3d initial_pose = prob->GetKin()->calcFwdKin(toVectorXd(opt.x())).at("l_gripper_tool_frame");
+  Eigen::Isometry3d initial_pose = prob->GetKin()->calcFwdKin(toVectorXd(opt->x())).at("l_gripper_tool_frame");
   initial_pose = change_base * initial_pose;
 
   ss = std::stringstream();
   ss << initial_pose.translation().transpose();
   CONSOLE_BRIDGE_logDebug("Initial Position: %s", ss.str().c_str());
-  sco::OptStatus status = opt.optimize();
+  sco::OptStatus status = opt->optimize();
   CONSOLE_BRIDGE_logDebug("Status: %s", sco::statusToString(status).c_str());
-  Eigen::Isometry3d final_pose = prob->GetKin()->calcFwdKin(toVectorXd(opt.x())).at("l_gripper_tool_frame");
+  Eigen::Isometry3d final_pose = prob->GetKin()->calcFwdKin(toVectorXd(opt->x())).at("l_gripper_tool_frame");
   final_pose = change_base * final_pose;
 
   Eigen::Isometry3d goal;
@@ -110,10 +120,20 @@ TEST_F(NumericalIKTest, numerical_ik1)  // NOLINT
   CONSOLE_BRIDGE_logDebug("Final Position: %s", ss.str().c_str());
 
   ss = std::stringstream();
-  ss << toVectorXd(opt.x()).transpose();
+  ss << toVectorXd(opt->x()).transpose();
   CONSOLE_BRIDGE_logDebug("Final Vars: ", ss.str().c_str());
 
   CONSOLE_BRIDGE_logDebug("planning time: %.3f", GetClock() - tStart);
+}
+
+TEST_F(NumericalIKTest, numerical_ik1)  // NOLINT
+{
+  runTest(env_, plotter_, false);
+}
+
+TEST_F(NumericalIKTest, numerical_ik1_multi_threaded)  // NOLINT
+{
+  runTest(env_, plotter_, true);
 }
 
 int main(int argc, char** argv)

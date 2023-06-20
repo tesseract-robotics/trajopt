@@ -2,6 +2,7 @@
 TESSERACT_COMMON_IGNORE_WARNINGS_PUSH
 #include <benchmark/benchmark.h>
 #include <algorithm>
+#include <thread>
 TESSERACT_COMMON_IGNORE_WARNINGS_POP
 #include <tesseract_environment/environment.h>
 #include <tesseract_common/resource_locator.h>
@@ -58,6 +59,37 @@ static void BM_TRAJOPT_PLANNING_SOLVE(benchmark::State& state, Environment::Ptr 
   }
 }
 
+/** @brief Benchmark trajopt simple collision solve */
+static void BM_TRAJOPT_MULTI_THREADED_SIMPLE_COLLISION_SOLVE(benchmark::State& state,
+                                                             Environment::Ptr env,
+                                                             Json::Value root)
+{
+  for (auto _ : state)
+  {
+    TrajOptProb::Ptr prob = ConstructProblem(root, env);
+    sco::BasicTrustRegionSQPMultiThreaded opt(prob);
+    opt.getParameters().num_threads = static_cast<int>(std::thread::hardware_concurrency());
+    opt.initialize(trajToDblVec(prob->GetInitTraj()));
+    opt.optimize();
+  }
+}
+
+/** @brief Benchmark trajopt planning solve */
+static void BM_TRAJOPT_MULTI_THREADED_PLANNING_SOLVE(benchmark::State& state, Environment::Ptr env, Json::Value root)
+{
+  for (auto _ : state)
+  {
+    ProblemConstructionInfo pci(env);
+    pci.fromJson(root);
+    pci.basic_info.convex_solver = sco::ModelType::OSQP;
+    TrajOptProb::Ptr prob = ConstructProblem(pci);
+    sco::BasicTrustRegionSQPMultiThreaded opt(prob);
+    opt.getParameters().num_threads = static_cast<int>(std::thread::hardware_concurrency());
+    opt.initialize(trajToDblVec(prob->GetInitTraj()));
+    opt.optimize();
+  }
+}
+
 int main(int argc, char** argv)
 {
   gLogLevel = util::LevelError;
@@ -79,12 +111,23 @@ int main(int argc, char** argv)
     ipos["spherebot_y_joint"] = 0.75;
     env->setState(ipos);
 
-    std::function<void(benchmark::State&, Environment::Ptr, Json::Value)> BM_SOLVE_FUNC =
-        BM_TRAJOPT_SIMPLE_COLLISION_SOLVE;
-    std::string name = "BM_TRAJOPT_SIMPLE_COLLISION_SOLVE";
-    benchmark::RegisterBenchmark(name.c_str(), BM_SOLVE_FUNC, env, root)
-        ->UseRealTime()
-        ->Unit(benchmark::TimeUnit::kMicrosecond);
+    {
+      std::function<void(benchmark::State&, Environment::Ptr, Json::Value)> BM_SOLVE_FUNC =
+          BM_TRAJOPT_SIMPLE_COLLISION_SOLVE;
+      std::string name = "BM_TRAJOPT_SIMPLE_COLLISION_SOLVE";
+      benchmark::RegisterBenchmark(name.c_str(), BM_SOLVE_FUNC, env, root)
+          ->UseRealTime()
+          ->Unit(benchmark::TimeUnit::kMicrosecond);
+    }
+
+    {
+      std::function<void(benchmark::State&, Environment::Ptr, Json::Value)> BM_SOLVE_FUNC =
+          BM_TRAJOPT_MULTI_THREADED_SIMPLE_COLLISION_SOLVE;
+      std::string name = "BM_TRAJOPT_MULTI_THREADED_SIMPLE_COLLISION_SOLVE";
+      benchmark::RegisterBenchmark(name.c_str(), BM_SOLVE_FUNC, env, root)
+          ->UseRealTime()
+          ->Unit(benchmark::TimeUnit::kMicrosecond);
+    }
   }
 
   //////////////////////////////////////
@@ -110,12 +153,24 @@ int main(int argc, char** argv)
     ipos["r_wrist_roll_joint"] = 3.074;
     env->setState(ipos);
 
-    std::function<void(benchmark::State&, Environment::Ptr, Json::Value)> BM_SOLVE_FUNC = BM_TRAJOPT_PLANNING_SOLVE;
-    std::string name = "BM_TRAJOPT_PLANNING_SOLVE";
-    benchmark::RegisterBenchmark(name.c_str(), BM_SOLVE_FUNC, env, root)
-        ->UseRealTime()
-        ->Unit(benchmark::TimeUnit::kMillisecond)
-        ->MinTime(100);
+    {
+      std::function<void(benchmark::State&, Environment::Ptr, Json::Value)> BM_SOLVE_FUNC = BM_TRAJOPT_PLANNING_SOLVE;
+      std::string name = "BM_TRAJOPT_PLANNING_SOLVE";
+      benchmark::RegisterBenchmark(name.c_str(), BM_SOLVE_FUNC, env, root)
+          ->UseRealTime()
+          ->Unit(benchmark::TimeUnit::kMillisecond)
+          ->MinTime(100);
+    }
+
+    {
+      std::function<void(benchmark::State&, Environment::Ptr, Json::Value)> BM_SOLVE_FUNC =
+          BM_TRAJOPT_MULTI_THREADED_PLANNING_SOLVE;
+      std::string name = "BM_TRAJOPT_MULTI_THREADED_PLANNING_SOLVE";
+      benchmark::RegisterBenchmark(name.c_str(), BM_SOLVE_FUNC, env, root)
+          ->UseRealTime()
+          ->Unit(benchmark::TimeUnit::kMillisecond)
+          ->MinTime(100);
+    }
   }
 
   benchmark::Initialize(&argc, argv);

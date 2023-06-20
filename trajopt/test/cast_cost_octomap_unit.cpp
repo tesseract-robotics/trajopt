@@ -94,7 +94,7 @@ public:
   }
 };
 
-TEST_F(CastOctomapTest, boxes)  // NOLINT
+void runTest(const Environment::Ptr& env, const Visualization::Ptr& plotter, bool use_multi_threaded)
 {
   CONSOLE_BRIDGE_logDebug("CastOctomapTest, boxes");
 
@@ -103,11 +103,11 @@ TEST_F(CastOctomapTest, boxes)  // NOLINT
   std::unordered_map<std::string, double> ipos;
   ipos["boxbot_x_joint"] = -1.9;
   ipos["boxbot_y_joint"] = 0;
-  env_->setState(ipos);
+  env->setState(ipos);
 
   //  plotter_->plotScene();
 
-  TrajOptProb::Ptr prob = ConstructProblem(root, env_);
+  TrajOptProb::Ptr prob = ConstructProblem(root, env);
   ASSERT_TRUE(!!prob);
 
   std::vector<ContactResultMap> collisions;
@@ -125,21 +125,41 @@ TEST_F(CastOctomapTest, boxes)  // NOLINT
   EXPECT_TRUE(found);
   CONSOLE_BRIDGE_logDebug((found) ? ("Initial trajectory is in collision") : ("Initial trajectory is collision free"));
 
-  sco::BasicTrustRegionSQP opt(prob);
-  if (plotting)
-    opt.addCallback(PlotCallback(plotter_));
-  opt.initialize(trajToDblVec(prob->GetInitTraj()));
-  opt.optimize();
+  sco::BasicTrustRegionSQP::Ptr opt;
+  if (use_multi_threaded)
+  {
+    opt = std::make_shared<sco::BasicTrustRegionSQPMultiThreaded>(prob);
+    opt->getParameters().num_threads = 5;
+  }
+  else
+  {
+    opt = std::make_shared<sco::BasicTrustRegionSQP>(prob);
+  }
 
   if (plotting)
-    plotter_->clear();
+    opt->addCallback(PlotCallback(plotter));
+  opt->initialize(trajToDblVec(prob->GetInitTraj()));
+  opt->optimize();
+
+  if (plotting)
+    plotter->clear();
 
   collisions.clear();
   found = checkTrajectory(
-      collisions, *manager, *state_solver, prob->GetKin()->getJointNames(), getTraj(opt.x(), prob->GetVars()), config);
+      collisions, *manager, *state_solver, prob->GetKin()->getJointNames(), getTraj(opt->x(), prob->GetVars()), config);
 
   EXPECT_FALSE(found);
   CONSOLE_BRIDGE_logDebug((found) ? ("Final trajectory is in collision") : ("Final trajectory is collision free"));
+}
+
+TEST_F(CastOctomapTest, boxes)  // NOLINT
+{
+  runTest(env_, plotter_, false);
+}
+
+TEST_F(CastOctomapTest, boxes_milti_threaded)  // NOLINT
+{
+  runTest(env_, plotter_, false);
 }
 
 int main(int argc, char** argv)
