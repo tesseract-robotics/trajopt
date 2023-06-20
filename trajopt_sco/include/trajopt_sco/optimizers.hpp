@@ -125,65 +125,6 @@ struct BasicTrustRegionSQPParameters
   BasicTrustRegionSQPParameters();
 };
 
-struct BasicTrustRegionSQPUtilFunctions
-{
-  virtual ~BasicTrustRegionSQPUtilFunctions() = default;
-
-  virtual DblVec evaluateCosts(const std::vector<Cost::Ptr>& costs, const DblVec& x) const;
-
-  virtual DblVec evaluateConstraintViols(const std::vector<Constraint::Ptr>& constraints, const DblVec& x) const;
-
-  virtual std::vector<ConvexObjective::Ptr> convexifyCosts(const std::vector<Cost::Ptr>& costs,
-                                                           const DblVec& x,
-                                                           Model* model) const;
-
-  virtual std::vector<ConvexConstraints::Ptr> convexifyConstraints(const std::vector<Constraint::Ptr>& cnts,
-                                                                   const DblVec& x,
-                                                                   Model* model) const;
-
-  virtual DblVec evaluateModelCosts(const std::vector<ConvexObjective::Ptr>& costs, const DblVec& x) const;
-
-  virtual DblVec evaluateModelCntViols(const std::vector<ConvexConstraints::Ptr>& cnts, const DblVec& x) const;
-
-  virtual std::vector<std::string> getCostNames(const std::vector<Cost::Ptr>& costs) const;
-
-  virtual std::vector<std::string> getCntNames(const std::vector<Constraint::Ptr>& cnts) const;
-
-  virtual std::vector<std::string> getVarNames(const VarVector& vars) const;
-};
-
-struct BasicTrustRegionSQPUtilFunctionsThreaded : public BasicTrustRegionSQPUtilFunctions
-{
-  BasicTrustRegionSQPUtilFunctionsThreaded();
-  BasicTrustRegionSQPUtilFunctionsThreaded(int num_threads);
-  ~BasicTrustRegionSQPUtilFunctionsThreaded() override = default;
-
-  DblVec evaluateCosts(const std::vector<Cost::Ptr>& costs, const DblVec& x) const override final;
-
-  DblVec evaluateConstraintViols(const std::vector<Constraint::Ptr>& constraints, const DblVec& x) const override final;
-
-  std::vector<ConvexObjective::Ptr> convexifyCosts(const std::vector<Cost::Ptr>& costs,
-                                                   const DblVec& x,
-                                                   Model* model) const override final;
-
-  std::vector<ConvexConstraints::Ptr> convexifyConstraints(const std::vector<Constraint::Ptr>& cnts,
-                                                           const DblVec& x,
-                                                           Model* model) const override final;
-
-  DblVec evaluateModelCosts(const std::vector<ConvexObjective::Ptr>& costs, const DblVec& x) const override final;
-
-  DblVec evaluateModelCntViols(const std::vector<ConvexConstraints::Ptr>& cnts, const DblVec& x) const override final;
-
-  std::vector<std::string> getCostNames(const std::vector<Cost::Ptr>& costs) const override final;
-
-  std::vector<std::string> getCntNames(const std::vector<Constraint::Ptr>& cnts) const override final;
-
-  std::vector<std::string> getVarNames(const VarVector& vars) const override final;
-
-private:
-  int num_threads_;
-};
-
 class BasicTrustRegionSQP : public Optimizer
 {
   /*
