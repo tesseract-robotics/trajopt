@@ -154,7 +154,7 @@ public:
   // Utility functions, exposed to allow overriding for multi threaded implementations
   virtual DblVec evaluateCosts(const std::vector<Cost::Ptr>& costs, const DblVec& x) const;
 
-  virtual DblVec evaluateConstraintViols(const std::vector<Constraint::Ptr>& constraints, const DblVec& x) const;
+  virtual DblVec evaluateConstraintViols(const std::vector<Constraint::Ptr>& cnts, const DblVec& x) const;
 
   virtual std::vector<ConvexObjective::Ptr> convexifyCosts(const std::vector<Cost::Ptr>& costs,
                                                            const DblVec& x,
@@ -193,7 +193,7 @@ public:
   // Utility functions, exposed to allow overriding for multi threaded implementations
   DblVec evaluateCosts(const std::vector<Cost::Ptr>& costs, const DblVec& x) const override final;
 
-  DblVec evaluateConstraintViols(const std::vector<Constraint::Ptr>& constraints, const DblVec& x) const override final;
+  DblVec evaluateConstraintViols(const std::vector<Constraint::Ptr>& cnts, const DblVec& x) const override final;
 
   std::vector<ConvexObjective::Ptr> convexifyCosts(const std::vector<Cost::Ptr>& costs,
                                                    const DblVec& x,

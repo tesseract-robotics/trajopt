@@ -138,12 +138,11 @@ DblVec BasicTrustRegionSQP::evaluateCosts(const std::vector<Cost::Ptr>& costs, c
   return out;
 }
 
-DblVec BasicTrustRegionSQP::evaluateConstraintViols(const std::vector<Constraint::Ptr>& constraints,
-                                                    const DblVec& x) const
+DblVec BasicTrustRegionSQP::evaluateConstraintViols(const std::vector<Constraint::Ptr>& cnts, const DblVec& x) const
 {
-  DblVec out(constraints.size());
-  for (size_t i = 0; i < constraints.size(); ++i)
-    out[i] = constraints[i]->violation(x);
+  DblVec out(cnts.size());
+  for (size_t i = 0; i < cnts.size(); ++i)
+    out[i] = cnts[i]->violation(x);
 
   return out;
 }
@@ -218,20 +217,24 @@ std::vector<std::string> BasicTrustRegionSQP::getVarNames(const VarVector& vars)
 DblVec BasicTrustRegionSQPMultiThreaded::evaluateCosts(const std::vector<Cost::Ptr>& costs, const DblVec& x) const
 {
   DblVec out(costs.size());
-#pragma omp parallel for schedule(dynamic, 1) num_threads(param_.num_threads)
+#pragma omp parallel for schedule(dynamic) num_threads(param_.num_threads) shared(out, costs, x)
   for (int i = 0; i < static_cast<int>(costs.size()); ++i)
+  {
     out[static_cast<std::size_t>(i)] = costs[static_cast<std::size_t>(i)]->value(x);
+  }
 
   return out;
 }
 
-DblVec BasicTrustRegionSQPMultiThreaded::evaluateConstraintViols(const std::vector<Constraint::Ptr>& constraints,
+DblVec BasicTrustRegionSQPMultiThreaded::evaluateConstraintViols(const std::vector<Constraint::Ptr>& cnts,
                                                                  const DblVec& x) const
 {
-  DblVec out(constraints.size());
-#pragma omp parallel for schedule(dynamic, 1) num_threads(param_.num_threads)
-  for (int i = 0; i < static_cast<int>(constraints.size()); ++i)
-    out[static_cast<std::size_t>(i)] = constraints[static_cast<std::size_t>(i)]->violation(x);
+  DblVec out(cnts.size());
+#pragma omp parallel for schedule(dynamic) num_threads(param_.num_threads) shared(out, cnts, x)
+  for (int i = 0; i < static_cast<int>(cnts.size()); ++i)
+  {
+    out[static_cast<std::size_t>(i)] = cnts[static_cast<std::size_t>(i)]->violation(x);
+  }
 
   return out;
 }
@@ -241,9 +244,11 @@ std::vector<ConvexObjective::Ptr> BasicTrustRegionSQPMultiThreaded::convexifyCos
                                                                                    Model* model) const
 {
   std::vector<ConvexObjective::Ptr> out(costs.size());
-#pragma omp parallel for schedule(dynamic, 1) num_threads(param_.num_threads)
+#pragma omp parallel for schedule(dynamic) num_threads(param_.num_threads) shared(out, costs, x, model)
   for (int i = 0; i < static_cast<int>(costs.size()); ++i)
+  {
     out[static_cast<std::size_t>(i)] = costs[static_cast<std::size_t>(i)]->convex(x, model);
+  }
 
   return out;
 }
@@ -254,9 +259,11 @@ BasicTrustRegionSQPMultiThreaded::convexifyConstraints(const std::vector<Constra
                                                        Model* model) const
 {
   std::vector<ConvexConstraints::Ptr> out(cnts.size());
-#pragma omp parallel for schedule(dynamic, 1) num_threads(param_.num_threads)
+#pragma omp parallel for schedule(dynamic) num_threads(param_.num_threads) shared(out, cnts, x, model)
   for (int i = 0; i < static_cast<int>(cnts.size()); ++i)
+  {
     out[static_cast<std::size_t>(i)] = cnts[static_cast<std::size_t>(i)]->convex(x, model);
+  }
 
   return out;
 }
@@ -265,9 +272,11 @@ DblVec BasicTrustRegionSQPMultiThreaded::evaluateModelCosts(const std::vector<Co
                                                             const DblVec& x) const
 {
   DblVec out(costs.size());
-#pragma omp parallel for schedule(dynamic, 1) num_threads(param_.num_threads)
+#pragma omp parallel for schedule(dynamic) num_threads(param_.num_threads) shared(out, costs, x)
   for (int i = 0; i < static_cast<int>(costs.size()); ++i)
+  {
     out[static_cast<std::size_t>(i)] = costs[static_cast<std::size_t>(i)]->value(x);
+  }
 
   return out;
 }
@@ -276,9 +285,11 @@ DblVec BasicTrustRegionSQPMultiThreaded::evaluateModelCntViols(const std::vector
                                                                const DblVec& x) const
 {
   DblVec out(cnts.size());
-#pragma omp parallel for schedule(dynamic, 1) num_threads(param_.num_threads)
+#pragma omp parallel for schedule(dynamic) num_threads(param_.num_threads) shared(out, cnts, x)
   for (int i = 0; i < static_cast<int>(cnts.size()); ++i)
+  {
     out[static_cast<std::size_t>(i)] = cnts[static_cast<std::size_t>(i)]->violation(x);
+  }
 
   return out;
 }
