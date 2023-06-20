@@ -710,8 +710,8 @@ OptStatus BasicTrustRegionSQP::optimize()
         ++results_.n_func_evals;
       }
 
-      // DblVec new_cnt_viols = util_funcs_->evaluateConstraintViols(constraints, results_.x);
-      // DblVec new_cost_vals = util_funcs_->evaluateCosts(prob_->getCosts(), results_.x);
+      // DblVec new_cnt_viols = evaluateConstraintViols(constraints, results_.x);
+      // DblVec new_cost_vals = evaluateCosts(prob_->getCosts(), results_.x);
       // cout << "costs" << endl;
       // for (int i=0; i < new_cnt_viols.size(); ++i) {
       //   cout << cnt_names[i] << " " << new_cnt_viols[i] -
