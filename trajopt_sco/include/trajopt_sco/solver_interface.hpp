@@ -115,12 +115,12 @@ struct VarRep
   using Ptr = std::shared_ptr<VarRep>;
 
   VarRep(std::size_t _index, std::string _name, void* _creator)
-    : index(_index), name(std::move(_name)), removed(false), creator(_creator)
+    : index(_index), name(std::move(_name)), creator(_creator)
   {
   }
   std::size_t index;
   std::string name;
-  bool removed;
+  bool removed{ false };
   void* creator;
 };
 
@@ -193,10 +193,10 @@ struct AffExpr
   AffExpr(AffExpr&&) = default;
   AffExpr& operator=(AffExpr&&) = default;
 
-  explicit AffExpr(double a) : constant(a) {}
-  explicit AffExpr(const Var& v) : coeffs(1, 1), vars(1, v) {}
+  explicit AffExpr(double a);
+  explicit AffExpr(const Var& v);
 
-  size_t size() const { return coeffs.size(); }
+  size_t size() const;
   double value(const double* x) const;
   double value(const DblVec& x) const;
 };
@@ -210,10 +210,10 @@ struct QuadExpr
   VarVector vars1;
   VarVector vars2;
   QuadExpr() = default;
-  explicit QuadExpr(double a) : affexpr(a) {}
-  explicit QuadExpr(const Var& v) : affexpr(v) {}
-  explicit QuadExpr(AffExpr aff) : affexpr(std::move(aff)) {}
-  size_t size() const { return coeffs.size(); }
+  explicit QuadExpr(double a);
+  explicit QuadExpr(const Var& v);
+  explicit QuadExpr(AffExpr aff);
+  size_t size() const;
   double value(const double* x) const;
   double value(const DblVec& x) const;
 };
@@ -249,7 +249,7 @@ public:
   friend std::ostream& operator<<(std::ostream& os, const ModelType& cs);
 
 private:
-  Value value_;
+  Value value_{ Value::AUTO_SOLVER };
 };
 
 std::vector<ModelType> availableSolvers();

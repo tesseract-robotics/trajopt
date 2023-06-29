@@ -53,7 +53,7 @@ target_compile_options(${PROJECT_NAME}-test PRIVATE ${TRAJOPT_COMPILE_OPTIONS_PR
 target_compile_definitions(${PROJECT_NAME}-test PRIVATE ${TRAJOPT_COMPILE_DEFINITIONS}
                                                         TRAJOPT_IFOPT_DIR="${CMAKE_SOURCE_DIR}")
 target_cxx_version(${PROJECT_NAME}-test PRIVATE VERSION ${TRAJOPT_CXX_VERSION})
-# target_clang_tidy(${PROJECT_NAME}-test ENABLE ${TRAJOPT_ENABLE_CLANG_TIDY})
+target_clang_tidy(${PROJECT_NAME}-test ENABLE ${TRAJOPT_ENABLE_CLANG_TIDY})
 add_gtest_discover_tests(${PROJECT_NAME}-test)
 if(HAVE_BPMPD)
   add_dependencies(${PROJECT_NAME}-test bpmpd_caller)
