@@ -8,7 +8,6 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt_sco/solver_interface.hpp>
-#include <trajopt_utils/macros.h>
 
 namespace sco
 {
@@ -62,6 +61,10 @@ void simplify2(IntVec& inds, DblVec& vals)
   }
 }
 
+AffExpr::AffExpr(double a) : constant(a) {}
+AffExpr::AffExpr(const Var& v) : coeffs(1, 1), vars(1, v) {}
+size_t AffExpr::size() const { return coeffs.size(); }
+
 double AffExpr::value(const double* x) const
 {
   double out = constant;
@@ -80,6 +83,12 @@ double AffExpr::value(const DblVec& x) const
   }
   return out;
 }
+
+QuadExpr::QuadExpr(double a) : affexpr(a) {}
+QuadExpr::QuadExpr(const Var& v) : affexpr(v) {}
+QuadExpr::QuadExpr(AffExpr aff) : affexpr(std::move(aff)) {}
+size_t QuadExpr::size() const { return coeffs.size(); }
+
 double QuadExpr::value(const DblVec& x) const
 {
   double out = affexpr.value(x);
@@ -215,9 +224,9 @@ std::ostream& operator<<(std::ostream& os, const ModelType& cs)
   return os;
 }
 
-ModelType::ModelType() { value_ = ModelType::AUTO_SOLVER; }
-ModelType::ModelType(const ModelType::Value& v) { value_ = v; }
-ModelType::ModelType(const int& v) { value_ = static_cast<Value>(v); }
+ModelType::ModelType() = default;
+ModelType::ModelType(const ModelType::Value& v) : value_(v) {}
+ModelType::ModelType(const int& v) : value_(static_cast<Value>(v)) {}
 ModelType::ModelType(const std::string& s)
 {
   for (unsigned int i = 0; i < ModelType::MODEL_NAMES_.size(); ++i)
@@ -351,6 +360,6 @@ Model::Ptr createModel(ModelType model_type, const ModelConfig::ConstPtr& model_
   std::stringstream solver_instatiation_error;
   solver_instatiation_error << "Failed to create solver: unknown solver " << solver << std::endl;
   PRINT_AND_THROW(solver_instatiation_error.str());
-  return Model::Ptr();
+  return {};
 }
 }  // namespace sco

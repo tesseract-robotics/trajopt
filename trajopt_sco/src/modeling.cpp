@@ -10,7 +10,6 @@ TRAJOPT_IGNORE_WARNINGS_POP
 #include <trajopt_sco/modeling.hpp>
 #include <trajopt_sco/sco_common.hpp>
 #include <trajopt_utils/logging.hpp>
-#include <trajopt_utils/macros.h>
 
 namespace sco
 {
