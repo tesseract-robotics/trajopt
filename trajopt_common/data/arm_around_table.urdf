@@ -56,17 +56,43 @@
     <color rgba="0.6 0.6 0.6 1.0"/>
   </material>
   <material name="Caster">
-    <texture filename="package://trajopt/test/data/pr2/materials/textures/pr2_caster_texture.png"/>
+    <texture filename="package://trajopt_common/data/pr2/materials/textures/pr2_caster_texture.png"/>
   </material>
   <material name="Wheel_l">
-    <texture filename="package://trajopt/test/data/pr2/materials/textures/pr2_wheel_left.png"/>
+    <texture filename="package://trajopt_common/data/pr2/materials/textures/pr2_wheel_left.png"/>
   </material>
   <material name="Wheel_r">
-    <texture filename="package://trajopt/test/data/pr2/materials/textures/pr2_wheel_right.png"/>
+    <texture filename="package://trajopt_common/data/pr2/materials/textures/pr2_wheel_right.png"/>
   </material>
   <material name="RollLinks">
-    <texture filename="package://trajopt/test/data/pr2/materials/textures/pr2_wheel_left.png"/>
+    <texture filename="package://trajopt_common/data/pr2/materials/textures/pr2_wheel_left.png"/>
   </material>
+
+  <link name="table_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="package://trajopt_common/data/meshes/Table.stl"/>
+      </geometry>
+      <material name="Cyan">
+        <color rgba="0 1.0 1.0 1.0"/>
+      </material>
+    </visual>
+
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://trajopt_common/data/meshes/Table.stl"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="table_joint" type="fixed">
+     <origin xyz="1.11 0.0 .635" rpy="0 0 0"/>
+     <parent link="base_footprint"/>
+     <child link="table_link"/>
+  </joint>
+
   <!-- Now we can start using the macros included above to define the actual PR2 -->
   <link name="base_link">
     <inertial>
@@ -77,40 +103,20 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://trajopt/test/data/pr2/meshes/base_v0/base.dae"/>
+        <mesh filename="package://trajopt_common/data/pr2/meshes/base_v0/base.dae"/>
       </geometry>
       <material name="White"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://trajopt/test/data/pr2/meshes/base_v0/base_L.stl"/>
+        <mesh filename="package://trajopt_common/data/pr2/meshes/base_v0/base_L.stl"/>
       </geometry>
     </collision>
   </link>
   <!-- base_footprint is a fictitious link(frame) that is on the ground right below base_link origin,
          navigation stack dedpends on this frame -->
   <link name="base_footprint">
-    <inertial>
-      <mass value="1.0"/>
-      <origin xyz="0 0 0"/>
-      <inertia ixx="0.01" ixy="0.0" ixz="0.0" iyy="0.01" iyz="0.0" izz="0.01"/>
-    </inertial>
-    <visual>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-      <geometry>
-        <box size="0.01 0.01 0.01"/>
-      </geometry>
-      <material name="White"/>
-    </visual>
-    <collision>
-      <!-- represent base collision with a simple rectangular model, positioned by base_size_z s.t. top
-             surface of the collision box matches the top surface of the PR2 base -->
-      <origin rpy="0 0 0" xyz="0 0 0.071"/>
-      <geometry>
-        <box size="0.001 0.001 0.001"/>
-      </geometry>
-    </collision>
   </link>
   <joint name="base_footprint_joint" type="fixed">
     <origin rpy="0 0 0" xyz="0 0 0.051"/>
@@ -207,14 +213,14 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://trajopt/test/data/pr2/meshes/base_v0/caster.stl"/>
+        <mesh filename="package://trajopt_common/data/pr2/meshes/base_v0/caster.stl"/>
       </geometry>
       <material name="Caster"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://trajopt/test/data/pr2/meshes/base_v0/caster_L.stl"/>
+        <mesh filename="package://trajopt_common/data/pr2/meshes/base_v0/caster_L.stl"/>
       </geometry>
     </collision>
   </link>
@@ -242,7 +248,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://trajopt/test/data/pr2/meshes/base_v0/wheel.dae"/>
+        <mesh filename="package://trajopt_common/data/pr2/meshes/base_v0/wheel.dae"/>
       </geometry>
       <material name="Wheel_l"/>
     </visual>
@@ -286,7 +292,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://trajopt/test/data/pr2/meshes/base_v0/wheel.dae"/>
+        <mesh filename="package://trajopt_common/data/pr2/meshes/base_v0/wheel.dae"/>
       </geometry>
       <material name="Wheel_r"/>
     </visual>
@@ -334,14 +340,14 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://trajopt/test/data/pr2/meshes/base_v0/caster.stl"/>
+        <mesh filename="package://trajopt_common/data/pr2/meshes/base_v0/caster.stl"/>
       </geometry>
       <material name="Caster"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://trajopt/test/data/pr2/meshes/base_v0/caster_L.stl"/>
+        <mesh filename="package://trajopt_common/data/pr2/meshes/base_v0/caster_L.stl"/>
       </geometry>
     </collision>
   </link>
@@ -369,7 +375,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://trajopt/test/data/pr2/meshes/base_v0/wheel.dae"/>
+        <mesh filename="package://trajopt_common/data/pr2/meshes/base_v0/wheel.dae"/>
       </geometry>
       <material name="Wheel_l"/>
     </visual>
@@ -413,7 +419,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://trajopt/test/data/pr2/meshes/base_v0/wheel.dae"/>
+        <mesh filename="package://trajopt_common/data/pr2/meshes/base_v0/wheel.dae"/>
       </geometry>
       <material name="Wheel_r"/>
     </visual>
@@ -461,14 +467,14 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://trajopt/test/data/pr2/meshes/base_v0/caster.stl"/>
+        <mesh filename="package://trajopt_common/data/pr2/meshes/base_v0/caster.stl"/>
       </geometry>
       <material name="Caster"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://trajopt/test/data/pr2/meshes/base_v0/caster_L.stl"/>
+        <mesh filename="package://trajopt_common/data/pr2/meshes/base_v0/caster_L.stl"/>
       </geometry>
     </collision>
   </link>
@@ -496,7 +502,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://trajopt/test/data/pr2/meshes/base_v0/wheel.dae"/>
+        <mesh filename="package://trajopt_common/data/pr2/meshes/base_v0/wheel.dae"/>
       </geometry>
       <material name="Wheel_l"/>
     </visual>
@@ -540,7 +546,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://trajopt/test/data/pr2/meshes/base_v0/wheel.dae"/>
+        <mesh filename="package://trajopt_common/data/pr2/meshes/base_v0/wheel.dae"/>
       </geometry>
       <material name="Wheel_r"/>
     </visual>
@@ -588,14 +594,14 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://trajopt/test/data/pr2/meshes/base_v0/caster.stl"/>
+        <mesh filename="package://trajopt_common/data/pr2/meshes/base_v0/caster.stl"/>
       </geometry>
       <material name="Caster"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://trajopt/test/data/pr2/meshes/base_v0/caster_L.stl"/>
+        <mesh filename="package://trajopt_common/data/pr2/meshes/base_v0/caster_L.stl"/>
       </geometry>
     </collision>
   </link>
@@ -623,7 +629,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://trajopt/test/data/pr2/meshes/base_v0/wheel.dae"/>
+        <mesh filename="package://trajopt_common/data/pr2/meshes/base_v0/wheel.dae"/>
       </geometry>
       <material name="Wheel_l"/>
     </visual>
@@ -667,7 +673,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://trajopt/test/data/pr2/meshes/base_v0/wheel.dae"/>
+        <mesh filename="package://trajopt_common/data/pr2/meshes/base_v0/wheel.dae"/>
       </geometry>
       <material name="Wheel_r"/>
     </visual>
@@ -746,14 +752,14 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://trajopt/test/data/pr2/meshes/torso_v0/torso_lift.dae"/>
+        <mesh filename="package://trajopt_common/data/pr2/meshes/torso_v0/torso_lift.dae"/>
       </geometry>
       <material name="Grey2"/>
     </visual>
     <collision name="torso_lift_collision">
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://trajopt/test/data/pr2/meshes/torso_v0/torso_lift_L.stl"/>
+        <mesh filename="package://trajopt_common/data/pr2/meshes/torso_v0/torso_lift_L.stl"/>
       </geometry>
     </collision>
   </link>
@@ -890,13 +896,13 @@
     <visual>
       <origin rpy="0 0 0 " xyz="0 0 0.0"/>
       <geometry>
-        <mesh filename="package://trajopt/test/data/pr2/meshes/head_v0/head_pan.dae"/>
+        <mesh filename="package://trajopt_common/data/pr2/meshes/head_v0/head_pan.dae"/>
       </geometry>
       <material name="Blue"/>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://trajopt/test/data/pr2/meshes/head_v0/head_pan_L.stl"/>
+        <mesh filename="package://trajopt_common/data/pr2/meshes/head_v0/head_pan_L.stl"/>
       </geometry>
     </collision>
   </link>
@@ -926,14 +932,14 @@
     <visual>
       <origin rpy="0.0 0.0 0.0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://trajopt/test/data/pr2/meshes/head_v0/head_tilt.dae"/>
+        <mesh filename="package://trajopt_common/data/pr2/meshes/head_v0/head_tilt.dae"/>
       </geometry>
       <material name="Green"/>
     </visual>
     <collision>
       <origin rpy="0.0 0.0 0.0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://trajopt/test/data/pr2/meshes/head_v0/head_tilt_L.stl"/>
+        <mesh filename="package://trajopt_common/data/pr2/meshes/head_v0/head_tilt_L.stl"/>
       </geometry>
     </collision>
   </link>
@@ -949,24 +955,6 @@
     <child link="head_plate_frame"/>
   </joint>
   <link name="head_plate_frame">
-    <inertial>
-      <mass value="0.01"/>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-      <inertia ixx="0.001" ixy="0.0" ixz="0.0" iyy="0.001" iyz="0.0" izz="0.001"/>
-    </inertial>
-    <visual>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-      <geometry>
-        <box size="0.01 0.01 0.01"/>
-      </geometry>
-      <material name="Blue"/>
-    </visual>
-    <collision>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-      <geometry>
-        <box size="0.01 0.01 0.01"/>
-      </geometry>
-    </collision>
   </link>
   <gazebo reference="head_plate_frame">
     <material value="Gazebo/Grey"/>
@@ -977,20 +965,6 @@
     <child link="sensor_mount_link"/>
   </joint>
   <link name="sensor_mount_link">
-    <inertial>
-      <!-- Needs verification with CAD -->
-      <mass value="0.05"/>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-      <inertia ixx="0.001" ixy="0.0" ixz="0.0" iyy="0.001" iyz="0.0" izz="0.01"/>
-    </inertial>
-    <!-- Should probably get real visuals here at some point -->
-    <visual>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-      <geometry>
-        <box size="0.01 0.01 0.01"/>
-      </geometry>
-      <material name="Blue"/>
-    </visual>
   </link>
   <joint name="high_def_frame_joint" type="fixed">
     <origin rpy="0 0 0" xyz="0.046457 -0.110 0.054600"/>
@@ -1439,14 +1413,14 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://trajopt/test/data/pr2/meshes/tilting_laser_v0/tilting_hokuyo.dae"/>
+        <mesh filename="package://trajopt_common/data/pr2/meshes/tilting_laser_v0/tilting_hokuyo.dae"/>
       </geometry>
       <material name="Red"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://trajopt/test/data/pr2/meshes/tilting_laser_v0/tilting_hokuyo_L.stl"/>
+        <mesh filename="package://trajopt_common/data/pr2/meshes/tilting_laser_v0/tilting_hokuyo_L.stl"/>
       </geometry>
     </collision>
   </link>
@@ -1524,14 +1498,14 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://trajopt/test/data/pr2/meshes/shoulder_v0/shoulder_pan.dae"/>
+        <mesh filename="package://trajopt_common/data/pr2/meshes/shoulder_v0/shoulder_pan.dae"/>
       </geometry>
       <material name="Blue"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0.0 0 0.0"/>
       <geometry>
-        <mesh filename="package://trajopt/test/data/pr2/meshes/shoulder_v0/shoulder_pan.stl"/>
+        <mesh filename="package://trajopt_common/data/pr2/meshes/shoulder_v0/shoulder_pan.stl"/>
       </geometry>
     </collision>
   </link>
@@ -1557,14 +1531,14 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://trajopt/test/data/pr2/meshes/shoulder_v0/shoulder_lift.dae"/>
+        <mesh filename="package://trajopt_common/data/pr2/meshes/shoulder_v0/shoulder_lift.dae"/>
       </geometry>
       <material name="Grey"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://trajopt/test/data/pr2/meshes/shoulder_v0/shoulder_lift.stl"/>
+        <mesh filename="package://trajopt_common/data/pr2/meshes/shoulder_v0/shoulder_lift.stl"/>
       </geometry>
     </collision>
   </link>
@@ -1590,14 +1564,14 @@
       <!-- TODO: This component doesn't actually have a mesh -->
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://trajopt/test/data/pr2/meshes/shoulder_v0/upper_arm_roll.stl"/>
+        <mesh filename="package://trajopt_common/data/pr2/meshes/shoulder_v0/upper_arm_roll.stl"/>
       </geometry>
       <material name="RollLinks"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://trajopt/test/data/pr2/meshes/shoulder_v0/upper_arm_roll_L.stl"/>
+        <mesh filename="package://trajopt_common/data/pr2/meshes/shoulder_v0/upper_arm_roll_L.stl"/>
       </geometry>
     </collision>
   </link>
@@ -1661,14 +1635,14 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://trajopt/test/data/pr2/meshes/upper_arm_v0/upper_arm.dae"/>
+        <mesh filename="package://trajopt_common/data/pr2/meshes/upper_arm_v0/upper_arm.dae"/>
       </geometry>
       <material name="Green"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://trajopt/test/data/pr2/meshes/upper_arm_v0/upper_arm.stl"/>
+        <mesh filename="package://trajopt_common/data/pr2/meshes/upper_arm_v0/upper_arm.stl"/>
       </geometry>
     </collision>
   </link>
@@ -1700,7 +1674,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://trajopt/test/data/pr2/meshes/upper_arm_v0/forearm_roll.stl"/>
+        <mesh filename="package://trajopt_common/data/pr2/meshes/upper_arm_v0/forearm_roll.stl"/>
       </geometry>
       <material name="RollLinks"/>
     </visual>
@@ -1708,7 +1682,7 @@
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://trajopt/test/data/pr2/meshes/upper_arm_v0/forearm_roll_L.stl"/>
+        <mesh filename="package://trajopt_common/data/pr2/meshes/upper_arm_v0/forearm_roll_L.stl"/>
       </geometry>
     </collision>
   </link>
@@ -1746,14 +1720,14 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://trajopt/test/data/pr2/meshes/upper_arm_v0/elbow_flex.dae"/>
+        <mesh filename="package://trajopt_common/data/pr2/meshes/upper_arm_v0/elbow_flex.dae"/>
       </geometry>
       <material name="Grey"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://trajopt/test/data/pr2/meshes/upper_arm_v0/elbow_flex.stl"/>
+        <mesh filename="package://trajopt_common/data/pr2/meshes/upper_arm_v0/elbow_flex.stl"/>
       </geometry>
     </collision>
   </link>
@@ -1790,14 +1764,14 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://trajopt/test/data/pr2/meshes/forearm_v0/forearm.dae"/>
+        <mesh filename="package://trajopt_common/data/pr2/meshes/forearm_v0/forearm.dae"/>
       </geometry>
       <material name="Grey"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://trajopt/test/data/pr2/meshes/forearm_v0/forearm.stl"/>
+        <mesh filename="package://trajopt_common/data/pr2/meshes/forearm_v0/forearm.stl"/>
       </geometry>
     </collision>
   </link>
@@ -1822,14 +1796,14 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://trajopt/test/data/pr2/meshes/forearm_v0/wrist_flex.dae"/>
+        <mesh filename="package://trajopt_common/data/pr2/meshes/forearm_v0/wrist_flex.dae"/>
       </geometry>
       <material name="Grey"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://trajopt/test/data/pr2/meshes/forearm_v0/wrist_flex.stl"/>
+        <mesh filename="package://trajopt_common/data/pr2/meshes/forearm_v0/wrist_flex.stl"/>
       </geometry>
     </collision>
   </link>
@@ -1855,14 +1829,14 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://trajopt/test/data/pr2/meshes/forearm_v0/wrist_roll.stl"/>
+        <mesh filename="package://trajopt_common/data/pr2/meshes/forearm_v0/wrist_roll.stl"/>
       </geometry>
       <material name="RollLinks"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://trajopt/test/data/pr2/meshes/forearm_v0/wrist_roll_L.stl"/>
+        <mesh filename="package://trajopt_common/data/pr2/meshes/forearm_v0/wrist_roll_L.stl"/>
       </geometry>
     </collision>
   </link>
@@ -1906,14 +1880,14 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://trajopt/test/data/pr2/meshes/gripper_v0/gripper_palm.dae"/>
+        <mesh filename="package://trajopt_common/data/pr2/meshes/gripper_v0/gripper_palm.dae"/>
       </geometry>
       <material name="Red"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://trajopt/test/data/pr2/meshes/gripper_v0/gripper_palm.stl"/>
+        <mesh filename="package://trajopt_common/data/pr2/meshes/gripper_v0/gripper_palm.stl"/>
       </geometry>
     </collision>
   </link>
@@ -1930,23 +1904,6 @@
     <child link="r_gripper_motor_accelerometer_link"/>
   </joint>
   <link name="r_gripper_motor_accelerometer_link">
-    <inertial>
-      <mass value="0.001"/>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-      <inertia ixx="0.001" ixy="0.0" ixz="0.0" iyy="0.001" iyz="0.0" izz="0.001"/>
-    </inertial>
-    <visual>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-      <geometry>
-        <box size="0.001 0.001 0.001"/>
-      </geometry>
-    </visual>
-    <collision>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-      <geometry>
-        <box size="0.001 0.001 0.001"/>
-      </geometry>
-    </collision>
   </link>
   <joint name="r_gripper_tool_joint" type="fixed">
     <origin rpy="0 0 0" xyz="0.18 0 0"/>
@@ -2034,14 +1991,14 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://trajopt/test/data/pr2/meshes/gripper_v0/l_finger.dae"/>
+        <mesh filename="package://trajopt_common/data/pr2/meshes/gripper_v0/l_finger.dae"/>
       </geometry>
       <material name="Grey"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://trajopt/test/data/pr2/meshes/gripper_v0/l_finger.stl"/>
+        <mesh filename="package://trajopt_common/data/pr2/meshes/gripper_v0/l_finger.stl"/>
       </geometry>
     </collision>
   </link>
@@ -2069,14 +2026,14 @@
     <visual>
       <origin rpy="3.14159265359 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://trajopt/test/data/pr2/meshes/gripper_v0/l_finger.dae"/>
+        <mesh filename="package://trajopt_common/data/pr2/meshes/gripper_v0/l_finger.dae"/>
       </geometry>
       <material name="Grey"/>
     </visual>
     <collision>
       <origin rpy="3.14159265359 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://trajopt/test/data/pr2/meshes/gripper_v0/l_finger.stl"/>
+        <mesh filename="package://trajopt_common/data/pr2/meshes/gripper_v0/l_finger.stl"/>
       </geometry>
     </collision>
   </link>
@@ -2104,14 +2061,14 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://trajopt/test/data/pr2/meshes/gripper_v0/l_finger_tip.dae"/>
+        <mesh filename="package://trajopt_common/data/pr2/meshes/gripper_v0/l_finger_tip.dae"/>
       </geometry>
       <material name="Green"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://trajopt/test/data/pr2/meshes/gripper_v0/l_finger_tip.stl"/>
+        <mesh filename="package://trajopt_common/data/pr2/meshes/gripper_v0/l_finger_tip.stl"/>
       </geometry>
     </collision>
   </link>
@@ -2139,14 +2096,14 @@
     <visual>
       <origin rpy="3.14159265359 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://trajopt/test/data/pr2/meshes/gripper_v0/l_finger_tip.dae"/>
+        <mesh filename="package://trajopt_common/data/pr2/meshes/gripper_v0/l_finger_tip.dae"/>
       </geometry>
       <material name="Green"/>
     </visual>
     <collision>
       <origin rpy="3.14159265359 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://trajopt/test/data/pr2/meshes/gripper_v0/l_finger_tip.stl"/>
+        <mesh filename="package://trajopt_common/data/pr2/meshes/gripper_v0/l_finger_tip.stl"/>
       </geometry>
     </collision>
   </link>
@@ -2458,14 +2415,14 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://trajopt/test/data/pr2/meshes/shoulder_v0/shoulder_pan.dae"/>
+        <mesh filename="package://trajopt_common/data/pr2/meshes/shoulder_v0/shoulder_pan.dae"/>
       </geometry>
       <material name="Blue"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0.0 0 0.0"/>
       <geometry>
-        <mesh filename="package://trajopt/test/data/pr2/meshes/shoulder_v0/shoulder_pan.stl"/>
+        <mesh filename="package://trajopt_common/data/pr2/meshes/shoulder_v0/shoulder_pan.stl"/>
       </geometry>
     </collision>
   </link>
@@ -2491,14 +2448,14 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://trajopt/test/data/pr2/meshes/shoulder_v0/shoulder_lift.dae"/>
+        <mesh filename="package://trajopt_common/data/pr2/meshes/shoulder_v0/shoulder_lift.dae"/>
       </geometry>
       <material name="Grey"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://trajopt/test/data/pr2/meshes/shoulder_v0/shoulder_lift.stl"/>
+        <mesh filename="package://trajopt_common/data/pr2/meshes/shoulder_v0/shoulder_lift.stl"/>
       </geometry>
     </collision>
   </link>
@@ -2524,14 +2481,14 @@
       <!-- TODO: This component doesn't actually have a mesh -->
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://trajopt/test/data/pr2/meshes/shoulder_v0/upper_arm_roll.stl"/>
+        <mesh filename="package://trajopt_common/data/pr2/meshes/shoulder_v0/upper_arm_roll.stl"/>
       </geometry>
       <material name="RollLinks"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://trajopt/test/data/pr2/meshes/shoulder_v0/upper_arm_roll_L.stl"/>
+        <mesh filename="package://trajopt_common/data/pr2/meshes/shoulder_v0/upper_arm_roll_L.stl"/>
       </geometry>
     </collision>
   </link>
@@ -2595,14 +2552,14 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://trajopt/test/data/pr2/meshes/upper_arm_v0/upper_arm.dae"/>
+        <mesh filename="package://trajopt_common/data/pr2/meshes/upper_arm_v0/upper_arm.dae"/>
       </geometry>
       <material name="Green"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://trajopt/test/data/pr2/meshes/upper_arm_v0/upper_arm.stl"/>
+        <mesh filename="package://trajopt_common/data/pr2/meshes/upper_arm_v0/upper_arm.stl"/>
       </geometry>
     </collision>
   </link>
@@ -2634,7 +2591,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://trajopt/test/data/pr2/meshes/upper_arm_v0/forearm_roll.stl"/>
+        <mesh filename="package://trajopt_common/data/pr2/meshes/upper_arm_v0/forearm_roll.stl"/>
       </geometry>
       <material name="RollLinks"/>
     </visual>
@@ -2642,7 +2599,7 @@
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://trajopt/test/data/pr2/meshes/upper_arm_v0/forearm_roll_L.stl"/>
+        <mesh filename="package://trajopt_common/data/pr2/meshes/upper_arm_v0/forearm_roll_L.stl"/>
       </geometry>
     </collision>
   </link>
@@ -2680,14 +2637,14 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://trajopt/test/data/pr2/meshes/upper_arm_v0/elbow_flex.dae"/>
+        <mesh filename="package://trajopt_common/data/pr2/meshes/upper_arm_v0/elbow_flex.dae"/>
       </geometry>
       <material name="Grey"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://trajopt/test/data/pr2/meshes/upper_arm_v0/elbow_flex.stl"/>
+        <mesh filename="package://trajopt_common/data/pr2/meshes/upper_arm_v0/elbow_flex.stl"/>
       </geometry>
     </collision>
   </link>
@@ -2724,14 +2681,14 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://trajopt/test/data/pr2/meshes/forearm_v0/forearm.dae"/>
+        <mesh filename="package://trajopt_common/data/pr2/meshes/forearm_v0/forearm.dae"/>
       </geometry>
       <material name="Grey"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://trajopt/test/data/pr2/meshes/forearm_v0/forearm.stl"/>
+        <mesh filename="package://trajopt_common/data/pr2/meshes/forearm_v0/forearm.stl"/>
       </geometry>
     </collision>
   </link>
@@ -2756,14 +2713,14 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://trajopt/test/data/pr2/meshes/forearm_v0/wrist_flex.dae"/>
+        <mesh filename="package://trajopt_common/data/pr2/meshes/forearm_v0/wrist_flex.dae"/>
       </geometry>
       <material name="Grey"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://trajopt/test/data/pr2/meshes/forearm_v0/wrist_flex.stl"/>
+        <mesh filename="package://trajopt_common/data/pr2/meshes/forearm_v0/wrist_flex.stl"/>
       </geometry>
     </collision>
   </link>
@@ -2789,14 +2746,14 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://trajopt/test/data/pr2/meshes/forearm_v0/wrist_roll.stl"/>
+        <mesh filename="package://trajopt_common/data/pr2/meshes/forearm_v0/wrist_roll.stl"/>
       </geometry>
       <material name="RollLinks"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://trajopt/test/data/pr2/meshes/forearm_v0/wrist_roll_L.stl"/>
+        <mesh filename="package://trajopt_common/data/pr2/meshes/forearm_v0/wrist_roll_L.stl"/>
       </geometry>
     </collision>
   </link>
@@ -2840,14 +2797,14 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://trajopt/test/data/pr2/meshes/gripper_v0/gripper_palm.dae"/>
+        <mesh filename="package://trajopt_common/data/pr2/meshes/gripper_v0/gripper_palm.dae"/>
       </geometry>
       <material name="Red"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://trajopt/test/data/pr2/meshes/gripper_v0/gripper_palm.stl"/>
+        <mesh filename="package://trajopt_common/data/pr2/meshes/gripper_v0/gripper_palm.stl"/>
       </geometry>
     </collision>
   </link>
@@ -2864,23 +2821,6 @@
     <child link="l_gripper_motor_accelerometer_link"/>
   </joint>
   <link name="l_gripper_motor_accelerometer_link">
-    <inertial>
-      <mass value="0.001"/>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-      <inertia ixx="0.001" ixy="0.0" ixz="0.0" iyy="0.001" iyz="0.0" izz="0.001"/>
-    </inertial>
-    <visual>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-      <geometry>
-        <box size="0.001 0.001 0.001"/>
-      </geometry>
-    </visual>
-    <collision>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-      <geometry>
-        <box size="0.001 0.001 0.001"/>
-      </geometry>
-    </collision>
   </link>
   <joint name="l_gripper_tool_joint" type="fixed">
     <origin rpy="0 0 0" xyz="0.18 0 0"/>
@@ -2968,14 +2908,14 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://trajopt/test/data/pr2/meshes/gripper_v0/l_finger.dae"/>
+        <mesh filename="package://trajopt_common/data/pr2/meshes/gripper_v0/l_finger.dae"/>
       </geometry>
       <material name="Grey"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://trajopt/test/data/pr2/meshes/gripper_v0/l_finger.stl"/>
+        <mesh filename="package://trajopt_common/data/pr2/meshes/gripper_v0/l_finger.stl"/>
       </geometry>
     </collision>
   </link>
@@ -3003,14 +2943,14 @@
     <visual>
       <origin rpy="3.14159265359 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://trajopt/test/data/pr2/meshes/gripper_v0/l_finger.dae"/>
+        <mesh filename="package://trajopt_common/data/pr2/meshes/gripper_v0/l_finger.dae"/>
       </geometry>
       <material name="Grey"/>
     </visual>
     <collision>
       <origin rpy="3.14159265359 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://trajopt/test/data/pr2/meshes/gripper_v0/l_finger.stl"/>
+        <mesh filename="package://trajopt_common/data/pr2/meshes/gripper_v0/l_finger.stl"/>
       </geometry>
     </collision>
   </link>
@@ -3038,14 +2978,14 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://trajopt/test/data/pr2/meshes/gripper_v0/l_finger_tip.dae"/>
+        <mesh filename="package://trajopt_common/data/pr2/meshes/gripper_v0/l_finger_tip.dae"/>
       </geometry>
       <material name="Green"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://trajopt/test/data/pr2/meshes/gripper_v0/l_finger_tip.stl"/>
+        <mesh filename="package://trajopt_common/data/pr2/meshes/gripper_v0/l_finger_tip.stl"/>
       </geometry>
     </collision>
   </link>
@@ -3073,14 +3013,14 @@
     <visual>
       <origin rpy="3.14159265359 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://trajopt/test/data/pr2/meshes/gripper_v0/l_finger_tip.dae"/>
+        <mesh filename="package://trajopt_common/data/pr2/meshes/gripper_v0/l_finger_tip.dae"/>
       </geometry>
       <material name="Green"/>
     </visual>
     <collision>
       <origin rpy="3.14159265359 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://trajopt/test/data/pr2/meshes/gripper_v0/l_finger_tip.stl"/>
+        <mesh filename="package://trajopt_common/data/pr2/meshes/gripper_v0/l_finger_tip.stl"/>
       </geometry>
     </collision>
   </link>

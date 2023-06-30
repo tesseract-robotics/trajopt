@@ -19,8 +19,6 @@ TESSERACT_COMMON_IGNORE_WARNINGS_POP
 #include <trajopt_common/logging.hpp>
 #include <trajopt_common/stl_to_string.hpp>
 
-#include "../trajopt_test_utils.hpp"
-
 using namespace trajopt;
 using namespace std;
 using namespace trajopt_common;
@@ -98,11 +96,11 @@ int main(int argc, char** argv)
   // Simple Collision Solve
   //////////////////////////////////////
   {
-    Json::Value root = readJsonFile(std::string(TRAJOPT_DIR) + "/test/data/config/simple_collision_test.json");
-    boost::filesystem::path urdf_file(std::string(TRAJOPT_DIR) + "/test/data/spherebot.urdf");
-    boost::filesystem::path srdf_file(std::string(TRAJOPT_DIR) + "/test/data/spherebot.srdf");
+    Json::Value root = readJsonFile(std::string(TRAJOPT_DATA_DIR) + "/config/simple_collision_test.json");
+    boost::filesystem::path urdf_file(std::string(TRAJOPT_DATA_DIR) + "/spherebot.urdf");
+    boost::filesystem::path srdf_file(std::string(TRAJOPT_DATA_DIR) + "/spherebot.srdf");
 
-    ResourceLocator::Ptr locator = std::make_shared<TrajOptSupportResourceLocator>();
+    ResourceLocator::Ptr locator = std::make_shared<tesseract_common::GeneralResourceLocator>();
     auto env = std::make_shared<Environment>();
     env->init(urdf_file, srdf_file, locator);
 
@@ -134,11 +132,11 @@ int main(int argc, char** argv)
   // Planning Solve
   //////////////////////////////////////
   {
-    Json::Value root = readJsonFile(std::string(TRAJOPT_DIR) + "/test/data/config/arm_around_table.json");
-    tesseract_common::fs::path urdf_file(std::string(TRAJOPT_DIR) + "/test/data/arm_around_table.urdf");
-    tesseract_common::fs::path srdf_file(std::string(TRAJOPT_DIR) + "/test/data/pr2.srdf");
+    Json::Value root = readJsonFile(std::string(TRAJOPT_DATA_DIR) + "/config/arm_around_table.json");
+    tesseract_common::fs::path urdf_file(std::string(TRAJOPT_DATA_DIR) + "/arm_around_table.urdf");
+    tesseract_common::fs::path srdf_file(std::string(TRAJOPT_DATA_DIR) + "/pr2.srdf");
 
-    ResourceLocator::Ptr locator = std::make_shared<TrajOptSupportResourceLocator>();
+    ResourceLocator::Ptr locator = std::make_shared<tesseract_common::GeneralResourceLocator>();
     auto env = std::make_shared<Environment>();
     env->init(urdf_file, srdf_file, locator);
 

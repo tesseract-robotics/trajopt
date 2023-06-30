@@ -69,19 +69,7 @@ target_cxx_version(${PROJECT_NAME} PUBLIC VERSION ${TRAJOPT_CXX_VERSION})
 target_include_directories(${PROJECT_NAME} PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
                                                   "$<INSTALL_INTERFACE:include>")
 
-# Install test data directory for use in other packages
-add_library(${PROJECT_NAME}_test_data INTERFACE)
-target_link_libraries(${PROJECT_NAME}_test_data INTERFACE)
-target_compile_definitions(
-  ${PROJECT_NAME}_test_data INTERFACE ${TRAJOPT_COMPILE_DEFINITIONS}
-                                      TRAJOPT_DIR="${CMAKE_INSTALL_PREFIX}/share/${PROJECT_NAME}")
-target_cxx_version(${PROJECT_NAME}_test_data INTERFACE VERSION ${TRAJOPT_CXX_VERSION})
-
-configure_package(NAMESPACE trajopt TARGETS ${PROJECT_NAME} ${PROJECT_NAME}_test_data)
-
-foreach(dir test/data)
-  install(DIRECTORY ${dir}/ DESTINATION share/${PROJECT_NAME}/${dir})
-endforeach()
+configure_package(NAMESPACE trajopt TARGETS ${PROJECT_NAME})
 
 # Mark cpp header files for installation
 install(

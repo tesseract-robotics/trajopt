@@ -41,7 +41,6 @@ TRAJOPT_IGNORE_WARNINGS_POP
 #include <trajopt/problem_description.hpp>
 #include <trajopt_common/config.hpp>
 #include <trajopt_common/logging.hpp>
-#include "trajopt_test_utils.hpp"
 
 using namespace trajopt;
 using namespace tesseract_environment;
@@ -66,9 +65,9 @@ TEST(CartPositionOptimizationTrajoptSCO, cart_position_optimization_trajopt_sco)
   }
 
   // 1)  Load Robot
-  tesseract_common::fs::path urdf_file(std::string(TRAJOPT_DIR) + "/test/data/arm_around_table.urdf");
-  tesseract_common::fs::path srdf_file(std::string(TRAJOPT_DIR) + "/test/data/pr2.srdf");
-  ResourceLocator::Ptr locator = std::make_shared<TrajOptSupportResourceLocator>();
+  tesseract_common::fs::path urdf_file(std::string(TRAJOPT_DATA_DIR) + "/arm_around_table.urdf");
+  tesseract_common::fs::path srdf_file(std::string(TRAJOPT_DATA_DIR) + "/pr2.srdf");
+  ResourceLocator::Ptr locator = std::make_shared<tesseract_common::GeneralResourceLocator>();
   auto env = std::make_shared<Environment>();
   env->init(urdf_file, srdf_file, locator);
 

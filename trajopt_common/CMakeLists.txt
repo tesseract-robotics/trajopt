@@ -30,7 +30,8 @@ add_library(${PROJECT_NAME} ${UTILS_SOURCE_FILES})
 target_link_libraries(${PROJECT_NAME} PUBLIC Eigen3::Eigen Boost::program_options tesseract::tesseract_common)
 target_compile_options(${PROJECT_NAME} PRIVATE ${TRAJOPT_COMPILE_OPTIONS_PRIVATE})
 target_compile_options(${PROJECT_NAME} PUBLIC ${TRAJOPT_COMPILE_OPTIONS_PUBLIC})
-target_compile_definitions(${PROJECT_NAME} PUBLIC ${TRAJOPT_COMPILE_DEFINITIONS})
+target_compile_definitions(${PROJECT_NAME} PUBLIC ${TRAJOPT_COMPILE_DEFINITIONS}
+                                                  TRAJOPT_DATA_DIR="${CMAKE_INSTALL_PREFIX}/share/${PROJECT_NAME}/data")
 target_cxx_version(${PROJECT_NAME} PUBLIC VERSION ${TRAJOPT_CXX_VERSION})
 target_clang_tidy(${PROJECT_NAME} ENABLE ${TRAJOPT_ENABLE_CLANG_TIDY})
 target_include_directories(${PROJECT_NAME} PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
@@ -48,6 +49,10 @@ install(
   PATTERN ".svn" EXCLUDE)
 
 install(FILES "${CMAKE_CURRENT_LIST_DIR}/cmake/trajopt_macros.cmake" DESTINATION lib/cmake/${PROJECT_NAME})
+
+foreach(dir data)
+  install(DIRECTORY ${dir}/ DESTINATION share/${PROJECT_NAME}/${dir})
+endforeach()
 
 if(TRAJOPT_PACKAGE)
   cpack(

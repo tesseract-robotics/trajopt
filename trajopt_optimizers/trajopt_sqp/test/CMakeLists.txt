@@ -44,7 +44,7 @@ macro(add_gtest test_name test_file)
     console_bridge
     ifopt::ifopt_ipopt
     trajopt::trajopt_ifopt
-    trajopt::trajopt_test_data
+    trajopt::trajopt_common
     GTest::GTest
     GTest::Main)
   target_include_directories(${test_name} PRIVATE "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>"
