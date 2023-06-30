@@ -1,4 +1,4 @@
-#include <trajopt_utils/macros.h>
+#include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <boost/format.hpp>
 #include <cstdio>
@@ -9,7 +9,7 @@ TRAJOPT_IGNORE_WARNINGS_POP
 #include <trajopt_sco/expr_ops.hpp>
 #include <trajopt_sco/modeling.hpp>
 #include <trajopt_sco/sco_common.hpp>
-#include <trajopt_utils/logging.hpp>
+#include <trajopt_common/logging.hpp>
 
 namespace sco
 {

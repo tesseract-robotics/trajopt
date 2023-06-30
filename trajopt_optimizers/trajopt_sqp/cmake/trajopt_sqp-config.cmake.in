@@ -9,7 +9,7 @@ find_dependency(console_bridge)
 find_dependency(ifopt)
 find_dependency(OsqpEigen)
 find_dependency(trajopt_ifopt)
-find_dependency(trajopt_utils)
+find_dependency(trajopt_common)
 find_dependency(tesseract_common)
 find_dependency(tesseract_visualization)
 

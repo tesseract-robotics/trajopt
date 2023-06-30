@@ -1,10 +1,10 @@
 #pragma once
-#include <trajopt_utils/macros.h>
+#include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <cstdio>
 TRAJOPT_IGNORE_WARNINGS_POP
 
-namespace util
+namespace trajopt_common
 {
 enum LogLevel
 {
@@ -28,45 +28,45 @@ inline LogLevel GetLogLevel() { return gLogLevel; }
 #define LOG_SUFFIX "\x1b[0m\n"
 
 #define LOG_FATAL(msg, ...)                                                                                            \
-  if (util::GetLogLevel() >= util::LevelFatal)                                                                         \
+  if (trajopt_common::GetLogLevel() >= trajopt_common::LevelFatal)                                                     \
   {                                                                                                                    \
     printf(FATAL_PREFIX);                                                                                              \
     printf(msg, ##__VA_ARGS__);                                                                                        \
     printf(LOG_SUFFIX);                                                                                                \
   }
 #define LOG_ERROR(msg, ...)                                                                                            \
-  if (util::GetLogLevel() >= util::LevelError)                                                                         \
+  if (trajopt_common::GetLogLevel() >= trajopt_common::LevelError)                                                     \
   {                                                                                                                    \
     printf(ERROR_PREFIX);                                                                                              \
     printf(msg, ##__VA_ARGS__);                                                                                        \
     printf(LOG_SUFFIX);                                                                                                \
   }
 #define LOG_WARN(msg, ...)                                                                                             \
-  if (util::GetLogLevel() >= util::LevelWarn)                                                                          \
+  if (trajopt_common::GetLogLevel() >= trajopt_common::LevelWarn)                                                      \
   {                                                                                                                    \
     printf(WARN_PREFIX);                                                                                               \
     printf(msg, ##__VA_ARGS__);                                                                                        \
     printf(LOG_SUFFIX);                                                                                                \
   }
 #define LOG_INFO(msg, ...)                                                                                             \
-  if (util::GetLogLevel() >= util::LevelInfo)                                                                          \
+  if (trajopt_common::GetLogLevel() >= trajopt_common::LevelInfo)                                                      \
   {                                                                                                                    \
     printf(INFO_PREFIX);                                                                                               \
     printf(msg, ##__VA_ARGS__);                                                                                        \
     printf(LOG_SUFFIX);                                                                                                \
   }
 #define LOG_DEBUG(msg, ...)                                                                                            \
-  if (util::GetLogLevel() >= util::LevelDebug)                                                                         \
+  if (trajopt_common::GetLogLevel() >= trajopt_common::LevelDebug)                                                     \
   {                                                                                                                    \
     printf(DEBUG_PREFIX);                                                                                              \
     printf(msg, ##__VA_ARGS__);                                                                                        \
     printf(LOG_SUFFIX);                                                                                                \
   }
 #define LOG_TRACE(msg, ...)                                                                                            \
-  if (util::GetLogLevel() >= util::LevelTrace)                                                                         \
+  if (trajopt_common::GetLogLevel() >= trajopt_common::LevelTrace)                                                     \
   {                                                                                                                    \
     printf(TRACE_PREFIX);                                                                                              \
     printf(msg, ##__VA_ARGS__);                                                                                        \
     printf(LOG_SUFFIX);                                                                                                \
   }
-}  // namespace util
+}  // namespace trajopt_common

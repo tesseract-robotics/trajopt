@@ -1,5 +1,5 @@
 #pragma once
-#include <trajopt_utils/macros.h>
+#include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <unordered_map>
 TRAJOPT_IGNORE_WARNINGS_POP
@@ -7,7 +7,7 @@ TRAJOPT_IGNORE_WARNINGS_POP
 #include <tesseract_environment/environment.h>
 #include <trajopt/common.hpp>
 #include <trajopt_sco/optimizers.hpp>
-#include <trajopt_utils/utils.hpp>
+#include <trajopt_common/utils.hpp>
 
 namespace sco
 {
@@ -587,7 +587,7 @@ struct CollisionTermInfo : public TermInfo
 
   /** @brief Contains distance penalization data: Safety Margin, Coeff used during */
   /** @brief optimization, etc. */
-  std::vector<util::SafetyMarginData::Ptr> info;
+  std::vector<trajopt_common::SafetyMarginData::Ptr> info;
 
   /** @brief Used to add term to pci from json */
   void fromJson(ProblemConstructionInfo& pci, const Json::Value& v) override;

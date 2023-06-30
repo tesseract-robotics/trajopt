@@ -27,7 +27,7 @@
 #ifndef TRAJOPT_SQP_INCLUDE_CLEAR_PLOTTER_CALLBACK_H_
 #define TRAJOPT_SQP_INCLUDE_CLEAR_PLOTTER_CALLBACK_H_
 
-#include <trajopt_utils/macros.h>
+#include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <tesseract_visualization/visualization.h>
 TRAJOPT_IGNORE_WARNINGS_POP

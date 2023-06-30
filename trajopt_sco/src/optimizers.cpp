@@ -1,4 +1,4 @@
-#include <trajopt_utils/macros.h>
+#include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <boost/format.hpp>
 #include <cmath>
@@ -12,9 +12,9 @@ TRAJOPT_IGNORE_WARNINGS_POP
 #include <trajopt_sco/optimizers.hpp>
 #include <trajopt_sco/sco_common.hpp>
 #include <trajopt_sco/solver_interface.hpp>
-#include <trajopt_utils/logging.hpp>
-#include <trajopt_utils/macros.h>
-#include <trajopt_utils/stl_to_string.hpp>
+#include <trajopt_common/logging.hpp>
+#include <trajopt_common/macros.h>
+#include <trajopt_common/stl_to_string.hpp>
 
 namespace sco
 {
@@ -24,8 +24,8 @@ std::ostream& operator<<(std::ostream& o, const OptResults& r)
 {
   o << "Optimization results:" << std::endl
     << "status: " << statusToString(r.status) << std::endl
-    << "cost values: " << util::Str(r.cost_vals) << std::endl
-    << "constraint violations: " << util::Str(r.cnt_viols) << std::endl
+    << "cost values: " << trajopt_common::Str(r.cost_vals) << std::endl
+    << "constraint violations: " << trajopt_common::Str(r.cnt_viols) << std::endl
     << "n func evals: " << r.n_func_evals << std::endl
     << "n qp solves: " << r.n_qp_solves << std::endl;
   return o;
@@ -357,7 +357,7 @@ void BasicTrustRegionSQPResults::update(const OptResults& prev_opt_results,
   // the Model
   new_x = DblVec(model_var_vals.begin(), model_var_vals.begin() + static_cast<long int>(prev_opt_results.x.size()));
 
-  if (util::GetLogLevel() >= util::LevelDebug)
+  if (trajopt_common::GetLogLevel() >= trajopt_common::LevelDebug)
   {
     DblVec cnt_costs1 = parent_.evaluateModelCosts(cnt_cost_models, model_var_vals);
     DblVec cnt_costs2 = model_cnt_viols;
@@ -380,7 +380,7 @@ void BasicTrustRegionSQPResults::update(const OptResults& prev_opt_results,
   exact_merit_improve = old_merit - new_merit;
   merit_improve_ratio = exact_merit_improve / approx_merit_improve;
 
-  if (util::GetLogLevel() >= util::LevelInfo)
+  if (trajopt_common::GetLogLevel() >= trajopt_common::LevelInfo)
   {
     LOG_INFO(" ");
     print();
@@ -664,7 +664,7 @@ OptStatus BasicTrustRegionSQP::optimize()
   std::FILE* log_vars_stream = nullptr;
   std::FILE* log_costs_stream = nullptr;
   std::FILE* log_constraints_stream = nullptr;
-  if (param_.log_results || util::GetLogLevel() >= util::LevelDebug)
+  if (param_.log_results || trajopt_common::GetLogLevel() >= trajopt_common::LevelDebug)
   {
     log_solver_stream = std::fopen((param_.log_dir + "/trajopt_solver.log").c_str(), "w");
     log_vars_stream = std::fopen((param_.log_dir + "/trajopt_vars.log").c_str(), "w");
@@ -810,7 +810,7 @@ OptStatus BasicTrustRegionSQP::optimize()
           iteration_results.printRaw();
         }
 
-        if (param_.log_results || util::GetLogLevel() >= util::LevelDebug)
+        if (param_.log_results || trajopt_common::GetLogLevel() >= trajopt_common::LevelDebug)
         {
           if (log_solver_stream != nullptr)
             iteration_results.writeSolver(log_solver_stream, results_.n_func_evals == 1);
@@ -931,7 +931,7 @@ cleanup:
   LOG_INFO("\n==================\n%s==================", CSTR(results_));
   callCallbacks();
 
-  if (param_.log_results || util::GetLogLevel() >= util::LevelDebug)
+  if (param_.log_results || trajopt_common::GetLogLevel() >= trajopt_common::LevelDebug)
   {
     std::fclose(log_solver_stream);
     std::fclose(log_vars_stream);

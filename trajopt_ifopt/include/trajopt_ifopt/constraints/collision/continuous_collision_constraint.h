@@ -26,7 +26,7 @@
  */
 #ifndef TRAJOPT_IFOPT_CONTINUOUS_COLLISION_CONSTRAINT_V2_H
 #define TRAJOPT_IFOPT_CONTINUOUS_COLLISION_CONSTRAINT_V2_H
-#include <trajopt_utils/macros.h>
+#include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <Eigen/Eigen>
 #include <ifopt/constraint_set.h>

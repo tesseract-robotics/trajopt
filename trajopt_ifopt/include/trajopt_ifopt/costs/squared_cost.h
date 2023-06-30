@@ -26,7 +26,7 @@
 #ifndef TRAJOPT_IFOPT_SQUARED_COST_H
 #define TRAJOPT_IFOPT_SQUARED_COST_H
 
-#include <trajopt_utils/macros.h>
+#include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <ifopt/cost_term.h>
 

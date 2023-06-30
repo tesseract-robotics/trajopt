@@ -26,7 +26,7 @@
 #ifndef TRAJOPT_IFOPT_JOINT_POSITION_VARIABLE_H
 #define TRAJOPT_IFOPT_JOINT_POSITION_VARIABLE_H
 
-#include <trajopt_utils/macros.h>
+#include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <ifopt/variable_set.h>
 #include <ifopt/bounds.h>

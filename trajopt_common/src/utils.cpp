@@ -1,7 +1,7 @@
-#include <trajopt_utils/utils.hpp>
+#include <trajopt_common/utils.hpp>
 #include <tesseract_common/utils.h>
 
-namespace util
+namespace trajopt_common
 {
 SafetyMarginData::SafetyMarginData(double default_safety_margin, double default_safety_margin_coeff)
   : default_safety_margin_data_({ default_safety_margin, default_safety_margin_coeff })
@@ -68,4 +68,4 @@ Eigen::Isometry3d addTwist(const Eigen::Isometry3d& t1,
   t2.translation() = t1.translation() + twist.head(3) * dt;
   return t2;
 }
-}  // namespace util
+}  // namespace trajopt_common

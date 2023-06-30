@@ -26,7 +26,7 @@
 #ifndef TRAJOPT_IFOPT_TRAJOPT_UTILS_H
 #define TRAJOPT_IFOPT_TRAJOPT_UTILS_H
 
-#include <trajopt_utils/macros.h>
+#include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <tesseract_common/types.h>
 #include <tesseract_common/joint_state.h>

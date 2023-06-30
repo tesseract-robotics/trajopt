@@ -13,7 +13,7 @@ find_package(console_bridge REQUIRED)
 find_package(ifopt REQUIRED)
 find_package(OsqpEigen REQUIRED)
 find_package(trajopt_ifopt REQUIRED)
-find_package(trajopt_utils REQUIRED)
+find_package(trajopt_common REQUIRED)
 find_package(ros_industrial_cmake_boilerplate REQUIRED)
 find_package(tesseract_common REQUIRED)
 find_package(tesseract_visualization REQUIRED)
@@ -71,7 +71,7 @@ target_include_directories(${PROJECT_NAME}_callbacks PUBLIC $<BUILD_INTERFACE:${
 target_link_libraries(
   ${PROJECT_NAME}_callbacks
   PUBLIC trajopt::trajopt_ifopt
-         trajopt::trajopt_utils
+         trajopt::trajopt_common
          tesseract::tesseract_visualization
          tesseract::tesseract_common
          console_bridge::console_bridge

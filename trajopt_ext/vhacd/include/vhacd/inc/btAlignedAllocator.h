@@ -19,7 +19,7 @@ software.
 #ifndef BT_ALIGNED_ALLOCATOR
 #define BT_ALIGNED_ALLOCATOR
 
-#include <trajopt_utils/macros.h>
+#include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
 
 /// we probably replace this with our own aligned memory allocator

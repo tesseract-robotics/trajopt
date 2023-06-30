@@ -1,4 +1,4 @@
-﻿#include <trajopt_utils/macros.h>
+﻿#include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <ctime>
 #include <gtest/gtest.h>

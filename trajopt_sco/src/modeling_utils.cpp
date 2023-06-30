@@ -1,4 +1,4 @@
-#include <trajopt_utils/macros.h>
+#include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <Eigen/Eigenvalues>
 #include <iostream>
@@ -7,7 +7,7 @@ TRAJOPT_IGNORE_WARNINGS_POP
 #include <trajopt_sco/expr_ops.hpp>
 #include <trajopt_sco/modeling.hpp>
 #include <trajopt_sco/modeling_utils.hpp>
-#include <trajopt_utils/eigen_conversions.hpp>
+#include <trajopt_common/eigen_conversions.hpp>
 
 namespace sco
 {
@@ -33,7 +33,7 @@ AffExpr affFromValGrad(double y, const Eigen::VectorXd& x, const Eigen::VectorXd
 {
   AffExpr aff;
   aff.constant = y - dydx.dot(x);
-  aff.coeffs = util::toDblVec(dydx);
+  aff.coeffs = trajopt_common::toDblVec(dydx);
   aff.vars = vars;
   aff = cleanupAff(aff);
   return aff;
@@ -64,10 +64,10 @@ ConvexObjective::Ptr CostFromFunc::convex(const DblVec& x, Model* model)
     QuadExpr& quad = out->quad_;
     quad.affexpr.constant = val - grad.dot(x_eigen) + .5 * x_eigen.dot(hess.cwiseProduct(x_eigen));
     quad.affexpr.vars = vars_;
-    quad.affexpr.coeffs = util::toDblVec(grad - hess.cwiseProduct(x_eigen));
+    quad.affexpr.coeffs = trajopt_common::toDblVec(grad - hess.cwiseProduct(x_eigen));
     quad.vars1 = vars_;
     quad.vars2 = vars_;
-    quad.coeffs = util::toDblVec(hess * .5);
+    quad.coeffs = trajopt_common::toDblVec(hess * .5);
   }
   else
   {
@@ -89,7 +89,7 @@ ConvexObjective::Ptr CostFromFunc::convex(const DblVec& x, Model* model)
     QuadExpr& quad = out->quad_;
     quad.affexpr.constant = val - grad.dot(x_eigen) + .5 * x_eigen.dot(pos_hess * x_eigen);
     quad.affexpr.vars = vars_;
-    quad.affexpr.coeffs = util::toDblVec(grad - pos_hess * x_eigen);
+    quad.affexpr.coeffs = trajopt_common::toDblVec(grad - pos_hess * x_eigen);
 
     auto nquadterms = static_cast<size_t>((x_eigen.size() * (x_eigen.size() - 1)) / 2);
     quad.coeffs.reserve(nquadterms);
@@ -241,7 +241,7 @@ DblVec ConstraintFromErrFunc::value(const DblVec& x)
   Eigen::VectorXd err = f_->call(x_eigen);
   if (coeffs_.size() > 0)
     err.array() *= coeffs_.array();
-  return util::toDblVec(err);
+  return trajopt_common::toDblVec(err);
 }
 
 ConvexConstraints::Ptr ConstraintFromErrFunc::convex(const DblVec& x, Model* model)

@@ -10,7 +10,7 @@
   <build_depend>ros_industrial_cmake_boilerplate</build_depend>
   <depend>bullet</depend>
   <depend>bullet-extras</depend>
-  <depend>trajopt_utils</depend>
+  <depend>trajopt_common</depend>
 
   <export>
     <build_type>cmake</build_type>

@@ -1,7 +1,7 @@
 #ifndef TRAJOPT_IFOPT_CACHE_H
 #define TRAJOPT_IFOPT_CACHE_H
 
-#include <trajopt_utils/macros.h>
+#include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <Eigen/Eigen>
 #include <memory>

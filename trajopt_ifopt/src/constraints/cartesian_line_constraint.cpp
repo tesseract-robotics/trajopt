@@ -28,7 +28,7 @@
 #include <trajopt_ifopt/constraints/cartesian_line_constraint.h>
 #include <trajopt_ifopt/utils/numeric_differentiation.h>
 #include <trajopt_ifopt/utils/trajopt_utils.h>
-#include <trajopt_utils/utils.hpp>
+#include <trajopt_common/utils.hpp>
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <tesseract_kinematics/core/utils.h>
 #include <console_bridge/console.h>
@@ -196,7 +196,7 @@ void CartLineConstraint::CalcJacobianBlock(const Eigen::Ref<const Eigen::VectorX
     Eigen::Vector3d rot_err = tesseract_common::calcRotationalError2(pose_err.rotation());
     for (int c = 0; c < jac0.cols(); ++c)
     {
-      auto new_pose_err = util::addTwist(pose_err, jac0.col(c), 1e-5);
+      auto new_pose_err = trajopt_common::addTwist(pose_err, jac0.col(c), 1e-5);
       Eigen::VectorXd new_rot_err = tesseract_common::calcRotationalError2(new_pose_err.rotation());
       jac0.col(c).tail(3) = ((new_rot_err - rot_err) / 1e-5);
     }

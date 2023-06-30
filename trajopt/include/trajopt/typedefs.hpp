@@ -1,5 +1,5 @@
 #pragma once
-#include <trajopt_utils/macros.h>
+#include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <Eigen/Core>
 #include <map>
@@ -10,13 +10,13 @@ TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt_sco/modeling.hpp>
 #include <trajopt_sco/modeling_utils.hpp>
-#include <trajopt_utils/basic_array.hpp>
+#include <trajopt_common/basic_array.hpp>
 
 namespace trajopt
 {
-using VarArray = util::BasicArray<sco::Var>;
-using AffArray = util::BasicArray<sco::AffExpr>;
-using CntArray = util::BasicArray<sco::Cnt>;
+using VarArray = trajopt_common::BasicArray<sco::Var>;
+using AffArray = trajopt_common::BasicArray<sco::AffExpr>;
+using CntArray = trajopt_common::BasicArray<sco::Cnt>;
 using TrajArray = Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
 using DblVec = sco::DblVec;
 using IntVec = sco::IntVec;

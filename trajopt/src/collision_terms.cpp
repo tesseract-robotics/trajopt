@@ -1,4 +1,4 @@
-#include <trajopt_utils/macros.h>
+#include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <boost/functional/hash.hpp>
 #include <tesseract_kinematics/core/joint_group.h>
@@ -13,9 +13,9 @@ TRAJOPT_IGNORE_WARNINGS_POP
 #include <trajopt_sco/expr_vec_ops.hpp>
 #include <trajopt_sco/modeling_utils.hpp>
 #include <trajopt_sco/sco_common.hpp>
-#include <trajopt_utils/eigen_conversions.hpp>
-#include <trajopt_utils/logging.hpp>
-#include <trajopt_utils/stl_to_string.hpp>
+#include <trajopt_common/eigen_conversions.hpp>
+#include <trajopt_common/logging.hpp>
+#include <trajopt_common/stl_to_string.hpp>
 
 namespace trajopt
 {
@@ -549,7 +549,7 @@ void CollisionEvaluator::CollisionsToDistanceExpressionsContinuousW(
 
 CollisionEvaluator::CollisionEvaluator(tesseract_kinematics::JointGroup::ConstPtr manip,
                                        tesseract_environment::Environment::ConstPtr env,
-                                       util::SafetyMarginData::ConstPtr safety_margin_data,
+                                       trajopt_common::SafetyMarginData::ConstPtr safety_margin_data,
                                        tesseract_collision::ContactTestType contact_test_type,
                                        double longest_valid_segment_length,
                                        double safety_margin_buffer,
@@ -865,7 +865,7 @@ void CollisionEvaluator::removeInvalidContactResults(tesseract_collision::Contac
 SingleTimestepCollisionEvaluator::SingleTimestepCollisionEvaluator(
     tesseract_kinematics::JointGroup::ConstPtr manip,
     tesseract_environment::Environment::ConstPtr env,
-    util::SafetyMarginData::ConstPtr safety_margin_data,
+    trajopt_common::SafetyMarginData::ConstPtr safety_margin_data,
     tesseract_collision::ContactTestType contact_test_type,
     sco::VarVector vars,
     CollisionExpressionEvaluatorType type,
@@ -1010,7 +1010,7 @@ void SingleTimestepCollisionEvaluator::Plot(const tesseract_visualization::Visua
 
 DiscreteCollisionEvaluator::DiscreteCollisionEvaluator(tesseract_kinematics::JointGroup::ConstPtr manip,
                                                        tesseract_environment::Environment::ConstPtr env,
-                                                       util::SafetyMarginData::ConstPtr safety_margin_data,
+                                                       trajopt_common::SafetyMarginData::ConstPtr safety_margin_data,
                                                        tesseract_collision::ContactTestType contact_test_type,
                                                        double longest_valid_segment_length,
                                                        sco::VarVector vars0,
@@ -1254,7 +1254,7 @@ void DiscreteCollisionEvaluator::Plot(const tesseract_visualization::Visualizati
 
 CastCollisionEvaluator::CastCollisionEvaluator(tesseract_kinematics::JointGroup::ConstPtr manip,
                                                tesseract_environment::Environment::ConstPtr env,
-                                               util::SafetyMarginData::ConstPtr safety_margin_data,
+                                               trajopt_common::SafetyMarginData::ConstPtr safety_margin_data,
                                                tesseract_collision::ContactTestType contact_test_type,
                                                double longest_valid_segment_length,
                                                sco::VarVector vars0,
@@ -1502,7 +1502,7 @@ void CastCollisionEvaluator::Plot(const tesseract_visualization::Visualization::
 
 CollisionCost::CollisionCost(tesseract_kinematics::JointGroup::ConstPtr manip,
                              tesseract_environment::Environment::ConstPtr env,
-                             util::SafetyMarginData::ConstPtr safety_margin_data,
+                             trajopt_common::SafetyMarginData::ConstPtr safety_margin_data,
                              tesseract_collision::ContactTestType contact_test_type,
                              sco::VarVector vars,
                              CollisionExpressionEvaluatorType type,
@@ -1520,7 +1520,7 @@ CollisionCost::CollisionCost(tesseract_kinematics::JointGroup::ConstPtr manip,
 
 CollisionCost::CollisionCost(tesseract_kinematics::JointGroup::ConstPtr manip,
                              tesseract_environment::Environment::ConstPtr env,
-                             util::SafetyMarginData::ConstPtr safety_margin_data,
+                             trajopt_common::SafetyMarginData::ConstPtr safety_margin_data,
                              tesseract_collision::ContactTestType contact_test_type,
                              double longest_valid_segment_length,
                              sco::VarVector vars0,
@@ -1609,7 +1609,7 @@ void CollisionCost::Plot(const tesseract_visualization::Visualization::Ptr& plot
 
 CollisionConstraint::CollisionConstraint(tesseract_kinematics::JointGroup::ConstPtr manip,
                                          tesseract_environment::Environment::ConstPtr env,
-                                         util::SafetyMarginData::ConstPtr safety_margin_data,
+                                         trajopt_common::SafetyMarginData::ConstPtr safety_margin_data,
                                          tesseract_collision::ContactTestType contact_test_type,
                                          sco::VarVector vars,
                                          CollisionExpressionEvaluatorType type,
@@ -1627,7 +1627,7 @@ CollisionConstraint::CollisionConstraint(tesseract_kinematics::JointGroup::Const
 
 CollisionConstraint::CollisionConstraint(tesseract_kinematics::JointGroup::ConstPtr manip,
                                          tesseract_environment::Environment::ConstPtr env,
-                                         util::SafetyMarginData::ConstPtr safety_margin_data,
+                                         trajopt_common::SafetyMarginData::ConstPtr safety_margin_data,
                                          tesseract_collision::ContactTestType contact_test_type,
                                          double longest_valid_segment_length,
                                          sco::VarVector vars0,

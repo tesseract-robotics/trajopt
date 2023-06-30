@@ -27,7 +27,7 @@
 #ifndef TRAJOPT_IFOPT_CARTESIAN_POSITION_CONSTRAINT_H
 #define TRAJOPT_IFOPT_CARTESIAN_POSITION_CONSTRAINT_H
 
-#include <trajopt_utils/macros.h>
+#include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <Eigen/Eigen>
 #include <ifopt/constraint_set.h>

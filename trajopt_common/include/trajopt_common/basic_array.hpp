@@ -1,10 +1,10 @@
 #pragma once
-#include <trajopt_utils/macros.h>
+#include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <vector>
 TRAJOPT_IGNORE_WARNINGS_POP
 
-namespace util
+namespace trajopt_common
 {
 template <class T>
 struct BasicArray
@@ -116,4 +116,4 @@ struct BasicArray
   T* data() { return m_data.data(); }
   T* data() const { return m_data.data(); }
 };
-}  // namespace util
+}  // namespace trajopt_common

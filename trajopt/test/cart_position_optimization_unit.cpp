@@ -25,7 +25,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <trajopt_utils/macros.h>
+#include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <gtest/gtest.h>
 #include <iostream>
@@ -39,14 +39,13 @@ TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt/plot_callback.hpp>
 #include <trajopt/problem_description.hpp>
-#include <trajopt_utils/config.hpp>
-#include <trajopt_utils/logging.hpp>
-#include "test_suite_utils.hpp"
+#include <trajopt_common/config.hpp>
+#include <trajopt_common/logging.hpp>
+#include "trajopt_test_utils.hpp"
 
 using namespace trajopt;
 using namespace tesseract_environment;
 using namespace tesseract_scene_graph;
-using namespace tesseract_collision;
 using namespace tesseract_common;
 
 const bool DEBUG = true;
@@ -58,12 +57,12 @@ TEST(CartPositionOptimizationTrajoptSCO, cart_position_optimization_trajopt_sco)
   if (DEBUG)  // NOLINT
   {
     console_bridge::setLogLevel(console_bridge::LogLevel::CONSOLE_BRIDGE_LOG_DEBUG);
-    util::gLogLevel = util::LevelInfo;
+    trajopt_common::gLogLevel = trajopt_common::LevelInfo;
   }
   else
   {
     console_bridge::setLogLevel(console_bridge::LogLevel::CONSOLE_BRIDGE_LOG_NONE);
-    util::gLogLevel = util::LevelError;
+    trajopt_common::gLogLevel = trajopt_common::LevelError;
   }
 
   // 1)  Load Robot

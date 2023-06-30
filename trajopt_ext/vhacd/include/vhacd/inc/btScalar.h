@@ -18,7 +18,7 @@ software.
 #ifndef BT_SCALAR_H
 #define BT_SCALAR_H
 
-#include <trajopt_utils/macros.h>
+#include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
 
 #ifdef BT_MANAGED_CODE

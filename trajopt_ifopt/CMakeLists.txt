@@ -9,7 +9,7 @@ if(WIN32)
   set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 endif()
 
-find_package(trajopt_utils)
+find_package(trajopt_common)
 find_package(console_bridge REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(ifopt REQUIRED)
@@ -66,7 +66,7 @@ target_link_libraries(
   ${PROJECT_NAME}
   PUBLIC console_bridge::console_bridge
          ifopt::ifopt_core
-         trajopt::trajopt_utils
+         trajopt::trajopt_common
          tesseract::tesseract_environment
          Eigen3::Eigen
          Boost::boost)

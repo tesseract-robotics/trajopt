@@ -7,7 +7,7 @@ set_and_check(@PROJECT_NAME@_LIBRARY_DIRS "${PACKAGE_PREFIX_DIR}/lib")
 include(CMakeFindDependencyMacro)
 find_dependency(Eigen3)
 find_dependency(OpenMP)
-find_dependency(trajopt_utils)
+find_dependency(trajopt_common)
 
 find_package(Bullet REQUIRED CONFIGS BulletConfig-float64.cmake BulletConfig.cmake)
 IF(NOT ${BULLET_DEFINITIONS} MATCHES ".*-DBT_USE_DOUBLE_PRECISION.*")

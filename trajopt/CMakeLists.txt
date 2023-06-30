@@ -13,7 +13,7 @@ find_package(Eigen3 REQUIRED)
 find_package(Boost REQUIRED)
 find_package(console_bridge REQUIRED)
 find_package(trajopt_sco REQUIRED)
-find_package(trajopt_utils REQUIRED)
+find_package(trajopt_common REQUIRED)
 find_package(tesseract_common REQUIRED)
 find_package(tesseract_environment REQUIRED)
 find_package(tesseract_visualization REQUIRED)
@@ -56,7 +56,7 @@ add_library(${PROJECT_NAME} ${TRAJOPT_SOURCE_FILES})
 target_link_libraries(
   ${PROJECT_NAME}
   PUBLIC trajopt::trajopt_sco
-         trajopt::trajopt_utils
+         trajopt::trajopt_common
          tesseract::tesseract_common
          tesseract::tesseract_environment
          tesseract::tesseract_visualization
