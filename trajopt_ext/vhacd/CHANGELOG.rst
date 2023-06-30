@@ -2,6 +2,11 @@
 Changelog for package vhacd
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Rename trajopt_utils to trajopt_common
+* Contributors: Levi Armstrong
+
 0.5.2 (2023-06-06)
 ------------------
 

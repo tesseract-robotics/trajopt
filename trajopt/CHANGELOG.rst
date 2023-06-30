@@ -2,6 +2,15 @@
 Changelog for package trajopt
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Move shared data to trajopt_common
+* Rename trajopt_utils to trajopt_common
+* Add multi-threaded support to TrajOpt (`#333 <https://github.com/tesseract-robotics/trajopt/issues/333>`_)
+* Enable qpOASES on Windows and fix Windows build (`#327 <https://github.com/tesseract-robotics/trajopt/issues/327>`_)
+* Filter contact pairs with zero coeffs
+* Contributors: John Wason, Levi Armstrong
+
 0.5.2 (2023-06-06)
 ------------------
 * MSVC 2022 build fixes (`#323 <https://github.com/tesseract-robotics/trajopt/issues/323>`_)

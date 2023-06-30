@@ -2,6 +2,16 @@
 Changelog for package trajopt_sco
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Rename trajopt_utils to trajopt_common
+* Fix clang-tidy errors
+* Add multi-threaded support to TrajOpt (`#333 <https://github.com/tesseract-robotics/trajopt/issues/333>`_)
+* Fix enable and clang-tidy errors (`#332 <https://github.com/tesseract-robotics/trajopt/issues/332>`_)
+* Enable qpOASES on Windows and fix Windows build (`#327 <https://github.com/tesseract-robotics/trajopt/issues/327>`_)
+* Filter contact pairs with zero coeffs
+* Contributors: John Wason, Levi Armstrong
+
 0.5.2 (2023-06-06)
 ------------------
 

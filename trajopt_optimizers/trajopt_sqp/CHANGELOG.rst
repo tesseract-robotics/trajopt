@@ -2,6 +2,13 @@
 Changelog for package trajopt_sqp
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Move shared data to trajopt_common
+* Rename trajopt_utils to trajopt_common
+* Enable qpOASES on Windows and fix Windows build (`#327 <https://github.com/tesseract-robotics/trajopt/issues/327>`_)
+* Contributors: John Wason, Levi Armstrong
+
 0.5.2 (2023-06-06)
 ------------------
 * Change error into warning for "Approximate merit function got worse [...]"

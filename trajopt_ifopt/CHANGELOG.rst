@@ -2,6 +2,14 @@
 Changelog for package trajopt_ifopt
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Move shared data to trajopt_common
+* Rename trajopt_utils to trajopt_common
+* Fix unit tests
+* Filter contact pairs with zero coeffs
+* Contributors: Levi Armstrong
+
 0.5.2 (2023-06-06)
 ------------------
 * Removed "Only Discrete Evaluator is implemented" messages
