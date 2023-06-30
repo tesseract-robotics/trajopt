@@ -2,8 +2,8 @@
 Changelog for package trajopt
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.6.0 (2023-06-30)
+------------------
 * Move shared data to trajopt_common
 * Rename trajopt_utils to trajopt_common
 * Add multi-threaded support to TrajOpt (`#333 <https://github.com/tesseract-robotics/trajopt/issues/333>`_)

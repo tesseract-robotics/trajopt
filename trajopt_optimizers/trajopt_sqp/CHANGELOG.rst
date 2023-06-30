@@ -2,8 +2,8 @@
 Changelog for package trajopt_sqp
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.6.0 (2023-06-30)
+------------------
 * Move shared data to trajopt_common
 * Rename trajopt_utils to trajopt_common
 * Enable qpOASES on Windows and fix Windows build (`#327 <https://github.com/tesseract-robotics/trajopt/issues/327>`_)

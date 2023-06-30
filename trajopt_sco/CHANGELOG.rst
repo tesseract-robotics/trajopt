@@ -2,8 +2,8 @@
 Changelog for package trajopt_sco
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.6.0 (2023-06-30)
+------------------
 * Rename trajopt_utils to trajopt_common
 * Fix clang-tidy errors
 * Add multi-threaded support to TrajOpt (`#333 <https://github.com/tesseract-robotics/trajopt/issues/333>`_)
