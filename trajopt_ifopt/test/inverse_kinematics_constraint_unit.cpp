@@ -35,6 +35,7 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <tesseract_environment/environment.h>
 #include <tesseract_environment/utils.h>
 #include <tesseract_common/types.h>
+#include <tesseract_common/utils.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt_ifopt/constraints/inverse_kinematics_constraint.h>
@@ -106,7 +107,7 @@ TEST_F(InverseKinematicsConstraintUnit, GetValue)  // NOLINT
 
   // Get the value (distance from IK position)
   Eigen::VectorXd values = constraint->GetValues();
-  EXPECT_TRUE(values.isApprox(Eigen::VectorXd::Zero(n_dof)));
+  EXPECT_TRUE(almostEqualRelativeAndAbs(values, Eigen::VectorXd::Zero(n_dof)));
 
   // Check that jac wrt constraint_var is identity
   {
