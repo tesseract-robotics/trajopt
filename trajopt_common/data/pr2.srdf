@@ -17,10 +17,10 @@
     </group>
 
     <!--Groups kinematic plugins -->
-    <kinematics_plugin_config filename="package://trajopt/test/data/pr2_plugins.yaml"/>
+    <kinematics_plugin_config filename="package://trajopt_common/data/pr2_plugins.yaml"/>
 
     <!--Contact Managers plugins -->
-    <contact_managers_plugin_config filename="package://trajopt/test/data/contact_manager_plugins.yaml"/>
+    <contact_managers_plugin_config filename="package://trajopt_common/data/contact_manager_plugins.yaml"/>
 
     <group name="right_gripper">
         <link name="r_gripper_palm_link" />

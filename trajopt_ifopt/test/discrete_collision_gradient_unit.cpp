@@ -43,7 +43,6 @@ TRAJOPT_IGNORE_WARNINGS_POP
 #include <trajopt_ifopt/constraints/collision/discrete_collision_evaluators.h>
 #include <trajopt_ifopt/constraints/joint_position_constraint.h>
 #include <trajopt_ifopt/costs/squared_cost.h>
-#include "trajopt_test_utils.hpp"
 
 using namespace trajopt_ifopt;
 using namespace tesseract_environment;
@@ -62,10 +61,10 @@ public:
 
   void SetUp() override
   {
-    boost::filesystem::path urdf_file(std::string(TRAJOPT_DIR) + "/test/data/spherebot.urdf");
-    boost::filesystem::path srdf_file(std::string(TRAJOPT_DIR) + "/test/data/spherebot.srdf");
+    boost::filesystem::path urdf_file(std::string(TRAJOPT_DATA_DIR) + "/spherebot.urdf");
+    boost::filesystem::path srdf_file(std::string(TRAJOPT_DATA_DIR) + "/spherebot.srdf");
 
-    ResourceLocator::Ptr locator = std::make_shared<TrajOptSupportResourceLocator>();
+    ResourceLocator::Ptr locator = std::make_shared<tesseract_common::GeneralResourceLocator>();
     EXPECT_TRUE(env->init(urdf_file, srdf_file, locator));
   }
 };

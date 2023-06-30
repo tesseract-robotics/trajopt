@@ -1,5 +1,4 @@
 find_package(GTest REQUIRED)
-find_package(trajopt REQUIRED)
 
 if(NOT TARGET GTest::GTest)
   add_library(GTest::GTest INTERFACE IMPORTED)
@@ -47,7 +46,7 @@ macro(add_gtest test_name test_file)
     GTest::Main
     ${Boost_SYSTEM_LIBRARY}
     ${Boost_PROGRAM_OPTIONS_LIBRARY}
-    trajopt::trajopt_test_data)
+    trajopt::trajopt_common)
   target_include_directories(${test_name} PRIVATE "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>"
                                                   ${GTEST_INCLUDE_DIRS})
   target_include_directories(${test_name} SYSTEM PRIVATE ${PCL_INCLUDE_DIRS})

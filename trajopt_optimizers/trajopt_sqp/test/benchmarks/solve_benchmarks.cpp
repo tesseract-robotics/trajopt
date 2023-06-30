@@ -26,7 +26,6 @@ TESSERACT_COMMON_IGNORE_WARNINGS_POP
 #include <trajopt_sqp/trajopt_qp_problem.h>
 #include <trajopt_sqp/trust_region_sqp_solver.h>
 #include <trajopt_sqp/osqp_eigen_solver.h>
-#include "../test_suite_utils.hpp"
 
 using namespace trajopt_ifopt;
 using namespace tesseract_environment;
@@ -334,10 +333,10 @@ int main(int argc, char** argv)
   //////////////////////////////////////
 
   {
-    boost::filesystem::path urdf_file(std::string(TRAJOPT_DIR) + "/test/data/spherebot.urdf");
-    boost::filesystem::path srdf_file(std::string(TRAJOPT_DIR) + "/test/data/spherebot.srdf");
+    boost::filesystem::path urdf_file(std::string(TRAJOPT_DATA_DIR) + "/spherebot.urdf");
+    boost::filesystem::path srdf_file(std::string(TRAJOPT_DATA_DIR) + "/spherebot.srdf");
 
-    ResourceLocator::Ptr locator = std::make_shared<TrajOptSupportResourceLocator>();
+    ResourceLocator::Ptr locator = std::make_shared<tesseract_common::GeneralResourceLocator>();
     auto env = std::make_shared<Environment>();
     env->init(urdf_file, srdf_file, locator);
 
@@ -357,10 +356,10 @@ int main(int argc, char** argv)
   // Planning Solve
   //////////////////////////////////////
   {
-    tesseract_common::fs::path urdf_file(std::string(TRAJOPT_DIR) + "/test/data/arm_around_table.urdf");
-    tesseract_common::fs::path srdf_file(std::string(TRAJOPT_DIR) + "/test/data/pr2.srdf");
+    tesseract_common::fs::path urdf_file(std::string(TRAJOPT_DATA_DIR) + "/arm_around_table.urdf");
+    tesseract_common::fs::path srdf_file(std::string(TRAJOPT_DATA_DIR) + "/pr2.srdf");
 
-    ResourceLocator::Ptr locator = std::make_shared<TrajOptSupportResourceLocator>();
+    ResourceLocator::Ptr locator = std::make_shared<tesseract_common::GeneralResourceLocator>();
     auto env = std::make_shared<Environment>();
     env->init(urdf_file, srdf_file, locator);
 

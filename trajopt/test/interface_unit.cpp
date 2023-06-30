@@ -12,7 +12,6 @@ TRAJOPT_IGNORE_WARNINGS_POP
 #include <trajopt/plot_callback.hpp>
 #include <trajopt/problem_description.hpp>
 #include <trajopt_sco/optimizers.hpp>
-#include <trajopt_test_utils.hpp>
 #include <trajopt_common/logging.hpp>
 
 using namespace trajopt;
@@ -33,10 +32,10 @@ public:
   Visualization::Ptr plotter_;                             /**< Trajopt Plotter */
   void SetUp() override
   {
-    tesseract_common::fs::path urdf_file(std::string(TRAJOPT_DIR) + "/test/data/arm_around_table.urdf");
-    tesseract_common::fs::path srdf_file(std::string(TRAJOPT_DIR) + "/test/data/pr2.srdf");
+    tesseract_common::fs::path urdf_file(std::string(TRAJOPT_DATA_DIR) + "/arm_around_table.urdf");
+    tesseract_common::fs::path srdf_file(std::string(TRAJOPT_DATA_DIR) + "/pr2.srdf");
 
-    ResourceLocator::Ptr locator = std::make_shared<TrajOptSupportResourceLocator>();
+    ResourceLocator::Ptr locator = std::make_shared<tesseract_common::GeneralResourceLocator>();
     EXPECT_TRUE(env_->init(urdf_file, srdf_file, locator));
 
     gLogLevel = trajopt_common::LevelError;
@@ -161,7 +160,7 @@ TEST_F(InterfaceTest, initial_trajectory_json_interface)
   // These must match the json file or the test will fail!!
   const int steps = 10;
 
-  Json::Value root = readJsonFile(std::string(TRAJOPT_DIR) + "/test/data/config/arm_around_table.json");
+  Json::Value root = readJsonFile(std::string(TRAJOPT_DATA_DIR) + "/config/arm_around_table.json");
 
   std::unordered_map<std::string, double> ipos;
   ipos["torso_lift_joint"] = 0;
@@ -196,7 +195,7 @@ TEST_F(InterfaceTest, initial_trajectory_time_json_interface)
   const int steps = 10;
   const double dt = 0.12341234;
 
-  Json::Value root = readJsonFile(std::string(TRAJOPT_DIR) + "/test/data/config/arm_around_table.json");
+  Json::Value root = readJsonFile(std::string(TRAJOPT_DATA_DIR) + "/config/arm_around_table.json");
 
   std::unordered_map<std::string, double> ipos;
   ipos["torso_lift_joint"] = 0;

@@ -10,7 +10,6 @@ TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt_ifopt/constraints/cartesian_line_constraint.h>
 #include <trajopt_ifopt/utils/numeric_differentiation.h>
-#include <trajopt_test_utils.hpp>
 
 using namespace trajopt_ifopt;
 using namespace std;
@@ -39,9 +38,9 @@ public:
   void SetUp() override
   {
     // Initialize Tesseract
-    tesseract_common::fs::path urdf_file(std::string(TRAJOPT_DIR) + "/test/data/arm_around_table.urdf");
-    tesseract_common::fs::path srdf_file(std::string(TRAJOPT_DIR) + "/test/data/pr2.srdf");
-    auto locator = std::make_shared<TrajOptSupportResourceLocator>();
+    tesseract_common::fs::path urdf_file(std::string(TRAJOPT_DATA_DIR) + "/arm_around_table.urdf");
+    tesseract_common::fs::path srdf_file(std::string(TRAJOPT_DATA_DIR) + "/pr2.srdf");
+    auto locator = std::make_shared<tesseract_common::GeneralResourceLocator>();
     bool status = env->init(urdf_file, srdf_file, locator);
     EXPECT_TRUE(status);
 

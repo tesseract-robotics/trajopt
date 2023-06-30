@@ -48,7 +48,6 @@ TRAJOPT_IGNORE_WARNINGS_POP
 #include <trajopt_ifopt/variable_sets/joint_position_variable.h>
 #include <trajopt_ifopt/costs/squared_cost.h>
 #include <trajopt_ifopt/utils/trajopt_utils.h>
-#include "test_suite_utils.hpp"
 
 const bool DEBUG = false;
 
@@ -65,9 +64,9 @@ public:
       console_bridge::setLogLevel(console_bridge::LogLevel::CONSOLE_BRIDGE_LOG_NONE);
 
     // 1)  Load Robot
-    tesseract_common::fs::path urdf_file(std::string(TRAJOPT_DIR) + "/test/data/arm_around_table.urdf");
-    tesseract_common::fs::path srdf_file(std::string(TRAJOPT_DIR) + "/test/data/pr2.srdf");
-    tesseract_common::ResourceLocator::Ptr locator = std::make_shared<TrajOptSupportResourceLocator>();
+    tesseract_common::fs::path urdf_file(std::string(TRAJOPT_DATA_DIR) + "/arm_around_table.urdf");
+    tesseract_common::fs::path srdf_file(std::string(TRAJOPT_DATA_DIR) + "/pr2.srdf");
+    tesseract_common::ResourceLocator::Ptr locator = std::make_shared<tesseract_common::GeneralResourceLocator>();
     env = std::make_shared<tesseract_environment::Environment>();
     env->init(urdf_file, srdf_file, locator);
   }

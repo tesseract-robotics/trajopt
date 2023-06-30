@@ -16,7 +16,6 @@ TRAJOPT_IGNORE_WARNINGS_POP
 #include <trajopt_common/eigen_conversions.hpp>
 #include <trajopt_common/logging.hpp>
 #include <trajopt_common/stl_to_string.hpp>
-
 #include "trajopt_test_utils.hpp"
 
 using namespace trajopt;
@@ -40,10 +39,10 @@ public:
 
   void SetUp() override
   {
-    boost::filesystem::path urdf_file(std::string(TRAJOPT_DIR) + "/test/data/spherebot.urdf");
-    boost::filesystem::path srdf_file(std::string(TRAJOPT_DIR) + "/test/data/spherebot.srdf");
+    boost::filesystem::path urdf_file(std::string(TRAJOPT_DATA_DIR) + "/spherebot.urdf");
+    boost::filesystem::path srdf_file(std::string(TRAJOPT_DATA_DIR) + "/spherebot.srdf");
 
-    ResourceLocator::Ptr locator = std::make_shared<TrajOptSupportResourceLocator>();
+    ResourceLocator::Ptr locator = std::make_shared<tesseract_common::GeneralResourceLocator>();
     EXPECT_TRUE(env_->init(urdf_file, srdf_file, locator));
 
     // gLogLevel = trajopt_common::LevelDebug;
@@ -57,7 +56,7 @@ void runTest(const Environment::Ptr& env, const Visualization::Ptr& plotter, boo
 {
   CONSOLE_BRIDGE_logDebug("SimpleCollisionTest, spheres");
 
-  Json::Value root = readJsonFile(std::string(TRAJOPT_DIR) + "/test/data/config/simple_collision_test.json");
+  Json::Value root = readJsonFile(std::string(TRAJOPT_DATA_DIR) + "/config/simple_collision_test.json");
 
   std::unordered_map<std::string, double> ipos;
   ipos["spherebot_x_joint"] = -0.75;

@@ -12,12 +12,12 @@ TRAJOPT_IGNORE_WARNINGS_POP
 #include <trajopt/plot_callback.hpp>
 #include <trajopt/problem_description.hpp>
 #include <trajopt_sco/optimizers.hpp>
-#include <trajopt_test_utils.hpp>
 #include <trajopt_common/clock.hpp>
 #include <trajopt_common/config.hpp>
 #include <trajopt_common/eigen_conversions.hpp>
 #include <trajopt_common/logging.hpp>
 #include <trajopt_common/stl_to_string.hpp>
+#include "trajopt_test_utils.hpp"
 
 using namespace trajopt;
 using namespace std;
@@ -38,10 +38,10 @@ public:
   Visualization::Ptr plotter_;                             /**< Trajopt Plotter */
   void SetUp() override
   {
-    tesseract_common::fs::path urdf_file(std::string(TRAJOPT_DIR) + "/test/data/arm_around_table.urdf");
-    tesseract_common::fs::path srdf_file(std::string(TRAJOPT_DIR) + "/test/data/pr2.srdf");
+    tesseract_common::fs::path urdf_file(std::string(TRAJOPT_DATA_DIR) + "/arm_around_table.urdf");
+    tesseract_common::fs::path srdf_file(std::string(TRAJOPT_DATA_DIR) + "/pr2.srdf");
 
-    ResourceLocator::Ptr locator = std::make_shared<TrajOptSupportResourceLocator>();
+    ResourceLocator::Ptr locator = std::make_shared<tesseract_common::GeneralResourceLocator>();
     EXPECT_TRUE(env_->init(urdf_file, srdf_file, locator));
 
     // Create plotting tool
@@ -59,7 +59,7 @@ void runTest(const Environment::Ptr& env, bool use_multi_threaded)
 {
   CONSOLE_BRIDGE_logDebug("PlanningTest, arm_around_table");
 
-  Json::Value root = readJsonFile(std::string(TRAJOPT_DIR) + "/test/data/config/arm_around_table.json");
+  Json::Value root = readJsonFile(std::string(TRAJOPT_DATA_DIR) + "/config/arm_around_table.json");
 
   std::unordered_map<std::string, double> ipos;
   ipos["torso_lift_joint"] = 0;
