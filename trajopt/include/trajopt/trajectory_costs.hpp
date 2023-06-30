@@ -6,7 +6,7 @@ Simple quadratic costs on trajectory
 
 #include <trajopt/common.hpp>
 #include <trajopt_sco/modeling.hpp>
-#include <trajopt_utils/macros.h>
+#include <trajopt_common/macros.h>
 
 namespace trajopt
 {

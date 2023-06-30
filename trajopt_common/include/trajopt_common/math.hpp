@@ -1,10 +1,10 @@
 #pragma once
-#include <trajopt_utils/macros.h>
+#include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <cmath>
 TRAJOPT_IGNORE_WARNINGS_POP
 
-namespace util
+namespace trajopt_common
 {
 inline float randf() { return (float)rand() / (float)RAND_MAX; }
-}  // namespace util
+}  // namespace trajopt_common

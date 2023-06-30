@@ -1,4 +1,4 @@
-#include <trajopt_utils/macros.h>
+#include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <Eigen/Core>
 TRAJOPT_IGNORE_WARNINGS_POP
@@ -6,7 +6,7 @@ TRAJOPT_IGNORE_WARNINGS_POP
 #include <trajopt/trajectory_costs.hpp>
 #include <trajopt_sco/expr_ops.hpp>
 #include <trajopt_sco/modeling_utils.hpp>
-#include <trajopt_utils/eigen_conversions.hpp>
+#include <trajopt_common/eigen_conversions.hpp>
 
 namespace
 {
@@ -167,7 +167,7 @@ DblVec JointPosEqConstraint::value(const DblVec& xvec)
   Eigen::MatrixXd diff =
       (traj.block(first_step_, 0, last_step_ - first_step_ + 1, traj.cols())).rowwise() - targets_.transpose();
   // Squares it, multiplies it by a diagonal matrix of coefficients, and converts to vector
-  return util::toDblVec((diff.array().square()).matrix() * coeffs_.asDiagonal());
+  return trajopt_common::toDblVec((diff.array().square()).matrix() * coeffs_.asDiagonal());
 }
 sco::ConvexConstraints::Ptr JointPosEqConstraint::convex(const DblVec& /*x*/, sco::Model* model)
 {
@@ -235,7 +235,7 @@ DblVec JointPosIneqConstraint::value(const DblVec& xvec)
   // vector
   Eigen::MatrixXd out(diff1.rows(), diff1.cols() + diff2.cols());
   out << diff1, diff2;
-  return util::toDblVec(out);
+  return trajopt_common::toDblVec(out);
 }
 
 sco::ConvexConstraints::Ptr JointPosIneqConstraint::convex(const DblVec& /*x*/, sco::Model* model)
@@ -399,7 +399,7 @@ DblVec JointVelEqConstraint::value(const DblVec& xvec)
   Eigen::MatrixXd diff = (diffAxis0(traj.block(first_step_, 0, last_step_ - first_step_ + 1, traj.cols()))).rowwise() -
                          targets_.transpose();
   // Squares it, multiplies it by a diagonal matrix of coefficients, and converts to vector
-  return util::toDblVec((diff.array().square()).matrix() * coeffs_.asDiagonal());
+  return trajopt_common::toDblVec((diff.array().square()).matrix() * coeffs_.asDiagonal());
 }
 sco::ConvexConstraints::Ptr JointVelEqConstraint::convex(const DblVec& /*x*/, sco::Model* model)
 {
@@ -468,7 +468,7 @@ DblVec JointVelIneqConstraint::value(const DblVec& xvec)
   // vector
   Eigen::MatrixXd out(diff1.rows(), diff1.cols() + diff2.cols());
   out << diff1, diff2;
-  return util::toDblVec(out.cwiseMax(0));
+  return trajopt_common::toDblVec(out.cwiseMax(0));
 }
 
 sco::ConvexConstraints::Ptr JointVelIneqConstraint::convex(const DblVec& /*x*/, sco::Model* model)
@@ -639,7 +639,7 @@ DblVec JointAccEqConstraint::value(const DblVec& xvec)
       (diffAxis0(diffAxis0(traj.block(first_step_, 0, last_step_ - first_step_ + 1, traj.cols())))).rowwise() -
       targets_.transpose();
   // Squares it, multiplies it by a diagonal matrix of coefficients, and converts to vector
-  return util::toDblVec((diff.array().square()).matrix() * coeffs_.asDiagonal());
+  return trajopt_common::toDblVec((diff.array().square()).matrix() * coeffs_.asDiagonal());
 }
 sco::ConvexConstraints::Ptr JointAccEqConstraint::convex(const DblVec& /*x*/, sco::Model* model)
 {
@@ -710,7 +710,7 @@ DblVec JointAccIneqConstraint::value(const DblVec& xvec)
   // vector
   Eigen::MatrixXd out(diff1.rows(), diff1.cols() + diff2.cols());
   out << diff1, diff2;
-  return util::toDblVec(out.cwiseMax(0));
+  return trajopt_common::toDblVec(out.cwiseMax(0));
 }
 
 sco::ConvexConstraints::Ptr JointAccIneqConstraint::convex(const DblVec& /*x*/, sco::Model* model)
@@ -887,7 +887,7 @@ DblVec JointJerkEqConstraint::value(const DblVec& xvec)
           .rowwise() -
       targets_.transpose();
   // Squares it, multiplies it by a diagonal matrix of coefficients, and converts to vector
-  return util::toDblVec((diff.array().square()).matrix() * coeffs_.asDiagonal());
+  return trajopt_common::toDblVec((diff.array().square()).matrix() * coeffs_.asDiagonal());
 }
 sco::ConvexConstraints::Ptr JointJerkEqConstraint::convex(const DblVec& /*x*/, sco::Model* model)
 {
@@ -958,7 +958,7 @@ DblVec JointJerkIneqConstraint::value(const DblVec& xvec)
   // vector
   Eigen::MatrixXd out(diff1.rows(), diff1.cols() + diff2.cols());
   out << diff1, diff2;
-  return util::toDblVec(out.cwiseMax(0));
+  return trajopt_common::toDblVec(out.cwiseMax(0));
 }
 
 sco::ConvexConstraints::Ptr JointJerkIneqConstraint::convex(const DblVec& /*x*/, sco::Model* model)

@@ -7,7 +7,7 @@ project(${pkg_extracted_name} VERSION ${pkg_extracted_version} LANGUAGES CXX)
 
 find_package(Eigen3 REQUIRED)
 find_package(OpenMP REQUIRED)
-find_package(trajopt_utils REQUIRED)
+find_package(trajopt_common REQUIRED)
 find_package(ros_industrial_cmake_boilerplate REQUIRED)
 find_package(
   Bullet
@@ -65,7 +65,7 @@ if(OpenCL_FOUND)
   target_compile_definitions(${PROJECT_NAME} PRIVATE -DOPENCL_CL_FILES="${PROJECT_CL_FILES}")
 endif()
 
-target_link_libraries(${PROJECT_NAME} PUBLIC OpenMP::OpenMP_CXX trajopt::trajopt_utils Eigen3::Eigen)
+target_link_libraries(${PROJECT_NAME} PUBLIC OpenMP::OpenMP_CXX trajopt::trajopt_common Eigen3::Eigen)
 target_include_directories(${PROJECT_NAME} PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
                                                   "$<INSTALL_INTERFACE:include>")
 target_include_directories(${PROJECT_NAME} SYSTEM PUBLIC "${BULLET_ROOT_DIR}/${BULLET_INCLUDE_DIRS}")

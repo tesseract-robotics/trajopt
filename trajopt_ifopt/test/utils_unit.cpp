@@ -24,13 +24,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <trajopt_utils/macros.h>
+#include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <ctime>
 #include <gtest/gtest.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 #include <trajopt_ifopt/utils/ifopt_utils.h>
-#include <trajopt_utils/utils.hpp>
+#include <trajopt_common/utils.hpp>
 #include <console_bridge/console.h>
 
 using namespace trajopt_ifopt;

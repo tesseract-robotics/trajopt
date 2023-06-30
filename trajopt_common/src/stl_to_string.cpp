@@ -1,4 +1,4 @@
-#include <trajopt_utils/stl_to_string.hpp>
+#include <trajopt_common/stl_to_string.hpp>
 
 namespace
 {
@@ -16,9 +16,9 @@ std::string Str_impl(const std::vector<T>& x)
 }
 }  // namespace
 
-namespace util
+namespace trajopt_common
 {
 std::string Str(const std::vector<double>& x) { return Str_impl(x); }
 std::string Str(const std::vector<float>& x) { return Str_impl(x); }
 std::string Str(const std::vector<int>& x) { return Str_impl(x); }
-}  // namespace util
+}  // namespace trajopt_common

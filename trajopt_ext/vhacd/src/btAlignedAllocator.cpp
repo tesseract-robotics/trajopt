@@ -16,7 +16,7 @@ software.
 3. This notice may not be removed or altered from any source distribution.
 */
 
-#include <trajopt_utils/macros.h>
+#include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
 
 #include "vhacd/inc/btAlignedAllocator.h"

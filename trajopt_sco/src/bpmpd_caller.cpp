@@ -1,4 +1,4 @@
-#include <trajopt_utils/macros.h>
+#include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <cerrno>
 #include <iostream>
@@ -6,7 +6,7 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <trajopt_sco/bpmpd_io.hpp>
 TRAJOPT_IGNORE_WARNINGS_POP
 
-#include <trajopt_utils/stl_to_string.hpp>
+#include <trajopt_common/stl_to_string.hpp>
 
 extern "C" {
 extern void bpmpd(int*,

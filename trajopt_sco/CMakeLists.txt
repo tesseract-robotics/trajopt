@@ -15,7 +15,7 @@ find_package(GUROBI QUIET)
 find_package(osqp QUIET)
 find_package(qpOASES QUIET)
 find_package(Eigen3 REQUIRED)
-find_package(trajopt_utils REQUIRED)
+find_package(trajopt_common REQUIRED)
 if(NOT TARGET JsonCpp::JsonCpp)
   find_package(jsoncpp REQUIRED)
 elseif(NOT TARGET jsoncpp_lib)
@@ -57,7 +57,7 @@ if(HAVE_BPMPD)
   target_include_directories(bpmpd_caller PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
                                                  "$<INSTALL_INTERFACE:include>")
   target_include_directories(bpmpd_caller SYSTEM
-                             PUBLIC $<TARGET_PROPERTY:trajopt::trajopt_utils,INTERFACE_INCLUDE_DIRECTORIES>)
+                             PUBLIC $<TARGET_PROPERTY:trajopt::trajopt_common,INTERFACE_INCLUDE_DIRECTORIES>)
 
   list(APPEND SCO_SOURCE_FILES src/bpmpd_interface.cpp)
 
@@ -105,7 +105,7 @@ endif()
 
 target_link_libraries(
   ${PROJECT_NAME}
-  PUBLIC trajopt::trajopt_utils
+  PUBLIC trajopt::trajopt_common
          Boost::boost
          Eigen3::Eigen
          ${CMAKE_DL_LIBS}

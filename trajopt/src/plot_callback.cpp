@@ -1,4 +1,4 @@
-#include <trajopt_utils/macros.h>
+#include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <functional>
 #include <set>
@@ -9,7 +9,7 @@ TRAJOPT_IGNORE_WARNINGS_POP
 #include <trajopt/common.hpp>
 #include <trajopt/plot_callback.hpp>
 #include <trajopt/problem_description.hpp>
-#include <trajopt_utils/eigen_conversions.hpp>
+#include <trajopt_common/eigen_conversions.hpp>
 
 namespace trajopt
 {

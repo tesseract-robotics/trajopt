@@ -1,4 +1,4 @@
-#include <trajopt_utils/macros.h>
+#include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <ctime>
 #include <gtest/gtest.h>
@@ -12,17 +12,17 @@ TRAJOPT_IGNORE_WARNINGS_POP
 #include <trajopt/problem_description.hpp>
 #include <trajopt_sco/optimizers.hpp>
 #include <trajopt_test_utils.hpp>
-#include <trajopt_utils/config.hpp>
-#include <trajopt_utils/eigen_conversions.hpp>
-#include <trajopt_utils/logging.hpp>
-#include <trajopt_utils/stl_to_string.hpp>
+#include <trajopt_common/config.hpp>
+#include <trajopt_common/eigen_conversions.hpp>
+#include <trajopt_common/logging.hpp>
+#include <trajopt_common/stl_to_string.hpp>
 
 #include <trajopt/kinematic_terms.hpp>
 #include <trajopt_sco/num_diff.hpp>
 
 using namespace trajopt;
 using namespace std;
-using namespace util;
+using namespace trajopt_common;
 using namespace tesseract_environment;
 using namespace tesseract_collision;
 using namespace tesseract_kinematics;
@@ -43,7 +43,7 @@ public:
     ResourceLocator::Ptr locator = std::make_shared<TrajOptSupportResourceLocator>();
     EXPECT_TRUE(env_->init(urdf_file, srdf_file, locator));
 
-    gLogLevel = util::LevelError;
+    gLogLevel = trajopt_common::LevelError;
   }
 };
 

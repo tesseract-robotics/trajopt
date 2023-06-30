@@ -1,4 +1,4 @@
-#include <trajopt_utils/macros.h>
+#include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <boost/algorithm/string.hpp>
 #include <json/json.h>
@@ -13,10 +13,10 @@ TRAJOPT_IGNORE_WARNINGS_POP
 #include <trajopt/trajectory_costs.hpp>
 #include <trajopt_sco/expr_op_overloads.hpp>
 #include <trajopt_sco/expr_ops.hpp>
-#include <trajopt_utils/eigen_conversions.hpp>
-#include <trajopt_utils/eigen_slicing.hpp>
-#include <trajopt_utils/logging.hpp>
-#include <trajopt_utils/vector_ops.hpp>
+#include <trajopt_common/eigen_conversions.hpp>
+#include <trajopt_common/eigen_slicing.hpp>
+#include <trajopt_common/logging.hpp>
+#include <trajopt_common/vector_ops.hpp>
 
 #include <tesseract_kinematics/kdl/kdl_fwd_kin_chain.h>
 
@@ -240,7 +240,7 @@ void ProblemConstructionInfo::readInitInfo(const Json::Value& v)
     {
       DblVec row;
       json_marshal::fromJsonArray(vdata[i], row, static_cast<int>(n_dof));
-      init_info.data.row(i) = util::toVectorXd(row);
+      init_info.data.row(i) = trajopt_common::toVectorXd(row);
     }
   }
   else if (boost::iequals(type_str, "joint_interpolated"))
@@ -255,7 +255,7 @@ void ProblemConstructionInfo::readInitInfo(const Json::Value& v)
                                     "initialization. expected %i got %i") %
                       n_dof % endpoint.size());
     }
-    init_info.data = util::toVectorXd(endpoint);
+    init_info.data = trajopt_common::toVectorXd(endpoint);
   }
   else
   {
@@ -989,7 +989,7 @@ void CartVelTermInfo::hatch(TrajOptProb& prob)
       prob.addCost(std::make_shared<TrajOptCostFromErrFunc>(
           f,
           dfdx,
-          util::concat(prob.GetVarRow(iStep, 0, n_dof), prob.GetVarRow(iStep + 1, 0, n_dof)),
+          trajopt_common::concat(prob.GetVarRow(iStep, 0, n_dof), prob.GetVarRow(iStep + 1, 0, n_dof)),
           Eigen::VectorXd::Ones(0),
           sco::ABS,
           name));
@@ -1004,7 +1004,7 @@ void CartVelTermInfo::hatch(TrajOptProb& prob)
       prob.addConstraint(std::make_shared<TrajOptConstraintFromErrFunc>(
           f,
           dfdx,
-          util::concat(prob.GetVarRow(iStep, 0, n_dof), prob.GetVarRow(iStep + 1, 0, n_dof)),
+          trajopt_common::concat(prob.GetVarRow(iStep, 0, n_dof), prob.GetVarRow(iStep + 1, 0, n_dof)),
           Eigen::VectorXd::Ones(0),
           sco::INEQ,
           "CartVel"));
@@ -1074,9 +1074,9 @@ void JointPosTermInfo::hatch(TrajOptProb& prob)
 
   // Check if tolerances are all zeros
   bool is_upper_zeros =
-      std::all_of(upper_tols.begin(), upper_tols.end(), [](double i) { return util::doubleEquals(i, 0.); });
+      std::all_of(upper_tols.begin(), upper_tols.end(), [](double i) { return trajopt_common::doubleEquals(i, 0.); });
   bool is_lower_zeros =
-      std::all_of(lower_tols.begin(), lower_tols.end(), [](double i) { return util::doubleEquals(i, 0.); });
+      std::all_of(lower_tols.begin(), lower_tols.end(), [](double i) { return trajopt_common::doubleEquals(i, 0.); });
 
   // Get vars associated with joints
   trajopt::VarArray vars = prob.GetVars();
@@ -1090,16 +1090,16 @@ void JointPosTermInfo::hatch(TrajOptProb& prob)
     if (is_upper_zeros && is_lower_zeros)
     {
       prob.addCost(std::make_shared<JointPosEqCost>(
-          joint_vars, util::toVectorXd(coeffs), util::toVectorXd(targets), first_step, last_step));
+          joint_vars, trajopt_common::toVectorXd(coeffs), trajopt_common::toVectorXd(targets), first_step, last_step));
       prob.getCosts().back()->setName(name);
     }
     else
     {
       auto c = std::make_shared<JointPosIneqCost>(joint_vars,
-                                                  util::toVectorXd(coeffs),
-                                                  util::toVectorXd(targets),
-                                                  util::toVectorXd(upper_tols),
-                                                  util::toVectorXd(lower_tols),
+                                                  trajopt_common::toVectorXd(coeffs),
+                                                  trajopt_common::toVectorXd(targets),
+                                                  trajopt_common::toVectorXd(upper_tols),
+                                                  trajopt_common::toVectorXd(lower_tols),
                                                   first_step,
                                                   last_step);
       prob.addCost(c);
@@ -1112,17 +1112,17 @@ void JointPosTermInfo::hatch(TrajOptProb& prob)
     if (is_upper_zeros && is_lower_zeros)
     {
       auto c = std::make_shared<JointPosEqConstraint>(
-          joint_vars, util::toVectorXd(coeffs), util::toVectorXd(targets), first_step, last_step);
+          joint_vars, trajopt_common::toVectorXd(coeffs), trajopt_common::toVectorXd(targets), first_step, last_step);
       prob.addConstraint(c);
       prob.getEqConstraints().back()->setName(name);
     }
     else
     {
       auto c = std::make_shared<JointPosIneqConstraint>(joint_vars,
-                                                        util::toVectorXd(coeffs),
-                                                        util::toVectorXd(targets),
-                                                        util::toVectorXd(upper_tols),
-                                                        util::toVectorXd(lower_tols),
+                                                        trajopt_common::toVectorXd(coeffs),
+                                                        trajopt_common::toVectorXd(targets),
+                                                        trajopt_common::toVectorXd(upper_tols),
+                                                        trajopt_common::toVectorXd(lower_tols),
                                                         first_step,
                                                         last_step);
       prob.addConstraint(c);
@@ -1193,9 +1193,9 @@ void JointVelTermInfo::hatch(TrajOptProb& prob)
 
   // Check if tolerances are all zeros
   bool is_upper_zeros =
-      std::all_of(upper_tols.begin(), upper_tols.end(), [](double i) { return util::doubleEquals(i, 0.); });
+      std::all_of(upper_tols.begin(), upper_tols.end(), [](double i) { return trajopt_common::doubleEquals(i, 0.); });
   bool is_lower_zeros =
-      std::all_of(lower_tols.begin(), lower_tols.end(), [](double i) { return util::doubleEquals(i, 0.); });
+      std::all_of(lower_tols.begin(), lower_tols.end(), [](double i) { return trajopt_common::doubleEquals(i, 0.); });
 
   // Get vars associated with joints
   trajopt::VarArray vars = prob.GetVars();
@@ -1220,8 +1220,8 @@ void JointVelTermInfo::hatch(TrajOptProb& prob)
         auto dfdx = std::make_shared<JointVelJacCalculator>();
         prob.addCost(std::make_shared<TrajOptCostFromErrFunc>(f,
                                                               dfdx,
-                                                              util::concat(joint_vars_vec, time_vars_vec),
-                                                              util::toVectorXd(single_jnt_coeffs),
+                                                              trajopt_common::concat(joint_vars_vec, time_vars_vec),
+                                                              trajopt_common::toVectorXd(single_jnt_coeffs),
                                                               sco::SQUARED,
                                                               name + "_j" + std::to_string(j)));
       }
@@ -1233,8 +1233,8 @@ void JointVelTermInfo::hatch(TrajOptProb& prob)
         auto dfdx = std::make_shared<JointVelJacCalculator>();
         prob.addCost(std::make_shared<TrajOptCostFromErrFunc>(f,
                                                               dfdx,
-                                                              util::concat(joint_vars_vec, time_vars_vec),
-                                                              util::toVectorXd(single_jnt_coeffs),
+                                                              trajopt_common::concat(joint_vars_vec, time_vars_vec),
+                                                              trajopt_common::toVectorXd(single_jnt_coeffs),
                                                               sco::HINGE,
                                                               name + "_j" + std::to_string(j)));
       }
@@ -1257,12 +1257,13 @@ void JointVelTermInfo::hatch(TrajOptProb& prob)
         DblVec single_jnt_coeffs = DblVec(num_vels * 2, coeffs[j]);
         auto f = std::make_shared<JointVelErrCalculator>(targets[j], upper_tols[j], lower_tols[j]);
         auto dfdx = std::make_shared<JointVelJacCalculator>();
-        prob.addConstraint(std::make_shared<TrajOptConstraintFromErrFunc>(f,
-                                                                          dfdx,
-                                                                          util::concat(joint_vars_vec, time_vars_vec),
-                                                                          util::toVectorXd(single_jnt_coeffs),
-                                                                          sco::EQ,
-                                                                          name + "_j" + std::to_string(j)));
+        prob.addConstraint(
+            std::make_shared<TrajOptConstraintFromErrFunc>(f,
+                                                           dfdx,
+                                                           trajopt_common::concat(joint_vars_vec, time_vars_vec),
+                                                           trajopt_common::toVectorXd(single_jnt_coeffs),
+                                                           sco::EQ,
+                                                           name + "_j" + std::to_string(j)));
       }
       // Otherwise it's a hinged "inequality" constraint
       else
@@ -1270,12 +1271,13 @@ void JointVelTermInfo::hatch(TrajOptProb& prob)
         DblVec single_jnt_coeffs = DblVec(num_vels * 2, coeffs[j]);
         auto f = std::make_shared<JointVelErrCalculator>(targets[j], upper_tols[j], lower_tols[j]);
         auto dfdx = std::make_shared<JointVelJacCalculator>();
-        prob.addConstraint(std::make_shared<TrajOptConstraintFromErrFunc>(f,
-                                                                          dfdx,
-                                                                          util::concat(joint_vars_vec, time_vars_vec),
-                                                                          util::toVectorXd(single_jnt_coeffs),
-                                                                          sco::INEQ,
-                                                                          name + "_j" + std::to_string(j)));
+        prob.addConstraint(
+            std::make_shared<TrajOptConstraintFromErrFunc>(f,
+                                                           dfdx,
+                                                           trajopt_common::concat(joint_vars_vec, time_vars_vec),
+                                                           trajopt_common::toVectorXd(single_jnt_coeffs),
+                                                           sco::INEQ,
+                                                           name + "_j" + std::to_string(j)));
       }
     }
   }
@@ -1285,16 +1287,16 @@ void JointVelTermInfo::hatch(TrajOptProb& prob)
     if (is_upper_zeros && is_lower_zeros)
     {
       prob.addCost(std::make_shared<JointVelEqCost>(
-          joint_vars, util::toVectorXd(coeffs), util::toVectorXd(targets), first_step, last_step));
+          joint_vars, trajopt_common::toVectorXd(coeffs), trajopt_common::toVectorXd(targets), first_step, last_step));
       prob.getCosts().back()->setName(name);
     }
     else
     {
       prob.addCost(std::make_shared<JointVelIneqCost>(joint_vars,
-                                                      util::toVectorXd(coeffs),
-                                                      util::toVectorXd(targets),
-                                                      util::toVectorXd(upper_tols),
-                                                      util::toVectorXd(lower_tols),
+                                                      trajopt_common::toVectorXd(coeffs),
+                                                      trajopt_common::toVectorXd(targets),
+                                                      trajopt_common::toVectorXd(upper_tols),
+                                                      trajopt_common::toVectorXd(lower_tols),
                                                       first_step,
                                                       last_step));
       prob.getCosts().back()->setName(name);
@@ -1306,16 +1308,16 @@ void JointVelTermInfo::hatch(TrajOptProb& prob)
     if (is_upper_zeros && is_lower_zeros)
     {
       prob.addConstraint(std::make_shared<JointVelEqConstraint>(
-          joint_vars, util::toVectorXd(coeffs), util::toVectorXd(targets), first_step, last_step));
+          joint_vars, trajopt_common::toVectorXd(coeffs), trajopt_common::toVectorXd(targets), first_step, last_step));
       prob.getEqConstraints().back()->setName(name);
     }
     else
     {
       prob.addConstraint(std::make_shared<JointVelIneqConstraint>(joint_vars,
-                                                                  util::toVectorXd(coeffs),
-                                                                  util::toVectorXd(targets),
-                                                                  util::toVectorXd(upper_tols),
-                                                                  util::toVectorXd(lower_tols),
+                                                                  trajopt_common::toVectorXd(coeffs),
+                                                                  trajopt_common::toVectorXd(targets),
+                                                                  trajopt_common::toVectorXd(upper_tols),
+                                                                  trajopt_common::toVectorXd(lower_tols),
                                                                   first_step,
                                                                   last_step));
       prob.getIneqConstraints().back()->setName(name);
@@ -1384,9 +1386,9 @@ void JointAccTermInfo::hatch(TrajOptProb& prob)
 
   // Check if tolerances are all zeros
   bool is_upper_zeros =
-      std::all_of(upper_tols.begin(), upper_tols.end(), [](double i) { return util::doubleEquals(i, 0.); });
+      std::all_of(upper_tols.begin(), upper_tols.end(), [](double i) { return trajopt_common::doubleEquals(i, 0.); });
   bool is_lower_zeros =
-      std::all_of(lower_tols.begin(), lower_tols.end(), [](double i) { return util::doubleEquals(i, 0.); });
+      std::all_of(lower_tols.begin(), lower_tols.end(), [](double i) { return trajopt_common::doubleEquals(i, 0.); });
 
   // Get vars associated with joints
   trajopt::VarArray vars = prob.GetVars();
@@ -1406,16 +1408,16 @@ void JointAccTermInfo::hatch(TrajOptProb& prob)
     if (is_upper_zeros && is_lower_zeros)
     {
       prob.addCost(std::make_shared<JointAccEqCost>(
-          joint_vars, util::toVectorXd(coeffs), util::toVectorXd(targets), first_step, last_step));
+          joint_vars, trajopt_common::toVectorXd(coeffs), trajopt_common::toVectorXd(targets), first_step, last_step));
       prob.getCosts().back()->setName(name);
     }
     else
     {
       prob.addCost(std::make_shared<JointAccIneqCost>(joint_vars,
-                                                      util::toVectorXd(coeffs),
-                                                      util::toVectorXd(targets),
-                                                      util::toVectorXd(upper_tols),
-                                                      util::toVectorXd(lower_tols),
+                                                      trajopt_common::toVectorXd(coeffs),
+                                                      trajopt_common::toVectorXd(targets),
+                                                      trajopt_common::toVectorXd(upper_tols),
+                                                      trajopt_common::toVectorXd(lower_tols),
                                                       first_step,
                                                       last_step));
       prob.getCosts().back()->setName(name);
@@ -1427,16 +1429,16 @@ void JointAccTermInfo::hatch(TrajOptProb& prob)
     if (is_upper_zeros && is_lower_zeros)
     {
       prob.addConstraint(std::make_shared<JointAccEqConstraint>(
-          joint_vars, util::toVectorXd(coeffs), util::toVectorXd(targets), first_step, last_step));
+          joint_vars, trajopt_common::toVectorXd(coeffs), trajopt_common::toVectorXd(targets), first_step, last_step));
       prob.getEqConstraints().back()->setName(name);
     }
     else
     {
       prob.addConstraint(std::make_shared<JointAccIneqConstraint>(joint_vars,
-                                                                  util::toVectorXd(coeffs),
-                                                                  util::toVectorXd(targets),
-                                                                  util::toVectorXd(upper_tols),
-                                                                  util::toVectorXd(lower_tols),
+                                                                  trajopt_common::toVectorXd(coeffs),
+                                                                  trajopt_common::toVectorXd(targets),
+                                                                  trajopt_common::toVectorXd(upper_tols),
+                                                                  trajopt_common::toVectorXd(lower_tols),
                                                                   first_step,
                                                                   last_step));
       prob.getIneqConstraints().back()->setName(name);
@@ -1506,9 +1508,9 @@ void JointJerkTermInfo::hatch(TrajOptProb& prob)
 
   // Check if tolerances are all zeros
   bool is_upper_zeros =
-      std::all_of(upper_tols.begin(), upper_tols.end(), [](double i) { return util::doubleEquals(i, 0.); });
+      std::all_of(upper_tols.begin(), upper_tols.end(), [](double i) { return trajopt_common::doubleEquals(i, 0.); });
   bool is_lower_zeros =
-      std::all_of(lower_tols.begin(), lower_tols.end(), [](double i) { return util::doubleEquals(i, 0.); });
+      std::all_of(lower_tols.begin(), lower_tols.end(), [](double i) { return trajopt_common::doubleEquals(i, 0.); });
 
   // Get vars associated with joints
   trajopt::VarArray vars = prob.GetVars();
@@ -1528,16 +1530,16 @@ void JointJerkTermInfo::hatch(TrajOptProb& prob)
     if (is_upper_zeros && is_lower_zeros)
     {
       prob.addCost(std::make_shared<JointJerkEqCost>(
-          joint_vars, util::toVectorXd(coeffs), util::toVectorXd(targets), first_step, last_step));
+          joint_vars, trajopt_common::toVectorXd(coeffs), trajopt_common::toVectorXd(targets), first_step, last_step));
       prob.getCosts().back()->setName(name);
     }
     else
     {
       prob.addCost(std::make_shared<JointJerkIneqCost>(joint_vars,
-                                                       util::toVectorXd(coeffs),
-                                                       util::toVectorXd(targets),
-                                                       util::toVectorXd(upper_tols),
-                                                       util::toVectorXd(lower_tols),
+                                                       trajopt_common::toVectorXd(coeffs),
+                                                       trajopt_common::toVectorXd(targets),
+                                                       trajopt_common::toVectorXd(upper_tols),
+                                                       trajopt_common::toVectorXd(lower_tols),
                                                        first_step,
                                                        last_step));
       prob.getCosts().back()->setName(name);
@@ -1549,16 +1551,16 @@ void JointJerkTermInfo::hatch(TrajOptProb& prob)
     if (is_upper_zeros && is_lower_zeros)
     {
       prob.addConstraint(std::make_shared<JointJerkEqConstraint>(
-          joint_vars, util::toVectorXd(coeffs), util::toVectorXd(targets), first_step, last_step));
+          joint_vars, trajopt_common::toVectorXd(coeffs), trajopt_common::toVectorXd(targets), first_step, last_step));
       prob.getEqConstraints().back()->setName(name);
     }
     else
     {
       prob.addConstraint(std::make_shared<JointJerkIneqConstraint>(joint_vars,
-                                                                   util::toVectorXd(coeffs),
-                                                                   util::toVectorXd(targets),
-                                                                   util::toVectorXd(upper_tols),
-                                                                   util::toVectorXd(lower_tols),
+                                                                   trajopt_common::toVectorXd(coeffs),
+                                                                   trajopt_common::toVectorXd(targets),
+                                                                   trajopt_common::toVectorXd(upper_tols),
+                                                                   trajopt_common::toVectorXd(lower_tols),
                                                                    first_step,
                                                                    last_step));
       prob.getIneqConstraints().back()->setName(name);
@@ -1630,7 +1632,7 @@ void CollisionTermInfo::fromJson(ProblemConstructionInfo& pci, const Json::Value
   for (int i = first_step; i <= last_step; ++i)
   {
     auto index = static_cast<size_t>(i - first_step);
-    auto data = std::make_shared<util::SafetyMarginData>(dist_pen[index], coeffs[index]);
+    auto data = std::make_shared<trajopt_common::SafetyMarginData>(dist_pen[index], coeffs[index]);
     info.push_back(data);
   }
 
@@ -1678,7 +1680,7 @@ void CollisionTermInfo::fromJson(ProblemConstructionInfo& pci, const Json::Value
       for (auto i = first_step; i <= last_step; ++i)
       {
         auto index = static_cast<size_t>(i - first_step);
-        util::SafetyMarginData::Ptr& data = info[index];
+        trajopt_common::SafetyMarginData::Ptr& data = info[index];
         for (const auto& p : pair)
         {
           data->setPairSafetyMarginData(link, p, pair_dist_pen[index], pair_coeffs[index]);
@@ -1878,7 +1880,7 @@ void TotalTimeTermInfo::hatch(TrajOptProb& prob)
   // Get correct penalty type
   sco::PenaltyType penalty_type;
   sco::ConstraintType constraint_type;
-  if (util::doubleEquals(limit, 0.0))
+  if (trajopt_common::doubleEquals(limit, 0.0))
   {
     penalty_type = sco::SQUARED;
     constraint_type = sco::EQ;
@@ -1940,12 +1942,12 @@ void AvoidSingularityTermInfo::hatch(TrajOptProb& prob)
     if (term_type & TT_COST)
     {
       prob.addCost(std::make_shared<TrajOptCostFromErrFunc>(
-          f, dfdx, prob.GetVarRow(i, 0, n_dof), util::toVectorXd(coeffs), sco::ABS, idx_name));
+          f, dfdx, prob.GetVarRow(i, 0, n_dof), trajopt_common::toVectorXd(coeffs), sco::ABS, idx_name));
     }
     else if (term_type & TT_CNT)
     {
       prob.addConstraint(std::make_shared<TrajOptConstraintFromErrFunc>(
-          f, dfdx, prob.GetVarRow(i, 0, n_dof), util::toVectorXd(coeffs), sco::INEQ, idx_name));
+          f, dfdx, prob.GetVarRow(i, 0, n_dof), trajopt_common::toVectorXd(coeffs), sco::INEQ, idx_name));
     }
     else
     {

@@ -14,16 +14,16 @@ TESSERACT_COMMON_IGNORE_WARNINGS_POP
 #include <trajopt/plot_callback.hpp>
 #include <trajopt/problem_description.hpp>
 #include <trajopt_sco/optimizers.hpp>
-#include <trajopt_utils/config.hpp>
-#include <trajopt_utils/eigen_conversions.hpp>
-#include <trajopt_utils/logging.hpp>
-#include <trajopt_utils/stl_to_string.hpp>
+#include <trajopt_common/config.hpp>
+#include <trajopt_common/eigen_conversions.hpp>
+#include <trajopt_common/logging.hpp>
+#include <trajopt_common/stl_to_string.hpp>
 
 #include "../trajopt_test_utils.hpp"
 
 using namespace trajopt;
 using namespace std;
-using namespace util;
+using namespace trajopt_common;
 using namespace tesseract_environment;
 using namespace tesseract_kinematics;
 using namespace tesseract_collision;
@@ -92,7 +92,7 @@ static void BM_TRAJOPT_MULTI_THREADED_PLANNING_SOLVE(benchmark::State& state, En
 
 int main(int argc, char** argv)
 {
-  gLogLevel = util::LevelError;
+  gLogLevel = trajopt_common::LevelError;
 
   //////////////////////////////////////
   // Simple Collision Solve

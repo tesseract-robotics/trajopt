@@ -1,4 +1,4 @@
-#include <trajopt_utils/macros.h>
+#include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <cmath>
 #include <fstream>
@@ -7,8 +7,8 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt_sco/bpmpd_interface.hpp>
-#include <trajopt_utils/logging.hpp>
-#include <trajopt_utils/stl_to_string.hpp>
+#include <trajopt_common/logging.hpp>
+#include <trajopt_common/stl_to_string.hpp>
 
 /**
 This is a readme file for the linux DLL version of BPMPD version 2.21

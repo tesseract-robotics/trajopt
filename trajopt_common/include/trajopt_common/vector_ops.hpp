@@ -1,10 +1,10 @@
 #pragma once
-#include <trajopt_utils/macros.h>
+#include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <vector>
 TRAJOPT_IGNORE_WARNINGS_POP
 
-namespace util
+namespace trajopt_common
 {
 inline std::vector<int> arange(int n)
 {
@@ -15,4 +15,4 @@ inline std::vector<int> arange(int n)
 }
 
 inline bool doubleEquals(double x, double y, double eps = 1E-5) { return std::abs(x - y) < eps; }
-}  // namespace util
+}  // namespace trajopt_common

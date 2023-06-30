@@ -1,11 +1,11 @@
 #pragma once
-#include <trajopt_utils/macros.h>
+#include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <Eigen/Core>
 #include <vector>
 TRAJOPT_IGNORE_WARNINGS_POP
 
-namespace util
+namespace trajopt_common
 {
 template <typename VectorT>
 VectorT fancySlice(const VectorT& x, const std::vector<int>& inds)
@@ -25,4 +25,4 @@ std::vector<int> flatnonzero(const VectorT& x)
       out.push_back(i);
   return out;
 }
-}  // namespace util
+}  // namespace trajopt_common

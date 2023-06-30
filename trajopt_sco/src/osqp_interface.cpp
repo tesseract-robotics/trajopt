@@ -1,4 +1,4 @@
-#include <trajopt_utils/macros.h>
+#include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <constants.h>
 #include <cmath>
@@ -10,8 +10,8 @@ TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt_sco/osqp_interface.hpp>
 #include <trajopt_sco/solver_utils.hpp>
-#include <trajopt_utils/logging.hpp>
-#include <trajopt_utils/stl_to_string.hpp>
+#include <trajopt_common/logging.hpp>
+#include <trajopt_common/stl_to_string.hpp>
 
 namespace sco
 {

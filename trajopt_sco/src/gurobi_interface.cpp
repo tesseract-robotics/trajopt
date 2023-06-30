@@ -1,4 +1,4 @@
-#include <trajopt_utils/macros.h>
+#include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
 extern "C" {
 #include "gurobi_c.h"
@@ -11,8 +11,8 @@ extern "C" {
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt_sco/gurobi_interface.hpp>
-#include <trajopt_utils/logging.hpp>
-#include <trajopt_utils/stl_to_string.hpp>
+#include <trajopt_common/logging.hpp>
+#include <trajopt_common/stl_to_string.hpp>
 
 namespace sco
 {
@@ -73,7 +73,7 @@ GurobiModel::GurobiModel()
   if (!gEnv)
   {
     GRBloadenv(&gEnv, nullptr);
-    if (util::GetLogLevel() < util::LevelDebug)
+    if (trajopt_common::GetLogLevel() < trajopt_common::LevelDebug)
     {
       ENSURE_SUCCESS(GRBsetintparam(gEnv, "OutputFlag", 0));
     }

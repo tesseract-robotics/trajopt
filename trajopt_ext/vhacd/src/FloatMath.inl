@@ -6,7 +6,7 @@
 // a matrix is a 'float *' to an array of 16 floating point numbers representing a 4x4 transformation matrix compatible with D3D or OGL
 // a quaternion is a 'float *' to 4 floats representing a quaternion x,y,z,w
 //
-#include <trajopt_utils/macros.h>
+#include <trajopt_common/macros.h>
 
 namespace FLOAT_MATH
 {

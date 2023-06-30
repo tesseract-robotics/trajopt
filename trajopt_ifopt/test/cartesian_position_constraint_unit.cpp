@@ -24,7 +24,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <trajopt_utils/macros.h>
+#include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <ctime>
 #include <gtest/gtest.h>
@@ -37,14 +37,14 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <tesseract_common/types.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
-#include <trajopt_utils/utils.hpp>
+#include <trajopt_common/utils.hpp>
 #include <trajopt_ifopt/constraints/cartesian_position_constraint.h>
 #include <trajopt_ifopt/utils/numeric_differentiation.h>
 #include <trajopt_test_utils.hpp>
 
 using namespace trajopt_ifopt;
 using namespace std;
-using namespace util;
+using namespace trajopt_common;
 using namespace tesseract_environment;
 using namespace tesseract_kinematics;
 using namespace tesseract_collision;

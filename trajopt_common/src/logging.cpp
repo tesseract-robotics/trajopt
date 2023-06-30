@@ -1,13 +1,13 @@
-#include <trajopt_utils/macros.h>
+#include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <cstdlib>
 #include <iostream>
 #include <string>
 TRAJOPT_IGNORE_WARNINGS_POP
 
-#include <trajopt_utils/logging.hpp>
+#include <trajopt_common/logging.hpp>
 
-namespace util
+namespace trajopt_common
 {
 LogLevel gLogLevel;  // NOLINT
 
@@ -51,4 +51,4 @@ int LoggingInit()
   return 1;
 }
 int this_is_a_hack_but_rhs_executes_on_library_load = LoggingInit();  // NOLINT
-}  // namespace util
+}  // namespace trajopt_common

@@ -1,4 +1,4 @@
-#include <trajopt_utils/macros.h>
+#include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <Eigen/Geometry>
 #include <Eigen/Core>
@@ -13,15 +13,15 @@ TRAJOPT_IGNORE_WARNINGS_POP
 #include <trajopt/utils.hpp>
 #include <trajopt_sco/expr_ops.hpp>
 #include <trajopt_sco/modeling_utils.hpp>
-#include <trajopt_utils/eigen_conversions.hpp>
-#include <trajopt_utils/eigen_slicing.hpp>
-#include <trajopt_utils/logging.hpp>
-#include <trajopt_utils/stl_to_string.hpp>
-#include <trajopt_utils/utils.hpp>
+#include <trajopt_common/eigen_conversions.hpp>
+#include <trajopt_common/eigen_slicing.hpp>
+#include <trajopt_common/logging.hpp>
+#include <trajopt_common/stl_to_string.hpp>
+#include <trajopt_common/utils.hpp>
 
 using namespace std;
 using namespace sco;
-using namespace util;
+using namespace trajopt_common;
 using Eigen::Isometry3d;
 using Eigen::MatrixXd;
 using Eigen::Vector3d;
@@ -104,7 +104,7 @@ MatrixXd DynamicCartPoseJacCalculator::operator()(const VectorXd& dof_vals) cons
   Eigen::Vector3d rot_err = tesseract_common::calcRotationalError(pose_err.rotation());
   for (int c = 0; c < jac0.cols(); ++c)
   {
-    auto new_pose_err = util::addTwist(pose_err, jac0.col(c), 1e-5);
+    auto new_pose_err = trajopt_common::addTwist(pose_err, jac0.col(c), 1e-5);
     Eigen::VectorXd new_rot_err = tesseract_common::calcRotationalError(new_pose_err.rotation());
     jac0.col(c).tail(3) = ((new_rot_err - rot_err) / 1e-5);
   }
@@ -196,7 +196,7 @@ MatrixXd CartPoseJacCalculator::operator()(const VectorXd& dof_vals) const
   Eigen::Vector3d rot_err = tesseract_common::calcRotationalError(pose_err.rotation());
   for (int c = 0; c < jac0.cols(); ++c)
   {
-    auto new_pose_err = util::addTwist(pose_err, jac0.col(c), 1e-5);
+    auto new_pose_err = trajopt_common::addTwist(pose_err, jac0.col(c), 1e-5);
     Eigen::VectorXd new_rot_err = tesseract_common::calcRotationalError(new_pose_err.rotation());
     jac0.col(c).tail(3) = ((new_rot_err - rot_err) / 1e-5);
   }

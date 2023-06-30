@@ -21,7 +21,7 @@
   <depend>tesseract_environment</depend>
   <depend>tesseract_visualization</depend>
   <depend>trajopt_sco</depend>
-  <depend>trajopt_utils</depend>
+  <depend>trajopt_common</depend>
   <depend>boost</depend>
 
   <test_depend>benchmark</test_depend>

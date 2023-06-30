@@ -24,7 +24,7 @@
 #ifndef TRAJOPT_IFOPT_COLLISION_TYPES_H
 #define TRAJOPT_IFOPT_COLLISION_TYPES_H
 
-#include <trajopt_utils/macros.h>
+#include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <Eigen/Eigen>
 #include <array>

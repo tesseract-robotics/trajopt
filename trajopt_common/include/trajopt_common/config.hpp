@@ -1,5 +1,5 @@
 #pragma once
-#include <trajopt_utils/macros.h>
+#include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <boost/program_options.hpp>
 #include <iostream>
@@ -8,9 +8,9 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <vector>
 TRAJOPT_IGNORE_WARNINGS_POP
 
-#include <trajopt_utils/stl_to_string.hpp>
+#include <trajopt_common/stl_to_string.hpp>
 
-namespace util
+namespace trajopt_common
 {
 namespace po = boost::program_options;
 
@@ -69,4 +69,4 @@ struct CommandParser
   CommandParser(const Config& config) { addGroup(config); }
   void read(int argc, char* argv[]);  // NOLINT
 };
-}  // namespace util
+}  // namespace trajopt_common

@@ -1,7 +1,7 @@
-#ifndef TRAJOPT_UTILS_UTILS_HPP
-#define TRAJOPT_UTILS_UTILS_HPP
+#ifndef TRAJOPT_COMMON_UTILS_HPP
+#define TRAJOPT_COMMON_UTILS_HPP
 
-#include <trajopt_utils/macros.h>
+#include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <Eigen/Geometry>
 #include <unordered_map>
@@ -11,7 +11,7 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <tesseract_common/types.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
-namespace util
+namespace trajopt_common
 {
 /** @brief Store Safety Margin Data for a given timestep */
 struct SafetyMarginData
@@ -113,6 +113,6 @@ std::vector<T> concat(const std::vector<T>& a, const std::vector<T>& b)
 Eigen::Isometry3d addTwist(const Eigen::Isometry3d& t1,
                            const Eigen::Ref<const Eigen::Matrix<double, 6, 1>>& twist,
                            double dt);
-}  // namespace util
+}  // namespace trajopt_common
 
-#endif  // TRAJOPT_UTILS_UTILS_HPP
+#endif  // TRAJOPT_COMMON_UTILS_HPP

@@ -1,10 +1,10 @@
 #pragma once
-#include <trajopt_utils/macros.h>
+#include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <Eigen/Core>
 TRAJOPT_IGNORE_WARNINGS_POP
 
-namespace util
+namespace trajopt_common
 {
 template <typename VectorT>
 Eigen::VectorXi searchsorted(const VectorT& x, const VectorT& y)
@@ -46,4 +46,4 @@ MatrixT interp2d(const VectorT& xNew, const VectorT& xOld, const MatrixT& yOld)
   }
   return yNew;
 }
-}  // namespace util
+}  // namespace trajopt_common

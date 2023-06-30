@@ -26,7 +26,7 @@
 #ifndef VHACD_VOLUME_H
 #define VHACD_VOLUME_H
 
-#include <trajopt_utils/macros.h>
+#include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
 
 #include "vhacdMesh.h"

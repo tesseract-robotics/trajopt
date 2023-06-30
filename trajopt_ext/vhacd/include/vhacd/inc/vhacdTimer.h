@@ -26,7 +26,7 @@
 #ifndef VHACD_TIMER_H
 #define VHACD_TIMER_H
 
-#include <trajopt_utils/macros.h>
+#include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
 
 #ifdef _WIN32

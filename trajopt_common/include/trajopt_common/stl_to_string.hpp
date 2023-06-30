@@ -1,5 +1,5 @@
 #pragma once
-#include <trajopt_utils/macros.h>
+#include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <iostream>
 #include <map>
@@ -9,7 +9,7 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <vector>
 TRAJOPT_IGNORE_WARNINGS_POP
 
-namespace util
+namespace trajopt_common
 {
 // std::string Str(const vector<double>& x);
 // std::string Str(const vector<float>& x);
@@ -52,7 +52,7 @@ std::string Str(const T& x)
   ss << x;
   return ss.str();
 }
-#define CSTR(x) util::Str(x).c_str()
+#define CSTR(x) trajopt_common::Str(x).c_str()
 
 template <class K, class V>
 std::string Str(const typename std::map<K, V>& x)
@@ -70,4 +70,4 @@ std::string Str(const typename std::map<K, V>& x)
   ss << "}";
   return ss.str();
 }
-}  // namespace util
+}  // namespace trajopt_common

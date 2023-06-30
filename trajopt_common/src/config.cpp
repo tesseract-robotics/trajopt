@@ -1,6 +1,6 @@
-#include <trajopt_utils/config.hpp>
+#include <trajopt_common/config.hpp>
 
-namespace util
+namespace trajopt_common
 {
 // NOLINTNEXTLINE
 void CommandParser::read(int argc, char* argv[])
@@ -25,4 +25,4 @@ void CommandParser::read(int argc, char* argv[])
   }
   po::notify(vm);
 }
-}  // namespace util
+}  // namespace trajopt_common
