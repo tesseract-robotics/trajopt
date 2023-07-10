@@ -2,6 +2,11 @@
 Changelog for package trajopt_sco
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Add qpOASES cmake option to trajopt_sco
+* Contributors: Levi Armstrong
+
 0.6.0 (2023-06-30)
 ------------------
 * Rename trajopt_utils to trajopt_common

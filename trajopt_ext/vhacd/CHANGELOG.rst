@@ -2,6 +2,9 @@
 Changelog for package vhacd
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+
 0.6.0 (2023-06-30)
 ------------------
 * Rename trajopt_utils to trajopt_common
