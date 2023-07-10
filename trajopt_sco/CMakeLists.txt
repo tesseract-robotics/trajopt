@@ -13,7 +13,6 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/")
 
 find_package(GUROBI QUIET)
 find_package(osqp QUIET)
-find_package(qpOASES QUIET)
 find_package(Eigen3 REQUIRED)
 find_package(trajopt_common REQUIRED)
 if(NOT TARGET JsonCpp::JsonCpp)
@@ -24,6 +23,12 @@ endif()
 find_package(ros_industrial_cmake_boilerplate REQUIRED)
 find_package(Boost REQUIRED)
 find_package(OpenMP REQUIRED)
+
+# qpOASES
+option(TRAJOPT_BUILD_qpOASES "Build qpOASES components" ON)
+if(TRAJOPT_BUILD_qpOASES)
+  find_package(qpOASES QUIET)
+endif()
 
 # Load variable for clang tidy args, compiler options and cxx version
 trajopt_variables()
@@ -76,7 +81,7 @@ if(osqp_FOUND)
   list(APPEND SCO_SOURCE_FILES src/osqp_interface.cpp)
 endif()
 
-if(qpOASES_FOUND)
+if(qpOASES_FOUND AND TRAJOPT_BUILD_qpOASES)
   list(APPEND SCO_SOURCE_FILES src/qpoases_interface.cpp)
 endif()
 
@@ -97,7 +102,7 @@ if(osqp_FOUND)
   target_link_libraries(${PROJECT_NAME} PRIVATE osqp::osqpstatic)
   target_compile_definitions(${PROJECT_NAME} PRIVATE HAVE_OSQP=ON)
 endif()
-if(qpOASES_FOUND)
+if(qpOASES_FOUND AND TRAJOPT_BUILD_qpOASES)
   target_link_libraries(${PROJECT_NAME} PRIVATE ${qpOASES_LIBRARIES})
   target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE ${qpOASES_INCLUDE_DIRS})
   target_compile_definitions(${PROJECT_NAME} PRIVATE HAVE_QPOASES=ON)
@@ -168,7 +173,7 @@ if(TRAJOPT_PACKAGE)
     list(APPEND WINDOWS_DEPENDS "${TRAJOPT_PACKAGE_PREFIX}osqp")
   endif()
 
-  if(qpOASES_FOUND)
+  if(qpOASES_FOUND AND TRAJOPT_BUILD_qpOASES)
     # TODO
   endif()
 
