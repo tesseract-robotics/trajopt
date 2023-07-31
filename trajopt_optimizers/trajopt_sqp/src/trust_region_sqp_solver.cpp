@@ -78,7 +78,7 @@ void TrustRegionSQPSolver::solve(const QPProblem::Ptr& qp_problem)
   status_ = SQPStatus::RUNNING;
 
   // Start time
-  using Clock = std::chrono::high_resolution_clock;
+  using Clock = std::chrono::steady_clock;
   auto start_time = Clock::now();
 
   // Initialize solver
@@ -101,15 +101,15 @@ void TrustRegionSQPSolver::solve(const QPProblem::Ptr& qp_problem)
         break;
       }
 
-      if (stepSQPSolver())
-        break;
-
       if (results_.overall_iteration >= params.max_iterations)
       {
         CONSOLE_BRIDGE_logInform("Iteration limit");
         status_ = SQPStatus::ITERATION_LIMIT;
         break;
       }
+
+      if (stepSQPSolver())
+        break;
     }
 
     // Check if constraints are satisfied
