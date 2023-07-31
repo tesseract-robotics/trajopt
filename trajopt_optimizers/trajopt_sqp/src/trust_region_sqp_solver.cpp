@@ -29,8 +29,9 @@
  * limitations under the License.
  */
 #include <trajopt_sqp/trust_region_sqp_solver.h>
-#include <iostream>
 #include <console_bridge/console.h>
+#include <iostream>
+#include <chrono>
 
 namespace trajopt_sqp
 {
@@ -76,6 +77,10 @@ void TrustRegionSQPSolver::solve(const QPProblem::Ptr& qp_problem)
 {
   status_ = SQPStatus::RUNNING;
 
+  // Start time
+  using Clock = std::chrono::steady_clock;
+  auto start_time = Clock::now();
+
   // Initialize solver
   init(qp_problem);
 
@@ -88,8 +93,13 @@ void TrustRegionSQPSolver::solve(const QPProblem::Ptr& qp_problem)
     // Convexification loop
     for (int convex_iteration = 0; convex_iteration < 100; convex_iteration++)
     {
-      if (stepSQPSolver())
+      double elapsed_time = std::chrono::duration<double, std::milli>(Clock::now() - start_time).count() / 1000.0;
+      if (elapsed_time > params.max_time)
+      {
+        CONSOLE_BRIDGE_logInform("Elapsed time %f has exceeded max time %f", elapsed_time, params.max_time);
+        status_ = SQPStatus::TIME_LIMIT;
         break;
+      }
 
       if (results_.overall_iteration >= params.max_iterations)
       {
@@ -97,11 +107,24 @@ void TrustRegionSQPSolver::solve(const QPProblem::Ptr& qp_problem)
         status_ = SQPStatus::ITERATION_LIMIT;
         break;
       }
+
+      if (stepSQPSolver())
+        break;
     }
 
     // Check if constraints are satisfied
     if (verifySQPSolverConvergence())
+    {
+      status_ = SQPStatus::NLP_CONVERGED;
       break;
+    }
+
+    // If status is iteration limit or time limit we need to exit penalty iteration loop
+    if (status_ == SQPStatus::ITERATION_LIMIT || status_ == SQPStatus::TIME_LIMIT)
+      break;
+
+    // Set status to running
+    status_ = SQPStatus::RUNNING;
 
     // ---------------------------
     // Constraints are not satisfied!
@@ -109,6 +132,13 @@ void TrustRegionSQPSolver::solve(const QPProblem::Ptr& qp_problem)
     // ---------------------------
     adjustPenalty();
   }  // Penalty adjustment loop
+
+  // If status is still set to running the penalty iteration limit was reached
+  if (status_ == SQPStatus::RUNNING)
+  {
+    status_ = SQPStatus::PENALTY_ITERATION_LIMIT;
+    CONSOLE_BRIDGE_logInform("Penalty iteration limit, optimization couldn't satisfy all constraints");
+  }
 
   // Final Cleanup
   if (SUPER_DEBUG_MODE)
