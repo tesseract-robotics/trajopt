@@ -117,10 +117,10 @@ void runNumericalIKTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const Env
   // 5) Setup solver
   auto qp_solver = std::make_shared<trajopt_sqp::OSQPEigenSolver>();
   trajopt_sqp::TrustRegionSQPSolver solver(qp_solver);
-  qp_solver->solver_.settings()->setVerbosity(true);
+  qp_solver->solver_.settings()->setVerbosity(false);
   qp_solver->solver_.settings()->setWarmStart(true);
   qp_solver->solver_.settings()->setPolish(true);
-  qp_solver->solver_.settings()->setAdaptiveRho(false);
+  qp_solver->solver_.settings()->setAdaptiveRho(true);
   qp_solver->solver_.settings()->setMaxIteration(8192);
   qp_solver->solver_.settings()->setAbsoluteTolerance(1e-4);
   qp_solver->solver_.settings()->setRelativeTolerance(1e-6);
