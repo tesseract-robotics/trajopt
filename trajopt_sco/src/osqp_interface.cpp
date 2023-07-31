@@ -16,7 +16,7 @@ TRAJOPT_IGNORE_WARNINGS_POP
 namespace sco
 {
 const double OSQP_INFINITY = std::numeric_limits<double>::infinity();
-const bool SUPER_DEBUG_MODE = false;
+const bool OSQP_COMPARE_DEBUG_MODE = true;
 
 OSQPModelConfig::OSQPModelConfig()
 {
@@ -28,7 +28,7 @@ OSQPModelConfig::OSQPModelConfig()
   settings.max_iter = 8192;
   settings.polish = 1;
   settings.adaptive_rho = 1;
-  settings.verbose = static_cast<c_int>(SUPER_DEBUG_MODE);
+  settings.verbose = 0;
 }
 
 Model::Ptr createOSQPModel(const ModelConfig::ConstPtr& config = nullptr)
@@ -118,8 +118,7 @@ void OSQPModel::updateObjective()
   // Copy triangular upper into empty matrix
   Eigen::SparseMatrix<double> triangular_sm;
   triangular_sm = sm.triangularView<Eigen::Upper>();
-  if (SUPER_DEBUG_MODE)
-    std::cout << std::fixed << std::setprecision(3) << "OSQP Hessian:\n" << triangular_sm.toDense() << std::endl;
+
   eigenToCSC(triangular_sm, P_row_indices_, P_column_pointers_, P_csc_data_);
 
   P_.reset(csc_matrix(osqp_data_.n,
@@ -131,12 +130,6 @@ void OSQPModel::updateObjective()
 
   osqp_data_.P = P_.get();
   osqp_data_.q = q_.data();
-
-  if (SUPER_DEBUG_MODE)
-  {
-    Eigen::Map<Eigen::VectorXd> q_vec(q_.data(), q_.size());
-    std::cout << std::fixed << std::setprecision(3) << "OSQP Gradient: " << q_vec.transpose() << std::endl;
-  }
 }
 
 void OSQPModel::updateConstraints()
@@ -172,8 +165,7 @@ void OSQPModel::updateConstraints()
     u_[i_bnd + m] = fmin(ubs_[i_bnd], OSQP_INFINITY);
     sm.insert(static_cast<Eigen::Index>(i_bnd + m), static_cast<Eigen::Index>(i_bnd)) = 1.;
   }
-  if (SUPER_DEBUG_MODE)
-    std::cout << std::fixed << std::setprecision(3) << "OSQP Constraint Matrix:\n" << sm.toDense() << std::endl;
+
   eigenToCSC(sm, A_row_indices_, A_column_pointers_, A_csc_data_);
 
   A_.reset(csc_matrix(osqp_data_.m,
@@ -185,25 +177,6 @@ void OSQPModel::updateConstraints()
 
   osqp_data_.A = A_.get();
 
-  if (SUPER_DEBUG_MODE)
-  {
-    Eigen::Map<Eigen::VectorXd> l_vec(l_.data(), static_cast<Eigen::Index>(l_.size()));
-    Eigen::Map<Eigen::VectorXd> u_vec(u_.data(), static_cast<Eigen::Index>(u_.size()));
-    std::cout << "OSQP Constraint Lower Bounds: " << l_vec.head(static_cast<Eigen::Index>(m)).transpose() << std::endl;
-    std::cout << "OSQP Constraint Upper Bounds: " << u_vec.head(static_cast<Eigen::Index>(m)).transpose() << std::endl;
-
-    std::vector<std::string> vars_names(vars_.size());
-    for (const auto& var : vars_)
-      vars_names[var.var_rep->index] = var.var_rep->name;
-
-    std::cout << "OSQP Variable Names: ";
-    for (const auto& var_name : vars_names)
-      std::cout << var_name << ",";
-    std::cout << std::endl;
-
-    std::cout << "OSQP Variable Lower Bounds: " << l_vec.tail(static_cast<Eigen::Index>(n)).transpose() << std::endl;
-    std::cout << "OSQP Variable Upper Bounds: " << u_vec.tail(static_cast<Eigen::Index>(n)).transpose() << std::endl;
-  }
   osqp_data_.l = l_.data();
   osqp_data_.u = u_.data();
 }
@@ -310,6 +283,53 @@ CvxOptStatus OSQPModel::optimize()
     return CVX_FAILED;
   }
 
+  if (OSQP_COMPARE_DEBUG_MODE)
+  {
+    Eigen::IOFormat format(5);
+    std::cout << "OSQP Number of Variables:" << osqp_data_.n << std::endl;
+    std::cout << "OSQP Number of Constraints:" << osqp_data_.m << std::endl;
+
+    Eigen::Map<Eigen::Matrix<c_int, Eigen::Dynamic, 1>> P_p_vec(osqp_data_.P->p, osqp_data_.P->n + 1);
+    Eigen::Map<Eigen::Matrix<c_int, Eigen::Dynamic, 1>> P_i_vec(osqp_data_.P->i, osqp_data_.P->nzmax);
+    Eigen::Map<Eigen::Matrix<c_float, Eigen::Dynamic, 1>> P_x_vec(osqp_data_.P->x, osqp_data_.P->nzmax);
+    std::cout << "OSQP Hessian:" << std::endl;
+    std::cout << "     nzmax:" << osqp_data_.P->nzmax << std::endl;
+    std::cout << "        nz:" << osqp_data_.P->nz << std::endl;
+    std::cout << "         m:" << osqp_data_.P->m << std::endl;
+    std::cout << "         n:" << osqp_data_.P->n << std::endl;
+    std::cout << "         p:" << P_p_vec.transpose().format(format) << std::endl;
+    std::cout << "         i:" << P_i_vec.transpose().format(format) << std::endl;
+    std::cout << "         x:" << P_x_vec.transpose().format(format) << std::endl;
+
+    Eigen::Map<Eigen::VectorXd> q_vec(osqp_data_.q, osqp_data_.n);
+    std::cout << "OSQP Gradient: " << q_vec.transpose().format(format) << std::endl;
+
+    Eigen::Map<Eigen::Matrix<c_int, Eigen::Dynamic, 1>> A_p_vec(osqp_data_.A->p, osqp_data_.A->n + 1);
+    Eigen::Map<Eigen::Matrix<c_int, Eigen::Dynamic, 1>> A_i_vec(osqp_data_.A->i, osqp_data_.A->nzmax);
+    Eigen::Map<Eigen::Matrix<c_float, Eigen::Dynamic, 1>> A_x_vec(osqp_data_.A->x, osqp_data_.A->nzmax);
+    std::cout << "OSQP Constraint Matrix:" << std::endl;
+    std::cout << "     nzmax:" << osqp_data_.A->nzmax << std::endl;
+    std::cout << "         m:" << osqp_data_.A->m << std::endl;
+    std::cout << "         n:" << osqp_data_.A->n << std::endl;
+    std::cout << "         p:" << A_p_vec.transpose().format(format) << std::endl;
+    std::cout << "         i:" << A_i_vec.transpose().format(format) << std::endl;
+    std::cout << "         x:" << A_x_vec.transpose().format(format) << std::endl;
+
+    Eigen::Map<Eigen::Matrix<c_float, Eigen::Dynamic, 1>> l_vec(osqp_data_.l, osqp_data_.m);
+    Eigen::Map<Eigen::Matrix<c_float, Eigen::Dynamic, 1>> u_vec(osqp_data_.u, osqp_data_.m);
+    std::cout << "OSQP Lower Bounds: " << l_vec.transpose().format(format) << std::endl;
+    std::cout << "OSQP Upper Bounds: " << u_vec.transpose().format(format) << std::endl;
+
+    std::vector<std::string> vars_names(vars_.size());
+    for (const auto& var : vars_)
+      vars_names[var.var_rep->index] = var.var_rep->name;
+
+    std::cout << "OSQP Variable Names: ";
+    for (const auto& var_name : vars_names)
+      std::cout << var_name << ",";
+    std::cout << std::endl;
+  }
+
   // Solve Problem
   const c_int retcode = osqp_solve(osqp_workspace_);
 
@@ -318,10 +338,11 @@ CvxOptStatus OSQPModel::optimize()
     // opt += m_objective.affexpr.constant;
     solution_ = DblVec(osqp_workspace_->solution->x, osqp_workspace_->solution->x + vars_.size());
 
-    if (SUPER_DEBUG_MODE)
+    if (OSQP_COMPARE_DEBUG_MODE)
     {
+      Eigen::IOFormat format(5);
       Eigen::Map<Eigen::VectorXd> solution_vec(solution_.data(), static_cast<Eigen::Index>(solution_.size()));
-      std::cout << "Solution: " << solution_vec.transpose() << std::endl;
+      std::cout << "OSQP Solution: " << solution_vec.transpose().format(format) << std::endl;
     }
 
     auto status = static_cast<int>(osqp_workspace_->info->status_val);
