@@ -160,6 +160,7 @@ void runCastOctomapTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const Env
   double margin_coeff = 10;
   double margin = 0.02;
   auto trajopt_collision_config = std::make_shared<trajopt_ifopt::TrajOptCollisionConfig>(margin, margin_coeff);
+  trajopt_collision_config->type = tesseract_collision::CollisionEvaluatorType::LVS_CONTINUOUS;
   trajopt_collision_config->collision_margin_buffer = 0.05;
 
   // 4) Add constraints

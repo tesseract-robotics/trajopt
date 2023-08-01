@@ -120,8 +120,8 @@ void runPlanningTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const Enviro
   double margin_coeff = 20;
   double margin = 0.025;
   auto trajopt_collision_config = std::make_shared<trajopt_ifopt::TrajOptCollisionConfig>(margin, margin_coeff);
+  trajopt_collision_config->type = tesseract_collision::CollisionEvaluatorType::CONTINUOUS;
   trajopt_collision_config->collision_margin_buffer = 0.01;
-  trajopt_collision_config->longest_valid_segment_length = 0.02;
 
   // Add costs
   {

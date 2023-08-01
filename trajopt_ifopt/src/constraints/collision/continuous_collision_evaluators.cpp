@@ -39,6 +39,10 @@ LVSContinuousCollisionEvaluator::LVSContinuousCollisionEvaluator(
   , collision_config_(std::move(collision_config))
   , dynamic_environment_(dynamic_environment)
 {
+  if (collision_config_->type != tesseract_collision::CollisionEvaluatorType::CONTINUOUS &&
+      collision_config_->type != tesseract_collision::CollisionEvaluatorType::LVS_CONTINUOUS)
+    throw std::runtime_error("LVSContinuousCollisionEvaluator, type must be CONTINUOUS or LVS_CONTINUOUS");
+
   manip_active_link_names_ = manip_->getActiveLinkNames();
 
   // If the environment is not expected to change, then the cloned state solver may be used each time.
@@ -199,7 +203,8 @@ void LVSContinuousCollisionEvaluator::CalcCollisionsHelper(const Eigen::Ref<cons
     removeInvalidContactResults(pair.second, data); /** @todo Should this be removed? levi */
   };
 
-  if (dist > collision_config_->longest_valid_segment_length)
+  if (collision_config_->type == tesseract_collision::CollisionEvaluatorType::LVS_CONTINUOUS &&
+      dist > collision_config_->longest_valid_segment_length)
   {
     // Calculate the number state to interpolate
     long cnt = static_cast<long>(std::ceil(dist / collision_config_->longest_valid_segment_length)) + 1;
@@ -435,7 +440,8 @@ void LVSDiscreteCollisionEvaluator::CalcCollisionsHelper(const Eigen::Ref<const 
   // the longest valid segment length.
   double dist = (dof_vals1 - dof_vals0).norm();
   long cnt = 2;
-  if (dist > collision_config_->longest_valid_segment_length)
+  if (collision_config_->type == tesseract_collision::CollisionEvaluatorType::LVS_CONTINUOUS &&
+      dist > collision_config_->longest_valid_segment_length)
   {
     // Calculate the number state to interpolate
     cnt = static_cast<long>(std::ceil(dist / collision_config_->longest_valid_segment_length)) + 1;
