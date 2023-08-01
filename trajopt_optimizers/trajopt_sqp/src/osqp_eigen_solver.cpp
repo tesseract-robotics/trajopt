@@ -26,8 +26,6 @@
 #include <trajopt_sqp/osqp_eigen_solver.h>
 
 #include <OsqpEigen/OsqpEigen.h>
-#include <osqp/cs.h>
-#include <osqp/types.h>
 #include <trajopt_common/macros.h>
 
 const bool OSQP_COMPARE_DEBUG_MODE = true;
@@ -190,12 +188,26 @@ static void* csc_calloc(c_int n, c_int size)
   return c_calloc(n, size);  // NOLINT
 }
 
+void csc_spfree_fix(csc* A)
+{
+  if (A)
+  {  // NOLINT
+    if (A->p)
+      c_free(A->p);  // NOLINT
+    if (A->i)
+      c_free(A->i);  // NOLINT
+    if (A->x)
+      c_free(A->x);  // NOLINT
+    c_free(A);       // NOLINT
+  }
+}
+
 csc* csc_spalloc_fix(c_int m, c_int n, c_int nzmax, c_int values, c_int triplet)
 {
   csc* A = (csc*)(csc_calloc(1, sizeof(csc))); /* allocate the csc struct */  // NOLINT
 
-  if (!A)             // NOLINT
-    return OSQP_NULL; /* out of memory */
+  if (!A)           // NOLINT
+    return nullptr; /* out of memory */
 
   A->m = m; /* define dimensions and nzmax */
   A->n = n;
@@ -204,12 +216,12 @@ csc* csc_spalloc_fix(c_int m, c_int n, c_int nzmax, c_int values, c_int triplet)
   A->p = (c_int*)(csc_malloc(triplet ? nzmax : n + 1, sizeof(c_int)));  // NOLINT
   for (int i = 0; i < n + 1; ++i)
     A->p[i] = 0;
-  A->i = values ? (c_int*)(csc_malloc(nzmax, sizeof(c_int))) : OSQP_NULL;      // NOLINT
-  A->x = values ? (c_float*)(csc_malloc(nzmax, sizeof(c_float))) : OSQP_NULL;  // NOLINT
-  if (!A->p || (values && !A->i) || (values && !A->x))                         // NOLINT
+  A->i = values ? (c_int*)(csc_malloc(nzmax, sizeof(c_int))) : nullptr;      // NOLINT
+  A->x = values ? (c_float*)(csc_malloc(nzmax, sizeof(c_float))) : nullptr;  // NOLINT
+  if (!A->p || (values && !A->i) || (values && !A->x))                       // NOLINT
   {
-    csc_spfree(A);
-    return OSQP_NULL;
+    csc_spfree_fix(A);
+    return nullptr;
   }
 
   return A;  // NOLINT
@@ -227,7 +239,7 @@ bool OSQPEigenSolver::updateHessianMatrix(const SparseMatrix& hessian)
     bool success = solver_.updateHessianMatrix(cleaned);
     if (cleaned.nonZeros() == 0) /** @todo Remove when upgrading to OSQP 1.0.0 */
     {
-      csc_spfree(solver_.data()->getData()->P);
+      csc_spfree_fix(solver_.data()->getData()->P);
       solver_.data()->getData()->P = nullptr;
       solver_.data()->getData()->P = csc_spalloc_fix(cleaned.rows(), cleaned.cols(), 0, 1, 0);
     }
@@ -238,7 +250,7 @@ bool OSQPEigenSolver::updateHessianMatrix(const SparseMatrix& hessian)
   bool success = solver_.data()->setHessianMatrix(cleaned);
   if (cleaned.nonZeros() == 0) /** @todo Remove when upgrading to OSQP 1.0.0 */
   {
-    csc_spfree(solver_.data()->getData()->P);
+    csc_spfree_fix(solver_.data()->getData()->P);
     solver_.data()->getData()->P = nullptr;
     solver_.data()->getData()->P = csc_spalloc_fix(cleaned.rows(), cleaned.cols(), 0, 1, 0);
   }
