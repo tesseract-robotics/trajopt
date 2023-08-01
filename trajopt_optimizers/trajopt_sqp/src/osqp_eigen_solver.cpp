@@ -28,7 +28,7 @@
 #include <OsqpEigen/OsqpEigen.h>
 #include <trajopt_common/macros.h>
 
-const bool OSQP_COMPARE_DEBUG_MODE = true;
+const bool OSQP_COMPARE_DEBUG_MODE = false;
 
 namespace trajopt_sqp
 {
