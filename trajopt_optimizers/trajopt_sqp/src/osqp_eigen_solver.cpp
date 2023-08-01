@@ -190,13 +190,13 @@ static void* csc_calloc(c_int n, c_int size)
 
 void csc_spfree_fix(csc* A)
 {
-  if (A)
-  {  // NOLINT
-    if (A->p)
+  if (A)  // NOLINT
+  {
+    if (A->p)        // NOLINT
       c_free(A->p);  // NOLINT
-    if (A->i)
+    if (A->i)        // NOLINT
       c_free(A->i);  // NOLINT
-    if (A->x)
+    if (A->x)        // NOLINT
       c_free(A->x);  // NOLINT
     c_free(A);       // NOLINT
   }
