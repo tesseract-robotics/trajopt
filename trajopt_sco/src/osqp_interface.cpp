@@ -16,7 +16,7 @@ TRAJOPT_IGNORE_WARNINGS_POP
 namespace sco
 {
 const double OSQP_INFINITY = std::numeric_limits<double>::infinity();
-const bool OSQP_COMPARE_DEBUG_MODE = true;
+const bool OSQP_COMPARE_DEBUG_MODE = false;
 
 OSQPModelConfig::OSQPModelConfig()
 {
