@@ -46,6 +46,8 @@ bool TrustRegionSQPSolver::init(QPProblem::Ptr qp_prob)
   // Initialize optimization parameters
   results_ = SQPResults(qp_problem->getNumNLPVars(), qp_problem->getNumNLPConstraints(), qp_problem->getNumNLPCosts());
   results_.best_var_vals = qp_problem->getVariableValues();
+  results_.merit_error_coeffs =
+      Eigen::VectorXd::Constant(qp_problem->getNumNLPConstraints(), params.initial_merit_error_coeff);
 
   // Evaluate exact constraint violations (expensive)
   results_.best_costs = qp_problem->getExactCosts();
@@ -222,14 +224,14 @@ bool TrustRegionSQPSolver::stepSQPSolver()
 
 void TrustRegionSQPSolver::runTrustRegionLoop()
 {
-  for (int trust_region_iteration = 0; trust_region_iteration < params.max_trust_region_expansions;
-       trust_region_iteration++)
+  results_.trust_region_iteration = 0;
+  while (results_.box_size.maxCoeff() >= params.min_trust_box_size)
   {
     if (SUPER_DEBUG_MODE)
       qp_problem->print();
 
     results_.overall_iteration++;
-    results_.trust_region_iteration = trust_region_iteration + 1;
+    results_.trust_region_iteration++;
 
     // Solve the current QP problem
     status_ = solveQPProblem();

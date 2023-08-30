@@ -66,8 +66,6 @@ struct SQPParameters
   double trust_shrink_ratio = 0.1;
   /** @brief Trust region is expanded by this when it is expanded */
   double trust_expand_ratio = 1.5;
-  /** @brief Max number of times the trust region will be expanded */
-  int max_trust_region_expansions = 10;
 
   /** @brief Any constraint under this value is not considered a violation */
   double cnt_tolerance = 1e-4;
@@ -75,8 +73,11 @@ struct SQPParameters
   double max_merit_coeff_increases = 5;
   /** @brief Constraints are scaled by this amount when inflated */
   double merit_coeff_increase_ratio = 10;
-  /** @brief Unused */
+  /** @brief Max time in seconds that the optimizer will run */
   double max_time = static_cast<double>(INFINITY);
+  /** @brief Initial coefficient that is used to scale the constraints. The total constaint cost is constaint_value
+   * coeff * merit_coeff */
+  double initial_merit_error_coeff = 10;
   /** @brief If true, only the constraints that are violated will be inflated */
   bool inflate_constraints_individually = true;
   /** @brief Initial size of the trust region */
@@ -107,7 +108,7 @@ struct SQPResults
     best_var_vals = Eigen::VectorXd::Zero(num_vars);
     new_var_vals = Eigen::VectorXd::Zero(num_vars);
     box_size = Eigen::VectorXd::Ones(num_vars);
-    merit_error_coeffs = Eigen::VectorXd::Constant(num_cnts, 10);
+    merit_error_coeffs = Eigen::VectorXd::Ones(num_cnts);
   }
   SQPResults() = default;
   /** @brief The lowest cost ever achieved */
