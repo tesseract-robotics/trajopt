@@ -19,6 +19,7 @@ requirements:
       - lcov
       - {{ cdt('mesa-libgl-devel') }}    # [linux]
       - {{ cdt('mesa-dri-drivers') }}    # [linux]
+      - git
     host:
       - boost-cpp 
       - eigen 
