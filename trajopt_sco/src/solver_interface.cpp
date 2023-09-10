@@ -288,6 +288,7 @@ std::vector<ModelType> availableSolvers()
 
 Model::Ptr createModel(ModelType model_type, const ModelConfig::ConstPtr& model_config)
 {
+  UNUSED(model_config);
 #ifdef HAVE_GUROBI
   extern Model::Ptr createGurobiModel();
 #endif
