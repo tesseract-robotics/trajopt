@@ -87,7 +87,7 @@ Eigen::VectorXd ContinuousCollisionConstraint::GetValues() const
   double margin_buffer = collision_evaluator_->GetCollisionConfig().collision_margin_buffer;
   Eigen::VectorXd values = Eigen::VectorXd::Constant(static_cast<Eigen::Index>(bounds_.size()), -margin_buffer);
 
-  CollisionCacheData::ConstPtr collision_data =
+  auto collision_data =
       collision_evaluator_->CalcCollisionData(joint_vals0, joint_vals1, position_vars_fixed_, bounds_.size());
 
   if (collision_data->gradient_results_sets.empty())
@@ -98,7 +98,7 @@ Eigen::VectorXd ContinuousCollisionConstraint::GetValues() const
   {
     for (std::size_t i = 0; i < cnt; ++i)
     {
-      const GradientResultsSet& r = collision_data->gradient_results_sets[i];
+      const trajopt_common::GradientResultsSet& r = collision_data->gradient_results_sets[i];
       values(static_cast<Eigen::Index>(i)) = r.coeff * r.getMaxError();
     }
   }
@@ -106,7 +106,7 @@ Eigen::VectorXd ContinuousCollisionConstraint::GetValues() const
   {
     for (std::size_t i = 0; i < cnt; ++i)
     {
-      const GradientResultsSet& r = collision_data->gradient_results_sets[i];
+      const trajopt_common::GradientResultsSet& r = collision_data->gradient_results_sets[i];
       if (r.max_error[0].has_error[0] || r.max_error[1].has_error[0])
         values(static_cast<Eigen::Index>(i)) = r.coeff * r.getMaxErrorT0();
     }
@@ -115,7 +115,7 @@ Eigen::VectorXd ContinuousCollisionConstraint::GetValues() const
   {
     for (std::size_t i = 0; i < cnt; ++i)
     {
-      const GradientResultsSet& r = collision_data->gradient_results_sets[i];
+      const trajopt_common::GradientResultsSet& r = collision_data->gradient_results_sets[i];
       if (r.max_error[0].has_error[1] || r.max_error[1].has_error[1])
         values(static_cast<Eigen::Index>(i)) = r.coeff * r.getMaxErrorT1();
     }
@@ -141,7 +141,7 @@ void ContinuousCollisionConstraint::FillJacobianBlock(std::string var_set, Jacob
   Eigen::VectorXd joint_vals0 = this->GetVariables()->GetComponent(position_vars_[0]->GetName())->GetValues();
   Eigen::VectorXd joint_vals1 = this->GetVariables()->GetComponent(position_vars_[1]->GetName())->GetValues();
 
-  CollisionCacheData::ConstPtr collision_data =
+  auto collision_data =
       collision_evaluator_->CalcCollisionData(joint_vals0, joint_vals1, position_vars_fixed_, bounds_.size());
 
   if (collision_data->gradient_results_sets.empty())
@@ -153,7 +153,7 @@ void ContinuousCollisionConstraint::FillJacobianBlock(std::string var_set, Jacob
   {
     for (std::size_t i = 0; i < cnt; ++i)
     {
-      const GradientResultsSet& r = collision_data->gradient_results_sets[i];
+      const trajopt_common::GradientResultsSet& r = collision_data->gradient_results_sets[i];
       if (r.max_error[0].has_error[0] || r.max_error[1].has_error[0])
       {
         double max_error_with_buffer = r.getMaxErrorWithBufferT0();
@@ -172,7 +172,7 @@ void ContinuousCollisionConstraint::FillJacobianBlock(std::string var_set, Jacob
   {
     for (std::size_t i = 0; i < cnt; ++i)
     {
-      const GradientResultsSet& r = collision_data->gradient_results_sets[i];
+      const trajopt_common::GradientResultsSet& r = collision_data->gradient_results_sets[i];
       if (r.max_error[0].has_error[1] || r.max_error[1].has_error[1])
       {
         double max_error_with_buffer = r.getMaxErrorWithBufferT1();

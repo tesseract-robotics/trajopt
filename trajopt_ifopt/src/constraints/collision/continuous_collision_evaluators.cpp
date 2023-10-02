@@ -23,15 +23,15 @@
  */
 
 #include <trajopt_ifopt/constraints/collision/continuous_collision_evaluators.h>
-#include <trajopt_ifopt/constraints/collision/collision_utils.h>
+#include <trajopt_common/collision_utils.h>
 
 namespace trajopt_ifopt
 {
 LVSContinuousCollisionEvaluator::LVSContinuousCollisionEvaluator(
-    std::shared_ptr<CollisionCache> collision_cache,
+    std::shared_ptr<trajopt_common::CollisionCache> collision_cache,
     tesseract_kinematics::JointGroup::ConstPtr manip,
     tesseract_environment::Environment::ConstPtr env,
-    trajopt_ifopt::TrajOptCollisionConfig::ConstPtr collision_config,
+    trajopt_common::TrajOptCollisionConfig::ConstPtr collision_config,
     bool dynamic_environment)
   : collision_cache_(std::move(collision_cache))
   , manip_(std::move(manip))
@@ -39,9 +39,8 @@ LVSContinuousCollisionEvaluator::LVSContinuousCollisionEvaluator(
   , collision_config_(std::move(collision_config))
   , dynamic_environment_(dynamic_environment)
 {
-  if (collision_config_->type != tesseract_collision::CollisionEvaluatorType::CONTINUOUS &&
-      collision_config_->type != tesseract_collision::CollisionEvaluatorType::LVS_CONTINUOUS)
-    throw std::runtime_error("LVSContinuousCollisionEvaluator, type must be CONTINUOUS or LVS_CONTINUOUS");
+  assert(collision_config_->type == tesseract_collision::CollisionEvaluatorType::CONTINUOUS ||
+         collision_config_->type == tesseract_collision::CollisionEvaluatorType::LVS_CONTINUOUS);
 
   manip_active_link_names_ = manip_->getActiveLinkNames();
 
@@ -78,13 +77,13 @@ LVSContinuousCollisionEvaluator::LVSContinuousCollisionEvaluator(
       collision_config_->collision_margin_buffer);
 }
 
-CollisionCacheData::ConstPtr
+trajopt_common::CollisionCacheData::ConstPtr
 LVSContinuousCollisionEvaluator::CalcCollisionData(const Eigen::Ref<const Eigen::VectorXd>& dof_vals0,
                                                    const Eigen::Ref<const Eigen::VectorXd>& dof_vals1,
                                                    const std::array<bool, 2>& position_vars_fixed,
                                                    std::size_t bounds_size)
 {
-  size_t key = getHash(*collision_config_, dof_vals0, dof_vals1);
+  size_t key = trajopt_common::getHash(*collision_config_, dof_vals0, dof_vals1);
   auto* it = collision_cache_->get(key);
   if (it != nullptr)
   {
@@ -92,24 +91,24 @@ LVSContinuousCollisionEvaluator::CalcCollisionData(const Eigen::Ref<const Eigen:
     return *it;
   }
 
-  auto data = std::make_shared<CollisionCacheData>();
+  auto data = std::make_shared<trajopt_common::CollisionCacheData>();
   CalcCollisionsHelper(dof_vals0, dof_vals1, data->contact_results_map);
 
   for (const auto& pair : data->contact_results_map)
   {
-    using ShapeGrsType = std::map<std::pair<std::size_t, std::size_t>, GradientResultsSet>;
+    using ShapeGrsType = std::map<std::pair<std::size_t, std::size_t>, trajopt_common::GradientResultsSet>;
     ShapeGrsType shape_grs;
     const double coeff =
         collision_config_->collision_coeff_data.getPairCollisionCoeff(pair.first.first, pair.first.second);
     for (const tesseract_collision::ContactResult& dist_result : pair.second)
     {
-      const std::size_t shape_hash0 = cantorHash(dist_result.shape_id[0], dist_result.subshape_id[0]);
-      const std::size_t shape_hash1 = cantorHash(dist_result.shape_id[1], dist_result.subshape_id[1]);
+      const std::size_t shape_hash0 = trajopt_common::cantorHash(dist_result.shape_id[0], dist_result.subshape_id[0]);
+      const std::size_t shape_hash1 = trajopt_common::cantorHash(dist_result.shape_id[1], dist_result.subshape_id[1]);
       auto shape_key = std::make_pair(shape_hash0, shape_hash1);
       auto it = shape_grs.find(shape_key);
       if (it == shape_grs.end())
       {
-        GradientResultsSet grs;
+        trajopt_common::GradientResultsSet grs;
         grs.key = pair.first;
         grs.shape_key = shape_key;
         grs.coeff = coeff;
@@ -140,7 +139,7 @@ LVSContinuousCollisionEvaluator::CalcCollisionData(const Eigen::Ref<const Eigen:
     {
       std::sort(data->gradient_results_sets.begin(),
                 data->gradient_results_sets.end(),
-                [](const GradientResultsSet& a, const GradientResultsSet& b) {
+                [](const trajopt_common::GradientResultsSet& a, const trajopt_common::GradientResultsSet& b) {
                   return a.getMaxErrorWithBuffer() > b.getMaxErrorWithBuffer();
                 });
     }
@@ -148,7 +147,7 @@ LVSContinuousCollisionEvaluator::CalcCollisionData(const Eigen::Ref<const Eigen:
     {
       std::sort(data->gradient_results_sets.begin(),
                 data->gradient_results_sets.end(),
-                [](const GradientResultsSet& a, const GradientResultsSet& b) {
+                [](const trajopt_common::GradientResultsSet& a, const trajopt_common::GradientResultsSet& b) {
                   return a.getMaxErrorWithBufferT0() > b.getMaxErrorWithBufferT0();
                 });
     }
@@ -156,7 +155,7 @@ LVSContinuousCollisionEvaluator::CalcCollisionData(const Eigen::Ref<const Eigen:
     {
       std::sort(data->gradient_results_sets.begin(),
                 data->gradient_results_sets.end(),
-                [](const GradientResultsSet& a, const GradientResultsSet& b) {
+                [](const trajopt_common::GradientResultsSet& a, const trajopt_common::GradientResultsSet& b) {
                   return a.getMaxErrorWithBufferT1() > b.getMaxErrorWithBufferT1();
                 });
     }
@@ -200,7 +199,7 @@ void LVSContinuousCollisionEvaluator::CalcCollisionsHelper(const Eigen::Ref<cons
                                                                                                pair.first.second);
     double coeff = collision_config_->collision_coeff_data.getPairCollisionCoeff(pair.first.first, pair.first.second);
     const Eigen::Vector3d data = { dist, collision_config_->collision_margin_buffer, coeff };
-    removeInvalidContactResults(pair.second, data); /** @todo Should this be removed? levi */
+    trajopt_common::removeInvalidContactResults(pair.second, data); /** @todo Should this be removed? levi */
   };
 
   if (collision_config_->type == tesseract_collision::CollisionEvaluatorType::LVS_CONTINUOUS &&
@@ -248,7 +247,7 @@ void LVSContinuousCollisionEvaluator::CalcCollisionsHelper(const Eigen::Ref<cons
   }
 }
 
-GradientResults
+trajopt_common::GradientResults
 LVSContinuousCollisionEvaluator::CalcGradientData(const Eigen::Ref<const Eigen::VectorXd>& dof_vals0,
                                                   const Eigen::Ref<const Eigen::VectorXd>& dof_vals1,
                                                   const tesseract_collision::ContactResult& contact_results)
@@ -257,10 +256,11 @@ LVSContinuousCollisionEvaluator::CalcGradientData(const Eigen::Ref<const Eigen::
   double margin = collision_config_->contact_manager_config.margin_data.getPairCollisionMargin(
       contact_results.link_names[0], contact_results.link_names[1]);
 
-  return getGradient(dof_vals0, dof_vals1, contact_results, margin, collision_config_->collision_margin_buffer, manip_);
+  return trajopt_common::getGradient(
+      dof_vals0, dof_vals1, contact_results, margin, collision_config_->collision_margin_buffer, manip_);
 }
 
-const trajopt_ifopt::TrajOptCollisionConfig& LVSContinuousCollisionEvaluator::GetCollisionConfig() const
+const trajopt_common::TrajOptCollisionConfig& LVSContinuousCollisionEvaluator::GetCollisionConfig() const
 {
   return *collision_config_;
 }
@@ -268,10 +268,10 @@ const trajopt_ifopt::TrajOptCollisionConfig& LVSContinuousCollisionEvaluator::Ge
 //////////////////////////////////////////
 
 LVSDiscreteCollisionEvaluator::LVSDiscreteCollisionEvaluator(
-    std::shared_ptr<CollisionCache> collision_cache,
+    std::shared_ptr<trajopt_common::CollisionCache> collision_cache,
     tesseract_kinematics::JointGroup::ConstPtr manip,
     tesseract_environment::Environment::ConstPtr env,
-    trajopt_ifopt::TrajOptCollisionConfig::ConstPtr collision_config,
+    trajopt_common::TrajOptCollisionConfig::ConstPtr collision_config,
     bool dynamic_environment)
   : collision_cache_(std::move(collision_cache))
   , manip_(std::move(manip))
@@ -314,7 +314,7 @@ LVSDiscreteCollisionEvaluator::LVSDiscreteCollisionEvaluator(
       collision_config_->collision_margin_buffer);
 }
 
-CollisionCacheData::ConstPtr
+trajopt_common::CollisionCacheData::ConstPtr
 LVSDiscreteCollisionEvaluator::CalcCollisionData(const Eigen::Ref<const Eigen::VectorXd>& dof_vals0,
                                                  const Eigen::Ref<const Eigen::VectorXd>& dof_vals1,
                                                  const std::array<bool, 2>& position_vars_fixed,
@@ -328,23 +328,23 @@ LVSDiscreteCollisionEvaluator::CalcCollisionData(const Eigen::Ref<const Eigen::V
     return *it;
   }
 
-  auto data = std::make_shared<CollisionCacheData>();
+  auto data = std::make_shared<trajopt_common::CollisionCacheData>();
   CalcCollisionsHelper(dof_vals0, dof_vals1, data->contact_results_map);
   for (const auto& pair : data->contact_results_map)
   {
-    using ShapeGrsType = std::map<std::pair<std::size_t, std::size_t>, GradientResultsSet>;
+    using ShapeGrsType = std::map<std::pair<std::size_t, std::size_t>, trajopt_common::GradientResultsSet>;
     ShapeGrsType shape_grs;
     const double coeff =
         collision_config_->collision_coeff_data.getPairCollisionCoeff(pair.first.first, pair.first.second);
     for (const tesseract_collision::ContactResult& dist_result : pair.second)
     {
-      const std::size_t shape_hash0 = cantorHash(dist_result.shape_id[0], dist_result.subshape_id[0]);
-      const std::size_t shape_hash1 = cantorHash(dist_result.shape_id[1], dist_result.subshape_id[1]);
+      const std::size_t shape_hash0 = trajopt_common::cantorHash(dist_result.shape_id[0], dist_result.subshape_id[0]);
+      const std::size_t shape_hash1 = trajopt_common::cantorHash(dist_result.shape_id[1], dist_result.subshape_id[1]);
       auto shape_key = std::make_pair(shape_hash0, shape_hash1);
       auto it = shape_grs.find(shape_key);
       if (it == shape_grs.end())
       {
-        GradientResultsSet grs;
+        trajopt_common::GradientResultsSet grs;
         grs.key = pair.first;
         grs.shape_key = shape_key;
         grs.coeff = coeff;
@@ -375,7 +375,7 @@ LVSDiscreteCollisionEvaluator::CalcCollisionData(const Eigen::Ref<const Eigen::V
     {
       std::sort(data->gradient_results_sets.begin(),
                 data->gradient_results_sets.end(),
-                [](const GradientResultsSet& a, const GradientResultsSet& b) {
+                [](const trajopt_common::GradientResultsSet& a, const trajopt_common::GradientResultsSet& b) {
                   return a.getMaxErrorWithBuffer() > b.getMaxErrorWithBuffer();
                 });
     }
@@ -383,7 +383,7 @@ LVSDiscreteCollisionEvaluator::CalcCollisionData(const Eigen::Ref<const Eigen::V
     {
       std::sort(data->gradient_results_sets.begin(),
                 data->gradient_results_sets.end(),
-                [](const GradientResultsSet& a, const GradientResultsSet& b) {
+                [](const trajopt_common::GradientResultsSet& a, const trajopt_common::GradientResultsSet& b) {
                   return a.getMaxErrorWithBufferT0() > b.getMaxErrorWithBufferT0();
                 });
     }
@@ -391,7 +391,7 @@ LVSDiscreteCollisionEvaluator::CalcCollisionData(const Eigen::Ref<const Eigen::V
     {
       std::sort(data->gradient_results_sets.begin(),
                 data->gradient_results_sets.end(),
-                [](const GradientResultsSet& a, const GradientResultsSet& b) {
+                [](const trajopt_common::GradientResultsSet& a, const trajopt_common::GradientResultsSet& b) {
                   return a.getMaxErrorWithBufferT1() > b.getMaxErrorWithBufferT1();
                 });
     }
@@ -432,7 +432,7 @@ void LVSDiscreteCollisionEvaluator::CalcCollisionsHelper(const Eigen::Ref<const 
     const Eigen::Vector3d data = { dist, collision_config_->collision_margin_buffer, coeff };
 
     // Don't include contacts at the fixed state
-    removeInvalidContactResults(pair.second, data);
+    trajopt_common::removeInvalidContactResults(pair.second, data);
   };
 
   // The first step is to see if the distance between two states is larger than the longest valid segment. If larger
@@ -474,7 +474,7 @@ void LVSDiscreteCollisionEvaluator::CalcCollisionsHelper(const Eigen::Ref<const 
   }
 }
 
-GradientResults
+trajopt_common::GradientResults
 LVSDiscreteCollisionEvaluator::CalcGradientData(const Eigen::Ref<const Eigen::VectorXd>& dof_vals0,
                                                 const Eigen::Ref<const Eigen::VectorXd>& dof_vals1,
                                                 const tesseract_collision::ContactResult& contact_results)
@@ -483,10 +483,11 @@ LVSDiscreteCollisionEvaluator::CalcGradientData(const Eigen::Ref<const Eigen::Ve
   double margin = collision_config_->contact_manager_config.margin_data.getPairCollisionMargin(
       contact_results.link_names[0], contact_results.link_names[1]);
 
-  return getGradient(dof_vals0, dof_vals1, contact_results, margin, collision_config_->collision_margin_buffer, manip_);
+  return trajopt_common::getGradient(
+      dof_vals0, dof_vals1, contact_results, margin, collision_config_->collision_margin_buffer, manip_);
 }
 
-const trajopt_ifopt::TrajOptCollisionConfig& LVSDiscreteCollisionEvaluator::GetCollisionConfig() const
+const trajopt_common::TrajOptCollisionConfig& LVSDiscreteCollisionEvaluator::GetCollisionConfig() const
 {
   return *collision_config_;
 }

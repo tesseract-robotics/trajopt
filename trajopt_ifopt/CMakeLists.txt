@@ -46,9 +46,7 @@ set(TRAJOPT_IFOPT_SOURCE_FILES
     src/constraints/joint_jerk_constraint.cpp
     src/constraints/joint_position_constraint.cpp
     src/constraints/joint_velocity_constraint.cpp
-    src/constraints/collision/collision_types.cpp
     src/constraints/cartesian_line_constraint.cpp
-    src/constraints/collision/collision_utils.cpp
     src/constraints/collision/discrete_collision_evaluators.cpp
     src/constraints/collision/continuous_collision_evaluators.cpp
     src/constraints/collision/weighted_average_methods.cpp

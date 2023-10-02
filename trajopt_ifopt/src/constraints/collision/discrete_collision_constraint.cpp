@@ -31,8 +31,8 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <console_bridge/console.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
+#include <trajopt_common/collision_utils.h>
 #include <trajopt_ifopt/constraints/collision/discrete_collision_constraint.h>
-#include <trajopt_ifopt/constraints/collision/collision_utils.h>
 #include <trajopt_ifopt/constraints/collision/weighted_average_methods.h>
 #include <trajopt_ifopt/utils/numeric_differentiation.h>
 
@@ -93,7 +93,8 @@ void DiscreteCollisionConstraint::FillJacobianBlock(std::string var_set, Jacobia
 Eigen::VectorXd DiscreteCollisionConstraint::CalcValues(const Eigen::Ref<const Eigen::VectorXd>& joint_vals) const
 {
   // Check the collisions
-  CollisionCacheData::ConstPtr collision_data = collision_evaluator_->CalcCollisions(joint_vals, bounds_.size());
+  trajopt_common::CollisionCacheData::ConstPtr collision_data =
+      collision_evaluator_->CalcCollisions(joint_vals, bounds_.size());
   double margin_buffer = collision_evaluator_->GetCollisionConfig().collision_margin_buffer;
   Eigen::VectorXd values = Eigen::VectorXd::Constant(static_cast<Eigen::Index>(bounds_.size()), -margin_buffer);
 
@@ -103,7 +104,7 @@ Eigen::VectorXd DiscreteCollisionConstraint::CalcValues(const Eigen::Ref<const E
   const std::size_t cnt = std::min(bounds_.size(), collision_data->gradient_results_sets.size());
   for (std::size_t i = 0; i < cnt; ++i)
   {
-    const GradientResultsSet& r = collision_data->gradient_results_sets[i];
+    const trajopt_common::GradientResultsSet& r = collision_data->gradient_results_sets[i];
     values(static_cast<Eigen::Index>(i)) = r.coeff * r.getMaxErrorT0();
   }
 
@@ -123,7 +124,8 @@ void DiscreteCollisionConstraint::CalcJacobianBlock(const Eigen::Ref<const Eigen
   if (!triplet_list_.empty())                                               // NOLINT
     jac_block.setFromTriplets(triplet_list_.begin(), triplet_list_.end());  // NOLINT
 
-  CollisionCacheData::ConstPtr collision_data = collision_evaluator_->CalcCollisions(joint_vals, bounds_.size());
+  trajopt_common::CollisionCacheData::ConstPtr collision_data =
+      collision_evaluator_->CalcCollisions(joint_vals, bounds_.size());
   if (collision_data->gradient_results_sets.empty())
     return;
 
@@ -131,7 +133,7 @@ void DiscreteCollisionConstraint::CalcJacobianBlock(const Eigen::Ref<const Eigen
   const std::size_t cnt = std::min(bounds_.size(), collision_data->gradient_results_sets.size());
   for (std::size_t i = 0; i < cnt; ++i)
   {
-    const GradientResultsSet& r = collision_data->gradient_results_sets[i];
+    const trajopt_common::GradientResultsSet& r = collision_data->gradient_results_sets[i];
     Eigen::VectorXd grad_vec = getWeightedAvgGradientT0(r, r.getMaxErrorWithBufferT0(), position_var_->GetRows());
 
     // Collision is 1 x n_dof

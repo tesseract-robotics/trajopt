@@ -18,6 +18,8 @@
   <exec_depend>libboost-program-options</exec_depend>
 
   <depend>tesseract_common</depend>
+  <depend>tesseract_collision</depend>
+  <depend>tesseract_kinematics</depend>
 
   <export>
     <build_type>cmake</build_type>

@@ -26,13 +26,12 @@
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <boost/functional/hash.hpp>
 #include <console_bridge/console.h>
-#include <tesseract_kinematics/core/joint_group.h>
 #include <tesseract_kinematics/core/utils.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
-#include <trajopt_ifopt/constraints/collision/collision_utils.h>
+#include <trajopt_common/collision_utils.h>
 
-namespace trajopt_ifopt
+namespace trajopt_common
 {
 std::size_t getHash(const TrajOptCollisionConfig& collision_config, const Eigen::Ref<const Eigen::VectorXd>& dof_vals)
 {
@@ -318,4 +317,4 @@ void debugPrintInfo(const tesseract_collision::ContactResult& res,
 
   std::printf("\n");
 }
-}  // namespace trajopt_ifopt
+}  // namespace trajopt_common
