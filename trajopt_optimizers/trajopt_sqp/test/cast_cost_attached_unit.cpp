@@ -166,7 +166,7 @@ void runCastAttachedLinkWithGeomTest(const trajopt_sqp::QPProblem::Ptr& qp_probl
   // Step 3: Setup collision
   double margin_coeff = 20;
   double margin = 0.3;
-  auto trajopt_collision_config = std::make_shared<trajopt_ifopt::TrajOptCollisionConfig>(margin, margin_coeff);
+  auto trajopt_collision_config = std::make_shared<trajopt_common::TrajOptCollisionConfig>(margin, margin_coeff);
   trajopt_collision_config->type = tesseract_collision::CollisionEvaluatorType::LVS_CONTINUOUS;
   trajopt_collision_config->collision_margin_buffer = 0.05;
 
@@ -185,7 +185,7 @@ void runCastAttachedLinkWithGeomTest(const trajopt_sqp::QPProblem::Ptr& qp_probl
     qp_problem->addConstraintSet(cnt);
   }
 
-  auto collision_cache = std::make_shared<trajopt_ifopt::CollisionCache>(100);
+  auto collision_cache = std::make_shared<trajopt_common::CollisionCache>(100);
   for (std::size_t i = 1; i < (vars.size() - 1); ++i)
   {
     auto collision_evaluator = std::make_shared<trajopt_ifopt::LVSContinuousCollisionEvaluator>(
@@ -286,7 +286,7 @@ void runCastAttachedLinkWithoutGeomTest(const trajopt_sqp::QPProblem::Ptr& qp_pr
   // Step 3: Setup collision
   double margin_coeff = 10;
   double margin = 0.02;
-  auto trajopt_collision_config = std::make_shared<trajopt_ifopt::TrajOptCollisionConfig>(margin, margin_coeff);
+  auto trajopt_collision_config = std::make_shared<trajopt_common::TrajOptCollisionConfig>(margin, margin_coeff);
   trajopt_collision_config->type = tesseract_collision::CollisionEvaluatorType::LVS_CONTINUOUS;
   trajopt_collision_config->collision_margin_buffer = 0.01;
   trajopt_collision_config->longest_valid_segment_length = 0.05;
@@ -306,7 +306,7 @@ void runCastAttachedLinkWithoutGeomTest(const trajopt_sqp::QPProblem::Ptr& qp_pr
     qp_problem->addConstraintSet(cnt);
   }
 
-  auto collision_cache = std::make_shared<trajopt_ifopt::CollisionCache>(100);
+  auto collision_cache = std::make_shared<trajopt_common::CollisionCache>(100);
   std::array<bool, 2> position_vars_fixed{ true, false };
   for (std::size_t i = 1; i < vars.size(); ++i)
   {

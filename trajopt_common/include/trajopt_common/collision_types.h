@@ -21,8 +21,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef TRAJOPT_IFOPT_COLLISION_TYPES_H
-#define TRAJOPT_IFOPT_COLLISION_TYPES_H
+#ifndef TRAJOPT_COMMON_COLLISION_TYPES_H
+#define TRAJOPT_COMMON_COLLISION_TYPES_H
 
 #include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
@@ -30,13 +30,11 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <array>
 #include <memory>
 #include <tesseract_collision/core/types.h>
-#include <tesseract_environment/environment.h>
-#include <ifopt/composite.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
-#include <trajopt_ifopt/cache.h>
+#include <trajopt_common/cache.h>
 
-namespace trajopt_ifopt
+namespace trajopt_common
 {
 using GetStateFn = std::function<tesseract_common::TransformMap(const Eigen::Ref<const Eigen::VectorXd>& joint_values)>;
 
@@ -266,5 +264,5 @@ struct CollisionCacheData
 
 using CollisionCache = Cache<size_t, CollisionCacheData::ConstPtr>;
 
-}  // namespace trajopt_ifopt
-#endif  // TRAJOPT_IFOPT_COLLISION_TYPES_H
+}  // namespace trajopt_common
+#endif  // TRAJOPT_COMMON_COLLISION_TYPES_H

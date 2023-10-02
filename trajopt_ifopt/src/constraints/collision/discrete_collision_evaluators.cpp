@@ -23,15 +23,16 @@
  */
 
 #include <trajopt_ifopt/constraints/collision/discrete_collision_evaluators.h>
-#include <trajopt_ifopt/constraints/collision/collision_utils.h>
+#include <trajopt_common/collision_utils.h>
 
 namespace trajopt_ifopt
 {
-SingleTimestepCollisionEvaluator::SingleTimestepCollisionEvaluator(std::shared_ptr<CollisionCache> collision_cache,
-                                                                   tesseract_kinematics::JointGroup::ConstPtr manip,
-                                                                   tesseract_environment::Environment::ConstPtr env,
-                                                                   TrajOptCollisionConfig::ConstPtr collision_config,
-                                                                   bool dynamic_environment)
+SingleTimestepCollisionEvaluator::SingleTimestepCollisionEvaluator(
+    std::shared_ptr<trajopt_common::CollisionCache> collision_cache,
+    tesseract_kinematics::JointGroup::ConstPtr manip,
+    tesseract_environment::Environment::ConstPtr env,
+    trajopt_common::TrajOptCollisionConfig::ConstPtr collision_config,
+    bool dynamic_environment)
   : collision_cache_(std::move(collision_cache))
   , manip_(std::move(manip))
   , env_(std::move(env))
@@ -73,7 +74,7 @@ SingleTimestepCollisionEvaluator::SingleTimestepCollisionEvaluator(std::shared_p
       collision_config_->collision_margin_buffer);
 }
 
-CollisionCacheData::ConstPtr
+trajopt_common::CollisionCacheData::ConstPtr
 SingleTimestepCollisionEvaluator::CalcCollisions(const Eigen::Ref<const Eigen::VectorXd>& dof_vals,
                                                  std::size_t bounds_size)
 {
@@ -86,24 +87,24 @@ SingleTimestepCollisionEvaluator::CalcCollisions(const Eigen::Ref<const Eigen::V
   }
 
   CONSOLE_BRIDGE_logDebug("Not using cached collision check");
-  auto data = std::make_shared<CollisionCacheData>();
+  auto data = std::make_shared<trajopt_common::CollisionCacheData>();
   CalcCollisionsHelper(dof_vals, data->contact_results_map);
 
   for (const auto& pair : data->contact_results_map)
   {
-    using ShapeGrsType = std::map<std::pair<std::size_t, std::size_t>, GradientResultsSet>;
+    using ShapeGrsType = std::map<std::pair<std::size_t, std::size_t>, trajopt_common::GradientResultsSet>;
     ShapeGrsType shape_grs;
     const double coeff =
         collision_config_->collision_coeff_data.getPairCollisionCoeff(pair.first.first, pair.first.second);
     for (const tesseract_collision::ContactResult& dist_result : pair.second)
     {
-      const std::size_t shape_hash0 = cantorHash(dist_result.shape_id[0], dist_result.subshape_id[0]);
-      const std::size_t shape_hash1 = cantorHash(dist_result.shape_id[1], dist_result.subshape_id[1]);
+      const std::size_t shape_hash0 = trajopt_common::cantorHash(dist_result.shape_id[0], dist_result.subshape_id[0]);
+      const std::size_t shape_hash1 = trajopt_common::cantorHash(dist_result.shape_id[1], dist_result.subshape_id[1]);
       auto shape_key = std::make_pair(shape_hash0, shape_hash1);
       auto it = shape_grs.find(shape_key);
       if (it == shape_grs.end())
       {
-        GradientResultsSet grs;
+        trajopt_common::GradientResultsSet grs;
         grs.key = pair.first;
         grs.shape_key = shape_key;
         grs.coeff = coeff;
@@ -131,7 +132,7 @@ SingleTimestepCollisionEvaluator::CalcCollisions(const Eigen::Ref<const Eigen::V
   {
     std::sort(data->gradient_results_sets.begin(),
               data->gradient_results_sets.end(),
-              [](const GradientResultsSet& a, const GradientResultsSet& b) {
+              [](const trajopt_common::GradientResultsSet& a, const trajopt_common::GradientResultsSet& b) {
                 return a.max_error[0].error > b.max_error[0].error;
               });
   }
@@ -180,17 +181,19 @@ void SingleTimestepCollisionEvaluator::CalcCollisionsHelper(const Eigen::Ref<con
   dist_results.filter(filter);
 }
 
-GradientResults SingleTimestepCollisionEvaluator::GetGradient(const Eigen::VectorXd& dofvals,
-                                                              const tesseract_collision::ContactResult& contact_result)
+trajopt_common::GradientResults
+SingleTimestepCollisionEvaluator::GetGradient(const Eigen::VectorXd& dofvals,
+                                              const tesseract_collision::ContactResult& contact_result)
 {
   // Contains the contact distance threshold and coefficient for the given link pair
   double margin = collision_config_->contact_manager_config.margin_data.getPairCollisionMargin(
       contact_result.link_names[0], contact_result.link_names[1]);
 
-  return getGradient(dofvals, contact_result, margin, collision_config_->collision_margin_buffer, manip_);
+  return trajopt_common::getGradient(
+      dofvals, contact_result, margin, collision_config_->collision_margin_buffer, manip_);
 }
 
-const TrajOptCollisionConfig& SingleTimestepCollisionEvaluator::GetCollisionConfig() const
+const trajopt_common::TrajOptCollisionConfig& SingleTimestepCollisionEvaluator::GetCollisionConfig() const
 {
   return *collision_config_;
 }

@@ -106,10 +106,10 @@ TEST_F(SimpleCollisionTest, spheres)  // NOLINT
   // Step 3: Setup collision
   double margin_coeff = 10;
   double margin = 0.2;
-  auto trajopt_collision_config = std::make_shared<trajopt_ifopt::TrajOptCollisionConfig>(margin, margin_coeff);
+  auto trajopt_collision_config = std::make_shared<trajopt_common::TrajOptCollisionConfig>(margin, margin_coeff);
   trajopt_collision_config->collision_margin_buffer = 0.05;
 
-  auto collision_cache = std::make_shared<trajopt_ifopt::CollisionCache>(100);
+  auto collision_cache = std::make_shared<trajopt_common::CollisionCache>(100);
   trajopt_ifopt::DiscreteCollisionEvaluator::Ptr collision_evaluator =
       std::make_shared<trajopt_ifopt::SingleTimestepCollisionEvaluator>(
           collision_cache, manip, env, trajopt_collision_config);

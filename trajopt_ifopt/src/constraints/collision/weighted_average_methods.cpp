@@ -26,7 +26,7 @@
 
 namespace trajopt_ifopt
 {
-Eigen::VectorXd getWeightedAvgGradientT0(const GradientResultsSet& grad_results_set,
+Eigen::VectorXd getWeightedAvgGradientT0(const trajopt_common::GradientResultsSet& grad_results_set,
                                          double max_error_with_buffer,
                                          Eigen::Index size)
 {
@@ -64,7 +64,7 @@ Eigen::VectorXd getWeightedAvgGradientT0(const GradientResultsSet& grad_results_
   return (1.0 / total_weight) * grad_results_set.coeff * grad_vec;
 }
 
-Eigen::VectorXd getWeightedAvgGradientT1(const GradientResultsSet& grad_results_set,
+Eigen::VectorXd getWeightedAvgGradientT1(const trajopt_common::GradientResultsSet& grad_results_set,
                                          double max_error_with_buffer,
                                          Eigen::Index size)
 {
