@@ -29,6 +29,35 @@ using Eigen::VectorXd;
 
 namespace trajopt
 {
+Eigen::VectorXd calculateExceededTolerance(const Eigen::VectorXd& lower_tolerance,
+                                           const Eigen::VectorXd& upper_tolerance,
+                                           const Eigen::VectorXd& error)
+{
+  // Initialize the resultant vector
+  Eigen::VectorXd resultant(error.size());
+
+  // Iterate through each element
+  for (int i = 0; i < error.size(); ++i) {
+    // If error is within tolerances, set resultant to 0
+    if (error(i) >= lower_tolerance(i) && error(i) <= upper_tolerance(i))
+    {
+      resultant(i) = 0.0;
+    }
+    // If error is below lower tolerance, set resultant to error - lower_tolerance
+    else if (error(i) < lower_tolerance(i))
+    {
+      resultant(i) = error(i) - lower_tolerance(i);
+    }
+    // If error is above upper tolerance, set resultant to error - upper_tolerance
+    else if (error(i) > upper_tolerance(i))
+    {
+      resultant(i) = error(i) - upper_tolerance(i);
+    }
+  }
+
+  return resultant;
+}
+
 VectorXd DynamicCartPoseErrCalculator::operator()(const VectorXd& dof_vals) const
 {
   tesseract_common::TransformMap state = manip_->calcFwdKin(dof_vals);
@@ -36,9 +65,12 @@ VectorXd DynamicCartPoseErrCalculator::operator()(const VectorXd& dof_vals) cons
   Isometry3d target_tf = state[target_frame_] * target_frame_offset_;
 
   VectorXd err = tesseract_common::calcTransformError(target_tf, source_tf);
+
+  VectorXd toleranced_err = calculateExceededTolerance(lower_tolerance_, upper_tolerance_, err);
+
   VectorXd reduced_err(indices_.size());
   for (int i = 0; i < indices_.size(); ++i)
-    reduced_err[i] = err[indices_[i]];
+    reduced_err[i] = toleranced_err[indices_[i]];
 
   return reduced_err;  // This is available in 3.4 err(indices_, Eigen::all);
 }
@@ -128,9 +160,11 @@ VectorXd CartPoseErrCalculator::operator()(const VectorXd& dof_vals) const
   else
     err = tesseract_common::calcTransformError(target_tf, source_tf);
 
+  VectorXd toleranced_err = calculateExceededTolerance(lower_tolerance_, upper_tolerance_, err);
+
   VectorXd reduced_err(indices_.size());
   for (int i = 0; i < indices_.size(); ++i)
-    reduced_err[i] = err[indices_[i]];
+    reduced_err[i] = toleranced_err[indices_[i]];
 
   return reduced_err;  // This is available in 3.4 err(indices_, Eigen::all);
 }

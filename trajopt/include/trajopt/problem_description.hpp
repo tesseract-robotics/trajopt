@@ -295,6 +295,12 @@ struct DynamicCartPoseTermInfo : public TermInfo
   Eigen::Isometry3d source_frame_offset;
   /** @brief A Static transform to be applied to target_ location */
   Eigen::Isometry3d target_frame_offset;
+  /** @brief Distance below waypoint that is allowed. Should be size = 6. First 3 elements are dx, dy, dz. The last 3
+   * elements are angle axis error allowed (Eigen::AngleAxisd.axis() * Eigen::AngleAxisd.angle()) */
+  Eigen::VectorXd lower_tolerance;
+  /** @brief Distance above waypoint that is allowed. Should be size = 6. First 3 elements are dx, dy, dz. The last 3
+   * elements are angle axis error allowed (Eigen::AngleAxisd.axis() * Eigen::AngleAxisd.angle())*/
+  Eigen::VectorXd upper_tolerance;
 
   DynamicCartPoseTermInfo();
 
@@ -325,6 +331,12 @@ struct CartPoseTermInfo : public TermInfo
   Eigen::Isometry3d source_frame_offset;
   /** @brief A Static transform to be applied to target_ location */
   Eigen::Isometry3d target_frame_offset;
+  /** @brief Distance below waypoint that is allowed. Should be size = 6. First 3 elements are dx, dy, dz. The last 3
+   * elements are angle axis error allowed (Eigen::AngleAxisd.axis() * Eigen::AngleAxisd.angle()) */
+  Eigen::VectorXd lower_tolerance;
+  /** @brief Distance above waypoint that is allowed. Should be size = 6. First 3 elements are dx, dy, dz. The last 3
+   * elements are angle axis error allowed (Eigen::AngleAxisd.axis() * Eigen::AngleAxisd.angle())*/
+  Eigen::VectorXd upper_tolerance;
 
   CartPoseTermInfo();
 
