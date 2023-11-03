@@ -777,12 +777,24 @@ void DynamicCartPoseTermInfo::hatch(TrajOptProb& prob)
   }
   else
   {
-    auto f = std::make_shared<DynamicCartPoseErrCalculator>(
-        prob.GetKin(), source_frame, target_frame, source_frame_offset, target_frame_offset, indices, lower_tolerance, upper_tolerance);
+    auto f = std::make_shared<DynamicCartPoseErrCalculator>(prob.GetKin(),
+                                                            source_frame,
+                                                            target_frame,
+                                                            source_frame_offset,
+                                                            target_frame_offset,
+                                                            indices,
+                                                            lower_tolerance,
+                                                            upper_tolerance);
 
     // This is currently not being used. There is an intermittent bug that needs to be tracked down it is not used.
-    auto dfdx = std::make_shared<DynamicCartPoseJacCalculator>(
-        prob.GetKin(), source_frame, target_frame, source_frame_offset, target_frame_offset, indices, lower_tolerance, upper_tolerance);
+    auto dfdx = std::make_shared<DynamicCartPoseJacCalculator>(prob.GetKin(),
+                                                               source_frame,
+                                                               target_frame,
+                                                               source_frame_offset,
+                                                               target_frame_offset,
+                                                               indices,
+                                                               lower_tolerance,
+                                                               upper_tolerance);
 
     // Apply error calculator as either cost or constraint
     if (term_type & TT_COST)
@@ -920,23 +932,47 @@ void CartPoseTermInfo::hatch(TrajOptProb& prob)
   }
   else if ((term_type & TT_COST) && ~(term_type | ~TT_USE_TIME))
   {
-    auto f = std::make_shared<CartPoseErrCalculator>(
-        prob.GetKin(), source_frame, target_frame, source_frame_offset, target_frame_offset, indices, lower_tolerance, upper_tolerance);
+    auto f = std::make_shared<CartPoseErrCalculator>(prob.GetKin(),
+                                                     source_frame,
+                                                     target_frame,
+                                                     source_frame_offset,
+                                                     target_frame_offset,
+                                                     indices,
+                                                     lower_tolerance,
+                                                     upper_tolerance);
 
     // This is currently not being used. There is an intermittent bug that needs to be tracked down it is not used.
-    auto dfdx = std::make_shared<CartPoseJacCalculator>(
-        prob.GetKin(), source_frame, target_frame, source_frame_offset, target_frame_offset, indices, lower_tolerance, upper_tolerance);
+    auto dfdx = std::make_shared<CartPoseJacCalculator>(prob.GetKin(),
+                                                        source_frame,
+                                                        target_frame,
+                                                        source_frame_offset,
+                                                        target_frame_offset,
+                                                        indices,
+                                                        lower_tolerance,
+                                                        upper_tolerance);
     prob.addCost(
         std::make_shared<TrajOptCostFromErrFunc>(f, prob.GetVarRow(timestep, 0, n_dof), coeff, sco::ABS, name));
   }
   else if ((term_type & TT_CNT) && ~(term_type | ~TT_USE_TIME))
   {
-    auto f = std::make_shared<CartPoseErrCalculator>(
-        prob.GetKin(), source_frame, target_frame, source_frame_offset, target_frame_offset, indices, lower_tolerance, upper_tolerance);
+    auto f = std::make_shared<CartPoseErrCalculator>(prob.GetKin(),
+                                                     source_frame,
+                                                     target_frame,
+                                                     source_frame_offset,
+                                                     target_frame_offset,
+                                                     indices,
+                                                     lower_tolerance,
+                                                     upper_tolerance);
 
     // This is currently not being used. There is an intermittent bug that needs to be tracked down it is not used.
-    auto dfdx = std::make_shared<CartPoseJacCalculator>(
-        prob.GetKin(), source_frame, target_frame, source_frame_offset, target_frame_offset, indices, lower_tolerance, upper_tolerance);
+    auto dfdx = std::make_shared<CartPoseJacCalculator>(prob.GetKin(),
+                                                        source_frame,
+                                                        target_frame,
+                                                        source_frame_offset,
+                                                        target_frame_offset,
+                                                        indices,
+                                                        lower_tolerance,
+                                                        upper_tolerance);
     prob.addConstraint(
         std::make_shared<TrajOptConstraintFromErrFunc>(f, prob.GetVarRow(timestep, 0, n_dof), coeff, sco::EQ, name));
   }

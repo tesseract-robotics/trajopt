@@ -37,7 +37,8 @@ Eigen::VectorXd calculateExceededTolerance(const Eigen::VectorXd& lower_toleranc
   Eigen::VectorXd resultant(error.size());
 
   // Iterate through each element
-  for (int i = 0; i < error.size(); ++i) {
+  for (int i = 0; i < error.size(); ++i)
+  {
     // If error is within tolerances, set resultant to 0
     if (error(i) >= lower_tolerance(i) && error(i) <= upper_tolerance(i))
     {
