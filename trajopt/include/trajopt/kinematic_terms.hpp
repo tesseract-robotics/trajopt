@@ -194,13 +194,13 @@ struct CartPoseErrCalculator : public TrajOptVectorOfVector
       Eigen::VectorXd lower_tolerance = Eigen::VectorXd::Zero(6),
       Eigen::VectorXd upper_tolerance = Eigen::VectorXd::Zero(6),
       ErrorFunctionType error_func = nullptr)
-      : manip_(std::move(manip))
-      , source_frame_(std::move(source_frame))
-      , target_frame_(std::move(target_frame))
-      , source_frame_offset_(source_frame_offset)
-      , target_frame_offset_(target_frame_offset)
-      , indices_(std::move(indices))
-      , error_function(error_func)
+    : manip_(std::move(manip))
+    , source_frame_(std::move(source_frame))
+    , target_frame_(std::move(target_frame))
+    , source_frame_offset_(source_frame_offset)
+    , target_frame_offset_(target_frame_offset)
+    , indices_(std::move(indices))
+    , error_function(error_func)
   {
     if (lower_tolerance.size() == 0)
       lower_tolerance_ = Eigen::VectorXd::Zero(6);
