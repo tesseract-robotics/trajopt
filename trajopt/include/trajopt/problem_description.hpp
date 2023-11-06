@@ -302,6 +302,10 @@ struct DynamicCartPoseTermInfo : public TermInfo
    * elements are angle axis error allowed (Eigen::AngleAxisd.axis() * Eigen::AngleAxisd.angle())*/
   Eigen::VectorXd upper_tolerance;
 
+  /** @brief Error function for calculating the error in the position given the source and target positions
+   * this defaults to tesseract_common::calcTransformError if unset*/
+  std::function<Eigen::VectorXd(const Eigen::Isometry3d&, const Eigen::Isometry3d&)> error_function = nullptr;
+
   DynamicCartPoseTermInfo();
 
   /** @brief Used to add term to pci from json */
@@ -337,6 +341,10 @@ struct CartPoseTermInfo : public TermInfo
   /** @brief Distance above waypoint that is allowed. Should be size = 6. First 3 elements are dx, dy, dz. The last 3
    * elements are angle axis error allowed (Eigen::AngleAxisd.axis() * Eigen::AngleAxisd.angle())*/
   Eigen::VectorXd upper_tolerance;
+
+  /** @brief Error function for calculating the error in the position given the source and target positions
+   * this defaults to tesseract_common::calcTransformError if unset*/
+  std::function<Eigen::VectorXd(const Eigen::Isometry3d&, const Eigen::Isometry3d&)> error_function = nullptr;
 
   CartPoseTermInfo();
 

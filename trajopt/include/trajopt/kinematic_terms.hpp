@@ -15,6 +15,8 @@ TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace trajopt
 {
+using ErrorFunctionType = std::function<Eigen::VectorXd(const Eigen::Isometry3d&, const Eigen::Isometry3d&)>;
+
 /**
  * @brief Used to calculate the error for CartPoseTermInfo
  * This is converted to a cost or constraint using TrajOptCostFromErrFunc or TrajOptConstraintFromErrFunc
@@ -45,6 +47,10 @@ struct DynamicCartPoseErrCalculator : public TrajOptVectorOfVector
    * elements are angle axis error allowed (Eigen::AngleAxisd.axis() * Eigen::AngleAxisd.angle())*/
   Eigen::VectorXd upper_tolerance_;
 
+  /** @brief Error function for calculating the error in the position given the source and target positions
+   * this defaults to tesseract_common::calcTransformError if unset*/
+  ErrorFunctionType error_function = nullptr;
+
   /**
    * @brief This is a vector of indices to be returned Default: {0, 1, 2, 3, 4, 5}
    *
@@ -61,13 +67,15 @@ struct DynamicCartPoseErrCalculator : public TrajOptVectorOfVector
       const Eigen::Isometry3d& target_frame_offset = Eigen::Isometry3d::Identity(),
       Eigen::VectorXi indices = Eigen::Matrix<int, 1, 6>(std::vector<int>({ 0, 1, 2, 3, 4, 5 }).data()),
       Eigen::VectorXd lower_tolerance = Eigen::VectorXd::Zero(6),
-      Eigen::VectorXd upper_tolerance = Eigen::VectorXd::Zero(6))
+      Eigen::VectorXd upper_tolerance = Eigen::VectorXd::Zero(6),
+      ErrorFunctionType error_func = nullptr)
     : manip_(std::move(manip))
     , source_frame_(std::move(source_frame))
     , target_frame_(std::move(target_frame))
     , source_frame_offset_(source_frame_offset)
     , target_frame_offset_(target_frame_offset)
     , indices_(std::move(indices))
+    , error_function(error_func)
   {
     if (lower_tolerance.size() == 0)
       lower_tolerance_ = Eigen::VectorXd::Zero(6);
@@ -105,13 +113,6 @@ struct DynamicCartPoseJacCalculator : sco::MatrixOfVector
   /** @brief A offset transform to be applied to target_frame_ location */
   Eigen::Isometry3d target_frame_offset_;
 
-  /** @brief Distance below waypoint that is allowed. Should be size = 6. First 3 elements are dx, dy, dz. The last 3
-   * elements are angle axis error allowed (Eigen::AngleAxisd.axis() * Eigen::AngleAxisd.angle()) */
-  Eigen::VectorXd lower_tolerance_;
-  /** @brief Distance above waypoint that is allowed. Should be size = 6. First 3 elements are dx, dy, dz. The last 3
-   * elements are angle axis error allowed (Eigen::AngleAxisd.axis() * Eigen::AngleAxisd.angle())*/
-  Eigen::VectorXd upper_tolerance_;
-
   /**
    * @brief This is a vector of indices to be returned Default: {0, 1, 2, 3, 4, 5}
    *
@@ -126,9 +127,7 @@ struct DynamicCartPoseJacCalculator : sco::MatrixOfVector
       std::string target_frame,
       const Eigen::Isometry3d& source_frame_offset = Eigen::Isometry3d::Identity(),
       const Eigen::Isometry3d& target_frame_offset = Eigen::Isometry3d::Identity(),
-      Eigen::VectorXi indices = Eigen::Matrix<int, 1, 6>(std::vector<int>({ 0, 1, 2, 3, 4, 5 }).data()),
-      Eigen::VectorXd lower_tolerance = Eigen::VectorXd::Zero(6),
-      Eigen::VectorXd upper_tolerance = Eigen::VectorXd::Zero(6))
+      Eigen::VectorXi indices = Eigen::Matrix<int, 1, 6>(std::vector<int>({ 0, 1, 2, 3, 4, 5 }).data()))
     : manip_(std::move(manip))
     , source_frame_(std::move(source_frame))
     , source_frame_offset_(source_frame_offset)
@@ -136,14 +135,6 @@ struct DynamicCartPoseJacCalculator : sco::MatrixOfVector
     , target_frame_offset_(target_frame_offset)
     , indices_(std::move(indices))
   {
-    if (lower_tolerance.size() == 0)
-      lower_tolerance_ = Eigen::VectorXd::Zero(6);
-    else
-      lower_tolerance_ = lower_tolerance;
-    if (upper_tolerance.size() == 0)
-      upper_tolerance_ = Eigen::VectorXd::Zero(6);
-    else
-      upper_tolerance_ = upper_tolerance;
     assert(indices_.size() <= 6);
   }
 
@@ -181,6 +172,10 @@ struct CartPoseErrCalculator : public TrajOptVectorOfVector
    * elements are angle axis error allowed (Eigen::AngleAxisd.axis() * Eigen::AngleAxisd.angle())*/
   Eigen::VectorXd upper_tolerance_;
 
+  /** @brief Error function for calculating the error in the position given the source and target positions
+   * this defaults to tesseract_common::calcTransformError if unset*/
+  ErrorFunctionType error_function = nullptr;
+
   /**
    * @brief This is a vector of indices to be returned Default: {0, 1, 2, 3, 4, 5}
    *
@@ -197,13 +192,15 @@ struct CartPoseErrCalculator : public TrajOptVectorOfVector
       const Eigen::Isometry3d& target_frame_offset = Eigen::Isometry3d::Identity(),
       Eigen::VectorXi indices = Eigen::Matrix<int, 1, 6>(std::vector<int>({ 0, 1, 2, 3, 4, 5 }).data()),
       Eigen::VectorXd lower_tolerance = Eigen::VectorXd::Zero(6),
-      Eigen::VectorXd upper_tolerance = Eigen::VectorXd::Zero(6))
-    : manip_(std::move(manip))
-    , source_frame_(std::move(source_frame))
-    , source_frame_offset_(source_frame_offset)
-    , target_frame_(std::move(target_frame))
-    , target_frame_offset_(target_frame_offset)
-    , indices_(std::move(indices))
+      Eigen::VectorXd upper_tolerance = Eigen::VectorXd::Zero(6),
+      ErrorFunctionType error_func = nullptr)
+      : manip_(std::move(manip))
+      , source_frame_(std::move(source_frame))
+      , target_frame_(std::move(target_frame))
+      , source_frame_offset_(source_frame_offset)
+      , target_frame_offset_(target_frame_offset)
+      , indices_(std::move(indices))
+      , error_function(error_func)
   {
     if (lower_tolerance.size() == 0)
       lower_tolerance_ = Eigen::VectorXd::Zero(6);
@@ -244,13 +241,6 @@ struct CartPoseJacCalculator : sco::MatrixOfVector
   /** @brief indicates which link is active */
   bool is_target_active_{ true };
 
-  /** @brief Distance below waypoint that is allowed. Should be size = 6. First 3 elements are dx, dy, dz. The last 3
-   * elements are angle axis error allowed (Eigen::AngleAxisd.axis() * Eigen::AngleAxisd.angle()) */
-  Eigen::VectorXd lower_tolerance_;
-  /** @brief Distance above waypoint that is allowed. Should be size = 6. First 3 elements are dx, dy, dz. The last 3
-   * elements are angle axis error allowed (Eigen::AngleAxisd.axis() * Eigen::AngleAxisd.angle())*/
-  Eigen::VectorXd upper_tolerance_;
-
   /**
    * @brief This is a vector of indices to be returned Default: {0, 1, 2, 3, 4, 5}
    *
@@ -265,9 +255,7 @@ struct CartPoseJacCalculator : sco::MatrixOfVector
       std::string target_frame,
       const Eigen::Isometry3d& source_frame_offset = Eigen::Isometry3d::Identity(),
       const Eigen::Isometry3d& target_frame_offset = Eigen::Isometry3d::Identity(),
-      Eigen::VectorXi indices = Eigen::Matrix<int, 1, 6>(std::vector<int>({ 0, 1, 2, 3, 4, 5 }).data()),
-      Eigen::VectorXd lower_tolerance = Eigen::VectorXd::Zero(6),
-      Eigen::VectorXd upper_tolerance = Eigen::VectorXd::Zero(6))
+      Eigen::VectorXi indices = Eigen::Matrix<int, 1, 6>(std::vector<int>({ 0, 1, 2, 3, 4, 5 }).data()))
     : manip_(std::move(manip))
     , source_frame_(std::move(source_frame))
     , source_frame_offset_(source_frame_offset)
@@ -275,14 +263,6 @@ struct CartPoseJacCalculator : sco::MatrixOfVector
     , target_frame_offset_(target_frame_offset)
     , indices_(std::move(indices))
   {
-    if (lower_tolerance.size() == 0)
-      lower_tolerance_ = Eigen::VectorXd::Zero(6);
-    else
-      lower_tolerance_ = lower_tolerance;
-    if (upper_tolerance.size() == 0)
-      upper_tolerance_ = Eigen::VectorXd::Zero(6);
-    else
-      upper_tolerance_ = upper_tolerance;
     is_target_active_ = manip_->isActiveLinkName(target_frame_);
     assert(indices_.size() <= 6);
   }

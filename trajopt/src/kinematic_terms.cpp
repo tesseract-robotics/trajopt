@@ -65,13 +65,19 @@ VectorXd DynamicCartPoseErrCalculator::operator()(const VectorXd& dof_vals) cons
   Isometry3d source_tf = state[source_frame_] * source_frame_offset_;
   Isometry3d target_tf = state[target_frame_] * target_frame_offset_;
 
-  VectorXd err = tesseract_common::calcTransformError(target_tf, source_tf);
-
-  VectorXd toleranced_err = calculateExceededTolerance(lower_tolerance_, upper_tolerance_, err);
+  VectorXd err;
+  if (!error_function)
+  {
+    err = tesseract_common::calcTransformError(target_tf, source_tf);
+  }
+  else
+  {
+    err = error_function(target_tf, source_tf);
+  }
 
   VectorXd reduced_err(indices_.size());
   for (int i = 0; i < indices_.size(); ++i)
-    reduced_err[i] = toleranced_err[indices_[i]];
+    reduced_err[i] = err[indices_[i]];
 
   return reduced_err;  // This is available in 3.4 err(indices_, Eigen::all);
 }
@@ -156,16 +162,24 @@ VectorXd CartPoseErrCalculator::operator()(const VectorXd& dof_vals) const
   Isometry3d target_tf = state[target_frame_] * target_frame_offset_;
 
   VectorXd err;
-  if (is_target_active_)
-    err = tesseract_common::calcTransformError(source_tf, target_tf);
+  if (!error_function)
+  {
+    if (is_target_active_)
+      err = tesseract_common::calcTransformError(source_tf, target_tf);
+    else
+      err = tesseract_common::calcTransformError(target_tf, source_tf);
+  }
   else
-    err = tesseract_common::calcTransformError(target_tf, source_tf);
-
-  VectorXd toleranced_err = calculateExceededTolerance(lower_tolerance_, upper_tolerance_, err);
+  {
+    if (is_target_active_)
+      err = error_function(source_tf, target_tf);
+    else
+      err = error_function(target_tf, source_tf);
+  }
 
   VectorXd reduced_err(indices_.size());
   for (int i = 0; i < indices_.size(); ++i)
-    reduced_err[i] = toleranced_err[indices_[i]];
+    reduced_err[i] = err[indices_[i]];
 
   return reduced_err;  // This is available in 3.4 err(indices_, Eigen::all);
 }

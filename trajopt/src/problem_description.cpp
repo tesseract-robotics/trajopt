@@ -784,7 +784,8 @@ void DynamicCartPoseTermInfo::hatch(TrajOptProb& prob)
                                                             target_frame_offset,
                                                             indices,
                                                             lower_tolerance,
-                                                            upper_tolerance);
+                                                            upper_tolerance,
+                                                            error_function);
 
     // This is currently not being used. There is an intermittent bug that needs to be tracked down it is not used.
     auto dfdx = std::make_shared<DynamicCartPoseJacCalculator>(prob.GetKin(),
@@ -792,9 +793,7 @@ void DynamicCartPoseTermInfo::hatch(TrajOptProb& prob)
                                                                target_frame,
                                                                source_frame_offset,
                                                                target_frame_offset,
-                                                               indices,
-                                                               lower_tolerance,
-                                                               upper_tolerance);
+                                                               indices);
 
     // Apply error calculator as either cost or constraint
     if (term_type & TT_COST)
@@ -939,7 +938,8 @@ void CartPoseTermInfo::hatch(TrajOptProb& prob)
                                                      target_frame_offset,
                                                      indices,
                                                      lower_tolerance,
-                                                     upper_tolerance);
+                                                     upper_tolerance,
+                                                     error_function);
 
     // This is currently not being used. There is an intermittent bug that needs to be tracked down it is not used.
     auto dfdx = std::make_shared<CartPoseJacCalculator>(prob.GetKin(),
@@ -947,9 +947,7 @@ void CartPoseTermInfo::hatch(TrajOptProb& prob)
                                                         target_frame,
                                                         source_frame_offset,
                                                         target_frame_offset,
-                                                        indices,
-                                                        lower_tolerance,
-                                                        upper_tolerance);
+                                                        indices);
     prob.addCost(
         std::make_shared<TrajOptCostFromErrFunc>(f, prob.GetVarRow(timestep, 0, n_dof), coeff, sco::ABS, name));
   }
@@ -962,7 +960,8 @@ void CartPoseTermInfo::hatch(TrajOptProb& prob)
                                                      target_frame_offset,
                                                      indices,
                                                      lower_tolerance,
-                                                     upper_tolerance);
+                                                     upper_tolerance,
+                                                     error_function);
 
     // This is currently not being used. There is an intermittent bug that needs to be tracked down it is not used.
     auto dfdx = std::make_shared<CartPoseJacCalculator>(prob.GetKin(),
@@ -970,9 +969,7 @@ void CartPoseTermInfo::hatch(TrajOptProb& prob)
                                                         target_frame,
                                                         source_frame_offset,
                                                         target_frame_offset,
-                                                        indices,
-                                                        lower_tolerance,
-                                                        upper_tolerance);
+                                                        indices);
     prob.addConstraint(
         std::make_shared<TrajOptConstraintFromErrFunc>(f, prob.GetVarRow(timestep, 0, n_dof), coeff, sco::EQ, name));
   }
