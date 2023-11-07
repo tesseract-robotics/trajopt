@@ -1,8 +1,7 @@
 #include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <cmath>
-#include <fstream>
-#include <csignal>
+#include <array>
 #include <trajopt_sco/bpmpd_io.hpp>
 TRAJOPT_IGNORE_WARNINGS_POP
 
