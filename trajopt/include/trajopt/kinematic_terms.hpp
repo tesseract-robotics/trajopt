@@ -18,29 +18,6 @@ namespace trajopt
 {
 using ErrorFunctionType = std::function<Eigen::VectorXd(const Eigen::Isometry3d&, const Eigen::Isometry3d&)>;
 
-// Function to apply tolerances to error values
-static Eigen::VectorXd applyTolerances(const Eigen::VectorXd& err,
-                                       const Eigen::VectorXd& lower_tolerance,
-                                       const Eigen::VectorXd& upper_tolerance)
-{
-  // Calculate the distance from the lower and upper tolerance, clamping values within tolerance to zero
-  Eigen::VectorXd dist_from_lower = (lower_tolerance - err).cwiseMax(0);
-  Eigen::VectorXd dist_from_upper = (err - upper_tolerance).cwiseMax(0);
-
-  // Use array expressions for element-wise absolute value and comparison
-  Eigen::ArrayXd dist_from_lower_abs = dist_from_lower.array().abs();
-  Eigen::ArrayXd dist_from_upper_abs = dist_from_upper.array().abs();
-
-  // Select the worst error (the one furthest from the tolerance zone) while preserving the sign
-  Eigen::ArrayXd worst_error_array =
-      (dist_from_upper_abs > dist_from_lower_abs).select(dist_from_upper.array(), dist_from_lower.array());
-
-  // Convert the result back to a vector
-  Eigen::VectorXd worst_error = worst_error_array.matrix();
-
-  return worst_error;
-}
-
 /**
  * @brief Used to calculate the error for CartPoseTermInfo
  * This is converted to a cost or constraint using TrajOptCostFromErrFunc or TrajOptConstraintFromErrFunc
@@ -84,36 +61,7 @@ struct DynamicCartPoseErrCalculator : public TrajOptVectorOfVector
       const Eigen::Isometry3d& target_frame_offset = Eigen::Isometry3d::Identity(),
       Eigen::VectorXi indices = Eigen::Matrix<int, 1, 6>(std::vector<int>({ 0, 1, 2, 3, 4, 5 }).data()),
       Eigen::VectorXd lower_tolerance = Eigen::VectorXd::Zero(6),
-      Eigen::VectorXd upper_tolerance = Eigen::VectorXd::Zero(6))
-    : manip_(std::move(manip))
-    , source_frame_(std::move(source_frame))
-    , target_frame_(std::move(target_frame))
-    , source_frame_offset_(source_frame_offset)
-    , target_frame_offset_(target_frame_offset)
-    , indices_(std::move(indices))
-  {
-    assert(indices_.size() <= 6);
-
-    // Check to see if the waypoint is toleranced and set the error function accordingly
-    if ((lower_tolerance.size() == 0 && upper_tolerance.size() == 0) || lower_tolerance.isApprox(upper_tolerance, 1e-6))
-    {
-      error_function = [this](const Eigen::Isometry3d& source_tf,
-                              const Eigen::Isometry3d& target_tf) -> Eigen::VectorXd {
-        return tesseract_common::calcTransformError(source_tf, target_tf);
-      };
-    }
-    else
-    {
-      error_function = [lower_tolerance, upper_tolerance](const Eigen::Isometry3d& source_tf,
-                                                          const Eigen::Isometry3d& target_tf) -> Eigen::VectorXd {
-        // Calculate the error using tesseract_common::calcTransformError or equivalent
-        Eigen::VectorXd err = tesseract_common::calcTransformError(source_tf, target_tf);
-
-        // Apply tolerances
-        return applyTolerances(err, lower_tolerance, upper_tolerance);
-      };
-    }
-  }
+      Eigen::VectorXd upper_tolerance = Eigen::VectorXd::Zero(6));
 
   void Plot(const tesseract_visualization::Visualization::Ptr& plotter, const Eigen::VectorXd& dof_vals) override;
 
@@ -212,38 +160,7 @@ struct CartPoseErrCalculator : public TrajOptVectorOfVector
       const Eigen::Isometry3d& target_frame_offset = Eigen::Isometry3d::Identity(),
       Eigen::VectorXi indices = Eigen::Matrix<int, 1, 6>(std::vector<int>({ 0, 1, 2, 3, 4, 5 }).data()),
       Eigen::VectorXd lower_tolerance = Eigen::VectorXd::Zero(6),
-      Eigen::VectorXd upper_tolerance = Eigen::VectorXd::Zero(6),
-      ErrorFunctionType error_func = nullptr)
-    : manip_(std::move(manip))
-    , source_frame_(std::move(source_frame))
-    , target_frame_(std::move(target_frame))
-    , source_frame_offset_(source_frame_offset)
-    , target_frame_offset_(target_frame_offset)
-    , indices_(std::move(indices))
-    , error_function(error_func)
-  {
-    assert(indices_.size() <= 6);
-
-    // Check to see if the waypoint is toleranced and set the error function accordingly
-    if ((lower_tolerance.size() == 0 && upper_tolerance.size() == 0) || lower_tolerance.isApprox(upper_tolerance, 1e-6))
-    {
-      error_function = [this](const Eigen::Isometry3d& source_tf,
-                              const Eigen::Isometry3d& target_tf) -> Eigen::VectorXd {
-        return tesseract_common::calcTransformError(source_tf, target_tf);
-      };
-    }
-    else
-    {
-      error_function = [lower_tolerance, upper_tolerance](const Eigen::Isometry3d& source_tf,
-                                                          const Eigen::Isometry3d& target_tf) -> Eigen::VectorXd {
-        // Calculate the error using tesseract_common::calcTransformError or equivalent
-        Eigen::VectorXd err = tesseract_common::calcTransformError(source_tf, target_tf);
-
-        // Apply tolerances
-        return applyTolerances(err, lower_tolerance, upper_tolerance);
-      };
-    }
-  }
+      Eigen::VectorXd upper_tolerance = Eigen::VectorXd::Zero(6));
 
   void Plot(const tesseract_visualization::Visualization::Ptr& plotter, const Eigen::VectorXd& dof_vals) override;
 
