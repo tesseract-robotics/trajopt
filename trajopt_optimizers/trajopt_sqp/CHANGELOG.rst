@@ -2,8 +2,8 @@
 Changelog for package trajopt_sqp
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.7.0 (2023-11-07)
+------------------
 * Move TrajOptIfopt collision gradient types and utils to trajopt_common package
 * - Fix termination condition for the trust region loop to match trajopt_sco and the original paper.
   - Add initial_merit_error_coeff to match trajopt_sco.

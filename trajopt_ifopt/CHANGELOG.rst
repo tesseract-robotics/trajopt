@@ -2,8 +2,8 @@
 Changelog for package trajopt_ifopt
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.7.0 (2023-11-07)
+------------------
 * Move TrajOptIfopt collision gradient types and utils to trajopt_common package
 * Fix ifopt continuous collision evaluator to distinguish CONTINUOUS and LVS_CONTINUOUS (`#342 <https://github.com/tesseract-robotics/trajopt/issues/342>`_)
 * Contributors: Levi Armstrong
