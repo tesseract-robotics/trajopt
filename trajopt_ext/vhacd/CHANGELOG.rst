@@ -2,6 +2,11 @@
 Changelog for package vhacd
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Fixes some includes (required for newer GCC on Ubuntu 22.04)
+* Contributors: Roelof Oomen
+
 0.6.1 (2023-07-10)
 ------------------
 

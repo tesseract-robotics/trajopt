@@ -2,6 +2,18 @@
 Changelog for package trajopt_sqp
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Move TrajOptIfopt collision gradient types and utils to trajopt_common package
+* - Fix termination condition for the trust region loop to match trajopt_sco and the original paper.
+  - Add initial_merit_error_coeff to match trajopt_sco.
+* Disable OSQP_COMPARE_DEBUG_MODE
+* Remove osqp headers from osqp_eigen_solver (`#344 <https://github.com/tesseract-robotics/trajopt/issues/344>`_)
+* Fix osqp eigen solver hessian and linear constraint matrix
+* Fix ifopt continuous collision evaluator to distinguish CONTINUOUS and LVS_CONTINUOUS (`#342 <https://github.com/tesseract-robotics/trajopt/issues/342>`_)
+* Fix TrustRegionSQPSolver solve method to correctly set status (`#341 <https://github.com/tesseract-robotics/trajopt/issues/341>`_)
+* Contributors: Levi Armstrong, Roelof Oomen
+
 0.6.1 (2023-07-10)
 ------------------
 

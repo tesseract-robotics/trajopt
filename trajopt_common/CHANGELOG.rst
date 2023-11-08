@@ -2,6 +2,11 @@
 Changelog for package trajopt_utils
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Move TrajOptIfopt collision gradient types and utils to trajopt_common package
+* Contributors: Levi Armstrong
+
 0.6.1 (2023-07-10)
 ------------------
 

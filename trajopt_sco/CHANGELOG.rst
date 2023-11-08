@@ -2,6 +2,13 @@
 Changelog for package trajopt_sco
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Fixes some includes (required for newer GCC on Ubuntu 22.04)
+* Disable OSQP_COMPARE_DEBUG_MODE
+* Fix osqp eigen solver hessian and linear constraint matrix
+* Contributors: Levi Armstrong, Roelof Oomen
+
 0.6.1 (2023-07-10)
 ------------------
 * Add qpOASES cmake option to trajopt_sco
