@@ -34,46 +34,22 @@ Eigen::VectorXd applyTolerances(const Eigen::VectorXd& error,
                                        const Eigen::VectorXd& lower_tolerance,
                                        const Eigen::VectorXd& upper_tolerance)
 {
-//  // Calculate the distance from the lower and upper tolerance, clamping values within tolerance to zero
-//  Eigen::VectorXd dist_from_lower = (lower_tolerance - err).cwiseMax(0);
-//  Eigen::VectorXd dist_from_upper = (err - upper_tolerance).cwiseMax(0);
+  // Calculate the distance from the lower and upper tolerance, clamping values within tolerance to zero
+  Eigen::VectorXd dist_from_lower = (error - lower_tolerance).cwiseMin(0);
+  Eigen::VectorXd dist_from_upper = (error - upper_tolerance).cwiseMax(0);
 
-//  // Use array expressions for element-wise absolute value and comparison
-//  Eigen::ArrayXd dist_from_lower_abs = dist_from_lower.array().abs();
-//  Eigen::ArrayXd dist_from_upper_abs = dist_from_upper.array().abs();
+  // Use array expressions for element-wise absolute value and comparison
+  Eigen::ArrayXd dist_from_lower_abs = dist_from_lower.array().abs();
+  Eigen::ArrayXd dist_from_upper_abs = dist_from_upper.array().abs();
 
-//  // Select the worst error (the one furthest from the tolerance zone) while preserving the sign
-//  Eigen::ArrayXd worst_error_array =
-//      (dist_from_upper_abs > dist_from_lower_abs).select(dist_from_upper.array(), dist_from_lower.array());
+  // Select the worst error (the one furthest from the tolerance zone) while preserving the sign
+  Eigen::ArrayXd worst_error_array =
+      (dist_from_upper_abs > dist_from_lower_abs).select(dist_from_upper.array(), dist_from_lower.array());
 
-//  // Convert the result back to a vector
-//  Eigen::VectorXd worst_error = worst_error_array.matrix();
+  // Convert the result back to a vector
+  Eigen::VectorXd worst_error = worst_error_array.matrix();
 
-//  return worst_error;
-  // Initialize the resultant vector
-   Eigen::VectorXd resultant(error.size());
-
-   // Iterate through each element
-   for (int i = 0; i < error.size(); ++i)
-   {
-     // If error is within tolerances, set resultant to 0
-     if (error(i) >= lower_tolerance(i) && error(i) <= upper_tolerance(i))
-     {
-       resultant(i) = 0.0;
-     }
-     // If error is below lower tolerance, set resultant to error - lower_tolerance
-     else if (error(i) < lower_tolerance(i))
-     {
-       resultant(i) = error(i) - lower_tolerance(i);
-     }
-     // If error is above upper tolerance, set resultant to error - upper_tolerance
-     else if (error(i) > upper_tolerance(i))
-     {
-       resultant(i) = error(i) - upper_tolerance(i);
-     }
-   }
-
-   return resultant;
+  return worst_error;
 }
 
 DynamicCartPoseErrCalculator::DynamicCartPoseErrCalculator(
