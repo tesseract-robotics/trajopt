@@ -14,3 +14,11 @@
     local-name: ifopt
     uri: https://github.com/ethz-adrl/ifopt.git
     version: master
+- git:
+    local-name: fcl
+    uri: https://github.com/flexible-collision-library/fcl.git
+    version: 0.6.1
+- git:
+    local-name: octomap
+    uri: https://github.com/OctoMap/octomap.git
+    version: v1.9.8
