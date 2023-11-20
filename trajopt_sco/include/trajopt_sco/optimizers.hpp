@@ -1,9 +1,9 @@
 #pragma once
 #include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
+#include <array>
 #include <functional>
 #include <string>
-#include <array>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt_sco/modeling.hpp>
@@ -83,46 +83,44 @@ protected:
 
 struct BasicTrustRegionSQPParameters
 {
-  double improve_ratio_threshold;  // minimum ratio true_improve/approx_improve
-                                   // to accept step
-  double min_trust_box_size;       // if trust region gets any smaller, exit and
-                                   // report convergence
-  double min_approx_improve;       // if model improves less than this, exit and
-                                   // report convergence
-  double min_approx_improve_frac;  // if model improves less than this, exit and
-                                   // report convergence
-  double max_iter;                 // The max number of iterations
-  double trust_shrink_ratio;       // if improvement is less than
-  // improve_ratio_threshold, shrink trust region by
-  // this ratio
-  double trust_expand_ratio;  // if improvement is less than
-                              // improve_ratio_threshold, shrink trust region by
-                              // this ratio
-  double cnt_tolerance;       // after convergence of penalty subproblem, if
-  // constraint violation is less than this, we're done
+  /** @brief Minimum ratio exact_improve/approx_improve to accept step */
+  double improve_ratio_threshold = 0.25;
+  /** @brief If trust region gets any smaller, exit and report convergence */
+  double min_trust_box_size = 1e-4;
+  /** @brief If model improves less than this, exit and report convergence */
+  double min_approx_improve = 1e-4;
+  /** @brief If model improves less than this, exit and report convergence */
+  double min_approx_improve_frac = static_cast<double>(-INFINITY);
+  /** @brief The max number of iterations */
+  double max_iter = 50;
+  /** @brief If improvement is less than improve_ratio_threshold, shrink trust region by this ratio */
+  double trust_shrink_ratio = 0.1;
+  /** @brief If improvement is less than improve_ratio_threshold, expand trust region by this ratio */
+  double trust_expand_ratio = 1.5;
+  /** @brief After convergence of penalty subproblem, if constraint violation is less than this, we're done */
+  double cnt_tolerance = 1e-4;
   /** @brief Max number of times that the constraints' cost will be increased */
-  double max_merit_coeff_increases;
-  /** @brief Max number of times the QP solver can fail before optimization is aborted*/
-  int max_qp_solver_failures;
-
-  double merit_coeff_increase_ratio;  // ratio that we increate coeff each time
-  /** @brief Max time in seconds that the optimizer will run*/
-  double max_time;
+  double max_merit_coeff_increases = 5;
+  /** @brief Max number of times the QP solver can fail before optimization is aborted */
+  int max_qp_solver_failures = 3;
+  /** @brief Ratio that we increase coeff each time */
+  double merit_coeff_increase_ratio = 10;
+  /** @brief Max time in seconds that the optimizer will run */
+  double max_time = static_cast<double>(INFINITY);
   /** @brief Initial coefficient that is used to scale the constraints. The total constaint cost is constaint_value *
    * coeff * merit_coeff */
-  double initial_merit_error_coeff;
+  double initial_merit_error_coeff = 10;
   /** @brief If true, merit coeffs will only be inflated for the constaints that failed. This can help when there are
-   * lots of constaints*/
-  bool inflate_constraints_individually;
-  double trust_box_size;  // current size of trust region (component-wise)
-
-  bool log_results;     // Log results to file
-  std::string log_dir;  // Directory to store log results (Default: /tmp)
-
+   * lots of constraints */
+  bool inflate_constraints_individually = true;
+  /** @brief Current size of trust region (component-wise) */
+  double trust_box_size = 1e-1;
+  /** @brief Log results to file */
+  bool log_results = false;
+  /** @brief Directory to store log results */
+  std::string log_dir = "/tmp";
   /** @brief If greater than one, multi threaded functions are called */
-  int num_threads;
-
-  BasicTrustRegionSQPParameters();
+  int num_threads = 0;
 };
 
 class BasicTrustRegionSQP : public Optimizer

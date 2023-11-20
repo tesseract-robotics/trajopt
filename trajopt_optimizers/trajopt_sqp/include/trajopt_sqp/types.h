@@ -52,6 +52,7 @@ enum class CostPenaltyType
  */
 struct SQPParameters
 {
+  /** @brief Minimum ratio exact_improve/approx_improve to accept step */
   double improve_ratio_threshold = 0.25;
   /** @brief NLP converges if trust region is smaller than this */
   double min_trust_box_size = 1e-4;
