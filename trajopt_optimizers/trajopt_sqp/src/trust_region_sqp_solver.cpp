@@ -30,7 +30,6 @@
  */
 #include <trajopt_sqp/trust_region_sqp_solver.h>
 #include <console_bridge/console.h>
-#include <iostream>
 #include <chrono>
 
 namespace trajopt_sqp
@@ -65,8 +64,8 @@ bool TrustRegionSQPSolver::init(QPProblem::Ptr qp_prob)
 
 void TrustRegionSQPSolver::setBoxSize(double box_size)
 {
-  results_.box_size = Eigen::VectorXd::Constant(qp_problem->getNumNLPVars(), box_size);
-  qp_problem->setBoxSize(results_.box_size);
+  qp_problem->setBoxSize(Eigen::VectorXd::Constant(qp_problem->getNumNLPVars(), box_size));
+  results_.box_size = qp_problem->getBoxSize();
 }
 
 void TrustRegionSQPSolver::registerCallback(const SQPCallback::Ptr& callback) { callbacks_.push_back(callback); }
@@ -186,8 +185,7 @@ void TrustRegionSQPSolver::adjustPenalty()
     CONSOLE_BRIDGE_logInform("Not all constraints are satisfied. Increasing constraint penalties uniformly");
     results_.merit_error_coeffs *= params.merit_coeff_increase_ratio;
   }
-  results_.box_size = Eigen::VectorXd::Ones(results_.box_size.size()) *
-                      fmax(results_.box_size[0], params.min_trust_box_size / params.trust_shrink_ratio * 1.5);
+  setBoxSize(fmax(results_.box_size[0], params.min_trust_box_size / params.trust_shrink_ratio * 1.5));
 }
 
 bool TrustRegionSQPSolver::stepSQPSolver()
