@@ -29,7 +29,7 @@ jobs:
           path: target_ws/src
 
       - name: Build and Tests
-        uses: tesseract-robotics/colcon-action@v2
+        uses: tesseract-robotics/colcon-action@v3
         with:
           before-script: source /opt/tesseract/install/setup.bash
           ccache-prefix: ${{ matrix.distro }}

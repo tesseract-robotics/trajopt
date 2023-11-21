@@ -50,10 +50,11 @@ jobs:
         echo "CMAKE_PREFIX_PATH=$GITHUB_WORKSPACE\vcpkg\installed\x64-windows-release" >> "$GITHUB_ENV"
 
     - name: Build and Tests
-      uses: tesseract-robotics/colcon-action@v2
+      uses: tesseract-robotics/colcon-action@v3
       with:
         ccache-prefix: ${{ matrix.distro }}
         vcs-file: .github/workflows/windows_dependencies.repos
         upstream-args: --cmake-args -G "Ninja" -DVCPKG_TARGET_TRIPLET=x64-windows-release -DCMAKE_BUILD_TYPE=Release -DBUILD_IPOPT=OFF -DBUILD_SNOPT=OFF
         target-path: target_ws/src
         target-args: --packages-ignore tesseract_examples trajopt_ifopt trajopt_sqp --cmake-args -G "Ninja" -DVCPKG_TARGET_TRIPLET=x64-windows-release -DCMAKE_BUILD_TYPE=Release -DTRAJOPT_ENABLE_TESTING=ON
+        run-tests-args: --packages-ignore tesseract_examples trajopt_ifopt trajopt_sqp

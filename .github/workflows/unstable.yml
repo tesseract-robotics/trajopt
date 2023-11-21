@@ -26,7 +26,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          path: target_ws/sr
+          path: target_ws/src
 
       - name: Install Depends
         shell: bash
@@ -36,7 +36,7 @@ jobs:
           apt install -y clang-tidy
 
       - name: Build and Tests
-        uses: tesseract-robotics/colcon-action@v2
+        uses: tesseract-robotics/colcon-action@v3
         with:
           before-script: source /opt/tesseract/install/setup.bash
           ccache-prefix: ${{ matrix.distro }}
