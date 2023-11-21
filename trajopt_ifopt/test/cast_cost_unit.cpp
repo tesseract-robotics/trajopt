@@ -57,7 +57,6 @@ class CastTest : public testing::TestWithParam<const char*>
 {
 public:
   Environment::Ptr env = std::make_shared<Environment>(); /**< Tesseract */
-  Visualization::Ptr plotter_;                            /**< Plotter */
 
   void SetUp() override
   {
@@ -78,8 +77,6 @@ TEST_F(CastTest, boxes)  // NOLINT
   ipos["boxbot_x_joint"] = -1.9;
   ipos["boxbot_y_joint"] = 0;
   env->setState(ipos);
-
-  //  plotter_->plotScene();
 
   std::vector<ContactResultMap> collisions;
   tesseract_scene_graph::StateSolver::Ptr state_solver = env->getStateSolver();

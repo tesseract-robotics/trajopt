@@ -54,7 +54,6 @@ class SimpleCollisionTest : public testing::TestWithParam<const char*>
 {
 public:
   Environment::Ptr env = std::make_shared<Environment>(); /**< Tesseract */
-  Visualization::Ptr plotter_;                            /**< Plotter */
 
   void SetUp() override
   {
@@ -73,8 +72,6 @@ TEST_F(SimpleCollisionTest, spheres)  // NOLINT
   ipos["spherebot_x_joint"] = -0.75;
   ipos["spherebot_y_joint"] = 0.75;
   env->setState(ipos);
-
-  //  plotter_->plotScene();
 
   std::vector<ContactResultMap> collisions;
   auto state_solver = env->getStateSolver();
