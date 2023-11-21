@@ -307,12 +307,6 @@ BasicTrustRegionSQPResults::BasicTrustRegionSQPResults(std::vector<std::string> 
   old_cost_vals.clear();
   new_cnt_viols.clear();
   old_cnt_viols.clear();
-  old_merit = 0;
-  model_merit = 0;
-  new_merit = 0;
-  approx_merit_improve = 0;
-  exact_merit_improve = 0;
-  merit_improve_ratio = 0;
   merit_error_coeffs = std::vector<double>(this->cnt_names.size(), 0);
 }
 
