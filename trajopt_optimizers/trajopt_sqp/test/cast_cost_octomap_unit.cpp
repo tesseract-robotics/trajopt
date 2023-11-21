@@ -33,7 +33,6 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <tesseract_common/types.h>
 #include <tesseract_environment/environment.h>
 #include <tesseract_environment/utils.h>
-#include <tesseract_visualization/visualization.h>
 #include <tesseract_geometry/impl/box.h>
 #include <tesseract_geometry/impl/octree.h>
 TRAJOPT_IGNORE_WARNINGS_POP
@@ -52,7 +51,6 @@ using namespace trajopt_ifopt;
 using namespace tesseract_environment;
 using namespace tesseract_kinematics;
 using namespace tesseract_collision;
-using namespace tesseract_visualization;
 using namespace tesseract_scene_graph;
 using namespace tesseract_geometry;
 using namespace tesseract_common;
@@ -61,7 +59,6 @@ class CastOctomapTest : public testing::TestWithParam<const char*>
 {
 public:
   Environment::Ptr env = std::make_shared<Environment>(); /**< Tesseract */
-  Visualization::Ptr plotter;                             /**< Trajopt Plotter */
 
   void SetUp() override
   {

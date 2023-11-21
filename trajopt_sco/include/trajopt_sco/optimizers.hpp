@@ -236,26 +236,26 @@ struct BasicTrustRegionSQPResults
   DblVec old_cnt_viols;
   /** @brief The previous iterations (exact) merit = vecSum(old_cost_vals) + merit_error_coeff * vecSum(old_cnt_viols)
    */
-  double old_merit;
+  double old_merit{ 0 };
   /** @brief The models merit = vecSum(model_cost_vals) + merit_error_coeff * vecSum(model_cnt_viols) */
-  double model_merit;
+  double model_merit{ 0 };
   /** @brief The exact merit = vecSum(new_cost_vals) + merit_error_coeff * vecSum(new_cnt_viols) */
-  double new_merit;
+  double new_merit{ 0 };
   /**
    * @brief A measure of improvement approximated using values from the model.
    * approx_merit_improve = old_merit - model_merit;
    */
-  double approx_merit_improve;
+  double approx_merit_improve{ 0 };
   /**
    * @brief A measure of improvement using exact values
    * exact_merit_improve = old_merit - new_merit;
    */
-  double exact_merit_improve;
+  double exact_merit_improve{ 0 };
   /**
    * @brief The ratio between the exact and model merit improvement
    * merit_improve_ratio = exact_merit_improve / approx_merit_improve;
    */
-  double merit_improve_ratio;
+  double merit_improve_ratio{ 0 };
   /** @brief This is the penalty applied to the constraints for this iteration */
   std::vector<double> merit_error_coeffs;
   /** @brief Variable names */

@@ -1,16 +1,4 @@
 - git:
-    local-name: ros_industrial_cmake_boilerplate
-    uri: https://github.com/ros-industrial/ros_industrial_cmake_boilerplate.git
-    version: 0.5.4
-- git:
-    local-name: tesseract
-    uri: https://github.com/ros-industrial-consortium/tesseract.git
-    version: 0.21.0
-- git:
-    local-name: opw_kinematics
-    uri: https://github.com/Jmeyer1292/opw_kinematics.git
-    version: 0.5.0
-- git:
     local-name: ifopt
     uri: https://github.com/ethz-adrl/ifopt.git
     version: 2.1.3

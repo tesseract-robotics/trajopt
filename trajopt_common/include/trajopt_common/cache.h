@@ -6,7 +6,6 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <Eigen/Eigen>
 #include <memory>
 #include <algorithm>
-#include <memory>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace trajopt_common
