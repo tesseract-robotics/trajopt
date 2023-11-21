@@ -1,0 +1,46 @@
+name: Ubuntu
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+  schedule:
+    - cron: '0 5 * * *'
+
+jobs:
+  ci:
+    name: ${{ matrix.distro }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        distro: [focal, jammy]
+    container:
+      image: ghcr.io/tesseract-robotics/tesseract:${{ matrix.distro }}-master
+      env:
+        CCACHE_DIR: "$GITHUB_WORKSPACE/${{ matrix.distro }}/.ccache"
+        DEBIAN_FRONTEND: noninteractive
+        TZ: Etc/UTC
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          path: target_ws/sr
+
+      - name: Install Depends
+        shell: bash
+        run: |
+          apt update
+          apt upgrade -y
+          apt install -y clang-tidy
+
+      - name: Build and Tests
+        uses: tesseract-robotics/colcon-action@v2
+        with:
+          before-script: source /opt/tesseract/install/setup.bash
+          ccache-prefix: ${{ matrix.distro }}
+          vcs-file: dependencies.repos
+          upstream-args: --cmake-args -DCMAKE_BUILD_TYPE=Release
+          target-path: target_ws/src
+          target-args: --cmake-args -DCMAKE_BUILD_TYPE=Debug -DTRAJOPT_ENABLE_TESTING=ON -DTRAJOPT_ENABLE_CLANG_TIDY=ON
