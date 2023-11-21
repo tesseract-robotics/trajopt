@@ -36,7 +36,7 @@ jobs:
           apt install -y clang-tidy
 
       - name: Build and Tests
-        uses: tesseract-robotics/colcon-action@v3
+        uses: tesseract-robotics/colcon-action@v4
         with:
           before-script: source /opt/tesseract/install/setup.bash
           ccache-prefix: ${{ matrix.distro }}
