@@ -2,6 +2,11 @@
 Changelog for package trajopt_utils
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Remove use of Industrial CI (`#359 <https://github.com/tesseract-robotics/trajopt/issues/359>`_)
+* Contributors: Levi Armstrong
+
 0.7.0 (2023-11-07)
 ------------------
 * Move TrajOptIfopt collision gradient types and utils to trajopt_common package
