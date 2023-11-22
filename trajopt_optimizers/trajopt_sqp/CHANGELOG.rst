@@ -2,8 +2,8 @@
 Changelog for package trajopt_sqp
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.7.1 (2023-11-22)
+------------------
 * Fix box size setting when adjusting penalties
 * Remove use of Industrial CI (`#359 <https://github.com/tesseract-robotics/trajopt/issues/359>`_)
 * - Use member initializers instead of constructor. Allows for showing defaults in doc tooltips or when going to definition. Matches trajopt_sqp.

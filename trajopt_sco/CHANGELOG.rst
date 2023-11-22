@@ -2,8 +2,8 @@
 Changelog for package trajopt_sco
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.7.1 (2023-11-22)
+------------------
 * Remove use of Industrial CI (`#359 <https://github.com/tesseract-robotics/trajopt/issues/359>`_)
 * - Use member initializers instead of constructor. Allows for showing defaults in doc tooltips or when going to definition. Matches trajopt_sqp.
   - Clean up comments
