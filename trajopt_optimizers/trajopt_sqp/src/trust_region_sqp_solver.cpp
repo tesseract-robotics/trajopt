@@ -54,11 +54,8 @@ bool TrustRegionSQPSolver::init(QPProblem::Ptr qp_prob)
   // Evaluate exact constraint violations (expensive)
   results_.best_constraint_violations = qp_problem->getExactConstraintViolations();
 
-  // Calculate exact NLP merits (expensive) - TODO: Look into caching for qp_solver->Convexify()
-  results_.best_exact_merit =
-      results_.best_costs.sum() + results_.best_constraint_violations.dot(results_.merit_error_coeffs);
-
   setBoxSize(params.initial_trust_box_size);
+  constraintMeritCoeffChanged();
   return true;
 }
 
@@ -66,6 +63,15 @@ void TrustRegionSQPSolver::setBoxSize(double box_size)
 {
   qp_problem->setBoxSize(Eigen::VectorXd::Constant(qp_problem->getNumNLPVars(), box_size));
   results_.box_size = qp_problem->getBoxSize();
+}
+
+void TrustRegionSQPSolver::constraintMeritCoeffChanged()
+{
+  qp_problem->setConstraintMeritCoeff(results_.merit_error_coeffs);
+
+  // Recalculate the best exact merit because merit coeffs may have changed
+  results_.best_exact_merit =
+      results_.best_costs.sum() + results_.best_constraint_violations.dot(results_.merit_error_coeffs);
 }
 
 void TrustRegionSQPSolver::registerCallback(const SQPCallback::Ptr& callback) { callbacks_.push_back(callback); }
@@ -186,6 +192,7 @@ void TrustRegionSQPSolver::adjustPenalty()
     results_.merit_error_coeffs *= params.merit_coeff_increase_ratio;
   }
   setBoxSize(fmax(results_.box_size[0], params.min_trust_box_size / params.trust_shrink_ratio * 1.5));
+  constraintMeritCoeffChanged();
 }
 
 bool TrustRegionSQPSolver::stepSQPSolver()
