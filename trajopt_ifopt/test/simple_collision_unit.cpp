@@ -109,7 +109,7 @@ TEST_F(SimpleCollisionTest, spheres)  // NOLINT
       std::make_shared<trajopt_ifopt::SingleTimestepCollisionEvaluator>(
           collision_cache, manip, env, trajopt_collision_config);
 
-  auto cnt = std::make_shared<trajopt_ifopt::DiscreteCollisionConstraint>(collision_evaluator, vars[0], 3);
+  auto cnt = std::make_shared<trajopt_ifopt::DiscreteCollisionConstraint>(collision_evaluator, vars[0], 3, true);
   nlp.AddConstraintSet(cnt);
 
   nlp.PrintCurrent();

@@ -116,7 +116,12 @@ bool OSQPEigenSolver::solve()
   }
 
   /** @todo Need to check if this is what we want in the new version */
-  if (solver_.solve() || solver_.workspace()->info->status_val == OSQP_SOLVED_INACCURATE)
+  const bool solved = solver_.solve();
+  const auto status = static_cast<int>(solver_.workspace()->info->status_val);
+  if (OSQP_COMPARE_DEBUG_MODE)
+    std::cout << "OSQP Status Value: " << solver_.workspace()->info->status_val << std::endl;
+
+  if (solved || status == OSQP_SOLVED_INACCURATE)
   {
     if (OSQP_COMPARE_DEBUG_MODE)
     {

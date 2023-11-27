@@ -337,15 +337,16 @@ CvxOptStatus OSQPModel::optimize()
   {
     // opt += m_objective.affexpr.constant;
     solution_ = DblVec(osqp_workspace_->solution->x, osqp_workspace_->solution->x + vars_.size());
+    auto status = static_cast<int>(osqp_workspace_->info->status_val);
 
     if (OSQP_COMPARE_DEBUG_MODE)
     {
       Eigen::IOFormat format(5);
       Eigen::Map<Eigen::VectorXd> solution_vec(solution_.data(), static_cast<Eigen::Index>(solution_.size()));
       std::cout << "OSQP Solution: " << solution_vec.transpose().format(format) << std::endl;
+      std::cout << "OSQP Status Value: " << status << std::endl;
     }
 
-    auto status = static_cast<int>(osqp_workspace_->info->status_val);
     if (status == OSQP_SOLVED || status == OSQP_SOLVED_INACCURATE)
       return CVX_SOLVED;
     if (status == OSQP_PRIMAL_INFEASIBLE || status == OSQP_PRIMAL_INFEASIBLE_INACCURATE ||

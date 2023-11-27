@@ -77,6 +77,8 @@ public:
 
   void setBoxSize(const Eigen::Ref<const Eigen::VectorXd>& box_size) override;
 
+  void setConstraintMeritCoeff(const Eigen::Ref<const Eigen::VectorXd>& merit_coeff) override;
+
   Eigen::VectorXd getBoxSize() const override;
 
   /** @brief Prints all members to the terminal in a human readable form */

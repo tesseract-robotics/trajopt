@@ -485,6 +485,12 @@ void IfoptQPProblem::setBoxSize(const Eigen::Ref<const Eigen::VectorXd>& box_siz
   updateNLPVariableBounds();
 }
 
+void IfoptQPProblem::setConstraintMeritCoeff(const Eigen::Ref<const Eigen::VectorXd>& merit_coeff)
+{
+  assert(merit_coeff.size() == num_nlp_cnts_);
+  constraint_merit_coeff_ = merit_coeff;
+}
+
 Eigen::VectorXd IfoptQPProblem::getBoxSize() const { return box_size_; }
 
 void IfoptQPProblem::print() const

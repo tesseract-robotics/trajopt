@@ -125,6 +125,8 @@ protected:
   SQPStatus status_{ SQPStatus::QP_SOLVER_ERROR };
   SQPResults results_;
   std::vector<SQPCallback::Ptr> callbacks_;
+
+  void constraintMeritCoeffChanged();
 };
 
 }  // namespace trajopt_sqp

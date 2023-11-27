@@ -129,6 +129,14 @@ public:
    * @param box_size New box size
    */
   virtual void setBoxSize(const Eigen::Ref<const Eigen::VectorXd>& box_size) = 0;
+
+  /**
+   * @brief Set the constraint merit coeff
+   * @details This controls the gradient for the constraint slack variables.
+   * @param merit_coeff
+   */
+  virtual void setConstraintMeritCoeff(const Eigen::Ref<const Eigen::VectorXd>& merit_coeff) = 0;
+
   /**
    * @brief Returns the box size
    * @return The box size for each variable
