@@ -2,6 +2,11 @@
 Changelog for package trajopt_sqp
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Fix TrajOpt Ifopt handling of constraint merit coefficient (`#366 <https://github.com/tesseract-robotics/trajopt/issues/366>`_)
+* Contributors: Levi Armstrong
+
 0.7.1 (2023-11-22)
 ------------------
 * Fix box size setting when adjusting penalties
