@@ -2,8 +2,8 @@
 Changelog for package trajopt_utils
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.7.2 (2023-11-27)
+------------------
 * Fix TrajOpt Ifopt handling of constraint merit coefficient (`#366 <https://github.com/tesseract-robotics/trajopt/issues/366>`_)
 * Removed gcc-specific options from clang config (see https://github.com/tesseract-robotics/tesseract/commit/43d08870034e85a3f335d37ded00df282e5ec46e)
 * Contributors: Levi Armstrong, Roelof Oomen

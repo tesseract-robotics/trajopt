@@ -2,8 +2,8 @@
 Changelog for package trajopt_sqp
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.7.2 (2023-11-27)
+------------------
 * Fix TrajOpt Ifopt handling of constraint merit coefficient (`#366 <https://github.com/tesseract-robotics/trajopt/issues/366>`_)
 * Contributors: Levi Armstrong
 
