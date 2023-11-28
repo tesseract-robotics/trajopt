@@ -23,12 +23,9 @@ enum OptStatus
   OPT_FAILED,
   INVALID
 };
-static const std::array<std::string, 6> OptStatus_strings = { "CONVERGED",
-                                                              "SCO_ITERATION_LIMIT",
-                                                              "PENALTY_ITERATION_LIMIT",
-                                                              "TIME_LIMI",
-                                                              "FAILED",
-                                                              "INVALID" };
+static const std::array<std::string, 6> OptStatus_strings = {
+  "CONVERGED", "SCO_ITERATION_LIMIT", "PENALTY_ITERATION_LIMIT", "TIME_LIMI", "FAILED", "INVALID"
+};
 inline std::string statusToString(OptStatus status) { return OptStatus_strings[status]; }
 struct OptResults
 {

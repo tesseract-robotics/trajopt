@@ -31,43 +31,42 @@ namespace trajopt
 {
 // Function to apply tolerances to error values
 Eigen::VectorXd applyTolerances(const Eigen::VectorXd& error,
-                                       const Eigen::VectorXd& lower_tolerance,
-                                       const Eigen::VectorXd& upper_tolerance)
+                                const Eigen::VectorXd& lower_tolerance,
+                                const Eigen::VectorXd& upper_tolerance)
 {
   Eigen::VectorXd resultant(error.size());
 
-     // Iterate through each element
-     for (int i = 0; i < error.size(); ++i)
-     {
-       // If error is within tolerances, set resultant to 0
-       if (error(i) >= lower_tolerance(i) && error(i) <= upper_tolerance(i))
-       {
-         resultant(i) = 0.0;
-       }
-       // If error is below lower tolerance, set resultant to error - lower_tolerance
-       else if (error(i) < lower_tolerance(i))
-       {
-         resultant(i) = error(i) - lower_tolerance(i);
-       }
-       // If error is above upper tolerance, set resultant to error - upper_tolerance
-       else if (error(i) > upper_tolerance(i))
-       {
-         resultant(i) = error(i) - upper_tolerance(i);
-       }
-     }
+  // Iterate through each element
+  for (int i = 0; i < error.size(); ++i)
+  {
+    // If error is within tolerances, set resultant to 0
+    if (error(i) >= lower_tolerance(i) && error(i) <= upper_tolerance(i))
+    {
+      resultant(i) = 0.0;
+    }
+    // If error is below lower tolerance, set resultant to error - lower_tolerance
+    else if (error(i) < lower_tolerance(i))
+    {
+      resultant(i) = error(i) - lower_tolerance(i);
+    }
+    // If error is above upper tolerance, set resultant to error - upper_tolerance
+    else if (error(i) > upper_tolerance(i))
+    {
+      resultant(i) = error(i) - upper_tolerance(i);
+    }
+  }
 
-     return resultant;
+  return resultant;
 }
 
-DynamicCartPoseErrCalculator::DynamicCartPoseErrCalculator(
-    tesseract_kinematics::JointGroup::ConstPtr manip,
-    std::string source_frame,
-    std::string target_frame,
-    const Eigen::Isometry3d& source_frame_offset,
-    const Eigen::Isometry3d& target_frame_offset,
-    Eigen::VectorXi indices,
-    Eigen::VectorXd lower_tolerance,
-    Eigen::VectorXd upper_tolerance)
+DynamicCartPoseErrCalculator::DynamicCartPoseErrCalculator(tesseract_kinematics::JointGroup::ConstPtr manip,
+                                                           std::string source_frame,
+                                                           std::string target_frame,
+                                                           const Eigen::Isometry3d& source_frame_offset,
+                                                           const Eigen::Isometry3d& target_frame_offset,
+                                                           Eigen::VectorXi indices,
+                                                           Eigen::VectorXd lower_tolerance,
+                                                           Eigen::VectorXd upper_tolerance)
   : manip_(std::move(manip))
   , source_frame_(std::move(source_frame))
   , target_frame_(std::move(target_frame))
@@ -80,8 +79,7 @@ DynamicCartPoseErrCalculator::DynamicCartPoseErrCalculator(
   // Check to see if the waypoint is toleranced and set the error function accordingly
   if ((lower_tolerance.size() == 0 && upper_tolerance.size() == 0) || lower_tolerance.isApprox(upper_tolerance, 1e-6))
   {
-    error_function = [this](const Eigen::Isometry3d& source_tf,
-                            const Eigen::Isometry3d& target_tf) -> Eigen::VectorXd {
+    error_function = [this](const Eigen::Isometry3d& source_tf, const Eigen::Isometry3d& target_tf) -> Eigen::VectorXd {
       return tesseract_common::calcTransformError(source_tf, target_tf);
     };
   }
@@ -162,15 +160,14 @@ MatrixXd DynamicCartPoseJacCalculator::operator()(const VectorXd& dof_vals) cons
   return reduced_jac;  // This is available in 3.4 jac0(indices_, Eigen::all);
 }
 
-CartPoseErrCalculator::CartPoseErrCalculator(
-    tesseract_kinematics::JointGroup::ConstPtr manip,
-    std::string source_frame,
-    std::string target_frame,
-    const Eigen::Isometry3d& source_frame_offset,
-    const Eigen::Isometry3d& target_frame_offset,
-    Eigen::VectorXi indices,
-    Eigen::VectorXd lower_tolerance,
-    Eigen::VectorXd upper_tolerance)
+CartPoseErrCalculator::CartPoseErrCalculator(tesseract_kinematics::JointGroup::ConstPtr manip,
+                                             std::string source_frame,
+                                             std::string target_frame,
+                                             const Eigen::Isometry3d& source_frame_offset,
+                                             const Eigen::Isometry3d& target_frame_offset,
+                                             Eigen::VectorXi indices,
+                                             Eigen::VectorXd lower_tolerance,
+                                             Eigen::VectorXd upper_tolerance)
   : manip_(std::move(manip))
   , source_frame_(std::move(source_frame))
   , target_frame_(std::move(target_frame))
@@ -183,8 +180,7 @@ CartPoseErrCalculator::CartPoseErrCalculator(
   // Check to see if the waypoint is toleranced and set the error function accordingly
   if ((lower_tolerance.size() == 0 && upper_tolerance.size() == 0) || lower_tolerance.isApprox(upper_tolerance, 1e-6))
   {
-    error_function = [this](const Eigen::Isometry3d& source_tf,
-                            const Eigen::Isometry3d& target_tf) -> Eigen::VectorXd {
+    error_function = [this](const Eigen::Isometry3d& source_tf, const Eigen::Isometry3d& target_tf) -> Eigen::VectorXd {
       return tesseract_common::calcTransformError(source_tf, target_tf);
     };
   }
@@ -243,8 +239,7 @@ void CartPoseErrCalculator::Plot(const tesseract_visualization::Visualization::P
 MatrixXd CartPoseJacCalculator::operator()(const VectorXd& dof_vals) const
 {
   // Duplicated from calcForwardNumJac in trajopt_sco/src/num_diff.cpp, but with ignoring tolerances
-  auto calc_error = [this](const VectorXd& vals) -> VectorXd
-  {
+  auto calc_error = [this](const VectorXd& vals) -> VectorXd {
     tesseract_common::TransformMap state = manip_->calcFwdKin(vals);
     Isometry3d source_tf = state[source_frame_] * source_frame_offset_;
     Isometry3d target_tf = state[target_frame_] * target_frame_offset_;
