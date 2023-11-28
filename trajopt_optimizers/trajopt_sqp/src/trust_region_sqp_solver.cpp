@@ -230,6 +230,7 @@ bool TrustRegionSQPSolver::stepSQPSolver()
 void TrustRegionSQPSolver::runTrustRegionLoop()
 {
   results_.trust_region_iteration = 0;
+  int qp_solver_failures = 0;
   while (results_.box_size.maxCoeff() >= params.min_trust_box_size)
   {
     if (SUPER_DEBUG_MODE)
@@ -240,12 +241,34 @@ void TrustRegionSQPSolver::runTrustRegionLoop()
 
     // Solve the current QP problem
     status_ = solveQPProblem();
+
     if (status_ != SQPStatus::RUNNING)
     {
-      qp_problem->setVariables(results_.best_var_vals.data());
-      qp_problem->scaleBoxSize(params.trust_shrink_ratio);
-      qp_solver->updateBounds(qp_problem->getBoundsLower(), qp_problem->getBoundsUpper());
-      results_.box_size = qp_problem->getBoxSize();
+      qp_solver_failures++;
+      CONSOLE_BRIDGE_logWarn("Convex solver failed (%d/%d)!", qp_solver_failures, params.max_qp_solver_failures);
+
+      if (qp_solver_failures < params.max_qp_solver_failures)
+      {
+        qp_problem->scaleBoxSize(params.trust_shrink_ratio);
+        qp_solver->updateBounds(qp_problem->getBoundsLower(), qp_problem->getBoundsUpper());
+        results_.box_size = qp_problem->getBoxSize();
+
+        CONSOLE_BRIDGE_logInform("Shrunk trust region. New box size: %.4f", results_.box_size[0]);
+        continue;
+      }
+
+      if (qp_solver_failures == params.max_qp_solver_failures)
+      {
+        // Convex solver failed and this is the last attempt so setting the trust region to the minimum
+        qp_problem->setBoxSize(Eigen::VectorXd::Constant(qp_problem->getNumNLPVars(), params.min_trust_box_size));
+        qp_solver->updateBounds(qp_problem->getBoundsLower(), qp_problem->getBoundsUpper());
+        results_.box_size = qp_problem->getBoxSize();
+
+        CONSOLE_BRIDGE_logInform("Shrunk trust region to minimum. New box size: %.4f", results_.box_size[0]);
+        continue;
+      }
+
+      CONSOLE_BRIDGE_logError("The convex solver failed you one too many times.");
       return;
     }
 
@@ -303,6 +326,7 @@ void TrustRegionSQPSolver::runTrustRegionLoop()
       qp_problem->setVariables(results_.best_var_vals.data());
 
       qp_problem->scaleBoxSize(params.trust_expand_ratio);
+      qp_solver->updateBounds(qp_problem->getBoundsLower(), qp_problem->getBoundsUpper());
       results_.box_size = qp_problem->getBoxSize();
       CONSOLE_BRIDGE_logInform("Expanded trust region. new box size: %.4f", results_.box_size[0]);
       return;
@@ -385,7 +409,8 @@ void TrustRegionSQPSolver::printStepInfo() const
   // Print Header
   std::printf("\n| %s |\n", std::string(88, '=').c_str());
   std::printf("| %s %s %s |\n", std::string(36, ' ').c_str(), "ROS Industrial", std::string(36, ' ').c_str());
-  std::printf("| %s %s %s |\n", std::string(32, ' ').c_str(), "TrajOpt Motion Planning", std::string(31, ' ').c_str());
+  std::printf(
+      "| %s %s %s |\n", std::string(32, ' ').c_str(), "TrajOpt Ifopt Motion Planning", std::string(31, ' ').c_str());
   std::printf("| %s |\n", std::string(88, '=').c_str());
   std::printf("| %s %s (Box Size: %-3.9f) %s |\n",
               std::string(26, ' ').c_str(),
