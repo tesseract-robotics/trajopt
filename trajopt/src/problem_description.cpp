@@ -939,7 +939,7 @@ void CartPoseTermInfo::hatch(TrajOptProb& prob)
     auto dfdx = std::make_shared<CartPoseJacCalculator>(
         prob.GetKin(), source_frame, target_frame, source_frame_offset, target_frame_offset, indices);
     prob.addCost(
-        std::make_shared<TrajOptCostFromErrFunc>(f, prob.GetVarRow(timestep, 0, n_dof), coeff, sco::ABS, name));
+        std::make_shared<TrajOptCostFromErrFunc>(f, dfdx, prob.GetVarRow(timestep, 0, n_dof), coeff, sco::ABS, name));
   }
   else if ((term_type & TT_CNT) && ~(term_type | ~TT_USE_TIME))
   {
@@ -956,7 +956,7 @@ void CartPoseTermInfo::hatch(TrajOptProb& prob)
     auto dfdx = std::make_shared<CartPoseJacCalculator>(
         prob.GetKin(), source_frame, target_frame, source_frame_offset, target_frame_offset, indices);
     prob.addConstraint(std::make_shared<TrajOptConstraintFromErrFunc>(
-        f, prob.GetVarRow(timestep, 0, n_dof), coeff, sco::EQ, name));
+        f, dfdx, prob.GetVarRow(timestep, 0, n_dof), coeff, sco::EQ, name));
   }
   else
   {

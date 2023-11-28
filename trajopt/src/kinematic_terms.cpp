@@ -34,22 +34,29 @@ Eigen::VectorXd applyTolerances(const Eigen::VectorXd& error,
                                        const Eigen::VectorXd& lower_tolerance,
                                        const Eigen::VectorXd& upper_tolerance)
 {
-  // Calculate the distance from the lower and upper tolerance, clamping values within tolerance to zero
-  Eigen::VectorXd dist_from_lower = (error - lower_tolerance).cwiseMin(0);
-  Eigen::VectorXd dist_from_upper = (error - upper_tolerance).cwiseMax(0);
+  Eigen::VectorXd resultant(error.size());
 
-  // Use array expressions for element-wise absolute value and comparison
-  Eigen::ArrayXd dist_from_lower_abs = dist_from_lower.array().abs();
-  Eigen::ArrayXd dist_from_upper_abs = dist_from_upper.array().abs();
+     // Iterate through each element
+     for (int i = 0; i < error.size(); ++i)
+     {
+       // If error is within tolerances, set resultant to 0
+       if (error(i) >= lower_tolerance(i) && error(i) <= upper_tolerance(i))
+       {
+         resultant(i) = 0.0;
+       }
+       // If error is below lower tolerance, set resultant to error - lower_tolerance
+       else if (error(i) < lower_tolerance(i))
+       {
+         resultant(i) = error(i) - lower_tolerance(i);
+       }
+       // If error is above upper tolerance, set resultant to error - upper_tolerance
+       else if (error(i) > upper_tolerance(i))
+       {
+         resultant(i) = error(i) - upper_tolerance(i);
+       }
+     }
 
-  // Select the worst error (the one furthest from the tolerance zone) while preserving the sign
-  Eigen::ArrayXd worst_error_array =
-      (dist_from_upper_abs > dist_from_lower_abs).select(dist_from_upper.array(), dist_from_lower.array());
-
-  // Convert the result back to a vector
-  Eigen::VectorXd worst_error = worst_error_array.matrix();
-
-  return worst_error;
+     return resultant;
 }
 
 DynamicCartPoseErrCalculator::DynamicCartPoseErrCalculator(
@@ -129,50 +136,26 @@ void DynamicCartPoseErrCalculator::Plot(const tesseract_visualization::Visualiza
 
 MatrixXd DynamicCartPoseJacCalculator::operator()(const VectorXd& dof_vals) const
 {
-  auto n_dof = static_cast<int>(manip_->numJoints());
+  // Duplicated from calcForwardNumJac in trajopt_sco/src/num_diff.cpp, but with ignoring tolerances
   tesseract_common::TransformMap state = manip_->calcFwdKin(dof_vals);
+  Isometry3d source_tf = state[source_frame_] * source_frame_offset_;
+  Isometry3d target_tf = state[target_frame_] * target_frame_offset_;
+  VectorXd err = tesseract_common::calcTransformError(target_tf, source_tf);
 
-  Eigen::Isometry3d source_tf = state[source_frame_] * source_frame_offset_;
-  Eigen::Isometry3d target_tf = state[target_frame_] * target_frame_offset_;
-
-  // Get the jacobian of link in the targets coordinate system
-  MatrixXd jac_link =
-      manip_->calcJacobian(dof_vals, manip_->getBaseLinkName(), source_frame_, source_frame_offset_.translation());
-  tesseract_common::jacobianChangeBase(jac_link, target_tf.inverse());
-
-  // Get the jacobian of the target in the targets coordinate system
-  MatrixXd jac_target =
-      manip_->calcJacobian(dof_vals, manip_->getBaseLinkName(), target_frame_, target_frame_offset_.translation());
-  tesseract_common::jacobianChangeBase(jac_target, target_tf.inverse());
-  tesseract_common::jacobianChangeRefPoint(jac_target, (target_tf.inverse() * source_tf).translation());
-
-  MatrixXd jac0 = jac_link - jac_target;
-
-  // Paper:
-  // https://ethz.ch/content/dam/ethz/special-interest/mavt/robotics-n-intelligent-systems/rsl-dam/documents/RobotDynamics2016/RD2016script.pdf
-  // The jacobian of the robot is the geometric jacobian (Je) which maps generalized velocities in
-  // joint space to time derivatives of the end-effector configuration representation. It does not
-  // represent the analytic jacobian (Ja) given by a partial differentiation of position and rotation
-  // to generalized coordinates. Since the geometric jacobian is unique there exists a linear mapping
-  // between velocities and the derivatives of the representation.
-  //
-  // The approach in the paper was tried but it was having issues with getting correct jacobian.
-  // Must of had an error in the implementation so should revisit at another time but the approach
-  // below should be sufficient and faster than numerical calculations using the err function.
-
-  // The approach below leverages the geometric jacobian and a small step in time to approximate
-  // the partial derivative of the error function. Note that the rotational portion is the only part
-  // that is required to be modified per the paper.
-  Isometry3d pose_err = target_tf.inverse() * source_tf;
-  Eigen::Vector3d rot_err = tesseract_common::calcRotationalError(pose_err.rotation());
-  for (int c = 0; c < jac0.cols(); ++c)
+  Eigen::MatrixXd jac0(err.size(), dof_vals.size());
+  Eigen::VectorXd dof_vals_pert = dof_vals;
+  for (int i = 0; i < dof_vals.size(); ++i)
   {
-    auto new_pose_err = trajopt_common::addTwist(pose_err, jac0.col(c), 1e-5);
-    Eigen::VectorXd new_rot_err = tesseract_common::calcRotationalError(new_pose_err.rotation());
-    jac0.col(c).tail(3) = ((new_rot_err - rot_err) / 1e-5);
+    dof_vals_pert(i) = dof_vals(i) + epsilon_;
+    tesseract_common::TransformMap state_pert = manip_->calcFwdKin(dof_vals_pert);
+    Isometry3d source_tf_pert = state_pert[source_frame_] * source_frame_offset_;
+    Isometry3d target_tf_pert = state_pert[target_frame_] * target_frame_offset_;
+    VectorXd err_pert = tesseract_common::calcTransformError(target_tf_pert, source_tf_pert);
+    jac0.col(i) = (err_pert - err) / epsilon_;
+    dof_vals_pert(i) = dof_vals(i);
   }
 
-  MatrixXd reduced_jac(indices_.size(), n_dof);
+  MatrixXd reduced_jac(indices_.size(), manip_->numJoints());
   for (int i = 0; i < indices_.size(); ++i)
     reduced_jac.row(i) = jac0.row(indices_[i]);
 
@@ -259,48 +242,29 @@ void CartPoseErrCalculator::Plot(const tesseract_visualization::Visualization::P
 
 MatrixXd CartPoseJacCalculator::operator()(const VectorXd& dof_vals) const
 {
-  tesseract_common::TransformMap state = manip_->calcFwdKin(dof_vals);
-  Eigen::Isometry3d pose_inv{ Eigen::Isometry3d::Identity() };
-  Eigen::Isometry3d tf0{ Eigen::Isometry3d::Identity() };
-  Eigen::MatrixXd jac0;
-
-  if (is_target_active_)
+  // Duplicated from calcForwardNumJac in trajopt_sco/src/num_diff.cpp, but with ignoring tolerances
+  auto calc_error = [this](const VectorXd& vals) -> VectorXd
   {
-    pose_inv = (state[source_frame_] * source_frame_offset_).inverse();
-    tf0 = state[target_frame_] * target_frame_offset_;
-    jac0 = manip_->calcJacobian(dof_vals, manip_->getBaseLinkName(), target_frame_, target_frame_offset_.translation());
-    tesseract_common::jacobianChangeBase(jac0, pose_inv);
-  }
-  else
-  {
-    pose_inv = (state[target_frame_] * target_frame_offset_).inverse();
-    tf0 = state[source_frame_] * source_frame_offset_;
-    jac0 = manip_->calcJacobian(dof_vals, manip_->getBaseLinkName(), source_frame_, source_frame_offset_.translation());
-    tesseract_common::jacobianChangeBase(jac0, pose_inv);
-  }
+    tesseract_common::TransformMap state = manip_->calcFwdKin(vals);
+    Isometry3d source_tf = state[source_frame_] * source_frame_offset_;
+    Isometry3d target_tf = state[target_frame_] * target_frame_offset_;
+    VectorXd err;
+    if (is_target_active_)
+      err = tesseract_common::calcTransformError(source_tf, target_tf);
+    else
+      err = tesseract_common::calcTransformError(target_tf, source_tf);
+    return err;
+  };
 
-  // Paper:
-  // https://ethz.ch/content/dam/ethz/special-interest/mavt/robotics-n-intelligent-systems/rsl-dam/documents/RobotDynamics2016/RD2016script.pdf
-  // The jacobian of the robot is the geometric jacobian (Je) which maps generalized velocities in
-  // joint space to time derivatives of the end-effector configuration representation. It does not
-  // represent the analytic jacobian (Ja) given by a partial differentiation of position and rotation
-  // to generalized coordinates. Since the geometric jacobian is unique there exists a linear mapping
-  // between velocities and the derivatives of the representation.
-  //
-  // The approach in the paper was tried but it was having issues with getting correct jacobian.
-  // Must of had an error in the implementation so should revisit at another time but the approach
-  // below should be sufficient and faster than numerical calculations using the err function.
-
-  // The approach below leverages the geometric jacobian and a small step in time to approximate
-  // the partial derivative of the error function. Note that the rotational portion is the only part
-  // that is required to be modified per the paper.
-  Isometry3d pose_err = pose_inv * tf0;
-  Eigen::Vector3d rot_err = tesseract_common::calcRotationalError(pose_err.rotation());
-  for (int c = 0; c < jac0.cols(); ++c)
+  VectorXd err = calc_error(dof_vals);
+  Eigen::MatrixXd jac0(err.size(), dof_vals.size());
+  Eigen::VectorXd dof_vals_pert = dof_vals;
+  for (int i = 0; i < dof_vals.size(); ++i)
   {
-    auto new_pose_err = trajopt_common::addTwist(pose_err, jac0.col(c), 1e-5);
-    Eigen::VectorXd new_rot_err = tesseract_common::calcRotationalError(new_pose_err.rotation());
-    jac0.col(c).tail(3) = ((new_rot_err - rot_err) / 1e-5);
+    dof_vals_pert(i) = dof_vals(i) + epsilon_;
+    VectorXd err_pert = calc_error(dof_vals_pert);
+    jac0.col(i) = (err_pert - err) / epsilon_;
+    dof_vals_pert(i) = dof_vals(i);
   }
 
   MatrixXd reduced_jac(indices_.size(), manip_->numJoints());

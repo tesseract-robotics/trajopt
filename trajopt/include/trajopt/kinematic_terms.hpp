@@ -16,6 +16,8 @@ TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace trajopt
 {
+const double DEFAULT_EPSILON = 1e-5;
+
 using ErrorFunctionType = std::function<Eigen::VectorXd(const Eigen::Isometry3d&, const Eigen::Isometry3d&)>;
 
 /**
@@ -96,6 +98,9 @@ struct DynamicCartPoseJacCalculator : sco::MatrixOfVector
    */
   Eigen::VectorXi indices_;
 
+  /** @brief perturbation amount for calculating Jacobian */
+  double epsilon_;
+
   DynamicCartPoseJacCalculator(
       tesseract_kinematics::JointGroup::ConstPtr manip,
       std::string source_frame,
@@ -109,6 +114,7 @@ struct DynamicCartPoseJacCalculator : sco::MatrixOfVector
     , target_frame_(std::move(target_frame))
     , target_frame_offset_(target_frame_offset)
     , indices_(std::move(indices))
+    , epsilon_(DEFAULT_EPSILON)
   {
     assert(indices_.size() <= 6);
   }
@@ -197,6 +203,9 @@ struct CartPoseJacCalculator : sco::MatrixOfVector
    */
   Eigen::VectorXi indices_;
 
+  /** @brief perturbation amount for calculating Jacobian */
+  double epsilon_;
+
   CartPoseJacCalculator(
       tesseract_kinematics::JointGroup::ConstPtr manip,
       std::string source_frame,
@@ -210,6 +219,7 @@ struct CartPoseJacCalculator : sco::MatrixOfVector
     , target_frame_(std::move(target_frame))
     , target_frame_offset_(target_frame_offset)
     , indices_(std::move(indices))
+    , epsilon_(DEFAULT_EPSILON)
   {
     is_target_active_ = manip_->isActiveLinkName(target_frame_);
     assert(indices_.size() <= 6);
