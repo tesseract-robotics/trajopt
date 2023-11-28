@@ -383,6 +383,8 @@ SQPStatus TrustRegionSQPSolver::solveQPProblem()
   }
   else
   {
+    qp_problem->setVariables(results_.best_var_vals.data());
+
     CONSOLE_BRIDGE_logError("Solver Failure");
     return SQPStatus::QP_SOLVER_ERROR;
   }
