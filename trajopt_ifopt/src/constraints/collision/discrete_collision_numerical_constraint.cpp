@@ -32,9 +32,9 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt_ifopt/constraints/collision/discrete_collision_numerical_constraint.h>
-#include <trajopt_ifopt/constraints/collision/collision_utils.h>
 #include <trajopt_ifopt/constraints/collision/weighted_average_methods.h>
 #include <trajopt_ifopt/utils/numeric_differentiation.h>
+#include <trajopt_common/collision_utils.h>
 
 namespace trajopt_ifopt
 {
@@ -95,7 +95,7 @@ Eigen::VectorXd
 DiscreteCollisionNumericalConstraint::CalcValues(const Eigen::Ref<const Eigen::VectorXd>& joint_vals) const
 {
   // Check the collisions
-  CollisionCacheData::ConstPtr collision_data = collision_evaluator_->CalcCollisions(joint_vals, bounds_.size());
+  auto collision_data = collision_evaluator_->CalcCollisions(joint_vals, bounds_.size());
   double margin_buffer = collision_evaluator_->GetCollisionConfig().collision_margin_buffer;
   Eigen::VectorXd values = Eigen::VectorXd::Constant(static_cast<Eigen::Index>(bounds_.size()), -margin_buffer);
 
@@ -125,7 +125,7 @@ void DiscreteCollisionNumericalConstraint::CalcJacobianBlock(const Eigen::Ref<co
   if (!triplet_list_.empty())                                               // NOLINT
     jac_block.setFromTriplets(triplet_list_.begin(), triplet_list_.end());  // NOLINT
 
-  CollisionCacheData::ConstPtr collision_data = collision_evaluator_->CalcCollisions(joint_vals, bounds_.size());
+  auto collision_data = collision_evaluator_->CalcCollisions(joint_vals, bounds_.size());
   if (collision_data->gradient_results_sets.empty())
     return;
 
@@ -138,11 +138,11 @@ void DiscreteCollisionNumericalConstraint::CalcJacobianBlock(const Eigen::Ref<co
   for (int j = 0; j < n_dof_; j++)
   {
     jv(j) = joint_vals(j) + delta;
-    CollisionCacheData::ConstPtr collision_data_delta = collision_evaluator_->CalcCollisions(jv, bounds_.size());
+    auto collision_data_delta = collision_evaluator_->CalcCollisions(jv, bounds_.size());
     for (int i = 0; i < static_cast<int>(cnt); ++i)
     {
-      const GradientResultsSet& baseline = collision_data->gradient_results_sets[static_cast<std::size_t>(i)];
-      auto fn = [&baseline](const GradientResultsSet& cr) {
+      const auto& baseline = collision_data->gradient_results_sets[static_cast<std::size_t>(i)];
+      auto fn = [&baseline](const trajopt_common::GradientResultsSet& cr) {
         return (cr.key == baseline.key && cr.shape_key == baseline.shape_key);
       };
 

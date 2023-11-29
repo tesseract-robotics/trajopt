@@ -82,5 +82,5 @@ macro(trajopt_variables)
     endif()
   endif()
 
-  set(TRAJOPT_CXX_VERSION 14)
+  set(TRAJOPT_CXX_VERSION 17)
 endmacro()

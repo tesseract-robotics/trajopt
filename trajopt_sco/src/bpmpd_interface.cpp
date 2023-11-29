@@ -4,6 +4,7 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <fstream>
 #include <csignal>
 #include <array>
+#include <mutex>
 #include <trajopt_sco/bpmpd_io.hpp>
 TRAJOPT_IGNORE_WARNINGS_POP
 

@@ -768,6 +768,12 @@ void TrajOptQPProblem::setBoxSize(const Eigen::Ref<const Eigen::VectorXd>& box_s
   updateNLPVariableBounds();
 }
 
+void TrajOptQPProblem::setConstraintMeritCoeff(const Eigen::Ref<const Eigen::VectorXd>& merit_coeff)
+{
+  assert(merit_coeff.size() == getNumNLPConstraints());
+  constraint_merit_coeff_ = merit_coeff;
+}
+
 Eigen::VectorXd TrajOptQPProblem::getBoxSize() const { return box_size_; }
 
 void TrajOptQPProblem::print() const

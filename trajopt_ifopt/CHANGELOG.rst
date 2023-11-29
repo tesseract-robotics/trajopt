@@ -2,6 +2,22 @@
 Changelog for package trajopt_ifopt
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.7.2 (2023-11-27)
+------------------
+* Fix TrajOpt Ifopt handling of constraint merit coefficient (`#366 <https://github.com/tesseract-robotics/trajopt/issues/366>`_)
+* Contributors: Levi Armstrong
+
+0.7.1 (2023-11-22)
+------------------
+* Remove use of Industrial CI (`#359 <https://github.com/tesseract-robotics/trajopt/issues/359>`_)
+* Contributors: Levi Armstrong
+
+0.7.0 (2023-11-07)
+------------------
+* Move TrajOptIfopt collision gradient types and utils to trajopt_common package
+* Fix ifopt continuous collision evaluator to distinguish CONTINUOUS and LVS_CONTINUOUS (`#342 <https://github.com/tesseract-robotics/trajopt/issues/342>`_)
+* Contributors: Levi Armstrong
+
 0.6.1 (2023-07-10)
 ------------------
 

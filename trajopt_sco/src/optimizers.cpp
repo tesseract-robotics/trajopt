@@ -4,7 +4,6 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <cmath>
 #include <chrono>
 #include <cstdio>
-#include <thread>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt_sco/expr_ops.hpp>
@@ -13,7 +12,6 @@ TRAJOPT_IGNORE_WARNINGS_POP
 #include <trajopt_sco/sco_common.hpp>
 #include <trajopt_sco/solver_interface.hpp>
 #include <trajopt_common/logging.hpp>
-#include <trajopt_common/macros.h>
 #include <trajopt_common/stl_to_string.hpp>
 
 namespace sco
@@ -74,28 +72,6 @@ void Optimizer::initialize(const DblVec& x)
                     prob_->getVars().size() % x.size());
   results_.clear();
   results_.x = x;
-}
-
-BasicTrustRegionSQPParameters::BasicTrustRegionSQPParameters()
-{
-  improve_ratio_threshold = 0.25;
-  min_trust_box_size = 1e-4;
-  min_approx_improve = 1e-4;
-  min_approx_improve_frac = static_cast<double>(-INFINITY);
-  max_iter = 50;
-  trust_shrink_ratio = 0.1;
-  trust_expand_ratio = 1.5;
-  cnt_tolerance = 1e-4;
-  max_merit_coeff_increases = 5;
-  max_qp_solver_failures = 3;
-  merit_coeff_increase_ratio = 10;
-  max_time = static_cast<double>(INFINITY);
-  initial_merit_error_coeff = 10;
-  inflate_constraints_individually = true;
-  trust_box_size = 1e-1;
-  log_results = false;
-  log_dir = "/tmp";
-  num_threads = 0;
 }
 
 BasicTrustRegionSQP::BasicTrustRegionSQP(const OptProb::Ptr& prob) { ctor(prob); }
@@ -330,12 +306,6 @@ BasicTrustRegionSQPResults::BasicTrustRegionSQPResults(std::vector<std::string> 
   old_cost_vals.clear();
   new_cnt_viols.clear();
   old_cnt_viols.clear();
-  old_merit = 0;
-  model_merit = 0;
-  new_merit = 0;
-  approx_merit_improve = 0;
-  exact_merit_improve = 0;
-  merit_improve_ratio = 0;
   merit_error_coeffs = std::vector<double>(this->cnt_names.size(), 0);
 }
 

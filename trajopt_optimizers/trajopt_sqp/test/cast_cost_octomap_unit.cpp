@@ -33,7 +33,6 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <tesseract_common/types.h>
 #include <tesseract_environment/environment.h>
 #include <tesseract_environment/utils.h>
-#include <tesseract_visualization/visualization.h>
 #include <tesseract_geometry/impl/box.h>
 #include <tesseract_geometry/impl/octree.h>
 TRAJOPT_IGNORE_WARNINGS_POP
@@ -52,7 +51,6 @@ using namespace trajopt_ifopt;
 using namespace tesseract_environment;
 using namespace tesseract_kinematics;
 using namespace tesseract_collision;
-using namespace tesseract_visualization;
 using namespace tesseract_scene_graph;
 using namespace tesseract_geometry;
 using namespace tesseract_common;
@@ -61,7 +59,6 @@ class CastOctomapTest : public testing::TestWithParam<const char*>
 {
 public:
   Environment::Ptr env = std::make_shared<Environment>(); /**< Tesseract */
-  Visualization::Ptr plotter;                             /**< Trajopt Plotter */
 
   void SetUp() override
   {
@@ -159,7 +156,7 @@ void runCastOctomapTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const Env
   // Step 3: Setup collision
   double margin_coeff = 10;
   double margin = 0.02;
-  auto trajopt_collision_config = std::make_shared<trajopt_ifopt::TrajOptCollisionConfig>(margin, margin_coeff);
+  auto trajopt_collision_config = std::make_shared<trajopt_common::TrajOptCollisionConfig>(margin, margin_coeff);
   trajopt_collision_config->type = tesseract_collision::CollisionEvaluatorType::LVS_CONTINUOUS;
   trajopt_collision_config->collision_margin_buffer = 0.05;
 
@@ -178,7 +175,7 @@ void runCastOctomapTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const Env
     qp_problem->addConstraintSet(cnt);
   }
 
-  auto collision_cache = std::make_shared<trajopt_ifopt::CollisionCache>(100);
+  auto collision_cache = std::make_shared<trajopt_common::CollisionCache>(100);
   std::array<bool, 2> position_vars_fixed{ true, false };
   for (std::size_t i = 1; i < vars.size(); ++i)
   {

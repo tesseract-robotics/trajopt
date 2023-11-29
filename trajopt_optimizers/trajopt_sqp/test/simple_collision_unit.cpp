@@ -30,7 +30,6 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <gtest/gtest.h>
 #include <tesseract_environment/environment.h>
 #include <tesseract_environment/utils.h>
-#include <tesseract_visualization/visualization.h>
 #include <ifopt/problem.h>
 #include <ifopt/constraint_set.h>
 TRAJOPT_IGNORE_WARNINGS_POP
@@ -53,7 +52,6 @@ using namespace trajopt_ifopt;
 using namespace tesseract_environment;
 using namespace tesseract_kinematics;
 using namespace tesseract_collision;
-using namespace tesseract_visualization;
 using namespace tesseract_scene_graph;
 using namespace tesseract_geometry;
 using namespace tesseract_common;
@@ -103,7 +101,8 @@ public:
     Eigen::VectorXd err = Eigen::VectorXd::Zero(3);
 
     // Check the collisions
-    CollisionCacheData::ConstPtr cdata = collision_evaluator_->CalcCollisions(joint_vals, bounds_.size());
+    trajopt_common::CollisionCacheData::ConstPtr cdata =
+        collision_evaluator_->CalcCollisions(joint_vals, bounds_.size());
 
     if (cdata->contact_results_map.empty())
       return err;
@@ -137,16 +136,17 @@ public:
     jac_block.reserve(n_dof_ * 3);
 
     // Calculate collisions
-    CollisionCacheData::ConstPtr cdata = collision_evaluator_->CalcCollisions(joint_vals, bounds_.size());
+    trajopt_common::CollisionCacheData::ConstPtr cdata =
+        collision_evaluator_->CalcCollisions(joint_vals, bounds_.size());
 
     // Get gradients for all contacts
     /** @todo Use the cdata gradient results */
-    std::vector<trajopt_ifopt::GradientResults> grad_results;
+    std::vector<trajopt_common::GradientResults> grad_results;
     for (const auto& pair : cdata->contact_results_map)
     {
       for (const auto& dist_result : pair.second)
       {
-        trajopt_ifopt::GradientResults result = collision_evaluator_->GetGradient(joint_vals, dist_result);
+        trajopt_common::GradientResults result = collision_evaluator_->GetGradient(joint_vals, dist_result);
         grad_results.push_back(result);
       }
     }
@@ -196,7 +196,6 @@ class SimpleCollisionTest : public testing::TestWithParam<const char*>
 {
 public:
   Environment::Ptr env = std::make_shared<Environment>(); /**< Tesseract */
-  Visualization::Ptr plotter_;                            /**< Plotter */
 
   void SetUp() override
   {
@@ -239,20 +238,20 @@ void runSimpleCollisionTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const
   }
 
   // Step 3: Setup collision
-  auto trajopt_collision_cnt_config = std::make_shared<trajopt_ifopt::TrajOptCollisionConfig>(0.2, 1);
+  auto trajopt_collision_cnt_config = std::make_shared<trajopt_common::TrajOptCollisionConfig>(0.2, 1);
   trajopt_collision_cnt_config->collision_margin_buffer = 0.05;
 
-  auto collision_cnt_cache = std::make_shared<trajopt_ifopt::CollisionCache>(100);
+  auto collision_cnt_cache = std::make_shared<trajopt_common::CollisionCache>(100);
   trajopt_ifopt::DiscreteCollisionEvaluator::Ptr collision_cnt_evaluator =
       std::make_shared<trajopt_ifopt::SingleTimestepCollisionEvaluator>(
           collision_cnt_cache, manip, env, trajopt_collision_cnt_config);
   auto collision_cnt = std::make_shared<SimpleCollisionConstraintIfopt>(collision_cnt_evaluator, vars[0]);
   qp_problem->addConstraintSet(collision_cnt);
 
-  auto trajopt_collision_cost_config = std::make_shared<trajopt_ifopt::TrajOptCollisionConfig>(0.3, 1);
+  auto trajopt_collision_cost_config = std::make_shared<trajopt_common::TrajOptCollisionConfig>(0.3, 1);
   trajopt_collision_cost_config->collision_margin_buffer = 0.05;
 
-  auto collision_cost_cache = std::make_shared<trajopt_ifopt::CollisionCache>(100);
+  auto collision_cost_cache = std::make_shared<trajopt_common::CollisionCache>(100);
   trajopt_ifopt::DiscreteCollisionEvaluator::Ptr collision_cost_evaluator =
       std::make_shared<trajopt_ifopt::SingleTimestepCollisionEvaluator>(
           collision_cost_cache, manip, env, trajopt_collision_cost_config);

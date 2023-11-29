@@ -21,8 +21,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef TRAJOPT_IFOPT_COLLISION_UTILS_H
-#define TRAJOPT_IFOPT_COLLISION_UTILS_H
+#ifndef TRAJOPT_COMMON_COLLISION_UTILS_H
+#define TRAJOPT_COMMON_COLLISION_UTILS_H
 
 #include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
@@ -31,9 +31,9 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <tesseract_kinematics/core/joint_group.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
-#include <trajopt_ifopt/constraints/collision/collision_types.h>
+#include <trajopt_common/collision_types.h>
 
-namespace trajopt_ifopt
+namespace trajopt_common
 {
 std::size_t getHash(const TrajOptCollisionConfig& collision_config, const Eigen::Ref<const Eigen::VectorXd>& dof_vals);
 std::size_t getHash(const TrajOptCollisionConfig& collision_config,
@@ -94,5 +94,5 @@ void debugPrintInfo(const tesseract_collision::ContactResult& res,
                     const Eigen::VectorXd& dof_vals,
                     bool header = false);
 
-}  // namespace trajopt_ifopt
-#endif  // TRAJOPT_IFOPT_COLLISION_UTILS_H
+}  // namespace trajopt_common
+#endif  // TRAJOPT_COMMON_COLLISION_UTILS_H

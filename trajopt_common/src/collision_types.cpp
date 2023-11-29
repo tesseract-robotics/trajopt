@@ -22,9 +22,9 @@
  * limitations under the License.
  */
 
-#include <trajopt_ifopt/constraints/collision/collision_types.h>
+#include <trajopt_common/collision_types.h>
 
-namespace trajopt_ifopt
+namespace trajopt_common
 {
 CollisionCoeffData::CollisionCoeffData(double default_collision_coeff)
   : default_collision_coeff_(default_collision_coeff)
@@ -260,4 +260,4 @@ double GradientResultsSet::getMaxErrorWithBufferT1() const
   return e;
 }
 
-}  // namespace trajopt_ifopt
+}  // namespace trajopt_common

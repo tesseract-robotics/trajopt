@@ -193,7 +193,7 @@ VarVector OptProb::createVariables(const std::vector<std::string>& names, const 
     upper_bounds_.push_back(ub[i]);
   }
   model_->update();
-  return VarVector(vars_.end() - static_cast<long int>(n_add), vars_.end());
+  return VarVector{ vars_.end() - static_cast<long int>(n_add), vars_.end() };
 }
 
 void OptProb::setLowerBounds(const DblVec& lb)

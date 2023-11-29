@@ -2,6 +2,25 @@
 Changelog for package trajopt_sco
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.7.2 (2023-11-27)
+------------------
+* Fix TrajOpt Ifopt handling of constraint merit coefficient (`#366 <https://github.com/tesseract-robotics/trajopt/issues/366>`_)
+* Contributors: Levi Armstrong
+
+0.7.1 (2023-11-22)
+------------------
+* Remove use of Industrial CI (`#359 <https://github.com/tesseract-robotics/trajopt/issues/359>`_)
+* - Use member initializers instead of constructor. Allows for showing defaults in doc tooltips or when going to definition. Matches trajopt_sqp.
+  - Clean up comments
+* Contributors: Levi Armstrong, Roelof Oomen
+
+0.7.0 (2023-11-07)
+------------------
+* Fixes some includes (required for newer GCC on Ubuntu 22.04)
+* Disable OSQP_COMPARE_DEBUG_MODE
+* Fix osqp eigen solver hessian and linear constraint matrix
+* Contributors: Levi Armstrong, Roelof Oomen
+
 0.6.1 (2023-07-10)
 ------------------
 * Add qpOASES cmake option to trajopt_sco

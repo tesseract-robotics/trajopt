@@ -29,14 +29,14 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <Eigen/Eigen>
 TRAJOPT_IGNORE_WARNINGS_POP
 
-#include <trajopt_ifopt/constraints/collision/collision_types.h>
+#include <trajopt_common/collision_types.h>
 
 namespace trajopt_ifopt
 {
-Eigen::VectorXd getWeightedAvgGradientT0(const GradientResultsSet& grad_results_set,
+Eigen::VectorXd getWeightedAvgGradientT0(const trajopt_common::GradientResultsSet& grad_results_set,
                                          double max_error_with_buffer,
                                          Eigen::Index size);
-Eigen::VectorXd getWeightedAvgGradientT1(const GradientResultsSet& grad_results_set,
+Eigen::VectorXd getWeightedAvgGradientT1(const trajopt_common::GradientResultsSet& grad_results_set,
                                          double max_error_with_buffer,
                                          Eigen::Index size);
 }  // namespace trajopt_ifopt

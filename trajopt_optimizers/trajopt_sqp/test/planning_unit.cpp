@@ -33,7 +33,6 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <tesseract_common/types.h>
 #include <tesseract_environment/environment.h>
 #include <tesseract_environment/utils.h>
-#include <tesseract_visualization/visualization.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt_ifopt/constraints/collision/continuous_collision_constraint.h>
@@ -51,7 +50,6 @@ using namespace trajopt_ifopt;
 using namespace tesseract_environment;
 using namespace tesseract_collision;
 using namespace tesseract_kinematics;
-using namespace tesseract_visualization;
 using namespace tesseract_scene_graph;
 using namespace tesseract_common;
 
@@ -59,7 +57,7 @@ class PlanningTest : public testing::TestWithParam<const char*>
 {
 public:
   Environment::Ptr env = std::make_shared<Environment>(); /**< Tesseract */
-  Visualization::Ptr plotter;                             /**< Trajopt Plotter */
+
   void SetUp() override
   {
     tesseract_common::fs::path urdf_file(std::string(TRAJOPT_DATA_DIR) + "/arm_around_table.urdf");
@@ -119,7 +117,7 @@ void runPlanningTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const Enviro
 
   double margin_coeff = 20;
   double margin = 0.025;
-  auto trajopt_collision_config = std::make_shared<trajopt_ifopt::TrajOptCollisionConfig>(margin, margin_coeff);
+  auto trajopt_collision_config = std::make_shared<trajopt_common::TrajOptCollisionConfig>(margin, margin_coeff);
   trajopt_collision_config->type = tesseract_collision::CollisionEvaluatorType::CONTINUOUS;
   trajopt_collision_config->collision_margin_buffer = 0.01;
 
@@ -145,7 +143,7 @@ void runPlanningTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const Enviro
     qp_problem->addConstraintSet(cnt);
   }
 
-  auto collision_cache = std::make_shared<trajopt_ifopt::CollisionCache>(100);
+  auto collision_cache = std::make_shared<trajopt_common::CollisionCache>(100);
   std::array<bool, 2> position_vars_fixed{ false, false };
   for (std::size_t i = 1; i < (vars.size() - 1); ++i)
   {

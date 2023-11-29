@@ -15,6 +15,8 @@ find_package(Eigen3 REQUIRED)
 find_package(Boost COMPONENTS program_options REQUIRED)
 find_package(ros_industrial_cmake_boilerplate REQUIRED)
 find_package(tesseract_common REQUIRED)
+find_package(tesseract_collision COMPONENTS core REQUIRED)
+find_package(tesseract_kinematics COMPONENTS core REQUIRED)
 
 # Load variable for clang tidy args, compiler options and cxx version
 trajopt_variables()
@@ -22,12 +24,20 @@ trajopt_variables()
 set(UTILS_SOURCE_FILES
     src/stl_to_string.cpp
     src/clock.cpp
+    src/collision_types.cpp
+    src/collision_utils.cpp
     src/config.cpp
     src/logging.cpp
     src/utils.cpp)
 
 add_library(${PROJECT_NAME} ${UTILS_SOURCE_FILES})
-target_link_libraries(${PROJECT_NAME} PUBLIC Eigen3::Eigen Boost::program_options tesseract::tesseract_common)
+target_link_libraries(
+  ${PROJECT_NAME}
+  PUBLIC Eigen3::Eigen
+         Boost::program_options
+         tesseract::tesseract_common
+         tesseract::tesseract_collision_core
+         tesseract::tesseract_kinematics_core)
 target_compile_options(${PROJECT_NAME} PRIVATE ${TRAJOPT_COMPILE_OPTIONS_PRIVATE})
 target_compile_options(${PROJECT_NAME} PUBLIC ${TRAJOPT_COMPILE_OPTIONS_PUBLIC})
 target_compile_definitions(${PROJECT_NAME} PUBLIC ${TRAJOPT_COMPILE_DEFINITIONS}

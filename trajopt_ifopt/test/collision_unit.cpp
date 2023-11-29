@@ -30,7 +30,6 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <gtest/gtest.h>
 #include <tesseract_environment/environment.h>
 #include <tesseract_environment/utils.h>
-#include <tesseract_visualization/visualization.h>
 #include <ifopt/problem.h>
 #include <ifopt/ipopt_solver.h>
 TRAJOPT_IGNORE_WARNINGS_POP
@@ -41,7 +40,6 @@ using namespace trajopt_ifopt;
 using namespace tesseract_environment;
 using namespace tesseract_kinematics;
 using namespace tesseract_collision;
-using namespace tesseract_visualization;
 using namespace tesseract_scene_graph;
 using namespace tesseract_geometry;
 using namespace tesseract_common;
@@ -64,8 +62,8 @@ public:
 
     // Set up collision evaluator
     tesseract_kinematics::JointGroup::ConstPtr kin = env->getJointGroup("manipulator");
-    auto config = std::make_shared<trajopt_ifopt::TrajOptCollisionConfig>(0.1, 1);
-    auto collision_cache = std::make_shared<trajopt_ifopt::CollisionCache>(100);
+    auto config = std::make_shared<trajopt_common::TrajOptCollisionConfig>(0.1, 1);
+    auto collision_cache = std::make_shared<trajopt_common::CollisionCache>(100);
 
     collision_evaluator =
         std::make_shared<trajopt_ifopt::SingleTimestepCollisionEvaluator>(collision_cache, kin, env, config);
