@@ -23,7 +23,7 @@ jobs:
         python -m pip install vcstool -q
     - name: vcs import
       run: >
-        vcs import --input "${{ github.workspace }}/workspace/src/trajopt/dependencies_unstable.repos" workspace/src/
+        vcs import --input "${{ github.workspace }}/workspace/src/trajopt/.github/workflows/windows_dependencies.repos" workspace/src/
     - uses: conda-incubator/setup-miniconda@v2
       with:
         miniforge-variant: Mambaforge
@@ -55,7 +55,7 @@ jobs:
         python -m pip install vcstool -q
     - name: vcs import
       run: >
-        vcs import --input "${{ github.workspace }}/workspace/src/trajopt/dependencies_unstable.repos" workspace/src/
+        vcs import --input "${{ github.workspace }}/workspace/src/trajopt/.github/workflows/windows_dependencies.repos" workspace/src/
     - uses: conda-incubator/setup-miniconda@v2
       with:
         miniforge-variant: Mambaforge
