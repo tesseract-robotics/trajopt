@@ -33,7 +33,7 @@ jobs:
         run: |
           apt update
           apt upgrade -y
-          apt install -y clang-tidy-10
+          apt install -y clang-tidy
 
       - name: Build and Tests
         uses: tesseract-robotics/colcon-action@v4
