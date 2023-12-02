@@ -83,4 +83,6 @@ CheckOptions:
     value:           '1'
   - key:             cppcoreguidelines-pro-type-member-init.IgnoreArrays
     value:           '1'
+ExtraArgs:
+  - '-std=c++17'
 ...
