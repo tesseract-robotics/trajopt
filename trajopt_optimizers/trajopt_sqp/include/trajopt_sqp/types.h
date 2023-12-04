@@ -215,7 +215,7 @@ enum class SQPStatus
   NLP_CONVERGED,           /**< NLP Successfully converged */
   ITERATION_LIMIT,         /**< SQP Optimization reached iteration limit */
   PENALTY_ITERATION_LIMIT, /**< SQP Optimization reached penalty iteration limit */
-  TIME_LIMIT,              /**< SQP Optimization reached reached limit */
+  OPT_TIME_LIMIT,          /**< SQP Optimization reached reached limit */
   QP_SOLVER_ERROR,         /**< QP Solver failed */
   CALLBACK_STOPPED         /**< Optimization stopped because callback returned false */
 };
