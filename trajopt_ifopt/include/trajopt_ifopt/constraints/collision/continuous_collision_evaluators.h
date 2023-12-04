@@ -139,9 +139,10 @@ private:
   CalcCollisionsCacheDataHelper(const Eigen::Ref<const Eigen::VectorXd>& dof_vals0,
                                 const Eigen::Ref<const Eigen::VectorXd>& dof_vals1);
 
-  void CalcCollisionsHelper(const Eigen::Ref<const Eigen::VectorXd>& dof_vals0,
+  void CalcCollisionsHelper(tesseract_collision::ContactResultMap& dist_results,
+                            const Eigen::Ref<const Eigen::VectorXd>& dof_vals0,
                             const Eigen::Ref<const Eigen::VectorXd>& dof_vals1,
-                            tesseract_collision::ContactResultMap& dist_results);
+                            const std::array<bool, 2>& position_vars_fixed);
 };
 
 /**
@@ -190,9 +191,10 @@ private:
   CalcCollisionsCacheDataHelper(const Eigen::Ref<const Eigen::VectorXd>& dof_vals0,
                                 const Eigen::Ref<const Eigen::VectorXd>& dof_vals1);
 
-  void CalcCollisionsHelper(const Eigen::Ref<const Eigen::VectorXd>& dof_vals0,
+  void CalcCollisionsHelper(tesseract_collision::ContactResultMap& dist_results,
+                            const Eigen::Ref<const Eigen::VectorXd>& dof_vals0,
                             const Eigen::Ref<const Eigen::VectorXd>& dof_vals1,
-                            tesseract_collision::ContactResultMap& dist_results);
+                            const std::array<bool, 2>& position_vars_fixed);
 };
 }  // namespace trajopt_ifopt
 #endif  // TRAJOPT_IFOPT_CONTINUOUS_COLLISION_EVALUATOR_H

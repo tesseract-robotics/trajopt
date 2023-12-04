@@ -104,7 +104,7 @@ void TrustRegionSQPSolver::solve(const QPProblem::Ptr& qp_problem)
       if (elapsed_time > params.max_time)
       {
         CONSOLE_BRIDGE_logInform("Elapsed time %f has exceeded max time %f", elapsed_time, params.max_time);
-        status_ = SQPStatus::TIME_LIMIT;
+        status_ = SQPStatus::OPT_TIME_LIMIT;
         break;
       }
 
@@ -127,7 +127,7 @@ void TrustRegionSQPSolver::solve(const QPProblem::Ptr& qp_problem)
     }
 
     // If status is iteration limit or time limit we need to exit penalty iteration loop
-    if (status_ == SQPStatus::ITERATION_LIMIT || status_ == SQPStatus::TIME_LIMIT)
+    if (status_ == SQPStatus::ITERATION_LIMIT || status_ == SQPStatus::OPT_TIME_LIMIT)
       break;
 
     // Set status to running
