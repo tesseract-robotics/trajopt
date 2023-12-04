@@ -360,99 +360,106 @@ void BasicTrustRegionSQPResults::update(const OptResults& prev_opt_results,
 void BasicTrustRegionSQPResults::print() const
 {
   // Print Header
-  std::printf("\n| %s |\n", std::string(75, '=').c_str());
-  std::printf("| %s %s %s |\n", std::string(29, ' ').c_str(), "ROS Industrial", std::string(30, ' ').c_str());
-  std::printf("| %s %s %s |\n", std::string(25, ' ').c_str(), "TrajOpt Motion Planning", std::string(25, ' ').c_str());
-  std::printf("| %s |\n", std::string(75, '=').c_str());
+  std::printf("\n| %s |\n", std::string(88, '=').c_str());
+  std::printf("| %s %s %s |\n", std::string(36, ' ').c_str(), "ROS Industrial", std::string(36, ' ').c_str());
+  std::printf("| %s %s %s |\n", std::string(31, ' ').c_str(), "TrajOpt Motion Planning", std::string(31, ' ').c_str());
+  std::printf("| %s |\n", std::string(88, '=').c_str());
 
   // Print Cost and Constraint Data
-  std::printf("| %10s | %10s | %10s | %10s | %10s | %10s | -%15s \n",
+  std::printf("| %10s | %10s | %10s | %10s | %10s | %10s | %10s |\n",
               "merit",
               "oldexact",
               "new_exact",
+              "new_approx",
               "dapprox",
               "dexact",
-              "ratio",
-              "");
-  std::printf("| %s | COSTS\n", std::string(75, '-').c_str());
+              "ratio");
+  std::printf("| %s | COSTS\n", std::string(88, '-').c_str());
   for (size_t i = 0; i < old_cost_vals.size(); ++i)
   {
     double approx_improve = old_cost_vals[i] - model_cost_vals[i];
     double exact_improve = old_cost_vals[i] - new_cost_vals[i];
     if (fabs(approx_improve) > 1e-8)
-      std::printf("| %10s | %10.3e | %10.3e | %10.3e | %10.3e | %10.3e | %-15s \n",
+      std::printf("| %10s | %10.3e | %10.3e | %10.3e | %10.3e | %10.3e | %10.3e | %-15s \n",
                   "----------",
                   old_cost_vals[i],
                   new_cost_vals[i],
+                  model_cost_vals[i],
                   approx_improve,
                   exact_improve,
                   exact_improve / approx_improve,
                   cost_names[i].c_str());
     else
-      std::printf("| %10s | %10.3e | %10.3e | %10.3e | %10.3e | %10s | %-15s \n",
+      std::printf("| %10s | %10.3e | %10.3e | %10.3e | %10.3e | %10.3e | %10s | %-15s \n",
                   "----------",
                   old_cost_vals[i],
                   new_cost_vals[i],
+                  model_cost_vals[i],
                   approx_improve,
                   exact_improve,
-                  "  ------  ",
+                  "----------",
                   cost_names[i].c_str());
   }
-  std::printf("| %s |\n", std::string(75, '=').c_str());
-  std::printf("| %10s | %10.3e | %10.3e | %10s | %10s | %10s | SUM COSTS \n",
+  std::printf("| %s |\n", std::string(88, '=').c_str());
+  std::printf("| %10s | %10.3e | %10.3e | %10.3e | %10s | %10s | %10s | SUM COSTS\n",
               "----------",
               vecSum(old_cost_vals),
               vecSum(new_cost_vals),
-              "  ------  ",
-              "  ------  ",
-              "  ------  ");
-  std::printf("| %s |\n", std::string(75, '=').c_str());
+              vecSum(model_cost_vals),
+              "----------",
+              "----------",
+              "----------");
+  std::printf("| %s |\n", std::string(88, '=').c_str());
 
   if (!cnt_names.empty())
   {
-    std::printf("| %s | CONSTRAINTS\n", std::string(75, '-').c_str());
+    std::printf("| %s | CONSTRAINTS\n", std::string(88, '-').c_str());
     for (size_t i = 0; i < old_cnt_viols.size(); ++i)
     {
       double approx_improve = old_cnt_viols[i] - model_cnt_viols[i];
       double exact_improve = old_cnt_viols[i] - new_cnt_viols[i];
       if (fabs(approx_improve) > 1e-8)
-        std::printf("| %10.3e | %10.3e | %10.3e | %10.3e | %10.3e | %10.3e | %-15s \n",
+        std::printf("| %10.3e | %10.3e | %10.3e | %10.3e | %10.3e | %10.3e | %10.3e | %-15s \n",
                     merit_error_coeffs[i],
                     merit_error_coeffs[i] * old_cnt_viols[i],
                     merit_error_coeffs[i] * new_cnt_viols[i],
+                    merit_error_coeffs[i] * model_cnt_viols[i],
                     merit_error_coeffs[i] * approx_improve,
                     merit_error_coeffs[i] * exact_improve,
                     exact_improve / approx_improve,
                     cnt_names[i].c_str());
       else
-        std::printf("| %10.3e | %10.3e | %10.3e | %10.3e | %10.3e | %10s | %-15s \n",
+        std::printf("| %10.3e | %10.3e | %10.3e | %10.3e | %10.3e | %10.3e | %10s | %-15s \n",
                     merit_error_coeffs[i],
                     merit_error_coeffs[i] * old_cnt_viols[i],
                     merit_error_coeffs[i] * new_cnt_viols[i],
+                    merit_error_coeffs[i] * model_cnt_viols[i],
                     merit_error_coeffs[i] * approx_improve,
                     merit_error_coeffs[i] * exact_improve,
-                    "  ------  ",
+                    "----------",
                     cnt_names[i].c_str());
     }
   }
-  std::printf("| %s |\n", std::string(75, '=').c_str());
-  std::printf("| %10s | %10.3e | %10.3e | %10s | %10s | %10s | SUM CONSTRAINTS (WITHOUT MERIT) \n",
+  std::printf("| %s |\n", std::string(88, '=').c_str());
+  std::printf("| %10s | %10.3e | %10.3e | %10.3e | %10s | %10s | %10s | SUM CONSTRAINTS (WITHOUT MERIT) \n",
               "----------",
               vecSum(old_cnt_viols),
               vecSum(new_cnt_viols),
-              "  ------  ",
-              "  ------  ",
-              "  ------  ");
-  std::printf("| %s |\n", std::string(75, '=').c_str());
-  std::printf("| %10s | %10.3e | %10.3e | %10.3e | %10.3e | %10.3e | TOTAL = SUM COSTS + SUM CONSTRAINTS (WITH "
+              vecSum(model_cnt_viols),
+              "----------",
+              "----------",
+              "----------");
+  std::printf("| %s |\n", std::string(88, '=').c_str());
+  std::printf("| %10s | %10.3e | %10.3e | %10s | %10.3e | %10.3e | %10.3e | TOTAL = SUM COSTS + SUM CONSTRAINTS (WITH "
               "MERIT)\n",
               "----------",
               old_merit,
               new_merit,
+              "----------",
               approx_merit_improve,
               exact_merit_improve,
               merit_improve_ratio);
-  std::printf("| %s |\n", std::string(75, '=').c_str());
+  std::printf("| %s |\n", std::string(88, '=').c_str());
 }
 
 void BasicTrustRegionSQPResults::writeSolver(std::FILE* stream, bool header) const
