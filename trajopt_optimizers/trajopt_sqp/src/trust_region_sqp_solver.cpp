@@ -98,7 +98,7 @@ void TrustRegionSQPSolver::solve(const QPProblem::Ptr& qp_problem)
     results_.convexify_iteration = 0;
 
     // Convexification loop
-    for (int convex_iteration = 0; convex_iteration < 100; convex_iteration++)
+    for (int convex_iteration = 1; convex_iteration < 100; convex_iteration++)
     {
       double elapsed_time = std::chrono::duration<double, std::milli>(Clock::now() - start_time).count() / 1000.0;
       if (elapsed_time > params.max_time)
@@ -412,7 +412,7 @@ void TrustRegionSQPSolver::printStepInfo() const
   std::printf("\n| %s |\n", std::string(88, '=').c_str());
   std::printf("| %s %s %s |\n", std::string(36, ' ').c_str(), "ROS Industrial", std::string(36, ' ').c_str());
   std::printf(
-      "| %s %s %s |\n", std::string(32, ' ').c_str(), "TrajOpt Ifopt Motion Planning", std::string(31, ' ').c_str());
+      "| %s %s %s |\n", std::string(28, ' ').c_str(), "TrajOpt Ifopt Motion Planning", std::string(29, ' ').c_str());
   std::printf("| %s |\n", std::string(88, '=').c_str());
   std::printf("| %s %s (Box Size: %-3.9f) %s |\n",
               std::string(26, ' ').c_str(),
