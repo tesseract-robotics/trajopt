@@ -343,8 +343,8 @@ CvxOptStatus OSQPModel::optimize()
     {
       Eigen::IOFormat format(5);
       Eigen::Map<Eigen::VectorXd> solution_vec(solution_.data(), static_cast<Eigen::Index>(solution_.size()));
-      std::cout << "OSQP Solution: " << solution_vec.transpose().format(format) << std::endl;
       std::cout << "OSQP Status Value: " << status << std::endl;
+      std::cout << "OSQP Solution: " << solution_vec.transpose().format(format) << std::endl;
     }
 
     if (status == OSQP_SOLVED || status == OSQP_SOLVED_INACCURATE)
