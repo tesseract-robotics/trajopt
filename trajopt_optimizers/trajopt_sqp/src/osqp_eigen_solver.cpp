@@ -275,21 +275,21 @@ bool OSQPEigenSolver::updateGradient(const Eigen::Ref<const Eigen::VectorXd>& gr
 
 bool OSQPEigenSolver::updateLowerBound(const Eigen::Ref<const Eigen::VectorXd>& lowerBound)
 {
-  bounds_lower_ = lowerBound.cwiseMax(Eigen::VectorXd::Ones(num_cnts_) * -OSQP_INFTY);
+  bounds_lower_ = lowerBound.cwiseMax(Eigen::VectorXd::Ones(num_cnts_) * -INFINITY);
   return solver_.updateLowerBound(bounds_lower_);
 }
 
 bool OSQPEigenSolver::updateUpperBound(const Eigen::Ref<const Eigen::VectorXd>& upperBound)
 {
-  bounds_upper_ = upperBound.cwiseMin(Eigen::VectorXd::Ones(num_cnts_) * OSQP_INFTY);
+  bounds_upper_ = upperBound.cwiseMin(Eigen::VectorXd::Ones(num_cnts_) * INFINITY);
   return solver_.updateUpperBound(bounds_upper_);
 }
 
 bool OSQPEigenSolver::updateBounds(const Eigen::Ref<const Eigen::VectorXd>& lowerBound,
                                    const Eigen::Ref<const Eigen::VectorXd>& upperBound)
 {
-  bounds_lower_ = lowerBound.cwiseMax(Eigen::VectorXd::Ones(num_cnts_) * -OSQP_INFTY);
-  bounds_upper_ = upperBound.cwiseMin(Eigen::VectorXd::Ones(num_cnts_) * OSQP_INFTY);
+  bounds_lower_ = lowerBound.cwiseMax(Eigen::VectorXd::Ones(num_cnts_) * -INFINITY);
+  bounds_upper_ = upperBound.cwiseMin(Eigen::VectorXd::Ones(num_cnts_) * INFINITY);
 
   if (solver_.isInitialized())
     return solver_.updateBounds(bounds_lower_, bounds_upper_);
