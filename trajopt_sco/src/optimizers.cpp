@@ -362,7 +362,7 @@ void BasicTrustRegionSQPResults::print() const
   // Print Header
   std::printf("\n| %s |\n", std::string(88, '=').c_str());
   std::printf("| %s %s %s |\n", std::string(36, ' ').c_str(), "ROS Industrial", std::string(36, ' ').c_str());
-  std::printf("| %s %s %s |\n", std::string(31, ' ').c_str(), "TrajOpt Motion Planning", std::string(31, ' ').c_str());
+  std::printf("| %s %s %s |\n", std::string(32, ' ').c_str(), "TrajOpt Motion Planning", std::string(31, ' ').c_str());
   std::printf("| %s |\n", std::string(88, '=').c_str());
 
   // Print Cost and Constraint Data
