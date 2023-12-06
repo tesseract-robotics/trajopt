@@ -72,6 +72,8 @@ struct SQPParameters
   double cnt_tolerance = 1e-4;
   /** @brief Max number of times the constraints will be inflated */
   double max_merit_coeff_increases = 5;
+  /** @brief Max number of times the QP solver can fail before optimization is aborted */
+  int max_qp_solver_failures = 3;
   /** @brief Constraints are scaled by this amount when inflated */
   double merit_coeff_increase_ratio = 10;
   /** @brief Max time in seconds that the optimizer will run */

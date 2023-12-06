@@ -56,7 +56,7 @@ public:
   /** @brief Set the current Optimization variables */
   virtual void setVariables(const double* x) = 0;
 
-  /** @brief Set the current Optimization variable values */
+  /** @brief Get the current Optimization variable values */
   virtual Eigen::VectorXd getVariableValues() const = 0;
 
   /** @brief Run the full convexification routine */
