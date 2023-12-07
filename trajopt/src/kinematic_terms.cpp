@@ -175,6 +175,7 @@ CartPoseErrCalculator::CartPoseErrCalculator(tesseract_kinematics::JointGroup::C
   , indices_(std::move(indices))
 {
   assert(indices_.size() <= 6);
+  is_target_active_ = manip_->isActiveLinkName(target_frame_);
 
   // Check to see if the waypoint is toleranced and set the error function accordingly
   if ((lower_tolerance.size() == 0 && upper_tolerance.size() == 0) || lower_tolerance.isApprox(upper_tolerance, 1e-6))
