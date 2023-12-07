@@ -799,7 +799,7 @@ void DynamicCartPoseTermInfo::hatch(TrajOptProb& prob)
     else if (term_type & TT_CNT)
     {
       prob.addConstraint(
-          std::make_shared<TrajOptConstraintFromErrFunc>(f, prob.GetVarRow(timestep, 0, n_dof), coeff, sco::EQ, name));
+          std::make_shared<TrajOptConstraintFromErrFunc>(f, dfdx, prob.GetVarRow(timestep, 0, n_dof), coeff, sco::EQ, name));
     }
     else
     {
