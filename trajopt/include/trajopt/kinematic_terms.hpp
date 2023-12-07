@@ -148,7 +148,7 @@ struct CartPoseErrCalculator : public TrajOptVectorOfVector
 
   /** @brief Error function for calculating the error in the position given the source and target positions
    * this defaults to tesseract_common::calcTransformError if unset*/
-  ErrorFunctionType error_function = nullptr;
+  ErrorFunctionType error_function_ = nullptr;
 
   /**
    * @brief This is a vector of indices to be returned Default: {0, 1, 2, 3, 4, 5}

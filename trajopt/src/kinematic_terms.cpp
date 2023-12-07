@@ -35,7 +35,6 @@ Eigen::VectorXd applyTolerances(const Eigen::VectorXd& error,
                                 const Eigen::VectorXd& upper_tolerance)
 {
   Eigen::VectorXd resultant(error.size());
-
   // Iterate through each element
   for (int i = 0; i < error.size(); ++i)
   {
@@ -180,14 +179,14 @@ CartPoseErrCalculator::CartPoseErrCalculator(tesseract_kinematics::JointGroup::C
   // Check to see if the waypoint is toleranced and set the error function accordingly
   if ((lower_tolerance.size() == 0 && upper_tolerance.size() == 0) || lower_tolerance.isApprox(upper_tolerance, 1e-6))
   {
-    error_function = [this](const Eigen::Isometry3d& source_tf, const Eigen::Isometry3d& target_tf) -> Eigen::VectorXd {
+    error_function_ = [this](const Eigen::Isometry3d& source_tf, const Eigen::Isometry3d& target_tf) -> Eigen::VectorXd {
       return tesseract_common::calcTransformError(source_tf, target_tf);
     };
   }
   else
   {
-    error_function = [lower_tolerance, upper_tolerance](const Eigen::Isometry3d& source_tf,
-                                                        const Eigen::Isometry3d& target_tf) -> Eigen::VectorXd {
+    error_function_ = [lower_tolerance, upper_tolerance](const Eigen::Isometry3d& source_tf,
+                                                         const Eigen::Isometry3d& target_tf) -> Eigen::VectorXd {
       // Calculate the error using tesseract_common::calcTransformError or equivalent
       Eigen::VectorXd err = tesseract_common::calcTransformError(source_tf, target_tf);
 
@@ -205,9 +204,9 @@ VectorXd CartPoseErrCalculator::operator()(const VectorXd& dof_vals) const
 
   VectorXd err;
   if (is_target_active_)
-    err = error_function(source_tf, target_tf);
+    err = error_function_(source_tf, target_tf);
   else
-    err = error_function(target_tf, source_tf);
+    err = error_function_(target_tf, source_tf);
 
   VectorXd reduced_err(indices_.size());
   for (int i = 0; i < indices_.size(); ++i)
@@ -248,7 +247,12 @@ MatrixXd CartPoseJacCalculator::operator()(const VectorXd& dof_vals) const
       err = tesseract_common::calcTransformError(source_tf, target_tf);
     else
       err = tesseract_common::calcTransformError(target_tf, source_tf);
-    return err;
+
+    VectorXd reduced_err(indices_.size());
+    for (int i = 0; i < indices_.size(); ++i)
+      reduced_err[i] = err[indices_[i]];
+
+    return reduced_err;
   };
 
   VectorXd err = calc_error(dof_vals);
