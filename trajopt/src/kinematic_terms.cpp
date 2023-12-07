@@ -180,7 +180,8 @@ CartPoseErrCalculator::CartPoseErrCalculator(tesseract_kinematics::JointGroup::C
   // Check to see if the waypoint is toleranced and set the error function accordingly
   if ((lower_tolerance.size() == 0 && upper_tolerance.size() == 0) || lower_tolerance.isApprox(upper_tolerance, 1e-6))
   {
-    error_function_ = [this](const Eigen::Isometry3d& source_tf, const Eigen::Isometry3d& target_tf) -> Eigen::VectorXd {
+    error_function_ = [this](const Eigen::Isometry3d& source_tf,
+                             const Eigen::Isometry3d& target_tf) -> Eigen::VectorXd {
       return tesseract_common::calcTransformError(source_tf, target_tf);
     };
   }
