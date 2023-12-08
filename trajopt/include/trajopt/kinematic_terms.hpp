@@ -45,7 +45,7 @@ struct DynamicCartPoseErrCalculator : public TrajOptVectorOfVector
 
   /** @brief Error function for calculating the error in the position given the source and target positions
    * this defaults to tesseract_common::calcTransformError if unset*/
-  ErrorFunctionType error_function = nullptr;
+  ErrorFunctionType error_function{ nullptr };
 
   /**
    * @brief This is a vector of indices to be returned Default: {0, 1, 2, 3, 4, 5}
@@ -62,8 +62,8 @@ struct DynamicCartPoseErrCalculator : public TrajOptVectorOfVector
       const Eigen::Isometry3d& source_frame_offset = Eigen::Isometry3d::Identity(),
       const Eigen::Isometry3d& target_frame_offset = Eigen::Isometry3d::Identity(),
       Eigen::VectorXi indices = Eigen::Matrix<int, 1, 6>(std::vector<int>({ 0, 1, 2, 3, 4, 5 }).data()),
-      Eigen::VectorXd lower_tolerance = Eigen::VectorXd::Zero(6),
-      Eigen::VectorXd upper_tolerance = Eigen::VectorXd::Zero(6));
+      Eigen::VectorXd lower_tolerance = {},
+      Eigen::VectorXd upper_tolerance = {});
 
   void Plot(const tesseract_visualization::Visualization::Ptr& plotter, const Eigen::VectorXd& dof_vals) override;
 
@@ -148,7 +148,7 @@ struct CartPoseErrCalculator : public TrajOptVectorOfVector
 
   /** @brief Error function for calculating the error in the position given the source and target positions
    * this defaults to tesseract_common::calcTransformError if unset*/
-  ErrorFunctionType error_function_ = nullptr;
+  ErrorFunctionType error_function_{ nullptr };
 
   /**
    * @brief This is a vector of indices to be returned Default: {0, 1, 2, 3, 4, 5}
@@ -165,8 +165,8 @@ struct CartPoseErrCalculator : public TrajOptVectorOfVector
       const Eigen::Isometry3d& source_frame_offset = Eigen::Isometry3d::Identity(),
       const Eigen::Isometry3d& target_frame_offset = Eigen::Isometry3d::Identity(),
       Eigen::VectorXi indices = Eigen::Matrix<int, 1, 6>(std::vector<int>({ 0, 1, 2, 3, 4, 5 }).data()),
-      Eigen::VectorXd lower_tolerance = Eigen::VectorXd::Zero(6),
-      Eigen::VectorXd upper_tolerance = Eigen::VectorXd::Zero(6));
+      Eigen::VectorXd lower_tolerance = {},
+      Eigen::VectorXd upper_tolerance = {});
 
   void Plot(const tesseract_visualization::Visualization::Ptr& plotter, const Eigen::VectorXd& dof_vals) override;
 

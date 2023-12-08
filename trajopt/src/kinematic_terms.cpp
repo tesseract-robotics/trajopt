@@ -35,6 +35,15 @@ Eigen::VectorXd applyTolerances(const Eigen::VectorXd& error,
                                 const Eigen::VectorXd& upper_tolerance)
 {
   Eigen::VectorXd resultant(error.size());
+
+  if (error.size() > lower_tolerance.size() || error.size() > upper_tolerance.size())
+  {
+    std::stringstream error_ss;
+    error_ss << "applyTolerances: error vector size greater than tolerance vector size: ";
+    error_ss << lower_tolerance.size() << ", upper: " << upper_tolerance.size() << ", error: " << error.size();
+    throw std::runtime_error(error_ss.str());
+  }
+
   // Iterate through each element
   for (int i = 0; i < error.size(); ++i)
   {
@@ -75,8 +84,17 @@ DynamicCartPoseErrCalculator::DynamicCartPoseErrCalculator(tesseract_kinematics:
 {
   assert(indices_.size() <= 6);
 
+  if (lower_tolerance.size() != upper_tolerance.size())
+  {
+    std::stringstream error_ss;
+    error_ss << "CartPoseErrCalculator: Mismatched tolerance sizes. lower: " << lower_tolerance.size()
+             << ", upper: " << upper_tolerance.size();
+    throw std::runtime_error(error_ss.str());
+  }
+
   // Check to see if the waypoint is toleranced and set the error function accordingly
-  if ((lower_tolerance.size() == 0 && upper_tolerance.size() == 0) || lower_tolerance.isApprox(upper_tolerance, 1e-6))
+  if ((lower_tolerance.size() == 0 && upper_tolerance.size() == 0) ||
+      tesseract_common::almostEqualRelativeAndAbs(lower_tolerance, upper_tolerance))
   {
     error_function = [this](const Eigen::Isometry3d& source_tf, const Eigen::Isometry3d& target_tf) -> Eigen::VectorXd {
       return tesseract_common::calcTransformError(source_tf, target_tf);
@@ -177,8 +195,17 @@ CartPoseErrCalculator::CartPoseErrCalculator(tesseract_kinematics::JointGroup::C
   assert(indices_.size() <= 6);
   is_target_active_ = manip_->isActiveLinkName(target_frame_);
 
+  if (lower_tolerance.size() != upper_tolerance.size())
+  {
+    std::stringstream error_ss;
+    error_ss << "CartPoseErrCalculator: Mismatched tolerance sizes. lower: " << lower_tolerance.size()
+             << ", upper: " << upper_tolerance.size();
+    throw std::runtime_error(error_ss.str());
+  }
+
   // Check to see if the waypoint is toleranced and set the error function accordingly
-  if ((lower_tolerance.size() == 0 && upper_tolerance.size() == 0) || lower_tolerance.isApprox(upper_tolerance, 1e-6))
+  if ((lower_tolerance.size() == 0 && upper_tolerance.size() == 0) ||
+      tesseract_common::almostEqualRelativeAndAbs(lower_tolerance, upper_tolerance))
   {
     error_function_ = [this](const Eigen::Isometry3d& source_tf,
                              const Eigen::Isometry3d& target_tf) -> Eigen::VectorXd {
@@ -246,9 +273,9 @@ MatrixXd CartPoseJacCalculator::operator()(const VectorXd& dof_vals) const
     Isometry3d target_tf = state[target_frame_] * target_frame_offset_;
     VectorXd err;
     if (is_target_active_)
-      err = tesseract_common::calcTransformError(source_tf, target_tf);
+      err = tesseract_common::calcTransformErrorJac(source_tf, target_tf);
     else
-      err = tesseract_common::calcTransformError(target_tf, source_tf);
+      err = tesseract_common::calcTransformErrorJac(target_tf, source_tf);
 
     VectorXd reduced_err(indices_.size());
     for (int i = 0; i < indices_.size(); ++i)
