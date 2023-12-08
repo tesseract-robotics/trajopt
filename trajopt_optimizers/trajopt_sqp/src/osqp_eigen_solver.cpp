@@ -312,7 +312,7 @@ bool OSQPEigenSolver::updateLinearConstraintsMatrix(const SparseMatrix& linearCo
     bool success = solver_.updateLinearConstraintsMatrix(cleaned);
     if (cleaned.nonZeros() == 0) /** @todo Remove when upgrading to OSQP 1.0.0 */
     {
-      csc_spfree(solver_.data()->getData()->A);
+      csc_spfree_fix(solver_.data()->getData()->A);
       solver_.data()->getData()->A = nullptr;
       solver_.data()->getData()->A = csc_spalloc_fix(cleaned.rows(), cleaned.cols(), 0, 1, 0);
     }
@@ -322,7 +322,7 @@ bool OSQPEigenSolver::updateLinearConstraintsMatrix(const SparseMatrix& linearCo
   bool success = solver_.data()->setLinearConstraintsMatrix(cleaned);
   if (cleaned.nonZeros() == 0) /** @todo Remove when upgrading to OSQP 1.0.0 */
   {
-    csc_spfree(solver_.data()->getData()->A);
+    csc_spfree_fix(solver_.data()->getData()->A);
     solver_.data()->getData()->A = nullptr;
     solver_.data()->getData()->A = csc_spalloc_fix(cleaned.rows(), cleaned.cols(), 0, 1, 0);
   }
