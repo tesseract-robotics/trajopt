@@ -70,11 +70,7 @@ LVSContinuousCollisionEvaluator::LVSContinuousCollisionEvaluator(
 
   contact_manager_ = env_->getContinuousContactManager();
   contact_manager_->setActiveCollisionObjects(manip_active_link_names_);
-  contact_manager_->setCollisionMarginData(collision_config_->contact_manager_config.margin_data);
-  // Increase the default by the buffer
-  contact_manager_->setDefaultCollisionMarginData(
-      collision_config_->contact_manager_config.margin_data.getMaxCollisionMargin() +
-      collision_config_->collision_margin_buffer);
+  contact_manager_->applyContactManagerConfig(collision_config_->contact_manager_config);
 }
 
 trajopt_common::CollisionCacheData::ConstPtr
@@ -308,11 +304,7 @@ LVSDiscreteCollisionEvaluator::LVSDiscreteCollisionEvaluator(
 
   contact_manager_ = env_->getDiscreteContactManager();
   contact_manager_->setActiveCollisionObjects(manip_active_link_names_);
-  contact_manager_->setCollisionMarginData(collision_config_->contact_manager_config.margin_data);
-  // Increase the default by the buffer
-  contact_manager_->setDefaultCollisionMarginData(
-      collision_config_->contact_manager_config.margin_data.getMaxCollisionMargin() +
-      collision_config_->collision_margin_buffer);
+  contact_manager_->applyContactManagerConfig(collision_config_->contact_manager_config);
 }
 
 trajopt_common::CollisionCacheData::ConstPtr
