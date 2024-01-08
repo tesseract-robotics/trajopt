@@ -108,6 +108,10 @@ void TrustRegionSQPSolver::solve(const QPProblem::Ptr& qp_problem)
         break;
       }
 
+      CONSOLE_BRIDGE_logDebug("current iterate: %s",
+                              (std::ostringstream() << results_.best_var_vals.transpose()).str().c_str());
+      CONSOLE_BRIDGE_logInform("iteration %i", convex_iteration);
+
       if (results_.overall_iteration >= params.max_iterations)
       {
         CONSOLE_BRIDGE_logInform("Iteration limit");
