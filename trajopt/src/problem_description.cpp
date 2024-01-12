@@ -786,7 +786,6 @@ void DynamicCartPoseTermInfo::hatch(TrajOptProb& prob)
                                                             lower_tolerance,
                                                             upper_tolerance);
 
-    // This is currently not being used. There is an intermittent bug that needs to be tracked down it is not used.
     auto dfdx = std::make_shared<DynamicCartPoseJacCalculator>(
         prob.GetKin(), source_frame, target_frame, source_frame_offset, target_frame_offset, indices);
 
@@ -935,7 +934,6 @@ void CartPoseTermInfo::hatch(TrajOptProb& prob)
                                                      lower_tolerance,
                                                      upper_tolerance);
 
-    // This is currently not being used. There is an intermittent bug that needs to be tracked down it is not used.
     auto dfdx = std::make_shared<CartPoseJacCalculator>(
         prob.GetKin(), source_frame, target_frame, source_frame_offset, target_frame_offset, indices);
     prob.addCost(
@@ -952,7 +950,6 @@ void CartPoseTermInfo::hatch(TrajOptProb& prob)
                                                      lower_tolerance,
                                                      upper_tolerance);
 
-    // This is currently not being used. There is an intermittent bug that needs to be tracked down it is not used.
     auto dfdx = std::make_shared<CartPoseJacCalculator>(
         prob.GetKin(), source_frame, target_frame, source_frame_offset, target_frame_offset, indices);
     prob.addConstraint(std::make_shared<TrajOptConstraintFromErrFunc>(
