@@ -79,7 +79,8 @@ TEST_F(KinematicCostsTest, CartPoseJacCalculator)  // NOLINT
   std::string source_frame = env_->getRootLinkName();
   std::string target_frame = "r_gripper_tool_frame";
   Eigen::Isometry3d source_frame_offset = env_->getState().link_transforms.at(target_frame);
-  Eigen::Isometry3d target_frame_offset = Eigen::Isometry3d::Identity();
+  Eigen::Isometry3d target_frame_offset =
+      Eigen::Isometry3d::Identity() * Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitZ());
 
   Eigen::VectorXd values(7);
   values << -1.1, 1.2, -3.3, -1.4, 5.5, -1.6, 7.7;
