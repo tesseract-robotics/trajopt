@@ -3,7 +3,7 @@ set -e
 ln -s $BUILD_PREFIX/bin/x86_64-conda-linux-gnu-gcc $BUILD_PREFIX/bin/gcc
 
 colcon build --merge-install --install-base="$PREFIX/opt/tesseract_robotics" \
-   --event-handlers console_cohesion+ \
+   --event-handlers console_cohesion+ desktop_notification- status- terminal_title- \
    --packages-ignore gtest osqp osqp_eigen tesseract_examples trajopt_ifopt trajopt_sqp \
    --cmake-args -DCMAKE_BUILD_TYPE=Release \
    -DBUILD_SHARED_LIBS=ON \
@@ -18,9 +18,10 @@ colcon build --merge-install --install-base="$PREFIX/opt/tesseract_robotics" \
    -DTESSERACT_ENABLE_TESTING=ON \
    -DTRAJOPT_ENABLE_TESTING=ON
 
-set TESSERACT_RESOURCE_PATH="$PREFIX/opt/tesseract_robotics/share"
+export TESSERACT_RESOURCE_PATH="$PREFIX/opt/tesseract_robotics/share"
 
-colcon test --event-handlers console_direct+ --return-code-on-test-failure \
+colcon test --event-handlers console_direct+ desktop_notification- status- terminal_title- \
+   --return-code-on-test-failure \
    --packages-ignore gtest osqp osqp_eigen tesseract_examples trajopt_ifopt trajopt_sqp tesseract_common \
    --merge-install --install-base="$PREFIX/opt/tesseract_robotics" 
 

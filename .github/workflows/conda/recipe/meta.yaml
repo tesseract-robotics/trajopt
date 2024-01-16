@@ -42,6 +42,8 @@ requirements:
       - xorg-libx11    # [unix]
       - xorg-libxext   # [unix]
       - blas
+      - osqp
+      - qpoases
     run:
       - boost-cpp
       - eigen 
@@ -63,6 +65,8 @@ requirements:
       - xorg-libx11    # [unix]
       - xorg-libxext   # [unix]
       - blas
+      - osqp
+      - qpoases
 
 build:
   skip: true # [py<37]
