@@ -98,13 +98,13 @@ void TrustRegionSQPSolver::solve(const QPProblem::Ptr& qp_problem)
     results_.convexify_iteration = 0;
 
     // Convexification loop
-    for (int convex_iteration = 0; convex_iteration < 100; convex_iteration++)
+    for (int convex_iteration = 1; convex_iteration < 100; convex_iteration++)
     {
       double elapsed_time = std::chrono::duration<double, std::milli>(Clock::now() - start_time).count() / 1000.0;
       if (elapsed_time > params.max_time)
       {
         CONSOLE_BRIDGE_logInform("Elapsed time %f has exceeded max time %f", elapsed_time, params.max_time);
-        status_ = SQPStatus::TIME_LIMIT;
+        status_ = SQPStatus::OPT_TIME_LIMIT;
         break;
       }
 
@@ -127,7 +127,7 @@ void TrustRegionSQPSolver::solve(const QPProblem::Ptr& qp_problem)
     }
 
     // If status is iteration limit or time limit we need to exit penalty iteration loop
-    if (status_ == SQPStatus::ITERATION_LIMIT || status_ == SQPStatus::TIME_LIMIT)
+    if (status_ == SQPStatus::ITERATION_LIMIT || status_ == SQPStatus::OPT_TIME_LIMIT)
       break;
 
     // Set status to running
@@ -230,6 +230,7 @@ bool TrustRegionSQPSolver::stepSQPSolver()
 void TrustRegionSQPSolver::runTrustRegionLoop()
 {
   results_.trust_region_iteration = 0;
+  int qp_solver_failures = 0;
   while (results_.box_size.maxCoeff() >= params.min_trust_box_size)
   {
     if (SUPER_DEBUG_MODE)
@@ -240,12 +241,34 @@ void TrustRegionSQPSolver::runTrustRegionLoop()
 
     // Solve the current QP problem
     status_ = solveQPProblem();
+
     if (status_ != SQPStatus::RUNNING)
     {
-      qp_problem->setVariables(results_.best_var_vals.data());
-      qp_problem->scaleBoxSize(params.trust_shrink_ratio);
-      qp_solver->updateBounds(qp_problem->getBoundsLower(), qp_problem->getBoundsUpper());
-      results_.box_size = qp_problem->getBoxSize();
+      qp_solver_failures++;
+      CONSOLE_BRIDGE_logWarn("Convex solver failed (%d/%d)!", qp_solver_failures, params.max_qp_solver_failures);
+
+      if (qp_solver_failures < params.max_qp_solver_failures)
+      {
+        qp_problem->scaleBoxSize(params.trust_shrink_ratio);
+        qp_solver->updateBounds(qp_problem->getBoundsLower(), qp_problem->getBoundsUpper());
+        results_.box_size = qp_problem->getBoxSize();
+
+        CONSOLE_BRIDGE_logInform("Shrunk trust region. New box size: %.4f", results_.box_size[0]);
+        continue;
+      }
+
+      if (qp_solver_failures == params.max_qp_solver_failures)
+      {
+        // Convex solver failed and this is the last attempt so setting the trust region to the minimum
+        qp_problem->setBoxSize(Eigen::VectorXd::Constant(qp_problem->getNumNLPVars(), params.min_trust_box_size));
+        qp_solver->updateBounds(qp_problem->getBoundsLower(), qp_problem->getBoundsUpper());
+        results_.box_size = qp_problem->getBoxSize();
+
+        CONSOLE_BRIDGE_logInform("Shrunk trust region to minimum. New box size: %.4f", results_.box_size[0]);
+        continue;
+      }
+
+      CONSOLE_BRIDGE_logError("The convex solver failed you one too many times.");
       return;
     }
 
@@ -303,6 +326,7 @@ void TrustRegionSQPSolver::runTrustRegionLoop()
       qp_problem->setVariables(results_.best_var_vals.data());
 
       qp_problem->scaleBoxSize(params.trust_expand_ratio);
+      qp_solver->updateBounds(qp_problem->getBoundsLower(), qp_problem->getBoundsUpper());
       results_.box_size = qp_problem->getBoxSize();
       CONSOLE_BRIDGE_logInform("Expanded trust region. new box size: %.4f", results_.box_size[0]);
       return;
@@ -359,6 +383,8 @@ SQPStatus TrustRegionSQPSolver::solveQPProblem()
   }
   else
   {
+    qp_problem->setVariables(results_.best_var_vals.data());
+
     CONSOLE_BRIDGE_logError("Solver Failure");
     return SQPStatus::QP_SOLVER_ERROR;
   }
@@ -385,7 +411,8 @@ void TrustRegionSQPSolver::printStepInfo() const
   // Print Header
   std::printf("\n| %s |\n", std::string(88, '=').c_str());
   std::printf("| %s %s %s |\n", std::string(36, ' ').c_str(), "ROS Industrial", std::string(36, ' ').c_str());
-  std::printf("| %s %s %s |\n", std::string(32, ' ').c_str(), "TrajOpt Motion Planning", std::string(31, ' ').c_str());
+  std::printf(
+      "| %s %s %s |\n", std::string(28, ' ').c_str(), "TrajOpt Ifopt Motion Planning", std::string(29, ' ').c_str());
   std::printf("| %s |\n", std::string(88, '=').c_str());
   std::printf("| %s %s (Box Size: %-3.9f) %s |\n",
               std::string(26, ' ').c_str(),

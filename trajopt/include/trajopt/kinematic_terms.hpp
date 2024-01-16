@@ -3,6 +3,7 @@
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <Eigen/Core>
 
+#include <trajopt_common/utils.hpp>
 #include <tesseract_environment/environment.h>
 #include <tesseract_environment/utils.h>
 #include <tesseract_kinematics/core/joint_group.h>
@@ -15,6 +16,10 @@ TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace trajopt
 {
+const double DEFAULT_EPSILON = 1e-5;
+
+using ErrorFunctionType = std::function<Eigen::VectorXd(const Eigen::Isometry3d&, const Eigen::Isometry3d&)>;
+
 /**
  * @brief Used to calculate the error for CartPoseTermInfo
  * This is converted to a cost or constraint using TrajOptCostFromErrFunc or TrajOptConstraintFromErrFunc
@@ -38,6 +43,10 @@ struct DynamicCartPoseErrCalculator : public TrajOptVectorOfVector
   /** @brief A offset transform to be applied to target_frame_ location */
   Eigen::Isometry3d target_frame_offset_;
 
+  /** @brief Error function for calculating the error in the position given the source and target positions
+   * this defaults to tesseract_common::calcTransformError if unset*/
+  ErrorFunctionType error_function{ nullptr };
+
   /**
    * @brief This is a vector of indices to be returned Default: {0, 1, 2, 3, 4, 5}
    *
@@ -52,16 +61,9 @@ struct DynamicCartPoseErrCalculator : public TrajOptVectorOfVector
       std::string target_frame,
       const Eigen::Isometry3d& source_frame_offset = Eigen::Isometry3d::Identity(),
       const Eigen::Isometry3d& target_frame_offset = Eigen::Isometry3d::Identity(),
-      Eigen::VectorXi indices = Eigen::Matrix<int, 1, 6>(std::vector<int>({ 0, 1, 2, 3, 4, 5 }).data()))
-    : manip_(std::move(manip))
-    , source_frame_(std::move(source_frame))
-    , target_frame_(std::move(target_frame))
-    , source_frame_offset_(source_frame_offset)
-    , target_frame_offset_(target_frame_offset)
-    , indices_(std::move(indices))
-  {
-    assert(indices_.size() <= 6);
-  }
+      Eigen::VectorXi indices = Eigen::Matrix<int, 1, 6>(std::vector<int>({ 0, 1, 2, 3, 4, 5 }).data()),
+      Eigen::VectorXd lower_tolerance = {},
+      Eigen::VectorXd upper_tolerance = {});
 
   void Plot(const tesseract_visualization::Visualization::Ptr& plotter, const Eigen::VectorXd& dof_vals) override;
 
@@ -96,6 +98,9 @@ struct DynamicCartPoseJacCalculator : sco::MatrixOfVector
    */
   Eigen::VectorXi indices_;
 
+  /** @brief perturbation amount for calculating Jacobian */
+  double epsilon_;
+
   DynamicCartPoseJacCalculator(
       tesseract_kinematics::JointGroup::ConstPtr manip,
       std::string source_frame,
@@ -109,6 +114,7 @@ struct DynamicCartPoseJacCalculator : sco::MatrixOfVector
     , target_frame_(std::move(target_frame))
     , target_frame_offset_(target_frame_offset)
     , indices_(std::move(indices))
+    , epsilon_(DEFAULT_EPSILON)
   {
     assert(indices_.size() <= 6);
   }
@@ -140,6 +146,10 @@ struct CartPoseErrCalculator : public TrajOptVectorOfVector
   /** @brief indicates which link is active */
   bool is_target_active_{ true };
 
+  /** @brief Error function for calculating the error in the position given the source and target positions
+   * this defaults to tesseract_common::calcTransformError if unset*/
+  ErrorFunctionType error_function_{ nullptr };
+
   /**
    * @brief This is a vector of indices to be returned Default: {0, 1, 2, 3, 4, 5}
    *
@@ -154,17 +164,9 @@ struct CartPoseErrCalculator : public TrajOptVectorOfVector
       std::string target_frame,
       const Eigen::Isometry3d& source_frame_offset = Eigen::Isometry3d::Identity(),
       const Eigen::Isometry3d& target_frame_offset = Eigen::Isometry3d::Identity(),
-      Eigen::VectorXi indices = Eigen::Matrix<int, 1, 6>(std::vector<int>({ 0, 1, 2, 3, 4, 5 }).data()))
-    : manip_(std::move(manip))
-    , source_frame_(std::move(source_frame))
-    , source_frame_offset_(source_frame_offset)
-    , target_frame_(std::move(target_frame))
-    , target_frame_offset_(target_frame_offset)
-    , indices_(std::move(indices))
-  {
-    is_target_active_ = manip_->isActiveLinkName(target_frame_);
-    assert(indices_.size() <= 6);
-  }
+      Eigen::VectorXi indices = Eigen::Matrix<int, 1, 6>(std::vector<int>({ 0, 1, 2, 3, 4, 5 }).data()),
+      Eigen::VectorXd lower_tolerance = {},
+      Eigen::VectorXd upper_tolerance = {});
 
   void Plot(const tesseract_visualization::Visualization::Ptr& plotter, const Eigen::VectorXd& dof_vals) override;
 
@@ -201,6 +203,9 @@ struct CartPoseJacCalculator : sco::MatrixOfVector
    */
   Eigen::VectorXi indices_;
 
+  /** @brief perturbation amount for calculating Jacobian */
+  double epsilon_;
+
   CartPoseJacCalculator(
       tesseract_kinematics::JointGroup::ConstPtr manip,
       std::string source_frame,
@@ -214,6 +219,7 @@ struct CartPoseJacCalculator : sco::MatrixOfVector
     , target_frame_(std::move(target_frame))
     , target_frame_offset_(target_frame_offset)
     , indices_(std::move(indices))
+    , epsilon_(DEFAULT_EPSILON)
   {
     is_target_active_ = manip_->isActiveLinkName(target_frame_);
     assert(indices_.size() <= 6);

@@ -72,7 +72,6 @@ WarningsAsErrors: >
     -readability-identifier-length,
     -readability-suspicious-call-argument
 HeaderFilterRegex: '.*'
-AnalyzeTemporaryDtors: false
 FormatStyle:     none
 CheckOptions:
   - key:             modernize-use-override.AllowOverrideAndFinal
@@ -83,4 +82,6 @@ CheckOptions:
     value:           '1'
   - key:             cppcoreguidelines-pro-type-member-init.IgnoreArrays
     value:           '1'
+ExtraArgs:
+  - '-std=c++17'
 ...
