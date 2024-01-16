@@ -13,6 +13,9 @@ on:
 jobs:
   conda-win:
     runs-on: windows-2019
+    defaults:
+      run:
+        shell: powershell
     steps:
     - uses: actions/checkout@v3
       with:
@@ -24,28 +27,33 @@ jobs:
     - name: vcs import
       run: >
         vcs import --input "${{ github.workspace }}/workspace/src/trajopt/.github/workflows/windows_dependencies.repos" workspace/src/
-    - uses: conda-incubator/setup-miniconda@v2
+    - uses: conda-incubator/setup-miniconda@v3
       with:
-        miniforge-variant: Mambaforge
-        channel-priority: true
-        channels: conda-forge
-        python-version: "3.10"
+        channel-priority: strict
+        environment-file: workspace/src/trajopt/.github/workflows/conda/environment.yml       
         use-mamba: true
+        auto-update-conda: true
+        activate-environment: tesseract-build
     - name: conda install
       run: >
         mamba install boa conda-smithy -y
     - name: build and test
       run: |
+        conda info
+        conda list
         mkdir conda
         xcopy /E workspace\src\trajopt\.github\workflows\conda conda
         cd conda
         New-Item -Name conda-forge.yml -ItemType File
         conda smithy regenerate
         
-        mamba mambabuild -m .ci_support/win_64_.yaml .
+        conda mambabuild -m .ci_support/win_64_.yaml .
 
   conda-linux:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash -el {0}
     steps:
     - uses: actions/checkout@v3
       with:
@@ -56,20 +64,24 @@ jobs:
     - name: vcs import
       run: >
         vcs import --input "${{ github.workspace }}/workspace/src/trajopt/.github/workflows/windows_dependencies.repos" workspace/src/
-    - uses: conda-incubator/setup-miniconda@v2
+    - uses: conda-incubator/setup-miniconda@v3
       with:
-        miniforge-variant: Mambaforge
-        channel-priority: true
-        channels: conda-forge
+        channel-priority: strict
+        environment-file: workspace/src/trajopt/.github/workflows/conda/environment.yml
         use-mamba: true
+        auto-update-conda: true
+        activate-environment: tesseract-build
     - name: conda install
       run: >
         mamba install boa conda-smithy -y
     - name: build and test
       run: |
+        conda info
+        conda list
+
         cp -r workspace/src/trajopt/.github/workflows/conda ./conda
         cd conda
         touch conda-forge.yml
         conda smithy regenerate
         
-        mamba mambabuild -m .ci_support/linux_64_.yaml .
+        conda mambabuild -m .ci_support/linux_64_.yaml .
