@@ -22,6 +22,8 @@ colcon build --merge-install --install-base="%PREFIX%\opt\tesseract_robotics" ^
 
 if %errorlevel% neq 0 exit /b %errorlevel%
 
+set TESSERACT_RESOURCE_PATH="%PREFIX%\opt\tesseract_robotics\share"
+
 colcon test --event-handlers console_direct+ --return-code-on-test-failure ^
    --packages-ignore gtest osqp osqp_eigen tesseract_examples trajopt_ifopt trajopt_sqp tesseract_common ^
    tesseract_collision tesseract_environment tesseract_geometry tesseract_kinematics tesseract_scene_graph ^
