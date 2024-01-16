@@ -34,9 +34,6 @@ jobs:
         use-mamba: true
         auto-update-conda: true
         activate-environment: tesseract-build
-    - name: conda install
-      run: >
-        mamba install boa conda-smithy -y
     - name: build and test
       run: |
         conda info
@@ -71,9 +68,6 @@ jobs:
         use-mamba: true
         auto-update-conda: true
         activate-environment: tesseract-build
-    - name: conda install
-      run: >
-        mamba install boa conda-smithy -y
     - name: build and test
       run: |
         conda info
