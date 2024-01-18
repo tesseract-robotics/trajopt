@@ -1,0 +1,81 @@
+name: Conda
+
+on:
+  push:
+    branches:
+      - master
+      - 'dev**'
+  pull_request:
+  release:
+    types:
+      - released
+
+jobs:
+  conda-win:
+    runs-on: windows-2019
+    defaults:
+      run:
+        shell: powershell
+    steps:
+    - uses: actions/checkout@v3
+      with:
+       path: workspace/src/trajopt
+    - name: install-depends
+      shell: cmd
+      run: |
+        python -m pip install vcstool -q
+    - name: vcs import
+      run: >
+        vcs import --input "${{ github.workspace }}/workspace/src/trajopt/.github/workflows/windows_dependencies.repos" workspace/src/
+    - uses: conda-incubator/setup-miniconda@v3
+      with:
+        channel-priority: strict
+        environment-file: workspace/src/trajopt/.github/workflows/conda/environment.yml       
+        use-mamba: true
+        auto-update-conda: true
+        activate-environment: tesseract-build
+    - name: build and test
+      run: |
+        conda info
+        conda list
+        mkdir conda
+        xcopy /E workspace\src\trajopt\.github\workflows\conda conda
+        cd conda
+        New-Item -Name conda-forge.yml -ItemType File
+        conda smithy regenerate
+        
+        conda mambabuild -m .ci_support/win_64_.yaml .
+
+  conda-linux:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash -el {0}
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        path: workspace/src/trajopt
+    - name: install-depends
+      run: |
+        python -m pip install vcstool -q
+    - name: vcs import
+      run: >
+        vcs import --input "${{ github.workspace }}/workspace/src/trajopt/.github/workflows/windows_dependencies.repos" workspace/src/
+    - uses: conda-incubator/setup-miniconda@v3
+      with:
+        channel-priority: strict
+        environment-file: workspace/src/trajopt/.github/workflows/conda/environment.yml
+        use-mamba: true
+        auto-update-conda: true
+        activate-environment: tesseract-build
+    - name: build and test
+      run: |
+        conda info
+        conda list
+
+        cp -r workspace/src/trajopt/.github/workflows/conda ./conda
+        cd conda
+        touch conda-forge.yml
+        conda smithy regenerate
+        
+        conda mambabuild -m .ci_support/linux_64_.yaml .

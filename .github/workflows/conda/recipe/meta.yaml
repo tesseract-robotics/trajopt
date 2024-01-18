@@ -1,0 +1,77 @@
+package:
+    name: trajopt
+    version: "0.1.0"
+
+source:
+    path: ../../workspace
+
+requirements:
+    build:
+      - {{ compiler('c') }}
+      - {{ compiler('cxx') }}
+      - gtest
+      - gmock
+      - cmake
+      - ninja # [win]
+      - make # [linux]
+      - pkg-config
+      - colcon-common-extensions 
+      - lcov
+      - {{ cdt('mesa-libgl-devel') }}    # [linux]
+      - {{ cdt('mesa-dri-drivers') }}    # [linux]
+      - git
+    host:
+      - boost-cpp 
+      - eigen 
+      - tinyxml2
+      - console_bridge
+      - assimp
+      - urdfdom
+      - fcl
+      - octomap 
+      - orocos-kdl 
+      - pcl
+      - gtest
+      - gmock
+      - pkg-config 
+      - xz
+      - flann
+      - jsoncpp
+      - yaml-cpp
+      - bullet-cpp
+      - xorg-libx11    # [unix]
+      - xorg-libxext   # [unix]
+      - blas
+      - osqp
+      - qpoases
+    run:
+      - boost-cpp
+      - eigen 
+      - tinyxml2
+      - console_bridge
+      - assimp
+      - urdfdom
+      - fcl
+      - octomap 
+      - orocos-kdl 
+      - pcl
+      - gtest
+      - gmock
+      - xz
+      - jsoncpp
+      - taskflow 
+      - yaml-cpp
+      - bullet-cpp
+      - xorg-libx11    # [unix]
+      - xorg-libxext   # [unix]
+      - blas
+      - osqp
+      - qpoases
+
+build:
+  skip: true # [py<37]
+  number: 0
+
+about:
+  home: https://github.com/ros-industrial-consortium/trajopt
+  summary: Trajopt motion planner

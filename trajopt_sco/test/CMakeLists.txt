@@ -46,7 +46,7 @@ target_link_libraries(
   GTest::Main
   ${PROJECT_NAME})
 if(osqp_FOUND)
-  target_link_libraries(${PROJECT_NAME}-test osqp::osqpstatic)
+  target_link_libraries(${PROJECT_NAME}-test osqp::osqp)
 endif()
 target_compile_options(${PROJECT_NAME}-test PRIVATE ${TRAJOPT_COMPILE_OPTIONS_PRIVATE}
                                                     ${TRAJOPT_COMPILE_OPTIONS_PUBLIC})
