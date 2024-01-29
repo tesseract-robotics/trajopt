@@ -152,29 +152,32 @@ void DynamicCartPoseErrCalculator::Plot(const tesseract_visualization::Visualiza
 MatrixXd DynamicCartPoseJacCalculator::operator()(const VectorXd& dof_vals) const
 {
   // Duplicated from calcForwardNumJac in trajopt_sco/src/num_diff.cpp, but with ignoring tolerances
-  tesseract_common::TransformMap state = manip_->calcFwdKin(dof_vals);
-  Isometry3d source_tf = state[source_frame_] * source_frame_offset_;
-  Isometry3d target_tf = state[target_frame_] * target_frame_offset_;
-  VectorXd err = tesseract_common::calcTransformError(target_tf, source_tf);
+  auto calc_error = [this](const VectorXd& vals) -> VectorXd {
+    tesseract_common::TransformMap state = manip_->calcFwdKin(vals);
+    Isometry3d source_tf = state[source_frame_] * source_frame_offset_;
+    Isometry3d target_tf = state[target_frame_] * target_frame_offset_;
+    VectorXd err;
+    err = tesseract_common::calcTransformErrorJac(target_tf, source_tf);
 
+    VectorXd reduced_err(indices_.size());
+    for (int i = 0; i < indices_.size(); ++i)
+      reduced_err[i] = err[indices_[i]];
+
+    return reduced_err;
+  };
+
+  VectorXd err = calc_error(dof_vals);
   Eigen::MatrixXd jac0(err.size(), dof_vals.size());
   Eigen::VectorXd dof_vals_pert = dof_vals;
   for (int i = 0; i < dof_vals.size(); ++i)
   {
     dof_vals_pert(i) = dof_vals(i) + epsilon_;
-    tesseract_common::TransformMap state_pert = manip_->calcFwdKin(dof_vals_pert);
-    Isometry3d source_tf_pert = state_pert[source_frame_] * source_frame_offset_;
-    Isometry3d target_tf_pert = state_pert[target_frame_] * target_frame_offset_;
-    VectorXd err_pert = tesseract_common::calcTransformError(target_tf_pert, source_tf_pert);
+    VectorXd err_pert = calc_error(dof_vals_pert);
     jac0.col(i) = (err_pert - err) / epsilon_;
     dof_vals_pert(i) = dof_vals(i);
   }
 
-  MatrixXd reduced_jac(indices_.size(), manip_->numJoints());
-  for (int i = 0; i < indices_.size(); ++i)
-    reduced_jac.row(i) = jac0.row(indices_[i]);
-
-  return reduced_jac;  // This is available in 3.4 jac0(indices_, Eigen::all);
+  return jac0;  // This is available in 3.4 jac0(indices_, Eigen::all);
 }
 
 CartPoseErrCalculator::CartPoseErrCalculator(tesseract_kinematics::JointGroup::ConstPtr manip,
@@ -295,11 +298,7 @@ MatrixXd CartPoseJacCalculator::operator()(const VectorXd& dof_vals) const
     dof_vals_pert(i) = dof_vals(i);
   }
 
-  MatrixXd reduced_jac(indices_.size(), manip_->numJoints());
-  for (int i = 0; i < indices_.size(); ++i)
-    reduced_jac.row(i) = jac0.row(indices_[i]);
-
-  return reduced_jac;  // This is available in 3.4 jac0(indices_, Eigen::all);
+  return jac0;  // This is available in 3.4 jac0(indices_, Eigen::all);
 }
 
 MatrixXd CartVelJacCalculator::operator()(const VectorXd& dof_vals) const
