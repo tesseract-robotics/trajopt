@@ -91,6 +91,9 @@ public:
 
   using Ptr = std::shared_ptr<CartPosConstraint>;
   using ConstPtr = std::shared_ptr<const CartPosConstraint>;
+  using ErrorFunctionType = std::function<Eigen::VectorXd(const Eigen::Isometry3d&, const Eigen::Isometry3d&)>;
+  using ErrorDiffFunctionType =
+      std::function<Eigen::VectorXd(const Eigen::VectorXd&, const Eigen::Isometry3d&, const Eigen::Isometry3d&)>;
 
   CartPosConstraint(CartPosInfo info, JointPosition::ConstPtr position_var, const std::string& name = "CartPos");
 
@@ -183,6 +186,12 @@ private:
 
   /** @brief The kinematic information used when calculating error */
   CartPosInfo info_;
+
+  /** @brief Error function for calculating the error in the position given the source and target positions */
+  ErrorFunctionType error_function_{ nullptr };
+
+  /** @brief The error function to calculate the error difference used for jacobian calculations */
+  ErrorDiffFunctionType error_diff_function_{ nullptr };
 };
-};  // namespace trajopt_ifopt
+}  // namespace trajopt_ifopt
 #endif
