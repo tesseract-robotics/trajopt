@@ -15,7 +15,7 @@ Extract trajectory array from solution vector x using indices in array vars
 TrajArray getTraj(const DblVec& x, const VarArray& vars);
 TrajArray getTraj(const DblVec& x, const AffArray& arr);
 
-inline DblVec trajToDblVec(const TrajArray& x) { return DblVec(x.data(), x.data() + x.rows() * x.cols()); }
+inline DblVec trajToDblVec(const TrajArray& x) { return { x.data(), x.data() + x.rows() * x.cols() }; }
 
 template <typename T>
 std::vector<T> singleton(const T& x)

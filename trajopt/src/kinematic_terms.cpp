@@ -376,6 +376,14 @@ MatrixXd CartPoseJacCalculator::operator()(const VectorXd& dof_vals) const
   return jac0;  // This is available in 3.4 jac0(indices_, Eigen::all);
 }
 
+CartVelJacCalculator::CartVelJacCalculator(tesseract_kinematics::JointGroup::ConstPtr manip,
+                                           std::string link,
+                                           double limit,
+                                           const Eigen::Isometry3d& tcp)  // NOLINT(modernize-pass-by-value)
+  : manip_(std::move(manip)), limit_(limit), link_(std::move(link)), tcp_(tcp)
+{
+}
+
 MatrixXd CartVelJacCalculator::operator()(const VectorXd& dof_vals) const
 {
   auto n_dof = static_cast<int>(manip_->numJoints());
@@ -401,6 +409,14 @@ MatrixXd CartVelJacCalculator::operator()(const VectorXd& dof_vals) const
   out.block(3, 0, 3, n_dof) = jac0.topRows(3);
   out.block(3, n_dof, 3, n_dof) = -jac1.topRows(3);
   return out;
+}
+
+CartVelErrCalculator::CartVelErrCalculator(tesseract_kinematics::JointGroup::ConstPtr manip,
+                                           std::string link,
+                                           double limit,
+                                           const Eigen::Isometry3d& tcp)  // NOLINT(modernize-pass-by-value)
+  : manip_(std::move(manip)), link_(std::move(link)), limit_(limit), tcp_(tcp)
+{
 }
 
 VectorXd CartVelErrCalculator::operator()(const VectorXd& dof_vals) const

@@ -226,10 +226,7 @@ struct CartVelJacCalculator : sco::MatrixOfVector
   CartVelJacCalculator(tesseract_kinematics::JointGroup::ConstPtr manip,
                        std::string link,
                        double limit,
-                       const Eigen::Isometry3d& tcp = Eigen::Isometry3d::Identity())
-    : manip_(std::move(manip)), limit_(limit), link_(std::move(link)), tcp_(tcp)
-  {
-  }
+                       const Eigen::Isometry3d& tcp = Eigen::Isometry3d::Identity());
 
   Eigen::MatrixXd operator()(const Eigen::VectorXd& dof_vals) const override;
 };
@@ -248,10 +245,7 @@ struct CartVelErrCalculator : sco::VectorOfVector
   CartVelErrCalculator(tesseract_kinematics::JointGroup::ConstPtr manip,
                        std::string link,
                        double limit,
-                       const Eigen::Isometry3d& tcp = Eigen::Isometry3d::Identity())
-    : manip_(std::move(manip)), link_(std::move(link)), limit_(limit), tcp_(tcp)
-  {
-  }
+                       const Eigen::Isometry3d& tcp = Eigen::Isometry3d::Identity());
 
   Eigen::VectorXd operator()(const Eigen::VectorXd& dof_vals) const override;
 };
