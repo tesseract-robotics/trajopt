@@ -160,7 +160,7 @@ void SingleTimestepCollisionEvaluator::CalcCollisionsHelper(const Eigen::Ref<con
   const auto& zero_coeff_pairs = collision_config_->collision_coeff_data.getPairsWithZeroCoeff();
   auto filter = [this, &zero_coeff_pairs](tesseract_collision::ContactResultMap::PairType& pair) {
     // Remove pairs with zero coeffs
-    if (std::find(zero_coeff_pairs.begin(), zero_coeff_pairs.end(), pair.first) != zero_coeff_pairs.end())
+    if (zero_coeff_pairs.find(pair.first) != zero_coeff_pairs.end())
     {
       pair.second.clear();
       return;
