@@ -39,9 +39,9 @@ namespace trajopt_ifopt
 CartPosInfo::CartPosInfo(tesseract_kinematics::JointGroup::ConstPtr manip,
                          std::string source_frame,
                          std::string target_frame,
-                         const Eigen::Isometry3d& source_frame_offset,  // NOLINT
-                         const Eigen::Isometry3d& target_frame_offset,  // NOLINT
-                         const Eigen::VectorXi& indices)                // NOLINT
+                         const Eigen::Isometry3d& source_frame_offset,  // NOLINT(modernize-pass-by-value)
+                         const Eigen::Isometry3d& target_frame_offset,  // NOLINT(modernize-pass-by-value)
+                         const Eigen::VectorXi& indices)                // NOLINT(modernize-pass-by-value)
   : manip(std::move(manip))
   , source_frame(std::move(source_frame))
   , target_frame(std::move(target_frame))

@@ -32,11 +32,25 @@ TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace trajopt_ifopt
 {
-InverseKinematicsConstraint::InverseKinematicsConstraint(const Eigen::Isometry3d& target_pose,
-                                                         InverseKinematicsInfo::ConstPtr kinematic_info,
-                                                         JointPosition::ConstPtr constraint_var,
-                                                         JointPosition::ConstPtr seed_var,
-                                                         const std::string& name)
+InverseKinematicsInfo::InverseKinematicsInfo(tesseract_kinematics::KinematicGroup::ConstPtr manip,
+                                             std::string working_frame,
+                                             std::string tcp_frame,
+                                             const Eigen::Isometry3d& tcp_offset)  // NOLINT(modernize-pass-by-value)
+  : manip(std::move(manip))
+  , working_frame(std::move(working_frame))
+  , tcp_frame(std::move(tcp_frame))
+  , tcp_offset(tcp_offset)
+{
+  if (!this->manip->hasLinkName(this->tcp_frame))
+    throw std::runtime_error("Link name '" + this->tcp_frame + "' provided does not exist.");
+}
+
+InverseKinematicsConstraint::InverseKinematicsConstraint(
+    const Eigen::Isometry3d& target_pose,  // NOLINT(modernize-pass-by-value)
+    InverseKinematicsInfo::ConstPtr kinematic_info,
+    JointPosition::ConstPtr constraint_var,
+    JointPosition::ConstPtr seed_var,
+    const std::string& name)
   : ifopt::ConstraintSet(constraint_var->GetRows(), name)
   , constraint_var_(std::move(constraint_var))
   , seed_var_(std::move(seed_var))

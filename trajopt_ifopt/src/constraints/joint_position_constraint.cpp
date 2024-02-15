@@ -36,12 +36,12 @@ JointPosConstraint::JointPosConstraint(const Eigen::VectorXd& targets,
                                        const Eigen::VectorXd& coeffs,
                                        const std::string& name)
   : ifopt::ConstraintSet(static_cast<int>(targets.size()) * static_cast<int>(position_vars.size()), name)
+  , n_dof_(targets.size())
+  , n_vars_(static_cast<long>(position_vars.size()))
   , coeffs_(coeffs)
   , position_vars_(position_vars)
 {
   // Set the n_dof and n_vars for convenience
-  n_dof_ = targets.size();
-  n_vars_ = static_cast<long>(position_vars.size());
   assert(n_dof_ > 0);
   assert(n_vars_ > 0);
 
