@@ -37,9 +37,9 @@ JointPosition::JointPosition(const Eigen::Ref<const Eigen::VectorXd>& init_value
                              std::vector<std::string> joint_names,
                              const std::string& name)
   : ifopt::VariableSet(static_cast<int>(init_value.size()), name)
-  , joint_names_(std::move(joint_names))
-  , values_(init_value)
   , bounds_(std::vector<ifopt::Bounds>(static_cast<size_t>(init_value.size()), ifopt::NoBound))
+  , values_(init_value)
+  , joint_names_(std::move(joint_names))
 {
 }
 
@@ -48,8 +48,8 @@ JointPosition::JointPosition(const Eigen::Ref<const Eigen::VectorXd>& init_value
                              const ifopt::Bounds& bounds,
                              const std::string& name)
   : ifopt::VariableSet(static_cast<int>(init_value.size()), name)
-  , joint_names_(std::move(joint_names))
   , bounds_(std::vector<ifopt::Bounds>(static_cast<size_t>(init_value.size()), bounds))
+  , joint_names_(std::move(joint_names))
 {
   /** @todo Print warning if init value is not within bounds */
   values_ = trajopt_ifopt::getClosestValidPoint(init_value, bounds_);
@@ -66,8 +66,8 @@ JointPosition::JointPosition(const Eigen::Ref<const Eigen::VectorXd>& init_value
                              const tesseract_common::KinematicLimits& bounds,
                              const std::string& name)
   : ifopt::VariableSet(static_cast<int>(init_value.size()), name)
-  , joint_names_(std::move(joint_names))
   , bounds_(std::vector<ifopt::Bounds>(static_cast<size_t>(init_value.size()), ifopt::NoBound))
+  , joint_names_(std::move(joint_names))
 {
   /** @todo Print warning if init value is not within bounds */
   for (Eigen::Index i = 0; i < init_value.size(); ++i)
