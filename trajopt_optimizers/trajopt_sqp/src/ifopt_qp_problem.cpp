@@ -429,7 +429,7 @@ double IfoptQPProblem::evaluateTotalConvexCost(const Eigen::Ref<const Eigen::Vec
 Eigen::VectorXd IfoptQPProblem::evaluateConvexCosts(const Eigen::Ref<const Eigen::VectorXd>& var_vals)
 {
   if (num_nlp_costs_ == 0)
-    return Eigen::VectorXd();
+    return {};
 
   auto var_block = var_vals.head(num_nlp_vars_);
   Eigen::VectorXd result_quad = var_block.transpose() * hessian_.block(0, 0, num_nlp_vars_, num_nlp_vars_) * var_block;
@@ -445,7 +445,7 @@ double IfoptQPProblem::evaluateTotalExactCost(const Eigen::Ref<const Eigen::Vect
 Eigen::VectorXd IfoptQPProblem::evaluateExactCosts(const Eigen::Ref<const Eigen::VectorXd>& var_vals)
 {
   if (!nlp_->HasCostTerms())
-    return Eigen::VectorXd();
+    return {};
 
   nlp_->SetVariables(var_vals.data());
   return nlp_->GetCosts().GetValues();
