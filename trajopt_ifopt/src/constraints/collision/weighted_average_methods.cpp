@@ -88,7 +88,7 @@ Eigen::VectorXd getWeightedAvgGradientT1(const trajopt_common::GradientResultsSe
           double w = (std::max(grad.error_with_buffer, 0.0) / max_error_with_buffer);
           assert(!(w < 0));
           total_weight += w;
-          grad_vec += w * (grad.gradients[i].scale * grad.gradients[i].gradient);
+          grad_vec += w * (grad.cc_gradients[i].scale * grad.cc_gradients[i].gradient);
           ++cnt;
         }
       }
