@@ -109,8 +109,8 @@ void TrajOptQPProblem::setup()
   squared_costs_target_ = Eigen::VectorXd::Zero(squared_costs_.GetRows());
   // Hinge cost adds a variable and an inequality constraint which equals two constraints added to the qp problem
   // Absolute cost add two variables and an equality constraint which equals three constraints added to the qp problem
-  num_qp_vars_ = getNumNLPVars() + hinge_costs_.GetRows() + (2 * abs_costs_.GetRows());
-  num_qp_cnts_ = getNumNLPConstraints() + getNumNLPVars() + (2 * hinge_costs_.GetRows()) + (3 * abs_costs_.GetRows());
+  num_qp_vars_ = getNumNLPVars() + hinge_costs_.GetRows() + (2L * abs_costs_.GetRows());
+  num_qp_cnts_ = getNumNLPConstraints() + getNumNLPVars() + (2L * hinge_costs_.GetRows()) + (3L * abs_costs_.GetRows());
   box_size_ = Eigen::VectorXd::Constant(getNumNLPVars(), 1e-1);
   constraint_merit_coeff_ = Eigen::VectorXd::Constant(getNumNLPConstraints(), 10);
   constraint_constant_ = Eigen::VectorXd::Zero(getNumNLPConstraints() + hinge_costs_.GetRows() + abs_costs_.GetRows());
@@ -325,7 +325,7 @@ void TrajOptQPProblem::convexifyCosts()
   ////////////////////////////////////////////////////////
   // Set the gradient of the absolute cost variables
   ////////////////////////////////////////////////////////
-  for (Eigen::Index i = 0; i < 2 * abs_costs_.GetRows(); i++)
+  for (Eigen::Index i = 0; i < 2L * abs_costs_.GetRows(); i++)
   {
     gradient_[current_var_index++] = 1; /** @todo This should be multiplied by the weight */
   }
@@ -629,7 +629,7 @@ double TrajOptQPProblem::evaluateTotalConvexCost(const Eigen::Ref<const Eigen::V
 Eigen::VectorXd TrajOptQPProblem::evaluateConvexCosts(const Eigen::Ref<const Eigen::VectorXd>& var_vals)
 {
   if (getNumNLPCosts() == 0)
-    return Eigen::VectorXd();
+    return {};
 
   Eigen::VectorXd var_block = var_vals.head(getNumNLPVars());
   Eigen::VectorXd costs = Eigen::VectorXd::Zero(getNumNLPCosts());
@@ -702,7 +702,7 @@ double TrajOptQPProblem::evaluateTotalExactCost(const Eigen::Ref<const Eigen::Ve
 Eigen::VectorXd TrajOptQPProblem::evaluateExactCosts(const Eigen::Ref<const Eigen::VectorXd>& var_vals)
 {
   if (getNumNLPCosts() == 0)
-    return Eigen::VectorXd();
+    return {};
 
   setVariables(var_vals.data());
 
