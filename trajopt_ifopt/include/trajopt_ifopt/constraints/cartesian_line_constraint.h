@@ -99,6 +99,8 @@ public:
 
   using Ptr = std::shared_ptr<CartLineConstraint>;
   using ConstPtr = std::shared_ptr<const CartLineConstraint>;
+  using ErrorDiffFunctionType =
+      std::function<Eigen::VectorXd(const Eigen::VectorXd&, const Eigen::Isometry3d&, const Eigen::Isometry3d&)>;
 
   CartLineConstraint(CartLineInfo info,
                      JointPosition::ConstPtr position_var,
@@ -190,6 +192,9 @@ private:
 
   /** @brief The cartesian line information used when calculating error */
   CartLineInfo info_;
+
+  /** @brief The error function to calculate the error difference used for jacobian calculations */
+  ErrorDiffFunctionType error_diff_function_{ nullptr };
 };
-};  // namespace trajopt_ifopt
+}  // namespace trajopt_ifopt
 #endif

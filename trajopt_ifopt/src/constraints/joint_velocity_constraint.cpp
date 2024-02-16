@@ -36,6 +36,8 @@ JointVelConstraint::JointVelConstraint(const Eigen::VectorXd& targets,
                                        const Eigen::VectorXd& coeffs,
                                        const std::string& name)
   : ifopt::ConstraintSet(static_cast<int>(targets.size()) * static_cast<int>(position_vars.size() - 1), name)
+  , n_dof_(targets.size())
+  , n_vars_(static_cast<long>(position_vars.size()))
   , coeffs_(coeffs)
   , position_vars_(position_vars)
 {
@@ -50,8 +52,6 @@ JointVelConstraint::JointVelConstraint(const Eigen::VectorXd& targets,
   }
 
   // Set n_dof and n_vars
-  n_dof_ = targets.size();
-  n_vars_ = static_cast<long>(position_vars_.size());
   assert(n_dof_ > 0);
   assert(n_vars_ > 0);
   //  assert(n_vars_ == 2);

@@ -36,20 +36,22 @@ namespace trajopt_ifopt
 JointPosition::JointPosition(const Eigen::Ref<const Eigen::VectorXd>& init_value,
                              std::vector<std::string> joint_names,
                              const std::string& name)
-  : ifopt::VariableSet(static_cast<int>(init_value.size()), name), joint_names_(std::move(joint_names))
+  : ifopt::VariableSet(static_cast<int>(init_value.size()), name)
+  , bounds_(std::vector<ifopt::Bounds>(static_cast<size_t>(init_value.size()), ifopt::NoBound))
+  , values_(init_value)
+  , joint_names_(std::move(joint_names))
 {
-  bounds_ = std::vector<ifopt::Bounds>(static_cast<size_t>(init_value.size()), ifopt::NoBound);
-  values_ = init_value;
 }
 
 JointPosition::JointPosition(const Eigen::Ref<const Eigen::VectorXd>& init_value,
                              std::vector<std::string> joint_names,
                              const ifopt::Bounds& bounds,
                              const std::string& name)
-  : ifopt::VariableSet(static_cast<int>(init_value.size()), name), joint_names_(std::move(joint_names))
+  : ifopt::VariableSet(static_cast<int>(init_value.size()), name)
+  , bounds_(std::vector<ifopt::Bounds>(static_cast<size_t>(init_value.size()), bounds))
+  , joint_names_(std::move(joint_names))
 {
   /** @todo Print warning if init value is not within bounds */
-  bounds_ = std::vector<ifopt::Bounds>(static_cast<size_t>(init_value.size()), bounds);
   values_ = trajopt_ifopt::getClosestValidPoint(init_value, bounds_);
 
   if (!values_.isApprox(init_value, 1e-10))
@@ -63,10 +65,11 @@ JointPosition::JointPosition(const Eigen::Ref<const Eigen::VectorXd>& init_value
                              std::vector<std::string> joint_names,
                              const tesseract_common::KinematicLimits& bounds,
                              const std::string& name)
-  : ifopt::VariableSet(static_cast<int>(init_value.size()), name), joint_names_(std::move(joint_names))
+  : ifopt::VariableSet(static_cast<int>(init_value.size()), name)
+  , bounds_(std::vector<ifopt::Bounds>(static_cast<size_t>(init_value.size()), ifopt::NoBound))
+  , joint_names_(std::move(joint_names))
 {
   /** @todo Print warning if init value is not within bounds */
-  bounds_ = std::vector<ifopt::Bounds>(static_cast<size_t>(init_value.size()), ifopt::NoBound);
   for (Eigen::Index i = 0; i < init_value.size(); ++i)
     bounds_[static_cast<std::size_t>(i)] = ifopt::Bounds(bounds.joint_limits(i, 0), bounds.joint_limits(i, 1));
 

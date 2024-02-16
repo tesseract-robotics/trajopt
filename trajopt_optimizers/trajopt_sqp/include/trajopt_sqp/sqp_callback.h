@@ -40,6 +40,8 @@ public:
   using Ptr = std::shared_ptr<SQPCallback>;
   using ConstPtr = std::shared_ptr<const SQPCallback>;
 
+  virtual ~SQPCallback() = default;
+
   /**
    * @brief This is the function called during the SQP
    * @param nlp The ifopt::Problem being optimized

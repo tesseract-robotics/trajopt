@@ -54,15 +54,7 @@ struct InverseKinematicsInfo
   InverseKinematicsInfo(tesseract_kinematics::KinematicGroup::ConstPtr manip,
                         std::string working_frame,
                         std::string tcp_frame,
-                        const Eigen::Isometry3d& tcp_offset = Eigen::Isometry3d::Identity())
-    : manip(std::move(manip))
-    , working_frame(std::move(working_frame))
-    , tcp_frame(std::move(tcp_frame))
-    , tcp_offset(tcp_offset)
-  {
-    if (!this->manip->hasLinkName(this->tcp_frame))
-      throw std::runtime_error("Link name '" + this->tcp_frame + "' provided does not exist.");
-  }
+                        const Eigen::Isometry3d& tcp_offset = Eigen::Isometry3d::Identity());
 
   tesseract_kinematics::KinematicGroup::ConstPtr manip;
 
@@ -168,5 +160,5 @@ private:
   /** @brief The kinematic info used to create this constraint */
   InverseKinematicsInfo::ConstPtr kinematic_info_;
 };
-};  // namespace trajopt_ifopt
+}  // namespace trajopt_ifopt
 #endif

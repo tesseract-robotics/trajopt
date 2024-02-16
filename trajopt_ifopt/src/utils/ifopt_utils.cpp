@@ -166,7 +166,7 @@ ifopt::Problem::Jacobian calcNumericalConstraintGradient(const double* x, ifopt:
   int n = nlp.GetNumberOfOptimizationVariables();
   int m = nlp.GetConstraints().GetRows();
   ifopt::Problem::Jacobian jac(m, n);
-  jac.reserve(m * n);
+  jac.reserve(static_cast<Eigen::Index>(m) * static_cast<Eigen::Index>(n));
 
   if (nlp.GetNumberOfConstraints() > 0)
   {
@@ -203,7 +203,7 @@ ifopt::Problem::Jacobian calcNumericalConstraintGradient(ifopt::Component& varia
   int n = variables.GetRows();
   int m = constraint_set.GetRows();
   ifopt::Problem::Jacobian jac(m, n);
-  jac.reserve(m * n);
+  jac.reserve(static_cast<Eigen::Index>(m) * static_cast<Eigen::Index>(n));
 
   if (!constraint_set.GetBounds().empty())
   {

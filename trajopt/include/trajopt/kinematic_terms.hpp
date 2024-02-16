@@ -19,6 +19,8 @@ namespace trajopt
 const double DEFAULT_EPSILON = 1e-5;
 
 using ErrorFunctionType = std::function<Eigen::VectorXd(const Eigen::Isometry3d&, const Eigen::Isometry3d&)>;
+using ErrorDiffFunctionType =
+    std::function<Eigen::VectorXd(const Eigen::VectorXd&, const Eigen::Isometry3d&, const Eigen::Isometry3d&)>;
 
 /**
  * @brief Used to calculate the error for CartPoseTermInfo
@@ -61,9 +63,9 @@ struct DynamicCartPoseErrCalculator : public TrajOptVectorOfVector
       std::string target_frame,
       const Eigen::Isometry3d& source_frame_offset = Eigen::Isometry3d::Identity(),
       const Eigen::Isometry3d& target_frame_offset = Eigen::Isometry3d::Identity(),
-      Eigen::VectorXi indices = Eigen::Matrix<int, 1, 6>(std::vector<int>({ 0, 1, 2, 3, 4, 5 }).data()),
-      Eigen::VectorXd lower_tolerance = {},
-      Eigen::VectorXd upper_tolerance = {});
+      const Eigen::VectorXi& indices = Eigen::Matrix<int, 1, 6>(std::vector<int>({ 0, 1, 2, 3, 4, 5 }).data()),
+      const Eigen::VectorXd& lower_tolerance = {},
+      const Eigen::VectorXd& upper_tolerance = {});
 
   void Plot(const tesseract_visualization::Visualization::Ptr& plotter, const Eigen::VectorXd& dof_vals) override;
 
@@ -107,17 +109,7 @@ struct DynamicCartPoseJacCalculator : sco::MatrixOfVector
       std::string target_frame,
       const Eigen::Isometry3d& source_frame_offset = Eigen::Isometry3d::Identity(),
       const Eigen::Isometry3d& target_frame_offset = Eigen::Isometry3d::Identity(),
-      Eigen::VectorXi indices = Eigen::Matrix<int, 1, 6>(std::vector<int>({ 0, 1, 2, 3, 4, 5 }).data()))
-    : manip_(std::move(manip))
-    , source_frame_(std::move(source_frame))
-    , source_frame_offset_(source_frame_offset)
-    , target_frame_(std::move(target_frame))
-    , target_frame_offset_(target_frame_offset)
-    , indices_(std::move(indices))
-    , epsilon_(DEFAULT_EPSILON)
-  {
-    assert(indices_.size() <= 6);
-  }
+      const Eigen::VectorXi& indices = Eigen::Matrix<int, 1, 6>(std::vector<int>({ 0, 1, 2, 3, 4, 5 }).data()));
 
   Eigen::MatrixXd operator()(const Eigen::VectorXd& dof_vals) const override;
 };
@@ -164,9 +156,9 @@ struct CartPoseErrCalculator : public TrajOptVectorOfVector
       std::string target_frame,
       const Eigen::Isometry3d& source_frame_offset = Eigen::Isometry3d::Identity(),
       const Eigen::Isometry3d& target_frame_offset = Eigen::Isometry3d::Identity(),
-      Eigen::VectorXi indices = Eigen::Matrix<int, 1, 6>(std::vector<int>({ 0, 1, 2, 3, 4, 5 }).data()),
-      Eigen::VectorXd lower_tolerance = {},
-      Eigen::VectorXd upper_tolerance = {});
+      const Eigen::VectorXi& indices = Eigen::Matrix<int, 1, 6>(std::vector<int>({ 0, 1, 2, 3, 4, 5 }).data()),
+      const Eigen::VectorXd& lower_tolerance = {},
+      const Eigen::VectorXd& upper_tolerance = {});
 
   void Plot(const tesseract_visualization::Visualization::Ptr& plotter, const Eigen::VectorXd& dof_vals) override;
 
@@ -195,6 +187,9 @@ struct CartPoseJacCalculator : sco::MatrixOfVector
   /** @brief indicates which link is active */
   bool is_target_active_{ true };
 
+  /** @brief The error function to calculate the error difference used for jacobian calculations */
+  ErrorDiffFunctionType error_diff_function_;
+
   /**
    * @brief This is a vector of indices to be returned Default: {0, 1, 2, 3, 4, 5}
    *
@@ -212,18 +207,7 @@ struct CartPoseJacCalculator : sco::MatrixOfVector
       std::string target_frame,
       const Eigen::Isometry3d& source_frame_offset = Eigen::Isometry3d::Identity(),
       const Eigen::Isometry3d& target_frame_offset = Eigen::Isometry3d::Identity(),
-      Eigen::VectorXi indices = Eigen::Matrix<int, 1, 6>(std::vector<int>({ 0, 1, 2, 3, 4, 5 }).data()))
-    : manip_(std::move(manip))
-    , source_frame_(std::move(source_frame))
-    , source_frame_offset_(source_frame_offset)
-    , target_frame_(std::move(target_frame))
-    , target_frame_offset_(target_frame_offset)
-    , indices_(std::move(indices))
-    , epsilon_(DEFAULT_EPSILON)
-  {
-    is_target_active_ = manip_->isActiveLinkName(target_frame_);
-    assert(indices_.size() <= 6);
-  }
+      const Eigen::VectorXi& indices = Eigen::Matrix<int, 1, 6>(std::vector<int>({ 0, 1, 2, 3, 4, 5 }).data()));
 
   Eigen::MatrixXd operator()(const Eigen::VectorXd& dof_vals) const override;
 };
@@ -242,10 +226,7 @@ struct CartVelJacCalculator : sco::MatrixOfVector
   CartVelJacCalculator(tesseract_kinematics::JointGroup::ConstPtr manip,
                        std::string link,
                        double limit,
-                       const Eigen::Isometry3d& tcp = Eigen::Isometry3d::Identity())
-    : manip_(std::move(manip)), limit_(limit), link_(std::move(link)), tcp_(tcp)
-  {
-  }
+                       const Eigen::Isometry3d& tcp = Eigen::Isometry3d::Identity());
 
   Eigen::MatrixXd operator()(const Eigen::VectorXd& dof_vals) const override;
 };
@@ -264,10 +245,7 @@ struct CartVelErrCalculator : sco::VectorOfVector
   CartVelErrCalculator(tesseract_kinematics::JointGroup::ConstPtr manip,
                        std::string link,
                        double limit,
-                       const Eigen::Isometry3d& tcp = Eigen::Isometry3d::Identity())
-    : manip_(std::move(manip)), link_(std::move(link)), limit_(limit), tcp_(tcp)
-  {
-  }
+                       const Eigen::Isometry3d& tcp = Eigen::Isometry3d::Identity());
 
   Eigen::VectorXd operator()(const Eigen::VectorXd& dof_vals) const override;
 };
