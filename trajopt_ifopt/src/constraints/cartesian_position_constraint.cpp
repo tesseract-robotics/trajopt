@@ -61,7 +61,16 @@ CartPosInfo::CartPosInfo(tesseract_kinematics::JointGroup::ConstPtr manip,
   if (this->indices.size() == 0)
     throw std::runtime_error("CartPosInfo: The indices list length is zero.");
 
-  is_target_active = this->manip->isActiveLinkName(this->target_frame);
+  const bool target_active = this->manip->isActiveLinkName(this->target_frame);
+  const bool source_active = this->manip->isActiveLinkName(this->source_frame);
+  if (target_active && source_active)
+    type = Type::BOTH_ACTIVE;
+  else if (target_active)
+    type = Type::TARGET_ACTIVE;
+  else if (source_active)
+    type = Type::SOURCE_ACTIVE;
+  else
+    throw std::runtime_error("CartPosInfo: Target and Source are both static links.");
 }
 
 CartPosConstraint::CartPosConstraint(CartPosInfo info,
@@ -82,45 +91,103 @@ CartPosConstraint::CartPosConstraint(CartPosInfo info,
   if (coeffs_.rows() != info_.indices.rows())
     std::runtime_error("The number of coeffs does not match the number of constraints.");
 
-  if (info_.is_target_active)
+  switch (info_.type)
   {
-    error_function_ = [](const Eigen::Isometry3d& target_tf, const Eigen::Isometry3d& source_tf) -> Eigen::VectorXd {
-      return tesseract_common::calcTransformError(source_tf, target_tf);
-    };
+    case CartPosInfo::Type::TARGET_ACTIVE:
+    {
+      error_function_ = [this](const Eigen::Isometry3d& target_tf,
+                               const Eigen::Isometry3d& source_tf) -> Eigen::VectorXd {
+        Eigen::VectorXd err = tesseract_common::calcTransformError(source_tf, target_tf);
 
-    error_diff_function_ = [this](const VectorXd& vals,
-                                  const Eigen::Isometry3d& target_tf,
-                                  const Eigen::Isometry3d& source_tf) -> VectorXd {
-      tesseract_common::TransformMap perturbed_state = info_.manip->calcFwdKin(vals);
-      Eigen::Isometry3d perturbed_target_tf = perturbed_state[info_.target_frame] * info_.target_frame_offset;
-      VectorXd error_diff = tesseract_common::calcJacobianTransformErrorDiff(source_tf, target_tf, perturbed_target_tf);
+        // This is available in 3.4 err(indices_, Eigen::all);
+        Eigen::VectorXd reduced_err(info_.indices.size());
+        for (int i = 0; i < info_.indices.size(); ++i)
+          reduced_err[i] = err[info_.indices[i]];
 
-      VectorXd reduced_error_diff(info_.indices.size());
-      for (int i = 0; i < info_.indices.size(); ++i)
-        reduced_error_diff[i] = error_diff[info_.indices[i]];
+        return reduced_err;
+      };
 
-      return reduced_error_diff;
-    };
-  }
-  else
-  {
-    error_function_ = [](const Eigen::Isometry3d& target_tf, const Eigen::Isometry3d& source_tf) -> Eigen::VectorXd {
-      return tesseract_common::calcTransformError(target_tf, source_tf);
-    };
+      error_diff_function_ = [this](const Eigen::VectorXd& vals,
+                                    const Eigen::Isometry3d& target_tf,
+                                    const Eigen::Isometry3d& source_tf) -> Eigen::VectorXd {
+        tesseract_common::TransformMap perturbed_state = info_.manip->calcFwdKin(vals);
+        Eigen::Isometry3d perturbed_target_tf = perturbed_state[info_.target_frame] * info_.target_frame_offset;
+        Eigen::VectorXd error_diff =
+            tesseract_common::calcJacobianTransformErrorDiff(source_tf, target_tf, perturbed_target_tf);
 
-    error_diff_function_ = [this](const VectorXd& vals,
-                                  const Eigen::Isometry3d& target_tf,
-                                  const Eigen::Isometry3d& source_tf) -> VectorXd {
-      tesseract_common::TransformMap perturbed_state = info_.manip->calcFwdKin(vals);
-      Eigen::Isometry3d perturbed_source_tf = perturbed_state[info_.source_frame] * info_.source_frame_offset;
-      VectorXd error_diff = tesseract_common::calcJacobianTransformErrorDiff(target_tf, source_tf, perturbed_source_tf);
+        // This is available in 3.4 err(indices_, Eigen::all);
+        Eigen::VectorXd reduced_error_diff(info_.indices.size());
+        for (int i = 0; i < info_.indices.size(); ++i)
+          reduced_error_diff[i] = error_diff[info_.indices[i]];
 
-      VectorXd reduced_error_diff(info_.indices.size());
-      for (int i = 0; i < info_.indices.size(); ++i)
-        reduced_error_diff[i] = error_diff[info_.indices[i]];
+        return reduced_error_diff;
+      };
 
-      return reduced_error_diff;
-    };
+      break;
+    }
+    case CartPosInfo::Type::SOURCE_ACTIVE:
+    {
+      error_function_ = [this](const Eigen::Isometry3d& target_tf,
+                               const Eigen::Isometry3d& source_tf) -> Eigen::VectorXd {
+        Eigen::VectorXd err = tesseract_common::calcTransformError(target_tf, source_tf);
+
+        // This is available in 3.4 err(indices_, Eigen::all);
+        Eigen::VectorXd reduced_err(info_.indices.size());
+        for (int i = 0; i < info_.indices.size(); ++i)
+          reduced_err[i] = err[info_.indices[i]];
+
+        return reduced_err;
+      };
+
+      error_diff_function_ = [this](const Eigen::VectorXd& vals,
+                                    const Eigen::Isometry3d& target_tf,
+                                    const Eigen::Isometry3d& source_tf) -> Eigen::VectorXd {
+        tesseract_common::TransformMap perturbed_state = info_.manip->calcFwdKin(vals);
+        Eigen::Isometry3d perturbed_source_tf = perturbed_state[info_.source_frame] * info_.source_frame_offset;
+        Eigen::VectorXd error_diff =
+            tesseract_common::calcJacobianTransformErrorDiff(target_tf, source_tf, perturbed_source_tf);
+
+        // This is available in 3.4 err(indices_, Eigen::all);
+        Eigen::VectorXd reduced_error_diff(info_.indices.size());
+        for (int i = 0; i < info_.indices.size(); ++i)
+          reduced_error_diff[i] = error_diff[info_.indices[i]];
+
+        return reduced_error_diff;
+      };
+      break;
+    }
+    case CartPosInfo::Type::BOTH_ACTIVE:
+    {
+      error_function_ = [this](const Eigen::Isometry3d& target_tf,
+                               const Eigen::Isometry3d& source_tf) -> Eigen::VectorXd {
+        Eigen::VectorXd err = tesseract_common::calcTransformError(target_tf, source_tf);
+
+        // This is available in 3.4 err(indices_, Eigen::all);
+        Eigen::VectorXd reduced_err(info_.indices.size());
+        for (int i = 0; i < info_.indices.size(); ++i)
+          reduced_err[i] = err[info_.indices[i]];
+
+        return reduced_err;
+      };
+
+      error_diff_function_ = [this](const Eigen::VectorXd& vals,
+                                    const Eigen::Isometry3d& target_tf,
+                                    const Eigen::Isometry3d& source_tf) -> Eigen::VectorXd {
+        tesseract_common::TransformMap perturbed_state = info_.manip->calcFwdKin(vals);
+        Eigen::Isometry3d perturbed_source_tf = perturbed_state[info_.source_frame] * info_.source_frame_offset;
+        Eigen::Isometry3d perturbed_target_tf = perturbed_state[info_.target_frame] * info_.target_frame_offset;
+        Eigen::VectorXd error_diff = tesseract_common::calcJacobianTransformErrorDiff(
+            target_tf, perturbed_target_tf, source_tf, perturbed_source_tf);
+
+        // This is available in 3.4 err(indices_, Eigen::all);
+        Eigen::VectorXd reduced_error_diff(info_.indices.size());
+        for (int i = 0; i < info_.indices.size(); ++i)
+          reduced_error_diff[i] = error_diff[info_.indices[i]];
+
+        return reduced_error_diff;
+      };
+      break;
+    }
   }
 }
 
@@ -135,13 +202,9 @@ Eigen::VectorXd CartPosConstraint::CalcValues(const Eigen::Ref<const Eigen::Vect
   Eigen::Isometry3d source_tf = state[info_.source_frame] * info_.source_frame_offset;
   Eigen::Isometry3d target_tf = state[info_.target_frame] * info_.target_frame_offset;
 
-  VectorXd err = error_function_(target_tf, source_tf);
+  Eigen::VectorXd err = error_function_(target_tf, source_tf);
 
-  VectorXd reduced_err(info_.indices.size());
-  for (int i = 0; i < info_.indices.size(); ++i)
-    reduced_err[i] = err[info_.indices[i]];
-
-  return coeffs_.cwiseProduct(reduced_err);  // This is available in 3.4 err(indices_, Eigen::all);
+  return coeffs_.cwiseProduct(err);
 }
 
 Eigen::VectorXd CartPosConstraint::GetValues() const
@@ -170,7 +233,7 @@ void CartPosConstraint::CalcJacobianBlock(const Eigen::Ref<const Eigen::VectorXd
   triplet_list.reserve(static_cast<std::size_t>(n_dof_ * info_.indices.size()));
 
   constexpr double eps{ 1e-5 };
-  if (use_numeric_differentiation)
+  if (use_numeric_differentiation || info_.type == CartPosInfo::Type::BOTH_ACTIVE)
   {
     Eigen::MatrixXd jac0(info_.indices.size(), joint_vals.size());
     Eigen::VectorXd dof_vals_pert = joint_vals;
@@ -194,20 +257,6 @@ void CartPosConstraint::CalcJacobianBlock(const Eigen::Ref<const Eigen::VectorXd
   }
   else
   {
-    // Calculate the jacobian
-    tesseract_common::TransformMap state = info_.manip->calcFwdKin(joint_vals);
-    Eigen::MatrixXd jac0;
-    if (info_.is_target_active)
-    {
-      jac0 = info_.manip->calcJacobian(joint_vals, info_.target_frame, info_.target_frame_offset.translation());
-      tesseract_common::jacobianChangeBase(jac0, (state[info_.source_frame] * info_.source_frame_offset).inverse());
-    }
-    else
-    {
-      jac0 = info_.manip->calcJacobian(joint_vals, info_.source_frame, info_.source_frame_offset.translation());
-      tesseract_common::jacobianChangeBase(jac0, (state[info_.target_frame] * info_.target_frame_offset).inverse());
-    }
-
     // Paper:
     // https://ethz.ch/content/dam/ethz/special-interest/mavt/robotics-n-intelligent-systems/rsl-dam/documents/RobotDynamics2016/RD2016script.pdf
     // The jacobian of the robot is the geometric jacobian (Je) which maps generalized velocities in
@@ -223,8 +272,15 @@ void CartPosConstraint::CalcJacobianBlock(const Eigen::Ref<const Eigen::VectorXd
     // The approach below leverages the geometric jacobian and a small step in time to approximate
     // the partial derivative of the error function. Note that the rotational portion is the only part
     // that is required to be modified per the paper.
-    if (info_.is_target_active)
+
+    // Calculate the jacobian
+    tesseract_common::TransformMap state = info_.manip->calcFwdKin(joint_vals);
+    Eigen::MatrixXd jac0;
+    if (info_.type == CartPosInfo::Type::TARGET_ACTIVE)
     {
+      jac0 = info_.manip->calcJacobian(joint_vals, info_.target_frame, info_.target_frame_offset.translation());
+      tesseract_common::jacobianChangeBase(jac0, (state[info_.source_frame] * info_.source_frame_offset).inverse());
+
       for (int c = 0; c < jac0.cols(); ++c)
       {
         auto perturbed_target_tf = trajopt_common::addTwist(target_tf, jac0.col(c), eps);
@@ -235,6 +291,9 @@ void CartPosConstraint::CalcJacobianBlock(const Eigen::Ref<const Eigen::VectorXd
     }
     else
     {
+      jac0 = info_.manip->calcJacobian(joint_vals, info_.source_frame, info_.source_frame_offset.translation());
+      tesseract_common::jacobianChangeBase(jac0, (state[info_.target_frame] * info_.target_frame_offset).inverse());
+
       for (int c = 0; c < jac0.cols(); ++c)
       {
         auto perturbed_source_tf = trajopt_common::addTwist(source_tf, jac0.col(c), eps);

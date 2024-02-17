@@ -49,6 +49,13 @@ struct CartPosInfo
   using Ptr = std::shared_ptr<CartPosInfo>;
   using ConstPtr = std::shared_ptr<const CartPosInfo>;
 
+  enum class Type
+  {
+    TARGET_ACTIVE,
+    SOURCE_ACTIVE,
+    BOTH_ACTIVE
+  };
+
   CartPosInfo() = default;
   CartPosInfo(tesseract_kinematics::JointGroup::ConstPtr manip,
               std::string source_frame,
@@ -73,7 +80,7 @@ struct CartPosInfo
   Eigen::Isometry3d target_frame_offset;
 
   /** @brief indicates which link is active */
-  bool is_target_active{ true };
+  Type type{ Type::TARGET_ACTIVE };
 
   /**
    * @brief This is a vector of indices to be returned Default: {0, 1, 2, 3, 4, 5}
