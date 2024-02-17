@@ -10,7 +10,7 @@ on:
 
 jobs:
   ci:
-    name: ${{ matrix.distro }}
+    name: ${{ matrix.distro }}-unstable
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
