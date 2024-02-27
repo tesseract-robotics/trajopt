@@ -158,8 +158,8 @@ void OSQPModel::updateConstraints()
     u_[i_cnt] = v[static_cast<Eigen::Index>(i_cnt)];
   }
 
-  std::vector<Eigen::Index> new_inner_sizes(static_cast<size_t>(sm.outerSize()));
-  for (size_t k = 0; k < sm.outerSize(); ++k)
+  std::vector<Eigen::Index> new_inner_sizes(n);
+  for (size_t k = 0; k < n; ++k)
   {
     new_inner_sizes[k] = sm.innerVector(static_cast<Eigen::Index>(k)).nonZeros() + 1;
   }
