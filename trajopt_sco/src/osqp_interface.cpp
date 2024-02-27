@@ -158,7 +158,12 @@ void OSQPModel::updateConstraints()
     u_[i_cnt] = v[static_cast<Eigen::Index>(i_cnt)];
   }
 
-  sm.reserve(sm.nonZeros() + static_cast<Eigen::Index>(n));
+  std::vector<Eigen::Index> new_inner_sizes(static_cast<size_t>(sm.outerSize()));
+  for (size_t k = 0; k < sm.outerSize(); ++k)
+  {
+    new_inner_sizes[k] = sm.innerVector(static_cast<Eigen::Index>(k)).nonZeros() + 1;
+  }
+  sm.reserve(new_inner_sizes);
   for (std::size_t i_bnd = 0; i_bnd < n; ++i_bnd)
   {
     l_[i_bnd + m] = fmax(lbs_[i_bnd], -OSQP_INFINITY);
