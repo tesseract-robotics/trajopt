@@ -41,11 +41,14 @@ void exprToEigen(const QuadExpr& expr,
   vars2inds(expr.vars2, ind2);
   assert((ind2.size() == ind1.size()) && (ind1.size() == expr.coeffs.size()));  // NOLINT
   sparse_matrix.resize(n_vars, n_vars);
-  sparse_matrix.reserve(static_cast<long int>(2 * expr.size()));
 
   Eigen::SparseVector<double> vector_sparse;
   exprToEigen(expr.affexpr, vector_sparse, n_vars);
   vector = vector_sparse;
+
+  using T = Eigen::Triplet<double>;
+  thread_local std::vector<T, Eigen::aligned_allocator<T>> triplets;
+  triplets.clear();
 
   for (size_t i = 0; i < expr.coeffs.size(); ++i)
   {
@@ -54,8 +57,7 @@ void exprToEigen(const QuadExpr& expr,
       // NOLINTNEXTLINE
       if (ind1[i] == ind2[i])
       {
-        sparse_matrix.coeffRef(static_cast<Eigen::Index>(ind1[i]), static_cast<Eigen::Index>(ind2[i])) +=
-            expr.coeffs[i];
+        triplets.emplace_back(static_cast<Eigen::Index>(ind1[i]), static_cast<Eigen::Index>(ind2[i]), expr.coeffs[i]);
       }
       else
       {
@@ -70,10 +72,11 @@ void exprToEigen(const QuadExpr& expr,
           r = static_cast<Eigen::Index>(ind2[i]);
           c = static_cast<Eigen::Index>(ind1[i]);
         }
-        sparse_matrix.coeffRef(r, c) += expr.coeffs[i];
+        triplets.emplace_back(r, c, expr.coeffs[i]);
       }
     }
   }
+  sparse_matrix.setFromTriplets(triplets.begin(), triplets.end());
 
   auto sparse_matrix_T = Eigen::SparseMatrix<double>(sparse_matrix.transpose());
   sparse_matrix = sparse_matrix + sparse_matrix_T;
