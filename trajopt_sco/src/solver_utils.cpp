@@ -1,6 +1,5 @@
 #include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
-#include <algorithm>
 #include <Eigen/SparseCore>
 #include <sstream>
 TRAJOPT_IGNORE_WARNINGS_POP
@@ -14,6 +13,10 @@ void exprToEigen(const AffExpr& expr, Eigen::SparseVector<double>& sparse_vector
 {
   sparse_vector.resize(n_vars);
   sparse_vector.reserve(static_cast<long int>(expr.size()));
+
+  std::vector<std::pair<int, double>> doublets;
+  doublets.reserve(expr.size());
+
   for (size_t i = 0; i < expr.size(); ++i)
   {
     auto i_var_index = static_cast<int>(expr.vars[i].var_rep->index);
@@ -24,7 +27,22 @@ void exprToEigen(const AffExpr& expr, Eigen::SparseVector<double>& sparse_vector
       throw std::runtime_error(msg.str());
     }
     if (expr.coeffs[i] != 0.)
-      sparse_vector.coeffRef(i_var_index) += expr.coeffs[i];
+      doublets.emplace_back(i_var_index, expr.coeffs[i]);
+  }
+
+  std::sort(doublets.begin(), doublets.end(), [](const auto& lhs, const auto& rhs) { return lhs.first < rhs.first; });
+  int prev_index{ -1 };
+  for (const auto& doublet : doublets)
+  {
+    if (doublet.first == prev_index)
+    {
+      sparse_vector.coeffRef(doublet.first) += doublet.second;
+    }
+    else
+    {
+      sparse_vector.insertBack(doublet.first) = doublet.second;
+    }
+    prev_index = doublet.first;
   }
 }
 
