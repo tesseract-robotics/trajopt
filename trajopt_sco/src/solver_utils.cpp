@@ -94,6 +94,11 @@ void exprToEigen(const QuadExpr& expr,
       }
     }
   }
+
+  if (force_diagonal)
+    for (int k = 0; k < n_vars; ++k)
+      triplets.emplace_back(k, k, 0.0);
+
   sparse_matrix.setFromTriplets(triplets.begin(), triplets.end());
 
   auto sparse_matrix_T = Eigen::SparseMatrix<double>(sparse_matrix.transpose());
@@ -101,10 +106,6 @@ void exprToEigen(const QuadExpr& expr,
 
   if (!matrix_is_halved)
     sparse_matrix = 0.5 * sparse_matrix;
-
-  if (force_diagonal)
-    for (int k = 0; k < n_vars; ++k)
-      sparse_matrix.coeffRef(k, k) += 0.0;
 }
 
 void exprToEigen(const AffExprVector& expr_vec,
