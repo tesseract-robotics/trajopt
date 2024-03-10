@@ -28,8 +28,12 @@
 
 #include <memory>
 #include <trajopt_sqp/types.h>
-#include <ifopt/problem.h>
 #include <trajopt_sqp/qp_problem.h>
+
+namespace ifopt
+{
+class Problem;
+}
 
 namespace trajopt_sqp
 {
@@ -43,11 +47,11 @@ public:
   IfoptQPProblem();
   IfoptQPProblem(std::shared_ptr<ifopt::Problem> nlp);
 
-  void addVariableSet(ifopt::VariableSet::Ptr variable_set) override;
+  void addVariableSet(std::shared_ptr<ifopt::VariableSet> variable_set) override;
 
-  void addConstraintSet(ifopt::ConstraintSet::Ptr constraint_set) override;
+  void addConstraintSet(std::shared_ptr<ifopt::ConstraintSet> constraint_set) override;
 
-  void addCostSet(ifopt::ConstraintSet::Ptr constraint_set, CostPenaltyType penalty_type) override;
+  void addCostSet(std::shared_ptr<ifopt::ConstraintSet> constraint_set, CostPenaltyType penalty_type) override;
 
   void setup() override;
 

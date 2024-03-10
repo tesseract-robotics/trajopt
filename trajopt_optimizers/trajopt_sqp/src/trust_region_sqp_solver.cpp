@@ -29,6 +29,10 @@
  * limitations under the License.
  */
 #include <trajopt_sqp/trust_region_sqp_solver.h>
+#include <trajopt_sqp/qp_problem.h>
+#include <trajopt_sqp/qp_solver.h>
+#include <trajopt_sqp/sqp_callback.h>
+
 #include <console_bridge/console.h>
 #include <chrono>
 
@@ -253,7 +257,7 @@ void TrustRegionSQPSolver::runTrustRegionLoop()
         qp_solver->updateBounds(qp_problem->getBoundsLower(), qp_problem->getBoundsUpper());
         results_.box_size = qp_problem->getBoxSize();
 
-        CONSOLE_BRIDGE_logInform("Shrunk trust region. New box size: %.4f", results_.box_size[0]);
+        CONSOLE_BRIDGE_logDebug("Shrunk trust region. New box size: %.4f", results_.box_size[0]);
         continue;
       }
 
@@ -264,7 +268,7 @@ void TrustRegionSQPSolver::runTrustRegionLoop()
         qp_solver->updateBounds(qp_problem->getBoundsLower(), qp_problem->getBoundsUpper());
         results_.box_size = qp_problem->getBoxSize();
 
-        CONSOLE_BRIDGE_logInform("Shrunk trust region to minimum. New box size: %.4f", results_.box_size[0]);
+        CONSOLE_BRIDGE_logDebug("Shrunk trust region to minimum. New box size: %.4f", results_.box_size[0]);
         continue;
       }
 
@@ -282,18 +286,18 @@ void TrustRegionSQPSolver::runTrustRegionLoop()
 
     if (results_.approx_merit_improve < params.min_approx_improve)
     {
-      CONSOLE_BRIDGE_logInform("Converged because improvement was small (%.3e < %.3e)",
-                               results_.approx_merit_improve,
-                               params.min_approx_improve);
+      CONSOLE_BRIDGE_logDebug("Converged because improvement was small (%.3e < %.3e)",
+                              results_.approx_merit_improve,
+                              params.min_approx_improve);
       status_ = SQPStatus::NLP_CONVERGED;
       return;
     }
 
     if (results_.approx_merit_improve / results_.best_exact_merit < params.min_approx_improve_frac)
     {
-      CONSOLE_BRIDGE_logInform("Converged because improvement ratio was small (%.3e < %.3e)",
-                               results_.approx_merit_improve / results_.best_exact_merit,
-                               params.min_approx_improve_frac);
+      CONSOLE_BRIDGE_logDebug("Converged because improvement ratio was small (%.3e < %.3e)",
+                              results_.approx_merit_improve / results_.best_exact_merit,
+                              params.min_approx_improve_frac);
       status_ = SQPStatus::NLP_CONVERGED;
       return;
     }
@@ -306,7 +310,7 @@ void TrustRegionSQPSolver::runTrustRegionLoop()
       qp_solver->updateBounds(qp_problem->getBoundsLower(), qp_problem->getBoundsUpper());
       results_.box_size = qp_problem->getBoxSize();
 
-      CONSOLE_BRIDGE_logInform("Shrunk trust region. new box size: %.4f", results_.box_size[0]);
+      CONSOLE_BRIDGE_logDebug("Shrunk trust region. new box size: %.4f", results_.box_size[0]);
     }
     else
     {
@@ -328,7 +332,7 @@ void TrustRegionSQPSolver::runTrustRegionLoop()
       qp_problem->scaleBoxSize(params.trust_expand_ratio);
       qp_solver->updateBounds(qp_problem->getBoundsLower(), qp_problem->getBoundsUpper());
       results_.box_size = qp_problem->getBoxSize();
-      CONSOLE_BRIDGE_logInform("Expanded trust region. new box size: %.4f", results_.box_size[0]);
+      CONSOLE_BRIDGE_logDebug("Expanded trust region. new box size: %.4f", results_.box_size[0]);
       return;
     }
   }  // Trust region loop

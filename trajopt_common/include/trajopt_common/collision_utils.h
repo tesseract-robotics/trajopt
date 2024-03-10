@@ -27,14 +27,16 @@
 #include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <Eigen/Eigen>
+#include <array>
 #include <tesseract_collision/core/types.h>
-#include <tesseract_kinematics/core/joint_group.h>
+#include <tesseract_kinematics/core/fwd.h>
 TRAJOPT_IGNORE_WARNINGS_POP
-
-#include <trajopt_common/collision_types.h>
 
 namespace trajopt_common
 {
+struct TrajOptCollisionConfig;
+struct GradientResults;
+
 std::size_t getHash(const TrajOptCollisionConfig& collision_config, const Eigen::Ref<const Eigen::VectorXd>& dof_vals);
 std::size_t getHash(const TrajOptCollisionConfig& collision_config,
                     const Eigen::Ref<const Eigen::VectorXd>& dof_vals0,
@@ -65,7 +67,7 @@ GradientResults getGradient(const Eigen::VectorXd& dofvals,
                             const tesseract_collision::ContactResult& contact_result,
                             double margin,
                             double margin_buffer,
-                            const tesseract_kinematics::JointGroup::ConstPtr& manip);
+                            const tesseract_kinematics::JointGroup& manip);
 
 /**
  * @brief Extracts the gradient information based on the contact results
@@ -80,7 +82,7 @@ GradientResults getGradient(const Eigen::VectorXd& dofvals0,
                             const tesseract_collision::ContactResult& contact_result,
                             double margin,
                             double margin_buffer,
-                            const tesseract_kinematics::JointGroup::ConstPtr& manip);
+                            const tesseract_kinematics::JointGroup& manip);
 
 /**
  * @brief Print debug gradient information

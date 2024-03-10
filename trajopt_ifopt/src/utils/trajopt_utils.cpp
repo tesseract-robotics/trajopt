@@ -25,6 +25,11 @@
  */
 
 #include <trajopt_ifopt/utils/trajopt_utils.h>
+#include <trajopt_ifopt/variable_sets/joint_position_variable.h>
+
+TRAJOPT_IGNORE_WARNINGS_PUSH
+#include <tesseract_common/joint_state.h>
+TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace trajopt_ifopt
 {

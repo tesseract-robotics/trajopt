@@ -25,34 +25,37 @@
  */
 #include <trajopt_sqp/osqp_eigen_solver.h>
 
-#include <OsqpEigen/OsqpEigen.h>
 #include <trajopt_common/macros.h>
+
+#include <OsqpEigen/OsqpEigen.h>
 
 const bool OSQP_COMPARE_DEBUG_MODE = false;
 
 namespace trajopt_sqp
 {
-OSQPEigenSolver::OSQPEigenSolver()
+OSQPEigenSolver::OSQPEigenSolver() : solver_(std::make_unique<OsqpEigen::Solver>())
 {
   if (verbosity > 0)
-    solver_.settings()->setVerbosity(true);
+    solver_->settings()->setVerbosity(true);
   else
-    solver_.settings()->setVerbosity(false);
-  solver_.settings()->setWarmStart(true);
-  solver_.settings()->setPolish(true);
-  solver_.settings()->setAdaptiveRho(true);
-  solver_.settings()->setMaxIteration(8192);
-  solver_.settings()->setAbsoluteTolerance(1e-4);
-  solver_.settings()->setRelativeTolerance(1e-6);
+    solver_->settings()->setVerbosity(false);
+  solver_->settings()->setWarmStart(true);
+  solver_->settings()->setPolish(true);
+  solver_->settings()->setAdaptiveRho(true);
+  solver_->settings()->setMaxIteration(8192);
+  solver_->settings()->setAbsoluteTolerance(1e-4);
+  solver_->settings()->setRelativeTolerance(1e-6);
 }
+
+OSQPEigenSolver::~OSQPEigenSolver() = default;
 
 bool OSQPEigenSolver::init(Eigen::Index num_vars, Eigen::Index num_cnts)
 {
   // Set the solver size
   num_cnts_ = num_cnts;
   num_vars_ = num_vars;
-  solver_.data()->setNumberOfVariables(static_cast<int>(num_vars_));
-  solver_.data()->setNumberOfConstraints(static_cast<int>(num_cnts_));
+  solver_->data()->setNumberOfVariables(static_cast<int>(num_vars_));
+  solver_->data()->setNumberOfConstraints(static_cast<int>(num_cnts_));
 
   solver_status_ = QPSolverStatus::INITIALIZED;
 
@@ -62,22 +65,22 @@ bool OSQPEigenSolver::init(Eigen::Index num_vars, Eigen::Index num_cnts)
 bool OSQPEigenSolver::clear()
 {
   // Clear all data
-  solver_.clearSolver();
-  solver_.data()->clearHessianMatrix();
-  solver_.data()->clearLinearConstraintsMatrix();
+  solver_->clearSolver();
+  solver_->data()->clearHessianMatrix();
+  solver_->data()->clearLinearConstraintsMatrix();
   return true;
 }
 
 bool OSQPEigenSolver::solve()
 {
   // In order to call initSolver, everything must have already been set, so we call it right before solving
-  if (!solver_.isInitialized())  // NOLINT
-    solver_.initSolver();
+  if (!solver_->isInitialized())  // NOLINT
+    solver_->initSolver();
 
   if (OSQP_COMPARE_DEBUG_MODE)
   {
     Eigen::IOFormat format(5);
-    const auto* osqp_data = solver_.data()->getData();
+    const auto* osqp_data = solver_->data()->getData();
     std::cout << "OSQP Number of Variables:" << osqp_data->n << std::endl;
     std::cout << "OSQP Number of Constraints:" << osqp_data->m << std::endl;
 
@@ -116,17 +119,17 @@ bool OSQPEigenSolver::solve()
   }
 
   /** @todo Need to check if this is what we want in the new version */
-  const bool solved = solver_.solve();
-  const auto status = static_cast<int>(solver_.workspace()->info->status_val);
+  const bool solved = solver_->solve();
+  const auto status = static_cast<int>(solver_->workspace()->info->status_val);
   if (OSQP_COMPARE_DEBUG_MODE)
-    std::cout << "OSQP Status Value: " << solver_.workspace()->info->status_val << std::endl;
+    std::cout << "OSQP Status Value: " << solver_->workspace()->info->status_val << std::endl;
 
   if (solved || status == OSQP_SOLVED_INACCURATE)
   {
     if (OSQP_COMPARE_DEBUG_MODE)
     {
       Eigen::IOFormat format(5);
-      std::cout << "OSQP Solution: " << solver_.getSolution().transpose().format(format) << std::endl;
+      std::cout << "OSQP Solution: " << solver_->getSolution().transpose().format(format) << std::endl;
     }
     return true;
   }
@@ -134,10 +137,10 @@ bool OSQPEigenSolver::solve()
   if (verbosity > 0)  // NOLINT
   {
     // If primal infeasible
-    if (solver_.workspace()->info->status_val == -3)
+    if (solver_->workspace()->info->status_val == -3)
     {
-      Eigen::Map<Eigen::VectorXd> primal_certificate(solver_.workspace()->delta_x, num_cnts_, 1);
-      std::cout << "OSQP Status: " << solver_.workspace()->info->status << std::endl;
+      Eigen::Map<Eigen::VectorXd> primal_certificate(solver_->workspace()->delta_x, num_cnts_, 1);
+      std::cout << "OSQP Status: " << solver_->workspace()->info->status << std::endl;
       std::cout << "\n---------------------------------------\n";
       std::cout << std::scientific << "Primal Certificate (v): " << primal_certificate.transpose() << std::endl;
 
@@ -154,10 +157,10 @@ bool OSQPEigenSolver::solve()
     }
 
     // If dual infeasible
-    if (solver_.workspace()->info->status_val == -4)  // NOLINT
+    if (solver_->workspace()->info->status_val == -4)  // NOLINT
     {
-      Eigen::Map<Eigen::VectorXd> dual_certificate(solver_.workspace()->delta_y, num_vars_, 1);
-      std::cout << "OSQP Status: " << solver_.workspace()->info->status << std::endl;
+      Eigen::Map<Eigen::VectorXd> dual_certificate(solver_->workspace()->delta_y, num_vars_, 1);
+      std::cout << "OSQP Status: " << solver_->workspace()->info->status << std::endl;
       std::cout << "\n---------------------------------------\n";
       std::cout << "Dual Certificate (x): " << dual_certificate.transpose() << std::endl;  // NOLINT
 
@@ -176,7 +179,7 @@ bool OSQPEigenSolver::solve()
 
 Eigen::VectorXd OSQPEigenSolver::getSolution()
 {
-  Eigen::VectorXd solution = solver_.getSolution();
+  Eigen::VectorXd solution = solver_->getSolution();
   return solution;
 }
 
@@ -239,25 +242,25 @@ bool OSQPEigenSolver::updateHessianMatrix(const SparseMatrix& hessian)
   // Also multiply by 2 because OSQP is multiplying by (1/2) for the objective fuction
   SparseMatrix cleaned = 2.0 * hessian.pruned(1e-7, 1);  // Any value < 1e-7 will be removed
 
-  if (solver_.isInitialized())
+  if (solver_->isInitialized())
   {
-    bool success = solver_.updateHessianMatrix(cleaned);
+    bool success = solver_->updateHessianMatrix(cleaned);
     if (cleaned.nonZeros() == 0) /** @todo Remove when upgrading to OSQP 1.0.0 */
     {
-      csc_spfree_fix(solver_.data()->getData()->P);
-      solver_.data()->getData()->P = nullptr;
-      solver_.data()->getData()->P = csc_spalloc_fix(cleaned.rows(), cleaned.cols(), 0, 1, 0);
+      csc_spfree_fix(solver_->data()->getData()->P);
+      solver_->data()->getData()->P = nullptr;
+      solver_->data()->getData()->P = csc_spalloc_fix(cleaned.rows(), cleaned.cols(), 0, 1, 0);
     }
     return success;
   }
 
-  solver_.data()->clearHessianMatrix();
-  bool success = solver_.data()->setHessianMatrix(cleaned);
+  solver_->data()->clearHessianMatrix();
+  bool success = solver_->data()->setHessianMatrix(cleaned);
   if (cleaned.nonZeros() == 0) /** @todo Remove when upgrading to OSQP 1.0.0 */
   {
-    csc_spfree_fix(solver_.data()->getData()->P);
-    solver_.data()->getData()->P = nullptr;
-    solver_.data()->getData()->P = csc_spalloc_fix(cleaned.rows(), cleaned.cols(), 0, 1, 0);
+    csc_spfree_fix(solver_->data()->getData()->P);
+    solver_->data()->getData()->P = nullptr;
+    solver_->data()->getData()->P = csc_spalloc_fix(cleaned.rows(), cleaned.cols(), 0, 1, 0);
   }
 
   return success;
@@ -267,22 +270,22 @@ bool OSQPEigenSolver::updateGradient(const Eigen::Ref<const Eigen::VectorXd>& gr
 {
   gradient_ = gradient;
 
-  if (solver_.isInitialized())
-    return solver_.updateGradient(gradient_);
+  if (solver_->isInitialized())
+    return solver_->updateGradient(gradient_);
 
-  return solver_.data()->setGradient(gradient_);
+  return solver_->data()->setGradient(gradient_);
 }
 
 bool OSQPEigenSolver::updateLowerBound(const Eigen::Ref<const Eigen::VectorXd>& lowerBound)
 {
   bounds_lower_ = lowerBound.cwiseMax(Eigen::VectorXd::Ones(num_cnts_) * -OSQP_INFTY);
-  return solver_.updateLowerBound(bounds_lower_);
+  return solver_->updateLowerBound(bounds_lower_);
 }
 
 bool OSQPEigenSolver::updateUpperBound(const Eigen::Ref<const Eigen::VectorXd>& upperBound)
 {
   bounds_upper_ = upperBound.cwiseMin(Eigen::VectorXd::Ones(num_cnts_) * OSQP_INFTY);
-  return solver_.updateUpperBound(bounds_upper_);
+  return solver_->updateUpperBound(bounds_upper_);
 }
 
 bool OSQPEigenSolver::updateBounds(const Eigen::Ref<const Eigen::VectorXd>& lowerBound,
@@ -291,11 +294,11 @@ bool OSQPEigenSolver::updateBounds(const Eigen::Ref<const Eigen::VectorXd>& lowe
   bounds_lower_ = lowerBound.cwiseMax(Eigen::VectorXd::Ones(num_cnts_) * -OSQP_INFTY);
   bounds_upper_ = upperBound.cwiseMin(Eigen::VectorXd::Ones(num_cnts_) * OSQP_INFTY);
 
-  if (solver_.isInitialized())
-    return solver_.updateBounds(bounds_lower_, bounds_upper_);
+  if (solver_->isInitialized())
+    return solver_->updateBounds(bounds_lower_, bounds_upper_);
 
-  bool success = solver_.data()->setLowerBound(bounds_lower_);
-  success &= solver_.data()->setUpperBound(bounds_upper_);
+  bool success = solver_->data()->setLowerBound(bounds_lower_);
+  success &= solver_->data()->setUpperBound(bounds_upper_);
   return success;
 }
 
@@ -304,27 +307,27 @@ bool OSQPEigenSolver::updateLinearConstraintsMatrix(const SparseMatrix& linearCo
   assert(num_cnts_ == linearConstraintsMatrix.rows());
   assert(num_vars_ == linearConstraintsMatrix.cols());
 
-  solver_.data()->clearLinearConstraintsMatrix();
+  solver_->data()->clearLinearConstraintsMatrix();
   SparseMatrix cleaned = linearConstraintsMatrix.pruned(1e-7, 1);  // Any value < 1e-7 will be removed
 
-  if (solver_.isInitialized())
+  if (solver_->isInitialized())
   {
-    bool success = solver_.updateLinearConstraintsMatrix(cleaned);
+    bool success = solver_->updateLinearConstraintsMatrix(cleaned);
     if (cleaned.nonZeros() == 0) /** @todo Remove when upgrading to OSQP 1.0.0 */
     {
-      csc_spfree_fix(solver_.data()->getData()->A);
-      solver_.data()->getData()->A = nullptr;
-      solver_.data()->getData()->A = csc_spalloc_fix(cleaned.rows(), cleaned.cols(), 0, 1, 0);
+      csc_spfree_fix(solver_->data()->getData()->A);
+      solver_->data()->getData()->A = nullptr;
+      solver_->data()->getData()->A = csc_spalloc_fix(cleaned.rows(), cleaned.cols(), 0, 1, 0);
     }
     return success;
   }
 
-  bool success = solver_.data()->setLinearConstraintsMatrix(cleaned);
+  bool success = solver_->data()->setLinearConstraintsMatrix(cleaned);
   if (cleaned.nonZeros() == 0) /** @todo Remove when upgrading to OSQP 1.0.0 */
   {
-    csc_spfree_fix(solver_.data()->getData()->A);
-    solver_.data()->getData()->A = nullptr;
-    solver_.data()->getData()->A = csc_spalloc_fix(cleaned.rows(), cleaned.cols(), 0, 1, 0);
+    csc_spfree_fix(solver_->data()->getData()->A);
+    solver_->data()->getData()->A = nullptr;
+    solver_->data()->getData()->A = csc_spalloc_fix(cleaned.rows(), cleaned.cols(), 0, 1, 0);
   }
   return success;
 }

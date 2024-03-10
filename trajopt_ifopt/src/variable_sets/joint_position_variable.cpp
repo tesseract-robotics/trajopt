@@ -26,6 +26,7 @@
 #include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <console_bridge/console.h>
+#include <tesseract_common/kinematic_limits.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt_ifopt/utils/ifopt_utils.h>

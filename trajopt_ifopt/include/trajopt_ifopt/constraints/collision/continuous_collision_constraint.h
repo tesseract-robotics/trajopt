@@ -26,18 +26,18 @@
  */
 #ifndef TRAJOPT_IFOPT_CONTINUOUS_COLLISION_CONSTRAINT_V2_H
 #define TRAJOPT_IFOPT_CONTINUOUS_COLLISION_CONSTRAINT_V2_H
+
 #include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
-#include <Eigen/Eigen>
+#include <Eigen/Core>
 #include <ifopt/constraint_set.h>
-#include <tesseract_collision/core/common.h>
 TRAJOPT_IGNORE_WARNINGS_POP
-
-#include <trajopt_ifopt/constraints/collision/continuous_collision_evaluators.h>
-#include <trajopt_ifopt/variable_sets/joint_position_variable.h>
 
 namespace trajopt_ifopt
 {
+class JointPosition;
+class ContinuousCollisionEvaluator;
+
 class ContinuousCollisionConstraint : public ifopt::ConstraintSet
 {
 public:
@@ -53,8 +53,8 @@ public:
    * @param fixed_sparsity This is mostly need for snopt which requires sparsity to not change
    * @param name
    */
-  ContinuousCollisionConstraint(ContinuousCollisionEvaluator::Ptr collision_evaluator,
-                                std::array<JointPosition::ConstPtr, 2> position_vars,
+  ContinuousCollisionConstraint(std::shared_ptr<ContinuousCollisionEvaluator> collision_evaluator,
+                                std::array<std::shared_ptr<const JointPosition>, 2> position_vars,
                                 std::array<bool, 2> position_vars_fixed,
                                 int max_num_cnt = 1,
                                 bool fixed_sparsity = false,
@@ -95,7 +95,7 @@ public:
    * @brief Get the collision evaluator. This exposed for plotter callbacks
    * @return The collision evaluator
    */
-  ContinuousCollisionEvaluator::Ptr GetCollisionEvaluator() const;
+  std::shared_ptr<ContinuousCollisionEvaluator> GetCollisionEvaluator() const;
 
 private:
   /** @brief The number of joints in a single JointPosition */
@@ -108,13 +108,13 @@ private:
    * @brief Pointers to the vars used by this constraint.
    * Do not access them directly. Instead use this->GetVariables()->GetComponent(position_var->GetName())->GetValues()
    */
-  std::array<JointPosition::ConstPtr, 2> position_vars_;
+  std::array<std::shared_ptr<const JointPosition>, 2> position_vars_;
   std::array<bool, 2> position_vars_fixed_;
 
   /** @brief Used to initialize jacobian because snopt sparsity cannot change */
   std::vector<Eigen::Triplet<double>> triplet_list_;
 
-  ContinuousCollisionEvaluator::Ptr collision_evaluator_;
+  std::shared_ptr<ContinuousCollisionEvaluator> collision_evaluator_;
 };
 }  // namespace trajopt_ifopt
 

@@ -2,14 +2,20 @@
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <ctime>
 #include <gtest/gtest.h>
+#include <tesseract_common/timer.h>
+#include <tesseract_common/resource_locator.h>
+#include <tesseract_state_solver/state_solver.h>
 #include <tesseract_environment/environment.h>
 #include <tesseract_environment/utils.h>
+#include <tesseract_collision/core/discrete_contact_manager.h>
+#include <tesseract_kinematics/core/joint_group.h>
 #include <tesseract_visualization/visualization.h>
+#include <console_bridge/console.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt/collision_terms.hpp>
-#include <trajopt/common.hpp>
 #include <trajopt/plot_callback.hpp>
+#include <trajopt/utils.hpp>
 #include <trajopt/problem_description.hpp>
 #include <trajopt_sco/optimizers.hpp>
 #include <trajopt_common/config.hpp>
@@ -98,7 +104,12 @@ void runTest(const Environment::Ptr& env, const Visualization::Ptr& plotter, boo
   if (plotting)
     opt->addCallback(PlotCallback(plotter));
   opt->initialize(trajToDblVec(prob->GetInitTraj()));
+
+  tesseract_common::Timer stopwatch;
+  stopwatch.start();
   opt->optimize();
+  stopwatch.stop();
+  CONSOLE_BRIDGE_logError("Test took %f seconds.", stopwatch.elapsedSeconds());
 
   if (plotting)
     plotter->clear();

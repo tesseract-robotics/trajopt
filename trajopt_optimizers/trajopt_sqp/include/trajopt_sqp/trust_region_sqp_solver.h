@@ -31,9 +31,11 @@
 #ifndef TRAJOPT_SQP_INCLUDE_SIMPLE_SQP_SOLVER_H_
 #define TRAJOPT_SQP_INCLUDE_SIMPLE_SQP_SOLVER_H_
 
-#include <trajopt_sqp/qp_problem.h>
-#include <trajopt_sqp/qp_solver.h>
-#include <trajopt_sqp/sqp_callback.h>
+#include <memory>
+#include <vector>
+
+#include <trajopt_sqp/fwd.h>
+#include <trajopt_sqp/types.h>
 
 namespace trajopt_sqp
 {
@@ -46,11 +48,11 @@ public:
   using Ptr = std::shared_ptr<TrustRegionSQPSolver>;
   using ConstPtr = std::shared_ptr<const TrustRegionSQPSolver>;
 
-  TrustRegionSQPSolver(QPSolver::Ptr qp_solver);
+  TrustRegionSQPSolver(std::shared_ptr<QPSolver> qp_solver);
 
-  bool init(QPProblem::Ptr qp_prob);
+  bool init(std::shared_ptr<QPProblem> qp_prob);
 
-  void solve(const QPProblem::Ptr& qp_prob);
+  void solve(const std::shared_ptr<QPProblem>& qp_prob);
 
   /**
    * @brief Run a single convexification step which calls runTrustRegionLoop
@@ -101,13 +103,7 @@ public:
   void printStepInfo() const;
 
   /** @brief Registers an optimization callback */
-  void registerCallback(const SQPCallback::Ptr& callback);
-
-  /** @brief If true then debug information will be printed to the terminal */
-  bool verbose{ false };
-
-  /** @brief Contains parameters that control the SQP optimization */
-  SQPParameters params;
+  void registerCallback(const std::shared_ptr<SQPCallback>& callback);
 
   /** @brief Gets the optimization status (currently unset) */
   const SQPStatus& getStatus();
@@ -115,16 +111,22 @@ public:
   /** @brief Gets the SQP optimization results */
   const SQPResults& getResults();
 
+  /** @brief If true then debug information will be printed to the terminal */
+  bool verbose{ false };
+
+  /** @brief Contains parameters that control the SQP optimization */
+  SQPParameters params;
+
   /** @brief The QP Solver used to solve a single step of the SQP routine  */
-  QPSolver::Ptr qp_solver;
+  std::shared_ptr<QPSolver> qp_solver;
 
   /** @brief The QP problem created from the NLP */
-  QPProblem::Ptr qp_problem;
+  std::shared_ptr<QPProblem> qp_problem;
 
 protected:
   SQPStatus status_{ SQPStatus::QP_SOLVER_ERROR };
   SQPResults results_;
-  std::vector<SQPCallback::Ptr> callbacks_;
+  std::vector<std::shared_ptr<SQPCallback>> callbacks_;
 
   void constraintMeritCoeffChanged();
 };

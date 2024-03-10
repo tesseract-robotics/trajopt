@@ -4,7 +4,11 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <Eigen/Core>
 #include <boost/format.hpp>
 #include <iostream>
+#include <tesseract_common/eigen_types.h>
+#include <tesseract_kinematics/core/joint_group.h>
 #include <tesseract_kinematics/core/utils.h>
+#include <tesseract_scene_graph/link.h>
+#include <tesseract_visualization/visualization.h>
 #include <tesseract_visualization/markers/axis_marker.h>
 #include <tesseract_visualization/markers/arrow_marker.h>
 TRAJOPT_IGNORE_WARNINGS_POP
@@ -68,7 +72,7 @@ Eigen::VectorXd applyTolerances(const Eigen::VectorXd& error,
 }
 
 DynamicCartPoseErrCalculator::DynamicCartPoseErrCalculator(
-    tesseract_kinematics::JointGroup::ConstPtr manip,
+    std::shared_ptr<const tesseract_kinematics::JointGroup> manip,
     std::string source_frame,
     std::string target_frame,
     const Eigen::Isometry3d& source_frame_offset,  // NOLINT(modernize-pass-by-value)
@@ -129,7 +133,7 @@ VectorXd DynamicCartPoseErrCalculator::operator()(const VectorXd& dof_vals) cons
   return reduced_err;  // This is available in 3.4 err(indices_, Eigen::all);
 }
 
-void DynamicCartPoseErrCalculator::Plot(const tesseract_visualization::Visualization::Ptr& plotter,
+void DynamicCartPoseErrCalculator::Plot(const std::shared_ptr<tesseract_visualization::Visualization>& plotter,
                                         const VectorXd& dof_vals)
 {
   tesseract_common::TransformMap state = manip_->calcFwdKin(dof_vals);
@@ -151,7 +155,7 @@ void DynamicCartPoseErrCalculator::Plot(const tesseract_visualization::Visualiza
 }
 
 DynamicCartPoseJacCalculator::DynamicCartPoseJacCalculator(
-    tesseract_kinematics::JointGroup::ConstPtr manip,
+    std::shared_ptr<const tesseract_kinematics::JointGroup> manip,
     std::string source_frame,
     std::string target_frame,
     const Eigen::Isometry3d& source_frame_offset,  // NOLINT(modernize-pass-by-value)
@@ -198,7 +202,7 @@ MatrixXd DynamicCartPoseJacCalculator::operator()(const VectorXd& dof_vals) cons
 }
 
 CartPoseErrCalculator::CartPoseErrCalculator(
-    tesseract_kinematics::JointGroup::ConstPtr manip,
+    std::shared_ptr<const tesseract_kinematics::JointGroup> manip,
     std::string source_frame,
     std::string target_frame,
     const Eigen::Isometry3d& source_frame_offset,  // NOLINT(modernize-pass-by-value)
@@ -285,7 +289,8 @@ VectorXd CartPoseErrCalculator::operator()(const VectorXd& dof_vals) const
   return reduced_err;  // This is available in 3.4 err(indices_, Eigen::all);
 }
 
-void CartPoseErrCalculator::Plot(const tesseract_visualization::Visualization::Ptr& plotter, const VectorXd& dof_vals)
+void CartPoseErrCalculator::Plot(const std::shared_ptr<tesseract_visualization::Visualization>& plotter,
+                                 const VectorXd& dof_vals)
 {
   tesseract_common::TransformMap state = manip_->calcFwdKin(dof_vals);
   Eigen::Isometry3d source_tf = state[source_frame_] * source_frame_offset_;
@@ -306,7 +311,7 @@ void CartPoseErrCalculator::Plot(const tesseract_visualization::Visualization::P
 }
 
 CartPoseJacCalculator::CartPoseJacCalculator(
-    tesseract_kinematics::JointGroup::ConstPtr manip,
+    std::shared_ptr<const tesseract_kinematics::JointGroup> manip,
     std::string source_frame,
     std::string target_frame,
     const Eigen::Isometry3d& source_frame_offset,  // NOLINT(modernize-pass-by-value)
@@ -376,7 +381,7 @@ MatrixXd CartPoseJacCalculator::operator()(const VectorXd& dof_vals) const
   return jac0;  // This is available in 3.4 jac0(indices_, Eigen::all);
 }
 
-CartVelJacCalculator::CartVelJacCalculator(tesseract_kinematics::JointGroup::ConstPtr manip,
+CartVelJacCalculator::CartVelJacCalculator(std::shared_ptr<const tesseract_kinematics::JointGroup> manip,
                                            std::string link,
                                            double limit,
                                            const Eigen::Isometry3d& tcp)  // NOLINT(modernize-pass-by-value)
@@ -411,7 +416,7 @@ MatrixXd CartVelJacCalculator::operator()(const VectorXd& dof_vals) const
   return out;
 }
 
-CartVelErrCalculator::CartVelErrCalculator(tesseract_kinematics::JointGroup::ConstPtr manip,
+CartVelErrCalculator::CartVelErrCalculator(std::shared_ptr<const tesseract_kinematics::JointGroup> manip,
                                            std::string link,
                                            double limit,
                                            const Eigen::Isometry3d& tcp)  // NOLINT(modernize-pass-by-value)

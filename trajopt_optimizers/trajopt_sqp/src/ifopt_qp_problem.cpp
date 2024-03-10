@@ -27,6 +27,7 @@
 #include <trajopt_ifopt/utils/ifopt_utils.h>
 #include <trajopt_ifopt/costs/squared_cost.h>
 #include <trajopt_ifopt/costs/absolute_cost.h>
+#include <ifopt/problem.h>
 #include <iostream>
 
 namespace trajopt_sqp
@@ -34,14 +35,17 @@ namespace trajopt_sqp
 IfoptQPProblem::IfoptQPProblem() : nlp_(std::make_shared<ifopt::Problem>()) {}
 IfoptQPProblem::IfoptQPProblem(std::shared_ptr<ifopt::Problem> nlp) : nlp_(std::move(nlp)) {}
 
-void IfoptQPProblem::addVariableSet(ifopt::VariableSet::Ptr variable_set) { nlp_->AddVariableSet(variable_set); }
+void IfoptQPProblem::addVariableSet(std::shared_ptr<ifopt::VariableSet> variable_set)
+{
+  nlp_->AddVariableSet(variable_set);
+}
 
-void IfoptQPProblem::addConstraintSet(ifopt::ConstraintSet::Ptr constraint_set)
+void IfoptQPProblem::addConstraintSet(std::shared_ptr<ifopt::ConstraintSet> constraint_set)
 {
   nlp_->AddConstraintSet(constraint_set);
 }
 
-void IfoptQPProblem::addCostSet(ifopt::ConstraintSet::Ptr constraint_set, CostPenaltyType penalty_type)
+void IfoptQPProblem::addCostSet(std::shared_ptr<ifopt::ConstraintSet> constraint_set, CostPenaltyType penalty_type)
 {
   switch (penalty_type)
   {

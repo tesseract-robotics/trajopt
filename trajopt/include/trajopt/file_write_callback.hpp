@@ -1,8 +1,17 @@
 #pragma once
-#include <trajopt/problem_description.hpp>
-#include <trajopt_sco/optimizers.hpp>
+
+#include <functional>
+#include <memory>
+
+namespace sco
+{
+class OptProb;
+struct OptResults;
+}  // namespace sco
 
 namespace trajopt
 {
-sco::Optimizer::Callback WriteCallback(std::shared_ptr<std::ofstream> file, const TrajOptProb::Ptr& prob);
-}
+class TrajOptProb;
+std::function<void(sco::OptProb*, sco::OptResults&)> WriteCallback(std::shared_ptr<std::ofstream> file,
+                                                                   const std::shared_ptr<TrajOptProb>& prob);
+}  // namespace trajopt

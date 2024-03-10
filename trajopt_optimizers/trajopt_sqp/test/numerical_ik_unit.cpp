@@ -29,11 +29,19 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <ctime>
 #include <sstream>
 #include <gtest/gtest.h>
+#include <console_bridge/console.h>
+#include <OsqpEigen/OsqpEigen.h>
 #include <tesseract_common/types.h>
+#include <tesseract_common/timer.h>
+#include <tesseract_common/resource_locator.h>
+#include <tesseract_collision/core/continuous_contact_manager.h>
+#include <tesseract_kinematics/core/joint_group.h>
+#include <tesseract_state_solver/state_solver.h>
 #include <tesseract_environment/environment.h>
 #include <tesseract_environment/utils.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
+#include <trajopt_ifopt/variable_sets/joint_position_variable.h>
 #include <trajopt_ifopt/constraints/collision/continuous_collision_constraint.h>
 #include <trajopt_ifopt/constraints/collision/continuous_collision_evaluators.h>
 #include <trajopt_ifopt/constraints/cartesian_position_constraint.h>
@@ -114,17 +122,23 @@ void runNumericalIKTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const Env
   // 5) Setup solver
   auto qp_solver = std::make_shared<trajopt_sqp::OSQPEigenSolver>();
   trajopt_sqp::TrustRegionSQPSolver solver(qp_solver);
-  qp_solver->solver_.settings()->setVerbosity(false);
-  qp_solver->solver_.settings()->setWarmStart(true);
-  qp_solver->solver_.settings()->setPolish(true);
-  qp_solver->solver_.settings()->setAdaptiveRho(true);
-  qp_solver->solver_.settings()->setMaxIteration(8192);
-  qp_solver->solver_.settings()->setAbsoluteTolerance(1e-4);
-  qp_solver->solver_.settings()->setRelativeTolerance(1e-6);
+  qp_solver->solver_->settings()->setVerbosity(false);
+  qp_solver->solver_->settings()->setWarmStart(true);
+  qp_solver->solver_->settings()->setPolish(true);
+  qp_solver->solver_->settings()->setAdaptiveRho(true);
+  qp_solver->solver_->settings()->setMaxIteration(8192);
+  qp_solver->solver_->settings()->setAbsoluteTolerance(1e-4);
+  qp_solver->solver_->settings()->setRelativeTolerance(1e-6);
 
   // 6) solve
-  solver.verbose = true;
+  solver.verbose = false;
+
+  tesseract_common::Timer stopwatch;
+  stopwatch.start();
   solver.solve(qp_problem);
+  stopwatch.stop();
+  CONSOLE_BRIDGE_logError("Test took %f seconds.", stopwatch.elapsedSeconds());
+
   Eigen::VectorXd x = qp_problem->getVariableValues();
 
   EXPECT_TRUE(solver.getStatus() == trajopt_sqp::SQPStatus::NLP_CONVERGED);
