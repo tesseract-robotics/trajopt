@@ -23,15 +23,24 @@
  */
 
 #include <trajopt_ifopt/constraints/collision/continuous_collision_evaluators.h>
+#include <trajopt_common/collision_types.h>
 #include <trajopt_common/collision_utils.h>
+
+TRAJOPT_IGNORE_WARNINGS_PUSH
+#include <tesseract_collision/core/discrete_contact_manager.h>
+#include <tesseract_collision/core/continuous_contact_manager.h>
+#include <tesseract_kinematics/core/joint_group.h>
+#include <tesseract_environment/environment.h>
+#include <console_bridge/console.h>
+TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace trajopt_ifopt
 {
 LVSContinuousCollisionEvaluator::LVSContinuousCollisionEvaluator(
-    std::shared_ptr<trajopt_common::CollisionCache> collision_cache,
-    tesseract_kinematics::JointGroup::ConstPtr manip,
-    tesseract_environment::Environment::ConstPtr env,
-    trajopt_common::TrajOptCollisionConfig::ConstPtr collision_config,
+    std::shared_ptr<CollisionCache> collision_cache,
+    std::shared_ptr<const tesseract_kinematics::JointGroup> manip,
+    std::shared_ptr<const tesseract_environment::Environment> env,
+    std::shared_ptr<const trajopt_common::TrajOptCollisionConfig> collision_config,
     bool dynamic_environment)
   : collision_cache_(std::move(collision_cache))
   , manip_(std::move(manip))
@@ -77,7 +86,7 @@ LVSContinuousCollisionEvaluator::LVSContinuousCollisionEvaluator(
       collision_config_->collision_margin_buffer);
 }
 
-trajopt_common::CollisionCacheData::ConstPtr
+std::shared_ptr<const trajopt_common::CollisionCacheData>
 LVSContinuousCollisionEvaluator::CalcCollisionData(const Eigen::Ref<const Eigen::VectorXd>& dof_vals0,
                                                    const Eigen::Ref<const Eigen::VectorXd>& dof_vals1,
                                                    const std::array<bool, 2>& position_vars_fixed,
@@ -258,7 +267,7 @@ LVSContinuousCollisionEvaluator::CalcGradientData(const Eigen::Ref<const Eigen::
       contact_results.link_names[0], contact_results.link_names[1]);
 
   return trajopt_common::getGradient(
-      dof_vals0, dof_vals1, contact_results, margin, collision_config_->collision_margin_buffer, manip_);
+      dof_vals0, dof_vals1, contact_results, margin, collision_config_->collision_margin_buffer, *manip_);
 }
 
 const trajopt_common::TrajOptCollisionConfig& LVSContinuousCollisionEvaluator::GetCollisionConfig() const
@@ -269,10 +278,10 @@ const trajopt_common::TrajOptCollisionConfig& LVSContinuousCollisionEvaluator::G
 //////////////////////////////////////////
 
 LVSDiscreteCollisionEvaluator::LVSDiscreteCollisionEvaluator(
-    std::shared_ptr<trajopt_common::CollisionCache> collision_cache,
-    tesseract_kinematics::JointGroup::ConstPtr manip,
-    tesseract_environment::Environment::ConstPtr env,
-    trajopt_common::TrajOptCollisionConfig::ConstPtr collision_config,
+    std::shared_ptr<CollisionCache> collision_cache,
+    std::shared_ptr<const tesseract_kinematics::JointGroup> manip,
+    std::shared_ptr<const tesseract_environment::Environment> env,
+    std::shared_ptr<const trajopt_common::TrajOptCollisionConfig> collision_config,
     bool dynamic_environment)
   : collision_cache_(std::move(collision_cache))
   , manip_(std::move(manip))
@@ -315,7 +324,7 @@ LVSDiscreteCollisionEvaluator::LVSDiscreteCollisionEvaluator(
       collision_config_->collision_margin_buffer);
 }
 
-trajopt_common::CollisionCacheData::ConstPtr
+std::shared_ptr<const trajopt_common::CollisionCacheData>
 LVSDiscreteCollisionEvaluator::CalcCollisionData(const Eigen::Ref<const Eigen::VectorXd>& dof_vals0,
                                                  const Eigen::Ref<const Eigen::VectorXd>& dof_vals1,
                                                  const std::array<bool, 2>& position_vars_fixed,
@@ -486,7 +495,7 @@ LVSDiscreteCollisionEvaluator::CalcGradientData(const Eigen::Ref<const Eigen::Ve
       contact_results.link_names[0], contact_results.link_names[1]);
 
   return trajopt_common::getGradient(
-      dof_vals0, dof_vals1, contact_results, margin, collision_config_->collision_margin_buffer, manip_);
+      dof_vals0, dof_vals1, contact_results, margin, collision_config_->collision_margin_buffer, *manip_);
 }
 
 const trajopt_common::TrajOptCollisionConfig& LVSDiscreteCollisionEvaluator::GetCollisionConfig() const

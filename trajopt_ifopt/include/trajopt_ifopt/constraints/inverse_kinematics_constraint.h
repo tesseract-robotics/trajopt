@@ -30,16 +30,13 @@
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <Eigen/Eigen>
 #include <ifopt/constraint_set.h>
-
-#include <tesseract_kinematics/core/inverse_kinematics.h>
-#include <tesseract_environment/environment.h>
-#include <tesseract_environment/utils.h>
+#include <tesseract_kinematics/core/fwd.h>
 TRAJOPT_IGNORE_WARNINGS_POP
-
-#include <trajopt_ifopt/variable_sets/joint_position_variable.h>
 
 namespace trajopt_ifopt
 {
+class JointPosition;
+
 /**
  * @brief Contains kinematic information for the inverse kinematics constraint
  */
@@ -51,12 +48,12 @@ struct InverseKinematicsInfo
   using ConstPtr = std::shared_ptr<const InverseKinematicsInfo>;
 
   InverseKinematicsInfo() = default;
-  InverseKinematicsInfo(tesseract_kinematics::KinematicGroup::ConstPtr manip,
+  InverseKinematicsInfo(std::shared_ptr<const tesseract_kinematics::KinematicGroup> manip,
                         std::string working_frame,
                         std::string tcp_frame,
                         const Eigen::Isometry3d& tcp_offset = Eigen::Isometry3d::Identity());
 
-  tesseract_kinematics::KinematicGroup::ConstPtr manip;
+  std::shared_ptr<const tesseract_kinematics::KinematicGroup> manip;
 
   /** @brief Not currently respected */
   std::string working_frame;
@@ -86,8 +83,8 @@ public:
 
   InverseKinematicsConstraint(const Eigen::Isometry3d& target_pose,
                               InverseKinematicsInfo::ConstPtr kinematic_info,
-                              JointPosition::ConstPtr constraint_var,
-                              JointPosition::ConstPtr seed_var,
+                              std::shared_ptr<const JointPosition> constraint_var,
+                              std::shared_ptr<const JointPosition> seed_var,
                               const std::string& name = "InverseKinematics");
 
   /**
@@ -151,10 +148,10 @@ private:
   /** @brief Pointer to the var used by this constraint.
    *
    * Do not access them directly. Instead use this->GetVariables()->GetComponent(position_var->GetName())->GetValues()*/
-  JointPosition::ConstPtr constraint_var_;
+  std::shared_ptr<const JointPosition> constraint_var_;
   /** @brief Pointer to the var used as a seed when calculating IK. This will usually be a adjacent point in the
    * trajectory*/
-  JointPosition::ConstPtr seed_var_;
+  std::shared_ptr<const JointPosition> seed_var_;
   /** @brief Target pose for the TCP. Currently in robot frame since world_to_base_ has not been implemented */
   Eigen::Isometry3d target_pose_;
   /** @brief The kinematic info used to create this constraint */

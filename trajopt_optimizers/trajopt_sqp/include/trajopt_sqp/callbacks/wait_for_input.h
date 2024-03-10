@@ -28,13 +28,10 @@
 
 #include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
-#include <ifopt/problem.h>
-#include <tesseract_visualization/visualization.h>
+#include <tesseract_visualization/fwd.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt_sqp/sqp_callback.h>
-#include <trajopt_sqp/trust_region_sqp_solver.h>
-#include <trajopt_sqp/types.h>
 
 namespace trajopt_sqp
 {
@@ -42,18 +39,18 @@ namespace trajopt_sqp
  * @brief Calls the waitForInput function in the plotter. Use to pause the optimization while displaying intermediate
  * results
  */
-class WaitForInputCallback : public trajopt_sqp::SQPCallback
+class WaitForInputCallback : public SQPCallback
 {
 public:
   using Ptr = std::shared_ptr<WaitForInputCallback>;
   using ConstPtr = std::shared_ptr<const WaitForInputCallback>;
 
-  WaitForInputCallback(tesseract_visualization::Visualization::Ptr plotter);
+  WaitForInputCallback(std::shared_ptr<tesseract_visualization::Visualization> plotter);
 
-  bool execute(const QPProblem& problem, const trajopt_sqp::SQPResults& sqp_results) override;
+  bool execute(const QPProblem& problem, const SQPResults& sqp_results) override;
 
 protected:
-  tesseract_visualization::Visualization::Ptr plotter_;
+  std::shared_ptr<tesseract_visualization::Visualization> plotter_;
 };
 }  // namespace trajopt_sqp
 

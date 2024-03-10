@@ -27,22 +27,23 @@
 
 #include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
-#include <tesseract_kinematics/core/utils.h>
-#include <console_bridge/console.h>
-#include <tesseract_collision/core/common.h>
+#include <trajopt_common/collision_types.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt_ifopt/constraints/collision/continuous_collision_constraint.h>
+#include <trajopt_ifopt/constraints/collision/continuous_collision_evaluators.h>
 #include <trajopt_ifopt/constraints/collision/weighted_average_methods.h>
+#include <trajopt_ifopt/variable_sets/joint_position_variable.h>
 
 namespace trajopt_ifopt
 {
-ContinuousCollisionConstraint::ContinuousCollisionConstraint(ContinuousCollisionEvaluator::Ptr collision_evaluator,
-                                                             std::array<JointPosition::ConstPtr, 2> position_vars,
-                                                             std::array<bool, 2> position_vars_fixed,
-                                                             int max_num_cnt,
-                                                             bool fixed_sparsity,
-                                                             const std::string& name)
+ContinuousCollisionConstraint::ContinuousCollisionConstraint(
+    std::shared_ptr<ContinuousCollisionEvaluator> collision_evaluator,
+    std::array<std::shared_ptr<const JointPosition>, 2> position_vars,
+    std::array<bool, 2> position_vars_fixed,
+    int max_num_cnt,
+    bool fixed_sparsity,
+    const std::string& name)
   : ifopt::ConstraintSet(max_num_cnt, name)
   , position_vars_(std::move(position_vars))
   , position_vars_fixed_(position_vars_fixed)
@@ -195,7 +196,7 @@ void ContinuousCollisionConstraint::SetBounds(const std::vector<ifopt::Bounds>& 
   bounds_ = bounds;
 }
 
-ContinuousCollisionEvaluator::Ptr ContinuousCollisionConstraint::GetCollisionEvaluator() const
+std::shared_ptr<ContinuousCollisionEvaluator> ContinuousCollisionConstraint::GetCollisionEvaluator() const
 {
   return collision_evaluator_;
 }

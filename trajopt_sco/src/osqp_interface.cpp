@@ -189,7 +189,7 @@ void OSQPModel::updateConstraints()
 void OSQPModel::createOrUpdateSolver()
 {
   updateObjective();
-  updateConstraints();  // NOLINT(clang-analyzer-core.UndefinedBinaryOperatorResult)
+  updateConstraints();  // NOLINT(clang-analyzer-core.UndefinedBinaryOperatorResult,clang-analyzer-core.uninitialized.Assign)
 
   // TODO atm we are not updating the workspace, but recreating it each time.
   // In the future, we will checking sparsity did not change and update instead
@@ -280,7 +280,7 @@ CvxOptStatus OSQPModel::optimize()
   update();
   try
   {
-    createOrUpdateSolver();  // NOLINT(clang-analyzer-core.UndefinedBinaryOperatorResult)
+    createOrUpdateSolver();  // NOLINT(clang-analyzer-core.UndefinedBinaryOperatorResult,clang-analyzer-core.uninitialized.Assign)
   }
   catch (std::exception& e)
   {

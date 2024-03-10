@@ -28,13 +28,15 @@
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <ctime>
 #include <gtest/gtest.h>
+#include <ifopt/problem.h>
+#include <console_bridge/console.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 #include <trajopt_ifopt/constraints/joint_position_constraint.h>
 #include <trajopt_ifopt/constraints/joint_velocity_constraint.h>
 #include <trajopt_ifopt/constraints/joint_acceleration_constraint.h>
 #include <trajopt_ifopt/constraints/joint_jerk_constraint.h>
+#include <trajopt_ifopt/variable_sets/joint_position_variable.h>
 #include <trajopt_ifopt/utils/ifopt_utils.h>
-#include <console_bridge/console.h>
 
 using namespace trajopt_ifopt;
 using namespace std;

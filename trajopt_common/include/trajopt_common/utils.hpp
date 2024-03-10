@@ -8,6 +8,7 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <memory>
 #include <vector>
 #include <array>
+#include <set>
 #include <tesseract_common/types.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 

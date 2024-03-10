@@ -27,22 +27,23 @@
 
 #include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
-#include <tesseract_kinematics/core/utils.h>
-#include <console_bridge/console.h>
+#include <trajopt_common/collision_types.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
-#include <trajopt_common/collision_utils.h>
 #include <trajopt_ifopt/constraints/collision/discrete_collision_constraint.h>
+#include <trajopt_ifopt/constraints/collision/discrete_collision_evaluators.h>
 #include <trajopt_ifopt/constraints/collision/weighted_average_methods.h>
+#include <trajopt_ifopt/variable_sets/joint_position_variable.h>
 #include <trajopt_ifopt/utils/numeric_differentiation.h>
 
 namespace trajopt_ifopt
 {
-DiscreteCollisionConstraint::DiscreteCollisionConstraint(DiscreteCollisionEvaluator::Ptr collision_evaluator,
-                                                         JointPosition::ConstPtr position_var,
-                                                         int max_num_cnt,
-                                                         bool fixed_sparsity,
-                                                         const std::string& name)
+DiscreteCollisionConstraint::DiscreteCollisionConstraint(
+    std::shared_ptr<DiscreteCollisionEvaluator> collision_evaluator,
+    std::shared_ptr<const JointPosition> position_var,
+    int max_num_cnt,
+    bool fixed_sparsity,
+    const std::string& name)
   : ifopt::ConstraintSet(max_num_cnt, name)
   , position_var_(std::move(position_var))
   , collision_evaluator_(std::move(collision_evaluator))
@@ -142,7 +143,7 @@ void DiscreteCollisionConstraint::CalcJacobianBlock(const Eigen::Ref<const Eigen
   }
 }
 
-DiscreteCollisionEvaluator::Ptr DiscreteCollisionConstraint::GetCollisionEvaluator() const
+std::shared_ptr<DiscreteCollisionEvaluator> DiscreteCollisionConstraint::GetCollisionEvaluator() const
 {
   return collision_evaluator_;
 }

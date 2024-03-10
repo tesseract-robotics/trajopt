@@ -28,6 +28,7 @@
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <ctime>
 #include <gtest/gtest.h>
+#include <ifopt/bounds.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 #include <trajopt_ifopt/utils/ifopt_utils.h>
 #include <trajopt_common/utils.hpp>

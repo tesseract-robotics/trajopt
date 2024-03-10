@@ -24,14 +24,19 @@
  * limitations under the License.
  */
 #include <trajopt_sqp/callbacks/cartesian_error_plotter.h>
-#include <trajopt_ifopt/utils/trajopt_utils.h>
 
+#include <trajopt_ifopt/constraints/cartesian_position_constraint.h>
+
+#include <tesseract_scene_graph/link.h>
+
+#include <tesseract_visualization/visualization.h>
 #include <tesseract_visualization/markers/arrow_marker.h>
 #include <tesseract_visualization/markers/axis_marker.h>
 
 using namespace trajopt_sqp;
 
-CartesianErrorPlottingCallback::CartesianErrorPlottingCallback(tesseract_visualization::Visualization::Ptr plotter)
+CartesianErrorPlottingCallback::CartesianErrorPlottingCallback(
+    std::shared_ptr<tesseract_visualization::Visualization> plotter)
   : plotter_(std::move(plotter))
 {
 }
@@ -62,13 +67,13 @@ void CartesianErrorPlottingCallback::plot(const QPProblem& /*problem*/)
 }
 
 void CartesianErrorPlottingCallback::addConstraintSet(
-    const trajopt_ifopt::CartPosConstraint::ConstPtr& cart_position_cnt)
+    const std::shared_ptr<const trajopt_ifopt::CartPosConstraint>& cart_position_cnt)
 {
   cart_position_cnts_.push_back(cart_position_cnt);
-};
+}
 
 void CartesianErrorPlottingCallback::addConstraintSet(
-    const std::vector<trajopt_ifopt::CartPosConstraint::ConstPtr>& cart_position_cnts)
+    const std::vector<std::shared_ptr<const trajopt_ifopt::CartPosConstraint>>& cart_position_cnts)
 {
   for (const auto& cnt : cart_position_cnts)
     cart_position_cnts_.push_back(cnt);
@@ -78,4 +83,4 @@ bool CartesianErrorPlottingCallback::execute(const QPProblem& problem, const tra
 {
   plot(problem);
   return true;
-};
+}

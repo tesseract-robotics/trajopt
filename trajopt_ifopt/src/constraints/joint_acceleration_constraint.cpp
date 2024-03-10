@@ -24,6 +24,7 @@
  * limitations under the License.
  */
 #include <trajopt_ifopt/constraints/joint_acceleration_constraint.h>
+#include <trajopt_ifopt/variable_sets/joint_position_variable.h>
 
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <console_bridge/console.h>
@@ -32,7 +33,7 @@ TRAJOPT_IGNORE_WARNINGS_POP
 namespace trajopt_ifopt
 {
 JointAccelConstraint::JointAccelConstraint(const Eigen::VectorXd& targets,
-                                           const std::vector<JointPosition::ConstPtr>& position_vars,
+                                           const std::vector<std::shared_ptr<const JointPosition> >& position_vars,
                                            const Eigen::VectorXd& coeffs,
                                            const std::string& name)
   : ifopt::ConstraintSet(static_cast<int>(targets.size()) * static_cast<int>(position_vars.size()), name)

@@ -4,11 +4,15 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <sstream>
 #include <gtest/gtest.h>
 #include <tesseract_common/types.h>
+#include <tesseract_common/timer.h>
+#include <tesseract_common/resource_locator.h>
+#include <tesseract_kinematics/core/joint_group.h>
 #include <tesseract_environment/environment.h>
 #include <tesseract_environment/utils.h>
+#include <tesseract_visualization/visualization.h>
+#include <console_bridge/console.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
-#include <trajopt/common.hpp>
 #include <trajopt/plot_callback.hpp>
 #include <trajopt/problem_description.hpp>
 #include <trajopt_sco/optimizers.hpp>
@@ -97,7 +101,11 @@ void runTest(const Environment::Ptr& env, const Visualization::Ptr& /*plotter*/,
   ss = std::stringstream();
   ss << initial_pose.translation().transpose();
   CONSOLE_BRIDGE_logDebug("Initial Position: %s", ss.str().c_str());
+  tesseract_common::Timer stopwatch;
+  stopwatch.start();
   sco::OptStatus status = opt->optimize();
+  stopwatch.stop();
+  CONSOLE_BRIDGE_logError("Test took %f seconds.", stopwatch.elapsedSeconds());
   CONSOLE_BRIDGE_logDebug("Status: %s", sco::statusToString(status).c_str());
   Eigen::Isometry3d final_pose = prob->GetKin()->calcFwdKin(toVectorXd(opt->x())).at("l_gripper_tool_frame");
   final_pose = change_base * final_pose;

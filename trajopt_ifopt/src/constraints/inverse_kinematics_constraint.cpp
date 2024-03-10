@@ -24,15 +24,16 @@
  * limitations under the License.
  */
 #include <trajopt_ifopt/constraints/inverse_kinematics_constraint.h>
+#include <trajopt_ifopt/variable_sets/joint_position_variable.h>
 
 TRAJOPT_IGNORE_WARNINGS_PUSH
-#include <tesseract_kinematics/core/utils.h>
+#include <tesseract_kinematics/core/kinematic_group.h>
 #include <console_bridge/console.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace trajopt_ifopt
 {
-InverseKinematicsInfo::InverseKinematicsInfo(tesseract_kinematics::KinematicGroup::ConstPtr manip,
+InverseKinematicsInfo::InverseKinematicsInfo(std::shared_ptr<const tesseract_kinematics::KinematicGroup> manip,
                                              std::string working_frame,
                                              std::string tcp_frame,
                                              const Eigen::Isometry3d& tcp_offset)  // NOLINT(modernize-pass-by-value)
@@ -48,8 +49,8 @@ InverseKinematicsInfo::InverseKinematicsInfo(tesseract_kinematics::KinematicGrou
 InverseKinematicsConstraint::InverseKinematicsConstraint(
     const Eigen::Isometry3d& target_pose,  // NOLINT(modernize-pass-by-value)
     InverseKinematicsInfo::ConstPtr kinematic_info,
-    JointPosition::ConstPtr constraint_var,
-    JointPosition::ConstPtr seed_var,
+    std::shared_ptr<const JointPosition> constraint_var,
+    std::shared_ptr<const JointPosition> seed_var,
     const std::string& name)
   : ifopt::ConstraintSet(constraint_var->GetRows(), name)
   , constraint_var_(std::move(constraint_var))

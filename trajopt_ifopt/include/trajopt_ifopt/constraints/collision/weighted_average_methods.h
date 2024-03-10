@@ -26,10 +26,10 @@
 
 #include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
-#include <Eigen/Eigen>
+#include <Eigen/Core>
 TRAJOPT_IGNORE_WARNINGS_POP
 
-#include <trajopt_common/collision_types.h>
+#include <trajopt_common/fwd.h>
 
 namespace trajopt_ifopt
 {

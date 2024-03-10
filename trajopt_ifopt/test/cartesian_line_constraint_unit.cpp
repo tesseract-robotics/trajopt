@@ -6,9 +6,13 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <console_bridge/console.h>
 #include <ifopt/problem.h>
 #include <tesseract_common/types.h>
+#include <tesseract_common/resource_locator.h>
+#include <tesseract_kinematics/core/joint_group.h>
+#include <tesseract_environment/environment.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt_ifopt/constraints/cartesian_line_constraint.h>
+#include <trajopt_ifopt/variable_sets/joint_position_variable.h>
 #include <trajopt_ifopt/utils/numeric_differentiation.h>
 
 using namespace trajopt_ifopt;

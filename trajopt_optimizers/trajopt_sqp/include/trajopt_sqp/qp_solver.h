@@ -27,7 +27,8 @@
 #ifndef TRAJOPT_SQP_INCLUDE_QP_SOLVER_H_
 #define TRAJOPT_SQP_INCLUDE_QP_SOLVER_H_
 
-#include <trajopt_sqp/types.h>
+#include <memory>
+#include <trajopt_sqp/eigen_types.h>
 
 namespace trajopt_sqp
 {

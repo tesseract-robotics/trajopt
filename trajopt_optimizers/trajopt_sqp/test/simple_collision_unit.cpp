@@ -28,11 +28,20 @@
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <ctime>
 #include <gtest/gtest.h>
+#include <console_bridge/console.h>
+#include <OsqpEigen/OsqpEigen.h>
+#include <tesseract_common/timer.h>
+#include <tesseract_common/resource_locator.h>
+#include <tesseract_collision/core/discrete_contact_manager.h>
+#include <tesseract_kinematics/core/joint_group.h>
+#include <tesseract_state_solver/state_solver.h>
 #include <tesseract_environment/environment.h>
 #include <tesseract_environment/utils.h>
 #include <ifopt/problem.h>
 #include <ifopt/constraint_set.h>
 TRAJOPT_IGNORE_WARNINGS_POP
+
+#include <trajopt_common/collision_types.h>
 
 #include <trajopt_ifopt/utils/numeric_differentiation.h>
 #include <trajopt_ifopt/constraints/collision/continuous_collision_constraint.h>
@@ -241,7 +250,7 @@ void runSimpleCollisionTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const
   auto trajopt_collision_cnt_config = std::make_shared<trajopt_common::TrajOptCollisionConfig>(0.2, 1);
   trajopt_collision_cnt_config->collision_margin_buffer = 0.05;
 
-  auto collision_cnt_cache = std::make_shared<trajopt_common::CollisionCache>(100);
+  auto collision_cnt_cache = std::make_shared<trajopt_ifopt::CollisionCache>(100);
   trajopt_ifopt::DiscreteCollisionEvaluator::Ptr collision_cnt_evaluator =
       std::make_shared<trajopt_ifopt::SingleTimestepCollisionEvaluator>(
           collision_cnt_cache, manip, env, trajopt_collision_cnt_config);
@@ -251,7 +260,7 @@ void runSimpleCollisionTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const
   auto trajopt_collision_cost_config = std::make_shared<trajopt_common::TrajOptCollisionConfig>(0.3, 1);
   trajopt_collision_cost_config->collision_margin_buffer = 0.05;
 
-  auto collision_cost_cache = std::make_shared<trajopt_common::CollisionCache>(100);
+  auto collision_cost_cache = std::make_shared<trajopt_ifopt::CollisionCache>(100);
   trajopt_ifopt::DiscreteCollisionEvaluator::Ptr collision_cost_evaluator =
       std::make_shared<trajopt_ifopt::SingleTimestepCollisionEvaluator>(
           collision_cost_cache, manip, env, trajopt_collision_cost_config);
@@ -272,17 +281,23 @@ void runSimpleCollisionTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const
   // 5) choose solver and options
   auto qp_solver = std::make_shared<trajopt_sqp::OSQPEigenSolver>();
   trajopt_sqp::TrustRegionSQPSolver solver(qp_solver);
-  qp_solver->solver_.settings()->setVerbosity(true);
-  qp_solver->solver_.settings()->setWarmStart(true);
-  qp_solver->solver_.settings()->setPolish(true);
-  qp_solver->solver_.settings()->setAdaptiveRho(false);
-  qp_solver->solver_.settings()->setMaxIteration(8192);
-  qp_solver->solver_.settings()->setAbsoluteTolerance(1e-4);
-  qp_solver->solver_.settings()->setRelativeTolerance(1e-6);
+  qp_solver->solver_->settings()->setVerbosity(false);
+  qp_solver->solver_->settings()->setWarmStart(true);
+  qp_solver->solver_->settings()->setPolish(true);
+  qp_solver->solver_->settings()->setAdaptiveRho(false);
+  qp_solver->solver_->settings()->setMaxIteration(8192);
+  qp_solver->solver_->settings()->setAbsoluteTolerance(1e-4);
+  qp_solver->solver_->settings()->setRelativeTolerance(1e-6);
 
   // 6) solve
-  solver.verbose = true;
+  solver.verbose = false;
+
+  tesseract_common::Timer stopwatch;
+  stopwatch.start();
   solver.solve(qp_problem);
+  stopwatch.stop();
+  CONSOLE_BRIDGE_logError("Test took %f seconds.", stopwatch.elapsedSeconds());
+
   Eigen::VectorXd x = qp_problem->getVariableValues();
 
   std::cout << x.transpose() << std::endl;
