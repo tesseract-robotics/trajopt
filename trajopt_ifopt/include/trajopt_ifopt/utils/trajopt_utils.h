@@ -28,20 +28,21 @@
 
 #include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
-#include <tesseract_common/types.h>
-#include <tesseract_common/joint_state.h>
-#include <Eigen/Core>
+#include <memory>
+#include <tesseract_common/eigen_types.h>
+#include <tesseract_common/fwd.h>
 TRAJOPT_IGNORE_WARNINGS_POP
-#include <trajopt_ifopt/variable_sets/joint_position_variable.h>
 
 namespace trajopt_ifopt
 {
+class JointPosition;
+
 /**
  * @brief Converts a vector of trajopt variables into the legacy TrajArray format
  * @param joint_positions Vector of joint positions. Must be in order and all the same length
  * @return TrajArray - size = [joint_positions.size(), joint_positions.n_dof]
  */
-tesseract_common::TrajArray toTrajArray(const std::vector<trajopt_ifopt::JointPosition::ConstPtr>& joint_positions);
+tesseract_common::TrajArray toTrajArray(const std::vector<std::shared_ptr<const JointPosition>>& joint_positions);
 
 /**
  * @brief Converts a vector of trajopt variables into tesseract_common JointTrajectory
@@ -49,7 +50,7 @@ tesseract_common::TrajArray toTrajArray(const std::vector<trajopt_ifopt::JointPo
  * @return JointTrajectory
  */
 tesseract_common::JointTrajectory
-toJointTrajectory(const std::vector<trajopt_ifopt::JointPosition::ConstPtr>& joint_positions);
+toJointTrajectory(const std::vector<std::shared_ptr<const JointPosition>>& joint_positions);
 
 }  // namespace trajopt_ifopt
 #endif

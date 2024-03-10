@@ -28,10 +28,16 @@
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <ctime>
 #include <gtest/gtest.h>
+#include <console_bridge/console.h>
+#include <tesseract_common/resource_locator.h>
+#include <tesseract_collision/core/discrete_contact_manager.h>
+#include <tesseract_kinematics/core/joint_group.h>
+#include <tesseract_state_solver/state_solver.h>
 #include <tesseract_environment/environment.h>
 #include <tesseract_environment/utils.h>
 #include <ifopt/problem.h>
 #include <ifopt/ipopt_solver.h>
+#include <trajopt_common/collision_types.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt_ifopt/utils/numeric_differentiation.h>
@@ -41,6 +47,7 @@ TRAJOPT_IGNORE_WARNINGS_POP
 #include <trajopt_ifopt/constraints/collision/discrete_collision_constraint.h>
 #include <trajopt_ifopt/constraints/collision/discrete_collision_evaluators.h>
 #include <trajopt_ifopt/constraints/joint_position_constraint.h>
+#include <trajopt_ifopt/variable_sets/joint_position_variable.h>
 #include <trajopt_ifopt/costs/squared_cost.h>
 
 using namespace trajopt_ifopt;
@@ -104,7 +111,7 @@ void runDiscreteGradientTest(const Environment::Ptr& env, double coeff)
   auto trajopt_collision_config = std::make_shared<trajopt_common::TrajOptCollisionConfig>(margin, margin_coeff);
   trajopt_collision_config->collision_margin_buffer = 0.0;  // 0.05
 
-  auto collision_cache = std::make_shared<trajopt_common::CollisionCache>(100);
+  auto collision_cache = std::make_shared<trajopt_ifopt::CollisionCache>(100);
   auto collision_evaluator = std::make_shared<trajopt_ifopt::SingleTimestepCollisionEvaluator>(
       collision_cache, manip, env, trajopt_collision_config);
   auto cnt = std::make_shared<trajopt_ifopt::DiscreteCollisionConstraint>(collision_evaluator, vars[0], 3);

@@ -30,18 +30,15 @@
 
 #include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
-#include <Eigen/Eigen>
+#include <Eigen/Geometry>
 #include <ifopt/constraint_set.h>
-
-#include <tesseract_kinematics/core/joint_group.h>
-#include <tesseract_environment/environment.h>
-#include <tesseract_environment/utils.h>
+#include <tesseract_kinematics/core/fwd.h>
 TRAJOPT_IGNORE_WARNINGS_POP
-
-#include <trajopt_ifopt/variable_sets/joint_position_variable.h>
 
 namespace trajopt_ifopt
 {
+class JointPosition;
+
 /**
  * @brief Contains kinematic information for the cartesian position cost; include cart point .h & remove?
  */
@@ -54,7 +51,7 @@ struct CartLineInfo
 
   CartLineInfo() = default;
   CartLineInfo(
-      tesseract_kinematics::JointGroup::ConstPtr manip,
+      std::shared_ptr<const tesseract_kinematics::JointGroup> manip,
       std::string source_frame,
       std::string target_frame,
       const Eigen::Isometry3d& target_frame_offset1,
@@ -63,7 +60,7 @@ struct CartLineInfo
       const Eigen::VectorXi& indices = Eigen::Matrix<int, 1, 6>(std::vector<int>({ 0, 1, 2, 3, 4, 5 }).data()));
 
   /** @brief The joint group */
-  tesseract_kinematics::JointGroup::ConstPtr manip;
+  std::shared_ptr<const tesseract_kinematics::JointGroup> manip;
 
   /** @brief Link which should reach desired pos */
   std::string source_frame;
@@ -103,7 +100,7 @@ public:
       std::function<Eigen::VectorXd(const Eigen::VectorXd&, const Eigen::Isometry3d&, const Eigen::Isometry3d&)>;
 
   CartLineConstraint(CartLineInfo info,
-                     JointPosition::ConstPtr position_var,
+                     std::shared_ptr<const JointPosition> position_var,
                      const Eigen::VectorXd& coeffs,
                      const std::string& name = "CartLine");
 
@@ -188,7 +185,7 @@ private:
    *
    * Do not access them directly. Instead use this->GetVariables()->GetComponent(position_var->GetName())->GetValues()
    */
-  JointPosition::ConstPtr position_var_;
+  std::shared_ptr<const JointPosition> position_var_;
 
   /** @brief The cartesian line information used when calculating error */
   CartLineInfo info_;

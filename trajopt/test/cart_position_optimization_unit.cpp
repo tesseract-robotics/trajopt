@@ -29,6 +29,8 @@
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <gtest/gtest.h>
 #include <iostream>
+#include <tesseract_kinematics/core/joint_group.h>
+#include <tesseract_scene_graph/scene_state.h>
 #include <tesseract_environment/environment.h>
 #include <tesseract_environment/utils.h>
 #include <tesseract_common/resource_locator.h>
@@ -38,6 +40,7 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt/plot_callback.hpp>
+#include <trajopt/utils.hpp>
 #include <trajopt/problem_description.hpp>
 #include <trajopt_common/config.hpp>
 #include <trajopt_common/logging.hpp>
@@ -104,7 +107,7 @@ TEST(CartPositionOptimizationTrajoptSCO, cart_position_optimization_trajopt_sco)
 
   {
     auto pose = std::make_shared<CartPoseTermInfo>();
-    pose->term_type = TT_CNT;
+    pose->term_type = TermType::TT_CNT;
     pose->name = "waypoint_cart_0";
     pose->timestep = 0;
     pose->source_frame = "r_gripper_tool_frame";

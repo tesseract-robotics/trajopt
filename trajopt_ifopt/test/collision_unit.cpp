@@ -28,13 +28,19 @@
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <ctime>
 #include <gtest/gtest.h>
+#include <console_bridge/console.h>
+#include <tesseract_common/resource_locator.h>
+#include <tesseract_kinematics/core/joint_group.h>
 #include <tesseract_environment/environment.h>
 #include <tesseract_environment/utils.h>
 #include <ifopt/problem.h>
 #include <ifopt/ipopt_solver.h>
+#include <trajopt_common/collision_types.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt_ifopt/constraints/collision/discrete_collision_constraint.h>
+#include <trajopt_ifopt/constraints/collision/discrete_collision_evaluators.h>
+#include <trajopt_ifopt/variable_sets/joint_position_variable.h>
 
 using namespace trajopt_ifopt;
 using namespace tesseract_environment;
@@ -63,7 +69,7 @@ public:
     // Set up collision evaluator
     tesseract_kinematics::JointGroup::ConstPtr kin = env->getJointGroup("manipulator");
     auto config = std::make_shared<trajopt_common::TrajOptCollisionConfig>(0.1, 1);
-    auto collision_cache = std::make_shared<trajopt_common::CollisionCache>(100);
+    auto collision_cache = std::make_shared<trajopt_ifopt::CollisionCache>(100);
 
     collision_evaluator =
         std::make_shared<trajopt_ifopt::SingleTimestepCollisionEvaluator>(collision_cache, kin, env, config);

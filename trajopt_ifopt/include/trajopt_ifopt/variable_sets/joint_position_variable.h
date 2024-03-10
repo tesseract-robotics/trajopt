@@ -30,8 +30,8 @@
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <ifopt/variable_set.h>
 #include <ifopt/bounds.h>
-#include <tesseract_common/types.h>
-#include <Eigen/Eigen>
+#include <Eigen/Core>
+#include <tesseract_common/fwd.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace trajopt_ifopt

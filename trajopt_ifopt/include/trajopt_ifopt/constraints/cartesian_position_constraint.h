@@ -31,16 +31,13 @@
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <Eigen/Eigen>
 #include <ifopt/constraint_set.h>
-
-#include <tesseract_kinematics/core/joint_group.h>
-#include <tesseract_environment/environment.h>
-#include <tesseract_environment/utils.h>
+#include <tesseract_kinematics/core/fwd.h>
 TRAJOPT_IGNORE_WARNINGS_POP
-
-#include <trajopt_ifopt/variable_sets/joint_position_variable.h>
 
 namespace trajopt_ifopt
 {
+class JointPosition;
+
 /** @brief Contains Cartesian pose constraint information */
 struct CartPosInfo
 {
@@ -57,7 +54,7 @@ struct CartPosInfo
   };
 
   CartPosInfo() = default;
-  CartPosInfo(tesseract_kinematics::JointGroup::ConstPtr manip,
+  CartPosInfo(std::shared_ptr<const tesseract_kinematics::JointGroup> manip,
               std::string source_frame,
               std::string target_frame,
               const Eigen::Isometry3d& source_frame_offset = Eigen::Isometry3d::Identity(),
@@ -65,7 +62,7 @@ struct CartPosInfo
               const Eigen::VectorXi& indices = Eigen::Matrix<int, 1, 6>(std::vector<int>({ 0, 1, 2, 3, 4, 5 }).data()));
 
   /** @brief The joint group */
-  tesseract_kinematics::JointGroup::ConstPtr manip;
+  std::shared_ptr<const tesseract_kinematics::JointGroup> manip;
 
   /** @brief Link which should reach desired pos */
   std::string source_frame;
@@ -102,10 +99,12 @@ public:
   using ErrorDiffFunctionType =
       std::function<Eigen::VectorXd(const Eigen::VectorXd&, const Eigen::Isometry3d&, const Eigen::Isometry3d&)>;
 
-  CartPosConstraint(CartPosInfo info, JointPosition::ConstPtr position_var, const std::string& name = "CartPos");
+  CartPosConstraint(CartPosInfo info,
+                    std::shared_ptr<const JointPosition> position_var,
+                    const std::string& name = "CartPos");
 
   CartPosConstraint(CartPosInfo info,
-                    JointPosition::ConstPtr position_var,
+                    std::shared_ptr<const JointPosition> position_var,
                     const Eigen::VectorXd& coeffs,
                     const std::string& name = "CartPos");
 
@@ -189,7 +188,7 @@ private:
    * @brief Pointers to the vars used by this constraint.
    * Do not access them directly. Instead use this->GetVariables()->GetComponent(position_var->GetName())->GetValues()
    */
-  JointPosition::ConstPtr position_var_;
+  std::shared_ptr<const JointPosition> position_var_;
 
   /** @brief The kinematic information used when calculating error */
   CartPosInfo info_;

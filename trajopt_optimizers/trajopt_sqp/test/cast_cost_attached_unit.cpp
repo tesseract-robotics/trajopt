@@ -28,13 +28,28 @@
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <ctime>
 #include <gtest/gtest.h>
+#include <console_bridge/console.h>
+#include <OsqpEigen/OsqpEigen.h>
 #include <tesseract_common/types.h>
+#include <tesseract_common/resource_locator.h>
+#include <tesseract_common/allowed_collision_matrix.h>
+#include <tesseract_collision/core/continuous_contact_manager.h>
+#include <tesseract_kinematics/core/joint_group.h>
+#include <tesseract_state_solver/state_solver.h>
+#include <tesseract_scene_graph/link.h>
+#include <tesseract_scene_graph/joint.h>
 #include <tesseract_environment/environment.h>
 #include <tesseract_environment/utils.h>
+#include <tesseract_environment/commands/add_link_command.h>
+#include <tesseract_environment/commands/modify_allowed_collisions_command.h>
+#include <tesseract_environment/commands/change_link_collision_enabled_command.h>
 #include <tesseract_geometry/impl/box.h>
 #include <tesseract_geometry/impl/octree.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
+#include <trajopt_common/collision_types.h>
+
+#include <trajopt_ifopt/variable_sets/joint_position_variable.h>
 #include <trajopt_ifopt/constraints/collision/continuous_collision_constraint.h>
 #include <trajopt_ifopt/constraints/collision/continuous_collision_evaluators.h>
 #include <trajopt_ifopt/constraints/joint_position_constraint.h>
@@ -182,7 +197,7 @@ void runCastAttachedLinkWithGeomTest(const trajopt_sqp::QPProblem::Ptr& qp_probl
     qp_problem->addConstraintSet(cnt);
   }
 
-  auto collision_cache = std::make_shared<trajopt_common::CollisionCache>(100);
+  auto collision_cache = std::make_shared<trajopt_ifopt::CollisionCache>(100);
   for (std::size_t i = 1; i < (vars.size() - 1); ++i)
   {
     auto collision_evaluator = std::make_shared<trajopt_ifopt::LVSContinuousCollisionEvaluator>(
@@ -201,13 +216,13 @@ void runCastAttachedLinkWithGeomTest(const trajopt_sqp::QPProblem::Ptr& qp_probl
   // 5) Setup solver
   auto qp_solver = std::make_shared<trajopt_sqp::OSQPEigenSolver>();
   trajopt_sqp::TrustRegionSQPSolver solver(qp_solver);
-  qp_solver->solver_.settings()->setVerbosity(true);
-  qp_solver->solver_.settings()->setWarmStart(true);
-  qp_solver->solver_.settings()->setPolish(true);
-  qp_solver->solver_.settings()->setAdaptiveRho(false);
-  qp_solver->solver_.settings()->setMaxIteration(8192);
-  qp_solver->solver_.settings()->setAbsoluteTolerance(1e-4);
-  qp_solver->solver_.settings()->setRelativeTolerance(1e-6);
+  qp_solver->solver_->settings()->setVerbosity(true);
+  qp_solver->solver_->settings()->setWarmStart(true);
+  qp_solver->solver_->settings()->setPolish(true);
+  qp_solver->solver_->settings()->setAdaptiveRho(false);
+  qp_solver->solver_->settings()->setMaxIteration(8192);
+  qp_solver->solver_->settings()->setAbsoluteTolerance(1e-4);
+  qp_solver->solver_->settings()->setRelativeTolerance(1e-6);
 
   // 6) solve
   solver.verbose = true;
@@ -303,7 +318,7 @@ void runCastAttachedLinkWithoutGeomTest(const trajopt_sqp::QPProblem::Ptr& qp_pr
     qp_problem->addConstraintSet(cnt);
   }
 
-  auto collision_cache = std::make_shared<trajopt_common::CollisionCache>(100);
+  auto collision_cache = std::make_shared<trajopt_ifopt::CollisionCache>(100);
   std::array<bool, 2> position_vars_fixed{ true, false };
   for (std::size_t i = 1; i < vars.size(); ++i)
   {
@@ -325,13 +340,13 @@ void runCastAttachedLinkWithoutGeomTest(const trajopt_sqp::QPProblem::Ptr& qp_pr
   // 5) Setup solver
   auto qp_solver = std::make_shared<trajopt_sqp::OSQPEigenSolver>();
   trajopt_sqp::TrustRegionSQPSolver solver(qp_solver);
-  qp_solver->solver_.settings()->setVerbosity(true);
-  qp_solver->solver_.settings()->setWarmStart(true);
-  qp_solver->solver_.settings()->setPolish(true);
-  qp_solver->solver_.settings()->setAdaptiveRho(false);
-  qp_solver->solver_.settings()->setMaxIteration(8192);
-  qp_solver->solver_.settings()->setAbsoluteTolerance(1e-4);
-  qp_solver->solver_.settings()->setRelativeTolerance(1e-6);
+  qp_solver->solver_->settings()->setVerbosity(true);
+  qp_solver->solver_->settings()->setWarmStart(true);
+  qp_solver->solver_->settings()->setPolish(true);
+  qp_solver->solver_->settings()->setAdaptiveRho(false);
+  qp_solver->solver_->settings()->setMaxIteration(8192);
+  qp_solver->solver_->settings()->setAbsoluteTolerance(1e-4);
+  qp_solver->solver_->settings()->setRelativeTolerance(1e-6);
 
   // 6) solve
   solver.verbose = true;

@@ -25,16 +25,16 @@
  * limitations under the License.
  */
 #include <trajopt_sqp/callbacks/clear_plotter.h>
-#include <trajopt_ifopt/utils/trajopt_utils.h>
+#include <tesseract_visualization/visualization.h>
 
 using namespace trajopt_sqp;
 
-ClearPlotterCallback::ClearPlotterCallback(tesseract_visualization::Visualization::Ptr plotter)
+ClearPlotterCallback::ClearPlotterCallback(std::shared_ptr<tesseract_visualization::Visualization> plotter)
   : plotter_(std::move(plotter))
 {
 }
 
-bool ClearPlotterCallback::execute(const QPProblem& /*problem*/, const trajopt_sqp::SQPResults&)
+bool ClearPlotterCallback::execute(const QPProblem& /*problem*/, const SQPResults&)
 {
   plotter_->clear();
   return true;

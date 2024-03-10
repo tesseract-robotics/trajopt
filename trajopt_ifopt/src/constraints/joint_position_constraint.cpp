@@ -24,6 +24,7 @@
  * limitations under the License.
  */
 #include <trajopt_ifopt/constraints/joint_position_constraint.h>
+#include <trajopt_ifopt/variable_sets/joint_position_variable.h>
 
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <console_bridge/console.h>
@@ -32,7 +33,7 @@ TRAJOPT_IGNORE_WARNINGS_POP
 namespace trajopt_ifopt
 {
 JointPosConstraint::JointPosConstraint(const Eigen::VectorXd& targets,
-                                       const std::vector<JointPosition::ConstPtr>& position_vars,
+                                       const std::vector<std::shared_ptr<const JointPosition>>& position_vars,
                                        const Eigen::VectorXd& coeffs,
                                        const std::string& name)
   : ifopt::ConstraintSet(static_cast<int>(targets.size()) * static_cast<int>(position_vars.size()), name)
@@ -76,7 +77,7 @@ JointPosConstraint::JointPosConstraint(const Eigen::VectorXd& targets,
 }
 
 JointPosConstraint::JointPosConstraint(const std::vector<ifopt::Bounds>& bounds,
-                                       const std::vector<JointPosition::ConstPtr>& position_vars,
+                                       const std::vector<std::shared_ptr<const JointPosition>>& position_vars,
                                        const Eigen::VectorXd& coeffs,
                                        const std::string& name)
   : ifopt::ConstraintSet(static_cast<int>(bounds.size()) * static_cast<int>(position_vars.size()), name)
@@ -129,7 +130,7 @@ void JointPosConstraint::FillJacobianBlock(std::string var_set, Jacobian& jac_bl
     if (var_set == position_vars_[static_cast<std::size_t>(i)]->GetName())  // NOLINT
     {
       // Reserve enough room in the sparse matrix
-      std::vector<Eigen::Triplet<double> > triplet_list;
+      std::vector<Eigen::Triplet<double>> triplet_list;
       triplet_list.reserve(static_cast<std::size_t>(n_dof_));
 
       // Each jac_block will be for a single variable but for all timesteps. Therefore we must index down to the

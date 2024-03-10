@@ -25,18 +25,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 #include <trajopt_ifopt/constraints/cartesian_line_constraint.h>
+#include <trajopt_ifopt/variable_sets/joint_position_variable.h>
 #include <trajopt_ifopt/utils/numeric_differentiation.h>
 #include <trajopt_ifopt/utils/trajopt_utils.h>
 #include <trajopt_common/utils.hpp>
+
 TRAJOPT_IGNORE_WARNINGS_PUSH
-#include <tesseract_kinematics/core/utils.h>
+#include <tesseract_kinematics/core/joint_group.h>
+#include <tesseract_common/utils.h>
 #include <console_bridge/console.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace trajopt_ifopt
 {
-CartLineInfo::CartLineInfo(tesseract_kinematics::JointGroup::ConstPtr manip,
+CartLineInfo::CartLineInfo(std::shared_ptr<const tesseract_kinematics::JointGroup> manip,
                            std::string source_frame,
                            std::string target_frame,
                            const Eigen::Isometry3d& target_frame_offset1,  // NOLINT(modernize-pass-by-value)
@@ -68,7 +72,7 @@ CartLineInfo::CartLineInfo(tesseract_kinematics::JointGroup::ConstPtr manip,
 }
 
 CartLineConstraint::CartLineConstraint(CartLineInfo info,
-                                       JointPosition::ConstPtr position_var,
+                                       std::shared_ptr<const JointPosition> position_var,
                                        const Eigen::VectorXd& coeffs,  // NOLINT
                                        const std::string& name)
   : ifopt::ConstraintSet(static_cast<int>(info.indices.rows()), name)
