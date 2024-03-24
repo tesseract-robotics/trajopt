@@ -29,10 +29,11 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <Eigen/Eigen>
 #include <array>
 #include <memory>
+#include <functional>
 #include <tesseract_collision/core/types.h>
+#include <tesseract_common/types.h>
+#include <tesseract_common/eigen_types.h>
 TRAJOPT_IGNORE_WARNINGS_POP
-
-#include <trajopt_common/cache.h>
 
 namespace trajopt_common
 {
@@ -261,8 +262,6 @@ struct CollisionCacheData
   tesseract_collision::ContactResultMap contact_results_map;
   std::vector<GradientResultsSet> gradient_results_sets;
 };
-
-using CollisionCache = Cache<size_t, CollisionCacheData::ConstPtr>;
 
 }  // namespace trajopt_common
 #endif  // TRAJOPT_COMMON_COLLISION_TYPES_H

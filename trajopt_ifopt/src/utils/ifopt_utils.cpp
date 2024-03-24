@@ -24,6 +24,13 @@
  * limitations under the License.
  */
 
+#include <trajopt_common/macros.h>
+TRAJOPT_IGNORE_WARNINGS_PUSH
+#include <ifopt/composite.h>
+#include <ifopt/constraint_set.h>
+#include <ifopt/problem.h>
+TRAJOPT_IGNORE_WARNINGS_POP
+
 #include <trajopt_ifopt/utils/ifopt_utils.h>
 
 namespace trajopt_ifopt
@@ -131,7 +138,7 @@ Eigen::VectorXd calcBoundsViolations(const Eigen::Ref<const Eigen::VectorXd>& in
   return calcBoundsErrors(input, bounds).cwiseAbs();  // NOLINT
 }
 
-ifopt::Problem::VectorXd calcNumericalCostGradient(const double* x, ifopt::Problem& nlp, double epsilon)
+ifopt::VectorXd calcNumericalCostGradient(const double* x, ifopt::Problem& nlp, double epsilon)
 {
   auto cache_vars = nlp.GetVariableValues();
 
@@ -159,7 +166,7 @@ ifopt::Problem::VectorXd calcNumericalCostGradient(const double* x, ifopt::Probl
   return jac.row(0).transpose();
 }
 
-ifopt::Problem::Jacobian calcNumericalConstraintGradient(const double* x, ifopt::Problem& nlp, double epsilon)
+ifopt::Jacobian calcNumericalConstraintGradient(const double* x, ifopt::Problem& nlp, double epsilon)
 {
   auto cache_vars = nlp.GetVariableValues();
 
@@ -194,9 +201,9 @@ ifopt::Problem::Jacobian calcNumericalConstraintGradient(const double* x, ifopt:
   return jac;
 }
 
-ifopt::Problem::Jacobian calcNumericalConstraintGradient(ifopt::Component& variables,
-                                                         ifopt::ConstraintSet& constraint_set,
-                                                         double epsilon)
+ifopt::Jacobian calcNumericalConstraintGradient(ifopt::Component& variables,
+                                                ifopt::ConstraintSet& constraint_set,
+                                                double epsilon)
 {
   Eigen::VectorXd x = variables.GetValues();
 

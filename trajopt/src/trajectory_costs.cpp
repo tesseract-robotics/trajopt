@@ -4,8 +4,11 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt/trajectory_costs.hpp>
+#include <trajopt/utils.hpp>
+
 #include <trajopt_sco/expr_ops.hpp>
 #include <trajopt_sco/modeling_utils.hpp>
+
 #include <trajopt_common/eigen_conversions.hpp>
 
 namespace

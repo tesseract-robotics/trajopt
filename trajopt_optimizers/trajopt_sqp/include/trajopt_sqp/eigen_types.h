@@ -1,6 +1,6 @@
 /**
- * @file wait_for_input.cpp
- * @brief A callback that calls the plotter waitForInput function to pause the optimization for debugging
+ * @file eigen_types.h
+ * @brief Contains eigen types for the trust region sqp solver
  *
  * @author Matthew Powelson
  * @date May 18, 2020
@@ -23,18 +23,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <trajopt_sqp/callbacks/wait_for_input.h>
-#include <tesseract_visualization/visualization.h>
+#ifndef TRAJOPT_SQP_EIGEN_TYPES_H
+#define TRAJOPT_SQP_EIGEN_TYPES_H
 
-using namespace trajopt_sqp;
+#include <Eigen/Eigen>
 
-WaitForInputCallback::WaitForInputCallback(std::shared_ptr<tesseract_visualization::Visualization> plotter)
-  : plotter_(std::move(plotter))
+namespace trajopt_sqp
 {
-}
+using SparseMatrix = Eigen::SparseMatrix<double, Eigen::RowMajor>;
+using SparseVector = Eigen::SparseVector<double, Eigen::RowMajor>;
+}  // namespace trajopt_sqp
 
-bool WaitForInputCallback::execute(const QPProblem& /*problem*/, const SQPResults&)
-{
-  plotter_->waitForInput();
-  return true;
-}
+#endif  // TRAJOPT_SQP_EIGEN_TYPES_H

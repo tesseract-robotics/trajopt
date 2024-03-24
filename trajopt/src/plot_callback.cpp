@@ -1,19 +1,23 @@
 #include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <functional>
-#include <set>
-#include <json/json.h>
+#include <tesseract_common/joint_state.h>
+#include <tesseract_state_solver/state_solver.h>
+#include <tesseract_kinematics/core/joint_group.h>
+#include <tesseract_environment/environment.h>
+#include <tesseract_visualization/visualization.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
-#include <tesseract_environment/environment.h>
-#include <trajopt/common.hpp>
-#include <trajopt/plot_callback.hpp>
+#include <trajopt_sco/optimizers.hpp>
+#include <trajopt_sco/modeling.hpp>
+
 #include <trajopt/problem_description.hpp>
-#include <trajopt_common/eigen_conversions.hpp>
+#include <trajopt/typedefs.hpp>
+#include <trajopt/utils.hpp>
 
 namespace trajopt
 {
-void PlotCosts(const tesseract_visualization::Visualization::Ptr& plotter,
+void PlotCosts(const std::shared_ptr<tesseract_visualization::Visualization>& plotter,
                const tesseract_scene_graph::StateSolver& state_solver,
                const std::vector<std::string>& joint_names,
                const std::vector<sco::Cost::Ptr>& costs,
@@ -48,7 +52,7 @@ void PlotCosts(const tesseract_visualization::Visualization::Ptr& plotter,
   plotter->waitForInput();
 }
 
-sco::Optimizer::Callback PlotCallback(const tesseract_visualization::Visualization::Ptr& plotter)
+sco::Optimizer::Callback PlotCallback(const std::shared_ptr<tesseract_visualization::Visualization>& plotter)
 {
   return [plotter](sco::OptProb* prob, sco::OptResults& results) {
     auto& trajopt_prob = dynamic_cast<TrajOptProb&>(*prob);
@@ -63,7 +67,7 @@ sco::Optimizer::Callback PlotCallback(const tesseract_visualization::Visualizati
   };
 }
 
-void PlotProb(const tesseract_visualization::Visualization::Ptr& plotter,
+void PlotProb(const std::shared_ptr<tesseract_visualization::Visualization>& plotter,
               const tesseract_scene_graph::StateSolver& state_solver,
               const std::vector<std::string>& joint_names,
               sco::OptProb* prob,
@@ -102,7 +106,7 @@ void PlotProb(const tesseract_visualization::Visualization::Ptr& plotter,
   plotter->waitForInput();
 }
 
-sco::Optimizer::Callback PlotProbCallback(const tesseract_visualization::Visualization::Ptr& plotter,
+sco::Optimizer::Callback PlotProbCallback(const std::shared_ptr<tesseract_visualization::Visualization>& plotter,
                                           const tesseract_scene_graph::StateSolver& state_solver,
                                           const std::vector<std::string>& joint_names)
 {

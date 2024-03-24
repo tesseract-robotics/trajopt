@@ -18,10 +18,15 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <functional>
 #include <fstream>
 #include <console_bridge/console.h>
-#include <json/json.h>
+#include <tesseract_kinematics/core/joint_group.h>
+#include <tesseract_environment/environment.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt/file_write_callback.hpp>
+#include <trajopt/problem_description.hpp>
+#include <trajopt/utils.hpp>
+
+#include <trajopt_sco/optimizers.hpp>
 #include <trajopt_common/utils.hpp>
 
 namespace trajopt
@@ -88,7 +93,8 @@ void WriteFile(const std::shared_ptr<std::ofstream>& file,
   *file << std::endl;
 }  // namespace trajopt
 
-sco::Optimizer::Callback WriteCallback(std::shared_ptr<std::ofstream> file, const TrajOptProb::Ptr& prob)
+std::function<void(sco::OptProb*, sco::OptResults&)> WriteCallback(std::shared_ptr<std::ofstream> file,
+                                                                   const std::shared_ptr<TrajOptProb>& prob)
 {
   if (!file->good())
   {

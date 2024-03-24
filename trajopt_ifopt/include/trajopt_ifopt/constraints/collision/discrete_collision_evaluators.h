@@ -26,19 +26,24 @@
 
 #include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
-#include <Eigen/Eigen>
+#include <Eigen/Core>
+#include <memory>
+#include <functional>
 
-#include <tesseract_collision/core/types.h>
-#include <tesseract_environment/environment.h>
-#include <tesseract_environment/utils.h>
-#include <tesseract_kinematics/core/joint_group.h>
+#include <tesseract_collision/core/fwd.h>
+#include <tesseract_kinematics/core/fwd.h>
+#include <tesseract_environment/fwd.h>
+#include <tesseract_common/eigen_types.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
-#include <trajopt_common/collision_types.h>
-#include <trajopt_ifopt/variable_sets/joint_position_variable.h>
+#include <trajopt_common/fwd.h>
+#include <trajopt_common/cache.h>
 
 namespace trajopt_ifopt
 {
+using GetStateFn = std::function<tesseract_common::TransformMap(const Eigen::Ref<const Eigen::VectorXd>& joint_values)>;
+using CollisionCache = trajopt_common::Cache<size_t, std::shared_ptr<const trajopt_common::CollisionCacheData>>;
+
 /**
  * @brief This collision evaluator only operates on a single state in the trajectory and does not check for collisions
  * between states.
@@ -64,8 +69,8 @@ public:
    * @return Collision cache data. If a cache does not exist for the provided joint values it evaluates and stores the
    * data.
    */
-  virtual trajopt_common::CollisionCacheData::ConstPtr CalcCollisions(const Eigen::Ref<const Eigen::VectorXd>& dof_vals,
-                                                                      std::size_t bounds_size) = 0;
+  virtual std::shared_ptr<const trajopt_common::CollisionCacheData>
+  CalcCollisions(const Eigen::Ref<const Eigen::VectorXd>& dof_vals, std::size_t bounds_size) = 0;
 
   /**
    * @brief Get the safety margin information.
@@ -96,14 +101,14 @@ public:
   using Ptr = std::shared_ptr<SingleTimestepCollisionEvaluator>;
   using ConstPtr = std::shared_ptr<const SingleTimestepCollisionEvaluator>;
 
-  SingleTimestepCollisionEvaluator(std::shared_ptr<trajopt_common::CollisionCache> collision_cache,
-                                   tesseract_kinematics::JointGroup::ConstPtr manip,
-                                   tesseract_environment::Environment::ConstPtr env,
-                                   trajopt_common::TrajOptCollisionConfig::ConstPtr collision_config,
+  SingleTimestepCollisionEvaluator(std::shared_ptr<CollisionCache> collision_cache,
+                                   std::shared_ptr<const tesseract_kinematics::JointGroup> manip,
+                                   std::shared_ptr<const tesseract_environment::Environment> env,
+                                   std::shared_ptr<const trajopt_common::TrajOptCollisionConfig> collision_config,
                                    bool dynamic_environment = false);
 
-  trajopt_common::CollisionCacheData::ConstPtr CalcCollisions(const Eigen::Ref<const Eigen::VectorXd>& dof_vals,
-                                                              std::size_t bounds_size) override final;
+  std::shared_ptr<const trajopt_common::CollisionCacheData>
+  CalcCollisions(const Eigen::Ref<const Eigen::VectorXd>& dof_vals, std::size_t bounds_size) override final;
 
   trajopt_common::GradientResults GetGradient(const Eigen::VectorXd& dofvals,
                                               const tesseract_collision::ContactResult& contact_result) override;
@@ -111,16 +116,16 @@ public:
   const trajopt_common::TrajOptCollisionConfig& GetCollisionConfig() const override;
 
 private:
-  std::shared_ptr<trajopt_common::CollisionCache> collision_cache_;
-  tesseract_kinematics::JointGroup::ConstPtr manip_;
-  tesseract_environment::Environment::ConstPtr env_;
-  trajopt_common::TrajOptCollisionConfig::ConstPtr collision_config_;
+  std::shared_ptr<CollisionCache> collision_cache_;
+  std::shared_ptr<const tesseract_kinematics::JointGroup> manip_;
+  std::shared_ptr<const tesseract_environment::Environment> env_;
+  std::shared_ptr<const trajopt_common::TrajOptCollisionConfig> collision_config_;
   std::vector<std::string> env_active_link_names_;
   std::vector<std::string> manip_active_link_names_;
   std::vector<std::string> diff_active_link_names_;
-  trajopt_common::GetStateFn get_state_fn_;
+  GetStateFn get_state_fn_;
   bool dynamic_environment_;
-  tesseract_collision::DiscreteContactManager::Ptr contact_manager_;
+  std::shared_ptr<tesseract_collision::DiscreteContactManager> contact_manager_;
 
   void CalcCollisionsHelper(const Eigen::Ref<const Eigen::VectorXd>& dof_vals,
                             tesseract_collision::ContactResultMap& dist_results);

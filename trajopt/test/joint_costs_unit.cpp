@@ -3,12 +3,16 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <ctime>
 #include <gtest/gtest.h>
 #include <tesseract_common/types.h>
+#include <tesseract_common/resource_locator.h>
+#include <tesseract_kinematics/core/joint_group.h>
 #include <tesseract_environment/environment.h>
 #include <tesseract_environment/utils.h>
+#include <tesseract_visualization/visualization.h>
+#include <console_bridge/console.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
-#include <trajopt/common.hpp>
 #include <trajopt/plot_callback.hpp>
+#include <trajopt/utils.hpp>
 #include <trajopt/problem_description.hpp>
 #include <trajopt_sco/optimizers.hpp>
 #include <trajopt_common/clock.hpp>
@@ -87,7 +91,7 @@ TEST_F(CostsTest, equality_jointPos)  // NOLINT
   jv->first_step = 0;
   jv->last_step = 0;
   jv->name = "joint_pos_single";
-  jv->term_type = TT_CNT;
+  jv->term_type = TermType::TT_CNT;
   pci.cnt_infos.push_back(jv);
 
   // All the rest of the joint velocities have a cost to some non zero value
@@ -97,7 +101,7 @@ TEST_F(CostsTest, equality_jointPos)  // NOLINT
   jv2->first_step = 0;
   jv2->last_step = pci.basic_info.n_steps - 1;
   jv2->name = "joint_pos_all";
-  jv2->term_type = TT_COST;
+  jv2->term_type = TermType::TT_COST;
   pci.cost_infos.push_back(jv2);
 
   TrajOptProb::Ptr prob = ConstructProblem(pci);
@@ -181,7 +185,7 @@ TEST_F(CostsTest, inequality_jointPos)  // NOLINT
   jv->first_step = 0;
   jv->last_step = pci.basic_info.n_steps - 1;
   jv->name = "joint_pos_limits";
-  jv->term_type = TT_CNT;
+  jv->term_type = TermType::TT_CNT;
   pci.cnt_infos.push_back(jv);
 
   // Joint Velocities also have a cost to some non zero value
@@ -193,7 +197,7 @@ TEST_F(CostsTest, inequality_jointPos)  // NOLINT
   jv2->first_step = 0;
   jv2->last_step = (pci.basic_info.n_steps - 1) / 2;
   jv2->name = "joint_pos_targ_1";
-  jv2->term_type = TT_COST;
+  jv2->term_type = TermType::TT_COST;
   pci.cost_infos.push_back(jv2);
 
   auto jv3 = std::make_shared<JointPosTermInfo>();
@@ -204,7 +208,7 @@ TEST_F(CostsTest, inequality_jointPos)  // NOLINT
   jv3->first_step = (pci.basic_info.n_steps - 1) / 2 + 1;
   jv3->last_step = pci.basic_info.n_steps - 1;
   jv3->name = "joint_pos_targ_2";
-  jv3->term_type = TT_COST;
+  jv3->term_type = TermType::TT_COST;
   pci.cost_infos.push_back(jv3);
 
   TrajOptProb::Ptr prob = ConstructProblem(pci);
@@ -289,7 +293,7 @@ TEST_F(CostsTest, equality_jointVel)  // NOLINT
   jv->first_step = 0;
   jv->last_step = 0;
   jv->name = "joint_vel_single";
-  jv->term_type = TT_CNT;
+  jv->term_type = TermType::TT_CNT;
   pci.cnt_infos.push_back(jv);
 
   // All the rest of the joint velocities have a cost to some non zero value
@@ -299,7 +303,7 @@ TEST_F(CostsTest, equality_jointVel)  // NOLINT
   jv2->first_step = 0;
   jv2->last_step = pci.basic_info.n_steps - 1;
   jv2->name = "joint_vel_all";
-  jv2->term_type = TT_COST;
+  jv2->term_type = TermType::TT_COST;
   pci.cost_infos.push_back(jv2);
 
   TrajOptProb::Ptr prob = ConstructProblem(pci);
@@ -383,7 +387,7 @@ TEST_F(CostsTest, inequality_jointVel)  // NOLINT
   jv->first_step = 0;
   jv->last_step = pci.basic_info.n_steps - 1;
   jv->name = "joint_vel_limits";
-  jv->term_type = TT_CNT;
+  jv->term_type = TermType::TT_CNT;
   pci.cnt_infos.push_back(jv);
 
   // Joint Velocities also have a cost to some non zero value
@@ -395,7 +399,7 @@ TEST_F(CostsTest, inequality_jointVel)  // NOLINT
   jv2->first_step = 0;
   jv2->last_step = (pci.basic_info.n_steps - 1) / 2;
   jv2->name = "joint_vel_targ_1";
-  jv2->term_type = TT_COST;
+  jv2->term_type = TermType::TT_COST;
   pci.cost_infos.push_back(jv2);
 
   auto jv3 = std::make_shared<JointVelTermInfo>();
@@ -406,7 +410,7 @@ TEST_F(CostsTest, inequality_jointVel)  // NOLINT
   jv3->first_step = (pci.basic_info.n_steps - 1) / 2 + 1;
   jv3->last_step = pci.basic_info.n_steps - 1;
   jv3->name = "joint_vel_targ_2";
-  jv3->term_type = TT_COST;
+  jv3->term_type = TermType::TT_COST;
   pci.cost_infos.push_back(jv3);
 
   TrajOptProb::Ptr prob = ConstructProblem(pci);
@@ -494,7 +498,7 @@ TEST_F(CostsTest, equality_jointVel_time)  // NOLINT
   jv->first_step = 0;
   jv->last_step = 0;
   jv->name = "joint_vel_single";
-  jv->term_type = TT_CNT | TT_USE_TIME;
+  jv->term_type = TermType::TT_CNT | TermType::TT_USE_TIME;
   pci.cnt_infos.push_back(jv);
 
   // All the rest of the joint velocities have a cost to some non zero value
@@ -504,7 +508,7 @@ TEST_F(CostsTest, equality_jointVel_time)  // NOLINT
   jv2->first_step = 0;
   jv2->last_step = pci.basic_info.n_steps - 1;
   jv2->name = "joint_vel_all";
-  jv2->term_type = TT_COST | TT_USE_TIME;
+  jv2->term_type = TermType::TT_COST | TermType::TT_USE_TIME;
   pci.cost_infos.push_back(jv2);
 
   TrajOptProb::Ptr prob = ConstructProblem(pci);
@@ -594,7 +598,7 @@ TEST_F(CostsTest, inequality_jointVel_time)  // NOLINT
   jv->first_step = 0;
   jv->last_step = pci.basic_info.n_steps - 1;
   jv->name = "joint_vel_limits";
-  jv->term_type = TT_CNT | TT_USE_TIME;
+  jv->term_type = TermType::TT_CNT | TermType::TT_USE_TIME;
   pci.cnt_infos.push_back(jv);
 
   // Joint Velocities also have a cost to some non zero value
@@ -606,7 +610,7 @@ TEST_F(CostsTest, inequality_jointVel_time)  // NOLINT
   jv2->first_step = 0;
   jv2->last_step = (pci.basic_info.n_steps - 1) / 2;
   jv2->name = "joint_vel_targ_1";
-  jv2->term_type = TT_COST | TT_USE_TIME;
+  jv2->term_type = TermType::TT_COST | TermType::TT_USE_TIME;
   pci.cost_infos.push_back(jv2);
 
   auto jv3 = std::make_shared<JointVelTermInfo>();
@@ -617,7 +621,7 @@ TEST_F(CostsTest, inequality_jointVel_time)  // NOLINT
   jv3->first_step = (pci.basic_info.n_steps - 1) / 2 + 1;
   jv3->last_step = pci.basic_info.n_steps - 1;
   jv3->name = "joint_vel_targ_2";
-  jv3->term_type = TT_COST | TT_USE_TIME;
+  jv3->term_type = TermType::TT_COST | TermType::TT_USE_TIME;
   pci.cost_infos.push_back(jv3);
 
   TrajOptProb::Ptr prob = ConstructProblem(pci);
@@ -702,7 +706,7 @@ TEST_F(CostsTest, equality_jointAcc)  // NOLINT
   jv->first_step = 0;
   jv->last_step = 0;
   jv->name = "joint_acc_single";
-  jv->term_type = TT_CNT;
+  jv->term_type = TermType::TT_CNT;
   pci.cnt_infos.push_back(jv);
 
   // All the rest of the joint velocities have a cost to some non zero value
@@ -712,7 +716,7 @@ TEST_F(CostsTest, equality_jointAcc)  // NOLINT
   jv2->first_step = 0;
   jv2->last_step = pci.basic_info.n_steps - 1;
   jv2->name = "joint_acc_all";
-  jv2->term_type = TT_COST;
+  jv2->term_type = TermType::TT_COST;
   pci.cost_infos.push_back(jv2);
 
   TrajOptProb::Ptr prob = ConstructProblem(pci);
@@ -798,7 +802,7 @@ TEST_F(CostsTest, inequality_jointAcc)  // NOLINT
   jv->first_step = 0;
   jv->last_step = pci.basic_info.n_steps - 1;
   jv->name = "joint_acc_limits";
-  jv->term_type = TT_CNT;
+  jv->term_type = TermType::TT_CNT;
   pci.cnt_infos.push_back(jv);
 
   // Joint accel also have a cost to some non zero value
@@ -810,7 +814,7 @@ TEST_F(CostsTest, inequality_jointAcc)  // NOLINT
   jv2->first_step = 0;
   jv2->last_step = (pci.basic_info.n_steps - 1) / 2;
   jv2->name = "joint_acc_targ_1";
-  jv2->term_type = TT_COST;
+  jv2->term_type = TermType::TT_COST;
   pci.cost_infos.push_back(jv2);
 
   auto jv3 = std::make_shared<JointAccTermInfo>();
@@ -821,7 +825,7 @@ TEST_F(CostsTest, inequality_jointAcc)  // NOLINT
   jv3->first_step = (pci.basic_info.n_steps - 1) / 2 + 1;
   jv3->last_step = pci.basic_info.n_steps - 1;
   jv3->name = "joint_acc_targ_2";
-  jv3->term_type = TT_COST;
+  jv3->term_type = TermType::TT_COST;
   pci.cost_infos.push_back(jv3);
 
   TrajOptProb::Ptr prob = ConstructProblem(pci);

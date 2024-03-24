@@ -29,6 +29,10 @@
  * limitations under the License.
  */
 #include <trajopt_sqp/trust_region_sqp_solver.h>
+#include <trajopt_sqp/qp_problem.h>
+#include <trajopt_sqp/qp_solver.h>
+#include <trajopt_sqp/sqp_callback.h>
+
 #include <console_bridge/console.h>
 #include <chrono>
 
@@ -36,7 +40,10 @@ namespace trajopt_sqp
 {
 const bool SUPER_DEBUG_MODE = false;
 
-TrustRegionSQPSolver::TrustRegionSQPSolver(QPSolver::Ptr qp_solver) : qp_solver(std::move(qp_solver)) {}
+TrustRegionSQPSolver::TrustRegionSQPSolver(QPSolver::Ptr qp_solver)
+  : qp_solver(std::move(qp_solver)), status_{ SQPStatus::QP_SOLVER_ERROR }
+{
+}
 
 bool TrustRegionSQPSolver::init(QPProblem::Ptr qp_prob)
 {

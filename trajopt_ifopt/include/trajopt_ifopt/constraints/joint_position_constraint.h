@@ -29,13 +29,13 @@
 #include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <ifopt/constraint_set.h>
-#include <Eigen/Eigen>
+#include <Eigen/Core>
 TRAJOPT_IGNORE_WARNINGS_POP
-
-#include <trajopt_ifopt/variable_sets/joint_position_variable.h>
 
 namespace trajopt_ifopt
 {
+class JointPosition;
+
 /**
  * @brief This creates a joint position constraint. Allows bounds to be set on a joint position
  */
@@ -54,7 +54,7 @@ public:
    * @param name Name of the constraint
    */
   JointPosConstraint(const Eigen::VectorXd& targets,
-                     const std::vector<JointPosition::ConstPtr>& position_vars,
+                     const std::vector<std::shared_ptr<const JointPosition>>& position_vars,
                      const Eigen::VectorXd& coeffs,
                      const std::string& name = "JointPos");
 
@@ -66,7 +66,7 @@ public:
    * @param name Name of the constraint
    */
   JointPosConstraint(const std::vector<ifopt::Bounds>& bounds,
-                     const std::vector<JointPosition::ConstPtr>& position_vars,
+                     const std::vector<std::shared_ptr<const JointPosition>>& position_vars,
                      const Eigen::VectorXd& coeffs,
                      const std::string& name = "JointPos");
 
@@ -105,7 +105,7 @@ private:
   /** @brief Pointers to the vars used by this constraint.
    *
    * Do not access them directly. Instead use this->GetVariables()->GetComponent(position_var->GetName())->GetValues()*/
-  std::vector<JointPosition::ConstPtr> position_vars_;
+  std::vector<std::shared_ptr<const JointPosition>> position_vars_;
 };
 }  // namespace trajopt_ifopt
 #endif

@@ -43,7 +43,10 @@ const std::array<double, 2>& SafetyMarginData::getPairSafetyMarginData(const std
 
 double SafetyMarginData::getMaxSafetyMargin() const { return max_safety_margin_; }
 
-const std::set<tesseract_common::LinkNamesPair>& SafetyMarginData::getPairsWithZeroCoeff() const { return zero_coeff_; }
+const std::set<std::pair<std::string, std::string>>& SafetyMarginData::getPairsWithZeroCoeff() const
+{
+  return zero_coeff_;
+}
 
 std::vector<SafetyMarginData::Ptr> createSafetyMarginDataVector(int num_elements,
                                                                 double default_safety_margin,

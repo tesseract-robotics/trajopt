@@ -24,12 +24,18 @@
  * limitations under the License.
  */
 #include <trajopt_sqp/callbacks/joint_state_plotter.h>
+
+#include <trajopt_ifopt/variable_sets/joint_position_variable.h>
 #include <trajopt_ifopt/utils/trajopt_utils.h>
+
+#include <tesseract_common/joint_state.h>
+#include <tesseract_visualization/visualization.h>
+#include <tesseract_state_solver/state_solver.h>
 
 using namespace trajopt_sqp;
 
-JointStatePlottingCallback::JointStatePlottingCallback(tesseract_visualization::Visualization::Ptr plotter,
-                                                       tesseract_scene_graph::StateSolver::UPtr state_solver)
+JointStatePlottingCallback::JointStatePlottingCallback(std::shared_ptr<tesseract_visualization::Visualization> plotter,
+                                                       std::unique_ptr<tesseract_scene_graph::StateSolver> state_solver)
   : plotter_(std::move(plotter)), state_solver_(std::move(state_solver))
 {
 }
@@ -42,19 +48,20 @@ void JointStatePlottingCallback::plot(const QPProblem& /*problem*/)
     plotter_->plotTrajectory(trajectory, *state_solver_);
 }
 
-void JointStatePlottingCallback::addVariableSet(const trajopt_ifopt::JointPosition::ConstPtr& joint_position)
+void JointStatePlottingCallback::addVariableSet(
+    const std::shared_ptr<const trajopt_ifopt::JointPosition>& joint_position)
 {
   joint_positions_.push_back(joint_position);
-};
+}
 
 void JointStatePlottingCallback::addVariableSet(
-    const std::vector<trajopt_ifopt::JointPosition::ConstPtr>& joint_positions)
+    const std::vector<std::shared_ptr<const trajopt_ifopt::JointPosition> >& joint_positions)
 {
   for (const auto& cnt : joint_positions)
     joint_positions_.push_back(cnt);
 }
-bool JointStatePlottingCallback::execute(const QPProblem& problem, const trajopt_sqp::SQPResults& /*sqp_results*/)
+bool JointStatePlottingCallback::execute(const QPProblem& problem, const SQPResults& /*sqp_results*/)
 {
   plot(problem);
   return true;
-};
+}

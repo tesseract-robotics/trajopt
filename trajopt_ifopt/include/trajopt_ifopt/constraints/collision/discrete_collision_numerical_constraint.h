@@ -32,20 +32,19 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <ifopt/constraint_set.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
-#include <trajopt_ifopt/constraints/collision/discrete_collision_evaluators.h>
-#include <trajopt_ifopt/variable_sets/joint_position_variable.h>
-#include <tesseract_collision/core/common.h>
-
 namespace trajopt_ifopt
 {
+class JointPosition;
+class DiscreteCollisionEvaluator;
+
 class DiscreteCollisionNumericalConstraint : public ifopt::ConstraintSet
 {
 public:
   using Ptr = std::shared_ptr<DiscreteCollisionNumericalConstraint>;
   using ConstPtr = std::shared_ptr<const DiscreteCollisionNumericalConstraint>;
 
-  DiscreteCollisionNumericalConstraint(DiscreteCollisionEvaluator::Ptr collision_evaluator,
-                                       JointPosition::ConstPtr position_var,
+  DiscreteCollisionNumericalConstraint(std::shared_ptr<DiscreteCollisionEvaluator> collision_evaluator,
+                                       std::shared_ptr<const JointPosition> position_var,
                                        int max_num_cnt = 1,
                                        bool fixed_sparsity = false,
                                        const std::string& name = "DiscreteCollisionNumerical");
@@ -95,7 +94,7 @@ public:
    * @brief Get the collision evaluator. This exposed for plotter callbacks
    * @return The collision evaluator
    */
-  DiscreteCollisionEvaluator::Ptr GetCollisionEvaluator() const;
+  std::shared_ptr<DiscreteCollisionEvaluator> GetCollisionEvaluator() const;
 
 private:
   /** @brief The number of joints in a single JointPosition */
@@ -108,12 +107,12 @@ private:
    * @brief Pointers to the vars used by this constraint.
    * Do not access them directly. Instead use this->GetVariables()->GetComponent(position_var->GetName())->GetValues()
    */
-  JointPosition::ConstPtr position_var_;
+  std::shared_ptr<const JointPosition> position_var_;
 
   /** @brief Used to initialize jacobian because snopt sparsity cannot change */
   std::vector<Eigen::Triplet<double>> triplet_list_;
 
-  DiscreteCollisionEvaluator::Ptr collision_evaluator_;
+  std::shared_ptr<DiscreteCollisionEvaluator> collision_evaluator_;
 };
 }  // namespace trajopt_ifopt
 #endif  // TRAJOPT_IFOPT_DISCRETE_COLLISION_NUMERICAL_CONSTRAINT_H

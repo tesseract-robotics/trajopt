@@ -24,6 +24,7 @@
  * limitations under the License.
  */
 #include <trajopt_ifopt/constraints/joint_velocity_constraint.h>
+#include <trajopt_ifopt/variable_sets/joint_position_variable.h>
 
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <console_bridge/console.h>
@@ -32,7 +33,7 @@ TRAJOPT_IGNORE_WARNINGS_POP
 namespace trajopt_ifopt
 {
 JointVelConstraint::JointVelConstraint(const Eigen::VectorXd& targets,
-                                       const std::vector<JointPosition::ConstPtr>& position_vars,
+                                       const std::vector<std::shared_ptr<const JointPosition>>& position_vars,
                                        const Eigen::VectorXd& coeffs,
                                        const std::string& name)
   : ifopt::ConstraintSet(static_cast<int>(targets.size()) * static_cast<int>(position_vars.size() - 1), name)
@@ -119,7 +120,7 @@ void JointVelConstraint::FillJacobianBlock(std::string var_set, Jacobian& jac_bl
   Eigen::Index i = it->second;
 
   // Reserve enough room in the sparse matrix
-  std::vector<Eigen::Triplet<double> > triplet_list;
+  std::vector<Eigen::Triplet<double>> triplet_list;
   triplet_list.reserve(static_cast<std::size_t>(3 * n_dof_));
 
   for (int j = 0; j < n_dof_; j++)

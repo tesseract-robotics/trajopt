@@ -26,11 +26,12 @@
 #ifndef TRAJOPT_SQP_INCLUDE_SQP_CALLBACK_H_
 #define TRAJOPT_SQP_INCLUDE_SQP_CALLBACK_H_
 
-#include <trajopt_sqp/types.h>
-#include <trajopt_sqp/qp_problem.h>
+#include <memory>
 
 namespace trajopt_sqp
 {
+class QPProblem;
+struct SQPResults;
 /**
  * @brief Base class for callbacks called during the SQP routine
  */

@@ -29,9 +29,17 @@
 #include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <Eigen/Eigen>
-#include <ifopt/cost_term.h>
-#include <ifopt/problem.h>
 TRAJOPT_IGNORE_WARNINGS_POP
+
+namespace ifopt
+{
+class Problem;
+class ConstraintSet;
+class Component;
+struct Bounds;
+using Jacobian = Eigen::SparseMatrix<double, Eigen::RowMajor>;
+using VectorXd = Eigen::VectorXd;
+}  // namespace ifopt
 
 namespace trajopt_ifopt
 {
@@ -133,7 +141,7 @@ Eigen::VectorXd calcBoundsViolations(const Eigen::Ref<const Eigen::VectorXd>& in
  * @param epsilon The epsilon to leverage for perturbing the values
  * @return The numerical cost gradient
  */
-ifopt::Problem::VectorXd calcNumericalCostGradient(const double* x, ifopt::Problem& nlp, double epsilon = 1e-8);
+ifopt::VectorXd calcNumericalCostGradient(const double* x, ifopt::Problem& nlp, double epsilon = 1e-8);
 
 /**
  * @brief Calculate the numerical constraint gradient at the provided values
@@ -142,7 +150,7 @@ ifopt::Problem::VectorXd calcNumericalCostGradient(const double* x, ifopt::Probl
  * @param epsilon The epsilon to leverage for perturbing the values
  * @return The numerical constraint gradient
  */
-ifopt::Problem::Jacobian calcNumericalConstraintGradient(const double* x, ifopt::Problem& nlp, double epsilon = 1e-8);
+ifopt::Jacobian calcNumericalConstraintGradient(const double* x, ifopt::Problem& nlp, double epsilon = 1e-8);
 
 /**
  * @brief Calculate the numerical constraint gradient at the provided values
@@ -153,9 +161,9 @@ ifopt::Problem::Jacobian calcNumericalConstraintGradient(const double* x, ifopt:
  * @param epsilon The epsilon to leverage for perturbing the values
  * @return The numerical constraint gradient
  */
-ifopt::Problem::Jacobian calcNumericalConstraintGradient(ifopt::Component& variables,
-                                                         ifopt::ConstraintSet& constraint_set,
-                                                         double epsilon = 1e-8);
+ifopt::Jacobian calcNumericalConstraintGradient(ifopt::Component& variables,
+                                                ifopt::ConstraintSet& constraint_set,
+                                                double epsilon = 1e-8);
 
 }  // namespace trajopt_ifopt
 #endif

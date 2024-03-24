@@ -5,16 +5,24 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <octomap/Pointcloud.h>
 #include <octomap/OcTree.h>
 #include <tesseract_common/types.h>
+#include <tesseract_common/resource_locator.h>
+#include <tesseract_collision/core/continuous_contact_manager.h>
+#include <tesseract_kinematics/core/joint_group.h>
+#include <tesseract_scene_graph/link.h>
+#include <tesseract_scene_graph/joint.h>
+#include <tesseract_state_solver/state_solver.h>
 #include <tesseract_environment/environment.h>
 #include <tesseract_environment/commands.h>
 #include <tesseract_environment/utils.h>
 #include <tesseract_geometry/impl/box.h>
 #include <tesseract_geometry/impl/octree.h>
+#include <tesseract_visualization/visualization.h>
+#include <console_bridge/console.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt/collision_terms.hpp>
-#include <trajopt/common.hpp>
 #include <trajopt/plot_callback.hpp>
+#include <trajopt/utils.hpp>
 #include <trajopt/problem_description.hpp>
 #include <trajopt_sco/optimizers.hpp>
 #include <trajopt_common/config.hpp>
@@ -70,7 +78,7 @@ public:
     octree->insertPointCloud(point_cloud, octomap::point3d(0, 0, 0));
 
     // Next add objects that can be attached/detached to the scene
-    Octree::Ptr coll_octree = std::make_shared<Octree>(octree, Octree::SubType::BOX);
+    Octree::Ptr coll_octree = std::make_shared<Octree>(octree, OctreeSubType::BOX);
     auto vis_box = std::make_shared<Box>(1.0, 1.0, 1.0);
 
     auto visual = std::make_shared<Visual>();
