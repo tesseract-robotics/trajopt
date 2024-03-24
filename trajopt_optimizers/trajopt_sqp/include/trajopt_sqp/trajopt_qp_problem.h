@@ -79,7 +79,7 @@ public:
   Eigen::Ref<const Eigen::VectorXd> getBoundsLower() override;
   Eigen::Ref<const Eigen::VectorXd> getBoundsUpper() override;
 
-protected:
+private:
   struct Implementation;
   std::unique_ptr<Implementation> impl_;
 };
