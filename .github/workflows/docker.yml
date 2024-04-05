@@ -52,12 +52,24 @@ jobs:
             type=raw,event=pr,prefix=${{ matrix.distro }}-,value=master
             type=semver,pattern={{major}}.{{minor}},prefix=${{ matrix.distro }}-
 
+      # Set TAG environment variable to specify right version of tesseract docker image to pull
+      - name: Set TAG environment variable
+        run: |
+          # Check if the current workflow run was triggered by a tag.
+          if [[ "${{ github.ref_type }}" == "tag" ]]; then
+            # If it's a tag event, set the TAG to the latest tagged version of tesseract
+            echo "TAG=${{ matrix.distro }}-0.21" >> $GITHUB_ENV
+          else
+            # If it's not a tag event (e.g., a push to a branch or a PR), set the TAG to distro-master.
+            echo "TAG=${{ matrix.distro }}-master" >> $GITHUB_ENV
+          fi
+
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: docker/Dockerfile
-          build-args: TAG=${{ steps.meta.outputs.version }}
+          file: docker/Dockerfile # filepath to Dockerfile in this repo
+          build-args: TAG=${{ env.TAG }} # Argument for Dockerfile to specify tag of parent container
           push: ${{ env.PUSH_DOCKER_IMAGE }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
