@@ -801,12 +801,10 @@ void CollisionEvaluator::removeInvalidContactResults(tesseract_collision::Contac
       contact_results.begin(), contact_results.end(), [=, &pair_data](const tesseract_collision::ContactResult& r) {
         switch (evaluator_type_)
         {
-          case CollisionExpressionEvaluatorType::START_FREE_END_FREE:
-          {
+          case CollisionExpressionEvaluatorType::START_FREE_END_FREE: {
             break;
           }
-          case CollisionExpressionEvaluatorType::START_FIXED_END_FREE:
-          {
+          case CollisionExpressionEvaluatorType::START_FIXED_END_FREE: {
             if (r.cc_type[0] == tesseract_collision::ContinuousCollisionType::CCType_Time0)
               return true;
 
@@ -815,8 +813,7 @@ void CollisionEvaluator::removeInvalidContactResults(tesseract_collision::Contac
 
             break;
           }
-          case CollisionExpressionEvaluatorType::START_FREE_END_FIXED:
-          {
+          case CollisionExpressionEvaluatorType::START_FREE_END_FIXED: {
             if (r.cc_type[0] == tesseract_collision::ContinuousCollisionType::CCType_Time1)
               return true;
 
@@ -825,12 +822,10 @@ void CollisionEvaluator::removeInvalidContactResults(tesseract_collision::Contac
 
             break;
           }
-          case CollisionExpressionEvaluatorType::START_FREE_END_FREE_WEIGHTED_SUM:
-          {
+          case CollisionExpressionEvaluatorType::START_FREE_END_FREE_WEIGHTED_SUM: {
             break;
           }
-          case CollisionExpressionEvaluatorType::START_FIXED_END_FREE_WEIGHTED_SUM:
-          {
+          case CollisionExpressionEvaluatorType::START_FIXED_END_FREE_WEIGHTED_SUM: {
             if (r.cc_type[0] == tesseract_collision::ContinuousCollisionType::CCType_Time0)
               return true;
 
@@ -839,8 +834,7 @@ void CollisionEvaluator::removeInvalidContactResults(tesseract_collision::Contac
 
             break;
           }
-          case CollisionExpressionEvaluatorType::START_FREE_END_FIXED_WEIGHTED_SUM:
-          {
+          case CollisionExpressionEvaluatorType::START_FREE_END_FIXED_WEIGHTED_SUM: {
             if (r.cc_type[0] == tesseract_collision::ContinuousCollisionType::CCType_Time1)
               return true;
 
@@ -849,8 +843,7 @@ void CollisionEvaluator::removeInvalidContactResults(tesseract_collision::Contac
 
             break;
           }
-          default:
-          {
+          default: {
             PRINT_AND_THROW("Invalid CollisionExpressionEvaluatorType for "
                             "CollisionEvaluator::removeInvalidContactResults!");
           }
@@ -889,8 +882,7 @@ SingleTimestepCollisionEvaluator::SingleTimestepCollisionEvaluator(
 
   switch (evaluator_type_)
   {
-    case CollisionExpressionEvaluatorType::SINGLE_TIME_STEP:
-    {
+    case CollisionExpressionEvaluatorType::SINGLE_TIME_STEP: {
       fn_ = std::bind(&SingleTimestepCollisionEvaluator::CalcDistExpressionsSingleTimeStep,
                       this,
                       std::placeholders::_1,
@@ -898,8 +890,7 @@ SingleTimestepCollisionEvaluator::SingleTimestepCollisionEvaluator(
                       std::placeholders::_3);
       break;
     }
-    case CollisionExpressionEvaluatorType::SINGLE_TIME_STEP_WEIGHTED_SUM:
-    {
+    case CollisionExpressionEvaluatorType::SINGLE_TIME_STEP_WEIGHTED_SUM: {
       fn_ = std::bind(&SingleTimestepCollisionEvaluator::CalcDistExpressionsSingleTimeStepW,
                       this,
                       std::placeholders::_1,
@@ -907,8 +898,7 @@ SingleTimestepCollisionEvaluator::SingleTimestepCollisionEvaluator(
                       std::placeholders::_3);
       break;
     }
-    default:
-    {
+    default: {
       PRINT_AND_THROW("Invalid CollisionExpressionEvaluatorType for SingleTimestepCollisionEvaluator!");
     }
   }
@@ -1035,8 +1025,7 @@ DiscreteCollisionEvaluator::DiscreteCollisionEvaluator(tesseract_kinematics::Joi
 
   switch (evaluator_type_)
   {
-    case CollisionExpressionEvaluatorType::START_FREE_END_FREE:
-    {
+    case CollisionExpressionEvaluatorType::START_FREE_END_FREE: {
       fn_ = std::bind(&DiscreteCollisionEvaluator::CalcDistExpressionsBothFree,
                       this,
                       std::placeholders::_1,
@@ -1044,8 +1033,7 @@ DiscreteCollisionEvaluator::DiscreteCollisionEvaluator(tesseract_kinematics::Joi
                       std::placeholders::_3);
       break;
     }
-    case CollisionExpressionEvaluatorType::START_FIXED_END_FREE:
-    {
+    case CollisionExpressionEvaluatorType::START_FIXED_END_FREE: {
       fn_ = std::bind(&DiscreteCollisionEvaluator::CalcDistExpressionsEndFree,
                       this,
                       std::placeholders::_1,
@@ -1053,8 +1041,7 @@ DiscreteCollisionEvaluator::DiscreteCollisionEvaluator(tesseract_kinematics::Joi
                       std::placeholders::_3);
       break;
     }
-    case CollisionExpressionEvaluatorType::START_FREE_END_FIXED:
-    {
+    case CollisionExpressionEvaluatorType::START_FREE_END_FIXED: {
       fn_ = std::bind(&DiscreteCollisionEvaluator::CalcDistExpressionsStartFree,
                       this,
                       std::placeholders::_1,
@@ -1062,8 +1049,7 @@ DiscreteCollisionEvaluator::DiscreteCollisionEvaluator(tesseract_kinematics::Joi
                       std::placeholders::_3);
       break;
     }
-    case CollisionExpressionEvaluatorType::START_FREE_END_FREE_WEIGHTED_SUM:
-    {
+    case CollisionExpressionEvaluatorType::START_FREE_END_FREE_WEIGHTED_SUM: {
       fn_ = std::bind(&DiscreteCollisionEvaluator::CalcDistExpressionsBothFreeW,
                       this,
                       std::placeholders::_1,
@@ -1071,8 +1057,7 @@ DiscreteCollisionEvaluator::DiscreteCollisionEvaluator(tesseract_kinematics::Joi
                       std::placeholders::_3);
       break;
     }
-    case CollisionExpressionEvaluatorType::START_FIXED_END_FREE_WEIGHTED_SUM:
-    {
+    case CollisionExpressionEvaluatorType::START_FIXED_END_FREE_WEIGHTED_SUM: {
       fn_ = std::bind(&DiscreteCollisionEvaluator::CalcDistExpressionsEndFreeW,
                       this,
                       std::placeholders::_1,
@@ -1080,8 +1065,7 @@ DiscreteCollisionEvaluator::DiscreteCollisionEvaluator(tesseract_kinematics::Joi
                       std::placeholders::_3);
       break;
     }
-    case CollisionExpressionEvaluatorType::START_FREE_END_FIXED_WEIGHTED_SUM:
-    {
+    case CollisionExpressionEvaluatorType::START_FREE_END_FIXED_WEIGHTED_SUM: {
       fn_ = std::bind(&DiscreteCollisionEvaluator::CalcDistExpressionsStartFreeW,
                       this,
                       std::placeholders::_1,
@@ -1089,8 +1073,7 @@ DiscreteCollisionEvaluator::DiscreteCollisionEvaluator(tesseract_kinematics::Joi
                       std::placeholders::_3);
       break;
     }
-    default:
-    {
+    default: {
       PRINT_AND_THROW("Invalid CollisionExpressionEvaluatorType for DiscreteCollisionEvaluator!");
     }
   }
@@ -1279,8 +1262,7 @@ CastCollisionEvaluator::CastCollisionEvaluator(tesseract_kinematics::JointGroup:
 
   switch (evaluator_type_)
   {
-    case CollisionExpressionEvaluatorType::START_FREE_END_FREE:
-    {
+    case CollisionExpressionEvaluatorType::START_FREE_END_FREE: {
       fn_ = std::bind(&CastCollisionEvaluator::CalcDistExpressionsBothFree,
                       this,
                       std::placeholders::_1,
@@ -1288,8 +1270,7 @@ CastCollisionEvaluator::CastCollisionEvaluator(tesseract_kinematics::JointGroup:
                       std::placeholders::_3);
       break;
     }
-    case CollisionExpressionEvaluatorType::START_FIXED_END_FREE:
-    {
+    case CollisionExpressionEvaluatorType::START_FIXED_END_FREE: {
       fn_ = std::bind(&CastCollisionEvaluator::CalcDistExpressionsEndFree,
                       this,
                       std::placeholders::_1,
@@ -1297,8 +1278,7 @@ CastCollisionEvaluator::CastCollisionEvaluator(tesseract_kinematics::JointGroup:
                       std::placeholders::_3);
       break;
     }
-    case CollisionExpressionEvaluatorType::START_FREE_END_FIXED:
-    {
+    case CollisionExpressionEvaluatorType::START_FREE_END_FIXED: {
       fn_ = std::bind(&CastCollisionEvaluator::CalcDistExpressionsStartFree,
                       this,
                       std::placeholders::_1,
@@ -1306,8 +1286,7 @@ CastCollisionEvaluator::CastCollisionEvaluator(tesseract_kinematics::JointGroup:
                       std::placeholders::_3);
       break;
     }
-    case CollisionExpressionEvaluatorType::START_FREE_END_FREE_WEIGHTED_SUM:
-    {
+    case CollisionExpressionEvaluatorType::START_FREE_END_FREE_WEIGHTED_SUM: {
       fn_ = std::bind(&CastCollisionEvaluator::CalcDistExpressionsBothFreeW,
                       this,
                       std::placeholders::_1,
@@ -1315,8 +1294,7 @@ CastCollisionEvaluator::CastCollisionEvaluator(tesseract_kinematics::JointGroup:
                       std::placeholders::_3);
       break;
     }
-    case CollisionExpressionEvaluatorType::START_FIXED_END_FREE_WEIGHTED_SUM:
-    {
+    case CollisionExpressionEvaluatorType::START_FIXED_END_FREE_WEIGHTED_SUM: {
       fn_ = std::bind(&CastCollisionEvaluator::CalcDistExpressionsEndFreeW,
                       this,
                       std::placeholders::_1,
@@ -1324,8 +1302,7 @@ CastCollisionEvaluator::CastCollisionEvaluator(tesseract_kinematics::JointGroup:
                       std::placeholders::_3);
       break;
     }
-    case CollisionExpressionEvaluatorType::START_FREE_END_FIXED_WEIGHTED_SUM:
-    {
+    case CollisionExpressionEvaluatorType::START_FREE_END_FIXED_WEIGHTED_SUM: {
       fn_ = std::bind(&CastCollisionEvaluator::CalcDistExpressionsStartFreeW,
                       this,
                       std::placeholders::_1,
@@ -1333,8 +1310,7 @@ CastCollisionEvaluator::CastCollisionEvaluator(tesseract_kinematics::JointGroup:
                       std::placeholders::_3);
       break;
     }
-    default:
-    {
+    default: {
       PRINT_AND_THROW("Invalid CollisionExpressionEvaluatorType for CastCollisionEvaluator!");
     }
   }

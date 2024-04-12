@@ -93,8 +93,7 @@ CartPosConstraint::CartPosConstraint(CartPosInfo info,
 
   switch (info_.type)
   {
-    case CartPosInfo::Type::TARGET_ACTIVE:
-    {
+    case CartPosInfo::Type::TARGET_ACTIVE: {
       error_function_ = [this](const Eigen::Isometry3d& target_tf,
                                const Eigen::Isometry3d& source_tf) -> Eigen::VectorXd {
         Eigen::VectorXd err = tesseract_common::calcTransformError(source_tf, target_tf);
@@ -125,8 +124,7 @@ CartPosConstraint::CartPosConstraint(CartPosInfo info,
 
       break;
     }
-    case CartPosInfo::Type::SOURCE_ACTIVE:
-    {
+    case CartPosInfo::Type::SOURCE_ACTIVE: {
       error_function_ = [this](const Eigen::Isometry3d& target_tf,
                                const Eigen::Isometry3d& source_tf) -> Eigen::VectorXd {
         Eigen::VectorXd err = tesseract_common::calcTransformError(target_tf, source_tf);
@@ -156,8 +154,7 @@ CartPosConstraint::CartPosConstraint(CartPosInfo info,
       };
       break;
     }
-    case CartPosInfo::Type::BOTH_ACTIVE:
-    {
+    case CartPosInfo::Type::BOTH_ACTIVE: {
       error_function_ = [this](const Eigen::Isometry3d& target_tf,
                                const Eigen::Isometry3d& source_tf) -> Eigen::VectorXd {
         Eigen::VectorXd err = tesseract_common::calcTransformError(target_tf, source_tf);

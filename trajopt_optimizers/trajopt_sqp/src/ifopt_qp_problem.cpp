@@ -45,16 +45,14 @@ void IfoptQPProblem::addCostSet(ifopt::ConstraintSet::Ptr constraint_set, CostPe
 {
   switch (penalty_type)
   {
-    case CostPenaltyType::SQUARED:
-    {
+    case CostPenaltyType::SQUARED: {
       // Must link the variables to the constraint since that happens in AddConstraintSet
       constraint_set->LinkWithVariables(nlp_->GetOptVariables());
       auto cost = std::make_shared<trajopt_ifopt::SquaredCost>(constraint_set);
       nlp_->AddCostSet(cost);
       break;
     }
-    case CostPenaltyType::ABSOLUTE:
-    {
+    case CostPenaltyType::ABSOLUTE: {
       // Must link the variables to the constraint since that happens in AddConstraintSet
       constraint_set->LinkWithVariables(nlp_->GetOptVariables());
       auto cost = std::make_shared<trajopt_ifopt::AbsoluteCost>(constraint_set);

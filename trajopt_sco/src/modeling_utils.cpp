@@ -184,21 +184,18 @@ ConvexObjective::Ptr CostFromErrFunc::convex(const DblVec& x, Model* model)
     }
     switch (pen_type_)
     {
-      case SQUARED:
-      {
+      case SQUARED: {
         QuadExpr quad = exprSquare(aff);
         exprScale(quad, weight);
         out->addQuadExpr(quad);
         break;
       }
-      case ABS:
-      {
+      case ABS: {
         exprScale(aff, weight);
         out->addAbs(aff, 1);
         break;
       }
-      case HINGE:
-      {
+      case HINGE: {
         exprScale(aff, weight);
         out->addHinge(aff, 1);
         break;

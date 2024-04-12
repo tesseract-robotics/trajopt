@@ -60,8 +60,7 @@ void TrajOptQPProblem::addCostSet(ifopt::ConstraintSet::Ptr constraint_set, Cost
   std::vector<ifopt::Bounds> cost_bounds = constraint_set->GetBounds();
   switch (penalty_type)
   {
-    case CostPenaltyType::SQUARED:
-    {
+    case CostPenaltyType::SQUARED: {
       for (const auto& bound : cost_bounds)
       {
         if (!trajopt_ifopt::isBoundsEquality(bound))
@@ -71,8 +70,7 @@ void TrajOptQPProblem::addCostSet(ifopt::ConstraintSet::Ptr constraint_set, Cost
       squared_costs_.AddComponent(constraint_set);
       break;
     }
-    case CostPenaltyType::ABSOLUTE:
-    {
+    case CostPenaltyType::ABSOLUTE: {
       for (const auto& bound : cost_bounds)
       {
         if (!trajopt_ifopt::isBoundsEquality(bound))
@@ -82,8 +80,7 @@ void TrajOptQPProblem::addCostSet(ifopt::ConstraintSet::Ptr constraint_set, Cost
       abs_costs_.AddComponent(constraint_set);
       break;
     }
-    case CostPenaltyType::HINGE:
-    {
+    case CostPenaltyType::HINGE: {
       for (const auto& bound : cost_bounds)
       {
         if (!trajopt_ifopt::isBoundsInEquality(bound))
@@ -93,8 +90,7 @@ void TrajOptQPProblem::addCostSet(ifopt::ConstraintSet::Ptr constraint_set, Cost
       hinge_costs_.AddComponent(constraint_set);
       break;
     }
-    default:
-    {
+    default: {
       throw std::runtime_error("Unsupport CostPenaltyType!");
     }
   }
