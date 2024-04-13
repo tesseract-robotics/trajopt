@@ -36,7 +36,7 @@ Model::Ptr createOSQPModel(const ModelConfig::ConstPtr& config = nullptr)
   return std::make_shared<OSQPModel>(config);
 }
 
-OSQPModel::OSQPModel(const ModelConfig::ConstPtr& config) : P_(nullptr), A_(nullptr)
+OSQPModel::OSQPModel(const ModelConfig::ConstPtr& config) : P_(nullptr, free), A_(nullptr, free)
 {
   // tuning parameters to be less accurate, but add a polishing step
   if (config != nullptr)
