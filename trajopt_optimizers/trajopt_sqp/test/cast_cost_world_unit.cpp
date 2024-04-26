@@ -45,11 +45,11 @@ TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt_common/collision_types.h>
 
-#include <trajopt_ifopt/variable_sets/joint_position_variable.h>
-#include <trajopt_ifopt/constraints/collision/continuous_collision_constraint.h>
-#include <trajopt_ifopt/constraints/collision/continuous_collision_evaluators.h>
-#include <trajopt_ifopt/constraints/joint_position_constraint.h>
-#include <trajopt_ifopt/costs/squared_cost.h>
+#include <trajopt_ifopt/trajopt/variable_sets/joint_position_variable.h>
+#include <trajopt_ifopt/trajopt/constraints/collision/continuous_collision_constraint.h>
+#include <trajopt_ifopt/trajopt/constraints/collision/continuous_collision_evaluators.h>
+#include <trajopt_ifopt/trajopt/constraints/joint_position_constraint.h>
+#include <trajopt_ifopt/trajopt/costs/squared_cost.h>
 
 #include <trajopt_sqp/ifopt_qp_problem.h>
 #include <trajopt_sqp/trajopt_qp_problem.h>

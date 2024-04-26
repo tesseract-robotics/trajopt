@@ -24,9 +24,9 @@
  * limitations under the License.
  */
 #include <trajopt_sqp/ifopt_qp_problem.h>
-#include <trajopt_ifopt/utils/ifopt_utils.h>
-#include <trajopt_ifopt/costs/squared_cost.h>
-#include <trajopt_ifopt/costs/absolute_cost.h>
+#include <trajopt_ifopt/trajopt/utils/ifopt_utils.h>
+#include <trajopt_ifopt/trajopt/costs/squared_cost.h>
+#include <trajopt_ifopt/trajopt/costs/absolute_cost.h>
 #include <ifopt/problem.h>
 #include <iostream>
 

@@ -10,7 +10,7 @@ macro(add_benchmark benchmark_name benchmark_file)
     ${benchmark_name}
     ${PROJECT_NAME}
     ifopt::ifopt_ipopt
-    trajopt::trajopt_ifopt
+    trajopt::trajopt_ifopt_trajopt
     trajopt::trajopt_common
     benchmark::benchmark)
   target_include_directories(${benchmark_name} PRIVATE "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>")

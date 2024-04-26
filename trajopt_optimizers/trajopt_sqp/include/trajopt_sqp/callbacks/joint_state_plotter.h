@@ -30,7 +30,7 @@
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <tesseract_visualization/fwd.h>
 #include <tesseract_state_solver/fwd.h>
-#include <trajopt_ifopt/fwd.h>
+#include <trajopt_ifopt/trajopt/fwd.h>
 #include <vector>
 TRAJOPT_IGNORE_WARNINGS_POP
 

@@ -26,7 +26,7 @@
 #include <trajopt_sqp/callbacks/collision_plotter.h>
 #include <trajopt_sqp/qp_problem.h>
 
-#include <trajopt_ifopt/constraints/collision/discrete_collision_constraint.h>
+#include <trajopt_ifopt/trajopt/constraints/collision/discrete_collision_constraint.h>
 
 #include <tesseract_visualization/visualization.h>
 

@@ -47,10 +47,10 @@ TRAJOPT_IGNORE_WARNINGS_POP
 #include <trajopt_sqp/trust_region_sqp_solver.h>
 #include <trajopt_sqp/osqp_eigen_solver.h>
 
-#include <trajopt_ifopt/constraints/cartesian_position_constraint.h>
-#include <trajopt_ifopt/variable_sets/joint_position_variable.h>
-#include <trajopt_ifopt/costs/squared_cost.h>
-#include <trajopt_ifopt/utils/trajopt_utils.h>
+#include <trajopt_ifopt/trajopt/constraints/cartesian_position_constraint.h>
+#include <trajopt_ifopt/trajopt/variable_sets/joint_position_variable.h>
+#include <trajopt_ifopt/trajopt/costs/squared_cost.h>
+#include <trajopt_ifopt/trajopt/utils/trajopt_utils.h>
 
 const bool DEBUG = false;
 

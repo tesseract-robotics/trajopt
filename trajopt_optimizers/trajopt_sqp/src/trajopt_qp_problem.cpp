@@ -6,7 +6,7 @@
 #include <trajopt_sqp/expressions.h>
 #include <trajopt_sqp/types.h>
 
-#include <trajopt_ifopt/utils/ifopt_utils.h>
+#include <trajopt_ifopt/trajopt/utils/ifopt_utils.h>
 
 #include <utility>
 #include <iostream>
