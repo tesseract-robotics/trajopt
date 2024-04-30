@@ -89,6 +89,10 @@ struct VarRep
   Eigen::VectorXd values;
 };
 
+/**
+ * @brief This is the class which the constraints should be storing
+ * @details This class contains all informtion necessary for filling the jacobian
+ */
 class Var
 {
 public:
@@ -99,6 +103,9 @@ public:
   Var& operator=(const Var&) = default;
   Var(Var&&) = default;
   Var& operator=(Var&&) = default;
+
+  Eigen::Index getIndex() const { return var_rep_->index; }
+  Eigen::Index getLength() const { return var_rep_->length; }
 
   template <typename T>
   T value() const
@@ -120,6 +127,7 @@ public:
   }
 
 private:
+  friend class Node;
   std::shared_ptr<VarRep> var_rep_{ nullptr };
 };
 

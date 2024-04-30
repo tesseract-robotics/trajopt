@@ -3,13 +3,21 @@
 
 #include <trajopt_ifopt/trajopt/variable_sets/var.h>
 #include <unordered_map>
+#include <boost/uuid/uuid.hpp>
 
 namespace trajopt_ifopt
 {
+class NodesVariables;
 class Node
 {
 public:
   Node(std::string node_name = "Node");
+
+  boost::uuids::uuid getUUID() const;
+
+  const std::string& getName() const;
+
+  NodesVariables* const getParent() const;
 
   Var addVar(const std::string& name);
 
@@ -23,11 +31,14 @@ public:
 
 protected:
   friend class NodesVariables;
+  boost::uuids::uuid uuid_{};
   std::string name_;
   std::unordered_map<std::string, Var> vars_;
   Eigen::Index length_{ 0 };
+  NodesVariables* parent_{ nullptr };
 
   void setVariables(const Eigen::Ref<const Eigen::VectorXd>& x);
+  void incrementIndex(Eigen::Index value);
 };
 
 }  // namespace trajopt_ifopt

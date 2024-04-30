@@ -36,17 +36,24 @@ NodesVariables::NodesVariables(const std::string& name) : VariableSet(kSpecifyLa
 
 void NodesVariables::AddNode(Node node)
 {
+  auto it =
+      std::find_if(nodes_.begin(), nodes_.begin(), [&node](const Node& n) { return n.getUUID() == node.getUUID(); });
+  if (it != nodes_.end())
+    throw std::runtime_error("NodesVariables, Node must be unique!");
+
+  node.incrementIndex(n_dim_);
+  node.parent_ = this;
   Eigen::Index length = node.size();
-  nodes_.emplace_back(n_dim_, std::move(node));
+  nodes_.emplace_back(std::move(node));
   n_dim_ += length;
 }
 
-const Node& NodesVariables::GetNode(std::size_t opt_idx) const { return nodes_.at(opt_idx).second; }
+const Node& NodesVariables::GetNode(std::size_t opt_idx) const { return nodes_.at(opt_idx); }
 
 void NodesVariables::SetVariables(const VectorXd& x)
 {
-  for (auto& pair : nodes_)
-    pair.second.setVariables(x.segment(pair.first, pair.second.size()));
+  for (auto& node : nodes_)
+    node.setVariables(x);
 
   values_ = x;
 
@@ -61,19 +68,12 @@ void NodesVariables::UpdateObservers()
     o->UpdateNodes();
 }
 
-void NodesVariables::AddObserver(std::shared_ptr<NodesObserver> observer) { observers_.push_back(observer); }
+void NodesVariables::AddObserver(std::shared_ptr<NodesObserver> observer) { observers_.push_back(std::move(observer)); }
 
 Eigen::Index NodesVariables::GetDim() const { return n_dim_; }
 
 NodesVariables::VecBound NodesVariables::GetBounds() const { return bounds_; }
 
-const std::vector<Node> NodesVariables::GetNodes() const
-{
-  std::vector<Node> nodes;
-  nodes.reserve(nodes_.size());
-  for (const auto& pair : nodes_)
-    nodes.push_back(pair.second);
-  return nodes;
-}
+std::vector<Node> NodesVariables::GetNodes() const { return nodes_; }
 
 }  // namespace trajopt_ifopt

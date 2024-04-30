@@ -91,7 +91,7 @@ public:
   /**
    * @returns All the nodes that can be used to reconstruct the spline.
    */
-  const std::vector<Node> GetNodes() const;
+  std::vector<Node> GetNodes() const;
 
   /**
    * @brief Adds a dependent observer that gets notified when the nodes change.
@@ -114,8 +114,8 @@ protected:
 
   Eigen::VectorXd values_;
   VecBound bounds_;  ///< the bounds on the node values.
-  std::vector<std::pair<Eigen::Index, Node>> nodes_;
-  Eigen::Index n_dim_{ -1 };
+  std::vector<Node> nodes_;
+  Eigen::Index n_dim_{ 0 };
   std::vector<std::shared_ptr<NodesObserver>> observers_;
 
   /** @brief Notifies the subscribed observers that the node values changes. */
