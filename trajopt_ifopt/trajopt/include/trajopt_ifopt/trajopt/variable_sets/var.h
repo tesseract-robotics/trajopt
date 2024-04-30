@@ -77,18 +77,6 @@ namespace trajopt_ifopt
 //   return var_rep_->child_names;
 // }
 
-struct VarRep
-{
-  VarRep(Eigen::Index _index, std::string _name);
-  VarRep(Eigen::Index _index, Eigen::Index _length, std::string _identifier, std::vector<std::string> _names);
-
-  Eigen::Index index{ -1 };
-  Eigen::Index length{ -1 };
-  std::string identifier;
-  std::vector<std::string> names;
-  Eigen::VectorXd values;
-};
-
 /**
  * @brief This is the class which the constraints should be storing
  * @details This class contains all informtion necessary for filling the jacobian
@@ -98,69 +86,74 @@ class Var
 public:
   Var() = default;
   ~Var() = default;
-  Var(std::unique_ptr<VarRep> var_rep);
+  Var(Eigen::Index index, std::string name);
+  Var(Eigen::Index index, Eigen::Index length, std::string identifier, std::vector<std::string> names);
   Var(const Var& other) = default;
   Var& operator=(const Var&) = default;
   Var(Var&&) = default;
   Var& operator=(Var&&) = default;
 
-  Eigen::Index getIndex() const { return var_rep_->index; }
-  Eigen::Index getLength() const { return var_rep_->length; }
+  Eigen::Index getIndex() const { return index_; }
+  Eigen::Index size() const { return length_; }
 
-  template <typename T>
-  T value() const
-  {
-    throw std::runtime_error("This should never be used");
-  }
-
-  template <typename T>
-  T name() const
-  {
-    throw std::runtime_error("This should never be used");
-  }
-
+  void incrementIndex(Eigen::Index value) { index_ += value; }
   void setVariables(const Eigen::Ref<const Eigen::VectorXd>& x)
   {
-    assert(var_rep_->index > -1 && var_rep_->index < x.size());
-    assert(var_rep_->length > 0 && (var_rep_->index + var_rep_->length) < x.size());
-    var_rep_->values = x.segment(var_rep_->index, var_rep_->length);
+    assert(index_ > -1 && index_ < x.size());
+    assert(length_ > 0 && (index_ + length_) < x.size());
+    values_ = x.segment(index_, length_);
+  }
+
+  template <typename T>
+  const T& value() const
+  {
+    throw std::runtime_error("This should never be used");
+  }
+
+  template <typename T>
+  const T& name() const
+  {
+    throw std::runtime_error("This should never be used");
   }
 
 private:
-  friend class Node;
-  std::shared_ptr<VarRep> var_rep_{ nullptr };
+  Eigen::Index index_{ -1 };
+  Eigen::Index length_{ -1 };
+  std::string identifier_;
+  std::vector<std::string> names_;
+  Eigen::VectorXd values_;
 };
 
 template <>
-inline double Var::value() const
+inline const double& Var::value() const
 {
-  assert(var_rep_->values.size() == 1);
-  assert(var_rep_->index > -1);
-  assert(var_rep_->length == 1);
-  return var_rep_->values[0];
+  assert(values_.size() == 1);
+  assert(index_ > -1);
+  assert(length_ == 1);
+  return values_[0];
 }
 
 template <>
-inline Eigen::VectorXd Var::value() const
+inline const Eigen::VectorXd& Var::value() const
 {
-  assert(var_rep_->index > -1);
-  assert(var_rep_->length > 1);
-  assert(var_rep_->names.size() > 1);
-  return var_rep_->values;
+  assert(index_ > -1);
+  assert(length_ > 1);
+  assert(names_.size() > 1);
+  return values_;
 }
 
 template <>
-inline std::string Var::name() const
+inline const std::string& Var::name() const
 {
-  assert(var_rep_->names.size() == 1);
-  return var_rep_->names[0];
+  assert(names_.size() == 1);
+  return names_[0];
 }
 
 template <>
-inline std::vector<std::string> Var::name() const
+inline const std::vector<std::string>& Var::name() const
 {
-  assert(var_rep_->names.size() > 1);
-  return var_rep_->names;
+  assert(names_.size() > 1);
+  return names_;
 }
 }  // namespace trajopt_ifopt
 

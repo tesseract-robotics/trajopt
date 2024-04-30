@@ -34,26 +34,21 @@ namespace trajopt_ifopt
 {
 NodesVariables::NodesVariables(const std::string& name) : VariableSet(kSpecifyLater, name) {}
 
-void NodesVariables::AddNode(Node node)
+void NodesVariables::AddNode(std::unique_ptr<Node> node)
 {
-  auto it =
-      std::find_if(nodes_.begin(), nodes_.begin(), [&node](const Node& n) { return n.getUUID() == node.getUUID(); });
-  if (it != nodes_.end())
-    throw std::runtime_error("NodesVariables, Node must be unique!");
-
-  node.incrementIndex(n_dim_);
-  node.parent_ = this;
-  Eigen::Index length = node.size();
+  node->incrementIndex(n_dim_);
+  node->parent_ = this;
+  Eigen::Index length = node->size();
   nodes_.emplace_back(std::move(node));
   n_dim_ += length;
 }
 
-const Node& NodesVariables::GetNode(std::size_t opt_idx) const { return nodes_.at(opt_idx); }
+const std::shared_ptr<const Node>& NodesVariables::GetNode(std::size_t opt_idx) const { return nodes_.at(opt_idx); }
 
 void NodesVariables::SetVariables(const VectorXd& x)
 {
   for (auto& node : nodes_)
-    node.setVariables(x);
+    node->setVariables(x);
 
   values_ = x;
 
@@ -74,6 +69,12 @@ Eigen::Index NodesVariables::GetDim() const { return n_dim_; }
 
 NodesVariables::VecBound NodesVariables::GetBounds() const { return bounds_; }
 
-std::vector<Node> NodesVariables::GetNodes() const { return nodes_; }
+std::vector<std::shared_ptr<const Node> > NodesVariables::GetNodes() const
+{
+  std::vector<std::shared_ptr<const Node> > nodes;
+  nodes.reserve(nodes_.size());
+  std::copy(nodes_.begin(), nodes_.end(), std::back_inserter(nodes));
+  return nodes;
+}
 
 }  // namespace trajopt_ifopt

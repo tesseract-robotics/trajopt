@@ -52,14 +52,14 @@ public:
    * @brief Add node to the variable set
    * @param node The node to append
    */
-  void AddNode(Node node);
+  void AddNode(std::unique_ptr<Node> node);
 
   /**
    * @brief Get node based on index
    * @param opt_idx The node index
    * @return The node
    */
-  const Node& GetNode(std::size_t opt_idx) const;
+  const std::shared_ptr<const Node>& GetNode(std::size_t opt_idx) const;
 
   /**
    * @brief Pure optimization variables that define the nodes.
@@ -91,7 +91,7 @@ public:
   /**
    * @returns All the nodes that can be used to reconstruct the spline.
    */
-  std::vector<Node> GetNodes() const;
+  std::vector<std::shared_ptr<const Node>> GetNodes() const;
 
   /**
    * @brief Adds a dependent observer that gets notified when the nodes change.
@@ -114,7 +114,7 @@ protected:
 
   Eigen::VectorXd values_;
   VecBound bounds_;  ///< the bounds on the node values.
-  std::vector<Node> nodes_;
+  std::vector<std::shared_ptr<Node>> nodes_;
   Eigen::Index n_dim_{ 0 };
   std::vector<std::shared_ptr<NodesObserver>> observers_;
 
