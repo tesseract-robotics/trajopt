@@ -11,6 +11,8 @@ on:
   release:
     types:
       - released
+  # allow manually starting this workflow
+  workflow_dispatch:
 
 jobs:
   ci:
