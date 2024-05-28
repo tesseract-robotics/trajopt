@@ -39,9 +39,8 @@ class NodesVariables;
 /**
  * @brief Base class to receive up-to-date values of the NodeVariables.
  *
- * This class registers with the node variables and everytime the positions or
- * velocities of a node change, the subject updates this class by calling the
- * UpdatePolynomials() method.
+ * This class registers with the node variables and everytime a node changes,
+ * the subject updates this class by calling the UpdatePolynomials() method.
  *
  * Used by spline.h
  *

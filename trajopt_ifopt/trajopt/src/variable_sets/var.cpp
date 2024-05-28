@@ -23,4 +23,15 @@ Var::Var(Eigen::Index index, Eigen::Index length, std::string identifier, std::v
 {
 }
 
+Eigen::Index Var::getIndex() const { return index_; }
+Eigen::Index Var::size() const { return length_; }
+
+void Var::incrementIndex(Eigen::Index value) { index_ += value; }
+void Var::setVariables(const Eigen::Ref<const Eigen::VectorXd>& x)
+{
+  assert(index_ > -1 && index_ < x.size());
+  assert(length_ > 0 && (index_ + length_) < x.size());
+  values_ = x.segment(index_, length_);
+}
+
 }  // namespace trajopt_ifopt

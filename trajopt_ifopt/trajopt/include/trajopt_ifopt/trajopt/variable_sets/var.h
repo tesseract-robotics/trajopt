@@ -93,16 +93,11 @@ public:
   Var(Var&&) = default;
   Var& operator=(Var&&) = default;
 
-  Eigen::Index getIndex() const { return index_; }
-  Eigen::Index size() const { return length_; }
+  Eigen::Index getIndex() const;
+  Eigen::Index size() const;
 
-  void incrementIndex(Eigen::Index value) { index_ += value; }
-  void setVariables(const Eigen::Ref<const Eigen::VectorXd>& x)
-  {
-    assert(index_ > -1 && index_ < x.size());
-    assert(length_ > 0 && (index_ + length_) < x.size());
-    values_ = x.segment(index_, length_);
-  }
+  void incrementIndex(Eigen::Index value);
+  void setVariables(const Eigen::Ref<const Eigen::VectorXd>& x);
 
   template <typename T>
   const T& value() const
