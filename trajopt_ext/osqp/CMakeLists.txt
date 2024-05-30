@@ -7,14 +7,14 @@ project(${pkg_extracted_name} VERSION ${pkg_extracted_version} LANGUAGES CXX)
 find_package(osqp QUIET)
 
 if(NOT ${osqp_FOUND})
-  message(WARNING "No valid OSQP version found. Cloning OSQP 0.6.0 into build directory")
+  message(WARNING "No valid OSQP version found. Cloning OSQP 0.6.3 into build directory")
 
   include(ExternalProject)
 
   ExternalProject_Add(
     osqp
     GIT_REPOSITORY https://github.com/oxfordcontrol/osqp
-    GIT_TAG v0.6.2
+    GIT_TAG v0.6.3
     SOURCE_DIR ${CMAKE_BINARY_DIR}-src
     BINARY_DIR ${CMAKE_BINARY_DIR}-build
     PATCH_COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_SOURCE_DIR}/patch_osqp.cmake
