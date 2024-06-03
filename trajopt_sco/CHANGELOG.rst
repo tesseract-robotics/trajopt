@@ -2,8 +2,8 @@
 Changelog for package trajopt_sco
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.22.0 (2024-06-02)
+-------------------
 * Mismatched free fix (`#399 <https://github.com/tesseract-robotics/trajopt/issues/399>`_)
   Co-authored-by: Jack-ReframeSystems <jack@reframe.systems>
 * Update to leverage forward declarations

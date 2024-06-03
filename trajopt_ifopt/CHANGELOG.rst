@@ -2,8 +2,8 @@
 Changelog for package trajopt_ifopt
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.22.0 (2024-06-02)
+-------------------
 * Update to leverage forward declarations
 * Add dynamic cartesian support to TrajOptIfopt
 * Fix bug in getWeightedAvgGradientT0

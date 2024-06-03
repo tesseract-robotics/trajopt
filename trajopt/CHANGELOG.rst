@@ -2,8 +2,8 @@
 Changelog for package trajopt
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.22.0 (2024-06-02)
+-------------------
 * Fix incorrect assert in collision term single time step weighted method
 * Update to leverage forward declarations
 * Update to use transform error diff function for numerical jacobian (`#386 <https://github.com/tesseract-robotics/trajopt/issues/386>`_)

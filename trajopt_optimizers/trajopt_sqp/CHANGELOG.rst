@@ -2,8 +2,8 @@
 Changelog for package trajopt_sqp
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.22.0 (2024-06-02)
+-------------------
 * Update to leverage forward declarations
 * Update trajopt ifopt planning unit tests to match trajopt version
 * Update to use transform error diff function for numerical jacobian (`#386 <https://github.com/tesseract-robotics/trajopt/issues/386>`_)

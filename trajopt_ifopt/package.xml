@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <package format="3">
   <name>trajopt_ifopt</name>
-  <version>0.7.2</version>
+  <version>0.22.0</version>
   <description>The trajopt_ifopt package</description>
   <maintainer email="levi.armstrong@swri.org">Levi Armstrong</maintainer>
   <license>Apache 2.0</license>
