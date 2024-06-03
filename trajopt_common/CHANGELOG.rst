@@ -2,6 +2,12 @@
 Changelog for package trajopt_utils
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Update to leverage forward declarations
+* Fix trajopt ifopt collision with fixed states (`#372 <https://github.com/tesseract-robotics/trajopt/issues/372>`_)
+* Contributors: Levi Armstrong
+
 0.7.2 (2023-11-27)
 ------------------
 * Fix TrajOpt Ifopt handling of constraint merit coefficient (`#366 <https://github.com/tesseract-robotics/trajopt/issues/366>`_)

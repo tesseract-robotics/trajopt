@@ -2,6 +2,23 @@
 Changelog for package trajopt_sco
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Mismatched free fix (`#399 <https://github.com/tesseract-robotics/trajopt/issues/399>`_)
+  Co-authored-by: Jack-ReframeSystems <jack@reframe.systems>
+* Update to leverage forward declarations
+* Also set matrix diagonal using triplets
+* Remove unneeded reserve() calls
+* Use n instead of outerSize()
+* Create SparseVector from doublets
+* exprToEigen initialize from triplets
+* Properly reserve SparseMatrix
+* Add conda tests (`#380 <https://github.com/tesseract-robotics/trajopt/issues/380>`_)
+* Add toleranced Cartesian waypoints to solver (`#354 <https://github.com/tesseract-robotics/trajopt/issues/354>`_)
+* Use OSQP_INFTY instead of numeric_limits infinity
+* Handle solver failures like TrajOpt does (`#369 <https://github.com/tesseract-robotics/trajopt/issues/369>`_)
+* Contributors: John Wason, Levi Armstrong, Roelof, Roelof Oomen, Tyler Marr
+
 0.7.2 (2023-11-27)
 ------------------
 * Fix TrajOpt Ifopt handling of constraint merit coefficient (`#366 <https://github.com/tesseract-robotics/trajopt/issues/366>`_)

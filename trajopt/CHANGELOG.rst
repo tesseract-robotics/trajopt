@@ -2,6 +2,16 @@
 Changelog for package trajopt
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Fix incorrect assert in collision term single time step weighted method
+* Update to leverage forward declarations
+* Update to use transform error diff function for numerical jacobian (`#386 <https://github.com/tesseract-robotics/trajopt/issues/386>`_)
+* Fixed issue where we were trying to reduce the error in two places (`#383 <https://github.com/tesseract-robotics/trajopt/issues/383>`_)
+* Add conda tests (`#380 <https://github.com/tesseract-robotics/trajopt/issues/380>`_)
+* Add toleranced Cartesian waypoints to solver (`#354 <https://github.com/tesseract-robotics/trajopt/issues/354>`_)
+* Contributors: John Wason, Levi Armstrong, Tyler Marr
+
 0.7.2 (2023-11-27)
 ------------------
 

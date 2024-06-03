@@ -2,6 +2,16 @@
 Changelog for package trajopt_sqp
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Update to leverage forward declarations
+* Update trajopt ifopt planning unit tests to match trajopt version
+* Update to use transform error diff function for numerical jacobian (`#386 <https://github.com/tesseract-robotics/trajopt/issues/386>`_)
+* Fixes two forgotten csc_spfree calls
+* Handle solver failures like TrajOpt does (`#369 <https://github.com/tesseract-robotics/trajopt/issues/369>`_)
+* Fix trajopt ifopt collision with fixed states (`#372 <https://github.com/tesseract-robotics/trajopt/issues/372>`_)
+* Contributors: Levi Armstrong, Roelof, Roelof Oomen
+
 0.7.2 (2023-11-27)
 ------------------
 * Fix TrajOpt Ifopt handling of constraint merit coefficient (`#366 <https://github.com/tesseract-robotics/trajopt/issues/366>`_)
