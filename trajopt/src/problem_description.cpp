@@ -1089,7 +1089,7 @@ void JointPosTermInfo::hatch(TrajOptProb& prob)
 
   // Check if parameters are the correct size.
   checkParameterSize(coeffs, n_dof, "JointPosTermInfo coeffs", true);
-  checkParameterSize(targets, n_dof, "JointPosTermInfo upper_tols", true);
+  checkParameterSize(targets, n_dof, "JointPosTermInfo targets", true);
   checkParameterSize(upper_tols, n_dof, "JointPosTermInfo upper_tols", true);
   checkParameterSize(lower_tols, n_dof, "JointPosTermInfo lower_tols", true);
 

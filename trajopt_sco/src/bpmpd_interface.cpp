@@ -1,7 +1,6 @@
 #include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <cmath>
-#include <fstream>
 #include <csignal>
 #include <array>
 #include <mutex>
@@ -238,7 +237,7 @@ BPMPDModel::BPMPDModel()
 Var BPMPDModel::addVar(const std::string& name)
 {
   std::scoped_lock lock(m_mutex);
-  m_vars.push_back(std::make_shared<VarRep>(m_vars.size(), name, this));
+  m_vars.emplace_back(std::make_shared<VarRep>(m_vars.size(), name, this));
   m_lbs.push_back(-BPMPD_BIG);
   m_ubs.push_back(BPMPD_BIG);
   return m_vars.back();
@@ -246,7 +245,7 @@ Var BPMPDModel::addVar(const std::string& name)
 Cnt BPMPDModel::addEqCnt(const AffExpr& expr, const std::string& /*name*/)
 {
   std::scoped_lock lock(m_mutex);
-  m_cnts.push_back(std::make_shared<CntRep>(m_cnts.size(), this));
+  m_cnts.emplace_back(std::make_shared<CntRep>(m_cnts.size(), this));
   m_cntExprs.push_back(expr);
   m_cntTypes.push_back(EQ);
   return m_cnts.back();
@@ -254,7 +253,7 @@ Cnt BPMPDModel::addEqCnt(const AffExpr& expr, const std::string& /*name*/)
 Cnt BPMPDModel::addIneqCnt(const AffExpr& expr, const std::string& /*name*/)
 {
   std::scoped_lock lock(m_mutex);
-  m_cnts.push_back(std::make_shared<CntRep>(m_cnts.size(), this));
+  m_cnts.emplace_back(std::make_shared<CntRep>(m_cnts.size(), this));
   m_cntExprs.push_back(expr);
   m_cntTypes.push_back(INEQ);
   return m_cnts.back();

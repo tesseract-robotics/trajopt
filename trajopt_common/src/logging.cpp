@@ -1,7 +1,6 @@
 #include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <cstdlib>
-#include <iostream>
 #include <string>
 TRAJOPT_IGNORE_WARNINGS_POP
 
