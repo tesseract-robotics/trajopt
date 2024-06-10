@@ -2,7 +2,6 @@
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <cmath>
 #include <Eigen/Eigen>
-#include <fstream>
 #include <csignal>
 TRAJOPT_IGNORE_WARNINGS_POP
 
@@ -39,7 +38,7 @@ qpOASESModel::~qpOASESModel() = default;
 Var qpOASESModel::addVar(const std::string& name)
 {
   std::scoped_lock lock(mutex_);
-  vars_.push_back(std::make_shared<VarRep>(vars_.size(), name, this));
+  vars_.emplace_back(std::make_shared<VarRep>(vars_.size(), name, this));
   lb_.push_back(-QPOASES_INFTY);
   ub_.push_back(QPOASES_INFTY);
   return vars_.back();
@@ -48,7 +47,7 @@ Var qpOASESModel::addVar(const std::string& name)
 Cnt qpOASESModel::addEqCnt(const AffExpr& expr, const std::string& /*name*/)
 {
   std::scoped_lock lock(mutex_);
-  cnts_.push_back(std::make_shared<CntRep>(cnts_.size(), this));
+  cnts_.emplace_back(std::make_shared<CntRep>(cnts_.size(), this));
   cnt_exprs_.push_back(expr);
   cnt_types_.push_back(EQ);
   return cnts_.back();
@@ -57,7 +56,7 @@ Cnt qpOASESModel::addEqCnt(const AffExpr& expr, const std::string& /*name*/)
 Cnt qpOASESModel::addIneqCnt(const AffExpr& expr, const std::string& /*name*/)
 {
   std::scoped_lock lock(mutex_);
-  cnts_.push_back(std::make_shared<CntRep>(cnts_.size(), this));
+  cnts_.emplace_back(std::make_shared<CntRep>(cnts_.size(), this));
   cnt_exprs_.push_back(expr);
   cnt_types_.push_back(INEQ);
   return cnts_.back();

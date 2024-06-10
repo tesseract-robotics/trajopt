@@ -5,7 +5,6 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <Eigen/SparseCore>
 #include <fstream>
 #include <csignal>
-#include <iomanip>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt_sco/osqp_interface.hpp>
@@ -63,7 +62,7 @@ OSQPModel::~OSQPModel()
 Var OSQPModel::addVar(const std::string& name)
 {
   std::scoped_lock lock(mutex_);
-  vars_.push_back(std::make_shared<VarRep>(vars_.size(), name, this));
+  vars_.emplace_back(std::make_shared<VarRep>(vars_.size(), name, this));
   lbs_.push_back(-OSQP_INFINITY);
   ubs_.push_back(OSQP_INFINITY);
   return vars_.back();
@@ -72,7 +71,7 @@ Var OSQPModel::addVar(const std::string& name)
 Cnt OSQPModel::addEqCnt(const AffExpr& expr, const std::string& /*name*/)
 {
   std::scoped_lock lock(mutex_);
-  cnts_.push_back(std::make_shared<CntRep>(cnts_.size(), this));
+  cnts_.emplace_back(std::make_shared<CntRep>(cnts_.size(), this));
   cnt_exprs_.push_back(expr);
   cnt_types_.push_back(EQ);
   return cnts_.back();
@@ -81,7 +80,7 @@ Cnt OSQPModel::addEqCnt(const AffExpr& expr, const std::string& /*name*/)
 Cnt OSQPModel::addIneqCnt(const AffExpr& expr, const std::string& /*name*/)
 {
   std::scoped_lock lock(mutex_);
-  cnts_.push_back(std::make_shared<CntRep>(cnts_.size(), this));
+  cnts_.emplace_back(std::make_shared<CntRep>(cnts_.size(), this));
   cnt_exprs_.push_back(expr);
   cnt_types_.push_back(INEQ);
   return cnts_.back();

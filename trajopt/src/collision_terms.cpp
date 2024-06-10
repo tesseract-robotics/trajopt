@@ -435,7 +435,7 @@ void CollisionEvaluator::CollisionsToDistanceExpressionsW(sco::AffExprVector& ex
     exprs_data.push_back(data);
     if (!found[0] && !found[1])
     {
-      exprs.push_back(sco::AffExpr(0));
+      exprs.emplace_back(0);
     }
     else
     {
@@ -529,7 +529,7 @@ void CollisionEvaluator::CollisionsToDistanceExpressionsContinuousW(
     exprs_data.push_back(data);
     if (!found[0] && !found[1])
     {
-      exprs.push_back(sco::AffExpr(0));
+      exprs.emplace_back(0);
     }
     else
     {
@@ -949,7 +949,7 @@ void SingleTimestepCollisionEvaluator::CalcCollisions(const Eigen::Ref<const Eig
   const auto& zero_coeff_pairs = getSafetyMarginData()->getPairsWithZeroCoeff();
   auto filter = [this, &zero_coeff_pairs](tesseract_collision::ContactResultMap::PairType& pair) {
     // Remove pairs with zero coeffs
-    if (std::find(zero_coeff_pairs.begin(), zero_coeff_pairs.end(), pair.first) != zero_coeff_pairs.end())
+    if (zero_coeff_pairs.find(pair.first) != zero_coeff_pairs.end())
     {
       pair.second.clear();
       return;
@@ -1150,7 +1150,7 @@ void DiscreteCollisionEvaluator::CalcCollisions(const Eigen::Ref<const Eigen::Ve
   const auto& zero_coeff_pairs = getSafetyMarginData()->getPairsWithZeroCoeff();
   auto filter = [this, &zero_coeff_pairs](tesseract_collision::ContactResultMap::PairType& pair) {
     // Remove pairs with zero coeffs
-    if (std::find(zero_coeff_pairs.begin(), zero_coeff_pairs.end(), pair.first) != zero_coeff_pairs.end())
+    if (zero_coeff_pairs.find(pair.first) != zero_coeff_pairs.end())
     {
       pair.second.clear();
       return;
@@ -1386,7 +1386,7 @@ void CastCollisionEvaluator::CalcCollisions(const Eigen::Ref<const Eigen::Vector
   const auto& zero_coeff_pairs = getSafetyMarginData()->getPairsWithZeroCoeff();
   auto filter = [this, &zero_coeff_pairs](tesseract_collision::ContactResultMap::PairType& pair) {
     // Remove pairs with zero coeffs
-    if (std::find(zero_coeff_pairs.begin(), zero_coeff_pairs.end(), pair.first) != zero_coeff_pairs.end())
+    if (zero_coeff_pairs.find(pair.first) != zero_coeff_pairs.end())
     {
       pair.second.clear();
       return;

@@ -4,7 +4,6 @@
 #include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <Eigen/Eigen>
-#include <memory>
 #include <algorithm>
 TRAJOPT_IGNORE_WARNINGS_POP
 

@@ -1,7 +1,6 @@
 #include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <Eigen/Eigenvalues>
-#include <iostream>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt_sco/expr_ops.hpp>
