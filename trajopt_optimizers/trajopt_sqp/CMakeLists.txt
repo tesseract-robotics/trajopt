@@ -49,7 +49,7 @@ add_library(
 target_link_libraries(
   ${PROJECT_NAME}
   PUBLIC console_bridge::console_bridge
-         trajopt::trajopt_ifopt
+         trajopt::trajopt_ifopt_trajopt
          ifopt::ifopt_core
          OsqpEigen::OsqpEigen)
 target_include_directories(${PROJECT_NAME} PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
@@ -71,7 +71,7 @@ target_include_directories(${PROJECT_NAME}_callbacks PUBLIC $<BUILD_INTERFACE:${
                                                             $<INSTALL_INTERFACE:include>)
 target_link_libraries(
   ${PROJECT_NAME}_callbacks
-  PUBLIC trajopt::trajopt_ifopt
+  PUBLIC trajopt::trajopt_ifopt_trajopt
          trajopt::trajopt_common
          tesseract::tesseract_visualization
          tesseract::tesseract_common

@@ -25,7 +25,7 @@
  */
 #include <trajopt_sqp/callbacks/cartesian_error_plotter.h>
 
-#include <trajopt_ifopt/constraints/cartesian_position_constraint.h>
+#include <trajopt_ifopt/trajopt/constraints/cartesian_position_constraint.h>
 
 #include <tesseract_scene_graph/link.h>
 

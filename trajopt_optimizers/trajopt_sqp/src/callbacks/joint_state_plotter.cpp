@@ -25,8 +25,8 @@
  */
 #include <trajopt_sqp/callbacks/joint_state_plotter.h>
 
-#include <trajopt_ifopt/variable_sets/joint_position_variable.h>
-#include <trajopt_ifopt/utils/trajopt_utils.h>
+#include <trajopt_ifopt/trajopt/variable_sets/joint_position_variable.h>
+#include <trajopt_ifopt/trajopt/utils/trajopt_utils.h>
 
 #include <tesseract_common/joint_state.h>
 #include <tesseract_visualization/visualization.h>
