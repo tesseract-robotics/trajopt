@@ -15,7 +15,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        distro: [focal, jammy]
+        distro: [focal, jammy, noble]
     container:
       image: ghcr.io/tesseract-robotics/tesseract:${{ matrix.distro }}-0.22
       env:
@@ -29,7 +29,7 @@ jobs:
           path: target_ws/src
 
       - name: Build and Tests
-        uses: tesseract-robotics/colcon-action@v4
+        uses: tesseract-robotics/colcon-action@v8
         with:
           before-script: source /opt/tesseract/install/setup.bash
           ccache-prefix: ${{ matrix.distro }}
