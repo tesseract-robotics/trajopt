@@ -1,10 +1,8 @@
 #pragma once
 #include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
-#include <string>
 #include <vector>
 #include <cassert>
-#include <iostream>
 #include <cstdlib>
 #include <unistd.h>
 TRAJOPT_IGNORE_WARNINGS_POP

@@ -3,11 +3,6 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 extern "C" {
 #include "gurobi_c.h"
 }
-#include <iostream>
-#include <map>
-#include <sstream>
-#include <stdexcept>
-#include <utility>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt_sco/gurobi_interface.hpp>

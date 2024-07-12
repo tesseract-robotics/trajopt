@@ -4,7 +4,6 @@
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <cassert>
 #include <iosfwd>
-#include <limits>
 #include <string>
 #include <vector>
 #include <memory>
