@@ -111,7 +111,7 @@ TermInfo::Ptr TermInfo::fromName(const std::string& type)
     return (*name2maker[type])();
 
   // RAVELOG_ERROR("There is no cost of type %s\n", type.c_str());
-  return TermInfo::Ptr();
+  return {};
 }
 
 void ProblemConstructionInfo::readBasicInfo(const Json::Value& v)
@@ -165,7 +165,7 @@ void ProblemConstructionInfo::readCosts(const Json::Value& v)
   for (const auto& it : v)
   {
     std::string type;
-    bool use_time;
+    bool use_time{ false };
     json_marshal::childFromJson(it, type, "type");
     json_marshal::childFromJson(it, use_time, "use_time", false);
     LOG_DEBUG("reading term: %s", type.c_str());
@@ -195,7 +195,7 @@ void ProblemConstructionInfo::readConstraints(const Json::Value& v)
   for (const auto& it : v)
   {
     std::string type;
-    bool use_time;
+    bool use_time{ false };
     json_marshal::childFromJson(it, type, "type");
     json_marshal::childFromJson(it, use_time, "use_time", false);
     LOG_DEBUG("reading term: %s", type.c_str());
@@ -553,7 +553,7 @@ TrajOptProb::TrajOptProb(int n_steps, const ProblemConstructionInfo& pci)
   : OptProb(pci.basic_info.convex_solver, pci.basic_info.convex_solver_config), m_kin(pci.kin), m_env(pci.env)
 {
   const Eigen::MatrixX2d& limits = m_kin->getLimits().joint_limits;
-  auto n_dof = static_cast<int>(m_kin->numJoints());
+  auto n_dof = m_kin->numJoints();
   Eigen::VectorXd lower, upper;
   lower = limits.col(0);
   upper = limits.col(1);
@@ -587,7 +587,7 @@ TrajOptProb::TrajOptProb(int n_steps, const ProblemConstructionInfo& pci)
     }
   }
   sco::VarVector trajvarvec = createVariables(names, vlower, vupper);
-  m_traj_vars = VarArray(n_steps, n_dof + (pci.basic_info.use_time ? 1 : 0), trajvarvec.data());
+  m_traj_vars = VarArray(n_steps, static_cast<int>(n_dof) + (pci.basic_info.use_time ? 1 : 0), trajvarvec.data());
 }
 
 void UserDefinedTermInfo::fromJson(ProblemConstructionInfo& /*pci*/, const Json::Value& /*v*/)
@@ -1224,7 +1224,7 @@ void JointVelTermInfo::hatch(TrajOptProb& prob)
 
   if (term_type == (TermType::TT_COST | TermType::TT_USE_TIME))
   {
-    auto num_vels = static_cast<unsigned>(last_step - first_step);
+    auto num_vels = static_cast<size_t>(last_step - first_step);
 
     // Apply seperate cost to each joint b/c that is how the error function is currently written
     for (size_t j = 0; j < n_dof; j++)
@@ -1263,7 +1263,7 @@ void JointVelTermInfo::hatch(TrajOptProb& prob)
   }
   else if (term_type == (TermType::TT_CNT | TermType::TT_USE_TIME))
   {
-    auto num_vels = static_cast<unsigned>(last_step - first_step);
+    auto num_vels = static_cast<size_t>(last_step - first_step);
 
     // Apply seperate cnt to each joint b/c that is how the error function is currently written
     for (size_t j = 0; j < n_dof; j++)
@@ -1599,7 +1599,7 @@ void CollisionTermInfo::fromJson(ProblemConstructionInfo& pci, const Json::Value
   const Json::Value& params = v["params"];
 
   int n_steps = pci.basic_info.n_steps;
-  int collision_evaluator_type;
+  int collision_evaluator_type{ 0 };
   json_marshal::childFromJson(params, collision_evaluator_type, "evaluator_type", 0);
   json_marshal::childFromJson(params, use_weighted_sum, "use_weighted_sum", false);
   json_marshal::childFromJson(params, first_step, "first_step", 0);
@@ -1738,7 +1738,7 @@ void CollisionTermInfo::hatch(TrajOptProb& prob)
         bool current_fixed = std::find(fixed_steps.begin(), fixed_steps.end(), i) != fixed_steps.end();
         bool next_fixed = std::find(fixed_steps.begin(), fixed_steps.end(), i + 1) != fixed_steps.end();
 
-        CollisionExpressionEvaluatorType expression_evaluator_type;
+        CollisionExpressionEvaluatorType expression_evaluator_type{};
         if (!current_fixed && !next_fixed)
         {
           expression_evaluator_type = (use_weighted_sum) ?
@@ -1810,7 +1810,7 @@ void CollisionTermInfo::hatch(TrajOptProb& prob)
         bool current_fixed = std::find(fixed_steps.begin(), fixed_steps.end(), i) != fixed_steps.end();
         bool next_fixed = std::find(fixed_steps.begin(), fixed_steps.end(), i + 1) != fixed_steps.end();
 
-        CollisionExpressionEvaluatorType expression_evaluator_type;
+        CollisionExpressionEvaluatorType expression_evaluator_type{};
         if (!current_fixed && !next_fixed)
         {
           expression_evaluator_type = (use_weighted_sum) ?
@@ -1899,8 +1899,8 @@ void TotalTimeTermInfo::hatch(TrajOptProb& prob)
   }
 
   // Get correct penalty type
-  sco::PenaltyType penalty_type;
-  sco::ConstraintType constraint_type;
+  sco::PenaltyType penalty_type{};
+  sco::ConstraintType constraint_type{};
   if (trajopt_common::doubleEquals(limit, 0.0))
   {
     penalty_type = sco::SQUARED;

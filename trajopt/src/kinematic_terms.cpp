@@ -322,10 +322,10 @@ CartPoseJacCalculator::CartPoseJacCalculator(
   , source_frame_offset_(source_frame_offset)
   , target_frame_(std::move(target_frame))
   , target_frame_offset_(target_frame_offset)
+  , is_target_active_(manip_->isActiveLinkName(target_frame_))
   , indices_(indices)
   , epsilon_(DEFAULT_EPSILON)
 {
-  is_target_active_ = manip_->isActiveLinkName(target_frame_);
   assert(indices_.size() <= 6);
 
   if (is_target_active_)
@@ -459,16 +459,16 @@ Eigen::VectorXd JointVelErrCalculator::operator()(const VectorXd& var_vals) cons
 MatrixXd JointVelJacCalculator::operator()(const VectorXd& var_vals) const
 {
   // var_vals = (theta_t1, theta_t2, theta_t3 ... 1/dt_1, 1/dt_2, 1/dt_3 ...)
-  auto num_vals = static_cast<int>(var_vals.rows());
-  int half = num_vals / 2;
-  int num_vels = half - 1;
+  auto num_vals = var_vals.rows();
+  auto half = num_vals / 2;
+  auto num_vels = half - 1;
   MatrixXd jac = MatrixXd::Zero(num_vels * 2, num_vals);
 
-  for (int i = 0; i < num_vels; i++)
+  for (auto i = 0; i < num_vels; i++)
   {
     // v = (j_i+1 - j_i)*(1/dt)
     // We calculate v with the dt from the second pt
-    int time_index = i + half + 1;
+    auto time_index = i + half + 1;
     // dv_i/dj_i = -(1/dt)
     jac(i, i) = -1.0 * var_vals(time_index);
     // dv_i/dj_i+1 = (1/dt)

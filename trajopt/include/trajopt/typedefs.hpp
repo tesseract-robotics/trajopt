@@ -2,7 +2,6 @@
 #include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <Eigen/Core>
-#include <map>
 #include <vector>
 #include <tesseract_visualization/fwd.h>
 TRAJOPT_IGNORE_WARNINGS_POP

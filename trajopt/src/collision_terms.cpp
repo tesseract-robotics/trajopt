@@ -985,7 +985,7 @@ void SingleTimestepCollisionEvaluator::Plot(const std::shared_ptr<tesseract_visu
 
   tesseract_collision::ContactResultVector dist_results_copy(dist_results.size());
   Eigen::VectorXd safety_distance(dist_results.size());
-  for (auto i = 0u; i < dist_results.size(); ++i)
+  for (auto i = 0U; i < dist_results.size(); ++i)
   {
     const tesseract_collision::ContactResult& res = dist_results[i].get();
     dist_results_copy[i] = res;
@@ -1206,7 +1206,7 @@ void DiscreteCollisionEvaluator::Plot(const std::shared_ptr<tesseract_visualizat
 
   tesseract_collision::ContactResultVector dist_results_copy(dist_results.size());
   Eigen::VectorXd safety_distance(dist_results.size());
-  for (auto i = 0u; i < dist_results.size(); ++i)
+  for (auto i = 0U; i < dist_results.size(); ++i)
   {
     const tesseract_collision::ContactResult& res = dist_results[i].get();
     dist_results_copy[i] = res;
@@ -1401,11 +1401,11 @@ void CastCollisionEvaluator::CalcCollisions(const Eigen::Ref<const Eigen::Vector
   if (dist > longest_valid_segment_length_)
   {
     // Calculate the number state to interpolate
-    size_t cnt = static_cast<size_t>(std::ceil(dist / longest_valid_segment_length_)) + 1;
+    auto cnt = static_cast<long>(std::ceil(dist / longest_valid_segment_length_)) + 1;
 
     // Create interpolated trajectory between two states that satisfies the longest valid segment length.
     tesseract_common::TrajArray subtraj(cnt, dof_vals0.size());
-    for (size_t i = 0; i < dof_vals0.size(); ++i)
+    for (long i = 0; i < dof_vals0.size(); ++i)
       subtraj.col(i) = Eigen::VectorXd::LinSpaced(cnt, dof_vals0(i), dof_vals1(i));
 
     // Perform casted collision checking for sub trajectory and store results in contacts_vector
@@ -1461,7 +1461,7 @@ void CastCollisionEvaluator::Plot(const std::shared_ptr<tesseract_visualization:
 
   tesseract_collision::ContactResultVector dist_results_copy(dist_results.size());
   Eigen::VectorXd safety_distance(dist_results.size());
-  for (auto i = 0u; i < dist_results.size(); ++i)
+  for (auto i = 0U; i < dist_results.size(); ++i)
   {
     const tesseract_collision::ContactResult& res = dist_results[i].get();
     dist_results_copy[i] = res;
