@@ -9,7 +9,7 @@ namespace trajopt_common
 {
 inline std::vector<double> toDblVec(const Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>& x)
 {
-  return std::vector<double>(x.data(), x.data() + x.size());
+  return { x.data(), x.data() + x.size() };
 }
 inline Eigen::VectorXd toVectorXd(const std::vector<double>& x)
 {

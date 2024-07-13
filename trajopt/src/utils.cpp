@@ -41,11 +41,11 @@ void AddVarArrays(sco::OptProb& prob,
                   const std::vector<std::string>& name_prefix,
                   const std::vector<VarArray*>& newvars)
 {
-  size_t n_arr = name_prefix.size();
+  std::size_t n_arr = name_prefix.size();
   assert(static_cast<unsigned>(n_arr) == newvars.size());
 
   std::vector<Eigen::MatrixXi> index(n_arr);
-  for (size_t i = 0; i < n_arr; ++i)
+  for (std::size_t i = 0; i < n_arr; ++i)
   {
     newvars[i]->resize(rows, cols[i]);
     index[i].resize(rows, cols[i]);
@@ -55,7 +55,7 @@ void AddVarArrays(sco::OptProb& prob,
   int var_idx = prob.getNumVars();
   for (int i = 0; i < rows; ++i)
   {
-    for (size_t k = 0; k < n_arr; ++k)
+    for (std::size_t k = 0; k < n_arr; ++k)
     {
       for (int j = 0; j < cols[k]; ++j)
       {
@@ -68,13 +68,13 @@ void AddVarArrays(sco::OptProb& prob,
   prob.createVariables(names);  // note that w,r, are both unbounded
 
   const std::vector<sco::Var>& vars = prob.getVars();
-  for (size_t k = 0; k < n_arr; ++k)
+  for (std::size_t k = 0; k < n_arr; ++k)
   {
     for (int i = 0; i < rows; ++i)
     {
       for (int j = 0; j < cols[k]; ++j)
       {
-        (*newvars[k])(i, j) = vars[static_cast<size_t>(index[k](i, j))];
+        (*newvars[k])(i, j) = vars[static_cast<std::size_t>(index[k](i, j))];
       }
     }
   }

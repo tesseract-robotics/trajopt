@@ -16,28 +16,28 @@ const std::vector<std::string> ModelType::MODEL_NAMES_ = { "GUROBI", "BPMPD", "O
 void vars2inds(const VarVector& vars, SizeTVec& inds)
 {
   inds = SizeTVec(vars.size());
-  for (size_t i = 0; i < inds.size(); ++i)
+  for (std::size_t i = 0; i < inds.size(); ++i)
     inds[i] = vars[i].var_rep->index;
 }
 
 void vars2inds(const VarVector& vars, IntVec& inds)
 {
   inds = IntVec(vars.size());
-  for (size_t i = 0; i < inds.size(); ++i)
+  for (std::size_t i = 0; i < inds.size(); ++i)
     inds[i] = static_cast<int>(vars[i].var_rep->index);
 }
 
 void cnts2inds(const CntVector& cnts, SizeTVec& inds)
 {
   inds = SizeTVec(cnts.size());
-  for (size_t i = 0; i < inds.size(); ++i)
+  for (std::size_t i = 0; i < inds.size(); ++i)
     inds[i] = cnts[i].cnt_rep->index;
 }
 
 void cnts2inds(const CntVector& cnts, IntVec& inds)
 {
   inds = IntVec(cnts.size());
-  for (size_t i = 0; i < inds.size(); ++i)
+  for (std::size_t i = 0; i < inds.size(); ++i)
     inds[i] = static_cast<int>(cnts[i].cnt_rep->index);
 }
 
@@ -68,7 +68,7 @@ size_t AffExpr::size() const { return coeffs.size(); }
 double AffExpr::value(const double* x) const
 {
   double out = constant;
-  for (size_t i = 0; i < size(); ++i)
+  for (std::size_t i = 0; i < size(); ++i)
   {
     out += coeffs[i] * vars[i].value(x);
   }
@@ -77,7 +77,7 @@ double AffExpr::value(const double* x) const
 double AffExpr::value(const DblVec& x) const
 {
   double out = constant;
-  for (size_t i = 0; i < size(); ++i)
+  for (std::size_t i = 0; i < size(); ++i)
   {
     out += coeffs[i] * vars[i].value(x);
   }
@@ -92,7 +92,7 @@ size_t QuadExpr::size() const { return coeffs.size(); }
 double QuadExpr::value(const DblVec& x) const
 {
   double out = affexpr.value(x);
-  for (size_t i = 0; i < size(); ++i)
+  for (std::size_t i = 0; i < size(); ++i)
   {
     out += coeffs[i] * vars1[i].value(x) * vars2[i].value(x);
   }
@@ -101,7 +101,7 @@ double QuadExpr::value(const DblVec& x) const
 double QuadExpr::value(const double* x) const
 {
   double out = affexpr.value(x);
-  for (size_t i = 0; i < size(); ++i)
+  for (std::size_t i = 0; i < size(); ++i)
   {
     out += coeffs[i] * vars1[i].value(x) * vars2[i].value(x);
   }
@@ -162,7 +162,7 @@ std::ostream& operator<<(std::ostream& o, const AffExpr& e)
     sep = " + ";
   }
 
-  for (size_t i = 0; i < e.size(); ++i)
+  for (std::size_t i = 0; i < e.size(); ++i)
   {
     if (e.coeffs[i] != 0)
     {
@@ -186,7 +186,7 @@ std::ostream& operator<<(std::ostream& o, const QuadExpr& e)
   o << " + [ ";
 
   std::string op;
-  for (size_t i = 0; i < e.size(); ++i)
+  for (std::size_t i = 0; i < e.size(); ++i)
   {
     if (e.coeffs[i] != 0)
     {
@@ -212,12 +212,11 @@ std::ostream& operator<<(std::ostream& o, const QuadExpr& e)
 
 std::ostream& operator<<(std::ostream& os, const ModelType& cs)
 {
-  auto cs_ivalue_ = static_cast<size_t>(cs.value_);
+  auto cs_ivalue_ = static_cast<std::size_t>(cs.value_);
   if (cs_ivalue_ > ModelType::MODEL_NAMES_.size())
   {
     std::stringstream conversion_error;
-    conversion_error << "Error converting ModelType to string - "
-                     << "enum value is " << cs_ivalue_ << std::endl;
+    conversion_error << "Error converting ModelType to string - " << "enum value is " << cs_ivalue_ << std::endl;
     throw std::runtime_error(conversion_error.str());
   }
   os << ModelType::MODEL_NAMES_[cs_ivalue_];
@@ -273,15 +272,15 @@ std::vector<ModelType> availableSolvers()
 #ifdef HAVE_QPOASES
   has_solver[ModelType::QPOASES] = true;
 #endif
-  size_t n_available_solvers = 0;
+  std::size_t n_available_solvers = 0;
   for (auto i = 0; i < ModelType::AUTO_SOLVER; ++i)
-    if (has_solver[static_cast<size_t>(i)])
+    if (has_solver[static_cast<std::size_t>(i)])
       ++n_available_solvers;
   std::vector<ModelType> available_solvers(n_available_solvers, ModelType::AUTO_SOLVER);
 
-  size_t j = 0;
+  std::size_t j = 0;
   for (int i = 0; i < static_cast<int>(ModelType::AUTO_SOLVER); ++i)
-    if (has_solver[static_cast<size_t>(i)])
+    if (has_solver[static_cast<std::size_t>(i)])
       available_solvers[j++] = static_cast<ModelType>(i);
   return available_solvers;
 }

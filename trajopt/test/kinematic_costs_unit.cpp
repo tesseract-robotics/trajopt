@@ -114,7 +114,7 @@ TEST_F(KinematicCostsTest, CartPoseJacCalculator)  // NOLINT
 //  Eigen::VectorXd values(15);
 //  values.setZero();
 //  std::vector<std::string> joint_names = kin->getJointNames();
-//  for (size_t i = 0; i < 15; ++i)
+//  for (std::size_t i = 0; i < 15; ++i)
 //  {
 //    if (joint_names[i] == "r_elbow_flex_joint" || joint_names[i] == "l_elbow_flex_joint")
 //      values(static_cast<long>(i)) = -0.15;

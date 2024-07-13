@@ -103,7 +103,7 @@ std::function<void(sco::OptProb*, sco::OptResults&)> WriteCallback(std::shared_p
 
   // Write joint names
   std::vector<std::string> joint_names = prob->GetEnv()->getActiveJointNames();
-  for (size_t i = 0; i < joint_names.size(); i++)
+  for (std::size_t i = 0; i < joint_names.size(); i++)
   {
     if (i != 0)
     {
@@ -136,6 +136,8 @@ std::function<void(sco::OptProb*, sco::OptResults&)> WriteCallback(std::shared_p
   *file << std::endl;
 
   // return callback function
-  return bind(&WriteFile, file, prob->GetKin(), std::ref(prob->GetVars()), std::placeholders::_2);
+  return [file, capture0 = prob->GetKin(), &capture1 = prob->GetVars()](auto&&, auto&& PH2) {
+    WriteFile(file, capture0, capture1, std::forward<decltype(PH2)>(PH2));
+  };
 }
 }  // namespace trajopt

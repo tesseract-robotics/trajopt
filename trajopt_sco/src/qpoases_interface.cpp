@@ -104,8 +104,8 @@ void qpOASESModel::updateObjective()
 
 void qpOASESModel::updateConstraints()
 {
-  const size_t n = vars_.size();
-  const size_t m = cnts_.size();
+  const std::size_t n = vars_.size();
+  const std::size_t m = cnts_.size();
 
   lbA_.clear();
   lbA_.resize(m, -QPOASES_INFTY);
@@ -116,7 +116,7 @@ void qpOASESModel::updateConstraints()
   Eigen::VectorXd v;
   exprToEigen(cnt_exprs_, sm, v, static_cast<Eigen::Index>(n));
 
-  for (size_t i_cnt = 0; i_cnt < m; ++i_cnt)
+  for (std::size_t i_cnt = 0; i_cnt < m; ++i_cnt)
   {
     lbA_[i_cnt] = (cnt_types_[i_cnt] == INEQ) ? -QPOASES_INFTY : v[static_cast<Eigen::Index>(i_cnt)];
     ubA_[i_cnt] = v[static_cast<Eigen::Index>(i_cnt)];
@@ -152,8 +152,8 @@ void qpOASESModel::createSolver()
 void qpOASESModel::update()
 {
   {
-    size_t inew = 0;
-    for (size_t iold = 0; iold < vars_.size(); ++iold)
+    std::size_t inew = 0;
+    for (std::size_t iold = 0; iold < vars_.size(); ++iold)
     {
       Var& var = vars_[iold];
       if (!var.var_rep->removed)
@@ -174,8 +174,8 @@ void qpOASESModel::update()
     ub_.resize(inew, -QPOASES_INFTY);
   }
   {
-    size_t inew = 0;
-    for (size_t iold = 0; iold < cnts_.size(); ++iold)
+    std::size_t inew = 0;
+    for (std::size_t iold = 0; iold < cnts_.size(); ++iold)
     {
       Cnt& cnt = cnts_[iold];
       if (!cnt.cnt_rep->removed)
@@ -199,9 +199,9 @@ void qpOASESModel::update()
 
 void qpOASESModel::setVarBounds(const VarVector& vars, const DblVec& lower, const DblVec& upper)
 {
-  for (size_t i = 0; i < vars.size(); ++i)
+  for (std::size_t i = 0; i < vars.size(); ++i)
   {
-    const size_t varind = vars[i].var_rep->index;
+    const std::size_t varind = vars[i].var_rep->index;
     lb_[varind] = lower[i];
     ub_[varind] = upper[i];
   }
@@ -209,9 +209,9 @@ void qpOASESModel::setVarBounds(const VarVector& vars, const DblVec& lower, cons
 DblVec qpOASESModel::getVarValues(const VarVector& vars) const
 {
   DblVec out(vars.size());
-  for (size_t i = 0; i < vars.size(); ++i)
+  for (std::size_t i = 0; i < vars.size(); ++i)
   {
-    const size_t varind = vars[i].var_rep->index;
+    const std::size_t varind = vars[i].var_rep->index;
     out[i] = solution_[varind];
   }
   return out;

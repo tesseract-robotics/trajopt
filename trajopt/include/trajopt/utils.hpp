@@ -1,7 +1,6 @@
 #pragma once
 #include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
-#include <unordered_map>
 #include <Eigen/Geometry>
 TRAJOPT_IGNORE_WARNINGS_POP
 

@@ -243,7 +243,7 @@ TEST_F(InterfaceTest, bitmask_test)
   std::vector<bool> cnt{ true, false, true, false };
   std::vector<bool> time{ false, false, true, true };
 
-  for (size_t i = 0; i < types.size(); i++)
+  for (std::size_t i = 0; i < types.size(); i++)
   {
     std::bitset<8> x(static_cast<long long unsigned>(types[i]));
 

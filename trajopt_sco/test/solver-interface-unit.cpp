@@ -44,7 +44,7 @@ TEST_P(SolverInterface, setup_problem)  // NOLINT
 
   AffExpr aff;
   std::cout << aff << std::endl;
-  for (size_t i = 0; i < 3; ++i)
+  for (std::size_t i = 0; i < 3; ++i)
   {
     exprInc(aff, vars[i]);
     solver->setVarBounds(vars[i], 0, 10);
@@ -61,7 +61,7 @@ TEST_P(SolverInterface, setup_problem)  // NOLINT
   solver->optimize();
 
   DblVec soln(3);
-  for (size_t i = 0; i < 3; ++i)
+  for (std::size_t i = 0; i < 3; ++i)
   {
     soln[i] = solver->getVarValue(vars[i]);
   }
@@ -93,7 +93,7 @@ TEST_P(SolverInterface, DISABLED_ExprMult_test1)  // NOLINT // QuadExpr not PSD
 
   AffExpr aff1;
   std::cout << aff1 << std::endl;
-  for (size_t i = 0; i < 3; ++i)
+  for (std::size_t i = 0; i < 3; ++i)
   {
     exprInc(aff1, vars[i]);
     solver->setVarBounds(vars[i], 0, 10);
@@ -103,7 +103,7 @@ TEST_P(SolverInterface, DISABLED_ExprMult_test1)  // NOLINT // QuadExpr not PSD
 
   AffExpr aff2;
   std::cout << aff2 << std::endl;
-  for (size_t i = 3; i < 6; ++i)
+  for (std::size_t i = 3; i < 6; ++i)
   {
     exprInc(aff2, vars[i]);
     solver->setVarBounds(vars[i], 0, 10);
@@ -121,7 +121,7 @@ TEST_P(SolverInterface, DISABLED_ExprMult_test1)  // NOLINT // QuadExpr not PSD
   solver->optimize();
 
   DblVec soln(3);
-  for (size_t i = 0; i < 3; ++i)
+  for (std::size_t i = 0; i < 3; ++i)
   {
     soln[i] = solver->getVarValue(vars[i]);
   }
@@ -174,7 +174,7 @@ TEST_P(SolverInterface, ExprMult_test2)  // NOLINT
   solver->optimize();
 
   DblVec soln(2);
-  for (size_t i = 0; i < 2; ++i)
+  for (std::size_t i = 0; i < 2; ++i)
   {
     soln[i] = solver->getVarValue(vars[i]);
     std::cout << soln[i] << std::endl;
@@ -226,7 +226,7 @@ TEST_P(SolverInterface, ExprMult_test3)  // NOLINT
   solver->optimize();
 
   DblVec soln(2);
-  for (size_t i = 0; i < 2; ++i)
+  for (std::size_t i = 0; i < 2; ++i)
   {
     soln[i] = solver->getVarValue(vars[i]);
     std::cout << soln[i] << std::endl;
