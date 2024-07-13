@@ -88,7 +88,7 @@ void runTest(const Environment::Ptr& env, const Visualization::Ptr& /*plotter*/,
   //  }
 
   CONSOLE_BRIDGE_logDebug("DOF: %d", prob->GetNumDOF());
-  opt->initialize(DblVec(static_cast<size_t>(prob->GetNumDOF()), 0));
+  opt->initialize(DblVec(static_cast<std::size_t>(prob->GetNumDOF()), 0));
   double tStart = GetClock();
   CONSOLE_BRIDGE_logDebug("Size: %d", opt->x().size());
   std::stringstream ss;

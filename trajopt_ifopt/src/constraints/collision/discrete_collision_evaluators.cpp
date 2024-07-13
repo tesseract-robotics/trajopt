@@ -87,7 +87,7 @@ std::shared_ptr<const trajopt_common::CollisionCacheData>
 SingleTimestepCollisionEvaluator::CalcCollisions(const Eigen::Ref<const Eigen::VectorXd>& dof_vals,
                                                  std::size_t bounds_size)
 {
-  size_t key = getHash(*collision_config_, dof_vals);
+  std::size_t key = getHash(*collision_config_, dof_vals);
   auto* it = collision_cache_->get(key);
   if (it != nullptr)
   {

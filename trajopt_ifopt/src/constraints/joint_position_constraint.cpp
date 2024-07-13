@@ -63,14 +63,14 @@ JointPosConstraint::JointPosConstraint(const Eigen::VectorXd& targets,
   }
 
   // Set the bounds to the input targets
-  std::vector<ifopt::Bounds> bounds(static_cast<size_t>(GetRows()));
+  std::vector<ifopt::Bounds> bounds(static_cast<std::size_t>(GetRows()));
   // All of the positions should be exactly at their targets
   for (long j = 0; j < n_vars_; j++)
   {
     for (long i = 0; i < n_dof_; i++)
     {
       double w_target = coeffs_[i] * targets[i];
-      bounds[static_cast<size_t>(i + j * n_dof_)] = ifopt::Bounds(w_target, w_target);
+      bounds[static_cast<std::size_t>(i + j * n_dof_)] = ifopt::Bounds(w_target, w_target);
     }
   }
   bounds_ = bounds;
@@ -111,7 +111,7 @@ JointPosConstraint::JointPosConstraint(const std::vector<ifopt::Bounds>& bounds,
 Eigen::VectorXd JointPosConstraint::GetValues() const
 {
   // Get the correct variables
-  Eigen::VectorXd values(static_cast<size_t>(n_dof_ * n_vars_));
+  Eigen::VectorXd values(static_cast<std::size_t>(n_dof_ * n_vars_));
   for (const auto& position_var : position_vars_)
     values << coeffs_.cwiseProduct(this->GetVariables()->GetComponent(position_var->GetName())->GetValues());
 

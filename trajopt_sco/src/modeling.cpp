@@ -154,12 +154,12 @@ DblVec Constraint::violations(const DblVec& x)
 
   if (type() == EQ)
   {
-    for (size_t i = 0; i < val.size(); ++i)
+    for (std::size_t i = 0; i < val.size(); ++i)
       out[i] = fabs(val[i]);
   }
   else
   {  // type() == INEQ
-    for (size_t i = 0; i < val.size(); ++i)
+    for (std::size_t i = 0; i < val.size(); ++i)
       out[i] = pospart(val[i]);
   }
 
@@ -179,13 +179,13 @@ VarVector OptProb::createVariables(const std::vector<std::string>& names)
 
 VarVector OptProb::createVariables(const std::vector<std::string>& names, const DblVec& lb, const DblVec& ub)
 {
-  size_t n_add = names.size(), n_cur = vars_.size();
+  std::size_t n_add = names.size(), n_cur = vars_.size();
   assert(lb.size() == n_add);
   assert(ub.size() == n_add);
   vars_.reserve(n_cur + n_add);
   lower_bounds_.reserve(n_cur + n_add);
   upper_bounds_.reserve(n_cur + n_add);
-  for (size_t i = 0; i < names.size(); ++i)
+  for (std::size_t i = 0; i < names.size(); ++i)
   {
     vars_.push_back(model_->addVar(names[i], lb[i], ub[i]));
     lower_bounds_.push_back(lb[i]);

@@ -92,7 +92,7 @@ LVSContinuousCollisionEvaluator::CalcCollisionData(const Eigen::Ref<const Eigen:
                                                    const std::array<bool, 2>& position_vars_fixed,
                                                    std::size_t bounds_size)
 {
-  size_t key = trajopt_common::getHash(*collision_config_, dof_vals0, dof_vals1);
+  std::size_t key = trajopt_common::getHash(*collision_config_, dof_vals0, dof_vals1);
   auto* it = collision_cache_->get(key);
   if (it != nullptr)
   {
@@ -330,7 +330,7 @@ LVSDiscreteCollisionEvaluator::CalcCollisionData(const Eigen::Ref<const Eigen::V
                                                  const std::array<bool, 2>& position_vars_fixed,
                                                  std::size_t bounds_size)
 {
-  size_t key = getHash(*collision_config_, dof_vals0, dof_vals1);
+  std::size_t key = getHash(*collision_config_, dof_vals0, dof_vals1);
   auto* it = collision_cache_->get(key);
   if (it != nullptr)
   {

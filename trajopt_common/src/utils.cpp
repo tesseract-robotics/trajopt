@@ -53,7 +53,7 @@ std::vector<SafetyMarginData::Ptr> createSafetyMarginDataVector(int num_elements
                                                                 double default_safety_margin_coeff)
 {
   std::vector<SafetyMarginData::Ptr> info;
-  info.reserve(static_cast<size_t>(num_elements));
+  info.reserve(static_cast<std::size_t>(num_elements));
   for (auto i = 0; i < num_elements; ++i)
     info.push_back(std::make_shared<SafetyMarginData>(default_safety_margin, default_safety_margin_coeff));
 

@@ -1,7 +1,6 @@
 #pragma once
 #include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
-#include <unordered_map>
 #include <type_traits>
 TRAJOPT_IGNORE_WARNINGS_POP
 
@@ -99,7 +98,7 @@ public:
 
 private:
   /** @brief If true, the last column in the optimization matrix will be 1/dt */
-  bool has_time;
+  bool has_time{ false };
   VarArray m_traj_vars;
   std::shared_ptr<const tesseract_kinematics::JointGroup> m_kin;
   std::shared_ptr<const tesseract_environment::Environment> m_env;
@@ -314,7 +313,7 @@ struct DynamicCartPoseTermInfo : public TermInfo
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
   /** @brief Timestep at which to apply term */
-  int timestep;
+  int timestep{ 0 };
   /** @brief Coefficients for position and rotation */
   Eigen::Vector3d pos_coeffs, rot_coeffs;
   /** @brief Link which should reach desired pos */
@@ -354,7 +353,7 @@ struct CartPoseTermInfo : public TermInfo
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
   /** @brief Timestep at which to apply term */
-  int timestep;
+  int timestep{ 0 };
   Eigen::Vector3d pos_coeffs, rot_coeffs;
 
   /** @brief Link which should reach desired pos */

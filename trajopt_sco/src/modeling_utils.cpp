@@ -90,19 +90,19 @@ ConvexObjective::Ptr CostFromFunc::convex(const DblVec& x, Model* model)
     quad.affexpr.vars = vars_;
     quad.affexpr.coeffs = trajopt_common::toDblVec(grad - pos_hess * x_eigen);
 
-    auto nquadterms = static_cast<size_t>((x_eigen.size() * (x_eigen.size() - 1)) / 2);
+    auto nquadterms = static_cast<std::size_t>((x_eigen.size() * (x_eigen.size() - 1)) / 2);
     quad.coeffs.reserve(nquadterms);
     quad.vars1.reserve(nquadterms);
     quad.vars2.reserve(nquadterms);
     for (long int i = 0, end = x_eigen.size(); i != end; ++i)
     {  // tricky --- eigen size() is signed
-      quad.vars1.push_back(vars_[static_cast<size_t>(i)]);
-      quad.vars2.push_back(vars_[static_cast<size_t>(i)]);
+      quad.vars1.push_back(vars_[static_cast<std::size_t>(i)]);
+      quad.vars2.push_back(vars_[static_cast<std::size_t>(i)]);
       quad.coeffs.push_back(pos_hess(i, i) / 2);
       for (long int j = i + 1; j != end; ++j)
       {  // tricky --- eigen size() is signed
-        quad.vars1.push_back(vars_[static_cast<size_t>(i)]);
-        quad.vars2.push_back(vars_[static_cast<size_t>(j)]);
+        quad.vars1.push_back(vars_[static_cast<std::size_t>(i)]);
+        quad.vars2.push_back(vars_[static_cast<std::size_t>(j)]);
         quad.coeffs.push_back(pos_hess(i, j));
       }
     }
@@ -270,7 +270,7 @@ ConvexConstraints::Ptr ConstraintFromErrFunc::convex(const DblVec& x, Model* mod
 std::string AffExprToString(const AffExpr& aff)
 {
   std::string out;
-  for (size_t i = 0; i < aff.vars.size(); i++)
+  for (std::size_t i = 0; i < aff.vars.size(); i++)
   {
     if (i != 0)
       out.append(" + ");

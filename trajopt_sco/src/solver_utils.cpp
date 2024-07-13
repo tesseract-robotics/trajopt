@@ -17,7 +17,7 @@ void exprToEigen(const AffExpr& expr, Eigen::SparseVector<double>& sparse_vector
   std::vector<std::pair<int, double>> doublets;
   doublets.reserve(expr.size());
 
-  for (size_t i = 0; i < expr.size(); ++i)
+  for (std::size_t i = 0; i < expr.size(); ++i)
   {
     auto i_var_index = static_cast<int>(expr.vars[i].var_rep->index);
     if (i_var_index >= n_vars)
@@ -68,7 +68,7 @@ void exprToEigen(const QuadExpr& expr,
   thread_local std::vector<T, Eigen::aligned_allocator<T>> triplets;
   triplets.clear();
 
-  for (size_t i = 0; i < expr.coeffs.size(); ++i)
+  for (std::size_t i = 0; i < expr.coeffs.size(); ++i)
   {
     if (expr.coeffs[i] != 0.0)
     {
@@ -123,10 +123,10 @@ void exprToEigen(const AffExprVector& expr_vec,
 
   for (int i = 0; i < static_cast<int>(expr_vec.size()); ++i)
   {
-    const AffExpr& expr = expr_vec[static_cast<size_t>(i)];
+    const AffExpr& expr = expr_vec[static_cast<std::size_t>(i)];
     vector[i] = -expr.constant;
 
-    for (size_t j = 0; j < expr.size(); ++j)
+    for (std::size_t j = 0; j < expr.size(); ++j)
     {
       auto i_var_index = static_cast<int>(expr.vars[j].var_rep->index);
       if (i_var_index >= n_vars)
@@ -170,9 +170,9 @@ void eigenToTriplets(const Eigen::SparseMatrix<double>& sparse_matrix,
                      DblVec& values_ij)
 {
   const auto& sm = sparse_matrix;
-  rows_i.reserve(rows_i.size() + static_cast<size_t>(sm.nonZeros()));
-  cols_j.reserve(cols_j.size() + static_cast<size_t>(sm.nonZeros()));
-  values_ij.reserve(values_ij.size() + static_cast<size_t>(sm.nonZeros()));
+  rows_i.reserve(rows_i.size() + static_cast<std::size_t>(sm.nonZeros()));
+  cols_j.reserve(cols_j.size() + static_cast<std::size_t>(sm.nonZeros()));
+  values_ij.reserve(values_ij.size() + static_cast<std::size_t>(sm.nonZeros()));
   for (int k = 0; k < sm.outerSize(); ++k)
   {
     for (Eigen::SparseMatrix<double>::InnerIterator it(sm, k); it; ++it)

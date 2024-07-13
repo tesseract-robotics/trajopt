@@ -270,9 +270,9 @@ template <typename VecType>
 inline void setVec(DblVec& x, const VarVector& vars, const VecType& vals)
 {
   assert(vars.size() == vals.size());
-  for (size_t i = 0; i < vars.size(); ++i)
+  for (std::size_t i = 0; i < vars.size(); ++i)
   {
-    x[static_cast<size_t>(vars[i].var_rep->index)] = vals[i];
+    x[static_cast<std::size_t>(vars[i].var_rep->index)] = vals[i];
   }
 }
 template <typename OutVecType>
