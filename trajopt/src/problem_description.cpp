@@ -1224,10 +1224,10 @@ void JointVelTermInfo::hatch(TrajOptProb& prob)
 
   if (term_type == (TermType::TT_COST | TermType::TT_USE_TIME))
   {
-    auto num_vels = static_cast<size_t>(last_step - first_step);
+    auto num_vels = static_cast<std::size_t>(last_step - first_step);
 
     // Apply seperate cost to each joint b/c that is how the error function is currently written
-    for (size_t j = 0; j < n_dof; j++)
+    for (std::size_t j = 0; j < n_dof; j++)
     {
       // Get a vector of a single column of vars
       sco::VarVector joint_vars_vec = joint_vars.cblock(first_step, static_cast<int>(j), last_step - first_step + 1);
@@ -1263,10 +1263,10 @@ void JointVelTermInfo::hatch(TrajOptProb& prob)
   }
   else if (term_type == (TermType::TT_CNT | TermType::TT_USE_TIME))
   {
-    auto num_vels = static_cast<size_t>(last_step - first_step);
+    auto num_vels = static_cast<std::size_t>(last_step - first_step);
 
     // Apply seperate cnt to each joint b/c that is how the error function is currently written
-    for (size_t j = 0; j < n_dof; j++)
+    for (std::size_t j = 0; j < n_dof; j++)
     {
       // Get a vector of a single column of vars
       sco::VarVector joint_vars_vec = joint_vars.cblock(first_step, static_cast<int>(j), last_step - first_step + 1);
@@ -1635,24 +1635,24 @@ void CollisionTermInfo::fromJson(ProblemConstructionInfo& pci, const Json::Value
   json_marshal::childFromJson(params, coeffs, "coeffs");
   int n_terms = last_step - first_step + 1;
   if (coeffs.size() == 1)
-    coeffs = DblVec(static_cast<size_t>(n_terms), coeffs[0]);
+    coeffs = DblVec(static_cast<std::size_t>(n_terms), coeffs[0]);
   else if (static_cast<int>(coeffs.size()) != n_terms)
   {
     PRINT_AND_THROW(boost::format("wrong size: coeffs. expected %i got %i") % n_terms % coeffs.size());
   }
   json_marshal::childFromJson(params, dist_pen, "dist_pen");
   if (dist_pen.size() == 1)
-    dist_pen = DblVec(static_cast<size_t>(n_terms), dist_pen[0]);
+    dist_pen = DblVec(static_cast<std::size_t>(n_terms), dist_pen[0]);
   else if (static_cast<int>(dist_pen.size()) != n_terms)
   {
     PRINT_AND_THROW(boost::format("wrong size: dist_pen. expected %i got %i") % n_terms % dist_pen.size());
   }
 
   // Create Contact Distance Data for each timestep
-  info.reserve(static_cast<size_t>(n_terms));
+  info.reserve(static_cast<std::size_t>(n_terms));
   for (int i = first_step; i <= last_step; ++i)
   {
-    auto index = static_cast<size_t>(i - first_step);
+    auto index = static_cast<std::size_t>(i - first_step);
     auto data = std::make_shared<trajopt_common::SafetyMarginData>(dist_pen[index], coeffs[index]);
     info.push_back(data);
   }
@@ -1680,7 +1680,7 @@ void CollisionTermInfo::fromJson(ProblemConstructionInfo& pci, const Json::Value
       json_marshal::childFromJson(*it, pair_coeffs, "coeffs");
       if (pair_coeffs.size() == 1)
       {
-        pair_coeffs = DblVec(static_cast<size_t>(n_terms), pair_coeffs[0]);
+        pair_coeffs = DblVec(static_cast<std::size_t>(n_terms), pair_coeffs[0]);
       }
       else if (static_cast<int>(pair_coeffs.size()) != n_terms)
       {
@@ -1691,7 +1691,7 @@ void CollisionTermInfo::fromJson(ProblemConstructionInfo& pci, const Json::Value
       json_marshal::childFromJson(*it, pair_dist_pen, "dist_pen");
       if (pair_dist_pen.size() == 1)
       {
-        pair_dist_pen = DblVec(static_cast<size_t>(n_terms), pair_dist_pen[0]);
+        pair_dist_pen = DblVec(static_cast<std::size_t>(n_terms), pair_dist_pen[0]);
       }
       else if (static_cast<int>(pair_dist_pen.size()) != n_terms)
       {
@@ -1700,7 +1700,7 @@ void CollisionTermInfo::fromJson(ProblemConstructionInfo& pci, const Json::Value
 
       for (auto i = first_step; i <= last_step; ++i)
       {
-        auto index = static_cast<size_t>(i - first_step);
+        auto index = static_cast<std::size_t>(i - first_step);
         trajopt_common::SafetyMarginData::Ptr& data = info[index];
         for (const auto& p : pair)
         {
@@ -1764,7 +1764,7 @@ void CollisionTermInfo::hatch(TrajOptProb& prob)
 
         auto c = std::make_shared<CollisionCost>(prob.GetKin(),
                                                  prob.GetEnv(),
-                                                 info[static_cast<size_t>(i - first_step)],
+                                                 info[static_cast<std::size_t>(i - first_step)],
                                                  contact_test_type,
                                                  longest_valid_segment_length,
                                                  prob.GetVarRow(i, 0, n_dof),
@@ -1788,7 +1788,7 @@ void CollisionTermInfo::hatch(TrajOptProb& prob)
         {
           auto c = std::make_shared<CollisionCost>(prob.GetKin(),
                                                    prob.GetEnv(),
-                                                   info[static_cast<size_t>(i - first_step)],
+                                                   info[static_cast<std::size_t>(i - first_step)],
                                                    contact_test_type,
                                                    prob.GetVarRow(i, 0, n_dof),
                                                    expression_evaluator_type,
@@ -1836,7 +1836,7 @@ void CollisionTermInfo::hatch(TrajOptProb& prob)
 
         auto c = std::make_shared<CollisionConstraint>(prob.GetKin(),
                                                        prob.GetEnv(),
-                                                       info[static_cast<size_t>(i - first_step)],
+                                                       info[static_cast<std::size_t>(i - first_step)],
                                                        contact_test_type,
                                                        longest_valid_segment_length,
                                                        prob.GetVarRow(i, 0, n_dof),
@@ -1860,7 +1860,7 @@ void CollisionTermInfo::hatch(TrajOptProb& prob)
         {
           auto c = std::make_shared<CollisionConstraint>(prob.GetKin(),
                                                          prob.GetEnv(),
-                                                         info[static_cast<size_t>(i - first_step)],
+                                                         info[static_cast<std::size_t>(i - first_step)],
                                                          contact_test_type,
                                                          prob.GetVarRow(i, 0, n_dof),
                                                          expression_evaluator_type,

@@ -27,11 +27,11 @@ protected:
   SQP() = default;
 };
 
-void setupProblem(OptProb::Ptr& probptr, size_t nvars, ModelType convex_solver)
+void setupProblem(OptProb::Ptr& probptr, std::size_t nvars, ModelType convex_solver)
 {
   probptr = std::make_shared<OptProb>(convex_solver);
   vector<string> var_names;
-  for (size_t i = 0; i < nvars; ++i)
+  for (std::size_t i = 0; i < nvars; ++i)
   {
     var_names.push_back((boost::format("x_%i") % i).str());
   }
@@ -43,7 +43,7 @@ void expectAllNear(const DblVec& x, const DblVec& y, double abstol)
   EXPECT_EQ(x.size(), y.size());
   stringstream ss;
   LOG_INFO("checking %s ?= %s", CSTR(x), CSTR(y));
-  for (size_t i = 0; i < x.size(); ++i)
+  for (std::size_t i = 0; i < x.size(); ++i)
     EXPECT_NEAR(x[i], y[i], abstol);
 }
 
@@ -92,7 +92,7 @@ void testProblem(ScalarOfVector::Ptr f,
                  ModelType convex_solver)
 {
   OptProb::Ptr prob;
-  size_t n = init.size();
+  std::size_t n = init.size();
   assert(sol.size() == n);
   setupProblem(prob, n, convex_solver);
   prob->addCost(std::make_shared<CostFromFunc>(std::move(f), prob->getVars(), "f", true));

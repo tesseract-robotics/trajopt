@@ -179,7 +179,7 @@ TEST_F(CollisionUnit, GetSetBounds)  // NOLINT
     std::vector<ifopt::Bounds> bounds_vec = std::vector<ifopt::Bounds>(1, bounds);
     constraint_2->SetBounds(bounds_vec);
     std::vector<ifopt::Bounds> results_vec = constraint_2->GetBounds();
-    for (size_t i = 0; i < bounds_vec.size(); i++)
+    for (std::size_t i = 0; i < bounds_vec.size(); i++)
     {
       EXPECT_EQ(bounds_vec[i].lower_, results_vec[i].lower_);
       EXPECT_EQ(bounds_vec[i].upper_, results_vec[i].upper_);

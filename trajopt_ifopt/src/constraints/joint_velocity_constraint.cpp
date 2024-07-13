@@ -67,14 +67,14 @@ JointVelConstraint::JointVelConstraint(const Eigen::VectorXd& targets,
     throw std::runtime_error("JointVelConstraint, coeff must be the same size of the joint position.");
 
   // Set the bounds to the input targets
-  std::vector<ifopt::Bounds> bounds(static_cast<size_t>(GetRows()));
+  std::vector<ifopt::Bounds> bounds(static_cast<std::size_t>(GetRows()));
   // All of the positions should be exactly at their targets
   for (long j = 0; j < n_vars_ - 1; j++)
   {
     index_map_[position_vars_[static_cast<std::size_t>(j)]->GetName()] = j;
     for (long i = 0; i < n_dof_; i++)
     {
-      bounds[static_cast<size_t>(i + j * n_dof_)] = ifopt::Bounds(targets[i], targets[i]);
+      bounds[static_cast<std::size_t>(i + j * n_dof_)] = ifopt::Bounds(targets[i], targets[i]);
     }
   }
   index_map_[position_vars_.back()->GetName()] = (n_vars_ - 1);
@@ -90,7 +90,7 @@ Eigen::VectorXd JointVelConstraint::GetValues() const
   // vel(var[1, 1]) - represents the joint velocity of DOF index 1 at timestep 1
   //
   // Velocity V = vel(var[0, 0]), vel(var[0, 1]), vel(var[0, 2]), vel(var[1, 0]), vel(var[1, 1]), vel(var[1, 2]), etc
-  Eigen::VectorXd velocity(static_cast<size_t>(n_dof_) * (static_cast<size_t>(n_vars_) - 1));
+  Eigen::VectorXd velocity(static_cast<std::size_t>(n_dof_) * (static_cast<std::size_t>(n_vars_) - 1));
 
   // Forward differentiation for the first point
   for (std::size_t ind = 0; ind < position_vars_.size() - 1; ind++)

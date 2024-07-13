@@ -108,7 +108,7 @@ void OSQPModel::removeCnts(const CntVector& cnts)
 
 void OSQPModel::updateObjective()
 {
-  const size_t n = vars_.size();
+  const std::size_t n = vars_.size();
   osqp_data_.n = static_cast<c_int>(n);
 
   Eigen::SparseMatrix<double> sm;
@@ -133,8 +133,8 @@ void OSQPModel::updateObjective()
 
 void OSQPModel::updateConstraints()
 {
-  const size_t n = vars_.size();
-  const size_t m = cnts_.size();
+  const std::size_t n = vars_.size();
+  const std::size_t m = cnts_.size();
   const auto n_int = static_cast<Eigen::Index>(n);
   const auto m_int = static_cast<Eigen::Index>(m);
 
@@ -158,7 +158,7 @@ void OSQPModel::updateConstraints()
   }
 
   std::vector<Eigen::Index> new_inner_sizes(n);
-  for (size_t k = 0; k < n; ++k)
+  for (std::size_t k = 0; k < n; ++k)
   {
     new_inner_sizes[k] = sm.innerVector(static_cast<Eigen::Index>(k)).nonZeros() + 1;
   }

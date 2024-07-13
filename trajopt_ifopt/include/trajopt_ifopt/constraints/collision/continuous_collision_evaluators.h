@@ -43,7 +43,7 @@ TRAJOPT_IGNORE_WARNINGS_POP
 namespace trajopt_ifopt
 {
 using GetStateFn = std::function<tesseract_common::TransformMap(const Eigen::Ref<const Eigen::VectorXd>& joint_values)>;
-using CollisionCache = trajopt_common::Cache<size_t, std::shared_ptr<const trajopt_common::CollisionCacheData>>;
+using CollisionCache = trajopt_common::Cache<std::size_t, std::shared_ptr<const trajopt_common::CollisionCacheData>>;
 
 /**
  * @brief This collision evaluator operates on two states and checks for collision between the two states using a

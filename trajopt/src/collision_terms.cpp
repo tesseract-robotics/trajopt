@@ -606,7 +606,7 @@ void CollisionEvaluator::CalcDists(const DblVec& x, DblVec& dists)
   CollisionsToDistances(*dist_results, dists);
 }
 
-inline size_t hash(const DblVec& x) { return boost::hash_range(x.begin(), x.end()); }
+inline std::size_t hash(const DblVec& x) { return boost::hash_range(x.begin(), x.end()); }
 ContactResultVectorConstPtr CollisionEvaluator::GetContactResultVectorCached(const DblVec& x)
 {
   std::pair<ContactResultMapConstPtr, ContactResultVectorConstPtr> pair = GetContactResultCached(x);
@@ -622,7 +622,7 @@ ContactResultMapConstPtr CollisionEvaluator::GetContactResultMapCached(const Dbl
 std::pair<ContactResultMapConstPtr, ContactResultVectorConstPtr>
 CollisionEvaluator::GetContactResultCached(const DblVec& x)
 {
-  size_t key = hash(sco::getDblVec(x, GetVars()));
+  std::size_t key = hash(sco::getDblVec(x, GetVars()));
   auto* it = m_cache.get(key);
   if (it != nullptr)
   {

@@ -67,14 +67,14 @@ JointAccelConstraint::JointAccelConstraint(const Eigen::VectorXd& targets,
     throw std::runtime_error("JointAccelConstraint, coeff must be the same size of the joint postion.");
 
   // Set the bounds to the input targets
-  std::vector<ifopt::Bounds> bounds(static_cast<size_t>(GetRows()));
+  std::vector<ifopt::Bounds> bounds(static_cast<std::size_t>(GetRows()));
   // All of the positions should be exactly at their targets
   for (long j = 0; j < n_vars_; j++)
   {
     index_map_[position_vars_[static_cast<std::size_t>(j)]->GetName()] = j;
     for (long i = 0; i < n_dof_; i++)
     {
-      bounds[static_cast<size_t>(i + j * n_dof_)] = ifopt::Bounds(targets[i], targets[i]);
+      bounds[static_cast<std::size_t>(i + j * n_dof_)] = ifopt::Bounds(targets[i], targets[i]);
     }
   }
   bounds_ = bounds;
@@ -82,7 +82,7 @@ JointAccelConstraint::JointAccelConstraint(const Eigen::VectorXd& targets,
 
 Eigen::VectorXd JointAccelConstraint::GetValues() const
 {
-  Eigen::VectorXd acceleration(static_cast<size_t>(n_dof_) * position_vars_.size());
+  Eigen::VectorXd acceleration(static_cast<std::size_t>(n_dof_) * position_vars_.size());
   // Forward Diff
   for (std::size_t ind = 0; ind < position_vars_.size() - 2; ind++)
   {

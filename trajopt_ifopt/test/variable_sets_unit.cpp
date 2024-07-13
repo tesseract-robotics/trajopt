@@ -61,10 +61,10 @@ TEST(VariableSetsUnit, joint_position_1)  // NOLINT
 
   // Check that setting bounds works
   ifopt::Bounds bounds(-0.1234, 0.5678);
-  std::vector<ifopt::Bounds> bounds_vec = std::vector<ifopt::Bounds>(static_cast<size_t>(init.size()), bounds);
+  std::vector<ifopt::Bounds> bounds_vec = std::vector<ifopt::Bounds>(static_cast<std::size_t>(init.size()), bounds);
   position_var.SetBounds(bounds_vec);
   std::vector<ifopt::Bounds> results_vec = position_var.GetBounds();
-  for (size_t i = 0; i < bounds_vec.size(); i++)
+  for (std::size_t i = 0; i < bounds_vec.size(); i++)
   {
     EXPECT_EQ(bounds_vec[i].lower_, results_vec[i].lower_);
     EXPECT_EQ(bounds_vec[i].upper_, results_vec[i].upper_);

@@ -9,7 +9,7 @@ std::string Str_impl(const std::vector<T>& x)
   ss << "(";
   if (!x.empty())
     ss << x[0];
-  for (size_t i = 1; i < x.size(); ++i)
+  for (std::size_t i = 1; i < x.size(); ++i)
     ss << ", " << x[i];
   ss << ")";
   return ss.str();

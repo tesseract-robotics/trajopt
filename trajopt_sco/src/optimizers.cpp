@@ -93,7 +93,7 @@ void BasicTrustRegionSQP::setTrustBoxConstraints(const DblVec& x)
   assert(vars.size() == x.size());
   const DblVec &lb = prob_->getLowerBounds(), ub = prob_->getUpperBounds();
   DblVec lbtrust(x.size()), ubtrust(x.size());
-  for (size_t i = 0; i < x.size(); ++i)
+  for (std::size_t i = 0; i < x.size(); ++i)
   {
     lbtrust[i] = fmax(x[i] - param_.trust_box_size, lb[i]);
     ubtrust[i] = fmin(x[i] + param_.trust_box_size, ub[i]);
@@ -108,7 +108,7 @@ void BasicTrustRegionSQP::setTrustBoxConstraints(const DblVec& x)
 DblVec BasicTrustRegionSQP::evaluateCosts(const std::vector<Cost::Ptr>& costs, const DblVec& x) const
 {
   DblVec out(costs.size());
-  for (size_t i = 0; i < costs.size(); ++i)
+  for (std::size_t i = 0; i < costs.size(); ++i)
     out[i] = costs[i]->value(x);
 
   return out;
@@ -117,7 +117,7 @@ DblVec BasicTrustRegionSQP::evaluateCosts(const std::vector<Cost::Ptr>& costs, c
 DblVec BasicTrustRegionSQP::evaluateConstraintViols(const std::vector<Constraint::Ptr>& cnts, const DblVec& x) const
 {
   DblVec out(cnts.size());
-  for (size_t i = 0; i < cnts.size(); ++i)
+  for (std::size_t i = 0; i < cnts.size(); ++i)
     out[i] = cnts[i]->violation(x);
 
   return out;
@@ -128,7 +128,7 @@ std::vector<ConvexObjective::Ptr> BasicTrustRegionSQP::convexifyCosts(const std:
                                                                       Model* model) const
 {
   std::vector<ConvexObjective::Ptr> out(costs.size());
-  for (size_t i = 0; i < costs.size(); ++i)
+  for (std::size_t i = 0; i < costs.size(); ++i)
     out[i] = costs[i]->convex(x, model);
 
   return out;
@@ -139,7 +139,7 @@ std::vector<ConvexConstraints::Ptr> BasicTrustRegionSQP::convexifyConstraints(co
                                                                               Model* model) const
 {
   std::vector<ConvexConstraints::Ptr> out(cnts.size());
-  for (size_t i = 0; i < cnts.size(); ++i)
+  for (std::size_t i = 0; i < cnts.size(); ++i)
     out[i] = cnts[i]->convex(x, model);
 
   return out;
@@ -148,7 +148,7 @@ std::vector<ConvexConstraints::Ptr> BasicTrustRegionSQP::convexifyConstraints(co
 DblVec BasicTrustRegionSQP::evaluateModelCosts(const std::vector<ConvexObjective::Ptr>& costs, const DblVec& x) const
 {
   DblVec out(costs.size());
-  for (size_t i = 0; i < costs.size(); ++i)
+  for (std::size_t i = 0; i < costs.size(); ++i)
     out[i] = costs[i]->value(x);
 
   return out;
@@ -158,7 +158,7 @@ DblVec BasicTrustRegionSQP::evaluateModelCntViols(const std::vector<ConvexConstr
                                                   const DblVec& x) const
 {
   DblVec out(cnts.size());
-  for (size_t i = 0; i < cnts.size(); ++i)
+  for (std::size_t i = 0; i < cnts.size(); ++i)
     out[i] = cnts[i]->violation(x);
 
   return out;
@@ -167,7 +167,7 @@ DblVec BasicTrustRegionSQP::evaluateModelCntViols(const std::vector<ConvexConstr
 std::vector<std::string> BasicTrustRegionSQP::getCostNames(const std::vector<Cost::Ptr>& costs) const
 {
   std::vector<std::string> out(costs.size());
-  for (size_t i = 0; i < costs.size(); ++i)
+  for (std::size_t i = 0; i < costs.size(); ++i)
     out[i] = costs[i]->name();
 
   return out;
@@ -176,7 +176,7 @@ std::vector<std::string> BasicTrustRegionSQP::getCostNames(const std::vector<Cos
 std::vector<std::string> BasicTrustRegionSQP::getCntNames(const std::vector<Constraint::Ptr>& cnts) const
 {
   std::vector<std::string> out(cnts.size());
-  for (size_t i = 0; i < cnts.size(); ++i)
+  for (std::size_t i = 0; i < cnts.size(); ++i)
     out[i] = cnts[i]->name();
   return out;
 }
@@ -375,7 +375,7 @@ void BasicTrustRegionSQPResults::print() const
               "dexact",
               "ratio");
   std::printf("| %s | COSTS\n", std::string(88, '-').c_str());
-  for (size_t i = 0; i < old_cost_vals.size(); ++i)
+  for (std::size_t i = 0; i < old_cost_vals.size(); ++i)
   {
     double approx_improve = old_cost_vals[i] - model_cost_vals[i];
     double exact_improve = old_cost_vals[i] - new_cost_vals[i];
@@ -414,7 +414,7 @@ void BasicTrustRegionSQPResults::print() const
   if (!cnt_names.empty())
   {
     std::printf("| %s | CONSTRAINTS\n", std::string(88, '-').c_str());
-    for (size_t i = 0; i < old_cnt_viols.size(); ++i)
+    for (std::size_t i = 0; i < old_cnt_viols.size(); ++i)
     {
       double approx_improve = old_cnt_viols[i] - model_cnt_viols[i];
       double exact_improve = old_cnt_viols[i] - new_cnt_viols[i];
@@ -508,14 +508,14 @@ void BasicTrustRegionSQPResults::writeCosts(std::FILE* stream, bool header) cons
     std::fprintf(stream, "\n");
 
     std::fprintf(stream, "%s", "DESCRIPTION");
-    for (size_t i = 0; i < cost_names.size(); ++i)
+    for (std::size_t i = 0; i < cost_names.size(); ++i)
       std::fprintf(stream, ",%s,%s,%s,%s", "oldexact", "dapprox", "dexact", "ratio");
 
     std::fprintf(stream, "\n");
   }
 
   std::fprintf(stream, "%s", "COSTS");
-  for (size_t i = 0; i < old_cost_vals.size(); ++i)
+  for (std::size_t i = 0; i < old_cost_vals.size(); ++i)
   {
     double approx_improve = old_cost_vals[i] - model_cost_vals[i];
     double exact_improve = old_cost_vals[i] - new_cost_vals[i];
@@ -544,14 +544,14 @@ void BasicTrustRegionSQPResults::writeConstraints(std::FILE* stream, bool header
     std::fprintf(stream, "\n");
 
     std::fprintf(stream, "%s", "DESCRIPTION");
-    for (size_t i = 0; i < cnt_names.size(); ++i)
+    for (std::size_t i = 0; i < cnt_names.size(); ++i)
       std::fprintf(stream, ",%s,%s,%s,%s", "oldexact", "dapprox", "dexact", "ratio");
 
     std::fprintf(stream, "\n");
   }
 
   std::fprintf(stream, "%s", "CONSTRAINTS");
-  for (size_t i = 0; i < old_cnt_viols.size(); ++i)
+  for (std::size_t i = 0; i < old_cnt_viols.size(); ++i)
   {
     double approx_improve = old_cnt_viols[i] - model_cnt_viols[i];
     double exact_improve = old_cnt_viols[i] - new_cnt_viols[i];

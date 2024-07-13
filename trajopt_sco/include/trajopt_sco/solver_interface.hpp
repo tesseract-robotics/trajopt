@@ -140,7 +140,7 @@ struct Var
   double value(const DblVec& x) const
   {
     assert(var_rep->index < x.size());
-    return x[static_cast<size_t>(var_rep->index)];
+    return x[static_cast<std::size_t>(var_rep->index)];
   }
 };
 
@@ -195,7 +195,7 @@ struct AffExpr
   explicit AffExpr(double a);
   explicit AffExpr(const Var& v);
 
-  size_t size() const;
+  std::size_t size() const;
   double value(const double* x) const;
   double value(const DblVec& x) const;
 };
@@ -212,7 +212,7 @@ struct QuadExpr
   explicit QuadExpr(double a);
   explicit QuadExpr(const Var& v);
   explicit QuadExpr(AffExpr aff);
-  size_t size() const;
+  std::size_t size() const;
   double value(const double* x) const;
   double value(const DblVec& x) const;
 };

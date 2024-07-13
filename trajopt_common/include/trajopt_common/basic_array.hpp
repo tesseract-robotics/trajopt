@@ -26,7 +26,7 @@ struct BasicArray
   {
     m_nRow = nRow;
     m_nCol = nCol;
-    m_data.resize(static_cast<size_t>(m_nRow) * static_cast<size_t>(m_nCol));
+    m_data.resize(static_cast<std::size_t>(m_nRow) * static_cast<std::size_t>(m_nCol));
   }
 
   int rows() const { return m_nRow; }
@@ -47,19 +47,19 @@ struct BasicArray
   }
   std::vector<T> rblock(int startRow, int startCol, int nCol) const
   {
-    std::vector<T> out(static_cast<size_t>(nCol));
+    std::vector<T> out(static_cast<std::size_t>(nCol));
     for (int iCol = 0; iCol < nCol; ++iCol)
     {
-      out[static_cast<size_t>(iCol)] = at(startRow, iCol + startCol);
+      out[static_cast<std::size_t>(iCol)] = at(startRow, iCol + startCol);
     }
     return out;
   }
   std::vector<T> cblock(int startRow, int startCol, int nRow) const
   {
-    std::vector<T> out(static_cast<size_t>(nRow));
+    std::vector<T> out(static_cast<std::size_t>(nRow));
     for (int iRow = 0; iRow < nRow; ++iRow)
     {
-      out[static_cast<size_t>(iRow)] = at(iRow + startRow, startCol);
+      out[static_cast<std::size_t>(iRow)] = at(iRow + startRow, startCol);
     }
     return out;
   }
@@ -80,19 +80,19 @@ struct BasicArray
   BasicArray bottomRows(int n) { return middleRows(m_nRow - n, n); }
   const T& at(int row, int col) const
   {
-    return m_data.at(static_cast<size_t>(row) * static_cast<size_t>(m_nCol) + static_cast<size_t>(col));
+    return m_data.at(static_cast<std::size_t>(row) * static_cast<std::size_t>(m_nCol) + static_cast<std::size_t>(col));
   }
   T& at(int row, int col)
   {
-    return m_data.at(static_cast<size_t>(row) * static_cast<size_t>(m_nCol) + static_cast<size_t>(col));
+    return m_data.at(static_cast<std::size_t>(row) * static_cast<std::size_t>(m_nCol) + static_cast<std::size_t>(col));
   }
   const T& operator()(int row, int col) const
   {
-    return m_data.at(static_cast<size_t>(row) * static_cast<size_t>(m_nCol) + static_cast<size_t>(col));
+    return m_data.at(static_cast<std::size_t>(row) * static_cast<std::size_t>(m_nCol) + static_cast<std::size_t>(col));
   }
   T& operator()(int row, int col)
   {
-    return m_data.at(static_cast<size_t>(row) * static_cast<size_t>(m_nCol) + static_cast<size_t>(col));
+    return m_data.at(static_cast<std::size_t>(row) * static_cast<std::size_t>(m_nCol) + static_cast<std::size_t>(col));
   }
   std::vector<T> col(int col)
   {
@@ -106,7 +106,7 @@ struct BasicArray
   std::vector<T> row(int row)
   {
     std::vector<T> out;
-    out.reserve(static_cast<size_t>(m_nCol));
+    out.reserve(static_cast<std::size_t>(m_nCol));
     for (int col = 0; col < m_nCol; col++)
       out.push_back(at(row, col));
     return out;
