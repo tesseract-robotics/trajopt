@@ -1,12 +1,14 @@
 #ifndef TRAJOPT_SQP_FWD_H
 #define TRAJOPT_SQP_FWD_H
 
+#include <cstdint>
+
 namespace trajopt_sqp
 {
 // types.h
-enum class ConstraintType;
-enum class CostPenaltyType;
-enum class SQPStatus;
+enum class ConstraintType : std::uint8_t;
+enum class CostPenaltyType : std::uint8_t;
+enum class SQPStatus : std::uint8_t;
 struct SQPParameters;
 struct SQPResults;
 
@@ -19,7 +21,7 @@ struct QuadExprs;
 class QPProblem;
 
 // qp_solver.h
-enum class QPSolverStatus;
+enum class QPSolverStatus : std::uint8_t;
 class QPSolver;
 
 // osqp_eigen_solver.h

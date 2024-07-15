@@ -46,7 +46,7 @@ struct CartPosInfo
   using Ptr = std::shared_ptr<CartPosInfo>;
   using ConstPtr = std::shared_ptr<const CartPosInfo>;
 
-  enum class Type
+  enum class Type : std::uint8_t
   {
     TARGET_ACTIVE,
     SOURCE_ACTIVE,

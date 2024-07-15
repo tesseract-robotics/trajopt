@@ -809,7 +809,7 @@ void CollisionEvaluator::removeInvalidContactResults(tesseract_collision::Contac
                                                      const std::array<double, 2>& pair_data) const
 {
   auto end = std::remove_if(
-      contact_results.begin(), contact_results.end(), [=, &pair_data](const tesseract_collision::ContactResult& r) {
+      contact_results.begin(), contact_results.end(), [this, &pair_data](const tesseract_collision::ContactResult& r) {
         switch (evaluator_type_)
         {
           case CollisionExpressionEvaluatorType::START_FREE_END_FREE:
@@ -1010,7 +1010,7 @@ void SingleTimestepCollisionEvaluator::Plot(const std::shared_ptr<tesseract_visu
     }
   }
 
-  auto margin_fn = [=](const std::string& link1, const std::string& link2) {
+  auto margin_fn = [this](const std::string& link1, const std::string& link2) {
     return getSafetyMarginData()->getPairSafetyMarginData(link1, link2)[0];
   };
 
@@ -1256,7 +1256,7 @@ void DiscreteCollisionEvaluator::Plot(const std::shared_ptr<tesseract_visualizat
     }
   }
 
-  auto margin_fn = [=](const std::string& link1, const std::string& link2) {
+  auto margin_fn = [this](const std::string& link1, const std::string& link2) {
     return getSafetyMarginData()->getPairSafetyMarginData(link1, link2)[0];
   };
 
@@ -1508,7 +1508,7 @@ void CastCollisionEvaluator::Plot(const std::shared_ptr<tesseract_visualization:
     }
   }
 
-  auto margin_fn = [=](const std::string& link1, const std::string& link2) {
+  auto margin_fn = [this](const std::string& link1, const std::string& link2) {
     return getSafetyMarginData()->getPairSafetyMarginData(link1, link2)[0];
   };
 

@@ -3,6 +3,7 @@
 #include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <cassert>
+#include <cstdint>
 #include <iosfwd>
 #include <string>
 #include <vector>
@@ -14,7 +15,7 @@ TRAJOPT_IGNORE_WARNINGS_POP
 namespace Json
 {
 class Value;
-}
+}  // namespace Json
 
 /**
 @file solver_interface.hpp
@@ -28,7 +29,7 @@ backends.
 
 namespace sco
 {
-enum ConstraintType
+enum ConstraintType : std::uint8_t
 {
   EQ,
   INEQ
@@ -36,7 +37,7 @@ enum ConstraintType
 
 using ConstraintTypeVector = std::vector<ConstraintType>;
 
-enum CvxOptStatus
+enum CvxOptStatus : std::uint8_t
 {
   CVX_SOLVED,
   CVX_INFEASIBLE,
@@ -225,7 +226,7 @@ std::ostream& operator<<(std::ostream&, const QuadExpr&);
 class ModelType
 {
 public:
-  enum Value
+  enum Value : std::uint8_t
   {
     GUROBI,
     OSQP,

@@ -1,12 +1,13 @@
 #pragma once
 #include <trajopt_common/macros.h>
+#include <cstdint>
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <cstdio>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace trajopt_common
 {
-enum LogLevel
+enum LogLevel : std::uint8_t
 {
   LevelFatal = 0,
   LevelError = 1,

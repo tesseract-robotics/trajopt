@@ -216,7 +216,7 @@ std::ostream& operator<<(std::ostream& os, const ModelType& cs)
   if (cs_ivalue_ > ModelType::MODEL_NAMES_.size())
   {
     std::stringstream conversion_error;
-    conversion_error << "Error converting ModelType to string - " << "enum value is " << cs_ivalue_ << std::endl;
+    conversion_error << "Error converting ModelType to string - " << "enum value is " << cs_ivalue_ << '\n';
     throw std::runtime_error(conversion_error.str());
   }
   os << ModelType::MODEL_NAMES_[cs_ivalue_];
@@ -301,7 +301,7 @@ Model::Ptr createModel(ModelType model_type, const ModelConfig::ConstPtr& model_
   extern Model::Ptr createqpOASESModel();
 #endif
 
-  char* solver_env = getenv("TRAJOPT_CONVEX_SOLVER");
+  const char* solver_env = getenv("TRAJOPT_CONVEX_SOLVER");
 
   ModelType solver = model_type;
 
@@ -358,7 +358,7 @@ Model::Ptr createModel(ModelType model_type, const ModelConfig::ConstPtr& model_
     return createqpOASESModel();
 #endif
   std::stringstream solver_instatiation_error;
-  solver_instatiation_error << "Failed to create solver: unknown solver " << solver << std::endl;
+  solver_instatiation_error << "Failed to create solver: unknown solver " << solver << '\n';
   PRINT_AND_THROW(solver_instatiation_error.str());
   return {};
 }
