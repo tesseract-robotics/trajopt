@@ -2,6 +2,7 @@
 #include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <array>
+#include <cstdint>
 #include <functional>
 #include <string>
 TRAJOPT_IGNORE_WARNINGS_POP
@@ -14,7 +15,7 @@ TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace sco
 {
-enum OptStatus
+enum OptStatus : std::uint8_t
 {
   OPT_CONVERGED,
   OPT_SCO_ITERATION_LIMIT,  // hit iteration limit before convergence

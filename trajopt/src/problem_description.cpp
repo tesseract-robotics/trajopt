@@ -243,7 +243,7 @@ void ProblemConstructionInfo::readInitInfo(const Json::Value& v)
     for (int i = 0; i < n_steps; ++i)
     {
       DblVec row;
-      json_marshal::fromJsonArray(vdata[i], row, static_cast<int>(n_dof));
+      json_marshal::fromJsonArray(vdata[i], row, n_dof);
       init_info.data.row(i) = trajopt_common::toVectorXd(row);
     }
   }

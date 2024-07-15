@@ -10,7 +10,7 @@ TRAJOPT_IGNORE_WARNINGS_POP
 namespace Json
 {
 class Value;
-}
+}  // namespace Json
 
 namespace json_marshal
 {

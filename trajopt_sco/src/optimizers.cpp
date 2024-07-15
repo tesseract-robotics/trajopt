@@ -20,12 +20,12 @@ const bool SUPER_DEBUG_MODE = false;
 
 std::ostream& operator<<(std::ostream& o, const OptResults& r)
 {
-  o << "Optimization results:" << std::endl
-    << "status: " << statusToString(r.status) << std::endl
-    << "cost values: " << trajopt_common::Str(r.cost_vals) << std::endl
-    << "constraint violations: " << trajopt_common::Str(r.cnt_viols) << std::endl
-    << "n func evals: " << r.n_func_evals << std::endl
-    << "n qp solves: " << r.n_qp_solves << std::endl;
+  o << "Optimization results:" << '\n'
+    << "status: " << statusToString(r.status) << '\n'
+    << "cost values: " << trajopt_common::Str(r.cost_vals) << '\n'
+    << "constraint violations: " << trajopt_common::Str(r.cnt_viols) << '\n'
+    << "n func evals: " << r.n_func_evals << '\n'
+    << "n qp solves: " << r.n_qp_solves << '\n';
   return o;
 }
 

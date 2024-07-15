@@ -51,39 +51,39 @@ SQPResults::SQPResults(Eigen::Index num_vars, Eigen::Index num_cnts, Eigen::Inde
 void SQPResults::print() const
 {
   Eigen::IOFormat format(3);
-  std::cout << "-------------- SQPResults::print() --------------" << std::endl;
-  std::cout << "best_exact_merit: " << best_exact_merit << std::endl;
-  std::cout << "new_exact_merit: " << new_exact_merit << std::endl;
-  std::cout << "best_approx_merit: " << best_approx_merit << std::endl;
-  std::cout << "new_approx_merit: " << new_approx_merit << std::endl;
+  std::cout << "-------------- SQPResults::print() --------------" << '\n';
+  std::cout << "best_exact_merit: " << best_exact_merit << '\n';
+  std::cout << "new_exact_merit: " << new_exact_merit << '\n';
+  std::cout << "best_approx_merit: " << best_approx_merit << '\n';
+  std::cout << "new_approx_merit: " << new_approx_merit << '\n';
 
   // NOLINTNEXTLINE
-  std::cout << "best_var_vals: " << best_var_vals.transpose().format(format) << std::endl;
-  std::cout << "new_var_vals: " << new_var_vals.transpose().format(format) << std::endl;
+  std::cout << "best_var_vals: " << best_var_vals.transpose().format(format) << '\n';
+  std::cout << "new_var_vals: " << new_var_vals.transpose().format(format) << '\n';
 
-  std::cout << "approx_merit_improve: " << approx_merit_improve << std::endl;
-  std::cout << "exact_merit_improve: " << exact_merit_improve << std::endl;
-  std::cout << "merit_improve_ratio: " << merit_improve_ratio << std::endl;
+  std::cout << "approx_merit_improve: " << approx_merit_improve << '\n';
+  std::cout << "exact_merit_improve: " << exact_merit_improve << '\n';
+  std::cout << "merit_improve_ratio: " << merit_improve_ratio << '\n';
 
-  std::cout << "box_size: " << box_size.transpose().format(format) << std::endl;
-  std::cout << "merit_error_coeffs: " << merit_error_coeffs.transpose().format(format) << std::endl;
+  std::cout << "box_size: " << box_size.transpose().format(format) << '\n';
+  std::cout << "merit_error_coeffs: " << merit_error_coeffs.transpose().format(format) << '\n';
 
-  std::cout << "best_constraint_violations: " << best_constraint_violations.transpose().format(format) << std::endl;
-  std::cout << "new_constraint_violations: " << new_constraint_violations.transpose().format(format) << std::endl;
+  std::cout << "best_constraint_violations: " << best_constraint_violations.transpose().format(format) << '\n';
+  std::cout << "new_constraint_violations: " << new_constraint_violations.transpose().format(format) << '\n';
   std::cout << "best_approx_constraint_violations: " << best_approx_constraint_violations.transpose().format(format)
-            << std::endl;
+            << '\n';
   std::cout << "new_approx_constraint_violations: " << new_approx_constraint_violations.transpose().format(format)
-            << std::endl;
+            << '\n';
 
-  std::cout << "best_costs: " << best_costs.transpose().format(format) << std::endl;
-  std::cout << "new_costs: " << new_costs.transpose().format(format) << std::endl;
-  std::cout << "best_approx_costs: " << best_approx_costs.transpose().format(format) << std::endl;
-  std::cout << "new_approx_costs: " << new_approx_costs.transpose().format(format) << std::endl;
+  std::cout << "best_costs: " << best_costs.transpose().format(format) << '\n';
+  std::cout << "new_costs: " << new_costs.transpose().format(format) << '\n';
+  std::cout << "best_approx_costs: " << best_approx_costs.transpose().format(format) << '\n';
+  std::cout << "new_approx_costs: " << new_approx_costs.transpose().format(format) << '\n';
 
-  std::cout << "penalty_iteration: " << penalty_iteration << std::endl;
-  std::cout << "convexify_iteration: " << convexify_iteration << std::endl;
-  std::cout << "trust_region_iteration: " << trust_region_iteration << std::endl;
-  std::cout << "overall_iteration: " << overall_iteration << std::endl;
+  std::cout << "penalty_iteration: " << penalty_iteration << '\n';
+  std::cout << "convexify_iteration: " << convexify_iteration << '\n';
+  std::cout << "trust_region_iteration: " << trust_region_iteration << '\n';
+  std::cout << "overall_iteration: " << overall_iteration << '\n';
 }
 
 }  // namespace trajopt_sqp

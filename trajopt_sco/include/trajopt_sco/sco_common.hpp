@@ -2,6 +2,7 @@
 #include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <algorithm>
+#include <cassert>
 #include <cmath>
 #include <vector>
 TRAJOPT_IGNORE_WARNINGS_POP

@@ -31,7 +31,7 @@
 namespace OsqpEigen
 {
 class Solver;
-}
+}  // namespace OsqpEigen
 
 namespace trajopt_sqp
 {

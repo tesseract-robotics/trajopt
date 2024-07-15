@@ -88,9 +88,9 @@ void WriteFile(const std::shared_ptr<std::ofstream>& file,
       *file << ',' << constraint;
     }
 
-    *file << std::endl;
+    *file << '\n';
   }
-  *file << std::endl;
+  *file << '\n' << std::flush;
 }  // namespace trajopt
 
 std::function<void(sco::OptProb*, sco::OptResults&)> WriteCallback(std::shared_ptr<std::ofstream> file,
@@ -133,7 +133,7 @@ std::function<void(sco::OptProb*, sco::OptResults&)> WriteCallback(std::shared_p
     *file << ',' << cnt->name();
   }
 
-  *file << std::endl;
+  *file << '\n' << std::flush;
 
   // return callback function
   return [file, capture0 = prob->GetKin(), &capture1 = prob->GetVars()](auto&&, auto&& PH2) {
