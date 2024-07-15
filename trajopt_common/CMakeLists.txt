@@ -26,7 +26,6 @@ set(UTILS_SOURCE_FILES
     src/clock.cpp
     src/collision_types.cpp
     src/collision_utils.cpp
-    src/config.cpp
     src/logging.cpp
     src/utils.cpp)
 

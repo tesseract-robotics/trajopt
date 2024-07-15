@@ -517,42 +517,42 @@ void TrajOptQPProblem::Implementation::print() const
 {
   Eigen::IOFormat format(3);
 
-  std::cout << "-------------- QPProblem::print() --------------" << std::endl;
-  std::cout << "Num NLP Vars: " << getNumNLPVars() << std::endl;
-  std::cout << "Num QP Vars: " << num_qp_vars_ << std::endl;
-  std::cout << "Num NLP Constraints: " << num_qp_cnts_ << std::endl;
+  std::cout << "-------------- QPProblem::print() --------------" << '\n';
+  std::cout << "Num NLP Vars: " << getNumNLPVars() << '\n';
+  std::cout << "Num QP Vars: " << num_qp_vars_ << '\n';
+  std::cout << "Num NLP Constraints: " << num_qp_cnts_ << '\n';
   std::cout << "Detected Constraint Type: ";
   for (const auto& cnt : constraint_types_)
     std::cout << static_cast<int>(cnt) << ", ";
 
-  std::cout << std::endl;
-  std::cout << "Box Size: " << box_size_.transpose().format(format) << std::endl;  // NOLINT
-  std::cout << "Constraint Merit Coeff: " << constraint_merit_coeff_.transpose().format(format) << std::endl;
+  std::cout << '\n';
+  std::cout << "Box Size: " << box_size_.transpose().format(format) << '\n';  // NOLINT
+  std::cout << "Constraint Merit Coeff: " << constraint_merit_coeff_.transpose().format(format) << '\n';
 
-  std::cout << "Hessian:\n" << hessian_.toDense().format(format) << std::endl;
-  std::cout << "Gradient: " << gradient_.transpose().format(format) << std::endl;
-  std::cout << "Constraint Matrix:\n" << constraint_matrix_.toDense().format(format) << std::endl;
+  std::cout << "Hessian:\n" << hessian_.toDense().format(format) << '\n';
+  std::cout << "Gradient: " << gradient_.transpose().format(format) << '\n';
+  std::cout << "Constraint Matrix:\n" << constraint_matrix_.toDense().format(format) << '\n';
   std::cout << "Constraint Lower Bounds: "
             << bounds_lower_.head(getNumNLPConstraints() + hinge_constraints_.GetRows()).transpose().format(format)
-            << std::endl;
+            << '\n';
   std::cout << "Constraint Upper Bounds: "
             << bounds_upper_.head(getNumNLPConstraints() + hinge_constraints_.GetRows()).transpose().format(format)
-            << std::endl;
+            << '\n';
   std::cout << "Variable Lower Bounds: "
             << bounds_lower_.tail(bounds_lower_.rows() - getNumNLPConstraints() - hinge_constraints_.GetRows())
                    .transpose()
                    .format(format)
-            << std::endl;
+            << '\n';
   std::cout << "Variable Upper Bounds: "
             << bounds_upper_.tail(bounds_upper_.rows() - getNumNLPConstraints() - hinge_constraints_.GetRows())
                    .transpose()
                    .format(format)
-            << std::endl;
-  std::cout << "All Lower Bounds: " << bounds_lower_.transpose().format(format) << std::endl;
-  std::cout << "All Upper Bounds: " << bounds_upper_.transpose().format(format) << std::endl;
-  std::cout << "NLP values: " << std::endl;
+            << '\n';
+  std::cout << "All Lower Bounds: " << bounds_lower_.transpose().format(format) << '\n';
+  std::cout << "All Upper Bounds: " << bounds_upper_.transpose().format(format) << '\n';
+  std::cout << "NLP values: " << '\n';
   for (const auto& v_set : variables_->GetComponents())
-    std::cout << v_set->GetValues().transpose().format(format) << std::endl;
+    std::cout << v_set->GetValues().transpose().format(format) << '\n';
 }
 
 Eigen::Index TrajOptQPProblem::Implementation::getNumNLPVars() const { return variables_->GetRows(); }

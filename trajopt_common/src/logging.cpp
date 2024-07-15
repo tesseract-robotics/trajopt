@@ -14,7 +14,7 @@ int LoggingInit()
 {
   const char* VALID_THRESH_VALUES = "FATAL ERROR WARN INFO DEBUG TRACE";
 
-  char* lvlc = getenv("TRAJOPT_LOG_THRESH");
+  const char* lvlc = getenv("TRAJOPT_LOG_THRESH");
   std::string lvlstr;
   if (lvlc == nullptr)
   {

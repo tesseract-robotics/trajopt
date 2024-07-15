@@ -16,7 +16,7 @@ TRAJOPT_IGNORE_WARNINGS_POP
 namespace sco
 {
 struct OptResults;
-}
+}  // namespace sco
 
 namespace trajopt
 {
@@ -169,7 +169,7 @@ struct InitInfo
 
     In all cases the dt column (if present) is appended the selected method is defined.
  */
-  enum Type
+  enum Type : std::uint8_t
   {
     STATIONARY,
     JOINT_INTERPOLATED,
@@ -581,7 +581,7 @@ struct JointJerkTermInfo : public TermInfo
   JointJerkTermInfo() : TermInfo(TermType::TT_COST | TermType::TT_CNT) {}
 };
 
-enum class CollisionEvaluatorType
+enum class CollisionEvaluatorType : std::uint8_t
 {
   SINGLE_TIMESTEP = 0,
   DISCRETE_CONTINUOUS = 1,

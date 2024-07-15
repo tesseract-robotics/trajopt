@@ -39,7 +39,7 @@ CollisionPlottingCallback::CollisionPlottingCallback(std::shared_ptr<tesseract_v
 
 void CollisionPlottingCallback::plot(const QPProblem& /*problem*/)  // NOLINT Remove after implementation
 {
-  std::cout << "Collision plotting has not been implemented. PRs welcome" << std::endl;
+  std::cout << "Collision plotting has not been implemented. PRs welcome" << '\n';
 }
 
 void CollisionPlottingCallback::addConstraintSet(

@@ -33,7 +33,7 @@
 namespace ifopt
 {
 class Problem;
-}
+}  // namespace ifopt
 
 namespace trajopt_sqp
 {

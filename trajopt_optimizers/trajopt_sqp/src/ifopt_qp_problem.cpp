@@ -501,23 +501,23 @@ void IfoptQPProblem::print() const
 {
   Eigen::IOFormat format(3);
 
-  std::cout << "-------------- QPProblem::print() --------------" << std::endl;
-  std::cout << "Num NLP Vars: " << num_nlp_vars_ << std::endl;
-  std::cout << "Num QP Vars: " << num_qp_vars_ << std::endl;
-  std::cout << "Num NLP Constraints: " << num_qp_cnts_ << std::endl;
+  std::cout << "-------------- QPProblem::print() --------------" << '\n';
+  std::cout << "Num NLP Vars: " << num_nlp_vars_ << '\n';
+  std::cout << "Num QP Vars: " << num_qp_vars_ << '\n';
+  std::cout << "Num NLP Constraints: " << num_qp_cnts_ << '\n';
   std::cout << "Detected Constraint Type: ";
   for (const auto& cnt : constraint_types_)
     std::cout << static_cast<int>(cnt) << ", ";
 
-  std::cout << std::endl;
-  std::cout << "box_size_: " << box_size_.transpose().format(format) << std::endl;  // NOLINT
-  std::cout << "constraint_merit_coeff_: " << constraint_merit_coeff_.transpose().format(format) << std::endl;
+  std::cout << '\n';
+  std::cout << "box_size_: " << box_size_.transpose().format(format) << '\n';  // NOLINT
+  std::cout << "constraint_merit_coeff_: " << constraint_merit_coeff_.transpose().format(format) << '\n';
 
-  std::cout << "Hessian:\n" << hessian_.toDense().format(format) << std::endl;
-  std::cout << "Gradient: " << gradient_.transpose().format(format) << std::endl;
-  std::cout << "Constraint Matrix:\n" << constraint_matrix_.toDense().format(format) << std::endl;
-  std::cout << "bounds_lower: " << bounds_lower_.transpose().format(format) << std::endl;
-  std::cout << "bounds_upper: " << bounds_upper_.transpose().format(format) << std::endl;
-  std::cout << "NLP values: " << nlp_->GetVariableValues().transpose().format(format) << std::endl;
+  std::cout << "Hessian:\n" << hessian_.toDense().format(format) << '\n';
+  std::cout << "Gradient: " << gradient_.transpose().format(format) << '\n';
+  std::cout << "Constraint Matrix:\n" << constraint_matrix_.toDense().format(format) << '\n';
+  std::cout << "bounds_lower: " << bounds_lower_.transpose().format(format) << '\n';
+  std::cout << "bounds_upper: " << bounds_upper_.transpose().format(format) << '\n';
+  std::cout << "NLP values: " << nlp_->GetVariableValues().transpose().format(format) << '\n';
 }
 }  // namespace trajopt_sqp

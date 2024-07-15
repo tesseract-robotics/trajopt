@@ -1,4 +1,5 @@
 #pragma once
+#include <cstdint>
 #include <vector>
 #include <memory>
 #include <Eigen/Core>
@@ -24,7 +25,7 @@ using ContactResultVectorConstPtr = std::shared_ptr<const ContactResultVectorWra
 /**
  * @brief This contains the different types of expression evaluators used when performing continuous collision checking.
  */
-enum class CollisionExpressionEvaluatorType
+enum class CollisionExpressionEvaluatorType : std::uint8_t
 {
   START_FREE_END_FREE = 0,  /**< @brief Both start and end state variables are free to be adjusted */
   START_FREE_END_FIXED = 1, /**< @brief Only start state variables are free to be adjusted */

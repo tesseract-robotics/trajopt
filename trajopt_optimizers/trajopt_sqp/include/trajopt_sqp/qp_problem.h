@@ -12,7 +12,7 @@ class ConstraintSet;
 
 namespace trajopt_sqp
 {
-enum class CostPenaltyType;
+enum class CostPenaltyType : std::uint8_t;
 
 /** @brief QP Problem Base */
 class QPProblem

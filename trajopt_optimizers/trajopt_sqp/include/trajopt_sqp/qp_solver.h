@@ -32,7 +32,7 @@
 
 namespace trajopt_sqp
 {
-enum class QPSolverStatus
+enum class QPSolverStatus : std::uint8_t
 {
   UNITIALIZED,
   INITIALIZED,

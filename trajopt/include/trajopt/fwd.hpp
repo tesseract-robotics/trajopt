@@ -1,10 +1,12 @@
 #ifndef TRAJOPT_FWD_HPP
 #define TRAJOPT_FWD_HPP
 
+#include <cstdint>
+
 namespace trajopt
 {
 // collision_terms.hpp
-enum class CollisionExpressionEvaluatorType;
+enum class CollisionExpressionEvaluatorType : std::uint8_t;
 struct LinkGradientResults;
 struct GradientResults;
 struct CollisionEvaluator;
@@ -25,7 +27,7 @@ struct JointPosTermInfo;
 struct JointVelTermInfo;
 struct JointAccTermInfo;
 struct JointJerkTermInfo;
-enum class CollisionEvaluatorType;
+enum class CollisionEvaluatorType : std::uint8_t;
 struct CollisionTermInfo;
 struct TotalTimeTermInfo;
 struct AvoidSingularityTermInfo;

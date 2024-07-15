@@ -81,55 +81,55 @@ bool OSQPEigenSolver::solve()
   {
     Eigen::IOFormat format(5);
     const auto* osqp_data = solver_->data()->getData();
-    std::cout << "OSQP Number of Variables:" << osqp_data->n << std::endl;
-    std::cout << "OSQP Number of Constraints:" << osqp_data->m << std::endl;
+    std::cout << "OSQP Number of Variables:" << osqp_data->n << '\n';
+    std::cout << "OSQP Number of Constraints:" << osqp_data->m << '\n';
 
     Eigen::Map<Eigen::Matrix<c_int, Eigen::Dynamic, 1>> P_p_vec(osqp_data->P->p, osqp_data->P->n + 1);
     Eigen::Map<Eigen::Matrix<c_int, Eigen::Dynamic, 1>> P_i_vec(osqp_data->P->i, osqp_data->P->nzmax);
     Eigen::Map<Eigen::Matrix<c_float, Eigen::Dynamic, 1>> P_x_vec(osqp_data->P->x, osqp_data->P->nzmax);
-    std::cout << "OSQP Hessian:" << std::endl;
-    std::cout << "     nzmax:" << osqp_data->P->nzmax << std::endl;
-    std::cout << "        nz:" << osqp_data->P->nz << std::endl;
-    std::cout << "         m:" << osqp_data->P->m << std::endl;
-    std::cout << "         n:" << osqp_data->P->n << std::endl;
-    std::cout << "         p:" << P_p_vec.transpose().format(format) << std::endl;
-    std::cout << "         i:" << P_i_vec.transpose().format(format) << std::endl;
-    std::cout << "         x:" << P_x_vec.transpose().format(format) << std::endl;
+    std::cout << "OSQP Hessian:" << '\n';
+    std::cout << "     nzmax:" << osqp_data->P->nzmax << '\n';
+    std::cout << "        nz:" << osqp_data->P->nz << '\n';
+    std::cout << "         m:" << osqp_data->P->m << '\n';
+    std::cout << "         n:" << osqp_data->P->n << '\n';
+    std::cout << "         p:" << P_p_vec.transpose().format(format) << '\n';
+    std::cout << "         i:" << P_i_vec.transpose().format(format) << '\n';
+    std::cout << "         x:" << P_x_vec.transpose().format(format) << '\n';
 
     Eigen::Map<Eigen::VectorXd> q_vec(osqp_data->q, osqp_data->n);
-    std::cout << "OSQP Gradient: " << q_vec.transpose().format(format) << std::endl;
+    std::cout << "OSQP Gradient: " << q_vec.transpose().format(format) << '\n';
 
     Eigen::Map<Eigen::Matrix<c_int, Eigen::Dynamic, 1>> A_p_vec(osqp_data->A->p, osqp_data->A->n + 1);
     Eigen::Map<Eigen::Matrix<c_int, Eigen::Dynamic, 1>> A_i_vec(osqp_data->A->i, osqp_data->A->nzmax);
     Eigen::Map<Eigen::Matrix<c_float, Eigen::Dynamic, 1>> A_x_vec(osqp_data->A->x, osqp_data->A->nzmax);
-    std::cout << "OSQP Constraint Matrix:" << std::endl;
-    std::cout << "     nzmax:" << osqp_data->A->nzmax << std::endl;
-    std::cout << "         m:" << osqp_data->A->m << std::endl;
-    std::cout << "         n:" << osqp_data->A->n << std::endl;
-    std::cout << "         p:" << A_p_vec.transpose().format(format) << std::endl;
-    std::cout << "         i:" << A_i_vec.transpose().format(format) << std::endl;
-    std::cout << "         x:" << A_x_vec.transpose().format(format) << std::endl;
+    std::cout << "OSQP Constraint Matrix:" << '\n';
+    std::cout << "     nzmax:" << osqp_data->A->nzmax << '\n';
+    std::cout << "         m:" << osqp_data->A->m << '\n';
+    std::cout << "         n:" << osqp_data->A->n << '\n';
+    std::cout << "         p:" << A_p_vec.transpose().format(format) << '\n';
+    std::cout << "         i:" << A_i_vec.transpose().format(format) << '\n';
+    std::cout << "         x:" << A_x_vec.transpose().format(format) << '\n';
 
     Eigen::Map<Eigen::Matrix<c_float, Eigen::Dynamic, 1>> l_vec(osqp_data->l, osqp_data->m);
     Eigen::Map<Eigen::Matrix<c_float, Eigen::Dynamic, 1>> u_vec(osqp_data->u, osqp_data->m);
-    std::cout << "OSQP Lower Bounds: " << l_vec.transpose().format(format) << std::endl;
-    std::cout << "OSQP Upper Bounds: " << u_vec.transpose().format(format) << std::endl;
+    std::cout << "OSQP Lower Bounds: " << l_vec.transpose().format(format) << '\n';
+    std::cout << "OSQP Upper Bounds: " << u_vec.transpose().format(format) << '\n';
 
-    std::cout << "OSQP Variable Names: " << std::endl;
+    std::cout << "OSQP Variable Names: " << '\n';
   }
 
   /** @todo Need to check if this is what we want in the new version */
   const bool solved = solver_->solve();
   const auto status = static_cast<int>(solver_->workspace()->info->status_val);
   if (OSQP_COMPARE_DEBUG_MODE)
-    std::cout << "OSQP Status Value: " << solver_->workspace()->info->status_val << std::endl;
+    std::cout << "OSQP Status Value: " << solver_->workspace()->info->status_val << '\n';
 
   if (solved || status == OSQP_SOLVED_INACCURATE)
   {
     if (OSQP_COMPARE_DEBUG_MODE)
     {
       Eigen::IOFormat format(5);
-      std::cout << "OSQP Solution: " << solver_->getSolution().transpose().format(format) << std::endl;
+      std::cout << "OSQP Solution: " << solver_->getSolution().transpose().format(format) << '\n';
     }
     return true;
   }
@@ -140,18 +140,18 @@ bool OSQPEigenSolver::solve()
     if (solver_->workspace()->info->status_val == -3)
     {
       Eigen::Map<Eigen::VectorXd> primal_certificate(solver_->workspace()->delta_x, num_cnts_, 1);
-      std::cout << "OSQP Status: " << solver_->workspace()->info->status << std::endl;
+      std::cout << "OSQP Status: " << solver_->workspace()->info->status << '\n';
       std::cout << "\n---------------------------------------\n";
-      std::cout << std::scientific << "Primal Certificate (v): " << primal_certificate.transpose() << std::endl;
+      std::cout << std::scientific << "Primal Certificate (v): " << primal_certificate.transpose() << '\n';
 
       double first = bounds_lower_.transpose() * primal_certificate;
       double second = bounds_upper_.transpose() * primal_certificate;
 
       std::cout << "A.transpose() * v = 0\n"
-                << "l.transpose() * v = " << first << "    u.transpose() * v = " << second << std::endl;
+                << "l.transpose() * v = " << first << "    u.transpose() * v = " << second << '\n';
       std::cout << "l.transpose() * v + u.transpose() * v  = " << first + second << " < 0\n";
-      std::cout << "Bounds_lower: " << bounds_lower_.transpose() << std::endl;
-      std::cout << "Bounds_upper: " << bounds_upper_.transpose() << std::endl;
+      std::cout << "Bounds_lower: " << bounds_lower_.transpose() << '\n';
+      std::cout << "Bounds_upper: " << bounds_upper_.transpose() << '\n';
       std::cout << std::fixed;
       std::cout << "\n---------------------------------------\n";
     }
@@ -160,14 +160,14 @@ bool OSQPEigenSolver::solve()
     if (solver_->workspace()->info->status_val == -4)  // NOLINT
     {
       Eigen::Map<Eigen::VectorXd> dual_certificate(solver_->workspace()->delta_y, num_vars_, 1);
-      std::cout << "OSQP Status: " << solver_->workspace()->info->status << std::endl;
+      std::cout << "OSQP Status: " << solver_->workspace()->info->status << '\n';
       std::cout << "\n---------------------------------------\n";
-      std::cout << "Dual Certificate (x): " << dual_certificate.transpose() << std::endl;  // NOLINT
+      std::cout << "Dual Certificate (x): " << dual_certificate.transpose() << '\n';  // NOLINT
 
       // TODO: Find a way to get the hessian here
       //        std::cout << "P*x = " << (qp_problem_->getHessian() * dual_certificate).transpose() << " = 0" <<
-      //        std::endl;
-      std::cout << "q.transpose() * x = " << gradient_.transpose() * dual_certificate << " < 0" << std::endl;
+      //        '\n';
+      std::cout << "q.transpose() * x = " << gradient_.transpose() * dual_certificate << " < 0" << '\n';
       std::cout << std::fixed;
       std::cout << "\n---------------------------------------\n";
     }

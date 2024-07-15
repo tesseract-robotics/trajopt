@@ -30,13 +30,13 @@
 
 namespace trajopt_sqp
 {
-enum class ConstraintType
+enum class ConstraintType : std::uint8_t
 {
   EQ,
   INEQ
 };
 
-enum class CostPenaltyType
+enum class CostPenaltyType : std::uint8_t
 {
   SQUARED,
   ABSOLUTE,
@@ -157,7 +157,7 @@ struct SQPResults
 /**
  * @brief Status codes for the SQP Optimization
  */
-enum class SQPStatus
+enum class SQPStatus : std::uint8_t
 {
   RUNNING,                 /**< Optimization is currently running */
   NLP_CONVERGED,           /**< NLP Successfully converged */
