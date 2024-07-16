@@ -3,13 +3,14 @@
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <vector>
 #include <cassert>
+#include <cstdint>
 #include <cstdlib>
 #include <unistd.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace bpmpd_io
 {
-enum SerMode
+enum SerMode : std::uint8_t
 {
   DESER,
   SER
@@ -23,14 +24,14 @@ void ser(int fp, T& x, SerMode mode)
     case SER:
     {
       T xcopy = x;
-      ssize_t n = write(fp, &xcopy, sizeof(T));
+      const ssize_t n = write(fp, &xcopy, sizeof(T));
       assert(n == sizeof(T));
       UNUSED(n);
       break;
     }
     case DESER:
     {
-      ssize_t n = read(fp, &x, sizeof(T));
+      const ssize_t n = read(fp, &x, sizeof(T));
       assert(n == sizeof(T));
       UNUSED(n);
       break;
@@ -47,7 +48,7 @@ void ser(int fp, std::vector<T>& x, SerMode mode)
   {
     case SER:
     {
-      long n = write(fp, x.data(), sizeof(T) * size);
+      const long n = write(fp, x.data(), sizeof(T) * size);
       assert(static_cast<unsigned long>(n) == sizeof(T) * size);
       UNUSED(n);
       break;
@@ -55,7 +56,7 @@ void ser(int fp, std::vector<T>& x, SerMode mode)
     case DESER:
     {
       x.resize(size);
-      long n = read(fp, x.data(), sizeof(T) * size);
+      const long n = read(fp, x.data(), sizeof(T) * size);
       assert(static_cast<unsigned long>(n) == sizeof(T) * size);
       UNUSED(n);
       break;

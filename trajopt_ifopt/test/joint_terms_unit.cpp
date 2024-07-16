@@ -47,7 +47,7 @@ TEST(JointTermsUnit, JointPosConstraintUnit)  // NOLINT
   CONSOLE_BRIDGE_logDebug("JointTermsUnit, JointPosConstraintUnit");
 
   std::vector<JointPosition::ConstPtr> position_vars;
-  std::vector<std::string> joint_names(10, "name");
+  const std::vector<std::string> joint_names(10, "name");
   Eigen::VectorXd init1(10);
   init1 << 0, 1, 2, 3, 4, 5, 6, 7, 8, 9;
   position_vars.push_back(std::make_shared<JointPosition>(init1, joint_names, "test_var1"));
@@ -59,9 +59,9 @@ TEST(JointTermsUnit, JointPosConstraintUnit)  // NOLINT
   Eigen::VectorXd targets(10);
   targets << 20, 21, 22, 23, 24, 25, 26, 27, 28, 29;
 
-  std::string name("test_cnt");
-  Eigen::VectorXd coeffs = Eigen::VectorXd::Constant(10, 1);
-  JointPosConstraint position_cnt(targets, position_vars, coeffs, name);
+  const std::string name("test_cnt");
+  const Eigen::VectorXd coeffs = Eigen::VectorXd::Constant(10, 1);
+  const JointPosConstraint position_cnt(targets, position_vars, coeffs, name);
 
   EXPECT_EQ(position_cnt.GetRows(), targets.size() * static_cast<Eigen::Index>(position_vars.size()));
   EXPECT_EQ(position_cnt.GetName(), name);
@@ -84,7 +84,7 @@ TEST(JointTermsUnit, JointVelConstraintUnit)  // NOLINT
   x_vals.reserve(27);
   for (int i = -13; i < 14; ++i)
   {
-    std::vector<std::string> joint_names{ "x", "y" };
+    const std::vector<std::string> joint_names{ "x", "y" };
     Eigen::VectorXd val(2);
     val << f(i), f(i);
     auto var = std::make_shared<JointPosition>(val, joint_names, "test_var_" + std::to_string(position_vars.size()));
@@ -95,8 +95,8 @@ TEST(JointTermsUnit, JointVelConstraintUnit)  // NOLINT
 
   Eigen::VectorXd targets(2);
   targets << 0, 0;
-  std::string name("test_joint_vel_cnt");
-  Eigen::VectorXd coeffs = Eigen::VectorXd::Constant(1, 1);
+  const std::string name("test_joint_vel_cnt");
+  const Eigen::VectorXd coeffs = Eigen::VectorXd::Constant(1, 1);
   JointVelConstraint velocity_cnt(targets, position_vars, coeffs, name);
 
   // Must link with variables or GetValues and GetJacobian throw exception.
@@ -114,7 +114,7 @@ TEST(JointTermsUnit, JointVelConstraintUnit)  // NOLINT
   {
     for (Eigen::Index j = 0; j < targets.size(); ++j)
     {
-      double expected_val = (f(x_vals[i + 1]) - f(x_vals[i]));
+      const double expected_val = (f(x_vals[i + 1]) - f(x_vals[i]));
       EXPECT_NEAR(velocity_vals((static_cast<Eigen::Index>(i) * targets.size()) + j), expected_val, 1e-6);
     }
   }
@@ -150,7 +150,7 @@ TEST(JointTermsUnit, JointVelConstraintMinimumUnit)  // NOLINT
   x_vals.reserve(2);
   for (int i = -13; i < -11; ++i)
   {
-    std::vector<std::string> joint_names{ "x", "y" };
+    const std::vector<std::string> joint_names{ "x", "y" };
     Eigen::VectorXd val(2);
     val << f(i), f(i);
     auto var = std::make_shared<JointPosition>(val, joint_names, "test_var_" + std::to_string(position_vars.size()));
@@ -161,8 +161,8 @@ TEST(JointTermsUnit, JointVelConstraintMinimumUnit)  // NOLINT
 
   Eigen::VectorXd targets(2);
   targets << 0, 0;
-  std::string name("test_joint_vel_cnt");
-  Eigen::VectorXd coeffs = Eigen::VectorXd::Constant(1, 1);
+  const std::string name("test_joint_vel_cnt");
+  const Eigen::VectorXd coeffs = Eigen::VectorXd::Constant(1, 1);
   JointVelConstraint velocity_cnt(targets, position_vars, coeffs, name);
 
   // Must link with variables or GetValues and GetJacobian throw exception.
@@ -180,7 +180,7 @@ TEST(JointTermsUnit, JointVelConstraintMinimumUnit)  // NOLINT
   {
     for (Eigen::Index j = 0; j < targets.size(); ++j)
     {
-      double expected_val = (f(x_vals[i + 1]) - f(x_vals[i]));
+      const double expected_val = (f(x_vals[i + 1]) - f(x_vals[i]));
       EXPECT_NEAR(velocity_vals((static_cast<Eigen::Index>(i) * targets.size()) + j), expected_val, 1e-6);
     }
   }
@@ -216,7 +216,7 @@ TEST(JointTermsUnit, JointAccelConstraintUnit)  // NOLINT
   x_vals.reserve(27);
   for (int i = -13; i < 14; ++i)
   {
-    std::vector<std::string> joint_names{ "x", "y" };
+    const std::vector<std::string> joint_names{ "x", "y" };
     Eigen::VectorXd val(2);
     val << f(i), f(i);
     auto var = std::make_shared<JointPosition>(val, joint_names, "test_var_" + std::to_string(position_vars.size()));
@@ -227,8 +227,8 @@ TEST(JointTermsUnit, JointAccelConstraintUnit)  // NOLINT
 
   Eigen::VectorXd targets(2);
   targets << 0, 0;
-  std::string name("test_joint_accel_cnt");
-  Eigen::VectorXd coeffs = Eigen::VectorXd::Constant(1, 1);
+  const std::string name("test_joint_accel_cnt");
+  const Eigen::VectorXd coeffs = Eigen::VectorXd::Constant(1, 1);
   JointAccelConstraint accel_cnt(targets, position_vars, coeffs, name);
 
   // Must link with variables or GetValues and GetJacobian throw exception.
@@ -246,7 +246,7 @@ TEST(JointTermsUnit, JointAccelConstraintUnit)  // NOLINT
   {
     for (Eigen::Index j = 0; j < targets.size(); ++j)
     {
-      double expected_val = (f(x_vals[i]) - 2.0 * f(x_vals[i + 1]) + f(x_vals[i + 2]));
+      const double expected_val = (f(x_vals[i]) - 2.0 * f(x_vals[i + 1]) + f(x_vals[i + 2]));
       EXPECT_NEAR(accel_vals((static_cast<Eigen::Index>(i) * targets.size()) + j), expected_val, 1e-6);
     }
   }
@@ -256,7 +256,7 @@ TEST(JointTermsUnit, JointAccelConstraintUnit)  // NOLINT
   {
     for (Eigen::Index j = 0; j < targets.size(); ++j)
     {
-      double expected_val = (f(x_vals[i]) - 2.0 * f(x_vals[i - 1]) + f(x_vals[i - 2]));
+      const double expected_val = (f(x_vals[i]) - 2.0 * f(x_vals[i - 1]) + f(x_vals[i - 2]));
       EXPECT_NEAR(accel_vals((static_cast<Eigen::Index>(i) * targets.size()) + j), expected_val, 1e-6);
     }
   }
@@ -292,7 +292,7 @@ TEST(JointTermsUnit, JointAccelConstraintMinimumUnit)  // NOLINT
   x_vals.reserve(4);
   for (int i = -13; i < -9; ++i)
   {
-    std::vector<std::string> joint_names{ "x", "y" };
+    const std::vector<std::string> joint_names{ "x", "y" };
     Eigen::VectorXd val(2);
     val << f(i), f(i);
     auto var = std::make_shared<JointPosition>(val, joint_names, "test_var_" + std::to_string(position_vars.size()));
@@ -303,8 +303,8 @@ TEST(JointTermsUnit, JointAccelConstraintMinimumUnit)  // NOLINT
 
   Eigen::VectorXd targets(2);
   targets << 0, 0;
-  std::string name("test_joint_accel_cnt");
-  Eigen::VectorXd coeffs = Eigen::VectorXd::Constant(1, 1);
+  const std::string name("test_joint_accel_cnt");
+  const Eigen::VectorXd coeffs = Eigen::VectorXd::Constant(1, 1);
   JointAccelConstraint accel_cnt(targets, position_vars, coeffs, name);
 
   // Must link with variables or GetValues and GetJacobian throw exception.
@@ -322,7 +322,7 @@ TEST(JointTermsUnit, JointAccelConstraintMinimumUnit)  // NOLINT
   {
     for (Eigen::Index j = 0; j < targets.size(); ++j)
     {
-      double expected_val = (f(x_vals[i]) - 2.0 * f(x_vals[i + 1]) + f(x_vals[i + 2]));
+      const double expected_val = (f(x_vals[i]) - 2.0 * f(x_vals[i + 1]) + f(x_vals[i + 2]));
       EXPECT_NEAR(accel_vals((static_cast<Eigen::Index>(i) * targets.size()) + j), expected_val, 1e-6);
     }
   }
@@ -332,7 +332,7 @@ TEST(JointTermsUnit, JointAccelConstraintMinimumUnit)  // NOLINT
   {
     for (Eigen::Index j = 0; j < targets.size(); ++j)
     {
-      double expected_val = (f(x_vals[i]) - 2.0 * f(x_vals[i - 1]) + f(x_vals[i - 2]));
+      const double expected_val = (f(x_vals[i]) - 2.0 * f(x_vals[i - 1]) + f(x_vals[i - 2]));
       EXPECT_NEAR(accel_vals((static_cast<Eigen::Index>(i) * targets.size()) + j), expected_val, 1e-6);
     }
   }
@@ -368,7 +368,7 @@ TEST(JointTermsUnit, JointJerkConstraintUnit)  // NOLINT
   x_vals.reserve(27);
   for (int i = -13; i < 14; ++i)
   {
-    std::vector<std::string> joint_names{ "x", "y" };
+    const std::vector<std::string> joint_names{ "x", "y" };
     Eigen::VectorXd val(2);
     val << f(i), f(i);
     auto var = std::make_shared<JointPosition>(val, joint_names, "test_var_" + std::to_string(position_vars.size()));
@@ -379,8 +379,8 @@ TEST(JointTermsUnit, JointJerkConstraintUnit)  // NOLINT
 
   Eigen::VectorXd targets(2);
   targets << 0, 0;
-  std::string name("test_joint_jerk_cnt");
-  Eigen::VectorXd coeffs = Eigen::VectorXd::Constant(1, 1);
+  const std::string name("test_joint_jerk_cnt");
+  const Eigen::VectorXd coeffs = Eigen::VectorXd::Constant(1, 1);
   JointJerkConstraint jerk_cnt(targets, position_vars, coeffs, name);
 
   // Must link with variables or GetValues and GetJacobian throw exception.
@@ -398,7 +398,7 @@ TEST(JointTermsUnit, JointJerkConstraintUnit)  // NOLINT
   {
     for (Eigen::Index j = 0; j < targets.size(); ++j)
     {
-      double expected_val = (-f(x_vals[i]) + 3.0 * f(x_vals[i + 1]) - 3.0 * f(x_vals[i + 2])) + f(x_vals[i + 3]);
+      const double expected_val = (-f(x_vals[i]) + 3.0 * f(x_vals[i + 1]) - 3.0 * f(x_vals[i + 2])) + f(x_vals[i + 3]);
       EXPECT_NEAR(jerk_vals((static_cast<Eigen::Index>(i) * targets.size()) + j), expected_val, 1e-6);
     }
   }
@@ -408,7 +408,7 @@ TEST(JointTermsUnit, JointJerkConstraintUnit)  // NOLINT
   {
     for (Eigen::Index j = 0; j < targets.size(); ++j)
     {
-      double expected_val = f(x_vals[i]) - 3.0 * f(x_vals[i - 1]) + 3.0 * f(x_vals[i - 2]) - f(x_vals[i - 3]);
+      const double expected_val = f(x_vals[i]) - 3.0 * f(x_vals[i - 1]) + 3.0 * f(x_vals[i - 2]) - f(x_vals[i - 3]);
       EXPECT_NEAR(jerk_vals((static_cast<Eigen::Index>(i) * targets.size()) + j), expected_val, 1e-6);
     }
   }
@@ -444,7 +444,7 @@ TEST(JointTermsUnit, JointJerkConstraintMinimumUnit)  // NOLINT
   x_vals.reserve(6);
   for (int i = -13; i < -7; ++i)
   {
-    std::vector<std::string> joint_names{ "x", "y" };
+    const std::vector<std::string> joint_names{ "x", "y" };
     Eigen::VectorXd val(2);
     val << f(i), f(i);
     auto var = std::make_shared<JointPosition>(val, joint_names, "test_var_" + std::to_string(position_vars.size()));
@@ -455,8 +455,8 @@ TEST(JointTermsUnit, JointJerkConstraintMinimumUnit)  // NOLINT
 
   Eigen::VectorXd targets(2);
   targets << 0, 0;
-  std::string name("test_joint_jerk_cnt");
-  Eigen::VectorXd coeffs = Eigen::VectorXd::Constant(1, 1);
+  const std::string name("test_joint_jerk_cnt");
+  const Eigen::VectorXd coeffs = Eigen::VectorXd::Constant(1, 1);
   JointJerkConstraint jerk_cnt(targets, position_vars, coeffs, name);
 
   // Must link with variables or GetValues and GetJacobian throw exception.
@@ -474,7 +474,7 @@ TEST(JointTermsUnit, JointJerkConstraintMinimumUnit)  // NOLINT
   {
     for (Eigen::Index j = 0; j < targets.size(); ++j)
     {
-      double expected_val = (-f(x_vals[i]) + 3.0 * f(x_vals[i + 1]) - 3.0 * f(x_vals[i + 2])) + f(x_vals[i + 3]);
+      const double expected_val = (-f(x_vals[i]) + 3.0 * f(x_vals[i + 1]) - 3.0 * f(x_vals[i + 2])) + f(x_vals[i + 3]);
       EXPECT_NEAR(jerk_vals((static_cast<Eigen::Index>(i) * targets.size()) + j), expected_val, 1e-6);
     }
   }
@@ -484,7 +484,7 @@ TEST(JointTermsUnit, JointJerkConstraintMinimumUnit)  // NOLINT
   {
     for (Eigen::Index j = 0; j < targets.size(); ++j)
     {
-      double expected_val = f(x_vals[i]) - 3.0 * f(x_vals[i - 1]) + 3.0 * f(x_vals[i - 2]) - f(x_vals[i - 3]);
+      const double expected_val = f(x_vals[i]) - 3.0 * f(x_vals[i - 1]) + 3.0 * f(x_vals[i - 2]) - f(x_vals[i - 3]);
       EXPECT_NEAR(jerk_vals((static_cast<Eigen::Index>(i) * targets.size()) + j), expected_val, 1e-6);
     }
   }

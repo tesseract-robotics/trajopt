@@ -64,9 +64,9 @@ public:
 
   void SetUp() override
   {
-    boost::filesystem::path urdf_file(std::string(TRAJOPT_DATA_DIR) + "/spherebot.urdf");
-    boost::filesystem::path srdf_file(std::string(TRAJOPT_DATA_DIR) + "/spherebot.srdf");
-    ResourceLocator::Ptr locator = std::make_shared<tesseract_common::GeneralResourceLocator>();
+    boost::filesystem::path const urdf_file(std::string(TRAJOPT_DATA_DIR) + "/spherebot.urdf");
+    boost::filesystem::path const srdf_file(std::string(TRAJOPT_DATA_DIR) + "/spherebot.srdf");
+    ResourceLocator::Ptr const locator = std::make_shared<tesseract_common::GeneralResourceLocator>();
     EXPECT_TRUE(env->init(urdf_file, srdf_file, locator));
   }
 };
@@ -82,8 +82,8 @@ TEST_F(SimpleCollisionTest, spheres)  // NOLINT
 
   std::vector<ContactResultMap> collisions;
   auto state_solver = env->getStateSolver();
-  DiscreteContactManager::Ptr manager = env->getDiscreteContactManager();
-  tesseract_kinematics::JointGroup::ConstPtr manip = env->getJointGroup("manipulator");
+  DiscreteContactManager::Ptr const manager = env->getDiscreteContactManager();
+  const tesseract_kinematics::JointGroup::ConstPtr manip = env->getJointGroup("manipulator");
 
   manager->setActiveCollisionObjects(manip->getActiveLinkNames());
   manager->setDefaultCollisionMarginData(0);
@@ -106,13 +106,13 @@ TEST_F(SimpleCollisionTest, spheres)  // NOLINT
   }
 
   // Step 3: Setup collision
-  double margin_coeff = 10;
-  double margin = 0.2;
+  const double margin_coeff = 10;
+  const double margin = 0.2;
   auto trajopt_collision_config = std::make_shared<trajopt_common::TrajOptCollisionConfig>(margin, margin_coeff);
   trajopt_collision_config->collision_margin_buffer = 0.05;
 
   auto collision_cache = std::make_shared<trajopt_ifopt::CollisionCache>(100);
-  trajopt_ifopt::DiscreteCollisionEvaluator::Ptr collision_evaluator =
+  const trajopt_ifopt::DiscreteCollisionEvaluator::Ptr collision_evaluator =
       std::make_shared<trajopt_ifopt::SingleTimestepCollisionEvaluator>(
           collision_cache, manip, env, trajopt_collision_config);
 
@@ -120,11 +120,12 @@ TEST_F(SimpleCollisionTest, spheres)  // NOLINT
   nlp.AddConstraintSet(cnt);
 
   nlp.PrintCurrent();
-  std::cout << "Jacobian: \n" << nlp.GetJacobianOfConstraints() << std::endl;
+  std::cout << "Jacobian: \n" << nlp.GetJacobianOfConstraints() << '\n';
 
   auto error_calculator = [&](const Eigen::Ref<const Eigen::VectorXd>& x) { return cnt->CalcValues(x); };
-  trajopt_ifopt::SparseMatrix num_jac_block = trajopt_ifopt::calcForwardNumJac(error_calculator, positions[0], 1e-4);
-  std::cout << "Numerical Jacobian: \n" << num_jac_block << std::endl;
+  trajopt_ifopt::SparseMatrix const num_jac_block =
+      trajopt_ifopt::calcForwardNumJac(error_calculator, positions[0], 1e-4);
+  std::cout << "Numerical Jacobian: \n" << num_jac_block << '\n';
 
   // 5) choose solver and options
   ifopt::IpoptSolver ipopt;
@@ -137,13 +138,13 @@ TEST_F(SimpleCollisionTest, spheres)  // NOLINT
   // 6) solve
   ipopt.Solve(nlp);
   Eigen::VectorXd x = nlp.GetOptVariables()->GetValues();
-  std::cout << x.transpose() << std::endl;  // NOLINT
+  std::cout << x.transpose() << '\n';  // NOLINT
 
   EXPECT_TRUE(ipopt.GetReturnStatus() == 0);
 
   tesseract_common::TrajArray inputs(1, 2);
   inputs << -0.75, 0.75;
-  Eigen::Map<tesseract_common::TrajArray> results(x.data(), 1, 2);
+  Eigen::Map<tesseract_common::TrajArray> const results(x.data(), 1, 2);
 
   bool found =
       checkTrajectory(collisions, *manager, *state_solver, manip->getJointNames(), inputs, *trajopt_collision_config);

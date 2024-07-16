@@ -42,7 +42,7 @@ JointStatePlottingCallback::JointStatePlottingCallback(std::shared_ptr<tesseract
 
 void JointStatePlottingCallback::plot(const QPProblem& /*problem*/)
 {
-  tesseract_common::JointTrajectory trajectory = trajopt_ifopt::toJointTrajectory(joint_positions_);
+  const tesseract_common::JointTrajectory trajectory = trajopt_ifopt::toJointTrajectory(joint_positions_);
 
   if (plotter_)
     plotter_->plotTrajectory(trajectory, *state_solver_);

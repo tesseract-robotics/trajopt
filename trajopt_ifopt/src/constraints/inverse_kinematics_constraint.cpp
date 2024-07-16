@@ -75,7 +75,7 @@ InverseKinematicsConstraint::CalcValues(const Eigen::Ref<const Eigen::VectorXd>&
   tesseract_kinematics::KinGroupIKInputs inputs;
   inputs.emplace_back(target_pose_, kinematic_info_->working_frame, kinematic_info_->tcp_frame);
 
-  tesseract_kinematics::IKSolutions target_joint_position =
+  const tesseract_kinematics::IKSolutions target_joint_position =
       kinematic_info_->manip->calcInvKin(inputs, seed_joint_position);
   assert(!target_joint_position.empty());
 
@@ -84,8 +84,8 @@ InverseKinematicsConstraint::CalcValues(const Eigen::Ref<const Eigen::VectorXd>&
   double error_norm = std::numeric_limits<double>::max();
   for (const auto& sol : target_joint_position)
   {
-    Eigen::VectorXd cur_error = sol - joint_vals;
-    double cur_error_norm = cur_error.norm();
+    const Eigen::VectorXd cur_error = sol - joint_vals;
+    const double cur_error_norm = cur_error.norm();
     if (cur_error_norm < error_norm)
     {
       error_norm = cur_error_norm;
@@ -98,8 +98,8 @@ InverseKinematicsConstraint::CalcValues(const Eigen::Ref<const Eigen::VectorXd>&
 Eigen::VectorXd InverseKinematicsConstraint::GetValues() const
 {
   // Get the two variables
-  Eigen::VectorXd seed_joint_position = this->GetVariables()->GetComponent(seed_var_->GetName())->GetValues();
-  Eigen::VectorXd joint_vals = this->GetVariables()->GetComponent(constraint_var_->GetName())->GetValues();
+  const Eigen::VectorXd seed_joint_position = this->GetVariables()->GetComponent(seed_var_->GetName())->GetValues();
+  const Eigen::VectorXd joint_vals = this->GetVariables()->GetComponent(constraint_var_->GetName())->GetValues();
 
   return CalcValues(joint_vals, seed_joint_position);
 }

@@ -74,17 +74,17 @@ public:
 
   void SetUp() override
   {
-    tesseract_common::fs::path urdf_file(std::string(TRAJOPT_DATA_DIR) + "/boxbot_world.urdf");
-    tesseract_common::fs::path srdf_file(std::string(TRAJOPT_DATA_DIR) + "/boxbot.srdf");
+    const tesseract_common::fs::path urdf_file(std::string(TRAJOPT_DATA_DIR) + "/boxbot_world.urdf");
+    const tesseract_common::fs::path srdf_file(std::string(TRAJOPT_DATA_DIR) + "/boxbot.srdf");
 
-    ResourceLocator::Ptr locator = std::make_shared<tesseract_common::GeneralResourceLocator>();
+    const ResourceLocator::Ptr locator = std::make_shared<tesseract_common::GeneralResourceLocator>();
     EXPECT_TRUE(env->init(urdf_file, srdf_file, locator));
 
     // Create plotting tool
     //    plotter_.reset(new tesseract_ros::ROSBasicPlotting(env_));
 
     octomap::Pointcloud point_cloud;
-    double delta = 0.05;
+    const double delta = 0.05;
     auto length = static_cast<int>(1 / delta);
 
     for (int x = 0; x < length; ++x)
@@ -94,11 +94,11 @@ public:
                                 -0.5F + static_cast<float>(y * delta),
                                 -0.5F + static_cast<float>(z * delta));
 
-    std::shared_ptr<octomap::OcTree> octree = std::make_shared<octomap::OcTree>(2 * delta);
+    const std::shared_ptr<octomap::OcTree> octree = std::make_shared<octomap::OcTree>(2 * delta);
     octree->insertPointCloud(point_cloud, octomap::point3d(0, 0, 0));
 
     // Next add objects that can be attached/detached to the scene
-    Octree::Ptr coll_octree = std::make_shared<Octree>(octree, OctreeSubType::BOX);
+    const Octree::Ptr coll_octree = std::make_shared<Octree>(octree, OctreeSubType::BOX);
     auto vis_box = std::make_shared<Box>(1.0, 1.0, 1.0);
 
     auto visual = std::make_shared<Visual>();
@@ -130,9 +130,9 @@ void runCastOctomapTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const Env
   env->setState(ipos);
 
   std::vector<ContactResultMap> collisions;
-  tesseract_scene_graph::StateSolver::Ptr state_solver = env->getStateSolver();
-  ContinuousContactManager::Ptr manager = env->getContinuousContactManager();
-  tesseract_kinematics::JointGroup::ConstPtr manip = env->getJointGroup("manipulator");
+  const tesseract_scene_graph::StateSolver::Ptr state_solver = env->getStateSolver();
+  const ContinuousContactManager::Ptr manager = env->getContinuousContactManager();
+  const tesseract_kinematics::JointGroup::ConstPtr manip = env->getJointGroup("manipulator");
 
   manager->setActiveCollisionObjects(manip->getActiveLinkNames());
   manager->setDefaultCollisionMarginData(0);
@@ -166,23 +166,23 @@ void runCastOctomapTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const Env
   }
 
   // Step 3: Setup collision
-  double margin_coeff = 10;
-  double margin = 0.02;
+  const double margin_coeff = 10;
+  const double margin = 0.02;
   auto trajopt_collision_config = std::make_shared<trajopt_common::TrajOptCollisionConfig>(margin, margin_coeff);
   trajopt_collision_config->type = tesseract_collision::CollisionEvaluatorType::LVS_CONTINUOUS;
   trajopt_collision_config->collision_margin_buffer = 0.05;
 
   // 4) Add constraints
   {  // Fix start position
-    std::vector<trajopt_ifopt::JointPosition::ConstPtr> fixed_vars = { vars[0] };
-    Eigen::VectorXd coeffs = Eigen::VectorXd::Constant(manip->numJoints(), 5);
+    const std::vector<trajopt_ifopt::JointPosition::ConstPtr> fixed_vars = { vars[0] };
+    const Eigen::VectorXd coeffs = Eigen::VectorXd::Constant(manip->numJoints(), 5);
     auto cnt = std::make_shared<trajopt_ifopt::JointPosConstraint>(positions[0], fixed_vars, coeffs);
     qp_problem->addConstraintSet(cnt);
   }
 
   {  // Fix end position
-    std::vector<trajopt_ifopt::JointPosition::ConstPtr> fixed_vars = { vars[2] };
-    Eigen::VectorXd coeffs = Eigen::VectorXd::Constant(manip->numJoints(), 5);
+    const std::vector<trajopt_ifopt::JointPosition::ConstPtr> fixed_vars = { vars[2] };
+    const Eigen::VectorXd coeffs = Eigen::VectorXd::Constant(manip->numJoints(), 5);
     auto cnt = std::make_shared<trajopt_ifopt::JointPosConstraint>(positions[2], fixed_vars, coeffs);
     qp_problem->addConstraintSet(cnt);
   }
@@ -194,7 +194,7 @@ void runCastOctomapTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const Env
     auto collision_evaluator = std::make_shared<trajopt_ifopt::LVSContinuousCollisionEvaluator>(
         collision_cache, manip, env, trajopt_collision_config);
 
-    std::array<JointPosition::ConstPtr, 2> position_vars{ vars[i - 1], vars[i] };
+    const std::array<JointPosition::ConstPtr, 2> position_vars{ vars[i - 1], vars[i] };
 
     auto cnt = std::make_shared<trajopt_ifopt::ContinuousCollisionConstraint>(
         collision_evaluator, position_vars, position_vars_fixed, 3);
@@ -221,13 +221,13 @@ void runCastOctomapTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const Env
   solver.verbose = true;
   solver.solve(qp_problem);
   Eigen::VectorXd x = qp_problem->getVariableValues();
-  std::cout << x.transpose() << std::endl;
+  std::cout << x.transpose() << '\n';
 
   EXPECT_TRUE(solver.getStatus() == trajopt_sqp::SQPStatus::NLP_CONVERGED);
 
   tesseract_common::TrajArray inputs(3, 2);
   inputs << -1.9, 0, 0, 1.9, 1.9, 3.8;
-  Eigen::Map<tesseract_common::TrajArray> results(x.data(), 3, 2);
+  const Eigen::Map<tesseract_common::TrajArray> results(x.data(), 3, 2);
 
   tesseract_collision::CollisionCheckConfig config;
   config.type = tesseract_collision::CollisionEvaluatorType::CONTINUOUS;

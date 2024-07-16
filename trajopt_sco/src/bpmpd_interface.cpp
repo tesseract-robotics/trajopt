@@ -164,7 +164,8 @@ Model::Ptr createBPMPDModel()
 
 pid_t popen2(const char* command, int* infp, int* outfp)
 {
-  std::array<int, 2> p_stdin{}, p_stdout{};
+  std::array<int, 2> p_stdin{};
+  std::array<int, 2> p_stdout{};
   pid_t pid{ 0 };
 
   if (pipe(p_stdin.data()) != 0 || pipe(p_stdout.data()) != 0)
@@ -210,7 +211,7 @@ static int gPipeOut = 0;  // NOLINT
 void fexit()
 {
   std::array<char, 1> text{ bpmpd_io::EXIT_CHAR };
-  long n = write(gPipeIn, text.data(), 1);
+  long const n = write(gPipeIn, text.data(), 1);
   ALWAYS_ASSERT(n == 1);
 }
 
@@ -236,7 +237,7 @@ BPMPDModel::BPMPDModel()
 
 Var BPMPDModel::addVar(const std::string& name)
 {
-  std::scoped_lock lock(m_mutex);
+  const std::scoped_lock lock(m_mutex);
   m_vars.emplace_back(std::make_shared<VarRep>(m_vars.size(), name, this));
   m_lbs.push_back(-BPMPD_BIG);
   m_ubs.push_back(BPMPD_BIG);
@@ -244,7 +245,7 @@ Var BPMPDModel::addVar(const std::string& name)
 }
 Cnt BPMPDModel::addEqCnt(const AffExpr& expr, const std::string& /*name*/)
 {
-  std::scoped_lock lock(m_mutex);
+  const std::scoped_lock lock(m_mutex);
   m_cnts.emplace_back(std::make_shared<CntRep>(m_cnts.size(), this));
   m_cntExprs.push_back(expr);
   m_cntTypes.push_back(EQ);
@@ -252,7 +253,7 @@ Cnt BPMPDModel::addEqCnt(const AffExpr& expr, const std::string& /*name*/)
 }
 Cnt BPMPDModel::addIneqCnt(const AffExpr& expr, const std::string& /*name*/)
 {
-  std::scoped_lock lock(m_mutex);
+  const std::scoped_lock lock(m_mutex);
   m_cnts.emplace_back(std::make_shared<CntRep>(m_cnts.size(), this));
   m_cntExprs.push_back(expr);
   m_cntTypes.push_back(INEQ);
@@ -265,7 +266,7 @@ Cnt BPMPDModel::addIneqCnt(const QuadExpr&, const std::string& /*name*/)
 
 void BPMPDModel::removeVars(const VarVector& vars)
 {
-  std::scoped_lock lock(m_mutex);
+  const std::scoped_lock lock(m_mutex);
   SizeTVec inds;
   vars2inds(vars, inds);
   for (const auto& var : vars)
@@ -274,7 +275,7 @@ void BPMPDModel::removeVars(const VarVector& vars)
 
 void BPMPDModel::removeCnts(const CntVector& cnts)
 {
-  std::scoped_lock lock(m_mutex);
+  const std::scoped_lock lock(m_mutex);
   SizeTVec inds;
   cnts2inds(cnts, inds);
   for (auto& cnt : cnts)  // NOLINT
@@ -349,7 +350,7 @@ DblVec BPMPDModel::getVarValues(const VarVector& vars) const
   return out;
 }
 
-#define DBG(expr)  // cout << #expr << ": " << CSTR(expr) << std::endl
+#define DBG(expr)  // cout << #expr << ": " << CSTR(expr) << '\n'
 
 CvxOptStatus BPMPDModel::optimize()
 {
@@ -363,11 +364,22 @@ CvxOptStatus BPMPDModel::optimize()
   // lbound[maxn+maxm],
   //        ubound[maxn+maxm], primal[maxn+maxm], dual[maxn+maxm], big, opt;
 
-  std::size_t n = m_vars.size();
-  std::size_t m = m_cnts.size();
+  const std::size_t n = m_vars.size();
+  const std::size_t m = m_cnts.size();
 
-  IntVec acolcnt(n), acolidx, qcolcnt(n), qcolidx, status(m + n);
-  DblVec acolnzs, qcolnzs, rhs(m), obj(n, 0), lbound(m + n), ubound(m + n), primal(m + n), dual(m + n);
+  IntVec acolcnt(n);
+  IntVec acolidx;
+  IntVec qcolcnt(n);
+  IntVec qcolidx;
+  const IntVec status(m + n);
+  DblVec acolnzs;
+  DblVec qcolnzs;
+  DblVec rhs(m);
+  DblVec obj(n, 0);
+  DblVec lbound(m + n);
+  DblVec ubound(m + n);
+  const DblVec primal(m + n);
+  const DblVec dual(m + n);
 
   DBG(m_lbs);
   DBG(m_ubs);
@@ -508,13 +520,13 @@ CvxOptStatus BPMPDModel::optimize()
                            ubound);
   bpmpd_io::ser(gPipeIn, bi, bpmpd_io::SER);
 
-  // std::cout << "serialization time:" << end-start << std::endl;
+  // std::cout << "serialization time:" << end-start << '\n';
 
   bpmpd_io::bpmpd_output bo;
   bpmpd_io::ser(gPipeOut, bo, bpmpd_io::DESER);
 
   m_soln = DblVec(bo.primal.begin(), bo.primal.begin() + static_cast<long int>(n));
-  int retcode = bo.code;
+  const int retcode = bo.code;
 
   if (retcode == 2)
     return CVX_SOLVED;

@@ -45,10 +45,10 @@ public:
 
   void SetUp() override
   {
-    boost::filesystem::path urdf_file(std::string(TRAJOPT_DATA_DIR) + "/spherebot.urdf");
-    boost::filesystem::path srdf_file(std::string(TRAJOPT_DATA_DIR) + "/spherebot.srdf");
+    const boost::filesystem::path urdf_file(std::string(TRAJOPT_DATA_DIR) + "/spherebot.urdf");
+    const boost::filesystem::path srdf_file(std::string(TRAJOPT_DATA_DIR) + "/spherebot.srdf");
 
-    ResourceLocator::Ptr locator = std::make_shared<tesseract_common::GeneralResourceLocator>();
+    const ResourceLocator::Ptr locator = std::make_shared<tesseract_common::GeneralResourceLocator>();
     EXPECT_TRUE(env_->init(urdf_file, srdf_file, locator));
 
     // gLogLevel = trajopt_common::LevelDebug;
@@ -62,7 +62,7 @@ void runTest(const Environment::Ptr& env, const Visualization::Ptr& plotter, boo
 {
   CONSOLE_BRIDGE_logDebug("SimpleCollisionTest, spheres");
 
-  Json::Value root = readJsonFile(std::string(TRAJOPT_DATA_DIR) + "/config/simple_collision_test.json");
+  const Json::Value root = readJsonFile(std::string(TRAJOPT_DATA_DIR) + "/config/simple_collision_test.json");
 
   std::unordered_map<std::string, double> ipos;
   ipos["spherebot_x_joint"] = -0.75;
@@ -71,12 +71,12 @@ void runTest(const Environment::Ptr& env, const Visualization::Ptr& plotter, boo
 
   //  plotter_->plotScene();
 
-  TrajOptProb::Ptr prob = ConstructProblem(root, env);
+  const TrajOptProb::Ptr prob = ConstructProblem(root, env);
   ASSERT_TRUE(!!prob);
 
   std::vector<ContactResultMap> collisions;
-  tesseract_scene_graph::StateSolver::UPtr state_solver = prob->GetEnv()->getStateSolver();
-  DiscreteContactManager::Ptr manager = prob->GetEnv()->getDiscreteContactManager();
+  const tesseract_scene_graph::StateSolver::UPtr state_solver = prob->GetEnv()->getStateSolver();
+  const DiscreteContactManager::Ptr manager = prob->GetEnv()->getDiscreteContactManager();
 
   manager->setActiveCollisionObjects(prob->GetKin()->getActiveLinkNames());
   manager->setDefaultCollisionMarginData(0.2);
@@ -115,7 +115,7 @@ void runTest(const Environment::Ptr& env, const Visualization::Ptr& plotter, boo
     plotter->clear();
 
   collisions.clear();
-  std::cout << getTraj(opt->x(), prob->GetVars()) << std::endl;
+  std::cout << getTraj(opt->x(), prob->GetVars()) << '\n';
 
   found = checkTrajectory(
       collisions, *manager, *state_solver, prob->GetKin()->getJointNames(), getTraj(opt->x(), prob->GetVars()), config);

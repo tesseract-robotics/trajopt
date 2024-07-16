@@ -1,7 +1,6 @@
 #include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <ctime>
-#include <sstream>
 #include <gtest/gtest.h>
 #include <tesseract_common/types.h>
 #include <tesseract_common/resource_locator.h>
@@ -44,10 +43,10 @@ public:
   Visualization::Ptr plotter_;                             /**< Trajopt Plotter */
   void SetUp() override
   {
-    tesseract_common::fs::path urdf_file(std::string(TRAJOPT_DATA_DIR) + "/arm_around_table.urdf");
-    tesseract_common::fs::path srdf_file(std::string(TRAJOPT_DATA_DIR) + "/pr2.srdf");
+    const tesseract_common::fs::path urdf_file(std::string(TRAJOPT_DATA_DIR) + "/arm_around_table.urdf");
+    const tesseract_common::fs::path srdf_file(std::string(TRAJOPT_DATA_DIR) + "/pr2.srdf");
 
-    ResourceLocator::Ptr locator = std::make_shared<tesseract_common::GeneralResourceLocator>();
+    const ResourceLocator::Ptr locator = std::make_shared<tesseract_common::GeneralResourceLocator>();
     EXPECT_TRUE(env_->init(urdf_file, srdf_file, locator));
 
     // Create plotting tool
@@ -65,7 +64,7 @@ void runTest(const Environment::Ptr& env, bool use_multi_threaded)
 {
   CONSOLE_BRIDGE_logDebug("PlanningTest, arm_around_table");
 
-  Json::Value root = readJsonFile(std::string(TRAJOPT_DATA_DIR) + "/config/arm_around_table.json");
+  const Json::Value root = readJsonFile(std::string(TRAJOPT_DATA_DIR) + "/config/arm_around_table.json");
 
   std::unordered_map<std::string, double> ipos;
   ipos["torso_lift_joint"] = 0;
@@ -83,12 +82,12 @@ void runTest(const Environment::Ptr& env, bool use_multi_threaded)
   ProblemConstructionInfo pci(env);
   pci.fromJson(root);
   pci.basic_info.convex_solver = sco::ModelType::OSQP;
-  TrajOptProb::Ptr prob = ConstructProblem(pci);
+  const TrajOptProb::Ptr prob = ConstructProblem(pci);
   ASSERT_TRUE(!!prob);
 
   std::vector<ContactResultMap> collisions;
-  tesseract_scene_graph::StateSolver::UPtr state_solver = prob->GetEnv()->getStateSolver();
-  ContinuousContactManager::Ptr manager = prob->GetEnv()->getContinuousContactManager();
+  const tesseract_scene_graph::StateSolver::UPtr state_solver = prob->GetEnv()->getStateSolver();
+  const ContinuousContactManager::Ptr manager = prob->GetEnv()->getContinuousContactManager();
 
   manager->setActiveCollisionObjects(prob->GetKin()->getActiveLinkNames());
   manager->setDefaultCollisionMarginData(0);
@@ -120,8 +119,8 @@ void runTest(const Environment::Ptr& env, bool use_multi_threaded)
   //  }
 
   opt->initialize(trajToDblVec(prob->GetInitTraj()));
-  double tStart = GetClock();
-  sco::OptStatus status = opt->optimize();
+  const double tStart = GetClock();
+  const sco::OptStatus status = opt->optimize();
   EXPECT_TRUE(status == sco::OptStatus::OPT_CONVERGED);
   CONSOLE_BRIDGE_logDebug("planning time: %.3f", GetClock() - tStart);
 

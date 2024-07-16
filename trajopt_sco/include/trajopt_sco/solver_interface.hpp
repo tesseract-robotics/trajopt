@@ -141,7 +141,7 @@ struct Var
   double value(const DblVec& x) const
   {
     assert(var_rep->index < x.size());
-    return x[static_cast<std::size_t>(var_rep->index)];
+    return x[var_rep->index];
   }
 };
 

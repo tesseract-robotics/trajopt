@@ -83,9 +83,9 @@ ContinuousCollisionNumericalConstraint::ContinuousCollisionNumericalConstraint(
 Eigen::VectorXd ContinuousCollisionNumericalConstraint::GetValues() const
 {
   // Get current joint values
-  Eigen::VectorXd joint_vals0 = this->GetVariables()->GetComponent(position_vars_[0]->GetName())->GetValues();
-  Eigen::VectorXd joint_vals1 = this->GetVariables()->GetComponent(position_vars_[1]->GetName())->GetValues();
-  double margin_buffer = collision_evaluator_->GetCollisionConfig().collision_margin_buffer;
+  const Eigen::VectorXd joint_vals0 = this->GetVariables()->GetComponent(position_vars_[0]->GetName())->GetValues();
+  const Eigen::VectorXd joint_vals1 = this->GetVariables()->GetComponent(position_vars_[1]->GetName())->GetValues();
+  const double margin_buffer = collision_evaluator_->GetCollisionConfig().collision_margin_buffer;
   Eigen::VectorXd values = Eigen::VectorXd::Constant(static_cast<Eigen::Index>(bounds_.size()), -margin_buffer);
 
   auto collision_data =
@@ -137,11 +137,11 @@ void ContinuousCollisionNumericalConstraint::FillJacobianBlock(std::string var_s
   if (!triplet_list_.empty())                                               // NOLINT
     jac_block.setFromTriplets(triplet_list_.begin(), triplet_list_.end());  // NOLINT
 
-  double margin_buffer = collision_evaluator_->GetCollisionConfig().collision_margin_buffer;
+  const double margin_buffer = collision_evaluator_->GetCollisionConfig().collision_margin_buffer;
 
   // Calculate collisions
   Eigen::VectorXd joint_vals0 = this->GetVariables()->GetComponent(position_vars_[0]->GetName())->GetValues();
-  Eigen::VectorXd joint_vals1 = this->GetVariables()->GetComponent(position_vars_[1]->GetName())->GetValues();
+  const Eigen::VectorXd joint_vals1 = this->GetVariables()->GetComponent(position_vars_[1]->GetName())->GetValues();
 
   auto collision_data =
       collision_evaluator_->CalcCollisionData(joint_vals0, joint_vals1, position_vars_fixed_, bounds_.size());
@@ -151,7 +151,7 @@ void ContinuousCollisionNumericalConstraint::FillJacobianBlock(std::string var_s
   const std::size_t cnt = std::min(bounds_.size(), collision_data->gradient_results_sets.size());
 
   Eigen::VectorXd jv = joint_vals0;
-  double delta = 1e-8;
+  const double delta = 1e-8;
   for (int j = 0; j < n_dof_; j++)
   {
     jv(j) = joint_vals0(j) + delta;

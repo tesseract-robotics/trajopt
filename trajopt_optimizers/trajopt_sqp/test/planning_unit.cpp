@@ -27,7 +27,6 @@
 #include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <ctime>
-#include <sstream>
 #include <memory>
 #include <gtest/gtest.h>
 #include <console_bridge/console.h>
@@ -69,10 +68,10 @@ public:
 
   void SetUp() override
   {
-    tesseract_common::fs::path urdf_file(std::string(TRAJOPT_DATA_DIR) + "/arm_around_table.urdf");
-    tesseract_common::fs::path srdf_file(std::string(TRAJOPT_DATA_DIR) + "/pr2.srdf");
+    const tesseract_common::fs::path urdf_file(std::string(TRAJOPT_DATA_DIR) + "/arm_around_table.urdf");
+    const tesseract_common::fs::path srdf_file(std::string(TRAJOPT_DATA_DIR) + "/pr2.srdf");
 
-    ResourceLocator::Ptr locator = std::make_shared<tesseract_common::GeneralResourceLocator>();
+    const ResourceLocator::Ptr locator = std::make_shared<tesseract_common::GeneralResourceLocator>();
     EXPECT_TRUE(env->init(urdf_file, srdf_file, locator));
 
     // Create plotting tool
@@ -98,9 +97,9 @@ void runPlanningTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const Enviro
   env->setState(ipos);
 
   std::vector<ContactResultMap> collisions;
-  tesseract_scene_graph::StateSolver::Ptr state_solver = env->getStateSolver();
-  ContinuousContactManager::Ptr manager = env->getContinuousContactManager();
-  tesseract_kinematics::JointGroup::ConstPtr manip = env->getJointGroup("right_arm");
+  const tesseract_scene_graph::StateSolver::Ptr state_solver = env->getStateSolver();
+  const ContinuousContactManager::Ptr manager = env->getContinuousContactManager();
+  const tesseract_kinematics::JointGroup::ConstPtr manip = env->getJointGroup("right_arm");
 
   manager->setActiveCollisionObjects(manip->getActiveLinkNames());
   manager->setDefaultCollisionMarginData(0);
@@ -124,30 +123,30 @@ void runPlanningTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const Enviro
     qp_problem->addVariableSet(var);
   }
 
-  double margin_coeff = 20;
-  double margin = 0.025;
+  const double margin_coeff = 20;
+  const double margin = 0.025;
   auto trajopt_collision_config = std::make_shared<trajopt_common::TrajOptCollisionConfig>(margin, margin_coeff);
   trajopt_collision_config->type = tesseract_collision::CollisionEvaluatorType::CONTINUOUS;
   trajopt_collision_config->collision_margin_buffer = 0.02;
 
   // Add costs
   {
-    Eigen::VectorXd coeffs = Eigen::VectorXd::Constant(1, 1);
+    const Eigen::VectorXd coeffs = Eigen::VectorXd::Constant(1, 1);
     auto cnt = std::make_shared<JointVelConstraint>(Eigen::VectorXd::Zero(7), vars, coeffs);
     qp_problem->addCostSet(cnt, trajopt_sqp::CostPenaltyType::SQUARED);
   }
 
   // Add constraints
   {  // Fix start position
-    std::vector<JointPosition::ConstPtr> fixed_vars = { vars[0] };
-    Eigen::VectorXd coeffs = Eigen::VectorXd::Constant(manip->numJoints(), 5);
+    const std::vector<JointPosition::ConstPtr> fixed_vars = { vars[0] };
+    const Eigen::VectorXd coeffs = Eigen::VectorXd::Constant(manip->numJoints(), 5);
     auto cnt = std::make_shared<JointPosConstraint>(trajectory.row(0), fixed_vars, coeffs);
     qp_problem->addConstraintSet(cnt);
   }
 
   {  // Fix end position
-    std::vector<trajopt_ifopt::JointPosition::ConstPtr> fixed_vars = { vars[5] };
-    Eigen::VectorXd coeffs = Eigen::VectorXd::Constant(manip->numJoints(), 5);
+    const std::vector<trajopt_ifopt::JointPosition::ConstPtr> fixed_vars = { vars[5] };
+    const Eigen::VectorXd coeffs = Eigen::VectorXd::Constant(manip->numJoints(), 5);
     auto cnt = std::make_shared<trajopt_ifopt::JointPosConstraint>(trajectory.row(5), fixed_vars, coeffs);
     qp_problem->addConstraintSet(cnt);
   }
@@ -159,7 +158,7 @@ void runPlanningTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const Enviro
     auto collision_evaluator = std::make_shared<trajopt_ifopt::LVSContinuousCollisionEvaluator>(
         collision_cache, manip, env, trajopt_collision_config);
 
-    std::array<JointPosition::ConstPtr, 2> position_vars{ vars[i - 1], vars[i] };
+    const std::array<JointPosition::ConstPtr, 2> position_vars{ vars[i - 1], vars[i] };
 
     if (i == 1)
       position_vars_fixed = { true, false };
@@ -192,11 +191,11 @@ void runPlanningTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const Enviro
   solver.verbose = true;
   solver.solve(qp_problem);
   Eigen::VectorXd x = qp_problem->getVariableValues();
-  std::cout << x.transpose() << std::endl;
+  std::cout << x.transpose() << '\n';
 
   EXPECT_TRUE(solver.getStatus() == trajopt_sqp::SQPStatus::NLP_CONVERGED);
 
-  Eigen::Map<tesseract_common::TrajArray> results(x.data(), 6, 7);
+  const Eigen::Map<tesseract_common::TrajArray> results(x.data(), 6, 7);
 
   tesseract_collision::CollisionCheckConfig config;
   config.type = tesseract_collision::CollisionEvaluatorType::CONTINUOUS;

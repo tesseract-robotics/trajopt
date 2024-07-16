@@ -40,10 +40,10 @@ public:
   Visualization::Ptr plotter_;                             /**< Trajopt Plotter */
   void SetUp() override
   {
-    tesseract_common::fs::path urdf_file(std::string(TRAJOPT_DATA_DIR) + "/arm_around_table.urdf");
-    tesseract_common::fs::path srdf_file(std::string(TRAJOPT_DATA_DIR) + "/pr2.srdf");
+    const tesseract_common::fs::path urdf_file(std::string(TRAJOPT_DATA_DIR) + "/arm_around_table.urdf");
+    const tesseract_common::fs::path srdf_file(std::string(TRAJOPT_DATA_DIR) + "/pr2.srdf");
 
-    ResourceLocator::Ptr locator = std::make_shared<tesseract_common::GeneralResourceLocator>();
+    const ResourceLocator::Ptr locator = std::make_shared<tesseract_common::GeneralResourceLocator>();
     EXPECT_TRUE(env_->init(urdf_file, srdf_file, locator));
 
     // Create plotting tool
@@ -61,14 +61,14 @@ void runTest(const Environment::Ptr& env, const Visualization::Ptr& /*plotter*/,
 {
   CONSOLE_BRIDGE_logDebug("NumericalIKTest, numerical_ik1");
 
-  Json::Value root = readJsonFile(std::string(TRAJOPT_DATA_DIR) + "/config/numerical_ik1.json");
+  const Json::Value root = readJsonFile(std::string(TRAJOPT_DATA_DIR) + "/config/numerical_ik1.json");
 
   //  plotter_->plotScene();
 
   ProblemConstructionInfo pci(env);
   pci.fromJson(root);
   pci.basic_info.convex_solver = sco::ModelType::OSQP;
-  TrajOptProb::Ptr prob = ConstructProblem(pci);
+  const TrajOptProb::Ptr prob = ConstructProblem(pci);
   ASSERT_TRUE(!!prob);
 
   sco::BasicTrustRegionSQP::Ptr opt;
@@ -89,12 +89,12 @@ void runTest(const Environment::Ptr& env, const Visualization::Ptr& /*plotter*/,
 
   CONSOLE_BRIDGE_logDebug("DOF: %d", prob->GetNumDOF());
   opt->initialize(DblVec(static_cast<std::size_t>(prob->GetNumDOF()), 0));
-  double tStart = GetClock();
+  const double tStart = GetClock();
   CONSOLE_BRIDGE_logDebug("Size: %d", opt->x().size());
   std::stringstream ss;
   ss << toVectorXd(opt->x()).transpose();
   CONSOLE_BRIDGE_logDebug("Initial Vars: %s", ss.str().c_str());
-  Eigen::Isometry3d change_base = prob->GetEnv()->getLinkTransform(prob->GetKin()->getBaseLinkName());
+  const Eigen::Isometry3d change_base = prob->GetEnv()->getLinkTransform(prob->GetKin()->getBaseLinkName());
   Eigen::Isometry3d initial_pose = prob->GetKin()->calcFwdKin(toVectorXd(opt->x())).at("l_gripper_tool_frame");
   initial_pose = change_base * initial_pose;
 
@@ -103,7 +103,7 @@ void runTest(const Environment::Ptr& env, const Visualization::Ptr& /*plotter*/,
   CONSOLE_BRIDGE_logDebug("Initial Position: %s", ss.str().c_str());
   tesseract_common::Timer stopwatch;
   stopwatch.start();
-  sco::OptStatus status = opt->optimize();
+  const sco::OptStatus status = opt->optimize();
   stopwatch.stop();
   CONSOLE_BRIDGE_logError("Test took %f seconds.", stopwatch.elapsedSeconds());
   CONSOLE_BRIDGE_logDebug("Status: %s", sco::statusToString(status).c_str());

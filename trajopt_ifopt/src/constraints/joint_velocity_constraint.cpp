@@ -97,7 +97,7 @@ Eigen::VectorXd JointVelConstraint::GetValues() const
   {
     auto vals1 = this->GetVariables()->GetComponent(position_vars_[ind]->GetName())->GetValues();
     auto vals2 = this->GetVariables()->GetComponent(position_vars_[ind + 1]->GetName())->GetValues();
-    Eigen::VectorXd single_step = (vals2 - vals1);
+    const Eigen::VectorXd single_step = (vals2 - vals1);
     velocity.block(n_dof_ * static_cast<Eigen::Index>(ind), 0, n_dof_, 1) = coeffs_.cwiseProduct(single_step);
   }
 
@@ -117,7 +117,7 @@ void JointVelConstraint::FillJacobianBlock(std::string var_set, Jacobian& jac_bl
   if (it == index_map_.end())  // NOLINT
     return;
 
-  Eigen::Index i = it->second;
+  const Eigen::Index i = it->second;
 
   // Reserve enough room in the sparse matrix
   std::vector<Eigen::Triplet<double>> triplet_list;

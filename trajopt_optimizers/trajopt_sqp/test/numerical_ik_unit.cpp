@@ -66,10 +66,10 @@ public:
 
   void SetUp() override
   {
-    tesseract_common::fs::path urdf_file(std::string(TRAJOPT_DATA_DIR) + "/arm_around_table.urdf");
-    tesseract_common::fs::path srdf_file(std::string(TRAJOPT_DATA_DIR) + "/pr2.srdf");
+    const tesseract_common::fs::path urdf_file(std::string(TRAJOPT_DATA_DIR) + "/arm_around_table.urdf");
+    const tesseract_common::fs::path srdf_file(std::string(TRAJOPT_DATA_DIR) + "/pr2.srdf");
 
-    ResourceLocator::Ptr locator = std::make_shared<tesseract_common::GeneralResourceLocator>();
+    const ResourceLocator::Ptr locator = std::make_shared<tesseract_common::GeneralResourceLocator>();
     EXPECT_TRUE(env->init(urdf_file, srdf_file, locator));
 
     // Create plotting tool
@@ -83,9 +83,9 @@ public:
 
 void runNumericalIKTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const Environment::Ptr& env)
 {
-  tesseract_scene_graph::StateSolver::Ptr state_solver = env->getStateSolver();
-  ContinuousContactManager::Ptr manager = env->getContinuousContactManager();
-  tesseract_kinematics::JointGroup::ConstPtr manip = env->getJointGroup("left_arm");
+  const tesseract_scene_graph::StateSolver::Ptr state_solver = env->getStateSolver();
+  const ContinuousContactManager::Ptr manager = env->getContinuousContactManager();
+  const tesseract_kinematics::JointGroup::ConstPtr manip = env->getJointGroup("left_arm");
 
   manager->setActiveCollisionObjects(manip->getActiveLinkNames());
   manager->setDefaultCollisionMarginData(0);
@@ -102,7 +102,8 @@ void runNumericalIKTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const Env
   target_pose.linear() = Eigen::Quaterniond(0, 0, 1, 0).toRotationMatrix();
   target_pose.translation() = Eigen::Vector3d(0.4, 0, 0.8);
 
-  CartPosInfo cart_info(manip, "l_gripper_tool_frame", "base_footprint", Eigen::Isometry3d::Identity(), target_pose);
+  const CartPosInfo cart_info(
+      manip, "l_gripper_tool_frame", "base_footprint", Eigen::Isometry3d::Identity(), target_pose);
   auto cnt = std::make_shared<trajopt_ifopt::CartPosConstraint>(cart_info, var);
   qp_problem->addConstraintSet(cnt);
 
@@ -139,7 +140,7 @@ void runNumericalIKTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const Env
   stopwatch.stop();
   CONSOLE_BRIDGE_logError("Test took %f seconds.", stopwatch.elapsedSeconds());
 
-  Eigen::VectorXd x = qp_problem->getVariableValues();
+  const Eigen::VectorXd x = qp_problem->getVariableValues();
 
   EXPECT_TRUE(solver.getStatus() == trajopt_sqp::SQPStatus::NLP_CONVERGED);
 

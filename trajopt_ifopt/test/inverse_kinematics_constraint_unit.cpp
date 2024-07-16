@@ -66,10 +66,10 @@ public:
   void SetUp() override
   {
     // Initialize Tesseract
-    tesseract_common::fs::path urdf_file(std::string(TRAJOPT_DATA_DIR) + "/arm_around_table.urdf");
-    tesseract_common::fs::path srdf_file(std::string(TRAJOPT_DATA_DIR) + "/pr2.srdf");
-    ResourceLocator::Ptr locator = std::make_shared<tesseract_common::GeneralResourceLocator>();
-    bool status = env->init(urdf_file, srdf_file, locator);
+    const tesseract_common::fs::path urdf_file(std::string(TRAJOPT_DATA_DIR) + "/arm_around_table.urdf");
+    const tesseract_common::fs::path srdf_file(std::string(TRAJOPT_DATA_DIR) + "/pr2.srdf");
+    const ResourceLocator::Ptr locator = std::make_shared<tesseract_common::GeneralResourceLocator>();
+    const bool status = env->init(urdf_file, srdf_file, locator);
     EXPECT_TRUE(status);
 
     // Extract necessary kinematic information
@@ -106,7 +106,7 @@ TEST_F(InverseKinematicsConstraintUnit, GetValue)  // NOLINT
   nlp.SetVariables(joint_position.data());
 
   // Get the value (distance from IK position)
-  Eigen::VectorXd values = constraint->GetValues();
+  const Eigen::VectorXd values = constraint->GetValues();
   EXPECT_TRUE(almostEqualRelativeAndAbs(values, Eigen::VectorXd::Zero(n_dof)));
 
   // Check that jac wrt constraint_var is identity
@@ -124,7 +124,7 @@ TEST_F(InverseKinematicsConstraintUnit, GetValue)  // NOLINT
     auto error_calculator = [&](const Eigen::Ref<const Eigen::VectorXd>& x) {
       return constraint->CalcValues(x, joint_position_single);
     };
-    trajopt_ifopt::SparseMatrix num_jac_block =
+    const trajopt_ifopt::SparseMatrix num_jac_block =
         trajopt_ifopt::calcForwardNumJac(error_calculator, joint_position_single, 1e-4);
     EXPECT_TRUE(jac_block.isApprox(num_jac_block));
   }
@@ -147,7 +147,7 @@ TEST_F(InverseKinematicsConstraintUnit, GetSetBounds)  // NOLINT
 
   // Check that setting bounds works
   {
-    Eigen::VectorXd pos = Eigen::VectorXd::Ones(n_dof);
+    const Eigen::VectorXd pos = Eigen::VectorXd::Ones(n_dof);
     auto var0 = std::make_shared<trajopt_ifopt::JointPosition>(pos, kin_group->getJointNames(), "Joint_Position_0");
     auto var1 = std::make_shared<trajopt_ifopt::JointPosition>(pos, kin_group->getJointNames(), "Joint_Position_1");
 
@@ -155,7 +155,7 @@ TEST_F(InverseKinematicsConstraintUnit, GetSetBounds)  // NOLINT
     auto constraint_2 =
         std::make_shared<trajopt_ifopt::InverseKinematicsConstraint>(target_pose, kinematic_info, var0, var1);
 
-    ifopt::Bounds bounds(-0.1234, 0.5678);
+    const ifopt::Bounds bounds(-0.1234, 0.5678);
     std::vector<ifopt::Bounds> bounds_vec = std::vector<ifopt::Bounds>(static_cast<std::size_t>(n_dof), bounds);
 
     constraint_2->SetBounds(bounds_vec);

@@ -104,7 +104,7 @@ void TrustRegionSQPSolver::solve(const QPProblem::Ptr& qp_problem)
     // Convexification loop
     for (int convex_iteration = 1; convex_iteration < 100; convex_iteration++)
     {
-      double elapsed_time = std::chrono::duration<double, std::milli>(Clock::now() - start_time).count() / 1000.0;
+      const double elapsed_time = std::chrono::duration<double, std::milli>(Clock::now() - start_time).count() / 1000.0;
       if (elapsed_time > params.max_time)
       {
         CONSOLE_BRIDGE_logInform("Elapsed time %f has exceeded max time %f", elapsed_time, params.max_time);
@@ -451,8 +451,8 @@ void TrustRegionSQPSolver::printStepInfo() const
   const std::vector<std::string>& cost_names = qp_problem->getNLPCostNames();
   for (Eigen::Index cost_number = 0; cost_number < static_cast<Eigen::Index>(cost_names.size()); ++cost_number)
   {
-    double approx_improve = results_.best_costs[cost_number] - results_.new_approx_costs[cost_number];
-    double exact_improve = results_.best_costs[cost_number] - results_.new_costs[cost_number];
+    const double approx_improve = results_.best_costs[cost_number] - results_.new_approx_costs[cost_number];
+    const double exact_improve = results_.best_costs[cost_number] - results_.new_costs[cost_number];
     if (fabs(approx_improve) > 1e-8)
       std::printf("| %10s | %10.3e | %10.3e | %10.3e | %10.3e | %10.3e | %10.3e | %-15s\n",
                   "----------",
@@ -496,9 +496,9 @@ void TrustRegionSQPSolver::printStepInfo() const
     // Loop over constraints
     for (Eigen::Index cnt_number = 0; cnt_number < static_cast<Eigen::Index>(constraint_names.size()); ++cnt_number)
     {
-      double approx_improve =
+      const double approx_improve =
           results_.best_constraint_violations[cnt_number] - results_.new_approx_constraint_violations[cnt_number];
-      double exact_improve =
+      const double exact_improve =
           results_.best_constraint_violations[cnt_number] - results_.new_constraint_violations[cnt_number];
       if (fabs(approx_improve) > 1e-8)
         std::printf("| %10.3e | %10.3e | %10.3e | %10.3e | %10.3e | %10.3e | %10.3e | %-15s\n",
@@ -524,7 +524,7 @@ void TrustRegionSQPSolver::printStepInfo() const
   }
 
   // Constraint
-  std::string constraints_satisfied =
+  const std::string constraints_satisfied =
       (results_.new_constraint_violations.maxCoeff() < params.cnt_tolerance) ? "True" : "False";
   std::printf("| %s |\n", std::string(88, '=').c_str());
   std::printf("| %10s | %10.3e | %10.3e | %10.3e | %10s | %10s | %10s | SUM CONSTRAINTS (WITHOUT MERIT), Satisfied "

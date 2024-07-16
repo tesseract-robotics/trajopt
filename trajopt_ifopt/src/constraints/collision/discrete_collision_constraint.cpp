@@ -71,7 +71,7 @@ DiscreteCollisionConstraint::DiscreteCollisionConstraint(
 Eigen::VectorXd DiscreteCollisionConstraint::GetValues() const
 {
   // Get current joint values
-  Eigen::VectorXd joint_vals = this->GetVariables()->GetComponent(position_var_->GetName())->GetValues();
+  const Eigen::VectorXd joint_vals = this->GetVariables()->GetComponent(position_var_->GetName())->GetValues();
 
   return CalcValues(joint_vals);
 }
@@ -86,7 +86,7 @@ void DiscreteCollisionConstraint::FillJacobianBlock(std::string var_set, Jacobia
     return;
 
   // Get current joint values
-  VectorXd joint_vals = this->GetVariables()->GetComponent(position_var_->GetName())->GetValues();
+  const VectorXd joint_vals = this->GetVariables()->GetComponent(position_var_->GetName())->GetValues();
 
   CalcJacobianBlock(joint_vals, jac_block);  // NOLINT
 }
@@ -94,9 +94,9 @@ void DiscreteCollisionConstraint::FillJacobianBlock(std::string var_set, Jacobia
 Eigen::VectorXd DiscreteCollisionConstraint::CalcValues(const Eigen::Ref<const Eigen::VectorXd>& joint_vals) const
 {
   // Check the collisions
-  trajopt_common::CollisionCacheData::ConstPtr collision_data =
+  const trajopt_common::CollisionCacheData::ConstPtr collision_data =
       collision_evaluator_->CalcCollisions(joint_vals, bounds_.size());
-  double margin_buffer = collision_evaluator_->GetCollisionConfig().collision_margin_buffer;
+  const double margin_buffer = collision_evaluator_->GetCollisionConfig().collision_margin_buffer;
   Eigen::VectorXd values = Eigen::VectorXd::Constant(static_cast<Eigen::Index>(bounds_.size()), -margin_buffer);
 
   if (collision_data->gradient_results_sets.empty())
@@ -125,7 +125,7 @@ void DiscreteCollisionConstraint::CalcJacobianBlock(const Eigen::Ref<const Eigen
   if (!triplet_list_.empty())                                               // NOLINT
     jac_block.setFromTriplets(triplet_list_.begin(), triplet_list_.end());  // NOLINT
 
-  trajopt_common::CollisionCacheData::ConstPtr collision_data =
+  const trajopt_common::CollisionCacheData::ConstPtr collision_data =
       collision_evaluator_->CalcCollisions(joint_vals, bounds_.size());
   if (collision_data->gradient_results_sets.empty())
     return;

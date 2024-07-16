@@ -15,7 +15,7 @@ QuadExprs::QuadExprs(Eigen::Index num_cost, Eigen::Index num_vars)
 
 Eigen::VectorXd QuadExprs::values(const Eigen::Ref<Eigen::VectorXd>& x) const
 {
-  Eigen::VectorXd result_lin = constants + (linear_coeffs * x);
+  const Eigen::VectorXd result_lin = constants + (linear_coeffs * x);
   Eigen::VectorXd result_quad = result_lin;
   assert(result_quad.rows() == static_cast<Eigen::Index>(quadratic_coeffs.size()));
   for (std::size_t i = 0; i < quadratic_coeffs.size(); ++i)
@@ -82,7 +82,7 @@ QuadExprs squareAffExprs(const AffExprs& aff_expr)
 
     // Now calculate the quadratic coefficients
     auto eq_affexpr_coeffs = aff_expr.linear_coeffs.row(i);
-    SparseMatrix eq_quadexpr_coeffs = eq_affexpr_coeffs.transpose() * eq_affexpr_coeffs;
+    const SparseMatrix eq_quadexpr_coeffs = eq_affexpr_coeffs.transpose() * eq_affexpr_coeffs;
 
     // Store the quadtratic coeffs and increment the objective quadratic coefficients
     if (eq_quadexpr_coeffs.nonZeros() > 0)

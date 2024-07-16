@@ -75,10 +75,10 @@ public:
 
   void SetUp() override
   {
-    tesseract_common::fs::path urdf_file(std::string(TRAJOPT_DATA_DIR) + "/boxbot.urdf");
-    tesseract_common::fs::path srdf_file(std::string(TRAJOPT_DATA_DIR) + "/boxbot.srdf");
+    const tesseract_common::fs::path urdf_file(std::string(TRAJOPT_DATA_DIR) + "/boxbot.urdf");
+    const tesseract_common::fs::path srdf_file(std::string(TRAJOPT_DATA_DIR) + "/boxbot.srdf");
 
-    ResourceLocator::Ptr locator = std::make_shared<tesseract_common::GeneralResourceLocator>();
+    const ResourceLocator::Ptr locator = std::make_shared<tesseract_common::GeneralResourceLocator>();
     EXPECT_TRUE(env->init(urdf_file, srdf_file, locator));
 
     // Create plotting tool
@@ -140,9 +140,9 @@ void runCastAttachedLinkWithGeomTest(const trajopt_sqp::QPProblem::Ptr& qp_probl
   env->setState(ipos);
 
   std::vector<ContactResultMap> collisions;
-  tesseract_scene_graph::StateSolver::Ptr state_solver = env->getStateSolver();
-  ContinuousContactManager::Ptr manager = env->getContinuousContactManager();
-  tesseract_kinematics::JointGroup::ConstPtr manip = env->getJointGroup("manipulator");
+  const tesseract_scene_graph::StateSolver::Ptr state_solver = env->getStateSolver();
+  const ContinuousContactManager::Ptr manager = env->getContinuousContactManager();
+  const tesseract_kinematics::JointGroup::ConstPtr manip = env->getJointGroup("manipulator");
 
   manager->setActiveCollisionObjects(manip->getActiveLinkNames());
   manager->setDefaultCollisionMarginData(0);
@@ -176,23 +176,23 @@ void runCastAttachedLinkWithGeomTest(const trajopt_sqp::QPProblem::Ptr& qp_probl
   }
 
   // Step 3: Setup collision
-  double margin_coeff = 20;
-  double margin = 0.3;
+  const double margin_coeff = 20;
+  const double margin = 0.3;
   auto trajopt_collision_config = std::make_shared<trajopt_common::TrajOptCollisionConfig>(margin, margin_coeff);
   trajopt_collision_config->type = tesseract_collision::CollisionEvaluatorType::LVS_CONTINUOUS;
   trajopt_collision_config->collision_margin_buffer = 0.05;
 
   // 4) Add constraints
   {  // Fix start position
-    std::vector<trajopt_ifopt::JointPosition::ConstPtr> fixed_vars = { vars[0] };
-    Eigen::VectorXd coeffs = Eigen::VectorXd::Constant(manip->numJoints(), 5);
+    const std::vector<trajopt_ifopt::JointPosition::ConstPtr> fixed_vars = { vars[0] };
+    const Eigen::VectorXd coeffs = Eigen::VectorXd::Constant(manip->numJoints(), 5);
     auto cnt = std::make_shared<trajopt_ifopt::JointPosConstraint>(positions[0], fixed_vars, coeffs);
     qp_problem->addConstraintSet(cnt);
   }
 
   {  // Fix end position
-    std::vector<trajopt_ifopt::JointPosition::ConstPtr> fixed_vars = { vars[2] };
-    Eigen::VectorXd coeffs = Eigen::VectorXd::Constant(manip->numJoints(), 5);
+    const std::vector<trajopt_ifopt::JointPosition::ConstPtr> fixed_vars = { vars[2] };
+    const Eigen::VectorXd coeffs = Eigen::VectorXd::Constant(manip->numJoints(), 5);
     auto cnt = std::make_shared<trajopt_ifopt::JointPosConstraint>(positions[2], fixed_vars, coeffs);
     qp_problem->addConstraintSet(cnt);
   }
@@ -203,8 +203,8 @@ void runCastAttachedLinkWithGeomTest(const trajopt_sqp::QPProblem::Ptr& qp_probl
     auto collision_evaluator = std::make_shared<trajopt_ifopt::LVSContinuousCollisionEvaluator>(
         collision_cache, manip, env, trajopt_collision_config);
 
-    std::array<JointPosition::ConstPtr, 2> position_vars{ vars[i - 1], vars[i] };
-    std::array<bool, 2> position_vars_fixed{ false, false };
+    const std::array<JointPosition::ConstPtr, 2> position_vars{ vars[i - 1], vars[i] };
+    const std::array<bool, 2> position_vars_fixed{ false, false };
     auto cnt = std::make_shared<trajopt_ifopt::ContinuousCollisionConstraint>(
         collision_evaluator, position_vars, position_vars_fixed, 3);
     qp_problem->addConstraintSet(cnt);
@@ -228,13 +228,13 @@ void runCastAttachedLinkWithGeomTest(const trajopt_sqp::QPProblem::Ptr& qp_probl
   solver.verbose = true;
   solver.solve(qp_problem);
   Eigen::VectorXd x = qp_problem->getVariableValues();
-  std::cout << x.transpose() << std::endl;
+  std::cout << x.transpose() << '\n';
 
   EXPECT_TRUE(solver.getStatus() == trajopt_sqp::SQPStatus::NLP_CONVERGED);
 
   tesseract_common::TrajArray inputs(3, 2);
   inputs << -1.9, 0, 0, 1.9, 1.9, 3.8;
-  Eigen::Map<tesseract_common::TrajArray> results(x.data(), 3, 2);
+  const Eigen::Map<tesseract_common::TrajArray> results(x.data(), 3, 2);
 
   tesseract_collision::CollisionCheckConfig config;
   config.type = tesseract_collision::CollisionEvaluatorType::CONTINUOUS;
@@ -260,9 +260,9 @@ void runCastAttachedLinkWithoutGeomTest(const trajopt_sqp::QPProblem::Ptr& qp_pr
   env->setState(ipos);
 
   std::vector<ContactResultMap> collisions;
-  tesseract_scene_graph::StateSolver::Ptr state_solver = env->getStateSolver();
-  ContinuousContactManager::Ptr manager = env->getContinuousContactManager();
-  tesseract_kinematics::JointGroup::ConstPtr manip = env->getJointGroup("manipulator");
+  const tesseract_scene_graph::StateSolver::Ptr state_solver = env->getStateSolver();
+  const ContinuousContactManager::Ptr manager = env->getContinuousContactManager();
+  const tesseract_kinematics::JointGroup::ConstPtr manip = env->getJointGroup("manipulator");
 
   manager->setActiveCollisionObjects(manip->getActiveLinkNames());
   manager->setDefaultCollisionMarginData(0);
@@ -296,8 +296,8 @@ void runCastAttachedLinkWithoutGeomTest(const trajopt_sqp::QPProblem::Ptr& qp_pr
   }
 
   // Step 3: Setup collision
-  double margin_coeff = 10;
-  double margin = 0.02;
+  const double margin_coeff = 10;
+  const double margin = 0.02;
   auto trajopt_collision_config = std::make_shared<trajopt_common::TrajOptCollisionConfig>(margin, margin_coeff);
   trajopt_collision_config->type = tesseract_collision::CollisionEvaluatorType::LVS_CONTINUOUS;
   trajopt_collision_config->collision_margin_buffer = 0.01;
@@ -305,15 +305,15 @@ void runCastAttachedLinkWithoutGeomTest(const trajopt_sqp::QPProblem::Ptr& qp_pr
 
   // 4) Add constraints
   {  // Fix start position
-    std::vector<trajopt_ifopt::JointPosition::ConstPtr> fixed_vars = { vars[0] };
-    Eigen::VectorXd coeffs = Eigen::VectorXd::Constant(manip->numJoints(), 5);
+    const std::vector<trajopt_ifopt::JointPosition::ConstPtr> fixed_vars = { vars[0] };
+    const Eigen::VectorXd coeffs = Eigen::VectorXd::Constant(manip->numJoints(), 5);
     auto cnt = std::make_shared<trajopt_ifopt::JointPosConstraint>(positions[0], fixed_vars, coeffs);
     qp_problem->addConstraintSet(cnt);
   }
 
   {  // Fix end position
-    std::vector<trajopt_ifopt::JointPosition::ConstPtr> fixed_vars = { vars[2] };
-    Eigen::VectorXd coeffs = Eigen::VectorXd::Constant(manip->numJoints(), 5);
+    const std::vector<trajopt_ifopt::JointPosition::ConstPtr> fixed_vars = { vars[2] };
+    const Eigen::VectorXd coeffs = Eigen::VectorXd::Constant(manip->numJoints(), 5);
     auto cnt = std::make_shared<trajopt_ifopt::JointPosConstraint>(positions[2], fixed_vars, coeffs);
     qp_problem->addConstraintSet(cnt);
   }
@@ -325,7 +325,7 @@ void runCastAttachedLinkWithoutGeomTest(const trajopt_sqp::QPProblem::Ptr& qp_pr
     auto collision_evaluator = std::make_shared<trajopt_ifopt::LVSContinuousCollisionEvaluator>(
         collision_cache, manip, env, trajopt_collision_config);
 
-    std::array<JointPosition::ConstPtr, 2> position_vars{ vars[i - 1], vars[i] };
+    const std::array<JointPosition::ConstPtr, 2> position_vars{ vars[i - 1], vars[i] };
 
     auto cnt = std::make_shared<trajopt_ifopt::ContinuousCollisionConstraint>(
         collision_evaluator, position_vars, position_vars_fixed, 2);
@@ -352,13 +352,13 @@ void runCastAttachedLinkWithoutGeomTest(const trajopt_sqp::QPProblem::Ptr& qp_pr
   solver.verbose = true;
   solver.solve(qp_problem);
   Eigen::VectorXd x = qp_problem->getVariableValues();
-  std::cout << x.transpose() << std::endl;
+  std::cout << x.transpose() << '\n';
 
   EXPECT_TRUE(solver.getStatus() == trajopt_sqp::SQPStatus::NLP_CONVERGED);
 
   tesseract_common::TrajArray inputs(3, 2);
   inputs << -1.9, 0, 0, 1.9, 1.9, 3.8;
-  Eigen::Map<tesseract_common::TrajArray> results(x.data(), 3, 2);
+  const Eigen::Map<tesseract_common::TrajArray> results(x.data(), 3, 2);
 
   tesseract_collision::CollisionCheckConfig config;
   config.type = tesseract_collision::CollisionEvaluatorType::CONTINUOUS;

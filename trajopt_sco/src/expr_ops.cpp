@@ -10,9 +10,9 @@ namespace sco
 QuadExpr exprMult(const AffExpr& affexpr1, const AffExpr& affexpr2)
 {
   QuadExpr out;
-  std::size_t naff1 = affexpr1.coeffs.size();
-  std::size_t naff2 = affexpr2.coeffs.size();
-  std::size_t nquad = naff1 * naff2;
+  const std::size_t naff1 = affexpr1.coeffs.size();
+  const std::size_t naff2 = affexpr2.coeffs.size();
+  const std::size_t nquad = naff1 * naff2;
 
   // Multiply the constants of the two expr
   out.affexpr.constant = affexpr1.constant * affexpr2.constant;
@@ -55,8 +55,8 @@ QuadExpr exprSquare(const Var& a)
 QuadExpr exprSquare(const AffExpr& affexpr)
 {
   QuadExpr out;
-  std::size_t naff = affexpr.coeffs.size();
-  std::size_t nquad = (naff * (naff + 1)) / 2;
+  const std::size_t naff = affexpr.coeffs.size();
+  const std::size_t nquad = (naff * (naff + 1)) / 2;
 
   out.affexpr.constant = sq(affexpr.constant);
 

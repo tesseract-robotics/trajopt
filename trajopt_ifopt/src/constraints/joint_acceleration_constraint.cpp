@@ -89,7 +89,7 @@ Eigen::VectorXd JointAccelConstraint::GetValues() const
     auto vals1 = GetVariables()->GetComponent(position_vars_[ind]->GetName())->GetValues();
     auto vals2 = GetVariables()->GetComponent(position_vars_[ind + 1]->GetName())->GetValues();
     auto vals3 = GetVariables()->GetComponent(position_vars_[ind + 2]->GetName())->GetValues();
-    Eigen::VectorXd single_step = (vals3 - 2 * vals2 + vals1);
+    const Eigen::VectorXd single_step = (vals3 - 2 * vals2 + vals1);
     acceleration.block(n_dof_ * static_cast<Eigen::Index>(ind), 0, n_dof_, 1) = coeffs_.cwiseProduct(single_step);
   }
 
@@ -99,7 +99,7 @@ Eigen::VectorXd JointAccelConstraint::GetValues() const
     auto vals1 = GetVariables()->GetComponent(position_vars_[ind]->GetName())->GetValues();
     auto vals2 = GetVariables()->GetComponent(position_vars_[ind - 1]->GetName())->GetValues();
     auto vals3 = GetVariables()->GetComponent(position_vars_[ind - 2]->GetName())->GetValues();
-    Eigen::VectorXd single_step = (vals3 - 2 * vals2 + vals1);
+    const Eigen::VectorXd single_step = (vals3 - 2 * vals2 + vals1);
     acceleration.block(n_dof_ * static_cast<Eigen::Index>(ind), 0, n_dof_, 1) = coeffs_.cwiseProduct(single_step);
   }
 
@@ -117,7 +117,7 @@ void JointAccelConstraint::FillJacobianBlock(std::string var_set, Jacobian& jac_
   if (it == index_map_.end())  // NOLINT
     return;
 
-  Eigen::Index i = it->second;
+  const Eigen::Index i = it->second;
 
   std::vector<Eigen::Triplet<double> > triplet_list;
   triplet_list.reserve(static_cast<std::size_t>(n_dof_ * 3));

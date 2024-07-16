@@ -27,7 +27,6 @@
 #include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <gtest/gtest.h>
-#include <iostream>
 
 #include <OsqpEigen/OsqpEigen.h>
 
@@ -74,7 +73,7 @@ void runJerkConstraintOptimizationTest(const trajopt_sqp::QPProblem::Ptr& qp_pro
 
   // 2) Add Variables
   std::vector<trajopt_ifopt::JointPosition::ConstPtr> vars;
-  std::vector<std::string> joint_names(7, "name");
+  const std::vector<std::string> joint_names(7, "name");
   {
     auto pos = Eigen::VectorXd::Zero(7);
     auto var = std::make_shared<trajopt_ifopt::JointPosition>(pos, joint_names, "Joint_Position_0");
@@ -99,7 +98,7 @@ void runJerkConstraintOptimizationTest(const trajopt_sqp::QPProblem::Ptr& qp_pro
   }
 
   // 3) Add constraints
-  Eigen::VectorXd start_pos = Eigen::VectorXd::Zero(7);
+  const Eigen::VectorXd start_pos = Eigen::VectorXd::Zero(7);
   std::vector<trajopt_ifopt::JointPosition::ConstPtr> start;
   start.push_back(vars.front());
   Eigen::VectorXd coeffs = Eigen::VectorXd::Constant(7, 5);
@@ -107,14 +106,14 @@ void runJerkConstraintOptimizationTest(const trajopt_sqp::QPProblem::Ptr& qp_pro
       std::make_shared<trajopt_ifopt::JointPosConstraint>(start_pos, start, coeffs, "StartPosition");
   qp_problem->addConstraintSet(start_constraint);
 
-  Eigen::VectorXd end_pos = Eigen::VectorXd::Ones(7) * 10;
+  const Eigen::VectorXd end_pos = Eigen::VectorXd::Ones(7) * 10;
   std::vector<trajopt_ifopt::JointPosition::ConstPtr> end;
   end.push_back(vars.back());
   auto end_constraint = std::make_shared<trajopt_ifopt::JointPosConstraint>(end_pos, end, coeffs, "EndPosition");
   qp_problem->addConstraintSet(end_constraint);
 
   // 4) Add costs
-  Eigen::VectorXd jerk_target = Eigen::VectorXd::Zero(7);
+  const Eigen::VectorXd jerk_target = Eigen::VectorXd::Zero(7);
   coeffs = Eigen::VectorXd::Constant(1, 1);
   auto jerk_constraint = std::make_shared<trajopt_ifopt::JointJerkConstraint>(jerk_target, vars, coeffs, "ja");
   qp_problem->addCostSet(jerk_constraint, trajopt_sqp::CostPenaltyType::SQUARED);
