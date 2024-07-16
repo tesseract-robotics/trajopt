@@ -85,7 +85,7 @@
   do                                                                                                                   \
   {                                                                                                                    \
     std::cerr << "\033[1;31mERROR " << (s) << "\033[0m\n";                                                             \
-    std::cerr << "at " << __FILE__ << ":" << __LINE__ << std::endl;                                                    \
+    std::cerr << "at " << __FILE__ << ":" << __LINE__ << '\n';                                                    \
     std::stringstream ss;                                                                                              \
     ss << (s);                                                                                                         \
     throw std::runtime_error(ss.str());                                                                                \

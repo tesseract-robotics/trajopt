@@ -79,7 +79,8 @@ void exprToEigen(const QuadExpr& expr,
       }
       else
       {
-        Eigen::Index c{ 0 }, r{ 0 };
+        Eigen::Index c{ 0 };
+        Eigen::Index r{ 0 };
         if (ind1[i] < ind2[i])
         {
           r = static_cast<Eigen::Index>(ind1[i]);

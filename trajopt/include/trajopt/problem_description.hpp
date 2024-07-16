@@ -35,25 +35,25 @@ enum class TermType : char
 
 inline TermType operator|(TermType lhs, TermType rhs)
 {
-  using T = std::underlying_type<TermType>::type;
+  using T = std::underlying_type_t<TermType>;
   return TermType(static_cast<T>(lhs) | static_cast<T>(rhs));
 }
 
 inline TermType operator&(TermType lhs, TermType rhs)
 {
-  using T = std::underlying_type<TermType>::type;
+  using T = std::underlying_type_t<TermType>;
   return TermType(static_cast<T>(lhs) & static_cast<T>(rhs));
 }
 
 inline TermType operator^(TermType lhs, TermType rhs)
 {
-  using T = std::underlying_type<TermType>::type;
+  using T = std::underlying_type_t<TermType>;
   return TermType(static_cast<T>(lhs) ^ static_cast<T>(rhs));
 }
 
 inline TermType operator~(TermType rhs)
 {
-  using T = std::underlying_type<TermType>::type;
+  using T = std::underlying_type_t<TermType>;
   return TermType(~static_cast<T>(rhs));
 }
 

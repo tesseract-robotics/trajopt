@@ -81,7 +81,7 @@ public:
    * @brief Constructs a CostTerm that converts a constraint into a cost with a sum squared error
    * @param constraint Input constraint to be converted to a cost
    */
-  SquaredCost(ifopt::ConstraintSet::Ptr constraint);
+  SquaredCost(const ifopt::ConstraintSet::Ptr& constraint);
   /**
    * @brief Constructs a CostTerm that converts a constraint into a cost with a weighted sum squared error
    * @param constraint Input constraint to be converted to a cost

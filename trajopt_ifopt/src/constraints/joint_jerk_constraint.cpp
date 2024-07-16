@@ -90,7 +90,7 @@ Eigen::VectorXd JointJerkConstraint::GetValues() const
     auto vals2 = GetVariables()->GetComponent(position_vars_[ind + 1]->GetName())->GetValues();
     auto vals3 = GetVariables()->GetComponent(position_vars_[ind + 2]->GetName())->GetValues();
     auto vals4 = GetVariables()->GetComponent(position_vars_[ind + 3]->GetName())->GetValues();
-    Eigen::VectorXd single_step = (3.0 * vals2) - (3.0 * vals3) - vals1 + vals4;
+    const Eigen::VectorXd single_step = (3.0 * vals2) - (3.0 * vals3) - vals1 + vals4;
     acceleration.block(n_dof_ * static_cast<Eigen::Index>(ind), 0, n_dof_, 1) = coeffs_.cwiseProduct(single_step);
   }
 
@@ -101,7 +101,7 @@ Eigen::VectorXd JointJerkConstraint::GetValues() const
     auto vals2 = GetVariables()->GetComponent(position_vars_[ind - 1]->GetName())->GetValues();
     auto vals3 = GetVariables()->GetComponent(position_vars_[ind - 2]->GetName())->GetValues();
     auto vals4 = GetVariables()->GetComponent(position_vars_[ind - 3]->GetName())->GetValues();
-    Eigen::VectorXd single_step = vals1 - (3.0 * vals2) + (3.0 * vals3) - vals4;
+    const Eigen::VectorXd single_step = vals1 - (3.0 * vals2) + (3.0 * vals3) - vals4;
     acceleration.block(n_dof_ * static_cast<Eigen::Index>(ind), 0, n_dof_, 1) = coeffs_.cwiseProduct(single_step);
   }
 
@@ -119,7 +119,7 @@ void JointJerkConstraint::FillJacobianBlock(std::string var_set, Jacobian& jac_b
   if (it == index_map_.end())  // NOLINT
     return;
 
-  Eigen::Index i = it->second;
+  const Eigen::Index i = it->second;
 
   // Reserve enough room in the sparse matrix
   std::vector<Eigen::Triplet<double>> triplet_list;

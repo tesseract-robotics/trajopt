@@ -66,11 +66,11 @@ public:
   void SetUp() override
   {
     // Initialize Tesseract
-    tesseract_common::fs::path urdf_file(std::string(TRAJOPT_DATA_DIR) + "/arm_around_table.urdf");
-    tesseract_common::fs::path srdf_file(std::string(TRAJOPT_DATA_DIR) + "/pr2.srdf");
+    const tesseract_common::fs::path urdf_file(std::string(TRAJOPT_DATA_DIR) + "/arm_around_table.urdf");
+    const tesseract_common::fs::path srdf_file(std::string(TRAJOPT_DATA_DIR) + "/pr2.srdf");
     auto locator = std::make_shared<tesseract_common::GeneralResourceLocator>();
     auto env = std::make_shared<Environment>();
-    bool status = env->init(urdf_file, srdf_file, locator);
+    const bool status = env->init(urdf_file, srdf_file, locator);
     EXPECT_TRUE(status);
 
     // Extract necessary kinematic information
@@ -82,7 +82,7 @@ public:
     nlp.AddVariableSet(var0);
 
     // 4) Add constraints
-    CartPosInfo cart_info(kin_group, "r_gripper_tool_frame", "base_footprint");
+    const CartPosInfo cart_info(kin_group, "r_gripper_tool_frame", "base_footprint");
     constraint = std::make_shared<trajopt_ifopt::CartPosConstraint>(cart_info, var0);
     nlp.AddConstraintSet(constraint);
   }
@@ -95,7 +95,7 @@ TEST_F(CartesianPositionConstraintUnit, GetValue)  // NOLINT
 
   // Run FK to get target pose
   Eigen::VectorXd joint_position = Eigen::VectorXd::Ones(n_dof);
-  Eigen::Isometry3d target_pose = kin_group->calcFwdKin(joint_position).at("r_gripper_tool_frame");
+  const Eigen::Isometry3d target_pose = kin_group->calcFwdKin(joint_position).at("r_gripper_tool_frame");
   constraint->SetTargetPose(target_pose);
 
   // Set the joints to the joint position that should satisfy it
@@ -145,8 +145,8 @@ TEST_F(CartesianPositionConstraintUnit, FillJacobian)  // NOLINT
   CONSOLE_BRIDGE_logDebug("CartesianPositionConstraintUnit, FillJacobian");
 
   // Run FK to get target pose
-  Eigen::VectorXd joint_position = Eigen::VectorXd::Ones(n_dof);
-  Eigen::Isometry3d target_pose = kin_group->calcFwdKin(joint_position).at("r_gripper_tool_frame");
+  const Eigen::VectorXd joint_position = Eigen::VectorXd::Ones(n_dof);
+  const Eigen::Isometry3d target_pose = kin_group->calcFwdKin(joint_position).at("r_gripper_tool_frame");
   constraint->SetTargetPose(target_pose);
 
   // Modify one joint at a time
@@ -159,7 +159,7 @@ TEST_F(CartesianPositionConstraintUnit, FillJacobian)  // NOLINT
 
     // Calculate jacobian numerically
     auto error_calculator = [&](const Eigen::Ref<const Eigen::VectorXd>& x) { return constraint->CalcValues(x); };
-    trajopt_ifopt::SparseMatrix num_jac_block =
+    const trajopt_ifopt::SparseMatrix num_jac_block =
         trajopt_ifopt::calcForwardNumJac(error_calculator, joint_position_mod, 1e-4);
 
     // Compare to constraint jacobian
@@ -167,15 +167,15 @@ TEST_F(CartesianPositionConstraintUnit, FillJacobian)  // NOLINT
       trajopt_ifopt::SparseMatrix jac_block(num_jac_block.rows(), num_jac_block.cols());
       constraint->CalcJacobianBlock(joint_position_mod, jac_block);  // NOLINT
       EXPECT_TRUE(jac_block.isApprox(num_jac_block, 1e-3));
-      //      std::cout << "Numeric:\n" << num_jac_block.toDense() << std::endl;
-      //      std::cout << "Analytic:\n" << jac_block.toDense() << std::endl;
+      //      std::cout << "Numeric:\n" << num_jac_block.toDense() << '\n';
+      //      std::cout << "Analytic:\n" << jac_block.toDense() << '\n';
     }
     {
       trajopt_ifopt::SparseMatrix jac_block(num_jac_block.rows(), num_jac_block.cols());
       constraint->FillJacobianBlock("Joint_Position_0", jac_block);
       EXPECT_TRUE(jac_block.toDense().isApprox(num_jac_block.toDense(), 1e-3));
-      //      std::cout << "Numeric:\n" << num_jac_block.toDense() << std::endl;
-      //      std::cout << "Analytic:\n" << jac_block.toDense() << std::endl;
+      //      std::cout << "Numeric:\n" << num_jac_block.toDense() << '\n';
+      //      std::cout << "Analytic:\n" << jac_block.toDense() << '\n';
     }
   }
 }
@@ -189,13 +189,13 @@ TEST_F(CartesianPositionConstraintUnit, GetSetBounds)  // NOLINT
 
   // Check that setting bounds works
   {
-    Eigen::VectorXd pos = Eigen::VectorXd::Ones(kin_group->numJoints());
+    const Eigen::VectorXd pos = Eigen::VectorXd::Ones(kin_group->numJoints());
     auto var0 = std::make_shared<trajopt_ifopt::JointPosition>(pos, kin_group->getJointNames(), "Joint_Position_0");
 
-    CartPosInfo cart_info(kin_group, "r_gripper_tool_frame", "base_footprint");
+    const CartPosInfo cart_info(kin_group, "r_gripper_tool_frame", "base_footprint");
     auto constraint_2 = std::make_shared<trajopt_ifopt::CartPosConstraint>(cart_info, var0);
 
-    ifopt::Bounds bounds(-0.1234, 0.5678);
+    const ifopt::Bounds bounds(-0.1234, 0.5678);
     std::vector<ifopt::Bounds> bounds_vec = std::vector<ifopt::Bounds>(6, bounds);
 
     constraint_2->SetBounds(bounds_vec);

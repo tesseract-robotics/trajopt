@@ -87,7 +87,7 @@ std::shared_ptr<const trajopt_common::CollisionCacheData>
 SingleTimestepCollisionEvaluator::CalcCollisions(const Eigen::Ref<const Eigen::VectorXd>& dof_vals,
                                                  std::size_t bounds_size)
 {
-  std::size_t key = getHash(*collision_config_, dof_vals);
+  const std::size_t key = getHash(*collision_config_, dof_vals);
   auto* it = collision_cache_->get(key);
   if (it != nullptr)
   {
@@ -176,9 +176,10 @@ void SingleTimestepCollisionEvaluator::CalcCollisionsHelper(const Eigen::Ref<con
     }
 
     // Contains the contact distance threshold and coefficient for the given link pair
-    double dist = collision_config_->contact_manager_config.margin_data.getPairCollisionMargin(pair.first.first,
-                                                                                               pair.first.second);
-    double coeff = collision_config_->collision_coeff_data.getPairCollisionCoeff(pair.first.first, pair.first.second);
+    const double dist = collision_config_->contact_manager_config.margin_data.getPairCollisionMargin(pair.first.first,
+                                                                                                     pair.first.second);
+    const double coeff =
+        collision_config_->collision_coeff_data.getPairCollisionCoeff(pair.first.first, pair.first.second);
     const Eigen::Vector2d data = { dist, coeff };
     auto end = std::remove_if(
         pair.second.begin(), pair.second.end(), [&data, this](const tesseract_collision::ContactResult& r) {
@@ -195,7 +196,7 @@ SingleTimestepCollisionEvaluator::GetGradient(const Eigen::VectorXd& dofvals,
                                               const tesseract_collision::ContactResult& contact_result)
 {
   // Contains the contact distance threshold and coefficient for the given link pair
-  double margin = collision_config_->contact_manager_config.margin_data.getPairCollisionMargin(
+  const double margin = collision_config_->contact_manager_config.margin_data.getPairCollisionMargin(
       contact_result.link_names[0], contact_result.link_names[1]);
 
   return trajopt_common::getGradient(

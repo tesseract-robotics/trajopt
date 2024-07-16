@@ -84,7 +84,7 @@ public:
     // If error function has a inherited from TrajOptVectorOfVector, call its Plot function
     if (auto* plt = dynamic_cast<TrajOptVectorOfVector*>(f_.get()))
     {
-      Eigen::VectorXd dof_vals = sco::getVec(x, vars_);
+      const Eigen::VectorXd dof_vals = sco::getVec(x, vars_);
       plt->Plot(plotter, dof_vals);
     }
   }
@@ -120,7 +120,7 @@ public:
     // If error function has a inherited from TrajOptVectorOfVector, call its Plot function
     if (auto* plt = dynamic_cast<TrajOptVectorOfVector*>(f_.get()))
     {
-      Eigen::VectorXd dof_vals = sco::getVec(x, vars_);
+      const Eigen::VectorXd dof_vals = sco::getVec(x, vars_);
       plt->Plot(plotter, dof_vals);
     }
   }

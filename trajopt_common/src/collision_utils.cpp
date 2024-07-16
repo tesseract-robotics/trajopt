@@ -151,18 +151,18 @@ void calcGradient(GradientResults& results,
   link_gradient.jacobian = jac.topRows(3);
   link_gradient.gradient = link_gradient.translation_vector.transpose() * link_gradient.jacobian;
 
-  //#ifndef NDEBUG // This is good for checking discrete evaluators
-  //  Eigen::Isometry3d test_link_transform = manip->calcFwdKin(dofvals, it->link_name);
-  //  Eigen::Isometry3d temp1 = world_to_base * test_link_transform;
-  //  Eigen::Isometry3d temp2 = link_transform * it->transform.inverse();
-  //  assert(temp1.isApprox(temp2, 0.0001));
+  // #ifndef NDEBUG // This is good for checking discrete evaluators
+  //   Eigen::Isometry3d test_link_transform = manip->calcFwdKin(dofvals, it->link_name);
+  //   Eigen::Isometry3d temp1 = world_to_base * test_link_transform;
+  //   Eigen::Isometry3d temp2 = link_transform * it->transform.inverse();
+  //   assert(temp1.isApprox(temp2, 0.0001));
 
   //  Eigen::MatrixXd jac_test;
   //  jac_test.resize(6, manip->numJoints());
   //  tesseract_kinematics::numericalJacobian(jac_test, world_to_base, *manip, dofvals, it->link_name,
   //  contact_result.nearest_points_local[i]); bool check = link_gradient.jacobian.isApprox(jac_test.topRows(3), 1e-3);
   //  assert(check == true);
-  //#endif
+  // #endif
 }
 
 GradientResults getGradient(const Eigen::VectorXd& dofvals,

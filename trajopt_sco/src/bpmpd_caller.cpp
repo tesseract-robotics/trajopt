@@ -35,8 +35,8 @@ extern void bpmpd(int*,
 
 int main(int /*argc*/, char** /*argv*/)
 {
-  std::string working_dir = BPMPD_WORKING_DIR;
-  int err = chdir(working_dir.c_str());
+  std::string const working_dir = BPMPD_WORKING_DIR;
+  int const err = chdir(working_dir.c_str());
   if (err != 0)
   {
     std::cerr << "error going to BPMPD working dir\n";

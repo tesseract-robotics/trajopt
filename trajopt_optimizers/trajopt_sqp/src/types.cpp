@@ -50,7 +50,7 @@ SQPResults::SQPResults(Eigen::Index num_vars, Eigen::Index num_cnts, Eigen::Inde
 
 void SQPResults::print() const
 {
-  Eigen::IOFormat format(3);
+  const Eigen::IOFormat format(3);
   std::cout << "-------------- SQPResults::print() --------------" << '\n';
   std::cout << "best_exact_merit: " << best_exact_merit << '\n';
   std::cout << "new_exact_merit: " << new_exact_merit << '\n';

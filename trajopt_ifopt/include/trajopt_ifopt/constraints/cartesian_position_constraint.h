@@ -99,7 +99,7 @@ public:
   using ErrorDiffFunctionType =
       std::function<Eigen::VectorXd(const Eigen::VectorXd&, const Eigen::Isometry3d&, const Eigen::Isometry3d&)>;
 
-  CartPosConstraint(CartPosInfo info,
+  CartPosConstraint(const CartPosInfo& info,
                     std::shared_ptr<const JointPosition> position_var,
                     const std::string& name = "CartPos");
 

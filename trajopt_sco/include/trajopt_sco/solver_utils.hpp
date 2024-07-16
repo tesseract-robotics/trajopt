@@ -119,7 +119,8 @@ void eigenToCSC(Eigen::SparseMatrix<double>& sparse_matrix,
 
   if (sizeof(T) != sizeof(int))
   {
-    IntVec row_indices_int, column_pointers_int;
+    IntVec row_indices_int;
+    IntVec column_pointers_int;
     auto* si_p = sm_ref.get().innerIndexPtr();
     row_indices_int.assign(si_p, si_p + sm_ref.get().nonZeros());
     row_indices.clear();

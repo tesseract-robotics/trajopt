@@ -102,7 +102,7 @@ TEST(CostWrapperUnit, SquaredCost)  // NOLINT
     Eigen::VectorXd pos(1);
     pos << -4;
     positions.push_back(pos);
-    std::vector<std::string> var_names = { "x" };
+    const std::vector<std::string> var_names = { "x" };
     auto var = std::make_shared<trajopt_ifopt::JointPosition>(pos, var_names);
     vars.push_back(var);
     nlp.AddVariableSet(var);
@@ -122,8 +122,8 @@ TEST(CostWrapperUnit, SquaredCost)  // NOLINT
   // Squared cost jacobian = 2 * y(x) * dy(x)
   //   y(x) = x^2 + 4x + 3
   //   dy(x) = 2x + 4
-  double x = positions[0](0);
-  double jac = 2 * (std::pow(x, 2) + 4 * x + 3) * (2 * x + 4);
+  const double x = positions[0](0);
+  const double jac = 2 * (std::pow(x, 2) + 4 * x + 3) * (2 * x + 4);
   EXPECT_NEAR(exact_jac(0, 0), jac, 1e-6);
   EXPECT_NEAR(numerical_jac(0, 0), jac, 1e-6);
 }
@@ -141,7 +141,7 @@ TEST(CostWrapperUnit, WeightedSquaredCost)  // NOLINT
     Eigen::VectorXd pos(1);
     pos << -4;
     positions.push_back(pos);
-    std::vector<std::string> var_names = { "x" };
+    const std::vector<std::string> var_names = { "x" };
     auto var = std::make_shared<trajopt_ifopt::JointPosition>(pos, var_names);
     vars.push_back(var);
     nlp.AddVariableSet(var);
@@ -163,8 +163,8 @@ TEST(CostWrapperUnit, WeightedSquaredCost)  // NOLINT
   // Squared cost jacobian = 2 * y(x) * dy(x)
   //   y(x) = x^2 + 4x + 3
   //   dy(x) = 2x + 4
-  double x = positions[0](0);
-  double jac = 2 * weights(0) * (std::pow(x, 2) + 4 * x + 3) * (2 * x + 4);
+  const double x = positions[0](0);
+  const double jac = 2 * weights(0) * (std::pow(x, 2) + 4 * x + 3) * (2 * x + 4);
   EXPECT_NEAR(exact_jac(0, 0), jac, 1e-6);
   EXPECT_NEAR(numerical_jac(0, 0), jac, 1e-6);
 }
@@ -182,7 +182,7 @@ TEST(CostWrapperUnit, AbsoluteCost)  // NOLINT
     Eigen::VectorXd pos(1);
     pos << -4;
     positions.push_back(pos);
-    std::vector<std::string> var_names = { "x" };
+    const std::vector<std::string> var_names = { "x" };
     auto var = std::make_shared<trajopt_ifopt::JointPosition>(pos, var_names);
     vars.push_back(var);
     nlp.AddVariableSet(var);
@@ -202,8 +202,8 @@ TEST(CostWrapperUnit, AbsoluteCost)  // NOLINT
   // Absolute cost jacobian = (y(x) / |y(x)|) * dy(x)
   //   y(x) = x^2 + 4x + 3
   //   dy(x) = 2x + 4
-  double x = positions[0](0);
-  double jac = ((std::pow(x, 2) + 4 * x + 3) / std::abs(std::pow(x, 2) + 4 * x + 3)) * (2 * x + 4);
+  const double x = positions[0](0);
+  const double jac = ((std::pow(x, 2) + 4 * x + 3) / std::abs(std::pow(x, 2) + 4 * x + 3)) * (2 * x + 4);
   EXPECT_NEAR(exact_jac(0, 0), jac, 1e-6);
   EXPECT_NEAR(numerical_jac(0, 0), jac, 1e-6);
 }
@@ -221,7 +221,7 @@ TEST(CostWrapperUnit, WeightedAbsoluteCost)  // NOLINT
     Eigen::VectorXd pos(1);
     pos << -4;
     positions.push_back(pos);
-    std::vector<std::string> var_names = { "x" };
+    const std::vector<std::string> var_names = { "x" };
     auto var = std::make_shared<trajopt_ifopt::JointPosition>(pos, var_names);
     vars.push_back(var);
     nlp.AddVariableSet(var);
@@ -243,8 +243,8 @@ TEST(CostWrapperUnit, WeightedAbsoluteCost)  // NOLINT
   // Absolute cost jacobian = (y(x) / |y(x)|) * dy(x)
   //   y(x) = x^2 + 4x + 3
   //   dy(x) = 2x + 4
-  double x = positions[0](0);
-  double jac = (weights(0) * (std::pow(x, 2) + 4 * x + 3) / std::abs(std::pow(x, 2) + 4 * x + 3)) * (2 * x + 4);
+  const double x = positions[0](0);
+  const double jac = (weights(0) * (std::pow(x, 2) + 4 * x + 3) / std::abs(std::pow(x, 2) + 4 * x + 3)) * (2 * x + 4);
   EXPECT_NEAR(exact_jac(0, 0), jac, 1e-6);
   EXPECT_NEAR(numerical_jac(0, 0), jac, 1e-6);
 }

@@ -65,10 +65,10 @@ public:
 
   void SetUp() override
   {
-    boost::filesystem::path urdf_file(std::string(TRAJOPT_DATA_DIR) + "/spherebot.urdf");
-    boost::filesystem::path srdf_file(std::string(TRAJOPT_DATA_DIR) + "/spherebot.srdf");
+    boost::filesystem::path const urdf_file(std::string(TRAJOPT_DATA_DIR) + "/spherebot.urdf");
+    boost::filesystem::path const srdf_file(std::string(TRAJOPT_DATA_DIR) + "/spherebot.srdf");
 
-    ResourceLocator::Ptr locator = std::make_shared<tesseract_common::GeneralResourceLocator>();
+    ResourceLocator::Ptr const locator = std::make_shared<tesseract_common::GeneralResourceLocator>();
     EXPECT_TRUE(env->init(urdf_file, srdf_file, locator));
   }
 };
@@ -81,9 +81,9 @@ void runDiscreteGradientTest(const Environment::Ptr& env, double coeff)
   env->setState(ipos);
 
   std::vector<ContactResultMap> collisions;
-  tesseract_scene_graph::StateSolver::Ptr state_solver = env->getStateSolver();
-  DiscreteContactManager::Ptr manager = env->getDiscreteContactManager();
-  tesseract_kinematics::JointGroup::ConstPtr manip = env->getJointGroup("manipulator");
+  tesseract_scene_graph::StateSolver::Ptr const state_solver = env->getStateSolver();
+  DiscreteContactManager::Ptr const manager = env->getDiscreteContactManager();
+  const tesseract_kinematics::JointGroup::ConstPtr manip = env->getJointGroup("manipulator");
 
   manager->setActiveCollisionObjects(manip->getActiveLinkNames());
   manager->setDefaultCollisionMarginData(0);
@@ -106,8 +106,8 @@ void runDiscreteGradientTest(const Environment::Ptr& env, double coeff)
   }
 
   // Step 3: Setup collision
-  double margin_coeff = coeff;
-  double margin = 0.2;
+  const double margin_coeff = coeff;
+  const double margin = 0.2;
   auto trajopt_collision_config = std::make_shared<trajopt_common::TrajOptCollisionConfig>(margin, margin_coeff);
   trajopt_collision_config->collision_margin_buffer = 0.0;  // 0.05
 
@@ -117,11 +117,11 @@ void runDiscreteGradientTest(const Environment::Ptr& env, double coeff)
   auto cnt = std::make_shared<trajopt_ifopt::DiscreteCollisionConstraint>(collision_evaluator, vars[0], 3);
   nlp.AddConstraintSet(cnt);
 
-  std::cout << "Jacobian: \n" << nlp.GetJacobianOfConstraints().toDense() << std::endl;
+  std::cout << "Jacobian: \n" << nlp.GetJacobianOfConstraints().toDense() << '\n';
 
-  trajopt_ifopt::SparseMatrix num_jac_block =
+  trajopt_ifopt::SparseMatrix const num_jac_block =
       trajopt_ifopt::calcNumericalConstraintGradient(positions[0].data(), nlp, 1e-8);
-  std::cout << "Numerical Jacobian: \n" << num_jac_block.toDense() << std::endl;
+  std::cout << "Numerical Jacobian: \n" << num_jac_block.toDense() << '\n';
 }
 
 TEST_F(DiscreteCollisionGradientTest, DiscreteCollisionGradientTest)  // NOLINT

@@ -110,7 +110,7 @@ DynamicCartPoseErrCalculator::DynamicCartPoseErrCalculator(
     error_function = [lower_tolerance, upper_tolerance](const Eigen::Isometry3d& target_tf,
                                                         const Eigen::Isometry3d& source_tf) -> Eigen::VectorXd {
       // Calculate the error using tesseract_common::calcTransformError or equivalent
-      VectorXd err = tesseract_common::calcTransformError(target_tf, source_tf);
+      const VectorXd err = tesseract_common::calcTransformError(target_tf, source_tf);
 
       // Apply tolerances
       return applyTolerances(err, lower_tolerance, upper_tolerance);
@@ -121,8 +121,8 @@ DynamicCartPoseErrCalculator::DynamicCartPoseErrCalculator(
 VectorXd DynamicCartPoseErrCalculator::operator()(const VectorXd& dof_vals) const
 {
   tesseract_common::TransformMap state = manip_->calcFwdKin(dof_vals);
-  Isometry3d source_tf = state[source_frame_] * source_frame_offset_;
-  Isometry3d target_tf = state[target_frame_] * target_frame_offset_;
+  const Isometry3d source_tf = state[source_frame_] * source_frame_offset_;
+  const Isometry3d target_tf = state[target_frame_] * target_frame_offset_;
 
   VectorXd err = error_function(target_tf, source_tf);
 
@@ -176,8 +176,8 @@ MatrixXd DynamicCartPoseJacCalculator::operator()(const VectorXd& dof_vals) cons
 {
   // Duplicated from calcForwardNumJac in trajopt_sco/src/num_diff.cpp, but with ignoring tolerances
   tesseract_common::TransformMap state = manip_->calcFwdKin(dof_vals);
-  Isometry3d source_tf = state[source_frame_] * source_frame_offset_;
-  Isometry3d target_tf = state[target_frame_] * target_frame_offset_;
+  const Isometry3d source_tf = state[source_frame_] * source_frame_offset_;
+  const Isometry3d target_tf = state[target_frame_] * target_frame_offset_;
 
   Eigen::MatrixXd jac0(indices_.size(), dof_vals.size());
   Eigen::VectorXd dof_vals_pert = dof_vals;
@@ -185,8 +185,8 @@ MatrixXd DynamicCartPoseJacCalculator::operator()(const VectorXd& dof_vals) cons
   {
     dof_vals_pert(i) = dof_vals(i) + epsilon_;
     tesseract_common::TransformMap state_pert = manip_->calcFwdKin(dof_vals_pert);
-    Isometry3d source_tf_pert = state_pert[source_frame_] * source_frame_offset_;
-    Isometry3d target_tf_pert = state_pert[target_frame_] * target_frame_offset_;
+    const Isometry3d source_tf_pert = state_pert[source_frame_] * source_frame_offset_;
+    const Isometry3d target_tf_pert = state_pert[target_frame_] * target_frame_offset_;
     VectorXd error_diff =
         tesseract_common::calcJacobianTransformErrorDiff(target_tf, target_tf_pert, source_tf, source_tf_pert);
 
@@ -254,7 +254,7 @@ CartPoseErrCalculator::CartPoseErrCalculator(
       error_function_ = [lower_tolerance, upper_tolerance](const Eigen::Isometry3d& target_tf,
                                                            const Eigen::Isometry3d& source_tf) -> Eigen::VectorXd {
         // Calculate the error using tesseract_common::calcTransformError or equivalent
-        VectorXd err = tesseract_common::calcTransformError(source_tf, target_tf);
+        const VectorXd err = tesseract_common::calcTransformError(source_tf, target_tf);
 
         // Apply tolerances
         return applyTolerances(err, lower_tolerance, upper_tolerance);
@@ -265,7 +265,7 @@ CartPoseErrCalculator::CartPoseErrCalculator(
       error_function_ = [lower_tolerance, upper_tolerance](const Eigen::Isometry3d& target_tf,
                                                            const Eigen::Isometry3d& source_tf) -> Eigen::VectorXd {
         // Calculate the error using tesseract_common::calcTransformError or equivalent
-        VectorXd err = tesseract_common::calcTransformError(target_tf, source_tf);
+        const VectorXd err = tesseract_common::calcTransformError(target_tf, source_tf);
 
         // Apply tolerances
         return applyTolerances(err, lower_tolerance, upper_tolerance);
@@ -277,8 +277,8 @@ CartPoseErrCalculator::CartPoseErrCalculator(
 VectorXd CartPoseErrCalculator::operator()(const VectorXd& dof_vals) const
 {
   tesseract_common::TransformMap state = manip_->calcFwdKin(dof_vals);
-  Isometry3d source_tf = state[source_frame_] * source_frame_offset_;
-  Isometry3d target_tf = state[target_frame_] * target_frame_offset_;
+  const Isometry3d source_tf = state[source_frame_] * source_frame_offset_;
+  const Isometry3d target_tf = state[target_frame_] * target_frame_offset_;
 
   VectorXd err = error_function_(target_tf, source_tf);
 
@@ -334,7 +334,7 @@ CartPoseJacCalculator::CartPoseJacCalculator(
                                   const Eigen::Isometry3d& target_tf,
                                   const Eigen::Isometry3d& source_tf) -> VectorXd {
       tesseract_common::TransformMap perturbed_state = manip_->calcFwdKin(vals);
-      Isometry3d perturbed_target_tf = perturbed_state[target_frame_] * target_frame_offset_;
+      const Isometry3d perturbed_target_tf = perturbed_state[target_frame_] * target_frame_offset_;
       VectorXd error_diff = tesseract_common::calcJacobianTransformErrorDiff(source_tf, target_tf, perturbed_target_tf);
 
       VectorXd reduced_error_diff(indices_.size());
@@ -350,7 +350,7 @@ CartPoseJacCalculator::CartPoseJacCalculator(
                                   const Eigen::Isometry3d& target_tf,
                                   const Eigen::Isometry3d& source_tf) -> VectorXd {
       tesseract_common::TransformMap perturbed_state = manip_->calcFwdKin(vals);
-      Isometry3d perturbed_source_tf = perturbed_state[source_frame_] * source_frame_offset_;
+      const Isometry3d perturbed_source_tf = perturbed_state[source_frame_] * source_frame_offset_;
       VectorXd error_diff = tesseract_common::calcJacobianTransformErrorDiff(target_tf, source_tf, perturbed_source_tf);
 
       VectorXd reduced_error_diff(indices_.size());
@@ -365,15 +365,15 @@ CartPoseJacCalculator::CartPoseJacCalculator(
 MatrixXd CartPoseJacCalculator::operator()(const VectorXd& dof_vals) const
 {
   tesseract_common::TransformMap state = manip_->calcFwdKin(dof_vals);
-  Isometry3d source_tf = state[source_frame_] * source_frame_offset_;
-  Isometry3d target_tf = state[target_frame_] * target_frame_offset_;
+  const Isometry3d source_tf = state[source_frame_] * source_frame_offset_;
+  const Isometry3d target_tf = state[target_frame_] * target_frame_offset_;
 
   Eigen::MatrixXd jac0(indices_.size(), dof_vals.size());
   Eigen::VectorXd dof_vals_pert = dof_vals;
   for (int i = 0; i < dof_vals.size(); ++i)
   {
     dof_vals_pert(i) = dof_vals(i) + epsilon_;
-    VectorXd error_diff = error_diff_function_(dof_vals_pert, target_tf, source_tf);
+    const VectorXd error_diff = error_diff_function_(dof_vals_pert, target_tf, source_tf);
     jac0.col(i) = error_diff / epsilon_;
     dof_vals_pert(i) = dof_vals(i);
   }
@@ -444,7 +444,7 @@ Eigen::VectorXd JointVelErrCalculator::operator()(const VectorXd& var_vals) cons
   assert(var_vals.rows() % 2 == 0);
   // Top half of the vector are the joint values. The bottom half are the 1/dt values
   auto half = static_cast<int>(var_vals.rows() / 2);
-  int num_vels = half - 1;
+  const int num_vels = half - 1;
   // (x1-x0)*(1/dt)
   VectorXd vel = (var_vals.segment(1, num_vels) - var_vals.segment(0, num_vels)).array() *
                  var_vals.segment(half + 1, num_vels).array();
@@ -489,7 +489,7 @@ VectorXd JointAccErrCalculator::operator()(const VectorXd& var_vals) const
 {
   assert(var_vals.rows() % 2 == 0);
   auto half = static_cast<int>(var_vals.rows() / 2);
-  int num_acc = half - 2;
+  const int num_acc = half - 2;
   VectorXd vels = vel_calc(var_vals);
 
   // v1-v0
@@ -505,18 +505,18 @@ VectorXd JointAccErrCalculator::operator()(const VectorXd& var_vals) const
 MatrixXd JointAccJacCalculator::operator()(const VectorXd& var_vals) const
 {
   auto num_vals = static_cast<int>(var_vals.rows());
-  int half = num_vals / 2;
+  const int half = num_vals / 2;
   MatrixXd jac = MatrixXd::Zero(half - 2, num_vals);
 
   VectorXd vels = vel_calc(var_vals);
   MatrixXd vel_jac = vel_jac_calc(var_vals);
   for (int i = 0; i < jac.rows(); i++)
   {
-    int dt_1_index = i + half + 1;
-    int dt_2_index = dt_1_index + 1;
-    double dt_1 = var_vals(dt_1_index);
-    double dt_2 = var_vals(dt_2_index);
-    double total_dt = dt_1 + dt_2;
+    const int dt_1_index = i + half + 1;
+    const int dt_2_index = dt_1_index + 1;
+    const double dt_1 = var_vals(dt_1_index);
+    const double dt_2 = var_vals(dt_2_index);
+    const double total_dt = dt_1 + dt_2;
 
     jac(i, i) = 2.0 * (vel_jac(i + 1, i) - vel_jac(i, i)) / total_dt;
     jac(i, i + 1) = 2.0 * (vel_jac(i + 1, i + 1) - vel_jac(i, i + 1)) / total_dt;
@@ -536,7 +536,7 @@ VectorXd JointJerkErrCalculator::operator()(const VectorXd& var_vals) const
 {
   assert(var_vals.rows() % 2 == 0);
   auto half = static_cast<int>(var_vals.rows() / 2);
-  int num_jerk = half - 3;
+  const int num_jerk = half - 3;
   VectorXd acc = acc_calc(var_vals);
 
   VectorXd acc_diff = acc.segment(1, num_jerk) - acc.segment(0, num_jerk);
@@ -552,7 +552,7 @@ VectorXd JointJerkErrCalculator::operator()(const VectorXd& var_vals) const
 MatrixXd JointJerkJacCalculator::operator()(const VectorXd& var_vals) const
 {
   auto num_vals = static_cast<int>(var_vals.rows());
-  int half = num_vals / 2;
+  const int half = num_vals / 2;
   MatrixXd jac = MatrixXd::Zero(half - 3, num_vals);
 
   VectorXd acc = acc_calc(var_vals);
@@ -560,13 +560,13 @@ MatrixXd JointJerkJacCalculator::operator()(const VectorXd& var_vals) const
 
   for (int i = 0; i < jac.rows(); i++)
   {
-    int dt_1_index = i + half + 1;
-    int dt_2_index = dt_1_index + 1;
-    int dt_3_index = dt_2_index + 1;
-    double dt_1 = var_vals(dt_1_index);
-    double dt_2 = var_vals(dt_2_index);
-    double dt_3 = var_vals(dt_3_index);
-    double total_dt = dt_1 + dt_2 + dt_3;
+    const int dt_1_index = i + half + 1;
+    const int dt_2_index = dt_1_index + 1;
+    const int dt_3_index = dt_2_index + 1;
+    const double dt_1 = var_vals(dt_1_index);
+    const double dt_2 = var_vals(dt_2_index);
+    const double dt_3 = var_vals(dt_3_index);
+    const double total_dt = dt_1 + dt_2 + dt_3;
 
     jac(i, i) = 3.0 * (acc_jac(i + 1, i) - acc_jac(i, i)) / total_dt;
     jac(i, i + 1) = 3.0 * (acc_jac(i + 1, i + 1) - acc_jac(i, i + 1)) / total_dt;
@@ -601,12 +601,12 @@ MatrixXd TimeCostJacCalculator::operator()(const VectorXd& var_vals) const
 VectorXd AvoidSingularityErrCalculator::operator()(const VectorXd& var_vals) const
 {
   // Calculate the SVD of the jacobian at this joint state
-  MatrixXd jacobian = fwd_kin_->calcJacobian(var_vals, link_name_);
-  Eigen::JacobiSVD<MatrixXd> svd(jacobian, Eigen::ComputeThinU | Eigen::ComputeThinV);
+  const MatrixXd jacobian = fwd_kin_->calcJacobian(var_vals, link_name_);
+  const Eigen::JacobiSVD<MatrixXd> svd(jacobian, Eigen::ComputeThinU | Eigen::ComputeThinV);
 
   // Get the U and V vectors for the smallest singular value
-  double smallest_sv = svd.singularValues().tail(1)(0);
-  double cost = 1.0 / (smallest_sv + lambda_);
+  const double smallest_sv = svd.singularValues().tail(1)(0);
+  const double cost = 1.0 / (smallest_sv + lambda_);
 
   const static double smallest_allowable_sv = 0.1;
   const double threshold = 1.0 / (smallest_allowable_sv + lambda_);
@@ -623,10 +623,10 @@ MatrixXd AvoidSingularityJacCalculator::jacobianPartialDerivative(const VectorXd
 {
   // Calculate the jacobian for the given joint perturbed by some epsilon
   Eigen::VectorXd joints(state);
-  double eps = eps_;
+  const double eps = eps_;
   joints(jntIdx) += eps;
 
-  MatrixXd jacobian_increment = fwd_kin_->calcJacobian(joints, link_name_);
+  const MatrixXd jacobian_increment = fwd_kin_->calcJacobian(joints, link_name_);
   return (jacobian_increment - jacobian) / eps;
 }
 
@@ -636,13 +636,13 @@ MatrixXd AvoidSingularityJacCalculator::operator()(const VectorXd& var_vals) con
   cost_jacobian.resize(1, var_vals.size());
 
   // Calculate the SVD of the jacobian at this joint state
-  MatrixXd jacobian = fwd_kin_->calcJacobian(var_vals, link_name_);
-  Eigen::JacobiSVD<MatrixXd> svd(jacobian, Eigen::ComputeThinU | Eigen::ComputeThinV);
+  const MatrixXd jacobian = fwd_kin_->calcJacobian(var_vals, link_name_);
+  const Eigen::JacobiSVD<MatrixXd> svd(jacobian, Eigen::ComputeThinU | Eigen::ComputeThinV);
 
   // Get the U and V vectors for the smallest singular value
-  double smallest_sv = svd.singularValues().tail(1)(0);
+  const double smallest_sv = svd.singularValues().tail(1)(0);
   VectorXd ui = svd.matrixU().rightCols(1);
-  VectorXd vi = svd.matrixV().rightCols(1);
+  const VectorXd vi = svd.matrixV().rightCols(1);
 
   // Calculate the jacobian partial derivative for each joint, perturbing it slightly
   for (Eigen::Index jntIdx = 0; jntIdx < var_vals.size(); ++jntIdx)

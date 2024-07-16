@@ -117,8 +117,8 @@ double JointPosIneqCost::value(const DblVec& xvec)
   Eigen::MatrixXd pos = traj.block(first_step_, 0, last_step_ - first_step_ + 1, traj.cols());
   // Subtract targets to center about 0 and then subtract from tolerance
   Eigen::MatrixXd diff0 = (pos.rowwise() - targets_.transpose());
-  Eigen::MatrixXd diff1 = (diff0.rowwise() - upper_tols_.transpose()) * coeffs_.asDiagonal();
-  Eigen::MatrixXd diff2 = ((diff0 * -1).rowwise() + lower_tols_.transpose()) * coeffs_.asDiagonal();
+  const Eigen::MatrixXd diff1 = (diff0.rowwise() - upper_tols_.transpose()) * coeffs_.asDiagonal();
+  const Eigen::MatrixXd diff2 = ((diff0 * -1).rowwise() + lower_tols_.transpose()) * coeffs_.asDiagonal();
   // Applies hinge, multiplies it by a diagonal matrix of coefficients, sums each corresponding value, and converts to
   // vector
   return diff1.cwiseMax(0).sum() + diff2.cwiseMax(0).sum();
@@ -232,8 +232,8 @@ DblVec JointPosIneqConstraint::value(const DblVec& xvec)
   Eigen::MatrixXd pos = traj.block(first_step_, 0, last_step_ - first_step_ + 1, traj.cols());
   // Subtract targets to center about 0 and then subtract from tolerance
   Eigen::MatrixXd diff0 = (pos.rowwise() - targets_.transpose());
-  Eigen::MatrixXd diff1 = (diff0.rowwise() - upper_tols_.transpose()) * coeffs_.asDiagonal();
-  Eigen::MatrixXd diff2 = ((diff0 * -1).rowwise() + lower_tols_.transpose()) * coeffs_.asDiagonal();
+  const Eigen::MatrixXd diff1 = (diff0.rowwise() - upper_tols_.transpose()) * coeffs_.asDiagonal();
+  const Eigen::MatrixXd diff2 = ((diff0 * -1).rowwise() + lower_tols_.transpose()) * coeffs_.asDiagonal();
   // Applies hinge, multiplies it by a diagonal matrix of coefficients, sums each corresponding value, and converts to
   // vector
   Eigen::MatrixXd out(diff1.rows(), diff1.cols() + diff2.cols());
@@ -348,8 +348,8 @@ double JointVelIneqCost::value(const DblVec& xvec)
   Eigen::MatrixXd vel = diffAxis0(traj.block(first_step_, 0, last_step_ - first_step_ + 1, traj.cols()));
   // Subtract targets_ to center about 0 and then subtract from tolerance
   Eigen::MatrixXd diff0 = (vel.rowwise() - targets_.transpose());
-  Eigen::MatrixXd diff1 = (diff0.rowwise() - upper_tols_.transpose()) * coeffs_.asDiagonal();
-  Eigen::MatrixXd diff2 = ((diff0 * -1).rowwise() + lower_tols_.transpose()) * coeffs_.asDiagonal();
+  const Eigen::MatrixXd diff1 = (diff0.rowwise() - upper_tols_.transpose()) * coeffs_.asDiagonal();
+  const Eigen::MatrixXd diff2 = ((diff0 * -1).rowwise() + lower_tols_.transpose()) * coeffs_.asDiagonal();
   // Applies hinge, multiplies it by a diagonal matrix of coefficients, sums each corresponding value, and converts to
   // vector
   return diff1.cwiseMax(0).sum() + diff2.cwiseMax(0).sum();
@@ -465,8 +465,8 @@ DblVec JointVelIneqConstraint::value(const DblVec& xvec)
   Eigen::MatrixXd vel = diffAxis0(traj.block(first_step_, 0, last_step_ - first_step_ + 1, traj.cols()));
   // Subtract targets_ to center about 0 and then subtract from tolerance
   Eigen::MatrixXd diff0 = (vel.rowwise() - targets_.transpose());
-  Eigen::MatrixXd diff1 = (diff0.rowwise() - upper_tols_.transpose()) * coeffs_.asDiagonal();
-  Eigen::MatrixXd diff2 = ((diff0 * -1).rowwise() + lower_tols_.transpose()) * coeffs_.asDiagonal();
+  const Eigen::MatrixXd diff1 = (diff0.rowwise() - upper_tols_.transpose()) * coeffs_.asDiagonal();
+  const Eigen::MatrixXd diff2 = ((diff0 * -1).rowwise() + lower_tols_.transpose()) * coeffs_.asDiagonal();
   // Applies hinge, multiplies it by a diagonal matrix of coefficients, sums each corresponding value, and converts to
   // vector
   Eigen::MatrixXd out(diff1.rows(), diff1.cols() + diff2.cols());
@@ -585,8 +585,8 @@ double JointAccIneqCost::value(const DblVec& xvec)
   Eigen::MatrixXd acc = diffAxis0(diffAxis0(traj.block(first_step_, 0, last_step_ - first_step_ + 1, traj.cols())));
   // Subtract targets_ to center about 0 and then subtract from tolerance
   Eigen::MatrixXd diff0 = (acc.rowwise() - targets_.transpose());
-  Eigen::MatrixXd diff1 = (diff0.rowwise() - upper_tols_.transpose()) * coeffs_.asDiagonal();
-  Eigen::MatrixXd diff2 = ((diff0 * -1).rowwise() + lower_tols_.transpose()) * coeffs_.asDiagonal();
+  const Eigen::MatrixXd diff1 = (diff0.rowwise() - upper_tols_.transpose()) * coeffs_.asDiagonal();
+  const Eigen::MatrixXd diff2 = ((diff0 * -1).rowwise() + lower_tols_.transpose()) * coeffs_.asDiagonal();
   // Applies hinge, multiplies it by a diagonal matrix of coefficients, sums each corresponding value, and converts to
   // vector
   return diff1.cwiseMax(0).sum() + diff2.cwiseMax(0).sum();
@@ -707,8 +707,8 @@ DblVec JointAccIneqConstraint::value(const DblVec& xvec)
   Eigen::MatrixXd acc = diffAxis0(diffAxis0(traj.block(first_step_, 0, last_step_ - first_step_ + 1, traj.cols())));
   // Subtract targets_ to center about 0 and then subtract from tolerance
   Eigen::MatrixXd diff0 = (acc.rowwise() - targets_.transpose());
-  Eigen::MatrixXd diff1 = (diff0.rowwise() - upper_tols_.transpose()) * coeffs_.asDiagonal();
-  Eigen::MatrixXd diff2 = ((diff0 * -1).rowwise() + lower_tols_.transpose()) * coeffs_.asDiagonal();
+  const Eigen::MatrixXd diff1 = (diff0.rowwise() - upper_tols_.transpose()) * coeffs_.asDiagonal();
+  const Eigen::MatrixXd diff2 = ((diff0 * -1).rowwise() + lower_tols_.transpose()) * coeffs_.asDiagonal();
   // Applies hinge, multiplies it by a diagonal matrix of coefficients, sums each corresponding value, and converts to
   // vector
   Eigen::MatrixXd out(diff1.rows(), diff1.cols() + diff2.cols());
@@ -831,8 +831,8 @@ double JointJerkIneqCost::value(const DblVec& xvec)
       diffAxis0(diffAxis0(diffAxis0(traj.block(first_step_, 0, last_step_ - first_step_ + 1, traj.cols()))));
   // Subtract targets_ to center about 0 and then subtract from tolerance
   Eigen::MatrixXd diff0 = (jerk.rowwise() - targets_.transpose());
-  Eigen::MatrixXd diff1 = (diff0.rowwise() - upper_tols_.transpose()) * coeffs_.asDiagonal();
-  Eigen::MatrixXd diff2 = ((diff0 * -1).rowwise() + lower_tols_.transpose()) * coeffs_.asDiagonal();
+  const Eigen::MatrixXd diff1 = (diff0.rowwise() - upper_tols_.transpose()) * coeffs_.asDiagonal();
+  const Eigen::MatrixXd diff2 = ((diff0 * -1).rowwise() + lower_tols_.transpose()) * coeffs_.asDiagonal();
   // Applies hinge, multiplies it by a diagonal matrix of coefficients, sums each corresponding value, and converts to
   // vector
   return diff1.cwiseMax(0).sum() + diff2.cwiseMax(0).sum();
@@ -955,8 +955,8 @@ DblVec JointJerkIneqConstraint::value(const DblVec& xvec)
   Eigen::MatrixXd acc = diffAxis0(diffAxis0(traj.block(first_step_, 0, last_step_ - first_step_ + 1, traj.cols())));
   // Subtract targets_ to center about 0 and then subtract from tolerance
   Eigen::MatrixXd diff0 = (acc.rowwise() - targets_.transpose());
-  Eigen::MatrixXd diff1 = (diff0.rowwise() - upper_tols_.transpose()) * coeffs_.asDiagonal();
-  Eigen::MatrixXd diff2 = ((diff0 * -1).rowwise() + lower_tols_.transpose()) * coeffs_.asDiagonal();
+  const Eigen::MatrixXd diff1 = (diff0.rowwise() - upper_tols_.transpose()) * coeffs_.asDiagonal();
+  const Eigen::MatrixXd diff2 = ((diff0 * -1).rowwise() + lower_tols_.transpose()) * coeffs_.asDiagonal();
   // Applies hinge, multiplies it by a diagonal matrix of coefficients, sums each corresponding value, and converts to
   // vector
   Eigen::MatrixXd out(diff1.rows(), diff1.cols() + diff2.cols());

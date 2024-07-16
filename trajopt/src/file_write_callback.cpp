@@ -54,7 +54,7 @@ void WriteFile(const std::shared_ptr<std::ofstream>& file,
     }
 
     // Calc cartesian pose
-    tesseract_common::TransformMap state = manip->calcFwdKin(joint_angles);
+    const tesseract_common::TransformMap state = manip->calcFwdKin(joint_angles);
 
     for (const auto& it : state)
     {
@@ -113,7 +113,7 @@ std::function<void(sco::OptProb*, sco::OptResults&)> WriteCallback(std::shared_p
   }
 
   // Write cartesian pose labels
-  std::vector<std::string> pose_str = std::vector<std::string>{ "x", "y", "z", "q_w", "q_x", "q_y", "q_z" };
+  const std::vector<std::string> pose_str = std::vector<std::string>{ "x", "y", "z", "q_w", "q_x", "q_y", "q_z" };
   for (const auto& i : pose_str)
   {
     *file << ',' << i;

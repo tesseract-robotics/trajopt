@@ -32,8 +32,8 @@ TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace trajopt_ifopt
 {
-AbsoluteCost::AbsoluteCost(ifopt::ConstraintSet::Ptr constraint)
-  : AbsoluteCost(std::move(constraint), Eigen::VectorXd::Ones(constraint->GetRows()))
+AbsoluteCost::AbsoluteCost(const ifopt::ConstraintSet::Ptr& constraint)
+  : AbsoluteCost(constraint, Eigen::VectorXd::Ones(constraint->GetRows()))
 {
 }
 
@@ -48,8 +48,8 @@ AbsoluteCost::AbsoluteCost(ifopt::ConstraintSet::Ptr constraint, const Eigen::Re
 double AbsoluteCost::GetCost() const
 {
   // This takes the absolute value of the errors
-  Eigen::VectorXd error = calcBoundsViolations(constraint_->GetValues(), constraint_->GetBounds());
-  double cost = weights_.transpose() * error;
+  const Eigen::VectorXd error = calcBoundsViolations(constraint_->GetValues(), constraint_->GetBounds());
+  const double cost = weights_.transpose() * error;
   return cost;
 }
 
@@ -76,9 +76,9 @@ void AbsoluteCost::FillJacobianBlock(std::string var_set, Jacobian& jac_block) c
   // There are two w's that cancel out resulting in w_error / error.abs().
   // This breaks down if the weights are not positive but the constructor takes the absolute
   // value of the weights to avoid this issue.
-  Eigen::ArrayXd error = calcBoundsErrors(constraint_->GetValues(), constraint_->GetBounds());
-  Eigen::ArrayXd w_error = error * weights_.array();
-  Eigen::VectorXd coeff = w_error / error.abs();
+  const Eigen::ArrayXd error = calcBoundsErrors(constraint_->GetValues(), constraint_->GetBounds());
+  const Eigen::ArrayXd w_error = error * weights_.array();
+  const Eigen::VectorXd coeff = w_error / error.abs();
 
   jac_block = coeff.sparseView().eval() * cnt_jac_block;  // NOLINT
 }

@@ -35,7 +35,7 @@ void ensure_only_members(const Json::Value& v, const char** fields, int nvalid)
     bool valid = false;
     for (int j = 0; j < nvalid; ++j)
     {
-      JSONCPP_STRING member_name = it.name();
+      const JSONCPP_STRING member_name = it.name();
       if (strcmp(member_name.c_str(), fields[j]) == 0)
       {
         valid = true;
@@ -169,7 +169,7 @@ void ProblemConstructionInfo::readCosts(const Json::Value& v)
     json_marshal::childFromJson(it, type, "type");
     json_marshal::childFromJson(it, use_time, "use_time", false);
     LOG_DEBUG("reading term: %s", type.c_str());
-    TermInfo::Ptr term = TermInfo::fromName(type);
+    const TermInfo::Ptr term = TermInfo::fromName(type);
 
     if (!term)
       PRINT_AND_THROW(boost::format("failed to construct cost named %s") % type);
@@ -199,7 +199,7 @@ void ProblemConstructionInfo::readConstraints(const Json::Value& v)
     json_marshal::childFromJson(it, type, "type");
     json_marshal::childFromJson(it, use_time, "use_time", false);
     LOG_DEBUG("reading term: %s", type.c_str());
-    TermInfo::Ptr term = TermInfo::fromName(type);
+    const TermInfo::Ptr term = TermInfo::fromName(type);
 
     if (!term)
       PRINT_AND_THROW(boost::format("failed to construct constraint named %s") % type);
@@ -223,7 +223,7 @@ void ProblemConstructionInfo::readInitInfo(const Json::Value& v)
   std::string type_str;
   json_marshal::childFromJson(v, type_str, "type");
   json_marshal::childFromJson(v, init_info.dt, "dt", 1.0);
-  int n_steps = basic_info.n_steps;
+  const int n_steps = basic_info.n_steps;
   auto n_dof = static_cast<int>(kin->numJoints());
 
   if (boost::iequals(type_str, "stationary"))
@@ -597,7 +597,7 @@ void UserDefinedTermInfo::fromJson(ProblemConstructionInfo& /*pci*/, const Json:
 
 void UserDefinedTermInfo::hatch(TrajOptProb& prob)
 {
-  int n_dof = static_cast<int>(prob.GetKin()->numJoints());
+  const int n_dof = static_cast<int>(prob.GetKin()->numJoints());
 
   // Apply error calculator as either cost or constraint
   if (static_cast<bool>(term_type & TermType::TT_COST))
@@ -644,7 +644,7 @@ void UserDefinedTermInfo::hatch(TrajOptProb& prob)
     {
       if (std::find(fixed_steps.begin(), fixed_steps.end(), s) == fixed_steps.end())
       {
-        std::string type_str = (constraint_type == sco::ConstraintType::EQ) ? "EQ" : "INEQ";
+        const std::string type_str = (constraint_type == sco::ConstraintType::EQ) ? "EQ" : "INEQ";
         if (jacobian_function == nullptr)
         {
           prob.addConstraint(
@@ -702,17 +702,17 @@ void DynamicCartPoseTermInfo::fromJson(ProblemConstructionInfo& pci, const Json:
   json_marshal::childFromJson(
       params, target_frame_offset_wxyz, "target_frame_offset_wxyz", Eigen::Vector4d(1, 0, 0, 0));
 
-  Eigen::Quaterniond q(source_frame_offset_wxyz(0),
-                       source_frame_offset_wxyz(1),
-                       source_frame_offset_wxyz(2),
-                       source_frame_offset_wxyz(3));
+  const Eigen::Quaterniond q(source_frame_offset_wxyz(0),
+                             source_frame_offset_wxyz(1),
+                             source_frame_offset_wxyz(2),
+                             source_frame_offset_wxyz(3));
   source_frame_offset.linear() = q.matrix();
   source_frame_offset.translation() = source_frame_offset_xyz;
 
-  Eigen::Quaterniond target_q(target_frame_offset_wxyz(0),
-                              target_frame_offset_wxyz(1),
-                              target_frame_offset_wxyz(2),
-                              target_frame_offset_wxyz(3));
+  const Eigen::Quaterniond target_q(target_frame_offset_wxyz(0),
+                                    target_frame_offset_wxyz(1),
+                                    target_frame_offset_wxyz(2),
+                                    target_frame_offset_wxyz(3));
   target_frame_offset.linear() = target_q.matrix();
   target_frame_offset.translation() = target_frame_offset_xyz;
 
@@ -726,8 +726,8 @@ void DynamicCartPoseTermInfo::fromJson(ProblemConstructionInfo& pci, const Json:
     PRINT_AND_THROW(boost::format("invalid target frame: %s") % target_frame);
   }
 
-  bool source_active = pci.kin->isActiveLinkName(source_frame);
-  bool target_active = pci.kin->isActiveLinkName(target_frame);
+  const bool source_active = pci.kin->isActiveLinkName(source_frame);
+  const bool target_active = pci.kin->isActiveLinkName(target_frame);
 
   if (!(source_active && target_active))
   {
@@ -749,7 +749,7 @@ void DynamicCartPoseTermInfo::fromJson(ProblemConstructionInfo& pci, const Json:
 
 void DynamicCartPoseTermInfo::hatch(TrajOptProb& prob)
 {
-  int n_dof = static_cast<int>(prob.GetKin()->numJoints());
+  const int n_dof = static_cast<int>(prob.GetKin()->numJoints());
 
   // Next parse the coeff and if not zero add the indice and coeff
   std::vector<int> ic;
@@ -843,17 +843,17 @@ void CartPoseTermInfo::fromJson(ProblemConstructionInfo& pci, const Json::Value&
   json_marshal::childFromJson(
       params, target_frame_offset_wxyz, "target_frame_offset_wxyz", Eigen::Vector4d(1, 0, 0, 0));
 
-  Eigen::Quaterniond q(source_frame_offset_wxyz(0),
-                       source_frame_offset_wxyz(1),
-                       source_frame_offset_wxyz(2),
-                       source_frame_offset_wxyz(3));
+  const Eigen::Quaterniond q(source_frame_offset_wxyz(0),
+                             source_frame_offset_wxyz(1),
+                             source_frame_offset_wxyz(2),
+                             source_frame_offset_wxyz(3));
   source_frame_offset.linear() = q.matrix();
   source_frame_offset.translation() = source_frame_offset_xyz;
 
-  Eigen::Quaterniond target_q(target_frame_offset_wxyz(0),
-                              target_frame_offset_wxyz(1),
-                              target_frame_offset_wxyz(2),
-                              target_frame_offset_wxyz(3));
+  const Eigen::Quaterniond target_q(target_frame_offset_wxyz(0),
+                                    target_frame_offset_wxyz(1),
+                                    target_frame_offset_wxyz(2),
+                                    target_frame_offset_wxyz(3));
   target_frame_offset.linear() = target_q.matrix();
   target_frame_offset.translation() = target_frame_offset_xyz;
 
@@ -867,8 +867,8 @@ void CartPoseTermInfo::fromJson(ProblemConstructionInfo& pci, const Json::Value&
     PRINT_AND_THROW(boost::format("invalid target frame: %s") % target_frame);
   }
 
-  bool source_active = pci.kin->isActiveLinkName(source_frame);
-  bool target_active = pci.kin->isActiveLinkName(target_frame);
+  const bool source_active = pci.kin->isActiveLinkName(source_frame);
+  const bool target_active = pci.kin->isActiveLinkName(target_frame);
   if (source_active && target_active)
   {
     PRINT_AND_THROW(boost::format("source '%s' and target '%s' are both active") % source_frame % target_frame);
@@ -893,7 +893,7 @@ void CartPoseTermInfo::fromJson(ProblemConstructionInfo& pci, const Json::Value&
 
 void CartPoseTermInfo::hatch(TrajOptProb& prob)
 {
-  int n_dof = static_cast<int>(prob.GetKin()->numJoints());
+  const int n_dof = static_cast<int>(prob.GetKin()->numJoints());
 
   // Next parse the coeff and if not zero add the index and coeff
   std::vector<int> ic;
@@ -991,7 +991,7 @@ void CartVelTermInfo::fromJson(ProblemConstructionInfo& pci, const Json::Value& 
 
 void CartVelTermInfo::hatch(TrajOptProb& prob)
 {
-  int n_dof = static_cast<int>(prob.GetKin()->numJoints());
+  const int n_dof = static_cast<int>(prob.GetKin()->numJoints());
 
   if (term_type == (TermType::TT_COST | TermType::TT_USE_TIME))
   {
@@ -1042,7 +1042,7 @@ void JointPosTermInfo::fromJson(ProblemConstructionInfo& pci, const Json::Value&
   FAIL_IF_FALSE(v.isMember("params"));
   const Json::Value& params = v["params"];
 
-  unsigned int n_dof = pci.kin->numJoints();
+  const unsigned int n_dof = pci.kin->numJoints();
   json_marshal::childFromJson(params, targets, "targets");
 
   // Optional Parameters
@@ -1058,7 +1058,7 @@ void JointPosTermInfo::fromJson(ProblemConstructionInfo& pci, const Json::Value&
 
 void JointPosTermInfo::hatch(TrajOptProb& prob)
 {
-  unsigned int n_dof = prob.GetKin()->numJoints();
+  const unsigned int n_dof = prob.GetKin()->numJoints();
 
   // If optional parameter not given, set to default
   if (coeffs.empty())
@@ -1079,7 +1079,7 @@ void JointPosTermInfo::hatch(TrajOptProb& prob)
   //    last_step += 1;
   if (last_step < first_step)
   {
-    int tmp = first_step;
+    const int tmp = first_step;
     first_step = last_step;
     last_step = tmp;
     CONSOLE_BRIDGE_logWarn("Last time step for JointPosTerm comes before first step. Reversing them.");
@@ -1094,13 +1094,13 @@ void JointPosTermInfo::hatch(TrajOptProb& prob)
   checkParameterSize(lower_tols, n_dof, "JointPosTermInfo lower_tols", true);
 
   // Check if tolerances are all zeros
-  bool is_upper_zeros =
+  const bool is_upper_zeros =
       std::all_of(upper_tols.begin(), upper_tols.end(), [](double i) { return trajopt_common::doubleEquals(i, 0.); });
-  bool is_lower_zeros =
+  const bool is_lower_zeros =
       std::all_of(lower_tols.begin(), lower_tols.end(), [](double i) { return trajopt_common::doubleEquals(i, 0.); });
 
   // Get vars associated with joints
-  trajopt::VarArray vars = prob.GetVars();
+  const trajopt::VarArray vars = prob.GetVars();
   trajopt::VarArray joint_vars = vars.block(0, 0, vars.rows(), static_cast<int>(n_dof));
   if (prob.GetHasTime())
     CONSOLE_BRIDGE_logInform("JointPosTermInfo does not differ based on setting of TermType::TT_USE_TIME");
@@ -1161,7 +1161,7 @@ void JointVelTermInfo::fromJson(ProblemConstructionInfo& pci, const Json::Value&
   FAIL_IF_FALSE(v.isMember("params"));
   const Json::Value& params = v["params"];
 
-  unsigned int n_dof = pci.kin->numJoints();
+  const unsigned int n_dof = pci.kin->numJoints();
   json_marshal::childFromJson(params, targets, "targets");
 
   // Optional Parameters
@@ -1177,7 +1177,7 @@ void JointVelTermInfo::fromJson(ProblemConstructionInfo& pci, const Json::Value&
 
 void JointVelTermInfo::hatch(TrajOptProb& prob)
 {
-  unsigned int n_dof = prob.GetKin()->numJoints();
+  const unsigned int n_dof = prob.GetKin()->numJoints();
 
   // If optional parameter not given, set to default
   if (coeffs.empty())
@@ -1198,7 +1198,7 @@ void JointVelTermInfo::hatch(TrajOptProb& prob)
     last_step += 1;
   if (last_step < first_step)
   {
-    int tmp = first_step;
+    const int tmp = first_step;
     first_step = last_step;
     last_step = tmp;
     CONSOLE_BRIDGE_logWarn("Last time step for JointVelTerm comes before first step. Reversing them.");
@@ -1213,13 +1213,13 @@ void JointVelTermInfo::hatch(TrajOptProb& prob)
   assert(first_step >= 0);
 
   // Check if tolerances are all zeros
-  bool is_upper_zeros =
+  const bool is_upper_zeros =
       std::all_of(upper_tols.begin(), upper_tols.end(), [](double i) { return trajopt_common::doubleEquals(i, 0.); });
-  bool is_lower_zeros =
+  const bool is_lower_zeros =
       std::all_of(lower_tols.begin(), lower_tols.end(), [](double i) { return trajopt_common::doubleEquals(i, 0.); });
 
   // Get vars associated with joints
-  trajopt::VarArray vars = prob.GetVars();
+  const trajopt::VarArray vars = prob.GetVars();
   trajopt::VarArray joint_vars = vars.block(0, 0, vars.rows(), static_cast<int>(n_dof));
 
   if (term_type == (TermType::TT_COST | TermType::TT_USE_TIME))
@@ -1230,13 +1230,14 @@ void JointVelTermInfo::hatch(TrajOptProb& prob)
     for (std::size_t j = 0; j < n_dof; j++)
     {
       // Get a vector of a single column of vars
-      sco::VarVector joint_vars_vec = joint_vars.cblock(first_step, static_cast<int>(j), last_step - first_step + 1);
-      sco::VarVector time_vars_vec = vars.cblock(first_step, vars.cols() - 1, last_step - first_step + 1);
+      const sco::VarVector joint_vars_vec =
+          joint_vars.cblock(first_step, static_cast<int>(j), last_step - first_step + 1);
+      const sco::VarVector time_vars_vec = vars.cblock(first_step, vars.cols() - 1, last_step - first_step + 1);
 
       // If the tolerances are 0, an equality cost is set
       if (is_upper_zeros && is_lower_zeros)
       {
-        DblVec single_jnt_coeffs = DblVec(num_vels * 2, coeffs[j]);
+        const DblVec single_jnt_coeffs = DblVec(num_vels * 2, coeffs[j]);
         auto f = std::make_shared<JointVelErrCalculator>(targets[j], upper_tols[j], lower_tols[j]);
         auto dfdx = std::make_shared<JointVelJacCalculator>();
         prob.addCost(std::make_shared<TrajOptCostFromErrFunc>(f,
@@ -1249,7 +1250,7 @@ void JointVelTermInfo::hatch(TrajOptProb& prob)
       // Otherwise it's a hinged "inequality" cost
       else
       {
-        DblVec single_jnt_coeffs = DblVec(num_vels * 2, coeffs[j]);
+        const DblVec single_jnt_coeffs = DblVec(num_vels * 2, coeffs[j]);
         auto f = std::make_shared<JointVelErrCalculator>(targets[j], upper_tols[j], lower_tols[j]);
         auto dfdx = std::make_shared<JointVelJacCalculator>();
         prob.addCost(std::make_shared<TrajOptCostFromErrFunc>(f,
@@ -1269,13 +1270,14 @@ void JointVelTermInfo::hatch(TrajOptProb& prob)
     for (std::size_t j = 0; j < n_dof; j++)
     {
       // Get a vector of a single column of vars
-      sco::VarVector joint_vars_vec = joint_vars.cblock(first_step, static_cast<int>(j), last_step - first_step + 1);
-      sco::VarVector time_vars_vec = vars.cblock(first_step, vars.cols() - 1, last_step - first_step + 1);
+      const sco::VarVector joint_vars_vec =
+          joint_vars.cblock(first_step, static_cast<int>(j), last_step - first_step + 1);
+      const sco::VarVector time_vars_vec = vars.cblock(first_step, vars.cols() - 1, last_step - first_step + 1);
 
       // If the tolerances are 0, an equality cnt is set
       if (is_upper_zeros && is_lower_zeros)
       {
-        DblVec single_jnt_coeffs = DblVec(num_vels * 2, coeffs[j]);
+        const DblVec single_jnt_coeffs = DblVec(num_vels * 2, coeffs[j]);
         auto f = std::make_shared<JointVelErrCalculator>(targets[j], upper_tols[j], lower_tols[j]);
         auto dfdx = std::make_shared<JointVelJacCalculator>();
         prob.addConstraint(
@@ -1289,7 +1291,7 @@ void JointVelTermInfo::hatch(TrajOptProb& prob)
       // Otherwise it's a hinged "inequality" constraint
       else
       {
-        DblVec single_jnt_coeffs = DblVec(num_vels * 2, coeffs[j]);
+        const DblVec single_jnt_coeffs = DblVec(num_vels * 2, coeffs[j]);
         auto f = std::make_shared<JointVelErrCalculator>(targets[j], upper_tols[j], lower_tols[j]);
         auto dfdx = std::make_shared<JointVelJacCalculator>();
         prob.addConstraint(
@@ -1355,7 +1357,7 @@ void JointAccTermInfo::fromJson(ProblemConstructionInfo& pci, const Json::Value&
   FAIL_IF_FALSE(v.isMember("params"));
   const Json::Value& params = v["params"];
 
-  unsigned int n_dof = pci.kin->numJoints();
+  const unsigned int n_dof = pci.kin->numJoints();
   json_marshal::childFromJson(params, targets, "targets");
 
   // Optional Parameters
@@ -1371,7 +1373,7 @@ void JointAccTermInfo::fromJson(ProblemConstructionInfo& pci, const Json::Value&
 
 void JointAccTermInfo::hatch(TrajOptProb& prob)
 {
-  unsigned int n_dof = prob.GetKin()->numJoints();
+  const unsigned int n_dof = prob.GetKin()->numJoints();
 
   // If optional parameter not given, set to default
   if (coeffs.empty())
@@ -1393,7 +1395,7 @@ void JointAccTermInfo::hatch(TrajOptProb& prob)
     last_step += 2;
   if (last_step < first_step)
   {
-    int tmp = first_step;
+    const int tmp = first_step;
     first_step = last_step;
     last_step = tmp;
     CONSOLE_BRIDGE_logWarn("Last time step for JointAccTerm comes before first step. Reversing them.");
@@ -1406,13 +1408,13 @@ void JointAccTermInfo::hatch(TrajOptProb& prob)
   checkParameterSize(lower_tols, n_dof, "JointAccTermInfo lower_tols", true);
 
   // Check if tolerances are all zeros
-  bool is_upper_zeros =
+  const bool is_upper_zeros =
       std::all_of(upper_tols.begin(), upper_tols.end(), [](double i) { return trajopt_common::doubleEquals(i, 0.); });
-  bool is_lower_zeros =
+  const bool is_lower_zeros =
       std::all_of(lower_tols.begin(), lower_tols.end(), [](double i) { return trajopt_common::doubleEquals(i, 0.); });
 
   // Get vars associated with joints
-  trajopt::VarArray vars = prob.GetVars();
+  const trajopt::VarArray vars = prob.GetVars();
   trajopt::VarArray joint_vars = vars.block(0, 0, vars.rows(), static_cast<int>(n_dof));
 
   if (term_type == (TermType::TT_COST | TermType::TT_USE_TIME))
@@ -1476,7 +1478,7 @@ void JointJerkTermInfo::fromJson(ProblemConstructionInfo& pci, const Json::Value
   FAIL_IF_FALSE(v.isMember("params"));
   const Json::Value& params = v["params"];
 
-  unsigned int n_dof = pci.kin->numJoints();
+  const unsigned int n_dof = pci.kin->numJoints();
 
   json_marshal::childFromJson(params, targets, "targets");
 
@@ -1493,7 +1495,7 @@ void JointJerkTermInfo::fromJson(ProblemConstructionInfo& pci, const Json::Value
 
 void JointJerkTermInfo::hatch(TrajOptProb& prob)
 {
-  unsigned int n_dof = prob.GetKin()->numJoints();
+  const unsigned int n_dof = prob.GetKin()->numJoints();
 
   // If optional parameter not given, set to default
   if (coeffs.empty())
@@ -1515,7 +1517,7 @@ void JointJerkTermInfo::hatch(TrajOptProb& prob)
     last_step += 4;
   if (last_step < first_step)
   {
-    int tmp = first_step;
+    const int tmp = first_step;
     first_step = last_step;
     last_step = tmp;
     CONSOLE_BRIDGE_logWarn("Last time step for JointJerkTerm comes before first step. Reversing them.");
@@ -1528,13 +1530,13 @@ void JointJerkTermInfo::hatch(TrajOptProb& prob)
   checkParameterSize(lower_tols, n_dof, "JointJerkTermInfo lower_tols", true);
 
   // Check if tolerances are all zeros
-  bool is_upper_zeros =
+  const bool is_upper_zeros =
       std::all_of(upper_tols.begin(), upper_tols.end(), [](double i) { return trajopt_common::doubleEquals(i, 0.); });
-  bool is_lower_zeros =
+  const bool is_lower_zeros =
       std::all_of(lower_tols.begin(), lower_tols.end(), [](double i) { return trajopt_common::doubleEquals(i, 0.); });
 
   // Get vars associated with joints
-  trajopt::VarArray vars = prob.GetVars();
+  const trajopt::VarArray vars = prob.GetVars();
   trajopt::VarArray joint_vars = vars.block(0, 0, vars.rows(), static_cast<int>(n_dof));
 
   if (term_type == (TermType::TT_COST | TermType::TT_USE_TIME))
@@ -1598,7 +1600,7 @@ void CollisionTermInfo::fromJson(ProblemConstructionInfo& pci, const Json::Value
   FAIL_IF_FALSE(v.isMember("params"));
   const Json::Value& params = v["params"];
 
-  int n_steps = pci.basic_info.n_steps;
+  const int n_steps = pci.basic_info.n_steps;
   int collision_evaluator_type{ 0 };
   json_marshal::childFromJson(params, collision_evaluator_type, "evaluator_type", 0);
   json_marshal::childFromJson(params, use_weighted_sum, "use_weighted_sum", false);
@@ -1701,7 +1703,7 @@ void CollisionTermInfo::fromJson(ProblemConstructionInfo& pci, const Json::Value
       for (auto i = first_step; i <= last_step; ++i)
       {
         auto index = static_cast<std::size_t>(i - first_step);
-        trajopt_common::SafetyMarginData::Ptr& data = info[index];
+        const trajopt_common::SafetyMarginData::Ptr& data = info[index];
         for (const auto& p : pair)
         {
           data->setPairSafetyMarginData(link, p, pair_dist_pen[index], pair_coeffs[index]);
@@ -1726,7 +1728,7 @@ void CollisionTermInfo::fromJson(ProblemConstructionInfo& pci, const Json::Value
 
 void CollisionTermInfo::hatch(TrajOptProb& prob)
 {
-  int n_dof = static_cast<int>(prob.GetKin()->numJoints());
+  const int n_dof = static_cast<int>(prob.GetKin()->numJoints());
 
   if (term_type == TermType::TT_COST)
   {
@@ -1735,8 +1737,8 @@ void CollisionTermInfo::hatch(TrajOptProb& prob)
       bool discrete_continuous = (evaluator_type == CollisionEvaluatorType::DISCRETE_CONTINUOUS);
       for (int i = first_step; i < last_step; ++i)
       {
-        bool current_fixed = std::find(fixed_steps.begin(), fixed_steps.end(), i) != fixed_steps.end();
-        bool next_fixed = std::find(fixed_steps.begin(), fixed_steps.end(), i + 1) != fixed_steps.end();
+        const bool current_fixed = std::find(fixed_steps.begin(), fixed_steps.end(), i) != fixed_steps.end();
+        const bool next_fixed = std::find(fixed_steps.begin(), fixed_steps.end(), i + 1) != fixed_steps.end();
 
         CollisionExpressionEvaluatorType expression_evaluator_type{};
         if (!current_fixed && !next_fixed)
@@ -1807,8 +1809,8 @@ void CollisionTermInfo::hatch(TrajOptProb& prob)
       bool discrete_continuous = (evaluator_type == CollisionEvaluatorType::DISCRETE_CONTINUOUS);
       for (int i = first_step; i < last_step; ++i)
       {
-        bool current_fixed = std::find(fixed_steps.begin(), fixed_steps.end(), i) != fixed_steps.end();
-        bool next_fixed = std::find(fixed_steps.begin(), fixed_steps.end(), i + 1) != fixed_steps.end();
+        const bool current_fixed = std::find(fixed_steps.begin(), fixed_steps.end(), i) != fixed_steps.end();
+        const bool next_fixed = std::find(fixed_steps.begin(), fixed_steps.end(), i + 1) != fixed_steps.end();
 
         CollisionExpressionEvaluatorType expression_evaluator_type{};
         if (!current_fixed && !next_fixed)
