@@ -69,7 +69,7 @@ JointPosConstraint::JointPosConstraint(const Eigen::VectorXd& targets,
   {
     for (long i = 0; i < n_dof_; i++)
     {
-      double w_target = coeffs_[i] * targets[i];
+      const double w_target = coeffs_[i] * targets[i];
       bounds[static_cast<std::size_t>(i + j * n_dof_)] = ifopt::Bounds(w_target, w_target);
     }
   }

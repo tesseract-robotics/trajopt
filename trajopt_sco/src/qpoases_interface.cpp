@@ -37,7 +37,7 @@ qpOASESModel::qpOASESModel()
 qpOASESModel::~qpOASESModel() = default;
 Var qpOASESModel::addVar(const std::string& name)
 {
-  std::scoped_lock lock(mutex_);
+  const std::scoped_lock lock(mutex_);
   vars_.emplace_back(std::make_shared<VarRep>(vars_.size(), name, this));
   lb_.push_back(-QPOASES_INFTY);
   ub_.push_back(QPOASES_INFTY);
@@ -46,7 +46,7 @@ Var qpOASESModel::addVar(const std::string& name)
 
 Cnt qpOASESModel::addEqCnt(const AffExpr& expr, const std::string& /*name*/)
 {
-  std::scoped_lock lock(mutex_);
+  const std::scoped_lock lock(mutex_);
   cnts_.emplace_back(std::make_shared<CntRep>(cnts_.size(), this));
   cnt_exprs_.push_back(expr);
   cnt_types_.push_back(EQ);
@@ -55,7 +55,7 @@ Cnt qpOASESModel::addEqCnt(const AffExpr& expr, const std::string& /*name*/)
 
 Cnt qpOASESModel::addIneqCnt(const AffExpr& expr, const std::string& /*name*/)
 {
-  std::scoped_lock lock(mutex_);
+  const std::scoped_lock lock(mutex_);
   cnts_.emplace_back(std::make_shared<CntRep>(cnts_.size(), this));
   cnt_exprs_.push_back(expr);
   cnt_types_.push_back(INEQ);
@@ -70,7 +70,7 @@ Cnt qpOASESModel::addIneqCnt(const QuadExpr&, const std::string& /*name*/)
 
 void qpOASESModel::removeVars(const VarVector& vars)
 {
-  std::scoped_lock lock(mutex_);
+  const std::scoped_lock lock(mutex_);
   IntVec inds;
   vars2inds(vars, inds);
   for (const auto& var : vars)
@@ -79,7 +79,7 @@ void qpOASESModel::removeVars(const VarVector& vars)
 
 void qpOASESModel::removeCnts(const CntVector& cnts)
 {
-  std::scoped_lock lock(mutex_);
+  const std::scoped_lock lock(mutex_);
   IntVec inds;
   cnts2inds(cnts, inds);
   for (const auto& cnt : cnts)

@@ -39,32 +39,34 @@ public:
 
   void SetUp() override
   {
-    tesseract_common::fs::path urdf_file(std::string(TRAJOPT_DATA_DIR) + "/arm_around_table.urdf");
-    tesseract_common::fs::path srdf_file(std::string(TRAJOPT_DATA_DIR) + "/pr2.srdf");
+    const tesseract_common::fs::path urdf_file(std::string(TRAJOPT_DATA_DIR) + "/arm_around_table.urdf");
+    const tesseract_common::fs::path srdf_file(std::string(TRAJOPT_DATA_DIR) + "/pr2.srdf");
 
-    ResourceLocator::Ptr locator = std::make_shared<tesseract_common::GeneralResourceLocator>();
+    const ResourceLocator::Ptr locator = std::make_shared<tesseract_common::GeneralResourceLocator>();
     EXPECT_TRUE(env_->init(urdf_file, srdf_file, locator));
 
     gLogLevel = trajopt_common::LevelError;
   }
 };
 
-static std::string toString(const Eigen::MatrixXd& mat)
+namespace
+{
+std::string toString(const Eigen::MatrixXd& mat)
 {
   std::stringstream ss;
   ss << mat;
   return ss.str();
 }
 
-static void checkJacobian(const sco::VectorOfVector& f,
-                          const sco::MatrixOfVector& dfdx,
-                          const Eigen::VectorXd& values,
-                          const double epsilon)
+void checkJacobian(const sco::VectorOfVector& f,
+                   const sco::MatrixOfVector& dfdx,
+                   const Eigen::VectorXd& values,
+                   const double epsilon)
 {
-  Eigen::MatrixXd numerical = sco::calcForwardNumJac(f, values, epsilon);
-  Eigen::MatrixXd analytical = dfdx(values);
+  const Eigen::MatrixXd numerical = sco::calcForwardNumJac(f, values, epsilon);
+  const Eigen::MatrixXd analytical = dfdx(values);
 
-  bool pass = numerical.isApprox(analytical, 1e-5);
+  const bool pass = numerical.isApprox(analytical, 1e-5);
   EXPECT_TRUE(pass);
   if (!pass)
   {
@@ -72,24 +74,25 @@ static void checkJacobian(const sco::VectorOfVector& f,
     CONSOLE_BRIDGE_logError("Analytical:\n %s", toString(analytical).c_str());
   }
 }
+}  // namespace
 
 TEST_F(KinematicCostsTest, CartPoseJacCalculator)  // NOLINT
 {
   CONSOLE_BRIDGE_logDebug("KinematicCostsTest, CartPoseJacCalculator");
 
-  tesseract_kinematics::JointGroup::Ptr kin = env_->getJointGroup("right_arm");
+  const tesseract_kinematics::JointGroup::Ptr kin = env_->getJointGroup("right_arm");
 
-  std::string source_frame = env_->getRootLinkName();
-  std::string target_frame = "r_gripper_tool_frame";
-  Eigen::Isometry3d source_frame_offset = env_->getState().link_transforms.at(target_frame);
-  Eigen::Isometry3d target_frame_offset =
+  const std::string source_frame = env_->getRootLinkName();
+  const std::string target_frame = "r_gripper_tool_frame";
+  const Eigen::Isometry3d source_frame_offset = env_->getState().link_transforms.at(target_frame);
+  const Eigen::Isometry3d target_frame_offset =
       Eigen::Isometry3d::Identity() * Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitZ());
 
   Eigen::VectorXd values(7);
   values << -1.1, 1.2, -3.3, -1.4, 5.5, -1.6, 7.7;
 
-  CartPoseErrCalculator f(kin, source_frame, target_frame, source_frame_offset, target_frame_offset);
-  CartPoseJacCalculator dfdx(kin, source_frame, target_frame, source_frame_offset, target_frame_offset);
+  const CartPoseErrCalculator f(kin, source_frame, target_frame, source_frame_offset, target_frame_offset);
+  const CartPoseJacCalculator dfdx(kin, source_frame, target_frame, source_frame_offset, target_frame_offset);
   checkJacobian(f, dfdx, values, 1.0e-5);
 }
 

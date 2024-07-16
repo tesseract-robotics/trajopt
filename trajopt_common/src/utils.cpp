@@ -14,7 +14,7 @@ void SafetyMarginData::setPairSafetyMarginData(const std::string& obj1,
                                                double safety_margin,
                                                double safety_margin_coeff)
 {
-  std::array<double, 2> data({ safety_margin, safety_margin_coeff });
+  const std::array<double, 2> data({ safety_margin, safety_margin_coeff });
   auto key = tesseract_common::makeOrderedLinkPair(obj1, obj2);
   pair_lookup_table_[key] = data;
 
@@ -66,7 +66,7 @@ Eigen::Isometry3d addTwist(const Eigen::Isometry3d& t1,
 {
   Eigen::Isometry3d t2;
   t2.setIdentity();
-  Eigen::Vector3d angle_axis = (t1.rotation().inverse() * twist.tail(3)) * dt;
+  const Eigen::Vector3d angle_axis = (t1.rotation().inverse() * twist.tail(3)) * dt;
   t2.linear() = t1.rotation() * Eigen::AngleAxisd(angle_axis.norm(), angle_axis.normalized());
   t2.translation() = t1.translation() + twist.head(3) * dt;
   return t2;

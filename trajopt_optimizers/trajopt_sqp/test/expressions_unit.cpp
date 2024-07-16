@@ -53,7 +53,7 @@ TEST(ExpressionsTest, AffExprsWithWeights)  // NOLINT
   CONSOLE_BRIDGE_logDebug("ExpressionsTest, AffExprsWithWeights");
   // f = (x(0) - x(1))^2
   // weight = 5
-  double w = 5;
+  const double w = 5;
   Eigen::Vector2d x(5, 1);
   Eigen::VectorXd e(1);
   e(0) = 16;
@@ -104,7 +104,7 @@ TEST(ExpressionsTest, squareAffExprs1)  // NOLINT
   e(0) = x(0) - x(1);
   Eigen::Vector2d J(1, -1);
 
-  AffExprs aff_exprs = trajopt_sqp::createAffExprs(e, J.transpose().sparseView(), x);
+  const AffExprs aff_exprs = trajopt_sqp::createAffExprs(e, J.transpose().sparseView(), x);
   EXPECT_NEAR(aff_exprs.values(x)(0), e(0), 1e-8);
 
   QuadExprs quad_exprs = trajopt_sqp::squareAffExprs(aff_exprs);

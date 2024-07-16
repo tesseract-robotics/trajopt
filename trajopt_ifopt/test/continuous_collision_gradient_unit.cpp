@@ -68,10 +68,10 @@ public:
 
   void SetUp() override
   {
-    boost::filesystem::path urdf_file(std::string(TRAJOPT_DATA_DIR) + "/spherebot.urdf");
-    boost::filesystem::path srdf_file(std::string(TRAJOPT_DATA_DIR) + "/spherebot.srdf");
+    const boost::filesystem::path urdf_file(std::string(TRAJOPT_DATA_DIR) + "/spherebot.urdf");
+    const boost::filesystem::path srdf_file(std::string(TRAJOPT_DATA_DIR) + "/spherebot.srdf");
 
-    ResourceLocator::Ptr locator = std::make_shared<tesseract_common::GeneralResourceLocator>();
+    const ResourceLocator::Ptr locator = std::make_shared<tesseract_common::GeneralResourceLocator>();
     EXPECT_TRUE(env->init(urdf_file, srdf_file, locator));
 
     gLogLevel = trajopt_common::LevelError;
@@ -86,9 +86,9 @@ void runContinuousGradientTest(const Environment::Ptr& env, double coeff)
   env->setState(ipos);
 
   std::vector<ContactResultMap> collisions;
-  tesseract_scene_graph::StateSolver::Ptr state_solver = env->getStateSolver();
-  ContinuousContactManager::Ptr manager = env->getContinuousContactManager();
-  tesseract_kinematics::JointGroup::ConstPtr manip = env->getJointGroup("manipulator");
+  const tesseract_scene_graph::StateSolver::Ptr state_solver = env->getStateSolver();
+  const ContinuousContactManager::Ptr manager = env->getContinuousContactManager();
+  const tesseract_kinematics::JointGroup::ConstPtr manip = env->getJointGroup("manipulator");
 
   manager->setActiveCollisionObjects(manip->getActiveLinkNames());
   manager->setDefaultCollisionMarginData(0);
@@ -127,8 +127,8 @@ void runContinuousGradientTest(const Environment::Ptr& env, double coeff)
   }
 
   // Step 3: Setup collision
-  double margin_coeff = coeff;
-  double margin = 0.02;
+  const double margin_coeff = coeff;
+  const double margin = 0.02;
   auto trajopt_collision_config = std::make_shared<trajopt_common::TrajOptCollisionConfig>(margin, margin_coeff);
   trajopt_collision_config->type = tesseract_collision::CollisionEvaluatorType::LVS_CONTINUOUS;
   trajopt_collision_config->collision_margin_buffer = 0.05;
@@ -139,18 +139,18 @@ void runContinuousGradientTest(const Environment::Ptr& env, double coeff)
     auto collision_evaluator = std::make_shared<trajopt_ifopt::LVSContinuousCollisionEvaluator>(
         collision_cache, manip, env, trajopt_collision_config);
 
-    std::array<JointPosition::ConstPtr, 2> position_vars{ vars[i - 1], vars[i] };
-    std::array<bool, 2> position_vars_fixed{ false, false };
+    const std::array<JointPosition::ConstPtr, 2> position_vars{ vars[i - 1], vars[i] };
+    const std::array<bool, 2> position_vars_fixed{ false, false };
     auto cnt = std::make_shared<trajopt_ifopt::ContinuousCollisionConstraint>(
         collision_evaluator, position_vars, position_vars_fixed, 3);
     nlp.AddConstraintSet(cnt);
   }
 
-  std::cout << "Jacobian: \n" << nlp.GetJacobianOfConstraints().toDense() << std::endl;
+  std::cout << "Jacobian: \n" << nlp.GetJacobianOfConstraints().toDense() << '\n';
   std::vector<double> init_vals{ -1.9, 0, 0, 1.9, 1.9, 3.8 };
-  trajopt_ifopt::SparseMatrix num_jac_block =
+  const trajopt_ifopt::SparseMatrix num_jac_block =
       trajopt_ifopt::calcNumericalConstraintGradient(init_vals.data(), nlp, 1e-8);
-  std::cout << "Numerical Jacobian: \n" << num_jac_block.toDense() << std::endl;
+  std::cout << "Numerical Jacobian: \n" << num_jac_block.toDense() << '\n';
 }
 
 TEST_F(ContinuousCollisionGradientTest, ContinuousCollisionGradientTest)  // NOLINT

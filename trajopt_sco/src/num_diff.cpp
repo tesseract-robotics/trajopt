@@ -42,11 +42,11 @@ Eigen::VectorXd calcForwardNumGrad(const ScalarOfVector& f, const Eigen::VectorX
 {
   Eigen::VectorXd out(x.size());
   Eigen::VectorXd xpert = x;
-  double y = f(x);
+  double const y = f(x);
   for (int i = 0; i < x.size(); ++i)
   {
     xpert(i) = x(i) + epsilon;
-    double ypert = f(xpert);
+    const double ypert = f(xpert);
     out(i) = (ypert - y) / epsilon;
     xpert(i) = x(i);
   }
@@ -54,13 +54,13 @@ Eigen::VectorXd calcForwardNumGrad(const ScalarOfVector& f, const Eigen::VectorX
 }
 Eigen::MatrixXd calcForwardNumJac(const VectorOfVector& f, const Eigen::VectorXd& x, double epsilon)
 {
-  Eigen::VectorXd y = f(x);
+  const Eigen::VectorXd y = f(x);
   Eigen::MatrixXd out(y.size(), x.size());
   Eigen::VectorXd xpert = x;
   for (int i = 0; i < x.size(); ++i)
   {
     xpert(i) = x(i) + epsilon;
-    Eigen::VectorXd ypert = f(xpert);
+    const Eigen::VectorXd ypert = f(xpert);
     out.col(i) = (ypert - y) / epsilon;
     xpert(i) = x(i);
   }
@@ -81,9 +81,9 @@ void calcGradAndDiagHess(const ScalarOfVector& f,
   for (int i = 0; i < x.size(); ++i)
   {
     xpert(i) = x(i) + epsilon / 2;
-    double yplus = f(xpert);
+    const double yplus = f(xpert);
     xpert(i) = x(i) - epsilon / 2;
-    double yminus = f(xpert);
+    const double yminus = f(xpert);
     grad(i) = (yplus - yminus) / epsilon;
     hess(i) = (yplus + yminus - 2 * y) / (epsilon * epsilon / 4);
     xpert(i) = x(i);
@@ -98,7 +98,7 @@ void calcGradHess(const ScalarOfVector::Ptr& f,
                   Eigen::MatrixXd& hess)
 {
   y = f->call(x);
-  VectorOfVector::Ptr grad_func = forwardNumGrad(f, epsilon);
+  const VectorOfVector::Ptr grad_func = forwardNumGrad(f, epsilon);
   grad = grad_func->call(x);
   hess = calcForwardNumJac(*grad_func, x, epsilon);
   hess = (hess + hess.transpose()) / 2;

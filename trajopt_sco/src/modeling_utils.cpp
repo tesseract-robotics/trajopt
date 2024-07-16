@@ -45,19 +45,20 @@ CostFromFunc::CostFromFunc(ScalarOfVector::Ptr f, VarVector vars, const std::str
 
 double CostFromFunc::value(const DblVec& x)
 {
-  Eigen::VectorXd x_eigen = getVec(x, vars_);
+  const Eigen::VectorXd x_eigen = getVec(x, vars_);
   return f_->call(x_eigen);
 }
 
 ConvexObjective::Ptr CostFromFunc::convex(const DblVec& x, Model* model)
 {
-  Eigen::VectorXd x_eigen = getVec(x, vars_);
+  const Eigen::VectorXd x_eigen = getVec(x, vars_);
 
   auto out = std::make_shared<ConvexObjective>(model);
   if (!full_hessian_)
   {
     double val{ NAN };
-    Eigen::VectorXd grad, hess;
+    Eigen::VectorXd grad;
+    Eigen::VectorXd hess;
     calcGradAndDiagHess(*f_, x_eigen, epsilon_, val, grad, hess);
     hess = hess.cwiseMax(Eigen::VectorXd::Zero(hess.size()));
     QuadExpr& quad = out->quad_;
@@ -76,7 +77,7 @@ ConvexObjective::Ptr CostFromFunc::convex(const DblVec& x, Model* model)
     calcGradHess(f_, x_eigen, epsilon_, val, grad, hess);
 
     Eigen::MatrixXd pos_hess = Eigen::MatrixXd::Zero(x_eigen.size(), x_eigen.size());
-    Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> es(hess);
+    const Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> es(hess);
     Eigen::VectorXd eigvals = es.eigenvalues();
     Eigen::MatrixXd eigvecs = es.eigenvectors();
     for (long int i = 0, end = x_eigen.size(); i != end; ++i)
@@ -141,7 +142,7 @@ CostFromErrFunc::CostFromErrFunc(VectorOfVector::Ptr f,
 }
 double CostFromErrFunc::value(const DblVec& x)
 {
-  Eigen::VectorXd x_eigen = getVec(x, vars_);
+  const Eigen::VectorXd x_eigen = getVec(x, vars_);
   Eigen::VectorXd err = f_->call(x_eigen);
 
   switch (pen_type_)
@@ -166,7 +167,7 @@ double CostFromErrFunc::value(const DblVec& x)
 }
 ConvexObjective::Ptr CostFromErrFunc::convex(const DblVec& x, Model* model)
 {
-  Eigen::VectorXd x_eigen = getVec(x, vars_);
+  const Eigen::VectorXd x_eigen = getVec(x, vars_);
   Eigen::MatrixXd jac = (dfdx_) ? dfdx_->call(x_eigen) : calcForwardNumJac(*f_, x_eigen, epsilon_);
   auto out = std::make_shared<ConvexObjective>(model);
   Eigen::VectorXd y = f_->call(x_eigen);
@@ -236,7 +237,7 @@ ConstraintFromErrFunc::ConstraintFromErrFunc(VectorOfVector::Ptr f,
 
 DblVec ConstraintFromErrFunc::value(const DblVec& x)
 {
-  Eigen::VectorXd x_eigen = getVec(x, vars_);
+  const Eigen::VectorXd x_eigen = getVec(x, vars_);
   Eigen::VectorXd err = f_->call(x_eigen);
   if (coeffs_.size() > 0)
     err.array() *= coeffs_.array();
@@ -245,7 +246,7 @@ DblVec ConstraintFromErrFunc::value(const DblVec& x)
 
 ConvexConstraints::Ptr ConstraintFromErrFunc::convex(const DblVec& x, Model* model)
 {
-  Eigen::VectorXd x_eigen = getVec(x, vars_);
+  const Eigen::VectorXd x_eigen = getVec(x, vars_);
   Eigen::MatrixXd jac = (dfdx_) ? dfdx_->call(x_eigen) : calcForwardNumJac(*f_, x_eigen, epsilon_);
   auto out = std::make_shared<ConvexConstraints>(model);
   Eigen::VectorXd y = f_->call(x_eigen);
@@ -274,7 +275,7 @@ std::string AffExprToString(const AffExpr& aff)
   {
     if (i != 0)
       out.append(" + ");
-    std::string term = std::to_string(aff.coeffs[i]) + "*" + aff.vars[i].var_rep->name;
+    const std::string term = std::to_string(aff.coeffs[i]) + "*" + aff.vars[i].var_rep->name;
     out.append(term);
   }
   out.append(" + " + std::to_string(aff.constant));

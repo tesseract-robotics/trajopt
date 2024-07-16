@@ -17,19 +17,19 @@ void ConvexObjective::addAffExpr(const AffExpr& affexpr) { exprInc(quad_, affexp
 void ConvexObjective::addQuadExpr(const QuadExpr& quadexpr) { exprInc(quad_, quadexpr); }
 void ConvexObjective::addHinge(const AffExpr& affexpr, double coeff)
 {
-  Var hinge = model_->addVar("hinge", 0, static_cast<double>(INFINITY));
+  Var const hinge = model_->addVar("hinge", 0, static_cast<double>(INFINITY));
   vars_.push_back(hinge);
   ineqs_.push_back(affexpr);
   exprDec(ineqs_.back(), hinge);
-  AffExpr hinge_cost = exprMult(AffExpr(hinge), coeff);
+  AffExpr const hinge_cost = exprMult(AffExpr(hinge), coeff);
   exprInc(quad_, hinge_cost);
 }
 
 void ConvexObjective::addAbs(const AffExpr& affexpr, double coeff)
 {
   // Add variables that will enforce ABS
-  Var neg = model_->addVar("neg", 0, static_cast<double>(INFINITY));
-  Var pos = model_->addVar("pos", 0, static_cast<double>(INFINITY));
+  Var const neg = model_->addVar("neg", 0, static_cast<double>(INFINITY));
+  Var const pos = model_->addVar("pos", 0, static_cast<double>(INFINITY));
   vars_.push_back(neg);
   vars_.push_back(pos);
   // Coeff will be applied whenever neg/pos are not 0
@@ -74,7 +74,7 @@ void ConvexObjective::addL2Norm(const AffExprVector& ev)
 
 void ConvexObjective::addMax(const AffExprVector& ev)
 {
-  Var m = model_->addVar("max", static_cast<double>(-INFINITY), static_cast<double>(INFINITY));
+  Var const m = model_->addVar("max", static_cast<double>(-INFINITY), static_cast<double>(INFINITY));
   ineqs_.reserve(ineqs_.size() + ev.size());
   for (const auto& i : ev)
   {
@@ -179,7 +179,8 @@ VarVector OptProb::createVariables(const std::vector<std::string>& names)
 
 VarVector OptProb::createVariables(const std::vector<std::string>& names, const DblVec& lb, const DblVec& ub)
 {
-  std::size_t n_add = names.size(), n_cur = vars_.size();
+  const std::size_t n_add = names.size();
+  const std::size_t n_cur = vars_.size();
   assert(lb.size() == n_add);
   assert(ub.size() == n_add);
   vars_.reserve(n_cur + n_add);
@@ -280,7 +281,7 @@ DblVec OptProb::getClosestFeasiblePointQP(const DblVec& x)
   }
   model_->setVarBounds(vars_, lower_bounds_, upper_bounds_);
   model_->setObjective(obj);
-  CvxOptStatus status = model_->optimize();
+  const CvxOptStatus status = model_->optimize();
   if (status != CVX_SOLVED)
   {
     model_->writeToFile("/tmp/fail.lp");

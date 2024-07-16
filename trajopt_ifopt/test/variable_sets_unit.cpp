@@ -42,7 +42,7 @@ TEST(VariableSetsUnit, joint_position_1)  // NOLINT
 {
   CONSOLE_BRIDGE_logDebug("VariableSetsUnit, joint_position_1");
 
-  std::string name("test_var");
+  const std::string name("test_var");
   Eigen::VectorXd init(10);
   init << 0, 1, 2, 3, 4, 5, 6, 7, 8, 9;
   JointPosition position_var(init, std::vector<std::string>(), name);
@@ -60,7 +60,7 @@ TEST(VariableSetsUnit, joint_position_1)  // NOLINT
   EXPECT_TRUE(changed.isApprox(position_var.GetValues()));
 
   // Check that setting bounds works
-  ifopt::Bounds bounds(-0.1234, 0.5678);
+  const ifopt::Bounds bounds(-0.1234, 0.5678);
   std::vector<ifopt::Bounds> bounds_vec = std::vector<ifopt::Bounds>(static_cast<std::size_t>(init.size()), bounds);
   position_var.SetBounds(bounds_vec);
   std::vector<ifopt::Bounds> results_vec = position_var.GetBounds();

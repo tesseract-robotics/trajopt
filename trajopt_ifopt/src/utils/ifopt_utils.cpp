@@ -62,6 +62,7 @@ bool isBoundsFiniteFinite(const ifopt::Bounds& bounds) { return (isFinite(bounds
 std::vector<ifopt::Bounds> toBounds(const Eigen::Ref<const Eigen::MatrixX2d>& limits)
 {
   std::vector<ifopt::Bounds> bounds;
+  bounds.reserve(static_cast<std::size_t>(limits.rows()));
   for (Eigen::Index i = 0; i < limits.rows(); i++)
     bounds.emplace_back(limits(i, 0), limits(i, 1));
   return bounds;
@@ -82,7 +83,7 @@ std::vector<Eigen::VectorXd> interpolate(const Eigen::Ref<const Eigen::VectorXd>
                                          Eigen::Index steps)
 {
   assert(start.size() == end.size());  // NOLINT
-  Eigen::VectorXd delta = (end - start) / static_cast<double>(steps - 1);
+  const Eigen::VectorXd delta = (end - start) / static_cast<double>(steps - 1);
   Eigen::VectorXd running = start;
   std::vector<Eigen::VectorXd> results;
   for (Eigen::Index i = 0; i < steps; i++)
@@ -124,10 +125,11 @@ Eigen::VectorXd calcBoundsErrors(const Eigen::Ref<const Eigen::VectorXd>& input,
   }
 
   // Values will be negative if they violate the constrain
-  Eigen::ArrayXd zero = Eigen::ArrayXd::Zero(input.rows());
-  Eigen::ArrayXd dist_from_lower = (input.array() - bound_lower).min(zero);
-  Eigen::ArrayXd dist_from_upper = (input.array() - bound_upper).max(zero);
-  Eigen::ArrayXd worst_error = (dist_from_upper.abs() > dist_from_lower.abs()).select(dist_from_upper, dist_from_lower);
+  const Eigen::ArrayXd zero = Eigen::ArrayXd::Zero(input.rows());
+  const Eigen::ArrayXd dist_from_lower = (input.array() - bound_lower).min(zero);
+  const Eigen::ArrayXd dist_from_upper = (input.array() - bound_upper).max(zero);
+  const Eigen::ArrayXd worst_error =
+      (dist_from_upper.abs() > dist_from_lower.abs()).select(dist_from_upper, dist_from_lower);
 
   return worst_error;
 }
@@ -142,19 +144,19 @@ ifopt::VectorXd calcNumericalCostGradient(const double* x, ifopt::Problem& nlp, 
 {
   auto cache_vars = nlp.GetVariableValues();
 
-  int n = nlp.GetNumberOfOptimizationVariables();
+  const int n = nlp.GetNumberOfOptimizationVariables();
   ifopt::Problem::Jacobian jac(1, n);
   if (nlp.HasCostTerms())
   {
-    double step_size = epsilon;
+    const double step_size = epsilon;
 
     // calculate forward difference by disturbing each optimization variable
-    double g = nlp.EvaluateCostFunction(x);
+    const double g = nlp.EvaluateCostFunction(x);
     std::vector<double> x_new(x, x + n);
     for (int i = 0; i < n; ++i)
     {
       x_new[static_cast<std::size_t>(i)] += step_size;  // disturb
-      double g_new = nlp.EvaluateCostFunction(x_new.data());
+      const double g_new = nlp.EvaluateCostFunction(x_new.data());
       jac.coeffRef(0, i) = (g_new - g) / step_size;
       x_new[static_cast<std::size_t>(i)] = x[i];  // reset for next iteration
     }
@@ -170,22 +172,22 @@ ifopt::Jacobian calcNumericalConstraintGradient(const double* x, ifopt::Problem&
 {
   auto cache_vars = nlp.GetVariableValues();
 
-  int n = nlp.GetNumberOfOptimizationVariables();
-  int m = nlp.GetConstraints().GetRows();
+  const int n = nlp.GetNumberOfOptimizationVariables();
+  const int m = nlp.GetConstraints().GetRows();
   ifopt::Problem::Jacobian jac(m, n);
   jac.reserve(static_cast<Eigen::Index>(m) * static_cast<Eigen::Index>(n));
 
   if (nlp.GetNumberOfConstraints() > 0)
   {
-    double step_size = epsilon;
+    const double step_size = epsilon;
 
     // calculate forward difference by disturbing each optimization variable
-    ifopt::Problem::VectorXd g = nlp.EvaluateConstraints(x);
+    const ifopt::Problem::VectorXd g = nlp.EvaluateConstraints(x);
     std::vector<double> x_new(x, x + n);
     for (int i = 0; i < n; ++i)
     {
       x_new[static_cast<std::size_t>(i)] += step_size;  // disturb
-      ifopt::Problem::VectorXd g_new = nlp.EvaluateConstraints(x_new.data());
+      const ifopt::Problem::VectorXd g_new = nlp.EvaluateConstraints(x_new.data());
       ifopt::Problem::VectorXd delta_g = (g_new - g) / step_size;
 
       for (int j = 0; j < m; ++j)
@@ -207,21 +209,21 @@ ifopt::Jacobian calcNumericalConstraintGradient(ifopt::Component& variables,
 {
   Eigen::VectorXd x = variables.GetValues();
 
-  int n = variables.GetRows();
-  int m = constraint_set.GetRows();
+  const int n = variables.GetRows();
+  const int m = constraint_set.GetRows();
   ifopt::Problem::Jacobian jac(m, n);
   jac.reserve(static_cast<Eigen::Index>(m) * static_cast<Eigen::Index>(n));
 
   if (!constraint_set.GetBounds().empty())
   {
     // calculate forward difference by disturbing each optimization variable
-    ifopt::Problem::VectorXd g = constraint_set.GetValues();
+    const ifopt::Problem::VectorXd g = constraint_set.GetValues();
     Eigen::VectorXd x_new = x;
     for (Eigen::Index i = 0; i < n; ++i)
     {
       x_new(i) = x(i) + epsilon;  // disturb
       variables.SetVariables(x_new);
-      ifopt::Problem::VectorXd g_new = constraint_set.GetValues();
+      const ifopt::Problem::VectorXd g_new = constraint_set.GetValues();
       ifopt::Problem::VectorXd delta_g = (g_new - g) / epsilon;
 
       for (int j = 0; j < m; ++j)

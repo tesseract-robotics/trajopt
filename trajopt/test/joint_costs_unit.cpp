@@ -41,10 +41,10 @@ public:
 
   void SetUp() override
   {
-    tesseract_common::fs::path urdf_file(std::string(TRAJOPT_DATA_DIR) + "/arm_around_table.urdf");
-    tesseract_common::fs::path srdf_file(std::string(TRAJOPT_DATA_DIR) + "/pr2.srdf");
+    const tesseract_common::fs::path urdf_file(std::string(TRAJOPT_DATA_DIR) + "/arm_around_table.urdf");
+    const tesseract_common::fs::path srdf_file(std::string(TRAJOPT_DATA_DIR) + "/pr2.srdf");
 
-    ResourceLocator::Ptr locator = std::make_shared<tesseract_common::GeneralResourceLocator>();
+    const ResourceLocator::Ptr locator = std::make_shared<tesseract_common::GeneralResourceLocator>();
     EXPECT_TRUE(env_->init(urdf_file, srdf_file, locator));
 
     gLogLevel = trajopt_common::LevelError;
@@ -104,7 +104,7 @@ TEST_F(CostsTest, equality_jointPos)  // NOLINT
   jv2->term_type = TermType::TT_COST;
   pci.cost_infos.push_back(jv2);
 
-  TrajOptProb::Ptr prob = ConstructProblem(pci);
+  const TrajOptProb::Ptr prob = ConstructProblem(pci);
   ASSERT_TRUE(!!prob);
 
   sco::BasicTrustRegionSQP opt(prob);
@@ -114,7 +114,7 @@ TEST_F(CostsTest, equality_jointPos)  // NOLINT
   }
 
   opt.initialize(trajToDblVec(prob->GetInitTraj()));
-  double tStart = GetClock();
+  const double tStart = GetClock();
 
   opt.optimize();
 
@@ -211,7 +211,7 @@ TEST_F(CostsTest, inequality_jointPos)  // NOLINT
   jv3->term_type = TermType::TT_COST;
   pci.cost_infos.push_back(jv3);
 
-  TrajOptProb::Ptr prob = ConstructProblem(pci);
+  const TrajOptProb::Ptr prob = ConstructProblem(pci);
   ASSERT_TRUE(!!prob);
 
   sco::BasicTrustRegionSQP opt(prob);
@@ -221,7 +221,7 @@ TEST_F(CostsTest, inequality_jointPos)  // NOLINT
   }
 
   opt.initialize(trajToDblVec(prob->GetInitTraj()));
-  double tStart = GetClock();
+  const double tStart = GetClock();
 
   opt.optimize();
   CONSOLE_BRIDGE_logDebug("planning time: %.3f", GetClock() - tStart);
@@ -306,7 +306,7 @@ TEST_F(CostsTest, equality_jointVel)  // NOLINT
   jv2->term_type = TermType::TT_COST;
   pci.cost_infos.push_back(jv2);
 
-  TrajOptProb::Ptr prob = ConstructProblem(pci);
+  const TrajOptProb::Ptr prob = ConstructProblem(pci);
   ASSERT_TRUE(!!prob);
 
   sco::BasicTrustRegionSQP opt(prob);
@@ -316,7 +316,7 @@ TEST_F(CostsTest, equality_jointVel)  // NOLINT
   }
 
   opt.initialize(trajToDblVec(prob->GetInitTraj()));
-  double tStart = GetClock();
+  const double tStart = GetClock();
 
   opt.optimize();
 
@@ -413,7 +413,7 @@ TEST_F(CostsTest, inequality_jointVel)  // NOLINT
   jv3->term_type = TermType::TT_COST;
   pci.cost_infos.push_back(jv3);
 
-  TrajOptProb::Ptr prob = ConstructProblem(pci);
+  const TrajOptProb::Ptr prob = ConstructProblem(pci);
   ASSERT_TRUE(!!prob);
 
   sco::BasicTrustRegionSQP opt(prob);
@@ -423,7 +423,7 @@ TEST_F(CostsTest, inequality_jointVel)  // NOLINT
   }
 
   opt.initialize(trajToDblVec(prob->GetInitTraj()));
-  double tStart = GetClock();
+  const double tStart = GetClock();
 
   opt.optimize();
   CONSOLE_BRIDGE_logDebug("planning time: %.3f", GetClock() - tStart);
@@ -511,7 +511,7 @@ TEST_F(CostsTest, equality_jointVel_time)  // NOLINT
   jv2->term_type = TermType::TT_COST | TermType::TT_USE_TIME;
   pci.cost_infos.push_back(jv2);
 
-  TrajOptProb::Ptr prob = ConstructProblem(pci);
+  const TrajOptProb::Ptr prob = ConstructProblem(pci);
   ASSERT_TRUE(!!prob);
 
   sco::BasicTrustRegionSQP opt(prob);
@@ -521,7 +521,7 @@ TEST_F(CostsTest, equality_jointVel_time)  // NOLINT
   }
 
   opt.initialize(trajToDblVec(prob->GetInitTraj()));
-  double tStart = GetClock();
+  const double tStart = GetClock();
 
   opt.optimize();
 
@@ -624,7 +624,7 @@ TEST_F(CostsTest, inequality_jointVel_time)  // NOLINT
   jv3->term_type = TermType::TT_COST | TermType::TT_USE_TIME;
   pci.cost_infos.push_back(jv3);
 
-  TrajOptProb::Ptr prob = ConstructProblem(pci);
+  const TrajOptProb::Ptr prob = ConstructProblem(pci);
   ASSERT_TRUE(!!prob);
 
   sco::BasicTrustRegionSQP opt(prob);
@@ -634,7 +634,7 @@ TEST_F(CostsTest, inequality_jointVel_time)  // NOLINT
   }
 
   opt.initialize(trajToDblVec(prob->GetInitTraj()));
-  double tStart = GetClock();
+  const double tStart = GetClock();
 
   opt.optimize();
   CONSOLE_BRIDGE_logDebug("planning time: %.3f", GetClock() - tStart);
@@ -719,7 +719,7 @@ TEST_F(CostsTest, equality_jointAcc)  // NOLINT
   jv2->term_type = TermType::TT_COST;
   pci.cost_infos.push_back(jv2);
 
-  TrajOptProb::Ptr prob = ConstructProblem(pci);
+  const TrajOptProb::Ptr prob = ConstructProblem(pci);
   ASSERT_TRUE(!!prob);
 
   sco::BasicTrustRegionSQP opt(prob);
@@ -729,7 +729,7 @@ TEST_F(CostsTest, equality_jointAcc)  // NOLINT
   }
 
   opt.initialize(trajToDblVec(prob->GetInitTraj()));
-  double tStart = GetClock();
+  const double tStart = GetClock();
 
   opt.optimize();
 
@@ -740,7 +740,7 @@ TEST_F(CostsTest, equality_jointAcc)  // NOLINT
   double accel{ std::numeric_limits<double>::max() };
   for (auto j = 0; j < output.cols(); ++j)
   {
-    int i = 0;
+    const int i = 0;
     accel = output(i, j) - 2 * output(i + 1, j) + output(i + 2, j);
     EXPECT_NEAR(accel, cnt_targ, cnt_tol);
   }
@@ -828,7 +828,7 @@ TEST_F(CostsTest, inequality_jointAcc)  // NOLINT
   jv3->term_type = TermType::TT_COST;
   pci.cost_infos.push_back(jv3);
 
-  TrajOptProb::Ptr prob = ConstructProblem(pci);
+  const TrajOptProb::Ptr prob = ConstructProblem(pci);
   ASSERT_TRUE(!!prob);
 
   sco::BasicTrustRegionSQP opt(prob);
@@ -838,7 +838,7 @@ TEST_F(CostsTest, inequality_jointAcc)  // NOLINT
   }
 
   opt.initialize(trajToDblVec(prob->GetInitTraj()));
-  double tStart = GetClock();
+  const double tStart = GetClock();
 
   opt.optimize();
   CONSOLE_BRIDGE_logDebug("planning time: %.3f", GetClock() - tStart);

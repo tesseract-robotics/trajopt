@@ -77,7 +77,7 @@ TEST_F(InterfaceTest, initial_trajectory_cpp_interface)
   jv->term_type = TT_COST;
   pci.cost_infos.push_back(jv);
 
-  TrajOptProb::Ptr prob = ConstructProblem(pci);
+  const TrajOptProb::Ptr prob = ConstructProblem(pci);
   ASSERT_TRUE(!!prob);
 
   trajopt::TrajArray initial_trajectory = prob->GetInitTraj();
@@ -127,7 +127,7 @@ TEST_F(InterfaceTest, initial_trajectory_time_cpp_interface)
   jv->term_type = TT_COST | TT_USE_TIME;
   pci.cost_infos.push_back(jv);
 
-  TrajOptProb::Ptr prob = ConstructProblem(pci);
+  const TrajOptProb::Ptr prob = ConstructProblem(pci);
   ASSERT_TRUE(!!prob);
 
   trajopt::TrajArray initial_trajectory = prob->GetInitTraj();
@@ -173,7 +173,7 @@ TEST_F(InterfaceTest, initial_trajectory_json_interface)
   ipos["r_wrist_roll_joint"] = 0;
   env_->setState(ipos);
 
-  TrajOptProb::Ptr prob = ConstructProblem(root, env_, env_->getFwdKinematics());
+  const TrajOptProb::Ptr prob = ConstructProblem(root, env_, env_->getFwdKinematics());
   ASSERT_TRUE(!!prob);
 
   trajopt::TrajArray initial_trajectory = prob->GetInitTraj();
@@ -208,7 +208,7 @@ TEST_F(InterfaceTest, initial_trajectory_time_json_interface)
   ipos["r_wrist_roll_joint"] = 0;
   env_->setState(ipos);
 
-  TrajOptProb::Ptr prob = ConstructProblem(root, env_, env_->getFwdKinematics());
+  const TrajOptProb::Ptr prob = ConstructProblem(root, env_, env_->getFwdKinematics());
   ASSERT_TRUE(!!prob);
 
   trajopt::TrajArray initial_trajectory = prob->GetInitTraj();

@@ -53,7 +53,7 @@ void simplify2(IntVec& inds, DblVec& vals)
   inds.resize(ind2val.size());
   vals.resize(ind2val.size());
   long unsigned int i_new = 0;
-  for (Int2Double::value_type& iv : ind2val)
+  for (const Int2Double::value_type& iv : ind2val)
   {
     inds[i_new] = iv.first;
     vals[i_new] = iv.second;
@@ -116,25 +116,26 @@ Var Model::addVar(const std::string& name, double lb, double ub)
 }
 void Model::removeVar(const Var& var)
 {
-  VarVector vars(1, var);
+  const VarVector vars(1, var);
   removeVars(vars);
 }
 void Model::removeCnt(const Cnt& cnt)
 {
-  CntVector cnts(1, cnt);
+  const CntVector cnts(1, cnt);
   removeCnts(cnts);
 }
 
 double Model::getVarValue(const Var& var) const
 {
-  VarVector vars(1, var);
+  const VarVector vars(1, var);
   return getVarValues(vars)[0];
 }
 
 void Model::setVarBounds(const Var& var, double lower, double upper)
 {
-  DblVec lowers(1, lower), uppers(1, upper);
-  VarVector vars(1, var);
+  const DblVec lowers(1, lower);
+  const DblVec uppers(1, upper);
+  const VarVector vars(1, var);
   setVarBounds(vars, lowers, uppers);
 }
 
@@ -247,8 +248,8 @@ void ModelType::fromJson(const Json::Value& v)
 {
   try
   {
-    std::string ref = v.asString();
-    ModelType cs(ref);
+    const std::string ref = v.asString();
+    const ModelType cs(ref);
     value_ = cs.value_;
   }
   catch (const std::runtime_error&)

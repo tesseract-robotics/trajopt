@@ -41,7 +41,7 @@ void AddVarArrays(sco::OptProb& prob,
                   const std::vector<std::string>& name_prefix,
                   const std::vector<VarArray*>& newvars)
 {
-  std::size_t n_arr = name_prefix.size();
+  const std::size_t n_arr = name_prefix.size();
   assert(static_cast<unsigned>(n_arr) == newvars.size());
 
   std::vector<Eigen::MatrixXi> index(n_arr);
@@ -82,9 +82,9 @@ void AddVarArrays(sco::OptProb& prob,
 
 void AddVarArray(sco::OptProb& prob, int rows, int cols, const std::string& name_prefix, VarArray& newvars)
 {
-  std::vector<VarArray*> arrs(1, &newvars);
-  std::vector<std::string> prefixes(1, name_prefix);
-  std::vector<int> colss(1, cols);
+  const std::vector<VarArray*> arrs(1, &newvars);
+  const std::vector<std::string> prefixes(1, name_prefix);
+  const std::vector<int> colss(1, cols);
   AddVarArrays(prob, rows, colss, prefixes, arrs);
 }
 

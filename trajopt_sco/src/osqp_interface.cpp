@@ -51,9 +51,9 @@ OSQPModel::~OSQPModel()
     osqp_cleanup(osqp_workspace_);
 
   // Clean up memory
-  for (Var& var : vars_)
+  for (const Var& var : vars_)
     var.var_rep->removed = true;
-  for (Cnt& cnt : cnts_)
+  for (const Cnt& cnt : cnts_)
     cnt.cnt_rep->removed = true;
 
   OSQPModel::update();
@@ -61,7 +61,7 @@ OSQPModel::~OSQPModel()
 
 Var OSQPModel::addVar(const std::string& name)
 {
-  std::scoped_lock lock(mutex_);
+  const std::scoped_lock lock(mutex_);
   vars_.emplace_back(std::make_shared<VarRep>(vars_.size(), name, this));
   lbs_.push_back(-OSQP_INFINITY);
   ubs_.push_back(OSQP_INFINITY);
@@ -70,7 +70,7 @@ Var OSQPModel::addVar(const std::string& name)
 
 Cnt OSQPModel::addEqCnt(const AffExpr& expr, const std::string& /*name*/)
 {
-  std::scoped_lock lock(mutex_);
+  const std::scoped_lock lock(mutex_);
   cnts_.emplace_back(std::make_shared<CntRep>(cnts_.size(), this));
   cnt_exprs_.push_back(expr);
   cnt_types_.push_back(EQ);
@@ -79,7 +79,7 @@ Cnt OSQPModel::addEqCnt(const AffExpr& expr, const std::string& /*name*/)
 
 Cnt OSQPModel::addIneqCnt(const AffExpr& expr, const std::string& /*name*/)
 {
-  std::scoped_lock lock(mutex_);
+  const std::scoped_lock lock(mutex_);
   cnts_.emplace_back(std::make_shared<CntRep>(cnts_.size(), this));
   cnt_exprs_.push_back(expr);
   cnt_types_.push_back(INEQ);
@@ -90,7 +90,7 @@ Cnt OSQPModel::addIneqCnt(const QuadExpr&, const std::string& /*name*/) { throw 
 
 void OSQPModel::removeVars(const VarVector& vars)
 {
-  std::scoped_lock lock(mutex_);
+  const std::scoped_lock lock(mutex_);
   SizeTVec inds;
   vars2inds(vars, inds);
   for (const auto& var : vars)
@@ -99,7 +99,7 @@ void OSQPModel::removeVars(const VarVector& vars)
 
 void OSQPModel::removeCnts(const CntVector& cnts)
 {
-  std::scoped_lock lock(mutex_);
+  const std::scoped_lock lock(mutex_);
   SizeTVec inds;
   cnts2inds(cnts, inds);
   for (const auto& cnt : cnts)
@@ -289,7 +289,7 @@ CvxOptStatus OSQPModel::optimize()
 
   if (OSQP_COMPARE_DEBUG_MODE)
   {
-    Eigen::IOFormat format(5);
+    const Eigen::IOFormat format(5);
     std::cout << "OSQP Number of Variables:" << osqp_data_.n << '\n';
     std::cout << "OSQP Number of Constraints:" << osqp_data_.m << '\n';
 
@@ -345,7 +345,7 @@ CvxOptStatus OSQPModel::optimize()
 
     if (OSQP_COMPARE_DEBUG_MODE)
     {
-      Eigen::IOFormat format(5);
+      const Eigen::IOFormat format(5);
       Eigen::Map<Eigen::VectorXd> solution_vec(solution_.data(), static_cast<Eigen::Index>(solution_.size()));
       std::cout << "OSQP Status Value: " << status << '\n';
       std::cout << "OSQP Solution: " << solution_vec.transpose().format(format) << '\n';
@@ -373,7 +373,7 @@ void OSQPModel::writeToFile(const std::string& fname) const
   outStream << "Subject To\n";
   for (std::size_t i = 0; i < cnt_exprs_.size(); ++i)
   {
-    std::string op = (cnt_types_[i] == INEQ) ? " <= " : " = ";
+    const std::string op = (cnt_types_[i] == INEQ) ? " <= " : " = ";
     outStream << cnt_exprs_[i] << op << 0 << "\n";
   }
 

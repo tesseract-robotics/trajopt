@@ -60,14 +60,14 @@ public:
 
   void SetUp() override
   {
-    boost::filesystem::path urdf_file(std::string(TRAJOPT_DATA_DIR) + "/boxbot.urdf");
-    boost::filesystem::path srdf_file(std::string(TRAJOPT_DATA_DIR) + "/boxbot.srdf");
+    const boost::filesystem::path urdf_file(std::string(TRAJOPT_DATA_DIR) + "/boxbot.urdf");
+    const boost::filesystem::path srdf_file(std::string(TRAJOPT_DATA_DIR) + "/boxbot.srdf");
 
-    ResourceLocator::Ptr locator = std::make_shared<tesseract_common::GeneralResourceLocator>();
+    const ResourceLocator::Ptr locator = std::make_shared<tesseract_common::GeneralResourceLocator>();
     EXPECT_TRUE(env->init(urdf_file, srdf_file, locator));
 
     // Set up collision evaluator
-    tesseract_kinematics::JointGroup::ConstPtr kin = env->getJointGroup("manipulator");
+    const tesseract_kinematics::JointGroup::ConstPtr kin = env->getJointGroup("manipulator");
     auto config = std::make_shared<trajopt_common::TrajOptCollisionConfig>(0.1, 1);
     auto collision_cache = std::make_shared<trajopt_ifopt::CollisionCache>(100);
 
@@ -104,8 +104,8 @@ TEST_F(CollisionUnit, GetValueFillJacobian)  // NOLINT
     ifopt::ConstraintSet::Jacobian jac_block;
     jac_block.resize(1, 2);
     constraint->FillJacobianBlock("Joint_Position_0", jac_block);
-    double dx = jac_block.coeff(0, 0);
-    double dy = jac_block.coeff(0, 1);
+    const double dx = jac_block.coeff(0, 0);
+    const double dy = jac_block.coeff(0, 1);
     EXPECT_NEAR(dx, 0.0, 1e-6);
     EXPECT_NEAR(dy, 0.0, 1e-6);
   }
@@ -121,8 +121,8 @@ TEST_F(CollisionUnit, GetValueFillJacobian)  // NOLINT
     ifopt::ConstraintSet::Jacobian jac_block;
     jac_block.resize(1, 2);
     constraint->FillJacobianBlock("Joint_Position_0", jac_block);
-    double dx = jac_block.coeff(0, 0);
-    double dy = jac_block.coeff(0, 1);
+    const double dx = jac_block.coeff(0, 0);
+    const double dy = jac_block.coeff(0, 1);
     EXPECT_NEAR(dx, 1.0, 1e-6);
     EXPECT_NEAR(dy, 0.0, 1e-6);
   }
@@ -136,8 +136,8 @@ TEST_F(CollisionUnit, GetValueFillJacobian)  // NOLINT
     ifopt::ConstraintSet::Jacobian jac_block;
     jac_block.resize(1, 2);
     constraint->FillJacobianBlock("Joint_Position_0", jac_block);
-    double dx = jac_block.coeff(0, 0);
-    double dy = jac_block.coeff(0, 1);
+    const double dx = jac_block.coeff(0, 0);
+    const double dy = jac_block.coeff(0, 1);
     EXPECT_NEAR(dx, 0.0, 1e-6);
     EXPECT_NEAR(dy, -1.0, 1e-6);
   }
@@ -153,8 +153,8 @@ TEST_F(CollisionUnit, GetValueFillJacobian)  // NOLINT
     ifopt::ConstraintSet::Jacobian jac_block;
     jac_block.resize(1, 2);
     constraint->FillJacobianBlock("Joint_Position_0", jac_block);
-    double dx = jac_block.coeff(0, 0);
-    double dy = jac_block.coeff(0, 1);
+    const double dx = jac_block.coeff(0, 0);
+    const double dy = jac_block.coeff(0, 1);
     EXPECT_NEAR(dx, 1.0, 1e-6);
     EXPECT_NEAR(dy, 0.0, 1e-6);
   }
@@ -171,11 +171,11 @@ TEST_F(CollisionUnit, GetSetBounds)  // NOLINT
   {
     Eigen::VectorXd pos(2);
     pos << -1.9, 0;
-    std::vector<std::string> joint_names(2, "names");
+    const std::vector<std::string> joint_names(2, "names");
     auto var0 = std::make_shared<trajopt_ifopt::JointPosition>(pos, joint_names, "Joint_Position_0");
 
     auto constraint_2 = std::make_shared<trajopt_ifopt::DiscreteCollisionConstraint>(collision_evaluator, var0, 3);
-    ifopt::Bounds bounds(-0.1234, 0.5678);
+    const ifopt::Bounds bounds(-0.1234, 0.5678);
     std::vector<ifopt::Bounds> bounds_vec = std::vector<ifopt::Bounds>(1, bounds);
     constraint_2->SetBounds(bounds_vec);
     std::vector<ifopt::Bounds> results_vec = constraint_2->GetBounds();
