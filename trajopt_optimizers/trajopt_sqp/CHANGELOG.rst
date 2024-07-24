@@ -2,8 +2,8 @@
 Changelog for package trajopt_sqp
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.23.0 (2024-07-24)
+-------------------
 * Trajopt clang-tidy clean-up v3 (`#414 <https://github.com/tesseract-robotics/trajopt/issues/414>`_)
 * Trajopt clang-tidy clean-up v2
 * Fixes for building on Ubuntu Noble

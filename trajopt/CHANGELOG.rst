@@ -2,8 +2,8 @@
 Changelog for package trajopt
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.23.0 (2024-07-24)
+-------------------
 * Trajopt clang-tidy clean-up v3 (`#414 <https://github.com/tesseract-robotics/trajopt/issues/414>`_)
 * Trajopt clang-tidy clean-up v2
 * Trajopt clang-tidy clean-up (`#411 <https://github.com/tesseract-robotics/trajopt/issues/411>`_)
