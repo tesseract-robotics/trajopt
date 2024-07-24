@@ -2,6 +2,9 @@
 Changelog for package osqp
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+
 0.22.0 (2024-06-02)
 -------------------
 * Update OSQP to 0.6.3

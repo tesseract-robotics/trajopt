@@ -2,6 +2,13 @@
 Changelog for package trajopt_sqp
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Trajopt clang-tidy clean-up v3 (`#414 <https://github.com/tesseract-robotics/trajopt/issues/414>`_)
+* Trajopt clang-tidy clean-up v2
+* Fixes for building on Ubuntu Noble
+* Contributors: Roelof Oomen
+
 0.22.0 (2024-06-02)
 -------------------
 * Update to leverage forward declarations

@@ -2,6 +2,14 @@
 Changelog for package trajopt_utils
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Trajopt clang-tidy clean-up v3 (`#414 <https://github.com/tesseract-robotics/trajopt/issues/414>`_)
+* Trajopt clang-tidy clean-up v2
+* Trajopt clang-tidy clean-up (`#411 <https://github.com/tesseract-robotics/trajopt/issues/411>`_)
+* Various include cleanups and clang-tidy fixes, and an error message fix.
+* Contributors: Roelof Oomen
+
 0.22.0 (2024-06-02)
 -------------------
 * Update to leverage forward declarations
