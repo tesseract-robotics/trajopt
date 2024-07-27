@@ -34,7 +34,7 @@ jobs:
       uses: johnwason/vcpkg-action@v6
       with:
         pkgs: >-
-         fcl bullet3[multithreading,double-precision,rtti] octomap console-bridge eigen3 yaml-cpp 
+         fcl bullet3[multithreading,double-precision,rtti] octomap console-bridge eigen3 yaml-cpp boost-stacktrace
          benchmark tinyxml2 assimp orocos-kdl pcl lapack-reference boost-dll boost-filesystem boost-filesystem 
          boost-serialization boost-program-options boost-graph urdfdom ccd[double-precision] gtest jsoncpp
         triplet: x64-windows-release
