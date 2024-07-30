@@ -44,7 +44,7 @@ jobs:
         New-Item -Name conda-forge.yml -ItemType File
         conda smithy regenerate
         
-        conda mambabuild -m .ci_support/win_64_.yaml .
+        conda mambabuild -m .ci_support/win_64_.yaml --build-only .
 
   conda-linux:
     runs-on: ubuntu-latest
@@ -78,4 +78,4 @@ jobs:
         touch conda-forge.yml
         conda smithy regenerate
         
-        conda mambabuild -m .ci_support/linux_64_.yaml .
+        conda mambabuild -m .ci_support/linux_64_.yaml --build-only .
