@@ -2,6 +2,11 @@
 Changelog for package qpoases
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Add Mac OS GitHub action (`#418 <https://github.com/tesseract-robotics/trajopt/issues/418>`_)
+* Contributors: John Wason
+
 0.23.1 (2024-07-24)
 -------------------
 
