@@ -4,6 +4,7 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <Eigen/Core>
 #include <vector>
 #include <tesseract_visualization/fwd.h>
+#include <unordered_map>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt_sco/modeling.hpp>

@@ -1,0 +1,108 @@
+name: Mac OSX
+
+on:
+  push:
+    branches:
+      - master
+      - 'dev**'
+  pull_request:
+    paths:
+      - 'trajopt**'
+      - '.github/workflows/mac.yml'
+      - '**.repos'
+  schedule:
+    - cron: '0 5 * * *'
+  release:
+    types:
+      - released
+
+env:
+  VCPKG_PKGS: >- 
+    boost-dll boost-program-options boost-stacktrace
+    boost-serialization boost-filesystem boost-format
+    tinyxml2 console-bridge assimp
+    urdfdom octomap orocos-kdl pcl
+    gtest benchmark flann jsoncpp
+    yaml-cpp eigen3
+    openblas
+    fcl ompl taskflow
+    bullet3[multithreading,double-precision,rtti]
+    ccd[double-precision] gperftools
+
+jobs:
+  build-macos:
+    strategy:
+      fail-fast: false
+      matrix:
+        config:
+          - runner: macos-12
+            vcpkg_triplet: x64-osx-dynamic-release
+            arch: x64
+            homebrew_root: /usr/local
+          - runner: macos-14
+            vcpkg_triplet: arm64-osx-dynamic-release
+            arch: arm64
+            homebrew_root: /opt/homebrew
+    runs-on: ${{ matrix.config.runner }}
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        path: ws/src/trajopt
+    - uses: actions/setup-python@v4
+      id: setup-python
+      with:
+        python-version: '3.12'
+    - name: brew
+      run: |
+        brew install libomp cmake automake autoconf libtool gcc ninja
+    - name: Setup cmake
+      uses: jwlawson/actions-setup-cmake@v2
+      with:
+        cmake-version: '3.28.x'
+    - name: vcpkg build
+      uses: johnwason/vcpkg-action@v6
+      with:
+        pkgs: >-
+          ${{ env.VCPKG_PKGS }}
+        triplet: ${{ matrix.config.vcpkg_triplet }}
+        extra-args: --clean-after-build --overlay-triplets=${{ github.workspace }}/ws/src/trajopt/.github/workflows/vcpkg_triplets
+        token: ${{ github.token }}
+        cache-key: osx-${{ matrix.config.arch }}-vcpkg
+        revision: master
+        github-binarycache: true
+    - name: pip3
+      run: |
+        python3 -m pip install numpy setuptools wheel pytest delvewheel colcon-common-extensions vcstool
+    - name: vcs import
+      working-directory: ws/src
+      run: vcs import --input trajopt/.github/workflows/windows_dependencies.repos
+    - name: colcon build
+      working-directory: ws
+      run: |
+        export DYLD_LIBRARY_PATH=$DYLD_LIBRARY_PATH:$GITHUB_WORKSPACE/vcpkg/installed/${{ matrix.config.vcpkg_triplet }}/lib
+        export CMAKE_PREFIX_PATH=$GITHUB_WORKSPACE/vcpkg/installed/${{ matrix.config.vcpkg_triplet }}
+
+        colcon build --merge-install \
+            --packages-ignore tesseract_examples trajopt_ifopt trajopt_sqp ifopt vhacd tesseract_python \
+            --event-handlers console_cohesion+ \
+            --cmake-force-configure \
+            --cmake-args -GNinja -DCMAKE_BUILD_TYPE=Release \
+            -DINSTALL_OMPL=OFF -DINSTALL_OMPL_TAG=master -DBUILD_IPOPT=OFF -DBUILD_SNOPT=OFF \
+            -DBUILD_SHARED_LIBS=ON -DTESSERACT_ENABLE_EXAMPLES=OFF \
+            -DVCPKG_APPLOCAL_DEPS=OFF -DTRAJOPT_ENABLE_TESTING=ON \
+            -DCMAKE_OSX_DEPLOYMENT_TARGET=12.0 \
+            -DOpenMP_CXX_INCLUDE_DIR=${{ matrix.config.homebrew_root }}/opt/libomp/include \
+            -DOpenMP_C_INCLUDE_DIR=${{ matrix.config.homebrew_root }}/opt/libomp/include \
+            -DOpenMP_CXX_LIB_NAMES=libomp -DOpenMP_CXX_FLAGS="-Xpreprocessor -fopenmp" \
+            -DOpenMP_C_LIB_NAMES=libomp -DOpenMP_C_FLAGS="-Xpreprocessor -fopenmp" \
+            -DOpenMP_libomp_LIBRARY=${{ matrix.config.homebrew_root }}/opt/libomp/lib/libomp.dylib
+    - name: colcon test
+      working-directory: ws
+      run: |
+        export DYLD_LIBRARY_PATH=$DYLD_LIBRARY_PATH:$GITHUB_WORKSPACE/vcpkg/installed/${{ matrix.config.vcpkg_triplet }}/lib
+        export CMAKE_PREFIX_PATH=$GITHUB_WORKSPACE/vcpkg/installed/${{ matrix.config.vcpkg_triplet }}
+
+        colcon test --merge-install \
+            --packages-ignore tesseract_examples trajopt_ifopt trajopt_sqp ifopt vhacd tesseract_python \
+            --event-handlers console_cohesion+
+    
