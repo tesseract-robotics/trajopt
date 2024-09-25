@@ -2,7 +2,7 @@
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <ctime>
 #include <gtest/gtest.h>
-#include <tesseract_common/timer.h>
+#include <tesseract_common/stopwatch.h>
 #include <tesseract_common/resource_locator.h>
 #include <tesseract_state_solver/state_solver.h>
 #include <tesseract_environment/environment.h>
@@ -105,7 +105,7 @@ void runTest(const Environment::Ptr& env, const Visualization::Ptr& plotter, boo
     opt->addCallback(PlotCallback(plotter));
   opt->initialize(trajToDblVec(prob->GetInitTraj()));
 
-  tesseract_common::Timer stopwatch;
+  tesseract_common::Stopwatch stopwatch;
   stopwatch.start();
   opt->optimize();
   stopwatch.stop();

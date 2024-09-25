@@ -30,7 +30,7 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <gtest/gtest.h>
 #include <console_bridge/console.h>
 #include <OsqpEigen/OsqpEigen.h>
-#include <tesseract_common/timer.h>
+#include <tesseract_common/stopwatch.h>
 #include <tesseract_common/resource_locator.h>
 #include <tesseract_collision/core/discrete_contact_manager.h>
 #include <tesseract_kinematics/core/joint_group.h>
@@ -293,7 +293,7 @@ void runSimpleCollisionTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const
   // 6) solve
   solver.verbose = false;
 
-  tesseract_common::Timer stopwatch;
+  tesseract_common::Stopwatch stopwatch;
   stopwatch.start();
   solver.solve(qp_problem);
   stopwatch.stop();
