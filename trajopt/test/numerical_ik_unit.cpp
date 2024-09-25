@@ -4,7 +4,7 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <sstream>
 #include <gtest/gtest.h>
 #include <tesseract_common/types.h>
-#include <tesseract_common/timer.h>
+#include <tesseract_common/stopwatch.h>
 #include <tesseract_common/resource_locator.h>
 #include <tesseract_kinematics/core/joint_group.h>
 #include <tesseract_environment/environment.h>
@@ -101,7 +101,7 @@ void runTest(const Environment::Ptr& env, const Visualization::Ptr& /*plotter*/,
   ss = std::stringstream();
   ss << initial_pose.translation().transpose();
   CONSOLE_BRIDGE_logDebug("Initial Position: %s", ss.str().c_str());
-  tesseract_common::Timer stopwatch;
+  tesseract_common::Stopwatch stopwatch;
   stopwatch.start();
   const sco::OptStatus status = opt->optimize();
   stopwatch.stop();

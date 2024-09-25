@@ -32,7 +32,7 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <console_bridge/console.h>
 #include <OsqpEigen/OsqpEigen.h>
 #include <tesseract_common/types.h>
-#include <tesseract_common/timer.h>
+#include <tesseract_common/stopwatch.h>
 #include <tesseract_common/resource_locator.h>
 #include <tesseract_collision/core/continuous_contact_manager.h>
 #include <tesseract_kinematics/core/joint_group.h>
@@ -134,7 +134,7 @@ void runNumericalIKTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const Env
   // 6) solve
   solver.verbose = false;
 
-  tesseract_common::Timer stopwatch;
+  tesseract_common::Stopwatch stopwatch;
   stopwatch.start();
   solver.solve(qp_problem);
   stopwatch.stop();
