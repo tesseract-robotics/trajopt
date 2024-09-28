@@ -2,6 +2,12 @@
 Changelog for package trajopt
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Add missing package libraries cmake variable
+* Rename Timer to Stopwatch
+* Contributors: Levi Armstrong, Roelof Oomen
+
 0.24.0 (2024-08-14)
 -------------------
 

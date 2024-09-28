@@ -2,6 +2,11 @@
 Changelog for package trajopt_ifopt
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Add missing package libraries cmake variable
+* Contributors: Levi Armstrong
+
 0.24.0 (2024-08-14)
 -------------------
 
