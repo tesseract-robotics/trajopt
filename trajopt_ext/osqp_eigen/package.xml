@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <package format="2">
   <name>osqp_eigen</name>
-  <version>0.25.1</version>
+  <version>0.26.0</version>
   <description>Downloads and builds the OSQPEigen Library</description>
   <maintainer email="levi.armstrong@swri.org">Levi Armstrong</maintainer>
   <license>LGPL</license>
