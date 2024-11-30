@@ -83,7 +83,7 @@ jobs:
         export CMAKE_PREFIX_PATH=$GITHUB_WORKSPACE/vcpkg/installed/${{ matrix.config.vcpkg_triplet }}
 
         colcon build --merge-install \
-            --packages-ignore tesseract_examples trajopt_ifopt trajopt_sqp ifopt vhacd tesseract_python \
+            --packages-ignore tesseract_examples vhacd tesseract_python \
             --event-handlers console_cohesion+ \
             --cmake-force-configure \
             --cmake-args -GNinja -DCMAKE_BUILD_TYPE=Release \
@@ -103,6 +103,6 @@ jobs:
         export CMAKE_PREFIX_PATH=$GITHUB_WORKSPACE/vcpkg/installed/${{ matrix.config.vcpkg_triplet }}
 
         colcon test --merge-install \
-            --packages-ignore tesseract_examples trajopt_ifopt trajopt_sqp ifopt vhacd tesseract_python \
+            --packages-ignore tesseract_examples vhacd tesseract_python \
             --event-handlers console_cohesion+
     
