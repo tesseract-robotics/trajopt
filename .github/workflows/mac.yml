@@ -28,6 +28,7 @@ env:
     fcl ompl taskflow
     bullet3[multithreading,double-precision,rtti]
     ccd[double-precision] gperftools
+    coin-or-ipopt
 
 jobs:
   build-macos:
