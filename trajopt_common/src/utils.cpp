@@ -1,8 +1,16 @@
 #include <trajopt_common/utils.hpp>
 #include <tesseract_common/utils.h>
+#if (BOOST_VERSION >= 107400) && (BOOST_VERSION < 107500)
+#include <boost/serialization/library_version_type.hpp>
+#endif
+#include <boost/serialization/nvp.hpp>
+#include <boost/serialization/array.hpp>
+#include <boost/serialization/set.hpp>
+#include <boost/serialization/unordered_map.hpp>
 
 namespace trajopt_common
 {
+SafetyMarginData::SafetyMarginData() : SafetyMarginData(0, 10) {}
 SafetyMarginData::SafetyMarginData(double default_safety_margin, double default_safety_margin_coeff)
   : default_safety_margin_data_({ default_safety_margin, default_safety_margin_coeff })
   , max_safety_margin_(default_safety_margin)
@@ -48,6 +56,15 @@ const std::set<std::pair<std::string, std::string>>& SafetyMarginData::getPairsW
   return zero_coeff_;
 }
 
+template <class Archive>
+void SafetyMarginData::serialize(Archive& ar, const unsigned int /*version*/)
+{
+  ar& BOOST_SERIALIZATION_NVP(default_safety_margin_data_);
+  ar& BOOST_SERIALIZATION_NVP(max_safety_margin_);
+  ar& BOOST_SERIALIZATION_NVP(pair_lookup_table_);
+  ar& BOOST_SERIALIZATION_NVP(zero_coeff_);
+}
+
 std::vector<SafetyMarginData::Ptr> createSafetyMarginDataVector(int num_elements,
                                                                 double default_safety_margin,
                                                                 double default_safety_margin_coeff)
@@ -72,3 +89,7 @@ Eigen::Isometry3d addTwist(const Eigen::Isometry3d& t1,
   return t2;
 }
 }  // namespace trajopt_common
+
+#include <tesseract_common/serialization.h>
+TESSERACT_SERIALIZE_ARCHIVES_INSTANTIATE(trajopt_common::SafetyMarginData)
+BOOST_CLASS_EXPORT_IMPLEMENT(trajopt_common::SafetyMarginData)

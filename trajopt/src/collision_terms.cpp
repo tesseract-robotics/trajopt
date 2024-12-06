@@ -25,10 +25,8 @@ TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace trajopt
 {
-
 namespace
 {
-
 void CollisionsToDistances(const ContactResultVectorWrapper& dist_results, DblVec& dists)
 {
   dists.clear();

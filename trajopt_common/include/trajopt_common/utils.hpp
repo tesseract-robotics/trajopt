@@ -10,6 +10,8 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <array>
 #include <set>
 #include <tesseract_common/types.h>
+#include <boost/serialization/access.hpp>
+#include <boost/serialization/export.hpp>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace trajopt_common
@@ -20,6 +22,7 @@ struct SafetyMarginData
   using Ptr = std::shared_ptr<SafetyMarginData>;
   using ConstPtr = std::shared_ptr<const SafetyMarginData>;
 
+  SafetyMarginData();
   SafetyMarginData(double default_safety_margin, double default_safety_margin_coeff);
 
   /**
@@ -81,6 +84,10 @@ private:
 
   /// Pairs containing zero coeff
   std::set<tesseract_common::LinkNamesPair> zero_coeff_;
+
+  friend class boost::serialization::access;
+  template <class Archive>
+  void serialize(Archive&, const unsigned int);  // NOLINT
 };
 
 /**
@@ -115,5 +122,7 @@ Eigen::Isometry3d addTwist(const Eigen::Isometry3d& t1,
                            const Eigen::Ref<const Eigen::Matrix<double, 6, 1>>& twist,
                            double dt);
 }  // namespace trajopt_common
+
+BOOST_CLASS_EXPORT_KEY(trajopt_common::SafetyMarginData)
 
 #endif  // TRAJOPT_COMMON_UTILS_HPP
