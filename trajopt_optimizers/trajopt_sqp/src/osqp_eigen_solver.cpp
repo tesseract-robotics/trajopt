@@ -188,7 +188,6 @@ Eigen::VectorXd OSQPEigenSolver::getSolution()
 TRAJOPT_IGNORE_WARNINGS_PUSH
 namespace
 {
-
 void* csc_malloc(c_int n, c_int size)
 {
   return c_malloc(n * size);  // NOLINT

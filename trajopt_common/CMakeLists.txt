@@ -12,7 +12,7 @@ if(WIN32)
 endif()
 
 find_package(Eigen3 REQUIRED)
-find_package(Boost COMPONENTS program_options REQUIRED)
+find_package(Boost COMPONENTS program_options serialization REQUIRED)
 find_package(ros_industrial_cmake_boilerplate REQUIRED)
 find_package(tesseract_common REQUIRED)
 find_package(tesseract_collision COMPONENTS core REQUIRED)
@@ -34,6 +34,7 @@ target_link_libraries(
   ${PROJECT_NAME}
   PUBLIC Eigen3::Eigen
          Boost::program_options
+         Boost::serialization
          tesseract::tesseract_common
          tesseract::tesseract_collision_core
          tesseract::tesseract_kinematics_core)
@@ -82,7 +83,9 @@ if(TRAJOPT_PACKAGE)
     LINUX_DEPENDS
     "libeigen3-dev"
     "libboost-program-options-dev"
+    "libboost-serialization-dev"
     WINDOWS_DEPENDS
     "Eigen3"
-    "boost-program-options")
+    "boost-program-options"
+    "boost_serialization")
 endif()

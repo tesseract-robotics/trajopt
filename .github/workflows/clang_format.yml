@@ -11,16 +11,17 @@ on:
 
 jobs:
   clang_format:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v1
 
       - name: Run clang format
         run: |
           sudo apt update
-          sudo apt install -y git clang-format-8
+          sudo apt install -y git clang-format-12
           if [ $? -ge 1 ]; then return 1; fi
           ./.run-clang-format
           if [ $? -ge 1 ]; then return 1; fi
           output=$(git diff)
+          echo $output
           if [ -n "$output" ]; then exit 1; else exit 0; fi

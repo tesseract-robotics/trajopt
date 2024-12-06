@@ -23,6 +23,12 @@
  */
 
 #include <trajopt_common/collision_types.h>
+#include <tesseract_collision/core/serialization.h>
+#if (BOOST_VERSION >= 107400) && (BOOST_VERSION < 107500)
+#include <boost/serialization/library_version_type.hpp>
+#endif
+#include <boost/serialization/unordered_map.hpp>
+#include <boost/serialization/set.hpp>
 
 namespace trajopt_common
 {
@@ -58,9 +64,26 @@ const std::set<tesseract_common::LinkNamesPair>& CollisionCoeffData::getPairsWit
   return zero_coeff_;
 }
 
+template <class Archive>
+void CollisionCoeffData::serialize(Archive& ar, const unsigned int /*version*/)
+{
+  ar& BOOST_SERIALIZATION_NVP(default_collision_coeff_);
+  ar& BOOST_SERIALIZATION_NVP(lookup_table_);
+  ar& BOOST_SERIALIZATION_NVP(zero_coeff_);
+}
+
 TrajOptCollisionConfig::TrajOptCollisionConfig(double margin, double coeff)
   : CollisionCheckConfig(margin), collision_coeff_data(coeff)
 {
+}
+
+template <class Archive>
+void TrajOptCollisionConfig::serialize(Archive& ar, const unsigned int /*version*/)
+{
+  ar& BOOST_SERIALIZATION_BASE_OBJECT_NVP(CollisionCheckConfig);
+  ar& BOOST_SERIALIZATION_NVP(collision_coeff_data);
+  ar& BOOST_SERIALIZATION_NVP(collision_margin_buffer);
+  ar& BOOST_SERIALIZATION_NVP(max_num_cnt);
 }
 
 double LinkMaxError::getMaxError() const
@@ -261,3 +284,9 @@ double GradientResultsSet::getMaxErrorWithBufferT1() const
 }
 
 }  // namespace trajopt_common
+
+#include <tesseract_common/serialization.h>
+TESSERACT_SERIALIZE_ARCHIVES_INSTANTIATE(trajopt_common::CollisionCoeffData)
+BOOST_CLASS_EXPORT_IMPLEMENT(trajopt_common::CollisionCoeffData)
+TESSERACT_SERIALIZE_ARCHIVES_INSTANTIATE(trajopt_common::TrajOptCollisionConfig)
+BOOST_CLASS_EXPORT_IMPLEMENT(trajopt_common::TrajOptCollisionConfig)

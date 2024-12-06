@@ -217,7 +217,8 @@ std::ostream& operator<<(std::ostream& os, const ModelType& cs)
   if (cs_ivalue_ > ModelType::MODEL_NAMES_.size())
   {
     std::stringstream conversion_error;
-    conversion_error << "Error converting ModelType to string - " << "enum value is " << cs_ivalue_ << '\n';
+    conversion_error << "Error converting ModelType to string - "
+                     << "enum value is " << cs_ivalue_ << '\n';
     throw std::runtime_error(conversion_error.str());
   }
   os << ModelType::MODEL_NAMES_[cs_ivalue_];

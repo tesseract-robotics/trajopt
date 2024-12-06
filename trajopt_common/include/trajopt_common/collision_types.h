@@ -87,6 +87,10 @@ private:
 
   /// Pairs containing zero coeff
   std::set<tesseract_common::LinkNamesPair> zero_coeff_;
+
+  friend class boost::serialization::access;
+  template <class Archive>
+  void serialize(Archive&, const unsigned int);  // NOLINT
 };
 
 /**
@@ -113,6 +117,11 @@ struct TrajOptCollisionConfig : public tesseract_collision::CollisionCheckConfig
    * It still finds all contacts but sorts based on the worst uses those up to the max_num_cnt.
    */
   int max_num_cnt{ 3 };
+
+protected:
+  friend class boost::serialization::access;
+  template <class Archive>
+  void serialize(Archive&, const unsigned int);  // NOLINT
 };
 
 /** @brief A data structure to contain a links gradient results */
@@ -264,4 +273,8 @@ struct CollisionCacheData
 };
 
 }  // namespace trajopt_common
+
+BOOST_CLASS_EXPORT_KEY(trajopt_common::CollisionCoeffData)
+BOOST_CLASS_EXPORT_KEY(trajopt_common::TrajOptCollisionConfig)
+
 #endif  // TRAJOPT_COMMON_COLLISION_TYPES_H

@@ -48,7 +48,9 @@ TEST(solver_utils, exprToEigen)  // NOLINT
   ASSERT_EQ(v_A.size(), m_A_expected.cols());
   const Eigen::VectorXd v_A_d = v_A;
   const Eigen::VectorXd m_A_r = m_A_expected.row(0);
-  EXPECT_TRUE(v_A_d.isApprox(m_A_r)) << "error converting x_affine" << " to Eigen::SparseVector. " << "v_A :" << '\n'
+  EXPECT_TRUE(v_A_d.isApprox(m_A_r)) << "error converting x_affine"
+                                     << " to Eigen::SparseVector. "
+                                     << "v_A :" << '\n'
                                      << v_A << '\n';
 
   Eigen::SparseMatrix<double> m_A;
@@ -60,7 +62,8 @@ TEST(solver_utils, exprToEigen)  // NOLINT
   EXPECT_EQ(m_A.nonZeros(), 2) << "m_A.nonZeros() != 2" << '\n';
   ASSERT_EQ(m_A.rows(), m_A_expected.rows());
   ASSERT_EQ(m_A.cols(), m_A_expected.cols());
-  EXPECT_TRUE(m_A.isApprox(m_A_expected)) << "error converting x_affine to " << "Eigen::SparseMatrix. m_A :" << '\n'
+  EXPECT_TRUE(m_A.isApprox(m_A_expected)) << "error converting x_affine to "
+                                          << "Eigen::SparseMatrix. m_A :" << '\n'
                                           << m_A << '\n';
 
   QuadExpr x_squared = exprSquare(x_affine);
@@ -79,7 +82,8 @@ TEST(solver_utils, exprToEigen)  // NOLINT
     ASSERT_EQ(v_q.size(), v_q_e_eig.size());
     EXPECT_TRUE(v_q_e_eig.isApprox(v_q)) << "v_q_expected != v_q" << '\n' << "v_q:" << '\n' << v_q << '\n';
   }
-  EXPECT_TRUE(m_Q.isApprox(m_Q_expected)) << "error converting x_squared to " << "Eigen::SparseMatrix. m_Q :" << '\n'
+  EXPECT_TRUE(m_Q.isApprox(m_Q_expected)) << "error converting x_squared to "
+                                          << "Eigen::SparseMatrix. m_Q :" << '\n'
                                           << m_Q << '\n';
   EXPECT_EQ(m_Q.nonZeros(), 4) << "m_Q.nonZeros() != 4" << '\n';
 
@@ -89,9 +93,9 @@ TEST(solver_utils, exprToEigen)  // NOLINT
                                                                   static_cast<long>(v_q_expected.size()));
     EXPECT_TRUE(v_q_e_eig.isApprox(v_q)) << "v_q_expected != v_q" << '\n' << "v_q:" << '\n' << v_q << '\n';
   }
-  EXPECT_TRUE(m_Q.isApprox(2 * m_Q_expected))
-      << "error converting x_squared to" << " Eigen::SparseMatrix. m_Q :" << '\n'
-      << m_Q << '\n';
+  EXPECT_TRUE(m_Q.isApprox(2 * m_Q_expected)) << "error converting x_squared to"
+                                              << " Eigen::SparseMatrix. m_Q :" << '\n'
+                                              << m_Q << '\n';
   EXPECT_EQ(m_Q.nonZeros(), 4) << "m_Q.nonZeros() != 4" << '\n';
 
   x_affine.coeffs = DblVec{ 0, 2 };
@@ -103,23 +107,26 @@ TEST(solver_utils, exprToEigen)  // NOLINT
   m_Q_expected.setZero();
   m_Q_expected << 0, 0, 0, 4;
   exprToEigen(x_squared, m_Q, v_q, n_vars, false, false);
-  EXPECT_TRUE(m_Q.isApprox(m_Q_expected)) << "error converting x_squared to " << "Eigen::SparseMatrix. m_Q :" << '\n'
+  EXPECT_TRUE(m_Q.isApprox(m_Q_expected)) << "error converting x_squared to "
+                                          << "Eigen::SparseMatrix. m_Q :" << '\n'
                                           << m_Q << '\n';
   EXPECT_EQ(m_Q.nonZeros(), 1) << "m_Q.nonZeros() != 1" << '\n';
 
   exprToEigen(x_squared, m_Q, v_q, n_vars, true, false);
-  EXPECT_TRUE(m_Q.isApprox(2 * m_Q_expected))
-      << "error converting x_squared to" << " Eigen::SparseMatrix. m_Q :" << '\n'
-      << m_Q << '\n';
+  EXPECT_TRUE(m_Q.isApprox(2 * m_Q_expected)) << "error converting x_squared to"
+                                              << " Eigen::SparseMatrix. m_Q :" << '\n'
+                                              << m_Q << '\n';
   EXPECT_EQ(m_Q.nonZeros(), 1) << "m_Q.nonZeros() != 1" << '\n';
 
   exprToEigen(x_squared, m_Q, v_q, n_vars, false, true);
-  EXPECT_TRUE(m_Q.isApprox(m_Q_expected)) << "error converting x_squared to " << "Eigen::SparseMatrix. m_Q :" << '\n'
+  EXPECT_TRUE(m_Q.isApprox(m_Q_expected)) << "error converting x_squared to "
+                                          << "Eigen::SparseMatrix. m_Q :" << '\n'
                                           << m_Q << '\n';
   EXPECT_EQ(m_Q.nonZeros(), 2) << "m_Q.nonZeros() != 2" << '\n';
 
   exprToEigen(x_squared, m_Q, v_q, n_vars, true, true);
-  EXPECT_TRUE(m_Q.isApprox(2 * m_Q_expected)) << "error converting x_squared to" << "Eigen::SparseMatrix. m_Q :" << '\n'
+  EXPECT_TRUE(m_Q.isApprox(2 * m_Q_expected)) << "error converting x_squared to"
+                                              << "Eigen::SparseMatrix. m_Q :" << '\n'
                                               << m_Q << '\n';
   EXPECT_EQ(m_Q.nonZeros(), 2) << "m_Q.nonZeros() != 2" << '\n';
 }
@@ -161,7 +168,9 @@ TEST(solver_utils, eigenToCSC)  // NOLINT
     EXPECT_TRUE(rows_i.size() == P.size()) << "rows_i.size() != P.size()";
     EXPECT_TRUE((P == DblVec{ 1, 1, 1, 2, 8, 3, 9 })) << "bad P:\n" << CSTR(P);
     EXPECT_TRUE((rows_i == IntVec{ 0, 1, 2, 0, 2, 0, 1 })) << "bad rows_i:\n" << CSTR(rows_i);
-    EXPECT_TRUE((cols_p == IntVec{ 0, 3, 5, 7 })) << "cols_p not in " << "CRC form:\n" << CSTR(cols_p);
+    EXPECT_TRUE((cols_p == IntVec{ 0, 3, 5, 7 })) << "cols_p not in "
+                                                  << "CRC form:\n"
+                                                  << CSTR(cols_p);
   }
   {
     /*
@@ -180,7 +189,9 @@ TEST(solver_utils, eigenToCSC)  // NOLINT
     EXPECT_TRUE((rows_i == IntVec{ 1, 0 })) << "rows_i != data_j:\n"
                                             << CSTR(rows_i) << " vs\n"
                                             << CSTR((IntVec{ 1, 0 }));
-    EXPECT_TRUE((cols_p == IntVec{ 0, 1, 2, 2 })) << "cols_p not in " << "CRC form:\n" << CSTR(cols_p);
+    EXPECT_TRUE((cols_p == IntVec{ 0, 1, 2, 2 })) << "cols_p not in "
+                                                  << "CRC form:\n"
+                                                  << CSTR(cols_p);
 
     std::vector<long long int> rows_i_ll;
     std::vector<long long int> cols_p_ll;
@@ -215,7 +226,9 @@ TEST(solver_utils, eigenToCSC)  // NOLINT
     EXPECT_TRUE(rows_i.size() == P.size()) << "rows_i.size() != P.size()";
     EXPECT_TRUE((P == DblVec{ 6 })) << "bad P:\n" << CSTR(P);
     EXPECT_TRUE((rows_i == IntVec{ 2 })) << "rows_i != data_j:\n" << CSTR(rows_i) << " vs\n" << CSTR((IntVec{ 1, 0 }));
-    EXPECT_TRUE((cols_p == IntVec{ 0, 0, 1, 1 })) << "cols_p not in " << "CRC form:\n" << CSTR(cols_p);
+    EXPECT_TRUE((cols_p == IntVec{ 0, 0, 1, 1 })) << "cols_p not in "
+                                                  << "CRC form:\n"
+                                                  << CSTR(cols_p);
   }
 }
 
@@ -237,8 +250,11 @@ TEST(solver_utils, eigenToCSC_upper_triangular)  // NOLINT
 
   EXPECT_TRUE(rows_i.size() == P.size()) << "rows_i.size() != P.size()";
   EXPECT_TRUE((P == DblVec{ 1, 2, 4, 9 })) << "bad P:\n" << CSTR(P);
-  EXPECT_TRUE((rows_i == IntVec{ 0, 0, 1, 2 })) << "rows_i != expected" << ":\n"
+  EXPECT_TRUE((rows_i == IntVec{ 0, 0, 1, 2 })) << "rows_i != expected"
+                                                << ":\n"
                                                 << CSTR(rows_i) << " vs\n"
                                                 << CSTR((IntVec{ 0, 0, 1, 2 }));
-  EXPECT_TRUE((cols_p == IntVec{ 0, 1, 3, 4 })) << "cols_p not in " << "CRC form:\n" << CSTR(cols_p);
+  EXPECT_TRUE((cols_p == IntVec{ 0, 1, 3, 4 })) << "cols_p not in "
+                                                << "CRC form:\n"
+                                                << CSTR(cols_p);
 }
