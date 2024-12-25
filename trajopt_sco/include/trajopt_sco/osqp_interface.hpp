@@ -19,6 +19,12 @@ struct OSQPModelConfig : public ModelConfig
   OSQPModelConfig();
 
   OSQPSettings settings{};
+
+  /**
+   * @brief Set the default OSQP Settings
+   * @param settings The object to apply default settings to
+   */
+  static void setDefaultOSQPSettings(OSQPSettings& settings);
 };
 
 /**
