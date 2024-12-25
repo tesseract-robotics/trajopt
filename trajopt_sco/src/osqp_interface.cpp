@@ -17,7 +17,9 @@ namespace sco
 const double OSQP_INFINITY = OSQP_INFTY;
 const bool OSQP_COMPARE_DEBUG_MODE = false;
 
-OSQPModelConfig::OSQPModelConfig()
+OSQPModelConfig::OSQPModelConfig() { setDefaultOSQPSettings(settings); }
+
+void OSQPModelConfig::setDefaultOSQPSettings(OSQPSettings& settings)
 {
   // Define Solver settings as default
   // see https://osqp.org/docs/interfaces/solver_settings.html#solver-settings
