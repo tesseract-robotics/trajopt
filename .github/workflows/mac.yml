@@ -35,7 +35,7 @@ jobs:
       fail-fast: false
       matrix:
         config:
-          - runner: macos-12
+          - runner: macos-13
             vcpkg_triplet: x64-osx-dynamic-release
             arch: x64
             homebrew_root: /usr/local
