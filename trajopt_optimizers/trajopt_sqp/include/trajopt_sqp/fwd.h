@@ -33,6 +33,9 @@ class IfoptQPProblem;
 // trajopt_qp_problem.h
 class TrajOptQPProblem;
 
+// trust_region_sqp_solver.h
+class TrustRegionSQPSolver;
+
 // callbacks
 class SQPCallback;
 class CartesianErrorPlottingCallback;
