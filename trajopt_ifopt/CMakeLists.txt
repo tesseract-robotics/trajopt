@@ -120,13 +120,13 @@ if(TRAJOPT_PACKAGE)
     "libboost-dev"
     "libconsole-bridge-dev"
     "ifopt"
-    "${TRAJOPT_PACKAGE_PREFIX}trajopt-utils"
+    "${TRAJOPT_PACKAGE_PREFIX}trajopt-common"
     "${TESSERACT_PACKAGE_PREFIX}tesseract-environment"
     WINDOWS_DEPENDS
     "Eigen3"
     "boost"
     "console-bridge"
     "ifopt"
-    "${TRAJOPT_PACKAGE_PREFIX}trajopt-utils"
+    "${TRAJOPT_PACKAGE_PREFIX}trajopt-common"
     "${TESSERACT_PACKAGE_PREFIX}tesseract-environment")
 endif()

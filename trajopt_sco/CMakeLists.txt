@@ -157,12 +157,12 @@ if(TRAJOPT_PACKAGE)
       "libeigen3-dev"
       "libboost-dev"
       "libjsoncpp-dev"
-      "${TRAJOPT_PACKAGE_PREFIX}trajopt-utils")
+      "${TRAJOPT_PACKAGE_PREFIX}trajopt-common")
   set(WINDOWS_DEPENDS
       "Eigen3"
       "boost"
       "jsoncpp"
-      "${TRAJOPT_PACKAGE_PREFIX}trajopt-utils")
+      "${TRAJOPT_PACKAGE_PREFIX}trajopt-common")
 
   if(GUROBI_FOUND)
     # TODO

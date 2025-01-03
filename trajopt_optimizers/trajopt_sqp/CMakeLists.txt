@@ -131,7 +131,7 @@ if(TRAJOPT_PACKAGE)
     "ifopt"
     "${TRAJOPT_PACKAGE_PREFIX}osqpeigen"
     "${TRAJOPT_PACKAGE_PREFIX}trajopt-ifopt"
-    "${TRAJOPT_PACKAGE_PREFIX}trajopt-utils"
+    "${TRAJOPT_PACKAGE_PREFIX}trajopt-common"
     "${TESSERACT_PACKAGE_PREFIX}tesseract-common"
     "${TESSERACT_PACKAGE_PREFIX}tesseract-visualization"
     WINDOWS_DEPENDS
@@ -141,7 +141,7 @@ if(TRAJOPT_PACKAGE)
     "ifopt"
     "${TRAJOPT_PACKAGE_PREFIX}osqpeigen"
     "${TRAJOPT_PACKAGE_PREFIX}trajopt-ifopt"
-    "${TRAJOPT_PACKAGE_PREFIX}trajopt-utils"
+    "${TRAJOPT_PACKAGE_PREFIX}trajopt-common"
     "${TESSERACT_PACKAGE_PREFIX}tesseract-common"
     "${TESSERACT_PACKAGE_PREFIX}tesseract-visualization")
 endif()

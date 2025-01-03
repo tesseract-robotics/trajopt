@@ -114,7 +114,7 @@ if(TRAJOPT_PACKAGE)
     "libconsole-bridge-dev"
     "libjsoncpp-dev"
     "${TRAJOPT_PACKAGE_PREFIX}trajopt-sco"
-    "${TRAJOPT_PACKAGE_PREFIX}trajopt-utils"
+    "${TRAJOPT_PACKAGE_PREFIX}trajopt-common"
     "${TESSERACT_PACKAGE_PREFIX}tesseract-environment"
     "${TESSERACT_PACKAGE_PREFIX}tesseract-visualization"
     WINDOWS_DEPENDS
@@ -123,7 +123,7 @@ if(TRAJOPT_PACKAGE)
     "console-bridge"
     "jsoncpp"
     "${TRAJOPT_PACKAGE_PREFIX}trajopt-sco"
-    "${TRAJOPT_PACKAGE_PREFIX}trajopt-utils"
+    "${TRAJOPT_PACKAGE_PREFIX}trajopt-common"
     "${TESSERACT_PACKAGE_PREFIX}tesseract-environment"
     "${TESSERACT_PACKAGE_PREFIX}tesseract-visualization")
 endif()
