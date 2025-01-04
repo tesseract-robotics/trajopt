@@ -29,7 +29,7 @@ public:
   Environment::Ptr env = std::make_shared<Environment>();
   std::shared_ptr<ifopt::Composite> variables = std::make_shared<ifopt::Composite>("variable-sets", false);
 
-  tesseract_kinematics::JointGroup::Ptr manip;
+  tesseract_kinematics::JointGroup::ConstPtr manip;
   CartLineInfo info;
   trajopt_ifopt::JointPosition::Ptr var;
 

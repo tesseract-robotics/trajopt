@@ -80,7 +80,7 @@ TEST_F(KinematicCostsTest, CartPoseJacCalculator)  // NOLINT
 {
   CONSOLE_BRIDGE_logDebug("KinematicCostsTest, CartPoseJacCalculator");
 
-  const tesseract_kinematics::JointGroup::Ptr kin = env_->getJointGroup("right_arm");
+  const tesseract_kinematics::JointGroup::ConstPtr kin = env_->getJointGroup("right_arm");
 
   const std::string source_frame = env_->getRootLinkName();
   const std::string target_frame = "r_gripper_tool_frame";

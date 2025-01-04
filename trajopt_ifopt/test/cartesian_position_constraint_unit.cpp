@@ -58,7 +58,7 @@ public:
   Environment::Ptr env = std::make_shared<Environment>();
   ifopt::Problem nlp;
 
-  tesseract_kinematics::JointGroup::Ptr kin_group;
+  tesseract_kinematics::JointGroup::ConstPtr kin_group;
   CartPosConstraint::Ptr constraint;
 
   Eigen::Index n_dof{ -1 };
