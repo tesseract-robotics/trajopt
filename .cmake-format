@@ -44,8 +44,22 @@ with section("parse"):
     'configure_package': {
       'pargs': {'nargs': 0},
       'kwargs': {
+        'COMPONENT': '?',
         'NAMESPACE': '?',
         'TARGETS': '*',
+        'SUPPORTED_COMPONENTS': '*',
+        'DEPENDENCIES': '*',
+        'CFG_EXTRAS': '*',
+      }
+    },
+    'configure_component': {
+      'pargs': {'nargs': 0},
+      'kwargs': {
+        'COMPONENT': '?',
+        'NAMESPACE': '?',
+        'TARGETS': '*',
+        'DEPENDENCIES': '*',
+        'CFG_EXTRAS': '*',
       }
     },
     'add_gtest_discover_tests': {
@@ -98,16 +112,66 @@ with section("parse"):
         'EXCLUDE': '*',
       }
     },
-    'tesseract_cpack': {
+    'install_targets': {
       'pargs': {'nargs': 0},
       'kwargs': {
-        'VERSION': 1,
-        'MAINTAINER': 1,
-        'DESCRIPTION': 1,
-        'LICENSE_FILE': 1,
-        'README_FILE': 1,
+        'TARGETS': '*',
+        'COMPONENT': '?',
+      }
+    },
+    'cpack': {
+      'pargs': {'nargs': 0},
+      'kwargs': {
+        'VERSION': '?',
+        'MAINTAINER_NAME': '?',
+        'MAINTAINER_EMAIL': '?',
+        'VENDOR': '?',
+        'DESCRIPTION': '?',
+        'LICENSE_FILE': '?',
+        'README_FILE': '?',
+        'PACKAGE_PREFIX': '?',
+        'LINUX_BUILD_DEPENDS': '*',
+        'WINDOWS_BUILD_DEPENDS': '*',
         'LINUX_DEPENDS': '*',
         'WINDOWS_DEPENDS': '*',
+      }
+    },
+    'cpack_component_package': {
+      'pargs': {'nargs': 0},
+      'kwargs': {
+        'VERSION': '?',
+        'MAINTAINER_NAME': '?',
+        'MAINTAINER_EMAIL': '?',
+        'VENDOR': '?',
+        'DESCRIPTION': '?',
+        'LICENSE_FILE': '?',
+        'README_FILE': '?',
+        'PACKAGE_PREFIX': '?',
+        'COMPONENT_DEPENDS': '*',
+      }
+    },
+    'cpack_component': {
+      'pargs': {'nargs': 0},
+      'kwargs': {
+        'COMPONENT': '?',
+        'VERSION': '?',
+        'DESCRIPTION': '?',
+        'PACKAGE_PREFIX': '?',
+        'LINUX_BUILD_DEPENDS': '*',
+        'WINDOWS_BUILD_DEPENDS': '*',
+        'LINUX_DEPENDS': '*',
+        'WINDOWS_DEPENDS': '*',
+        'COMPONENT_DEPENDS': '*',
+      }
+    },
+    'cpack_debian_source_package': {
+      'pargs': {'nargs': 0},
+      'kwargs': {
+        'CHANGLELOG': '?',
+        'UPLOAD': '?',
+        'DPUT_HOST': '?',
+        'DEBIAN_INCREMENT': '?',
+        'DISTRIBUTIONS': '*',
       }
     },
   }

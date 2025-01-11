@@ -114,34 +114,28 @@ endif()
 
 if(TRAJOPT_PACKAGE)
   cpack(
-    VERSION
-    ${pkg_extracted_version}
-    MAINTAINER
-    <https://github.com/tesseract-robotics/trajopt>
-    VENDOR
-    "ROS-Industrial"
-    DESCRIPTION
-    ${pkg_extracted_description}
-    PACKAGE_PREFIX
-    ${TRAJOPT_PACKAGE_PREFIX}
+    VERSION ${pkg_extracted_version} MAINTAINER <https://github.com/tesseract-robotics/trajopt>
+    VENDOR "ROS-Industrial"
+    DESCRIPTION ${pkg_extracted_description}
+    PACKAGE_PREFIX ${TRAJOPT_PACKAGE_PREFIX}
     LINUX_DEPENDS
-    "libeigen3-dev"
-    "libboost-dev"
-    "libconsole-bridge-dev"
-    "ifopt"
-    "${TRAJOPT_PACKAGE_PREFIX}osqpeigen"
-    "${TRAJOPT_PACKAGE_PREFIX}trajopt-ifopt"
-    "${TRAJOPT_PACKAGE_PREFIX}trajopt-common"
-    "${TESSERACT_PACKAGE_PREFIX}tesseract-common"
-    "${TESSERACT_PACKAGE_PREFIX}tesseract-visualization"
+      "libeigen3-dev"
+      "libboost-dev"
+      "libconsole-bridge-dev"
+      "ifopt"
+      "${TRAJOPT_PACKAGE_PREFIX}osqpeigen"
+      "${TRAJOPT_PACKAGE_PREFIX}trajopt-ifopt"
+      "${TRAJOPT_PACKAGE_PREFIX}trajopt-common"
+      "${TESSERACT_PACKAGE_PREFIX}tesseract-common"
+      "${TESSERACT_PACKAGE_PREFIX}tesseract-visualization"
     WINDOWS_DEPENDS
-    "Eigen3"
-    "boost"
-    "console-bridge"
-    "ifopt"
-    "${TRAJOPT_PACKAGE_PREFIX}osqpeigen"
-    "${TRAJOPT_PACKAGE_PREFIX}trajopt-ifopt"
-    "${TRAJOPT_PACKAGE_PREFIX}trajopt-common"
-    "${TESSERACT_PACKAGE_PREFIX}tesseract-common"
-    "${TESSERACT_PACKAGE_PREFIX}tesseract-visualization")
+      "Eigen3"
+      "boost"
+      "console-bridge"
+      "ifopt"
+      "${TRAJOPT_PACKAGE_PREFIX}osqpeigen"
+      "${TRAJOPT_PACKAGE_PREFIX}trajopt-ifopt"
+      "${TRAJOPT_PACKAGE_PREFIX}trajopt-common"
+      "${TESSERACT_PACKAGE_PREFIX}tesseract-common"
+      "${TESSERACT_PACKAGE_PREFIX}tesseract-visualization")
 endif()

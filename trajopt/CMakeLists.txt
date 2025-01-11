@@ -94,36 +94,28 @@ endif()
 
 if(TRAJOPT_PACKAGE)
   cpack(
-    VERSION
-    ${pkg_extracted_version}
-    MAINTAINER
-    <https://github.com/tesseract-robotics/trajopt>
-    VENDOR
-    "ROS-Industrial"
-    DESCRIPTION
-    ${pkg_extracted_description}
-    LICENSE_FILE
-    ""
-    README_FILE
-    ${CMAKE_CURRENT_LIST_DIR}/../README.md
-    PACKAGE_PREFIX
-    ${TRAJOPT_PACKAGE_PREFIX}
+    VERSION ${pkg_extracted_version} MAINTAINER <https://github.com/tesseract-robotics/trajopt>
+    VENDOR "ROS-Industrial"
+    DESCRIPTION ${pkg_extracted_description}
+    LICENSE_FILE ""
+    README_FILE ${CMAKE_CURRENT_LIST_DIR}/../README.md
+    PACKAGE_PREFIX ${TRAJOPT_PACKAGE_PREFIX}
     LINUX_DEPENDS
-    "libeigen3-dev"
-    "libboost-dev"
-    "libconsole-bridge-dev"
-    "libjsoncpp-dev"
-    "${TRAJOPT_PACKAGE_PREFIX}trajopt-sco"
-    "${TRAJOPT_PACKAGE_PREFIX}trajopt-common"
-    "${TESSERACT_PACKAGE_PREFIX}tesseract-environment"
-    "${TESSERACT_PACKAGE_PREFIX}tesseract-visualization"
+      "libeigen3-dev"
+      "libboost-dev"
+      "libconsole-bridge-dev"
+      "libjsoncpp-dev"
+      "${TRAJOPT_PACKAGE_PREFIX}trajopt-sco"
+      "${TRAJOPT_PACKAGE_PREFIX}trajopt-common"
+      "${TESSERACT_PACKAGE_PREFIX}tesseract-environment"
+      "${TESSERACT_PACKAGE_PREFIX}tesseract-visualization"
     WINDOWS_DEPENDS
-    "Eigen3"
-    "boost"
-    "console-bridge"
-    "jsoncpp"
-    "${TRAJOPT_PACKAGE_PREFIX}trajopt-sco"
-    "${TRAJOPT_PACKAGE_PREFIX}trajopt-common"
-    "${TESSERACT_PACKAGE_PREFIX}tesseract-environment"
-    "${TESSERACT_PACKAGE_PREFIX}tesseract-visualization")
+      "Eigen3"
+      "boost"
+      "console-bridge"
+      "jsoncpp"
+      "${TRAJOPT_PACKAGE_PREFIX}trajopt-sco"
+      "${TRAJOPT_PACKAGE_PREFIX}trajopt-common"
+      "${TESSERACT_PACKAGE_PREFIX}tesseract-environment"
+      "${TESSERACT_PACKAGE_PREFIX}tesseract-visualization")
 endif()

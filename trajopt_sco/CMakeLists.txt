@@ -178,22 +178,12 @@ if(TRAJOPT_PACKAGE)
   endif()
 
   cpack(
-    VERSION
-    ${pkg_extracted_version}
-    MAINTAINER
-    <https://github.com/tesseract-robotics/trajopt>
-    VENDOR
-    "ROS-Industrial"
-    DESCRIPTION
-    ${pkg_extracted_description}
-    LICENSE_FILE
-    ""
-    README_FILE
-    ${CMAKE_CURRENT_LIST_DIR}/../README.md
-    PACKAGE_PREFIX
-    ${TRAJOPT_PACKAGE_PREFIX}
-    LINUX_DEPENDS
-    ${LINUX_DEPENDS}
-    WINDOWS_DEPENDS
-    ${WINDOWS_DEPENDS})
+    VERSION ${pkg_extracted_version} MAINTAINER <https://github.com/tesseract-robotics/trajopt>
+    VENDOR "ROS-Industrial"
+    DESCRIPTION ${pkg_extracted_description}
+    LICENSE_FILE ""
+    README_FILE ${CMAKE_CURRENT_LIST_DIR}/../README.md
+    PACKAGE_PREFIX ${TRAJOPT_PACKAGE_PREFIX}
+    LINUX_DEPENDS ${LINUX_DEPENDS}
+    WINDOWS_DEPENDS ${WINDOWS_DEPENDS})
 endif()

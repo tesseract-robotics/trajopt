@@ -66,26 +66,12 @@ endforeach()
 
 if(TRAJOPT_PACKAGE)
   cpack(
-    VERSION
-    ${pkg_extracted_version}
-    MAINTAINER
-    <https://github.com/tesseract-robotics/trajopt>
-    VENDOR
-    "ROS-Industrial"
-    DESCRIPTION
-    ${pkg_extracted_description}
-    LICENSE_FILE
-    ""
-    README_FILE
-    ${CMAKE_CURRENT_LIST_DIR}/../README.md
-    PACKAGE_PREFIX
-    ${TRAJOPT_PACKAGE_PREFIX}
-    LINUX_DEPENDS
-    "libeigen3-dev"
-    "libboost-program-options-dev"
-    "libboost-serialization-dev"
-    WINDOWS_DEPENDS
-    "Eigen3"
-    "boost-program-options"
-    "boost_serialization")
+    VERSION ${pkg_extracted_version} MAINTAINER <https://github.com/tesseract-robotics/trajopt>
+    VENDOR "ROS-Industrial"
+    DESCRIPTION ${pkg_extracted_description}
+    LICENSE_FILE ""
+    README_FILE ${CMAKE_CURRENT_LIST_DIR}/../README.md
+    PACKAGE_PREFIX ${TRAJOPT_PACKAGE_PREFIX}
+    LINUX_DEPENDS "libeigen3-dev" "libboost-program-options-dev" "libboost-serialization-dev"
+    WINDOWS_DEPENDS "Eigen3" "boost-program-options" "boost_serialization")
 endif()
