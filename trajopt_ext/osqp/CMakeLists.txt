@@ -29,16 +29,10 @@ if(NOT ${osqp_FOUND})
     set(CPACK_BUILD_SOURCE_DIRS "${CMAKE_BINARY_DIR}-src;${CMAKE_BINARY_DIR}-build")
     set(CPACK_INSTALL_CMAKE_PROJECTS "${CMAKE_BINARY_DIR}-build;${PROJECT_NAME};ALL;/")
     cpack(
-      VERSION
-      ${pkg_extracted_version}
-      MAINTAINER
-      <https://github.com/tesseract-robotics/trajopt>
-      VENDOR
-      "ROS-Industrial"
-      DESCRIPTION
-      ${pkg_extracted_description}
-      PACKAGE_PREFIX
-      ${TRAJOPT_PACKAGE_PREFIX})
+      VERSION ${pkg_extracted_version} MAINTAINER <https://github.com/tesseract-robotics/trajopt>
+      VENDOR "ROS-Industrial"
+      DESCRIPTION ${pkg_extracted_description}
+      PACKAGE_PREFIX ${TRAJOPT_PACKAGE_PREFIX})
   endif()
 endif()
 
