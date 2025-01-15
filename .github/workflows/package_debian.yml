@@ -1,0 +1,122 @@
+name: Package-Debian-Build
+
+on:
+  push:
+    # tags:
+    #   - '*'
+
+  # allow manually starting this workflow
+  workflow_dispatch:
+
+jobs:
+  Debian:
+    name: ${{ matrix.distro }}
+    runs-on: ubuntu-latest
+    container:
+      image: ubuntu:${{ matrix.distro }}
+      env:
+        DEBIAN_FRONTEND: noninteractive
+    strategy:
+      fail-fast: false
+      matrix:
+        distro: [focal, jammy, noble]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          path: target_ws/src
+
+      - name: Install dependencies
+        run: |
+          apt update
+          apt upgrade -y
+          apt install -y clang-tidy
+
+      - name: Build and test
+        uses: tesseract-robotics/colcon-action@v9
+        with:
+          before-script: source /opt/tesseract/install/setup.bash
+          ccache-enabled: false
+          vcs-file: dependencies.repos
+          upstream-args: --cmake-args -DCMAKE_BUILD_TYPE=Release
+          target-path: target_ws/src
+          target-args: --cmake-args -DCMAKE_BUILD_TYPE=Release -DTRAJOPT_PACKAGE=ON
+          run-tests: false
+
+      - name: Create artifacts directory
+        run: |
+          mkdir $GITHUB_WORKSPACE/artifacts
+
+      - name: Package osqp
+        working-directory: target_ws/build/osqp
+        shell: bash
+        run: |
+          cpack --config CPackConfig.cmake
+          cp ./*.deb $GITHUB_WORKSPACE/artifacts
+          cp ./*.tar.xz $GITHUB_WORKSPACE/artifacts
+
+      - name: Package osqp_eigen
+        working-directory: target_ws/build/osqp_eigen
+        shell: bash
+        run: |
+          cpack --config CPackConfig.cmake
+          cp ./*.deb $GITHUB_WORKSPACE/artifacts
+          cp ./*.tar.xz $GITHUB_WORKSPACE/artifacts
+
+      - name: Package trajopt_common
+        working-directory: target_ws/build/trajopt_common
+        shell: bash
+        run: |
+          cpack --config CPackConfig.cmake
+          cp ./*.deb $GITHUB_WORKSPACE/artifacts
+          cp ./*.tar.xz $GITHUB_WORKSPACE/artifacts
+
+      - name: Package vhacd
+        working-directory: target_ws/build/vhacd
+        shell: bash
+        run: |
+          cpack --config CPackConfig.cmake
+          cp ./*.deb $GITHUB_WORKSPACE/artifacts
+          cp ./*.tar.xz $GITHUB_WORKSPACE/artifacts
+
+      - name: Package trajopt_sco
+        working-directory: target_ws/build/trajopt_sco
+        shell: bash
+        run: |
+          cpack --config CPackConfig.cmake
+          cp ./*.deb $GITHUB_WORKSPACE/artifacts
+          cp ./*.tar.xz $GITHUB_WORKSPACE/artifacts
+
+      - name: Package trajopt
+        working-directory: target_ws/build/trajopt
+        shell: bash
+        run: |
+          cpack --config CPackConfig.cmake
+          cp ./*.deb $GITHUB_WORKSPACE/artifacts
+          cp ./*.tar.xz $GITHUB_WORKSPACE/artifacts
+
+      - name: Package trajopt_sqp
+        working-directory: target_ws/build/trajopt_sqp
+        shell: bash
+        run: |
+          cpack --config CPackConfig.cmake
+          cp ./*.deb $GITHUB_WORKSPACE/artifacts
+          cp ./*.tar.xz $GITHUB_WORKSPACE/artifacts
+
+      - name: Package trajopt_ifopt
+        working-directory: target_ws/build/trajopt_ifopt
+        shell: bash
+        run: |
+          cpack --config CPackConfig.cmake
+          cp ./*.deb $GITHUB_WORKSPACE/artifacts
+          cp ./*.tar.xz $GITHUB_WORKSPACE/artifacts
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: debian_package_${{ matrix.distro }}
+          path: ${{ github.workspace }}/artifacts/*.deb
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: archive_package_${{ matrix.distro }}
+          path: ${{ github.workspace }}/artifacts/*.tar.xz
