@@ -99,7 +99,6 @@ jobs:
           fi
 
       - name: Package vhacd
-        if: ${{ exists('target_ws/build/vhacd') }}
         working-directory: target_ws/build/vhacd
         shell: bash
         run: |
