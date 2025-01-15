@@ -20,7 +20,7 @@ echo "   artifact_dir: $artifact_dir"
 echo "   artifact_ext: $artifact_ext"
 echo "   build_dir: $build_dir"
 
-declare -a StringArray=("osqp" "OsqpEigen" "trajopt_common" "vhacd" "trajopt_sco" "trajopt" "trajopt_sqp" "trajopt_ifopt")
+declare -a StringArray=("osqp" "osqp_eigen" "trajopt_common" "vhacd" "trajopt_sco" "trajopt" "trajopt_sqp" "trajopt_ifopt")
 
 # Iterate the packages using for loop
 for val in ${StringArray[@]}; do
