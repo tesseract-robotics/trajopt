@@ -98,16 +98,6 @@ jobs:
             cp ./*.tar.xz $GITHUB_WORKSPACE/artifacts
           fi
 
-      - name: Package vhacd
-        shell: bash
-        run: |
-          if [ -d $GITHUB_WORKSPACE/target_ws/build/vhacd ]; then
-            cd $GITHUB_WORKSPACE/target_ws/build/vhacd
-            cpack --config CPackConfig.cmake
-            cp ./*.deb $GITHUB_WORKSPACE/artifacts
-            cp ./*.tar.xz $GITHUB_WORKSPACE/artifacts
-          fi
-
       - name: Package trajopt_common
         working-directory: target_ws/build/trajopt_common
         shell: bash
