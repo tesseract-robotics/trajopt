@@ -38,13 +38,15 @@ jobs:
 
   Debian:
     name: ${{ matrix.distro }}
+    needs: get-tag  # Make sure the 'ci' job waits for the 'get-tag' job to finish
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         distro: [focal, jammy, noble]
     container:
-      image: ghcr.io/tesseract-robotics/tesseract:${{ matrix.distro }}-${{ needs.get-tag.outputs.major }}.${{ needs.get-tag.outputs.minor }}
+      # image: ghcr.io/tesseract-robotics/tesseract:${{ matrix.distro }}-${{ needs.get-tag.outputs.major }}.${{ needs.get-tag.outputs.minor }}
+      image: ghcr.io/tesseract-robotics/tesseract:${{ matrix.distro }}-master
       env:
         DEBIAN_FRONTEND: noninteractive
         TZ: Etc/UTC
