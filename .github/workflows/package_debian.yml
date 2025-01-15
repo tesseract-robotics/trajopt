@@ -79,6 +79,7 @@ jobs:
           mkdir $GITHUB_WORKSPACE/artifacts
 
       - name: Package osqp
+        if: ${{ exists('target_ws/build/osqp') }}
         working-directory: target_ws/build/osqp
         shell: bash
         run: |
@@ -87,7 +88,17 @@ jobs:
           cp ./*.tar.xz $GITHUB_WORKSPACE/artifacts
 
       - name: Package osqp_eigen
+        if: ${{ exists('target_ws/build/osqp_eigen') }}
         working-directory: target_ws/build/osqp_eigen
+        shell: bash
+        run: |
+          cpack --config CPackConfig.cmake
+          cp ./*.deb $GITHUB_WORKSPACE/artifacts
+          cp ./*.tar.xz $GITHUB_WORKSPACE/artifacts
+
+      - name: Package vhacd
+        if: ${{ exists('target_ws/build/vhacd') }}
+        working-directory: target_ws/build/vhacd
         shell: bash
         run: |
           cpack --config CPackConfig.cmake
@@ -96,14 +107,6 @@ jobs:
 
       - name: Package trajopt_common
         working-directory: target_ws/build/trajopt_common
-        shell: bash
-        run: |
-          cpack --config CPackConfig.cmake
-          cp ./*.deb $GITHUB_WORKSPACE/artifacts
-          cp ./*.tar.xz $GITHUB_WORKSPACE/artifacts
-
-      - name: Package vhacd
-        working-directory: target_ws/build/vhacd
         shell: bash
         run: |
           cpack --config CPackConfig.cmake
