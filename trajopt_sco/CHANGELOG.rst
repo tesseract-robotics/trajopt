@@ -2,6 +2,15 @@
 Changelog for package trajopt_sco
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Fix trust region params boost serialization
+* Update cmake format
+* Fix cpack typo to use trajopt_common over trajopt_utils (`#436 <https://github.com/tesseract-robotics/trajopt/issues/436>`_)
+* Expose utility to set default osqp settings
+* Add boost serialization support to config objects
+* Contributors: Levi Armstrong, Max DeSantis
+
 0.27.0 (2024-12-01)
 -------------------
 

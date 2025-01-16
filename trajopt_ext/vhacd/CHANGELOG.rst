@@ -2,6 +2,11 @@
 Changelog for package vhacd
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Add boost serialization support to config objects
+* Contributors: Levi Armstrong
+
 0.27.0 (2024-12-01)
 -------------------
 
