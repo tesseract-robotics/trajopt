@@ -89,7 +89,7 @@ struct BasicTrustRegionSQPParameters
   /** @brief If model improves less than this, exit and report convergence */
   double min_approx_improve = 1e-4;
   /** @brief If model improves less than this, exit and report convergence */
-  double min_approx_improve_frac = static_cast<double>(-INFINITY);
+  double min_approx_improve_frac = std::numeric_limits<double>::lowest();
   /** @brief The max number of iterations */
   double max_iter = 50;
   /** @brief If improvement is less than improve_ratio_threshold, shrink trust region by this ratio */
@@ -105,7 +105,7 @@ struct BasicTrustRegionSQPParameters
   /** @brief Ratio that we increase coeff each time */
   double merit_coeff_increase_ratio = 10;
   /** @brief Max time in seconds that the optimizer will run */
-  double max_time = static_cast<double>(INFINITY);
+  double max_time = std::numeric_limits<double>::max();
   /** @brief Initial coefficient that is used to scale the constraints. The total constaint cost is constaint_value *
    * coeff * merit_coeff */
   double initial_merit_error_coeff = 10;

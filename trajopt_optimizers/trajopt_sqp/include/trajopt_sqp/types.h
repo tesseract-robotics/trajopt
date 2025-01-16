@@ -55,7 +55,7 @@ struct SQPParameters
   /** @brief NLP converges if approx_merit_improves is smaller than this */
   double min_approx_improve = 1e-4;
   /** @brief NLP converges if approx_merit_improve / best_exact_merit < min_approx_improve_frac */
-  double min_approx_improve_frac = static_cast<double>(-INFINITY);
+  double min_approx_improve_frac = std::numeric_limits<double>::lowest();
   /** @brief Max number of QP calls allowed */
   int max_iterations = 50;
 
@@ -73,7 +73,7 @@ struct SQPParameters
   /** @brief Constraints are scaled by this amount when inflated */
   double merit_coeff_increase_ratio = 10;
   /** @brief Max time in seconds that the optimizer will run */
-  double max_time = static_cast<double>(INFINITY);
+  double max_time = std::numeric_limits<double>::max();
   /** @brief Initial coefficient that is used to scale the constraints. The total constaint cost is constaint_value
    * coeff * merit_coeff */
   double initial_merit_error_coeff = 10;
