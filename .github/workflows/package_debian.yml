@@ -2,51 +2,50 @@ name: Package-Debian-Build
 
 on:
   push:
-    # tags:
-    #   - '*'
+    tags:
+      - '*'
 
   # allow manually starting this workflow
   workflow_dispatch:
 
 jobs:
-  # get-tag:
-  #   # Pre-job to fetch the latest tag
-  #   runs-on: ubuntu-latest
-  #   outputs:
-  #     major: ${{ steps.extract_tag.outputs.major }}
-  #     minor: ${{ steps.extract_tag.outputs.minor }}
-  #   steps:
-  #     - name: Checkout repository
-  #       uses: actions/checkout@v4
-  #       with:
-  #         fetch-depth: 0  # Ensure all history and tags are fetched
+  get-tag:
+    # Pre-job to fetch the latest tag
+    runs-on: ubuntu-latest
+    outputs:
+      major: ${{ steps.extract_tag.outputs.major }}
+      minor: ${{ steps.extract_tag.outputs.minor }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Ensure all history and tags are fetched
 
-  #     - name: Get latest tag
-  #       id: extract_tag
-  #       run: |
-  #         latest_tag=$(git describe --tags `git rev-list --tags --max-count=1`)
-  #         echo "Latest tag: $latest_tag"
+      - name: Get latest tag
+        id: extract_tag
+        run: |
+          latest_tag=$(git describe --tags `git rev-list --tags --max-count=1`)
+          echo "Latest tag: $latest_tag"
 
-  #         # Extract major and minor version from the tag
-  #         IFS='.' read -r major minor patch <<< "$latest_tag"
-  #         echo "Major: $major"
-  #         echo "Minor: $minor"
+          # Extract major and minor version from the tag
+          IFS='.' read -r major minor patch <<< "$latest_tag"
+          echo "Major: $major"
+          echo "Minor: $minor"
 
-  #         # Set as output variables
-  #         echo "::set-output name=major::$major"
-  #         echo "::set-output name=minor::$minor"
+          # Set as output variables
+          echo "::set-output name=major::$major"
+          echo "::set-output name=minor::$minor"
 
   Debian:
     name: ${{ matrix.distro }}
-    # needs: get-tag  # Make sure the 'ci' job waits for the 'get-tag' job to finish
+    needs: get-tag  # Make sure the 'ci' job waits for the 'get-tag' job to finish
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         distro: [focal, jammy, noble]
     container:
-      # image: ghcr.io/tesseract-robotics/tesseract:${{ matrix.distro }}-${{ needs.get-tag.outputs.major }}.${{ needs.get-tag.outputs.minor }}
-      image: ghcr.io/tesseract-robotics/tesseract:${{ matrix.distro }}-master
+      image: ghcr.io/tesseract-robotics/tesseract:${{ matrix.distro }}-${{ needs.get-tag.outputs.major }}.${{ needs.get-tag.outputs.minor }}
       env:
         DEBIAN_FRONTEND: noninteractive
         TZ: Etc/UTC
