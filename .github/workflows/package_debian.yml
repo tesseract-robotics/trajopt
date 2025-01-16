@@ -1,0 +1,148 @@
+name: Package-Debian-Build
+
+on:
+  push:
+    tags:
+      - '*'
+
+  # allow manually starting this workflow
+  workflow_dispatch:
+
+jobs:
+  get-tag:
+    # Pre-job to fetch the latest tag
+    runs-on: ubuntu-latest
+    outputs:
+      major: ${{ steps.extract_tag.outputs.major }}
+      minor: ${{ steps.extract_tag.outputs.minor }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Ensure all history and tags are fetched
+
+      - name: Get latest tag
+        id: extract_tag
+        run: |
+          latest_tag=$(git describe --tags `git rev-list --tags --max-count=1`)
+          echo "Latest tag: $latest_tag"
+
+          # Extract major and minor version from the tag
+          IFS='.' read -r major minor patch <<< "$latest_tag"
+          echo "Major: $major"
+          echo "Minor: $minor"
+
+          # Set as output variables
+          echo "::set-output name=major::$major"
+          echo "::set-output name=minor::$minor"
+
+  Debian:
+    name: ${{ matrix.distro }}
+    needs: get-tag  # Make sure the 'ci' job waits for the 'get-tag' job to finish
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        distro: [focal, jammy, noble]
+    container:
+      image: ghcr.io/tesseract-robotics/tesseract:${{ matrix.distro }}-${{ needs.get-tag.outputs.major }}.${{ needs.get-tag.outputs.minor }}
+      env:
+        DEBIAN_FRONTEND: noninteractive
+        TZ: Etc/UTC
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          path: target_ws/src
+
+      - name: Install dependencies
+        run: |
+          apt update
+          apt upgrade -y
+          apt install -y clang-tidy
+
+      - name: Build and test
+        uses: tesseract-robotics/colcon-action@v9
+        with:
+          before-script: source /opt/tesseract/install/setup.bash
+          ccache-enabled: false
+          vcs-file: dependencies.repos
+          upstream-args: --cmake-args -DCMAKE_BUILD_TYPE=Release
+          target-path: target_ws/src
+          target-args: --cmake-args -DCMAKE_BUILD_TYPE=Release -DTRAJOPT_PACKAGE=ON
+          run-tests: false
+
+      - name: Create artifacts directory
+        run: |
+          mkdir $GITHUB_WORKSPACE/artifacts
+
+      - name: Package osqp
+        shell: bash
+        run: |
+          if [ -d $GITHUB_WORKSPACE/target_ws/build/osqp ]; then
+            cd $GITHUB_WORKSPACE/target_ws/build/osqp
+            cpack --config CPackConfig.cmake
+            cp ./*.deb $GITHUB_WORKSPACE/artifacts
+            cp ./*.tar.xz $GITHUB_WORKSPACE/artifacts
+          fi
+
+      - name: Package osqp_eigen
+        shell: bash
+        run: |
+          if [ -d $GITHUB_WORKSPACE/target_ws/build/osqp_eigen ]; then
+            cd $GITHUB_WORKSPACE/target_ws/build/osqp_eigen
+            cpack --config CPackConfig.cmake
+            cp ./*.deb $GITHUB_WORKSPACE/artifacts
+            cp ./*.tar.xz $GITHUB_WORKSPACE/artifacts
+          fi
+
+      - name: Package trajopt_common
+        working-directory: target_ws/build/trajopt_common
+        shell: bash
+        run: |
+          cpack --config CPackConfig.cmake
+          cp ./*.deb $GITHUB_WORKSPACE/artifacts
+          cp ./*.tar.xz $GITHUB_WORKSPACE/artifacts
+
+      - name: Package trajopt_sco
+        working-directory: target_ws/build/trajopt_sco
+        shell: bash
+        run: |
+          cpack --config CPackConfig.cmake
+          cp ./*.deb $GITHUB_WORKSPACE/artifacts
+          cp ./*.tar.xz $GITHUB_WORKSPACE/artifacts
+
+      - name: Package trajopt
+        working-directory: target_ws/build/trajopt
+        shell: bash
+        run: |
+          cpack --config CPackConfig.cmake
+          cp ./*.deb $GITHUB_WORKSPACE/artifacts
+          cp ./*.tar.xz $GITHUB_WORKSPACE/artifacts
+
+      - name: Package trajopt_sqp
+        working-directory: target_ws/build/trajopt_sqp
+        shell: bash
+        run: |
+          cpack --config CPackConfig.cmake
+          cp ./*.deb $GITHUB_WORKSPACE/artifacts
+          cp ./*.tar.xz $GITHUB_WORKSPACE/artifacts
+
+      - name: Package trajopt_ifopt
+        working-directory: target_ws/build/trajopt_ifopt
+        shell: bash
+        run: |
+          cpack --config CPackConfig.cmake
+          cp ./*.deb $GITHUB_WORKSPACE/artifacts
+          cp ./*.tar.xz $GITHUB_WORKSPACE/artifacts
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: debian_package_${{ matrix.distro }}
+          path: ${{ github.workspace }}/artifacts/*.deb
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: archive_package_${{ matrix.distro }}
+          path: ${{ github.workspace }}/artifacts/*.tar.xz
