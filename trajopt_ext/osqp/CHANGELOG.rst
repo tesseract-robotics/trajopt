@@ -2,8 +2,8 @@
 Changelog for package osqp
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.28.0 (2025-01-16)
+-------------------
 * Update cmake format
 * Contributors: Levi Armstrong
 

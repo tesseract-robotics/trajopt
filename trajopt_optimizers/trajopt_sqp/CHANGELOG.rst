@@ -2,8 +2,8 @@
 Changelog for package trajopt_sqp
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.28.0 (2025-01-16)
+-------------------
 * Fix trust region params boost serialization
 * Update cmake format
 * Fix cpack typo to use trajopt_common over trajopt_utils (`#436 <https://github.com/tesseract-robotics/trajopt/issues/436>`_)
