@@ -2,6 +2,9 @@
 Changelog for package trajopt_sqp
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+
 0.28.0 (2025-01-16)
 -------------------
 * Fix trust region params boost serialization

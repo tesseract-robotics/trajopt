@@ -2,6 +2,11 @@
 Changelog for package trajopt_ifopt
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Fix incorrect evaluator type check in LVSDiscrete collision evaluator
+* Contributors: Levi Armstrong
+
 0.28.0 (2025-01-16)
 -------------------
 * Update cmake format
