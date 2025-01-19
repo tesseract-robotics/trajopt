@@ -48,8 +48,12 @@ LVSContinuousCollisionEvaluator::LVSContinuousCollisionEvaluator(
   , collision_config_(std::move(collision_config))
   , dynamic_environment_(dynamic_environment)
 {
-  assert(collision_config_->type == tesseract_collision::CollisionEvaluatorType::CONTINUOUS ||
-         collision_config_->type == tesseract_collision::CollisionEvaluatorType::LVS_CONTINUOUS);
+  if (collision_config_->type == tesseract_collision::CollisionEvaluatorType::DISCRETE ||
+      collision_config_->type == tesseract_collision::CollisionEvaluatorType::LVS_DISCRETE)
+  {
+    throw std::runtime_error("LVSContinuousCollisionEvaluator, has been configured with "
+                             "CollisionEvaluatorType::DISCRETE or CollisionEvaluatorType::LVS_DISCRETE");
+  }
 
   manip_active_link_names_ = manip_->getActiveLinkNames();
 
@@ -290,6 +294,13 @@ LVSDiscreteCollisionEvaluator::LVSDiscreteCollisionEvaluator(
   , collision_config_(std::move(collision_config))
   , dynamic_environment_(dynamic_environment)
 {
+  if (collision_config_->type == tesseract_collision::CollisionEvaluatorType::CONTINUOUS ||
+      collision_config_->type == tesseract_collision::CollisionEvaluatorType::LVS_CONTINUOUS)
+  {
+    throw std::runtime_error("LVSDiscreteCollisionEvaluator, has been configured with "
+                             "CollisionEvaluatorType::CONTINUOUS or CollisionEvaluatorType::LVS_CONTINUOUS");
+  }
+
   manip_active_link_names_ = manip_->getActiveLinkNames();
 
   // If the environment is not expected to change, then the cloned state solver may be used each time.
@@ -453,7 +464,7 @@ void LVSDiscreteCollisionEvaluator::CalcCollisionsHelper(tesseract_collision::Co
   // the longest valid segment length.
   const double dist = (dof_vals1 - dof_vals0).norm();
   long cnt = 2;
-  if (collision_config_->type == tesseract_collision::CollisionEvaluatorType::LVS_CONTINUOUS &&
+  if (collision_config_->type == tesseract_collision::CollisionEvaluatorType::LVS_DISCRETE &&
       dist > collision_config_->longest_valid_segment_length)
   {
     // Calculate the number state to interpolate
