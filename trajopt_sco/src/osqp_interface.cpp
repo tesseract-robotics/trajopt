@@ -223,15 +223,15 @@ void OSQPModel::createOrUpdateSolver()
     LOG_DEBUG("OSQP update (warm start = %lli).", config_.settings.warm_start);
     need_setup = false;
 
-    if (osqp_update_lin_cost(osqp_workspace_, osqp_data_.q) != 0)
-    {
-      need_setup = true;
-      LOG_WARN("OSQP updating linear costs failed.");
-    }
     if (osqp_update_bounds(osqp_workspace_, osqp_data_.l, osqp_data_.u) != 0)
     {
       need_setup = true;
       LOG_WARN("OSQP updating bounds failed.");
+    }
+    if (osqp_update_lin_cost(osqp_workspace_, osqp_data_.q) != 0)
+    {
+      need_setup = true;
+      LOG_WARN("OSQP updating linear costs failed.");
     }
     if (osqp_update_P_A(osqp_workspace_,
                         osqp_data_.P->x,
