@@ -2,6 +2,9 @@
 Changelog for package trajopt_ifopt
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+
 0.28.1 (2025-01-18)
 -------------------
 * Fix incorrect evaluator type check in LVSDiscrete collision evaluator
