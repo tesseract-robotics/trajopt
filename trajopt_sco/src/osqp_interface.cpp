@@ -108,7 +108,7 @@ void OSQPModel::removeCnts(const CntVector& cnts)
     cnt.cnt_rep->removed = true;
 }
 
-void OSQPModel::updateObjective()
+bool OSQPModel::updateObjective()
 {
   const std::size_t n = vars_.size();
   osqp_data_.n = static_cast<c_int>(n);
@@ -122,6 +122,16 @@ void OSQPModel::updateObjective()
 
   eigenToCSC(triangular_sm, P_row_indices_, P_column_pointers_, P_csc_data_);
 
+  // Check if sparsity has changed
+  bool sparsity_equal = false;
+  if (osqp_data_.P != nullptr && osqp_data_.P->n == osqp_data_.n && osqp_data_.P->m == osqp_data_.n &&
+      osqp_data_.P->nzmax == P_csc_data_.size())
+  {
+    sparsity_equal = memcmp(osqp_data_.P->p, P_column_pointers_.data(), static_cast<size_t>(osqp_data_.P->n) + 1) == 0;
+    sparsity_equal = sparsity_equal &&
+                     (memcmp(osqp_data_.P->i, P_row_indices_.data(), static_cast<size_t>(osqp_data_.P->nzmax)) == 0);
+  }
+
   P_.reset(csc_matrix(osqp_data_.n,
                       osqp_data_.n,
                       static_cast<c_int>(P_csc_data_.size()),
@@ -131,9 +141,11 @@ void OSQPModel::updateObjective()
 
   osqp_data_.P = P_.get();
   osqp_data_.q = q_.data();
+
+  return sparsity_equal;
 }
 
-void OSQPModel::updateConstraints()
+bool OSQPModel::updateConstraints()
 {
   const std::size_t n = vars_.size();
   const std::size_t m = cnts_.size();
@@ -174,6 +186,16 @@ void OSQPModel::updateConstraints()
 
   eigenToCSC(sm, A_row_indices_, A_column_pointers_, A_csc_data_);
 
+  // Check if sparsity has changed
+  bool sparsity_equal = false;
+  if (osqp_data_.A != nullptr && osqp_data_.A->n == osqp_data_.n && osqp_data_.A->m == osqp_data_.m &&
+      osqp_data_.A->nzmax == A_csc_data_.size())
+  {
+    sparsity_equal = memcmp(osqp_data_.A->p, A_column_pointers_.data(), static_cast<size_t>(osqp_data_.A->n) + 1) == 0;
+    sparsity_equal = sparsity_equal &&
+                     (memcmp(osqp_data_.A->i, A_row_indices_.data(), static_cast<size_t>(osqp_data_.A->nzmax)) == 0);
+  }
+
   A_.reset(csc_matrix(osqp_data_.m,
                       osqp_data_.n,
                       static_cast<c_int>(A_csc_data_.size()),
@@ -185,26 +207,62 @@ void OSQPModel::updateConstraints()
 
   osqp_data_.l = l_.data();
   osqp_data_.u = u_.data();
+
+  return sparsity_equal;
 }
 
 void OSQPModel::createOrUpdateSolver()
 {
-  updateObjective();
-  updateConstraints();  // NOLINT(clang-analyzer-core.UndefinedBinaryOperatorResult,clang-analyzer-core.uninitialized.Assign)
+  bool P_sparsity_equal = updateObjective();
+  bool A_sparsity_equal = updateConstraints();
 
-  // TODO atm we are not updating the workspace, but recreating it each time.
-  // In the future, we will checking sparsity did not change and update instead
-  if (osqp_workspace_ != nullptr)
-    osqp_cleanup(osqp_workspace_);
-
-  // Setup workspace - this should be called only once
-  auto ret = osqp_setup(&osqp_workspace_, &osqp_data_, &config_.settings);
-  if (ret != 0)
+  // If sparsity did not change, update data, otherwise cleanup and setup
+  bool need_setup = true;
+  if ((osqp_workspace_ != nullptr) && P_sparsity_equal && A_sparsity_equal)
   {
-    // In this case, no data got allocated, so don't try to free it.
-    if (ret == OSQP_DATA_VALIDATION_ERROR || ret == OSQP_SETTINGS_VALIDATION_ERROR)
-      osqp_workspace_ = nullptr;
-    throw std::runtime_error("Could not initialize OSQP: error " + std::to_string(ret));
+    LOG_DEBUG("OSQP update (warm start = %lli).", config_.settings.warm_start);
+    need_setup = false;
+
+    if (osqp_update_lin_cost(osqp_workspace_, osqp_data_.q) != 0)
+    {
+      need_setup = true;
+      LOG_WARN("OSQP updating linear costs failed.");
+    }
+    if (osqp_update_bounds(osqp_workspace_, osqp_data_.l, osqp_data_.u) != 0)
+    {
+      need_setup = true;
+      LOG_WARN("OSQP updating bounds failed.");
+    }
+    if (osqp_update_P_A(osqp_workspace_,
+                        osqp_data_.P->x,
+                        OSQP_NULL,
+                        osqp_data_.P->nzmax,
+                        osqp_data_.A->x,
+                        OSQP_NULL,
+                        osqp_data_.A->nzmax) != 0)
+    {
+      need_setup = true;
+      LOG_WARN("OSQP updating P and A matrices failed.");
+    }
+  }
+
+  if (need_setup)
+  {
+    if (osqp_workspace_ != nullptr)
+    {
+      LOG_DEBUG("OSQP cleanup (cold start).");
+      osqp_cleanup(osqp_workspace_);
+    }
+
+    // Setup workspace - this should be called only once
+    auto ret = osqp_setup(&osqp_workspace_, &osqp_data_, &config_.settings);
+    if (ret != 0)
+    {
+      // In this case, no data got allocated, so don't try to free it.
+      if (ret == OSQP_DATA_VALIDATION_ERROR || ret == OSQP_SETTINGS_VALIDATION_ERROR)
+        osqp_workspace_ = nullptr;
+      throw std::runtime_error("Could not initialize OSQP: error " + std::to_string(ret));
+    }
   }
 }
 

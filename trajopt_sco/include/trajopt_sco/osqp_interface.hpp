@@ -49,12 +49,12 @@ class OSQPModel : public Model
 
   /** Updates OSQP quadratic cost matrix from QuadExpr expression.
    *  Transforms QuadExpr objective_ into the OSQP CSC matrix P_ */
-  void updateObjective();
+  bool updateObjective();
 
   /** Updates qpOASES constraints from AffExpr expression.
    *  Transforms AffExpr cntr_exprs_ and box bounds lbs_ and ubs_ into the
    *  OSQP CSC matrix A_, and vectors lbA_ and ubA_ */
-  void updateConstraints();
+  bool updateConstraints();
 
   /** Creates or updates the solver and its workspace */
   void createOrUpdateSolver();
