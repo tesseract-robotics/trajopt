@@ -213,8 +213,8 @@ bool OSQPModel::updateConstraints()
 
 void OSQPModel::createOrUpdateSolver()
 {
-  bool P_sparsity_equal = updateObjective();
-  bool A_sparsity_equal = updateConstraints();
+  const bool P_sparsity_equal = updateObjective();
+  const bool A_sparsity_equal = updateConstraints();
 
   // If sparsity did not change, update data, otherwise cleanup and setup
   bool need_setup = true;
