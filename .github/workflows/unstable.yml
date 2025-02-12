@@ -43,6 +43,11 @@ jobs:
         run: |
           apt update
           apt upgrade -y
+
+      - name: Install Clang Tidy
+        if: ${{ matrix.distro }} == 'jammy'
+        shell: bash
+        run: |
           apt install -y wget
           echo "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-17 main" | tee /etc/apt/sources.list.d/llvm-toolchain.list
           echo "deb-src http://apt.llvm.org/jammy/ llvm-toolchain-jammy-17 main" | tee -a /etc/apt/sources.list.d/llvm-toolchain.list
