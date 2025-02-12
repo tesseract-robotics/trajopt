@@ -45,7 +45,7 @@ jobs:
           apt upgrade -y
 
       - name: Install Clang Tidy
-        if: ${{ matrix.distro }} == 'jammy'
+        if: ${{ matrix.distro == 'jammy' }
         shell: bash
         run: |
           apt install -y wget
