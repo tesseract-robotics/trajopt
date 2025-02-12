@@ -16,6 +16,16 @@ jobs:
       fail-fast: false
       matrix:
         distro: [focal, jammy, noble]
+        include:
+          - distro: focal
+            env:
+              TARGET_CMAKE_ARGS: "-DCMAKE_BUILD_TYPE=Debug -DTRAJOPT_ENABLE_TESTING=ON -DTRAJOPT_ENABLE_CLANG_TIDY=ON -DTRAJOPT_PACKAGE=ON"
+          - distro: jammy
+            env:
+              TARGET_CMAKE_ARGS: "-DCMAKE_BUILD_TYPE=Debug -DTRAJOPT_ENABLE_TESTING=ON -DTRAJOPT_ENABLE_CLANG_TIDY=ON -DTRAJOPT_PACKAGE=ON -DCLANG_TIDY_NAMES=clang-tidy-17"
+          - distro: noble
+            env:
+              TARGET_CMAKE_ARGS: "-DCMAKE_BUILD_TYPE=Debug -DTRAJOPT_ENABLE_TESTING=ON -DTRAJOPT_ENABLE_CLANG_TIDY=ON -DTRAJOPT_PACKAGE=ON"
     container:
       image: ghcr.io/tesseract-robotics/tesseract:${{ matrix.distro }}-master
       env:
@@ -33,14 +43,26 @@ jobs:
         run: |
           apt update
           apt upgrade -y
-          apt install -y clang-tidy
+
+      - name: Install Clang Tidy
+        if: ${{ matrix.distro == 'jammy' }}
+        shell: bash
+        run: |
+          apt install -y wget
+          echo "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-17 main" | tee /etc/apt/sources.list.d/llvm-toolchain.list
+          echo "deb-src http://apt.llvm.org/jammy/ llvm-toolchain-jammy-17 main" | tee -a /etc/apt/sources.list.d/llvm-toolchain.list
+          wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | tee /etc/apt/trusted.gpg.d/llvm.asc
+          apt update -y
+          apt install -y clang-tidy-17 libomp-17-dev
 
       - name: Build and Tests
-        uses: tesseract-robotics/colcon-action@v8
+        uses: tesseract-robotics/colcon-action@v11
         with:
           before-script: source /opt/tesseract/install/setup.bash
           ccache-prefix: ${{ matrix.distro }}
           vcs-file: dependencies_unstable.repos
+          run-tests: false
+          rosdep-install-args: -iry --skip-keys=libomp-dev
           upstream-args: --cmake-args -DCMAKE_BUILD_TYPE=Release
           target-path: target_ws/src
-          target-args: --cmake-args -DCMAKE_BUILD_TYPE=Debug -DTRAJOPT_ENABLE_TESTING=ON -DTRAJOPT_ENABLE_CLANG_TIDY=ON -DTRAJOPT_PACKAGE=ON
+          target-args: --cmake-args ${{ matrix.env.TARGET_CMAKE_ARGS }}
