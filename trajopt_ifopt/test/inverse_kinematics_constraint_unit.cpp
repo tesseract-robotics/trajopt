@@ -66,8 +66,8 @@ public:
   void SetUp() override
   {
     // Initialize Tesseract
-    const tesseract_common::fs::path urdf_file(std::string(TRAJOPT_DATA_DIR) + "/arm_around_table.urdf");
-    const tesseract_common::fs::path srdf_file(std::string(TRAJOPT_DATA_DIR) + "/pr2.srdf");
+    const std::filesystem::path urdf_file(std::string(TRAJOPT_DATA_DIR) + "/arm_around_table.urdf");
+    const std::filesystem::path srdf_file(std::string(TRAJOPT_DATA_DIR) + "/pr2.srdf");
     const ResourceLocator::Ptr locator = std::make_shared<tesseract_common::GeneralResourceLocator>();
     const bool status = env->init(urdf_file, srdf_file, locator);
     EXPECT_TRUE(status);

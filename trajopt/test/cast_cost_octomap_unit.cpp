@@ -52,8 +52,8 @@ public:
 
   void SetUp() override
   {
-    const tesseract_common::fs::path urdf_file(std::string(TRAJOPT_DATA_DIR) + "/boxbot_world.urdf");
-    const tesseract_common::fs::path srdf_file(std::string(TRAJOPT_DATA_DIR) + "/boxbot.srdf");
+    const std::filesystem::path urdf_file(std::string(TRAJOPT_DATA_DIR) + "/boxbot_world.urdf");
+    const std::filesystem::path srdf_file(std::string(TRAJOPT_DATA_DIR) + "/boxbot.srdf");
 
     const ResourceLocator::Ptr locator = std::make_shared<tesseract_common::GeneralResourceLocator>();
     EXPECT_TRUE(env_->init(urdf_file, srdf_file, locator));

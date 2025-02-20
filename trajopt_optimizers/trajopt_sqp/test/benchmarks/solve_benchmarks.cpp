@@ -333,8 +333,8 @@ int main(int argc, char** argv)
   //////////////////////////////////////
 
   {
-    boost::filesystem::path urdf_file(std::string(TRAJOPT_DATA_DIR) + "/spherebot.urdf");
-    boost::filesystem::path srdf_file(std::string(TRAJOPT_DATA_DIR) + "/spherebot.srdf");
+    std::filesystem::path urdf_file(std::string(TRAJOPT_DATA_DIR) + "/spherebot.urdf");
+    std::filesystem::path srdf_file(std::string(TRAJOPT_DATA_DIR) + "/spherebot.srdf");
 
     ResourceLocator::Ptr locator = std::make_shared<tesseract_common::GeneralResourceLocator>();
     auto env = std::make_shared<Environment>();
@@ -356,8 +356,8 @@ int main(int argc, char** argv)
   // Planning Solve
   //////////////////////////////////////
   {
-    tesseract_common::fs::path urdf_file(std::string(TRAJOPT_DATA_DIR) + "/arm_around_table.urdf");
-    tesseract_common::fs::path srdf_file(std::string(TRAJOPT_DATA_DIR) + "/pr2.srdf");
+    std::filesystem::path urdf_file(std::string(TRAJOPT_DATA_DIR) + "/arm_around_table.urdf");
+    std::filesystem::path srdf_file(std::string(TRAJOPT_DATA_DIR) + "/pr2.srdf");
 
     ResourceLocator::Ptr locator = std::make_shared<tesseract_common::GeneralResourceLocator>();
     auto env = std::make_shared<Environment>();
