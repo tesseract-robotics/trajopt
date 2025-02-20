@@ -32,8 +32,8 @@ public:
   Visualization::Ptr plotter_;                             /**< Trajopt Plotter */
   void SetUp() override
   {
-    tesseract_common::fs::path urdf_file(std::string(TRAJOPT_DATA_DIR) + "/arm_around_table.urdf");
-    tesseract_common::fs::path srdf_file(std::string(TRAJOPT_DATA_DIR) + "/pr2.srdf");
+    std::filesystem::path urdf_file(std::string(TRAJOPT_DATA_DIR) + "/arm_around_table.urdf");
+    std::filesystem::path srdf_file(std::string(TRAJOPT_DATA_DIR) + "/pr2.srdf");
 
     ResourceLocator::Ptr locator = std::make_shared<tesseract_common::GeneralResourceLocator>();
     EXPECT_TRUE(env_->init(urdf_file, srdf_file, locator));
