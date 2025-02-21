@@ -21,6 +21,11 @@ struct OSQPModelConfig : public ModelConfig
   OSQPSettings settings{};
 
   /**
+   * @brief Update the OSQP workspace for subsequent optimizations, instead of recreating it each time.
+   */
+  bool update_workspace{ false };
+
+  /**
    * @brief Set the default OSQP Settings
    * @param settings The object to apply default settings to
    */
@@ -49,12 +54,12 @@ class OSQPModel : public Model
 
   /** Updates OSQP quadratic cost matrix from QuadExpr expression.
    *  Transforms QuadExpr objective_ into the OSQP CSC matrix P_ */
-  void updateObjective();
+  bool updateObjective();
 
   /** Updates qpOASES constraints from AffExpr expression.
    *  Transforms AffExpr cntr_exprs_ and box bounds lbs_ and ubs_ into the
    *  OSQP CSC matrix A_, and vectors lbA_ and ubA_ */
-  void updateConstraints();
+  bool updateConstraints();
 
   /** Creates or updates the solver and its workspace */
   void createOrUpdateSolver();
