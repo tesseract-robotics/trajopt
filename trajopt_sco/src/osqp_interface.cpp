@@ -218,7 +218,7 @@ void OSQPModel::createOrUpdateSolver()
 
   // If sparsity did not change, update data, otherwise cleanup and setup
   bool need_setup = true;
-  if ((osqp_workspace_ != nullptr) && P_sparsity_equal && A_sparsity_equal)
+  if ((osqp_workspace_ != nullptr) && (config_.update_workspace) && P_sparsity_equal && A_sparsity_equal)
   {
     LOG_DEBUG("OSQP update (warm start = %lli).", config_.settings.warm_start);
     need_setup = false;
