@@ -21,6 +21,11 @@ struct OSQPModelConfig : public ModelConfig
   OSQPSettings settings{};
 
   /**
+   * @brief Update the OSQP workspace for subsequent optimizations, instead of recreating it each time.
+   */
+  bool update_workspace{ false };
+
+  /**
    * @brief Set the default OSQP Settings
    * @param settings The object to apply default settings to
    */
