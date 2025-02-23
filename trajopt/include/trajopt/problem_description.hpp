@@ -581,13 +581,6 @@ struct JointJerkTermInfo : public TermInfo
   JointJerkTermInfo() : TermInfo(TermType::TT_COST | TermType::TT_CNT) {}
 };
 
-enum class CollisionEvaluatorType : std::uint8_t
-{
-  SINGLE_TIMESTEP = 0,
-  DISCRETE_CONTINUOUS = 1,
-  CAST_CONTINUOUS = 2,
-};
-
 /**
 \brief %Collision penalty
 
@@ -606,7 +599,7 @@ struct CollisionTermInfo : public TermInfo
   int first_step{ -1 }, last_step{ -1 };
 
   /** @brief Indicate the type of collision checking that should be used. */
-  CollisionEvaluatorType evaluator_type{ CollisionEvaluatorType::SINGLE_TIMESTEP };
+  tesseract_collision::CollisionEvaluatorType evaluator_type{ tesseract_collision::CollisionEvaluatorType::DISCRETE };
 
   /**
    * @brief Use the weighted sum for each link pair. This reduces the number equations added to the problem
