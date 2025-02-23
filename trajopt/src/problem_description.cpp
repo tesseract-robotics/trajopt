@@ -1601,8 +1601,8 @@ void CollisionTermInfo::fromJson(ProblemConstructionInfo& pci, const Json::Value
   const Json::Value& params = v["params"];
 
   const int n_steps = pci.basic_info.n_steps;
-  int collision_evaluator_type{ 0 };
-  json_marshal::childFromJson(params, collision_evaluator_type, "evaluator_type", 0);
+  int collision_evaluator_type{ 1 };
+  json_marshal::childFromJson(params, collision_evaluator_type, "evaluator_type", 1);
   json_marshal::childFromJson(params, use_weighted_sum, "use_weighted_sum", false);
   json_marshal::childFromJson(params, first_step, "first_step", 0);
   json_marshal::childFromJson(params, last_step, "last_step", n_steps - 1);
@@ -1615,7 +1615,7 @@ void CollisionTermInfo::fromJson(ProblemConstructionInfo& pci, const Json::Value
   FAIL_IF_FALSE(collision_evaluator_type <= 2);
   FAIL_IF_FALSE(safety_margin_buffer >= 0);
 
-  evaluator_type = static_cast<CollisionEvaluatorType>(collision_evaluator_type);
+  evaluator_type = static_cast<tesseract_collision::CollisionEvaluatorType>(collision_evaluator_type);
 
   json_marshal::childFromJson(params, fixed_steps, "fixed_steps", {});
   for (const auto& fs : fixed_steps)
@@ -1732,9 +1732,10 @@ void CollisionTermInfo::hatch(TrajOptProb& prob)
 
   if (term_type == TermType::TT_COST)
   {
-    if (evaluator_type != CollisionEvaluatorType::SINGLE_TIMESTEP)
+    if (evaluator_type != tesseract_collision::CollisionEvaluatorType::DISCRETE &&
+        evaluator_type != tesseract_collision::CollisionEvaluatorType::CONTINUOUS)
     {
-      bool discrete_continuous = (evaluator_type == CollisionEvaluatorType::DISCRETE_CONTINUOUS);
+      bool discrete_continuous = (evaluator_type == tesseract_collision::CollisionEvaluatorType::LVS_DISCRETE);
       for (int i = first_step; i < last_step; ++i)
       {
         const bool current_fixed = std::find(fixed_steps.begin(), fixed_steps.end(), i) != fixed_steps.end();
@@ -1804,9 +1805,10 @@ void CollisionTermInfo::hatch(TrajOptProb& prob)
   }
   else
   {  // ALMOST COPIED
-    if (evaluator_type != CollisionEvaluatorType::SINGLE_TIMESTEP)
+    if (evaluator_type != tesseract_collision::CollisionEvaluatorType::DISCRETE &&
+        evaluator_type != tesseract_collision::CollisionEvaluatorType::CONTINUOUS)
     {
-      bool discrete_continuous = (evaluator_type == CollisionEvaluatorType::DISCRETE_CONTINUOUS);
+      bool discrete_continuous = (evaluator_type == tesseract_collision::CollisionEvaluatorType::LVS_DISCRETE);
       for (int i = first_step; i < last_step; ++i)
       {
         const bool current_fixed = std::find(fixed_steps.begin(), fixed_steps.end(), i) != fixed_steps.end();
