@@ -1,5 +1,6 @@
 #include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
+#include <limits>
 #include <boost/algorithm/string.hpp>
 #include <json/json.h>
 #include <console_bridge/console.h>
@@ -1732,9 +1733,11 @@ void CollisionTermInfo::hatch(TrajOptProb& prob)
 
   if (term_type == TermType::TT_COST)
   {
-    if (evaluator_type != tesseract_collision::CollisionEvaluatorType::DISCRETE &&
-        evaluator_type != tesseract_collision::CollisionEvaluatorType::CONTINUOUS)
+    if (evaluator_type != tesseract_collision::CollisionEvaluatorType::DISCRETE)
     {
+      auto lvs = (evaluator_type == tesseract_collision::CollisionEvaluatorType::CONTINUOUS) ?
+                     std::numeric_limits<double>::max() :
+                     longest_valid_segment_length;
       bool discrete_continuous = (evaluator_type == tesseract_collision::CollisionEvaluatorType::LVS_DISCRETE);
       for (int i = first_step; i < last_step; ++i)
       {
@@ -1769,7 +1772,7 @@ void CollisionTermInfo::hatch(TrajOptProb& prob)
                                                  prob.GetEnv(),
                                                  info[static_cast<std::size_t>(i - first_step)],
                                                  contact_test_type,
-                                                 longest_valid_segment_length,
+                                                 lvs,
                                                  prob.GetVarRow(i, 0, n_dof),
                                                  prob.GetVarRow(i + 1, 0, n_dof),
                                                  expression_evaluator_type,
@@ -1805,9 +1808,11 @@ void CollisionTermInfo::hatch(TrajOptProb& prob)
   }
   else
   {  // ALMOST COPIED
-    if (evaluator_type != tesseract_collision::CollisionEvaluatorType::DISCRETE &&
-        evaluator_type != tesseract_collision::CollisionEvaluatorType::CONTINUOUS)
+    if (evaluator_type != tesseract_collision::CollisionEvaluatorType::DISCRETE)
     {
+      auto lvs = (evaluator_type == tesseract_collision::CollisionEvaluatorType::CONTINUOUS) ?
+                     std::numeric_limits<double>::max() :
+                     longest_valid_segment_length;
       bool discrete_continuous = (evaluator_type == tesseract_collision::CollisionEvaluatorType::LVS_DISCRETE);
       for (int i = first_step; i < last_step; ++i)
       {
@@ -1842,7 +1847,7 @@ void CollisionTermInfo::hatch(TrajOptProb& prob)
                                                        prob.GetEnv(),
                                                        info[static_cast<std::size_t>(i - first_step)],
                                                        contact_test_type,
-                                                       longest_valid_segment_length,
+                                                       lvs,
                                                        prob.GetVarRow(i, 0, n_dof),
                                                        prob.GetVarRow(i + 1, 0, n_dof),
                                                        expression_evaluator_type,
