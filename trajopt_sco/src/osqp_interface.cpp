@@ -42,7 +42,9 @@ OSQPModel::OSQPModel(const ModelConfig::ConstPtr& config) : P_(nullptr, free), A
   // tuning parameters to be less accurate, but add a polishing step
   if (config != nullptr)
   {
-    config_.settings = std::dynamic_pointer_cast<const OSQPModelConfig>(config)->settings;
+    const auto& osqp_config = std::dynamic_pointer_cast<const OSQPModelConfig>(config);
+    config_.settings = osqp_config->settings;
+    config_.update_workspace = osqp_config->update_workspace;
   }
 }
 
