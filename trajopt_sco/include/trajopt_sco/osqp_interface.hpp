@@ -53,13 +53,19 @@ class OSQPModel : public Model
   OSQPWorkspace* osqp_workspace_{ nullptr };
 
   /** Updates OSQP quadratic cost matrix from QuadExpr expression.
-   *  Transforms QuadExpr objective_ into the OSQP CSC matrix P_ */
-  bool updateObjective();
+   *  Transforms QuadExpr objective_ into the OSQP CSC matrix P_
+   * @param check_sparsity Check if the sparsity of the P matrix has changed
+   * @return True if check_sparsity = true and the sparsity of the P matrix has not changed
+   */
+  bool updateObjective(bool check_sparsity);
 
   /** Updates qpOASES constraints from AffExpr expression.
    *  Transforms AffExpr cntr_exprs_ and box bounds lbs_ and ubs_ into the
-   *  OSQP CSC matrix A_, and vectors lbA_ and ubA_ */
-  bool updateConstraints();
+   *  OSQP CSC matrix A_, and vectors lbA_ and ubA_
+   * @param check_sparsity Checks if the sparsity of the A matrix has changed
+   * @return True if check_sparsity = true and the sparsity of the A matrix has not changed
+   */
+  bool updateConstraints(bool check_sparsity);
 
   /** Creates or updates the solver and its workspace */
   void createOrUpdateSolver();

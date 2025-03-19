@@ -110,7 +110,7 @@ void OSQPModel::removeCnts(const CntVector& cnts)
     cnt.cnt_rep->removed = true;
 }
 
-bool OSQPModel::updateObjective()
+bool OSQPModel::updateObjective(bool check_sparsity)
 {
   const std::size_t n = vars_.size();
   osqp_data_.n = static_cast<c_int>(n);
@@ -126,7 +126,7 @@ bool OSQPModel::updateObjective()
 
   // Check if sparsity has changed
   bool sparsity_equal = false;
-  if (osqp_data_.P != nullptr && osqp_data_.P->n == osqp_data_.n && osqp_data_.P->m == osqp_data_.n &&
+  if (check_sparsity && osqp_data_.P != nullptr && osqp_data_.P->n == osqp_data_.n && osqp_data_.P->m == osqp_data_.n &&
       osqp_data_.P->nzmax == P_csc_data_.size())
   {
     sparsity_equal = memcmp(osqp_data_.P->p, P_column_pointers_.data(), static_cast<size_t>(osqp_data_.P->n) + 1) == 0;
@@ -147,7 +147,7 @@ bool OSQPModel::updateObjective()
   return sparsity_equal;
 }
 
-bool OSQPModel::updateConstraints()
+bool OSQPModel::updateConstraints(bool check_sparsity)
 {
   const std::size_t n = vars_.size();
   const std::size_t m = cnts_.size();
@@ -190,7 +190,7 @@ bool OSQPModel::updateConstraints()
 
   // Check if sparsity has changed
   bool sparsity_equal = false;
-  if (osqp_data_.A != nullptr && osqp_data_.A->n == osqp_data_.n && osqp_data_.A->m == osqp_data_.m &&
+  if (check_sparsity && osqp_data_.A != nullptr && osqp_data_.A->n == osqp_data_.n && osqp_data_.A->m == osqp_data_.m &&
       osqp_data_.A->nzmax == A_csc_data_.size())
   {
     sparsity_equal = memcmp(osqp_data_.A->p, A_column_pointers_.data(), static_cast<size_t>(osqp_data_.A->n) + 1) == 0;
@@ -215,8 +215,8 @@ bool OSQPModel::updateConstraints()
 
 void OSQPModel::createOrUpdateSolver()
 {
-  const bool P_sparsity_equal = updateObjective();
-  const bool A_sparsity_equal = updateConstraints();
+  const bool P_sparsity_equal = updateObjective(config_.update_workspace);
+  const bool A_sparsity_equal = updateConstraints(config_.update_workspace);
 
   // If sparsity did not change, update data, otherwise cleanup and setup
   bool need_setup = true;
