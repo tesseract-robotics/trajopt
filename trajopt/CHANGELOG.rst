@@ -2,8 +2,8 @@
 Changelog for package trajopt
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.29.0 (2025-03-20)
+-------------------
 * Fix CollisionEvaluatorType::CONTINUOUS
 * Leverage tesseract_collision CollisionEvaluatorType
 * Update to leverage std::filesystem
