@@ -2,6 +2,11 @@
 Changelog for package trajopt_sqp
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Update to leverage std::filesystem
+* Contributors: Levi Armstrong
+
 0.28.3 (2025-01-22)
 -------------------
 

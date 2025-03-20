@@ -2,6 +2,13 @@
 Changelog for package trajopt
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Fix CollisionEvaluatorType::CONTINUOUS
+* Leverage tesseract_collision CollisionEvaluatorType
+* Update to leverage std::filesystem
+* Contributors: Levi Armstrong, Roelof Oomen
+
 0.28.3 (2025-01-22)
 -------------------
 
