@@ -2,6 +2,11 @@
 Changelog for package trajopt
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Add tesseract:make_convex attribute to urdf files
+* Contributors: Levi Armstrong
+
 0.29.0 (2025-03-20)
 -------------------
 * Fix CollisionEvaluatorType::CONTINUOUS
