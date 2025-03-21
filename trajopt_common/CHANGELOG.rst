@@ -2,8 +2,8 @@
 Changelog for package trajopt_utils
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.29.1 (2025-03-20)
+-------------------
 * Add tesseract:make_convex attribute to urdf files
 * Contributors: Levi Armstrong
 
