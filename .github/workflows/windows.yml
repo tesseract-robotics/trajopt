@@ -38,6 +38,7 @@ jobs:
          benchmark tinyxml2 assimp orocos-kdl pcl lapack-reference boost-dll boost-filesystem boost-filesystem 
          boost-format
          boost-serialization boost-program-options boost-graph urdfdom ccd[double-precision] gtest jsoncpp
+         coin-or-ipopt
         triplet: x64-windows-release
         extra-args: --clean-after-build
         token: ${{ github.token }}
@@ -60,7 +61,6 @@ jobs:
       with:
         ccache-prefix: ${{ matrix.distro }}
         vcs-file: .github/workflows/windows_dependencies.repos
-        upstream-args: --cmake-args -G "Ninja" -DVCPKG_TARGET_TRIPLET=x64-windows-release -DCMAKE_BUILD_TYPE=Release -DBUILD_IPOPT=OFF -DBUILD_SNOPT=OFF
+        upstream-args: --cmake-args -G "Ninja" -DVCPKG_TARGET_TRIPLET=x64-windows-release -DCMAKE_BUILD_TYPE=Release -DBUILD_IPOPT=ON -DBUILD_SNOPT=OFF
         target-path: target_ws/src
-        target-args: --packages-ignore trajopt_ifopt trajopt_sqp --cmake-args -G "Ninja" -DVCPKG_TARGET_TRIPLET=x64-windows-release -DCMAKE_BUILD_TYPE=Release -DTRAJOPT_ENABLE_TESTING=ON
-        run-tests-args: --packages-ignore trajopt_ifopt trajopt_sqp
+        target-args: --cmake-args -G "Ninja" -DVCPKG_TARGET_TRIPLET=x64-windows-release -DCMAKE_BUILD_TYPE=Release -DTRAJOPT_ENABLE_TESTING=ON
