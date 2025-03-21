@@ -1613,7 +1613,7 @@ void CollisionTermInfo::fromJson(ProblemConstructionInfo& pci, const Json::Value
   FAIL_IF_FALSE(longest_valid_segment_length >= 0);
   FAIL_IF_FALSE((first_step >= 0) && (first_step < n_steps));
   FAIL_IF_FALSE((last_step >= first_step) && (last_step < n_steps));
-  FAIL_IF_FALSE(collision_evaluator_type <= 2);
+  FAIL_IF_FALSE(collision_evaluator_type <= 4);
   FAIL_IF_FALSE(safety_margin_buffer >= 0);
 
   evaluator_type = static_cast<tesseract_collision::CollisionEvaluatorType>(collision_evaluator_type);

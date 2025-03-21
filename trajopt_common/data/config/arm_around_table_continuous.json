@@ -17,7 +17,7 @@
     "type" : "collision",
     "name" : "collision",
     "params" : {
-      "evaluator_type" : 2,
+      "evaluator_type" : 4,
       "coeffs" : [20],
       "dist_pen" : [0.025],
       "longest_valid_segment_length" : 0.1

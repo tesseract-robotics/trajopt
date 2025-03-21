@@ -17,7 +17,7 @@
     "params" : {
       "coeffs" : [20],
       "dist_pen" : [0.025],
-      "evaluator_type" : 2,
+      "evaluator_type" : 4,
       "fixed_steps": [0, 5],
       "longest_valid_segment_length" : 0.02
     }

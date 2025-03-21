@@ -1,5 +1,5 @@
 <?xml version="1.0" ?>
-<robot name="boxbot" xmlns:xacro="http://ros.org/wiki/xacro">
+<robot name="boxbot" xmlns:xacro="http://ros.org/wiki/xacro" tesseract:make_convex="true">
   <xacro:include filename="$(find trajopt)/test/data/boxbot_macro.xacro"/>
   <xacro:include filename="$(find trajopt)/test/data/box_1m_macro.xacro"/>
 
