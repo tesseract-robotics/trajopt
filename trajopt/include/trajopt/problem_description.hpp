@@ -603,7 +603,7 @@ struct CollisionTermInfo : public TermInfo
   std::vector<int> fixed_steps;
 
   /** @brief The collision checking configuration */
-  std::vector<trajopt_common::TrajOptCollisionConfig> config;
+  trajopt_common::TrajOptCollisionConfig config;
 
   /** @brief Used to add term to pci from json */
   void fromJson(ProblemConstructionInfo& pci, const Json::Value& v) override;
