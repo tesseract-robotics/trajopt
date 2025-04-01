@@ -102,7 +102,17 @@ struct TrajOptCollisionConfig : public tesseract_collision::CollisionCheckConfig
   using ConstPtr = std::shared_ptr<const TrajOptCollisionConfig>;
 
   TrajOptCollisionConfig() = default;
-  TrajOptCollisionConfig(double margin, double coeff);
+  TrajOptCollisionConfig(
+      double margin,
+      double coeff,
+      tesseract_collision::ContactRequest request = tesseract_collision::ContactRequest(),
+      tesseract_collision::CollisionEvaluatorType type = tesseract_collision::CollisionEvaluatorType::DISCRETE,
+      double longest_valid_segment_length = 0.005,
+      tesseract_collision::CollisionCheckProgramType check_program_mode =
+          tesseract_collision::CollisionCheckProgramType::ALL);
+
+  /** @brief If true, a collision will be added to the problem. Default: true*/
+  bool enabled = true;
 
   /** @brief The collision coeff/weight */
   CollisionCoeffData collision_coeff_data;
@@ -112,11 +122,18 @@ struct TrajOptCollisionConfig : public tesseract_collision::CollisionCheckConfig
   double collision_margin_buffer{ 0 };
 
   /**
-   * @brief This is only used by trajopt_ifopt because the constraints size must be fixed.
-   * This define the max number of link pairs to be considered.
+   * @brief This define the max number of link pairs to be considered.
    * It still finds all contacts but sorts based on the worst uses those up to the max_num_cnt.
+   * @note This is only used by trajopt_ifopt because the constraints size must be fixed.
    */
   int max_num_cnt{ 3 };
+
+  /**
+   * @brief Use the weighted sum for each link pair. This reduces the number equations added to the problem
+   * When enable it is good to start with a coefficient of 1 otherwise 20 is a good starting point.
+   * @note This is only used by trajopt and not trajopt_ifopt
+   */
+  bool use_weighted_sum{ false };
 
 protected:
   friend class boost::serialization::access;

@@ -85,7 +85,7 @@ struct GradientResults
   std::array<LinkGradientResults, 2> gradients;
 
   /** @brief The link pair safety margin data */
-  const std::array<double, 2>& data;
+  std::array<double, 2> data;
 };
 
 /**
@@ -105,10 +105,7 @@ struct CollisionEvaluator
   // NOLINTNEXTLINE
   CollisionEvaluator(std::shared_ptr<const tesseract_kinematics::JointGroup> manip,
                      std::shared_ptr<const tesseract_environment::Environment> env,
-                     std::shared_ptr<const trajopt_common::SafetyMarginData> safety_margin_data,
-                     tesseract_collision::ContactTestType contact_test_type,
-                     double longest_valid_segment_length,
-                     double safety_margin_buffer,
+                     std::shared_ptr<const trajopt_common::TrajOptCollisionConfig> collision_config,
                      bool dynamic_environment = false);
   virtual ~CollisionEvaluator() = default;
   CollisionEvaluator(const CollisionEvaluator&) = default;
@@ -221,7 +218,7 @@ struct CollisionEvaluator
    * @brief Get the safety margin information.
    * @return Safety margin information
    */
-  std::shared_ptr<const trajopt_common::SafetyMarginData> getSafetyMarginData() const;
+  const trajopt_common::TrajOptCollisionConfig& getCollisionConfig() const;
 
   /** @brief The collision results cached results */
 
@@ -233,12 +230,10 @@ protected:
   std::vector<std::string> env_active_link_names_;
   std::vector<std::string> manip_active_link_names_;
   std::vector<std::string> diff_active_link_names_;
-  std::shared_ptr<const trajopt_common::SafetyMarginData> safety_margin_data_;
-  double safety_margin_buffer_{ 0 };
-  tesseract_collision::ContactTestType contact_test_type_{ tesseract_collision::ContactTestType::ALL };
-  double longest_valid_segment_length_{ 0.05 };
+  std::shared_ptr<const trajopt_common::TrajOptCollisionConfig> collision_config_;
   sco::VarVector vars0_;
   sco::VarVector vars1_;
+  std::array<bool, 2> position_vars_fixed_{ false, false };
   CollisionExpressionEvaluatorType evaluator_type_{ CollisionExpressionEvaluatorType::START_FREE_END_FREE };
   std::function<tesseract_common::TransformMap(const Eigen::Ref<const Eigen::VectorXd>& joint_values)> get_state_fn_;
   bool dynamic_environment_{ false };
@@ -379,11 +374,9 @@ public:
 
   SingleTimestepCollisionEvaluator(std::shared_ptr<const tesseract_kinematics::JointGroup> manip,
                                    std::shared_ptr<const tesseract_environment::Environment> env,
-                                   std::shared_ptr<const trajopt_common::SafetyMarginData> safety_margin_data,
-                                   tesseract_collision::ContactTestType contact_test_type,
+                                   std::shared_ptr<const trajopt_common::TrajOptCollisionConfig> collision_config,
                                    sco::VarVector vars,
                                    CollisionExpressionEvaluatorType type,
-                                   double safety_margin_buffer,
                                    bool dynamic_environment = false);
   /**
   @brief linearize all contact distances in terms of robot dofs
@@ -423,13 +416,10 @@ public:
 
   CastCollisionEvaluator(std::shared_ptr<const tesseract_kinematics::JointGroup> manip,
                          std::shared_ptr<const tesseract_environment::Environment> env,
-                         std::shared_ptr<const trajopt_common::SafetyMarginData> safety_margin_data,
-                         tesseract_collision::ContactTestType contact_test_type,
-                         double longest_valid_segment_length,
+                         std::shared_ptr<const trajopt_common::TrajOptCollisionConfig> collision_config,
                          sco::VarVector vars0,
                          sco::VarVector vars1,
-                         CollisionExpressionEvaluatorType type,
-                         double safety_margin_buffer);
+                         CollisionExpressionEvaluatorType type);
   void CalcDistExpressions(const DblVec& x,
                            sco::AffExprVector& exprs,
                            std::vector<std::array<double, 2>>& exprs_data) override;
@@ -463,13 +453,10 @@ public:
 
   DiscreteCollisionEvaluator(std::shared_ptr<const tesseract_kinematics::JointGroup> manip,
                              std::shared_ptr<const tesseract_environment::Environment> env,
-                             std::shared_ptr<const trajopt_common::SafetyMarginData> safety_margin_data,
-                             tesseract_collision::ContactTestType contact_test_type,
-                             double longest_valid_segment_length,
+                             std::shared_ptr<const trajopt_common::TrajOptCollisionConfig> collision_config,
                              sco::VarVector vars0,
                              sco::VarVector vars1,
-                             CollisionExpressionEvaluatorType type,
-                             double safety_margin_buffer);
+                             CollisionExpressionEvaluatorType type);
   void CalcDistExpressions(const DblVec& x,
                            sco::AffExprVector& exprs,
                            std::vector<std::array<double, 2>>& exprs_data) override;
@@ -497,22 +484,17 @@ public:
   /* constructor for single timestep */
   CollisionCost(std::shared_ptr<const tesseract_kinematics::JointGroup> manip,
                 std::shared_ptr<const tesseract_environment::Environment> env,
-                std::shared_ptr<const trajopt_common::SafetyMarginData> safety_margin_data,
-                tesseract_collision::ContactTestType contact_test_type,
+                std::shared_ptr<const trajopt_common::TrajOptCollisionConfig> collision_config,
                 sco::VarVector vars,
-                CollisionExpressionEvaluatorType type,
-                double safety_margin_buffer);
+                CollisionExpressionEvaluatorType type);
   /* constructor for discrete continuous and cast continuous cost */
   CollisionCost(std::shared_ptr<const tesseract_kinematics::JointGroup> manip,
                 std::shared_ptr<const tesseract_environment::Environment> env,
-                std::shared_ptr<const trajopt_common::SafetyMarginData> safety_margin_data,
-                tesseract_collision::ContactTestType contact_test_type,
-                double longest_valid_segment_length,
+                std::shared_ptr<const trajopt_common::TrajOptCollisionConfig> collision_config,
                 sco::VarVector vars0,
                 sco::VarVector vars1,
                 CollisionExpressionEvaluatorType type,
-                bool discrete,
-                double safety_margin_buffer);
+                bool discrete);
   sco::ConvexObjective::Ptr convex(const DblVec& x, sco::Model* model) override;
   double value(const DblVec&) override;
   void Plot(const std::shared_ptr<tesseract_visualization::Visualization>& plotter, const DblVec& x) override;
@@ -528,22 +510,17 @@ public:
   /* constructor for single timestep */
   CollisionConstraint(std::shared_ptr<const tesseract_kinematics::JointGroup> manip,
                       std::shared_ptr<const tesseract_environment::Environment> env,
-                      std::shared_ptr<const trajopt_common::SafetyMarginData> safety_margin_data,
-                      tesseract_collision::ContactTestType contact_test_type,
+                      std::shared_ptr<const trajopt_common::TrajOptCollisionConfig> collision_config,
                       sco::VarVector vars,
-                      CollisionExpressionEvaluatorType type,
-                      double safety_margin_buffer);
+                      CollisionExpressionEvaluatorType type);
   /* constructor for discrete continuous and cast continuous cost */
   CollisionConstraint(std::shared_ptr<const tesseract_kinematics::JointGroup> manip,
                       std::shared_ptr<const tesseract_environment::Environment> env,
-                      std::shared_ptr<const trajopt_common::SafetyMarginData> safety_margin_data,
-                      tesseract_collision::ContactTestType contact_test_type,
-                      double longest_valid_segment_length,
+                      std::shared_ptr<const trajopt_common::TrajOptCollisionConfig> collision_config,
                       sco::VarVector vars0,
                       sco::VarVector vars1,
                       CollisionExpressionEvaluatorType type,
-                      bool discrete,
-                      double safety_margin_buffer);
+                      bool discrete);
   sco::ConvexConstraints::Ptr convex(const DblVec& x, sco::Model* model) override;
   DblVec value(const DblVec&) override;
   void Plot(const DblVec& x);

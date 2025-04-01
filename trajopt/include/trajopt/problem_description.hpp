@@ -10,6 +10,7 @@ TRAJOPT_IGNORE_WARNINGS_POP
 #include <tesseract_collision/core/types.h>
 
 #include <trajopt/typedefs.hpp>
+#include <trajopt_common/collision_types.h>
 #include <trajopt_common/utils.hpp>
 
 #include <trajopt_sco/optimizers.hpp>
@@ -598,38 +599,11 @@ struct CollisionTermInfo : public TermInfo
   /** @brief first_step and last_step are inclusive */
   int first_step{ -1 }, last_step{ -1 };
 
-  /** @brief Indicate the type of collision checking that should be used. */
-  tesseract_collision::CollisionEvaluatorType evaluator_type{ tesseract_collision::CollisionEvaluatorType::DISCRETE };
-
-  /**
-   * @brief Use the weighted sum for each link pair. This reduces the number equations added to the problem
-   * When enable it is good to start with a coefficient of 1 otherwise 20 is a good starting point.
-   */
-  bool use_weighted_sum{ false };
-
   /** @brief Indicated if a step is fixed and its variables cannot be changed */
   std::vector<int> fixed_steps;
 
-  /** @brief Set the resolution at which state validity needs to be verified in order for a motion between two states
-   * to be considered valid. If norm(state1 - state0) > longest_valid_segment_length.
-   *
-   * Note: This gets converted to longest_valid_segment_fraction.
-   *       longest_valid_segment_fraction = longest_valid_segment_length / state_space.getMaximumExtent()
-   */
-  double longest_valid_segment_length{ 0.5 };
-
-  /** @brief A buffer added to the collision margin distance. Contact results that are within the safety margin buffer
-  distance but greater than the safety margin distance (i.e. close but not in collision) will be evaluated but will not
-  contribute costs to the optimization problem. This helps keep the solution away from collision constraint conditions
-  when the safety margin distance is small.*/
-  double safety_margin_buffer{ 0.05 };
-
-  /** @brief Set the contact test type that should be used. */
-  tesseract_collision::ContactTestType contact_test_type = tesseract_collision::ContactTestType::ALL;
-
-  /** @brief Contains distance penalization data: Safety Margin, Coeff used during */
-  /** @brief optimization, etc. */
-  std::vector<trajopt_common::SafetyMarginData::Ptr> info;
+  /** @brief The collision checking configuration */
+  std::vector<trajopt_common::TrajOptCollisionConfig> config;
 
   /** @brief Used to add term to pci from json */
   void fromJson(ProblemConstructionInfo& pci, const Json::Value& v) override;

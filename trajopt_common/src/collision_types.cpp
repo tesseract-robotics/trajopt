@@ -72,8 +72,14 @@ void CollisionCoeffData::serialize(Archive& ar, const unsigned int /*version*/)
   ar& BOOST_SERIALIZATION_NVP(zero_coeff_);
 }
 
-TrajOptCollisionConfig::TrajOptCollisionConfig(double margin, double coeff)
-  : CollisionCheckConfig(margin), collision_coeff_data(coeff)
+TrajOptCollisionConfig::TrajOptCollisionConfig(double margin,
+                                               double coeff,
+                                               tesseract_collision::ContactRequest request,
+                                               tesseract_collision::CollisionEvaluatorType type,
+                                               double longest_valid_segment_length,
+                                               tesseract_collision::CollisionCheckProgramType check_program_mode)
+  : CollisionCheckConfig(margin, std::move(request), type, longest_valid_segment_length, check_program_mode)
+  , collision_coeff_data(coeff)
 {
 }
 
@@ -81,9 +87,11 @@ template <class Archive>
 void TrajOptCollisionConfig::serialize(Archive& ar, const unsigned int /*version*/)
 {
   ar& BOOST_SERIALIZATION_BASE_OBJECT_NVP(CollisionCheckConfig);
+  ar& BOOST_SERIALIZATION_NVP(enabled);
   ar& BOOST_SERIALIZATION_NVP(collision_coeff_data);
   ar& BOOST_SERIALIZATION_NVP(collision_margin_buffer);
   ar& BOOST_SERIALIZATION_NVP(max_num_cnt);
+  ar& BOOST_SERIALIZATION_NVP(use_weighted_sum);
 }
 
 double LinkMaxError::getMaxError() const
