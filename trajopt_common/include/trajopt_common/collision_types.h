@@ -119,7 +119,7 @@ struct TrajOptCollisionConfig : public tesseract_collision::CollisionCheckConfig
 
   /** @brief Additional collision margin that is added for the collision check but is not used when calculating the
    * error */
-  double collision_margin_buffer{ 0 };
+  double collision_margin_buffer{ 0.01 };
 
   /**
    * @brief This define the max number of link pairs to be considered.
