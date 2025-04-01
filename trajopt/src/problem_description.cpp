@@ -1637,34 +1637,17 @@ void CollisionTermInfo::fromJson(ProblemConstructionInfo& pci, const Json::Value
   FAIL_IF_FALSE(contact_type < 3);
   auto contact_request_type = static_cast<tesseract_collision::ContactTestType>(contact_type);
 
-  DblVec coeffs, dist_pen;
-  json_marshal::childFromJson(params, coeffs, "coeffs");
   int n_terms = last_step - first_step + 1;
-  if (coeffs.size() == 1)
-    coeffs = DblVec(static_cast<std::size_t>(n_terms), coeffs[0]);
-  else if (static_cast<int>(coeffs.size()) != n_terms)
-  {
-    PRINT_AND_THROW(boost::format("wrong size: coeffs. expected %i got %i") % n_terms % coeffs.size());
-  }
+  double coeffs{ 20 };
+  double dist_pen{ 0.0 };
+  json_marshal::childFromJson(params, coeffs, "coeffs");
   json_marshal::childFromJson(params, dist_pen, "dist_pen");
-  if (dist_pen.size() == 1)
-    dist_pen = DblVec(static_cast<std::size_t>(n_terms), dist_pen[0]);
-  else if (static_cast<int>(dist_pen.size()) != n_terms)
-  {
-    PRINT_AND_THROW(boost::format("wrong size: dist_pen. expected %i got %i") % n_terms % dist_pen.size());
-  }
 
   // Create Contact Distance Data for each timestep
-  config.reserve(static_cast<std::size_t>(n_terms));
-  for (int i = first_step; i <= last_step; ++i)
-  {
-    auto index = static_cast<std::size_t>(i - first_step);
-    trajopt_common::TrajOptCollisionConfig sub_config(
-        dist_pen[index], coeffs[index], contact_request_type, evaluator_type, longest_valid_segment_length);
-    sub_config.collision_margin_buffer = collision_margin_buffer;
-    sub_config.use_weighted_sum = use_weighted_sum;
-    config.push_back(sub_config);
-  }
+  config = trajopt_common::TrajOptCollisionConfig(
+      dist_pen, coeffs, contact_request_type, evaluator_type, longest_valid_segment_length);
+  config.collision_margin_buffer = collision_margin_buffer;
+  config.use_weighted_sum = use_weighted_sum;
 
   // Check if data was set for individual pairs
   if (params.isMember("pairs"))
@@ -1685,39 +1668,17 @@ void CollisionTermInfo::fromJson(ProblemConstructionInfo& pci, const Json::Value
         PRINT_AND_THROW(boost::format("wrong size: pair. expected > 0 got %i") % pair.size());
       }
 
-      DblVec pair_coeffs;
+      double pair_coeffs{ 20 };
+      double pair_dist_pen{ 0 };
       json_marshal::childFromJson(*it, pair_coeffs, "coeffs");
-      if (pair_coeffs.size() == 1)
-      {
-        pair_coeffs = DblVec(static_cast<std::size_t>(n_terms), pair_coeffs[0]);
-      }
-      else if (static_cast<int>(pair_coeffs.size()) != n_terms)
-      {
-        PRINT_AND_THROW(boost::format("wrong size: coeffs. expected %i got %i") % n_terms % pair_coeffs.size());
-      }
-
-      DblVec pair_dist_pen;
       json_marshal::childFromJson(*it, pair_dist_pen, "dist_pen");
-      if (pair_dist_pen.size() == 1)
-      {
-        pair_dist_pen = DblVec(static_cast<std::size_t>(n_terms), pair_dist_pen[0]);
-      }
-      else if (static_cast<int>(pair_dist_pen.size()) != n_terms)
-      {
-        PRINT_AND_THROW(boost::format("wrong size: dist_pen. expected %i got %i") % n_terms % pair_dist_pen.size());
-      }
 
-      for (auto i = first_step; i <= last_step; ++i)
+      for (const auto& p : pair)
       {
-        auto index = static_cast<std::size_t>(i - first_step);
-        trajopt_common::TrajOptCollisionConfig& data = config[index];
-        for (const auto& p : pair)
-        {
-          data.contact_manager_config.margin_data.setPairCollisionMargin(link, p, pair_dist_pen[index]);
-          data.contact_manager_config.margin_data_override_type =
-              tesseract_collision::CollisionMarginOverrideType::MODIFY;
-          data.collision_coeff_data.setPairCollisionCoeff(link, p, pair_coeffs[index]);
-        }
+        config.contact_manager_config.margin_data.setPairCollisionMargin(link, p, pair_dist_pen);
+        config.contact_manager_config.margin_data_override_type =
+            tesseract_collision::CollisionMarginOverrideType::MODIFY;
+        config.collision_coeff_data.setPairCollisionCoeff(link, p, pair_coeffs);
       }
     }
   }
@@ -1739,17 +1700,17 @@ void CollisionTermInfo::fromJson(ProblemConstructionInfo& pci, const Json::Value
 void CollisionTermInfo::hatch(TrajOptProb& prob)
 {
   const int n_dof = static_cast<int>(prob.GetKin()->numJoints());
-  const auto evaluator_type = config.front().type;
-  const double longest_valid_segment_length = config.front().longest_valid_segment_length;
-  const bool use_weighted_sum = config.front().use_weighted_sum;
+  // const auto evaluator_type = config.front().type;
+  // const double longest_valid_segment_length = config.front().longest_valid_segment_length;
+  // const bool use_weighted_sum = config.front().use_weighted_sum;
   if (term_type == TermType::TT_COST)
   {
-    if (evaluator_type != tesseract_collision::CollisionEvaluatorType::DISCRETE)
+    if (config.type != tesseract_collision::CollisionEvaluatorType::DISCRETE)
     {
-      auto lvs = (evaluator_type == tesseract_collision::CollisionEvaluatorType::CONTINUOUS) ?
+      auto lvs = (config.type == tesseract_collision::CollisionEvaluatorType::CONTINUOUS) ?
                      std::numeric_limits<double>::max() :
-                     longest_valid_segment_length;
-      bool discrete_continuous = (evaluator_type == tesseract_collision::CollisionEvaluatorType::LVS_DISCRETE);
+                     config.longest_valid_segment_length;
+      bool discrete_continuous = (config.type == tesseract_collision::CollisionEvaluatorType::LVS_DISCRETE);
       for (int i = first_step; i < last_step; ++i)
       {
         const bool current_fixed = std::find(fixed_steps.begin(), fixed_steps.end(), i) != fixed_steps.end();
@@ -1758,19 +1719,19 @@ void CollisionTermInfo::hatch(TrajOptProb& prob)
         CollisionExpressionEvaluatorType expression_evaluator_type{};
         if (!current_fixed && !next_fixed)
         {
-          expression_evaluator_type = (use_weighted_sum) ?
+          expression_evaluator_type = (config.use_weighted_sum) ?
                                           CollisionExpressionEvaluatorType::START_FREE_END_FREE_WEIGHTED_SUM :
                                           CollisionExpressionEvaluatorType::START_FREE_END_FREE;
         }
         else if (current_fixed)
         {
-          expression_evaluator_type = (use_weighted_sum) ?
+          expression_evaluator_type = (config.use_weighted_sum) ?
                                           CollisionExpressionEvaluatorType::START_FIXED_END_FREE_WEIGHTED_SUM :
                                           CollisionExpressionEvaluatorType::START_FIXED_END_FREE;
         }
         else if (next_fixed)
         {
-          expression_evaluator_type = (use_weighted_sum) ?
+          expression_evaluator_type = (config.use_weighted_sum) ?
                                           CollisionExpressionEvaluatorType::START_FREE_END_FIXED_WEIGHTED_SUM :
                                           CollisionExpressionEvaluatorType::START_FREE_END_FIXED;
         }
@@ -1779,14 +1740,13 @@ void CollisionTermInfo::hatch(TrajOptProb& prob)
           PRINT_AND_THROW("Currently two adjacent fixed steps are not supported in collision term.");
         }
 
-        auto c = std::make_shared<CollisionCost>(
-            prob.GetKin(),
-            prob.GetEnv(),
-            std::make_shared<trajopt_common::TrajOptCollisionConfig>(config[static_cast<std::size_t>(i - first_step)]),
-            prob.GetVarRow(i, 0, n_dof),
-            prob.GetVarRow(i + 1, 0, n_dof),
-            expression_evaluator_type,
-            discrete_continuous);
+        auto c = std::make_shared<CollisionCost>(prob.GetKin(),
+                                                 prob.GetEnv(),
+                                                 std::make_shared<trajopt_common::TrajOptCollisionConfig>(config),
+                                                 prob.GetVarRow(i, 0, n_dof),
+                                                 prob.GetVarRow(i + 1, 0, n_dof),
+                                                 expression_evaluator_type,
+                                                 discrete_continuous);
 
         prob.addCost(c);
         prob.getCosts().back()->setName((boost::format("%s_%i") % name.c_str() % i).str());
@@ -1795,16 +1755,15 @@ void CollisionTermInfo::hatch(TrajOptProb& prob)
     else
     {
       CollisionExpressionEvaluatorType expression_evaluator_type =
-          (use_weighted_sum) ? CollisionExpressionEvaluatorType::SINGLE_TIME_STEP_WEIGHTED_SUM :
-                               CollisionExpressionEvaluatorType::SINGLE_TIME_STEP;
+          (config.use_weighted_sum) ? CollisionExpressionEvaluatorType::SINGLE_TIME_STEP_WEIGHTED_SUM :
+                                      CollisionExpressionEvaluatorType::SINGLE_TIME_STEP;
       for (int i = first_step; i <= last_step; ++i)
       {
         if (std::find(fixed_steps.begin(), fixed_steps.end(), i) == fixed_steps.end())
         {
           auto c = std::make_shared<CollisionCost>(prob.GetKin(),
                                                    prob.GetEnv(),
-                                                   std::make_shared<trajopt_common::TrajOptCollisionConfig>(
-                                                       config[static_cast<std::size_t>(i - first_step)]),
+                                                   std::make_shared<trajopt_common::TrajOptCollisionConfig>(config),
                                                    prob.GetVarRow(i, 0, n_dof),
                                                    expression_evaluator_type);
 
@@ -1816,12 +1775,12 @@ void CollisionTermInfo::hatch(TrajOptProb& prob)
   }
   else
   {  // ALMOST COPIED
-    if (evaluator_type != tesseract_collision::CollisionEvaluatorType::DISCRETE)
+    if (config.type != tesseract_collision::CollisionEvaluatorType::DISCRETE)
     {
-      auto lvs = (evaluator_type == tesseract_collision::CollisionEvaluatorType::CONTINUOUS) ?
+      auto lvs = (config.type == tesseract_collision::CollisionEvaluatorType::CONTINUOUS) ?
                      std::numeric_limits<double>::max() :
-                     longest_valid_segment_length;
-      bool discrete_continuous = (evaluator_type == tesseract_collision::CollisionEvaluatorType::LVS_DISCRETE);
+                     config.longest_valid_segment_length;
+      bool discrete_continuous = (config.type == tesseract_collision::CollisionEvaluatorType::LVS_DISCRETE);
       for (int i = first_step; i < last_step; ++i)
       {
         const bool current_fixed = std::find(fixed_steps.begin(), fixed_steps.end(), i) != fixed_steps.end();
@@ -1830,19 +1789,19 @@ void CollisionTermInfo::hatch(TrajOptProb& prob)
         CollisionExpressionEvaluatorType expression_evaluator_type{};
         if (!current_fixed && !next_fixed)
         {
-          expression_evaluator_type = (use_weighted_sum) ?
+          expression_evaluator_type = (config.use_weighted_sum) ?
                                           CollisionExpressionEvaluatorType::START_FREE_END_FREE_WEIGHTED_SUM :
                                           CollisionExpressionEvaluatorType::START_FREE_END_FREE;
         }
         else if (current_fixed)
         {
-          expression_evaluator_type = (use_weighted_sum) ?
+          expression_evaluator_type = (config.use_weighted_sum) ?
                                           CollisionExpressionEvaluatorType::START_FIXED_END_FREE_WEIGHTED_SUM :
                                           CollisionExpressionEvaluatorType::START_FIXED_END_FREE;
         }
         else if (next_fixed)
         {
-          expression_evaluator_type = (use_weighted_sum) ?
+          expression_evaluator_type = (config.use_weighted_sum) ?
                                           CollisionExpressionEvaluatorType::START_FREE_END_FIXED_WEIGHTED_SUM :
                                           CollisionExpressionEvaluatorType::START_FREE_END_FIXED;
         }
@@ -1851,14 +1810,13 @@ void CollisionTermInfo::hatch(TrajOptProb& prob)
           PRINT_AND_THROW("Currently two adjacent fixed steps are not supported in collision term.");
         }
 
-        auto c = std::make_shared<CollisionConstraint>(
-            prob.GetKin(),
-            prob.GetEnv(),
-            std::make_shared<trajopt_common::TrajOptCollisionConfig>(config[static_cast<std::size_t>(i - first_step)]),
-            prob.GetVarRow(i, 0, n_dof),
-            prob.GetVarRow(i + 1, 0, n_dof),
-            expression_evaluator_type,
-            discrete_continuous);
+        auto c = std::make_shared<CollisionConstraint>(prob.GetKin(),
+                                                       prob.GetEnv(),
+                                                       std::make_shared<trajopt_common::TrajOptCollisionConfig>(config),
+                                                       prob.GetVarRow(i, 0, n_dof),
+                                                       prob.GetVarRow(i + 1, 0, n_dof),
+                                                       expression_evaluator_type,
+                                                       discrete_continuous);
 
         prob.addIneqConstraint(c);
         prob.getIneqConstraints().back()->setName((boost::format("%s_%i") % name.c_str() % i).str());
@@ -1867,18 +1825,18 @@ void CollisionTermInfo::hatch(TrajOptProb& prob)
     else
     {
       CollisionExpressionEvaluatorType expression_evaluator_type =
-          (use_weighted_sum) ? CollisionExpressionEvaluatorType::SINGLE_TIME_STEP_WEIGHTED_SUM :
-                               CollisionExpressionEvaluatorType::SINGLE_TIME_STEP;
+          (config.use_weighted_sum) ? CollisionExpressionEvaluatorType::SINGLE_TIME_STEP_WEIGHTED_SUM :
+                                      CollisionExpressionEvaluatorType::SINGLE_TIME_STEP;
       for (int i = first_step; i <= last_step; ++i)
       {
         if (std::find(fixed_steps.begin(), fixed_steps.end(), i) == fixed_steps.end())
         {
-          auto c = std::make_shared<CollisionConstraint>(prob.GetKin(),
-                                                         prob.GetEnv(),
-                                                         std::make_shared<trajopt_common::TrajOptCollisionConfig>(
-                                                             config[static_cast<std::size_t>(i - first_step)]),
-                                                         prob.GetVarRow(i, 0, n_dof),
-                                                         expression_evaluator_type);
+          auto c =
+              std::make_shared<CollisionConstraint>(prob.GetKin(),
+                                                    prob.GetEnv(),
+                                                    std::make_shared<trajopt_common::TrajOptCollisionConfig>(config),
+                                                    prob.GetVarRow(i, 0, n_dof),
+                                                    expression_evaluator_type);
 
           prob.addIneqConstraint(c);
           prob.getIneqConstraints().back()->setName((boost::format("%s_%i") % name.c_str() % i).str());
