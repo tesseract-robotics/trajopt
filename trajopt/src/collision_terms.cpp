@@ -21,6 +21,8 @@ TRAJOPT_IGNORE_WARNINGS_POP
 #include <trajopt_common/eigen_conversions.hpp>
 #include <trajopt_common/logging.hpp>
 #include <trajopt_common/stl_to_string.hpp>
+#include <trajopt_common/collision_types.h>
+#include <trajopt_common/collision_utils.h>
 #include <trajopt_common/utils.hpp>
 
 namespace trajopt
@@ -251,8 +253,11 @@ GradientResults CollisionEvaluator::GetGradient(const Eigen::VectorXd& dofvals,
                                                 bool isTimestep1)
 {
   // Contains the contact distance threshold and coefficient for the given link pair
-  const std::array<double, 2>& data =
-      safety_margin_data_->getPairSafetyMarginData(contact_result.link_names[0], contact_result.link_names[1]);
+  const double dist = collision_config_->contact_manager_config.margin_data.getPairCollisionMargin(
+      contact_result.link_names[0], contact_result.link_names[1]);
+  const double coeff = collision_config_->collision_coeff_data.getPairCollisionCoeff(contact_result.link_names[0],
+                                                                                     contact_result.link_names[1]);
+  const std::array<double, 2> data{ dist, coeff };
   return GetGradient(dofvals, contact_result, data, isTimestep1);
 }
 
@@ -324,14 +329,17 @@ GradientResults CollisionEvaluator::GetGradient(const Eigen::VectorXd& dofvals0,
                                                 bool isTimestep1)
 {
   // Contains the contact distance threshold and coefficient for the given link pair
-  const std::array<double, 2>& data =
-      safety_margin_data_->getPairSafetyMarginData(contact_result.link_names[0], contact_result.link_names[1]);
+  const double dist = collision_config_->contact_manager_config.margin_data.getPairCollisionMargin(
+      contact_result.link_names[0], contact_result.link_names[1]);
+  const double coeff = collision_config_->collision_coeff_data.getPairCollisionCoeff(contact_result.link_names[0],
+                                                                                     contact_result.link_names[1]);
+  const std::array<double, 2> data{ dist, coeff };
   return GetGradient(dofvals0, dofvals1, contact_result, data, isTimestep1);
 }
 
-std::shared_ptr<const trajopt_common::SafetyMarginData> CollisionEvaluator::getSafetyMarginData() const
+const trajopt_common::TrajOptCollisionConfig& CollisionEvaluator::getCollisionConfig() const
 {
-  return safety_margin_data_;
+  return *collision_config_;
 }
 
 void CollisionEvaluator::CollisionsToDistanceExpressions(sco::AffExprVector& exprs,
@@ -409,8 +417,11 @@ void CollisionEvaluator::CollisionsToDistanceExpressionsW(sco::AffExprVector& ex
     dist_grad[1] = Eigen::VectorXd::Zero(manip_->numJoints());
 
     // Contains the contact distance threshold and coefficient for the given link pair
-    const std::array<double, 2>& data =
-        safety_margin_data_->getPairSafetyMarginData(pair.first.first, pair.first.second);
+    const double dist = collision_config_->contact_manager_config.margin_data.getPairCollisionMargin(pair.first.first,
+                                                                                                     pair.first.second);
+    const double coeff =
+        collision_config_->collision_coeff_data.getPairCollisionCoeff(pair.first.first, pair.first.second);
+    const std::array<double, 2> data{ dist, coeff };
 
     for (const auto& res : pair.second)
     {
@@ -429,8 +440,8 @@ void CollisionEvaluator::CollisionsToDistanceExpressionsW(sco::AffExprVector& ex
           if (res.distance < worst_dist)
             worst_dist = res.distance;
 
-          const double weight =
-              100.0 * sco::pospart(grad.data[static_cast<long>(i)] + safety_margin_buffer_ - res.distance);
+          const double weight = 100.0 * sco::pospart(grad.data[static_cast<long>(i)] +
+                                                     collision_config_->collision_margin_buffer - res.distance);
           total_weight[i] += weight;
           dist_grad[i] += (weight * grad.gradients[i].gradient);
         }
@@ -501,8 +512,11 @@ void CollisionEvaluator::CollisionsToDistanceExpressionsContinuousW(
     dist_grad[1] = Eigen::VectorXd::Zero(manip_->numJoints());
 
     // Contains the contact distance threshold and coefficient for the given link pair
-    const std::array<double, 2>& data =
-        safety_margin_data_->getPairSafetyMarginData(pair.first.first, pair.first.second);
+    const double dist = collision_config_->contact_manager_config.margin_data.getPairCollisionMargin(pair.first.first,
+                                                                                                     pair.first.second);
+    const double coeff =
+        collision_config_->collision_coeff_data.getPairCollisionCoeff(pair.first.first, pair.first.second);
+    const std::array<double, 2> data{ dist, coeff };
 
     for (const auto& res : pair.second)
     {
@@ -524,8 +538,8 @@ void CollisionEvaluator::CollisionsToDistanceExpressionsContinuousW(
           if (res.distance < worst_dist)
             worst_dist = res.distance;
 
-          const double weight =
-              100.0 * sco::pospart(grad.data[static_cast<long>(i)] + safety_margin_buffer_ - res.distance);
+          const double weight = 100.0 * sco::pospart(grad.data[static_cast<long>(i)] +
+                                                     collision_config_->collision_margin_buffer - res.distance);
           total_weight[i] += weight;
           dist_grad[i] += (weight * grad.gradients[i].gradient);
         }
@@ -566,17 +580,11 @@ void CollisionEvaluator::CollisionsToDistanceExpressionsContinuousW(
 
 CollisionEvaluator::CollisionEvaluator(tesseract_kinematics::JointGroup::ConstPtr manip,
                                        tesseract_environment::Environment::ConstPtr env,
-                                       trajopt_common::SafetyMarginData::ConstPtr safety_margin_data,
-                                       tesseract_collision::ContactTestType contact_test_type,
-                                       double longest_valid_segment_length,
-                                       double safety_margin_buffer,
+                                       std::shared_ptr<const trajopt_common::TrajOptCollisionConfig> collision_config,
                                        bool dynamic_environment)
   : manip_(std::move(manip))
   , env_(std::move(env))
-  , safety_margin_data_(std::move(safety_margin_data))
-  , safety_margin_buffer_(safety_margin_buffer)
-  , contact_test_type_(contact_test_type)
-  , longest_valid_segment_length_(longest_valid_segment_length)
+  , collision_config_(std::move(collision_config))
   , dynamic_environment_(dynamic_environment)
 {
   manip_active_link_names_ = manip_->getActiveLinkNames();
@@ -873,7 +881,7 @@ void CollisionEvaluator::removeInvalidContactResults(tesseract_collision::Contac
           }
         }
 
-        return (!((pair_data[0] + safety_margin_buffer_) > r.distance));
+        return (!((pair_data[0] + collision_config_->collision_margin_buffer) > r.distance));
       });
 
   contact_results.erase(end, contact_results.end());
@@ -882,27 +890,30 @@ void CollisionEvaluator::removeInvalidContactResults(tesseract_collision::Contac
 SingleTimestepCollisionEvaluator::SingleTimestepCollisionEvaluator(
     std::shared_ptr<const tesseract_kinematics::JointGroup> manip,
     std::shared_ptr<const tesseract_environment::Environment> env,
-    std::shared_ptr<const trajopt_common::SafetyMarginData> safety_margin_data,
-    tesseract_collision::ContactTestType contact_test_type,
+    std::shared_ptr<const trajopt_common::TrajOptCollisionConfig> collision_config,
     sco::VarVector vars,
     CollisionExpressionEvaluatorType type,
-    double safety_margin_buffer,
     bool dynamic_environment)
-  : CollisionEvaluator(std::move(manip),
-                       std::move(env),
-                       std::move(safety_margin_data),
-                       contact_test_type,
-                       0,
-                       safety_margin_buffer,
-                       dynamic_environment)
+  : CollisionEvaluator(std::move(manip), std::move(env), std::move(collision_config), dynamic_environment)
 {
+  if (collision_config_->type == tesseract_collision::CollisionEvaluatorType::CONTINUOUS ||
+      collision_config_->type == tesseract_collision::CollisionEvaluatorType::LVS_CONTINUOUS ||
+      collision_config_->type == tesseract_collision::CollisionEvaluatorType::LVS_DISCRETE)
+  {
+    throw std::runtime_error("SingleTimestepCollisionEvaluator, has been configured with "
+                             "CONTINUOUS or LVS_CONTINUOUS or LVS_DISCRETE");
+  }
+
   vars0_ = std::move(vars);
   evaluator_type_ = type;
 
   contact_manager_ = env_->getDiscreteContactManager();
   contact_manager_->setActiveCollisionObjects(manip_->getActiveLinkNames());
-  /** @todo Should remove trajopt safety margin data structure and use the one from tesseract */
-  contact_manager_->setDefaultCollisionMarginData(safety_margin_data_->getMaxSafetyMargin() + safety_margin_buffer_);
+  contact_manager_->setCollisionMarginData(collision_config_->contact_manager_config.margin_data);
+  // Increase the default by the buffer
+  contact_manager_->setDefaultCollisionMarginData(
+      collision_config_->contact_manager_config.margin_data.getMaxCollisionMargin() +
+      collision_config_->collision_margin_buffer);
 
   switch (evaluator_type_)
   {
@@ -950,9 +961,9 @@ void SingleTimestepCollisionEvaluator::CalcCollisions(const Eigen::Ref<const Eig
   for (const auto& link_name : manip_active_link_names_)
     contact_manager_->setCollisionObjectsTransform(link_name, state[link_name]);
 
-  contact_manager_->contactTest(dist_results, contact_test_type_);
+  contact_manager_->contactTest(dist_results, collision_config_->contact_request);
 
-  const auto& zero_coeff_pairs = getSafetyMarginData()->getPairsWithZeroCoeff();
+  const auto& zero_coeff_pairs = collision_config_->collision_coeff_data.getPairsWithZeroCoeff();
   auto filter = [this, &zero_coeff_pairs](tesseract_collision::ContactResultMap::PairType& pair) {
     // Remove pairs with zero coeffs
     if (zero_coeff_pairs.find(pair.first) != zero_coeff_pairs.end())
@@ -962,11 +973,12 @@ void SingleTimestepCollisionEvaluator::CalcCollisions(const Eigen::Ref<const Eig
     }
 
     // Contains the contact distance threshold and coefficient for the given link pair
-    const std::array<double, 2>& data =
-        getSafetyMarginData()->getPairSafetyMarginData(pair.first.first, pair.first.second);
+    const double dist = collision_config_->contact_manager_config.margin_data.getPairCollisionMargin(pair.first.first,
+                                                                                                     pair.first.second);
+
     auto end = std::remove_if(
-        pair.second.begin(), pair.second.end(), [&data, this](const tesseract_collision::ContactResult& r) {
-          return (!((data[0] + safety_margin_buffer_) > r.distance));
+        pair.second.begin(), pair.second.end(), [dist, this](const tesseract_collision::ContactResult& r) {
+          return (!((dist + collision_config_->collision_margin_buffer) > r.distance));
         });
     pair.second.erase(end, pair.second.end());
   };
@@ -996,10 +1008,9 @@ void SingleTimestepCollisionEvaluator::Plot(const std::shared_ptr<tesseract_visu
     const tesseract_collision::ContactResult& res = dist_results[i].get();
     dist_results_copy[i] = res;
 
-    // Contains the contact distance threshold and coefficient for the given link pair
-    const std::array<double, 2>& data =
-        getSafetyMarginData()->getPairSafetyMarginData(res.link_names[0], res.link_names[1]);
-    safety_distance[i] = data[0];
+    // Contains the contact distance threshold for the given link pair
+    safety_distance[i] = collision_config_->contact_manager_config.margin_data.getPairCollisionMargin(
+        res.link_names[0], res.link_names[1]);
 
     if (manip_->isActiveLinkName(res.link_names[0]))
     {
@@ -1017,7 +1028,7 @@ void SingleTimestepCollisionEvaluator::Plot(const std::shared_ptr<tesseract_visu
   }
 
   auto margin_fn = [this](const std::string& link1, const std::string& link2) {
-    return getSafetyMarginData()->getPairSafetyMarginData(link1, link2)[0];
+    return collision_config_->contact_manager_config.margin_data.getPairCollisionMargin(link1, link2);
   };
 
   const tesseract_visualization::ContactResultsMarker cm(manip_->getActiveLinkNames(), dist_results_copy, margin_fn);
@@ -1029,33 +1040,37 @@ void SingleTimestepCollisionEvaluator::Plot(const std::shared_ptr<tesseract_visu
 DiscreteCollisionEvaluator::DiscreteCollisionEvaluator(
     std::shared_ptr<const tesseract_kinematics::JointGroup> manip,
     std::shared_ptr<const tesseract_environment::Environment> env,
-    std::shared_ptr<const trajopt_common::SafetyMarginData> safety_margin_data,
-    tesseract_collision::ContactTestType contact_test_type,
-    double longest_valid_segment_length,
+    std::shared_ptr<const trajopt_common::TrajOptCollisionConfig> collision_config,
     sco::VarVector vars0,
     sco::VarVector vars1,
-    CollisionExpressionEvaluatorType type,
-    double safety_margin_buffer)
-  : CollisionEvaluator(std::move(manip),
-                       std::move(env),
-                       std::move(safety_margin_data),
-                       contact_test_type,
-                       longest_valid_segment_length,
-                       safety_margin_buffer)
+    CollisionExpressionEvaluatorType type)
+  : CollisionEvaluator(std::move(manip), std::move(env), std::move(collision_config))
 {
+  if (collision_config_->type == tesseract_collision::CollisionEvaluatorType::DISCRETE ||
+      collision_config_->type == tesseract_collision::CollisionEvaluatorType::CONTINUOUS ||
+      collision_config_->type == tesseract_collision::CollisionEvaluatorType::LVS_CONTINUOUS)
+  {
+    throw std::runtime_error("DiscreteCollisionEvaluator, has been configured with "
+                             "DISCRETE or CONTINUOUS or LVS_CONTINUOUS");
+  }
+
   vars0_ = std::move(vars0);
   vars1_ = std::move(vars1);
   evaluator_type_ = type;
 
   contact_manager_ = env_->getDiscreteContactManager();
   contact_manager_->setActiveCollisionObjects(manip_->getActiveLinkNames());
-  /** @todo Should remove trajopt safety margin data structure and use the one from tesseract */
-  contact_manager_->setDefaultCollisionMarginData(safety_margin_data_->getMaxSafetyMargin() + safety_margin_buffer_);
+  contact_manager_->setCollisionMarginData(collision_config_->contact_manager_config.margin_data);
+  // Increase the default by the buffer
+  contact_manager_->setDefaultCollisionMarginData(
+      collision_config_->contact_manager_config.margin_data.getMaxCollisionMargin() +
+      collision_config_->collision_margin_buffer);
 
   switch (evaluator_type_)
   {
     case CollisionExpressionEvaluatorType::START_FREE_END_FREE:
     {
+      position_vars_fixed_ = { false, false };
       fn_ = std::bind(&DiscreteCollisionEvaluator::CalcDistExpressionsBothFree,
                       this,
                       std::placeholders::_1,
@@ -1065,6 +1080,7 @@ DiscreteCollisionEvaluator::DiscreteCollisionEvaluator(
     }
     case CollisionExpressionEvaluatorType::START_FIXED_END_FREE:
     {
+      position_vars_fixed_ = { true, false };
       fn_ = std::bind(&DiscreteCollisionEvaluator::CalcDistExpressionsEndFree,
                       this,
                       std::placeholders::_1,
@@ -1074,6 +1090,7 @@ DiscreteCollisionEvaluator::DiscreteCollisionEvaluator(
     }
     case CollisionExpressionEvaluatorType::START_FREE_END_FIXED:
     {
+      position_vars_fixed_ = { false, true };
       fn_ = std::bind(&DiscreteCollisionEvaluator::CalcDistExpressionsStartFree,
                       this,
                       std::placeholders::_1,
@@ -1083,6 +1100,7 @@ DiscreteCollisionEvaluator::DiscreteCollisionEvaluator(
     }
     case CollisionExpressionEvaluatorType::START_FREE_END_FREE_WEIGHTED_SUM:
     {
+      position_vars_fixed_ = { false, false };
       fn_ = std::bind(&DiscreteCollisionEvaluator::CalcDistExpressionsBothFreeW,
                       this,
                       std::placeholders::_1,
@@ -1092,6 +1110,7 @@ DiscreteCollisionEvaluator::DiscreteCollisionEvaluator(
     }
     case CollisionExpressionEvaluatorType::START_FIXED_END_FREE_WEIGHTED_SUM:
     {
+      position_vars_fixed_ = { true, false };
       fn_ = std::bind(&DiscreteCollisionEvaluator::CalcDistExpressionsEndFreeW,
                       this,
                       std::placeholders::_1,
@@ -1101,6 +1120,7 @@ DiscreteCollisionEvaluator::DiscreteCollisionEvaluator(
     }
     case CollisionExpressionEvaluatorType::START_FREE_END_FIXED_WEIGHTED_SUM:
     {
+      position_vars_fixed_ = { false, true };
       fn_ = std::bind(&DiscreteCollisionEvaluator::CalcDistExpressionsStartFreeW,
                       this,
                       std::placeholders::_1,
@@ -1141,10 +1161,10 @@ void DiscreteCollisionEvaluator::CalcCollisions(const Eigen::Ref<const Eigen::Ve
   }
 
   long cnt = 2;
-  if (dist > longest_valid_segment_length_)
+  if (dist > collision_config_->longest_valid_segment_length)
   {
     // Calculate the number state to interpolate
-    cnt = static_cast<long>(std::ceil(dist / longest_valid_segment_length_)) + 1;
+    cnt = static_cast<long>(std::ceil(dist / collision_config_->longest_valid_segment_length)) + 1;
   }
 
   // Create interpolated trajectory between two states that satisfies the longest valid segment length.
@@ -1153,7 +1173,7 @@ void DiscreteCollisionEvaluator::CalcCollisions(const Eigen::Ref<const Eigen::Ve
     subtraj.col(i) = Eigen::VectorXd::LinSpaced(cnt, dof_vals0(i), dof_vals1(i));
 
   // Define Filter
-  const auto& zero_coeff_pairs = getSafetyMarginData()->getPairsWithZeroCoeff();
+  const auto& zero_coeff_pairs = collision_config_->collision_coeff_data.getPairsWithZeroCoeff();
   auto filter = [this, &zero_coeff_pairs](tesseract_collision::ContactResultMap::PairType& pair) {
     // Remove pairs with zero coeffs
     if (zero_coeff_pairs.find(pair.first) != zero_coeff_pairs.end())
@@ -1162,10 +1182,25 @@ void DiscreteCollisionEvaluator::CalcCollisions(const Eigen::Ref<const Eigen::Ve
       return;
     }
 
+    // Contains the contact distance threshold and coefficient for the given link pair
+    const double dist = collision_config_->contact_manager_config.margin_data.getPairCollisionMargin(pair.first.first,
+                                                                                                     pair.first.second);
+    const double coeff =
+        collision_config_->collision_coeff_data.getPairCollisionCoeff(pair.first.first, pair.first.second);
+    const Eigen::Vector3d data = { dist, collision_config_->collision_margin_buffer, coeff };
+
     // Don't include contacts at the fixed state
-    const std::array<double, 2>& data =
-        getSafetyMarginData()->getPairSafetyMarginData(pair.first.first, pair.first.second);
-    removeInvalidContactResults(pair.second, data);
+#ifndef NDEBUG
+    tesseract_collision::ContactResultVector copy{ pair.second };
+#endif
+
+    trajopt_common::removeInvalidContactResults(pair.second, data, position_vars_fixed_);
+
+#ifndef NDEBUG
+    std::array<double, 2> temp_data{ dist, coeff };
+    removeInvalidContactResults(copy, temp_data);
+    assert(copy.size() == pair.second.size());
+#endif
   };
 
   // Perform casted collision checking for sub trajectory and store results in contacts_vector
@@ -1180,7 +1215,7 @@ void DiscreteCollisionEvaluator::CalcCollisions(const Eigen::Ref<const Eigen::Ve
     for (const auto& link_name : manip_active_link_names_)
       contact_manager_->setCollisionObjectsTransform(link_name, state0[link_name]);
 
-    contact_manager_->contactTest(contacts, contact_test_type_);
+    contact_manager_->contactTest(contacts, collision_config_->contact_request);
 
     if (!contacts.empty())
     {
@@ -1217,10 +1252,9 @@ void DiscreteCollisionEvaluator::Plot(const std::shared_ptr<tesseract_visualizat
     const tesseract_collision::ContactResult& res = dist_results[i].get();
     dist_results_copy[i] = res;
 
-    // Contains the contact distance threshold and coefficient for the given link pair
-    const std::array<double, 2>& data =
-        getSafetyMarginData()->getPairSafetyMarginData(res.link_names[0], res.link_names[1]);
-    safety_distance[i] = data[0];
+    // Contains the contact distance threshold for the given link pair
+    safety_distance[i] = collision_config_->contact_manager_config.margin_data.getPairCollisionMargin(
+        res.link_names[0], res.link_names[1]);
 
     if (manip_->isActiveLinkName(res.link_names[0]))
     {
@@ -1263,7 +1297,7 @@ void DiscreteCollisionEvaluator::Plot(const std::shared_ptr<tesseract_visualizat
   }
 
   auto margin_fn = [this](const std::string& link1, const std::string& link2) {
-    return getSafetyMarginData()->getPairSafetyMarginData(link1, link2)[0];
+    return collision_config_->contact_manager_config.margin_data.getPairCollisionMargin(link1, link2);
   };
 
   const tesseract_visualization::ContactResultsMarker cm(manip_->getActiveLinkNames(), dist_results_copy, margin_fn);
@@ -1277,33 +1311,36 @@ sco::VarVector DiscreteCollisionEvaluator::GetVars() { return trajopt_common::co
 CastCollisionEvaluator::CastCollisionEvaluator(
     std::shared_ptr<const tesseract_kinematics::JointGroup> manip,
     std::shared_ptr<const tesseract_environment::Environment> env,
-    std::shared_ptr<const trajopt_common::SafetyMarginData> safety_margin_data,
-    tesseract_collision::ContactTestType contact_test_type,
-    double longest_valid_segment_length,
+    std::shared_ptr<const trajopt_common::TrajOptCollisionConfig> collision_config,
     sco::VarVector vars0,
     sco::VarVector vars1,
-    CollisionExpressionEvaluatorType type,
-    double safety_margin_buffer)
-  : CollisionEvaluator(std::move(manip),
-                       std::move(env),
-                       std::move(safety_margin_data),
-                       contact_test_type,
-                       longest_valid_segment_length,
-                       safety_margin_buffer)
+    CollisionExpressionEvaluatorType type)
+  : CollisionEvaluator(std::move(manip), std::move(env), std::move(collision_config))
 {
+  if (collision_config_->type == tesseract_collision::CollisionEvaluatorType::DISCRETE ||
+      collision_config_->type == tesseract_collision::CollisionEvaluatorType::LVS_DISCRETE)
+  {
+    throw std::runtime_error("CastCollisionEvaluator, has been configured with "
+                             "DISCRETE or LVS_DISCRETE");
+  }
+
   vars0_ = std::move(vars0);
   vars1_ = std::move(vars1);
   evaluator_type_ = type;
 
   contact_manager_ = env_->getContinuousContactManager();
   contact_manager_->setActiveCollisionObjects(manip_->getActiveLinkNames());
-  /** @todo Should remove trajopt safety margin data structure and use the one from tesseract */
-  contact_manager_->setDefaultCollisionMarginData(safety_margin_data_->getMaxSafetyMargin() + safety_margin_buffer_);
+  contact_manager_->setCollisionMarginData(collision_config_->contact_manager_config.margin_data);
+  // Increase the default by the buffer
+  contact_manager_->setDefaultCollisionMarginData(
+      collision_config_->contact_manager_config.margin_data.getMaxCollisionMargin() +
+      collision_config_->collision_margin_buffer);
 
   switch (evaluator_type_)
   {
     case CollisionExpressionEvaluatorType::START_FREE_END_FREE:
     {
+      position_vars_fixed_ = { false, false };
       fn_ = std::bind(&CastCollisionEvaluator::CalcDistExpressionsBothFree,
                       this,
                       std::placeholders::_1,
@@ -1313,6 +1350,7 @@ CastCollisionEvaluator::CastCollisionEvaluator(
     }
     case CollisionExpressionEvaluatorType::START_FIXED_END_FREE:
     {
+      position_vars_fixed_ = { true, false };
       fn_ = std::bind(&CastCollisionEvaluator::CalcDistExpressionsEndFree,
                       this,
                       std::placeholders::_1,
@@ -1322,6 +1360,7 @@ CastCollisionEvaluator::CastCollisionEvaluator(
     }
     case CollisionExpressionEvaluatorType::START_FREE_END_FIXED:
     {
+      position_vars_fixed_ = { false, true };
       fn_ = std::bind(&CastCollisionEvaluator::CalcDistExpressionsStartFree,
                       this,
                       std::placeholders::_1,
@@ -1331,6 +1370,7 @@ CastCollisionEvaluator::CastCollisionEvaluator(
     }
     case CollisionExpressionEvaluatorType::START_FREE_END_FREE_WEIGHTED_SUM:
     {
+      position_vars_fixed_ = { false, false };
       fn_ = std::bind(&CastCollisionEvaluator::CalcDistExpressionsBothFreeW,
                       this,
                       std::placeholders::_1,
@@ -1340,6 +1380,7 @@ CastCollisionEvaluator::CastCollisionEvaluator(
     }
     case CollisionExpressionEvaluatorType::START_FIXED_END_FREE_WEIGHTED_SUM:
     {
+      position_vars_fixed_ = { true, false };
       fn_ = std::bind(&CastCollisionEvaluator::CalcDistExpressionsEndFreeW,
                       this,
                       std::placeholders::_1,
@@ -1349,6 +1390,7 @@ CastCollisionEvaluator::CastCollisionEvaluator(
     }
     case CollisionExpressionEvaluatorType::START_FREE_END_FIXED_WEIGHTED_SUM:
     {
+      position_vars_fixed_ = { false, true };
       fn_ = std::bind(&CastCollisionEvaluator::CalcDistExpressionsStartFreeW,
                       this,
                       std::placeholders::_1,
@@ -1389,7 +1431,7 @@ void CastCollisionEvaluator::CalcCollisions(const Eigen::Ref<const Eigen::Vector
   }
 
   // Define Filter
-  const auto& zero_coeff_pairs = getSafetyMarginData()->getPairsWithZeroCoeff();
+  const auto& zero_coeff_pairs = collision_config_->collision_coeff_data.getPairsWithZeroCoeff();
   auto filter = [this, &zero_coeff_pairs](tesseract_collision::ContactResultMap::PairType& pair) {
     // Remove pairs with zero coeffs
     if (zero_coeff_pairs.find(pair.first) != zero_coeff_pairs.end())
@@ -1398,16 +1440,31 @@ void CastCollisionEvaluator::CalcCollisions(const Eigen::Ref<const Eigen::Vector
       return;
     }
 
+    // Contains the contact distance threshold and coefficient for the given link pair
+    const double dist = collision_config_->contact_manager_config.margin_data.getPairCollisionMargin(pair.first.first,
+                                                                                                     pair.first.second);
+    const double coeff =
+        collision_config_->collision_coeff_data.getPairCollisionCoeff(pair.first.first, pair.first.second);
+    const Eigen::Vector3d data = { dist, collision_config_->collision_margin_buffer, coeff };
+
     // Don't include contacts at the fixed state
-    const std::array<double, 2>& data =
-        getSafetyMarginData()->getPairSafetyMarginData(pair.first.first, pair.first.second);
-    removeInvalidContactResults(pair.second, data);
+#ifndef NDEBUG
+    tesseract_collision::ContactResultVector copy{ pair.second };
+#endif
+
+    trajopt_common::removeInvalidContactResults(pair.second, data, position_vars_fixed_);
+
+#ifndef NDEBUG
+    std::array<double, 2> temp_data{ dist, coeff };
+    removeInvalidContactResults(copy, temp_data);
+    assert(copy.size() == pair.second.size());
+#endif
   };
 
-  if (dist > longest_valid_segment_length_)
+  if (dist > collision_config_->longest_valid_segment_length)
   {
     // Calculate the number state to interpolate
-    auto cnt = static_cast<long>(std::ceil(dist / longest_valid_segment_length_)) + 1;
+    auto cnt = static_cast<long>(std::ceil(dist / collision_config_->longest_valid_segment_length)) + 1;
 
     // Create interpolated trajectory between two states that satisfies the longest valid segment length.
     tesseract_common::TrajArray subtraj(cnt, dof_vals0.size());
@@ -1427,7 +1484,7 @@ void CastCollisionEvaluator::CalcCollisions(const Eigen::Ref<const Eigen::Vector
       for (const auto& link_name : manip_active_link_names_)
         contact_manager_->setCollisionObjectsTransform(link_name, state0[link_name], state1[link_name]);
 
-      contact_manager_->contactTest(contacts, contact_test_type_);
+      contact_manager_->contactTest(contacts, collision_config_->contact_request);
 
       if (!contacts.empty())
       {
@@ -1444,7 +1501,7 @@ void CastCollisionEvaluator::CalcCollisions(const Eigen::Ref<const Eigen::Vector
     for (const auto& link_name : manip_active_link_names_)
       contact_manager_->setCollisionObjectsTransform(link_name, state0[link_name], state1[link_name]);
 
-    contact_manager_->contactTest(dist_results, contact_test_type_);
+    contact_manager_->contactTest(dist_results, collision_config_->contact_request);
 
     dist_results.filter(filter);
   }
@@ -1473,9 +1530,8 @@ void CastCollisionEvaluator::Plot(const std::shared_ptr<tesseract_visualization:
     dist_results_copy[i] = res;
 
     // Contains the contact distance threshold and coefficient for the given link pair
-    const std::array<double, 2>& data =
-        getSafetyMarginData()->getPairSafetyMarginData(res.link_names[0], res.link_names[1]);
-    safety_distance[i] = data[0];
+    safety_distance[i] = collision_config_->contact_manager_config.margin_data.getPairCollisionMargin(
+        res.link_names[0], res.link_names[1]);
 
     if (manip_->isActiveLinkName(res.link_names[0]))
     {
@@ -1515,7 +1571,7 @@ void CastCollisionEvaluator::Plot(const std::shared_ptr<tesseract_visualization:
   }
 
   auto margin_fn = [this](const std::string& link1, const std::string& link2) {
-    return getSafetyMarginData()->getPairSafetyMarginData(link1, link2)[0];
+    return collision_config_->contact_manager_config.margin_data.getPairCollisionMargin(link1, link2);
   };
 
   const tesseract_visualization::ContactResultsMarker cm(manip_->getActiveLinkNames(), dist_results_copy, margin_fn);
@@ -1528,58 +1584,34 @@ sco::VarVector CastCollisionEvaluator::GetVars() { return trajopt_common::concat
 
 CollisionCost::CollisionCost(std::shared_ptr<const tesseract_kinematics::JointGroup> manip,
                              std::shared_ptr<const tesseract_environment::Environment> env,
-                             std::shared_ptr<const trajopt_common::SafetyMarginData> safety_margin_data,
-                             tesseract_collision::ContactTestType contact_test_type,
+                             std::shared_ptr<const trajopt_common::TrajOptCollisionConfig> collision_config,
                              sco::VarVector vars,
-                             CollisionExpressionEvaluatorType type,
-                             double safety_margin_buffer)
+                             CollisionExpressionEvaluatorType type)
   : Cost("collision")
 {
-  m_calc = std::make_shared<SingleTimestepCollisionEvaluator>(std::move(manip),
-                                                              std::move(env),
-                                                              std::move(safety_margin_data),
-                                                              contact_test_type,
-                                                              std::move(vars),
-                                                              type,
-                                                              safety_margin_buffer);
+  m_calc = std::make_shared<SingleTimestepCollisionEvaluator>(
+      std::move(manip), std::move(env), std::move(collision_config), std::move(vars), type);
 }
 
 CollisionCost::CollisionCost(std::shared_ptr<const tesseract_kinematics::JointGroup> manip,
                              std::shared_ptr<const tesseract_environment::Environment> env,
-                             std::shared_ptr<const trajopt_common::SafetyMarginData> safety_margin_data,
-                             tesseract_collision::ContactTestType contact_test_type,
-                             double longest_valid_segment_length,
+                             std::shared_ptr<const trajopt_common::TrajOptCollisionConfig> collision_config,
                              sco::VarVector vars0,
                              sco::VarVector vars1,
                              CollisionExpressionEvaluatorType type,
-                             bool discrete,
-                             double safety_margin_buffer)
+                             bool discrete)
 {
   if (discrete)
   {
     name_ = "discrete_continuous_collision";
-    m_calc = std::make_shared<DiscreteCollisionEvaluator>(std::move(manip),
-                                                          std::move(env),
-                                                          std::move(safety_margin_data),
-                                                          contact_test_type,
-                                                          longest_valid_segment_length,
-                                                          std::move(vars0),
-                                                          std::move(vars1),
-                                                          type,
-                                                          safety_margin_buffer);
+    m_calc = std::make_shared<DiscreteCollisionEvaluator>(
+        std::move(manip), std::move(env), std::move(collision_config), std::move(vars0), std::move(vars1), type);
   }
   else
   {
     name_ = "cast_continuous_collision";
-    m_calc = std::make_shared<CastCollisionEvaluator>(std::move(manip),
-                                                      std::move(env),
-                                                      std::move(safety_margin_data),
-                                                      contact_test_type,
-                                                      longest_valid_segment_length,
-                                                      std::move(vars0),
-                                                      std::move(vars1),
-                                                      type,
-                                                      safety_margin_buffer);
+    m_calc = std::make_shared<CastCollisionEvaluator>(
+        std::move(manip), std::move(env), std::move(collision_config), std::move(vars0), std::move(vars1), type);
   }
 }
 
@@ -1620,9 +1652,12 @@ double CollisionCost::value(const sco::DblVec& x)
   {
     const tesseract_collision::ContactResult& res = dist_results[i].get();
     // Contains the contact distance threshold and coefficient for the given link pair
-    const std::array<double, 2>& data =
-        m_calc->getSafetyMarginData()->getPairSafetyMarginData(res.link_names[0], res.link_names[1]);
-    out += sco::pospart(data[0] - dists[i]) * data[1];
+    const auto& collision_config = m_calc->getCollisionConfig();
+    const double dist = collision_config.contact_manager_config.margin_data.getPairCollisionMargin(res.link_names[0],
+                                                                                                   res.link_names[1]);
+    const double coeff =
+        collision_config.collision_coeff_data.getPairCollisionCoeff(res.link_names[0], res.link_names[1]);
+    out += sco::pospart(dist - dists[i]) * coeff;
   }
   return out;
 }
@@ -1635,58 +1670,34 @@ void CollisionCost::Plot(const std::shared_ptr<tesseract_visualization::Visualiz
 
 CollisionConstraint::CollisionConstraint(std::shared_ptr<const tesseract_kinematics::JointGroup> manip,
                                          std::shared_ptr<const tesseract_environment::Environment> env,
-                                         std::shared_ptr<const trajopt_common::SafetyMarginData> safety_margin_data,
-                                         tesseract_collision::ContactTestType contact_test_type,
+                                         std::shared_ptr<const trajopt_common::TrajOptCollisionConfig> collision_config,
                                          sco::VarVector vars,
-                                         CollisionExpressionEvaluatorType type,
-                                         double safety_margin_buffer)
+                                         CollisionExpressionEvaluatorType type)
 {
   name_ = "collision";
-  m_calc = std::make_shared<SingleTimestepCollisionEvaluator>(std::move(manip),
-                                                              std::move(env),
-                                                              std::move(safety_margin_data),
-                                                              contact_test_type,
-                                                              std::move(vars),
-                                                              type,
-                                                              safety_margin_buffer);
+  m_calc = std::make_shared<SingleTimestepCollisionEvaluator>(
+      std::move(manip), std::move(env), std::move(collision_config), std::move(vars), type);
 }
 
 CollisionConstraint::CollisionConstraint(std::shared_ptr<const tesseract_kinematics::JointGroup> manip,
                                          std::shared_ptr<const tesseract_environment::Environment> env,
-                                         std::shared_ptr<const trajopt_common::SafetyMarginData> safety_margin_data,
-                                         tesseract_collision::ContactTestType contact_test_type,
-                                         double longest_valid_segment_length,
+                                         std::shared_ptr<const trajopt_common::TrajOptCollisionConfig> collision_config,
                                          sco::VarVector vars0,
                                          sco::VarVector vars1,
                                          CollisionExpressionEvaluatorType type,
-                                         bool discrete,
-                                         double safety_margin_buffer)
+                                         bool discrete)
 {
   if (discrete)
   {
     name_ = "discrete_continuous_collision";
-    m_calc = std::make_shared<DiscreteCollisionEvaluator>(std::move(manip),
-                                                          std::move(env),
-                                                          std::move(safety_margin_data),
-                                                          contact_test_type,
-                                                          longest_valid_segment_length,
-                                                          std::move(vars0),
-                                                          std::move(vars1),
-                                                          type,
-                                                          safety_margin_buffer);
+    m_calc = std::make_shared<DiscreteCollisionEvaluator>(
+        std::move(manip), std::move(env), std::move(collision_config), std::move(vars0), std::move(vars1), type);
   }
   else
   {
     name_ = "cast_continuous_collision";
-    m_calc = std::make_shared<CastCollisionEvaluator>(std::move(manip),
-                                                      std::move(env),
-                                                      std::move(safety_margin_data),
-                                                      contact_test_type,
-                                                      longest_valid_segment_length,
-                                                      std::move(vars0),
-                                                      std::move(vars1),
-                                                      type,
-                                                      safety_margin_buffer);
+    m_calc = std::make_shared<CastCollisionEvaluator>(
+        std::move(manip), std::move(env), std::move(collision_config), std::move(vars0), std::move(vars1), type);
   }
 }
 
@@ -1727,10 +1738,13 @@ DblVec CollisionConstraint::value(const sco::DblVec& x)
   {
     const tesseract_collision::ContactResult& res = dist_results[i].get();
     // Contains the contact distance threshold and coefficient for the given link pair
-    const std::array<double, 2>& data =
-        m_calc->getSafetyMarginData()->getPairSafetyMarginData(res.link_names[0], res.link_names[1]);
+    const auto& collision_config = m_calc->getCollisionConfig();
+    const double dist = collision_config.contact_manager_config.margin_data.getPairCollisionMargin(res.link_names[0],
+                                                                                                   res.link_names[1]);
+    const double coeff =
+        collision_config.collision_coeff_data.getPairCollisionCoeff(res.link_names[0], res.link_names[1]);
 
-    out[i] = sco::pospart(data[0] - dists[i]) * data[1];
+    out[i] = sco::pospart(dist - dists[i]) * coeff;
   }
   return out;
 }
