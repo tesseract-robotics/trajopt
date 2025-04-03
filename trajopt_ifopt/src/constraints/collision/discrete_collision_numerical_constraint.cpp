@@ -96,7 +96,7 @@ DiscreteCollisionNumericalConstraint::CalcValues(const Eigen::Ref<const Eigen::V
 {
   // Check the collisions
   auto collision_data = collision_evaluator_->CalcCollisions(joint_vals, bounds_.size());
-  const double margin_buffer = collision_evaluator_->GetCollisionConfig().collision_margin_buffer;
+  const double margin_buffer = collision_evaluator_->GetCollisionMarginBuffer();
   Eigen::VectorXd values = Eigen::VectorXd::Constant(static_cast<Eigen::Index>(bounds_.size()), -margin_buffer);
 
   if (collision_data->gradient_results_sets.empty())
@@ -131,7 +131,7 @@ void DiscreteCollisionNumericalConstraint::CalcJacobianBlock(const Eigen::Ref<co
 
   const std::size_t cnt = std::min(bounds_.size(), collision_data->gradient_results_sets.size());
 
-  const double margin_buffer = collision_evaluator_->GetCollisionConfig().collision_margin_buffer;
+  const double margin_buffer = collision_evaluator_->GetCollisionMarginBuffer();
 
   Eigen::VectorXd jv = joint_vals;
   const double delta = 1e-8;

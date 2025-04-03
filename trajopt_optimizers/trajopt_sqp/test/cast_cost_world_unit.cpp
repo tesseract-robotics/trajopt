@@ -152,9 +152,9 @@ void runCastWorldTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const Envir
   // Step 3: Setup collision
   const double margin_coeff = 10;
   const double margin = 0.02;
-  auto trajopt_collision_config = std::make_shared<trajopt_common::TrajOptCollisionConfig>(margin, margin_coeff);
-  trajopt_collision_config->type = tesseract_collision::CollisionEvaluatorType::LVS_CONTINUOUS;
-  trajopt_collision_config->collision_margin_buffer = 0.05;
+  trajopt_common::TrajOptCollisionConfig trajopt_collision_config(margin, margin_coeff);
+  trajopt_collision_config.type = tesseract_collision::CollisionEvaluatorType::LVS_CONTINUOUS;
+  trajopt_collision_config.collision_margin_buffer = 0.05;
 
   // 4) Add constraints
   {  // Fix start position

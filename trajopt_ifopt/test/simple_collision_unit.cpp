@@ -108,8 +108,8 @@ TEST_F(SimpleCollisionTest, spheres)  // NOLINT
   // Step 3: Setup collision
   const double margin_coeff = 10;
   const double margin = 0.2;
-  auto trajopt_collision_config = std::make_shared<trajopt_common::TrajOptCollisionConfig>(margin, margin_coeff);
-  trajopt_collision_config->collision_margin_buffer = 0.05;
+  trajopt_common::TrajOptCollisionConfig trajopt_collision_config(margin, margin_coeff);
+  trajopt_collision_config.collision_margin_buffer = 0.05;
 
   auto collision_cache = std::make_shared<trajopt_ifopt::CollisionCache>(100);
   const trajopt_ifopt::DiscreteCollisionEvaluator::Ptr collision_evaluator =
@@ -147,14 +147,14 @@ TEST_F(SimpleCollisionTest, spheres)  // NOLINT
   Eigen::Map<tesseract_common::TrajArray> const results(x.data(), 1, 2);
 
   bool found =
-      checkTrajectory(collisions, *manager, *state_solver, manip->getJointNames(), inputs, *trajopt_collision_config);
+      checkTrajectory(collisions, *manager, *state_solver, manip->getJointNames(), inputs, trajopt_collision_config);
 
   EXPECT_TRUE(found);
   CONSOLE_BRIDGE_logWarn((found) ? ("Initial trajectory is in collision") : ("Initial trajectory is collision free"));
 
   collisions.clear();
   found =
-      checkTrajectory(collisions, *manager, *state_solver, manip->getJointNames(), results, *trajopt_collision_config);
+      checkTrajectory(collisions, *manager, *state_solver, manip->getJointNames(), results, trajopt_collision_config);
 
   EXPECT_FALSE(found);
   CONSOLE_BRIDGE_logWarn((found) ? ("Final trajectory is in collision") : ("Final trajectory is collision free"));

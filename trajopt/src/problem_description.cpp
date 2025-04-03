@@ -1742,7 +1742,7 @@ void CollisionTermInfo::hatch(TrajOptProb& prob)
 
         auto c = std::make_shared<CollisionCost>(prob.GetKin(),
                                                  prob.GetEnv(),
-                                                 std::make_shared<trajopt_common::TrajOptCollisionConfig>(config),
+                                                 config,
                                                  prob.GetVarRow(i, 0, n_dof),
                                                  prob.GetVarRow(i + 1, 0, n_dof),
                                                  expression_evaluator_type,
@@ -1761,11 +1761,8 @@ void CollisionTermInfo::hatch(TrajOptProb& prob)
       {
         if (std::find(fixed_steps.begin(), fixed_steps.end(), i) == fixed_steps.end())
         {
-          auto c = std::make_shared<CollisionCost>(prob.GetKin(),
-                                                   prob.GetEnv(),
-                                                   std::make_shared<trajopt_common::TrajOptCollisionConfig>(config),
-                                                   prob.GetVarRow(i, 0, n_dof),
-                                                   expression_evaluator_type);
+          auto c = std::make_shared<CollisionCost>(
+              prob.GetKin(), prob.GetEnv(), config, prob.GetVarRow(i, 0, n_dof), expression_evaluator_type);
 
           prob.addCost(c);
           prob.getCosts().back()->setName((boost::format("%s_%i") % name.c_str() % i).str());
@@ -1812,7 +1809,7 @@ void CollisionTermInfo::hatch(TrajOptProb& prob)
 
         auto c = std::make_shared<CollisionConstraint>(prob.GetKin(),
                                                        prob.GetEnv(),
-                                                       std::make_shared<trajopt_common::TrajOptCollisionConfig>(config),
+                                                       config,
                                                        prob.GetVarRow(i, 0, n_dof),
                                                        prob.GetVarRow(i + 1, 0, n_dof),
                                                        expression_evaluator_type,
@@ -1831,12 +1828,8 @@ void CollisionTermInfo::hatch(TrajOptProb& prob)
       {
         if (std::find(fixed_steps.begin(), fixed_steps.end(), i) == fixed_steps.end())
         {
-          auto c =
-              std::make_shared<CollisionConstraint>(prob.GetKin(),
-                                                    prob.GetEnv(),
-                                                    std::make_shared<trajopt_common::TrajOptCollisionConfig>(config),
-                                                    prob.GetVarRow(i, 0, n_dof),
-                                                    expression_evaluator_type);
+          auto c = std::make_shared<CollisionConstraint>(
+              prob.GetKin(), prob.GetEnv(), config, prob.GetVarRow(i, 0, n_dof), expression_evaluator_type);
 
           prob.addIneqConstraint(c);
           prob.getIneqConstraints().back()->setName((boost::format("%s_%i") % name.c_str() % i).str());

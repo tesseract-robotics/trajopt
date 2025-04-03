@@ -96,7 +96,7 @@ Eigen::VectorXd DiscreteCollisionConstraint::CalcValues(const Eigen::Ref<const E
   // Check the collisions
   const trajopt_common::CollisionCacheData::ConstPtr collision_data =
       collision_evaluator_->CalcCollisions(joint_vals, bounds_.size());
-  const double margin_buffer = collision_evaluator_->GetCollisionConfig().collision_margin_buffer;
+  const double margin_buffer = collision_evaluator_->GetCollisionMarginBuffer();
   Eigen::VectorXd values = Eigen::VectorXd::Constant(static_cast<Eigen::Index>(bounds_.size()), -margin_buffer);
 
   if (collision_data->gradient_results_sets.empty())

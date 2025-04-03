@@ -34,9 +34,10 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <tesseract_kinematics/core/fwd.h>
 #include <tesseract_environment/fwd.h>
 #include <tesseract_common/eigen_types.h>
+#include <tesseract_common/collision_margin_data.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
-#include <trajopt_common/fwd.h>
+#include <trajopt_common/collision_types.h>
 #include <trajopt_common/cache.h>
 
 namespace trajopt_ifopt
@@ -73,10 +74,22 @@ public:
   CalcCollisions(const Eigen::Ref<const Eigen::VectorXd>& dof_vals, std::size_t bounds_size) = 0;
 
   /**
-   * @brief Get the safety margin information.
-   * @return Safety margin information
+   * @brief Get the collision margin buffer
+   * @return The collision margin buffer
    */
-  virtual const trajopt_common::TrajOptCollisionConfig& GetCollisionConfig() const = 0;
+  virtual double GetCollisionMarginBuffer() const = 0;
+
+  /**
+   * @brief Get the collision margin information.
+   * @return Collision margin information
+   */
+  virtual const tesseract_common::CollisionMarginData& GetCollisionMarginData() const = 0;
+
+  /**
+   * @brief Get the collision coefficient information.
+   * @return Collision coefficient information
+   */
+  virtual const trajopt_common::CollisionCoeffData& GetCollisionCoeffData() const = 0;
 
   /**
    * @brief Extracts the gradient information based on the contact results
@@ -104,7 +117,7 @@ public:
   SingleTimestepCollisionEvaluator(std::shared_ptr<CollisionCache> collision_cache,
                                    std::shared_ptr<const tesseract_kinematics::JointGroup> manip,
                                    std::shared_ptr<const tesseract_environment::Environment> env,
-                                   std::shared_ptr<const trajopt_common::TrajOptCollisionConfig> collision_config,
+                                   const trajopt_common::TrajOptCollisionConfig& collision_config,
                                    bool dynamic_environment = false);
 
   std::shared_ptr<const trajopt_common::CollisionCacheData>
@@ -113,13 +126,21 @@ public:
   trajopt_common::GradientResults GetGradient(const Eigen::VectorXd& dofvals,
                                               const tesseract_collision::ContactResult& contact_result) override;
 
-  const trajopt_common::TrajOptCollisionConfig& GetCollisionConfig() const override;
+  double GetCollisionMarginBuffer() const override final;
+
+  const tesseract_common::CollisionMarginData& GetCollisionMarginData() const override final;
+
+  const trajopt_common::CollisionCoeffData& GetCollisionCoeffData() const override final;
 
 private:
   std::shared_ptr<CollisionCache> collision_cache_;
   std::shared_ptr<const tesseract_kinematics::JointGroup> manip_;
   std::shared_ptr<const tesseract_environment::Environment> env_;
-  std::shared_ptr<const trajopt_common::TrajOptCollisionConfig> collision_config_;
+  tesseract_collision::ContactRequest contact_request_;
+  tesseract_common::CollisionMarginData margin_data_;
+  trajopt_common::CollisionCoeffData coeff_data_;
+  double collision_margin_buffer_{ 0.0 };
+  double longest_valid_segment_length_{ 0.005 };
   std::vector<std::string> env_active_link_names_;
   std::vector<std::string> manip_active_link_names_;
   std::vector<std::string> diff_active_link_names_;

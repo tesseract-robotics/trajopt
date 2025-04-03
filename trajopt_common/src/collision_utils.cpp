@@ -35,22 +35,24 @@ TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace trajopt_common
 {
-std::size_t getHash(const TrajOptCollisionConfig& collision_config, const Eigen::Ref<const Eigen::VectorXd>& dof_vals)
+std::size_t getHash(const void* parent, const Eigen::Ref<const Eigen::VectorXd>& dof_vals)
 {
+  assert(parent != nullptr);
   std::size_t seed = 0;
-  boost::hash_combine(seed, &collision_config);
+  boost::hash_combine(seed, parent);
   for (Eigen::Index i = 0; i < dof_vals.rows(); ++i)
     boost::hash_combine(seed, dof_vals[i]);
 
   return seed;
 }
 
-std::size_t getHash(const TrajOptCollisionConfig& collision_config,
+std::size_t getHash(const void* parent,
                     const Eigen::Ref<const Eigen::VectorXd>& dof_vals0,
                     const Eigen::Ref<const Eigen::VectorXd>& dof_vals1)
 {
+  assert(parent != nullptr);
   std::size_t seed = 0;
-  boost::hash_combine(seed, &collision_config);
+  boost::hash_combine(seed, parent);
   for (Eigen::Index i = 0; i < dof_vals0.rows(); ++i)
   {
     boost::hash_combine(seed, dof_vals0[i]);

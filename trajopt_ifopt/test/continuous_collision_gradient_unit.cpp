@@ -129,9 +129,9 @@ void runContinuousGradientTest(const Environment::Ptr& env, double coeff)
   // Step 3: Setup collision
   const double margin_coeff = coeff;
   const double margin = 0.02;
-  auto trajopt_collision_config = std::make_shared<trajopt_common::TrajOptCollisionConfig>(margin, margin_coeff);
-  trajopt_collision_config->type = tesseract_collision::CollisionEvaluatorType::LVS_CONTINUOUS;
-  trajopt_collision_config->collision_margin_buffer = 0.05;
+  trajopt_common::TrajOptCollisionConfig trajopt_collision_config(margin, margin_coeff);
+  trajopt_collision_config.type = tesseract_collision::CollisionEvaluatorType::LVS_CONTINUOUS;
+  trajopt_collision_config.collision_margin_buffer = 0.05;
 
   auto collision_cache = std::make_shared<trajopt_ifopt::CollisionCache>(100);
   for (std::size_t i = 1; i < vars.size(); ++i)
