@@ -139,7 +139,7 @@ private:
   tesseract_collision::ContactRequest contact_request_;
   tesseract_common::CollisionMarginData margin_data_;
   trajopt_common::CollisionCoeffData coeff_data_;
-  double collision_margin_buffer_{ 0.0 };
+  double margin_buffer_{ 0.0 };
   double longest_valid_segment_length_{ 0.005 };
   std::vector<std::string> env_active_link_names_;
   std::vector<std::string> manip_active_link_names_;

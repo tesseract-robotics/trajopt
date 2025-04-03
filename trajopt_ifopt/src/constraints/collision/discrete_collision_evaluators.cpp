@@ -88,12 +88,12 @@ SingleTimestepCollisionEvaluator::SingleTimestepCollisionEvaluator(
   // Must make a copy after applying the config but before we increment the margin data
   margin_data_ = contact_manager_->getCollisionMarginData();
   coeff_data_ = collision_config.collision_coeff_data;
-  collision_margin_buffer_ = collision_config.collision_margin_buffer;
+  margin_buffer_ = collision_config.collision_margin_buffer;
   longest_valid_segment_length_ = collision_config.longest_valid_segment_length;
   contact_request_ = collision_config.contact_request;
 
   // Increase the default by the buffer
-  contact_manager_->incrementCollisionMarginData(collision_margin_buffer_);
+  contact_manager_->incrementCollisionMarginData(margin_buffer_);
 }
 
 std::shared_ptr<const trajopt_common::CollisionCacheData>
@@ -193,7 +193,7 @@ void SingleTimestepCollisionEvaluator::CalcCollisionsHelper(const Eigen::Ref<con
     const Eigen::Vector2d data = { dist, coeff };
     auto end = std::remove_if(
         pair.second.begin(), pair.second.end(), [&data, this](const tesseract_collision::ContactResult& r) {
-          return (!((data[0] + collision_margin_buffer_) > r.distance));
+          return (!((data[0] + margin_buffer_) > r.distance));
         });
     pair.second.erase(end, pair.second.end());
   };
@@ -208,10 +208,10 @@ SingleTimestepCollisionEvaluator::GetGradient(const Eigen::VectorXd& dofvals,
   // Contains the contact distance threshold and coefficient for the given link pair
   const double margin = margin_data_.getPairCollisionMargin(contact_result.link_names[0], contact_result.link_names[1]);
 
-  return trajopt_common::getGradient(dofvals, contact_result, margin, collision_margin_buffer_, *manip_);
+  return trajopt_common::getGradient(dofvals, contact_result, margin, margin_buffer_, *manip_);
 }
 
-double SingleTimestepCollisionEvaluator::GetCollisionMarginBuffer() const { return collision_margin_buffer_; }
+double SingleTimestepCollisionEvaluator::GetCollisionMarginBuffer() const { return margin_buffer_; }
 
 const tesseract_common::CollisionMarginData& SingleTimestepCollisionEvaluator::GetCollisionMarginData() const
 {

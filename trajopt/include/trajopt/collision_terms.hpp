@@ -79,13 +79,16 @@ struct GradientResults
    * @brief Construct the GradientResults
    * @param data The link pair safety margin data
    */
-  GradientResults(const std::array<double, 2>& data) : data(data) {}
+  GradientResults(double margin, double coeff) : margin(margin), coeff(coeff) {}
 
   /** @brief The gradient results data for LinkA and LinkB */
   std::array<LinkGradientResults, 2> gradients;
 
-  /** @brief The link pair safety margin data */
-  std::array<double, 2> data;
+  /** @brief The link pair contact margin */
+  double margin{ 0 };
+
+  /** @brief The link pair coefficient/weight */
+  double coeff{ 0 };
 };
 
 /**
@@ -127,7 +130,8 @@ struct CollisionEvaluator
    */
   virtual void CalcDistExpressions(const DblVec& x,
                                    sco::AffExprVector& exprs,
-                                   std::vector<std::array<double, 2>>& exprs_data) = 0;
+                                   std::vector<double>& exprs_margin,
+                                   std::vector<double>& exprs_coeff) = 0;
 
   /**
    * @brief Given optimizer parameters calculate the collision results for this evaluator
@@ -167,13 +171,15 @@ struct CollisionEvaluator
    * @brief Extracts the gradient information based on the contact results
    * @param dofvals The joint values
    * @param contact_result The contact results to compute the gradient
-   * @param data Data associated with the link pair the contact results associated with.
+   * @param margin The link pair the contact margin.
+   * @param coeff The link pair the coefficient/weight.
    * @param isTimestep1 Indicates if this is the second timestep when computing gradient for continuous collision
    * @return The gradient results
    */
   GradientResults GetGradient(const Eigen::VectorXd& dofvals,
                               const tesseract_collision::ContactResult& contact_result,
-                              const std::array<double, 2>& data,
+                              double margin,
+                              double coeff,
                               bool isTimestep1);
 
   /**
@@ -191,14 +197,16 @@ struct CollisionEvaluator
    * @brief Extracts the gradient information based on the contact results
    * @param dofvals The joint values
    * @param contact_result The contact results to compute the gradient
-   * @param data Data associated with the link pair the contact results associated with.
+   * @param margin The link pair the contact margin.
+   * @param coeff The link pair the coefficient/weight.
    * @param isTimestep1 Indicates if this is the second timestep when computing gradient for continuous collision
    * @return The gradient results
    */
   GradientResults GetGradient(const Eigen::VectorXd& dofvals0,
                               const Eigen::VectorXd& dofvals1,
                               const tesseract_collision::ContactResult& contact_result,
-                              const std::array<double, 2>& data,
+                              double margin,
+                              double coeff,
                               bool isTimestep1);
 
   /**
@@ -238,12 +246,13 @@ protected:
   tesseract_collision::ContactRequest contact_request_;
   tesseract_common::CollisionMarginData margin_data_;
   trajopt_common::CollisionCoeffData coeff_data_;
-  double collision_margin_buffer_{ 0.0 };
+  double margin_buffer_{ 0.0 };
   double longest_valid_segment_length_{ 0.005 };
 
   sco::VarVector vars0_;
   sco::VarVector vars1_;
-  std::array<bool, 2> position_vars_fixed_{ false, false };
+  bool vars0_fixed_{ false };
+  bool vars1_fixed_{ false };
   CollisionExpressionEvaluatorType evaluator_type_{ CollisionExpressionEvaluatorType::START_FREE_END_FREE };
   std::function<tesseract_common::TransformMap(const Eigen::Ref<const Eigen::VectorXd>& joint_values)> get_state_fn_;
   bool dynamic_environment_{ false };
@@ -251,21 +260,24 @@ protected:
   std::pair<ContactResultMapConstPtr, ContactResultVectorConstPtr> GetContactResultCached(const DblVec& x);
 
   void CollisionsToDistanceExpressions(sco::AffExprVector& exprs,
-                                       std::vector<std::array<double, 2>>& exprs_data,
+                                       std::vector<double>& exprs_margin,
+                                       std::vector<double>& exprs_coeff,
                                        const ContactResultVectorWrapper& dist_results,
                                        const sco::VarVector& vars,
                                        const DblVec& x,
                                        bool isTimestep1);
 
   void CollisionsToDistanceExpressionsW(sco::AffExprVector& exprs,
-                                        std::vector<std::array<double, 2>>& exprs_data,
+                                        std::vector<double>& exprs_margin,
+                                        std::vector<double>& exprs_coeff,
                                         const tesseract_collision::ContactResultMap& dist_results,
                                         const sco::VarVector& vars,
                                         const DblVec& x,
                                         bool isTimestep1);
 
   void CollisionsToDistanceExpressionsContinuousW(sco::AffExprVector& exprs,
-                                                  std::vector<std::array<double, 2>>& exprs_data,
+                                                  std::vector<double>& exprs_margin,
+                                                  std::vector<double>& exprs_coeff,
                                                   const tesseract_collision::ContactResultMap& dist_results,
                                                   const sco::VarVector& vars0,
                                                   const sco::VarVector& vars1,
@@ -281,7 +293,8 @@ protected:
    */
   void CalcDistExpressionsStartFree(const DblVec& x,
                                     sco::AffExprVector& exprs,
-                                    std::vector<std::array<double, 2>>& exprs_data);
+                                    std::vector<double>& exprs_margin,
+                                    std::vector<double>& exprs_coeff);
 
   /**
    * @brief Calculate the distance expressions when the end is free but the start is fixed
@@ -292,7 +305,8 @@ protected:
    */
   void CalcDistExpressionsEndFree(const DblVec& x,
                                   sco::AffExprVector& exprs,
-                                  std::vector<std::array<double, 2>>& exprs_data);
+                                  std::vector<double>& exprs_margin,
+                                  std::vector<double>& exprs_coeff);
 
   /**
    * @brief Calculate the distance expressions when the start and end are free
@@ -303,7 +317,8 @@ protected:
    */
   void CalcDistExpressionsBothFree(const DblVec& x,
                                    sco::AffExprVector& exprs,
-                                   std::vector<std::array<double, 2>>& exprs_data);
+                                   std::vector<double>& exprs_margin,
+                                   std::vector<double>& exprs_coeff);
 
   /**
    * @brief Calculate the distance expressions when the start is free but the end is fixed
@@ -314,7 +329,8 @@ protected:
    */
   void CalcDistExpressionsStartFreeW(const DblVec& x,
                                      sco::AffExprVector& exprs,
-                                     std::vector<std::array<double, 2>>& exprs_data);
+                                     std::vector<double>& exprs_margin,
+                                     std::vector<double>& exprs_coeff);
 
   /**
    * @brief Calculate the distance expressions when the end is free but the start is fixed
@@ -325,7 +341,8 @@ protected:
    */
   void CalcDistExpressionsEndFreeW(const DblVec& x,
                                    sco::AffExprVector& exprs,
-                                   std::vector<std::array<double, 2>>& exprs_data);
+                                   std::vector<double>& exprs_margin,
+                                   std::vector<double>& exprs_coeff);
 
   /**
    * @brief Calculate the distance expressions when the start and end are free
@@ -336,7 +353,8 @@ protected:
    */
   void CalcDistExpressionsBothFreeW(const DblVec& x,
                                     sco::AffExprVector& exprs,
-                                    std::vector<std::array<double, 2>>& exprs_data);
+                                    std::vector<double>& exprs_margin,
+                                    std::vector<double>& exprs_coeff);
 
   /**
    * @brief Calculate the distance expressions for single time step
@@ -347,7 +365,8 @@ protected:
    */
   void CalcDistExpressionsSingleTimeStep(const DblVec& x,
                                          sco::AffExprVector& exprs,
-                                         std::vector<std::array<double, 2>>& exprs_data);
+                                         std::vector<double>& exprs_margin,
+                                         std::vector<double>& exprs_coeff);
 
   /**
    * @brief Calculate the distance expressions for single time step
@@ -358,15 +377,16 @@ protected:
    */
   void CalcDistExpressionsSingleTimeStepW(const DblVec& x,
                                           sco::AffExprVector& exprs,
-                                          std::vector<std::array<double, 2>>& exprs_data);
+                                          std::vector<double>& exprs_margin,
+                                          std::vector<double>& exprs_coeff);
 
   /**
    * @brief Remove any results that are invalid.
    * Invalid state are contacts that occur at fixed states or have distances outside the threshold.
    * @param contact_results Contact results vector to process.
+   * @param margin The contact margin
    */
-  void removeInvalidContactResults(tesseract_collision::ContactResultVector& contact_results,
-                                   const std::array<double, 2>& pair_data) const;
+  void removeInvalidContactResults(tesseract_collision::ContactResultVector& contact_results, double margin) const;
 
 private:
   CollisionEvaluator() = default;
@@ -397,7 +417,8 @@ public:
   */
   void CalcDistExpressions(const DblVec& x,
                            sco::AffExprVector& exprs,
-                           std::vector<std::array<double, 2>>& exprs_data) override;
+                           std::vector<double>& exprs_margin,
+                           std::vector<double>& exprs_coeff) override;
   void CalcCollisions(const DblVec& x, tesseract_collision::ContactResultMap& dist_results) override;
   /**
    * @brief Given joint names and values calculate the collision results for this evaluator
@@ -411,7 +432,7 @@ public:
 
 private:
   std::shared_ptr<tesseract_collision::DiscreteContactManager> contact_manager_;
-  std::function<void(const DblVec&, sco::AffExprVector&, std::vector<std::array<double, 2>>&)> fn_;
+  std::function<void(const DblVec&, sco::AffExprVector&, std::vector<double>&, std::vector<double>&)> fn_;
 };
 
 /**
@@ -432,7 +453,8 @@ public:
                          CollisionExpressionEvaluatorType type);
   void CalcDistExpressions(const DblVec& x,
                            sco::AffExprVector& exprs,
-                           std::vector<std::array<double, 2>>& exprs_data) override;
+                           std::vector<double>& exprs_margin,
+                           std::vector<double>& exprs_coeff) override;
   void CalcCollisions(const DblVec& x, tesseract_collision::ContactResultMap& dist_results) override;
   /**
    * @brief Given joint names and values calculate the collision results for this evaluator
@@ -448,7 +470,7 @@ public:
 
 private:
   std::shared_ptr<tesseract_collision::ContinuousContactManager> contact_manager_;
-  std::function<void(const DblVec&, sco::AffExprVector&, std::vector<std::array<double, 2>>&)> fn_;
+  std::function<void(const DblVec&, sco::AffExprVector&, std::vector<double>&, std::vector<double>&)> fn_;
 };
 
 /**
@@ -469,7 +491,8 @@ public:
                              CollisionExpressionEvaluatorType type);
   void CalcDistExpressions(const DblVec& x,
                            sco::AffExprVector& exprs,
-                           std::vector<std::array<double, 2>>& exprs_data) override;
+                           std::vector<double>& exprs_margin,
+                           std::vector<double>& exprs_coeff) override;
   void CalcCollisions(const DblVec& x, tesseract_collision::ContactResultMap& dist_results) override;
   /**
    * @brief Given joint names and values calculate the collision results for this evaluator
@@ -485,7 +508,7 @@ public:
 
 private:
   std::shared_ptr<tesseract_collision::DiscreteContactManager> contact_manager_;
-  std::function<void(const DblVec&, sco::AffExprVector&, std::vector<std::array<double, 2>>&)> fn_;
+  std::function<void(const DblVec&, sco::AffExprVector&, std::vector<double>&, std::vector<double>&)> fn_;
 };
 
 class CollisionCost : public sco::Cost, public Plotter

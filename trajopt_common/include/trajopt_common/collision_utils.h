@@ -48,11 +48,16 @@ std::size_t cantorHash(int shape_id, int subshape_id);
  * @brief Remove any results that are invalid.
  * Invalid state are contacts that occur at fixed states or have distances outside the threshold.
  * @param contact_results Contact results vector to process.
- * @param position_vars_fixed Indicate if a state is fixed
+ * @param margin The contact margin
+ * @param margin The contact margin buffer
+ * @param var1_fixed Indicates if the var1 is a fixed state
+ * @param var2_fixed Indicates if the var2 is a fixed state
  */
 void removeInvalidContactResults(tesseract_collision::ContactResultVector& contact_results,
-                                 const Eigen::Vector3d& data,
-                                 const std::array<bool, 2>& position_vars_fixed);
+                                 double margin,
+                                 double margin_buffer,
+                                 bool var1_fixed,
+                                 bool var2_fixed);
 
 /**
  * @brief Extracts the gradient information based on the contact results

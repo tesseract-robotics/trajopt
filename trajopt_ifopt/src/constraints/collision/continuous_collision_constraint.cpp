@@ -40,13 +40,15 @@ namespace trajopt_ifopt
 ContinuousCollisionConstraint::ContinuousCollisionConstraint(
     std::shared_ptr<ContinuousCollisionEvaluator> collision_evaluator,
     std::array<std::shared_ptr<const JointPosition>, 2> position_vars,
-    std::array<bool, 2> position_vars_fixed,
+    bool vars0_fixed,
+    bool vars1_fixed,
     int max_num_cnt,
     bool fixed_sparsity,
     const std::string& name)
   : ifopt::ConstraintSet(max_num_cnt, name)
   , position_vars_(std::move(position_vars))
-  , position_vars_fixed_(position_vars_fixed)
+  , vars0_fixed_(vars0_fixed)
+  , vars1_fixed_(vars1_fixed)
   , collision_evaluator_(std::move(collision_evaluator))
 {
   if (position_vars_[0] == nullptr && position_vars_[1] == nullptr)
@@ -60,7 +62,7 @@ ContinuousCollisionConstraint::ContinuousCollisionConstraint(
   if (position_vars_[0]->GetRows() != position_vars_[1]->GetRows())
     throw std::runtime_error("position_vars are not the same size!");
 
-  if (position_vars_fixed_[0] && position_vars_fixed_[1])
+  if (vars0_fixed_ && vars1_fixed_)
     throw std::runtime_error("position_vars are both fixed!");
 
   if (max_num_cnt < 1)
@@ -89,13 +91,13 @@ Eigen::VectorXd ContinuousCollisionConstraint::GetValues() const
   Eigen::VectorXd values = Eigen::VectorXd::Constant(static_cast<Eigen::Index>(bounds_.size()), -margin_buffer);
 
   auto collision_data =
-      collision_evaluator_->CalcCollisionData(joint_vals0, joint_vals1, position_vars_fixed_, bounds_.size());
+      collision_evaluator_->CalcCollisionData(joint_vals0, joint_vals1, vars0_fixed_, vars1_fixed_, bounds_.size());
 
   if (collision_data->gradient_results_sets.empty())
     return values;
 
   const std::size_t cnt = std::min(collision_data->gradient_results_sets.size(), bounds_.size());
-  if (!position_vars_fixed_[0] && !position_vars_fixed_[1])
+  if (!vars0_fixed_ && !vars1_fixed_)
   {
     for (std::size_t i = 0; i < cnt; ++i)
     {
@@ -103,7 +105,7 @@ Eigen::VectorXd ContinuousCollisionConstraint::GetValues() const
       values(static_cast<Eigen::Index>(i)) = r.coeff * r.getMaxError();
     }
   }
-  else if (!position_vars_fixed_[0])
+  else if (!vars0_fixed_)
   {
     for (std::size_t i = 0; i < cnt; ++i)
     {
@@ -143,14 +145,14 @@ void ContinuousCollisionConstraint::FillJacobianBlock(std::string var_set, Jacob
   const Eigen::VectorXd joint_vals1 = this->GetVariables()->GetComponent(position_vars_[1]->GetName())->GetValues();
 
   auto collision_data =
-      collision_evaluator_->CalcCollisionData(joint_vals0, joint_vals1, position_vars_fixed_, bounds_.size());
+      collision_evaluator_->CalcCollisionData(joint_vals0, joint_vals1, vars0_fixed_, vars1_fixed_, bounds_.size());
 
   if (collision_data->gradient_results_sets.empty())
     return;
 
   /** @todo Should use triplet list and setFromTriplets */
   const std::size_t cnt = std::min(collision_data->gradient_results_sets.size(), bounds_.size());
-  if (var_set == position_vars_[0]->GetName() && !position_vars_fixed_[0])
+  if (var_set == position_vars_[0]->GetName() && !vars0_fixed_)
   {
     for (std::size_t i = 0; i < cnt; ++i)
     {
@@ -158,7 +160,7 @@ void ContinuousCollisionConstraint::FillJacobianBlock(std::string var_set, Jacob
       if (r.max_error[0].has_error[0] || r.max_error[1].has_error[0])
       {
         double max_error_with_buffer = r.getMaxErrorWithBufferT0();
-        if (!position_vars_fixed_[1])
+        if (!vars1_fixed_)
           max_error_with_buffer = r.getMaxErrorWithBuffer();
 
         Eigen::VectorXd grad_vec = getWeightedAvgGradientT0(r, max_error_with_buffer, position_vars_[0]->GetRows());
@@ -169,7 +171,7 @@ void ContinuousCollisionConstraint::FillJacobianBlock(std::string var_set, Jacob
       }
     }
   }
-  else if (var_set == position_vars_[1]->GetName() && !position_vars_fixed_[1])
+  else if (var_set == position_vars_[1]->GetName() && !vars1_fixed_)
   {
     for (std::size_t i = 0; i < cnt; ++i)
     {
@@ -177,7 +179,7 @@ void ContinuousCollisionConstraint::FillJacobianBlock(std::string var_set, Jacob
       if (r.max_error[0].has_error[1] || r.max_error[1].has_error[1])
       {
         double max_error_with_buffer = r.getMaxErrorWithBufferT1();
-        if (!position_vars_fixed_[0])
+        if (!vars0_fixed_)
           max_error_with_buffer = r.getMaxErrorWithBuffer();
 
         Eigen::VectorXd grad_vec = getWeightedAvgGradientT1(r, max_error_with_buffer, position_vars_[1]->GetRows());
