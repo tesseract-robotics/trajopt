@@ -117,15 +117,14 @@ public:
       return err;
 
     Eigen::Index i{ 0 };
+    const auto& margin_data = collision_evaluator_->GetCollisionMarginData();
+    const auto& coeff_data = collision_evaluator_->GetCollisionCoeffData();
     for (const auto& pair : cdata->contact_results_map)
     {
       for (const auto& dist_result : pair.second)
       {
-        const double dist =
-            collision_evaluator_->GetCollisionConfig().contact_manager_config.margin_data.getPairCollisionMargin(
-                dist_result.link_names[0], dist_result.link_names[1]);
-        const double coeff = collision_evaluator_->GetCollisionConfig().collision_coeff_data.getPairCollisionCoeff(
-            dist_result.link_names[0], dist_result.link_names[1]);
+        const double dist = margin_data.getPairCollisionMargin(dist_result.link_names[0], dist_result.link_names[1]);
+        const double coeff = coeff_data.getPairCollisionCoeff(dist_result.link_names[0], dist_result.link_names[1]);
         err[i++] += std::max<double>(((dist - dist_result.distance) * coeff), 0.);
       }
     }
@@ -247,8 +246,8 @@ void runSimpleCollisionTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const
   }
 
   // Step 3: Setup collision
-  auto trajopt_collision_cnt_config = std::make_shared<trajopt_common::TrajOptCollisionConfig>(0.2, 1);
-  trajopt_collision_cnt_config->collision_margin_buffer = 0.05;
+  trajopt_common::TrajOptCollisionConfig trajopt_collision_cnt_config(0.2, 1);
+  trajopt_collision_cnt_config.collision_margin_buffer = 0.05;
 
   auto collision_cnt_cache = std::make_shared<trajopt_ifopt::CollisionCache>(100);
   const trajopt_ifopt::DiscreteCollisionEvaluator::Ptr collision_cnt_evaluator =
@@ -257,8 +256,8 @@ void runSimpleCollisionTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const
   auto collision_cnt = std::make_shared<SimpleCollisionConstraintIfopt>(collision_cnt_evaluator, vars[0]);
   qp_problem->addConstraintSet(collision_cnt);
 
-  auto trajopt_collision_cost_config = std::make_shared<trajopt_common::TrajOptCollisionConfig>(0.3, 1);
-  trajopt_collision_cost_config->collision_margin_buffer = 0.05;
+  trajopt_common::TrajOptCollisionConfig trajopt_collision_cost_config(0.3, 1);
+  trajopt_collision_cost_config.collision_margin_buffer = 0.05;
 
   auto collision_cost_cache = std::make_shared<trajopt_ifopt::CollisionCache>(100);
   const trajopt_ifopt::DiscreteCollisionEvaluator::Ptr collision_cost_evaluator =
@@ -308,14 +307,14 @@ void runSimpleCollisionTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const
   const Eigen::Map<tesseract_common::TrajArray> results(x.data(), 1, 2);
 
   bool found = checkTrajectory(
-      collisions, *manager, *state_solver, manip->getJointNames(), inputs, *trajopt_collision_cnt_config);
+      collisions, *manager, *state_solver, manip->getJointNames(), inputs, trajopt_collision_cnt_config);
 
   EXPECT_TRUE(found);
   CONSOLE_BRIDGE_logWarn((found) ? ("Initial trajectory is in collision") : ("Initial trajectory is collision free"));
 
   collisions.clear();
   found = checkTrajectory(
-      collisions, *manager, *state_solver, manip->getJointNames(), results, *trajopt_collision_cnt_config);
+      collisions, *manager, *state_solver, manip->getJointNames(), results, trajopt_collision_cnt_config);
 
   EXPECT_FALSE(found);
   CONSOLE_BRIDGE_logWarn((found) ? ("Final trajectory is in collision") : ("Final trajectory is collision free"));

@@ -85,7 +85,7 @@ Eigen::VectorXd ContinuousCollisionConstraint::GetValues() const
   // Get current joint values
   const Eigen::VectorXd joint_vals0 = this->GetVariables()->GetComponent(position_vars_[0]->GetName())->GetValues();
   const Eigen::VectorXd joint_vals1 = this->GetVariables()->GetComponent(position_vars_[1]->GetName())->GetValues();
-  const double margin_buffer = collision_evaluator_->GetCollisionConfig().collision_margin_buffer;
+  const double margin_buffer = collision_evaluator_->GetCollisionMarginBuffer();
   Eigen::VectorXd values = Eigen::VectorXd::Constant(static_cast<Eigen::Index>(bounds_.size()), -margin_buffer);
 
   auto collision_data =

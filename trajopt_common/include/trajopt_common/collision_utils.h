@@ -34,11 +34,10 @@ TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace trajopt_common
 {
-struct TrajOptCollisionConfig;
 struct GradientResults;
 
-std::size_t getHash(const TrajOptCollisionConfig& collision_config, const Eigen::Ref<const Eigen::VectorXd>& dof_vals);
-std::size_t getHash(const TrajOptCollisionConfig& collision_config,
+std::size_t getHash(const void* parent, const Eigen::Ref<const Eigen::VectorXd>& dof_vals);
+std::size_t getHash(const void* parent,
                     const Eigen::Ref<const Eigen::VectorXd>& dof_vals0,
                     const Eigen::Ref<const Eigen::VectorXd>& dof_vals1);
 

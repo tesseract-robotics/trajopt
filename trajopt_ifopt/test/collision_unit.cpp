@@ -68,7 +68,7 @@ public:
 
     // Set up collision evaluator
     const tesseract_kinematics::JointGroup::ConstPtr kin = env->getJointGroup("manipulator");
-    auto config = std::make_shared<trajopt_common::TrajOptCollisionConfig>(0.1, 1);
+    trajopt_common::TrajOptCollisionConfig config(0.1, 1);
     auto collision_cache = std::make_shared<trajopt_ifopt::CollisionCache>(100);
 
     collision_evaluator =
@@ -99,7 +99,7 @@ TEST_F(CollisionUnit, GetValueFillJacobian)  // NOLINT
     pos << -1.9, 0.01;
     nlp.SetVariables(pos.data());
     Eigen::VectorXd values = constraint->GetValues();
-    EXPECT_NEAR(values[0], 0.0, 1e-6);
+    EXPECT_NEAR(values[0], -1 * collision_evaluator->GetCollisionMarginBuffer(), 1e-6);
 
     ifopt::ConstraintSet::Jacobian jac_block;
     jac_block.resize(1, 2);

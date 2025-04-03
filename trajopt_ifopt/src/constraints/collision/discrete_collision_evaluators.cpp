@@ -40,14 +40,22 @@ SingleTimestepCollisionEvaluator::SingleTimestepCollisionEvaluator(
     std::shared_ptr<CollisionCache> collision_cache,
     std::shared_ptr<const tesseract_kinematics::JointGroup> manip,
     std::shared_ptr<const tesseract_environment::Environment> env,
-    std::shared_ptr<const trajopt_common::TrajOptCollisionConfig> collision_config,
+    const trajopt_common::TrajOptCollisionConfig& collision_config,
     bool dynamic_environment)
   : collision_cache_(std::move(collision_cache))
   , manip_(std::move(manip))
   , env_(std::move(env))
-  , collision_config_(std::move(collision_config))
   , dynamic_environment_(dynamic_environment)
 {
+  if (collision_config.type == tesseract_collision::CollisionEvaluatorType::CONTINUOUS ||
+      collision_config.type == tesseract_collision::CollisionEvaluatorType::LVS_CONTINUOUS ||
+      collision_config.type == tesseract_collision::CollisionEvaluatorType::LVS_DISCRETE ||
+      collision_config.type == tesseract_collision::CollisionEvaluatorType::NONE)
+  {
+    throw std::runtime_error("SingleTimestepCollisionEvaluator, has been configured with "
+                             "CONTINUOUS or LVS_CONTINUOUS or LVS_DISCRETE or NONE");
+  }
+
   manip_active_link_names_ = manip_->getActiveLinkNames();
 
   // If the environment is not expected to change, then the cloned state solver may be used each time.
@@ -76,18 +84,23 @@ SingleTimestepCollisionEvaluator::SingleTimestepCollisionEvaluator(
 
   contact_manager_ = env_->getDiscreteContactManager();
   contact_manager_->setActiveCollisionObjects(manip_active_link_names_);
-  contact_manager_->setCollisionMarginData(collision_config_->contact_manager_config.margin_data);
+  contact_manager_->applyContactManagerConfig(collision_config.contact_manager_config);
+  // Must make a copy after applying the config but before we increment the margin data
+  margin_data_ = contact_manager_->getCollisionMarginData();
+  coeff_data_ = collision_config.collision_coeff_data;
+  collision_margin_buffer_ = collision_config.collision_margin_buffer;
+  longest_valid_segment_length_ = collision_config.longest_valid_segment_length;
+  contact_request_ = collision_config.contact_request;
+
   // Increase the default by the buffer
-  contact_manager_->setDefaultCollisionMarginData(
-      collision_config_->contact_manager_config.margin_data.getMaxCollisionMargin() +
-      collision_config_->collision_margin_buffer);
+  contact_manager_->incrementCollisionMarginData(collision_margin_buffer_);
 }
 
 std::shared_ptr<const trajopt_common::CollisionCacheData>
 SingleTimestepCollisionEvaluator::CalcCollisions(const Eigen::Ref<const Eigen::VectorXd>& dof_vals,
                                                  std::size_t bounds_size)
 {
-  const std::size_t key = getHash(*collision_config_, dof_vals);
+  const std::size_t key = trajopt_common::getHash(this, dof_vals);
   auto* it = collision_cache_->get(key);
   if (it != nullptr)
   {
@@ -103,8 +116,7 @@ SingleTimestepCollisionEvaluator::CalcCollisions(const Eigen::Ref<const Eigen::V
   {
     using ShapeGrsType = std::map<std::pair<std::size_t, std::size_t>, trajopt_common::GradientResultsSet>;
     ShapeGrsType shape_grs;
-    const double coeff =
-        collision_config_->collision_coeff_data.getPairCollisionCoeff(pair.first.first, pair.first.second);
+    const double coeff = coeff_data_.getPairCollisionCoeff(pair.first.first, pair.first.second);
     for (const tesseract_collision::ContactResult& dist_result : pair.second)
     {
       const std::size_t shape_hash0 = trajopt_common::cantorHash(dist_result.shape_id[0], dist_result.subshape_id[0]);
@@ -162,11 +174,11 @@ void SingleTimestepCollisionEvaluator::CalcCollisionsHelper(const Eigen::Ref<con
   for (const auto& link_name : manip_active_link_names_)
     contact_manager_->setCollisionObjectsTransform(link_name, state[link_name]);
 
-  contact_manager_->contactTest(dist_results, collision_config_->contact_request);
+  contact_manager_->contactTest(dist_results, contact_request_);
 
   // Don't include contacts at the fixed state
   // Don't include contacts with zero coeffs
-  const auto& zero_coeff_pairs = collision_config_->collision_coeff_data.getPairsWithZeroCoeff();
+  const auto& zero_coeff_pairs = coeff_data_.getPairsWithZeroCoeff();
   auto filter = [this, &zero_coeff_pairs](tesseract_collision::ContactResultMap::PairType& pair) {
     // Remove pairs with zero coeffs
     if (zero_coeff_pairs.find(pair.first) != zero_coeff_pairs.end())
@@ -176,14 +188,12 @@ void SingleTimestepCollisionEvaluator::CalcCollisionsHelper(const Eigen::Ref<con
     }
 
     // Contains the contact distance threshold and coefficient for the given link pair
-    const double dist = collision_config_->contact_manager_config.margin_data.getPairCollisionMargin(pair.first.first,
-                                                                                                     pair.first.second);
-    const double coeff =
-        collision_config_->collision_coeff_data.getPairCollisionCoeff(pair.first.first, pair.first.second);
+    const double dist = margin_data_.getPairCollisionMargin(pair.first.first, pair.first.second);
+    const double coeff = coeff_data_.getPairCollisionCoeff(pair.first.first, pair.first.second);
     const Eigen::Vector2d data = { dist, coeff };
     auto end = std::remove_if(
         pair.second.begin(), pair.second.end(), [&data, this](const tesseract_collision::ContactResult& r) {
-          return (!((data[0] + collision_config_->collision_margin_buffer) > r.distance));
+          return (!((data[0] + collision_margin_buffer_) > r.distance));
         });
     pair.second.erase(end, pair.second.end());
   };
@@ -196,16 +206,21 @@ SingleTimestepCollisionEvaluator::GetGradient(const Eigen::VectorXd& dofvals,
                                               const tesseract_collision::ContactResult& contact_result)
 {
   // Contains the contact distance threshold and coefficient for the given link pair
-  const double margin = collision_config_->contact_manager_config.margin_data.getPairCollisionMargin(
-      contact_result.link_names[0], contact_result.link_names[1]);
+  const double margin = margin_data_.getPairCollisionMargin(contact_result.link_names[0], contact_result.link_names[1]);
 
-  return trajopt_common::getGradient(
-      dofvals, contact_result, margin, collision_config_->collision_margin_buffer, *manip_);
+  return trajopt_common::getGradient(dofvals, contact_result, margin, collision_margin_buffer_, *manip_);
 }
 
-const trajopt_common::TrajOptCollisionConfig& SingleTimestepCollisionEvaluator::GetCollisionConfig() const
+double SingleTimestepCollisionEvaluator::GetCollisionMarginBuffer() const { return collision_margin_buffer_; }
+
+const tesseract_common::CollisionMarginData& SingleTimestepCollisionEvaluator::GetCollisionMarginData() const
 {
-  return *collision_config_;
+  return margin_data_;
+}
+
+const trajopt_common::CollisionCoeffData& SingleTimestepCollisionEvaluator::GetCollisionCoeffData() const
+{
+  return coeff_data_;
 }
 
 }  // namespace trajopt_ifopt
