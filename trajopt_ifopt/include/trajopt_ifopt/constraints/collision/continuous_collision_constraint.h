@@ -55,7 +55,8 @@ public:
    */
   ContinuousCollisionConstraint(std::shared_ptr<ContinuousCollisionEvaluator> collision_evaluator,
                                 std::array<std::shared_ptr<const JointPosition>, 2> position_vars,
-                                std::array<bool, 2> position_vars_fixed,
+                                bool vars0_fixed,
+                                bool vars1_fixed,
                                 int max_num_cnt = 1,
                                 bool fixed_sparsity = false,
                                 const std::string& name = "LVSCollision");
@@ -109,7 +110,8 @@ private:
    * Do not access them directly. Instead use this->GetVariables()->GetComponent(position_var->GetName())->GetValues()
    */
   std::array<std::shared_ptr<const JointPosition>, 2> position_vars_;
-  std::array<bool, 2> position_vars_fixed_;
+  bool vars0_fixed_{ false };
+  bool vars1_fixed_{ false };
 
   /** @brief Used to initialize jacobian because snopt sparsity cannot change */
   std::vector<Eigen::Triplet<double>> triplet_list_;

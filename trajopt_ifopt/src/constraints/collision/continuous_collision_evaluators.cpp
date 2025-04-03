@@ -88,18 +88,19 @@ LVSContinuousCollisionEvaluator::LVSContinuousCollisionEvaluator(
   // Must make a copy after applying the config but before we increment the margin data
   margin_data_ = contact_manager_->getCollisionMarginData();
   coeff_data_ = collision_config.collision_coeff_data;
-  collision_margin_buffer_ = collision_config.collision_margin_buffer;
+  margin_buffer_ = collision_config.collision_margin_buffer;
   longest_valid_segment_length_ = collision_config.longest_valid_segment_length;
   contact_request_ = collision_config.contact_request;
 
   // Increase the default by the buffer
-  contact_manager_->incrementCollisionMarginData(collision_margin_buffer_);
+  contact_manager_->incrementCollisionMarginData(margin_buffer_);
 }
 
 std::shared_ptr<const trajopt_common::CollisionCacheData>
 LVSContinuousCollisionEvaluator::CalcCollisionData(const Eigen::Ref<const Eigen::VectorXd>& dof_vals0,
                                                    const Eigen::Ref<const Eigen::VectorXd>& dof_vals1,
-                                                   const std::array<bool, 2>& position_vars_fixed,
+                                                   bool vars0_fixed,
+                                                   bool vars1_fixed,
                                                    std::size_t bounds_size)
 {
   const std::size_t key = trajopt_common::getHash(this, dof_vals0, dof_vals1);
@@ -111,7 +112,7 @@ LVSContinuousCollisionEvaluator::CalcCollisionData(const Eigen::Ref<const Eigen:
   }
 
   auto data = std::make_shared<trajopt_common::CollisionCacheData>();
-  CalcCollisionsHelper(data->contact_results_map, dof_vals0, dof_vals1, position_vars_fixed);
+  CalcCollisionsHelper(data->contact_results_map, dof_vals0, dof_vals1, vars0_fixed, vars1_fixed);
 
   for (const auto& pair : data->contact_results_map)
   {
@@ -153,7 +154,7 @@ LVSContinuousCollisionEvaluator::CalcCollisionData(const Eigen::Ref<const Eigen:
 
   if (data->gradient_results_sets.size() > bounds_size)
   {
-    if (!position_vars_fixed[0] && !position_vars_fixed[1])
+    if (!vars0_fixed && !vars1_fixed)
     {
       std::sort(data->gradient_results_sets.begin(),
                 data->gradient_results_sets.end(),
@@ -161,7 +162,7 @@ LVSContinuousCollisionEvaluator::CalcCollisionData(const Eigen::Ref<const Eigen:
                   return a.getMaxErrorWithBuffer() > b.getMaxErrorWithBuffer();
                 });
     }
-    else if (!position_vars_fixed[0])
+    else if (!vars0_fixed)
     {
       std::sort(data->gradient_results_sets.begin(),
                 data->gradient_results_sets.end(),
@@ -186,7 +187,8 @@ LVSContinuousCollisionEvaluator::CalcCollisionData(const Eigen::Ref<const Eigen:
 void LVSContinuousCollisionEvaluator::CalcCollisionsHelper(tesseract_collision::ContactResultMap& dist_results,
                                                            const Eigen::Ref<const Eigen::VectorXd>& dof_vals0,
                                                            const Eigen::Ref<const Eigen::VectorXd>& dof_vals1,
-                                                           const std::array<bool, 2>& position_vars_fixed)
+                                                           bool vars0_fixed,
+                                                           bool vars1_fixed)
 {
   // The first step is to see if the distance between two states is larger than the longest valid segment. If larger
   // the collision checking is broken up into multiple casted collision checks such that each check is less then
@@ -205,20 +207,19 @@ void LVSContinuousCollisionEvaluator::CalcCollisionsHelper(tesseract_collision::
   // Don't include contacts at the fixed state
   // Don't include contacts with zero coeffs
   const auto& zero_coeff_pairs = coeff_data_.getPairsWithZeroCoeff();
-  auto filter = [this, &zero_coeff_pairs, &position_vars_fixed](tesseract_collision::ContactResultMap::PairType& pair) {
-    // Remove pairs with zero coeffs
-    if (zero_coeff_pairs.find(pair.first) != zero_coeff_pairs.end())
-    {
-      pair.second.clear();
-      return;
-    }
+  auto filter =
+      [this, &zero_coeff_pairs, vars0_fixed, vars1_fixed](tesseract_collision::ContactResultMap::PairType& pair) {
+        // Remove pairs with zero coeffs
+        if (zero_coeff_pairs.find(pair.first) != zero_coeff_pairs.end())
+        {
+          pair.second.clear();
+          return;
+        }
 
-    // Contains the contact distance threshold and coefficient for the given link pair
-    const double dist = margin_data_.getPairCollisionMargin(pair.first.first, pair.first.second);
-    const double coeff = coeff_data_.getPairCollisionCoeff(pair.first.first, pair.first.second);
-    const Eigen::Vector3d data = { dist, collision_margin_buffer_, coeff };
-    trajopt_common::removeInvalidContactResults(pair.second, data, position_vars_fixed);
-  };
+        // Contains the contact distance threshold and coefficient for the given link pair
+        const double margin = margin_data_.getPairCollisionMargin(pair.first.first, pair.first.second);
+        trajopt_common::removeInvalidContactResults(pair.second, margin, margin_buffer_, vars0_fixed, vars1_fixed);
+      };
 
   if (!single_timestep_ && dist > longest_valid_segment_length_)
   {
@@ -272,10 +273,10 @@ LVSContinuousCollisionEvaluator::CalcGradientData(const Eigen::Ref<const Eigen::
   // Contains the contact distance threshold and coefficient for the given link pair
   const double margin =
       margin_data_.getPairCollisionMargin(contact_results.link_names[0], contact_results.link_names[1]);
-  return trajopt_common::getGradient(dof_vals0, dof_vals1, contact_results, margin, collision_margin_buffer_, *manip_);
+  return trajopt_common::getGradient(dof_vals0, dof_vals1, contact_results, margin, margin_buffer_, *manip_);
 }
 
-double LVSContinuousCollisionEvaluator::GetCollisionMarginBuffer() const { return collision_margin_buffer_; }
+double LVSContinuousCollisionEvaluator::GetCollisionMarginBuffer() const { return margin_buffer_; }
 
 const tesseract_common::CollisionMarginData& LVSContinuousCollisionEvaluator::GetCollisionMarginData() const
 {
@@ -341,18 +342,19 @@ LVSDiscreteCollisionEvaluator::LVSDiscreteCollisionEvaluator(
   // Must make a copy after applying the config but before we increment the margin data
   margin_data_ = contact_manager_->getCollisionMarginData();
   coeff_data_ = collision_config.collision_coeff_data;
-  collision_margin_buffer_ = collision_config.collision_margin_buffer;
+  margin_buffer_ = collision_config.collision_margin_buffer;
   longest_valid_segment_length_ = collision_config.longest_valid_segment_length;
   contact_request_ = collision_config.contact_request;
 
   // Increase the default by the buffer
-  contact_manager_->incrementCollisionMarginData(collision_margin_buffer_);
+  contact_manager_->incrementCollisionMarginData(margin_buffer_);
 }
 
 std::shared_ptr<const trajopt_common::CollisionCacheData>
 LVSDiscreteCollisionEvaluator::CalcCollisionData(const Eigen::Ref<const Eigen::VectorXd>& dof_vals0,
                                                  const Eigen::Ref<const Eigen::VectorXd>& dof_vals1,
-                                                 const std::array<bool, 2>& position_vars_fixed,
+                                                 bool vars0_fixed,
+                                                 bool vars1_fixed,
                                                  std::size_t bounds_size)
 {
   const std::size_t key = trajopt_common::getHash(this, dof_vals0, dof_vals1);
@@ -364,7 +366,7 @@ LVSDiscreteCollisionEvaluator::CalcCollisionData(const Eigen::Ref<const Eigen::V
   }
 
   auto data = std::make_shared<trajopt_common::CollisionCacheData>();
-  CalcCollisionsHelper(data->contact_results_map, dof_vals0, dof_vals1, position_vars_fixed);
+  CalcCollisionsHelper(data->contact_results_map, dof_vals0, dof_vals1, vars0_fixed, vars1_fixed);
   for (const auto& pair : data->contact_results_map)
   {
     using ShapeGrsType = std::map<std::pair<std::size_t, std::size_t>, trajopt_common::GradientResultsSet>;
@@ -405,7 +407,7 @@ LVSDiscreteCollisionEvaluator::CalcCollisionData(const Eigen::Ref<const Eigen::V
 
   if (data->gradient_results_sets.size() > bounds_size)
   {
-    if (!position_vars_fixed[0] && !position_vars_fixed[1])
+    if (!vars0_fixed && !vars1_fixed)
     {
       std::sort(data->gradient_results_sets.begin(),
                 data->gradient_results_sets.end(),
@@ -413,7 +415,7 @@ LVSDiscreteCollisionEvaluator::CalcCollisionData(const Eigen::Ref<const Eigen::V
                   return a.getMaxErrorWithBuffer() > b.getMaxErrorWithBuffer();
                 });
     }
-    else if (!position_vars_fixed[0])
+    else if (!vars0_fixed)
     {
       std::sort(data->gradient_results_sets.begin(),
                 data->gradient_results_sets.end(),
@@ -438,7 +440,8 @@ LVSDiscreteCollisionEvaluator::CalcCollisionData(const Eigen::Ref<const Eigen::V
 void LVSDiscreteCollisionEvaluator::CalcCollisionsHelper(tesseract_collision::ContactResultMap& dist_results,
                                                          const Eigen::Ref<const Eigen::VectorXd>& dof_vals0,
                                                          const Eigen::Ref<const Eigen::VectorXd>& dof_vals1,
-                                                         const std::array<bool, 2>& position_vars_fixed)
+                                                         bool vars0_fixed,
+                                                         bool vars1_fixed)
 {
   // If not empty then there are links that are not part of the kinematics object that can move (dynamic environment)
   if (!diff_active_link_names_.empty())
@@ -452,22 +455,21 @@ void LVSDiscreteCollisionEvaluator::CalcCollisionsHelper(tesseract_collision::Co
   // Don't include contacts at the fixed state
   // Don't include contacts with zero coeffs
   const auto& zero_coeff_pairs = coeff_data_.getPairsWithZeroCoeff();
-  auto filter = [this, &zero_coeff_pairs, &position_vars_fixed](tesseract_collision::ContactResultMap::PairType& pair) {
-    // Remove pairs with zero coeffs
-    if (zero_coeff_pairs.find(pair.first) != zero_coeff_pairs.end())
-    {
-      pair.second.clear();
-      return;
-    }
+  auto filter =
+      [this, &zero_coeff_pairs, vars0_fixed, vars1_fixed](tesseract_collision::ContactResultMap::PairType& pair) {
+        // Remove pairs with zero coeffs
+        if (zero_coeff_pairs.find(pair.first) != zero_coeff_pairs.end())
+        {
+          pair.second.clear();
+          return;
+        }
 
-    // Contains the contact distance threshold and coefficient for the given link pair
-    const double dist = margin_data_.getPairCollisionMargin(pair.first.first, pair.first.second);
-    const double coeff = coeff_data_.getPairCollisionCoeff(pair.first.first, pair.first.second);
-    const Eigen::Vector3d data = { dist, collision_margin_buffer_, coeff };
+        // Contains the contact distance threshold and coefficient for the given link pair
+        const double margin = margin_data_.getPairCollisionMargin(pair.first.first, pair.first.second);
 
-    // Don't include contacts at the fixed state
-    trajopt_common::removeInvalidContactResults(pair.second, data, position_vars_fixed);
-  };
+        // Don't include contacts at the fixed state
+        trajopt_common::removeInvalidContactResults(pair.second, margin, margin_buffer_, vars0_fixed, vars1_fixed);
+      };
 
   // The first step is to see if the distance between two states is larger than the longest valid segment. If larger
   // the collision checking is broken up into multiple casted collision checks such that each check is less then
@@ -515,10 +517,10 @@ LVSDiscreteCollisionEvaluator::CalcGradientData(const Eigen::Ref<const Eigen::Ve
   // Contains the contact distance threshold and coefficient for the given link pair
   const double margin =
       margin_data_.getPairCollisionMargin(contact_results.link_names[0], contact_results.link_names[1]);
-  return trajopt_common::getGradient(dof_vals0, dof_vals1, contact_results, margin, collision_margin_buffer_, *manip_);
+  return trajopt_common::getGradient(dof_vals0, dof_vals1, contact_results, margin, margin_buffer_, *manip_);
 }
 
-double LVSDiscreteCollisionEvaluator::GetCollisionMarginBuffer() const { return collision_margin_buffer_; }
+double LVSDiscreteCollisionEvaluator::GetCollisionMarginBuffer() const { return margin_buffer_; }
 
 const tesseract_common::CollisionMarginData& LVSDiscreteCollisionEvaluator::GetCollisionMarginData() const
 {

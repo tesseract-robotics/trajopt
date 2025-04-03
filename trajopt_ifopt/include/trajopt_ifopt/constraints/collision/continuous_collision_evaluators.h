@@ -75,7 +75,8 @@ public:
   virtual std::shared_ptr<const trajopt_common::CollisionCacheData>
   CalcCollisionData(const Eigen::Ref<const Eigen::VectorXd>& dof_vals0,
                     const Eigen::Ref<const Eigen::VectorXd>& dof_vals1,
-                    const std::array<bool, 2>& position_vars_fixed,
+                    bool vars0_fixed,
+                    bool vars1_fixed,
                     std::size_t bounds_size) = 0;
 
   /**
@@ -132,7 +133,8 @@ public:
   std::shared_ptr<const trajopt_common::CollisionCacheData>
   CalcCollisionData(const Eigen::Ref<const Eigen::VectorXd>& dof_vals0,
                     const Eigen::Ref<const Eigen::VectorXd>& dof_vals1,
-                    const std::array<bool, 2>& position_vars_fixed,
+                    bool vars0_fixed,
+                    bool vars1_fixed,
                     std::size_t bounds_size) override final;
 
   trajopt_common::GradientResults
@@ -153,7 +155,7 @@ private:
   tesseract_collision::ContactRequest contact_request_;
   tesseract_common::CollisionMarginData margin_data_;
   trajopt_common::CollisionCoeffData coeff_data_;
-  double collision_margin_buffer_{ 0.0 };
+  double margin_buffer_{ 0.0 };
   double longest_valid_segment_length_{ 0.005 };
   bool single_timestep_{ false };
   std::vector<std::string> env_active_link_names_;
@@ -170,7 +172,8 @@ private:
   void CalcCollisionsHelper(tesseract_collision::ContactResultMap& dist_results,
                             const Eigen::Ref<const Eigen::VectorXd>& dof_vals0,
                             const Eigen::Ref<const Eigen::VectorXd>& dof_vals1,
-                            const std::array<bool, 2>& position_vars_fixed);
+                            bool vars0_fixed,
+                            bool vars1_fixed);
 };
 
 /**
@@ -194,7 +197,8 @@ public:
   std::shared_ptr<const trajopt_common::CollisionCacheData>
   CalcCollisionData(const Eigen::Ref<const Eigen::VectorXd>& dof_vals0,
                     const Eigen::Ref<const Eigen::VectorXd>& dof_vals1,
-                    const std::array<bool, 2>& position_vars_fixed,
+                    bool vars0_fixed,
+                    bool vars1_fixed,
                     std::size_t bounds_size) override final;
 
   trajopt_common::GradientResults
@@ -215,7 +219,7 @@ private:
   tesseract_collision::ContactRequest contact_request_;
   tesseract_common::CollisionMarginData margin_data_;
   trajopt_common::CollisionCoeffData coeff_data_;
-  double collision_margin_buffer_{ 0.0 };
+  double margin_buffer_{ 0.0 };
   double longest_valid_segment_length_{ 0.005 };
   std::vector<std::string> env_active_link_names_;
   std::vector<std::string> manip_active_link_names_;
@@ -231,7 +235,8 @@ private:
   void CalcCollisionsHelper(tesseract_collision::ContactResultMap& dist_results,
                             const Eigen::Ref<const Eigen::VectorXd>& dof_vals0,
                             const Eigen::Ref<const Eigen::VectorXd>& dof_vals1,
-                            const std::array<bool, 2>& position_vars_fixed);
+                            bool vars0_fixed,
+                            bool vars1_fixed);
 };
 }  // namespace trajopt_ifopt
 #endif  // TRAJOPT_IFOPT_CONTINUOUS_COLLISION_EVALUATOR_H

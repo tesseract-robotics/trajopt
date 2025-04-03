@@ -72,43 +72,44 @@ std::size_t cantorHash(int shape_id, int subshape_id)
 }
 
 void removeInvalidContactResults(tesseract_collision::ContactResultVector& contact_results,
-                                 const Eigen::Vector3d& data,
-                                 const std::array<bool, 2>& position_vars_fixed)
+                                 double margin,
+                                 double margin_buffer,
+                                 bool var1_fixed,
+                                 bool var2_fixed)
 {
-  auto end = std::remove_if(contact_results.begin(),
-                            contact_results.end(),
-                            [=, &data, &position_vars_fixed](const tesseract_collision::ContactResult& r) {
-                              /** @todo Is this correct? (Levi)*/
-                              if ((!((data[0] + data[1]) > r.distance)))
-                                return true;
+  auto end =
+      std::remove_if(contact_results.begin(), contact_results.end(), [=](const tesseract_collision::ContactResult& r) {
+        /** @todo Is this correct? (Levi)*/
+        if ((!((margin + margin_buffer) > r.distance)))
+          return true;
 
-                              if (!position_vars_fixed[0] && !position_vars_fixed[1])
-                                return false;
+        if (!var1_fixed && !var2_fixed)
+          return false;
 
-                              if (position_vars_fixed[0])
-                              {
-                                if (r.cc_type[0] != tesseract_collision::ContinuousCollisionType::CCType_None &&
-                                    r.cc_type[0] != tesseract_collision::ContinuousCollisionType::CCType_Time0)
-                                  return false;
+        if (var1_fixed)
+        {
+          if (r.cc_type[0] != tesseract_collision::ContinuousCollisionType::CCType_None &&
+              r.cc_type[0] != tesseract_collision::ContinuousCollisionType::CCType_Time0)
+            return false;
 
-                                if (r.cc_type[1] != tesseract_collision::ContinuousCollisionType::CCType_None &&
-                                    r.cc_type[1] != tesseract_collision::ContinuousCollisionType::CCType_Time0)
-                                  return false;
-                              }
+          if (r.cc_type[1] != tesseract_collision::ContinuousCollisionType::CCType_None &&
+              r.cc_type[1] != tesseract_collision::ContinuousCollisionType::CCType_Time0)
+            return false;
+        }
 
-                              if (position_vars_fixed[1])
-                              {
-                                if (r.cc_type[0] != tesseract_collision::ContinuousCollisionType::CCType_None &&
-                                    r.cc_type[0] != tesseract_collision::ContinuousCollisionType::CCType_Time1)
-                                  return false;
+        if (var2_fixed)
+        {
+          if (r.cc_type[0] != tesseract_collision::ContinuousCollisionType::CCType_None &&
+              r.cc_type[0] != tesseract_collision::ContinuousCollisionType::CCType_Time1)
+            return false;
 
-                                if (r.cc_type[1] != tesseract_collision::ContinuousCollisionType::CCType_None &&
-                                    r.cc_type[1] != tesseract_collision::ContinuousCollisionType::CCType_Time1)
-                                  return false;
-                              }
+          if (r.cc_type[1] != tesseract_collision::ContinuousCollisionType::CCType_None &&
+              r.cc_type[1] != tesseract_collision::ContinuousCollisionType::CCType_Time1)
+            return false;
+        }
 
-                              return true;
-                            });
+        return true;
+      });
 
   contact_results.erase(end, contact_results.end());
 }

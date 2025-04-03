@@ -152,7 +152,7 @@ void runPlanningTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const Enviro
   }
 
   auto collision_cache = std::make_shared<trajopt_ifopt::CollisionCache>(100);
-  std::array<bool, 2> position_vars_fixed{ false, false };
+  std::array<bool, 2> vars_fixed{ false, false };
   for (std::size_t i = 1; i < (vars.size() - 1); ++i)
   {
     auto collision_evaluator = std::make_shared<trajopt_ifopt::LVSContinuousCollisionEvaluator>(
@@ -161,14 +161,14 @@ void runPlanningTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const Enviro
     const std::array<JointPosition::ConstPtr, 2> position_vars{ vars[i - 1], vars[i] };
 
     if (i == 1)
-      position_vars_fixed = { true, false };
+      vars_fixed = { true, false };
     else if (i == (vars.size() - 1))
-      position_vars_fixed = { false, true };
+      vars_fixed = { false, true };
     else
-      position_vars_fixed = { false, false };
+      vars_fixed = { false, false };
 
     auto cnt = std::make_shared<trajopt_ifopt::ContinuousCollisionConstraint>(
-        collision_evaluator, position_vars, position_vars_fixed, 5);
+        collision_evaluator, position_vars, vars_fixed[0], vars_fixed[1], 5);
 
     qp_problem->addCostSet(cnt, trajopt_sqp::CostPenaltyType::HINGE);
   }

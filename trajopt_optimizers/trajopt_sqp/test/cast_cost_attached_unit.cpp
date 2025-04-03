@@ -204,9 +204,8 @@ void runCastAttachedLinkWithGeomTest(const trajopt_sqp::QPProblem::Ptr& qp_probl
         collision_cache, manip, env, trajopt_collision_config);
 
     const std::array<JointPosition::ConstPtr, 2> position_vars{ vars[i - 1], vars[i] };
-    const std::array<bool, 2> position_vars_fixed{ false, false };
     auto cnt = std::make_shared<trajopt_ifopt::ContinuousCollisionConstraint>(
-        collision_evaluator, position_vars, position_vars_fixed, 3);
+        collision_evaluator, position_vars, false, false, 3);
     qp_problem->addConstraintSet(cnt);
   }
 
@@ -319,7 +318,7 @@ void runCastAttachedLinkWithoutGeomTest(const trajopt_sqp::QPProblem::Ptr& qp_pr
   }
 
   auto collision_cache = std::make_shared<trajopt_ifopt::CollisionCache>(100);
-  std::array<bool, 2> position_vars_fixed{ true, false };
+  std::array<bool, 2> vars_fixed{ true, false };
   for (std::size_t i = 1; i < vars.size(); ++i)
   {
     auto collision_evaluator = std::make_shared<trajopt_ifopt::LVSContinuousCollisionEvaluator>(
@@ -328,10 +327,10 @@ void runCastAttachedLinkWithoutGeomTest(const trajopt_sqp::QPProblem::Ptr& qp_pr
     const std::array<JointPosition::ConstPtr, 2> position_vars{ vars[i - 1], vars[i] };
 
     auto cnt = std::make_shared<trajopt_ifopt::ContinuousCollisionConstraint>(
-        collision_evaluator, position_vars, position_vars_fixed, 2);
+        collision_evaluator, position_vars, vars_fixed[0], vars_fixed[1], 2);
     qp_problem->addConstraintSet(cnt);
 
-    position_vars_fixed = { false, true };
+    vars_fixed = { false, true };
   }
 
   qp_problem->setup();
