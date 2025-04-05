@@ -102,7 +102,7 @@ void runPlanningTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const Enviro
   const tesseract_kinematics::JointGroup::ConstPtr manip = env->getJointGroup("right_arm");
 
   manager->setActiveCollisionObjects(manip->getActiveLinkNames());
-  manager->setDefaultCollisionMarginData(0);
+  manager->setDefaultCollisionMargin(0);
 
   // Initial trajectory
   tesseract_common::TrajArray trajectory(6, 7);
@@ -126,7 +126,7 @@ void runPlanningTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const Enviro
   const double margin_coeff = 20;
   const double margin = 0.025;
   trajopt_common::TrajOptCollisionConfig trajopt_collision_config(margin, margin_coeff);
-  trajopt_collision_config.type = tesseract_collision::CollisionEvaluatorType::CONTINUOUS;
+  trajopt_collision_config.collision_check_config.type = tesseract_collision::CollisionEvaluatorType::CONTINUOUS;
   trajopt_collision_config.collision_margin_buffer = 0.02;
 
   // Add costs

@@ -37,7 +37,7 @@ CollisionCoeffData::CollisionCoeffData(double default_collision_coeff)
 {
 }
 
-void CollisionCoeffData::setPairCollisionCoeff(const std::string& obj1, const std::string& obj2, double collision_coeff)
+void CollisionCoeffData::setCollisionCoeff(const std::string& obj1, const std::string& obj2, double collision_coeff)
 {
   auto key = tesseract_common::makeOrderedLinkPair(obj1, obj2);
   lookup_table_[key] = collision_coeff;
@@ -48,7 +48,7 @@ void CollisionCoeffData::setPairCollisionCoeff(const std::string& obj1, const st
     zero_coeff_.erase(key);
 }
 
-double CollisionCoeffData::getPairCollisionCoeff(const std::string& obj1, const std::string& obj2) const
+double CollisionCoeffData::getCollisionCoeff(const std::string& obj1, const std::string& obj2) const
 {
   auto key = tesseract_common::makeOrderedLinkPair(obj1, obj2);
   const auto it = lookup_table_.find(key);
@@ -78,7 +78,8 @@ TrajOptCollisionConfig::TrajOptCollisionConfig(double margin,
                                                tesseract_collision::CollisionEvaluatorType type,
                                                double longest_valid_segment_length,
                                                tesseract_collision::CollisionCheckProgramType check_program_mode)
-  : CollisionCheckConfig(margin, std::move(request), type, longest_valid_segment_length, check_program_mode)
+  : contact_manager_config(margin)
+  , collision_check_config(std::move(request), type, longest_valid_segment_length, check_program_mode)
   , collision_coeff_data(coeff)
 {
 }
@@ -86,8 +87,9 @@ TrajOptCollisionConfig::TrajOptCollisionConfig(double margin,
 template <class Archive>
 void TrajOptCollisionConfig::serialize(Archive& ar, const unsigned int /*version*/)
 {
-  ar& BOOST_SERIALIZATION_BASE_OBJECT_NVP(CollisionCheckConfig);
   ar& BOOST_SERIALIZATION_NVP(enabled);
+  ar& BOOST_SERIALIZATION_NVP(contact_manager_config);
+  ar& BOOST_SERIALIZATION_NVP(collision_check_config);
   ar& BOOST_SERIALIZATION_NVP(collision_coeff_data);
   ar& BOOST_SERIALIZATION_NVP(collision_margin_buffer);
   ar& BOOST_SERIALIZATION_NVP(max_num_cnt);

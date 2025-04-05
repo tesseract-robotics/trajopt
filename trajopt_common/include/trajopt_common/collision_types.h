@@ -59,7 +59,7 @@ struct CollisionCoeffData
    * @param obj2 The Second object name. Order doesn't matter
    * @param Coeff Coefficient
    */
-  void setPairCollisionCoeff(const std::string& obj1, const std::string& obj2, double collision_coeff);
+  void setCollisionCoeff(const std::string& obj1, const std::string& obj2, double collision_coeff);
 
   /**
    * @brief Get the pairs collision coefficient
@@ -70,7 +70,7 @@ struct CollisionCoeffData
    * @param obj2 The second object name
    * @return Coefficient
    */
-  double getPairCollisionCoeff(const std::string& obj1, const std::string& obj2) const;
+  double getCollisionCoeff(const std::string& obj1, const std::string& obj2) const;
 
   /**
    * @brief Get the pairs with zero coeff
@@ -96,7 +96,7 @@ private:
 /**
  * @brief Config settings for collision terms.
  */
-struct TrajOptCollisionConfig : public tesseract_collision::CollisionCheckConfig
+struct TrajOptCollisionConfig
 {
   using Ptr = std::shared_ptr<TrajOptCollisionConfig>;
   using ConstPtr = std::shared_ptr<const TrajOptCollisionConfig>;
@@ -113,6 +113,12 @@ struct TrajOptCollisionConfig : public tesseract_collision::CollisionCheckConfig
 
   /** @brief If true, a collision will be added to the problem. Default: true*/
   bool enabled = true;
+
+  /** @brief The contact manager config */
+  tesseract_collision::ContactManagerConfig contact_manager_config;
+
+  /** @brief The contact check config */
+  tesseract_collision::CollisionCheckConfig collision_check_config;
 
   /** @brief The collision coeff/weight */
   CollisionCoeffData collision_coeff_data;

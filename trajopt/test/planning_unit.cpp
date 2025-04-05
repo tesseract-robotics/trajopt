@@ -90,7 +90,7 @@ void runTest(const Environment::Ptr& env, bool use_multi_threaded)
   const ContinuousContactManager::Ptr manager = prob->GetEnv()->getContinuousContactManager();
 
   manager->setActiveCollisionObjects(prob->GetKin()->getActiveLinkNames());
-  manager->setDefaultCollisionMarginData(0);
+  manager->setDefaultCollisionMargin(0);
 
   tesseract_collision::CollisionCheckConfig config;
   config.type = tesseract_collision::CollisionEvaluatorType::CONTINUOUS;

@@ -145,7 +145,7 @@ void runCastAttachedLinkWithGeomTest(const trajopt_sqp::QPProblem::Ptr& qp_probl
   const tesseract_kinematics::JointGroup::ConstPtr manip = env->getJointGroup("manipulator");
 
   manager->setActiveCollisionObjects(manip->getActiveLinkNames());
-  manager->setDefaultCollisionMarginData(0);
+  manager->setDefaultCollisionMargin(0);
 
   // 3) Add Variables
   std::vector<trajopt_ifopt::JointPosition::ConstPtr> vars;
@@ -179,7 +179,7 @@ void runCastAttachedLinkWithGeomTest(const trajopt_sqp::QPProblem::Ptr& qp_probl
   const double margin_coeff = 20;
   const double margin = 0.3;
   trajopt_common::TrajOptCollisionConfig trajopt_collision_config(margin, margin_coeff);
-  trajopt_collision_config.type = tesseract_collision::CollisionEvaluatorType::LVS_CONTINUOUS;
+  trajopt_collision_config.collision_check_config.type = tesseract_collision::CollisionEvaluatorType::LVS_CONTINUOUS;
   trajopt_collision_config.collision_margin_buffer = 0.05;
 
   // 4) Add constraints
@@ -264,7 +264,7 @@ void runCastAttachedLinkWithoutGeomTest(const trajopt_sqp::QPProblem::Ptr& qp_pr
   const tesseract_kinematics::JointGroup::ConstPtr manip = env->getJointGroup("manipulator");
 
   manager->setActiveCollisionObjects(manip->getActiveLinkNames());
-  manager->setDefaultCollisionMarginData(0);
+  manager->setDefaultCollisionMargin(0);
 
   // 3) Add Variables
   std::vector<trajopt_ifopt::JointPosition::ConstPtr> vars;
@@ -298,9 +298,9 @@ void runCastAttachedLinkWithoutGeomTest(const trajopt_sqp::QPProblem::Ptr& qp_pr
   const double margin_coeff = 10;
   const double margin = 0.02;
   trajopt_common::TrajOptCollisionConfig trajopt_collision_config(margin, margin_coeff);
-  trajopt_collision_config.type = tesseract_collision::CollisionEvaluatorType::LVS_CONTINUOUS;
+  trajopt_collision_config.collision_check_config.type = tesseract_collision::CollisionEvaluatorType::LVS_CONTINUOUS;
+  trajopt_collision_config.collision_check_config.longest_valid_segment_length = 0.05;
   trajopt_collision_config.collision_margin_buffer = 0.01;
-  trajopt_collision_config.longest_valid_segment_length = 0.05;
 
   // 4) Add constraints
   {  // Fix start position

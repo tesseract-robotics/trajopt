@@ -50,14 +50,14 @@ std::size_t cantorHash(int shape_id, int subshape_id);
  * @param contact_results Contact results vector to process.
  * @param margin The contact margin
  * @param margin The contact margin buffer
+ * @param var0_fixed Indicates if the var0 is a fixed state
  * @param var1_fixed Indicates if the var1 is a fixed state
- * @param var2_fixed Indicates if the var2 is a fixed state
  */
 void removeInvalidContactResults(tesseract_collision::ContactResultVector& contact_results,
                                  double margin,
                                  double margin_buffer,
-                                 bool var1_fixed,
-                                 bool var2_fixed);
+                                 bool var0_fixed,
+                                 bool var1_fixed);
 
 /**
  * @brief Extracts the gradient information based on the contact results

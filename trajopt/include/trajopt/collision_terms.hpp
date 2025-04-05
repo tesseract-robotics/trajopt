@@ -243,11 +243,10 @@ protected:
   std::vector<std::string> env_active_link_names_;
   std::vector<std::string> manip_active_link_names_;
   std::vector<std::string> diff_active_link_names_;
-  tesseract_collision::ContactRequest contact_request_;
   tesseract_common::CollisionMarginData margin_data_;
   trajopt_common::CollisionCoeffData coeff_data_;
   double margin_buffer_{ 0.0 };
-  double longest_valid_segment_length_{ 0.005 };
+  tesseract_collision::CollisionCheckConfig collision_check_config_;
 
   sco::VarVector vars0_;
   sco::VarVector vars1_;
