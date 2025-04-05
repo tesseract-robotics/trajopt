@@ -45,16 +45,16 @@ LVSContinuousCollisionEvaluator::LVSContinuousCollisionEvaluator(
   : collision_cache_(std::move(collision_cache))
   , manip_(std::move(manip))
   , env_(std::move(env))
+  , collision_check_config_(collision_config.collision_check_config)
   , dynamic_environment_(dynamic_environment)
 {
-  if (collision_config.type == tesseract_collision::CollisionEvaluatorType::DISCRETE ||
-      collision_config.type == tesseract_collision::CollisionEvaluatorType::LVS_DISCRETE ||
-      collision_config.type == tesseract_collision::CollisionEvaluatorType::NONE)
+  if (collision_check_config_.type != tesseract_collision::CollisionEvaluatorType::CONTINUOUS &&
+      collision_check_config_.type != tesseract_collision::CollisionEvaluatorType::LVS_CONTINUOUS)
   {
-    throw std::runtime_error("LVSContinuousCollisionEvaluator, has been configured with "
-                             "DISCRETE or LVS_DISCRETE or NONE");
+    throw std::runtime_error("LVSContinuousCollisionEvaluator, should be configured with CONTINUOUS or LVS_CONTINUOUS");
   }
-  single_timestep_ = (collision_config.type == tesseract_collision::CollisionEvaluatorType::CONTINUOUS);
+
+  single_timestep_ = (collision_check_config_.type == tesseract_collision::CollisionEvaluatorType::CONTINUOUS);
 
   manip_active_link_names_ = manip_->getActiveLinkNames();
 
@@ -89,11 +89,9 @@ LVSContinuousCollisionEvaluator::LVSContinuousCollisionEvaluator(
   margin_data_ = contact_manager_->getCollisionMarginData();
   coeff_data_ = collision_config.collision_coeff_data;
   margin_buffer_ = collision_config.collision_margin_buffer;
-  longest_valid_segment_length_ = collision_config.longest_valid_segment_length;
-  contact_request_ = collision_config.contact_request;
 
   // Increase the default by the buffer
-  contact_manager_->incrementCollisionMarginData(margin_buffer_);
+  contact_manager_->incrementCollisionMargin(margin_buffer_);
 }
 
 std::shared_ptr<const trajopt_common::CollisionCacheData>
@@ -118,7 +116,7 @@ LVSContinuousCollisionEvaluator::CalcCollisionData(const Eigen::Ref<const Eigen:
   {
     using ShapeGrsType = std::map<std::pair<std::size_t, std::size_t>, trajopt_common::GradientResultsSet>;
     ShapeGrsType shape_grs;
-    const double coeff = coeff_data_.getPairCollisionCoeff(pair.first.first, pair.first.second);
+    const double coeff = coeff_data_.getCollisionCoeff(pair.first.first, pair.first.second);
     for (const tesseract_collision::ContactResult& dist_result : pair.second)
     {
       const std::size_t shape_hash0 = trajopt_common::cantorHash(dist_result.shape_id[0], dist_result.subshape_id[0]);
@@ -217,14 +215,14 @@ void LVSContinuousCollisionEvaluator::CalcCollisionsHelper(tesseract_collision::
         }
 
         // Contains the contact distance threshold and coefficient for the given link pair
-        const double margin = margin_data_.getPairCollisionMargin(pair.first.first, pair.first.second);
+        const double margin = margin_data_.getCollisionMargin(pair.first.first, pair.first.second);
         trajopt_common::removeInvalidContactResults(pair.second, margin, margin_buffer_, vars0_fixed, vars1_fixed);
       };
 
-  if (!single_timestep_ && dist > longest_valid_segment_length_)
+  if (!single_timestep_ && dist > collision_check_config_.longest_valid_segment_length)
   {
     // Calculate the number state to interpolate
-    const long cnt = static_cast<long>(std::ceil(dist / longest_valid_segment_length_)) + 1;
+    const long cnt = static_cast<long>(std::ceil(dist / collision_check_config_.longest_valid_segment_length)) + 1;
 
     // Create interpolated trajectory between two states that satisfies the longest valid segment length.
     tesseract_common::TrajArray subtraj(cnt, dof_vals0.size());
@@ -243,7 +241,7 @@ void LVSContinuousCollisionEvaluator::CalcCollisionsHelper(tesseract_collision::
       for (const auto& link_name : manip_active_link_names_)
         contact_manager_->setCollisionObjectsTransform(link_name, state0[link_name], state1[link_name]);
 
-      contact_manager_->contactTest(contacts, contact_request_);
+      contact_manager_->contactTest(contacts, collision_check_config_.contact_request);
       if (!contacts.empty())
       {
         dist_results.addInterpolatedCollisionResults(
@@ -259,7 +257,7 @@ void LVSContinuousCollisionEvaluator::CalcCollisionsHelper(tesseract_collision::
     for (const auto& link_name : manip_active_link_names_)
       contact_manager_->setCollisionObjectsTransform(link_name, state0[link_name], state1[link_name]);
 
-    contact_manager_->contactTest(dist_results, contact_request_);
+    contact_manager_->contactTest(dist_results, collision_check_config_.contact_request);
 
     dist_results.filter(filter);
   }
@@ -271,8 +269,7 @@ LVSContinuousCollisionEvaluator::CalcGradientData(const Eigen::Ref<const Eigen::
                                                   const tesseract_collision::ContactResult& contact_results)
 {
   // Contains the contact distance threshold and coefficient for the given link pair
-  const double margin =
-      margin_data_.getPairCollisionMargin(contact_results.link_names[0], contact_results.link_names[1]);
+  const double margin = margin_data_.getCollisionMargin(contact_results.link_names[0], contact_results.link_names[1]);
   return trajopt_common::getGradient(dof_vals0, dof_vals1, contact_results, margin, margin_buffer_, *manip_);
 }
 
@@ -299,16 +296,11 @@ LVSDiscreteCollisionEvaluator::LVSDiscreteCollisionEvaluator(
   : collision_cache_(std::move(collision_cache))
   , manip_(std::move(manip))
   , env_(std::move(env))
+  , collision_check_config_(collision_config.collision_check_config)
   , dynamic_environment_(dynamic_environment)
 {
-  if (collision_config.type == tesseract_collision::CollisionEvaluatorType::CONTINUOUS ||
-      collision_config.type == tesseract_collision::CollisionEvaluatorType::LVS_CONTINUOUS ||
-      collision_config.type == tesseract_collision::CollisionEvaluatorType::DISCRETE ||
-      collision_config.type == tesseract_collision::CollisionEvaluatorType::NONE)
-  {
-    throw std::runtime_error("LVSDiscreteCollisionEvaluator, has been configured with "
-                             "CONTINUOUS or LVS_CONTINUOUS or DISCRETE or NONE");
-  }
+  if (collision_check_config_.type != tesseract_collision::CollisionEvaluatorType::LVS_DISCRETE)
+    throw std::runtime_error("LVSDiscreteCollisionEvaluator, should be configured with LVS_DISCRETE");
 
   manip_active_link_names_ = manip_->getActiveLinkNames();
 
@@ -343,11 +335,9 @@ LVSDiscreteCollisionEvaluator::LVSDiscreteCollisionEvaluator(
   margin_data_ = contact_manager_->getCollisionMarginData();
   coeff_data_ = collision_config.collision_coeff_data;
   margin_buffer_ = collision_config.collision_margin_buffer;
-  longest_valid_segment_length_ = collision_config.longest_valid_segment_length;
-  contact_request_ = collision_config.contact_request;
 
   // Increase the default by the buffer
-  contact_manager_->incrementCollisionMarginData(margin_buffer_);
+  contact_manager_->incrementCollisionMargin(margin_buffer_);
 }
 
 std::shared_ptr<const trajopt_common::CollisionCacheData>
@@ -371,7 +361,7 @@ LVSDiscreteCollisionEvaluator::CalcCollisionData(const Eigen::Ref<const Eigen::V
   {
     using ShapeGrsType = std::map<std::pair<std::size_t, std::size_t>, trajopt_common::GradientResultsSet>;
     ShapeGrsType shape_grs;
-    const double coeff = coeff_data_.getPairCollisionCoeff(pair.first.first, pair.first.second);
+    const double coeff = coeff_data_.getCollisionCoeff(pair.first.first, pair.first.second);
     for (const tesseract_collision::ContactResult& dist_result : pair.second)
     {
       const std::size_t shape_hash0 = trajopt_common::cantorHash(dist_result.shape_id[0], dist_result.subshape_id[0]);
@@ -465,7 +455,7 @@ void LVSDiscreteCollisionEvaluator::CalcCollisionsHelper(tesseract_collision::Co
         }
 
         // Contains the contact distance threshold and coefficient for the given link pair
-        const double margin = margin_data_.getPairCollisionMargin(pair.first.first, pair.first.second);
+        const double margin = margin_data_.getCollisionMargin(pair.first.first, pair.first.second);
 
         // Don't include contacts at the fixed state
         trajopt_common::removeInvalidContactResults(pair.second, margin, margin_buffer_, vars0_fixed, vars1_fixed);
@@ -476,10 +466,10 @@ void LVSDiscreteCollisionEvaluator::CalcCollisionsHelper(tesseract_collision::Co
   // the longest valid segment length.
   const double dist = (dof_vals1 - dof_vals0).norm();
   long cnt = 2;
-  if (dist > longest_valid_segment_length_)
+  if (dist > collision_check_config_.longest_valid_segment_length)
   {
     // Calculate the number state to interpolate
-    cnt = static_cast<long>(std::ceil(dist / longest_valid_segment_length_)) + 1;
+    cnt = static_cast<long>(std::ceil(dist / collision_check_config_.longest_valid_segment_length)) + 1;
   }
 
   // Create interpolated trajectory between two states that satisfies the longest valid segment length.
@@ -498,7 +488,7 @@ void LVSDiscreteCollisionEvaluator::CalcCollisionsHelper(tesseract_collision::Co
     for (const auto& link_name : manip_active_link_names_)
       contact_manager_->setCollisionObjectsTransform(link_name, state0[link_name]);
 
-    contact_manager_->contactTest(contacts, contact_request_);
+    contact_manager_->contactTest(contacts, collision_check_config_.contact_request);
 
     if (!contacts.empty())
     {
@@ -515,8 +505,7 @@ LVSDiscreteCollisionEvaluator::CalcGradientData(const Eigen::Ref<const Eigen::Ve
                                                 const tesseract_collision::ContactResult& contact_results)
 {
   // Contains the contact distance threshold and coefficient for the given link pair
-  const double margin =
-      margin_data_.getPairCollisionMargin(contact_results.link_names[0], contact_results.link_names[1]);
+  const double margin = margin_data_.getCollisionMargin(contact_results.link_names[0], contact_results.link_names[1]);
   return trajopt_common::getGradient(dof_vals0, dof_vals1, contact_results, margin, margin_buffer_, *manip_);
 }
 

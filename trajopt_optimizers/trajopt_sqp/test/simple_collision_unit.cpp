@@ -123,8 +123,8 @@ public:
     {
       for (const auto& dist_result : pair.second)
       {
-        const double dist = margin_data.getPairCollisionMargin(dist_result.link_names[0], dist_result.link_names[1]);
-        const double coeff = coeff_data.getPairCollisionCoeff(dist_result.link_names[0], dist_result.link_names[1]);
+        const double dist = margin_data.getCollisionMargin(dist_result.link_names[0], dist_result.link_names[1]);
+        const double coeff = coeff_data.getCollisionCoeff(dist_result.link_names[0], dist_result.link_names[1]);
         err[i++] += std::max<double>(((dist - dist_result.distance) * coeff), 0.);
       }
     }
@@ -229,7 +229,7 @@ void runSimpleCollisionTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const
   const tesseract_kinematics::JointGroup::ConstPtr manip = env->getJointGroup("manipulator");
 
   manager->setActiveCollisionObjects(manip->getActiveLinkNames());
-  manager->setDefaultCollisionMarginData(0);
+  manager->setDefaultCollisionMargin(0);
 
   collisions.clear();
 
@@ -306,15 +306,23 @@ void runSimpleCollisionTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const
   inputs << -0.75, 0.75;
   const Eigen::Map<tesseract_common::TrajArray> results(x.data(), 1, 2);
 
-  bool found = checkTrajectory(
-      collisions, *manager, *state_solver, manip->getJointNames(), inputs, trajopt_collision_cnt_config);
+  bool found = checkTrajectory(collisions,
+                               *manager,
+                               *state_solver,
+                               manip->getJointNames(),
+                               inputs,
+                               trajopt_collision_cnt_config.collision_check_config);
 
   EXPECT_TRUE(found);
   CONSOLE_BRIDGE_logWarn((found) ? ("Initial trajectory is in collision") : ("Initial trajectory is collision free"));
 
   collisions.clear();
-  found = checkTrajectory(
-      collisions, *manager, *state_solver, manip->getJointNames(), results, trajopt_collision_cnt_config);
+  found = checkTrajectory(collisions,
+                          *manager,
+                          *state_solver,
+                          manip->getJointNames(),
+                          results,
+                          trajopt_collision_cnt_config.collision_check_config);
 
   EXPECT_FALSE(found);
   CONSOLE_BRIDGE_logWarn((found) ? ("Final trajectory is in collision") : ("Final trajectory is collision free"));

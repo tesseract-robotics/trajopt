@@ -86,7 +86,7 @@ TEST_F(SimpleCollisionTest, spheres)  // NOLINT
   const tesseract_kinematics::JointGroup::ConstPtr manip = env->getJointGroup("manipulator");
 
   manager->setActiveCollisionObjects(manip->getActiveLinkNames());
-  manager->setDefaultCollisionMarginData(0);
+  manager->setDefaultCollisionMargin(0);
 
   collisions.clear();
 
@@ -146,15 +146,23 @@ TEST_F(SimpleCollisionTest, spheres)  // NOLINT
   inputs << -0.75, 0.75;
   Eigen::Map<tesseract_common::TrajArray> const results(x.data(), 1, 2);
 
-  bool found =
-      checkTrajectory(collisions, *manager, *state_solver, manip->getJointNames(), inputs, trajopt_collision_config);
+  bool found = checkTrajectory(collisions,
+                               *manager,
+                               *state_solver,
+                               manip->getJointNames(),
+                               inputs,
+                               trajopt_collision_config.collision_check_config);
 
   EXPECT_TRUE(found);
   CONSOLE_BRIDGE_logWarn((found) ? ("Initial trajectory is in collision") : ("Initial trajectory is collision free"));
 
   collisions.clear();
-  found =
-      checkTrajectory(collisions, *manager, *state_solver, manip->getJointNames(), results, trajopt_collision_config);
+  found = checkTrajectory(collisions,
+                          *manager,
+                          *state_solver,
+                          manip->getJointNames(),
+                          results,
+                          trajopt_collision_config.collision_check_config);
 
   EXPECT_FALSE(found);
   CONSOLE_BRIDGE_logWarn((found) ? ("Final trajectory is in collision") : ("Final trajectory is collision free"));

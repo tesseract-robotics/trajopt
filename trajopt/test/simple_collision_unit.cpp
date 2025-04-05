@@ -79,7 +79,7 @@ void runTest(const Environment::Ptr& env, const Visualization::Ptr& plotter, boo
   const DiscreteContactManager::Ptr manager = prob->GetEnv()->getDiscreteContactManager();
 
   manager->setActiveCollisionObjects(prob->GetKin()->getActiveLinkNames());
-  manager->setDefaultCollisionMarginData(0.2);
+  manager->setDefaultCollisionMargin(0.2);
 
   collisions.clear();
   tesseract_collision::CollisionCheckConfig config;

@@ -91,7 +91,7 @@ void runContinuousGradientTest(const Environment::Ptr& env, double coeff)
   const tesseract_kinematics::JointGroup::ConstPtr manip = env->getJointGroup("manipulator");
 
   manager->setActiveCollisionObjects(manip->getActiveLinkNames());
-  manager->setDefaultCollisionMarginData(0);
+  manager->setDefaultCollisionMargin(0);
 
   collisions.clear();
 
@@ -130,7 +130,7 @@ void runContinuousGradientTest(const Environment::Ptr& env, double coeff)
   const double margin_coeff = coeff;
   const double margin = 0.02;
   trajopt_common::TrajOptCollisionConfig trajopt_collision_config(margin, margin_coeff);
-  trajopt_collision_config.type = tesseract_collision::CollisionEvaluatorType::LVS_CONTINUOUS;
+  trajopt_collision_config.collision_check_config.type = tesseract_collision::CollisionEvaluatorType::LVS_CONTINUOUS;
   trajopt_collision_config.collision_margin_buffer = 0.05;
 
   auto collision_cache = std::make_shared<trajopt_ifopt::CollisionCache>(100);

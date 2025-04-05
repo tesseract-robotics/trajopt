@@ -86,7 +86,7 @@ void runDiscreteGradientTest(const Environment::Ptr& env, double coeff)
   const tesseract_kinematics::JointGroup::ConstPtr manip = env->getJointGroup("manipulator");
 
   manager->setActiveCollisionObjects(manip->getActiveLinkNames());
-  manager->setDefaultCollisionMarginData(0);
+  manager->setDefaultCollisionMargin(0);
 
   collisions.clear();
 

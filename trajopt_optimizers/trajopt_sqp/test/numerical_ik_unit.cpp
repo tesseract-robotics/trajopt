@@ -88,7 +88,7 @@ void runNumericalIKTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const Env
   const tesseract_kinematics::JointGroup::ConstPtr manip = env->getJointGroup("left_arm");
 
   manager->setActiveCollisionObjects(manip->getActiveLinkNames());
-  manager->setDefaultCollisionMarginData(0);
+  manager->setDefaultCollisionMargin(0);
 
   // 3) Add Variables
   Eigen::VectorXd cur_position(7);  // env->getCurrentJointValues(forward_kinematics->getJointNames());

@@ -1675,10 +1675,10 @@ void CollisionTermInfo::fromJson(ProblemConstructionInfo& pci, const Json::Value
 
       for (const auto& p : pair)
       {
-        config.contact_manager_config.margin_data.setPairCollisionMargin(link, p, pair_dist_pen);
-        config.contact_manager_config.margin_data_override_type =
-            tesseract_collision::CollisionMarginOverrideType::MODIFY;
-        config.collision_coeff_data.setPairCollisionCoeff(link, p, pair_coeffs);
+        config.contact_manager_config.pair_margin_data.setCollisionMargin(link, p, pair_dist_pen);
+        config.contact_manager_config.pair_margin_override_type =
+            tesseract_collision::CollisionMarginPairOverrideType::MODIFY;
+        config.collision_coeff_data.setCollisionCoeff(link, p, pair_coeffs);
       }
     }
   }
@@ -1700,17 +1700,15 @@ void CollisionTermInfo::fromJson(ProblemConstructionInfo& pci, const Json::Value
 void CollisionTermInfo::hatch(TrajOptProb& prob)
 {
   const int n_dof = static_cast<int>(prob.GetKin()->numJoints());
-  // const auto evaluator_type = config.front().type;
-  // const double longest_valid_segment_length = config.front().longest_valid_segment_length;
-  // const bool use_weighted_sum = config.front().use_weighted_sum;
   if (term_type == TermType::TT_COST)
   {
-    if (config.type != tesseract_collision::CollisionEvaluatorType::DISCRETE)
+    if (config.collision_check_config.type != tesseract_collision::CollisionEvaluatorType::DISCRETE)
     {
-      auto lvs = (config.type == tesseract_collision::CollisionEvaluatorType::CONTINUOUS) ?
+      auto lvs = (config.collision_check_config.type == tesseract_collision::CollisionEvaluatorType::CONTINUOUS) ?
                      std::numeric_limits<double>::max() :
-                     config.longest_valid_segment_length;
-      bool discrete_continuous = (config.type == tesseract_collision::CollisionEvaluatorType::LVS_DISCRETE);
+                     config.collision_check_config.longest_valid_segment_length;
+      bool discrete_continuous =
+          (config.collision_check_config.type == tesseract_collision::CollisionEvaluatorType::LVS_DISCRETE);
       for (int i = first_step; i < last_step; ++i)
       {
         const bool current_fixed = std::find(fixed_steps.begin(), fixed_steps.end(), i) != fixed_steps.end();
@@ -1772,12 +1770,13 @@ void CollisionTermInfo::hatch(TrajOptProb& prob)
   }
   else
   {  // ALMOST COPIED
-    if (config.type != tesseract_collision::CollisionEvaluatorType::DISCRETE)
+    if (config.collision_check_config.type != tesseract_collision::CollisionEvaluatorType::DISCRETE)
     {
-      auto lvs = (config.type == tesseract_collision::CollisionEvaluatorType::CONTINUOUS) ?
+      auto lvs = (config.collision_check_config.type == tesseract_collision::CollisionEvaluatorType::CONTINUOUS) ?
                      std::numeric_limits<double>::max() :
-                     config.longest_valid_segment_length;
-      bool discrete_continuous = (config.type == tesseract_collision::CollisionEvaluatorType::LVS_DISCRETE);
+                     config.collision_check_config.longest_valid_segment_length;
+      bool discrete_continuous =
+          (config.collision_check_config.type == tesseract_collision::CollisionEvaluatorType::LVS_DISCRETE);
       for (int i = first_step; i < last_step; ++i)
       {
         const bool current_fixed = std::find(fixed_steps.begin(), fixed_steps.end(), i) != fixed_steps.end();

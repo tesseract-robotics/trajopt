@@ -78,7 +78,7 @@ void runTest(const Environment::Ptr& env, const Visualization::Ptr& plotter, boo
   const ContinuousContactManager::Ptr manager = prob->GetEnv()->getContinuousContactManager();
 
   manager->setActiveCollisionObjects(prob->GetKin()->getActiveLinkNames());
-  manager->setDefaultCollisionMarginData(0);
+  manager->setDefaultCollisionMargin(0);
 
   collisions.clear();
   tesseract_collision::CollisionCheckConfig config;

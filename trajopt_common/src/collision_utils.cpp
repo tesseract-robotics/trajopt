@@ -74,8 +74,8 @@ std::size_t cantorHash(int shape_id, int subshape_id)
 void removeInvalidContactResults(tesseract_collision::ContactResultVector& contact_results,
                                  double margin,
                                  double margin_buffer,
-                                 bool var1_fixed,
-                                 bool var2_fixed)
+                                 bool var0_fixed,
+                                 bool var1_fixed)
 {
   auto end =
       std::remove_if(contact_results.begin(), contact_results.end(), [=](const tesseract_collision::ContactResult& r) {
@@ -83,10 +83,10 @@ void removeInvalidContactResults(tesseract_collision::ContactResultVector& conta
         if ((!((margin + margin_buffer) > r.distance)))
           return true;
 
-        if (!var1_fixed && !var2_fixed)
+        if (!var0_fixed && !var1_fixed)
           return false;
 
-        if (var1_fixed)
+        if (var0_fixed)
         {
           if (r.cc_type[0] != tesseract_collision::ContinuousCollisionType::CCType_None &&
               r.cc_type[0] != tesseract_collision::ContinuousCollisionType::CCType_Time0)
@@ -97,7 +97,7 @@ void removeInvalidContactResults(tesseract_collision::ContactResultVector& conta
             return false;
         }
 
-        if (var2_fixed)
+        if (var1_fixed)
         {
           if (r.cc_type[0] != tesseract_collision::ContinuousCollisionType::CCType_None &&
               r.cc_type[0] != tesseract_collision::ContinuousCollisionType::CCType_Time1)
