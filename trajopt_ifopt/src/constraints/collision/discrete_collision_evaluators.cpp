@@ -184,7 +184,7 @@ void SingleTimestepCollisionEvaluator::CalcCollisionsHelper(const Eigen::Ref<con
     const double margin = margin_data_.getCollisionMargin(pair.first.first, pair.first.second);
     auto end = std::remove_if(
         pair.second.begin(), pair.second.end(), [&margin, this](const tesseract_collision::ContactResult& r) {
-          return (r.distance >= (margin + margin_buffer_));
+          return (r.distance > (margin + margin_buffer_));
         });
     pair.second.erase(end, pair.second.end());
   };

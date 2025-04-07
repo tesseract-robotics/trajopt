@@ -80,7 +80,7 @@ void removeInvalidContactResults(tesseract_collision::ContactResultVector& conta
   auto end =
       std::remove_if(contact_results.begin(), contact_results.end(), [=](const tesseract_collision::ContactResult& r) {
         /** @todo Is this correct? (Levi)*/
-        if ((r.distance >= (margin + margin_buffer)))
+        if ((r.distance > (margin + margin_buffer)))
           return true;
 
         if (!var0_fixed && !var1_fixed)

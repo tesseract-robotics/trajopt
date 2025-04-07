@@ -890,7 +890,7 @@ void CollisionEvaluator::removeInvalidContactResults(tesseract_collision::Contac
           }
         }
 
-        return (r.distance >= (margin + margin_buffer_));
+        return (r.distance > (margin + margin_buffer_));
       });
 
   contact_results.erase(end, contact_results.end());
@@ -987,7 +987,7 @@ void SingleTimestepCollisionEvaluator::CalcCollisions(const Eigen::Ref<const Eig
 
     auto end = std::remove_if(
         pair.second.begin(), pair.second.end(), [margin, this](const tesseract_collision::ContactResult& r) {
-          return (r.distance >= (margin + margin_buffer_));
+          return (r.distance > (margin + margin_buffer_));
         });
     pair.second.erase(end, pair.second.end());
   };
