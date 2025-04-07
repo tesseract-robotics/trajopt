@@ -186,7 +186,7 @@ void SingleTimestepCollisionEvaluator::CalcCollisionsHelper(const Eigen::Ref<con
     const Eigen::Vector2d data = { dist, coeff };
     auto end = std::remove_if(
         pair.second.begin(), pair.second.end(), [&data, this](const tesseract_collision::ContactResult& r) {
-          return (!((data[0] + margin_buffer_) > r.distance));
+          return (r.distance >= (data[0] + margin_buffer_));
         });
     pair.second.erase(end, pair.second.end());
   };
