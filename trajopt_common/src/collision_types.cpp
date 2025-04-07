@@ -93,7 +93,6 @@ void TrajOptCollisionConfig::serialize(Archive& ar, const unsigned int /*version
   ar& BOOST_SERIALIZATION_NVP(collision_coeff_data);
   ar& BOOST_SERIALIZATION_NVP(collision_margin_buffer);
   ar& BOOST_SERIALIZATION_NVP(max_num_cnt);
-  ar& BOOST_SERIALIZATION_NVP(use_weighted_sum);
 }
 
 double LinkMaxError::getMaxError() const

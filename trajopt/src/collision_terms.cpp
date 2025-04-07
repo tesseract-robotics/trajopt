@@ -379,202 +379,6 @@ void CollisionEvaluator::CollisionsToDistanceExpressions(sco::AffExprVector& exp
   }
 }
 
-void CollisionEvaluator::CollisionsToDistanceExpressionsW(sco::AffExprVector& exprs,
-                                                          std::vector<double>& exprs_margin,
-                                                          std::vector<double>& exprs_coeff,
-                                                          const tesseract_collision::ContactResultMap& dist_results,
-                                                          const sco::VarVector& vars,
-                                                          const DblVec& x,
-                                                          bool isTimestep1)
-{
-  const Eigen::VectorXd dofvals = sco::getVec(x, vars);
-
-  // All collision data is in world coordinate system. This provides the
-  // transform for converting data between world frame and manipulator
-  // frame.
-
-  exprs.clear();
-  exprs_margin.clear();
-  exprs_coeff.clear();
-  exprs.reserve(dist_results.count());
-  exprs_margin.reserve(dist_results.count());
-  exprs_coeff.reserve(dist_results.count());
-  for (const auto& pair : dist_results)
-  {
-    if (pair.second.empty())
-      continue;
-
-    double worst_dist{ std::numeric_limits<double>::max() };
-    double total_weight[2];
-    bool found[2];
-    Eigen::VectorXd dist_grad[2];
-
-    total_weight[0] = 0;
-    total_weight[1] = 0;
-
-    found[0] = false;
-    found[1] = false;
-
-    dist_grad[0] = Eigen::VectorXd::Zero(manip_->numJoints());
-    dist_grad[1] = Eigen::VectorXd::Zero(manip_->numJoints());
-
-    // Contains the contact distance threshold and coefficient for the given link pair
-    const double margin = margin_data_.getCollisionMargin(pair.first.first, pair.first.second);
-    const double coeff = coeff_data_.getCollisionCoeff(pair.first.first, pair.first.second);
-    for (const auto& res : pair.second)
-    {
-      GradientResults grad = GetGradient(dofvals, res, margin, coeff, isTimestep1);
-
-      for (std::size_t i = 0; i < 2; ++i)
-      {
-        // Changing the start state does not have an affect if the collision is at the end state so do not process
-        // Changing the end state does not have an affect if the collision is at the start state so do not process
-        if (grad.gradients[i].has_gradient &&
-            !(!isTimestep1 && res.cc_type[i] == tesseract_collision::ContinuousCollisionType::CCType_Time1) &&
-            !(isTimestep1 && res.cc_type[i] == tesseract_collision::ContinuousCollisionType::CCType_Time0))
-        {
-          found[i] = true;
-
-          if (res.distance < worst_dist)
-            worst_dist = res.distance;
-
-          const double weight = 100.0 * sco::pospart(grad.margin + margin_buffer_ - res.distance);
-          total_weight[i] += weight;
-          dist_grad[i] += (weight * grad.gradients[i].gradient);
-        }
-      }
-    }
-
-    exprs_margin.push_back(margin);
-    exprs_coeff.push_back(coeff);
-    if (!found[0] && !found[1])
-    {
-      exprs.emplace_back(0);
-    }
-    else
-    {
-      sco::AffExpr dist(worst_dist);
-      for (std::size_t i = 0; i < 2; ++i)
-      {
-        if (found[i])
-        {
-          assert(std::abs(total_weight[i]) > 1e-8);
-          dist_grad[i] *= (1.0 / total_weight[i]);
-          sco::exprInc(dist, sco::varDot(dist_grad[i], vars));
-          sco::exprInc(dist, -dist_grad[i].dot(dofvals));
-        }
-      }
-      exprs.push_back(dist);
-    }
-  }
-}
-
-void CollisionEvaluator::CollisionsToDistanceExpressionsContinuousW(
-    sco::AffExprVector& exprs,
-    std::vector<double>& exprs_margin,
-    std::vector<double>& exprs_coeff,
-    const tesseract_collision::ContactResultMap& dist_results,
-    const sco::VarVector& vars0,
-    const sco::VarVector& vars1,
-    const DblVec& x,
-    bool isTimestep1)
-{
-  const Eigen::VectorXd dofvals0 = sco::getVec(x, vars0);
-  const Eigen::VectorXd dofvals1 = sco::getVec(x, vars1);
-  const Eigen::VectorXd dofvalst = Eigen::VectorXd::Zero(dofvals0.size());
-
-  // All collision data is in world coordinate system. This provides the
-  // transform for converting data between world frame and manipulator
-  // frame.
-
-  exprs.clear();
-  exprs_margin.clear();
-  exprs_coeff.clear();
-  exprs.reserve(dist_results.count());
-  exprs_margin.reserve(dist_results.count());
-  exprs_coeff.reserve(dist_results.count());
-  for (const auto& pair : dist_results)
-  {
-    if (pair.second.empty())
-      continue;
-
-    double worst_dist{ std::numeric_limits<double>::max() };
-    double total_weight[2];
-    bool found[2];
-    Eigen::VectorXd dist_grad[2];
-
-    total_weight[0] = 0;
-    total_weight[1] = 0;
-
-    found[0] = false;
-    found[1] = false;
-
-    dist_grad[0] = Eigen::VectorXd::Zero(manip_->numJoints());
-    dist_grad[1] = Eigen::VectorXd::Zero(manip_->numJoints());
-
-    // Contains the contact distance threshold and coefficient for the given link pair
-    const double margin = margin_data_.getCollisionMargin(pair.first.first, pair.first.second);
-    const double coeff = coeff_data_.getCollisionCoeff(pair.first.first, pair.first.second);
-    for (const auto& res : pair.second)
-    {
-      GradientResults grad = GetGradient(dofvals0, dofvals1, res, margin, coeff, isTimestep1);
-
-      for (std::size_t i = 0; i < 2; ++i)
-      {
-        // Changing the start state does not have an affect if the collision is at the end state so do not process
-        // Changing the end state does not have an affect if the collision is at the start state so do not process
-        if (grad.gradients[i].has_gradient &&
-            !(!isTimestep1 && res.cc_type[i] == tesseract_collision::ContinuousCollisionType::CCType_Time1) &&
-            !(isTimestep1 && res.cc_type[i] == tesseract_collision::ContinuousCollisionType::CCType_Time0))
-        {
-          assert(res.cc_type[i] != tesseract_collision::ContinuousCollisionType::CCType_None);
-          assert(res.cc_time[i] >= 0.0 && res.cc_time[i] <= 1.0);
-
-          found[i] = true;
-
-          if (res.distance < worst_dist)
-            worst_dist = res.distance;
-
-          const double weight = 100.0 * sco::pospart(grad.margin + margin_buffer_ - res.distance);
-          total_weight[i] += weight;
-          dist_grad[i] += (weight * grad.gradients[i].gradient);
-        }
-      }
-    }
-
-    exprs_margin.push_back(margin);
-    exprs_coeff.push_back(coeff);
-    if (!found[0] && !found[1])
-    {
-      exprs.emplace_back(0);
-    }
-    else
-    {
-      sco::AffExpr dist(worst_dist);
-      for (std::size_t i = 0; i < 2; ++i)
-      {
-        if (found[i])
-        {
-          assert(std::abs(total_weight[i]) > 1e-8);
-          dist_grad[i] *= (1.0 / total_weight[i]);
-
-          if (i == 0)
-          {
-            sco::exprInc(dist, sco::varDot(dist_grad[i], vars0));
-            sco::exprInc(dist, -dist_grad[i].dot(dofvals0));
-          }
-          else
-          {
-            sco::exprInc(dist, sco::varDot(dist_grad[i], vars1));
-            sco::exprInc(dist, -dist_grad[i].dot(dofvals1));
-          }
-        }
-      }
-      exprs.push_back(dist);
-    }
-  }
-}
-
 CollisionEvaluator::CollisionEvaluator(tesseract_kinematics::JointGroup::ConstPtr manip,
                                        tesseract_environment::Environment::ConstPtr env,
                                        bool dynamic_environment)
@@ -730,73 +534,6 @@ void CollisionEvaluator::CalcDistExpressionsBothFree(const DblVec& x,
   }
 }
 
-void CollisionEvaluator::CalcDistExpressionsStartFreeW(const DblVec& x,
-                                                       sco::AffExprVector& exprs,
-                                                       std::vector<double>& exprs_margin,
-                                                       std::vector<double>& exprs_coeff)
-{
-  const ContactResultMapConstPtr dist_results = GetContactResultMapCached(x);
-
-  sco::AffExprVector exprs0;
-  CollisionsToDistanceExpressionsContinuousW(
-      exprs0, exprs_margin, exprs_coeff, *dist_results, vars0_, vars1_, x, false);
-
-  exprs.resize(exprs0.size());
-  for (std::size_t i = 0; i < exprs0.size(); ++i)
-  {
-    exprs[i] = sco::AffExpr(0);
-    sco::exprInc(exprs[i], exprs0[i]);
-    exprs[i] = sco::cleanupAff(exprs[i]);
-  }
-}
-
-void CollisionEvaluator::CalcDistExpressionsEndFreeW(const DblVec& x,
-                                                     sco::AffExprVector& exprs,
-                                                     std::vector<double>& exprs_margin,
-                                                     std::vector<double>& exprs_coeff)
-{
-  const ContactResultMapConstPtr dist_results = GetContactResultMapCached(x);
-
-  sco::AffExprVector exprs1;
-  CollisionsToDistanceExpressionsContinuousW(exprs1, exprs_margin, exprs_coeff, *dist_results, vars0_, vars1_, x, true);
-
-  exprs.resize(exprs1.size());
-  for (std::size_t i = 0; i < exprs1.size(); ++i)
-  {
-    exprs[i] = sco::AffExpr(0);
-    sco::exprInc(exprs[i], exprs1[i]);
-    exprs[i] = sco::cleanupAff(exprs[i]);
-  }
-}
-
-void CollisionEvaluator::CalcDistExpressionsBothFreeW(const DblVec& x,
-                                                      sco::AffExprVector& exprs,
-                                                      std::vector<double>& exprs_margin,
-                                                      std::vector<double>& exprs_coeff)
-{
-  const ContactResultMapConstPtr dist_results = GetContactResultMapCached(x);
-
-  sco::AffExprVector exprs0, exprs1;
-  std::vector<double> exprs_margin0, exprs_margin1;
-  std::vector<double> exprs_coeff0, exprs_coeff1;
-  CollisionsToDistanceExpressionsContinuousW(
-      exprs0, exprs_margin0, exprs_coeff0, *dist_results, vars0_, vars1_, x, false);
-  CollisionsToDistanceExpressionsContinuousW(
-      exprs1, exprs_margin1, exprs_coeff1, *dist_results, vars0_, vars1_, x, true);
-
-  exprs_margin = exprs_margin0;
-  exprs_coeff = exprs_coeff0;
-  exprs.resize(exprs0.size());
-  assert(exprs0.size() == exprs1.size());
-  for (std::size_t i = 0; i < exprs0.size(); ++i)
-  {
-    exprs[i] = sco::AffExpr(0);
-    sco::exprInc(exprs[i], exprs0[i]);
-    sco::exprInc(exprs[i], exprs1[i]);
-    exprs[i] = sco::cleanupAff(exprs[i]);
-  }
-}
-
 void CollisionEvaluator::CalcDistExpressionsSingleTimeStep(const DblVec& x,
                                                            sco::AffExprVector& exprs,
                                                            std::vector<double>& exprs_margin,
@@ -813,19 +550,6 @@ void CollisionEvaluator::CalcDistExpressionsSingleTimeStep(const DblVec& x,
     sco::exprInc(exprs[i], dist_results[i].get().distance);
     sco::cleanupAff(exprs[i]);
   }
-}
-
-void CollisionEvaluator::CalcDistExpressionsSingleTimeStepW(const DblVec& x,
-                                                            sco::AffExprVector& exprs,
-                                                            std::vector<double>& exprs_margin,
-                                                            std::vector<double>& exprs_coeff)
-{
-  const ContactResultMapConstPtr dist_results = GetContactResultMapCached(x);
-  CollisionsToDistanceExpressionsW(exprs, exprs_margin, exprs_coeff, *dist_results, vars0_, x, false);
-  assert(dist_results->size() == exprs.size());
-
-  for (auto& expr : exprs)
-    expr = sco::cleanupAff(expr);
 }
 
 void CollisionEvaluator::removeInvalidContactResults(tesseract_collision::ContactResultVector& contact_results,
@@ -850,30 +574,6 @@ void CollisionEvaluator::removeInvalidContactResults(tesseract_collision::Contac
             break;
           }
           case CollisionExpressionEvaluatorType::START_FREE_END_FIXED:
-          {
-            if (r.cc_type[0] == tesseract_collision::ContinuousCollisionType::CCType_Time1)
-              return true;
-
-            if (r.cc_type[1] == tesseract_collision::ContinuousCollisionType::CCType_Time1)
-              return true;
-
-            break;
-          }
-          case CollisionExpressionEvaluatorType::START_FREE_END_FREE_WEIGHTED_SUM:
-          {
-            break;
-          }
-          case CollisionExpressionEvaluatorType::START_FIXED_END_FREE_WEIGHTED_SUM:
-          {
-            if (r.cc_type[0] == tesseract_collision::ContinuousCollisionType::CCType_Time0)
-              return true;
-
-            if (r.cc_type[1] == tesseract_collision::ContinuousCollisionType::CCType_Time0)
-              return true;
-
-            break;
-          }
-          case CollisionExpressionEvaluatorType::START_FREE_END_FIXED_WEIGHTED_SUM:
           {
             if (r.cc_type[0] == tesseract_collision::ContinuousCollisionType::CCType_Time1)
               return true;
@@ -928,16 +628,6 @@ SingleTimestepCollisionEvaluator::SingleTimestepCollisionEvaluator(
     case CollisionExpressionEvaluatorType::SINGLE_TIME_STEP:
     {
       fn_ = std::bind(&SingleTimestepCollisionEvaluator::CalcDistExpressionsSingleTimeStep,
-                      this,
-                      std::placeholders::_1,
-                      std::placeholders::_2,
-                      std::placeholders::_3,
-                      std::placeholders::_4);
-      break;
-    }
-    case CollisionExpressionEvaluatorType::SINGLE_TIME_STEP_WEIGHTED_SUM:
-    {
-      fn_ = std::bind(&SingleTimestepCollisionEvaluator::CalcDistExpressionsSingleTimeStepW,
                       this,
                       std::placeholders::_1,
                       std::placeholders::_2,
@@ -1104,42 +794,6 @@ DiscreteCollisionEvaluator::DiscreteCollisionEvaluator(std::shared_ptr<const tes
       vars0_fixed_ = false;
       vars1_fixed_ = true;
       fn_ = std::bind(&DiscreteCollisionEvaluator::CalcDistExpressionsStartFree,
-                      this,
-                      std::placeholders::_1,
-                      std::placeholders::_2,
-                      std::placeholders::_3,
-                      std::placeholders::_4);
-      break;
-    }
-    case CollisionExpressionEvaluatorType::START_FREE_END_FREE_WEIGHTED_SUM:
-    {
-      vars0_fixed_ = false;
-      vars1_fixed_ = false;
-      fn_ = std::bind(&DiscreteCollisionEvaluator::CalcDistExpressionsBothFreeW,
-                      this,
-                      std::placeholders::_1,
-                      std::placeholders::_2,
-                      std::placeholders::_3,
-                      std::placeholders::_4);
-      break;
-    }
-    case CollisionExpressionEvaluatorType::START_FIXED_END_FREE_WEIGHTED_SUM:
-    {
-      vars0_fixed_ = true;
-      vars1_fixed_ = false;
-      fn_ = std::bind(&DiscreteCollisionEvaluator::CalcDistExpressionsEndFreeW,
-                      this,
-                      std::placeholders::_1,
-                      std::placeholders::_2,
-                      std::placeholders::_3,
-                      std::placeholders::_4);
-      break;
-    }
-    case CollisionExpressionEvaluatorType::START_FREE_END_FIXED_WEIGHTED_SUM:
-    {
-      vars0_fixed_ = false;
-      vars1_fixed_ = true;
-      fn_ = std::bind(&DiscreteCollisionEvaluator::CalcDistExpressionsStartFreeW,
                       this,
                       std::placeholders::_1,
                       std::placeholders::_2,
@@ -1383,42 +1037,6 @@ CastCollisionEvaluator::CastCollisionEvaluator(std::shared_ptr<const tesseract_k
       vars0_fixed_ = false;
       vars1_fixed_ = true;
       fn_ = std::bind(&CastCollisionEvaluator::CalcDistExpressionsStartFree,
-                      this,
-                      std::placeholders::_1,
-                      std::placeholders::_2,
-                      std::placeholders::_3,
-                      std::placeholders::_4);
-      break;
-    }
-    case CollisionExpressionEvaluatorType::START_FREE_END_FREE_WEIGHTED_SUM:
-    {
-      vars0_fixed_ = false;
-      vars1_fixed_ = false;
-      fn_ = std::bind(&CastCollisionEvaluator::CalcDistExpressionsBothFreeW,
-                      this,
-                      std::placeholders::_1,
-                      std::placeholders::_2,
-                      std::placeholders::_3,
-                      std::placeholders::_4);
-      break;
-    }
-    case CollisionExpressionEvaluatorType::START_FIXED_END_FREE_WEIGHTED_SUM:
-    {
-      vars0_fixed_ = true;
-      vars1_fixed_ = false;
-      fn_ = std::bind(&CastCollisionEvaluator::CalcDistExpressionsEndFreeW,
-                      this,
-                      std::placeholders::_1,
-                      std::placeholders::_2,
-                      std::placeholders::_3,
-                      std::placeholders::_4);
-      break;
-    }
-    case CollisionExpressionEvaluatorType::START_FREE_END_FIXED_WEIGHTED_SUM:
-    {
-      vars0_fixed_ = false;
-      vars1_fixed_ = true;
-      fn_ = std::bind(&CastCollisionEvaluator::CalcDistExpressionsStartFreeW,
                       this,
                       std::placeholders::_1,
                       std::placeholders::_2,

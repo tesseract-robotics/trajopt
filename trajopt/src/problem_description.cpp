@@ -1605,9 +1605,7 @@ void CollisionTermInfo::fromJson(ProblemConstructionInfo& pci, const Json::Value
   int collision_evaluator_type{ 1 };
   double longest_valid_segment_length{ 0.5 };
   double collision_margin_buffer{ 0.5 };
-  bool use_weighted_sum{ false };
   json_marshal::childFromJson(params, collision_evaluator_type, "evaluator_type", 1);
-  json_marshal::childFromJson(params, use_weighted_sum, "use_weighted_sum", false);
   json_marshal::childFromJson(params, first_step, "first_step", 0);
   json_marshal::childFromJson(params, last_step, "last_step", n_steps - 1);
   json_marshal::childFromJson(params, longest_valid_segment_length, "longest_valid_segment_length", 0.5);
@@ -1647,7 +1645,6 @@ void CollisionTermInfo::fromJson(ProblemConstructionInfo& pci, const Json::Value
   config = trajopt_common::TrajOptCollisionConfig(
       dist_pen, coeffs, contact_request_type, evaluator_type, longest_valid_segment_length);
   config.collision_margin_buffer = collision_margin_buffer;
-  config.use_weighted_sum = use_weighted_sum;
 
   // Check if data was set for individual pairs
   if (params.isMember("pairs"))
@@ -1687,7 +1684,6 @@ void CollisionTermInfo::fromJson(ProblemConstructionInfo& pci, const Json::Value
                                "first_step",
                                "last_step",
                                "evaluator_type",
-                               "use_weighted_sum",
                                "fixed_steps",
                                "contact_test_type",
                                "longest_valid_segment_length",
@@ -1717,21 +1713,15 @@ void CollisionTermInfo::hatch(TrajOptProb& prob)
         CollisionExpressionEvaluatorType expression_evaluator_type{};
         if (!current_fixed && !next_fixed)
         {
-          expression_evaluator_type = (config.use_weighted_sum) ?
-                                          CollisionExpressionEvaluatorType::START_FREE_END_FREE_WEIGHTED_SUM :
-                                          CollisionExpressionEvaluatorType::START_FREE_END_FREE;
+          expression_evaluator_type = CollisionExpressionEvaluatorType::START_FREE_END_FREE;
         }
         else if (current_fixed)
         {
-          expression_evaluator_type = (config.use_weighted_sum) ?
-                                          CollisionExpressionEvaluatorType::START_FIXED_END_FREE_WEIGHTED_SUM :
-                                          CollisionExpressionEvaluatorType::START_FIXED_END_FREE;
+          expression_evaluator_type = CollisionExpressionEvaluatorType::START_FIXED_END_FREE;
         }
         else if (next_fixed)
         {
-          expression_evaluator_type = (config.use_weighted_sum) ?
-                                          CollisionExpressionEvaluatorType::START_FREE_END_FIXED_WEIGHTED_SUM :
-                                          CollisionExpressionEvaluatorType::START_FREE_END_FIXED;
+          expression_evaluator_type = CollisionExpressionEvaluatorType::START_FREE_END_FIXED;
         }
         else
         {
@@ -1752,9 +1742,7 @@ void CollisionTermInfo::hatch(TrajOptProb& prob)
     }
     else
     {
-      CollisionExpressionEvaluatorType expression_evaluator_type =
-          (config.use_weighted_sum) ? CollisionExpressionEvaluatorType::SINGLE_TIME_STEP_WEIGHTED_SUM :
-                                      CollisionExpressionEvaluatorType::SINGLE_TIME_STEP;
+      CollisionExpressionEvaluatorType expression_evaluator_type = CollisionExpressionEvaluatorType::SINGLE_TIME_STEP;
       for (int i = first_step; i <= last_step; ++i)
       {
         if (std::find(fixed_steps.begin(), fixed_steps.end(), i) == fixed_steps.end())
@@ -1785,21 +1773,15 @@ void CollisionTermInfo::hatch(TrajOptProb& prob)
         CollisionExpressionEvaluatorType expression_evaluator_type{};
         if (!current_fixed && !next_fixed)
         {
-          expression_evaluator_type = (config.use_weighted_sum) ?
-                                          CollisionExpressionEvaluatorType::START_FREE_END_FREE_WEIGHTED_SUM :
-                                          CollisionExpressionEvaluatorType::START_FREE_END_FREE;
+          expression_evaluator_type = CollisionExpressionEvaluatorType::START_FREE_END_FREE;
         }
         else if (current_fixed)
         {
-          expression_evaluator_type = (config.use_weighted_sum) ?
-                                          CollisionExpressionEvaluatorType::START_FIXED_END_FREE_WEIGHTED_SUM :
-                                          CollisionExpressionEvaluatorType::START_FIXED_END_FREE;
+          expression_evaluator_type = CollisionExpressionEvaluatorType::START_FIXED_END_FREE;
         }
         else if (next_fixed)
         {
-          expression_evaluator_type = (config.use_weighted_sum) ?
-                                          CollisionExpressionEvaluatorType::START_FREE_END_FIXED_WEIGHTED_SUM :
-                                          CollisionExpressionEvaluatorType::START_FREE_END_FIXED;
+          expression_evaluator_type = CollisionExpressionEvaluatorType::START_FREE_END_FIXED;
         }
         else
         {
@@ -1820,9 +1802,7 @@ void CollisionTermInfo::hatch(TrajOptProb& prob)
     }
     else
     {
-      CollisionExpressionEvaluatorType expression_evaluator_type =
-          (config.use_weighted_sum) ? CollisionExpressionEvaluatorType::SINGLE_TIME_STEP_WEIGHTED_SUM :
-                                      CollisionExpressionEvaluatorType::SINGLE_TIME_STEP;
+      CollisionExpressionEvaluatorType expression_evaluator_type = CollisionExpressionEvaluatorType::SINGLE_TIME_STEP;
       for (int i = first_step; i <= last_step; ++i)
       {
         if (std::find(fixed_steps.begin(), fixed_steps.end(), i) == fixed_steps.end())
