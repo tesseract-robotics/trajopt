@@ -1,4 +1,6 @@
+#include <osqp.h>
 #include <trajopt_common/macros.h>
+#include "trajopt_sco/sco_common.hpp"
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <constants.h>
 #include <cmath>
@@ -215,12 +217,39 @@ bool OSQPModel::updateConstraints(bool check_sparsity)
 
 void OSQPModel::createOrUpdateSolver()
 {
-  const bool P_sparsity_equal = updateObjective(config_.update_workspace);
-  const bool A_sparsity_equal = updateConstraints(config_.update_workspace);
+  bool allow_update = false;
+  bool allow_explicit_warm_start = false;
+  if (osqp_workspace_ != nullptr)
+  {
+    const auto status_val = static_cast<int>(osqp_workspace_->info->status_val);
+    // Only warm start or update if the last optimzation was (almost) solved
+    if ((status_val == OSQP_SOLVED) || (status_val == OSQP_SOLVED_INACCURATE))
+    {
+      if (config_.update_workspace)
+      {
+        // When updating, warm start is implicit (depending on the warm_start setting)
+        allow_update = true;
+      }
+      else if (config_.settings.warm_start != 0)
+      {
+        // Only allow explicit warm start if not updating
+        allow_explicit_warm_start = true;
+      }
+    }
+  }
+
+  // Update P and q (only check sparsity if necessary)
+  const bool P_sparsity_equal = updateObjective(allow_update || allow_explicit_warm_start);
+  // Update A and l, u
+  const bool A_sparsity_equal = updateConstraints(P_sparsity_equal);
+
+  // Only allow update or warm start if the sparsity of P and A did not change
+  allow_update = allow_update && P_sparsity_equal && A_sparsity_equal;
+  allow_explicit_warm_start = allow_explicit_warm_start && P_sparsity_equal && A_sparsity_equal;
 
   // If sparsity did not change, update data, otherwise cleanup and setup
   bool need_setup = true;
-  if ((osqp_workspace_ != nullptr) && (config_.update_workspace) && P_sparsity_equal && A_sparsity_equal)
+  if (allow_update)
   {
     LOG_DEBUG("OSQP update (warm start = %lli).", config_.settings.warm_start);
     need_setup = false;
@@ -230,18 +259,18 @@ void OSQPModel::createOrUpdateSolver()
       need_setup = true;
       LOG_WARN("OSQP updating bounds failed.");
     }
-    if (osqp_update_lin_cost(osqp_workspace_, osqp_data_.q) != 0)
+    if (!need_setup && (osqp_update_lin_cost(osqp_workspace_, osqp_data_.q) != 0))
     {
       need_setup = true;
       LOG_WARN("OSQP updating linear costs failed.");
     }
-    if (osqp_update_P_A(osqp_workspace_,
-                        osqp_data_.P->x,
-                        OSQP_NULL,
-                        osqp_data_.P->nzmax,
-                        osqp_data_.A->x,
-                        OSQP_NULL,
-                        osqp_data_.A->nzmax) != 0)
+    if (!need_setup && (osqp_update_P_A(osqp_workspace_,
+                                        osqp_data_.P->x,
+                                        OSQP_NULL,
+                                        osqp_data_.P->nzmax,
+                                        osqp_data_.A->x,
+                                        OSQP_NULL,
+                                        osqp_data_.A->nzmax) != 0))
     {
       need_setup = true;
       LOG_WARN("OSQP updating P and A matrices failed.");
@@ -250,9 +279,19 @@ void OSQPModel::createOrUpdateSolver()
 
   if (need_setup)
   {
+    DblVec prev_x;
+    DblVec prev_y;
+    double prev_rho = 0.0;
     if (osqp_workspace_ != nullptr)
     {
-      LOG_DEBUG("OSQP cleanup (cold start).");
+      if (allow_explicit_warm_start)
+      {
+        LOG_DEBUG("OSQP explicit warm start (warm_start = %lli).", config_.settings.warm_start);
+        // Store previous solution
+        prev_x = DblVec(osqp_workspace_->solution->x, osqp_workspace_->solution->x + osqp_data_.n);
+        prev_y = DblVec(osqp_workspace_->solution->y, osqp_workspace_->solution->y + osqp_data_.m);
+        prev_rho = osqp_workspace_->settings->rho;
+      }
       osqp_cleanup(osqp_workspace_);
     }
 
@@ -264,6 +303,18 @@ void OSQPModel::createOrUpdateSolver()
       if (ret == OSQP_DATA_VALIDATION_ERROR || ret == OSQP_SETTINGS_VALIDATION_ERROR)
         osqp_workspace_ = nullptr;
       throw std::runtime_error("Could not initialize OSQP: error " + std::to_string(ret));
+    }
+    if (!prev_x.empty() && !prev_y.empty())
+    {
+      // Warm start recreated workspace with previous solution
+      if (osqp_warm_start(osqp_workspace_, prev_x.data(), prev_y.data()) != 0)
+      {
+        LOG_WARN("OSQP warm start failed.");
+      }
+      if (osqp_update_rho(osqp_workspace_, prev_rho) != 0)
+      {
+        LOG_WARN("OSQP rho update failed.");
+      }
     }
   }
 }
