@@ -134,13 +134,6 @@ struct TrajOptCollisionConfig
    */
   int max_num_cnt{ 3 };
 
-  /**
-   * @brief Use the weighted sum for each link pair. This reduces the number equations added to the problem
-   * When enable it is good to start with a coefficient of 1 otherwise 20 is a good starting point.
-   * @note This is only used by trajopt and not trajopt_ifopt
-   */
-  bool use_weighted_sum{ false };
-
 protected:
   friend class boost::serialization::access;
   template <class Archive>

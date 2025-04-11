@@ -30,29 +30,7 @@ enum class CollisionExpressionEvaluatorType : std::uint8_t
   START_FREE_END_FREE = 0,  /**< @brief Both start and end state variables are free to be adjusted */
   START_FREE_END_FIXED = 1, /**< @brief Only start state variables are free to be adjusted */
   START_FIXED_END_FREE = 2, /**< @brief Only end state variables are free to be adjusted */
-
-  /**
-   * @brief Both start and end state variables are free to be adjusted
-   * The jacobian is calculated using a weighted sum over the interpolated states for a given link pair.
-   */
-  START_FREE_END_FREE_WEIGHTED_SUM = 3,
-  /**
-   * @brief Only start state variables are free to be adjusted
-   * The jacobian is calculated using a weighted sum over the interpolated states for a given link pair.
-   */
-  START_FREE_END_FIXED_WEIGHTED_SUM = 4,
-  /**
-   * @brief Only end state variables are free to be adjusted
-   * The jacobian is calculated using a weighted sum over the interpolated states for a given link pair.
-   */
-  START_FIXED_END_FREE_WEIGHTED_SUM = 5,
-
-  SINGLE_TIME_STEP = 6, /**< @brief Expressions are only calculated at a single time step */
-  /**
-   * @brief Expressions are only calculated at a single time step
-   * The jacobian is calculated using a weighted sum for a given link pair.
-   */
-  SINGLE_TIME_STEP_WEIGHTED_SUM = 7
+  SINGLE_TIME_STEP = 3,     /**< @brief Expressions are only calculated at a single time step */
 };
 
 /** @brief A data structure to contain a links gradient results */
@@ -266,23 +244,6 @@ protected:
                                        const DblVec& x,
                                        bool isTimestep1);
 
-  void CollisionsToDistanceExpressionsW(sco::AffExprVector& exprs,
-                                        std::vector<double>& exprs_margin,
-                                        std::vector<double>& exprs_coeff,
-                                        const tesseract_collision::ContactResultMap& dist_results,
-                                        const sco::VarVector& vars,
-                                        const DblVec& x,
-                                        bool isTimestep1);
-
-  void CollisionsToDistanceExpressionsContinuousW(sco::AffExprVector& exprs,
-                                                  std::vector<double>& exprs_margin,
-                                                  std::vector<double>& exprs_coeff,
-                                                  const tesseract_collision::ContactResultMap& dist_results,
-                                                  const sco::VarVector& vars0,
-                                                  const sco::VarVector& vars1,
-                                                  const DblVec& x,
-                                                  bool isTimestep1);
-
   /**
    * @brief Calculate the distance expressions when the start is free but the end is fixed
    * This creates an expression for every contact results found.
@@ -320,42 +281,6 @@ protected:
                                    std::vector<double>& exprs_coeff);
 
   /**
-   * @brief Calculate the distance expressions when the start is free but the end is fixed
-   * This creates the expression based on the weighted sum for given link pair
-   * @param x The current values
-   * @param exprs The returned expression
-   * @param exprs_data The safety margin pair associated with the expression
-   */
-  void CalcDistExpressionsStartFreeW(const DblVec& x,
-                                     sco::AffExprVector& exprs,
-                                     std::vector<double>& exprs_margin,
-                                     std::vector<double>& exprs_coeff);
-
-  /**
-   * @brief Calculate the distance expressions when the end is free but the start is fixed
-   * This creates the expression based on the weighted sum for given link pair
-   * @param x The current values
-   * @param exprs The returned expression
-   * @param exprs_data The safety margin pair associated with the expression
-   */
-  void CalcDistExpressionsEndFreeW(const DblVec& x,
-                                   sco::AffExprVector& exprs,
-                                   std::vector<double>& exprs_margin,
-                                   std::vector<double>& exprs_coeff);
-
-  /**
-   * @brief Calculate the distance expressions when the start and end are free
-   * This creates the expression based on the weighted sum for given link pair
-   * @param x The current values
-   * @param exprs The returned expression
-   * @param exprs_data The safety margin pair associated with the expression
-   */
-  void CalcDistExpressionsBothFreeW(const DblVec& x,
-                                    sco::AffExprVector& exprs,
-                                    std::vector<double>& exprs_margin,
-                                    std::vector<double>& exprs_coeff);
-
-  /**
    * @brief Calculate the distance expressions for single time step
    * This creates an expression for every contact results found.
    * @param x The current values
@@ -366,18 +291,6 @@ protected:
                                          sco::AffExprVector& exprs,
                                          std::vector<double>& exprs_margin,
                                          std::vector<double>& exprs_coeff);
-
-  /**
-   * @brief Calculate the distance expressions for single time step
-   * This creates the expression based on the weighted sum for given link pair
-   * @param x The current values
-   * @param exprs The returned expression
-   * @param exprs_data The safety margin pair associated with the expression
-   */
-  void CalcDistExpressionsSingleTimeStepW(const DblVec& x,
-                                          sco::AffExprVector& exprs,
-                                          std::vector<double>& exprs_margin,
-                                          std::vector<double>& exprs_coeff);
 
   /**
    * @brief Remove any results that are invalid.
