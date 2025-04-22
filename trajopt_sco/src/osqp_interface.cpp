@@ -277,44 +277,45 @@ void OSQPModel::createOrUpdateSolver()
     }
   }
 
-  if (need_setup)
-  {
-    DblVec prev_x;
-    DblVec prev_y;
-    double prev_rho = 0.0;
-    if (osqp_workspace_ != nullptr)
-    {
-      if (allow_explicit_warm_start)
-      {
-        LOG_DEBUG("OSQP explicit warm start (warm_start = %lli).", config_.settings.warm_start);
-        // Store previous solution
-        prev_x = DblVec(osqp_workspace_->solution->x, osqp_workspace_->solution->x + osqp_data_.n);
-        prev_y = DblVec(osqp_workspace_->solution->y, osqp_workspace_->solution->y + osqp_data_.m);
-        prev_rho = osqp_workspace_->settings->rho;
-      }
-      osqp_cleanup(osqp_workspace_);
-    }
+  // If setup is not required then return
+  if (!need_setup)
+    return;
 
-    // Setup workspace - this should be called only once
-    auto ret = osqp_setup(&osqp_workspace_, &osqp_data_, &config_.settings);
-    if (ret != 0)
+  DblVec prev_x;
+  DblVec prev_y;
+  double prev_rho = 0.0;
+  if (osqp_workspace_ != nullptr)
+  {
+    if (allow_explicit_warm_start)
     {
-      // In this case, no data got allocated, so don't try to free it.
-      if (ret == OSQP_DATA_VALIDATION_ERROR || ret == OSQP_SETTINGS_VALIDATION_ERROR)
-        osqp_workspace_ = nullptr;
-      throw std::runtime_error("Could not initialize OSQP: error " + std::to_string(ret));
+      LOG_DEBUG("OSQP explicit warm start (warm_start = %lli).", config_.settings.warm_start);
+      // Store previous solution
+      prev_x = DblVec(osqp_workspace_->solution->x, osqp_workspace_->solution->x + osqp_data_.n);
+      prev_y = DblVec(osqp_workspace_->solution->y, osqp_workspace_->solution->y + osqp_data_.m);
+      prev_rho = osqp_workspace_->settings->rho;
     }
-    if (!prev_x.empty() && !prev_y.empty())
+    osqp_cleanup(osqp_workspace_);
+  }
+
+  // Setup workspace - this should be called only once
+  auto ret = osqp_setup(&osqp_workspace_, &osqp_data_, &config_.settings);
+  if (ret != 0)
+  {
+    // In this case, no data got allocated, so don't try to free it.
+    if (ret == OSQP_DATA_VALIDATION_ERROR || ret == OSQP_SETTINGS_VALIDATION_ERROR)
+      osqp_workspace_ = nullptr;
+    throw std::runtime_error("Could not initialize OSQP: error " + std::to_string(ret));
+  }
+  if (!prev_x.empty() && !prev_y.empty())
+  {
+    // Warm start recreated workspace with previous solution
+    if (osqp_warm_start(osqp_workspace_, prev_x.data(), prev_y.data()) != 0)
     {
-      // Warm start recreated workspace with previous solution
-      if (osqp_warm_start(osqp_workspace_, prev_x.data(), prev_y.data()) != 0)
-      {
-        LOG_WARN("OSQP warm start failed.");
-      }
-      if (osqp_update_rho(osqp_workspace_, prev_rho) != 0)
-      {
-        LOG_WARN("OSQP rho update failed.");
-      }
+      LOG_WARN("OSQP warm start failed.");
+    }
+    if (osqp_update_rho(osqp_workspace_, prev_rho) != 0)
+    {
+      LOG_WARN("OSQP rho update failed.");
     }
   }
 }
