@@ -2,8 +2,8 @@
 Changelog for package trajopt_sqp
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.30.0 (2025-04-23)
+-------------------
 * Fix issues with how Collision Check Config was being used
 * Requested changes and additional bug fixes
 * Fix bug in trajopt and trajopt_ifopt collision evaluators
