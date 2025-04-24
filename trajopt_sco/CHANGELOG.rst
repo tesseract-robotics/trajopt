@@ -2,6 +2,11 @@
 Changelog for package trajopt_sco
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Update OSQP workspace, instead of recreating (`#446 <https://github.com/tesseract-robotics/trajopt/issues/446>`_)
+* Contributors: Roelof Oomen
+
 0.29.1 (2025-03-20)
 -------------------
 

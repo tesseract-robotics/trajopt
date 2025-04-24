@@ -2,6 +2,16 @@
 Changelog for package trajopt_ifopt
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Minor updates (`#456 <https://github.com/tesseract-robotics/trajopt/issues/456>`_)
+  * Simplify logic for filtering collisions
+  * Removed pairing of margin and coefficient into vector
+* Fix issues with how Collision Check Config was being used
+* Requested changes and additional bug fixes
+* Fix bug in trajopt and trajopt_ifopt collision evaluators
+* Contributors: Levi Armstrong, Michael Ripperger
+
 0.29.1 (2025-03-20)
 -------------------
 

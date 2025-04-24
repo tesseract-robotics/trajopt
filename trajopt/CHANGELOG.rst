@@ -2,6 +2,19 @@
 Changelog for package trajopt
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Removed weighted sum methods from legacy Trajopt (`#457 <https://github.com/tesseract-robotics/trajopt/issues/457>`_)
+* Minor updates (`#456 <https://github.com/tesseract-robotics/trajopt/issues/456>`_)
+  * Simplify logic for filtering collisions
+  * Removed pairing of margin and coefficient into vector
+* Fix issues with how Collision Check Config was being used
+* Requested changes and additional bug fixes
+* Fix bug in trajopt and trajopt_ifopt collision evaluators
+* Store single TrajOptCollisionConfig instead of vector
+* Update legacy trajopt to leverage trajopt_common::TrajOptCollisionConfig
+* Contributors: Levi Armstrong, Michael Ripperger
+
 0.29.1 (2025-03-20)
 -------------------
 * Add tesseract:make_convex attribute to urdf files
