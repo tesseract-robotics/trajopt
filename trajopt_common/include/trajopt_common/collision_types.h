@@ -89,6 +89,7 @@ private:
   std::set<tesseract_common::LinkNamesPair> zero_coeff_;
 
   friend class boost::serialization::access;
+  friend struct tesseract_common::Serialization;
   template <class Archive>
   void serialize(Archive&, const unsigned int);  // NOLINT
 };
@@ -136,6 +137,7 @@ struct TrajOptCollisionConfig
 
 protected:
   friend class boost::serialization::access;
+  friend struct tesseract_common::Serialization;
   template <class Archive>
   void serialize(Archive&, const unsigned int);  // NOLINT
 };
