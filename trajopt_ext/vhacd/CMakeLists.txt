@@ -59,7 +59,7 @@ add_library(
 target_cxx_version(${PROJECT_NAME} PUBLIC VERSION ${TRAJOPT_CXX_VERSION})
 
 if(OpenCL_FOUND)
-  target_include_directories(${PROJECT_NAME} PRIVATE "${OpenCL_INCLUDE_DIR}")
+  target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE "${OpenCL_INCLUDE_DIR}")
   target_link_libraries(${PROJECT_NAME} PRIVATE "${OpenCL_LIBRARY}")
   target_compile_definitions(${PROJECT_NAME} PRIVATE -DOPENCL_FOUND=1)
   target_compile_definitions(${PROJECT_NAME} PRIVATE -DOPENCL_CL_FILES="${PROJECT_CL_FILES}")
