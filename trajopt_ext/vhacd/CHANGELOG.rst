@@ -2,6 +2,11 @@
 Changelog for package vhacd
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Add missing SYSTEM to target include in vhacd
+* Contributors: Levi Armstrong
+
 0.30.0 (2025-04-23)
 -------------------
 

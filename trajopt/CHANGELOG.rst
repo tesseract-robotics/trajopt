@@ -2,6 +2,9 @@
 Changelog for package trajopt
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+
 0.30.0 (2025-04-23)
 -------------------
 * Removed weighted sum methods from legacy Trajopt (`#457 <https://github.com/tesseract-robotics/trajopt/issues/457>`_)

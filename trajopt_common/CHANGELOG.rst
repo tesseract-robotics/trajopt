@@ -2,6 +2,13 @@
 Changelog for package trajopt_utils
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Make sure serialized objects have friend struct tesseract_common::Serialization
+* Remove SafetyMarginData from fwd.h
+  This struct was removed in a previous commit, but accidentally left in the forward declarations.
+* Contributors: Levi Armstrong, Roelof Oomen
+
 0.30.0 (2025-04-23)
 -------------------
 * Removed weighted sum methods from legacy Trajopt (`#457 <https://github.com/tesseract-robotics/trajopt/issues/457>`_)
