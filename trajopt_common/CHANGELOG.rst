@@ -2,8 +2,8 @@
 Changelog for package trajopt_utils
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.31.0 (2025-07-06)
+-------------------
 * Make sure serialized objects have friend struct tesseract_common::Serialization
 * Remove SafetyMarginData from fwd.h
   This struct was removed in a previous commit, but accidentally left in the forward declarations.
