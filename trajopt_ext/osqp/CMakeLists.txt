@@ -6,7 +6,7 @@ project(${pkg_extracted_name} VERSION ${pkg_extracted_version} LANGUAGES CXX)
 
 find_package(osqp QUIET)
 
-if(NOT ${osqp_FOUND} AND NOT TRJOPT_OSQP_DISABLED)
+if(NOT ${osqp_FOUND} AND NOT TRAJOPT_OSQP_DISABLED)
   message(WARNING "No valid OSQP version found. Cloning OSQP 0.6.3 into build directory")
 
   include(ExternalProject)
