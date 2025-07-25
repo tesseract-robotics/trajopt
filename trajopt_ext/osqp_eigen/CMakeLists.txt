@@ -6,7 +6,7 @@ project(OsqpEigen VERSION ${pkg_extracted_version} LANGUAGES CXX)
 
 find_package(OsqpEigen QUIET)
 
-if(NOT ${OsqpEigen_FOUND} AND NOT TRJOPT_OSQP_DISABLED)
+if(NOT ${OsqpEigen_FOUND})
   message(WARNING "No valid OsqpEigen version found. Cloning into build directory")
 
   include(ExternalProject)

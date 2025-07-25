@@ -6,7 +6,7 @@ project(qpoases VERSION ${pkg_extracted_version} LANGUAGES CXX)
 
 find_package(qpOASES QUIET)
 
-if(NOT qpOASES_FOUND AND NOT TRJOPT_QPOASES_DISABLED)
+if(NOT qpOASES_FOUND)
   message(WARNING "No valid qpOASES version found. Cloning into build directory")
 
   include(ExternalProject)
