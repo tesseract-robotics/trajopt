@@ -389,8 +389,8 @@ CollisionEvaluator::CollisionEvaluator(tesseract_kinematics::JointGroup::ConstPt
   // If the environment is not expected to change, then the cloned state solver may be used each time.
   if (dynamic_environment_)
   {
-    get_state_fn_ = [&](const Eigen::Ref<const Eigen::VectorXd>& joint_values) {
-      return env_->getState(manip_->getJointNames(), joint_values).link_transforms;
+    get_state_fn_ = [&](tesseract_common::TransformMap& transforms, const Eigen::Ref<const Eigen::VectorXd>& joint_values) {
+      transforms = env_->getState(manip_->getJointNames(), joint_values).link_transforms;
     };
     env_active_link_names_ = env_->getActiveLinkNames();
 
@@ -404,8 +404,8 @@ CollisionEvaluator::CollisionEvaluator(tesseract_kinematics::JointGroup::ConstPt
   }
   else
   {
-    get_state_fn_ = [&](const Eigen::Ref<const Eigen::VectorXd>& joint_values) {
-      return manip_->calcFwdKin(joint_values);
+    get_state_fn_ = [&](tesseract_common::TransformMap& transforms, const Eigen::Ref<const Eigen::VectorXd>& joint_values) {
+      manip_->calcFwdKin(transforms, joint_values);
     };
     env_active_link_names_ = manip_->getActiveLinkNames();
   }
@@ -652,7 +652,9 @@ void SingleTimestepCollisionEvaluator::CalcCollisions(const DblVec& x,
 void SingleTimestepCollisionEvaluator::CalcCollisions(const Eigen::Ref<const Eigen::VectorXd>& dof_vals,
                                                       tesseract_collision::ContactResultMap& dist_results)
 {
-  tesseract_common::TransformMap state = get_state_fn_(dof_vals);
+  thread_local tesseract_common::TransformMap state;
+  state.clear();
+  get_state_fn_(state, dof_vals);
 
   // If not empty then there are links that are not part of the kinematics object that can move (dynamic environment)
   for (const auto& link_name : diff_active_link_names_)
@@ -825,10 +827,13 @@ void DiscreteCollisionEvaluator::CalcCollisions(const Eigen::Ref<const Eigen::Ve
   // the longest valid segment length.
   const double dist = (dof_vals1 - dof_vals0).norm();
 
+  thread_local tesseract_common::TransformMap state;
+  state.clear();
+
   // If not empty then there are links that are not part of the kinematics object that can move (dynamic environment)
   if (!diff_active_link_names_.empty())
   {
-    tesseract_common::TransformMap state = get_state_fn_(dof_vals0);
+    get_state_fn_(state, dof_vals0);
     for (const auto& link_name : diff_active_link_names_)
       contact_manager_->setCollisionObjectsTransform(link_name, state[link_name]);
   }
@@ -878,10 +883,10 @@ void DiscreteCollisionEvaluator::CalcCollisions(const Eigen::Ref<const Eigen::Ve
   tesseract_collision::ContactResultMap contacts{ dist_results };
   for (int i = 0; i < subtraj.rows(); ++i)
   {
-    tesseract_common::TransformMap state0 = get_state_fn_(subtraj.row(i));
+    get_state_fn_(state, subtraj.row(i));
 
     for (const auto& link_name : manip_active_link_names_)
-      contact_manager_->setCollisionObjectsTransform(link_name, state0[link_name]);
+      contact_manager_->setCollisionObjectsTransform(link_name, state[link_name]);
 
     contact_manager_->contactTest(contacts, collision_check_config_.contact_request);
 
@@ -1068,12 +1073,15 @@ void CastCollisionEvaluator::CalcCollisions(const Eigen::Ref<const Eigen::Vector
   // the longest valid segment length.
   const double dist = (dof_vals1 - dof_vals0).norm();
 
+  thread_local tesseract_common::TransformMap state0;
+  state0.clear();
+
   // If not empty then there are links that are not part of the kinematics object that can move (dynamic environment)
   if (!diff_active_link_names_.empty())
   {
-    tesseract_common::TransformMap state = get_state_fn_(dof_vals0);
+    get_state_fn_(state0, dof_vals0);
     for (const auto& link_name : diff_active_link_names_)
-      contact_manager_->setCollisionObjectsTransform(link_name, state[link_name]);
+      contact_manager_->setCollisionObjectsTransform(link_name, state0[link_name]);
   }
 
   // Define Filter
@@ -1102,6 +1110,9 @@ void CastCollisionEvaluator::CalcCollisions(const Eigen::Ref<const Eigen::Vector
 #endif
   };
 
+  thread_local tesseract_common::TransformMap state1;
+  state1.clear();
+
   if (dist > collision_check_config_.longest_valid_segment_length)
   {
     // Calculate the number state to interpolate
@@ -1119,8 +1130,8 @@ void CastCollisionEvaluator::CalcCollisions(const Eigen::Ref<const Eigen::Vector
     const double dt = 1.0 / double(last_state_idx);
     for (int i = 0; i < subtraj.rows() - 1; ++i)
     {
-      tesseract_common::TransformMap state0 = manip_->calcFwdKin(subtraj.row(i));
-      tesseract_common::TransformMap state1 = manip_->calcFwdKin(subtraj.row(i + 1));
+      manip_->calcFwdKin(state0, subtraj.row(i));
+      manip_->calcFwdKin(state1, subtraj.row(i + 1));
 
       for (const auto& link_name : manip_active_link_names_)
         contact_manager_->setCollisionObjectsTransform(link_name, state0[link_name], state1[link_name]);
@@ -1137,8 +1148,8 @@ void CastCollisionEvaluator::CalcCollisions(const Eigen::Ref<const Eigen::Vector
   }
   else
   {
-    tesseract_common::TransformMap state0 = manip_->calcFwdKin(dof_vals0);
-    tesseract_common::TransformMap state1 = manip_->calcFwdKin(dof_vals1);
+    manip_->calcFwdKin(state0, dof_vals0);
+    manip_->calcFwdKin(state1, dof_vals1);
     for (const auto& link_name : manip_active_link_names_)
       contact_manager_->setCollisionObjectsTransform(link_name, state0[link_name], state1[link_name]);
 
