@@ -61,8 +61,9 @@ LVSContinuousCollisionEvaluator::LVSContinuousCollisionEvaluator(
   // If the environment is not expected to change, then the cloned state solver may be used each time.
   if (dynamic_environment_)
   {
-    get_state_fn_ = [&](const Eigen::Ref<const Eigen::VectorXd>& joint_values) {
-      return env_->getState(manip_->getJointNames(), joint_values).link_transforms;
+    get_state_fn_ = [&](tesseract_common::TransformMap& transforms,
+                        const Eigen::Ref<const Eigen::VectorXd>& joint_values) {
+      env_->getLinkTransforms(transforms, manip_->getJointNames(), joint_values);
     };
     env_active_link_names_ = env_->getActiveLinkNames();
 
@@ -76,8 +77,9 @@ LVSContinuousCollisionEvaluator::LVSContinuousCollisionEvaluator(
   }
   else
   {
-    get_state_fn_ = [&](const Eigen::Ref<const Eigen::VectorXd>& joint_values) {
-      return manip_->calcFwdKin(joint_values);
+    get_state_fn_ = [&](tesseract_common::TransformMap& transforms,
+                        const Eigen::Ref<const Eigen::VectorXd>& joint_values) {
+      manip_->calcFwdKin(transforms, joint_values);
     };
     env_active_link_names_ = manip_->getActiveLinkNames();
   }
@@ -193,12 +195,18 @@ void LVSContinuousCollisionEvaluator::CalcCollisionsHelper(tesseract_collision::
   // the longest valid segment length.
   const double dist = (dof_vals1 - dof_vals0).norm();
 
+  thread_local tesseract_common::TransformMap state0;
+  state0.clear();
+
+  thread_local tesseract_common::TransformMap state1;
+  state1.clear();
+
   // If not empty then there are links that are not part of the kinematics object that can move (dynamic environment)
   if (!diff_active_link_names_.empty())
   {
-    tesseract_common::TransformMap state = get_state_fn_(dof_vals0);
+    get_state_fn_(state0, dof_vals0);
     for (const auto& link_name : diff_active_link_names_)
-      contact_manager_->setCollisionObjectsTransform(link_name, state[link_name]);
+      contact_manager_->setCollisionObjectsTransform(link_name, state0[link_name]);
   }
 
   // Create filter
@@ -235,8 +243,8 @@ void LVSContinuousCollisionEvaluator::CalcCollisionsHelper(tesseract_collision::
     const double dt = 1.0 / double(last_state_idx);
     for (int i = 0; i < subtraj.rows() - 1; ++i)
     {
-      tesseract_common::TransformMap state0 = get_state_fn_(subtraj.row(i));
-      tesseract_common::TransformMap state1 = get_state_fn_(subtraj.row(i + 1));
+      get_state_fn_(state0, subtraj.row(i));
+      get_state_fn_(state1, subtraj.row(i + 1));
 
       for (const auto& link_name : manip_active_link_names_)
         contact_manager_->setCollisionObjectsTransform(link_name, state0[link_name], state1[link_name]);
@@ -252,8 +260,8 @@ void LVSContinuousCollisionEvaluator::CalcCollisionsHelper(tesseract_collision::
   }
   else
   {
-    tesseract_common::TransformMap state0 = get_state_fn_(dof_vals0);
-    tesseract_common::TransformMap state1 = get_state_fn_(dof_vals1);
+    get_state_fn_(state0, dof_vals0);
+    get_state_fn_(state1, dof_vals1);
     for (const auto& link_name : manip_active_link_names_)
       contact_manager_->setCollisionObjectsTransform(link_name, state0[link_name], state1[link_name]);
 
@@ -307,8 +315,9 @@ LVSDiscreteCollisionEvaluator::LVSDiscreteCollisionEvaluator(
   // If the environment is not expected to change, then the cloned state solver may be used each time.
   if (dynamic_environment_)
   {
-    get_state_fn_ = [&](const Eigen::Ref<const Eigen::VectorXd>& joint_values) {
-      return env_->getState(manip_->getJointNames(), joint_values).link_transforms;
+    get_state_fn_ = [&](tesseract_common::TransformMap& transforms,
+                        const Eigen::Ref<const Eigen::VectorXd>& joint_values) {
+      env_->getLinkTransforms(transforms, manip_->getJointNames(), joint_values);
     };
     env_active_link_names_ = env_->getActiveLinkNames();
 
@@ -322,8 +331,9 @@ LVSDiscreteCollisionEvaluator::LVSDiscreteCollisionEvaluator(
   }
   else
   {
-    get_state_fn_ = [&](const Eigen::Ref<const Eigen::VectorXd>& joint_values) {
-      return manip_->calcFwdKin(joint_values);
+    get_state_fn_ = [&](tesseract_common::TransformMap& transforms,
+                        const Eigen::Ref<const Eigen::VectorXd>& joint_values) {
+      manip_->calcFwdKin(transforms, joint_values);
     };
     env_active_link_names_ = manip_->getActiveLinkNames();
   }
@@ -433,10 +443,13 @@ void LVSDiscreteCollisionEvaluator::CalcCollisionsHelper(tesseract_collision::Co
                                                          bool vars0_fixed,
                                                          bool vars1_fixed)
 {
+  thread_local tesseract_common::TransformMap state;
+  state.clear();
+
   // If not empty then there are links that are not part of the kinematics object that can move (dynamic environment)
   if (!diff_active_link_names_.empty())
   {
-    tesseract_common::TransformMap state = get_state_fn_(dof_vals0);
+    get_state_fn_(state, dof_vals0);
     for (const auto& link_name : diff_active_link_names_)
       contact_manager_->setCollisionObjectsTransform(link_name, state[link_name]);
   }
@@ -483,10 +496,10 @@ void LVSDiscreteCollisionEvaluator::CalcCollisionsHelper(tesseract_collision::Co
   const double dt = 1.0 / double(last_state_idx);
   for (int i = 0; i < subtraj.rows(); ++i)
   {
-    tesseract_common::TransformMap state0 = get_state_fn_(subtraj.row(i));
+    get_state_fn_(state, subtraj.row(i));
 
     for (const auto& link_name : manip_active_link_names_)
-      contact_manager_->setCollisionObjectsTransform(link_name, state0[link_name]);
+      contact_manager_->setCollisionObjectsTransform(link_name, state[link_name]);
 
     contact_manager_->contactTest(contacts, collision_check_config_.contact_request);
 

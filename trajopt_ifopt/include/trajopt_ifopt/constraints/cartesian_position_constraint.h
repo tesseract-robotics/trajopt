@@ -31,6 +31,7 @@
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <Eigen/Eigen>
 #include <ifopt/constraint_set.h>
+#include <tesseract_common/eigen_types.h>
 #include <tesseract_kinematics/core/fwd.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
@@ -96,8 +97,10 @@ public:
   using Ptr = std::shared_ptr<CartPosConstraint>;
   using ConstPtr = std::shared_ptr<const CartPosConstraint>;
   using ErrorFunctionType = std::function<Eigen::VectorXd(const Eigen::Isometry3d&, const Eigen::Isometry3d&)>;
-  using ErrorDiffFunctionType =
-      std::function<Eigen::VectorXd(const Eigen::VectorXd&, const Eigen::Isometry3d&, const Eigen::Isometry3d&)>;
+  using ErrorDiffFunctionType = std::function<Eigen::VectorXd(const Eigen::VectorXd&,
+                                                              const Eigen::Isometry3d&,
+                                                              const Eigen::Isometry3d&,
+                                                              tesseract_common::TransformMap&)>;
 
   CartPosConstraint(const CartPosInfo& info,
                     std::shared_ptr<const JointPosition> position_var,

@@ -389,8 +389,9 @@ CollisionEvaluator::CollisionEvaluator(tesseract_kinematics::JointGroup::ConstPt
   // If the environment is not expected to change, then the cloned state solver may be used each time.
   if (dynamic_environment_)
   {
-    get_state_fn_ = [&](tesseract_common::TransformMap& transforms, const Eigen::Ref<const Eigen::VectorXd>& joint_values) {
-      transforms = env_->getState(manip_->getJointNames(), joint_values).link_transforms;
+    get_state_fn_ = [&](tesseract_common::TransformMap& transforms,
+                        const Eigen::Ref<const Eigen::VectorXd>& joint_values) {
+      env_->getLinkTransforms(transforms, manip_->getJointNames(), joint_values);
     };
     env_active_link_names_ = env_->getActiveLinkNames();
 
@@ -404,7 +405,8 @@ CollisionEvaluator::CollisionEvaluator(tesseract_kinematics::JointGroup::ConstPt
   }
   else
   {
-    get_state_fn_ = [&](tesseract_common::TransformMap& transforms, const Eigen::Ref<const Eigen::VectorXd>& joint_values) {
+    get_state_fn_ = [&](tesseract_common::TransformMap& transforms,
+                        const Eigen::Ref<const Eigen::VectorXd>& joint_values) {
       manip_->calcFwdKin(transforms, joint_values);
     };
     env_active_link_names_ = manip_->getActiveLinkNames();
@@ -1076,6 +1078,9 @@ void CastCollisionEvaluator::CalcCollisions(const Eigen::Ref<const Eigen::Vector
   thread_local tesseract_common::TransformMap state0;
   state0.clear();
 
+  thread_local tesseract_common::TransformMap state1;
+  state1.clear();
+
   // If not empty then there are links that are not part of the kinematics object that can move (dynamic environment)
   if (!diff_active_link_names_.empty())
   {
@@ -1109,9 +1114,6 @@ void CastCollisionEvaluator::CalcCollisions(const Eigen::Ref<const Eigen::Vector
     assert(copy.size() == pair.second.size());
 #endif
   };
-
-  thread_local tesseract_common::TransformMap state1;
-  state1.clear();
 
   if (dist > collision_check_config_.longest_valid_segment_length)
   {

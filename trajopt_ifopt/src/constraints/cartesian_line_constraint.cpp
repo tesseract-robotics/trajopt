@@ -91,11 +91,12 @@ CartLineConstraint::CartLineConstraint(CartLineInfo info,
 
   error_diff_function_ = [this](const Eigen::VectorXd& vals,
                                 const Eigen::Isometry3d& target_tf,
-                                const Eigen::Isometry3d& source_tf) -> Eigen::VectorXd {
-    tesseract_common::TransformMap perturbed_state = info_.manip->calcFwdKin(vals);
-    const Eigen::Isometry3d perturbed_source_tf = perturbed_state[info_.source_frame] * info_.source_frame_offset;
-    const Eigen::Isometry3d target_tf1 = perturbed_state[info_.target_frame] * info_.target_frame_offset1;
-    const Eigen::Isometry3d target_tf2 = perturbed_state[info_.target_frame] * info_.target_frame_offset2;
+                                const Eigen::Isometry3d& source_tf,
+                                tesseract_common::TransformMap& transforms_cache) -> Eigen::VectorXd {
+    info_.manip->calcFwdKin(transforms_cache, vals);
+    const Eigen::Isometry3d perturbed_source_tf = transforms_cache[info_.source_frame] * info_.source_frame_offset;
+    const Eigen::Isometry3d target_tf1 = transforms_cache[info_.target_frame] * info_.target_frame_offset1;
+    const Eigen::Isometry3d target_tf2 = transforms_cache[info_.target_frame] * info_.target_frame_offset2;
 
     // For Jacobian Calc, we need the inverse of the nearest point, D, to new Pose, C, on the constraint line AB
     const Eigen::Isometry3d perturbed_target_tf = GetLinePoint(perturbed_source_tf, target_tf1, target_tf2);
@@ -113,7 +114,10 @@ CartLineConstraint::CartLineConstraint(CartLineInfo info,
 
 Eigen::VectorXd CartLineConstraint::CalcValues(const Eigen::Ref<const Eigen::VectorXd>& joint_vals) const
 {
-  tesseract_common::TransformMap state = info_.manip->calcFwdKin(joint_vals);
+  thread_local tesseract_common::TransformMap state;
+  state.clear();
+
+  info_.manip->calcFwdKin(state, joint_vals);
   const Eigen::Isometry3d source_tf = state[info_.source_frame] * info_.source_frame_offset;
   const Eigen::Isometry3d target_tf1 = state[info_.target_frame] * info_.target_frame_offset1;
   const Eigen::Isometry3d target_tf2 = state[info_.target_frame] * info_.target_frame_offset2;
@@ -150,7 +154,10 @@ void CartLineConstraint::SetBounds(const std::vector<ifopt::Bounds>& bounds)
 void CartLineConstraint::CalcJacobianBlock(const Eigen::Ref<const Eigen::VectorXd>& joint_vals,
                                            Jacobian& jac_block) const
 {
-  tesseract_common::TransformMap state = info_.manip->calcFwdKin(joint_vals);
+  thread_local tesseract_common::TransformMap state;
+  state.clear();
+
+  info_.manip->calcFwdKin(state, joint_vals);
   const Eigen::Isometry3d source_tf = state[info_.source_frame] * info_.source_frame_offset;
   const Eigen::Isometry3d target_tf1 = state[info_.target_frame] * info_.target_frame_offset1;
   const Eigen::Isometry3d target_tf2 = state[info_.target_frame] * info_.target_frame_offset2;
@@ -170,7 +177,7 @@ void CartLineConstraint::CalcJacobianBlock(const Eigen::Ref<const Eigen::VectorX
     for (int i = 0; i < joint_vals.size(); ++i)
     {
       dof_vals_pert(i) = joint_vals(i) + eps;
-      const VectorXd error_diff = error_diff_function_(dof_vals_pert, target_tf, source_tf);
+      const VectorXd error_diff = error_diff_function_(dof_vals_pert, target_tf, source_tf, state);
       jac0.col(i) = error_diff / eps;
       dof_vals_pert(i) = joint_vals(i);
     }
@@ -188,7 +195,7 @@ void CartLineConstraint::CalcJacobianBlock(const Eigen::Ref<const Eigen::VectorX
   else
   {
     // Reserve enough room in the sparse matrix
-    tesseract_common::TransformMap state = info_.manip->calcFwdKin(joint_vals);
+    info_.manip->calcFwdKin(state, joint_vals);
     const Eigen::Isometry3d source_tf = state[info_.source_frame] * info_.source_frame_offset;
     const Eigen::Isometry3d target_tf1 = state[info_.target_frame] * info_.target_frame_offset1;
     const Eigen::Isometry3d target_tf2 = state[info_.target_frame] * info_.target_frame_offset2;

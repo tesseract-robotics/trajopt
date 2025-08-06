@@ -56,8 +56,9 @@ SingleTimestepCollisionEvaluator::SingleTimestepCollisionEvaluator(
   // If the environment is not expected to change, then the cloned state solver may be used each time.
   if (dynamic_environment_)
   {
-    get_state_fn_ = [&](const Eigen::Ref<const Eigen::VectorXd>& joint_values) {
-      return env_->getState(manip_->getJointNames(), joint_values).link_transforms;
+    get_state_fn_ = [&](tesseract_common::TransformMap& transforms,
+                        const Eigen::Ref<const Eigen::VectorXd>& joint_values) {
+      env_->getLinkTransforms(transforms, manip_->getJointNames(), joint_values);
     };
     env_active_link_names_ = env_->getActiveLinkNames();
 
@@ -71,8 +72,9 @@ SingleTimestepCollisionEvaluator::SingleTimestepCollisionEvaluator(
   }
   else
   {
-    get_state_fn_ = [&](const Eigen::Ref<const Eigen::VectorXd>& joint_values) {
-      return manip_->calcFwdKin(joint_values);
+    get_state_fn_ = [&](tesseract_common::TransformMap& transforms,
+                        const Eigen::Ref<const Eigen::VectorXd>& joint_values) {
+      manip_->calcFwdKin(transforms, joint_values);
     };
     env_active_link_names_ = manip_->getActiveLinkNames();
   }
@@ -158,7 +160,10 @@ SingleTimestepCollisionEvaluator::CalcCollisions(const Eigen::Ref<const Eigen::V
 void SingleTimestepCollisionEvaluator::CalcCollisionsHelper(const Eigen::Ref<const Eigen::VectorXd>& dof_vals,
                                                             tesseract_collision::ContactResultMap& dist_results)
 {
-  tesseract_common::TransformMap state = get_state_fn_(dof_vals);
+  thread_local tesseract_common::TransformMap state;
+  state.clear();
+
+  get_state_fn_(state, dof_vals);
 
   // If not empty then there are links that are not part of the kinematics object that can move (dynamic environment)
   for (const auto& link_name : diff_active_link_names_)

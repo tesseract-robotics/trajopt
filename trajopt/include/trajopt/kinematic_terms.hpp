@@ -14,8 +14,10 @@ namespace trajopt
 const double DEFAULT_EPSILON = 1e-5;
 
 using ErrorFunctionType = std::function<Eigen::VectorXd(const Eigen::Isometry3d&, const Eigen::Isometry3d&)>;
-using ErrorDiffFunctionType =
-    std::function<Eigen::VectorXd(const Eigen::VectorXd&, const Eigen::Isometry3d&, const Eigen::Isometry3d&)>;
+using ErrorDiffFunctionType = std::function<Eigen::VectorXd(const Eigen::VectorXd&,
+                                                            const Eigen::Isometry3d&,
+                                                            const Eigen::Isometry3d&,
+                                                            tesseract_common::TransformMap&)>;
 
 /**
  * @brief Used to calculate the error for CartPoseTermInfo
