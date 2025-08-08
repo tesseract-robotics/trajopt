@@ -71,7 +71,7 @@ struct DynamicCartPoseErrCalculator : public TrajOptVectorOfVector
 };
 
 /** @brief Used to calculate the jacobian for CartPoseTermInfo */
-struct DynamicCartPoseJacCalculator : sco::MatrixOfVector
+struct DynamicCartPoseJacCalculator : TrajOptMatrixOfVector
 {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
@@ -165,7 +165,7 @@ struct CartPoseErrCalculator : public TrajOptVectorOfVector
 };
 
 /** @brief Used to calculate the jacobian for StaticCartPoseTermInfo */
-struct CartPoseJacCalculator : sco::MatrixOfVector
+struct CartPoseJacCalculator : TrajOptMatrixOfVector
 {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
@@ -215,7 +215,7 @@ struct CartPoseJacCalculator : sco::MatrixOfVector
  * @brief Used to calculate the jacobian for CartVelTermInfo
  *
  */
-struct CartVelJacCalculator : sco::MatrixOfVector
+struct CartVelJacCalculator : TrajOptMatrixOfVector
 {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   std::shared_ptr<const tesseract_kinematics::JointGroup> manip_;
@@ -234,7 +234,7 @@ struct CartVelJacCalculator : sco::MatrixOfVector
  * @brief  Used to calculate the error for CartVelTermInfo
  * This is converted to a cost or constraint using TrajOptCostFromErrFunc or TrajOptConstraintFromErrFunc
  */
-struct CartVelErrCalculator : sco::VectorOfVector
+struct CartVelErrCalculator : TrajOptVectorOfVector
 {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   std::shared_ptr<const tesseract_kinematics::JointGroup> manip_;
@@ -249,7 +249,7 @@ struct CartVelErrCalculator : sco::VectorOfVector
   Eigen::VectorXd operator()(const Eigen::VectorXd& dof_vals) const override;
 };
 
-struct JointVelErrCalculator : sco::VectorOfVector
+struct JointVelErrCalculator : TrajOptVectorOfVector
 {
   /** @brief Velocity target */
   double target_{ 0.0 };
@@ -265,12 +265,12 @@ struct JointVelErrCalculator : sco::VectorOfVector
   Eigen::VectorXd operator()(const Eigen::VectorXd& var_vals) const override;
 };
 
-struct JointVelJacCalculator : sco::MatrixOfVector
+struct JointVelJacCalculator : TrajOptMatrixOfVector
 {
   Eigen::MatrixXd operator()(const Eigen::VectorXd& var_vals) const override;
 };
 
-struct JointAccErrCalculator : sco::VectorOfVector
+struct JointAccErrCalculator : TrajOptVectorOfVector
 {
   JointVelErrCalculator vel_calc;
   double limit_{ 0.0 };
@@ -279,14 +279,14 @@ struct JointAccErrCalculator : sco::VectorOfVector
   Eigen::VectorXd operator()(const Eigen::VectorXd& var_vals) const override;
 };
 
-struct JointAccJacCalculator : sco::MatrixOfVector
+struct JointAccJacCalculator : TrajOptMatrixOfVector
 {
   JointVelErrCalculator vel_calc;
   JointVelJacCalculator vel_jac_calc;
   Eigen::MatrixXd operator()(const Eigen::VectorXd& var_vals) const override;
 };
 
-struct JointJerkErrCalculator : sco::VectorOfVector
+struct JointJerkErrCalculator : TrajOptVectorOfVector
 {
   JointAccErrCalculator acc_calc;
   double limit_{ 0.0 };
@@ -295,14 +295,14 @@ struct JointJerkErrCalculator : sco::VectorOfVector
   Eigen::VectorXd operator()(const Eigen::VectorXd& var_vals) const override;
 };
 
-struct JointJerkJacCalculator : sco::MatrixOfVector
+struct JointJerkJacCalculator : TrajOptMatrixOfVector
 {
   JointAccErrCalculator acc_calc;
   JointAccJacCalculator acc_jac_calc;
   Eigen::MatrixXd operator()(const Eigen::VectorXd& var_vals) const override;
 };
 
-struct TimeCostCalculator : sco::VectorOfVector
+struct TimeCostCalculator : TrajOptVectorOfVector
 {
   /** @brief The time target (s). This is subtracted from the cost, so only set limit!=0 if the penalty type is a hinge
    * (or you could get negatives)*/
@@ -312,13 +312,13 @@ struct TimeCostCalculator : sco::VectorOfVector
   Eigen::VectorXd operator()(const Eigen::VectorXd& var_vals) const override;
 };
 
-struct TimeCostJacCalculator : sco::MatrixOfVector
+struct TimeCostJacCalculator : TrajOptMatrixOfVector
 {
   Eigen::MatrixXd operator()(const Eigen::VectorXd& var_vals) const override;
 };
 
 /** @brief Error calculator for evaluating the cost of a singularity, in the form 1.0 / (smallest_sv + lambda) */
-struct AvoidSingularityErrCalculator : sco::VectorOfVector
+struct AvoidSingularityErrCalculator : TrajOptVectorOfVector
 {
   /** @brief Forward kinematics (and robot jacobian) calculator */
   std::shared_ptr<const tesseract_kinematics::JointGroup> fwd_kin_;
@@ -338,7 +338,7 @@ struct AvoidSingularityErrCalculator : sco::VectorOfVector
 };
 
 /** @brief Jacobian calculator for the singularity avoidance error */
-struct AvoidSingularityJacCalculator : sco::MatrixOfVector
+struct AvoidSingularityJacCalculator : TrajOptMatrixOfVector
 {
   /** @brief Forward kinematics (and robot jacobian) calculator */
   std::shared_ptr<const tesseract_kinematics::JointGroup> fwd_kin_;

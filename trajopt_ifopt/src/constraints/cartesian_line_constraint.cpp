@@ -71,6 +71,8 @@ CartLineInfo::CartLineInfo(std::shared_ptr<const tesseract_kinematics::JointGrou
     throw std::runtime_error("CartLineInfo: The indices list length is zero.");
 }
 
+thread_local tesseract_common::TransformMap CartLineConstraint::transforms_cache;
+
 CartLineConstraint::CartLineConstraint(CartLineInfo info,
                                        std::shared_ptr<const JointPosition> position_var,
                                        const Eigen::VectorXd& coeffs,  // NOLINT
@@ -114,13 +116,11 @@ CartLineConstraint::CartLineConstraint(CartLineInfo info,
 
 Eigen::VectorXd CartLineConstraint::CalcValues(const Eigen::Ref<const Eigen::VectorXd>& joint_vals) const
 {
-  thread_local tesseract_common::TransformMap state;
-  state.clear();
-
-  info_.manip->calcFwdKin(state, joint_vals);
-  const Eigen::Isometry3d source_tf = state[info_.source_frame] * info_.source_frame_offset;
-  const Eigen::Isometry3d target_tf1 = state[info_.target_frame] * info_.target_frame_offset1;
-  const Eigen::Isometry3d target_tf2 = state[info_.target_frame] * info_.target_frame_offset2;
+  transforms_cache.clear();
+  info_.manip->calcFwdKin(transforms_cache, joint_vals);
+  const Eigen::Isometry3d source_tf = transforms_cache[info_.source_frame] * info_.source_frame_offset;
+  const Eigen::Isometry3d target_tf1 = transforms_cache[info_.target_frame] * info_.target_frame_offset1;
+  const Eigen::Isometry3d target_tf2 = transforms_cache[info_.target_frame] * info_.target_frame_offset2;
 
   // For Jacobian Calc, we need the inverse of the nearest point, D, to new Pose, C, on the constraint line AB
   const Eigen::Isometry3d target_tf = GetLinePoint(source_tf, target_tf1, target_tf2);
@@ -154,13 +154,11 @@ void CartLineConstraint::SetBounds(const std::vector<ifopt::Bounds>& bounds)
 void CartLineConstraint::CalcJacobianBlock(const Eigen::Ref<const Eigen::VectorXd>& joint_vals,
                                            Jacobian& jac_block) const
 {
-  thread_local tesseract_common::TransformMap state;
-  state.clear();
-
-  info_.manip->calcFwdKin(state, joint_vals);
-  const Eigen::Isometry3d source_tf = state[info_.source_frame] * info_.source_frame_offset;
-  const Eigen::Isometry3d target_tf1 = state[info_.target_frame] * info_.target_frame_offset1;
-  const Eigen::Isometry3d target_tf2 = state[info_.target_frame] * info_.target_frame_offset2;
+  transforms_cache.clear();
+  info_.manip->calcFwdKin(transforms_cache, joint_vals);
+  const Eigen::Isometry3d source_tf = transforms_cache[info_.source_frame] * info_.source_frame_offset;
+  const Eigen::Isometry3d target_tf1 = transforms_cache[info_.target_frame] * info_.target_frame_offset1;
+  const Eigen::Isometry3d target_tf2 = transforms_cache[info_.target_frame] * info_.target_frame_offset2;
 
   // For Jacobian Calc, we need the inverse of the nearest point, D, to new Pose, C, on the constraint line AB
   const Eigen::Isometry3d target_tf = GetLinePoint(source_tf, target_tf1, target_tf2);
@@ -177,7 +175,7 @@ void CartLineConstraint::CalcJacobianBlock(const Eigen::Ref<const Eigen::VectorX
     for (int i = 0; i < joint_vals.size(); ++i)
     {
       dof_vals_pert(i) = joint_vals(i) + eps;
-      const VectorXd error_diff = error_diff_function_(dof_vals_pert, target_tf, source_tf, state);
+      const VectorXd error_diff = error_diff_function_(dof_vals_pert, target_tf, source_tf, transforms_cache);
       jac0.col(i) = error_diff / eps;
       dof_vals_pert(i) = joint_vals(i);
     }
@@ -195,10 +193,10 @@ void CartLineConstraint::CalcJacobianBlock(const Eigen::Ref<const Eigen::VectorX
   else
   {
     // Reserve enough room in the sparse matrix
-    info_.manip->calcFwdKin(state, joint_vals);
-    const Eigen::Isometry3d source_tf = state[info_.source_frame] * info_.source_frame_offset;
-    const Eigen::Isometry3d target_tf1 = state[info_.target_frame] * info_.target_frame_offset1;
-    const Eigen::Isometry3d target_tf2 = state[info_.target_frame] * info_.target_frame_offset2;
+    info_.manip->calcFwdKin(transforms_cache, joint_vals);
+    const Eigen::Isometry3d source_tf = transforms_cache[info_.source_frame] * info_.source_frame_offset;
+    const Eigen::Isometry3d target_tf1 = transforms_cache[info_.target_frame] * info_.target_frame_offset1;
+    const Eigen::Isometry3d target_tf2 = transforms_cache[info_.target_frame] * info_.target_frame_offset2;
 
     // For Jacobian Calc, we need the inverse of the nearest point, D, to new Pose, C, on the constraint line AB
     const Eigen::Isometry3d target_tf = GetLinePoint(source_tf, target_tf1, target_tf2);
@@ -310,4 +308,5 @@ Eigen::Isometry3d CartLineConstraint::GetLinePoint(const Eigen::Isometry3d& sour
 
   return line_point;
 }
+
 }  // namespace trajopt_ifopt

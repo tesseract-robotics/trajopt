@@ -237,6 +237,9 @@ protected:
 
   std::pair<ContactResultMapConstPtr, ContactResultVectorConstPtr> GetContactResultCached(const DblVec& x);
 
+  static thread_local tesseract_common::TransformMap transforms_cache0;  // Shared per-thread cache
+  static thread_local tesseract_common::TransformMap transforms_cache1;  // Shared per-thread cache
+
   void CollisionsToDistanceExpressions(sco::AffExprVector& exprs,
                                        std::vector<double>& exprs_margin,
                                        std::vector<double>& exprs_coeff,

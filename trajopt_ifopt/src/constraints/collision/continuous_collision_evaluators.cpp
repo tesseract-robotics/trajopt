@@ -36,6 +36,9 @@ TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace trajopt_ifopt
 {
+thread_local tesseract_common::TransformMap ContinuousCollisionEvaluator::transforms_cache0;
+thread_local tesseract_common::TransformMap ContinuousCollisionEvaluator::transforms_cache1;
+
 LVSContinuousCollisionEvaluator::LVSContinuousCollisionEvaluator(
     std::shared_ptr<CollisionCache> collision_cache,
     std::shared_ptr<const tesseract_kinematics::JointGroup> manip,
@@ -195,18 +198,15 @@ void LVSContinuousCollisionEvaluator::CalcCollisionsHelper(tesseract_collision::
   // the longest valid segment length.
   const double dist = (dof_vals1 - dof_vals0).norm();
 
-  thread_local tesseract_common::TransformMap state0;
-  state0.clear();
-
-  thread_local tesseract_common::TransformMap state1;
-  state1.clear();
+  transforms_cache0.clear();
+  transforms_cache1.clear();
 
   // If not empty then there are links that are not part of the kinematics object that can move (dynamic environment)
   if (!diff_active_link_names_.empty())
   {
-    get_state_fn_(state0, dof_vals0);
+    get_state_fn_(transforms_cache0, dof_vals0);
     for (const auto& link_name : diff_active_link_names_)
-      contact_manager_->setCollisionObjectsTransform(link_name, state0[link_name]);
+      contact_manager_->setCollisionObjectsTransform(link_name, transforms_cache0[link_name]);
   }
 
   // Create filter
@@ -243,11 +243,12 @@ void LVSContinuousCollisionEvaluator::CalcCollisionsHelper(tesseract_collision::
     const double dt = 1.0 / double(last_state_idx);
     for (int i = 0; i < subtraj.rows() - 1; ++i)
     {
-      get_state_fn_(state0, subtraj.row(i));
-      get_state_fn_(state1, subtraj.row(i + 1));
+      get_state_fn_(transforms_cache0, subtraj.row(i));
+      get_state_fn_(transforms_cache1, subtraj.row(i + 1));
 
       for (const auto& link_name : manip_active_link_names_)
-        contact_manager_->setCollisionObjectsTransform(link_name, state0[link_name], state1[link_name]);
+        contact_manager_->setCollisionObjectsTransform(
+            link_name, transforms_cache0[link_name], transforms_cache1[link_name]);
 
       contact_manager_->contactTest(contacts, collision_check_config_.contact_request);
       if (!contacts.empty())
@@ -260,10 +261,11 @@ void LVSContinuousCollisionEvaluator::CalcCollisionsHelper(tesseract_collision::
   }
   else
   {
-    get_state_fn_(state0, dof_vals0);
-    get_state_fn_(state1, dof_vals1);
+    get_state_fn_(transforms_cache0, dof_vals0);
+    get_state_fn_(transforms_cache1, dof_vals1);
     for (const auto& link_name : manip_active_link_names_)
-      contact_manager_->setCollisionObjectsTransform(link_name, state0[link_name], state1[link_name]);
+      contact_manager_->setCollisionObjectsTransform(
+          link_name, transforms_cache0[link_name], transforms_cache1[link_name]);
 
     contact_manager_->contactTest(dist_results, collision_check_config_.contact_request);
 
@@ -443,15 +445,14 @@ void LVSDiscreteCollisionEvaluator::CalcCollisionsHelper(tesseract_collision::Co
                                                          bool vars0_fixed,
                                                          bool vars1_fixed)
 {
-  thread_local tesseract_common::TransformMap state;
-  state.clear();
+  transforms_cache0.clear();
 
   // If not empty then there are links that are not part of the kinematics object that can move (dynamic environment)
   if (!diff_active_link_names_.empty())
   {
-    get_state_fn_(state, dof_vals0);
+    get_state_fn_(transforms_cache0, dof_vals0);
     for (const auto& link_name : diff_active_link_names_)
-      contact_manager_->setCollisionObjectsTransform(link_name, state[link_name]);
+      contact_manager_->setCollisionObjectsTransform(link_name, transforms_cache0[link_name]);
   }
 
   // Create filter
@@ -496,10 +497,10 @@ void LVSDiscreteCollisionEvaluator::CalcCollisionsHelper(tesseract_collision::Co
   const double dt = 1.0 / double(last_state_idx);
   for (int i = 0; i < subtraj.rows(); ++i)
   {
-    get_state_fn_(state, subtraj.row(i));
+    get_state_fn_(transforms_cache0, subtraj.row(i));
 
     for (const auto& link_name : manip_active_link_names_)
-      contact_manager_->setCollisionObjectsTransform(link_name, state[link_name]);
+      contact_manager_->setCollisionObjectsTransform(link_name, transforms_cache0[link_name]);
 
     contact_manager_->contactTest(contacts, collision_check_config_.contact_request);
 

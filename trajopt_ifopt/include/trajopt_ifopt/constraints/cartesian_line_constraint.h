@@ -195,6 +195,8 @@ private:
 
   /** @brief The error function to calculate the error difference used for jacobian calculations */
   ErrorDiffFunctionType error_diff_function_{ nullptr };
+
+  static thread_local tesseract_common::TransformMap transforms_cache;  // Shared per-thread cache
 };
 }  // namespace trajopt_ifopt
 #endif
