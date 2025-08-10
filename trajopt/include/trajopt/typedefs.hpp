@@ -10,6 +10,7 @@ TRAJOPT_IGNORE_WARNINGS_POP
 #include <trajopt_sco/modeling.hpp>
 #include <trajopt_sco/modeling_utils.hpp>
 #include <trajopt_common/basic_array.hpp>
+#include <tesseract_common/eigen_types.h>
 
 namespace trajopt
 {
@@ -19,16 +20,6 @@ using CntArray = trajopt_common::BasicArray<sco::Cnt>;
 using TrajArray = Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
 using DblVec = sco::DblVec;
 using IntVec = sco::IntVec;
-
-template <typename T>
-using AlignedVector = std::vector<T, Eigen::aligned_allocator<T>>;
-
-template <typename Key, typename Value>
-using AlignedUnorderedMap = std::unordered_map<Key,
-                                               Value,
-                                               std::hash<Key>,
-                                               std::equal_to<Key>,
-                                               Eigen::aligned_allocator<std::pair<const Key, Value>>>;
 
 /** @brief Interface for objects that know how to plot themselves given solution
  * vector x */
@@ -51,8 +42,26 @@ public:
 class TrajOptVectorOfVector : public sco::VectorOfVector
 {
 public:
-  virtual void Plot(const std::shared_ptr<tesseract_visualization::Visualization>& plotter,
-                    const Eigen::VectorXd& dof_vals) = 0;
+  virtual void Plot(const std::shared_ptr<tesseract_visualization::Visualization>& /*plotter*/,
+                    const Eigen::VectorXd& /*dof_vals*/)
+  {
+  }
+
+protected:
+  static thread_local tesseract_common::TransformMap transforms_cache;  // NOLINT
+};
+
+/**  @brief Adds plotting to the MatrixOfVector class in trajopt_sco */
+class TrajOptMatrixOfVector : public sco::MatrixOfVector
+{
+public:
+  virtual void Plot(const std::shared_ptr<tesseract_visualization::Visualization>& /*plotter*/,
+                    const Eigen::VectorXd& /*dof_vals*/)
+  {
+  }
+
+protected:
+  static thread_local tesseract_common::TransformMap transforms_cache;  // NOLINT
 };
 
 /**  @brief Adds plotting to the CostFromErrFunc class in trajopt_sco */

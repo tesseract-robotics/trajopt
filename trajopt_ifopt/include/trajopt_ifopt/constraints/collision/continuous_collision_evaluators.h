@@ -43,7 +43,8 @@ TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace trajopt_ifopt
 {
-using GetStateFn = std::function<tesseract_common::TransformMap(const Eigen::Ref<const Eigen::VectorXd>& joint_values)>;
+using GetStateFn =
+    std::function<void(tesseract_common::TransformMap&, const Eigen::Ref<const Eigen::VectorXd>& joint_values)>;
 using CollisionCache = trajopt_common::Cache<std::size_t, std::shared_ptr<const trajopt_common::CollisionCacheData>>;
 
 /**
@@ -110,6 +111,10 @@ public:
    * @return Collision coefficient information
    */
   virtual const trajopt_common::CollisionCoeffData& GetCollisionCoeffData() const = 0;
+
+protected:
+  static thread_local tesseract_common::TransformMap transforms_cache0;  // NOLINT
+  static thread_local tesseract_common::TransformMap transforms_cache1;  // NOLINT
 };
 
 /**

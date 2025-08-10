@@ -48,6 +48,7 @@ set(TRAJOPT_SOURCE_FILES
     src/collision_terms.cpp
     src/json_marshal.cpp
     src/problem_description.cpp
+    src/typedefs.cpp
     src/utils.cpp
     src/plot_callback.cpp
     src/file_write_callback.cpp)

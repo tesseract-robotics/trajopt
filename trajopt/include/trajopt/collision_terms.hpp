@@ -231,10 +231,14 @@ protected:
   bool vars0_fixed_{ false };
   bool vars1_fixed_{ false };
   CollisionExpressionEvaluatorType evaluator_type_{ CollisionExpressionEvaluatorType::START_FREE_END_FREE };
-  std::function<tesseract_common::TransformMap(const Eigen::Ref<const Eigen::VectorXd>& joint_values)> get_state_fn_;
+  std::function<void(tesseract_common::TransformMap& transforms, const Eigen::Ref<const Eigen::VectorXd>& joint_values)>
+      get_state_fn_;
   bool dynamic_environment_{ false };
 
   std::pair<ContactResultMapConstPtr, ContactResultVectorConstPtr> GetContactResultCached(const DblVec& x);
+
+  static thread_local tesseract_common::TransformMap transforms_cache0;  // NOLINT
+  static thread_local tesseract_common::TransformMap transforms_cache1;  // NOLINT
 
   void CollisionsToDistanceExpressions(sco::AffExprVector& exprs,
                                        std::vector<double>& exprs_margin,

@@ -120,9 +120,10 @@ DynamicCartPoseErrCalculator::DynamicCartPoseErrCalculator(
 
 VectorXd DynamicCartPoseErrCalculator::operator()(const VectorXd& dof_vals) const
 {
-  tesseract_common::TransformMap state = manip_->calcFwdKin(dof_vals);
-  const Isometry3d source_tf = state[source_frame_] * source_frame_offset_;
-  const Isometry3d target_tf = state[target_frame_] * target_frame_offset_;
+  transforms_cache.clear();
+  manip_->calcFwdKin(transforms_cache, dof_vals);
+  const Isometry3d source_tf = transforms_cache[source_frame_] * source_frame_offset_;
+  const Isometry3d target_tf = transforms_cache[target_frame_] * target_frame_offset_;
 
   VectorXd err = error_function(target_tf, source_tf);
 
@@ -175,18 +176,19 @@ DynamicCartPoseJacCalculator::DynamicCartPoseJacCalculator(
 MatrixXd DynamicCartPoseJacCalculator::operator()(const VectorXd& dof_vals) const
 {
   // Duplicated from calcForwardNumJac in trajopt_sco/src/num_diff.cpp, but with ignoring tolerances
-  tesseract_common::TransformMap state = manip_->calcFwdKin(dof_vals);
-  const Isometry3d source_tf = state[source_frame_] * source_frame_offset_;
-  const Isometry3d target_tf = state[target_frame_] * target_frame_offset_;
+  transforms_cache.clear();
+  manip_->calcFwdKin(transforms_cache, dof_vals);
+  const Isometry3d source_tf = transforms_cache[source_frame_] * source_frame_offset_;
+  const Isometry3d target_tf = transforms_cache[target_frame_] * target_frame_offset_;
 
   Eigen::MatrixXd jac0(indices_.size(), dof_vals.size());
   Eigen::VectorXd dof_vals_pert = dof_vals;
   for (int i = 0; i < dof_vals.size(); ++i)
   {
     dof_vals_pert(i) = dof_vals(i) + epsilon_;
-    tesseract_common::TransformMap state_pert = manip_->calcFwdKin(dof_vals_pert);
-    const Isometry3d source_tf_pert = state_pert[source_frame_] * source_frame_offset_;
-    const Isometry3d target_tf_pert = state_pert[target_frame_] * target_frame_offset_;
+    manip_->calcFwdKin(transforms_cache, dof_vals_pert);
+    const Isometry3d source_tf_pert = transforms_cache[source_frame_] * source_frame_offset_;
+    const Isometry3d target_tf_pert = transforms_cache[target_frame_] * target_frame_offset_;
     VectorXd error_diff =
         tesseract_common::calcJacobianTransformErrorDiff(target_tf, target_tf_pert, source_tf, source_tf_pert);
 
@@ -276,9 +278,10 @@ CartPoseErrCalculator::CartPoseErrCalculator(
 
 VectorXd CartPoseErrCalculator::operator()(const VectorXd& dof_vals) const
 {
-  tesseract_common::TransformMap state = manip_->calcFwdKin(dof_vals);
-  const Isometry3d source_tf = state[source_frame_] * source_frame_offset_;
-  const Isometry3d target_tf = state[target_frame_] * target_frame_offset_;
+  transforms_cache.clear();
+  manip_->calcFwdKin(transforms_cache, dof_vals);
+  const Isometry3d source_tf = transforms_cache[source_frame_] * source_frame_offset_;
+  const Isometry3d target_tf = transforms_cache[target_frame_] * target_frame_offset_;
 
   VectorXd err = error_function_(target_tf, source_tf);
 
@@ -332,9 +335,10 @@ CartPoseJacCalculator::CartPoseJacCalculator(
   {
     error_diff_function_ = [this](const VectorXd& vals,
                                   const Eigen::Isometry3d& target_tf,
-                                  const Eigen::Isometry3d& source_tf) -> VectorXd {
-      tesseract_common::TransformMap perturbed_state = manip_->calcFwdKin(vals);
-      const Isometry3d perturbed_target_tf = perturbed_state[target_frame_] * target_frame_offset_;
+                                  const Eigen::Isometry3d& source_tf,
+                                  tesseract_common::TransformMap& state_cache) -> VectorXd {
+      manip_->calcFwdKin(state_cache, vals);
+      const Isometry3d perturbed_target_tf = state_cache[target_frame_] * target_frame_offset_;
       VectorXd error_diff = tesseract_common::calcJacobianTransformErrorDiff(source_tf, target_tf, perturbed_target_tf);
 
       VectorXd reduced_error_diff(indices_.size());
@@ -348,9 +352,10 @@ CartPoseJacCalculator::CartPoseJacCalculator(
   {
     error_diff_function_ = [this](const VectorXd& vals,
                                   const Eigen::Isometry3d& target_tf,
-                                  const Eigen::Isometry3d& source_tf) -> VectorXd {
-      tesseract_common::TransformMap perturbed_state = manip_->calcFwdKin(vals);
-      const Isometry3d perturbed_source_tf = perturbed_state[source_frame_] * source_frame_offset_;
+                                  const Eigen::Isometry3d& source_tf,
+                                  tesseract_common::TransformMap& state_cache) -> VectorXd {
+      manip_->calcFwdKin(state_cache, vals);
+      const Isometry3d perturbed_source_tf = state_cache[source_frame_] * source_frame_offset_;
       VectorXd error_diff = tesseract_common::calcJacobianTransformErrorDiff(target_tf, source_tf, perturbed_source_tf);
 
       VectorXd reduced_error_diff(indices_.size());
@@ -364,16 +369,17 @@ CartPoseJacCalculator::CartPoseJacCalculator(
 
 MatrixXd CartPoseJacCalculator::operator()(const VectorXd& dof_vals) const
 {
-  tesseract_common::TransformMap state = manip_->calcFwdKin(dof_vals);
-  const Isometry3d source_tf = state[source_frame_] * source_frame_offset_;
-  const Isometry3d target_tf = state[target_frame_] * target_frame_offset_;
+  transforms_cache.clear();
+  manip_->calcFwdKin(transforms_cache, dof_vals);
+  const Isometry3d source_tf = transforms_cache[source_frame_] * source_frame_offset_;
+  const Isometry3d target_tf = transforms_cache[target_frame_] * target_frame_offset_;
 
   Eigen::MatrixXd jac0(indices_.size(), dof_vals.size());
   Eigen::VectorXd dof_vals_pert = dof_vals;
   for (int i = 0; i < dof_vals.size(); ++i)
   {
     dof_vals_pert(i) = dof_vals(i) + epsilon_;
-    const VectorXd error_diff = error_diff_function_(dof_vals_pert, target_tf, source_tf);
+    const VectorXd error_diff = error_diff_function_(dof_vals_pert, target_tf, source_tf, transforms_cache);
     jac0.col(i) = error_diff / epsilon_;
     dof_vals_pert(i) = dof_vals(i);
   }
@@ -427,11 +433,14 @@ CartVelErrCalculator::CartVelErrCalculator(std::shared_ptr<const tesseract_kinem
 VectorXd CartVelErrCalculator::operator()(const VectorXd& dof_vals) const
 {
   auto n_dof = static_cast<int>(manip_->numJoints());
-  tesseract_common::TransformMap state0 = manip_->calcFwdKin(dof_vals.topRows(n_dof));
-  tesseract_common::TransformMap state1 = manip_->calcFwdKin(dof_vals.bottomRows(n_dof));
 
-  Isometry3d pose0 = state0[link_] * tcp_;
-  Isometry3d pose1 = state1[link_] * tcp_;
+  transforms_cache.clear();
+
+  manip_->calcFwdKin(transforms_cache, dof_vals.topRows(n_dof));
+  Isometry3d pose0 = transforms_cache[link_] * tcp_;
+
+  manip_->calcFwdKin(transforms_cache, dof_vals.bottomRows(n_dof));
+  Isometry3d pose1 = transforms_cache[link_] * tcp_;
 
   VectorXd out(6);
   out.topRows(3) = (pose1.translation() - pose0.translation() - Vector3d(limit_, limit_, limit_));
