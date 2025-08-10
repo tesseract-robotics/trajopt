@@ -42,26 +42,26 @@ public:
 class TrajOptVectorOfVector : public sco::VectorOfVector
 {
 public:
-  virtual void Plot(const std::shared_ptr<tesseract_visualization::Visualization>& plotter,
-                    const Eigen::VectorXd& dof_vals)
+  virtual void Plot(const std::shared_ptr<tesseract_visualization::Visualization>& /*plotter*/,
+                    const Eigen::VectorXd& /*dof_vals*/)
   {
   }
 
 protected:
-  static thread_local tesseract_common::TransformMap transforms_cache;
+  static thread_local tesseract_common::TransformMap transforms_cache;  // NOLINT
 };
 
 /**  @brief Adds plotting to the MatrixOfVector class in trajopt_sco */
 class TrajOptMatrixOfVector : public sco::MatrixOfVector
 {
 public:
-  virtual void Plot(const std::shared_ptr<tesseract_visualization::Visualization>& plotter,
-                    const Eigen::VectorXd& dof_vals)
+  virtual void Plot(const std::shared_ptr<tesseract_visualization::Visualization>& /*plotter*/,
+                    const Eigen::VectorXd& /*dof_vals*/)
   {
   }
 
 protected:
-  static thread_local tesseract_common::TransformMap transforms_cache;
+  static thread_local tesseract_common::TransformMap transforms_cache;  // NOLINT
 };
 
 /**  @brief Adds plotting to the CostFromErrFunc class in trajopt_sco */

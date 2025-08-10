@@ -75,7 +75,7 @@ CartPosInfo::CartPosInfo(std::shared_ptr<const tesseract_kinematics::JointGroup>
     throw std::runtime_error("CartPosInfo: Target and Source are both static links.");
 }
 
-thread_local tesseract_common::TransformMap CartPosConstraint::transforms_cache;
+thread_local tesseract_common::TransformMap CartPosConstraint::transforms_cache;  // NOLINT
 
 CartPosConstraint::CartPosConstraint(CartPosInfo info,
                                      std::shared_ptr<const JointPosition> position_var,

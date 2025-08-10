@@ -36,8 +36,8 @@ TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace trajopt_ifopt
 {
-thread_local tesseract_common::TransformMap ContinuousCollisionEvaluator::transforms_cache0;
-thread_local tesseract_common::TransformMap ContinuousCollisionEvaluator::transforms_cache1;
+thread_local tesseract_common::TransformMap ContinuousCollisionEvaluator::transforms_cache0;  // NOLINT
+thread_local tesseract_common::TransformMap ContinuousCollisionEvaluator::transforms_cache1;  // NOLINT
 
 LVSContinuousCollisionEvaluator::LVSContinuousCollisionEvaluator(
     std::shared_ptr<CollisionCache> collision_cache,

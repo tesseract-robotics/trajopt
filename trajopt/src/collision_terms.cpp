@@ -200,8 +200,8 @@ void DebugPrintInfo(const tesseract_collision::ContactResult& res,
 
 }  // namespace
 
-thread_local tesseract_common::TransformMap CollisionEvaluator::transforms_cache0;
-thread_local tesseract_common::TransformMap CollisionEvaluator::transforms_cache1;
+thread_local tesseract_common::TransformMap CollisionEvaluator::transforms_cache0;  // NOLINT
+thread_local tesseract_common::TransformMap CollisionEvaluator::transforms_cache1;  // NOLINT
 
 GradientResults CollisionEvaluator::GetGradient(const Eigen::VectorXd& dofvals,
                                                 const tesseract_collision::ContactResult& contact_result,

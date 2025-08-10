@@ -113,8 +113,8 @@ public:
   virtual const trajopt_common::CollisionCoeffData& GetCollisionCoeffData() const = 0;
 
 protected:
-  static thread_local tesseract_common::TransformMap transforms_cache0;  // Shared per-thread cache
-  static thread_local tesseract_common::TransformMap transforms_cache1;  // Shared per-thread cache
+  static thread_local tesseract_common::TransformMap transforms_cache0;  // NOLINT
+  static thread_local tesseract_common::TransformMap transforms_cache1;  // NOLINT
 };
 
 /**

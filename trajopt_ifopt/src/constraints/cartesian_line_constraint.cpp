@@ -71,7 +71,7 @@ CartLineInfo::CartLineInfo(std::shared_ptr<const tesseract_kinematics::JointGrou
     throw std::runtime_error("CartLineInfo: The indices list length is zero.");
 }
 
-thread_local tesseract_common::TransformMap CartLineConstraint::transforms_cache;
+thread_local tesseract_common::TransformMap CartLineConstraint::transforms_cache;  // NOLINT
 
 CartLineConstraint::CartLineConstraint(CartLineInfo info,
                                        std::shared_ptr<const JointPosition> position_var,
