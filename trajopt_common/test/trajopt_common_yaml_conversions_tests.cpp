@@ -76,7 +76,7 @@ TEST(TrajoptCommonYAMLTestFixture, CollisionCoeffDataConversionsUnit)  // NOLINT
     {
       auto up = out["unique_pairs"];
       ASSERT_TRUE(up.IsSequence());
-      ASSERT_EQ(up.size(), 1u);
+      ASSERT_EQ(up.size(), 1U);
       EXPECT_EQ(up[0]["pair"][0].as<std::string>(), "link_a");
       EXPECT_EQ(up[0]["pair"][1].as<std::string>(), "link_b");
       EXPECT_NEAR(up[0]["coeff"].as<double>(), 0.0, 1e-8);
@@ -112,7 +112,10 @@ TEST(TrajoptCommonYAMLTestFixture, TrajOptCollisionConfigConversionsUnit)  // NO
     EXPECT_FALSE(c.enabled);
     // default_margin scaled by 0.5
     EXPECT_TRUE(c.contact_manager_config.default_margin.has_value());
-    EXPECT_NEAR(c.contact_manager_config.default_margin.value(), 0.01, 1e-8);
+    if (c.contact_manager_config.default_margin.has_value())
+    {
+      EXPECT_NEAR(c.contact_manager_config.default_margin.value(), 0.01, 1e-8);
+    }
     EXPECT_NEAR(c.collision_check_config.longest_valid_segment_length, 0.01, 1e-8);
     EXPECT_NEAR(c.collision_margin_buffer, 0.05, 1e-8);
     EXPECT_EQ(c.max_num_cnt, 10);
@@ -141,7 +144,7 @@ TEST(TrajoptCommonYAMLTestFixture, TrajOptCollisionConfigConversionsUnit)  // NO
 
     auto up = out["collision_coeff_data"]["unique_pairs"];
     ASSERT_TRUE(up.IsSequence());
-    ASSERT_EQ(up.size(), 1u);
+    ASSERT_EQ(up.size(), 1U);
     EXPECT_EQ(up[0]["pair"][0].as<std::string>(), "l0");
     EXPECT_EQ(up[0]["pair"][1].as<std::string>(), "l1");
     EXPECT_NEAR(up[0]["coeff"].as<double>(), 0.0, 1e-8);
@@ -182,8 +185,12 @@ TEST(TrajoptCommonYAMLTestFixture, TrajOptCollisionConfigRoundTripUnit)  // NOLI
 
   EXPECT_EQ(c_out.enabled, c_in.enabled);
   ASSERT_TRUE(c_out.contact_manager_config.default_margin.has_value());
-  EXPECT_NEAR(
-      c_out.contact_manager_config.default_margin.value(), c_in.contact_manager_config.default_margin.value(), 1e-12);
+  ASSERT_TRUE(c_in.contact_manager_config.default_margin.has_value());
+  if (c_out.contact_manager_config.default_margin.has_value() && c_in.contact_manager_config.default_margin.has_value())
+  {
+    EXPECT_NEAR(
+        c_out.contact_manager_config.default_margin.value(), c_in.contact_manager_config.default_margin.value(), 1e-12);
+  }
   EXPECT_NEAR(c_out.collision_check_config.longest_valid_segment_length,
               c_in.collision_check_config.longest_valid_segment_length,
               1e-12);

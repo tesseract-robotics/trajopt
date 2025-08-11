@@ -96,11 +96,11 @@ struct convert<trajopt_common::CollisionCoeffData>
         const YAML::Node& pair_node = entry["pair"];
         if (!pair_node || !pair_node.IsSequence() || pair_node.size() != 2)
           return false;
-        std::string a = pair_node[0].as<std::string>();
-        std::string b = pair_node[1].as<std::string>();
+        auto a = pair_node[0].as<std::string>();
+        auto b = pair_node[1].as<std::string>();
         if (const YAML::Node& cn = entry["coeff"])
         {
-          double c = cn.as<double>();
+          auto c = cn.as<double>();
           out.setCollisionCoeff(a, b, c);
         }
       }
