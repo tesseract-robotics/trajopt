@@ -58,6 +58,12 @@ install(
   PATTERN "*.hpp"
   PATTERN ".svn" EXCLUDE)
 
+if(TRAJOPT_ENABLE_TESTING)
+  enable_testing()
+  add_custom_target(run_tests)
+  add_subdirectory(test)
+endif()
+
 install(FILES "${CMAKE_CURRENT_LIST_DIR}/cmake/trajopt_macros.cmake" DESTINATION lib/cmake/${PROJECT_NAME})
 
 foreach(dir data)
