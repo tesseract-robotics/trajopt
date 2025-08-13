@@ -65,7 +65,7 @@ TEST(TrajoptCommonYAMLTestFixture, CollisionCoeffDataConversionsUnit)  // NOLINT
     EXPECT_NEAR(d.getCollisionCoeff("link_a", "link_b"), 0.0, 1e-8);
   }
 
-  {  // encode (only zero coeff pairs encoded)
+  {  // encode
     trajopt_common::CollisionCoeffData d(3.0);
     d.setCollisionCoeff("link_a", "link_b", 0.0);
     d.setCollisionCoeff("link_c", "link_d", 1.5);
@@ -76,10 +76,30 @@ TEST(TrajoptCommonYAMLTestFixture, CollisionCoeffDataConversionsUnit)  // NOLINT
     {
       auto up = out["unique_pairs"];
       ASSERT_TRUE(up.IsSequence());
-      ASSERT_EQ(up.size(), 1U);
-      EXPECT_EQ(up[0]["pair"][0].as<std::string>(), "link_a");
-      EXPECT_EQ(up[0]["pair"][1].as<std::string>(), "link_b");
-      EXPECT_NEAR(up[0]["coeff"].as<double>(), 0.0, 1e-8);
+      ASSERT_EQ(up.size(), 2U);
+
+      // Check that both pairs are present (order may vary)
+      bool found_ab = false;
+      bool found_cd = false;
+      for (const auto& entry : up)
+      {
+        auto first = entry["pair"][0].as<std::string>();
+        auto second = entry["pair"][1].as<std::string>();
+        auto coeff = entry["coeff"].as<double>();
+
+        if ((first == "link_a" && second == "link_b") || (first == "link_b" && second == "link_a"))
+        {
+          EXPECT_NEAR(coeff, 0.0, 1e-8);
+          found_ab = true;
+        }
+        else if ((first == "link_c" && second == "link_d") || (first == "link_d" && second == "link_c"))
+        {
+          EXPECT_NEAR(coeff, 1.5, 1e-8);
+          found_cd = true;
+        }
+      }
+      EXPECT_TRUE(found_ab);
+      EXPECT_TRUE(found_cd);
     }
   }
 }
@@ -145,17 +165,65 @@ TEST(TrajoptCommonYAMLTestFixture, TrajOptCollisionConfigConversionsUnit)  // NO
     auto up = out["collision_coeff_data"]["unique_pairs"];
     ASSERT_TRUE(up.IsSequence());
     ASSERT_EQ(up.size(), 1U);
-    EXPECT_EQ(up[0]["pair"][0].as<std::string>(), "l0");
-    EXPECT_EQ(up[0]["pair"][1].as<std::string>(), "l1");
-    EXPECT_NEAR(up[0]["coeff"].as<double>(), 0.0, 1e-8);
+    // Check that the zero coefficient pair is present (order may vary due to internal ordering)
+    bool found_l0_l1 = false;
+    for (const auto& entry : up)
+    {
+      auto first = entry["pair"][0].as<std::string>();
+      auto second = entry["pair"][1].as<std::string>();
+      auto coeff = entry["coeff"].as<double>();
+
+      if ((first == "l0" && second == "l1") || (first == "l1" && second == "l0"))
+      {
+        EXPECT_NEAR(coeff, 0.0, 1e-8);
+        found_l0_l1 = true;
+      }
+    }
+    EXPECT_TRUE(found_l0_l1);
   }
+}
+
+TEST(TrajoptCommonYAMLTestFixture, CollisionCoeffDataGetterMethodsUnit)  // NOLINT
+{
+  trajopt_common::CollisionCoeffData d(3.5);
+  d.setCollisionCoeff("link1", "link2", 2.0);
+  d.setCollisionCoeff("link3", "link4", 0.0);
+  d.setCollisionCoeff("link5", "link6", 1.5);
+
+  // Test getDefaultCollisionCoeff
+  EXPECT_NEAR(d.getDefaultCollisionCoeff(), 3.5, 1e-12);
+
+  // Test getCollisionCoeffPairData
+  const auto& pair_data = d.getCollisionCoeffPairData();
+  EXPECT_EQ(pair_data.size(), 3U);
+
+  // Verify the pairs are stored correctly (note: pairs are ordered internally)
+  EXPECT_NEAR(d.getCollisionCoeff("link1", "link2"), 2.0, 1e-12);
+  EXPECT_NEAR(d.getCollisionCoeff("link3", "link4"), 0.0, 1e-12);
+  EXPECT_NEAR(d.getCollisionCoeff("link5", "link6"), 1.5, 1e-12);
+
+  // Test getPairsWithZeroCoeff
+  const auto& zero_pairs = d.getPairsWithZeroCoeff();
+  EXPECT_EQ(zero_pairs.size(), 1U);
+
+  // Verify that the zero coefficient pair is in the zero_pairs set
+  bool found_zero_pair = false;
+  for (const auto& pair : zero_pairs)
+  {
+    if ((pair.first == "link3" && pair.second == "link4") || (pair.first == "link4" && pair.second == "link3"))
+    {
+      found_zero_pair = true;
+      break;
+    }
+  }
+  EXPECT_TRUE(found_zero_pair);
 }
 
 TEST(TrajoptCommonYAMLTestFixture, CollisionCoeffDataRoundTripUnit)  // NOLINT
 {
   trajopt_common::CollisionCoeffData d_in(2.5);
   d_in.setCollisionCoeff("a", "b", 0.0);
-  d_in.setCollisionCoeff("c", "d", 0.0);
+  d_in.setCollisionCoeff("c", "d", 1.8);
 
   YAML::Node n = YAML::convert<trajopt_common::CollisionCoeffData>::encode(d_in);
   trajopt_common::CollisionCoeffData d_out;
@@ -164,8 +232,8 @@ TEST(TrajoptCommonYAMLTestFixture, CollisionCoeffDataRoundTripUnit)  // NOLINT
   EXPECT_NEAR(d_out.getCollisionCoeff("x", "y"), 2.5, 1e-12);
   EXPECT_NEAR(d_out.getCollisionCoeff("a", "b"), 0.0, 1e-12);
   EXPECT_NEAR(d_out.getCollisionCoeff("b", "a"), 0.0, 1e-12);
-  EXPECT_NEAR(d_out.getCollisionCoeff("c", "d"), 0.0, 1e-12);
-  EXPECT_NEAR(d_out.getCollisionCoeff("d", "c"), 0.0, 1e-12);
+  EXPECT_NEAR(d_out.getCollisionCoeff("c", "d"), 1.8, 1e-12);
+  EXPECT_NEAR(d_out.getCollisionCoeff("d", "c"), 1.8, 1e-12);
 }
 
 TEST(TrajoptCommonYAMLTestFixture, TrajOptCollisionConfigRoundTripUnit)  // NOLINT

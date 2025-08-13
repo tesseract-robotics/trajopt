@@ -46,24 +46,23 @@ struct convert<trajopt_common::CollisionCoeffData>
   {
     Node node;
 
-    // Encode default coeff inferred from an unknown pair
-    node["default_coeff"] = rhs.getCollisionCoeff("__DEFAULT_COEFF_A__", "__DEFAULT_COEFF_B__");
+    // Encode default coefficient
+    node["default_coeff"] = rhs.getDefaultCollisionCoeff();
 
-    // NOTE: The default coefficient and full lookup table are private.
-    // We encode only pairs known to be zero via getPairsWithZeroCoeff().
-    const auto& zero_pairs = rhs.getPairsWithZeroCoeff();
-    if (!zero_pairs.empty())
+    // Encode all pair-specific coefficients
+    const auto& pair_data = rhs.getCollisionCoeffPairData();
+    if (!pair_data.empty())
     {
       Node unique_pairs(YAML::NodeType::Sequence);
-      for (const auto& p : zero_pairs)
+      for (const auto& entry : pair_data)
       {
-        Node entry;
+        Node pair_entry;
         Node pair(YAML::NodeType::Sequence);
-        pair.push_back(p.first);
-        pair.push_back(p.second);
-        entry["pair"] = pair;
-        entry["coeff"] = 0.0;
-        unique_pairs.push_back(entry);
+        pair.push_back(entry.first.first);
+        pair.push_back(entry.first.second);
+        pair_entry["pair"] = pair;
+        pair_entry["coeff"] = entry.second;
+        unique_pairs.push_back(pair_entry);
       }
       node["unique_pairs"] = unique_pairs;
     }

@@ -50,6 +50,18 @@ struct CollisionCoeffData
   CollisionCoeffData(double default_collision_coeff = 1);
 
   /**
+   * @brief Set the default collision coefficient
+   * @param default_collision_coeff The default collision coefficient used when no pair-specific coefficient is set
+   */
+  void setDefaultCollisionCoeff(double default_collision_coeff);
+
+  /**
+   * @brief Get the default collision coefficient
+   * @return The default collision coefficient used when no pair-specific coefficient is set
+   */
+  double getDefaultCollisionCoeff() const;
+
+  /**
    * @brief Set the coefficient for a given contact pair
    *
    * The order of the object names does not matter, that is handled internal to
@@ -71,6 +83,12 @@ struct CollisionCoeffData
    * @return Coefficient
    */
   double getCollisionCoeff(const std::string& obj1, const std::string& obj2) const;
+
+  /**
+   * @brief Get all collision coefficient pair data
+   * @return A reference to the lookup table containing all pair-specific coefficients
+   */
+  const std::unordered_map<tesseract_common::LinkNamesPair, double>& getCollisionCoeffPairData() const;
 
   /**
    * @brief Get the pairs with zero coeff
