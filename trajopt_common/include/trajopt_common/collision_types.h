@@ -83,7 +83,7 @@ private:
   double default_collision_coeff_;
 
   /// A map of link pair names to contact distance
-  std::unordered_map<tesseract_common::LinkNamesPair, double, tesseract_common::PairHash> lookup_table_;
+  std::unordered_map<tesseract_common::LinkNamesPair, double> lookup_table_;
 
   /// Pairs containing zero coeff
   std::set<tesseract_common::LinkNamesPair> zero_coeff_;
