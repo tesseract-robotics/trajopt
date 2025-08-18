@@ -47,16 +47,14 @@ TEST(TrajoptCommonYAMLTestFixture, CollisionCoeffDataConversionsUnit)  // NOLINT
 {
   const std::string yaml_string = R"(
     default_coeff: 2.5
-    unique_pairs:
-      - { pair: [link_a, link_b], coeff: 0.0 }
-      - { pair: [link_c, link_d], coeff: 1.5 }
+    pair_coeff_data:
+      [link_a, link_b]: 0.0
+      [link_c, link_d]: 1.5
   )";
 
   {  // decode
-    trajopt_common::CollisionCoeffData d;
     YAML::Node n = YAML::Load(yaml_string);
-    auto success = YAML::convert<trajopt_common::CollisionCoeffData>::decode(n, d);
-    EXPECT_TRUE(success);
+    auto d = n.as<trajopt_common::CollisionCoeffData>();
 
     // default for unknown
     EXPECT_NEAR(d.getCollisionCoeff("foo", "bar"), 2.5, 1e-8);
@@ -66,41 +64,17 @@ TEST(TrajoptCommonYAMLTestFixture, CollisionCoeffDataConversionsUnit)  // NOLINT
   }
 
   {  // encode
-    trajopt_common::CollisionCoeffData d(3.0);
-    d.setCollisionCoeff("link_a", "link_b", 0.0);
-    d.setCollisionCoeff("link_c", "link_d", 1.5);
+    trajopt_common::CollisionCoeffData data_original(3.0);
+    data_original.setCollisionCoeff("link_a", "link_b", 0.0);
+    data_original.setCollisionCoeff("link_c", "link_d", 1.5);
 
-    YAML::Node out = YAML::convert<trajopt_common::CollisionCoeffData>::encode(d);
-    EXPECT_NEAR(out["default_coeff"].as<double>(), 3.0, 1e-8);
-    if (out["unique_pairs"])  // optional
-    {
-      auto up = out["unique_pairs"];
-      ASSERT_TRUE(up.IsSequence());
-      ASSERT_EQ(up.size(), 2U);
-
-      // Check that both pairs are present (order may vary)
-      bool found_ab = false;
-      bool found_cd = false;
-      for (const auto& entry : up)
-      {
-        auto first = entry["pair"][0].as<std::string>();
-        auto second = entry["pair"][1].as<std::string>();
-        auto coeff = entry["coeff"].as<double>();
-
-        if ((first == "link_a" && second == "link_b") || (first == "link_b" && second == "link_a"))
-        {
-          EXPECT_NEAR(coeff, 0.0, 1e-8);
-          found_ab = true;
-        }
-        else if ((first == "link_c" && second == "link_d") || (first == "link_d" && second == "link_c"))
-        {
-          EXPECT_NEAR(coeff, 1.5, 1e-8);
-          found_cd = true;
-        }
-      }
-      EXPECT_TRUE(found_ab);
-      EXPECT_TRUE(found_cd);
-    }
+    YAML::Node n(data_original);
+    auto data = n.as<trajopt_common::CollisionCoeffData>();
+    EXPECT_NEAR(data.getDefaultCollisionCoeff(), 3.0, 1e-8);
+    EXPECT_NEAR(data.getCollisionCoeff("link_a", "link_b"), 0.0, 1e-8);
+    EXPECT_NEAR(data.getCollisionCoeff("link_c", "link_d"), 1.5, 1e-8);
+    EXPECT_EQ(data.getPairsWithZeroCoeff().size(), 1U);
+    EXPECT_EQ(data.getCollisionCoeffPairData().size(), 2U);
   }
 }
 
@@ -116,26 +90,22 @@ TEST(TrajoptCommonYAMLTestFixture, TrajOptCollisionConfigConversionsUnit)  // NO
       check_program_mode: ALL
     collision_coeff_data:
       default_coeff: 3.0
-      unique_pairs:
-        - { pair: [l0, l1], coeff: 0.0 }
+      pair_coeff_data:
+        [l0, l1]: 0.0
     collision_margin_buffer: 0.05
     max_num_cnt: 10
-    collision_scale: 0.5
+    scale_margins: 0.5
   )";
 
   {  // decode
-    trajopt_common::TrajOptCollisionConfig c;
     YAML::Node n = YAML::Load(yaml_string);
-    auto success = YAML::convert<trajopt_common::TrajOptCollisionConfig>::decode(n, c);
-    EXPECT_TRUE(success);
+    auto c = n.as<trajopt_common::TrajOptCollisionConfig>();
 
     EXPECT_FALSE(c.enabled);
     // default_margin scaled by 0.5
     EXPECT_TRUE(c.contact_manager_config.default_margin.has_value());
-    if (c.contact_manager_config.default_margin.has_value())
-    {
-      EXPECT_NEAR(c.contact_manager_config.default_margin.value(), 0.01, 1e-8);
-    }
+    // NOLINTNEXTLINE
+    EXPECT_NEAR(c.contact_manager_config.default_margin.value(), 0.01, 1e-8);
     EXPECT_NEAR(c.collision_check_config.longest_valid_segment_length, 0.01, 1e-8);
     EXPECT_NEAR(c.collision_margin_buffer, 0.05, 1e-8);
     EXPECT_EQ(c.max_num_cnt, 10);
@@ -146,40 +116,32 @@ TEST(TrajoptCommonYAMLTestFixture, TrajOptCollisionConfigConversionsUnit)  // NO
   }
 
   {  // encode
-    trajopt_common::TrajOptCollisionConfig c;
-    c.enabled = false;
-    c.contact_manager_config.default_margin = 0.01;
-    c.collision_check_config.longest_valid_segment_length = 0.02;
-    c.collision_coeff_data = trajopt_common::CollisionCoeffData(2.0);
-    c.collision_coeff_data.setCollisionCoeff("l0", "l1", 0.0);
-    c.collision_margin_buffer = 0.1;
-    c.max_num_cnt = 5;
+    trajopt_common::TrajOptCollisionConfig data_original;
+    data_original.enabled = false;
+    data_original.contact_manager_config.default_margin = 0.01;
+    data_original.collision_check_config.longest_valid_segment_length = 0.02;
+    data_original.collision_coeff_data = trajopt_common::CollisionCoeffData(2.0);
+    data_original.collision_coeff_data.setCollisionCoeff("l0", "l1", 0.0);
+    data_original.collision_coeff_data.setCollisionCoeff("l1", "l2", 1.7);
+    data_original.collision_margin_buffer = 0.1;
+    data_original.max_num_cnt = 5;
 
-    YAML::Node out = YAML::convert<trajopt_common::TrajOptCollisionConfig>::encode(c);
-    EXPECT_FALSE(out["enabled"].as<bool>());
-    EXPECT_NEAR(out["contact_manager_config"]["default_margin"].as<double>(), 0.01, 1e-8);
-    EXPECT_NEAR(out["collision_check_config"]["longest_valid_segment_length"].as<double>(), 0.02, 1e-8);
-    EXPECT_NEAR(out["collision_margin_buffer"].as<double>(), 0.1, 1e-8);
-    EXPECT_EQ(out["max_num_cnt"].as<int>(), 5);
+    YAML::Node n(data_original);
+    auto data = n.as<trajopt_common::TrajOptCollisionConfig>();
 
-    auto up = out["collision_coeff_data"]["unique_pairs"];
-    ASSERT_TRUE(up.IsSequence());
-    ASSERT_EQ(up.size(), 1U);
-    // Check that the zero coefficient pair is present (order may vary due to internal ordering)
-    bool found_l0_l1 = false;
-    for (const auto& entry : up)
-    {
-      auto first = entry["pair"][0].as<std::string>();
-      auto second = entry["pair"][1].as<std::string>();
-      auto coeff = entry["coeff"].as<double>();
+    EXPECT_FALSE(data.enabled);
+    EXPECT_TRUE(data.contact_manager_config.default_margin.has_value());
+    // NOLINTNEXTLINE
+    EXPECT_NEAR(data.contact_manager_config.default_margin.value(), 0.01, 1e-8);
+    EXPECT_NEAR(data.collision_check_config.longest_valid_segment_length, 0.02, 1e-8);
+    EXPECT_NEAR(data.collision_margin_buffer, 0.1, 1e-8);
+    EXPECT_EQ(data.max_num_cnt, 5);
 
-      if ((first == "l0" && second == "l1") || (first == "l1" && second == "l0"))
-      {
-        EXPECT_NEAR(coeff, 0.0, 1e-8);
-        found_l0_l1 = true;
-      }
-    }
-    EXPECT_TRUE(found_l0_l1);
+    EXPECT_NEAR(data.collision_coeff_data.getDefaultCollisionCoeff(), 2.0, 1e-8);
+    EXPECT_NEAR(data.collision_coeff_data.getCollisionCoeff("l0", "l1"), 0.0, 1e-8);
+    EXPECT_NEAR(data.collision_coeff_data.getCollisionCoeff("l1", "l2"), 1.7, 1e-8);
+    EXPECT_EQ(data.collision_coeff_data.getPairsWithZeroCoeff().size(), 1U);
+    EXPECT_EQ(data.collision_coeff_data.getCollisionCoeffPairData().size(), 2U);
   }
 }
 
@@ -225,10 +187,8 @@ TEST(TrajoptCommonYAMLTestFixture, CollisionCoeffDataRoundTripUnit)  // NOLINT
   d_in.setCollisionCoeff("a", "b", 0.0);
   d_in.setCollisionCoeff("c", "d", 1.8);
 
-  YAML::Node n = YAML::convert<trajopt_common::CollisionCoeffData>::encode(d_in);
-  trajopt_common::CollisionCoeffData d_out;
-  ASSERT_TRUE(YAML::convert<trajopt_common::CollisionCoeffData>::decode(n, d_out));
-
+  YAML::Node n(d_in);
+  auto d_out = n.as<trajopt_common::CollisionCoeffData>();
   EXPECT_NEAR(d_out.getCollisionCoeff("x", "y"), 2.5, 1e-12);
   EXPECT_NEAR(d_out.getCollisionCoeff("a", "b"), 0.0, 1e-12);
   EXPECT_NEAR(d_out.getCollisionCoeff("b", "a"), 0.0, 1e-12);
@@ -247,18 +207,17 @@ TEST(TrajoptCommonYAMLTestFixture, TrajOptCollisionConfigRoundTripUnit)  // NOLI
   c_in.collision_margin_buffer = 0.05;
   c_in.max_num_cnt = 7;
 
-  YAML::Node n = YAML::convert<trajopt_common::TrajOptCollisionConfig>::encode(c_in);
-  trajopt_common::TrajOptCollisionConfig c_out;
-  ASSERT_TRUE(YAML::convert<trajopt_common::TrajOptCollisionConfig>::decode(n, c_out));
+  YAML::Node n(c_in);
+  auto c_out = n.as<trajopt_common::TrajOptCollisionConfig>();
 
   EXPECT_EQ(c_out.enabled, c_in.enabled);
   ASSERT_TRUE(c_out.contact_manager_config.default_margin.has_value());
   ASSERT_TRUE(c_in.contact_manager_config.default_margin.has_value());
-  if (c_out.contact_manager_config.default_margin.has_value() && c_in.contact_manager_config.default_margin.has_value())
-  {
-    EXPECT_NEAR(
-        c_out.contact_manager_config.default_margin.value(), c_in.contact_manager_config.default_margin.value(), 1e-12);
-  }
+
+  // NOLINTNEXTLINE
+  EXPECT_NEAR(
+      c_out.contact_manager_config.default_margin.value(), c_in.contact_manager_config.default_margin.value(), 1e-12);
+
   EXPECT_NEAR(c_out.collision_check_config.longest_valid_segment_length,
               c_in.collision_check_config.longest_valid_segment_length,
               1e-12);

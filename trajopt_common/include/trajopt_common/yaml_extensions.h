@@ -53,18 +53,19 @@ struct convert<trajopt_common::CollisionCoeffData>
     const auto& pair_data = rhs.getCollisionCoeffPairData();
     if (!pair_data.empty())
     {
-      Node unique_pairs(YAML::NodeType::Sequence);
-      for (const auto& entry : pair_data)
+      Node pair_coeff_data_node(YAML::NodeType::Sequence);
+      for (const auto& pair : pair_data)
       {
-        Node pair_entry;
-        Node pair(YAML::NodeType::Sequence);
-        pair.push_back(entry.first.first);
-        pair.push_back(entry.first.second);
-        pair_entry["pair"] = pair;
-        pair_entry["coeff"] = entry.second;
-        unique_pairs.push_back(pair_entry);
+        Node key_node(NodeType::Sequence);
+        key_node.push_back(pair.first.first);
+        key_node.push_back(pair.first.second);
+
+        // tell yaml-cpp “emit this sequence in [a, b] inline style”
+        key_node.SetStyle(YAML::EmitterStyle::Flow);
+
+        pair_coeff_data_node[key_node] = pair.second;
       }
-      node["unique_pairs"] = unique_pairs;
+      node["pair_coeff_data"] = pair_coeff_data_node;
     }
 
     return node;
@@ -72,40 +73,24 @@ struct convert<trajopt_common::CollisionCoeffData>
 
   static bool decode(const Node& node, trajopt_common::CollisionCoeffData& rhs)
   {
-    if (!node || !node.IsMap())
-    {
-      rhs = trajopt_common::CollisionCoeffData();
-      return true;
-    }
+    if (!node.IsMap())
+      return false;
 
-    double default_coeff = 1.0;
     if (const YAML::Node& n = node["default_coeff"])
-      default_coeff = n.as<double>();
+      rhs.setDefaultCollisionCoeff(n.as<double>());
 
-    trajopt_common::CollisionCoeffData out(default_coeff);
-
-    if (const YAML::Node& up = node["unique_pairs"])
+    if (const YAML::Node& pair_coeff_data_node = node["pair_coeff_data"])
     {
-      if (!up.IsSequence())
-        return false;
-      for (const auto& entry : up)
+      for (auto it = pair_coeff_data_node.begin(); it != pair_coeff_data_node.end(); ++it)
       {
-        if (!entry.IsMap())
+        Node key_node = it->first;
+        if (!key_node.IsSequence() || key_node.size() != 2)
           return false;
-        const YAML::Node& pair_node = entry["pair"];
-        if (!pair_node || !pair_node.IsSequence() || pair_node.size() != 2)
-          return false;
-        auto a = pair_node[0].as<std::string>();
-        auto b = pair_node[1].as<std::string>();
-        if (const YAML::Node& cn = entry["coeff"])
-        {
-          auto c = cn.as<double>();
-          out.setCollisionCoeff(a, b, c);
-        }
+
+        rhs.setCollisionCoeff(key_node[0].as<std::string>(), key_node[1].as<std::string>(), it->second.as<double>());
       }
     }
 
-    rhs = out;
     return true;
   }
 };
@@ -143,14 +128,12 @@ struct convert<trajopt_common::TrajOptCollisionConfig>
     // Accept both 'collision_margin_buffer' and legacy alias 'buffer'
     if (const YAML::Node& n = node["collision_margin_buffer"])
       rhs.collision_margin_buffer = n.as<double>();
-    if (const YAML::Node& n = node["buffer"])
-      rhs.collision_margin_buffer = n.as<double>();
 
     if (const YAML::Node& n = node["max_num_cnt"])
       rhs.max_num_cnt = n.as<int>();
 
     // Optional: scale contact manager margins if provided
-    if (const YAML::Node& n = node["collision_scale"])
+    if (const YAML::Node& n = node["scale_margins"])
       rhs.contact_manager_config.scaleMargins(n.as<double>());
 
     return true;

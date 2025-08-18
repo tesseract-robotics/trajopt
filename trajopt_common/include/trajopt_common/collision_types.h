@@ -47,7 +47,8 @@ struct CollisionCoeffData
   using Ptr = std::shared_ptr<CollisionCoeffData>;
   using ConstPtr = std::shared_ptr<const CollisionCoeffData>;
 
-  CollisionCoeffData(double default_collision_coeff = 1);
+  CollisionCoeffData() = default;
+  CollisionCoeffData(double default_collision_coeff);
 
   /**
    * @brief Set the default collision coefficient
@@ -98,7 +99,7 @@ struct CollisionCoeffData
 
 private:
   /// Stores the collision coefficient used if no pair-specific one is set
-  double default_collision_coeff_;
+  double default_collision_coeff_{ 1 };
 
   /// A map of link pair names to contact distance
   std::unordered_map<tesseract_common::LinkNamesPair, double> lookup_table_;
