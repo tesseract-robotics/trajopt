@@ -348,7 +348,9 @@ int main(int argc, char** argv)
 
     std::function<void(benchmark::State&, Environment::Ptr)> BM_SOLVE_FUNC = BM_TRAJOPT_IFOPT_SIMPLE_COLLISION_SOLVE;
     std::string name = "BM_TRAJOPT_IFOPT_SIMPLE_COLLISION_SOLVE";
-    benchmark::RegisterBenchmark(name, BM_SOLVE_FUNC, env)->UseRealTime()->Unit(benchmark::TimeUnit::kMicrosecond);
+    benchmark::RegisterBenchmark(name.c_str(), BM_SOLVE_FUNC, env)
+        ->UseRealTime()
+        ->Unit(benchmark::TimeUnit::kMicrosecond);
   }
 
   //////////////////////////////////////
@@ -375,7 +377,7 @@ int main(int argc, char** argv)
 
     std::function<void(benchmark::State&, Environment::Ptr)> BM_SOLVE_FUNC = BM_TRAJOPT_IFOPT_PLANNING_SOLVE;
     std::string name = "BM_TRAJOPT_IFOPT_PLANNING_SOLVE";
-    benchmark::RegisterBenchmark(name, BM_SOLVE_FUNC, env)
+    benchmark::RegisterBenchmark(name.c_str(), BM_SOLVE_FUNC, env)
         ->UseRealTime()
         ->Unit(benchmark::TimeUnit::kMillisecond)
         ->MinTime(6);

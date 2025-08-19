@@ -9,6 +9,7 @@ requirements:
     build:
       - {{ compiler('c') }}
       - {{ compiler('cxx') }}
+      - benchmark
       - gtest
       - gmock
       - cmake
