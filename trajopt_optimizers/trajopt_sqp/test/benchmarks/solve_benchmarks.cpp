@@ -1,15 +1,15 @@
 #include <tesseract_common/macros.h>
-#include <tesseract_kinematics/core/joint_group.h>
-#include <OsqpEigen/Solver.hpp>
 TESSERACT_COMMON_IGNORE_WARNINGS_PUSH
 #include <benchmark/benchmark.h>
 #include <algorithm>
 #include <ifopt/problem.h>
 #include <ifopt/constraint_set.h>
+#include <OsqpEigen/Solver.hpp>
 TESSERACT_COMMON_IGNORE_WARNINGS_POP
 
 #include <tesseract_environment/environment.h>
 #include <tesseract_common/resource_locator.h>
+#include <tesseract_kinematics/core/joint_group.h>
 #include <tesseract_urdf/urdf_parser.h>
 
 #include <trajopt_ifopt/utils/numeric_differentiation.h>
@@ -171,9 +171,9 @@ private:
 };
 
 /** @brief Benchmark trajopt ifopt simple collision solve */
-static void BM_TRAJOPT_IFOPT_SIMPLE_COLLISION_SOLVE(benchmark::State& state, Environment::Ptr env)
+static void BM_TRAJOPT_IFOPT_SIMPLE_COLLISION_SOLVE(benchmark::State& state, const Environment::Ptr& env)
 {
-  for (auto _ : state)
+  for (auto _ : state)  // NOLINT
   {
     auto qp_problem = std::make_shared<trajopt_sqp::TrajOptQPProblem>();
     tesseract_kinematics::JointGroup::ConstPtr manip = env->getJointGroup("manipulator");
@@ -232,9 +232,9 @@ static void BM_TRAJOPT_IFOPT_SIMPLE_COLLISION_SOLVE(benchmark::State& state, Env
   }
 }
 
-static void BM_TRAJOPT_IFOPT_PLANNING_SOLVE(benchmark::State& state, Environment::Ptr env)
+static void BM_TRAJOPT_IFOPT_PLANNING_SOLVE(benchmark::State& state, const Environment::Ptr& env)
 {
-  for (auto _ : state)
+  for (auto _ : state)  // NOLINT
   {
     auto qp_problem = std::make_shared<trajopt_sqp::TrajOptQPProblem>();
     tesseract_kinematics::JointGroup::ConstPtr manip = env->getJointGroup("right_arm");

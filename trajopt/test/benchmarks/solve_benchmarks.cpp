@@ -36,7 +36,7 @@ static void BM_TRAJOPT_SIMPLE_COLLISION_SOLVE(benchmark::State& state,
                                               const Environment::Ptr& env,
                                               const Json::Value& root)
 {
-  for (auto _ : state)
+  for (auto _ : state)  // NOLINT
   {
     TrajOptProb::Ptr prob = ConstructProblem(root, env);
     sco::BasicTrustRegionSQP opt(prob);
@@ -48,7 +48,7 @@ static void BM_TRAJOPT_SIMPLE_COLLISION_SOLVE(benchmark::State& state,
 /** @brief Benchmark trajopt planning solve */
 static void BM_TRAJOPT_PLANNING_SOLVE(benchmark::State& state, const Environment::Ptr& env, const Json::Value& root)
 {
-  for (auto _ : state)
+  for (auto _ : state)  // NOLINT
   {
     ProblemConstructionInfo pci(env);
     pci.fromJson(root);
@@ -65,7 +65,7 @@ static void BM_TRAJOPT_MULTI_THREADED_SIMPLE_COLLISION_SOLVE(benchmark::State& s
                                                              const Environment::Ptr& env,
                                                              const Json::Value& root)
 {
-  for (auto _ : state)
+  for (auto _ : state)  // NOLINT
   {
     TrajOptProb::Ptr prob = ConstructProblem(root, env);
     sco::BasicTrustRegionSQPMultiThreaded opt(prob);
@@ -80,7 +80,7 @@ static void BM_TRAJOPT_MULTI_THREADED_PLANNING_SOLVE(benchmark::State& state,
                                                      const Environment::Ptr& env,
                                                      const Json::Value& root)
 {
-  for (auto _ : state)
+  for (auto _ : state)  // NOLINT
   {
     ProblemConstructionInfo pci(env);
     pci.fromJson(root);
@@ -93,7 +93,7 @@ static void BM_TRAJOPT_MULTI_THREADED_PLANNING_SOLVE(benchmark::State& state,
   }
 }
 
-int main(int argc, char** argv)
+int main(int argc, char** argv)  // NOLINT(bugprone-exception-escape)
 {
   gLogLevel = trajopt_common::LevelError;
 
