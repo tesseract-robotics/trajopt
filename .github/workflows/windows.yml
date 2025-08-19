@@ -62,5 +62,5 @@ jobs:
         vcs-file: .github/workflows/windows_dependencies.repos
         upstream-args: --cmake-args -G "Ninja" -DVCPKG_TARGET_TRIPLET=x64-windows-release -DCMAKE_BUILD_TYPE=Release -DBUILD_IPOPT=OFF -DBUILD_SNOPT=OFF
         target-path: target_ws/src
-        target-args: --packages-ignore trajopt_ifopt trajopt_sqp --cmake-args -G "Ninja" -DVCPKG_TARGET_TRIPLET=x64-windows-release -DCMAKE_BUILD_TYPE=Release -DTRAJOPT_ENABLE_TESTING=ON
+        target-args: --packages-ignore trajopt_ifopt trajopt_sqp --cmake-args -G "Ninja" -DVCPKG_TARGET_TRIPLET=x64-windows-release -DCMAKE_BUILD_TYPE=Release -DTRAJOPT_ENABLE_TESTING=ON -DTRAJOPT_ENABLE_BENCHMARKING=ON -DTRAJOPT_ENABLE_RUN_BENCHMARKING=OFF
         run-tests-args: --packages-ignore trajopt_ifopt trajopt_sqp

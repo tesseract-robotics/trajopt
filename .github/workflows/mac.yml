@@ -90,6 +90,7 @@ jobs:
             -DINSTALL_OMPL=OFF -DINSTALL_OMPL_TAG=master -DBUILD_IPOPT=OFF -DBUILD_SNOPT=OFF \
             -DBUILD_SHARED_LIBS=ON -DTESSERACT_ENABLE_EXAMPLES=OFF \
             -DVCPKG_APPLOCAL_DEPS=OFF -DTRAJOPT_ENABLE_TESTING=ON \
+            -DTRAJOPT_ENABLE_BENCHMARKING=ON -DTRAJOPT_ENABLE_RUN_BENCHMARKING=OFF \
             -DCMAKE_OSX_DEPLOYMENT_TARGET=12.0 \
             -DOpenMP_CXX_INCLUDE_DIR=${{ matrix.config.homebrew_root }}/opt/libomp/include \
             -DOpenMP_C_INCLUDE_DIR=${{ matrix.config.homebrew_root }}/opt/libomp/include \

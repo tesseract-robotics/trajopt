@@ -1,5 +1,4 @@
 #include <benchmark/benchmark.h>
-#include <iostream>
 
 #include <Eigen/Eigen>
 #include <trajopt/typedefs.hpp>
@@ -50,19 +49,18 @@ public:
     targets = Eigen::VectorXd::Zero(num_cols_);
     upper = Eigen::VectorXd::Ones(num_cols_) * 0.5;
     lower = Eigen::VectorXd::Ones(num_cols_) * -0.5;
-    first_step = 0;
     last_step = num_rows_ - 1;
     model = std::make_shared<sco::OSQPModel>();
     traj = createVarArray(model, num_rows_, num_cols_);
 
     trajopt::TrajArray traj_array = trajopt::TrajArray::Random(num_rows_, num_cols_);
-    dbl_vec = trajopt::DblVec(traj_array.data(), traj_array.data() + traj_array.rows() * traj_array.cols());
+    dbl_vec = trajopt::DblVec(traj_array.data(), traj_array.data() + (traj_array.rows() * traj_array.cols()));
   }
   Eigen::VectorXd coeffs;
   Eigen::VectorXd targets;
   Eigen::VectorXd upper;
   Eigen::VectorXd lower;
-  int first_step;
+  int first_step{};
   int last_step;
   std::shared_ptr<sco::OSQPModel> model;
   trajopt::VarArray traj;
@@ -79,7 +77,7 @@ void BM_EQ_TERM_CONSTRUCTION(benchmark::State& state)
 {
   BenchmarkInfo info(10, 6);
 
-  for (auto _ : state)
+  for (auto _ : state)  // NOLINT
   {
     CostClass object(info.traj, info.coeffs, info.targets, info.first_step, info.last_step);
   }
@@ -100,7 +98,7 @@ void BM_INEQ_TERM_CONSTRUCTION(benchmark::State& state)
 {
   BenchmarkInfo info(10, 6);
 
-  for (auto _ : state)
+  for (auto _ : state)  // NOLINT
   {
     CostClass object(info.traj, info.coeffs, info.targets, info.upper, info.lower, info.first_step, info.last_step);
   }
@@ -123,7 +121,7 @@ void BM_EQ_TERM_VALUE(benchmark::State& state)
   BenchmarkInfo info(10, 6);
   CostClass object(info.traj, info.coeffs, info.targets, info.first_step, info.last_step);
 
-  for (auto _ : state)
+  for (auto _ : state)  // NOLINT
   {
     benchmark::DoNotOptimize(object.value(info.dbl_vec));
   }
@@ -145,7 +143,7 @@ void BM_INEQ_TERM_VALUE(benchmark::State& state)
   BenchmarkInfo info(10, 6);
   CostClass object(info.traj, info.coeffs, info.targets, info.upper, info.lower, info.first_step, info.last_step);
 
-  for (auto _ : state)
+  for (auto _ : state)  // NOLINT
   {
     benchmark::DoNotOptimize(object.value(info.dbl_vec));
   }
@@ -167,7 +165,7 @@ void BM_EQ_TERM_CONVEX(benchmark::State& state)
   BenchmarkInfo info(10, 6);
   CostClass object(info.traj, info.coeffs, info.targets, info.first_step, info.last_step);
 
-  for (auto _ : state)
+  for (auto _ : state)  // NOLINT
   {
     benchmark::DoNotOptimize(object.convex(info.dbl_vec, info.model.get()));
   }
@@ -189,7 +187,7 @@ void BM_INEQ_TERM_CONVEX(benchmark::State& state)
   BenchmarkInfo info(10, 6);
   CostClass object(info.traj, info.coeffs, info.targets, info.upper, info.lower, info.first_step, info.last_step);
 
-  for (auto _ : state)
+  for (auto _ : state)  // NOLINT
   {
     benchmark::DoNotOptimize(object.convex(info.dbl_vec, info.model.get()));
   }
