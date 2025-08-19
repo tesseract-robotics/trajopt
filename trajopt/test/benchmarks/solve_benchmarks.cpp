@@ -1,23 +1,24 @@
 #include <tesseract_common/macros.h>
 TESSERACT_COMMON_IGNORE_WARNINGS_PUSH
 #include <benchmark/benchmark.h>
-#include <algorithm>
+#include <json/value.h>
 #include <thread>
 TESSERACT_COMMON_IGNORE_WARNINGS_POP
 #include <tesseract_environment/environment.h>
 #include <tesseract_common/resource_locator.h>
 #include <tesseract_urdf/urdf_parser.h>
-#include <tesseract_support/tesseract_support_resource_locator.h>
 
 #include <trajopt/collision_terms.hpp>
-#include <trajopt/common.hpp>
 #include <trajopt/plot_callback.hpp>
 #include <trajopt/problem_description.hpp>
+#include <trajopt/utils.hpp>
 #include <trajopt_sco/optimizers.hpp>
 #include <trajopt_common/config.hpp>
 #include <trajopt_common/eigen_conversions.hpp>
 #include <trajopt_common/logging.hpp>
 #include <trajopt_common/stl_to_string.hpp>
+
+#include "../test/trajopt_test_utils.hpp"
 
 using namespace trajopt;
 using namespace std;
@@ -31,7 +32,9 @@ using namespace tesseract_geometry;
 using namespace tesseract_common;
 
 /** @brief Benchmark trajopt simple collision solve */
-static void BM_TRAJOPT_SIMPLE_COLLISION_SOLVE(benchmark::State& state, Environment::Ptr env, Json::Value root)
+static void BM_TRAJOPT_SIMPLE_COLLISION_SOLVE(benchmark::State& state,
+                                              const Environment::Ptr& env,
+                                              const Json::Value& root)
 {
   for (auto _ : state)
   {
@@ -43,7 +46,7 @@ static void BM_TRAJOPT_SIMPLE_COLLISION_SOLVE(benchmark::State& state, Environme
 }
 
 /** @brief Benchmark trajopt planning solve */
-static void BM_TRAJOPT_PLANNING_SOLVE(benchmark::State& state, Environment::Ptr env, Json::Value root)
+static void BM_TRAJOPT_PLANNING_SOLVE(benchmark::State& state, const Environment::Ptr& env, const Json::Value& root)
 {
   for (auto _ : state)
   {
@@ -59,8 +62,8 @@ static void BM_TRAJOPT_PLANNING_SOLVE(benchmark::State& state, Environment::Ptr 
 
 /** @brief Benchmark trajopt simple collision solve */
 static void BM_TRAJOPT_MULTI_THREADED_SIMPLE_COLLISION_SOLVE(benchmark::State& state,
-                                                             Environment::Ptr env,
-                                                             Json::Value root)
+                                                             const Environment::Ptr& env,
+                                                             const Json::Value& root)
 {
   for (auto _ : state)
   {
@@ -73,7 +76,9 @@ static void BM_TRAJOPT_MULTI_THREADED_SIMPLE_COLLISION_SOLVE(benchmark::State& s
 }
 
 /** @brief Benchmark trajopt planning solve */
-static void BM_TRAJOPT_MULTI_THREADED_PLANNING_SOLVE(benchmark::State& state, Environment::Ptr env, Json::Value root)
+static void BM_TRAJOPT_MULTI_THREADED_PLANNING_SOLVE(benchmark::State& state,
+                                                     const Environment::Ptr& env,
+                                                     const Json::Value& root)
 {
   for (auto _ : state)
   {
@@ -113,7 +118,7 @@ int main(int argc, char** argv)
       std::function<void(benchmark::State&, Environment::Ptr, Json::Value)> BM_SOLVE_FUNC =
           BM_TRAJOPT_SIMPLE_COLLISION_SOLVE;
       std::string name = "BM_TRAJOPT_SIMPLE_COLLISION_SOLVE";
-      benchmark::RegisterBenchmark(name.c_str(), BM_SOLVE_FUNC, env, root)
+      benchmark::RegisterBenchmark(name, BM_SOLVE_FUNC, env, root)
           ->UseRealTime()
           ->Unit(benchmark::TimeUnit::kMicrosecond);
     }
@@ -122,7 +127,7 @@ int main(int argc, char** argv)
       std::function<void(benchmark::State&, Environment::Ptr, Json::Value)> BM_SOLVE_FUNC =
           BM_TRAJOPT_MULTI_THREADED_SIMPLE_COLLISION_SOLVE;
       std::string name = "BM_TRAJOPT_MULTI_THREADED_SIMPLE_COLLISION_SOLVE";
-      benchmark::RegisterBenchmark(name.c_str(), BM_SOLVE_FUNC, env, root)
+      benchmark::RegisterBenchmark(name, BM_SOLVE_FUNC, env, root)
           ->UseRealTime()
           ->Unit(benchmark::TimeUnit::kMicrosecond);
     }
@@ -154,7 +159,7 @@ int main(int argc, char** argv)
     {
       std::function<void(benchmark::State&, Environment::Ptr, Json::Value)> BM_SOLVE_FUNC = BM_TRAJOPT_PLANNING_SOLVE;
       std::string name = "BM_TRAJOPT_PLANNING_SOLVE";
-      benchmark::RegisterBenchmark(name.c_str(), BM_SOLVE_FUNC, env, root)
+      benchmark::RegisterBenchmark(name, BM_SOLVE_FUNC, env, root)
           ->UseRealTime()
           ->Unit(benchmark::TimeUnit::kMillisecond)
           ->MinTime(100);
@@ -164,7 +169,7 @@ int main(int argc, char** argv)
       std::function<void(benchmark::State&, Environment::Ptr, Json::Value)> BM_SOLVE_FUNC =
           BM_TRAJOPT_MULTI_THREADED_PLANNING_SOLVE;
       std::string name = "BM_TRAJOPT_MULTI_THREADED_PLANNING_SOLVE";
-      benchmark::RegisterBenchmark(name.c_str(), BM_SOLVE_FUNC, env, root)
+      benchmark::RegisterBenchmark(name, BM_SOLVE_FUNC, env, root)
           ->UseRealTime()
           ->Unit(benchmark::TimeUnit::kMillisecond)
           ->MinTime(100);

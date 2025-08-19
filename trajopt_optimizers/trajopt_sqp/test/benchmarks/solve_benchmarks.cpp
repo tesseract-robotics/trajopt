@@ -1,4 +1,6 @@
 #include <tesseract_common/macros.h>
+#include <tesseract_kinematics/core/joint_group.h>
+#include <OsqpEigen/Solver.hpp>
 TESSERACT_COMMON_IGNORE_WARNINGS_PUSH
 #include <benchmark/benchmark.h>
 #include <algorithm>
@@ -9,14 +11,12 @@ TESSERACT_COMMON_IGNORE_WARNINGS_POP
 #include <tesseract_environment/environment.h>
 #include <tesseract_common/resource_locator.h>
 #include <tesseract_urdf/urdf_parser.h>
-#include <tesseract_support/tesseract_support_resource_locator.h>
 
 #include <trajopt_ifopt/utils/numeric_differentiation.h>
 #include <trajopt_ifopt/constraints/collision/continuous_collision_constraint.h>
 #include <trajopt_ifopt/constraints/collision/continuous_collision_evaluators.h>
 #include <trajopt_ifopt/constraints/collision/discrete_collision_constraint.h>
 #include <trajopt_ifopt/constraints/collision/discrete_collision_evaluators.h>
-#include <trajopt_ifopt/constraints/joint_position_constraint.h>
 #include <trajopt_ifopt/constraints/joint_position_constraint.h>
 #include <trajopt_ifopt/constraints/joint_velocity_constraint.h>
 #include <trajopt_ifopt/costs/squared_cost.h>
@@ -80,7 +80,8 @@ public:
     Eigen::VectorXd err = Eigen::VectorXd::Zero(3);
 
     // Check the collisions
-    CollisionCacheData::ConstPtr cdata = collision_evaluator_->CalcCollisions(joint_vals, bounds_.size());
+    trajopt_common::CollisionCacheData::ConstPtr cdata =
+        collision_evaluator_->CalcCollisions(joint_vals, bounds_.size());
 
     if (cdata->contact_results_map.empty())
       return err;
@@ -90,10 +91,10 @@ public:
     {
       for (const auto& dist_result : pair.second)
       {
-        double dist = collision_evaluator_->GetCollisionConfig().contact_manager_config.margin_data.getCollisionMargin(
-            dist_result.link_names[0], dist_result.link_names[1]);
-        double coeff = collision_evaluator_->GetCollisionConfig().collision_coeff_data.getCollisionCoeff(
-            dist_result.link_names[0], dist_result.link_names[1]);
+        double dist = collision_evaluator_->GetCollisionMarginData().getCollisionMargin(dist_result.link_names[0],
+                                                                                        dist_result.link_names[1]);
+        double coeff = collision_evaluator_->GetCollisionCoeffData().getCollisionCoeff(dist_result.link_names[0],
+                                                                                       dist_result.link_names[1]);
         err[i++] += std::max<double>(((dist - dist_result.distance) * coeff), 0.);
       }
     }
@@ -113,16 +114,17 @@ public:
     jac_block.reserve(n_dof_ * 3);
 
     // Calculate collisions
-    CollisionCacheData::ConstPtr cdata = collision_evaluator_->CalcCollisions(joint_vals, bounds_.size());
+    trajopt_common::CollisionCacheData::ConstPtr cdata =
+        collision_evaluator_->CalcCollisions(joint_vals, bounds_.size());
 
     // Get gradients for all contacts
     /** @todo Use the cdata gradient results */
-    std::vector<trajopt_ifopt::GradientResults> grad_results;
+    std::vector<trajopt_common::GradientResults> grad_results;
     for (const auto& pair : cdata->contact_results_map)
     {
       for (const auto& dist_result : pair.second)
       {
-        trajopt_ifopt::GradientResults result = collision_evaluator_->GetGradient(joint_vals, dist_result);
+        trajopt_common::GradientResults result = collision_evaluator_->GetGradient(joint_vals, dist_result);
         grad_results.push_back(result);
       }
     }
@@ -187,23 +189,23 @@ static void BM_TRAJOPT_IFOPT_SIMPLE_COLLISION_SOLVE(benchmark::State& state, Env
     }
 
     // Step 3: Setup collision
-    auto trajopt_collision_cnt_config = std::make_shared<trajopt_ifopt::TrajOptCollisionConfig>(0.2, 1);
+    auto trajopt_collision_cnt_config = std::make_shared<trajopt_common::TrajOptCollisionConfig>(0.2, 1);
     trajopt_collision_cnt_config->collision_margin_buffer = 0.05;
 
     auto collision_cnt_cache = std::make_shared<trajopt_ifopt::CollisionCache>(100);
     trajopt_ifopt::DiscreteCollisionEvaluator::Ptr collision_cnt_evaluator =
         std::make_shared<trajopt_ifopt::SingleTimestepCollisionEvaluator>(
-            collision_cnt_cache, manip, env, trajopt_collision_cnt_config);
+            collision_cnt_cache, manip, env, *trajopt_collision_cnt_config);
     auto collision_cnt = std::make_shared<SimpleCollisionConstraintIfopt>(collision_cnt_evaluator, vars[0]);
     qp_problem->addConstraintSet(collision_cnt);
 
-    auto trajopt_collision_cost_config = std::make_shared<trajopt_ifopt::TrajOptCollisionConfig>(0.3, 1);
+    auto trajopt_collision_cost_config = std::make_shared<trajopt_common::TrajOptCollisionConfig>(0.3, 1);
     trajopt_collision_cost_config->collision_margin_buffer = 0.05;
 
     auto collision_cost_cache = std::make_shared<trajopt_ifopt::CollisionCache>(100);
     trajopt_ifopt::DiscreteCollisionEvaluator::Ptr collision_cost_evaluator =
         std::make_shared<trajopt_ifopt::SingleTimestepCollisionEvaluator>(
-            collision_cost_cache, manip, env, trajopt_collision_cost_config);
+            collision_cost_cache, manip, env, *trajopt_collision_cost_config);
     auto collision_cost = std::make_shared<SimpleCollisionConstraintIfopt>(collision_cost_evaluator, vars[0]);
     qp_problem->addCostSet(collision_cost, trajopt_sqp::CostPenaltyType::HINGE);
 
@@ -216,13 +218,13 @@ static void BM_TRAJOPT_IFOPT_SIMPLE_COLLISION_SOLVE(benchmark::State& state, Env
     // 5) choose solver and options
     auto qp_solver = std::make_shared<trajopt_sqp::OSQPEigenSolver>();
     trajopt_sqp::TrustRegionSQPSolver solver(qp_solver);
-    qp_solver->solver_.settings()->setVerbosity(false);
-    qp_solver->solver_.settings()->setWarmStart(true);
-    qp_solver->solver_.settings()->setPolish(true);
-    qp_solver->solver_.settings()->setAdaptiveRho(false);
-    qp_solver->solver_.settings()->setMaxIteration(8192);
-    qp_solver->solver_.settings()->setAbsoluteTolerance(1e-4);
-    qp_solver->solver_.settings()->setRelativeTolerance(1e-6);
+    qp_solver->solver_->settings()->setVerbosity(false);
+    qp_solver->solver_->settings()->setWarmStart(true);
+    qp_solver->solver_->settings()->setPolish(true);
+    qp_solver->solver_->settings()->setAdaptiveRho(false);
+    qp_solver->solver_->settings()->setMaxIteration(8192);
+    qp_solver->solver_->settings()->setAbsoluteTolerance(1e-4);
+    qp_solver->solver_->settings()->setRelativeTolerance(1e-6);
 
     // 6) solve
     solver.verbose = false;
@@ -258,8 +260,8 @@ static void BM_TRAJOPT_IFOPT_PLANNING_SOLVE(benchmark::State& state, Environment
 
     double margin_coeff = 20;
     double margin = 0.025;
-    auto trajopt_collision_config = std::make_shared<trajopt_ifopt::TrajOptCollisionConfig>(margin, margin_coeff);
-    trajopt_collision_config->type = tesseract_collision::CollisionEvaluatorType::CONTINUOUS;
+    auto trajopt_collision_config = std::make_shared<trajopt_common::TrajOptCollisionConfig>(margin, margin_coeff);
+    trajopt_collision_config->collision_check_config.type = tesseract_collision::CollisionEvaluatorType::CONTINUOUS;
     trajopt_collision_config->collision_margin_buffer = 0.01;
 
     // Add costs
@@ -289,7 +291,7 @@ static void BM_TRAJOPT_IFOPT_PLANNING_SOLVE(benchmark::State& state, Environment
     for (std::size_t i = 1; i < (vars.size() - 1); ++i)
     {
       auto collision_evaluator = std::make_shared<trajopt_ifopt::LVSContinuousCollisionEvaluator>(
-          collision_cache, manip, env, trajopt_collision_config);
+          collision_cache, manip, env, *trajopt_collision_config);
 
       std::array<JointPosition::ConstPtr, 2> position_vars{ vars[i - 1], vars[i] };
 
@@ -301,7 +303,7 @@ static void BM_TRAJOPT_IFOPT_PLANNING_SOLVE(benchmark::State& state, Environment
         position_vars_fixed = { false, false };
 
       auto cnt = std::make_shared<trajopt_ifopt::ContinuousCollisionConstraint>(
-          collision_evaluator, position_vars, position_vars_fixed, 5);
+          collision_evaluator, position_vars, position_vars_fixed[0], position_vars_fixed[1], 5);
 
       qp_problem->addCostSet(cnt, trajopt_sqp::CostPenaltyType::HINGE);
     }
@@ -311,13 +313,13 @@ static void BM_TRAJOPT_IFOPT_PLANNING_SOLVE(benchmark::State& state, Environment
     // Setup solver
     auto qp_solver = std::make_shared<trajopt_sqp::OSQPEigenSolver>();
     trajopt_sqp::TrustRegionSQPSolver solver(qp_solver);
-    qp_solver->solver_.settings()->setVerbosity(false);
-    qp_solver->solver_.settings()->setWarmStart(true);
-    qp_solver->solver_.settings()->setPolish(true);
-    qp_solver->solver_.settings()->setAdaptiveRho(false);
-    qp_solver->solver_.settings()->setMaxIteration(8192);
-    qp_solver->solver_.settings()->setAbsoluteTolerance(1e-4);
-    qp_solver->solver_.settings()->setRelativeTolerance(1e-6);
+    qp_solver->solver_->settings()->setVerbosity(false);
+    qp_solver->solver_->settings()->setWarmStart(true);
+    qp_solver->solver_->settings()->setPolish(true);
+    qp_solver->solver_->settings()->setAdaptiveRho(false);
+    qp_solver->solver_->settings()->setMaxIteration(8192);
+    qp_solver->solver_->settings()->setAbsoluteTolerance(1e-4);
+    qp_solver->solver_->settings()->setRelativeTolerance(1e-6);
 
     // 6) solve
     solver.verbose = false;
@@ -346,9 +348,7 @@ int main(int argc, char** argv)
 
     std::function<void(benchmark::State&, Environment::Ptr)> BM_SOLVE_FUNC = BM_TRAJOPT_IFOPT_SIMPLE_COLLISION_SOLVE;
     std::string name = "BM_TRAJOPT_IFOPT_SIMPLE_COLLISION_SOLVE";
-    benchmark::RegisterBenchmark(name.c_str(), BM_SOLVE_FUNC, env)
-        ->UseRealTime()
-        ->Unit(benchmark::TimeUnit::kMicrosecond);
+    benchmark::RegisterBenchmark(name, BM_SOLVE_FUNC, env)->UseRealTime()->Unit(benchmark::TimeUnit::kMicrosecond);
   }
 
   //////////////////////////////////////
@@ -375,7 +375,7 @@ int main(int argc, char** argv)
 
     std::function<void(benchmark::State&, Environment::Ptr)> BM_SOLVE_FUNC = BM_TRAJOPT_IFOPT_PLANNING_SOLVE;
     std::string name = "BM_TRAJOPT_IFOPT_PLANNING_SOLVE";
-    benchmark::RegisterBenchmark(name.c_str(), BM_SOLVE_FUNC, env)
+    benchmark::RegisterBenchmark(name, BM_SOLVE_FUNC, env)
         ->UseRealTime()
         ->Unit(benchmark::TimeUnit::kMillisecond)
         ->MinTime(6);
