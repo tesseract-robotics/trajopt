@@ -37,6 +37,13 @@ CollisionCoeffData::CollisionCoeffData(double default_collision_coeff)
 {
 }
 
+void CollisionCoeffData::setDefaultCollisionCoeff(double default_collision_coeff)
+{
+  default_collision_coeff_ = default_collision_coeff;
+}
+
+double CollisionCoeffData::getDefaultCollisionCoeff() const { return default_collision_coeff_; }
+
 void CollisionCoeffData::setCollisionCoeff(const std::string& obj1, const std::string& obj2, double collision_coeff)
 {
   auto key = tesseract_common::makeOrderedLinkPair(obj1, obj2);
@@ -57,6 +64,11 @@ double CollisionCoeffData::getCollisionCoeff(const std::string& obj1, const std:
     return it->second;
 
   return default_collision_coeff_;
+}
+
+const std::unordered_map<tesseract_common::LinkNamesPair, double>& CollisionCoeffData::getCollisionCoeffPairData() const
+{
+  return lookup_table_;
 }
 
 const std::set<tesseract_common::LinkNamesPair>& CollisionCoeffData::getPairsWithZeroCoeff() const
