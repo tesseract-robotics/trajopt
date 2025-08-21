@@ -100,8 +100,8 @@ void BasicTrustRegionSQP::setTrustBoxConstraints(const DblVec& x)
   DblVec ubtrust(x.size());
   for (std::size_t i = 0; i < x.size(); ++i)
   {
-    lbtrust[i] = fmax(fmin(x[i], ub[i]) - param_.trust_box_size, lb[i]);
-    ubtrust[i] = fmin(fmax(x[i], lb[i]) + param_.trust_box_size, ub[i]);
+    lbtrust[i] = fmax(fmin(x[i], ub[i] - param_.trust_box_size) - param_.trust_box_size, lb[i]);
+    ubtrust[i] = fmin(fmax(x[i], lb[i] + param_.trust_box_size) + param_.trust_box_size, ub[i]);
   }
   model_->setVarBounds(vars, lbtrust, ubtrust);
 }
