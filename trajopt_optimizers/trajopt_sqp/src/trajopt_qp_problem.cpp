@@ -901,28 +901,25 @@ void TrajOptQPProblem::Implementation::updateNLPConstraintBounds()
 
 void TrajOptQPProblem::Implementation::updateNLPVariableBounds()
 {
-  // This is eqivalent to BasicTrustRegionSQP::setTrustBoxConstraints
+  // This is equivalent to BasicTrustRegionSQP::setTrustBoxConstraints
   const Eigen::VectorXd x_initial = variables_->GetValues();
 
-  // Calculate box constraints
-  const Eigen::VectorXd lower_box_cnt = x_initial - box_size_;
-  const Eigen::VectorXd upper_box_cnt = x_initial + box_size_;
-
   // Set the variable limits once
-  std::vector<ifopt::Bounds> var_bounds = variables_->GetBounds();
+  const std::vector<ifopt::Bounds> var_bounds = variables_->GetBounds();
   Eigen::VectorXd var_bounds_lower(getNumNLPVars());
   Eigen::VectorXd var_bounds_upper(getNumNLPVars());
   for (Eigen::Index i = 0; i < getNumNLPVars(); i++)
   {
-    var_bounds_lower[i] = var_bounds[static_cast<std::size_t>(i)].lower_;
-    var_bounds_upper[i] = var_bounds[static_cast<std::size_t>(i)].upper_;
+    const auto& bounds = var_bounds[static_cast<std::size_t>(i)];
+    var_bounds_lower[i] = bounds.lower_;
+    var_bounds_upper[i] = bounds.upper_;
   }
 
-  // Apply box constraints and variable limits
-  const Eigen::VectorXd var_bounds_lower_final = var_bounds_lower.cwiseMax(lower_box_cnt);
-  // Add the extra check here that the upper is bigger than the lower. It seems that there can be issues when the
-  // numbers get close to 0.
-  const Eigen::VectorXd var_bounds_upper_final = var_bounds_upper.cwiseMin(upper_box_cnt).cwiseMax(var_bounds_lower);
+  // Calculate box constraints, while limiting to variable bounds and maintaining the trust region size
+  const Eigen::VectorXd var_bounds_lower_final =
+      (x_initial.cwiseMin(var_bounds_upper - box_size_) - box_size_).cwiseMax(var_bounds_lower);
+  const Eigen::VectorXd var_bounds_upper_final =
+      (x_initial.cwiseMax(var_bounds_lower + box_size_) + box_size_).cwiseMin(var_bounds_upper);
   const Eigen::Index var_row_index = getNumNLPConstraints() + hinge_constraints_.GetRows() + abs_constraints_.GetRows();
   bounds_lower_.block(var_row_index, 0, var_bounds_lower_final.size(), 1) = var_bounds_lower_final;
   bounds_upper_.block(var_row_index, 0, var_bounds_upper_final.size(), 1) = var_bounds_upper_final;
