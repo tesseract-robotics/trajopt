@@ -4,7 +4,7 @@ find_package(ros_industrial_cmake_boilerplate REQUIRED)
 extract_package_metadata(pkg)
 project(${pkg_extracted_name} VERSION ${pkg_extracted_version} LANGUAGES CXX)
 
-find_package(osqp QUIET)
+find_package(osqp 0.6.3 QUIET)
 
 if(NOT ${osqp_FOUND} AND NOT TRAJOPT_OSQP_DISABLED)
   message(WARNING "No valid OSQP version found. Cloning OSQP 0.6.3 into build directory")
