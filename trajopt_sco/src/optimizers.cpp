@@ -755,10 +755,8 @@ OptStatus BasicTrustRegionSQP::optimize()
         if (status != CVX_SOLVED)
         {
           LOG_WARN("convex solver failed! set TRAJOPT_LOG_THRESH=DEBUG to see "
-                   "solver output. saving model to /tmp/fail.lp and IIS to "
-                   "/tmp/fail.ilp");
+                   "solver output. Saving model to /tmp/fail.lp");
           model_->writeToFile("/tmp/fail.lp");
-          model_->writeToFile("/tmp/fail.ilp");
           if (qp_solver_failures < (param_.max_qp_solver_failures - 1))
           {
             adjustTrustRegion(param_.trust_shrink_ratio);
