@@ -125,15 +125,25 @@ bool OSQPModel::updateObjective(bool check_sparsity)
   Eigen::SparseMatrix<double> triangular_sm;
   triangular_sm = sm.triangularView<Eigen::Upper>();
 
-  eigenToCSC(triangular_sm, P_row_indices_, P_column_pointers_, P_csc_data_);
-
-  // Check if sparsity has changed
+  std::vector<OSQPInt> prev_row_indices;
+  std::vector<OSQPInt> prev_column_pointers;
+  // Check if dimensions have changed
   bool sparsity_equal = false;
   if (check_sparsity && P_ != nullptr && P_->n == n_ && P_->m == n_ && P_->nzmax == P_csc_data_.size())
   {
-    sparsity_equal = memcmp(P_->p, P_column_pointers_.data(), static_cast<size_t>(P_->n) + 1) == 0;
-    sparsity_equal = sparsity_equal && (memcmp(P_->i, P_row_indices_.data(), static_cast<size_t>(P_->nzmax)) == 0);
+    sparsity_equal = true;
+    // Store previous values for the sparsity check
+    prev_row_indices.swap(P_row_indices_);
+    prev_column_pointers.swap(P_column_pointers_);
   }
+
+  eigenToCSC(triangular_sm, P_row_indices_, P_column_pointers_, P_csc_data_);
+
+  // Check if sparsity has changed
+  sparsity_equal = sparsity_equal &&
+                   memcmp(prev_column_pointers.data(), P_column_pointers_.data(), static_cast<size_t>(P_->n) + 1) == 0;
+  sparsity_equal =
+      sparsity_equal && (memcmp(prev_row_indices.data(), P_row_indices_.data(), static_cast<size_t>(P_->nzmax)) == 0);
 
   P_.reset(OSQPCscMatrix_new(n_,
                              n_,
@@ -184,15 +194,25 @@ bool OSQPModel::updateConstraints(bool check_sparsity)
     sm.insert(static_cast<Eigen::Index>(i_bnd + m), static_cast<Eigen::Index>(i_bnd)) = 1.;
   }
 
-  eigenToCSC(sm, A_row_indices_, A_column_pointers_, A_csc_data_);
-
-  // Check if sparsity has changed
+  std::vector<OSQPInt> prev_row_indices;
+  std::vector<OSQPInt> prev_column_pointers;
+  // Check if dimensions have changed
   bool sparsity_equal = false;
   if (check_sparsity && A_ != nullptr && A_->n == n_ && A_->m == m_ && A_->nzmax == A_csc_data_.size())
   {
-    sparsity_equal = memcmp(A_->p, A_column_pointers_.data(), static_cast<size_t>(A_->n) + 1) == 0;
-    sparsity_equal = sparsity_equal && (memcmp(A_->i, A_row_indices_.data(), static_cast<size_t>(A_->nzmax)) == 0);
+    sparsity_equal = true;
+    // Store previous values for the sparsity check
+    prev_row_indices.swap(A_row_indices_);
+    prev_column_pointers.swap(A_column_pointers_);
   }
+
+  eigenToCSC(sm, A_row_indices_, A_column_pointers_, A_csc_data_);
+
+  // Check if sparsity has changed
+  sparsity_equal = sparsity_equal &&
+                   memcmp(prev_column_pointers.data(), A_column_pointers_.data(), static_cast<size_t>(A_->n) + 1) == 0;
+  sparsity_equal =
+      sparsity_equal && (memcmp(prev_row_indices.data(), A_row_indices_.data(), static_cast<size_t>(A_->nzmax)) == 0);
 
   A_.reset(OSQPCscMatrix_new(m_,
                              n_,
