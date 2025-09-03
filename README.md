@@ -2,13 +2,16 @@
 
 Platform             | CI Status
 ---------------------|:---------
-Linux (Focal)        | [![Build Status](https://github.com/ros-industrial-consortium/trajopt_ros/workflows/Focal-Build/badge.svg)](https://github.com/ros-industrial-consortium/trajopt_ros/actions)
-Linux (Bionic)       | [![Build Status](https://github.com/ros-industrial-consortium/trajopt_ros/workflows/Bionic-Build/badge.svg)](https://github.com/ros-industrial-consortium/trajopt_ros/actions)
-Windows              | [![Build Status](https://github.com/ros-industrial-consortium/trajopt_ros/workflows/Windows-Noetic-Build/badge.svg)](https://github.com/ros-industrial-consortium/trajopt_ros/actions)
-Lint  (Clang-Format) | [![Build Status](https://github.com/ros-industrial-consortium/trajopt_ros/workflows/Clang-Format/badge.svg)](https://github.com/ros-industrial-consortium/trajopt_ros/actions)
+Linux (Unstable)        | [![Build Status](https://github.com/tesseract-robotics/trajopt/workflows/Unstabel/badge.svg)](https://github.com/tesseract-robotics/trajopt/actions)
+Linux (Stable)        | [![Build Status](https://github.com/tesseract-robotics/trajopt/workflows/Ubuntu/badge.svg)](https://github.com/tesseract-robotics/trajopt/actions)
+Linux (Conda)       | [![Build Status](https://github.com/tesseract-robotics/trajopt/workflows/Conda/badge.svg)](https://github.com/tesseract-robotics/trajopt/actions)
+Linux (Mac OSX)       | [![Build Status](https://github.com/tesseract-robotics/trajopt/workflows/Mac%20OSX/badge.svg)](https://github.com/tesseract-robotics/trajopt/actions)
+Windows              | [![Build Status](https://github.com/tesseract-robotics/trajopt/workflows/Windows/badge.svg)](https://github.com/tesseract-robotics/trajopt/actions)
+Lint  (Clang-Format) | [![Build Status](https://github.com/tesseract-robotics/trajopt/workflows/Clang-Format/badge.svg)](https://github.com/tesseract-robotics/trajopt/actions)
+Lint  (CMake-Format) | [![Build Status](https://github.com/tesseract-robotics/trajopt/workflows/CMake-Format/badge.svg)](https://github.com/tesseract-robotics/trajopt/actions)
 
 
-[![Github Issues](https://img.shields.io/github/issues/ros-industrial-consortium/trajopt_ros.svg)](http://github.com/ros-industrial-consortium/trajopt_ros/issues)
+[![Github Issues](https://img.shields.io/github/issues/tesseract-robotics/trajopt.svg)](http://github.com/tesseract-robotics/trajopt/issues)
 
 [![license - apache 2.0](https://img.shields.io/:license-Apache%202.0-yellowgreen.svg)](https://opensource.org/licenses/Apache-2.0)
 [![license - bsd 2 clause](https://img.shields.io/:license-BSD%202--Clause-blue.svg)](https://opensource.org/licenses/BSD-2-Clause)
@@ -20,25 +23,25 @@ An optimizing path planner for ROS
 ![PR2 Table](gh_pages/_static/example_gifs/PR2_table.gif)
 
 ## Solvers support
-`trajopt_ros` implements sequential convex optimization to solve the motion planning problem.
+`trajopt` implements sequential convex optimization to solve the motion planning problem.
 It implements a penalty method to optimize for joint velocities while satisfying a set of constraints.
 Internally, it makes use of convex solvers that are able to solve linearly constrained quadratic problems.
 At the moment, the following solvers are supported:
 - `BPMPD` (interior point method, free for non-commercial use only)
 - `Gurobi` (simplex and interior point/parallel barrier, license required)
-- `OSQP` (ADMM, BSD2 license)
+- `OSQP` (ADMM, BSD2 license) default
 - `qpOASES` (active set, LGPL 2.1 license)
 
-While the `BPMPD` library is bundled in the distribution, `Gurobi`, `OSQP` and `qpOASES` need to be installed in the system.
+The `BPMPD` library is bundled in the distribution, and `OSQP` and `qpOASES` are pulled automatically from their source distribution when needed. `Gurobi` needs to be installed in the system.
 To compile with `Gurobi` support, a `GUROBI_HOME` variable needs to be defined.
-Once `trajopt_ros` is compiled with support for a specific solver, you can select it by properly setting the `TRAJOPT_CONVEX_SOLVER` environment variable. Possible values are `GUROBI`, `BPMPD`, `OSQP`, `QPOASES`, `AUTO_SOLVER`.
+Once `trajopts` is compiled with support for a specific solver, you can select it by properly setting the `TRAJOPT_CONVEX_SOLVER` environment variable. Possible values are `GUROBI`, `BPMPD`, `OSQP`, `QPOASES`, `AUTO_SOLVER`.
 The selection to `AUTO_SOLVER` is the default and automatically picks the best between the available solvers.
 
 ## TrajOpt Examples
-If you're new to TrajOpt, a great place to start is [tesseract_ros_examples](https://github.com/ros-industrial-consortium/tesseract_ros/tree/master/tesseract_ros_examples). This contains a number of examples to get you started.
-This package is no longer part of this repository, but is maintained over at `ros-industrial-consortium/tesseract_ros`.
+If you're new to TrajOpt, a great place to start is [tesseract_ros_examples](https://github.com/ros-industrial-consortium/tesseract_ros2/tree/master/tesseract_ros_examples). This contains a number of examples to get you started.
+This package is no longer part of this repository, but is maintained over at `ros-industrial-consortium/tesseract_ros2`.
 
-Additionally, there is an industrial training module that covers TrajOpt for a pick and place application. That module can be found [HERE](https://industrial-training-master.readthedocs.io/en/melodic/_source/demo3/index.html).
+Additionally, there is an industrial training module that covers TrajOpt for a pick and place application. That module can be found [HERE](https://industrial-training-master.readthedocs.io/en/latest/_source/_archives/demo3/index.html).
 #### Pick and Place
 The pick and place example is great place to start because it shows a complete end to end process using TrajOpt. While the code itself is quite long, this is because it is showing setting up and solving 2 problems (the pick and the place) as well as attaching and detaching objects in Tesseract. It makes use of the Tesseract TrajOpt Planner which simplifies some of the problem setup.
 
