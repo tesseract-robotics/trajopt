@@ -237,28 +237,24 @@ void OSQPModel::createOrUpdateSolver()
   allow_explicit_warm_start = allow_explicit_warm_start && P_sparsity_equal && A_sparsity_equal;
 
   // If sparsity did not change, update data, otherwise cleanup and setup
-  bool need_setup = true;
-  if (allow_update)
+  if (allow_update && (osqp_update_data_vec(osqp_workspace_, q_.data(), l_.data(), u_.data()) != 0))
   {
-    LOG_DEBUG("OSQP update (warm start = %lli).", config_.settings.warm_starting);
-    need_setup = false;
-
-    if (osqp_update_data_vec(osqp_workspace_, q_.data(), l_.data(), u_.data()) != 0)
-    {
-      need_setup = true;
-      LOG_WARN("OSQP updating bounds and linear costs failed.");
-    }
-    if (!need_setup &&
-        (osqp_update_data_mat(osqp_workspace_, P_->x, OSQP_NULL, P_->nzmax, A_->x, OSQP_NULL, A_->nzmax) != 0))
-    {
-      need_setup = true;
-      LOG_WARN("OSQP updating P and A matrices failed.");
-    }
+    allow_update = false;
+    LOG_WARN("OSQP updating bounds and linear costs failed.");
+  }
+  if (allow_update &&
+      (osqp_update_data_mat(osqp_workspace_, P_->x, OSQP_NULL, P_->nzmax, A_->x, OSQP_NULL, A_->nzmax) != 0))
+  {
+    allow_update = false;
+    LOG_WARN("OSQP updating P and A matrices failed.");
   }
 
   // If setup is not required then return
-  if (!need_setup)
+  if (allow_update)
+  {
+    LOG_DEBUG("OSQP updated (warm start = %lli).", config_.settings.warm_starting);
     return;
+  }
 
   auto settings = config_.settings;
   DblVec prev_x;
