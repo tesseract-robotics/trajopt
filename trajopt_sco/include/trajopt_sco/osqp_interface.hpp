@@ -45,21 +45,6 @@ struct OSQPModelConfig : public ModelConfig
  */
 class OSQPModel : public Model
 {
-  using OSQPData = struct
-  {
-    OSQPInt n;         ///< number of variables n
-    OSQPInt m;         ///< number of constraints m
-    OSQPCscMatrix* P;  ///< the upper triangular part of the quadratic objective matrix P (size n x n).
-    OSQPCscMatrix* A;  ///< linear constraints matrix A (size m x n)
-    OSQPFloat* q;      ///< dense array for linear part of objective function (size n)
-    OSQPFloat* l;      ///< dense array for lower bound (size m)
-    OSQPFloat* u;      ///< dense array for upper bound (size m)
-  };
-
-  /** OSQPData. Some fields here (`osp_data_.A` and `osp_data_.P`) are *  automatically allocated by OSQP, but
-   * deallocated by us. */
-  OSQPData osqp_data_{};
-
   /** OSQP Workspace. Memory here is managed by OSQP */
   OSQPSolver* osqp_workspace_{ nullptr };
 
@@ -101,6 +86,8 @@ class OSQPModel : public Model
   std::vector<OSQPInt> A_column_pointers_; /**< column pointers for constraint matrix, CSC format */
   DblVec A_csc_data_;                      /**< constraint matrix values in CSC format */
   DblVec l_, u_;                           /**< linear constraints upper and lower limits */
+  OSQPInt m_ = 0;                          /**< Number of constraints in the model */
+  OSQPInt n_ = 0;                          /**< Number of variables in the model */
 
   QuadExpr objective_; /**< objective QuadExpr expression */
 
