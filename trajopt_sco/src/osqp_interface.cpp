@@ -458,7 +458,7 @@ CvxOptStatus OSQPModel::optimize()
       std::cout << "OSQP Solution: " << solution_vec.transpose().format(format) << '\n';
     }
 
-    if (console_bridge::getLogLevel() == console_bridge::LogLevel::CONSOLE_BRIDGE_LOG_DEBUG)
+    if (trajopt_common::GetLogLevel() >= trajopt_common::LevelDebug)
     {
       switch (status)
       {
