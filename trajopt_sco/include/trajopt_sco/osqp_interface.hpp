@@ -45,12 +45,8 @@ struct OSQPModelConfig : public ModelConfig
  */
 class OSQPModel : public Model
 {
-  /** OSQPData. Some fields here (`osp_data_.A` and `osp_data_.P`) are *  automatically allocated by OSQP, but
-   * deallocated by us. */
-  OSQPData osqp_data_{};
-
   /** OSQP Workspace. Memory here is managed by OSQP */
-  OSQPWorkspace* osqp_workspace_{ nullptr };
+  OSQPSolver* osqp_workspace_{ nullptr };
 
   /** Updates OSQP quadratic cost matrix from QuadExpr expression.
    *  Transforms QuadExpr objective_ into the OSQP CSC matrix P_
@@ -77,17 +73,21 @@ class OSQPModel : public Model
   ConstraintTypeVector cnt_types_; /**< constraints types */
   DblVec solution_;                /**< optimizizer's solution for current model */
 
-  std::unique_ptr<csc, decltype(&free)> P_; /**< Takes ownership of OSQPData.P to avoid having to deallocate manually */
-  std::unique_ptr<csc, decltype(&free)> A_; /**< Takes ownership of OSQPData.A to avoid having to deallocate manually */
-  std::vector<c_int> P_row_indices_;        /**< row indices for P, CSC format */
-  std::vector<c_int> P_column_pointers_;    /**< column pointers for P, CSC format */
-  DblVec P_csc_data_;                       /**< P values in CSC format */
-  Eigen::VectorXd q_;                       /**< linear part of the objective */
+  std::unique_ptr<OSQPCscMatrix, decltype(&free)> P_; /**< Takes ownership of OSQPData.P to avoid having to deallocate
+                                                         manually */
+  std::unique_ptr<OSQPCscMatrix, decltype(&free)> A_; /**< Takes ownership of OSQPData.A to avoid having to deallocate
+                                                         manually */
+  std::vector<OSQPInt> P_row_indices_;                /**< row indices for P, CSC format */
+  std::vector<OSQPInt> P_column_pointers_;            /**< column pointers for P, CSC format */
+  DblVec P_csc_data_;                                 /**< P values in CSC format */
+  Eigen::VectorXd q_;                                 /**< linear part of the objective */
 
-  std::vector<c_int> A_row_indices_;     /**< row indices for constraint matrix, CSC format */
-  std::vector<c_int> A_column_pointers_; /**< column pointers for constraint matrix, CSC format */
-  DblVec A_csc_data_;                    /**< constraint matrix values in CSC format */
-  DblVec l_, u_;                         /**< linear constraints upper and lower limits */
+  std::vector<OSQPInt> A_row_indices_;     /**< row indices for constraint matrix, CSC format */
+  std::vector<OSQPInt> A_column_pointers_; /**< column pointers for constraint matrix, CSC format */
+  DblVec A_csc_data_;                      /**< constraint matrix values in CSC format */
+  DblVec l_, u_;                           /**< linear constraints upper and lower limits */
+  OSQPInt m_ = 0;                          /**< Number of constraints in the model */
+  OSQPInt n_ = 0;                          /**< Number of variables in the model */
 
   QuadExpr objective_; /**< objective QuadExpr expression */
 

@@ -26,6 +26,11 @@
 #ifndef TRAJOPT_SQP_INCLUDE_OSQP_EIGEN_SOLVER_H_
 #define TRAJOPT_SQP_INCLUDE_OSQP_EIGEN_SOLVER_H_
 
+#include <trajopt_common/macros.h>
+TRAJOPT_IGNORE_WARNINGS_PUSH
+#include <OsqpEigen/Settings.hpp>
+TRAJOPT_IGNORE_WARNINGS_POP
+
 #include <trajopt_sqp/qp_solver.h>
 
 namespace OsqpEigen
@@ -50,6 +55,8 @@ public:
   OSQPEigenSolver& operator=(const OSQPEigenSolver&) = delete;
   OSQPEigenSolver(OSQPEigenSolver&&) = default;
   OSQPEigenSolver& operator=(OSQPEigenSolver&&) = default;
+
+  static void setDefaultOSQPSettings(OsqpEigen::Settings& settings);
 
   bool init(Eigen::Index num_vars, Eigen::Index num_cnts) override;
 

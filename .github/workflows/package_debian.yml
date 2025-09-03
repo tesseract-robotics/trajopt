@@ -43,7 +43,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        distro: [focal, jammy, noble]
+        distro: [jammy, noble]
     container:
       image: ghcr.io/tesseract-robotics/tesseract:${{ matrix.distro }}-${{ needs.get-tag.outputs.major }}.${{ needs.get-tag.outputs.minor }}
       env:

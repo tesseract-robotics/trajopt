@@ -4,17 +4,27 @@ find_package(ros_industrial_cmake_boilerplate REQUIRED)
 extract_package_metadata(pkg)
 project(OsqpEigen VERSION ${pkg_extracted_version} LANGUAGES CXX)
 
-find_package(OsqpEigen QUIET)
+set(TRAJOPT_OSQPEIGEN_VERSION "0.10.3")
+# Remove patch version for find_package
+string(
+  REGEX
+  REPLACE "\\.[0-9]+$"
+          ""
+          TRAJOPT_OSQPEIGEN_VERSION_MAJORMINOR
+          ${TRAJOPT_OSQPEIGEN_VERSION})
+
+find_package(OsqpEigen ${TRAJOPT_OSQPEIGEN_VERSION_MAJORMINOR} QUIET)
 
 if(NOT ${OsqpEigen_FOUND} AND NOT TRAJOPT_OSQP_DISABLED)
-  message(WARNING "No valid OsqpEigen version found. Cloning into build directory")
+  message(
+    WARNING "No valid OsqpEigen version found. Cloning OsqpEigen ${TRAJOPT_OSQPEIGEN_VERSION} into build directory")
 
   include(ExternalProject)
 
   ExternalProject_Add(
     ${PROJECT_NAME}
     GIT_REPOSITORY https://github.com/robotology/osqp-eigen
-    GIT_TAG v0.6.3
+    GIT_TAG v${TRAJOPT_OSQPEIGEN_VERSION}
     SOURCE_DIR ${CMAKE_BINARY_DIR}-src
     BINARY_DIR ${CMAKE_BINARY_DIR}-build
     CMAKE_CACHE_ARGS
