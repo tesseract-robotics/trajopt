@@ -129,7 +129,8 @@ bool OSQPModel::updateObjective(bool check_sparsity)
   std::vector<OSQPInt> prev_column_pointers;
   // Check if dimensions have changed
   bool sparsity_equal = false;
-  if (check_sparsity && P_ != nullptr && P_->n == n_ && P_->m == n_ && P_->nzmax == P_csc_data_.size())
+  if (check_sparsity && P_ != nullptr && P_->n == sm.outerSize() && P_->m == sm.innerSize() &&
+      P_->nzmax == triangular_sm.nonZeros())
   {
     sparsity_equal = true;
     // Store previous values for the sparsity check
@@ -198,7 +199,8 @@ bool OSQPModel::updateConstraints(bool check_sparsity)
   std::vector<OSQPInt> prev_column_pointers;
   // Check if dimensions have changed
   bool sparsity_equal = false;
-  if (check_sparsity && A_ != nullptr && A_->n == n_ && A_->m == m_ && A_->nzmax == A_csc_data_.size())
+  if (check_sparsity && A_ != nullptr && A_->n == sm.outerSize() && A_->m == sm.innerSize() &&
+      A_->nzmax == sm.nonZeros())
   {
     sparsity_equal = true;
     // Store previous values for the sparsity check
