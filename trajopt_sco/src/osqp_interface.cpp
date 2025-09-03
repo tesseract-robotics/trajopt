@@ -260,9 +260,9 @@ void OSQPModel::createOrUpdateSolver()
   if (!need_setup)
     return;
 
+  auto settings = config_.settings;
   DblVec prev_x;
   DblVec prev_y;
-  double prev_rho = 0.0;
   if (osqp_workspace_ != nullptr)
   {
     if (allow_explicit_warm_start)
@@ -271,14 +271,13 @@ void OSQPModel::createOrUpdateSolver()
       // Store previous solution
       prev_x = DblVec(osqp_workspace_->solution->x, osqp_workspace_->solution->x + n_);
       prev_y = DblVec(osqp_workspace_->solution->y, osqp_workspace_->solution->y + m_);
-      prev_rho = osqp_workspace_->settings->rho;
+      settings.rho = osqp_workspace_->settings->rho;
     }
     osqp_cleanup(osqp_workspace_);
   }
 
   // Setup workspace - this should be called only once
-  auto ret =
-      osqp_setup(&osqp_workspace_, P_.get(), q_.data(), A_.get(), l_.data(), u_.data(), m_, n_, &config_.settings);
+  auto ret = osqp_setup(&osqp_workspace_, P_.get(), q_.data(), A_.get(), l_.data(), u_.data(), m_, n_, &settings);
   if (ret != 0)
   {
     // In this case, no data got allocated, so don't try to free it.
@@ -292,10 +291,6 @@ void OSQPModel::createOrUpdateSolver()
     if (osqp_warm_start(osqp_workspace_, prev_x.data(), prev_y.data()) != 0)
     {
       LOG_WARN("OSQP warm start failed.");
-    }
-    if (osqp_update_rho(osqp_workspace_, prev_rho) != 0)
-    {
-      LOG_WARN("OSQP rho update failed.");
     }
   }
 }
