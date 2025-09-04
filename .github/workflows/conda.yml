@@ -12,7 +12,7 @@ on:
 
 jobs:
   conda-win:
-    runs-on: windows-2019
+    runs-on: windows-2022
     defaults:
       run:
         shell: powershell
@@ -79,3 +79,4 @@ jobs:
         conda smithy regenerate
         
         conda mambabuild -m .ci_support/linux_64_.yaml --build-only .
+
