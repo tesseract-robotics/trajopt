@@ -91,7 +91,7 @@ struct BasicTrustRegionSQPParameters
   /** @brief If model improves less than this, exit and report convergence */
   double min_approx_improve_frac = std::numeric_limits<double>::lowest();
   /** @brief The max number of iterations */
-  double max_iter = 50;
+  int max_iter = 50;
   /** @brief If improvement is less than improve_ratio_threshold, shrink trust region by this ratio */
   double trust_shrink_ratio = 0.1;
   /** @brief If improvement is less than improve_ratio_threshold, expand trust region by this ratio */
