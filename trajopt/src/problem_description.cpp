@@ -80,7 +80,7 @@ void checkParameterSize(trajopt::DblVec& parameter,
   if (apply_first && parameter.size() == 1)
   {
     parameter = trajopt::DblVec(expected_size, parameter[0]);
-    CONSOLE_BRIDGE_logInform("1 %s given. Applying to all %i joints", name.c_str(), expected_size);
+    CONSOLE_BRIDGE_logDebug("1 %s given. Applying to all %i joints", name.c_str(), expected_size);
   }
   else if (parameter.size() != expected_size)
   {
