@@ -2,6 +2,13 @@
 Changelog for package trajopt
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Make message debug instead of info
+* Fix benchmarks (`#471 <https://github.com/tesseract-robotics/trajopt/issues/471>`_)
+* improve memory allocations (`#468 <https://github.com/tesseract-robotics/trajopt/issues/468>`_)
+* Contributors: Levi Armstrong, Roelof Oomen
+
 0.31.0 (2025-07-06)
 -------------------
 

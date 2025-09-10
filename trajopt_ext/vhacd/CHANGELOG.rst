@@ -2,6 +2,9 @@
 Changelog for package vhacd
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+
 0.31.0 (2025-07-06)
 -------------------
 * Add missing SYSTEM to target include in vhacd

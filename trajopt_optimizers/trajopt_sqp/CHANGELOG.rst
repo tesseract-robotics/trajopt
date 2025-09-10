@@ -2,6 +2,14 @@
 Changelog for package trajopt_sqp
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Update OSQP dependency to v1.0.0 and OSQPEigen to v0.10.3 (`#474 <https://github.com/tesseract-robotics/trajopt/issues/474>`_)
+* Fix bounds problem (`#472 <https://github.com/tesseract-robotics/trajopt/issues/472>`_)
+  * Also ensure the trust box does not shrink when a variable is close to a bound
+* Fix benchmarks (`#471 <https://github.com/tesseract-robotics/trajopt/issues/471>`_)
+* Contributors: Roelof Oomen
+
 0.31.0 (2025-07-06)
 -------------------
 

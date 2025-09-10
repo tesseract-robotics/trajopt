@@ -2,6 +2,13 @@
 Changelog for package osqp_eigen
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Update OSQP dependency to v1.0.0 and OSQPEigen to v0.10.3 (`#474 <https://github.com/tesseract-robotics/trajopt/issues/474>`_)
+* Fix disable external cmake variable names
+* Add ability to disable packages in external build via cmake
+* Contributors: Levi Armstrong, Roelof Oomen
+
 0.31.0 (2025-07-06)
 -------------------
 

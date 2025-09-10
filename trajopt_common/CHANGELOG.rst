@@ -2,6 +2,13 @@
 Changelog for package trajopt_utils
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Fix benchmarks (`#471 <https://github.com/tesseract-robotics/trajopt/issues/471>`_)
+* Add yaml conversions and related tests (`#469 <https://github.com/tesseract-robotics/trajopt/issues/469>`_)
+* Remove PairHash (replaced by implicit std::hash in tesseract_common)
+* Contributors: Roelof Oomen, Tyler Marr
+
 0.31.0 (2025-07-06)
 -------------------
 * Make sure serialized objects have friend struct tesseract_common::Serialization
