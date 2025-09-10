@@ -2,8 +2,8 @@
 Changelog for package trajopt_ifopt
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.32.0 (2025-09-10)
+-------------------
 * improve memory allocations (`#468 <https://github.com/tesseract-robotics/trajopt/issues/468>`_)
 * Contributors: Levi Armstrong
 

@@ -2,8 +2,8 @@
 Changelog for package qpoases
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.32.0 (2025-09-10)
+-------------------
 * Fix qpOASES Lapack naming conflict
 * Fix disable external cmake variable names
 * Add ability to disable packages in external build via cmake

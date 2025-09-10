@@ -2,8 +2,8 @@
 Changelog for package trajopt
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.32.0 (2025-09-10)
+-------------------
 * Make message debug instead of info
 * Fix benchmarks (`#471 <https://github.com/tesseract-robotics/trajopt/issues/471>`_)
 * improve memory allocations (`#468 <https://github.com/tesseract-robotics/trajopt/issues/468>`_)
