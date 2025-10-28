@@ -2,8 +2,8 @@
 Changelog for package osqp_eigen
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.33.0 (2025-10-28)
+-------------------
 * Update to osqp_eigen 0.11.0
 * Contributors: Levi Armstrong
 
