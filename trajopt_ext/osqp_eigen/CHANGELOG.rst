@@ -2,6 +2,11 @@
 Changelog for package osqp_eigen
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Update to osqp_eigen 0.11.0
+* Contributors: Levi Armstrong
+
 0.32.0 (2025-09-10)
 -------------------
 * Update OSQP dependency to v1.0.0 and OSQPEigen to v0.10.3 (`#474 <https://github.com/tesseract-robotics/trajopt/issues/474>`_)

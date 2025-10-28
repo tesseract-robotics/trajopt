@@ -2,6 +2,9 @@
 Changelog for package trajopt_sco
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+
 0.32.0 (2025-09-10)
 -------------------
 * Make OSQP max_iter a integer

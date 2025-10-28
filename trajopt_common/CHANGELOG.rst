@@ -2,6 +2,9 @@
 Changelog for package trajopt_utils
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+
 0.32.0 (2025-09-10)
 -------------------
 * Fix benchmarks (`#471 <https://github.com/tesseract-robotics/trajopt/issues/471>`_)
