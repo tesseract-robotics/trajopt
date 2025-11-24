@@ -13,6 +13,7 @@ TRAJOPT_IGNORE_WARNINGS_POP
 #include <trajopt_sco/solver_interface.hpp>
 #include <trajopt_common/logging.hpp>
 #include <trajopt_common/stl_to_string.hpp>
+#include <tesseract_common/utils.h>
 
 namespace sco
 {
@@ -56,6 +57,40 @@ std::vector<ConvexObjective::Ptr> cntsToCosts(const std::vector<ConvexConstraint
   return out;
 }
 }  // namespace
+
+bool BasicTrustRegionSQPParameters::operator==(const BasicTrustRegionSQPParameters& rhs) const
+{
+  static auto max_diff = static_cast<double>(std::numeric_limits<float>::epsilon());
+
+  bool equal = true;
+  equal &= tesseract_common::almostEqualRelativeAndAbs(improve_ratio_threshold, rhs.improve_ratio_threshold, max_diff);
+  equal &= tesseract_common::almostEqualRelativeAndAbs(min_trust_box_size, rhs.min_trust_box_size, max_diff);
+  equal &= tesseract_common::almostEqualRelativeAndAbs(min_approx_improve, rhs.min_approx_improve, max_diff);
+  equal &= tesseract_common::almostEqualRelativeAndAbs(min_approx_improve_frac, rhs.min_approx_improve_frac, max_diff);
+  equal &= (max_iter == rhs.max_iter);
+  equal &= tesseract_common::almostEqualRelativeAndAbs(trust_shrink_ratio, rhs.trust_shrink_ratio, max_diff);
+  equal &= tesseract_common::almostEqualRelativeAndAbs(trust_expand_ratio, rhs.trust_expand_ratio, max_diff);
+  equal &= tesseract_common::almostEqualRelativeAndAbs(cnt_tolerance, rhs.cnt_tolerance, max_diff);
+  equal &=
+      tesseract_common::almostEqualRelativeAndAbs(max_merit_coeff_increases, rhs.max_merit_coeff_increases, max_diff);
+  equal &= (max_qp_solver_failures == rhs.max_qp_solver_failures);
+  equal &=
+      tesseract_common::almostEqualRelativeAndAbs(merit_coeff_increase_ratio, rhs.merit_coeff_increase_ratio, max_diff);
+  equal &= tesseract_common::almostEqualRelativeAndAbs(max_time, rhs.max_time, max_diff);
+  equal &=
+      tesseract_common::almostEqualRelativeAndAbs(initial_merit_error_coeff, rhs.initial_merit_error_coeff, max_diff);
+  equal &= (inflate_constraints_individually == rhs.inflate_constraints_individually);
+  equal &= tesseract_common::almostEqualRelativeAndAbs(trust_box_size, rhs.trust_box_size, max_diff);
+  equal &= (log_results == rhs.log_results);
+  equal &= (log_dir == rhs.log_dir);
+  equal &= (num_threads == rhs.num_threads);
+  return equal;
+}
+
+bool BasicTrustRegionSQPParameters::operator!=(const BasicTrustRegionSQPParameters& rhs) const
+{
+  return !operator==(rhs);
+}
 
 void Optimizer::addCallback(const Callback& cb) { callbacks_.push_back(cb); }
 void Optimizer::callCallbacks()

@@ -23,12 +23,7 @@
  */
 
 #include <trajopt_common/collision_types.h>
-#include <tesseract_collision/core/serialization.h>
-#if (BOOST_VERSION >= 107400) && (BOOST_VERSION < 107500)
-#include <boost/serialization/library_version_type.hpp>
-#endif
-#include <boost/serialization/unordered_map.hpp>
-#include <boost/serialization/set.hpp>
+#include <tesseract_common/utils.h>
 
 namespace trajopt_common
 {
@@ -76,13 +71,24 @@ const std::set<tesseract_common::LinkNamesPair>& CollisionCoeffData::getPairsWit
   return zero_coeff_;
 }
 
-template <class Archive>
-void CollisionCoeffData::serialize(Archive& ar, const unsigned int /*version*/)
+bool CollisionCoeffData::operator==(const CollisionCoeffData& rhs) const
 {
-  ar& BOOST_SERIALIZATION_NVP(default_collision_coeff_);
-  ar& BOOST_SERIALIZATION_NVP(lookup_table_);
-  ar& BOOST_SERIALIZATION_NVP(zero_coeff_);
+  static auto max_diff = static_cast<double>(std::numeric_limits<float>::epsilon());
+
+  auto value_eq = [](const double& v1, const double& v2) {
+    return tesseract_common::almostEqualRelativeAndAbs(v1, v2, max_diff);
+  };
+
+  bool equal = true;
+  equal &=
+      tesseract_common::almostEqualRelativeAndAbs(default_collision_coeff_, rhs.default_collision_coeff_, max_diff);
+  equal &= tesseract_common::isIdenticalMap<std::unordered_map<tesseract_common::LinkNamesPair, double>, double>(
+      lookup_table_, rhs.lookup_table_, value_eq);
+  equal &= (zero_coeff_ == rhs.zero_coeff_);
+  return equal;
 }
+
+bool CollisionCoeffData::operator!=(const CollisionCoeffData& rhs) const { return !operator==(rhs); }
 
 TrajOptCollisionConfig::TrajOptCollisionConfig(double margin,
                                                double coeff,
@@ -96,16 +102,21 @@ TrajOptCollisionConfig::TrajOptCollisionConfig(double margin,
 {
 }
 
-template <class Archive>
-void TrajOptCollisionConfig::serialize(Archive& ar, const unsigned int /*version*/)
+bool TrajOptCollisionConfig::operator==(const TrajOptCollisionConfig& rhs) const
 {
-  ar& BOOST_SERIALIZATION_NVP(enabled);
-  ar& BOOST_SERIALIZATION_NVP(contact_manager_config);
-  ar& BOOST_SERIALIZATION_NVP(collision_check_config);
-  ar& BOOST_SERIALIZATION_NVP(collision_coeff_data);
-  ar& BOOST_SERIALIZATION_NVP(collision_margin_buffer);
-  ar& BOOST_SERIALIZATION_NVP(max_num_cnt);
+  static auto max_diff = static_cast<double>(std::numeric_limits<float>::epsilon());
+
+  bool equal = true;
+  equal &= (enabled == rhs.enabled);
+  equal &= (contact_manager_config == rhs.contact_manager_config);
+  equal &= (collision_check_config == rhs.collision_check_config);
+  equal &= (collision_coeff_data == rhs.collision_coeff_data);
+  equal &= tesseract_common::almostEqualRelativeAndAbs(collision_margin_buffer, rhs.collision_margin_buffer, max_diff);
+  equal &= (max_num_cnt == rhs.max_num_cnt);
+  return equal;
 }
+
+bool TrajOptCollisionConfig::operator!=(const TrajOptCollisionConfig& rhs) const { return !operator==(rhs); }
 
 double LinkMaxError::getMaxError() const
 {
@@ -305,9 +316,3 @@ double GradientResultsSet::getMaxErrorWithBufferT1() const
 }
 
 }  // namespace trajopt_common
-
-#include <tesseract_common/serialization.h>
-TESSERACT_SERIALIZE_ARCHIVES_INSTANTIATE(trajopt_common::CollisionCoeffData)
-BOOST_CLASS_EXPORT_IMPLEMENT(trajopt_common::CollisionCoeffData)
-TESSERACT_SERIALIZE_ARCHIVES_INSTANTIATE(trajopt_common::TrajOptCollisionConfig)
-BOOST_CLASS_EXPORT_IMPLEMENT(trajopt_common::TrajOptCollisionConfig)

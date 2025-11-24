@@ -120,6 +120,9 @@ struct BasicTrustRegionSQPParameters
   std::string log_dir = "/tmp";
   /** @brief If greater than one, multi threaded functions are called */
   int num_threads = 0;
+
+  bool operator==(const BasicTrustRegionSQPParameters& rhs) const;
+  bool operator!=(const BasicTrustRegionSQPParameters& rhs) const;
 };
 
 class BasicTrustRegionSQP : public Optimizer

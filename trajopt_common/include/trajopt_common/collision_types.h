@@ -39,9 +39,15 @@ namespace trajopt_common
 {
 using GetStateFn = std::function<tesseract_common::TransformMap(const Eigen::Ref<const Eigen::VectorXd>& joint_values)>;
 
+class CollisionCoeffData;
+
+template <class Archive>
+void serialize(Archive& ar, CollisionCoeffData& obj);
+
 /** @brief Stores information about how the margins allowed between collision objects */
-struct CollisionCoeffData
+class CollisionCoeffData
 {
+public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
   using Ptr = std::shared_ptr<CollisionCoeffData>;
@@ -97,6 +103,9 @@ struct CollisionCoeffData
    */
   const std::set<tesseract_common::LinkNamesPair>& getPairsWithZeroCoeff() const;
 
+  bool operator==(const CollisionCoeffData& rhs) const;
+  bool operator!=(const CollisionCoeffData& rhs) const;
+
 private:
   /// Stores the collision coefficient used if no pair-specific one is set
   double default_collision_coeff_{ 1 };
@@ -107,10 +116,8 @@ private:
   /// Pairs containing zero coeff
   std::set<tesseract_common::LinkNamesPair> zero_coeff_;
 
-  friend class boost::serialization::access;
-  friend struct tesseract_common::Serialization;
   template <class Archive>
-  void serialize(Archive&, const unsigned int);  // NOLINT
+  friend void ::trajopt_common::serialize(Archive& ar, CollisionCoeffData& obj);
 };
 
 /**
@@ -154,11 +161,8 @@ struct TrajOptCollisionConfig
    */
   int max_num_cnt{ 3 };
 
-protected:
-  friend class boost::serialization::access;
-  friend struct tesseract_common::Serialization;
-  template <class Archive>
-  void serialize(Archive&, const unsigned int);  // NOLINT
+  bool operator==(const TrajOptCollisionConfig& rhs) const;
+  bool operator!=(const TrajOptCollisionConfig& rhs) const;
 };
 
 /** @brief A data structure to contain a links gradient results */
@@ -310,8 +314,5 @@ struct CollisionCacheData
 };
 
 }  // namespace trajopt_common
-
-BOOST_CLASS_EXPORT_KEY(trajopt_common::CollisionCoeffData)
-BOOST_CLASS_EXPORT_KEY(trajopt_common::TrajOptCollisionConfig)
 
 #endif  // TRAJOPT_COMMON_COLLISION_TYPES_H
