@@ -85,6 +85,9 @@ struct SQPParameters
   bool log_results = false;
   /** @brief Unused */
   std::string log_dir = "/tmp";
+
+  bool operator==(const SQPParameters& rhs) const;
+  bool operator!=(const SQPParameters& rhs) const;
 };
 
 /** @brief This struct contains information and results for the SQP problem */
