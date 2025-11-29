@@ -4,8 +4,6 @@
  *
  * @author Matthew Powelson
  * @date May 18, 2020
- * @version TODO
- * @bug No known bugs
  *
  * @copyright Copyright (c) 2020, Southwest Research Institute
  *
