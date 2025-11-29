@@ -56,7 +56,7 @@ jobs:
         echo "CMAKE_PREFIX_PATH=$GITHUB_WORKSPACE\vcpkg\installed\x64-windows-release" >> "$GITHUB_ENV"
 
     - name: Build and Tests
-      uses: tesseract-robotics/colcon-action@v11
+      uses: tesseract-robotics/colcon-action@v13
       with:
         ccache-prefix: ${{ matrix.distro }}
         vcs-file: .github/workflows/windows_dependencies.repos
