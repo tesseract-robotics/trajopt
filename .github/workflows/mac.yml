@@ -60,7 +60,7 @@ jobs:
       with:
         cmake-version: '3.28.x'
     - name: vcpkg build
-      uses: johnwason/vcpkg-action@v6
+      uses: johnwason/vcpkg-action@v7
       with:
         pkgs: >-
           ${{ env.VCPKG_PKGS }}
