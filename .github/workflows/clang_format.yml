@@ -13,7 +13,7 @@ jobs:
   clang_format:
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v6
 
       - name: Run clang format
         run: |

@@ -17,7 +17,7 @@ jobs:
       run:
         shell: powershell
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v6
       with:
        path: workspace/src/trajopt
     - name: install-depends
@@ -52,7 +52,7 @@ jobs:
       run:
         shell: bash -el {0}
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v6
       with:
         path: workspace/src/trajopt
     - name: install-depends
