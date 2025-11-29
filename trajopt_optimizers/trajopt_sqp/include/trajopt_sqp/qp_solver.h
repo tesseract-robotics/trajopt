@@ -4,7 +4,6 @@
  *
  * @author Matthew Powelson
  * @date May 18, 2020
- * @version TODO
  * @bug This is not being used currently. The OSQPEigen solver interface needs to be cleaned up such that this base
  * class can be used in trust_region_sqp_solver.h
  *

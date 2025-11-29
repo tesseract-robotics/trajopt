@@ -4,8 +4,6 @@
  *
  * @author Levi Armstrong
  * @date May 20, 20201
- * @version TODO
- * @bug No known bugs
  *
  * @copyright Copyright (c) 2021, Southwest Research Institute
  *

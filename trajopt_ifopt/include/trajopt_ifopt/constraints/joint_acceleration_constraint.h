@@ -4,8 +4,6 @@
  *
  * @author Ben Greenberg
  * @date April 22, 2021
- * @version TODO
- * @bug No known bugs
  *
  * @copyright Copyright (c) 2021, Southwest Research Institute
  *

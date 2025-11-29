@@ -4,8 +4,6 @@
  *
  * @author Tyler Marr
  * @date August 8, 2025
- * @version TODO
- * @bug No known bugs
  *
  * @copyright Copyright (c) 2025, Tyler Marr, Confinity Robotics
  *
