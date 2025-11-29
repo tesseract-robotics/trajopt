@@ -31,7 +31,7 @@ jobs:
         cmake-version: '3.28.x'
 
     - name: vcpkg build
-      uses: johnwason/vcpkg-action@v6
+      uses: johnwason/vcpkg-action@v7
       with:
         pkgs: >-
          fcl bullet3[multithreading,double-precision,rtti] octomap console-bridge eigen3 yaml-cpp boost-stacktrace
