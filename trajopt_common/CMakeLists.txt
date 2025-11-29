@@ -13,7 +13,6 @@ endif()
 
 find_package(Eigen3 REQUIRED)
 find_package(Boost COMPONENTS program_options REQUIRED)
-find_package(ros_industrial_cmake_boilerplate REQUIRED)
 find_package(tesseract_common REQUIRED)
 find_package(tesseract_collision COMPONENTS core REQUIRED)
 find_package(tesseract_kinematics COMPONENTS core REQUIRED)
@@ -46,7 +45,15 @@ target_clang_tidy(${PROJECT_NAME} ENABLE ${TRAJOPT_ENABLE_CLANG_TIDY})
 target_include_directories(${PROJECT_NAME} PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
                                                   "$<INSTALL_INTERFACE:include>")
 
-configure_package(NAMESPACE trajopt TARGETS ${PROJECT_NAME})
+configure_package(
+  NAMESPACE trajopt
+  TARGETS ${PROJECT_NAME}
+  DEPENDENCIES
+    Eigen3
+    tesseract_common
+    "tesseract_collision COMPONENTS core"
+    "tesseract_kinematics COMPONENTS core"
+  CFG_EXTRAS cmake/trajopt_macros.cmake)
 
 # Mark cpp header files for installation
 install(
