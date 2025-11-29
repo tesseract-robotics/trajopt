@@ -18,19 +18,6 @@ find_package(ros_industrial_cmake_boilerplate REQUIRED)
 find_package(tesseract_common REQUIRED)
 find_package(tesseract_visualization REQUIRED)
 
-if(NOT TARGET console_bridge::console_bridge)
-  add_library(console_bridge::console_bridge INTERFACE IMPORTED)
-  set_target_properties(console_bridge::console_bridge PROPERTIES INTERFACE_INCLUDE_DIRECTORIES
-                                                                  ${console_bridge_INCLUDE_DIRS})
-  set_target_properties(console_bridge::console_bridge PROPERTIES INTERFACE_LINK_LIBRARIES ${console_bridge_LIBRARIES})
-else()
-  get_target_property(CHECK_INCLUDE_DIRECTORIES console_bridge::console_bridge INTERFACE_INCLUDE_DIRECTORIES)
-  if(NOT ${CHECK_INCLUDE_DIRECTORIES})
-    set_target_properties(console_bridge::console_bridge PROPERTIES INTERFACE_INCLUDE_DIRECTORIES
-                                                                    ${console_bridge_INCLUDE_DIRS})
-  endif()
-endif()
-
 # Load variable for clang tidy args, compiler options and cxx version
 trajopt_variables()
 
@@ -87,7 +74,17 @@ target_cxx_version(${PROJECT_NAME}_callbacks PUBLIC VERSION ${TRAJOPT_CXX_VERSIO
 # Install ##
 # ######################################################################################################################
 
-configure_package(NAMESPACE trajopt TARGETS ${PROJECT_NAME} ${PROJECT_NAME}_callbacks)
+configure_package(
+  NAMESPACE trajopt
+  TARGETS ${PROJECT_NAME} ${PROJECT_NAME}_callbacks
+  DEPENDENCIES
+    console_bridge
+    ifopt
+    OsqpEigen
+    trajopt_ifopt
+    trajopt_common
+    tesseract_common
+    tesseract_visualization)
 
 # Mark cpp header files for installation
 install(
