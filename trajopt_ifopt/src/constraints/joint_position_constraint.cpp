@@ -23,6 +23,9 @@
  */
 #include <trajopt_ifopt/constraints/joint_position_constraint.h>
 #include <trajopt_ifopt/variable_sets/joint_position_variable.h>
+#include <trajopt_ifopt/variable_sets/nodes_variables.h>
+#include <trajopt_ifopt/variable_sets/node.h>
+#include <trajopt_ifopt/variable_sets/var.h>
 
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <console_bridge/console.h>
@@ -68,7 +71,7 @@ JointPosConstraint::JointPosConstraint(const Eigen::VectorXd& targets,
     for (long i = 0; i < n_dof_; i++)
     {
       const double w_target = coeffs_[i] * targets[i];
-      bounds[static_cast<std::size_t>(i + j * n_dof_)] = ifopt::Bounds(w_target, w_target);
+      bounds[static_cast<std::size_t>(i + (j * n_dof_))] = ifopt::Bounds(w_target, w_target);
     }
   }
   bounds_ = bounds;
@@ -139,5 +142,96 @@ void JointPosConstraint::FillJacobianBlock(std::string var_set, Jacobian& jac_bl
       jac_block.setFromTriplets(triplet_list.begin(), triplet_list.end());  // NOLINT
     }
   }
+}
+
+JointPosConstraint2::JointPosConstraint2(const Eigen::VectorXd& target,
+                                         const std::shared_ptr<const Var>& position_var,
+                                         const Eigen::VectorXd& coeffs,
+                                         const std::string& name)
+  : ifopt::ConstraintSet(static_cast<int>(target.size()), name)
+  , var_set_(position_var->getParent()->getParent()->GetName())
+  , n_dof_(target.size())
+  , coeffs_(coeffs)
+  , position_var_(position_var)
+{
+  // Set the n_dof and n_vars for convenience
+  assert(n_dof_ > 0);
+
+  if (!(coeffs_.array() > 0).all())
+    throw std::runtime_error("JointPosConstraint, coeff must be greater than zero.");
+
+  if (coeffs_.rows() == 1)
+    coeffs_ = Eigen::VectorXd::Constant(n_dof_, coeffs(0));
+
+  if (coeffs_.rows() != n_dof_)
+    throw std::runtime_error("JointPosConstraint, coeff must be the same size of the joint postion.");
+
+  // Check and make sure the targets size aligns with the vars passed in
+  if (target.size() != position_var->size())
+    CONSOLE_BRIDGE_logError("Targets size does not align with variables provided");
+
+  // Set the bounds to the input targets
+  std::vector<ifopt::Bounds> bounds(static_cast<std::size_t>(GetRows()));
+  // All of the positions should be exactly at their targets
+
+  for (long i = 0; i < n_dof_; i++)
+  {
+    const double w_target = coeffs_[i] * target[i];
+    bounds[static_cast<std::size_t>(i)] = ifopt::Bounds(w_target, w_target);
+  }
+
+  bounds_ = bounds;
+}
+
+JointPosConstraint2::JointPosConstraint2(const std::vector<ifopt::Bounds>& bounds,
+                                         const std::shared_ptr<const Var>& position_var,
+                                         const Eigen::VectorXd& coeffs,
+                                         const std::string& name)
+  : ifopt::ConstraintSet(static_cast<int>(bounds.size()), name)
+  , var_set_(position_var->getParent()->getParent()->GetName())
+  , coeffs_(coeffs)
+  , bounds_(bounds)
+  , position_var_(position_var)
+{
+  // Set the n_dof and n_vars for convenience
+  n_dof_ = static_cast<long>(bounds_.size());
+
+  assert(n_dof_ > 0);
+
+  if (!(coeffs_.array() > 0).all())
+    throw std::runtime_error("JointPosConstraint, coeff must be greater than zero.");
+
+  if (coeffs_.rows() == 1)
+    coeffs_ = Eigen::VectorXd::Constant(n_dof_, coeffs(0));
+
+  if (coeffs_.rows() != n_dof_)
+    throw std::runtime_error("JointPosConstraint, coeff must be the same size of the joint postion.");
+
+  // Check and make sure the targets size aligns with the vars passed in
+  if (static_cast<long>(bounds_.size()) != position_var_->size())
+    CONSOLE_BRIDGE_logError("Bounds size does not align with variables provided");
+}
+
+Eigen::VectorXd JointPosConstraint2::GetValues() const { return coeffs_.cwiseProduct(position_var_->value()); }
+
+// Set the limits on the constraint values
+std::vector<ifopt::Bounds> JointPosConstraint2::GetBounds() const { return bounds_; }
+
+void JointPosConstraint2::FillJacobianBlock(std::string var_set, Jacobian& jac_block) const
+{
+  // Check if this constraint use the var_set
+  // Only modify the jacobian if this constraint uses var_set
+  if (var_set != var_set_)
+    return;
+
+  // Reserve enough room in the sparse matrix
+  std::vector<Eigen::Triplet<double>> triplet_list;
+  triplet_list.reserve(static_cast<std::size_t>(n_dof_));
+
+  // Loop over all of the variables this constraint uses
+  for (int j = 0; j < n_dof_; j++)  // NOLINT
+    triplet_list.emplace_back(position_var_->getIndex() + j, position_var_->getIndex() + j, coeffs_[j] * 1.0);
+
+  jac_block.setFromTriplets(triplet_list.begin(), triplet_list.end());  // NOLINT
 }
 }  // namespace trajopt_ifopt
