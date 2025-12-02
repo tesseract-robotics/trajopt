@@ -41,6 +41,7 @@ void NodesVariables::AddNode(std::unique_ptr<Node> node)
   Eigen::Index length = node->size();
   nodes_.emplace_back(std::move(node));
   n_dim_ += length;
+  SetRows(static_cast<int>(n_dim_));
 }
 
 std::shared_ptr<const Node> NodesVariables::GetNode(std::size_t opt_idx) const { return nodes_.at(opt_idx); }

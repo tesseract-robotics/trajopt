@@ -34,6 +34,9 @@ TRAJOPT_IGNORE_WARNINGS_POP
 #include <trajopt_ifopt/constraints/joint_acceleration_constraint.h>
 #include <trajopt_ifopt/constraints/joint_jerk_constraint.h>
 #include <trajopt_ifopt/variable_sets/joint_position_variable.h>
+#include <trajopt_ifopt/variable_sets/nodes_variables.h>
+#include <trajopt_ifopt/variable_sets/node.h>
+#include <trajopt_ifopt/variable_sets/var.h>
 #include <trajopt_ifopt/utils/ifopt_utils.h>
 
 using namespace trajopt_ifopt;
@@ -120,6 +123,80 @@ TEST(JointTermsUnit, JointVelConstraintUnit)  // NOLINT
   ifopt::ConstraintSet::Jacobian jac = velocity_cnt.GetJacobian();
   ifopt::Problem::Jacobian num_jac = trajopt_ifopt::calcNumericalConstraintGradient(*variables, velocity_cnt);
 
+  EXPECT_EQ(jac.rows(), static_cast<Eigen::Index>(x_vals.size() - 1) * targets.size());
+  EXPECT_EQ(jac.cols(), static_cast<Eigen::Index>(x_vals.size()) * targets.size());
+
+  for (Eigen::Index i = 0; i < static_cast<Eigen::Index>(x_vals.size() - 1) * targets.size(); ++i)
+  {
+    for (Eigen::Index j = 0; j < static_cast<Eigen::Index>(x_vals.size()) * targets.size(); ++j)
+    {
+      EXPECT_NEAR(jac.coeffRef(i, j), num_jac.coeffRef(i, j), 1e-3);
+    }
+  }
+}
+
+TEST(JointTermsUnit, JointVelConstraintUnit2)  // NOLINT
+{
+  CONSOLE_BRIDGE_logDebug("JointTermsUnit, JointVelConstraintUnit2");
+
+  // y = x^3 + 5*x^2 + 2*x + 1
+  auto f = [](double x) { return ((x * x * x) + (5 * x * x) + (2 * x) + 1); };
+
+  auto variables = std::make_shared<ifopt::Composite>("variable-sets", false);
+  std::vector<std::shared_ptr<const Var>> position_vars;
+  position_vars.reserve(27);
+
+  std::vector<int> x_vals;
+  auto variable_set = std::make_shared<NodesVariables>("joint_trajectory");
+  x_vals.reserve(27);
+  std::vector<double> init_vals;
+  for (int i = -13; i < 14; ++i)
+  {
+    auto node = std::make_unique<Node>();
+    const std::string var_id = "test_var_" + std::to_string(position_vars.size());
+    const std::vector<std::string> joint_names{ "x", "y" };
+    position_vars.push_back(node->addVar(var_id, joint_names));
+    variable_set->AddNode(std::move(node));
+
+    init_vals.push_back(f(i));
+    init_vals.push_back(f(i));
+
+    x_vals.push_back(i);
+  }
+
+  Eigen::Map<Eigen::VectorXd> data(init_vals.data(), static_cast<Eigen::Index>(init_vals.size()));
+  variable_set->SetVariables(data);
+
+  variables->AddComponent(variable_set);
+
+  Eigen::VectorXd targets(2);
+  targets << 0, 0;
+  const std::string name("test_joint_vel_cnt");
+  const Eigen::VectorXd coeffs = Eigen::VectorXd::Constant(1, 1);
+  JointVelConstraint2 velocity_cnt(targets, position_vars, coeffs, name);
+
+  // Must link with variables or GetValues and GetJacobian throw exception.
+  velocity_cnt.LinkWithVariables(variables);
+
+  EXPECT_EQ(velocity_cnt.GetRows(), targets.size() * static_cast<Eigen::Index>(position_vars.size() - 1));
+  EXPECT_EQ(velocity_cnt.GetName(), name);
+  EXPECT_EQ(velocity_cnt.GetBounds().size(), targets.size() * static_cast<Eigen::Index>(position_vars.size() - 1));
+
+  Eigen::VectorXd velocity_vals = velocity_cnt.GetValues();
+  EXPECT_EQ(velocity_vals.size(), targets.size() * static_cast<Eigen::Index>(position_vars.size() - 1));
+
+  // Test forward diff
+  for (std::size_t i = 0; i < x_vals.size() - 1; ++i)
+  {
+    for (Eigen::Index j = 0; j < targets.size(); ++j)
+    {
+      const double expected_val = (f(x_vals[i + 1]) - f(x_vals[i]));
+      EXPECT_NEAR(velocity_vals((static_cast<Eigen::Index>(i) * targets.size()) + j), expected_val, 1e-6);
+    }
+  }
+
+  ifopt::ConstraintSet::Jacobian jac = velocity_cnt.GetJacobian();
+  ifopt::Problem::Jacobian num_jac = trajopt_ifopt::calcNumericalConstraintGradient(*variables, velocity_cnt);
   EXPECT_EQ(jac.rows(), static_cast<Eigen::Index>(x_vals.size() - 1) * targets.size());
   EXPECT_EQ(jac.cols(), static_cast<Eigen::Index>(x_vals.size()) * targets.size());
 

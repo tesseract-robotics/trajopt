@@ -94,11 +94,11 @@ install(
 # Testing ##
 # ######################################################################################################################
 
-if(TRAJOPT_ENABLE_TESTING)
+# if(TRAJOPT_ENABLE_TESTING)
   enable_testing()
   add_custom_target(run_tests)
   add_subdirectory(test)
-endif()
+# endif()
 
 if(TRAJOPT_PACKAGE)
   cpack(
