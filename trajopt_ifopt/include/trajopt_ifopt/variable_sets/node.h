@@ -3,6 +3,7 @@
 
 #include <trajopt_ifopt/variable_sets/var.h>
 #include <unordered_map>
+#include <memory>
 
 namespace trajopt_ifopt
 {
@@ -18,7 +19,7 @@ public:
 
   const std::string& getName() const;
 
-  NodesVariables* getParent() const;
+  const NodesVariables* getParent() const;
 
   std::shared_ptr<const Var> addVar(const std::string& name);
 

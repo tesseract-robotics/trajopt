@@ -7,11 +7,11 @@ namespace trajopt_ifopt
 Node::Node(std::string node_name) : name_(std::move(node_name)) {}
 
 const std::string& Node::getName() const { return name_; }
-trajopt_ifopt::NodesVariables* Node::getParent() const { return parent_; }
+const NodesVariables* Node::getParent() const { return parent_; }
 std::shared_ptr<const trajopt_ifopt::Var> Node::addVar(const std::string& name,
                                                        const std::vector<std::string>& child_names)
 {
-  auto var = std::make_shared<Var>(length_, child_names.size(), name, child_names);
+  auto var = std::make_shared<Var>(length_, child_names.size(), name, child_names, this);
   vars_[name] = var;
   length_ += static_cast<Eigen::Index>(child_names.size());
   return var;
@@ -19,7 +19,7 @@ std::shared_ptr<const trajopt_ifopt::Var> Node::addVar(const std::string& name,
 
 std::shared_ptr<const trajopt_ifopt::Var> Node::addVar(const std::string& name)
 {
-  auto var = std::make_shared<Var>(length_, name);
+  auto var = std::make_shared<Var>(length_, name, this);
   vars_[name] = var;
   length_ += 1;
   return var;

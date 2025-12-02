@@ -49,6 +49,12 @@ public:
   using Ptr = std::shared_ptr<NodesVariables>;
 
   /**
+   * @param variable_name  The name of the variables in the optimization problem.
+   */
+  NodesVariables(const std::string& variable_name);
+  virtual ~NodesVariables() = default;
+
+  /**
    * @brief Add node to the variable set
    * @param node The node to append
    */
@@ -105,13 +111,6 @@ public:
   Eigen::Index GetDim() const;
 
 protected:
-  /**
-   * @param n_dim  The number of dimensions (x,y,..) each node has.
-   * @param variable_name  The name of the variables in the optimization problem.
-   */
-  NodesVariables(const std::string& variable_name);
-  virtual ~NodesVariables() = default;
-
   Eigen::VectorXd values_;
   VecBound bounds_;  ///< the bounds on the node values.
   std::vector<std::shared_ptr<Node>> nodes_;
