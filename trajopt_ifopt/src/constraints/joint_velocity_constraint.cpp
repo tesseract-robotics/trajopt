@@ -214,7 +214,7 @@ void JointVelConstraint2::FillJacobianBlock(std::string var_set, Jacobian& jac_b
 {
   // Check if this constraint use the var_set
   // Only modify the jacobian if this constraint uses var_set
-  if (var_set != var_set_)  // NOLINT
+  if (var_set != var_set_)
     return;
 
   // Reserve enough room in the sparse matrix
