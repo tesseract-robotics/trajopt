@@ -19,6 +19,7 @@
   <depend>trajopt_ifopt</depend>
   <depend>trajopt_common</depend>
   <depend>tesseract_common</depend>
+  <depend>tesseract_state_solver</depend>
   <depend>tesseract_visualization</depend>
 
   <test_depend>gtest</test_depend>
