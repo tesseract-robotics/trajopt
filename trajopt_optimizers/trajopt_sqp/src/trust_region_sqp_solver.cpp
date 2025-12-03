@@ -105,14 +105,14 @@ void TrustRegionSQPSolver::solve(const QPProblem::Ptr& qp_problem)
       const double elapsed_time = std::chrono::duration<double, std::milli>(Clock::now() - start_time).count() / 1000.0;
       if (elapsed_time > params.max_time)
       {
-        CONSOLE_BRIDGE_logInform("Elapsed time %f has exceeded max time %f", elapsed_time, params.max_time);
+        CONSOLE_BRIDGE_logDebug("Elapsed time %f has exceeded max time %f", elapsed_time, params.max_time);
         status_ = SQPStatus::OPT_TIME_LIMIT;
         break;
       }
 
       if (results_.overall_iteration >= params.max_iterations)
       {
-        CONSOLE_BRIDGE_logInform("Iteration limit");
+        CONSOLE_BRIDGE_logDebug("Iteration limit");
         status_ = SQPStatus::ITERATION_LIMIT;
         break;
       }
@@ -146,7 +146,7 @@ void TrustRegionSQPSolver::solve(const QPProblem::Ptr& qp_problem)
   if (status_ == SQPStatus::RUNNING)
   {
     status_ = SQPStatus::PENALTY_ITERATION_LIMIT;
-    CONSOLE_BRIDGE_logInform("Penalty iteration limit, optimization couldn't satisfy all constraints");
+    CONSOLE_BRIDGE_logDebug("Penalty iteration limit, optimization couldn't satisfy all constraints");
   }
 
   // Final Cleanup
@@ -161,13 +161,13 @@ bool TrustRegionSQPSolver::verifySQPSolverConvergence()
   // Check if constraints are satisfied
   if (results_.best_constraint_violations.size() == 0)
   {
-    CONSOLE_BRIDGE_logInform("Optimization has converged and there are no constraints");
+    CONSOLE_BRIDGE_logDebug("Optimization has converged and there are no constraints");
     return true;
   }
 
   if (results_.best_constraint_violations.maxCoeff() < params.cnt_tolerance)
   {
-    CONSOLE_BRIDGE_logInform("woo-hoo! constraints are satisfied (to tolerance %.2e)", params.cnt_tolerance);
+    CONSOLE_BRIDGE_logDebug("woo-hoo! constraints are satisfied (to tolerance %.2e)", params.cnt_tolerance);
     return true;
   }
 
@@ -183,14 +183,14 @@ void TrustRegionSQPSolver::adjustPenalty()
     {
       if (results_.best_constraint_violations[idx] > params.cnt_tolerance)
       {
-        CONSOLE_BRIDGE_logInform("Not all constraints are satisfied. Increasing constraint penalties for %d", idx);
+        CONSOLE_BRIDGE_logDebug("Not all constraints are satisfied. Increasing constraint penalties for %d", idx);
         results_.merit_error_coeffs[idx] *= params.merit_coeff_increase_ratio;
       }
     }
   }
   else
   {
-    CONSOLE_BRIDGE_logInform("Not all constraints are satisfied. Increasing constraint penalties uniformly");
+    CONSOLE_BRIDGE_logDebug("Not all constraints are satisfied. Increasing constraint penalties uniformly");
     results_.merit_error_coeffs *= params.merit_coeff_increase_ratio;
   }
   setBoxSize(fmax(results_.box_size[0], params.min_trust_box_size / params.trust_shrink_ratio * 1.5));
@@ -222,7 +222,7 @@ bool TrustRegionSQPSolver::stepSQPSolver()
 
   if (results_.box_size.maxCoeff() < params.min_trust_box_size)
   {
-    CONSOLE_BRIDGE_logInform("Converged because trust region is tiny");
+    CONSOLE_BRIDGE_logDebug("Converged because trust region is tiny");
     status_ = SQPStatus::NLP_CONVERGED;
     return true;
   }
