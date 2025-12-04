@@ -157,7 +157,6 @@ DiscreteCollisionConstraint2::DiscreteCollisionConstraint2(
     bool fixed_sparsity,
     const std::string& name)
   : ifopt::ConstraintSet(max_num_cnt, name)
-  , var_set_(position_var->getParent()->getParent()->GetName())
   , position_var_(std::move(position_var))
   , collision_evaluator_(std::move(collision_evaluator))
 {
@@ -194,7 +193,7 @@ std::vector<ifopt::Bounds> DiscreteCollisionConstraint2::GetBounds() const { ret
 void DiscreteCollisionConstraint2::FillJacobianBlock(std::string var_set, Jacobian& jac_block) const
 {
   // Only modify the jacobian if this constraint uses var_set
-  if (var_set != var_set_)  // NOLINT
+  if (var_set != position_var_->getParent()->getParent()->GetName())  // NOLINT
     return;
 
   // Get current joint values
@@ -251,7 +250,7 @@ void DiscreteCollisionConstraint2::CalcJacobianBlock(const Eigen::Ref<const Eige
 
     // Collision is 1 x n_dof
     for (int j = 0; j < n_dof_; j++)
-      jac_block.coeffRef(static_cast<int>(i), j) = -1.0 * grad_vec[j];
+      jac_block.coeffRef(static_cast<int>(i), position_var_->getIndex() + j) = -1.0 * grad_vec[j];
   }
 }
 

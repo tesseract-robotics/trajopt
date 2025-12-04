@@ -369,7 +369,6 @@ CartPosConstraint2::CartPosConstraint2(CartPosInfo info,
                                        const Eigen::VectorXd& coeffs,  // NOLINT
                                        const std::string& name)
   : ifopt::ConstraintSet(static_cast<int>(info.indices.rows()), name)
-  , var_set_(position_var->getParent()->getParent()->GetName())
   , coeffs_(coeffs)
   , position_var_(std::move(position_var))
   , info_(std::move(info))
@@ -617,7 +616,7 @@ void CartPosConstraint2::CalcJacobianBlock(const Eigen::Ref<const Eigen::VectorX
 void CartPosConstraint2::FillJacobianBlock(std::string var_set, Jacobian& jac_block) const
 {
   // Only modify the jacobian if this constraint uses var_set
-  if (var_set != var_set_)  // NOLINT
+  if (var_set != position_var_->getParent()->getParent()->GetName())  // NOLINT
     return;
 
   // Get current joint values and calculate jacobian

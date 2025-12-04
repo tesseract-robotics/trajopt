@@ -51,14 +51,8 @@ public:
   /**
    * @param variable_name  The name of the variables in the optimization problem.
    */
-  NodesVariables(const std::string& variable_name);
+  NodesVariables(const std::string& variable_name, std::vector<std::unique_ptr<Node>> nodes);
   virtual ~NodesVariables() = default;
-
-  /**
-   * @brief Add node to the variable set
-   * @param node The node to append
-   */
-  void AddNode(std::unique_ptr<Node> node);
 
   /**
    * @brief Get node based on index
@@ -116,6 +110,12 @@ protected:
   std::vector<std::shared_ptr<Node>> nodes_;
   Eigen::Index n_dim_{ 0 };
   std::vector<std::shared_ptr<NodesObserver>> observers_;
+
+  /**
+   * @brief Add node to the variable set
+   * @param node The node to append
+   */
+  void AddNode(std::unique_ptr<Node> node);
 
   /** @brief Notifies the subscribed observers that the node values changes. */
   void UpdateObservers();

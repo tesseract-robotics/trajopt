@@ -293,9 +293,6 @@ public:
   bool use_numeric_differentiation{ true };
 
 private:
-  /** @brief The var_set associated with this constraint */
-  std::string var_set_;
-
   /** @brief The number of joints in a single JointPosition */
   long n_dof_;
 
