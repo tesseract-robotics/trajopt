@@ -3,6 +3,7 @@
 
 #include <Eigen/Core>
 #include <vector>
+#include <ifopt/bounds.h>
 
 namespace trajopt_ifopt
 {
@@ -17,11 +18,16 @@ class Var
 public:
   Var() = default;
   ~Var() = default;
-  Var(Eigen::Index index, std::string name, Node* parent = nullptr);
   Var(Eigen::Index index,
-      Eigen::Index length,
+      std::string name,
+      double value,
+      ifopt::Bounds bounds = ifopt::NoBound,
+      Node* parent = nullptr);
+  Var(Eigen::Index index,
       std::string identifier,
       std::vector<std::string> names,
+      const Eigen::VectorXd& values,
+      const std::vector<ifopt::Bounds>& bounds,
       Node* parent = nullptr);
   Var(const Var& other) = default;
   Var& operator=(const Var&) = default;
@@ -65,6 +71,12 @@ public:
    */
   const std::vector<std::string>& name() const;
 
+  /**
+   * @brief Get the variable bounds
+   * @return The bounds
+   */
+  const std::vector<ifopt::Bounds>& bounds() const;
+
 private:
   friend class Node;
   Eigen::Index index_{ -1 };
@@ -72,6 +84,7 @@ private:
   std::string identifier_;
   std::vector<std::string> names_;
   Eigen::VectorXd values_;
+  std::vector<ifopt::Bounds> bounds_;
   Node* parent_{ nullptr };
 
   /**

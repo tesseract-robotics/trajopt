@@ -155,7 +155,6 @@ JointAccelConstraint2::JointAccelConstraint2(const Eigen::VectorXd& targets,
                                              const Eigen::VectorXd& coeffs,
                                              const std::string& name)
   : ifopt::ConstraintSet(static_cast<int>(targets.size()) * static_cast<int>(position_vars.size()), name)
-  , var_set_(position_vars.front()->getParent()->getParent()->GetName())
   , n_dof_(targets.size())
   , n_vars_(static_cast<long>(position_vars.size()))
   , coeffs_(coeffs)
@@ -229,7 +228,7 @@ void JointAccelConstraint2::FillJacobianBlock(std::string var_set, Jacobian& jac
 {
   // Check if this constraint use the var_set
   // Only modify the jacobian if this constraint uses var_set
-  if (var_set != var_set_)
+  if (var_set != position_vars_.front()->getParent()->getParent()->GetName())
     return;
 
   std::vector<Eigen::Triplet<double> > triplet_list;

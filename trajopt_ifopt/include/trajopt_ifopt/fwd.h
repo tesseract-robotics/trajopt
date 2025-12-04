@@ -20,6 +20,9 @@ namespace trajopt_ifopt
 {
 // joint_position_variable.h
 class JointPosition;
+class NodesVariables;
+class Node;
+class Var;
 
 // cartesian_line_constraint.h
 struct CartLineInfo;

@@ -21,13 +21,20 @@ public:
 
   const NodesVariables* getParent() const;
 
-  std::shared_ptr<const Var> addVar(const std::string& name);
+  bool hasVar(const std::string& name) const;
 
-  std::shared_ptr<const Var> addVar(const std::string& name, const std::vector<std::string>& child_names);
+  std::shared_ptr<const Var> addVar(const std::string& name, double value, ifopt::Bounds bounds = ifopt::NoBound);
+
+  std::shared_ptr<const Var> addVar(const std::string& name,
+                                    const std::vector<std::string>& child_names,
+                                    const Eigen::VectorXd& values,
+                                    const std::vector<ifopt::Bounds>& bounds);
 
   std::shared_ptr<const Var> getVar(const std::string& name) const;
 
-  bool hasVar(const std::string& name) const;
+  Eigen::VectorXd getValues() const;
+
+  std::vector<ifopt::Bounds> getBounds() const;
 
   Eigen::Index size() const;
 
@@ -36,7 +43,8 @@ public:
 protected:
   friend class NodesVariables;
   std::string name_;
-  std::unordered_map<std::string, std::shared_ptr<Var>> vars_;
+  std::vector<std::shared_ptr<Var>> vars_;
+  std::unordered_map<std::string, std::shared_ptr<Var>> vars_by_name_;
   Eigen::Index length_{ 0 };
   NodesVariables* parent_{ nullptr };
 

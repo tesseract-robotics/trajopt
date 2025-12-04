@@ -95,9 +95,9 @@ install(
 # ######################################################################################################################
 
 # if(TRAJOPT_ENABLE_TESTING)
-  enable_testing()
-  add_custom_target(run_tests)
-  add_subdirectory(test)
+enable_testing()
+add_custom_target(run_tests)
+add_subdirectory(test)
 # endif()
 
 if(TRAJOPT_PACKAGE)

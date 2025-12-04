@@ -2,23 +2,35 @@
 
 namespace trajopt_ifopt
 {
-Var::Var(Eigen::Index index, std::string name, Node* parent)
+Var::Var(Eigen::Index index, std::string name, double value, ifopt::Bounds bounds, Node* parent)
   : index_(index)
   , identifier_(std::move(name))
   , names_({ identifier_ })
-  , values_(Eigen::VectorXd::Zero(1))
+  , values_(Eigen::VectorXd::Constant(1, value))
+  , bounds_({ bounds })
   , parent_(parent)
 {
 }
 
-Var::Var(Eigen::Index index, Eigen::Index length, std::string identifier, std::vector<std::string> names, Node* parent)
+Var::Var(Eigen::Index index,
+         std::string identifier,
+         std::vector<std::string> names,
+         const Eigen::VectorXd& values,
+         const std::vector<ifopt::Bounds>& bounds,
+         Node* parent)
   : index_(index)
-  , length_(length)
+  , length_(values.size())
   , identifier_(std::move(identifier))
   , names_(std::move(names))
-  , values_(Eigen::VectorXd::Zero(static_cast<Eigen::Index>(names_.size())))
+  , values_(values)
+  , bounds_(bounds)
   , parent_(parent)
 {
+  if (names_.size() != bounds_.size())
+    throw std::runtime_error("Varaible: '" + identifier_ + "' has miss matched size for names and values");
+
+  if (names_.size() != values_.size())
+    throw std::runtime_error("Varaible: '" + identifier_ + "' has miss matched size for names and values");
 }
 
 const std::string& Var::getIdentifier() const { return identifier_; }
@@ -27,6 +39,7 @@ Eigen::Index Var::getIndex() const { return index_; }
 Eigen::Index Var::size() const { return length_; }
 const Eigen::VectorXd& Var::value() const { return values_; }
 const std::vector<std::string>& Var::name() const { return names_; }
+const std::vector<ifopt::Bounds>& Var::bounds() const { return bounds_; }
 
 void Var::incrementIndex(Eigen::Index value) { index_ += value; }
 void Var::setVariables(const Eigen::Ref<const Eigen::VectorXd>& x)

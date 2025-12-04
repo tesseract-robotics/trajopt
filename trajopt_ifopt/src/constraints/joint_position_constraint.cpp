@@ -149,7 +149,6 @@ JointPosConstraint2::JointPosConstraint2(const Eigen::VectorXd& target,
                                          const Eigen::VectorXd& coeffs,
                                          const std::string& name)
   : ifopt::ConstraintSet(static_cast<int>(target.size()), name)
-  , var_set_(position_var->getParent()->getParent()->GetName())
   , n_dof_(target.size())
   , coeffs_(coeffs)
   , position_var_(position_var)
@@ -188,7 +187,6 @@ JointPosConstraint2::JointPosConstraint2(const std::vector<ifopt::Bounds>& bound
                                          const Eigen::VectorXd& coeffs,
                                          const std::string& name)
   : ifopt::ConstraintSet(static_cast<int>(bounds.size()), name)
-  , var_set_(position_var->getParent()->getParent()->GetName())
   , coeffs_(coeffs)
   , bounds_(bounds)
   , position_var_(position_var)
@@ -221,7 +219,7 @@ void JointPosConstraint2::FillJacobianBlock(std::string var_set, Jacobian& jac_b
 {
   // Check if this constraint use the var_set
   // Only modify the jacobian if this constraint uses var_set
-  if (var_set != var_set_)
+  if (var_set != position_var_->getParent()->getParent()->GetName())
     return;
 
   // Reserve enough room in the sparse matrix
@@ -230,7 +228,7 @@ void JointPosConstraint2::FillJacobianBlock(std::string var_set, Jacobian& jac_b
 
   // Loop over all of the variables this constraint uses
   for (int j = 0; j < n_dof_; j++)  // NOLINT
-    triplet_list.emplace_back(position_var_->getIndex() + j, position_var_->getIndex() + j, coeffs_[j] * 1.0);
+    triplet_list.emplace_back(j, position_var_->getIndex() + j, coeffs_[j] * 1.0);
 
   jac_block.setFromTriplets(triplet_list.begin(), triplet_list.end());  // NOLINT
 }

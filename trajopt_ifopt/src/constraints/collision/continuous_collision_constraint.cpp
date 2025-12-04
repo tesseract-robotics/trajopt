@@ -213,7 +213,6 @@ ContinuousCollisionConstraint2::ContinuousCollisionConstraint2(
     bool fixed_sparsity,
     const std::string& name)
   : ifopt::ConstraintSet(max_num_cnt, name)
-  , var_set_(position_vars.front()->getParent()->getParent()->GetName())
   , position_vars_(std::move(position_vars))
   , vars0_fixed_(vars0_fixed)
   , vars1_fixed_(vars1_fixed)
@@ -303,7 +302,7 @@ std::vector<ifopt::Bounds> ContinuousCollisionConstraint2::GetBounds() const { r
 void ContinuousCollisionConstraint2::FillJacobianBlock(std::string var_set, Jacobian& jac_block) const
 {
   // Only modify the jacobian if this constraint uses var_set
-  if (var_set != var_set_)  // NOLINT
+  if (var_set != position_vars_.front()->getParent()->getParent()->GetName())  // NOLINT
     return;
 
   // Setting to zeros because snopt sparsity cannot change
@@ -339,7 +338,7 @@ void ContinuousCollisionConstraint2::FillJacobianBlock(std::string var_set, Jaco
 
         // Collision is 1 x n_dof
         for (int j = 0; j < n_dof_; j++)
-          jac_block.coeffRef(static_cast<int>(i), j) = -1.0 * grad_vec[j];
+          jac_block.coeffRef(static_cast<int>(i), position_vars_[0]->getIndex() + j) = -1.0 * grad_vec[j];
       }
     }
   }
@@ -359,7 +358,7 @@ void ContinuousCollisionConstraint2::FillJacobianBlock(std::string var_set, Jaco
 
         // Collision is 1 x n_dof
         for (int j = 0; j < n_dof_; j++)
-          jac_block.coeffRef(static_cast<int>(i), j) = -1.0 * grad_vec[j];
+          jac_block.coeffRef(static_cast<int>(i), position_vars_[1]->getIndex() + j) = -1.0 * grad_vec[j];
       }
     }
   }

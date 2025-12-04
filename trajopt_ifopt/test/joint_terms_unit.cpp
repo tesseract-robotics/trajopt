@@ -73,20 +73,19 @@ TEST(JointTermsUnit, JointPosConstraintUnit2)  // NOLINT
 {
   CONSOLE_BRIDGE_logDebug("JointTermsUnit, JointPosConstraintUnit2");
 
-  auto variables = std::make_shared<ifopt::Composite>("variable-sets", false);
-
-  auto variable_set = std::make_shared<NodesVariables>("joint_trajectory");
   const std::vector<std::string> joint_names(10, "name");
-
-  auto node = std::make_unique<Node>();
-  std::shared_ptr<const Var> position_var = node->addVar("state", joint_names);
-  variable_set->AddNode(std::move(node));
-
   Eigen::VectorXd init_vals(10);
   init_vals << 0, 1, 2, 3, 4, 5, 6, 7, 8, 9;
+  std::vector<ifopt::Bounds> bounds(10, ifopt::NoBound);
 
-  variable_set->SetVariables(init_vals);
+  auto node = std::make_unique<Node>();
+  std::shared_ptr<const Var> position_var = node->addVar("state", joint_names, init_vals, bounds);
+  std::vector<std::unique_ptr<Node>> nodes;
+  nodes.push_back(std::move(node));
 
+  auto variable_set = std::make_shared<NodesVariables>("joint_trajectory", std::move(nodes));
+
+  auto variables = std::make_shared<ifopt::Composite>("variable-sets", false);
   variables->AddComponent(variable_set);
 
   std::vector<Eigen::VectorXd> targets;
@@ -198,31 +197,28 @@ TEST(JointTermsUnit, JointVelConstraintUnit2)  // NOLINT
   // y = x^3 + 5*x^2 + 2*x + 1
   auto f = [](double x) { return ((x * x * x) + (5 * x * x) + (2 * x) + 1); };
 
-  auto variables = std::make_shared<ifopt::Composite>("variable-sets", false);
+  std::vector<std::unique_ptr<Node>> nodes;
   std::vector<std::shared_ptr<const Var>> position_vars;
   position_vars.reserve(27);
 
   std::vector<int> x_vals;
-  auto variable_set = std::make_shared<NodesVariables>("joint_trajectory");
   x_vals.reserve(27);
-  std::vector<double> init_vals;
   for (int i = -13; i < 14; ++i)
   {
     auto node = std::make_unique<Node>();
     const std::string var_id = "test_var_" + std::to_string(position_vars.size());
     const std::vector<std::string> joint_names{ "x", "y" };
-    position_vars.push_back(node->addVar(var_id, joint_names));
-    variable_set->AddNode(std::move(node));
-
-    init_vals.push_back(f(i));
-    init_vals.push_back(f(i));
+    std::vector<ifopt::Bounds> bounds(2, ifopt::NoBound);
+    Eigen::VectorXd vals(2);
+    vals << f(i), f(i);
+    position_vars.push_back(node->addVar(var_id, joint_names, vals, bounds));
+    nodes.push_back(std::move(node));
 
     x_vals.push_back(i);
   }
+  auto variable_set = std::make_shared<NodesVariables>("joint_trajectory", std::move(nodes));
 
-  Eigen::Map<Eigen::VectorXd> data(init_vals.data(), static_cast<Eigen::Index>(init_vals.size()));
-  variable_set->SetVariables(data);
-
+  auto variables = std::make_shared<ifopt::Composite>("variable-sets", false);
   variables->AddComponent(variable_set);
 
   Eigen::VectorXd targets(2);
@@ -414,31 +410,28 @@ TEST(JointTermsUnit, JointAccelConstraintUnit2)  // NOLINT
   // y = x^3 + 5*x^2 + 2*x + 1
   auto f = [](double x) { return ((x * x * x) + (5 * x * x) + (2 * x) + 1); };
 
-  auto variables = std::make_shared<ifopt::Composite>("variable-sets", false);
+  std::vector<std::unique_ptr<Node>> nodes;
   std::vector<std::shared_ptr<const Var>> position_vars;
   position_vars.reserve(27);
 
   std::vector<int> x_vals;
-  auto variable_set = std::make_shared<NodesVariables>("joint_trajectory");
   x_vals.reserve(27);
-  std::vector<double> init_vals;
   for (int i = -13; i < 14; ++i)
   {
     auto node = std::make_unique<Node>();
     const std::string var_id = "test_var_" + std::to_string(position_vars.size());
     const std::vector<std::string> joint_names{ "x", "y" };
-    position_vars.push_back(node->addVar(var_id, joint_names));
-    variable_set->AddNode(std::move(node));
-
-    init_vals.push_back(f(i));
-    init_vals.push_back(f(i));
+    std::vector<ifopt::Bounds> bounds(2, ifopt::NoBound);
+    Eigen::VectorXd vals(2);
+    vals << f(i), f(i);
+    position_vars.push_back(node->addVar(var_id, joint_names, vals, bounds));
+    nodes.push_back(std::move(node));
 
     x_vals.push_back(i);
   }
 
-  Eigen::Map<Eigen::VectorXd> data(init_vals.data(), static_cast<Eigen::Index>(init_vals.size()));
-  variable_set->SetVariables(data);
-
+  auto variable_set = std::make_shared<NodesVariables>("joint_trajectory", std::move(nodes));
+  auto variables = std::make_shared<ifopt::Composite>("variable-sets", false);
   variables->AddComponent(variable_set);
 
   Eigen::VectorXd targets(2);
@@ -652,31 +645,28 @@ TEST(JointTermsUnit, JointJerkConstraintUnit2)  // NOLINT
   // y = x^3 + 5*x^2 + 2*x + 1
   auto f = [](double x) { return ((x * x * x) + (5 * x * x) + (2 * x) + 1); };
 
-  auto variables = std::make_shared<ifopt::Composite>("variable-sets", false);
+  std::vector<std::unique_ptr<Node>> nodes;
   std::vector<std::shared_ptr<const Var>> position_vars;
   position_vars.reserve(27);
 
   std::vector<int> x_vals;
-  auto variable_set = std::make_shared<NodesVariables>("joint_trajectory");
   x_vals.reserve(27);
-  std::vector<double> init_vals;
   for (int i = -13; i < 14; ++i)
   {
     auto node = std::make_unique<Node>();
     const std::string var_id = "test_var_" + std::to_string(position_vars.size());
     const std::vector<std::string> joint_names{ "x", "y" };
-    position_vars.push_back(node->addVar(var_id, joint_names));
-    variable_set->AddNode(std::move(node));
-
-    init_vals.push_back(f(i));
-    init_vals.push_back(f(i));
+    std::vector<ifopt::Bounds> bounds(2, ifopt::NoBound);
+    Eigen::VectorXd vals(2);
+    vals << f(i), f(i);
+    position_vars.push_back(node->addVar(var_id, joint_names, vals, bounds));
+    nodes.push_back(std::move(node));
 
     x_vals.push_back(i);
   }
 
-  Eigen::Map<Eigen::VectorXd> data(init_vals.data(), static_cast<Eigen::Index>(init_vals.size()));
-  variable_set->SetVariables(data);
-
+  auto variable_set = std::make_shared<NodesVariables>("joint_trajectory", std::move(nodes));
+  auto variables = std::make_shared<ifopt::Composite>("variable-sets", false);
   variables->AddComponent(variable_set);
 
   Eigen::VectorXd targets(2);

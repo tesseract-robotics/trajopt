@@ -29,19 +29,45 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <trajopt_ifopt/variable_sets/nodes_variables.h>
 #include <trajopt_ifopt/variable_sets/nodes_observer.h>
+#include <trajopt_ifopt/variable_sets/node.h>
 
 namespace trajopt_ifopt
 {
-NodesVariables::NodesVariables(const std::string& name) : VariableSet(kSpecifyLater, name) {}
+NodesVariables::NodesVariables(const std::string& name, std::vector<std::unique_ptr<Node>> nodes)
+  : VariableSet(kSpecifyLater, name)
+{
+  nodes_.reserve(nodes.size());
+  for (auto& node : nodes)
+    AddNode(std::move(node));
+
+  // Set the size
+  SetRows(static_cast<int>(n_dim_));
+
+  // Get the initial values
+  std::vector<double> values;
+  values.reserve(static_cast<std::size_t>(n_dim_));
+
+  for (const auto& node : nodes_)
+  {
+    Eigen::VectorXd node_values = node->getValues();
+    values.insert(values.end(), node_values.data(), node_values.data() + node_values.size());
+  }
+
+  values_ = Eigen::Map<Eigen::VectorXd>(values.data(), static_cast<Eigen::Index>(values.size()));
+  assert(values_.size() == bounds_.size());
+}
 
 void NodesVariables::AddNode(std::unique_ptr<Node> node)
 {
   node->incrementIndex(n_dim_);
   node->parent_ = this;
+
   Eigen::Index length = node->size();
+  std::vector<ifopt::Bounds> bounds = node->getBounds();
+
   nodes_.emplace_back(std::move(node));
+  bounds_.insert(bounds_.end(), bounds.begin(), bounds.end());
   n_dim_ += length;
-  SetRows(static_cast<int>(n_dim_));
 }
 
 std::shared_ptr<const Node> NodesVariables::GetNode(std::size_t opt_idx) const { return nodes_.at(opt_idx); }
@@ -70,9 +96,9 @@ Eigen::Index NodesVariables::GetDim() const { return n_dim_; }
 
 NodesVariables::VecBound NodesVariables::GetBounds() const { return bounds_; }
 
-std::vector<std::shared_ptr<const Node> > NodesVariables::GetNodes() const
+std::vector<std::shared_ptr<const Node>> NodesVariables::GetNodes() const
 {
-  std::vector<std::shared_ptr<const Node> > nodes;
+  std::vector<std::shared_ptr<const Node>> nodes;
   nodes.reserve(nodes_.size());
   std::copy(nodes_.begin(), nodes_.end(), std::back_inserter(nodes));
   return nodes;

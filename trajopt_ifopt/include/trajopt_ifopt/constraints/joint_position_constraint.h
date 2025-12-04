@@ -161,9 +161,6 @@ public:
   void FillJacobianBlock(std::string var_set, Jacobian& jac_block) const override;
 
 private:
-  /** @brief The var_set associated with this constraint */
-  std::string var_set_;
-
   /** @brief The number of joints in a single JointPosition */
   long n_dof_;
 
