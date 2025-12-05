@@ -217,6 +217,7 @@ ContinuousCollisionConstraint2::ContinuousCollisionConstraint2(
   , vars0_fixed_(vars0_fixed)
   , vars1_fixed_(vars1_fixed)
   , collision_evaluator_(std::move(collision_evaluator))
+  , fixed_sparsity_(fixed_sparsity)
 {
   if (position_vars_[0] == nullptr && position_vars_[1] == nullptr)
     throw std::runtime_error("position_vars contains a nullptr!");
@@ -236,17 +237,6 @@ ContinuousCollisionConstraint2::ContinuousCollisionConstraint2(
     throw std::runtime_error("max_num_cnt must be greater than zero!");
 
   bounds_ = std::vector<ifopt::Bounds>(static_cast<std::size_t>(max_num_cnt), ifopt::BoundSmallerZero);
-
-  if (fixed_sparsity)
-  {
-    // Setting to zeros because snopt sparsity cannot change
-    triplet_list_.reserve(static_cast<std::size_t>(bounds_.size()) *
-                          static_cast<std::size_t>(position_vars_[0]->size()));
-
-    for (Eigen::Index i = 0; i < static_cast<Eigen::Index>(bounds_.size()); i++)  // NOLINT
-      for (Eigen::Index j = 0; j < n_dof_; j++)
-        triplet_list_.emplace_back(i, j, 0);
-  }
 }
 
 Eigen::VectorXd ContinuousCollisionConstraint2::GetValues() const
@@ -299,11 +289,32 @@ Eigen::VectorXd ContinuousCollisionConstraint2::GetValues() const
 // Set the limits on the constraint values
 std::vector<ifopt::Bounds> ContinuousCollisionConstraint2::GetBounds() const { return bounds_; }
 
+void ContinuousCollisionConstraint2::initSparsity() const
+{
+  if (!fixed_sparsity_)
+    return;
+
+  // Setting to zeros because snopt sparsity cannot change
+  triplet_list_.reserve(static_cast<std::size_t>(bounds_.size()) * static_cast<std::size_t>(position_vars_[0]->size()));
+
+  for (Eigen::Index i = 0; i < static_cast<Eigen::Index>(bounds_.size()); i++)  // NOLINT
+  {
+    for (Eigen::Index j = 0; j < n_dof_; j++)
+    {
+      triplet_list_.emplace_back(i, position_vars_[0]->getIndex() + j, 0);
+      triplet_list_.emplace_back(i, position_vars_[1]->getIndex() + j, 0);
+    }
+  }
+}
+
 void ContinuousCollisionConstraint2::FillJacobianBlock(std::string var_set, Jacobian& jac_block) const
 {
   // Only modify the jacobian if this constraint uses var_set
   if (var_set != position_vars_.front()->getParent()->getParent()->GetName())  // NOLINT
     return;
+
+  // Setting to zeros because snopt sparsity cannot change
+  std::call_once(init_flag_, &ContinuousCollisionConstraint2::initSparsity, this);
 
   // Setting to zeros because snopt sparsity cannot change
   if (!triplet_list_.empty())                                               // NOLINT

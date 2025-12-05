@@ -159,6 +159,7 @@ DiscreteCollisionConstraint2::DiscreteCollisionConstraint2(
   : ifopt::ConstraintSet(max_num_cnt, name)
   , position_var_(std::move(position_var))
   , collision_evaluator_(std::move(collision_evaluator))
+  , fixed_sparsity_(fixed_sparsity)
 {
   // Set n_dof_ for convenience
   n_dof_ = position_var_->size();
@@ -168,15 +169,6 @@ DiscreteCollisionConstraint2::DiscreteCollisionConstraint2(
     throw std::runtime_error("max_num_cnt must be greater than zero!");
 
   bounds_ = std::vector<ifopt::Bounds>(static_cast<std::size_t>(max_num_cnt), ifopt::BoundSmallerZero);
-
-  // Setting to zeros because snopt sparsity cannot change
-  if (fixed_sparsity)
-  {
-    triplet_list_.reserve(static_cast<std::size_t>(bounds_.size()) * static_cast<std::size_t>(position_var_->size()));
-    for (Eigen::Index i = 0; i < static_cast<Eigen::Index>(bounds_.size()); i++)
-      for (Eigen::Index j = 0; j < n_dof_; j++)
-        triplet_list_.emplace_back(i, j, 0);
-  }
 }
 
 Eigen::VectorXd DiscreteCollisionConstraint2::GetValues() const
@@ -229,9 +221,23 @@ void DiscreteCollisionConstraint2::SetBounds(const std::vector<ifopt::Bounds>& b
   bounds_ = bounds;
 }
 
+void DiscreteCollisionConstraint2::initSparsity() const
+{
+  if (!fixed_sparsity_)
+    return;
+
+  triplet_list_.reserve(static_cast<std::size_t>(bounds_.size()) * static_cast<std::size_t>(position_var_->size()));
+  for (Eigen::Index i = 0; i < static_cast<Eigen::Index>(bounds_.size()); i++)
+    for (Eigen::Index j = 0; j < n_dof_; j++)
+      triplet_list_.emplace_back(i, position_var_->getIndex() + j, 0);
+}
+
 void DiscreteCollisionConstraint2::CalcJacobianBlock(const Eigen::Ref<const Eigen::VectorXd>& joint_vals,
                                                      Jacobian& jac_block) const
 {
+  // Setting to zeros because snopt sparsity cannot change
+  std::call_once(init_flag_, &DiscreteCollisionConstraint2::initSparsity, this);
+
   // Setting to zeros because snopt sparsity cannot change
   if (!triplet_list_.empty())                                               // NOLINT
     jac_block.setFromTriplets(triplet_list_.begin(), triplet_list_.end());  // NOLINT

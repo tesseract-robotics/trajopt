@@ -1,4 +1,6 @@
 #include <trajopt_ifopt/variable_sets/var.h>
+#include <trajopt_ifopt/utils/ifopt_utils.h>
+#include <console_bridge/console.h>
 
 namespace trajopt_ifopt
 {
@@ -10,6 +12,13 @@ Var::Var(Eigen::Index index, std::string name, double value, ifopt::Bounds bound
   , bounds_({ bounds })
   , parent_(parent)
 {
+  values_ = trajopt_ifopt::getClosestValidPoint(Eigen::VectorXd::Constant(1, value), bounds_);
+
+  if (!values_.isApprox(Eigen::VectorXd::Constant(1, value), 1e-10))
+  {
+    CONSOLE_BRIDGE_logWarn("The initial values are not within the provided bounds. Adjusting to be within the "
+                           "bounds.");
+  }
 }
 
 Var::Var(Eigen::Index index,
@@ -31,6 +40,14 @@ Var::Var(Eigen::Index index,
 
   if (names_.size() != values_.size())
     throw std::runtime_error("Varaible: '" + identifier_ + "' has miss matched size for names and values");
+
+  values_ = trajopt_ifopt::getClosestValidPoint(values, bounds_);
+
+  if (!values_.isApprox(values, 1e-10))
+  {
+    CONSOLE_BRIDGE_logWarn("The initial values are not within the provided bounds. Adjusting to be within the "
+                           "bounds.");
+  }
 }
 
 const std::string& Var::getIdentifier() const { return identifier_; }

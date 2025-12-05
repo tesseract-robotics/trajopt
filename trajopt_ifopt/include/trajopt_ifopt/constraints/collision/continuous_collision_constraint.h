@@ -29,6 +29,7 @@
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <Eigen/Core>
 #include <ifopt/constraint_set.h>
+#include <mutex>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace trajopt_ifopt
@@ -193,10 +194,14 @@ private:
   bool vars0_fixed_{ false };
   bool vars1_fixed_{ false };
 
-  /** @brief Used to initialize jacobian because snopt sparsity cannot change */
-  std::vector<Eigen::Triplet<double>> triplet_list_;
-
   std::shared_ptr<ContinuousCollisionEvaluator> collision_evaluator_;
+
+  /** @brief Used to initialize jacobian because snopt sparsity cannot change */
+  bool fixed_sparsity_{ false };
+  mutable std::once_flag init_flag_;
+  mutable std::vector<Eigen::Triplet<double>> triplet_list_;
+
+  void initSparsity() const;
 };
 }  // namespace trajopt_ifopt
 
