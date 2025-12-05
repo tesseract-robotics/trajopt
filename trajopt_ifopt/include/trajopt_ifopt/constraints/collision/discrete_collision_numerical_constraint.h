@@ -28,11 +28,12 @@
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <Eigen/Eigen>
 #include <ifopt/constraint_set.h>
+#include <mutex>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace trajopt_ifopt
 {
-class JointPosition;
+class Var;
 class DiscreteCollisionEvaluator;
 
 class DiscreteCollisionNumericalConstraint : public ifopt::ConstraintSet
@@ -42,7 +43,7 @@ public:
   using ConstPtr = std::shared_ptr<const DiscreteCollisionNumericalConstraint>;
 
   DiscreteCollisionNumericalConstraint(std::shared_ptr<DiscreteCollisionEvaluator> collision_evaluator,
-                                       std::shared_ptr<const JointPosition> position_var,
+                                       std::shared_ptr<const Var> position_var,
                                        int max_num_cnt = 1,
                                        bool fixed_sparsity = false,
                                        const std::string& name = "DiscreteCollisionNumerical");
@@ -101,16 +102,17 @@ private:
   /** @brief Bounds on the constraint value. Default: std::vector<Bounds>(1, ifopt::BoundSmallerZero) */
   std::vector<ifopt::Bounds> bounds_;
 
-  /**
-   * @brief Pointers to the vars used by this constraint.
-   * Do not access them directly. Instead use this->GetVariables()->GetComponent(position_var->GetName())->GetValues()
-   */
-  std::shared_ptr<const JointPosition> position_var_;
-
-  /** @brief Used to initialize jacobian because snopt sparsity cannot change */
-  std::vector<Eigen::Triplet<double>> triplet_list_;
+  /** @brief Pointers to the vars used by this constraint. */
+  std::shared_ptr<const Var> position_var_;
 
   std::shared_ptr<DiscreteCollisionEvaluator> collision_evaluator_;
+
+  /** @brief Used to initialize jacobian because snopt sparsity cannot change */
+  bool fixed_sparsity_{ false };
+  mutable std::once_flag init_flag_;
+  mutable std::vector<Eigen::Triplet<double>> triplet_list_;
+
+  void initSparsity() const;
 };
 }  // namespace trajopt_ifopt
 #endif  // TRAJOPT_IFOPT_DISCRETE_COLLISION_NUMERICAL_CONSTRAINT_H

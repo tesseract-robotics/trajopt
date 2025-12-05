@@ -31,13 +31,15 @@ TRAJOPT_IGNORE_WARNINGS_POP
 #include <trajopt_ifopt/constraints/collision/continuous_collision_constraint.h>
 #include <trajopt_ifopt/constraints/collision/continuous_collision_evaluators.h>
 #include <trajopt_ifopt/constraints/collision/weighted_average_methods.h>
-#include <trajopt_ifopt/variable_sets/joint_position_variable.h>
+#include <trajopt_ifopt/variable_sets/nodes_variables.h>
+#include <trajopt_ifopt/variable_sets/node.h>
+#include <trajopt_ifopt/variable_sets/var.h>
 
 namespace trajopt_ifopt
 {
 ContinuousCollisionConstraint::ContinuousCollisionConstraint(
     std::shared_ptr<ContinuousCollisionEvaluator> collision_evaluator,
-    std::array<std::shared_ptr<const JointPosition>, 2> position_vars,
+    std::array<std::shared_ptr<const Var>, 2> position_vars,
     bool vars0_fixed,
     bool vars1_fixed,
     int max_num_cnt,
@@ -48,16 +50,17 @@ ContinuousCollisionConstraint::ContinuousCollisionConstraint(
   , vars0_fixed_(vars0_fixed)
   , vars1_fixed_(vars1_fixed)
   , collision_evaluator_(std::move(collision_evaluator))
+  , fixed_sparsity_(fixed_sparsity)
 {
   if (position_vars_[0] == nullptr && position_vars_[1] == nullptr)
     throw std::runtime_error("position_vars contains a nullptr!");
 
   // Set n_dof_ for convenience
-  n_dof_ = position_vars_[0]->GetRows();
+  n_dof_ = position_vars_[0]->size();
   if (!(n_dof_ > 0))
     throw std::runtime_error("position_vars[0] is empty!");
 
-  if (position_vars_[0]->GetRows() != position_vars_[1]->GetRows())
+  if (position_vars_[0]->size() != position_vars_[1]->size())
     throw std::runtime_error("position_vars are not the same size!");
 
   if (vars0_fixed_ && vars1_fixed_)
@@ -67,29 +70,15 @@ ContinuousCollisionConstraint::ContinuousCollisionConstraint(
     throw std::runtime_error("max_num_cnt must be greater than zero!");
 
   bounds_ = std::vector<ifopt::Bounds>(static_cast<std::size_t>(max_num_cnt), ifopt::BoundSmallerZero);
-
-  if (fixed_sparsity)
-  {
-    // Setting to zeros because snopt sparsity cannot change
-    triplet_list_.reserve(static_cast<std::size_t>(bounds_.size()) *
-                          static_cast<std::size_t>(position_vars_[0]->GetRows()));
-
-    for (Eigen::Index i = 0; i < static_cast<Eigen::Index>(bounds_.size()); i++)  // NOLINT
-      for (Eigen::Index j = 0; j < n_dof_; j++)
-        triplet_list_.emplace_back(i, j, 0);
-  }
 }
 
 Eigen::VectorXd ContinuousCollisionConstraint::GetValues() const
 {
-  // Get current joint values
-  const Eigen::VectorXd joint_vals0 = this->GetVariables()->GetComponent(position_vars_[0]->GetName())->GetValues();
-  const Eigen::VectorXd joint_vals1 = this->GetVariables()->GetComponent(position_vars_[1]->GetName())->GetValues();
   const double margin_buffer = collision_evaluator_->GetCollisionMarginBuffer();
   Eigen::VectorXd values = Eigen::VectorXd::Constant(static_cast<Eigen::Index>(bounds_.size()), -margin_buffer);
 
-  auto collision_data =
-      collision_evaluator_->CalcCollisionData(joint_vals0, joint_vals1, vars0_fixed_, vars1_fixed_, bounds_.size());
+  auto collision_data = collision_evaluator_->CalcCollisionData(
+      position_vars_[0]->value(), position_vars_[1]->value(), vars0_fixed_, vars1_fixed_, bounds_.size());
 
   if (collision_data->gradient_results_sets.empty())
     return values;
@@ -128,29 +117,47 @@ Eigen::VectorXd ContinuousCollisionConstraint::GetValues() const
 // Set the limits on the constraint values
 std::vector<ifopt::Bounds> ContinuousCollisionConstraint::GetBounds() const { return bounds_; }
 
+void ContinuousCollisionConstraint::initSparsity() const
+{
+  if (!fixed_sparsity_)
+    return;
+
+  // Setting to zeros because snopt sparsity cannot change
+  triplet_list_.reserve(static_cast<std::size_t>(bounds_.size()) * static_cast<std::size_t>(position_vars_[0]->size()));
+
+  for (Eigen::Index i = 0; i < static_cast<Eigen::Index>(bounds_.size()); i++)  // NOLINT
+  {
+    for (Eigen::Index j = 0; j < n_dof_; j++)
+    {
+      triplet_list_.emplace_back(i, position_vars_[0]->getIndex() + j, 0);
+      triplet_list_.emplace_back(i, position_vars_[1]->getIndex() + j, 0);
+    }
+  }
+}
+
 void ContinuousCollisionConstraint::FillJacobianBlock(std::string var_set, Jacobian& jac_block) const
 {
   // Only modify the jacobian if this constraint uses var_set
-  if (var_set != position_vars_[0]->GetName() && var_set != position_vars_[1]->GetName())  // NOLINT
+  if (var_set != position_vars_.front()->getParent()->getParent()->GetName())  // NOLINT
     return;
+
+  // Setting to zeros because snopt sparsity cannot change
+  std::call_once(init_flag_, &ContinuousCollisionConstraint::initSparsity, this);
 
   // Setting to zeros because snopt sparsity cannot change
   if (!triplet_list_.empty())                                               // NOLINT
     jac_block.setFromTriplets(triplet_list_.begin(), triplet_list_.end());  // NOLINT
 
   // Calculate collisions
-  const Eigen::VectorXd joint_vals0 = this->GetVariables()->GetComponent(position_vars_[0]->GetName())->GetValues();
-  const Eigen::VectorXd joint_vals1 = this->GetVariables()->GetComponent(position_vars_[1]->GetName())->GetValues();
-
-  auto collision_data =
-      collision_evaluator_->CalcCollisionData(joint_vals0, joint_vals1, vars0_fixed_, vars1_fixed_, bounds_.size());
+  auto collision_data = collision_evaluator_->CalcCollisionData(
+      position_vars_[0]->value(), position_vars_[1]->value(), vars0_fixed_, vars1_fixed_, bounds_.size());
 
   if (collision_data->gradient_results_sets.empty())
     return;
 
   /** @todo Should use triplet list and setFromTriplets */
   const std::size_t cnt = std::min(collision_data->gradient_results_sets.size(), bounds_.size());
-  if (var_set == position_vars_[0]->GetName() && !vars0_fixed_)
+  if (!vars0_fixed_)
   {
     for (std::size_t i = 0; i < cnt; ++i)
     {
@@ -161,15 +168,16 @@ void ContinuousCollisionConstraint::FillJacobianBlock(std::string var_set, Jacob
         if (!vars1_fixed_)
           max_error_with_buffer = r.getMaxErrorWithBuffer();
 
-        Eigen::VectorXd grad_vec = getWeightedAvgGradientT0(r, max_error_with_buffer, position_vars_[0]->GetRows());
+        Eigen::VectorXd grad_vec = getWeightedAvgGradientT0(r, max_error_with_buffer, position_vars_[0]->size());
 
         // Collision is 1 x n_dof
         for (int j = 0; j < n_dof_; j++)
-          jac_block.coeffRef(static_cast<int>(i), j) = -1.0 * grad_vec[j];
+          jac_block.coeffRef(static_cast<int>(i), position_vars_[0]->getIndex() + j) = -1.0 * grad_vec[j];
       }
     }
   }
-  else if (var_set == position_vars_[1]->GetName() && !vars1_fixed_)
+
+  if (!vars1_fixed_)
   {
     for (std::size_t i = 0; i < cnt; ++i)
     {
@@ -180,11 +188,11 @@ void ContinuousCollisionConstraint::FillJacobianBlock(std::string var_set, Jacob
         if (!vars0_fixed_)
           max_error_with_buffer = r.getMaxErrorWithBuffer();
 
-        Eigen::VectorXd grad_vec = getWeightedAvgGradientT1(r, max_error_with_buffer, position_vars_[1]->GetRows());
+        Eigen::VectorXd grad_vec = getWeightedAvgGradientT1(r, max_error_with_buffer, position_vars_[1]->size());
 
         // Collision is 1 x n_dof
         for (int j = 0; j < n_dof_; j++)
-          jac_block.coeffRef(static_cast<int>(i), j) = -1.0 * grad_vec[j];
+          jac_block.coeffRef(static_cast<int>(i), position_vars_[1]->getIndex() + j) = -1.0 * grad_vec[j];
       }
     }
   }

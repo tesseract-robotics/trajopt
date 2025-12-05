@@ -43,7 +43,10 @@ set(TRAJOPT_IFOPT_SOURCE_FILES
     src/utils/ifopt_utils.cpp
     src/utils/numeric_differentiation.cpp
     src/utils/trajopt_utils.cpp
-    src/variable_sets/joint_position_variable.cpp)
+    src/variable_sets/nodes_variables.cpp
+    src/variable_sets/nodes_observer.cpp
+    src/variable_sets/node.cpp
+    src/variable_sets/var.cpp)
 
 add_library(${PROJECT_NAME} ${TRAJOPT_IFOPT_SOURCE_FILES})
 target_link_libraries(
@@ -90,11 +93,11 @@ install(
 # Testing ##
 # ######################################################################################################################
 
-if(TRAJOPT_ENABLE_TESTING)
-  enable_testing()
-  add_custom_target(run_tests)
-  add_subdirectory(test)
-endif()
+# if(TRAJOPT_ENABLE_TESTING)
+enable_testing()
+add_custom_target(run_tests)
+add_subdirectory(test)
+# endif()
 
 if(TRAJOPT_PACKAGE)
   cpack(

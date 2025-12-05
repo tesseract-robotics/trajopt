@@ -23,7 +23,10 @@
  * limitations under the License.
  */
 #include <trajopt_ifopt/constraints/cartesian_position_constraint.h>
-#include <trajopt_ifopt/variable_sets/joint_position_variable.h>
+#include <trajopt_ifopt/variable_sets/nodes_variables.h>
+#include <trajopt_ifopt/variable_sets/node.h>
+#include <trajopt_ifopt/variable_sets/var.h>
+
 #include <trajopt_ifopt/utils/numeric_differentiation.h>
 #include <trajopt_ifopt/utils/trajopt_utils.h>
 #include <trajopt_common/utils.hpp>
@@ -36,47 +39,10 @@ TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace trajopt_ifopt
 {
-CartPosInfo::CartPosInfo(std::shared_ptr<const tesseract_kinematics::JointGroup> manip,
-                         std::string source_frame,
-                         std::string target_frame,
-                         const Eigen::Isometry3d& source_frame_offset,  // NOLINT(modernize-pass-by-value)
-                         const Eigen::Isometry3d& target_frame_offset,  // NOLINT(modernize-pass-by-value)
-                         const Eigen::VectorXi& indices)                // NOLINT(modernize-pass-by-value)
-  : manip(std::move(manip))
-  , source_frame(std::move(source_frame))
-  , target_frame(std::move(target_frame))
-  , source_frame_offset(source_frame_offset)
-  , target_frame_offset(target_frame_offset)
-  , indices(indices)
-{
-  if (!this->manip->hasLinkName(this->source_frame))
-    throw std::runtime_error("CartPosInfo: Source Link name '" + this->source_frame + "' provided does not exist.");
-
-  if (!this->manip->hasLinkName(this->target_frame))
-    throw std::runtime_error("CartPosInfo: Target Link name '" + this->target_frame + "' provided does not exist.");
-
-  if (this->indices.size() > 6)
-    throw std::runtime_error("CartPosInfo: The indices list length cannot be larger than six.");
-
-  if (this->indices.size() == 0)
-    throw std::runtime_error("CartPosInfo: The indices list length is zero.");
-
-  const bool target_active = this->manip->isActiveLinkName(this->target_frame);
-  const bool source_active = this->manip->isActiveLinkName(this->source_frame);
-  if (target_active && source_active)
-    type = Type::BOTH_ACTIVE;
-  else if (target_active)
-    type = Type::TARGET_ACTIVE;
-  else if (source_active)
-    type = Type::SOURCE_ACTIVE;
-  else
-    throw std::runtime_error("CartPosInfo: Target and Source are both static links.");
-}
-
 thread_local tesseract_common::TransformMap CartPosConstraint::transforms_cache;  // NOLINT
 
 CartPosConstraint::CartPosConstraint(CartPosInfo info,
-                                     std::shared_ptr<const JointPosition> position_var,
+                                     std::shared_ptr<const Var> position_var,
                                      const Eigen::VectorXd& coeffs,  // NOLINT
                                      const std::string& name)
   : ifopt::ConstraintSet(static_cast<int>(info.indices.rows()), name)
@@ -197,7 +163,7 @@ CartPosConstraint::CartPosConstraint(CartPosInfo info,
 }
 
 CartPosConstraint::CartPosConstraint(const CartPosInfo& info,
-                                     std::shared_ptr<const JointPosition> position_var,
+                                     std::shared_ptr<const Var> position_var,
                                      const std::string& name)
   : CartPosConstraint(info, std::move(position_var), Eigen::VectorXd::Ones(info.indices.rows()), name)
 {
@@ -215,11 +181,7 @@ Eigen::VectorXd CartPosConstraint::CalcValues(const Eigen::Ref<const Eigen::Vect
   return coeffs_.cwiseProduct(err);
 }
 
-Eigen::VectorXd CartPosConstraint::GetValues() const
-{
-  const VectorXd joint_vals = this->GetVariables()->GetComponent(position_var_->GetName())->GetValues();
-  return CalcValues(joint_vals);
-}
+Eigen::VectorXd CartPosConstraint::GetValues() const { return CalcValues(position_var_->value()); }
 
 // Set the limits on the constraint values
 std::vector<ifopt::Bounds> CartPosConstraint::GetBounds() const { return bounds_; }
@@ -260,7 +222,7 @@ void CartPosConstraint::CalcJacobianBlock(const Eigen::Ref<const Eigen::VectorXd
       {
         // Each jac_block will be for a single variable but for all timesteps. Therefore we must index down to the
         // correct timestep for this variable
-        triplet_list.emplace_back(i, j, coeffs_(i) * jac0(i, j));
+        triplet_list.emplace_back(i, position_var_->getIndex() + j, coeffs_(i) * jac0(i, j));
       }
     }
   }
@@ -321,7 +283,7 @@ void CartPosConstraint::CalcJacobianBlock(const Eigen::Ref<const Eigen::VectorXd
       {
         // Each jac_block will be for a single variable but for all timesteps. Therefore we must index down to the
         // correct timestep for this variable
-        triplet_list.emplace_back(i, j, coeffs_(i) * jac0(info_.indices[i], j));
+        triplet_list.emplace_back(i, position_var_->getIndex() + j, coeffs_(i) * jac0(info_.indices[i], j));
       }
     }
   }
@@ -331,12 +293,11 @@ void CartPosConstraint::CalcJacobianBlock(const Eigen::Ref<const Eigen::VectorXd
 void CartPosConstraint::FillJacobianBlock(std::string var_set, Jacobian& jac_block) const
 {
   // Only modify the jacobian if this constraint uses var_set
-  if (var_set != position_var_->GetName())  // NOLINT
+  if (var_set != position_var_->getParent()->getParent()->GetName())  // NOLINT
     return;
 
   // Get current joint values and calculate jacobian
-  const VectorXd joint_vals = this->GetVariables()->GetComponent(position_var_->GetName())->GetValues();
-  CalcJacobianBlock(joint_vals, jac_block);  // NOLINT
+  CalcJacobianBlock(position_var_->value(), jac_block);  // NOLINT
 }
 
 const CartPosInfo& CartPosConstraint::GetInfo() const { return info_; }
@@ -352,8 +313,7 @@ Eigen::Isometry3d CartPosConstraint::GetTargetPose() const { return info_.target
 Eigen::Isometry3d CartPosConstraint::GetCurrentPose() const
 {
   transforms_cache.clear();
-  const VectorXd joint_vals = this->GetVariables()->GetComponent(position_var_->GetName())->GetValues();
-  info_.manip->calcFwdKin(transforms_cache, joint_vals);
+  info_.manip->calcFwdKin(transforms_cache, position_var_->value());
 
   return transforms_cache[info_.source_frame] * info_.source_frame_offset;
 }

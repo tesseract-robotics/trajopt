@@ -33,7 +33,7 @@ TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace trajopt_ifopt
 {
-class JointPosition;
+class Var;
 
 /**
  * @brief Contains kinematic information for the inverse kinematics constraint
@@ -81,8 +81,8 @@ public:
 
   InverseKinematicsConstraint(const Eigen::Isometry3d& target_pose,
                               InverseKinematicsInfo::ConstPtr kinematic_info,
-                              std::shared_ptr<const JointPosition> constraint_var,
-                              std::shared_ptr<const JointPosition> seed_var,
+                              std::shared_ptr<const Var> constraint_var,
+                              std::shared_ptr<const Var> seed_var,
                               const std::string& name = "InverseKinematics");
 
   /**
@@ -143,13 +143,11 @@ private:
   /** @brief Bounds on the joint distance the constraint_var may vary from the IK solution */
   std::vector<ifopt::Bounds> bounds_;
 
-  /** @brief Pointer to the var used by this constraint.
-   *
-   * Do not access them directly. Instead use this->GetVariables()->GetComponent(position_var->GetName())->GetValues()*/
-  std::shared_ptr<const JointPosition> constraint_var_;
+  /** @brief Pointers to the vars used by this constraint. */
+  std::shared_ptr<const Var> constraint_var_;
   /** @brief Pointer to the var used as a seed when calculating IK. This will usually be a adjacent point in the
    * trajectory*/
-  std::shared_ptr<const JointPosition> seed_var_;
+  std::shared_ptr<const Var> seed_var_;
   /** @brief Target pose for the TCP. Currently in robot frame since world_to_base_ has not been implemented */
   Eigen::Isometry3d target_pose_;
   /** @brief The kinematic info used to create this constraint */

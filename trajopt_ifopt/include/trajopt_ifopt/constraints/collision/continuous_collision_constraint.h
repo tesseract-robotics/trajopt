@@ -29,11 +29,12 @@
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <Eigen/Core>
 #include <ifopt/constraint_set.h>
+#include <mutex>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace trajopt_ifopt
 {
-class JointPosition;
+class Var;
 class ContinuousCollisionEvaluator;
 
 class ContinuousCollisionConstraint : public ifopt::ConstraintSet
@@ -52,7 +53,7 @@ public:
    * @param name
    */
   ContinuousCollisionConstraint(std::shared_ptr<ContinuousCollisionEvaluator> collision_evaluator,
-                                std::array<std::shared_ptr<const JointPosition>, 2> position_vars,
+                                std::array<std::shared_ptr<const Var>, 2> position_vars,
                                 bool vars0_fixed,
                                 bool vars1_fixed,
                                 int max_num_cnt = 1,
@@ -103,18 +104,19 @@ private:
   /** @brief Bounds on the constraint value. Default: std::vector<Bounds>(1, ifopt::BoundSmallerZero) */
   std::vector<ifopt::Bounds> bounds_;
 
-  /**
-   * @brief Pointers to the vars used by this constraint.
-   * Do not access them directly. Instead use this->GetVariables()->GetComponent(position_var->GetName())->GetValues()
-   */
-  std::array<std::shared_ptr<const JointPosition>, 2> position_vars_;
+  /** @brief Pointers to the vars used by this constraint. */
+  std::array<std::shared_ptr<const Var>, 2> position_vars_;
   bool vars0_fixed_{ false };
   bool vars1_fixed_{ false };
 
-  /** @brief Used to initialize jacobian because snopt sparsity cannot change */
-  std::vector<Eigen::Triplet<double>> triplet_list_;
-
   std::shared_ptr<ContinuousCollisionEvaluator> collision_evaluator_;
+
+  /** @brief Used to initialize jacobian because snopt sparsity cannot change */
+  bool fixed_sparsity_{ false };
+  mutable std::once_flag init_flag_;
+  mutable std::vector<Eigen::Triplet<double>> triplet_list_;
+
+  void initSparsity() const;
 };
 }  // namespace trajopt_ifopt
 

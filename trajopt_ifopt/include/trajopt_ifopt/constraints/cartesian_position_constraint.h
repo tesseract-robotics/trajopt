@@ -35,7 +35,7 @@ TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace trajopt_ifopt
 {
-class JointPosition;
+class Var;
 
 /** @brief Contains Cartesian pose constraint information */
 struct CartPosInfo
@@ -101,11 +101,11 @@ public:
                                                               tesseract_common::TransformMap&)>;
 
   CartPosConstraint(const CartPosInfo& info,
-                    std::shared_ptr<const JointPosition> position_var,
+                    std::shared_ptr<const Var> position_var,
                     const std::string& name = "CartPos");
 
   CartPosConstraint(CartPosInfo info,
-                    std::shared_ptr<const JointPosition> position_var,
+                    std::shared_ptr<const Var> position_var,
                     const Eigen::VectorXd& coeffs,
                     const std::string& name = "CartPos");
 
@@ -185,11 +185,8 @@ private:
   /** @brief Bounds on the positions of each joint */
   std::vector<ifopt::Bounds> bounds_;
 
-  /**
-   * @brief Pointers to the vars used by this constraint.
-   * Do not access them directly. Instead use this->GetVariables()->GetComponent(position_var->GetName())->GetValues()
-   */
-  std::shared_ptr<const JointPosition> position_var_;
+  /** @brief Pointers to the vars used by this constraint. */
+  std::shared_ptr<const Var> position_var_;
 
   /** @brief The kinematic information used when calculating error */
   CartPosInfo info_;

@@ -32,7 +32,7 @@ TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace trajopt_ifopt
 {
-class JointPosition;
+class Var;
 
 /**
  * @brief This creates a joint position constraint. Allows bounds to be set on a joint position
@@ -51,8 +51,8 @@ public:
    * @param coeffs The joint coefficients to use as weights. If size of 1 then the values is replicated for each joint.
    * @param name Name of the constraint
    */
-  JointPosConstraint(const Eigen::VectorXd& targets,
-                     const std::vector<std::shared_ptr<const JointPosition>>& position_vars,
+  JointPosConstraint(const Eigen::VectorXd& target,
+                     const std::shared_ptr<const Var>& position_var,
                      const Eigen::VectorXd& coeffs,
                      const std::string& name = "JointPos");
 
@@ -64,7 +64,7 @@ public:
    * @param name Name of the constraint
    */
   JointPosConstraint(const std::vector<ifopt::Bounds>& bounds,
-                     const std::vector<std::shared_ptr<const JointPosition>>& position_vars,
+                     const std::shared_ptr<const Var>& position_vars,
                      const Eigen::VectorXd& coeffs,
                      const std::string& name = "JointPos");
 
@@ -91,8 +91,6 @@ public:
 private:
   /** @brief The number of joints in a single JointPosition */
   long n_dof_;
-  /** @brief The number of JointPositions passed in */
-  long n_vars_;
 
   /** @brief The coeff to apply to error and gradient */
   Eigen::VectorXd coeffs_;
@@ -100,10 +98,8 @@ private:
   /** @brief Bounds on the positions of each joint */
   std::vector<ifopt::Bounds> bounds_;
 
-  /** @brief Pointers to the vars used by this constraint.
-   *
-   * Do not access them directly. Instead use this->GetVariables()->GetComponent(position_var->GetName())->GetValues()*/
-  std::vector<std::shared_ptr<const JointPosition>> position_vars_;
+  /** @brief Pointers to the vars used by this constraint. */
+  std::shared_ptr<const Var> position_var_;
 };
 }  // namespace trajopt_ifopt
 #endif

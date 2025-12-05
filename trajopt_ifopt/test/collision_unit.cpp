@@ -38,7 +38,10 @@ TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt_ifopt/constraints/collision/discrete_collision_constraint.h>
 #include <trajopt_ifopt/constraints/collision/discrete_collision_evaluators.h>
-#include <trajopt_ifopt/variable_sets/joint_position_variable.h>
+#include <trajopt_ifopt/variable_sets/nodes_variables.h>
+#include <trajopt_ifopt/variable_sets/node.h>
+#include <trajopt_ifopt/variable_sets/var.h>
+#include <trajopt_ifopt/utils/ifopt_utils.h>
 
 using namespace trajopt_ifopt;
 using namespace tesseract_environment;
@@ -73,10 +76,15 @@ public:
         std::make_shared<trajopt_ifopt::SingleTimestepCollisionEvaluator>(collision_cache, kin, env, config);
 
     // 3) Add Variables
+    const std::vector<ifopt::Bounds> bounds = trajopt_ifopt::toBounds(kin->getLimits().joint_limits);
     Eigen::VectorXd pos(2);
     pos << -1.9, 0;
-    auto var0 = std::make_shared<trajopt_ifopt::JointPosition>(pos, kin->getJointNames(), "Joint_Position_0");
-    nlp.AddVariableSet(var0);
+    auto node = std::make_unique<trajopt_ifopt::Node>("Joint_Position_0");
+    auto var0 = node->addVar("position", kin->getJointNames(), pos, bounds);
+
+    std::vector<std::unique_ptr<trajopt_ifopt::Node>> nodes;
+    nodes.push_back(std::move(node));
+    nlp.AddVariableSet(std::make_shared<trajopt_ifopt::NodesVariables>("joint_trajectory", std::move(nodes)));
 
     constraint = std::make_shared<trajopt_ifopt::DiscreteCollisionConstraint>(collision_evaluator, var0, 1);
     nlp.AddConstraintSet(constraint);
@@ -167,14 +175,16 @@ TEST_F(CollisionUnit, GetSetBounds)  // NOLINT
 
   // Check that setting bounds works
   {
+    std::vector<ifopt::Bounds> bounds_vec{ ifopt::NoBound, ifopt::NoBound };
     Eigen::VectorXd pos(2);
     pos << -1.9, 0;
     const std::vector<std::string> joint_names(2, "names");
-    auto var0 = std::make_shared<trajopt_ifopt::JointPosition>(pos, joint_names, "Joint_Position_0");
+    auto node = std::make_unique<trajopt_ifopt::Node>("Joint_Position_0");
+    auto var0 = node->addVar("position", joint_names, pos, bounds_vec);
 
     auto constraint_2 = std::make_shared<trajopt_ifopt::DiscreteCollisionConstraint>(collision_evaluator, var0, 3);
     const ifopt::Bounds bounds(-0.1234, 0.5678);
-    std::vector<ifopt::Bounds> bounds_vec = std::vector<ifopt::Bounds>(1, bounds);
+    bounds_vec = std::vector<ifopt::Bounds>(2, bounds);
     constraint_2->SetBounds(bounds_vec);
     std::vector<ifopt::Bounds> results_vec = constraint_2->GetBounds();
     for (std::size_t i = 0; i < bounds_vec.size(); i++)
