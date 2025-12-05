@@ -18,8 +18,7 @@
 
 namespace trajopt_ifopt
 {
-// joint_position_variable.h
-class JointPosition;
+// variable_sets
 class NodesVariables;
 class Node;
 class Var;

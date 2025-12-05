@@ -30,7 +30,9 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <gtest/gtest.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
-#include <trajopt_ifopt/variable_sets/joint_position_variable.h>
+#include <trajopt_ifopt/variable_sets/nodes_variables.h>
+#include <trajopt_ifopt/variable_sets/node.h>
+#include <trajopt_ifopt/variable_sets/var.h>
 #include <trajopt_ifopt/costs/absolute_cost.h>
 #include <trajopt_ifopt/costs/squared_cost.h>
 #include <trajopt_ifopt/utils/ifopt_utils.h>
@@ -46,7 +48,7 @@ class SimpleTestConstraint : public ifopt::ConstraintSet
 public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-  SimpleTestConstraint(trajopt_ifopt::JointPosition::ConstPtr position_var,
+  SimpleTestConstraint(std::shared_ptr<const trajopt_ifopt::Var> position_var,
                        const std::string& name = "SimpleTestConstraint")
     : ifopt::ConstraintSet(1, name), position_var_(std::move(position_var))
   {
@@ -56,8 +58,8 @@ public:
   Eigen::VectorXd GetValues() const final
   {
     Eigen::VectorXd output(1);
-    Eigen::VectorXd joint_vals = this->GetVariables()->GetComponent(position_var_->GetName())->GetValues();
-    output(0) = std::pow(joint_vals(0), 2) + 4 * joint_vals(0) + 3;
+    double v = position_var_->value()(0);
+    output(0) = std::pow(v, 2) + (4 * v) + 3;
     return output;
   }
 
@@ -66,15 +68,13 @@ public:
   void FillJacobianBlock(std::string var_set, Jacobian& jac_block) const final
   {
     // Only modify the jacobian if this constraint uses var_set
-    if (var_set != position_var_->GetName())  // NOLINT
+    if (var_set != position_var_->getParent()->getParent()->GetName())  // NOLINT
       return;
 
     // dy = 2x + 4;
-    Eigen::VectorXd joint_vals = this->GetVariables()->GetComponent(position_var_->GetName())->GetValues();
-
     // Reserve enough room in the sparse matrix
     jac_block.reserve(1);
-    jac_block.coeffRef(0, 0) = 2 * joint_vals(0) + 4;
+    jac_block.coeffRef(0, position_var_->getIndex()) = (2 * position_var_->value()(0)) + 4;
   }
 
 private:
@@ -84,7 +84,7 @@ private:
   /** @brief Pointers to the vars used by this constraint.
    *
    * Do not access them directly. Instead use this->GetVariables()->GetComponent(position_var->GetName())->GetValues()*/
-  trajopt_ifopt::JointPosition::ConstPtr position_var_;
+  std::shared_ptr<const trajopt_ifopt::Var> position_var_;
 };
 
 /** @brief Tests that GetValues and FillJacobianBlock return the correct values */
@@ -94,33 +94,33 @@ TEST(CostWrapperUnit, SquaredCost)  // NOLINT
   ifopt::Problem nlp;
 
   // 3) Add Variables
-  std::vector<trajopt_ifopt::JointPosition::ConstPtr> vars;
-  std::vector<Eigen::VectorXd> positions;
+  std::vector<std::unique_ptr<trajopt_ifopt::Node>> nodes;
+  std::shared_ptr<const trajopt_ifopt::Var> var;
   {
+    auto node = std::make_unique<trajopt_ifopt::Node>("Node");
     Eigen::VectorXd pos(1);
     pos << -4;
-    positions.push_back(pos);
     const std::vector<std::string> var_names = { "x" };
-    auto var = std::make_shared<trajopt_ifopt::JointPosition>(pos, var_names);
-    vars.push_back(var);
-    nlp.AddVariableSet(var);
+    var = node->addVar("position", { "x" }, pos, { ifopt::NoBound });
+    nodes.push_back(std::move(node));
   }
+  nlp.AddVariableSet(std::make_shared<trajopt_ifopt::NodesVariables>("joint-trajectory", std::move(nodes)));
 
   // 4) add cost
-  auto cnt = std::make_shared<SimpleTestConstraint>(vars[0]);
+  auto cnt = std::make_shared<SimpleTestConstraint>(var);
   cnt->LinkWithVariables(nlp.GetOptVariables());
   auto cost = std::make_shared<trajopt_ifopt::SquaredCost>(cnt);
   nlp.AddCostSet(cost);
 
-  auto exact_jac = nlp.EvaluateCostFunctionGradient(positions[0].data());
-  auto numerical_jac = trajopt_ifopt::calcNumericalCostGradient(positions[0].data(), nlp, 1e-8);
+  auto exact_jac = nlp.EvaluateCostFunctionGradient(var->value().data());
+  auto numerical_jac = trajopt_ifopt::calcNumericalCostGradient(var->value().data(), nlp, 1e-8);
 
   EXPECT_NEAR(exact_jac(0, 0), numerical_jac(0, 0), 1e-6);
 
   // Squared cost jacobian = 2 * y(x) * dy(x)
   //   y(x) = x^2 + 4x + 3
   //   dy(x) = 2x + 4
-  const double x = positions[0](0);
+  const double x = var->value()(0);
   const double jac = 2 * (std::pow(x, 2) + 4 * x + 3) * (2 * x + 4);
   EXPECT_NEAR(exact_jac(0, 0), jac, 1e-6);
   EXPECT_NEAR(numerical_jac(0, 0), jac, 1e-6);
@@ -133,35 +133,35 @@ TEST(CostWrapperUnit, WeightedSquaredCost)  // NOLINT
   ifopt::Problem nlp;
 
   // 3) Add Variables
-  std::vector<trajopt_ifopt::JointPosition::ConstPtr> vars;
-  std::vector<Eigen::VectorXd> positions;
+  std::vector<std::unique_ptr<trajopt_ifopt::Node>> nodes;
+  std::shared_ptr<const trajopt_ifopt::Var> var;
   {
+    auto node = std::make_unique<trajopt_ifopt::Node>("Node");
     Eigen::VectorXd pos(1);
     pos << -4;
-    positions.push_back(pos);
     const std::vector<std::string> var_names = { "x" };
-    auto var = std::make_shared<trajopt_ifopt::JointPosition>(pos, var_names);
-    vars.push_back(var);
-    nlp.AddVariableSet(var);
+    var = node->addVar("position", { "x" }, pos, { ifopt::NoBound });
+    nodes.push_back(std::move(node));
   }
+  nlp.AddVariableSet(std::make_shared<trajopt_ifopt::NodesVariables>("joint-trajectory", std::move(nodes)));
 
   // 4) add cost
   Eigen::VectorXd weights(1);
   weights(0) = 2;
-  auto cnt = std::make_shared<SimpleTestConstraint>(vars[0]);
+  auto cnt = std::make_shared<SimpleTestConstraint>(var);
   cnt->LinkWithVariables(nlp.GetOptVariables());
   auto cost = std::make_shared<trajopt_ifopt::SquaredCost>(cnt, weights);
   nlp.AddCostSet(cost);
 
-  auto exact_jac = nlp.EvaluateCostFunctionGradient(positions[0].data());
-  auto numerical_jac = trajopt_ifopt::calcNumericalCostGradient(positions[0].data(), nlp, 1e-8);
+  auto exact_jac = nlp.EvaluateCostFunctionGradient(var->value().data());
+  auto numerical_jac = trajopt_ifopt::calcNumericalCostGradient(var->value().data(), nlp, 1e-8);
 
   EXPECT_NEAR(exact_jac(0, 0), numerical_jac(0, 0), 1e-6);
 
   // Squared cost jacobian = 2 * y(x) * dy(x)
   //   y(x) = x^2 + 4x + 3
   //   dy(x) = 2x + 4
-  const double x = positions[0](0);
+  const double x = var->value()(0);
   const double jac = 2 * weights(0) * (std::pow(x, 2) + 4 * x + 3) * (2 * x + 4);
   EXPECT_NEAR(exact_jac(0, 0), jac, 1e-6);
   EXPECT_NEAR(numerical_jac(0, 0), jac, 1e-6);
@@ -174,34 +174,34 @@ TEST(CostWrapperUnit, AbsoluteCost)  // NOLINT
   ifopt::Problem nlp;
 
   // 3) Add Variables
-  std::vector<trajopt_ifopt::JointPosition::ConstPtr> vars;
-  std::vector<Eigen::VectorXd> positions;
+  std::vector<std::unique_ptr<trajopt_ifopt::Node>> nodes;
+  std::shared_ptr<const trajopt_ifopt::Var> var;
   {
+    auto node = std::make_unique<trajopt_ifopt::Node>("Node");
     Eigen::VectorXd pos(1);
     pos << -4;
-    positions.push_back(pos);
     const std::vector<std::string> var_names = { "x" };
-    auto var = std::make_shared<trajopt_ifopt::JointPosition>(pos, var_names);
-    vars.push_back(var);
-    nlp.AddVariableSet(var);
+    var = node->addVar("position", { "x" }, pos, { ifopt::NoBound });
+    nodes.push_back(std::move(node));
   }
+  nlp.AddVariableSet(std::make_shared<trajopt_ifopt::NodesVariables>("joint-trajectory", std::move(nodes)));
 
   // 4) add cost
-  auto cnt = std::make_shared<SimpleTestConstraint>(vars[0]);
+  auto cnt = std::make_shared<SimpleTestConstraint>(var);
   cnt->LinkWithVariables(nlp.GetOptVariables());
   auto cost = std::make_shared<trajopt_ifopt::AbsoluteCost>(cnt);
   nlp.AddCostSet(cost);
 
-  auto exact_jac = nlp.EvaluateCostFunctionGradient(positions[0].data());
-  auto numerical_jac = trajopt_ifopt::calcNumericalCostGradient(positions[0].data(), nlp, 1e-8);
+  auto exact_jac = nlp.EvaluateCostFunctionGradient(var->value().data());
+  auto numerical_jac = trajopt_ifopt::calcNumericalCostGradient(var->value().data(), nlp, 1e-8);
 
   EXPECT_NEAR(exact_jac(0, 0), numerical_jac(0, 0), 1e-6);
 
   // Absolute cost jacobian = (y(x) / |y(x)|) * dy(x)
   //   y(x) = x^2 + 4x + 3
   //   dy(x) = 2x + 4
-  const double x = positions[0](0);
-  const double jac = ((std::pow(x, 2) + 4 * x + 3) / std::abs(std::pow(x, 2) + 4 * x + 3)) * (2 * x + 4);
+  const double x = var->value()(0);
+  const double jac = ((std::pow(x, 2) + (4 * x) + 3) / std::abs(std::pow(x, 2) + (4 * x) + 3)) * ((2 * x) + 4);
   EXPECT_NEAR(exact_jac(0, 0), jac, 1e-6);
   EXPECT_NEAR(numerical_jac(0, 0), jac, 1e-6);
 }
@@ -213,36 +213,37 @@ TEST(CostWrapperUnit, WeightedAbsoluteCost)  // NOLINT
   ifopt::Problem nlp;
 
   // 3) Add Variables
-  std::vector<trajopt_ifopt::JointPosition::ConstPtr> vars;
-  std::vector<Eigen::VectorXd> positions;
+  std::vector<std::unique_ptr<trajopt_ifopt::Node>> nodes;
+  std::shared_ptr<const trajopt_ifopt::Var> var;
   {
+    auto node = std::make_unique<trajopt_ifopt::Node>("Node");
     Eigen::VectorXd pos(1);
     pos << -4;
-    positions.push_back(pos);
     const std::vector<std::string> var_names = { "x" };
-    auto var = std::make_shared<trajopt_ifopt::JointPosition>(pos, var_names);
-    vars.push_back(var);
-    nlp.AddVariableSet(var);
+    var = node->addVar("position", { "x" }, pos, { ifopt::NoBound });
+    nodes.push_back(std::move(node));
   }
+  nlp.AddVariableSet(std::make_shared<trajopt_ifopt::NodesVariables>("joint-trajectory", std::move(nodes)));
 
   // 4) add cost
   Eigen::VectorXd weights(1);
   weights(0) = 2;
-  auto cnt = std::make_shared<SimpleTestConstraint>(vars[0]);
+  auto cnt = std::make_shared<SimpleTestConstraint>(var);
   cnt->LinkWithVariables(nlp.GetOptVariables());
   auto cost = std::make_shared<trajopt_ifopt::AbsoluteCost>(cnt, weights);
   nlp.AddCostSet(cost);
 
-  auto exact_jac = nlp.EvaluateCostFunctionGradient(positions[0].data());
-  auto numerical_jac = trajopt_ifopt::calcNumericalCostGradient(positions[0].data(), nlp, 1e-8);  // NOLINT
+  auto exact_jac = nlp.EvaluateCostFunctionGradient(var->value().data());
+  auto numerical_jac = trajopt_ifopt::calcNumericalCostGradient(var->value().data(), nlp, 1e-8);  // NOLINT
 
   EXPECT_NEAR(exact_jac(0, 0), numerical_jac(0, 0), 1e-6);
 
   // Absolute cost jacobian = (y(x) / |y(x)|) * dy(x)
   //   y(x) = x^2 + 4x + 3
   //   dy(x) = 2x + 4
-  const double x = positions[0](0);
-  const double jac = (weights(0) * (std::pow(x, 2) + 4 * x + 3) / std::abs(std::pow(x, 2) + 4 * x + 3)) * (2 * x + 4);
+  const double x = var->value()(0);
+  const double jac =
+      (weights(0) * (std::pow(x, 2) + (4 * x) + 3) / std::abs(std::pow(x, 2) + (4 * x) + 3)) * ((2 * x) + 4);
   EXPECT_NEAR(exact_jac(0, 0), jac, 1e-6);
   EXPECT_NEAR(numerical_jac(0, 0), jac, 1e-6);
 }

@@ -25,7 +25,9 @@
  */
 
 #include <trajopt_ifopt/constraints/cartesian_line_constraint.h>
-#include <trajopt_ifopt/variable_sets/joint_position_variable.h>
+#include <trajopt_ifopt/variable_sets/nodes_variables.h>
+#include <trajopt_ifopt/variable_sets/node.h>
+#include <trajopt_ifopt/variable_sets/var.h>
 #include <trajopt_ifopt/utils/numeric_differentiation.h>
 #include <trajopt_ifopt/utils/trajopt_utils.h>
 #include <trajopt_common/utils.hpp>
@@ -72,7 +74,7 @@ CartLineInfo::CartLineInfo(std::shared_ptr<const tesseract_kinematics::JointGrou
 thread_local tesseract_common::TransformMap CartLineConstraint::transforms_cache;  // NOLINT
 
 CartLineConstraint::CartLineConstraint(CartLineInfo info,
-                                       std::shared_ptr<const JointPosition> position_var,
+                                       std::shared_ptr<const Var> position_var,
                                        const Eigen::VectorXd& coeffs,  // NOLINT
                                        const std::string& name)
   : ifopt::ConstraintSet(static_cast<int>(info.indices.rows()), name)
@@ -134,11 +136,7 @@ Eigen::VectorXd CartLineConstraint::CalcValues(const Eigen::Ref<const Eigen::Vec
   return coeffs_.cwiseProduct(reduced_err);  // This is available in 3.4 err(indices_, Eigen::all);
 }
 
-Eigen::VectorXd CartLineConstraint::GetValues() const
-{
-  const Eigen::VectorXd joint_vals = this->GetVariables()->GetComponent(position_var_->GetName())->GetValues();
-  return CalcValues(joint_vals);
-}
+Eigen::VectorXd CartLineConstraint::GetValues() const { return CalcValues(position_var_->value()); }
 
 // Set the limits on the constraint values
 std::vector<ifopt::Bounds> CartLineConstraint::GetBounds() const { return bounds_; }
@@ -184,7 +182,7 @@ void CartLineConstraint::CalcJacobianBlock(const Eigen::Ref<const Eigen::VectorX
       {
         // Each jac_block will be for a single variable but for all timesteps. Therefore we must index down to the
         // correct timestep for this variable
-        triplet_list.emplace_back(i, j, coeffs_(i) * jac0.coeffRef(info_.indices[i], j));
+        triplet_list.emplace_back(i, position_var_->getIndex() + j, coeffs_(i) * jac0.coeffRef(info_.indices[i], j));
       }
     }
   }
@@ -242,7 +240,7 @@ void CartLineConstraint::CalcJacobianBlock(const Eigen::Ref<const Eigen::VectorX
       {
         // Each jac_block will be for a single variable but for all timesteps. Therefore we must index down to the
         // correct timestep for this variable
-        triplet_list.emplace_back(i, j, coeffs_(i) * jac0(info_.indices[i], j));
+        triplet_list.emplace_back(i, position_var_->getIndex() + j, coeffs_(i) * jac0(info_.indices[i], j));
       }
     }
   }
@@ -252,12 +250,11 @@ void CartLineConstraint::CalcJacobianBlock(const Eigen::Ref<const Eigen::VectorX
 void CartLineConstraint::FillJacobianBlock(std::string var_set, Jacobian& jac_block) const
 {
   // Only modify the jacobian if this constraint uses var_set
-  if (var_set != position_var_->GetName())  // NOLINT
+  if (var_set != position_var_->getParent()->getParent()->GetName())  // NOLINT
     return;
 
   // Get current joint values and calculate jacobian
-  const Eigen::VectorXd joint_vals = this->GetVariables()->GetComponent(position_var_->GetName())->GetValues();
-  CalcJacobianBlock(joint_vals, jac_block);  // NOLINT
+  CalcJacobianBlock(position_var_->value(), jac_block);  // NOLINT
 }
 
 std::pair<Eigen::Isometry3d, Eigen::Isometry3d> CartLineConstraint::GetLine() const

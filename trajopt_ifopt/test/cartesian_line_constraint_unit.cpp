@@ -12,8 +12,11 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt_ifopt/constraints/cartesian_line_constraint.h>
-#include <trajopt_ifopt/variable_sets/joint_position_variable.h>
+#include <trajopt_ifopt/variable_sets/nodes_variables.h>
+#include <trajopt_ifopt/variable_sets/node.h>
+#include <trajopt_ifopt/variable_sets/var.h>
 #include <trajopt_ifopt/utils/numeric_differentiation.h>
+#include <trajopt_ifopt/utils/ifopt_utils.h>
 
 using namespace trajopt_ifopt;
 using namespace std;
@@ -31,7 +34,7 @@ public:
 
   tesseract_kinematics::JointGroup::ConstPtr manip;
   CartLineInfo info;
-  trajopt_ifopt::JointPosition::Ptr var;
+  std::shared_ptr<const trajopt_ifopt::Var> var;
 
   Eigen::Isometry3d source_tf;
   Eigen::Isometry3d line_start_pose;
@@ -52,9 +55,13 @@ public:
     manip = env->getJointGroup("right_arm");
     n_dof = manip->numJoints();
 
+    std::vector<ifopt::Bounds> bounds = trajopt_ifopt::toBounds(manip->getLimits().joint_limits);
+    auto node = std::make_unique<trajopt_ifopt::Node>("Joint_Position_0");
     auto pos = Eigen::VectorXd::Ones(n_dof);
-    var = std::make_shared<trajopt_ifopt::JointPosition>(pos, manip->getJointNames(), "Joint_Position_0");
-    variables->AddComponent(var);
+    var = node->addVar("position", manip->getJointNames(), pos, bounds);
+    std::vector<std::unique_ptr<trajopt_ifopt::Node>> nodes;
+    nodes.push_back(std::move(node));
+    variables->AddComponent(std::make_shared<trajopt_ifopt::NodesVariables>("joint_trajectory", std::move(nodes)));
 
     // Add constraints
     const Eigen::VectorXd joint_position = Eigen::VectorXd::Ones(n_dof);

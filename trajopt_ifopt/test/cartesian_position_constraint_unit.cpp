@@ -37,7 +37,10 @@ TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt_common/utils.hpp>
 #include <trajopt_ifopt/constraints/cartesian_position_constraint.h>
-#include <trajopt_ifopt/variable_sets/joint_position_variable.h>
+#include <trajopt_ifopt/variable_sets/nodes_variables.h>
+#include <trajopt_ifopt/variable_sets/node.h>
+#include <trajopt_ifopt/variable_sets/var.h>
+#include <trajopt_ifopt/utils/ifopt_utils.h>
 #include <trajopt_ifopt/utils/numeric_differentiation.h>
 
 using namespace trajopt_ifopt;
@@ -75,9 +78,14 @@ public:
     kin_group = env->getJointGroup("right_arm");
     n_dof = kin_group->numJoints();
 
+    const std::vector<ifopt::Bounds> bounds = trajopt_ifopt::toBounds(kin_group->getLimits().joint_limits);
     auto pos = Eigen::VectorXd::Ones(kin_group->numJoints());
-    auto var0 = std::make_shared<trajopt_ifopt::JointPosition>(pos, kin_group->getJointNames(), "Joint_Position_0");
-    nlp.AddVariableSet(var0);
+    auto node = std::make_unique<trajopt_ifopt::Node>("Joint_Position_0");
+    auto var0 = node->addVar("position", kin_group->getJointNames(), pos, bounds);
+
+    std::vector<std::unique_ptr<trajopt_ifopt::Node>> nodes;
+    nodes.push_back(std::move(node));
+    nlp.AddVariableSet(std::make_shared<trajopt_ifopt::NodesVariables>("joint_trajectory", std::move(nodes)));
 
     // 4) Add constraints
     const CartPosInfo cart_info(kin_group, "r_gripper_tool_frame", "base_footprint");
@@ -187,14 +195,16 @@ TEST_F(CartesianPositionConstraintUnit, GetSetBounds)  // NOLINT
 
   // Check that setting bounds works
   {
+    std::vector<ifopt::Bounds> bounds_vec = trajopt_ifopt::toBounds(kin_group->getLimits().joint_limits);
+    auto node = std::make_unique<trajopt_ifopt::Node>("Joint_Position_0");
     const Eigen::VectorXd pos = Eigen::VectorXd::Ones(kin_group->numJoints());
-    auto var0 = std::make_shared<trajopt_ifopt::JointPosition>(pos, kin_group->getJointNames(), "Joint_Position_0");
+    auto var0 = node->addVar("position", kin_group->getJointNames(), pos, bounds_vec);
 
     const CartPosInfo cart_info(kin_group, "r_gripper_tool_frame", "base_footprint");
     auto constraint_2 = std::make_shared<trajopt_ifopt::CartPosConstraint>(cart_info, var0);
 
     const ifopt::Bounds bounds(-0.1234, 0.5678);
-    std::vector<ifopt::Bounds> bounds_vec = std::vector<ifopt::Bounds>(6, bounds);
+    bounds_vec = std::vector<ifopt::Bounds>(6, bounds);
 
     constraint_2->SetBounds(bounds_vec);
     std::vector<ifopt::Bounds> results_vec = constraint_2->GetBounds();
