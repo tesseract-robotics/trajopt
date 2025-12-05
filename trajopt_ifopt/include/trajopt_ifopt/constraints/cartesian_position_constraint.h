@@ -35,7 +35,6 @@ TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace trajopt_ifopt
 {
-class JointPosition;
 class Var;
 
 /** @brief Contains Cartesian pose constraint information */
@@ -102,11 +101,11 @@ public:
                                                               tesseract_common::TransformMap&)>;
 
   CartPosConstraint(const CartPosInfo& info,
-                    std::shared_ptr<const JointPosition> position_var,
+                    std::shared_ptr<const Var> position_var,
                     const std::string& name = "CartPos");
 
   CartPosConstraint(CartPosInfo info,
-                    std::shared_ptr<const JointPosition> position_var,
+                    std::shared_ptr<const Var> position_var,
                     const Eigen::VectorXd& coeffs,
                     const std::string& name = "CartPos");
 
@@ -186,126 +185,7 @@ private:
   /** @brief Bounds on the positions of each joint */
   std::vector<ifopt::Bounds> bounds_;
 
-  /**
-   * @brief Pointers to the vars used by this constraint.
-   * Do not access them directly. Instead use this->GetVariables()->GetComponent(position_var->GetName())->GetValues()
-   */
-  std::shared_ptr<const JointPosition> position_var_;
-
-  /** @brief The kinematic information used when calculating error */
-  CartPosInfo info_;
-
-  /** @brief Error function for calculating the error in the position given the source and target positions */
-  ErrorFunctionType error_function_{ nullptr };
-
-  /** @brief The error function to calculate the error difference used for jacobian calculations */
-  ErrorDiffFunctionType error_diff_function_{ nullptr };
-
-  static thread_local tesseract_common::TransformMap transforms_cache;  // NOLINT
-};
-
-class CartPosConstraint2 : public ifopt::ConstraintSet
-{
-public:
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-
-  using Ptr = std::shared_ptr<CartPosConstraint>;
-  using ConstPtr = std::shared_ptr<const CartPosConstraint>;
-  using ErrorFunctionType = std::function<Eigen::VectorXd(const Eigen::Isometry3d&, const Eigen::Isometry3d&)>;
-  using ErrorDiffFunctionType = std::function<Eigen::VectorXd(const Eigen::VectorXd&,
-                                                              const Eigen::Isometry3d&,
-                                                              const Eigen::Isometry3d&,
-                                                              tesseract_common::TransformMap&)>;
-
-  CartPosConstraint2(const CartPosInfo& info,
-                     std::shared_ptr<const Var> position_var,
-                     const std::string& name = "CartPos");
-
-  CartPosConstraint2(CartPosInfo info,
-                     std::shared_ptr<const Var> position_var,
-                     const Eigen::VectorXd& coeffs,
-                     const std::string& name = "CartPos");
-
-  /**
-   * @brief CalcValues Calculates the values associated with the constraint
-   * @param joint_vals Input joint values for which FK is solved
-   * @return Error of FK solution from target, size 6. The first 3 terms are associated with position and the last 3 are
-   * associated with orientation.
-   */
-  Eigen::VectorXd CalcValues(const Eigen::Ref<const Eigen::VectorXd>& joint_vals) const;
-  /**
-   * @brief Returns the values associated with the constraint. In this case that is the concatenated joint values
-   * associated with each of the joint positions should be n_dof_ * n_vars_ long
-   * @return
-   */
-  Eigen::VectorXd GetValues() const override;
-
-  /**
-   * @brief  Returns the "bounds" of this constraint. How these are enforced is up to the solver
-   * @return Returns the "bounds" of this constraint
-   */
-  std::vector<ifopt::Bounds> GetBounds() const override;
-
-  void SetBounds(const std::vector<ifopt::Bounds>& bounds);
-
-  /**
-   * @brief Fills the jacobian block associated with the constraint
-   * @param jac_block Block of the overall jacobian associated with these constraints
-   */
-  void CalcJacobianBlock(const Eigen::Ref<const Eigen::VectorXd>& joint_vals, Jacobian& jac_block) const;
-  /**
-   * @brief Fills the jacobian block associated with the given var_set.
-   * @param var_set Name of the var_set to which the jac_block is associated
-   * @param jac_block Block of the overall jacobian associated with these constraints and the var_set variable
-   */
-  void FillJacobianBlock(std::string var_set, Jacobian& jac_block) const override;
-
-  /**
-   * @brief Gets the Cartesian Pose info used to create this constraint
-   * @return The Cartesian Pose info used to create this constraint
-   */
-  const CartPosInfo& GetInfo() const;
-  CartPosInfo& GetInfo();
-
-  /**
-   * @brief Set the target pose
-   * @param pose
-   */
-  void SetTargetPose(const Eigen::Isometry3d& target_frame_offset);
-
-  /**
-   * @brief Returns the target pose for the constraint
-   * @return The target pose for the constraint
-   */
-  Eigen::Isometry3d GetTargetPose() const;
-
-  /**
-   * @brief Returns the current TCP pose in world frame given the input kinematic info and the current variable values
-   * @return The current TCP pose given the input kinematic info and the current variable values
-   */
-  Eigen::Isometry3d GetCurrentPose() const;
-
-  /** @brief If true, numeric differentiation will be used. Default: true
-   *
-   * Note: While the logic for using the jacobian from KDL will be used if set to false, this has been buggy. Set this
-   * to false at your own risk.
-   */
-  bool use_numeric_differentiation{ true };
-
-private:
-  /** @brief The number of joints in a single JointPosition */
-  long n_dof_;
-
-  /** @brief The constraint coefficients */
-  Eigen::VectorXd coeffs_;
-
-  /** @brief Bounds on the positions of each joint */
-  std::vector<ifopt::Bounds> bounds_;
-
-  /**
-   * @brief Pointers to the vars used by this constraint.
-   * Do not access them directly. Instead use this->GetVariables()->GetComponent(position_var->GetName())->GetValues()
-   */
+  /** @brief Pointers to the vars used by this constraint. */
   std::shared_ptr<const Var> position_var_;
 
   /** @brief The kinematic information used when calculating error */

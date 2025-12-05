@@ -33,7 +33,6 @@ TRAJOPT_IGNORE_WARNINGS_POP
 #include <trajopt_ifopt/constraints/joint_velocity_constraint.h>
 #include <trajopt_ifopt/constraints/joint_acceleration_constraint.h>
 #include <trajopt_ifopt/constraints/joint_jerk_constraint.h>
-#include <trajopt_ifopt/variable_sets/joint_position_variable.h>
 #include <trajopt_ifopt/variable_sets/nodes_variables.h>
 #include <trajopt_ifopt/variable_sets/node.h>
 #include <trajopt_ifopt/variable_sets/var.h>
@@ -47,32 +46,6 @@ TEST(JointTermsUnit, JointPosConstraintUnit)  // NOLINT
 {
   CONSOLE_BRIDGE_logDebug("JointTermsUnit, JointPosConstraintUnit");
 
-  std::vector<JointPosition::ConstPtr> position_vars;
-  const std::vector<std::string> joint_names(10, "name");
-  Eigen::VectorXd init1(10);
-  init1 << 0, 1, 2, 3, 4, 5, 6, 7, 8, 9;
-  position_vars.push_back(std::make_shared<JointPosition>(init1, joint_names, "test_var1"));
-
-  Eigen::VectorXd init2(10);
-  init2 << 10, 11, 12, 13, 14, 15, 16, 17, 18, 19;
-  position_vars.push_back(std::make_shared<JointPosition>(init2, joint_names, "test_var2"));
-
-  Eigen::VectorXd targets(10);
-  targets << 20, 21, 22, 23, 24, 25, 26, 27, 28, 29;
-
-  const std::string name("test_cnt");
-  const Eigen::VectorXd coeffs = Eigen::VectorXd::Constant(10, 1);
-  const JointPosConstraint position_cnt(targets, position_vars, coeffs, name);
-
-  EXPECT_EQ(position_cnt.GetRows(), targets.size() * static_cast<Eigen::Index>(position_vars.size()));
-  EXPECT_EQ(position_cnt.GetName(), name);
-  EXPECT_EQ(position_cnt.GetBounds().size(), targets.size() * static_cast<Eigen::Index>(position_vars.size()));
-}
-
-TEST(JointTermsUnit, JointPosConstraintUnit2)  // NOLINT
-{
-  CONSOLE_BRIDGE_logDebug("JointTermsUnit, JointPosConstraintUnit2");
-
   const std::vector<std::string> joint_names(10, "name");
   Eigen::VectorXd init_vals(10);
   init_vals << 0, 1, 2, 3, 4, 5, 6, 7, 8, 9;
@@ -83,10 +56,8 @@ TEST(JointTermsUnit, JointPosConstraintUnit2)  // NOLINT
   std::vector<std::unique_ptr<Node>> nodes;
   nodes.push_back(std::move(node));
 
-  auto variable_set = std::make_shared<NodesVariables>("joint_trajectory", std::move(nodes));
-
   auto variables = std::make_shared<ifopt::Composite>("variable-sets", false);
-  variables->AddComponent(variable_set);
+  variables->AddComponent(std::make_shared<NodesVariables>("joint_trajectory", std::move(nodes)));
 
   std::vector<Eigen::VectorXd> targets;
   Eigen::VectorXd target(10);
@@ -94,7 +65,7 @@ TEST(JointTermsUnit, JointPosConstraintUnit2)  // NOLINT
 
   const std::string name("test_cnt");
   const Eigen::VectorXd coeffs = Eigen::VectorXd::Constant(10, 1);
-  JointPosConstraint2 position_cnt(target, position_var, coeffs, name);
+  JointPosConstraint position_cnt(target, position_var, coeffs, name);
 
   // Must link with variables or GetValues and GetJacobian throw exception.
   position_cnt.LinkWithVariables(variables);
@@ -132,71 +103,6 @@ TEST(JointTermsUnit, JointVelConstraintUnit)  // NOLINT
   // y = x^3 + 5*x^2 + 2*x + 1
   auto f = [](double x) { return ((x * x * x) + (5 * x * x) + (2 * x) + 1); };
 
-  auto variables = std::make_shared<ifopt::Composite>("variable-sets", false);
-  std::vector<JointPosition::ConstPtr> position_vars;
-  position_vars.reserve(27);
-
-  std::vector<int> x_vals;
-  x_vals.reserve(27);
-  for (int i = -13; i < 14; ++i)
-  {
-    const std::vector<std::string> joint_names{ "x", "y" };
-    Eigen::VectorXd val(2);
-    val << f(i), f(i);
-    auto var = std::make_shared<JointPosition>(val, joint_names, "test_var_" + std::to_string(position_vars.size()));
-    position_vars.push_back(var);
-    variables->AddComponent(var);
-    x_vals.push_back(i);
-  }
-
-  Eigen::VectorXd targets(2);
-  targets << 0, 0;
-  const std::string name("test_joint_vel_cnt");
-  const Eigen::VectorXd coeffs = Eigen::VectorXd::Constant(1, 1);
-  JointVelConstraint velocity_cnt(targets, position_vars, coeffs, name);
-
-  // Must link with variables or GetValues and GetJacobian throw exception.
-  velocity_cnt.LinkWithVariables(variables);
-
-  EXPECT_EQ(velocity_cnt.GetRows(), targets.size() * static_cast<Eigen::Index>(position_vars.size() - 1));
-  EXPECT_EQ(velocity_cnt.GetName(), name);
-  EXPECT_EQ(velocity_cnt.GetBounds().size(), targets.size() * static_cast<Eigen::Index>(position_vars.size() - 1));
-
-  Eigen::VectorXd velocity_vals = velocity_cnt.GetValues();
-  EXPECT_EQ(velocity_vals.size(), targets.size() * static_cast<Eigen::Index>(position_vars.size() - 1));
-
-  // Test forward diff
-  for (std::size_t i = 0; i < x_vals.size() - 1; ++i)
-  {
-    for (Eigen::Index j = 0; j < targets.size(); ++j)
-    {
-      const double expected_val = (f(x_vals[i + 1]) - f(x_vals[i]));
-      EXPECT_NEAR(velocity_vals((static_cast<Eigen::Index>(i) * targets.size()) + j), expected_val, 1e-6);
-    }
-  }
-
-  ifopt::ConstraintSet::Jacobian jac = velocity_cnt.GetJacobian();
-  ifopt::Problem::Jacobian num_jac = trajopt_ifopt::calcNumericalConstraintGradient(*variables, velocity_cnt);
-
-  EXPECT_EQ(jac.rows(), static_cast<Eigen::Index>(x_vals.size() - 1) * targets.size());
-  EXPECT_EQ(jac.cols(), static_cast<Eigen::Index>(x_vals.size()) * targets.size());
-
-  for (Eigen::Index i = 0; i < static_cast<Eigen::Index>(x_vals.size() - 1) * targets.size(); ++i)
-  {
-    for (Eigen::Index j = 0; j < static_cast<Eigen::Index>(x_vals.size()) * targets.size(); ++j)
-    {
-      EXPECT_NEAR(jac.coeffRef(i, j), num_jac.coeffRef(i, j), 1e-3);
-    }
-  }
-}
-
-TEST(JointTermsUnit, JointVelConstraintUnit2)  // NOLINT
-{
-  CONSOLE_BRIDGE_logDebug("JointTermsUnit, JointVelConstraintUnit2");
-
-  // y = x^3 + 5*x^2 + 2*x + 1
-  auto f = [](double x) { return ((x * x * x) + (5 * x * x) + (2 * x) + 1); };
-
   std::vector<std::unique_ptr<Node>> nodes;
   std::vector<std::shared_ptr<const Var>> position_vars;
   position_vars.reserve(27);
@@ -216,16 +122,14 @@ TEST(JointTermsUnit, JointVelConstraintUnit2)  // NOLINT
 
     x_vals.push_back(i);
   }
-  auto variable_set = std::make_shared<NodesVariables>("joint_trajectory", std::move(nodes));
-
   auto variables = std::make_shared<ifopt::Composite>("variable-sets", false);
-  variables->AddComponent(variable_set);
+  variables->AddComponent(std::make_shared<NodesVariables>("joint_trajectory", std::move(nodes)));
 
   Eigen::VectorXd targets(2);
   targets << 0, 0;
   const std::string name("test_joint_vel_cnt");
   const Eigen::VectorXd coeffs = Eigen::VectorXd::Constant(1, 1);
-  JointVelConstraint2 velocity_cnt(targets, position_vars, coeffs, name);
+  JointVelConstraint velocity_cnt(targets, position_vars, coeffs, name);
 
   // Must link with variables or GetValues and GetJacobian throw exception.
   velocity_cnt.LinkWithVariables(variables);
@@ -269,22 +173,28 @@ TEST(JointTermsUnit, JointVelConstraintMinimumUnit)  // NOLINT
   // y = x^3 + 5*x^2 + 2*x + 1
   auto f = [](double x) { return ((x * x * x) + (5 * x * x) + (2 * x) + 1); };
 
-  auto variables = std::make_shared<ifopt::Composite>("variable-sets", false);
-  std::vector<JointPosition::ConstPtr> position_vars;
+  std::vector<std::unique_ptr<Node>> nodes;
+  std::vector<std::shared_ptr<const Var>> position_vars;
   position_vars.reserve(2);
 
   std::vector<int> x_vals;
   x_vals.reserve(2);
   for (int i = -13; i < -11; ++i)
   {
+    auto node = std::make_unique<Node>();
+    const std::string var_id = "test_var_" + std::to_string(position_vars.size());
     const std::vector<std::string> joint_names{ "x", "y" };
-    Eigen::VectorXd val(2);
-    val << f(i), f(i);
-    auto var = std::make_shared<JointPosition>(val, joint_names, "test_var_" + std::to_string(position_vars.size()));
-    position_vars.push_back(var);
-    variables->AddComponent(var);
+    std::vector<ifopt::Bounds> bounds(2, ifopt::NoBound);
+    Eigen::VectorXd vals(2);
+    vals << f(i), f(i);
+    position_vars.push_back(node->addVar(var_id, joint_names, vals, bounds));
+    nodes.push_back(std::move(node));
+
     x_vals.push_back(i);
   }
+
+  auto variables = std::make_shared<ifopt::Composite>("variable-sets", false);
+  variables->AddComponent(std::make_shared<NodesVariables>("joint_trajectory", std::move(nodes)));
 
   Eigen::VectorXd targets(2);
   targets << 0, 0;
@@ -335,81 +245,6 @@ TEST(JointTermsUnit, JointAccelConstraintUnit)  // NOLINT
   // y = x^3 + 5*x^2 + 2*x + 1
   auto f = [](double x) { return ((x * x * x) + (5 * x * x) + (2 * x) + 1); };
 
-  auto variables = std::make_shared<ifopt::Composite>("variable-sets", false);
-  std::vector<JointPosition::ConstPtr> position_vars;
-  position_vars.reserve(27);
-
-  std::vector<int> x_vals;
-  x_vals.reserve(27);
-  for (int i = -13; i < 14; ++i)
-  {
-    const std::vector<std::string> joint_names{ "x", "y" };
-    Eigen::VectorXd val(2);
-    val << f(i), f(i);
-    auto var = std::make_shared<JointPosition>(val, joint_names, "test_var_" + std::to_string(position_vars.size()));
-    position_vars.push_back(var);
-    variables->AddComponent(var);
-    x_vals.push_back(i);
-  }
-
-  Eigen::VectorXd targets(2);
-  targets << 0, 0;
-  const std::string name("test_joint_accel_cnt");
-  const Eigen::VectorXd coeffs = Eigen::VectorXd::Constant(1, 1);
-  JointAccelConstraint accel_cnt(targets, position_vars, coeffs, name);
-
-  // Must link with variables or GetValues and GetJacobian throw exception.
-  accel_cnt.LinkWithVariables(variables);
-
-  EXPECT_EQ(accel_cnt.GetRows(), targets.size() * static_cast<Eigen::Index>(position_vars.size()));
-  EXPECT_EQ(accel_cnt.GetName(), name);
-  EXPECT_EQ(accel_cnt.GetBounds().size(), targets.size() * static_cast<Eigen::Index>(position_vars.size()));
-
-  Eigen::VectorXd accel_vals = accel_cnt.GetValues();
-  EXPECT_EQ(accel_vals.size(), targets.size() * static_cast<Eigen::Index>(position_vars.size()));
-
-  // Test forward diff
-  for (std::size_t i = 0; i < x_vals.size() - 2; ++i)
-  {
-    for (Eigen::Index j = 0; j < targets.size(); ++j)
-    {
-      const double expected_val = (f(x_vals[i]) - (2.0 * f(x_vals[i + 1])) + f(x_vals[i + 2]));
-      EXPECT_NEAR(accel_vals((static_cast<Eigen::Index>(i) * targets.size()) + j), expected_val, 1e-6);
-    }
-  }
-
-  // Backward diff for last points
-  for (std::size_t i = x_vals.size() - 2; i < x_vals.size(); ++i)
-  {
-    for (Eigen::Index j = 0; j < targets.size(); ++j)
-    {
-      const double expected_val = (f(x_vals[i]) - (2.0 * f(x_vals[i - 1])) + f(x_vals[i - 2]));
-      EXPECT_NEAR(accel_vals((static_cast<Eigen::Index>(i) * targets.size()) + j), expected_val, 1e-6);
-    }
-  }
-
-  ifopt::ConstraintSet::Jacobian jac = accel_cnt.GetJacobian();
-  ifopt::Problem::Jacobian num_jac = trajopt_ifopt::calcNumericalConstraintGradient(*variables, accel_cnt);
-
-  EXPECT_EQ(jac.rows(), static_cast<Eigen::Index>(x_vals.size()) * targets.size());
-  EXPECT_EQ(jac.cols(), static_cast<Eigen::Index>(x_vals.size()) * targets.size());
-
-  for (Eigen::Index i = 0; i < static_cast<Eigen::Index>(x_vals.size()) * targets.size(); ++i)
-  {
-    for (Eigen::Index j = 0; j < static_cast<Eigen::Index>(x_vals.size()) * targets.size(); ++j)
-    {
-      EXPECT_NEAR(jac.coeffRef(i, j), num_jac.coeffRef(i, j), 1e-3);
-    }
-  }
-}
-
-TEST(JointTermsUnit, JointAccelConstraintUnit2)  // NOLINT
-{
-  CONSOLE_BRIDGE_logDebug("JointTermsUnit, JointVelConstraintUnit2");
-
-  // y = x^3 + 5*x^2 + 2*x + 1
-  auto f = [](double x) { return ((x * x * x) + (5 * x * x) + (2 * x) + 1); };
-
   std::vector<std::unique_ptr<Node>> nodes;
   std::vector<std::shared_ptr<const Var>> position_vars;
   position_vars.reserve(27);
@@ -430,15 +265,14 @@ TEST(JointTermsUnit, JointAccelConstraintUnit2)  // NOLINT
     x_vals.push_back(i);
   }
 
-  auto variable_set = std::make_shared<NodesVariables>("joint_trajectory", std::move(nodes));
   auto variables = std::make_shared<ifopt::Composite>("variable-sets", false);
-  variables->AddComponent(variable_set);
+  variables->AddComponent(std::make_shared<NodesVariables>("joint_trajectory", std::move(nodes)));
 
   Eigen::VectorXd targets(2);
   targets << 0, 0;
   const std::string name("test_joint_accel_cnt");
   const Eigen::VectorXd coeffs = Eigen::VectorXd::Constant(1, 1);
-  JointAccelConstraint2 accel_cnt(targets, position_vars, coeffs, name);
+  JointAccelConstraint accel_cnt(targets, position_vars, coeffs, name);
 
   // Must link with variables or GetValues and GetJacobian throw exception.
   accel_cnt.LinkWithVariables(variables);
@@ -493,22 +327,28 @@ TEST(JointTermsUnit, JointAccelConstraintMinimumUnit)  // NOLINT
   // y = x^3 + 5*x^2 + 2*x + 1
   auto f = [](double x) { return ((x * x * x) + (5 * x * x) + (2 * x) + 1); };
 
-  auto variables = std::make_shared<ifopt::Composite>("variable-sets", false);
-  std::vector<JointPosition::ConstPtr> position_vars;
+  std::vector<std::unique_ptr<Node>> nodes;
+  std::vector<std::shared_ptr<const Var>> position_vars;
   position_vars.reserve(4);
 
   std::vector<int> x_vals;
   x_vals.reserve(4);
   for (int i = -13; i < -9; ++i)
   {
+    auto node = std::make_unique<Node>();
+    const std::string var_id = "test_var_" + std::to_string(position_vars.size());
     const std::vector<std::string> joint_names{ "x", "y" };
-    Eigen::VectorXd val(2);
-    val << f(i), f(i);
-    auto var = std::make_shared<JointPosition>(val, joint_names, "test_var_" + std::to_string(position_vars.size()));
-    position_vars.push_back(var);
-    variables->AddComponent(var);
+    std::vector<ifopt::Bounds> bounds(2, ifopt::NoBound);
+    Eigen::VectorXd vals(2);
+    vals << f(i), f(i);
+    position_vars.push_back(node->addVar(var_id, joint_names, vals, bounds));
+    nodes.push_back(std::move(node));
+
     x_vals.push_back(i);
   }
+
+  auto variables = std::make_shared<ifopt::Composite>("variable-sets", false);
+  variables->AddComponent(std::make_shared<NodesVariables>("joint_trajectory", std::move(nodes)));
 
   Eigen::VectorXd targets(2);
   targets << 0, 0;
@@ -569,82 +409,6 @@ TEST(JointTermsUnit, JointJerkConstraintUnit)  // NOLINT
   // y = x^3 + 5*x^2 + 2*x + 1
   auto f = [](double x) { return ((x * x * x) + (5 * x * x) + (2 * x) + 1); };
 
-  auto variables = std::make_shared<ifopt::Composite>("variable-sets", false);
-  std::vector<JointPosition::ConstPtr> position_vars;
-  position_vars.reserve(27);
-
-  std::vector<int> x_vals;
-  x_vals.reserve(27);
-  for (int i = -13; i < 14; ++i)
-  {
-    const std::vector<std::string> joint_names{ "x", "y" };
-    Eigen::VectorXd val(2);
-    val << f(i), f(i);
-    auto var = std::make_shared<JointPosition>(val, joint_names, "test_var_" + std::to_string(position_vars.size()));
-    position_vars.push_back(var);
-    variables->AddComponent(var);
-    x_vals.push_back(i);
-  }
-
-  Eigen::VectorXd targets(2);
-  targets << 0, 0;
-  const std::string name("test_joint_jerk_cnt");
-  const Eigen::VectorXd coeffs = Eigen::VectorXd::Constant(1, 1);
-  JointJerkConstraint jerk_cnt(targets, position_vars, coeffs, name);
-
-  // Must link with variables or GetValues and GetJacobian throw exception.
-  jerk_cnt.LinkWithVariables(variables);
-
-  EXPECT_EQ(jerk_cnt.GetRows(), targets.size() * static_cast<Eigen::Index>(position_vars.size()));
-  EXPECT_EQ(jerk_cnt.GetName(), name);
-  EXPECT_EQ(jerk_cnt.GetBounds().size(), targets.size() * static_cast<Eigen::Index>(position_vars.size()));
-
-  Eigen::VectorXd jerk_vals = jerk_cnt.GetValues();
-  EXPECT_EQ(jerk_vals.size(), targets.size() * static_cast<Eigen::Index>(position_vars.size()));
-
-  // Test forward diff
-  for (std::size_t i = 0; i < x_vals.size() - 3; ++i)
-  {
-    for (Eigen::Index j = 0; j < targets.size(); ++j)
-    {
-      const double expected_val =
-          (-f(x_vals[i]) + (3.0 * f(x_vals[i + 1])) - (3.0 * f(x_vals[i + 2]))) + f(x_vals[i + 3]);
-      EXPECT_NEAR(jerk_vals((static_cast<Eigen::Index>(i) * targets.size()) + j), expected_val, 1e-6);
-    }
-  }
-
-  // Backward diff for last points
-  for (std::size_t i = x_vals.size() - 2; i < x_vals.size(); ++i)
-  {
-    for (Eigen::Index j = 0; j < targets.size(); ++j)
-    {
-      const double expected_val = f(x_vals[i]) - (3.0 * f(x_vals[i - 1])) + (3.0 * f(x_vals[i - 2])) - f(x_vals[i - 3]);
-      EXPECT_NEAR(jerk_vals((static_cast<Eigen::Index>(i) * targets.size()) + j), expected_val, 1e-6);
-    }
-  }
-
-  ifopt::ConstraintSet::Jacobian jac = jerk_cnt.GetJacobian();
-  ifopt::Problem::Jacobian num_jac = trajopt_ifopt::calcNumericalConstraintGradient(*variables, jerk_cnt);
-
-  EXPECT_EQ(jac.rows(), static_cast<Eigen::Index>(x_vals.size()) * targets.size());
-  EXPECT_EQ(jac.cols(), static_cast<Eigen::Index>(x_vals.size()) * targets.size());
-
-  for (Eigen::Index i = 0; i < static_cast<Eigen::Index>(x_vals.size()) * targets.size(); ++i)
-  {
-    for (Eigen::Index j = 0; j < static_cast<Eigen::Index>(x_vals.size()) * targets.size(); ++j)
-    {
-      EXPECT_NEAR(jac.coeffRef(i, j), num_jac.coeffRef(i, j), 1e-3);
-    }
-  }
-}
-
-TEST(JointTermsUnit, JointJerkConstraintUnit2)  // NOLINT
-{
-  CONSOLE_BRIDGE_logDebug("JointTermsUnit, JointJerkConstraintUnit2");
-
-  // y = x^3 + 5*x^2 + 2*x + 1
-  auto f = [](double x) { return ((x * x * x) + (5 * x * x) + (2 * x) + 1); };
-
   std::vector<std::unique_ptr<Node>> nodes;
   std::vector<std::shared_ptr<const Var>> position_vars;
   position_vars.reserve(27);
@@ -665,15 +429,14 @@ TEST(JointTermsUnit, JointJerkConstraintUnit2)  // NOLINT
     x_vals.push_back(i);
   }
 
-  auto variable_set = std::make_shared<NodesVariables>("joint_trajectory", std::move(nodes));
   auto variables = std::make_shared<ifopt::Composite>("variable-sets", false);
-  variables->AddComponent(variable_set);
+  variables->AddComponent(std::make_shared<NodesVariables>("joint_trajectory", std::move(nodes)));
 
   Eigen::VectorXd targets(2);
   targets << 0, 0;
   const std::string name("test_joint_jerk_cnt");
   const Eigen::VectorXd coeffs = Eigen::VectorXd::Constant(1, 1);
-  JointJerkConstraint2 jerk_cnt(targets, position_vars, coeffs, name);
+  JointJerkConstraint jerk_cnt(targets, position_vars, coeffs, name);
 
   // Must link with variables or GetValues and GetJacobian throw exception.
   jerk_cnt.LinkWithVariables(variables);
@@ -729,22 +492,28 @@ TEST(JointTermsUnit, JointJerkConstraintMinimumUnit)  // NOLINT
   // y = x^3 + 5*x^2 + 2*x + 1
   auto f = [](double x) { return ((x * x * x) + (5 * x * x) + (2 * x) + 1); };
 
-  auto variables = std::make_shared<ifopt::Composite>("variable-sets", false);
-  std::vector<JointPosition::ConstPtr> position_vars;
+  std::vector<std::unique_ptr<Node>> nodes;
+  std::vector<std::shared_ptr<const Var>> position_vars;
   position_vars.reserve(6);
 
   std::vector<int> x_vals;
   x_vals.reserve(6);
   for (int i = -13; i < -7; ++i)
   {
+    auto node = std::make_unique<Node>();
+    const std::string var_id = "test_var_" + std::to_string(position_vars.size());
     const std::vector<std::string> joint_names{ "x", "y" };
-    Eigen::VectorXd val(2);
-    val << f(i), f(i);
-    auto var = std::make_shared<JointPosition>(val, joint_names, "test_var_" + std::to_string(position_vars.size()));
-    position_vars.push_back(var);
-    variables->AddComponent(var);
+    std::vector<ifopt::Bounds> bounds(2, ifopt::NoBound);
+    Eigen::VectorXd vals(2);
+    vals << f(i), f(i);
+    position_vars.push_back(node->addVar(var_id, joint_names, vals, bounds));
+    nodes.push_back(std::move(node));
+
     x_vals.push_back(i);
   }
+
+  auto variables = std::make_shared<ifopt::Composite>("variable-sets", false);
+  variables->AddComponent(std::make_shared<NodesVariables>("joint_trajectory", std::move(nodes)));
 
   Eigen::VectorXd targets(2);
   targets << 0, 0;

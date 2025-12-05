@@ -37,8 +37,11 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt_ifopt/constraints/inverse_kinematics_constraint.h>
-#include <trajopt_ifopt/variable_sets/joint_position_variable.h>
+#include <trajopt_ifopt/variable_sets/nodes_variables.h>
+#include <trajopt_ifopt/variable_sets/node.h>
+#include <trajopt_ifopt/variable_sets/var.h>
 #include <trajopt_ifopt/utils/numeric_differentiation.h>
+#include <trajopt_ifopt/utils/ifopt_utils.h>
 
 using namespace trajopt_ifopt;
 using namespace std;
@@ -58,6 +61,7 @@ public:
   tesseract_kinematics::KinematicGroup::ConstPtr kin_group;
   InverseKinematicsInfo::Ptr kinematic_info;
   InverseKinematicsConstraint::Ptr constraint;
+  std::vector<ifopt::Bounds> joint_bounds;
 
   Eigen::Index n_dof{ -1 };
 
@@ -73,17 +77,21 @@ public:
     // Extract necessary kinematic information
     kin_group = env->getKinematicGroup("right_arm");
     n_dof = kin_group->numJoints();
+    joint_bounds = trajopt_ifopt::toBounds(kin_group->getLimits().joint_limits);
 
     kinematic_info =
         std::make_shared<trajopt_ifopt::InverseKinematicsInfo>(kin_group, "base_footprint", "r_gripper_tool_frame");
 
     auto pos = Eigen::VectorXd::Ones(kin_group->numJoints());
-    auto var0 = std::make_shared<trajopt_ifopt::JointPosition>(pos, kin_group->getJointNames(), "Joint_Position_0");
-    auto var1 = std::make_shared<trajopt_ifopt::JointPosition>(pos, kin_group->getJointNames(), "Joint_Position_1");
-    nlp.AddVariableSet(var0);
-    nlp.AddVariableSet(var1);
+    std::vector<std::unique_ptr<trajopt_ifopt::Node>> nodes;
+    nodes.push_back(std::make_unique<trajopt_ifopt::Node>("Joint_Position_0"));
+    auto var0 = nodes.back()->addVar("position", kin_group->getJointNames(), pos, joint_bounds);
+    nodes.push_back(std::make_unique<trajopt_ifopt::Node>("Joint_Position_1"));
+    auto var1 = nodes.back()->addVar("position", kin_group->getJointNames(), pos, joint_bounds);
 
-    // 4) Add constraints
+    nlp.AddVariableSet(std::make_shared<trajopt_ifopt::NodesVariables>("joint_trajectory", std::move(nodes)));
+
+    // Add constraints
     auto target_pose = Eigen::Isometry3d::Identity();
     constraint = std::make_shared<trajopt_ifopt::InverseKinematicsConstraint>(target_pose, kinematic_info, var0, var1);
     nlp.AddConstraintSet(constraint);
@@ -146,8 +154,11 @@ TEST_F(InverseKinematicsConstraintUnit, GetSetBounds)  // NOLINT
   // Check that setting bounds works
   {
     const Eigen::VectorXd pos = Eigen::VectorXd::Ones(n_dof);
-    auto var0 = std::make_shared<trajopt_ifopt::JointPosition>(pos, kin_group->getJointNames(), "Joint_Position_0");
-    auto var1 = std::make_shared<trajopt_ifopt::JointPosition>(pos, kin_group->getJointNames(), "Joint_Position_1");
+    std::vector<std::unique_ptr<trajopt_ifopt::Node>> nodes;
+    nodes.push_back(std::make_unique<trajopt_ifopt::Node>("Joint_Position_0"));
+    auto var0 = nodes.back()->addVar("position", kin_group->getJointNames(), pos, joint_bounds);
+    nodes.push_back(std::make_unique<trajopt_ifopt::Node>("Joint_Position_1"));
+    auto var1 = nodes.back()->addVar("position", kin_group->getJointNames(), pos, joint_bounds);
 
     auto target_pose = Eigen::Isometry3d::Identity();
     auto constraint_2 =

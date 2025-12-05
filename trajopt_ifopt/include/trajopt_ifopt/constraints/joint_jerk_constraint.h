@@ -32,7 +32,6 @@ TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace trajopt_ifopt
 {
-class JointPosition;
 class Var;
 
 /**
@@ -55,7 +54,7 @@ public:
    * @param name Name of the constraint
    */
   JointJerkConstraint(const Eigen::VectorXd& targets,
-                      const std::vector<std::shared_ptr<const JointPosition>>& position_vars,
+                      const std::vector<std::shared_ptr<const Var>>& position_vars,
                       const Eigen::VectorXd& coeffs,
                       const std::string& name = "JointJerk");
 
@@ -68,7 +67,7 @@ public:
    * @param name Name of the constraint
    */
   JointJerkConstraint(const std::vector<ifopt::Bounds>& bounds,
-                      const std::vector<std::shared_ptr<const JointPosition>>& position_vars,
+                      const std::vector<std::shared_ptr<const Var>>& position_vars,
                       const Eigen::VectorXd& coeffs,
                       const std::string& name = "JointJerk");
 
@@ -94,81 +93,6 @@ public:
 private:
   /** @brief The number of joints in a single JointPosition */
   long n_dof_;
-  /** @brief The number of JointPositions passed in */
-  long n_vars_;
-
-  /** @brief The coeff to apply to error and gradient */
-  Eigen::VectorXd coeffs_;
-
-  /** @brief Bounds on the velocities of each joint */
-  std::vector<ifopt::Bounds> bounds_;
-
-  /** @brief Pointers to the vars used by this constraint.
-   *
-   * Do not access them directly. Instead use this->GetVariables()->GetComponent(position_var->GetName())->GetValues()*/
-  std::vector<std::shared_ptr<const JointPosition>> position_vars_;
-  std::unordered_map<std::string, Eigen::Index> index_map_;
-};
-
-/**
- * @brief This creates a joint acceleration constraint and allows bounds to be set on a joint position
- *
- * Joint acceleration is calculated as a = th_2 - 2th_1 + th_0
- */
-class JointJerkConstraint2 : public ifopt::ConstraintSet
-{
-public:
-  using Ptr = std::shared_ptr<JointJerkConstraint>;
-  using ConstPtr = std::shared_ptr<const JointJerkConstraint>;
-
-  /**
-   * @brief Constructs a jerk constraint from these variables, setting the bounds to the target
-   * @param targets Joint Jerk targets (length should be n_dof). Upper and lower bounds are set to this value
-   * @param position_vars Joint positions used to calculate acceleration. These vars are assumed to be continuous and in
-   * order.
-   * @param coeffs The joint coefficients to use as weights. If size of 1 then the values is replicated for each joint.
-   * @param name Name of the constraint
-   */
-  JointJerkConstraint2(const Eigen::VectorXd& targets,
-                       const std::vector<std::shared_ptr<const Var>>& position_vars,
-                       const Eigen::VectorXd& coeffs,
-                       const std::string& name = "JointJerk");
-
-  /**
-   * @brief Constructs a jerk constraint from these variables, setting the bounds to those passed in.
-   * @param bounds Bounds on target joint acceleration (length should be n_dof)
-   * @param position_vars Joint positions used to calculate acceleration. These vars are assumed to be continuous and in
-   * order.
-   * @param coeffs The joint coefficients to use as weights. If size of 1 then the values is replicated for each joint.
-   * @param name Name of the constraint
-   */
-  JointJerkConstraint2(const std::vector<ifopt::Bounds>& bounds,
-                       const std::vector<std::shared_ptr<const JointPosition>>& position_vars,
-                       const Eigen::VectorXd& coeffs,
-                       const std::string& name = "JointJerk");
-
-  /**
-   * @brief Returns the values associated with the constraint. In this case that is the approximate joint jerk.
-   * @return Returns joint jerk. Length is n_dof_ * n_vars
-   */
-  Eigen::VectorXd GetValues() const override;
-
-  /**
-   * @brief  Returns the "bounds" of this constraint. How these are enforced is up to the solver
-   * @return Returns the "bounds" of this constraint
-   */
-  std::vector<ifopt::Bounds> GetBounds() const override;
-
-  /**
-   * @brief Fills the jacobian block associated with the given var_set.
-   * @param var_set Name of the var_set to which the jac_block is associated
-   * @param jac_block Block of the overall jacobian associated with these constraints and the var_set variable
-   */
-  void FillJacobianBlock(std::string var_set, Jacobian& jac_block) const override;
-
-private:
-  /** @brief The number of joints in a single JointPosition */
-  long n_dof_;
 
   /** @brief The number of JointPositions passed in */
   long n_vars_;
@@ -179,9 +103,7 @@ private:
   /** @brief Bounds on the velocities of each joint */
   std::vector<ifopt::Bounds> bounds_;
 
-  /** @brief Pointers to the vars used by this constraint.
-   *
-   * Do not access them directly. Instead use this->GetVariables()->GetComponent(position_var->GetName())->GetValues()*/
+  /** @brief Pointers to the vars used by this constraint. */
   std::vector<std::shared_ptr<const Var>> position_vars_;
 };
 }  // namespace trajopt_ifopt

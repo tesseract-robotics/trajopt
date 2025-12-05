@@ -23,7 +23,7 @@
  */
 
 #include <trajopt_ifopt/utils/trajopt_utils.h>
-#include <trajopt_ifopt/variable_sets/joint_position_variable.h>
+#include <trajopt_ifopt/variable_sets/var.h>
 
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <tesseract_common/joint_state.h>
@@ -31,18 +31,18 @@ TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace trajopt_ifopt
 {
-tesseract_common::TrajArray toTrajArray(const std::vector<trajopt_ifopt::JointPosition::ConstPtr>& joint_positions)
+tesseract_common::TrajArray toTrajArray(const std::vector<std::shared_ptr<const trajopt_ifopt::Var>>& joint_positions)
 {
   tesseract_common::TrajArray traj_array;
   if (!joint_positions.empty())
-    traj_array.resize(static_cast<Eigen::Index>(joint_positions.size()), joint_positions.front()->GetRows());
+    traj_array.resize(static_cast<Eigen::Index>(joint_positions.size()), joint_positions.front()->size());
   for (Eigen::Index i = 0; i < traj_array.rows(); i++)
-    traj_array.row(i) = joint_positions[static_cast<std::size_t>(i)]->GetValues().transpose();
+    traj_array.row(i) = joint_positions[static_cast<std::size_t>(i)]->value().transpose();
   return traj_array;
 }
 
 tesseract_common::JointTrajectory
-toJointTrajectory(const std::vector<trajopt_ifopt::JointPosition::ConstPtr>& joint_positions)
+toJointTrajectory(const std::vector<std::shared_ptr<const trajopt_ifopt::Var>>& joint_positions)
 {
   tesseract_common::JointTrajectory joint_trajectory;
 
@@ -50,7 +50,7 @@ toJointTrajectory(const std::vector<trajopt_ifopt::JointPosition::ConstPtr>& joi
     joint_trajectory.reserve(joint_positions.size());
 
   for (const auto& jp : joint_positions)
-    joint_trajectory.states.emplace_back(jp->GetJointNames(), jp->GetValues());
+    joint_trajectory.states.emplace_back(jp->name(), jp->value());
 
   return joint_trajectory;
 }

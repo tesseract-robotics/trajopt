@@ -47,6 +47,7 @@ TRAJOPT_IGNORE_WARNINGS_POP
 #include <trajopt_ifopt/constraints/collision/continuous_collision_evaluators.h>
 #include <trajopt_ifopt/constraints/cartesian_position_constraint.h>
 #include <trajopt_ifopt/costs/squared_cost.h>
+#include <trajopt_ifopt/utils/ifopt_utils.h>
 
 #include <trajopt_sqp/ifopt_qp_problem.h>
 #include <trajopt_sqp/trajopt_qp_problem.h>
@@ -169,11 +170,7 @@ void runNumericalIKTest2(const trajopt_sqp::QPProblem::Ptr& qp_problem, const En
   const tesseract_scene_graph::StateSolver::Ptr state_solver = env->getStateSolver();
   const ContinuousContactManager::Ptr manager = env->getContinuousContactManager();
   const tesseract_kinematics::JointGroup::ConstPtr manip = env->getJointGroup("left_arm");
-  const tesseract_common::KinematicLimits limits = manip->getLimits();
-
-  std::vector<ifopt::Bounds> bounds;
-  for (Eigen::Index i = 0; i < limits.joint_limits.rows(); ++i)
-    bounds.emplace_back(limits.joint_limits(i, 0), limits.joint_limits(i, 1));
+  const std::vector<ifopt::Bounds> bounds = trajopt_ifopt::toBounds(manip->getLimits().joint_limits);
 
   manager->setActiveCollisionObjects(manip->getActiveLinkNames());
   manager->setDefaultCollisionMargin(0);

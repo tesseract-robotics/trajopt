@@ -30,14 +30,16 @@ TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt_ifopt/constraints/collision/continuous_collision_numerical_constraint.h>
 #include <trajopt_ifopt/constraints/collision/continuous_collision_evaluators.h>
-#include <trajopt_ifopt/variable_sets/joint_position_variable.h>
+#include <trajopt_ifopt/variable_sets/nodes_variables.h>
+#include <trajopt_ifopt/variable_sets/node.h>
+#include <trajopt_ifopt/variable_sets/var.h>
 #include <trajopt_ifopt/constraints/collision/weighted_average_methods.h>
 
 namespace trajopt_ifopt
 {
 ContinuousCollisionNumericalConstraint::ContinuousCollisionNumericalConstraint(
     std::shared_ptr<ContinuousCollisionEvaluator> collision_evaluator,
-    std::array<std::shared_ptr<const JointPosition>, 2> position_vars,
+    std::array<std::shared_ptr<const Var>, 2> position_vars,
     bool vars0_fixed,
     bool vars1_fixed,
     int max_num_cnt,
@@ -53,11 +55,11 @@ ContinuousCollisionNumericalConstraint::ContinuousCollisionNumericalConstraint(
     throw std::runtime_error("position_vars contains a nullptr!");
 
   // Set n_dof_ for convenience
-  n_dof_ = position_vars_[0]->GetRows();
+  n_dof_ = position_vars_[0]->size();
   if (!(n_dof_ > 0))
     throw std::runtime_error("position_vars[0] is empty!");
 
-  if (position_vars_[0]->GetRows() != position_vars_[1]->GetRows())
+  if (position_vars_[0]->size() != position_vars_[1]->size())
     throw std::runtime_error("position_vars are not the same size!");
 
   if (vars0_fixed_ && vars1_fixed_)
@@ -72,7 +74,7 @@ ContinuousCollisionNumericalConstraint::ContinuousCollisionNumericalConstraint(
   {
     // Setting to zeros because snopt sparsity cannot change
     triplet_list_.reserve(static_cast<std::size_t>(bounds_.size()) *
-                          static_cast<std::size_t>(position_vars_[0]->GetRows()));
+                          static_cast<std::size_t>(position_vars_[0]->size()));
 
     for (Eigen::Index i = 0; i < static_cast<Eigen::Index>(bounds_.size()); i++)  // NOLINT
       for (Eigen::Index j = 0; j < n_dof_; j++)
@@ -83,13 +85,11 @@ ContinuousCollisionNumericalConstraint::ContinuousCollisionNumericalConstraint(
 Eigen::VectorXd ContinuousCollisionNumericalConstraint::GetValues() const
 {
   // Get current joint values
-  const Eigen::VectorXd joint_vals0 = this->GetVariables()->GetComponent(position_vars_[0]->GetName())->GetValues();
-  const Eigen::VectorXd joint_vals1 = this->GetVariables()->GetComponent(position_vars_[1]->GetName())->GetValues();
   const double margin_buffer = collision_evaluator_->GetCollisionMarginBuffer();
   Eigen::VectorXd values = Eigen::VectorXd::Constant(static_cast<Eigen::Index>(bounds_.size()), -margin_buffer);
 
-  auto collision_data =
-      collision_evaluator_->CalcCollisionData(joint_vals0, joint_vals1, vars0_fixed_, vars1_fixed_, bounds_.size());
+  auto collision_data = collision_evaluator_->CalcCollisionData(
+      position_vars_[0]->value(), position_vars_[1]->value(), vars0_fixed_, vars1_fixed_, bounds_.size());
 
   if (collision_data->gradient_results_sets.empty())
     return values;
@@ -130,7 +130,7 @@ std::vector<ifopt::Bounds> ContinuousCollisionNumericalConstraint::GetBounds() c
 void ContinuousCollisionNumericalConstraint::FillJacobianBlock(std::string var_set, Jacobian& jac_block) const
 {
   // Only modify the jacobian if this constraint uses var_set
-  if (var_set != position_vars_[0]->GetName() && var_set != position_vars_[1]->GetName())  // NOLINT
+  if (var_set != position_vars_[0]->getParent()->getParent()->GetName())  // NOLINT
     return;
 
   // Setting to zeros because snopt sparsity cannot change
@@ -140,8 +140,8 @@ void ContinuousCollisionNumericalConstraint::FillJacobianBlock(std::string var_s
   const double margin_buffer = collision_evaluator_->GetCollisionMarginBuffer();
 
   // Calculate collisions
-  Eigen::VectorXd joint_vals0 = this->GetVariables()->GetComponent(position_vars_[0]->GetName())->GetValues();
-  const Eigen::VectorXd joint_vals1 = this->GetVariables()->GetComponent(position_vars_[1]->GetName())->GetValues();
+  Eigen::VectorXd joint_vals0 = position_vars_[0]->value();
+  const Eigen::VectorXd joint_vals1 = position_vars_[1]->value();
 
   auto collision_data =
       collision_evaluator_->CalcCollisionData(joint_vals0, joint_vals1, vars0_fixed_, vars1_fixed_, bounds_.size());
