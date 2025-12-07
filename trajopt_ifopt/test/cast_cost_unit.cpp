@@ -45,8 +45,11 @@ TRAJOPT_IGNORE_WARNINGS_POP
 #include <trajopt_ifopt/constraints/collision/continuous_collision_constraint.h>
 #include <trajopt_ifopt/constraints/collision/continuous_collision_evaluators.h>
 #include <trajopt_ifopt/constraints/joint_position_constraint.h>
-#include <trajopt_ifopt/variable_sets/joint_position_variable.h>
+#include <trajopt_ifopt/variable_sets/nodes_variables.h>
+#include <trajopt_ifopt/variable_sets/node.h>
+#include <trajopt_ifopt/variable_sets/var.h>
 #include <trajopt_ifopt/utils/numeric_differentiation.h>
+#include <trajopt_ifopt/utils/ifopt_utils.h>
 
 using namespace trajopt_ifopt;
 using namespace std;
@@ -87,6 +90,7 @@ TEST_F(CastTest, boxes)  // NOLINT
   const tesseract_scene_graph::StateSolver::Ptr state_solver = env->getStateSolver();
   const ContinuousContactManager::Ptr manager = env->getContinuousContactManager();
   const tesseract_kinematics::JointGroup::ConstPtr manip = env->getJointGroup("manipulator");
+  const std::vector<ifopt::Bounds> bounds = trajopt_ifopt::toBounds(manip->getLimits().joint_limits);
 
   manager->setActiveCollisionObjects(manip->getActiveLinkNames());
   manager->setDefaultCollisionMargin(0);
@@ -97,32 +101,34 @@ TEST_F(CastTest, boxes)  // NOLINT
   ifopt::Problem nlp;
 
   // 3) Add Variables
-  std::vector<trajopt_ifopt::JointPosition::ConstPtr> vars;
+  std::vector<std::unique_ptr<trajopt_ifopt::Node>> nodes;
+  std::vector<std::shared_ptr<const trajopt_ifopt::Var>> vars;
   std::vector<Eigen::VectorXd> positions;
   {
+    nodes.push_back(std::make_unique<trajopt_ifopt::Node>("Joint_Position_0"));
     Eigen::VectorXd pos(2);
     pos << -1.9, 0;
     positions.push_back(pos);
-    auto var = std::make_shared<trajopt_ifopt::JointPosition>(pos, manip->getJointNames(), "Joint_Position_0");
-    vars.push_back(var);
-    nlp.AddVariableSet(var);
+    vars.push_back(nodes.back()->addVar("position", manip->getJointNames(), pos, bounds));
   }
+
   {
+    nodes.push_back(std::make_unique<trajopt_ifopt::Node>("Joint_Position_1"));
     Eigen::VectorXd pos(2);
     pos << 0, 1.9;
     positions.push_back(pos);
-    auto var = std::make_shared<trajopt_ifopt::JointPosition>(pos, manip->getJointNames(), "Joint_Position_1");
-    vars.push_back(var);
-    nlp.AddVariableSet(var);
+    vars.push_back(nodes.back()->addVar("position", manip->getJointNames(), pos, bounds));
   }
+
   {
+    nodes.push_back(std::make_unique<trajopt_ifopt::Node>("Joint_Position_2"));
     Eigen::VectorXd pos(2);
     pos << 1.9, 3.8;
     positions.push_back(pos);
-    auto var = std::make_shared<trajopt_ifopt::JointPosition>(pos, manip->getJointNames(), "Joint_Position_2");
-    vars.push_back(var);
-    nlp.AddVariableSet(var);
+    vars.push_back(nodes.back()->addVar("position", manip->getJointNames(), pos, bounds));
   }
+
+  nlp.AddVariableSet(std::make_shared<trajopt_ifopt::NodesVariables>("joint_trajectory", std::move(nodes)));
 
   // Step 3: Setup collision
   const double margin_coeff = 1;
@@ -133,16 +139,14 @@ TEST_F(CastTest, boxes)  // NOLINT
 
   // 4) Add constraints
   {  // Fix start position
-    const std::vector<trajopt_ifopt::JointPosition::ConstPtr> fixed_vars = { vars[0] };
     const Eigen::VectorXd coeffs = Eigen::VectorXd::Constant(manip->numJoints(), 1);
-    auto cnt = std::make_shared<trajopt_ifopt::JointPosConstraint>(positions[0], fixed_vars, coeffs);
+    auto cnt = std::make_shared<trajopt_ifopt::JointPosConstraint>(positions[0], vars[0], coeffs);
     nlp.AddConstraintSet(cnt);
   }
 
   {  // Fix end position
-    const std::vector<trajopt_ifopt::JointPosition::ConstPtr> fixed_vars = { vars[2] };
     const Eigen::VectorXd coeffs = Eigen::VectorXd::Constant(manip->numJoints(), 1);
-    auto cnt = std::make_shared<trajopt_ifopt::JointPosConstraint>(positions[2], fixed_vars, coeffs);
+    auto cnt = std::make_shared<trajopt_ifopt::JointPosConstraint>(positions[2], vars[2], coeffs);
     nlp.AddConstraintSet(cnt);
   }
 
@@ -153,7 +157,7 @@ TEST_F(CastTest, boxes)  // NOLINT
     auto collision_evaluator = std::make_shared<trajopt_ifopt::LVSContinuousCollisionEvaluator>(
         collision_cache, manip, env, trajopt_collision_config);
 
-    const std::array<JointPosition::ConstPtr, 2> position_vars{ vars[i - 1], vars[i] };
+    const std::array<std::shared_ptr<const Var>, 2> position_vars{ vars[i - 1], vars[i] };
     auto cnt = std::make_shared<trajopt_ifopt::ContinuousCollisionConstraint>(
         collision_evaluator, position_vars, vars_fixed[0], vars_fixed[1], 1, true);
     nlp.AddConstraintSet(cnt);

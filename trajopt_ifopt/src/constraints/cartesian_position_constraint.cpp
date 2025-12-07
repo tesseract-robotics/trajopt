@@ -39,6 +39,43 @@ TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace trajopt_ifopt
 {
+CartPosInfo::CartPosInfo(std::shared_ptr<const tesseract_kinematics::JointGroup> manip,
+                         std::string source_frame,
+                         std::string target_frame,
+                         const Eigen::Isometry3d& source_frame_offset,  // NOLINT(modernize-pass-by-value)
+                         const Eigen::Isometry3d& target_frame_offset,  // NOLINT(modernize-pass-by-value)
+                         const Eigen::VectorXi& indices)                // NOLINT(modernize-pass-by-value)
+  : manip(std::move(manip))
+  , source_frame(std::move(source_frame))
+  , target_frame(std::move(target_frame))
+  , source_frame_offset(source_frame_offset)
+  , target_frame_offset(target_frame_offset)
+  , indices(indices)
+{
+  if (!this->manip->hasLinkName(this->source_frame))
+    throw std::runtime_error("CartPosInfo: Source Link name '" + this->source_frame + "' provided does not exist.");
+
+  if (!this->manip->hasLinkName(this->target_frame))
+    throw std::runtime_error("CartPosInfo: Target Link name '" + this->target_frame + "' provided does not exist.");
+
+  if (this->indices.size() > 6)
+    throw std::runtime_error("CartPosInfo: The indices list length cannot be larger than six.");
+
+  if (this->indices.size() == 0)
+    throw std::runtime_error("CartPosInfo: The indices list length is zero.");
+
+  const bool target_active = this->manip->isActiveLinkName(this->target_frame);
+  const bool source_active = this->manip->isActiveLinkName(this->source_frame);
+  if (target_active && source_active)
+    type = Type::BOTH_ACTIVE;
+  else if (target_active)
+    type = Type::TARGET_ACTIVE;
+  else if (source_active)
+    type = Type::SOURCE_ACTIVE;
+  else
+    throw std::runtime_error("CartPosInfo: Target and Source are both static links.");
+}
+
 thread_local tesseract_common::TransformMap CartPosConstraint::transforms_cache;  // NOLINT
 
 CartPosConstraint::CartPosConstraint(CartPosInfo info,

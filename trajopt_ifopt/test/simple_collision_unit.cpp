@@ -39,6 +39,7 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt_ifopt/utils/numeric_differentiation.h>
+#include <trajopt_ifopt/utils/ifopt_utils.h>
 #include <trajopt_ifopt/variable_sets/nodes_variables.h>
 #include <trajopt_ifopt/variable_sets/node.h>
 #include <trajopt_ifopt/variable_sets/var.h>
@@ -84,6 +85,7 @@ TEST_F(SimpleCollisionTest, spheres)  // NOLINT
   auto state_solver = env->getStateSolver();
   DiscreteContactManager::Ptr const manager = env->getDiscreteContactManager();
   const tesseract_kinematics::JointGroup::ConstPtr manip = env->getJointGroup("manipulator");
+  const std::vector<ifopt::Bounds> bounds = trajopt_ifopt::toBounds(manip->getLimits().joint_limits);
 
   manager->setActiveCollisionObjects(manip->getActiveLinkNames());
   manager->setDefaultCollisionMargin(0);
@@ -94,16 +96,17 @@ TEST_F(SimpleCollisionTest, spheres)  // NOLINT
   ifopt::Problem nlp;
 
   // 3) Add Variables
-  std::vector<trajopt_ifopt::JointPosition::ConstPtr> vars;
+  std::vector<std::unique_ptr<trajopt_ifopt::Node>> nodes;
+  std::vector<std::shared_ptr<const trajopt_ifopt::Var>> vars;
   std::vector<Eigen::VectorXd> positions;
   {
+    nodes.push_back(std::make_unique<trajopt_ifopt::Node>("Joint_Position_0"));
     Eigen::VectorXd pos(2);
     pos << -0.75, 0.75;
     positions.push_back(pos);
-    auto var = std::make_shared<trajopt_ifopt::JointPosition>(pos, manip->getJointNames(), "Joint_Position_0");
-    vars.push_back(var);
-    nlp.AddVariableSet(var);
+    vars.push_back(nodes.back()->addVar("position", manip->getJointNames(), pos, bounds));
   }
+  nlp.AddVariableSet(std::make_shared<trajopt_ifopt::NodesVariables>("joint_trajectory", std::move(nodes)));
 
   // Step 3: Setup collision
   const double margin_coeff = 10;
