@@ -28,7 +28,6 @@ Var::Var(Eigen::Index index,
          const std::vector<ifopt::Bounds>& bounds,
          Node* parent)
   : index_(index)
-  , length_(values.size())
   , identifier_(std::move(identifier))
   , names_(std::move(names))
   , values_(values)
@@ -53,7 +52,7 @@ Var::Var(Eigen::Index index,
 const std::string& Var::getIdentifier() const { return identifier_; }
 const Node* Var::getParent() const { return parent_; }
 Eigen::Index Var::getIndex() const { return index_; }
-Eigen::Index Var::size() const { return length_; }
+Eigen::Index Var::size() const { return values_.rows(); }
 const Eigen::VectorXd& Var::value() const { return values_; }
 const std::vector<std::string>& Var::name() const { return names_; }
 const std::vector<ifopt::Bounds>& Var::bounds() const { return bounds_; }
@@ -62,8 +61,8 @@ void Var::incrementIndex(Eigen::Index value) { index_ += value; }
 void Var::setVariables(const Eigen::Ref<const Eigen::VectorXd>& x)
 {
   assert(index_ > -1 && index_ < x.size());
-  assert(length_ > 0 && (index_ + (length_ - 1)) < x.size());
-  values_ = x.segment(index_, length_);
+  assert(values_.rows() > 0 && (index_ + (values_.rows() - 1)) < x.size());
+  values_ = x.segment(index_, values_.rows());
 }
 
 }  // namespace trajopt_ifopt

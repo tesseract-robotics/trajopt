@@ -119,22 +119,6 @@ protected:
 
   /** @brief Notifies the subscribed observers that the node values changes. */
   void UpdateObservers();
-
-  // /**
-  //  * @brief Bounds a specific node variables.
-  //  * @param node_id  The ID of the node to bound.
-  //  * @param deriv    The derivative of the node to set.
-  //  * @param dim      The dimension of the node to bound.
-  //  * @param values   The values to set the bounds to.
-  //  */
-  // void AddBounds(int node_id, Dx deriv, const std::vector<int>& dim,
-  //                const VectorXd& values);
-  // /**
-  //  * @brief Restricts a specific optimization variables.
-  //  * @param node_info The specs of the optimization variables to restrict.
-  //  * @param value     The value to set the bounds to.
-  //  */
-  // void AddBound(const NodeValueInfo& node_info, double value);
 };
 
 }  // namespace trajopt_ifopt
