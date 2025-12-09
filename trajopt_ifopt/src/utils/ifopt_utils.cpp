@@ -47,7 +47,7 @@ bool isBoundsGreaterFinite(const ifopt::Bounds& bounds)
 
 bool isBoundsSmallerFinite(const ifopt::Bounds& bounds)
 {
-  return (std::isfinite(bounds.upper_) && !isFinite(bounds.lower_));
+  return (isFinite(bounds.upper_) && !isFinite(bounds.lower_));
 }
 
 bool isBoundsInEquality(const ifopt::Bounds& bounds)
@@ -70,10 +70,15 @@ std::vector<ifopt::Bounds> toBounds(const Eigen::Ref<const Eigen::VectorXd>& low
                                     const Eigen::Ref<const Eigen::VectorXd>& upper_limits)
 {
   assert(lower_limits.size() == upper_limits.size());  // NOLINT
-  Eigen::MatrixX2d limits(lower_limits.rows(), 2);
-  limits.col(0) = lower_limits;
-  limits.col(1) = upper_limits;
-  return toBounds(limits);
+
+  const auto n = lower_limits.size();
+  std::vector<ifopt::Bounds> bounds;
+  bounds.reserve(static_cast<std::size_t>(n));
+
+  for (Eigen::Index i = 0; i < n; ++i)
+    bounds.emplace_back(lower_limits[i], upper_limits[i]);
+
+  return bounds;
 }
 
 std::vector<Eigen::VectorXd> interpolate(const Eigen::Ref<const Eigen::VectorXd>& start,
@@ -81,55 +86,64 @@ std::vector<Eigen::VectorXd> interpolate(const Eigen::Ref<const Eigen::VectorXd>
                                          Eigen::Index steps)
 {
   assert(start.size() == end.size());  // NOLINT
+  assert(steps >= 2);                  // NOLINT: avoid division by zero
+
   const Eigen::VectorXd delta = (end - start) / static_cast<double>(steps - 1);
   Eigen::VectorXd running = start;
+
   std::vector<Eigen::VectorXd> results;
-  for (Eigen::Index i = 0; i < steps; i++)
+  results.reserve(static_cast<std::size_t>(steps));
+
+  for (Eigen::Index i = 0; i < steps; ++i)
   {
     results.push_back(running);
     running += delta;
   }
+
   return results;
 }
 
 Eigen::VectorXd getClosestValidPoint(const Eigen::Ref<const Eigen::VectorXd>& input,
                                      const std::vector<ifopt::Bounds>& bounds)
 {
-  // Convert Bounds to VectorXds
-  Eigen::VectorXd bound_lower(static_cast<Eigen::Index>(bounds.size()));
-  Eigen::VectorXd bound_upper(static_cast<Eigen::Index>(bounds.size()));
-  for (std::size_t i = 0; i < bounds.size(); i++)
+  assert(input.size() == static_cast<Eigen::Index>(bounds.size()));  // NOLINT
+
+  Eigen::VectorXd lower(input.size());
+  Eigen::VectorXd upper(input.size());
+
+  for (Eigen::Index i = 0; i < input.size(); ++i)
   {
-    bound_lower[static_cast<Eigen::Index>(i)] = bounds[i].lower_;
-    bound_upper[static_cast<Eigen::Index>(i)] = bounds[i].upper_;
+    lower[i] = bounds[static_cast<std::size_t>(i)].lower_;
+    upper[i] = bounds[static_cast<std::size_t>(i)].upper_;
   }
 
-  // If input is outside a bound, force it to the boundary
-  return input.cwiseMax(bound_lower).cwiseMin(bound_upper);
+  return input.cwiseMax(lower).cwiseMin(upper);
 }
 
 Eigen::VectorXd calcBoundsErrors(const Eigen::Ref<const Eigen::VectorXd>& input,
                                  const std::vector<ifopt::Bounds>& bounds)
 {
-  assert(input.rows() == static_cast<Eigen::Index>(bounds.size()));  // NOLINT
+  assert(input.size() == static_cast<Eigen::Index>(bounds.size()));  // NOLINT
 
-  // Convert constraint bounds to VectorXd
-  Eigen::ArrayXd bound_lower(input.rows());
-  Eigen::ArrayXd bound_upper(input.rows());
-  for (std::size_t i = 0; i < bounds.size(); i++)
+  Eigen::ArrayXd lower(input.size());
+  Eigen::ArrayXd upper(input.size());
+  for (Eigen::Index i = 0; i < input.size(); ++i)
   {
-    bound_lower[static_cast<Eigen::Index>(i)] = bounds[i].lower_;
-    bound_upper[static_cast<Eigen::Index>(i)] = bounds[i].upper_;
+    const auto& b = bounds[static_cast<std::size_t>(i)];
+    lower[i] = b.lower_;
+    upper[i] = b.upper_;
   }
 
-  // Values will be negative if they violate the constrain
-  const Eigen::ArrayXd zero = Eigen::ArrayXd::Zero(input.rows());
-  const Eigen::ArrayXd dist_from_lower = (input.array() - bound_lower).min(zero);
-  const Eigen::ArrayXd dist_from_upper = (input.array() - bound_upper).max(zero);
+  const Eigen::ArrayXd diff_lower = input.array() - lower;
+  const Eigen::ArrayXd diff_upper = input.array() - upper;
+
+  const Eigen::ArrayXd dist_from_lower = diff_lower.min(0.0);
+  const Eigen::ArrayXd dist_from_upper = diff_upper.max(0.0);
+
   const Eigen::ArrayXd worst_error =
       (dist_from_upper.abs() > dist_from_lower.abs()).select(dist_from_upper, dist_from_lower);
 
-  return worst_error;
+  return worst_error.matrix();
 }
 
 Eigen::VectorXd calcBoundsViolations(const Eigen::Ref<const Eigen::VectorXd>& input,
@@ -144,25 +158,26 @@ ifopt::VectorXd calcNumericalCostGradient(const double* x, ifopt::Problem& nlp, 
 
   const int n = nlp.GetNumberOfOptimizationVariables();
   ifopt::Problem::Jacobian jac(1, n);
+
   if (nlp.HasCostTerms())
   {
-    const double step_size = epsilon;
-
-    // calculate forward difference by disturbing each optimization variable
     const double g = nlp.EvaluateCostFunction(x);
     std::vector<double> x_new(x, x + n);
+
     for (int i = 0; i < n; ++i)
     {
-      x_new[static_cast<std::size_t>(i)] += step_size;  // disturb
+      x_new[static_cast<std::size_t>(i)] += epsilon;  // disturb
       const double g_new = nlp.EvaluateCostFunction(x_new.data());
-      jac.coeffRef(0, i) = (g_new - g) / step_size;
-      x_new[static_cast<std::size_t>(i)] = x[i];  // reset for next iteration
+      jac.coeffRef(0, i) = (g_new - g) / epsilon;
+      x_new[static_cast<std::size_t>(i)] = x[i];  // reset
     }
   }
+  else
+  {
+    jac.setZero();
+  }
 
-  // Set problem values back to the original values.
   nlp.SetVariables(cache_vars.data());
-
   return jac.row(0).transpose();
 }
 
@@ -175,29 +190,26 @@ ifopt::Jacobian calcNumericalConstraintGradient(const double* x, ifopt::Problem&
   ifopt::Problem::Jacobian jac(m, n);
   jac.reserve(static_cast<Eigen::Index>(m) * static_cast<Eigen::Index>(n));
 
-  if (nlp.GetNumberOfConstraints() > 0)
+  if (nlp.GetNumberOfConstraints() > 0 && n > 0)
   {
-    const double step_size = epsilon;
-
-    // calculate forward difference by disturbing each optimization variable
     const ifopt::Problem::VectorXd g = nlp.EvaluateConstraints(x);
     std::vector<double> x_new(x, x + n);
+    ifopt::Problem::VectorXd delta_g(m);
+
     for (int i = 0; i < n; ++i)
     {
-      x_new[static_cast<std::size_t>(i)] += step_size;  // disturb
+      x_new[static_cast<std::size_t>(i)] += epsilon;
       const ifopt::Problem::VectorXd g_new = nlp.EvaluateConstraints(x_new.data());
-      ifopt::Problem::VectorXd delta_g = (g_new - g) / step_size;
+      delta_g = (g_new - g) / epsilon;
 
       for (int j = 0; j < m; ++j)
-        jac.coeffRef(j, i) = delta_g(j);
+        jac.coeffRef(j, i) = delta_g[j];
 
-      x_new[static_cast<std::size_t>(i)] = x[i];  // reset for next iteration
+      x_new[static_cast<std::size_t>(i)] = x[i];
     }
   }
 
-  // Set problem values back to the original values.
   nlp.SetVariables(cache_vars.data());
-
   return jac;
 }
 
@@ -205,33 +217,41 @@ ifopt::Jacobian calcNumericalConstraintGradient(ifopt::Component& variables,
                                                 ifopt::ConstraintSet& constraint_set,
                                                 double epsilon)
 {
-  Eigen::VectorXd x = variables.GetValues();
-
   const int n = variables.GetRows();
   const int m = constraint_set.GetRows();
+
   ifopt::Problem::Jacobian jac(m, n);
   jac.reserve(static_cast<Eigen::Index>(m) * static_cast<Eigen::Index>(n));
 
-  if (!constraint_set.GetBounds().empty())
+  // Nothing to do if there are no constraints, no variables, or no bounds
+  if (m == 0 || n == 0 || constraint_set.GetBounds().empty())
+    return jac;
+
+  // Cache current variable values
+  Eigen::VectorXd x = variables.GetValues();
+
+  // Base constraint values at x
+  const ifopt::Problem::VectorXd g = constraint_set.GetValues();
+
+  Eigen::VectorXd x_new = x;
+  ifopt::Problem::VectorXd delta_g(m);
+
+  // Forward-difference approximation for each variable
+  for (Eigen::Index i = 0; i < n; ++i)
   {
-    // calculate forward difference by disturbing each optimization variable
-    const ifopt::Problem::VectorXd g = constraint_set.GetValues();
-    Eigen::VectorXd x_new = x;
-    for (Eigen::Index i = 0; i < n; ++i)
-    {
-      x_new(i) = x(i) + epsilon;  // disturb
-      variables.SetVariables(x_new);
-      const ifopt::Problem::VectorXd g_new = constraint_set.GetValues();
-      ifopt::Problem::VectorXd delta_g = (g_new - g) / epsilon;
+    x_new(i) = x(i) + epsilon;  // disturb variable i
+    variables.SetVariables(x_new);
 
-      for (int j = 0; j < m; ++j)
-        jac.coeffRef(j, i) = delta_g(j);
+    const ifopt::Problem::VectorXd g_new = constraint_set.GetValues();
+    delta_g = (g_new - g) / epsilon;
 
-      x_new(i) = x(i);  // reset for next iteration
-    }
+    for (int j = 0; j < m; ++j)
+      jac.coeffRef(j, static_cast<int>(i)) = delta_g(j);
+
+    x_new(i) = x(i);  // reset for next iteration
   }
 
-  // Set problem values back to the original values.
+  // Restore original variables
   variables.SetVariables(x);
 
   return jac;

@@ -46,31 +46,42 @@ SquaredCost::SquaredCost(ifopt::ConstraintSet::Ptr constraint, const Eigen::Ref<
 double SquaredCost::GetCost() const
 {
   Eigen::VectorXd error = calcBoundsErrors(constraint_->GetValues(), constraint_->GetBounds());
-  double const cost = error.transpose() * weights_.asDiagonal() * error;
-  return cost;
+  // cost = sum_i w_i * e_i^2
+  return (weights_.array() * error.array().square()).sum();
 }
 
 void SquaredCost::FillJacobianBlock(std::string var_set, Jacobian& jac_block) const
 {
   // Get a Jacobian block the size necessary for the constraint
-  Jacobian cnt_jac_block;
   int var_size = 0;
   for (const auto& vars : GetVariables()->GetComponents())
   {
     if (vars->GetName() == var_set)  // NOLINT
+    {
       var_size = vars->GetRows();
+      break;
+    }
   }
   if (var_size == 0)  // NOLINT
-    throw std::runtime_error("Unable to find var_set.");
+    throw std::runtime_error("SquaredCost: Unable to find var_set '" + var_set + "'.");
 
-  cnt_jac_block.resize(constraint_->GetRows(), var_size);  // NOLINT
-
-  // Get the Jacobian Block from the constraint
+  // Get the Jacobian block from the constraint
+  Jacobian cnt_jac_block;
+  cnt_jac_block.resize(n_constraints_, var_size);  // NOLINT
   constraint_->FillJacobianBlock(var_set, cnt_jac_block);
 
-  // Apply the chain rule. See doxygen for this class
-  Eigen::VectorXd error = calcBoundsErrors(constraint_->GetValues(), constraint_->GetBounds());
-  jac_block = 2 * error.transpose().sparseView() * weights_.asDiagonal() * cnt_jac_block;  // NOLINT
+  // error = bounds error vector (length = n_constraints_)
+  const Eigen::VectorXd error = calcBoundsErrors(constraint_->GetValues(), constraint_->GetBounds());
+
+  // coeff_i = 2 * w_i * e_i
+  const Eigen::VectorXd coeff = (2.0 * (weights_.array() * error.array())).matrix();
+
+  // Gradient row: 1 x var_size
+  // (dense row vector = coeff^T * J)
+  const Eigen::RowVectorXd grad = coeff.transpose() * cnt_jac_block;
+
+  // Convert to sparse and return
+  jac_block = grad.sparseView();
 }
 
 }  // namespace trajopt_ifopt

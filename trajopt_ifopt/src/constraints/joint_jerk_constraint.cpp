@@ -78,30 +78,38 @@ JointJerkConstraint::JointJerkConstraint(const Eigen::VectorXd& targets,
 
 Eigen::VectorXd JointJerkConstraint::GetValues() const
 {
-  Eigen::VectorXd acceleration(static_cast<std::size_t>(n_dof_) * position_vars_.size());
-  // Forward Diff
-  for (std::size_t ind = 0; ind < position_vars_.size() - 3; ind++)
+  const std::size_t n = position_vars_.size();
+  Eigen::VectorXd jerk(n_dof_ * static_cast<Eigen::Index>(n));
+
+  // Forward diff for timesteps [0, n-4]
+  // j_i = coeffs_ .* (-q_i + 3*q_{i+1} - 3*q_{i+2} + q_{i+3})
+  for (std::size_t i = 0; i < n - 3; ++i)
   {
-    auto vals1 = position_vars_[ind]->value();
-    auto vals2 = position_vars_[ind + 1]->value();
-    auto vals3 = position_vars_[ind + 2]->value();
-    auto vals4 = position_vars_[ind + 3]->value();
-    const Eigen::VectorXd single_step = (3.0 * vals2) - (3.0 * vals3) - vals1 + vals4;
-    acceleration.block(n_dof_ * static_cast<Eigen::Index>(ind), 0, n_dof_, 1) = coeffs_.cwiseProduct(single_step);
+    const Eigen::VectorXd& q0 = position_vars_[i]->value();
+    const Eigen::VectorXd& q1 = position_vars_[i + 1]->value();
+    const Eigen::VectorXd& q2 = position_vars_[i + 2]->value();
+    const Eigen::VectorXd& q3 = position_vars_[i + 3]->value();
+
+    const Eigen::VectorXd single_step = -q0 + 3.0 * q1 - 3.0 * q2 + q3;
+
+    jerk.segment(static_cast<Eigen::Index>(i) * n_dof_, n_dof_) = coeffs_.cwiseProduct(single_step);
   }
 
-  // Backward Diff
-  for (std::size_t ind = position_vars_.size() - 3; ind < position_vars_.size(); ind++)
+  // Backward diff for timesteps [n-3, n-1]
+  // j_i = coeffs_ .* ( q_i - 3*q_{i-1} + 3*q_{i-2} - q_{i-3} )
+  for (std::size_t i = n - 3; i < n; ++i)
   {
-    auto vals1 = position_vars_[ind]->value();
-    auto vals2 = position_vars_[ind - 1]->value();
-    auto vals3 = position_vars_[ind - 2]->value();
-    auto vals4 = position_vars_[ind - 3]->value();
-    const Eigen::VectorXd single_step = vals1 - (3.0 * vals2) + (3.0 * vals3) - vals4;
-    acceleration.block(n_dof_ * static_cast<Eigen::Index>(ind), 0, n_dof_, 1) = coeffs_.cwiseProduct(single_step);
+    const Eigen::VectorXd& q0 = position_vars_[i]->value();      // q_i
+    const Eigen::VectorXd& q1 = position_vars_[i - 1]->value();  // q_{i-1}
+    const Eigen::VectorXd& q2 = position_vars_[i - 2]->value();  // q_{i-2}
+    const Eigen::VectorXd& q3 = position_vars_[i - 3]->value();  // q_{i-3}
+
+    const Eigen::VectorXd single_step = q0 - 3.0 * q1 + 3.0 * q2 - q3;
+
+    jerk.segment(static_cast<Eigen::Index>(i) * n_dof_, n_dof_) = coeffs_.cwiseProduct(single_step);
   }
 
-  return acceleration;
+  return jerk;
 }
 
 // Set the limits on the constraint values (in this case just the targets)
@@ -114,71 +122,57 @@ void JointJerkConstraint::FillJacobianBlock(std::string var_set, Jacobian& jac_b
   if (var_set != position_vars_.front()->getParent()->getParent()->GetName())
     return;
 
-  // Reserve enough room in the sparse matrix
-  std::vector<Eigen::Triplet<double>> triplet_list;
-  triplet_list.reserve(static_cast<std::size_t>(n_dof_ * 4));
+  std::vector<Eigen::Triplet<double>> triplets;
+  // Each timestep depends on 4 positions → 4 nonzeros per DOF
+  triplets.reserve(static_cast<std::size_t>(4 * n_dof_ * n_vars_));
 
-  // jac block will be (n_vars-1)*n_dof x n_dof
-  Eigen::Index prev_idx3 = -1;
-  Eigen::Index prev_idx2 = -1;
-  Eigen::Index prev_idx1 = -1;
-  Eigen::Index idx = -1;
-  Eigen::Index post_idx1 = -1;
-  Eigen::Index post_idx2 = -1;
-  Eigen::Index post_idx3 = -1;
+  const std::size_t n = position_vars_.size();
 
-  for (std::size_t i = 0; i < n_vars_; i++)
+  for (std::size_t i = 0; i < n; ++i)
   {
-    idx = position_vars_[i]->getIndex();
+    const Eigen::Index row_offset = static_cast<Eigen::Index>(i) * n_dof_;
 
-    if (i > 0)
-      prev_idx1 = position_vars_[i - 1]->getIndex();
-
-    if (i > 1)
-      prev_idx2 = position_vars_[i - 2]->getIndex();
-
-    if (i > 2)
-      prev_idx3 = position_vars_[i - 3]->getIndex();
-
-    if (i < n_vars_ - 1)
-      post_idx1 = position_vars_[i + 1]->getIndex();
-
-    if (i < n_vars_ - 2)
-      post_idx2 = position_vars_[i + 2]->getIndex();
-
-    if (i < n_vars_ - 3)
-      post_idx3 = position_vars_[i + 3]->getIndex();
-
-    for (int j = 0; j < n_dof_; j++)
+    if (i < n - 3)
     {
-      // The last two variable are special and only effect the last two constraints.
-      // Everything else effects 3
-      if (i < n_vars_ - 3)
-        triplet_list.emplace_back(idx + j, idx + j, -1.0 * coeffs_[j]);
+      // Forward diff: j_i = c * (-q_i + 3*q_{i+1} - 3*q_{i+2} + q_{i+3})
+      const Eigen::Index col_i = position_vars_[i]->getIndex();
+      const Eigen::Index col_ip1 = position_vars_[i + 1]->getIndex();
+      const Eigen::Index col_ip2 = position_vars_[i + 2]->getIndex();
+      const Eigen::Index col_ip3 = position_vars_[i + 3]->getIndex();
 
-      if (i > 0 && i < n_vars_ - 2)
-        triplet_list.emplace_back(prev_idx1 + j, idx + j, 3.0 * coeffs_[j]);
+      for (Eigen::Index k = 0; k < n_dof_; ++k)
+      {
+        const double c = coeffs_[k];
+        const Eigen::Index row = row_offset + k;
 
-      if (i > 1 && i < n_vars_ - 1)
-        triplet_list.emplace_back(prev_idx2 + j, idx + j, -3.0 * coeffs_[j]);
+        triplets.emplace_back(row, col_i + k, -c);          // ∂j_i/∂q_i
+        triplets.emplace_back(row, col_ip1 + k, 3.0 * c);   // ∂j_i/∂q_{i+1}
+        triplets.emplace_back(row, col_ip2 + k, -3.0 * c);  // ∂j_i/∂q_{i+2}
+        triplets.emplace_back(row, col_ip3 + k, c);         // ∂j_i/∂q_{i+3}
+      }
+    }
+    else
+    {
+      // Backward diff: j_i = c * (q_i - 3*q_{i-1} + 3*q_{i-2} - q_{i-3})
+      const Eigen::Index col_i = position_vars_[i]->getIndex();
+      const Eigen::Index col_im1 = position_vars_[i - 1]->getIndex();
+      const Eigen::Index col_im2 = position_vars_[i - 2]->getIndex();
+      const Eigen::Index col_im3 = position_vars_[i - 3]->getIndex();
 
-      if (i > 2)
-        triplet_list.emplace_back(prev_idx3 + j, idx + j, 1.0 * coeffs_[j]);
+      for (Eigen::Index k = 0; k < n_dof_; ++k)
+      {
+        const double c = coeffs_[k];
+        const Eigen::Index row = row_offset + k;
 
-      if (i >= (n_vars_ - 3) && i <= (n_vars_ - 1))
-        triplet_list.emplace_back(idx + j, idx + j, 1.0 * coeffs_[j]);
-
-      if (i >= (n_vars_ - 4) && i <= (n_vars_ - 2))
-        triplet_list.emplace_back(post_idx1 + j, idx + j, -3.0 * coeffs_[j]);
-
-      if (i >= (n_vars_ - 5) && i <= (n_vars_ - 3))
-        triplet_list.emplace_back(post_idx2 + j, idx + j, 3.0 * coeffs_[j]);
-
-      if (i >= (n_vars_ - 6) && i <= (n_vars_ - 4))
-        triplet_list.emplace_back(post_idx3 + j, idx + j, -1.0 * coeffs_[j]);
+        triplets.emplace_back(row, col_i + k, c);           // ∂j_i/∂q_i
+        triplets.emplace_back(row, col_im1 + k, -3.0 * c);  // ∂j_i/∂q_{i-1}
+        triplets.emplace_back(row, col_im2 + k, 3.0 * c);   // ∂j_i/∂q_{i-2}
+        triplets.emplace_back(row, col_im3 + k, -c);        // ∂j_i/∂q_{i-3}
+      }
     }
   }
-  jac_block.setFromTriplets(triplet_list.begin(), triplet_list.end());  // NOLINT
+
+  jac_block.setFromTriplets(triplets.begin(), triplets.end());  // NOLINT
 }
 
 }  // namespace trajopt_ifopt
