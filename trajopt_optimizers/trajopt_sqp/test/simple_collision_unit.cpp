@@ -83,13 +83,7 @@ public:
     bounds_ = std::vector<ifopt::Bounds>(3, ifopt::BoundSmallerZero);
   }
 
-  Eigen::VectorXd GetValues() const final
-  {
-    // Get current joint values
-    // const Eigen::VectorXd joint_vals = this->GetVariables()->GetComponent(position_var_->GetName())->GetValues();
-
-    return CalcValues(position_var_->value());
-  }
+  Eigen::VectorXd GetValues() const final { return CalcValues(position_var_->value()); }
 
   // Set the limits on the constraint values
   std::vector<ifopt::Bounds> GetBounds() const final { return bounds_; }
@@ -99,9 +93,6 @@ public:
     // Only modify the jacobian if this constraint uses var_set
     if (var_set != position_var_->getParent()->getParent()->GetName())  // NOLINT
       return;
-
-    // Get current joint values
-    // const VectorXd joint_vals = this->GetVariables()->GetComponent(position_var_->GetName())->GetValues();
 
     CalcJacobianBlock(position_var_->value(), jac_block);  // NOLINT
   }
@@ -141,9 +132,6 @@ public:
 
   void CalcJacobianBlock(const Eigen::Ref<const Eigen::VectorXd>& joint_vals, Jacobian& jac_block) const
   {
-    // Reserve enough room in the sparse matrix
-    // jac_block.reserve(n_dof_ * 3);
-
     // Calculate collisions
     const trajopt_common::CollisionCacheData::ConstPtr cdata =
         collision_evaluator_->CalcCollisions(joint_vals, bounds_.size());
