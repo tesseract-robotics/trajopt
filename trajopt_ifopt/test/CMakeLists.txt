@@ -66,5 +66,5 @@ add_gtest(${PROJECT_NAME}_inverse_kinematics_constraint_unit inverse_kinematics_
 add_gtest(${PROJECT_NAME}_joint_terms_unit joint_terms_unit.cpp)
 
 add_gtest(${PROJECT_NAME}_utils_unit utils_unit.cpp)
-# add_gtest(${PROJECT_NAME}_variable_sets_unit variable_sets_unit.cpp)
+add_gtest(${PROJECT_NAME}_variable_sets_unit variable_sets_unit.cpp)
 add_gtest(${PROJECT_NAME}_simple_collision_unit simple_collision_unit.cpp)
