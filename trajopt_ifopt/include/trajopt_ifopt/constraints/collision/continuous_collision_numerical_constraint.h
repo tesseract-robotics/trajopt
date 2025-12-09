@@ -32,7 +32,7 @@ TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace trajopt_ifopt
 {
-class JointPosition;
+class Var;
 class ContinuousCollisionEvaluator;
 
 class ContinuousCollisionNumericalConstraint : public ifopt::ConstraintSet
@@ -51,7 +51,7 @@ public:
    * @param name
    */
   ContinuousCollisionNumericalConstraint(std::shared_ptr<ContinuousCollisionEvaluator> collision_evaluator,
-                                         std::array<std::shared_ptr<const JointPosition>, 2> position_vars,
+                                         std::array<std::shared_ptr<const Var>, 2> position_vars,
                                          bool vars0_fixed,
                                          bool vars1_fixed,
                                          int max_num_cnt = 1,
@@ -102,11 +102,8 @@ private:
   /** @brief Bounds on the constraint value. Default: std::vector<Bounds>(1, ifopt::BoundSmallerZero) */
   std::vector<ifopt::Bounds> bounds_;
 
-  /**
-   * @brief Pointers to the vars used by this constraint.
-   * Do not access them directly. Instead use this->GetVariables()->GetComponent(position_var->GetName())->GetValues()
-   */
-  std::array<std::shared_ptr<const JointPosition>, 2> position_vars_;
+  /** @brief Pointers to the vars used by this constraint. */
+  std::array<std::shared_ptr<const Var>, 2> position_vars_;
 
   bool vars0_fixed_{ false };
   bool vars1_fixed_{ false };

@@ -924,18 +924,19 @@ OptStatus BasicTrustRegionSQP::optimize()
         {
           if (results_.cnt_viols[idx] > param_.cnt_tolerance)
           {
-            LOG_INFO("Not all constraints are satisfied. Increasing constraint penalties for %s", CSTR(cnt_names[idx]));
+            LOG_DEBUG("Not all constraints are satisfied. Increasing constraint penalties for %s",
+                      CSTR(cnt_names[idx]));
             merit_error_coeffs[idx] *= param_.merit_coeff_increase_ratio;
           }
         }
       }
       else
       {
-        LOG_INFO("Not all constraints are satisfied. Increasing constraint penalties uniformly");
+        LOG_DEBUG("Not all constraints are satisfied. Increasing constraint penalties uniformly");
         for (auto& merit_error_coeff : merit_error_coeffs)
           merit_error_coeff *= param_.merit_coeff_increase_ratio;
       }
-      LOG_INFO("New merit_error_coeffs: %s", CSTR(merit_error_coeffs));
+      LOG_DEBUG("New merit_error_coeffs: %s", CSTR(merit_error_coeffs));
       param_.trust_box_size = fmax(param_.trust_box_size, param_.min_trust_box_size / param_.trust_shrink_ratio * 1.5);
     }
   } /* merit adjustment loop */

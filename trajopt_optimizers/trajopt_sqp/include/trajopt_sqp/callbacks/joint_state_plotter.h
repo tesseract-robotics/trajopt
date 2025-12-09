@@ -62,18 +62,18 @@ public:
    * @brief Add a variable set to be plotted
    * @param joint_position JointPosition variable to be plotted. They should all be the same size
    */
-  void addVariableSet(const std::shared_ptr<const trajopt_ifopt::JointPosition>& joint_position);
+  void addVariableSet(const std::shared_ptr<const trajopt_ifopt::Var>& joint_position);
 
   /**
    * @brief Adds multiple variable sets to be plotted
    * @param joint_positions JointPosition variables to be plotted. They should all be the same size
    */
-  void addVariableSet(const std::vector<std::shared_ptr<const trajopt_ifopt::JointPosition>>& joint_positions);
+  void addVariableSet(const std::vector<std::shared_ptr<const trajopt_ifopt::Var>>& joint_positions);
 
   bool execute(const QPProblem& problem, const SQPResults& sqp_results) override;
 
 protected:
-  std::vector<std::shared_ptr<const trajopt_ifopt::JointPosition>> joint_positions_;
+  std::vector<std::shared_ptr<const trajopt_ifopt::Var>> joint_positions_;
   std::shared_ptr<tesseract_visualization::Visualization> plotter_;
   std::unique_ptr<tesseract_scene_graph::StateSolver> state_solver_;
 };

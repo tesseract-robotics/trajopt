@@ -22,7 +22,9 @@
  * limitations under the License.
  */
 #include <trajopt_ifopt/constraints/joint_position_constraint.h>
-#include <trajopt_ifopt/variable_sets/joint_position_variable.h>
+#include <trajopt_ifopt/variable_sets/nodes_variables.h>
+#include <trajopt_ifopt/variable_sets/node.h>
+#include <trajopt_ifopt/variable_sets/var.h>
 
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <console_bridge/console.h>
@@ -30,19 +32,17 @@ TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace trajopt_ifopt
 {
-JointPosConstraint::JointPosConstraint(const Eigen::VectorXd& targets,
-                                       const std::vector<std::shared_ptr<const JointPosition>>& position_vars,
+JointPosConstraint::JointPosConstraint(const Eigen::VectorXd& target,
+                                       const std::shared_ptr<const Var>& position_var,
                                        const Eigen::VectorXd& coeffs,
                                        const std::string& name)
-  : ifopt::ConstraintSet(static_cast<int>(targets.size()) * static_cast<int>(position_vars.size()), name)
-  , n_dof_(targets.size())
-  , n_vars_(static_cast<long>(position_vars.size()))
+  : ifopt::ConstraintSet(static_cast<int>(target.size()), name)
+  , n_dof_(target.size())
   , coeffs_(coeffs)
-  , position_vars_(position_vars)
+  , position_var_(position_var)
 {
   // Set the n_dof and n_vars for convenience
   assert(n_dof_ > 0);
-  assert(n_vars_ > 0);
 
   if (!(coeffs_.array() > 0).all())
     throw std::runtime_error("JointPosConstraint, coeff must be greater than zero.");
@@ -54,40 +54,35 @@ JointPosConstraint::JointPosConstraint(const Eigen::VectorXd& targets,
     throw std::runtime_error("JointPosConstraint, coeff must be the same size of the joint postion.");
 
   // Check and make sure the targets size aligns with the vars passed in
-  for (const auto& position_var : position_vars)
-  {
-    if (targets.size() != position_var->GetRows())
-      CONSOLE_BRIDGE_logError("Targets size does not align with variables provided");
-  }
+  if (target.size() != position_var->size())
+    CONSOLE_BRIDGE_logError("Targets size does not align with variables provided");
 
   // Set the bounds to the input targets
   std::vector<ifopt::Bounds> bounds(static_cast<std::size_t>(GetRows()));
   // All of the positions should be exactly at their targets
-  for (long j = 0; j < n_vars_; j++)
+
+  for (long i = 0; i < n_dof_; i++)
   {
-    for (long i = 0; i < n_dof_; i++)
-    {
-      const double w_target = coeffs_[i] * targets[i];
-      bounds[static_cast<std::size_t>(i + j * n_dof_)] = ifopt::Bounds(w_target, w_target);
-    }
+    const double w_target = coeffs_[i] * target[i];
+    bounds[static_cast<std::size_t>(i)] = ifopt::Bounds(w_target, w_target);
   }
+
   bounds_ = bounds;
 }
 
 JointPosConstraint::JointPosConstraint(const std::vector<ifopt::Bounds>& bounds,
-                                       const std::vector<std::shared_ptr<const JointPosition>>& position_vars,
+                                       const std::shared_ptr<const Var>& position_var,
                                        const Eigen::VectorXd& coeffs,
                                        const std::string& name)
-  : ifopt::ConstraintSet(static_cast<int>(bounds.size()) * static_cast<int>(position_vars.size()), name)
+  : ifopt::ConstraintSet(static_cast<int>(bounds.size()), name)
   , coeffs_(coeffs)
   , bounds_(bounds)
-  , position_vars_(position_vars)
+  , position_var_(position_var)
 {
   // Set the n_dof and n_vars for convenience
   n_dof_ = static_cast<long>(bounds_.size());
-  n_vars_ = static_cast<long>(position_vars_.size());
+
   assert(n_dof_ > 0);
-  assert(n_vars_ > 0);
 
   if (!(coeffs_.array() > 0).all())
     throw std::runtime_error("JointPosConstraint, coeff must be greater than zero.");
@@ -99,45 +94,30 @@ JointPosConstraint::JointPosConstraint(const std::vector<ifopt::Bounds>& bounds,
     throw std::runtime_error("JointPosConstraint, coeff must be the same size of the joint postion.");
 
   // Check and make sure the targets size aligns with the vars passed in
-  for (auto& position_var : position_vars_)
-  {
-    if (static_cast<long>(bounds_.size()) != position_var->GetRows())
-      CONSOLE_BRIDGE_logError("Bounds size does not align with variables provided");
-  }
+  if (static_cast<long>(bounds_.size()) != position_var_->size())
+    CONSOLE_BRIDGE_logError("Bounds size does not align with variables provided");
 }
 
-Eigen::VectorXd JointPosConstraint::GetValues() const
-{
-  // Get the correct variables
-  Eigen::VectorXd values(static_cast<std::size_t>(n_dof_ * n_vars_));
-  for (const auto& position_var : position_vars_)
-    values << coeffs_.cwiseProduct(this->GetVariables()->GetComponent(position_var->GetName())->GetValues());
-
-  return values;
-}
+Eigen::VectorXd JointPosConstraint::GetValues() const { return coeffs_.cwiseProduct(position_var_->value()); }
 
 // Set the limits on the constraint values
 std::vector<ifopt::Bounds> JointPosConstraint::GetBounds() const { return bounds_; }
 
 void JointPosConstraint::FillJacobianBlock(std::string var_set, Jacobian& jac_block) const
 {
+  // Check if this constraint use the var_set
+  // Only modify the jacobian if this constraint uses var_set
+  if (var_set != position_var_->getParent()->getParent()->GetName())
+    return;
+
+  // Reserve enough room in the sparse matrix
+  std::vector<Eigen::Triplet<double>> triplet_list;
+  triplet_list.reserve(static_cast<std::size_t>(n_dof_));
+
   // Loop over all of the variables this constraint uses
-  for (long i = 0; i < n_vars_; i++)  // NOLINT
-  {
-    // Only modify the jacobian if this constraint uses var_set
-    if (var_set == position_vars_[static_cast<std::size_t>(i)]->GetName())  // NOLINT
-    {
-      // Reserve enough room in the sparse matrix
-      std::vector<Eigen::Triplet<double>> triplet_list;
-      triplet_list.reserve(static_cast<std::size_t>(n_dof_));
+  for (int j = 0; j < n_dof_; j++)  // NOLINT
+    triplet_list.emplace_back(j, position_var_->getIndex() + j, coeffs_[j] * 1.0);
 
-      // Each jac_block will be for a single variable but for all timesteps. Therefore we must index down to the
-      // correct timestep for this variable
-      for (int j = 0; j < n_dof_; j++)  // NOLINT
-        triplet_list.emplace_back(i * n_dof_ * 0 + j, j, coeffs_[j] * 1.0);
-
-      jac_block.setFromTriplets(triplet_list.begin(), triplet_list.end());  // NOLINT
-    }
-  }
+  jac_block.setFromTriplets(triplet_list.begin(), triplet_list.end());  // NOLINT
 }
 }  // namespace trajopt_ifopt

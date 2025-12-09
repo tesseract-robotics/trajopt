@@ -32,7 +32,7 @@ TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace trajopt_ifopt
 {
-class JointPosition;
+class Var;
 
 /**
  * @brief This creates a joint acceleration constraint and allows bounds to be set on a joint position
@@ -54,7 +54,7 @@ public:
    * @param name Name of the constraint
    */
   JointJerkConstraint(const Eigen::VectorXd& targets,
-                      const std::vector<std::shared_ptr<const JointPosition>>& position_vars,
+                      const std::vector<std::shared_ptr<const Var>>& position_vars,
                       const Eigen::VectorXd& coeffs,
                       const std::string& name = "JointJerk");
 
@@ -67,7 +67,7 @@ public:
    * @param name Name of the constraint
    */
   JointJerkConstraint(const std::vector<ifopt::Bounds>& bounds,
-                      const std::vector<std::shared_ptr<const JointPosition>>& position_vars,
+                      const std::vector<std::shared_ptr<const Var>>& position_vars,
                       const Eigen::VectorXd& coeffs,
                       const std::string& name = "JointJerk");
 
@@ -93,6 +93,7 @@ public:
 private:
   /** @brief The number of joints in a single JointPosition */
   long n_dof_;
+
   /** @brief The number of JointPositions passed in */
   long n_vars_;
 
@@ -102,11 +103,8 @@ private:
   /** @brief Bounds on the velocities of each joint */
   std::vector<ifopt::Bounds> bounds_;
 
-  /** @brief Pointers to the vars used by this constraint.
-   *
-   * Do not access them directly. Instead use this->GetVariables()->GetComponent(position_var->GetName())->GetValues()*/
-  std::vector<std::shared_ptr<const JointPosition>> position_vars_;
-  std::unordered_map<std::string, Eigen::Index> index_map_;
+  /** @brief Pointers to the vars used by this constraint. */
+  std::vector<std::shared_ptr<const Var>> position_vars_;
 };
 }  // namespace trajopt_ifopt
 #endif

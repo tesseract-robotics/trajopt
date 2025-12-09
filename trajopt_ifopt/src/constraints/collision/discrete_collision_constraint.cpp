@@ -31,48 +31,36 @@ TRAJOPT_IGNORE_WARNINGS_POP
 #include <trajopt_ifopt/constraints/collision/discrete_collision_constraint.h>
 #include <trajopt_ifopt/constraints/collision/discrete_collision_evaluators.h>
 #include <trajopt_ifopt/constraints/collision/weighted_average_methods.h>
-#include <trajopt_ifopt/variable_sets/joint_position_variable.h>
+#include <trajopt_ifopt/variable_sets/nodes_variables.h>
+#include <trajopt_ifopt/variable_sets/node.h>
+#include <trajopt_ifopt/variable_sets/var.h>
+
 #include <trajopt_ifopt/utils/numeric_differentiation.h>
 
 namespace trajopt_ifopt
 {
 DiscreteCollisionConstraint::DiscreteCollisionConstraint(
     std::shared_ptr<DiscreteCollisionEvaluator> collision_evaluator,
-    std::shared_ptr<const JointPosition> position_var,
+    std::shared_ptr<const Var> position_var,
     int max_num_cnt,
     bool fixed_sparsity,
     const std::string& name)
   : ifopt::ConstraintSet(max_num_cnt, name)
   , position_var_(std::move(position_var))
   , collision_evaluator_(std::move(collision_evaluator))
+  , fixed_sparsity_(fixed_sparsity)
 {
   // Set n_dof_ for convenience
-  n_dof_ = position_var_->GetRows();
+  n_dof_ = position_var_->size();
   assert(n_dof_ > 0);
 
   if (max_num_cnt < 1)
     throw std::runtime_error("max_num_cnt must be greater than zero!");
 
   bounds_ = std::vector<ifopt::Bounds>(static_cast<std::size_t>(max_num_cnt), ifopt::BoundSmallerZero);
-
-  // Setting to zeros because snopt sparsity cannot change
-  if (fixed_sparsity)
-  {
-    triplet_list_.reserve(static_cast<std::size_t>(bounds_.size()) *
-                          static_cast<std::size_t>(position_var_->GetRows()));
-    for (Eigen::Index i = 0; i < static_cast<Eigen::Index>(bounds_.size()); i++)
-      for (Eigen::Index j = 0; j < n_dof_; j++)
-        triplet_list_.emplace_back(i, j, 0);
-  }
 }
 
-Eigen::VectorXd DiscreteCollisionConstraint::GetValues() const
-{
-  // Get current joint values
-  const Eigen::VectorXd joint_vals = this->GetVariables()->GetComponent(position_var_->GetName())->GetValues();
-
-  return CalcValues(joint_vals);
-}
+Eigen::VectorXd DiscreteCollisionConstraint::GetValues() const { return CalcValues(position_var_->value()); }
 
 // Set the limits on the constraint values
 std::vector<ifopt::Bounds> DiscreteCollisionConstraint::GetBounds() const { return bounds_; }
@@ -80,13 +68,10 @@ std::vector<ifopt::Bounds> DiscreteCollisionConstraint::GetBounds() const { retu
 void DiscreteCollisionConstraint::FillJacobianBlock(std::string var_set, Jacobian& jac_block) const
 {
   // Only modify the jacobian if this constraint uses var_set
-  if (var_set != position_var_->GetName())  // NOLINT
+  if (var_set != position_var_->getParent()->getParent()->GetName())  // NOLINT
     return;
 
-  // Get current joint values
-  const VectorXd joint_vals = this->GetVariables()->GetComponent(position_var_->GetName())->GetValues();
-
-  CalcJacobianBlock(joint_vals, jac_block);  // NOLINT
+  CalcJacobianBlock(position_var_->value(), jac_block);  // NOLINT
 }
 
 Eigen::VectorXd DiscreteCollisionConstraint::CalcValues(const Eigen::Ref<const Eigen::VectorXd>& joint_vals) const
@@ -116,9 +101,23 @@ void DiscreteCollisionConstraint::SetBounds(const std::vector<ifopt::Bounds>& bo
   bounds_ = bounds;
 }
 
+void DiscreteCollisionConstraint::initSparsity() const
+{
+  if (!fixed_sparsity_)
+    return;
+
+  triplet_list_.reserve(static_cast<std::size_t>(bounds_.size()) * static_cast<std::size_t>(position_var_->size()));
+  for (Eigen::Index i = 0; i < static_cast<Eigen::Index>(bounds_.size()); i++)
+    for (Eigen::Index j = 0; j < n_dof_; j++)
+      triplet_list_.emplace_back(i, position_var_->getIndex() + j, 0);
+}
+
 void DiscreteCollisionConstraint::CalcJacobianBlock(const Eigen::Ref<const Eigen::VectorXd>& joint_vals,
                                                     Jacobian& jac_block) const
 {
+  // Setting to zeros because snopt sparsity cannot change
+  std::call_once(init_flag_, &DiscreteCollisionConstraint::initSparsity, this);
+
   // Setting to zeros because snopt sparsity cannot change
   if (!triplet_list_.empty())                                               // NOLINT
     jac_block.setFromTriplets(triplet_list_.begin(), triplet_list_.end());  // NOLINT
@@ -133,11 +132,11 @@ void DiscreteCollisionConstraint::CalcJacobianBlock(const Eigen::Ref<const Eigen
   for (std::size_t i = 0; i < cnt; ++i)
   {
     const trajopt_common::GradientResultsSet& r = collision_data->gradient_results_sets[i];
-    Eigen::VectorXd grad_vec = getWeightedAvgGradientT0(r, r.getMaxErrorWithBufferT0(), position_var_->GetRows());
+    Eigen::VectorXd grad_vec = getWeightedAvgGradientT0(r, r.getMaxErrorWithBufferT0(), position_var_->size());
 
     // Collision is 1 x n_dof
     for (int j = 0; j < n_dof_; j++)
-      jac_block.coeffRef(static_cast<int>(i), j) = -1.0 * grad_vec[j];
+      jac_block.coeffRef(static_cast<int>(i), position_var_->getIndex() + j) = -1.0 * grad_vec[j];
   }
 }
 

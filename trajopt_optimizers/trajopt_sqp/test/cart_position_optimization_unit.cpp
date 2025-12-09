@@ -46,9 +46,12 @@ TRAJOPT_IGNORE_WARNINGS_POP
 #include <trajopt_sqp/osqp_eigen_solver.h>
 
 #include <trajopt_ifopt/constraints/cartesian_position_constraint.h>
-#include <trajopt_ifopt/variable_sets/joint_position_variable.h>
+#include <trajopt_ifopt/variable_sets/nodes_variables.h>
+#include <trajopt_ifopt/variable_sets/node.h>
+#include <trajopt_ifopt/variable_sets/var.h>
 #include <trajopt_ifopt/costs/squared_cost.h>
 #include <trajopt_ifopt/utils/trajopt_utils.h>
+#include <trajopt_ifopt/utils/ifopt_utils.h>
 
 const bool DEBUG = false;
 
@@ -88,6 +91,8 @@ void runCartPositionOptimization(const trajopt_sqp::QPProblem::Ptr& qp_problem,
 
   // Extract necessary kinematic information
   const tesseract_kinematics::JointGroup::ConstPtr manip = env->getJointGroup("right_arm");
+  const tesseract_common::KinematicLimits limits = manip->getLimits();
+  const std::vector<ifopt::Bounds> bounds = trajopt_ifopt::toBounds(limits.joint_limits);
 
   // Get target position
   Eigen::VectorXd start_pos(manip->numJoints());
@@ -99,15 +104,16 @@ void runCartPositionOptimization(const trajopt_sqp::QPProblem::Ptr& qp_problem,
   Eigen::Isometry3d target_pose = manip->calcFwdKin(joint_target).at("r_gripper_tool_frame");
 
   // 3) Add Variables
-  std::vector<trajopt_ifopt::JointPosition::ConstPtr> vars;
+  std::vector<std::unique_ptr<trajopt_ifopt::Node>> nodes;
+  std::vector<std::shared_ptr<const trajopt_ifopt::Var>> vars;
   for (int ind = 0; ind < 1; ind++)
   {
+    auto node = std::make_unique<trajopt_ifopt::Node>("Joint_Position_" + std::to_string(ind));
     auto zero = Eigen::VectorXd::Zero(7);
-    auto var = std::make_shared<trajopt_ifopt::JointPosition>(
-        zero, manip->getJointNames(), "Joint_Position_" + std::to_string(ind));
-    vars.push_back(var);
-    qp_problem->addVariableSet(var);
+    vars.push_back(node->addVar("position", manip->getJointNames(), zero, bounds));
+    nodes.push_back(std::move(node));
   }
+  qp_problem->addVariableSet(std::make_shared<trajopt_ifopt::NodesVariables>("joint_trajectory", std::move(nodes)));
 
   // 4) Add constraints
   for (const auto& var : vars)
@@ -139,7 +145,7 @@ void runCartPositionOptimization(const trajopt_sqp::QPProblem::Ptr& qp_problem,
 }
 
 /** @brief Applies a cartesian position constraint and solves the ifopt problem with trajopt_sqp */
-TEST_F(CartPositionOptimization, cart_position_optimization_trajopt_problem)  // NOLINT
+TEST_F(CartPositionOptimization, cart_position_optimization_ifopt_problem)  // NOLINT
 {
   CONSOLE_BRIDGE_logDebug("CartPositionOptimization, cart_position_optimization_trajopt_problem");
   auto qp_problem = std::make_shared<trajopt_sqp::IfoptQPProblem>();
@@ -147,9 +153,17 @@ TEST_F(CartPositionOptimization, cart_position_optimization_trajopt_problem)  //
 }
 
 /** @brief Applies a cartesian position constraint and solves the ifopt problem with trajopt_sqp */
-TEST_F(CartPositionOptimization, cart_position_optimization_ifopt_problem)  // NOLINT
+TEST_F(CartPositionOptimization, cart_position_optimization_trajopt_problem)  // NOLINT
 {
   CONSOLE_BRIDGE_logDebug("CartPositionOptimization, cart_position_optimization_ifopt_problem");
   auto qp_problem = std::make_shared<trajopt_sqp::TrajOptQPProblem>();
   runCartPositionOptimization(qp_problem, env);
+}
+
+int main(int argc, char** argv)
+{
+  testing::InitGoogleTest(&argc, argv);
+
+  //  pnh.param("plotting", plotting, false);
+  return RUN_ALL_TESTS();
 }

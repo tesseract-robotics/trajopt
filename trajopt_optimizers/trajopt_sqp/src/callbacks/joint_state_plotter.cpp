@@ -23,7 +23,9 @@
  */
 #include <trajopt_sqp/callbacks/joint_state_plotter.h>
 
-#include <trajopt_ifopt/variable_sets/joint_position_variable.h>
+#include <trajopt_ifopt/variable_sets/nodes_variables.h>
+#include <trajopt_ifopt/variable_sets/node.h>
+#include <trajopt_ifopt/variable_sets/var.h>
 #include <trajopt_ifopt/utils/trajopt_utils.h>
 
 #include <tesseract_common/joint_state.h>
@@ -46,14 +48,13 @@ void JointStatePlottingCallback::plot(const QPProblem& /*problem*/)
     plotter_->plotTrajectory(trajectory, *state_solver_);
 }
 
-void JointStatePlottingCallback::addVariableSet(
-    const std::shared_ptr<const trajopt_ifopt::JointPosition>& joint_position)
+void JointStatePlottingCallback::addVariableSet(const std::shared_ptr<const trajopt_ifopt::Var>& joint_position)
 {
   joint_positions_.push_back(joint_position);
 }
 
 void JointStatePlottingCallback::addVariableSet(
-    const std::vector<std::shared_ptr<const trajopt_ifopt::JointPosition> >& joint_positions)
+    const std::vector<std::shared_ptr<const trajopt_ifopt::Var> >& joint_positions)
 {
   for (const auto& cnt : joint_positions)
     joint_positions_.push_back(cnt);

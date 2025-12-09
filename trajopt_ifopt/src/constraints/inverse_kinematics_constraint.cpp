@@ -22,7 +22,9 @@
  * limitations under the License.
  */
 #include <trajopt_ifopt/constraints/inverse_kinematics_constraint.h>
-#include <trajopt_ifopt/variable_sets/joint_position_variable.h>
+#include <trajopt_ifopt/variable_sets/nodes_variables.h>
+#include <trajopt_ifopt/variable_sets/node.h>
+#include <trajopt_ifopt/variable_sets/var.h>
 
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <tesseract_kinematics/core/kinematic_group.h>
@@ -47,19 +49,19 @@ InverseKinematicsInfo::InverseKinematicsInfo(std::shared_ptr<const tesseract_kin
 InverseKinematicsConstraint::InverseKinematicsConstraint(
     const Eigen::Isometry3d& target_pose,  // NOLINT(modernize-pass-by-value)
     InverseKinematicsInfo::ConstPtr kinematic_info,
-    std::shared_ptr<const JointPosition> constraint_var,
-    std::shared_ptr<const JointPosition> seed_var,
+    std::shared_ptr<const Var> constraint_var,
+    std::shared_ptr<const Var> seed_var,
     const std::string& name)
-  : ifopt::ConstraintSet(constraint_var->GetRows(), name)
+  : ifopt::ConstraintSet(static_cast<int>(constraint_var->size()), name)
   , constraint_var_(std::move(constraint_var))
   , seed_var_(std::move(seed_var))
   , target_pose_(target_pose)
   , kinematic_info_(std::move(kinematic_info))
 {
   // Set the n_dof and n_vars for convenience
-  n_dof_ = constraint_var_->GetRows();
+  n_dof_ = constraint_var_->size();
   assert(n_dof_ > 0);
-  if (constraint_var_->GetRows() != kinematic_info_->manip->numJoints())
+  if (constraint_var_->size() != kinematic_info_->manip->numJoints())
     CONSOLE_BRIDGE_logError("Inverse kinematics has a different number of joints than the given variable set");
 
   bounds_ = std::vector<ifopt::Bounds>(static_cast<std::size_t>(n_dof_), ifopt::BoundZero);
@@ -95,11 +97,7 @@ InverseKinematicsConstraint::CalcValues(const Eigen::Ref<const Eigen::VectorXd>&
 
 Eigen::VectorXd InverseKinematicsConstraint::GetValues() const
 {
-  // Get the two variables
-  const Eigen::VectorXd seed_joint_position = this->GetVariables()->GetComponent(seed_var_->GetName())->GetValues();
-  const Eigen::VectorXd joint_vals = this->GetVariables()->GetComponent(constraint_var_->GetName())->GetValues();
-
-  return CalcValues(joint_vals, seed_joint_position);
+  return CalcValues(constraint_var_->value(), seed_var_->value());
 }
 
 // Set the limits on the constraint values
@@ -116,7 +114,7 @@ void InverseKinematicsConstraint::SetBounds(const std::vector<ifopt::Bounds>& bo
 void InverseKinematicsConstraint::FillJacobianBlock(std::string var_set, Jacobian& jac_block) const
 {
   // Only modify the jacobian if this constraint uses var_set
-  if (var_set != constraint_var_->GetName())  // NOLINT
+  if (var_set != constraint_var_->getParent()->getParent()->GetName())  // NOLINT
     return;
 
   std::vector<Eigen::Triplet<double> > triplet_list;
@@ -124,7 +122,7 @@ void InverseKinematicsConstraint::FillJacobianBlock(std::string var_set, Jacobia
 
   // err = target - x =? derr/dx = -1
   for (int j = 0; j < n_dof_; j++)  // NOLINT
-    triplet_list.emplace_back(j, j, -1);
+    triplet_list.emplace_back(j, constraint_var_->getIndex() + j, -1);
 
   jac_block.setFromTriplets(triplet_list.begin(), triplet_list.end());  // NOLINT
 }
