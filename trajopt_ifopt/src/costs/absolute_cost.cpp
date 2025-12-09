@@ -47,38 +47,57 @@ double AbsoluteCost::GetCost() const
 {
   // This takes the absolute value of the errors
   const Eigen::VectorXd error = calcBoundsViolations(constraint_->GetValues(), constraint_->GetBounds());
-  const double cost = weights_.transpose() * error;
-  return cost;
+  return weights_.dot(error);
 }
 
 void AbsoluteCost::FillJacobianBlock(std::string var_set, Jacobian& jac_block) const
 {
   // Get a Jacobian block the size necessary for the constraint
-  Jacobian cnt_jac_block;
   int var_size = 0;
   for (const auto& vars : GetVariables()->GetComponents())
   {
     if (vars->GetName() == var_set)  // NOLINT
+    {
       var_size = vars->GetRows();
+      break;
+    }
   }
 
   if (var_size == 0)  // NOLINT
-    throw std::runtime_error("Unable to find var_set.");
+    throw std::runtime_error("AbsoluteCost: Unable to find var_set '" + var_set + "'.");
 
-  cnt_jac_block.resize(constraint_->GetRows(), var_size);  // NOLINT
-
-  // Get the Jacobian Block from the constraint
+  // Get the Jacobian block from the underlying constraint
+  Jacobian cnt_jac_block;
+  cnt_jac_block.resize(n_constraints_, var_size);  // NOLINT
   constraint_->FillJacobianBlock(var_set, cnt_jac_block);
 
-  // Apply the chain rule. See doxygen for this class
-  // There are two w's that cancel out resulting in w_error / error.abs().
-  // This breaks down if the weights are not positive but the constructor takes the absolute
-  // value of the weights to avoid this issue.
+  // Compute signed coefficients: coeff_i = weights_[i] * sign(error_i)
   const Eigen::ArrayXd error = calcBoundsErrors(constraint_->GetValues(), constraint_->GetBounds());
-  const Eigen::ArrayXd w_error = error * weights_.array();
-  const Eigen::VectorXd coeff = w_error / error.abs();
 
-  jac_block = coeff.sparseView().eval() * cnt_jac_block;  // NOLINT
+  Eigen::VectorXd coeff(n_constraints_);
+  for (Eigen::Index i = 0; i < error.size(); ++i)
+  {
+    const double e = error[i];
+    if (std::abs(e) < 1e-12)
+      coeff[i] = 0.0;  // subgradient at 0
+    else if (e > 0.0)
+      coeff[i] = weights_[i];
+    else
+      coeff[i] = -weights_[i];
+  }
+
+  // Scale each row of the constraint Jacobian by coeff[row]
+  for (int outer = 0; outer < cnt_jac_block.outerSize(); ++outer)
+  {
+    for (Jacobian::InnerIterator it(cnt_jac_block, outer); it; ++it)
+    {
+      // it.row() is the row index in [0, n_constraints_)
+      it.valueRef() *= coeff[it.row()];
+    }
+  }
+
+  // Output the scaled block
+  jac_block = cnt_jac_block;
 }
 
 }  // namespace trajopt_ifopt

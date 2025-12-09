@@ -85,17 +85,20 @@ Eigen::VectorXd JointVelConstraint::GetValues() const
   // vel(var[1, 1]) - represents the joint velocity of DOF index 1 at timestep 1
   //
   // Velocity V = vel(var[0, 0]), vel(var[0, 1]), vel(var[0, 2]), vel(var[1, 0]), vel(var[1, 1]), vel(var[1, 2]), etc
-  Eigen::VectorXd velocity(static_cast<std::size_t>(n_dof_) * (static_cast<std::size_t>(n_vars_) - 1));
 
-  // Eigen::VectorXd val = this->GetVariables()->GetComponent(var_set_)->GetValues();
+  // Number of velocity segments (one less than number of position vars)
+  const Eigen::Index n_segments = n_vars_ - 1;
 
-  // Forward differentiation for the first point
-  for (std::size_t ind = 0; ind < position_vars_.size() - 1; ind++)
+  Eigen::VectorXd velocity(n_dof_ * n_segments);
+
+  for (Eigen::Index seg = 0; seg < n_segments; ++seg)
   {
-    auto vals1 = position_vars_[ind]->value();
-    auto vals2 = position_vars_[ind + 1]->value();
-    const Eigen::VectorXd single_step = (vals2 - vals1);
-    velocity.block(n_dof_ * static_cast<Eigen::Index>(ind), 0, n_dof_, 1) = coeffs_.cwiseProduct(single_step);
+    // q_i and q_{i+1}
+    const Eigen::VectorXd& q0 = position_vars_[static_cast<std::size_t>(seg)]->value();
+    const Eigen::VectorXd& q1 = position_vars_[static_cast<std::size_t>(seg + 1)]->value();
+
+    // v_i = coeffs_ .* (q_{i+1} - q_i)
+    velocity.segment(seg * n_dof_, n_dof_) = coeffs_.cwiseProduct(q1 - q0);
   }
 
   return velocity;
@@ -111,33 +114,32 @@ void JointVelConstraint::FillJacobianBlock(std::string var_set, Jacobian& jac_bl
   if (var_set != position_vars_.front()->getParent()->getParent()->GetName())
     return;
 
-  // Reserve enough room in the sparse matrix
-  std::vector<Eigen::Triplet<double>> triplet_list;
-  triplet_list.reserve(static_cast<std::size_t>(n_vars_ * n_dof_));
+  const Eigen::Index n_segments = n_vars_ - 1;
 
-  // The first and last variable are special and only effect the first and last constraint. Everything else effects 2
-  Eigen::Index prev_idx = -1;
-  Eigen::Index idx = position_vars_[0]->getIndex();
-  for (int j = 0; j < n_dof_; j++)
-    triplet_list.emplace_back(idx + j, idx + j, -1.0 * coeffs_[j]);
+  // Each segment contributes 2 * n_dof_ nonzeros (− and +)
+  std::vector<Eigen::Triplet<double>> triplets;
+  triplets.reserve(static_cast<std::size_t>(2 * n_segments * n_dof_));
 
-  for (std::size_t i = 1; i < (n_vars_ - 1); i++)
+  for (Eigen::Index seg = 0; seg < n_segments; ++seg)
   {
-    prev_idx = position_vars_[i - 1]->getIndex();
-    idx = position_vars_[i]->getIndex();
-    for (int j = 0; j < n_dof_; j++)
+    const Eigen::Index row_offset = seg * n_dof_;
+
+    // Column indices in this var_set for q_seg and q_{seg+1}
+    const Eigen::Index col0 = position_vars_[static_cast<std::size_t>(seg)]->getIndex();
+    const Eigen::Index col1 = position_vars_[static_cast<std::size_t>(seg + 1)]->getIndex();
+
+    for (Eigen::Index k = 0; k < n_dof_; ++k)
     {
-      triplet_list.emplace_back(idx + j, idx + j, -1.0 * coeffs_[j]);
-      triplet_list.emplace_back(prev_idx + j, idx + j, 1.0 * coeffs_[j]);
+      const double c = coeffs_[k];
+      const Eigen::Index row = row_offset + k;
+
+      // v(seg,k) = c * (q1 - q0)
+      triplets.emplace_back(row, col0 + k, -c);  // ∂v/∂q_seg
+      triplets.emplace_back(row, col1 + k, c);   // ∂v/∂q_{seg+1}
     }
   }
 
-  prev_idx = position_vars_[static_cast<std::size_t>(n_vars_ - 2)]->getIndex();
-  idx = position_vars_[static_cast<std::size_t>(n_vars_ - 1)]->getIndex();
-  for (int j = 0; j < n_dof_; j++)
-    triplet_list.emplace_back(prev_idx + j, idx + j, 1.0 * coeffs_[j]);
-
-  jac_block.setFromTriplets(triplet_list.begin(), triplet_list.end());  // NOLINT
+  jac_block.setFromTriplets(triplets.begin(), triplets.end());  // NOLINT
 }
 
 }  // namespace trajopt_ifopt
