@@ -78,8 +78,8 @@ public:
     kin_group = env->getJointGroup("right_arm");
     n_dof = kin_group->numJoints();
 
-    const std::vector<ifopt::Bounds> bounds = trajopt_ifopt::toBounds(kin_group->getLimits().joint_limits);
-    auto pos = Eigen::VectorXd::Ones(kin_group->numJoints());
+    const std::vector<ifopt::Bounds> bounds(static_cast<std::size_t>(n_dof), ifopt::NoBound);
+    auto pos = Eigen::VectorXd::Ones(n_dof);
     auto node = std::make_unique<trajopt_ifopt::Node>("Joint_Position_0");
     auto var0 = node->addVar("position", kin_group->getJointNames(), pos, bounds);
 
@@ -178,7 +178,7 @@ TEST_F(CartesianPositionConstraintUnit, FillJacobian)  // NOLINT
     }
     {
       trajopt_ifopt::SparseMatrix jac_block(num_jac_block.rows(), num_jac_block.cols());
-      constraint->FillJacobianBlock("Joint_Position_0", jac_block);
+      constraint->FillJacobianBlock("joint_trajectory", jac_block);
       EXPECT_TRUE(jac_block.toDense().isApprox(num_jac_block.toDense(), 1e-3));
       //      std::cout << "Numeric:\n" << num_jac_block.toDense() << '\n';
       //      std::cout << "Analytic:\n" << jac_block.toDense() << '\n';
@@ -195,7 +195,7 @@ TEST_F(CartesianPositionConstraintUnit, GetSetBounds)  // NOLINT
 
   // Check that setting bounds works
   {
-    std::vector<ifopt::Bounds> bounds_vec = trajopt_ifopt::toBounds(kin_group->getLimits().joint_limits);
+    std::vector<ifopt::Bounds> bounds_vec(static_cast<std::size_t>(n_dof), ifopt::NoBound);
     auto node = std::make_unique<trajopt_ifopt::Node>("Joint_Position_0");
     const Eigen::VectorXd pos = Eigen::VectorXd::Ones(kin_group->numJoints());
     auto var0 = node->addVar("position", kin_group->getJointNames(), pos, bounds_vec);

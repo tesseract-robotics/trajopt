@@ -78,7 +78,10 @@ ContinuousCollisionNumericalConstraint::ContinuousCollisionNumericalConstraint(
 
     for (Eigen::Index i = 0; i < static_cast<Eigen::Index>(bounds_.size()); i++)  // NOLINT
       for (Eigen::Index j = 0; j < n_dof_; j++)
-        triplet_list_.emplace_back(i, j, 0);
+      {
+        triplet_list_.emplace_back(i, position_vars_[0]->getIndex() + j, 0);
+        triplet_list_.emplace_back(i, position_vars_[1]->getIndex() + j, 0);
+      }
   }
 }
 
@@ -149,49 +152,51 @@ void ContinuousCollisionNumericalConstraint::FillJacobianBlock(std::string var_s
     return;
 
   const std::size_t cnt = std::min(bounds_.size(), collision_data->gradient_results_sets.size());
-
-  Eigen::VectorXd jv = joint_vals0;
   const double delta = 1e-8;
-  for (int j = 0; j < n_dof_; j++)
+  for (std::size_t p = 0; p < 2; p++)
   {
-    jv(j) = joint_vals0(j) + delta;
-    auto collision_data_delta =
-        collision_evaluator_->CalcCollisionData(jv, joint_vals1, vars0_fixed_, vars1_fixed_, bounds_.size());
-
-    for (int i = 0; i < static_cast<int>(cnt); ++i)
+    Eigen::VectorXd jv = position_vars_[p]->value();
+    for (int j = 0; j < n_dof_; j++)
     {
-      const auto& baseline = collision_data->gradient_results_sets[static_cast<std::size_t>(i)];
-      auto fn = [&baseline](const trajopt_common::GradientResultsSet& cr) {
-        return (cr.key == baseline.key && cr.shape_key == baseline.shape_key);
-      };
-      auto it = std::find_if(
-          collision_data_delta->gradient_results_sets.begin(), collision_data_delta->gradient_results_sets.end(), fn);
-      if (it != collision_data_delta->gradient_results_sets.end())
-      {
-        double dist_delta{ 0 };
-        if (!vars0_fixed_ && !vars1_fixed_)
-          dist_delta = it->coeff * (it->getMaxError() - baseline.getMaxError());
-        else if (!vars0_fixed_)
-          dist_delta = it->coeff * (it->getMaxErrorT0() - baseline.getMaxErrorT0());
-        else
-          dist_delta = it->coeff * (it->getMaxErrorT1() - baseline.getMaxErrorT1());
+      jv(j) += delta;
+      auto collision_data_delta =
+          collision_evaluator_->CalcCollisionData(jv, joint_vals1, vars0_fixed_, vars1_fixed_, bounds_.size());
 
-        jac_block.coeffRef(i, j) = dist_delta / delta;
-      }
-      else
+      for (int i = 0; i < static_cast<int>(cnt); ++i)
       {
-        double dist_delta{ 0 };
-        if (!vars0_fixed_ && !vars1_fixed_)
-          dist_delta = baseline.coeff * ((-1.0 * margin_buffer) - baseline.getMaxError());
-        else if (!vars0_fixed_)
-          dist_delta = baseline.coeff * ((-1.0 * margin_buffer) - baseline.getMaxErrorT0());
-        else
-          dist_delta = baseline.coeff * ((-1.0 * margin_buffer) - baseline.getMaxErrorT1());
+        const auto& baseline = collision_data->gradient_results_sets[static_cast<std::size_t>(i)];
+        auto fn = [&baseline](const trajopt_common::GradientResultsSet& cr) {
+          return (cr.key == baseline.key && cr.shape_key == baseline.shape_key);
+        };
+        auto it = std::find_if(
+            collision_data_delta->gradient_results_sets.begin(), collision_data_delta->gradient_results_sets.end(), fn);
+        if (it != collision_data_delta->gradient_results_sets.end())
+        {
+          double dist_delta{ 0 };
+          if (!vars0_fixed_ && !vars1_fixed_)
+            dist_delta = it->coeff * (it->getMaxError() - baseline.getMaxError());
+          else if (!vars0_fixed_)
+            dist_delta = it->coeff * (it->getMaxErrorT0() - baseline.getMaxErrorT0());
+          else
+            dist_delta = it->coeff * (it->getMaxErrorT1() - baseline.getMaxErrorT1());
 
-        jac_block.coeffRef(i, j) = dist_delta / delta;
+          jac_block.coeffRef(i, position_vars_[p]->getIndex() + j) = dist_delta / delta;
+        }
+        else
+        {
+          double dist_delta{ 0 };
+          if (!vars0_fixed_ && !vars1_fixed_)
+            dist_delta = baseline.coeff * ((-1.0 * margin_buffer) - baseline.getMaxError());
+          else if (!vars0_fixed_)
+            dist_delta = baseline.coeff * ((-1.0 * margin_buffer) - baseline.getMaxErrorT0());
+          else
+            dist_delta = baseline.coeff * ((-1.0 * margin_buffer) - baseline.getMaxErrorT1());
+
+          jac_block.coeffRef(i, position_vars_[p]->getIndex() + j) = dist_delta / delta;
+        }
       }
+      jv = position_vars_[p]->value();
     }
-    jv(j) = joint_vals0(j);
   }
 }
 

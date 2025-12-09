@@ -119,7 +119,7 @@ TEST_F(InverseKinematicsConstraintUnit, GetValue)  // NOLINT
   {
     ifopt::ConstraintSet::Jacobian jac_block;
     jac_block.resize(n_dof, n_dof);
-    constraint->FillJacobianBlock("Joint_Position_0", jac_block);
+    constraint->FillJacobianBlock("joint_trajectory", jac_block);
     // Check that the size is correct
     EXPECT_EQ(jac_block.nonZeros(), n_dof);
     // Check that it is identity
@@ -139,7 +139,7 @@ TEST_F(InverseKinematicsConstraintUnit, GetValue)  // NOLINT
   {
     ifopt::ConstraintSet::Jacobian jac_block;
     jac_block.resize(n_dof, n_dof);
-    constraint->FillJacobianBlock("Joint_Position_1", jac_block);
+    constraint->FillJacobianBlock("invalid_var_set", jac_block);
     EXPECT_EQ(jac_block.nonZeros(), 0);
   }
 }

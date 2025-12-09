@@ -55,7 +55,7 @@ public:
     manip = env->getJointGroup("right_arm");
     n_dof = manip->numJoints();
 
-    std::vector<ifopt::Bounds> bounds = trajopt_ifopt::toBounds(manip->getLimits().joint_limits);
+    std::vector<ifopt::Bounds> bounds(static_cast<std::size_t>(manip->numJoints()), ifopt::NoBound);
     auto node = std::make_unique<trajopt_ifopt::Node>("Joint_Position_0");
     auto pos = Eigen::VectorXd::Ones(n_dof);
     var = node->addVar("position", manip->getJointNames(), pos, bounds);
@@ -166,7 +166,7 @@ TEST_F(CartesianLineConstraintUnit, FillJacobian)  // NOLINT
     }
     {
       ifopt::ConstraintSet::Jacobian jac_block(num_jac_block.rows(), num_jac_block.cols());
-      constraint->FillJacobianBlock("Joint_Position_0", jac_block);
+      constraint->FillJacobianBlock("joint_trajectory", jac_block);
       EXPECT_TRUE(jac_block.toDense().isApprox(num_jac_block.toDense(), 1e-3));
     }
   }

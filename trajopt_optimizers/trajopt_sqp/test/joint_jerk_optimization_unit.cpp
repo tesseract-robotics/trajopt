@@ -76,22 +76,16 @@ void runJerkConstraintOptimizationTest(const trajopt_sqp::QPProblem::Ptr& qp_pro
   const auto bounds = std::vector<ifopt::Bounds>(7, ifopt::NoBound);
   std::vector<std::unique_ptr<trajopt_ifopt::Node>> nodes;
   std::vector<std::shared_ptr<const trajopt_ifopt::Var>> vars;
-  for (int ind = 0; ind < 2; ind++)
-  {
-    auto node = std::make_unique<trajopt_ifopt::Node>("Joint_Position_0");
-    auto pos = Eigen::VectorXd::Zero(7);
-    vars.push_back(node->addVar("position", joint_names, pos, bounds));
-    nodes.push_back(std::move(node));
-  }
-
-  for (int ind = 1; ind < 6; ind++)
+  for (int ind = 0; ind < 6; ind++)
   {
     auto node = std::make_unique<trajopt_ifopt::Node>("Joint_Position_" + std::to_string(ind));
     Eigen::VectorXd pos;
-    if (ind == 5)
+    if (ind == 0)
+      pos = Eigen::VectorXd::Zero(7);
+    else if (ind == 5)
       pos = Eigen::VectorXd::Ones(7) * 10;
     else
-      pos = Eigen::VectorXd::Ones(7) * ((ind / 5.0) * 10 + 0.01);
+      pos = Eigen::VectorXd::Ones(7) * ((ind / 5.0) * (10 + 0.01));
     vars.push_back(node->addVar("position", joint_names, pos, bounds));
     nodes.push_back(std::move(node));
   }

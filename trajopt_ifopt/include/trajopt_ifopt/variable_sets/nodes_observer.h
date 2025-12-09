@@ -52,9 +52,9 @@ class NodesObserver : public std::enable_shared_from_this<NodesObserver>
 public:
   /**
    * @brief Registers this observer with the subject class to receive updates.
-   * @param node_values  The subject holding the Hermite node values.
+   * @param subject  The subject holding the Hermite node values.
    */
-  NodesObserver(std::weak_ptr<NodesVariables> node_values);
+  NodesObserver(std::weak_ptr<NodesVariables> subject);
   virtual ~NodesObserver() = default;
 
   /**
@@ -63,7 +63,7 @@ public:
   virtual void UpdateNodes() = 0;
 
 protected:
-  std::weak_ptr<NodesVariables> node_values_;
+  std::weak_ptr<NodesVariables> subject_;
 };
 }  // namespace trajopt_ifopt
 #endif  // TRAJOPT_IFOPT_NODES_OBSERVER_H

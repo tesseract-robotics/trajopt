@@ -52,7 +52,7 @@ public:
    * @param variable_name  The name of the variables in the optimization problem.
    */
   NodesVariables(const std::string& variable_name, std::vector<std::unique_ptr<Node>> nodes);
-  virtual ~NodesVariables() = default;
+  ~NodesVariables() override = default;
 
   /**
    * @brief Get node based on index

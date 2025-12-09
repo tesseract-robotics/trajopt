@@ -32,11 +32,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace trajopt_ifopt
 {
-NodesObserver::NodesObserver(std::weak_ptr<NodesVariables> subject)
+NodesObserver::NodesObserver(std::weak_ptr<NodesVariables> subject) : subject_(std::move(subject))
 {
-  node_values_ = subject;
-
-  auto subject_shared = subject.lock();  // Convert weak_ptr to shared_ptr
+  auto subject_shared = subject_.lock();  // Convert weak_ptr to shared_ptr
   if (subject_shared)
     subject_shared->AddObserver(shared_from_this());  // register observer to subject so this class always up-to-date
   else                                                // Handle the case where the weak_ptr is expired

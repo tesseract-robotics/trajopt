@@ -76,7 +76,7 @@ public:
         std::make_shared<trajopt_ifopt::SingleTimestepCollisionEvaluator>(collision_cache, kin, env, config);
 
     // 3) Add Variables
-    const std::vector<ifopt::Bounds> bounds = trajopt_ifopt::toBounds(kin->getLimits().joint_limits);
+    const std::vector<ifopt::Bounds> bounds(static_cast<std::size_t>(kin->numJoints()), ifopt::NoBound);
     Eigen::VectorXd pos(2);
     pos << -1.9, 0;
     auto node = std::make_unique<trajopt_ifopt::Node>("Joint_Position_0");
@@ -109,7 +109,7 @@ TEST_F(CollisionUnit, GetValueFillJacobian)  // NOLINT
 
     ifopt::ConstraintSet::Jacobian jac_block;
     jac_block.resize(1, 2);
-    constraint->FillJacobianBlock("Joint_Position_0", jac_block);
+    constraint->FillJacobianBlock("joint_trajectory", jac_block);
     const double dx = jac_block.coeff(0, 0);
     const double dy = jac_block.coeff(0, 1);
     EXPECT_NEAR(dx, 0.0, 1e-6);
@@ -126,7 +126,7 @@ TEST_F(CollisionUnit, GetValueFillJacobian)  // NOLINT
 
     ifopt::ConstraintSet::Jacobian jac_block;
     jac_block.resize(1, 2);
-    constraint->FillJacobianBlock("Joint_Position_0", jac_block);
+    constraint->FillJacobianBlock("joint_trajectory", jac_block);
     const double dx = jac_block.coeff(0, 0);
     const double dy = jac_block.coeff(0, 1);
     EXPECT_NEAR(dx, 1.0, 1e-6);
@@ -141,7 +141,7 @@ TEST_F(CollisionUnit, GetValueFillJacobian)  // NOLINT
 
     ifopt::ConstraintSet::Jacobian jac_block;
     jac_block.resize(1, 2);
-    constraint->FillJacobianBlock("Joint_Position_0", jac_block);
+    constraint->FillJacobianBlock("joint_trajectory", jac_block);
     const double dx = jac_block.coeff(0, 0);
     const double dy = jac_block.coeff(0, 1);
     EXPECT_NEAR(dx, 0.0, 1e-6);
@@ -158,7 +158,7 @@ TEST_F(CollisionUnit, GetValueFillJacobian)  // NOLINT
 
     ifopt::ConstraintSet::Jacobian jac_block;
     jac_block.resize(1, 2);
-    constraint->FillJacobianBlock("Joint_Position_0", jac_block);
+    constraint->FillJacobianBlock("joint_trajectory", jac_block);
     const double dx = jac_block.coeff(0, 0);
     const double dy = jac_block.coeff(0, 1);
     EXPECT_NEAR(dx, 1.0, 1e-6);
@@ -184,7 +184,7 @@ TEST_F(CollisionUnit, GetSetBounds)  // NOLINT
 
     auto constraint_2 = std::make_shared<trajopt_ifopt::DiscreteCollisionConstraint>(collision_evaluator, var0, 3);
     const ifopt::Bounds bounds(-0.1234, 0.5678);
-    bounds_vec = std::vector<ifopt::Bounds>(2, bounds);
+    bounds_vec = std::vector<ifopt::Bounds>(1, bounds);
     constraint_2->SetBounds(bounds_vec);
     std::vector<ifopt::Bounds> results_vec = constraint_2->GetBounds();
     for (std::size_t i = 0; i < bounds_vec.size(); i++)

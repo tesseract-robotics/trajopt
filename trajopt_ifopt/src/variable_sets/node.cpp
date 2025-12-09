@@ -6,6 +6,7 @@
 namespace trajopt_ifopt
 {
 Node::Node(std::string node_name) : name_(std::move(node_name)) {}
+Node::~Node() = default;
 
 const std::string& Node::getName() const { return name_; }
 const NodesVariables* Node::getParent() const { return parent_; }

@@ -36,7 +36,7 @@ public:
    * @param node_name Descriptive name for this node (for logging/debugging).
    */
   explicit Node(std::string node_name = "Node");
-
+  ~Node();
   Node(const Node&) = delete;
   Node& operator=(const Node&) = delete;
   Node(Node&&) = default;
