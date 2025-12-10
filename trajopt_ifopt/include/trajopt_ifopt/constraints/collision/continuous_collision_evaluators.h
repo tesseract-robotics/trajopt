@@ -60,10 +60,10 @@ public:
 
   ContinuousCollisionEvaluator() = default;
   virtual ~ContinuousCollisionEvaluator() = default;
-  ContinuousCollisionEvaluator(const ContinuousCollisionEvaluator&) = default;
-  ContinuousCollisionEvaluator& operator=(const ContinuousCollisionEvaluator&) = default;
-  ContinuousCollisionEvaluator(ContinuousCollisionEvaluator&&) = default;
-  ContinuousCollisionEvaluator& operator=(ContinuousCollisionEvaluator&&) = default;
+  ContinuousCollisionEvaluator(const ContinuousCollisionEvaluator&) = delete;
+  ContinuousCollisionEvaluator& operator=(const ContinuousCollisionEvaluator&) = delete;
+  ContinuousCollisionEvaluator(ContinuousCollisionEvaluator&&) = delete;
+  ContinuousCollisionEvaluator& operator=(ContinuousCollisionEvaluator&&) = delete;
 
   /**
    * @brief Given joint names and values calculate the collision results for this evaluator

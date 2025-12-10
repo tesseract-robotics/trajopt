@@ -108,39 +108,39 @@ SingleTimestepCollisionEvaluator::CalcCollisions(const Eigen::Ref<const Eigen::V
 
   for (const auto& pair : data->contact_results_map)
   {
-    using ShapeGrsType = std::map<std::pair<std::size_t, std::size_t>, trajopt_common::GradientResultsSet>;
-    ShapeGrsType shape_grs;
+    using ShapeKey = std::pair<std::size_t, std::size_t>;
+    using ShapeGrsMap = std::map<ShapeKey, trajopt_common::GradientResultsSet>;
+
+    if (pair.second.empty())
+      continue;
+
+    ShapeGrsMap shape_grs;
     const double coeff = coeff_data_.getCollisionCoeff(pair.first.first, pair.first.second);
-    for (const tesseract_collision::ContactResult& dist_result : pair.second)
+
+    for (const auto& dist_result : pair.second)
     {
       const std::size_t shape_hash0 = trajopt_common::cantorHash(dist_result.shape_id[0], dist_result.subshape_id[0]);
       const std::size_t shape_hash1 = trajopt_common::cantorHash(dist_result.shape_id[1], dist_result.subshape_id[1]);
-      auto shape_key = std::make_pair(shape_hash0, shape_hash1);
-      auto it = shape_grs.find(shape_key);
-      if (it == shape_grs.end())
+      const ShapeKey shape_key{ shape_hash0, shape_hash1 };
+
+      auto [it, inserted] = shape_grs.try_emplace(shape_key);
+      auto& grs = it->second;
+
+      if (inserted)
       {
-        trajopt_common::GradientResultsSet grs;
         grs.key = pair.first;
         grs.shape_key = shape_key;
         grs.coeff = coeff;
         grs.results.reserve(pair.second.size());
-        grs.add(GetGradient(dof_vals, dist_result));
-        shape_grs[shape_key] = grs;
       }
-      else
-      {
-        it->second.add(GetGradient(dof_vals, dist_result));
-      }
+
+      grs.add(GetGradient(dof_vals, dist_result));
     }
 
-    // This is not as efficient as it could be. Need to update Tesseract to store per subhshape key
-    const std::size_t new_size = data->gradient_results_sets.size() + shape_grs.size();
-    data->gradient_results_sets.reserve(new_size);
-
-    std::transform(shape_grs.begin(),
-                   shape_grs.end(),
-                   std::back_inserter(data->gradient_results_sets),
-                   std::bind(&ShapeGrsType::value_type::second, std::placeholders::_1));  // NOLINT
+    // Move results out instead of copying
+    data->gradient_results_sets.reserve(data->gradient_results_sets.size() + shape_grs.size());
+    for (auto& kv : shape_grs)
+      data->gradient_results_sets.emplace_back(std::move(kv.second));
   }
 
   if (data->gradient_results_sets.size() > bounds_size)

@@ -106,11 +106,10 @@ LVSContinuousCollisionEvaluator::CalcCollisionData(const Eigen::Ref<const Eigen:
                                                    std::size_t bounds_size)
 {
   const std::size_t key = trajopt_common::getHash(this, dof_vals0, dof_vals1);
-  auto* it = collision_cache_->get(key);
-  if (it != nullptr)
+  if (auto* cached = collision_cache_->get(key); cached != nullptr)
   {
     CONSOLE_BRIDGE_logDebug("Using cached collision check");
-    return *it;
+    return *cached;
   }
 
   auto data = std::make_shared<trajopt_common::CollisionCacheData>();
@@ -118,68 +117,54 @@ LVSContinuousCollisionEvaluator::CalcCollisionData(const Eigen::Ref<const Eigen:
 
   for (const auto& pair : data->contact_results_map)
   {
-    using ShapeGrsType = std::map<std::pair<std::size_t, std::size_t>, trajopt_common::GradientResultsSet>;
-    ShapeGrsType shape_grs;
+    using ShapeKey = std::pair<std::size_t, std::size_t>;
+    using ShapeGrsMap = std::map<ShapeKey, trajopt_common::GradientResultsSet>;
+    ShapeGrsMap shape_grs;
+
     const double coeff = coeff_data_.getCollisionCoeff(pair.first.first, pair.first.second);
-    for (const tesseract_collision::ContactResult& dist_result : pair.second)
+    const auto& results = pair.second;
+
+    for (const tesseract_collision::ContactResult& dist_result : results)
     {
       const std::size_t shape_hash0 = trajopt_common::cantorHash(dist_result.shape_id[0], dist_result.subshape_id[0]);
       const std::size_t shape_hash1 = trajopt_common::cantorHash(dist_result.shape_id[1], dist_result.subshape_id[1]);
-      auto shape_key = std::make_pair(shape_hash0, shape_hash1);
-      auto it = shape_grs.find(shape_key);
-      if (it == shape_grs.end())
+      ShapeKey shape_key{ shape_hash0, shape_hash1 };
+
+      auto [it_shape, inserted] = shape_grs.try_emplace(shape_key);
+      auto& grs = it_shape->second;
+
+      if (inserted)
       {
-        trajopt_common::GradientResultsSet grs;
         grs.key = pair.first;
         grs.shape_key = shape_key;
         grs.coeff = coeff;
         grs.is_continuous = true;
-        grs.results.reserve(pair.second.size());
-        grs.add(CalcGradientData(dof_vals0, dof_vals1, dist_result));
-        shape_grs[shape_key] = grs;
+        grs.results.reserve(results.size());
       }
-      else
-      {
-        it->second.add(CalcGradientData(dof_vals0, dof_vals1, dist_result));
-      }
+
+      grs.add(CalcGradientData(dof_vals0, dof_vals1, dist_result));
     }
 
-    // This is not as efficient as it could be. Need to update Tesseract to store per subhshape key
     const std::size_t new_size = data->gradient_results_sets.size() + shape_grs.size();
     data->gradient_results_sets.reserve(new_size);
 
-    std::transform(shape_grs.begin(),
-                   shape_grs.end(),
-                   std::back_inserter(data->gradient_results_sets),
-                   std::bind(&ShapeGrsType::value_type::second, std::placeholders::_1));  // NOLINT
+    for (auto& kv : shape_grs)
+      data->gradient_results_sets.push_back(std::move(kv.second));
   }
 
   if (data->gradient_results_sets.size() > bounds_size)
   {
-    if (!vars0_fixed && !vars1_fixed)
-    {
-      std::sort(data->gradient_results_sets.begin(),
-                data->gradient_results_sets.end(),
-                [](const trajopt_common::GradientResultsSet& a, const trajopt_common::GradientResultsSet& b) {
-                  return a.getMaxErrorWithBuffer() > b.getMaxErrorWithBuffer();
-                });
-    }
-    else if (!vars0_fixed)
-    {
-      std::sort(data->gradient_results_sets.begin(),
-                data->gradient_results_sets.end(),
-                [](const trajopt_common::GradientResultsSet& a, const trajopt_common::GradientResultsSet& b) {
-                  return a.getMaxErrorWithBufferT0() > b.getMaxErrorWithBufferT0();
-                });
-    }
-    else
-    {
-      std::sort(data->gradient_results_sets.begin(),
-                data->gradient_results_sets.end(),
-                [](const trajopt_common::GradientResultsSet& a, const trajopt_common::GradientResultsSet& b) {
-                  return a.getMaxErrorWithBufferT1() > b.getMaxErrorWithBufferT1();
-                });
-    }
+    auto cmp = [vars0_fixed, vars1_fixed](const trajopt_common::GradientResultsSet& a,
+                                          const trajopt_common::GradientResultsSet& b) {
+      if (!vars0_fixed && !vars1_fixed)
+        return a.getMaxErrorWithBuffer() > b.getMaxErrorWithBuffer();
+      if (!vars0_fixed)
+        return a.getMaxErrorWithBufferT0() > b.getMaxErrorWithBufferT0();
+      return a.getMaxErrorWithBufferT1() > b.getMaxErrorWithBufferT1();
+    };
+
+    std::sort(data->gradient_results_sets.begin(), data->gradient_results_sets.end(), cmp);
+    // (Optional future tweak: partial_sort + erase to keep only top bounds_size)
   }
 
   collision_cache_->put(key, data);
@@ -359,79 +344,65 @@ LVSDiscreteCollisionEvaluator::CalcCollisionData(const Eigen::Ref<const Eigen::V
                                                  std::size_t bounds_size)
 {
   const std::size_t key = trajopt_common::getHash(this, dof_vals0, dof_vals1);
-  auto* it = collision_cache_->get(key);
-  if (it != nullptr)
+  if (auto* cached = collision_cache_->get(key); cached != nullptr)
   {
     CONSOLE_BRIDGE_logDebug("Using cached collision check");
-    return *it;
+    return *cached;
   }
 
   auto data = std::make_shared<trajopt_common::CollisionCacheData>();
   CalcCollisionsHelper(data->contact_results_map, dof_vals0, dof_vals1, vars0_fixed, vars1_fixed);
+
   for (const auto& pair : data->contact_results_map)
   {
-    using ShapeGrsType = std::map<std::pair<std::size_t, std::size_t>, trajopt_common::GradientResultsSet>;
-    ShapeGrsType shape_grs;
+    using ShapeKey = std::pair<std::size_t, std::size_t>;
+    using ShapeGrsMap = std::map<ShapeKey, trajopt_common::GradientResultsSet>;
+    ShapeGrsMap shape_grs;
+
     const double coeff = coeff_data_.getCollisionCoeff(pair.first.first, pair.first.second);
-    for (const tesseract_collision::ContactResult& dist_result : pair.second)
+    const auto& results = pair.second;
+
+    for (const tesseract_collision::ContactResult& dist_result : results)
     {
       const std::size_t shape_hash0 = trajopt_common::cantorHash(dist_result.shape_id[0], dist_result.subshape_id[0]);
       const std::size_t shape_hash1 = trajopt_common::cantorHash(dist_result.shape_id[1], dist_result.subshape_id[1]);
-      auto shape_key = std::make_pair(shape_hash0, shape_hash1);
-      auto it = shape_grs.find(shape_key);
-      if (it == shape_grs.end())
+      ShapeKey shape_key{ shape_hash0, shape_hash1 };
+
+      auto [it_shape, inserted] = shape_grs.try_emplace(shape_key);
+      auto& grs = it_shape->second;
+
+      if (inserted)
       {
-        trajopt_common::GradientResultsSet grs;
         grs.key = pair.first;
         grs.shape_key = shape_key;
         grs.coeff = coeff;
         grs.is_continuous = true;
-        grs.results.reserve(pair.second.size());
-        grs.add(CalcGradientData(dof_vals0, dof_vals1, dist_result));
-        shape_grs[shape_key] = grs;
+        grs.results.reserve(results.size());
       }
-      else
-      {
-        it->second.add(CalcGradientData(dof_vals0, dof_vals1, dist_result));
-      }
+
+      grs.add(CalcGradientData(dof_vals0, dof_vals1, dist_result));
     }
 
-    // This is not as efficient as it could be. Need to update Tesseract to store per subhshape key
     const std::size_t new_size = data->gradient_results_sets.size() + shape_grs.size();
     data->gradient_results_sets.reserve(new_size);
 
-    std::transform(shape_grs.begin(),
-                   shape_grs.end(),
-                   std::back_inserter(data->gradient_results_sets),
-                   std::bind(&ShapeGrsType::value_type::second, std::placeholders::_1));  // NOLINT
+    for (auto& kv : shape_grs)
+      data->gradient_results_sets.push_back(std::move(kv.second));
   }
 
   if (data->gradient_results_sets.size() > bounds_size)
   {
-    if (!vars0_fixed && !vars1_fixed)
-    {
-      std::sort(data->gradient_results_sets.begin(),
-                data->gradient_results_sets.end(),
-                [](const trajopt_common::GradientResultsSet& a, const trajopt_common::GradientResultsSet& b) {
-                  return a.getMaxErrorWithBuffer() > b.getMaxErrorWithBuffer();
-                });
-    }
-    else if (!vars0_fixed)
-    {
-      std::sort(data->gradient_results_sets.begin(),
-                data->gradient_results_sets.end(),
-                [](const trajopt_common::GradientResultsSet& a, const trajopt_common::GradientResultsSet& b) {
-                  return a.getMaxErrorWithBufferT0() > b.getMaxErrorWithBufferT0();
-                });
-    }
-    else
-    {
-      std::sort(data->gradient_results_sets.begin(),
-                data->gradient_results_sets.end(),
-                [](const trajopt_common::GradientResultsSet& a, const trajopt_common::GradientResultsSet& b) {
-                  return a.getMaxErrorWithBufferT1() > b.getMaxErrorWithBufferT1();
-                });
-    }
+    auto cmp = [vars0_fixed, vars1_fixed](const trajopt_common::GradientResultsSet& a,
+                                          const trajopt_common::GradientResultsSet& b) {
+      if (!vars0_fixed && !vars1_fixed)
+        return a.getMaxErrorWithBuffer() > b.getMaxErrorWithBuffer();
+      if (!vars0_fixed)
+        return a.getMaxErrorWithBufferT0() > b.getMaxErrorWithBufferT0();
+      return a.getMaxErrorWithBufferT1() > b.getMaxErrorWithBufferT1();
+    };
+
+    std::sort(data->gradient_results_sets.begin(), data->gradient_results_sets.end(), cmp);
+    // Same optional partial_sort+erase idea as above.
   }
 
   collision_cache_->put(key, data);
