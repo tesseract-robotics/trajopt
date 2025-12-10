@@ -47,7 +47,13 @@ public:
                               std::shared_ptr<const Var> position_var,
                               int max_num_cnt = 1,
                               bool fixed_sparsity = false,
-                              const std::string& name = "DiscreteCollisionV3");
+                              const std::string& name = "DiscreteCollision");
+
+  DiscreteCollisionConstraint(std::shared_ptr<DiscreteCollisionEvaluator> collision_evaluator,
+                              std::vector<std::shared_ptr<const Var>> position_vars,
+                              int max_num_cnt = 1,
+                              bool fixed_sparsity = false,
+                              const std::string& name = "DiscreteCollision");
 
   /**
    * @brief Returns the values associated with the constraint.
@@ -75,20 +81,11 @@ public:
    */
   void FillJacobianBlock(std::string var_set, Jacobian& jac_block) const override;
 
-  /** @brief Calculates the values associated with the constraint */
-  Eigen::VectorXd CalcValues(const Eigen::Ref<const Eigen::VectorXd>& joint_vals) const;
-
   /**
    * @brief Sets the bounds on the collision distance
    * @param bounds New bounds that will be set. Should be size 1
    */
   void SetBounds(const std::vector<ifopt::Bounds>& bounds);
-
-  /**
-   * @brief Fills the jacobian block associated with the constraint
-   * @param jac_block Block of the overall jacobian associated with these constraints
-   */
-  void CalcJacobianBlock(const Eigen::Ref<const Eigen::VectorXd>& joint_vals, Jacobian& jac_block) const;
 
   /**
    * @brief Get the collision evaluator. This exposed for plotter callbacks
@@ -98,22 +95,26 @@ public:
 
 private:
   /** @brief The number of joints in a single JointPosition */
-  long n_dof_;
+  long n_dof_{ 0 };
+
+  /** @brief The per-position_var max constraints */
+  std::size_t max_num_cnt_per_var_{ 0 };
 
   /** @brief Bounds on the constraint value. Default: std::vector<Bounds>(1, ifopt::BoundSmallerZero) */
   std::vector<ifopt::Bounds> bounds_;
 
   /** @brief Pointers to the vars used by this constraint. */
-  std::shared_ptr<const Var> position_var_;
+  std::vector<std::shared_ptr<const Var>> position_vars_;
 
   std::shared_ptr<DiscreteCollisionEvaluator> collision_evaluator_;
 
   /** @brief Used to initialize jacobian because snopt sparsity cannot change */
   bool fixed_sparsity_{ false };
+  mutable std::string var_set_name_;
   mutable std::once_flag init_flag_;
   mutable std::vector<Eigen::Triplet<double>> triplet_list_;
 
-  void initSparsity() const;
+  void init() const;
 };
 
 }  // namespace trajopt_ifopt
