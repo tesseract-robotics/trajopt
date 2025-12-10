@@ -59,10 +59,10 @@ public:
 
   DiscreteCollisionEvaluator() = default;
   virtual ~DiscreteCollisionEvaluator() = default;
-  DiscreteCollisionEvaluator(const DiscreteCollisionEvaluator&) = default;
-  DiscreteCollisionEvaluator& operator=(const DiscreteCollisionEvaluator&) = default;
-  DiscreteCollisionEvaluator(DiscreteCollisionEvaluator&&) = default;
-  DiscreteCollisionEvaluator& operator=(DiscreteCollisionEvaluator&&) = default;
+  DiscreteCollisionEvaluator(const DiscreteCollisionEvaluator&) = delete;
+  DiscreteCollisionEvaluator& operator=(const DiscreteCollisionEvaluator&) = delete;
+  DiscreteCollisionEvaluator(DiscreteCollisionEvaluator&&) = delete;
+  DiscreteCollisionEvaluator& operator=(DiscreteCollisionEvaluator&&) = delete;
 
   /**
    * @brief Given joint names and values calculate the collision results for this evaluator
