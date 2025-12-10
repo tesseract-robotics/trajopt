@@ -60,6 +60,14 @@ public:
                                 bool fixed_sparsity = false,
                                 const std::string& name = "LVSCollision");
 
+  ContinuousCollisionConstraint(std::shared_ptr<ContinuousCollisionEvaluator> collision_evaluator,
+                                std::vector<std::shared_ptr<const Var>> position_vars,
+                                bool vars0_fixed,
+                                bool vars1_fixed,
+                                int max_num_cnt = 1,
+                                bool fixed_sparsity = false,
+                                const std::string& name = "LVSCollision");
+
   /**
    * @brief Returns the values associated with the constraint.
    * @warning Make sure that the values returns are not just the violation but the constraint values.
@@ -101,11 +109,14 @@ private:
   /** @brief The number of joints in a single JointPosition */
   long n_dof_;
 
+  /** @brief The per-position_var max constraints */
+  std::size_t max_num_cnt_per_segment_{ 0 };
+
   /** @brief Bounds on the constraint value. Default: std::vector<Bounds>(1, ifopt::BoundSmallerZero) */
   std::vector<ifopt::Bounds> bounds_;
 
   /** @brief Pointers to the vars used by this constraint. */
-  std::array<std::shared_ptr<const Var>, 2> position_vars_;
+  std::vector<std::shared_ptr<const Var>> position_vars_;
   bool vars0_fixed_{ false };
   bool vars1_fixed_{ false };
 
@@ -113,10 +124,11 @@ private:
 
   /** @brief Used to initialize jacobian because snopt sparsity cannot change */
   bool fixed_sparsity_{ false };
+  mutable std::string var_set_name_;
   mutable std::once_flag init_flag_;
   mutable std::vector<Eigen::Triplet<double>> triplet_list_;
 
-  void initSparsity() const;
+  void init() const;
 };
 }  // namespace trajopt_ifopt
 

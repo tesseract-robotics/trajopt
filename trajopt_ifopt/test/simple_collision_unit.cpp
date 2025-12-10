@@ -125,11 +125,6 @@ TEST_F(SimpleCollisionTest, spheres)  // NOLINT
   nlp.PrintCurrent();
   std::cout << "Jacobian: \n" << nlp.GetJacobianOfConstraints() << '\n';
 
-  auto error_calculator = [&](const Eigen::Ref<const Eigen::VectorXd>& x) { return cnt->CalcValues(x); };
-  trajopt_ifopt::SparseMatrix const num_jac_block =
-      trajopt_ifopt::calcForwardNumJac(error_calculator, positions[0], 1e-4);
-  std::cout << "Numerical Jacobian: \n" << num_jac_block << '\n';
-
   // 5) choose solver and options
   ifopt::IpoptSolver ipopt;
   ipopt.SetOption("derivative_test", "first-order");
