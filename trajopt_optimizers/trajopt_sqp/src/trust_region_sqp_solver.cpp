@@ -244,6 +244,9 @@ void TrustRegionSQPSolver::runTrustRegionLoop()
     // Solve the current QP problem
     status_ = solveQPProblem();
 
+    if (status_ == SQPStatus::CALLBACK_STOPPED)
+      return;  // Respect callbacks and exit gracefully
+
     if (status_ != SQPStatus::RUNNING)
     {
       qp_solver_failures++;
@@ -291,11 +294,12 @@ void TrustRegionSQPSolver::runTrustRegionLoop()
       return;
     }
 
-    if (results_.approx_merit_improve / results_.best_exact_merit < params.min_approx_improve_frac)
+    const double denom = std::max(std::abs(results_.best_exact_merit), 1e-12);
+    const double approx_frac = results_.approx_merit_improve / denom;
+    if (approx_frac < params.min_approx_improve_frac)
     {
-      CONSOLE_BRIDGE_logDebug("Converged because improvement ratio was small (%.3e < %.3e)",
-                              results_.approx_merit_improve / results_.best_exact_merit,
-                              params.min_approx_improve_frac);
+      CONSOLE_BRIDGE_logDebug(
+          "Converged because improvement ratio was small (%.3e < %.3e)", approx_frac, params.min_approx_improve_frac);
       status_ = SQPStatus::NLP_CONVERGED;
       return;
     }
@@ -370,7 +374,11 @@ SQPStatus TrustRegionSQPSolver::solveQPProblem()
     results_.new_exact_merit =
         results_.new_costs.sum() + results_.new_constraint_violations.dot(results_.merit_error_coeffs);
     results_.exact_merit_improve = results_.best_exact_merit - results_.new_exact_merit;
-    results_.merit_improve_ratio = results_.exact_merit_improve / results_.approx_merit_improve;
+    // results_.merit_improve_ratio = results_.exact_merit_improve / results_.approx_merit_improve;
+    if (std::abs(results_.approx_merit_improve) < 1e-12)
+      results_.merit_improve_ratio = 0.0;  // or 1.0, or whatever convention you want
+    else
+      results_.merit_improve_ratio = results_.exact_merit_improve / results_.approx_merit_improve;
 
     // The variable are changed to the new values to calculated data but must be set
     // to best var vals because the new values may not improve the merit which is determined later.
