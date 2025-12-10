@@ -28,7 +28,10 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <OsqpEigen/OsqpEigen.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
-const bool OSQP_COMPARE_DEBUG_MODE = false;
+namespace
+{
+constexpr bool OSQP_COMPARE_DEBUG_MODE = false;
+}
 
 namespace trajopt_sqp
 {
@@ -75,6 +78,13 @@ bool OSQPEigenSolver::clear()
   solver_->clearSolver();
   solver_->data()->clearHessianMatrix();
   solver_->data()->clearLinearConstraintsMatrix();
+
+  num_vars_ = 0;
+  num_cnts_ = 0;
+  gradient_.resize(0);
+  bounds_lower_.resize(0);
+  bounds_upper_.resize(0);
+  solver_status_ = QPSolverStatus::UNITIALIZED;
   return true;
 }
 
@@ -82,7 +92,13 @@ bool OSQPEigenSolver::solve()
 {
   // In order to call initSolver, everything must have already been set, so we call it right before solving
   if (!solver_->isInitialized())  // NOLINT
-    solver_->initSolver();
+  {
+    if (!solver_->initSolver())
+    {
+      solver_status_ = QPSolverStatus::QP_ERROR;
+      return false;
+    }
+  }
 
   if (OSQP_COMPARE_DEBUG_MODE)
   {
@@ -185,11 +201,7 @@ bool OSQPEigenSolver::solve()
   return false;
 }
 
-Eigen::VectorXd OSQPEigenSolver::getSolution()
-{
-  Eigen::VectorXd solution = solver_->getSolution();
-  return solution;
-}
+Eigen::VectorXd OSQPEigenSolver::getSolution() { return solver_->getSolution(); }
 
 bool OSQPEigenSolver::updateHessianMatrix(const SparseMatrix& hessian)
 {
@@ -198,15 +210,10 @@ bool OSQPEigenSolver::updateHessianMatrix(const SparseMatrix& hessian)
   const SparseMatrix cleaned = 2.0 * hessian.pruned(1e-7, 1);  // Any value < 1e-7 will be removed
 
   if (solver_->isInitialized())
-  {
-    const bool success = solver_->updateHessianMatrix(cleaned);
-    return success;
-  }
+    return solver_->updateHessianMatrix(cleaned);
 
   solver_->data()->clearHessianMatrix();
-  const bool success = solver_->data()->setHessianMatrix(cleaned);
-
-  return success;
+  return solver_->data()->setHessianMatrix(cleaned);
 }
 
 bool OSQPEigenSolver::updateGradient(const Eigen::Ref<const Eigen::VectorXd>& gradient)
@@ -254,13 +261,9 @@ bool OSQPEigenSolver::updateLinearConstraintsMatrix(const SparseMatrix& linearCo
   const SparseMatrix cleaned = linearConstraintsMatrix.pruned(1e-7, 1);  // Any value < 1e-7 will be removed
 
   if (solver_->isInitialized())
-  {
-    const bool success = solver_->updateLinearConstraintsMatrix(cleaned);
-    return success;
-  }
+    return solver_->updateLinearConstraintsMatrix(cleaned);
 
-  const bool success = solver_->data()->setLinearConstraintsMatrix(cleaned);
-  return success;
+  return solver_->data()->setLinearConstraintsMatrix(cleaned);
 }
 
 }  // namespace trajopt_sqp
