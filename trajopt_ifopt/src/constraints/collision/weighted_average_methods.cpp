@@ -50,7 +50,7 @@ Eigen::VectorXd getWeightedAvgGradientT0(const trajopt_common::GradientResultsSe
           const double w = (std::max(grad.error_with_buffer, 0.0) / max_error_with_buffer);
           assert(!(w < 0));
           total_weight += w;
-          grad_vec += w * (grad.gradients[i].scale * grad.gradients[i].gradient);
+          grad_vec.noalias() += w * (grad.gradients[i].scale * grad.gradients[i].gradient);
           ++cnt;
         }
       }
@@ -61,7 +61,8 @@ Eigen::VectorXd getWeightedAvgGradientT0(const trajopt_common::GradientResultsSe
     return grad_vec;
 
   assert(total_weight > 0);
-  return (1.0 / total_weight) * grad_results_set.coeff * grad_vec;
+  const double scale = grad_results_set.coeff / total_weight;
+  return scale * grad_vec;
 }
 
 Eigen::VectorXd getWeightedAvgGradientT1(const trajopt_common::GradientResultsSet& grad_results_set,
@@ -88,7 +89,7 @@ Eigen::VectorXd getWeightedAvgGradientT1(const trajopt_common::GradientResultsSe
           const double w = (std::max(grad.error_with_buffer, 0.0) / max_error_with_buffer);
           assert(!(w < 0));
           total_weight += w;
-          grad_vec += w * (grad.cc_gradients[i].scale * grad.cc_gradients[i].gradient);
+          grad_vec.noalias() += w * (grad.cc_gradients[i].scale * grad.cc_gradients[i].gradient);
           ++cnt;
         }
       }
@@ -99,6 +100,7 @@ Eigen::VectorXd getWeightedAvgGradientT1(const trajopt_common::GradientResultsSe
     return grad_vec;
 
   assert(total_weight > 0);
-  return (1.0 / total_weight) * grad_results_set.coeff * grad_vec;
+  const double scale = grad_results_set.coeff / total_weight;
+  return scale * grad_vec;
 }
 }  // namespace trajopt_ifopt

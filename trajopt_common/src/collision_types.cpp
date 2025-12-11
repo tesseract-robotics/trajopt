@@ -41,7 +41,7 @@ double CollisionCoeffData::getDefaultCollisionCoeff() const { return default_col
 void CollisionCoeffData::setCollisionCoeff(const std::string& obj1, const std::string& obj2, double collision_coeff)
 {
   auto key = tesseract_common::makeOrderedLinkPair(obj1, obj2);
-  lookup_table_[key] = collision_coeff;
+  lookup_table_.insert_or_assign(key, collision_coeff);
 
   if (tesseract_common::almostEqualRelativeAndAbs(collision_coeff, 0.0))
     zero_coeff_.insert(key);
@@ -72,9 +72,9 @@ const std::set<tesseract_common::LinkNamesPair>& CollisionCoeffData::getPairsWit
 
 bool CollisionCoeffData::operator==(const CollisionCoeffData& rhs) const
 {
-  static auto max_diff = static_cast<double>(std::numeric_limits<float>::epsilon());
+  static constexpr auto max_diff = static_cast<double>(std::numeric_limits<float>::epsilon());
 
-  auto value_eq = [](const double& v1, const double& v2) {
+  static const auto value_eq = [](double v1, double v2) {
     return tesseract_common::almostEqualRelativeAndAbs(v1, v2, max_diff);
   };
 
@@ -147,35 +147,28 @@ double LinkMaxError::getMaxErrorWithBuffer() const
 
 void GradientResultsSet::add(const GradientResults& gradient_result)
 {
-  // Update max error for LinkA and LinkB excluding values at T1
   for (std::size_t i = 0; i < 2; ++i)
   {
-    if (gradient_result.gradients[i].has_gradient &&
-        gradient_result.gradients[i].cc_type != tesseract_collision::ContinuousCollisionType::CCType_Time1)
+    const auto& g = gradient_result.gradients[i];
+    if (!g.has_gradient)
+      continue;
+
+    // Update max error for LinkA and LinkB excluding values at T1
+    if (g.cc_type != tesseract_collision::ContinuousCollisionType::CCType_Time1)
     {
       max_error[i].has_error[0] = true;
-
-      if (gradient_result.error > max_error[i].error[0])
-        max_error[i].error[0] = gradient_result.error;
-
-      if (gradient_result.error_with_buffer > max_error[i].error_with_buffer[0])
-        max_error[i].error_with_buffer[0] = gradient_result.error_with_buffer;
+      max_error[i].error[0] = std::max(max_error[i].error[0], gradient_result.error);
+      max_error[i].error_with_buffer[0] =
+          std::max(max_error[i].error_with_buffer[0], gradient_result.error_with_buffer);
     }
-  }
 
-  // Update max error for LinkA and LinkB excluding values at T0
-  for (std::size_t i = 0; i < 2; ++i)
-  {
-    if (gradient_result.gradients[i].has_gradient &&
-        gradient_result.gradients[i].cc_type != tesseract_collision::ContinuousCollisionType::CCType_Time0)
+    // Update max error for LinkA and LinkB excluding values at T0
+    if (g.cc_type != tesseract_collision::ContinuousCollisionType::CCType_Time0)
     {
       max_error[i].has_error[1] = true;
-
-      if (gradient_result.error > max_error[i].error[1])
-        max_error[i].error[1] = gradient_result.error;
-
-      if (gradient_result.error_with_buffer > max_error[i].error_with_buffer[1])
-        max_error[i].error_with_buffer[1] = gradient_result.error_with_buffer;
+      max_error[i].error[1] = std::max(max_error[i].error[1], gradient_result.error);
+      max_error[i].error_with_buffer[1] =
+          std::max(max_error[i].error_with_buffer[1], gradient_result.error_with_buffer);
     }
   }
 
