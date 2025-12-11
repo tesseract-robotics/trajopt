@@ -2,7 +2,13 @@
 
 namespace trajopt_sqp
 {
-Eigen::VectorXd AffExprs::values(const Eigen::Ref<Eigen::VectorXd>& x) const { return constants + (linear_coeffs * x); }
+Eigen::VectorXd AffExprs::values(const Eigen::Ref<const Eigen::VectorXd>& x) const
+{
+  // Avoid building a temporary for (linear_coeffs * x) + constants
+  Eigen::VectorXd result = constants;
+  result.noalias() += linear_coeffs * x;
+  return result;
+}
 
 QuadExprs::QuadExprs(Eigen::Index num_cost, Eigen::Index num_vars)
   : constants(Eigen::VectorXd::Zero(num_cost))
@@ -13,18 +19,30 @@ QuadExprs::QuadExprs(Eigen::Index num_cost, Eigen::Index num_vars)
   quadratic_coeffs.reserve(static_cast<std::size_t>(num_cost));
 }
 
-Eigen::VectorXd QuadExprs::values(const Eigen::Ref<Eigen::VectorXd>& x) const
+Eigen::VectorXd QuadExprs::values(const Eigen::Ref<const Eigen::VectorXd>& x) const
 {
-  const Eigen::VectorXd result_lin = constants + (linear_coeffs * x);
-  Eigen::VectorXd result_quad = result_lin;
-  assert(result_quad.rows() == static_cast<Eigen::Index>(quadratic_coeffs.size()));
-  for (std::size_t i = 0; i < quadratic_coeffs.size(); ++i)
+  // Start with affine part: c + A x
+  Eigen::VectorXd result = constants;
+  result.noalias() += linear_coeffs * x;
+
+  if (quadratic_coeffs.empty())
+    return result;
+
+  // Reuse a single scratch vector for Q_i * x to avoid per-iteration allocations
+  Eigen::VectorXd tmp(x.size());
+  const auto n = static_cast<Eigen::Index>(quadratic_coeffs.size());
+  assert(result.rows() == n);
+
+  for (Eigen::Index i = 0; i < n; ++i)
   {
-    const auto& eq_quad_coeffs = quadratic_coeffs[i];
-    if (eq_quad_coeffs.nonZeros() > 0)
-      result_quad(static_cast<Eigen::Index>(i)) += (x.transpose() * eq_quad_coeffs * x);  // NOLINT
+    const SparseMatrix& Q = quadratic_coeffs[static_cast<std::size_t>(i)];
+    if (Q.nonZeros() == 0)
+      continue;
+
+    tmp.noalias() = Q * x;
+    result(i) += x.dot(tmp);  // xᵀ Q x
   }
-  return result_quad;
+  return result;
 }
 
 AffExprs createAffExprs(const Eigen::Ref<const Eigen::VectorXd>& func_error,
@@ -33,7 +51,9 @@ AffExprs createAffExprs(const Eigen::Ref<const Eigen::VectorXd>& func_error,
 {
   AffExprs aff_expr;
 
-  aff_expr.constants = func_error - (func_jacobian * x);
+  // constants = f(x₀) − J(x₀) x₀
+  aff_expr.constants = func_error;
+  aff_expr.constants.noalias() -= func_jacobian * x;
   aff_expr.linear_coeffs = func_jacobian;
 
   return aff_expr;
@@ -44,23 +64,37 @@ QuadExprs createQuadExprs(const Eigen::Ref<const Eigen::VectorXd>& func_errors,
                           const std::vector<SparseMatrix>& func_hessians,
                           const Eigen::Ref<const Eigen::VectorXd>& x)
 {
-  QuadExprs quad_exprs;
+  const Eigen::Index num_cost = func_errors.rows();
+  const Eigen::Index num_vars = func_jacobian.cols();
 
-  quad_exprs.quadratic_coeffs.resize(static_cast<std::size_t>(func_errors.rows()));
+  QuadExprs quad_exprs(num_cost, num_vars);
+
+  // constants = f(x₀) − J(x₀) x₀
+  quad_exprs.constants = func_errors;
+  quad_exprs.constants.noalias() -= func_jacobian * x;
+
   quad_exprs.linear_coeffs.resize(func_jacobian.rows(), func_jacobian.cols());
-  quad_exprs.constants = func_errors - (func_jacobian * x);  // NOLINT
+  quad_exprs.linear_coeffs.setZero();  // keep existing behavior: rows with no Hessian stay zero
+  quad_exprs.quadratic_coeffs.resize(static_cast<std::size_t>(num_cost));
 
-  for (Eigen::Index i = 0; i < func_errors.rows(); ++i)  // NOLINT
+  // Reuse scratch for H_i * x
+  Eigen::VectorXd tmp(num_vars);
+
+  for (Eigen::Index i = 0; i < num_cost; ++i)
   {
-    const auto& eq_hessian = func_hessians[static_cast<std::size_t>(i)];
-    if (eq_hessian.nonZeros() > 0)
-    {
-      auto& c = quad_exprs.quadratic_coeffs[static_cast<std::size_t>(i)];
-      c = 0.5 * eq_hessian;
+    const auto& H = func_hessians[static_cast<std::size_t>(i)];
+    if (H.nonZeros() == 0)
+      continue;
 
-      quad_exprs.constants(i) += (x.transpose() * c * x);
-      quad_exprs.linear_coeffs.row(i) = func_jacobian.row(i) - ((2.0 * c) * x).transpose();
-    }
+    auto& Q = quad_exprs.quadratic_coeffs[static_cast<std::size_t>(i)];
+    Q = 0.5 * H;  // store ½ H
+
+    // ½ xᵀ H x
+    tmp.noalias() = H * x;
+    quad_exprs.constants(i) += 0.5 * x.dot(tmp);
+
+    // linear row: J_i − H x
+    quad_exprs.linear_coeffs.row(i) = func_jacobian.row(i) - tmp.transpose();
   }
 
   return quad_exprs;
@@ -68,23 +102,28 @@ QuadExprs createQuadExprs(const Eigen::Ref<const Eigen::VectorXd>& func_errors,
 
 QuadExprs squareAffExprs(const AffExprs& aff_expr)
 {
-  QuadExprs quad_expr;
-  quad_expr.constants = aff_expr.constants.array().square();
-  quad_expr.linear_coeffs = (2 * aff_expr.constants).asDiagonal() * aff_expr.linear_coeffs;
-  quad_expr.quadratic_coeffs.resize(static_cast<std::size_t>(aff_expr.constants.rows()));
-  quad_expr.objective_linear_coeffs = Eigen::VectorXd::Zero(aff_expr.linear_coeffs.cols());
-  quad_expr.objective_quadratic_coeffs.resize(aff_expr.linear_coeffs.cols(), aff_expr.linear_coeffs.cols());
+  QuadExprs quad_expr(aff_expr.constants.rows(), aff_expr.linear_coeffs.cols());
 
+  // Per-equation constant term: a_i²
+  quad_expr.constants = aff_expr.constants.array().square();
+
+  // Per-equation linear term: 2 a_i b_iᵀ
+  quad_expr.linear_coeffs = (2.0 * aff_expr.constants).asDiagonal() * aff_expr.linear_coeffs;
+
+  quad_expr.quadratic_coeffs.resize(static_cast<std::size_t>(aff_expr.constants.rows()));
+
+  // Objective aggregates
+  quad_expr.objective_linear_coeffs =
+      quad_expr.linear_coeffs.transpose() * Eigen::VectorXd::Ones(quad_expr.linear_coeffs.rows());
+
+  quad_expr.objective_quadratic_coeffs.resize(aff_expr.linear_coeffs.cols(), aff_expr.linear_coeffs.cols());
+  // Start as empty (all zeros)
+  // objective_quadratic_coeffs will be the sum of per-equation Q_i
   for (Eigen::Index i = 0; i < aff_expr.constants.rows(); ++i)
   {
-    // Increment the objective linear coefficients
-    quad_expr.objective_linear_coeffs += quad_expr.linear_coeffs.row(i);
+    auto eq_affexpr_coeffs = aff_expr.linear_coeffs.row(i);                                     // b_iᵀ
+    const SparseMatrix eq_quadexpr_coeffs = eq_affexpr_coeffs.transpose() * eq_affexpr_coeffs;  // b_i b_iᵀ
 
-    // Now calculate the quadratic coefficients
-    auto eq_affexpr_coeffs = aff_expr.linear_coeffs.row(i);
-    const SparseMatrix eq_quadexpr_coeffs = eq_affexpr_coeffs.transpose() * eq_affexpr_coeffs;
-
-    // Store the quadtratic coeffs and increment the objective quadratic coefficients
     if (eq_quadexpr_coeffs.nonZeros() > 0)
     {
       quad_expr.quadratic_coeffs[static_cast<std::size_t>(i)] = eq_quadexpr_coeffs;
