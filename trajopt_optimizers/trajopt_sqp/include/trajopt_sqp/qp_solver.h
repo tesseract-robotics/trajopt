@@ -27,7 +27,7 @@
 #define TRAJOPT_SQP_INCLUDE_QP_SOLVER_H_
 
 #include <memory>
-#include <trajopt_sqp/eigen_types.h>
+#include <trajopt_ifopt/core/eigen_types.h>
 
 namespace trajopt_sqp
 {
@@ -64,7 +64,7 @@ public:
    * @param num_cnts Number of QP constraints
    * @return true if successful
    */
-  virtual bool init(Eigen::Index num_vars, Eigen::Index num_cnts) = 0;
+  virtual bool init(Eigen::Index num_vars, Eigen::Index num_cnts, const Eigen::VectorXd& init_vals = {}) = 0;
 
   /**
    * @brief Clears the QP solver
@@ -89,7 +89,7 @@ public:
    * @param hessian The QP hessian. Should be n_vars x n_vars
    * @return true if successful
    */
-  virtual bool updateHessianMatrix(const SparseMatrix& hessian) = 0;
+  virtual bool updateHessianMatrix(const trajopt_ifopt::Jacobian& hessian) = 0;
 
   /**
    * @brief Updates the cost gradient
@@ -126,7 +126,7 @@ public:
    * @param linearConstraintsMatrix Input constraint matrix
    * @return true if successful
    */
-  virtual bool updateLinearConstraintsMatrix(const SparseMatrix& linearConstraintsMatrix) = 0;
+  virtual bool updateLinearConstraintsMatrix(const trajopt_ifopt::Jacobian& linearConstraintsMatrix) = 0;
 
   /**
    * @brief Returns the solver status

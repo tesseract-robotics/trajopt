@@ -37,203 +37,125 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
 
-#include <trajopt_ifopt/core/bounds.h>
+#include <trajopt_ifopt/core/component.h>
 
 namespace trajopt_ifopt
 {
-using Jacobian = Eigen::SparseMatrix<double, Eigen::RowMajor>;
-
 /**
- * @brief Interface representing either Variable, Cost or Constraint.
+ * @brief A collection of variable components which is treated as another variables component.
  *
- * Variables, costs and constraints can all be fit into the same interface
- * (Component). For example, each has a "value", which is either the actual
- * value of the variables, the constraint value g or the cost.
- * This representation provides one common interface
- * ("smallest common denominator") that can be contain either individual
- * variables/costs/constraints or a Composite of these. This pattern
- * takes care of stacking variables, ordering Jacobians and providing bounds
- * for the complete problem without duplicating code. For more information on
- * the composite pattern visit https://sourcemaking.com/design_patterns/composite
+ * This composite does not perform any evaluation itself; it stitches together:
+ * @li values (concatenation)
+ * @li bounds (concatenation)
+ * and partitions a solver-provided decision vector into per-variable-set segments.
+ *
+ * @note This composite assumes variables are fixed-sized. Its row count is the sum
+ *       of its child variable set sizes.
+ *
+ * @ingroup ProblemFormulation
  */
-class Component
+class CompositeVariables : public Variables
 {
 public:
-  using Ptr = std::shared_ptr<Component>;
+  using Ptr = std::shared_ptr<CompositeVariables>;
+  using ComponentVec = std::vector<Variables::Ptr>;
+
+  explicit CompositeVariables(std::string name);
+  ~CompositeVariables() override = default;
 
   /**
-   * @brief  Creates a component.
-   * @param  num_rows  The number of rows of this components.
-   * @param  name  The identifier for this component.
+   * @brief Adds a variables component to this composite.
    *
-   * The number of rows @c num_rows can represent either
-   * @li number of variables in this variables set
-   * @li number of constraints in this constraint set
-   * @li 1 if this component represents a Cost.
+   * @attention The number of rows must be specified by the component and must be non-negative.
    */
-  Component(std::string name, int num_rows, bool is_dynamic);
-  virtual ~Component() = default;
+  void addComponent(Variables::Ptr component);
+
+  /** @brief Removes all components and resets row count to zero. */
+  void clearComponents();
+
+  /** @brief Returns read access to the components. */
+  const ComponentVec& getComponents() const;
+
+  /** @brief True if no components have been added. */
+  bool empty() const;
 
   /**
-   * @brief This used for dynamic size components to recompute the number of rows
-   * @return The number of rows
-   */
-  virtual int Update() = 0;
-
-  /**
-   * @brief  Returns the "values" of whatever this component represents.
+   * @brief Access component with the specified name.
+   * @param name The component name.
+   * @return The variables component pointer.
    *
-   * @li For Variable this represents the actual optimization values.
-   * @li For Constraint this represents the constraint value g.
-   * @li For Cost this represents the cost value.
+   * @warning This is a linear search. Prefer storing handles if performance matters.
    */
-  virtual Eigen::VectorXd GetValues() const = 0;
+  Variables::Ptr getComponent(const std::string& name) const;
 
-  /**
-   * @brief  Returns the "bounds" of this component.
-   *
-   * @li For Variable these are the upper and lower variable bound.
-   * @li For Constraint this represents the constraint bounds.
-   * @li For Cost these done't exists (set to infinity).
-   */
-  virtual std::vector<Bounds> GetBounds() const = 0;
-
-  /**
-   * @brief  Sets the optimization variables from an Eigen vector.
-   *
-   * This is only done for Variable, where these are set from the current
-   * values of the @ref solvers.
-   */
-  virtual void SetVariables(const Eigen::VectorXd& x) = 0;
-
-  /**
-   * @brief  Returns derivatives of each row w.r.t. the variables
-   *
-   * @li For Constraint this is a matrix with one row per constraint.
-   * @li For a Cost this is a row vector (gradient transpose).
-   * @li Not sensible for Variable.
-   */
-  virtual Jacobian GetJacobian() const = 0;
-
-  /**
-   * @brief Returns the number of rows of this component.
-   */
-  int GetRows() const;
-
-  /**
-   * @brief Returns the name (id) of this component.
-   */
-  const std::string& GetName() const;
-
-  /**
-   * @brief Prints the relevant information (name, rows, values) of this component.
-   * @param tolerance  When to flag constraint/bound violation.
-   * @param index_start  Of this specific variables-, constraint- or cost set.
-   */
-  virtual void Print(double tolerance, int& index_start) const;
-
-  /**
-   * @brief Sets the number of rows of this component.
-   *
-   * @attention This should correctly be done through constructor call, only
-   * delay this by using @c kSpecifyLater if you have good reason.
-   */
-  void SetRows(int num_rows);
-  static const int kSpecifyLater = -1;
-
-  /**
-   * @brief Indicate if the component can change size when variables change
-   * @return true if it can change size
-   */
-  bool IsDynamic() const;
-
-private:
-  std::string name_;
-  int num_rows_ = kSpecifyLater;
-  bool is_dynamic_{ false };
-};
-
-/**
- * @brief A collection of components which is treated as another Component.
- *
- * This class follows the Component interface as well, but doesn't actually
- * do any evaluation, but only stitches together the results of the
- * components it is holding. This is where multiple sets of variables,
- * constraints or costs are ordered and combined.
- *
- * See Component and Composite Pattern for more information.
- */
-class Composite : public Component
-{
-public:
-  using Ptr = std::shared_ptr<Composite>;
-  using ComponentVec = std::vector<Component::Ptr>;
-
-  /**
-   * @brief  Creates a Composite holding either variables, costs or constraints.
-   * @param  is_cost  True if this class holds cost terms, false for all others.
-   *
-   * Constraints and variables append individual constraint sets and Jacobian
-   * rows below one another, whereas costs terms are all accumulated to a
-   * scalar value/a single Jacobian row.
-   */
-  Composite(std::string name, bool is_cost, bool is_dynamic);
-  ~Composite() override = default;
-
-  // see Component for documentation
-  int Update() override;
-  Eigen::VectorXd GetValues() const override;
-  Jacobian GetJacobian() const override;
-  std::vector<Bounds> GetBounds() const override;
-  void SetVariables(const Eigen::VectorXd& x) override;
-  void PrintAll() const;
-
-  /**
-   * @brief  Access generic component with the specified name.
-   * @param  name  The name given to the component.
-   * @return A generic pointer of that component.
-   */
-  Component::Ptr GetComponent(const std::string& name) const;
-
-  /**
-   * @brief  Access type-casted component with the specified name.
-   * @param  name  The name given to the component.
-   * @tparam T  Type of component.
-   * @return A type-casted pointer possibly providing addtional functionality.
-   */
-  template <typename T>
-  std::shared_ptr<T> GetComponent(const std::string& name) const;
-
-  /**
-   * @brief Adds a component to this composite.
-   */
-  void AddComponent(Component::Ptr);
-
-  /**
-   * @brief Removes all component from this composite.
-   */
-  void ClearComponents();
-
-  /**
-   * @brief Returns read access to the components.
-   */
-  const ComponentVec& GetComponents() const;
+  // ---- Variables / Component ----
+  Eigen::VectorXd getValues() const override;
+  std::vector<Bounds> getBounds() const override;
+  void setVariables(const Eigen::VectorXd& x) override;
+  void print(int& index, double tolerance = 0.001) const override;
 
 private:
   ComponentVec components_;
-  bool is_cost_{ false };
-  // The number of variables for costs/constraint composites (not set for variables).
-  // Is initialized the first the GetJacobian() is called.
-  mutable std::atomic<Eigen::Index> n_var = -1;
 };
 
-// implementation of template functions
-template <typename T>
-std::shared_ptr<T> Composite::GetComponent(const std::string& name) const
+/**
+ * @brief A collection of differentiable components which is treated as another differentiable component.
+ *
+ * This composite stitches together:
+ * @li values (stacked for constraints, summed for costs)
+ * @li bounds (concatenated)
+ * @li Jacobians (stacked for constraints, summed for costs)
+ *
+ * It also supports dynamic-sized components through @ref update().
+ *
+ * @ingroup ProblemFormulation
+ */
+class CompositeDifferentiable : public Differentiable
 {
-  Component::Ptr c = GetComponent(name);
-  return std::dynamic_pointer_cast<T>(c);
-}
+public:
+  using Ptr = std::shared_ptr<CompositeDifferentiable>;
+  using ComponentVec = std::vector<Differentiable::Ptr>;
+
+  CompositeDifferentiable(std::string name, Mode mode, bool dynamic);
+  ~CompositeDifferentiable() override = default;
+
+  /**
+   * @brief Adds a differentiable component to this composite.
+   *
+   * @attention The child component's @ref DifferentiableInterface::isDynamic() must match this composite.
+   */
+  void addComponent(Differentiable::Ptr component);
+
+  /** @brief Removes all components and resets row count to zero (or 1 for cost mode). */
+  void clearComponents();
+
+  /** @brief Returns read access to the components. */
+  const ComponentVec& getComponents() const;
+
+  /** @brief True if no components have been added. */
+  bool empty() const;
+
+  /**
+   * @brief Access component with the specified name.
+   * @param name The component name.
+   * @return The differentiable component pointer.
+   *
+   * @warning This is a linear search. Prefer storing handles if performance matters.
+   */
+  Differentiable::Ptr getComponent(const std::string& name) const;
+
+  // ---- DifferentiableInterface / ComponentInterface ----
+  int update() override;
+  Eigen::VectorXd getValues() const override;
+  Eigen::VectorXd getCoefficients() const override;
+  Jacobian getJacobian() const override;
+  std::vector<Bounds> getBounds() const override;
+  void print(int& index, double tolerance = 0.001) const override;
+
+private:
+  ComponentVec components_;
+  mutable long n_vars_{ -1 };
+};
 
 }  // namespace trajopt_ifopt
 

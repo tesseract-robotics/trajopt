@@ -39,7 +39,6 @@ JointVelConstraint::JointVelConstraint(const Eigen::VectorXd& targets,
   : ConstraintSet(std::move(name), static_cast<int>(targets.size()) * static_cast<int>(position_vars.size() - 1))
   , n_dof_(targets.size())
   , n_vars_(static_cast<long>(position_vars.size()))
-  , coeffs_(coeffs)
   , position_vars_(position_vars)
 {
   if (position_vars_.size() < 2)
@@ -56,17 +55,25 @@ JointVelConstraint::JointVelConstraint(const Eigen::VectorXd& targets,
   assert(n_dof_ > 0);
   assert(n_vars_ > 0);
 
-  if (!(coeffs_.array() > 0).all())
+  if (!(coeffs.array() > 0).all())
     throw std::runtime_error("JointVelConstraint, coeff must be greater than zero.");
 
-  if (coeffs_.rows() == 1)
-    coeffs_ = Eigen::VectorXd::Constant(n_dof_, coeffs(0));
-
-  if (coeffs_.rows() != n_dof_)
+  if (coeffs.rows() == 0)
+    coeffs_ = Eigen::VectorXd::Constant(n_dof_ * (n_vars_ - 1), 5);
+  else if (coeffs.rows() == 1)
+    coeffs_ = Eigen::VectorXd::Constant(n_dof_ * (n_vars_ - 1), coeffs(0));
+  else if (coeffs.rows() != n_dof_)
     throw std::runtime_error("JointVelConstraint, coeff must be the same size of the joint position.");
 
+  if (coeffs.rows() == n_dof_)
+  {
+    coeffs_.resize(n_dof_ * (n_vars_ - 1));
+    for (long j = 0; j < n_vars_ - 1; j++)
+      coeffs_.segment(j * n_dof_, n_dof_) = coeffs;
+  }
+
   // Set the bounds to the input targets
-  std::vector<Bounds> bounds(static_cast<std::size_t>(GetRows()));
+  std::vector<Bounds> bounds(static_cast<std::size_t>(rows_));
   // All of the positions should be exactly at their targets
   for (long j = 0; j < n_vars_ - 1; j++)
   {
@@ -76,7 +83,7 @@ JointVelConstraint::JointVelConstraint(const Eigen::VectorXd& targets,
   bounds_ = bounds;
 }
 
-Eigen::VectorXd JointVelConstraint::GetValues() const
+Eigen::VectorXd JointVelConstraint::getValues() const
 {
   // i - represents the trajectory timestep index
   // k - represents the DOF index
@@ -98,20 +105,22 @@ Eigen::VectorXd JointVelConstraint::GetValues() const
     const Eigen::VectorXd& q1 = position_vars_[static_cast<std::size_t>(seg + 1)]->value();
 
     // v_i = coeffs_ .* (q_{i+1} - q_i)
-    velocity.segment(seg * n_dof_, n_dof_) = coeffs_.cwiseProduct(q1 - q0);
+    velocity.segment(seg * n_dof_, n_dof_) = (q1 - q0);
   }
 
   return velocity;
 }
 
-// Set the limits on the constraint values (in this case just the targets)
-std::vector<Bounds> JointVelConstraint::GetBounds() const { return bounds_; }
+Eigen::VectorXd JointVelConstraint::getCoefficients() const { return coeffs_; }
 
-void JointVelConstraint::FillJacobianBlock(std::string var_set, Jacobian& jac_block) const
+// Set the limits on the constraint values (in this case just the targets)
+std::vector<Bounds> JointVelConstraint::getBounds() const { return bounds_; }
+
+void JointVelConstraint::fillJacobianBlock(std::string var_set, Jacobian& jac_block) const
 {
   // Check if this constraint use the var_set
   // Only modify the jacobian if this constraint uses var_set
-  if (var_set != position_vars_.front()->getParent()->getParent()->GetName())
+  if (var_set != position_vars_.front()->getParent()->getParent()->getName())
     return;
 
   const Eigen::Index n_segments = n_vars_ - 1;
@@ -130,12 +139,11 @@ void JointVelConstraint::FillJacobianBlock(std::string var_set, Jacobian& jac_bl
 
     for (Eigen::Index k = 0; k < n_dof_; ++k)
     {
-      const double c = coeffs_[k];
       const Eigen::Index row = row_offset + k;
 
       // v(seg,k) = c * (q1 - q0)
-      triplets.emplace_back(row, col0 + k, -c);  // ∂v/∂q_seg
-      triplets.emplace_back(row, col1 + k, c);   // ∂v/∂q_{seg+1}
+      triplets.emplace_back(row, col0 + k, -1);  // ∂v/∂q_seg
+      triplets.emplace_back(row, col1 + k, 1);   // ∂v/∂q_{seg+1}
     }
   }
 

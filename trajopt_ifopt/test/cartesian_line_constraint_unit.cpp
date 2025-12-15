@@ -10,6 +10,7 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <tesseract_environment/environment.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
+#include <trajopt_ifopt/core/composite.h>
 #include <trajopt_ifopt/constraints/cartesian_line_constraint.h>
 #include <trajopt_ifopt/variable_sets/nodes_variables.h>
 #include <trajopt_ifopt/variable_sets/node.h>
@@ -29,7 +30,7 @@ class CartesianLineConstraintUnit : public testing::TestWithParam<const char*>
 {
 public:
   Environment::Ptr env = std::make_shared<Environment>();
-  std::shared_ptr<Composite> variables = std::make_shared<Composite>("variable-sets", false, false);
+  CompositeVariables::Ptr variables = std::make_shared<CompositeVariables>("variable-sets");
 
   tesseract_kinematics::JointGroup::ConstPtr manip;
   CartLineInfo info;
@@ -60,7 +61,7 @@ public:
     var = node->addVar("position", manip->getJointNames(), pos, bounds);
     std::vector<std::unique_ptr<Node>> nodes;
     nodes.push_back(std::move(node));
-    variables->AddComponent(std::make_shared<NodesVariables>("joint_trajectory", std::move(nodes)));
+    variables->addComponent(std::make_shared<NodesVariables>("joint_trajectory", std::move(nodes)));
 
     // Add constraints
     const Eigen::VectorXd joint_position = Eigen::VectorXd::Ones(n_dof);
@@ -84,24 +85,24 @@ TEST_F(CartesianLineConstraintUnit, GetValue)  // NOLINT
     info = CartLineInfo(manip, "r_gripper_tool_frame", "base_link", line_start_pose, line_end_pose);
     const Eigen::VectorXd coeff = Eigen::VectorXd::Ones(info.indices.rows());
     auto constraint = std::make_shared<CartLineConstraint>(info, var, coeff);
-    constraint->LinkWithVariables(variables);
+    constraint->linkWithVariables(variables);
 
     // Given a joint position at the target, the error should be 0
     {
-      auto error = constraint->CalcValues(joint_position);
+      auto error = constraint->calcValues(joint_position);
       EXPECT_LT(error.maxCoeff(), 1e-3) << error.maxCoeff();
       EXPECT_GT(error.minCoeff(), -1e-3) << error.minCoeff();
     }
 
     {
-      auto error = constraint->GetValues();
+      auto error = constraint->getValues();
       EXPECT_LT(error.maxCoeff(), 1e-3);
       EXPECT_GT(error.minCoeff(), -1e-3);
     }
 
     {  // Orientation test
       joint_position[6] += 0.707;
-      auto error = constraint->CalcValues(joint_position);
+      auto error = constraint->calcValues(joint_position);
       EXPECT_NEAR(error.norm(), 0.707, 1e-3);
     }
   }
@@ -118,9 +119,9 @@ TEST_F(CartesianLineConstraintUnit, GetValue)  // NOLINT
     info = CartLineInfo(manip, "r_gripper_tool_frame", "base_link", start_pose_mod, end_pose_mod);
     const Eigen::VectorXd coeff = Eigen::VectorXd::Ones(info.indices.rows());
     auto constraint = std::make_shared<CartLineConstraint>(info, var, coeff);
-    constraint->LinkWithVariables(variables);
+    constraint->linkWithVariables(variables);
 
-    auto error = constraint->CalcValues(joint_position);
+    auto error = constraint->calcValues(joint_position);
     EXPECT_NEAR(error.norm(), 0.5, 1e-2);
   }
 }
@@ -141,7 +142,7 @@ TEST_F(CartesianLineConstraintUnit, FillJacobian)  // NOLINT
   info = CartLineInfo(manip, "r_gripper_tool_frame", "base_link", start_pose_mod, end_pose_mod);
   const Eigen::VectorXd coeff = Eigen::VectorXd::Ones(info.indices.rows());
   auto constraint = std::make_shared<CartLineConstraint>(info, var, coeff);
-  constraint->LinkWithVariables(variables);
+  constraint->linkWithVariables(variables);
 
   // below here should match cartesian
   // Modify one joint at a time
@@ -150,21 +151,21 @@ TEST_F(CartesianLineConstraintUnit, FillJacobian)  // NOLINT
     // Set the joints
     Eigen::VectorXd joint_position_mod = joint_position;
     joint_position_mod[i] = 2.0;
-    variables->SetVariables(joint_position_mod);
+    variables->setVariables(joint_position_mod);
 
     // Calculate jacobian numerically
-    auto error_calculator = [&](const Eigen::Ref<const Eigen::VectorXd>& x) { return constraint->CalcValues(x); };
+    auto error_calculator = [&](const Eigen::Ref<const Eigen::VectorXd>& x) { return constraint->calcValues(x); };
     const Jacobian num_jac_block = calcForwardNumJac(error_calculator, joint_position_mod, 1e-4);
 
     // Compare to constraint jacobian
     {
       Jacobian jac_block(num_jac_block.rows(), num_jac_block.cols());
-      constraint->CalcJacobianBlock(joint_position_mod, jac_block);  // NOLINT
+      constraint->calcJacobianBlock(joint_position_mod, jac_block);  // NOLINT
       EXPECT_TRUE(jac_block.isApprox(num_jac_block, 1e-3));
     }
     {
       Jacobian jac_block(num_jac_block.rows(), num_jac_block.cols());
-      constraint->FillJacobianBlock("joint_trajectory", jac_block);
+      constraint->fillJacobianBlock("joint_trajectory", jac_block);
       EXPECT_TRUE(jac_block.toDense().isApprox(num_jac_block.toDense(), 1e-3));
     }
   }
@@ -181,13 +182,13 @@ TEST_F(CartesianLineConstraintUnit, GetSetBounds)  // NOLINT
   info = CartLineInfo(manip, "r_gripper_tool_frame", "base_link", line_start_pose, line_end_pose);
   const Eigen::VectorXd coeff = Eigen::VectorXd::Ones(info.indices.rows());
   auto constraint = std::make_shared<CartLineConstraint>(info, var, coeff);
-  constraint->LinkWithVariables(variables);
+  constraint->linkWithVariables(variables);
 
   const Bounds bounds(-0.1234, 0.5678);
   std::vector<Bounds> bounds_vec(6, bounds);
 
-  constraint->SetBounds(bounds_vec);
-  std::vector<Bounds> results_vec = constraint->GetBounds();
+  constraint->setBounds(bounds_vec);
+  std::vector<Bounds> results_vec = constraint->getBounds();
   for (std::size_t i = 0; i < bounds_vec.size(); i++)
   {
     EXPECT_EQ(bounds_vec[i].lower, results_vec[i].lower);
@@ -205,20 +206,20 @@ TEST_F(CartesianLineConstraintUnit, IgnoreVariables)  // NOLINT
   info = CartLineInfo(manip, "r_gripper_tool_frame", "base_link", line_start_pose, line_end_pose);
   const Eigen::VectorXd coeff = Eigen::VectorXd::Ones(info.indices.rows());
   auto constraint = std::make_shared<CartLineConstraint>(info, var, coeff);
-  constraint->LinkWithVariables(variables);
+  constraint->linkWithVariables(variables);
 
   // Check that jacobian does not change for variables it shouldn't
   {
     Jacobian jac_block_input;
     jac_block_input.resize(n_dof, n_dof);
-    constraint->FillJacobianBlock("another_var", jac_block_input);
+    constraint->fillJacobianBlock("another_var", jac_block_input);
     EXPECT_EQ(jac_block_input.nonZeros(), 0);
   }
   // Check that it is fine with jac blocks the wrong size for this constraint
   {
     Jacobian jac_block_input;
     jac_block_input.resize(3, 5);
-    constraint->FillJacobianBlock("another_var2", jac_block_input);
+    constraint->fillJacobianBlock("another_var2", jac_block_input);
     EXPECT_EQ(jac_block_input.nonZeros(), 0);
   }
 }

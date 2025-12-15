@@ -50,6 +50,7 @@ TRAJOPT_IGNORE_WARNINGS_POP
 #include <trajopt_ifopt/constraints/collision/continuous_collision_constraint.h>
 #include <trajopt_ifopt/constraints/collision/continuous_collision_evaluators.h>
 #include <trajopt_ifopt/constraints/joint_position_constraint.h>
+#include <trajopt_ifopt/constraints/joint_velocity_constraint.h>
 #include <trajopt_ifopt/costs/squared_cost.h>
 
 #include <trajopt_sqp/ifopt_qp_problem.h>
@@ -107,7 +108,7 @@ public:
   }
 };
 
-void runCastWorldTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const Environment::Ptr& env)
+void runCastWorldTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const Environment::Ptr& env, bool fixed_size)
 {
   std::unordered_map<std::string, double> ipos;
   ipos["boxbot_x_joint"] = -1.9;
@@ -182,12 +183,26 @@ void runCastWorldTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const Envir
 
     const std::array<std::shared_ptr<const Var>, 2> position_vars{ vars[i - 1], vars[i] };
 
-    auto cnt = std::make_shared<trajopt_ifopt::ContinuousCollisionConstraint>(
-        collision_evaluator, position_vars, vars_fixed[0], vars_fixed[1], 3);
-    qp_problem->addConstraintSet(cnt);
+    if (fixed_size)
+    {
+      auto cnt = std::make_shared<trajopt_ifopt::ContinuousCollisionConstraint>(
+          collision_evaluator, position_vars, vars_fixed[0], vars_fixed[1], 3);
+      qp_problem->addConstraintSet(cnt);
+    }
+    else
+    {
+      auto cnt = std::make_shared<trajopt_ifopt::ContinuousCollisionConstraintD>(
+          collision_evaluator, position_vars, vars_fixed[0], vars_fixed[1]);
+      qp_problem->addConstraintSet(cnt);
+    }
 
     vars_fixed = { false, true };
   }
+
+  auto vel_target = Eigen::VectorXd::Zero(2);
+  auto vel_coeff = Eigen::VectorXd::Ones(2);
+  qp_problem->addCostSet(std::make_shared<trajopt_ifopt::JointVelConstraint>(vel_target, vars, vel_coeff),
+                         trajopt_sqp::CostPenaltyType::SQUARED);
 
   qp_problem->setup();
   qp_problem->print();
@@ -195,7 +210,7 @@ void runCastWorldTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const Envir
   // 5) Setup solver
   auto qp_solver = std::make_shared<trajopt_sqp::OSQPEigenSolver>();
   trajopt_sqp::TrustRegionSQPSolver solver(qp_solver);
-  qp_solver->solver_->settings()->setVerbosity(true);
+  qp_solver->solver_->settings()->setVerbosity(false);
   qp_solver->solver_->settings()->setWarmStart(true);
   qp_solver->solver_->settings()->setPolish(true);
   qp_solver->solver_->settings()->setAdaptiveRho(false);
@@ -204,7 +219,7 @@ void runCastWorldTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const Envir
   qp_solver->solver_->settings()->setRelativeTolerance(1e-6);
 
   // 6) solve
-  solver.verbose = true;
+  solver.verbose = false;
   solver.solve(qp_problem);
   Eigen::VectorXd x = qp_problem->getVariableValues();
   std::cout << x.transpose() << '\n';
@@ -233,14 +248,14 @@ TEST_F(CastWorldTest, boxesIfoptProblem)  // NOLINT
 {
   CONSOLE_BRIDGE_logDebug("CastWorldTest, boxesIfoptProblem");
   auto qp_problem = std::make_shared<trajopt_sqp::IfoptQPProblem>();
-  runCastWorldTest(qp_problem, env);
+  runCastWorldTest(qp_problem, env, true);
 }
 
 TEST_F(CastWorldTest, boxesTrajOptProblem)  // NOLINT
 {
   CONSOLE_BRIDGE_logDebug("CastWorldTest, boxesTrajOptProblem");
   auto qp_problem = std::make_shared<trajopt_sqp::TrajOptQPProblem>();
-  runCastWorldTest(qp_problem, env);  // NOLINT
+  runCastWorldTest(qp_problem, env, false);  // NOLINT
 }
 
 int main(int argc, char** argv)

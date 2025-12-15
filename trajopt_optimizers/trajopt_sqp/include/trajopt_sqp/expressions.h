@@ -3,7 +3,7 @@
 
 #include <vector>
 
-#include <trajopt_sqp/eigen_types.h>
+#include <trajopt_ifopt/core/eigen_types.h>
 
 namespace trajopt_sqp
 {
@@ -57,7 +57,7 @@ struct AffExprs : Exprs
    * Each row corresponds to a single expression, and each column corresponds to a
    * decision variable. Size: (num_exprs × num_vars).
    */
-  SparseMatrix linear_coeffs;
+  trajopt_ifopt::Jacobian linear_coeffs;
 
   /**
    * @brief Evaluate the affine expressions at the given decision vector.
@@ -124,7 +124,7 @@ struct QuadExprs : Exprs
    *
    * Dimensions: (num_expressions × num_vars).
    */
-  SparseMatrix linear_coeffs;
+  trajopt_ifopt::Jacobian linear_coeffs;
 
   /**
    * @brief Quadratic coefficient matrices \f$Q_i\f for each expression.
@@ -132,7 +132,7 @@ struct QuadExprs : Exprs
    *          expression \f$f_i(x)\f. If a given expression is purely affine,
    *          the corresponding matrix may be empty (zero non-zeros).
    */
-  std::vector<SparseMatrix> quadratic_coeffs;
+  std::vector<trajopt_ifopt::Jacobian> quadratic_coeffs;
 
   /**
    * @brief Aggregated objective linear coefficients.
@@ -159,7 +159,7 @@ struct QuadExprs : Exprs
    *
    * Dimensions: (num_vars × num_vars).
    */
-  SparseMatrix objective_quadratic_coeffs;
+  trajopt_ifopt::Jacobian objective_quadratic_coeffs;
 
   /**
    * @brief Evaluate all quadratic expressions at the given decision vector.
@@ -220,7 +220,7 @@ struct QuadExprs : Exprs
  * @return Affine expressions representing the local linear approximation @f$\hat{f}(x)@f$.
  */
 AffExprs createAffExprs(const Eigen::Ref<const Eigen::VectorXd>& func_error,
-                        const Eigen::Ref<const SparseMatrix>& func_jacobian,
+                        const Eigen::Ref<const trajopt_ifopt::Jacobian>& func_jacobian,
                         const Eigen::Ref<const Eigen::VectorXd>& x);
 
 /**
@@ -294,8 +294,8 @@ AffExprs createAffExprs(const Eigen::Ref<const Eigen::VectorXd>& func_error,
  * @return Quadratic expressions representing the local second-order approximation \f$\hat{f}(x)\f$.
  */
 QuadExprs createQuadExprs(const Eigen::Ref<const Eigen::VectorXd>& func_errors,
-                          const Eigen::Ref<const SparseMatrix>& func_jacobian,
-                          const std::vector<SparseMatrix>& func_hessians,
+                          const Eigen::Ref<const trajopt_ifopt::Jacobian>& func_jacobian,
+                          const std::vector<trajopt_ifopt::Jacobian>& func_hessians,
                           const Eigen::Ref<const Eigen::VectorXd>& x);
 
 /**
@@ -334,7 +334,7 @@ QuadExprs createQuadExprs(const Eigen::Ref<const Eigen::VectorXd>& func_errors,
  * @return A @ref QuadExprs encoding g(x) = f(x) ∘ f(x) (element-wise square),
  *         along with the aggregated quadratic objective coefficients.
  */
-QuadExprs squareAffExprs(const AffExprs& aff_expr);
+QuadExprs squareAffExprs(const AffExprs& aff_expr, const Eigen::Ref<const Eigen::VectorXd>& weights);
 
 }  // namespace trajopt_sqp
 

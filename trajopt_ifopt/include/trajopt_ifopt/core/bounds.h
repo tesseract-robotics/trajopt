@@ -30,6 +30,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef TRAJOPT_IFOPT_CORE_BOUNDS_H
 #define TRAJOPT_IFOPT_CORE_BOUNDS_H
 
+#include <cmath>
+
 namespace trajopt_ifopt
 {
 /**
@@ -58,13 +60,10 @@ struct Bounds
   }
 };
 
-// settings this as signals infinity for IPOPT/SNOPT solvers
-static constexpr double inf = 1.0e20;
-
-static const Bounds NoBound = Bounds(-inf, +inf);
+static const Bounds NoBound = Bounds(-double(INFINITY), +double(INFINITY));
 static const Bounds BoundZero = Bounds(0.0, 0.0);
-static const Bounds BoundGreaterZero = Bounds(0.0, +inf);
-static const Bounds BoundSmallerZero = Bounds(-inf, 0.0);
+static const Bounds BoundGreaterZero = Bounds(0.0, +double(INFINITY));
+static const Bounds BoundSmallerZero = Bounds(-double(INFINITY), 0.0);
 
 }  // namespace trajopt_ifopt
 

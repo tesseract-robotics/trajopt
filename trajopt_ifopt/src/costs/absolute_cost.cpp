@@ -31,34 +31,42 @@ TRAJOPT_IGNORE_WARNINGS_POP
 namespace trajopt_ifopt
 {
 AbsoluteCost::AbsoluteCost(const ConstraintSet::Ptr& constraint)
-  : AbsoluteCost(constraint, Eigen::VectorXd::Ones(constraint->GetRows()))
+  : AbsoluteCost(constraint, Eigen::VectorXd::Ones(constraint->getRows()))
 {
 }
 
 AbsoluteCost::AbsoluteCost(ConstraintSet::Ptr constraint, const Eigen::Ref<const Eigen::VectorXd>& weights)
-  : CostTerm(constraint->GetName() + "_absolute_cost")
+  : CostTerm(constraint->getName() + "_absolute_cost")
   , constraint_(std::move(constraint))
-  , n_constraints_(constraint_->GetRows())
+  , n_constraints_(constraint_->getRows())
   , weights_(weights.cwiseAbs())  // must be positive
 {
 }
 
-double AbsoluteCost::GetCost() const
+int AbsoluteCost::update()
+{
+  constraint_->update();
+  return rows_;
+}
+
+double AbsoluteCost::getCost() const
 {
   // This takes the absolute value of the errors
-  const Eigen::VectorXd error = calcBoundsViolations(constraint_->GetValues(), constraint_->GetBounds());
+  const Eigen::VectorXd error = calcBoundsViolations(constraint_->getValues(), constraint_->getBounds());
   return weights_.dot(error);
 }
 
-void AbsoluteCost::FillJacobianBlock(std::string var_set, Jacobian& jac_block) const
+Eigen::VectorXd AbsoluteCost::getCoefficients() const { return constraint_->getCoefficients(); }
+
+void AbsoluteCost::fillJacobianBlock(std::string var_set, Jacobian& jac_block) const
 {
   // Get a Jacobian block the size necessary for the constraint
   int var_size = 0;
-  for (const auto& vars : GetVariables()->GetComponents())
+  for (const auto& vars : getVariables()->getComponents())
   {
-    if (vars->GetName() == var_set)  // NOLINT
+    if (vars->getName() == var_set)  // NOLINT
     {
-      var_size = vars->GetRows();
+      var_size = vars->getRows();
       break;
     }
   }
@@ -69,10 +77,10 @@ void AbsoluteCost::FillJacobianBlock(std::string var_set, Jacobian& jac_block) c
   // Get the Jacobian block from the underlying constraint
   Jacobian cnt_jac_block;
   cnt_jac_block.resize(n_constraints_, var_size);  // NOLINT
-  constraint_->FillJacobianBlock(var_set, cnt_jac_block);
+  constraint_->fillJacobianBlock(var_set, cnt_jac_block);
 
   // Compute signed coefficients: coeff_i = weights_[i] * sign(error_i)
-  const Eigen::ArrayXd error = calcBoundsErrors(constraint_->GetValues(), constraint_->GetBounds());
+  const Eigen::ArrayXd error = calcBoundsErrors(constraint_->getValues(), constraint_->getBounds());
 
   Eigen::VectorXd coeff(n_constraints_);
   for (Eigen::Index i = 0; i < error.size(); ++i)

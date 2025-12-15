@@ -33,114 +33,122 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace trajopt_ifopt
 {
-Problem::Problem() : constraints_("constraint-sets", false, false), costs_("cost-terms", true, false)
+Problem::Problem()
+  : variables_(std::make_shared<CompositeVariables>("variable-sets"))
+  , constraints_("constraint-sets", Differentiable::Mode::kStackRows, false)
+  , costs_("cost-terms", Differentiable::Mode::kStackRows, false)
 {
-  variables_ = std::make_shared<Composite>("variable-sets", false, false);
 }
 
-void Problem::AddVariableSet(VariableSet::Ptr variable_set) { variables_->AddComponent(std::move(variable_set)); }
+void Problem::addVariableSet(Variables::Ptr variable_set) { variables_->addComponent(std::move(variable_set)); }
 
-void Problem::AddConstraintSet(ConstraintSet::Ptr constraint_set)
+void Problem::addConstraintSet(ConstraintSet::Ptr constraint_set)
 {
-  constraint_set->LinkWithVariables(variables_);
-  constraints_.AddComponent(std::move(constraint_set));
+  constraint_set->linkWithVariables(variables_);
+  constraints_.addComponent(std::move(constraint_set));
 }
 
-void Problem::AddCostSet(CostTerm::Ptr cost_set)
+void Problem::addCostSet(CostTerm::Ptr cost_set)
 {
-  cost_set->LinkWithVariables(variables_);
-  costs_.AddComponent(std::move(cost_set));
+  cost_set->linkWithVariables(variables_);
+  costs_.addComponent(std::move(cost_set));
 }
 
-int Problem::GetNumberOfOptimizationVariables() const { return variables_->GetRows(); }
+int Problem::getNumberOfOptimizationVariables() const { return variables_->getRows(); }
 
-std::vector<Bounds> Problem::GetBoundsOnOptimizationVariables() const { return variables_->GetBounds(); }
+std::vector<Bounds> Problem::getBoundsOnOptimizationVariables() const { return variables_->getBounds(); }
 
-Eigen::VectorXd Problem::GetVariableValues() const { return variables_->GetValues(); }
+Eigen::VectorXd Problem::getVariableValues() const { return variables_->getValues(); }
 
-void Problem::SetVariables(const double* x) { variables_->SetVariables(ConvertToEigen(x)); }
+void Problem::setVariables(const double* x)
+{
+  variables_->setVariables(convertToEigen(x));
 
-double Problem::EvaluateCostFunction(const double* x)
+  constraints_.update();
+  costs_.update();
+}
+
+double Problem::evaluateCostFunction(const double* x)
 {
   Eigen::VectorXd g = Eigen::VectorXd::Zero(1);
-  if (HasCostTerms())
+  if (hasCostTerms())
   {
-    SetVariables(x);
-    g = costs_.GetValues();
+    setVariables(x);
+    g = costs_.getValues();
   }
   return g(0);
 }
 
-Eigen::VectorXd Problem::EvaluateCostFunctionGradient(const double* x,
+Eigen::VectorXd Problem::evaluateCostFunctionGradient(const double* x,
                                                       bool use_finite_difference_approximation,
                                                       double epsilon)
 {
-  int n = GetNumberOfOptimizationVariables();
+  int n = getNumberOfOptimizationVariables();
   Jacobian jac = Jacobian(1, n);
-  if (HasCostTerms())
+  if (hasCostTerms())
   {
     if (use_finite_difference_approximation)
     {
       double step_size = epsilon;
 
       // calculate forward difference by disturbing each optimization variable
-      double g = EvaluateCostFunction(x);
+      double g = evaluateCostFunction(x);
       std::vector<double> x_new(x, x + n);
       for (std::size_t i = 0; i < n; ++i)
       {
         x_new[i] += step_size;  // disturb
-        double g_new = EvaluateCostFunction(x_new.data());
+        double g_new = evaluateCostFunction(x_new.data());
         jac.coeffRef(0, static_cast<Eigen::Index>(i)) = (g_new - g) / step_size;
         x_new[i] = x[i];  // reset for next iteration
       }
     }
     else
     {
-      SetVariables(x);
-      jac = costs_.GetJacobian();
+      setVariables(x);
+      jac = costs_.getJacobian();
     }
   }
 
   return jac.row(0).transpose();
 }
 
-std::vector<Bounds> Problem::GetBoundsOnConstraints() const { return constraints_.GetBounds(); }
+std::vector<Bounds> Problem::getBoundsOnConstraints() const { return constraints_.getBounds(); }
 
-int Problem::GetNumberOfConstraints() const { return static_cast<int>(GetBoundsOnConstraints().size()); }
+int Problem::getNumberOfConstraints() const { return static_cast<int>(getBoundsOnConstraints().size()); }
 
-Eigen::VectorXd Problem::EvaluateConstraints(const double* x)
+Eigen::VectorXd Problem::evaluateConstraints(const double* x)
 {
-  SetVariables(x);
-  return constraints_.GetValues();
+  setVariables(x);
+  return constraints_.getValues();
 }
 
-bool Problem::HasCostTerms() const { return costs_.GetRows() > 0; }
+bool Problem::hasCostTerms() const { return costs_.getRows() > 0; }
 
-void Problem::EvalNonzerosOfJacobian(const double* x, double* values)
+void Problem::evalNonzerosOfJacobian(const double* x, double* values)
 {
-  SetVariables(x);
-  Jacobian jac = GetJacobianOfConstraints();
+  setVariables(x);
+  Jacobian jac = getJacobianOfConstraints();
 
   jac.makeCompressed();  // so the valuePtr() is dense and accurate
   std::copy(jac.valuePtr(), jac.valuePtr() + jac.nonZeros(), values);
 }
 
-Jacobian Problem::GetJacobianOfConstraints() const { return constraints_.GetJacobian(); }
+Jacobian Problem::getJacobianOfConstraints() const { return constraints_.getJacobian(); }
 
-Jacobian Problem::GetJacobianOfCosts() const { return costs_.GetJacobian(); }
+Jacobian Problem::getJacobianOfCosts() const { return costs_.getJacobian(); }
 
-void Problem::SaveCurrent() { x_prev.push_back(variables_->GetValues()); }
+void Problem::saveCurrent() { x_prev.push_back(variables_->getValues()); }
 
-Composite::Ptr Problem::GetOptVariables() const { return variables_; }
+CompositeVariables::Ptr Problem::getOptVariables() const { return variables_; }
 
-void Problem::SetOptVariables(int iter) { variables_->SetVariables(x_prev.at(static_cast<std::size_t>(iter))); }
+void Problem::setOptVariables(int iter) { variables_->setVariables(x_prev.at(static_cast<std::size_t>(iter))); }
 
-void Problem::SetOptVariablesFinal()
+void Problem::setOptVariablesFinal()
 {
-  variables_->SetVariables(x_prev.at(static_cast<std::size_t>(GetIterationCount() - 1)));
+  variables_->setVariables(x_prev.at(static_cast<std::size_t>(getIterationCount() - 1)));
 }
 
-void Problem::PrintCurrent() const
+void Problem::printCurrent() const
 {
   using namespace std;
   cout << "\n"
@@ -159,14 +167,17 @@ void Problem::PrintCurrent() const
        << std::right << std::setw(33) << "" << std::setw(5) << "c  " << std::setw(16) << "i    " << std::setw(11)
        << "v " << std::left << "\n";
 
-  variables_->PrintAll();
-  constraints_.PrintAll();
-  costs_.PrintAll();
+  int idx = 0;
+  variables_->print(idx);
+  idx = 0;
+  constraints_.print(idx);
+  idx = 0;
+  costs_.print(idx);
 };
 
-Eigen::VectorXd Problem::ConvertToEigen(const double* x) const
+Eigen::VectorXd Problem::convertToEigen(const double* x) const
 {
-  return Eigen::Map<const Eigen::VectorXd>(x, GetNumberOfOptimizationVariables());
+  return Eigen::Map<const Eigen::VectorXd>(x, getNumberOfOptimizationVariables());
 }
 
 }  // namespace trajopt_ifopt

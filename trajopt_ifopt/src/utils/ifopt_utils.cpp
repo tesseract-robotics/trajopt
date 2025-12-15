@@ -30,7 +30,7 @@
 
 namespace trajopt_ifopt
 {
-bool isFinite(double value) { return std::isfinite(value) && (value < inf) && (value > -inf); }
+bool isFinite(double value) { return std::isfinite(value) && (value < 1e20) && (value > -1e20); }
 
 bool isBoundsEquality(const Bounds& bounds)
 {
@@ -139,20 +139,20 @@ Eigen::VectorXd calcBoundsViolations(const Eigen::Ref<const Eigen::VectorXd>& in
 
 Eigen::VectorXd calcNumericalCostGradient(const double* x, Problem& nlp, double epsilon)
 {
-  auto cache_vars = nlp.GetVariableValues();
+  auto cache_vars = nlp.getVariableValues();
 
-  const int n = nlp.GetNumberOfOptimizationVariables();
+  const int n = nlp.getNumberOfOptimizationVariables();
   Jacobian jac(1, n);
 
-  if (nlp.HasCostTerms())
+  if (nlp.hasCostTerms())
   {
-    const double g = nlp.EvaluateCostFunction(x);
+    const double g = nlp.evaluateCostFunction(x);
     std::vector<double> x_new(x, x + n);
 
     for (int i = 0; i < n; ++i)
     {
       x_new[static_cast<std::size_t>(i)] += epsilon;  // disturb
-      const double g_new = nlp.EvaluateCostFunction(x_new.data());
+      const double g_new = nlp.evaluateCostFunction(x_new.data());
       jac.coeffRef(0, i) = (g_new - g) / epsilon;
       x_new[static_cast<std::size_t>(i)] = x[i];  // reset
     }
@@ -162,29 +162,29 @@ Eigen::VectorXd calcNumericalCostGradient(const double* x, Problem& nlp, double 
     jac.setZero();
   }
 
-  nlp.SetVariables(cache_vars.data());
+  nlp.setVariables(cache_vars.data());
   return jac.row(0).transpose();
 }
 
 Jacobian calcNumericalConstraintGradient(const double* x, Problem& nlp, double epsilon)
 {
-  auto cache_vars = nlp.GetVariableValues();
+  auto cache_vars = nlp.getVariableValues();
 
-  const int n = nlp.GetNumberOfOptimizationVariables();
-  const int m = nlp.GetConstraints().GetRows();
+  const int n = nlp.getNumberOfOptimizationVariables();
+  const int m = nlp.getConstraints().getRows();
   Jacobian jac(m, n);
   jac.reserve(static_cast<Eigen::Index>(m) * static_cast<Eigen::Index>(n));
 
-  if (nlp.GetNumberOfConstraints() > 0 && n > 0)
+  if (nlp.getNumberOfConstraints() > 0 && n > 0)
   {
-    const Eigen::VectorXd g = nlp.EvaluateConstraints(x);
+    const Eigen::VectorXd g = nlp.evaluateConstraints(x);
     std::vector<double> x_new(x, x + n);
     Eigen::VectorXd delta_g(m);
 
     for (int i = 0; i < n; ++i)
     {
       x_new[static_cast<std::size_t>(i)] += epsilon;
-      const Eigen::VectorXd g_new = nlp.EvaluateConstraints(x_new.data());
+      const Eigen::VectorXd g_new = nlp.evaluateConstraints(x_new.data());
       delta_g = (g_new - g) / epsilon;
 
       for (int j = 0; j < m; ++j)
@@ -194,27 +194,27 @@ Jacobian calcNumericalConstraintGradient(const double* x, Problem& nlp, double e
     }
   }
 
-  nlp.SetVariables(cache_vars.data());
+  nlp.setVariables(cache_vars.data());
   return jac;
 }
 
-Jacobian calcNumericalConstraintGradient(Component& variables, ConstraintSet& constraint_set, double epsilon)
+Jacobian calcNumericalConstraintGradient(Variables& variables, ConstraintSet& constraint_set, double epsilon)
 {
-  const int n = variables.GetRows();
-  const int m = constraint_set.GetRows();
+  const int n = variables.getRows();
+  const int m = constraint_set.getRows();
 
   Jacobian jac(m, n);
   jac.reserve(static_cast<Eigen::Index>(m) * static_cast<Eigen::Index>(n));
 
   // Nothing to do if there are no constraints, no variables, or no bounds
-  if (m == 0 || n == 0 || constraint_set.GetBounds().empty())
+  if (m == 0 || n == 0 || constraint_set.getBounds().empty())
     return jac;
 
   // Cache current variable values
-  Eigen::VectorXd x = variables.GetValues();
+  Eigen::VectorXd x = variables.getValues();
 
   // Base constraint values at x
-  const Eigen::VectorXd g = constraint_set.GetValues();
+  const Eigen::VectorXd g = constraint_set.getValues();
 
   Eigen::VectorXd x_new = x;
   Eigen::VectorXd delta_g(m);
@@ -223,9 +223,9 @@ Jacobian calcNumericalConstraintGradient(Component& variables, ConstraintSet& co
   for (Eigen::Index i = 0; i < n; ++i)
   {
     x_new(i) = x(i) + epsilon;  // disturb variable i
-    variables.SetVariables(x_new);
+    variables.setVariables(x_new);
 
-    const Eigen::VectorXd g_new = constraint_set.GetValues();
+    const Eigen::VectorXd g_new = constraint_set.getValues();
     delta_g = (g_new - g) / epsilon;
 
     for (int j = 0; j < m; ++j)
@@ -235,7 +235,7 @@ Jacobian calcNumericalConstraintGradient(Component& variables, ConstraintSet& co
   }
 
   // Restore original variables
-  variables.SetVariables(x);
+  variables.setVariables(x);
 
   return jac;
 }

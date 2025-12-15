@@ -32,7 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <trajopt_ifopt/core/constraint_set.h>
 #include <trajopt_ifopt/core/cost_term.h>
-#include <trajopt_ifopt/core/variable_set.h>
+#include <trajopt_ifopt/core/component.h>
 
 /**
  * @brief common namespace for all elements in this library.
@@ -60,7 +60,7 @@ namespace trajopt_ifopt
  *       g1_lower < g1(x0,x1) < g0_upper        (constraint-set 1 \in R^1)
  *
  *
- * #### GetValues()
+ * #### getValues()
  * This structure allows a user to define each of these sets independently in
  * separate classes and ifopt takes care of building the overall problem from
  * these sets. This is implemented by
@@ -74,7 +74,7 @@ namespace trajopt_ifopt
  * respect to each variable-set independently. This ensures that when the
  * order of variable-sets changes in the overall vector, this derivative
  * information is still valid. These "Jacobian blocks" must be supplied through
- * ConstraintSet::FillJacobianBlock() and are then used to build the complete Jacobian for
+ * ConstraintSet::fillJacobianBlock() and are then used to build the complete Jacobian for
  * the cost and constraints.
  *
  * \image html ifopt.png
@@ -111,7 +111,7 @@ public:
    * the optimal timing values. This function correctly appends the
    * individual variables sets and ensures correct order of Jacobian columns.
    */
-  void AddVariableSet(VariableSet::Ptr variable_set);
+  void addVariableSet(Variables::Ptr variable_set);
 
   /**
    * @brief Add a set of multiple constraints to the optimization problem.
@@ -121,7 +121,7 @@ public:
    * constraints. It makes sure the overall constraint and Jacobian correctly
    * considers all individual constraint sets.
    */
-  void AddConstraintSet(ConstraintSet::Ptr constraint_set);
+  void addConstraintSet(ConstraintSet::Ptr constraint_set);
 
   /**
    * @brief Add a cost term to the optimization problem.
@@ -131,70 +131,70 @@ public:
    * composed of different cost terms. It makes sure the overall value and
    * gradient is considering each individual cost.
    */
-  void AddCostSet(CostTerm::Ptr cost_set);
+  void addCostSet(CostTerm::Ptr cost_set);
 
   /**
    * @brief  Updates the variables with the values of the raw pointer @c x.
    */
-  void SetVariables(const double* x);
+  void setVariables(const double* x);
 
   /**
    * @brief The number of optimization variables.
    */
-  int GetNumberOfOptimizationVariables() const;
+  int getNumberOfOptimizationVariables() const;
 
   /**
    * @brief True if the optimization problem includes a cost, false if
    * merely a feasibility problem is defined.
    */
-  bool HasCostTerms() const;
+  bool hasCostTerms() const;
 
   /**
    * @brief The maximum and minimum value each optimization variable
    * is allowed to have.
    */
-  std::vector<Bounds> GetBoundsOnOptimizationVariables() const;
+  std::vector<Bounds> getBoundsOnOptimizationVariables() const;
 
   /**
    * @brief The current value of the optimization variables.
    */
-  Eigen::VectorXd GetVariableValues() const;
+  Eigen::VectorXd getVariableValues() const;
 
   /**
    * @brief The scalar cost for current optimization variables @c x.
    */
-  double EvaluateCostFunction(const double* x);
+  double evaluateCostFunction(const double* x);
 
   /**
    * @brief The column-vector of derivatives of the cost w.r.t. each variable.
    * @details ipopt uses 10e-8 for their derivative check, but setting here to more precise
    * https://coin-or.github.io/Ipopt/OPTIONS.html#OPT_derivative_test_perturbation
    */
-  Eigen::VectorXd EvaluateCostFunctionGradient(const double* x,
+  Eigen::VectorXd evaluateCostFunctionGradient(const double* x,
                                                bool use_finite_difference_approximation = false,
                                                double epsilon = std::numeric_limits<double>::epsilon());
 
   /**
    * @brief The number of individual constraints.
    */
-  int GetNumberOfConstraints() const;
+  int getNumberOfConstraints() const;
 
   /**
    * @brief The upper and lower bound of each individual constraint.
    */
-  std::vector<Bounds> GetBoundsOnConstraints() const;
+  std::vector<Bounds> getBoundsOnConstraints() const;
 
   /**
    * @brief Each constraint value g(x) for current optimization variables @c x.
    */
-  Eigen::VectorXd EvaluateConstraints(const double* x);
+  Eigen::VectorXd evaluateConstraints(const double* x);
 
   /**
    * @brief Extracts those entries from constraint Jacobian that are not zero.
    * @param [in]  x  The current values of the optimization variables.
    * @param [out] values  The nonzero derivatives ordered by Eigen::RowMajor.
    */
-  void EvalNonzerosOfJacobian(const double* x, double* values);
+  void evalNonzerosOfJacobian(const double* x, double* values);
 
   /**
    * @brief The sparse-matrix representation of Jacobian of the constraints.
@@ -202,7 +202,7 @@ public:
    * Each row corresponds to a constraint and each column to an optimizaton
    * variable.
    */
-  Jacobian GetJacobianOfConstraints() const;
+  Jacobian getJacobianOfConstraints() const;
 
   /**
    * @brief The sparse-matrix representation of Jacobian of the costs.
@@ -210,66 +210,66 @@ public:
    * Returns one row corresponding to the costs and each column corresponding
    * to an optimizaton variable.
    */
-  Jacobian GetJacobianOfCosts() const;
+  Jacobian getJacobianOfCosts() const;
 
   /**
    * @brief Saves the current values of the optimization variables in x_prev.
    *
    * This is used to keep a history of the values for each NLP iterations.
    */
-  void SaveCurrent();
+  void saveCurrent();
 
   /**
    * @brief Read/write access to the current optimization variables.
    */
-  Composite::Ptr GetOptVariables() const;
+  CompositeVariables::Ptr getOptVariables() const;
 
   /**
    * @brief Sets the optimization variables to those at iteration iter.
    */
-  void SetOptVariables(int iter);
+  void setOptVariables(int iter);
 
   /**
    * @brief Sets the optimization variables to those of the final iteration.
    */
-  void SetOptVariablesFinal();
+  void setOptVariablesFinal();
 
   /**
    * @brief The number of iterations it took to solve the problem.
    */
-  int GetIterationCount() const { return static_cast<int>(x_prev.size()); };
+  int getIterationCount() const { return static_cast<int>(x_prev.size()); };
 
   /**
    * @brief Prints the variables, costs and constraints.
    */
-  void PrintCurrent() const;
+  void printCurrent() const;
 
   /**
    * @brief Read access to the constraints composite
    * @return A const reference to constraints_
    */
-  const Composite& GetConstraints() const { return constraints_; };
+  const CompositeDifferentiable& getConstraints() const { return constraints_; };
 
   /**
    * @brief Read access to the costs composite
    * @return A const reference to costs_
    */
-  const Composite& GetCosts() const { return costs_; };
+  const CompositeDifferentiable& getCosts() const { return costs_; };
 
   /**
    * @brief Read access to the history of iterations
    * @return A const reference to x_prev
    */
-  const std::vector<Eigen::VectorXd>& GetIterations() const { return x_prev; };
+  const std::vector<Eigen::VectorXd>& getIterations() const { return x_prev; };
 
 private:
-  Composite::Ptr variables_;
-  Composite constraints_;
-  Composite costs_;
+  CompositeVariables::Ptr variables_;
+  CompositeDifferentiable constraints_;
+  CompositeDifferentiable costs_;
 
   std::vector<Eigen::VectorXd> x_prev;  ///< the pure variables for every iteration.
 
-  Eigen::VectorXd ConvertToEigen(const double* x) const;
+  Eigen::VectorXd convertToEigen(const double* x) const;
 };
 
 }  // namespace trajopt_ifopt

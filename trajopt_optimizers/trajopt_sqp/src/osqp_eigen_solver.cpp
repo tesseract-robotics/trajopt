@@ -59,11 +59,12 @@ void OSQPEigenSolver::setDefaultOSQPSettings(OsqpEigen::Settings& settings)
   settings.setCheckDualGap(false);
 }
 
-bool OSQPEigenSolver::init(Eigen::Index num_vars, Eigen::Index num_cnts)
+bool OSQPEigenSolver::init(Eigen::Index num_vars, Eigen::Index num_cnts, const Eigen::VectorXd& init_vals)
 {
   // Set the solver size
   num_cnts_ = num_cnts;
   num_vars_ = num_vars;
+  init_vals_ = init_vals;
   solver_->data()->setNumberOfVariables(static_cast<int>(num_vars_));
   solver_->data()->setNumberOfConstraints(static_cast<int>(num_cnts_));
 
@@ -81,6 +82,7 @@ bool OSQPEigenSolver::clear()
 
   num_vars_ = 0;
   num_cnts_ = 0;
+  init_vals_.resize(0);
   gradient_.resize(0);
   bounds_lower_.resize(0);
   bounds_upper_.resize(0);
@@ -100,9 +102,23 @@ bool OSQPEigenSolver::solve()
     }
   }
 
+  if (init_vals_.rows() > 0 && !OSQP_COMPARE_DEBUG_MODE)
+  {
+    /** @todo update the init_vals to compute the slack variables. The initial slack variable should be the max of
+     * either zero or the constraint violation */
+    Eigen::VectorXd x0(num_vars_);
+    Eigen::VectorXd y0(num_cnts_);
+    solver_->getPrimalVariable(x0);
+    solver_->getDualVariable(y0);
+    x0.head(init_vals_.rows()) = init_vals_;
+    bool success = solver_->setWarmStart(x0, y0);
+    UNUSED(success);
+    assert(success);
+  }
+
+  const Eigen::IOFormat format(8);
   if (OSQP_COMPARE_DEBUG_MODE)
   {
-    const Eigen::IOFormat format(5);
     const auto* osqp_data = solver_->data()->getData();
     std::cout << "OSQP Number of Variables:" << osqp_data->n << '\n';
     std::cout << "OSQP Number of Constraints:" << osqp_data->m << '\n';
@@ -119,6 +135,10 @@ bool OSQPEigenSolver::solve()
     std::cout << "         i:" << P_i_vec.transpose().format(format) << '\n';
     std::cout << "         x:" << P_x_vec.transpose().format(format) << '\n';
 
+    // Eigen::SparseMatrix<OSQPFloat> P_dense;
+    // OsqpEigen::SparseMatrixHelper::osqpSparseMatrixToEigenSparseMatrix<OSQPFloat>(osqp_data->P, P_dense);
+    // std::cout << "         d:\n" << P_dense.toDense().format(format) << '\n';
+
     Eigen::Map<Eigen::VectorXd> q_vec(osqp_data->q, osqp_data->n);
     std::cout << "OSQP Gradient: " << q_vec.transpose().format(format) << '\n';
 
@@ -133,12 +153,14 @@ bool OSQPEigenSolver::solve()
     std::cout << "         i:" << A_i_vec.transpose().format(format) << '\n';
     std::cout << "         x:" << A_x_vec.transpose().format(format) << '\n';
 
+    // Eigen::SparseMatrix<OSQPFloat> A_dense;
+    // OsqpEigen::SparseMatrixHelper::osqpSparseMatrixToEigenSparseMatrix<OSQPFloat>(osqp_data->A, A_dense);
+    // std::cout << "         d:\n" << A_dense.toDense().format(format) << '\n';
+
     Eigen::Map<Eigen::Matrix<OSQPFloat, Eigen::Dynamic, 1>> l_vec(osqp_data->l, osqp_data->m);
     Eigen::Map<Eigen::Matrix<OSQPFloat, Eigen::Dynamic, 1>> u_vec(osqp_data->u, osqp_data->m);
     std::cout << "OSQP Lower Bounds: " << l_vec.transpose().format(format) << '\n';
     std::cout << "OSQP Upper Bounds: " << u_vec.transpose().format(format) << '\n';
-
-    std::cout << "OSQP Variable Names: " << '\n';
   }
 
   /** @todo Need to check if this is what we want in the new version */
@@ -152,7 +174,6 @@ bool OSQPEigenSolver::solve()
   {
     if (OSQP_COMPARE_DEBUG_MODE)
     {
-      const Eigen::IOFormat format(5);
       std::cout << "OSQP Solution: " << solver_->getSolution().transpose().format(format) << '\n';
     }
     return true;
@@ -203,11 +224,11 @@ bool OSQPEigenSolver::solve()
 
 Eigen::VectorXd OSQPEigenSolver::getSolution() { return solver_->getSolution(); }
 
-bool OSQPEigenSolver::updateHessianMatrix(const SparseMatrix& hessian)
+bool OSQPEigenSolver::updateHessianMatrix(const trajopt_ifopt::Jacobian& hessian)
 {
   // Clean up values close to 0
   // Also multiply by 2 because OSQP is multiplying by (1/2) for the objective fuction
-  const SparseMatrix cleaned = 2.0 * hessian.pruned(1e-7, 1);  // Any value < 1e-7 will be removed
+  const trajopt_ifopt::Jacobian cleaned = 2.0 * hessian.pruned(1e-7, 1);  // Any value < 1e-7 will be removed
 
   if (solver_->isInitialized())
     return solver_->updateHessianMatrix(cleaned);
@@ -218,7 +239,7 @@ bool OSQPEigenSolver::updateHessianMatrix(const SparseMatrix& hessian)
 
 bool OSQPEigenSolver::updateGradient(const Eigen::Ref<const Eigen::VectorXd>& gradient)
 {
-  gradient_ = gradient;
+  gradient_ = (gradient.array().abs() < 1e-7).select(0.0, gradient.array());
 
   if (solver_->isInitialized())
     return solver_->updateGradient(gradient_);
@@ -252,13 +273,13 @@ bool OSQPEigenSolver::updateBounds(const Eigen::Ref<const Eigen::VectorXd>& lowe
   return success;
 }
 
-bool OSQPEigenSolver::updateLinearConstraintsMatrix(const SparseMatrix& linearConstraintsMatrix)
+bool OSQPEigenSolver::updateLinearConstraintsMatrix(const trajopt_ifopt::Jacobian& linearConstraintsMatrix)
 {
   assert(num_cnts_ == linearConstraintsMatrix.rows());
   assert(num_vars_ == linearConstraintsMatrix.cols());
 
   solver_->data()->clearLinearConstraintsMatrix();
-  const SparseMatrix cleaned = linearConstraintsMatrix.pruned(1e-7, 1);  // Any value < 1e-7 will be removed
+  const trajopt_ifopt::Jacobian cleaned = linearConstraintsMatrix.pruned(1e-7, 1);  // Any value < 1e-7 will be removed
 
   if (solver_->isInitialized())
     return solver_->updateLinearConstraintsMatrix(cleaned);

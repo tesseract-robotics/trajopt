@@ -73,7 +73,7 @@ public:
    * data.
    */
   virtual std::shared_ptr<const trajopt_common::CollisionCacheData>
-  CalcCollisionData(const Eigen::Ref<const Eigen::VectorXd>& dof_vals0,
+  calcCollisionData(const Eigen::Ref<const Eigen::VectorXd>& dof_vals0,
                     const Eigen::Ref<const Eigen::VectorXd>& dof_vals1,
                     bool vars0_fixed,
                     bool vars1_fixed,
@@ -89,7 +89,7 @@ public:
    * @return The gradient results
    */
   virtual trajopt_common::GradientResults
-  CalcGradientData(const Eigen::Ref<const Eigen::VectorXd>& dof_vals0,
+  calcGradientData(const Eigen::Ref<const Eigen::VectorXd>& dof_vals0,
                    const Eigen::Ref<const Eigen::VectorXd>& dof_vals1,
                    const tesseract_collision::ContactResult& contact_results) = 0;
 
@@ -97,19 +97,19 @@ public:
    * @brief Get the collision margin buffer
    * @return The collision margin buffer
    */
-  virtual double GetCollisionMarginBuffer() const = 0;
+  virtual double getCollisionMarginBuffer() const = 0;
 
   /**
    * @brief Get the collision margin information.
    * @return Collision margin information
    */
-  virtual const tesseract_common::CollisionMarginData& GetCollisionMarginData() const = 0;
+  virtual const tesseract_common::CollisionMarginData& getCollisionMarginData() const = 0;
 
   /**
    * @brief Get the collision coefficient information.
    * @return Collision coefficient information
    */
-  virtual const trajopt_common::CollisionCoeffData& GetCollisionCoeffData() const = 0;
+  virtual const trajopt_common::CollisionCoeffData& getCollisionCoeffData() const = 0;
 
 protected:
   static thread_local tesseract_common::TransformMap transforms_cache0;  // NOLINT
@@ -135,22 +135,22 @@ public:
                                   bool dynamic_environment = false);
 
   std::shared_ptr<const trajopt_common::CollisionCacheData>
-  CalcCollisionData(const Eigen::Ref<const Eigen::VectorXd>& dof_vals0,
+  calcCollisionData(const Eigen::Ref<const Eigen::VectorXd>& dof_vals0,
                     const Eigen::Ref<const Eigen::VectorXd>& dof_vals1,
                     bool vars0_fixed,
                     bool vars1_fixed,
                     std::size_t bounds_size) override final;
 
   trajopt_common::GradientResults
-  CalcGradientData(const Eigen::Ref<const Eigen::VectorXd>& dof_vals0,
+  calcGradientData(const Eigen::Ref<const Eigen::VectorXd>& dof_vals0,
                    const Eigen::Ref<const Eigen::VectorXd>& dof_vals1,
                    const tesseract_collision::ContactResult& contact_results) override final;
 
-  double GetCollisionMarginBuffer() const override final;
+  double getCollisionMarginBuffer() const override final;
 
-  const tesseract_common::CollisionMarginData& GetCollisionMarginData() const override final;
+  const tesseract_common::CollisionMarginData& getCollisionMarginData() const override final;
 
-  const trajopt_common::CollisionCoeffData& GetCollisionCoeffData() const override final;
+  const trajopt_common::CollisionCoeffData& getCollisionCoeffData() const override final;
 
 private:
   std::shared_ptr<CollisionCache> collision_cache_;
@@ -169,10 +169,10 @@ private:
   std::shared_ptr<tesseract_collision::ContinuousContactManager> contact_manager_;
 
   std::shared_ptr<const trajopt_common::CollisionCacheData>
-  CalcCollisionsCacheDataHelper(const Eigen::Ref<const Eigen::VectorXd>& dof_vals0,
+  calcCollisionsCacheDataHelper(const Eigen::Ref<const Eigen::VectorXd>& dof_vals0,
                                 const Eigen::Ref<const Eigen::VectorXd>& dof_vals1);
 
-  void CalcCollisionsHelper(tesseract_collision::ContactResultMap& dist_results,
+  void calcCollisionsHelper(tesseract_collision::ContactResultMap& dist_results,
                             const Eigen::Ref<const Eigen::VectorXd>& dof_vals0,
                             const Eigen::Ref<const Eigen::VectorXd>& dof_vals1,
                             bool vars0_fixed,
@@ -198,22 +198,22 @@ public:
                                 bool dynamic_environment = false);
 
   std::shared_ptr<const trajopt_common::CollisionCacheData>
-  CalcCollisionData(const Eigen::Ref<const Eigen::VectorXd>& dof_vals0,
+  calcCollisionData(const Eigen::Ref<const Eigen::VectorXd>& dof_vals0,
                     const Eigen::Ref<const Eigen::VectorXd>& dof_vals1,
                     bool vars0_fixed,
                     bool vars1_fixed,
                     std::size_t bounds_size) override final;
 
   trajopt_common::GradientResults
-  CalcGradientData(const Eigen::Ref<const Eigen::VectorXd>& dof_vals0,
+  calcGradientData(const Eigen::Ref<const Eigen::VectorXd>& dof_vals0,
                    const Eigen::Ref<const Eigen::VectorXd>& dof_vals1,
                    const tesseract_collision::ContactResult& contact_results) override final;
 
-  double GetCollisionMarginBuffer() const override final;
+  double getCollisionMarginBuffer() const override final;
 
-  const tesseract_common::CollisionMarginData& GetCollisionMarginData() const override final;
+  const tesseract_common::CollisionMarginData& getCollisionMarginData() const override final;
 
-  const trajopt_common::CollisionCoeffData& GetCollisionCoeffData() const override final;
+  const trajopt_common::CollisionCoeffData& getCollisionCoeffData() const override final;
 
 private:
   std::shared_ptr<CollisionCache> collision_cache_;
@@ -231,10 +231,10 @@ private:
   std::shared_ptr<tesseract_collision::DiscreteContactManager> contact_manager_;
 
   std::shared_ptr<const trajopt_common::CollisionCacheData>
-  CalcCollisionsCacheDataHelper(const Eigen::Ref<const Eigen::VectorXd>& dof_vals0,
+  calcCollisionsCacheDataHelper(const Eigen::Ref<const Eigen::VectorXd>& dof_vals0,
                                 const Eigen::Ref<const Eigen::VectorXd>& dof_vals1);
 
-  void CalcCollisionsHelper(tesseract_collision::ContactResultMap& dist_results,
+  void calcCollisionsHelper(tesseract_collision::ContactResultMap& dist_results,
                             const Eigen::Ref<const Eigen::VectorXd>& dof_vals0,
                             const Eigen::Ref<const Eigen::VectorXd>& dof_vals1,
                             bool vars0_fixed,

@@ -99,7 +99,7 @@ LVSContinuousCollisionEvaluator::LVSContinuousCollisionEvaluator(
 }
 
 std::shared_ptr<const trajopt_common::CollisionCacheData>
-LVSContinuousCollisionEvaluator::CalcCollisionData(const Eigen::Ref<const Eigen::VectorXd>& dof_vals0,
+LVSContinuousCollisionEvaluator::calcCollisionData(const Eigen::Ref<const Eigen::VectorXd>& dof_vals0,
                                                    const Eigen::Ref<const Eigen::VectorXd>& dof_vals1,
                                                    bool vars0_fixed,
                                                    bool vars1_fixed,
@@ -113,7 +113,7 @@ LVSContinuousCollisionEvaluator::CalcCollisionData(const Eigen::Ref<const Eigen:
   }
 
   auto data = std::make_shared<trajopt_common::CollisionCacheData>();
-  CalcCollisionsHelper(data->contact_results_map, dof_vals0, dof_vals1, vars0_fixed, vars1_fixed);
+  calcCollisionsHelper(data->contact_results_map, dof_vals0, dof_vals1, vars0_fixed, vars1_fixed);
 
   for (const auto& pair : data->contact_results_map)
   {
@@ -142,7 +142,7 @@ LVSContinuousCollisionEvaluator::CalcCollisionData(const Eigen::Ref<const Eigen:
         grs.results.reserve(results.size());
       }
 
-      grs.add(CalcGradientData(dof_vals0, dof_vals1, dist_result));
+      grs.add(calcGradientData(dof_vals0, dof_vals1, dist_result));
     }
 
     const std::size_t new_size = data->gradient_results_sets.size() + shape_grs.size();
@@ -152,7 +152,7 @@ LVSContinuousCollisionEvaluator::CalcCollisionData(const Eigen::Ref<const Eigen:
       data->gradient_results_sets.push_back(std::move(kv.second));
   }
 
-  if (data->gradient_results_sets.size() > bounds_size)
+  if (data->gradient_results_sets.size() > bounds_size && bounds_size != 0)
   {
     auto cmp = [vars0_fixed, vars1_fixed](const trajopt_common::GradientResultsSet& a,
                                           const trajopt_common::GradientResultsSet& b) {
@@ -171,7 +171,7 @@ LVSContinuousCollisionEvaluator::CalcCollisionData(const Eigen::Ref<const Eigen:
   return data;
 }
 
-void LVSContinuousCollisionEvaluator::CalcCollisionsHelper(tesseract_collision::ContactResultMap& dist_results,
+void LVSContinuousCollisionEvaluator::calcCollisionsHelper(tesseract_collision::ContactResultMap& dist_results,
                                                            const Eigen::Ref<const Eigen::VectorXd>& dof_vals0,
                                                            const Eigen::Ref<const Eigen::VectorXd>& dof_vals1,
                                                            bool vars0_fixed,
@@ -258,7 +258,7 @@ void LVSContinuousCollisionEvaluator::CalcCollisionsHelper(tesseract_collision::
 }
 
 trajopt_common::GradientResults
-LVSContinuousCollisionEvaluator::CalcGradientData(const Eigen::Ref<const Eigen::VectorXd>& dof_vals0,
+LVSContinuousCollisionEvaluator::calcGradientData(const Eigen::Ref<const Eigen::VectorXd>& dof_vals0,
                                                   const Eigen::Ref<const Eigen::VectorXd>& dof_vals1,
                                                   const tesseract_collision::ContactResult& contact_results)
 {
@@ -267,14 +267,14 @@ LVSContinuousCollisionEvaluator::CalcGradientData(const Eigen::Ref<const Eigen::
   return trajopt_common::getGradient(dof_vals0, dof_vals1, contact_results, margin, margin_buffer_, *manip_);
 }
 
-double LVSContinuousCollisionEvaluator::GetCollisionMarginBuffer() const { return margin_buffer_; }
+double LVSContinuousCollisionEvaluator::getCollisionMarginBuffer() const { return margin_buffer_; }
 
-const tesseract_common::CollisionMarginData& LVSContinuousCollisionEvaluator::GetCollisionMarginData() const
+const tesseract_common::CollisionMarginData& LVSContinuousCollisionEvaluator::getCollisionMarginData() const
 {
   return margin_data_;
 }
 
-const trajopt_common::CollisionCoeffData& LVSContinuousCollisionEvaluator::GetCollisionCoeffData() const
+const trajopt_common::CollisionCoeffData& LVSContinuousCollisionEvaluator::getCollisionCoeffData() const
 {
   return coeff_data_;
 }
@@ -337,7 +337,7 @@ LVSDiscreteCollisionEvaluator::LVSDiscreteCollisionEvaluator(
 }
 
 std::shared_ptr<const trajopt_common::CollisionCacheData>
-LVSDiscreteCollisionEvaluator::CalcCollisionData(const Eigen::Ref<const Eigen::VectorXd>& dof_vals0,
+LVSDiscreteCollisionEvaluator::calcCollisionData(const Eigen::Ref<const Eigen::VectorXd>& dof_vals0,
                                                  const Eigen::Ref<const Eigen::VectorXd>& dof_vals1,
                                                  bool vars0_fixed,
                                                  bool vars1_fixed,
@@ -351,7 +351,7 @@ LVSDiscreteCollisionEvaluator::CalcCollisionData(const Eigen::Ref<const Eigen::V
   }
 
   auto data = std::make_shared<trajopt_common::CollisionCacheData>();
-  CalcCollisionsHelper(data->contact_results_map, dof_vals0, dof_vals1, vars0_fixed, vars1_fixed);
+  calcCollisionsHelper(data->contact_results_map, dof_vals0, dof_vals1, vars0_fixed, vars1_fixed);
 
   for (const auto& pair : data->contact_results_map)
   {
@@ -380,7 +380,7 @@ LVSDiscreteCollisionEvaluator::CalcCollisionData(const Eigen::Ref<const Eigen::V
         grs.results.reserve(results.size());
       }
 
-      grs.add(CalcGradientData(dof_vals0, dof_vals1, dist_result));
+      grs.add(calcGradientData(dof_vals0, dof_vals1, dist_result));
     }
 
     const std::size_t new_size = data->gradient_results_sets.size() + shape_grs.size();
@@ -390,7 +390,7 @@ LVSDiscreteCollisionEvaluator::CalcCollisionData(const Eigen::Ref<const Eigen::V
       data->gradient_results_sets.push_back(std::move(kv.second));
   }
 
-  if (data->gradient_results_sets.size() > bounds_size)
+  if (data->gradient_results_sets.size() > bounds_size && bounds_size != 0)
   {
     auto cmp = [vars0_fixed, vars1_fixed](const trajopt_common::GradientResultsSet& a,
                                           const trajopt_common::GradientResultsSet& b) {
@@ -409,7 +409,7 @@ LVSDiscreteCollisionEvaluator::CalcCollisionData(const Eigen::Ref<const Eigen::V
   return data;
 }
 
-void LVSDiscreteCollisionEvaluator::CalcCollisionsHelper(tesseract_collision::ContactResultMap& dist_results,
+void LVSDiscreteCollisionEvaluator::calcCollisionsHelper(tesseract_collision::ContactResultMap& dist_results,
                                                          const Eigen::Ref<const Eigen::VectorXd>& dof_vals0,
                                                          const Eigen::Ref<const Eigen::VectorXd>& dof_vals1,
                                                          bool vars0_fixed,
@@ -484,7 +484,7 @@ void LVSDiscreteCollisionEvaluator::CalcCollisionsHelper(tesseract_collision::Co
 }
 
 trajopt_common::GradientResults
-LVSDiscreteCollisionEvaluator::CalcGradientData(const Eigen::Ref<const Eigen::VectorXd>& dof_vals0,
+LVSDiscreteCollisionEvaluator::calcGradientData(const Eigen::Ref<const Eigen::VectorXd>& dof_vals0,
                                                 const Eigen::Ref<const Eigen::VectorXd>& dof_vals1,
                                                 const tesseract_collision::ContactResult& contact_results)
 {
@@ -493,14 +493,14 @@ LVSDiscreteCollisionEvaluator::CalcGradientData(const Eigen::Ref<const Eigen::Ve
   return trajopt_common::getGradient(dof_vals0, dof_vals1, contact_results, margin, margin_buffer_, *manip_);
 }
 
-double LVSDiscreteCollisionEvaluator::GetCollisionMarginBuffer() const { return margin_buffer_; }
+double LVSDiscreteCollisionEvaluator::getCollisionMarginBuffer() const { return margin_buffer_; }
 
-const tesseract_common::CollisionMarginData& LVSDiscreteCollisionEvaluator::GetCollisionMarginData() const
+const tesseract_common::CollisionMarginData& LVSDiscreteCollisionEvaluator::getCollisionMarginData() const
 {
   return margin_data_;
 }
 
-const trajopt_common::CollisionCoeffData& LVSDiscreteCollisionEvaluator::GetCollisionCoeffData() const
+const trajopt_common::CollisionCoeffData& LVSDiscreteCollisionEvaluator::getCollisionCoeffData() const
 {
   return coeff_data_;
 }

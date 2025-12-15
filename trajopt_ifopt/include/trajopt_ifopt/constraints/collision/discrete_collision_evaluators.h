@@ -71,25 +71,25 @@ public:
    * data.
    */
   virtual std::shared_ptr<const trajopt_common::CollisionCacheData>
-  CalcCollisions(const Eigen::Ref<const Eigen::VectorXd>& dof_vals, std::size_t bounds_size) = 0;
+  calcCollisions(const Eigen::Ref<const Eigen::VectorXd>& dof_vals, std::size_t bounds_size) = 0;
 
   /**
    * @brief Get the collision margin buffer
    * @return The collision margin buffer
    */
-  virtual double GetCollisionMarginBuffer() const = 0;
+  virtual double getCollisionMarginBuffer() const = 0;
 
   /**
    * @brief Get the collision margin information.
    * @return Collision margin information
    */
-  virtual const tesseract_common::CollisionMarginData& GetCollisionMarginData() const = 0;
+  virtual const tesseract_common::CollisionMarginData& getCollisionMarginData() const = 0;
 
   /**
    * @brief Get the collision coefficient information.
    * @return Collision coefficient information
    */
-  virtual const trajopt_common::CollisionCoeffData& GetCollisionCoeffData() const = 0;
+  virtual const trajopt_common::CollisionCoeffData& getCollisionCoeffData() const = 0;
 
   /**
    * @brief Extracts the gradient information based on the contact results
@@ -98,7 +98,7 @@ public:
    * @param isTimestep1 Indicates if this is the second timestep when computing gradient for continuous collision
    * @return The gradient results
    */
-  virtual trajopt_common::GradientResults GetGradient(const Eigen::VectorXd& dofvals,
+  virtual trajopt_common::GradientResults getGradient(const Eigen::VectorXd& dofvals,
                                                       const tesseract_collision::ContactResult& contact_result) = 0;
 };
 
@@ -121,16 +121,16 @@ public:
                                    bool dynamic_environment = false);
 
   std::shared_ptr<const trajopt_common::CollisionCacheData>
-  CalcCollisions(const Eigen::Ref<const Eigen::VectorXd>& dof_vals, std::size_t bounds_size) override final;
+  calcCollisions(const Eigen::Ref<const Eigen::VectorXd>& dof_vals, std::size_t bounds_size) override final;
 
-  trajopt_common::GradientResults GetGradient(const Eigen::VectorXd& dofvals,
+  trajopt_common::GradientResults getGradient(const Eigen::VectorXd& dofvals,
                                               const tesseract_collision::ContactResult& contact_result) override;
 
-  double GetCollisionMarginBuffer() const override final;
+  double getCollisionMarginBuffer() const override final;
 
-  const tesseract_common::CollisionMarginData& GetCollisionMarginData() const override final;
+  const tesseract_common::CollisionMarginData& getCollisionMarginData() const override final;
 
-  const trajopt_common::CollisionCoeffData& GetCollisionCoeffData() const override final;
+  const trajopt_common::CollisionCoeffData& getCollisionCoeffData() const override final;
 
 private:
   std::shared_ptr<CollisionCache> collision_cache_;
@@ -147,7 +147,7 @@ private:
   bool dynamic_environment_;
   std::shared_ptr<tesseract_collision::DiscreteContactManager> contact_manager_;
 
-  void CalcCollisionsHelper(const Eigen::Ref<const Eigen::VectorXd>& dof_vals,
+  void calcCollisionsHelper(const Eigen::Ref<const Eigen::VectorXd>& dof_vals,
                             tesseract_collision::ContactResultMap& dist_results);
 };
 

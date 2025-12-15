@@ -148,7 +148,7 @@ TEST(NodesVariablesUnit, AddNodesAndGetNodes)
   // Create variable set
   trajopt_ifopt::NodesVariables vars("nodes", std::move(nodes));
 
-  auto out_nodes = vars.GetNodes();
+  auto out_nodes = vars.getNodes();
   ASSERT_EQ(out_nodes.size(), 2U);
 
   EXPECT_EQ(out_nodes[0]->getName(), "n0");
@@ -159,8 +159,8 @@ TEST(NodesVariablesUnit, AddNodesAndGetNodes)
   EXPECT_EQ(out_nodes[1]->getParent(), &vars);
 
   // GetNode should be consistent with GetNodes (assume 0-based indexing)
-  auto n0 = vars.GetNode(0);
-  auto n1 = vars.GetNode(1);
+  auto n0 = vars.getNode(0);
+  auto n1 = vars.getNode(1);
   ASSERT_TRUE(static_cast<bool>(n0));
   ASSERT_TRUE(static_cast<bool>(n1));
   EXPECT_EQ(n0->getName(), "n0");
@@ -191,16 +191,16 @@ TEST(NodesVariablesUnit, SetVariablesPropagatesToNodesAndVars)
   x << 5.0, 6.0, 7.0;
 
   // Set into NodesVariables, which should update internal storage and nodes
-  vars.SetVariables(x);
+  vars.setVariables(x);
 
   // GetValues should roundtrip the vector
-  Eigen::VectorXd out = vars.GetValues();
+  Eigen::VectorXd out = vars.getValues();
   ASSERT_EQ(out.size(), x.size());
   EXPECT_TRUE(out.isApprox(x));
 
   // Check that the corresponding node/var views see the same data
-  auto n0 = vars.GetNode(0);
-  auto n1 = vars.GetNode(1);
+  auto n0 = vars.getNode(0);
+  auto n1 = vars.getNode(1);
   ASSERT_TRUE(static_cast<bool>(n0));
   ASSERT_TRUE(static_cast<bool>(n1));
 
