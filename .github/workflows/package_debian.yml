@@ -147,12 +147,12 @@ jobs:
           cp ./*.deb $GITHUB_WORKSPACE/artifacts
           cp ./*.tar.xz $GITHUB_WORKSPACE/artifacts
 
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v6
         with:
           name: debian_package_${{ matrix.distro }}
           path: ${{ github.workspace }}/artifacts/*.deb
 
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v6
         with:
           name: archive_package_${{ matrix.distro }}
           path: ${{ github.workspace }}/artifacts/*.tar.xz
