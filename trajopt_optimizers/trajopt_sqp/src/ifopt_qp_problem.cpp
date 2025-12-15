@@ -43,6 +43,12 @@ void IfoptQPProblem::addConstraintSet(std::shared_ptr<trajopt_ifopt::ConstraintS
   nlp_->AddConstraintSet(std::move(constraint_set));
 }
 
+void
+IfoptQPProblem::addDynamicConstraintSet(std::shared_ptr<trajopt_ifopt::DynamicConstraintSet> /*dyn_constraint_set*/)
+{
+  throw std::runtime_error("IfoptQPProblem, dynamic constraint sets are not supported");
+}
+
 void IfoptQPProblem::addCostSet(std::shared_ptr<trajopt_ifopt::ConstraintSet> constraint_set,
                                 CostPenaltyType penalty_type)
 {

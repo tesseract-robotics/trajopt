@@ -45,6 +45,8 @@ public:
 
   void addConstraintSet(std::shared_ptr<trajopt_ifopt::ConstraintSet> constraint_set) override;
 
+  void addDynamicConstraintSet(std::shared_ptr<trajopt_ifopt::DynamicConstraintSet> dyn_constraint_set) override;
+
   void addCostSet(std::shared_ptr<trajopt_ifopt::ConstraintSet> constraint_set, CostPenaltyType penalty_type) override;
 
   void setup() override;

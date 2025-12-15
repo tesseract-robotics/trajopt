@@ -33,6 +33,9 @@ class NodesVariables;
 class Node;
 class Var;
 
+// Dynamic Constraint Set
+class DynamicConstraintSet;
+
 // cartesian_line_constraint.h
 struct CartLineInfo;
 class CartLineConstraint;

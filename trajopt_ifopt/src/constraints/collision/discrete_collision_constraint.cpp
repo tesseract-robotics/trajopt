@@ -195,4 +195,111 @@ std::shared_ptr<DiscreteCollisionEvaluator> DiscreteCollisionConstraint::GetColl
   return collision_evaluator_;
 }
 
+DiscreteCollisionConstraintD::DiscreteCollisionConstraintD(
+    std::shared_ptr<DiscreteCollisionEvaluator> collision_evaluator,
+    std::shared_ptr<const Var> position_var,
+    const std::string& name)
+  : DynamicConstraintSet(name)
+  , position_var_(std::move(position_var))
+  , collision_evaluator_(std::move(collision_evaluator))
+{
+  n_dof_ = position_var_->size();
+  assert(n_dof_ > 0);
+}
+
+int DiscreteCollisionConstraintD::update()
+{
+  int rows{ 0 };
+  const trajopt_common::CollisionCacheData::ConstPtr collision_data =
+      collision_evaluator_->CalcCollisions(position_var_->value(), 0);
+  for (const auto& gradient_results_set : collision_data->gradient_results_sets)
+    rows += static_cast<int>(gradient_results_set.results.size());
+
+  SetRows(rows);
+  bounds_ = std::vector<ifopt::Bounds>(static_cast<std::size_t>(rows), ifopt::BoundSmallerZero);
+
+  std::call_once(init_flag_, &DiscreteCollisionConstraintD::init, this);
+
+  return rows;
+}
+
+Eigen::VectorXd DiscreteCollisionConstraintD::GetValues() const
+{
+  const trajopt_common::CollisionCacheData::ConstPtr collision_data =
+      collision_evaluator_->CalcCollisions(position_var_->value(), 0);
+
+  std::vector<double> values;
+  for (const auto& gradient_results_set : collision_data->gradient_results_sets)
+  {
+    for (const auto& result : gradient_results_set.results)
+      values.emplace_back(result.error * gradient_results_set.coeff);
+  }
+
+  return Eigen::Map<Eigen::VectorXd>(values.data(), static_cast<Eigen::Index>(values.size()));
+}
+
+// Set the limits on the constraint values
+std::vector<ifopt::Bounds> DiscreteCollisionConstraintD::GetBounds() const { return bounds_; }
+
+void DiscreteCollisionConstraintD::FillJacobianBlock(std::string var_set, Jacobian& jac_block) const
+{
+  // Only modify the jacobian if this constraint uses var_set
+  if (var_set != var_set_name_ || GetRows() == 0)  // NOLINT
+    return;
+
+  Eigen::Index i{ 0 };
+
+  const trajopt_common::CollisionCacheData::ConstPtr collision_data =
+      collision_evaluator_->CalcCollisions(position_var_->value(), 0);
+
+  if (collision_data->gradient_results_sets.empty())
+    return;
+
+  for (const auto& gradient_results_set : collision_data->gradient_results_sets)
+  {
+    for (const auto& result : gradient_results_set.results)
+    {
+      assert(result.gradients[0].has_gradient || result.gradients[1].has_gradient);
+      if (result.gradients[0].has_gradient && result.gradients[1].has_gradient)
+      {
+        // This does work but could be faster
+        for (int j = 0; j < n_dof_; j++)
+          jac_block.coeffRef(i, position_var_->getIndex() + j) =
+              -1.0 * (result.gradients[0].gradient[j] + result.gradients[1].gradient[j]);
+      }
+      else if (result.gradients[0].has_gradient)
+      {
+        // This does work but could be faster
+        for (int j = 0; j < n_dof_; j++)
+          jac_block.coeffRef(i, position_var_->getIndex() + j) = -1.0 * result.gradients[0].gradient[j];
+      }
+      else if (result.gradients[1].has_gradient)
+      {
+        // This does work but could be faster
+        for (int j = 0; j < n_dof_; j++)
+          jac_block.coeffRef(i, position_var_->getIndex() + j) = -1.0 * result.gradients[1].gradient[j];
+      }
+      ++i;
+    }
+  }
+  assert(GetRows() == (i - 1));
+}
+
+void DiscreteCollisionConstraintD::SetBounds(const std::vector<ifopt::Bounds>& bounds)
+{
+  assert(bounds.size() == GetRows());
+  bounds_ = bounds;
+}
+
+void DiscreteCollisionConstraintD::init() const
+{
+  const auto* parent_set = position_var_->getParent()->getParent();
+  var_set_name_ = parent_set->GetName();
+}
+
+std::shared_ptr<DiscreteCollisionEvaluator> DiscreteCollisionConstraintD::GetCollisionEvaluator() const
+{
+  return collision_evaluator_;
+}
+
 }  // namespace trajopt_ifopt

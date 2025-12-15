@@ -390,7 +390,7 @@ LVSDiscreteCollisionEvaluator::CalcCollisionData(const Eigen::Ref<const Eigen::V
       data->gradient_results_sets.push_back(std::move(kv.second));
   }
 
-  if (data->gradient_results_sets.size() > bounds_size)
+  if (data->gradient_results_sets.size() > bounds_size && bounds_size != 0)
   {
     auto cmp = [vars0_fixed, vars1_fixed](const trajopt_common::GradientResultsSet& a,
                                           const trajopt_common::GradientResultsSet& b) {

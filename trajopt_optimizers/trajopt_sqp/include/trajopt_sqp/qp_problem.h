@@ -5,6 +5,11 @@
 #include <trajopt_sqp/eigen_types.h>
 #include <trajopt_ifopt/fwd.h>
 
+namespace trajopt_ifopt
+{
+class DynamicConstraintSet;
+}
+
 namespace trajopt_sqp
 {
 enum class CostPenaltyType : std::uint8_t;
@@ -37,6 +42,16 @@ public:
    * considers all individual constraint sets.
    */
   virtual void addConstraintSet(std::shared_ptr<trajopt_ifopt::ConstraintSet> constraint_set) = 0;
+
+  /**
+   * @brief Add a set of multiple constraints to the optimization problem.
+   * @param dyn_constraint_set  This can be 1 to infinity number of constraints.
+   *
+   * This function can be called multiple times for different sets of
+   * constraints. It makes sure the overall constraint and Jacobian correctly
+   * considers all individual constraint sets.
+   */
+  virtual void addDynamicConstraintSet(std::shared_ptr<trajopt_ifopt::DynamicConstraintSet> dyn_constraint_set) = 0;
 
   /**
    * @brief Add a squared cost term to the problem.
