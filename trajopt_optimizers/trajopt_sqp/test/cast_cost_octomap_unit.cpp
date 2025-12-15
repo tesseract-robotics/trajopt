@@ -52,6 +52,7 @@ TRAJOPT_IGNORE_WARNINGS_POP
 #include <trajopt_ifopt/constraints/collision/continuous_collision_constraint.h>
 #include <trajopt_ifopt/constraints/collision/continuous_collision_evaluators.h>
 #include <trajopt_ifopt/constraints/joint_position_constraint.h>
+#include <trajopt_ifopt/constraints/joint_velocity_constraint.h>
 #include <trajopt_ifopt/costs/squared_cost.h>
 #include <trajopt_ifopt/utils/ifopt_utils.h>
 
@@ -123,7 +124,7 @@ public:
   }
 };
 
-void runCastOctomapTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const Environment::Ptr& env)
+void runCastOctomapTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const Environment::Ptr& env, bool fixed_size)
 {
   std::unordered_map<std::string, double> ipos;
   ipos["boxbot_x_joint"] = -1.9;
@@ -174,7 +175,8 @@ void runCastOctomapTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const Env
   const double margin = 0.02;
   trajopt_common::TrajOptCollisionConfig trajopt_collision_config(margin, margin_coeff);
   trajopt_collision_config.collision_check_config.type = tesseract_collision::CollisionEvaluatorType::LVS_CONTINUOUS;
-  trajopt_collision_config.collision_margin_buffer = 0.05;
+  trajopt_collision_config.collision_check_config.longest_valid_segment_length = 0.05;
+  trajopt_collision_config.collision_margin_buffer = 0.5;
 
   // 4) Add constraints
   {  // Fix start position
@@ -198,12 +200,26 @@ void runCastOctomapTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const Env
 
     const std::array<std::shared_ptr<const Var>, 2> position_vars{ vars[i - 1], vars[i] };
 
-    auto cnt = std::make_shared<trajopt_ifopt::ContinuousCollisionConstraint>(
-        collision_evaluator, position_vars, vars_fixed[0], vars_fixed[1], 3);
-    qp_problem->addConstraintSet(cnt);
+    if (fixed_size)
+    {
+      auto cnt = std::make_shared<trajopt_ifopt::ContinuousCollisionConstraint>(
+          collision_evaluator, position_vars, vars_fixed[0], vars_fixed[1], 3);
+      qp_problem->addConstraintSet(cnt);
+    }
+    else
+    {
+      auto cnt = std::make_shared<trajopt_ifopt::ContinuousCollisionConstraintD>(
+          collision_evaluator, position_vars, vars_fixed[0], vars_fixed[1]);
+      qp_problem->addConstraintSet(cnt);
+    }
 
     vars_fixed = { false, true };
   }
+
+  auto vel_target = Eigen::VectorXd::Zero(2);
+  auto vel_coeff = Eigen::VectorXd::Ones(2);
+  qp_problem->addCostSet(std::make_shared<trajopt_ifopt::JointVelConstraint>(vel_target, vars, vel_coeff),
+                         trajopt_sqp::CostPenaltyType::SQUARED);
 
   qp_problem->setup();
   qp_problem->print();
@@ -211,7 +227,7 @@ void runCastOctomapTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const Env
   // 5) Setup solver
   auto qp_solver = std::make_shared<trajopt_sqp::OSQPEigenSolver>();
   trajopt_sqp::TrustRegionSQPSolver solver(qp_solver);
-  qp_solver->solver_->settings()->setVerbosity(true);
+  qp_solver->solver_->settings()->setVerbosity(false);
   qp_solver->solver_->settings()->setWarmStart(true);
   qp_solver->solver_->settings()->setPolish(true);
   qp_solver->solver_->settings()->setAdaptiveRho(false);
@@ -220,7 +236,7 @@ void runCastOctomapTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const Env
   qp_solver->solver_->settings()->setRelativeTolerance(1e-6);
 
   // 6) solve
-  solver.verbose = true;
+  solver.verbose = false;
   solver.solve(qp_problem);
   Eigen::VectorXd x = qp_problem->getVariableValues();
   std::cout << x.transpose() << '\n';
@@ -249,14 +265,14 @@ TEST_F(CastOctomapTest, boxesIfoptProblem)  // NOLINT
 {
   CONSOLE_BRIDGE_logDebug("CastOctomapTest, boxesIfoptProblem");
   auto qp_problem = std::make_shared<trajopt_sqp::IfoptQPProblem>();
-  runCastOctomapTest(qp_problem, env);
+  runCastOctomapTest(qp_problem, env, true);
 }
 
 TEST_F(CastOctomapTest, boxesTrajOptProblem)  // NOLINT
 {
   CONSOLE_BRIDGE_logDebug("CastOctomapTest, boxesTrajOptProblem");
   auto qp_problem = std::make_shared<trajopt_sqp::TrajOptQPProblem>();
-  runCastOctomapTest(qp_problem, env);  // NOLINT
+  runCastOctomapTest(qp_problem, env, false);  // NOLINT
 }
 
 int main(int argc, char** argv)

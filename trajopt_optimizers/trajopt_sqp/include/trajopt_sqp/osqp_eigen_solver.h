@@ -56,7 +56,7 @@ public:
 
   static void setDefaultOSQPSettings(OsqpEigen::Settings& settings);
 
-  bool init(Eigen::Index num_vars, Eigen::Index num_cnts) override;
+  bool init(Eigen::Index num_vars, Eigen::Index num_cnts, const Eigen::VectorXd& init_vals = {}) override;
 
   bool clear() override;
 
@@ -64,7 +64,7 @@ public:
 
   Eigen::VectorXd getSolution() override;
 
-  bool updateHessianMatrix(const SparseMatrix& hessian) override;
+  bool updateHessianMatrix(const trajopt_ifopt::Jacobian& hessian) override;
 
   bool updateGradient(const Eigen::Ref<const Eigen::VectorXd>& gradient) override;
 
@@ -75,7 +75,7 @@ public:
   bool updateBounds(const Eigen::Ref<const Eigen::VectorXd>& lowerBound,
                     const Eigen::Ref<const Eigen::VectorXd>& upperBound) override;
 
-  bool updateLinearConstraintsMatrix(const SparseMatrix& linearConstraintsMatrix) override;
+  bool updateLinearConstraintsMatrix(const trajopt_ifopt::Jacobian& linearConstraintsMatrix) override;
 
   QPSolverStatus getSolverStatus() const override { return solver_status_; }
 
@@ -84,6 +84,7 @@ public:
 private:
   // Depending on what they decide to do with this issue, these could be dropped
   // https://github.com/robotology/osqp-eigen/issues/17
+  Eigen::VectorXd init_vals_;
   Eigen::VectorXd bounds_lower_;
   Eigen::VectorXd bounds_upper_;
   Eigen::VectorXd gradient_;

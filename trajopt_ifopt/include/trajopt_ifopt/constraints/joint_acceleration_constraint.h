@@ -46,6 +46,8 @@ public:
   using Ptr = std::shared_ptr<JointAccelConstraint>;
   using ConstPtr = std::shared_ptr<const JointAccelConstraint>;
 
+  int update() override { return rows_; }
+
   /**
    * @brief Constructs a acceleration contraint from these variables, setting the bounds to the target
    * @param targets Joint Acceleration targets (length should be n_dof). Upper and lower bounds are set to this value
@@ -76,20 +78,23 @@ public:
    * @brief Returns the values associated with the constraint. In this case that is the approximate joint acceleration.
    * @return Returns jointAcceleration. Length is n_dof_ * n_vars
    */
-  Eigen::VectorXd GetValues() const override;
+  Eigen::VectorXd getValues() const override;
+
+  /** @copydoc Differentiable::getCoefficients */
+  Eigen::VectorXd getCoefficients() const override;
 
   /**
    * @brief  Returns the "bounds" of this constraint. How these are enforced is up to the solver
    * @return Returns the "bounds" of this constraint
    */
-  std::vector<Bounds> GetBounds() const override;
+  std::vector<Bounds> getBounds() const override;
 
   /**
    * @brief Fills the jacobian block associated with the given var_set.
    * @param var_set Name of the var_set to which the jac_block is associated
    * @param jac_block Block of the overall jacobian associated with these constraints and the var_set variable
    */
-  void FillJacobianBlock(std::string var_set, Jacobian& jac_block) const override;
+  void fillJacobianBlock(std::string var_set, Jacobian& jac_block) const override;
 
 private:
   /** @brief The number of joints in a single JointPosition */

@@ -68,7 +68,7 @@ InverseKinematicsConstraint::InverseKinematicsConstraint(
 }
 
 Eigen::VectorXd
-InverseKinematicsConstraint::CalcValues(const Eigen::Ref<const Eigen::VectorXd>& joint_vals,
+InverseKinematicsConstraint::calcValues(const Eigen::Ref<const Eigen::VectorXd>& joint_vals,
                                         const Eigen::Ref<const Eigen::VectorXd>& seed_joint_position) const
 {
   // Get joint position using IK and the seed variable
@@ -95,15 +95,17 @@ InverseKinematicsConstraint::CalcValues(const Eigen::Ref<const Eigen::VectorXd>&
   return error;
 }
 
-Eigen::VectorXd InverseKinematicsConstraint::GetValues() const
+Eigen::VectorXd InverseKinematicsConstraint::getValues() const
 {
-  return CalcValues(constraint_var_->value(), seed_var_->value());
+  return calcValues(constraint_var_->value(), seed_var_->value());
 }
 
-// Set the limits on the constraint values
-std::vector<Bounds> InverseKinematicsConstraint::GetBounds() const { return bounds_; }
+Eigen::VectorXd InverseKinematicsConstraint::getCoefficients() const { return Eigen::VectorXd::Constant(n_dof_, 1); }
 
-void InverseKinematicsConstraint::SetBounds(const std::vector<Bounds>& bounds)
+// Set the limits on the constraint values
+std::vector<Bounds> InverseKinematicsConstraint::getBounds() const { return bounds_; }
+
+void InverseKinematicsConstraint::setBounds(const std::vector<Bounds>& bounds)
 {
   if (bounds.size() != static_cast<std::size_t>(n_dof_))
     CONSOLE_BRIDGE_logError("Bounds is incorrect size. It is %d when it should be %d", bounds.size(), n_dof_);
@@ -111,10 +113,10 @@ void InverseKinematicsConstraint::SetBounds(const std::vector<Bounds>& bounds)
   bounds_ = bounds;
 }
 
-void InverseKinematicsConstraint::FillJacobianBlock(std::string var_set, Jacobian& jac_block) const
+void InverseKinematicsConstraint::fillJacobianBlock(std::string var_set, Jacobian& jac_block) const
 {
   // Only modify the jacobian if this constraint uses var_set
-  if (var_set != constraint_var_->getParent()->getParent()->GetName())  // NOLINT
+  if (var_set != constraint_var_->getParent()->getParent()->getName())  // NOLINT
     return;
 
   std::vector<Eigen::Triplet<double> > triplet_list;
@@ -127,5 +129,5 @@ void InverseKinematicsConstraint::FillJacobianBlock(std::string var_set, Jacobia
   jac_block.setFromTriplets(triplet_list.begin(), triplet_list.end());  // NOLINT
 }
 
-void InverseKinematicsConstraint::SetTargetPose(const Eigen::Isometry3d& target_pose) { target_pose_ = target_pose; }
+void InverseKinematicsConstraint::setTargetPose(const Eigen::Isometry3d& target_pose) { target_pose_ = target_pose; }
 }  // namespace trajopt_ifopt

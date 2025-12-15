@@ -53,23 +53,23 @@ private:
   /**
    * @brief  Returns the scalar cost term calculated from the @c variables.
    */
-  virtual double GetCost() const = 0;
+  virtual double getCost() const = 0;
 
 public:
   /**
    * @brief  Wrapper function that converts double to Eigen::VectorXd.
    */
-  Eigen::VectorXd GetValues() const final;
+  Eigen::VectorXd getValues() const final;
 
   /**
    * @brief  Returns infinite bounds (e.g. no bounds).
    */
-  std::vector<Bounds> GetBounds() const final;
+  std::vector<Bounds> getBounds() const final;
 
   /**
    * Cost term printout slightly different from variables/constraints.
    */
-  void Print(double tol, int& index) const final;
+  void print(int& index, double tol) const final;
 };
 
 }  // namespace trajopt_ifopt

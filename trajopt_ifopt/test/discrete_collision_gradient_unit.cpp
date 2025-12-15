@@ -105,7 +105,7 @@ void runDiscreteGradientTest(const Environment::Ptr& env, double coeff)
     vars.push_back(nodes.back()->addVar("position", manip->getJointNames(), pos, bounds));
   }
 
-  nlp.AddVariableSet(std::make_shared<NodesVariables>("joint_trajectory", std::move(nodes)));
+  nlp.addVariableSet(std::make_shared<NodesVariables>("joint_trajectory", std::move(nodes)));
 
   // Step 3: Setup collision
   const double margin_coeff = coeff;
@@ -117,9 +117,9 @@ void runDiscreteGradientTest(const Environment::Ptr& env, double coeff)
   auto collision_evaluator =
       std::make_shared<SingleTimestepCollisionEvaluator>(collision_cache, manip, env, trajopt_collision_config);
   auto cnt = std::make_shared<DiscreteCollisionConstraint>(collision_evaluator, vars[0], 3);
-  nlp.AddConstraintSet(cnt);
+  nlp.addConstraintSet(cnt);
 
-  std::cout << "Jacobian: \n" << nlp.GetJacobianOfConstraints().toDense() << '\n';
+  std::cout << "Jacobian: \n" << nlp.getJacobianOfConstraints().toDense() << '\n';
 
   Jacobian const num_jac_block = calcNumericalConstraintGradient(positions[0].data(), nlp, 1e-8);
   std::cout << "Numerical Jacobian: \n" << num_jac_block.toDense() << '\n';

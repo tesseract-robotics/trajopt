@@ -87,13 +87,17 @@ public:
    */
   SquaredCost(ConstraintSet::Ptr constraint, const Eigen::Ref<const Eigen::VectorXd>& weights);
 
-  double GetCost() const override;
+  int update() override;
 
-  void FillJacobianBlock(std::string var_set, Jacobian& jac_block) const override;
+  double getCost() const override;
+
+  Eigen::VectorXd getCoefficients() const override;
+
+  void fillJacobianBlock(std::string var_set, Jacobian& jac_block) const override;
 
 private:
   /** @brief Constraint being converted to a cost */
-  std::shared_ptr<const ConstraintSet> constraint_;
+  std::shared_ptr<ConstraintSet> constraint_;
 
   /** @brief Size of the input constraint */
   long n_constraints_;

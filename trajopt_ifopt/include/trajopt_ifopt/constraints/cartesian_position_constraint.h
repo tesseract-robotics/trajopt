@@ -108,64 +108,69 @@ public:
                     const Eigen::VectorXd& coeffs,
                     std::string name = "CartPos");
 
+  int update() override { return rows_; }
+
   /**
    * @brief CalcValues Calculates the values associated with the constraint
    * @param joint_vals Input joint values for which FK is solved
    * @return Error of FK solution from target, size 6. The first 3 terms are associated with position and the last 3 are
    * associated with orientation.
    */
-  Eigen::VectorXd CalcValues(const Eigen::Ref<const Eigen::VectorXd>& joint_vals) const;
+  Eigen::VectorXd calcValues(const Eigen::Ref<const Eigen::VectorXd>& joint_vals) const;
   /**
    * @brief Returns the values associated with the constraint. In this case that is the concatenated joint values
    * associated with each of the joint positions should be n_dof_ * n_vars_ long
    * @return
    */
-  Eigen::VectorXd GetValues() const override;
+  Eigen::VectorXd getValues() const override;
+
+  /** @copydoc Differentiable::getCoefficients */
+  Eigen::VectorXd getCoefficients() const override;
 
   /**
    * @brief  Returns the "bounds" of this constraint. How these are enforced is up to the solver
    * @return Returns the "bounds" of this constraint
    */
-  std::vector<Bounds> GetBounds() const override;
+  std::vector<Bounds> getBounds() const override;
 
-  void SetBounds(const std::vector<Bounds>& bounds);
+  void setBounds(const std::vector<Bounds>& bounds);
 
   /**
    * @brief Fills the jacobian block associated with the constraint
    * @param jac_block Block of the overall jacobian associated with these constraints
    */
-  void CalcJacobianBlock(const Eigen::Ref<const Eigen::VectorXd>& joint_vals, Jacobian& jac_block) const;
+  void calcJacobianBlock(const Eigen::Ref<const Eigen::VectorXd>& joint_vals, Jacobian& jac_block) const;
   /**
    * @brief Fills the jacobian block associated with the given var_set.
    * @param var_set Name of the var_set to which the jac_block is associated
    * @param jac_block Block of the overall jacobian associated with these constraints and the var_set variable
    */
-  void FillJacobianBlock(std::string var_set, Jacobian& jac_block) const override;
+  void fillJacobianBlock(std::string var_set, Jacobian& jac_block) const override;
 
   /**
    * @brief Gets the Cartesian Pose info used to create this constraint
    * @return The Cartesian Pose info used to create this constraint
    */
-  const CartPosInfo& GetInfo() const;
-  CartPosInfo& GetInfo();
+  const CartPosInfo& getInfo() const;
+  CartPosInfo& getInfo();
 
   /**
    * @brief Set the target pose
    * @param pose
    */
-  void SetTargetPose(const Eigen::Isometry3d& target_frame_offset);
+  void setTargetPose(const Eigen::Isometry3d& target_frame_offset);
 
   /**
    * @brief Returns the target pose for the constraint
    * @return The target pose for the constraint
    */
-  Eigen::Isometry3d GetTargetPose() const;
+  Eigen::Isometry3d getTargetPose() const;
 
   /**
    * @brief Returns the current TCP pose in world frame given the input kinematic info and the current variable values
    * @return The current TCP pose given the input kinematic info and the current variable values
    */
-  Eigen::Isometry3d GetCurrentPose() const;
+  Eigen::Isometry3d getCurrentPose() const;
 
   /** @brief If true, numeric differentiation will be used. Default: true
    *
@@ -196,7 +201,7 @@ private:
   /** @brief The error function to calculate the error difference used for jacobian calculations */
   ErrorDiffFunctionType error_diff_function_{ nullptr };
 
-  static thread_local tesseract_common::TransformMap transforms_cache;  // NOLINT
+  static thread_local tesseract_common::TransformMap transforms_cache_;  // NOLINT
 };
 }  // namespace trajopt_ifopt
 #endif

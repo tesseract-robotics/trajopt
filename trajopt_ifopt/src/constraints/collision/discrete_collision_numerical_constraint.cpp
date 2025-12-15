@@ -56,15 +56,33 @@ DiscreteCollisionNumericalConstraint::DiscreteCollisionNumericalConstraint(
   if (max_num_cnt < 1)
     throw std::runtime_error("max_num_cnt must be greater than zero!");
 
+  coeffs_ = Eigen::VectorXd::Constant(rows_, 1);
   bounds_ = std::vector<Bounds>(static_cast<std::size_t>(max_num_cnt), BoundSmallerZero);
 }
 
-Eigen::VectorXd DiscreteCollisionNumericalConstraint::GetValues() const { return CalcValues(position_var_->value()); }
+int DiscreteCollisionNumericalConstraint::update()
+{
+  const trajopt_common::CollisionCacheData::ConstPtr collision_data =
+      collision_evaluator_->calcCollisions(position_var_->value(), bounds_.size());
+
+  const auto cnt = std::min<std::size_t>(bounds_.size(), collision_data->gradient_results_sets.size());
+  for (std::size_t i = 0; i < cnt; ++i)
+    coeffs_(static_cast<Eigen::Index>(i)) = collision_data->gradient_results_sets[i].coeff;
+
+  // Setting to zeros because snopt sparsity cannot change
+  std::call_once(init_flag_, &DiscreteCollisionNumericalConstraint::init, this);
+
+  return rows_;
+}
+
+Eigen::VectorXd DiscreteCollisionNumericalConstraint::getValues() const { return calcValues(position_var_->value()); }
+
+Eigen::VectorXd DiscreteCollisionNumericalConstraint::getCoefficients() const { return coeffs_; }
 
 // Set the limits on the constraint values
-std::vector<Bounds> DiscreteCollisionNumericalConstraint::GetBounds() const { return bounds_; }
+std::vector<Bounds> DiscreteCollisionNumericalConstraint::getBounds() const { return bounds_; }
 
-void DiscreteCollisionNumericalConstraint::initSparsity() const
+void DiscreteCollisionNumericalConstraint::init() const
 {
   if (!fixed_sparsity_)
     return;
@@ -75,24 +93,21 @@ void DiscreteCollisionNumericalConstraint::initSparsity() const
       triplet_list_.emplace_back(i, position_var_->getIndex() + j, 0);
 }
 
-void DiscreteCollisionNumericalConstraint::FillJacobianBlock(std::string var_set, Jacobian& jac_block) const
+void DiscreteCollisionNumericalConstraint::fillJacobianBlock(std::string var_set, Jacobian& jac_block) const
 {
   // Only modify the jacobian if this constraint uses var_set
-  if (var_set != position_var_->getParent()->getParent()->GetName())  // NOLINT
+  if (var_set != position_var_->getParent()->getParent()->getName())  // NOLINT
     return;
 
-  // Setting to zeros because snopt sparsity cannot change
-  std::call_once(init_flag_, &DiscreteCollisionNumericalConstraint::initSparsity, this);
-
-  CalcJacobianBlock(position_var_->value(), jac_block);  // NOLINT
+  calcJacobianBlock(position_var_->value(), jac_block);  // NOLINT
 }
 
 Eigen::VectorXd
-DiscreteCollisionNumericalConstraint::CalcValues(const Eigen::Ref<const Eigen::VectorXd>& joint_vals) const
+DiscreteCollisionNumericalConstraint::calcValues(const Eigen::Ref<const Eigen::VectorXd>& joint_vals) const
 {
   // Check the collisions
-  auto collision_data = collision_evaluator_->CalcCollisions(joint_vals, bounds_.size());
-  const double margin_buffer = collision_evaluator_->GetCollisionMarginBuffer();
+  auto collision_data = collision_evaluator_->calcCollisions(joint_vals, bounds_.size());
+  const double margin_buffer = collision_evaluator_->getCollisionMarginBuffer();
   Eigen::VectorXd values = Eigen::VectorXd::Constant(static_cast<Eigen::Index>(bounds_.size()), -margin_buffer);
 
   if (collision_data->gradient_results_sets.empty())
@@ -102,39 +117,39 @@ DiscreteCollisionNumericalConstraint::CalcValues(const Eigen::Ref<const Eigen::V
   for (std::size_t i = 0; i < cnt; ++i)
   {
     const auto& grs = collision_data->gradient_results_sets[i];
-    values(static_cast<Eigen::Index>(i)) = grs.coeff * grs.getMaxErrorT0();
+    values(static_cast<Eigen::Index>(i)) = grs.getMaxErrorT0();
   }
 
   return values;
 }
 
-void DiscreteCollisionNumericalConstraint::SetBounds(const std::vector<Bounds>& bounds)
+void DiscreteCollisionNumericalConstraint::setBounds(const std::vector<Bounds>& bounds)
 {
   assert(bounds.size() == 1);
   bounds_ = bounds;
 }
 
-void DiscreteCollisionNumericalConstraint::CalcJacobianBlock(const Eigen::Ref<const Eigen::VectorXd>& joint_vals,
+void DiscreteCollisionNumericalConstraint::calcJacobianBlock(const Eigen::Ref<const Eigen::VectorXd>& joint_vals,
                                                              Jacobian& jac_block) const
 {
   // Setting to zeros because snopt sparsity cannot change
   if (!triplet_list_.empty())                                               // NOLINT
     jac_block.setFromTriplets(triplet_list_.begin(), triplet_list_.end());  // NOLINT
 
-  auto collision_data = collision_evaluator_->CalcCollisions(joint_vals, bounds_.size());
+  auto collision_data = collision_evaluator_->calcCollisions(joint_vals, bounds_.size());
   if (collision_data->gradient_results_sets.empty())
     return;
 
   const std::size_t cnt = std::min(bounds_.size(), collision_data->gradient_results_sets.size());
 
-  const double margin_buffer = collision_evaluator_->GetCollisionMarginBuffer();
+  const double margin_buffer = collision_evaluator_->getCollisionMarginBuffer();
 
   Eigen::VectorXd jv = joint_vals;
   const double delta = 1e-8;
   for (int j = 0; j < n_dof_; j++)
   {
     jv(j) = joint_vals(j) + delta;
-    auto collision_data_delta = collision_evaluator_->CalcCollisions(jv, bounds_.size());
+    auto collision_data_delta = collision_evaluator_->calcCollisions(jv, bounds_.size());
     for (int i = 0; i < static_cast<int>(cnt); ++i)
     {
       const auto& baseline = collision_data->gradient_results_sets[static_cast<std::size_t>(i)];
@@ -146,12 +161,12 @@ void DiscreteCollisionNumericalConstraint::CalcJacobianBlock(const Eigen::Ref<co
           collision_data_delta->gradient_results_sets.begin(), collision_data_delta->gradient_results_sets.end(), fn);
       if (it != collision_data_delta->gradient_results_sets.end())
       {
-        const double dist_delta = baseline.coeff * (it->getMaxErrorT0() - baseline.getMaxErrorT0());
+        const double dist_delta = (it->getMaxErrorT0() - baseline.getMaxErrorT0());
         jac_block.coeffRef(i, position_var_->getIndex() + j) = dist_delta / delta;
       }
       else
       {
-        const double dist_delta = baseline.coeff * ((-1.0 * margin_buffer) - baseline.getMaxErrorT0());
+        const double dist_delta = ((-1.0 * margin_buffer) - baseline.getMaxErrorT0());
         jac_block.coeffRef(i, position_var_->getIndex() + j) = dist_delta / delta;
       }
     }
@@ -174,7 +189,7 @@ void DiscreteCollisionNumericalConstraint::CalcJacobianBlock(const Eigen::Ref<co
   //    //#endif
 }
 
-std::shared_ptr<DiscreteCollisionEvaluator> DiscreteCollisionNumericalConstraint::GetCollisionEvaluator() const
+std::shared_ptr<DiscreteCollisionEvaluator> DiscreteCollisionNumericalConstraint::getCollisionEvaluator() const
 {
   return collision_evaluator_;
 }

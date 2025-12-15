@@ -45,129 +45,94 @@ ContinuousCollisionConstraint::ContinuousCollisionConstraint(
     int max_num_cnt,
     bool fixed_sparsity,
     std::string name)
-  : ContinuousCollisionConstraint(
-        std::move(collision_evaluator),
-        std::vector<std::shared_ptr<const Var>>{ std::move(position_vars[0]), std::move(position_vars[1]) },
-        vars0_fixed,
-        vars1_fixed,
-        max_num_cnt,
-        fixed_sparsity,
-        std::move(name))
-{
-}
-
-ContinuousCollisionConstraint::ContinuousCollisionConstraint(
-    std::shared_ptr<ContinuousCollisionEvaluator> collision_evaluator,
-    std::vector<std::shared_ptr<const Var>> position_vars,
-    bool vars0_fixed,
-    bool vars1_fixed,
-    int max_num_cnt,
-    bool fixed_sparsity,
-    std::string name)
-  : ConstraintSet(std::move(name),
-                  max_num_cnt * static_cast<int>(position_vars.size() > 1 ? (position_vars.size() - 1) : 0))
+  : ConstraintSet(std::move(name), max_num_cnt)
   , position_vars_(std::move(position_vars))
   , vars0_fixed_(vars0_fixed)
   , vars1_fixed_(vars1_fixed)
   , collision_evaluator_(std::move(collision_evaluator))
   , fixed_sparsity_(fixed_sparsity)
 {
-  if (position_vars_.size() < 2)
-    throw std::runtime_error("ContinuousCollisionConstraint: position_vars must contain at least two variables for "
-                             "continuous collision");
-
-  for (const auto& v : position_vars_)
-  {
-    if (v == nullptr)
-      throw std::runtime_error("ContinuousCollisionConstraint: position_vars contains a nullptr!");
-  }
+  if (position_vars_[0] == nullptr && position_vars_[1] == nullptr)
+    throw std::runtime_error("ContinuousCollisionConstraint: position_vars contains a nullptr!");
 
   // All vars must have same size
   n_dof_ = position_vars_.front()->size();
   if (n_dof_ <= 0)
     throw std::runtime_error("ContinuousCollisionConstraint: first position var is empty!");
 
-  for (const auto& v : position_vars_)
-  {
-    if (v->size() != n_dof_)
-      throw std::runtime_error("ContinuousCollisionConstraint: all position_vars must have same size!");
-  }
+  if (position_vars_[0]->size() != position_vars_[1]->size())
+    throw std::runtime_error("ContinuousCollisionConstraint: all position_vars must have same size!");
 
-  if (position_vars_.size() == 2 && vars0_fixed_ && vars1_fixed_)
-    throw std::runtime_error("ContinuousCollisionConstraint: when number vars is two, both ends cannot be fixed!");
+  if (vars0_fixed_ && vars1_fixed_)
+    throw std::runtime_error("ContinuousCollisionConstraint: both ends cannot be fixed!");
 
   if (max_num_cnt < 1)
     throw std::runtime_error("ContinuousCollisionConstraint: max_num_cnt must be greater than zero!");
 
-  max_num_cnt_per_segment_ = static_cast<std::size_t>(max_num_cnt);
-
-  const std::size_t num_segments = position_vars_.size() - 1;
-  const std::size_t total_rows = max_num_cnt_per_segment_ * num_segments;
-
-  if (static_cast<int>(total_rows) != GetRows())
-    throw std::runtime_error("ContinuousCollisionConstraint: internal row count mismatch");
-
-  bounds_ = std::vector<Bounds>(total_rows, BoundSmallerZero);
+  coeffs_ = Eigen::VectorXd::Constant(rows_, 1);
+  bounds_ = std::vector<Bounds>(static_cast<std::size_t>(max_num_cnt), BoundSmallerZero);
 }
 
-Eigen::VectorXd ContinuousCollisionConstraint::GetValues() const
+int ContinuousCollisionConstraint::update()
 {
-  const double margin_buffer = collision_evaluator_->GetCollisionMarginBuffer();
-  Eigen::VectorXd values = Eigen::VectorXd::Constant(GetRows(), -margin_buffer);
+  const trajopt_common::CollisionCacheData::ConstPtr collision_data = collision_evaluator_->calcCollisionData(
+      position_vars_[0]->value(), position_vars_[1]->value(), vars0_fixed_, vars1_fixed_, bounds_.size());
 
-  const std::size_t num_segments = position_vars_.size() - 1;
+  const auto cnt = std::min<std::size_t>(bounds_.size(), collision_data->gradient_results_sets.size());
+  for (std::size_t i = 0; i < cnt; ++i)
+    coeffs_(static_cast<Eigen::Index>(i)) = collision_data->gradient_results_sets[i].coeff;
 
-  for (std::size_t seg = 0; seg < num_segments; ++seg)
+  std::call_once(init_flag_, &ContinuousCollisionConstraint::init, this);
+
+  return rows_;
+}
+
+Eigen::VectorXd ContinuousCollisionConstraint::getValues() const
+{
+  const double margin_buffer = collision_evaluator_->getCollisionMarginBuffer();
+  Eigen::VectorXd values = Eigen::VectorXd::Constant(rows_, -margin_buffer);
+
+  auto collision_data = collision_evaluator_->calcCollisionData(
+      position_vars_[0]->value(), position_vars_[1]->value(), vars0_fixed_, vars1_fixed_, bounds_.size());
+
+  if (collision_data->gradient_results_sets.empty())
+    return values;
+
+  const auto cnt = std::min<std::size_t>(bounds_.size(), collision_data->gradient_results_sets.size());
+  if (!vars0_fixed_ && !vars1_fixed_)
   {
-    const auto& var0 = position_vars_[seg];
-    const auto& var1 = position_vars_[seg + 1];
-
-    const bool seg_vars0_fixed = (seg == 0) ? vars0_fixed_ : false;
-    const bool seg_vars1_fixed = (seg == num_segments - 1) ? vars1_fixed_ : false;
-
-    auto collision_data = collision_evaluator_->CalcCollisionData(
-        var0->value(), var1->value(), seg_vars0_fixed, seg_vars1_fixed, max_num_cnt_per_segment_);
-
-    if (collision_data->gradient_results_sets.empty())
-      continue;
-
-    const std::size_t row_offset = seg * max_num_cnt_per_segment_;
-    const std::size_t cnt =
-        std::min<std::size_t>(max_num_cnt_per_segment_, collision_data->gradient_results_sets.size());
-
-    if (!seg_vars0_fixed && !seg_vars1_fixed)
+    for (std::size_t i = 0; i < cnt; ++i)
     {
-      for (std::size_t i = 0; i < cnt; ++i)
-      {
-        const trajopt_common::GradientResultsSet& r = collision_data->gradient_results_sets[i];
-        values(static_cast<Eigen::Index>(row_offset + i)) = r.coeff * r.getMaxError();
-      }
+      const trajopt_common::GradientResultsSet& r = collision_data->gradient_results_sets[i];
+      values(static_cast<Eigen::Index>(i)) = r.getMaxError();
     }
-    else if (!seg_vars0_fixed)
+  }
+  else if (!vars0_fixed_)
+  {
+    for (std::size_t i = 0; i < cnt; ++i)
     {
-      for (std::size_t i = 0; i < cnt; ++i)
-      {
-        const trajopt_common::GradientResultsSet& r = collision_data->gradient_results_sets[i];
-        if (r.max_error[0].has_error[0] || r.max_error[1].has_error[0])
-          values(static_cast<Eigen::Index>(row_offset + i)) = r.coeff * r.getMaxErrorT0();
-      }
+      const trajopt_common::GradientResultsSet& r = collision_data->gradient_results_sets[i];
+      if (r.max_error[0].has_error[0] || r.max_error[1].has_error[0])
+        values(static_cast<Eigen::Index>(i)) = r.getMaxErrorT0();
     }
-    else  // !seg_vars1_fixed
+  }
+  else
+  {
+    for (std::size_t i = 0; i < cnt; ++i)
     {
-      for (std::size_t i = 0; i < cnt; ++i)
-      {
-        const trajopt_common::GradientResultsSet& r = collision_data->gradient_results_sets[i];
-        if (r.max_error[0].has_error[1] || r.max_error[1].has_error[1])
-          values(static_cast<Eigen::Index>(row_offset + i)) = r.coeff * r.getMaxErrorT1();
-      }
+      const trajopt_common::GradientResultsSet& r = collision_data->gradient_results_sets[i];
+      if (r.max_error[0].has_error[1] || r.max_error[1].has_error[1])
+        values(static_cast<Eigen::Index>(i)) = r.getMaxErrorT1();
     }
   }
 
   return values;
 }
 
+Eigen::VectorXd ContinuousCollisionConstraint::getCoefficients() const { return coeffs_; }
+
 // Set the limits on the constraint values
-std::vector<Bounds> ContinuousCollisionConstraint::GetBounds() const { return bounds_; }
+std::vector<Bounds> ContinuousCollisionConstraint::getBounds() const { return bounds_; }
 
 void ContinuousCollisionConstraint::init() const
 {
@@ -182,124 +147,270 @@ void ContinuousCollisionConstraint::init() const
       throw std::runtime_error("ContinuousCollisionConstraint: all vars must belong to the same variable set");
   }
 
-  var_set_name_ = parent_set0->GetName();
+  var_set_name_ = parent_set0->getName();
 
   if (!fixed_sparsity_)
     return;
 
   triplet_list_.clear();
 
-  const std::size_t num_segments = position_vars_.size() - 1;
-  const Eigen::Index total_rows = GetRows();
-
-  triplet_list_.reserve(static_cast<std::size_t>(total_rows) * static_cast<std::size_t>(2 * n_dof_));
-
-  for (std::size_t seg = 0; seg < num_segments; ++seg)
+  // Setting to zeros because snopt sparsity cannot change
+  triplet_list_.reserve(bounds_.size() * static_cast<std::size_t>(position_vars_[0]->size()));
+  for (Eigen::Index i = 0; i < rows_; i++)  // NOLINT
   {
-    const auto& var0 = position_vars_[seg];
-    const auto& var1 = position_vars_[seg + 1];
-
-    const Eigen::Index base_idx0 = var0->getIndex();
-    const Eigen::Index base_idx1 = var1->getIndex();
-
-    const std::size_t row_base = seg * max_num_cnt_per_segment_;
-    for (int k = 0; k < max_num_cnt_per_segment_; ++k)
+    for (Eigen::Index j = 0; j < n_dof_; j++)
     {
-      const auto row = static_cast<Eigen::Index>(row_base + static_cast<std::size_t>(k));
-      for (Eigen::Index j = 0; j < n_dof_; ++j)
-      {
-        triplet_list_.emplace_back(row, base_idx0 + j, 0.0);
-        triplet_list_.emplace_back(row, base_idx1 + j, 0.0);
-      }
+      triplet_list_.emplace_back(i, position_vars_[0]->getIndex() + j, 0);
+      triplet_list_.emplace_back(i, position_vars_[1]->getIndex() + j, 0);
     }
   }
 }
 
-void ContinuousCollisionConstraint::FillJacobianBlock(std::string var_set, Jacobian& jac_block) const
+void ContinuousCollisionConstraint::fillJacobianBlock(std::string var_set, Jacobian& jac_block) const
 {
-  std::call_once(init_flag_, &ContinuousCollisionConstraint::init, this);
-
   // Only modify the jacobian if this constraint uses var_set
   if (var_set != var_set_name_)  // NOLINT
     return;
 
-  // Setting to zeros because SNOPT sparsity cannot change
+  // Setting to zeros because snopt sparsity cannot change
   if (!triplet_list_.empty())                                               // NOLINT
     jac_block.setFromTriplets(triplet_list_.begin(), triplet_list_.end());  // NOLINT
 
-  const std::size_t num_segments = position_vars_.size() - 1;
+  // Calculate collisions
+  auto collision_data = collision_evaluator_->calcCollisionData(
+      position_vars_[0]->value(), position_vars_[1]->value(), vars0_fixed_, vars1_fixed_, bounds_.size());
 
-  for (std::size_t seg = 0; seg < num_segments; ++seg)
+  if (collision_data->gradient_results_sets.empty())
+    return;
+
+  /** @todo Should use triplet list and setFromTriplets */
+  const std::size_t cnt = std::min(collision_data->gradient_results_sets.size(), bounds_.size());
+  if (!vars0_fixed_)
   {
-    const auto& var0 = position_vars_[seg];
-    const auto& var1 = position_vars_[seg + 1];
-
-    const bool seg_vars0_fixed = (seg == 0) ? vars0_fixed_ : false;
-    const bool seg_vars1_fixed = (seg == num_segments - 1) ? vars1_fixed_ : false;
-
-    auto collision_data = collision_evaluator_->CalcCollisionData(
-        var0->value(), var1->value(), seg_vars0_fixed, seg_vars1_fixed, max_num_cnt_per_segment_);
-
-    if (collision_data->gradient_results_sets.empty())
-      continue;
-
-    const std::size_t row_offset = seg * max_num_cnt_per_segment_;
-    const std::size_t cnt =
-        std::min<std::size_t>(max_num_cnt_per_segment_, collision_data->gradient_results_sets.size());
-
-    // T0 contributions
-    if (!seg_vars0_fixed)
+    for (std::size_t i = 0; i < cnt; ++i)
     {
-      const Eigen::Index base_idx0 = var0->getIndex();
-      for (std::size_t i = 0; i < cnt; ++i)
+      const trajopt_common::GradientResultsSet& r = collision_data->gradient_results_sets[i];
+      if (r.max_error[0].has_error[0] || r.max_error[1].has_error[0])
       {
-        const trajopt_common::GradientResultsSet& r = collision_data->gradient_results_sets[i];
-        if (r.max_error[0].has_error[0] || r.max_error[1].has_error[0])
-        {
-          double max_error_with_buffer = r.getMaxErrorWithBufferT0();
-          if (!seg_vars1_fixed)
-            max_error_with_buffer = r.getMaxErrorWithBuffer();
+        double max_error_with_buffer = r.getMaxErrorWithBufferT0();
+        if (!vars1_fixed_)
+          max_error_with_buffer = r.getMaxErrorWithBuffer();
 
-          Eigen::VectorXd grad_vec = getWeightedAvgGradientT0(r, max_error_with_buffer, n_dof_);
+        Eigen::VectorXd grad_vec = getWeightedAvgGradientT0(r, max_error_with_buffer, position_vars_[0]->size());
 
-          const int row = static_cast<int>(row_offset + i);
-          for (Eigen::Index j = 0; j < n_dof_; ++j)
-            jac_block.coeffRef(row, static_cast<int>(base_idx0 + j)) = -1.0 * grad_vec[j];
-        }
+        // Collision is 1 x n_dof
+        for (int j = 0; j < n_dof_; j++)
+          jac_block.coeffRef(static_cast<int>(i), position_vars_[0]->getIndex() + j) = -1.0 * grad_vec[j];
       }
     }
+  }
 
-    // T1 contributions
-    if (!seg_vars1_fixed)
+  if (!vars1_fixed_)
+  {
+    for (std::size_t i = 0; i < cnt; ++i)
     {
-      const Eigen::Index base_idx1 = var1->getIndex();
-      for (std::size_t i = 0; i < cnt; ++i)
+      const trajopt_common::GradientResultsSet& r = collision_data->gradient_results_sets[i];
+      if (r.max_error[0].has_error[1] || r.max_error[1].has_error[1])
       {
-        const trajopt_common::GradientResultsSet& r = collision_data->gradient_results_sets[i];
-        if (r.max_error[0].has_error[1] || r.max_error[1].has_error[1])
-        {
-          double max_error_with_buffer = r.getMaxErrorWithBufferT1();
-          if (!seg_vars0_fixed)
-            max_error_with_buffer = r.getMaxErrorWithBuffer();
+        double max_error_with_buffer = r.getMaxErrorWithBufferT1();
+        if (!vars0_fixed_)
+          max_error_with_buffer = r.getMaxErrorWithBuffer();
 
-          Eigen::VectorXd grad_vec = getWeightedAvgGradientT1(r, max_error_with_buffer, n_dof_);
+        Eigen::VectorXd grad_vec = getWeightedAvgGradientT1(r, max_error_with_buffer, position_vars_[1]->size());
 
-          const int row = static_cast<int>(row_offset + i);
-          for (Eigen::Index j = 0; j < n_dof_; ++j)
-            jac_block.coeffRef(row, static_cast<int>(base_idx1 + j)) = -1.0 * grad_vec[j];
-        }
+        // Collision is 1 x n_dof
+        for (int j = 0; j < n_dof_; j++)
+          jac_block.coeffRef(static_cast<int>(i), position_vars_[1]->getIndex() + j) = -1.0 * grad_vec[j];
       }
     }
   }
 }
 
-void ContinuousCollisionConstraint::SetBounds(const std::vector<Bounds>& bounds)
+void ContinuousCollisionConstraint::setBounds(const std::vector<Bounds>& bounds)
 {
-  assert(bounds.size() == GetRows());
+  assert(bounds.size() == rows_);
   bounds_ = bounds;
 }
 
-std::shared_ptr<ContinuousCollisionEvaluator> ContinuousCollisionConstraint::GetCollisionEvaluator() const
+std::shared_ptr<ContinuousCollisionEvaluator> ContinuousCollisionConstraint::getCollisionEvaluator() const
+{
+  return collision_evaluator_;
+}
+
+ContinuousCollisionConstraintD::ContinuousCollisionConstraintD(
+    std::shared_ptr<ContinuousCollisionEvaluator> collision_evaluator,
+    std::array<std::shared_ptr<const Var>, 2> position_vars,
+    bool vars0_fixed,
+    bool vars1_fixed,
+    std::string name)
+  : ConstraintSet(std::move(name), true)
+  , position_vars_(std::move(position_vars))
+  , vars0_fixed_(vars0_fixed)
+  , vars1_fixed_(vars1_fixed)
+  , collision_evaluator_(std::move(collision_evaluator))
+{
+  if (position_vars_[0] == nullptr && position_vars_[1] == nullptr)
+    throw std::runtime_error("ContinuousCollisionConstraint: position_vars contains a nullptr!");
+
+  // All vars must have same size
+  n_dof_ = position_vars_.front()->size();
+  if (n_dof_ <= 0)
+    throw std::runtime_error("ContinuousCollisionConstraint: first position var is empty!");
+
+  if (position_vars_[0]->size() != position_vars_[1]->size())
+    throw std::runtime_error("ContinuousCollisionConstraint: all position_vars must have same size!");
+
+  if (vars0_fixed_ && vars1_fixed_)
+    throw std::runtime_error("ContinuousCollisionConstraint: both ends cannot be fixed!");
+}
+
+int ContinuousCollisionConstraintD::update()
+{
+  int rows{ 0 };
+
+  collision_data_ = collision_evaluator_->calcCollisionData(
+      position_vars_[0]->value(), position_vars_[1]->value(), vars0_fixed_, vars1_fixed_, 0);
+
+  for (const auto& gradient_results_set : collision_data_->gradient_results_sets)
+    rows += static_cast<int>(gradient_results_set.results.size());
+
+  rows_ = rows;
+  bounds_ = std::vector<Bounds>(static_cast<std::size_t>(rows), BoundSmallerZero);
+
+  coeffs_.resize(rows_);
+  values_.resize(rows_);
+
+  Eigen::Index i{ 0 };
+  for (const auto& gradient_results_set : collision_data_->gradient_results_sets)
+  {
+    for (const auto& result : gradient_results_set.results)
+    {
+      coeffs_(i) = gradient_results_set.coeff;
+      values_(i++) = result.error;
+    }
+  }
+
+  assert(rows_ == i);
+
+  std::call_once(init_flag_, &ContinuousCollisionConstraintD::init, this);
+
+  return rows;
+}
+
+Eigen::VectorXd ContinuousCollisionConstraintD::getValues() const { return values_; }
+
+// Set the limits on the constraint values
+std::vector<Bounds> ContinuousCollisionConstraintD::getBounds() const { return bounds_; }
+
+void ContinuousCollisionConstraintD::init() const
+{
+  const auto* parent_set0 = position_vars_[0]->getParent()->getParent();
+  if (parent_set0 == nullptr)
+    throw std::runtime_error("ContinuousCollisionConstraint: invalid variable parent");
+
+  var_set_name_ = parent_set0->getName();
+
+  const auto* parent_set1 = position_vars_[1]->getParent()->getParent();
+  if (parent_set1 == nullptr)
+    throw std::runtime_error("ContinuousCollisionConstraint: invalid variable parent");
+
+  if (var_set_name_ != parent_set1->getName())
+    throw std::runtime_error("ContinuousCollisionConstraint: all vars must belong to the same variable set");
+}
+
+void ContinuousCollisionConstraintD::fillJacobianBlock(std::string var_set, Jacobian& jac_block) const
+{
+  // Only modify the jacobian if this constraint uses var_set
+  if (var_set != var_set_name_ || rows_ == 0)  // NOLINT
+    return;
+
+  if (collision_data_->gradient_results_sets.empty())
+    return;
+
+  Eigen::Index i{ 0 };
+  for (const auto& gradient_results_set : collision_data_->gradient_results_sets)
+  {
+    for (const auto& result : gradient_results_set.results)
+    {
+      assert(result.gradients[0].has_gradient || result.gradients[1].has_gradient ||
+             result.cc_gradients[0].has_gradient || result.cc_gradients[1].has_gradient);
+
+      if (!vars0_fixed_)
+      {
+        const Eigen::Index offset = position_vars_[0]->getIndex();
+        if (result.gradients[0].has_gradient && result.gradients[1].has_gradient)
+        {
+          const auto& lgr0 = result.gradients[0];
+          const auto& lgr1 = result.gradients[1];
+
+          // This does work but could be faster
+          for (int j = 0; j < n_dof_; j++)
+            jac_block.coeffRef(i, offset + j) =
+                -1.0 * ((lgr0.scale * lgr0.gradient[j]) + (lgr1.scale * lgr1.gradient[j]));
+        }
+        else if (result.gradients[0].has_gradient)
+        {
+          const auto& lgr = result.gradients[0];
+
+          // This does work but could be faster
+          for (int j = 0; j < n_dof_; j++)
+            jac_block.coeffRef(i, offset + j) = -1.0 * lgr.scale * lgr.gradient[j];
+        }
+        else if (result.gradients[1].has_gradient)
+        {
+          const auto& lgr = result.gradients[1];
+
+          // This does work but could be faster
+          for (int j = 0; j < n_dof_; j++)
+            jac_block.coeffRef(i, offset + j) = -1.0 * lgr.scale * lgr.gradient[j];
+        }
+      }
+
+      if (!vars1_fixed_)
+      {
+        const Eigen::Index offset = position_vars_[1]->getIndex();
+        if (result.cc_gradients[0].has_gradient && result.cc_gradients[1].has_gradient)
+        {
+          const auto& lgr0 = result.cc_gradients[0];
+          const auto& lgr1 = result.cc_gradients[1];
+
+          // This does work but could be faster
+          for (int j = 0; j < n_dof_; j++)
+            jac_block.coeffRef(i, offset + j) =
+                -1.0 * ((lgr0.scale * lgr0.gradient[j]) + (lgr1.scale * lgr1.gradient[j]));
+        }
+        else if (result.cc_gradients[0].has_gradient)
+        {
+          const auto& lgr = result.cc_gradients[0];
+
+          // This does work but could be faster
+          for (int j = 0; j < n_dof_; j++)
+            jac_block.coeffRef(i, offset + j) = -1.0 * lgr.scale * lgr.gradient[j];
+        }
+        else if (result.cc_gradients[1].has_gradient)
+        {
+          const auto& lgr = result.cc_gradients[1];
+
+          // This does work but could be faster
+          for (int j = 0; j < n_dof_; j++)
+            jac_block.coeffRef(i, offset + j) = -1.0 * lgr.scale * lgr.gradient[j];
+        }
+      }
+      ++i;
+    }
+  }
+  assert(rows_ == i);
+}
+
+Eigen::VectorXd ContinuousCollisionConstraintD::getCoefficients() const { return coeffs_; }
+
+void ContinuousCollisionConstraintD::setBounds(const std::vector<Bounds>& bounds)
+{
+  assert(bounds.size() == rows_);
+  bounds_ = bounds;
+}
+
+std::shared_ptr<ContinuousCollisionEvaluator> ContinuousCollisionConstraintD::getCollisionEvaluator() const
 {
   return collision_evaluator_;
 }

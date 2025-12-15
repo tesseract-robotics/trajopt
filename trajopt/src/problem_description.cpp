@@ -496,7 +496,7 @@ TrajOptProb::Ptr ConstructProblem(const ProblemConstructionInfo& pci)
         PRINT_AND_THROW("robot dof values don't match initialization. I don't "
                         "know what you want me to use for the dof values");
       }
-
+      /** @todo Should this be added to trajopt_ifopt */
       for (int j = 0; j < static_cast<int>(n_dof); ++j)
       {
         prob->addLinearConstraint(sco::exprSub(sco::AffExpr(prob->m_traj_vars(t_idx, j)), init_traj(t_idx, j)),
@@ -514,7 +514,7 @@ TrajOptProb::Ptr ConstructProblem(const ProblemConstructionInfo& pci)
       {
         PRINT_AND_THROW("DOF(aka Joint) indice is greater than the number of DOF available.");
       }
-
+      /** @todo Should this be added to trajopt_ifopt */
       for (int i = 0; i < prob->GetNumSteps(); ++i)
       {
         // Need to check if the timesteps is in the fixed_timesteps, do not want to apply two of the same linear

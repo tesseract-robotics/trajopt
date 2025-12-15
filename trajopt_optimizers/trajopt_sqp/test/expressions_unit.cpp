@@ -105,7 +105,7 @@ TEST(ExpressionsTest, squareAffExprs1)  // NOLINT
   const AffExprs aff_exprs = trajopt_sqp::createAffExprs(e, J.transpose().sparseView(), x);
   EXPECT_NEAR(aff_exprs.values(x)(0), e(0), 1e-8);
 
-  QuadExprs quad_exprs = trajopt_sqp::squareAffExprs(aff_exprs);
+  QuadExprs quad_exprs = trajopt_sqp::squareAffExprs(aff_exprs, Eigen::VectorXd::Ones(aff_exprs.constants.size()));
 
   EXPECT_NEAR(quad_exprs.constants(0), 0, 1e-8);
   EXPECT_NEAR(quad_exprs.linear_coeffs.coeff(0, 0), 0, 1e-8);
@@ -135,7 +135,7 @@ TEST(ExpressionsTest, squareAffExprs2)  // NOLINT
 
   // The affine expression = (a + b*x + c*y) where x = x(0) and y = x(1)
   // The squared affine expressions = a^2 + 2*a*b*x + 2*a*c*y + 2*b*c*x*y + b^2 * x^2 + c^2 * y^2
-  QuadExprs quad_exprs = trajopt_sqp::squareAffExprs(aff_exprs);
+  QuadExprs quad_exprs = trajopt_sqp::squareAffExprs(aff_exprs, Eigen::VectorXd::Ones(aff_exprs.constants.size()));
 
   EXPECT_NEAR(quad_exprs.constants(0), std::pow(aff_exprs.constants(0), 2.0), 1e-8);
   EXPECT_NEAR(

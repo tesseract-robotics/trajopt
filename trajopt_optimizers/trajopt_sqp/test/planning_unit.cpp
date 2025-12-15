@@ -130,8 +130,9 @@ void runPlanningTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const Enviro
   const double margin_coeff = 20;
   const double margin = 0.025;
   trajopt_common::TrajOptCollisionConfig trajopt_collision_config(margin, margin_coeff);
-  trajopt_collision_config.collision_check_config.type = tesseract_collision::CollisionEvaluatorType::CONTINUOUS;
-  trajopt_collision_config.collision_margin_buffer = 0.02;
+  trajopt_collision_config.collision_check_config.type = tesseract_collision::CollisionEvaluatorType::LVS_CONTINUOUS;
+  trajopt_collision_config.collision_check_config.longest_valid_segment_length = 0.02;
+  trajopt_collision_config.collision_margin_buffer = 0.5;
 
   // Add costs
   {
@@ -155,7 +156,7 @@ void runPlanningTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const Enviro
 
   auto collision_cache = std::make_shared<trajopt_ifopt::CollisionCache>(100);
   std::array<bool, 2> vars_fixed{ false, false };
-  for (std::size_t i = 1; i < (vars.size() - 1); ++i)
+  for (std::size_t i = 1; i < vars.size(); ++i)
   {
     auto collision_evaluator = std::make_shared<trajopt_ifopt::LVSContinuousCollisionEvaluator>(
         collision_cache, manip, env, trajopt_collision_config);
@@ -169,8 +170,8 @@ void runPlanningTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const Enviro
     else
       vars_fixed = { false, false };
 
-    auto cnt = std::make_shared<trajopt_ifopt::ContinuousCollisionConstraint>(
-        collision_evaluator, position_vars, vars_fixed[0], vars_fixed[1], 5);
+    auto cnt = std::make_shared<trajopt_ifopt::ContinuousCollisionConstraintD>(
+        collision_evaluator, position_vars, vars_fixed[0], vars_fixed[1]);
 
     qp_problem->addCostSet(cnt, trajopt_sqp::CostPenaltyType::HINGE);
   }
@@ -181,7 +182,7 @@ void runPlanningTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const Enviro
   // Setup solver
   auto qp_solver = std::make_shared<trajopt_sqp::OSQPEigenSolver>();
   trajopt_sqp::TrustRegionSQPSolver solver(qp_solver);
-  qp_solver->solver_->settings()->setVerbosity(true);
+  qp_solver->solver_->settings()->setVerbosity(false);
   qp_solver->solver_->settings()->setWarmStart(true);
   qp_solver->solver_->settings()->setPolish(true);
   qp_solver->solver_->settings()->setAdaptiveRho(false);
@@ -190,7 +191,7 @@ void runPlanningTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const Enviro
   qp_solver->solver_->settings()->setRelativeTolerance(1e-6);
 
   // 6) solve
-  solver.verbose = true;
+  solver.verbose = false;
   solver.solve(qp_problem);
   Eigen::VectorXd x = qp_problem->getVariableValues();
   std::cout << x.transpose() << '\n';

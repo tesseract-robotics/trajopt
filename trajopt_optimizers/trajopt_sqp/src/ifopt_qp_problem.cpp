@@ -33,35 +33,41 @@ namespace trajopt_sqp
 IfoptQPProblem::IfoptQPProblem() : nlp_(std::make_shared<trajopt_ifopt::Problem>()) {}
 IfoptQPProblem::IfoptQPProblem(std::shared_ptr<trajopt_ifopt::Problem> nlp) : nlp_(std::move(nlp)) {}
 
-void IfoptQPProblem::addVariableSet(std::shared_ptr<trajopt_ifopt::VariableSet> variable_set)
+void IfoptQPProblem::addVariableSet(std::shared_ptr<trajopt_ifopt::Variables> variable_set)
 {
-  nlp_->AddVariableSet(std::move(variable_set));
+  nlp_->addVariableSet(std::move(variable_set));
 }
 
 void IfoptQPProblem::addConstraintSet(std::shared_ptr<trajopt_ifopt::ConstraintSet> constraint_set)
 {
-  nlp_->AddConstraintSet(std::move(constraint_set));
+  if (constraint_set->isDynamic())
+    throw std::runtime_error("IfoptQPProblem, dynamic constraint sets are not supported");
+
+  nlp_->addConstraintSet(std::move(constraint_set));
 }
 
 void IfoptQPProblem::addCostSet(std::shared_ptr<trajopt_ifopt::ConstraintSet> constraint_set,
                                 CostPenaltyType penalty_type)
 {
+  if (constraint_set->isDynamic())
+    throw std::runtime_error("IfoptQPProblem, dynamic cost sets are not supported");
+
   switch (penalty_type)
   {
     case CostPenaltyType::SQUARED:
     {
       // Must link the variables to the constraint since that happens in AddConstraintSet
-      constraint_set->LinkWithVariables(nlp_->GetOptVariables());
+      constraint_set->linkWithVariables(nlp_->getOptVariables());
       auto cost = std::make_shared<trajopt_ifopt::SquaredCost>(constraint_set);
-      nlp_->AddCostSet(std::move(cost));
+      nlp_->addCostSet(std::move(cost));
       break;
     }
     case CostPenaltyType::ABSOLUTE:
     {
       // Must link the variables to the constraint since that happens in AddConstraintSet
-      constraint_set->LinkWithVariables(nlp_->GetOptVariables());
+      constraint_set->linkWithVariables(nlp_->getOptVariables());
       auto cost = std::make_shared<trajopt_ifopt::AbsoluteCost>(constraint_set);
-      nlp_->AddCostSet(std::move(cost));
+      nlp_->addCostSet(std::move(cost));
       break;
     }
     default:
@@ -71,9 +77,9 @@ void IfoptQPProblem::addCostSet(std::shared_ptr<trajopt_ifopt::ConstraintSet> co
 
 void IfoptQPProblem::setup()
 {
-  num_nlp_vars_ = nlp_->GetNumberOfOptimizationVariables();
-  num_nlp_cnts_ = nlp_->GetNumberOfConstraints();
-  num_nlp_costs_ = nlp_->GetCosts().GetRows();
+  num_nlp_vars_ = nlp_->getNumberOfOptimizationVariables();
+  num_nlp_cnts_ = nlp_->getNumberOfConstraints();
+  num_nlp_costs_ = nlp_->getCosts().getRows();
   cost_constant_ = Eigen::VectorXd::Zero(1);
 
   num_qp_vars_ = num_nlp_vars_;
@@ -82,23 +88,23 @@ void IfoptQPProblem::setup()
   constraint_merit_coeff_ = Eigen::VectorXd::Constant(num_nlp_cnts_, 10);
 
   // Get NLP Cost and Constraint Names for Debug Print
-  for (const auto& cnt : nlp_->GetConstraints().GetComponents())
+  for (const auto& cnt : nlp_->getConstraints().getComponents())
   {
-    for (Eigen::Index j = 0; j < cnt->GetRows(); j++)
-      constraint_names_.push_back(cnt->GetName() + "_" + std::to_string(j));
+    for (Eigen::Index j = 0; j < cnt->getRows(); j++)
+      constraint_names_.push_back(cnt->getName() + "_" + std::to_string(j));
   }
 
-  for (const auto& cost : nlp_->GetCosts().GetComponents())
+  for (const auto& cost : nlp_->getCosts().getComponents())
   {
-    for (Eigen::Index j = 0; j < cost->GetRows(); j++)
-      cost_names_.push_back(cost->GetName() + "_" + std::to_string(j));
+    for (Eigen::Index j = 0; j < cost->getRows(); j++)
+      cost_names_.push_back(cost->getName() + "_" + std::to_string(j));
   }
 
   // Get bounds
   Eigen::VectorXd nlp_bounds_l(num_nlp_cnts_);
   Eigen::VectorXd nlp_bounds_u(num_nlp_cnts_);
   // Convert constraint bounds to VectorXd
-  std::vector<trajopt_ifopt::Bounds> cnt_bounds = nlp_->GetBoundsOnConstraints();
+  std::vector<trajopt_ifopt::Bounds> cnt_bounds = nlp_->getBoundsOnConstraints();
   for (Eigen::Index i = 0; i < num_nlp_cnts_; i++)
   {
     nlp_bounds_l[i] = cnt_bounds[static_cast<std::size_t>(i)].lower;
@@ -131,8 +137,8 @@ void IfoptQPProblem::setup()
   bounds_upper_ = Eigen::VectorXd::Constant(num_qp_cnts_, double(INFINITY));
 }
 
-void IfoptQPProblem::setVariables(const double* x) { nlp_->SetVariables(x); }
-Eigen::VectorXd IfoptQPProblem::getVariableValues() const { return nlp_->GetVariableValues(); }
+void IfoptQPProblem::setVariables(const double* x) { nlp_->setVariables(x); }
+Eigen::VectorXd IfoptQPProblem::getVariableValues() const { return nlp_->getVariableValues(); }
 
 void IfoptQPProblem::convexify()
 {
@@ -175,7 +181,7 @@ void IfoptQPProblem::updateGradient()
   // Set the gradient of the NLP costs
   ////////////////////////////////////////////////////////
   gradient_ = Eigen::VectorXd::Zero(num_qp_vars_);
-  const SparseMatrix cost_jac = nlp_->GetJacobianOfCosts();
+  const trajopt_ifopt::Jacobian cost_jac = nlp_->getJacobianOfCosts();
   /**
    * @note See CostFromFunc::convex in modeling_utils.cpp. Once Hessian has been implemented
    *
@@ -247,7 +253,7 @@ void IfoptQPProblem::updateGradient()
 
 void IfoptQPProblem::linearizeConstraints()
 {
-  const SparseMatrix jac = nlp_->GetJacobianOfConstraints();
+  const trajopt_ifopt::Jacobian jac = nlp_->getJacobianOfConstraints();
 
   // Create triplet list of nonzero constraints
   using T = Eigen::Triplet<double>;
@@ -257,7 +263,7 @@ void IfoptQPProblem::linearizeConstraints()
   // Add jacobian to triplet list
   for (int k = 0; k < jac.outerSize(); ++k)  // NOLINT
   {
-    for (SparseMatrix::InnerIterator it(jac, k); it; ++it)
+    for (trajopt_ifopt::Jacobian::InnerIterator it(jac, k); it; ++it)
     {
       tripletList.emplace_back(it.row(), it.col(), it.value());
     }
@@ -297,8 +303,8 @@ void IfoptQPProblem::updateCostsConstantExpression()
     return;
 
   // Get values about which we will linearize
-  Eigen::VectorXd x_initial = nlp_->GetVariableValues().head(num_nlp_vars_);
-  const Eigen::VectorXd cost_initial_value = nlp_->GetCosts().GetValues();
+  Eigen::VectorXd x_initial = nlp_->getVariableValues().head(num_nlp_vars_);
+  const Eigen::VectorXd cost_initial_value = nlp_->getCosts().getValues();
 
   // In the case of a QP problem the costs and constraints are represented as
   // quadratic functions is f(x) = a + b * x + c * x^2.
@@ -327,8 +333,8 @@ void IfoptQPProblem::updateConstraintsConstantExpression()
     return;
 
   // Get values about which we will linearize
-  const Eigen::VectorXd x_initial = nlp_->GetVariableValues().head(num_nlp_vars_);
-  const Eigen::VectorXd cnt_initial_value = nlp_->GetConstraints().GetValues();
+  const Eigen::VectorXd x_initial = nlp_->getVariableValues().head(num_nlp_vars_);
+  const Eigen::VectorXd cnt_initial_value = nlp_->getConstraints().getValues();
 
   // In the case of a QP problem the costs and constraints are represented as
   // quadratic functions is f(x) = a + b * x + c * x^2.
@@ -345,7 +351,7 @@ void IfoptQPProblem::updateConstraintsConstantExpression()
   //       to calculate the merit of the solve.
 
   // The block excludes the slack variables
-  const SparseMatrix jac = constraint_matrix_.block(0, 0, num_nlp_cnts_, num_nlp_vars_);
+  const trajopt_ifopt::Jacobian jac = constraint_matrix_.block(0, 0, num_nlp_cnts_, num_nlp_vars_);
   constraint_constant_ = (cnt_initial_value - jac * x_initial);
 }
 
@@ -358,7 +364,7 @@ void IfoptQPProblem::updateNLPConstraintBounds()
   Eigen::VectorXd cnt_bound_upper(num_nlp_cnts_);
 
   // Convert constraint bounds to VectorXd
-  std::vector<trajopt_ifopt::Bounds> cnt_bounds = nlp_->GetBoundsOnConstraints();
+  std::vector<trajopt_ifopt::Bounds> cnt_bounds = nlp_->getBoundsOnConstraints();
   for (Eigen::Index i = 0; i < num_nlp_cnts_; i++)
   {
     cnt_bound_lower[i] = cnt_bounds[static_cast<std::size_t>(i)].lower;
@@ -376,10 +382,10 @@ void IfoptQPProblem::updateNLPConstraintBounds()
 void IfoptQPProblem::updateNLPVariableBounds()
 {
   // This is equivalent to BasicTrustRegionSQP::setTrustBoxConstraints
-  const Eigen::VectorXd x_initial = nlp_->GetVariableValues();
+  const Eigen::VectorXd x_initial = nlp_->getVariableValues();
 
   // Set the variable limits once
-  const std::vector<trajopt_ifopt::Bounds> var_bounds = nlp_->GetBoundsOnOptimizationVariables();
+  const std::vector<trajopt_ifopt::Bounds> var_bounds = nlp_->getBoundsOnOptimizationVariables();
   Eigen::VectorXd var_bounds_lower(num_nlp_vars_);
   Eigen::VectorXd var_bounds_upper(num_nlp_vars_);
   for (Eigen::Index i = 0; i < num_nlp_vars_; i++)
@@ -441,37 +447,37 @@ Eigen::VectorXd IfoptQPProblem::evaluateConvexCosts(const Eigen::Ref<const Eigen
 
 double IfoptQPProblem::evaluateTotalExactCost(const Eigen::Ref<const Eigen::VectorXd>& var_vals)
 {
-  return nlp_->EvaluateCostFunction(var_vals.data());
+  return nlp_->evaluateCostFunction(var_vals.data());
 }
 
 Eigen::VectorXd IfoptQPProblem::evaluateExactCosts(const Eigen::Ref<const Eigen::VectorXd>& var_vals)
 {
-  if (!nlp_->HasCostTerms())
+  if (!nlp_->hasCostTerms())
     return {};
 
-  nlp_->SetVariables(var_vals.data());
-  return nlp_->GetCosts().GetValues();
+  nlp_->setVariables(var_vals.data());
+  return nlp_->getCosts().getValues();
 }
 
-Eigen::VectorXd IfoptQPProblem::getExactCosts() { return evaluateExactCosts(nlp_->GetOptVariables()->GetValues()); }
+Eigen::VectorXd IfoptQPProblem::getExactCosts() { return evaluateExactCosts(nlp_->getOptVariables()->getValues()); }
 
 Eigen::VectorXd IfoptQPProblem::evaluateConvexConstraintViolations(const Eigen::Ref<const Eigen::VectorXd>& var_vals)
 {
   const Eigen::VectorXd result_lin =
       constraint_matrix_.block(0, 0, num_nlp_cnts_, num_nlp_vars_) * var_vals.head(num_nlp_vars_);  // NOLINT
   const Eigen::VectorXd constraint_value = constraint_constant_ + result_lin;
-  return trajopt_ifopt::calcBoundsViolations(constraint_value, nlp_->GetBoundsOnConstraints());
+  return trajopt_ifopt::calcBoundsViolations(constraint_value, nlp_->getBoundsOnConstraints());
 }
 
 Eigen::VectorXd IfoptQPProblem::evaluateExactConstraintViolations(const Eigen::Ref<const Eigen::VectorXd>& var_vals)
 {
-  const Eigen::VectorXd cnt_vals = nlp_->EvaluateConstraints(var_vals.data());
-  return trajopt_ifopt::calcBoundsViolations(cnt_vals, nlp_->GetBoundsOnConstraints());
+  const Eigen::VectorXd cnt_vals = nlp_->evaluateConstraints(var_vals.data());
+  return trajopt_ifopt::calcBoundsViolations(cnt_vals, nlp_->getBoundsOnConstraints());
 }
 
 Eigen::VectorXd IfoptQPProblem::getExactConstraintViolations()
 {
-  return evaluateExactConstraintViolations(nlp_->GetOptVariables()->GetValues());  // NOLINT
+  return evaluateExactConstraintViolations(nlp_->getOptVariables()->getValues());  // NOLINT
 }
 
 void IfoptQPProblem::scaleBoxSize(double& scale)
@@ -516,6 +522,6 @@ void IfoptQPProblem::print() const
   std::cout << "Constraint Matrix:\n" << constraint_matrix_.toDense().format(format) << '\n';
   std::cout << "bounds_lower: " << bounds_lower_.transpose().format(format) << '\n';
   std::cout << "bounds_upper: " << bounds_upper_.transpose().format(format) << '\n';
-  std::cout << "NLP values: " << nlp_->GetVariableValues().transpose().format(format) << '\n';
+  std::cout << "NLP values: " << nlp_->getVariableValues().transpose().format(format) << '\n';
 }
 }  // namespace trajopt_sqp

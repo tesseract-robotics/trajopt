@@ -106,51 +106,56 @@ public:
                      const Eigen::VectorXd& coeffs,
                      std::string name = "CartLine");
 
+  int update() override { return rows_; }
+
   /**
    * @brief CalcValues Calculates the values associated with the constraint
    * @param joint_vals Input joint values for which FK is solved
    * @return Error of FK solution from target, size 6. The first 3 terms are associated with position and are currently
    * the only values honored for the linear model
    * */
-  Eigen::VectorXd CalcValues(const Eigen::Ref<const Eigen::VectorXd>& joint_vals) const;
+  Eigen::VectorXd calcValues(const Eigen::Ref<const Eigen::VectorXd>& joint_vals) const;
   /**
    * @brief Returns the values associated with the constraint. In this case it should be the
    * joint values placed along the line should be n_dof_ * n_vars_ long
    * @return
    */
-  Eigen::VectorXd GetValues() const override;
+  Eigen::VectorXd getValues() const override;
+
+  /** @copydoc Differentiable::getCoefficients */
+  Eigen::VectorXd getCoefficients() const override;
 
   /**
    * @brief  Returns the "bounds" of this constraint. How these are enforced is up to the solver
    * @return Returns the "bounds" of this constraint
    */
-  std::vector<Bounds> GetBounds() const override;
+  std::vector<Bounds> getBounds() const override;
 
-  void SetBounds(const std::vector<Bounds>& bounds);
+  void setBounds(const std::vector<Bounds>& bounds);
 
   /**
    * @brief Fills the jacobian block associated with the constraint
    * @param jac_block Block of the overall jacobian associated with these constraints
    */
-  void CalcJacobianBlock(const Eigen::Ref<const Eigen::VectorXd>& joint_vals, Jacobian& jac_block) const;
+  void calcJacobianBlock(const Eigen::Ref<const Eigen::VectorXd>& joint_vals, Jacobian& jac_block) const;
   /**
    * @brief Fills the jacobian block associated with the given var_set.
    * @param var_set Name of the var_set to which the jac_block is associated
    * @param jac_block Block of the overall jacobian associated with these constraints and the var_set variable
    */
-  void FillJacobianBlock(std::string var_set, Jacobian& jac_block) const override;
+  void fillJacobianBlock(std::string var_set, Jacobian& jac_block) const override;
 
   /**
    * @brief Get the two poses defining the line
    * @return A std::pair of poses
    */
-  std::pair<Eigen::Isometry3d, Eigen::Isometry3d> GetLine() const;
+  std::pair<Eigen::Isometry3d, Eigen::Isometry3d> getLine() const;
 
   /**
    * @brief Gets the kinematic info used to create this constraint
    * @return The kinematic info used to create this constraint
    */
-  const CartLineInfo& GetInfo() const;
+  const CartLineInfo& getInfo() const;
 
   /** @brief If true, numeric differentiation will be used. Default: true
    *
@@ -169,7 +174,7 @@ public:
    * @param target_tf2 The location of the end of the line
    * @return The nearest point on the line to the source_tf
    */
-  Eigen::Isometry3d GetLinePoint(const Eigen::Isometry3d& source_tf,
+  Eigen::Isometry3d getLinePoint(const Eigen::Isometry3d& source_tf,
                                  const Eigen::Isometry3d& target_tf1,
                                  const Eigen::Isometry3d& target_tf2) const;
 
@@ -192,7 +197,7 @@ private:
   /** @brief The error function to calculate the error difference used for jacobian calculations */
   ErrorDiffFunctionType error_diff_function_{ nullptr };
 
-  static thread_local tesseract_common::TransformMap transforms_cache;  // NOLINT
+  static thread_local tesseract_common::TransformMap transforms_cache_;  // NOLINT
 };
 }  // namespace trajopt_ifopt
 #endif
