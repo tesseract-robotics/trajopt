@@ -62,6 +62,7 @@ public:
 
   Eigen::Index getNumNLPVars() const override;
   Eigen::Index getNumNLPConstraints() const override;
+  Eigen::Index getNumNLPConstraintSets() const override;
   Eigen::Index getNumNLPCosts() const override;
   Eigen::Index getNumQPVars() const override;
   Eigen::Index getNumQPConstraints() const override;
