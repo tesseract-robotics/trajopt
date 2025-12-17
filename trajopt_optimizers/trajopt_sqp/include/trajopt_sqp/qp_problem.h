@@ -154,7 +154,6 @@ public:
 
   virtual Eigen::Index getNumNLPVars() const = 0;
   virtual Eigen::Index getNumNLPConstraints() const = 0;
-  virtual Eigen::Index getNumNLPConstraintSets() const = 0;
   virtual Eigen::Index getNumNLPCosts() const = 0;
   virtual Eigen::Index getNumQPVars() const = 0;
   virtual Eigen::Index getNumQPConstraints() const = 0;
