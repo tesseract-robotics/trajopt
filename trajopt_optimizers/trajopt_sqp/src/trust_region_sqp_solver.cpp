@@ -36,7 +36,7 @@
 
 namespace trajopt_sqp
 {
-const bool SUPER_DEBUG_MODE = false;
+const bool SUPER_DEBUG_MODE = true;
 
 TrustRegionSQPSolver::TrustRegionSQPSolver(QPSolver::Ptr qp_solver) : qp_solver(std::move(qp_solver)) {}
 
@@ -45,10 +45,11 @@ bool TrustRegionSQPSolver::init(QPProblem::Ptr qp_prob)
   qp_problem = std::move(qp_prob);
 
   // Initialize optimization parameters
-  results_ = SQPResults(qp_problem->getNumNLPVars(), qp_problem->getNumNLPConstraints(), qp_problem->getNumNLPCosts());
+  results_ =
+      SQPResults(qp_problem->getNumNLPVars(), qp_problem->getNumNLPConstraintSets(), qp_problem->getNumNLPCosts());
   results_.best_var_vals = qp_problem->getVariableValues();
   results_.merit_error_coeffs =
-      Eigen::VectorXd::Constant(qp_problem->getNumNLPConstraints(), params.initial_merit_error_coeff);
+      Eigen::VectorXd::Constant(qp_problem->getNumNLPConstraintSets(), params.initial_merit_error_coeff);
 
   // Evaluate exact constraint violations (expensive)
   results_.best_costs = qp_problem->getExactCosts();
