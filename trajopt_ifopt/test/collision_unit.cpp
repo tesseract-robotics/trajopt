@@ -184,7 +184,7 @@ TEST_F(CollisionUnit, GetSetBounds)  // NOLINT
 
     auto constraint_2 = std::make_shared<trajopt_ifopt::DiscreteCollisionConstraint>(collision_evaluator, var0, 3);
     const ifopt::Bounds bounds(-0.1234, 0.5678);
-    bounds_vec = std::vector<ifopt::Bounds>(1, bounds);
+    bounds_vec = std::vector<ifopt::Bounds>(3, bounds);
     constraint_2->SetBounds(bounds_vec);
     std::vector<ifopt::Bounds> results_vec = constraint_2->GetBounds();
     for (std::size_t i = 0; i < bounds_vec.size(); i++)

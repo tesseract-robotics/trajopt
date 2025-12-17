@@ -88,7 +88,6 @@ public:
 
   Eigen::Index getNumNLPVars() const override { return num_nlp_vars_; }
   Eigen::Index getNumNLPConstraints() const override { return num_nlp_cnts_; }
-  Eigen::Index getNumNLPConstraintSets() const override { return num_nlp_cnts_; }
   Eigen::Index getNumNLPCosts() const override { return num_nlp_costs_; }
   Eigen::Index getNumQPVars() const override { return num_qp_vars_; }
   Eigen::Index getNumQPConstraints() const override { return num_qp_cnts_; }
