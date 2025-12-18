@@ -218,6 +218,9 @@ public:
    */
   const ComponentVec& GetComponents() const;
 
+  /** @brief If no components have been added */
+  bool Empty() const;
+
 private:
   ComponentVec components_;
   bool is_cost_{ false };

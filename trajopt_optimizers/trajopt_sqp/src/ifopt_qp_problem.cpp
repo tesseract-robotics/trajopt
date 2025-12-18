@@ -75,6 +75,12 @@ void IfoptQPProblem::addCostSet(std::shared_ptr<trajopt_ifopt::ConstraintSet> co
   }
 }
 
+void IfoptQPProblem::addDynamicCostSet(std::shared_ptr<trajopt_ifopt::DynamicConstraintSet> /*dyn_constraint_set*/,
+                                       CostPenaltyType /*penalty_type*/)
+{
+  throw std::runtime_error("IfoptQPProblem, dynamic cost sets are not supported");
+}
+
 void IfoptQPProblem::setup()
 {
   num_nlp_vars_ = nlp_->GetNumberOfOptimizationVariables();

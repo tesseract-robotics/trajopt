@@ -197,6 +197,8 @@ std::vector<Bounds> Composite::GetBounds() const
 
 const Composite::ComponentVec& Composite::GetComponents() const { return components_; }
 
+bool Composite::Empty() const { return components_.empty(); }
+
 void Composite::PrintAll() const
 {
   int index = 0;

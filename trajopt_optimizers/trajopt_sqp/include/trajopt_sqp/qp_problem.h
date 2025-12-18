@@ -60,6 +60,17 @@ public:
                           CostPenaltyType penalty_type) = 0;
 
   /**
+   * @brief Add a squared cost term to the problem.
+   * @param dyn_constraint_set The constraint set to be evaluated as a squared cost.
+   *
+   * This function can be called multiple times if the constraint function is
+   * composed of different cost terms. It makes sure the overall value and
+   * gradient is considering each individual cost.
+   */
+  virtual void addDynamicCostSet(std::shared_ptr<trajopt_ifopt::DynamicConstraintSet> dyn_constraint_set,
+                                 CostPenaltyType penalty_type) = 0;
+
+  /**
    * @brief This setups the QP problems based on the constraints and cost sets added to the problem.
    * @details This must be called after all constraints and costs have been added to the problem
    */
