@@ -45,9 +45,10 @@ struct TrajOptQPProblem::Implementation
     , squared_costs_("squared-cost-terms", false, false)
     , hinge_costs_("hinge-cost-terms", false, false)
     , abs_costs_("abs-cost-terms", false, false)
-    , hinge_constraints_("hinge-constraint-sets", false, false)
-    , abs_constraints_("abs-constraint-sets", false, false)
-    , dyn_constraints_("dyn_constraint-terms", false, true)
+    , dyn_constraints_("dyn-constraint-terms", false, true)
+    , dyn_squared_costs_("dyn-squared-cost-terms", false, true)
+    , dyn_hinge_costs_("dyn-hinge-cost-terms", false, true)
+    , dyn_abs_costs_("dyn-abs-cost-terms", false, true)
   {
     variables_ = std::make_shared<trajopt_ifopt::Composite>("variable-sets", false, false);
   }
@@ -68,8 +69,6 @@ struct TrajOptQPProblem::Implementation
   trajopt_ifopt::Composite squared_costs_;
   trajopt_ifopt::Composite hinge_costs_;
   trajopt_ifopt::Composite abs_costs_;
-  trajopt_ifopt::Composite hinge_constraints_;
-  trajopt_ifopt::Composite abs_constraints_;
 
   Eigen::VectorXd squared_costs_target_;
   std::vector<std::string> cost_names_;
@@ -80,9 +79,6 @@ struct TrajOptQPProblem::Implementation
   std::vector<trajopt_ifopt::Bounds> squared_cost_bounds_;
   std::vector<trajopt_ifopt::Bounds> abs_cost_bounds_;
   std::vector<trajopt_ifopt::Bounds> hinge_cost_bounds_;
-
-  std::vector<trajopt_ifopt::Bounds> hinge_cnt_bounds_;
-  std::vector<trajopt_ifopt::Bounds> abs_cnt_bounds_;
 
   std::vector<trajopt_ifopt::Bounds> var_bounds_;
 
@@ -96,6 +92,10 @@ struct TrajOptQPProblem::Implementation
   trajopt_ifopt::Composite dyn_constraints_;
   std::vector<ConstraintType> dyn_constraint_types_;
   std::vector<trajopt_ifopt::Bounds> dyn_constraint_bounds_;
+
+  trajopt_ifopt::Composite dyn_squared_costs_;
+  trajopt_ifopt::Composite dyn_hinge_costs_;
+  trajopt_ifopt::Composite dyn_abs_costs_;
 
   // These quantities are computed in the update() method
   Eigen::Index num_nlp_cnts_{ 0 };
@@ -292,99 +292,116 @@ void TrajOptQPProblem::Implementation::addCostSet(std::shared_ptr<trajopt_ifopt:
   initialized_ = false;
 }
 
-// NOLINTNEXTLINE
 void TrajOptQPProblem::Implementation::addDynamicCostSet(
-    std::shared_ptr<trajopt_ifopt::DynamicConstraintSet> /*dyn_constraint_set*/,
-    CostPenaltyType /*penalty_type*/)
+    std::shared_ptr<trajopt_ifopt::DynamicConstraintSet> dyn_constraint_set,
+    CostPenaltyType penalty_type)
 {
-  // dyn_constraint_set->LinkWithVariables(variables_);
-  // const std::vector<trajopt_ifopt::Bounds> cost_bounds = dyn_constraint_set->GetBounds();
-  // switch (penalty_type)
-  // {
-  //   case CostPenaltyType::SQUARED:
-  //   {
-  //     for (const auto& bound : cost_bounds)
-  //     {
-  //       if (!trajopt_ifopt::isBoundsEquality(bound))
-  //         throw std::runtime_error("TrajOpt Ifopt squared cost must have equality bounds!");
-  //     }
-
-  //     squared_costs_.AddComponent(std::move(dyn_constraint_set));
-  //     break;
-  //   }
-  //   case CostPenaltyType::ABSOLUTE:
-  //   {
-  //     for (const auto& bound : cost_bounds)
-  //     {
-  //       if (!trajopt_ifopt::isBoundsEquality(bound))
-  //         throw std::runtime_error("TrajOpt Ifopt absolute cost must have equality bounds!");
-  //     }
-
-  //     abs_costs_.AddComponent(std::move(dyn_constraint_set));
-  //     break;
-  //   }
-  //   case CostPenaltyType::HINGE:
-  //   {
-  //     for (const auto& bound : cost_bounds)
-  //     {
-  //       if (!trajopt_ifopt::isBoundsInEquality(bound))
-  //         throw std::runtime_error("TrajOpt Ifopt hinge cost must have inequality bounds!");
-  //     }
-
-  //     hinge_costs_.AddComponent(std::move(dyn_constraint_set));
-  //     break;
-  //   }
-  //   default:
-  //   {
-  //     throw std::runtime_error("Unsupport CostPenaltyType!");
-  //   }
-  // }
+  dyn_constraint_set->LinkWithVariables(variables_);
+  switch (penalty_type)
+  {
+    case CostPenaltyType::SQUARED:
+    {
+      dyn_squared_costs_.AddComponent(std::move(dyn_constraint_set));
+      break;
+    }
+    case CostPenaltyType::ABSOLUTE:
+    {
+      dyn_abs_costs_.AddComponent(std::move(dyn_constraint_set));
+      break;
+    }
+    case CostPenaltyType::HINGE:
+    {
+      dyn_hinge_costs_.AddComponent(std::move(dyn_constraint_set));
+      break;
+    }
+    default:
+    {
+      throw std::runtime_error("Unsupport CostPenaltyType!");
+    }
+  }
 }
 
 void TrajOptQPProblem::Implementation::update()
 {
-  if (initialized_ && dyn_constraints_.Empty())
+  if (initialized_ && dyn_constraints_.Empty() && dyn_squared_costs_.Empty() && dyn_abs_costs_.Empty() &&
+      dyn_hinge_costs_.Empty())
     return;
-
-  int num_nlp_dyn_cnts = dyn_constraints_.Update();
-  dyn_constraint_bounds_ = dyn_constraints_.GetBounds();
-  dyn_constraint_types_.resize(static_cast<std::size_t>(num_nlp_dyn_cnts));
-  assert(dyn_constraint_bounds_.size() == static_cast<std::size_t>(num_nlp_dyn_cnts));
 
   // Local counts to avoid repeated virtual / composite queries
   const Eigen::Index n_nlp_vars = variables_->GetRows();
+  const Eigen::Index n_squared = squared_costs_.GetRows();
   const Eigen::Index n_hinge = hinge_costs_.GetRows();
   const Eigen::Index n_abs = abs_costs_.GetRows();
 
-  num_nlp_cnts_ = constraints_.GetRows() + num_nlp_dyn_cnts;
+  num_nlp_cnts_ = constraints_.GetRows();
 
   // Hinge cost adds a variable and an inequality constraint (→ 2 constraints)
   // Absolute cost adds two variables and an equality constraint (→ 3 constraints)
   num_qp_vars_ = num_constraint_qp_vars_ + n_nlp_vars + n_hinge + (2L * n_abs);
   num_qp_cnts_ = num_nlp_cnts_ + num_constraint_qp_cnts_ + n_nlp_vars + (2L * n_hinge) + (3L * n_abs);
 
-  ////////////////////////////////////////////////////////
-  // Get NLP bounds and detect dynamic constraint type
-  ////////////////////////////////////////////////////////
-  for (std::size_t i = 0; i < num_nlp_dyn_cnts; ++i)
+  if (!dyn_squared_costs_.Empty())
   {
-    const auto& b = dyn_constraint_bounds_[i];
-    const double diff = b.upper - b.lower;
-    if (std::abs(diff) < 1e-3)
+    int num_dyn_squared = dyn_squared_costs_.Update();
+    Eigen::VectorXd squared_costs_target = Eigen::VectorXd::Zero(n_squared + num_dyn_squared);
+    if (n_squared > 0)
+      squared_costs_target.head(n_squared) = squared_costs_target_.head(n_squared);
+
+    auto dyn_squared_cost_bounds = dyn_constraints_.GetBounds();
+    for (std::size_t j = 0; j < dyn_squared_cost_bounds.size(); ++j)
     {
-      dyn_constraint_types_[i] = ConstraintType::EQ;
-      num_qp_vars_ += 2;  // L1 slack pair
-      num_qp_cnts_ += 2;
+      assert(trajopt_ifopt::isBoundsEquality(dyn_squared_cost_bounds[j]));
+      squared_costs_target(n_squared + static_cast<Eigen::Index>(j)) = dyn_squared_cost_bounds[j].lower;
     }
-    else
+    squared_costs_target_ = squared_costs_target;
+  }
+
+  int n_dyn_abs{ 0 };
+  if (!dyn_abs_costs_.Empty())
+  {
+    n_dyn_abs = dyn_abs_costs_.Update();
+
+    num_qp_vars_ += (2L * n_dyn_abs);
+    num_qp_cnts_ += (3L * n_dyn_abs);
+  }
+
+  int n_dyn_hinge{ 0 };
+  if (!dyn_hinge_costs_.Empty())
+  {
+    int n_dyn_hinge = dyn_hinge_costs_.Update();
+
+    num_qp_vars_ += n_dyn_hinge;
+    num_qp_cnts_ += (2L * n_dyn_hinge);
+  }
+
+  if (!dyn_constraints_.Empty())
+  {
+    int num_nlp_dyn_cnts = dyn_constraints_.Update();
+    num_nlp_cnts_ += num_nlp_dyn_cnts;
+    dyn_constraint_bounds_ = dyn_constraints_.GetBounds();
+    dyn_constraint_types_.resize(static_cast<std::size_t>(num_nlp_dyn_cnts));
+    assert(dyn_constraint_bounds_.size() == static_cast<std::size_t>(num_nlp_dyn_cnts));
+
+    for (std::size_t i = 0; i < num_nlp_dyn_cnts; ++i)
     {
-      dyn_constraint_types_[i] = ConstraintType::INEQ;
-      num_qp_vars_ += 1;  // hinge slack
-      num_qp_cnts_ += 1;
+      const auto& b = dyn_constraint_bounds_[i];
+      const double diff = b.upper - b.lower;
+      if (std::abs(diff) < 1e-3)
+      {
+        dyn_constraint_types_[i] = ConstraintType::EQ;
+        num_qp_vars_ += 2;  // L1 slack pair
+        num_qp_cnts_ += 2;
+      }
+      else
+      {
+        dyn_constraint_types_[i] = ConstraintType::INEQ;
+        num_qp_vars_ += 1;  // hinge slack
+        num_qp_cnts_ += 1;
+      }
     }
   }
 
-  constraint_constant_ = Eigen::VectorXd::Zero(num_nlp_cnts_ + n_hinge + n_abs);
+  constraint_constant_ = Eigen::VectorXd::Zero(num_nlp_cnts_ + n_hinge + n_abs + n_dyn_hinge + n_dyn_abs);
 
   // Initialize the constraint bounds
   bounds_lower_ = Eigen::VectorXd::Constant(num_qp_cnts_, -double(INFINITY));
@@ -397,9 +414,6 @@ void TrajOptQPProblem::Implementation::setup()
   const Eigen::Index n_nlp_vars = getNumNLPVars();
   const Eigen::Index n_nlp_costs = getNumNLPCosts();
   const Eigen::Index n_nlp_cnts = constraints_.GetRows();
-
-  hinge_constraints_.ClearComponents();
-  abs_constraints_.ClearComponents();
 
   squared_costs_target_ = Eigen::VectorXd::Zero(squared_costs_.GetRows());
 
@@ -439,10 +453,11 @@ void TrajOptQPProblem::Implementation::setup()
     }
   }
 
+  for (const auto& cost : dyn_squared_costs_.GetComponents())
+    cost_names_.push_back(cost->GetName());
+
   for (const auto& cost : abs_costs_.GetComponents())
   {
-    abs_constraints_.AddComponent(cost);
-
     const std::vector<trajopt_ifopt::Bounds> cost_bounds = cost->GetBounds();
     for (Eigen::Index j = 0; j < cost->GetRows(); ++j)
     {
@@ -451,10 +466,11 @@ void TrajOptQPProblem::Implementation::setup()
     }
   }
 
+  for (const auto& cost : dyn_abs_costs_.GetComponents())
+    cost_names_.push_back(cost->GetName());
+
   for (const auto& cost : hinge_costs_.GetComponents())
   {
-    hinge_constraints_.AddComponent(cost);
-
     const std::vector<trajopt_ifopt::Bounds> cost_bounds = cost->GetBounds();
     for (Eigen::Index j = 0; j < cost->GetRows(); ++j)
     {
@@ -462,6 +478,9 @@ void TrajOptQPProblem::Implementation::setup()
       cost_names_.push_back(cost->GetName() + "_" + std::to_string(j));
     }
   }
+
+  for (const auto& cost : dyn_hinge_costs_.GetComponents())
+    cost_names_.push_back(cost->GetName());
 
   // Get NLP bounds and detect constraint type
   constraint_bounds_ = constraints_.GetBounds();
@@ -491,10 +510,6 @@ void TrajOptQPProblem::Implementation::setup()
   squared_cost_bounds_ = squared_costs_.GetBounds();
   abs_cost_bounds_ = abs_costs_.GetBounds();
   hinge_cost_bounds_ = hinge_costs_.GetBounds();
-
-  // Cache constraint bounds for hinge / abs constraint composites
-  hinge_cnt_bounds_ = hinge_constraints_.GetBounds();
-  abs_cnt_bounds_ = abs_constraints_.GetBounds();
 
   // Cache variable bounds (used in updateNLPVariableBounds)
   var_bounds_ = variables_->GetBounds();
@@ -544,7 +559,10 @@ Eigen::VectorXd TrajOptQPProblem::Implementation::evaluateConvexCosts(const Eige
   const Eigen::Index n_sq = squared_costs_.GetRows();
   const Eigen::Index n_hinge = hinge_costs_.GetRows();
   const Eigen::Index n_abs = abs_costs_.GetRows();
-  const Eigen::Index total_cost = n_sq + n_hinge + n_abs;
+  const auto n_dyn_sq = static_cast<Eigen::Index>(dyn_squared_costs_.GetComponents().size());
+  const auto n_dyn_hinge = static_cast<Eigen::Index>(dyn_hinge_costs_.GetComponents().size());
+  const auto n_dyn_abs = static_cast<Eigen::Index>(dyn_abs_costs_.GetComponents().size());
+  const Eigen::Index total_cost = n_sq + n_hinge + n_abs + n_dyn_sq + n_dyn_hinge + n_dyn_abs;
 
   Eigen::VectorXd costs = Eigen::VectorXd::Zero(total_cost);
   Eigen::VectorXd var_block = var_vals.head(nlp_vars);
@@ -552,36 +570,79 @@ Eigen::VectorXd TrajOptQPProblem::Implementation::evaluateConvexCosts(const Eige
   // Squared costs (already convexified into squared_objective_nlp_)
   if (n_sq > 0)
   {
+    /** @todo How do I update this with dyn */
     costs.head(n_sq) = squared_objective_nlp_.values(var_block);
     assert(!(costs.head(n_sq).array() < -1e-8).any());
   }
+
+  Eigen::Index cost_offset{ n_sq };
+  Eigen::Index row_offset{ 0 };
 
   // Hinge costs
   if (n_hinge > 0)
   {
     const Eigen::VectorXd hinge_cnt_constant = constraint_constant_.topRows(n_hinge);
-    const auto hinge_cnt_jac = constraint_matrix_.block(0, 0, hinge_constraints_.GetRows(), nlp_vars);
+    const auto hinge_cnt_jac = constraint_matrix_.block(0, 0, hinge_costs_.GetRows(), nlp_vars);
 
     const Eigen::VectorXd hinge_convex_value = hinge_cnt_constant + hinge_cnt_jac * var_block;
     const Eigen::VectorXd hinge_cost = trajopt_ifopt::calcBoundsViolations(hinge_convex_value, hinge_cost_bounds_);
 
-    costs.segment(n_sq, n_hinge) = hinge_cost;
-    assert(!(costs.segment(n_sq, n_hinge).array() < -1e-8).any());
+    costs.segment(cost_offset, n_hinge) = hinge_cost;
+    assert(!(hinge_cost.array() < -1e-8).any());
+
+    cost_offset += n_hinge;
+    row_offset += n_hinge;
+  }
+
+  if (n_dyn_hinge > 0)
+  {
+    for (const auto& cost : dyn_hinge_costs_.GetComponents())
+    {
+      const Eigen::VectorXd hinge_cnt_constant = constraint_constant_.segment(row_offset, cost->GetRows());
+      const auto hinge_cnt_jac = constraint_matrix_.block(row_offset, 0, cost->GetRows(), nlp_vars);
+
+      const Eigen::VectorXd hinge_convex_value = hinge_cnt_constant + hinge_cnt_jac * var_block;
+      const Eigen::VectorXd hinge_cost = trajopt_ifopt::calcBoundsViolations(hinge_convex_value, cost->GetBounds());
+
+      costs(cost_offset++) = hinge_cost.sum();
+      assert(!(hinge_cost.array() < -1e-8).any());
+      row_offset += cost->GetRows();
+    }
   }
 
   // Absolute costs
   if (n_abs > 0)
   {
-    const Eigen::Index abs_row_offset = n_hinge;
-    const Eigen::VectorXd abs_cnt_constant = constraint_constant_.segment(abs_row_offset, n_abs);
-    const auto abs_cnt_jac = constraint_matrix_.block(abs_row_offset, 0, abs_constraints_.GetRows(), nlp_vars);
+    const Eigen::VectorXd abs_cnt_constant = constraint_constant_.segment(row_offset, n_abs);
+    const auto abs_cnt_jac = constraint_matrix_.block(row_offset, 0, abs_costs_.GetRows(), nlp_vars);
     const Eigen::VectorXd abs_convex_value = abs_cnt_constant + abs_cnt_jac * var_block;
 
     // calcBoundsViolations already returns |violation|
     const Eigen::VectorXd abs_cost = trajopt_ifopt::calcBoundsViolations(abs_convex_value, abs_cost_bounds_);
 
-    costs.segment(n_sq + n_hinge, n_abs) = abs_cost;
-    assert(!(costs.segment(n_sq + n_hinge, n_abs).array() < -1e-8).any());
+    costs.segment(cost_offset, n_abs) = abs_cost;
+    assert(!(abs_cost.array() < -1e-8).any());
+
+    cost_offset += n_abs;
+    row_offset += n_abs;
+  }
+
+  if (n_dyn_abs > 0)
+  {
+    for (const auto& cost : dyn_abs_costs_.GetComponents())
+    {
+      const Eigen::VectorXd abs_cnt_constant = constraint_constant_.segment(row_offset, cost->GetRows());
+      const auto abs_cnt_jac = constraint_matrix_.block(row_offset, 0, cost->GetRows(), nlp_vars);
+      const Eigen::VectorXd abs_convex_value = abs_cnt_constant + abs_cnt_jac * var_block;
+
+      // calcBoundsViolations already returns |violation|
+      const Eigen::VectorXd abs_cost = trajopt_ifopt::calcBoundsViolations(abs_convex_value, cost->GetBounds());
+
+      costs(cost_offset++) = abs_cost.sum();
+      assert(!(abs_cost.array() < -1e-8).any());
+
+      row_offset += cost->GetRows();
+    }
   }
 
   return costs;
@@ -655,7 +716,7 @@ Eigen::VectorXd TrajOptQPProblem::Implementation::evaluateExactCosts(const Eigen
 Eigen::VectorXd
 TrajOptQPProblem::Implementation::evaluateConvexConstraintViolations(const Eigen::Ref<const Eigen::VectorXd>& var_vals)
 {
-  Eigen::Index row_index = hinge_constraints_.GetRows() + abs_costs_.GetRows();
+  Eigen::Index row_index = hinge_costs_.GetRows() + abs_costs_.GetRows();
   const auto& dyn_components = dyn_constraints_.GetComponents();
 
   Eigen::VectorXd violations(constraints_.GetRows() + static_cast<Eigen::Index>(dyn_components.size()));
@@ -754,16 +815,16 @@ void TrajOptQPProblem::Implementation::print() const
   std::cout << "Gradient: " << gradient_.transpose().format(format) << '\n';
   std::cout << "Constraint Matrix:\n" << constraint_matrix_.toDense().format(format) << '\n';
   std::cout << "Constraint Lower Bounds: "
-            << bounds_lower_.head(num_nlp_cnts_ + hinge_constraints_.GetRows()).transpose().format(format) << '\n';
+            << bounds_lower_.head(num_nlp_cnts_ + hinge_costs_.GetRows()).transpose().format(format) << '\n';
   std::cout << "Constraint Upper Bounds: "
-            << bounds_upper_.head(num_nlp_cnts_ + hinge_constraints_.GetRows()).transpose().format(format) << '\n';
+            << bounds_upper_.head(num_nlp_cnts_ + hinge_costs_.GetRows()).transpose().format(format) << '\n';
   std::cout << "Variable Lower Bounds: "
-            << bounds_lower_.tail(bounds_lower_.rows() - num_nlp_cnts_ - hinge_constraints_.GetRows())
+            << bounds_lower_.tail(bounds_lower_.rows() - num_nlp_cnts_ - hinge_costs_.GetRows())
                    .transpose()
                    .format(format)
             << '\n';
   std::cout << "Variable Upper Bounds: "
-            << bounds_upper_.tail(bounds_upper_.rows() - num_nlp_cnts_ - hinge_constraints_.GetRows())
+            << bounds_upper_.tail(bounds_upper_.rows() - num_nlp_cnts_ - hinge_costs_.GetRows())
                    .transpose()
                    .format(format)
             << '\n';
@@ -778,6 +839,7 @@ Eigen::Index TrajOptQPProblem::Implementation::getNumNLPVars() const { return va
 
 Eigen::Index TrajOptQPProblem::Implementation::getNumNLPCosts() const
 {
+  /** @todo This need to be updated to include dyn costs */
   return (squared_costs_.GetRows() + abs_costs_.GetRows() + hinge_costs_.GetRows());
 }
 
@@ -917,8 +979,8 @@ void TrajOptQPProblem::Implementation::linearizeConstraints()
 {
   const trajopt_ifopt::Jacobian nlp_cnt_jac = constraints_.GetJacobian();
   const trajopt_ifopt::Jacobian nlp_dyn_cnt_jac = dyn_constraints_.GetJacobian();
-  const trajopt_ifopt::Jacobian hinge_cnt_jac = hinge_constraints_.GetJacobian();
-  const trajopt_ifopt::Jacobian abs_cnt_jac = abs_constraints_.GetJacobian();
+  const trajopt_ifopt::Jacobian hinge_cnt_jac = hinge_costs_.GetJacobian();
+  const trajopt_ifopt::Jacobian abs_cnt_jac = abs_costs_.GetJacobian();
 
   std::vector<Eigen::Triplet<double>> triplets;
   const Eigen::Index nnz_base = nlp_cnt_jac.nonZeros() + hinge_cnt_jac.nonZeros() + abs_cnt_jac.nonZeros();
@@ -933,13 +995,13 @@ void TrajOptQPProblem::Implementation::linearizeConstraints()
       triplets.emplace_back(it.row(), it.col(), it.value());
 
   // abs constraints (shifted rows)
-  Eigen::Index current_row_index = hinge_constraints_.GetRows();
+  Eigen::Index current_row_index = hinge_costs_.GetRows();
   for (int k = 0; k < abs_cnt_jac.outerSize(); ++k)
     for (trajopt_ifopt::Jacobian::InnerIterator it(abs_cnt_jac, k); it; ++it)
       triplets.emplace_back(current_row_index + it.row(), it.col(), it.value());
 
   // nlp constraints (shift again)
-  current_row_index += abs_constraints_.GetRows();
+  current_row_index += abs_costs_.GetRows();
   for (int k = 0; k < nlp_cnt_jac.outerSize(); ++k)
     for (trajopt_ifopt::Jacobian::InnerIterator it(nlp_cnt_jac, k); it; ++it)
       triplets.emplace_back(current_row_index + it.row(), it.col(), it.value());
@@ -1008,8 +1070,8 @@ void TrajOptQPProblem::Implementation::linearizeConstraints()
 void TrajOptQPProblem::Implementation::updateConstraintsConstantExpression()
 {
   const Eigen::Index n_nlp = getNumNLPVars();
-  const Eigen::Index n_hinge = hinge_constraints_.GetRows();
-  const Eigen::Index n_abs = abs_constraints_.GetRows();
+  const Eigen::Index n_hinge = hinge_costs_.GetRows();
+  const Eigen::Index n_abs = abs_costs_.GetRows();
   const Eigen::Index total_num_cnt = n_hinge + n_abs + num_nlp_cnts_;
 
   if (total_num_cnt == 0)
@@ -1024,7 +1086,7 @@ void TrajOptQPProblem::Implementation::updateConstraintsConstantExpression()
   Eigen::Index row = 0;
   if (n_hinge > 0)
   {  // Get values about which we will linearize
-    const Eigen::VectorXd cnt_initial_value = hinge_constraints_.GetValues();
+    const Eigen::VectorXd cnt_initial_value = hinge_costs_.GetValues();
 
     // In the case of a QP problem the costs and constraints are represented as
     // quadratic functions is f(x) = a + b * x + c * x^2.
@@ -1047,7 +1109,7 @@ void TrajOptQPProblem::Implementation::updateConstraintsConstantExpression()
 
   if (n_abs > 0)
   {  // Get values about which we will linearize
-    const Eigen::VectorXd cnt_initial_value = abs_constraints_.GetValues();
+    const Eigen::VectorXd cnt_initial_value = abs_costs_.GetValues();
 
     // In the case of a QP problem the costs and constraints are represented as
     // quadratic functions is f(x) = a + b * x + c * x^2.
@@ -1119,8 +1181,8 @@ void TrajOptQPProblem::Implementation::updateConstraintsConstantExpression()
 
 void TrajOptQPProblem::Implementation::updateNLPConstraintBounds()
 {
-  const Eigen::Index n_hinge = hinge_constraints_.GetRows();
-  const Eigen::Index n_abs = abs_constraints_.GetRows();
+  const Eigen::Index n_hinge = hinge_costs_.GetRows();
+  const Eigen::Index n_abs = abs_costs_.GetRows();
   const Eigen::Index total_num_cnt = n_hinge + n_abs + num_nlp_cnts_;
 
   if (total_num_cnt == 0)
@@ -1133,7 +1195,7 @@ void TrajOptQPProblem::Implementation::updateNLPConstraintBounds()
   // Hinge constraint bounds
   for (Eigen::Index i = 0; i < n_hinge; ++i)
   {
-    const auto& b = hinge_cnt_bounds_[static_cast<std::size_t>(i)];
+    const auto& b = hinge_cost_bounds_[static_cast<std::size_t>(i)];
     cnt_bound_lower[row + i] = b.lower;
     cnt_bound_upper[row + i] = b.upper;
   }
@@ -1142,7 +1204,7 @@ void TrajOptQPProblem::Implementation::updateNLPConstraintBounds()
   // Absolute constraint bounds
   for (Eigen::Index i = 0; i < n_abs; ++i)
   {
-    const auto& b = abs_cnt_bounds_[static_cast<std::size_t>(i)];
+    const auto& b = abs_cost_bounds_[static_cast<std::size_t>(i)];
     cnt_bound_lower[row + i] = b.lower;
     cnt_bound_upper[row + i] = b.upper;
   }
@@ -1181,8 +1243,8 @@ void TrajOptQPProblem::Implementation::updateNLPVariableBounds()
 {
   // Equivalent to BasicTrustRegionSQP::setTrustBoxConstraints
   const Eigen::Index n_nlp_vars = getNumNLPVars();
-  const Eigen::Index n_hinge = hinge_constraints_.GetRows();
-  const Eigen::Index n_abs = abs_constraints_.GetRows();
+  const Eigen::Index n_hinge = hinge_costs_.GetRows();
+  const Eigen::Index n_abs = abs_costs_.GetRows();
 
   const Eigen::VectorXd x_initial = variables_->GetValues();
 
@@ -1211,8 +1273,7 @@ void TrajOptQPProblem::Implementation::updateNLPVariableBounds()
 
 void TrajOptQPProblem::Implementation::updateSlackVariableBounds()
 {
-  Eigen::Index current_cnt_index =
-      num_nlp_cnts_ + hinge_constraints_.GetRows() + abs_constraints_.GetRows() + getNumNLPVars();
+  Eigen::Index current_cnt_index = num_nlp_cnts_ + hinge_costs_.GetRows() + abs_costs_.GetRows() + getNumNLPVars();
 
   for (Eigen::Index i = 0; i < hinge_costs_.GetRows(); i++)
   {
