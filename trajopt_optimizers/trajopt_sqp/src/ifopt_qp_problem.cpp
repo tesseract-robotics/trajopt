@@ -44,7 +44,7 @@ void IfoptQPProblem::addConstraintSet(std::shared_ptr<trajopt_ifopt::ConstraintS
 }
 
 void
-IfoptQPProblem::addDynamicConstraintSet(std::shared_ptr<trajopt_ifopt::DynamicConstraintSet> /*dyn_constraint_set*/)
+    IfoptQPProblem::addDynamicConstraintSet(std::shared_ptr<trajopt_ifopt::DynamicConstraintSet> /*dyn_constraint_set*/)
 {
   throw std::runtime_error("IfoptQPProblem, dynamic constraint sets are not supported");
 }

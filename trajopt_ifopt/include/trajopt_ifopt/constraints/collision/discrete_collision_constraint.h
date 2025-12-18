@@ -32,6 +32,7 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt_ifopt/core/constraint_set.h>
+#include <trajopt_ifopt/core/dynamic_constraint_set.h>
 
 namespace trajopt_ifopt
 {
@@ -126,9 +127,9 @@ public:
 
   DiscreteCollisionConstraintD(std::shared_ptr<DiscreteCollisionEvaluator> collision_evaluator,
                                std::shared_ptr<const Var> position_var,
-                               const std::string& name = "DiscreteCollision");
+                               std::string name = "DiscreteCollision");
 
-  int update() override;
+  int Update() override;
 
   /**
    * @brief Returns the values associated with the constraint.
@@ -147,7 +148,7 @@ public:
    * @brief  Returns the "bounds" of this constraint. How these are enforced is up to the solver
    * @return Returns the "bounds" of this constraint
    */
-  std::vector<ifopt::Bounds> GetBounds() const override;
+  std::vector<Bounds> GetBounds() const override;
 
   /**
    * @brief Fills the jacobian block associated with the given var_set.
@@ -160,7 +161,7 @@ public:
    * @brief Sets the bounds on the collision distance
    * @param bounds New bounds that will be set. Should be size 1
    */
-  void SetBounds(const std::vector<ifopt::Bounds>& bounds);
+  void SetBounds(const std::vector<Bounds>& bounds);
 
   /**
    * @brief Get the collision evaluator. This exposed for plotter callbacks
@@ -173,7 +174,7 @@ private:
   long n_dof_{ 0 };
 
   /** @brief Bounds on the constraint value. Default: std::vector<Bounds>(1, ifopt::BoundSmallerZero) */
-  std::vector<ifopt::Bounds> bounds_;
+  std::vector<Bounds> bounds_;
 
   /** @brief Pointers to the vars used by this constraint. */
   std::shared_ptr<const Var> position_var_;

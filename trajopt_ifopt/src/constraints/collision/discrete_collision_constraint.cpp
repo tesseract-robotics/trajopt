@@ -198,8 +198,8 @@ std::shared_ptr<DiscreteCollisionEvaluator> DiscreteCollisionConstraint::GetColl
 DiscreteCollisionConstraintD::DiscreteCollisionConstraintD(
     std::shared_ptr<DiscreteCollisionEvaluator> collision_evaluator,
     std::shared_ptr<const Var> position_var,
-    const std::string& name)
-  : DynamicConstraintSet(name)
+    std::string name)
+  : DynamicConstraintSet(std::move(name))
   , position_var_(std::move(position_var))
   , collision_evaluator_(std::move(collision_evaluator))
 {
@@ -207,7 +207,7 @@ DiscreteCollisionConstraintD::DiscreteCollisionConstraintD(
   assert(n_dof_ > 0);
 }
 
-int DiscreteCollisionConstraintD::update()
+int DiscreteCollisionConstraintD::Update()
 {
   int rows{ 0 };
   const trajopt_common::CollisionCacheData::ConstPtr collision_data =
@@ -216,7 +216,7 @@ int DiscreteCollisionConstraintD::update()
     rows += static_cast<int>(gradient_results_set.results.size());
 
   SetRows(rows);
-  bounds_ = std::vector<ifopt::Bounds>(static_cast<std::size_t>(rows), ifopt::BoundSmallerZero);
+  bounds_ = std::vector<Bounds>(static_cast<std::size_t>(rows), BoundSmallerZero);
 
   std::call_once(init_flag_, &DiscreteCollisionConstraintD::init, this);
 
@@ -239,7 +239,7 @@ Eigen::VectorXd DiscreteCollisionConstraintD::GetValues() const
 }
 
 // Set the limits on the constraint values
-std::vector<ifopt::Bounds> DiscreteCollisionConstraintD::GetBounds() const { return bounds_; }
+std::vector<Bounds> DiscreteCollisionConstraintD::GetBounds() const { return bounds_; }
 
 void DiscreteCollisionConstraintD::FillJacobianBlock(std::string var_set, Jacobian& jac_block) const
 {
@@ -285,7 +285,7 @@ void DiscreteCollisionConstraintD::FillJacobianBlock(std::string var_set, Jacobi
   assert(GetRows() == (i - 1));
 }
 
-void DiscreteCollisionConstraintD::SetBounds(const std::vector<ifopt::Bounds>& bounds)
+void DiscreteCollisionConstraintD::SetBounds(const std::vector<Bounds>& bounds)
 {
   assert(bounds.size() == GetRows());
   bounds_ = bounds;
