@@ -56,7 +56,7 @@ TEST(VarUnit, VectorVarConstructionAndAccess)
   x << 10, 20.0, 30.0;
 
   const std::vector<std::string> names{ "a", "b", "c" };
-  const std::vector<ifopt::Bounds> bounds(3, ifopt::NoBound);
+  const std::vector<trajopt_ifopt::Bounds> bounds(3, trajopt_ifopt::NoBound);
 
   // Vector starts at index 1, length 3 -> x[1..3]
   trajopt_ifopt::Var v(0, "position", names, x, bounds);
@@ -98,7 +98,7 @@ TEST(NodeUnit, NameParentAndVarManagement)
   vector_var_pos << -1.0, 10.0, 20.0;
 
   const std::vector<std::string> names{ "a", "b", "c" };
-  const std::vector<ifopt::Bounds> bounds(3, ifopt::NoBound);
+  const std::vector<trajopt_ifopt::Bounds> bounds(3, trajopt_ifopt::NoBound);
 
   auto vector_var = node.addVar("v", names, vector_var_pos, bounds);
   EXPECT_TRUE(static_cast<bool>(vector_var));
@@ -141,7 +141,7 @@ TEST(NodesVariablesUnit, AddNodesAndGetNodes)
   vector_var_pos << -1.0, 10.0;
 
   const std::vector<std::string> names{ "v0", "v1" };
-  const std::vector<ifopt::Bounds> bounds(2, ifopt::NoBound);
+  const std::vector<trajopt_ifopt::Bounds> bounds(2, trajopt_ifopt::NoBound);
   nodes.push_back(std::make_unique<trajopt_ifopt::Node>("n1"));
   nodes.back()->addVar("v", names, vector_var_pos, bounds);
 
@@ -179,7 +179,7 @@ TEST(NodesVariablesUnit, SetVariablesPropagatesToNodesAndVars)
   vector_var_pos << -1.0, 10.0;
 
   const std::vector<std::string> names{ "v0", "v1" };
-  const std::vector<ifopt::Bounds> bounds(2, ifopt::NoBound);
+  const std::vector<trajopt_ifopt::Bounds> bounds(2, trajopt_ifopt::NoBound);
   nodes.push_back(std::make_unique<trajopt_ifopt::Node>("n1"));
   nodes.back()->addVar("v", names, vector_var_pos, bounds);
 

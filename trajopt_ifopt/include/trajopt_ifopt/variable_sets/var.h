@@ -23,7 +23,7 @@
 
 #include <Eigen/Core>
 #include <vector>
-#include <ifopt/bounds.h>
+#include <trajopt_ifopt/core/bounds.h>
 
 namespace trajopt_ifopt
 {
@@ -67,11 +67,7 @@ public:
    * This constructor creates a variable segment of size 1. The @p name is used
    * both as the identifier and as the single element name in @ref names_.
    */
-  Var(Eigen::Index index,
-      std::string name,
-      double value,
-      ifopt::Bounds bounds = ifopt::NoBound,
-      Node* parent = nullptr);
+  Var(Eigen::Index index, std::string name, double value, Bounds bounds = NoBound, Node* parent = nullptr);
 
   /**
    * @brief Construct a vector-valued variable.
@@ -92,7 +88,7 @@ public:
       std::string identifier,
       std::vector<std::string> names,
       const Eigen::VectorXd& values,
-      const std::vector<ifopt::Bounds>& bounds,
+      const std::vector<Bounds>& bounds,
       Node* parent = nullptr);
 
   Var(const Var& other) = default;
@@ -181,7 +177,7 @@ public:
    * ifopt::Bounds object describing lower and upper bounds for the
    * corresponding element.
    */
-  const std::vector<ifopt::Bounds>& bounds() const;
+  const std::vector<Bounds>& bounds() const;
 
 private:
   friend class Node;
@@ -224,7 +220,7 @@ private:
    * ifopt::Bounds describing the lower and upper bounds of the corresponding
    * variable.
    */
-  std::vector<ifopt::Bounds> bounds_;
+  std::vector<Bounds> bounds_;
 
   /**
    * @brief Pointer to the parent node that owns this variable.

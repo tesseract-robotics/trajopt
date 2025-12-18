@@ -9,7 +9,6 @@ macro(add_benchmark benchmark_name benchmark_file)
   target_link_libraries(
     ${benchmark_name}
     ${PROJECT_NAME}
-    ifopt::ifopt_ipopt
     trajopt::trajopt_ifopt
     trajopt::trajopt_common
     benchmark::benchmark)

@@ -57,7 +57,6 @@ jobs:
         with:
           before-script: source /opt/tesseract/install/setup.bash
           ccache-prefix: ${{ matrix.distro }}
-          vcs-file: dependencies_unstable.repos
           run-tests: false
           rosdep-install-args: -iry --skip-keys=libomp-dev
           upstream-args: --cmake-args -DCMAKE_BUILD_TYPE=Release

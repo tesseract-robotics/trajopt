@@ -44,7 +44,7 @@ ContinuousCollisionConstraint::ContinuousCollisionConstraint(
     bool vars1_fixed,
     int max_num_cnt,
     bool fixed_sparsity,
-    const std::string& name)
+    std::string name)
   : ContinuousCollisionConstraint(
         std::move(collision_evaluator),
         std::vector<std::shared_ptr<const Var>>{ std::move(position_vars[0]), std::move(position_vars[1]) },
@@ -52,7 +52,7 @@ ContinuousCollisionConstraint::ContinuousCollisionConstraint(
         vars1_fixed,
         max_num_cnt,
         fixed_sparsity,
-        name)
+        std::move(name))
 {
 }
 
@@ -63,9 +63,9 @@ ContinuousCollisionConstraint::ContinuousCollisionConstraint(
     bool vars1_fixed,
     int max_num_cnt,
     bool fixed_sparsity,
-    const std::string& name)
-  : ifopt::ConstraintSet(max_num_cnt * static_cast<int>(position_vars.size() > 1 ? (position_vars.size() - 1) : 0),
-                         name)
+    std::string name)
+  : ConstraintSet(std::move(name),
+                  max_num_cnt * static_cast<int>(position_vars.size() > 1 ? (position_vars.size() - 1) : 0))
   , position_vars_(std::move(position_vars))
   , vars0_fixed_(vars0_fixed)
   , vars1_fixed_(vars1_fixed)
@@ -107,7 +107,7 @@ ContinuousCollisionConstraint::ContinuousCollisionConstraint(
   if (static_cast<int>(total_rows) != GetRows())
     throw std::runtime_error("ContinuousCollisionConstraint: internal row count mismatch");
 
-  bounds_ = std::vector<ifopt::Bounds>(total_rows, ifopt::BoundSmallerZero);
+  bounds_ = std::vector<Bounds>(total_rows, BoundSmallerZero);
 }
 
 Eigen::VectorXd ContinuousCollisionConstraint::GetValues() const
@@ -167,7 +167,7 @@ Eigen::VectorXd ContinuousCollisionConstraint::GetValues() const
 }
 
 // Set the limits on the constraint values
-std::vector<ifopt::Bounds> ContinuousCollisionConstraint::GetBounds() const { return bounds_; }
+std::vector<Bounds> ContinuousCollisionConstraint::GetBounds() const { return bounds_; }
 
 void ContinuousCollisionConstraint::init() const
 {
@@ -293,7 +293,7 @@ void ContinuousCollisionConstraint::FillJacobianBlock(std::string var_set, Jacob
   }
 }
 
-void ContinuousCollisionConstraint::SetBounds(const std::vector<ifopt::Bounds>& bounds)
+void ContinuousCollisionConstraint::SetBounds(const std::vector<Bounds>& bounds)
 {
   assert(bounds.size() == GetRows());
   bounds_ = bounds;

@@ -12,7 +12,6 @@ endif()
 find_package(trajopt_common REQUIRED)
 find_package(console_bridge REQUIRED)
 find_package(Eigen3 REQUIRED)
-find_package(ifopt REQUIRED)
 find_package(tesseract_environment REQUIRED)
 find_package(Boost REQUIRED)
 
@@ -24,6 +23,12 @@ trajopt_variables()
 # ######################################################################################################################
 
 set(TRAJOPT_IFOPT_SOURCE_FILES
+    src/core/composite.cpp
+    src/core/constraint_set.cpp
+    src/core/cost_term.cpp
+    src/core/dynamic_constraint_set.cpp
+    src/core/problem.cpp
+    src/core/variable_set.cpp
     src/costs/absolute_cost.cpp
     src/costs/squared_cost.cpp
     src/constraints/cartesian_position_constraint.cpp
@@ -52,7 +57,6 @@ add_library(${PROJECT_NAME} ${TRAJOPT_IFOPT_SOURCE_FILES})
 target_link_libraries(
   ${PROJECT_NAME}
   PUBLIC console_bridge::console_bridge
-         ifopt::ifopt_core
          trajopt::trajopt_common
          tesseract::tesseract_environment
          Eigen3::Eigen
@@ -76,7 +80,6 @@ configure_package(
     trajopt_common
     console_bridge
     Eigen3
-    ifopt
     tesseract_environment
     Boost)
 
@@ -110,14 +113,12 @@ if(TRAJOPT_PACKAGE)
       "libeigen3-dev"
       "libboost-dev"
       "libconsole-bridge-dev"
-      "ifopt"
       "${TRAJOPT_PACKAGE_PREFIX}trajopt-common"
       "${TESSERACT_PACKAGE_PREFIX}tesseract-environment"
     WINDOWS_DEPENDS
       "Eigen3"
       "boost"
       "console-bridge"
-      "ifopt"
       "${TRAJOPT_PACKAGE_PREFIX}trajopt-common"
       "${TESSERACT_PACKAGE_PREFIX}tesseract-environment")
 endif()

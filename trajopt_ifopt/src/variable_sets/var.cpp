@@ -24,7 +24,7 @@
 
 namespace trajopt_ifopt
 {
-Var::Var(Eigen::Index index, std::string name, double value, ifopt::Bounds bounds, Node* parent)
+Var::Var(Eigen::Index index, std::string name, double value, Bounds bounds, Node* parent)
   : index_(index)
   , identifier_(std::move(name))
   , names_({ identifier_ })
@@ -45,7 +45,7 @@ Var::Var(Eigen::Index index,
          std::string identifier,
          std::vector<std::string> names,
          const Eigen::VectorXd& values,
-         const std::vector<ifopt::Bounds>& bounds,
+         const std::vector<Bounds>& bounds,
          Node* parent)
   : index_(index)
   , identifier_(std::move(identifier))
@@ -75,7 +75,7 @@ Eigen::Index Var::getIndex() const { return index_; }
 Eigen::Index Var::size() const { return values_.rows(); }
 const Eigen::VectorXd& Var::value() const { return values_; }
 const std::vector<std::string>& Var::name() const { return names_; }
-const std::vector<ifopt::Bounds>& Var::bounds() const { return bounds_; }
+const std::vector<Bounds>& Var::bounds() const { return bounds_; }
 
 void Var::incrementIndex(Eigen::Index value) { index_ += value; }
 void Var::setVariables(const Eigen::Ref<const Eigen::VectorXd>& x)

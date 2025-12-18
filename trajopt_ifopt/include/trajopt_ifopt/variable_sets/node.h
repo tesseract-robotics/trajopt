@@ -21,7 +21,7 @@
 #ifndef TRAJOPT_IFOPT_NODE_H
 #define TRAJOPT_IFOPT_NODE_H
 
-#include <ifopt/bounds.h>
+#include <trajopt_ifopt/core/bounds.h>
 
 #include <Eigen/Core>
 #include <unordered_map>
@@ -101,7 +101,7 @@ public:
    *       is managed by @ref NodesVariables and will be updated via
    *       @ref incrementIndex() when nodes are assembled.
    */
-  std::shared_ptr<const Var> addVar(const std::string& name, double value, ifopt::Bounds bounds = ifopt::NoBound);
+  std::shared_ptr<const Var> addVar(const std::string& name, double value, Bounds bounds = NoBound);
 
   /**
    * @brief Add a vector-valued variable to this node.
@@ -120,7 +120,7 @@ public:
   std::shared_ptr<const Var> addVar(const std::string& name,
                                     const std::vector<std::string>& child_names,
                                     const Eigen::VectorXd& values,
-                                    const std::vector<ifopt::Bounds>& bounds);
+                                    const std::vector<Bounds>& bounds);
 
   /**
    * @brief Get a variable by name.
@@ -148,7 +148,7 @@ public:
    *
    * @return Concatenated vector of all bounds in this node.
    */
-  std::vector<ifopt::Bounds> getBounds() const;
+  std::vector<Bounds> getBounds() const;
 
   /**
    * @brief Get the total number of scalar decision variables in this node.

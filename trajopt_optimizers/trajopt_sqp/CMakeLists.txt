@@ -10,7 +10,6 @@ if(WIN32)
 endif()
 
 find_package(console_bridge REQUIRED)
-find_package(ifopt REQUIRED)
 find_package(OsqpEigen REQUIRED)
 find_package(trajopt_ifopt REQUIRED)
 find_package(trajopt_common REQUIRED)
@@ -33,12 +32,7 @@ add_library(
   src/trajopt_qp_problem.cpp
   src/expressions.cpp
   src/types.cpp)
-target_link_libraries(
-  ${PROJECT_NAME}
-  PUBLIC console_bridge::console_bridge
-         trajopt::trajopt_ifopt
-         ifopt::ifopt_core
-         OsqpEigen::OsqpEigen)
+target_link_libraries(${PROJECT_NAME} PUBLIC console_bridge::console_bridge trajopt::trajopt_ifopt OsqpEigen::OsqpEigen)
 target_include_directories(${PROJECT_NAME} PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
                                                   $<INSTALL_INTERFACE:include>)
 target_compile_options(${PROJECT_NAME} PRIVATE ${TRAJOPT_COMPILE_OPTIONS_PRIVATE})
@@ -79,7 +73,6 @@ configure_package(
   TARGETS ${PROJECT_NAME} ${PROJECT_NAME}_callbacks
   DEPENDENCIES
     console_bridge
-    ifopt
     OsqpEigen
     trajopt_ifopt
     trajopt_common
@@ -119,7 +112,6 @@ if(TRAJOPT_PACKAGE)
       "libeigen3-dev"
       "libboost-dev"
       "libconsole-bridge-dev"
-      "ifopt"
       "${TRAJOPT_PACKAGE_PREFIX}osqpeigen"
       "${TRAJOPT_PACKAGE_PREFIX}trajopt-ifopt"
       "${TRAJOPT_PACKAGE_PREFIX}trajopt-common"
@@ -129,7 +121,6 @@ if(TRAJOPT_PACKAGE)
       "Eigen3"
       "boost"
       "console-bridge"
-      "ifopt"
       "${TRAJOPT_PACKAGE_PREFIX}osqpeigen"
       "${TRAJOPT_PACKAGE_PREFIX}trajopt-ifopt"
       "${TRAJOPT_PACKAGE_PREFIX}trajopt-common"

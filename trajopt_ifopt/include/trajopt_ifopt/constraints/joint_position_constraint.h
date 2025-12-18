@@ -26,9 +26,10 @@
 
 #include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
-#include <ifopt/constraint_set.h>
 #include <Eigen/Core>
 TRAJOPT_IGNORE_WARNINGS_POP
+
+#include <trajopt_ifopt/core/constraint_set.h>
 
 namespace trajopt_ifopt
 {
@@ -37,7 +38,7 @@ class Var;
 /**
  * @brief This creates a joint position constraint. Allows bounds to be set on a joint position
  */
-class JointPosConstraint : public ifopt::ConstraintSet
+class JointPosConstraint : public ConstraintSet
 {
 public:
   using Ptr = std::shared_ptr<JointPosConstraint>;
@@ -54,7 +55,7 @@ public:
   JointPosConstraint(const Eigen::VectorXd& target,
                      const std::shared_ptr<const Var>& position_var,
                      const Eigen::VectorXd& coeffs,
-                     const std::string& name = "JointPos");
+                     std::string name = "JointPos");
 
   /**
    * @brief JointPosConstraint
@@ -63,10 +64,10 @@ public:
    * @param coeffs The joint coefficients to use as weights. If size of 1 then the values is replicated for each joint.
    * @param name Name of the constraint
    */
-  JointPosConstraint(const std::vector<ifopt::Bounds>& bounds,
+  JointPosConstraint(const std::vector<Bounds>& bounds,
                      const std::shared_ptr<const Var>& position_vars,
                      const Eigen::VectorXd& coeffs,
-                     const std::string& name = "JointPos");
+                     std::string name = "JointPos");
 
   /**
    * @brief Returns the values associated with the constraint. In this case that is the concatenated joint values
@@ -79,7 +80,7 @@ public:
    * @brief  Returns the "bounds" of this constraint. How these are enforced is up to the solver
    * @return Returns the "bounds" of this constraint
    */
-  std::vector<ifopt::Bounds> GetBounds() const override;
+  std::vector<Bounds> GetBounds() const override;
 
   /**
    * @brief Fills the jacobian block associated with the given var_set.
@@ -96,7 +97,7 @@ private:
   Eigen::VectorXd coeffs_;
 
   /** @brief Bounds on the positions of each joint */
-  std::vector<ifopt::Bounds> bounds_;
+  std::vector<Bounds> bounds_;
 
   /** @brief Pointers to the vars used by this constraint. */
   std::shared_ptr<const Var> position_var_;

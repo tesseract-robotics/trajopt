@@ -27,11 +27,7 @@
 #include <memory>
 #include <trajopt_sqp/types.h>
 #include <trajopt_sqp/qp_problem.h>
-
-namespace ifopt
-{
-class Problem;
-}  // namespace ifopt
+#include <trajopt_ifopt/fwd.h>
 
 namespace trajopt_sqp
 {
@@ -43,13 +39,13 @@ public:
   using ConstPtr = std::shared_ptr<const IfoptQPProblem>;
 
   IfoptQPProblem();
-  IfoptQPProblem(std::shared_ptr<ifopt::Problem> nlp);
+  IfoptQPProblem(std::shared_ptr<trajopt_ifopt::Problem> nlp);
 
-  void addVariableSet(std::shared_ptr<ifopt::VariableSet> variable_set) override;
+  void addVariableSet(std::shared_ptr<trajopt_ifopt::VariableSet> variable_set) override;
 
-  void addConstraintSet(std::shared_ptr<ifopt::ConstraintSet> constraint_set) override;
+  void addConstraintSet(std::shared_ptr<trajopt_ifopt::ConstraintSet> constraint_set) override;
 
-  void addCostSet(std::shared_ptr<ifopt::ConstraintSet> constraint_set, CostPenaltyType penalty_type) override;
+  void addCostSet(std::shared_ptr<trajopt_ifopt::ConstraintSet> constraint_set, CostPenaltyType penalty_type) override;
 
   void setup() override;
 
@@ -106,7 +102,7 @@ public:
   Eigen::Ref<const Eigen::VectorXd> getBoundsUpper() override { return bounds_upper_; }
 
 protected:
-  std::shared_ptr<ifopt::Problem> nlp_;
+  std::shared_ptr<trajopt_ifopt::Problem> nlp_;
 
   Eigen::Index num_nlp_vars_{ 0 };
   Eigen::Index num_nlp_cnts_{ 0 };

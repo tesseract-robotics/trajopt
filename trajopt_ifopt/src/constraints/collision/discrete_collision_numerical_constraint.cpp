@@ -43,8 +43,8 @@ DiscreteCollisionNumericalConstraint::DiscreteCollisionNumericalConstraint(
     std::shared_ptr<const Var> position_var,
     int max_num_cnt,
     bool fixed_sparsity,
-    const std::string& name)
-  : ifopt::ConstraintSet(max_num_cnt, name)
+    std::string name)
+  : ConstraintSet(std::move(name), max_num_cnt)
   , position_var_(std::move(position_var))
   , collision_evaluator_(std::move(collision_evaluator))
   , fixed_sparsity_(fixed_sparsity)
@@ -56,13 +56,13 @@ DiscreteCollisionNumericalConstraint::DiscreteCollisionNumericalConstraint(
   if (max_num_cnt < 1)
     throw std::runtime_error("max_num_cnt must be greater than zero!");
 
-  bounds_ = std::vector<ifopt::Bounds>(static_cast<std::size_t>(max_num_cnt), ifopt::BoundSmallerZero);
+  bounds_ = std::vector<Bounds>(static_cast<std::size_t>(max_num_cnt), BoundSmallerZero);
 }
 
 Eigen::VectorXd DiscreteCollisionNumericalConstraint::GetValues() const { return CalcValues(position_var_->value()); }
 
 // Set the limits on the constraint values
-std::vector<ifopt::Bounds> DiscreteCollisionNumericalConstraint::GetBounds() const { return bounds_; }
+std::vector<Bounds> DiscreteCollisionNumericalConstraint::GetBounds() const { return bounds_; }
 
 void DiscreteCollisionNumericalConstraint::initSparsity() const
 {
@@ -108,7 +108,7 @@ DiscreteCollisionNumericalConstraint::CalcValues(const Eigen::Ref<const Eigen::V
   return values;
 }
 
-void DiscreteCollisionNumericalConstraint::SetBounds(const std::vector<ifopt::Bounds>& bounds)
+void DiscreteCollisionNumericalConstraint::SetBounds(const std::vector<Bounds>& bounds)
 {
   assert(bounds.size() == 1);
   bounds_ = bounds;

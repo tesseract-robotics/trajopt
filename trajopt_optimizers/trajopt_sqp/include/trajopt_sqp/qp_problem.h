@@ -3,12 +3,7 @@
 
 #include <memory>
 #include <trajopt_sqp/eigen_types.h>
-
-namespace ifopt
-{
-class VariableSet;
-class ConstraintSet;
-}  // namespace ifopt
+#include <trajopt_ifopt/fwd.h>
 
 namespace trajopt_sqp
 {
@@ -31,7 +26,7 @@ public:
    * the optimal timing values. This function correctly appends the
    * individual variables sets and ensures correct order of Jacobian columns.
    */
-  virtual void addVariableSet(std::shared_ptr<ifopt::VariableSet> variable_set) = 0;
+  virtual void addVariableSet(std::shared_ptr<trajopt_ifopt::VariableSet> variable_set) = 0;
 
   /**
    * @brief Add a set of multiple constraints to the optimization problem.
@@ -41,7 +36,7 @@ public:
    * constraints. It makes sure the overall constraint and Jacobian correctly
    * considers all individual constraint sets.
    */
-  virtual void addConstraintSet(std::shared_ptr<ifopt::ConstraintSet> constraint_set) = 0;
+  virtual void addConstraintSet(std::shared_ptr<trajopt_ifopt::ConstraintSet> constraint_set) = 0;
 
   /**
    * @brief Add a squared cost term to the problem.
@@ -51,7 +46,8 @@ public:
    * composed of different cost terms. It makes sure the overall value and
    * gradient is considering each individual cost.
    */
-  virtual void addCostSet(std::shared_ptr<ifopt::ConstraintSet> constraint_set, CostPenaltyType penalty_type) = 0;
+  virtual void addCostSet(std::shared_ptr<trajopt_ifopt::ConstraintSet> constraint_set,
+                          CostPenaltyType penalty_type) = 0;
 
   /**
    * @brief This setups the QP problems based on the constraints and cost sets added to the problem.

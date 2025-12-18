@@ -33,8 +33,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace trajopt_ifopt
 {
-NodesVariables::NodesVariables(const std::string& name, std::vector<std::unique_ptr<Node>> nodes)
-  : VariableSet(kSpecifyLater, name)
+NodesVariables::NodesVariables(std::string name, std::vector<std::unique_ptr<Node>> nodes)
+  : VariableSet(std::move(name), kSpecifyLater)
 {
   nodes_.reserve(nodes.size());
   for (auto& node : nodes)
@@ -63,7 +63,7 @@ void NodesVariables::AddNode(std::unique_ptr<Node> node)
   node->parent_ = this;
 
   Eigen::Index length = node->size();
-  std::vector<ifopt::Bounds> bounds = node->getBounds();
+  std::vector<Bounds> bounds = node->getBounds();
 
   nodes_.emplace_back(std::move(node));
   bounds_.insert(bounds_.end(), bounds.begin(), bounds.end());
@@ -72,7 +72,7 @@ void NodesVariables::AddNode(std::unique_ptr<Node> node)
 
 std::shared_ptr<const Node> NodesVariables::GetNode(std::size_t opt_idx) const { return nodes_.at(opt_idx); }
 
-void NodesVariables::SetVariables(const VectorXd& x)
+void NodesVariables::SetVariables(const Eigen::VectorXd& x)
 {
   for (auto& node : nodes_)
     node->setVariables(x);
@@ -94,7 +94,7 @@ void NodesVariables::AddObserver(std::shared_ptr<NodesObserver> observer) { obse
 
 Eigen::Index NodesVariables::GetDim() const { return n_dim_; }
 
-NodesVariables::VecBound NodesVariables::GetBounds() const { return bounds_; }
+std::vector<Bounds> NodesVariables::GetBounds() const { return bounds_; }
 
 std::vector<std::shared_ptr<const Node>> NodesVariables::GetNodes() const
 {

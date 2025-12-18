@@ -26,10 +26,10 @@
 
 #include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
-#include <ifopt/cost_term.h>
-
 #include <Eigen/Eigen>
 TRAJOPT_IGNORE_WARNINGS_POP
+
+#include <trajopt_ifopt/core/cost_term.h>
 
 namespace trajopt_ifopt
 {
@@ -69,7 +69,7 @@ namespace trajopt_ifopt
  *     dcost(x)/dx = 2 * error.transpose() * W * J(x)
  *
  */
-class SquaredCost : public ifopt::CostTerm
+class SquaredCost : public CostTerm
 {
 public:
   using Ptr = std::shared_ptr<SquaredCost>;
@@ -79,13 +79,13 @@ public:
    * @brief Constructs a CostTerm that converts a constraint into a cost with a sum squared error
    * @param constraint Input constraint to be converted to a cost
    */
-  SquaredCost(const ifopt::ConstraintSet::Ptr& constraint);
+  SquaredCost(const ConstraintSet::Ptr& constraint);
   /**
    * @brief Constructs a CostTerm that converts a constraint into a cost with a weighted sum squared error
    * @param constraint Input constraint to be converted to a cost
    * @param weights Weights applied to the constraints. Length should be n_constraints
    */
-  SquaredCost(ifopt::ConstraintSet::Ptr constraint, const Eigen::Ref<const Eigen::VectorXd>& weights);
+  SquaredCost(ConstraintSet::Ptr constraint, const Eigen::Ref<const Eigen::VectorXd>& weights);
 
   double GetCost() const override;
 

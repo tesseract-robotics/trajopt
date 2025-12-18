@@ -32,18 +32,18 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
-#include <ifopt/variable_set.h>
-#include <ifopt/bounds.h>
 #include <Eigen/Core>
 TRAJOPT_IGNORE_WARNINGS_POP
 
+#include <trajopt_ifopt/core/bounds.h>
+#include <trajopt_ifopt/core/variable_set.h>
 #include <trajopt_ifopt/variable_sets/node.h>
 
 namespace trajopt_ifopt
 {
 class NodesObserver;
 
-class NodesVariables : public ifopt::VariableSet
+class NodesVariables : public VariableSet
 {
 public:
   using Ptr = std::shared_ptr<NodesVariables>;
@@ -51,7 +51,7 @@ public:
   /**
    * @param variable_name  The name of the variables in the optimization problem.
    */
-  NodesVariables(const std::string& variable_name, std::vector<std::unique_ptr<Node>> nodes);
+  NodesVariables(std::string variable_name, std::vector<std::unique_ptr<Node>> nodes);
   ~NodesVariables() override = default;
 
   /**
@@ -69,7 +69,7 @@ public:
    *
    * @sa GetNodeInfoAtOptIndex()
    */
-  VectorXd GetValues() const override;
+  Eigen::VectorXd GetValues() const override;
 
   /**
    * @brief Sets some node positions and velocity from the optimization variables.
@@ -81,12 +81,12 @@ public:
    *
    * @sa GetNodeValuesInfo()
    */
-  void SetVariables(const VectorXd& x) override;
+  void SetVariables(const Eigen::VectorXd& x) override;
 
   /**
    * @returns the bounds on position and velocity of each node and dimension.
    */
-  VecBound GetBounds() const override;
+  std::vector<Bounds> GetBounds() const override;
 
   /**
    * @returns All the nodes that can be used to reconstruct the spline.
@@ -106,7 +106,7 @@ public:
 
 protected:
   Eigen::VectorXd values_;
-  VecBound bounds_;  ///< the bounds on the node values.
+  std::vector<Bounds> bounds_;  ///< the bounds on the node values.
   std::vector<std::shared_ptr<Node>> nodes_;
   Eigen::Index n_dim_{ 0 };
   std::vector<std::shared_ptr<NodesObserver>> observers_;

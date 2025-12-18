@@ -33,8 +33,6 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <tesseract_state_solver/state_solver.h>
 #include <tesseract_environment/environment.h>
 #include <tesseract_environment/utils.h>
-#include <ifopt/problem.h>
-#include <ifopt/ipopt_solver.h>
 #include <trajopt_common/collision_types.h>
 #include <trajopt_common/config.hpp>
 #include <trajopt_common/eigen_conversions.hpp>
@@ -42,6 +40,7 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <trajopt_common/stl_to_string.hpp>
 TRAJOPT_IGNORE_WARNINGS_POP
 
+#include <trajopt_ifopt/core/problem.h>
 #include <trajopt_ifopt/constraints/collision/continuous_collision_constraint.h>
 #include <trajopt_ifopt/constraints/collision/continuous_collision_evaluators.h>
 #include <trajopt_ifopt/constraints/joint_position_constraint.h>
@@ -89,7 +88,7 @@ void runContinuousGradientTest(const Environment::Ptr& env, double coeff)
   const tesseract_scene_graph::StateSolver::Ptr state_solver = env->getStateSolver();
   const ContinuousContactManager::Ptr manager = env->getContinuousContactManager();
   const tesseract_kinematics::JointGroup::ConstPtr manip = env->getJointGroup("manipulator");
-  const std::vector<ifopt::Bounds> bounds = trajopt_ifopt::toBounds(manip->getLimits().joint_limits);
+  const std::vector<Bounds> bounds = toBounds(manip->getLimits().joint_limits);
 
   manager->setActiveCollisionObjects(manip->getActiveLinkNames());
   manager->setDefaultCollisionMargin(0);
@@ -97,14 +96,14 @@ void runContinuousGradientTest(const Environment::Ptr& env, double coeff)
   collisions.clear();
 
   // 2) Create the problem
-  ifopt::Problem nlp;
+  Problem nlp;
 
   // 3) Add Variables
-  std::vector<std::unique_ptr<trajopt_ifopt::Node>> nodes;
-  std::vector<std::shared_ptr<const trajopt_ifopt::Var>> vars;
+  std::vector<std::unique_ptr<Node>> nodes;
+  std::vector<std::shared_ptr<const Var>> vars;
   std::vector<Eigen::VectorXd> positions;
   {
-    nodes.push_back(std::make_unique<trajopt_ifopt::Node>("Joint_Position_0"));
+    nodes.push_back(std::make_unique<Node>("Joint_Position_0"));
     Eigen::VectorXd pos(2);
     pos << -1.9, 0;
     positions.push_back(pos);
@@ -112,7 +111,7 @@ void runContinuousGradientTest(const Environment::Ptr& env, double coeff)
   }
 
   {
-    nodes.push_back(std::make_unique<trajopt_ifopt::Node>("Joint_Position_1"));
+    nodes.push_back(std::make_unique<Node>("Joint_Position_1"));
     Eigen::VectorXd pos(2);
     pos << 0, 1.9;
     positions.push_back(pos);
@@ -120,14 +119,14 @@ void runContinuousGradientTest(const Environment::Ptr& env, double coeff)
   }
 
   {
-    nodes.push_back(std::make_unique<trajopt_ifopt::Node>("Joint_Position_2"));
+    nodes.push_back(std::make_unique<Node>("Joint_Position_2"));
     Eigen::VectorXd pos(2);
     pos << 1.9, 3.8;
     positions.push_back(pos);
     vars.push_back(nodes.back()->addVar("position", manip->getJointNames(), pos, bounds));
   }
 
-  nlp.AddVariableSet(std::make_shared<trajopt_ifopt::NodesVariables>("joint_trajectory", std::move(nodes)));
+  nlp.AddVariableSet(std::make_shared<NodesVariables>("joint_trajectory", std::move(nodes)));
 
   // Step 3: Setup collision
   const double margin_coeff = coeff;
@@ -136,22 +135,20 @@ void runContinuousGradientTest(const Environment::Ptr& env, double coeff)
   trajopt_collision_config.collision_check_config.type = tesseract_collision::CollisionEvaluatorType::LVS_CONTINUOUS;
   trajopt_collision_config.collision_margin_buffer = 0.05;
 
-  auto collision_cache = std::make_shared<trajopt_ifopt::CollisionCache>(100);
+  auto collision_cache = std::make_shared<CollisionCache>(100);
   for (std::size_t i = 1; i < vars.size(); ++i)
   {
-    auto collision_evaluator = std::make_shared<trajopt_ifopt::LVSContinuousCollisionEvaluator>(
-        collision_cache, manip, env, trajopt_collision_config);
+    auto collision_evaluator =
+        std::make_shared<LVSContinuousCollisionEvaluator>(collision_cache, manip, env, trajopt_collision_config);
 
     const std::array<std::shared_ptr<const Var>, 2> position_vars{ vars[i - 1], vars[i] };
-    auto cnt = std::make_shared<trajopt_ifopt::ContinuousCollisionConstraint>(
-        collision_evaluator, position_vars, false, false, 3);
+    auto cnt = std::make_shared<ContinuousCollisionConstraint>(collision_evaluator, position_vars, false, false, 3);
     nlp.AddConstraintSet(cnt);
   }
 
   std::cout << "Jacobian: \n" << nlp.GetJacobianOfConstraints().toDense() << '\n';
   std::vector<double> init_vals{ -1.9, 0, 0, 1.9, 1.9, 3.8 };
-  const trajopt_ifopt::SparseMatrix num_jac_block =
-      trajopt_ifopt::calcNumericalConstraintGradient(init_vals.data(), nlp, 1e-8);
+  const Jacobian num_jac_block = calcNumericalConstraintGradient(init_vals.data(), nlp, 1e-8);
   std::cout << "Numerical Jacobian: \n" << num_jac_block.toDense() << '\n';
 }
 

@@ -76,8 +76,8 @@ thread_local tesseract_common::TransformMap CartLineConstraint::transforms_cache
 CartLineConstraint::CartLineConstraint(CartLineInfo info,
                                        std::shared_ptr<const Var> position_var,
                                        const Eigen::VectorXd& coeffs,  // NOLINT
-                                       const std::string& name)
-  : ifopt::ConstraintSet(static_cast<int>(info.indices.rows()), name)
+                                       std::string name)
+  : ConstraintSet(std::move(name), static_cast<int>(info.indices.rows()))
   , coeffs_(coeffs)
   , position_var_(std::move(position_var))
   , info_(std::move(info))
@@ -86,7 +86,7 @@ CartLineConstraint::CartLineConstraint(CartLineInfo info,
   n_dof_ = info_.manip->numJoints();
   assert(n_dof_ > 0);
 
-  bounds_ = std::vector<ifopt::Bounds>(static_cast<std::size_t>(info_.indices.rows()), ifopt::BoundZero);
+  bounds_ = std::vector<Bounds>(static_cast<std::size_t>(info_.indices.rows()), BoundZero);
 
   if (coeffs_.rows() != info_.indices.rows())
     std::runtime_error("The number of coeffs does not match the number of constraints.");
@@ -139,9 +139,9 @@ Eigen::VectorXd CartLineConstraint::CalcValues(const Eigen::Ref<const Eigen::Vec
 Eigen::VectorXd CartLineConstraint::GetValues() const { return CalcValues(position_var_->value()); }
 
 // Set the limits on the constraint values
-std::vector<ifopt::Bounds> CartLineConstraint::GetBounds() const { return bounds_; }
+std::vector<Bounds> CartLineConstraint::GetBounds() const { return bounds_; }
 
-void CartLineConstraint::SetBounds(const std::vector<ifopt::Bounds>& bounds)
+void CartLineConstraint::SetBounds(const std::vector<Bounds>& bounds)
 {
   assert(bounds.size() == 6);
   bounds_ = bounds;
@@ -171,7 +171,7 @@ void CartLineConstraint::CalcJacobianBlock(const Eigen::Ref<const Eigen::VectorX
     for (int i = 0; i < joint_vals.size(); ++i)
     {
       dof_vals_pert(i) = joint_vals(i) + eps;
-      const VectorXd error_diff = error_diff_function_(dof_vals_pert, target_tf, source_tf, transforms_cache);
+      const Eigen::VectorXd error_diff = error_diff_function_(dof_vals_pert, target_tf, source_tf, transforms_cache);
       jac0.col(i) = error_diff / eps;
       dof_vals_pert(i) = joint_vals(i);
     }

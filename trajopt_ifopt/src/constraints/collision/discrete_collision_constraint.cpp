@@ -44,12 +44,12 @@ DiscreteCollisionConstraint::DiscreteCollisionConstraint(
     std::shared_ptr<const Var> position_var,
     int max_num_cnt,
     bool fixed_sparsity,
-    const std::string& name)
+    std::string name)
   : DiscreteCollisionConstraint(std::move(collision_evaluator),
                                 std::vector<std::shared_ptr<const Var>>{ std::move(position_var) },
                                 max_num_cnt,
                                 fixed_sparsity,
-                                name)
+                                std::move(name))
 {
 }
 
@@ -58,8 +58,8 @@ DiscreteCollisionConstraint::DiscreteCollisionConstraint(
     std::vector<std::shared_ptr<const Var>> position_vars,
     int max_num_cnt,
     bool fixed_sparsity,
-    const std::string& name)
-  : ifopt::ConstraintSet(max_num_cnt * static_cast<int>(position_vars.size()), name)
+    std::string name)
+  : ConstraintSet(std::move(name), max_num_cnt * static_cast<int>(position_vars.size()))
   , position_vars_(std::move(position_vars))
   , collision_evaluator_(std::move(collision_evaluator))
   , fixed_sparsity_(fixed_sparsity)
@@ -79,7 +79,7 @@ DiscreteCollisionConstraint::DiscreteCollisionConstraint(
 
   assert(n_dof_ > 0);
 
-  bounds_ = std::vector<ifopt::Bounds>(static_cast<std::size_t>(GetRows()), ifopt::BoundSmallerZero);
+  bounds_ = std::vector<Bounds>(static_cast<std::size_t>(GetRows()), BoundSmallerZero);
 }
 
 Eigen::VectorXd DiscreteCollisionConstraint::GetValues() const
@@ -113,7 +113,7 @@ Eigen::VectorXd DiscreteCollisionConstraint::GetValues() const
 }
 
 // Set the limits on the constraint values
-std::vector<ifopt::Bounds> DiscreteCollisionConstraint::GetBounds() const { return bounds_; }
+std::vector<Bounds> DiscreteCollisionConstraint::GetBounds() const { return bounds_; }
 
 void DiscreteCollisionConstraint::FillJacobianBlock(std::string var_set, Jacobian& jac_block) const
 {
@@ -154,7 +154,7 @@ void DiscreteCollisionConstraint::FillJacobianBlock(std::string var_set, Jacobia
   }
 }
 
-void DiscreteCollisionConstraint::SetBounds(const std::vector<ifopt::Bounds>& bounds)
+void DiscreteCollisionConstraint::SetBounds(const std::vector<Bounds>& bounds)
 {
   assert(bounds.size() == GetRows());
   bounds_ = bounds;

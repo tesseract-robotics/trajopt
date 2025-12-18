@@ -27,8 +27,6 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <gtest/gtest.h>
 #include <iostream>
 #include <OsqpEigen/OsqpEigen.h>
-#include <ifopt/problem.h>
-#include <ifopt/ipopt_solver.h>
 #include <console_bridge/console.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
@@ -76,7 +74,7 @@ void runJointPositionOptimizationTest(const trajopt_sqp::QPProblem::Ptr& qp_prob
     auto node = std::make_unique<trajopt_ifopt::Node>("Joint_Position_" + std::to_string(ind));
     auto pos = Eigen::VectorXd::Zero(7);
     const std::vector<std::string> joint_names(7, "name");
-    const std::vector<ifopt::Bounds> bounds(7, ifopt::NoBound);
+    const std::vector<trajopt_ifopt::Bounds> bounds(7, trajopt_ifopt::NoBound);
     vars.push_back(node->addVar("position", joint_names, pos, bounds));
     nodes.push_back(std::move(node));
   }
@@ -109,60 +107,6 @@ void runJointPositionOptimizationTest(const trajopt_sqp::QPProblem::Ptr& qp_prob
 
   if (DEBUG)
     qp_problem->print();
-}
-
-/** @brief Applies a joint position constraint and solves the problem with IPOPT */
-TEST_F(JointPositionOptimization, joint_position_optimization_ipopt)  // NOLINT
-{
-  // 1) create Problem
-  ifopt::Problem nlp_ipopt;
-
-  // 2) Add Variables
-  std::vector<std::unique_ptr<trajopt_ifopt::Node>> nodes;
-  std::vector<std::shared_ptr<const trajopt_ifopt::Var>> vars;
-  for (int ind = 0; ind < 2; ind++)
-  {
-    auto node = std::make_unique<trajopt_ifopt::Node>("Joint_Position_" + std::to_string(ind));
-    auto pos = Eigen::VectorXd::Zero(7);
-    const std::vector<std::string> joint_names(7, "name");
-    const std::vector<ifopt::Bounds> bounds(7, ifopt::NoBound);
-    vars.push_back(node->addVar("position", joint_names, pos, bounds));
-    nodes.push_back(std::move(node));
-  }
-
-  nlp_ipopt.AddVariableSet(std::make_shared<trajopt_ifopt::NodesVariables>("joint_trajectory", std::move(nodes)));
-
-  // 3) Add constraints
-  const Eigen::VectorXd start_pos = Eigen::VectorXd::Zero(7);
-  const Eigen::VectorXd coeffs = Eigen::VectorXd::Constant(7, 1);
-  auto start_constraint =
-      std::make_shared<trajopt_ifopt::JointPosConstraint>(start_pos, vars.front(), coeffs, "StartPosition");
-  nlp_ipopt.AddConstraintSet(start_constraint);
-
-  const Eigen::VectorXd end_pos = Eigen::VectorXd::Ones(7);
-  auto end_constraint =
-      std::make_shared<trajopt_ifopt::JointPosConstraint>(end_pos, vars.back(), coeffs, "EndPosition");
-  nlp_ipopt.AddConstraintSet(end_constraint);
-
-  ifopt::IpoptSolver solver;
-  solver.SetOption("derivative_test", "first-order");
-  solver.SetOption("linear_solver", "mumps");
-  //  ipopt.SetOption("jacobian_approximation", "finite-difference-values");
-  solver.SetOption("jacobian_approximation", "exact");
-  solver.SetOption("print_level", 5);
-
-  // solve
-  solver.Solve(nlp_ipopt);
-  Eigen::VectorXd x = nlp_ipopt.GetOptVariables()->GetValues();
-  for (Eigen::Index i = 0; i < 7; i++)
-    EXPECT_NEAR(x[i], 0.0, 1e-5);
-  for (Eigen::Index i = 7; i < 14; i++)
-    EXPECT_NEAR(x[i], 1.0, 1e-5);
-  if (DEBUG)
-  {
-    std::cout << x.transpose() << '\n';
-    nlp_ipopt.PrintCurrent();
-  }
 }
 
 /**

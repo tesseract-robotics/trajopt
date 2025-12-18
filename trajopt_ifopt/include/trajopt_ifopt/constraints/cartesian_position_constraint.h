@@ -28,10 +28,11 @@
 #include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <Eigen/Eigen>
-#include <ifopt/constraint_set.h>
+TRAJOPT_IGNORE_WARNINGS_POP
+
+#include <trajopt_ifopt/core/constraint_set.h>
 #include <tesseract_common/eigen_types.h>
 #include <tesseract_kinematics/core/fwd.h>
-TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace trajopt_ifopt
 {
@@ -87,7 +88,7 @@ struct CartPosInfo
   Eigen::VectorXi indices;
 };
 
-class CartPosConstraint : public ifopt::ConstraintSet
+class CartPosConstraint : public ConstraintSet
 {
 public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -100,14 +101,12 @@ public:
                                                               const Eigen::Isometry3d&,
                                                               tesseract_common::TransformMap&)>;
 
-  CartPosConstraint(const CartPosInfo& info,
-                    std::shared_ptr<const Var> position_var,
-                    const std::string& name = "CartPos");
+  CartPosConstraint(const CartPosInfo& info, std::shared_ptr<const Var> position_var, std::string name = "CartPos");
 
   CartPosConstraint(CartPosInfo info,
                     std::shared_ptr<const Var> position_var,
                     const Eigen::VectorXd& coeffs,
-                    const std::string& name = "CartPos");
+                    std::string name = "CartPos");
 
   /**
    * @brief CalcValues Calculates the values associated with the constraint
@@ -127,9 +126,9 @@ public:
    * @brief  Returns the "bounds" of this constraint. How these are enforced is up to the solver
    * @return Returns the "bounds" of this constraint
    */
-  std::vector<ifopt::Bounds> GetBounds() const override;
+  std::vector<Bounds> GetBounds() const override;
 
-  void SetBounds(const std::vector<ifopt::Bounds>& bounds);
+  void SetBounds(const std::vector<Bounds>& bounds);
 
   /**
    * @brief Fills the jacobian block associated with the constraint
@@ -183,7 +182,7 @@ private:
   Eigen::VectorXd coeffs_;
 
   /** @brief Bounds on the positions of each joint */
-  std::vector<ifopt::Bounds> bounds_;
+  std::vector<Bounds> bounds_;
 
   /** @brief Pointers to the vars used by this constraint. */
   std::shared_ptr<const Var> position_var_;

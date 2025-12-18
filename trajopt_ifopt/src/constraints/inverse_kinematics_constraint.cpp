@@ -51,8 +51,8 @@ InverseKinematicsConstraint::InverseKinematicsConstraint(
     InverseKinematicsInfo::ConstPtr kinematic_info,
     std::shared_ptr<const Var> constraint_var,
     std::shared_ptr<const Var> seed_var,
-    const std::string& name)
-  : ifopt::ConstraintSet(static_cast<int>(constraint_var->size()), name)
+    std::string name)
+  : ConstraintSet(std::move(name), static_cast<int>(constraint_var->size()))
   , constraint_var_(std::move(constraint_var))
   , seed_var_(std::move(seed_var))
   , target_pose_(target_pose)
@@ -64,7 +64,7 @@ InverseKinematicsConstraint::InverseKinematicsConstraint(
   if (constraint_var_->size() != kinematic_info_->manip->numJoints())
     CONSOLE_BRIDGE_logError("Inverse kinematics has a different number of joints than the given variable set");
 
-  bounds_ = std::vector<ifopt::Bounds>(static_cast<std::size_t>(n_dof_), ifopt::BoundZero);
+  bounds_ = std::vector<Bounds>(static_cast<std::size_t>(n_dof_), BoundZero);
 }
 
 Eigen::VectorXd
@@ -101,9 +101,9 @@ Eigen::VectorXd InverseKinematicsConstraint::GetValues() const
 }
 
 // Set the limits on the constraint values
-std::vector<ifopt::Bounds> InverseKinematicsConstraint::GetBounds() const { return bounds_; }
+std::vector<Bounds> InverseKinematicsConstraint::GetBounds() const { return bounds_; }
 
-void InverseKinematicsConstraint::SetBounds(const std::vector<ifopt::Bounds>& bounds)
+void InverseKinematicsConstraint::SetBounds(const std::vector<Bounds>& bounds)
 {
   if (bounds.size() != static_cast<std::size_t>(n_dof_))
     CONSOLE_BRIDGE_logError("Bounds is incorrect size. It is %d when it should be %d", bounds.size(), n_dof_);

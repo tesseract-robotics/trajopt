@@ -25,7 +25,7 @@
 
 namespace trajopt_ifopt
 {
-SparseMatrix calcForwardNumJac(const ErrorCalculator& f, const Eigen::Ref<const Eigen::VectorXd>& x, double epsilon)
+Jacobian calcForwardNumJac(const ErrorCalculator& f, const Eigen::Ref<const Eigen::VectorXd>& x, double epsilon)
 {
   const Eigen::VectorXd y = f(x);
   Eigen::MatrixXd out(y.size(), x.size());

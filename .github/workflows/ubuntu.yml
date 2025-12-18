@@ -63,7 +63,6 @@ jobs:
         with:
           before-script: source /opt/tesseract/install/setup.bash
           ccache-prefix: ${{ matrix.distro }}
-          vcs-file: dependencies.repos
           upstream-args: --cmake-args -DCMAKE_BUILD_TYPE=Release
           target-path: target_ws/src
           target-args: --cmake-args -DCMAKE_BUILD_TYPE=Debug -DTRAJOPT_ENABLE_TESTING=ON -DTRAJOPT_ENABLE_BENCHMARKING=ON -DTRAJOPT_ENABLE_RUN_BENCHMARKING=OFF

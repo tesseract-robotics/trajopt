@@ -35,8 +35,8 @@ namespace trajopt_ifopt
 JointAccelConstraint::JointAccelConstraint(const Eigen::VectorXd& targets,
                                            const std::vector<std::shared_ptr<const Var>>& position_vars,
                                            const Eigen::VectorXd& coeffs,
-                                           const std::string& name)
-  : ifopt::ConstraintSet(static_cast<int>(targets.size()) * static_cast<int>(position_vars.size()), name)
+                                           std::string name)
+  : ConstraintSet(std::move(name), static_cast<int>(targets.size()) * static_cast<int>(position_vars.size()))
   , n_dof_(targets.size())
   , n_vars_(static_cast<long>(position_vars.size()))
   , coeffs_(coeffs)
@@ -67,11 +67,11 @@ JointAccelConstraint::JointAccelConstraint(const Eigen::VectorXd& targets,
 
   // Set the bounds to the input targets
   // All of the positions should be exactly at their targets
-  std::vector<ifopt::Bounds> bounds(static_cast<std::size_t>(GetRows()));
+  std::vector<Bounds> bounds(static_cast<std::size_t>(GetRows()));
   for (long j = 0; j < n_vars_; j++)
   {
     for (long i = 0; i < n_dof_; i++)
-      bounds[static_cast<std::size_t>(i + (j * n_dof_))] = ifopt::Bounds(targets[i], targets[i]);
+      bounds[static_cast<std::size_t>(i + (j * n_dof_))] = Bounds(targets[i], targets[i]);
   }
   bounds_ = bounds;
 }
@@ -107,7 +107,7 @@ Eigen::VectorXd JointAccelConstraint::GetValues() const
 }
 
 // Set the limits on the constraint values (in this case just the targets)
-std::vector<ifopt::Bounds> JointAccelConstraint::GetBounds() const { return bounds_; }
+std::vector<Bounds> JointAccelConstraint::GetBounds() const { return bounds_; }
 
 void JointAccelConstraint::FillJacobianBlock(std::string var_set, Jacobian& jac_block) const
 {

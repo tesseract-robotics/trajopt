@@ -81,8 +81,8 @@ thread_local tesseract_common::TransformMap CartPosConstraint::transforms_cache;
 CartPosConstraint::CartPosConstraint(CartPosInfo info,
                                      std::shared_ptr<const Var> position_var,
                                      const Eigen::VectorXd& coeffs,  // NOLINT
-                                     const std::string& name)
-  : ifopt::ConstraintSet(static_cast<int>(info.indices.rows()), name)
+                                     std::string name)
+  : ConstraintSet(std::move(name), static_cast<int>(info.indices.rows()))
   , coeffs_(coeffs)
   , position_var_(std::move(position_var))
   , info_(std::move(info))
@@ -91,7 +91,7 @@ CartPosConstraint::CartPosConstraint(CartPosInfo info,
   n_dof_ = info_.manip->numJoints();
   assert(n_dof_ > 0);
 
-  bounds_ = std::vector<ifopt::Bounds>(static_cast<std::size_t>(info_.indices.rows()), ifopt::BoundZero);
+  bounds_ = std::vector<Bounds>(static_cast<std::size_t>(info_.indices.rows()), BoundZero);
 
   if (coeffs_.rows() != info_.indices.rows())
     std::runtime_error("The number of coeffs does not match the number of constraints.");
@@ -199,10 +199,8 @@ CartPosConstraint::CartPosConstraint(CartPosInfo info,
   }
 }
 
-CartPosConstraint::CartPosConstraint(const CartPosInfo& info,
-                                     std::shared_ptr<const Var> position_var,
-                                     const std::string& name)
-  : CartPosConstraint(info, std::move(position_var), Eigen::VectorXd::Ones(info.indices.rows()), name)
+CartPosConstraint::CartPosConstraint(const CartPosInfo& info, std::shared_ptr<const Var> position_var, std::string name)
+  : CartPosConstraint(info, std::move(position_var), Eigen::VectorXd::Ones(info.indices.rows()), std::move(name))
 {
 }
 
@@ -221,9 +219,9 @@ Eigen::VectorXd CartPosConstraint::CalcValues(const Eigen::Ref<const Eigen::Vect
 Eigen::VectorXd CartPosConstraint::GetValues() const { return CalcValues(position_var_->value()); }
 
 // Set the limits on the constraint values
-std::vector<ifopt::Bounds> CartPosConstraint::GetBounds() const { return bounds_; }
+std::vector<Bounds> CartPosConstraint::GetBounds() const { return bounds_; }
 
-void CartPosConstraint::SetBounds(const std::vector<ifopt::Bounds>& bounds)
+void CartPosConstraint::SetBounds(const std::vector<Bounds>& bounds)
 {
   assert(bounds.size() == 6);
   bounds_ = bounds;
@@ -248,7 +246,7 @@ void CartPosConstraint::CalcJacobianBlock(const Eigen::Ref<const Eigen::VectorXd
     for (int i = 0; i < joint_vals.size(); ++i)
     {
       dof_vals_pert(i) = joint_vals(i) + eps;
-      const VectorXd error_diff = error_diff_function_(dof_vals_pert, target_tf, source_tf, transforms_cache);
+      const Eigen::VectorXd error_diff = error_diff_function_(dof_vals_pert, target_tf, source_tf, transforms_cache);
       jac0.col(i) = error_diff / eps;
       dof_vals_pert(i) = joint_vals(i);
     }
@@ -293,7 +291,7 @@ void CartPosConstraint::CalcJacobianBlock(const Eigen::Ref<const Eigen::VectorXd
       for (int c = 0; c < jac0.cols(); ++c)
       {
         auto perturbed_target_tf = trajopt_common::addTwist(target_tf, jac0.col(c), eps);
-        const VectorXd error_diff =
+        const Eigen::VectorXd error_diff =
             tesseract_common::calcJacobianTransformErrorDiff(source_tf, target_tf, perturbed_target_tf);
         jac0.col(c).tail(3) = (error_diff / eps);
       }
@@ -307,7 +305,7 @@ void CartPosConstraint::CalcJacobianBlock(const Eigen::Ref<const Eigen::VectorXd
       for (int c = 0; c < jac0.cols(); ++c)
       {
         auto perturbed_source_tf = trajopt_common::addTwist(source_tf, jac0.col(c), eps);
-        const VectorXd error_diff =
+        const Eigen::VectorXd error_diff =
             tesseract_common::calcJacobianTransformErrorDiff(target_tf, source_tf, perturbed_source_tf);
         jac0.col(c).tail(3) = (error_diff / eps);
       }

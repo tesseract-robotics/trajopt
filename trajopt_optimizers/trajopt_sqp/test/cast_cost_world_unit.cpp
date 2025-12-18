@@ -118,7 +118,7 @@ void runCastWorldTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const Envir
   const tesseract_scene_graph::StateSolver::Ptr state_solver = env->getStateSolver();
   const ContinuousContactManager::Ptr manager = env->getContinuousContactManager();
   const tesseract_kinematics::JointGroup::ConstPtr manip = env->getJointGroup("manipulator");
-  const std::vector<ifopt::Bounds> bounds = trajopt_ifopt::toBounds(manip->getLimits().joint_limits);
+  const std::vector<trajopt_ifopt::Bounds> bounds = trajopt_ifopt::toBounds(manip->getLimits().joint_limits);
 
   manager->setActiveCollisionObjects(manip->getActiveLinkNames());
   manager->setDefaultCollisionMargin(0);

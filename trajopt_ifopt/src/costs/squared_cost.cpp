@@ -30,12 +30,12 @@ TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace trajopt_ifopt
 {
-SquaredCost::SquaredCost(const ifopt::ConstraintSet::Ptr& constraint)
+SquaredCost::SquaredCost(const ConstraintSet::Ptr& constraint)
   : SquaredCost(constraint, Eigen::VectorXd::Ones(constraint->GetRows()))
 {
 }
 
-SquaredCost::SquaredCost(ifopt::ConstraintSet::Ptr constraint, const Eigen::Ref<const Eigen::VectorXd>& weights)
+SquaredCost::SquaredCost(ConstraintSet::Ptr constraint, const Eigen::Ref<const Eigen::VectorXd>& weights)
   : CostTerm(constraint->GetName() + "_squared_cost")
   , constraint_(std::move(constraint))
   , n_constraints_(constraint_->GetRows())

@@ -30,9 +30,6 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 
 #include <OsqpEigen/OsqpEigen.h>
 
-#include <ifopt/problem.h>
-#include <ifopt/ipopt_solver.h>
-
 #include <tesseract_common/resource_locator.h>
 #include <tesseract_common/types.h>
 #include <tesseract_kinematics/core/joint_group.h>
@@ -92,7 +89,7 @@ void runCartPositionOptimization(const trajopt_sqp::QPProblem::Ptr& qp_problem,
   // Extract necessary kinematic information
   const tesseract_kinematics::JointGroup::ConstPtr manip = env->getJointGroup("right_arm");
   const tesseract_common::KinematicLimits limits = manip->getLimits();
-  const std::vector<ifopt::Bounds> bounds = trajopt_ifopt::toBounds(limits.joint_limits);
+  const std::vector<trajopt_ifopt::Bounds> bounds = trajopt_ifopt::toBounds(limits.joint_limits);
 
   // Get target position
   Eigen::VectorXd start_pos(manip->numJoints());
