@@ -101,12 +101,12 @@ struct TrajOptQPProblem::Implementation
   Eigen::Index num_qp_cnts_{ 0 };
 
   // These objects are computed in the convexifyCosts() method
-  SparseMatrix hessian_;
+  trajopt_ifopt::Jacobian hessian_;
   Eigen::VectorXd gradient_;
   QuadExprs squared_objective_nlp_;
 
   // This object is computed in the linearizeConstraints() method
-  SparseMatrix constraint_matrix_;
+  trajopt_ifopt::Jacobian constraint_matrix_;
 
   // This object is computed in the updateConstraintsConstantExpression() method
   Eigen::VectorXd constraint_constant_;  // This should be the center of the bounds
@@ -770,7 +770,7 @@ void TrajOptQPProblem::Implementation::convexifyCosts()
   if (squared_costs_.GetRows() > 0)
   {
     squared_objective_nlp_ = QuadExprs(squared_costs_.GetRows(), getNumNLPVars());
-    const SparseMatrix cnt_jac = squared_costs_.GetJacobian();
+    const trajopt_ifopt::Jacobian cnt_jac = squared_costs_.GetJacobian();
     const Eigen::VectorXd cnt_vals = squared_costs_.GetValues();
 
     // This is not correct should pass the value to createAffExprs then use bound to which could change the sign of the
@@ -798,7 +798,7 @@ void TrajOptQPProblem::Implementation::convexifyCosts()
       // Add jacobian to triplet list
       for (int k = 0; k < cost_quad_expr.linear_coeffs.outerSize(); ++k)
       {
-        for (SparseMatrix::InnerIterator it(cost_quad_expr.linear_coeffs, k); it; ++it)
+        for (trajopt_ifopt::Jacobian::InnerIterator it(cost_quad_expr.linear_coeffs, k); it; ++it)
           grad_triplet_list.emplace_back(it.row(), it.col(), it.value());
       }
     }
@@ -822,7 +822,7 @@ void TrajOptQPProblem::Implementation::convexifyCosts()
       hessian_.reserve(squared_objective_nlp_.objective_quadratic_coeffs.nonZeros());
       for (int k = 0; k < squared_objective_nlp_.objective_quadratic_coeffs.outerSize(); ++k)
       {
-        for (SparseMatrix::InnerIterator it(squared_objective_nlp_.objective_quadratic_coeffs, k); it; ++it)
+        for (trajopt_ifopt::Jacobian::InnerIterator it(squared_objective_nlp_.objective_quadratic_coeffs, k); it; ++it)
           hessian_.coeffRef(it.row(), it.col()) += it.value();
       }
     }
@@ -884,9 +884,9 @@ void TrajOptQPProblem::Implementation::convexifyCosts()
 
 void TrajOptQPProblem::Implementation::linearizeConstraints()
 {
-  const SparseMatrix nlp_cnt_jac = constraints_.GetJacobian();
-  const SparseMatrix hinge_cnt_jac = hinge_constraints_.GetJacobian();
-  const SparseMatrix abs_cnt_jac = abs_constraints_.GetJacobian();
+  const trajopt_ifopt::Jacobian nlp_cnt_jac = constraints_.GetJacobian();
+  const trajopt_ifopt::Jacobian hinge_cnt_jac = hinge_constraints_.GetJacobian();
+  const trajopt_ifopt::Jacobian abs_cnt_jac = abs_constraints_.GetJacobian();
 
   std::vector<Eigen::Triplet<double>> triplets;
   const Eigen::Index nnz_base = nlp_cnt_jac.nonZeros() + hinge_cnt_jac.nonZeros() + abs_cnt_jac.nonZeros();
@@ -897,26 +897,26 @@ void TrajOptQPProblem::Implementation::linearizeConstraints()
 
   // hinge constraints
   for (int k = 0; k < hinge_cnt_jac.outerSize(); ++k)
-    for (SparseMatrix::InnerIterator it(hinge_cnt_jac, k); it; ++it)
+    for (trajopt_ifopt::Jacobian::InnerIterator it(hinge_cnt_jac, k); it; ++it)
       triplets.emplace_back(it.row(), it.col(), it.value());
 
   // abs constraints (shifted rows)
   Eigen::Index current_row_index = hinge_constraints_.GetRows();
   for (int k = 0; k < abs_cnt_jac.outerSize(); ++k)
-    for (SparseMatrix::InnerIterator it(abs_cnt_jac, k); it; ++it)
+    for (trajopt_ifopt::Jacobian::InnerIterator it(abs_cnt_jac, k); it; ++it)
       triplets.emplace_back(current_row_index + it.row(), it.col(), it.value());
 
   // nlp constraints (shift again)
   current_row_index += abs_constraints_.GetRows();
   for (int k = 0; k < nlp_cnt_jac.outerSize(); ++k)
-    for (SparseMatrix::InnerIterator it(nlp_cnt_jac, k); it; ++it)
+    for (trajopt_ifopt::Jacobian::InnerIterator it(nlp_cnt_jac, k); it; ++it)
       triplets.emplace_back(current_row_index + it.row(), it.col(), it.value());
 
   for (const auto& cnt : dyn_constraints_)
   {
-    const SparseMatrix nlp_cnt_jac = cnt->GetJacobian();
+    const trajopt_ifopt::Jacobian nlp_cnt_jac = cnt->GetJacobian();
     for (int k = 0; k < nlp_cnt_jac.outerSize(); ++k)
-      for (SparseMatrix::InnerIterator it(nlp_cnt_jac, k); it; ++it)
+      for (trajopt_ifopt::Jacobian::InnerIterator it(nlp_cnt_jac, k); it; ++it)
         triplets.emplace_back(current_row_index + it.row(), it.col(), it.value());
 
     current_row_index += cnt->GetRows();
@@ -1356,10 +1356,10 @@ const std::vector<std::string>& TrajOptQPProblem::getNLPCostNames() const
 Eigen::Ref<const Eigen::VectorXd> TrajOptQPProblem::getBoxSize() { return impl_->box_size_; }
 Eigen::Ref<const Eigen::VectorXd> TrajOptQPProblem::getConstraintMeritCoeff() { return impl_->constraint_merit_coeff_; }
 
-Eigen::Ref<const SparseMatrix> TrajOptQPProblem::getHessian() { return impl_->hessian_; }
+Eigen::Ref<const trajopt_ifopt::Jacobian> TrajOptQPProblem::getHessian() { return impl_->hessian_; }
 Eigen::Ref<const Eigen::VectorXd> TrajOptQPProblem::getGradient() { return impl_->gradient_; }
 
-Eigen::Ref<const SparseMatrix> TrajOptQPProblem::getConstraintMatrix() { return impl_->constraint_matrix_; }
+Eigen::Ref<const trajopt_ifopt::Jacobian> TrajOptQPProblem::getConstraintMatrix() { return impl_->constraint_matrix_; }
 Eigen::Ref<const Eigen::VectorXd> TrajOptQPProblem::getBoundsLower() { return impl_->bounds_lower_; }
 Eigen::Ref<const Eigen::VectorXd> TrajOptQPProblem::getBoundsUpper() { return impl_->bounds_upper_; }
 

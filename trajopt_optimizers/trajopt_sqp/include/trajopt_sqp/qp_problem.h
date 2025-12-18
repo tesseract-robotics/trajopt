@@ -2,13 +2,8 @@
 #define TRAJOPT_SQP_QP_PROBLEM_BASE_H
 
 #include <memory>
-#include <trajopt_sqp/eigen_types.h>
+#include <trajopt_ifopt/core/eigen_types.h>
 #include <trajopt_ifopt/fwd.h>
-
-namespace trajopt_ifopt
-{
-class DynamicConstraintSet;
-}
 
 namespace trajopt_sqp
 {
@@ -175,10 +170,10 @@ public:
   virtual Eigen::Ref<const Eigen::VectorXd> getBoxSize() = 0;
   virtual Eigen::Ref<const Eigen::VectorXd> getConstraintMeritCoeff() = 0;
 
-  virtual Eigen::Ref<const SparseMatrix> getHessian() = 0;
+  virtual Eigen::Ref<const trajopt_ifopt::Jacobian> getHessian() = 0;
   virtual Eigen::Ref<const Eigen::VectorXd> getGradient() = 0;
 
-  virtual Eigen::Ref<const SparseMatrix> getConstraintMatrix() = 0;
+  virtual Eigen::Ref<const trajopt_ifopt::Jacobian> getConstraintMatrix() = 0;
   virtual Eigen::Ref<const Eigen::VectorXd> getBoundsLower() = 0;
   virtual Eigen::Ref<const Eigen::VectorXd> getBoundsUpper() = 0;
 };

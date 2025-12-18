@@ -203,11 +203,11 @@ bool OSQPEigenSolver::solve()
 
 Eigen::VectorXd OSQPEigenSolver::getSolution() { return solver_->getSolution(); }
 
-bool OSQPEigenSolver::updateHessianMatrix(const SparseMatrix& hessian)
+bool OSQPEigenSolver::updateHessianMatrix(const trajopt_ifopt::Jacobian& hessian)
 {
   // Clean up values close to 0
   // Also multiply by 2 because OSQP is multiplying by (1/2) for the objective fuction
-  const SparseMatrix cleaned = 2.0 * hessian.pruned(1e-7, 1);  // Any value < 1e-7 will be removed
+  const trajopt_ifopt::Jacobian cleaned = 2.0 * hessian.pruned(1e-7, 1);  // Any value < 1e-7 will be removed
 
   if (solver_->isInitialized())
     return solver_->updateHessianMatrix(cleaned);
@@ -252,13 +252,13 @@ bool OSQPEigenSolver::updateBounds(const Eigen::Ref<const Eigen::VectorXd>& lowe
   return success;
 }
 
-bool OSQPEigenSolver::updateLinearConstraintsMatrix(const SparseMatrix& linearConstraintsMatrix)
+bool OSQPEigenSolver::updateLinearConstraintsMatrix(const trajopt_ifopt::Jacobian& linearConstraintsMatrix)
 {
   assert(num_cnts_ == linearConstraintsMatrix.rows());
   assert(num_vars_ == linearConstraintsMatrix.cols());
 
   solver_->data()->clearLinearConstraintsMatrix();
-  const SparseMatrix cleaned = linearConstraintsMatrix.pruned(1e-7, 1);  // Any value < 1e-7 will be removed
+  const trajopt_ifopt::Jacobian cleaned = linearConstraintsMatrix.pruned(1e-7, 1);  // Any value < 1e-7 will be removed
 
   if (solver_->isInitialized())
     return solver_->updateLinearConstraintsMatrix(cleaned);

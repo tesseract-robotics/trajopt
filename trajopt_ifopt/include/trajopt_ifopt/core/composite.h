@@ -38,11 +38,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <Eigen/Sparse>
 
 #include <trajopt_ifopt/core/bounds.h>
+#include <trajopt_ifopt/core/eigen_types.h>
 
 namespace trajopt_ifopt
 {
-using Jacobian = Eigen::SparseMatrix<double, Eigen::RowMajor>;
-
 /**
  * @brief Interface representing either Variable, Cost or Constraint.
  *

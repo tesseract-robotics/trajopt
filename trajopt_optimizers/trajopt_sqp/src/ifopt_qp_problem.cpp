@@ -181,7 +181,7 @@ void IfoptQPProblem::updateGradient()
   // Set the gradient of the NLP costs
   ////////////////////////////////////////////////////////
   gradient_ = Eigen::VectorXd::Zero(num_qp_vars_);
-  const SparseMatrix cost_jac = nlp_->GetJacobianOfCosts();
+  const trajopt_ifopt::Jacobian cost_jac = nlp_->GetJacobianOfCosts();
   /**
    * @note See CostFromFunc::convex in modeling_utils.cpp. Once Hessian has been implemented
    *
@@ -253,7 +253,7 @@ void IfoptQPProblem::updateGradient()
 
 void IfoptQPProblem::linearizeConstraints()
 {
-  const SparseMatrix jac = nlp_->GetJacobianOfConstraints();
+  const trajopt_ifopt::Jacobian jac = nlp_->GetJacobianOfConstraints();
 
   // Create triplet list of nonzero constraints
   using T = Eigen::Triplet<double>;
@@ -263,7 +263,7 @@ void IfoptQPProblem::linearizeConstraints()
   // Add jacobian to triplet list
   for (int k = 0; k < jac.outerSize(); ++k)  // NOLINT
   {
-    for (SparseMatrix::InnerIterator it(jac, k); it; ++it)
+    for (trajopt_ifopt::Jacobian::InnerIterator it(jac, k); it; ++it)
     {
       tripletList.emplace_back(it.row(), it.col(), it.value());
     }
@@ -351,7 +351,7 @@ void IfoptQPProblem::updateConstraintsConstantExpression()
   //       to calculate the merit of the solve.
 
   // The block excludes the slack variables
-  const SparseMatrix jac = constraint_matrix_.block(0, 0, num_nlp_cnts_, num_nlp_vars_);
+  const trajopt_ifopt::Jacobian jac = constraint_matrix_.block(0, 0, num_nlp_cnts_, num_nlp_vars_);
   constraint_constant_ = (cnt_initial_value - jac * x_initial);
 }
 
