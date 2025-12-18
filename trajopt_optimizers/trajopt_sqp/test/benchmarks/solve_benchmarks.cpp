@@ -2,8 +2,6 @@
 TESSERACT_COMMON_IGNORE_WARNINGS_PUSH
 #include <benchmark/benchmark.h>
 #include <algorithm>
-#include <ifopt/problem.h>
-#include <ifopt/constraint_set.h>
 #include <OsqpEigen/Solver.hpp>
 TESSERACT_COMMON_IGNORE_WARNINGS_POP
 
@@ -12,6 +10,8 @@ TESSERACT_COMMON_IGNORE_WARNINGS_POP
 #include <tesseract_kinematics/core/joint_group.h>
 #include <tesseract_urdf/urdf_parser.h>
 
+#include <trajopt_ifopt/core/problem.h>
+#include <trajopt_ifopt/core/constraint_set.h>
 #include <trajopt_ifopt/utils/numeric_differentiation.h>
 #include <trajopt_ifopt/utils/ifopt_utils.h>
 #include <trajopt_ifopt/constraints/collision/continuous_collision_constraint.h>
@@ -38,13 +38,13 @@ using namespace tesseract_scene_graph;
 using namespace tesseract_geometry;
 using namespace tesseract_common;
 
-class SimpleCollisionConstraintIfopt : public ifopt::ConstraintSet
+class SimpleCollisionConstraintIfopt : public ConstraintSet
 {
 public:
   SimpleCollisionConstraintIfopt(DiscreteCollisionEvaluator::Ptr collision_evaluator,
                                  std::shared_ptr<const Var> position_var,
-                                 const std::string& name = "SimpleCollisionConstraint")
-    : ifopt::ConstraintSet(3, name)
+                                 std::string name = "SimpleCollisionConstraint")
+    : ConstraintSet(std::move(name), 3)
     , position_var_(std::move(position_var))
     , collision_evaluator_(std::move(collision_evaluator))
   {
@@ -52,13 +52,13 @@ public:
     n_dof_ = position_var_->size();
     assert(n_dof_ > 0);
 
-    bounds_ = std::vector<ifopt::Bounds>(3, ifopt::BoundSmallerZero);
+    bounds_ = std::vector<Bounds>(3, BoundSmallerZero);
   }
 
   Eigen::VectorXd GetValues() const final { return CalcValues(position_var_->value()); }
 
   // Set the limits on the constraint values
-  std::vector<ifopt::Bounds> GetBounds() const final { return bounds_; }
+  std::vector<trajopt_ifopt::Bounds> GetBounds() const final { return bounds_; }
 
   void FillJacobianBlock(std::string var_set, Jacobian& jac_block) const final
   {
@@ -96,7 +96,7 @@ public:
     return err;
   }
 
-  void SetBounds(const std::vector<ifopt::Bounds>& bounds)
+  void SetBounds(const std::vector<Bounds>& bounds)
   {
     assert(bounds.size() == 3);
     bounds_ = bounds;
@@ -155,10 +155,10 @@ private:
   long n_dof_;
 
   /** @brief Bounds on the constraint value. Default: std::vector<Bounds>(1, ifopt::BoundSmallerZero) */
-  std::vector<ifopt::Bounds> bounds_;
+  std::vector<Bounds> bounds_;
 
   /** @brief Pointers to the vars used by this constraint. */
-  std::shared_ptr<const trajopt_ifopt::Var> position_var_;
+  std::shared_ptr<const Var> position_var_;
 
   DiscreteCollisionEvaluator::Ptr collision_evaluator_;
 };
@@ -170,7 +170,7 @@ static void BM_TRAJOPT_IFOPT_SIMPLE_COLLISION_SOLVE(benchmark::State& state, con
   {
     auto qp_problem = std::make_shared<trajopt_sqp::TrajOptQPProblem>();
     tesseract_kinematics::JointGroup::ConstPtr manip = env->getJointGroup("manipulator");
-    const std::vector<ifopt::Bounds> bounds = trajopt_ifopt::toBounds(manip->getLimits().joint_limits);
+    const std::vector<Bounds> bounds = toBounds(manip->getLimits().joint_limits);
 
     // Add Variables
     std::vector<std::unique_ptr<Node>> nodes;
@@ -188,27 +188,25 @@ static void BM_TRAJOPT_IFOPT_SIMPLE_COLLISION_SOLVE(benchmark::State& state, con
     auto trajopt_collision_cnt_config = std::make_shared<trajopt_common::TrajOptCollisionConfig>(0.2, 1);
     trajopt_collision_cnt_config->collision_margin_buffer = 0.05;
 
-    auto collision_cnt_cache = std::make_shared<trajopt_ifopt::CollisionCache>(100);
-    trajopt_ifopt::DiscreteCollisionEvaluator::Ptr collision_cnt_evaluator =
-        std::make_shared<trajopt_ifopt::SingleTimestepCollisionEvaluator>(
-            collision_cnt_cache, manip, env, *trajopt_collision_cnt_config);
+    auto collision_cnt_cache = std::make_shared<CollisionCache>(100);
+    DiscreteCollisionEvaluator::Ptr collision_cnt_evaluator = std::make_shared<SingleTimestepCollisionEvaluator>(
+        collision_cnt_cache, manip, env, *trajopt_collision_cnt_config);
     auto collision_cnt = std::make_shared<SimpleCollisionConstraintIfopt>(collision_cnt_evaluator, vars[0]);
     qp_problem->addConstraintSet(collision_cnt);
 
     auto trajopt_collision_cost_config = std::make_shared<trajopt_common::TrajOptCollisionConfig>(0.3, 1);
     trajopt_collision_cost_config->collision_margin_buffer = 0.05;
 
-    auto collision_cost_cache = std::make_shared<trajopt_ifopt::CollisionCache>(100);
-    trajopt_ifopt::DiscreteCollisionEvaluator::Ptr collision_cost_evaluator =
-        std::make_shared<trajopt_ifopt::SingleTimestepCollisionEvaluator>(
-            collision_cost_cache, manip, env, *trajopt_collision_cost_config);
+    auto collision_cost_cache = std::make_shared<CollisionCache>(100);
+    DiscreteCollisionEvaluator::Ptr collision_cost_evaluator = std::make_shared<SingleTimestepCollisionEvaluator>(
+        collision_cost_cache, manip, env, *trajopt_collision_cost_config);
     auto collision_cost = std::make_shared<SimpleCollisionConstraintIfopt>(collision_cost_evaluator, vars[0]);
     qp_problem->addCostSet(collision_cost, trajopt_sqp::CostPenaltyType::HINGE);
 
     Eigen::VectorXd coeffs = Eigen::VectorXd::Constant(2, 1);
     for (const auto& var : vars)
     {
-      auto jp_cost = std::make_shared<trajopt_ifopt::JointPosConstraint>(Eigen::Vector2d(0, 0), var, coeffs);
+      auto jp_cost = std::make_shared<JointPosConstraint>(Eigen::Vector2d(0, 0), var, coeffs);
       qp_problem->addCostSet(jp_cost, trajopt_sqp::CostPenaltyType::SQUARED);
     }
 
@@ -237,7 +235,7 @@ static void BM_TRAJOPT_IFOPT_PLANNING_SOLVE(benchmark::State& state, const Envir
   {
     auto qp_problem = std::make_shared<trajopt_sqp::TrajOptQPProblem>();
     tesseract_kinematics::JointGroup::ConstPtr manip = env->getJointGroup("right_arm");
-    const std::vector<ifopt::Bounds> bounds = trajopt_ifopt::toBounds(manip->getLimits().joint_limits);
+    const std::vector<Bounds> bounds = toBounds(manip->getLimits().joint_limits);
 
     // Initial trajectory
     tesseract_common::TrajArray trajectory(6, 7);
@@ -280,16 +278,16 @@ static void BM_TRAJOPT_IFOPT_PLANNING_SOLVE(benchmark::State& state, const Envir
 
     {  // Fix end position
       Eigen::VectorXd coeffs = Eigen::VectorXd::Constant(manip->numJoints(), 5);
-      auto cnt = std::make_shared<trajopt_ifopt::JointPosConstraint>(trajectory.row(5), vars[5], coeffs);
+      auto cnt = std::make_shared<JointPosConstraint>(trajectory.row(5), vars[5], coeffs);
       qp_problem->addConstraintSet(cnt);
     }
 
-    auto collision_cache = std::make_shared<trajopt_ifopt::CollisionCache>(100);
+    auto collision_cache = std::make_shared<CollisionCache>(100);
     std::array<bool, 2> position_vars_fixed{ false, false };
     for (std::size_t i = 1; i < (vars.size() - 1); ++i)
     {
-      auto collision_evaluator = std::make_shared<trajopt_ifopt::LVSContinuousCollisionEvaluator>(
-          collision_cache, manip, env, *trajopt_collision_config);
+      auto collision_evaluator =
+          std::make_shared<LVSContinuousCollisionEvaluator>(collision_cache, manip, env, *trajopt_collision_config);
 
       std::array<std::shared_ptr<const Var>, 2> position_vars{ vars[i - 1], vars[i] };
 
@@ -300,7 +298,7 @@ static void BM_TRAJOPT_IFOPT_PLANNING_SOLVE(benchmark::State& state, const Envir
       else
         position_vars_fixed = { false, false };
 
-      auto cnt = std::make_shared<trajopt_ifopt::ContinuousCollisionConstraint>(
+      auto cnt = std::make_shared<ContinuousCollisionConstraint>(
           collision_evaluator, position_vars, position_vars_fixed[0], position_vars_fixed[1], 5);
 
       qp_problem->addCostSet(cnt, trajopt_sqp::CostPenaltyType::HINGE);

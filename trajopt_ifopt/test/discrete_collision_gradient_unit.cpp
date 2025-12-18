@@ -33,13 +33,10 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <tesseract_state_solver/state_solver.h>
 #include <tesseract_environment/environment.h>
 #include <tesseract_environment/utils.h>
-#include <ifopt/problem.h>
-#include <ifopt/ipopt_solver.h>
 #include <trajopt_common/collision_types.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
-#include <trajopt_ifopt/utils/numeric_differentiation.h>
-#include <trajopt_ifopt/utils/ifopt_utils.h>
+#include <trajopt_ifopt/core/problem.h>
 #include <trajopt_ifopt/constraints/collision/continuous_collision_constraint.h>
 #include <trajopt_ifopt/constraints/collision/continuous_collision_evaluators.h>
 #include <trajopt_ifopt/constraints/collision/discrete_collision_constraint.h>
@@ -49,6 +46,8 @@ TRAJOPT_IGNORE_WARNINGS_POP
 #include <trajopt_ifopt/variable_sets/node.h>
 #include <trajopt_ifopt/variable_sets/var.h>
 #include <trajopt_ifopt/costs/squared_cost.h>
+#include <trajopt_ifopt/utils/numeric_differentiation.h>
+#include <trajopt_ifopt/utils/ifopt_utils.h>
 
 using namespace trajopt_ifopt;
 using namespace tesseract_environment;
@@ -84,7 +83,7 @@ void runDiscreteGradientTest(const Environment::Ptr& env, double coeff)
   tesseract_scene_graph::StateSolver::Ptr const state_solver = env->getStateSolver();
   DiscreteContactManager::Ptr const manager = env->getDiscreteContactManager();
   const tesseract_kinematics::JointGroup::ConstPtr manip = env->getJointGroup("manipulator");
-  const std::vector<ifopt::Bounds> bounds = trajopt_ifopt::toBounds(manip->getLimits().joint_limits);
+  const std::vector<Bounds> bounds = toBounds(manip->getLimits().joint_limits);
 
   manager->setActiveCollisionObjects(manip->getActiveLinkNames());
   manager->setDefaultCollisionMargin(0);
@@ -92,21 +91,21 @@ void runDiscreteGradientTest(const Environment::Ptr& env, double coeff)
   collisions.clear();
 
   // 2) Create the problem
-  ifopt::Problem nlp;
+  Problem nlp;
 
   // 3) Add Variables
-  std::vector<std::unique_ptr<trajopt_ifopt::Node>> nodes;
-  std::vector<std::shared_ptr<const trajopt_ifopt::Var>> vars;
+  std::vector<std::unique_ptr<Node>> nodes;
+  std::vector<std::shared_ptr<const Var>> vars;
   std::vector<Eigen::VectorXd> positions;
   {
-    nodes.push_back(std::make_unique<trajopt_ifopt::Node>("Joint_Position_0"));
+    nodes.push_back(std::make_unique<Node>("Joint_Position_0"));
     Eigen::VectorXd pos(2);
     pos << -0.75, 0.75;
     positions.push_back(pos);
     vars.push_back(nodes.back()->addVar("position", manip->getJointNames(), pos, bounds));
   }
 
-  nlp.AddVariableSet(std::make_shared<trajopt_ifopt::NodesVariables>("joint_trajectory", std::move(nodes)));
+  nlp.AddVariableSet(std::make_shared<NodesVariables>("joint_trajectory", std::move(nodes)));
 
   // Step 3: Setup collision
   const double margin_coeff = coeff;
@@ -114,16 +113,15 @@ void runDiscreteGradientTest(const Environment::Ptr& env, double coeff)
   trajopt_common::TrajOptCollisionConfig trajopt_collision_config(margin, margin_coeff);
   trajopt_collision_config.collision_margin_buffer = 0.0;  // 0.05
 
-  auto collision_cache = std::make_shared<trajopt_ifopt::CollisionCache>(100);
-  auto collision_evaluator = std::make_shared<trajopt_ifopt::SingleTimestepCollisionEvaluator>(
-      collision_cache, manip, env, trajopt_collision_config);
-  auto cnt = std::make_shared<trajopt_ifopt::DiscreteCollisionConstraint>(collision_evaluator, vars[0], 3);
+  auto collision_cache = std::make_shared<CollisionCache>(100);
+  auto collision_evaluator =
+      std::make_shared<SingleTimestepCollisionEvaluator>(collision_cache, manip, env, trajopt_collision_config);
+  auto cnt = std::make_shared<DiscreteCollisionConstraint>(collision_evaluator, vars[0], 3);
   nlp.AddConstraintSet(cnt);
 
   std::cout << "Jacobian: \n" << nlp.GetJacobianOfConstraints().toDense() << '\n';
 
-  trajopt_ifopt::SparseMatrix const num_jac_block =
-      trajopt_ifopt::calcNumericalConstraintGradient(positions[0].data(), nlp, 1e-8);
+  Jacobian const num_jac_block = calcNumericalConstraintGradient(positions[0].data(), nlp, 1e-8);
   std::cout << "Numerical Jacobian: \n" << num_jac_block.toDense() << '\n';
 }
 

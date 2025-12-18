@@ -26,7 +26,6 @@
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <ctime>
 #include <gtest/gtest.h>
-#include <ifopt/problem.h>
 #include <console_bridge/console.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 #include <trajopt_ifopt/constraints/joint_position_constraint.h>
@@ -49,14 +48,14 @@ TEST(JointTermsUnit, JointPosConstraintUnit)  // NOLINT
   const std::vector<std::string> joint_names(10, "name");
   Eigen::VectorXd init_vals(10);
   init_vals << 0, 1, 2, 3, 4, 5, 6, 7, 8, 9;
-  std::vector<ifopt::Bounds> bounds(10, ifopt::NoBound);
+  std::vector<Bounds> bounds(10, NoBound);
 
   auto node = std::make_unique<Node>();
   std::shared_ptr<const Var> position_var = node->addVar("state", joint_names, init_vals, bounds);
   std::vector<std::unique_ptr<Node>> nodes;
   nodes.push_back(std::move(node));
 
-  auto variables = std::make_shared<ifopt::Composite>("variable-sets", false);
+  auto variables = std::make_shared<Composite>("variable-sets", false, false);
   variables->AddComponent(std::make_shared<NodesVariables>("joint_trajectory", std::move(nodes)));
 
   std::vector<Eigen::VectorXd> targets;
@@ -80,8 +79,8 @@ TEST(JointTermsUnit, JointPosConstraintUnit)  // NOLINT
   // Test forward diff
   EXPECT_TRUE(position_vals.isApprox(init_vals, 1e-6));
 
-  ifopt::ConstraintSet::Jacobian jac = position_cnt.GetJacobian();
-  ifopt::Problem::Jacobian num_jac = trajopt_ifopt::calcNumericalConstraintGradient(*variables, position_cnt);
+  Jacobian jac = position_cnt.GetJacobian();
+  Jacobian num_jac = calcNumericalConstraintGradient(*variables, position_cnt);
 
   EXPECT_EQ(jac.rows(), target.size());
   EXPECT_EQ(jac.cols(), target.size());
@@ -114,7 +113,7 @@ TEST(JointTermsUnit, JointVelConstraintUnit)  // NOLINT
     auto node = std::make_unique<Node>();
     const std::string var_id = "test_var_" + std::to_string(position_vars.size());
     const std::vector<std::string> joint_names{ "x", "y" };
-    std::vector<ifopt::Bounds> bounds(2, ifopt::NoBound);
+    std::vector<Bounds> bounds(2, NoBound);
     Eigen::VectorXd vals(2);
     vals << f(i), f(i);
     position_vars.push_back(node->addVar(var_id, joint_names, vals, bounds));
@@ -122,7 +121,7 @@ TEST(JointTermsUnit, JointVelConstraintUnit)  // NOLINT
 
     x_vals.push_back(i);
   }
-  auto variables = std::make_shared<ifopt::Composite>("variable-sets", false);
+  auto variables = std::make_shared<Composite>("variable-sets", false, false);
   variables->AddComponent(std::make_shared<NodesVariables>("joint_trajectory", std::move(nodes)));
 
   Eigen::VectorXd targets(2);
@@ -151,8 +150,8 @@ TEST(JointTermsUnit, JointVelConstraintUnit)  // NOLINT
     }
   }
 
-  ifopt::ConstraintSet::Jacobian jac = velocity_cnt.GetJacobian();
-  ifopt::Problem::Jacobian num_jac = trajopt_ifopt::calcNumericalConstraintGradient(*variables, velocity_cnt);
+  Jacobian jac = velocity_cnt.GetJacobian();
+  Jacobian num_jac = calcNumericalConstraintGradient(*variables, velocity_cnt);
   EXPECT_EQ(jac.rows(), static_cast<Eigen::Index>(x_vals.size() - 1) * targets.size());
   EXPECT_EQ(jac.cols(), static_cast<Eigen::Index>(x_vals.size()) * targets.size());
 
@@ -184,7 +183,7 @@ TEST(JointTermsUnit, JointVelConstraintMinimumUnit)  // NOLINT
     auto node = std::make_unique<Node>();
     const std::string var_id = "test_var_" + std::to_string(position_vars.size());
     const std::vector<std::string> joint_names{ "x", "y" };
-    std::vector<ifopt::Bounds> bounds(2, ifopt::NoBound);
+    std::vector<Bounds> bounds(2, NoBound);
     Eigen::VectorXd vals(2);
     vals << f(i), f(i);
     position_vars.push_back(node->addVar(var_id, joint_names, vals, bounds));
@@ -193,7 +192,7 @@ TEST(JointTermsUnit, JointVelConstraintMinimumUnit)  // NOLINT
     x_vals.push_back(i);
   }
 
-  auto variables = std::make_shared<ifopt::Composite>("variable-sets", false);
+  auto variables = std::make_shared<Composite>("variable-sets", false, false);
   variables->AddComponent(std::make_shared<NodesVariables>("joint_trajectory", std::move(nodes)));
 
   Eigen::VectorXd targets(2);
@@ -222,8 +221,8 @@ TEST(JointTermsUnit, JointVelConstraintMinimumUnit)  // NOLINT
     }
   }
 
-  ifopt::ConstraintSet::Jacobian jac = velocity_cnt.GetJacobian();
-  ifopt::Problem::Jacobian num_jac = trajopt_ifopt::calcNumericalConstraintGradient(*variables, velocity_cnt);
+  Jacobian jac = velocity_cnt.GetJacobian();
+  Jacobian num_jac = calcNumericalConstraintGradient(*variables, velocity_cnt);
 
   EXPECT_EQ(jac.rows(), static_cast<Eigen::Index>(x_vals.size() - 1) * targets.size());
   EXPECT_EQ(jac.cols(), static_cast<Eigen::Index>(x_vals.size()) * targets.size());
@@ -256,7 +255,7 @@ TEST(JointTermsUnit, JointAccelConstraintUnit)  // NOLINT
     auto node = std::make_unique<Node>();
     const std::string var_id = "test_var_" + std::to_string(position_vars.size());
     const std::vector<std::string> joint_names{ "x", "y" };
-    std::vector<ifopt::Bounds> bounds(2, ifopt::NoBound);
+    std::vector<Bounds> bounds(2, NoBound);
     Eigen::VectorXd vals(2);
     vals << f(i), f(i);
     position_vars.push_back(node->addVar(var_id, joint_names, vals, bounds));
@@ -265,7 +264,7 @@ TEST(JointTermsUnit, JointAccelConstraintUnit)  // NOLINT
     x_vals.push_back(i);
   }
 
-  auto variables = std::make_shared<ifopt::Composite>("variable-sets", false);
+  auto variables = std::make_shared<Composite>("variable-sets", false, false);
   variables->AddComponent(std::make_shared<NodesVariables>("joint_trajectory", std::move(nodes)));
 
   Eigen::VectorXd targets(2);
@@ -304,8 +303,8 @@ TEST(JointTermsUnit, JointAccelConstraintUnit)  // NOLINT
     }
   }
 
-  ifopt::ConstraintSet::Jacobian jac = accel_cnt.GetJacobian();
-  ifopt::Problem::Jacobian num_jac = trajopt_ifopt::calcNumericalConstraintGradient(*variables, accel_cnt);
+  Jacobian jac = accel_cnt.GetJacobian();
+  Jacobian num_jac = calcNumericalConstraintGradient(*variables, accel_cnt);
 
   EXPECT_EQ(jac.rows(), static_cast<Eigen::Index>(x_vals.size()) * targets.size());
   EXPECT_EQ(jac.cols(), static_cast<Eigen::Index>(x_vals.size()) * targets.size());
@@ -338,7 +337,7 @@ TEST(JointTermsUnit, JointAccelConstraintMinimumUnit)  // NOLINT
     auto node = std::make_unique<Node>();
     const std::string var_id = "test_var_" + std::to_string(position_vars.size());
     const std::vector<std::string> joint_names{ "x", "y" };
-    std::vector<ifopt::Bounds> bounds(2, ifopt::NoBound);
+    std::vector<Bounds> bounds(2, NoBound);
     Eigen::VectorXd vals(2);
     vals << f(i), f(i);
     position_vars.push_back(node->addVar(var_id, joint_names, vals, bounds));
@@ -347,7 +346,7 @@ TEST(JointTermsUnit, JointAccelConstraintMinimumUnit)  // NOLINT
     x_vals.push_back(i);
   }
 
-  auto variables = std::make_shared<ifopt::Composite>("variable-sets", false);
+  auto variables = std::make_shared<Composite>("variable-sets", false, false);
   variables->AddComponent(std::make_shared<NodesVariables>("joint_trajectory", std::move(nodes)));
 
   Eigen::VectorXd targets(2);
@@ -386,8 +385,8 @@ TEST(JointTermsUnit, JointAccelConstraintMinimumUnit)  // NOLINT
     }
   }
 
-  ifopt::ConstraintSet::Jacobian jac = accel_cnt.GetJacobian();
-  ifopt::Problem::Jacobian num_jac = trajopt_ifopt::calcNumericalConstraintGradient(*variables, accel_cnt);
+  Jacobian jac = accel_cnt.GetJacobian();
+  Jacobian num_jac = calcNumericalConstraintGradient(*variables, accel_cnt);
 
   EXPECT_EQ(jac.rows(), static_cast<Eigen::Index>(x_vals.size()) * targets.size());
   EXPECT_EQ(jac.cols(), static_cast<Eigen::Index>(x_vals.size()) * targets.size());
@@ -420,7 +419,7 @@ TEST(JointTermsUnit, JointJerkConstraintUnit)  // NOLINT
     auto node = std::make_unique<Node>();
     const std::string var_id = "test_var_" + std::to_string(position_vars.size());
     const std::vector<std::string> joint_names{ "x", "y" };
-    std::vector<ifopt::Bounds> bounds(2, ifopt::NoBound);
+    std::vector<Bounds> bounds(2, NoBound);
     Eigen::VectorXd vals(2);
     vals << f(i), f(i);
     position_vars.push_back(node->addVar(var_id, joint_names, vals, bounds));
@@ -429,7 +428,7 @@ TEST(JointTermsUnit, JointJerkConstraintUnit)  // NOLINT
     x_vals.push_back(i);
   }
 
-  auto variables = std::make_shared<ifopt::Composite>("variable-sets", false);
+  auto variables = std::make_shared<Composite>("variable-sets", false, false);
   variables->AddComponent(std::make_shared<NodesVariables>("joint_trajectory", std::move(nodes)));
 
   Eigen::VectorXd targets(2);
@@ -469,8 +468,8 @@ TEST(JointTermsUnit, JointJerkConstraintUnit)  // NOLINT
     }
   }
 
-  ifopt::ConstraintSet::Jacobian jac = jerk_cnt.GetJacobian();
-  ifopt::Problem::Jacobian num_jac = trajopt_ifopt::calcNumericalConstraintGradient(*variables, jerk_cnt);
+  Jacobian jac = jerk_cnt.GetJacobian();
+  Jacobian num_jac = calcNumericalConstraintGradient(*variables, jerk_cnt);
 
   EXPECT_EQ(jac.rows(), static_cast<Eigen::Index>(x_vals.size()) * targets.size());
   EXPECT_EQ(jac.cols(), static_cast<Eigen::Index>(x_vals.size()) * targets.size());
@@ -503,7 +502,7 @@ TEST(JointTermsUnit, JointJerkConstraintMinimumUnit)  // NOLINT
     auto node = std::make_unique<Node>();
     const std::string var_id = "test_var_" + std::to_string(position_vars.size());
     const std::vector<std::string> joint_names{ "x", "y" };
-    std::vector<ifopt::Bounds> bounds(2, ifopt::NoBound);
+    std::vector<Bounds> bounds(2, NoBound);
     Eigen::VectorXd vals(2);
     vals << f(i), f(i);
     position_vars.push_back(node->addVar(var_id, joint_names, vals, bounds));
@@ -512,7 +511,7 @@ TEST(JointTermsUnit, JointJerkConstraintMinimumUnit)  // NOLINT
     x_vals.push_back(i);
   }
 
-  auto variables = std::make_shared<ifopt::Composite>("variable-sets", false);
+  auto variables = std::make_shared<Composite>("variable-sets", false, false);
   variables->AddComponent(std::make_shared<NodesVariables>("joint_trajectory", std::move(nodes)));
 
   Eigen::VectorXd targets(2);
@@ -551,8 +550,8 @@ TEST(JointTermsUnit, JointJerkConstraintMinimumUnit)  // NOLINT
     }
   }
 
-  ifopt::ConstraintSet::Jacobian jac = jerk_cnt.GetJacobian();
-  ifopt::Problem::Jacobian num_jac = trajopt_ifopt::calcNumericalConstraintGradient(*variables, jerk_cnt);
+  Jacobian jac = jerk_cnt.GetJacobian();
+  Jacobian num_jac = calcNumericalConstraintGradient(*variables, jerk_cnt);
 
   EXPECT_EQ(jac.rows(), static_cast<Eigen::Index>(x_vals.size()) * targets.size());
   EXPECT_EQ(jac.cols(), static_cast<Eigen::Index>(x_vals.size()) * targets.size());

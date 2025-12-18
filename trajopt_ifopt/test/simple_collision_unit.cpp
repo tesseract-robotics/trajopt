@@ -32,8 +32,6 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <tesseract_state_solver/state_solver.h>
 #include <tesseract_environment/environment.h>
 #include <tesseract_environment/utils.h>
-#include <ifopt/problem.h>
-#include <ifopt/ipopt_solver.h>
 #include <trajopt_common/collision_types.h>
 #include <console_bridge/console.h>
 TRAJOPT_IGNORE_WARNINGS_POP
@@ -85,7 +83,7 @@ TEST_F(SimpleCollisionTest, spheres)  // NOLINT
   auto state_solver = env->getStateSolver();
   DiscreteContactManager::Ptr const manager = env->getDiscreteContactManager();
   const tesseract_kinematics::JointGroup::ConstPtr manip = env->getJointGroup("manipulator");
-  const std::vector<ifopt::Bounds> bounds = trajopt_ifopt::toBounds(manip->getLimits().joint_limits);
+  const std::vector<Bounds> bounds = toBounds(manip->getLimits().joint_limits);
 
   manager->setActiveCollisionObjects(manip->getActiveLinkNames());
   manager->setDefaultCollisionMargin(0);
@@ -96,17 +94,17 @@ TEST_F(SimpleCollisionTest, spheres)  // NOLINT
   ifopt::Problem nlp;
 
   // 3) Add Variables
-  std::vector<std::unique_ptr<trajopt_ifopt::Node>> nodes;
-  std::vector<std::shared_ptr<const trajopt_ifopt::Var>> vars;
+  std::vector<std::unique_ptr<Node>> nodes;
+  std::vector<std::shared_ptr<const Var>> vars;
   std::vector<Eigen::VectorXd> positions;
   {
-    nodes.push_back(std::make_unique<trajopt_ifopt::Node>("Joint_Position_0"));
+    nodes.push_back(std::make_unique<Node>("Joint_Position_0"));
     Eigen::VectorXd pos(2);
     pos << -0.75, 0.75;
     positions.push_back(pos);
     vars.push_back(nodes.back()->addVar("position", manip->getJointNames(), pos, bounds));
   }
-  nlp.AddVariableSet(std::make_shared<trajopt_ifopt::NodesVariables>("joint_trajectory", std::move(nodes)));
+  nlp.AddVariableSet(std::make_shared<NodesVariables>("joint_trajectory", std::move(nodes)));
 
   // Step 3: Setup collision
   const double margin_coeff = 10;
@@ -114,12 +112,11 @@ TEST_F(SimpleCollisionTest, spheres)  // NOLINT
   trajopt_common::TrajOptCollisionConfig trajopt_collision_config(margin, margin_coeff);
   trajopt_collision_config.collision_margin_buffer = 0.05;
 
-  auto collision_cache = std::make_shared<trajopt_ifopt::CollisionCache>(100);
-  const trajopt_ifopt::DiscreteCollisionEvaluator::Ptr collision_evaluator =
-      std::make_shared<trajopt_ifopt::SingleTimestepCollisionEvaluator>(
-          collision_cache, manip, env, trajopt_collision_config);
+  auto collision_cache = std::make_shared<CollisionCache>(100);
+  const DiscreteCollisionEvaluator::Ptr collision_evaluator =
+      std::make_shared<SingleTimestepCollisionEvaluator>(collision_cache, manip, env, trajopt_collision_config);
 
-  auto cnt = std::make_shared<trajopt_ifopt::DiscreteCollisionConstraint>(collision_evaluator, vars[0], 3, true);
+  auto cnt = std::make_shared<DiscreteCollisionConstraint>(collision_evaluator, vars[0], 3, true);
   nlp.AddConstraintSet(cnt);
 
   nlp.PrintCurrent();

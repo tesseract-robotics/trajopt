@@ -28,8 +28,6 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 
 #include <OsqpEigen/OsqpEigen.h>
 
-#include <ifopt/problem.h>
-#include <ifopt/ipopt_solver.h>
 #include <console_bridge/console.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
@@ -73,7 +71,7 @@ void runJerkConstraintOptimizationTest(const trajopt_sqp::QPProblem::Ptr& qp_pro
 
   // 2) Add Variables
   const std::vector<std::string> joint_names(7, "name");
-  const auto bounds = std::vector<ifopt::Bounds>(7, ifopt::NoBound);
+  const auto bounds = std::vector<trajopt_ifopt::Bounds>(7, trajopt_ifopt::NoBound);
   std::vector<std::unique_ptr<trajopt_ifopt::Node>> nodes;
   std::vector<std::shared_ptr<const trajopt_ifopt::Var>> vars;
   for (int ind = 0; ind < 6; ind++)

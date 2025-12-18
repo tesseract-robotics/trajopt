@@ -1,4 +1,0 @@
-- git:
-    local-name: ifopt
-    uri: https://github.com/ethz-adrl/ifopt.git
-    version: master

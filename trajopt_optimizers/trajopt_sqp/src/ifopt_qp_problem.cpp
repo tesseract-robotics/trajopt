@@ -25,25 +25,26 @@
 #include <trajopt_ifopt/utils/ifopt_utils.h>
 #include <trajopt_ifopt/costs/squared_cost.h>
 #include <trajopt_ifopt/costs/absolute_cost.h>
-#include <ifopt/problem.h>
+#include <trajopt_ifopt/core/problem.h>
 #include <iostream>
 
 namespace trajopt_sqp
 {
-IfoptQPProblem::IfoptQPProblem() : nlp_(std::make_shared<ifopt::Problem>()) {}
-IfoptQPProblem::IfoptQPProblem(std::shared_ptr<ifopt::Problem> nlp) : nlp_(std::move(nlp)) {}
+IfoptQPProblem::IfoptQPProblem() : nlp_(std::make_shared<trajopt_ifopt::Problem>()) {}
+IfoptQPProblem::IfoptQPProblem(std::shared_ptr<trajopt_ifopt::Problem> nlp) : nlp_(std::move(nlp)) {}
 
-void IfoptQPProblem::addVariableSet(std::shared_ptr<ifopt::VariableSet> variable_set)
+void IfoptQPProblem::addVariableSet(std::shared_ptr<trajopt_ifopt::VariableSet> variable_set)
 {
-  nlp_->AddVariableSet(variable_set);
+  nlp_->AddVariableSet(std::move(variable_set));
 }
 
-void IfoptQPProblem::addConstraintSet(std::shared_ptr<ifopt::ConstraintSet> constraint_set)
+void IfoptQPProblem::addConstraintSet(std::shared_ptr<trajopt_ifopt::ConstraintSet> constraint_set)
 {
-  nlp_->AddConstraintSet(constraint_set);
+  nlp_->AddConstraintSet(std::move(constraint_set));
 }
 
-void IfoptQPProblem::addCostSet(std::shared_ptr<ifopt::ConstraintSet> constraint_set, CostPenaltyType penalty_type)
+void IfoptQPProblem::addCostSet(std::shared_ptr<trajopt_ifopt::ConstraintSet> constraint_set,
+                                CostPenaltyType penalty_type)
 {
   switch (penalty_type)
   {
@@ -52,7 +53,7 @@ void IfoptQPProblem::addCostSet(std::shared_ptr<ifopt::ConstraintSet> constraint
       // Must link the variables to the constraint since that happens in AddConstraintSet
       constraint_set->LinkWithVariables(nlp_->GetOptVariables());
       auto cost = std::make_shared<trajopt_ifopt::SquaredCost>(constraint_set);
-      nlp_->AddCostSet(cost);
+      nlp_->AddCostSet(std::move(cost));
       break;
     }
     case CostPenaltyType::ABSOLUTE:
@@ -60,7 +61,7 @@ void IfoptQPProblem::addCostSet(std::shared_ptr<ifopt::ConstraintSet> constraint
       // Must link the variables to the constraint since that happens in AddConstraintSet
       constraint_set->LinkWithVariables(nlp_->GetOptVariables());
       auto cost = std::make_shared<trajopt_ifopt::AbsoluteCost>(constraint_set);
-      nlp_->AddCostSet(cost);
+      nlp_->AddCostSet(std::move(cost));
       break;
     }
     default:
@@ -97,11 +98,11 @@ void IfoptQPProblem::setup()
   Eigen::VectorXd nlp_bounds_l(num_nlp_cnts_);
   Eigen::VectorXd nlp_bounds_u(num_nlp_cnts_);
   // Convert constraint bounds to VectorXd
-  std::vector<ifopt::Bounds> cnt_bounds = nlp_->GetBoundsOnConstraints();
+  std::vector<trajopt_ifopt::Bounds> cnt_bounds = nlp_->GetBoundsOnConstraints();
   for (Eigen::Index i = 0; i < num_nlp_cnts_; i++)
   {
-    nlp_bounds_l[i] = cnt_bounds[static_cast<std::size_t>(i)].lower_;
-    nlp_bounds_u[i] = cnt_bounds[static_cast<std::size_t>(i)].upper_;
+    nlp_bounds_l[i] = cnt_bounds[static_cast<std::size_t>(i)].lower;
+    nlp_bounds_u[i] = cnt_bounds[static_cast<std::size_t>(i)].upper;
   }
 
   // Detect constraint type
@@ -357,11 +358,11 @@ void IfoptQPProblem::updateNLPConstraintBounds()
   Eigen::VectorXd cnt_bound_upper(num_nlp_cnts_);
 
   // Convert constraint bounds to VectorXd
-  std::vector<ifopt::Bounds> cnt_bounds = nlp_->GetBoundsOnConstraints();
+  std::vector<trajopt_ifopt::Bounds> cnt_bounds = nlp_->GetBoundsOnConstraints();
   for (Eigen::Index i = 0; i < num_nlp_cnts_; i++)
   {
-    cnt_bound_lower[i] = cnt_bounds[static_cast<std::size_t>(i)].lower_;
-    cnt_bound_upper[i] = cnt_bounds[static_cast<std::size_t>(i)].upper_;
+    cnt_bound_lower[i] = cnt_bounds[static_cast<std::size_t>(i)].lower;
+    cnt_bound_upper[i] = cnt_bounds[static_cast<std::size_t>(i)].upper;
   }
 
   const Eigen::VectorXd linearized_cnt_lower = cnt_bound_lower - constraint_constant_;
@@ -378,14 +379,14 @@ void IfoptQPProblem::updateNLPVariableBounds()
   const Eigen::VectorXd x_initial = nlp_->GetVariableValues();
 
   // Set the variable limits once
-  const std::vector<ifopt::Bounds> var_bounds = nlp_->GetBoundsOnOptimizationVariables();
+  const std::vector<trajopt_ifopt::Bounds> var_bounds = nlp_->GetBoundsOnOptimizationVariables();
   Eigen::VectorXd var_bounds_lower(num_nlp_vars_);
   Eigen::VectorXd var_bounds_upper(num_nlp_vars_);
   for (Eigen::Index i = 0; i < num_nlp_vars_; i++)
   {
     const auto& bounds = var_bounds[static_cast<std::size_t>(i)];
-    var_bounds_lower[i] = bounds.lower_;
-    var_bounds_upper[i] = bounds.upper_;
+    var_bounds_lower[i] = bounds.lower;
+    var_bounds_upper[i] = bounds.upper;
   }
 
   // Calculate box constraints, while limiting to variable bounds and maintaining the trust region size

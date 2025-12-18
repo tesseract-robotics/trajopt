@@ -18,6 +18,16 @@
 
 namespace trajopt_ifopt
 {
+// Core
+struct Bounds;
+class Component;
+class Composite;
+class ConstraintSet;
+class CostTerm;
+class DynamicConstraintSet;
+class Problem;
+class VariableSet;
+
 // variable_sets
 class NodesVariables;
 class Node;

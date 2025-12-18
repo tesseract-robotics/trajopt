@@ -27,7 +27,6 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <ctime>
 #include <gtest/gtest.h>
 #include <console_bridge/console.h>
-#include <ifopt/problem.h>
 #include <tesseract_common/resource_locator.h>
 #include <tesseract_kinematics/core/joint_group.h>
 #include <tesseract_environment/environment.h>
@@ -36,6 +35,7 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt_common/utils.hpp>
+#include <trajopt_ifopt/core/problem.h>
 #include <trajopt_ifopt/constraints/cartesian_position_constraint.h>
 #include <trajopt_ifopt/variable_sets/nodes_variables.h>
 #include <trajopt_ifopt/variable_sets/node.h>
@@ -57,7 +57,7 @@ class CartesianPositionConstraintUnit : public testing::TestWithParam<const char
 {
 public:
   Environment::Ptr env = std::make_shared<Environment>();
-  ifopt::Problem nlp;
+  Problem nlp;
 
   tesseract_kinematics::JointGroup::ConstPtr kin_group;
   CartPosConstraint::Ptr constraint;
@@ -78,18 +78,18 @@ public:
     kin_group = env->getJointGroup("right_arm");
     n_dof = kin_group->numJoints();
 
-    const std::vector<ifopt::Bounds> bounds(static_cast<std::size_t>(n_dof), ifopt::NoBound);
+    const std::vector<Bounds> bounds(static_cast<std::size_t>(n_dof), NoBound);
     auto pos = Eigen::VectorXd::Ones(n_dof);
-    auto node = std::make_unique<trajopt_ifopt::Node>("Joint_Position_0");
+    auto node = std::make_unique<Node>("Joint_Position_0");
     auto var0 = node->addVar("position", kin_group->getJointNames(), pos, bounds);
 
-    std::vector<std::unique_ptr<trajopt_ifopt::Node>> nodes;
+    std::vector<std::unique_ptr<Node>> nodes;
     nodes.push_back(std::move(node));
-    nlp.AddVariableSet(std::make_shared<trajopt_ifopt::NodesVariables>("joint_trajectory", std::move(nodes)));
+    nlp.AddVariableSet(std::make_shared<NodesVariables>("joint_trajectory", std::move(nodes)));
 
     // 4) Add constraints
     const CartPosInfo cart_info(kin_group, "r_gripper_tool_frame", "base_footprint");
-    constraint = std::make_shared<trajopt_ifopt::CartPosConstraint>(cart_info, var0);
+    constraint = std::make_shared<CartPosConstraint>(cart_info, var0);
     nlp.AddConstraintSet(constraint);
   }
 };
@@ -165,19 +165,18 @@ TEST_F(CartesianPositionConstraintUnit, FillJacobian)  // NOLINT
 
     // Calculate jacobian numerically
     auto error_calculator = [&](const Eigen::Ref<const Eigen::VectorXd>& x) { return constraint->CalcValues(x); };
-    const trajopt_ifopt::SparseMatrix num_jac_block =
-        trajopt_ifopt::calcForwardNumJac(error_calculator, joint_position_mod, 1e-4);
+    const Jacobian num_jac_block = calcForwardNumJac(error_calculator, joint_position_mod, 1e-4);
 
     // Compare to constraint jacobian
     {
-      trajopt_ifopt::SparseMatrix jac_block(num_jac_block.rows(), num_jac_block.cols());
+      Jacobian jac_block(num_jac_block.rows(), num_jac_block.cols());
       constraint->CalcJacobianBlock(joint_position_mod, jac_block);  // NOLINT
       EXPECT_TRUE(jac_block.isApprox(num_jac_block, 1e-3));
       //      std::cout << "Numeric:\n" << num_jac_block.toDense() << '\n';
       //      std::cout << "Analytic:\n" << jac_block.toDense() << '\n';
     }
     {
-      trajopt_ifopt::SparseMatrix jac_block(num_jac_block.rows(), num_jac_block.cols());
+      Jacobian jac_block(num_jac_block.rows(), num_jac_block.cols());
       constraint->FillJacobianBlock("joint_trajectory", jac_block);
       EXPECT_TRUE(jac_block.toDense().isApprox(num_jac_block.toDense(), 1e-3));
       //      std::cout << "Numeric:\n" << num_jac_block.toDense() << '\n';
@@ -195,23 +194,23 @@ TEST_F(CartesianPositionConstraintUnit, GetSetBounds)  // NOLINT
 
   // Check that setting bounds works
   {
-    std::vector<ifopt::Bounds> bounds_vec(static_cast<std::size_t>(n_dof), ifopt::NoBound);
-    auto node = std::make_unique<trajopt_ifopt::Node>("Joint_Position_0");
+    std::vector<Bounds> bounds_vec(static_cast<std::size_t>(n_dof), NoBound);
+    auto node = std::make_unique<Node>("Joint_Position_0");
     const Eigen::VectorXd pos = Eigen::VectorXd::Ones(kin_group->numJoints());
     auto var0 = node->addVar("position", kin_group->getJointNames(), pos, bounds_vec);
 
     const CartPosInfo cart_info(kin_group, "r_gripper_tool_frame", "base_footprint");
-    auto constraint_2 = std::make_shared<trajopt_ifopt::CartPosConstraint>(cart_info, var0);
+    auto constraint_2 = std::make_shared<CartPosConstraint>(cart_info, var0);
 
-    const ifopt::Bounds bounds(-0.1234, 0.5678);
-    bounds_vec = std::vector<ifopt::Bounds>(6, bounds);
+    const Bounds bounds(-0.1234, 0.5678);
+    bounds_vec = std::vector<Bounds>(6, bounds);
 
     constraint_2->SetBounds(bounds_vec);
-    std::vector<ifopt::Bounds> results_vec = constraint_2->GetBounds();
+    std::vector<Bounds> results_vec = constraint_2->GetBounds();
     for (std::size_t i = 0; i < bounds_vec.size(); i++)
     {
-      EXPECT_EQ(bounds_vec[i].lower_, results_vec[i].lower_);
-      EXPECT_EQ(bounds_vec[i].upper_, results_vec[i].upper_);
+      EXPECT_EQ(bounds_vec[i].lower, results_vec[i].lower);
+      EXPECT_EQ(bounds_vec[i].upper, results_vec[i].upper);
     }
   }
 }
@@ -225,7 +224,7 @@ TEST_F(CartesianPositionConstraintUnit, IgnoreVariables)  // NOLINT
 
   // Check that jacobian does not change for variables it shouldn't
   {
-    ifopt::ConstraintSet::Jacobian jac_block_input;
+    Jacobian jac_block_input;
     jac_block_input.resize(n_dof, n_dof);
     constraint->FillJacobianBlock("another_var", jac_block_input);
     EXPECT_EQ(jac_block_input.nonZeros(), 0);
@@ -233,7 +232,7 @@ TEST_F(CartesianPositionConstraintUnit, IgnoreVariables)  // NOLINT
 
   // Check that it is fine with jac blocks the wrong size for this constraint
   {
-    ifopt::ConstraintSet::Jacobian jac_block_input;
+    Jacobian jac_block_input;
     jac_block_input.resize(3, 5);
     constraint->FillJacobianBlock("another_var2", jac_block_input);
     EXPECT_EQ(jac_block_input.nonZeros(), 0);

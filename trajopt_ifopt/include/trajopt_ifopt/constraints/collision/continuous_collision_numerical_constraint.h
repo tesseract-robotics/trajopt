@@ -27,15 +27,16 @@
 #include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <Eigen/Eigen>
-#include <ifopt/constraint_set.h>
 TRAJOPT_IGNORE_WARNINGS_POP
+
+#include <trajopt_ifopt/core/constraint_set.h>
 
 namespace trajopt_ifopt
 {
 class Var;
 class ContinuousCollisionEvaluator;
 
-class ContinuousCollisionNumericalConstraint : public ifopt::ConstraintSet
+class ContinuousCollisionNumericalConstraint : public ConstraintSet
 {
 public:
   using Ptr = std::shared_ptr<ContinuousCollisionNumericalConstraint>;
@@ -56,7 +57,7 @@ public:
                                          bool vars1_fixed,
                                          int max_num_cnt = 1,
                                          bool fixed_sparsity = false,
-                                         const std::string& name = "LVSCollision");
+                                         std::string name = "LVSCollision");
 
   /**
    * @brief Returns the values associated with the constraint.
@@ -75,7 +76,7 @@ public:
    * @brief  Returns the "bounds" of this constraint. How these are enforced is up to the solver
    * @return Returns the "bounds" of this constraint
    */
-  std::vector<ifopt::Bounds> GetBounds() const override;
+  std::vector<Bounds> GetBounds() const override;
   /**
    * @brief Fills the jacobian block associated with the given var_set.
    * @param var_set Name of the var_set to which the jac_block is associated
@@ -87,7 +88,7 @@ public:
    * @brief Sets the bounds on the collision distance
    * @param bounds New bounds that will be set. Should be size 1
    */
-  void SetBounds(const std::vector<ifopt::Bounds>& bounds);
+  void SetBounds(const std::vector<Bounds>& bounds);
 
   /**
    * @brief Get the collision evaluator. This exposed for plotter callbacks
@@ -100,7 +101,7 @@ private:
   long n_dof_;
 
   /** @brief Bounds on the constraint value. Default: std::vector<Bounds>(1, ifopt::BoundSmallerZero) */
-  std::vector<ifopt::Bounds> bounds_;
+  std::vector<Bounds> bounds_;
 
   /** @brief Pointers to the vars used by this constraint. */
   std::array<std::shared_ptr<const Var>, 2> position_vars_;

@@ -35,8 +35,8 @@ namespace trajopt_ifopt
 JointPosConstraint::JointPosConstraint(const Eigen::VectorXd& target,
                                        const std::shared_ptr<const Var>& position_var,
                                        const Eigen::VectorXd& coeffs,
-                                       const std::string& name)
-  : ifopt::ConstraintSet(static_cast<int>(target.size()), name)
+                                       std::string name)
+  : ConstraintSet(std::move(name), static_cast<int>(target.size()))
   , n_dof_(target.size())
   , coeffs_(coeffs)
   , position_var_(position_var)
@@ -58,23 +58,23 @@ JointPosConstraint::JointPosConstraint(const Eigen::VectorXd& target,
     CONSOLE_BRIDGE_logError("Targets size does not align with variables provided");
 
   // Set the bounds to the input targets
-  std::vector<ifopt::Bounds> bounds(static_cast<std::size_t>(GetRows()));
+  std::vector<Bounds> bounds(static_cast<std::size_t>(GetRows()));
   // All of the positions should be exactly at their targets
 
   for (long i = 0; i < n_dof_; i++)
   {
     const double w_target = coeffs_[i] * target[i];
-    bounds[static_cast<std::size_t>(i)] = ifopt::Bounds(w_target, w_target);
+    bounds[static_cast<std::size_t>(i)] = Bounds(w_target, w_target);
   }
 
   bounds_ = bounds;
 }
 
-JointPosConstraint::JointPosConstraint(const std::vector<ifopt::Bounds>& bounds,
+JointPosConstraint::JointPosConstraint(const std::vector<Bounds>& bounds,
                                        const std::shared_ptr<const Var>& position_var,
                                        const Eigen::VectorXd& coeffs,
-                                       const std::string& name)
-  : ifopt::ConstraintSet(static_cast<int>(bounds.size()), name)
+                                       std::string name)
+  : ConstraintSet(std::move(name), static_cast<int>(bounds.size()))
   , coeffs_(coeffs)
   , bounds_(bounds)
   , position_var_(position_var)
@@ -101,7 +101,7 @@ JointPosConstraint::JointPosConstraint(const std::vector<ifopt::Bounds>& bounds,
 Eigen::VectorXd JointPosConstraint::GetValues() const { return coeffs_.cwiseProduct(position_var_->value()); }
 
 // Set the limits on the constraint values
-std::vector<ifopt::Bounds> JointPosConstraint::GetBounds() const { return bounds_; }
+std::vector<Bounds> JointPosConstraint::GetBounds() const { return bounds_; }
 
 void JointPosConstraint::FillJacobianBlock(std::string var_set, Jacobian& jac_block) const
 {

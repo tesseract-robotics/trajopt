@@ -44,8 +44,8 @@ ContinuousCollisionNumericalConstraint::ContinuousCollisionNumericalConstraint(
     bool vars1_fixed,
     int max_num_cnt,
     bool fixed_sparsity,
-    const std::string& name)
-  : ifopt::ConstraintSet(max_num_cnt, name)
+    std::string name)
+  : ConstraintSet(std::move(name), max_num_cnt)
   , position_vars_(std::move(position_vars))
   , vars0_fixed_(vars0_fixed)
   , vars1_fixed_(vars1_fixed)
@@ -68,7 +68,7 @@ ContinuousCollisionNumericalConstraint::ContinuousCollisionNumericalConstraint(
   if (max_num_cnt < 1)
     throw std::runtime_error("max_num_cnt must be greater than zero!");
 
-  bounds_ = std::vector<ifopt::Bounds>(static_cast<std::size_t>(max_num_cnt), ifopt::BoundSmallerZero);
+  bounds_ = std::vector<Bounds>(static_cast<std::size_t>(max_num_cnt), BoundSmallerZero);
 
   if (fixed_sparsity)
   {
@@ -128,7 +128,7 @@ Eigen::VectorXd ContinuousCollisionNumericalConstraint::GetValues() const
 }
 
 // Set the limits on the constraint values
-std::vector<ifopt::Bounds> ContinuousCollisionNumericalConstraint::GetBounds() const { return bounds_; }
+std::vector<Bounds> ContinuousCollisionNumericalConstraint::GetBounds() const { return bounds_; }
 
 void ContinuousCollisionNumericalConstraint::FillJacobianBlock(std::string var_set, Jacobian& jac_block) const
 {
@@ -200,7 +200,7 @@ void ContinuousCollisionNumericalConstraint::FillJacobianBlock(std::string var_s
   }
 }
 
-void ContinuousCollisionNumericalConstraint::SetBounds(const std::vector<ifopt::Bounds>& bounds)
+void ContinuousCollisionNumericalConstraint::SetBounds(const std::vector<Bounds>& bounds)
 {
   assert(bounds.size() == 1);
   bounds_ = bounds;

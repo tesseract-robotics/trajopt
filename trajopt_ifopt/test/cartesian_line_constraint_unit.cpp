@@ -4,7 +4,6 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <gtest/gtest.h>
 #include <boost/filesystem.hpp>
 #include <console_bridge/console.h>
-#include <ifopt/problem.h>
 #include <tesseract_common/types.h>
 #include <tesseract_common/resource_locator.h>
 #include <tesseract_kinematics/core/joint_group.h>
@@ -30,11 +29,11 @@ class CartesianLineConstraintUnit : public testing::TestWithParam<const char*>
 {
 public:
   Environment::Ptr env = std::make_shared<Environment>();
-  std::shared_ptr<ifopt::Composite> variables = std::make_shared<ifopt::Composite>("variable-sets", false);
+  std::shared_ptr<Composite> variables = std::make_shared<Composite>("variable-sets", false, false);
 
   tesseract_kinematics::JointGroup::ConstPtr manip;
   CartLineInfo info;
-  std::shared_ptr<const trajopt_ifopt::Var> var;
+  std::shared_ptr<const Var> var;
 
   Eigen::Isometry3d source_tf;
   Eigen::Isometry3d line_start_pose;
@@ -55,13 +54,13 @@ public:
     manip = env->getJointGroup("right_arm");
     n_dof = manip->numJoints();
 
-    std::vector<ifopt::Bounds> bounds(static_cast<std::size_t>(manip->numJoints()), ifopt::NoBound);
-    auto node = std::make_unique<trajopt_ifopt::Node>("Joint_Position_0");
+    std::vector<Bounds> bounds(static_cast<std::size_t>(manip->numJoints()), NoBound);
+    auto node = std::make_unique<Node>("Joint_Position_0");
     auto pos = Eigen::VectorXd::Ones(n_dof);
     var = node->addVar("position", manip->getJointNames(), pos, bounds);
-    std::vector<std::unique_ptr<trajopt_ifopt::Node>> nodes;
+    std::vector<std::unique_ptr<Node>> nodes;
     nodes.push_back(std::move(node));
-    variables->AddComponent(std::make_shared<trajopt_ifopt::NodesVariables>("joint_trajectory", std::move(nodes)));
+    variables->AddComponent(std::make_shared<NodesVariables>("joint_trajectory", std::move(nodes)));
 
     // Add constraints
     const Eigen::VectorXd joint_position = Eigen::VectorXd::Ones(n_dof);
@@ -82,9 +81,9 @@ TEST_F(CartesianLineConstraintUnit, GetValue)  // NOLINT
   {
     Eigen::VectorXd joint_position = Eigen::VectorXd::Ones(n_dof);
 
-    info = trajopt_ifopt::CartLineInfo(manip, "r_gripper_tool_frame", "base_link", line_start_pose, line_end_pose);
+    info = CartLineInfo(manip, "r_gripper_tool_frame", "base_link", line_start_pose, line_end_pose);
     const Eigen::VectorXd coeff = Eigen::VectorXd::Ones(info.indices.rows());
-    auto constraint = std::make_shared<trajopt_ifopt::CartLineConstraint>(info, var, coeff);
+    auto constraint = std::make_shared<CartLineConstraint>(info, var, coeff);
     constraint->LinkWithVariables(variables);
 
     // Given a joint position at the target, the error should be 0
@@ -116,9 +115,9 @@ TEST_F(CartesianLineConstraintUnit, GetValue)  // NOLINT
     start_pose_mod.translation() = start_pose_mod.translation() + Eigen::Vector3d(0.0, 0.3, 0.4);
     end_pose_mod.translation() = end_pose_mod.translation() + Eigen::Vector3d(0.0, 0.3, 0.4);
 
-    info = trajopt_ifopt::CartLineInfo(manip, "r_gripper_tool_frame", "base_link", start_pose_mod, end_pose_mod);
+    info = CartLineInfo(manip, "r_gripper_tool_frame", "base_link", start_pose_mod, end_pose_mod);
     const Eigen::VectorXd coeff = Eigen::VectorXd::Ones(info.indices.rows());
-    auto constraint = std::make_shared<trajopt_ifopt::CartLineConstraint>(info, var, coeff);
+    auto constraint = std::make_shared<CartLineConstraint>(info, var, coeff);
     constraint->LinkWithVariables(variables);
 
     auto error = constraint->CalcValues(joint_position);
@@ -139,9 +138,9 @@ TEST_F(CartesianLineConstraintUnit, FillJacobian)  // NOLINT
   const Eigen::Isometry3d start_pose_mod = source_tf.translate(Eigen::Vector3d(-1.0, 0, 0));
   const Eigen::Isometry3d end_pose_mod = source_tf.translate(Eigen::Vector3d(1.0, 0, 0));
 
-  info = trajopt_ifopt::CartLineInfo(manip, "r_gripper_tool_frame", "base_link", start_pose_mod, end_pose_mod);
+  info = CartLineInfo(manip, "r_gripper_tool_frame", "base_link", start_pose_mod, end_pose_mod);
   const Eigen::VectorXd coeff = Eigen::VectorXd::Ones(info.indices.rows());
-  auto constraint = std::make_shared<trajopt_ifopt::CartLineConstraint>(info, var, coeff);
+  auto constraint = std::make_shared<CartLineConstraint>(info, var, coeff);
   constraint->LinkWithVariables(variables);
 
   // below here should match cartesian
@@ -155,17 +154,16 @@ TEST_F(CartesianLineConstraintUnit, FillJacobian)  // NOLINT
 
     // Calculate jacobian numerically
     auto error_calculator = [&](const Eigen::Ref<const Eigen::VectorXd>& x) { return constraint->CalcValues(x); };
-    const ifopt::ConstraintSet::Jacobian num_jac_block =
-        trajopt_ifopt::calcForwardNumJac(error_calculator, joint_position_mod, 1e-4);
+    const Jacobian num_jac_block = calcForwardNumJac(error_calculator, joint_position_mod, 1e-4);
 
     // Compare to constraint jacobian
     {
-      ifopt::ConstraintSet::Jacobian jac_block(num_jac_block.rows(), num_jac_block.cols());
+      Jacobian jac_block(num_jac_block.rows(), num_jac_block.cols());
       constraint->CalcJacobianBlock(joint_position_mod, jac_block);  // NOLINT
       EXPECT_TRUE(jac_block.isApprox(num_jac_block, 1e-3));
     }
     {
-      ifopt::ConstraintSet::Jacobian jac_block(num_jac_block.rows(), num_jac_block.cols());
+      Jacobian jac_block(num_jac_block.rows(), num_jac_block.cols());
       constraint->FillJacobianBlock("joint_trajectory", jac_block);
       EXPECT_TRUE(jac_block.toDense().isApprox(num_jac_block.toDense(), 1e-3));
     }
@@ -180,20 +178,20 @@ TEST_F(CartesianLineConstraintUnit, GetSetBounds)  // NOLINT
   CONSOLE_BRIDGE_logDebug("CartesianPositionConstraintUnit, GetSetBounds");
 
   // Check that setting bounds works
-  info = trajopt_ifopt::CartLineInfo(manip, "r_gripper_tool_frame", "base_link", line_start_pose, line_end_pose);
+  info = CartLineInfo(manip, "r_gripper_tool_frame", "base_link", line_start_pose, line_end_pose);
   const Eigen::VectorXd coeff = Eigen::VectorXd::Ones(info.indices.rows());
-  auto constraint = std::make_shared<trajopt_ifopt::CartLineConstraint>(info, var, coeff);
+  auto constraint = std::make_shared<CartLineConstraint>(info, var, coeff);
   constraint->LinkWithVariables(variables);
 
-  const ifopt::Bounds bounds(-0.1234, 0.5678);
-  std::vector<ifopt::Bounds> bounds_vec = std::vector<ifopt::Bounds>(6, bounds);
+  const Bounds bounds(-0.1234, 0.5678);
+  std::vector<Bounds> bounds_vec(6, bounds);
 
   constraint->SetBounds(bounds_vec);
-  std::vector<ifopt::Bounds> results_vec = constraint->GetBounds();
+  std::vector<Bounds> results_vec = constraint->GetBounds();
   for (std::size_t i = 0; i < bounds_vec.size(); i++)
   {
-    EXPECT_EQ(bounds_vec[i].lower_, results_vec[i].lower_);
-    EXPECT_EQ(bounds_vec[i].upper_, results_vec[i].upper_);
+    EXPECT_EQ(bounds_vec[i].lower, results_vec[i].lower);
+    EXPECT_EQ(bounds_vec[i].upper, results_vec[i].upper);
   }
 }
 
@@ -204,21 +202,21 @@ TEST_F(CartesianLineConstraintUnit, IgnoreVariables)  // NOLINT
 {
   CONSOLE_BRIDGE_logDebug("CartesianPositionConstraintUnit, IgnoreVariables");
 
-  info = trajopt_ifopt::CartLineInfo(manip, "r_gripper_tool_frame", "base_link", line_start_pose, line_end_pose);
+  info = CartLineInfo(manip, "r_gripper_tool_frame", "base_link", line_start_pose, line_end_pose);
   const Eigen::VectorXd coeff = Eigen::VectorXd::Ones(info.indices.rows());
-  auto constraint = std::make_shared<trajopt_ifopt::CartLineConstraint>(info, var, coeff);
+  auto constraint = std::make_shared<CartLineConstraint>(info, var, coeff);
   constraint->LinkWithVariables(variables);
 
   // Check that jacobian does not change for variables it shouldn't
   {
-    ifopt::ConstraintSet::Jacobian jac_block_input;
+    Jacobian jac_block_input;
     jac_block_input.resize(n_dof, n_dof);
     constraint->FillJacobianBlock("another_var", jac_block_input);
     EXPECT_EQ(jac_block_input.nonZeros(), 0);
   }
   // Check that it is fine with jac blocks the wrong size for this constraint
   {
-    ifopt::ConstraintSet::Jacobian jac_block_input;
+    Jacobian jac_block_input;
     jac_block_input.resize(3, 5);
     constraint->FillJacobianBlock("another_var2", jac_block_input);
     EXPECT_EQ(jac_block_input.nonZeros(), 0);

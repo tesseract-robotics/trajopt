@@ -27,9 +27,10 @@
 #include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <Eigen/Eigen>
-#include <ifopt/constraint_set.h>
-#include <tesseract_kinematics/core/fwd.h>
 TRAJOPT_IGNORE_WARNINGS_POP
+
+#include <trajopt_ifopt/core/constraint_set.h>
+#include <tesseract_kinematics/core/fwd.h>
 
 namespace trajopt_ifopt
 {
@@ -71,7 +72,7 @@ struct InverseKinematicsInfo
  *
  * TODO: Look into integration with descartes_light samplers to allow z-free
  */
-class InverseKinematicsConstraint : public ifopt::ConstraintSet
+class InverseKinematicsConstraint : public ConstraintSet
 {
 public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -83,7 +84,7 @@ public:
                               InverseKinematicsInfo::ConstPtr kinematic_info,
                               std::shared_ptr<const Var> constraint_var,
                               std::shared_ptr<const Var> seed_var,
-                              const std::string& name = "InverseKinematics");
+                              std::string name = "InverseKinematics");
 
   /**
    * @brief Calculates the values associated with the constraint
@@ -104,10 +105,10 @@ public:
    * @brief  Returns the "bounds" of this constraint. How these are enforced is up to the solver
    * @return Bounds on the distance a joint can vary from the IK solution
    */
-  std::vector<ifopt::Bounds> GetBounds() const override;
+  std::vector<Bounds> GetBounds() const override;
 
   /** @brief Set the constraint bounds. Must be n_dof_ */
-  void SetBounds(const std::vector<ifopt::Bounds>& bounds);
+  void SetBounds(const std::vector<Bounds>& bounds);
 
   /**
    * @brief Fills the jacobian block associated with the constraint
@@ -141,7 +142,7 @@ private:
   long n_dof_;
 
   /** @brief Bounds on the joint distance the constraint_var may vary from the IK solution */
-  std::vector<ifopt::Bounds> bounds_;
+  std::vector<Bounds> bounds_;
 
   /** @brief Pointers to the vars used by this constraint. */
   std::shared_ptr<const Var> constraint_var_;

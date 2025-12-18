@@ -33,7 +33,7 @@ const NodesVariables* Node::getParent() const { return parent_; }
 
 bool Node::hasVar(const std::string& name) const { return (vars_by_name_.find(name) != vars_by_name_.end()); }
 
-std::shared_ptr<const Var> Node::addVar(const std::string& name, double value, ifopt::Bounds bounds)
+std::shared_ptr<const Var> Node::addVar(const std::string& name, double value, Bounds bounds)
 {
   vars_.emplace_back(std::make_shared<Var>(length_, name, value, bounds, this));
   vars_by_name_[name] = vars_.back();
@@ -44,7 +44,7 @@ std::shared_ptr<const Var> Node::addVar(const std::string& name, double value, i
 std::shared_ptr<const Var> Node::addVar(const std::string& name,
                                         const std::vector<std::string>& child_names,
                                         const Eigen::VectorXd& values,
-                                        const std::vector<ifopt::Bounds>& bounds)
+                                        const std::vector<Bounds>& bounds)
 {
   vars_.emplace_back(std::make_shared<Var>(length_, name, child_names, values, bounds, this));
   vars_by_name_[name] = vars_.back();
@@ -66,12 +66,12 @@ Eigen::VectorXd Node::getValues() const
   return Eigen::Map<Eigen::VectorXd>(values.data(), static_cast<Eigen::Index>(values.size()));
 }
 
-std::vector<ifopt::Bounds> Node::getBounds() const
+std::vector<Bounds> Node::getBounds() const
 {
-  std::vector<ifopt::Bounds> bounds;
+  std::vector<Bounds> bounds;
   for (const auto& var : vars_)
   {
-    const std::vector<ifopt::Bounds>& var_bounds = var->bounds();
+    const std::vector<Bounds>& var_bounds = var->bounds();
     bounds.insert(bounds.end(), var_bounds.begin(), var_bounds.end());
   }
   return bounds;

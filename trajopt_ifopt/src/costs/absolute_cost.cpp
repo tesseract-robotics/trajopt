@@ -30,12 +30,12 @@ TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace trajopt_ifopt
 {
-AbsoluteCost::AbsoluteCost(const ifopt::ConstraintSet::Ptr& constraint)
+AbsoluteCost::AbsoluteCost(const ConstraintSet::Ptr& constraint)
   : AbsoluteCost(constraint, Eigen::VectorXd::Ones(constraint->GetRows()))
 {
 }
 
-AbsoluteCost::AbsoluteCost(ifopt::ConstraintSet::Ptr constraint, const Eigen::Ref<const Eigen::VectorXd>& weights)
+AbsoluteCost::AbsoluteCost(ConstraintSet::Ptr constraint, const Eigen::Ref<const Eigen::VectorXd>& weights)
   : CostTerm(constraint->GetName() + "_absolute_cost")
   , constraint_(std::move(constraint))
   , n_constraints_(constraint_->GetRows())

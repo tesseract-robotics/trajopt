@@ -42,7 +42,6 @@ macro(add_gtest test_name test_file)
     ${test_name}
     ${PROJECT_NAME}
     console_bridge
-    ifopt::ifopt_ipopt
     trajopt::trajopt_ifopt
     trajopt::trajopt_common
     GTest::GTest

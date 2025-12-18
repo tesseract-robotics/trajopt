@@ -1,6 +1,6 @@
 
-#include <ifopt/variable_set.h>
-#include <ifopt/constraint_set.h>
+#include <trajopt_ifopt/core/variable_set.h>
+#include <trajopt_ifopt/core/constraint_set.h>
 
 #include <trajopt_sqp/trajopt_qp_problem.h>
 #include <trajopt_sqp/expressions.h>
@@ -40,43 +40,43 @@ namespace trajopt_sqp
 struct TrajOptQPProblem::Implementation
 {
   Implementation()
-    : squared_costs_("squared-cost-terms", false)
-    , hinge_costs_("hinge-cost-terms", false)
-    , abs_costs_("abs-cost-terms", false)
-    , hinge_constraints_("hinge-constraint-sets", false)
-    , abs_constraints_("abs-constraint-sets", false)
+    : squared_costs_("squared-cost-terms", false, false)
+    , hinge_costs_("hinge-cost-terms", false, false)
+    , abs_costs_("abs-cost-terms", false, false)
+    , hinge_constraints_("hinge-constraint-sets", false, false)
+    , abs_constraints_("abs-constraint-sets", false, false)
   {
-    variables_ = std::make_shared<ifopt::Composite>("variable-sets", false);
+    variables_ = std::make_shared<trajopt_ifopt::Composite>("variable-sets", false, false);
   }
 
   bool initialized_{ false };
-  ifopt::Composite::Ptr variables_;
+  trajopt_ifopt::Composite::Ptr variables_;
 
   ///////////////////////////////
   // These will never change size
   ///////////////////////////////
   Eigen::VectorXd constraint_merit_coeff_;
-  std::vector<ifopt::Component::Ptr> constraints_;
+  std::vector<trajopt_ifopt::Component::Ptr> constraints_;
   std::vector<std::vector<ConstraintType>> constraint_types_;
   std::vector<std::string> constraint_names_;
 
-  ifopt::Composite squared_costs_;
-  ifopt::Composite hinge_costs_;
-  ifopt::Composite abs_costs_;
-  ifopt::Composite hinge_constraints_;
-  ifopt::Composite abs_constraints_;
+  trajopt_ifopt::Composite squared_costs_;
+  trajopt_ifopt::Composite hinge_costs_;
+  trajopt_ifopt::Composite abs_costs_;
+  trajopt_ifopt::Composite hinge_constraints_;
+  trajopt_ifopt::Composite abs_constraints_;
   Eigen::VectorXd squared_costs_target_;
   std::vector<std::string> cost_names_;
 
   // Cached bounds (assumed static over SQP iterations)
-  std::vector<ifopt::Bounds> squared_cost_bounds_;
-  std::vector<ifopt::Bounds> abs_cost_bounds_;
-  std::vector<ifopt::Bounds> hinge_cost_bounds_;
+  std::vector<trajopt_ifopt::Bounds> squared_cost_bounds_;
+  std::vector<trajopt_ifopt::Bounds> abs_cost_bounds_;
+  std::vector<trajopt_ifopt::Bounds> hinge_cost_bounds_;
 
-  std::vector<ifopt::Bounds> hinge_cnt_bounds_;
-  std::vector<ifopt::Bounds> abs_cnt_bounds_;
+  std::vector<trajopt_ifopt::Bounds> hinge_cnt_bounds_;
+  std::vector<trajopt_ifopt::Bounds> abs_cnt_bounds_;
 
-  std::vector<ifopt::Bounds> var_bounds_;
+  std::vector<trajopt_ifopt::Bounds> var_bounds_;
 
   /** @brief Box size - constraint is set at current_val +/- box_size */
   Eigen::VectorXd box_size_;
@@ -106,11 +106,11 @@ struct TrajOptQPProblem::Implementation
   Eigen::VectorXd bounds_lower_;
   Eigen::VectorXd bounds_upper_;
 
-  void addVariableSet(const std::shared_ptr<ifopt::VariableSet>& variable_set);
+  void addVariableSet(std::shared_ptr<trajopt_ifopt::VariableSet> variable_set);
 
-  void addConstraintSet(const std::shared_ptr<ifopt::ConstraintSet>& constraint_set);
+  void addConstraintSet(std::shared_ptr<trajopt_ifopt::ConstraintSet> constraint_set);
 
-  void addCostSet(const std::shared_ptr<ifopt::ConstraintSet>& constraint_set, CostPenaltyType penalty_type);
+  void addCostSet(std::shared_ptr<trajopt_ifopt::ConstraintSet> constraint_set, CostPenaltyType penalty_type);
 
   void setup();
 
@@ -205,24 +205,24 @@ struct TrajOptQPProblem::Implementation
   void updateConstraintsConstantExpression();
 };
 
-void TrajOptQPProblem::Implementation::addVariableSet(const std::shared_ptr<ifopt::VariableSet>& variable_set)
+void TrajOptQPProblem::Implementation::addVariableSet(std::shared_ptr<trajopt_ifopt::VariableSet> variable_set)
 {
-  variables_->AddComponent(variable_set);
+  variables_->AddComponent(std::move(variable_set));
   initialized_ = false;
 }
 
-void TrajOptQPProblem::Implementation::addConstraintSet(const std::shared_ptr<ifopt::ConstraintSet>& constraint_set)
+void TrajOptQPProblem::Implementation::addConstraintSet(std::shared_ptr<trajopt_ifopt::ConstraintSet> constraint_set)
 {
   constraint_set->LinkWithVariables(variables_);
-  constraints_.push_back(constraint_set);
+  constraints_.push_back(std::move(constraint_set));
   initialized_ = false;
 }
 
-void TrajOptQPProblem::Implementation::addCostSet(const std::shared_ptr<ifopt::ConstraintSet>& constraint_set,
+void TrajOptQPProblem::Implementation::addCostSet(std::shared_ptr<trajopt_ifopt::ConstraintSet> constraint_set,
                                                   CostPenaltyType penalty_type)
 {
   constraint_set->LinkWithVariables(variables_);
-  const std::vector<ifopt::Bounds> cost_bounds = constraint_set->GetBounds();
+  const std::vector<trajopt_ifopt::Bounds> cost_bounds = constraint_set->GetBounds();
   switch (penalty_type)
   {
     case CostPenaltyType::SQUARED:
@@ -233,7 +233,7 @@ void TrajOptQPProblem::Implementation::addCostSet(const std::shared_ptr<ifopt::C
           throw std::runtime_error("TrajOpt Ifopt squared cost must have equality bounds!");
       }
 
-      squared_costs_.AddComponent(constraint_set);
+      squared_costs_.AddComponent(std::move(constraint_set));
       break;
     }
     case CostPenaltyType::ABSOLUTE:
@@ -244,7 +244,7 @@ void TrajOptQPProblem::Implementation::addCostSet(const std::shared_ptr<ifopt::C
           throw std::runtime_error("TrajOpt Ifopt absolute cost must have equality bounds!");
       }
 
-      abs_costs_.AddComponent(constraint_set);
+      abs_costs_.AddComponent(std::move(constraint_set));
       break;
     }
     case CostPenaltyType::HINGE:
@@ -255,7 +255,7 @@ void TrajOptQPProblem::Implementation::addCostSet(const std::shared_ptr<ifopt::C
           throw std::runtime_error("TrajOpt Ifopt hinge cost must have inequality bounds!");
       }
 
-      hinge_costs_.AddComponent(constraint_set);
+      hinge_costs_.AddComponent(std::move(constraint_set));
       break;
     }
     default:
@@ -293,11 +293,11 @@ void TrajOptQPProblem::Implementation::update()
     Eigen::VectorXd nlp_bounds_l(cnt->GetRows());
     Eigen::VectorXd nlp_bounds_u(cnt->GetRows());
 
-    const std::vector<ifopt::Bounds> cnt_bounds = cnt->GetBounds();
+    const std::vector<trajopt_ifopt::Bounds> cnt_bounds = cnt->GetBounds();
     for (Eigen::Index i = 0; i < cnt->GetRows(); ++i)
     {
-      nlp_bounds_l[i] = cnt_bounds[static_cast<std::size_t>(i)].lower_;
-      nlp_bounds_u[i] = cnt_bounds[static_cast<std::size_t>(i)].upper_;
+      nlp_bounds_l[i] = cnt_bounds[static_cast<std::size_t>(i)].lower;
+      nlp_bounds_u[i] = cnt_bounds[static_cast<std::size_t>(i)].upper;
     }
 
     const Eigen::VectorXd nlp_bounds_diff = nlp_bounds_u - nlp_bounds_l;
@@ -351,11 +351,11 @@ void TrajOptQPProblem::Implementation::setup()
   // Get NLP Cost and Constraint Names for Debug Print
   for (const auto& cost : squared_costs_.GetComponents())
   {
-    const std::vector<ifopt::Bounds> cost_bounds = cost->GetBounds();
+    const std::vector<trajopt_ifopt::Bounds> cost_bounds = cost->GetBounds();
     for (Eigen::Index j = 0; j < cost->GetRows(); ++j)
     {
       assert(trajopt_ifopt::isBoundsEquality(cost_bounds[static_cast<std::size_t>(j)]));
-      squared_costs_target_(j) = cost_bounds[static_cast<std::size_t>(j)].lower_;
+      squared_costs_target_(j) = cost_bounds[static_cast<std::size_t>(j)].lower;
       cost_names_.push_back(cost->GetName() + "_" + std::to_string(j));
     }
   }
@@ -364,7 +364,7 @@ void TrajOptQPProblem::Implementation::setup()
   {
     abs_constraints_.AddComponent(cost);
 
-    const std::vector<ifopt::Bounds> cost_bounds = cost->GetBounds();
+    const std::vector<trajopt_ifopt::Bounds> cost_bounds = cost->GetBounds();
     for (Eigen::Index j = 0; j < cost->GetRows(); ++j)
     {
       assert(trajopt_ifopt::isBoundsEquality(cost_bounds[static_cast<std::size_t>(j)]));
@@ -376,7 +376,7 @@ void TrajOptQPProblem::Implementation::setup()
   {
     hinge_constraints_.AddComponent(cost);
 
-    const std::vector<ifopt::Bounds> cost_bounds = cost->GetBounds();
+    const std::vector<trajopt_ifopt::Bounds> cost_bounds = cost->GetBounds();
     for (Eigen::Index j = 0; j < cost->GetRows(); ++j)
     {
       assert(trajopt_ifopt::isBoundsInEquality(cost_bounds[static_cast<std::size_t>(j)]));
@@ -963,8 +963,8 @@ void TrajOptQPProblem::Implementation::updateNLPConstraintBounds()
   for (Eigen::Index i = 0; i < n_hinge; ++i)
   {
     const auto& b = hinge_cnt_bounds_[static_cast<std::size_t>(i)];
-    cnt_bound_lower[row + i] = b.lower_;
-    cnt_bound_upper[row + i] = b.upper_;
+    cnt_bound_lower[row + i] = b.lower;
+    cnt_bound_upper[row + i] = b.upper;
   }
   row += n_hinge;
 
@@ -972,8 +972,8 @@ void TrajOptQPProblem::Implementation::updateNLPConstraintBounds()
   for (Eigen::Index i = 0; i < n_abs; ++i)
   {
     const auto& b = abs_cnt_bounds_[static_cast<std::size_t>(i)];
-    cnt_bound_lower[row + i] = b.lower_;
-    cnt_bound_upper[row + i] = b.upper_;
+    cnt_bound_lower[row + i] = b.lower;
+    cnt_bound_upper[row + i] = b.upper;
   }
   row += n_abs;
 
@@ -985,8 +985,8 @@ void TrajOptQPProblem::Implementation::updateNLPConstraintBounds()
     for (Eigen::Index j = 0; j < cnt_bounds.size(); ++j)
     {
       const auto& b = cnt_bounds[static_cast<std::size_t>(j)];
-      cnt_bound_lower[row + j] = b.lower_;
-      cnt_bound_upper[row + j] = b.upper_;
+      cnt_bound_lower[row + j] = b.lower;
+      cnt_bound_upper[row + j] = b.upper;
     }
     row += cnt->GetRows();
   }
@@ -1014,8 +1014,8 @@ void TrajOptQPProblem::Implementation::updateNLPVariableBounds()
   for (Eigen::Index i = 0; i < n_nlp_vars; ++i)
   {
     const auto& b = var_bounds_[static_cast<std::size_t>(i)];
-    var_bounds_lower[i] = b.lower_;
-    var_bounds_upper[i] = b.upper_;
+    var_bounds_lower[i] = b.lower;
+    var_bounds_upper[i] = b.upper;
   }
 
   // Calculate box constraints, while limiting to variable bounds and maintaining the trust region size
@@ -1073,19 +1073,20 @@ TrajOptQPProblem::TrajOptQPProblem() : impl_(std::make_unique<Implementation>())
 
 TrajOptQPProblem::~TrajOptQPProblem() = default;
 
-void TrajOptQPProblem::addVariableSet(std::shared_ptr<ifopt::VariableSet> variable_set)
+void TrajOptQPProblem::addVariableSet(std::shared_ptr<trajopt_ifopt::VariableSet> variable_set)
 {
-  impl_->addVariableSet(variable_set);
+  impl_->addVariableSet(std::move(variable_set));
 }
 
-void TrajOptQPProblem::addConstraintSet(std::shared_ptr<ifopt::ConstraintSet> constraint_set)
+void TrajOptQPProblem::addConstraintSet(std::shared_ptr<trajopt_ifopt::ConstraintSet> constraint_set)
 {
-  impl_->addConstraintSet(constraint_set);
+  impl_->addConstraintSet(std::move(constraint_set));
 }
 
-void TrajOptQPProblem::addCostSet(std::shared_ptr<ifopt::ConstraintSet> constraint_set, CostPenaltyType penalty_type)
+void TrajOptQPProblem::addCostSet(std::shared_ptr<trajopt_ifopt::ConstraintSet> constraint_set,
+                                  CostPenaltyType penalty_type)
 {
-  impl_->addCostSet(constraint_set, penalty_type);
+  impl_->addCostSet(std::move(constraint_set), penalty_type);
 }
 
 void TrajOptQPProblem::setup() { impl_->setup(); }

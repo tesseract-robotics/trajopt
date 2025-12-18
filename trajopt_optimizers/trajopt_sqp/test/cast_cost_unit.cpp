@@ -34,7 +34,6 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <tesseract_state_solver/state_solver.h>
 #include <tesseract_environment/environment.h>
 #include <tesseract_environment/utils.h>
-#include <ifopt/problem.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt_common/collision_types.h>
@@ -86,17 +85,17 @@ void runCastTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const Environmen
   const tesseract_scene_graph::StateSolver::Ptr state_solver = env->getStateSolver();
   const ContinuousContactManager::Ptr manager = env->getContinuousContactManager();
   const tesseract_kinematics::JointGroup::ConstPtr manip = env->getJointGroup("manipulator");
-  const std::vector<ifopt::Bounds> bounds = trajopt_ifopt::toBounds(manip->getLimits().joint_limits);
+  const std::vector<Bounds> bounds = toBounds(manip->getLimits().joint_limits);
 
   manager->setActiveCollisionObjects(manip->getActiveLinkNames());
   manager->setDefaultCollisionMargin(0);
 
   // 3) Add Variables
-  std::vector<std::unique_ptr<trajopt_ifopt::Node>> nodes;
-  std::vector<std::shared_ptr<const trajopt_ifopt::Var>> vars;
+  std::vector<std::unique_ptr<Node>> nodes;
+  std::vector<std::shared_ptr<const Var>> vars;
   std::vector<Eigen::VectorXd> positions;
   {
-    nodes.push_back(std::make_unique<trajopt_ifopt::Node>("Joint_Position_0"));
+    nodes.push_back(std::make_unique<Node>("Joint_Position_0"));
     Eigen::VectorXd pos(2);
     pos << -1.9, 0;
     positions.push_back(pos);
@@ -104,7 +103,7 @@ void runCastTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const Environmen
   }
 
   {
-    nodes.push_back(std::make_unique<trajopt_ifopt::Node>("Joint_Position_1"));
+    nodes.push_back(std::make_unique<Node>("Joint_Position_1"));
     Eigen::VectorXd pos(2);
     pos << 0, 1.9;
     positions.push_back(pos);
@@ -112,14 +111,14 @@ void runCastTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const Environmen
   }
 
   {
-    nodes.push_back(std::make_unique<trajopt_ifopt::Node>("Joint_Position_2"));
+    nodes.push_back(std::make_unique<Node>("Joint_Position_2"));
     Eigen::VectorXd pos(2);
     pos << 1.9, 3.8;
     positions.push_back(pos);
     vars.push_back(nodes.back()->addVar("position", manip->getJointNames(), pos, bounds));
   }
 
-  qp_problem->addVariableSet(std::make_shared<trajopt_ifopt::NodesVariables>("joint_trajectory", std::move(nodes)));
+  qp_problem->addVariableSet(std::make_shared<NodesVariables>("joint_trajectory", std::move(nodes)));
 
   // Step 3: Setup collision
   const double margin_coeff = 10;
@@ -131,26 +130,26 @@ void runCastTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const Environmen
   // 4) Add constraints
   {  // Fix start position
     const Eigen::VectorXd coeffs = Eigen::VectorXd::Constant(manip->numJoints(), 5);
-    auto cnt = std::make_shared<trajopt_ifopt::JointPosConstraint>(positions[0], vars[0], coeffs);
+    auto cnt = std::make_shared<JointPosConstraint>(positions[0], vars[0], coeffs);
     qp_problem->addConstraintSet(cnt);
   }
 
   {  // Fix end position
     const Eigen::VectorXd coeffs = Eigen::VectorXd::Constant(manip->numJoints(), 5);
-    auto cnt = std::make_shared<trajopt_ifopt::JointPosConstraint>(positions[2], vars[2], coeffs);
+    auto cnt = std::make_shared<JointPosConstraint>(positions[2], vars[2], coeffs);
     qp_problem->addConstraintSet(cnt);
   }
 
-  auto collision_cache = std::make_shared<trajopt_ifopt::CollisionCache>(100);
+  auto collision_cache = std::make_shared<CollisionCache>(100);
   std::array<bool, 2> vars_fixed{ true, false };
   for (std::size_t i = 1; i < vars.size(); ++i)
   {
-    auto collision_evaluator = std::make_shared<trajopt_ifopt::LVSContinuousCollisionEvaluator>(
-        collision_cache, manip, env, trajopt_collision_config);
+    auto collision_evaluator =
+        std::make_shared<LVSContinuousCollisionEvaluator>(collision_cache, manip, env, trajopt_collision_config);
 
     const std::array<std::shared_ptr<const Var>, 2> position_vars{ vars[i - 1], vars[i] };
 
-    auto cnt = std::make_shared<trajopt_ifopt::ContinuousCollisionConstraint>(
+    auto cnt = std::make_shared<ContinuousCollisionConstraint>(
         collision_evaluator, position_vars, vars_fixed[0], vars_fixed[1], 3);
     qp_problem->addConstraintSet(cnt);
 

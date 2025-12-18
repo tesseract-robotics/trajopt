@@ -26,9 +26,10 @@
 
 #include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
-#include <ifopt/constraint_set.h>
 #include <Eigen/Core>
 TRAJOPT_IGNORE_WARNINGS_POP
+
+#include <trajopt_ifopt/core/constraint_set.h>
 
 namespace trajopt_ifopt
 {
@@ -39,7 +40,7 @@ class Var;
  *
  * Joint velocity is calculated as v = th_1 - th_0
  */
-class JointVelConstraint : public ifopt::ConstraintSet
+class JointVelConstraint : public ConstraintSet
 {
 public:
   using Ptr = std::shared_ptr<JointVelConstraint>;
@@ -56,7 +57,7 @@ public:
   JointVelConstraint(const Eigen::VectorXd& targets,
                      const std::vector<std::shared_ptr<const Var>>& position_vars,
                      const Eigen::VectorXd& coeffs,
-                     const std::string& name = "JointVel");
+                     std::string name = "JointVel");
 
   /**
    * @brief Constructs a velocity constraint from these variables, setting the bounds to those passed in.
@@ -66,10 +67,10 @@ public:
    * @param coeffs The joint coefficients to use as weights. If size of 1 then the values is replicated for each joint.
    * @param name Name of the constraint
    */
-  JointVelConstraint(const std::vector<ifopt::Bounds>& bounds,
+  JointVelConstraint(const std::vector<Bounds>& bounds,
                      const std::vector<std::shared_ptr<const Var>>& position_vars,
                      const Eigen::VectorXd& coeffs,
-                     const std::string& name = "JointVel");
+                     std::string name = "JointVel");
 
   /**
    * @brief Returns the values associated with the constraint. In this case that is the approximate joint velocity.
@@ -81,7 +82,7 @@ public:
    * @brief  Returns the "bounds" of this constraint. How these are enforced is up to the solver
    * @return Returns the "bounds" of this constraint
    */
-  std::vector<ifopt::Bounds> GetBounds() const override;
+  std::vector<Bounds> GetBounds() const override;
 
   /**
    * @brief Fills the jacobian block associated with the given var_set.
@@ -101,7 +102,7 @@ private:
   Eigen::VectorXd coeffs_;
 
   /** @brief Bounds on the velocities of each joint */
-  std::vector<ifopt::Bounds> bounds_;
+  std::vector<Bounds> bounds_;
 
   /** @brief Pointers to the vars used by this constraint. */
   std::vector<std::shared_ptr<const Var>> position_vars_;

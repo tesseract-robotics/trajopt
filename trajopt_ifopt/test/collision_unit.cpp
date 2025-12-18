@@ -31,11 +31,10 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <tesseract_kinematics/core/joint_group.h>
 #include <tesseract_environment/environment.h>
 #include <tesseract_environment/utils.h>
-#include <ifopt/problem.h>
-#include <ifopt/ipopt_solver.h>
 #include <trajopt_common/collision_types.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
+#include <trajopt_ifopt/core/problem.h>
 #include <trajopt_ifopt/constraints/collision/discrete_collision_constraint.h>
 #include <trajopt_ifopt/constraints/collision/discrete_collision_evaluators.h>
 #include <trajopt_ifopt/variable_sets/nodes_variables.h>
@@ -55,9 +54,9 @@ class CollisionUnit : public testing::TestWithParam<const char*>
 {
 public:
   Environment::Ptr env = std::make_shared<Environment>(); /**< Tesseract */
-  trajopt_ifopt::DiscreteCollisionEvaluator::Ptr collision_evaluator;
-  ifopt::Problem nlp;
-  std::shared_ptr<trajopt_ifopt::DiscreteCollisionConstraint> constraint;
+  DiscreteCollisionEvaluator::Ptr collision_evaluator;
+  Problem nlp;
+  std::shared_ptr<DiscreteCollisionConstraint> constraint;
 
   void SetUp() override
   {
@@ -70,23 +69,22 @@ public:
     // Set up collision evaluator
     const tesseract_kinematics::JointGroup::ConstPtr kin = env->getJointGroup("manipulator");
     trajopt_common::TrajOptCollisionConfig config(0.1, 1);
-    auto collision_cache = std::make_shared<trajopt_ifopt::CollisionCache>(100);
+    auto collision_cache = std::make_shared<CollisionCache>(100);
 
-    collision_evaluator =
-        std::make_shared<trajopt_ifopt::SingleTimestepCollisionEvaluator>(collision_cache, kin, env, config);
+    collision_evaluator = std::make_shared<SingleTimestepCollisionEvaluator>(collision_cache, kin, env, config);
 
     // 3) Add Variables
-    const std::vector<ifopt::Bounds> bounds(static_cast<std::size_t>(kin->numJoints()), ifopt::NoBound);
+    const std::vector<Bounds> bounds(static_cast<std::size_t>(kin->numJoints()), NoBound);
     Eigen::VectorXd pos(2);
     pos << -1.9, 0;
-    auto node = std::make_unique<trajopt_ifopt::Node>("Joint_Position_0");
+    auto node = std::make_unique<Node>("Joint_Position_0");
     auto var0 = node->addVar("position", kin->getJointNames(), pos, bounds);
 
-    std::vector<std::unique_ptr<trajopt_ifopt::Node>> nodes;
+    std::vector<std::unique_ptr<Node>> nodes;
     nodes.push_back(std::move(node));
-    nlp.AddVariableSet(std::make_shared<trajopt_ifopt::NodesVariables>("joint_trajectory", std::move(nodes)));
+    nlp.AddVariableSet(std::make_shared<NodesVariables>("joint_trajectory", std::move(nodes)));
 
-    constraint = std::make_shared<trajopt_ifopt::DiscreteCollisionConstraint>(collision_evaluator, var0, 1);
+    constraint = std::make_shared<DiscreteCollisionConstraint>(collision_evaluator, var0, 1);
     nlp.AddConstraintSet(constraint);
   }
 };
@@ -107,7 +105,7 @@ TEST_F(CollisionUnit, GetValueFillJacobian)  // NOLINT
     Eigen::VectorXd values = constraint->GetValues();
     EXPECT_NEAR(values[0], -1 * collision_evaluator->GetCollisionMarginBuffer(), 1e-6);
 
-    ifopt::ConstraintSet::Jacobian jac_block;
+    Jacobian jac_block;
     jac_block.resize(1, 2);
     constraint->FillJacobianBlock("joint_trajectory", jac_block);
     const double dx = jac_block.coeff(0, 0);
@@ -124,7 +122,7 @@ TEST_F(CollisionUnit, GetValueFillJacobian)  // NOLINT
     Eigen::VectorXd values = constraint->GetValues();
     EXPECT_NEAR(values[0], 0.1, 1e-6);
 
-    ifopt::ConstraintSet::Jacobian jac_block;
+    Jacobian jac_block;
     jac_block.resize(1, 2);
     constraint->FillJacobianBlock("joint_trajectory", jac_block);
     const double dx = jac_block.coeff(0, 0);
@@ -139,7 +137,7 @@ TEST_F(CollisionUnit, GetValueFillJacobian)  // NOLINT
     Eigen::VectorXd values = constraint->GetValues();
     EXPECT_NEAR(values[0], 0.1, 1e-6);
 
-    ifopt::ConstraintSet::Jacobian jac_block;
+    Jacobian jac_block;
     jac_block.resize(1, 2);
     constraint->FillJacobianBlock("joint_trajectory", jac_block);
     const double dx = jac_block.coeff(0, 0);
@@ -156,7 +154,7 @@ TEST_F(CollisionUnit, GetValueFillJacobian)  // NOLINT
     Eigen::VectorXd values = constraint->GetValues();
     EXPECT_NEAR(values[0], 0.2, 1e-6);
 
-    ifopt::ConstraintSet::Jacobian jac_block;
+    Jacobian jac_block;
     jac_block.resize(1, 2);
     constraint->FillJacobianBlock("joint_trajectory", jac_block);
     const double dx = jac_block.coeff(0, 0);
@@ -175,22 +173,22 @@ TEST_F(CollisionUnit, GetSetBounds)  // NOLINT
 
   // Check that setting bounds works
   {
-    std::vector<ifopt::Bounds> bounds_vec{ ifopt::NoBound, ifopt::NoBound };
+    std::vector<Bounds> bounds_vec{ NoBound, NoBound };
     Eigen::VectorXd pos(2);
     pos << -1.9, 0;
     const std::vector<std::string> joint_names(2, "names");
-    auto node = std::make_unique<trajopt_ifopt::Node>("Joint_Position_0");
+    auto node = std::make_unique<Node>("Joint_Position_0");
     auto var0 = node->addVar("position", joint_names, pos, bounds_vec);
 
-    auto constraint_2 = std::make_shared<trajopt_ifopt::DiscreteCollisionConstraint>(collision_evaluator, var0, 3);
-    const ifopt::Bounds bounds(-0.1234, 0.5678);
-    bounds_vec = std::vector<ifopt::Bounds>(3, bounds);
+    auto constraint_2 = std::make_shared<DiscreteCollisionConstraint>(collision_evaluator, var0, 3);
+    const Bounds bounds(-0.1234, 0.5678);
+    bounds_vec = std::vector<Bounds>(3, bounds);
     constraint_2->SetBounds(bounds_vec);
-    std::vector<ifopt::Bounds> results_vec = constraint_2->GetBounds();
+    std::vector<Bounds> results_vec = constraint_2->GetBounds();
     for (std::size_t i = 0; i < bounds_vec.size(); i++)
     {
-      EXPECT_EQ(bounds_vec[i].lower_, results_vec[i].lower_);
-      EXPECT_EQ(bounds_vec[i].upper_, results_vec[i].upper_);
+      EXPECT_EQ(bounds_vec[i].lower, results_vec[i].lower);
+      EXPECT_EQ(bounds_vec[i].upper, results_vec[i].upper);
     }
   }
 }
@@ -204,7 +202,7 @@ TEST_F(CollisionUnit, IgnoreVariables)  // NOLINT
 
   // Check that jacobian does not change for variables it shouldn't
   {
-    ifopt::ConstraintSet::Jacobian jac_block_input;
+    Jacobian jac_block_input;
     jac_block_input.resize(1, 2);
     constraint->FillJacobianBlock("another_var", jac_block_input);
     EXPECT_EQ(jac_block_input.nonZeros(), 0);

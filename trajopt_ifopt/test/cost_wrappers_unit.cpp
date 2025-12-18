@@ -25,11 +25,11 @@
 #include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <Eigen/Eigen>
-#include <ifopt/problem.h>
-#include <ifopt/constraint_set.h>
 #include <gtest/gtest.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
+#include <trajopt_ifopt/core/constraint_set.h>
+#include <trajopt_ifopt/core/problem.h>
 #include <trajopt_ifopt/variable_sets/nodes_variables.h>
 #include <trajopt_ifopt/variable_sets/node.h>
 #include <trajopt_ifopt/variable_sets/var.h>
@@ -43,16 +43,16 @@ TRAJOPT_IGNORE_WARNINGS_POP
  *    y(x) = x^2 + 4x + 3
  *   dy(x) = 2x + 4
  */
-class SimpleTestConstraint : public ifopt::ConstraintSet
+class SimpleTestConstraint : public trajopt_ifopt::ConstraintSet
 {
 public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
   SimpleTestConstraint(std::shared_ptr<const trajopt_ifopt::Var> position_var,
-                       const std::string& name = "SimpleTestConstraint")
-    : ifopt::ConstraintSet(1, name), position_var_(std::move(position_var))
+                       std::string name = "SimpleTestConstraint")
+    : ConstraintSet(std::move(name), 1), position_var_(std::move(position_var))
   {
-    bounds_ = std::vector<ifopt::Bounds>(1, ifopt::BoundZero);
+    bounds_ = std::vector<trajopt_ifopt::Bounds>(1, trajopt_ifopt::BoundZero);
   }
 
   Eigen::VectorXd GetValues() const final
@@ -63,9 +63,9 @@ public:
     return output;
   }
 
-  std::vector<ifopt::Bounds> GetBounds() const final { return bounds_; }
+  std::vector<trajopt_ifopt::Bounds> GetBounds() const final { return bounds_; }
 
-  void FillJacobianBlock(std::string var_set, Jacobian& jac_block) const final
+  void FillJacobianBlock(std::string var_set, trajopt_ifopt::Jacobian& jac_block) const final
   {
     // Only modify the jacobian if this constraint uses var_set
     if (var_set != position_var_->getParent()->getParent()->GetName())  // NOLINT
@@ -79,7 +79,7 @@ public:
 
 private:
   /** @brief Bounds on the positions of each joint */
-  std::vector<ifopt::Bounds> bounds_;
+  std::vector<trajopt_ifopt::Bounds> bounds_;
 
   /** @brief Pointers to the vars used by this constraint.
    *
@@ -91,7 +91,7 @@ private:
 TEST(CostWrapperUnit, SquaredCost)  // NOLINT
 {
   // 2) Create the problem
-  ifopt::Problem nlp;
+  trajopt_ifopt::Problem nlp;
 
   // 3) Add Variables
   std::vector<std::unique_ptr<trajopt_ifopt::Node>> nodes;
@@ -101,7 +101,7 @@ TEST(CostWrapperUnit, SquaredCost)  // NOLINT
     Eigen::VectorXd pos(1);
     pos << -4;
     const std::vector<std::string> var_names = { "x" };
-    var = node->addVar("position", { "x" }, pos, { ifopt::NoBound });
+    var = node->addVar("position", { "x" }, pos, { trajopt_ifopt::NoBound });
     nodes.push_back(std::move(node));
   }
   nlp.AddVariableSet(std::make_shared<trajopt_ifopt::NodesVariables>("joint-trajectory", std::move(nodes)));
@@ -130,7 +130,7 @@ TEST(CostWrapperUnit, SquaredCost)  // NOLINT
 TEST(CostWrapperUnit, WeightedSquaredCost)  // NOLINT
 {
   // 2) Create the problem
-  ifopt::Problem nlp;
+  trajopt_ifopt::Problem nlp;
 
   // 3) Add Variables
   std::vector<std::unique_ptr<trajopt_ifopt::Node>> nodes;
@@ -140,7 +140,7 @@ TEST(CostWrapperUnit, WeightedSquaredCost)  // NOLINT
     Eigen::VectorXd pos(1);
     pos << -4;
     const std::vector<std::string> var_names = { "x" };
-    var = node->addVar("position", { "x" }, pos, { ifopt::NoBound });
+    var = node->addVar("position", { "x" }, pos, { trajopt_ifopt::NoBound });
     nodes.push_back(std::move(node));
   }
   nlp.AddVariableSet(std::make_shared<trajopt_ifopt::NodesVariables>("joint-trajectory", std::move(nodes)));
@@ -171,7 +171,7 @@ TEST(CostWrapperUnit, WeightedSquaredCost)  // NOLINT
 TEST(CostWrapperUnit, AbsoluteCost)  // NOLINT
 {
   // 2) Create the problem
-  ifopt::Problem nlp;
+  trajopt_ifopt::Problem nlp;
 
   // 3) Add Variables
   std::vector<std::unique_ptr<trajopt_ifopt::Node>> nodes;
@@ -181,7 +181,7 @@ TEST(CostWrapperUnit, AbsoluteCost)  // NOLINT
     Eigen::VectorXd pos(1);
     pos << -4;
     const std::vector<std::string> var_names = { "x" };
-    var = node->addVar("position", { "x" }, pos, { ifopt::NoBound });
+    var = node->addVar("position", { "x" }, pos, { trajopt_ifopt::NoBound });
     nodes.push_back(std::move(node));
   }
   nlp.AddVariableSet(std::make_shared<trajopt_ifopt::NodesVariables>("joint-trajectory", std::move(nodes)));
@@ -210,7 +210,7 @@ TEST(CostWrapperUnit, AbsoluteCost)  // NOLINT
 TEST(CostWrapperUnit, WeightedAbsoluteCost)  // NOLINT
 {
   // 2) Create the problem
-  ifopt::Problem nlp;
+  trajopt_ifopt::Problem nlp;
 
   // 3) Add Variables
   std::vector<std::unique_ptr<trajopt_ifopt::Node>> nodes;
@@ -220,7 +220,7 @@ TEST(CostWrapperUnit, WeightedAbsoluteCost)  // NOLINT
     Eigen::VectorXd pos(1);
     pos << -4;
     const std::vector<std::string> var_names = { "x" };
-    var = node->addVar("position", { "x" }, pos, { ifopt::NoBound });
+    var = node->addVar("position", { "x" }, pos, { trajopt_ifopt::NoBound });
     nodes.push_back(std::move(node));
   }
   nlp.AddVariableSet(std::make_shared<trajopt_ifopt::NodesVariables>("joint-trajectory", std::move(nodes)));
