@@ -66,7 +66,7 @@ JointJerkConstraint::JointJerkConstraint(const Eigen::VectorXd& targets,
     throw std::runtime_error("JointJerkConstraint, coeff must be the same size of the joint postion.");
 
   // Set the bounds to the input targets
-  std::vector<Bounds> bounds(static_cast<std::size_t>(GetRows()));
+  std::vector<Bounds> bounds(static_cast<std::size_t>(rows_));
   // All of the positions should be exactly at their targets
   for (long j = 0; j < n_vars_; j++)
   {
@@ -76,7 +76,7 @@ JointJerkConstraint::JointJerkConstraint(const Eigen::VectorXd& targets,
   bounds_ = bounds;
 }
 
-Eigen::VectorXd JointJerkConstraint::GetValues() const
+Eigen::VectorXd JointJerkConstraint::getValues() const
 {
   const std::size_t n = position_vars_.size();
   Eigen::VectorXd jerk(n_dof_ * static_cast<Eigen::Index>(n));
@@ -113,13 +113,13 @@ Eigen::VectorXd JointJerkConstraint::GetValues() const
 }
 
 // Set the limits on the constraint values (in this case just the targets)
-std::vector<Bounds> JointJerkConstraint::GetBounds() const { return bounds_; }
+std::vector<Bounds> JointJerkConstraint::getBounds() const { return bounds_; }
 
-void JointJerkConstraint::FillJacobianBlock(std::string var_set, Jacobian& jac_block) const
+void JointJerkConstraint::fillJacobianBlock(std::string var_set, Jacobian& jac_block) const
 {
   // Check if this constraint use the var_set
   // Only modify the jacobian if this constraint uses var_set
-  if (var_set != position_vars_.front()->getParent()->getParent()->GetName())
+  if (var_set != position_vars_.front()->getParent()->getParent()->getName())
     return;
 
   std::vector<Eigen::Triplet<double>> triplets;

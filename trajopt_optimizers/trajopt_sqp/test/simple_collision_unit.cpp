@@ -81,34 +81,36 @@ public:
     bounds_ = std::vector<trajopt_ifopt::Bounds>(3, trajopt_ifopt::BoundSmallerZero);
   }
 
-  Eigen::VectorXd GetValues() const final { return CalcValues(position_var_->value()); }
+  int update() final { return rows_; }
+
+  Eigen::VectorXd getValues() const final { return calcValues(position_var_->value()); }
 
   // Set the limits on the constraint values
-  std::vector<trajopt_ifopt::Bounds> GetBounds() const final { return bounds_; }
+  std::vector<trajopt_ifopt::Bounds> getBounds() const final { return bounds_; }
 
-  void FillJacobianBlock(std::string var_set, Jacobian& jac_block) const final
+  void fillJacobianBlock(std::string var_set, Jacobian& jac_block) const final
   {
     // Only modify the jacobian if this constraint uses var_set
-    if (var_set != position_var_->getParent()->getParent()->GetName())  // NOLINT
+    if (var_set != position_var_->getParent()->getParent()->getName())  // NOLINT
       return;
 
-    CalcJacobianBlock(position_var_->value(), jac_block);  // NOLINT
+    calcJacobianBlock(position_var_->value(), jac_block);  // NOLINT
   }
 
-  Eigen::VectorXd CalcValues(const Eigen::Ref<const Eigen::VectorXd>& joint_vals) const
+  Eigen::VectorXd calcValues(const Eigen::Ref<const Eigen::VectorXd>& joint_vals) const
   {
     Eigen::VectorXd err = Eigen::VectorXd::Zero(3);
 
     // Check the collisions
     const trajopt_common::CollisionCacheData::ConstPtr cdata =
-        collision_evaluator_->CalcCollisions(joint_vals, bounds_.size());
+        collision_evaluator_->calcCollisions(joint_vals, bounds_.size());
 
     if (cdata->contact_results_map.empty())
       return err;
 
     Eigen::Index i{ 0 };
-    const auto& margin_data = collision_evaluator_->GetCollisionMarginData();
-    const auto& coeff_data = collision_evaluator_->GetCollisionCoeffData();
+    const auto& margin_data = collision_evaluator_->getCollisionMarginData();
+    const auto& coeff_data = collision_evaluator_->getCollisionCoeffData();
     for (const auto& pair : cdata->contact_results_map)
     {
       for (const auto& dist_result : pair.second)
@@ -122,17 +124,17 @@ public:
     return err;
   }
 
-  void SetBounds(const std::vector<trajopt_ifopt::Bounds>& bounds)
+  void setBounds(const std::vector<trajopt_ifopt::Bounds>& bounds)
   {
     assert(bounds.size() == 3);
     bounds_ = bounds;
   }
 
-  void CalcJacobianBlock(const Eigen::Ref<const Eigen::VectorXd>& joint_vals, Jacobian& jac_block) const
+  void calcJacobianBlock(const Eigen::Ref<const Eigen::VectorXd>& joint_vals, Jacobian& jac_block) const
   {
     // Calculate collisions
     const trajopt_common::CollisionCacheData::ConstPtr cdata =
-        collision_evaluator_->CalcCollisions(joint_vals, bounds_.size());
+        collision_evaluator_->calcCollisions(joint_vals, bounds_.size());
 
     // Get gradients for all contacts
     /** @todo Use the cdata gradient results */
@@ -141,7 +143,7 @@ public:
     {
       for (const auto& dist_result : pair.second)
       {
-        const trajopt_common::GradientResults result = collision_evaluator_->GetGradient(joint_vals, dist_result);
+        const trajopt_common::GradientResults result = collision_evaluator_->getGradient(joint_vals, dist_result);
         grad_results.push_back(result);
       }
     }
@@ -265,7 +267,7 @@ void runSimpleCollisionTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const
   qp_problem->setup();
   qp_problem->print();
 
-  auto error_calculator = [&](const Eigen::Ref<const Eigen::VectorXd>& x) { return collision_cnt->CalcValues(x); };
+  auto error_calculator = [&](const Eigen::Ref<const Eigen::VectorXd>& x) { return collision_cnt->calcValues(x); };
   const Jacobian num_jac_block = calcForwardNumJac(error_calculator, positions[0], 1e-4);
   std::cout << "Numerical Jacobian: \n" << num_jac_block << '\n';
 

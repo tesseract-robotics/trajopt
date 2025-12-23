@@ -26,7 +26,7 @@ public:
    * the optimal timing values. This function correctly appends the
    * individual variables sets and ensures correct order of Jacobian columns.
    */
-  virtual void addVariableSet(std::shared_ptr<trajopt_ifopt::VariableSet> variable_set) = 0;
+  virtual void addVariableSet(std::shared_ptr<trajopt_ifopt::Variables> variable_set) = 0;
 
   /**
    * @brief Add a set of multiple constraints to the optimization problem.
@@ -39,16 +39,6 @@ public:
   virtual void addConstraintSet(std::shared_ptr<trajopt_ifopt::ConstraintSet> constraint_set) = 0;
 
   /**
-   * @brief Add a set of multiple constraints to the optimization problem.
-   * @param dyn_constraint_set  This can be 1 to infinity number of constraints.
-   *
-   * This function can be called multiple times for different sets of
-   * constraints. It makes sure the overall constraint and Jacobian correctly
-   * considers all individual constraint sets.
-   */
-  virtual void addDynamicConstraintSet(std::shared_ptr<trajopt_ifopt::DynamicConstraintSet> dyn_constraint_set) = 0;
-
-  /**
    * @brief Add a squared cost term to the problem.
    * @param constraint_set The constraint set to be evaluated as a squared cost.
    *
@@ -58,17 +48,6 @@ public:
    */
   virtual void addCostSet(std::shared_ptr<trajopt_ifopt::ConstraintSet> constraint_set,
                           CostPenaltyType penalty_type) = 0;
-
-  /**
-   * @brief Add a squared cost term to the problem.
-   * @param dyn_constraint_set The constraint set to be evaluated as a squared cost.
-   *
-   * This function can be called multiple times if the constraint function is
-   * composed of different cost terms. It makes sure the overall value and
-   * gradient is considering each individual cost.
-   */
-  virtual void addDynamicCostSet(std::shared_ptr<trajopt_ifopt::DynamicConstraintSet> dyn_constraint_set,
-                                 CostPenaltyType penalty_type) = 0;
 
   /**
    * @brief This setups the QP problems based on the constraints and cost sets added to the problem.

@@ -23,12 +23,11 @@ trajopt_variables()
 # ######################################################################################################################
 
 set(TRAJOPT_IFOPT_SOURCE_FILES
+    src/core/component.cpp
     src/core/composite.cpp
     src/core/constraint_set.cpp
     src/core/cost_term.cpp
-    src/core/dynamic_constraint_set.cpp
     src/core/problem.cpp
-    src/core/variable_set.cpp
     src/costs/absolute_cost.cpp
     src/costs/squared_cost.cpp
     src/constraints/cartesian_position_constraint.cpp

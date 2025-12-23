@@ -66,7 +66,7 @@ JointVelConstraint::JointVelConstraint(const Eigen::VectorXd& targets,
     throw std::runtime_error("JointVelConstraint, coeff must be the same size of the joint position.");
 
   // Set the bounds to the input targets
-  std::vector<Bounds> bounds(static_cast<std::size_t>(GetRows()));
+  std::vector<Bounds> bounds(static_cast<std::size_t>(rows_));
   // All of the positions should be exactly at their targets
   for (long j = 0; j < n_vars_ - 1; j++)
   {
@@ -76,7 +76,7 @@ JointVelConstraint::JointVelConstraint(const Eigen::VectorXd& targets,
   bounds_ = bounds;
 }
 
-Eigen::VectorXd JointVelConstraint::GetValues() const
+Eigen::VectorXd JointVelConstraint::getValues() const
 {
   // i - represents the trajectory timestep index
   // k - represents the DOF index
@@ -105,13 +105,13 @@ Eigen::VectorXd JointVelConstraint::GetValues() const
 }
 
 // Set the limits on the constraint values (in this case just the targets)
-std::vector<Bounds> JointVelConstraint::GetBounds() const { return bounds_; }
+std::vector<Bounds> JointVelConstraint::getBounds() const { return bounds_; }
 
-void JointVelConstraint::FillJacobianBlock(std::string var_set, Jacobian& jac_block) const
+void JointVelConstraint::fillJacobianBlock(std::string var_set, Jacobian& jac_block) const
 {
   // Check if this constraint use the var_set
   // Only modify the jacobian if this constraint uses var_set
-  if (var_set != position_vars_.front()->getParent()->getParent()->GetName())
+  if (var_set != position_vars_.front()->getParent()->getParent()->getName())
     return;
 
   const Eigen::Index n_segments = n_vars_ - 1;

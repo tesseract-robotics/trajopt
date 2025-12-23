@@ -29,7 +29,7 @@
 namespace trajopt_ifopt
 {
 struct Bounds;
-class Component;
+class Variables;
 class ConstraintSet;
 class Problem;
 
@@ -148,7 +148,7 @@ Jacobian calcNumericalConstraintGradient(const double* x, Problem& nlp, double e
  * @param epsilon The epsilon to leverage for perturbing the values
  * @return The numerical constraint gradient
  */
-Jacobian calcNumericalConstraintGradient(Component& variables, ConstraintSet& constraint_set, double epsilon = 1e-8);
+Jacobian calcNumericalConstraintGradient(Variables& variables, ConstraintSet& constraint_set, double epsilon = 1e-8);
 
 }  // namespace trajopt_ifopt
 #endif

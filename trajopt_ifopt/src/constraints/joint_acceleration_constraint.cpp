@@ -67,7 +67,7 @@ JointAccelConstraint::JointAccelConstraint(const Eigen::VectorXd& targets,
 
   // Set the bounds to the input targets
   // All of the positions should be exactly at their targets
-  std::vector<Bounds> bounds(static_cast<std::size_t>(GetRows()));
+  std::vector<Bounds> bounds(static_cast<std::size_t>(rows_));
   for (long j = 0; j < n_vars_; j++)
   {
     for (long i = 0; i < n_dof_; i++)
@@ -76,7 +76,7 @@ JointAccelConstraint::JointAccelConstraint(const Eigen::VectorXd& targets,
   bounds_ = bounds;
 }
 
-Eigen::VectorXd JointAccelConstraint::GetValues() const
+Eigen::VectorXd JointAccelConstraint::getValues() const
 {
   const std::size_t n = position_vars_.size();
   Eigen::VectorXd acceleration(n_dof_ * static_cast<Eigen::Index>(n));
@@ -107,13 +107,13 @@ Eigen::VectorXd JointAccelConstraint::GetValues() const
 }
 
 // Set the limits on the constraint values (in this case just the targets)
-std::vector<Bounds> JointAccelConstraint::GetBounds() const { return bounds_; }
+std::vector<Bounds> JointAccelConstraint::getBounds() const { return bounds_; }
 
-void JointAccelConstraint::FillJacobianBlock(std::string var_set, Jacobian& jac_block) const
+void JointAccelConstraint::fillJacobianBlock(std::string var_set, Jacobian& jac_block) const
 {
   // Check if this constraint use the var_set
   // Only modify the jacobian if this constraint uses var_set
-  if (var_set != position_vars_.front()->getParent()->getParent()->GetName())
+  if (var_set != position_vars_.front()->getParent()->getParent()->getName())
     return;
 
   // Each timestep contributes 3 nonzeros per DOF

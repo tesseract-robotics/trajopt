@@ -36,27 +36,27 @@ namespace trajopt_ifopt
 {
 CostTerm::CostTerm(std::string name) : ConstraintSet(std::move(name), 1) {}
 
-Eigen::VectorXd CostTerm::GetValues() const
+Eigen::VectorXd CostTerm::getValues() const
 {
   Eigen::VectorXd cost(1);
-  cost(0) = GetCost();
+  cost(0) = getCost();
   return cost;
 }
 
-std::vector<Bounds> CostTerm::GetBounds() const
+std::vector<Bounds> CostTerm::getBounds() const
 {
-  return std::vector<Bounds>(static_cast<std::size_t>(GetRows()), NoBound);  // NOLINT
+  return std::vector<Bounds>(static_cast<std::size_t>(rows_), NoBound);  // NOLINT
 }
 
-void CostTerm::Print(double /*tol*/, int& index) const
+void CostTerm::print(int& index, double /*tol*/) const
 {
   // only one scalar cost value
-  double cost = GetValues()(0);
+  double cost = getValues()(0);
 
   std::cout.precision(2);
-  std::cout << std::fixed << std::left << std::setw(30) << GetName() << std::right << std::setw(4) << GetRows()
-            << std::setw(9) << index << std::setfill('.') << std::setw(7) << index + GetRows() - 1 << std::setfill(' ')
-            << std::setw(12) << cost << "\n";
+  std::cout << std::fixed << std::left << std::setw(30) << name_ << std::right << std::setw(4) << rows_ << std::setw(9)
+            << index << std::setfill('.') << std::setw(7) << index + rows_ - 1 << std::setfill(' ') << std::setw(12)
+            << cost << "\n";
 }
 
 }  // namespace trajopt_ifopt

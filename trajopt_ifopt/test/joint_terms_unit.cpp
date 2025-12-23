@@ -55,8 +55,8 @@ TEST(JointTermsUnit, JointPosConstraintUnit)  // NOLINT
   std::vector<std::unique_ptr<Node>> nodes;
   nodes.push_back(std::move(node));
 
-  auto variables = std::make_shared<Composite>("variable-sets", false, false);
-  variables->AddComponent(std::make_shared<NodesVariables>("joint_trajectory", std::move(nodes)));
+  auto variables = std::make_shared<CompositeVariables>("variable-sets");
+  variables->addComponent(std::make_shared<NodesVariables>("joint_trajectory", std::move(nodes)));
 
   std::vector<Eigen::VectorXd> targets;
   Eigen::VectorXd target(10);
@@ -67,19 +67,19 @@ TEST(JointTermsUnit, JointPosConstraintUnit)  // NOLINT
   JointPosConstraint position_cnt(target, position_var, coeffs, name);
 
   // Must link with variables or GetValues and GetJacobian throw exception.
-  position_cnt.LinkWithVariables(variables);
+  position_cnt.linkWithVariables(variables);
 
-  EXPECT_EQ(position_cnt.GetRows(), static_cast<std::size_t>(target.size()));
-  EXPECT_EQ(position_cnt.GetName(), name);
-  EXPECT_EQ(position_cnt.GetBounds().size(), static_cast<std::size_t>(target.size()));
+  EXPECT_EQ(position_cnt.getRows(), static_cast<std::size_t>(target.size()));
+  EXPECT_EQ(position_cnt.getName(), name);
+  EXPECT_EQ(position_cnt.getBounds().size(), static_cast<std::size_t>(target.size()));
 
-  Eigen::VectorXd position_vals = position_cnt.GetValues();
+  Eigen::VectorXd position_vals = position_cnt.getValues();
   EXPECT_EQ(position_vals.size(), static_cast<std::size_t>(target.size()));
 
   // Test forward diff
   EXPECT_TRUE(position_vals.isApprox(init_vals, 1e-6));
 
-  Jacobian jac = position_cnt.GetJacobian();
+  Jacobian jac = position_cnt.getJacobian();
   Jacobian num_jac = calcNumericalConstraintGradient(*variables, position_cnt);
 
   EXPECT_EQ(jac.rows(), target.size());
@@ -121,8 +121,8 @@ TEST(JointTermsUnit, JointVelConstraintUnit)  // NOLINT
 
     x_vals.push_back(i);
   }
-  auto variables = std::make_shared<Composite>("variable-sets", false, false);
-  variables->AddComponent(std::make_shared<NodesVariables>("joint_trajectory", std::move(nodes)));
+  auto variables = std::make_shared<CompositeVariables>("variable-sets");
+  variables->addComponent(std::make_shared<NodesVariables>("joint_trajectory", std::move(nodes)));
 
   Eigen::VectorXd targets(2);
   targets << 0, 0;
@@ -131,13 +131,13 @@ TEST(JointTermsUnit, JointVelConstraintUnit)  // NOLINT
   JointVelConstraint velocity_cnt(targets, position_vars, coeffs, name);
 
   // Must link with variables or GetValues and GetJacobian throw exception.
-  velocity_cnt.LinkWithVariables(variables);
+  velocity_cnt.linkWithVariables(variables);
 
-  EXPECT_EQ(velocity_cnt.GetRows(), targets.size() * static_cast<Eigen::Index>(position_vars.size() - 1));
-  EXPECT_EQ(velocity_cnt.GetName(), name);
-  EXPECT_EQ(velocity_cnt.GetBounds().size(), targets.size() * static_cast<Eigen::Index>(position_vars.size() - 1));
+  EXPECT_EQ(velocity_cnt.getRows(), targets.size() * static_cast<Eigen::Index>(position_vars.size() - 1));
+  EXPECT_EQ(velocity_cnt.getName(), name);
+  EXPECT_EQ(velocity_cnt.getBounds().size(), targets.size() * static_cast<Eigen::Index>(position_vars.size() - 1));
 
-  Eigen::VectorXd velocity_vals = velocity_cnt.GetValues();
+  Eigen::VectorXd velocity_vals = velocity_cnt.getValues();
   EXPECT_EQ(velocity_vals.size(), targets.size() * static_cast<Eigen::Index>(position_vars.size() - 1));
 
   // Test forward diff
@@ -150,7 +150,7 @@ TEST(JointTermsUnit, JointVelConstraintUnit)  // NOLINT
     }
   }
 
-  Jacobian jac = velocity_cnt.GetJacobian();
+  Jacobian jac = velocity_cnt.getJacobian();
   Jacobian num_jac = calcNumericalConstraintGradient(*variables, velocity_cnt);
   EXPECT_EQ(jac.rows(), static_cast<Eigen::Index>(x_vals.size() - 1) * targets.size());
   EXPECT_EQ(jac.cols(), static_cast<Eigen::Index>(x_vals.size()) * targets.size());
@@ -192,8 +192,8 @@ TEST(JointTermsUnit, JointVelConstraintMinimumUnit)  // NOLINT
     x_vals.push_back(i);
   }
 
-  auto variables = std::make_shared<Composite>("variable-sets", false, false);
-  variables->AddComponent(std::make_shared<NodesVariables>("joint_trajectory", std::move(nodes)));
+  auto variables = std::make_shared<CompositeVariables>("variable-sets");
+  variables->addComponent(std::make_shared<NodesVariables>("joint_trajectory", std::move(nodes)));
 
   Eigen::VectorXd targets(2);
   targets << 0, 0;
@@ -202,13 +202,13 @@ TEST(JointTermsUnit, JointVelConstraintMinimumUnit)  // NOLINT
   JointVelConstraint velocity_cnt(targets, position_vars, coeffs, name);
 
   // Must link with variables or GetValues and GetJacobian throw exception.
-  velocity_cnt.LinkWithVariables(variables);
+  velocity_cnt.linkWithVariables(variables);
 
-  EXPECT_EQ(velocity_cnt.GetRows(), targets.size() * static_cast<Eigen::Index>(position_vars.size() - 1));
-  EXPECT_EQ(velocity_cnt.GetName(), name);
-  EXPECT_EQ(velocity_cnt.GetBounds().size(), targets.size() * static_cast<Eigen::Index>(position_vars.size() - 1));
+  EXPECT_EQ(velocity_cnt.getRows(), targets.size() * static_cast<Eigen::Index>(position_vars.size() - 1));
+  EXPECT_EQ(velocity_cnt.getName(), name);
+  EXPECT_EQ(velocity_cnt.getBounds().size(), targets.size() * static_cast<Eigen::Index>(position_vars.size() - 1));
 
-  Eigen::VectorXd velocity_vals = velocity_cnt.GetValues();
+  Eigen::VectorXd velocity_vals = velocity_cnt.getValues();
   EXPECT_EQ(velocity_vals.size(), targets.size() * static_cast<Eigen::Index>(position_vars.size() - 1));
 
   // Test forward diff
@@ -221,7 +221,7 @@ TEST(JointTermsUnit, JointVelConstraintMinimumUnit)  // NOLINT
     }
   }
 
-  Jacobian jac = velocity_cnt.GetJacobian();
+  Jacobian jac = velocity_cnt.getJacobian();
   Jacobian num_jac = calcNumericalConstraintGradient(*variables, velocity_cnt);
 
   EXPECT_EQ(jac.rows(), static_cast<Eigen::Index>(x_vals.size() - 1) * targets.size());
@@ -264,8 +264,8 @@ TEST(JointTermsUnit, JointAccelConstraintUnit)  // NOLINT
     x_vals.push_back(i);
   }
 
-  auto variables = std::make_shared<Composite>("variable-sets", false, false);
-  variables->AddComponent(std::make_shared<NodesVariables>("joint_trajectory", std::move(nodes)));
+  auto variables = std::make_shared<CompositeVariables>("variable-sets");
+  variables->addComponent(std::make_shared<NodesVariables>("joint_trajectory", std::move(nodes)));
 
   Eigen::VectorXd targets(2);
   targets << 0, 0;
@@ -274,13 +274,13 @@ TEST(JointTermsUnit, JointAccelConstraintUnit)  // NOLINT
   JointAccelConstraint accel_cnt(targets, position_vars, coeffs, name);
 
   // Must link with variables or GetValues and GetJacobian throw exception.
-  accel_cnt.LinkWithVariables(variables);
+  accel_cnt.linkWithVariables(variables);
 
-  EXPECT_EQ(accel_cnt.GetRows(), targets.size() * static_cast<Eigen::Index>(position_vars.size()));
-  EXPECT_EQ(accel_cnt.GetName(), name);
-  EXPECT_EQ(accel_cnt.GetBounds().size(), targets.size() * static_cast<Eigen::Index>(position_vars.size()));
+  EXPECT_EQ(accel_cnt.getRows(), targets.size() * static_cast<Eigen::Index>(position_vars.size()));
+  EXPECT_EQ(accel_cnt.getName(), name);
+  EXPECT_EQ(accel_cnt.getBounds().size(), targets.size() * static_cast<Eigen::Index>(position_vars.size()));
 
-  Eigen::VectorXd accel_vals = accel_cnt.GetValues();
+  Eigen::VectorXd accel_vals = accel_cnt.getValues();
   EXPECT_EQ(accel_vals.size(), targets.size() * static_cast<Eigen::Index>(position_vars.size()));
 
   // Test forward diff
@@ -303,7 +303,7 @@ TEST(JointTermsUnit, JointAccelConstraintUnit)  // NOLINT
     }
   }
 
-  Jacobian jac = accel_cnt.GetJacobian();
+  Jacobian jac = accel_cnt.getJacobian();
   Jacobian num_jac = calcNumericalConstraintGradient(*variables, accel_cnt);
 
   EXPECT_EQ(jac.rows(), static_cast<Eigen::Index>(x_vals.size()) * targets.size());
@@ -346,8 +346,8 @@ TEST(JointTermsUnit, JointAccelConstraintMinimumUnit)  // NOLINT
     x_vals.push_back(i);
   }
 
-  auto variables = std::make_shared<Composite>("variable-sets", false, false);
-  variables->AddComponent(std::make_shared<NodesVariables>("joint_trajectory", std::move(nodes)));
+  auto variables = std::make_shared<CompositeVariables>("variable-sets");
+  variables->addComponent(std::make_shared<NodesVariables>("joint_trajectory", std::move(nodes)));
 
   Eigen::VectorXd targets(2);
   targets << 0, 0;
@@ -356,13 +356,13 @@ TEST(JointTermsUnit, JointAccelConstraintMinimumUnit)  // NOLINT
   JointAccelConstraint accel_cnt(targets, position_vars, coeffs, name);
 
   // Must link with variables or GetValues and GetJacobian throw exception.
-  accel_cnt.LinkWithVariables(variables);
+  accel_cnt.linkWithVariables(variables);
 
-  EXPECT_EQ(accel_cnt.GetRows(), targets.size() * static_cast<Eigen::Index>(position_vars.size()));
-  EXPECT_EQ(accel_cnt.GetName(), name);
-  EXPECT_EQ(accel_cnt.GetBounds().size(), targets.size() * static_cast<Eigen::Index>(position_vars.size()));
+  EXPECT_EQ(accel_cnt.getRows(), targets.size() * static_cast<Eigen::Index>(position_vars.size()));
+  EXPECT_EQ(accel_cnt.getName(), name);
+  EXPECT_EQ(accel_cnt.getBounds().size(), targets.size() * static_cast<Eigen::Index>(position_vars.size()));
 
-  Eigen::VectorXd accel_vals = accel_cnt.GetValues();
+  Eigen::VectorXd accel_vals = accel_cnt.getValues();
   EXPECT_EQ(accel_vals.size(), targets.size() * static_cast<Eigen::Index>(position_vars.size()));
 
   // Test forward diff
@@ -385,7 +385,7 @@ TEST(JointTermsUnit, JointAccelConstraintMinimumUnit)  // NOLINT
     }
   }
 
-  Jacobian jac = accel_cnt.GetJacobian();
+  Jacobian jac = accel_cnt.getJacobian();
   Jacobian num_jac = calcNumericalConstraintGradient(*variables, accel_cnt);
 
   EXPECT_EQ(jac.rows(), static_cast<Eigen::Index>(x_vals.size()) * targets.size());
@@ -428,8 +428,8 @@ TEST(JointTermsUnit, JointJerkConstraintUnit)  // NOLINT
     x_vals.push_back(i);
   }
 
-  auto variables = std::make_shared<Composite>("variable-sets", false, false);
-  variables->AddComponent(std::make_shared<NodesVariables>("joint_trajectory", std::move(nodes)));
+  auto variables = std::make_shared<CompositeVariables>("variable-sets");
+  variables->addComponent(std::make_shared<NodesVariables>("joint_trajectory", std::move(nodes)));
 
   Eigen::VectorXd targets(2);
   targets << 0, 0;
@@ -438,13 +438,13 @@ TEST(JointTermsUnit, JointJerkConstraintUnit)  // NOLINT
   JointJerkConstraint jerk_cnt(targets, position_vars, coeffs, name);
 
   // Must link with variables or GetValues and GetJacobian throw exception.
-  jerk_cnt.LinkWithVariables(variables);
+  jerk_cnt.linkWithVariables(variables);
 
-  EXPECT_EQ(jerk_cnt.GetRows(), targets.size() * static_cast<Eigen::Index>(position_vars.size()));
-  EXPECT_EQ(jerk_cnt.GetName(), name);
-  EXPECT_EQ(jerk_cnt.GetBounds().size(), targets.size() * static_cast<Eigen::Index>(position_vars.size()));
+  EXPECT_EQ(jerk_cnt.getRows(), targets.size() * static_cast<Eigen::Index>(position_vars.size()));
+  EXPECT_EQ(jerk_cnt.getName(), name);
+  EXPECT_EQ(jerk_cnt.getBounds().size(), targets.size() * static_cast<Eigen::Index>(position_vars.size()));
 
-  Eigen::VectorXd jerk_vals = jerk_cnt.GetValues();
+  Eigen::VectorXd jerk_vals = jerk_cnt.getValues();
   EXPECT_EQ(jerk_vals.size(), targets.size() * static_cast<Eigen::Index>(position_vars.size()));
 
   // Test forward diff
@@ -468,7 +468,7 @@ TEST(JointTermsUnit, JointJerkConstraintUnit)  // NOLINT
     }
   }
 
-  Jacobian jac = jerk_cnt.GetJacobian();
+  Jacobian jac = jerk_cnt.getJacobian();
   Jacobian num_jac = calcNumericalConstraintGradient(*variables, jerk_cnt);
 
   EXPECT_EQ(jac.rows(), static_cast<Eigen::Index>(x_vals.size()) * targets.size());
@@ -511,8 +511,8 @@ TEST(JointTermsUnit, JointJerkConstraintMinimumUnit)  // NOLINT
     x_vals.push_back(i);
   }
 
-  auto variables = std::make_shared<Composite>("variable-sets", false, false);
-  variables->AddComponent(std::make_shared<NodesVariables>("joint_trajectory", std::move(nodes)));
+  auto variables = std::make_shared<CompositeVariables>("variable-sets");
+  variables->addComponent(std::make_shared<NodesVariables>("joint_trajectory", std::move(nodes)));
 
   Eigen::VectorXd targets(2);
   targets << 0, 0;
@@ -521,13 +521,13 @@ TEST(JointTermsUnit, JointJerkConstraintMinimumUnit)  // NOLINT
   JointJerkConstraint jerk_cnt(targets, position_vars, coeffs, name);
 
   // Must link with variables or GetValues and GetJacobian throw exception.
-  jerk_cnt.LinkWithVariables(variables);
+  jerk_cnt.linkWithVariables(variables);
 
-  EXPECT_EQ(jerk_cnt.GetRows(), targets.size() * static_cast<Eigen::Index>(position_vars.size()));
-  EXPECT_EQ(jerk_cnt.GetName(), name);
-  EXPECT_EQ(jerk_cnt.GetBounds().size(), targets.size() * static_cast<Eigen::Index>(position_vars.size()));
+  EXPECT_EQ(jerk_cnt.getRows(), targets.size() * static_cast<Eigen::Index>(position_vars.size()));
+  EXPECT_EQ(jerk_cnt.getName(), name);
+  EXPECT_EQ(jerk_cnt.getBounds().size(), targets.size() * static_cast<Eigen::Index>(position_vars.size()));
 
-  Eigen::VectorXd jerk_vals = jerk_cnt.GetValues();
+  Eigen::VectorXd jerk_vals = jerk_cnt.getValues();
   EXPECT_EQ(jerk_vals.size(), targets.size() * static_cast<Eigen::Index>(position_vars.size()));
 
   // Test forward diff
@@ -550,7 +550,7 @@ TEST(JointTermsUnit, JointJerkConstraintMinimumUnit)  // NOLINT
     }
   }
 
-  Jacobian jac = jerk_cnt.GetJacobian();
+  Jacobian jac = jerk_cnt.getJacobian();
   Jacobian num_jac = calcNumericalConstraintGradient(*variables, jerk_cnt);
 
   EXPECT_EQ(jac.rows(), static_cast<Eigen::Index>(x_vals.size()) * targets.size());

@@ -55,27 +55,29 @@ public:
     bounds_ = std::vector<Bounds>(3, BoundSmallerZero);
   }
 
-  Eigen::VectorXd GetValues() const final { return CalcValues(position_var_->value()); }
+  int update() final { return rows_; }
+
+  Eigen::VectorXd getValues() const final { return calcValues(position_var_->value()); }
 
   // Set the limits on the constraint values
-  std::vector<trajopt_ifopt::Bounds> GetBounds() const final { return bounds_; }
+  std::vector<trajopt_ifopt::Bounds> getBounds() const final { return bounds_; }
 
-  void FillJacobianBlock(std::string var_set, Jacobian& jac_block) const final
+  void fillJacobianBlock(std::string var_set, Jacobian& jac_block) const final
   {
     // Only modify the jacobian if this constraint uses var_set
-    if (var_set != position_var_->getParent()->getParent()->GetName())  // NOLINT
+    if (var_set != position_var_->getParent()->getParent()->getName())  // NOLINT
       return;
 
     CalcJacobianBlock(position_var_->value(), jac_block);  // NOLINT
   }
 
-  Eigen::VectorXd CalcValues(const Eigen::Ref<const Eigen::VectorXd>& joint_vals) const
+  Eigen::VectorXd calcValues(const Eigen::Ref<const Eigen::VectorXd>& joint_vals) const
   {
     Eigen::VectorXd err = Eigen::VectorXd::Zero(3);
 
     // Check the collisions
     trajopt_common::CollisionCacheData::ConstPtr cdata =
-        collision_evaluator_->CalcCollisions(joint_vals, bounds_.size());
+        collision_evaluator_->calcCollisions(joint_vals, bounds_.size());
 
     if (cdata->contact_results_map.empty())
       return err;
@@ -85,9 +87,9 @@ public:
     {
       for (const auto& dist_result : pair.second)
       {
-        double dist = collision_evaluator_->GetCollisionMarginData().getCollisionMargin(dist_result.link_names[0],
+        double dist = collision_evaluator_->getCollisionMarginData().getCollisionMargin(dist_result.link_names[0],
                                                                                         dist_result.link_names[1]);
-        double coeff = collision_evaluator_->GetCollisionCoeffData().getCollisionCoeff(dist_result.link_names[0],
+        double coeff = collision_evaluator_->getCollisionCoeffData().getCollisionCoeff(dist_result.link_names[0],
                                                                                        dist_result.link_names[1]);
         err[i++] += std::max<double>(((dist - dist_result.distance) * coeff), 0.);
       }
@@ -109,7 +111,7 @@ public:
 
     // Calculate collisions
     trajopt_common::CollisionCacheData::ConstPtr cdata =
-        collision_evaluator_->CalcCollisions(joint_vals, bounds_.size());
+        collision_evaluator_->calcCollisions(joint_vals, bounds_.size());
 
     // Get gradients for all contacts
     /** @todo Use the cdata gradient results */
@@ -118,7 +120,7 @@ public:
     {
       for (const auto& dist_result : pair.second)
       {
-        trajopt_common::GradientResults result = collision_evaluator_->GetGradient(joint_vals, dist_result);
+        trajopt_common::GradientResults result = collision_evaluator_->getGradient(joint_vals, dist_result);
         grad_results.push_back(result);
       }
     }
