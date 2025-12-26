@@ -43,8 +43,8 @@ void CartesianErrorPlottingCallback::plot(const QPProblem& /*problem*/)
 {
   for (const auto& cnt : cart_position_cnts_)
   {
-    Eigen::Isometry3d current_pose = cnt->GetCurrentPose();
-    Eigen::Isometry3d target_pose = cnt->GetTargetPose();
+    Eigen::Isometry3d current_pose = cnt->getCurrentPose();
+    Eigen::Isometry3d target_pose = cnt->getTargetPose();
 
     if (plotter_)
     {

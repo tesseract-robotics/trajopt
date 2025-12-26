@@ -27,41 +27,14 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ******************************************************************************/
 
-#ifndef TRAJOPT_IFOPT_CORE_VARIABLE_SET_H
-#define TRAJOPT_IFOPT_CORE_VARIABLE_SET_H
+#ifndef TRAJOPT_IFOPT_CORE_EIGEN_TYPES_H
+#define TRAJOPT_IFOPT_CORE_EIGEN_TYPES_H
 
-#include <trajopt_ifopt/core/composite.h>
+#include <Eigen/Eigen>
 
 namespace trajopt_ifopt
 {
-/**
- * @brief  A container holding a set of related optimization variables.
- *
- * This is a single set of variables representing a single concept, e.g
- * "spline coefficients" or "step durations".
- *
- * @ingroup ProblemFormulation
- * @sa Component
- */
-class VariableSet : public Component
-{
-public:
-  /**
-   * @brief Creates a set of variables representing a single concept.
-   * @param name   What the variables represent to (e.g. "spline coefficients").
-   * @param n_var  Number of variables.
-   */
-  VariableSet(std::string name, int n_var);
-  ~VariableSet() override = default;
-
-private:
-  // doesn't exist for variables, generated run-time error when used.
-  Jacobian GetJacobian() const final;
-
-  // doesn't exist for variables, generated run-time error when used.
-  int Update() final;
-};
-
+using Jacobian = Eigen::SparseMatrix<double, Eigen::RowMajor>;
 }  // namespace trajopt_ifopt
 
-#endif  // TRAJOPT_IFOPT_CORE_VARIABLE_SET_H
+#endif  // TRAJOPT_IFOPT_CORE_EIGEN_TYPES_H

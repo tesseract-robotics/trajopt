@@ -85,12 +85,12 @@ public:
 
     std::vector<std::unique_ptr<Node>> nodes;
     nodes.push_back(std::move(node));
-    nlp.AddVariableSet(std::make_shared<NodesVariables>("joint_trajectory", std::move(nodes)));
+    nlp.addVariableSet(std::make_shared<NodesVariables>("joint_trajectory", std::move(nodes)));
 
     // 4) Add constraints
     const CartPosInfo cart_info(kin_group, "r_gripper_tool_frame", "base_footprint");
     constraint = std::make_shared<CartPosConstraint>(cart_info, var0);
-    nlp.AddConstraintSet(constraint);
+    nlp.addConstraintSet(constraint);
   }
 };
 
@@ -102,19 +102,19 @@ TEST_F(CartesianPositionConstraintUnit, GetValue)  // NOLINT
   // Run FK to get target pose
   Eigen::VectorXd joint_position = Eigen::VectorXd::Ones(n_dof);
   const Eigen::Isometry3d target_pose = kin_group->calcFwdKin(joint_position).at("r_gripper_tool_frame");
-  constraint->SetTargetPose(target_pose);
+  constraint->setTargetPose(target_pose);
 
   // Set the joints to the joint position that should satisfy it
-  nlp.SetVariables(joint_position.data());
+  nlp.setVariables(joint_position.data());
 
   // Given a joint position at the target, the error should be 0
   {
-    auto error = constraint->CalcValues(joint_position);
+    auto error = constraint->calcValues(joint_position);
     EXPECT_LT(error.maxCoeff(), 1e-3);
     EXPECT_GT(error.minCoeff(), -1e-3);
   }
   {
-    auto error = constraint->GetValues();
+    auto error = constraint->getValues();
     EXPECT_LT(error.maxCoeff(), 1e-3);
     EXPECT_GT(error.minCoeff(), -1e-3);
   }
@@ -123,22 +123,22 @@ TEST_F(CartesianPositionConstraintUnit, GetValue)  // NOLINT
   {
     Eigen::Isometry3d target_pose_mod = target_pose;
     target_pose_mod.translate(Eigen::Vector3d(0.1, 0.0, 0.0));
-    constraint->SetTargetPose(target_pose_mod);
-    auto error = constraint->CalcValues(joint_position);
+    constraint->setTargetPose(target_pose_mod);
+    auto error = constraint->calcValues(joint_position);
     EXPECT_NEAR(error[0], -0.1, 1e-3);
   }
   {
     Eigen::Isometry3d target_pose_mod = target_pose;
     target_pose_mod.translate(Eigen::Vector3d(0.0, 0.2, 0.0));
-    constraint->SetTargetPose(target_pose_mod);
-    auto error = constraint->CalcValues(joint_position);
+    constraint->setTargetPose(target_pose_mod);
+    auto error = constraint->calcValues(joint_position);
     EXPECT_NEAR(error[1], -0.2, 1e-3);
   }
   {
     Eigen::Isometry3d target_pose_mod = target_pose;
     target_pose_mod.translate(Eigen::Vector3d(0.0, 0.0, -0.3));
-    constraint->SetTargetPose(target_pose_mod);
-    auto error = constraint->CalcValues(joint_position);
+    constraint->setTargetPose(target_pose_mod);
+    auto error = constraint->calcValues(joint_position);
     EXPECT_NEAR(error[2], 0.3, 1e-3);
   }
 
@@ -153,7 +153,7 @@ TEST_F(CartesianPositionConstraintUnit, FillJacobian)  // NOLINT
   // Run FK to get target pose
   const Eigen::VectorXd joint_position = Eigen::VectorXd::Ones(n_dof);
   const Eigen::Isometry3d target_pose = kin_group->calcFwdKin(joint_position).at("r_gripper_tool_frame");
-  constraint->SetTargetPose(target_pose);
+  constraint->setTargetPose(target_pose);
 
   // Modify one joint at a time
   for (Eigen::Index i = 0; i < n_dof; i++)
@@ -161,23 +161,23 @@ TEST_F(CartesianPositionConstraintUnit, FillJacobian)  // NOLINT
     // Set the joints
     Eigen::VectorXd joint_position_mod = joint_position;
     joint_position_mod[i] = 2.0;
-    nlp.SetVariables(joint_position_mod.data());
+    nlp.setVariables(joint_position_mod.data());
 
     // Calculate jacobian numerically
-    auto error_calculator = [&](const Eigen::Ref<const Eigen::VectorXd>& x) { return constraint->CalcValues(x); };
+    auto error_calculator = [&](const Eigen::Ref<const Eigen::VectorXd>& x) { return constraint->calcValues(x); };
     const Jacobian num_jac_block = calcForwardNumJac(error_calculator, joint_position_mod, 1e-4);
 
     // Compare to constraint jacobian
     {
       Jacobian jac_block(num_jac_block.rows(), num_jac_block.cols());
-      constraint->CalcJacobianBlock(joint_position_mod, jac_block);  // NOLINT
+      constraint->calcJacobianBlock(joint_position_mod, jac_block);  // NOLINT
       EXPECT_TRUE(jac_block.isApprox(num_jac_block, 1e-3));
       //      std::cout << "Numeric:\n" << num_jac_block.toDense() << '\n';
       //      std::cout << "Analytic:\n" << jac_block.toDense() << '\n';
     }
     {
       Jacobian jac_block(num_jac_block.rows(), num_jac_block.cols());
-      constraint->FillJacobianBlock("joint_trajectory", jac_block);
+      constraint->fillJacobianBlock("joint_trajectory", jac_block);
       EXPECT_TRUE(jac_block.toDense().isApprox(num_jac_block.toDense(), 1e-3));
       //      std::cout << "Numeric:\n" << num_jac_block.toDense() << '\n';
       //      std::cout << "Analytic:\n" << jac_block.toDense() << '\n';
@@ -205,8 +205,8 @@ TEST_F(CartesianPositionConstraintUnit, GetSetBounds)  // NOLINT
     const Bounds bounds(-0.1234, 0.5678);
     bounds_vec = std::vector<Bounds>(6, bounds);
 
-    constraint_2->SetBounds(bounds_vec);
-    std::vector<Bounds> results_vec = constraint_2->GetBounds();
+    constraint_2->setBounds(bounds_vec);
+    std::vector<Bounds> results_vec = constraint_2->getBounds();
     for (std::size_t i = 0; i < bounds_vec.size(); i++)
     {
       EXPECT_EQ(bounds_vec[i].lower, results_vec[i].lower);
@@ -226,7 +226,7 @@ TEST_F(CartesianPositionConstraintUnit, IgnoreVariables)  // NOLINT
   {
     Jacobian jac_block_input;
     jac_block_input.resize(n_dof, n_dof);
-    constraint->FillJacobianBlock("another_var", jac_block_input);
+    constraint->fillJacobianBlock("another_var", jac_block_input);
     EXPECT_EQ(jac_block_input.nonZeros(), 0);
   }
 
@@ -234,7 +234,7 @@ TEST_F(CartesianPositionConstraintUnit, IgnoreVariables)  // NOLINT
   {
     Jacobian jac_block_input;
     jac_block_input.resize(3, 5);
-    constraint->FillJacobianBlock("another_var2", jac_block_input);
+    constraint->fillJacobianBlock("another_var2", jac_block_input);
     EXPECT_EQ(jac_block_input.nonZeros(), 0);
   }
 }

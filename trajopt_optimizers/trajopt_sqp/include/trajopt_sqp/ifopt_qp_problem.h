@@ -41,7 +41,7 @@ public:
   IfoptQPProblem();
   IfoptQPProblem(std::shared_ptr<trajopt_ifopt::Problem> nlp);
 
-  void addVariableSet(std::shared_ptr<trajopt_ifopt::VariableSet> variable_set) override;
+  void addVariableSet(std::shared_ptr<trajopt_ifopt::Variables> variable_set) override;
 
   void addConstraintSet(std::shared_ptr<trajopt_ifopt::ConstraintSet> constraint_set) override;
 
@@ -94,10 +94,10 @@ public:
   Eigen::Ref<const Eigen::VectorXd> getBoxSize() override { return box_size_; }
   Eigen::Ref<const Eigen::VectorXd> getConstraintMeritCoeff() override { return constraint_merit_coeff_; }
 
-  Eigen::Ref<const SparseMatrix> getHessian() override { return hessian_; }
+  Eigen::Ref<const trajopt_ifopt::Jacobian> getHessian() override { return hessian_; }
   Eigen::Ref<const Eigen::VectorXd> getGradient() override { return gradient_; }
 
-  Eigen::Ref<const SparseMatrix> getConstraintMatrix() override { return constraint_matrix_; }
+  Eigen::Ref<const trajopt_ifopt::Jacobian> getConstraintMatrix() override { return constraint_matrix_; }
   Eigen::Ref<const Eigen::VectorXd> getBoundsLower() override { return bounds_lower_; }
   Eigen::Ref<const Eigen::VectorXd> getBoundsUpper() override { return bounds_upper_; }
 
@@ -118,11 +118,11 @@ protected:
   Eigen::VectorXd box_size_;
   Eigen::VectorXd constraint_merit_coeff_;
 
-  SparseMatrix hessian_;
+  trajopt_ifopt::Jacobian hessian_;
   Eigen::VectorXd gradient_;
   Eigen::VectorXd cost_constant_;
 
-  SparseMatrix constraint_matrix_;
+  trajopt_ifopt::Jacobian constraint_matrix_;
   Eigen::VectorXd bounds_lower_;
   Eigen::VectorXd bounds_upper_;
   // This should be the center of the bounds

@@ -31,22 +31,30 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace trajopt_ifopt
 {
-ConstraintSet::ConstraintSet(std::string name, int n_constraints) : Component(std::move(name), n_constraints, false) {}
-
-Jacobian ConstraintSet::GetJacobian() const
+ConstraintSet::ConstraintSet(std::string name, bool dynamic)
+  : Differentiable(std::move(name), Mode::kStackRows, dynamic)
 {
-  Jacobian jacobian(GetRows(), variables_->GetRows());
+}
+
+ConstraintSet::ConstraintSet(std::string name, int n_constraints)
+  : Differentiable(std::move(name), n_constraints, Mode::kStackRows, false)
+{
+}
+
+Jacobian ConstraintSet::getJacobian() const
+{
+  Jacobian jacobian(rows_, variables_->getRows());
 
   int col = 0;
   Jacobian jac;
   std::vector<Eigen::Triplet<double>> triplet_list;
 
-  for (const auto& vars : variables_->GetComponents())
+  for (const auto& vars : variables_->getComponents())
   {
-    int n = vars->GetRows();
-    jac.resize(GetRows(), n);
+    int n = vars->getRows();
+    jac.resize(rows_, n);
 
-    FillJacobianBlock(vars->GetName(), jac);
+    fillJacobianBlock(vars->getName(), jac);
     // reserve space for the new elements to reduce memory allocation
     triplet_list.reserve(triplet_list.size() + static_cast<std::size_t>(jac.nonZeros()));
 
@@ -62,19 +70,12 @@ Jacobian ConstraintSet::GetJacobian() const
   return jacobian;
 }
 
-void ConstraintSet::LinkWithVariables(const VariablesPtr& x)
+void ConstraintSet::linkWithVariables(const CompositeVariables::Ptr& x)
 {
   variables_ = x;
-  InitVariableDependedQuantities(x);
+  initVariableDependedQuantities(x);
 }
 
-void ConstraintSet::InitVariableDependedQuantities(const VariablesPtr& /*x_init*/) {}
-
-void ConstraintSet::SetVariables(const Eigen::VectorXd& /*x*/)
-{
-  throw std::runtime_error("not implemented for fixed size constraint sets");
-};
-
-int ConstraintSet::Update() { throw std::runtime_error("not implemented for fixed size constraint sets"); }
+void ConstraintSet::initVariableDependedQuantities(const Variables::Ptr& /*x_init*/) {}
 
 }  // namespace trajopt_ifopt

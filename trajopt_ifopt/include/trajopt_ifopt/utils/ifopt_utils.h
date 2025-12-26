@@ -24,17 +24,12 @@
 #ifndef TRAJOPT_IFOPT_IFOPT_UTILS_H
 #define TRAJOPT_IFOPT_IFOPT_UTILS_H
 
-#include <trajopt_common/macros.h>
-TRAJOPT_IGNORE_WARNINGS_PUSH
-#include <Eigen/Eigen>
-TRAJOPT_IGNORE_WARNINGS_POP
+#include <trajopt_ifopt/core/eigen_types.h>
 
 namespace trajopt_ifopt
 {
-using Jacobian = Eigen::SparseMatrix<double, Eigen::RowMajor>;
-
 struct Bounds;
-class Component;
+class Variables;
 class ConstraintSet;
 class Problem;
 
@@ -153,7 +148,7 @@ Jacobian calcNumericalConstraintGradient(const double* x, Problem& nlp, double e
  * @param epsilon The epsilon to leverage for perturbing the values
  * @return The numerical constraint gradient
  */
-Jacobian calcNumericalConstraintGradient(Component& variables, ConstraintSet& constraint_set, double epsilon = 1e-8);
+Jacobian calcNumericalConstraintGradient(Variables& variables, ConstraintSet& constraint_set, double epsilon = 1e-8);
 
 }  // namespace trajopt_ifopt
 #endif

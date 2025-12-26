@@ -1,8 +1,9 @@
 #ifndef TRAJOPT_SQP_TRAJOPT_QP_PROBLEM_H
 #define TRAJOPT_SQP_TRAJOPT_QP_PROBLEM_H
 
-#include <memory>
 #include <trajopt_sqp/qp_problem.h>
+
+#include <memory>
 
 namespace trajopt_sqp
 {
@@ -20,7 +21,7 @@ public:
   TrajOptQPProblem(TrajOptQPProblem&&) = default;
   TrajOptQPProblem& operator=(TrajOptQPProblem&&) = default;
 
-  void addVariableSet(std::shared_ptr<trajopt_ifopt::VariableSet> variable_set) override;
+  void addVariableSet(std::shared_ptr<trajopt_ifopt::Variables> variable_set) override;
 
   void addConstraintSet(std::shared_ptr<trajopt_ifopt::ConstraintSet> constraint_set) override;
 
@@ -72,10 +73,10 @@ public:
   Eigen::Ref<const Eigen::VectorXd> getBoxSize() override;
   Eigen::Ref<const Eigen::VectorXd> getConstraintMeritCoeff() override;
 
-  Eigen::Ref<const SparseMatrix> getHessian() override;
+  Eigen::Ref<const trajopt_ifopt::Jacobian> getHessian() override;
   Eigen::Ref<const Eigen::VectorXd> getGradient() override;
 
-  Eigen::Ref<const SparseMatrix> getConstraintMatrix() override;
+  Eigen::Ref<const trajopt_ifopt::Jacobian> getConstraintMatrix() override;
   Eigen::Ref<const Eigen::VectorXd> getBoundsLower() override;
   Eigen::Ref<const Eigen::VectorXd> getBoundsUpper() override;
 

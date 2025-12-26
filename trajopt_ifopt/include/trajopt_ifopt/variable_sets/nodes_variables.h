@@ -36,14 +36,14 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt_ifopt/core/bounds.h>
-#include <trajopt_ifopt/core/variable_set.h>
+#include <trajopt_ifopt/core/component.h>
 #include <trajopt_ifopt/variable_sets/node.h>
 
 namespace trajopt_ifopt
 {
 class NodesObserver;
 
-class NodesVariables : public VariableSet
+class NodesVariables : public Variables
 {
 public:
   using Ptr = std::shared_ptr<NodesVariables>;
@@ -59,7 +59,7 @@ public:
    * @param opt_idx The node index
    * @return The node
    */
-  std::shared_ptr<const Node> GetNode(std::size_t opt_idx) const;
+  std::shared_ptr<const Node> getNode(std::size_t opt_idx) const;
 
   /**
    * @brief Pure optimization variables that define the nodes.
@@ -69,7 +69,7 @@ public:
    *
    * @sa GetNodeInfoAtOptIndex()
    */
-  Eigen::VectorXd GetValues() const override;
+  Eigen::VectorXd getValues() const override;
 
   /**
    * @brief Sets some node positions and velocity from the optimization variables.
@@ -81,28 +81,28 @@ public:
    *
    * @sa GetNodeValuesInfo()
    */
-  void SetVariables(const Eigen::VectorXd& x) override;
+  void setVariables(const Eigen::VectorXd& x) override;
 
   /**
    * @returns the bounds on position and velocity of each node and dimension.
    */
-  std::vector<Bounds> GetBounds() const override;
+  std::vector<Bounds> getBounds() const override;
 
   /**
    * @returns All the nodes that can be used to reconstruct the spline.
    */
-  std::vector<std::shared_ptr<const Node>> GetNodes() const;
+  std::vector<std::shared_ptr<const Node>> getNodes() const;
 
   /**
    * @brief Adds a dependent observer that gets notified when the nodes change.
    * @param spline Usually a pointer to a spline which uses the node values.
    */
-  void AddObserver(std::shared_ptr<NodesObserver> observer);
+  void addObserver(std::shared_ptr<NodesObserver> observer);
 
   /**
    * @returns  The dimensions (x,y,z) of every node.
    */
-  Eigen::Index GetDim() const;
+  Eigen::Index getDim() const;
 
 protected:
   Eigen::VectorXd values_;
@@ -115,10 +115,10 @@ protected:
    * @brief Add node to the variable set
    * @param node The node to append
    */
-  void AddNode(std::unique_ptr<Node> node);
+  void addNode(std::unique_ptr<Node> node);
 
   /** @brief Notifies the subscribed observers that the node values changes. */
-  void UpdateObservers();
+  void updateObservers();
 };
 
 }  // namespace trajopt_ifopt

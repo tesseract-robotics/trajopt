@@ -85,13 +85,13 @@ ContinuousCollisionNumericalConstraint::ContinuousCollisionNumericalConstraint(
   }
 }
 
-Eigen::VectorXd ContinuousCollisionNumericalConstraint::GetValues() const
+Eigen::VectorXd ContinuousCollisionNumericalConstraint::getValues() const
 {
   // Get current joint values
-  const double margin_buffer = collision_evaluator_->GetCollisionMarginBuffer();
+  const double margin_buffer = collision_evaluator_->getCollisionMarginBuffer();
   Eigen::VectorXd values = Eigen::VectorXd::Constant(static_cast<Eigen::Index>(bounds_.size()), -margin_buffer);
 
-  auto collision_data = collision_evaluator_->CalcCollisionData(
+  auto collision_data = collision_evaluator_->calcCollisionData(
       position_vars_[0]->value(), position_vars_[1]->value(), vars0_fixed_, vars1_fixed_, bounds_.size());
 
   if (collision_data->gradient_results_sets.empty())
@@ -128,26 +128,26 @@ Eigen::VectorXd ContinuousCollisionNumericalConstraint::GetValues() const
 }
 
 // Set the limits on the constraint values
-std::vector<Bounds> ContinuousCollisionNumericalConstraint::GetBounds() const { return bounds_; }
+std::vector<Bounds> ContinuousCollisionNumericalConstraint::getBounds() const { return bounds_; }
 
-void ContinuousCollisionNumericalConstraint::FillJacobianBlock(std::string var_set, Jacobian& jac_block) const
+void ContinuousCollisionNumericalConstraint::fillJacobianBlock(std::string var_set, Jacobian& jac_block) const
 {
   // Only modify the jacobian if this constraint uses var_set
-  if (var_set != position_vars_[0]->getParent()->getParent()->GetName())  // NOLINT
+  if (var_set != position_vars_[0]->getParent()->getParent()->getName())  // NOLINT
     return;
 
   // Setting to zeros because snopt sparsity cannot change
   if (!triplet_list_.empty())                                               // NOLINT
     jac_block.setFromTriplets(triplet_list_.begin(), triplet_list_.end());  // NOLINT
 
-  const double margin_buffer = collision_evaluator_->GetCollisionMarginBuffer();
+  const double margin_buffer = collision_evaluator_->getCollisionMarginBuffer();
 
   // Calculate collisions
   Eigen::VectorXd joint_vals0 = position_vars_[0]->value();
   const Eigen::VectorXd joint_vals1 = position_vars_[1]->value();
 
   auto collision_data =
-      collision_evaluator_->CalcCollisionData(joint_vals0, joint_vals1, vars0_fixed_, vars1_fixed_, bounds_.size());
+      collision_evaluator_->calcCollisionData(joint_vals0, joint_vals1, vars0_fixed_, vars1_fixed_, bounds_.size());
   if (collision_data->gradient_results_sets.empty())
     return;
 
@@ -160,7 +160,7 @@ void ContinuousCollisionNumericalConstraint::FillJacobianBlock(std::string var_s
     {
       jv(j) += delta;
       auto collision_data_delta =
-          collision_evaluator_->CalcCollisionData(jv, joint_vals1, vars0_fixed_, vars1_fixed_, bounds_.size());
+          collision_evaluator_->calcCollisionData(jv, joint_vals1, vars0_fixed_, vars1_fixed_, bounds_.size());
 
       for (int i = 0; i < static_cast<int>(cnt); ++i)
       {
@@ -200,13 +200,13 @@ void ContinuousCollisionNumericalConstraint::FillJacobianBlock(std::string var_s
   }
 }
 
-void ContinuousCollisionNumericalConstraint::SetBounds(const std::vector<Bounds>& bounds)
+void ContinuousCollisionNumericalConstraint::setBounds(const std::vector<Bounds>& bounds)
 {
   assert(bounds.size() == 1);
   bounds_ = bounds;
 }
 
-std::shared_ptr<ContinuousCollisionEvaluator> ContinuousCollisionNumericalConstraint::GetCollisionEvaluator() const
+std::shared_ptr<ContinuousCollisionEvaluator> ContinuousCollisionNumericalConstraint::getCollisionEvaluator() const
 {
   return collision_evaluator_;
 }

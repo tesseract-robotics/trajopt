@@ -69,6 +69,8 @@ public:
                                 bool fixed_sparsity = false,
                                 std::string name = "LVSCollision");
 
+  int update() override { return rows_; }
+
   /**
    * @brief Returns the values associated with the constraint.
    * @warning Make sure that the values returns are not just the violation but the constraint values.
@@ -80,31 +82,31 @@ public:
    * it is important to not set the collision margin buffer to zero.
    * @return The constraint values not the violations
    */
-  Eigen::VectorXd GetValues() const override;
+  Eigen::VectorXd getValues() const override;
 
   /**
    * @brief  Returns the "bounds" of this constraint. How these are enforced is up to the solver
    * @return Returns the "bounds" of this constraint
    */
-  std::vector<Bounds> GetBounds() const override;
+  std::vector<Bounds> getBounds() const override;
   /**
    * @brief Fills the jacobian block associated with the given var_set.
    * @param var_set Name of the var_set to which the jac_block is associated
    * @param jac_block Block of the overall jacobian associated with these constraints and the var_set variable
    */
-  void FillJacobianBlock(std::string var_set, Jacobian& jac_block) const override;
+  void fillJacobianBlock(std::string var_set, Jacobian& jac_block) const override;
 
   /**
    * @brief Sets the bounds on the collision distance
    * @param bounds New bounds that will be set. Should be size 1
    */
-  void SetBounds(const std::vector<Bounds>& bounds);
+  void setBounds(const std::vector<Bounds>& bounds);
 
   /**
    * @brief Get the collision evaluator. This exposed for plotter callbacks
    * @return The collision evaluator
    */
-  std::shared_ptr<ContinuousCollisionEvaluator> GetCollisionEvaluator() const;
+  std::shared_ptr<ContinuousCollisionEvaluator> getCollisionEvaluator() const;
 
 private:
   /** @brief The number of joints in a single JointPosition */

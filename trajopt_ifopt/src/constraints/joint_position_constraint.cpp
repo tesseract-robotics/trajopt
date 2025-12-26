@@ -58,7 +58,7 @@ JointPosConstraint::JointPosConstraint(const Eigen::VectorXd& target,
     CONSOLE_BRIDGE_logError("Targets size does not align with variables provided");
 
   // Set the bounds to the input targets
-  std::vector<Bounds> bounds(static_cast<std::size_t>(GetRows()));
+  std::vector<Bounds> bounds(static_cast<std::size_t>(rows_));
   // All of the positions should be exactly at their targets
 
   for (long i = 0; i < n_dof_; i++)
@@ -98,16 +98,16 @@ JointPosConstraint::JointPosConstraint(const std::vector<Bounds>& bounds,
     CONSOLE_BRIDGE_logError("Bounds size does not align with variables provided");
 }
 
-Eigen::VectorXd JointPosConstraint::GetValues() const { return coeffs_.cwiseProduct(position_var_->value()); }
+Eigen::VectorXd JointPosConstraint::getValues() const { return coeffs_.cwiseProduct(position_var_->value()); }
 
 // Set the limits on the constraint values
-std::vector<Bounds> JointPosConstraint::GetBounds() const { return bounds_; }
+std::vector<Bounds> JointPosConstraint::getBounds() const { return bounds_; }
 
-void JointPosConstraint::FillJacobianBlock(std::string var_set, Jacobian& jac_block) const
+void JointPosConstraint::fillJacobianBlock(std::string var_set, Jacobian& jac_block) const
 {
   // Check if this constraint use the var_set
   // Only modify the jacobian if this constraint uses var_set
-  if (var_set != position_var_->getParent()->getParent()->GetName())
+  if (var_set != position_var_->getParent()->getParent()->getName())
     return;
 
   // Reserve enough room in the sparse matrix

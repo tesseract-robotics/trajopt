@@ -104,7 +104,7 @@ TEST_F(SimpleCollisionTest, spheres)  // NOLINT
     positions.push_back(pos);
     vars.push_back(nodes.back()->addVar("position", manip->getJointNames(), pos, bounds));
   }
-  nlp.AddVariableSet(std::make_shared<NodesVariables>("joint_trajectory", std::move(nodes)));
+  nlp.addVariableSet(std::make_shared<NodesVariables>("joint_trajectory", std::move(nodes)));
 
   // Step 3: Setup collision
   const double margin_coeff = 10;
@@ -117,7 +117,7 @@ TEST_F(SimpleCollisionTest, spheres)  // NOLINT
       std::make_shared<SingleTimestepCollisionEvaluator>(collision_cache, manip, env, trajopt_collision_config);
 
   auto cnt = std::make_shared<DiscreteCollisionConstraint>(collision_evaluator, vars[0], 3, true);
-  nlp.AddConstraintSet(cnt);
+  nlp.addConstraintSet(cnt);
 
   nlp.PrintCurrent();
   std::cout << "Jacobian: \n" << nlp.GetJacobianOfConstraints() << '\n';
@@ -132,7 +132,7 @@ TEST_F(SimpleCollisionTest, spheres)  // NOLINT
 
   // 6) solve
   ipopt.Solve(nlp);
-  Eigen::VectorXd x = nlp.GetOptVariables()->GetValues();
+  Eigen::VectorXd x = nlp.GetOptVariables()->getValues();
   std::cout << x.transpose() << '\n';  // NOLINT
 
   EXPECT_TRUE(ipopt.GetReturnStatus() == 0);

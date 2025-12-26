@@ -21,17 +21,22 @@ namespace trajopt_ifopt
 // Core
 struct Bounds;
 class Component;
-class Composite;
+class Variables;
+class Differentiable;
+class CompositeVariables;
+class CompositeDifferentiable;
 class ConstraintSet;
 class CostTerm;
 class DynamicConstraintSet;
 class Problem;
-class VariableSet;
 
 // variable_sets
 class NodesVariables;
 class Node;
 class Var;
+
+// Dynamic Constraint Set
+class DynamicConstraintSet;
 
 // cartesian_line_constraint.h
 struct CartLineInfo;

@@ -104,16 +104,16 @@ ContinuousCollisionConstraint::ContinuousCollisionConstraint(
   const std::size_t num_segments = position_vars_.size() - 1;
   const std::size_t total_rows = max_num_cnt_per_segment_ * num_segments;
 
-  if (static_cast<int>(total_rows) != GetRows())
+  if (static_cast<int>(total_rows) != rows_)
     throw std::runtime_error("ContinuousCollisionConstraint: internal row count mismatch");
 
   bounds_ = std::vector<Bounds>(total_rows, BoundSmallerZero);
 }
 
-Eigen::VectorXd ContinuousCollisionConstraint::GetValues() const
+Eigen::VectorXd ContinuousCollisionConstraint::getValues() const
 {
-  const double margin_buffer = collision_evaluator_->GetCollisionMarginBuffer();
-  Eigen::VectorXd values = Eigen::VectorXd::Constant(GetRows(), -margin_buffer);
+  const double margin_buffer = collision_evaluator_->getCollisionMarginBuffer();
+  Eigen::VectorXd values = Eigen::VectorXd::Constant(rows_, -margin_buffer);
 
   const std::size_t num_segments = position_vars_.size() - 1;
 
@@ -125,7 +125,7 @@ Eigen::VectorXd ContinuousCollisionConstraint::GetValues() const
     const bool seg_vars0_fixed = (seg == 0) ? vars0_fixed_ : false;
     const bool seg_vars1_fixed = (seg == num_segments - 1) ? vars1_fixed_ : false;
 
-    auto collision_data = collision_evaluator_->CalcCollisionData(
+    auto collision_data = collision_evaluator_->calcCollisionData(
         var0->value(), var1->value(), seg_vars0_fixed, seg_vars1_fixed, max_num_cnt_per_segment_);
 
     if (collision_data->gradient_results_sets.empty())
@@ -167,7 +167,7 @@ Eigen::VectorXd ContinuousCollisionConstraint::GetValues() const
 }
 
 // Set the limits on the constraint values
-std::vector<Bounds> ContinuousCollisionConstraint::GetBounds() const { return bounds_; }
+std::vector<Bounds> ContinuousCollisionConstraint::getBounds() const { return bounds_; }
 
 void ContinuousCollisionConstraint::init() const
 {
@@ -182,7 +182,7 @@ void ContinuousCollisionConstraint::init() const
       throw std::runtime_error("ContinuousCollisionConstraint: all vars must belong to the same variable set");
   }
 
-  var_set_name_ = parent_set0->GetName();
+  var_set_name_ = parent_set0->getName();
 
   if (!fixed_sparsity_)
     return;
@@ -190,7 +190,7 @@ void ContinuousCollisionConstraint::init() const
   triplet_list_.clear();
 
   const std::size_t num_segments = position_vars_.size() - 1;
-  const Eigen::Index total_rows = GetRows();
+  const Eigen::Index total_rows = rows_;
 
   triplet_list_.reserve(static_cast<std::size_t>(total_rows) * static_cast<std::size_t>(2 * n_dof_));
 
@@ -215,7 +215,7 @@ void ContinuousCollisionConstraint::init() const
   }
 }
 
-void ContinuousCollisionConstraint::FillJacobianBlock(std::string var_set, Jacobian& jac_block) const
+void ContinuousCollisionConstraint::fillJacobianBlock(std::string var_set, Jacobian& jac_block) const
 {
   std::call_once(init_flag_, &ContinuousCollisionConstraint::init, this);
 
@@ -237,7 +237,7 @@ void ContinuousCollisionConstraint::FillJacobianBlock(std::string var_set, Jacob
     const bool seg_vars0_fixed = (seg == 0) ? vars0_fixed_ : false;
     const bool seg_vars1_fixed = (seg == num_segments - 1) ? vars1_fixed_ : false;
 
-    auto collision_data = collision_evaluator_->CalcCollisionData(
+    auto collision_data = collision_evaluator_->calcCollisionData(
         var0->value(), var1->value(), seg_vars0_fixed, seg_vars1_fixed, max_num_cnt_per_segment_);
 
     if (collision_data->gradient_results_sets.empty())
@@ -293,13 +293,13 @@ void ContinuousCollisionConstraint::FillJacobianBlock(std::string var_set, Jacob
   }
 }
 
-void ContinuousCollisionConstraint::SetBounds(const std::vector<Bounds>& bounds)
+void ContinuousCollisionConstraint::setBounds(const std::vector<Bounds>& bounds)
 {
-  assert(bounds.size() == GetRows());
+  assert(bounds.size() == rows_);
   bounds_ = bounds;
 }
 
-std::shared_ptr<ContinuousCollisionEvaluator> ContinuousCollisionConstraint::GetCollisionEvaluator() const
+std::shared_ptr<ContinuousCollisionEvaluator> ContinuousCollisionConstraint::getCollisionEvaluator() const
 {
   return collision_evaluator_;
 }

@@ -127,7 +127,7 @@ TEST_F(CastTest, boxes)  // NOLINT
     vars.push_back(nodes.back()->addVar("position", manip->getJointNames(), pos, bounds));
   }
 
-  nlp.AddVariableSet(std::make_shared<NodesVariables>("joint_trajectory", std::move(nodes)));
+  nlp.addVariableSet(std::make_shared<NodesVariables>("joint_trajectory", std::move(nodes)));
 
   // Step 3: Setup collision
   const double margin_coeff = 1;
@@ -140,13 +140,13 @@ TEST_F(CastTest, boxes)  // NOLINT
   {  // Fix start position
     const Eigen::VectorXd coeffs = Eigen::VectorXd::Constant(manip->numJoints(), 1);
     auto cnt = std::make_shared<JointPosConstraint>(positions[0], vars[0], coeffs);
-    nlp.AddConstraintSet(cnt);
+    nlp.addConstraintSet(cnt);
   }
 
   {  // Fix end position
     const Eigen::VectorXd coeffs = Eigen::VectorXd::Constant(manip->numJoints(), 1);
     auto cnt = std::make_shared<JointPosConstraint>(positions[2], vars[2], coeffs);
-    nlp.AddConstraintSet(cnt);
+    nlp.addConstraintSet(cnt);
   }
 
   auto collision_cache = std::make_shared<CollisionCache>(100);
@@ -159,15 +159,15 @@ TEST_F(CastTest, boxes)  // NOLINT
     const std::array<std::shared_ptr<const Var>, 2> position_vars{ vars[i - 1], vars[i] };
     auto cnt = std::make_shared<ContinuousCollisionConstraint>(
         collision_evaluator, position_vars, vars_fixed[0], vars_fixed[1], 1, true);
-    nlp.AddConstraintSet(cnt);
+    nlp.addConstraintSet(cnt);
     if (i == vars.size() - 1)
       vars_fixed = { false, true };
     else
       vars_fixed = { false, false };
   }
 
-  nlp.PrintCurrent();
-  std::cout << "Jacobian: \n" << nlp.GetJacobianOfConstraints().toDense() << '\n';
+  nlp.printCurrent();
+  std::cout << "Jacobian: \n" << nlp.getJacobianOfConstraints().toDense() << '\n';
 
   // 5) choose solver and options
   ifopt::IpoptSolver ipopt;
@@ -180,7 +180,7 @@ TEST_F(CastTest, boxes)  // NOLINT
 
   // 6) solve
   ipopt.Solve(nlp);
-  Eigen::VectorXd x = nlp.GetOptVariables()->GetValues();
+  Eigen::VectorXd x = nlp.getOptVariables()->getValues();
   std::cout << x.transpose() << '\n';
 
   EXPECT_TRUE(ipopt.GetReturnStatus() == 0);
