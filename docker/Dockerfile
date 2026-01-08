@@ -11,7 +11,6 @@ USER root
 ARG WORKSPACE_DIR=/opt/trajopt
 RUN --mount=type=bind,target=${WORKSPACE_DIR}/src/trajopt \
   cd ${WORKSPACE_DIR} \
-  && vcs import src < src/trajopt/dependencies.repos --shallow \
   && rosdep install \
     --from-paths ${WORKSPACE_DIR}/src \
     -iry
