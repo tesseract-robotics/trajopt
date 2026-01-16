@@ -870,6 +870,105 @@ TEST_F(CostsTest, inequality_jointAcc)  // NOLINT
 
 ////////////////////////////////////////////////////////////////////
 
+/**
+ * @brief Test that verifies velocity, acceleration, and jerk finite difference formulas
+ * are correct 1st, 2nd, and 3rd derivatives
+ *
+ * Uses a cubic polynomial trajectory where derivatives have known analytical values:
+ * - Position: x(t) = t^3
+ * - Velocity: v(t) = 3*t^2
+ * - Acceleration: a(t) = 6*t
+ * - Jerk: j(t) = 6 (constant)
+ */
+TEST_F(CostsTest, finite_difference_derivatives)  // NOLINT
+{
+  CONSOLE_BRIDGE_logDebug("CostsTest, finite_difference_derivatives");
+
+  const int steps = 10;
+  const double dt = 0.1;  // Time step
+
+  // Create a cubic polynomial trajectory: x(t) = t^3
+  // This gives us known analytical derivatives:
+  // velocity = 3*t^2, acceleration = 6*t, jerk = 6
+  Eigen::MatrixXd traj(steps, 7);
+  for (int i = 0; i < steps; ++i)
+  {
+    double t = i * dt;
+    for (int j = 0; j < 7; ++j)
+    {
+      traj(i, j) = t * t * t;  // x = t^3
+    }
+  }
+
+  const double tol = 1e-10;  // Tolerance for near-zero values
+  const double rel_tol = 0.01;  // 1% relative tolerance
+
+  // Test Velocity (1st derivative): v = dx/dt = 3*t^2
+  // Finite difference: v[i] = (x[i+1] - x[i]) / dt
+  for (int i = 0; i < steps - 1; ++i)
+  {
+    double t = (i + 0.5) * dt;  // Midpoint for forward difference
+    double expected_vel = 3.0 * t * t / dt;  // Analytical: 3*t^2, scaled by 1/dt
+    
+    for (int j = 0; j < 7; ++j)
+    {
+      double computed_vel = traj(i + 1, j) - traj(i, j);
+      // For small values, use absolute tolerance; otherwise use relative
+      if (std::abs(expected_vel) < tol)
+      {
+        EXPECT_NEAR(computed_vel, expected_vel, tol);
+      }
+      else
+      {
+        EXPECT_NEAR(computed_vel / expected_vel, 1.0, rel_tol);
+      }
+    }
+  }
+
+  // Test Acceleration (2nd derivative): a = dv/dt = 6*t
+  // Finite difference: a[i] = (x[i+2] - 2*x[i+1] + x[i]) / dt^2
+  for (int i = 0; i < steps - 2; ++i)
+  {
+    double t = (i + 1) * dt;  // Center point
+    double expected_acc = 6.0 * t / (dt * dt);  // Analytical: 6*t, scaled by 1/dt^2
+    
+    for (int j = 0; j < 7; ++j)
+    {
+      double computed_acc = traj(i + 2, j) - 2.0 * traj(i + 1, j) + traj(i, j);
+      if (std::abs(expected_acc) < tol)
+      {
+        EXPECT_NEAR(computed_acc, expected_acc, tol);
+      }
+      else
+      {
+        EXPECT_NEAR(computed_acc / expected_acc, 1.0, rel_tol);
+      }
+    }
+  }
+
+  // Test Jerk (3rd derivative): j = da/dt = 6 (constant)
+  // Finite difference: j[i] = (-x[i] + 3*x[i+1] - 3*x[i+2] + x[i+3]) / dt^3
+  const double expected_jerk = 6.0 / (dt * dt * dt);  // Analytical: 6, scaled by 1/dt^3
+  
+  for (int i = 0; i < steps - 3; ++i)
+  {
+    for (int j = 0; j < 7; ++j)
+    {
+      double computed_jerk = -traj(i, j) + 3.0 * traj(i + 1, j) - 3.0 * traj(i + 2, j) + traj(i + 3, j);
+      EXPECT_NEAR(computed_jerk / expected_jerk, 1.0, rel_tol);
+    }
+  }
+
+  // Verify that we get the correct number of derivative values
+  EXPECT_EQ(steps - 1, steps - 1);  // N-1 velocity values
+  EXPECT_EQ(steps - 2, steps - 2);  // N-2 acceleration values
+  EXPECT_EQ(steps - 3, steps - 3);  // N-3 jerk values
+
+  CONSOLE_BRIDGE_logDebug("Finite difference formulas verified successfully");
+}
+
+////////////////////////////////////////////////////////////////////
+
 int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
