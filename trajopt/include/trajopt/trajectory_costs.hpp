@@ -474,7 +474,7 @@ private:
   int first_step_;
   /** @brief Last time step to which the term is applied */
   int last_step_;
-  /** @brief Stores the costs as an expression. Will be length num_jnts*(num_timesteps-4)*2 */
+  /** @brief Stores the costs as an expression. Will be length num_jnts*(num_timesteps-3)*2 */
   std::vector<sco::AffExpr> expr_vec_;
 };
 
@@ -499,7 +499,7 @@ private:
   VarArray vars_;
   /** @brief The coefficients used to weight the cost */
   Eigen::VectorXd coeffs_;
-  /** @brief Stores the costs as an expression. Will be length num_jnts*(num_timesteps-4) */
+  /** @brief Stores the costs as an expression. Will be length num_jnts*(num_timesteps-3) */
   std::vector<sco::AffExpr> expr_vec_;
   /** @brief Vector of velocity targets */
   Eigen::VectorXd targets_;
@@ -541,7 +541,7 @@ private:
   int first_step_;
   /** @brief Last time step to which the term is applied */
   int last_step_;
-  /** @brief Stores the costs as an expression. Will be length num_jnts*(num_timesteps-4)*2 */
+  /** @brief Stores the costs as an expression. Will be length num_jnts*(num_timesteps-3)*2 */
   std::vector<sco::AffExpr> expr_vec_;
 };
 }  // namespace trajopt
