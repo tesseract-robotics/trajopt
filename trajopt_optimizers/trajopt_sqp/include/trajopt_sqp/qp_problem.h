@@ -2,7 +2,7 @@
 #define TRAJOPT_SQP_QP_PROBLEM_BASE_H
 
 #include <memory>
-#include <trajopt_sqp/eigen_types.h>
+#include <trajopt_ifopt/core/eigen_types.h>
 #include <trajopt_ifopt/fwd.h>
 
 namespace trajopt_sqp
@@ -26,7 +26,7 @@ public:
    * the optimal timing values. This function correctly appends the
    * individual variables sets and ensures correct order of Jacobian columns.
    */
-  virtual void addVariableSet(std::shared_ptr<trajopt_ifopt::VariableSet> variable_set) = 0;
+  virtual void addVariableSet(std::shared_ptr<trajopt_ifopt::Variables> variable_set) = 0;
 
   /**
    * @brief Add a set of multiple constraints to the optimization problem.
@@ -160,10 +160,10 @@ public:
   virtual Eigen::Ref<const Eigen::VectorXd> getBoxSize() = 0;
   virtual Eigen::Ref<const Eigen::VectorXd> getConstraintMeritCoeff() = 0;
 
-  virtual Eigen::Ref<const SparseMatrix> getHessian() = 0;
+  virtual Eigen::Ref<const trajopt_ifopt::Jacobian> getHessian() = 0;
   virtual Eigen::Ref<const Eigen::VectorXd> getGradient() = 0;
 
-  virtual Eigen::Ref<const SparseMatrix> getConstraintMatrix() = 0;
+  virtual Eigen::Ref<const trajopt_ifopt::Jacobian> getConstraintMatrix() = 0;
   virtual Eigen::Ref<const Eigen::VectorXd> getBoundsLower() = 0;
   virtual Eigen::Ref<const Eigen::VectorXd> getBoundsUpper() = 0;
 };

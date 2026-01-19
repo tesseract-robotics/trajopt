@@ -60,7 +60,7 @@ public:
   /**
    * @brief Callback method called every time the subject changes.
    */
-  virtual void UpdateNodes() = 0;
+  virtual void updateNodes() = 0;
 
 protected:
   std::weak_ptr<NodesVariables> subject_;

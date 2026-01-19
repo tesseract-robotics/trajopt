@@ -30,6 +30,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef TRAJOPT_IFOPT_CORE_CONSTRAINT_SET_H
 #define TRAJOPT_IFOPT_CORE_CONSTRAINT_SET_H
 
+#include <trajopt_ifopt/core/component.h>
 #include <trajopt_ifopt/core/composite.h>
 
 namespace trajopt_ifopt
@@ -47,19 +48,21 @@ namespace trajopt_ifopt
  *
  * @sa Component
  */
-class ConstraintSet : public Component
+class ConstraintSet : public Differentiable
 {
 public:
   using Ptr = std::shared_ptr<ConstraintSet>;
-  using VariablesPtr = Composite::Ptr;
 
   /**
    * @brief Creates constraints on the variables @c x.
    * @param name  What these constraints represent.
    * @param n_constraints  The number of constraints.
    */
+  ConstraintSet(std::string name, bool dynamic);
   ConstraintSet(std::string name, int n_constraints);
   ~ConstraintSet() override = default;
+
+  /** @todo I think everything related to linkWithVariables can be removed */
 
   /**
    * @brief Connects the constraint with the optimization variables.
@@ -68,7 +71,7 @@ public:
    * The optimization variable values are necessary for calculating constraint
    * violations and Jacobians.
    */
-  void LinkWithVariables(const VariablesPtr& x);
+  void linkWithVariables(const CompositeVariables::Ptr& x);
 
   /**
    * @brief  The matrix of derivatives for these constraints and variables.
@@ -78,9 +81,9 @@ public:
    * constraint, whereas every column refers to a single optimization variable.
    *
    * This function only combines the user-defined jacobians from
-   * FillJacobianBlock().
+   * fillJacobianBlock().
    */
-  Jacobian GetJacobian() const final;
+  Jacobian getJacobian() const final;
 
   /**
    * @brief Set individual Jacobians corresponding to each decision variable set.
@@ -104,7 +107,7 @@ public:
    * set as follows (which can also be set =0.0 without erros):
    * jac_block.coeffRef(1, 3) = ...
    */
-  virtual void FillJacobianBlock(std::string var_set, Jacobian& jac_block) const = 0;
+  virtual void fillJacobianBlock(std::string var_set, Jacobian& jac_block) const = 0;
 
 protected:
   /**
@@ -112,10 +115,10 @@ protected:
    *
    * This must be used to formulate the constraint violation and Jacobian.
    */
-  VariablesPtr GetVariables() const { return variables_; };
+  CompositeVariables::Ptr getVariables() const { return variables_; };
 
 private:
-  VariablesPtr variables_;
+  CompositeVariables::Ptr variables_;
 
   /**
    * @brief  Initialize quantities that depend on the optimization variables.
@@ -125,13 +128,7 @@ private:
    * or shorthands to specific variable sets want to be saved for quicker
    * access later. This function can be overwritten for that.
    */
-  virtual void InitVariableDependedQuantities(const VariablesPtr& x_init);
-
-  // doesn't exist for constraints, generated run-time error when used
-  void SetVariables(const Eigen::VectorXd& x) final;
-
-  // doesn't exist for fixed size constraints, generated run-time error when used
-  int Update() final;
+  virtual void initVariableDependedQuantities(const Variables::Ptr& x_init);
 };
 }  // namespace trajopt_ifopt
 

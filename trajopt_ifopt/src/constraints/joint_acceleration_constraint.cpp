@@ -39,7 +39,6 @@ JointAccelConstraint::JointAccelConstraint(const Eigen::VectorXd& targets,
   : ConstraintSet(std::move(name), static_cast<int>(targets.size()) * static_cast<int>(position_vars.size()))
   , n_dof_(targets.size())
   , n_vars_(static_cast<long>(position_vars.size()))
-  , coeffs_(coeffs)
   , position_vars_(position_vars)
 {
   if (position_vars_.size() < 4)
@@ -56,18 +55,26 @@ JointAccelConstraint::JointAccelConstraint(const Eigen::VectorXd& targets,
   assert(n_dof_ > 0);
   assert(n_vars_ > 0);
 
-  if (!(coeffs_.array() > 0).all())
+  if (!(coeffs.array() > 0).all())
     throw std::runtime_error("JointAccelConstraint, coeff must be greater than zero.");
 
-  if (coeffs_.rows() == 1)
-    coeffs_ = Eigen::VectorXd::Constant(n_dof_, coeffs(0));
-
-  if (coeffs_.rows() != n_dof_)
+  if (coeffs.rows() == 0)
+    coeffs_ = Eigen::VectorXd::Ones(n_dof_ * n_vars_);
+  else if (coeffs.rows() == 1)
+    coeffs_ = Eigen::VectorXd::Constant(n_dof_ * n_vars_, coeffs(0));
+  else if (coeffs.rows() != n_dof_)
     throw std::runtime_error("JointAccelConstraint, coeff must be the same size of the joint postion.");
+
+  if (coeffs.rows() == n_dof_)
+  {
+    coeffs_.resize(n_dof_ * n_vars_);
+    for (long j = 0; j < n_vars_; j++)
+      coeffs_.segment(j * n_dof_, n_dof_) = coeffs;
+  }
 
   // Set the bounds to the input targets
   // All of the positions should be exactly at their targets
-  std::vector<Bounds> bounds(static_cast<std::size_t>(GetRows()));
+  std::vector<Bounds> bounds(static_cast<std::size_t>(rows_));
   for (long j = 0; j < n_vars_; j++)
   {
     for (long i = 0; i < n_dof_; i++)
@@ -76,7 +83,7 @@ JointAccelConstraint::JointAccelConstraint(const Eigen::VectorXd& targets,
   bounds_ = bounds;
 }
 
-Eigen::VectorXd JointAccelConstraint::GetValues() const
+Eigen::VectorXd JointAccelConstraint::getValues() const
 {
   const std::size_t n = position_vars_.size();
   Eigen::VectorXd acceleration(n_dof_ * static_cast<Eigen::Index>(n));
@@ -89,7 +96,7 @@ Eigen::VectorXd JointAccelConstraint::GetValues() const
     const Eigen::VectorXd& q2 = position_vars_[i + 2]->value();
 
     const Eigen::VectorXd single_step = q2 - 2.0 * q1 + q0;
-    acceleration.segment(static_cast<Eigen::Index>(i) * n_dof_, n_dof_) = coeffs_.cwiseProduct(single_step);
+    acceleration.segment(static_cast<Eigen::Index>(i) * n_dof_, n_dof_) = single_step;
   }
 
   // Backward diff for the last two timesteps [n-2, n-1]
@@ -100,20 +107,22 @@ Eigen::VectorXd JointAccelConstraint::GetValues() const
     const Eigen::VectorXd& q2 = position_vars_[i - 2]->value();  // q_{i-2}
 
     const Eigen::VectorXd single_step = q2 - 2.0 * q1 + q0;
-    acceleration.segment(static_cast<Eigen::Index>(i) * n_dof_, n_dof_) = coeffs_.cwiseProduct(single_step);
+    acceleration.segment(static_cast<Eigen::Index>(i) * n_dof_, n_dof_) = single_step;
   }
 
   return acceleration;
 }
 
-// Set the limits on the constraint values (in this case just the targets)
-std::vector<Bounds> JointAccelConstraint::GetBounds() const { return bounds_; }
+Eigen::VectorXd JointAccelConstraint::getCoefficients() const { return coeffs_; }
 
-void JointAccelConstraint::FillJacobianBlock(std::string var_set, Jacobian& jac_block) const
+// Set the limits on the constraint values (in this case just the targets)
+std::vector<Bounds> JointAccelConstraint::getBounds() const { return bounds_; }
+
+void JointAccelConstraint::fillJacobianBlock(std::string var_set, Jacobian& jac_block) const
 {
   // Check if this constraint use the var_set
   // Only modify the jacobian if this constraint uses var_set
-  if (var_set != position_vars_.front()->getParent()->getParent()->GetName())
+  if (var_set != position_vars_.front()->getParent()->getParent()->getName())
     return;
 
   // Each timestep contributes 3 nonzeros per DOF
@@ -134,13 +143,12 @@ void JointAccelConstraint::FillJacobianBlock(std::string var_set, Jacobian& jac_
 
       for (Eigen::Index k = 0; k < n_dof_; ++k)
       {
-        const double c = coeffs_[k];
         const Eigen::Index row = row_offset + k;
 
         // a_i = c * (q_{i+2} - 2*q_{i+1} + q_i)
-        triplets.emplace_back(row, col_i + k, c);           // ∂a/∂q_i
-        triplets.emplace_back(row, col_ip1 + k, -2.0 * c);  // ∂a/∂q_{i+1}
-        triplets.emplace_back(row, col_ip2 + k, c);         // ∂a/∂q_{i+2}
+        triplets.emplace_back(row, col_i + k, 1);       // ∂a/∂q_i
+        triplets.emplace_back(row, col_ip1 + k, -2.0);  // ∂a/∂q_{i+1}
+        triplets.emplace_back(row, col_ip2 + k, 1);     // ∂a/∂q_{i+2}
       }
     }
     else
@@ -152,13 +160,12 @@ void JointAccelConstraint::FillJacobianBlock(std::string var_set, Jacobian& jac_
 
       for (Eigen::Index k = 0; k < n_dof_; ++k)
       {
-        const double c = coeffs_[k];
         const Eigen::Index row = row_offset + k;
 
         // a_i = c * (q_{i-2} - 2*q_{i-1} + q_i)
-        triplets.emplace_back(row, col_im2 + k, c);         // ∂a/∂q_{i-2}
-        triplets.emplace_back(row, col_im1 + k, -2.0 * c);  // ∂a/∂q_{i-1}
-        triplets.emplace_back(row, col_i + k, c);           // ∂a/∂q_i
+        triplets.emplace_back(row, col_im2 + k, 1);     // ∂a/∂q_{i-2}
+        triplets.emplace_back(row, col_im1 + k, -2.0);  // ∂a/∂q_{i-1}
+        triplets.emplace_back(row, col_i + k, 1);       // ∂a/∂q_i
       }
     }
   }

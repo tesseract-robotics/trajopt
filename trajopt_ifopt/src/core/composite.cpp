@@ -29,137 +29,175 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <trajopt_ifopt/core/composite.h>
 
-#include <iomanip>
 #include <iostream>
 
 namespace trajopt_ifopt
 {
-Component::Component(std::string name, int num_rows, bool is_dynamic)
-  : name_(std::move(name)), num_rows_(num_rows), is_dynamic_(is_dynamic)
-{
-}
+CompositeVariables::CompositeVariables(std::string name) : Variables(std::move(name), 0) {}
 
-int Component::GetRows() const { return num_rows_; }
-
-void Component::SetRows(int num_rows) { num_rows_ = num_rows; }
-
-const std::string& Component::GetName() const { return name_; }
-
-bool Component::IsDynamic() const { return is_dynamic_; }
-
-void Component::Print(double tol, int& index) const
-{
-  // calculate squared bound violation
-  Eigen::VectorXd x = GetValues();
-  std::vector<Bounds> bounds = GetBounds();
-
-  std::vector<int> viol_idx;
-  for (std::size_t i = 0; i < bounds.size(); ++i)
-  {
-    const auto& b = bounds.at(i);
-    double val = x(static_cast<Eigen::Index>(i));
-    if (val < b.lower - tol || b.upper + tol < val)
-      viol_idx.push_back(static_cast<int>(i));  // constraint out of bounds
-  }
-
-  std::string black = "\033[0m";
-  std::string red = "\033[31m";
-  std::string color = viol_idx.empty() ? black : red;
-
-  std::cout.precision(2);
-  std::cout << std::fixed << std::left << std::setw(30) << name_ << std::right << std::setw(4) << num_rows_
-            << std::setw(9) << index << std::setfill('.') << std::setw(7) << index + num_rows_ - 1 << std::setfill(' ')
-            << color << std::setw(12) << viol_idx.size() << black << "\n";
-
-  index += num_rows_;
-}
-
-Composite::Composite(std::string name, bool is_cost, bool is_dynamic)
-  : Component(std::move(name), 0, is_dynamic), is_cost_(is_cost)
-{
-}
-
-void Composite::AddComponent(Component::Ptr c)
+void CompositeVariables::addComponent(Variables::Ptr c)
 {
   // at this point the number of rows must be specified.
-  assert(c->GetRows() != kSpecifyLater);
-  assert(c->IsDynamic() == IsDynamic());
+  assert(c->getRows() != -1);
 
-  if (is_cost_)
-    SetRows(1);
-  else if (!IsDynamic())
-    SetRows(GetRows() + c->GetRows());
-
+  rows_ += c->getRows();
   components_.push_back(std::move(c));
 }
 
-void Composite::ClearComponents()
+const CompositeVariables::ComponentVec& CompositeVariables::getComponents() const { return components_; }
+
+void CompositeVariables::clearComponents()
 {
   components_.clear();
-  SetRows(0);
+  rows_ = 0;
 }
 
-Component::Ptr Composite::GetComponent(const std::string& name) const
+Variables::Ptr CompositeVariables::getComponent(const std::string& name) const
 {
   for (const auto& c : components_)
-    if (c->GetName() == name)
+    if (c->getName() == name)
       return c;
 
   assert(false);  // component with name doesn't exist, abort program
   return {};
 }
 
-int Composite::Update()
+bool CompositeVariables::empty() const { return components_.empty(); }
+
+// ---- Variables / Component ----
+Eigen::VectorXd CompositeVariables::getValues() const
 {
-  if (!IsDynamic())
-    return GetRows();
-
-  int rows{ 0 };
-  for (auto& c : components_)
-    rows += c->Update();
-
-  SetRows(rows);
-  return rows;
-}
-
-Eigen::VectorXd Composite::GetValues() const
-{
-  Eigen::VectorXd g_all = Eigen::VectorXd::Zero(GetRows());
+  Eigen::VectorXd g_all = Eigen::VectorXd::Zero(rows_);
 
   int row = 0;
   for (const auto& c : components_)
   {
-    int n_rows = c->GetRows();
-    Eigen::VectorXd g = c->GetValues();
-    g_all.middleRows(row, n_rows) += g;
-
-    if (!is_cost_)
-      row += n_rows;
+    int n_rows = c->getRows();
+    g_all.middleRows(row, n_rows) += c->getValues();
+    row += n_rows;
   }
   return g_all;
 }
 
-void Composite::SetVariables(const Eigen::VectorXd& x)
+std::vector<Bounds> CompositeVariables::getBounds() const
+{
+  std::vector<Bounds> bounds;
+  bounds.reserve(static_cast<std::size_t>(rows_));
+  for (const auto& c : components_)
+  {
+    std::vector<Bounds> b = c->getBounds();
+    bounds.insert(bounds.end(), b.begin(), b.end());
+  }
+
+  return bounds;
+}
+
+void CompositeVariables::setVariables(const Eigen::VectorXd& x)
 {
   int row = 0;
   for (auto& c : components_)
   {
-    int n_rows = c->GetRows();
-    c->SetVariables(x.middleRows(row, n_rows));
-    row += n_rows;
+    c->setVariables(x.middleRows(row, c->getRows()));
+    row += c->getRows();
   }
 }
 
-Jacobian Composite::GetJacobian() const
+void CompositeVariables::print(int& index, double tolerance) const
+{
+  std::cout << name_ << ":\n";
+  for (const auto& c : components_)
+  {
+    std::cout << "   ";  // indent components
+    c->print(index, tolerance);
+  }
+  std::cout << "\n";
+}
+
+CompositeDifferentiable::CompositeDifferentiable(std::string name, Mode mode, bool dynamic)
+  : Differentiable(std::move(name), 0, mode, dynamic)
+{
+}
+
+void CompositeDifferentiable::addComponent(Differentiable::Ptr c)
+{
+  // at this point the number of rows must be specified.
+  assert(c->getRows() != -1);
+
+  rows_ += c->getRows();
+  components_.push_back(std::move(c));
+}
+
+const CompositeDifferentiable::ComponentVec& CompositeDifferentiable::getComponents() const { return components_; }
+
+void CompositeDifferentiable::clearComponents()
+{
+  components_.clear();
+  rows_ = 0;
+}
+
+Differentiable::Ptr CompositeDifferentiable::getComponent(const std::string& name) const
+{
+  for (const auto& c : components_)
+    if (c->getName() == name)
+      return c;
+
+  assert(false);  // component with name doesn't exist, abort program
+  return {};
+}
+
+bool CompositeDifferentiable::empty() const { return components_.empty(); }
+
+int CompositeDifferentiable::update()
+{
+  int rows{ 0 };
+  for (auto& c : components_)
+    rows += c->update();
+
+  if (dynamic_)
+    rows_ = rows;
+
+  assert(rows_ == rows);
+  return rows_;
+}
+
+Eigen::VectorXd CompositeDifferentiable::getValues() const
+{
+  Eigen::VectorXd g_all = Eigen::VectorXd::Zero(rows_);
+
+  int row = 0;
+  for (const auto& c : components_)
+  {
+    g_all.middleRows(row, c->getRows()) += c->getValues();
+    if (mode_ == Mode::kStackRows)
+      row += c->getRows();
+  }
+  return g_all;
+}
+
+Eigen::VectorXd CompositeDifferentiable::getCoefficients() const
+{
+  Eigen::VectorXd g_all = Eigen::VectorXd::Zero(rows_);
+
+  int row = 0;
+  for (const auto& c : components_)
+  {
+    g_all.middleRows(row, c->getRows()) += c->getCoefficients();
+    if (mode_ == Mode::kStackRows)
+      row += c->getRows();
+  }
+  return g_all;
+}
+
+Jacobian CompositeDifferentiable::getJacobian() const
 {
   // set number of variables only the first time this function is called,
   // since number doesn't change during the optimization. Improves efficiency.
-  if (n_var == -1)
-    n_var = components_.empty() ? 0 : components_.front()->GetJacobian().cols();
+  if (n_vars_ == -1)
+    n_vars_ = components_.empty() ? 0 : components_.front()->getJacobian().cols();
 
-  Jacobian jacobian(GetRows(), n_var);
+  Jacobian jacobian(rows_, n_vars_);
 
-  if (n_var == 0)
+  if (n_vars_ == 0)
     return jacobian;
 
   Eigen::Index row = 0;
@@ -167,47 +205,41 @@ Jacobian Composite::GetJacobian() const
 
   for (const auto& c : components_)
   {
-    const Jacobian& jac = c->GetJacobian();
+    const Jacobian& jac = c->getJacobian();
     triplet_list.reserve(triplet_list.size() + static_cast<std::size_t>(jac.nonZeros()));
 
     for (Eigen::Index k = 0; k < jac.outerSize(); ++k)
       for (Jacobian::InnerIterator it(jac, k); it; ++it)
         triplet_list.emplace_back(row + it.row(), it.col(), it.value());
 
-    if (!is_cost_)
-      row += c->GetRows();
+    if (mode_ == Mode::kStackRows)
+      row += c->getRows();
   }
 
   jacobian.setFromTriplets(triplet_list.begin(), triplet_list.end());
   return jacobian;
 }
 
-std::vector<Bounds> Composite::GetBounds() const
+std::vector<Bounds> CompositeDifferentiable::getBounds() const
 {
   std::vector<Bounds> bounds;
-  bounds.reserve(static_cast<std::size_t>(GetRows()));
+  bounds.reserve(static_cast<std::size_t>(rows_));
   for (const auto& c : components_)
   {
-    std::vector<Bounds> b = c->GetBounds();
+    std::vector<Bounds> b = c->getBounds();
     bounds.insert(bounds.end(), b.begin(), b.end());
   }
 
   return bounds;
 }
 
-const Composite::ComponentVec& Composite::GetComponents() const { return components_; }
-
-void Composite::PrintAll() const
+void CompositeDifferentiable::print(int& index, double tolerance) const
 {
-  int index = 0;
-  // tolerance when printing out constraint/bound violation.
-  constexpr double tol = 0.001;
-
-  std::cout << GetName() << ":\n";
+  std::cout << name_ << ":\n";
   for (const auto& c : components_)
   {
     std::cout << "   ";  // indent components
-    c->Print(tol, index);
+    c->print(index, tolerance);
   }
   std::cout << "\n";
 }

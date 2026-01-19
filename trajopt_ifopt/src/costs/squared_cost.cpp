@@ -31,34 +31,42 @@ TRAJOPT_IGNORE_WARNINGS_POP
 namespace trajopt_ifopt
 {
 SquaredCost::SquaredCost(const ConstraintSet::Ptr& constraint)
-  : SquaredCost(constraint, Eigen::VectorXd::Ones(constraint->GetRows()))
+  : SquaredCost(constraint, Eigen::VectorXd::Ones(constraint->getRows()))
 {
 }
 
 SquaredCost::SquaredCost(ConstraintSet::Ptr constraint, const Eigen::Ref<const Eigen::VectorXd>& weights)
-  : CostTerm(constraint->GetName() + "_squared_cost")
+  : CostTerm(constraint->getName() + "_squared_cost")
   , constraint_(std::move(constraint))
-  , n_constraints_(constraint_->GetRows())
+  , n_constraints_(constraint_->getRows())
   , weights_(weights.cwiseAbs())
 {
 }
 
-double SquaredCost::GetCost() const
+int SquaredCost::update()
 {
-  Eigen::VectorXd error = calcBoundsErrors(constraint_->GetValues(), constraint_->GetBounds());
+  constraint_->update();
+  return rows_;
+}
+
+double SquaredCost::getCost() const
+{
+  Eigen::VectorXd error = calcBoundsErrors(constraint_->getValues(), constraint_->getBounds());
   // cost = sum_i w_i * e_i^2
   return (weights_.array() * error.array().square()).sum();
 }
 
-void SquaredCost::FillJacobianBlock(std::string var_set, Jacobian& jac_block) const
+Eigen::VectorXd SquaredCost::getCoefficients() const { return constraint_->getCoefficients(); }
+
+void SquaredCost::fillJacobianBlock(std::string var_set, Jacobian& jac_block) const
 {
   // Get a Jacobian block the size necessary for the constraint
   int var_size = 0;
-  for (const auto& vars : GetVariables()->GetComponents())
+  for (const auto& vars : getVariables()->getComponents())
   {
-    if (vars->GetName() == var_set)  // NOLINT
+    if (vars->getName() == var_set)  // NOLINT
     {
-      var_size = vars->GetRows();
+      var_size = vars->getRows();
       break;
     }
   }
@@ -68,10 +76,10 @@ void SquaredCost::FillJacobianBlock(std::string var_set, Jacobian& jac_block) co
   // Get the Jacobian block from the constraint
   Jacobian cnt_jac_block;
   cnt_jac_block.resize(n_constraints_, var_size);  // NOLINT
-  constraint_->FillJacobianBlock(var_set, cnt_jac_block);
+  constraint_->fillJacobianBlock(var_set, cnt_jac_block);
 
   // error = bounds error vector (length = n_constraints_)
-  const Eigen::VectorXd error = calcBoundsErrors(constraint_->GetValues(), constraint_->GetBounds());
+  const Eigen::VectorXd error = calcBoundsErrors(constraint_->getValues(), constraint_->getBounds());
 
   // coeff_i = 2 * w_i * e_i
   const Eigen::VectorXd coeff = (2.0 * (weights_.array() * error.array())).matrix();

@@ -36,7 +36,7 @@ NodesObserver::NodesObserver(std::weak_ptr<NodesVariables> subject) : subject_(s
 {
   auto subject_shared = subject_.lock();  // Convert weak_ptr to shared_ptr
   if (subject_shared)
-    subject_shared->AddObserver(shared_from_this());  // register observer to subject so this class always up-to-date
+    subject_shared->addObserver(shared_from_this());  // register observer to subject so this class always up-to-date
   else                                                // Handle the case where the weak_ptr is expired
     throw std::runtime_error("Failed to lock weak_ptr; the object might have been destroyed.");
 }

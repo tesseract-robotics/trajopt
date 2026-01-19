@@ -76,7 +76,7 @@ CartPosInfo::CartPosInfo(std::shared_ptr<const tesseract_kinematics::JointGroup>
     throw std::runtime_error("CartPosInfo: Target and Source are both static links.");
 }
 
-thread_local tesseract_common::TransformMap CartPosConstraint::transforms_cache;  // NOLINT
+thread_local tesseract_common::TransformMap CartPosConstraint::transforms_cache_;  // NOLINT
 
 CartPosConstraint::CartPosConstraint(CartPosInfo info,
                                      std::shared_ptr<const Var> position_var,
@@ -181,6 +181,7 @@ CartPosConstraint::CartPosConstraint(CartPosInfo info,
                                     const Eigen::Isometry3d& target_tf,
                                     const Eigen::Isometry3d& source_tf,
                                     tesseract_common::TransformMap& transforms_cache) -> Eigen::VectorXd {
+        /** @todo This is different from legacy kinematic_terms */
         info_.manip->calcFwdKin(transforms_cache, vals);
         const Eigen::Isometry3d perturbed_source_tf = transforms_cache[info_.source_frame] * info_.source_frame_offset;
         const Eigen::Isometry3d perturbed_target_tf = transforms_cache[info_.target_frame] * info_.target_frame_offset;
@@ -204,36 +205,38 @@ CartPosConstraint::CartPosConstraint(const CartPosInfo& info, std::shared_ptr<co
 {
 }
 
-Eigen::VectorXd CartPosConstraint::CalcValues(const Eigen::Ref<const Eigen::VectorXd>& joint_vals) const
+Eigen::VectorXd CartPosConstraint::calcValues(const Eigen::Ref<const Eigen::VectorXd>& joint_vals) const
 {
-  transforms_cache.clear();
-  info_.manip->calcFwdKin(transforms_cache, joint_vals);
-  const Eigen::Isometry3d source_tf = transforms_cache[info_.source_frame] * info_.source_frame_offset;
-  const Eigen::Isometry3d target_tf = transforms_cache[info_.target_frame] * info_.target_frame_offset;
+  transforms_cache_.clear();
+  info_.manip->calcFwdKin(transforms_cache_, joint_vals);
+  const Eigen::Isometry3d source_tf = transforms_cache_[info_.source_frame] * info_.source_frame_offset;
+  const Eigen::Isometry3d target_tf = transforms_cache_[info_.target_frame] * info_.target_frame_offset;
 
   const Eigen::VectorXd err = error_function_(target_tf, source_tf);
 
-  return coeffs_.cwiseProduct(err);
+  return err;
 }
 
-Eigen::VectorXd CartPosConstraint::GetValues() const { return CalcValues(position_var_->value()); }
+Eigen::VectorXd CartPosConstraint::getValues() const { return calcValues(position_var_->value()); }
+
+Eigen::VectorXd CartPosConstraint::getCoefficients() const { return coeffs_; }
 
 // Set the limits on the constraint values
-std::vector<Bounds> CartPosConstraint::GetBounds() const { return bounds_; }
+std::vector<Bounds> CartPosConstraint::getBounds() const { return bounds_; }
 
-void CartPosConstraint::SetBounds(const std::vector<Bounds>& bounds)
+void CartPosConstraint::setBounds(const std::vector<Bounds>& bounds)
 {
   assert(bounds.size() == 6);
   bounds_ = bounds;
 }
 
-void CartPosConstraint::CalcJacobianBlock(const Eigen::Ref<const Eigen::VectorXd>& joint_vals,
+void CartPosConstraint::calcJacobianBlock(const Eigen::Ref<const Eigen::VectorXd>& joint_vals,
                                           Jacobian& jac_block) const
 {
-  transforms_cache.clear();
-  info_.manip->calcFwdKin(transforms_cache, joint_vals);
-  const Eigen::Isometry3d source_tf = transforms_cache[info_.source_frame] * info_.source_frame_offset;
-  const Eigen::Isometry3d target_tf = transforms_cache[info_.target_frame] * info_.target_frame_offset;
+  transforms_cache_.clear();
+  info_.manip->calcFwdKin(transforms_cache_, joint_vals);
+  const Eigen::Isometry3d source_tf = transforms_cache_[info_.source_frame] * info_.source_frame_offset;
+  const Eigen::Isometry3d target_tf = transforms_cache_[info_.target_frame] * info_.target_frame_offset;
 
   std::vector<Eigen::Triplet<double> > triplet_list;
   triplet_list.reserve(static_cast<std::size_t>(n_dof_ * info_.indices.size()));
@@ -246,7 +249,7 @@ void CartPosConstraint::CalcJacobianBlock(const Eigen::Ref<const Eigen::VectorXd
     for (int i = 0; i < joint_vals.size(); ++i)
     {
       dof_vals_pert(i) = joint_vals(i) + eps;
-      const Eigen::VectorXd error_diff = error_diff_function_(dof_vals_pert, target_tf, source_tf, transforms_cache);
+      const Eigen::VectorXd error_diff = error_diff_function_(dof_vals_pert, target_tf, source_tf, transforms_cache_);
       jac0.col(i) = error_diff / eps;
       dof_vals_pert(i) = joint_vals(i);
     }
@@ -257,7 +260,7 @@ void CartPosConstraint::CalcJacobianBlock(const Eigen::Ref<const Eigen::VectorXd
       {
         // Each jac_block will be for a single variable but for all timesteps. Therefore we must index down to the
         // correct timestep for this variable
-        triplet_list.emplace_back(i, position_var_->getIndex() + j, coeffs_(i) * jac0(i, j));
+        triplet_list.emplace_back(i, position_var_->getIndex() + j, jac0(i, j));
       }
     }
   }
@@ -280,13 +283,13 @@ void CartPosConstraint::CalcJacobianBlock(const Eigen::Ref<const Eigen::VectorXd
     // that is required to be modified per the paper.
 
     // Calculate the jacobian
-    info_.manip->calcFwdKin(transforms_cache, joint_vals);
+    info_.manip->calcFwdKin(transforms_cache_, joint_vals);
     Eigen::MatrixXd jac0;
     if (info_.type == CartPosInfo::Type::TARGET_ACTIVE)
     {
       jac0 = info_.manip->calcJacobian(joint_vals, info_.target_frame, info_.target_frame_offset.translation());
       tesseract_common::jacobianChangeBase(
-          jac0, (transforms_cache[info_.source_frame] * info_.source_frame_offset).inverse());
+          jac0, (transforms_cache_[info_.source_frame] * info_.source_frame_offset).inverse());
 
       for (int c = 0; c < jac0.cols(); ++c)
       {
@@ -300,7 +303,7 @@ void CartPosConstraint::CalcJacobianBlock(const Eigen::Ref<const Eigen::VectorXd
     {
       jac0 = info_.manip->calcJacobian(joint_vals, info_.source_frame, info_.source_frame_offset.translation());
       tesseract_common::jacobianChangeBase(
-          jac0, (transforms_cache[info_.target_frame] * info_.target_frame_offset).inverse());
+          jac0, (transforms_cache_[info_.target_frame] * info_.target_frame_offset).inverse());
 
       for (int c = 0; c < jac0.cols(); ++c)
       {
@@ -318,39 +321,39 @@ void CartPosConstraint::CalcJacobianBlock(const Eigen::Ref<const Eigen::VectorXd
       {
         // Each jac_block will be for a single variable but for all timesteps. Therefore we must index down to the
         // correct timestep for this variable
-        triplet_list.emplace_back(i, position_var_->getIndex() + j, coeffs_(i) * jac0(info_.indices[i], j));
+        triplet_list.emplace_back(i, position_var_->getIndex() + j, jac0(info_.indices[i], j));
       }
     }
   }
   jac_block.setFromTriplets(triplet_list.begin(), triplet_list.end());  // NOLINT
 }
 
-void CartPosConstraint::FillJacobianBlock(std::string var_set, Jacobian& jac_block) const
+void CartPosConstraint::fillJacobianBlock(std::string var_set, Jacobian& jac_block) const
 {
   // Only modify the jacobian if this constraint uses var_set
-  if (var_set != position_var_->getParent()->getParent()->GetName())  // NOLINT
+  if (var_set != position_var_->getParent()->getParent()->getName())  // NOLINT
     return;
 
   // Get current joint values and calculate jacobian
-  CalcJacobianBlock(position_var_->value(), jac_block);  // NOLINT
+  calcJacobianBlock(position_var_->value(), jac_block);  // NOLINT
 }
 
-const CartPosInfo& CartPosConstraint::GetInfo() const { return info_; }
-CartPosInfo& CartPosConstraint::GetInfo() { return info_; }
+const CartPosInfo& CartPosConstraint::getInfo() const { return info_; }
+CartPosInfo& CartPosConstraint::getInfo() { return info_; }
 
-void CartPosConstraint::SetTargetPose(const Eigen::Isometry3d& target_frame_offset)
+void CartPosConstraint::setTargetPose(const Eigen::Isometry3d& target_frame_offset)
 {
   info_.target_frame_offset = target_frame_offset;
 }
 
-Eigen::Isometry3d CartPosConstraint::GetTargetPose() const { return info_.target_frame_offset; }
+Eigen::Isometry3d CartPosConstraint::getTargetPose() const { return info_.target_frame_offset; }
 
-Eigen::Isometry3d CartPosConstraint::GetCurrentPose() const
+Eigen::Isometry3d CartPosConstraint::getCurrentPose() const
 {
-  transforms_cache.clear();
-  info_.manip->calcFwdKin(transforms_cache, position_var_->value());
+  transforms_cache_.clear();
+  info_.manip->calcFwdKin(transforms_cache_, position_var_->value());
 
-  return transforms_cache[info_.source_frame] * info_.source_frame_offset;
+  return transforms_cache_[info_.source_frame] * info_.source_frame_offset;
 }
 
 }  // namespace trajopt_ifopt

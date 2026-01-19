@@ -24,7 +24,7 @@
 #ifndef TRAJOPT_SQP_TYPES_H_
 #define TRAJOPT_SQP_TYPES_H_
 
-#include <trajopt_sqp/eigen_types.h>
+#include <Eigen/Core>
 
 namespace trajopt_sqp
 {

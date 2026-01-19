@@ -34,14 +34,14 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 namespace trajopt_ifopt
 {
 NodesVariables::NodesVariables(std::string name, std::vector<std::unique_ptr<Node>> nodes)
-  : VariableSet(std::move(name), kSpecifyLater)
+  : Variables(std::move(name), -1)
 {
   nodes_.reserve(nodes.size());
   for (auto& node : nodes)
-    AddNode(std::move(node));
+    addNode(std::move(node));
 
   // Set the size
-  SetRows(static_cast<int>(n_dim_));
+  rows_ = static_cast<int>(n_dim_);
 
   // Get the initial values
   std::vector<double> values;
@@ -57,7 +57,7 @@ NodesVariables::NodesVariables(std::string name, std::vector<std::unique_ptr<Nod
   assert(values_.size() == bounds_.size());
 }
 
-void NodesVariables::AddNode(std::unique_ptr<Node> node)
+void NodesVariables::addNode(std::unique_ptr<Node> node)
 {
   node->incrementIndex(n_dim_);
   node->parent_ = this;
@@ -70,33 +70,33 @@ void NodesVariables::AddNode(std::unique_ptr<Node> node)
   n_dim_ += length;
 }
 
-std::shared_ptr<const Node> NodesVariables::GetNode(std::size_t opt_idx) const { return nodes_.at(opt_idx); }
+std::shared_ptr<const Node> NodesVariables::getNode(std::size_t opt_idx) const { return nodes_.at(opt_idx); }
 
-void NodesVariables::SetVariables(const Eigen::VectorXd& x)
+void NodesVariables::setVariables(const Eigen::VectorXd& x)
 {
   for (auto& node : nodes_)
     node->setVariables(x);
 
   values_ = x;
 
-  UpdateObservers();
+  updateObservers();
 }
 
-Eigen::VectorXd NodesVariables::GetValues() const { return values_; }
+Eigen::VectorXd NodesVariables::getValues() const { return values_; }
 
-void NodesVariables::UpdateObservers()
+void NodesVariables::updateObservers()
 {
   for (auto& o : observers_)
-    o->UpdateNodes();
+    o->updateNodes();
 }
 
-void NodesVariables::AddObserver(std::shared_ptr<NodesObserver> observer) { observers_.push_back(std::move(observer)); }
+void NodesVariables::addObserver(std::shared_ptr<NodesObserver> observer) { observers_.push_back(std::move(observer)); }
 
-Eigen::Index NodesVariables::GetDim() const { return n_dim_; }
+Eigen::Index NodesVariables::getDim() const { return n_dim_; }
 
-std::vector<Bounds> NodesVariables::GetBounds() const { return bounds_; }
+std::vector<Bounds> NodesVariables::getBounds() const { return bounds_; }
 
-std::vector<std::shared_ptr<const Node>> NodesVariables::GetNodes() const
+std::vector<std::shared_ptr<const Node>> NodesVariables::getNodes() const
 {
   std::vector<std::shared_ptr<const Node>> nodes;
   nodes.reserve(nodes_.size());

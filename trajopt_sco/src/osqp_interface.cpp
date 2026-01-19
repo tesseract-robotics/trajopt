@@ -14,6 +14,60 @@ TRAJOPT_IGNORE_WARNINGS_POP
 #include <trajopt_common/logging.hpp>
 #include <trajopt_common/stl_to_string.hpp>
 
+template <typename T>
+bool osqpSparseMatrixToTriplets(const OSQPCscMatrix& osqpSparseMatrix, std::vector<Eigen::Triplet<T>>& tripletList)
+{
+  // get row and column data
+  OSQPInt* innerIndexPtr = osqpSparseMatrix.i;
+  OSQPInt* outerIndexPtr = osqpSparseMatrix.p;
+
+  // get values data
+  OSQPFloat* valuePtr = osqpSparseMatrix.x;
+  OSQPInt numberOfNonZeroCoeff = osqpSparseMatrix.p[osqpSparseMatrix.n];
+
+  // populate the tripletes vector
+  int column = 0;
+  int row{ -1 };
+  OSQPFloat value{ -1 };
+
+  tripletList.resize(static_cast<std::size_t>(numberOfNonZeroCoeff));
+  for (int i = 0; i < numberOfNonZeroCoeff; i++)
+  {
+    row = static_cast<int>(innerIndexPtr[i]);
+    value = valuePtr[i];
+
+    while (i >= outerIndexPtr[column + 1])
+      column++;
+
+    tripletList[static_cast<std::size_t>(i)] = Eigen::Triplet<T>(row, column, static_cast<T>(value));
+  }
+
+  tripletList.erase(tripletList.begin() + numberOfNonZeroCoeff, tripletList.end());
+
+  return true;
+}
+
+template <typename T>
+bool osqpSparseMatrixToEigenSparseMatrix(const OSQPCscMatrix& osqpSparseMatrix,
+                                         Eigen::SparseMatrix<T>& eigenSparseMatrix)
+{
+  // get the number of rows and columns
+  int rows = static_cast<int>(osqpSparseMatrix.m);
+  int cols = static_cast<int>(osqpSparseMatrix.n);
+
+  // get the triplets from the csc matrix
+  std::vector<Eigen::Triplet<T>> tripletList;
+
+  osqpSparseMatrixToTriplets<T>(osqpSparseMatrix, tripletList);
+
+  // resize the eigen matrix
+  eigenSparseMatrix.resize(rows, cols);
+
+  // set the eigen matrix from triplets
+  eigenSparseMatrix.setFromTriplets(tripletList.begin(), tripletList.end());
+  return true;
+}
+
 namespace sco
 {
 const double OSQP_INFINITY = OSQP_INFTY;
@@ -283,12 +337,15 @@ void OSQPModel::createOrUpdateSolver()
   DblVec prev_y;
   if (osqp_workspace_ != nullptr)
   {
-    if (allow_explicit_warm_start)
+    if (allow_explicit_warm_start && !OSQP_COMPARE_DEBUG_MODE)
     {
+      /** @todo this is not correct because constraints are dynamic size so these cannot be reused between
+       * convexification. Only the trajectory optimization variables could be reused. **/
       LOG_DEBUG("OSQP explicit warm start (warm_starting = %lli).", config_.settings.warm_starting);
       // Store previous solution
       prev_x = DblVec(osqp_workspace_->solution->x, osqp_workspace_->solution->x + n_);
-      prev_y = DblVec(osqp_workspace_->solution->y, osqp_workspace_->solution->y + m_);
+      // prev_y = DblVec(osqp_workspace_->solution->y, osqp_workspace_->solution->y + m_);
+      prev_y = DblVec(static_cast<std::size_t>(m_), 0);
       settings.rho = osqp_workspace_->settings->rho;
     }
     osqp_cleanup(osqp_workspace_);
@@ -394,9 +451,9 @@ CvxOptStatus OSQPModel::optimize()
     return CVX_FAILED;
   }
 
+  const Eigen::IOFormat format(8);
   if (OSQP_COMPARE_DEBUG_MODE)
   {
-    const Eigen::IOFormat format(5);
     std::cout << "OSQP Number of Variables:" << n_ << '\n';
     std::cout << "OSQP Number of Constraints:" << m_ << '\n';
 
@@ -412,6 +469,10 @@ CvxOptStatus OSQPModel::optimize()
     std::cout << "         i:" << P_i_vec.transpose().format(format) << '\n';
     std::cout << "         x:" << P_x_vec.transpose().format(format) << '\n';
 
+    // Eigen::SparseMatrix<OSQPFloat> P_dense;
+    // osqpSparseMatrixToEigenSparseMatrix<OSQPFloat>(*P_, P_dense);
+    // std::cout << "         d:\n" << P_dense.toDense().format(format) << '\n';
+
     Eigen::Map<Eigen::VectorXd> q_vec(q_.data(), n_);
     std::cout << "OSQP Gradient: " << q_vec.transpose().format(format) << '\n';
 
@@ -425,6 +486,10 @@ CvxOptStatus OSQPModel::optimize()
     std::cout << "         p:" << A_p_vec.transpose().format(format) << '\n';
     std::cout << "         i:" << A_i_vec.transpose().format(format) << '\n';
     std::cout << "         x:" << A_x_vec.transpose().format(format) << '\n';
+
+    // Eigen::SparseMatrix<OSQPFloat> A_dense;
+    // osqpSparseMatrixToEigenSparseMatrix<OSQPFloat>(*A_, A_dense);
+    // std::cout << "         d:\n" << A_dense.toDense().format(format) << '\n';
 
     Eigen::Map<Eigen::Matrix<OSQPFloat, Eigen::Dynamic, 1>> l_vec(l_.data(), m_);
     Eigen::Map<Eigen::Matrix<OSQPFloat, Eigen::Dynamic, 1>> u_vec(u_.data(), m_);
@@ -452,7 +517,6 @@ CvxOptStatus OSQPModel::optimize()
 
     if (OSQP_COMPARE_DEBUG_MODE)
     {
-      const Eigen::IOFormat format(5);
       Eigen::Map<Eigen::VectorXd> solution_vec(solution_.data(), static_cast<Eigen::Index>(solution_.size()));
       std::cout << "OSQP Status Value: " << status << '\n';
       std::cout << "OSQP Solution: " << solution_vec.transpose().format(format) << '\n';

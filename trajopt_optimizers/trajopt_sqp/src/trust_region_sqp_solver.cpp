@@ -207,7 +207,7 @@ bool TrustRegionSQPSolver::stepSQPSolver()
   qp_solver->clear();
 
   // Convexify the costs and constraints around their current values
-  qp_solver->init(qp_problem->getNumQPVars(), qp_problem->getNumQPConstraints());
+  qp_solver->init(qp_problem->getNumQPVars(), qp_problem->getNumQPConstraints(), qp_problem->getVariableValues());
   qp_solver->updateHessianMatrix(qp_problem->getHessian());
   qp_solver->updateGradient(qp_problem->getGradient());
   qp_solver->updateLinearConstraintsMatrix(qp_problem->getConstraintMatrix());

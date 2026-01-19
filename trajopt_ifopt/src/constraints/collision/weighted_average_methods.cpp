@@ -61,7 +61,7 @@ Eigen::VectorXd getWeightedAvgGradientT0(const trajopt_common::GradientResultsSe
     return grad_vec;
 
   assert(total_weight > 0);
-  const double scale = grad_results_set.coeff / total_weight;
+  const double scale = 1 / total_weight;
   return scale * grad_vec;
 }
 
@@ -100,7 +100,7 @@ Eigen::VectorXd getWeightedAvgGradientT1(const trajopt_common::GradientResultsSe
     return grad_vec;
 
   assert(total_weight > 0);
-  const double scale = grad_results_set.coeff / total_weight;
+  const double scale = 1 / total_weight;
   return scale * grad_vec;
 }
 }  // namespace trajopt_ifopt
