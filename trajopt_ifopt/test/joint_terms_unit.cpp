@@ -459,7 +459,7 @@ TEST(JointTermsUnit, JointJerkConstraintUnit)  // NOLINT
   }
 
   // Backward diff for last points
-  for (std::size_t i = x_vals.size() - 2; i < x_vals.size(); ++i)
+  for (std::size_t i = x_vals.size() - 3; i < x_vals.size(); ++i)
   {
     for (Eigen::Index j = 0; j < targets.size(); ++j)
     {
@@ -541,7 +541,7 @@ TEST(JointTermsUnit, JointJerkConstraintMinimumUnit)  // NOLINT
   }
 
   // Backward diff for last points
-  for (std::size_t i = x_vals.size() - 2; i < x_vals.size(); ++i)
+  for (std::size_t i = x_vals.size() - 3; i < x_vals.size(); ++i)
   {
     for (Eigen::Index j = 0; j < targets.size(); ++j)
     {
