@@ -205,7 +205,7 @@ Jacobian CompositeDifferentiable::getJacobian() const
 
   for (const auto& c : components_)
   {
-    const Jacobian& jac = c->getJacobian();
+    const Jacobian jac = c->getJacobian();
     triplet_list.reserve(triplet_list.size() + static_cast<std::size_t>(jac.nonZeros()));
 
     for (Eigen::Index k = 0; k < jac.outerSize(); ++k)
