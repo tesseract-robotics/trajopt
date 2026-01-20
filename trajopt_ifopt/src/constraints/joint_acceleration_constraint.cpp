@@ -42,7 +42,7 @@ JointAccelConstraint::JointAccelConstraint(const Eigen::VectorXd& targets,
   , position_vars_(position_vars)
 {
   if (position_vars_.size() < 3)
-    throw std::runtime_error("JointAccelConstraint requires a minimum of four position variables!");
+    throw std::runtime_error("JointAccelConstraint requires a minimum of three position variables!");
 
   // Check and make sure the targets size aligns with the vars passed in
   for (const auto& position_var : position_vars_)
