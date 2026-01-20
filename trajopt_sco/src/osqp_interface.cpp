@@ -344,8 +344,7 @@ void OSQPModel::createOrUpdateSolver()
       LOG_DEBUG("OSQP explicit warm start (warm_starting = %lli).", config_.settings.warm_starting);
       // Store previous solution
       prev_x = DblVec(osqp_workspace_->solution->x, osqp_workspace_->solution->x + n_);
-      // prev_y = DblVec(osqp_workspace_->solution->y, osqp_workspace_->solution->y + m_);
-      prev_y = DblVec(static_cast<std::size_t>(m_), 0);
+      prev_y = DblVec(osqp_workspace_->solution->y, osqp_workspace_->solution->y + m_);
       settings.rho = osqp_workspace_->settings->rho;
     }
     osqp_cleanup(osqp_workspace_);
