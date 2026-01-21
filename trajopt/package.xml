@@ -26,7 +26,6 @@
 
   <test_depend>benchmark</test_depend>
   <test_depend>gtest</test_depend>
-  <test_depend>libpcl-all-dev</test_depend>
 
   <export>
     <build_type>cmake</build_type>
