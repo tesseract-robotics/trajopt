@@ -1,12 +1,4 @@
 find_package(GTest REQUIRED)
-find_package(
-  PCL REQUIRED
-  COMPONENTS core
-             features
-             filters
-             io
-             segmentation
-             surface)
 
 if(NOT TARGET GTest::GTest)
   add_library(GTest::GTest INTERFACE IMPORTED)
@@ -52,7 +44,6 @@ macro(add_gtest test_name test_file)
     Boost::boost)
   target_include_directories(${test_name} PRIVATE "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>"
                                                   ${GTEST_INCLUDE_DIRS})
-  target_include_directories(${test_name} SYSTEM PRIVATE ${PCL_INCLUDE_DIRS})
   add_gtest_discover_tests(${test_name})
   add_dependencies(${test_name} ${PROJECT_NAME})
   add_dependencies(run_tests ${test_name})
