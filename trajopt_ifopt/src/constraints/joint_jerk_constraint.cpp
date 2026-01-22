@@ -41,8 +41,8 @@ JointJerkConstraint::JointJerkConstraint(const Eigen::VectorXd& targets,
   , n_vars_(static_cast<long>(position_vars.size()))
   , position_vars_(position_vars)
 {
-  if (position_vars_.size() < 6)
-    throw std::runtime_error("JointJerkConstraint requires a minimum of six position variables!");
+  if (position_vars_.size() < 4)
+    throw std::runtime_error("JointJerkConstraint requires a minimum of four position variables!");
 
   // Check and make sure the targets size aligns with the vars passed in
   for (const auto& position_var : position_vars)
