@@ -95,19 +95,16 @@ struct ConvexProblem
   std::vector<ConstraintInfo> cost_constraint_infos;
   std::vector<ConstraintInfo> constraint_infos;
 
-  // These objects are computed in the convexifyCosts() method
+  // These objects are computed in the convexify() method
   trajopt_ifopt::Jacobian hessian;
   Eigen::VectorXd gradient;
   QuadExprs squared_objective_nlp;
   Eigen::VectorXd squared_costs_target;
 
-  // This object is computed in the linearizeConstraints() method
   trajopt_ifopt::Jacobian constraint_matrix;
-
-  // This object is computed in the updateConstraintsConstantExpression() method
   Eigen::VectorXd constraint_constant;  // This should be the center of the bounds
 
-  // These objects are computed in the updateNLPConstraintBounds() and updateNLPVariableBounds() methods
+  // These objects are computed in the and convexify() updateNLPVariableBounds() methods
   Eigen::VectorXd bounds_lower;
   Eigen::VectorXd bounds_upper;
 
@@ -280,32 +277,10 @@ struct TrajOptQPProblem::Implementation
   void print() const;
 
   /**
-   * @brief Helper that updates the objective function constant and linear and quadratic coefficients of the QP Problem
-   * @details Called by convexify()
-   */
-  void convexifyCosts();
-
-  /**
-   * @brief Helper that linearizes the constraints about the current point, storing the
-   * jacobian as the constraint matrix and adding slack variables.
-   * @details Called by convexify()
-   */
-  void linearizeConstraints();
-
-  /**
-   * @brief Helper that updates the NLP constraint bounds (top section)
-   * @details Called by convexify()
-   */
-  void updateNLPConstraintBounds();
-
-  /**
    * @brief Helper that updates the NLP variable bounds (middle section)
    * @details Called by convexify()
    */
   void updateNLPVariableBounds();
-
-  /** @brief This calculates the constant expression in the quadratic expression for the constraints */
-  void updateConstraintsConstantExpression();
 };
 
 void TrajOptQPProblem::Implementation::addVariableSet(std::shared_ptr<trajopt_ifopt::Variables> variable_set)
@@ -705,17 +680,243 @@ void TrajOptQPProblem::Implementation::convexify()
   // Update if dynamic constraints are present
   update();
 
-  // This must be called prior to updateGradient
-  convexifyCosts();  // NOLINT
+  // Convexify
+  const Eigen::Index num_nlp_costs = cvp.n_costs + cvp.n_cost_constraints;
 
-  linearizeConstraints();  // NOLINT
+  ////////////////////////////////////////////////////////
+  // Set the Hessian (empty for now)
+  ////////////////////////////////////////////////////////
+  cvp.hessian.resize(cvp.num_qp_vars, cvp.num_qp_vars);
 
-  // The three above must be called before rest to update internal data
+  ////////////////////////////////////////////////////////
+  // Set the gradient of the NLP costs
+  ////////////////////////////////////////////////////////
+  cvp.gradient = Eigen::VectorXd::Zero(cvp.num_qp_vars);
 
-  updateConstraintsConstantExpression();
+  const Eigen::VectorXd x_initial = variables_->getValues();
 
-  updateNLPConstraintBounds();
+  // Create triplet list of nonzero gradients
+  std::vector<Eigen::Triplet<double>> grad_triplet_list;
+  grad_triplet_list.reserve(static_cast<std::size_t>(cvp.n_nlp_vars * num_nlp_costs) * 3);
 
+  // Process Squared Costs
+  /** @note See CostFromFunc::convex in modeling_utils.cpp. */
+  if (cvp.n_costs > 0)
+  {
+    cvp.squared_objective_nlp = QuadExprs(cvp.n_costs, cvp.n_nlp_vars);
+    Eigen::Index row = 0;
+    for (const auto& c : all_costs_)
+    {
+      // This is not correct should pass the value to createAffExprs then use bound to which could change the sign of
+      // the affine expression
+      //    Eigen::VectorXd cnt_error = trajopt_ifopt::calcBoundsErrors(cnt_vals, squared_costs_.getBounds());
+
+      // This should be correct now
+      AffExprs cnt_aff_expr = createAffExprs(c->getValues(), c->getJacobian(), x_initial);
+      cnt_aff_expr.constants = (cvp.squared_costs_target.segment(row, c->getRows()) - cnt_aff_expr.constants);
+      cnt_aff_expr.linear_coeffs *= -1;
+      QuadExprs cost_quad_expr = squareAffExprs(cnt_aff_expr, c->getCoefficients());
+
+      // store individual equations constant
+      cvp.squared_objective_nlp.constants.segment(row, c->getRows()) = cost_quad_expr.constants;
+
+      // Sum objective function linear coefficients
+      cvp.squared_objective_nlp.objective_linear_coeffs += cost_quad_expr.objective_linear_coeffs;
+
+      // Sum objective function quadratic coefficients
+      cvp.squared_objective_nlp.objective_quadratic_coeffs += cost_quad_expr.objective_quadratic_coeffs;
+
+      // store individual equations linear coefficients in a Triplet list to update equation linear coefficients later
+      if (cost_quad_expr.linear_coeffs.nonZeros() > 0)
+      {
+        // Add jacobian to triplet list
+        for (int k = 0; k < cost_quad_expr.linear_coeffs.outerSize(); ++k)
+        {
+          for (trajopt_ifopt::Jacobian::InnerIterator it(cost_quad_expr.linear_coeffs, k); it; ++it)
+            grad_triplet_list.emplace_back(row + it.row(), it.col(), it.value());
+        }
+      }
+
+      // Store individual equations quadratic coefficients
+      cvp.squared_objective_nlp.quadratic_coeffs.insert(cvp.squared_objective_nlp.quadratic_coeffs.end(),
+                                                        cost_quad_expr.quadratic_coeffs.begin(),
+                                                        cost_quad_expr.quadratic_coeffs.end());
+
+      row += c->getRows();
+    }
+
+    // Store individual equations linear coefficients
+    cvp.squared_objective_nlp.linear_coeffs.setFromTriplets(grad_triplet_list.begin(),
+                                                            grad_triplet_list.end());  // NOLINT
+
+    // Insert QP Problem Objective Linear Coefficients
+    cvp.gradient.head(cvp.n_nlp_vars) = cvp.squared_objective_nlp.objective_linear_coeffs;
+
+    // Insert QP Problem Objective Quadratic Coefficients
+    if (cvp.squared_objective_nlp.objective_quadratic_coeffs.nonZeros() > 0)
+    {
+      cvp.hessian.reserve(cvp.squared_objective_nlp.objective_quadratic_coeffs.nonZeros());
+      for (int k = 0; k < cvp.squared_objective_nlp.objective_quadratic_coeffs.outerSize(); ++k)
+      {
+        for (trajopt_ifopt::Jacobian::InnerIterator it(cvp.squared_objective_nlp.objective_quadratic_coeffs, k); it;
+             ++it)
+          cvp.hessian.coeffRef(it.row(), it.col()) += it.value();
+      }
+    }
+  }
+
+  // Hinge and Asolute costs are handled differently than squared cost because they add constraints to the qp problem
+
+  /** @todo make this a member variable and clear */
+  std::vector<Eigen::Triplet<double>> constraint_matrix_triplets;
+  constraint_matrix_triplets.reserve(static_cast<std::size_t>(cvp.num_qp_vars));
+
+  Eigen::Index constraint_matrix_row{ 0 };
+  Eigen::Index constraint_matrix_non_zeros{ 0 };
+  Eigen::Index current_var_index{ cvp.n_nlp_vars };
+  ////////////////////////////////////////////////////////
+  // Set the gradient of the cost constraint variables
+  ////////////////////////////////////////////////////////
+  for (std::size_t i = 0; i < all_cost_constraints_.size(); ++i)
+  {
+    const auto& info = cost_constraint_infos[i];
+    const auto& cost = all_cost_constraints_[i];
+    if (info.rows == 0)
+      continue;
+
+    // Slack Variable Gradient
+    cvp.gradient.segment(current_var_index, info.slack_gradients.size()) = Eigen::Map<const Eigen::VectorXd>(
+        info.slack_gradients.data(), static_cast<Eigen::Index>(info.slack_gradients.size()));
+    current_var_index += static_cast<Eigen::Index>(info.slack_gradients.size());
+
+    // Linearize Constraints
+    const trajopt_ifopt::Jacobian jac = cost->getJacobian();
+    for (int k = 0; k < jac.outerSize(); ++k)
+      for (trajopt_ifopt::Jacobian::InnerIterator it(jac, k); it; ++it)
+        constraint_matrix_triplets.emplace_back(constraint_matrix_row + it.row(), it.col(), it.value());
+
+    // In the case of a QP problem the costs and constraints are represented as
+    // quadratic functions is f(x) = a + b * x + c * x^2.
+    // Currently for constraints we do not leverage the Hessian so the quadratic
+    // function is f(x) = a + b * x
+    // When convexifying the function it need to produce the same constraint values at the values used to calculate
+    // the jacobian, so f(x_initial) = a + b * x = cnt_initial_value.
+    // Therefore a = cnt_initial_value - b * x
+    //     where: b = jac (calculated below)
+    //            x = x_initial
+    //            a = quadratic constant (constraint_constant_)
+    //
+    // Note: This is not used by the QP solver directly but by the Trust Regions Solver
+    //       to calculate the merit of the solve.
+    const Eigen::VectorXd lin = jac * x_initial;
+    cvp.constraint_constant.segment(constraint_matrix_row, info.rows) = cost->getValues() - lin;
+
+    // Update NLP Constraint Bounds
+    for (std::size_t j = 0; j < info.bounds.size(); ++j)
+    {
+      const auto& b = info.bounds[j];
+      const Eigen::Index row = constraint_matrix_row + static_cast<Eigen::Index>(j);
+      const double constant = cvp.constraint_constant[row];
+      cvp.bounds_lower[row] = b.getLower() - constant;
+      cvp.bounds_upper[row] = b.getUpper() - constant;
+    }
+
+    constraint_matrix_non_zeros += jac.nonZeros();
+    constraint_matrix_row += info.rows;
+  }
+
+  ////////////////////////////////////////////////////////
+  // Set the gradient of the constraint slack variables
+  ////////////////////////////////////////////////////////
+
+  for (std::size_t i = 0; i < all_constraints_.size(); ++i)
+  {
+    const auto& info = constraint_infos[i];
+    const auto& cnt = all_constraints_[i];
+
+    // Slack Variable Gradient
+    cvp.gradient.segment(current_var_index, info.slack_gradients.size()) =
+        constraint_merit_coeff_[static_cast<Eigen::Index>(i)] *
+        Eigen::Map<const Eigen::VectorXd>(info.slack_gradients.data(),
+                                          static_cast<Eigen::Index>(info.slack_gradients.size()));
+    current_var_index += static_cast<Eigen::Index>(info.slack_gradients.size());
+
+    // Linearize Constraints
+    const trajopt_ifopt::Jacobian jac = cnt->getJacobian();
+    for (int k = 0; k < jac.outerSize(); ++k)
+      for (trajopt_ifopt::Jacobian::InnerIterator it(jac, k); it; ++it)
+        constraint_matrix_triplets.emplace_back(constraint_matrix_row + it.row(), it.col(), it.value());
+
+    // In the case of a QP problem the costs and constraints are represented as
+    // quadratic functions is f(x) = a + b * x + c * x^2.
+    // Currently for constraints we do not leverage the Hessian so the quadratic
+    // function is f(x) = a + b * x
+    // When convexifying the function it need to produce the same constraint values at the values used to calculate
+    // the jacobian, so f(x_initial) = a + b * x = cnt_initial_value.
+    // Therefore a = cnt_initial_value - b * x
+    //     where: b = jac (calculated below)
+    //            x = x_initial
+    //            a = quadratic constant (constraint_constant_)
+    //
+    // Note: This is not used by the QP solver directly but by the Trust Regions Solver
+    //       to calculate the merit of the solve.
+    const Eigen::VectorXd lin = jac * x_initial;
+    cvp.constraint_constant.segment(constraint_matrix_row, info.rows) = cnt->getValues() - lin;
+
+    // Update NLP Constraint Bounds
+    for (std::size_t j = 0; j < info.bounds.size(); ++j)
+    {
+      const auto& b = info.bounds[j];
+      const Eigen::Index row = constraint_matrix_row + static_cast<Eigen::Index>(j);
+      const double constant = cvp.constraint_constant[row];
+      cvp.bounds_lower[row] = b.getLower() - constant;
+      cvp.bounds_upper[row] = b.getUpper() - constant;
+    }
+
+    constraint_matrix_non_zeros += jac.nonZeros();
+    constraint_matrix_row += info.rows;
+  }
+
+  ////////////////////////////////////////////////////////
+  // Set the slack variables constraint matrix
+  ////////////////////////////////////////////////////////
+
+  // Reset row index
+  constraint_matrix_row = 0;
+
+  Eigen::Index current_col_index = cvp.n_nlp_vars;
+  for (const auto& info : cvp.cost_constraint_infos)
+  {
+    for (const auto& var : info.slack_vars)
+      constraint_matrix_triplets.emplace_back(
+          constraint_matrix_row + var.row(), current_col_index + var.col(), var.value());
+
+    constraint_matrix_row += info.rows;
+    current_col_index += static_cast<Eigen::Index>(info.slack_vars.size());
+  }
+
+  for (const auto& info : cvp.constraint_infos)
+  {
+    for (const auto& var : info.slack_vars)
+      constraint_matrix_triplets.emplace_back(
+          constraint_matrix_row + var.row(), current_col_index + var.col(), var.value());
+
+    constraint_matrix_row += info.rows;
+    current_col_index += static_cast<Eigen::Index>(info.slack_vars.size());
+  }
+
+  // Add a diagonal matrix for the variable limits (including slack variables since the merit coeff is only applied in
+  // the cost) below the actual constraints
+  constraint_matrix_row = cvp.n_constraints + cvp.n_cost_constraints;
+  for (Eigen::Index i = 0; i < cvp.num_qp_vars; ++i)
+    constraint_matrix_triplets.emplace_back(constraint_matrix_row + i, i, 1.0);
+
+  // Insert the triplet list into the sparse matrix
+  cvp.constraint_matrix.resize(cvp.num_qp_cnts, cvp.num_qp_vars);
+  cvp.constraint_matrix.reserve(constraint_matrix_non_zeros + cvp.num_qp_vars);
+  cvp.constraint_matrix.setFromTriplets(constraint_matrix_triplets.begin(), constraint_matrix_triplets.end());
+
+  // Update NLP Bounds
   updateNLPVariableBounds();
 }
 
@@ -811,16 +1012,6 @@ void TrajOptQPProblem::Implementation::print() const
   std::cout << "Num NLP Vars: " << cvp.n_nlp_vars << '\n';
   std::cout << "Num QP Vars: " << cvp.num_qp_vars << '\n';
   std::cout << "Num NLP Constraints: " << cvp.num_qp_cnts << '\n';
-  // std::cout << "Detected Constraint Type: ";
-  // for (const auto& info : cvp.cnt_infos)
-  //   for (const auto& cnt_type : info.constraint_types)
-  //     std::cout << static_cast<int>(cnt_type) << ", ";
-
-  // for (const auto& info : cvp.dyn_cnt_infos)
-  //   for (const auto& cnt_type : info.constraint_types)
-  //     std::cout << static_cast<int>(cnt_type) << ", ";
-
-  std::cout << '\n';
   std::cout << "Box Size: " << box_size_.transpose().format(format) << '\n';  // NOLINT
   std::cout << "Constraint Merit Coeff: " << constraint_merit_coeff_.transpose().format(format) << '\n';
 
@@ -838,282 +1029,6 @@ void TrajOptQPProblem::Implementation::print() const
   std::cout << "NLP values: " << '\n';
   for (const auto& v_set : variables_->getComponents())
     std::cout << v_set->getValues().transpose().format(format) << '\n';
-}
-
-void TrajOptQPProblem::Implementation::convexifyCosts()
-{
-  const Eigen::Index num_nlp_costs = cvp.n_costs + cvp.n_cost_constraints;
-
-  ////////////////////////////////////////////////////////
-  // Set the Hessian (empty for now)
-  ////////////////////////////////////////////////////////
-  cvp.hessian.resize(cvp.num_qp_vars, cvp.num_qp_vars);
-
-  ////////////////////////////////////////////////////////
-  // Set the gradient of the NLP costs
-  ////////////////////////////////////////////////////////
-  cvp.gradient = Eigen::VectorXd::Zero(cvp.num_qp_vars);
-
-  const Eigen::VectorXd x_initial = variables_->getValues();
-
-  // Create triplet list of nonzero gradients
-  std::vector<Eigen::Triplet<double>> grad_triplet_list;
-  grad_triplet_list.reserve(static_cast<std::size_t>(cvp.n_nlp_vars * num_nlp_costs) * 3);
-
-  // Process Squared Costs
-  /** @note See CostFromFunc::convex in modeling_utils.cpp. */
-  if (cvp.n_costs > 0)
-  {
-    cvp.squared_objective_nlp = QuadExprs(cvp.n_costs, cvp.n_nlp_vars);
-    Eigen::Index row = 0;
-    for (const auto& c : all_costs_)
-    {
-      // This is not correct should pass the value to createAffExprs then use bound to which could change the sign of
-      // the affine expression
-      //    Eigen::VectorXd cnt_error = trajopt_ifopt::calcBoundsErrors(cnt_vals, squared_costs_.getBounds());
-
-      // This should be correct now
-      AffExprs cnt_aff_expr = createAffExprs(c->getValues(), c->getJacobian(), x_initial);
-      cnt_aff_expr.constants = (cvp.squared_costs_target.segment(row, c->getRows()) - cnt_aff_expr.constants);
-      cnt_aff_expr.linear_coeffs *= -1;
-      QuadExprs cost_quad_expr = squareAffExprs(cnt_aff_expr, c->getCoefficients());
-
-      // store individual equations constant
-      cvp.squared_objective_nlp.constants.segment(row, c->getRows()) = cost_quad_expr.constants;
-
-      // Sum objective function linear coefficients
-      cvp.squared_objective_nlp.objective_linear_coeffs += cost_quad_expr.objective_linear_coeffs;
-
-      // Sum objective function quadratic coefficients
-      cvp.squared_objective_nlp.objective_quadratic_coeffs += cost_quad_expr.objective_quadratic_coeffs;
-
-      // store individual equations linear coefficients in a Triplet list to update equation linear coefficients later
-      if (cost_quad_expr.linear_coeffs.nonZeros() > 0)
-      {
-        // Add jacobian to triplet list
-        for (int k = 0; k < cost_quad_expr.linear_coeffs.outerSize(); ++k)
-        {
-          for (trajopt_ifopt::Jacobian::InnerIterator it(cost_quad_expr.linear_coeffs, k); it; ++it)
-            grad_triplet_list.emplace_back(row + it.row(), it.col(), it.value());
-        }
-      }
-
-      // Store individual equations quadratic coefficients
-      cvp.squared_objective_nlp.quadratic_coeffs.insert(cvp.squared_objective_nlp.quadratic_coeffs.end(),
-                                                        cost_quad_expr.quadratic_coeffs.begin(),
-                                                        cost_quad_expr.quadratic_coeffs.end());
-
-      row += c->getRows();
-    }
-
-    // Store individual equations linear coefficients
-    cvp.squared_objective_nlp.linear_coeffs.setFromTriplets(grad_triplet_list.begin(),
-                                                            grad_triplet_list.end());  // NOLINT
-
-    // Insert QP Problem Objective Linear Coefficients
-    cvp.gradient.head(cvp.n_nlp_vars) = cvp.squared_objective_nlp.objective_linear_coeffs;
-
-    // Insert QP Problem Objective Quadratic Coefficients
-    if (cvp.squared_objective_nlp.objective_quadratic_coeffs.nonZeros() > 0)
-    {
-      cvp.hessian.reserve(cvp.squared_objective_nlp.objective_quadratic_coeffs.nonZeros());
-      for (int k = 0; k < cvp.squared_objective_nlp.objective_quadratic_coeffs.outerSize(); ++k)
-      {
-        for (trajopt_ifopt::Jacobian::InnerIterator it(cvp.squared_objective_nlp.objective_quadratic_coeffs, k); it;
-             ++it)
-          cvp.hessian.coeffRef(it.row(), it.col()) += it.value();
-      }
-    }
-  }
-
-  // Hinge and Asolute costs are handled differently than squared cost because they add constraints to the qp problem
-
-  Eigen::Index current_var_index = cvp.n_nlp_vars;
-  ////////////////////////////////////////////////////////
-  // Set the gradient of the cost constraint variables
-  ////////////////////////////////////////////////////////
-  for (const auto& info : cvp.cost_constraint_infos)
-  {
-    cvp.gradient.segment(current_var_index, info.slack_gradients.size()) = Eigen::Map<const Eigen::VectorXd>(
-        info.slack_gradients.data(), static_cast<Eigen::Index>(info.slack_gradients.size()));
-    current_var_index += static_cast<Eigen::Index>(info.slack_gradients.size());
-  }
-
-  ////////////////////////////////////////////////////////
-  // Set the gradient of the constraint slack variables
-  ////////////////////////////////////////////////////////
-
-  for (Eigen::Index i = 0; i < cvp.constraint_infos.size(); i++)
-  {
-    const auto& info = cvp.constraint_infos[static_cast<std::size_t>(i)];
-    cvp.gradient.segment(current_var_index, info.slack_gradients.size()) =
-        constraint_merit_coeff_[i] *
-        Eigen::Map<const Eigen::VectorXd>(info.slack_gradients.data(),
-                                          static_cast<Eigen::Index>(info.slack_gradients.size()));
-    current_var_index += static_cast<Eigen::Index>(info.slack_gradients.size());
-  }
-}
-
-void TrajOptQPProblem::Implementation::linearizeConstraints()
-{
-  std::vector<Eigen::Triplet<double>> triplets;
-  triplets.reserve(static_cast<std::size_t>(cvp.num_qp_vars));
-
-  Eigen::Index current_row_index{ 0 };
-  Eigen::Index non_zeros{ 0 };
-  // cost constraints
-  for (const auto& c : all_cost_constraints_)
-  {
-    if (c->getRows() == 0)
-      continue;
-
-    const trajopt_ifopt::Jacobian jac = c->getJacobian();
-    for (int k = 0; k < jac.outerSize(); ++k)
-      for (trajopt_ifopt::Jacobian::InnerIterator it(jac, k); it; ++it)
-        triplets.emplace_back(current_row_index + it.row(), it.col(), it.value());
-
-    non_zeros += jac.nonZeros();
-    current_row_index += c->getRows();
-  }
-
-  // nlp constraints (shift again)
-  for (const auto& c : all_constraints_)
-  {
-    if (c->getRows() == 0)
-      continue;
-
-    const trajopt_ifopt::Jacobian jac = c->getJacobian();
-    for (int k = 0; k < jac.outerSize(); ++k)
-      for (trajopt_ifopt::Jacobian::InnerIterator it(jac, k); it; ++it)
-        triplets.emplace_back(current_row_index + it.row(), it.col(), it.value());
-
-    non_zeros += jac.nonZeros();
-    current_row_index += c->getRows();
-  }
-
-  // Reset row index
-  current_row_index = 0;
-
-  Eigen::Index current_col_index = cvp.n_nlp_vars;
-  for (const auto& info : cvp.cost_constraint_infos)
-  {
-    for (const auto& var : info.slack_vars)
-      triplets.emplace_back(current_row_index + var.row(), current_col_index + var.col(), var.value());
-
-    current_row_index += info.rows;
-    current_col_index += static_cast<Eigen::Index>(info.slack_vars.size());
-  }
-
-  for (const auto& info : cvp.constraint_infos)
-  {
-    for (const auto& var : info.slack_vars)
-      triplets.emplace_back(current_row_index + var.row(), current_col_index + var.col(), var.value());
-
-    current_row_index += info.rows;
-    current_col_index += static_cast<Eigen::Index>(info.slack_vars.size());
-  }
-
-  // Add a diagonal matrix for the variable limits (including slack variables since the merit coeff is only applied in
-  // the cost) below the actual constraints
-  current_row_index = cvp.n_constraints + cvp.n_cost_constraints;
-  for (Eigen::Index i = 0; i < cvp.num_qp_vars; ++i)
-    triplets.emplace_back(current_row_index + i, i, 1.0);
-
-  // Insert the triplet list into the sparse matrix
-  cvp.constraint_matrix.resize(cvp.num_qp_cnts, cvp.num_qp_vars);
-  cvp.constraint_matrix.reserve(non_zeros + cvp.num_qp_vars);
-  cvp.constraint_matrix.setFromTriplets(triplets.begin(), triplets.end());  // NOLINT
-}
-
-void TrajOptQPProblem::Implementation::updateConstraintsConstantExpression()
-{
-  const Eigen::Index total_num_cnt = cvp.n_constraints + cvp.n_cost_constraints;
-
-  if (total_num_cnt == 0)
-    return;
-
-  // Get values about which we will linearize
-  const Eigen::VectorXd x_initial = variables_->getValues();
-
-  // One mat-vec for all constraint rows (excluding slack columns)
-  const Eigen::VectorXd lin = cvp.constraint_matrix.block(0, 0, total_num_cnt, cvp.n_nlp_vars) * x_initial;
-
-  // In the case of a QP problem the costs and constraints are represented as
-  // quadratic functions is f(x) = a + b * x + c * x^2.
-  // Currently for constraints we do not leverage the Hessian so the quadratic
-  // function is f(x) = a + b * x
-  // When convexifying the function it need to produce the same constraint values at the values used to calculate
-  // the jacobian, so f(x_initial) = a + b * x = cnt_initial_value.
-  // Therefore a = cnt_initial_value - b * x
-  //     where: b = jac (calculated below)
-  //            x = x_initial
-  //            a = quadratic constant (constraint_constant_)
-  //
-  // Note: This is not used by the QP solver directly but by the Trust Regions Solver
-  //       to calculate the merit of the solve.
-
-  Eigen::Index row = 0;
-  for (const auto& c : all_cost_constraints_)
-  {
-    if (c->getRows() == 0)
-      continue;
-
-    // The block excludes the slack variables
-    cvp.constraint_constant.segment(row, c->getRows()) = c->getValues() - lin.segment(row, c->getRows());
-    row += c->getRows();
-  }
-
-  for (const auto& c : all_constraints_)
-  {
-    if (c->getRows() == 0)
-      continue;
-
-    // The block excludes the slack variables
-    cvp.constraint_constant.segment(row, c->getRows()) = c->getValues() - lin.segment(row, c->getRows());
-    row += c->getRows();
-  }
-}
-
-void TrajOptQPProblem::Implementation::updateNLPConstraintBounds()
-{
-  const Eigen::Index total_num_cnt = cvp.n_constraints + cvp.n_cost_constraints;
-
-  if (total_num_cnt == 0)
-    return;
-
-  Eigen::VectorXd cnt_bound_lower(total_num_cnt);
-  Eigen::VectorXd cnt_bound_upper(total_num_cnt);
-  Eigen::Index row = 0;
-
-  for (const auto& info : cvp.cost_constraint_infos)
-  {
-    if (info.rows == 0)
-      continue;
-
-    for (const auto& b : info.bounds)
-    {
-      cnt_bound_lower[row] = b.getLower();
-      cnt_bound_upper[row++] = b.getUpper();
-    }
-  }
-
-  for (const auto& info : cvp.constraint_infos)
-  {
-    if (info.rows == 0)
-      continue;
-
-    for (const auto& b : info.bounds)
-    {
-      cnt_bound_lower[row] = b.getLower();
-      cnt_bound_upper[row++] = b.getUpper();
-    }
-  }
-
-  const Eigen::VectorXd linearized_cnt_lower = cnt_bound_lower - cvp.constraint_constant;
-  const Eigen::VectorXd linearized_cnt_upper = cnt_bound_upper - cvp.constraint_constant;
-
-  cvp.bounds_lower.topRows(total_num_cnt) = linearized_cnt_lower;
-  cvp.bounds_upper.topRows(total_num_cnt) = linearized_cnt_upper;
 }
 
 void TrajOptQPProblem::Implementation::updateNLPVariableBounds()
