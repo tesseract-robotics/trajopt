@@ -168,8 +168,8 @@ TEST_F(InverseKinematicsConstraintUnit, GetSetBounds)  // NOLINT
     std::vector<Bounds> results_vec = constraint_2->getBounds();
     for (std::size_t i = 0; i < bounds_vec.size(); i++)
     {
-      EXPECT_EQ(bounds_vec[i].lower, results_vec[i].lower);
-      EXPECT_EQ(bounds_vec[i].upper, results_vec[i].upper);
+      EXPECT_EQ(bounds_vec[i].getLower(), results_vec[i].getLower());
+      EXPECT_EQ(bounds_vec[i].getUpper(), results_vec[i].getUpper());
     }
   }
 }

@@ -112,7 +112,7 @@ protected:
   std::vector<std::string> constraint_names_;
   std::vector<std::string> cost_names_;
 
-  std::vector<ConstraintType> constraint_types_;
+  std::vector<trajopt_ifopt::BoundsType> constraint_types_;
 
   /** @brief Box size - constraint is set at current_val +/- box_size */
   Eigen::VectorXd box_size_;

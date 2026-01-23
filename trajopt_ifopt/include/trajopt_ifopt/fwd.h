@@ -16,10 +16,13 @@
 #ifndef TRAJOPT_IFOPT_FWD_H
 #define TRAJOPT_IFOPT_FWD_H
 
+#include <cstdint>
+
 namespace trajopt_ifopt
 {
 // Core
-struct Bounds;
+enum class BoundsType : std::uint8_t;
+class Bounds;
 class Component;
 class Variables;
 class Differentiable;

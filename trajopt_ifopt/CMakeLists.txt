@@ -23,6 +23,7 @@ trajopt_variables()
 # ######################################################################################################################
 
 set(TRAJOPT_IFOPT_SOURCE_FILES
+    src/core/bounds.cpp
     src/core/component.cpp
     src/core/composite.cpp
     src/core/constraint_set.cpp

@@ -106,6 +106,7 @@ public:
   CartPosConstraint(CartPosInfo info,
                     std::shared_ptr<const Var> position_var,
                     const Eigen::VectorXd& coeffs,
+                    const std::vector<Bounds>& bounds,
                     std::string name = "CartPos");
 
   int update() override { return rows_; }
@@ -132,8 +133,6 @@ public:
    * @return Returns the "bounds" of this constraint
    */
   std::vector<Bounds> getBounds() const override;
-
-  void setBounds(const std::vector<Bounds>& bounds);
 
   /**
    * @brief Fills the jacobian block associated with the constraint

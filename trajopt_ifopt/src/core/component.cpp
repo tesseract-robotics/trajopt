@@ -55,7 +55,7 @@ void Component::print(int& index, double tolerance) const
   {
     const auto& b = bounds.at(i);
     double val = x(static_cast<Eigen::Index>(i));
-    if (val < b.lower - tolerance || b.upper + tolerance < val)
+    if (val < b.getLower() - tolerance || b.getUpper() + tolerance < val)
       viol_idx.push_back(static_cast<int>(i));  // constraint out of bounds
   }
 

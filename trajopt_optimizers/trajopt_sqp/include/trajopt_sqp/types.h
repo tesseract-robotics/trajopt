@@ -28,12 +28,6 @@
 
 namespace trajopt_sqp
 {
-enum class ConstraintType : std::uint8_t
-{
-  EQ,
-  INEQ
-};
-
 enum class CostPenaltyType : std::uint8_t
 {
   SQUARED,

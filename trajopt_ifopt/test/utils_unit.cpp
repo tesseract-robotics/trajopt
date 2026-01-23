@@ -49,8 +49,8 @@ TEST(UtilsUnit, toBoundsMatrixX2d)  // NOLINT
   // Check that all bounds were set correctly
   for (Eigen::Index i = 0; i < input_bounds.rows(); i++)
   {
-    EXPECT_EQ(input_bounds(i, 0), results[static_cast<std::size_t>(i)].lower);
-    EXPECT_EQ(input_bounds(i, 1), results[static_cast<std::size_t>(i)].upper);
+    EXPECT_EQ(input_bounds(i, 0), results[static_cast<std::size_t>(i)].getLower());
+    EXPECT_EQ(input_bounds(i, 1), results[static_cast<std::size_t>(i)].getUpper());
   }
 }
 
@@ -70,8 +70,8 @@ TEST(UtilsUnit, toBoundsVectorXd)  // NOLINT
   // Check that all bounds were set correctly
   for (Eigen::Index i = 0; i < lower_bounds.rows(); i++)
   {
-    EXPECT_EQ(lower_bounds(i), results[static_cast<std::size_t>(i)].lower);
-    EXPECT_EQ(upper_bounds(i), results[static_cast<std::size_t>(i)].upper);
+    EXPECT_EQ(lower_bounds(i), results[static_cast<std::size_t>(i)].getLower());
+    EXPECT_EQ(upper_bounds(i), results[static_cast<std::size_t>(i)].getUpper());
   }
 }
 

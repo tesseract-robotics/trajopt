@@ -107,29 +107,25 @@ void IfoptQPProblem::setup()
   std::vector<trajopt_ifopt::Bounds> cnt_bounds = nlp_->getBoundsOnConstraints();
   for (Eigen::Index i = 0; i < num_nlp_cnts_; i++)
   {
-    nlp_bounds_l[i] = cnt_bounds[static_cast<std::size_t>(i)].lower;
-    nlp_bounds_u[i] = cnt_bounds[static_cast<std::size_t>(i)].upper;
-  }
+    const auto& b = cnt_bounds[static_cast<std::size_t>(i)];
+    nlp_bounds_l[i] = b.getLower();
+    nlp_bounds_u[i] = b.getUpper();
 
-  // Detect constraint type
-  Eigen::VectorXd nlp_bounds_diff = nlp_bounds_u - nlp_bounds_l;
-  constraint_types_.resize(static_cast<std::size_t>(num_nlp_cnts_));
-  for (std::size_t i = 0; i < static_cast<std::size_t>(nlp_bounds_diff.size()); i++)
-  {
-    if (std::abs(nlp_bounds_diff[static_cast<Eigen::Index>(i)]) < 1e-3)
+    constraint_types_[static_cast<std::size_t>(i)] = b.getType();
+    if (b.getType() == trajopt_ifopt::BoundsType::EQUALITY)
     {
-      constraint_types_[i] = ConstraintType::EQ;
       // Add 2 slack variables for L1 loss
       num_qp_vars_ += 2;
       num_qp_cnts_ += 2;
     }
-    else
+    else if (b.getType() == trajopt_ifopt::BoundsType::LOWER_BOUND)
     {
-      constraint_types_[i] = ConstraintType::INEQ;
       // Add 1 slack variable for hinge loss
       num_qp_vars_ += 1;
       num_qp_cnts_ += 1;
     }
+    else
+      throw std::runtime_error("Unsupport bounds type!");
   }
 
   // Initialize the constraint bounds
@@ -235,18 +231,21 @@ void IfoptQPProblem::updateGradient()
     Eigen::Index current_var_index = num_nlp_vars_;
     for (Eigen::Index i = 0; i < num_nlp_cnts_; i++)
     {
-      if (constraint_types_[static_cast<std::size_t>(i)] == ConstraintType::EQ)
+      const auto bounds_type = constraint_types_[static_cast<std::size_t>(i)];
+      if (bounds_type == trajopt_ifopt::BoundsType::EQUALITY)
       {
         gradient_[current_var_index] = constraint_merit_coeff_[i];
         gradient_[current_var_index + 1] = constraint_merit_coeff_[i];
 
         current_var_index += 2;
       }
-      else
+      else if (bounds_type == trajopt_ifopt::BoundsType::LOWER_BOUND)
       {
         gradient_[current_var_index] = constraint_merit_coeff_[i];
         current_var_index++;
       }
+      else
+        throw std::runtime_error("Unsupported bounds type!");
     }
   }
 }
@@ -273,17 +272,20 @@ void IfoptQPProblem::linearizeConstraints()
   Eigen::Index current_column_index = num_nlp_vars_;
   for (Eigen::Index i = 0; i < num_nlp_cnts_; i++)
   {
-    if (constraint_types_[static_cast<std::size_t>(i)] == ConstraintType::EQ)
+    const auto bounds_type = constraint_types_[static_cast<std::size_t>(i)];
+    if (bounds_type == trajopt_ifopt::BoundsType::EQUALITY)
     {
       tripletList.emplace_back(i, current_column_index, 1);
       tripletList.emplace_back(i, current_column_index + 1, -1);
       current_column_index += 2;
     }
-    else
+    else if (bounds_type == trajopt_ifopt::BoundsType::LOWER_BOUND)
     {
       tripletList.emplace_back(i, current_column_index, -1);
       current_column_index++;
     }
+    else
+      throw std::runtime_error("Unsupported bounds type!");
   }
 
   // Add a diagonal matrix for the variable limits (including slack variables since the merit coeff is only applied in
@@ -367,8 +369,8 @@ void IfoptQPProblem::updateNLPConstraintBounds()
   std::vector<trajopt_ifopt::Bounds> cnt_bounds = nlp_->getBoundsOnConstraints();
   for (Eigen::Index i = 0; i < num_nlp_cnts_; i++)
   {
-    cnt_bound_lower[i] = cnt_bounds[static_cast<std::size_t>(i)].lower;
-    cnt_bound_upper[i] = cnt_bounds[static_cast<std::size_t>(i)].upper;
+    cnt_bound_lower[i] = cnt_bounds[static_cast<std::size_t>(i)].getLower();
+    cnt_bound_upper[i] = cnt_bounds[static_cast<std::size_t>(i)].getUpper();
   }
 
   const Eigen::VectorXd linearized_cnt_lower = cnt_bound_lower - constraint_constant_;
@@ -391,8 +393,8 @@ void IfoptQPProblem::updateNLPVariableBounds()
   for (Eigen::Index i = 0; i < num_nlp_vars_; i++)
   {
     const auto& bounds = var_bounds[static_cast<std::size_t>(i)];
-    var_bounds_lower[i] = bounds.lower;
-    var_bounds_upper[i] = bounds.upper;
+    var_bounds_lower[i] = bounds.getLower();
+    var_bounds_upper[i] = bounds.getUpper();
   }
 
   // Calculate box constraints, while limiting to variable bounds and maintaining the trust region size
@@ -409,7 +411,8 @@ void IfoptQPProblem::updateSlackVariableBounds()
   Eigen::Index current_cnt_index = num_nlp_cnts_ + num_nlp_vars_;
   for (Eigen::Index i = 0; i < num_nlp_cnts_; i++)
   {
-    if (constraint_types_[static_cast<std::size_t>(i)] == ConstraintType::EQ)
+    const auto bounds_type = constraint_types_[static_cast<std::size_t>(i)];
+    if (bounds_type == trajopt_ifopt::BoundsType::EQUALITY)
     {
       bounds_lower_[current_cnt_index] = 0;
       bounds_upper_[current_cnt_index] = double(INFINITY);
@@ -418,13 +421,15 @@ void IfoptQPProblem::updateSlackVariableBounds()
 
       current_cnt_index += 2;
     }
-    else
+    else if (bounds_type == trajopt_ifopt::BoundsType::LOWER_BOUND)
     {
       bounds_lower_[current_cnt_index] = 0;
       bounds_upper_[current_cnt_index] = double(INFINITY);
 
       current_cnt_index++;
     }
+    else
+      throw std::runtime_error("Unsupported bounds type!");
   }
 }
 

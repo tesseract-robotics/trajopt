@@ -28,47 +28,10 @@
 
 namespace trajopt_ifopt
 {
-struct Bounds;
+class Bounds;
 class Variables;
 class ConstraintSet;
 class Problem;
-
-bool isFinite(double value);
-
-/**
- * @brief Check if bounds are equality where upper and lower are finite and equal
- * @param bounds The bounds to check
- * @return True if equality bounds, otherwise false
- */
-bool isBoundsEquality(const Bounds& bounds);
-
-/**
- * @brief Check if bounds are [finite, ifopt::inf]
- * @param bounds The bounds to check
- * @return True if bounds are [finite, ifopt::inf], otherwise false
- */
-bool isBoundsGreaterFinite(const Bounds& bounds);
-
-/**
- * @brief Check if bounds are [-ifopt::inf, finite]
- * @param bounds The bounds to check
- * @return True if bounds are [-ifopt::inf, finite], otherwise false
- */
-bool isBoundsSmallerFinite(const Bounds& bounds);
-
-/**
- * @brief Check if bounds are [finite, ifopt::inf] or [-ifopt::inf, finite]
- * @param bounds The bounds to check
- * @return True if bounds are [finite, ifopt::inf] or [-ifopt::inf, finite], otherwise false
- */
-bool isBoundsInEquality(const Bounds& bounds);
-
-/**
- * @brief Check if bounds are [finite, finite]
- * @param bounds The bounds to check
- * @return True if bounds are [finite, finite], otherwise false
- */
-bool isBoundsFiniteFinite(const Bounds& bounds);
 
 /**
  * @brief Converts a MatrixX2d (e.g. from forward_kinematics->getLimits()) to a vector of ifopt Bounds

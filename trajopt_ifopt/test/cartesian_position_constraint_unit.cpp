@@ -202,15 +202,18 @@ TEST_F(CartesianPositionConstraintUnit, GetSetBounds)  // NOLINT
     const CartPosInfo cart_info(kin_group, "r_gripper_tool_frame", "base_footprint");
     auto constraint_2 = std::make_shared<CartPosConstraint>(cart_info, var0);
 
+    const Eigen::VectorXd coeffs = 10 * Eigen::VectorXd::Ones(kin_group->numJoints());
     const Bounds bounds(-0.1234, 0.5678);
     bounds_vec = std::vector<Bounds>(6, bounds);
 
-    constraint_2->setBounds(bounds_vec);
-    std::vector<Bounds> results_vec = constraint_2->getBounds();
+    auto constraint_3 = std::make_shared<CartPosConstraint>(cart_info, var0, coeffs, bounds_vec);
+    const std::vector<Bounds> results_bounds = constraint_3->getBounds();
+    const Eigen::VectorXd result_coeffs = constraint_3->getCoefficients();
     for (std::size_t i = 0; i < bounds_vec.size(); i++)
     {
-      EXPECT_EQ(bounds_vec[i].lower, results_vec[i].lower);
-      EXPECT_EQ(bounds_vec[i].upper, results_vec[i].upper);
+      EXPECT_DOUBLE_EQ(coeffs(static_cast<Eigen::Index>(i)), result_coeffs(static_cast<Eigen::Index>(i)));
+      EXPECT_DOUBLE_EQ(bounds_vec[i].getLower(), results_bounds[i].getLower());
+      EXPECT_DOUBLE_EQ(bounds_vec[i].getUpper(), results_bounds[i].getUpper());
     }
   }
 }
