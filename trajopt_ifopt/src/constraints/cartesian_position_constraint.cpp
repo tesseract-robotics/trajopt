@@ -81,9 +81,11 @@ thread_local tesseract_common::TransformMap CartPosConstraint::transforms_cache_
 CartPosConstraint::CartPosConstraint(CartPosInfo info,
                                      std::shared_ptr<const Var> position_var,
                                      const Eigen::VectorXd& coeffs,  // NOLINT
+                                     const std::vector<Bounds>& bounds,
                                      std::string name)
   : ConstraintSet(std::move(name), static_cast<int>(info.indices.rows()))
   , coeffs_(coeffs)
+  , bounds_(bounds)
   , position_var_(std::move(position_var))
   , info_(std::move(info))
 {
@@ -91,7 +93,8 @@ CartPosConstraint::CartPosConstraint(CartPosInfo info,
   n_dof_ = info_.manip->numJoints();
   assert(n_dof_ > 0);
 
-  bounds_ = std::vector<Bounds>(static_cast<std::size_t>(info_.indices.rows()), BoundZero);
+  if (bounds_.size() != info_.indices.rows())
+    std::runtime_error("The number of bounds does not match the number of constraints.");
 
   if (coeffs_.rows() != info_.indices.rows())
     std::runtime_error("The number of coeffs does not match the number of constraints.");
@@ -201,7 +204,11 @@ CartPosConstraint::CartPosConstraint(CartPosInfo info,
 }
 
 CartPosConstraint::CartPosConstraint(const CartPosInfo& info, std::shared_ptr<const Var> position_var, std::string name)
-  : CartPosConstraint(info, std::move(position_var), Eigen::VectorXd::Ones(info.indices.rows()), std::move(name))
+  : CartPosConstraint(info,
+                      std::move(position_var),
+                      Eigen::VectorXd::Ones(info.indices.rows()),
+                      std::vector<Bounds>(static_cast<std::size_t>(info.indices.rows()), BoundZero),
+                      std::move(name))
 {
 }
 
@@ -221,14 +228,7 @@ Eigen::VectorXd CartPosConstraint::getValues() const { return calcValues(positio
 
 Eigen::VectorXd CartPosConstraint::getCoefficients() const { return coeffs_; }
 
-// Set the limits on the constraint values
 std::vector<Bounds> CartPosConstraint::getBounds() const { return bounds_; }
-
-void CartPosConstraint::setBounds(const std::vector<Bounds>& bounds)
-{
-  assert(bounds.size() == 6);
-  bounds_ = bounds;
-}
 
 void CartPosConstraint::calcJacobianBlock(const Eigen::Ref<const Eigen::VectorXd>& joint_vals,
                                           Jacobian& jac_block) const

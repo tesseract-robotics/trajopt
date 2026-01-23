@@ -30,21 +30,6 @@
 
 namespace trajopt_ifopt
 {
-bool isFinite(double value) { return std::isfinite(value) && (value < 1e20) && (value > -1e20); }
-
-bool isBoundsEquality(const Bounds& bounds)
-{
-  return isFinite(bounds.lower) && isFinite(bounds.upper) && (std::abs(bounds.upper - bounds.lower) < 1e-8);
-}
-
-bool isBoundsGreaterFinite(const Bounds& bounds) { return (isFinite(bounds.lower) && !isFinite(bounds.upper)); }
-
-bool isBoundsSmallerFinite(const Bounds& bounds) { return (isFinite(bounds.upper) && !isFinite(bounds.lower)); }
-
-bool isBoundsInEquality(const Bounds& bounds) { return isBoundsGreaterFinite(bounds) || isBoundsSmallerFinite(bounds); }
-
-bool isBoundsFiniteFinite(const Bounds& bounds) { return (isFinite(bounds.lower) && isFinite(bounds.upper)); }
-
 std::vector<Bounds> toBounds(const Eigen::Ref<const Eigen::MatrixX2d>& limits)
 {
   std::vector<Bounds> bounds;
@@ -100,8 +85,8 @@ Eigen::VectorXd getClosestValidPoint(const Eigen::Ref<const Eigen::VectorXd>& in
 
   for (Eigen::Index i = 0; i < input.size(); ++i)
   {
-    lower[i] = bounds[static_cast<std::size_t>(i)].lower;
-    upper[i] = bounds[static_cast<std::size_t>(i)].upper;
+    lower[i] = bounds[static_cast<std::size_t>(i)].getLower();
+    upper[i] = bounds[static_cast<std::size_t>(i)].getUpper();
   }
 
   return input.cwiseMax(lower).cwiseMin(upper);
@@ -116,8 +101,8 @@ Eigen::VectorXd calcBoundsErrors(const Eigen::Ref<const Eigen::VectorXd>& input,
   for (Eigen::Index i = 0; i < input.size(); ++i)
   {
     const auto& b = bounds[static_cast<std::size_t>(i)];
-    lower[i] = b.lower;
-    upper[i] = b.upper;
+    lower[i] = b.getLower();
+    upper[i] = b.getUpper();
   }
 
   const Eigen::ArrayXd diff_lower = input.array() - lower;
