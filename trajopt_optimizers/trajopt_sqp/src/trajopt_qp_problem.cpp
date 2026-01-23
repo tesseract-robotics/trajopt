@@ -215,10 +215,6 @@ struct TrajOptQPProblem::Implementation
   std::vector<trajopt_ifopt::Differentiable::Ptr> all_cost_constraints_;
   std::vector<trajopt_ifopt::Differentiable::Ptr> all_constraints_;
 
-  std::vector<ComponentInfo> cost_infos;
-  std::vector<ConstraintInfo> cost_constraint_infos;
-  std::vector<ConstraintInfo> constraint_infos;
-
   trajopt_ifopt::CompositeVariables::Ptr variables_;
   std::vector<trajopt_ifopt::Differentiable::Ptr> constraints_;
   std::vector<trajopt_ifopt::Differentiable::Ptr> squared_costs_;
@@ -389,7 +385,7 @@ void TrajOptQPProblem::Implementation::update()
     info.bounds = cost->getBounds();
 
     cvp.n_costs += info.rows;
-    cost_infos[i] = info;
+    cvp.cost_infos[i] = info;
   }
 
   // Hinge cost adds a variable and an inequality constraint (→ 2 constraints)
@@ -398,7 +394,7 @@ void TrajOptQPProblem::Implementation::update()
   for (std::size_t i = 0; i < all_cost_constraints_.size(); ++i)
   {
     const auto& cost = all_cost_constraints_[i];
-    auto& info = cost_constraint_infos[i];
+    auto& info = cvp.cost_constraint_infos[i];
     if (initialized_ && !cost->isDynamic())
     {
       cvp.n_cost_constraints += cost->getRows();
@@ -448,7 +444,7 @@ void TrajOptQPProblem::Implementation::update()
   for (std::size_t i = 0; i < all_constraints_.size(); ++i)
   {
     const auto& cnt = all_constraints_[i];
-    auto& info = constraint_infos[i];
+    auto& info = cvp.constraint_infos[i];
     if (initialized_ && !cnt->isDynamic())
     {
       cvp.n_constraints += cnt->getRows();
@@ -495,10 +491,6 @@ void TrajOptQPProblem::Implementation::update()
     cvp.n_slack_vars += static_cast<Eigen::Index>(info.slack_vars.size());
   }
 
-  cvp.cost_infos = cost_infos;
-  cvp.cost_constraint_infos = cost_constraint_infos;
-  cvp.constraint_infos = constraint_infos;
-
   cvp.num_qp_vars = cvp.n_nlp_vars + cvp.n_slack_vars;
   cvp.num_qp_cnts = cvp.n_cost_constraints + cvp.n_constraints + cvp.num_qp_vars;
 
@@ -506,7 +498,7 @@ void TrajOptQPProblem::Implementation::update()
   if (cvp.n_costs > 0)
   {
     Eigen::Index row{ 0 };
-    for (const auto& cost : cost_infos)
+    for (const auto& cost : cvp.cost_infos)
     {
       for (const auto& b : cost.bounds)
         cvp.squared_costs_target(row++) = b.getLower();
@@ -580,14 +572,14 @@ void TrajOptQPProblem::Implementation::setup()
   num_cost_components = static_cast<Eigen::Index>(all_costs_.size() + all_cost_constraints_.size());
 
   // Get NLP Cost and Constraint Names for Debug Print
-  cost_infos.clear();
-  cost_infos.resize(all_costs_.size());
+  cvp.cost_infos.clear();
+  cvp.cost_infos.resize(all_costs_.size());
 
-  cost_constraint_infos.clear();
-  cost_constraint_infos.resize(all_cost_constraints_.size());
+  cvp.cost_constraint_infos.clear();
+  cvp.cost_constraint_infos.resize(all_cost_constraints_.size());
 
-  constraint_infos.clear();
-  constraint_infos.resize(all_constraints_.size());
+  cvp.constraint_infos.clear();
+  cvp.constraint_infos.resize(all_constraints_.size());
 
   // Define cost names
   cost_names_.clear();
@@ -602,9 +594,7 @@ void TrajOptQPProblem::Implementation::setup()
   num_cnt_components = static_cast<Eigen::Index>(constraints_.size() + dyn_constraints_.size());
   constraint_merit_coeff_ = Eigen::VectorXd::Constant(num_cnt_components, 10.0);
 
-  constraint_infos.clear();
-  constraint_infos.resize(all_constraints_.size());
-
+  // Define constraint names
   constraint_names_.clear();
   constraint_names_.reserve(static_cast<std::size_t>(num_cnt_components));
   for (const auto& cnt : all_constraints_)
@@ -625,50 +615,6 @@ void TrajOptQPProblem::Implementation::setVariables(const double* x)
 
   for (auto& c : all_components_)
     c->update();
-
-  /** @todo I belive this can be removed now */
-  if (initialized_)
-  {
-    for (std::size_t i = 0; i < all_costs_.size(); ++i)
-    {
-      const auto& cnt = all_costs_[i];
-      if (!cnt->isDynamic())
-        continue;
-
-      auto& info = cost_infos[i];
-      info.rows = cnt->getRows();
-      info.coeffs = cnt->getCoefficients();
-      info.bounds = cnt->getBounds();
-    }
-
-    for (std::size_t i = 0; i < all_cost_constraints_.size(); ++i)
-    {
-      const auto& cnt = all_cost_constraints_[i];
-      if (!cnt->isDynamic())
-        continue;
-
-      auto& info = cost_constraint_infos[i];
-      info.rows = cnt->getRows();
-      info.coeffs = cnt->getCoefficients();
-      info.bounds = cnt->getBounds();
-      info.slack_vars.clear();
-      info.slack_gradients.clear();
-    }
-
-    for (std::size_t i = 0; i < all_constraints_.size(); ++i)
-    {
-      const auto& cnt = all_constraints_[i];
-      if (!cnt->isDynamic())
-        continue;
-
-      auto& info = constraint_infos[i];
-      info.rows = cnt->getRows();
-      info.coeffs = cnt->getCoefficients();
-      info.bounds = cnt->getBounds();
-      info.slack_vars.clear();
-      info.slack_gradients.clear();
-    }
-  }
 }
 
 Eigen::VectorXd TrajOptQPProblem::Implementation::getVariableValues() const { return variables_->getValues(); }
@@ -779,7 +725,7 @@ void TrajOptQPProblem::Implementation::convexify()
   ////////////////////////////////////////////////////////
   for (std::size_t i = 0; i < all_cost_constraints_.size(); ++i)
   {
-    const auto& info = cost_constraint_infos[i];
+    const auto& info = cvp.cost_constraint_infos[i];
     const auto& cost = all_cost_constraints_[i];
     if (info.rows == 0)
       continue;
@@ -831,7 +777,7 @@ void TrajOptQPProblem::Implementation::convexify()
 
   for (std::size_t i = 0; i < all_constraints_.size(); ++i)
   {
-    const auto& info = constraint_infos[i];
+    const auto& info = cvp.constraint_infos[i];
     const auto& cnt = all_constraints_[i];
 
     // Slack Variable Gradient
