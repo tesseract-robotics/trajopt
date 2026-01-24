@@ -92,34 +92,54 @@ Eigen::VectorXd getClosestValidPoint(const Eigen::Ref<const Eigen::VectorXd>& in
   return input.cwiseMax(lower).cwiseMin(upper);
 }
 
-Eigen::VectorXd calcBoundsErrors(const Eigen::Ref<const Eigen::VectorXd>& input, const std::vector<Bounds>& bounds)
+void calcBoundsErrors(Eigen::Ref<Eigen::VectorXd> out,
+                      const Eigen::Ref<const Eigen::VectorXd>& input,
+                      const std::vector<Bounds>& bounds)
 {
   assert(input.size() == static_cast<Eigen::Index>(bounds.size()));  // NOLINT
+  assert(out.size() == input.size());                                // NOLINT
 
-  Eigen::ArrayXd lower(input.size());
-  Eigen::ArrayXd upper(input.size());
   for (Eigen::Index i = 0; i < input.size(); ++i)
   {
     const auto& b = bounds[static_cast<std::size_t>(i)];
-    lower[i] = b.getLower();
-    upper[i] = b.getUpper();
+    const double x = input[i];
+    const double lb = b.getLower();
+    const double ub = b.getUpper();
+
+    // Signed "worst" error: negative if below lower, positive if above upper, else 0.
+    // This matches your vectorized logic.
+    if (x < lb)
+      out[i] = x - lb;  // negative
+    else if (x > ub)
+      out[i] = x - ub;  // positive
+    else
+      out[i] = 0.0;
   }
-
-  const Eigen::ArrayXd diff_lower = input.array() - lower;
-  const Eigen::ArrayXd diff_upper = input.array() - upper;
-
-  const Eigen::ArrayXd dist_from_lower = diff_lower.min(0.0);
-  const Eigen::ArrayXd dist_from_upper = diff_upper.max(0.0);
-
-  const Eigen::ArrayXd worst_error =
-      (dist_from_upper.abs() > dist_from_lower.abs()).select(dist_from_upper, dist_from_lower);
-
-  return worst_error.matrix();
 }
 
-Eigen::VectorXd calcBoundsViolations(const Eigen::Ref<const Eigen::VectorXd>& input, const std::vector<Bounds>& bounds)
+void calcBoundsViolations(Eigen::Ref<Eigen::VectorXd> out,
+                          const Eigen::Ref<const Eigen::VectorXd>& input,
+                          const std::vector<Bounds>& bounds)
 {
-  return calcBoundsErrors(input, bounds).cwiseAbs();  // NOLINT
+  assert(input.size() == static_cast<Eigen::Index>(bounds.size()));  // NOLINT
+  assert(out.size() == input.size());                                // NOLINT
+
+  for (Eigen::Index i = 0; i < input.size(); ++i)
+  {
+    const auto& b = bounds[static_cast<std::size_t>(i)];
+    const double x = input[i];
+    const double lb = b.getLower();
+    const double ub = b.getUpper();
+
+    // Signed "worst" error: negative if below lower, positive if above upper, else 0.
+    // This matches your vectorized logic.
+    if (x < lb)
+      out[i] = std::abs(x - lb);  // negative
+    else if (x > ub)
+      out[i] = std::abs(x - ub);  // positive
+    else
+      out[i] = 0.0;
+  }
 }
 
 Eigen::VectorXd calcNumericalCostGradient(const double* x, Problem& nlp, double epsilon)
