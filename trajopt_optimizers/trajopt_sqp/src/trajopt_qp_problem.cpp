@@ -162,18 +162,23 @@ Eigen::VectorXd ConvexProblem::evaluateConvexCosts(const Eigen::Ref<const Eigen:
       auto constant = constraint_constant.segment(row_offset, c_info.rows);
 
       // Ensure scratch buffers big enough (no allocation after first growth)
-      scratch_val.resize(c_info.rows);
-      scratch_err.resize(c_info.rows);
+      if (scratch_val.size() < c_info.rows)
+        scratch_val.resize(c_info.rows);
+      if (scratch_err.size() < c_info.rows)
+        scratch_err.resize(c_info.rows);
+
+      auto val = scratch_val.head(c_info.rows);
+      auto err = scratch_err.head(c_info.rows);
 
       // scratch_val = constant + jac * var_vals
-      scratch_val = constant;                   // copy into scratch (but no alloc)
-      scratch_val.noalias() += jac * var_vals;  // mat-vec into existing memory
+      val = constant;                   // copy into scratch (but no alloc)
+      val.noalias() += jac * var_vals;  // mat-vec into existing memory
 
       // compute violations in-place
-      trajopt_ifopt::calcBoundsViolations(scratch_err, scratch_val, c_info.bounds);
+      trajopt_ifopt::calcBoundsViolations(err, val, c_info.bounds);
 
-      costs(cost_idx++) = scratch_err.sum();
-      assert(!(cost.array() < -1e-8).any());
+      costs(cost_idx++) = err.sum();
+      assert(!(err.array() < -1e-8).any());
       row_offset += c_info.rows;
     }
   }
@@ -202,17 +207,22 @@ Eigen::VectorXd ConvexProblem::evaluateConvexConstraintViolations(const Eigen::R
     auto constant = constraint_constant.middleRows(row_index, c_info.rows);
 
     // Ensure scratch buffers big enough (no allocation after first growth)
-    scratch_val.resize(c_info.rows);
-    scratch_err.resize(c_info.rows);
+    if (scratch_val.size() < c_info.rows)
+      scratch_val.resize(c_info.rows);
+    if (scratch_err.size() < c_info.rows)
+      scratch_err.resize(c_info.rows);
+
+    auto val = scratch_val.head(c_info.rows);
+    auto err = scratch_err.head(c_info.rows);
 
     // scratch_val = constant + jac * var_vals
-    scratch_val = constant;                    // copy into scratch (but no alloc)
-    scratch_val.noalias() += jac * var_block;  // mat-vec into existing memory
+    val = constant;                    // copy into scratch (but no alloc)
+    val.noalias() += jac * var_block;  // mat-vec into existing memory
 
     // compute violations in-place
-    trajopt_ifopt::calcBoundsViolations(scratch_err, scratch_val, c_info.bounds);
+    trajopt_ifopt::calcBoundsViolations(err, val, c_info.bounds);
 
-    violations(cnt_idx++) = scratch_err.sum();
+    violations(cnt_idx++) = err.sum();
     row_index += c_info.rows;
   }
 
@@ -563,6 +573,7 @@ void TrajOptQPProblem::Implementation::setup()
 
   // Get count
   cvp.n_costs = 0;
+  has_dyn_component = false;
   for (const auto& c : all_costs)
   {
     cvp.n_costs += c->getRows();
@@ -664,11 +675,13 @@ void TrajOptQPProblem::Implementation::convexify()
   // Set the Hessian (empty for now)
   ////////////////////////////////////////////////////////
   cvp.hessian.resize(cvp.num_qp_vars, cvp.num_qp_vars);
+  cvp.hessian.setZero();
 
   ////////////////////////////////////////////////////////
   // Set the gradient of the NLP costs
   ////////////////////////////////////////////////////////
-  cvp.gradient = Eigen::VectorXd::Zero(cvp.num_qp_vars);
+  cvp.gradient.resize(cvp.num_qp_vars);
+  cvp.gradient.setZero();
 
   const Eigen::VectorXd x_initial = variables->getValues();
 
@@ -733,12 +746,16 @@ void TrajOptQPProblem::Implementation::convexify()
     if (cvp.squared_objective_nlp.objective_quadratic_coeffs.nonZeros() > 0)
     {
       cvp.hessian.reserve(cvp.squared_objective_nlp.objective_quadratic_coeffs.nonZeros());
-      for (int k = 0; k < cvp.squared_objective_nlp.objective_quadratic_coeffs.outerSize(); ++k)
+      for (int r = 0; r < cvp.squared_objective_nlp.objective_quadratic_coeffs.outerSize(); ++r)
       {
-        for (trajopt_ifopt::Jacobian::InnerIterator it(cvp.squared_objective_nlp.objective_quadratic_coeffs, k); it;
+        cvp.hessian.startVec(r);  // start row k (RowMajor)
+
+        // RowMajor Q: r == it.row(), col is sorted, perfect for insertBack
+        for (trajopt_ifopt::Jacobian::InnerIterator it(cvp.squared_objective_nlp.objective_quadratic_coeffs, r); it;
              ++it)
-          cvp.hessian.coeffRef(it.row(), it.col()) += it.value();
+          cvp.hessian.insertBack(r, it.col()) = it.value();
       }
+      cvp.hessian.finalize();
     }
   }
 
@@ -746,7 +763,7 @@ void TrajOptQPProblem::Implementation::convexify()
 
   /** Use cache triplet and clear */
   cache_triplets_2.clear();
-  cache_triplets_2.reserve(static_cast<std::size_t>(cvp.num_qp_vars + cvp.num_qp_vars));
+  cache_triplets_2.reserve(static_cast<std::size_t>(cvp.num_qp_cnts + cvp.num_qp_vars));
 
   Eigen::Index constraint_matrix_row{ 0 };
   Eigen::Index constraint_matrix_non_zeros{ 0 };
@@ -921,9 +938,12 @@ TrajOptQPProblem::Implementation::evaluateExactCosts(const Eigen::Ref<const Eige
       continue;
     }
 
-    scratch_err.resize(c->getRows());
-    trajopt_ifopt::calcBoundsViolations(scratch_err, c->getValues(), c->getBounds());
-    g(cost_idx++) = (scratch_err.array().square() * c->getCoefficients().array()).sum();
+    if (scratch_err.size() < c->getRows())
+      scratch_err.resize(c->getRows());
+    auto err = scratch_err.head(c->getRows());
+
+    trajopt_ifopt::calcBoundsViolations(err, c->getValues(), c->getBounds());
+    g(cost_idx++) = (err.array().square() * c->getCoefficients().array()).sum();
   }
 
   for (const auto& c : all_cost_constraints)
@@ -934,9 +954,12 @@ TrajOptQPProblem::Implementation::evaluateExactCosts(const Eigen::Ref<const Eige
       continue;
     }
 
-    scratch_err.resize(c->getRows());
-    trajopt_ifopt::calcBoundsViolations(scratch_err, c->getValues(), c->getBounds());
-    g(cost_idx++) = scratch_err.sum();
+    if (scratch_err.size() < c->getRows())
+      scratch_err.resize(c->getRows());
+    auto err = scratch_err.head(c->getRows());
+
+    trajopt_ifopt::calcBoundsViolations(err, c->getValues(), c->getBounds());
+    g(cost_idx++) = err.sum();
   }
 
   return g;
@@ -956,9 +979,12 @@ Eigen::VectorXd TrajOptQPProblem::Implementation::evaluateExactConstraintViolati
       continue;
     }
 
-    scratch_err.resize(c->getRows());
-    trajopt_ifopt::calcBoundsViolations(scratch_err, c->getValues(), c->getBounds());
-    violations(cnt_idx++) = scratch_err.sum();
+    if (scratch_err.size() < c->getRows())
+      scratch_err.resize(c->getRows());
+    auto err = scratch_err.head(c->getRows());
+
+    trajopt_ifopt::calcBoundsViolations(err, c->getValues(), c->getBounds());
+    violations(cnt_idx++) = err.sum();
   }
 
   return violations;
