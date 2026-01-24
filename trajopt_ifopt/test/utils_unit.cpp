@@ -155,9 +155,11 @@ TEST(UtilsUnit, calcBoundsErrorsAndViolations)  // NOLINT
     const Bounds bound(BoundSmallerZero);
     const std::vector<Bounds> bounds(3, bound);
     const Eigen::VectorXd input = Eigen::VectorXd::Constant(3, 3.5);
-    const Eigen::VectorXd output = calcBoundsErrors(input, bounds);
+    Eigen::VectorXd output(3);
+    calcBoundsErrors(output, input, bounds);
     EXPECT_TRUE(output.isApprox(input));
-    const Eigen::VectorXd output2 = calcBoundsViolations(input, bounds);
+    Eigen::VectorXd output2(3);
+    calcBoundsViolations(output2, input, bounds);
     EXPECT_TRUE(output2.isApprox(output.cwiseAbs()));
   }
 
@@ -165,9 +167,11 @@ TEST(UtilsUnit, calcBoundsErrorsAndViolations)  // NOLINT
     const Bounds bound(BoundSmallerZero);
     const std::vector<Bounds> bounds(3, bound);
     const Eigen::VectorXd input = Eigen::VectorXd::Constant(3, -3.5);
-    const Eigen::VectorXd output = calcBoundsErrors(input, bounds);
+    Eigen::VectorXd output(3);
+    calcBoundsErrors(output, input, bounds);
     EXPECT_TRUE(output.isApprox(Eigen::VectorXd::Zero(3)));
-    const Eigen::VectorXd output2 = calcBoundsViolations(input, bounds);
+    Eigen::VectorXd output2(3);
+    calcBoundsViolations(output2, input, bounds);
     EXPECT_TRUE(output2.isApprox(output.cwiseAbs()));
   }
 
@@ -175,9 +179,11 @@ TEST(UtilsUnit, calcBoundsErrorsAndViolations)  // NOLINT
     const Bounds bound(BoundGreaterZero);
     const std::vector<Bounds> bounds(3, bound);
     const Eigen::VectorXd input = Eigen::VectorXd::Constant(3, -3.5);
-    const Eigen::VectorXd output = calcBoundsErrors(input, bounds);
+    Eigen::VectorXd output(3);
+    calcBoundsErrors(output, input, bounds);
     EXPECT_TRUE(output.isApprox(input));
-    const Eigen::VectorXd output2 = calcBoundsViolations(input, bounds);
+    Eigen::VectorXd output2(3);
+    calcBoundsViolations(output2, input, bounds);
     EXPECT_TRUE(output2.isApprox(output.cwiseAbs()));
   }
 
@@ -185,9 +191,11 @@ TEST(UtilsUnit, calcBoundsErrorsAndViolations)  // NOLINT
     const Bounds bound(BoundGreaterZero);
     const std::vector<Bounds> bounds(3, bound);
     const Eigen::VectorXd input = Eigen::VectorXd::Constant(3, 3.5);
-    const Eigen::VectorXd output = calcBoundsErrors(input, bounds);
+    Eigen::VectorXd output(3);
+    calcBoundsErrors(output, input, bounds);
     EXPECT_TRUE(output.isApprox(Eigen::VectorXd::Zero(3)));
-    const Eigen::VectorXd output2 = calcBoundsViolations(input, bounds);
+    Eigen::VectorXd output2(3);
+    calcBoundsViolations(output2, input, bounds);
     EXPECT_TRUE(output2.isApprox(output.cwiseAbs()));
   }
 
@@ -195,9 +203,11 @@ TEST(UtilsUnit, calcBoundsErrorsAndViolations)  // NOLINT
     const Bounds bound(BoundZero);
     const std::vector<Bounds> bounds(3, bound);
     const Eigen::VectorXd input = Eigen::VectorXd::Constant(3, 3.5);
-    const Eigen::VectorXd output = calcBoundsErrors(input, bounds);
+    Eigen::VectorXd output(3);
+    calcBoundsErrors(output, input, bounds);
     EXPECT_TRUE(output.isApprox(input));
-    const Eigen::VectorXd output2 = calcBoundsViolations(input, bounds);
+    Eigen::VectorXd output2(3);
+    calcBoundsViolations(output2, input, bounds);
     EXPECT_TRUE(output2.isApprox(output.cwiseAbs()));
   }
 
@@ -205,9 +215,11 @@ TEST(UtilsUnit, calcBoundsErrorsAndViolations)  // NOLINT
     const Bounds bound(BoundZero);
     const std::vector<Bounds> bounds(3, bound);
     const Eigen::VectorXd input = Eigen::VectorXd::Constant(3, -3.5);
-    const Eigen::VectorXd output = calcBoundsErrors(input, bounds);
+    Eigen::VectorXd output(3);
+    calcBoundsErrors(output, input, bounds);
     EXPECT_TRUE(output.isApprox(input));
-    const Eigen::VectorXd output2 = calcBoundsViolations(input, bounds);
+    Eigen::VectorXd output2(3);
+    calcBoundsViolations(output2, input, bounds);
     EXPECT_TRUE(output2.isApprox(output.cwiseAbs()));
   }
 
@@ -215,9 +227,11 @@ TEST(UtilsUnit, calcBoundsErrorsAndViolations)  // NOLINT
     const Bounds bound(BoundZero);
     const std::vector<Bounds> bounds(3, bound);
     const Eigen::VectorXd input = Eigen::VectorXd::Zero(3);
-    const Eigen::VectorXd output = calcBoundsErrors(input, bounds);
+    Eigen::VectorXd output(3);
+    calcBoundsErrors(output, input, bounds);
     EXPECT_TRUE(output.isApprox(input));
-    const Eigen::VectorXd output2 = calcBoundsViolations(input, bounds);
+    Eigen::VectorXd output2(3);
+    calcBoundsViolations(output2, input, bounds);
     EXPECT_TRUE(output2.isApprox(output.cwiseAbs()));
   }
 
@@ -225,10 +239,12 @@ TEST(UtilsUnit, calcBoundsErrorsAndViolations)  // NOLINT
     const Bounds bound(-3, 6);
     const std::vector<Bounds> bounds(3, bound);
     const Eigen::VectorXd input = Eigen::VectorXd::Constant(3, -3.5);
-    const Eigen::VectorXd output = calcBoundsErrors(input, bounds);
+    Eigen::VectorXd output(3);
+    calcBoundsErrors(output, input, bounds);
     const Eigen::VectorXd viol = Eigen::VectorXd::Constant(3, -0.5);
     EXPECT_TRUE(output.isApprox(viol));
-    const Eigen::VectorXd output2 = calcBoundsViolations(input, bounds);
+    Eigen::VectorXd output2(3);
+    calcBoundsViolations(output2, input, bounds);
     EXPECT_TRUE(output2.isApprox(output.cwiseAbs()));
   }
 
@@ -236,10 +252,12 @@ TEST(UtilsUnit, calcBoundsErrorsAndViolations)  // NOLINT
     const Bounds bound(-3, 6);
     const std::vector<Bounds> bounds(3, bound);
     const Eigen::VectorXd input = Eigen::VectorXd::Constant(3, 6.5);
-    const Eigen::VectorXd output = calcBoundsErrors(input, bounds);
+    Eigen::VectorXd output(3);
+    calcBoundsErrors(output, input, bounds);
     const Eigen::VectorXd viol = Eigen::VectorXd::Constant(3, 0.5);
     EXPECT_TRUE(output.isApprox(viol));
-    const Eigen::VectorXd output2 = calcBoundsViolations(input, bounds);
+    Eigen::VectorXd output2(3);
+    calcBoundsViolations(output2, input, bounds);
     EXPECT_TRUE(output2.isApprox(output.cwiseAbs()));
   }
 
@@ -247,9 +265,11 @@ TEST(UtilsUnit, calcBoundsErrorsAndViolations)  // NOLINT
     const Bounds bound(-3, 6);
     const std::vector<Bounds> bounds(3, bound);
     const Eigen::VectorXd input = Eigen::VectorXd::Constant(3, 1);
-    const Eigen::VectorXd output = calcBoundsErrors(input, bounds);
+    Eigen::VectorXd output(3);
+    calcBoundsErrors(output, input, bounds);
     EXPECT_TRUE(output.isApprox(Eigen::VectorXd::Zero(3)));
-    const Eigen::VectorXd output2 = calcBoundsViolations(input, bounds);
+    Eigen::VectorXd output2(3);
+    calcBoundsViolations(output2, input, bounds);
     EXPECT_TRUE(output2.isApprox(output.cwiseAbs()));
   }
 }
