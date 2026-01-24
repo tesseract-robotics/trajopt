@@ -94,10 +94,10 @@ CartPosConstraint::CartPosConstraint(CartPosInfo info,
   assert(n_dof_ > 0);
 
   if (bounds_.size() != info_.indices.rows())
-    std::runtime_error("The number of bounds does not match the number of constraints.");
+    throw std::runtime_error("The number of bounds does not match the number of constraints.");
 
   if (coeffs_.rows() != info_.indices.rows())
-    std::runtime_error("The number of coeffs does not match the number of constraints.");
+    throw std::runtime_error("The number of coeffs does not match the number of constraints.");
 
   switch (info_.type)
   {

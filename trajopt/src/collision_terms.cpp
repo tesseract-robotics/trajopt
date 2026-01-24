@@ -752,7 +752,7 @@ DiscreteCollisionEvaluator::DiscreteCollisionEvaluator(std::shared_ptr<const tes
 {
   collision_check_config_ = collision_config.collision_check_config;
   if (collision_check_config_.type != tesseract_collision::CollisionEvaluatorType::LVS_DISCRETE)
-    std::runtime_error("DiscreteCollisionEvaluator, should be configured with LVS_DISCRETE");
+    throw std::runtime_error("DiscreteCollisionEvaluator, should be configured with LVS_DISCRETE");
 
   vars0_ = std::move(vars0);
   vars1_ = std::move(vars1);
