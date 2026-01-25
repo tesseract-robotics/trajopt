@@ -84,16 +84,17 @@ struct ConvexProblem
   Eigen::Index n_slack_vars{ 0 };
 
   // These quantities are computed in the update() method
-  Eigen::Index n_costs{ 0 };
-  Eigen::Index n_cost_constraints{ 0 };
-  Eigen::Index n_constraints{ 0 };
+  Eigen::Index n_objective_terms{ 0 };
+  Eigen::Index n_constraint_terms{ 0 };  // (n_penalty_constraints + n_merit_constraints)
+  Eigen::Index n_penalty_constraints{ 0 };
+  Eigen::Index n_merit_constraints{ 0 };
 
   Eigen::Index num_qp_vars{ 0 };
   Eigen::Index num_qp_cnts{ 0 };
 
-  std::vector<ComponentInfo> cost_infos;
-  std::vector<ConstraintInfo> cost_constraint_infos;
-  std::vector<ConstraintInfo> constraint_infos;
+  std::vector<ComponentInfo> objective_term_infos;
+  std::vector<ConstraintInfo> penalty_constraint_infos;
+  std::vector<ConstraintInfo> merit_constraint_infos;
 
   // These objects are computed in the convexify() method
   trajopt_ifopt::Jacobian hessian;
@@ -120,7 +121,7 @@ struct ConvexProblem
 Eigen::VectorXd ConvexProblem::evaluateConvexCosts(const Eigen::Ref<const Eigen::VectorXd>& var_vals)
 {
   /** @note The legacy trajop appears to use all variables include slack for convex cost evaluation */
-  const auto total_cost = static_cast<Eigen::Index>(cost_infos.size() + cost_constraint_infos.size());
+  const auto total_cost = static_cast<Eigen::Index>(objective_term_infos.size() + penalty_constraint_infos.size());
 
   if (total_cost == 0)
     return {};
@@ -134,11 +135,11 @@ Eigen::VectorXd ConvexProblem::evaluateConvexCosts(const Eigen::Ref<const Eigen:
   Eigen::Index row_offset{ 0 };
 
   // Squared costs (already convexified into squared_objective_nlp_)
-  if (!cost_infos.empty())
+  if (!objective_term_infos.empty())
   {
     Eigen::VectorXd sq_costs = squared_objective_nlp.values(var_block);
     assert(!(sq_costs.array() < -1e-8).any());
-    for (const auto& c_info : cost_infos)
+    for (const auto& c_info : objective_term_infos)
     {
       costs(cost_idx++) = sq_costs.segment(row_offset, c_info.rows).sum();
       row_offset += c_info.rows;
@@ -147,40 +148,36 @@ Eigen::VectorXd ConvexProblem::evaluateConvexCosts(const Eigen::Ref<const Eigen:
 
   // Reset row offset for constraint matrix
   row_offset = 0;
-
-  if (!cost_constraint_infos.empty())
+  for (const auto& c_info : penalty_constraint_infos)
   {
-    for (const auto& c_info : cost_constraint_infos)
+    if (c_info.rows == 0)
     {
-      if (c_info.rows == 0)
-      {
-        costs(cost_idx++) = 0;
-        continue;
-      }
-
-      auto jac = constraint_matrix.middleRows(row_offset, c_info.rows);
-      auto constant = constraint_constant.segment(row_offset, c_info.rows);
-
-      // Ensure scratch buffers big enough (no allocation after first growth)
-      if (scratch_val.size() < c_info.rows)
-        scratch_val.resize(c_info.rows);
-      if (scratch_err.size() < c_info.rows)
-        scratch_err.resize(c_info.rows);
-
-      auto val = scratch_val.head(c_info.rows);
-      auto err = scratch_err.head(c_info.rows);
-
-      // scratch_val = constant + jac * var_vals
-      val = constant;                   // copy into scratch (but no alloc)
-      val.noalias() += jac * var_vals;  // mat-vec into existing memory
-
-      // compute violations in-place
-      trajopt_ifopt::calcBoundsViolations(err, val, c_info.bounds);
-
-      costs(cost_idx++) = err.sum();
-      assert(!(err.array() < -1e-8).any());
-      row_offset += c_info.rows;
+      costs(cost_idx++) = 0;
+      continue;
     }
+
+    auto jac = constraint_matrix.middleRows(row_offset, c_info.rows);
+    auto constant = constraint_constant.segment(row_offset, c_info.rows);
+
+    // Ensure scratch buffers big enough (no allocation after first growth)
+    if (scratch_val.size() < c_info.rows)
+      scratch_val.resize(c_info.rows);
+    if (scratch_err.size() < c_info.rows)
+      scratch_err.resize(c_info.rows);
+
+    auto val = scratch_val.head(c_info.rows);
+    auto err = scratch_err.head(c_info.rows);
+
+    // scratch_val = constant + jac * var_vals
+    val = constant;                   // copy into scratch (but no alloc)
+    val.noalias() += jac * var_vals;  // mat-vec into existing memory
+
+    // compute violations in-place
+    trajopt_ifopt::calcBoundsViolations(err, val, c_info.bounds);
+
+    costs(cost_idx++) = err.sum();
+    assert(!(err.array() < -1e-8).any());
+    row_offset += c_info.rows;
   }
 
   return costs;
@@ -189,12 +186,12 @@ Eigen::VectorXd ConvexProblem::evaluateConvexCosts(const Eigen::Ref<const Eigen:
 Eigen::VectorXd ConvexProblem::evaluateConvexConstraintViolations(const Eigen::Ref<const Eigen::VectorXd>& var_vals)
 {
   /** @note The legacy trajop does not use slack variables for convex evaluation */
-  Eigen::VectorXd violations(constraint_infos.size());
+  Eigen::VectorXd violations(merit_constraint_infos.size());
   Eigen::Index cnt_idx{ 0 };
-  Eigen::Index row_index{ n_cost_constraints };
+  Eigen::Index row_index{ n_penalty_constraints };
 
   Eigen::Ref<const Eigen::VectorXd> var_block = var_vals.head(n_nlp_vars);
-  for (const auto& c_info : constraint_infos)
+  for (const auto& c_info : merit_constraint_infos)
   {
     if (c_info.rows == 0)
     {
@@ -242,10 +239,77 @@ struct TrajOptQPProblem::Implementation
   Eigen::Index num_cnt_components{ 0 };
   bool has_dyn_component{ false };
 
+  /**
+   * @brief Convex objective-only terms (no additional QP constraint rows).
+   * @details
+   * These are the standard NLP cost terms that are convexified into the QP objective
+   * (i.e., contribute to the Hessian/gradient directly). In the current implementation,
+   * this bucket contains the squared-cost terms.
+   *
+   * @note These terms do not introduce slack variables or constraint rows by themselves.
+   */
+  std::vector<trajopt_ifopt::Differentiable::Ptr> objective_terms;
+
+  /**
+   * @brief Constraint-like terms that are modeled as penalties in the objective.
+   * @details
+   * These terms originate as constraints (e.g., hinge and absolute penalties), but are
+   * treated as "costified constraints" by introducing slack variables and adding the
+   * corresponding constraint rows to the QP. Their influence on the optimization is
+   * primarily through the objective via the slack variable gradient contribution.
+   *
+   * In other words:
+   *  - They still appear in the QP constraint matrix (to relate the slack variables to
+   *    the linearized constraint expression),
+   *  - But they conceptually belong to the cost/penalty side of the merit function
+   *    (i.e., they are not weighted by @ref constraint_merit_coeff).
+   *
+   */
+  std::vector<trajopt_ifopt::Differentiable::Ptr> penalty_constraints;
+
+  /**
+   * @brief Primary NLP constraints that participate in the merit function as constraints.
+   * @details
+   * These are the constraints that the high-level SQP/trust-region layer treats as
+   * "true constraints" for convergence/merit calculations. They are linearized into the
+   * QP constraint matrix and are typically weighted in the merit function using
+   * @ref constraint_merit_coeff (e.g., by scaling the slack variable gradients).
+   *
+   * @note Although slack variables may be introduced for these constraints (to convert
+   * inequalities to equalities), the defining characteristic of this bucket is that
+   * their violation contributes to the merit function as a constraint term, not merely
+   * as a penalty.
+   *
+   */
+  std::vector<trajopt_ifopt::Differentiable::Ptr> merit_constraints;
+
+  /**
+   * @brief Convenience container for all QP constraint-row producing terms.
+   * @details
+   * This is the union of:
+   *  - @ref penalty_constraints (hinge/abs style costified constraints)
+   *  - @ref merit_constraints   (primary NLP constraints)
+   *
+   * These terms are the ones that populate:
+   *  - the linearized constraint Jacobian block(s),
+   *  - the slack-variable coupling structure,
+   *  - and the constraint bounds / constants used for merit evaluation.
+   */
+  std::vector<trajopt_ifopt::Differentiable::Ptr> constraint_terms;
+
+  /**
+   * @brief Convenience container for all differentiable components in the QP problem.
+   * @details
+   * This is the union of:
+   *  - @ref objective_terms
+   *  - @ref constraint_terms
+   *
+   * It is typically used for bulk operations such as:
+   *  - calling @c update() on every component,
+   *  - iterating over all terms for setup / bookkeeping,
+   *  - centralized handling of dynamic components.
+   */
   std::vector<trajopt_ifopt::Differentiable::Ptr> all_components;
-  std::vector<trajopt_ifopt::Differentiable::Ptr> all_costs;
-  std::vector<trajopt_ifopt::Differentiable::Ptr> all_cost_constraints;
-  std::vector<trajopt_ifopt::Differentiable::Ptr> all_constraints;
 
   trajopt_ifopt::CompositeVariables::Ptr variables;
   std::vector<trajopt_ifopt::Differentiable::Ptr> constraints;
@@ -400,37 +464,37 @@ void TrajOptQPProblem::Implementation::update()
     return;
 
   cvp.n_slack_vars = 0;
-  cvp.n_costs = 0;
-  cvp.n_cost_constraints = 0;
-  cvp.n_constraints = 0;
+  cvp.n_objective_terms = 0;
+  cvp.n_penalty_constraints = 0;
+  cvp.n_merit_constraints = 0;
 
-  for (std::size_t i = 0; i < all_costs.size(); ++i)
+  for (std::size_t i = 0; i < objective_terms.size(); ++i)
   {
-    const auto& cost = all_costs[i];
+    const auto& cost = objective_terms[i];
     if (initialized && !cost->isDynamic())
     {
-      cvp.n_costs += cost->getRows();
+      cvp.n_objective_terms += cost->getRows();
       continue;
     }
 
-    auto& info = cvp.cost_infos[i];
+    auto& info = cvp.objective_term_infos[i];
     info.rows = cost->getRows();
     info.coeffs = cost->getCoefficients();
     info.bounds = cost->getBounds();
 
-    cvp.n_costs += info.rows;
+    cvp.n_objective_terms += info.rows;
   }
 
   // Hinge cost adds a variable and an inequality constraint (→ 2 constraints)
   // Absolute cost adds two variables and an equality constraint (→ 3 constraints)
   /** @todo update to handle absolute cost correctly */
-  for (std::size_t i = 0; i < all_cost_constraints.size(); ++i)
+  for (std::size_t i = 0; i < penalty_constraints.size(); ++i)
   {
-    const auto& cost = all_cost_constraints[i];
-    auto& info = cvp.cost_constraint_infos[i];
+    const auto& cost = penalty_constraints[i];
+    auto& info = cvp.penalty_constraint_infos[i];
     if (initialized && !cost->isDynamic())
     {
-      cvp.n_cost_constraints += cost->getRows();
+      cvp.n_penalty_constraints += cost->getRows();
       cvp.n_slack_vars += static_cast<Eigen::Index>(info.slack_vars.size());
       continue;
     }
@@ -470,17 +534,17 @@ void TrajOptQPProblem::Implementation::update()
       }
     }
 
-    cvp.n_cost_constraints += info.rows;
+    cvp.n_penalty_constraints += info.rows;
     cvp.n_slack_vars += static_cast<Eigen::Index>(info.slack_vars.size());
   }
 
-  for (std::size_t i = 0; i < all_constraints.size(); ++i)
+  for (std::size_t i = 0; i < merit_constraints.size(); ++i)
   {
-    const auto& cnt = all_constraints[i];
-    auto& info = cvp.constraint_infos[i];
+    const auto& cnt = merit_constraints[i];
+    auto& info = cvp.merit_constraint_infos[i];
     if (initialized && !cnt->isDynamic())
     {
-      cvp.n_constraints += cnt->getRows();
+      cvp.n_merit_constraints += cnt->getRows();
       cvp.n_slack_vars += static_cast<Eigen::Index>(info.slack_vars.size());
       continue;
     }
@@ -520,25 +584,26 @@ void TrajOptQPProblem::Implementation::update()
       }
     }
 
-    cvp.n_constraints += info.rows;
+    cvp.n_merit_constraints += info.rows;
     cvp.n_slack_vars += static_cast<Eigen::Index>(info.slack_vars.size());
   }
 
+  cvp.n_constraint_terms = cvp.n_penalty_constraints + cvp.n_merit_constraints;
   cvp.num_qp_vars = cvp.n_nlp_vars + cvp.n_slack_vars;
-  cvp.num_qp_cnts = cvp.n_cost_constraints + cvp.n_constraints + cvp.num_qp_vars;
+  cvp.num_qp_cnts = cvp.n_penalty_constraints + cvp.n_merit_constraints + cvp.num_qp_vars;
 
-  cvp.squared_costs_target = Eigen::VectorXd::Zero(cvp.n_costs);
-  if (cvp.n_costs > 0)
+  cvp.squared_costs_target = Eigen::VectorXd::Zero(cvp.n_objective_terms);
+  if (cvp.n_objective_terms > 0)
   {
     Eigen::Index row{ 0 };
-    for (const auto& cost : cvp.cost_infos)
+    for (const auto& cost : cvp.objective_term_infos)
     {
       for (const auto& b : cost.bounds)
         cvp.squared_costs_target(row++) = b.getLower();
     }
   }
 
-  cvp.constraint_constant = Eigen::VectorXd::Zero(cvp.n_cost_constraints + cvp.n_constraints);
+  cvp.constraint_constant = Eigen::VectorXd::Zero(cvp.n_constraint_terms);
 
   // Initialize the constraint bounds
   // We default to slack variable bounds to avoid having to set those seperatly
@@ -548,51 +613,55 @@ void TrajOptQPProblem::Implementation::update()
 
 void TrajOptQPProblem::Implementation::setup()
 {
-  all_costs.clear();
-  all_costs.insert(all_costs.end(), squared_costs.begin(), squared_costs.end());
-  all_costs.insert(all_costs.end(), dyn_squared_costs.begin(), dyn_squared_costs.end());
+  objective_terms.clear();
+  objective_terms.insert(objective_terms.end(), squared_costs.begin(), squared_costs.end());
+  objective_terms.insert(objective_terms.end(), dyn_squared_costs.begin(), dyn_squared_costs.end());
 
-  all_cost_constraints.clear();
-  all_cost_constraints.insert(all_cost_constraints.end(), hinge_costs.begin(), hinge_costs.end());
-  all_cost_constraints.insert(all_cost_constraints.end(), dyn_hinge_costs.begin(), dyn_hinge_costs.end());
-  all_cost_constraints.insert(all_cost_constraints.end(), abs_costs.begin(), abs_costs.end());
-  all_cost_constraints.insert(all_cost_constraints.end(), dyn_abs_costs.begin(), dyn_abs_costs.end());
+  penalty_constraints.clear();
+  penalty_constraints.insert(penalty_constraints.end(), hinge_costs.begin(), hinge_costs.end());
+  penalty_constraints.insert(penalty_constraints.end(), dyn_hinge_costs.begin(), dyn_hinge_costs.end());
+  penalty_constraints.insert(penalty_constraints.end(), abs_costs.begin(), abs_costs.end());
+  penalty_constraints.insert(penalty_constraints.end(), dyn_abs_costs.begin(), dyn_abs_costs.end());
 
-  all_constraints.clear();
-  all_constraints.insert(all_constraints.end(), constraints.begin(), constraints.end());
-  all_constraints.insert(all_constraints.end(), dyn_constraint.begin(), dyn_constraint.end());
+  merit_constraints.clear();
+  merit_constraints.insert(merit_constraints.end(), constraints.begin(), constraints.end());
+  merit_constraints.insert(merit_constraints.end(), dyn_constraint.begin(), dyn_constraint.end());
+
+  constraint_terms.clear();
+  constraint_terms.insert(constraint_terms.end(), penalty_constraints.begin(), penalty_constraints.end());
+  constraint_terms.insert(constraint_terms.end(), merit_constraints.begin(), merit_constraints.end());
 
   all_components.clear();
-  all_components.insert(all_components.end(), all_costs.begin(), all_costs.end());
-  all_components.insert(all_components.end(), all_cost_constraints.begin(), all_cost_constraints.end());
-  all_components.insert(all_components.end(), all_constraints.begin(), all_constraints.end());
+  all_components.insert(all_components.end(), objective_terms.begin(), objective_terms.end());
+  all_components.insert(all_components.end(), penalty_constraints.begin(), penalty_constraints.end());
+  all_components.insert(all_components.end(), merit_constraints.begin(), merit_constraints.end());
 
   // Call update
   for (auto& c : all_components)
     c->update();
 
   // Get count
-  cvp.n_costs = 0;
+  cvp.n_objective_terms = 0;
   has_dyn_component = false;
-  for (const auto& c : all_costs)
+  for (const auto& c : objective_terms)
   {
-    cvp.n_costs += c->getRows();
+    cvp.n_objective_terms += c->getRows();
     if (c->isDynamic())
       has_dyn_component = true;
   }
 
-  cvp.n_cost_constraints = 0;
-  for (const auto& c : all_cost_constraints)
+  cvp.n_penalty_constraints = 0;
+  for (const auto& c : penalty_constraints)
   {
-    cvp.n_cost_constraints += c->getRows();
+    cvp.n_penalty_constraints += c->getRows();
     if (c->isDynamic())
       has_dyn_component = true;
   }
 
-  cvp.n_constraints = 0;
-  for (const auto& c : all_constraints)
+  cvp.n_merit_constraints = 0;
+  for (const auto& c : merit_constraints)
   {
-    cvp.n_constraints += c->getRows();
+    cvp.n_merit_constraints += c->getRows();
     if (c->isDynamic())
       has_dyn_component = true;
   }
@@ -603,35 +672,35 @@ void TrajOptQPProblem::Implementation::setup()
   box_size = Eigen::VectorXd::Constant(cvp.n_nlp_vars, 1e-1);
 
   // Reset and reserve name buffers (avoid accumulation across multiple setup() calls)
-  num_cost_components = static_cast<Eigen::Index>(all_costs.size() + all_cost_constraints.size());
+  num_cost_components = static_cast<Eigen::Index>(objective_terms.size() + penalty_constraints.size());
 
   // Get NLP Cost and Constraint Names for Debug Print
-  cvp.cost_infos.clear();
-  cvp.cost_infos.resize(all_costs.size());
+  cvp.objective_term_infos.clear();
+  cvp.objective_term_infos.resize(objective_terms.size());
 
-  cvp.cost_constraint_infos.clear();
-  cvp.cost_constraint_infos.resize(all_cost_constraints.size());
+  cvp.penalty_constraint_infos.clear();
+  cvp.penalty_constraint_infos.resize(penalty_constraints.size());
 
-  cvp.constraint_infos.clear();
-  cvp.constraint_infos.resize(all_constraints.size());
+  cvp.merit_constraint_infos.clear();
+  cvp.merit_constraint_infos.resize(merit_constraints.size());
 
   // Define cost names
   cost_names.clear();
   cost_names.reserve(static_cast<std::size_t>(num_cost_components));
-  for (const auto& cost : all_costs)
+  for (const auto& cost : objective_terms)
     cost_names.push_back(cost->getName());
 
-  for (const auto& cost : all_cost_constraints)
+  for (const auto& cost : penalty_constraints)
     cost_names.push_back(cost->getName());
 
   // Get NLP bounds and detect constraint type
-  num_cnt_components = static_cast<Eigen::Index>(all_constraints.size());
+  num_cnt_components = static_cast<Eigen::Index>(merit_constraints.size());
   constraint_merit_coeff = Eigen::VectorXd::Constant(num_cnt_components, 10.0);
 
   // Define constraint names
   constraint_names.clear();
   constraint_names.reserve(static_cast<std::size_t>(num_cnt_components));
-  for (const auto& cnt : all_constraints)
+  for (const auto& cnt : merit_constraints)
     constraint_names.push_back(cnt->getName());
 
   // Cache variable bounds (used in updateNLPVariableBounds)
@@ -669,7 +738,7 @@ void TrajOptQPProblem::Implementation::convexify()
   update();
 
   // Convexify
-  const Eigen::Index num_nlp_costs = cvp.n_costs + cvp.n_cost_constraints;
+  const Eigen::Index num_nlp_costs = cvp.n_objective_terms + cvp.n_penalty_constraints;
 
   ////////////////////////////////////////////////////////
   // Set the Hessian (empty for now)
@@ -691,11 +760,11 @@ void TrajOptQPProblem::Implementation::convexify()
 
   // Process Squared Costs
   /** @note See CostFromFunc::convex in modeling_utils.cpp. */
-  if (cvp.n_costs > 0)
+  if (cvp.n_objective_terms > 0)
   {
-    cvp.squared_objective_nlp = QuadExprs(cvp.n_costs, cvp.n_nlp_vars);
+    cvp.squared_objective_nlp = QuadExprs(cvp.n_objective_terms, cvp.n_nlp_vars);
     Eigen::Index row = 0;
-    for (const auto& c : all_costs)
+    for (const auto& c : objective_terms)
     {
       // This is not correct should pass the value to createAffExprs then use bound to which could change the sign of
       // the affine expression
@@ -771,10 +840,10 @@ void TrajOptQPProblem::Implementation::convexify()
   ////////////////////////////////////////////////////////
   // Set the gradient of the cost constraint variables
   ////////////////////////////////////////////////////////
-  for (std::size_t i = 0; i < all_cost_constraints.size(); ++i)
+  for (std::size_t i = 0; i < penalty_constraints.size(); ++i)
   {
-    const auto& info = cvp.cost_constraint_infos[i];
-    const auto& cost = all_cost_constraints[i];
+    const auto& info = cvp.penalty_constraint_infos[i];
+    const auto& cost = penalty_constraints[i];
     if (info.rows == 0)
       continue;
 
@@ -824,10 +893,10 @@ void TrajOptQPProblem::Implementation::convexify()
   // Set the gradient of the constraint slack variables
   ////////////////////////////////////////////////////////
 
-  for (std::size_t i = 0; i < all_constraints.size(); ++i)
+  for (std::size_t i = 0; i < merit_constraints.size(); ++i)
   {
-    const auto& info = cvp.constraint_infos[i];
-    const auto& cnt = all_constraints[i];
+    const auto& info = cvp.merit_constraint_infos[i];
+    const auto& cnt = merit_constraints[i];
 
     // Slack Variable Gradient
     cvp.gradient.segment(current_var_index, info.slack_gradients.size()) =
@@ -881,7 +950,7 @@ void TrajOptQPProblem::Implementation::convexify()
   constraint_matrix_row = 0;
 
   Eigen::Index current_col_index = cvp.n_nlp_vars;
-  for (const auto& info : cvp.cost_constraint_infos)
+  for (const auto& info : cvp.penalty_constraint_infos)
   {
     for (const auto& var : info.slack_vars)
       cache_triplets_2.emplace_back(constraint_matrix_row + var.row(), current_col_index + var.col(), var.value());
@@ -890,7 +959,7 @@ void TrajOptQPProblem::Implementation::convexify()
     current_col_index += static_cast<Eigen::Index>(info.slack_vars.size());
   }
 
-  for (const auto& info : cvp.constraint_infos)
+  for (const auto& info : cvp.merit_constraint_infos)
   {
     for (const auto& var : info.slack_vars)
       cache_triplets_2.emplace_back(constraint_matrix_row + var.row(), current_col_index + var.col(), var.value());
@@ -901,7 +970,7 @@ void TrajOptQPProblem::Implementation::convexify()
 
   // Add a diagonal matrix for the variable limits (including slack variables since the merit coeff is only applied in
   // the cost) below the actual constraints
-  constraint_matrix_row = cvp.n_constraints + cvp.n_cost_constraints;
+  constraint_matrix_row = cvp.n_merit_constraints + cvp.n_penalty_constraints;
   for (Eigen::Index i = 0; i < cvp.num_qp_vars; ++i)
     cache_triplets_2.emplace_back(constraint_matrix_row + i, i, 1.0);
 
@@ -930,7 +999,7 @@ TrajOptQPProblem::Implementation::evaluateExactCosts(const Eigen::Ref<const Eige
   Eigen::VectorXd g(num_cost_components);
   Eigen::Index cost_idx{ 0 };
 
-  for (const auto& c : all_costs)
+  for (const auto& c : objective_terms)
   {
     if (c->getRows() == 0)
     {
@@ -946,7 +1015,7 @@ TrajOptQPProblem::Implementation::evaluateExactCosts(const Eigen::Ref<const Eige
     g(cost_idx++) = (err.array().square() * c->getCoefficients().array()).sum();
   }
 
-  for (const auto& c : all_cost_constraints)
+  for (const auto& c : penalty_constraints)
   {
     if (c->getRows() == 0)
     {
@@ -968,10 +1037,10 @@ TrajOptQPProblem::Implementation::evaluateExactCosts(const Eigen::Ref<const Eige
 Eigen::VectorXd TrajOptQPProblem::Implementation::evaluateExactConstraintViolations(
     const Eigen::Ref<const Eigen::VectorXd>& /*var_vals*/)
 {
-  Eigen::VectorXd violations(all_constraints.size());
+  Eigen::VectorXd violations(merit_constraints.size());
   Eigen::Index cnt_idx{ 0 };
 
-  for (const auto& c : all_constraints)
+  for (const auto& c : merit_constraints)
   {
     if (c->getRows() == 0)
     {
@@ -1011,7 +1080,6 @@ void TrajOptQPProblem::Implementation::setConstraintMeritCoeff(const Eigen::Ref<
 
 void TrajOptQPProblem::Implementation::print() const
 {
-  Eigen::Index total_cnt = cvp.n_cost_constraints + cvp.n_constraints;
   const Eigen::IOFormat format(3);
 
   std::cout << "-------------- QPProblem::print() --------------" << '\n';
@@ -1024,12 +1092,16 @@ void TrajOptQPProblem::Implementation::print() const
   std::cout << "Hessian:\n" << cvp.hessian.toDense().format(format) << '\n';
   std::cout << "Gradient: " << cvp.gradient.transpose().format(format) << '\n';
   std::cout << "Constraint Matrix:\n" << cvp.constraint_matrix.toDense().format(format) << '\n';
-  std::cout << "Constraint Lower Bounds: " << cvp.bounds_lower.head(total_cnt).transpose().format(format) << '\n';
-  std::cout << "Constraint Upper Bounds: " << cvp.bounds_upper.head(total_cnt).transpose().format(format) << '\n';
+  std::cout << "Constraint Lower Bounds: " << cvp.bounds_lower.head(cvp.n_constraint_terms).transpose().format(format)
+            << '\n';
+  std::cout << "Constraint Upper Bounds: " << cvp.bounds_upper.head(cvp.n_constraint_terms).transpose().format(format)
+            << '\n';
   std::cout << "Variable Lower Bounds: "
-            << cvp.bounds_lower.tail(cvp.bounds_lower.rows() - total_cnt).transpose().format(format) << '\n';
+            << cvp.bounds_lower.tail(cvp.bounds_lower.rows() - cvp.n_constraint_terms).transpose().format(format)
+            << '\n';
   std::cout << "Variable Upper Bounds: "
-            << cvp.bounds_upper.tail(cvp.bounds_upper.rows() - total_cnt).transpose().format(format) << '\n';
+            << cvp.bounds_upper.tail(cvp.bounds_upper.rows() - cvp.n_constraint_terms).transpose().format(format)
+            << '\n';
   std::cout << "All Lower Bounds: " << cvp.bounds_lower.transpose().format(format) << '\n';
   std::cout << "All Upper Bounds: " << cvp.bounds_upper.transpose().format(format) << '\n';
   std::cout << "NLP values: " << '\n';
@@ -1040,7 +1112,7 @@ void TrajOptQPProblem::Implementation::print() const
 void TrajOptQPProblem::Implementation::updateNLPVariableBounds(const Eigen::Ref<const Eigen::VectorXd>& nlp_values)
 {
   // Equivalent to BasicTrustRegionSQP::setTrustBoxConstraints
-  const Eigen::Index idx = cvp.n_constraints + cvp.n_cost_constraints;
+  const Eigen::Index idx = cvp.n_merit_constraints + cvp.n_penalty_constraints;
 
   auto lower = cvp.bounds_lower.segment(idx, cvp.n_nlp_vars);
   auto upper = cvp.bounds_upper.segment(idx, cvp.n_nlp_vars);
