@@ -86,6 +86,7 @@ void IfoptQPProblem::setup()
   num_qp_cnts_ = num_nlp_cnts_ + num_nlp_vars_;
   box_size_ = Eigen::VectorXd::Constant(num_nlp_vars_, 1e-1);
   constraint_merit_coeff_ = Eigen::VectorXd::Constant(num_nlp_cnts_, 10);
+  constraint_types_.resize(static_cast<std::size_t>(num_nlp_cnts_));
 
   // Get NLP Cost and Constraint Names for Debug Print
   for (const auto& cnt : nlp_->getConstraints().getComponents())
