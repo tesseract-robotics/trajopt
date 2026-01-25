@@ -51,7 +51,8 @@ int SquaredCost::update()
 
 double SquaredCost::getCost() const
 {
-  Eigen::VectorXd error = calcBoundsErrors(constraint_->getValues(), constraint_->getBounds());
+  Eigen::VectorXd error(constraint_->getRows());
+  calcBoundsErrors(error, constraint_->getValues(), constraint_->getBounds());
   // cost = sum_i w_i * e_i^2
   return (weights_.array() * error.array().square()).sum();
 }
@@ -79,7 +80,8 @@ void SquaredCost::fillJacobianBlock(std::string var_set, Jacobian& jac_block) co
   constraint_->fillJacobianBlock(var_set, cnt_jac_block);
 
   // error = bounds error vector (length = n_constraints_)
-  const Eigen::VectorXd error = calcBoundsErrors(constraint_->getValues(), constraint_->getBounds());
+  Eigen::VectorXd error(constraint_->getRows());
+  calcBoundsErrors(error, constraint_->getValues(), constraint_->getBounds());
 
   // coeff_i = 2 * w_i * e_i
   const Eigen::VectorXd coeff = (2.0 * (weights_.array() * error.array())).matrix();

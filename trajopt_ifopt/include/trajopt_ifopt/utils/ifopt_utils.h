@@ -70,19 +70,24 @@ Eigen::VectorXd getClosestValidPoint(const Eigen::Ref<const Eigen::VectorXd>& in
 
 /**
  * @brief Calculate errors of the bounds
+ * @param out The error given the bounds, if within the bounds it will be zero
  * @param input The input values
  * @param bounds The bounds
- * @return The error given the bounds, if within the bounds it will be zero
  */
-Eigen::VectorXd calcBoundsErrors(const Eigen::Ref<const Eigen::VectorXd>& input, const std::vector<Bounds>& bounds);
+void calcBoundsErrors(Eigen::Ref<Eigen::VectorXd> out,
+                      const Eigen::Ref<const Eigen::VectorXd>& input,
+                      const std::vector<Bounds>& bounds);
 
 /**
  * @brief The absolute value of the Bounds Errors
+ * @param out The absolute errors given the bounds, if within the bounds it will be zero
  * @param input The input values
  * @param bounds The bounds
  * @return The absolute errors given the bounds, if within the bounds it will be zero
  */
-Eigen::VectorXd calcBoundsViolations(const Eigen::Ref<const Eigen::VectorXd>& input, const std::vector<Bounds>& bounds);
+void calcBoundsViolations(Eigen::Ref<Eigen::VectorXd> out,
+                          const Eigen::Ref<const Eigen::VectorXd>& input,
+                          const std::vector<Bounds>& bounds);
 
 /**
  * @brief Calculate the numerical cost gradient at the provided values

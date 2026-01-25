@@ -471,13 +471,19 @@ Eigen::VectorXd IfoptQPProblem::evaluateConvexConstraintViolations(const Eigen::
   const Eigen::VectorXd result_lin =
       constraint_matrix_.block(0, 0, num_nlp_cnts_, num_nlp_vars_) * var_vals.head(num_nlp_vars_);  // NOLINT
   const Eigen::VectorXd constraint_value = constraint_constant_ + result_lin;
-  return trajopt_ifopt::calcBoundsViolations(constraint_value, nlp_->getBoundsOnConstraints());
+
+  Eigen::VectorXd violations(constraint_value.rows());
+  trajopt_ifopt::calcBoundsViolations(violations, constraint_value, nlp_->getBoundsOnConstraints());
+  return violations;
 }
 
 Eigen::VectorXd IfoptQPProblem::evaluateExactConstraintViolations(const Eigen::Ref<const Eigen::VectorXd>& var_vals)
 {
   const Eigen::VectorXd cnt_vals = nlp_->evaluateConstraints(var_vals.data());
-  return trajopt_ifopt::calcBoundsViolations(cnt_vals, nlp_->getBoundsOnConstraints());
+
+  Eigen::VectorXd violations(cnt_vals.rows());
+  trajopt_ifopt::calcBoundsViolations(violations, cnt_vals, nlp_->getBoundsOnConstraints());
+  return violations;
 }
 
 Eigen::VectorXd IfoptQPProblem::getExactConstraintViolations()

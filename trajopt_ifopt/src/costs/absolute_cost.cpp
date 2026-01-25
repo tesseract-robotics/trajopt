@@ -52,7 +52,8 @@ int AbsoluteCost::update()
 double AbsoluteCost::getCost() const
 {
   // This takes the absolute value of the errors
-  const Eigen::VectorXd error = calcBoundsViolations(constraint_->getValues(), constraint_->getBounds());
+  Eigen::VectorXd error(constraint_->getRows());
+  calcBoundsViolations(error, constraint_->getValues(), constraint_->getBounds());
   return weights_.dot(error);
 }
 
@@ -80,7 +81,8 @@ void AbsoluteCost::fillJacobianBlock(std::string var_set, Jacobian& jac_block) c
   constraint_->fillJacobianBlock(var_set, cnt_jac_block);
 
   // Compute signed coefficients: coeff_i = weights_[i] * sign(error_i)
-  const Eigen::ArrayXd error = calcBoundsErrors(constraint_->getValues(), constraint_->getBounds());
+  Eigen::ArrayXd error(constraint_->getRows());
+  calcBoundsErrors(error, constraint_->getValues(), constraint_->getBounds());
 
   Eigen::VectorXd coeff(n_constraints_);
   for (Eigen::Index i = 0; i < error.size(); ++i)
