@@ -36,28 +36,33 @@ SquaredCost::SquaredCost(const ConstraintSet::Ptr& constraint)
 }
 
 SquaredCost::SquaredCost(ConstraintSet::Ptr constraint, const Eigen::Ref<const Eigen::VectorXd>& weights)
-  : CostTerm(constraint->getName() + "_squared_cost")
+  : ConstraintSet(constraint->getName() + "_squared_cost", 1)
   , constraint_(std::move(constraint))
   , n_constraints_(constraint_->getRows())
   , weights_(weights.cwiseAbs())
 {
+  values_ = Eigen::VectorXd::Zero(1);
+  coeffs_ = Eigen::VectorXd::Ones(1);
+  bounds_ = std::vector<Bounds>(1, NoBound);
 }
 
 int SquaredCost::update()
 {
   constraint_->update();
-  return rows_;
-}
 
-double SquaredCost::getCost() const
-{
   Eigen::VectorXd error(constraint_->getRows());
   calcBoundsErrors(error, constraint_->getValues(), constraint_->getBounds());
   // cost = sum_i w_i * e_i^2
-  return (weights_.array() * error.array().square()).sum();
+  values_[0] = (weights_.array() * error.array().square()).sum();
+
+  return rows_;
 }
 
-Eigen::VectorXd SquaredCost::getCoefficients() const { return constraint_->getCoefficients(); }
+const Eigen::VectorXd& SquaredCost::getValues() const { return values_; }
+
+const Eigen::VectorXd& SquaredCost::getCoefficients() const { return coeffs_; }
+
+const std::vector<Bounds>& SquaredCost::getBounds() const { return bounds_; }
 
 void SquaredCost::fillJacobianBlock(std::string var_set, Jacobian& jac_block) const
 {

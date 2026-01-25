@@ -84,7 +84,8 @@ TEST_F(CartesianLineConstraintUnit, GetValue)  // NOLINT
 
     info = CartLineInfo(manip, "r_gripper_tool_frame", "base_link", line_start_pose, line_end_pose);
     const Eigen::VectorXd coeff = Eigen::VectorXd::Ones(info.indices.rows());
-    auto constraint = std::make_shared<CartLineConstraint>(info, var, coeff);
+    const std::vector<Bounds> bounds(static_cast<std::size_t>(info.indices.rows()), BoundZero);
+    auto constraint = std::make_shared<CartLineConstraint>(info, var, coeff, bounds);
     constraint->linkWithVariables(variables);
 
     // Given a joint position at the target, the error should be 0
@@ -118,7 +119,8 @@ TEST_F(CartesianLineConstraintUnit, GetValue)  // NOLINT
 
     info = CartLineInfo(manip, "r_gripper_tool_frame", "base_link", start_pose_mod, end_pose_mod);
     const Eigen::VectorXd coeff = Eigen::VectorXd::Ones(info.indices.rows());
-    auto constraint = std::make_shared<CartLineConstraint>(info, var, coeff);
+    const std::vector<Bounds> bounds(static_cast<std::size_t>(info.indices.rows()), BoundZero);
+    auto constraint = std::make_shared<CartLineConstraint>(info, var, coeff, bounds);
     constraint->linkWithVariables(variables);
 
     auto error = constraint->calcValues(joint_position);
@@ -141,7 +143,8 @@ TEST_F(CartesianLineConstraintUnit, FillJacobian)  // NOLINT
 
   info = CartLineInfo(manip, "r_gripper_tool_frame", "base_link", start_pose_mod, end_pose_mod);
   const Eigen::VectorXd coeff = Eigen::VectorXd::Ones(info.indices.rows());
-  auto constraint = std::make_shared<CartLineConstraint>(info, var, coeff);
+  const std::vector<Bounds> bounds(static_cast<std::size_t>(info.indices.rows()), BoundZero);
+  auto constraint = std::make_shared<CartLineConstraint>(info, var, coeff, bounds);
   constraint->linkWithVariables(variables);
 
   // below here should match cartesian
@@ -180,19 +183,23 @@ TEST_F(CartesianLineConstraintUnit, GetSetBounds)  // NOLINT
 
   // Check that setting bounds works
   info = CartLineInfo(manip, "r_gripper_tool_frame", "base_link", line_start_pose, line_end_pose);
-  const Eigen::VectorXd coeff = Eigen::VectorXd::Ones(info.indices.rows());
-  auto constraint = std::make_shared<CartLineConstraint>(info, var, coeff);
+  Eigen::VectorXd coeffs = Eigen::VectorXd::Ones(info.indices.rows());
+  std::vector<Bounds> bounds_vec(static_cast<std::size_t>(info.indices.rows()), BoundZero);
+  auto constraint = std::make_shared<CartLineConstraint>(info, var, coeffs, bounds_vec);
   constraint->linkWithVariables(variables);
 
   const Bounds bounds(-0.1234, 0.5678);
-  std::vector<Bounds> bounds_vec(6, bounds);
+  bounds_vec = std::vector<Bounds>(static_cast<std::size_t>(info.indices.rows()), bounds);
+  coeffs *= 10;
 
-  constraint->setBounds(bounds_vec);
-  std::vector<Bounds> results_vec = constraint->getBounds();
+  auto constraint_3 = std::make_shared<CartLineConstraint>(info, var, coeffs, bounds_vec);
+  const std::vector<Bounds> results_bounds = constraint_3->getBounds();
+  const Eigen::VectorXd result_coeffs = constraint_3->getCoefficients();
   for (std::size_t i = 0; i < bounds_vec.size(); i++)
   {
-    EXPECT_EQ(bounds_vec[i].getLower(), results_vec[i].getLower());
-    EXPECT_EQ(bounds_vec[i].getUpper(), results_vec[i].getUpper());
+    EXPECT_DOUBLE_EQ(coeffs(static_cast<Eigen::Index>(i)), result_coeffs(static_cast<Eigen::Index>(i)));
+    EXPECT_DOUBLE_EQ(bounds_vec[i].getLower(), results_bounds[i].getLower());
+    EXPECT_DOUBLE_EQ(bounds_vec[i].getUpper(), results_bounds[i].getUpper());
   }
 }
 
@@ -205,7 +212,8 @@ TEST_F(CartesianLineConstraintUnit, IgnoreVariables)  // NOLINT
 
   info = CartLineInfo(manip, "r_gripper_tool_frame", "base_link", line_start_pose, line_end_pose);
   const Eigen::VectorXd coeff = Eigen::VectorXd::Ones(info.indices.rows());
-  auto constraint = std::make_shared<CartLineConstraint>(info, var, coeff);
+  std::vector<Bounds> bounds(static_cast<std::size_t>(info.indices.rows()), BoundZero);
+  auto constraint = std::make_shared<CartLineConstraint>(info, var, coeff, bounds);
   constraint->linkWithVariables(variables);
 
   // Check that jacobian does not change for variables it shouldn't

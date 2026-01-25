@@ -91,8 +91,11 @@ public:
     nlp.addVariableSet(std::make_shared<NodesVariables>("joint_trajectory", std::move(nodes)));
 
     // Add constraints
+    const Eigen::VectorXd coeffs = Eigen::VectorXd::Ones(kin_group->numJoints());
+    const std::vector<trajopt_ifopt::Bounds> bounds(static_cast<std::size_t>(kin_group->numJoints()),
+                                                    trajopt_ifopt::BoundZero);
     auto target_pose = Eigen::Isometry3d::Identity();
-    constraint = std::make_shared<InverseKinematicsConstraint>(target_pose, kinematic_info, var0, var1);
+    constraint = std::make_shared<InverseKinematicsConstraint>(target_pose, kinematic_info, var0, var1, coeffs, bounds);
     nlp.addConstraintSet(constraint);
   }
 };
@@ -158,18 +161,26 @@ TEST_F(InverseKinematicsConstraintUnit, GetSetBounds)  // NOLINT
     nodes.push_back(std::make_unique<Node>("Joint_Position_1"));
     auto var1 = nodes.back()->addVar("position", kin_group->getJointNames(), pos, joint_bounds);
 
+    Eigen::VectorXd coeffs = Eigen::VectorXd::Ones(kin_group->numJoints());
+    std::vector<Bounds> bounds_vec(static_cast<std::size_t>(n_dof), trajopt_ifopt::BoundZero);
+
     auto target_pose = Eigen::Isometry3d::Identity();
-    auto constraint_2 = std::make_shared<InverseKinematicsConstraint>(target_pose, kinematic_info, var0, var1);
+    auto constraint_2 =
+        std::make_shared<InverseKinematicsConstraint>(target_pose, kinematic_info, var0, var1, coeffs, bounds_vec);
 
     const Bounds bounds(-0.1234, 0.5678);
-    std::vector<Bounds> bounds_vec = std::vector<Bounds>(static_cast<std::size_t>(n_dof), bounds);
+    bounds_vec = std::vector<Bounds>(static_cast<std::size_t>(n_dof), bounds);
+    coeffs *= 10;
 
-    constraint_2->setBounds(bounds_vec);
-    std::vector<Bounds> results_vec = constraint_2->getBounds();
+    auto constraint_3 =
+        std::make_shared<InverseKinematicsConstraint>(target_pose, kinematic_info, var0, var1, coeffs, bounds_vec);
+    const std::vector<Bounds> results_bounds = constraint_3->getBounds();
+    const Eigen::VectorXd result_coeffs = constraint_3->getCoefficients();
     for (std::size_t i = 0; i < bounds_vec.size(); i++)
     {
-      EXPECT_EQ(bounds_vec[i].getLower(), results_vec[i].getLower());
-      EXPECT_EQ(bounds_vec[i].getUpper(), results_vec[i].getUpper());
+      EXPECT_DOUBLE_EQ(coeffs(static_cast<Eigen::Index>(i)), result_coeffs(static_cast<Eigen::Index>(i)));
+      EXPECT_DOUBLE_EQ(bounds_vec[i].getLower(), results_bounds[i].getLower());
+      EXPECT_DOUBLE_EQ(bounds_vec[i].getUpper(), results_bounds[i].getUpper());
     }
   }
 }

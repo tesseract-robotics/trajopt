@@ -89,13 +89,21 @@ public:
   Variables::Ptr getComponent(const std::string& name) const;
 
   // ---- Variables / Component ----
-  Eigen::VectorXd getValues() const override;
-  std::vector<Bounds> getBounds() const override;
+  const Eigen::VectorXd& getValues() const override;
+  const std::vector<Bounds>& getBounds() const override;
   void setVariables(const Eigen::VectorXd& x) override;
   void print(int& index, double tolerance = 0.001) const override;
 
 private:
+  void markDirty();
+
   ComponentVec components_;
+
+  // caches
+  mutable Eigen::VectorXd values_cache_;
+  mutable std::vector<Bounds> bounds_cache_;
+  mutable bool values_dirty_{ true };
+  mutable bool bounds_dirty_{ true };
 };
 
 /**
@@ -146,15 +154,26 @@ public:
 
   // ---- DifferentiableInterface / ComponentInterface ----
   int update() override;
-  Eigen::VectorXd getValues() const override;
-  Eigen::VectorXd getCoefficients() const override;
+  const Eigen::VectorXd& getValues() const override;
+  const Eigen::VectorXd& getCoefficients() const override;
+  const std::vector<Bounds>& getBounds() const override;
   Jacobian getJacobian() const override;
-  std::vector<Bounds> getBounds() const override;
   void print(int& index, double tolerance = 0.001) const override;
 
 private:
+  void markDirty();
+
   ComponentVec components_;
   mutable long n_vars_{ -1 };
+
+  // caches
+  mutable Eigen::VectorXd values_cache_;
+  mutable Eigen::VectorXd coeffs_cache_;
+  mutable std::vector<Bounds> bounds_cache_;
+
+  mutable bool values_dirty_{ true };
+  mutable bool coeffs_dirty_{ true };
+  mutable bool bounds_dirty_{ true };
 };
 
 }  // namespace trajopt_ifopt

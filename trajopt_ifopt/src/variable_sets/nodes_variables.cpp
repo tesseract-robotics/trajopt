@@ -82,7 +82,7 @@ void NodesVariables::setVariables(const Eigen::VectorXd& x)
   updateObservers();
 }
 
-Eigen::VectorXd NodesVariables::getValues() const { return values_; }
+const Eigen::VectorXd& NodesVariables::getValues() const { return values_; }
 
 void NodesVariables::updateObservers()
 {
@@ -94,7 +94,7 @@ void NodesVariables::addObserver(std::shared_ptr<NodesObserver> observer) { obse
 
 Eigen::Index NodesVariables::getDim() const { return n_dim_; }
 
-std::vector<Bounds> NodesVariables::getBounds() const { return bounds_; }
+const std::vector<Bounds>& NodesVariables::getBounds() const { return bounds_; }
 
 std::vector<std::shared_ptr<const Node>> NodesVariables::getNodes() const
 {

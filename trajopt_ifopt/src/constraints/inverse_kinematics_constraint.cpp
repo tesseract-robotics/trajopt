@@ -51,8 +51,12 @@ InverseKinematicsConstraint::InverseKinematicsConstraint(
     InverseKinematicsInfo::ConstPtr kinematic_info,
     std::shared_ptr<const Var> constraint_var,
     std::shared_ptr<const Var> seed_var,
+    const Eigen::VectorXd& coeffs,
+    const std::vector<Bounds>& bounds,
     std::string name)
   : ConstraintSet(std::move(name), static_cast<int>(constraint_var->size()))
+  , coeffs_(coeffs)
+  , bounds_(bounds)
   , constraint_var_(std::move(constraint_var))
   , seed_var_(std::move(seed_var))
   , target_pose_(target_pose)
@@ -64,7 +68,7 @@ InverseKinematicsConstraint::InverseKinematicsConstraint(
   if (constraint_var_->size() != kinematic_info_->manip->numJoints())
     CONSOLE_BRIDGE_logError("Inverse kinematics has a different number of joints than the given variable set");
 
-  bounds_ = std::vector<Bounds>(static_cast<std::size_t>(n_dof_), BoundZero);
+  values_ = Eigen::VectorXd::Zero(rows_);
 }
 
 Eigen::VectorXd
@@ -95,23 +99,17 @@ InverseKinematicsConstraint::calcValues(const Eigen::Ref<const Eigen::VectorXd>&
   return error;
 }
 
-Eigen::VectorXd InverseKinematicsConstraint::getValues() const
+int InverseKinematicsConstraint::update()
 {
-  return calcValues(constraint_var_->value(), seed_var_->value());
+  values_ = calcValues(constraint_var_->value(), seed_var_->value());
+  return rows_;
 }
 
-Eigen::VectorXd InverseKinematicsConstraint::getCoefficients() const { return Eigen::VectorXd::Constant(n_dof_, 1); }
+const Eigen::VectorXd& InverseKinematicsConstraint::getValues() const { return values_; }
 
-// Set the limits on the constraint values
-std::vector<Bounds> InverseKinematicsConstraint::getBounds() const { return bounds_; }
+const Eigen::VectorXd& InverseKinematicsConstraint::getCoefficients() const { return coeffs_; }
 
-void InverseKinematicsConstraint::setBounds(const std::vector<Bounds>& bounds)
-{
-  if (bounds.size() != static_cast<std::size_t>(n_dof_))
-    CONSOLE_BRIDGE_logError("Bounds is incorrect size. It is %d when it should be %d", bounds.size(), n_dof_);
-
-  bounds_ = bounds;
-}
+const std::vector<Bounds>& InverseKinematicsConstraint::getBounds() const { return bounds_; }
 
 void InverseKinematicsConstraint::fillJacobianBlock(std::string var_set, Jacobian& jac_block) const
 {

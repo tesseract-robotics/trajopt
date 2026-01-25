@@ -27,7 +27,6 @@ set(TRAJOPT_IFOPT_SOURCE_FILES
     src/core/component.cpp
     src/core/composite.cpp
     src/core/constraint_set.cpp
-    src/core/cost_term.cpp
     src/core/problem.cpp
     src/costs/absolute_cost.cpp
     src/costs/squared_cost.cpp

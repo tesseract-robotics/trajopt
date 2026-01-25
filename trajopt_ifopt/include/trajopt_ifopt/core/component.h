@@ -102,7 +102,7 @@ public:
    * @li Constraint set: the constraint values g(x).
    * @li Cost term: the cost value (typically a 1x1 vector).
    */
-  virtual Eigen::VectorXd getValues() const = 0;
+  virtual const Eigen::VectorXd& getValues() const = 0;
 
   /**
    * @brief Returns the bounds of this component.
@@ -115,7 +115,7 @@ public:
    *
    * @note Callers should treat the returned vector size as equal to @ref getRows().
    */
-  virtual std::vector<Bounds> getBounds() const = 0;
+  virtual const std::vector<Bounds>& getBounds() const = 0;
 
   /**
    * @brief Prints the relevant information (name, rows, values) of this component.
@@ -241,7 +241,7 @@ public:
    *   weight per term/row/time-step/etc.).
    *    * @return Coefficient vector (component-defined length/order).
    */
-  virtual Eigen::VectorXd getCoefficients() const = 0;
+  virtual const Eigen::VectorXd& getCoefficients() const = 0;
 
   /**
    * @brief Returns derivatives of each row with respect to the decision variables.

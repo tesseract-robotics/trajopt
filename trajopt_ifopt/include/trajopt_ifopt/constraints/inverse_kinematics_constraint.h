@@ -84,9 +84,11 @@ public:
                               InverseKinematicsInfo::ConstPtr kinematic_info,
                               std::shared_ptr<const Var> constraint_var,
                               std::shared_ptr<const Var> seed_var,
+                              const Eigen::VectorXd& coeffs,
+                              const std::vector<Bounds>& bounds,
                               std::string name = "InverseKinematics");
 
-  int update() override { return rows_; }
+  int update() override;
 
   /**
    * @brief Calculates the values associated with the constraint
@@ -101,19 +103,16 @@ public:
    * (size n_dof_)
    * @return
    */
-  Eigen::VectorXd getValues() const override;
+  const Eigen::VectorXd& getValues() const override;
 
   /** @copydoc Differentiable::getCoefficients */
-  Eigen::VectorXd getCoefficients() const override;
+  const Eigen::VectorXd& getCoefficients() const override;
 
   /**
    * @brief  Returns the "bounds" of this constraint. How these are enforced is up to the solver
    * @return Bounds on the distance a joint can vary from the IK solution
    */
-  std::vector<Bounds> getBounds() const override;
-
-  /** @brief Set the constraint bounds. Must be n_dof_ */
-  void setBounds(const std::vector<Bounds>& bounds);
+  const std::vector<Bounds>& getBounds() const override;
 
   /**
    * @brief Fills the jacobian block associated with the constraint
@@ -145,6 +144,12 @@ public:
 private:
   /** @brief The number of joints in a single JointPosition */
   long n_dof_;
+
+  /** @brief The computed constraint values */
+  Eigen::VectorXd values_;
+
+  /** @brief The constraint coefficients */
+  Eigen::VectorXd coeffs_;
 
   /** @brief Bounds on the joint distance the constraint_var may vary from the IK solution */
   std::vector<Bounds> bounds_;

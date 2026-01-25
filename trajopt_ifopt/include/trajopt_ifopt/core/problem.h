@@ -31,7 +31,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define TRAJOPT_IFOPT_CORE_PROBLEM_H
 
 #include <trajopt_ifopt/core/constraint_set.h>
-#include <trajopt_ifopt/core/cost_term.h>
 #include <trajopt_ifopt/core/component.h>
 
 /**
@@ -131,7 +130,7 @@ public:
    * composed of different cost terms. It makes sure the overall value and
    * gradient is considering each individual cost.
    */
-  void addCostSet(CostTerm::Ptr cost_set);
+  void addCostSet(ConstraintSet::Ptr cost_set);
 
   /**
    * @brief  Updates the variables with the values of the raw pointer @c x.

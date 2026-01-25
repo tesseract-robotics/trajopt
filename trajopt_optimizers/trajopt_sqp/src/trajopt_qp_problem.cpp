@@ -400,7 +400,7 @@ void TrajOptQPProblem::Implementation::addCostSet(std::shared_ptr<trajopt_ifopt:
                                                   CostPenaltyType penalty_type)
 {
   constraint_set->linkWithVariables(variables);
-  const std::vector<trajopt_ifopt::Bounds> cost_bounds = constraint_set->getBounds();
+  const std::vector<trajopt_ifopt::Bounds>& cost_bounds = constraint_set->getBounds();
   switch (penalty_type)
   {
     case CostPenaltyType::SQUARED:
@@ -706,7 +706,7 @@ void TrajOptQPProblem::Implementation::setup()
   // Cache variable bounds (used in updateNLPVariableBounds)
   var_bounds_lower.resize(cvp.n_nlp_vars);
   var_bounds_upper.resize(cvp.n_nlp_vars);
-  std::vector<trajopt_ifopt::Bounds> var_bounds = variables->getBounds();
+  const std::vector<trajopt_ifopt::Bounds>& var_bounds = variables->getBounds();
   for (Eigen::Index i = 0; i < cvp.n_nlp_vars; ++i)
   {
     const auto& b = var_bounds[static_cast<std::size_t>(i)];
@@ -752,7 +752,7 @@ void TrajOptQPProblem::Implementation::convexify()
   cvp.gradient.resize(cvp.num_qp_vars);
   cvp.gradient.setZero();
 
-  const Eigen::VectorXd x_initial = variables->getValues();
+  const Eigen::VectorXd& x_initial = variables->getValues();
 
   // Create triplet list of nonzero gradients
   cache_triplets_1.clear();

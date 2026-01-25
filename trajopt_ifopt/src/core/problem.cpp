@@ -48,7 +48,7 @@ void Problem::addConstraintSet(ConstraintSet::Ptr constraint_set)
   constraints_.addComponent(std::move(constraint_set));
 }
 
-void Problem::addCostSet(CostTerm::Ptr cost_set)
+void Problem::addCostSet(ConstraintSet::Ptr cost_set)
 {
   cost_set->linkWithVariables(variables_);
   costs_.addComponent(std::move(cost_set));

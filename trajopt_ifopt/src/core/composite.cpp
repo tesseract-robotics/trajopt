@@ -35,6 +35,12 @@ namespace trajopt_ifopt
 {
 CompositeVariables::CompositeVariables(std::string name) : Variables(std::move(name), 0) {}
 
+void CompositeVariables::markDirty()
+{
+  values_dirty_ = true;
+  bounds_dirty_ = true;
+}
+
 void CompositeVariables::addComponent(Variables::Ptr c)
 {
   // at this point the number of rows must be specified.
@@ -42,6 +48,7 @@ void CompositeVariables::addComponent(Variables::Ptr c)
 
   rows_ += c->getRows();
   components_.push_back(std::move(c));
+  markDirty();
 }
 
 const CompositeVariables::ComponentVec& CompositeVariables::getComponents() const { return components_; }
@@ -50,6 +57,7 @@ void CompositeVariables::clearComponents()
 {
   components_.clear();
   rows_ = 0;
+  markDirty();
 }
 
 Variables::Ptr CompositeVariables::getComponent(const std::string& name) const
@@ -65,31 +73,40 @@ Variables::Ptr CompositeVariables::getComponent(const std::string& name) const
 bool CompositeVariables::empty() const { return components_.empty(); }
 
 // ---- Variables / Component ----
-Eigen::VectorXd CompositeVariables::getValues() const
+const Eigen::VectorXd& CompositeVariables::getValues() const
 {
-  Eigen::VectorXd g_all = Eigen::VectorXd::Zero(rows_);
+  if (!values_dirty_ && values_cache_.size() == rows_)
+    return values_cache_;
 
+  values_cache_.resize(rows_);
   int row = 0;
   for (const auto& c : components_)
   {
-    int n_rows = c->getRows();
-    g_all.middleRows(row, n_rows) += c->getValues();
+    const int n_rows = c->getRows();
+    values_cache_.segment(row, n_rows) = c->getValues();
     row += n_rows;
   }
-  return g_all;
+
+  values_dirty_ = false;
+  return values_cache_;
 }
 
-std::vector<Bounds> CompositeVariables::getBounds() const
+const std::vector<Bounds>& CompositeVariables::getBounds() const
 {
-  std::vector<Bounds> bounds;
-  bounds.reserve(static_cast<std::size_t>(rows_));
+  if (!bounds_dirty_ && static_cast<int>(bounds_cache_.size()) == rows_)
+    return bounds_cache_;
+
+  bounds_cache_.clear();
+  bounds_cache_.reserve(static_cast<std::size_t>(rows_));
+
   for (const auto& c : components_)
   {
-    std::vector<Bounds> b = c->getBounds();
-    bounds.insert(bounds.end(), b.begin(), b.end());
+    const auto& b = c->getBounds();
+    bounds_cache_.insert(bounds_cache_.end(), b.begin(), b.end());
   }
 
-  return bounds;
+  bounds_dirty_ = false;
+  return bounds_cache_;
 }
 
 void CompositeVariables::setVariables(const Eigen::VectorXd& x)
@@ -100,6 +117,8 @@ void CompositeVariables::setVariables(const Eigen::VectorXd& x)
     c->setVariables(x.middleRows(row, c->getRows()));
     row += c->getRows();
   }
+  values_cache_ = x.head(row);
+  values_dirty_ = false;
 }
 
 void CompositeVariables::print(int& index, double tolerance) const
@@ -118,6 +137,13 @@ CompositeDifferentiable::CompositeDifferentiable(std::string name, Mode mode, bo
 {
 }
 
+void CompositeDifferentiable::markDirty()
+{
+  values_dirty_ = true;
+  coeffs_dirty_ = true;
+  bounds_dirty_ = true;
+}
+
 void CompositeDifferentiable::addComponent(Differentiable::Ptr c)
 {
   // at this point the number of rows must be specified.
@@ -125,6 +151,7 @@ void CompositeDifferentiable::addComponent(Differentiable::Ptr c)
 
   rows_ += c->getRows();
   components_.push_back(std::move(c));
+  markDirty();
 }
 
 const CompositeDifferentiable::ComponentVec& CompositeDifferentiable::getComponents() const { return components_; }
@@ -133,6 +160,8 @@ void CompositeDifferentiable::clearComponents()
 {
   components_.clear();
   rows_ = 0;
+  n_vars_ = -1;
+  markDirty();
 }
 
 Differentiable::Ptr CompositeDifferentiable::getComponent(const std::string& name) const
@@ -157,35 +186,52 @@ int CompositeDifferentiable::update()
     rows_ = rows;
 
   assert(rows_ == rows);
+
+  // dynamic sizing/state changed → invalidate caches
+  markDirty();
   return rows_;
 }
 
-Eigen::VectorXd CompositeDifferentiable::getValues() const
+const Eigen::VectorXd& CompositeDifferentiable::getValues() const
 {
-  Eigen::VectorXd g_all = Eigen::VectorXd::Zero(rows_);
+  if (!values_dirty_ && values_cache_.size() == rows_)
+    return values_cache_;
+
+  values_cache_.setZero(rows_);
 
   int row = 0;
   for (const auto& c : components_)
   {
-    g_all.middleRows(row, c->getRows()) += c->getValues();
+    const auto& v = c->getValues();
+    values_cache_.segment(row, c->getRows()) += v;
+
     if (mode_ == Mode::kStackRows)
       row += c->getRows();
   }
-  return g_all;
+
+  values_dirty_ = false;
+  return values_cache_;
 }
 
-Eigen::VectorXd CompositeDifferentiable::getCoefficients() const
+const Eigen::VectorXd& CompositeDifferentiable::getCoefficients() const
 {
-  Eigen::VectorXd g_all = Eigen::VectorXd::Zero(rows_);
+  if (!coeffs_dirty_ && coeffs_cache_.size() == rows_)
+    return coeffs_cache_;
 
+  coeffs_cache_.setZero(rows_);
   int row = 0;
+
   for (const auto& c : components_)
   {
-    g_all.middleRows(row, c->getRows()) += c->getCoefficients();
+    const auto& w = c->getCoefficients();
+    coeffs_cache_.segment(row, c->getRows()) += w;
+
     if (mode_ == Mode::kStackRows)
       row += c->getRows();
   }
-  return g_all;
+
+  coeffs_dirty_ = false;
+  return coeffs_cache_;
 }
 
 Jacobian CompositeDifferentiable::getJacobian() const
@@ -220,17 +266,22 @@ Jacobian CompositeDifferentiable::getJacobian() const
   return jacobian;
 }
 
-std::vector<Bounds> CompositeDifferentiable::getBounds() const
+const std::vector<Bounds>& CompositeDifferentiable::getBounds() const
 {
-  std::vector<Bounds> bounds;
-  bounds.reserve(static_cast<std::size_t>(rows_));
+  if (!bounds_dirty_ && static_cast<int>(bounds_cache_.size()) == rows_)
+    return bounds_cache_;
+
+  bounds_cache_.clear();
+  bounds_cache_.reserve(static_cast<std::size_t>(rows_));
+
   for (const auto& c : components_)
   {
-    std::vector<Bounds> b = c->getBounds();
-    bounds.insert(bounds.end(), b.begin(), b.end());
+    const auto& b = c->getBounds();
+    bounds_cache_.insert(bounds_cache_.end(), b.begin(), b.end());
   }
 
-  return bounds;
+  bounds_dirty_ = false;
+  return bounds_cache_;
 }
 
 void CompositeDifferentiable::print(int& index, double tolerance) const

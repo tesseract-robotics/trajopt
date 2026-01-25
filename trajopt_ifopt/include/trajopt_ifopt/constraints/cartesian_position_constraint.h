@@ -109,7 +109,7 @@ public:
                     const std::vector<Bounds>& bounds,
                     std::string name = "CartPos");
 
-  int update() override { return rows_; }
+  int update() override;
 
   /**
    * @brief CalcValues Calculates the values associated with the constraint
@@ -123,16 +123,16 @@ public:
    * associated with each of the joint positions should be n_dof_ * n_vars_ long
    * @return
    */
-  Eigen::VectorXd getValues() const override;
+  const Eigen::VectorXd& getValues() const override;
 
   /** @copydoc Differentiable::getCoefficients */
-  Eigen::VectorXd getCoefficients() const override;
+  const Eigen::VectorXd& getCoefficients() const override;
 
   /**
    * @brief  Returns the "bounds" of this constraint. How these are enforced is up to the solver
    * @return Returns the "bounds" of this constraint
    */
-  std::vector<Bounds> getBounds() const override;
+  const std::vector<Bounds>& getBounds() const override;
 
   /**
    * @brief Fills the jacobian block associated with the constraint
@@ -181,6 +181,9 @@ public:
 private:
   /** @brief The number of joints in a single JointPosition */
   long n_dof_;
+
+  /** @brief The computed constraint values */
+  Eigen::VectorXd values_;
 
   /** @brief The constraint coefficients */
   Eigen::VectorXd coeffs_;

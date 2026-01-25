@@ -36,28 +36,33 @@ AbsoluteCost::AbsoluteCost(const ConstraintSet::Ptr& constraint)
 }
 
 AbsoluteCost::AbsoluteCost(ConstraintSet::Ptr constraint, const Eigen::Ref<const Eigen::VectorXd>& weights)
-  : CostTerm(constraint->getName() + "_absolute_cost")
+  : ConstraintSet(constraint->getName() + "_absolute_cost", 1)
   , constraint_(std::move(constraint))
   , n_constraints_(constraint_->getRows())
   , weights_(weights.cwiseAbs())  // must be positive
+
 {
+  values_ = Eigen::VectorXd::Zero(1);
+  coeffs_ = Eigen::VectorXd::Ones(1);
+  bounds_ = std::vector<Bounds>(1, NoBound);
 }
 
 int AbsoluteCost::update()
 {
   constraint_->update();
+
+  Eigen::VectorXd error(constraint_->getRows());
+  calcBoundsViolations(error, constraint_->getValues(), constraint_->getBounds());
+  values_[0] = weights_.dot(error);
+
   return rows_;
 }
 
-double AbsoluteCost::getCost() const
-{
-  // This takes the absolute value of the errors
-  Eigen::VectorXd error(constraint_->getRows());
-  calcBoundsViolations(error, constraint_->getValues(), constraint_->getBounds());
-  return weights_.dot(error);
-}
+const Eigen::VectorXd& AbsoluteCost::getValues() const { return values_; }
 
-Eigen::VectorXd AbsoluteCost::getCoefficients() const { return constraint_->getCoefficients(); }
+const Eigen::VectorXd& AbsoluteCost::getCoefficients() const { return coeffs_; }
+
+const std::vector<Bounds>& AbsoluteCost::getBounds() const { return bounds_; }
 
 void AbsoluteCost::fillJacobianBlock(std::string var_set, Jacobian& jac_block) const
 {

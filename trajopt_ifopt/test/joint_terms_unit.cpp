@@ -68,6 +68,7 @@ TEST(JointTermsUnit, JointPosConstraintUnit)  // NOLINT
 
   // Must link with variables or GetValues and GetJacobian throw exception.
   position_cnt.linkWithVariables(variables);
+  position_cnt.update();
 
   EXPECT_EQ(position_cnt.getRows(), static_cast<std::size_t>(target.size()));
   EXPECT_EQ(position_cnt.getName(), name);
@@ -132,6 +133,7 @@ TEST(JointTermsUnit, JointVelConstraintUnit)  // NOLINT
 
   // Must link with variables or GetValues and GetJacobian throw exception.
   velocity_cnt.linkWithVariables(variables);
+  velocity_cnt.update();
 
   EXPECT_EQ(velocity_cnt.getRows(), targets.size() * static_cast<Eigen::Index>(position_vars.size() - 1));
   EXPECT_EQ(velocity_cnt.getName(), name);
@@ -203,6 +205,7 @@ TEST(JointTermsUnit, JointVelConstraintMinimumUnit)  // NOLINT
 
   // Must link with variables or GetValues and GetJacobian throw exception.
   velocity_cnt.linkWithVariables(variables);
+  velocity_cnt.update();
 
   EXPECT_EQ(velocity_cnt.getRows(), targets.size() * static_cast<Eigen::Index>(position_vars.size() - 1));
   EXPECT_EQ(velocity_cnt.getName(), name);
@@ -275,6 +278,7 @@ TEST(JointTermsUnit, JointAccelConstraintUnit)  // NOLINT
 
   // Must link with variables or GetValues and GetJacobian throw exception.
   accel_cnt.linkWithVariables(variables);
+  accel_cnt.update();
 
   EXPECT_EQ(accel_cnt.getRows(), targets.size() * static_cast<Eigen::Index>(position_vars.size()));
   EXPECT_EQ(accel_cnt.getName(), name);
@@ -357,6 +361,7 @@ TEST(JointTermsUnit, JointAccelConstraintMinimumUnit)  // NOLINT
 
   // Must link with variables or GetValues and GetJacobian throw exception.
   accel_cnt.linkWithVariables(variables);
+  accel_cnt.update();
 
   EXPECT_EQ(accel_cnt.getRows(), targets.size() * static_cast<Eigen::Index>(position_vars.size()));
   EXPECT_EQ(accel_cnt.getName(), name);
@@ -439,6 +444,7 @@ TEST(JointTermsUnit, JointJerkConstraintUnit)  // NOLINT
 
   // Must link with variables or GetValues and GetJacobian throw exception.
   jerk_cnt.linkWithVariables(variables);
+  jerk_cnt.update();
 
   EXPECT_EQ(jerk_cnt.getRows(), targets.size() * static_cast<Eigen::Index>(position_vars.size()));
   EXPECT_EQ(jerk_cnt.getName(), name);
@@ -522,6 +528,7 @@ TEST(JointTermsUnit, JointJerkConstraintMinimumUnit)  // NOLINT
 
   // Must link with variables or GetValues and GetJacobian throw exception.
   jerk_cnt.linkWithVariables(variables);
+  jerk_cnt.update();
 
   EXPECT_EQ(jerk_cnt.getRows(), targets.size() * static_cast<Eigen::Index>(position_vars.size()));
   EXPECT_EQ(jerk_cnt.getName(), name);

@@ -55,6 +55,7 @@ JointVelConstraint::JointVelConstraint(const Eigen::VectorXd& targets,
   assert(n_dof_ > 0);
   assert(n_vars_ > 0);
 
+  values_ = Eigen::VectorXd::Zero(n_dof_ * (n_vars_ - 1));
   if (!(coeffs.array() > 0).all())
     throw std::runtime_error("JointVelConstraint, coeff must be greater than zero.");
 
@@ -83,7 +84,7 @@ JointVelConstraint::JointVelConstraint(const Eigen::VectorXd& targets,
   bounds_ = bounds;
 }
 
-Eigen::VectorXd JointVelConstraint::getValues() const
+int JointVelConstraint::update()
 {
   // i - represents the trajectory timestep index
   // k - represents the DOF index
@@ -93,28 +94,24 @@ Eigen::VectorXd JointVelConstraint::getValues() const
   //
   // Velocity V = vel(var[0, 0]), vel(var[0, 1]), vel(var[0, 2]), vel(var[1, 0]), vel(var[1, 1]), vel(var[1, 2]), etc
 
-  // Number of velocity segments (one less than number of position vars)
-  const Eigen::Index n_segments = n_vars_ - 1;
-
-  Eigen::VectorXd velocity(n_dof_ * n_segments);
-
-  for (Eigen::Index seg = 0; seg < n_segments; ++seg)
+  for (Eigen::Index seg = 0; seg < n_vars_ - 1; ++seg)
   {
     // q_i and q_{i+1}
     const Eigen::VectorXd& q0 = position_vars_[static_cast<std::size_t>(seg)]->value();
     const Eigen::VectorXd& q1 = position_vars_[static_cast<std::size_t>(seg + 1)]->value();
 
     // v_i = coeffs_ .* (q_{i+1} - q_i)
-    velocity.segment(seg * n_dof_, n_dof_) = (q1 - q0);
+    values_.segment(seg * n_dof_, n_dof_) = (q1 - q0);
   }
 
-  return velocity;
+  return rows_;
 }
 
-Eigen::VectorXd JointVelConstraint::getCoefficients() const { return coeffs_; }
+const Eigen::VectorXd& JointVelConstraint::getValues() const { return values_; }
 
-// Set the limits on the constraint values (in this case just the targets)
-std::vector<Bounds> JointVelConstraint::getBounds() const { return bounds_; }
+const Eigen::VectorXd& JointVelConstraint::getCoefficients() const { return coeffs_; }
+
+const std::vector<Bounds>& JointVelConstraint::getBounds() const { return bounds_; }
 
 void JointVelConstraint::fillJacobianBlock(std::string var_set, Jacobian& jac_block) const
 {

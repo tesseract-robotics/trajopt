@@ -84,6 +84,7 @@ JointPosConstraint::JointPosConstraint(const std::vector<Bounds>& bounds,
 
   assert(n_dof_ > 0);
 
+  values_ = Eigen::VectorXd::Zero(rows_);
   if (!(coeffs_.array() > 0).all())
     throw std::runtime_error("JointPosConstraint, coeff must be greater than zero.");
 
@@ -99,12 +100,18 @@ JointPosConstraint::JointPosConstraint(const std::vector<Bounds>& bounds,
     CONSOLE_BRIDGE_logError("Bounds size does not align with variables provided");
 }
 
-Eigen::VectorXd JointPosConstraint::getValues() const { return position_var_->value(); }
+int JointPosConstraint::update()
+{
+  values_ = position_var_->value();
+  return rows_;
+}
 
-Eigen::VectorXd JointPosConstraint::getCoefficients() const { return coeffs_; }
+const Eigen::VectorXd& JointPosConstraint::getValues() const { return values_; }
+
+const Eigen::VectorXd& JointPosConstraint::getCoefficients() const { return coeffs_; }
 
 // Set the limits on the constraint values
-std::vector<Bounds> JointPosConstraint::getBounds() const { return bounds_; }
+const std::vector<Bounds>& JointPosConstraint::getBounds() const { return bounds_; }
 
 void JointPosConstraint::fillJacobianBlock(std::string var_set, Jacobian& jac_block) const
 {

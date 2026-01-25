@@ -46,8 +46,6 @@ public:
   using Ptr = std::shared_ptr<JointJerkConstraint>;
   using ConstPtr = std::shared_ptr<const JointJerkConstraint>;
 
-  int update() override { return rows_; }
-
   /**
    * @brief Constructs a jerk constraint from these variables, setting the bounds to the target
    * @param targets Joint Jerk targets (length should be n_dof). Upper and lower bounds are set to this value
@@ -74,20 +72,22 @@ public:
                       const Eigen::VectorXd& coeffs,
                       const std::string& name = "JointJerk");
 
+  int update() override;
+
   /**
    * @brief Returns the values associated with the constraint. In this case that is the approximate joint jerk.
    * @return Returns joint jerk. Length is n_dof_ * n_vars
    */
-  Eigen::VectorXd getValues() const override;
+  const Eigen::VectorXd& getValues() const override;
 
   /** @copydoc Differentiable::getCoefficients */
-  Eigen::VectorXd getCoefficients() const override;
+  const Eigen::VectorXd& getCoefficients() const override;
 
   /**
    * @brief  Returns the "bounds" of this constraint. How these are enforced is up to the solver
    * @return Returns the "bounds" of this constraint
    */
-  std::vector<Bounds> getBounds() const override;
+  const std::vector<Bounds>& getBounds() const override;
 
   /**
    * @brief Fills the jacobian block associated with the given var_set.
@@ -102,6 +102,9 @@ private:
 
   /** @brief The number of JointPositions passed in */
   long n_vars_;
+
+  /** @brief The computed constraint values */
+  Eigen::VectorXd values_;
 
   /** @brief The coeff to apply to error and gradient */
   Eigen::VectorXd coeffs_;

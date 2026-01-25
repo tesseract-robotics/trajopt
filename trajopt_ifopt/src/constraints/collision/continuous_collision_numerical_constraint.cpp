@@ -71,6 +71,9 @@ ContinuousCollisionNumericalConstraint::ContinuousCollisionNumericalConstraint(
   coeffs_ = Eigen::VectorXd::Constant(rows_, 1);
   bounds_ = std::vector<Bounds>(static_cast<std::size_t>(max_num_cnt), BoundSmallerZero);
 
+  const double margin_buffer = collision_evaluator_->getCollisionMarginBuffer();
+  values_ = Eigen::VectorXd::Constant(rows_, -margin_buffer);
+
   if (fixed_sparsity)
   {
     // Setting to zeros because snopt sparsity cannot change
@@ -88,60 +91,59 @@ ContinuousCollisionNumericalConstraint::ContinuousCollisionNumericalConstraint(
 
 int ContinuousCollisionNumericalConstraint::update()
 {
+  const double margin_buffer = collision_evaluator_->getCollisionMarginBuffer();
   const trajopt_common::CollisionCacheData::ConstPtr collision_data = collision_evaluator_->calcCollisionData(
       position_vars_[0]->value(), position_vars_[1]->value(), vars0_fixed_, vars1_fixed_, bounds_.size());
 
-  const auto cnt = std::min<std::size_t>(bounds_.size(), collision_data->gradient_results_sets.size());
-  for (std::size_t i = 0; i < cnt; ++i)
-    coeffs_(static_cast<Eigen::Index>(i)) = collision_data->gradient_results_sets[i].coeff;
+  coeffs_.setOnes();
+  values_.setConstant(-margin_buffer);
+
+  if (!collision_data->gradient_results_sets.empty())
+  {
+    const auto cnt = std::min<std::size_t>(bounds_.size(), collision_data->gradient_results_sets.size());
+    if (!vars0_fixed_ && !vars1_fixed_)
+    {
+      for (std::size_t i = 0; i < cnt; ++i)
+      {
+        const trajopt_common::GradientResultsSet& r = collision_data->gradient_results_sets[i];
+        coeffs_(static_cast<Eigen::Index>(i)) = r.coeff;
+        values_(static_cast<Eigen::Index>(i)) = r.getMaxError();
+      }
+    }
+    else if (!vars0_fixed_)
+    {
+      for (std::size_t i = 0; i < cnt; ++i)
+      {
+        const trajopt_common::GradientResultsSet& r = collision_data->gradient_results_sets[i];
+        if (r.max_error[0].has_error[0] || r.max_error[1].has_error[0])
+        {
+          coeffs_(static_cast<Eigen::Index>(i)) = r.coeff;
+          values_(static_cast<Eigen::Index>(i)) = r.getMaxErrorT0();
+        }
+      }
+    }
+    else
+    {
+      for (std::size_t i = 0; i < cnt; ++i)
+      {
+        const trajopt_common::GradientResultsSet& r = collision_data->gradient_results_sets[i];
+        if (r.max_error[0].has_error[1] || r.max_error[1].has_error[1])
+        {
+          coeffs_(static_cast<Eigen::Index>(i)) = r.coeff;
+          values_(static_cast<Eigen::Index>(i)) = r.getMaxErrorT1();
+        }
+      }
+    }
+  }
 
   return rows_;
 }
 
-Eigen::VectorXd ContinuousCollisionNumericalConstraint::getValues() const
-{
-  // Get current joint values
-  const double margin_buffer = collision_evaluator_->getCollisionMarginBuffer();
-  Eigen::VectorXd values = Eigen::VectorXd::Constant(static_cast<Eigen::Index>(bounds_.size()), -margin_buffer);
+const Eigen::VectorXd& ContinuousCollisionNumericalConstraint::getValues() const { return values_; }
 
-  auto collision_data = collision_evaluator_->calcCollisionData(
-      position_vars_[0]->value(), position_vars_[1]->value(), vars0_fixed_, vars1_fixed_, bounds_.size());
+const std::vector<Bounds>& ContinuousCollisionNumericalConstraint::getBounds() const { return bounds_; }
 
-  if (collision_data->gradient_results_sets.empty())
-    return values;
-
-  const std::size_t cnt = std::min(bounds_.size(), collision_data->gradient_results_sets.size());
-
-  if (!vars0_fixed_ && !vars1_fixed_)
-  {
-    for (std::size_t i = 0; i < cnt; ++i)
-    {
-      const trajopt_common::GradientResultsSet& r = collision_data->gradient_results_sets[i];
-      values(static_cast<Eigen::Index>(i)) = r.getMaxError();
-    }
-  }
-  else if (!vars0_fixed_)
-  {
-    for (std::size_t i = 0; i < cnt; ++i)
-    {
-      const trajopt_common::GradientResultsSet& r = collision_data->gradient_results_sets[i];
-      values(static_cast<Eigen::Index>(i)) = r.getMaxErrorT0();
-    }
-  }
-  else
-  {
-    for (std::size_t i = 0; i < cnt; ++i)
-    {
-      const trajopt_common::GradientResultsSet& r = collision_data->gradient_results_sets[i];
-      values(static_cast<Eigen::Index>(i)) = r.getMaxErrorT1();
-    }
-  }
-
-  return values;
-}
-
-// Set the limits on the constraint values
-std::vector<Bounds> ContinuousCollisionNumericalConstraint::getBounds() const { return bounds_; }
+const Eigen::VectorXd& ContinuousCollisionNumericalConstraint::getCoefficients() const { return coeffs_; }
 
 void ContinuousCollisionNumericalConstraint::fillJacobianBlock(std::string var_set, Jacobian& jac_block) const
 {
@@ -211,14 +213,6 @@ void ContinuousCollisionNumericalConstraint::fillJacobianBlock(std::string var_s
       jv = position_vars_[p]->value();
     }
   }
-}
-
-Eigen::VectorXd ContinuousCollisionNumericalConstraint::getCoefficients() const { return coeffs_; }
-
-void ContinuousCollisionNumericalConstraint::setBounds(const std::vector<Bounds>& bounds)
-{
-  assert(bounds.size() == 1);
-  bounds_ = bounds;
 }
 
 std::shared_ptr<ContinuousCollisionEvaluator> ContinuousCollisionNumericalConstraint::getCollisionEvaluator() const

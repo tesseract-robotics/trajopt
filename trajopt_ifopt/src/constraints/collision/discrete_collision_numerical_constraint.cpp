@@ -58,16 +58,30 @@ DiscreteCollisionNumericalConstraint::DiscreteCollisionNumericalConstraint(
 
   coeffs_ = Eigen::VectorXd::Constant(rows_, 1);
   bounds_ = std::vector<Bounds>(static_cast<std::size_t>(max_num_cnt), BoundSmallerZero);
+
+  const double margin_buffer = collision_evaluator_->getCollisionMarginBuffer();
+  values_ = Eigen::VectorXd::Constant(rows_, -margin_buffer);
 }
 
 int DiscreteCollisionNumericalConstraint::update()
 {
+  const double margin_buffer = collision_evaluator_->getCollisionMarginBuffer();
   const trajopt_common::CollisionCacheData::ConstPtr collision_data =
       collision_evaluator_->calcCollisions(position_var_->value(), bounds_.size());
 
-  const auto cnt = std::min<std::size_t>(bounds_.size(), collision_data->gradient_results_sets.size());
-  for (std::size_t i = 0; i < cnt; ++i)
-    coeffs_(static_cast<Eigen::Index>(i)) = collision_data->gradient_results_sets[i].coeff;
+  coeffs_.setOnes();
+  values_.setConstant(-margin_buffer);
+
+  if (!collision_data->gradient_results_sets.empty())
+  {
+    const std::size_t cnt = std::min(bounds_.size(), collision_data->gradient_results_sets.size());
+    for (std::size_t i = 0; i < cnt; ++i)
+    {
+      const trajopt_common::GradientResultsSet& r = collision_data->gradient_results_sets[i];
+      coeffs_(static_cast<Eigen::Index>(i)) = r.coeff;
+      values_(static_cast<Eigen::Index>(i)) = r.getMaxErrorT0();
+    }
+  }
 
   // Setting to zeros because snopt sparsity cannot change
   std::call_once(init_flag_, &DiscreteCollisionNumericalConstraint::init, this);
@@ -75,12 +89,11 @@ int DiscreteCollisionNumericalConstraint::update()
   return rows_;
 }
 
-Eigen::VectorXd DiscreteCollisionNumericalConstraint::getValues() const { return calcValues(position_var_->value()); }
+const Eigen::VectorXd& DiscreteCollisionNumericalConstraint::getValues() const { return values_; }
 
-Eigen::VectorXd DiscreteCollisionNumericalConstraint::getCoefficients() const { return coeffs_; }
+const Eigen::VectorXd& DiscreteCollisionNumericalConstraint::getCoefficients() const { return coeffs_; }
 
-// Set the limits on the constraint values
-std::vector<Bounds> DiscreteCollisionNumericalConstraint::getBounds() const { return bounds_; }
+const std::vector<Bounds>& DiscreteCollisionNumericalConstraint::getBounds() const { return bounds_; }
 
 void DiscreteCollisionNumericalConstraint::init() const
 {
@@ -121,12 +134,6 @@ DiscreteCollisionNumericalConstraint::calcValues(const Eigen::Ref<const Eigen::V
   }
 
   return values;
-}
-
-void DiscreteCollisionNumericalConstraint::setBounds(const std::vector<Bounds>& bounds)
-{
-  assert(bounds.size() == 1);
-  bounds_ = bounds;
 }
 
 void DiscreteCollisionNumericalConstraint::calcJacobianBlock(const Eigen::Ref<const Eigen::VectorXd>& joint_vals,

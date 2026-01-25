@@ -75,10 +75,12 @@ thread_local tesseract_common::TransformMap CartLineConstraint::transforms_cache
 
 CartLineConstraint::CartLineConstraint(CartLineInfo info,
                                        std::shared_ptr<const Var> position_var,
-                                       const Eigen::VectorXd& coeffs,  // NOLINT
+                                       const Eigen::VectorXd& coeffs,
+                                       const std::vector<Bounds>& bounds,  // NOLINT
                                        std::string name)
   : ConstraintSet(std::move(name), static_cast<int>(info.indices.rows()))
   , coeffs_(coeffs)
+  , bounds_(bounds)
   , position_var_(std::move(position_var))
   , info_(std::move(info))
 {
@@ -86,9 +88,9 @@ CartLineConstraint::CartLineConstraint(CartLineInfo info,
   n_dof_ = info_.manip->numJoints();
   assert(n_dof_ > 0);
 
-  bounds_ = std::vector<Bounds>(static_cast<std::size_t>(info_.indices.rows()), BoundZero);
+  values_ = Eigen::VectorXd::Zero(rows_);
 
-  if (coeffs_.rows() != info_.indices.rows())
+  if (coeffs_.rows() != rows_)
     throw std::runtime_error("The number of coeffs does not match the number of constraints.");
 
   error_diff_function_ = [this](const Eigen::VectorXd& vals,
@@ -114,6 +116,12 @@ CartLineConstraint::CartLineConstraint(CartLineInfo info,
   };
 }
 
+int CartLineConstraint::update()
+{
+  values_ = calcValues(position_var_->value());
+  return rows_;
+}
+
 Eigen::VectorXd CartLineConstraint::calcValues(const Eigen::Ref<const Eigen::VectorXd>& joint_vals) const
 {
   transforms_cache_.clear();
@@ -136,18 +144,11 @@ Eigen::VectorXd CartLineConstraint::calcValues(const Eigen::Ref<const Eigen::Vec
   return reduced_err;  // This is available in 3.4 err(indices_, Eigen::all);
 }
 
-Eigen::VectorXd CartLineConstraint::getValues() const { return calcValues(position_var_->value()); }
+const Eigen::VectorXd& CartLineConstraint::getValues() const { return values_; }
 
-Eigen::VectorXd CartLineConstraint::getCoefficients() const { return coeffs_; }
+const Eigen::VectorXd& CartLineConstraint::getCoefficients() const { return coeffs_; }
 
-// Set the limits on the constraint values
-std::vector<Bounds> CartLineConstraint::getBounds() const { return bounds_; }
-
-void CartLineConstraint::setBounds(const std::vector<Bounds>& bounds)
-{
-  assert(bounds.size() == 6);
-  bounds_ = bounds;
-}
+const std::vector<Bounds>& CartLineConstraint::getBounds() const { return bounds_; }
 
 void CartLineConstraint::calcJacobianBlock(const Eigen::Ref<const Eigen::VectorXd>& joint_vals,
                                            Jacobian& jac_block) const

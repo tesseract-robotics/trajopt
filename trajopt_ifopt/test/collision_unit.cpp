@@ -165,35 +165,6 @@ TEST_F(CollisionUnit, GetValueFillJacobian)  // NOLINT
 }
 
 /**
- * @brief Checks that the Bounds are set correctly
- */
-TEST_F(CollisionUnit, GetSetBounds)  // NOLINT
-{
-  CONSOLE_BRIDGE_logDebug("CollisionUnit, GetSetBounds");
-
-  // Check that setting bounds works
-  {
-    std::vector<Bounds> bounds_vec{ NoBound, NoBound };
-    Eigen::VectorXd pos(2);
-    pos << -1.9, 0;
-    const std::vector<std::string> joint_names(2, "names");
-    auto node = std::make_unique<Node>("Joint_Position_0");
-    auto var0 = node->addVar("position", joint_names, pos, bounds_vec);
-
-    auto constraint_2 = std::make_shared<DiscreteCollisionConstraint>(collision_evaluator, var0, 3);
-    const Bounds bounds(-0.1234, 0.5678);
-    bounds_vec = std::vector<Bounds>(3, bounds);
-    constraint_2->setBounds(bounds_vec);
-    std::vector<Bounds> results_vec = constraint_2->getBounds();
-    for (std::size_t i = 0; i < bounds_vec.size(); i++)
-    {
-      EXPECT_EQ(bounds_vec[i].getLower(), results_vec[i].getLower());
-      EXPECT_EQ(bounds_vec[i].getUpper(), results_vec[i].getUpper());
-    }
-  }
-}
-
-/**
  * @brief Checks that the constraint doesn't change the jacobian when it shouldn't
  */
 TEST_F(CollisionUnit, IgnoreVariables)  // NOLINT

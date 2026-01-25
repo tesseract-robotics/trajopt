@@ -62,16 +62,16 @@ public:
    * it is important to not set the collision margin buffer to zero.
    * @return The constraint values not the violations
    */
-  Eigen::VectorXd getValues() const override;
+  const Eigen::VectorXd& getValues() const override;
 
   /** @copydoc Differentiable::getCoefficients */
-  Eigen::VectorXd getCoefficients() const override;
+  const Eigen::VectorXd& getCoefficients() const override;
 
   /**
    * @brief  Returns the "bounds" of this constraint. How these are enforced is up to the solver
    * @return Returns the "bounds" of this constraint
    */
-  std::vector<Bounds> getBounds() const override;
+  const std::vector<Bounds>& getBounds() const override;
 
   /**
    * @brief Fills the jacobian block associated with the given var_set.
@@ -82,12 +82,6 @@ public:
 
   /** @brief Calculates the values associated with the constraint */
   Eigen::VectorXd calcValues(const Eigen::Ref<const Eigen::VectorXd>& joint_vals) const;
-
-  /**
-   * @brief Sets the bounds on the collision distance
-   * @param bounds New bounds that will be set. Should be size 1
-   */
-  void setBounds(const std::vector<Bounds>& bounds);
 
   /**
    * @brief Fills the jacobian block associated with the constraint
@@ -104,6 +98,9 @@ public:
 private:
   /** @brief The number of joints in a single JointPosition */
   long n_dof_;
+
+  /** @brief The computed constraint values */
+  Eigen::VectorXd values_;
 
   /** @brief The constraint coefficients */
   Eigen::VectorXd coeffs_;

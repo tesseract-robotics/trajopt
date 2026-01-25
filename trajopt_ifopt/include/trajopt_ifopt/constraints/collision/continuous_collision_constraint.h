@@ -75,28 +75,22 @@ public:
    * it is important to not set the collision margin buffer to zero.
    * @return The constraint values not the violations
    */
-  Eigen::VectorXd getValues() const override;
+  const Eigen::VectorXd& getValues() const override;
 
   /** @copydoc Differentiable::getCoefficients */
-  Eigen::VectorXd getCoefficients() const override;
+  const Eigen::VectorXd& getCoefficients() const override;
 
   /**
    * @brief  Returns the "bounds" of this constraint. How these are enforced is up to the solver
    * @return Returns the "bounds" of this constraint
    */
-  std::vector<Bounds> getBounds() const override;
+  const std::vector<Bounds>& getBounds() const override;
   /**
    * @brief Fills the jacobian block associated with the given var_set.
    * @param var_set Name of the var_set to which the jac_block is associated
    * @param jac_block Block of the overall jacobian associated with these constraints and the var_set variable
    */
   void fillJacobianBlock(std::string var_set, Jacobian& jac_block) const override;
-
-  /**
-   * @brief Sets the bounds on the collision distance
-   * @param bounds New bounds that will be set. Should be size 1
-   */
-  void setBounds(const std::vector<Bounds>& bounds);
 
   /**
    * @brief Get the collision evaluator. This exposed for plotter callbacks
@@ -107,6 +101,9 @@ public:
 private:
   /** @brief The number of joints in a single JointPosition */
   long n_dof_;
+
+  /** @brief The computed constraint values */
+  Eigen::VectorXd values_;
 
   /** @brief The constraint coefficients */
   Eigen::VectorXd coeffs_;
@@ -162,28 +159,23 @@ public:
    * it is important to not set the collision margin buffer to zero.
    * @return The constraint values not the violations
    */
-  Eigen::VectorXd getValues() const override;
+  const Eigen::VectorXd& getValues() const override;
 
   /** @copydoc Differentiable::getCoefficients */
-  Eigen::VectorXd getCoefficients() const override;
+  const Eigen::VectorXd& getCoefficients() const override;
 
   /**
    * @brief  Returns the "bounds" of this constraint. How these are enforced is up to the solver
    * @return Returns the "bounds" of this constraint
    */
-  std::vector<Bounds> getBounds() const override;
+  const std::vector<Bounds>& getBounds() const override;
+
   /**
    * @brief Fills the jacobian block associated with the given var_set.
    * @param var_set Name of the var_set to which the jac_block is associated
    * @param jac_block Block of the overall jacobian associated with these constraints and the var_set variable
    */
   void fillJacobianBlock(std::string var_set, Jacobian& jac_block) const override;
-
-  /**
-   * @brief Sets the bounds on the collision distance
-   * @param bounds New bounds that will be set. Should be size 1
-   */
-  void setBounds(const std::vector<Bounds>& bounds);
 
   /**
    * @brief Get the collision evaluator. This exposed for plotter callbacks
@@ -195,14 +187,14 @@ private:
   /** @brief The number of joints in a single JointPosition */
   long n_dof_;
 
+  /** @brief The computed constraint values */
+  Eigen::VectorXd values_;
+
   /** @brief The constraint coefficients */
   Eigen::VectorXd coeffs_;
 
   /** @brief Bounds on the constraint value. Default: std::vector<Bounds>(1, ifopt::BoundSmallerZero) */
   std::vector<Bounds> bounds_;
-
-  /** @brief Used to store the values computed */
-  Eigen::VectorXd values_;
 
   std::shared_ptr<const trajopt_common::CollisionCacheData> collision_data_;
 

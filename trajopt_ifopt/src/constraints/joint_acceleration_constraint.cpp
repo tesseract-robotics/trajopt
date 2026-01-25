@@ -55,19 +55,20 @@ JointAccelConstraint::JointAccelConstraint(const Eigen::VectorXd& targets,
   assert(n_dof_ > 0);
   assert(n_vars_ > 0);
 
+  values_ = Eigen::VectorXd::Zero(rows_);
   if (!(coeffs.array() > 0).all())
     throw std::runtime_error("JointAccelConstraint, coeff must be greater than zero.");
 
   if (coeffs.rows() == 0)
-    coeffs_ = Eigen::VectorXd::Ones(n_dof_ * n_vars_);
+    coeffs_ = Eigen::VectorXd::Ones(rows_);
   else if (coeffs.rows() == 1)
-    coeffs_ = Eigen::VectorXd::Constant(n_dof_ * n_vars_, coeffs(0));
+    coeffs_ = Eigen::VectorXd::Constant(rows_, coeffs(0));
   else if (coeffs.rows() != n_dof_)
     throw std::runtime_error("JointAccelConstraint, coeff must be the same size of the joint postion.");
 
   if (coeffs.rows() == n_dof_)
   {
-    coeffs_.resize(n_dof_ * n_vars_);
+    coeffs_.resize(rows_);
     for (long j = 0; j < n_vars_; j++)
       coeffs_.segment(j * n_dof_, n_dof_) = coeffs;
   }
@@ -83,40 +84,38 @@ JointAccelConstraint::JointAccelConstraint(const Eigen::VectorXd& targets,
   bounds_ = bounds;
 }
 
-Eigen::VectorXd JointAccelConstraint::getValues() const
+int JointAccelConstraint::update()
 {
-  const std::size_t n = position_vars_.size();
-  Eigen::VectorXd acceleration(n_dof_ * static_cast<Eigen::Index>(n));
-
   // Forward diff for timesteps [0, n-3]
-  for (std::size_t i = 0; i < n - 2; ++i)
+  for (std::size_t i = 0; i < n_vars_ - 2; ++i)
   {
     const Eigen::VectorXd& q0 = position_vars_[i]->value();
     const Eigen::VectorXd& q1 = position_vars_[i + 1]->value();
     const Eigen::VectorXd& q2 = position_vars_[i + 2]->value();
 
     const Eigen::VectorXd single_step = q2 - 2.0 * q1 + q0;
-    acceleration.segment(static_cast<Eigen::Index>(i) * n_dof_, n_dof_) = single_step;
+    values_.segment(static_cast<Eigen::Index>(i) * n_dof_, n_dof_) = single_step;
   }
 
   // Backward diff for the last two timesteps [n-2, n-1]
-  for (std::size_t i = n - 2; i < n; ++i)
+  for (std::size_t i = static_cast<std::size_t>(n_vars_ - 2); i < n_vars_; ++i)
   {
     const Eigen::VectorXd& q0 = position_vars_[i]->value();      // q_i
     const Eigen::VectorXd& q1 = position_vars_[i - 1]->value();  // q_{i-1}
     const Eigen::VectorXd& q2 = position_vars_[i - 2]->value();  // q_{i-2}
 
     const Eigen::VectorXd single_step = q2 - 2.0 * q1 + q0;
-    acceleration.segment(static_cast<Eigen::Index>(i) * n_dof_, n_dof_) = single_step;
+    values_.segment(static_cast<Eigen::Index>(i) * n_dof_, n_dof_) = single_step;
   }
 
-  return acceleration;
+  return rows_;
 }
 
-Eigen::VectorXd JointAccelConstraint::getCoefficients() const { return coeffs_; }
+const Eigen::VectorXd& JointAccelConstraint::getValues() const { return values_; }
 
-// Set the limits on the constraint values (in this case just the targets)
-std::vector<Bounds> JointAccelConstraint::getBounds() const { return bounds_; }
+const Eigen::VectorXd& JointAccelConstraint::getCoefficients() const { return coeffs_; }
+
+const std::vector<Bounds>& JointAccelConstraint::getBounds() const { return bounds_; }
 
 void JointAccelConstraint::fillJacobianBlock(std::string var_set, Jacobian& jac_block) const
 {

@@ -29,7 +29,7 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <Eigen/Eigen>
 TRAJOPT_IGNORE_WARNINGS_POP
 
-#include <trajopt_ifopt/core/cost_term.h>
+#include <trajopt_ifopt/core/constraint_set.h>
 
 namespace trajopt_ifopt
 {
@@ -69,7 +69,7 @@ namespace trajopt_ifopt
  *     dcost(x)/dx = (W * error(x) / abs(W * error(x))) * J(x)
  *
  */
-class AbsoluteCost : public CostTerm
+class AbsoluteCost : public ConstraintSet
 {
 public:
   using Ptr = std::shared_ptr<AbsoluteCost>;
@@ -89,9 +89,11 @@ public:
 
   int update() override;
 
-  double getCost() const override;
+  const Eigen::VectorXd& getValues() const final;
 
-  Eigen::VectorXd getCoefficients() const override;
+  const Eigen::VectorXd& getCoefficients() const override;
+
+  const std::vector<Bounds>& getBounds() const final;
 
   void fillJacobianBlock(std::string var_set, Jacobian& jac_block) const override;
 
@@ -104,6 +106,15 @@ private:
 
   /** @brief Vector of weights. Default: Eigen::VectorXd::Ones(n_constraints) */
   Eigen::VectorXd weights_;
+
+  /** @brief The computed cost values */
+  Eigen::VectorXd values_;
+
+  /** @brief The cost coefficients */
+  Eigen::VectorXd coeffs_;
+
+  /** @brief Bounds on the positions of each joint */
+  std::vector<Bounds> bounds_;
 };
 
 }  // namespace trajopt_ifopt

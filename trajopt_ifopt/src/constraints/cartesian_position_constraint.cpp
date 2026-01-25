@@ -93,6 +93,7 @@ CartPosConstraint::CartPosConstraint(CartPosInfo info,
   n_dof_ = info_.manip->numJoints();
   assert(n_dof_ > 0);
 
+  values_ = Eigen::VectorXd::Zero(rows_);
   if (bounds_.size() != info_.indices.rows())
     throw std::runtime_error("The number of bounds does not match the number of constraints.");
 
@@ -224,11 +225,17 @@ Eigen::VectorXd CartPosConstraint::calcValues(const Eigen::Ref<const Eigen::Vect
   return err;
 }
 
-Eigen::VectorXd CartPosConstraint::getValues() const { return calcValues(position_var_->value()); }
+int CartPosConstraint::update()
+{
+  values_ = calcValues(position_var_->value());
+  return rows_;
+}
 
-Eigen::VectorXd CartPosConstraint::getCoefficients() const { return coeffs_; }
+const Eigen::VectorXd& CartPosConstraint::getValues() const { return values_; }
 
-std::vector<Bounds> CartPosConstraint::getBounds() const { return bounds_; }
+const Eigen::VectorXd& CartPosConstraint::getCoefficients() const { return coeffs_; }
+
+const std::vector<Bounds>& CartPosConstraint::getBounds() const { return bounds_; }
 
 void CartPosConstraint::calcJacobianBlock(const Eigen::Ref<const Eigen::VectorXd>& joint_vals,
                                           Jacobian& jac_block) const

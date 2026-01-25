@@ -52,23 +52,23 @@ public:
                        std::string name = "SimpleTestConstraint")
     : ConstraintSet(std::move(name), 1), position_var_(std::move(position_var))
   {
+    values_ = Eigen::VectorXd::Zero(1);
     coeffs_ = Eigen::VectorXd::Constant(1, 1);
     bounds_ = std::vector<trajopt_ifopt::Bounds>(1, trajopt_ifopt::BoundZero);
   }
 
-  int update() final { return rows_; }
-
-  Eigen::VectorXd getValues() const final
+  int update() final
   {
-    Eigen::VectorXd output(1);
     double v = position_var_->value()(0);
-    output(0) = std::pow(v, 2) + (4 * v) + 3;
-    return output;
+    values_(0) = std::pow(v, 2) + (4 * v) + 3;
+    return rows_;
   }
 
-  Eigen::VectorXd getCoefficients() const final { return coeffs_; }
+  const Eigen::VectorXd& getValues() const final { return values_; }
 
-  std::vector<trajopt_ifopt::Bounds> getBounds() const final { return bounds_; }
+  const Eigen::VectorXd& getCoefficients() const final { return coeffs_; }
+
+  const std::vector<trajopt_ifopt::Bounds>& getBounds() const final { return bounds_; }
 
   void fillJacobianBlock(std::string var_set, trajopt_ifopt::Jacobian& jac_block) const final
   {
@@ -83,6 +83,9 @@ public:
   }
 
 private:
+  /** @brief The values */
+  Eigen::VectorXd values_;
+
   /** @brief The constraint coefficients */
   Eigen::VectorXd coeffs_;
 

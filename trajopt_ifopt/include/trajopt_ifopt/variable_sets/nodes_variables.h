@@ -69,7 +69,7 @@ public:
    *
    * @sa GetNodeInfoAtOptIndex()
    */
-  Eigen::VectorXd getValues() const override;
+  const Eigen::VectorXd& getValues() const override;
 
   /**
    * @brief Sets some node positions and velocity from the optimization variables.
@@ -86,7 +86,7 @@ public:
   /**
    * @returns the bounds on position and velocity of each node and dimension.
    */
-  std::vector<Bounds> getBounds() const override;
+  const std::vector<Bounds>& getBounds() const override;
 
   /**
    * @returns All the nodes that can be used to reconstruct the spline.

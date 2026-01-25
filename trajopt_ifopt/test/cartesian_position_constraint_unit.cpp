@@ -202,7 +202,7 @@ TEST_F(CartesianPositionConstraintUnit, GetSetBounds)  // NOLINT
     const CartPosInfo cart_info(kin_group, "r_gripper_tool_frame", "base_footprint");
     auto constraint_2 = std::make_shared<CartPosConstraint>(cart_info, var0);
 
-    const Eigen::VectorXd coeffs = 10 * Eigen::VectorXd::Ones(kin_group->numJoints());
+    const Eigen::VectorXd coeffs = 10 * Eigen::VectorXd::Ones(6);
     const Bounds bounds(-0.1234, 0.5678);
     bounds_vec = std::vector<Bounds>(6, bounds);
 

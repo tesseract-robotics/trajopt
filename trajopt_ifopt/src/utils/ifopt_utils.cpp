@@ -229,8 +229,9 @@ Jacobian calcNumericalConstraintGradient(Variables& variables, ConstraintSet& co
   {
     x_new(i) = x(i) + epsilon;  // disturb variable i
     variables.setVariables(x_new);
+    constraint_set.update();
 
-    const Eigen::VectorXd g_new = constraint_set.getValues();
+    const Eigen::VectorXd& g_new = constraint_set.getValues();
     delta_g = (g_new - g) / epsilon;
 
     for (int j = 0; j < m; ++j)
