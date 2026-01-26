@@ -150,11 +150,20 @@ bool CompositeDifferentiable::empty() const { return components_.empty(); }
 int CompositeDifferentiable::update()
 {
   int rows{ 0 };
+  Eigen::Index non_zeros{ 0 };
   for (auto& c : components_)
+  {
     rows += c->update();
+    non_zeros += c->getNonZeros();
+    assert(c->getRows() >= 0);
+    assert(c->getNonZeros() >= 0);
+  }
 
   if (dynamic_)
+  {
     rows_ = rows;
+    non_zeros_ = non_zeros;
+  }
 
   assert(rows_ == rows);
   return rows_;

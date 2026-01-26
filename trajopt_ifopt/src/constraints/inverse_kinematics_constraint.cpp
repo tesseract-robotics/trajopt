@@ -64,6 +64,7 @@ InverseKinematicsConstraint::InverseKinematicsConstraint(
   if (constraint_var_->size() != kinematic_info_->manip->numJoints())
     CONSOLE_BRIDGE_logError("Inverse kinematics has a different number of joints than the given variable set");
 
+  non_zeros_ = n_dof_;
   bounds_ = std::vector<Bounds>(static_cast<std::size_t>(n_dof_), BoundZero);
 }
 

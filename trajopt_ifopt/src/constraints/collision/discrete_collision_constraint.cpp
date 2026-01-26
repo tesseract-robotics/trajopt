@@ -59,6 +59,7 @@ DiscreteCollisionConstraint::DiscreteCollisionConstraint(
 
   coeffs_ = Eigen::VectorXd::Constant(rows_, 1);
   bounds_ = std::vector<Bounds>(static_cast<std::size_t>(max_num_cnt), BoundSmallerZero);
+  non_zeros_ = rows_ * n_dof_;
 }
 
 int DiscreteCollisionConstraint::update()
@@ -175,6 +176,7 @@ int DiscreteCollisionConstraintD::update()
     rows += static_cast<int>(gradient_results_set.results.size());
 
   rows_ = rows;
+  non_zeros_ = rows_ * n_dof_;
   bounds_ = std::vector<Bounds>(static_cast<std::size_t>(rows), BoundSmallerZero);
 
   coeffs_.resize(rows_);

@@ -44,10 +44,13 @@ ConstraintSet::ConstraintSet(std::string name, int n_constraints)
 Jacobian ConstraintSet::getJacobian() const
 {
   Jacobian jacobian(rows_, variables_->getRows());
+  jacobian.reserve(non_zeros_.load());
 
   int col = 0;
   Jacobian jac;
+  jac.reserve(non_zeros_.load());
   std::vector<Eigen::Triplet<double>> triplet_list;
+  triplet_list.reserve(static_cast<std::size_t>(non_zeros_.load()));
 
   for (const auto& vars : variables_->getComponents())
   {
@@ -55,8 +58,6 @@ Jacobian ConstraintSet::getJacobian() const
     jac.resize(rows_, n);
 
     fillJacobianBlock(vars->getName(), jac);
-    // reserve space for the new elements to reduce memory allocation
-    triplet_list.reserve(triplet_list.size() + static_cast<std::size_t>(jac.nonZeros()));
 
     // create triplets for the derivative at the correct position in the overall Jacobian
     for (Eigen::Index k = 0; k < jac.outerSize(); ++k)

@@ -44,6 +44,8 @@ JointPosConstraint::JointPosConstraint(const Eigen::VectorXd& target,
   // Set the n_dof and n_vars for convenience
   assert(n_dof_ > 0);
 
+  non_zeros_ = n_dof_;
+
   if (!(coeffs_.array() > 0).all())
     throw std::runtime_error("JointPosConstraint, coeff must be greater than zero.");
 
@@ -84,6 +86,8 @@ JointPosConstraint::JointPosConstraint(const std::vector<Bounds>& bounds,
 
   assert(n_dof_ > 0);
 
+  non_zeros_ = n_dof_;
+
   if (!(coeffs_.array() > 0).all())
     throw std::runtime_error("JointPosConstraint, coeff must be greater than zero.");
 
@@ -115,7 +119,7 @@ void JointPosConstraint::fillJacobianBlock(std::string var_set, Jacobian& jac_bl
 
   // Reserve enough room in the sparse matrix
   std::vector<Eigen::Triplet<double>> triplet_list;
-  triplet_list.reserve(static_cast<std::size_t>(n_dof_));
+  triplet_list.reserve(static_cast<std::size_t>(non_zeros_));
 
   // Loop over all of the variables this constraint uses
   for (int j = 0; j < n_dof_; j++)  // NOLINT

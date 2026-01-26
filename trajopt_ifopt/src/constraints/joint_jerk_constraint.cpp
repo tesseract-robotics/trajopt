@@ -55,6 +55,9 @@ JointJerkConstraint::JointJerkConstraint(const Eigen::VectorXd& targets,
   assert(n_dof_ > 0);
   assert(n_vars_ > 0);
 
+  // Each timestep depends on 4 positions → 4 nonzeros per DOF
+  non_zeros_ = 4 * n_dof_ * n_vars_;
+
   if (!(coeffs.array() > 0).all())
     throw std::runtime_error("JointJerkConstraint, coeff must be greater than zero.");
 
@@ -132,8 +135,7 @@ void JointJerkConstraint::fillJacobianBlock(std::string var_set, Jacobian& jac_b
     return;
 
   std::vector<Eigen::Triplet<double>> triplets;
-  // Each timestep depends on 4 positions → 4 nonzeros per DOF
-  triplets.reserve(static_cast<std::size_t>(4 * n_dof_ * n_vars_));
+  triplets.reserve(static_cast<std::size_t>(non_zeros_));
 
   const std::size_t n = position_vars_.size();
 

@@ -55,6 +55,9 @@ JointVelConstraint::JointVelConstraint(const Eigen::VectorXd& targets,
   assert(n_dof_ > 0);
   assert(n_vars_ > 0);
 
+  // Each segment contributes 2 * n_dof_ nonzeros (− and +)
+  non_zeros_ = 2 * (n_vars_ - 1) * n_dof_;
+
   if (!(coeffs.array() > 0).all())
     throw std::runtime_error("JointVelConstraint, coeff must be greater than zero.");
 
@@ -123,13 +126,10 @@ void JointVelConstraint::fillJacobianBlock(std::string var_set, Jacobian& jac_bl
   if (var_set != position_vars_.front()->getParent()->getParent()->getName())
     return;
 
-  const Eigen::Index n_segments = n_vars_ - 1;
-
-  // Each segment contributes 2 * n_dof_ nonzeros (− and +)
   std::vector<Eigen::Triplet<double>> triplets;
-  triplets.reserve(static_cast<std::size_t>(2 * n_segments * n_dof_));
+  triplets.reserve(static_cast<std::size_t>(non_zeros_));
 
-  for (Eigen::Index seg = 0; seg < n_segments; ++seg)
+  for (Eigen::Index seg = 0; seg < (n_vars_ - 1); ++seg)
   {
     const Eigen::Index row_offset = seg * n_dof_;
 

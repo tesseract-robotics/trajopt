@@ -64,6 +64,7 @@ namespace trajopt_sqp
 struct ComponentInfo
 {
   Eigen::Index rows{ 0 };
+  Eigen::Index non_zeros{ 0 };
   Eigen::VectorXd coeffs;
   std::vector<trajopt_ifopt::Bounds> bounds;
 };
@@ -71,6 +72,7 @@ struct ComponentInfo
 struct ConstraintInfo
 {
   Eigen::Index rows{ 0 };
+  Eigen::Index non_zeros{ 0 };
   Eigen::VectorXd coeffs;
   std::vector<trajopt_ifopt::Bounds> bounds;
   std::vector<Eigen::Triplet<double>> slack_vars;
@@ -88,6 +90,11 @@ struct ConvexProblem
   Eigen::Index n_constraint_terms{ 0 };  // (n_penalty_constraints + n_merit_constraints)
   Eigen::Index n_penalty_constraints{ 0 };
   Eigen::Index n_merit_constraints{ 0 };
+
+  Eigen::Index n_objective_term_non_zeros{ 0 };
+  Eigen::Index n_constraint_term_non_zeros{ 0 };
+  Eigen::Index n_penalty_constraint_non_zeros{ 0 };
+  Eigen::Index n_merit_constraint_non_zeros{ 0 };
 
   Eigen::Index num_qp_vars{ 0 };
   Eigen::Index num_qp_cnts{ 0 };
@@ -468,21 +475,29 @@ void TrajOptQPProblem::Implementation::update()
   cvp.n_penalty_constraints = 0;
   cvp.n_merit_constraints = 0;
 
+  cvp.n_objective_term_non_zeros = 0;
+  cvp.n_constraint_term_non_zeros = 0;
+  cvp.n_penalty_constraint_non_zeros = 0;
+  cvp.n_merit_constraint_non_zeros = 0;
+
   for (std::size_t i = 0; i < objective_terms.size(); ++i)
   {
     const auto& cost = objective_terms[i];
     if (initialized && !cost->isDynamic())
     {
       cvp.n_objective_terms += cost->getRows();
+      cvp.n_objective_term_non_zeros += cost->getNonZeros();
       continue;
     }
 
     auto& info = cvp.objective_term_infos[i];
     info.rows = cost->getRows();
+    info.non_zeros = cost->getNonZeros();
     info.coeffs = cost->getCoefficients();
     info.bounds = cost->getBounds();
 
     cvp.n_objective_terms += info.rows;
+    cvp.n_objective_term_non_zeros += info.non_zeros;
   }
 
   // Hinge cost adds a variable and an inequality constraint (→ 2 constraints)
@@ -495,11 +510,13 @@ void TrajOptQPProblem::Implementation::update()
     if (initialized && !cost->isDynamic())
     {
       cvp.n_penalty_constraints += cost->getRows();
+      cvp.n_penalty_constraint_non_zeros += cost->getNonZeros();
       cvp.n_slack_vars += static_cast<Eigen::Index>(info.slack_vars.size());
       continue;
     }
 
     info.rows = cost->getRows();
+    info.non_zeros = cost->getNonZeros();
     info.coeffs = cost->getCoefficients();
     info.bounds = cost->getBounds();
     info.slack_vars.clear();
@@ -535,6 +552,7 @@ void TrajOptQPProblem::Implementation::update()
     }
 
     cvp.n_penalty_constraints += info.rows;
+    cvp.n_penalty_constraint_non_zeros += info.non_zeros;
     cvp.n_slack_vars += static_cast<Eigen::Index>(info.slack_vars.size());
   }
 
@@ -545,11 +563,13 @@ void TrajOptQPProblem::Implementation::update()
     if (initialized && !cnt->isDynamic())
     {
       cvp.n_merit_constraints += cnt->getRows();
+      cvp.n_merit_constraint_non_zeros += cnt->getNonZeros();
       cvp.n_slack_vars += static_cast<Eigen::Index>(info.slack_vars.size());
       continue;
     }
 
     info.rows = cnt->getRows();
+    info.non_zeros = cnt->getNonZeros();
     info.coeffs = cnt->getCoefficients();
     info.bounds = cnt->getBounds();
     info.slack_vars.clear();
@@ -585,10 +605,13 @@ void TrajOptQPProblem::Implementation::update()
     }
 
     cvp.n_merit_constraints += info.rows;
+    cvp.n_merit_constraint_non_zeros += info.non_zeros;
     cvp.n_slack_vars += static_cast<Eigen::Index>(info.slack_vars.size());
   }
 
   cvp.n_constraint_terms = cvp.n_penalty_constraints + cvp.n_merit_constraints;
+  cvp.n_constraint_term_non_zeros = cvp.n_penalty_constraint_non_zeros + cvp.n_merit_constraint_non_zeros;
+
   cvp.num_qp_vars = cvp.n_nlp_vars + cvp.n_slack_vars;
   cvp.num_qp_cnts = cvp.n_penalty_constraints + cvp.n_merit_constraints + cvp.num_qp_vars;
 
@@ -738,7 +761,6 @@ void TrajOptQPProblem::Implementation::convexify()
   update();
 
   // Convexify
-  const Eigen::Index num_nlp_costs = cvp.n_objective_terms + cvp.n_penalty_constraints;
 
   ////////////////////////////////////////////////////////
   // Set the Hessian (empty for now)
@@ -756,7 +778,7 @@ void TrajOptQPProblem::Implementation::convexify()
 
   // Create triplet list of nonzero gradients
   cache_triplets_1.clear();
-  cache_triplets_1.reserve(static_cast<std::size_t>(cvp.n_nlp_vars * num_nlp_costs) * 3);
+  cache_triplets_1.reserve(static_cast<std::size_t>(cvp.n_objective_term_non_zeros));
 
   // Process Squared Costs
   /** @note See CostFromFunc::convex in modeling_utils.cpp. */
@@ -832,10 +854,9 @@ void TrajOptQPProblem::Implementation::convexify()
 
   /** Use cache triplet and clear */
   cache_triplets_2.clear();
-  cache_triplets_2.reserve(static_cast<std::size_t>(cvp.num_qp_cnts + cvp.num_qp_vars));
+  cache_triplets_2.reserve(static_cast<std::size_t>(cvp.n_constraint_term_non_zeros + cvp.num_qp_vars));
 
   Eigen::Index constraint_matrix_row{ 0 };
-  Eigen::Index constraint_matrix_non_zeros{ 0 };
   Eigen::Index current_var_index{ cvp.n_nlp_vars };
   ////////////////////////////////////////////////////////
   // Set the gradient of the cost constraint variables
@@ -885,7 +906,6 @@ void TrajOptQPProblem::Implementation::convexify()
       cvp.bounds_upper[row] = b.getUpper() - constant;
     }
 
-    constraint_matrix_non_zeros += jac.nonZeros();
     constraint_matrix_row += info.rows;
   }
 
@@ -938,7 +958,6 @@ void TrajOptQPProblem::Implementation::convexify()
       cvp.bounds_upper[row] = b.getUpper() - constant;
     }
 
-    constraint_matrix_non_zeros += jac.nonZeros();
     constraint_matrix_row += info.rows;
   }
 
@@ -976,7 +995,7 @@ void TrajOptQPProblem::Implementation::convexify()
 
   // Insert the triplet list into the sparse matrix
   cvp.constraint_matrix.resize(cvp.num_qp_cnts, cvp.num_qp_vars);
-  cvp.constraint_matrix.reserve(constraint_matrix_non_zeros + cvp.num_qp_vars);
+  cvp.constraint_matrix.reserve(cvp.n_constraint_term_non_zeros + cvp.num_qp_vars);
   cvp.constraint_matrix.setFromTriplets(cache_triplets_2.begin(), cache_triplets_2.end());
 
   // Update NLP Bounds

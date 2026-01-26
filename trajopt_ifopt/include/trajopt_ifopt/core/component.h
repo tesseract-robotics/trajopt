@@ -214,6 +214,28 @@ public:
   bool isScalar() const;
 
   /**
+   * @brief Returns an estimate of the Jacobian sparsity (number of structural non-zeros).
+   *
+   * @details
+   * This value is intended as a *capacity hint* for preallocation (e.g., calling
+   * `SparseMatrix::reserve()` or reserving triplet storage) to reduce reallocations
+   * when assembling the Jacobian.
+   *
+   * - For fixed-structure components, this should typically be set once and remain
+   *   constant across iterations.
+   * - For dynamic components, this should be refreshed during @ref update() to reflect
+   *   the current active-set / structure (or a conservative upper bound if the exact
+   *   count is not known cheaply).
+   *
+   * @note This is not required to equal `getJacobian().nonZeros()` exactly; it may be
+   *       an upper bound. Returning a value that is too small may cause extra
+   *       allocations, while a value that is too large only wastes reserved capacity.
+   *
+   * @return Estimated (or maximum expected) number of non-zero entries in the Jacobian.
+   */
+  Eigen::Index getNonZeros() const;
+
+  /**
    * @brief Recompute sizing/state for dynamic-sized components.
    *
    * For components where @ref isDynamic() is true, this method is used to:
@@ -256,6 +278,7 @@ public:
 protected:
   Mode mode_{ Mode::kStackRows };
   bool dynamic_{ false };
+  std::atomic<Eigen::Index> non_zeros_{ -1 };
 };
 
 }  // namespace trajopt_ifopt
