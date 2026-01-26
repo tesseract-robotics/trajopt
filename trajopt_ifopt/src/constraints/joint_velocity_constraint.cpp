@@ -116,7 +116,10 @@ Eigen::VectorXd JointVelConstraint::getCoefficients() const { return coeffs_; }
 // Set the limits on the constraint values (in this case just the targets)
 std::vector<Bounds> JointVelConstraint::getBounds() const { return bounds_; }
 
-void JointVelConstraint::fillJacobianBlock(std::string var_set, Jacobian& jac_block) const
+void JointVelConstraint::fillJacobianBlock(std::vector<Eigen::Triplet<double>>& jac_block,
+                                           const std::string& var_set,
+                                           Eigen::Index row_index,
+                                           Eigen::Index col_index) const
 {
   // Check if this constraint use the var_set
   // Only modify the jacobian if this constraint uses var_set
@@ -125,29 +128,23 @@ void JointVelConstraint::fillJacobianBlock(std::string var_set, Jacobian& jac_bl
 
   const Eigen::Index n_segments = n_vars_ - 1;
 
-  // Each segment contributes 2 * n_dof_ nonzeros (− and +)
-  std::vector<Eigen::Triplet<double>> triplets;
-  triplets.reserve(static_cast<std::size_t>(2 * n_segments * n_dof_));
-
   for (Eigen::Index seg = 0; seg < n_segments; ++seg)
   {
-    const Eigen::Index row_offset = seg * n_dof_;
+    const Eigen::Index row_offset = row_index + (seg * n_dof_);
 
     // Column indices in this var_set for q_seg and q_{seg+1}
-    const Eigen::Index col0 = position_vars_[static_cast<std::size_t>(seg)]->getIndex();
-    const Eigen::Index col1 = position_vars_[static_cast<std::size_t>(seg + 1)]->getIndex();
+    const Eigen::Index col0 = col_index + position_vars_[static_cast<std::size_t>(seg)]->getIndex();
+    const Eigen::Index col1 = col_index + position_vars_[static_cast<std::size_t>(seg + 1)]->getIndex();
 
     for (Eigen::Index k = 0; k < n_dof_; ++k)
     {
       const Eigen::Index row = row_offset + k;
 
       // v(seg,k) = c * (q1 - q0)
-      triplets.emplace_back(row, col0 + k, -1);  // ∂v/∂q_seg
-      triplets.emplace_back(row, col1 + k, 1);   // ∂v/∂q_{seg+1}
+      jac_block.emplace_back(row, col0 + k, -1);  // ∂v/∂q_seg
+      jac_block.emplace_back(row, col1 + k, 1);   // ∂v/∂q_{seg+1}
     }
   }
-
-  jac_block.setFromTriplets(triplets.begin(), triplets.end());  // NOLINT
 }
 
 }  // namespace trajopt_ifopt

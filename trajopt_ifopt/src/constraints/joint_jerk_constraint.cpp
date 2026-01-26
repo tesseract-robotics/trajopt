@@ -124,62 +124,59 @@ Eigen::VectorXd JointJerkConstraint::getCoefficients() const { return coeffs_; }
 // Set the limits on the constraint values (in this case just the targets)
 std::vector<Bounds> JointJerkConstraint::getBounds() const { return bounds_; }
 
-void JointJerkConstraint::fillJacobianBlock(std::string var_set, Jacobian& jac_block) const
+void JointJerkConstraint::fillJacobianBlock(std::vector<Eigen::Triplet<double>>& jac_block,
+                                            const std::string& var_set,
+                                            Eigen::Index row_index,
+                                            Eigen::Index col_index) const
 {
   // Check if this constraint use the var_set
   // Only modify the jacobian if this constraint uses var_set
   if (var_set != position_vars_.front()->getParent()->getParent()->getName())
     return;
 
-  std::vector<Eigen::Triplet<double>> triplets;
-  // Each timestep depends on 4 positions → 4 nonzeros per DOF
-  triplets.reserve(static_cast<std::size_t>(4 * n_dof_ * n_vars_));
-
   const std::size_t n = position_vars_.size();
 
   for (std::size_t i = 0; i < n; ++i)
   {
-    const Eigen::Index row_offset = static_cast<Eigen::Index>(i) * n_dof_;
+    const Eigen::Index row_offset = row_index + (static_cast<Eigen::Index>(i) * n_dof_);
 
     if (i < n - 3)
     {
       // Forward diff: j_i = c * (-q_i + 3*q_{i+1} - 3*q_{i+2} + q_{i+3})
-      const Eigen::Index col_i = position_vars_[i]->getIndex();
-      const Eigen::Index col_ip1 = position_vars_[i + 1]->getIndex();
-      const Eigen::Index col_ip2 = position_vars_[i + 2]->getIndex();
-      const Eigen::Index col_ip3 = position_vars_[i + 3]->getIndex();
+      const Eigen::Index col_i = col_index + position_vars_[i]->getIndex();
+      const Eigen::Index col_ip1 = col_index + position_vars_[i + 1]->getIndex();
+      const Eigen::Index col_ip2 = col_index + position_vars_[i + 2]->getIndex();
+      const Eigen::Index col_ip3 = col_index + position_vars_[i + 3]->getIndex();
 
       for (Eigen::Index k = 0; k < n_dof_; ++k)
       {
         const Eigen::Index row = row_offset + k;
 
-        triplets.emplace_back(row, col_i + k, -1);      // ∂j_i/∂q_i
-        triplets.emplace_back(row, col_ip1 + k, 3.0);   // ∂j_i/∂q_{i+1}
-        triplets.emplace_back(row, col_ip2 + k, -3.0);  // ∂j_i/∂q_{i+2}
-        triplets.emplace_back(row, col_ip3 + k, 1);     // ∂j_i/∂q_{i+3}
+        jac_block.emplace_back(row, col_i + k, -1);      // ∂j_i/∂q_i
+        jac_block.emplace_back(row, col_ip1 + k, 3.0);   // ∂j_i/∂q_{i+1}
+        jac_block.emplace_back(row, col_ip2 + k, -3.0);  // ∂j_i/∂q_{i+2}
+        jac_block.emplace_back(row, col_ip3 + k, 1);     // ∂j_i/∂q_{i+3}
       }
     }
     else
     {
       // Backward diff: j_i = c * (q_i - 3*q_{i-1} + 3*q_{i-2} - q_{i-3})
-      const Eigen::Index col_i = position_vars_[i]->getIndex();
-      const Eigen::Index col_im1 = position_vars_[i - 1]->getIndex();
-      const Eigen::Index col_im2 = position_vars_[i - 2]->getIndex();
-      const Eigen::Index col_im3 = position_vars_[i - 3]->getIndex();
+      const Eigen::Index col_i = col_index + position_vars_[i]->getIndex();
+      const Eigen::Index col_im1 = col_index + position_vars_[i - 1]->getIndex();
+      const Eigen::Index col_im2 = col_index + position_vars_[i - 2]->getIndex();
+      const Eigen::Index col_im3 = col_index + position_vars_[i - 3]->getIndex();
 
       for (Eigen::Index k = 0; k < n_dof_; ++k)
       {
         const Eigen::Index row = row_offset + k;
 
-        triplets.emplace_back(row, col_i + k, 1);       // ∂j_i/∂q_i
-        triplets.emplace_back(row, col_im1 + k, -3.0);  // ∂j_i/∂q_{i-1}
-        triplets.emplace_back(row, col_im2 + k, 3.0);   // ∂j_i/∂q_{i-2}
-        triplets.emplace_back(row, col_im3 + k, -1);    // ∂j_i/∂q_{i-3}
+        jac_block.emplace_back(row, col_i + k, 1);       // ∂j_i/∂q_i
+        jac_block.emplace_back(row, col_im1 + k, -3.0);  // ∂j_i/∂q_{i-1}
+        jac_block.emplace_back(row, col_im2 + k, 3.0);   // ∂j_i/∂q_{i-2}
+        jac_block.emplace_back(row, col_im3 + k, -1);    // ∂j_i/∂q_{i-3}
       }
     }
   }
-
-  jac_block.setFromTriplets(triplets.begin(), triplets.end());  // NOLINT
 }
 
 }  // namespace trajopt_ifopt

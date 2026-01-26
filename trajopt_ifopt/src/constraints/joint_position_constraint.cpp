@@ -106,21 +106,19 @@ Eigen::VectorXd JointPosConstraint::getCoefficients() const { return coeffs_; }
 // Set the limits on the constraint values
 std::vector<Bounds> JointPosConstraint::getBounds() const { return bounds_; }
 
-void JointPosConstraint::fillJacobianBlock(std::string var_set, Jacobian& jac_block) const
+void JointPosConstraint::fillJacobianBlock(std::vector<Eigen::Triplet<double>>& jac_block,
+                                           const std::string& var_set,
+                                           Eigen::Index row_index,
+                                           Eigen::Index col_index) const
 {
   // Check if this constraint use the var_set
   // Only modify the jacobian if this constraint uses var_set
   if (var_set != position_var_->getParent()->getParent()->getName())
     return;
 
-  // Reserve enough room in the sparse matrix
-  std::vector<Eigen::Triplet<double>> triplet_list;
-  triplet_list.reserve(static_cast<std::size_t>(n_dof_));
-
   // Loop over all of the variables this constraint uses
+  col_index += position_var_->getIndex();
   for (int j = 0; j < n_dof_; j++)  // NOLINT
-    triplet_list.emplace_back(j, position_var_->getIndex() + j, 1.0);
-
-  jac_block.setFromTriplets(triplet_list.begin(), triplet_list.end());  // NOLINT
+    jac_block.emplace_back(row_index + j, col_index + j, 1.0);
 }
 }  // namespace trajopt_ifopt

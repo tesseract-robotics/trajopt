@@ -230,17 +230,17 @@ Eigen::VectorXd CartPosConstraint::getCoefficients() const { return coeffs_; }
 
 std::vector<Bounds> CartPosConstraint::getBounds() const { return bounds_; }
 
-void CartPosConstraint::calcJacobianBlock(const Eigen::Ref<const Eigen::VectorXd>& joint_vals,
-                                          Jacobian& jac_block) const
+void CartPosConstraint::calcJacobianBlock(std::vector<Eigen::Triplet<double>>& jac_block,
+                                          const Eigen::Ref<const Eigen::VectorXd>& joint_vals,
+                                          Eigen::Index row_index,
+                                          Eigen::Index col_index) const
 {
   transforms_cache_.clear();
   info_.manip->calcFwdKin(transforms_cache_, joint_vals);
   const Eigen::Isometry3d source_tf = transforms_cache_[info_.source_frame] * info_.source_frame_offset;
   const Eigen::Isometry3d target_tf = transforms_cache_[info_.target_frame] * info_.target_frame_offset;
 
-  std::vector<Eigen::Triplet<double> > triplet_list;
-  triplet_list.reserve(static_cast<std::size_t>(n_dof_ * info_.indices.size()));
-
+  col_index += position_var_->getIndex();
   constexpr double eps{ 1e-5 };
   if (use_numeric_differentiation || info_.type == CartPosInfo::Type::BOTH_ACTIVE)
   {
@@ -260,7 +260,7 @@ void CartPosConstraint::calcJacobianBlock(const Eigen::Ref<const Eigen::VectorXd
       {
         // Each jac_block will be for a single variable but for all timesteps. Therefore we must index down to the
         // correct timestep for this variable
-        triplet_list.emplace_back(i, position_var_->getIndex() + j, jac0(i, j));
+        jac_block.emplace_back(row_index + i, col_index + j, jac0(i, j));
       }
     }
   }
@@ -321,21 +321,23 @@ void CartPosConstraint::calcJacobianBlock(const Eigen::Ref<const Eigen::VectorXd
       {
         // Each jac_block will be for a single variable but for all timesteps. Therefore we must index down to the
         // correct timestep for this variable
-        triplet_list.emplace_back(i, position_var_->getIndex() + j, jac0(info_.indices[i], j));
+        jac_block.emplace_back(row_index + i, col_index + j, jac0(info_.indices[i], j));
       }
     }
   }
-  jac_block.setFromTriplets(triplet_list.begin(), triplet_list.end());  // NOLINT
 }
 
-void CartPosConstraint::fillJacobianBlock(std::string var_set, Jacobian& jac_block) const
+void CartPosConstraint::fillJacobianBlock(std::vector<Eigen::Triplet<double>>& jac_block,
+                                          const std::string& var_set,
+                                          Eigen::Index row_index,
+                                          Eigen::Index col_index) const
 {
   // Only modify the jacobian if this constraint uses var_set
   if (var_set != position_var_->getParent()->getParent()->getName())  // NOLINT
     return;
 
   // Get current joint values and calculate jacobian
-  calcJacobianBlock(position_var_->value(), jac_block);  // NOLINT
+  calcJacobianBlock(jac_block, position_var_->value(), row_index, col_index);  // NOLINT
 }
 
 const CartPosInfo& CartPosConstraint::getInfo() const { return info_; }

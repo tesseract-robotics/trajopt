@@ -166,15 +166,18 @@ void ContinuousCollisionConstraint::init() const
   }
 }
 
-void ContinuousCollisionConstraint::fillJacobianBlock(std::string var_set, Jacobian& jac_block) const
+void ContinuousCollisionConstraint::fillJacobianBlock(std::vector<Eigen::Triplet<double>>& jac_block,
+                                                      const std::string& var_set,
+                                                      Eigen::Index row_index,
+                                                      Eigen::Index col_index) const
 {
   // Only modify the jacobian if this constraint uses var_set
   if (var_set != var_set_name_)  // NOLINT
     return;
 
   // Setting to zeros because snopt sparsity cannot change
-  if (!triplet_list_.empty())                                               // NOLINT
-    jac_block.setFromTriplets(triplet_list_.begin(), triplet_list_.end());  // NOLINT
+  if (!triplet_list_.empty())                                                       // NOLINT
+    jac_block.insert(jac_block.end(), triplet_list_.begin(), triplet_list_.end());  // NOLINT
 
   // Calculate collisions
   auto collision_data = collision_evaluator_->calcCollisionData(
@@ -200,7 +203,8 @@ void ContinuousCollisionConstraint::fillJacobianBlock(std::string var_set, Jacob
 
         // Collision is 1 x n_dof
         for (int j = 0; j < n_dof_; j++)
-          jac_block.coeffRef(static_cast<int>(i), position_vars_[0]->getIndex() + j) = -1.0 * grad_vec[j];
+          jac_block.emplace_back(
+              row_index + static_cast<int>(i), col_index + position_vars_[0]->getIndex() + j, -1.0 * grad_vec[j]);
       }
     }
   }
@@ -220,7 +224,8 @@ void ContinuousCollisionConstraint::fillJacobianBlock(std::string var_set, Jacob
 
         // Collision is 1 x n_dof
         for (int j = 0; j < n_dof_; j++)
-          jac_block.coeffRef(static_cast<int>(i), position_vars_[1]->getIndex() + j) = -1.0 * grad_vec[j];
+          jac_block.emplace_back(
+              row_index + static_cast<int>(i), col_index + position_vars_[1]->getIndex() + j, -1.0 * grad_vec[j]);
       }
     }
   }
@@ -318,7 +323,10 @@ void ContinuousCollisionConstraintD::init() const
     throw std::runtime_error("ContinuousCollisionConstraint: all vars must belong to the same variable set");
 }
 
-void ContinuousCollisionConstraintD::fillJacobianBlock(std::string var_set, Jacobian& jac_block) const
+void ContinuousCollisionConstraintD::fillJacobianBlock(std::vector<Eigen::Triplet<double>>& jac_block,
+                                                       const std::string& var_set,
+                                                       Eigen::Index row_index,
+                                                       Eigen::Index col_index) const
 {
   // Only modify the jacobian if this constraint uses var_set
   if (var_set != var_set_name_ || rows_ == 0)  // NOLINT
@@ -337,7 +345,7 @@ void ContinuousCollisionConstraintD::fillJacobianBlock(std::string var_set, Jaco
 
       if (!vars0_fixed_)
       {
-        const Eigen::Index offset = position_vars_[0]->getIndex();
+        const Eigen::Index offset = col_index + position_vars_[0]->getIndex();
         if (result.gradients[0].has_gradient && result.gradients[1].has_gradient)
         {
           const auto& lgr0 = result.gradients[0];
@@ -345,8 +353,8 @@ void ContinuousCollisionConstraintD::fillJacobianBlock(std::string var_set, Jaco
 
           // This does work but could be faster
           for (int j = 0; j < n_dof_; j++)
-            jac_block.coeffRef(i, offset + j) =
-                -1.0 * ((lgr0.scale * lgr0.gradient[j]) + (lgr1.scale * lgr1.gradient[j]));
+            jac_block.emplace_back(
+                row_index + i, offset + j, -1.0 * ((lgr0.scale * lgr0.gradient[j]) + (lgr1.scale * lgr1.gradient[j])));
         }
         else if (result.gradients[0].has_gradient)
         {
@@ -354,7 +362,7 @@ void ContinuousCollisionConstraintD::fillJacobianBlock(std::string var_set, Jaco
 
           // This does work but could be faster
           for (int j = 0; j < n_dof_; j++)
-            jac_block.coeffRef(i, offset + j) = -1.0 * lgr.scale * lgr.gradient[j];
+            jac_block.emplace_back(row_index + i, offset + j, -1.0 * lgr.scale * lgr.gradient[j]);
         }
         else if (result.gradients[1].has_gradient)
         {
@@ -362,13 +370,13 @@ void ContinuousCollisionConstraintD::fillJacobianBlock(std::string var_set, Jaco
 
           // This does work but could be faster
           for (int j = 0; j < n_dof_; j++)
-            jac_block.coeffRef(i, offset + j) = -1.0 * lgr.scale * lgr.gradient[j];
+            jac_block.emplace_back(row_index + i, offset + j, -1.0 * lgr.scale * lgr.gradient[j]);
         }
       }
 
       if (!vars1_fixed_)
       {
-        const Eigen::Index offset = position_vars_[1]->getIndex();
+        const Eigen::Index offset = col_index + position_vars_[1]->getIndex();
         if (result.cc_gradients[0].has_gradient && result.cc_gradients[1].has_gradient)
         {
           const auto& lgr0 = result.cc_gradients[0];
@@ -376,8 +384,8 @@ void ContinuousCollisionConstraintD::fillJacobianBlock(std::string var_set, Jaco
 
           // This does work but could be faster
           for (int j = 0; j < n_dof_; j++)
-            jac_block.coeffRef(i, offset + j) =
-                -1.0 * ((lgr0.scale * lgr0.gradient[j]) + (lgr1.scale * lgr1.gradient[j]));
+            jac_block.emplace_back(
+                row_index + i, offset + j, -1.0 * ((lgr0.scale * lgr0.gradient[j]) + (lgr1.scale * lgr1.gradient[j])));
         }
         else if (result.cc_gradients[0].has_gradient)
         {
@@ -385,7 +393,7 @@ void ContinuousCollisionConstraintD::fillJacobianBlock(std::string var_set, Jaco
 
           // This does work but could be faster
           for (int j = 0; j < n_dof_; j++)
-            jac_block.coeffRef(i, offset + j) = -1.0 * lgr.scale * lgr.gradient[j];
+            jac_block.emplace_back(row_index + i, offset + j, -1.0 * lgr.scale * lgr.gradient[j]);
         }
         else if (result.cc_gradients[1].has_gradient)
         {
@@ -393,7 +401,7 @@ void ContinuousCollisionConstraintD::fillJacobianBlock(std::string var_set, Jaco
 
           // This does work but could be faster
           for (int j = 0; j < n_dof_; j++)
-            jac_block.coeffRef(i, offset + j) = -1.0 * lgr.scale * lgr.gradient[j];
+            jac_block.emplace_back(row_index + i, offset + j, -1.0 * lgr.scale * lgr.gradient[j]);
         }
       }
       ++i;

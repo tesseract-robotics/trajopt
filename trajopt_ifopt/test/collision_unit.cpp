@@ -107,7 +107,8 @@ TEST_F(CollisionUnit, GetValueFillJacobian)  // NOLINT
 
     Jacobian jac_block;
     jac_block.resize(1, 2);
-    constraint->fillJacobianBlock("joint_trajectory", jac_block);
+    constraint->fillJacobianBlock(jac_block, "joint_trajectory", 0, 0);
+
     const double dx = jac_block.coeff(0, 0);
     const double dy = jac_block.coeff(0, 1);
     EXPECT_NEAR(dx, 0.0, 1e-6);

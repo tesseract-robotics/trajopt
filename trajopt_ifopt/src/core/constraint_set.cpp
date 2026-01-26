@@ -46,23 +46,13 @@ Jacobian ConstraintSet::getJacobian() const
   Jacobian jacobian(rows_, variables_->getRows());
 
   int col = 0;
-  Jacobian jac;
   std::vector<Eigen::Triplet<double>> triplet_list;
+  // triplet_list.reserve(triplet_list.size() + static_cast<std::size_t>(jac.nonZeros()));
 
   for (const auto& vars : variables_->getComponents())
   {
-    int n = vars->getRows();
-    jac.resize(rows_, n);
-
-    fillJacobianBlock(vars->getName(), jac);
-    // reserve space for the new elements to reduce memory allocation
-    triplet_list.reserve(triplet_list.size() + static_cast<std::size_t>(jac.nonZeros()));
-
-    // create triplets for the derivative at the correct position in the overall Jacobian
-    for (Eigen::Index k = 0; k < jac.outerSize(); ++k)
-      for (Jacobian::InnerIterator it(jac, k); it; ++it)
-        triplet_list.emplace_back(it.row(), col + it.col(), it.value());
-    col += n;
+    fillJacobianBlock(triplet_list, vars->getName(), 0, col);
+    col += vars->getRows();
   }
 
   // transform triplet vector into sparse matrix

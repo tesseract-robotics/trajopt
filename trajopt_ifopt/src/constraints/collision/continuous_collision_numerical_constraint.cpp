@@ -143,15 +143,18 @@ Eigen::VectorXd ContinuousCollisionNumericalConstraint::getValues() const
 // Set the limits on the constraint values
 std::vector<Bounds> ContinuousCollisionNumericalConstraint::getBounds() const { return bounds_; }
 
-void ContinuousCollisionNumericalConstraint::fillJacobianBlock(std::string var_set, Jacobian& jac_block) const
+void ContinuousCollisionNumericalConstraint::fillJacobianBlock(std::vector<Eigen::Triplet<double>>& jac_block,
+                                                               const std::string& var_set,
+                                                               Eigen::Index row_index,
+                                                               Eigen::Index col_index) const
 {
   // Only modify the jacobian if this constraint uses var_set
   if (var_set != position_vars_[0]->getParent()->getParent()->getName())  // NOLINT
     return;
 
   // Setting to zeros because snopt sparsity cannot change
-  if (!triplet_list_.empty())                                               // NOLINT
-    jac_block.setFromTriplets(triplet_list_.begin(), triplet_list_.end());  // NOLINT
+  if (!triplet_list_.empty())                                                       // NOLINT
+    jac_block.insert(jac_block.end(), triplet_list_.begin(), triplet_list_.end());  // NOLINT
 
   const double margin_buffer = collision_evaluator_->getCollisionMarginBuffer();
 
@@ -193,7 +196,7 @@ void ContinuousCollisionNumericalConstraint::fillJacobianBlock(std::string var_s
           else
             dist_delta = (it->getMaxErrorT1() - baseline.getMaxErrorT1());
 
-          jac_block.coeffRef(i, position_vars_[p]->getIndex() + j) = dist_delta / delta;
+          jac_block.emplace_back(row_index + i, col_index + position_vars_[p]->getIndex() + j, dist_delta / delta);
         }
         else
         {
@@ -205,7 +208,7 @@ void ContinuousCollisionNumericalConstraint::fillJacobianBlock(std::string var_s
           else
             dist_delta = ((-1.0 * margin_buffer) - baseline.getMaxErrorT1());
 
-          jac_block.coeffRef(i, position_vars_[p]->getIndex() + j) = dist_delta / delta;
+          jac_block.emplace_back(row_index + i, col_index + position_vars_[p]->getIndex() + j, dist_delta / delta);
         }
       }
       jv = position_vars_[p]->value();

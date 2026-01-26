@@ -59,7 +59,10 @@ double SquaredCost::getCost() const
 
 Eigen::VectorXd SquaredCost::getCoefficients() const { return constraint_->getCoefficients(); }
 
-void SquaredCost::fillJacobianBlock(std::string var_set, Jacobian& jac_block) const
+void SquaredCost::fillJacobianBlock(std::vector<Eigen::Triplet<double>>& jac_block,
+                                    const std::string& var_set,
+                                    Eigen::Index row_index,
+                                    Eigen::Index col_index) const
 {
   // Get a Jacobian block the size necessary for the constraint
   int var_size = 0;
@@ -75,9 +78,12 @@ void SquaredCost::fillJacobianBlock(std::string var_set, Jacobian& jac_block) co
     throw std::runtime_error("SquaredCost: Unable to find var_set '" + var_set + "'.");
 
   // Get the Jacobian block from the constraint
+  std::vector<Eigen::Triplet<double>> triplets;
+  constraint_->fillJacobianBlock(triplets, var_set, 0, 0);
+
   Jacobian cnt_jac_block;
   cnt_jac_block.resize(n_constraints_, var_size);  // NOLINT
-  constraint_->fillJacobianBlock(var_set, cnt_jac_block);
+  cnt_jac_block.setFromTriplets(triplets.begin(), triplets.end());
 
   // error = bounds error vector (length = n_constraints_)
   Eigen::VectorXd error(constraint_->getRows());
@@ -91,7 +97,11 @@ void SquaredCost::fillJacobianBlock(std::string var_set, Jacobian& jac_block) co
   const Eigen::RowVectorXd grad = coeff.transpose() * cnt_jac_block;
 
   // Convert to sparse and return
-  jac_block = grad.sparseView();
+  Jacobian jac = grad.sparseView();
+
+  for (Eigen::Index k = 0; k < jac.outerSize(); ++k)
+    for (Jacobian::InnerIterator it(jac, k); it; ++it)
+      jac_block.emplace_back(row_index + it.row(), col_index + it.col(), it.value());
 }
 
 }  // namespace trajopt_ifopt

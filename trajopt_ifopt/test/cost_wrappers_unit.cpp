@@ -70,16 +70,17 @@ public:
 
   std::vector<trajopt_ifopt::Bounds> getBounds() const final { return bounds_; }
 
-  void fillJacobianBlock(std::string var_set, trajopt_ifopt::Jacobian& jac_block) const final
+  void fillJacobianBlock(std::vector<Eigen::Triplet<double>>& jac_block,
+                         const std::string& var_set,
+                         Eigen::Index row_index,
+                         Eigen::Index col_index) const final
   {
     // Only modify the jacobian if this constraint uses var_set
     if (var_set != position_var_->getParent()->getParent()->getName())  // NOLINT
       return;
 
     // dy = 2x + 4;
-    // Reserve enough room in the sparse matrix
-    jac_block.reserve(1);
-    jac_block.coeffRef(0, position_var_->getIndex()) = (2 * position_var_->value()(0)) + 4;
+    jac_block.emplace_back(row_index + 0, col_index + position_var_->getIndex(), (2 * position_var_->value()(0)) + 4);
   }
 
 private:

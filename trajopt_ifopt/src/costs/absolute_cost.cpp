@@ -59,7 +59,10 @@ double AbsoluteCost::getCost() const
 
 Eigen::VectorXd AbsoluteCost::getCoefficients() const { return constraint_->getCoefficients(); }
 
-void AbsoluteCost::fillJacobianBlock(std::string var_set, Jacobian& jac_block) const
+void AbsoluteCost::fillJacobianBlock(std::vector<Eigen::Triplet<double>>& jac_block,
+                                     const std::string& var_set,
+                                     Eigen::Index row_index,
+                                     Eigen::Index col_index) const
 {
   // Get a Jacobian block the size necessary for the constraint
   int var_size = 0;
@@ -76,9 +79,12 @@ void AbsoluteCost::fillJacobianBlock(std::string var_set, Jacobian& jac_block) c
     throw std::runtime_error("AbsoluteCost: Unable to find var_set '" + var_set + "'.");
 
   // Get the Jacobian block from the underlying constraint
+  std::vector<Eigen::Triplet<double>> triplets;
+  constraint_->fillJacobianBlock(triplets, var_set, 0, 0);
+
   Jacobian cnt_jac_block;
   cnt_jac_block.resize(n_constraints_, var_size);  // NOLINT
-  constraint_->fillJacobianBlock(var_set, cnt_jac_block);
+  cnt_jac_block.setFromTriplets(triplets.begin(), triplets.end());
 
   // Compute signed coefficients: coeff_i = weights_[i] * sign(error_i)
   Eigen::ArrayXd error(constraint_->getRows());
@@ -102,12 +108,9 @@ void AbsoluteCost::fillJacobianBlock(std::string var_set, Jacobian& jac_block) c
     for (Jacobian::InnerIterator it(cnt_jac_block, outer); it; ++it)
     {
       // it.row() is the row index in [0, n_constraints_)
-      it.valueRef() *= coeff[it.row()];
+      jac_block.emplace_back(row_index + it.row(), col_index + it.col(), it.value() * coeff[it.row()]);
     }
   }
-
-  // Output the scaled block
-  jac_block = cnt_jac_block;
 }
 
 }  // namespace trajopt_ifopt
