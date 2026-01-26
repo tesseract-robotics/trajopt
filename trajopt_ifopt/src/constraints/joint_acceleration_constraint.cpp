@@ -55,6 +55,9 @@ JointAccelConstraint::JointAccelConstraint(const Eigen::VectorXd& targets,
   assert(n_dof_ > 0);
   assert(n_vars_ > 0);
 
+  // Each timestep contributes 3 nonzeros per DOF
+  non_zeros_ = 3 * n_dof_ * n_vars_;
+
   if (!(coeffs.array() > 0).all())
     throw std::runtime_error("JointAccelConstraint, coeff must be greater than zero.");
 
@@ -125,9 +128,8 @@ void JointAccelConstraint::fillJacobianBlock(std::string var_set, Jacobian& jac_
   if (var_set != position_vars_.front()->getParent()->getParent()->getName())
     return;
 
-  // Each timestep contributes 3 nonzeros per DOF
   std::vector<Eigen::Triplet<double>> triplets;
-  triplets.reserve(static_cast<std::size_t>(3 * n_dof_ * n_vars_));
+  triplets.reserve(static_cast<std::size_t>(non_zeros_));
 
   const std::size_t n = position_vars_.size();
   for (std::size_t i = 0; i < n; ++i)

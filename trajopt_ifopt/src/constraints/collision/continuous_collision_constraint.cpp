@@ -71,6 +71,7 @@ ContinuousCollisionConstraint::ContinuousCollisionConstraint(
 
   coeffs_ = Eigen::VectorXd::Constant(rows_, 1);
   bounds_ = std::vector<Bounds>(static_cast<std::size_t>(max_num_cnt), BoundSmallerZero);
+  non_zeros_ = 2 * static_cast<Eigen::Index>(rows_) * n_dof_;
 }
 
 int ContinuousCollisionConstraint::update()
@@ -275,7 +276,8 @@ int ContinuousCollisionConstraintD::update()
     rows += static_cast<int>(gradient_results_set.results.size());
 
   rows_ = rows;
-  bounds_ = std::vector<Bounds>(static_cast<std::size_t>(rows), BoundSmallerZero);
+  non_zeros_ = 2 * static_cast<Eigen::Index>(rows_) * n_dof_;
+  bounds_ = std::vector<Bounds>(static_cast<std::size_t>(rows_), BoundSmallerZero);
 
   coeffs_.resize(rows_);
   values_.resize(rows_);

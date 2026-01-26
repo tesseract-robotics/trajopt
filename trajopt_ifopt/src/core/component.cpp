@@ -42,7 +42,11 @@ Component::Component(std::string name, int num_rows) : name_(std::move(name)), r
 
 const std::string& Component::getName() const { return name_; }
 
-int Component::getRows() const { return rows_; }
+int Component::getRows() const
+{
+  assert(rows_ >= 0);
+  return rows_;
+}
 
 void Component::print(int& index, double tolerance) const
 {
@@ -81,4 +85,9 @@ Differentiable::Differentiable(std::string name, int num_rows, Mode mode, bool d
 
 bool Differentiable::isDynamic() const { return dynamic_; }
 bool Differentiable::isScalar() const { return mode_ == Mode::kSumToScalar; }
+Eigen::Index Differentiable::getNonZeros() const
+{
+  assert(non_zeros_ >= 0);
+  return non_zeros_;
+};
 }  // namespace trajopt_ifopt

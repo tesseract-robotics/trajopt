@@ -57,6 +57,7 @@ DiscreteCollisionNumericalConstraint::DiscreteCollisionNumericalConstraint(
     throw std::runtime_error("max_num_cnt must be greater than zero!");
 
   coeffs_ = Eigen::VectorXd::Constant(rows_, 1);
+  non_zeros_ = rows_ * n_dof_;
   bounds_ = std::vector<Bounds>(static_cast<std::size_t>(max_num_cnt), BoundSmallerZero);
 }
 

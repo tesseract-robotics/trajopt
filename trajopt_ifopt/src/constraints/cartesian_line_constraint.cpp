@@ -86,6 +86,7 @@ CartLineConstraint::CartLineConstraint(CartLineInfo info,
   n_dof_ = info_.manip->numJoints();
   assert(n_dof_ > 0);
 
+  non_zeros_ = n_dof_ * info_.indices.rows();
   bounds_ = std::vector<Bounds>(static_cast<std::size_t>(info_.indices.rows()), BoundZero);
 
   if (coeffs_.rows() != info_.indices.rows())

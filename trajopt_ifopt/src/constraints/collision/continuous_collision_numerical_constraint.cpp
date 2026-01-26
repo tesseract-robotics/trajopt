@@ -95,6 +95,7 @@ int ContinuousCollisionNumericalConstraint::update()
   for (std::size_t i = 0; i < cnt; ++i)
     coeffs_(static_cast<Eigen::Index>(i)) = collision_data->gradient_results_sets[i].coeff;
 
+  non_zeros_ = 2 * static_cast<Eigen::Index>(rows_) * n_dof_;
   return rows_;
 }
 

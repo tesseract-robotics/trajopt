@@ -93,6 +93,8 @@ CartPosConstraint::CartPosConstraint(CartPosInfo info,
   n_dof_ = info_.manip->numJoints();
   assert(n_dof_ > 0);
 
+  non_zeros_ = n_dof_ * info_.indices.rows();
+
   if (bounds_.size() != info_.indices.rows())
     throw std::runtime_error("The number of bounds does not match the number of constraints.");
 
