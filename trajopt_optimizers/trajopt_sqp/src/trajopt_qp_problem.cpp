@@ -718,42 +718,6 @@ void TrajOptQPProblem::Implementation::convexify()
 
     // Linearize Constraints
     const trajopt_ifopt::Jacobian jac = cost->getJacobian();
-    for (Eigen::Index k = 0; k < jac.outerSize(); ++k)
-    {
-      for (trajopt_ifopt::Jacobian::InnerIterator it(jac, k); it; ++it)
-        cache_triplets_2.emplace_back(constraint_matrix_row + it.row(), it.col(), it.value());
-
-      //////////////////////////////////////////////////////////
-      // Set the slack variables constraint matrix and gradient
-      //////////////////////////////////////////////////////////
-
-      const auto cnt_bound_type = info.bounds[static_cast<std::size_t>(k)].getType();
-      const double coeff = info.coeffs(k);
-      if (cnt_bound_type == trajopt_ifopt::BoundsType::EQUALITY)
-      {
-        cache_slack_gradient.emplace_back(coeff);
-        cache_slack_gradient.emplace_back(coeff);
-        cache_triplets_2.emplace_back(constraint_matrix_row + k, current_var_index++, 1.0);
-        cache_triplets_2.emplace_back(constraint_matrix_row + k, current_var_index++, -1.0);
-        cvp.n_slack_vars += 2;
-      }
-      else if (cnt_bound_type == trajopt_ifopt::BoundsType::LOWER_BOUND)
-      {
-        cache_slack_gradient.emplace_back(coeff);
-        cache_triplets_2.emplace_back(constraint_matrix_row + k, current_var_index++, 1.0);
-        ++cvp.n_slack_vars;
-      }
-      else if (cnt_bound_type == trajopt_ifopt::BoundsType::UPPER_BOUND)
-      {
-        cache_slack_gradient.emplace_back(coeff);
-        cache_triplets_2.emplace_back(constraint_matrix_row + k, current_var_index++, -1.0);
-        ++cvp.n_slack_vars;
-      }
-      else
-      {
-        throw std::runtime_error("Unsupported bounds type!");
-      }
-    }
 
     // In the case of a QP problem the costs and constraints are represented as
     // quadratic functions is f(x) = a + b * x + c * x^2.
@@ -772,14 +736,50 @@ void TrajOptQPProblem::Implementation::convexify()
     cc = cost->getValues();
     cc.noalias() -= jac * x_initial;
 
-    // Update NLP Constraint Bounds
-    for (std::size_t j = 0; j < info.bounds.size(); ++j)
+    for (Eigen::Index k = 0; k < jac.outerSize(); ++k)
     {
-      const auto& b = info.bounds[j];
-      const Eigen::Index row = constraint_matrix_row + static_cast<Eigen::Index>(j);
+      for (trajopt_ifopt::Jacobian::InnerIterator it(jac, k); it; ++it)
+        cache_triplets_2.emplace_back(constraint_matrix_row + it.row(), it.col(), it.value());
+
+      ///////////////////////////////
+      // Update NLP Constraint Bounds
+      ///////////////////////////////
+      const auto& cnt_bound = info.bounds[static_cast<std::size_t>(k)];
+      const auto cnt_bound_type = cnt_bound.getType();
+      const Eigen::Index row = constraint_matrix_row + k;
       const double constant = cvp.constraint_constant[row];
-      cvp.bounds_lower[row] = b.getLower() - constant;
-      cvp.bounds_upper[row] = b.getUpper() - constant;
+      cvp.bounds_lower[row] = cnt_bound.getLower() - constant;
+      cvp.bounds_upper[row] = cnt_bound.getUpper() - constant;
+
+      //////////////////////////////////////////////////////////
+      // Set the slack variables constraint matrix and gradient
+      //////////////////////////////////////////////////////////
+
+      const double coeff = info.coeffs(k);
+      if (cnt_bound_type == trajopt_ifopt::BoundsType::EQUALITY)
+      {
+        cache_slack_gradient.emplace_back(coeff);
+        cache_slack_gradient.emplace_back(coeff);
+        cache_triplets_2.emplace_back(row, current_var_index++, 1.0);
+        cache_triplets_2.emplace_back(row, current_var_index++, -1.0);
+        cvp.n_slack_vars += 2;
+      }
+      else if (cnt_bound_type == trajopt_ifopt::BoundsType::LOWER_BOUND)
+      {
+        cache_slack_gradient.emplace_back(coeff);
+        cache_triplets_2.emplace_back(row, current_var_index++, 1.0);
+        ++cvp.n_slack_vars;
+      }
+      else if (cnt_bound_type == trajopt_ifopt::BoundsType::UPPER_BOUND)
+      {
+        cache_slack_gradient.emplace_back(coeff);
+        cache_triplets_2.emplace_back(row, current_var_index++, -1.0);
+        ++cvp.n_slack_vars;
+      }
+      else
+      {
+        throw std::runtime_error("Unsupported bounds type!");
+      }
     }
 
     constraint_matrix_row += info.rows;
@@ -796,16 +796,43 @@ void TrajOptQPProblem::Implementation::convexify()
 
     // Linearize Constraints
     const trajopt_ifopt::Jacobian jac = cnt->getJacobian();
+
+    // In the case of a QP problem the costs and constraints are represented as
+    // quadratic functions is f(x) = a + b * x + c * x^2.
+    // Currently for constraints we do not leverage the Hessian so the quadratic
+    // function is f(x) = a + b * x
+    // When convexifying the function it need to produce the same constraint values at the values used to calculate
+    // the jacobian, so f(x_initial) = a + b * x = cnt_initial_value.
+    // Therefore a = cnt_initial_value - b * x
+    //     where: b = jac (calculated below)
+    //            x = x_initial
+    //            a = quadratic constant (constraint_constant_)
+    //
+    // Note: This is not used by the QP solver directly but by the Trust Regions Solver
+    //       to calculate the merit of the solve.
+    auto cc = cvp.constraint_constant.segment(constraint_matrix_row, info.rows);
+    cc = cnt->getValues();
+    cc.noalias() -= jac * x_initial;
+
     for (Eigen::Index k = 0; k < jac.outerSize(); ++k)
     {
       for (trajopt_ifopt::Jacobian::InnerIterator it(jac, k); it; ++it)
         cache_triplets_2.emplace_back(constraint_matrix_row + it.row(), it.col(), it.value());
 
+      ///////////////////////////////
+      // Update NLP Constraint Bounds
+      ///////////////////////////////
+      const auto& cnt_bound = info.bounds[static_cast<std::size_t>(k)];
+      const auto cnt_bound_type = cnt_bound.getType();
+      const Eigen::Index row = constraint_matrix_row + k;
+      const double constant = cvp.constraint_constant[row];
+      cvp.bounds_lower[row] = cnt_bound.getLower() - constant;
+      cvp.bounds_upper[row] = cnt_bound.getUpper() - constant;
+
       //////////////////////////////////////////////////////////
       // Set the slack variables constraint matrix and gradient
       //////////////////////////////////////////////////////////
 
-      const auto cnt_bound_type = info.bounds[static_cast<std::size_t>(k)].getType();
       const double coeff = constraint_merit_coeff(static_cast<Eigen::Index>(i)) * info.coeffs(k);
       if (cnt_bound_type == trajopt_ifopt::BoundsType::EQUALITY)
       {
@@ -831,33 +858,6 @@ void TrajOptQPProblem::Implementation::convexify()
       {
         throw std::runtime_error("Unsupported bounds type!");
       }
-    }
-
-    // In the case of a QP problem the costs and constraints are represented as
-    // quadratic functions is f(x) = a + b * x + c * x^2.
-    // Currently for constraints we do not leverage the Hessian so the quadratic
-    // function is f(x) = a + b * x
-    // When convexifying the function it need to produce the same constraint values at the values used to calculate
-    // the jacobian, so f(x_initial) = a + b * x = cnt_initial_value.
-    // Therefore a = cnt_initial_value - b * x
-    //     where: b = jac (calculated below)
-    //            x = x_initial
-    //            a = quadratic constant (constraint_constant_)
-    //
-    // Note: This is not used by the QP solver directly but by the Trust Regions Solver
-    //       to calculate the merit of the solve.
-    auto cc = cvp.constraint_constant.segment(constraint_matrix_row, info.rows);
-    cc = cnt->getValues();
-    cc.noalias() -= jac * x_initial;
-
-    // Update NLP Constraint Bounds
-    for (std::size_t j = 0; j < info.bounds.size(); ++j)
-    {
-      const auto& b = info.bounds[j];
-      const Eigen::Index row = constraint_matrix_row + static_cast<Eigen::Index>(j);
-      const double constant = cvp.constraint_constant[row];
-      cvp.bounds_lower[row] = b.getLower() - constant;
-      cvp.bounds_upper[row] = b.getUpper() - constant;
     }
 
     constraint_matrix_row += info.rows;
