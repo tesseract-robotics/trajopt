@@ -35,16 +35,16 @@ namespace trajopt_ifopt
 JointPosConstraint::JointPosConstraint(const Eigen::VectorXd& target,
                                        const std::shared_ptr<const Var>& position_var,
                                        const Eigen::VectorXd& coeffs,
-                                       std::string name)
+                                       std::string name,
+                                       RangeBoundHandling range_bound_handling)
   : ConstraintSet(std::move(name), static_cast<int>(target.size()))
   , n_dof_(target.size())
   , coeffs_(coeffs)
+  , range_bound_handling_(range_bound_handling)
   , position_var_(position_var)
 {
   // Set the n_dof and n_vars for convenience
   assert(n_dof_ > 0);
-
-  non_zeros_ = n_dof_;
 
   if (!(coeffs_.array() > 0).all())
     throw std::runtime_error("JointPosConstraint, coeff must be greater than zero.");
@@ -63,30 +63,33 @@ JointPosConstraint::JointPosConstraint(const Eigen::VectorXd& target,
   std::vector<Bounds> bounds(static_cast<std::size_t>(rows_));
   // All of the positions should be exactly at their targets
 
-  for (long i = 0; i < n_dof_; i++)
+  indices_.reserve(static_cast<std::size_t>(n_dof_));
+  for (int i = 0; i < n_dof_; i++)
   {
     const double w_target = target[i];
     bounds[static_cast<std::size_t>(i)] = Bounds(w_target, w_target);
+    indices_.push_back(i);
   }
 
+  non_zeros_ = static_cast<Eigen::Index>(indices_.size());
   bounds_ = bounds;
 }
 
 JointPosConstraint::JointPosConstraint(const std::vector<Bounds>& bounds,
                                        const std::shared_ptr<const Var>& position_var,
                                        const Eigen::VectorXd& coeffs,
-                                       std::string name)
+                                       std::string name,
+                                       RangeBoundHandling range_bound_handling)
   : ConstraintSet(std::move(name), static_cast<int>(bounds.size()))
   , coeffs_(coeffs)
   , bounds_(bounds)
+  , range_bound_handling_(range_bound_handling)
   , position_var_(position_var)
 {
   // Set the n_dof and n_vars for convenience
   n_dof_ = static_cast<long>(bounds_.size());
 
   assert(n_dof_ > 0);
-
-  non_zeros_ = n_dof_;
 
   if (!(coeffs_.array() > 0).all())
     throw std::runtime_error("JointPosConstraint, coeff must be greater than zero.");
@@ -101,9 +104,55 @@ JointPosConstraint::JointPosConstraint(const std::vector<Bounds>& bounds,
   // Check and make sure the targets size aligns with the vars passed in
   if (static_cast<long>(bounds_.size()) != position_var_->size())
     CONSOLE_BRIDGE_logError("Bounds size does not align with variables provided");
+
+  indices_.reserve(static_cast<std::size_t>(n_dof_));
+  for (int i = 0; i < n_dof_; i++)
+    indices_.push_back(i);
+
+  if (range_bound_handling_ == RangeBoundHandling::kSplitToTwoInequalities)
+  {
+    bounds_.clear();
+    std::vector<double> split_coeffs;
+    std::vector<int> split_indices;
+    split_coeffs.reserve(static_cast<std::size_t>(n_dof_));
+    split_indices.reserve(static_cast<std::size_t>(n_dof_));
+    for (std::size_t i = 0; i < bounds.size(); ++i)
+    {
+      const auto& b = bounds[i];
+      if (b.getType() == BoundsType::RANGE_BOUND)
+      {
+        bounds_.emplace_back(b.getLower(), double(INFINITY));
+        bounds_.emplace_back(-double(INFINITY), b.getUpper());
+        split_indices.push_back(indices_[i]);
+        split_indices.push_back(indices_[i]);
+        split_coeffs.emplace_back(coeffs[static_cast<Eigen::Index>(i)]);
+        split_coeffs.emplace_back(coeffs[static_cast<Eigen::Index>(i)]);
+      }
+      else
+      {
+        bounds_.push_back(b);
+        split_indices.push_back(indices_[i]);
+        split_coeffs.emplace_back(coeffs[static_cast<Eigen::Index>(i)]);
+      }
+    }
+
+    indices_ = split_indices;
+    coeffs_ = Eigen::Map<Eigen::VectorXd>(split_coeffs.data(), static_cast<Eigen::Index>(split_coeffs.size()));
+    rows_ = static_cast<int>(indices_.size());
+  }
+
+  non_zeros_ = static_cast<Eigen::Index>(indices_.size());
 }
 
-Eigen::VectorXd JointPosConstraint::getValues() const { return position_var_->value(); }
+Eigen::VectorXd JointPosConstraint::getValues() const
+{
+  const auto& jp = position_var_->value();
+  Eigen::VectorXd values(coeffs_.size());
+  for (int i = 0; i < indices_.size(); ++i)
+    values[i] = jp(indices_[static_cast<std::size_t>(i)]);
+
+  return values;
+}
 
 Eigen::VectorXd JointPosConstraint::getCoefficients() const { return coeffs_; }
 
@@ -122,8 +171,8 @@ void JointPosConstraint::fillJacobianBlock(Jacobian& jac_block, const std::strin
   triplet_list.reserve(static_cast<std::size_t>(non_zeros_));
 
   // Loop over all of the variables this constraint uses
-  for (int j = 0; j < n_dof_; j++)  // NOLINT
-    triplet_list.emplace_back(j, position_var_->getIndex() + j, 1.0);
+  for (int j = 0; j < indices_.size(); j++)  // NOLINT
+    triplet_list.emplace_back(j, position_var_->getIndex() + indices_[static_cast<std::size_t>(j)], 1.0);
 
   jac_block.setFromTriplets(triplet_list.begin(), triplet_list.end());  // NOLINT
 }

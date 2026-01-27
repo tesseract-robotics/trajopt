@@ -57,7 +57,8 @@ public:
   JointPosConstraint(const Eigen::VectorXd& target,
                      const std::shared_ptr<const Var>& position_var,
                      const Eigen::VectorXd& coeffs,
-                     std::string name = "JointPos");
+                     std::string name = "JointPos",
+                     RangeBoundHandling range_bound_handling = RangeBoundHandling::kSplitToTwoInequalities);
 
   /**
    * @brief JointPosConstraint
@@ -69,7 +70,8 @@ public:
   JointPosConstraint(const std::vector<Bounds>& bounds,
                      const std::shared_ptr<const Var>& position_vars,
                      const Eigen::VectorXd& coeffs,
-                     std::string name = "JointPos");
+                     std::string name = "JointPos",
+                     RangeBoundHandling range_bound_handling = RangeBoundHandling::kSplitToTwoInequalities);
 
   /**
    * @brief Returns the values associated with the constraint. In this case that is the concatenated joint values
@@ -103,6 +105,12 @@ private:
 
   /** @brief Bounds on the positions of each joint */
   std::vector<Bounds> bounds_;
+
+  /** @brief This is a vector of indices to be returned Default: {0, 1, 2, ..., n_dof_ - 1} */
+  std::vector<int> indices_;
+
+  /** @brief Policy for representing range bounds when building the constraint rows. */
+  RangeBoundHandling range_bound_handling_{ RangeBoundHandling::kSplitToTwoInequalities };
 
   /** @brief Pointers to the vars used by this constraint. */
   std::shared_ptr<const Var> position_var_;
