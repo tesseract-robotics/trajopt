@@ -763,9 +763,11 @@ void TrajOptQPProblem::Implementation::convexify()
       // Set the slack variables constraint matrix and gradient
       //////////////////////////////////////////////////////////
 
+      assert(info.type != ComponentInfoType::kObjectiveSquared);
       const double coeff = merit_coeff * info.coeffs(k);
       if (cnt_bound_type == trajopt_ifopt::BoundsType::kEquality)
       {
+        assert(info.type != ComponentInfoType::kPenaltyHinge);
         cache_slack_gradient.emplace_back(coeff);
         cache_slack_gradient.emplace_back(coeff);
         cache_triplets_2.emplace_back(row, current_var_index++, 1.0);
@@ -774,12 +776,14 @@ void TrajOptQPProblem::Implementation::convexify()
       }
       else if (cnt_bound_type == trajopt_ifopt::BoundsType::kLowerBound)
       {
+        assert(info.type != ComponentInfoType::kPenaltyAbsolute);
         cache_slack_gradient.emplace_back(coeff);
         cache_triplets_2.emplace_back(row, current_var_index++, 1.0);
         ++cvp.n_slack_vars;
       }
       else if (cnt_bound_type == trajopt_ifopt::BoundsType::kUpperBound)
       {
+        assert(info.type != ComponentInfoType::kPenaltyAbsolute);
         cache_slack_gradient.emplace_back(coeff);
         cache_triplets_2.emplace_back(row, current_var_index++, -1.0);
         ++cvp.n_slack_vars;
