@@ -266,7 +266,7 @@ void runNumericalIKWithToleranceTest(const trajopt_sqp::QPProblem::Ptr& qp_probl
   CONSOLE_BRIDGE_logDebug("Final Vars: ", ss.str().c_str());
 }
 
-TEST_F(NumericalIKTest, DISABLED_numerical_ik_with_tol_trajopt_problem)  // NOLINT
+TEST_F(NumericalIKTest, numerical_ik_with_tol_trajopt_problem)  // NOLINT
 {
   CONSOLE_BRIDGE_logDebug("PlanningTest, numerical_ik_with_tol_trajopt_problem");
   auto qp_problem = std::make_shared<trajopt_sqp::TrajOptQPProblem>();

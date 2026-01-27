@@ -82,24 +82,58 @@ CartPosConstraint::CartPosConstraint(CartPosInfo info,
                                      std::shared_ptr<const Var> position_var,
                                      const Eigen::VectorXd& coeffs,  // NOLINT
                                      const std::vector<Bounds>& bounds,
-                                     std::string name)
+                                     std::string name,
+                                     RangeBoundHandling range_bound_handling)
   : ConstraintSet(std::move(name), static_cast<int>(info.indices.rows()))
   , coeffs_(coeffs)
   , bounds_(bounds)
   , position_var_(std::move(position_var))
+  , range_bound_handling_(range_bound_handling)
   , info_(std::move(info))
 {
   // Set the n_dof and n_vars for convenience
   n_dof_ = info_.manip->numJoints();
   assert(n_dof_ > 0);
 
-  non_zeros_ = n_dof_ * info_.indices.rows();
-
   if (bounds_.size() != info_.indices.rows())
     throw std::runtime_error("The number of bounds does not match the number of constraints.");
 
   if (coeffs_.rows() != info_.indices.rows())
     throw std::runtime_error("The number of coeffs does not match the number of constraints.");
+
+  if (range_bound_handling_ == RangeBoundHandling::kSplitToTwoInequalities)
+  {
+    bounds_.clear();
+    std::vector<double> split_coeffs;
+    std::vector<int> split_indices;
+    split_coeffs.reserve(bounds.size());
+    split_indices.reserve(bounds.size());
+    for (std::size_t i = 0; i < bounds.size(); ++i)
+    {
+      const auto& b = bounds[i];
+      if (b.getType() == BoundsType::RANGE_BOUND)
+      {
+        bounds_.emplace_back(b.getLower(), double(INFINITY));
+        bounds_.emplace_back(-double(INFINITY), b.getUpper());
+        split_indices.push_back(info_.indices[static_cast<Eigen::Index>(i)]);
+        split_indices.push_back(info_.indices[static_cast<Eigen::Index>(i)]);
+        split_coeffs.emplace_back(coeffs[static_cast<Eigen::Index>(i)]);
+        split_coeffs.emplace_back(coeffs[static_cast<Eigen::Index>(i)]);
+      }
+      else
+      {
+        bounds_.push_back(b);
+        split_indices.push_back(info_.indices[static_cast<Eigen::Index>(i)]);
+        split_coeffs.emplace_back(coeffs[static_cast<Eigen::Index>(i)]);
+      }
+    }
+
+    info_.indices = Eigen::Map<Eigen::VectorXi>(split_indices.data(), static_cast<Eigen::Index>(split_indices.size()));
+    coeffs_ = Eigen::Map<Eigen::VectorXd>(split_coeffs.data(), static_cast<Eigen::Index>(split_coeffs.size()));
+    rows_ = static_cast<int>(info_.indices.rows());
+  }
+
+  non_zeros_ = n_dof_ * info_.indices.rows();
 
   switch (info_.type)
   {
@@ -205,12 +239,16 @@ CartPosConstraint::CartPosConstraint(CartPosInfo info,
   }
 }
 
-CartPosConstraint::CartPosConstraint(const CartPosInfo& info, std::shared_ptr<const Var> position_var, std::string name)
+CartPosConstraint::CartPosConstraint(const CartPosInfo& info,
+                                     std::shared_ptr<const Var> position_var,
+                                     std::string name,
+                                     RangeBoundHandling range_bound_handling)
   : CartPosConstraint(info,
                       std::move(position_var),
                       Eigen::VectorXd::Ones(info.indices.rows()),
                       std::vector<Bounds>(static_cast<std::size_t>(info.indices.rows()), BoundZero),
-                      std::move(name))
+                      std::move(name),
+                      range_bound_handling)
 {
 }
 

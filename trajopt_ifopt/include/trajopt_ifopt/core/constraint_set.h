@@ -36,6 +36,47 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 namespace trajopt_ifopt
 {
 /**
+ * @brief Controls how a component should represent "range" bounds (both lower and upper bounds).
+ *
+ * Some constraints naturally produce a single row with a bound interval:
+ * @code
+ *   lb <= g(x) <= ub
+ * @endcode
+ *
+ * Downstream formulations (e.g., slack-variable handling or certain QP/SQP builders) may prefer
+ * representing this as two separate inequality rows:
+ * @code
+ *   g(x) >= lb
+ *   g(x) <= ub
+ * @endcode
+ *
+ * This enum specifies whether to keep range bounds as a single row or to split them into two
+ * inequality rows when building the constraint representation.
+ *
+ * @note This setting typically only affects rows whose bounds are true ranges (finite lower and
+ *       finite upper with lb < ub). Equality bounds (lb == ub) and one-sided bounds are usually
+ *       unchanged.
+ */
+enum class RangeBoundHandling
+{
+  /** @brief Do not split range bounds; keep them as a single row with [lb, ub]. */
+  kKeepAsIs = 0,
+
+  /**
+   * @brief Split range bounds into two inequality rows.
+   *
+   * A single row with bounds [lb, ub] is represented as two rows:
+   *  - Row A: g(x) >= lb  (lower-bound inequality)
+   *  - Row B: g(x) <= ub  (upper-bound inequality)
+   *
+   * @note Enabling this increases the reported row count for each range-bounded row (typically by +1)
+   *       and requires consistent handling in getValues(), getBounds(), and getJacobian() to reflect
+   *       the expanded representation.
+   */
+  kSplitToTwoInequalities
+};
+
+/**
  * @brief A container holding a set of related constraints.
  *
  * This container holds constraints representing a single concept, e.g.
