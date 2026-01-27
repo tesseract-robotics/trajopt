@@ -46,12 +46,12 @@ namespace trajopt_ifopt
  *   - EQUALITY:    (v, v)                  => g(x) == v
  *   - LOWER_BOUND: (l, +inf)               => l <= g(x)
  *   - UPPER_BOUND: (-inf, u)               => g(x) <= u
- *   - BOXED_BOUND: (l, u) with l < u       => l <= g(x) <= u
+ *   - RANGE_BOUND: (l, u) with l < u       => l <= g(x) <= u
  *
  * Notes:
  *   - "Finite" means the value is not +/-infinity.
  *   - EQUALITY is typically detected when |upper - lower| <= eps.
- *   - RANGE_BOUND is the two-sided finite bound case (sometimes called a "range bound" or "interval bound").
+ *   - RANGE_BOUND is the two-sided finite bound case (sometimes called a "boxed bound" or "interval bound").
  */
 enum class BoundsType : std::uint8_t
 {
