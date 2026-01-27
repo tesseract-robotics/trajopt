@@ -118,7 +118,7 @@ TEST_F(InverseKinematicsConstraintUnit, GetValue)  // NOLINT
   {
     Jacobian jac_block;
     jac_block.resize(n_dof, n_dof);
-    constraint->fillJacobianBlock("joint_trajectory", jac_block);
+    constraint->fillJacobianBlock(jac_block, "joint_trajectory");
     // Check that the size is correct
     EXPECT_EQ(jac_block.nonZeros(), n_dof);
     // Check that it is identity
@@ -137,7 +137,7 @@ TEST_F(InverseKinematicsConstraintUnit, GetValue)  // NOLINT
   {
     Jacobian jac_block;
     jac_block.resize(n_dof, n_dof);
-    constraint->fillJacobianBlock("invalid_var_set", jac_block);
+    constraint->fillJacobianBlock(jac_block, "invalid_var_set");
     EXPECT_EQ(jac_block.nonZeros(), 0);
   }
 }
@@ -185,14 +185,14 @@ TEST_F(InverseKinematicsConstraintUnit, IgnoreVariables)  // NOLINT
   {
     Jacobian jac_block_input;
     jac_block_input.resize(n_dof, n_dof);
-    constraint->fillJacobianBlock("another_var", jac_block_input);
+    constraint->fillJacobianBlock(jac_block_input, "another_var");
     EXPECT_EQ(jac_block_input.nonZeros(), 0);
   }
   // Check that it is fine with jac blocks the wrong size for this constraint
   {
     Jacobian jac_block_input;
     jac_block_input.resize(3, 5);
-    constraint->fillJacobianBlock("another_var2", jac_block_input);
+    constraint->fillJacobianBlock(jac_block_input, "another_var2");
     EXPECT_EQ(jac_block_input.nonZeros(), 0);
   }
 }

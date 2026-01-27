@@ -143,7 +143,7 @@ public:
    * @param var_set Name of the var_set to which the jac_block is associated
    * @param jac_block Block of the overall jacobian associated with these constraints and the var_set variable
    */
-  void fillJacobianBlock(std::string var_set, Jacobian& jac_block) const override;
+  void fillJacobianBlock(Jacobian& jac_block, const std::string& var_set) const override;
 
   /**
    * @brief Get the two poses defining the line

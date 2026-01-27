@@ -165,7 +165,7 @@ TEST_F(CartesianLineConstraintUnit, FillJacobian)  // NOLINT
     }
     {
       Jacobian jac_block(num_jac_block.rows(), num_jac_block.cols());
-      constraint->fillJacobianBlock("joint_trajectory", jac_block);
+      constraint->fillJacobianBlock(jac_block, "joint_trajectory");
       EXPECT_TRUE(jac_block.toDense().isApprox(num_jac_block.toDense(), 1e-3));
     }
   }
@@ -212,14 +212,14 @@ TEST_F(CartesianLineConstraintUnit, IgnoreVariables)  // NOLINT
   {
     Jacobian jac_block_input;
     jac_block_input.resize(n_dof, n_dof);
-    constraint->fillJacobianBlock("another_var", jac_block_input);
+    constraint->fillJacobianBlock(jac_block_input, "another_var");
     EXPECT_EQ(jac_block_input.nonZeros(), 0);
   }
   // Check that it is fine with jac blocks the wrong size for this constraint
   {
     Jacobian jac_block_input;
     jac_block_input.resize(3, 5);
-    constraint->fillJacobianBlock("another_var2", jac_block_input);
+    constraint->fillJacobianBlock(jac_block_input, "another_var2");
     EXPECT_EQ(jac_block_input.nonZeros(), 0);
   }
 }

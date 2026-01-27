@@ -103,7 +103,7 @@ Eigen::VectorXd DiscreteCollisionConstraint::getCoefficients() const { return co
 // Set the limits on the constraint values
 std::vector<Bounds> DiscreteCollisionConstraint::getBounds() const { return bounds_; }
 
-void DiscreteCollisionConstraint::fillJacobianBlock(std::string var_set, Jacobian& jac_block) const
+void DiscreteCollisionConstraint::fillJacobianBlock(Jacobian& jac_block, const std::string& var_set) const
 {
   // Only modify the jacobian if this constraint uses var_set
   if (var_set != var_set_name_)  // NOLINT
@@ -209,7 +209,7 @@ Eigen::VectorXd DiscreteCollisionConstraintD::getCoefficients() const { return c
 // Set the limits on the constraint values
 std::vector<Bounds> DiscreteCollisionConstraintD::getBounds() const { return bounds_; }
 
-void DiscreteCollisionConstraintD::fillJacobianBlock(std::string var_set, Jacobian& jac_block) const
+void DiscreteCollisionConstraintD::fillJacobianBlock(Jacobian& jac_block, const std::string& var_set) const
 {
   // Only modify the jacobian if this constraint uses var_set
   if (var_set != var_set_name_ || rows_ == 0)  // NOLINT

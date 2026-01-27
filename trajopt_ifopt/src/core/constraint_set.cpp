@@ -57,7 +57,7 @@ Jacobian ConstraintSet::getJacobian() const
     int n = vars->getRows();
     jac.resize(rows_, n);
 
-    fillJacobianBlock(vars->getName(), jac);
+    fillJacobianBlock(jac, vars->getName());
 
     // create triplets for the derivative at the correct position in the overall Jacobian
     for (Eigen::Index k = 0; k < jac.outerSize(); ++k)

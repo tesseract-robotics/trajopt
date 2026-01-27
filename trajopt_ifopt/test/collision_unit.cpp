@@ -107,7 +107,7 @@ TEST_F(CollisionUnit, GetValueFillJacobian)  // NOLINT
 
     Jacobian jac_block;
     jac_block.resize(1, 2);
-    constraint->fillJacobianBlock("joint_trajectory", jac_block);
+    constraint->fillJacobianBlock(jac_block, "joint_trajectory");
     const double dx = jac_block.coeff(0, 0);
     const double dy = jac_block.coeff(0, 1);
     EXPECT_NEAR(dx, 0.0, 1e-6);
@@ -124,7 +124,7 @@ TEST_F(CollisionUnit, GetValueFillJacobian)  // NOLINT
 
     Jacobian jac_block;
     jac_block.resize(1, 2);
-    constraint->fillJacobianBlock("joint_trajectory", jac_block);
+    constraint->fillJacobianBlock(jac_block, "joint_trajectory");
     const double dx = jac_block.coeff(0, 0);
     const double dy = jac_block.coeff(0, 1);
     EXPECT_NEAR(dx, 1.0, 1e-6);
@@ -139,7 +139,7 @@ TEST_F(CollisionUnit, GetValueFillJacobian)  // NOLINT
 
     Jacobian jac_block;
     jac_block.resize(1, 2);
-    constraint->fillJacobianBlock("joint_trajectory", jac_block);
+    constraint->fillJacobianBlock(jac_block, "joint_trajectory");
     const double dx = jac_block.coeff(0, 0);
     const double dy = jac_block.coeff(0, 1);
     EXPECT_NEAR(dx, 0.0, 1e-6);
@@ -156,7 +156,7 @@ TEST_F(CollisionUnit, GetValueFillJacobian)  // NOLINT
 
     Jacobian jac_block;
     jac_block.resize(1, 2);
-    constraint->fillJacobianBlock("joint_trajectory", jac_block);
+    constraint->fillJacobianBlock(jac_block, "joint_trajectory");
     const double dx = jac_block.coeff(0, 0);
     const double dy = jac_block.coeff(0, 1);
     EXPECT_NEAR(dx, 1.0, 1e-6);
@@ -204,7 +204,7 @@ TEST_F(CollisionUnit, IgnoreVariables)  // NOLINT
   {
     Jacobian jac_block_input;
     jac_block_input.resize(1, 2);
-    constraint->fillJacobianBlock("another_var", jac_block_input);
+    constraint->fillJacobianBlock(jac_block_input, "another_var");
     EXPECT_EQ(jac_block_input.nonZeros(), 0);
   }
 }

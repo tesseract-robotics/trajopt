@@ -167,7 +167,7 @@ void ContinuousCollisionConstraint::init() const
   }
 }
 
-void ContinuousCollisionConstraint::fillJacobianBlock(std::string var_set, Jacobian& jac_block) const
+void ContinuousCollisionConstraint::fillJacobianBlock(Jacobian& jac_block, const std::string& var_set) const
 {
   // Only modify the jacobian if this constraint uses var_set
   if (var_set != var_set_name_)  // NOLINT
@@ -320,7 +320,7 @@ void ContinuousCollisionConstraintD::init() const
     throw std::runtime_error("ContinuousCollisionConstraint: all vars must belong to the same variable set");
 }
 
-void ContinuousCollisionConstraintD::fillJacobianBlock(std::string var_set, Jacobian& jac_block) const
+void ContinuousCollisionConstraintD::fillJacobianBlock(Jacobian& jac_block, const std::string& var_set) const
 {
   // Only modify the jacobian if this constraint uses var_set
   if (var_set != var_set_name_ || rows_ == 0)  // NOLINT
