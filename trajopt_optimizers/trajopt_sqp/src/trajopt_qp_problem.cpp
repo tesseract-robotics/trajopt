@@ -813,6 +813,7 @@ void TrajOptQPProblem::Implementation::convexify()
   // Set the gradient of the NLP costs
   ////////////////////////////////////////////////////////
   cvp.gradient.resize(cvp.num_qp_vars);
+  cvp.gradient.setZero();
   cvp.gradient.tail(cvp.n_slack_vars) = Eigen::Map<Eigen::VectorXd>(cache_slack_gradient.data(), cvp.n_slack_vars);
 
   // Create triplet list of nonzero gradients
