@@ -365,10 +365,10 @@ SQPStatus TrustRegionSQPSolver::solveQPProblem()
     results_.approx_merit_improve = results_.best_exact_merit - results_.new_approx_merit;
 
     // Evaluate exact costs (expensive)
-    results_.new_costs = qp_problem->evaluateExactCosts(results_.new_var_vals);
+    results_.new_costs = qp_problem->getExactCosts();
 
     // Evaluate exact constraint violations (expensive)
-    results_.new_constraint_violations = qp_problem->evaluateExactConstraintViolations(results_.new_var_vals);
+    results_.new_constraint_violations = qp_problem->getExactConstraintViolations();
 
     // Calculate exact NLP merits (expensive) - TODO: Look into caching for qp_solver->Convexify()
     results_.new_exact_merit =

@@ -151,13 +151,15 @@ Eigen::VectorXd calcNumericalCostGradient(const double* x, Problem& nlp, double 
 
   if (nlp.hasCostTerms())
   {
-    const double g = nlp.evaluateCostFunction(x);
+    nlp.setVariables(x);
+    const double g = nlp.evaluateCostFunction();
     std::vector<double> x_new(x, x + n);
 
     for (int i = 0; i < n; ++i)
     {
       x_new[static_cast<std::size_t>(i)] += epsilon;  // disturb
-      const double g_new = nlp.evaluateCostFunction(x_new.data());
+      nlp.setVariables(x_new.data());
+      const double g_new = nlp.evaluateCostFunction();
       jac.coeffRef(0, i) = (g_new - g) / epsilon;
       x_new[static_cast<std::size_t>(i)] = x[i];  // reset
     }
@@ -182,14 +184,16 @@ Jacobian calcNumericalConstraintGradient(const double* x, Problem& nlp, double e
 
   if (nlp.getNumberOfConstraints() > 0 && n > 0)
   {
-    const Eigen::VectorXd g = nlp.evaluateConstraints(x);
+    nlp.setVariables(x);
+    const Eigen::VectorXd g = nlp.evaluateConstraints();
     std::vector<double> x_new(x, x + n);
     Eigen::VectorXd delta_g(m);
 
     for (int i = 0; i < n; ++i)
     {
       x_new[static_cast<std::size_t>(i)] += epsilon;
-      const Eigen::VectorXd g_new = nlp.evaluateConstraints(x_new.data());
+      nlp.setVariables(x_new.data());
+      const Eigen::VectorXd g_new = nlp.evaluateConstraints();
       delta_g = (g_new - g) / epsilon;
 
       for (int j = 0; j < m; ++j)

@@ -59,15 +59,11 @@ public:
 
   Eigen::VectorXd evaluateConvexCosts(const Eigen::Ref<const Eigen::VectorXd>& var_vals) override;
 
-  double evaluateTotalExactCost(const Eigen::Ref<const Eigen::VectorXd>& var_vals) override;
-
-  Eigen::VectorXd evaluateExactCosts(const Eigen::Ref<const Eigen::VectorXd>& var_vals) override;
+  double getTotalExactCost() override;
 
   Eigen::VectorXd getExactCosts() override;
 
   Eigen::VectorXd evaluateConvexConstraintViolations(const Eigen::Ref<const Eigen::VectorXd>& var_vals) override;
-
-  Eigen::VectorXd evaluateExactConstraintViolations(const Eigen::Ref<const Eigen::VectorXd>& var_vals) override;
 
   Eigen::VectorXd getExactConstraintViolations() override;
 

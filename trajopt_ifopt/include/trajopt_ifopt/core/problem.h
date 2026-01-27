@@ -163,15 +163,14 @@ public:
   /**
    * @brief The scalar cost for current optimization variables @c x.
    */
-  double evaluateCostFunction(const double* x);
+  double evaluateCostFunction();
 
   /**
    * @brief The column-vector of derivatives of the cost w.r.t. each variable.
    * @details ipopt uses 10e-8 for their derivative check, but setting here to more precise
    * https://coin-or.github.io/Ipopt/OPTIONS.html#OPT_derivative_test_perturbation
    */
-  Eigen::VectorXd evaluateCostFunctionGradient(const double* x,
-                                               bool use_finite_difference_approximation = false,
+  Eigen::VectorXd evaluateCostFunctionGradient(bool use_finite_difference_approximation = false,
                                                double epsilon = std::numeric_limits<double>::epsilon());
 
   /**
@@ -187,14 +186,14 @@ public:
   /**
    * @brief Each constraint value g(x) for current optimization variables @c x.
    */
-  Eigen::VectorXd evaluateConstraints(const double* x);
+  Eigen::VectorXd evaluateConstraints();
 
   /**
    * @brief Extracts those entries from constraint Jacobian that are not zero.
    * @param [in]  x  The current values of the optimization variables.
    * @param [out] values  The nonzero derivatives ordered by Eigen::RowMajor.
    */
-  void evalNonzerosOfJacobian(const double* x, double* values);
+  void evalNonzerosOfJacobian(double* values) const;
 
   /**
    * @brief The sparse-matrix representation of Jacobian of the constraints.

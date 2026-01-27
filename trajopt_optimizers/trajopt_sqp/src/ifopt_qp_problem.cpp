@@ -119,7 +119,8 @@ void IfoptQPProblem::setup()
       num_qp_vars_ += 2;
       num_qp_cnts_ += 2;
     }
-    else if (b.getType() == trajopt_ifopt::BoundsType::kLowerBound)
+    else if (b.getType() == trajopt_ifopt::BoundsType::kLowerBound ||
+             b.getType() == trajopt_ifopt::BoundsType::kUpperBound)
     {
       // Add 1 slack variable for hinge loss
       num_qp_vars_ += 1;
@@ -240,7 +241,8 @@ void IfoptQPProblem::updateGradient()
 
         current_var_index += 2;
       }
-      else if (bounds_type == trajopt_ifopt::BoundsType::kLowerBound)
+      else if (bounds_type == trajopt_ifopt::BoundsType::kLowerBound ||
+               bounds_type == trajopt_ifopt::BoundsType::kUpperBound)
       {
         gradient_[current_var_index] = constraint_merit_coeff_[i];
         current_var_index++;
@@ -281,6 +283,11 @@ void IfoptQPProblem::linearizeConstraints()
       current_column_index += 2;
     }
     else if (bounds_type == trajopt_ifopt::BoundsType::kLowerBound)
+    {
+      tripletList.emplace_back(i, current_column_index, 1);
+      current_column_index++;
+    }
+    else if (bounds_type == trajopt_ifopt::BoundsType::kUpperBound)
     {
       tripletList.emplace_back(i, current_column_index, -1);
       current_column_index++;
@@ -422,7 +429,8 @@ void IfoptQPProblem::updateSlackVariableBounds()
 
       current_cnt_index += 2;
     }
-    else if (bounds_type == trajopt_ifopt::BoundsType::kLowerBound)
+    else if (bounds_type == trajopt_ifopt::BoundsType::kLowerBound ||
+             bounds_type == trajopt_ifopt::BoundsType::kUpperBound)
     {
       bounds_lower_[current_cnt_index] = 0;
       bounds_upper_[current_cnt_index] = double(INFINITY);
@@ -451,21 +459,15 @@ Eigen::VectorXd IfoptQPProblem::evaluateConvexCosts(const Eigen::Ref<const Eigen
   return cost_constant_ + result_lin + result_quad;
 }
 
-double IfoptQPProblem::evaluateTotalExactCost(const Eigen::Ref<const Eigen::VectorXd>& var_vals)
-{
-  return nlp_->evaluateCostFunction(var_vals.data());
-}
+double IfoptQPProblem::getTotalExactCost() { return nlp_->evaluateCostFunction(); }
 
-Eigen::VectorXd IfoptQPProblem::evaluateExactCosts(const Eigen::Ref<const Eigen::VectorXd>& var_vals)
+Eigen::VectorXd IfoptQPProblem::getExactCosts()
 {
   if (!nlp_->hasCostTerms())
     return {};
 
-  nlp_->setVariables(var_vals.data());
   return nlp_->getCosts().getValues();
 }
-
-Eigen::VectorXd IfoptQPProblem::getExactCosts() { return evaluateExactCosts(nlp_->getOptVariables()->getValues()); }
 
 Eigen::VectorXd IfoptQPProblem::evaluateConvexConstraintViolations(const Eigen::Ref<const Eigen::VectorXd>& var_vals)
 {
@@ -478,18 +480,13 @@ Eigen::VectorXd IfoptQPProblem::evaluateConvexConstraintViolations(const Eigen::
   return violations;
 }
 
-Eigen::VectorXd IfoptQPProblem::evaluateExactConstraintViolations(const Eigen::Ref<const Eigen::VectorXd>& var_vals)
+Eigen::VectorXd IfoptQPProblem::getExactConstraintViolations()
 {
-  const Eigen::VectorXd cnt_vals = nlp_->evaluateConstraints(var_vals.data());
+  const Eigen::VectorXd cnt_vals = nlp_->evaluateConstraints();
 
   Eigen::VectorXd violations(cnt_vals.rows());
   trajopt_ifopt::calcBoundsViolations(violations, cnt_vals, nlp_->getBoundsOnConstraints());
   return violations;
-}
-
-Eigen::VectorXd IfoptQPProblem::getExactConstraintViolations()
-{
-  return evaluateExactConstraintViolations(nlp_->getOptVariables()->getValues());  // NOLINT
 }
 
 void IfoptQPProblem::scaleBoxSize(double& scale)

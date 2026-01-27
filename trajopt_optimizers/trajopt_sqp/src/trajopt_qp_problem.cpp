@@ -367,11 +367,11 @@ struct TrajOptQPProblem::Implementation
 
   void convexify();
 
-  double evaluateTotalExactCost(const Eigen::Ref<const Eigen::VectorXd>& var_vals);
+  double getTotalExactCost();
 
-  Eigen::VectorXd evaluateExactCosts(const Eigen::Ref<const Eigen::VectorXd>& var_vals);
+  Eigen::VectorXd getExactCosts();
 
-  Eigen::VectorXd evaluateExactConstraintViolations(const Eigen::Ref<const Eigen::VectorXd>& var_vals);
+  Eigen::VectorXd getExactConstraintViolations();
 
   void scaleBoxSize(double& scale);
 
@@ -920,13 +920,9 @@ void TrajOptQPProblem::Implementation::convexify()
   updateNLPVariableBounds(x_initial);
 }
 
-double TrajOptQPProblem::Implementation::evaluateTotalExactCost(const Eigen::Ref<const Eigen::VectorXd>& var_vals)
-{
-  return evaluateExactCosts(var_vals).sum();
-}
+double TrajOptQPProblem::Implementation::getTotalExactCost() { return getExactCosts().sum(); }
 
-Eigen::VectorXd
-TrajOptQPProblem::Implementation::evaluateExactCosts(const Eigen::Ref<const Eigen::VectorXd>& /*var_vals*/)
+Eigen::VectorXd TrajOptQPProblem::Implementation::getExactCosts()
 {
   assert(initialized);
 
@@ -971,8 +967,7 @@ TrajOptQPProblem::Implementation::evaluateExactCosts(const Eigen::Ref<const Eige
   return g;
 }
 
-Eigen::VectorXd TrajOptQPProblem::Implementation::evaluateExactConstraintViolations(
-    const Eigen::Ref<const Eigen::VectorXd>& /*var_vals*/)
+Eigen::VectorXd TrajOptQPProblem::Implementation::getExactConstraintViolations()
 {
   Eigen::VectorXd violations(merit_constraints.size());
   Eigen::Index cnt_idx{ 0 };
@@ -1109,31 +1104,18 @@ Eigen::VectorXd TrajOptQPProblem::evaluateConvexCosts(const Eigen::Ref<const Eig
   return impl_->cvp.evaluateConvexCosts(var_vals);
 }
 
-double TrajOptQPProblem::evaluateTotalExactCost(const Eigen::Ref<const Eigen::VectorXd>& var_vals)
-{
-  return impl_->evaluateTotalExactCost(var_vals);
-}
+double TrajOptQPProblem::getTotalExactCost() { return impl_->getTotalExactCost(); }
 
-Eigen::VectorXd TrajOptQPProblem::evaluateExactCosts(const Eigen::Ref<const Eigen::VectorXd>& var_vals)
-{
-  return impl_->evaluateExactCosts(var_vals);
-}
-
-Eigen::VectorXd TrajOptQPProblem::getExactCosts() { return evaluateExactCosts(impl_->variables->getValues()); }
+Eigen::VectorXd TrajOptQPProblem::getExactCosts() { return impl_->getExactCosts(); }
 
 Eigen::VectorXd TrajOptQPProblem::evaluateConvexConstraintViolations(const Eigen::Ref<const Eigen::VectorXd>& var_vals)
 {
   return impl_->cvp.evaluateConvexConstraintViolations(var_vals);
 }
 
-Eigen::VectorXd TrajOptQPProblem::evaluateExactConstraintViolations(const Eigen::Ref<const Eigen::VectorXd>& var_vals)
-{
-  return impl_->evaluateExactConstraintViolations(var_vals);
-}
-
 Eigen::VectorXd TrajOptQPProblem::getExactConstraintViolations()
 {
-  return evaluateExactConstraintViolations(impl_->variables->getValues());  // NOLINT
+  return impl_->getExactConstraintViolations();  // NOLINT
 }
 
 void TrajOptQPProblem::scaleBoxSize(double& scale) { impl_->scaleBoxSize(scale); }

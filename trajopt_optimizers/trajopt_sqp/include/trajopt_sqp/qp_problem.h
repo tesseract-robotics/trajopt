@@ -80,24 +80,14 @@ public:
   virtual Eigen::VectorXd evaluateConvexCosts(const Eigen::Ref<const Eigen::VectorXd>& var_vals) = 0;
 
   /**
-   * @brief Evaluates the sum of the cost functions at var_vals
+   * @brief Get the sum of the cost functions
    * @note This will be relatively computationally expensive, as we will have to loop through all the cost components in
    * the problem and calculate their values manually.
-   * @param var_vals Point at which the cost is calculated. Should be size num_qp_vars
    */
-  virtual double evaluateTotalExactCost(const Eigen::Ref<const Eigen::VectorXd>& var_vals) = 0;
+  virtual double getTotalExactCost() = 0;
 
   /**
-   * @brief Evaluated the cost functions at var_vals
-   * @note This will be relatively computationally expensive, as we will have to loop through all the cost components in
-   * the problem and calculate their values manually.
-   * @param var_vals Point at which the cost is calculated. Should be size num_qp_vars
-   * @return Cost associated with each cost term in the problem (for debugging)
-   */
-  virtual Eigen::VectorXd evaluateExactCosts(const Eigen::Ref<const Eigen::VectorXd>& var_vals) = 0;
-
-  /**
-   * @brief get the current NLP costs.
+   * @brief Get the current NLP costs.
    * @return Vector of costs.
    */
   virtual Eigen::VectorXd getExactCosts() = 0;
@@ -109,12 +99,6 @@ public:
    * @return
    */
   virtual Eigen::VectorXd evaluateConvexConstraintViolations(const Eigen::Ref<const Eigen::VectorXd>& var_vals) = 0;
-
-  /**
-   * @brief Evaluate NLP constraint violations at the provided var_vals. Values > 0 are violations
-   * @return Vector of constraint violations. Values > 0 are violations
-   */
-  virtual Eigen::VectorXd evaluateExactConstraintViolations(const Eigen::Ref<const Eigen::VectorXd>& var_vals) = 0;
 
   /**
    * @brief get the current NLP constraint violations. Values > 0 are violations
