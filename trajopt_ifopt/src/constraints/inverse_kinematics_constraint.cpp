@@ -114,7 +114,7 @@ void InverseKinematicsConstraint::setBounds(const std::vector<Bounds>& bounds)
   bounds_ = bounds;
 }
 
-void InverseKinematicsConstraint::fillJacobianBlock(std::string var_set, Jacobian& jac_block) const
+void InverseKinematicsConstraint::fillJacobianBlock(Jacobian& jac_block, const std::string& var_set) const
 {
   // Only modify the jacobian if this constraint uses var_set
   if (var_set != constraint_var_->getParent()->getParent()->getName())  // NOLINT

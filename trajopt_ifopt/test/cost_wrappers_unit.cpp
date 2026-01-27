@@ -70,7 +70,7 @@ public:
 
   std::vector<trajopt_ifopt::Bounds> getBounds() const final { return bounds_; }
 
-  void fillJacobianBlock(std::string var_set, trajopt_ifopt::Jacobian& jac_block) const final
+  void fillJacobianBlock(trajopt_ifopt::Jacobian& jac_block, const std::string& var_set) const final
   {
     // Only modify the jacobian if this constraint uses var_set
     if (var_set != position_var_->getParent()->getParent()->getName())  // NOLINT

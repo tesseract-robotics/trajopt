@@ -144,7 +144,7 @@ Eigen::VectorXd ContinuousCollisionNumericalConstraint::getValues() const
 // Set the limits on the constraint values
 std::vector<Bounds> ContinuousCollisionNumericalConstraint::getBounds() const { return bounds_; }
 
-void ContinuousCollisionNumericalConstraint::fillJacobianBlock(std::string var_set, Jacobian& jac_block) const
+void ContinuousCollisionNumericalConstraint::fillJacobianBlock(Jacobian& jac_block, const std::string& var_set) const
 {
   // Only modify the jacobian if this constraint uses var_set
   if (var_set != position_vars_[0]->getParent()->getParent()->getName())  // NOLINT

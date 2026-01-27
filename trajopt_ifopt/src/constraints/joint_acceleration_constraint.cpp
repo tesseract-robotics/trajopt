@@ -121,7 +121,7 @@ Eigen::VectorXd JointAccelConstraint::getCoefficients() const { return coeffs_; 
 // Set the limits on the constraint values (in this case just the targets)
 std::vector<Bounds> JointAccelConstraint::getBounds() const { return bounds_; }
 
-void JointAccelConstraint::fillJacobianBlock(std::string var_set, Jacobian& jac_block) const
+void JointAccelConstraint::fillJacobianBlock(Jacobian& jac_block, const std::string& var_set) const
 {
   // Check if this constraint use the var_set
   // Only modify the jacobian if this constraint uses var_set

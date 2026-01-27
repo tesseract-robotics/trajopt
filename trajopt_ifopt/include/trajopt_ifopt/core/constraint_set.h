@@ -107,7 +107,7 @@ public:
    * set as follows (which can also be set =0.0 without erros):
    * jac_block.coeffRef(1, 3) = ...
    */
-  virtual void fillJacobianBlock(std::string var_set, Jacobian& jac_block) const = 0;
+  virtual void fillJacobianBlock(Jacobian& jac_block, const std::string& var_set) const = 0;
 
 protected:
   /**

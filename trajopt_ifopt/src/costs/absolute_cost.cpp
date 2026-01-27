@@ -59,7 +59,7 @@ double AbsoluteCost::getCost() const
 
 Eigen::VectorXd AbsoluteCost::getCoefficients() const { return constraint_->getCoefficients(); }
 
-void AbsoluteCost::fillJacobianBlock(std::string var_set, Jacobian& jac_block) const
+void AbsoluteCost::fillJacobianBlock(Jacobian& jac_block, const std::string& var_set) const
 {
   // Get a Jacobian block the size necessary for the constraint
   int var_size = 0;
@@ -78,7 +78,7 @@ void AbsoluteCost::fillJacobianBlock(std::string var_set, Jacobian& jac_block) c
   // Get the Jacobian block from the underlying constraint
   Jacobian cnt_jac_block;
   cnt_jac_block.resize(n_constraints_, var_size);  // NOLINT
-  constraint_->fillJacobianBlock(var_set, cnt_jac_block);
+  constraint_->fillJacobianBlock(cnt_jac_block, var_set);
 
   // Compute signed coefficients: coeff_i = weights_[i] * sign(error_i)
   Eigen::ArrayXd error(constraint_->getRows());

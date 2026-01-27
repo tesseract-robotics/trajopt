@@ -330,7 +330,7 @@ void CartPosConstraint::calcJacobianBlock(const Eigen::Ref<const Eigen::VectorXd
   jac_block.setFromTriplets(triplet_list.begin(), triplet_list.end());  // NOLINT
 }
 
-void CartPosConstraint::fillJacobianBlock(std::string var_set, Jacobian& jac_block) const
+void CartPosConstraint::fillJacobianBlock(Jacobian& jac_block, const std::string& var_set) const
 {
   // Only modify the jacobian if this constraint uses var_set
   if (var_set != position_var_->getParent()->getParent()->getName())  // NOLINT

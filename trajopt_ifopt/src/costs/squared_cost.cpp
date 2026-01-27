@@ -59,7 +59,7 @@ double SquaredCost::getCost() const
 
 Eigen::VectorXd SquaredCost::getCoefficients() const { return constraint_->getCoefficients(); }
 
-void SquaredCost::fillJacobianBlock(std::string var_set, Jacobian& jac_block) const
+void SquaredCost::fillJacobianBlock(Jacobian& jac_block, const std::string& var_set) const
 {
   // Get a Jacobian block the size necessary for the constraint
   int var_size = 0;
@@ -77,7 +77,7 @@ void SquaredCost::fillJacobianBlock(std::string var_set, Jacobian& jac_block) co
   // Get the Jacobian block from the constraint
   Jacobian cnt_jac_block;
   cnt_jac_block.resize(n_constraints_, var_size);  // NOLINT
-  constraint_->fillJacobianBlock(var_set, cnt_jac_block);
+  constraint_->fillJacobianBlock(cnt_jac_block, var_set);
 
   // error = bounds error vector (length = n_constraints_)
   Eigen::VectorXd error(constraint_->getRows());

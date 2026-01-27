@@ -110,7 +110,7 @@ Eigen::VectorXd JointPosConstraint::getCoefficients() const { return coeffs_; }
 // Set the limits on the constraint values
 std::vector<Bounds> JointPosConstraint::getBounds() const { return bounds_; }
 
-void JointPosConstraint::fillJacobianBlock(std::string var_set, Jacobian& jac_block) const
+void JointPosConstraint::fillJacobianBlock(Jacobian& jac_block, const std::string& var_set) const
 {
   // Check if this constraint use the var_set
   // Only modify the jacobian if this constraint uses var_set

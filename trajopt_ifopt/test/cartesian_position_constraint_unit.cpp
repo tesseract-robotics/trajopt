@@ -177,7 +177,7 @@ TEST_F(CartesianPositionConstraintUnit, FillJacobian)  // NOLINT
     }
     {
       Jacobian jac_block(num_jac_block.rows(), num_jac_block.cols());
-      constraint->fillJacobianBlock("joint_trajectory", jac_block);
+      constraint->fillJacobianBlock(jac_block, "joint_trajectory");
       EXPECT_TRUE(jac_block.toDense().isApprox(num_jac_block.toDense(), 1e-3));
       //      std::cout << "Numeric:\n" << num_jac_block.toDense() << '\n';
       //      std::cout << "Analytic:\n" << jac_block.toDense() << '\n';
@@ -229,7 +229,7 @@ TEST_F(CartesianPositionConstraintUnit, IgnoreVariables)  // NOLINT
   {
     Jacobian jac_block_input;
     jac_block_input.resize(n_dof, n_dof);
-    constraint->fillJacobianBlock("another_var", jac_block_input);
+    constraint->fillJacobianBlock(jac_block_input, "another_var");
     EXPECT_EQ(jac_block_input.nonZeros(), 0);
   }
 
@@ -237,7 +237,7 @@ TEST_F(CartesianPositionConstraintUnit, IgnoreVariables)  // NOLINT
   {
     Jacobian jac_block_input;
     jac_block_input.resize(3, 5);
-    constraint->fillJacobianBlock("another_var2", jac_block_input);
+    constraint->fillJacobianBlock(jac_block_input, "another_var2");
     EXPECT_EQ(jac_block_input.nonZeros(), 0);
   }
 }
