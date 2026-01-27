@@ -100,6 +100,8 @@ struct ConvexProblem
   Eigen::Index num_qp_cnts{ 0 };
 
   std::vector<ComponentInfo> objective_term_infos;
+  std::vector<std::reference_wrapper<ComponentInfo>> constraint_term_infos;  // (penalty_constraint_infos +
+                                                                             // merit_constraint_infos)
   std::vector<ComponentInfo> penalty_constraint_infos;
   std::vector<ComponentInfo> merit_constraint_infos;
 
@@ -626,6 +628,8 @@ void TrajOptQPProblem::Implementation::setup()
   cvp.merit_constraint_infos.clear();
   cvp.merit_constraint_infos.resize(merit_constraints.size());
 
+  cvp.constraint_term_infos.clear();
+
   // Define cost names
   cost_names.clear();
   cost_names.reserve(static_cast<std::size_t>(num_cost_components));
@@ -638,10 +642,11 @@ void TrajOptQPProblem::Implementation::setup()
   for (std::size_t i = 0; i < penalty_constraints.size(); ++i)
   {
     cost_names.push_back(penalty_constraints[i]->getName());
-    if (i < (hinge_costs.size() + dyn_hinge_costs.size()))
-      cvp.penalty_constraint_infos[i].type = ComponentInfoType::PENALTY_CONSTRAINT_HINGE;
-    else
-      cvp.penalty_constraint_infos[i].type = ComponentInfoType::PENALTY_CONSTRAINT_ABS;
+
+    auto& info = cvp.penalty_constraint_infos[i];
+    info.type = (i < (hinge_costs.size() + dyn_hinge_costs.size())) ? ComponentInfoType::PENALTY_CONSTRAINT_HINGE :
+                                                                      ComponentInfoType::PENALTY_CONSTRAINT_ABS;
+    cvp.constraint_term_infos.emplace_back(info);
   }
 
   // Get NLP bounds and detect constraint type
@@ -654,7 +659,10 @@ void TrajOptQPProblem::Implementation::setup()
   for (std::size_t i = 0; i < merit_constraints.size(); ++i)
   {
     constraint_names.push_back(merit_constraints[i]->getName());
-    cvp.merit_constraint_infos[i].type = ComponentInfoType::MERIT_CONSTRAINT;
+
+    auto& info = cvp.merit_constraint_infos[i];
+    info.type = ComponentInfoType::MERIT_CONSTRAINT;
+    cvp.constraint_term_infos.emplace_back(info);
   }
 
   // Cache variable bounds (used in updateNLPVariableBounds)
@@ -706,93 +714,13 @@ void TrajOptQPProblem::Implementation::convexify()
   cvp.n_slack_vars = 0;
   Eigen::Index constraint_matrix_row{ 0 };
   Eigen::Index current_var_index{ cvp.n_nlp_vars };
-  ////////////////////////////////////////////////////////
-  // Set the gradient of the cost constraint variables
-  ////////////////////////////////////////////////////////
-  for (std::size_t i = 0; i < penalty_constraints.size(); ++i)
+  Eigen::Index merit_constraint_index{ 0 };
+  for (std::size_t i = 0; i < constraint_terms.size(); ++i)
   {
-    const auto& info = cvp.penalty_constraint_infos[i];
-    const auto& cost = penalty_constraints[i];
+    const auto& info = cvp.constraint_term_infos[i].get();
+    const auto& cnt = constraint_terms[i];
     if (info.rows == 0)
       continue;
-
-    // Linearize Constraints
-    const trajopt_ifopt::Jacobian jac = cost->getJacobian();
-
-    // In the case of a QP problem the costs and constraints are represented as
-    // quadratic functions is f(x) = a + b * x + c * x^2.
-    // Currently for constraints we do not leverage the Hessian so the quadratic
-    // function is f(x) = a + b * x
-    // When convexifying the function it need to produce the same constraint values at the values used to calculate
-    // the jacobian, so f(x_initial) = a + b * x = cnt_initial_value.
-    // Therefore a = cnt_initial_value - b * x
-    //     where: b = jac (calculated below)
-    //            x = x_initial
-    //            a = quadratic constant (constraint_constant_)
-    //
-    // Note: This is not used by the QP solver directly but by the Trust Regions Solver
-    //       to calculate the merit of the solve.
-    auto cc = cvp.constraint_constant.segment(constraint_matrix_row, info.rows);
-    cc = cost->getValues();
-    cc.noalias() -= jac * x_initial;
-
-    for (Eigen::Index k = 0; k < jac.outerSize(); ++k)
-    {
-      for (trajopt_ifopt::Jacobian::InnerIterator it(jac, k); it; ++it)
-        cache_triplets_2.emplace_back(constraint_matrix_row + it.row(), it.col(), it.value());
-
-      ///////////////////////////////
-      // Update NLP Constraint Bounds
-      ///////////////////////////////
-      const auto& cnt_bound = info.bounds[static_cast<std::size_t>(k)];
-      const auto cnt_bound_type = cnt_bound.getType();
-      const Eigen::Index row = constraint_matrix_row + k;
-      const double constant = cvp.constraint_constant[row];
-      cvp.bounds_lower[row] = cnt_bound.getLower() - constant;
-      cvp.bounds_upper[row] = cnt_bound.getUpper() - constant;
-
-      //////////////////////////////////////////////////////////
-      // Set the slack variables constraint matrix and gradient
-      //////////////////////////////////////////////////////////
-
-      const double coeff = info.coeffs(k);
-      if (cnt_bound_type == trajopt_ifopt::BoundsType::EQUALITY)
-      {
-        cache_slack_gradient.emplace_back(coeff);
-        cache_slack_gradient.emplace_back(coeff);
-        cache_triplets_2.emplace_back(row, current_var_index++, 1.0);
-        cache_triplets_2.emplace_back(row, current_var_index++, -1.0);
-        cvp.n_slack_vars += 2;
-      }
-      else if (cnt_bound_type == trajopt_ifopt::BoundsType::LOWER_BOUND)
-      {
-        cache_slack_gradient.emplace_back(coeff);
-        cache_triplets_2.emplace_back(row, current_var_index++, 1.0);
-        ++cvp.n_slack_vars;
-      }
-      else if (cnt_bound_type == trajopt_ifopt::BoundsType::UPPER_BOUND)
-      {
-        cache_slack_gradient.emplace_back(coeff);
-        cache_triplets_2.emplace_back(row, current_var_index++, -1.0);
-        ++cvp.n_slack_vars;
-      }
-      else
-      {
-        throw std::runtime_error("Unsupported bounds type!");
-      }
-    }
-
-    constraint_matrix_row += info.rows;
-  }
-
-  ////////////////////////////////////////////////////////
-  // Set the gradient of the constraint slack variables
-  ////////////////////////////////////////////////////////
-
-  for (std::size_t i = 0; i < merit_constraints.size(); ++i)
-  {
-    const auto& info = cvp.merit_constraint_infos[i];
-    const auto& cnt = merit_constraints[i];
 
     // Linearize Constraints
     const trajopt_ifopt::Jacobian jac = cnt->getJacobian();
@@ -814,6 +742,8 @@ void TrajOptQPProblem::Implementation::convexify()
     cc = cnt->getValues();
     cc.noalias() -= jac * x_initial;
 
+    const double merit_coeff =
+        (info.type == ComponentInfoType::MERIT_CONSTRAINT) ? constraint_merit_coeff(merit_constraint_index++) : 1;
     for (Eigen::Index k = 0; k < jac.outerSize(); ++k)
     {
       for (trajopt_ifopt::Jacobian::InnerIterator it(jac, k); it; ++it)
@@ -833,25 +763,25 @@ void TrajOptQPProblem::Implementation::convexify()
       // Set the slack variables constraint matrix and gradient
       //////////////////////////////////////////////////////////
 
-      const double coeff = constraint_merit_coeff(static_cast<Eigen::Index>(i)) * info.coeffs(k);
+      const double coeff = merit_coeff * info.coeffs(k);
       if (cnt_bound_type == trajopt_ifopt::BoundsType::EQUALITY)
       {
         cache_slack_gradient.emplace_back(coeff);
         cache_slack_gradient.emplace_back(coeff);
-        cache_triplets_2.emplace_back(constraint_matrix_row + k, current_var_index++, 1.0);
-        cache_triplets_2.emplace_back(constraint_matrix_row + k, current_var_index++, -1.0);
+        cache_triplets_2.emplace_back(row, current_var_index++, 1.0);
+        cache_triplets_2.emplace_back(row, current_var_index++, -1.0);
         cvp.n_slack_vars += 2;
       }
       else if (cnt_bound_type == trajopt_ifopt::BoundsType::LOWER_BOUND)
       {
         cache_slack_gradient.emplace_back(coeff);
-        cache_triplets_2.emplace_back(constraint_matrix_row + k, current_var_index++, 1.0);
+        cache_triplets_2.emplace_back(row, current_var_index++, 1.0);
         ++cvp.n_slack_vars;
       }
       else if (cnt_bound_type == trajopt_ifopt::BoundsType::UPPER_BOUND)
       {
         cache_slack_gradient.emplace_back(coeff);
-        cache_triplets_2.emplace_back(constraint_matrix_row + k, current_var_index++, -1.0);
+        cache_triplets_2.emplace_back(row, current_var_index++, -1.0);
         ++cvp.n_slack_vars;
       }
       else
