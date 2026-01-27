@@ -41,6 +41,7 @@ AbsoluteCost::AbsoluteCost(ConstraintSet::Ptr constraint, const Eigen::Ref<const
   , n_constraints_(constraint_->getRows())
   , weights_(weights.cwiseAbs())  // must be positive
 {
+  non_zeros_ = weights.size();
 }
 
 int AbsoluteCost::update()

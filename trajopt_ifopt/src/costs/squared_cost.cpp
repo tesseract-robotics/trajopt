@@ -41,6 +41,7 @@ SquaredCost::SquaredCost(ConstraintSet::Ptr constraint, const Eigen::Ref<const E
   , n_constraints_(constraint_->getRows())
   , weights_(weights.cwiseAbs())
 {
+  non_zeros_ = weights.size();
 }
 
 int SquaredCost::update()

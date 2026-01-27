@@ -68,23 +68,20 @@ void Problem::setVariables(const double* x)
   costs_.update();
 }
 
-double Problem::evaluateCostFunction(const double* x)
+double Problem::evaluateCostFunction()
 {
   Eigen::VectorXd g = Eigen::VectorXd::Zero(1);
   if (hasCostTerms())
-  {
-    setVariables(x);
     g = costs_.getValues();
-  }
+
   return g(0);
 }
 
-Eigen::VectorXd Problem::evaluateCostFunctionGradient(const double* x,
-                                                      bool use_finite_difference_approximation,
-                                                      double epsilon)
+Eigen::VectorXd Problem::evaluateCostFunctionGradient(bool use_finite_difference_approximation, double epsilon)
 {
   int n = getNumberOfOptimizationVariables();
   Jacobian jac = Jacobian(1, n);
+  Eigen::VectorXd x = getVariableValues();
   if (hasCostTerms())
   {
     if (use_finite_difference_approximation)
@@ -92,19 +89,20 @@ Eigen::VectorXd Problem::evaluateCostFunctionGradient(const double* x,
       double step_size = epsilon;
 
       // calculate forward difference by disturbing each optimization variable
-      double g = evaluateCostFunction(x);
-      std::vector<double> x_new(x, x + n);
+      double g = evaluateCostFunction();
+      std::vector<double> x_new(x.data(), x.data() + x.size());
       for (std::size_t i = 0; i < n; ++i)
       {
         x_new[i] += step_size;  // disturb
-        double g_new = evaluateCostFunction(x_new.data());
+        setVariables(x_new.data());
+        double g_new = evaluateCostFunction();
         jac.coeffRef(0, static_cast<Eigen::Index>(i)) = (g_new - g) / step_size;
-        x_new[i] = x[i];  // reset for next iteration
+        x_new[i] = x[static_cast<Eigen::Index>(i)];  // reset for next iteration
       }
+      setVariables(x.data());
     }
     else
     {
-      setVariables(x);
       jac = costs_.getJacobian();
     }
   }
@@ -116,17 +114,12 @@ std::vector<Bounds> Problem::getBoundsOnConstraints() const { return constraints
 
 int Problem::getNumberOfConstraints() const { return static_cast<int>(getBoundsOnConstraints().size()); }
 
-Eigen::VectorXd Problem::evaluateConstraints(const double* x)
-{
-  setVariables(x);
-  return constraints_.getValues();
-}
+Eigen::VectorXd Problem::evaluateConstraints() { return constraints_.getValues(); }
 
 bool Problem::hasCostTerms() const { return costs_.getRows() > 0; }
 
-void Problem::evalNonzerosOfJacobian(const double* x, double* values)
+void Problem::evalNonzerosOfJacobian(double* values) const
 {
-  setVariables(x);
   Jacobian jac = getJacobianOfConstraints();
 
   jac.makeCompressed();  // so the valuePtr() is dense and accurate

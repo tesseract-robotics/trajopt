@@ -120,7 +120,8 @@ TEST(CostWrapperUnit, SquaredCost)  // NOLINT
   auto cost = std::make_shared<trajopt_ifopt::SquaredCost>(cnt);
   nlp.addCostSet(cost);
 
-  auto exact_jac = nlp.evaluateCostFunctionGradient(var->value().data());
+  nlp.setVariables(var->value().data());
+  auto exact_jac = nlp.evaluateCostFunctionGradient();
   auto numerical_jac = trajopt_ifopt::calcNumericalCostGradient(var->value().data(), nlp, 1e-8);
 
   EXPECT_NEAR(exact_jac(0, 0), numerical_jac(0, 0), 1e-6);
@@ -161,7 +162,8 @@ TEST(CostWrapperUnit, WeightedSquaredCost)  // NOLINT
   auto cost = std::make_shared<trajopt_ifopt::SquaredCost>(cnt, weights);
   nlp.addCostSet(cost);
 
-  auto exact_jac = nlp.evaluateCostFunctionGradient(var->value().data());
+  nlp.setVariables(var->value().data());
+  auto exact_jac = nlp.evaluateCostFunctionGradient();
   auto numerical_jac = trajopt_ifopt::calcNumericalCostGradient(var->value().data(), nlp, 1e-8);
 
   EXPECT_NEAR(exact_jac(0, 0), numerical_jac(0, 0), 1e-6);
@@ -200,7 +202,8 @@ TEST(CostWrapperUnit, AbsoluteCost)  // NOLINT
   auto cost = std::make_shared<trajopt_ifopt::AbsoluteCost>(cnt);
   nlp.addCostSet(cost);
 
-  auto exact_jac = nlp.evaluateCostFunctionGradient(var->value().data());
+  nlp.setVariables(var->value().data());
+  auto exact_jac = nlp.evaluateCostFunctionGradient();
   auto numerical_jac = trajopt_ifopt::calcNumericalCostGradient(var->value().data(), nlp, 1e-8);
 
   EXPECT_NEAR(exact_jac(0, 0), numerical_jac(0, 0), 1e-6);
@@ -241,7 +244,8 @@ TEST(CostWrapperUnit, WeightedAbsoluteCost)  // NOLINT
   auto cost = std::make_shared<trajopt_ifopt::AbsoluteCost>(cnt, weights);
   nlp.addCostSet(cost);
 
-  auto exact_jac = nlp.evaluateCostFunctionGradient(var->value().data());
+  nlp.setVariables(var->value().data());
+  auto exact_jac = nlp.evaluateCostFunctionGradient();
   auto numerical_jac = trajopt_ifopt::calcNumericalCostGradient(var->value().data(), nlp, 1e-8);  // NOLINT
 
   EXPECT_NEAR(exact_jac(0, 0), numerical_jac(0, 0), 1e-6);
