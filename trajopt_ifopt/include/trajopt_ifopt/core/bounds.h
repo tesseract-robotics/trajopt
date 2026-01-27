@@ -42,33 +42,33 @@ namespace trajopt_ifopt
  * This enum describes the shape of a bound interval [lower, upper] associated with a scalar expression g(x).
  * It is commonly used to determine how a constraint row should be modeled in a QP/NLP:
  *
- *   - UNBOUNDED:   (-inf, +inf)            => no restriction on g(x)
- *   - EQUALITY:    (v, v)                  => g(x) == v
- *   - LOWER_BOUND: (l, +inf)               => l <= g(x)
- *   - UPPER_BOUND: (-inf, u)               => g(x) <= u
- *   - RANGE_BOUND: (l, u) with l < u       => l <= g(x) <= u
+ *   - kUnbounded:   (-inf, +inf)            => no restriction on g(x)
+ *   - kEquality:    (v, v)                  => g(x) == v
+ *   - kLowerBound: (l, +inf)               => l <= g(x)
+ *   - kUpperBound: (-inf, u)               => g(x) <= u
+ *   - kRangeBound: (l, u) with l < u       => l <= g(x) <= u
  *
  * Notes:
  *   - "Finite" means the value is not +/-infinity.
- *   - EQUALITY is typically detected when |upper - lower| <= eps.
- *   - RANGE_BOUND is the two-sided finite bound case (sometimes called a "boxed bound" or "interval bound").
+ *   - kEquality is typically detected when |upper - lower| <= eps.
+ *   - kRangeBound is the two-sided finite bound case (sometimes called a "boxed bound" or "interval bound").
  */
 enum class BoundsType : std::uint8_t
 {
   /** @brief No finite lower or upper bound: (-inf, +inf). */
-  UNBOUNDED = 0,
+  kUnbounded = 0,
 
   /** @brief Equality bound: (v, v) meaning g(x) == v (within a tolerance). */
-  EQUALITY,
+  kEquality,
 
   /** @brief Lower-bounded only: (l, +inf) meaning l <= g(x). */
-  LOWER_BOUND,
+  kLowerBound,
 
   /** @brief Upper-bounded only: (-inf, u) meaning g(x) <= u. */
-  UPPER_BOUND,
+  kUpperBound,
 
   /** @brief Two-sided bound: (l, u) with l < u meaning l <= g(x) <= u. */
-  RANGE_BOUND,
+  kRangeBound,
 };
 
 /**
@@ -183,7 +183,7 @@ private:
   double upper_{ 0 };
 
   /** @brief Cached classification of the current [lower, upper] interval. */
-  BoundsType type_{ BoundsType::EQUALITY };
+  BoundsType type_{ BoundsType::kEquality };
 
   /**
    * @brief Recompute @ref type_ from the current @ref lower_ and @ref upper_.

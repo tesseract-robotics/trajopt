@@ -230,7 +230,7 @@ void runCastAttachedLinkWithGeomTest(const trajopt_sqp::QPProblem::Ptr& qp_probl
   auto vel_target = Eigen::VectorXd::Zero(2);
   auto vel_coeff = Eigen::VectorXd::Ones(2);
   qp_problem->addCostSet(std::make_shared<trajopt_ifopt::JointVelConstraint>(vel_target, vars, vel_coeff),
-                         trajopt_sqp::CostPenaltyType::SQUARED);
+                         trajopt_sqp::CostPenaltyType::kSquared);
 
   qp_problem->setup();
   qp_problem->print();
@@ -252,7 +252,7 @@ void runCastAttachedLinkWithGeomTest(const trajopt_sqp::QPProblem::Ptr& qp_probl
   Eigen::VectorXd x = qp_problem->getVariableValues();
   std::cout << x.transpose() << '\n';
 
-  EXPECT_TRUE(solver.getStatus() == trajopt_sqp::SQPStatus::NLP_CONVERGED);
+  EXPECT_TRUE(solver.getStatus() == trajopt_sqp::SQPStatus::kConverged);
 
   tesseract_common::TrajArray inputs(3, 2);
   inputs << -1.9, 0, 0, 1.9, 1.9, 3.8;
@@ -388,7 +388,7 @@ void runCastAttachedLinkWithoutGeomTest(const trajopt_sqp::QPProblem::Ptr& qp_pr
   Eigen::VectorXd x = qp_problem->getVariableValues();
   std::cout << x.transpose() << '\n';
 
-  EXPECT_TRUE(solver.getStatus() == trajopt_sqp::SQPStatus::NLP_CONVERGED);
+  EXPECT_TRUE(solver.getStatus() == trajopt_sqp::SQPStatus::kConverged);
 
   tesseract_common::TrajArray inputs(3, 2);
   inputs << -1.9, 0, 0, 1.9, 1.9, 3.8;

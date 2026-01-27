@@ -105,7 +105,7 @@ void runAccelerationConstraintOptimizationTest(const trajopt_sqp::QPProblem::Ptr
   const Eigen::VectorXd accel_target = Eigen::VectorXd::Zero(7);
   coeffs = Eigen::VectorXd::Constant(1, 1);
   auto accel_constraint = std::make_shared<trajopt_ifopt::JointAccelConstraint>(accel_target, vars, coeffs, "ja");
-  qp_problem->addCostSet(accel_constraint, trajopt_sqp::CostPenaltyType::SQUARED);
+  qp_problem->addCostSet(accel_constraint, trajopt_sqp::CostPenaltyType::kSquared);
 
   qp_problem->setup();
 

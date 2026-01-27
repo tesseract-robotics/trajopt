@@ -76,13 +76,13 @@ static void BM_TRAJOPT_IFOPT_SIMPLE_COLLISION_SOLVE(benchmark::State& state, con
     DiscreteCollisionEvaluator::Ptr collision_cost_evaluator = std::make_shared<SingleTimestepCollisionEvaluator>(
         collision_cost_cache, manip, env, *trajopt_collision_cost_config);
     auto collision_cost = std::make_shared<DiscreteCollisionConstraintD>(collision_cost_evaluator, vars[0]);
-    qp_problem->addCostSet(collision_cost, trajopt_sqp::CostPenaltyType::HINGE);
+    qp_problem->addCostSet(collision_cost, trajopt_sqp::CostPenaltyType::kHinge);
 
     Eigen::VectorXd coeffs = Eigen::VectorXd::Constant(2, 1);
     for (const auto& var : vars)
     {
       auto jp_cost = std::make_shared<JointPosConstraint>(Eigen::Vector2d(0, 0), var, coeffs);
-      qp_problem->addCostSet(jp_cost, trajopt_sqp::CostPenaltyType::SQUARED);
+      qp_problem->addCostSet(jp_cost, trajopt_sqp::CostPenaltyType::kSquared);
     }
 
     qp_problem->setup();
@@ -141,7 +141,7 @@ static void BM_TRAJOPT_IFOPT_PLANNING_SOLVE(benchmark::State& state, const Envir
     {
       Eigen::VectorXd coeffs = Eigen::VectorXd::Constant(1, 1);
       auto cnt = std::make_shared<JointVelConstraint>(Eigen::VectorXd::Zero(7), vars, coeffs);
-      qp_problem->addCostSet(cnt, trajopt_sqp::CostPenaltyType::SQUARED);
+      qp_problem->addCostSet(cnt, trajopt_sqp::CostPenaltyType::kSquared);
     }
 
     // Add constraints
@@ -176,7 +176,7 @@ static void BM_TRAJOPT_IFOPT_PLANNING_SOLVE(benchmark::State& state, const Envir
       auto cnt = std::make_shared<ContinuousCollisionConstraintD>(
           collision_evaluator, position_vars, position_vars_fixed[0], position_vars_fixed[1]);
 
-      qp_problem->addCostSet(cnt, trajopt_sqp::CostPenaltyType::HINGE);
+      qp_problem->addCostSet(cnt, trajopt_sqp::CostPenaltyType::kHinge);
     }
 
     qp_problem->setup();

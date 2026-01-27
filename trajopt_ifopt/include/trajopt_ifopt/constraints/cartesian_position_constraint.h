@@ -48,9 +48,9 @@ struct CartPosInfo
 
   enum class Type : std::uint8_t
   {
-    TARGET_ACTIVE,
-    SOURCE_ACTIVE,
-    BOTH_ACTIVE
+    kTargetActive,
+    kSourceActive,
+    kBothActive
   };
 
   CartPosInfo() = default;
@@ -77,7 +77,7 @@ struct CartPosInfo
   Eigen::Isometry3d target_frame_offset;
 
   /** @brief indicates which link is active */
-  Type type{ Type::TARGET_ACTIVE };
+  Type type{ Type::kTargetActive };
 
   /**
    * @brief This is a vector of indices to be returned Default: {0, 1, 2, 3, 4, 5}

@@ -106,7 +106,7 @@ void runJerkConstraintOptimizationTest(const trajopt_sqp::QPProblem::Ptr& qp_pro
   const Eigen::VectorXd jerk_target = Eigen::VectorXd::Zero(7);
   coeffs = Eigen::VectorXd::Constant(1, 1);
   auto jerk_constraint = std::make_shared<trajopt_ifopt::JointJerkConstraint>(jerk_target, vars, coeffs, "ja");
-  qp_problem->addCostSet(jerk_constraint, trajopt_sqp::CostPenaltyType::SQUARED);
+  qp_problem->addCostSet(jerk_constraint, trajopt_sqp::CostPenaltyType::kSquared);
 
   qp_problem->setup();
 

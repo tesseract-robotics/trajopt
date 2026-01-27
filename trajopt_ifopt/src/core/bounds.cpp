@@ -77,10 +77,10 @@ void Bounds::operator-=(double scalar)
 void Bounds::updateType()
 {
   if (!isFinite(lower_) && !isFinite(upper_))
-    type_ = BoundsType::UNBOUNDED;
+    type_ = BoundsType::kUnbounded;
   else if (isFinite(lower_) && isFinite(upper_))
-    type_ = (std::abs(upper_ - lower_) < 1e-8) ? BoundsType::EQUALITY : BoundsType::RANGE_BOUND;
+    type_ = (std::abs(upper_ - lower_) < 1e-8) ? BoundsType::kEquality : BoundsType::kRangeBound;
   else
-    type_ = (isFinite(lower_)) ? BoundsType::LOWER_BOUND : BoundsType::UPPER_BOUND;
+    type_ = (isFinite(lower_)) ? BoundsType::kLowerBound : BoundsType::kUpperBound;
 }
 }  // namespace trajopt_ifopt

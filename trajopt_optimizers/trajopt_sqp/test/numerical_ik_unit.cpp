@@ -146,7 +146,7 @@ void runNumericalIKTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const Env
 
   const Eigen::VectorXd x = qp_problem->getVariableValues();
 
-  EXPECT_TRUE(solver.getStatus() == trajopt_sqp::SQPStatus::NLP_CONVERGED);
+  EXPECT_TRUE(solver.getStatus() == trajopt_sqp::SQPStatus::kConverged);
 
   Eigen::Isometry3d final_pose = manip->calcFwdKin(x).at("l_gripper_tool_frame");
 
@@ -239,7 +239,7 @@ void runNumericalIKWithToleranceTest(const trajopt_sqp::QPProblem::Ptr& qp_probl
 
   const Eigen::VectorXd x = qp_problem->getVariableValues();
 
-  EXPECT_TRUE(solver.getStatus() == trajopt_sqp::SQPStatus::NLP_CONVERGED);
+  EXPECT_TRUE(solver.getStatus() == trajopt_sqp::SQPStatus::kConverged);
 
   Eigen::Isometry3d final_pose = manip->calcFwdKin(x).at("l_gripper_tool_frame");
 

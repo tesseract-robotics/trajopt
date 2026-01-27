@@ -31,11 +31,27 @@
 
 namespace trajopt_sqp
 {
+/**
+ * @brief Status codes describing the lifecycle/result of the QP solver.
+ *
+ * These values are intended for high-level SQP/trust-region logic to track whether the
+ * underlying QP solver is ready to be used, and whether the most recent solve was successful.
+ */
 enum class QPSolverStatus : std::uint8_t
 {
-  UNITIALIZED,
-  INITIALIZED,
-  QP_ERROR
+  /** @brief Solver has not been initialized (e.g., no problem data has been provided yet). */
+  kUninitialized,
+
+  /** @brief Solver has been initialized and is ready to solve QP instances. */
+  kInitialized,
+
+  /**
+   * @brief The QP solver reported a failure on initialization or on the most recent solve.
+   *
+   * Typical reasons include infeasibility, numerical issues, invalid problem data, or the solver
+   * failing to reach a solution under its configured settings/limits.
+   */
+  kFailed
 };
 
 /**

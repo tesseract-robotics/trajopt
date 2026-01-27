@@ -57,7 +57,7 @@ namespace trajopt_ifopt
  *       finite upper with lb < ub). Equality bounds (lb == ub) and one-sided bounds are usually
  *       unchanged.
  */
-enum class RangeBoundHandling
+enum class RangeBoundHandling : std::uint8_t
 {
   /** @brief Do not split range bounds; keep them as a single row with [lb, ub]. */
   kKeepAsIs = 0,

@@ -63,16 +63,16 @@ namespace trajopt_sqp
 {
 enum class ComponentInfoType : std::uint8_t
 {
-  OBJECTIVE_SQUARED = 0,
-  PENALTY_CONSTRAINT_HINGE,
-  PENALTY_CONSTRAINT_ABS,
-  MERIT_CONSTRAINT,
-  UNKNOWN
+  kObjectiveSquared = 0,
+  kPenaltyHinge,
+  kPenaltyAbsolute,
+  kMeritConstraint,
+  kUnknown
 };
 
 struct ComponentInfo
 {
-  ComponentInfoType type{ ComponentInfoType::UNKNOWN };
+  ComponentInfoType type{ ComponentInfoType::kUnknown };
   Eigen::Index rows{ 0 };
   Eigen::Index non_zeros{ 0 };
   Eigen::VectorXd coeffs;
@@ -413,11 +413,11 @@ void TrajOptQPProblem::Implementation::addCostSet(std::shared_ptr<trajopt_ifopt:
   const std::vector<trajopt_ifopt::Bounds> cost_bounds = constraint_set->getBounds();
   switch (penalty_type)
   {
-    case CostPenaltyType::SQUARED:
+    case CostPenaltyType::kSquared:
     {
       for (const auto& bound : cost_bounds)
       {
-        if (bound.getType() != trajopt_ifopt::BoundsType::EQUALITY)
+        if (bound.getType() != trajopt_ifopt::BoundsType::kEquality)
           throw std::runtime_error("TrajOpt Ifopt squared cost must have equality bounds!");
       }
 
@@ -428,11 +428,11 @@ void TrajOptQPProblem::Implementation::addCostSet(std::shared_ptr<trajopt_ifopt:
 
       break;
     }
-    case CostPenaltyType::ABSOLUTE:
+    case CostPenaltyType::kAbsolute:
     {
       for (const auto& bound : cost_bounds)
       {
-        if (bound.getType() != trajopt_ifopt::BoundsType::EQUALITY)
+        if (bound.getType() != trajopt_ifopt::BoundsType::kEquality)
           throw std::runtime_error("TrajOpt Ifopt absolute cost must have equality bounds!");
       }
 
@@ -443,12 +443,12 @@ void TrajOptQPProblem::Implementation::addCostSet(std::shared_ptr<trajopt_ifopt:
 
       break;
     }
-    case CostPenaltyType::HINGE:
+    case CostPenaltyType::kHinge:
     {
       for (const auto& bound : cost_bounds)
       {
-        if (bound.getType() != trajopt_ifopt::BoundsType::LOWER_BOUND &&
-            bound.getType() != trajopt_ifopt::BoundsType::UPPER_BOUND)
+        if (bound.getType() != trajopt_ifopt::BoundsType::kLowerBound &&
+            bound.getType() != trajopt_ifopt::BoundsType::kUpperBound)
           throw std::runtime_error("TrajOpt Ifopt hinge cost must have inequality bounds!");
       }
 
@@ -636,7 +636,7 @@ void TrajOptQPProblem::Implementation::setup()
   for (std::size_t i = 0; i < objective_terms.size(); ++i)
   {
     cost_names.push_back(objective_terms[i]->getName());
-    cvp.objective_term_infos[i].type = ComponentInfoType::OBJECTIVE_SQUARED;
+    cvp.objective_term_infos[i].type = ComponentInfoType::kObjectiveSquared;
   }
 
   for (std::size_t i = 0; i < penalty_constraints.size(); ++i)
@@ -644,8 +644,8 @@ void TrajOptQPProblem::Implementation::setup()
     cost_names.push_back(penalty_constraints[i]->getName());
 
     auto& info = cvp.penalty_constraint_infos[i];
-    info.type = (i < (hinge_costs.size() + dyn_hinge_costs.size())) ? ComponentInfoType::PENALTY_CONSTRAINT_HINGE :
-                                                                      ComponentInfoType::PENALTY_CONSTRAINT_ABS;
+    info.type = (i < (hinge_costs.size() + dyn_hinge_costs.size())) ? ComponentInfoType::kPenaltyHinge :
+                                                                      ComponentInfoType::kPenaltyAbsolute;
     cvp.constraint_term_infos.emplace_back(info);
   }
 
@@ -661,7 +661,7 @@ void TrajOptQPProblem::Implementation::setup()
     constraint_names.push_back(merit_constraints[i]->getName());
 
     auto& info = cvp.merit_constraint_infos[i];
-    info.type = ComponentInfoType::MERIT_CONSTRAINT;
+    info.type = ComponentInfoType::kMeritConstraint;
     cvp.constraint_term_infos.emplace_back(info);
   }
 
@@ -743,7 +743,7 @@ void TrajOptQPProblem::Implementation::convexify()
     cc.noalias() -= jac * x_initial;
 
     const double merit_coeff =
-        (info.type == ComponentInfoType::MERIT_CONSTRAINT) ? constraint_merit_coeff(merit_constraint_index++) : 1;
+        (info.type == ComponentInfoType::kMeritConstraint) ? constraint_merit_coeff(merit_constraint_index++) : 1;
     for (Eigen::Index k = 0; k < jac.outerSize(); ++k)
     {
       for (trajopt_ifopt::Jacobian::InnerIterator it(jac, k); it; ++it)
@@ -764,7 +764,7 @@ void TrajOptQPProblem::Implementation::convexify()
       //////////////////////////////////////////////////////////
 
       const double coeff = merit_coeff * info.coeffs(k);
-      if (cnt_bound_type == trajopt_ifopt::BoundsType::EQUALITY)
+      if (cnt_bound_type == trajopt_ifopt::BoundsType::kEquality)
       {
         cache_slack_gradient.emplace_back(coeff);
         cache_slack_gradient.emplace_back(coeff);
@@ -772,13 +772,13 @@ void TrajOptQPProblem::Implementation::convexify()
         cache_triplets_2.emplace_back(row, current_var_index++, -1.0);
         cvp.n_slack_vars += 2;
       }
-      else if (cnt_bound_type == trajopt_ifopt::BoundsType::LOWER_BOUND)
+      else if (cnt_bound_type == trajopt_ifopt::BoundsType::kLowerBound)
       {
         cache_slack_gradient.emplace_back(coeff);
         cache_triplets_2.emplace_back(row, current_var_index++, 1.0);
         ++cvp.n_slack_vars;
       }
-      else if (cnt_bound_type == trajopt_ifopt::BoundsType::UPPER_BOUND)
+      else if (cnt_bound_type == trajopt_ifopt::BoundsType::kUpperBound)
       {
         cache_slack_gradient.emplace_back(coeff);
         cache_triplets_2.emplace_back(row, current_var_index++, -1.0);

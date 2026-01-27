@@ -119,7 +119,7 @@ JointPosConstraint::JointPosConstraint(const std::vector<Bounds>& bounds,
     for (std::size_t i = 0; i < bounds.size(); ++i)
     {
       const auto& b = bounds[i];
-      if (b.getType() == BoundsType::RANGE_BOUND)
+      if (b.getType() == BoundsType::kRangeBound)
       {
         bounds_.emplace_back(b.getLower(), double(INFINITY));
         bounds_.emplace_back(-double(INFINITY), b.getUpper());

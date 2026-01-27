@@ -67,11 +67,11 @@ CartPosInfo::CartPosInfo(std::shared_ptr<const tesseract_kinematics::JointGroup>
   const bool target_active = this->manip->isActiveLinkName(this->target_frame);
   const bool source_active = this->manip->isActiveLinkName(this->source_frame);
   if (target_active && source_active)
-    type = Type::BOTH_ACTIVE;
+    type = Type::kBothActive;
   else if (target_active)
-    type = Type::TARGET_ACTIVE;
+    type = Type::kTargetActive;
   else if (source_active)
-    type = Type::SOURCE_ACTIVE;
+    type = Type::kSourceActive;
   else
     throw std::runtime_error("CartPosInfo: Target and Source are both static links.");
 }
@@ -111,7 +111,7 @@ CartPosConstraint::CartPosConstraint(CartPosInfo info,
     for (std::size_t i = 0; i < bounds.size(); ++i)
     {
       const auto& b = bounds[i];
-      if (b.getType() == BoundsType::RANGE_BOUND)
+      if (b.getType() == BoundsType::kRangeBound)
       {
         bounds_.emplace_back(b.getLower(), double(INFINITY));
         bounds_.emplace_back(-double(INFINITY), b.getUpper());
@@ -137,7 +137,7 @@ CartPosConstraint::CartPosConstraint(CartPosInfo info,
 
   switch (info_.type)
   {
-    case CartPosInfo::Type::TARGET_ACTIVE:
+    case CartPosInfo::Type::kTargetActive:
     {
       error_function_ = [this](const Eigen::Isometry3d& target_tf,
                                const Eigen::Isometry3d& source_tf) -> Eigen::VectorXd {
@@ -170,7 +170,7 @@ CartPosConstraint::CartPosConstraint(CartPosInfo info,
 
       break;
     }
-    case CartPosInfo::Type::SOURCE_ACTIVE:
+    case CartPosInfo::Type::kSourceActive:
     {
       error_function_ = [this](const Eigen::Isometry3d& target_tf,
                                const Eigen::Isometry3d& source_tf) -> Eigen::VectorXd {
@@ -202,7 +202,7 @@ CartPosConstraint::CartPosConstraint(CartPosInfo info,
       };
       break;
     }
-    case CartPosInfo::Type::BOTH_ACTIVE:
+    case CartPosInfo::Type::kBothActive:
     {
       error_function_ = [this](const Eigen::Isometry3d& target_tf,
                                const Eigen::Isometry3d& source_tf) -> Eigen::VectorXd {
@@ -282,7 +282,7 @@ void CartPosConstraint::calcJacobianBlock(const Eigen::Ref<const Eigen::VectorXd
   triplet_list.reserve(static_cast<std::size_t>(n_dof_ * info_.indices.size()));
 
   constexpr double eps{ 1e-5 };
-  if (use_numeric_differentiation || info_.type == CartPosInfo::Type::BOTH_ACTIVE)
+  if (use_numeric_differentiation || info_.type == CartPosInfo::Type::kBothActive)
   {
     Eigen::MatrixXd jac0(info_.indices.size(), joint_vals.size());
     Eigen::VectorXd dof_vals_pert = joint_vals;
@@ -325,7 +325,7 @@ void CartPosConstraint::calcJacobianBlock(const Eigen::Ref<const Eigen::VectorXd
     // Calculate the jacobian
     info_.manip->calcFwdKin(transforms_cache_, joint_vals);
     Eigen::MatrixXd jac0;
-    if (info_.type == CartPosInfo::Type::TARGET_ACTIVE)
+    if (info_.type == CartPosInfo::Type::kTargetActive)
     {
       jac0 = info_.manip->calcJacobian(joint_vals, info_.target_frame, info_.target_frame_offset.translation());
       tesseract_common::jacobianChangeBase(

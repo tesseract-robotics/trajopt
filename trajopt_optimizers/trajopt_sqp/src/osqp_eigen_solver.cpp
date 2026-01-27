@@ -68,7 +68,7 @@ bool OSQPEigenSolver::init(Eigen::Index num_vars, Eigen::Index num_cnts, const E
   solver_->data()->setNumberOfVariables(static_cast<int>(num_vars_));
   solver_->data()->setNumberOfConstraints(static_cast<int>(num_cnts_));
 
-  solver_status_ = QPSolverStatus::INITIALIZED;
+  solver_status_ = QPSolverStatus::kInitialized;
 
   return true;
 }
@@ -86,7 +86,7 @@ bool OSQPEigenSolver::clear()
   gradient_.resize(0);
   bounds_lower_.resize(0);
   bounds_upper_.resize(0);
-  solver_status_ = QPSolverStatus::UNITIALIZED;
+  solver_status_ = QPSolverStatus::kUninitialized;
   return true;
 }
 
@@ -97,7 +97,7 @@ bool OSQPEigenSolver::solve()
   {
     if (!solver_->initSolver())
     {
-      solver_status_ = QPSolverStatus::QP_ERROR;
+      solver_status_ = QPSolverStatus::kFailed;
       return false;
     }
   }
@@ -218,7 +218,7 @@ bool OSQPEigenSolver::solve()
     }
   }
 
-  solver_status_ = QPSolverStatus::QP_ERROR;
+  solver_status_ = QPSolverStatus::kFailed;
   return false;
 }
 
