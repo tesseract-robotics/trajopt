@@ -101,13 +101,17 @@ public:
                                                               const Eigen::Isometry3d&,
                                                               tesseract_common::TransformMap&)>;
 
-  CartPosConstraint(const CartPosInfo& info, std::shared_ptr<const Var> position_var, std::string name = "CartPos");
+  CartPosConstraint(const CartPosInfo& info,
+                    std::shared_ptr<const Var> position_var,
+                    std::string name = "CartPos",
+                    RangeBoundHandling range_bound_handling = RangeBoundHandling::kSplitToTwoInequalities);
 
   CartPosConstraint(CartPosInfo info,
                     std::shared_ptr<const Var> position_var,
                     const Eigen::VectorXd& coeffs,
                     const std::vector<Bounds>& bounds,
-                    std::string name = "CartPos");
+                    std::string name = "CartPos",
+                    RangeBoundHandling range_bound_handling = RangeBoundHandling::kSplitToTwoInequalities);
 
   int update() override { return rows_; }
 
@@ -190,6 +194,9 @@ private:
 
   /** @brief Pointers to the vars used by this constraint. */
   std::shared_ptr<const Var> position_var_;
+
+  /** @brief Policy for representing range bounds when building the constraint rows. */
+  RangeBoundHandling range_bound_handling_{ RangeBoundHandling::kSplitToTwoInequalities };
 
   /** @brief The kinematic information used when calculating error */
   CartPosInfo info_;
