@@ -28,11 +28,69 @@
 
 namespace trajopt_sqp
 {
+/**
+ * @brief Specifies how a constraint-like term is represented in the QP subproblem.
+ *
+ * This enum describes the penalty model used when a term is incorporated into the
+ * convexified QP (objective and/or constraints). Different penalty types imply
+ * different bound requirements and different auxiliary (slack) variable handling.
+ */
 enum class CostPenaltyType : std::uint8_t
 {
-  SQUARED,
-  ABSOLUTE,
-  HINGE
+  /**
+   * @brief Squared penalty (least-squares style).
+   *
+   * Interprets the term as a squared objective contribution, typically of the form:
+   * @code
+   *   w ∘ (g(x) - target)^2
+   * @endcode
+   * where @c w are per-row coefficients.
+   *
+   * Commonly used for "soft equality" costs. In this formulation the term usually
+   * expects equality-like bounds (lb == ub) to define the target value.
+   *
+   * @note This form is handled as a pure objective term (no additional QP constraint
+   *       rows or slack variables are required beyond what the solver already uses).
+   */
+  kSquared,
+
+  /**
+   * @brief Absolute-value penalty (L1 / |·| style).
+   *
+   * Models an equality-like residual with an absolute value cost, conceptually:
+   * @code
+   *   w ∘ |g(x) - target|
+   * @endcode
+   *
+   * This is typically implemented by introducing auxiliary variable(s) and adding
+   * constraint row(s) that relate those variables to the linearized residual so the
+   * QP objective can penalize the auxiliary variable(s).
+   *
+   * Commonly used for robust costs and sparsity-promoting penalties.
+   *
+   * @note In many setups this expects equality-like bounds (lb == ub) to define the
+   *       target/residual reference value.
+   */
+  kAbsolute,
+
+  /**
+   * @brief Hinge penalty (one-sided / max(0, ·) style).
+   *
+   * Penalizes only violations of an inequality bound, conceptually:
+   * @code
+   *   w ∘ max(0, g(x) - ub)   // for upper-bound constraints
+   *   w ∘ max(0, lb - g(x))   // for lower-bound constraints
+   * @endcode
+   *
+   * This is typically implemented by introducing a nonnegative slack variable and
+   * adding a constraint row that couples the slack to the linearized inequality,
+   * while the QP objective penalizes the slack.
+   *
+   * @note This form expects inequality-like bounds (LOWER_BOUND or UPPER_BOUND). Range
+   *       bounds may need special handling (e.g., split into two inequalities) prior
+   *       to applying a hinge penalty.
+   */
+  kHinge
 };
 
 /**
@@ -150,17 +208,20 @@ struct SQPResults
 };
 
 /**
- * @brief Status codes for the SQP Optimization
+ * @brief Status codes reported by the SQP solver.
+ *
+ * These values describe why an SQP run is still in progress, terminated
+ * successfully, or stopped early due to limits/errors.
  */
 enum class SQPStatus : std::uint8_t
 {
-  RUNNING,                 /**< Optimization is currently running */
-  NLP_CONVERGED,           /**< NLP Successfully converged */
-  ITERATION_LIMIT,         /**< SQP Optimization reached iteration limit */
-  PENALTY_ITERATION_LIMIT, /**< SQP Optimization reached penalty iteration limit */
-  OPT_TIME_LIMIT,          /**< SQP Optimization reached reached limit */
-  QP_SOLVER_ERROR,         /**< QP Solver failed */
-  CALLBACK_STOPPED         /**< Optimization stopped because callback returned false */
+  kRunning,               /**< Optimization is currently running */
+  kConverged,             /**< Optimization converged successfully */
+  kIterationLimit,        /**< Reached SQP iteration limit */
+  kPenaltyIterationLimit, /**< Reached penalty-outer-loop iteration limit */
+  kTimeLimit,             /**< Reached optimization time limit */
+  kQPSolveFailed,         /**< QP solve failed (solver error / no solution returned) */
+  kStoppedByCallback      /**< Stopped because callback returned false */
 };
 
 }  // namespace trajopt_sqp

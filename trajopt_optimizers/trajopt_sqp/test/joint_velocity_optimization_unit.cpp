@@ -104,7 +104,7 @@ void runVelocityConstraintOptimizationTest(const trajopt_sqp::QPProblem::Ptr& qp
   const Eigen::VectorXd vel_target = Eigen::VectorXd::Zero(7);
   coeffs = Eigen::VectorXd::Constant(1, 1);
   auto vel_constraint = std::make_shared<trajopt_ifopt::JointVelConstraint>(vel_target, vars, coeffs, "jv");
-  qp_problem->addCostSet(vel_constraint, trajopt_sqp::CostPenaltyType::SQUARED);
+  qp_problem->addCostSet(vel_constraint, trajopt_sqp::CostPenaltyType::kSquared);
 
   qp_problem->setup();
 

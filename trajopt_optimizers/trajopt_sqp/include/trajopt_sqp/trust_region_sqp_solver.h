@@ -122,7 +122,7 @@ public:
   std::shared_ptr<QPProblem> qp_problem;
 
 protected:
-  SQPStatus status_{ SQPStatus::QP_SOLVER_ERROR };
+  SQPStatus status_{ SQPStatus::kQPSolveFailed };
   SQPResults results_;
   std::vector<std::shared_ptr<SQPCallback>> callbacks_;
 

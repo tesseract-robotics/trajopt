@@ -91,7 +91,7 @@ private:
   Eigen::Index num_vars_{ 0 };
   Eigen::Index num_cnts_{ 0 };
 
-  QPSolverStatus solver_status_{ QPSolverStatus::UNITIALIZED };
+  QPSolverStatus solver_status_{ QPSolverStatus::kUninitialized };
 };
 
 }  // namespace trajopt_sqp

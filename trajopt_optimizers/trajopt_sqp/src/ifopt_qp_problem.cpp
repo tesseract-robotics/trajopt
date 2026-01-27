@@ -54,7 +54,7 @@ void IfoptQPProblem::addCostSet(std::shared_ptr<trajopt_ifopt::ConstraintSet> co
 
   switch (penalty_type)
   {
-    case CostPenaltyType::SQUARED:
+    case CostPenaltyType::kSquared:
     {
       // Must link the variables to the constraint since that happens in AddConstraintSet
       constraint_set->linkWithVariables(nlp_->getOptVariables());
@@ -62,7 +62,7 @@ void IfoptQPProblem::addCostSet(std::shared_ptr<trajopt_ifopt::ConstraintSet> co
       nlp_->addCostSet(std::move(cost));
       break;
     }
-    case CostPenaltyType::ABSOLUTE:
+    case CostPenaltyType::kAbsolute:
     {
       // Must link the variables to the constraint since that happens in AddConstraintSet
       constraint_set->linkWithVariables(nlp_->getOptVariables());
@@ -113,13 +113,13 @@ void IfoptQPProblem::setup()
     nlp_bounds_u[i] = b.getUpper();
 
     constraint_types_[static_cast<std::size_t>(i)] = b.getType();
-    if (b.getType() == trajopt_ifopt::BoundsType::EQUALITY)
+    if (b.getType() == trajopt_ifopt::BoundsType::kEquality)
     {
       // Add 2 slack variables for L1 loss
       num_qp_vars_ += 2;
       num_qp_cnts_ += 2;
     }
-    else if (b.getType() == trajopt_ifopt::BoundsType::LOWER_BOUND)
+    else if (b.getType() == trajopt_ifopt::BoundsType::kLowerBound)
     {
       // Add 1 slack variable for hinge loss
       num_qp_vars_ += 1;
@@ -233,14 +233,14 @@ void IfoptQPProblem::updateGradient()
     for (Eigen::Index i = 0; i < num_nlp_cnts_; i++)
     {
       const auto bounds_type = constraint_types_[static_cast<std::size_t>(i)];
-      if (bounds_type == trajopt_ifopt::BoundsType::EQUALITY)
+      if (bounds_type == trajopt_ifopt::BoundsType::kEquality)
       {
         gradient_[current_var_index] = constraint_merit_coeff_[i];
         gradient_[current_var_index + 1] = constraint_merit_coeff_[i];
 
         current_var_index += 2;
       }
-      else if (bounds_type == trajopt_ifopt::BoundsType::LOWER_BOUND)
+      else if (bounds_type == trajopt_ifopt::BoundsType::kLowerBound)
       {
         gradient_[current_var_index] = constraint_merit_coeff_[i];
         current_var_index++;
@@ -274,13 +274,13 @@ void IfoptQPProblem::linearizeConstraints()
   for (Eigen::Index i = 0; i < num_nlp_cnts_; i++)
   {
     const auto bounds_type = constraint_types_[static_cast<std::size_t>(i)];
-    if (bounds_type == trajopt_ifopt::BoundsType::EQUALITY)
+    if (bounds_type == trajopt_ifopt::BoundsType::kEquality)
     {
       tripletList.emplace_back(i, current_column_index, 1);
       tripletList.emplace_back(i, current_column_index + 1, -1);
       current_column_index += 2;
     }
-    else if (bounds_type == trajopt_ifopt::BoundsType::LOWER_BOUND)
+    else if (bounds_type == trajopt_ifopt::BoundsType::kLowerBound)
     {
       tripletList.emplace_back(i, current_column_index, -1);
       current_column_index++;
@@ -413,7 +413,7 @@ void IfoptQPProblem::updateSlackVariableBounds()
   for (Eigen::Index i = 0; i < num_nlp_cnts_; i++)
   {
     const auto bounds_type = constraint_types_[static_cast<std::size_t>(i)];
-    if (bounds_type == trajopt_ifopt::BoundsType::EQUALITY)
+    if (bounds_type == trajopt_ifopt::BoundsType::kEquality)
     {
       bounds_lower_[current_cnt_index] = 0;
       bounds_upper_[current_cnt_index] = double(INFINITY);
@@ -422,7 +422,7 @@ void IfoptQPProblem::updateSlackVariableBounds()
 
       current_cnt_index += 2;
     }
-    else if (bounds_type == trajopt_ifopt::BoundsType::LOWER_BOUND)
+    else if (bounds_type == trajopt_ifopt::BoundsType::kLowerBound)
     {
       bounds_lower_[current_cnt_index] = 0;
       bounds_upper_[current_cnt_index] = double(INFINITY);

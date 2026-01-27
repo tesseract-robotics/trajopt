@@ -84,7 +84,7 @@ const SQPResults& TrustRegionSQPSolver::getResults() { return results_; }
 
 void TrustRegionSQPSolver::solve(const QPProblem::Ptr& qp_problem)
 {
-  status_ = SQPStatus::RUNNING;
+  status_ = SQPStatus::kRunning;
 
   // Start time
   using Clock = std::chrono::steady_clock;
@@ -106,14 +106,14 @@ void TrustRegionSQPSolver::solve(const QPProblem::Ptr& qp_problem)
       if (elapsed_time > params.max_time)
       {
         CONSOLE_BRIDGE_logDebug("Elapsed time %f has exceeded max time %f", elapsed_time, params.max_time);
-        status_ = SQPStatus::OPT_TIME_LIMIT;
+        status_ = SQPStatus::kTimeLimit;
         break;
       }
 
       if (results_.overall_iteration >= params.max_iterations)
       {
         CONSOLE_BRIDGE_logDebug("Iteration limit");
-        status_ = SQPStatus::ITERATION_LIMIT;
+        status_ = SQPStatus::kIterationLimit;
         break;
       }
 
@@ -124,16 +124,16 @@ void TrustRegionSQPSolver::solve(const QPProblem::Ptr& qp_problem)
     // Check if constraints are satisfied
     if (verifySQPSolverConvergence())
     {
-      status_ = SQPStatus::NLP_CONVERGED;
+      status_ = SQPStatus::kConverged;
       break;
     }
 
     // If status is iteration limit or time limit we need to exit penalty iteration loop
-    if (status_ == SQPStatus::ITERATION_LIMIT || status_ == SQPStatus::OPT_TIME_LIMIT)
+    if (status_ == SQPStatus::kIterationLimit || status_ == SQPStatus::kTimeLimit)
       break;
 
     // Set status to running
-    status_ = SQPStatus::RUNNING;
+    status_ = SQPStatus::kRunning;
 
     // ---------------------------
     // Constraints are not satisfied!
@@ -143,9 +143,9 @@ void TrustRegionSQPSolver::solve(const QPProblem::Ptr& qp_problem)
   }  // Penalty adjustment loop
 
   // If status is still set to running the penalty iteration limit was reached
-  if (status_ == SQPStatus::RUNNING)
+  if (status_ == SQPStatus::kRunning)
   {
-    status_ = SQPStatus::PENALTY_ITERATION_LIMIT;
+    status_ = SQPStatus::kPenaltyIterationLimit;
     CONSOLE_BRIDGE_logDebug("Penalty iteration limit, optimization couldn't satisfy all constraints");
   }
 
@@ -217,13 +217,13 @@ bool TrustRegionSQPSolver::stepSQPSolver()
   runTrustRegionLoop();
 
   // Check if the NLP has converged
-  if (status_ == SQPStatus::NLP_CONVERGED)
+  if (status_ == SQPStatus::kConverged)
     return true;
 
   if (results_.box_size.maxCoeff() < params.min_trust_box_size)
   {
     CONSOLE_BRIDGE_logDebug("Converged because trust region is tiny");
-    status_ = SQPStatus::NLP_CONVERGED;
+    status_ = SQPStatus::kConverged;
     return true;
   }
   return false;
@@ -244,10 +244,10 @@ void TrustRegionSQPSolver::runTrustRegionLoop()
     // Solve the current QP problem
     status_ = solveQPProblem();
 
-    if (status_ == SQPStatus::CALLBACK_STOPPED)
+    if (status_ == SQPStatus::kStoppedByCallback)
       return;  // Respect callbacks and exit gracefully
 
-    if (status_ != SQPStatus::RUNNING)
+    if (status_ != SQPStatus::kRunning)
     {
       qp_solver_failures++;
       CONSOLE_BRIDGE_logWarn("Convex solver failed (%d/%d)!", qp_solver_failures, params.max_qp_solver_failures);
@@ -290,7 +290,7 @@ void TrustRegionSQPSolver::runTrustRegionLoop()
       CONSOLE_BRIDGE_logDebug("Converged because improvement was small (%.3e < %.3e)",
                               results_.approx_merit_improve,
                               params.min_approx_improve);
-      status_ = SQPStatus::NLP_CONVERGED;
+      status_ = SQPStatus::kConverged;
       return;
     }
 
@@ -300,7 +300,7 @@ void TrustRegionSQPSolver::runTrustRegionLoop()
     {
       CONSOLE_BRIDGE_logDebug(
           "Converged because improvement ratio was small (%.3e < %.3e)", approx_frac, params.min_approx_improve_frac);
-      status_ = SQPStatus::NLP_CONVERGED;
+      status_ = SQPStatus::kConverged;
       return;
     }
 
@@ -396,16 +396,16 @@ SQPStatus TrustRegionSQPSolver::solveQPProblem()
     qp_problem->setVariables(results_.best_var_vals.data());
 
     CONSOLE_BRIDGE_logError("Solver Failure");
-    return SQPStatus::QP_SOLVER_ERROR;
+    return SQPStatus::kQPSolveFailed;
   }
 
   // Check if any callbacks returned false
   if (!succeed)
   {
-    return SQPStatus::CALLBACK_STOPPED;
+    return SQPStatus::kStoppedByCallback;
   }
 
-  return SQPStatus::RUNNING;
+  return SQPStatus::kRunning;
 }
 
 bool TrustRegionSQPSolver::callCallbacks()

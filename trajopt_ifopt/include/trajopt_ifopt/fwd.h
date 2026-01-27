@@ -22,6 +22,7 @@ namespace trajopt_ifopt
 {
 // Core
 enum class BoundsType : std::uint8_t;
+enum class RangeBoundHandling : std::uint8_t;
 class Bounds;
 class Component;
 class Variables;

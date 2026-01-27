@@ -138,7 +138,7 @@ void runPlanningTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const Enviro
   {
     const Eigen::VectorXd coeffs = Eigen::VectorXd::Constant(1, 1);
     auto cnt = std::make_shared<JointVelConstraint>(Eigen::VectorXd::Zero(7), vars, coeffs);
-    qp_problem->addCostSet(cnt, trajopt_sqp::CostPenaltyType::SQUARED);
+    qp_problem->addCostSet(cnt, trajopt_sqp::CostPenaltyType::kSquared);
   }
 
   // Add constraints
@@ -173,7 +173,7 @@ void runPlanningTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const Enviro
     auto cnt = std::make_shared<trajopt_ifopt::ContinuousCollisionConstraintD>(
         collision_evaluator, position_vars, vars_fixed[0], vars_fixed[1]);
 
-    qp_problem->addCostSet(cnt, trajopt_sqp::CostPenaltyType::HINGE);
+    qp_problem->addCostSet(cnt, trajopt_sqp::CostPenaltyType::kHinge);
   }
 
   qp_problem->setup();
@@ -196,7 +196,7 @@ void runPlanningTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const Enviro
   Eigen::VectorXd x = qp_problem->getVariableValues();
   std::cout << x.transpose() << '\n';
 
-  EXPECT_TRUE(solver.getStatus() == trajopt_sqp::SQPStatus::NLP_CONVERGED);
+  EXPECT_TRUE(solver.getStatus() == trajopt_sqp::SQPStatus::kConverged);
 
   const Eigen::Map<tesseract_common::TrajArray> results(x.data(), 6, 7);
 
