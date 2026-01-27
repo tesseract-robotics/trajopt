@@ -61,8 +61,18 @@
 
 namespace trajopt_sqp
 {
+enum class ComponentInfoType : std::uint8_t
+{
+  OBJECTIVE_SQUARED = 0,
+  PENALTY_CONSTRAINT_HINGE,
+  PENALTY_CONSTRAINT_ABS,
+  MERIT_CONSTRAINT,
+  UNKNOWN
+};
+
 struct ComponentInfo
 {
+  ComponentInfoType type{ ComponentInfoType::UNKNOWN };
   Eigen::Index rows{ 0 };
   Eigen::Index non_zeros{ 0 };
   Eigen::VectorXd coeffs;
@@ -97,7 +107,7 @@ struct ConvexProblem
   trajopt_ifopt::Jacobian hessian;
   Eigen::VectorXd gradient;
   QuadExprs squared_objective_nlp;
-  Eigen::VectorXd squared_costs_target;
+  Eigen::VectorXd squared_objective_target;
 
   trajopt_ifopt::Jacobian constraint_matrix;
   Eigen::VectorXd constraint_constant;  // This should be the center of the bounds
@@ -536,19 +546,7 @@ void TrajOptQPProblem::Implementation::update()
   cvp.n_constraint_terms = cvp.n_penalty_constraints + cvp.n_merit_constraints;
   cvp.n_constraint_term_non_zeros = cvp.n_penalty_constraint_non_zeros + cvp.n_merit_constraint_non_zeros;
 
-  cvp.squared_costs_target = Eigen::VectorXd::Zero(cvp.n_objective_terms);
-
-  /** @todo move to confexify */
-  if (cvp.n_objective_terms > 0)
-  {
-    Eigen::Index row{ 0 };
-    for (const auto& cost : cvp.objective_term_infos)
-    {
-      for (const auto& b : cost.bounds)
-        cvp.squared_costs_target(row++) = b.getLower();
-    }
-  }
-
+  cvp.squared_objective_target = Eigen::VectorXd::Zero(cvp.n_objective_terms);
   cvp.constraint_constant = Eigen::VectorXd::Zero(cvp.n_constraint_terms);
 
   cvp.bounds_lower.resize(cvp.n_nlp_vars + cvp.n_penalty_constraints + cvp.n_merit_constraints);
@@ -631,11 +629,20 @@ void TrajOptQPProblem::Implementation::setup()
   // Define cost names
   cost_names.clear();
   cost_names.reserve(static_cast<std::size_t>(num_cost_components));
-  for (const auto& cost : objective_terms)
-    cost_names.push_back(cost->getName());
+  for (std::size_t i = 0; i < objective_terms.size(); ++i)
+  {
+    cost_names.push_back(objective_terms[i]->getName());
+    cvp.objective_term_infos[i].type = ComponentInfoType::OBJECTIVE_SQUARED;
+  }
 
-  for (const auto& cost : penalty_constraints)
-    cost_names.push_back(cost->getName());
+  for (std::size_t i = 0; i < penalty_constraints.size(); ++i)
+  {
+    cost_names.push_back(penalty_constraints[i]->getName());
+    if (i < (hinge_costs.size() + dyn_hinge_costs.size()))
+      cvp.penalty_constraint_infos[i].type = ComponentInfoType::PENALTY_CONSTRAINT_HINGE;
+    else
+      cvp.penalty_constraint_infos[i].type = ComponentInfoType::PENALTY_CONSTRAINT_ABS;
+  }
 
   // Get NLP bounds and detect constraint type
   num_cnt_components = static_cast<Eigen::Index>(merit_constraints.size());
@@ -644,8 +651,11 @@ void TrajOptQPProblem::Implementation::setup()
   // Define constraint names
   constraint_names.clear();
   constraint_names.reserve(static_cast<std::size_t>(num_cnt_components));
-  for (const auto& cnt : merit_constraints)
-    constraint_names.push_back(cnt->getName());
+  for (std::size_t i = 0; i < merit_constraints.size(); ++i)
+  {
+    constraint_names.push_back(merit_constraints[i]->getName());
+    cvp.merit_constraint_infos[i].type = ComponentInfoType::MERIT_CONSTRAINT;
+  }
 
   // Cache variable bounds (used in updateNLPVariableBounds)
   var_bounds_lower.resize(cvp.n_nlp_vars);
@@ -885,20 +895,27 @@ void TrajOptQPProblem::Implementation::convexify()
   {
     cvp.squared_objective_nlp = QuadExprs(cvp.n_objective_terms, cvp.n_nlp_vars);
     Eigen::Index row = 0;
-    for (const auto& c : objective_terms)
+    for (std::size_t i = 0; i < objective_terms.size(); ++i)
     {
+      const auto& info = cvp.objective_term_infos[i];
+      const auto& obj = objective_terms[i];
+
+      Eigen::Index idx{ row };
+      for (const auto& b : info.bounds)
+        cvp.squared_objective_target(idx++) = b.getLower();
+
       // This is not correct should pass the value to createAffExprs then use bound to which could change the sign of
       // the affine expression
       //    Eigen::VectorXd cnt_error = trajopt_ifopt::calcBoundsErrors(cnt_vals, squared_costs_.getBounds());
 
       // This should be correct now
-      AffExprs cnt_aff_expr = createAffExprs(c->getValues(), c->getJacobian(), x_initial);
-      cnt_aff_expr.constants = (cvp.squared_costs_target.segment(row, c->getRows()) - cnt_aff_expr.constants);
+      AffExprs cnt_aff_expr = createAffExprs(obj->getValues(), obj->getJacobian(), x_initial);
+      cnt_aff_expr.constants = (cvp.squared_objective_target.segment(row, obj->getRows()) - cnt_aff_expr.constants);
       cnt_aff_expr.linear_coeffs *= -1;
-      QuadExprs cost_quad_expr = squareAffExprs(cnt_aff_expr, c->getCoefficients());
+      QuadExprs cost_quad_expr = squareAffExprs(cnt_aff_expr, obj->getCoefficients());
 
       // store individual equations constant
-      cvp.squared_objective_nlp.constants.segment(row, c->getRows()) = cost_quad_expr.constants;
+      cvp.squared_objective_nlp.constants.segment(row, obj->getRows()) = cost_quad_expr.constants;
 
       // Sum objective function linear coefficients
       cvp.squared_objective_nlp.objective_linear_coeffs += cost_quad_expr.objective_linear_coeffs;
@@ -922,7 +939,7 @@ void TrajOptQPProblem::Implementation::convexify()
                                                         cost_quad_expr.quadratic_coeffs.begin(),
                                                         cost_quad_expr.quadratic_coeffs.end());
 
-      row += c->getRows();
+      row += obj->getRows();
     }
 
     // Store individual equations linear coefficients
