@@ -112,9 +112,17 @@ LVSContinuousCollisionEvaluator::calcCollisionData(const Eigen::Ref<const Eigen:
     return *cached;
   }
 
-  auto data = std::make_shared<trajopt_common::CollisionCacheData>();
-  calcCollisionsHelper(data->contact_results_map, dof_vals0, dof_vals1, vars0_fixed, vars1_fixed);
+  /**
+   * We tried different combinations of how to store the dist_map and also passing in a sub_dist_map to CalcCollisions,
+   * using member variable and thread_local. Just making the dist_map thread_local and making a copy for sub_dist_result
+   * in CalcCollisions had the most significant impact on peformance and memory.
+   */
+  thread_local tesseract_collision::ContactResultMap dist_map;
+  dist_map.clear();
+  calcCollisionsHelper(dist_map, dof_vals0, dof_vals1, vars0_fixed, vars1_fixed);
 
+  auto data = std::make_shared<trajopt_common::CollisionCacheData>();
+  data->contact_results_map = dist_map;
   for (const auto& pair : data->contact_results_map)
   {
     using ShapeKey = std::pair<std::size_t, std::size_t>;
@@ -221,8 +229,17 @@ void LVSContinuousCollisionEvaluator::calcCollisionsHelper(tesseract_collision::
     for (long i = 0; i < dof_vals0.size(); ++i)
       subtraj.col(i) = Eigen::VectorXd::LinSpaced(cnt, dof_vals0(i), dof_vals1(i));
 
-    // Perform casted collision checking for sub trajectory and store results in contacts_vector
-    tesseract_collision::ContactResultMap contacts{ dist_results };
+    /**
+     * We tried different combinations of how to store the dist_map and also passing in a sub_dist_map to
+     * CalcCollisions, using member variable and thread_local. Just making the dist_map thread_local and making a copy
+     * for sub_dist_result in CalcCollisions had the most significant impact on peformance and memory.
+     *
+     * @note copying dist_results here does not copy the capacity so must use thread local
+     */
+    thread_local tesseract_collision::ContactResultMap contacts;
+    contacts.clear();
+
+    // Perform collision checking for sub trajectory and store results in contacts_vector
     const int last_state_idx{ static_cast<int>(subtraj.rows()) - 1 };
     const double dt = 1.0 / double(last_state_idx);
     for (int i = 0; i < subtraj.rows() - 1; ++i)
@@ -350,9 +367,17 @@ LVSDiscreteCollisionEvaluator::calcCollisionData(const Eigen::Ref<const Eigen::V
     return *cached;
   }
 
-  auto data = std::make_shared<trajopt_common::CollisionCacheData>();
-  calcCollisionsHelper(data->contact_results_map, dof_vals0, dof_vals1, vars0_fixed, vars1_fixed);
+  /**
+   * We tried different combinations of how to store the dist_map and also passing in a sub_dist_map to CalcCollisions,
+   * using member variable and thread_local. Just making the dist_map thread_local and making a copy for sub_dist_result
+   * in CalcCollisions had the most significant impact on peformance and memory.
+   */
+  thread_local tesseract_collision::ContactResultMap dist_map;
+  dist_map.clear();
+  calcCollisionsHelper(dist_map, dof_vals0, dof_vals1, vars0_fixed, vars1_fixed);
 
+  auto data = std::make_shared<trajopt_common::CollisionCacheData>();
+  data->contact_results_map = dist_map;
   for (const auto& pair : data->contact_results_map)
   {
     using ShapeKey = std::pair<std::size_t, std::size_t>;
@@ -461,8 +486,17 @@ void LVSDiscreteCollisionEvaluator::calcCollisionsHelper(tesseract_collision::Co
   for (long i = 0; i < dof_vals0.size(); ++i)
     subtraj.col(i) = Eigen::VectorXd::LinSpaced(cnt, dof_vals0(i), dof_vals1(i));
 
+  /**
+   * We tried different combinations of how to store the dist_map and also passing in a sub_dist_map to CalcCollisions,
+   * using member variable and thread_local. Just making the dist_map thread_local and making a copy for sub_dist_result
+   * in CalcCollisions had the most significant impact on peformance and memory.
+   *
+   * @note copying dist_results here does not copy the capacity so must use thread local
+   */
+  thread_local tesseract_collision::ContactResultMap contacts;
+  contacts.clear();
+
   // Perform casted collision checking for sub trajectory and store results in contacts_vector
-  tesseract_collision::ContactResultMap contacts{ dist_results };
   const int last_state_idx{ static_cast<int>(subtraj.rows()) - 1 };
   const double dt = 1.0 / double(last_state_idx);
   for (int i = 0; i < subtraj.rows(); ++i)

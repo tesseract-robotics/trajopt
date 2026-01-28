@@ -281,7 +281,7 @@ struct GradientResultsSet
    * @brief This updates max error data
    * @param gradient_result The gradient results to add
    */
-  void add(const GradientResults& gradient_result);
+  void add(GradientResults gradient_result);
 
   /** @brief Get the max error including T0 and T1 */
   double getMaxError() const;

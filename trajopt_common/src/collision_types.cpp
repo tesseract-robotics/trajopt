@@ -40,7 +40,8 @@ double CollisionCoeffData::getDefaultCollisionCoeff() const { return default_col
 
 void CollisionCoeffData::setCollisionCoeff(const std::string& obj1, const std::string& obj2, double collision_coeff)
 {
-  auto key = tesseract_common::makeOrderedLinkPair(obj1, obj2);
+  thread_local tesseract_common::LinkNamesPair key;
+  tesseract_common::makeOrderedLinkPair(key, obj1, obj2);
   lookup_table_.insert_or_assign(key, collision_coeff);
 
   if (tesseract_common::almostEqualRelativeAndAbs(collision_coeff, 0.0))
@@ -51,7 +52,8 @@ void CollisionCoeffData::setCollisionCoeff(const std::string& obj1, const std::s
 
 double CollisionCoeffData::getCollisionCoeff(const std::string& obj1, const std::string& obj2) const
 {
-  auto key = tesseract_common::makeOrderedLinkPair(obj1, obj2);
+  thread_local tesseract_common::LinkNamesPair key;
+  tesseract_common::makeOrderedLinkPair(key, obj1, obj2);
   const auto it = lookup_table_.find(key);
 
   if (it != lookup_table_.end())
@@ -145,7 +147,7 @@ double LinkMaxError::getMaxErrorWithBuffer() const
   throw std::runtime_error("Invalid LinkMaxError");
 }
 
-void GradientResultsSet::add(const GradientResults& gradient_result)
+void GradientResultsSet::add(GradientResults gradient_result)
 {
   for (std::size_t i = 0; i < 2; ++i)
   {
@@ -172,7 +174,7 @@ void GradientResultsSet::add(const GradientResults& gradient_result)
     }
   }
 
-  results.push_back(gradient_result);
+  results.emplace_back(std::move(gradient_result));
 }
 
 double GradientResultsSet::getMaxError() const
