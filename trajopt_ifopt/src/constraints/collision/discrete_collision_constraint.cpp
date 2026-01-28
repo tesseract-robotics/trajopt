@@ -223,29 +223,31 @@ void DiscreteCollisionConstraintD::fillJacobianBlock(Jacobian& jac_block, const 
   {
     for (const auto& result : gradient_results_set.results)
     {
+      jac_block.startVec(i);
       assert(result.gradients[0].has_gradient || result.gradients[1].has_gradient);
       if (result.gradients[0].has_gradient && result.gradients[1].has_gradient)
       {
         // This does work but could be faster
         for (int j = 0; j < n_dof_; j++)
-          jac_block.coeffRef(i, position_var_->getIndex() + j) =
+          jac_block.insertBack(i, position_var_->getIndex() + j) =
               -1.0 * (result.gradients[0].gradient[j] + result.gradients[1].gradient[j]);
       }
       else if (result.gradients[0].has_gradient)
       {
         // This does work but could be faster
         for (int j = 0; j < n_dof_; j++)
-          jac_block.coeffRef(i, position_var_->getIndex() + j) = -1.0 * result.gradients[0].gradient[j];
+          jac_block.insertBack(i, position_var_->getIndex() + j) = -1.0 * result.gradients[0].gradient[j];
       }
       else if (result.gradients[1].has_gradient)
       {
         // This does work but could be faster
         for (int j = 0; j < n_dof_; j++)
-          jac_block.coeffRef(i, position_var_->getIndex() + j) = -1.0 * result.gradients[1].gradient[j];
+          jac_block.insertBack(i, position_var_->getIndex() + j) = -1.0 * result.gradients[1].gradient[j];
       }
       ++i;
     }
   }
+  jac_block.finalize();
   assert(rows_ == i);
 }
 

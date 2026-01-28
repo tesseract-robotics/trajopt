@@ -334,6 +334,7 @@ void ContinuousCollisionConstraintD::fillJacobianBlock(Jacobian& jac_block, cons
   {
     for (const auto& result : gradient_results_set.results)
     {
+      jac_block.startVec(i);
       assert(result.gradients[0].has_gradient || result.gradients[1].has_gradient ||
              result.cc_gradients[0].has_gradient || result.cc_gradients[1].has_gradient);
 
@@ -347,7 +348,7 @@ void ContinuousCollisionConstraintD::fillJacobianBlock(Jacobian& jac_block, cons
 
           // This does work but could be faster
           for (int j = 0; j < n_dof_; j++)
-            jac_block.coeffRef(i, offset + j) =
+            jac_block.insertBack(i, offset + j) =
                 -1.0 * ((lgr0.scale * lgr0.gradient[j]) + (lgr1.scale * lgr1.gradient[j]));
         }
         else if (result.gradients[0].has_gradient)
@@ -356,7 +357,7 @@ void ContinuousCollisionConstraintD::fillJacobianBlock(Jacobian& jac_block, cons
 
           // This does work but could be faster
           for (int j = 0; j < n_dof_; j++)
-            jac_block.coeffRef(i, offset + j) = -1.0 * lgr.scale * lgr.gradient[j];
+            jac_block.insertBack(i, offset + j) = -1.0 * lgr.scale * lgr.gradient[j];
         }
         else if (result.gradients[1].has_gradient)
         {
@@ -364,7 +365,7 @@ void ContinuousCollisionConstraintD::fillJacobianBlock(Jacobian& jac_block, cons
 
           // This does work but could be faster
           for (int j = 0; j < n_dof_; j++)
-            jac_block.coeffRef(i, offset + j) = -1.0 * lgr.scale * lgr.gradient[j];
+            jac_block.insertBack(i, offset + j) = -1.0 * lgr.scale * lgr.gradient[j];
         }
       }
 
@@ -378,7 +379,7 @@ void ContinuousCollisionConstraintD::fillJacobianBlock(Jacobian& jac_block, cons
 
           // This does work but could be faster
           for (int j = 0; j < n_dof_; j++)
-            jac_block.coeffRef(i, offset + j) =
+            jac_block.insertBack(i, offset + j) =
                 -1.0 * ((lgr0.scale * lgr0.gradient[j]) + (lgr1.scale * lgr1.gradient[j]));
         }
         else if (result.cc_gradients[0].has_gradient)
@@ -387,7 +388,7 @@ void ContinuousCollisionConstraintD::fillJacobianBlock(Jacobian& jac_block, cons
 
           // This does work but could be faster
           for (int j = 0; j < n_dof_; j++)
-            jac_block.coeffRef(i, offset + j) = -1.0 * lgr.scale * lgr.gradient[j];
+            jac_block.insertBack(i, offset + j) = -1.0 * lgr.scale * lgr.gradient[j];
         }
         else if (result.cc_gradients[1].has_gradient)
         {
@@ -395,12 +396,13 @@ void ContinuousCollisionConstraintD::fillJacobianBlock(Jacobian& jac_block, cons
 
           // This does work but could be faster
           for (int j = 0; j < n_dof_; j++)
-            jac_block.coeffRef(i, offset + j) = -1.0 * lgr.scale * lgr.gradient[j];
+            jac_block.insertBack(i, offset + j) = -1.0 * lgr.scale * lgr.gradient[j];
         }
       }
       ++i;
     }
   }
+  jac_block.finalize();
   assert(rows_ == i);
 }
 

@@ -128,9 +128,6 @@ void JointAccelConstraint::fillJacobianBlock(Jacobian& jac_block, const std::str
   if (var_set != position_vars_.front()->getParent()->getParent()->getName())
     return;
 
-  std::vector<Eigen::Triplet<double>> triplets;
-  triplets.reserve(static_cast<std::size_t>(non_zeros_));
-
   const std::size_t n = position_vars_.size();
   for (std::size_t i = 0; i < n; ++i)
   {
@@ -146,11 +143,11 @@ void JointAccelConstraint::fillJacobianBlock(Jacobian& jac_block, const std::str
       for (Eigen::Index k = 0; k < n_dof_; ++k)
       {
         const Eigen::Index row = row_offset + k;
-
+        jac_block.startVec(row);
         // a_i = c * (q_{i+2} - 2*q_{i+1} + q_i)
-        triplets.emplace_back(row, col_i + k, 1);       // ∂a/∂q_i
-        triplets.emplace_back(row, col_ip1 + k, -2.0);  // ∂a/∂q_{i+1}
-        triplets.emplace_back(row, col_ip2 + k, 1);     // ∂a/∂q_{i+2}
+        jac_block.insertBack(row, col_i + k) = 1;       // ∂a/∂q_i
+        jac_block.insertBack(row, col_ip1 + k) = -2.0;  // ∂a/∂q_{i+1}
+        jac_block.insertBack(row, col_ip2 + k) = 1;     // ∂a/∂q_{i+2}
       }
     }
     else
@@ -163,16 +160,16 @@ void JointAccelConstraint::fillJacobianBlock(Jacobian& jac_block, const std::str
       for (Eigen::Index k = 0; k < n_dof_; ++k)
       {
         const Eigen::Index row = row_offset + k;
-
+        jac_block.startVec(row);
         // a_i = c * (q_{i-2} - 2*q_{i-1} + q_i)
-        triplets.emplace_back(row, col_im2 + k, 1);     // ∂a/∂q_{i-2}
-        triplets.emplace_back(row, col_im1 + k, -2.0);  // ∂a/∂q_{i-1}
-        triplets.emplace_back(row, col_i + k, 1);       // ∂a/∂q_i
+        jac_block.insertBack(row, col_im2 + k) = 1;     // ∂a/∂q_{i-2}
+        jac_block.insertBack(row, col_im1 + k) = -2.0;  // ∂a/∂q_{i-1}
+        jac_block.insertBack(row, col_i + k) = 1;       // ∂a/∂q_i
       }
     }
   }
 
-  jac_block.setFromTriplets(triplets.begin(), triplets.end());  // NOLINT
+  jac_block.finalize();  // NOLINT
 }
 
 }  // namespace trajopt_ifopt

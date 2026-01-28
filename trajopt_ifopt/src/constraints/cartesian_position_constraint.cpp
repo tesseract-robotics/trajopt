@@ -278,9 +278,6 @@ void CartPosConstraint::calcJacobianBlock(const Eigen::Ref<const Eigen::VectorXd
   const Eigen::Isometry3d source_tf = transforms_cache_[info_.source_frame] * info_.source_frame_offset;
   const Eigen::Isometry3d target_tf = transforms_cache_[info_.target_frame] * info_.target_frame_offset;
 
-  std::vector<Eigen::Triplet<double> > triplet_list;
-  triplet_list.reserve(static_cast<std::size_t>(n_dof_ * info_.indices.size()));
-
   constexpr double eps{ 1e-5 };
   if (use_numeric_differentiation || info_.type == CartPosInfo::Type::kBothActive)
   {
@@ -296,11 +293,12 @@ void CartPosConstraint::calcJacobianBlock(const Eigen::Ref<const Eigen::VectorXd
 
     for (int i = 0; i < info_.indices.size(); ++i)
     {
+      jac_block.startVec(i);
       for (int j = 0; j < n_dof_; j++)
       {
         // Each jac_block will be for a single variable but for all timesteps. Therefore we must index down to the
         // correct timestep for this variable
-        triplet_list.emplace_back(i, position_var_->getIndex() + j, jac0(i, j));
+        jac_block.insertBack(i, position_var_->getIndex() + j) = jac0(i, j);
       }
     }
   }
@@ -357,15 +355,16 @@ void CartPosConstraint::calcJacobianBlock(const Eigen::Ref<const Eigen::VectorXd
     // Convert to a sparse matrix and set the jacobian
     for (int i = 0; i < info_.indices.size(); ++i)
     {
+      jac_block.startVec(i);
       for (int j = 0; j < n_dof_; j++)
       {
         // Each jac_block will be for a single variable but for all timesteps. Therefore we must index down to the
         // correct timestep for this variable
-        triplet_list.emplace_back(i, position_var_->getIndex() + j, jac0(info_.indices[i], j));
+        jac_block.insertBack(i, position_var_->getIndex() + j) = jac0(info_.indices[i], j);
       }
     }
   }
-  jac_block.setFromTriplets(triplet_list.begin(), triplet_list.end());  // NOLINT
+  jac_block.finalize();  // NOLINT
 }
 
 void CartPosConstraint::fillJacobianBlock(Jacobian& jac_block, const std::string& var_set) const

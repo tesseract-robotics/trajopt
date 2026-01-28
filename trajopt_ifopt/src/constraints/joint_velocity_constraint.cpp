@@ -126,9 +126,6 @@ void JointVelConstraint::fillJacobianBlock(Jacobian& jac_block, const std::strin
   if (var_set != position_vars_.front()->getParent()->getParent()->getName())
     return;
 
-  std::vector<Eigen::Triplet<double>> triplets;
-  triplets.reserve(static_cast<std::size_t>(non_zeros_));
-
   for (Eigen::Index seg = 0; seg < (n_vars_ - 1); ++seg)
   {
     const Eigen::Index row_offset = seg * n_dof_;
@@ -140,14 +137,14 @@ void JointVelConstraint::fillJacobianBlock(Jacobian& jac_block, const std::strin
     for (Eigen::Index k = 0; k < n_dof_; ++k)
     {
       const Eigen::Index row = row_offset + k;
-
+      jac_block.startVec(row);
       // v(seg,k) = c * (q1 - q0)
-      triplets.emplace_back(row, col0 + k, -1);  // ∂v/∂q_seg
-      triplets.emplace_back(row, col1 + k, 1);   // ∂v/∂q_{seg+1}
+      jac_block.insertBack(row, col0 + k) = -1;  // ∂v/∂q_seg
+      jac_block.insertBack(row, col1 + k) = 1;   // ∂v/∂q_{seg+1}
     }
   }
 
-  jac_block.setFromTriplets(triplets.begin(), triplets.end());  // NOLINT
+  jac_block.finalize();  // NOLINT
 }
 
 }  // namespace trajopt_ifopt

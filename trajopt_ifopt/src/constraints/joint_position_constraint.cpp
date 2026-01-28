@@ -166,14 +166,13 @@ void JointPosConstraint::fillJacobianBlock(Jacobian& jac_block, const std::strin
   if (var_set != position_var_->getParent()->getParent()->getName())
     return;
 
-  // Reserve enough room in the sparse matrix
-  std::vector<Eigen::Triplet<double>> triplet_list;
-  triplet_list.reserve(static_cast<std::size_t>(non_zeros_));
-
   // Loop over all of the variables this constraint uses
   for (int j = 0; j < indices_.size(); j++)  // NOLINT
-    triplet_list.emplace_back(j, position_var_->getIndex() + indices_[static_cast<std::size_t>(j)], 1.0);
+  {
+    jac_block.startVec(j);
+    jac_block.insertBack(j, position_var_->getIndex() + indices_[static_cast<std::size_t>(j)]) = 1.0;
+  }
 
-  jac_block.setFromTriplets(triplet_list.begin(), triplet_list.end());  // NOLINT
+  jac_block.finalize();  // NOLINT
 }
 }  // namespace trajopt_ifopt
