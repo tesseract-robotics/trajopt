@@ -103,9 +103,18 @@ SingleTimestepCollisionEvaluator::calcCollisions(const Eigen::Ref<const Eigen::V
   }
 
   CONSOLE_BRIDGE_logDebug("Not using cached collision check");
-  auto data = std::make_shared<trajopt_common::CollisionCacheData>();
-  calcCollisionsHelper(dof_vals, data->contact_results_map);
 
+  /**
+   * We tried different combinations of how to store the dist_map and also passing in a sub_dist_map to CalcCollisions,
+   * using member variable and thread_local. Just making the dist_map thread_local and making a copy for sub_dist_result
+   * in CalcCollisions had the most significant impact on peformance and memory.
+   */
+  thread_local tesseract_collision::ContactResultMap dist_map;
+  dist_map.clear();
+  calcCollisionsHelper(dof_vals, dist_map);
+
+  auto data = std::make_shared<trajopt_common::CollisionCacheData>();
+  data->contact_results_map = dist_map;
   for (const auto& pair : data->contact_results_map)
   {
     using ShapeKey = std::pair<std::size_t, std::size_t>;

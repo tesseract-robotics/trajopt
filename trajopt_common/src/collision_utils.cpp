@@ -149,9 +149,13 @@ void calcGradient(GradientResults& results,
   // Since the link transform is known then do not call calcJacobian with link point
   tesseract_common::jacobianChangeRefPoint(jac, link_transform.linear() * contact_result.nearest_points_local[i]);
 
-  link_gradient.translation_vector = ((i == 0) ? -1.0 : 1.0) * contact_result.normal;
+  link_gradient.translation_vector = contact_result.normal;
+  if (i == 0)
+    link_gradient.translation_vector *= -1.0;
+
   link_gradient.jacobian = jac.topRows(3);
-  link_gradient.gradient = link_gradient.translation_vector.transpose() * link_gradient.jacobian;
+  link_gradient.gradient.resize(jac.cols());
+  link_gradient.gradient.noalias() = link_gradient.jacobian.transpose() * link_gradient.translation_vector;
 
   // #ifndef NDEBUG // This is good for checking discrete evaluators
   //   Eigen::Isometry3d test_link_transform = manip->calcFwdKin(dofvals, it->link_name);
