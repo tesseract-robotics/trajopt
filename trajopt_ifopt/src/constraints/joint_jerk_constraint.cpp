@@ -170,10 +170,10 @@ void JointJerkConstraint::fillJacobianBlock(Jacobian& jac_block, const std::stri
       {
         const Eigen::Index row = row_offset + k;
         jac_block.startVec(row);
-        jac_block.insertBack(row, col_i + k) = 1;       // ∂j_i/∂q_i
-        jac_block.insertBack(row, col_im1 + k) = -3.0;  // ∂j_i/∂q_{i-1}
-        jac_block.insertBack(row, col_im2 + k) = 3.0;   // ∂j_i/∂q_{i-2}
         jac_block.insertBack(row, col_im3 + k) = -1;    // ∂j_i/∂q_{i-3}
+        jac_block.insertBack(row, col_im2 + k) = 3.0;   // ∂j_i/∂q_{i-2}
+        jac_block.insertBack(row, col_im1 + k) = -3.0;  // ∂j_i/∂q_{i-1}
+        jac_block.insertBack(row, col_i + k) = 1;       // ∂j_i/∂q_i
       }
     }
   }
