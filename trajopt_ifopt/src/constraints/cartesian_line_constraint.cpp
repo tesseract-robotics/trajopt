@@ -162,10 +162,6 @@ void CartLineConstraint::calcJacobianBlock(const Eigen::Ref<const Eigen::VectorX
   // For Jacobian Calc, we need the inverse of the nearest point, D, to new Pose, C, on the constraint line AB
   const Eigen::Isometry3d target_tf = getLinePoint(source_tf, target_tf1, target_tf2);
 
-  // Reserve enough room in the sparse matrix
-  std::vector<Eigen::Triplet<double> > triplet_list;
-  triplet_list.reserve(static_cast<std::size_t>(n_dof_ * info_.indices.size()));
-
   constexpr double eps{ 1e-5 };
   if (use_numeric_differentiation)
   {
@@ -181,11 +177,12 @@ void CartLineConstraint::calcJacobianBlock(const Eigen::Ref<const Eigen::VectorX
 
     for (int i = 0; i < 6; i++)
     {
+      jac_block.startVec(i);
       for (int j = 0; j < n_dof_; j++)
       {
         // Each jac_block will be for a single variable but for all timesteps. Therefore we must index down to the
         // correct timestep for this variable
-        triplet_list.emplace_back(i, position_var_->getIndex() + j, jac0.coeffRef(info_.indices[i], j));
+        jac_block.insertBack(i, position_var_->getIndex() + j) = jac0.coeffRef(info_.indices[i], j);
       }
     }
   }
@@ -239,15 +236,16 @@ void CartLineConstraint::calcJacobianBlock(const Eigen::Ref<const Eigen::VectorX
     // This does work but could be faster
     for (int i = 0; i < 6; i++)
     {
+      jac_block.startVec(i);
       for (int j = 0; j < n_dof_; j++)
       {
         // Each jac_block will be for a single variable but for all timesteps. Therefore we must index down to the
         // correct timestep for this variable
-        triplet_list.emplace_back(i, position_var_->getIndex() + j, jac0(info_.indices[i], j));
+        jac_block.insertBack(i, position_var_->getIndex() + j) = jac0(info_.indices[i], j);
       }
     }
   }
-  jac_block.setFromTriplets(triplet_list.begin(), triplet_list.end());  // NOLINT
+  jac_block.finalize();  // NOLINT
 }
 
 void CartLineConstraint::fillJacobianBlock(Jacobian& jac_block, const std::string& var_set) const

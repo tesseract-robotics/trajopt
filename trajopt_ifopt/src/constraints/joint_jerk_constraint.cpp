@@ -134,9 +134,6 @@ void JointJerkConstraint::fillJacobianBlock(Jacobian& jac_block, const std::stri
   if (var_set != position_vars_.front()->getParent()->getParent()->getName())
     return;
 
-  std::vector<Eigen::Triplet<double>> triplets;
-  triplets.reserve(static_cast<std::size_t>(non_zeros_));
-
   const std::size_t n = position_vars_.size();
 
   for (std::size_t i = 0; i < n; ++i)
@@ -154,11 +151,11 @@ void JointJerkConstraint::fillJacobianBlock(Jacobian& jac_block, const std::stri
       for (Eigen::Index k = 0; k < n_dof_; ++k)
       {
         const Eigen::Index row = row_offset + k;
-
-        triplets.emplace_back(row, col_i + k, -1);      // ∂j_i/∂q_i
-        triplets.emplace_back(row, col_ip1 + k, 3.0);   // ∂j_i/∂q_{i+1}
-        triplets.emplace_back(row, col_ip2 + k, -3.0);  // ∂j_i/∂q_{i+2}
-        triplets.emplace_back(row, col_ip3 + k, 1);     // ∂j_i/∂q_{i+3}
+        jac_block.startVec(row);
+        jac_block.insertBack(row, col_i + k) = -1;      // ∂j_i/∂q_i
+        jac_block.insertBack(row, col_ip1 + k) = 3.0;   // ∂j_i/∂q_{i+1}
+        jac_block.insertBack(row, col_ip2 + k) = -3.0;  // ∂j_i/∂q_{i+2}
+        jac_block.insertBack(row, col_ip3 + k) = 1;     // ∂j_i/∂q_{i+3}
       }
     }
     else
@@ -172,16 +169,16 @@ void JointJerkConstraint::fillJacobianBlock(Jacobian& jac_block, const std::stri
       for (Eigen::Index k = 0; k < n_dof_; ++k)
       {
         const Eigen::Index row = row_offset + k;
-
-        triplets.emplace_back(row, col_i + k, 1);       // ∂j_i/∂q_i
-        triplets.emplace_back(row, col_im1 + k, -3.0);  // ∂j_i/∂q_{i-1}
-        triplets.emplace_back(row, col_im2 + k, 3.0);   // ∂j_i/∂q_{i-2}
-        triplets.emplace_back(row, col_im3 + k, -1);    // ∂j_i/∂q_{i-3}
+        jac_block.startVec(row);
+        jac_block.insertBack(row, col_im3 + k) = -1;    // ∂j_i/∂q_{i-3}
+        jac_block.insertBack(row, col_im2 + k) = 3.0;   // ∂j_i/∂q_{i-2}
+        jac_block.insertBack(row, col_im1 + k) = -3.0;  // ∂j_i/∂q_{i-1}
+        jac_block.insertBack(row, col_i + k) = 1;       // ∂j_i/∂q_i
       }
     }
   }
 
-  jac_block.setFromTriplets(triplets.begin(), triplets.end());  // NOLINT
+  jac_block.finalize();  // NOLINT
 }
 
 }  // namespace trajopt_ifopt
