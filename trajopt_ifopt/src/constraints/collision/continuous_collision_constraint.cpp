@@ -26,6 +26,7 @@
 #include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <trajopt_common/collision_types.h>
+#include <trajopt_common/collision_utils.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt_ifopt/constraints/collision/continuous_collision_constraint.h>
@@ -76,12 +77,20 @@ ContinuousCollisionConstraint::ContinuousCollisionConstraint(
 
 int ContinuousCollisionConstraint::update()
 {
-  const trajopt_common::CollisionCacheData::ConstPtr collision_data = collision_evaluator_->calcCollisionData(
-      position_vars_[0]->value(), position_vars_[1]->value(), vars0_fixed_, vars1_fixed_, bounds_.size());
+  std::size_t variable_hash = position_vars_[0]->getParent()->getParent()->getHash();
+  if (variable_hash == collision_data_hash_)
+    return rows_;
 
-  const auto cnt = std::min<std::size_t>(bounds_.size(), collision_data->gradient_results_sets.size());
+  collision_evaluator_->calcCollisionData(collision_data_,
+                                          position_vars_[0]->value(),
+                                          position_vars_[1]->value(),
+                                          vars0_fixed_,
+                                          vars1_fixed_,
+                                          bounds_.size());
+
+  const auto cnt = std::min<std::size_t>(bounds_.size(), collision_data_.gradient_results_sets.size());
   for (std::size_t i = 0; i < cnt; ++i)
-    coeffs_(static_cast<Eigen::Index>(i)) = collision_data->gradient_results_sets[i].coeff;
+    coeffs_(static_cast<Eigen::Index>(i)) = collision_data_.gradient_results_sets[i].coeff;
 
   std::call_once(init_flag_, &ContinuousCollisionConstraint::init, this);
 
@@ -93,18 +102,15 @@ Eigen::VectorXd ContinuousCollisionConstraint::getValues() const
   const double margin_buffer = collision_evaluator_->getCollisionMarginBuffer();
   Eigen::VectorXd values = Eigen::VectorXd::Constant(rows_, -margin_buffer);
 
-  auto collision_data = collision_evaluator_->calcCollisionData(
-      position_vars_[0]->value(), position_vars_[1]->value(), vars0_fixed_, vars1_fixed_, bounds_.size());
-
-  if (collision_data->gradient_results_sets.empty())
+  if (collision_data_.gradient_results_sets.empty())
     return values;
 
-  const auto cnt = std::min<std::size_t>(bounds_.size(), collision_data->gradient_results_sets.size());
+  const auto cnt = std::min<std::size_t>(bounds_.size(), collision_data_.gradient_results_sets.size());
   if (!vars0_fixed_ && !vars1_fixed_)
   {
     for (std::size_t i = 0; i < cnt; ++i)
     {
-      const trajopt_common::GradientResultsSet& r = collision_data->gradient_results_sets[i];
+      const trajopt_common::GradientResultsSet& r = collision_data_.gradient_results_sets[i];
       values(static_cast<Eigen::Index>(i)) = r.getMaxError();
     }
   }
@@ -112,7 +118,7 @@ Eigen::VectorXd ContinuousCollisionConstraint::getValues() const
   {
     for (std::size_t i = 0; i < cnt; ++i)
     {
-      const trajopt_common::GradientResultsSet& r = collision_data->gradient_results_sets[i];
+      const trajopt_common::GradientResultsSet& r = collision_data_.gradient_results_sets[i];
       if (r.max_error[0].has_error[0] || r.max_error[1].has_error[0])
         values(static_cast<Eigen::Index>(i)) = r.getMaxErrorT0();
     }
@@ -121,7 +127,7 @@ Eigen::VectorXd ContinuousCollisionConstraint::getValues() const
   {
     for (std::size_t i = 0; i < cnt; ++i)
     {
-      const trajopt_common::GradientResultsSet& r = collision_data->gradient_results_sets[i];
+      const trajopt_common::GradientResultsSet& r = collision_data_.gradient_results_sets[i];
       if (r.max_error[0].has_error[1] || r.max_error[1].has_error[1])
         values(static_cast<Eigen::Index>(i)) = r.getMaxErrorT1();
     }
@@ -177,20 +183,16 @@ void ContinuousCollisionConstraint::fillJacobianBlock(Jacobian& jac_block, const
   if (!triplet_list_.empty())                                               // NOLINT
     jac_block.setFromTriplets(triplet_list_.begin(), triplet_list_.end());  // NOLINT
 
-  // Calculate collisions
-  auto collision_data = collision_evaluator_->calcCollisionData(
-      position_vars_[0]->value(), position_vars_[1]->value(), vars0_fixed_, vars1_fixed_, bounds_.size());
-
-  if (collision_data->gradient_results_sets.empty())
+  if (collision_data_.gradient_results_sets.empty())
     return;
 
   /** @todo Should use triplet list and setFromTriplets */
-  const std::size_t cnt = std::min(collision_data->gradient_results_sets.size(), bounds_.size());
+  const std::size_t cnt = std::min(collision_data_.gradient_results_sets.size(), bounds_.size());
   if (!vars0_fixed_)
   {
     for (std::size_t i = 0; i < cnt; ++i)
     {
-      const trajopt_common::GradientResultsSet& r = collision_data->gradient_results_sets[i];
+      const trajopt_common::GradientResultsSet& r = collision_data_.gradient_results_sets[i];
       if (r.max_error[0].has_error[0] || r.max_error[1].has_error[0])
       {
         double max_error_with_buffer = r.getMaxErrorWithBufferT0();
@@ -210,7 +212,7 @@ void ContinuousCollisionConstraint::fillJacobianBlock(Jacobian& jac_block, const
   {
     for (std::size_t i = 0; i < cnt; ++i)
     {
-      const trajopt_common::GradientResultsSet& r = collision_data->gradient_results_sets[i];
+      const trajopt_common::GradientResultsSet& r = collision_data_.gradient_results_sets[i];
       if (r.max_error[0].has_error[1] || r.max_error[1].has_error[1])
       {
         double max_error_with_buffer = r.getMaxErrorWithBufferT1();
@@ -267,15 +269,14 @@ ContinuousCollisionConstraintD::ContinuousCollisionConstraintD(
 
 int ContinuousCollisionConstraintD::update()
 {
-  int rows{ 0 };
+  std::size_t variable_hash = position_vars_[0]->getParent()->getParent()->getHash();
+  if (variable_hash == collision_data_hash_)
+    return rows_;
 
-  collision_data_ = collision_evaluator_->calcCollisionData(
-      position_vars_[0]->value(), position_vars_[1]->value(), vars0_fixed_, vars1_fixed_, 0);
+  collision_evaluator_->calcCollisionData(
+      collision_data_, position_vars_[0]->value(), position_vars_[1]->value(), vars0_fixed_, vars1_fixed_, 0);
 
-  for (const auto& gradient_results_set : collision_data_->gradient_results_sets)
-    rows += static_cast<int>(gradient_results_set.results.size());
-
-  rows_ = rows;
+  rows_ = static_cast<int>(collision_data_.contact_results_map.count());
   non_zeros_ = 2 * static_cast<Eigen::Index>(rows_) * n_dof_;
   bounds_ = std::vector<Bounds>(static_cast<std::size_t>(rows_), BoundSmallerZero);
 
@@ -283,12 +284,16 @@ int ContinuousCollisionConstraintD::update()
   values_.resize(rows_);
 
   Eigen::Index i{ 0 };
-  for (const auto& gradient_results_set : collision_data_->gradient_results_sets)
+  for (const auto& pair : collision_data_.contact_results_map)
   {
-    for (const auto& result : gradient_results_set.results)
+    const double margin =
+        collision_evaluator_->getCollisionMarginData().getCollisionMargin(pair.first.first, pair.first.second);
+    const double coeff =
+        collision_evaluator_->getCollisionCoeffData().getCollisionCoeff(pair.first.first, pair.first.second);
+    for (const auto& contact_results : pair.second)
     {
-      coeffs_(i) = gradient_results_set.coeff;
-      values_(i++) = result.error;
+      coeffs_(i) = coeff;
+      values_(i++) = margin - contact_results.distance;
     }
   }
 
@@ -296,7 +301,7 @@ int ContinuousCollisionConstraintD::update()
 
   std::call_once(init_flag_, &ContinuousCollisionConstraintD::init, this);
 
-  return rows;
+  return rows_;
 }
 
 Eigen::VectorXd ContinuousCollisionConstraintD::getValues() const { return values_; }
@@ -326,14 +331,20 @@ void ContinuousCollisionConstraintD::fillJacobianBlock(Jacobian& jac_block, cons
   if (var_set != var_set_name_ || rows_ == 0)  // NOLINT
     return;
 
-  if (collision_data_->gradient_results_sets.empty())
+  if (collision_data_.contact_results_map.empty())
     return;
 
+  auto jp0 = position_vars_[0]->value();
+  auto jp1 = position_vars_[1]->value();
+
+  trajopt_common::GradientResults result;
   Eigen::Index i{ 0 };
-  for (const auto& gradient_results_set : collision_data_->gradient_results_sets)
+  for (const auto& pair : collision_data_.contact_results_map)
   {
-    for (const auto& result : gradient_results_set.results)
+    for (const auto& contact_results : pair.second)
     {
+      result.clear();
+      trajopt_common::getGradient(result, jp0, jp1, contact_results, 0, 0, collision_evaluator_->getJointGroup());
       jac_block.startVec(i);
       assert(result.gradients[0].has_gradient || result.gradients[1].has_gradient ||
              result.cc_gradients[0].has_gradient || result.cc_gradients[1].has_gradient);

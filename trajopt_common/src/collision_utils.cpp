@@ -124,6 +124,7 @@ void calcGradient(GradientResults& results,
   link_gradient.has_gradient = true;
 
   // Calculate Jacobian
+  /** @todo update calcJacobian to have out param overload */
   Eigen::MatrixXd jac = manip.calcJacobian(dofvals, contact_result.link_names[i]);
 
   // Need to change the base and ref point of the jacobian.
@@ -171,13 +172,13 @@ void calcGradient(GradientResults& results,
   // #endif
 }
 
-GradientResults getGradient(const Eigen::VectorXd& dofvals,
-                            const tesseract_collision::ContactResult& contact_result,
-                            double margin,
-                            double margin_buffer,
-                            const tesseract_kinematics::JointGroup& manip)
+void getGradient(GradientResults& results,
+                 const Eigen::VectorXd& dofvals,
+                 const tesseract_collision::ContactResult& contact_result,
+                 double margin,
+                 double margin_buffer,
+                 const tesseract_kinematics::JointGroup& manip)
 {
-  GradientResults results;
   results.error = (margin - contact_result.distance);
   results.error_with_buffer = (margin + margin_buffer - contact_result.distance);
   for (std::size_t i = 0; i < 2; ++i)
@@ -186,18 +187,16 @@ GradientResults getGradient(const Eigen::VectorXd& dofvals,
       calcGradient(results, i, dofvals, contact_result, manip, false);
   }
   // DebugPrintInfo(res, results.gradients[0], results.gradients[1], dofvals, &res == &(dist_results.front()));
-
-  return results;
 }
 
-GradientResults getGradient(const Eigen::VectorXd& dofvals0,
-                            const Eigen::VectorXd& dofvals1,
-                            const tesseract_collision::ContactResult& contact_result,
-                            double margin,
-                            double margin_buffer,
-                            const tesseract_kinematics::JointGroup& manip)
+void getGradient(GradientResults& results,
+                 const Eigen::VectorXd& dofvals0,
+                 const Eigen::VectorXd& dofvals1,
+                 const tesseract_collision::ContactResult& contact_result,
+                 double margin,
+                 double margin_buffer,
+                 const tesseract_kinematics::JointGroup& manip)
 {
-  GradientResults results;
   results.error = (margin - contact_result.distance);
   results.error_with_buffer = (margin + margin_buffer - contact_result.distance);
 
@@ -219,8 +218,6 @@ GradientResults getGradient(const Eigen::VectorXd& dofvals0,
   }
 
   // DebugPrintInfo(res, results.gradients[0], results.gradients[1], dofvals, &res == &(dist_results.front()));
-
-  return results;
 }
 
 void debugPrintInfo(const tesseract_collision::ContactResult& res,

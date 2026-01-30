@@ -223,6 +223,7 @@ Jacobian calcNumericalConstraintGradient(Variables& variables, ConstraintSet& co
   Eigen::VectorXd x = variables.getValues();
 
   // Base constraint values at x
+  constraint_set.update();
   const Eigen::VectorXd g = constraint_set.getValues();
 
   Eigen::VectorXd x_new = x;
@@ -234,6 +235,7 @@ Jacobian calcNumericalConstraintGradient(Variables& variables, ConstraintSet& co
     x_new(i) = x(i) + epsilon;  // disturb variable i
     variables.setVariables(x_new);
 
+    constraint_set.update();
     const Eigen::VectorXd g_new = constraint_set.getValues();
     delta_g = (g_new - g) / epsilon;
 
@@ -245,6 +247,7 @@ Jacobian calcNumericalConstraintGradient(Variables& variables, ConstraintSet& co
 
   // Restore original variables
   variables.setVariables(x);
+  constraint_set.update();
 
   return jac;
 }

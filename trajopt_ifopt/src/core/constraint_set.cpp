@@ -46,6 +46,13 @@ Jacobian ConstraintSet::getJacobian() const
   Jacobian jacobian(rows_, variables_->getRows());
   jacobian.reserve(non_zeros_.load());
 
+  // This is an optimization for when you only have one variable set
+  if (variables_->getComponents().size() == 1)
+  {
+    fillJacobianBlock(jacobian, variables_->getComponents().front()->getName());
+    return jacobian;
+  }
+
   int col = 0;
   Jacobian jac;
   jac.reserve(non_zeros_.load());

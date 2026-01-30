@@ -191,12 +191,11 @@ void runCastOctomapTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const Env
     qp_problem->addConstraintSet(cnt);
   }
 
-  auto collision_cache = std::make_shared<trajopt_ifopt::CollisionCache>(100);
   std::array<bool, 2> vars_fixed{ true, false };
   for (std::size_t i = 1; i < vars.size(); ++i)
   {
-    auto collision_evaluator = std::make_shared<trajopt_ifopt::LVSContinuousCollisionEvaluator>(
-        collision_cache, manip, env, trajopt_collision_config);
+    auto collision_evaluator =
+        std::make_shared<trajopt_ifopt::LVSContinuousCollisionEvaluator>(manip, env, trajopt_collision_config);
 
     const std::array<std::shared_ptr<const Var>, 2> position_vars{ vars[i - 1], vars[i] };
 

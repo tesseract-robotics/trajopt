@@ -31,6 +31,7 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt_ifopt/core/constraint_set.h>
+#include <trajopt_common/collision_types.h>
 
 namespace trajopt_ifopt
 {
@@ -115,6 +116,8 @@ private:
   std::shared_ptr<const Var> position_var_;
 
   std::shared_ptr<DiscreteCollisionEvaluator> collision_evaluator_;
+  trajopt_common::CollisionCacheData collision_data_;
+  std::size_t collision_data_hash_{ 0 };
 
   /** @brief Used to initialize jacobian because snopt sparsity cannot change */
   bool fixed_sparsity_{ false };

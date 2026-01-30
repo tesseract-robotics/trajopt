@@ -28,6 +28,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ******************************************************************************/
 
 #include <trajopt_ifopt/core/composite.h>
+#include <trajopt_common/collision_utils.h>
 
 #include <iostream>
 
@@ -95,11 +96,22 @@ std::vector<Bounds> CompositeVariables::getBounds() const
 void CompositeVariables::setVariables(const Eigen::VectorXd& x)
 {
   int row = 0;
+
   for (auto& c : components_)
   {
     c->setVariables(x.middleRows(row, c->getRows()));
     row += c->getRows();
   }
+
+  hash_ = trajopt_common::getHash(this, x);
+}
+
+std::size_t CompositeVariables::getHash() const
+{
+  if (components_.empty())
+    return 0;
+
+  return hash_;
 }
 
 void CompositeVariables::print(int& index, double tolerance) const

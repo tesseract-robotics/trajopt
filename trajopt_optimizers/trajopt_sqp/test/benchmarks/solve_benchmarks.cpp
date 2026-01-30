@@ -1,9 +1,9 @@
-#include <tesseract_common/macros.h>
-TESSERACT_COMMON_IGNORE_WARNINGS_PUSH
+#include <trajopt_common/macros.h>
+TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <benchmark/benchmark.h>
 #include <algorithm>
 #include <OsqpEigen/Solver.hpp>
-TESSERACT_COMMON_IGNORE_WARNINGS_POP
+TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <tesseract_environment/environment.h>
 #include <tesseract_common/resource_locator.h>
@@ -63,18 +63,16 @@ static void BM_TRAJOPT_IFOPT_SIMPLE_COLLISION_SOLVE(benchmark::State& state, con
     auto trajopt_collision_cnt_config = std::make_shared<trajopt_common::TrajOptCollisionConfig>(0.2, 1);
     trajopt_collision_cnt_config->collision_margin_buffer = 0.05;
 
-    auto collision_cnt_cache = std::make_shared<CollisionCache>(100);
-    DiscreteCollisionEvaluator::Ptr collision_cnt_evaluator = std::make_shared<SingleTimestepCollisionEvaluator>(
-        collision_cnt_cache, manip, env, *trajopt_collision_cnt_config);
+    DiscreteCollisionEvaluator::Ptr collision_cnt_evaluator =
+        std::make_shared<SingleTimestepCollisionEvaluator>(manip, env, *trajopt_collision_cnt_config);
     auto collision_cnt = std::make_shared<DiscreteCollisionConstraintD>(collision_cnt_evaluator, vars[0]);
     qp_problem->addConstraintSet(collision_cnt);
 
     auto trajopt_collision_cost_config = std::make_shared<trajopt_common::TrajOptCollisionConfig>(0.3, 1);
     trajopt_collision_cost_config->collision_margin_buffer = 0.05;
 
-    auto collision_cost_cache = std::make_shared<CollisionCache>(100);
-    DiscreteCollisionEvaluator::Ptr collision_cost_evaluator = std::make_shared<SingleTimestepCollisionEvaluator>(
-        collision_cost_cache, manip, env, *trajopt_collision_cost_config);
+    DiscreteCollisionEvaluator::Ptr collision_cost_evaluator =
+        std::make_shared<SingleTimestepCollisionEvaluator>(manip, env, *trajopt_collision_cost_config);
     auto collision_cost = std::make_shared<DiscreteCollisionConstraintD>(collision_cost_evaluator, vars[0]);
     qp_problem->addCostSet(collision_cost, trajopt_sqp::CostPenaltyType::kHinge);
 
@@ -157,12 +155,11 @@ static void BM_TRAJOPT_IFOPT_PLANNING_SOLVE(benchmark::State& state, const Envir
       qp_problem->addConstraintSet(cnt);
     }
 
-    auto collision_cache = std::make_shared<CollisionCache>(100);
     std::array<bool, 2> position_vars_fixed{ false, false };
     for (std::size_t i = 1; i < (vars.size() - 1); ++i)
     {
       auto collision_evaluator =
-          std::make_shared<LVSContinuousCollisionEvaluator>(collision_cache, manip, env, *trajopt_collision_config);
+          std::make_shared<LVSContinuousCollisionEvaluator>(manip, env, *trajopt_collision_config);
 
       std::array<std::shared_ptr<const Var>, 2> position_vars{ vars[i - 1], vars[i] };
 

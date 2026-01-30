@@ -77,6 +77,9 @@ void IfoptQPProblem::addCostSet(std::shared_ptr<trajopt_ifopt::ConstraintSet> co
 
 void IfoptQPProblem::setup()
 {
+  auto start_variables = nlp_->getVariableValues();
+  nlp_->setVariables(start_variables.data());
+
   num_nlp_vars_ = nlp_->getNumberOfOptimizationVariables();
   num_nlp_cnts_ = nlp_->getNumberOfConstraints();
   num_nlp_costs_ = nlp_->getCosts().getRows();

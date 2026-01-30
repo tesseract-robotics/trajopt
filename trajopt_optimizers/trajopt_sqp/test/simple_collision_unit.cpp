@@ -119,9 +119,8 @@ void runSimpleCollisionTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const
   trajopt_collision_cnt_config.collision_margin_buffer = 0.5;
   trajopt_collision_cnt_config.collision_check_config.longest_valid_segment_length = 0.05;
 
-  auto collision_cnt_cache = std::make_shared<CollisionCache>(100);
   const DiscreteCollisionEvaluator::Ptr collision_cnt_evaluator =
-      std::make_shared<SingleTimestepCollisionEvaluator>(collision_cnt_cache, manip, env, trajopt_collision_cnt_config);
+      std::make_shared<SingleTimestepCollisionEvaluator>(manip, env, trajopt_collision_cnt_config);
   auto collision_cnt = std::make_shared<DiscreteCollisionConstraintD>(collision_cnt_evaluator, vars[0]);
   qp_problem->addConstraintSet(collision_cnt);
 
@@ -129,9 +128,8 @@ void runSimpleCollisionTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const
   trajopt_collision_cost_config.collision_margin_buffer = 0.5;
   trajopt_collision_cost_config.collision_check_config.longest_valid_segment_length = 0.05;
 
-  auto collision_cost_cache = std::make_shared<CollisionCache>(100);
-  const DiscreteCollisionEvaluator::Ptr collision_cost_evaluator = std::make_shared<SingleTimestepCollisionEvaluator>(
-      collision_cost_cache, manip, env, trajopt_collision_cost_config);
+  const DiscreteCollisionEvaluator::Ptr collision_cost_evaluator =
+      std::make_shared<SingleTimestepCollisionEvaluator>(manip, env, trajopt_collision_cost_config);
   auto collision_cost = std::make_shared<DiscreteCollisionConstraintD>(collision_cost_evaluator, vars[0]);
   qp_problem->addCostSet(collision_cost, trajopt_sqp::CostPenaltyType::kHinge);
 

@@ -30,6 +30,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <trajopt_ifopt/variable_sets/nodes_variables.h>
 #include <trajopt_ifopt/variable_sets/nodes_observer.h>
 #include <trajopt_ifopt/variable_sets/node.h>
+#include <trajopt_common/collision_utils.h>
 
 namespace trajopt_ifopt
 {
@@ -54,6 +55,7 @@ NodesVariables::NodesVariables(std::string name, std::vector<std::unique_ptr<Nod
   }
 
   values_ = Eigen::Map<Eigen::VectorXd>(values.data(), static_cast<Eigen::Index>(values.size()));
+  hash_ = trajopt_common::getHash(this, values_);
   assert(values_.size() == bounds_.size());
 }
 
@@ -78,9 +80,12 @@ void NodesVariables::setVariables(const Eigen::VectorXd& x)
     node->setVariables(x);
 
   values_ = x;
+  hash_ = trajopt_common::getHash(this, values_);
 
   updateObservers();
 }
+
+std::size_t NodesVariables::getHash() const { return hash_; }
 
 Eigen::VectorXd NodesVariables::getValues() const { return values_; }
 

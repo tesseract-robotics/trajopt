@@ -33,7 +33,6 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <tesseract_environment/utils.h>
 #include <tesseract_common/resource_locator.h>
 #include <tesseract_common/types.h>
-#include <tesseract_common/macros.h>
 #include <console_bridge/console.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 

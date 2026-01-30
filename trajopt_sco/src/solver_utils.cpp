@@ -64,8 +64,7 @@ void exprToEigen(const QuadExpr& expr,
   exprToEigen(expr.affexpr, vector_sparse, n_vars);
   vector = vector_sparse;
 
-  using T = Eigen::Triplet<double>;
-  thread_local std::vector<T, Eigen::aligned_allocator<T>> triplets;
+  TRAJOPT_THREAD_LOCAL std::vector<Eigen::Triplet<double>> triplets;
   triplets.clear();
 
   for (std::size_t i = 0; i < expr.coeffs.size(); ++i)
@@ -118,8 +117,7 @@ void exprToEigen(const AffExprVector& expr_vec,
   vector.setZero();
   sparse_matrix.resize(static_cast<long int>(expr_vec.size()), n_vars);
 
-  using T = Eigen::Triplet<double>;
-  thread_local std::vector<T, Eigen::aligned_allocator<T>> triplets;
+  TRAJOPT_THREAD_LOCAL std::vector<Eigen::Triplet<double>> triplets;
   triplets.clear();
 
   for (int i = 0; i < static_cast<int>(expr_vec.size()); ++i)
@@ -153,8 +151,7 @@ void tripletsToEigen(const IntVec& rows_i,
   assert((rows_i.size() == cols_j.size()) && (rows_i.size() == values_ij.size()));  // NOLINT
   sparse_matrix.reserve(static_cast<Eigen::Index>(values_ij.size()));
 
-  using T = Eigen::Triplet<double>;
-  thread_local std::vector<T, Eigen::aligned_allocator<T>> triplets;
+  TRAJOPT_THREAD_LOCAL std::vector<Eigen::Triplet<double>> triplets;
   triplets.clear();
   triplets.reserve(values_ij.size());
 

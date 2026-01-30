@@ -69,9 +69,8 @@ public:
     // Set up collision evaluator
     const tesseract_kinematics::JointGroup::ConstPtr kin = env->getJointGroup("manipulator");
     trajopt_common::TrajOptCollisionConfig config(0.1, 1);
-    auto collision_cache = std::make_shared<CollisionCache>(100);
 
-    collision_evaluator = std::make_shared<SingleTimestepCollisionEvaluator>(collision_cache, kin, env, config);
+    collision_evaluator = std::make_shared<SingleTimestepCollisionEvaluator>(kin, env, config);
 
     // 3) Add Variables
     const std::vector<Bounds> bounds(static_cast<std::size_t>(kin->numJoints()), NoBound);
