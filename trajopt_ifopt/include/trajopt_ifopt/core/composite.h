@@ -92,10 +92,12 @@ public:
   Eigen::VectorXd getValues() const override;
   std::vector<Bounds> getBounds() const override;
   void setVariables(const Eigen::VectorXd& x) override;
+  std::size_t getHash() const override;
   void print(int& index, double tolerance = 0.001) const override;
 
 private:
   ComponentVec components_;
+  std::size_t hash_{ 0 };
 };
 
 /**

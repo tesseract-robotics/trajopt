@@ -453,7 +453,7 @@ CollisionEvaluator::GetContactResultCached(const DblVec& x)
    * using member variable and thread_local. Just making the dist_map thread_local and making a copy for sub_dist_result
    * in CalcCollisions had the most significant impact on peformance and memory.
    */
-  thread_local tesseract_collision::ContactResultMap dist_map;
+  TRAJOPT_THREAD_LOCAL tesseract_collision::ContactResultMap dist_map;
   dist_map.clear();
 
   CalcCollisions(x, dist_map);

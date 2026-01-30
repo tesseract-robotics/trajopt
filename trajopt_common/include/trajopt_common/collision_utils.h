@@ -66,11 +66,12 @@ void removeInvalidContactResults(tesseract_collision::ContactResultVector& conta
  * @param isTimestep1 Indicates if this is the second timestep when computing gradient for continuous collision
  * @return The gradient results
  */
-GradientResults getGradient(const Eigen::VectorXd& dofvals,
-                            const tesseract_collision::ContactResult& contact_result,
-                            double margin,
-                            double margin_buffer,
-                            const tesseract_kinematics::JointGroup& manip);
+void getGradient(GradientResults& results,
+                 const Eigen::VectorXd& dofvals,
+                 const tesseract_collision::ContactResult& contact_result,
+                 double margin,
+                 double margin_buffer,
+                 const tesseract_kinematics::JointGroup& manip);
 
 /**
  * @brief Extracts the gradient information based on the contact results
@@ -80,12 +81,13 @@ GradientResults getGradient(const Eigen::VectorXd& dofvals,
  * @param isTimestep1 Indicates if this is the second timestep when computing gradient for continuous collision
  * @return The gradient results
  */
-GradientResults getGradient(const Eigen::VectorXd& dofvals0,
-                            const Eigen::VectorXd& dofvals1,
-                            const tesseract_collision::ContactResult& contact_result,
-                            double margin,
-                            double margin_buffer,
-                            const tesseract_kinematics::JointGroup& manip);
+void getGradient(GradientResults& results,
+                 const Eigen::VectorXd& dofvals0,
+                 const Eigen::VectorXd& dofvals1,
+                 const tesseract_collision::ContactResult& contact_result,
+                 double margin,
+                 double margin_buffer,
+                 const tesseract_kinematics::JointGroup& manip);
 
 /**
  * @brief Print debug gradient information

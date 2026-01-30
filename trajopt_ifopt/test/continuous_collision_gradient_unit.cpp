@@ -135,11 +135,9 @@ void runContinuousGradientTest(const Environment::Ptr& env, double coeff)
   trajopt_collision_config.collision_check_config.type = tesseract_collision::CollisionEvaluatorType::LVS_CONTINUOUS;
   trajopt_collision_config.collision_margin_buffer = 0.05;
 
-  auto collision_cache = std::make_shared<CollisionCache>(100);
   for (std::size_t i = 1; i < vars.size(); ++i)
   {
-    auto collision_evaluator =
-        std::make_shared<LVSContinuousCollisionEvaluator>(collision_cache, manip, env, trajopt_collision_config);
+    auto collision_evaluator = std::make_shared<LVSContinuousCollisionEvaluator>(manip, env, trajopt_collision_config);
 
     const std::array<std::shared_ptr<const Var>, 2> position_vars{ vars[i - 1], vars[i] };
     auto cnt = std::make_shared<ContinuousCollisionConstraint>(collision_evaluator, position_vars, false, false, 3);

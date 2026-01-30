@@ -25,10 +25,10 @@
 #ifndef TRAJOPT_COMMON_YAML_EXTENSIONS_H
 #define TRAJOPT_COMMON_YAML_EXTENSIONS_H
 
-#include <tesseract_common/macros.h>
-TESSERACT_COMMON_IGNORE_WARNINGS_PUSH
+#include <trajopt_common/macros.h>
+TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <yaml-cpp/yaml.h>
-TESSERACT_COMMON_IGNORE_WARNINGS_POP
+TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt_common/collision_types.h>
 #include <tesseract_collision/core/yaml_extensions.h>

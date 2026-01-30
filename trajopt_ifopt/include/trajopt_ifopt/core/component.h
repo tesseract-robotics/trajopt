@@ -161,6 +161,12 @@ public:
    * @note @p x is expected to have size equal to @ref getRows().
    */
   virtual void setVariables(const Eigen::VectorXd& x) = 0;
+
+  /**
+   * @brief Get the variable hash leveraged for caching data. It should be based on the variables so when the variables
+   * change so does the hash
+   */
+  virtual std::size_t getHash() const = 0;
 };
 
 /**

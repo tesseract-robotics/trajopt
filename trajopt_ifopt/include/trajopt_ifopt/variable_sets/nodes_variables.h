@@ -83,6 +83,9 @@ public:
    */
   void setVariables(const Eigen::VectorXd& x) override;
 
+  /** @brief Get the variable hash used for caching data */
+  std::size_t getHash() const override;
+
   /**
    * @returns the bounds on position and velocity of each node and dimension.
    */
@@ -106,6 +109,7 @@ public:
 
 protected:
   Eigen::VectorXd values_;
+  std::size_t hash_{ 0 };
   std::vector<Bounds> bounds_;  ///< the bounds on the node values.
   std::vector<std::shared_ptr<Node>> nodes_;
   Eigen::Index n_dim_{ 0 };

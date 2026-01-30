@@ -184,6 +184,9 @@ struct LinkGradientResults
 
   /** @brief The continuous collision type */
   tesseract_collision::ContinuousCollisionType cc_type{ tesseract_collision::ContinuousCollisionType::CCType_None };
+
+  // Reset to default settings
+  void clear();
 };
 
 /** @brief A data structure to contain a link pair gradient results */
@@ -207,6 +210,9 @@ struct GradientResults
 
   /** @brief The error (margin + margin_buffer - dist_result.distance) */
   double error_with_buffer{ 0 };
+
+  // Reset to default settings
+  void clear();
 };
 
 struct LinkMaxError

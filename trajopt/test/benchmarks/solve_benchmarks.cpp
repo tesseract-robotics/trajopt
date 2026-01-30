@@ -1,9 +1,9 @@
-#include <tesseract_common/macros.h>
-TESSERACT_COMMON_IGNORE_WARNINGS_PUSH
+#include <trajopt_common/macros.h>
+TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <benchmark/benchmark.h>
 #include <json/value.h>
 #include <thread>
-TESSERACT_COMMON_IGNORE_WARNINGS_POP
+TRAJOPT_IGNORE_WARNINGS_POP
 #include <tesseract_environment/environment.h>
 #include <tesseract_common/resource_locator.h>
 #include <tesseract_urdf/urdf_parser.h>

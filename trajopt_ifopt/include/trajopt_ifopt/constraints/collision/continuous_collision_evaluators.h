@@ -38,13 +38,11 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt_common/collision_types.h>
-#include <trajopt_common/cache.h>
 
 namespace trajopt_ifopt
 {
 using GetStateFn =
     std::function<void(tesseract_common::TransformMap&, const Eigen::Ref<const Eigen::VectorXd>& joint_values)>;
-using CollisionCache = trajopt_common::Cache<std::size_t, std::shared_ptr<const trajopt_common::CollisionCacheData>>;
 
 /**
  * @brief This collision evaluator operates on two states and checks for collision between the two states using a
@@ -69,15 +67,16 @@ public:
    * @brief Given joint names and values calculate the collision results for this evaluator
    * @param dof_vals0 Joint values for start state
    * @param dof_vals1 Joint values for end state
+   * @param max_allowed Indicate the max number of results allowed
    * @return Collision cache data. If a cache does not exist for the provided joint values it evaluates and stores the
    * data.
    */
-  virtual std::shared_ptr<const trajopt_common::CollisionCacheData>
-  calcCollisionData(const Eigen::Ref<const Eigen::VectorXd>& dof_vals0,
-                    const Eigen::Ref<const Eigen::VectorXd>& dof_vals1,
-                    bool vars0_fixed,
-                    bool vars1_fixed,
-                    std::size_t bounds_size) = 0;
+  virtual void calcCollisionData(trajopt_common::CollisionCacheData& collision_data,
+                                 const Eigen::Ref<const Eigen::VectorXd>& dof_vals0,
+                                 const Eigen::Ref<const Eigen::VectorXd>& dof_vals1,
+                                 bool vars0_fixed,
+                                 bool vars1_fixed,
+                                 std::size_t max_allowed) = 0;
 
   /**
    * @brief Extracts the gradient information based on the contact results for the transition between dof_vals0 and
@@ -111,6 +110,12 @@ public:
    */
   virtual const trajopt_common::CollisionCoeffData& getCollisionCoeffData() const = 0;
 
+  /**
+   * @brief Get the joint group
+   * @return The joint group
+   */
+  virtual const tesseract_kinematics::JointGroup& getJointGroup() const = 0;
+
 protected:
   static thread_local tesseract_common::TransformMap transforms_cache0;  // NOLINT
   static thread_local tesseract_common::TransformMap transforms_cache1;  // NOLINT
@@ -128,18 +133,17 @@ public:
   using Ptr = std::shared_ptr<LVSContinuousCollisionEvaluator>;
   using ConstPtr = std::shared_ptr<const LVSContinuousCollisionEvaluator>;
 
-  LVSContinuousCollisionEvaluator(std::shared_ptr<CollisionCache> collision_cache,
-                                  std::shared_ptr<const tesseract_kinematics::JointGroup> manip,
+  LVSContinuousCollisionEvaluator(std::shared_ptr<const tesseract_kinematics::JointGroup> manip,
                                   std::shared_ptr<const tesseract_environment::Environment> env,
                                   const trajopt_common::TrajOptCollisionConfig& collision_config,
                                   bool dynamic_environment = false);
 
-  std::shared_ptr<const trajopt_common::CollisionCacheData>
-  calcCollisionData(const Eigen::Ref<const Eigen::VectorXd>& dof_vals0,
-                    const Eigen::Ref<const Eigen::VectorXd>& dof_vals1,
-                    bool vars0_fixed,
-                    bool vars1_fixed,
-                    std::size_t bounds_size) override final;
+  void calcCollisionData(trajopt_common::CollisionCacheData& collision_data,
+                         const Eigen::Ref<const Eigen::VectorXd>& dof_vals0,
+                         const Eigen::Ref<const Eigen::VectorXd>& dof_vals1,
+                         bool vars0_fixed,
+                         bool vars1_fixed,
+                         std::size_t max_allowed) override final;
 
   trajopt_common::GradientResults
   calcGradientData(const Eigen::Ref<const Eigen::VectorXd>& dof_vals0,
@@ -152,8 +156,9 @@ public:
 
   const trajopt_common::CollisionCoeffData& getCollisionCoeffData() const override final;
 
+  const tesseract_kinematics::JointGroup& getJointGroup() const override final;
+
 private:
-  std::shared_ptr<CollisionCache> collision_cache_;
   std::shared_ptr<const tesseract_kinematics::JointGroup> manip_;
   std::shared_ptr<const tesseract_environment::Environment> env_;
   tesseract_common::CollisionMarginData margin_data_;
@@ -191,18 +196,17 @@ public:
   using Ptr = std::shared_ptr<LVSDiscreteCollisionEvaluator>;
   using ConstPtr = std::shared_ptr<const LVSDiscreteCollisionEvaluator>;
 
-  LVSDiscreteCollisionEvaluator(std::shared_ptr<CollisionCache> collision_cache,
-                                std::shared_ptr<const tesseract_kinematics::JointGroup> manip,
+  LVSDiscreteCollisionEvaluator(std::shared_ptr<const tesseract_kinematics::JointGroup> manip,
                                 std::shared_ptr<const tesseract_environment::Environment> env,
                                 const trajopt_common::TrajOptCollisionConfig& collision_config,
                                 bool dynamic_environment = false);
 
-  std::shared_ptr<const trajopt_common::CollisionCacheData>
-  calcCollisionData(const Eigen::Ref<const Eigen::VectorXd>& dof_vals0,
-                    const Eigen::Ref<const Eigen::VectorXd>& dof_vals1,
-                    bool vars0_fixed,
-                    bool vars1_fixed,
-                    std::size_t bounds_size) override final;
+  void calcCollisionData(trajopt_common::CollisionCacheData& collision_data,
+                         const Eigen::Ref<const Eigen::VectorXd>& dof_vals0,
+                         const Eigen::Ref<const Eigen::VectorXd>& dof_vals1,
+                         bool vars0_fixed,
+                         bool vars1_fixed,
+                         std::size_t max_allowed) override final;
 
   trajopt_common::GradientResults
   calcGradientData(const Eigen::Ref<const Eigen::VectorXd>& dof_vals0,
@@ -215,8 +219,9 @@ public:
 
   const trajopt_common::CollisionCoeffData& getCollisionCoeffData() const override final;
 
+  const tesseract_kinematics::JointGroup& getJointGroup() const override final;
+
 private:
-  std::shared_ptr<CollisionCache> collision_cache_;
   std::shared_ptr<const tesseract_kinematics::JointGroup> manip_;
   std::shared_ptr<const tesseract_environment::Environment> env_;
   tesseract_common::CollisionMarginData margin_data_;

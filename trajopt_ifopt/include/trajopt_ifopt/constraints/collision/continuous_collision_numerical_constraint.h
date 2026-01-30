@@ -30,6 +30,7 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt_ifopt/core/constraint_set.h>
+#include <trajopt_common/collision_types.h>
 
 namespace trajopt_ifopt
 {
@@ -121,6 +122,8 @@ private:
   std::vector<Eigen::Triplet<double>> triplet_list_;
 
   std::shared_ptr<ContinuousCollisionEvaluator> collision_evaluator_;
+  trajopt_common::CollisionCacheData collision_data_;
+  std::size_t collision_data_hash_{ 0 };
 };
 }  // namespace trajopt_ifopt
 #endif  // TRAJOPT_IFOPT_CONTINUOUS_COLLISION_NUMERICAL_CONSTRAINT_H

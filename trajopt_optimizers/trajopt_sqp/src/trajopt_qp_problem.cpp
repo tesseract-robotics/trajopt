@@ -1,11 +1,10 @@
 
 #include <trajopt_ifopt/core/constraint_set.h>
+#include <trajopt_ifopt/utils/ifopt_utils.h>
 
 #include <trajopt_sqp/trajopt_qp_problem.h>
 #include <trajopt_sqp/expressions.h>
 #include <trajopt_sqp/types.h>
-
-#include <trajopt_ifopt/utils/ifopt_utils.h>
 
 #include <utility>
 #include <iostream>
@@ -342,6 +341,10 @@ struct TrajOptQPProblem::Implementation
   /** @brief Box size - constraint is set at current_val +/- box_size */
   Eigen::VectorXd box_size;
 
+  // These two help reduce number of calls to update method
+  int n_dyn_components{ 0 };
+  int n_dyn_components_prev{ -1 };
+
   std::vector<Eigen::Triplet<double>> cache_triplets_1;
   std::vector<Eigen::Triplet<double>> cache_triplets_2;
   std::vector<double> cache_slack_gradient;
@@ -470,8 +473,10 @@ void TrajOptQPProblem::Implementation::addCostSet(std::shared_ptr<trajopt_ifopt:
 
 void TrajOptQPProblem::Implementation::update()
 {
-  if (initialized && !has_dyn_component)
+  if (initialized && (!has_dyn_component || (n_dyn_components_prev == 0 && n_dyn_components == 0)))
     return;
+
+  n_dyn_components_prev = n_dyn_components;
 
   cvp.n_objective_terms = 0;
   cvp.n_penalty_constraints = 0;
@@ -581,8 +586,13 @@ void TrajOptQPProblem::Implementation::setup()
   all_components.insert(all_components.end(), merit_constraints.begin(), merit_constraints.end());
 
   // Call update
+  n_dyn_components = 0;
   for (auto& c : all_components)
-    c->update();
+  {
+    int cnt = c->update();
+    if (c->isDynamic())
+      n_dyn_components += cnt;
+  }
 
   // Get count
   cvp.n_objective_terms = 0;
@@ -686,8 +696,13 @@ void TrajOptQPProblem::Implementation::setVariables(const double* x)
 {
   variables->setVariables(Eigen::Map<const Eigen::VectorXd>(x, variables->getRows()));
 
+  n_dyn_components = 0;
   for (auto& c : all_components)
-    c->update();
+  {
+    int cnt = c->update();
+    if (c->isDynamic())
+      n_dyn_components += cnt;
+  }
 }
 
 Eigen::VectorXd TrajOptQPProblem::Implementation::getVariableValues() const { return variables->getValues(); }
@@ -707,7 +722,8 @@ void TrajOptQPProblem::Implementation::convexify()
 
   /** Use cache triplet and clear */
   cache_triplets_2.clear();
-  cache_triplets_2.reserve(static_cast<std::size_t>(cvp.n_constraint_term_non_zeros + (cvp.n_constraint_terms * 3)));
+  cache_triplets_2.reserve(
+      static_cast<std::size_t>(cvp.n_constraint_term_non_zeros + (cvp.n_constraint_terms * 3) + cvp.n_nlp_vars));
   cache_slack_gradient.clear();
   cache_slack_gradient.reserve(static_cast<std::size_t>(cvp.n_constraint_terms * 3));
 
@@ -913,7 +929,7 @@ void TrajOptQPProblem::Implementation::convexify()
 
   // Insert the triplet list into the sparse matrix
   cvp.constraint_matrix.resize(cvp.num_qp_cnts, cvp.num_qp_vars);
-  cvp.constraint_matrix.reserve(cvp.n_constraint_term_non_zeros + cvp.num_qp_vars);
+  cvp.constraint_matrix.reserve(cvp.n_constraint_term_non_zeros + cvp.n_slack_vars + cvp.num_qp_vars);
   cvp.constraint_matrix.setFromTriplets(cache_triplets_2.begin(), cache_triplets_2.end());
 
   // Update NLP Bounds

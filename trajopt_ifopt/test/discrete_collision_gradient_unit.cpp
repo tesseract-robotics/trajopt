@@ -113,9 +113,7 @@ void runDiscreteGradientTest(const Environment::Ptr& env, double coeff)
   trajopt_common::TrajOptCollisionConfig trajopt_collision_config(margin, margin_coeff);
   trajopt_collision_config.collision_margin_buffer = 0.0;  // 0.05
 
-  auto collision_cache = std::make_shared<CollisionCache>(100);
-  auto collision_evaluator =
-      std::make_shared<SingleTimestepCollisionEvaluator>(collision_cache, manip, env, trajopt_collision_config);
+  auto collision_evaluator = std::make_shared<SingleTimestepCollisionEvaluator>(manip, env, trajopt_collision_config);
   auto cnt = std::make_shared<DiscreteCollisionConstraint>(collision_evaluator, vars[0], 3);
   nlp.addConstraintSet(cnt);
 

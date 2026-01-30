@@ -39,13 +39,11 @@ thread_local tesseract_common::TransformMap ContinuousCollisionEvaluator::transf
 thread_local tesseract_common::TransformMap ContinuousCollisionEvaluator::transforms_cache1;  // NOLINT
 
 LVSContinuousCollisionEvaluator::LVSContinuousCollisionEvaluator(
-    std::shared_ptr<CollisionCache> collision_cache,
     std::shared_ptr<const tesseract_kinematics::JointGroup> manip,
     std::shared_ptr<const tesseract_environment::Environment> env,
     const trajopt_common::TrajOptCollisionConfig& collision_config,
     bool dynamic_environment)
-  : collision_cache_(std::move(collision_cache))
-  , manip_(std::move(manip))
+  : manip_(std::move(manip))
   , env_(std::move(env))
   , collision_check_config_(collision_config.collision_check_config)
   , dynamic_environment_(dynamic_environment)
@@ -98,32 +96,23 @@ LVSContinuousCollisionEvaluator::LVSContinuousCollisionEvaluator(
   contact_manager_->incrementCollisionMargin(margin_buffer_);
 }
 
-std::shared_ptr<const trajopt_common::CollisionCacheData>
-LVSContinuousCollisionEvaluator::calcCollisionData(const Eigen::Ref<const Eigen::VectorXd>& dof_vals0,
-                                                   const Eigen::Ref<const Eigen::VectorXd>& dof_vals1,
-                                                   bool vars0_fixed,
-                                                   bool vars1_fixed,
-                                                   std::size_t bounds_size)
+void LVSContinuousCollisionEvaluator::calcCollisionData(trajopt_common::CollisionCacheData& collision_data,
+                                                        const Eigen::Ref<const Eigen::VectorXd>& dof_vals0,
+                                                        const Eigen::Ref<const Eigen::VectorXd>& dof_vals1,
+                                                        bool vars0_fixed,
+                                                        bool vars1_fixed,
+                                                        std::size_t max_allowed)
 {
-  const std::size_t key = trajopt_common::getHash(this, dof_vals0, dof_vals1);
-  if (auto* cached = collision_cache_->get(key); cached != nullptr)
-  {
-    CONSOLE_BRIDGE_logDebug("Using cached collision check");
-    return *cached;
-  }
+  collision_data.contact_results_map.clear();
+  collision_data.gradient_results_sets.clear();
+  calcCollisionsHelper(collision_data.contact_results_map, dof_vals0, dof_vals1, vars0_fixed, vars1_fixed);
 
-  /**
-   * We tried different combinations of how to store the dist_map and also passing in a sub_dist_map to CalcCollisions,
-   * using member variable and thread_local. Just making the dist_map thread_local and making a copy for sub_dist_result
-   * in CalcCollisions had the most significant impact on peformance and memory.
-   */
-  thread_local tesseract_collision::ContactResultMap dist_map;
-  dist_map.clear();
-  calcCollisionsHelper(dist_map, dof_vals0, dof_vals1, vars0_fixed, vars1_fixed);
+  // If max allowed is not set gradient data is computed
+  if (max_allowed <= 0)
+    return;
 
-  auto data = std::make_shared<trajopt_common::CollisionCacheData>();
-  data->contact_results_map = dist_map;
-  for (const auto& pair : data->contact_results_map)
+  collision_data.gradient_results_sets.reserve(static_cast<std::size_t>(collision_data.contact_results_map.count()));
+  for (const auto& pair : collision_data.contact_results_map)
   {
     using ShapeKey = std::pair<std::size_t, std::size_t>;
     using ShapeGrsMap = std::map<ShapeKey, trajopt_common::GradientResultsSet>;
@@ -153,14 +142,11 @@ LVSContinuousCollisionEvaluator::calcCollisionData(const Eigen::Ref<const Eigen:
       grs.add(calcGradientData(dof_vals0, dof_vals1, dist_result));
     }
 
-    const std::size_t new_size = data->gradient_results_sets.size() + shape_grs.size();
-    data->gradient_results_sets.reserve(new_size);
-
     for (auto& kv : shape_grs)
-      data->gradient_results_sets.push_back(std::move(kv.second));
+      collision_data.gradient_results_sets.emplace_back(std::move(kv.second));
   }
 
-  if (data->gradient_results_sets.size() > bounds_size && bounds_size != 0)
+  if (collision_data.gradient_results_sets.size() > max_allowed)
   {
     auto cmp = [vars0_fixed, vars1_fixed](const trajopt_common::GradientResultsSet& a,
                                           const trajopt_common::GradientResultsSet& b) {
@@ -171,12 +157,9 @@ LVSContinuousCollisionEvaluator::calcCollisionData(const Eigen::Ref<const Eigen:
       return a.getMaxErrorWithBufferT1() > b.getMaxErrorWithBufferT1();
     };
 
-    std::sort(data->gradient_results_sets.begin(), data->gradient_results_sets.end(), cmp);
+    std::sort(collision_data.gradient_results_sets.begin(), collision_data.gradient_results_sets.end(), cmp);
     // (Optional future tweak: partial_sort + erase to keep only top bounds_size)
   }
-
-  collision_cache_->put(key, data);
-  return data;
 }
 
 void LVSContinuousCollisionEvaluator::calcCollisionsHelper(tesseract_collision::ContactResultMap& dist_results,
@@ -229,15 +212,8 @@ void LVSContinuousCollisionEvaluator::calcCollisionsHelper(tesseract_collision::
     for (long i = 0; i < dof_vals0.size(); ++i)
       subtraj.col(i) = Eigen::VectorXd::LinSpaced(cnt, dof_vals0(i), dof_vals1(i));
 
-    /**
-     * We tried different combinations of how to store the dist_map and also passing in a sub_dist_map to
-     * CalcCollisions, using member variable and thread_local. Just making the dist_map thread_local and making a copy
-     * for sub_dist_result in CalcCollisions had the most significant impact on peformance and memory.
-     *
-     * @note copying dist_results here does not copy the capacity so must use thread local
-     */
-    thread_local tesseract_collision::ContactResultMap contacts;
-    contacts.clear();
+    /** @note thread_local did not make a difference here */
+    tesseract_collision::ContactResultMap contacts;
 
     // Perform collision checking for sub trajectory and store results in contacts_vector
     const int last_state_idx{ static_cast<int>(subtraj.rows()) - 1 };
@@ -281,7 +257,9 @@ LVSContinuousCollisionEvaluator::calcGradientData(const Eigen::Ref<const Eigen::
 {
   // Contains the contact distance threshold and coefficient for the given link pair
   const double margin = margin_data_.getCollisionMargin(contact_results.link_names[0], contact_results.link_names[1]);
-  return trajopt_common::getGradient(dof_vals0, dof_vals1, contact_results, margin, margin_buffer_, *manip_);
+  trajopt_common::GradientResults results;
+  trajopt_common::getGradient(results, dof_vals0, dof_vals1, contact_results, margin, margin_buffer_, *manip_);
+  return results;
 }
 
 double LVSContinuousCollisionEvaluator::getCollisionMarginBuffer() const { return margin_buffer_; }
@@ -296,16 +274,16 @@ const trajopt_common::CollisionCoeffData& LVSContinuousCollisionEvaluator::getCo
   return coeff_data_;
 }
 
+const tesseract_kinematics::JointGroup& LVSContinuousCollisionEvaluator::getJointGroup() const { return *manip_; }
+
 //////////////////////////////////////////
 
 LVSDiscreteCollisionEvaluator::LVSDiscreteCollisionEvaluator(
-    std::shared_ptr<CollisionCache> collision_cache,
     std::shared_ptr<const tesseract_kinematics::JointGroup> manip,
     std::shared_ptr<const tesseract_environment::Environment> env,
     const trajopt_common::TrajOptCollisionConfig& collision_config,
     bool dynamic_environment)
-  : collision_cache_(std::move(collision_cache))
-  , manip_(std::move(manip))
+  : manip_(std::move(manip))
   , env_(std::move(env))
   , collision_check_config_(collision_config.collision_check_config)
   , dynamic_environment_(dynamic_environment)
@@ -353,32 +331,23 @@ LVSDiscreteCollisionEvaluator::LVSDiscreteCollisionEvaluator(
   contact_manager_->incrementCollisionMargin(margin_buffer_);
 }
 
-std::shared_ptr<const trajopt_common::CollisionCacheData>
-LVSDiscreteCollisionEvaluator::calcCollisionData(const Eigen::Ref<const Eigen::VectorXd>& dof_vals0,
-                                                 const Eigen::Ref<const Eigen::VectorXd>& dof_vals1,
-                                                 bool vars0_fixed,
-                                                 bool vars1_fixed,
-                                                 std::size_t bounds_size)
+void LVSDiscreteCollisionEvaluator::calcCollisionData(trajopt_common::CollisionCacheData& collision_data,
+                                                      const Eigen::Ref<const Eigen::VectorXd>& dof_vals0,
+                                                      const Eigen::Ref<const Eigen::VectorXd>& dof_vals1,
+                                                      bool vars0_fixed,
+                                                      bool vars1_fixed,
+                                                      std::size_t max_allowed)
 {
-  const std::size_t key = trajopt_common::getHash(this, dof_vals0, dof_vals1);
-  if (auto* cached = collision_cache_->get(key); cached != nullptr)
-  {
-    CONSOLE_BRIDGE_logDebug("Using cached collision check");
-    return *cached;
-  }
+  collision_data.contact_results_map.clear();
+  collision_data.gradient_results_sets.clear();
+  calcCollisionsHelper(collision_data.contact_results_map, dof_vals0, dof_vals1, vars0_fixed, vars1_fixed);
 
-  /**
-   * We tried different combinations of how to store the dist_map and also passing in a sub_dist_map to CalcCollisions,
-   * using member variable and thread_local. Just making the dist_map thread_local and making a copy for sub_dist_result
-   * in CalcCollisions had the most significant impact on peformance and memory.
-   */
-  thread_local tesseract_collision::ContactResultMap dist_map;
-  dist_map.clear();
-  calcCollisionsHelper(dist_map, dof_vals0, dof_vals1, vars0_fixed, vars1_fixed);
+  // If max allowed is not set gradient data is computed
+  if (max_allowed <= 0)
+    return;
 
-  auto data = std::make_shared<trajopt_common::CollisionCacheData>();
-  data->contact_results_map = dist_map;
-  for (const auto& pair : data->contact_results_map)
+  collision_data.gradient_results_sets.reserve(static_cast<std::size_t>(collision_data.contact_results_map.count()));
+  for (const auto& pair : collision_data.contact_results_map)
   {
     using ShapeKey = std::pair<std::size_t, std::size_t>;
     using ShapeGrsMap = std::map<ShapeKey, trajopt_common::GradientResultsSet>;
@@ -408,14 +377,11 @@ LVSDiscreteCollisionEvaluator::calcCollisionData(const Eigen::Ref<const Eigen::V
       grs.add(calcGradientData(dof_vals0, dof_vals1, dist_result));
     }
 
-    const std::size_t new_size = data->gradient_results_sets.size() + shape_grs.size();
-    data->gradient_results_sets.reserve(new_size);
-
     for (auto& kv : shape_grs)
-      data->gradient_results_sets.push_back(std::move(kv.second));
+      collision_data.gradient_results_sets.emplace_back(std::move(kv.second));
   }
 
-  if (data->gradient_results_sets.size() > bounds_size && bounds_size != 0)
+  if (collision_data.gradient_results_sets.size() > max_allowed)
   {
     auto cmp = [vars0_fixed, vars1_fixed](const trajopt_common::GradientResultsSet& a,
                                           const trajopt_common::GradientResultsSet& b) {
@@ -426,12 +392,9 @@ LVSDiscreteCollisionEvaluator::calcCollisionData(const Eigen::Ref<const Eigen::V
       return a.getMaxErrorWithBufferT1() > b.getMaxErrorWithBufferT1();
     };
 
-    std::sort(data->gradient_results_sets.begin(), data->gradient_results_sets.end(), cmp);
+    std::sort(collision_data.gradient_results_sets.begin(), collision_data.gradient_results_sets.end(), cmp);
     // Same optional partial_sort+erase idea as above.
   }
-
-  collision_cache_->put(key, data);
-  return data;
 }
 
 void LVSDiscreteCollisionEvaluator::calcCollisionsHelper(tesseract_collision::ContactResultMap& dist_results,
@@ -486,15 +449,8 @@ void LVSDiscreteCollisionEvaluator::calcCollisionsHelper(tesseract_collision::Co
   for (long i = 0; i < dof_vals0.size(); ++i)
     subtraj.col(i) = Eigen::VectorXd::LinSpaced(cnt, dof_vals0(i), dof_vals1(i));
 
-  /**
-   * We tried different combinations of how to store the dist_map and also passing in a sub_dist_map to CalcCollisions,
-   * using member variable and thread_local. Just making the dist_map thread_local and making a copy for sub_dist_result
-   * in CalcCollisions had the most significant impact on peformance and memory.
-   *
-   * @note copying dist_results here does not copy the capacity so must use thread local
-   */
-  thread_local tesseract_collision::ContactResultMap contacts;
-  contacts.clear();
+  /** @note thread_local had little impact */
+  tesseract_collision::ContactResultMap contacts;
 
   // Perform casted collision checking for sub trajectory and store results in contacts_vector
   const int last_state_idx{ static_cast<int>(subtraj.rows()) - 1 };
@@ -524,7 +480,9 @@ LVSDiscreteCollisionEvaluator::calcGradientData(const Eigen::Ref<const Eigen::Ve
 {
   // Contains the contact distance threshold and coefficient for the given link pair
   const double margin = margin_data_.getCollisionMargin(contact_results.link_names[0], contact_results.link_names[1]);
-  return trajopt_common::getGradient(dof_vals0, dof_vals1, contact_results, margin, margin_buffer_, *manip_);
+  trajopt_common::GradientResults results;
+  trajopt_common::getGradient(results, dof_vals0, dof_vals1, contact_results, margin, margin_buffer_, *manip_);
+  return results;
 }
 
 double LVSDiscreteCollisionEvaluator::getCollisionMarginBuffer() const { return margin_buffer_; }
@@ -538,5 +496,7 @@ const trajopt_common::CollisionCoeffData& LVSDiscreteCollisionEvaluator::getColl
 {
   return coeff_data_;
 }
+
+const tesseract_kinematics::JointGroup& LVSDiscreteCollisionEvaluator::getJointGroup() const { return *manip_; }
 
 }  // namespace trajopt_ifopt
