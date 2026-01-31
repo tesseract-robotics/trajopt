@@ -2,8 +2,8 @@
 Changelog for package trajopt
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.34.0 (2026-01-31)
+-------------------
 * Reduce memory allocation in trajopt_ifopt and trajopt_sqp
 * Fix bug with missing throw on exceptions
 * Simplify trajopt_ifopt by removing use of CompositeDifferentiable

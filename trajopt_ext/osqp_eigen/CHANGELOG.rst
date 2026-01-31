@@ -2,8 +2,8 @@
 Changelog for package osqp_eigen
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.34.0 (2026-01-31)
+-------------------
 * Add nodes variable set (`#438 <https://github.com/tesseract-robotics/trajopt/issues/438>`_)
 * Contributors: Levi Armstrong
 

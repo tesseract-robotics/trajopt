@@ -2,8 +2,8 @@
 Changelog for package trajopt_utils
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.34.0 (2026-01-31)
+-------------------
 * Reduce memory allocation in trajopt_ifopt and trajopt_sqp
 * Reduce allocations
 * Minor optimizations in the weighted average methods

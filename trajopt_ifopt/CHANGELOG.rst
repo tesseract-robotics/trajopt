@@ -2,8 +2,8 @@
 Changelog for package trajopt_ifopt
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.34.0 (2026-01-31)
+-------------------
 * Reduce memory allocation in trajopt_ifopt and trajopt_sqp
 * Leverage sparse matrix insert back for collision jacobian population (`#526 <https://github.com/tesseract-robotics/trajopt/issues/526>`_)
 * Reduce allocations
