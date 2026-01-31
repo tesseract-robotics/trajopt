@@ -2,6 +2,16 @@
 Changelog for package trajopt_utils
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Reduce memory allocation in trajopt_ifopt and trajopt_sqp
+* Reduce allocations
+* Minor optimizations in the weighted average methods
+* Cleanup doxygen file headers
+* Remove old console bridge cmake target logic
+* Switch to using Cereal for serialization
+* Contributors: Levi Armstrong
+
 0.33.0 (2025-10-28)
 -------------------
 

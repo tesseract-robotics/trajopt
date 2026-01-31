@@ -2,6 +2,43 @@
 Changelog for package trajopt_sqp
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Reduce memory allocation in trajopt_ifopt and trajopt_sqp
+* Update Problem and QP Problem interface
+* Verify bounds are correct based on penalty type in debug
+* Update enum in trajopt_ifopt and trajopt_sqp to follow google style guide
+* Add range bound support to cartesian position constraint
+* Fix size bug in ifopt qp problem
+* Add back cvp.gradient.setZero()
+* Consolidate TrajOptQPProblem convexify
+* Simplify TrajOptQPProblem convexify
+* Add ComponentInfoType
+* Consolidate slack variables selection into confexify method
+* Add getNonZeros to trajopt_ifopt Differentiable interface
+* Rename trajopt qp problem member variables
+* Optimize trajopt ifopt qp problem (`#511 <https://github.com/tesseract-robotics/trajopt/issues/511>`_)
+* Cleanup variable names in trajopt qp problem
+* Consolidate cost and constraint info containers
+* Consolidate everything into the convexify function
+* Simplification by consolidation of similar components
+* Simplify trajopt_ifopt by removing use of CompositeDifferentiable
+* Remove unused PCL dependencies
+* Add dynamic constraint support
+* Remove dependency on Ifopt repository
+* Separate static from dynamic variables in qp problem
+* Update so there is only a single merit coeff per constraint set like the original trajopt
+* Optimize expressions
+* Minor update to trust region sqp solver
+* Minor update to osqp eigen solver
+* Cache bounds during setup
+* Optimize trajopt qp problem class
+* Add nodes variable set (`#438 <https://github.com/tesseract-robotics/trajopt/issues/438>`_)
+* Cleanup doxygen file headers
+* Remove old console bridge cmake target logic
+* Switch to using Cereal for serialization
+* Contributors: Levi Armstrong, Roelof Oomen
+
 0.33.0 (2025-10-28)
 -------------------
 

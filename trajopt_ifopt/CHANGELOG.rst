@@ -2,6 +2,37 @@
 Changelog for package trajopt_ifopt
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Reduce memory allocation in trajopt_ifopt and trajopt_sqp
+* Leverage sparse matrix insert back for collision jacobian population (`#526 <https://github.com/tesseract-robotics/trajopt/issues/526>`_)
+* Reduce allocations
+* Update Problem and QP Problem interface
+* Update enum in trajopt_ifopt and trajopt_sqp to follow google style guide
+* Add range bound support to joint position constraint
+* Fix BoundsType documentation
+* Add range bound support to cartesian position constraint
+* Update fillJacobianBlock so out param is first
+* Add getNonZeros to trajopt_ifopt Differentiable interface
+* Optimize trajopt ifopt qp problem (`#511 <https://github.com/tesseract-robotics/trajopt/issues/511>`_)
+* Fix bug with missing throw on exceptions
+* Simplification by consolidation of similar components
+* Copilot review changes (`#504 <https://github.com/tesseract-robotics/trajopt/issues/504>`_)
+* Remove unused PCL dependencies
+* Update readme to explain how constraint/cost coefficients are leveraged internally
+* Fix Composite getJacobian
+* Add dynamic constraint support
+* Remove dependency on Ifopt repository
+* Separate static from dynamic variables in qp problem
+* Minor optimizations in the weighted average methods
+* Update ifopt collision constraints to accept vector of vars
+* Optimize collision evaluators
+* Optimize costs and constraints
+* Add nodes variable set (`#438 <https://github.com/tesseract-robotics/trajopt/issues/438>`_)
+* Cleanup doxygen file headers
+* Remove old console bridge cmake target logic
+* Contributors: Levi Armstrong, Roelof Oomen
+
 0.33.0 (2025-10-28)
 -------------------
 

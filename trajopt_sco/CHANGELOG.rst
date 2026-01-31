@@ -2,6 +2,15 @@
 Changelog for package trajopt_sco
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Reduce memory allocation in trajopt_ifopt and trajopt_sqp
+* Copilot review changes (`#504 <https://github.com/tesseract-robotics/trajopt/issues/504>`_)
+* Add dynamic constraint support
+* Add nodes variable set (`#438 <https://github.com/tesseract-robotics/trajopt/issues/438>`_)
+* Switch to using Cereal for serialization
+* Contributors: Levi Armstrong
+
 0.33.0 (2025-10-28)
 -------------------
 
