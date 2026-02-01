@@ -266,7 +266,7 @@ JointVelEqCost::JointVelEqCost(VarArray vars,
   , first_step_(first_step)
   , last_step_(last_step)
 {
-  if (((last_step_ - 1) - first_step_) <= 0)
+  if (((last_step_ - 1) - first_step_) < 0)
     throw std::runtime_error("JointVelEqCost, trajectory is too short!");
 
   for (int i = first_step_; i <= last_step_ - 1; ++i)
@@ -316,7 +316,7 @@ JointVelIneqCost::JointVelIneqCost(VarArray vars,
   , first_step_(first_step)
   , last_step_(last_step)
 {
-  if (((last_step_ - 1) - first_step_) <= 0)
+  if (((last_step_ - 1) - first_step_) < 0)
     throw std::runtime_error("JointVelIneqCost, trajectory is too short!");
 
   for (int i = first_step_; i <= last_step_ - 1; ++i)
@@ -385,7 +385,7 @@ JointVelEqConstraint::JointVelEqConstraint(VarArray vars,
   , first_step_(first_step)
   , last_step_(last_step)
 {
-  if (((last_step_ - 1) - first_step_) <= 0)
+  if (((last_step_ - 1) - first_step_) < 0)
     throw std::runtime_error("JointVelEqConstraint, trajectory is too short!");
 
   for (int i = first_step_; i <= last_step_ - 1; ++i)
@@ -439,7 +439,7 @@ JointVelIneqConstraint::JointVelIneqConstraint(VarArray vars,
   , first_step_(first_step)
   , last_step_(last_step)
 {
-  if (((last_step_ - 1) - first_step_) <= 0)
+  if (((last_step_ - 1) - first_step_) < 0)
     throw std::runtime_error("JointVelIneqConstraint, trajectory is too short!");
 
   for (int i = first_step_; i <= last_step_ - 1; ++i)
@@ -511,7 +511,7 @@ JointAccEqCost::JointAccEqCost(VarArray vars,
   , first_step_(first_step)
   , last_step_(last_step)
 {
-  if (((last_step_ - 2) - first_step_) <= 0)
+  if (((last_step_ - 2) - first_step_) < 0)
     throw std::runtime_error("JointAccEqCost, trajectory is too short!");
 
   for (int i = first_step_; i <= last_step_ - 2; ++i)
@@ -564,7 +564,7 @@ JointAccIneqCost::JointAccIneqCost(VarArray vars,
   , first_step_(first_step)
   , last_step_(last_step)
 {
-  if (((last_step_ - 2) - first_step_) <= 0)
+  if (((last_step_ - 2) - first_step_) < 0)
     throw std::runtime_error("JointAccIneqCost, trajectory is too short!");
 
   for (int i = first_step_; i <= last_step_ - 2; ++i)
@@ -634,7 +634,7 @@ JointAccEqConstraint::JointAccEqConstraint(VarArray vars,
   , first_step_(first_step)
   , last_step_(last_step)
 {
-  if (((last_step_ - 2) - first_step_) <= 0)
+  if (((last_step_ - 2) - first_step_) < 0)
     throw std::runtime_error("JointAccEqConstraint, trajectory is too short!");
 
   for (int i = first_step_; i <= last_step_ - 2; ++i)
@@ -691,7 +691,7 @@ JointAccIneqConstraint::JointAccIneqConstraint(VarArray vars,
   , first_step_(first_step)
   , last_step_(last_step)
 {
-  if (((last_step_ - 2) - first_step_) <= 0)
+  if (((last_step_ - 2) - first_step_) < 0)
     throw std::runtime_error("JointAccIneqConstraint, trajectory is too short!");
 
   // Form upper limit expr = - (upper_tol-(vel-targ))
@@ -765,7 +765,7 @@ JointJerkEqCost::JointJerkEqCost(VarArray vars,
   , first_step_(first_step)
   , last_step_(last_step)
 {
-  if (((last_step_ - 3) - first_step_) <= 0)
+  if (((last_step_ - 3) - first_step_) < 0)
     throw std::runtime_error("JointJerkEqCost, trajectory is too short!");
 
   for (int i = first_step_; i <= last_step_ - 3; ++i)
@@ -820,7 +820,7 @@ JointJerkIneqCost::JointJerkIneqCost(VarArray vars,
   , first_step_(first_step)
   , last_step_(last_step)
 {
-  if (((last_step_ - 3) - first_step_) <= 0)
+  if (((last_step_ - 3) - first_step_) < 0)
     throw std::runtime_error("JointJerkIneqCost, trajectory is too short!");
 
   for (int i = first_step_; i <= last_step_ - 3; ++i)
@@ -892,7 +892,7 @@ JointJerkEqConstraint::JointJerkEqConstraint(VarArray vars,
   , first_step_(first_step)
   , last_step_(last_step)
 {
-  if (((last_step_ - 3) - first_step_) <= 0)
+  if (((last_step_ - 3) - first_step_) < 0)
     throw std::runtime_error("JointJerkEqConstraint, trajectory is too short!");
 
   for (int i = first_step_; i <= last_step_ - 3; ++i)
@@ -951,7 +951,7 @@ JointJerkIneqConstraint::JointJerkIneqConstraint(VarArray vars,
   , first_step_(first_step)
   , last_step_(last_step)
 {
-  if (((last_step_ - 3) - first_step_) <= 0)
+  if (((last_step_ - 3) - first_step_) < 0)
     throw std::runtime_error("JointJerkIneqConstraint, trajectory is too short!");
 
   for (int i = first_step_; i <= last_step_ - 3; ++i)
