@@ -2,6 +2,11 @@
 Changelog for package trajopt_ifopt
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Add back collision data caching to trajopt ifopt
+* Contributors: Levi Armstrong
+
 0.34.0 (2026-01-31)
 -------------------
 * Reduce memory allocation in trajopt_ifopt and trajopt_sqp
