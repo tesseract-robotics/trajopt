@@ -694,7 +694,12 @@ void TrajOptQPProblem::Implementation::setup()
 
 void TrajOptQPProblem::Implementation::setVariables(const double* x)
 {
+  const std::size_t hash = variables->getHash();
   variables->setVariables(Eigen::Map<const Eigen::VectorXd>(x, variables->getRows()));
+
+  // Skip update if variables did not change
+  if (hash == variables->getHash())
+    return;
 
   n_dyn_components = 0;
   for (auto& c : all_components)

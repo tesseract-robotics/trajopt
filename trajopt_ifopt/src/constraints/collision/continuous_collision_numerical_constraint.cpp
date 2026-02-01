@@ -89,19 +89,24 @@ ContinuousCollisionNumericalConstraint::ContinuousCollisionNumericalConstraint(
 int ContinuousCollisionNumericalConstraint::update()
 {
   std::size_t variable_hash = position_vars_[0]->getParent()->getParent()->getHash();
-  if (variable_hash == collision_data_hash_)
-    return rows_;
+  auto* cache_data = collision_data_cache_.get(variable_hash);
 
-  collision_evaluator_->calcCollisionData(collision_data_,
-                                          position_vars_[0]->value(),
-                                          position_vars_[1]->value(),
-                                          vars0_fixed_,
-                                          vars1_fixed_,
-                                          bounds_.size());
+  if (cache_data != nullptr)
+  {
+    collision_data_ = *cache_data;
+  }
+  else
+  {
+    auto data = std::make_shared<trajopt_common::CollisionCacheData>();
+    collision_evaluator_->calcCollisionData(
+        *data, position_vars_[0]->value(), position_vars_[1]->value(), vars0_fixed_, vars1_fixed_, bounds_.size());
+    collision_data_ = data;
+    collision_data_cache_.put(variable_hash, data);
+  }
 
-  const auto cnt = std::min<std::size_t>(bounds_.size(), collision_data_.gradient_results_sets.size());
+  const auto cnt = std::min<std::size_t>(bounds_.size(), collision_data_->gradient_results_sets.size());
   for (std::size_t i = 0; i < cnt; ++i)
-    coeffs_(static_cast<Eigen::Index>(i)) = collision_data_.gradient_results_sets[i].coeff;
+    coeffs_(static_cast<Eigen::Index>(i)) = collision_data_->gradient_results_sets[i].coeff;
 
   non_zeros_ = 2 * static_cast<Eigen::Index>(rows_) * n_dof_;
   return rows_;
@@ -113,16 +118,16 @@ Eigen::VectorXd ContinuousCollisionNumericalConstraint::getValues() const
   const double margin_buffer = collision_evaluator_->getCollisionMarginBuffer();
   Eigen::VectorXd values = Eigen::VectorXd::Constant(static_cast<Eigen::Index>(bounds_.size()), -margin_buffer);
 
-  if (collision_data_.gradient_results_sets.empty())
+  if (collision_data_->gradient_results_sets.empty())
     return values;
 
-  const std::size_t cnt = std::min(bounds_.size(), collision_data_.gradient_results_sets.size());
+  const std::size_t cnt = std::min(bounds_.size(), collision_data_->gradient_results_sets.size());
 
   if (!vars0_fixed_ && !vars1_fixed_)
   {
     for (std::size_t i = 0; i < cnt; ++i)
     {
-      const trajopt_common::GradientResultsSet& r = collision_data_.gradient_results_sets[i];
+      const trajopt_common::GradientResultsSet& r = collision_data_->gradient_results_sets[i];
       values(static_cast<Eigen::Index>(i)) = r.getMaxError();
     }
   }
@@ -130,7 +135,7 @@ Eigen::VectorXd ContinuousCollisionNumericalConstraint::getValues() const
   {
     for (std::size_t i = 0; i < cnt; ++i)
     {
-      const trajopt_common::GradientResultsSet& r = collision_data_.gradient_results_sets[i];
+      const trajopt_common::GradientResultsSet& r = collision_data_->gradient_results_sets[i];
       values(static_cast<Eigen::Index>(i)) = r.getMaxErrorT0();
     }
   }
@@ -138,7 +143,7 @@ Eigen::VectorXd ContinuousCollisionNumericalConstraint::getValues() const
   {
     for (std::size_t i = 0; i < cnt; ++i)
     {
-      const trajopt_common::GradientResultsSet& r = collision_data_.gradient_results_sets[i];
+      const trajopt_common::GradientResultsSet& r = collision_data_->gradient_results_sets[i];
       values(static_cast<Eigen::Index>(i)) = r.getMaxErrorT1();
     }
   }
@@ -165,11 +170,11 @@ void ContinuousCollisionNumericalConstraint::fillJacobianBlock(Jacobian& jac_blo
   Eigen::VectorXd joint_vals0 = position_vars_[0]->value();
   const Eigen::VectorXd joint_vals1 = position_vars_[1]->value();
 
-  if (collision_data_.gradient_results_sets.empty())
+  if (collision_data_->gradient_results_sets.empty())
     return;
 
   trajopt_common::CollisionCacheData collision_data_delta;
-  const std::size_t cnt = std::min(bounds_.size(), collision_data_.gradient_results_sets.size());
+  const std::size_t cnt = std::min(bounds_.size(), collision_data_->gradient_results_sets.size());
   const double delta = 1e-8;
   for (std::size_t p = 0; p < 2; p++)
   {
@@ -182,7 +187,7 @@ void ContinuousCollisionNumericalConstraint::fillJacobianBlock(Jacobian& jac_blo
 
       for (int i = 0; i < static_cast<int>(cnt); ++i)
       {
-        const auto& baseline = collision_data_.gradient_results_sets[static_cast<std::size_t>(i)];
+        const auto& baseline = collision_data_->gradient_results_sets[static_cast<std::size_t>(i)];
         auto fn = [&baseline](const trajopt_common::GradientResultsSet& cr) {
           return (cr.key == baseline.key && cr.shape_key == baseline.shape_key);
         };
