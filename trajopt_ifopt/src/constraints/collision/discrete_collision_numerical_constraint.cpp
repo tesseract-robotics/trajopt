@@ -64,14 +64,23 @@ DiscreteCollisionNumericalConstraint::DiscreteCollisionNumericalConstraint(
 int DiscreteCollisionNumericalConstraint::update()
 {
   std::size_t variable_hash = position_var_->getParent()->getParent()->getHash();
-  if (variable_hash == collision_data_hash_)
-    return rows_;
+  auto* cache_data = collision_data_cache_.get(variable_hash);
 
-  collision_evaluator_->calcCollisions(collision_data_, position_var_->value(), bounds_.size());
+  if (cache_data != nullptr)
+  {
+    collision_data_ = *cache_data;
+  }
+  else
+  {
+    auto data = std::make_shared<trajopt_common::CollisionCacheData>();
+    collision_evaluator_->calcCollisions(*data, position_var_->value(), bounds_.size());
+    collision_data_ = data;
+    collision_data_cache_.put(variable_hash, data);
+  }
 
-  const auto cnt = std::min<std::size_t>(bounds_.size(), collision_data_.gradient_results_sets.size());
+  const auto cnt = std::min<std::size_t>(bounds_.size(), collision_data_->gradient_results_sets.size());
   for (std::size_t i = 0; i < cnt; ++i)
-    coeffs_(static_cast<Eigen::Index>(i)) = collision_data_.gradient_results_sets[i].coeff;
+    coeffs_(static_cast<Eigen::Index>(i)) = collision_data_->gradient_results_sets[i].coeff;
 
   // Setting to zeros because snopt sparsity cannot change
   std::call_once(init_flag_, &DiscreteCollisionNumericalConstraint::init, this);
@@ -113,13 +122,13 @@ DiscreteCollisionNumericalConstraint::calcValues(const Eigen::Ref<const Eigen::V
   const double margin_buffer = collision_evaluator_->getCollisionMarginBuffer();
   Eigen::VectorXd values = Eigen::VectorXd::Constant(static_cast<Eigen::Index>(bounds_.size()), -margin_buffer);
 
-  if (collision_data_.gradient_results_sets.empty())
+  if (collision_data_->gradient_results_sets.empty())
     return values;
 
-  const std::size_t cnt = std::min(bounds_.size(), collision_data_.gradient_results_sets.size());
+  const std::size_t cnt = std::min(bounds_.size(), collision_data_->gradient_results_sets.size());
   for (std::size_t i = 0; i < cnt; ++i)
   {
-    const auto& grs = collision_data_.gradient_results_sets[i];
+    const auto& grs = collision_data_->gradient_results_sets[i];
     values(static_cast<Eigen::Index>(i)) = grs.getMaxErrorT0();
   }
 
@@ -139,10 +148,10 @@ void DiscreteCollisionNumericalConstraint::calcJacobianBlock(const Eigen::Ref<co
   if (!triplet_list_.empty())                                               // NOLINT
     jac_block.setFromTriplets(triplet_list_.begin(), triplet_list_.end());  // NOLINT
 
-  if (collision_data_.gradient_results_sets.empty())
+  if (collision_data_->gradient_results_sets.empty())
     return;
 
-  const std::size_t cnt = std::min(bounds_.size(), collision_data_.gradient_results_sets.size());
+  const std::size_t cnt = std::min(bounds_.size(), collision_data_->gradient_results_sets.size());
 
   const double margin_buffer = collision_evaluator_->getCollisionMarginBuffer();
 
@@ -155,7 +164,7 @@ void DiscreteCollisionNumericalConstraint::calcJacobianBlock(const Eigen::Ref<co
     collision_evaluator_->calcCollisions(collision_data_delta, jv, bounds_.size());
     for (int i = 0; i < static_cast<int>(cnt); ++i)
     {
-      const auto& baseline = collision_data_.gradient_results_sets[static_cast<std::size_t>(i)];
+      const auto& baseline = collision_data_->gradient_results_sets[static_cast<std::size_t>(i)];
       auto fn = [&baseline](const trajopt_common::GradientResultsSet& cr) {
         return (cr.key == baseline.key && cr.shape_key == baseline.shape_key);
       };
