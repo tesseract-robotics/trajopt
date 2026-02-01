@@ -2,8 +2,8 @@
 Changelog for package trajopt_ifopt
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.34.1 (2026-01-31)
+-------------------
 * Add back collision data caching to trajopt ifopt
 * Contributors: Levi Armstrong
 

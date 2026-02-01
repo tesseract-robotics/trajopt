@@ -2,8 +2,8 @@
 Changelog for package trajopt
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.34.1 (2026-01-31)
+-------------------
 * Fix trajopt joint term unit tests
 * Contributors: Levi Armstrong
 
