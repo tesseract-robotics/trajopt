@@ -101,13 +101,12 @@ Eigen::VectorXd JointJerkConstraint::getValues() const
     const Eigen::VectorXd& q3 = position_vars_[i + 3]->value();
 
     const Eigen::VectorXd single_step = -q0 + 3.0 * q1 - 3.0 * q2 + q3;
-
     jerk.segment(static_cast<Eigen::Index>(i) * n_dof_, n_dof_) = single_step;
   }
 
-  // Backward diff for timesteps [n-3, n-1]
+  // Backward diff for the last three timesteps [n-3, n-1]
   // j_i = ( q_i - 3*q_{i-1} + 3*q_{i-2} - q_{i-3} )
-  for (std::size_t i = n - 3; i < n; ++i)
+  for (std::size_t i = std::max(n - 3, 3UL); i < n; ++i)
   {
     const Eigen::VectorXd& q0 = position_vars_[i]->value();      // q_i
     const Eigen::VectorXd& q1 = position_vars_[i - 1]->value();  // q_{i-1}
@@ -115,7 +114,6 @@ Eigen::VectorXd JointJerkConstraint::getValues() const
     const Eigen::VectorXd& q3 = position_vars_[i - 3]->value();  // q_{i-3}
 
     const Eigen::VectorXd single_step = q0 - 3.0 * q1 + 3.0 * q2 - q3;
-
     jerk.segment(static_cast<Eigen::Index>(i) * n_dof_, n_dof_) = single_step;
   }
 
@@ -135,46 +133,45 @@ void JointJerkConstraint::fillJacobianBlock(Jacobian& jac_block, const std::stri
     return;
 
   const std::size_t n = position_vars_.size();
-
-  for (std::size_t i = 0; i < n; ++i)
+  for (std::size_t i = 0; i < n - 3; ++i)
   {
     const Eigen::Index row_offset = static_cast<Eigen::Index>(i) * n_dof_;
 
-    if (i < n - 3)
-    {
-      // Forward diff: j_i = c * (-q_i + 3*q_{i+1} - 3*q_{i+2} + q_{i+3})
-      const Eigen::Index col_i = position_vars_[i]->getIndex();
-      const Eigen::Index col_ip1 = position_vars_[i + 1]->getIndex();
-      const Eigen::Index col_ip2 = position_vars_[i + 2]->getIndex();
-      const Eigen::Index col_ip3 = position_vars_[i + 3]->getIndex();
+    // Forward diff: j_i = c * (-q_i + 3*q_{i+1} - 3*q_{i+2} + q_{i+3})
+    const Eigen::Index col_i = position_vars_[i]->getIndex();
+    const Eigen::Index col_ip1 = position_vars_[i + 1]->getIndex();
+    const Eigen::Index col_ip2 = position_vars_[i + 2]->getIndex();
+    const Eigen::Index col_ip3 = position_vars_[i + 3]->getIndex();
 
-      for (Eigen::Index k = 0; k < n_dof_; ++k)
-      {
-        const Eigen::Index row = row_offset + k;
-        jac_block.startVec(row);
-        jac_block.insertBack(row, col_i + k) = -1;      // ∂j_i/∂q_i
-        jac_block.insertBack(row, col_ip1 + k) = 3.0;   // ∂j_i/∂q_{i+1}
-        jac_block.insertBack(row, col_ip2 + k) = -3.0;  // ∂j_i/∂q_{i+2}
-        jac_block.insertBack(row, col_ip3 + k) = 1;     // ∂j_i/∂q_{i+3}
-      }
+    for (Eigen::Index k = 0; k < n_dof_; ++k)
+    {
+      const Eigen::Index row = row_offset + k;
+      jac_block.startVec(row);
+      jac_block.insertBack(row, col_i + k) = -1;      // ∂j_i/∂q_i
+      jac_block.insertBack(row, col_ip1 + k) = 3.0;   // ∂j_i/∂q_{i+1}
+      jac_block.insertBack(row, col_ip2 + k) = -3.0;  // ∂j_i/∂q_{i+2}
+      jac_block.insertBack(row, col_ip3 + k) = 1;     // ∂j_i/∂q_{i+3}
     }
-    else
-    {
-      // Backward diff: j_i = c * (q_i - 3*q_{i-1} + 3*q_{i-2} - q_{i-3})
-      const Eigen::Index col_i = position_vars_[i]->getIndex();
-      const Eigen::Index col_im1 = position_vars_[i - 1]->getIndex();
-      const Eigen::Index col_im2 = position_vars_[i - 2]->getIndex();
-      const Eigen::Index col_im3 = position_vars_[i - 3]->getIndex();
+  }
 
-      for (Eigen::Index k = 0; k < n_dof_; ++k)
-      {
-        const Eigen::Index row = row_offset + k;
-        jac_block.startVec(row);
-        jac_block.insertBack(row, col_im3 + k) = -1;    // ∂j_i/∂q_{i-3}
-        jac_block.insertBack(row, col_im2 + k) = 3.0;   // ∂j_i/∂q_{i-2}
-        jac_block.insertBack(row, col_im1 + k) = -3.0;  // ∂j_i/∂q_{i-1}
-        jac_block.insertBack(row, col_i + k) = 1;       // ∂j_i/∂q_i
-      }
+  for (std::size_t i = std::max(n - 3, 3UL); i < n; ++i)
+  {
+    const Eigen::Index row_offset = static_cast<Eigen::Index>(i) * n_dof_;
+
+    // Backward diff: j_i = c * (q_i - 3*q_{i-1} + 3*q_{i-2} - q_{i-3})
+    const Eigen::Index col_i = position_vars_[i]->getIndex();
+    const Eigen::Index col_im1 = position_vars_[i - 1]->getIndex();
+    const Eigen::Index col_im2 = position_vars_[i - 2]->getIndex();
+    const Eigen::Index col_im3 = position_vars_[i - 3]->getIndex();
+
+    for (Eigen::Index k = 0; k < n_dof_; ++k)
+    {
+      const Eigen::Index row = row_offset + k;
+      jac_block.startVec(row);
+      jac_block.insertBack(row, col_im3 + k) = -1;    // ∂j_i/∂q_{i-3}
+      jac_block.insertBack(row, col_im2 + k) = 3.0;   // ∂j_i/∂q_{i-2}
+      jac_block.insertBack(row, col_im1 + k) = -3.0;  // ∂j_i/∂q_{i-1}
+      jac_block.insertBack(row, col_i + k) = 1;       // ∂j_i/∂q_i
     }
   }
 
