@@ -89,19 +89,20 @@ ContinuousCollisionNumericalConstraint::ContinuousCollisionNumericalConstraint(
 int ContinuousCollisionNumericalConstraint::update()
 {
   std::size_t variable_hash = position_vars_[0]->getParent()->getParent()->getHash();
-  auto* cache_data = collision_data_cache_.get(variable_hash);
+  auto cache_data = collision_data_cache_.getOrAcquire(variable_hash);
 
-  if (cache_data != nullptr)
+  collision_data_ = cache_data.first;
+  if (!cache_data.second)
   {
-    collision_data_ = *cache_data;
-  }
-  else
-  {
-    auto data = std::make_shared<trajopt_common::CollisionCacheData>();
-    collision_evaluator_->calcCollisionData(
-        *data, position_vars_[0]->value(), position_vars_[1]->value(), vars0_fixed_, vars1_fixed_, bounds_.size());
-    collision_data_ = data;
-    collision_data_cache_.put(variable_hash, data);
+    collision_data_->contact_results_map.clear();
+    collision_data_->gradient_results_sets.clear();
+    collision_evaluator_->calcCollisionData(*collision_data_,
+                                            position_vars_[0]->value(),
+                                            position_vars_[1]->value(),
+                                            vars0_fixed_,
+                                            vars1_fixed_,
+                                            bounds_.size());
+    collision_data_cache_.put(variable_hash, collision_data_);
   }
 
   const auto cnt = std::min<std::size_t>(bounds_.size(), collision_data_->gradient_results_sets.size());

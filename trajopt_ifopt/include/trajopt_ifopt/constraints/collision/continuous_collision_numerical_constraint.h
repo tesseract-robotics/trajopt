@@ -123,10 +123,8 @@ private:
   std::vector<Eigen::Triplet<double>> triplet_list_;
 
   std::shared_ptr<ContinuousCollisionEvaluator> collision_evaluator_;
-  trajopt_common::Cache<std::size_t, std::shared_ptr<const trajopt_common::CollisionCacheData>> collision_data_cache_{
-    10
-  };
-  std::shared_ptr<const trajopt_common::CollisionCacheData> collision_data_;
+  trajopt_common::Cache<std::size_t, trajopt_common::CollisionCacheData> collision_data_cache_{ 3 };
+  std::shared_ptr<trajopt_common::CollisionCacheData> collision_data_;
 };
 }  // namespace trajopt_ifopt
 #endif  // TRAJOPT_IFOPT_CONTINUOUS_COLLISION_NUMERICAL_CONSTRAINT_H
