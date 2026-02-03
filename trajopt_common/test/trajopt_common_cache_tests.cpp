@@ -26,7 +26,7 @@ std::shared_ptr<TestValue> acquireAndPut(CacheT& cache, Key key, int marker)
   {
     ptr->marker = marker;
     // put returns bool now; ensure it succeeded
-    ASSERT_TRUE(cache.put(key, ptr));
+    EXPECT_TRUE(cache.put(key, ptr));
   }
   return ptr;
 }
