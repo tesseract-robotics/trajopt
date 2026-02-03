@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <package format="3">
   <name>trajopt_common</name>
-  <version>0.34.2</version>
+  <version>0.34.3</version>
   <description>The trajopt_common package</description>
   <maintainer email="levi.armstrong@swri.org">Levi Armstrong</maintainer>
   <license>BSD</license>

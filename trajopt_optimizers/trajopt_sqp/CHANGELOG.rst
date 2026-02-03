@@ -2,8 +2,8 @@
 Changelog for package trajopt_sqp
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.34.3 (2026-02-03)
+-------------------
 * Update trajopt_ifopt cartesian pose constraint to align with legacy version
 * Contributors: Levi Armstrong
 
