@@ -2,6 +2,11 @@
 Changelog for package trajopt_ifopt
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Update trajopt_ifopt cartesian pose constraint to align with legacy version
+* Contributors: Levi Armstrong
+
 0.34.2 (2026-02-03)
 -------------------
 * Fix acceleration and jerk minimum number of variables

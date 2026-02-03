@@ -2,6 +2,9 @@
 Changelog for package trajopt
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+
 0.34.2 (2026-02-03)
 -------------------
 * Fix trajopt joint term unit tests
