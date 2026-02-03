@@ -22,7 +22,7 @@ namespace trajopt_common
 //     if (!hit) { /* populate ptr (returned from pool) */ cache.put(key, ptr); }
 // - get(key) returns Ptr on hit, nullptr on miss.
 // - getOrAcquire(key) returns {ptr, true} on hit, {ptr, false} on miss (ptr from pool).
-//   If the pool is exhausted (no free or evictable slots), getOrAcquire returns {nullptr, false}.
+//   If the pool needs more capacity, it will grow automatically (doubling).
 // - put(key, ptr) associates a pooled ptr with a key and marks it MRU. Returns true on success
 //   (ptr belonged to this pool), false otherwise.
 // - erase(key) removes the mapping but leaves pooled object allocated.
@@ -37,17 +37,18 @@ public:
   using AcquireResult = std::pair<Ptr, bool>;  // {ptr, hit}
 
   explicit Cache(std::size_t capacity = 666)
-    : capacity_(capacity)
-    , pool_(capacity)
-    , slot_key_(capacity)
-    , assigned_(capacity, false)
-    , checked_out_(capacity, false)
-    , slot_it_(capacity)
+    : capacity_(capacity), pool_(), slot_key_(), assigned_(), checked_out_(), slot_it_()
   {
-    free_slots_.reserve(capacity_);
+    if (capacity_ == 0)
+      capacity_ = 1;
+    pool_.reserve(capacity_);
+    slot_key_.resize(capacity_);
+    assigned_.assign(capacity_, false);
+    checked_out_.assign(capacity_, false);
+    slot_it_.resize(capacity_);
     for (std::size_t i = 0; i < capacity_; ++i)
     {
-      pool_[i] = std::make_shared<ValueT>();
+      pool_.push_back(std::make_shared<ValueT>());
       ptr_to_slot_[pool_[i].get()] = i;
       free_slots_.push_back(i);
     }
@@ -69,7 +70,6 @@ public:
   // Returns {ptr, false} on miss, where ptr is taken from the pool.
   // On miss, the returned ptr is NOT associated with `key`. The caller should
   // rebuild it and then call put(key, ptr) to cache it.
-  // If the pool is exhausted (no free or evictable slots), returns {nullptr, false}.
   AcquireResult getOrAcquire(const KeyT& key)
   {
     const auto it = key_to_slot_.find(key);
@@ -81,8 +81,11 @@ public:
     }
 
     const std::size_t slot = acquireSlot();
+    // acquireSlot grows the pool if necessary and returns a valid slot.
+    // It should not return kNpos under normal conditions unless allocation fails.
     if (slot == kNpos)
-      return { Ptr{}, false };
+      return { Ptr{}, false };  // should rarely happen; indicates allocation failure condition
+
     return { pool_[slot], false };
   }
 
@@ -162,6 +165,32 @@ public:
 private:
   static constexpr std::size_t kNpos = static_cast<std::size_t>(-1);
 
+  // Grow pool to at least new_capacity (must be > capacity_). Preserves existing
+  // pool entries and expands slot metadata.
+  void growPool(std::size_t new_capacity)
+  {
+    if (new_capacity <= capacity_)
+      return;
+
+    const std::size_t old = capacity_;
+    // Reserve to reduce reallocations; we'll push_back new elements so indices 0..old-1 are unchanged.
+    pool_.reserve(new_capacity);
+
+    slot_key_.resize(new_capacity);
+    assigned_.resize(new_capacity, false);
+    checked_out_.resize(new_capacity, false);
+    slot_it_.resize(new_capacity);
+
+    for (std::size_t i = old; i < new_capacity; ++i)
+    {
+      pool_.push_back(std::make_shared<ValueT>());
+      ptr_to_slot_[pool_[i].get()] = i;
+      free_slots_.push_back(i);
+    }
+
+    capacity_ = new_capacity;
+  }
+
   // Moves a slot to most-recently-used.
   void touch(std::size_t slot)
   {
@@ -208,7 +237,7 @@ private:
   //  - Otherwise evict the LRU cached slot.
   //
   // The returned slot is marked checked_out_ = true and has no key mapping.
-  // If no slot can be provided (all slots checked out and nothing evictable), returns kNpos.
+  // This implementation will grow the pool automatically if no slots are available.
   std::size_t acquireSlot()
   {
     std::size_t slot = kNpos;
@@ -238,8 +267,25 @@ private:
       else
       {
         // No available free slots and no assigned (evictable) slots:
-        // indicate exhaustion by returning kNpos.
-        return kNpos;
+        // grow the pool (double).
+        std::size_t new_capacity = capacity_ ? capacity_ * 2 : 1;
+        growPool(new_capacity);
+
+        // After growing, attempt to find a free slot again.
+        while (!free_slots_.empty())
+        {
+          const std::size_t candidate = free_slots_.back();
+          free_slots_.pop_back();
+          if (!assigned_[candidate] && !checked_out_[candidate])
+          {
+            slot = candidate;
+            break;
+          }
+        }
+
+        // In the unlikely event we still couldn't grab a slot, indicate failure.
+        if (slot == kNpos)
+          return kNpos;
       }
     }
 
@@ -256,7 +302,7 @@ private:
   }
 
   std::size_t capacity_;
-  std::vector<Ptr> pool_;  // Fixed pool of objects.
+  std::vector<Ptr> pool_;  // Fixed pool of objects, can grow.
 
   // Key -> slot lookup.
   std::unordered_map<KeyT, std::size_t, Hash, KeyEqual> key_to_slot_;

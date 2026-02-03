@@ -296,7 +296,7 @@ TEST(CacheTest, ErasedSlotsShouldBeReusableOnMiss)
   (void)p2;
 }
 
-TEST(CacheTest, AcquireExhaustionReturnsNullptr)
+TEST(CacheTest, AcquireExpandsPoolAndReturnsPtr)
 {
   CacheT cache(2);
 
@@ -309,10 +309,18 @@ TEST(CacheTest, AcquireExhaustionReturnsNullptr)
   EXPECT_FALSE(hb);
   ASSERT_NE(b, nullptr);
 
-  // Now all two slots are checked out; a third acquisition should return nullptr.
+  // Now all initial two slots are checked out; a third acquisition should cause the pool to grow
+  // and return a valid pooled pointer.
   auto [c, hc] = cache.getOrAcquire(3);
   EXPECT_FALSE(hc);
-  EXPECT_EQ(c, nullptr);
+  ASSERT_NE(c, nullptr);
+
+  // Capacity should have expanded (doubled from 2).
+  EXPECT_GT(cache.capacity(), 2U);
+
+  // New pointer should be distinct from a and b.
+  EXPECT_NE(c.get(), a.get());
+  EXPECT_NE(c.get(), b.get());
 }
 
 int main(int argc, char** argv)
