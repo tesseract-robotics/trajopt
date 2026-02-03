@@ -89,8 +89,7 @@ public:
     nlp = std::make_shared<Problem>(variables);
 
     // 4) Add constraints
-    const CartPosInfo cart_info(kin_group, "r_gripper_tool_frame", "base_footprint");
-    constraint = std::make_shared<CartPosConstraint>(cart_info, var0);
+    constraint = std::make_shared<CartPosConstraint>(var0, kin_group, "r_gripper_tool_frame", "base_footprint");
     nlp->addConstraintSet(constraint);
   }
 };
@@ -199,15 +198,22 @@ TEST_F(CartesianPositionConstraintUnit, GetSetBounds)  // NOLINT
     const Eigen::VectorXd pos = Eigen::VectorXd::Ones(kin_group->numJoints());
     auto var0 = node->addVar("position", kin_group->getJointNames(), pos, bounds_vec);
 
-    const CartPosInfo cart_info(kin_group, "r_gripper_tool_frame", "base_footprint");
-    auto constraint_2 = std::make_shared<CartPosConstraint>(cart_info, var0);
+    auto constraint_2 = std::make_shared<CartPosConstraint>(var0, kin_group, "r_gripper_tool_frame", "base_footprint");
 
-    const Eigen::VectorXd coeffs = 10 * Eigen::VectorXd::Ones(cart_info.indices.rows());
+    const Eigen::VectorXd coeffs = 10 * Eigen::VectorXd::Ones(6);
     const Bounds bounds(-0.1234, 0.5678);
     bounds_vec = std::vector<Bounds>(6, bounds);
 
-    auto constraint_3 = std::make_shared<CartPosConstraint>(
-        cart_info, var0, coeffs, bounds_vec, "test", trajopt_ifopt::RangeBoundHandling::kKeepAsIs);
+    auto constraint_3 = std::make_shared<CartPosConstraint>(var0,
+                                                            coeffs,
+                                                            bounds_vec,
+                                                            kin_group,
+                                                            "r_gripper_tool_frame",
+                                                            "base_footprint",
+                                                            Eigen::Isometry3d::Identity(),
+                                                            Eigen::Isometry3d::Identity(),
+                                                            "test",
+                                                            trajopt_ifopt::RangeBoundHandling::kKeepAsIs);
     const std::vector<Bounds> results_bounds = constraint_3->getBounds();
     const Eigen::VectorXd result_coeffs = constraint_3->getCoefficients();
     for (std::size_t i = 0; i < bounds_vec.size(); i++)

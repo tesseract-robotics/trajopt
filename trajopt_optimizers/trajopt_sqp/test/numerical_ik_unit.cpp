@@ -110,9 +110,8 @@ void runNumericalIKTest(const Environment::Ptr& env)
   target_pose.linear() = Eigen::Quaterniond(0, 0, 1, 0).toRotationMatrix();
   target_pose.translation() = Eigen::Vector3d(0.4, 0, 0.8);
 
-  const CartPosInfo cart_info(
-      manip, "l_gripper_tool_frame", "base_footprint", Eigen::Isometry3d::Identity(), target_pose);
-  auto cnt = std::make_shared<trajopt_ifopt::CartPosConstraint>(cart_info, var);
+  auto cnt = std::make_shared<trajopt_ifopt::CartPosConstraint>(
+      var, manip, "l_gripper_tool_frame", "base_footprint", Eigen::Isometry3d::Identity(), target_pose);
   qp_problem->addConstraintSet(cnt);
 
   qp_problem->setup();
@@ -199,8 +198,6 @@ void runNumericalIKWithToleranceTest(const Environment::Ptr& env)
   target_pose.linear() = Eigen::Quaterniond(0, 0, 1, 0).toRotationMatrix();
   target_pose.translation() = Eigen::Vector3d(0.4, 0, 0.8);
 
-  const CartPosInfo cart_info(
-      manip, "l_gripper_tool_frame", "base_footprint", Eigen::Isometry3d::Identity(), target_pose);
   Eigen::VectorXd cart_coeffs = Eigen::VectorXd::Ones(6);
   std::vector<Bounds> cart_bounds(6, trajopt_ifopt::BoundZero);
   cart_bounds[0].setLower(-0.01);
@@ -209,7 +206,14 @@ void runNumericalIKWithToleranceTest(const Environment::Ptr& env)
   cart_bounds[0].setUpper(0.01);
   cart_bounds[1].setUpper(0.01);
   cart_bounds[2].setUpper(0.01);
-  auto cnt = std::make_shared<trajopt_ifopt::CartPosConstraint>(cart_info, var, cart_coeffs, cart_bounds);
+  auto cnt = std::make_shared<trajopt_ifopt::CartPosConstraint>(var,
+                                                                cart_coeffs,
+                                                                cart_bounds,
+                                                                manip,
+                                                                "l_gripper_tool_frame",
+                                                                "base_footprint",
+                                                                Eigen::Isometry3d::Identity(),
+                                                                target_pose);
   qp_problem->addConstraintSet(cnt);
 
   qp_problem->setup();
