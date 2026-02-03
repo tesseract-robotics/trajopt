@@ -60,26 +60,10 @@ double AbsoluteCost::getCost() const
 
 Eigen::VectorXd AbsoluteCost::getCoefficients() const { return constraint_->getCoefficients(); }
 
-void AbsoluteCost::fillJacobianBlock(Jacobian& jac_block, const std::string& var_set) const
+Jacobian AbsoluteCost::getJacobian() const
 {
-  // Get a Jacobian block the size necessary for the constraint
-  int var_size = 0;
-  for (const auto& vars : getVariables()->getComponents())
-  {
-    if (vars->getName() == var_set)  // NOLINT
-    {
-      var_size = vars->getRows();
-      break;
-    }
-  }
-
-  if (var_size == 0)  // NOLINT
-    throw std::runtime_error("AbsoluteCost: Unable to find var_set '" + var_set + "'.");
-
   // Get the Jacobian block from the underlying constraint
-  Jacobian cnt_jac_block;
-  cnt_jac_block.resize(n_constraints_, var_size);  // NOLINT
-  constraint_->fillJacobianBlock(cnt_jac_block, var_set);
+  Jacobian cnt_jac_block = constraint_->getJacobian();
 
   // Compute signed coefficients: coeff_i = weights_[i] * sign(error_i)
   Eigen::ArrayXd error(constraint_->getRows());
@@ -108,7 +92,7 @@ void AbsoluteCost::fillJacobianBlock(Jacobian& jac_block, const std::string& var
   }
 
   // Output the scaled block
-  jac_block = cnt_jac_block;
+  return cnt_jac_block;
 }
 
 }  // namespace trajopt_ifopt

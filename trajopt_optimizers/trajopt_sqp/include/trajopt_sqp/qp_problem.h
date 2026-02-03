@@ -17,16 +17,6 @@ public:
   using ConstPtr = std::shared_ptr<const QPProblem>;
 
   virtual ~QPProblem() = default;
-  /**
-   * @brief Add one individual set of variables to the optimization problem.
-   * @param variable_set  The selection of optimization variables.
-   *
-   * This function can be called multiple times, with multiple sets, e.g.
-   * one set that parameterizes a body trajectory, the other that resembles
-   * the optimal timing values. This function correctly appends the
-   * individual variables sets and ensures correct order of Jacobian columns.
-   */
-  virtual void addVariableSet(std::shared_ptr<trajopt_ifopt::Variables> variable_set) = 0;
 
   /**
    * @brief Add a set of multiple constraints to the optimization problem.

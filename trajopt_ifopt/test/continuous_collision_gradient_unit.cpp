@@ -95,10 +95,7 @@ void runContinuousGradientTest(const Environment::Ptr& env, double coeff)
 
   collisions.clear();
 
-  // 2) Create the problem
-  Problem nlp;
-
-  // 3) Add Variables
+  // 1) Add Variables
   std::vector<std::unique_ptr<Node>> nodes;
   std::vector<std::shared_ptr<const Var>> vars;
   std::vector<Eigen::VectorXd> positions;
@@ -125,8 +122,10 @@ void runContinuousGradientTest(const Environment::Ptr& env, double coeff)
     positions.push_back(pos);
     vars.push_back(nodes.back()->addVar("position", manip->getJointNames(), pos, bounds));
   }
+  auto variables = std::make_shared<NodesVariables>("joint_trajectory", std::move(nodes));
 
-  nlp.addVariableSet(std::make_shared<NodesVariables>("joint_trajectory", std::move(nodes)));
+  // 2) Create the problem
+  Problem nlp(variables);
 
   // Step 3: Setup collision
   const double margin_coeff = coeff;
@@ -144,6 +143,7 @@ void runContinuousGradientTest(const Environment::Ptr& env, double coeff)
     nlp.addConstraintSet(cnt);
   }
 
+  nlp.setVariables(variables->getValues().data());
   std::cout << "Jacobian: \n" << nlp.getJacobianOfConstraints().toDense() << '\n';
   std::vector<double> init_vals{ -1.9, 0, 0, 1.9, 1.9, 3.8 };
   const Jacobian num_jac_block = calcNumericalConstraintGradient(init_vals.data(), nlp, 1e-8);

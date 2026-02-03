@@ -112,55 +112,19 @@ public:
    * The optimization variable values are necessary for calculating constraint
    * violations and Jacobians.
    */
-  void linkWithVariables(const CompositeVariables::Ptr& x);
-
-  /**
-   * @brief  The matrix of derivatives for these constraints and variables.
-   *
-   * Assuming @c n constraints and @c m variables, the returned Jacobian
-   * has dimensions n x m. Every row represents the derivatives of a single
-   * constraint, whereas every column refers to a single optimization variable.
-   *
-   * This function only combines the user-defined jacobians from
-   * fillJacobianBlock().
-   */
-  Jacobian getJacobian() const final;
-
-  /**
-   * @brief Set individual Jacobians corresponding to each decision variable set.
-   * @param var_set  Set of variables the current Jacobian block belongs to.
-   * @param jac_block  Columns of the overall Jacobian affected by var_set.
-   *
-   * A convenience function so the user does not have to worry about the
-   * ordering of variable sets. All that is required is that the user knows
-   * the internal ordering of variables in each individual set and provides
-   * the Jacobian of the constraints w.r.t. this set (starting at column 0).
-   * GetJacobian() then inserts these columns at the correct position in the
-   * overall Jacobian.
-   *
-   * If the constraint doen't depend on a @c var_set, this function should
-   * simply do nothing.
-   *
-   * Attention: @c jac_bock is a sparse matrix, and must always have the same
-   * sparsity pattern. Therefore, it's better not to build a dense matrix and
-   * call .sparseView(), because if some entries happen to be zero for some
-   * iteration, that changes the sparsity pattern. A more robust way is to directly
-   * set as follows (which can also be set =0.0 without erros):
-   * jac_block.coeffRef(1, 3) = ...
-   */
-  virtual void fillJacobianBlock(Jacobian& jac_block, const std::string& var_set) const = 0;
+  void linkWithVariables(const Variables::Ptr& x);
 
 protected:
+  Variables::Ptr variables_;
+
   /**
    * @brief Read access to the value of the optimization variables.
    *
    * This must be used to formulate the constraint violation and Jacobian.
    */
-  CompositeVariables::Ptr getVariables() const { return variables_; };
+  Variables::Ptr getVariables() const { return variables_; };
 
 private:
-  CompositeVariables::Ptr variables_;
-
   /**
    * @brief  Initialize quantities that depend on the optimization variables.
    * @param x  A pointer to the initial values of the optimization variables.

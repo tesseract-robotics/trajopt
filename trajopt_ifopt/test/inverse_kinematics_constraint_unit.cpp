@@ -56,7 +56,7 @@ class InverseKinematicsConstraintUnit : public testing::TestWithParam<const char
 {
 public:
   Environment::Ptr env = std::make_shared<Environment>();
-  Problem nlp;
+  std::shared_ptr<Problem> nlp;
 
   tesseract_kinematics::KinematicGroup::ConstPtr kin_group;
   InverseKinematicsInfo::Ptr kinematic_info;
@@ -88,12 +88,13 @@ public:
     nodes.push_back(std::make_unique<Node>("Joint_Position_1"));
     auto var1 = nodes.back()->addVar("position", kin_group->getJointNames(), pos, joint_bounds);
 
-    nlp.addVariableSet(std::make_shared<NodesVariables>("joint_trajectory", std::move(nodes)));
+    auto variables = std::make_shared<NodesVariables>("joint_trajectory", std::move(nodes));
+    nlp = std::make_shared<Problem>(variables);
 
     // Add constraints
     auto target_pose = Eigen::Isometry3d::Identity();
     constraint = std::make_shared<InverseKinematicsConstraint>(target_pose, kinematic_info, var0, var1);
-    nlp.addConstraintSet(constraint);
+    nlp->addConstraintSet(constraint);
   }
 };
 
@@ -108,7 +109,7 @@ TEST_F(InverseKinematicsConstraintUnit, GetValue)  // NOLINT
 
   // Set the joints to that joint position
   Eigen::VectorXd joint_position = Eigen::VectorXd::Zero(n_dof * 2);
-  nlp.setVariables(joint_position.data());
+  nlp->setVariables(joint_position.data());
 
   // Get the value (distance from IK position)
   const Eigen::VectorXd values = constraint->getValues();
@@ -116,9 +117,7 @@ TEST_F(InverseKinematicsConstraintUnit, GetValue)  // NOLINT
 
   // Check that jac wrt constraint_var is identity
   {
-    Jacobian jac_block;
-    jac_block.resize(n_dof, n_dof);
-    constraint->fillJacobianBlock(jac_block, "joint_trajectory");
+    Jacobian jac_block = constraint->getJacobian().toDense().leftCols(kin_group->numJoints()).sparseView();
     // Check that the size is correct
     EXPECT_EQ(jac_block.nonZeros(), n_dof);
     // Check that it is identity
@@ -127,18 +126,14 @@ TEST_F(InverseKinematicsConstraintUnit, GetValue)  // NOLINT
 
     // Check against numeric differentiation
     auto error_calculator = [&](const Eigen::Ref<const Eigen::VectorXd>& x) {
-      return constraint->calcValues(x, joint_position_single);
+      Eigen::VectorXd values = nlp->getVariableValues();
+      values.head(kin_group->numJoints()) = x;
+      values.tail(kin_group->numJoints()) = joint_position_single;
+      nlp->setVariables(values.data());
+      return constraint->getValues();
     };
     const Jacobian num_jac_block = calcForwardNumJac(error_calculator, joint_position_single, 1e-4);
     EXPECT_TRUE(jac_block.isApprox(num_jac_block));
-  }
-
-  // Check that jac wrt seed_var is zero
-  {
-    Jacobian jac_block;
-    jac_block.resize(n_dof, n_dof);
-    constraint->fillJacobianBlock(jac_block, "invalid_var_set");
-    EXPECT_EQ(jac_block.nonZeros(), 0);
   }
 }
 
@@ -171,29 +166,6 @@ TEST_F(InverseKinematicsConstraintUnit, GetSetBounds)  // NOLINT
       EXPECT_EQ(bounds_vec[i].getLower(), results_vec[i].getLower());
       EXPECT_EQ(bounds_vec[i].getUpper(), results_vec[i].getUpper());
     }
-  }
-}
-
-/**
- * @brief Checks that the constraint doesn't change the jacobian when it shouldn't
- */
-TEST_F(InverseKinematicsConstraintUnit, IgnoreVariables)  // NOLINT
-{
-  CONSOLE_BRIDGE_logDebug("InverseKinematicsConstraintUnit, IgnoreVariables");
-
-  // Check that jacobian does not change for variables it shouldn't
-  {
-    Jacobian jac_block_input;
-    jac_block_input.resize(n_dof, n_dof);
-    constraint->fillJacobianBlock(jac_block_input, "another_var");
-    EXPECT_EQ(jac_block_input.nonZeros(), 0);
-  }
-  // Check that it is fine with jac blocks the wrong size for this constraint
-  {
-    Jacobian jac_block_input;
-    jac_block_input.resize(3, 5);
-    constraint->fillJacobianBlock(jac_block_input, "another_var2");
-    EXPECT_EQ(jac_block_input.nonZeros(), 0);
   }
 }
 

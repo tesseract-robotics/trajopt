@@ -87,12 +87,9 @@ public:
    * @return Returns the "bounds" of this constraint
    */
   std::vector<Bounds> getBounds() const override;
-  /**
-   * @brief Fills the jacobian block associated with the given var_set.
-   * @param var_set Name of the var_set to which the jac_block is associated
-   * @param jac_block Block of the overall jacobian associated with these constraints and the var_set variable
-   */
-  void fillJacobianBlock(Jacobian& jac_block, const std::string& var_set) const override;
+
+  /** @brief Get the jacobian */
+  Jacobian getJacobian() const override;
 
   /**
    * @brief Sets the bounds on the collision distance
@@ -127,7 +124,6 @@ private:
 
   /** @brief Used to initialize jacobian because snopt sparsity cannot change */
   bool fixed_sparsity_{ false };
-  mutable std::string var_set_name_;
   mutable std::once_flag init_flag_;
   mutable std::vector<Eigen::Triplet<double>> triplet_list_;
 
@@ -176,12 +172,9 @@ public:
    * @return Returns the "bounds" of this constraint
    */
   std::vector<Bounds> getBounds() const override;
-  /**
-   * @brief Fills the jacobian block associated with the given var_set.
-   * @param var_set Name of the var_set to which the jac_block is associated
-   * @param jac_block Block of the overall jacobian associated with these constraints and the var_set variable
-   */
-  void fillJacobianBlock(Jacobian& jac_block, const std::string& var_set) const override;
+
+  /** @brief Get the jacobian */
+  Jacobian getJacobian() const override;
 
   /**
    * @brief Sets the bounds on the collision distance
@@ -216,11 +209,6 @@ private:
   std::shared_ptr<ContinuousCollisionEvaluator> collision_evaluator_;
   trajopt_common::Cache<std::size_t, trajopt_common::CollisionCacheData> collision_data_cache_{ 3 };
   std::shared_ptr<trajopt_common::CollisionCacheData> collision_data_;
-
-  mutable std::string var_set_name_;
-  mutable std::once_flag init_flag_;
-
-  void init() const;
 };
 }  // namespace trajopt_ifopt
 

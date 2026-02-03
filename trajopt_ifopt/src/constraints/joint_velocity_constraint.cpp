@@ -119,12 +119,10 @@ Eigen::VectorXd JointVelConstraint::getCoefficients() const { return coeffs_; }
 // Set the limits on the constraint values (in this case just the targets)
 std::vector<Bounds> JointVelConstraint::getBounds() const { return bounds_; }
 
-void JointVelConstraint::fillJacobianBlock(Jacobian& jac_block, const std::string& var_set) const
+Jacobian JointVelConstraint::getJacobian() const
 {
-  // Check if this constraint use the var_set
-  // Only modify the jacobian if this constraint uses var_set
-  if (var_set != position_vars_.front()->getParent()->getParent()->getName())
-    return;
+  Jacobian jac(rows_, variables_->getRows());
+  jac.reserve(non_zeros_.load());
 
   for (Eigen::Index seg = 0; seg < (n_vars_ - 1); ++seg)
   {
@@ -137,14 +135,15 @@ void JointVelConstraint::fillJacobianBlock(Jacobian& jac_block, const std::strin
     for (Eigen::Index k = 0; k < n_dof_; ++k)
     {
       const Eigen::Index row = row_offset + k;
-      jac_block.startVec(row);
+      jac.startVec(row);
       // v(seg,k) = c * (q1 - q0)
-      jac_block.insertBack(row, col0 + k) = -1;  // ∂v/∂q_seg
-      jac_block.insertBack(row, col1 + k) = 1;   // ∂v/∂q_{seg+1}
+      jac.insertBack(row, col0 + k) = -1;  // ∂v/∂q_seg
+      jac.insertBack(row, col1 + k) = 1;   // ∂v/∂q_{seg+1}
     }
   }
 
-  jac_block.finalize();  // NOLINT
+  jac.finalize();  // NOLINT
+  return jac;
 }
 
 }  // namespace trajopt_ifopt

@@ -33,14 +33,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace trajopt_ifopt
 {
-Problem::Problem()
-  : variables_(std::make_shared<CompositeVariables>("variable-sets"))
+Problem::Problem(Variables::Ptr variables)
+  : variables_(std::move(variables))
   , constraints_("constraint-sets", Differentiable::Mode::kStackRows, false)
   , costs_("cost-terms", Differentiable::Mode::kStackRows, false)
 {
 }
-
-void Problem::addVariableSet(Variables::Ptr variable_set) { variables_->addComponent(std::move(variable_set)); }
 
 void Problem::addConstraintSet(ConstraintSet::Ptr constraint_set)
 {
@@ -132,7 +130,7 @@ Jacobian Problem::getJacobianOfCosts() const { return costs_.getJacobian(); }
 
 void Problem::saveCurrent() { x_prev.push_back(variables_->getValues()); }
 
-CompositeVariables::Ptr Problem::getOptVariables() const { return variables_; }
+Variables::Ptr Problem::getOptVariables() const { return variables_; }
 
 void Problem::setOptVariables(int iter) { variables_->setVariables(x_prev.at(static_cast<std::size_t>(iter))); }
 

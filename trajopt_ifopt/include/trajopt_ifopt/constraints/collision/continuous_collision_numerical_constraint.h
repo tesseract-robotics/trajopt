@@ -84,12 +84,9 @@ public:
    * @return Returns the "bounds" of this constraint
    */
   std::vector<Bounds> getBounds() const override;
-  /**
-   * @brief Fills the jacobian block associated with the given var_set.
-   * @param var_set Name of the var_set to which the jac_block is associated
-   * @param jac_block Block of the overall jacobian associated with these constraints and the var_set variable
-   */
-  void fillJacobianBlock(Jacobian& jac_block, const std::string& var_set) const override;
+
+  /** @brief Get the jacobian */
+  Jacobian getJacobian() const override;
 
   /**
    * @brief Sets the bounds on the collision distance

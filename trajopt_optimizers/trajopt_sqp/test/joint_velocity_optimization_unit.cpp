@@ -56,7 +56,8 @@ public:
   }
 };
 
-void runVelocityConstraintOptimizationTest(const trajopt_sqp::QPProblem::Ptr& qp_problem)
+template <typename T>
+void runVelocityConstraintOptimizationTest()
 {
   auto qp_solver = std::make_shared<trajopt_sqp::OSQPEigenSolver>();
   trajopt_sqp::TrustRegionSQPSolver solver(qp_solver);
@@ -68,7 +69,7 @@ void runVelocityConstraintOptimizationTest(const trajopt_sqp::QPProblem::Ptr& qp
   qp_solver->solver_->settings()->setPolish(true);
   qp_solver->solver_->settings()->setAdaptiveRho(false);
 
-  // 2) Add Variables
+  // 1) Add Variables
   std::vector<std::unique_ptr<trajopt_ifopt::Node>> nodes;
   std::vector<std::shared_ptr<const trajopt_ifopt::Var>> vars;
   const std::vector<std::string> joint_names(7, "name");
@@ -86,7 +87,10 @@ void runVelocityConstraintOptimizationTest(const trajopt_sqp::QPProblem::Ptr& qp
     vars.push_back(node->addVar("position", joint_names, pos, bounds));
     nodes.push_back(std::move(node));
   }
-  qp_problem->addVariableSet(std::make_shared<trajopt_ifopt::NodesVariables>("joint_trajectory", std::move(nodes)));
+  auto variables = std::make_shared<trajopt_ifopt::NodesVariables>("joint_trajectory", std::move(nodes));
+
+  // 2) Create problem
+  auto qp_problem = std::make_shared<T>(variables);
 
   // 3) Add constraints
   const Eigen::VectorXd start_pos = Eigen::VectorXd::Zero(7);
@@ -128,15 +132,13 @@ void runVelocityConstraintOptimizationTest(const trajopt_sqp::QPProblem::Ptr& qp
 TEST_F(VelocityConstraintOptimization, velocity_constraint_optimization_ifopt_problem)  // NOLINT
 {
   CONSOLE_BRIDGE_logDebug("VelocityConstraintOptimization, velocity_constraint_optimization_ifopt_problem");
-  auto qp_problem = std::make_shared<trajopt_sqp::IfoptQPProblem>();
-  runVelocityConstraintOptimizationTest(qp_problem);
+  runVelocityConstraintOptimizationTest<trajopt_sqp::IfoptQPProblem>();
 }
 
 TEST_F(VelocityConstraintOptimization, velocity_constraint_optimization_trajopt_problem)  // NOLINT
 {
   CONSOLE_BRIDGE_logDebug("VelocityConstraintOptimization, velocity_constraint_optimization_trajopt_problem");
-  auto qp_problem = std::make_shared<trajopt_sqp::TrajOptQPProblem>();
-  runVelocityConstraintOptimizationTest(qp_problem);
+  runVelocityConstraintOptimizationTest<trajopt_sqp::TrajOptQPProblem>();
 }
 
 ////////////////////////////////////////////////////////////////////

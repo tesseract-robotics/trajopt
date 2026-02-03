@@ -108,7 +108,8 @@ public:
   }
 };
 
-void runCastWorldTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const Environment::Ptr& env, bool fixed_size)
+template <typename T>
+void runCastWorldTest(const Environment::Ptr& env, bool fixed_size)
 {
   std::unordered_map<std::string, double> ipos;
   ipos["boxbot_x_joint"] = -1.9;
@@ -151,8 +152,10 @@ void runCastWorldTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const Envir
     positions.push_back(pos);
     vars.push_back(nodes.back()->addVar("position", manip->getJointNames(), pos, bounds));
   }
+  auto variables = std::make_shared<trajopt_ifopt::NodesVariables>("joint_trajectory", std::move(nodes));
 
-  qp_problem->addVariableSet(std::make_shared<trajopt_ifopt::NodesVariables>("joint_trajectory", std::move(nodes)));
+  // 2) Create problem
+  auto qp_problem = std::make_shared<T>(variables);
 
   // Step 3: Setup collision
   const double margin_coeff = 10;
@@ -246,15 +249,13 @@ void runCastWorldTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const Envir
 TEST_F(CastWorldTest, boxesIfoptProblem)  // NOLINT
 {
   CONSOLE_BRIDGE_logDebug("CastWorldTest, boxesIfoptProblem");
-  auto qp_problem = std::make_shared<trajopt_sqp::IfoptQPProblem>();
-  runCastWorldTest(qp_problem, env, true);
+  runCastWorldTest<trajopt_sqp::IfoptQPProblem>(env, true);
 }
 
 TEST_F(CastWorldTest, boxesTrajOptProblem)  // NOLINT
 {
   CONSOLE_BRIDGE_logDebug("CastWorldTest, boxesTrajOptProblem");
-  auto qp_problem = std::make_shared<trajopt_sqp::TrajOptQPProblem>();
-  runCastWorldTest(qp_problem, env, false);  // NOLINT
+  runCastWorldTest<trajopt_sqp::TrajOptQPProblem>(env, false);  // NOLINT
 }
 
 int main(int argc, char** argv)

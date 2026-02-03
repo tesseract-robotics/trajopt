@@ -57,7 +57,8 @@ public:
   }
 };
 
-void runJerkConstraintOptimizationTest(const trajopt_sqp::QPProblem::Ptr& qp_problem)
+template <typename T>
+void runJerkConstraintOptimizationTest()
 {
   auto qp_solver = std::make_shared<trajopt_sqp::OSQPEigenSolver>();
   trajopt_sqp::TrustRegionSQPSolver solver(qp_solver);
@@ -69,7 +70,7 @@ void runJerkConstraintOptimizationTest(const trajopt_sqp::QPProblem::Ptr& qp_pro
   qp_solver->solver_->settings()->setPolish(true);
   qp_solver->solver_->settings()->setAdaptiveRho(false);
 
-  // 2) Add Variables
+  // 1) Add Variables
   const std::vector<std::string> joint_names(7, "name");
   const auto bounds = std::vector<trajopt_ifopt::Bounds>(7, trajopt_ifopt::NoBound);
   std::vector<std::unique_ptr<trajopt_ifopt::Node>> nodes;
@@ -87,8 +88,10 @@ void runJerkConstraintOptimizationTest(const trajopt_sqp::QPProblem::Ptr& qp_pro
     vars.push_back(node->addVar("position", joint_names, pos, bounds));
     nodes.push_back(std::move(node));
   }
+  auto variables = std::make_shared<trajopt_ifopt::NodesVariables>("joint_trajectory", std::move(nodes));
 
-  qp_problem->addVariableSet(std::make_shared<trajopt_ifopt::NodesVariables>("joint_trajectory", std::move(nodes)));
+  // 2) Create problem
+  auto qp_problem = std::make_shared<T>(variables);
 
   // 3) Add constraints
   const Eigen::VectorXd start_pos = Eigen::VectorXd::Zero(7);
@@ -136,15 +139,13 @@ void runJerkConstraintOptimizationTest(const trajopt_sqp::QPProblem::Ptr& qp_pro
 TEST_F(JerkConstraintOptimization, jerk_constraint_optimization_ifopt_problem)  // NOLINT
 {
   CONSOLE_BRIDGE_logDebug("JerkConstraintOptimization, jerk_constraint_optimization_ifopt_problem");
-  auto qp_problem = std::make_shared<trajopt_sqp::IfoptQPProblem>();
-  runJerkConstraintOptimizationTest(qp_problem);
+  runJerkConstraintOptimizationTest<trajopt_sqp::IfoptQPProblem>();
 }
 
 TEST_F(JerkConstraintOptimization, jerk_constraint_optimization_trajopt_problem)  // NOLINT
 {
   CONSOLE_BRIDGE_logDebug("JerkConstraintOptimization, jerk_constraint_optimization_trajopt_problem");
-  auto qp_problem = std::make_shared<trajopt_sqp::TrajOptQPProblem>();
-  runJerkConstraintOptimizationTest(qp_problem);
+  runJerkConstraintOptimizationTest<trajopt_sqp::TrajOptQPProblem>();
 }
 
 ////////////////////////////////////////////////////////////////////

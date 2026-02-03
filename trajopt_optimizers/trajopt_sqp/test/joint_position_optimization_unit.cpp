@@ -54,7 +54,8 @@ public:
   }
 };
 
-void runJointPositionOptimizationTest(const trajopt_sqp::QPProblem::Ptr& qp_problem)
+template <typename T>
+void runJointPositionOptimizationTest()
 {
   auto qp_solver = std::make_shared<trajopt_sqp::OSQPEigenSolver>();
   trajopt_sqp::TrustRegionSQPSolver solver(qp_solver);
@@ -66,7 +67,7 @@ void runJointPositionOptimizationTest(const trajopt_sqp::QPProblem::Ptr& qp_prob
   qp_solver->solver_->settings()->setAbsoluteTolerance(1e-4);
   qp_solver->solver_->settings()->setRelativeTolerance(1e-6);
 
-  // 2) Add Variables
+  // 1) Add Variables
   std::vector<std::unique_ptr<trajopt_ifopt::Node>> nodes;
   std::vector<std::shared_ptr<const trajopt_ifopt::Var>> vars;
   for (int ind = 0; ind < 2; ind++)
@@ -78,8 +79,10 @@ void runJointPositionOptimizationTest(const trajopt_sqp::QPProblem::Ptr& qp_prob
     vars.push_back(node->addVar("position", joint_names, pos, bounds));
     nodes.push_back(std::move(node));
   }
+  auto variables = std::make_shared<trajopt_ifopt::NodesVariables>("joint_trajectory", std::move(nodes));
 
-  qp_problem->addVariableSet(std::make_shared<trajopt_ifopt::NodesVariables>("joint_trajectory", std::move(nodes)));
+  // 2) Create problem
+  auto qp_problem = std::make_shared<T>(variables);
 
   // 3) Add constraints
   const Eigen::VectorXd start_pos = Eigen::VectorXd::Zero(7);
@@ -115,8 +118,7 @@ void runJointPositionOptimizationTest(const trajopt_sqp::QPProblem::Ptr& qp_prob
 TEST_F(JointPositionOptimization, joint_position_optimization_ifopt_problem)  // NOLINT
 {
   CONSOLE_BRIDGE_logDebug("JointPositionOptimization, joint_position_optimization_ifopt_problem");
-  auto qp_problem = std::make_shared<trajopt_sqp::IfoptQPProblem>();
-  runJointPositionOptimizationTest(qp_problem);
+  runJointPositionOptimizationTest<trajopt_sqp::IfoptQPProblem>();
 }
 
 /**
@@ -125,8 +127,7 @@ TEST_F(JointPositionOptimization, joint_position_optimization_ifopt_problem)  //
 TEST_F(JointPositionOptimization, joint_position_optimization_trajopt_problem)  // NOLINT
 {
   CONSOLE_BRIDGE_logDebug("JointPositionOptimization, joint_position_optimization_trajopt_problem");
-  auto qp_problem = std::make_shared<trajopt_sqp::TrajOptQPProblem>();
-  runJointPositionOptimizationTest(qp_problem);
+  runJointPositionOptimizationTest<trajopt_sqp::TrajOptQPProblem>();
 }
 
 ////////////////////////////////////////////////////////////////////

@@ -127,12 +127,10 @@ Eigen::VectorXd JointJerkConstraint::getCoefficients() const { return coeffs_; }
 // Set the limits on the constraint values (in this case just the targets)
 std::vector<Bounds> JointJerkConstraint::getBounds() const { return bounds_; }
 
-void JointJerkConstraint::fillJacobianBlock(Jacobian& jac_block, const std::string& var_set) const
+Jacobian JointJerkConstraint::getJacobian() const
 {
-  // Check if this constraint use the var_set
-  // Only modify the jacobian if this constraint uses var_set
-  if (var_set != position_vars_.front()->getParent()->getParent()->getName())
-    return;
+  Jacobian jac(rows_, variables_->getRows());
+  jac.reserve(non_zeros_.load());
 
   const std::size_t n = position_vars_.size();
 
@@ -151,11 +149,11 @@ void JointJerkConstraint::fillJacobianBlock(Jacobian& jac_block, const std::stri
       for (Eigen::Index k = 0; k < n_dof_; ++k)
       {
         const Eigen::Index row = row_offset + k;
-        jac_block.startVec(row);
-        jac_block.insertBack(row, col_i + k) = -1;      // ∂j_i/∂q_i
-        jac_block.insertBack(row, col_ip1 + k) = 3.0;   // ∂j_i/∂q_{i+1}
-        jac_block.insertBack(row, col_ip2 + k) = -3.0;  // ∂j_i/∂q_{i+2}
-        jac_block.insertBack(row, col_ip3 + k) = 1;     // ∂j_i/∂q_{i+3}
+        jac.startVec(row);
+        jac.insertBack(row, col_i + k) = -1;      // ∂j_i/∂q_i
+        jac.insertBack(row, col_ip1 + k) = 3.0;   // ∂j_i/∂q_{i+1}
+        jac.insertBack(row, col_ip2 + k) = -3.0;  // ∂j_i/∂q_{i+2}
+        jac.insertBack(row, col_ip3 + k) = 1;     // ∂j_i/∂q_{i+3}
       }
     }
     else
@@ -169,16 +167,17 @@ void JointJerkConstraint::fillJacobianBlock(Jacobian& jac_block, const std::stri
       for (Eigen::Index k = 0; k < n_dof_; ++k)
       {
         const Eigen::Index row = row_offset + k;
-        jac_block.startVec(row);
-        jac_block.insertBack(row, col_im3 + k) = -1;    // ∂j_i/∂q_{i-3}
-        jac_block.insertBack(row, col_im2 + k) = 3.0;   // ∂j_i/∂q_{i-2}
-        jac_block.insertBack(row, col_im1 + k) = -3.0;  // ∂j_i/∂q_{i-1}
-        jac_block.insertBack(row, col_i + k) = 1;       // ∂j_i/∂q_i
+        jac.startVec(row);
+        jac.insertBack(row, col_im3 + k) = -1;    // ∂j_i/∂q_{i-3}
+        jac.insertBack(row, col_im2 + k) = 3.0;   // ∂j_i/∂q_{i-2}
+        jac.insertBack(row, col_im1 + k) = -3.0;  // ∂j_i/∂q_{i-1}
+        jac.insertBack(row, col_i + k) = 1;       // ∂j_i/∂q_i
       }
     }
   }
 
-  jac_block.finalize();  // NOLINT
+  jac.finalize();  // NOLINT
+  return jac;
 }
 
 }  // namespace trajopt_ifopt

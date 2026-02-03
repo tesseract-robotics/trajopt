@@ -132,9 +132,8 @@ public:
   }
 };
 
-void runCastAttachedLinkWithGeomTest(const trajopt_sqp::QPProblem::Ptr& qp_problem,
-                                     const Environment::Ptr& env,
-                                     bool fixed_size)
+template <typename T>
+void runCastAttachedLinkWithGeomTest(const Environment::Ptr& env, bool fixed_size)
 {
   env->applyCommand(std::make_shared<ChangeLinkCollisionEnabledCommand>("box_attached", true));
 
@@ -179,8 +178,10 @@ void runCastAttachedLinkWithGeomTest(const trajopt_sqp::QPProblem::Ptr& qp_probl
     positions.push_back(pos);
     vars.push_back(nodes.back()->addVar("position", manip->getJointNames(), pos, bounds));
   }
+  auto variables = std::make_shared<trajopt_ifopt::NodesVariables>("joint_trajectory", std::move(nodes));
 
-  qp_problem->addVariableSet(std::make_shared<trajopt_ifopt::NodesVariables>("joint_trajectory", std::move(nodes)));
+  // 2) Create problem
+  auto qp_problem = std::make_shared<T>(variables);
 
   // Step 3: Setup collision
   const double margin_coeff = 10;
@@ -271,9 +272,8 @@ void runCastAttachedLinkWithGeomTest(const trajopt_sqp::QPProblem::Ptr& qp_probl
   CONSOLE_BRIDGE_logWarn((found) ? ("Final trajectory is in collision") : ("Final trajectory is collision free"));
 }
 
-void runCastAttachedLinkWithoutGeomTest(const trajopt_sqp::QPProblem::Ptr& qp_problem,
-                                        const Environment::Ptr& env,
-                                        bool fixed_size)
+template <typename T>
+void runCastAttachedLinkWithoutGeomTest(const Environment::Ptr& env, bool fixed_size)
 {
   env->applyCommand(std::make_shared<ChangeLinkCollisionEnabledCommand>("box_attached2", true));
 
@@ -318,8 +318,10 @@ void runCastAttachedLinkWithoutGeomTest(const trajopt_sqp::QPProblem::Ptr& qp_pr
     positions.push_back(pos);
     vars.push_back(nodes.back()->addVar("position", manip->getJointNames(), pos, bounds));
   }
+  auto variables = std::make_shared<trajopt_ifopt::NodesVariables>("joint_trajectory", std::move(nodes));
 
-  qp_problem->addVariableSet(std::make_shared<trajopt_ifopt::NodesVariables>("joint_trajectory", std::move(nodes)));
+  // 2) Create problem
+  auto qp_problem = std::make_shared<T>(variables);
 
   // Step 3: Setup collision
   const double margin_coeff = 10;
@@ -409,29 +411,25 @@ void runCastAttachedLinkWithoutGeomTest(const trajopt_sqp::QPProblem::Ptr& qp_pr
 TEST_F(CastAttachedTest, LinkWithGeomIfoptProblem)  // NOLINT
 {
   CONSOLE_BRIDGE_logDebug("CastAttachedTest, LinkWithGeomIfoptProblem");
-  auto qp_problem = std::make_shared<trajopt_sqp::IfoptQPProblem>();
-  runCastAttachedLinkWithGeomTest(qp_problem, env, true);
+  runCastAttachedLinkWithGeomTest<trajopt_sqp::IfoptQPProblem>(env, true);
 }
 
 TEST_F(CastAttachedTest, LinkWithGeomTrajOptProblem)  // NOLINT
 {
   CONSOLE_BRIDGE_logDebug("CastAttachedTest, LinkWithGeomTrajOptProblem");
-  auto qp_problem = std::make_shared<trajopt_sqp::TrajOptQPProblem>();
-  runCastAttachedLinkWithGeomTest(qp_problem, env, false);
+  runCastAttachedLinkWithGeomTest<trajopt_sqp::TrajOptQPProblem>(env, false);
 }
 
 TEST_F(CastAttachedTest, LinkWithoutGeomIfoptProblem)  // NOLINT
 {
   CONSOLE_BRIDGE_logDebug("CastAttachedTest, LinkWithoutGeomIfoptProblem");
-  auto qp_problem = std::make_shared<trajopt_sqp::IfoptQPProblem>();
-  runCastAttachedLinkWithoutGeomTest(qp_problem, env, true);
+  runCastAttachedLinkWithoutGeomTest<trajopt_sqp::IfoptQPProblem>(env, true);
 }
 
 TEST_F(CastAttachedTest, LinkWithoutGeomTrajOptProblem)  // NOLINT
 {
   CONSOLE_BRIDGE_logDebug("CastAttachedTest, LinkWithoutGeomTrajOptProblem");
-  auto qp_problem = std::make_shared<trajopt_sqp::TrajOptQPProblem>();
-  runCastAttachedLinkWithoutGeomTest(qp_problem, env, false);  // NOLINT
+  runCastAttachedLinkWithoutGeomTest<trajopt_sqp::TrajOptQPProblem>(env, false);  // NOLINT
 }
 
 int main(int argc, char** argv)

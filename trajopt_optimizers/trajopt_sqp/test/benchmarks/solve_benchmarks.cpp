@@ -43,7 +43,6 @@ static void BM_TRAJOPT_IFOPT_SIMPLE_COLLISION_SOLVE(benchmark::State& state, con
 {
   for (auto _ : state)  // NOLINT
   {
-    auto qp_problem = std::make_shared<trajopt_sqp::TrajOptQPProblem>();
     tesseract_kinematics::JointGroup::ConstPtr manip = env->getJointGroup("manipulator");
     const std::vector<Bounds> bounds = toBounds(manip->getLimits().joint_limits);
 
@@ -57,7 +56,10 @@ static void BM_TRAJOPT_IFOPT_SIMPLE_COLLISION_SOLVE(benchmark::State& state, con
       nodes.push_back(std::make_unique<Node>("Joint_Position_0"));
       vars.push_back(nodes.back()->addVar("position", manip->getJointNames(), pos, bounds));
     }
-    qp_problem->addVariableSet(std::make_shared<NodesVariables>("joint_trajectory", std::move(nodes)));
+    auto variables = std::make_shared<trajopt_ifopt::NodesVariables>("joint_trajectory", std::move(nodes));
+
+    // 2) Create problem
+    auto qp_problem = std::make_shared<trajopt_sqp::TrajOptQPProblem>(variables);
 
     // Step 3: Setup collision
     auto trajopt_collision_cnt_config = std::make_shared<trajopt_common::TrajOptCollisionConfig>(0.2, 1);
@@ -106,7 +108,6 @@ static void BM_TRAJOPT_IFOPT_PLANNING_SOLVE(benchmark::State& state, const Envir
 {
   for (auto _ : state)  // NOLINT
   {
-    auto qp_problem = std::make_shared<trajopt_sqp::TrajOptQPProblem>();
     tesseract_kinematics::JointGroup::ConstPtr manip = env->getJointGroup("right_arm");
     const std::vector<Bounds> bounds = toBounds(manip->getLimits().joint_limits);
 
@@ -127,7 +128,10 @@ static void BM_TRAJOPT_IFOPT_PLANNING_SOLVE(benchmark::State& state, const Envir
       nodes.push_back(std::make_unique<Node>("Joint_Position_" + std::to_string(i)));
       vars.push_back(nodes.back()->addVar("position", manip->getJointNames(), trajectory.row(i), bounds));
     }
-    qp_problem->addVariableSet(std::make_shared<NodesVariables>("joint_trajectory", std::move(nodes)));
+    auto variables = std::make_shared<trajopt_ifopt::NodesVariables>("joint_trajectory", std::move(nodes));
+
+    // 2) Create problem
+    auto qp_problem = std::make_shared<trajopt_sqp::TrajOptQPProblem>(variables);
 
     double margin_coeff = 20;
     double margin = 0.025;

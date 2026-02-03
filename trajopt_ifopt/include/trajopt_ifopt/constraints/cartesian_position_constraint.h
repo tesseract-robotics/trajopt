@@ -142,13 +142,10 @@ public:
    * @brief Fills the jacobian block associated with the constraint
    * @param jac_block Block of the overall jacobian associated with these constraints
    */
-  void calcJacobianBlock(const Eigen::Ref<const Eigen::VectorXd>& joint_vals, Jacobian& jac_block) const;
-  /**
-   * @brief Fills the jacobian block associated with the given var_set.
-   * @param var_set Name of the var_set to which the jac_block is associated
-   * @param jac_block Block of the overall jacobian associated with these constraints and the var_set variable
-   */
-  void fillJacobianBlock(Jacobian& jac_block, const std::string& var_set) const override;
+  void calcJacobianBlock(Jacobian& jac_block, const Eigen::Ref<const Eigen::VectorXd>& joint_vals) const;
+
+  /** @brief Get the jacobian */
+  Jacobian getJacobian() const override;
 
   /**
    * @brief Gets the Cartesian Pose info used to create this constraint

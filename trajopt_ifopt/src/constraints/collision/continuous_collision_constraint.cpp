@@ -160,8 +160,6 @@ void ContinuousCollisionConstraint::init() const
       throw std::runtime_error("ContinuousCollisionConstraint: all vars must belong to the same variable set");
   }
 
-  var_set_name_ = parent_set0->getName();
-
   if (!fixed_sparsity_)
     return;
 
@@ -179,18 +177,17 @@ void ContinuousCollisionConstraint::init() const
   }
 }
 
-void ContinuousCollisionConstraint::fillJacobianBlock(Jacobian& jac_block, const std::string& var_set) const
+Jacobian ContinuousCollisionConstraint::getJacobian() const
 {
-  // Only modify the jacobian if this constraint uses var_set
-  if (var_set != var_set_name_)  // NOLINT
-    return;
+  Jacobian jac(rows_, variables_->getRows());
+  jac.reserve(non_zeros_.load());
 
   // Setting to zeros because snopt sparsity cannot change
-  if (!triplet_list_.empty())                                               // NOLINT
-    jac_block.setFromTriplets(triplet_list_.begin(), triplet_list_.end());  // NOLINT
+  if (!triplet_list_.empty())                                         // NOLINT
+    jac.setFromTriplets(triplet_list_.begin(), triplet_list_.end());  // NOLINT
 
   if (collision_data_->gradient_results_sets.empty())
-    return;
+    return jac;
 
   /** @todo Should use triplet list and setFromTriplets */
   const std::size_t cnt = std::min(collision_data_->gradient_results_sets.size(), bounds_.size());
@@ -209,7 +206,7 @@ void ContinuousCollisionConstraint::fillJacobianBlock(Jacobian& jac_block, const
 
         // Collision is 1 x n_dof
         for (int j = 0; j < n_dof_; j++)
-          jac_block.coeffRef(static_cast<int>(i), position_vars_[0]->getIndex() + j) = -1.0 * grad_vec[j];
+          jac.coeffRef(static_cast<int>(i), position_vars_[0]->getIndex() + j) = -1.0 * grad_vec[j];
       }
     }
   }
@@ -229,10 +226,11 @@ void ContinuousCollisionConstraint::fillJacobianBlock(Jacobian& jac_block, const
 
         // Collision is 1 x n_dof
         for (int j = 0; j < n_dof_; j++)
-          jac_block.coeffRef(static_cast<int>(i), position_vars_[1]->getIndex() + j) = -1.0 * grad_vec[j];
+          jac.coeffRef(static_cast<int>(i), position_vars_[1]->getIndex() + j) = -1.0 * grad_vec[j];
       }
     }
   }
+  return jac;
 }
 
 void ContinuousCollisionConstraint::setBounds(const std::vector<Bounds>& bounds)
@@ -311,8 +309,6 @@ int ContinuousCollisionConstraintD::update()
 
   assert(rows_ == i);
 
-  std::call_once(init_flag_, &ContinuousCollisionConstraintD::init, this);
-
   return rows_;
 }
 
@@ -321,30 +317,13 @@ Eigen::VectorXd ContinuousCollisionConstraintD::getValues() const { return value
 // Set the limits on the constraint values
 std::vector<Bounds> ContinuousCollisionConstraintD::getBounds() const { return bounds_; }
 
-void ContinuousCollisionConstraintD::init() const
+Jacobian ContinuousCollisionConstraintD::getJacobian() const
 {
-  const auto* parent_set0 = position_vars_[0]->getParent()->getParent();
-  if (parent_set0 == nullptr)
-    throw std::runtime_error("ContinuousCollisionConstraint: invalid variable parent");
-
-  var_set_name_ = parent_set0->getName();
-
-  const auto* parent_set1 = position_vars_[1]->getParent()->getParent();
-  if (parent_set1 == nullptr)
-    throw std::runtime_error("ContinuousCollisionConstraint: invalid variable parent");
-
-  if (var_set_name_ != parent_set1->getName())
-    throw std::runtime_error("ContinuousCollisionConstraint: all vars must belong to the same variable set");
-}
-
-void ContinuousCollisionConstraintD::fillJacobianBlock(Jacobian& jac_block, const std::string& var_set) const
-{
-  // Only modify the jacobian if this constraint uses var_set
-  if (var_set != var_set_name_ || rows_ == 0)  // NOLINT
-    return;
+  Jacobian jac(rows_, variables_->getRows());
+  jac.reserve(non_zeros_.load());
 
   if (collision_data_->contact_results_map.empty())
-    return;
+    return jac;
 
   auto jp0 = position_vars_[0]->value();
   auto jp1 = position_vars_[1]->value();
@@ -357,7 +336,7 @@ void ContinuousCollisionConstraintD::fillJacobianBlock(Jacobian& jac_block, cons
     {
       result.clear();
       trajopt_common::getGradient(result, jp0, jp1, contact_results, 0, 0, collision_evaluator_->getJointGroup());
-      jac_block.startVec(i);
+      jac.startVec(i);
       assert(result.gradients[0].has_gradient || result.gradients[1].has_gradient ||
              result.cc_gradients[0].has_gradient || result.cc_gradients[1].has_gradient);
 
@@ -371,8 +350,7 @@ void ContinuousCollisionConstraintD::fillJacobianBlock(Jacobian& jac_block, cons
 
           // This does work but could be faster
           for (int j = 0; j < n_dof_; j++)
-            jac_block.insertBack(i, offset + j) =
-                -1.0 * ((lgr0.scale * lgr0.gradient[j]) + (lgr1.scale * lgr1.gradient[j]));
+            jac.insertBack(i, offset + j) = -1.0 * ((lgr0.scale * lgr0.gradient[j]) + (lgr1.scale * lgr1.gradient[j]));
         }
         else if (result.gradients[0].has_gradient)
         {
@@ -380,7 +358,7 @@ void ContinuousCollisionConstraintD::fillJacobianBlock(Jacobian& jac_block, cons
 
           // This does work but could be faster
           for (int j = 0; j < n_dof_; j++)
-            jac_block.insertBack(i, offset + j) = -1.0 * lgr.scale * lgr.gradient[j];
+            jac.insertBack(i, offset + j) = -1.0 * lgr.scale * lgr.gradient[j];
         }
         else if (result.gradients[1].has_gradient)
         {
@@ -388,7 +366,7 @@ void ContinuousCollisionConstraintD::fillJacobianBlock(Jacobian& jac_block, cons
 
           // This does work but could be faster
           for (int j = 0; j < n_dof_; j++)
-            jac_block.insertBack(i, offset + j) = -1.0 * lgr.scale * lgr.gradient[j];
+            jac.insertBack(i, offset + j) = -1.0 * lgr.scale * lgr.gradient[j];
         }
       }
 
@@ -402,8 +380,7 @@ void ContinuousCollisionConstraintD::fillJacobianBlock(Jacobian& jac_block, cons
 
           // This does work but could be faster
           for (int j = 0; j < n_dof_; j++)
-            jac_block.insertBack(i, offset + j) =
-                -1.0 * ((lgr0.scale * lgr0.gradient[j]) + (lgr1.scale * lgr1.gradient[j]));
+            jac.insertBack(i, offset + j) = -1.0 * ((lgr0.scale * lgr0.gradient[j]) + (lgr1.scale * lgr1.gradient[j]));
         }
         else if (result.cc_gradients[0].has_gradient)
         {
@@ -411,7 +388,7 @@ void ContinuousCollisionConstraintD::fillJacobianBlock(Jacobian& jac_block, cons
 
           // This does work but could be faster
           for (int j = 0; j < n_dof_; j++)
-            jac_block.insertBack(i, offset + j) = -1.0 * lgr.scale * lgr.gradient[j];
+            jac.insertBack(i, offset + j) = -1.0 * lgr.scale * lgr.gradient[j];
         }
         else if (result.cc_gradients[1].has_gradient)
         {
@@ -419,14 +396,15 @@ void ContinuousCollisionConstraintD::fillJacobianBlock(Jacobian& jac_block, cons
 
           // This does work but could be faster
           for (int j = 0; j < n_dof_; j++)
-            jac_block.insertBack(i, offset + j) = -1.0 * lgr.scale * lgr.gradient[j];
+            jac.insertBack(i, offset + j) = -1.0 * lgr.scale * lgr.gradient[j];
         }
       }
       ++i;
     }
   }
-  jac_block.finalize();
+  jac.finalize();
   assert(rows_ == i);
+  return jac;
 }
 
 Eigen::VectorXd ContinuousCollisionConstraintD::getCoefficients() const { return coeffs_; }

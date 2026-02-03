@@ -14,14 +14,12 @@ public:
   using Ptr = std::shared_ptr<TrajOptQPProblem>;
   using ConstPtr = std::shared_ptr<const TrajOptQPProblem>;
 
-  TrajOptQPProblem();
+  TrajOptQPProblem(std::shared_ptr<trajopt_ifopt::Variables> variables);
   ~TrajOptQPProblem() override;
   TrajOptQPProblem(const TrajOptQPProblem&) = delete;
   TrajOptQPProblem& operator=(const TrajOptQPProblem&) = delete;
   TrajOptQPProblem(TrajOptQPProblem&&) = default;
   TrajOptQPProblem& operator=(TrajOptQPProblem&&) = default;
-
-  void addVariableSet(std::shared_ptr<trajopt_ifopt::Variables> variable_set) override;
 
   void addConstraintSet(std::shared_ptr<trajopt_ifopt::ConstraintSet> constraint_set) override;
 

@@ -89,14 +89,6 @@ public:
   int update() override { return rows_; }
 
   /**
-   * @brief Calculates the values associated with the constraint
-   * @param joint_vals Joint values for which the value is calculated
-   * @param seed_joint_position Joint values used as the seed when calculating IK
-   * @return Distance of each joint from the IK solution
-   */
-  Eigen::VectorXd calcValues(const Eigen::Ref<const Eigen::VectorXd>& joint_vals,
-                             const Eigen::Ref<const Eigen::VectorXd>& seed_joint_position) const;
-  /**
    * @brief Returns the values associated with the constraint. This is the joint distance from the target joint position
    * (size n_dof_)
    * @return
@@ -120,15 +112,9 @@ public:
    * @param jac_block Block of the overall jacobian associated with these constraints
    */
   void calcJacobianBlock(const Eigen::Ref<const Eigen::VectorXd>& joint_vals, Jacobian& jac_block) const;
-  /**
-   * @brief Fills the jacobian block associated with the given var_set.
-   *
-   * Since the value of this constraint is the joint distance from the joint position acquired with IK, the jacobian is
-   * the same as that for the joint position constraint.
-   * @param var_set Name of the var_set to which the jac_block is associated
-   * @param jac_block Block of the overall jacobian associated with these constraints and the var_set variable
-   */
-  void fillJacobianBlock(Jacobian& jac_block, const std::string& var_set) const override;
+
+  /** @brief Get the jacobian */
+  Jacobian getJacobian() const override;
 
   /**
    * @brief Sets the target pose for the TCP

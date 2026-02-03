@@ -38,10 +38,8 @@ public:
   using Ptr = std::shared_ptr<IfoptQPProblem>;
   using ConstPtr = std::shared_ptr<const IfoptQPProblem>;
 
-  IfoptQPProblem();
+  IfoptQPProblem(std::shared_ptr<trajopt_ifopt::Variables> variables);
   IfoptQPProblem(std::shared_ptr<trajopt_ifopt::Problem> nlp);
-
-  void addVariableSet(std::shared_ptr<trajopt_ifopt::Variables> variable_set) override;
 
   void addConstraintSet(std::shared_ptr<trajopt_ifopt::ConstraintSet> constraint_set) override;
 

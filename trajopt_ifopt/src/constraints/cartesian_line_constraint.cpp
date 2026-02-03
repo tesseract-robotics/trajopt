@@ -150,8 +150,8 @@ void CartLineConstraint::setBounds(const std::vector<Bounds>& bounds)
   bounds_ = bounds;
 }
 
-void CartLineConstraint::calcJacobianBlock(const Eigen::Ref<const Eigen::VectorXd>& joint_vals,
-                                           Jacobian& jac_block) const
+void CartLineConstraint::calcJacobianBlock(Jacobian& jac_block,
+                                           const Eigen::Ref<const Eigen::VectorXd>& joint_vals) const
 {
   transforms_cache_.clear();
   info_.manip->calcFwdKin(transforms_cache_, joint_vals);
@@ -248,14 +248,15 @@ void CartLineConstraint::calcJacobianBlock(const Eigen::Ref<const Eigen::VectorX
   jac_block.finalize();  // NOLINT
 }
 
-void CartLineConstraint::fillJacobianBlock(Jacobian& jac_block, const std::string& var_set) const
+Jacobian CartLineConstraint::getJacobian() const
 {
-  // Only modify the jacobian if this constraint uses var_set
-  if (var_set != position_var_->getParent()->getParent()->getName())  // NOLINT
-    return;
+  Jacobian jac(rows_, variables_->getRows());
+  jac.reserve(non_zeros_.load());
 
   // Get current joint values and calculate jacobian
-  calcJacobianBlock(position_var_->value(), jac_block);  // NOLINT
+  calcJacobianBlock(jac, position_var_->value());  // NOLINT
+
+  return jac;
 }
 
 std::pair<Eigen::Isometry3d, Eigen::Isometry3d> CartLineConstraint::getLine() const

@@ -73,8 +73,8 @@ public:
   }
 };
 
-void runCartPositionOptimization(const trajopt_sqp::QPProblem::Ptr& qp_problem,
-                                 const tesseract_environment::Environment::Ptr& env)
+template <typename T>
+void runCartPositionOptimization(const tesseract_environment::Environment::Ptr& env)
 {
   auto qp_solver = std::make_shared<trajopt_sqp::OSQPEigenSolver>();
   trajopt_sqp::TrustRegionSQPSolver solver(qp_solver);
@@ -110,7 +110,10 @@ void runCartPositionOptimization(const trajopt_sqp::QPProblem::Ptr& qp_problem,
     vars.push_back(node->addVar("position", manip->getJointNames(), zero, bounds));
     nodes.push_back(std::move(node));
   }
-  qp_problem->addVariableSet(std::make_shared<trajopt_ifopt::NodesVariables>("joint_trajectory", std::move(nodes)));
+  auto variables = std::make_shared<trajopt_ifopt::NodesVariables>("joint_trajectory", std::move(nodes));
+
+  // 2) Create problem
+  auto qp_problem = std::make_shared<T>(variables);
 
   // 4) Add constraints
   for (const auto& var : vars)
@@ -145,16 +148,14 @@ void runCartPositionOptimization(const trajopt_sqp::QPProblem::Ptr& qp_problem,
 TEST_F(CartPositionOptimization, cart_position_optimization_ifopt_problem)  // NOLINT
 {
   CONSOLE_BRIDGE_logDebug("CartPositionOptimization, cart_position_optimization_trajopt_problem");
-  auto qp_problem = std::make_shared<trajopt_sqp::IfoptQPProblem>();
-  runCartPositionOptimization(qp_problem, env);
+  runCartPositionOptimization<trajopt_sqp::IfoptQPProblem>(env);
 }
 
 /** @brief Applies a cartesian position constraint and solves the ifopt problem with trajopt_sqp */
 TEST_F(CartPositionOptimization, cart_position_optimization_trajopt_problem)  // NOLINT
 {
   CONSOLE_BRIDGE_logDebug("CartPositionOptimization, cart_position_optimization_ifopt_problem");
-  auto qp_problem = std::make_shared<trajopt_sqp::TrajOptQPProblem>();
-  runCartPositionOptimization(qp_problem, env);
+  runCartPositionOptimization<trajopt_sqp::TrajOptQPProblem>(env);
 }
 
 int main(int argc, char** argv)

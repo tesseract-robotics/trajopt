@@ -42,65 +42,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 namespace trajopt_ifopt
 {
 /**
- * @brief A collection of variable components which is treated as another variables component.
- *
- * This composite does not perform any evaluation itself; it stitches together:
- * @li values (concatenation)
- * @li bounds (concatenation)
- * and partitions a solver-provided decision vector into per-variable-set segments.
- *
- * @note This composite assumes variables are fixed-sized. Its row count is the sum
- *       of its child variable set sizes.
- *
- * @ingroup ProblemFormulation
- */
-class CompositeVariables : public Variables
-{
-public:
-  using Ptr = std::shared_ptr<CompositeVariables>;
-  using ComponentVec = std::vector<Variables::Ptr>;
-
-  explicit CompositeVariables(std::string name);
-  ~CompositeVariables() override = default;
-
-  /**
-   * @brief Adds a variables component to this composite.
-   *
-   * @attention The number of rows must be specified by the component and must be non-negative.
-   */
-  void addComponent(Variables::Ptr component);
-
-  /** @brief Removes all components and resets row count to zero. */
-  void clearComponents();
-
-  /** @brief Returns read access to the components. */
-  const ComponentVec& getComponents() const;
-
-  /** @brief True if no components have been added. */
-  bool empty() const;
-
-  /**
-   * @brief Access component with the specified name.
-   * @param name The component name.
-   * @return The variables component pointer.
-   *
-   * @warning This is a linear search. Prefer storing handles if performance matters.
-   */
-  Variables::Ptr getComponent(const std::string& name) const;
-
-  // ---- Variables / Component ----
-  Eigen::VectorXd getValues() const override;
-  std::vector<Bounds> getBounds() const override;
-  void setVariables(const Eigen::VectorXd& x) override;
-  std::size_t getHash() const override;
-  void print(int& index, double tolerance = 0.001) const override;
-
-private:
-  ComponentVec components_;
-  std::size_t hash_{ 0 };
-};
-
-/**
  * @brief A collection of differentiable components which is treated as another differentiable component.
  *
  * This composite stitches together:
