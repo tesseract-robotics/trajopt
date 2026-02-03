@@ -36,8 +36,7 @@ public:
   using Ptr = std::shared_ptr<ValueT>;
   using AcquireResult = std::pair<Ptr, bool>;  // {ptr, hit}
 
-  explicit Cache(std::size_t capacity = 666)
-    : capacity_(capacity), pool_(), slot_key_(), assigned_(), checked_out_(), slot_it_()
+  explicit Cache(std::size_t capacity = 666) : capacity_(capacity), pool_(), slot_key_()
   {
     if (capacity_ == 0)
       capacity_ = 1;
