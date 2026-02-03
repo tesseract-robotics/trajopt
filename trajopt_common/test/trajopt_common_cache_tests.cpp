@@ -265,12 +265,6 @@ TEST(CacheTest, RepeatedHitsDoNotChangePoolIdentityForKey)
   }
 }
 
-// After you erase keys, those slots are NOT added back to a reusable "available slot"
-// list; once free_slots_ is exhausted and lru_ becomes empty, acquireSlot() falls into
-// the degenerate path and always returns slot 0.
-//
-// If you decide that erased slots should be reusable, enable this test after fixing
-// acquireSlot()/erase() to track available unassigned slots.
 TEST(CacheTest, ErasedSlotsShouldBeReusableOnMiss)
 {
   CacheT cache(2);

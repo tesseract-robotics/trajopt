@@ -87,7 +87,10 @@ public:
 
     const std::size_t slot = slotFromPtr(value);
     if (slot == kNpos)
+    {
+      assert(false && "Cache::put called with pointer not from pool");
       return;
+    }
 
     // If the key is already mapped to a different slot, evict that entry.
     auto existing = key_to_slot_.find(key);
@@ -221,7 +224,8 @@ private:
       else
       {
         // Degenerate case: everything is checked out and nothing cached.
-        // Reuse slot 0 to avoid returning invalid.
+        // Everything is checked out and nothing is cached: contract violation.
+        assert(false && "Cache::acquireSlot: no slots available (all checked out?)");
         slot = 0;
       }
     }
