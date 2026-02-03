@@ -57,7 +57,7 @@ class CartesianPositionConstraintUnit : public testing::TestWithParam<const char
 {
 public:
   Environment::Ptr env = std::make_shared<Environment>();
-  Problem nlp;
+  std::shared_ptr<Problem> nlp;
 
   tesseract_kinematics::JointGroup::ConstPtr kin_group;
   CartPosConstraint::Ptr constraint;
@@ -85,12 +85,13 @@ public:
 
     std::vector<std::unique_ptr<Node>> nodes;
     nodes.push_back(std::move(node));
-    nlp.addVariableSet(std::make_shared<NodesVariables>("joint_trajectory", std::move(nodes)));
+    auto variables = std::make_shared<NodesVariables>("joint_trajectory", std::move(nodes));
+    nlp = std::make_shared<Problem>(variables);
 
     // 4) Add constraints
     const CartPosInfo cart_info(kin_group, "r_gripper_tool_frame", "base_footprint");
     constraint = std::make_shared<CartPosConstraint>(cart_info, var0);
-    nlp.addConstraintSet(constraint);
+    nlp->addConstraintSet(constraint);
   }
 };
 
@@ -105,7 +106,7 @@ TEST_F(CartesianPositionConstraintUnit, GetValue)  // NOLINT
   constraint->setTargetPose(target_pose);
 
   // Set the joints to the joint position that should satisfy it
-  nlp.setVariables(joint_position.data());
+  nlp->setVariables(joint_position.data());
 
   // Given a joint position at the target, the error should be 0
   {
@@ -161,7 +162,7 @@ TEST_F(CartesianPositionConstraintUnit, FillJacobian)  // NOLINT
     // Set the joints
     Eigen::VectorXd joint_position_mod = joint_position;
     joint_position_mod[i] = 2.0;
-    nlp.setVariables(joint_position_mod.data());
+    nlp->setVariables(joint_position_mod.data());
 
     // Calculate jacobian numerically
     auto error_calculator = [&](const Eigen::Ref<const Eigen::VectorXd>& x) { return constraint->calcValues(x); };
@@ -170,14 +171,13 @@ TEST_F(CartesianPositionConstraintUnit, FillJacobian)  // NOLINT
     // Compare to constraint jacobian
     {
       Jacobian jac_block(num_jac_block.rows(), num_jac_block.cols());
-      constraint->calcJacobianBlock(joint_position_mod, jac_block);  // NOLINT
+      constraint->calcJacobianBlock(jac_block, joint_position_mod);  // NOLINT
       EXPECT_TRUE(jac_block.isApprox(num_jac_block, 1e-3));
       //      std::cout << "Numeric:\n" << num_jac_block.toDense() << '\n';
       //      std::cout << "Analytic:\n" << jac_block.toDense() << '\n';
     }
     {
-      Jacobian jac_block(num_jac_block.rows(), num_jac_block.cols());
-      constraint->fillJacobianBlock(jac_block, "joint_trajectory");
+      Jacobian jac_block = constraint->getJacobian();
       EXPECT_TRUE(jac_block.toDense().isApprox(num_jac_block.toDense(), 1e-3));
       //      std::cout << "Numeric:\n" << num_jac_block.toDense() << '\n';
       //      std::cout << "Analytic:\n" << jac_block.toDense() << '\n';
@@ -216,30 +216,6 @@ TEST_F(CartesianPositionConstraintUnit, GetSetBounds)  // NOLINT
       EXPECT_DOUBLE_EQ(bounds_vec[i].getLower(), results_bounds[i].getLower());
       EXPECT_DOUBLE_EQ(bounds_vec[i].getUpper(), results_bounds[i].getUpper());
     }
-  }
-}
-
-/**
- * @brief Checks that the constraint doesn't change the jacobian when it shouldn't
- */
-TEST_F(CartesianPositionConstraintUnit, IgnoreVariables)  // NOLINT
-{
-  CONSOLE_BRIDGE_logDebug("CartesianPositionConstraintUnit, IgnoreVariables");
-
-  // Check that jacobian does not change for variables it shouldn't
-  {
-    Jacobian jac_block_input;
-    jac_block_input.resize(n_dof, n_dof);
-    constraint->fillJacobianBlock(jac_block_input, "another_var");
-    EXPECT_EQ(jac_block_input.nonZeros(), 0);
-  }
-
-  // Check that it is fine with jac blocks the wrong size for this constraint
-  {
-    Jacobian jac_block_input;
-    jac_block_input.resize(3, 5);
-    constraint->fillJacobianBlock(jac_block_input, "another_var2");
-    EXPECT_EQ(jac_block_input.nonZeros(), 0);
   }
 }
 

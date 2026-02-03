@@ -55,8 +55,7 @@ TEST(JointTermsUnit, JointPosConstraintUnit)  // NOLINT
   std::vector<std::unique_ptr<Node>> nodes;
   nodes.push_back(std::move(node));
 
-  auto variables = std::make_shared<CompositeVariables>("variable-sets");
-  variables->addComponent(std::make_shared<NodesVariables>("joint_trajectory", std::move(nodes)));
+  auto variables = std::make_shared<NodesVariables>("joint_trajectory", std::move(nodes));
 
   std::vector<Eigen::VectorXd> targets;
   Eigen::VectorXd target(10);
@@ -121,8 +120,7 @@ TEST(JointTermsUnit, JointVelConstraintUnit)  // NOLINT
 
     x_vals.push_back(i);
   }
-  auto variables = std::make_shared<CompositeVariables>("variable-sets");
-  variables->addComponent(std::make_shared<NodesVariables>("joint_trajectory", std::move(nodes)));
+  auto variables = std::make_shared<NodesVariables>("joint_trajectory", std::move(nodes));
 
   Eigen::VectorXd targets(2);
   targets << 0, 0;
@@ -192,8 +190,7 @@ TEST(JointTermsUnit, JointVelConstraintMinimumUnit)  // NOLINT
     x_vals.push_back(i);
   }
 
-  auto variables = std::make_shared<CompositeVariables>("variable-sets");
-  variables->addComponent(std::make_shared<NodesVariables>("joint_trajectory", std::move(nodes)));
+  auto variables = std::make_shared<NodesVariables>("joint_trajectory", std::move(nodes));
 
   Eigen::VectorXd targets(2);
   targets << 0, 0;
@@ -264,8 +261,7 @@ TEST(JointTermsUnit, JointAccelConstraintUnit)  // NOLINT
     x_vals.push_back(i);
   }
 
-  auto variables = std::make_shared<CompositeVariables>("variable-sets");
-  variables->addComponent(std::make_shared<NodesVariables>("joint_trajectory", std::move(nodes)));
+  auto variables = std::make_shared<NodesVariables>("joint_trajectory", std::move(nodes));
 
   Eigen::VectorXd targets(2);
   targets << 0, 0;
@@ -346,8 +342,7 @@ TEST(JointTermsUnit, JointAccelConstraintMinimumUnit)  // NOLINT
     x_vals.push_back(i);
   }
 
-  auto variables = std::make_shared<CompositeVariables>("variable-sets");
-  variables->addComponent(std::make_shared<NodesVariables>("joint_trajectory", std::move(nodes)));
+  auto variables = std::make_shared<NodesVariables>("joint_trajectory", std::move(nodes));
 
   Eigen::VectorXd targets(2);
   targets << 0, 0;
@@ -428,8 +423,7 @@ TEST(JointTermsUnit, JointJerkConstraintUnit)  // NOLINT
     x_vals.push_back(i);
   }
 
-  auto variables = std::make_shared<CompositeVariables>("variable-sets");
-  variables->addComponent(std::make_shared<NodesVariables>("joint_trajectory", std::move(nodes)));
+  auto variables = std::make_shared<NodesVariables>("joint_trajectory", std::move(nodes));
 
   Eigen::VectorXd targets(2);
   targets << 0, 0;
@@ -511,8 +505,7 @@ TEST(JointTermsUnit, JointJerkConstraintMinimumUnit)  // NOLINT
     x_vals.push_back(i);
   }
 
-  auto variables = std::make_shared<CompositeVariables>("variable-sets");
-  variables->addComponent(std::make_shared<NodesVariables>("joint_trajectory", std::move(nodes)));
+  auto variables = std::make_shared<NodesVariables>("joint_trajectory", std::move(nodes));
 
   Eigen::VectorXd targets(2);
   targets << 0, 0;

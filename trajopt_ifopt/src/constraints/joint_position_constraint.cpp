@@ -159,20 +159,19 @@ Eigen::VectorXd JointPosConstraint::getCoefficients() const { return coeffs_; }
 // Set the limits on the constraint values
 std::vector<Bounds> JointPosConstraint::getBounds() const { return bounds_; }
 
-void JointPosConstraint::fillJacobianBlock(Jacobian& jac_block, const std::string& var_set) const
+Jacobian JointPosConstraint::getJacobian() const
 {
-  // Check if this constraint use the var_set
-  // Only modify the jacobian if this constraint uses var_set
-  if (var_set != position_var_->getParent()->getParent()->getName())
-    return;
+  Jacobian jac(rows_, variables_->getRows());
+  jac.reserve(non_zeros_.load());
 
   // Loop over all of the variables this constraint uses
   for (int j = 0; j < indices_.size(); j++)  // NOLINT
   {
-    jac_block.startVec(j);
-    jac_block.insertBack(j, position_var_->getIndex() + indices_[static_cast<std::size_t>(j)]) = 1.0;
+    jac.startVec(j);
+    jac.insertBack(j, position_var_->getIndex() + indices_[static_cast<std::size_t>(j)]) = 1.0;
   }
 
-  jac_block.finalize();  // NOLINT
+  jac.finalize();  // NOLINT
+  return jac;
 }
 }  // namespace trajopt_ifopt

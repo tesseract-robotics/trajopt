@@ -111,18 +111,17 @@ Eigen::VectorXd DiscreteCollisionConstraint::getCoefficients() const { return co
 // Set the limits on the constraint values
 std::vector<Bounds> DiscreteCollisionConstraint::getBounds() const { return bounds_; }
 
-void DiscreteCollisionConstraint::fillJacobianBlock(Jacobian& jac_block, const std::string& var_set) const
+Jacobian DiscreteCollisionConstraint::getJacobian() const
 {
-  // Only modify the jacobian if this constraint uses var_set
-  if (var_set != var_set_name_)  // NOLINT
-    return;
+  Jacobian jac(rows_, variables_->getRows());
+  jac.reserve(non_zeros_.load());
 
   // Setting to zeros because SNOPT sparsity cannot change
-  if (!triplet_list_.empty())                                               // NOLINT
-    jac_block.setFromTriplets(triplet_list_.begin(), triplet_list_.end());  // NOLINT
+  if (!triplet_list_.empty())                                         // NOLINT
+    jac.setFromTriplets(triplet_list_.begin(), triplet_list_.end());  // NOLINT
 
   if (collision_data_->gradient_results_sets.empty())
-    return;
+    return jac;
 
   /** @todo Probably should use a triplet list and setFromTriplets */
   const std::size_t cnt = std::min(bounds_.size(), collision_data_->gradient_results_sets.size());
@@ -133,8 +132,10 @@ void DiscreteCollisionConstraint::fillJacobianBlock(Jacobian& jac_block, const s
 
     // Collision is 1 x n_dof
     for (int j = 0; j < n_dof_; j++)
-      jac_block.coeffRef(static_cast<int>(i), position_var_->getIndex() + j) = -1.0 * grad_vec[j];
+      jac.coeffRef(static_cast<int>(i), position_var_->getIndex() + j) = -1.0 * grad_vec[j];
   }
+
+  return jac;
 }
 
 void DiscreteCollisionConstraint::setBounds(const std::vector<Bounds>& bounds)
@@ -145,9 +146,6 @@ void DiscreteCollisionConstraint::setBounds(const std::vector<Bounds>& bounds)
 
 void DiscreteCollisionConstraint::init() const
 {
-  const auto* parent_set = position_var_->getParent()->getParent();
-  var_set_name_ = parent_set->getName();
-
   if (!fixed_sparsity_)
     return;
 
@@ -215,8 +213,6 @@ int DiscreteCollisionConstraintD::update()
 
   assert(rows_ == i);
 
-  std::call_once(init_flag_, &DiscreteCollisionConstraintD::init, this);
-
   return rows_;
 }
 
@@ -227,14 +223,13 @@ Eigen::VectorXd DiscreteCollisionConstraintD::getCoefficients() const { return c
 // Set the limits on the constraint values
 std::vector<Bounds> DiscreteCollisionConstraintD::getBounds() const { return bounds_; }
 
-void DiscreteCollisionConstraintD::fillJacobianBlock(Jacobian& jac_block, const std::string& var_set) const
+Jacobian DiscreteCollisionConstraintD::getJacobian() const
 {
-  // Only modify the jacobian if this constraint uses var_set
-  if (var_set != var_set_name_ || rows_ == 0)  // NOLINT
-    return;
+  Jacobian jac(rows_, variables_->getRows());
+  jac.reserve(non_zeros_.load());
 
   if (collision_data_->contact_results_map.empty())
-    return;
+    return jac;
 
   auto jp = position_var_->value();
 
@@ -246,44 +241,39 @@ void DiscreteCollisionConstraintD::fillJacobianBlock(Jacobian& jac_block, const 
     {
       result.clear();
       trajopt_common::getGradient(result, jp, contact_results, 0, 0, collision_evaluator_->getJointGroup());
-      jac_block.startVec(i);
+      jac.startVec(i);
       assert(result.gradients[0].has_gradient || result.gradients[1].has_gradient);
       if (result.gradients[0].has_gradient && result.gradients[1].has_gradient)
       {
         // This does work but could be faster
         for (int j = 0; j < n_dof_; j++)
-          jac_block.insertBack(i, position_var_->getIndex() + j) =
+          jac.insertBack(i, position_var_->getIndex() + j) =
               -1.0 * (result.gradients[0].gradient[j] + result.gradients[1].gradient[j]);
       }
       else if (result.gradients[0].has_gradient)
       {
         // This does work but could be faster
         for (int j = 0; j < n_dof_; j++)
-          jac_block.insertBack(i, position_var_->getIndex() + j) = -1.0 * result.gradients[0].gradient[j];
+          jac.insertBack(i, position_var_->getIndex() + j) = -1.0 * result.gradients[0].gradient[j];
       }
       else if (result.gradients[1].has_gradient)
       {
         // This does work but could be faster
         for (int j = 0; j < n_dof_; j++)
-          jac_block.insertBack(i, position_var_->getIndex() + j) = -1.0 * result.gradients[1].gradient[j];
+          jac.insertBack(i, position_var_->getIndex() + j) = -1.0 * result.gradients[1].gradient[j];
       }
       ++i;
     }
   }
-  jac_block.finalize();
+  jac.finalize();
   assert(rows_ == i);
+  return jac;
 }
 
 void DiscreteCollisionConstraintD::setBounds(const std::vector<Bounds>& bounds)
 {
   assert(bounds.size() == rows_);
   bounds_ = bounds;
-}
-
-void DiscreteCollisionConstraintD::init() const
-{
-  const auto* parent_set = position_var_->getParent()->getParent();
-  var_set_name_ = parent_set->getName();
 }
 
 std::shared_ptr<DiscreteCollisionEvaluator> DiscreteCollisionConstraintD::getCollisionEvaluator() const

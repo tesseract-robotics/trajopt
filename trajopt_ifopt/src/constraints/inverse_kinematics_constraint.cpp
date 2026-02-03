@@ -68,20 +68,20 @@ InverseKinematicsConstraint::InverseKinematicsConstraint(
   bounds_ = std::vector<Bounds>(static_cast<std::size_t>(n_dof_), BoundZero);
 }
 
-Eigen::VectorXd
-InverseKinematicsConstraint::calcValues(const Eigen::Ref<const Eigen::VectorXd>& joint_vals,
-                                        const Eigen::Ref<const Eigen::VectorXd>& seed_joint_position) const
+Eigen::VectorXd InverseKinematicsConstraint::getValues() const
 {
   // Get joint position using IK and the seed variable
   tesseract_kinematics::KinGroupIKInputs inputs;
   inputs.emplace_back(target_pose_, kinematic_info_->working_frame, kinematic_info_->tcp_frame);
 
+  auto joint_vals = constraint_var_->value();
+  auto seed_values = seed_var_->value();
   const tesseract_kinematics::IKSolutions target_joint_position =
-      kinematic_info_->manip->calcInvKin(inputs, seed_joint_position);
+      kinematic_info_->manip->calcInvKin(inputs, seed_values);
   assert(!target_joint_position.empty());
 
   // Calculate joint error
-  Eigen::VectorXd error = Eigen::VectorXd::Zero(joint_vals.rows());
+  Eigen::VectorXd error = Eigen::VectorXd::Zero(n_dof_);
   double error_norm = std::numeric_limits<double>::max();
   for (const auto& sol : target_joint_position)
   {
@@ -94,11 +94,6 @@ InverseKinematicsConstraint::calcValues(const Eigen::Ref<const Eigen::VectorXd>&
     }
   }
   return error;
-}
-
-Eigen::VectorXd InverseKinematicsConstraint::getValues() const
-{
-  return calcValues(constraint_var_->value(), seed_var_->value());
 }
 
 Eigen::VectorXd InverseKinematicsConstraint::getCoefficients() const { return Eigen::VectorXd::Constant(n_dof_, 1); }
@@ -114,20 +109,20 @@ void InverseKinematicsConstraint::setBounds(const std::vector<Bounds>& bounds)
   bounds_ = bounds;
 }
 
-void InverseKinematicsConstraint::fillJacobianBlock(Jacobian& jac_block, const std::string& var_set) const
+Jacobian InverseKinematicsConstraint::getJacobian() const
 {
-  // Only modify the jacobian if this constraint uses var_set
-  if (var_set != constraint_var_->getParent()->getParent()->getName())  // NOLINT
-    return;
+  Jacobian jac(rows_, variables_->getRows());
+  jac.reserve(non_zeros_.load());
 
   // err = target - x =? derr/dx = -1
   for (int j = 0; j < n_dof_; j++)  // NOLINT
   {
-    jac_block.startVec(j);
-    jac_block.insertBack(j, constraint_var_->getIndex() + j) = -1;
+    jac.startVec(j);
+    jac.insertBack(j, constraint_var_->getIndex() + j) = -1;
   }
 
-  jac_block.finalize();  // NOLINT
+  jac.finalize();  // NOLINT
+  return jac;
 }
 
 void InverseKinematicsConstraint::setTargetPose(const Eigen::Isometry3d& target_pose) { target_pose_ = target_pose; }

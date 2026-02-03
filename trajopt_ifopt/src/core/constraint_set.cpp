@@ -41,44 +41,7 @@ ConstraintSet::ConstraintSet(std::string name, int n_constraints)
 {
 }
 
-Jacobian ConstraintSet::getJacobian() const
-{
-  Jacobian jacobian(rows_, variables_->getRows());
-  jacobian.reserve(non_zeros_.load());
-
-  // This is an optimization for when you only have one variable set
-  if (variables_->getComponents().size() == 1)
-  {
-    fillJacobianBlock(jacobian, variables_->getComponents().front()->getName());
-    return jacobian;
-  }
-
-  int col = 0;
-  Jacobian jac;
-  jac.reserve(non_zeros_.load());
-  std::vector<Eigen::Triplet<double>> triplet_list;
-  triplet_list.reserve(static_cast<std::size_t>(non_zeros_.load()));
-
-  for (const auto& vars : variables_->getComponents())
-  {
-    int n = vars->getRows();
-    jac.resize(rows_, n);
-
-    fillJacobianBlock(jac, vars->getName());
-
-    // create triplets for the derivative at the correct position in the overall Jacobian
-    for (Eigen::Index k = 0; k < jac.outerSize(); ++k)
-      for (Jacobian::InnerIterator it(jac, k); it; ++it)
-        triplet_list.emplace_back(it.row(), col + it.col(), it.value());
-    col += n;
-  }
-
-  // transform triplet vector into sparse matrix
-  jacobian.setFromTriplets(triplet_list.begin(), triplet_list.end());
-  return jacobian;
-}
-
-void ConstraintSet::linkWithVariables(const CompositeVariables::Ptr& x)
+void ConstraintSet::linkWithVariables(const Variables::Ptr& x)
 {
   variables_ = x;
   initVariableDependedQuantities(x);

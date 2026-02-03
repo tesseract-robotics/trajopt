@@ -84,7 +84,8 @@ public:
   }
 };
 
-void runPlanningTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const Environment::Ptr& env)
+template <typename T>
+void runPlanningTest(const Environment::Ptr& env)
 {
   std::unordered_map<std::string, double> ipos;
   ipos["torso_lift_joint"] = 0;
@@ -125,7 +126,10 @@ void runPlanningTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const Enviro
     vars.push_back(var);
     nodes.push_back(std::move(node));
   }
-  qp_problem->addVariableSet(std::make_shared<trajopt_ifopt::NodesVariables>("joint_trajectory", std::move(nodes)));
+  auto variables = std::make_shared<trajopt_ifopt::NodesVariables>("joint_trajectory", std::move(nodes));
+
+  // 2) Create problem
+  auto qp_problem = std::make_shared<T>(variables);
 
   const double margin_coeff = 20;
   const double margin = 0.025;
@@ -217,15 +221,13 @@ void runPlanningTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const Enviro
 // TEST_F(PlanningTest, arm_around_table_ifopt_problem)  // NOLINT
 //{
 //  CONSOLE_BRIDGE_logDebug("PlanningTest, arm_around_table");
-//  auto qp_problem = std::make_shared<trajopt_sqp::IfoptQPProblem>();
-//  runPlanningTest(qp_problem, env);
+//  runPlanningTest<trajopt_sqp::IfoptQPProblem>(env);
 //}
 
 TEST_F(PlanningTest, arm_around_table_trajopt_problem)  // NOLINT
 {
   CONSOLE_BRIDGE_logDebug("PlanningTest, arm_around_table");
-  auto qp_problem = std::make_shared<trajopt_sqp::TrajOptQPProblem>();
-  runPlanningTest(qp_problem, env);
+  runPlanningTest<trajopt_sqp::TrajOptQPProblem>(env);
 }
 
 int main(int argc, char** argv)

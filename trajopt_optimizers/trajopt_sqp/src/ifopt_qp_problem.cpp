@@ -30,13 +30,11 @@
 
 namespace trajopt_sqp
 {
-IfoptQPProblem::IfoptQPProblem() : nlp_(std::make_shared<trajopt_ifopt::Problem>()) {}
-IfoptQPProblem::IfoptQPProblem(std::shared_ptr<trajopt_ifopt::Problem> nlp) : nlp_(std::move(nlp)) {}
-
-void IfoptQPProblem::addVariableSet(std::shared_ptr<trajopt_ifopt::Variables> variable_set)
+IfoptQPProblem::IfoptQPProblem(std::shared_ptr<trajopt_ifopt::Variables> variables)
+  : nlp_(std::make_shared<trajopt_ifopt::Problem>(std::move(variables)))
 {
-  nlp_->addVariableSet(std::move(variable_set));
 }
+IfoptQPProblem::IfoptQPProblem(std::shared_ptr<trajopt_ifopt::Problem> nlp) : nlp_(std::move(nlp)) {}
 
 void IfoptQPProblem::addConstraintSet(std::shared_ptr<trajopt_ifopt::ConstraintSet> constraint_set)
 {

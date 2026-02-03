@@ -55,7 +55,7 @@ class CollisionUnit : public testing::TestWithParam<const char*>
 public:
   Environment::Ptr env = std::make_shared<Environment>(); /**< Tesseract */
   DiscreteCollisionEvaluator::Ptr collision_evaluator;
-  Problem nlp;
+  std::shared_ptr<Problem> nlp;
   std::shared_ptr<DiscreteCollisionConstraint> constraint;
 
   void SetUp() override
@@ -81,10 +81,11 @@ public:
 
     std::vector<std::unique_ptr<Node>> nodes;
     nodes.push_back(std::move(node));
-    nlp.addVariableSet(std::make_shared<NodesVariables>("joint_trajectory", std::move(nodes)));
+    auto variables = std::make_shared<NodesVariables>("joint_trajectory", std::move(nodes));
+    nlp = std::make_shared<Problem>(variables);
 
     constraint = std::make_shared<DiscreteCollisionConstraint>(collision_evaluator, var0, 1);
-    nlp.addConstraintSet(constraint);
+    nlp->addConstraintSet(constraint);
   }
 };
 
@@ -100,13 +101,11 @@ TEST_F(CollisionUnit, GetValueFillJacobian)  // NOLINT
     Eigen::VectorXd pos(2);
     // Small offset in y is to avoid numeric instabilites with perfectly aligning edges
     pos << -1.9, 0.01;
-    nlp.setVariables(pos.data());
+    nlp->setVariables(pos.data());
     Eigen::VectorXd values = constraint->getValues();
     EXPECT_NEAR(values[0], -1 * collision_evaluator->getCollisionMarginBuffer(), 1e-6);
 
-    Jacobian jac_block;
-    jac_block.resize(1, 2);
-    constraint->fillJacobianBlock(jac_block, "joint_trajectory");
+    Jacobian jac_block = constraint->getJacobian();
     const double dx = jac_block.coeff(0, 0);
     const double dy = jac_block.coeff(0, 1);
     EXPECT_NEAR(dx, 0.0, 1e-6);
@@ -117,13 +116,11 @@ TEST_F(CollisionUnit, GetValueFillJacobian)  // NOLINT
   {
     Eigen::VectorXd pos(2);
     pos << -1.0, 0.01;
-    nlp.setVariables(pos.data());
+    nlp->setVariables(pos.data());
     Eigen::VectorXd values = constraint->getValues();
     EXPECT_NEAR(values[0], 0.1, 1e-6);
 
-    Jacobian jac_block;
-    jac_block.resize(1, 2);
-    constraint->fillJacobianBlock(jac_block, "joint_trajectory");
+    Jacobian jac_block = constraint->getJacobian();
     const double dx = jac_block.coeff(0, 0);
     const double dy = jac_block.coeff(0, 1);
     EXPECT_NEAR(dx, 1.0, 1e-6);
@@ -132,13 +129,11 @@ TEST_F(CollisionUnit, GetValueFillJacobian)  // NOLINT
   {
     Eigen::VectorXd pos(2);
     pos << 0.01, 1.0;
-    nlp.setVariables(pos.data());
+    nlp->setVariables(pos.data());
     Eigen::VectorXd values = constraint->getValues();
     EXPECT_NEAR(values[0], 0.1, 1e-6);
 
-    Jacobian jac_block;
-    jac_block.resize(1, 2);
-    constraint->fillJacobianBlock(jac_block, "joint_trajectory");
+    Jacobian jac_block = constraint->getJacobian();
     const double dx = jac_block.coeff(0, 0);
     const double dy = jac_block.coeff(0, 1);
     EXPECT_NEAR(dx, 0.0, 1e-6);
@@ -149,13 +144,11 @@ TEST_F(CollisionUnit, GetValueFillJacobian)  // NOLINT
   {
     Eigen::VectorXd pos(2);
     pos << -0.9, 0.01;
-    nlp.setVariables(pos.data());
+    nlp->setVariables(pos.data());
     Eigen::VectorXd values = constraint->getValues();
     EXPECT_NEAR(values[0], 0.2, 1e-6);
 
-    Jacobian jac_block;
-    jac_block.resize(1, 2);
-    constraint->fillJacobianBlock(jac_block, "joint_trajectory");
+    Jacobian jac_block = constraint->getJacobian();
     const double dx = jac_block.coeff(0, 0);
     const double dy = jac_block.coeff(0, 1);
     EXPECT_NEAR(dx, 1.0, 1e-6);
@@ -189,22 +182,6 @@ TEST_F(CollisionUnit, GetSetBounds)  // NOLINT
       EXPECT_EQ(bounds_vec[i].getLower(), results_vec[i].getLower());
       EXPECT_EQ(bounds_vec[i].getUpper(), results_vec[i].getUpper());
     }
-  }
-}
-
-/**
- * @brief Checks that the constraint doesn't change the jacobian when it shouldn't
- */
-TEST_F(CollisionUnit, IgnoreVariables)  // NOLINT
-{
-  CONSOLE_BRIDGE_logDebug("CollisionUnit, IgnoreVariables");
-
-  // Check that jacobian does not change for variables it shouldn't
-  {
-    Jacobian jac_block_input;
-    jac_block_input.resize(1, 2);
-    constraint->fillJacobianBlock(jac_block_input, "another_var");
-    EXPECT_EQ(jac_block_input.nonZeros(), 0);
   }
 }
 

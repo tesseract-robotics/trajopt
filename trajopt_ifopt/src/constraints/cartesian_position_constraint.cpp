@@ -270,8 +270,8 @@ Eigen::VectorXd CartPosConstraint::getCoefficients() const { return coeffs_; }
 
 std::vector<Bounds> CartPosConstraint::getBounds() const { return bounds_; }
 
-void CartPosConstraint::calcJacobianBlock(const Eigen::Ref<const Eigen::VectorXd>& joint_vals,
-                                          Jacobian& jac_block) const
+void CartPosConstraint::calcJacobianBlock(Jacobian& jac_block,
+                                          const Eigen::Ref<const Eigen::VectorXd>& joint_vals) const
 {
   transforms_cache_.clear();
   info_.manip->calcFwdKin(transforms_cache_, joint_vals);
@@ -367,14 +367,14 @@ void CartPosConstraint::calcJacobianBlock(const Eigen::Ref<const Eigen::VectorXd
   jac_block.finalize();  // NOLINT
 }
 
-void CartPosConstraint::fillJacobianBlock(Jacobian& jac_block, const std::string& var_set) const
+Jacobian CartPosConstraint::getJacobian() const
 {
-  // Only modify the jacobian if this constraint uses var_set
-  if (var_set != position_var_->getParent()->getParent()->getName())  // NOLINT
-    return;
+  Jacobian jac(rows_, variables_->getRows());
+  jac.reserve(non_zeros_.load());
 
   // Get current joint values and calculate jacobian
-  calcJacobianBlock(position_var_->value(), jac_block);  // NOLINT
+  calcJacobianBlock(jac, position_var_->value());  // NOLINT
+  return jac;
 }
 
 const CartPosInfo& CartPosConstraint::getInfo() const { return info_; }

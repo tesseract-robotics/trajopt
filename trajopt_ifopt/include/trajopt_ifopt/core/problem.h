@@ -99,19 +99,8 @@ public:
   /**
    * @brief  Creates a optimization problem with no variables, costs or constraints.
    */
-  Problem();
+  Problem(Variables::Ptr variables);
   virtual ~Problem() = default;
-
-  /**
-   * @brief Add one individual set of variables to the optimization problem.
-   * @param variable_set  The selection of optimization variables.
-   *
-   * This function can be called multiple times, with multiple sets, e.g.
-   * one set that parameterizes a body trajectory, the other that resembles
-   * the optimal timing values. This function correctly appends the
-   * individual variables sets and ensures correct order of Jacobian columns.
-   */
-  void addVariableSet(Variables::Ptr variable_set);
 
   /**
    * @brief Add a set of multiple constraints to the optimization problem.
@@ -221,7 +210,7 @@ public:
   /**
    * @brief Read/write access to the current optimization variables.
    */
-  CompositeVariables::Ptr getOptVariables() const;
+  Variables::Ptr getOptVariables() const;
 
   /**
    * @brief Sets the optimization variables to those at iteration iter.
@@ -262,7 +251,7 @@ public:
   const std::vector<Eigen::VectorXd>& getIterations() const { return x_prev; };
 
 private:
-  CompositeVariables::Ptr variables_;
+  Variables::Ptr variables_;
   CompositeDifferentiable constraints_;
   CompositeDifferentiable costs_;
 

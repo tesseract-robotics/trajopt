@@ -82,7 +82,8 @@ public:
   }
 };
 
-void runNumericalIKTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const Environment::Ptr& env)
+template <typename T>
+void runNumericalIKTest(const Environment::Ptr& env)
 {
   const tesseract_scene_graph::StateSolver::Ptr state_solver = env->getStateSolver();
   const ContinuousContactManager::Ptr manager = env->getContinuousContactManager();
@@ -99,7 +100,10 @@ void runNumericalIKTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const Env
   cur_position << 0, 0, 0, -0.001, 0, -0.001, 0;
   auto var = node->addVar("position", manip->getJointNames(), cur_position, bounds);
   nodes.push_back(std::move(node));
-  qp_problem->addVariableSet(std::make_shared<trajopt_ifopt::NodesVariables>("joint_trajectory", std::move(nodes)));
+  auto variables = std::make_shared<trajopt_ifopt::NodesVariables>("joint_trajectory", std::move(nodes));
+
+  // 2) Create problem
+  auto qp_problem = std::make_shared<T>(variables);
 
   // 4) Add constraints
   Eigen::Isometry3d target_pose = Eigen::Isometry3d::Identity();
@@ -167,7 +171,8 @@ void runNumericalIKTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const Env
   CONSOLE_BRIDGE_logDebug("Final Vars: ", ss.str().c_str());
 }
 
-void runNumericalIKWithToleranceTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const Environment::Ptr& env)
+template <typename T>
+void runNumericalIKWithToleranceTest(const Environment::Ptr& env)
 {
   const tesseract_scene_graph::StateSolver::Ptr state_solver = env->getStateSolver();
   const ContinuousContactManager::Ptr manager = env->getContinuousContactManager();
@@ -184,7 +189,10 @@ void runNumericalIKWithToleranceTest(const trajopt_sqp::QPProblem::Ptr& qp_probl
   cur_position << 0, 0, 0, -0.001, 0, -0.001, 0;
   auto var = node->addVar("position", manip->getJointNames(), cur_position, bounds);
   nodes.push_back(std::move(node));
-  qp_problem->addVariableSet(std::make_shared<trajopt_ifopt::NodesVariables>("joint_trajectory", std::move(nodes)));
+  auto variables = std::make_shared<trajopt_ifopt::NodesVariables>("joint_trajectory", std::move(nodes));
+
+  // 2) Create problem
+  auto qp_problem = std::make_shared<T>(variables);
 
   // 4) Add constraints
   Eigen::Isometry3d target_pose = Eigen::Isometry3d::Identity();
@@ -269,22 +277,19 @@ void runNumericalIKWithToleranceTest(const trajopt_sqp::QPProblem::Ptr& qp_probl
 TEST_F(NumericalIKTest, numerical_ik_with_tol_trajopt_problem)  // NOLINT
 {
   CONSOLE_BRIDGE_logDebug("PlanningTest, numerical_ik_with_tol_trajopt_problem");
-  auto qp_problem = std::make_shared<trajopt_sqp::TrajOptQPProblem>();
-  runNumericalIKWithToleranceTest(qp_problem, env);
+  runNumericalIKWithToleranceTest<trajopt_sqp::TrajOptQPProblem>(env);
 }
 
 TEST_F(NumericalIKTest, numerical_ik_ifopt_problem)  // NOLINT
 {
   CONSOLE_BRIDGE_logDebug("PlanningTest, numerical_ik_ifopt_problem");
-  auto qp_problem = std::make_shared<trajopt_sqp::IfoptQPProblem>();
-  runNumericalIKTest(qp_problem, env);
+  runNumericalIKTest<trajopt_sqp::IfoptQPProblem>(env);
 }
 
 TEST_F(NumericalIKTest, numerical_ik_trajopt_problem)  // NOLINT
 {
   CONSOLE_BRIDGE_logDebug("PlanningTest, numerical_ik_trajopt_problem");
-  auto qp_problem = std::make_shared<trajopt_sqp::TrajOptQPProblem>();
-  runNumericalIKTest(qp_problem, env);
+  runNumericalIKTest<trajopt_sqp::TrajOptQPProblem>(env);
 }
 
 int main(int argc, char** argv)

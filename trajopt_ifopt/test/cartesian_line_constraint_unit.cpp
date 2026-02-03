@@ -30,7 +30,7 @@ class CartesianLineConstraintUnit : public testing::TestWithParam<const char*>
 {
 public:
   Environment::Ptr env = std::make_shared<Environment>();
-  CompositeVariables::Ptr variables = std::make_shared<CompositeVariables>("variable-sets");
+  Variables::Ptr variables;
 
   tesseract_kinematics::JointGroup::ConstPtr manip;
   CartLineInfo info;
@@ -61,7 +61,7 @@ public:
     var = node->addVar("position", manip->getJointNames(), pos, bounds);
     std::vector<std::unique_ptr<Node>> nodes;
     nodes.push_back(std::move(node));
-    variables->addComponent(std::make_shared<NodesVariables>("joint_trajectory", std::move(nodes)));
+    variables = std::make_shared<NodesVariables>("joint_trajectory", std::move(nodes));
 
     // Add constraints
     const Eigen::VectorXd joint_position = Eigen::VectorXd::Ones(n_dof);
@@ -160,12 +160,11 @@ TEST_F(CartesianLineConstraintUnit, FillJacobian)  // NOLINT
     // Compare to constraint jacobian
     {
       Jacobian jac_block(num_jac_block.rows(), num_jac_block.cols());
-      constraint->calcJacobianBlock(joint_position_mod, jac_block);  // NOLINT
+      constraint->calcJacobianBlock(jac_block, joint_position_mod);  // NOLINT
       EXPECT_TRUE(jac_block.isApprox(num_jac_block, 1e-3));
     }
     {
-      Jacobian jac_block(num_jac_block.rows(), num_jac_block.cols());
-      constraint->fillJacobianBlock(jac_block, "joint_trajectory");
+      Jacobian jac_block = constraint->getJacobian();
       EXPECT_TRUE(jac_block.toDense().isApprox(num_jac_block.toDense(), 1e-3));
     }
   }
@@ -193,34 +192,6 @@ TEST_F(CartesianLineConstraintUnit, GetSetBounds)  // NOLINT
   {
     EXPECT_EQ(bounds_vec[i].getLower(), results_vec[i].getLower());
     EXPECT_EQ(bounds_vec[i].getUpper(), results_vec[i].getUpper());
-  }
-}
-
-///**
-// * @brief Checks that the constraint doesn't change the jacobian when it shouldn't
-// */
-TEST_F(CartesianLineConstraintUnit, IgnoreVariables)  // NOLINT
-{
-  CONSOLE_BRIDGE_logDebug("CartesianPositionConstraintUnit, IgnoreVariables");
-
-  info = CartLineInfo(manip, "r_gripper_tool_frame", "base_link", line_start_pose, line_end_pose);
-  const Eigen::VectorXd coeff = Eigen::VectorXd::Ones(info.indices.rows());
-  auto constraint = std::make_shared<CartLineConstraint>(info, var, coeff);
-  constraint->linkWithVariables(variables);
-
-  // Check that jacobian does not change for variables it shouldn't
-  {
-    Jacobian jac_block_input;
-    jac_block_input.resize(n_dof, n_dof);
-    constraint->fillJacobianBlock(jac_block_input, "another_var");
-    EXPECT_EQ(jac_block_input.nonZeros(), 0);
-  }
-  // Check that it is fine with jac blocks the wrong size for this constraint
-  {
-    Jacobian jac_block_input;
-    jac_block_input.resize(3, 5);
-    constraint->fillJacobianBlock(jac_block_input, "another_var2");
-    EXPECT_EQ(jac_block_input.nonZeros(), 0);
   }
 }
 

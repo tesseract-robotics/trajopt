@@ -121,12 +121,10 @@ Eigen::VectorXd JointAccelConstraint::getCoefficients() const { return coeffs_; 
 // Set the limits on the constraint values (in this case just the targets)
 std::vector<Bounds> JointAccelConstraint::getBounds() const { return bounds_; }
 
-void JointAccelConstraint::fillJacobianBlock(Jacobian& jac_block, const std::string& var_set) const
+Jacobian JointAccelConstraint::getJacobian() const
 {
-  // Check if this constraint use the var_set
-  // Only modify the jacobian if this constraint uses var_set
-  if (var_set != position_vars_.front()->getParent()->getParent()->getName())
-    return;
+  Jacobian jac(rows_, variables_->getRows());
+  jac.reserve(non_zeros_.load());
 
   const std::size_t n = position_vars_.size();
   for (std::size_t i = 0; i < n; ++i)
@@ -143,11 +141,11 @@ void JointAccelConstraint::fillJacobianBlock(Jacobian& jac_block, const std::str
       for (Eigen::Index k = 0; k < n_dof_; ++k)
       {
         const Eigen::Index row = row_offset + k;
-        jac_block.startVec(row);
+        jac.startVec(row);
         // a_i = c * (q_{i+2} - 2*q_{i+1} + q_i)
-        jac_block.insertBack(row, col_i + k) = 1;       // ∂a/∂q_i
-        jac_block.insertBack(row, col_ip1 + k) = -2.0;  // ∂a/∂q_{i+1}
-        jac_block.insertBack(row, col_ip2 + k) = 1;     // ∂a/∂q_{i+2}
+        jac.insertBack(row, col_i + k) = 1;       // ∂a/∂q_i
+        jac.insertBack(row, col_ip1 + k) = -2.0;  // ∂a/∂q_{i+1}
+        jac.insertBack(row, col_ip2 + k) = 1;     // ∂a/∂q_{i+2}
       }
     }
     else
@@ -160,16 +158,17 @@ void JointAccelConstraint::fillJacobianBlock(Jacobian& jac_block, const std::str
       for (Eigen::Index k = 0; k < n_dof_; ++k)
       {
         const Eigen::Index row = row_offset + k;
-        jac_block.startVec(row);
+        jac.startVec(row);
         // a_i = c * (q_{i-2} - 2*q_{i-1} + q_i)
-        jac_block.insertBack(row, col_im2 + k) = 1;     // ∂a/∂q_{i-2}
-        jac_block.insertBack(row, col_im1 + k) = -2.0;  // ∂a/∂q_{i-1}
-        jac_block.insertBack(row, col_i + k) = 1;       // ∂a/∂q_i
+        jac.insertBack(row, col_im2 + k) = 1;     // ∂a/∂q_{i-2}
+        jac.insertBack(row, col_im1 + k) = -2.0;  // ∂a/∂q_{i-1}
+        jac.insertBack(row, col_i + k) = 1;       // ∂a/∂q_i
       }
     }
   }
 
-  jac_block.finalize();  // NOLINT
+  jac.finalize();  // NOLINT
+  return jac;
 }
 
 }  // namespace trajopt_ifopt

@@ -78,7 +78,8 @@ public:
   }
 };
 
-void runSimpleCollisionTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const Environment::Ptr& env)
+template <typename T>
+void runSimpleCollisionTest(const Environment::Ptr& env)
 {
   std::unordered_map<std::string, double> ipos;
   ipos["spherebot_x_joint"] = -0.75;
@@ -111,8 +112,10 @@ void runSimpleCollisionTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const
     vars.push_back(var);
     nodes.push_back(std::move(node));
   }
+  auto variables = std::make_shared<trajopt_ifopt::NodesVariables>("joint_trajectory", std::move(nodes));
 
-  qp_problem->addVariableSet(std::make_shared<NodesVariables>("joint_trajectory", std::move(nodes)));
+  // 2) Create problem
+  auto qp_problem = std::make_shared<T>(variables);
 
   // Step 3: Setup collision
   trajopt_common::TrajOptCollisionConfig trajopt_collision_cnt_config(0.2, 1);
@@ -193,8 +196,7 @@ void runSimpleCollisionTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const
 // TEST_F(SimpleCollisionTest, spheres_ifopt_problem)  // NOLINT
 //{
 //  CONSOLE_BRIDGE_logDebug("SimpleCollisionTest, spheres_ifopt_problem");
-//  auto qp_problem = std::make_shared<trajopt_sqp::IfoptQPProblem>();
-//  runSimpleCollisionTest(qp_problem, env);
+//  runSimpleCollisionTest<trajopt_sqp::IfoptQPProblem>(env);
 //}
 
 TEST_F(SimpleCollisionTest, spheres_trajopt_problem)  // NOLINT
@@ -206,8 +208,7 @@ TEST_F(SimpleCollisionTest, spheres_trajopt_problem)  // NOLINT
    * Constraints use violation versus cost uses the error.
    */
   CONSOLE_BRIDGE_logDebug("SimpleCollisionTest, spheres_trajopt_problem");
-  auto qp_problem = std::make_shared<trajopt_sqp::TrajOptQPProblem>();
-  runSimpleCollisionTest(qp_problem, env);  // NOLINT
+  runSimpleCollisionTest<trajopt_sqp::TrajOptQPProblem>(env);  // NOLINT
 }
 
 int main(int argc, char** argv)

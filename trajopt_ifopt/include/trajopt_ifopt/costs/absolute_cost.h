@@ -93,7 +93,8 @@ public:
 
   Eigen::VectorXd getCoefficients() const override;
 
-  void fillJacobianBlock(Jacobian& jac_block, const std::string& var_set) const override;
+  /** @brief Get the jacobian */
+  Jacobian getJacobian() const override;
 
 private:
   /** @brief Constraint being converted to a cost */

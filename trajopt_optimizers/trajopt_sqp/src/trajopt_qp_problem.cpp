@@ -236,7 +236,7 @@ Eigen::VectorXd ConvexProblem::evaluateConvexConstraintViolations(const Eigen::R
 
 struct TrajOptQPProblem::Implementation
 {
-  Implementation() : variables(std::make_shared<trajopt_ifopt::CompositeVariables>("variable-sets")) {}
+  Implementation(std::shared_ptr<trajopt_ifopt::Variables> variables) : variables(std::move(variables)) {}
 
   bool initialized{ false };
 
@@ -319,7 +319,7 @@ struct TrajOptQPProblem::Implementation
    */
   std::vector<trajopt_ifopt::Differentiable::Ptr> all_components;
 
-  trajopt_ifopt::CompositeVariables::Ptr variables;
+  trajopt_ifopt::Variables::Ptr variables;
   std::vector<trajopt_ifopt::Differentiable::Ptr> constraints;
   std::vector<trajopt_ifopt::Differentiable::Ptr> squared_costs;
   std::vector<trajopt_ifopt::Differentiable::Ptr> hinge_costs;
@@ -390,12 +390,6 @@ struct TrajOptQPProblem::Implementation
    */
   void updateNLPVariableBounds(const Eigen::Ref<const Eigen::VectorXd>& nlp_values);
 };
-
-void TrajOptQPProblem::Implementation::addVariableSet(std::shared_ptr<trajopt_ifopt::Variables> variable_set)
-{
-  variables->addComponent(std::move(variable_set));
-  initialized = false;
-}
 
 void TrajOptQPProblem::Implementation::addConstraintSet(std::shared_ptr<trajopt_ifopt::ConstraintSet> constraint_set)
 {
@@ -1057,9 +1051,7 @@ void TrajOptQPProblem::Implementation::print() const
             << '\n';
   std::cout << "All Lower Bounds: " << cvp.bounds_lower.transpose().format(format) << '\n';
   std::cout << "All Upper Bounds: " << cvp.bounds_upper.transpose().format(format) << '\n';
-  std::cout << "NLP values: " << '\n';
-  for (const auto& v_set : variables->getComponents())
-    std::cout << v_set->getValues().transpose().format(format) << '\n';
+  std::cout << "NLP values: " << '\n' << variables->getValues().transpose().format(format) << '\n';
 }
 
 void TrajOptQPProblem::Implementation::updateNLPVariableBounds(const Eigen::Ref<const Eigen::VectorXd>& nlp_values)
@@ -1083,14 +1075,12 @@ void TrajOptQPProblem::Implementation::updateNLPVariableBounds(const Eigen::Ref<
   }
 }
 
-TrajOptQPProblem::TrajOptQPProblem() : impl_(std::make_unique<Implementation>()) {}
+TrajOptQPProblem::TrajOptQPProblem(std::shared_ptr<trajopt_ifopt::Variables> variables)
+  : impl_(std::make_unique<Implementation>(std::move(variables)))
+{
+}
 
 TrajOptQPProblem::~TrajOptQPProblem() = default;
-
-void TrajOptQPProblem::addVariableSet(std::shared_ptr<trajopt_ifopt::Variables> variable_set)
-{
-  impl_->addVariableSet(std::move(variable_set));
-}
 
 void TrajOptQPProblem::addConstraintSet(std::shared_ptr<trajopt_ifopt::ConstraintSet> constraint_set)
 {

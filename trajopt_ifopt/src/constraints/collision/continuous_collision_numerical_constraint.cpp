@@ -155,24 +155,23 @@ Eigen::VectorXd ContinuousCollisionNumericalConstraint::getValues() const
 // Set the limits on the constraint values
 std::vector<Bounds> ContinuousCollisionNumericalConstraint::getBounds() const { return bounds_; }
 
-void ContinuousCollisionNumericalConstraint::fillJacobianBlock(Jacobian& jac_block, const std::string& var_set) const
+Jacobian ContinuousCollisionNumericalConstraint::getJacobian() const
 {
-  // Only modify the jacobian if this constraint uses var_set
-  if (var_set != position_vars_[0]->getParent()->getParent()->getName())  // NOLINT
-    return;
+  Jacobian jac(rows_, variables_->getRows());
+  jac.reserve(non_zeros_.load());
 
   // Setting to zeros because snopt sparsity cannot change
-  if (!triplet_list_.empty())                                               // NOLINT
-    jac_block.setFromTriplets(triplet_list_.begin(), triplet_list_.end());  // NOLINT
+  if (!triplet_list_.empty())                                         // NOLINT
+    jac.setFromTriplets(triplet_list_.begin(), triplet_list_.end());  // NOLINT
+
+  if (collision_data_->gradient_results_sets.empty())
+    return jac;
 
   const double margin_buffer = collision_evaluator_->getCollisionMarginBuffer();
 
   // Calculate collisions
   Eigen::VectorXd joint_vals0 = position_vars_[0]->value();
   const Eigen::VectorXd joint_vals1 = position_vars_[1]->value();
-
-  if (collision_data_->gradient_results_sets.empty())
-    return;
 
   trajopt_common::CollisionCacheData collision_data_delta;
   const std::size_t cnt = std::min(bounds_.size(), collision_data_->gradient_results_sets.size());
@@ -204,7 +203,7 @@ void ContinuousCollisionNumericalConstraint::fillJacobianBlock(Jacobian& jac_blo
           else
             dist_delta = (it->getMaxErrorT1() - baseline.getMaxErrorT1());
 
-          jac_block.coeffRef(i, position_vars_[p]->getIndex() + j) = dist_delta / delta;
+          jac.coeffRef(i, position_vars_[p]->getIndex() + j) = dist_delta / delta;
         }
         else
         {
@@ -216,12 +215,13 @@ void ContinuousCollisionNumericalConstraint::fillJacobianBlock(Jacobian& jac_blo
           else
             dist_delta = ((-1.0 * margin_buffer) - baseline.getMaxErrorT1());
 
-          jac_block.coeffRef(i, position_vars_[p]->getIndex() + j) = dist_delta / delta;
+          jac.coeffRef(i, position_vars_[p]->getIndex() + j) = dist_delta / delta;
         }
       }
       jv = position_vars_[p]->value();
     }
   }
+  return jac;
 }
 
 Eigen::VectorXd ContinuousCollisionNumericalConstraint::getCoefficients() const { return coeffs_; }
