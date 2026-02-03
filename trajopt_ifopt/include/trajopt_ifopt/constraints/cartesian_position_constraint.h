@@ -38,56 +38,6 @@ namespace trajopt_ifopt
 {
 class Var;
 
-/** @brief Contains Cartesian pose constraint information */
-struct CartPosInfo
-{
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-
-  using Ptr = std::shared_ptr<CartPosInfo>;
-  using ConstPtr = std::shared_ptr<const CartPosInfo>;
-
-  enum class Type : std::uint8_t
-  {
-    kTargetActive,
-    kSourceActive,
-    kBothActive
-  };
-
-  CartPosInfo() = default;
-  CartPosInfo(std::shared_ptr<const tesseract_kinematics::JointGroup> manip,
-              std::string source_frame,
-              std::string target_frame,
-              const Eigen::Isometry3d& source_frame_offset = Eigen::Isometry3d::Identity(),
-              const Eigen::Isometry3d& target_frame_offset = Eigen::Isometry3d::Identity(),
-              const Eigen::VectorXi& indices = Eigen::Matrix<int, 1, 6>(std::vector<int>({ 0, 1, 2, 3, 4, 5 }).data()));
-
-  /** @brief The joint group */
-  std::shared_ptr<const tesseract_kinematics::JointGroup> manip;
-
-  /** @brief Link which should reach desired pos */
-  std::string source_frame;
-
-  /** @brief The target frame that should be reached by the source */
-  std::string target_frame;
-
-  /** @brief Static transform applied to the source_frame location */
-  Eigen::Isometry3d source_frame_offset;
-
-  /** @brief Static transform applied to the target_frame location */
-  Eigen::Isometry3d target_frame_offset;
-
-  /** @brief indicates which link is active */
-  Type type{ Type::kTargetActive };
-
-  /**
-   * @brief This is a vector of indices to be returned Default: {0, 1, 2, 3, 4, 5}
-   *
-   * If you only care about x, y and z error, this is {0, 1, 2}
-   * If you only care about rotation error around x, y and z, this is {3, 4, 5}
-   */
-  Eigen::VectorXi indices;
-};
-
 class CartPosConstraint : public ConstraintSet
 {
 public:
@@ -101,15 +51,23 @@ public:
                                                               const Eigen::Isometry3d&,
                                                               tesseract_common::TransformMap&)>;
 
-  CartPosConstraint(const CartPosInfo& info,
-                    std::shared_ptr<const Var> position_var,
+  CartPosConstraint(std::shared_ptr<const Var> position_var,
+                    std::shared_ptr<const tesseract_kinematics::JointGroup> manip,
+                    std::string source_frame,
+                    std::string target_frame,
+                    const Eigen::Isometry3d& source_frame_offset = Eigen::Isometry3d::Identity(),
+                    const Eigen::Isometry3d& target_frame_offset = Eigen::Isometry3d::Identity(),
                     std::string name = "CartPos",
                     RangeBoundHandling range_bound_handling = RangeBoundHandling::kSplitToTwoInequalities);
 
-  CartPosConstraint(CartPosInfo info,
-                    std::shared_ptr<const Var> position_var,
+  CartPosConstraint(std::shared_ptr<const Var> position_var,
                     const Eigen::VectorXd& coeffs,
                     const std::vector<Bounds>& bounds,
+                    std::shared_ptr<const tesseract_kinematics::JointGroup> manip,
+                    std::string source_frame,
+                    std::string target_frame,
+                    const Eigen::Isometry3d& source_frame_offset = Eigen::Isometry3d::Identity(),
+                    const Eigen::Isometry3d& target_frame_offset = Eigen::Isometry3d::Identity(),
                     std::string name = "CartPos",
                     RangeBoundHandling range_bound_handling = RangeBoundHandling::kSplitToTwoInequalities);
 
@@ -148,13 +106,6 @@ public:
   Jacobian getJacobian() const override;
 
   /**
-   * @brief Gets the Cartesian Pose info used to create this constraint
-   * @return The Cartesian Pose info used to create this constraint
-   */
-  const CartPosInfo& getInfo() const;
-  CartPosInfo& getInfo();
-
-  /**
    * @brief Set the target pose
    * @param pose
    */
@@ -180,6 +131,13 @@ public:
   bool use_numeric_differentiation{ true };
 
 private:
+  enum class Type : std::uint8_t
+  {
+    kTargetActive,
+    kSourceActive,
+    kBothActive
+  };
+
   /** @brief The number of joints in a single JointPosition */
   long n_dof_;
 
@@ -195,8 +153,31 @@ private:
   /** @brief Policy for representing range bounds when building the constraint rows. */
   RangeBoundHandling range_bound_handling_{ RangeBoundHandling::kSplitToTwoInequalities };
 
-  /** @brief The kinematic information used when calculating error */
-  CartPosInfo info_;
+  /** @brief The joint group */
+  std::shared_ptr<const tesseract_kinematics::JointGroup> manip_;
+
+  /** @brief Link which should reach desired pos */
+  std::string source_frame_;
+
+  /** @brief The target frame that should be reached by the source */
+  std::string target_frame_;
+
+  /** @brief Static transform applied to the source_frame location */
+  Eigen::Isometry3d source_frame_offset_;
+
+  /** @brief Static transform applied to the target_frame location */
+  Eigen::Isometry3d target_frame_offset_;
+
+  /** @brief indicates which link is active */
+  Type type_{ Type::kTargetActive };
+
+  /**
+   * @brief This is a vector of indices to be returned Default: {0, 1, 2, 3, 4, 5}
+   *
+   * If you only care about x, y and z error, this is {0, 1, 2}
+   * If you only care about rotation error around x, y and z, this is {3, 4, 5}
+   */
+  Eigen::VectorXi indices_;
 
   /** @brief Error function for calculating the error in the position given the source and target positions */
   ErrorFunctionType error_function_{ nullptr };

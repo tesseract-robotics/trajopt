@@ -118,9 +118,8 @@ void runCartPositionOptimization(const tesseract_environment::Environment::Ptr& 
   // 4) Add constraints
   for (const auto& var : vars)
   {
-    const trajopt_ifopt::CartPosInfo cart_info(
-        manip, "r_gripper_tool_frame", "base_footprint", Eigen::Isometry3d::Identity(), target_pose);
-    auto cnt = std::make_shared<trajopt_ifopt::CartPosConstraint>(cart_info, var);
+    auto cnt = std::make_shared<trajopt_ifopt::CartPosConstraint>(
+        var, manip, "r_gripper_tool_frame", "base_footprint", Eigen::Isometry3d::Identity(), target_pose);
     qp_problem->addConstraintSet(cnt);
   }
 
