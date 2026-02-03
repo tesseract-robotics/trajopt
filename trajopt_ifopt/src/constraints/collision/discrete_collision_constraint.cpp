@@ -66,18 +66,15 @@ DiscreteCollisionConstraint::DiscreteCollisionConstraint(
 int DiscreteCollisionConstraint::update()
 {
   std::size_t variable_hash = position_var_->getParent()->getParent()->getHash();
-  auto* cache_data = collision_data_cache_.get(variable_hash);
+  auto cache_data = collision_data_cache_.getOrAcquire(variable_hash);
 
-  if (cache_data != nullptr)
+  collision_data_ = cache_data.first;
+  if (!cache_data.second)
   {
-    collision_data_ = *cache_data;
-  }
-  else
-  {
-    auto data = std::make_shared<trajopt_common::CollisionCacheData>();
-    collision_evaluator_->calcCollisions(*data, position_var_->value(), bounds_.size());
-    collision_data_ = data;
-    collision_data_cache_.put(variable_hash, data);
+    collision_data_->contact_results_map.clear();
+    collision_data_->gradient_results_sets.clear();
+    collision_evaluator_->calcCollisions(*collision_data_, position_var_->value(), bounds_.size());
+    collision_data_cache_.put(variable_hash, collision_data_);
   }
 
   const auto cnt = std::min<std::size_t>(bounds_.size(), collision_data_->gradient_results_sets.size());
@@ -180,18 +177,19 @@ DiscreteCollisionConstraintD::DiscreteCollisionConstraintD(
 int DiscreteCollisionConstraintD::update()
 {
   std::size_t variable_hash = position_var_->getParent()->getParent()->getHash();
-  auto* cache_data = collision_data_cache_.get(variable_hash);
+  auto cache_data = collision_data_cache_.getOrAcquire(variable_hash);
 
-  if (cache_data != nullptr)
+  if (cache_data.second)
   {
-    collision_data_ = *cache_data;
+    collision_data_ = cache_data.first;
   }
   else
   {
-    auto data = std::make_shared<trajopt_common::CollisionCacheData>();
-    collision_evaluator_->calcCollisions(*data, position_var_->value(), 0);
-    collision_data_ = data;
-    collision_data_cache_.put(variable_hash, data);
+    cache_data.first->contact_results_map.clear();
+    cache_data.first->gradient_results_sets.clear();
+    collision_evaluator_->calcCollisions(*cache_data.first, position_var_->value(), 0);
+    collision_data_ = cache_data.first;
+    collision_data_cache_.put(variable_hash, cache_data.first);
   }
 
   rows_ = static_cast<int>(collision_data_->contact_results_map.count());
