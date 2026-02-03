@@ -2,8 +2,8 @@
 Changelog for package trajopt_sqp
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.34.2 (2026-02-03)
+-------------------
 * Remove CompositeVariables to simplify trajopt_ifopt codebase
 * Add back collision data caching to trajopt ifopt
 * Reduce memory allocation in trajopt_ifopt and trajopt_sqp

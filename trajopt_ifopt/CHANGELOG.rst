@@ -2,8 +2,8 @@
 Changelog for package trajopt_ifopt
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.34.2 (2026-02-03)
+-------------------
 * Fix acceleration and jerk minimum number of variables
 * Remove CompositeVariables to simplify trajopt_ifopt codebase
 * Update cache to also be a pool of object to retrieve unused objects (`#530 <https://github.com/tesseract-robotics/trajopt/issues/530>`_)

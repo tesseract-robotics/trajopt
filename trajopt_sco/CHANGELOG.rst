@@ -2,8 +2,8 @@
 Changelog for package trajopt_sco
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.34.2 (2026-02-03)
+-------------------
 * Reduce memory allocation in trajopt_ifopt and trajopt_sqp
 * Copilot review changes (`#504 <https://github.com/tesseract-robotics/trajopt/issues/504>`_)
 * Add dynamic constraint support
