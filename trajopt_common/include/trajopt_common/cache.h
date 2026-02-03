@@ -15,10 +15,18 @@ TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace trajopt_common
 {
-// Fixed-capacity LRU cache that stores a pool of shared_ptr<ValueT>.
-// On cache miss, returns an object from the pool and removes any old key mapping
-// for the object (i.e., evicts LRU). The caller should rebuild the object and
-// call put(key, ptr) to associate it with the key.
+// Cache: fixed-capacity LRU pool of ValueT objects stored as shared_ptr<ValueT>.
+// - Not thread-safe: callers must synchronize externally if using from multiple threads.
+// - Usage pattern:
+//     auto [ptr, hit] = cache.getOrAcquire(key);
+//     if (!hit) { /* populate ptr (returned from pool) */ cache.put(key, ptr); }
+// - get(key) returns Ptr on hit, nullptr on miss.
+// - getOrAcquire(key) returns {ptr, true} on hit, {ptr, false} on miss (ptr from pool).
+//   If the pool is exhausted (no free or evictable slots), getOrAcquire returns {nullptr, false}.
+// - put(key, ptr) associates a pooled ptr with a key and marks it MRU. Returns true on success
+//   (ptr belonged to this pool), false otherwise.
+// - erase(key) removes the mapping but leaves pooled object allocated.
+
 template <typename KeyT, typename ValueT, typename Hash = std::hash<KeyT>, typename KeyEqual = std::equal_to<KeyT>>
 class Cache
 {
@@ -59,9 +67,9 @@ public:
 
   // Returns {ptr, true} on hit (and updates LRU).
   // Returns {ptr, false} on miss, where ptr is taken from the pool.
-  //
   // On miss, the returned ptr is NOT associated with `key`. The caller should
   // rebuild it and then call put(key, ptr) to cache it.
+  // If the pool is exhausted (no free or evictable slots), returns {nullptr, false}.
   AcquireResult getOrAcquire(const KeyT& key)
   {
     const auto it = key_to_slot_.find(key);
@@ -73,6 +81,8 @@ public:
     }
 
     const std::size_t slot = acquireSlot();
+    if (slot == kNpos)
+      return { Ptr{}, false };
     return { pool_[slot], false };
   }
 
@@ -80,16 +90,17 @@ public:
   //
   // If ptr belongs to this cache's pool, it is stored in its pool slot.
   // If key already exists, the previous slot is evicted (key removed).
-  void put(const KeyT& key, const Ptr& value)
+  // Returns true if mapping established; false if ptr not from this pool.
+  bool put(const KeyT& key, const Ptr& value)
   {
     if (!value)
-      return;
+      return false;
 
     const std::size_t slot = slotFromPtr(value);
     if (slot == kNpos)
     {
       assert(false && "Cache::put called with pointer not from pool");
-      return;
+      return false;
     }
 
     // If the key is already mapped to a different slot, evict that entry.
@@ -130,6 +141,8 @@ public:
     {
       touch(slot);
     }
+
+    return true;
   }
 
   // Removes a key mapping from the cache (the underlying pooled object remains).
@@ -195,6 +208,7 @@ private:
   //  - Otherwise evict the LRU cached slot.
   //
   // The returned slot is marked checked_out_ = true and has no key mapping.
+  // If no slot can be provided (all slots checked out and nothing evictable), returns kNpos.
   std::size_t acquireSlot()
   {
     std::size_t slot = kNpos;
@@ -223,10 +237,9 @@ private:
       }
       else
       {
-        // Degenerate case: everything is checked out and nothing cached.
-        // Everything is checked out and nothing is cached: contract violation.
-        assert(false && "Cache::acquireSlot: no slots available (all checked out?)");
-        slot = 0;
+        // No available free slots and no assigned (evictable) slots:
+        // indicate exhaustion by returning kNpos.
+        return kNpos;
       }
     }
 

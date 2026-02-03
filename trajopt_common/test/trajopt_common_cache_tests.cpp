@@ -2,7 +2,7 @@
 
 #include <cstdint>
 #include <set>
-#include <string>
+#include <cstring>
 #include <unordered_set>
 #include <utility>
 #include <vector>
@@ -25,7 +25,8 @@ std::shared_ptr<TestValue> acquireAndPut(CacheT& cache, Key key, int marker)
   if (!hit)
   {
     ptr->marker = marker;
-    cache.put(key, ptr);
+    // put returns bool now; ensure it succeeded
+    ASSERT_TRUE(cache.put(key, ptr));
   }
   return ptr;
 }
@@ -68,7 +69,7 @@ TEST(CacheTest, GetOrAcquireMissDoesNotCreateKeyMappingUntilPut)
   EXPECT_EQ(cache.get(10), nullptr);
   EXPECT_EQ(cache.size(), 0U);
 
-  cache.put(10, ptr);
+  ASSERT_TRUE(cache.put(10, ptr));
   EXPECT_EQ(cache.size(), 1U);
   EXPECT_EQ(cache.get(10).get(), ptr.get());
 }
@@ -98,7 +99,7 @@ TEST(CacheTest, GetHitTouchesRecencySoLRUEvictionChanges)
   // key=3 still not mapped until put.
   EXPECT_EQ(cache.get(3), nullptr);
 
-  cache.put(3, p3);
+  ASSERT_TRUE(cache.put(3, p3));
   EXPECT_NE(cache.get(3), nullptr);
   EXPECT_EQ(cache.size(), 2U);
 }
@@ -137,7 +138,8 @@ TEST(CacheTest, LRUEvictionOrderWithThreeKeys)
   // Miss key=4 should evict key=2.
   auto [p4, hit4] = cache.getOrAcquire(4);
   EXPECT_FALSE(hit4);
-  cache.put(4, p4);
+  ASSERT_NE(p4, nullptr);
+  ASSERT_TRUE(cache.put(4, p4));
 
   EXPECT_NE(cache.get(1), nullptr);
   EXPECT_EQ(cache.get(2), nullptr);  // evicted
@@ -158,7 +160,7 @@ TEST(CacheTest, PutSameKeySamePtrTouchDoesNotChangeSize)
   ASSERT_EQ(cache.size(), 1U);
 
   // Put same key with same ptr should keep size == 1.
-  cache.put(1, p1);
+  ASSERT_TRUE(cache.put(1, p1));
   EXPECT_EQ(cache.size(), 1U);
   EXPECT_EQ(cache.get(1).get(), p1.get());
 }
@@ -182,7 +184,7 @@ TEST(CacheTest, PutExistingKeyWithDifferentPtrEvictsOldMapping)
 
   // Now intentionally map key=2 to the acquired pointer p3 (different slot than current key=2).
   // This should evict the old key=2 mapping and replace it with p3.
-  cache.put(2, p3);
+  ASSERT_TRUE(cache.put(2, p3));
 
   auto g2 = cache.get(2);
   ASSERT_NE(g2, nullptr);
@@ -201,7 +203,7 @@ TEST(CacheTest, PutPtrPreviouslyMappedToDifferentKeyRemovesOldKey)
   ASSERT_EQ(cache.size(), 2U);
 
   // Re-map p1's pooled object to key=99.
-  cache.put(99, p1);
+  ASSERT_TRUE(cache.put(99, p1));
 
   // Old key=1 mapping should be removed.
   EXPECT_EQ(cache.get(1), nullptr);
@@ -265,6 +267,7 @@ TEST(CacheTest, RepeatedHitsDoNotChangePoolIdentityForKey)
   }
 }
 
+// After you erase keys, those slots are intended to be reusable. Verify that.
 TEST(CacheTest, ErasedSlotsShouldBeReusableOnMiss)
 {
   CacheT cache(2);
@@ -277,7 +280,7 @@ TEST(CacheTest, ErasedSlotsShouldBeReusableOnMiss)
   cache.erase(2);
   ASSERT_EQ(cache.size(), 0U);
 
-  // Now two misses should ideally return two different pooled objects (reuse both slots).
+  // Now two misses should return two pooled objects (reuse both slots).
   auto [a, ha] = cache.getOrAcquire(10);
   auto [b, hb] = cache.getOrAcquire(11);
   EXPECT_FALSE(ha);
@@ -291,6 +294,25 @@ TEST(CacheTest, ErasedSlotsShouldBeReusableOnMiss)
 
   (void)p1;
   (void)p2;
+}
+
+TEST(CacheTest, AcquireExhaustionReturnsNullptr)
+{
+  CacheT cache(2);
+
+  // Acquire two objects without putting them back: they should be checked out.
+  auto [a, ha] = cache.getOrAcquire(1);
+  EXPECT_FALSE(ha);
+  ASSERT_NE(a, nullptr);
+
+  auto [b, hb] = cache.getOrAcquire(2);
+  EXPECT_FALSE(hb);
+  ASSERT_NE(b, nullptr);
+
+  // Now all two slots are checked out; a third acquisition should return nullptr.
+  auto [c, hc] = cache.getOrAcquire(3);
+  EXPECT_FALSE(hc);
+  EXPECT_EQ(c, nullptr);
 }
 
 int main(int argc, char** argv)
