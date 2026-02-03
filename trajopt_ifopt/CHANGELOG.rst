@@ -2,13 +2,12 @@
 Changelog for package trajopt_ifopt
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-0.34.1 (2026-01-31)
--------------------
+Forthcoming
+-----------
+* Fix acceleration and jerk minimum number of variables
+* Remove CompositeVariables to simplify trajopt_ifopt codebase
+* Update cache to also be a pool of object to retrieve unused objects (`#530 <https://github.com/tesseract-robotics/trajopt/issues/530>`_)
 * Add back collision data caching to trajopt ifopt
-* Contributors: Levi Armstrong
-
-0.34.0 (2026-01-31)
--------------------
 * Reduce memory allocation in trajopt_ifopt and trajopt_sqp
 * Leverage sparse matrix insert back for collision jacobian population (`#526 <https://github.com/tesseract-robotics/trajopt/issues/526>`_)
 * Reduce allocations

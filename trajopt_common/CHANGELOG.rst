@@ -2,11 +2,9 @@
 Changelog for package trajopt_utils
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-0.34.1 (2026-01-31)
--------------------
-
-0.34.0 (2026-01-31)
--------------------
+Forthcoming
+-----------
+* Update cache to also be a pool of object to retrieve unused objects (`#530 <https://github.com/tesseract-robotics/trajopt/issues/530>`_)
 * Reduce memory allocation in trajopt_ifopt and trajopt_sqp
 * Reduce allocations
 * Minor optimizations in the weighted average methods

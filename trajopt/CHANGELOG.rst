@@ -2,13 +2,9 @@
 Changelog for package trajopt
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-0.34.1 (2026-01-31)
--------------------
+Forthcoming
+-----------
 * Fix trajopt joint term unit tests
-* Contributors: Levi Armstrong
-
-0.34.0 (2026-01-31)
--------------------
 * Reduce memory allocation in trajopt_ifopt and trajopt_sqp
 * Fix bug with missing throw on exceptions
 * Simplify trajopt_ifopt by removing use of CompositeDifferentiable
