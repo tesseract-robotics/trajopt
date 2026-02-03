@@ -268,7 +268,7 @@ private:
       {
         // No available free slots and no assigned (evictable) slots:
         // grow the pool (double).
-        std::size_t new_capacity = capacity_ ? capacity_ * 2 : 1;
+        std::size_t new_capacity = (capacity_ != 0U) ? capacity_ * 2 : 1;
         growPool(new_capacity);
 
         // After growing, attempt to find a free slot again.
