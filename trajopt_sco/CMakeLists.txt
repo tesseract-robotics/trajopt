@@ -44,7 +44,21 @@ set(SCO_SOURCE_FILES
     src/num_diff.cpp)
 
 if(NOT APPLE AND NOT WIN32)
-  set(HAVE_BPMPD TRUE)
+  execute_process(COMMAND uname -p OUTPUT_VARIABLE CMAKE_SYSTEM_NAME2)
+  if(NOT
+    CMAKE_SYSTEM_NAME2
+    MATCHES
+    "aarch64"
+    AND NOT
+        CMAKE_SYSTEM_NAME2
+        MATCHES
+        "armv7l"
+    AND NOT
+        CMAKE_SYSTEM_NAME2
+        MATCHES
+        "unknown")
+    set(HAVE_BPMPD TRUE)
+  endif()
 endif()
 
 if(HAVE_BPMPD)
