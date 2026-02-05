@@ -145,7 +145,13 @@ Eigen::VectorXd ConvexProblem::evaluateConvexCosts(const Eigen::Ref<const Eigen:
   // Squared costs (already convexified into squared_objective_nlp_)
   if (!objective_term_infos.empty())
   {
-    Eigen::VectorXd sq_costs = squared_objective_nlp.values(var_block);
+    // reuse scratch_val (ensure big enough once)
+    if (scratch_val.size() < n_objective_terms)
+      scratch_val.resize(n_objective_terms);
+
+    auto sq_costs = scratch_val.head(n_objective_terms);
+    squared_objective_nlp.values(sq_costs, var_block);
+
     assert(!(sq_costs.array() < -1e-8).any());
     for (const auto& c_info : objective_term_infos)
     {
@@ -208,7 +214,7 @@ Eigen::VectorXd ConvexProblem::evaluateConvexConstraintViolations(const Eigen::R
     }
 
     // NOLINTNEXTLINE
-    auto jac = constraint_matrix.block(row_index, 0, c_info.rows, n_nlp_vars);
+    auto jac = constraint_matrix.middleRows(row_index, c_info.rows).leftCols(n_nlp_vars);
     auto constant = constraint_constant.middleRows(row_index, c_info.rows);
 
     // Ensure scratch buffers big enough (no allocation after first growth)
@@ -348,6 +354,8 @@ struct TrajOptQPProblem::Implementation
   std::vector<Eigen::Triplet<double>> cache_triplets_1;
   std::vector<Eigen::Triplet<double>> cache_triplets_2;
   std::vector<double> cache_slack_gradient;
+  AffExprs cache_aff_expr;
+  QuadExprs cache_quad_expr;
 
   // Scratch buffers reused across evaluations
   Eigen::VectorXd scratch_err;  // holds bounds violations
@@ -547,8 +555,8 @@ void TrajOptQPProblem::Implementation::update()
   cvp.n_constraint_terms = cvp.n_penalty_constraints + cvp.n_merit_constraints;
   cvp.n_constraint_term_non_zeros = cvp.n_penalty_constraint_non_zeros + cvp.n_merit_constraint_non_zeros;
 
-  cvp.squared_objective_target = Eigen::VectorXd::Zero(cvp.n_objective_terms);
-  cvp.constraint_constant = Eigen::VectorXd::Zero(cvp.n_constraint_terms);
+  cvp.squared_objective_target.setZero(cvp.n_objective_terms);
+  cvp.constraint_constant.setZero(cvp.n_constraint_terms);
 
   cvp.bounds_lower.resize(cvp.n_nlp_vars + cvp.n_penalty_constraints + cvp.n_merit_constraints);
   cvp.bounds_upper.resize(cvp.n_nlp_vars + cvp.n_penalty_constraints + cvp.n_merit_constraints);
@@ -843,8 +851,16 @@ void TrajOptQPProblem::Implementation::convexify()
   /** @note See CostFromFunc::convex in modeling_utils.cpp. */
   if (cvp.n_objective_terms > 0)
   {
-    cvp.squared_objective_nlp = QuadExprs(cvp.n_objective_terms, cvp.n_nlp_vars);
+    cvp.squared_objective_nlp.constants.setZero(cvp.n_objective_terms);
+    cvp.squared_objective_nlp.linear_coeffs.resize(cvp.n_objective_terms, cvp.n_nlp_vars);
+    cvp.squared_objective_nlp.linear_coeffs.setZero();
+    cvp.squared_objective_nlp.objective_linear_coeffs.setZero(cvp.n_nlp_vars);
+    cvp.squared_objective_nlp.objective_quadratic_coeffs.resize(cvp.n_nlp_vars, cvp.n_nlp_vars);
+    cvp.squared_objective_nlp.objective_quadratic_coeffs.setZero();
+    cvp.squared_objective_nlp.quadratic_coeffs.resize(static_cast<std::size_t>(cvp.n_objective_terms));
+
     Eigen::Index row = 0;
+    bool has_obj_quad = false;
     for (std::size_t i = 0; i < objective_terms.size(); ++i)
     {
       const auto& info = cvp.objective_term_infos[i];
@@ -859,35 +875,39 @@ void TrajOptQPProblem::Implementation::convexify()
       //    Eigen::VectorXd cnt_error = trajopt_ifopt::calcBoundsErrors(cnt_vals, squared_costs_.getBounds());
 
       // This should be correct now
-      AffExprs cnt_aff_expr = createAffExprs(obj->getValues(), obj->getJacobian(), x_initial);
-      cnt_aff_expr.constants = (cvp.squared_objective_target.segment(row, obj->getRows()) - cnt_aff_expr.constants);
-      cnt_aff_expr.linear_coeffs *= -1;
-      QuadExprs cost_quad_expr = squareAffExprs(cnt_aff_expr, obj->getCoefficients());
+      cache_aff_expr.create(obj->getValues(), obj->getJacobian(), x_initial);
+      cache_aff_expr.constants = (cvp.squared_objective_target.segment(row, obj->getRows()) - cache_aff_expr.constants);
+      cache_aff_expr.linear_coeffs *= -1;
+      cache_aff_expr.square(cache_quad_expr, obj->getCoefficients());
+
+      // Update has objective quad
+      has_obj_quad |= (cache_quad_expr.objective_quadratic_coeffs.nonZeros() > 0);
 
       // store individual equations constant
-      cvp.squared_objective_nlp.constants.segment(row, obj->getRows()) = cost_quad_expr.constants;
+      cvp.squared_objective_nlp.constants.segment(row, obj->getRows()) = cache_quad_expr.constants;
 
       // Sum objective function linear coefficients
-      cvp.squared_objective_nlp.objective_linear_coeffs += cost_quad_expr.objective_linear_coeffs;
+      cvp.squared_objective_nlp.objective_linear_coeffs += cache_quad_expr.objective_linear_coeffs;
 
       // Sum objective function quadratic coefficients
-      cvp.squared_objective_nlp.objective_quadratic_coeffs += cost_quad_expr.objective_quadratic_coeffs;
+      cvp.squared_objective_nlp.objective_quadratic_coeffs += cache_quad_expr.objective_quadratic_coeffs;
 
       // store individual equations linear coefficients in a Triplet list to update equation linear coefficients later
-      if (cost_quad_expr.linear_coeffs.nonZeros() > 0)
+      if (cache_quad_expr.linear_coeffs.nonZeros() > 0)
       {
         // Add jacobian to triplet list
-        for (int k = 0; k < cost_quad_expr.linear_coeffs.outerSize(); ++k)
+        for (int k = 0; k < cache_quad_expr.linear_coeffs.outerSize(); ++k)
         {
-          for (trajopt_ifopt::Jacobian::InnerIterator it(cost_quad_expr.linear_coeffs, k); it; ++it)
+          for (trajopt_ifopt::Jacobian::InnerIterator it(cache_quad_expr.linear_coeffs, k); it; ++it)
             cache_triplets_1.emplace_back(row + it.row(), it.col(), it.value());
         }
       }
 
       // Store individual equations quadratic coefficients
-      cvp.squared_objective_nlp.quadratic_coeffs.insert(cvp.squared_objective_nlp.quadratic_coeffs.end(),
-                                                        cost_quad_expr.quadratic_coeffs.begin(),
-                                                        cost_quad_expr.quadratic_coeffs.end());
+      assert(cache_quad_expr.quadratic_coeffs.size() == obj->getRows());
+      for (std::size_t j = 0; j < cache_quad_expr.quadratic_coeffs.size(); ++j)
+        cvp.squared_objective_nlp.quadratic_coeffs[static_cast<std::size_t>(row) + j] =
+            cache_quad_expr.quadratic_coeffs[j];
 
       row += obj->getRows();
     }
@@ -900,10 +920,10 @@ void TrajOptQPProblem::Implementation::convexify()
     cvp.gradient.head(cvp.n_nlp_vars) = cvp.squared_objective_nlp.objective_linear_coeffs;
 
     // Insert QP Problem Objective Quadratic Coefficients
-    if (cvp.squared_objective_nlp.objective_quadratic_coeffs.nonZeros() > 0)
+    if (has_obj_quad)
     {
       cvp.hessian.reserve(cvp.squared_objective_nlp.objective_quadratic_coeffs.nonZeros());
-      for (int r = 0; r < cvp.squared_objective_nlp.objective_quadratic_coeffs.outerSize(); ++r)
+      for (Eigen::Index r = 0; r < cvp.squared_objective_nlp.objective_quadratic_coeffs.outerSize(); ++r)
       {
         cvp.hessian.startVec(r);  // start row k (RowMajor)
 
@@ -913,6 +933,7 @@ void TrajOptQPProblem::Implementation::convexify()
           cvp.hessian.insertBack(r, it.col()) = it.value();
       }
       cvp.hessian.finalize();
+      cvp.hessian.makeCompressed();
     }
   }
 
@@ -930,6 +951,7 @@ void TrajOptQPProblem::Implementation::convexify()
   cvp.constraint_matrix.resize(cvp.num_qp_cnts, cvp.num_qp_vars);
   cvp.constraint_matrix.reserve(cvp.n_constraint_term_non_zeros + cvp.n_slack_vars + cvp.num_qp_vars);
   cvp.constraint_matrix.setFromTriplets(cache_triplets_2.begin(), cache_triplets_2.end());
+  cvp.constraint_matrix.makeCompressed();
 
   // Update NLP Bounds
   updateNLPVariableBounds(x_initial);
