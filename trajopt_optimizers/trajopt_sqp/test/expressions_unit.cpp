@@ -39,11 +39,14 @@ TEST(ExpressionsTest, AffExprs)  // NOLINT
   e(0) = 16;
   Eigen::Vector2d J(8, -8);
 
-  AffExprs aff_exprs = trajopt_sqp::createAffExprs(e, J.transpose().sparseView(), x);
+  AffExprs aff_exprs;
+  aff_exprs.create(e, J.transpose().sparseView(), x);
   EXPECT_NEAR(aff_exprs.constants(0), -16, 1e-8);
   EXPECT_NEAR(aff_exprs.linear_coeffs.coeff(0, 0), 8, 1e-8);
   EXPECT_NEAR(aff_exprs.linear_coeffs.coeff(0, 1), -8, 1e-8);
-  EXPECT_NEAR(aff_exprs.values(x)(0), e(0), 1e-8);
+  Eigen::VectorXd results(1);
+  aff_exprs.values(results, x);
+  EXPECT_NEAR(results(0), e(0), 1e-8);
 }
 
 TEST(ExpressionsTest, AffExprsWithWeights)  // NOLINT
@@ -57,12 +60,17 @@ TEST(ExpressionsTest, AffExprsWithWeights)  // NOLINT
   e(0) = 16;
   Eigen::Vector2d J(8, -8);
 
-  AffExprs aff_exprs1 = trajopt_sqp::createAffExprs(w * e, (w * J).transpose().sparseView(), x);
-  AffExprs aff_exprs2 = trajopt_sqp::createAffExprs(e, J.transpose().sparseView(), x);
+  AffExprs aff_exprs1;
+  aff_exprs1.create(w * e, (w * J).transpose().sparseView(), x);
+  AffExprs aff_exprs2;
+  aff_exprs2.create(e, J.transpose().sparseView(), x);
   EXPECT_NEAR(aff_exprs1.constants(0), w * aff_exprs2.constants(0), 1e-8);
   EXPECT_NEAR(aff_exprs1.linear_coeffs.coeff(0, 0), w * aff_exprs2.linear_coeffs.coeff(0, 0), 1e-8);
   EXPECT_NEAR(aff_exprs1.linear_coeffs.coeff(0, 1), w * aff_exprs2.linear_coeffs.coeff(0, 1), 1e-8);
-  EXPECT_NEAR(aff_exprs1.values(x)(0), w * e(0), 1e-8);
+
+  Eigen::VectorXd results(1);
+  aff_exprs1.values(results, x);
+  EXPECT_NEAR(results(0), w * e(0), 1e-8);
 }
 
 TEST(ExpressionsTest, QuadExprs)  // NOLINT
@@ -76,7 +84,8 @@ TEST(ExpressionsTest, QuadExprs)  // NOLINT
   Eigen::Matrix2d H;
   H << 2, -2, -2, 2;
 
-  QuadExprs quad_exprs = trajopt_sqp::createQuadExprs(e, J.transpose().sparseView(), { H.sparseView() }, x);
+  QuadExprs quad_exprs;
+  quad_exprs.create(e, J.transpose().sparseView(), { H.sparseView() }, x);
   EXPECT_NEAR(quad_exprs.constants(0), 0, 1e-8);
   EXPECT_NEAR(quad_exprs.linear_coeffs.coeff(0, 0), 0, 1e-8);
   EXPECT_NEAR(quad_exprs.linear_coeffs.coeff(0, 1), 0, 1e-8);
@@ -84,11 +93,15 @@ TEST(ExpressionsTest, QuadExprs)  // NOLINT
   EXPECT_NEAR(quad_exprs.quadratic_coeffs[0].coeff(1, 1), 1, 1e-8);
   EXPECT_NEAR(quad_exprs.quadratic_coeffs[0].coeff(0, 1), -1, 1e-8);
   EXPECT_NEAR(quad_exprs.quadratic_coeffs[0].coeff(1, 0), -1, 1e-8);
-  EXPECT_NEAR(quad_exprs.values(x)(0), e(0), 1e-8);
+
+  Eigen::VectorXd results(1);
+  quad_exprs.values(results, x);
+  EXPECT_NEAR(results(0), e(0), 1e-8);
 
   // Because the function is a quadratic it should be an exact fit so check another set of values
   x = Eigen::Vector2d(8, 2);
-  EXPECT_NEAR(quad_exprs.values(x)(0), std::pow(x(0) - x(1), 2.0), 1e-8);
+  quad_exprs.values(results, x);
+  EXPECT_NEAR(results(0), std::pow(x(0) - x(1), 2.0), 1e-8);
 }
 
 TEST(ExpressionsTest, squareAffExprs1)  // NOLINT
@@ -102,23 +115,43 @@ TEST(ExpressionsTest, squareAffExprs1)  // NOLINT
   e(0) = x(0) - x(1);
   Eigen::Vector2d J(1, -1);
 
-  const AffExprs aff_exprs = trajopt_sqp::createAffExprs(e, J.transpose().sparseView(), x);
-  EXPECT_NEAR(aff_exprs.values(x)(0), e(0), 1e-8);
+  AffExprs aff_exprs;
+  aff_exprs.create(e, J.transpose().sparseView(), x);
 
-  QuadExprs quad_exprs = trajopt_sqp::squareAffExprs(aff_exprs, Eigen::VectorXd::Ones(aff_exprs.constants.size()));
+  Eigen::VectorXd results(1);
+  aff_exprs.values(results, x);
+  EXPECT_NEAR(results(0), e(0), 1e-8);
+
+  QuadExprs quad_exprs;
+  aff_exprs.square(quad_exprs, Eigen::VectorXd::Ones(aff_exprs.constants.size()));
 
   EXPECT_NEAR(quad_exprs.constants(0), 0, 1e-8);
   EXPECT_NEAR(quad_exprs.linear_coeffs.coeff(0, 0), 0, 1e-8);
   EXPECT_NEAR(quad_exprs.linear_coeffs.coeff(0, 1), 0, 1e-8);
+
+  // New representation: quadratic_coeffs[0] stores q as a 1×n row vector,
+  // where q = sqrt(w) * b^T. Here w=1 and b=[1, -1], so q=[1, -1].
+  ASSERT_EQ(quad_exprs.quadratic_coeffs.size(), 1);
+  EXPECT_EQ(quad_exprs.quadratic_coeffs[0].rows(), 1);
+  EXPECT_EQ(quad_exprs.quadratic_coeffs[0].cols(), 2);
+
   EXPECT_NEAR(quad_exprs.quadratic_coeffs[0].coeff(0, 0), 1, 1e-8);
-  EXPECT_NEAR(quad_exprs.quadratic_coeffs[0].coeff(1, 1), 1, 1e-8);
   EXPECT_NEAR(quad_exprs.quadratic_coeffs[0].coeff(0, 1), -1, 1e-8);
-  EXPECT_NEAR(quad_exprs.quadratic_coeffs[0].coeff(1, 0), -1, 1e-8);
-  EXPECT_NEAR(quad_exprs.values(x)(0), std::pow(x(0) - x(1), 2.0), 1e-8);
+
+  // And the aggregated objective quadratic is still the full outer product:
+  // H = Bw^T * Bw = [ [1, -1], [-1, 1] ].
+  EXPECT_NEAR(quad_exprs.objective_quadratic_coeffs.coeff(0, 0), 1, 1e-8);
+  EXPECT_NEAR(quad_exprs.objective_quadratic_coeffs.coeff(1, 1), 1, 1e-8);
+  EXPECT_NEAR(quad_exprs.objective_quadratic_coeffs.coeff(0, 1), -1, 1e-8);
+  EXPECT_NEAR(quad_exprs.objective_quadratic_coeffs.coeff(1, 0), -1, 1e-8);
+
+  quad_exprs.values(results, x);
+  EXPECT_NEAR(results(0), std::pow(x(0) - x(1), 2.0), 1e-8);
 
   // Because the function is a quadratic it should be an exact fit so check another set of values
   x = Eigen::Vector2d(8, 2);
-  EXPECT_NEAR(quad_exprs.values(x)(0), std::pow(x(0) - x(1), 2.0), 1e-8);
+  quad_exprs.values(results, x);
+  EXPECT_NEAR(results(0), std::pow(x(0) - x(1), 2.0), 1e-8);
 }
 
 TEST(ExpressionsTest, squareAffExprs2)  // NOLINT
@@ -130,27 +163,44 @@ TEST(ExpressionsTest, squareAffExprs2)  // NOLINT
   e(0) = 5 - (x(0) - x(1));
   Eigen::Vector2d J(-1, 1);
 
-  AffExprs aff_exprs = trajopt_sqp::createAffExprs(e, J.transpose().sparseView(), x);
-  EXPECT_NEAR(aff_exprs.values(x)(0), e(0), 1e-8);
+  AffExprs aff_exprs;
+  aff_exprs.create(e, J.transpose().sparseView(), x);
+
+  Eigen::VectorXd results(1);
+  aff_exprs.values(results, x);
+  EXPECT_NEAR(results(0), e(0), 1e-8);
 
   // The affine expression = (a + b*x + c*y) where x = x(0) and y = x(1)
   // The squared affine expressions = a^2 + 2*a*b*x + 2*a*c*y + 2*b*c*x*y + b^2 * x^2 + c^2 * y^2
-  QuadExprs quad_exprs = trajopt_sqp::squareAffExprs(aff_exprs, Eigen::VectorXd::Ones(aff_exprs.constants.size()));
+  QuadExprs quad_exprs;
+  aff_exprs.square(quad_exprs, Eigen::VectorXd::Ones(aff_exprs.constants.size()));
 
   EXPECT_NEAR(quad_exprs.constants(0), std::pow(aff_exprs.constants(0), 2.0), 1e-8);
   EXPECT_NEAR(
       quad_exprs.linear_coeffs.coeff(0, 0), 2 * aff_exprs.constants(0) * aff_exprs.linear_coeffs.coeff(0, 0), 1e-8);
   EXPECT_NEAR(
       quad_exprs.linear_coeffs.coeff(0, 1), 2 * aff_exprs.constants(0) * aff_exprs.linear_coeffs.coeff(0, 1), 1e-8);
-  EXPECT_NEAR(quad_exprs.quadratic_coeffs[0].coeff(0, 0), std::pow(aff_exprs.linear_coeffs.coeff(0, 0), 2.0), 1e-8);
-  EXPECT_NEAR(quad_exprs.quadratic_coeffs[0].coeff(1, 1), std::pow(aff_exprs.linear_coeffs.coeff(0, 1), 2.0), 1e-8);
-  EXPECT_NEAR(quad_exprs.quadratic_coeffs[0].coeff(0, 1),
-              aff_exprs.linear_coeffs.coeff(0, 0) * aff_exprs.linear_coeffs.coeff(0, 1),
-              1e-8);
-  EXPECT_NEAR(quad_exprs.quadratic_coeffs[0].coeff(1, 0),
-              aff_exprs.linear_coeffs.coeff(0, 0) * aff_exprs.linear_coeffs.coeff(0, 1),
-              1e-8);
-  EXPECT_NEAR(quad_exprs.values(x)(0), std::pow(e(0), 2.0), 1e-8);
+
+  // New representation: quadratic_coeffs[0] stores q as a 1×n row vector,
+  // where q = sqrt(w) * b^T. Here w=1, so q == b.
+  ASSERT_EQ(quad_exprs.quadratic_coeffs.size(), 1);
+  EXPECT_EQ(quad_exprs.quadratic_coeffs[0].rows(), 1);
+  EXPECT_EQ(quad_exprs.quadratic_coeffs[0].cols(), 2);
+
+  EXPECT_NEAR(quad_exprs.quadratic_coeffs[0].coeff(0, 0), aff_exprs.linear_coeffs.coeff(0, 0), 1e-8);
+  EXPECT_NEAR(quad_exprs.quadratic_coeffs[0].coeff(0, 1), aff_exprs.linear_coeffs.coeff(0, 1), 1e-8);
+
+  // And the aggregated objective quadratic is still the full outer product: H = b^T b.
+  const double b0 = aff_exprs.linear_coeffs.coeff(0, 0);
+  const double b1 = aff_exprs.linear_coeffs.coeff(0, 1);
+
+  EXPECT_NEAR(quad_exprs.objective_quadratic_coeffs.coeff(0, 0), b0 * b0, 1e-8);
+  EXPECT_NEAR(quad_exprs.objective_quadratic_coeffs.coeff(1, 1), b1 * b1, 1e-8);
+  EXPECT_NEAR(quad_exprs.objective_quadratic_coeffs.coeff(0, 1), b0 * b1, 1e-8);
+  EXPECT_NEAR(quad_exprs.objective_quadratic_coeffs.coeff(1, 0), b0 * b1, 1e-8);
+
+  quad_exprs.values(results, x);
+  EXPECT_NEAR(results(0), std::pow(e(0), 2.0), 1e-8);
 }
 
 int main(int argc, char** argv)
