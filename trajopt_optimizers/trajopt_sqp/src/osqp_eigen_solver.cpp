@@ -65,6 +65,8 @@ bool OSQPEigenSolver::init(Eigen::Index num_vars, Eigen::Index num_cnts, const E
   num_cnts_ = num_cnts;
   num_vars_ = num_vars;
   init_vals_ = init_vals;
+  x0_.setZero(num_vars_);
+  y0_.setZero(num_cnts_);
   solver_->data()->setNumberOfVariables(static_cast<int>(num_vars_));
   solver_->data()->setNumberOfConstraints(static_cast<int>(num_cnts_));
 
@@ -82,6 +84,8 @@ bool OSQPEigenSolver::clear()
 
   num_vars_ = 0;
   num_cnts_ = 0;
+  x0_.resize(0);
+  y0_.resize(0);
   init_vals_.resize(0);
   gradient_.resize(0);
   bounds_lower_.resize(0);
@@ -102,19 +106,20 @@ bool OSQPEigenSolver::solve()
     }
   }
 
-  if (init_vals_.rows() > 0 && !OSQP_COMPARE_DEBUG_MODE)
-  {
-    /** @todo update the init_vals to compute the slack variables. The initial slack variable should be the max of
-     * either zero or the constraint violation */
-    Eigen::VectorXd x0(num_vars_);
-    Eigen::VectorXd y0(num_cnts_);
-    solver_->getPrimalVariable(x0);
-    solver_->getDualVariable(y0);
-    x0.head(init_vals_.rows()) = init_vals_;
-    bool success = solver_->setWarmStart(x0, y0);
-    UNUSED(success);
-    assert(success);
-  }
+  /** @todo I do not believe this is correct because it causes different results when runnig the puzzle_piece_example
+   * for different contact managers */
+
+  // if (init_vals_.rows() > 0 && !OSQP_COMPARE_DEBUG_MODE)
+  // {
+  //   /** @todo update the init_vals to compute the slack variables. The initial slack variable should be the max of
+  //    * either zero or the constraint violation */
+  //   solver_->getPrimalVariable(x0_);
+  //   solver_->getDualVariable(y0_);
+  //   x0_.head(init_vals_.rows()) = init_vals_;
+  //   bool success = solver_->setWarmStart(x0_, y0_);
+  //   UNUSED(success);
+  //   assert(success);
+  // }
 
   const Eigen::IOFormat format(8);
   if (OSQP_COMPARE_DEBUG_MODE)
