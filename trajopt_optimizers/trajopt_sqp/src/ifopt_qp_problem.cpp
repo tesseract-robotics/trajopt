@@ -268,7 +268,11 @@ void IfoptQPProblem::linearizeConstraints()
   {
     for (trajopt_ifopt::Jacobian::InnerIterator it(jac, k); it; ++it)
     {
-      tripletList.emplace_back(it.row(), it.col(), it.value());
+      // Originally it pruned these but it changes sparsity so we now set to zero
+      if (std::abs(it.value()) < 1e-7)
+        tripletList.emplace_back(it.row(), it.col(), 0.0);
+      else
+        tripletList.emplace_back(it.row(), it.col(), it.value());
     }
   }
 

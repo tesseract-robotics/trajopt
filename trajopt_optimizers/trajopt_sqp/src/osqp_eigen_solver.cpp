@@ -231,15 +231,13 @@ Eigen::VectorXd OSQPEigenSolver::getSolution() { return solver_->getSolution(); 
 
 bool OSQPEigenSolver::updateHessianMatrix(const trajopt_ifopt::Jacobian& hessian)
 {
-  // Clean up values close to 0
   // Also multiply by 2 because OSQP is multiplying by (1/2) for the objective fuction
-  const trajopt_ifopt::Jacobian cleaned = 2.0 * hessian.pruned(1e-7, 1);  // Any value < 1e-7 will be removed
-
+  auto h2 = 2.0 * hessian; /** @todo This should be handled already by who is calling this function */
   if (solver_->isInitialized())
-    return solver_->updateHessianMatrix(cleaned);
+    return solver_->updateHessianMatrix(h2.eval());
 
   solver_->data()->clearHessianMatrix();
-  return solver_->data()->setHessianMatrix(cleaned);
+  return solver_->data()->setHessianMatrix(h2.eval());
 }
 
 bool OSQPEigenSolver::updateGradient(const Eigen::Ref<const Eigen::VectorXd>& gradient)
@@ -273,9 +271,7 @@ bool OSQPEigenSolver::updateBounds(const Eigen::Ref<const Eigen::VectorXd>& lowe
   if (solver_->isInitialized())
     return solver_->updateBounds(bounds_lower_, bounds_upper_);
 
-  bool success = solver_->data()->setLowerBound(bounds_lower_);
-  success &= solver_->data()->setUpperBound(bounds_upper_);
-  return success;
+  return solver_->data()->setBounds(bounds_lower_, bounds_upper_);
 }
 
 bool OSQPEigenSolver::updateLinearConstraintsMatrix(const trajopt_ifopt::Jacobian& linearConstraintsMatrix)
@@ -283,13 +279,11 @@ bool OSQPEigenSolver::updateLinearConstraintsMatrix(const trajopt_ifopt::Jacobia
   assert(num_cnts_ == linearConstraintsMatrix.rows());
   assert(num_vars_ == linearConstraintsMatrix.cols());
 
-  solver_->data()->clearLinearConstraintsMatrix();
-  const trajopt_ifopt::Jacobian cleaned = linearConstraintsMatrix.pruned(1e-7, 1);  // Any value < 1e-7 will be removed
-
   if (solver_->isInitialized())
-    return solver_->updateLinearConstraintsMatrix(cleaned);
+    return solver_->updateLinearConstraintsMatrix(linearConstraintsMatrix);
 
-  return solver_->data()->setLinearConstraintsMatrix(cleaned);
+  solver_->data()->clearLinearConstraintsMatrix();
+  return solver_->data()->setLinearConstraintsMatrix(linearConstraintsMatrix);
 }
 
 }  // namespace trajopt_sqp
