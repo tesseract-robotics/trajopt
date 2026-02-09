@@ -770,7 +770,13 @@ void TrajOptQPProblem::Implementation::convexify()
     for (Eigen::Index k = 0; k < jac.outerSize(); ++k)
     {
       for (trajopt_ifopt::Jacobian::InnerIterator it(jac, k); it; ++it)
-        cache_triplets_2.emplace_back(constraint_matrix_row + it.row(), it.col(), it.value());
+      {
+        // Originally it pruned these but it changes sparsity so we now set to zero
+        if (std::abs(it.value()) < 1e-7)
+          cache_triplets_2.emplace_back(constraint_matrix_row + it.row(), it.col(), 0.0);
+        else
+          cache_triplets_2.emplace_back(constraint_matrix_row + it.row(), it.col(), it.value());
+      }
 
       ///////////////////////////////
       // Update NLP Constraint Bounds
@@ -930,7 +936,13 @@ void TrajOptQPProblem::Implementation::convexify()
         // RowMajor Q: r == it.row(), col is sorted, perfect for insertBack
         for (trajopt_ifopt::Jacobian::InnerIterator it(cvp.squared_objective_nlp.objective_quadratic_coeffs, r); it;
              ++it)
-          cvp.hessian.insertBack(r, it.col()) = it.value();
+        {
+          // Originally it pruned these but it changes sparsity so we now set to zero
+          if (std::abs(it.value()) < 1e-7)
+            cvp.hessian.insertBack(r, it.col()) = 0.0;
+          else
+            cvp.hessian.insertBack(r, it.col()) = it.value();
+        }
       }
       cvp.hessian.finalize();
       cvp.hessian.makeCompressed();
