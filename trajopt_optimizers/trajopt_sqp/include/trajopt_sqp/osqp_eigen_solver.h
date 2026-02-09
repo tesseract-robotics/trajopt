@@ -84,6 +84,8 @@ public:
 private:
   // Depending on what they decide to do with this issue, these could be dropped
   // https://github.com/robotology/osqp-eigen/issues/17
+  Eigen::VectorXd x0_;
+  Eigen::VectorXd y0_;
   Eigen::VectorXd init_vals_;
   Eigen::VectorXd bounds_lower_;
   Eigen::VectorXd bounds_upper_;
