@@ -200,18 +200,44 @@ void TrustRegionSQPSolver::adjustPenalty()
 bool TrustRegionSQPSolver::stepSQPSolver()
 {
   results_.convexify_iteration++;
+
+  const auto prev_nv = qp_problem->getNumQPVars();
+  const auto prev_nc = qp_problem->getNumQPConstraints();
+
   qp_problem->convexify();
 
-  // TODO: Look into not clearing and reinitializing the workspace each iteration. It should be as simple as
-  // removing this
-  qp_solver->clear();
+  const auto nv = qp_problem->getNumQPVars();
+  const auto nc = qp_problem->getNumQPConstraints();
 
-  // Convexify the costs and constraints around their current values
-  qp_solver->init(qp_problem->getNumQPVars(), qp_problem->getNumQPConstraints(), qp_problem->getVariableValues());
-  qp_solver->updateHessianMatrix(qp_problem->getHessian());
-  qp_solver->updateGradient(qp_problem->getGradient());
-  qp_solver->updateLinearConstraintsMatrix(qp_problem->getConstraintMatrix());
-  qp_solver->updateBounds(qp_problem->getBoundsLower(), qp_problem->getBoundsUpper());
+  const bool first_time = qp_solver->getSolverStatus() == QPSolverStatus::kUninitialized;
+  const bool dims_changed = (nv != prev_nv || nc != prev_nc);
+
+  if (first_time || dims_changed)
+  {
+    qp_solver->clear();
+    qp_solver->init(nv, nc, qp_problem->getVariableValues());
+    qp_solver->updateHessianMatrix(qp_problem->getHessian());
+    qp_solver->updateGradient(qp_problem->getGradient());
+    qp_solver->updateLinearConstraintsMatrix(qp_problem->getConstraintMatrix());
+    qp_solver->updateBounds(qp_problem->getBoundsLower(), qp_problem->getBoundsUpper());
+  }
+  else
+  {
+    // try update-in-place
+    if (!qp_solver->updateHessianMatrix(qp_problem->getHessian()) ||
+        !qp_solver->updateGradient(qp_problem->getGradient()) ||
+        !qp_solver->updateLinearConstraintsMatrix(qp_problem->getConstraintMatrix()) ||
+        !qp_solver->updateBounds(qp_problem->getBoundsLower(), qp_problem->getBoundsUpper()))
+    {
+      // pattern likely changed; fall back to full rebuild
+      qp_solver->clear();
+      qp_solver->init(nv, nc, qp_problem->getVariableValues());
+      qp_solver->updateHessianMatrix(qp_problem->getHessian());
+      qp_solver->updateGradient(qp_problem->getGradient());
+      qp_solver->updateLinearConstraintsMatrix(qp_problem->getConstraintMatrix());
+      qp_solver->updateBounds(qp_problem->getBoundsLower(), qp_problem->getBoundsUpper());
+    }
+  }
 
   // Trust region loop
   runTrustRegionLoop();
