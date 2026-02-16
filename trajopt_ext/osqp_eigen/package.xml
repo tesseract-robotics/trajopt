@@ -6,6 +6,7 @@
   <maintainer email="levi.armstrong@swri.org">Levi Armstrong</maintainer>
   <license>LGPL</license>
 
+  <depend>osqp-eigen</depend>
   <build_depend>osqp</build_depend>
   <build_depend>ros_industrial_cmake_boilerplate</build_depend>
 

@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.5.0)
 find_package(ros_industrial_cmake_boilerplate REQUIRED)
 
 extract_package_metadata(pkg)
-project(OsqpEigen VERSION ${pkg_extracted_version} LANGUAGES CXX)
+project(OsqpEigen_Ext VERSION ${pkg_extracted_version} LANGUAGES CXX)
 
 set(TRAJOPT_OSQPEIGEN_VERSION "0.11.0")
 # Remove patch version for find_package
