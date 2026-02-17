@@ -52,10 +52,10 @@ int SquaredCost::update()
 
 double SquaredCost::getCost() const
 {
-  Eigen::VectorXd error(constraint_->getRows());
-  calcBoundsErrors(error, constraint_->getValues(), constraint_->getBounds());
+  scratch_error_.resize(constraint_->getRows());
+  calcBoundsErrors(scratch_error_, constraint_->getValues(), constraint_->getBounds());
   // cost = sum_i w_i * e_i^2
-  return (weights_.array() * error.array().square()).sum();
+  return (weights_.array() * scratch_error_.array().square()).sum();
 }
 
 Eigen::VectorXd SquaredCost::getCoefficients() const { return constraint_->getCoefficients(); }
@@ -66,18 +66,37 @@ Jacobian SquaredCost::getJacobian() const
   Jacobian cnt_jac_block = constraint_->getJacobian();
 
   // error = bounds error vector (length = n_constraints_)
-  Eigen::VectorXd error(constraint_->getRows());
-  calcBoundsErrors(error, constraint_->getValues(), constraint_->getBounds());
+  scratch_error_.resize(constraint_->getRows());
+  calcBoundsErrors(scratch_error_, constraint_->getValues(), constraint_->getBounds());
 
   // coeff_i = 2 * w_i * e_i
-  const Eigen::VectorXd coeff = (2.0 * (weights_.array() * error.array())).matrix();
+  // Scale each row of the sparse Jacobian in-place by coeff_i
+  for (Eigen::Index r = 0; r < cnt_jac_block.outerSize(); ++r)
+  {
+    const double c = 2.0 * weights_[r] * scratch_error_[r];
+    for (Jacobian::InnerIterator it(cnt_jac_block, r); it; ++it)
+      it.valueRef() *= c;
+  }
 
-  // Gradient row: 1 x var_size
-  // (dense row vector = coeff^T * J)
-  const Eigen::RowVectorXd grad = coeff.transpose() * cnt_jac_block;
+  // Sum all rows into a single gradient row (1 x n_vars)
+  Jacobian grad(1, cnt_jac_block.cols());
+  std::vector<Eigen::Triplet<double>> trips;
+  trips.reserve(static_cast<std::size_t>(cnt_jac_block.nonZeros()));
 
-  // Convert to sparse and return
-  return grad.sparseView();
+  // Accumulate column sums via a dense scratch vector to avoid duplicate triplet handling
+  Eigen::VectorXd col_sums = Eigen::VectorXd::Zero(cnt_jac_block.cols());
+  for (Eigen::Index r = 0; r < cnt_jac_block.outerSize(); ++r)
+    for (Jacobian::InnerIterator it(cnt_jac_block, r); it; ++it)
+      col_sums[it.col()] += it.value();
+
+  for (Eigen::Index j = 0; j < col_sums.size(); ++j)
+  {
+    if (col_sums[j] != 0.0)
+      trips.emplace_back(0, j, col_sums[j]);
+  }
+
+  grad.setFromTriplets(trips.begin(), trips.end());
+  return grad;
 }
 
 }  // namespace trajopt_ifopt

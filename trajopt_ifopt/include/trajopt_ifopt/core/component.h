@@ -32,7 +32,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <memory>
 #include <string>
 #include <vector>
-#include <atomic>
 
 #include <Eigen/Dense>
 
@@ -127,7 +126,7 @@ public:
 
 protected:
   std::string name_;
-  std::atomic<int> rows_{ -1 };
+  int rows_{ -1 };
 };
 
 /**
@@ -285,7 +284,7 @@ public:
 protected:
   Mode mode_{ Mode::kStackRows };
   bool dynamic_{ false };
-  std::atomic<Eigen::Index> non_zeros_{ -1 };
+  Eigen::Index non_zeros_{ -1 };
 };
 
 }  // namespace trajopt_ifopt

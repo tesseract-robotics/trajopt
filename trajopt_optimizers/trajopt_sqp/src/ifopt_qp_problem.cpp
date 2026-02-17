@@ -336,10 +336,9 @@ void IfoptQPProblem::updateCostsConstantExpression()
 
   // The block excludes the slack variables
   /** @todo I am not sure this is correct because the gradient_ is not each individual cost function gradient */
-  const Eigen::VectorXd result_quad =
-      x_initial.transpose() * hessian_.block(0, 0, num_nlp_vars_, num_nlp_vars_) * x_initial;
-  const Eigen::VectorXd result_lin = x_initial.transpose() * gradient_.block(0, 0, num_nlp_vars_, num_nlp_costs_);
-  cost_constant_ = cost_initial_value - result_quad - result_lin;
+  const double result_quad = x_initial.transpose() * hessian_.block(0, 0, num_nlp_vars_, num_nlp_vars_) * x_initial;
+  const double result_lin = x_initial.dot(gradient_.head(num_nlp_vars_));
+  cost_constant_ = cost_initial_value.array() - result_quad - result_lin;
 }
 
 void IfoptQPProblem::updateConstraintsConstantExpression()
@@ -458,10 +457,9 @@ Eigen::VectorXd IfoptQPProblem::evaluateConvexCosts(const Eigen::Ref<const Eigen
     return {};
 
   auto var_block = var_vals.head(num_nlp_vars_);
-  const Eigen::VectorXd result_quad =
-      var_block.transpose() * hessian_.block(0, 0, num_nlp_vars_, num_nlp_vars_) * var_block;
-  const Eigen::VectorXd result_lin = var_block.transpose() * gradient_.block(0, 0, num_nlp_vars_, num_nlp_costs_);
-  return cost_constant_ + result_lin + result_quad;
+  const double result_quad = var_block.transpose() * hessian_.block(0, 0, num_nlp_vars_, num_nlp_vars_) * var_block;
+  const double result_lin = var_block.dot(gradient_.head(num_nlp_vars_));
+  return cost_constant_.array() + result_lin + result_quad;
 }
 
 double IfoptQPProblem::getTotalExactCost() { return nlp_->evaluateCostFunction(); }

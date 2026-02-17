@@ -158,7 +158,7 @@ std::vector<Bounds> ContinuousCollisionNumericalConstraint::getBounds() const { 
 Jacobian ContinuousCollisionNumericalConstraint::getJacobian() const
 {
   Jacobian jac(rows_, variables_->getRows());
-  jac.reserve(non_zeros_.load());
+  jac.reserve(non_zeros_);
 
   // Setting to zeros because snopt sparsity cannot change
   if (!triplet_list_.empty())                                         // NOLINT

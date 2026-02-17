@@ -124,7 +124,7 @@ std::vector<Bounds> JointAccelConstraint::getBounds() const { return bounds_; }
 Jacobian JointAccelConstraint::getJacobian() const
 {
   Jacobian jac(rows_, variables_->getRows());
-  jac.reserve(non_zeros_.load());
+  jac.reserve(non_zeros_);
 
   const std::size_t n = position_vars_.size();
   for (std::size_t i = 0; i < n; ++i)

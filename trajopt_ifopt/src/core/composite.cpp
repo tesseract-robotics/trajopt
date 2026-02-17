@@ -132,11 +132,11 @@ Jacobian CompositeDifferentiable::getJacobian() const
 
   Eigen::Index row = 0;
   std::vector<Eigen::Triplet<double>> triplet_list;
+  triplet_list.reserve(static_cast<std::size_t>(non_zeros_ >= 0 ? non_zeros_ : 0));
 
   for (const auto& c : components_)
   {
     const Jacobian jac = c->getJacobian();
-    triplet_list.reserve(triplet_list.size() + static_cast<std::size_t>(jac.nonZeros()));
 
     for (Eigen::Index k = 0; k < jac.outerSize(); ++k)
       for (Jacobian::InnerIterator it(jac, k); it; ++it)

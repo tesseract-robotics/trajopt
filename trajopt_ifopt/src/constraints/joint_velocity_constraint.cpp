@@ -122,7 +122,7 @@ std::vector<Bounds> JointVelConstraint::getBounds() const { return bounds_; }
 Jacobian JointVelConstraint::getJacobian() const
 {
   Jacobian jac(rows_, variables_->getRows());
-  jac.reserve(non_zeros_.load());
+  jac.reserve(non_zeros_);
 
   for (Eigen::Index seg = 0; seg < (n_vars_ - 1); ++seg)
   {

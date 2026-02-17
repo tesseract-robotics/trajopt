@@ -180,7 +180,7 @@ void ContinuousCollisionConstraint::init() const
 Jacobian ContinuousCollisionConstraint::getJacobian() const
 {
   Jacobian jac(rows_, variables_->getRows());
-  jac.reserve(non_zeros_.load());
+  jac.reserve(non_zeros_);
 
   // Setting to zeros because snopt sparsity cannot change
   if (!triplet_list_.empty())                                         // NOLINT
@@ -320,7 +320,7 @@ std::vector<Bounds> ContinuousCollisionConstraintD::getBounds() const { return b
 Jacobian ContinuousCollisionConstraintD::getJacobian() const
 {
   Jacobian jac(rows_, variables_->getRows());
-  jac.reserve(non_zeros_.load());
+  jac.reserve(non_zeros_);
 
   if (collision_data_->contact_results_map.empty())
     return jac;

@@ -162,7 +162,7 @@ std::vector<Bounds> JointPosConstraint::getBounds() const { return bounds_; }
 Jacobian JointPosConstraint::getJacobian() const
 {
   Jacobian jac(rows_, variables_->getRows());
-  jac.reserve(non_zeros_.load());
+  jac.reserve(non_zeros_);
 
   // Loop over all of the variables this constraint uses
   for (int j = 0; j < indices_.size(); j++)  // NOLINT

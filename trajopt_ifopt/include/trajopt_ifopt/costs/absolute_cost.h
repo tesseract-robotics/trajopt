@@ -105,6 +105,9 @@ private:
 
   /** @brief Vector of weights. Default: Eigen::VectorXd::Ones(n_constraints) */
   Eigen::VectorXd weights_;
+
+  /** @brief Scratch buffer reused across getCost()/getJacobian() calls to avoid per-call allocations. */
+  mutable Eigen::VectorXd scratch_error_;
 };
 
 }  // namespace trajopt_ifopt

@@ -106,7 +106,7 @@ void DiscreteCollisionNumericalConstraint::init() const
 Jacobian DiscreteCollisionNumericalConstraint::getJacobian() const
 {
   Jacobian jac(rows_, variables_->getRows());
-  jac.reserve(non_zeros_.load());
+  jac.reserve(non_zeros_);
 
   calcJacobianBlock(jac, position_var_->value());  // NOLINT
   return jac;

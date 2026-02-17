@@ -112,7 +112,7 @@ void InverseKinematicsConstraint::setBounds(const std::vector<Bounds>& bounds)
 Jacobian InverseKinematicsConstraint::getJacobian() const
 {
   Jacobian jac(rows_, variables_->getRows());
-  jac.reserve(non_zeros_.load());
+  jac.reserve(non_zeros_);
 
   // err = target - x =? derr/dx = -1
   for (int j = 0; j < n_dof_; j++)  // NOLINT

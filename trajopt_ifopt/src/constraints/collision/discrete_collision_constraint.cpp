@@ -114,7 +114,7 @@ std::vector<Bounds> DiscreteCollisionConstraint::getBounds() const { return boun
 Jacobian DiscreteCollisionConstraint::getJacobian() const
 {
   Jacobian jac(rows_, variables_->getRows());
-  jac.reserve(non_zeros_.load());
+  jac.reserve(non_zeros_);
 
   // Setting to zeros because SNOPT sparsity cannot change
   if (!triplet_list_.empty())                                         // NOLINT
@@ -226,7 +226,7 @@ std::vector<Bounds> DiscreteCollisionConstraintD::getBounds() const { return bou
 Jacobian DiscreteCollisionConstraintD::getJacobian() const
 {
   Jacobian jac(rows_, variables_->getRows());
-  jac.reserve(non_zeros_.load());
+  jac.reserve(non_zeros_);
 
   if (collision_data_->contact_results_map.empty())
     return jac;

@@ -251,7 +251,7 @@ void CartLineConstraint::calcJacobianBlock(Jacobian& jac_block,
 Jacobian CartLineConstraint::getJacobian() const
 {
   Jacobian jac(rows_, variables_->getRows());
-  jac.reserve(non_zeros_.load());
+  jac.reserve(non_zeros_);
 
   // Get current joint values and calculate jacobian
   calcJacobianBlock(jac, position_var_->value());  // NOLINT

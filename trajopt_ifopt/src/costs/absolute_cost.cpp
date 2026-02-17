@@ -53,9 +53,9 @@ int AbsoluteCost::update()
 double AbsoluteCost::getCost() const
 {
   // This takes the absolute value of the errors
-  Eigen::VectorXd error(constraint_->getRows());
-  calcBoundsViolations(error, constraint_->getValues(), constraint_->getBounds());
-  return weights_.dot(error);
+  scratch_error_.resize(constraint_->getRows());
+  calcBoundsViolations(scratch_error_, constraint_->getValues(), constraint_->getBounds());
+  return weights_.dot(scratch_error_);
 }
 
 Eigen::VectorXd AbsoluteCost::getCoefficients() const { return constraint_->getCoefficients(); }
@@ -66,13 +66,13 @@ Jacobian AbsoluteCost::getJacobian() const
   Jacobian cnt_jac_block = constraint_->getJacobian();
 
   // Compute signed coefficients: coeff_i = weights_[i] * sign(error_i)
-  Eigen::ArrayXd error(constraint_->getRows());
-  calcBoundsErrors(error, constraint_->getValues(), constraint_->getBounds());
+  scratch_error_.resize(constraint_->getRows());
+  calcBoundsErrors(scratch_error_, constraint_->getValues(), constraint_->getBounds());
 
   Eigen::VectorXd coeff(n_constraints_);
-  for (Eigen::Index i = 0; i < error.size(); ++i)
+  for (Eigen::Index i = 0; i < scratch_error_.size(); ++i)
   {
-    const double e = error[i];
+    const double e = scratch_error_[i];
     if (std::abs(e) < 1e-12)
       coeff[i] = 0.0;  // subgradient at 0
     else if (e > 0.0)
@@ -81,18 +81,13 @@ Jacobian AbsoluteCost::getJacobian() const
       coeff[i] = -weights_[i];
   }
 
-  // Scale each row of the constraint Jacobian by coeff[row]
-  for (int outer = 0; outer < cnt_jac_block.outerSize(); ++outer)
-  {
-    for (Jacobian::InnerIterator it(cnt_jac_block, outer); it; ++it)
-    {
-      // it.row() is the row index in [0, n_constraints_)
-      it.valueRef() *= coeff[it.row()];
-    }
-  }
+  // Gradient row: 1 x var_size
+  // CostTerm reports rows_ = 1, so the Jacobian must be a single row.
+  // (dense row vector = coeff^T * J)
+  const Eigen::RowVectorXd grad = coeff.transpose() * cnt_jac_block;
 
-  // Output the scaled block
-  return cnt_jac_block;
+  // Convert to sparse and return
+  return grad.sparseView();
 }
 
 }  // namespace trajopt_ifopt

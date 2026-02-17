@@ -130,7 +130,7 @@ std::vector<Bounds> JointJerkConstraint::getBounds() const { return bounds_; }
 Jacobian JointJerkConstraint::getJacobian() const
 {
   Jacobian jac(rows_, variables_->getRows());
-  jac.reserve(non_zeros_.load());
+  jac.reserve(non_zeros_);
 
   const std::size_t n = position_vars_.size();
 
