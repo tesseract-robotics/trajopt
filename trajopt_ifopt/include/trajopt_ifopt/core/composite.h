@@ -59,7 +59,7 @@ public:
   using Ptr = std::shared_ptr<CompositeDifferentiable>;
   using ComponentVec = std::vector<Differentiable::Ptr>;
 
-  CompositeDifferentiable(std::string name, Mode mode, bool dynamic);
+  CompositeDifferentiable(std::string name, Eigen::Index num_vars, Mode mode, bool dynamic);
   ~CompositeDifferentiable() override = default;
 
   /**
@@ -97,7 +97,7 @@ public:
 
 private:
   ComponentVec components_;
-  mutable long n_vars_{ -1 };
+  Eigen::Index num_vars_{ 0 };
 };
 
 }  // namespace trajopt_ifopt

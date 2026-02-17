@@ -34,8 +34,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace trajopt_ifopt
 {
-CompositeDifferentiable::CompositeDifferentiable(std::string name, Mode mode, bool dynamic)
-  : Differentiable(std::move(name), 0, mode, dynamic)
+CompositeDifferentiable::CompositeDifferentiable(std::string name, Eigen::Index num_vars, Mode mode, bool dynamic)
+  : Differentiable(std::move(name), 0, mode, dynamic), num_vars_(num_vars)
 {
 }
 
@@ -120,14 +120,9 @@ Eigen::VectorXd CompositeDifferentiable::getCoefficients() const
 
 Jacobian CompositeDifferentiable::getJacobian() const
 {
-  // set number of variables only the first time this function is called,
-  // since number doesn't change during the optimization. Improves efficiency.
-  if (n_vars_ == -1)
-    n_vars_ = components_.empty() ? 0 : components_.front()->getJacobian().cols();
+  Jacobian jacobian(rows_, num_vars_);
 
-  Jacobian jacobian(rows_, n_vars_);
-
-  if (n_vars_ == 0)
+  if (num_vars_ == 0)
     return jacobian;
 
   Eigen::Index row = 0;

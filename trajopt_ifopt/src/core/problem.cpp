@@ -35,8 +35,8 @@ namespace trajopt_ifopt
 {
 Problem::Problem(Variables::Ptr variables)
   : variables_(std::move(variables))
-  , constraints_("constraint-sets", Differentiable::Mode::kStackRows, false)
-  , costs_("cost-terms", Differentiable::Mode::kStackRows, false)
+  , constraints_("constraint-sets", variables_->getRows(), Differentiable::Mode::kStackRows, false)
+  , costs_("cost-terms", variables_->getRows(), Differentiable::Mode::kStackRows, false)
 {
 }
 

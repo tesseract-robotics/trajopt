@@ -89,5 +89,6 @@ Eigen::Index Differentiable::getNonZeros() const
 {
   assert(non_zeros_ >= 0);
   return non_zeros_;
-};
+}
+
 }  // namespace trajopt_ifopt

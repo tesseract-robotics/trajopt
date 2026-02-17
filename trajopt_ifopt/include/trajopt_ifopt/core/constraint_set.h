@@ -103,8 +103,6 @@ public:
   ConstraintSet(std::string name, int n_constraints);
   ~ConstraintSet() override = default;
 
-  /** @todo I think everything related to linkWithVariables can be removed */
-
   /**
    * @brief Connects the constraint with the optimization variables.
    * @param x  A pointer to the current values of the optimization variables.
