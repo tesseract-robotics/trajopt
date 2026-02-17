@@ -33,25 +33,23 @@ public:
 
   void convexify() override;
 
-  double evaluateTotalConvexCost(const Eigen::Ref<const Eigen::VectorXd>& var_vals) override;
+  double evaluateTotalConvexCost(const Eigen::Ref<const Eigen::VectorXd>& var_vals) const override;
 
-  Eigen::VectorXd evaluateConvexCosts(const Eigen::Ref<const Eigen::VectorXd>& var_vals) override;
+  Eigen::VectorXd evaluateConvexCosts(const Eigen::Ref<const Eigen::VectorXd>& var_vals) const override;
 
-  double getTotalExactCost() override;
+  double getTotalExactCost() const override;
 
-  Eigen::VectorXd getExactCosts() override;
+  Eigen::VectorXd getExactCosts() const override;
 
-  Eigen::VectorXd evaluateConvexConstraintViolations(const Eigen::Ref<const Eigen::VectorXd>& var_vals) override;
+  Eigen::VectorXd evaluateConvexConstraintViolations(const Eigen::Ref<const Eigen::VectorXd>& var_vals) const override;
 
-  Eigen::VectorXd getExactConstraintViolations() override;
+  Eigen::VectorXd getExactConstraintViolations() const override;
 
   void scaleBoxSize(double& scale) override;
 
   void setBoxSize(const Eigen::Ref<const Eigen::VectorXd>& box_size) override;
 
   void setConstraintMeritCoeff(const Eigen::Ref<const Eigen::VectorXd>& merit_coeff) override;
-
-  Eigen::VectorXd getBoxSize() const override;
 
   void print() const override;
 
@@ -64,15 +62,15 @@ public:
   const std::vector<std::string>& getNLPConstraintNames() const override;
   const std::vector<std::string>& getNLPCostNames() const override;
 
-  Eigen::Ref<const Eigen::VectorXd> getBoxSize() override;
-  Eigen::Ref<const Eigen::VectorXd> getConstraintMeritCoeff() override;
+  const Eigen::VectorXd& getBoxSize() const override;
+  const Eigen::VectorXd& getConstraintMeritCoeff() const override;
 
-  Eigen::Ref<const trajopt_ifopt::Jacobian> getHessian() override;
-  Eigen::Ref<const Eigen::VectorXd> getGradient() override;
+  const trajopt_ifopt::Jacobian& getHessian() const override;
+  const Eigen::VectorXd& getGradient() const override;
 
-  Eigen::Ref<const trajopt_ifopt::Jacobian> getConstraintMatrix() override;
-  Eigen::Ref<const Eigen::VectorXd> getBoundsLower() override;
-  Eigen::Ref<const Eigen::VectorXd> getBoundsUpper() override;
+  const trajopt_ifopt::Jacobian& getConstraintMatrix() const override;
+  const Eigen::VectorXd& getBoundsLower() const override;
+  const Eigen::VectorXd& getBoundsUpper() const override;
 
 private:
   struct Implementation;

@@ -26,6 +26,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include <trajopt_ifopt/core/eigen_types.h>
 #include <trajopt_sqp/trust_region_sqp_solver.h>
 #include <trajopt_sqp/qp_problem.h>
 #include <trajopt_sqp/qp_solver.h>
@@ -215,11 +216,12 @@ bool TrustRegionSQPSolver::stepSQPSolver()
   if (first_time || dims_changed)
   {
     qp_solver->clear();
-    qp_solver->init(nv, nc, qp_problem->getVariableValues());
+    qp_solver->init(nv, nc);
     qp_solver->updateHessianMatrix(qp_problem->getHessian());
     qp_solver->updateGradient(qp_problem->getGradient());
     qp_solver->updateLinearConstraintsMatrix(qp_problem->getConstraintMatrix());
     qp_solver->updateBounds(qp_problem->getBoundsLower(), qp_problem->getBoundsUpper());
+    qp_solver->setWarmStart(*qp_problem);
   }
   else
   {
@@ -231,11 +233,12 @@ bool TrustRegionSQPSolver::stepSQPSolver()
     {
       // pattern likely changed; fall back to full rebuild
       qp_solver->clear();
-      qp_solver->init(nv, nc, qp_problem->getVariableValues());
+      qp_solver->init(nv, nc);
       qp_solver->updateHessianMatrix(qp_problem->getHessian());
       qp_solver->updateGradient(qp_problem->getGradient());
       qp_solver->updateLinearConstraintsMatrix(qp_problem->getConstraintMatrix());
       qp_solver->updateBounds(qp_problem->getBoundsLower(), qp_problem->getBoundsUpper());
+      qp_solver->setWarmStart(*qp_problem);
     }
   }
 

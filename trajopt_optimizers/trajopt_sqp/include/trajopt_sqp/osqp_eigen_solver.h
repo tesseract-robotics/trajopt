@@ -38,6 +38,8 @@ class Solver;
 
 namespace trajopt_sqp
 {
+class QPProblem;
+
 /**
  * @brief An Interface to the OSQPEigen QP Solver
  */
@@ -56,7 +58,7 @@ public:
 
   static void setDefaultOSQPSettings(OsqpEigen::Settings& settings);
 
-  bool init(Eigen::Index num_vars, Eigen::Index num_cnts, const Eigen::VectorXd& init_vals = {}) override;
+  bool init(Eigen::Index num_vars, Eigen::Index num_cnts) override;
 
   bool clear() override;
 
@@ -77,6 +79,8 @@ public:
 
   bool updateLinearConstraintsMatrix(const trajopt_ifopt::Jacobian& linearConstraintsMatrix) override;
 
+  bool setWarmStart(const QPProblem& qp_problem) override;
+
   QPSolverStatus getSolverStatus() const override { return solver_status_; }
 
   std::unique_ptr<OsqpEigen::Solver> solver_;
@@ -86,7 +90,6 @@ private:
   // https://github.com/robotology/osqp-eigen/issues/17
   Eigen::VectorXd x0_;
   Eigen::VectorXd y0_;
-  Eigen::VectorXd init_vals_;
   Eigen::VectorXd bounds_lower_;
   Eigen::VectorXd bounds_upper_;
   Eigen::VectorXd gradient_;

@@ -446,12 +446,12 @@ void IfoptQPProblem::updateSlackVariableBounds()
   }
 }
 
-double IfoptQPProblem::evaluateTotalConvexCost(const Eigen::Ref<const Eigen::VectorXd>& var_vals)
+double IfoptQPProblem::evaluateTotalConvexCost(const Eigen::Ref<const Eigen::VectorXd>& var_vals) const
 {
   return evaluateConvexCosts(var_vals).sum();
 }
 
-Eigen::VectorXd IfoptQPProblem::evaluateConvexCosts(const Eigen::Ref<const Eigen::VectorXd>& var_vals)
+Eigen::VectorXd IfoptQPProblem::evaluateConvexCosts(const Eigen::Ref<const Eigen::VectorXd>& var_vals) const
 {
   if (num_nlp_costs_ == 0)
     return {};
@@ -462,9 +462,9 @@ Eigen::VectorXd IfoptQPProblem::evaluateConvexCosts(const Eigen::Ref<const Eigen
   return cost_constant_.array() + result_lin + result_quad;
 }
 
-double IfoptQPProblem::getTotalExactCost() { return nlp_->evaluateCostFunction(); }
+double IfoptQPProblem::getTotalExactCost() const { return nlp_->evaluateCostFunction(); }
 
-Eigen::VectorXd IfoptQPProblem::getExactCosts()
+Eigen::VectorXd IfoptQPProblem::getExactCosts() const
 {
   if (!nlp_->hasCostTerms())
     return {};
@@ -472,7 +472,8 @@ Eigen::VectorXd IfoptQPProblem::getExactCosts()
   return nlp_->getCosts().getValues();
 }
 
-Eigen::VectorXd IfoptQPProblem::evaluateConvexConstraintViolations(const Eigen::Ref<const Eigen::VectorXd>& var_vals)
+Eigen::VectorXd
+IfoptQPProblem::evaluateConvexConstraintViolations(const Eigen::Ref<const Eigen::VectorXd>& var_vals) const
 {
   const Eigen::VectorXd result_lin =
       constraint_matrix_.block(0, 0, num_nlp_cnts_, num_nlp_vars_) * var_vals.head(num_nlp_vars_);  // NOLINT
@@ -483,7 +484,7 @@ Eigen::VectorXd IfoptQPProblem::evaluateConvexConstraintViolations(const Eigen::
   return violations;
 }
 
-Eigen::VectorXd IfoptQPProblem::getExactConstraintViolations()
+Eigen::VectorXd IfoptQPProblem::getExactConstraintViolations() const
 {
   const Eigen::VectorXd cnt_vals = nlp_->evaluateConstraints();
 
@@ -510,8 +511,6 @@ void IfoptQPProblem::setConstraintMeritCoeff(const Eigen::Ref<const Eigen::Vecto
   assert(merit_coeff.size() == num_nlp_cnts_);
   constraint_merit_coeff_ = merit_coeff;
 }
-
-Eigen::VectorXd IfoptQPProblem::getBoxSize() const { return box_size_; }
 
 void IfoptQPProblem::print() const
 {

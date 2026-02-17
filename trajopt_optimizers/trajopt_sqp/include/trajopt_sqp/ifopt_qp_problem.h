@@ -53,25 +53,23 @@ public:
 
   void convexify() override;
 
-  double evaluateTotalConvexCost(const Eigen::Ref<const Eigen::VectorXd>& var_vals) override;
+  double evaluateTotalConvexCost(const Eigen::Ref<const Eigen::VectorXd>& var_vals) const override;
 
-  Eigen::VectorXd evaluateConvexCosts(const Eigen::Ref<const Eigen::VectorXd>& var_vals) override;
+  Eigen::VectorXd evaluateConvexCosts(const Eigen::Ref<const Eigen::VectorXd>& var_vals) const override;
 
-  double getTotalExactCost() override;
+  double getTotalExactCost() const override;
 
-  Eigen::VectorXd getExactCosts() override;
+  Eigen::VectorXd getExactCosts() const override;
 
-  Eigen::VectorXd evaluateConvexConstraintViolations(const Eigen::Ref<const Eigen::VectorXd>& var_vals) override;
+  Eigen::VectorXd evaluateConvexConstraintViolations(const Eigen::Ref<const Eigen::VectorXd>& var_vals) const override;
 
-  Eigen::VectorXd getExactConstraintViolations() override;
+  Eigen::VectorXd getExactConstraintViolations() const override;
 
   void scaleBoxSize(double& scale) override;
 
   void setBoxSize(const Eigen::Ref<const Eigen::VectorXd>& box_size) override;
 
   void setConstraintMeritCoeff(const Eigen::Ref<const Eigen::VectorXd>& merit_coeff) override;
-
-  Eigen::VectorXd getBoxSize() const override;
 
   /** @brief Prints all members to the terminal in a human readable form */
   void print() const override;
@@ -85,15 +83,15 @@ public:
   const std::vector<std::string>& getNLPConstraintNames() const override { return constraint_names_; }
   const std::vector<std::string>& getNLPCostNames() const override { return cost_names_; }
 
-  Eigen::Ref<const Eigen::VectorXd> getBoxSize() override { return box_size_; }
-  Eigen::Ref<const Eigen::VectorXd> getConstraintMeritCoeff() override { return constraint_merit_coeff_; }
+  const Eigen::VectorXd& getBoxSize() const override { return box_size_; }
+  const Eigen::VectorXd& getConstraintMeritCoeff() const override { return constraint_merit_coeff_; }
 
-  Eigen::Ref<const trajopt_ifopt::Jacobian> getHessian() override { return hessian_; }
-  Eigen::Ref<const Eigen::VectorXd> getGradient() override { return gradient_; }
+  const trajopt_ifopt::Jacobian& getHessian() const override { return hessian_; }
+  const Eigen::VectorXd& getGradient() const override { return gradient_; }
 
-  Eigen::Ref<const trajopt_ifopt::Jacobian> getConstraintMatrix() override { return constraint_matrix_; }
-  Eigen::Ref<const Eigen::VectorXd> getBoundsLower() override { return bounds_lower_; }
-  Eigen::Ref<const Eigen::VectorXd> getBoundsUpper() override { return bounds_upper_; }
+  const trajopt_ifopt::Jacobian& getConstraintMatrix() const override { return constraint_matrix_; }
+  const Eigen::VectorXd& getBoundsLower() const override { return bounds_lower_; }
+  const Eigen::VectorXd& getBoundsUpper() const override { return bounds_upper_; }
 
 protected:
   std::shared_ptr<trajopt_ifopt::Problem> nlp_;

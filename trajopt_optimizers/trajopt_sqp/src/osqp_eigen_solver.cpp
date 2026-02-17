@@ -22,6 +22,7 @@
  * limitations under the License.
  */
 #include <trajopt_sqp/osqp_eigen_solver.h>
+#include <trajopt_sqp/qp_problem.h>
 
 #include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
@@ -59,12 +60,11 @@ void OSQPEigenSolver::setDefaultOSQPSettings(OsqpEigen::Settings& settings)
   settings.setCheckDualGap(false);
 }
 
-bool OSQPEigenSolver::init(Eigen::Index num_vars, Eigen::Index num_cnts, const Eigen::VectorXd& init_vals)
+bool OSQPEigenSolver::init(Eigen::Index num_vars, Eigen::Index num_cnts)
 {
   // Set the solver size
   num_cnts_ = num_cnts;
   num_vars_ = num_vars;
-  init_vals_ = init_vals;
   x0_.setZero(num_vars_);
   y0_.setZero(num_cnts_);
   solver_->data()->setNumberOfVariables(static_cast<int>(num_vars_));
@@ -86,7 +86,6 @@ bool OSQPEigenSolver::clear()
   num_cnts_ = 0;
   x0_.resize(0);
   y0_.resize(0);
-  init_vals_.resize(0);
   gradient_.resize(0);
   bounds_lower_.resize(0);
   bounds_upper_.resize(0);
@@ -104,22 +103,11 @@ bool OSQPEigenSolver::solve()
       solver_status_ = QPSolverStatus::kFailed;
       return false;
     }
+
+    // Apply stored warm start if the setting is enabled
+    if (solver_->settings()->getSettings()->warm_starting == 1)
+      solver_->setWarmStart(x0_, y0_);
   }
-
-  /** @todo I do not believe this is correct because it causes different results when runnig the puzzle_piece_example
-   * for different contact managers */
-
-  // if (init_vals_.rows() > 0 && !OSQP_COMPARE_DEBUG_MODE)
-  // {
-  //   /** @todo update the init_vals to compute the slack variables. The initial slack variable should be the max of
-  //    * either zero or the constraint violation */
-  //   solver_->getPrimalVariable(x0_);
-  //   solver_->getDualVariable(y0_);
-  //   x0_.head(init_vals_.rows()) = init_vals_;
-  //   bool success = solver_->setWarmStart(x0_, y0_);
-  //   UNUSED(success);
-  //   assert(success);
-  // }
 
   const Eigen::IOFormat format(8);
   if (OSQP_COMPARE_DEBUG_MODE)
@@ -284,6 +272,57 @@ bool OSQPEigenSolver::updateLinearConstraintsMatrix(const trajopt_ifopt::Jacobia
 
   solver_->data()->clearLinearConstraintsMatrix();
   return solver_->data()->setLinearConstraintsMatrix(linearConstraintsMatrix);
+}
+
+bool OSQPEigenSolver::setWarmStart(const QPProblem& qp_problem)
+{
+  if (solver_->settings()->getSettings()->warm_starting != 1)
+    return true;
+
+  // Initialize primal variables with NLP variables followed by slack variables
+  const Eigen::Index num_nlp_vars = qp_problem.getNumNLPVars();
+  const Eigen::Index num_slacks = num_vars_ - num_nlp_vars;
+  x0_.setZero(num_vars_);
+
+  // Extract NLP variable values from the problem
+  const Eigen::VectorXd nlp_vars = qp_problem.getVariableValues();
+  assert(nlp_vars.size() == num_nlp_vars);
+
+  // Set the primal NLP variables
+  x0_.head(num_nlp_vars) = nlp_vars;
+
+  // If there are slack variables, compute them from constraint violations
+  if (num_slacks > 0)
+  {
+    // Evaluate constraint violations at current NLP variables
+    const Eigen::VectorXd violations = qp_problem.evaluateConvexConstraintViolations(nlp_vars);
+
+    // Get the constraint matrix (row-major)
+    const trajopt_ifopt::Jacobian& constraint_matrix = qp_problem.getConstraintMatrix();
+
+    for (Eigen::Index k = 0; k < violations.size(); ++k)
+    {
+      for (trajopt_ifopt::Jacobian::InnerIterator it(constraint_matrix, k); it; ++it)
+      {
+        const Eigen::Index col_idx = it.col();
+        const double coeff = it.value();
+
+        // Slack variables start at index num_nlp_vars
+        if (col_idx >= num_nlp_vars && std::abs(coeff) > 1e-14)
+        {
+          // Slack is computed as: slack = violation / coefficient
+          double slack = violations(k) / coeff;
+          // Enforce non-negativity constraint on slack variables
+          x0_(col_idx) = std::max(0.0, slack);
+        }
+      }
+    }
+  }
+
+  // Initialize dual variables to zero
+  y0_.setZero(num_cnts_);
+
+  return true;
 }
 
 }  // namespace trajopt_sqp

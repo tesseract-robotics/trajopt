@@ -58,7 +58,7 @@ public:
    * @brief Evaluates the cost of the convexified function (ie using the stored gradient and hessian) at var_vals
    * @param var_vals Point at which the convex cost is calculated. Should be size num_qp_vars
    */
-  virtual double evaluateTotalConvexCost(const Eigen::Ref<const Eigen::VectorXd>& var_vals) = 0;
+  virtual double evaluateTotalConvexCost(const Eigen::Ref<const Eigen::VectorXd>& var_vals) const = 0;
 
   /**
    * @brief Evaluated the cost of the convexified function (ie using the stored gradient and hessian) at var_vals
@@ -67,20 +67,20 @@ public:
    * @param var_vals Point at which the convex cost is calculated. Should be size num_qp_vars
    * @return Cost associated with each cost term in the problem (for debugging)
    */
-  virtual Eigen::VectorXd evaluateConvexCosts(const Eigen::Ref<const Eigen::VectorXd>& var_vals) = 0;
+  virtual Eigen::VectorXd evaluateConvexCosts(const Eigen::Ref<const Eigen::VectorXd>& var_vals) const = 0;
 
   /**
    * @brief Get the sum of the cost functions
    * @note This will be relatively computationally expensive, as we will have to loop through all the cost components in
    * the problem and calculate their values manually.
    */
-  virtual double getTotalExactCost() = 0;
+  virtual double getTotalExactCost() const = 0;
 
   /**
    * @brief Get the current NLP costs.
    * @return Vector of costs.
    */
-  virtual Eigen::VectorXd getExactCosts() = 0;
+  virtual Eigen::VectorXd getExactCosts() const = 0;
 
   /**
    * @brief Evaluated the costraint violation of the convexified function (ie using the stored constraint matrix) at
@@ -88,13 +88,14 @@ public:
    * @param var_vals
    * @return
    */
-  virtual Eigen::VectorXd evaluateConvexConstraintViolations(const Eigen::Ref<const Eigen::VectorXd>& var_vals) = 0;
+  virtual Eigen::VectorXd
+  evaluateConvexConstraintViolations(const Eigen::Ref<const Eigen::VectorXd>& var_vals) const = 0;
 
   /**
    * @brief get the current NLP constraint violations. Values > 0 are violations
    * @return Vector of constraint violations. Values > 0 are violations
    */
-  virtual Eigen::VectorXd getExactConstraintViolations() = 0;
+  virtual Eigen::VectorXd getExactConstraintViolations() const = 0;
   /**
    * @brief Uniformly scales the box size  (box_size_ = box_size_ * scale)
    * @param scale Value by which the box size is scaled
@@ -113,12 +114,6 @@ public:
    */
   virtual void setConstraintMeritCoeff(const Eigen::Ref<const Eigen::VectorXd>& merit_coeff) = 0;
 
-  /**
-   * @brief Returns the box size
-   * @return The box size for each variable
-   */
-  virtual Eigen::VectorXd getBoxSize() const = 0;
-
   /** @brief Prints all members to the terminal in a human readable form */
   virtual void print() const = 0;
 
@@ -131,15 +126,15 @@ public:
   virtual const std::vector<std::string>& getNLPConstraintNames() const = 0;
   virtual const std::vector<std::string>& getNLPCostNames() const = 0;
 
-  virtual Eigen::Ref<const Eigen::VectorXd> getBoxSize() = 0;
-  virtual Eigen::Ref<const Eigen::VectorXd> getConstraintMeritCoeff() = 0;
+  virtual const Eigen::VectorXd& getBoxSize() const = 0;
+  virtual const Eigen::VectorXd& getConstraintMeritCoeff() const = 0;
 
-  virtual Eigen::Ref<const trajopt_ifopt::Jacobian> getHessian() = 0;
-  virtual Eigen::Ref<const Eigen::VectorXd> getGradient() = 0;
+  virtual const trajopt_ifopt::Jacobian& getHessian() const = 0;
+  virtual const Eigen::VectorXd& getGradient() const = 0;
 
-  virtual Eigen::Ref<const trajopt_ifopt::Jacobian> getConstraintMatrix() = 0;
-  virtual Eigen::Ref<const Eigen::VectorXd> getBoundsLower() = 0;
-  virtual Eigen::Ref<const Eigen::VectorXd> getBoundsUpper() = 0;
+  virtual const trajopt_ifopt::Jacobian& getConstraintMatrix() const = 0;
+  virtual const Eigen::VectorXd& getBoundsLower() const = 0;
+  virtual const Eigen::VectorXd& getBoundsUpper() const = 0;
 };
 
 }  // namespace trajopt_sqp

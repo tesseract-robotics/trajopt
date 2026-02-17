@@ -31,6 +31,9 @@
 
 namespace trajopt_sqp
 {
+// Forward declaration
+class QPProblem;
+
 /**
  * @brief Status codes describing the lifecycle/result of the QP solver.
  *
@@ -80,7 +83,7 @@ public:
    * @param num_cnts Number of QP constraints
    * @return true if successful
    */
-  virtual bool init(Eigen::Index num_vars, Eigen::Index num_cnts, const Eigen::VectorXd& init_vals = {}) = 0;
+  virtual bool init(Eigen::Index num_vars, Eigen::Index num_cnts) = 0;
 
   /**
    * @brief Clears the QP solver
@@ -143,6 +146,18 @@ public:
    * @return true if successful
    */
   virtual bool updateLinearConstraintsMatrix(const trajopt_ifopt::Jacobian& linearConstraintsMatrix) = 0;
+
+  /**
+   * @brief Provides an explicit primal/dual warm start to the solver from the QP problem.
+   *
+   * This method computes initial primal and dual values based on the current NLP iterate
+   * and approximate constraint violations from the QP problem. It automatically calculates
+   * slack variable values using the constraint matrix structure.
+   *
+   * @param qp_problem        The QP problem containing variables, constraints, and violations.
+   * @return true if successful.
+   */
+  virtual bool setWarmStart(const QPProblem& qp_problem) = 0;
 
   /**
    * @brief Returns the solver status
