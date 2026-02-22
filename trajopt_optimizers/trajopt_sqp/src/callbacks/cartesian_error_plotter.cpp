@@ -34,7 +34,7 @@
 using namespace trajopt_sqp;
 
 CartesianErrorPlottingCallback::CartesianErrorPlottingCallback(
-    std::shared_ptr<tesseract_visualization::Visualization> plotter)
+    std::shared_ptr<tesseract::visualization::Visualization> plotter)
   : plotter_(std::move(plotter))
 {
 }
@@ -48,16 +48,16 @@ void CartesianErrorPlottingCallback::plot(const QPProblem& /*problem*/)
 
     if (plotter_)
     {
-      tesseract_visualization::AxisMarker m1(current_pose);
+      tesseract::visualization::AxisMarker m1(current_pose);
       m1.setScale(Eigen::Vector3d::Constant(0.05));
       plotter_->plotMarker(m1);
 
-      tesseract_visualization::AxisMarker m2(target_pose);
+      tesseract::visualization::AxisMarker m2(target_pose);
       m2.setScale(Eigen::Vector3d::Constant(0.05));
       plotter_->plotMarker(m2);
 
-      tesseract_visualization::ArrowMarker m3(current_pose.translation(), target_pose.translation());
-      m3.material = std::make_shared<tesseract_scene_graph::Material>("cart_pose_error_material");
+      tesseract::visualization::ArrowMarker m3(current_pose.translation(), target_pose.translation());
+      m3.material = std::make_shared<tesseract::scene_graph::Material>("cart_pose_error_material");
       m3.material->color << 1, 0, 1, 1;
       plotter_->plotMarker(m3);
     }

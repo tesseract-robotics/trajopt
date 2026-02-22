@@ -47,12 +47,12 @@ struct InverseKinematicsInfo
   using ConstPtr = std::shared_ptr<const InverseKinematicsInfo>;
 
   InverseKinematicsInfo() = default;
-  InverseKinematicsInfo(std::shared_ptr<const tesseract_kinematics::KinematicGroup> manip,
+  InverseKinematicsInfo(std::shared_ptr<const tesseract::kinematics::KinematicGroup> manip,
                         std::string working_frame,
                         std::string tcp_frame,
                         const Eigen::Isometry3d& tcp_offset = Eigen::Isometry3d::Identity());
 
-  std::shared_ptr<const tesseract_kinematics::KinematicGroup> manip;
+  std::shared_ptr<const tesseract::kinematics::KinematicGroup> manip;
 
   /** @brief Not currently respected */
   std::string working_frame;

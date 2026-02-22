@@ -54,11 +54,11 @@ TRAJOPT_IGNORE_WARNINGS_POP
 #include <trajopt_sqp/osqp_eigen_solver.h>
 
 using namespace trajopt_ifopt;
-using namespace tesseract_environment;
-using namespace tesseract_collision;
-using namespace tesseract_kinematics;
-using namespace tesseract_scene_graph;
-using namespace tesseract_common;
+using namespace tesseract::environment;
+using namespace tesseract::collision;
+using namespace tesseract::kinematics;
+using namespace tesseract::scene_graph;
+using namespace tesseract::common;
 
 class NumericalIKTest : public testing::TestWithParam<const char*>
 {
@@ -70,7 +70,7 @@ public:
     const std::filesystem::path urdf_file(std::string(TRAJOPT_DATA_DIR) + "/arm_around_table.urdf");
     const std::filesystem::path srdf_file(std::string(TRAJOPT_DATA_DIR) + "/pr2.srdf");
 
-    const ResourceLocator::Ptr locator = std::make_shared<tesseract_common::GeneralResourceLocator>();
+    const ResourceLocator::Ptr locator = std::make_shared<GeneralResourceLocator>();
     EXPECT_TRUE(env->init(urdf_file, srdf_file, locator));
 
     // Create plotting tool
@@ -85,9 +85,9 @@ public:
 template <typename T>
 void runNumericalIKTest(const Environment::Ptr& env)
 {
-  const tesseract_scene_graph::StateSolver::Ptr state_solver = env->getStateSolver();
+  const StateSolver::Ptr state_solver = env->getStateSolver();
   const ContinuousContactManager::Ptr manager = env->getContinuousContactManager();
-  const tesseract_kinematics::JointGroup::ConstPtr manip = env->getJointGroup("left_arm");
+  const JointGroup::ConstPtr manip = env->getJointGroup("left_arm");
   const std::vector<trajopt_ifopt::Bounds> bounds = trajopt_ifopt::toBounds(manip->getLimits().joint_limits);
 
   manager->setActiveCollisionObjects(manip->getActiveLinkNames());
@@ -141,7 +141,7 @@ void runNumericalIKTest(const Environment::Ptr& env)
   // 6) solve
   solver.verbose = false;
 
-  tesseract_common::Stopwatch stopwatch;
+  Stopwatch stopwatch;
   stopwatch.start();
   solver.solve(qp_problem);
   stopwatch.stop();
@@ -173,9 +173,9 @@ void runNumericalIKTest(const Environment::Ptr& env)
 template <typename T>
 void runNumericalIKWithToleranceTest(const Environment::Ptr& env)
 {
-  const tesseract_scene_graph::StateSolver::Ptr state_solver = env->getStateSolver();
+  const StateSolver::Ptr state_solver = env->getStateSolver();
   const ContinuousContactManager::Ptr manager = env->getContinuousContactManager();
-  const tesseract_kinematics::JointGroup::ConstPtr manip = env->getJointGroup("left_arm");
+  const JointGroup::ConstPtr manip = env->getJointGroup("left_arm");
   const std::vector<trajopt_ifopt::Bounds> bounds = trajopt_ifopt::toBounds(manip->getLimits().joint_limits);
 
   manager->setActiveCollisionObjects(manip->getActiveLinkNames());
@@ -243,7 +243,7 @@ void runNumericalIKWithToleranceTest(const Environment::Ptr& env)
   // 6) solve
   solver.verbose = true;
 
-  tesseract_common::Stopwatch stopwatch;
+  Stopwatch stopwatch;
   stopwatch.start();
   solver.solve(qp_problem);
   stopwatch.stop();

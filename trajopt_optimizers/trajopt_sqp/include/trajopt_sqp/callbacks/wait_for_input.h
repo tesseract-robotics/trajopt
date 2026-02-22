@@ -43,12 +43,12 @@ public:
   using Ptr = std::shared_ptr<WaitForInputCallback>;
   using ConstPtr = std::shared_ptr<const WaitForInputCallback>;
 
-  WaitForInputCallback(std::shared_ptr<tesseract_visualization::Visualization> plotter);
+  WaitForInputCallback(std::shared_ptr<tesseract::visualization::Visualization> plotter);
 
   bool execute(const QPProblem& problem, const SQPResults& sqp_results) override;
 
 protected:
-  std::shared_ptr<tesseract_visualization::Visualization> plotter_;
+  std::shared_ptr<tesseract::visualization::Visualization> plotter_;
 };
 }  // namespace trajopt_sqp
 

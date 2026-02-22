@@ -40,7 +40,7 @@ TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace trajopt_ifopt
 {
-CartLineInfo::CartLineInfo(std::shared_ptr<const tesseract_kinematics::JointGroup> manip,
+CartLineInfo::CartLineInfo(std::shared_ptr<const tesseract::kinematics::JointGroup> manip,
                            std::string source_frame,
                            std::string target_frame,
                            const Eigen::Isometry3d& target_frame_offset1,  // NOLINT(modernize-pass-by-value)
@@ -71,7 +71,7 @@ CartLineInfo::CartLineInfo(std::shared_ptr<const tesseract_kinematics::JointGrou
     throw std::runtime_error("CartLineInfo: The indices list length is zero.");
 }
 
-thread_local tesseract_common::TransformMap CartLineConstraint::transforms_cache_;  // NOLINT
+thread_local tesseract::common::TransformMap CartLineConstraint::transforms_cache_;  // NOLINT
 
 CartLineConstraint::CartLineConstraint(CartLineInfo info,
                                        std::shared_ptr<const Var> position_var,
@@ -95,7 +95,7 @@ CartLineConstraint::CartLineConstraint(CartLineInfo info,
   error_diff_function_ = [this](const Eigen::VectorXd& vals,
                                 const Eigen::Isometry3d& target_tf,
                                 const Eigen::Isometry3d& source_tf,
-                                tesseract_common::TransformMap& transforms_cache) -> Eigen::VectorXd {
+                                tesseract::common::TransformMap& transforms_cache) -> Eigen::VectorXd {
     info_.manip->calcFwdKin(transforms_cache, vals);
     const Eigen::Isometry3d perturbed_source_tf = transforms_cache[info_.source_frame] * info_.source_frame_offset;
     const Eigen::Isometry3d target_tf1 = transforms_cache[info_.target_frame] * info_.target_frame_offset1;
@@ -104,7 +104,7 @@ CartLineConstraint::CartLineConstraint(CartLineInfo info,
     // For Jacobian Calc, we need the inverse of the nearest point, D, to new Pose, C, on the constraint line AB
     const Eigen::Isometry3d perturbed_target_tf = getLinePoint(perturbed_source_tf, target_tf1, target_tf2);
 
-    Eigen::VectorXd error_diff = tesseract_common::calcJacobianTransformErrorDiff(
+    Eigen::VectorXd error_diff = tesseract::common::calcJacobianTransformErrorDiff(
         target_tf, perturbed_target_tf, source_tf, perturbed_source_tf);
 
     Eigen::VectorXd reduced_error_diff(info_.indices.size());
@@ -128,7 +128,7 @@ Eigen::VectorXd CartLineConstraint::calcValues(const Eigen::Ref<const Eigen::Vec
 
   // pose error is the vector from the new_pose to nearest point on line AB, line_point
   // the below method is equivalent to the position constraint; using the line point as the target point
-  Eigen::VectorXd err = tesseract_common::calcTransformError(target_tf, source_tf);
+  Eigen::VectorXd err = tesseract::common::calcTransformError(target_tf, source_tf);
 
   Eigen::VectorXd reduced_err(info_.indices.size());
   for (int i = 0; i < info_.indices.size(); ++i)
@@ -199,7 +199,7 @@ void CartLineConstraint::calcJacobianBlock(Jacobian& jac_block,
 
     Eigen::MatrixXd jac0 =
         info_.manip->calcJacobian(joint_vals, info_.source_frame, info_.source_frame_offset.translation());
-    tesseract_common::jacobianChangeBase(jac0, target_tf.inverse());
+    tesseract::common::jacobianChangeBase(jac0, target_tf.inverse());
 
     // Paper:
     // https://ethz.ch/content/dam/ethz/special-interest/mavt/robotics-n-intelligent-systems/rsl-dam/documents/RobotDynamics2016/RD2016script.pdf
@@ -223,7 +223,7 @@ void CartLineConstraint::calcJacobianBlock(Jacobian& jac_block,
       // For Jacobian Calc, we need the inverse of the nearest point, D, to new Pose, C, on the constraint line AB
       const Eigen::Isometry3d perturbed_target_tf = getLinePoint(perturbed_source_tf, target_tf1, target_tf2);
 
-      const Eigen::VectorXd error_diff = tesseract_common::calcJacobianTransformErrorDiff(
+      const Eigen::VectorXd error_diff = tesseract::common::calcJacobianTransformErrorDiff(
           target_tf, perturbed_target_tf, source_tf, perturbed_source_tf);
 
       jac0.col(c).tail(3) = (error_diff / eps);

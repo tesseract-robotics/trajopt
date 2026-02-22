@@ -27,13 +27,13 @@ TRAJOPT_IGNORE_WARNINGS_POP
 using namespace trajopt;
 using namespace std;
 using namespace trajopt_common;
-using namespace tesseract_environment;
-using namespace tesseract_kinematics;
-using namespace tesseract_collision;
-using namespace tesseract_visualization;
-using namespace tesseract_scene_graph;
-using namespace tesseract_geometry;
-using namespace tesseract_common;
+using namespace tesseract::environment;
+using namespace tesseract::kinematics;
+using namespace tesseract::collision;
+using namespace tesseract::visualization;
+using namespace tesseract::scene_graph;
+using namespace tesseract::geometry;
+using namespace tesseract::common;
 
 static const bool plotting = false;
 
@@ -48,7 +48,7 @@ public:
     const std::filesystem::path urdf_file(std::string(TRAJOPT_DATA_DIR) + "/spherebot.urdf");
     const std::filesystem::path srdf_file(std::string(TRAJOPT_DATA_DIR) + "/spherebot.srdf");
 
-    const ResourceLocator::Ptr locator = std::make_shared<tesseract_common::GeneralResourceLocator>();
+    const ResourceLocator::Ptr locator = std::make_shared<tesseract::common::GeneralResourceLocator>();
     EXPECT_TRUE(env_->init(urdf_file, srdf_file, locator));
 
     // gLogLevel = trajopt_common::LevelDebug;
@@ -75,15 +75,15 @@ void runTest(const Environment::Ptr& env, const Visualization::Ptr& plotter, boo
   ASSERT_TRUE(!!prob);
 
   std::vector<ContactResultMap> collisions;
-  const tesseract_scene_graph::StateSolver::UPtr state_solver = prob->GetEnv()->getStateSolver();
+  const tesseract::scene_graph::StateSolver::UPtr state_solver = prob->GetEnv()->getStateSolver();
   const DiscreteContactManager::Ptr manager = prob->GetEnv()->getDiscreteContactManager();
 
   manager->setActiveCollisionObjects(prob->GetKin()->getActiveLinkNames());
   manager->setDefaultCollisionMargin(0.2);
 
   collisions.clear();
-  tesseract_collision::CollisionCheckConfig config;
-  config.type = tesseract_collision::CollisionEvaluatorType::DISCRETE;
+  tesseract::collision::CollisionCheckConfig config;
+  config.type = tesseract::collision::CollisionEvaluatorType::DISCRETE;
   bool found = checkTrajectory(
       collisions, *manager, *state_solver, prob->GetKin()->getJointNames(), prob->GetInitTraj(), config);
 
@@ -105,7 +105,7 @@ void runTest(const Environment::Ptr& env, const Visualization::Ptr& plotter, boo
     opt->addCallback(PlotCallback(plotter));
   opt->initialize(trajToDblVec(prob->GetInitTraj()));
 
-  tesseract_common::Stopwatch stopwatch;
+  tesseract::common::Stopwatch stopwatch;
   stopwatch.start();
   opt->optimize();
   stopwatch.stop();

@@ -40,14 +40,14 @@ class Var;
  * @param joint_positions Vector of joint positions. Must be in order and all the same length
  * @return TrajArray - size = [joint_positions.size(), joint_positions.n_dof]
  */
-tesseract_common::TrajArray toTrajArray(const std::vector<std::shared_ptr<const Var>>& joint_positions);
+tesseract::common::TrajArray toTrajArray(const std::vector<std::shared_ptr<const Var>>& joint_positions);
 
 /**
  * @brief Converts a vector of trajopt variables into tesseract_common JointTrajectory
  * @param joint_positions Vector of joint positions. Must be in order and all the same length
  * @return JointTrajectory
  */
-tesseract_common::JointTrajectory toJointTrajectory(const std::vector<std::shared_ptr<const Var>>& joint_positions);
+tesseract::common::JointTrajectory toJointTrajectory(const std::vector<std::shared_ptr<const Var>>& joint_positions);
 
 }  // namespace trajopt_ifopt
 #endif

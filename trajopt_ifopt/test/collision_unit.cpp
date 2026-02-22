@@ -43,12 +43,12 @@ TRAJOPT_IGNORE_WARNINGS_POP
 #include <trajopt_ifopt/utils/ifopt_utils.h>
 
 using namespace trajopt_ifopt;
-using namespace tesseract_environment;
-using namespace tesseract_kinematics;
-using namespace tesseract_collision;
-using namespace tesseract_scene_graph;
-using namespace tesseract_geometry;
-using namespace tesseract_common;
+using namespace tesseract::environment;
+using namespace tesseract::kinematics;
+using namespace tesseract::collision;
+using namespace tesseract::scene_graph;
+using namespace tesseract::geometry;
+using namespace tesseract::common;
 
 class CollisionUnit : public testing::TestWithParam<const char*>
 {
@@ -63,11 +63,11 @@ public:
     const std::filesystem::path urdf_file(std::string(TRAJOPT_DATA_DIR) + "/boxbot.urdf");
     const std::filesystem::path srdf_file(std::string(TRAJOPT_DATA_DIR) + "/boxbot.srdf");
 
-    const ResourceLocator::Ptr locator = std::make_shared<tesseract_common::GeneralResourceLocator>();
+    const ResourceLocator::Ptr locator = std::make_shared<tesseract::common::GeneralResourceLocator>();
     EXPECT_TRUE(env->init(urdf_file, srdf_file, locator));
 
     // Set up collision evaluator
-    const tesseract_kinematics::JointGroup::ConstPtr kin = env->getJointGroup("manipulator");
+    const JointGroup::ConstPtr kin = env->getJointGroup("manipulator");
     trajopt_common::TrajOptCollisionConfig config(0.1, 1);
 
     collision_evaluator = std::make_shared<SingleTimestepCollisionEvaluator>(kin, env, config);

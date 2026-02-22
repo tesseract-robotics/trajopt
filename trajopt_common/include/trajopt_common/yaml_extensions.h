@@ -117,9 +117,9 @@ struct convert<trajopt_common::TrajOptCollisionConfig>
     if (const YAML::Node& n = node["enabled"])
       rhs.enabled = n.as<bool>();
     if (const YAML::Node& n = node["contact_manager_config"])
-      rhs.contact_manager_config = n.as<tesseract_collision::ContactManagerConfig>();
+      rhs.contact_manager_config = n.as<tesseract::collision::ContactManagerConfig>();
     if (const YAML::Node& n = node["collision_check_config"])
-      rhs.collision_check_config = n.as<tesseract_collision::CollisionCheckConfig>();
+      rhs.collision_check_config = n.as<tesseract::collision::CollisionCheckConfig>();
     if (const YAML::Node& n = node["collision_coeff_data"])
       rhs.collision_coeff_data = n.as<trajopt_common::CollisionCoeffData>();
 

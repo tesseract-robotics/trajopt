@@ -20,11 +20,11 @@ TRAJOPT_IGNORE_WARNINGS_POP
 
 using namespace trajopt_ifopt;
 using namespace std;
-using namespace tesseract_environment;
-using namespace tesseract_kinematics;
-using namespace tesseract_collision;
-using namespace tesseract_scene_graph;
-using namespace tesseract_geometry;
+using namespace tesseract::environment;
+using namespace tesseract::kinematics;
+using namespace tesseract::collision;
+using namespace tesseract::scene_graph;
+using namespace tesseract::geometry;
 
 class CartesianLineConstraintUnit : public testing::TestWithParam<const char*>
 {
@@ -32,7 +32,7 @@ public:
   Environment::Ptr env = std::make_shared<Environment>();
   Variables::Ptr variables;
 
-  tesseract_kinematics::JointGroup::ConstPtr manip;
+  JointGroup::ConstPtr manip;
   CartLineInfo info;
   std::shared_ptr<const Var> var;
 
@@ -47,7 +47,7 @@ public:
     // Initialize Tesseract
     const std::filesystem::path urdf_file(std::string(TRAJOPT_DATA_DIR) + "/arm_around_table.urdf");
     const std::filesystem::path srdf_file(std::string(TRAJOPT_DATA_DIR) + "/pr2.srdf");
-    auto locator = std::make_shared<tesseract_common::GeneralResourceLocator>();
+    auto locator = std::make_shared<tesseract::common::GeneralResourceLocator>();
     const bool status = env->init(urdf_file, srdf_file, locator);
     EXPECT_TRUE(status);
 

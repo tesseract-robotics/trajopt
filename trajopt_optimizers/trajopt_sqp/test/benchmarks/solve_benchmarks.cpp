@@ -31,19 +31,19 @@ TRAJOPT_IGNORE_WARNINGS_POP
 #include <trajopt_sqp/osqp_eigen_solver.h>
 
 using namespace trajopt_ifopt;
-using namespace tesseract_environment;
-using namespace tesseract_kinematics;
-using namespace tesseract_collision;
-using namespace tesseract_scene_graph;
-using namespace tesseract_geometry;
-using namespace tesseract_common;
+using namespace tesseract::environment;
+using namespace tesseract::kinematics;
+using namespace tesseract::collision;
+using namespace tesseract::scene_graph;
+using namespace tesseract::geometry;
+using namespace tesseract::common;
 
 /** @brief Benchmark trajopt ifopt simple collision solve */
 static void BM_TRAJOPT_IFOPT_SIMPLE_COLLISION_SOLVE(benchmark::State& state, const Environment::Ptr& env)
 {
   for (auto _ : state)  // NOLINT
   {
-    tesseract_kinematics::JointGroup::ConstPtr manip = env->getJointGroup("manipulator");
+    JointGroup::ConstPtr manip = env->getJointGroup("manipulator");
     const std::vector<Bounds> bounds = toBounds(manip->getLimits().joint_limits);
 
     // Add Variables
@@ -108,11 +108,11 @@ static void BM_TRAJOPT_IFOPT_PLANNING_SOLVE(benchmark::State& state, const Envir
 {
   for (auto _ : state)  // NOLINT
   {
-    tesseract_kinematics::JointGroup::ConstPtr manip = env->getJointGroup("right_arm");
+    JointGroup::ConstPtr manip = env->getJointGroup("right_arm");
     const std::vector<Bounds> bounds = toBounds(manip->getLimits().joint_limits);
 
     // Initial trajectory
-    tesseract_common::TrajArray trajectory(6, 7);
+    TrajArray trajectory(6, 7);
     trajectory.row(0) << -1.832, -0.332, -1.011, -1.437, -1.1, -1.926, 3.074;
     trajectory.row(1) << -1.411, 0.028, -0.764, -1.463, -1.525, -1.698, 3.055;
     trajectory.row(2) << -0.99, 0.388, -0.517, -1.489, -1.949, -1.289, 3.036;
@@ -136,7 +136,7 @@ static void BM_TRAJOPT_IFOPT_PLANNING_SOLVE(benchmark::State& state, const Envir
     double margin_coeff = 20;
     double margin = 0.025;
     auto trajopt_collision_config = std::make_shared<trajopt_common::TrajOptCollisionConfig>(margin, margin_coeff);
-    trajopt_collision_config->collision_check_config.type = tesseract_collision::CollisionEvaluatorType::CONTINUOUS;
+    trajopt_collision_config->collision_check_config.type = tesseract::collision::CollisionEvaluatorType::CONTINUOUS;
     trajopt_collision_config->collision_margin_buffer = 0.01;
 
     // Add costs
@@ -209,7 +209,7 @@ int main(int argc, char** argv)
     std::filesystem::path urdf_file(std::string(TRAJOPT_DATA_DIR) + "/spherebot.urdf");
     std::filesystem::path srdf_file(std::string(TRAJOPT_DATA_DIR) + "/spherebot.srdf");
 
-    ResourceLocator::Ptr locator = std::make_shared<tesseract_common::GeneralResourceLocator>();
+    ResourceLocator::Ptr locator = std::make_shared<GeneralResourceLocator>();
     auto env = std::make_shared<Environment>();
     env->init(urdf_file, srdf_file, locator);
 
@@ -232,7 +232,7 @@ int main(int argc, char** argv)
     std::filesystem::path urdf_file(std::string(TRAJOPT_DATA_DIR) + "/arm_around_table.urdf");
     std::filesystem::path srdf_file(std::string(TRAJOPT_DATA_DIR) + "/pr2.srdf");
 
-    ResourceLocator::Ptr locator = std::make_shared<tesseract_common::GeneralResourceLocator>();
+    ResourceLocator::Ptr locator = std::make_shared<GeneralResourceLocator>();
     auto env = std::make_shared<Environment>();
     env->init(urdf_file, srdf_file, locator);
 

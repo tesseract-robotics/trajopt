@@ -42,7 +42,7 @@ Eigen::VectorXd getWeightedAvgGradientT0(const trajopt_common::GradientResultsSe
     for (std::size_t i = 0; i < 2; ++i)
     {
       if (grad.gradients[i].has_gradient &&
-          (grad.gradients[i].cc_type != tesseract_collision::ContinuousCollisionType::CCType_Time1))
+          (grad.gradients[i].cc_type != tesseract::collision::ContinuousCollisionType::CCType_Time1))
       {
         if (grad_results_set.max_error[i].error_with_buffer[0] > 0)
         {
@@ -81,7 +81,7 @@ Eigen::VectorXd getWeightedAvgGradientT1(const trajopt_common::GradientResultsSe
     for (std::size_t i = 0; i < 2; ++i)
     {
       if (grad.cc_gradients[i].has_gradient &&
-          (grad.cc_gradients[i].cc_type != tesseract_collision::ContinuousCollisionType::CCType_Time0))
+          (grad.cc_gradients[i].cc_type != tesseract::collision::ContinuousCollisionType::CCType_Time0))
       {
         if (grad_results_set.max_error[i].error_with_buffer[1] > 0)
         {

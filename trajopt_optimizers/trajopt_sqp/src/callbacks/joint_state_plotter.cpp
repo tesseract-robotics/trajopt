@@ -34,15 +34,16 @@
 
 using namespace trajopt_sqp;
 
-JointStatePlottingCallback::JointStatePlottingCallback(std::shared_ptr<tesseract_visualization::Visualization> plotter,
-                                                       std::unique_ptr<tesseract_scene_graph::StateSolver> state_solver)
+JointStatePlottingCallback::JointStatePlottingCallback(
+    std::shared_ptr<tesseract::visualization::Visualization> plotter,
+    std::unique_ptr<tesseract::scene_graph::StateSolver> state_solver)
   : plotter_(std::move(plotter)), state_solver_(std::move(state_solver))
 {
 }
 
 void JointStatePlottingCallback::plot(const QPProblem& /*problem*/)
 {
-  const tesseract_common::JointTrajectory trajectory = trajopt_ifopt::toJointTrajectory(joint_positions_);
+  const tesseract::common::JointTrajectory trajectory = trajopt_ifopt::toJointTrajectory(joint_positions_);
 
   if (plotter_)
     plotter_->plotTrajectory(trajectory, *state_solver_);

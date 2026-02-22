@@ -32,7 +32,7 @@ TRAJOPT_IGNORE_WARNINGS_POP
 namespace trajopt
 {
 void WriteFile(const std::shared_ptr<std::ofstream>& file,
-               const tesseract_kinematics::JointGroup::ConstPtr& manip,
+               const tesseract::kinematics::JointGroup::ConstPtr& manip,
                const trajopt::VarArray& vars,
                const sco::OptResults& results)
 {
@@ -54,7 +54,7 @@ void WriteFile(const std::shared_ptr<std::ofstream>& file,
     }
 
     // Calc cartesian pose
-    const tesseract_common::TransformMap state = manip->calcFwdKin(joint_angles);
+    const tesseract::common::TransformMap state = manip->calcFwdKin(joint_angles);
 
     for (const auto& it : state)
     {
@@ -67,7 +67,7 @@ void WriteFile(const std::shared_ptr<std::ofstream>& file,
 
       // Write cartesian pose to file
       *file << it.first << ": ";
-      Eigen::VectorXd pose_vec = tesseract_common::concat(it.second.translation(), rot_vec);
+      Eigen::VectorXd pose_vec = tesseract::common::concat(it.second.translation(), rot_vec);
       for (auto i = 0; i < pose_vec.size(); i++)
       {
         *file << ',' << pose_vec(i);

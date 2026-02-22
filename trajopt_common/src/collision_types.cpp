@@ -40,11 +40,11 @@ double CollisionCoeffData::getDefaultCollisionCoeff() const { return default_col
 
 void CollisionCoeffData::setCollisionCoeff(const std::string& obj1, const std::string& obj2, double collision_coeff)
 {
-  TRAJOPT_THREAD_LOCAL tesseract_common::LinkNamesPair key;
-  tesseract_common::makeOrderedLinkPair(key, obj1, obj2);
+  TRAJOPT_THREAD_LOCAL tesseract::common::LinkNamesPair key;
+  tesseract::common::makeOrderedLinkPair(key, obj1, obj2);
   lookup_table_.insert_or_assign(key, collision_coeff);
 
-  if (tesseract_common::almostEqualRelativeAndAbs(collision_coeff, 0.0))
+  if (tesseract::common::almostEqualRelativeAndAbs(collision_coeff, 0.0))
     zero_coeff_.insert(key);
   else
     zero_coeff_.erase(key);
@@ -52,8 +52,8 @@ void CollisionCoeffData::setCollisionCoeff(const std::string& obj1, const std::s
 
 double CollisionCoeffData::getCollisionCoeff(const std::string& obj1, const std::string& obj2) const
 {
-  TRAJOPT_THREAD_LOCAL tesseract_common::LinkNamesPair key;
-  tesseract_common::makeOrderedLinkPair(key, obj1, obj2);
+  TRAJOPT_THREAD_LOCAL tesseract::common::LinkNamesPair key;
+  tesseract::common::makeOrderedLinkPair(key, obj1, obj2);
   const auto it = lookup_table_.find(key);
 
   if (it != lookup_table_.end())
@@ -62,12 +62,13 @@ double CollisionCoeffData::getCollisionCoeff(const std::string& obj1, const std:
   return default_collision_coeff_;
 }
 
-const std::unordered_map<tesseract_common::LinkNamesPair, double>& CollisionCoeffData::getCollisionCoeffPairData() const
+const std::unordered_map<tesseract::common::LinkNamesPair, double>&
+CollisionCoeffData::getCollisionCoeffPairData() const
 {
   return lookup_table_;
 }
 
-const std::set<tesseract_common::LinkNamesPair>& CollisionCoeffData::getPairsWithZeroCoeff() const
+const std::set<tesseract::common::LinkNamesPair>& CollisionCoeffData::getPairsWithZeroCoeff() const
 {
   return zero_coeff_;
 }
@@ -77,13 +78,13 @@ bool CollisionCoeffData::operator==(const CollisionCoeffData& rhs) const
   static constexpr auto max_diff = static_cast<double>(std::numeric_limits<float>::epsilon());
 
   static const auto value_eq = [](double v1, double v2) {
-    return tesseract_common::almostEqualRelativeAndAbs(v1, v2, max_diff);
+    return tesseract::common::almostEqualRelativeAndAbs(v1, v2, max_diff);
   };
 
   bool equal = true;
   equal &=
-      tesseract_common::almostEqualRelativeAndAbs(default_collision_coeff_, rhs.default_collision_coeff_, max_diff);
-  equal &= tesseract_common::isIdenticalMap<std::unordered_map<tesseract_common::LinkNamesPair, double>, double>(
+      tesseract::common::almostEqualRelativeAndAbs(default_collision_coeff_, rhs.default_collision_coeff_, max_diff);
+  equal &= tesseract::common::isIdenticalMap<std::unordered_map<tesseract::common::LinkNamesPair, double>, double>(
       lookup_table_, rhs.lookup_table_, value_eq);
   equal &= (zero_coeff_ == rhs.zero_coeff_);
   return equal;
@@ -93,10 +94,10 @@ bool CollisionCoeffData::operator!=(const CollisionCoeffData& rhs) const { retur
 
 TrajOptCollisionConfig::TrajOptCollisionConfig(double margin,
                                                double coeff,
-                                               tesseract_collision::ContactRequest request,
-                                               tesseract_collision::CollisionEvaluatorType type,
+                                               tesseract::collision::ContactRequest request,
+                                               tesseract::collision::CollisionEvaluatorType type,
                                                double longest_valid_segment_length,
-                                               tesseract_collision::CollisionCheckProgramType check_program_mode)
+                                               tesseract::collision::CollisionCheckProgramType check_program_mode)
   : contact_manager_config(margin)
   , collision_check_config(std::move(request), type, longest_valid_segment_length, check_program_mode)
   , collision_coeff_data(coeff)
@@ -112,7 +113,7 @@ bool TrajOptCollisionConfig::operator==(const TrajOptCollisionConfig& rhs) const
   equal &= (contact_manager_config == rhs.contact_manager_config);
   equal &= (collision_check_config == rhs.collision_check_config);
   equal &= (collision_coeff_data == rhs.collision_coeff_data);
-  equal &= tesseract_common::almostEqualRelativeAndAbs(collision_margin_buffer, rhs.collision_margin_buffer, max_diff);
+  equal &= tesseract::common::almostEqualRelativeAndAbs(collision_margin_buffer, rhs.collision_margin_buffer, max_diff);
   equal &= (max_num_cnt == rhs.max_num_cnt);
   return equal;
 }
@@ -137,7 +138,7 @@ void LinkGradientResults::clear()
 {
   has_gradient = false;
   scale = 1.0;
-  cc_type = tesseract_collision::ContinuousCollisionType::CCType_None;
+  cc_type = tesseract::collision::ContinuousCollisionType::CCType_None;
 }
 
 void GradientResults::clear()
@@ -173,7 +174,7 @@ void GradientResultsSet::add(GradientResults gradient_result)
       continue;
 
     // Update max error for LinkA and LinkB excluding values at T1
-    if (g.cc_type != tesseract_collision::ContinuousCollisionType::CCType_Time1)
+    if (g.cc_type != tesseract::collision::ContinuousCollisionType::CCType_Time1)
     {
       max_error[i].has_error[0] = true;
       max_error[i].error[0] = std::max(max_error[i].error[0], gradient_result.error);
@@ -182,7 +183,7 @@ void GradientResultsSet::add(GradientResults gradient_result)
     }
 
     // Update max error for LinkA and LinkB excluding values at T0
-    if (g.cc_type != tesseract_collision::ContinuousCollisionType::CCType_Time0)
+    if (g.cc_type != tesseract::collision::ContinuousCollisionType::CCType_Time0)
     {
       max_error[i].has_error[1] = true;
       max_error[i].error[1] = std::max(max_error[i].error[1], gradient_result.error);

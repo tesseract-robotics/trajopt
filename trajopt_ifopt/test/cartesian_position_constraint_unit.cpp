@@ -46,12 +46,12 @@ TRAJOPT_IGNORE_WARNINGS_POP
 using namespace trajopt_ifopt;
 using namespace std;
 using namespace trajopt_common;
-using namespace tesseract_environment;
-using namespace tesseract_kinematics;
-using namespace tesseract_collision;
-using namespace tesseract_scene_graph;
-using namespace tesseract_geometry;
-using namespace tesseract_common;
+using namespace tesseract::environment;
+using namespace tesseract::kinematics;
+using namespace tesseract::collision;
+using namespace tesseract::scene_graph;
+using namespace tesseract::geometry;
+using namespace tesseract::common;
 
 class CartesianPositionConstraintUnit : public testing::TestWithParam<const char*>
 {
@@ -59,7 +59,7 @@ public:
   Environment::Ptr env = std::make_shared<Environment>();
   std::shared_ptr<Problem> nlp;
 
-  tesseract_kinematics::JointGroup::ConstPtr kin_group;
+  JointGroup::ConstPtr kin_group;
   CartPosConstraint::Ptr constraint;
 
   Eigen::Index n_dof{ -1 };
@@ -69,7 +69,7 @@ public:
     // Initialize Tesseract
     const std::filesystem::path urdf_file(std::string(TRAJOPT_DATA_DIR) + "/arm_around_table.urdf");
     const std::filesystem::path srdf_file(std::string(TRAJOPT_DATA_DIR) + "/pr2.srdf");
-    auto locator = std::make_shared<tesseract_common::GeneralResourceLocator>();
+    auto locator = std::make_shared<tesseract::common::GeneralResourceLocator>();
     auto env = std::make_shared<Environment>();
     const bool status = env->init(urdf_file, srdf_file, locator);
     EXPECT_TRUE(status);

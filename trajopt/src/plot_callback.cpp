@@ -17,8 +17,8 @@ TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace trajopt
 {
-void PlotCosts(const std::shared_ptr<tesseract_visualization::Visualization>& plotter,
-               const tesseract_scene_graph::StateSolver& state_solver,
+void PlotCosts(const std::shared_ptr<tesseract::visualization::Visualization>& plotter,
+               const tesseract::scene_graph::StateSolver& state_solver,
                const std::vector<std::string>& joint_names,
                const std::vector<sco::Cost::Ptr>& costs,
                const std::vector<sco::Constraint::Ptr>& cnts,
@@ -44,7 +44,7 @@ void PlotCosts(const std::shared_ptr<tesseract_visualization::Visualization>& pl
   }
 
   auto traj = getTraj(results.x, vars);
-  tesseract_common::JointTrajectory joint_trajectory;
+  tesseract::common::JointTrajectory joint_trajectory;
   for (long i = 0; i < traj.rows(); ++i)
     joint_trajectory.states.emplace_back(joint_names, traj.row(i));
 
@@ -52,7 +52,7 @@ void PlotCosts(const std::shared_ptr<tesseract_visualization::Visualization>& pl
   plotter->waitForInput();
 }
 
-sco::Optimizer::Callback PlotCallback(const std::shared_ptr<tesseract_visualization::Visualization>& plotter)
+sco::Optimizer::Callback PlotCallback(const std::shared_ptr<tesseract::visualization::Visualization>& plotter)
 {
   return [plotter](sco::OptProb* prob, sco::OptResults& results) {
     auto& trajopt_prob = dynamic_cast<TrajOptProb&>(*prob);
@@ -67,8 +67,8 @@ sco::Optimizer::Callback PlotCallback(const std::shared_ptr<tesseract_visualizat
   };
 }
 
-void PlotProb(const std::shared_ptr<tesseract_visualization::Visualization>& plotter,
-              const tesseract_scene_graph::StateSolver& state_solver,
+void PlotProb(const std::shared_ptr<tesseract::visualization::Visualization>& plotter,
+              const tesseract::scene_graph::StateSolver& state_solver,
               const std::vector<std::string>& joint_names,
               sco::OptProb* prob,
               const sco::OptResults& results)
@@ -98,7 +98,7 @@ void PlotProb(const std::shared_ptr<tesseract_visualization::Visualization>& plo
   var_array.m_nRow = static_cast<int>(var_vec.size()) / var_array.cols();
 
   auto traj = getTraj(results.x, var_array);
-  tesseract_common::JointTrajectory joint_trajectory;
+  tesseract::common::JointTrajectory joint_trajectory;
   for (long i = 0; i < traj.rows(); ++i)
     joint_trajectory.states.emplace_back(joint_names, traj.row(i));
 
@@ -106,8 +106,8 @@ void PlotProb(const std::shared_ptr<tesseract_visualization::Visualization>& plo
   plotter->waitForInput();
 }
 
-sco::Optimizer::Callback PlotProbCallback(const std::shared_ptr<tesseract_visualization::Visualization>& plotter,
-                                          const tesseract_scene_graph::StateSolver& state_solver,
+sco::Optimizer::Callback PlotProbCallback(const std::shared_ptr<tesseract::visualization::Visualization>& plotter,
+                                          const tesseract::scene_graph::StateSolver& state_solver,
                                           const std::vector<std::string>& joint_names)
 {
   return [plotter, &state_solver, &joint_names](sco::OptProb* opt_problem, sco::OptResults& opt_results) {

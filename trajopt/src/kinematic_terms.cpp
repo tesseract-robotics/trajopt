@@ -72,7 +72,7 @@ Eigen::VectorXd applyTolerances(const Eigen::VectorXd& error,
 }
 
 DynamicCartPoseErrCalculator::DynamicCartPoseErrCalculator(
-    std::shared_ptr<const tesseract_kinematics::JointGroup> manip,
+    std::shared_ptr<const tesseract::kinematics::JointGroup> manip,
     std::string source_frame,
     std::string target_frame,
     const Eigen::Isometry3d& source_frame_offset,  // NOLINT(modernize-pass-by-value)
@@ -99,18 +99,18 @@ DynamicCartPoseErrCalculator::DynamicCartPoseErrCalculator(
 
   // Check to see if the waypoint is toleranced and set the error function accordingly
   if ((lower_tolerance.size() == 0 && upper_tolerance.size() == 0) ||
-      tesseract_common::almostEqualRelativeAndAbs(lower_tolerance, upper_tolerance))
+      tesseract::common::almostEqualRelativeAndAbs(lower_tolerance, upper_tolerance))
   {
     error_function = [this](const Eigen::Isometry3d& target_tf, const Eigen::Isometry3d& source_tf) -> Eigen::VectorXd {
-      return tesseract_common::calcTransformError(target_tf, source_tf);
+      return tesseract::common::calcTransformError(target_tf, source_tf);
     };
   }
   else
   {
     error_function = [lower_tolerance, upper_tolerance](const Eigen::Isometry3d& target_tf,
                                                         const Eigen::Isometry3d& source_tf) -> Eigen::VectorXd {
-      // Calculate the error using tesseract_common::calcTransformError or equivalent
-      const VectorXd err = tesseract_common::calcTransformError(target_tf, source_tf);
+      // Calculate the error using tesseract::common::calcTransformError or equivalent
+      const VectorXd err = tesseract::common::calcTransformError(target_tf, source_tf);
 
       // Apply tolerances
       return applyTolerances(err, lower_tolerance, upper_tolerance);
@@ -134,29 +134,29 @@ VectorXd DynamicCartPoseErrCalculator::operator()(const VectorXd& dof_vals) cons
   return reduced_err;  // This is available in 3.4 err(indices_, Eigen::all);
 }
 
-void DynamicCartPoseErrCalculator::Plot(const std::shared_ptr<tesseract_visualization::Visualization>& plotter,
+void DynamicCartPoseErrCalculator::Plot(const std::shared_ptr<tesseract::visualization::Visualization>& plotter,
                                         const VectorXd& dof_vals)
 {
-  tesseract_common::TransformMap state = manip_->calcFwdKin(dof_vals);
+  tesseract::common::TransformMap state = manip_->calcFwdKin(dof_vals);
   Eigen::Isometry3d source_tf = state[source_frame_] * source_frame_offset_;
   Eigen::Isometry3d target_tf = state[target_frame_] * target_frame_offset_;
 
-  tesseract_visualization::AxisMarker m1(source_tf);
+  tesseract::visualization::AxisMarker m1(source_tf);
   m1.setScale(Eigen::Vector3d::Constant(0.05));
   plotter->plotMarker(m1);
 
-  tesseract_visualization::AxisMarker m2(target_tf);
+  tesseract::visualization::AxisMarker m2(target_tf);
   m2.setScale(Eigen::Vector3d::Constant(0.05));
   plotter->plotMarker(m2);
 
-  tesseract_visualization::ArrowMarker m3(source_tf.translation(), target_tf.translation());
-  m3.material = std::make_shared<tesseract_scene_graph::Material>("cart_pose_error_material");
+  tesseract::visualization::ArrowMarker m3(source_tf.translation(), target_tf.translation());
+  m3.material = std::make_shared<tesseract::scene_graph::Material>("cart_pose_error_material");
   m3.material->color << 1, 0, 1, 1;
   plotter->plotMarker(m3);
 }
 
 DynamicCartPoseJacCalculator::DynamicCartPoseJacCalculator(
-    std::shared_ptr<const tesseract_kinematics::JointGroup> manip,
+    std::shared_ptr<const tesseract::kinematics::JointGroup> manip,
     std::string source_frame,
     std::string target_frame,
     const Eigen::Isometry3d& source_frame_offset,  // NOLINT(modernize-pass-by-value)
@@ -190,7 +190,7 @@ MatrixXd DynamicCartPoseJacCalculator::operator()(const VectorXd& dof_vals) cons
     const Isometry3d source_tf_pert = transforms_cache[source_frame_] * source_frame_offset_;
     const Isometry3d target_tf_pert = transforms_cache[target_frame_] * target_frame_offset_;
     VectorXd error_diff =
-        tesseract_common::calcJacobianTransformErrorDiff(target_tf, target_tf_pert, source_tf, source_tf_pert);
+        tesseract::common::calcJacobianTransformErrorDiff(target_tf, target_tf_pert, source_tf, source_tf_pert);
 
     VectorXd reduced_error_diff(indices_.size());
     for (int i = 0; i < indices_.size(); ++i)
@@ -204,7 +204,7 @@ MatrixXd DynamicCartPoseJacCalculator::operator()(const VectorXd& dof_vals) cons
 }
 
 CartPoseErrCalculator::CartPoseErrCalculator(
-    std::shared_ptr<const tesseract_kinematics::JointGroup> manip,
+    std::shared_ptr<const tesseract::kinematics::JointGroup> manip,
     std::string source_frame,
     std::string target_frame,
     const Eigen::Isometry3d& source_frame_offset,  // NOLINT(modernize-pass-by-value)
@@ -232,20 +232,20 @@ CartPoseErrCalculator::CartPoseErrCalculator(
 
   // Check to see if the waypoint is toleranced and set the error function accordingly
   if ((lower_tolerance.size() == 0 && upper_tolerance.size() == 0) ||
-      tesseract_common::almostEqualRelativeAndAbs(lower_tolerance, upper_tolerance))
+      tesseract::common::almostEqualRelativeAndAbs(lower_tolerance, upper_tolerance))
   {
     if (is_target_active_)
     {
       error_function_ = [this](const Eigen::Isometry3d& target_tf,
                                const Eigen::Isometry3d& source_tf) -> Eigen::VectorXd {
-        return tesseract_common::calcTransformError(source_tf, target_tf);
+        return tesseract::common::calcTransformError(source_tf, target_tf);
       };
     }
     else
     {
       error_function_ = [this](const Eigen::Isometry3d& target_tf,
                                const Eigen::Isometry3d& source_tf) -> Eigen::VectorXd {
-        return tesseract_common::calcTransformError(target_tf, source_tf);
+        return tesseract::common::calcTransformError(target_tf, source_tf);
       };
     }
   }
@@ -255,8 +255,8 @@ CartPoseErrCalculator::CartPoseErrCalculator(
     {
       error_function_ = [lower_tolerance, upper_tolerance](const Eigen::Isometry3d& target_tf,
                                                            const Eigen::Isometry3d& source_tf) -> Eigen::VectorXd {
-        // Calculate the error using tesseract_common::calcTransformError or equivalent
-        const VectorXd err = tesseract_common::calcTransformError(source_tf, target_tf);
+        // Calculate the error using tesseract::common::calcTransformError or equivalent
+        const VectorXd err = tesseract::common::calcTransformError(source_tf, target_tf);
 
         // Apply tolerances
         return applyTolerances(err, lower_tolerance, upper_tolerance);
@@ -266,8 +266,8 @@ CartPoseErrCalculator::CartPoseErrCalculator(
     {
       error_function_ = [lower_tolerance, upper_tolerance](const Eigen::Isometry3d& target_tf,
                                                            const Eigen::Isometry3d& source_tf) -> Eigen::VectorXd {
-        // Calculate the error using tesseract_common::calcTransformError or equivalent
-        const VectorXd err = tesseract_common::calcTransformError(target_tf, source_tf);
+        // Calculate the error using tesseract::common::calcTransformError or equivalent
+        const VectorXd err = tesseract::common::calcTransformError(target_tf, source_tf);
 
         // Apply tolerances
         return applyTolerances(err, lower_tolerance, upper_tolerance);
@@ -292,29 +292,29 @@ VectorXd CartPoseErrCalculator::operator()(const VectorXd& dof_vals) const
   return reduced_err;  // This is available in 3.4 err(indices_, Eigen::all);
 }
 
-void CartPoseErrCalculator::Plot(const std::shared_ptr<tesseract_visualization::Visualization>& plotter,
+void CartPoseErrCalculator::Plot(const std::shared_ptr<tesseract::visualization::Visualization>& plotter,
                                  const VectorXd& dof_vals)
 {
-  tesseract_common::TransformMap state = manip_->calcFwdKin(dof_vals);
+  tesseract::common::TransformMap state = manip_->calcFwdKin(dof_vals);
   Eigen::Isometry3d source_tf = state[source_frame_] * source_frame_offset_;
   Eigen::Isometry3d target_tf = state[target_frame_] * target_frame_offset_;
 
-  tesseract_visualization::AxisMarker m1(source_tf);
+  tesseract::visualization::AxisMarker m1(source_tf);
   m1.setScale(Eigen::Vector3d::Constant(0.05));
   plotter->plotMarker(m1);
 
-  tesseract_visualization::AxisMarker m2(target_tf);
+  tesseract::visualization::AxisMarker m2(target_tf);
   m2.setScale(Eigen::Vector3d::Constant(0.05));
   plotter->plotMarker(m2);
 
-  tesseract_visualization::ArrowMarker m3(source_tf.translation(), target_tf.translation());
-  m3.material = std::make_shared<tesseract_scene_graph::Material>("cart_pose_error_material");
+  tesseract::visualization::ArrowMarker m3(source_tf.translation(), target_tf.translation());
+  m3.material = std::make_shared<tesseract::scene_graph::Material>("cart_pose_error_material");
   m3.material->color << 1, 0, 1, 1;
   plotter->plotMarker(m3);
 }
 
 CartPoseJacCalculator::CartPoseJacCalculator(
-    std::shared_ptr<const tesseract_kinematics::JointGroup> manip,
+    std::shared_ptr<const tesseract::kinematics::JointGroup> manip,
     std::string source_frame,
     std::string target_frame,
     const Eigen::Isometry3d& source_frame_offset,  // NOLINT(modernize-pass-by-value)
@@ -336,10 +336,11 @@ CartPoseJacCalculator::CartPoseJacCalculator(
     error_diff_function_ = [this](const VectorXd& vals,
                                   const Eigen::Isometry3d& target_tf,
                                   const Eigen::Isometry3d& source_tf,
-                                  tesseract_common::TransformMap& state_cache) -> VectorXd {
+                                  tesseract::common::TransformMap& state_cache) -> VectorXd {
       manip_->calcFwdKin(state_cache, vals);
       const Isometry3d perturbed_target_tf = state_cache[target_frame_] * target_frame_offset_;
-      VectorXd error_diff = tesseract_common::calcJacobianTransformErrorDiff(source_tf, target_tf, perturbed_target_tf);
+      VectorXd error_diff =
+          tesseract::common::calcJacobianTransformErrorDiff(source_tf, target_tf, perturbed_target_tf);
 
       VectorXd reduced_error_diff(indices_.size());
       for (int i = 0; i < indices_.size(); ++i)
@@ -353,10 +354,11 @@ CartPoseJacCalculator::CartPoseJacCalculator(
     error_diff_function_ = [this](const VectorXd& vals,
                                   const Eigen::Isometry3d& target_tf,
                                   const Eigen::Isometry3d& source_tf,
-                                  tesseract_common::TransformMap& state_cache) -> VectorXd {
+                                  tesseract::common::TransformMap& state_cache) -> VectorXd {
       manip_->calcFwdKin(state_cache, vals);
       const Isometry3d perturbed_source_tf = state_cache[source_frame_] * source_frame_offset_;
-      VectorXd error_diff = tesseract_common::calcJacobianTransformErrorDiff(target_tf, source_tf, perturbed_source_tf);
+      VectorXd error_diff =
+          tesseract::common::calcJacobianTransformErrorDiff(target_tf, source_tf, perturbed_source_tf);
 
       VectorXd reduced_error_diff(indices_.size());
       for (int i = 0; i < indices_.size(); ++i)
@@ -387,7 +389,7 @@ MatrixXd CartPoseJacCalculator::operator()(const VectorXd& dof_vals) const
   return jac0;  // This is available in 3.4 jac0(indices_, Eigen::all);
 }
 
-CartVelJacCalculator::CartVelJacCalculator(std::shared_ptr<const tesseract_kinematics::JointGroup> manip,
+CartVelJacCalculator::CartVelJacCalculator(std::shared_ptr<const tesseract::kinematics::JointGroup> manip,
                                            std::string link,
                                            double limit,
                                            const Eigen::Isometry3d& tcp)  // NOLINT(modernize-pass-by-value)
@@ -422,7 +424,7 @@ MatrixXd CartVelJacCalculator::operator()(const VectorXd& dof_vals) const
   return out;
 }
 
-CartVelErrCalculator::CartVelErrCalculator(std::shared_ptr<const tesseract_kinematics::JointGroup> manip,
+CartVelErrCalculator::CartVelErrCalculator(std::shared_ptr<const tesseract::kinematics::JointGroup> manip,
                                            std::string link,
                                            double limit,
                                            const Eigen::Isometry3d& tcp)  // NOLINT(modernize-pass-by-value)
