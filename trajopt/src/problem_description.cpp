@@ -315,7 +315,7 @@ void generateInitTraj(TrajArray& init_traj, const ProblemConstructionInfo& pci)
   // initialize based on type specified
   if (init_info.type == InitInfo::STATIONARY)
   {
-    tesseract_scene_graph::SceneState state = pci.env->getState();
+    tesseract::scene_graph::SceneState state = pci.env->getState();
     Eigen::VectorXd start_pos(pci.kin->numJoints());
     int i = 0;
     for (const auto& joint : pci.kin->getJointNames())
@@ -329,7 +329,7 @@ void generateInitTraj(TrajArray& init_traj, const ProblemConstructionInfo& pci)
   }
   else if (init_info.type == InitInfo::JOINT_INTERPOLATED)
   {
-    tesseract_scene_graph::SceneState state = pci.env->getState();
+    tesseract::scene_graph::SceneState state = pci.env->getState();
     Eigen::VectorXd start_pos(pci.kin->numJoints());
     int i = 0;
     for (const auto& joint : pci.kin->getJointNames())
@@ -392,7 +392,7 @@ TrajOptResult::TrajOptResult(sco::OptResults& opt, TrajOptProb& prob)
 }
 
 TrajOptResult::Ptr OptimizeProblem(const TrajOptProb::Ptr& prob,
-                                   const tesseract_visualization::Visualization::Ptr& plotter)
+                                   const tesseract::visualization::Visualization::Ptr& plotter)
 {
   sco::BasicTrustRegionSQP opt(prob);
   sco::BasicTrustRegionSQPParameters& param = opt.getParameters();
@@ -541,7 +541,7 @@ TrajOptProb::Ptr ConstructProblem(const ProblemConstructionInfo& pci)
   return prob;
 }
 
-TrajOptProb::Ptr ConstructProblem(const Json::Value& root, const tesseract_environment::Environment::ConstPtr& env)
+TrajOptProb::Ptr ConstructProblem(const Json::Value& root, const tesseract::environment::Environment::ConstPtr& env)
 {
   ProblemConstructionInfo pci(env);
   pci.fromJson(root);
@@ -1617,7 +1617,7 @@ void CollisionTermInfo::fromJson(ProblemConstructionInfo& pci, const Json::Value
   FAIL_IF_FALSE(collision_evaluator_type <= 4);
   FAIL_IF_FALSE(collision_margin_buffer >= 0);
 
-  auto evaluator_type = static_cast<tesseract_collision::CollisionEvaluatorType>(collision_evaluator_type);
+  auto evaluator_type = static_cast<tesseract::collision::CollisionEvaluatorType>(collision_evaluator_type);
 
   json_marshal::childFromJson(params, fixed_steps, "fixed_steps", {});
   for (const auto& fs : fixed_steps)
@@ -1633,7 +1633,7 @@ void CollisionTermInfo::fromJson(ProblemConstructionInfo& pci, const Json::Value
   json_marshal::childFromJson(params, contact_type, "contact_test_type", contact_type);
   FAIL_IF_FALSE(contact_type >= 0);
   FAIL_IF_FALSE(contact_type < 3);
-  auto contact_request_type = static_cast<tesseract_collision::ContactTestType>(contact_type);
+  auto contact_request_type = static_cast<tesseract::collision::ContactTestType>(contact_type);
 
   int n_terms = last_step - first_step + 1;
   double coeffs{ 20 };
@@ -1674,7 +1674,7 @@ void CollisionTermInfo::fromJson(ProblemConstructionInfo& pci, const Json::Value
       {
         config.contact_manager_config.pair_margin_data.setCollisionMargin(link, p, pair_dist_pen);
         config.contact_manager_config.pair_margin_override_type =
-            tesseract_collision::CollisionMarginPairOverrideType::MODIFY;
+            tesseract::collision::CollisionMarginPairOverrideType::MODIFY;
         config.collision_coeff_data.setCollisionCoeff(link, p, pair_coeffs);
       }
     }
@@ -1698,13 +1698,13 @@ void CollisionTermInfo::hatch(TrajOptProb& prob)
   const int n_dof = static_cast<int>(prob.GetKin()->numJoints());
   if (term_type == TermType::TT_COST)
   {
-    if (config.collision_check_config.type != tesseract_collision::CollisionEvaluatorType::DISCRETE)
+    if (config.collision_check_config.type != tesseract::collision::CollisionEvaluatorType::DISCRETE)
     {
-      auto lvs = (config.collision_check_config.type == tesseract_collision::CollisionEvaluatorType::CONTINUOUS) ?
+      auto lvs = (config.collision_check_config.type == tesseract::collision::CollisionEvaluatorType::CONTINUOUS) ?
                      std::numeric_limits<double>::max() :
                      config.collision_check_config.longest_valid_segment_length;
       bool discrete_continuous =
-          (config.collision_check_config.type == tesseract_collision::CollisionEvaluatorType::LVS_DISCRETE);
+          (config.collision_check_config.type == tesseract::collision::CollisionEvaluatorType::LVS_DISCRETE);
       for (int i = first_step; i < last_step; ++i)
       {
         const bool current_fixed = std::find(fixed_steps.begin(), fixed_steps.end(), i) != fixed_steps.end();
@@ -1758,13 +1758,13 @@ void CollisionTermInfo::hatch(TrajOptProb& prob)
   }
   else
   {  // ALMOST COPIED
-    if (config.collision_check_config.type != tesseract_collision::CollisionEvaluatorType::DISCRETE)
+    if (config.collision_check_config.type != tesseract::collision::CollisionEvaluatorType::DISCRETE)
     {
-      auto lvs = (config.collision_check_config.type == tesseract_collision::CollisionEvaluatorType::CONTINUOUS) ?
+      auto lvs = (config.collision_check_config.type == tesseract::collision::CollisionEvaluatorType::CONTINUOUS) ?
                      std::numeric_limits<double>::max() :
                      config.collision_check_config.longest_valid_segment_length;
       bool discrete_continuous =
-          (config.collision_check_config.type == tesseract_collision::CollisionEvaluatorType::LVS_DISCRETE);
+          (config.collision_check_config.type == tesseract::collision::CollisionEvaluatorType::LVS_DISCRETE);
       for (int i = first_step; i < last_step; ++i)
       {
         const bool current_fixed = std::find(fixed_steps.begin(), fixed_steps.end(), i) != fixed_steps.end();
@@ -1881,7 +1881,7 @@ void AvoidSingularityTermInfo::fromJson(ProblemConstructionInfo&, const Json::Va
 
 void AvoidSingularityTermInfo::hatch(TrajOptProb& prob)
 {
-  tesseract_kinematics::JointGroup::ConstPtr kin = prob.GetKin();
+  tesseract::kinematics::JointGroup::ConstPtr kin = prob.GetKin();
   sco::VectorOfVector::Ptr f;
   sco::MatrixOfVector::Ptr dfdx;
 

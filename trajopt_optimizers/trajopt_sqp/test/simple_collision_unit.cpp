@@ -57,12 +57,12 @@ TRAJOPT_IGNORE_WARNINGS_POP
 #include <trajopt_sqp/osqp_eigen_solver.h>
 
 using namespace trajopt_ifopt;
-using namespace tesseract_environment;
-using namespace tesseract_kinematics;
-using namespace tesseract_collision;
-using namespace tesseract_scene_graph;
-using namespace tesseract_geometry;
-using namespace tesseract_common;
+using namespace tesseract::environment;
+using namespace tesseract::kinematics;
+using namespace tesseract::collision;
+using namespace tesseract::scene_graph;
+using namespace tesseract::geometry;
+using namespace tesseract::common;
 
 class SimpleCollisionTest : public testing::TestWithParam<const char*>
 {
@@ -73,7 +73,7 @@ public:
   {
     const std::filesystem::path urdf_file(std::string(TRAJOPT_DATA_DIR) + "/spherebot.urdf");
     const std::filesystem::path srdf_file(std::string(TRAJOPT_DATA_DIR) + "/spherebot.srdf");
-    const ResourceLocator::Ptr locator = std::make_shared<tesseract_common::GeneralResourceLocator>();
+    const ResourceLocator::Ptr locator = std::make_shared<GeneralResourceLocator>();
     EXPECT_TRUE(env->init(urdf_file, srdf_file, locator));
   }
 };
@@ -89,9 +89,9 @@ void runSimpleCollisionTest(const Environment::Ptr& env)
   //  plotter_->plotScene();
 
   std::vector<ContactResultMap> collisions;
-  const tesseract_scene_graph::StateSolver::Ptr state_solver = env->getStateSolver();
+  const StateSolver::Ptr state_solver = env->getStateSolver();
   const DiscreteContactManager::Ptr manager = env->getDiscreteContactManager();
-  const tesseract_kinematics::JointGroup::ConstPtr manip = env->getJointGroup("manipulator");
+  const JointGroup::ConstPtr manip = env->getJointGroup("manipulator");
   const std::vector<Bounds> bounds = toBounds(manip->getLimits().joint_limits);
 
   manager->setActiveCollisionObjects(manip->getActiveLinkNames());
@@ -157,7 +157,7 @@ void runSimpleCollisionTest(const Environment::Ptr& env)
   // 6) solve
   solver.verbose = false;
 
-  tesseract_common::Stopwatch stopwatch;
+  Stopwatch stopwatch;
   stopwatch.start();
   solver.solve(qp_problem);
   stopwatch.stop();
@@ -167,9 +167,9 @@ void runSimpleCollisionTest(const Environment::Ptr& env)
 
   std::cout << x.transpose() << '\n';
 
-  tesseract_common::TrajArray inputs(1, 2);
+  TrajArray inputs(1, 2);
   inputs << -0.75, 0.75;
-  const Eigen::Map<tesseract_common::TrajArray> results(x.data(), 1, 2);
+  const Eigen::Map<TrajArray> results(x.data(), 1, 2);
 
   bool found = checkTrajectory(collisions,
                                *manager,

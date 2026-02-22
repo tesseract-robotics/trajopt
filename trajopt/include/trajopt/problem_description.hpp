@@ -87,8 +87,8 @@ public:
   /** @brief Returns the problem DOF. This is the number of columns in the optimization matrix.
    * Note that this is not necessarily the same as the kinematic DOF.*/
   int GetNumDOF() { return m_traj_vars.cols(); }
-  std::shared_ptr<const tesseract_kinematics::JointGroup> GetKin() { return m_kin; }
-  std::shared_ptr<const tesseract_environment::Environment> GetEnv() { return m_env; }
+  std::shared_ptr<const tesseract::kinematics::JointGroup> GetKin() { return m_kin; }
+  std::shared_ptr<const tesseract::environment::Environment> GetEnv() { return m_env; }
   void SetInitTraj(const TrajArray& x) { m_init_traj = x; }
   TrajArray GetInitTraj() { return m_init_traj; }
   friend TrajOptProb::Ptr ConstructProblem(const ProblemConstructionInfo&);
@@ -101,8 +101,8 @@ private:
   /** @brief If true, the last column in the optimization matrix will be 1/dt */
   bool has_time{ false };
   VarArray m_traj_vars;
-  std::shared_ptr<const tesseract_kinematics::JointGroup> m_kin;
-  std::shared_ptr<const tesseract_environment::Environment> m_env;
+  std::shared_ptr<const tesseract::kinematics::JointGroup> m_kin;
+  std::shared_ptr<const tesseract::environment::Environment> m_env;
   TrajArray m_init_traj;
 };
 
@@ -241,12 +241,12 @@ public:
   std::vector<TermInfo::Ptr> cnt_infos;
   InitInfo init_info;
 
-  std::shared_ptr<const tesseract_environment::Environment> env;
-  std::shared_ptr<const tesseract_kinematics::JointGroup> kin;
+  std::shared_ptr<const tesseract::environment::Environment> env;
+  std::shared_ptr<const tesseract::kinematics::JointGroup> kin;
 
   std::vector<sco::Optimizer::Callback> callbacks;
 
-  ProblemConstructionInfo(std::shared_ptr<const tesseract_environment::Environment> env) : env(std::move(env)) {}
+  ProblemConstructionInfo(std::shared_ptr<const tesseract::environment::Environment> env) : env(std::move(env)) {}
 
   void fromJson(const Json::Value& v);
 
@@ -333,7 +333,7 @@ struct DynamicCartPoseTermInfo : public TermInfo
   Eigen::VectorXd upper_tolerance;
 
   /** @brief Error function for calculating the error in the position given the source and target positions
-   * this defaults to tesseract_common::calcTransformError if unset*/
+   * this defaults to tesseract::common::calcTransformError if unset*/
   std::function<Eigen::VectorXd(const Eigen::Isometry3d&, const Eigen::Isometry3d&)> error_function = nullptr;
 
   DynamicCartPoseTermInfo();
@@ -373,7 +373,7 @@ struct CartPoseTermInfo : public TermInfo
   Eigen::VectorXd upper_tolerance;
 
   /** @brief Error function for calculating the error in the position given the source and target positions
-   * this defaults to tesseract_common::calcTransformError if unset*/
+   * this defaults to tesseract::common::calcTransformError if unset*/
   std::function<Eigen::VectorXd(const Eigen::Isometry3d&, const Eigen::Isometry3d&)> error_function = nullptr;
 
   CartPoseTermInfo();
@@ -637,7 +637,7 @@ struct TotalTimeTermInfo : public TermInfo
 struct AvoidSingularityTermInfo : public TermInfo
 {
   /** @brief The forward kinematics solver used to calculate the jacobian for which to do singularity avoidance */
-  std::shared_ptr<const tesseract_kinematics::JointGroup> subset_kin_;
+  std::shared_ptr<const tesseract::kinematics::JointGroup> subset_kin_;
   /** @brief Damping factor used to prevent numerical instability in the singularity avoidance cost as the smallest
    * singular value approaches zero */
   double lambda{ 0.1 };
@@ -651,7 +651,7 @@ struct AvoidSingularityTermInfo : public TermInfo
   void fromJson(ProblemConstructionInfo& pci, const Json::Value& v) override;
   DEFINE_CREATE(AvoidSingularityTermInfo)
 
-  AvoidSingularityTermInfo(std::shared_ptr<const tesseract_kinematics::JointGroup> subset_kin = nullptr,
+  AvoidSingularityTermInfo(std::shared_ptr<const tesseract::kinematics::JointGroup> subset_kin = nullptr,
                            double lambda_ = 0.1)
     : TermInfo(TermType::TT_COST | TermType::TT_CNT), subset_kin_(std::move(subset_kin)), lambda(lambda_)
   {
@@ -660,8 +660,8 @@ struct AvoidSingularityTermInfo : public TermInfo
 
 TrajOptProb::Ptr ConstructProblem(const ProblemConstructionInfo&);
 TrajOptProb::Ptr ConstructProblem(const Json::Value&,
-                                  const std::shared_ptr<const tesseract_environment::Environment>& env);
+                                  const std::shared_ptr<const tesseract::environment::Environment>& env);
 TrajOptResult::Ptr OptimizeProblem(const TrajOptProb::Ptr&,
-                                   const std::shared_ptr<tesseract_visualization::Visualization>& plotter = nullptr);
+                                   const std::shared_ptr<tesseract::visualization::Visualization>& plotter = nullptr);
 
 }  // namespace trajopt

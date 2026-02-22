@@ -56,11 +56,11 @@ TRAJOPT_IGNORE_WARNINGS_POP
 #include <trajopt_sqp/osqp_eigen_solver.h>
 
 using namespace trajopt_ifopt;
-using namespace tesseract_environment;
-using namespace tesseract_collision;
-using namespace tesseract_kinematics;
-using namespace tesseract_scene_graph;
-using namespace tesseract_common;
+using namespace tesseract::environment;
+using namespace tesseract::collision;
+using namespace tesseract::kinematics;
+using namespace tesseract::scene_graph;
+using namespace tesseract::common;
 
 class PlanningTest : public testing::TestWithParam<const char*>
 {
@@ -72,7 +72,7 @@ public:
     const std::filesystem::path urdf_file(std::string(TRAJOPT_DATA_DIR) + "/arm_around_table.urdf");
     const std::filesystem::path srdf_file(std::string(TRAJOPT_DATA_DIR) + "/pr2.srdf");
 
-    const ResourceLocator::Ptr locator = std::make_shared<tesseract_common::GeneralResourceLocator>();
+    const ResourceLocator::Ptr locator = std::make_shared<GeneralResourceLocator>();
     EXPECT_TRUE(env->init(urdf_file, srdf_file, locator));
 
     // Create plotting tool
@@ -99,16 +99,16 @@ void runPlanningTest(const Environment::Ptr& env)
   env->setState(ipos);
 
   std::vector<ContactResultMap> collisions;
-  const tesseract_scene_graph::StateSolver::Ptr state_solver = env->getStateSolver();
+  const StateSolver::Ptr state_solver = env->getStateSolver();
   const ContinuousContactManager::Ptr manager = env->getContinuousContactManager();
-  const tesseract_kinematics::JointGroup::ConstPtr manip = env->getJointGroup("right_arm");
+  const JointGroup::ConstPtr manip = env->getJointGroup("right_arm");
   const std::vector<trajopt_ifopt::Bounds> bounds = trajopt_ifopt::toBounds(manip->getLimits().joint_limits);
 
   manager->setActiveCollisionObjects(manip->getActiveLinkNames());
   manager->setDefaultCollisionMargin(0);
 
   // Initial trajectory
-  tesseract_common::TrajArray trajectory(6, 7);
+  TrajArray trajectory(6, 7);
   trajectory.row(0) << -1.832, -0.332, -1.011, -1.437, -1.1, -1.926, 3.074;
   trajectory.row(1) << -1.411, 0.028, -0.764, -1.463, -1.525, -1.698, 3.055;
   trajectory.row(2) << -0.99, 0.388, -0.517, -1.489, -1.949, -1.289, 3.036;
@@ -134,7 +134,7 @@ void runPlanningTest(const Environment::Ptr& env)
   const double margin_coeff = 20;
   const double margin = 0.025;
   trajopt_common::TrajOptCollisionConfig trajopt_collision_config(margin, margin_coeff);
-  trajopt_collision_config.collision_check_config.type = tesseract_collision::CollisionEvaluatorType::LVS_CONTINUOUS;
+  trajopt_collision_config.collision_check_config.type = tesseract::collision::CollisionEvaluatorType::LVS_CONTINUOUS;
   trajopt_collision_config.collision_check_config.longest_valid_segment_length = 0.02;
   trajopt_collision_config.collision_margin_buffer = 0.5;
 
@@ -201,10 +201,10 @@ void runPlanningTest(const Environment::Ptr& env)
 
   EXPECT_TRUE(solver.getStatus() == trajopt_sqp::SQPStatus::kConverged);
 
-  const Eigen::Map<tesseract_common::TrajArray> results(x.data(), 6, 7);
+  const Eigen::Map<TrajArray> results(x.data(), 6, 7);
 
-  tesseract_collision::CollisionCheckConfig config;
-  config.type = tesseract_collision::CollisionEvaluatorType::CONTINUOUS;
+  tesseract::collision::CollisionCheckConfig config;
+  config.type = tesseract::collision::CollisionEvaluatorType::CONTINUOUS;
   bool found = checkTrajectory(collisions, *manager, *state_solver, manip->getJointNames(), trajectory, config);
 
   EXPECT_TRUE(found);

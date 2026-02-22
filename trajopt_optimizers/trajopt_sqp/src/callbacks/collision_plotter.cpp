@@ -31,7 +31,7 @@
 
 using namespace trajopt_sqp;
 
-CollisionPlottingCallback::CollisionPlottingCallback(std::shared_ptr<tesseract_visualization::Visualization> plotter)
+CollisionPlottingCallback::CollisionPlottingCallback(std::shared_ptr<tesseract::visualization::Visualization> plotter)
   : plotter_(std::move(plotter))
 {
 }

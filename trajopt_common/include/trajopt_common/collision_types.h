@@ -36,7 +36,8 @@ TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace trajopt_common
 {
-using GetStateFn = std::function<tesseract_common::TransformMap(const Eigen::Ref<const Eigen::VectorXd>& joint_values)>;
+using GetStateFn =
+    std::function<tesseract::common::TransformMap(const Eigen::Ref<const Eigen::VectorXd>& joint_values)>;
 
 class CollisionCoeffData;
 
@@ -94,13 +95,13 @@ public:
    * @brief Get all collision coefficient pair data
    * @return A reference to the lookup table containing all pair-specific coefficients
    */
-  const std::unordered_map<tesseract_common::LinkNamesPair, double>& getCollisionCoeffPairData() const;
+  const std::unordered_map<tesseract::common::LinkNamesPair, double>& getCollisionCoeffPairData() const;
 
   /**
    * @brief Get the pairs with zero coeff
    * @return A vector of pairs with zero coeff
    */
-  const std::set<tesseract_common::LinkNamesPair>& getPairsWithZeroCoeff() const;
+  const std::set<tesseract::common::LinkNamesPair>& getPairsWithZeroCoeff() const;
 
   bool operator==(const CollisionCoeffData& rhs) const;
   bool operator!=(const CollisionCoeffData& rhs) const;
@@ -110,10 +111,10 @@ private:
   double default_collision_coeff_{ 1 };
 
   /// A map of link pair names to contact distance
-  std::unordered_map<tesseract_common::LinkNamesPair, double> lookup_table_;
+  std::unordered_map<tesseract::common::LinkNamesPair, double> lookup_table_;
 
   /// Pairs containing zero coeff
-  std::set<tesseract_common::LinkNamesPair> zero_coeff_;
+  std::set<tesseract::common::LinkNamesPair> zero_coeff_;
 
   template <class Archive>
   friend void ::trajopt_common::serialize(Archive& ar, CollisionCoeffData& obj);
@@ -131,20 +132,20 @@ struct TrajOptCollisionConfig
   TrajOptCollisionConfig(
       double margin,
       double coeff,
-      tesseract_collision::ContactRequest request = tesseract_collision::ContactRequest(),
-      tesseract_collision::CollisionEvaluatorType type = tesseract_collision::CollisionEvaluatorType::DISCRETE,
+      tesseract::collision::ContactRequest request = tesseract::collision::ContactRequest(),
+      tesseract::collision::CollisionEvaluatorType type = tesseract::collision::CollisionEvaluatorType::DISCRETE,
       double longest_valid_segment_length = 0.005,
-      tesseract_collision::CollisionCheckProgramType check_program_mode =
-          tesseract_collision::CollisionCheckProgramType::ALL);
+      tesseract::collision::CollisionCheckProgramType check_program_mode =
+          tesseract::collision::CollisionCheckProgramType::ALL);
 
   /** @brief If true, a collision will be added to the problem. Default: true*/
   bool enabled = true;
 
   /** @brief The contact manager config */
-  tesseract_collision::ContactManagerConfig contact_manager_config;
+  tesseract::collision::ContactManagerConfig contact_manager_config;
 
   /** @brief The contact check config */
-  tesseract_collision::CollisionCheckConfig collision_check_config;
+  tesseract::collision::CollisionCheckConfig collision_check_config;
 
   /** @brief The collision coeff/weight */
   CollisionCoeffData collision_coeff_data;
@@ -183,7 +184,7 @@ struct LinkGradientResults
   double scale{ 1.0 };
 
   /** @brief The continuous collision type */
-  tesseract_collision::ContinuousCollisionType cc_type{ tesseract_collision::ContinuousCollisionType::CCType_None };
+  tesseract::collision::ContinuousCollisionType cc_type{ tesseract::collision::ContinuousCollisionType::CCType_None };
 
   // Reset to default settings
   void clear();
@@ -314,7 +315,7 @@ struct CollisionCacheData
   using Ptr = std::shared_ptr<CollisionCacheData>;
   using ConstPtr = std::shared_ptr<const CollisionCacheData>;
 
-  tesseract_collision::ContactResultMap contact_results_map;
+  tesseract::collision::ContactResultMap contact_results_map;
   std::vector<GradientResultsSet> gradient_results_sets;
 };
 

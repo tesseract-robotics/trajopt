@@ -54,12 +54,12 @@ TRAJOPT_IGNORE_WARNINGS_POP
 #include <trajopt_sqp/osqp_eigen_solver.h>
 
 using namespace trajopt_ifopt;
-using namespace tesseract_environment;
-using namespace tesseract_kinematics;
-using namespace tesseract_collision;
-using namespace tesseract_scene_graph;
-using namespace tesseract_geometry;
-using namespace tesseract_common;
+using namespace tesseract::environment;
+using namespace tesseract::kinematics;
+using namespace tesseract::collision;
+using namespace tesseract::scene_graph;
+using namespace tesseract::geometry;
+using namespace tesseract::common;
 
 class CastTest : public testing::TestWithParam<const char*>
 {
@@ -70,7 +70,7 @@ public:
   {
     const std::filesystem::path urdf_file(std::string(TRAJOPT_DATA_DIR) + "/boxbot.urdf");
     const std::filesystem::path srdf_file(std::string(TRAJOPT_DATA_DIR) + "/boxbot.srdf");
-    const ResourceLocator::Ptr locator = std::make_shared<tesseract_common::GeneralResourceLocator>();
+    const ResourceLocator::Ptr locator = std::make_shared<GeneralResourceLocator>();
     EXPECT_TRUE(env->init(urdf_file, srdf_file, locator));
   }
 };
@@ -84,9 +84,9 @@ void runCastTest(const Environment::Ptr& env, bool fixed_size)
   env->setState(ipos);
 
   std::vector<ContactResultMap> collisions;
-  const tesseract_scene_graph::StateSolver::Ptr state_solver = env->getStateSolver();
+  const StateSolver::Ptr state_solver = env->getStateSolver();
   const ContinuousContactManager::Ptr manager = env->getContinuousContactManager();
-  const tesseract_kinematics::JointGroup::ConstPtr manip = env->getJointGroup("manipulator");
+  const JointGroup::ConstPtr manip = env->getJointGroup("manipulator");
   const std::vector<Bounds> bounds = toBounds(manip->getLimits().joint_limits);
 
   manager->setActiveCollisionObjects(manip->getActiveLinkNames());
@@ -128,7 +128,7 @@ void runCastTest(const Environment::Ptr& env, bool fixed_size)
   const double margin_coeff = 1;
   const double margin = 0.02;
   trajopt_common::TrajOptCollisionConfig trajopt_collision_config(margin, margin_coeff);
-  trajopt_collision_config.collision_check_config.type = tesseract_collision::CollisionEvaluatorType::LVS_CONTINUOUS;
+  trajopt_collision_config.collision_check_config.type = tesseract::collision::CollisionEvaluatorType::LVS_CONTINUOUS;
   trajopt_collision_config.collision_check_config.longest_valid_segment_length = 0.05;
   trajopt_collision_config.collision_margin_buffer = 0.5;
 
@@ -195,12 +195,12 @@ void runCastTest(const Environment::Ptr& env, bool fixed_size)
 
   EXPECT_TRUE(solver.getStatus() == trajopt_sqp::SQPStatus::kConverged);
 
-  tesseract_common::TrajArray inputs(3, 2);
+  TrajArray inputs(3, 2);
   inputs << -1.9, 0, 0, 1.9, 1.9, 3.8;
-  const Eigen::Map<tesseract_common::TrajArray> results(x.data(), 3, 2);
+  const Eigen::Map<TrajArray> results(x.data(), 3, 2);
 
-  tesseract_collision::CollisionCheckConfig config;
-  config.type = tesseract_collision::CollisionEvaluatorType::CONTINUOUS;
+  tesseract::collision::CollisionCheckConfig config;
+  config.type = tesseract::collision::CollisionEvaluatorType::CONTINUOUS;
   bool found = checkTrajectory(collisions, *manager, *state_solver, manip->getJointNames(), inputs, config);
 
   EXPECT_TRUE(found);

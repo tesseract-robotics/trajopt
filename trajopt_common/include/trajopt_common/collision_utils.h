@@ -52,7 +52,7 @@ std::size_t cantorHash(int shape_id, int subshape_id);
  * @param var0_fixed Indicates if the var0 is a fixed state
  * @param var1_fixed Indicates if the var1 is a fixed state
  */
-void removeInvalidContactResults(tesseract_collision::ContactResultVector& contact_results,
+void removeInvalidContactResults(tesseract::collision::ContactResultVector& contact_results,
                                  double margin,
                                  double margin_buffer,
                                  bool var0_fixed,
@@ -68,10 +68,10 @@ void removeInvalidContactResults(tesseract_collision::ContactResultVector& conta
  */
 void getGradient(GradientResults& results,
                  const Eigen::VectorXd& dofvals,
-                 const tesseract_collision::ContactResult& contact_result,
+                 const tesseract::collision::ContactResult& contact_result,
                  double margin,
                  double margin_buffer,
-                 const tesseract_kinematics::JointGroup& manip);
+                 const tesseract::kinematics::JointGroup& manip);
 
 /**
  * @brief Extracts the gradient information based on the contact results
@@ -84,10 +84,10 @@ void getGradient(GradientResults& results,
 void getGradient(GradientResults& results,
                  const Eigen::VectorXd& dofvals0,
                  const Eigen::VectorXd& dofvals1,
-                 const tesseract_collision::ContactResult& contact_result,
+                 const tesseract::collision::ContactResult& contact_result,
                  double margin,
                  double margin_buffer,
-                 const tesseract_kinematics::JointGroup& manip);
+                 const tesseract::kinematics::JointGroup& manip);
 
 /**
  * @brief Print debug gradient information
@@ -97,7 +97,7 @@ void getGradient(GradientResults& results,
  * @param dof_vals The joint values
  * @param header If true, header is printed
  */
-void debugPrintInfo(const tesseract_collision::ContactResult& res,
+void debugPrintInfo(const tesseract::collision::ContactResult& res,
                     const Eigen::VectorXd& dist_grad_A,
                     const Eigen::VectorXd& dist_grad_B,
                     const Eigen::VectorXd& dof_vals,

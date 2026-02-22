@@ -65,7 +65,7 @@ public:
   {
     std::filesystem::path const urdf_file(std::string(TRAJOPT_DATA_DIR) + "/spherebot.urdf");
     std::filesystem::path const srdf_file(std::string(TRAJOPT_DATA_DIR) + "/spherebot.srdf");
-    ResourceLocator::Ptr const locator = std::make_shared<tesseract_common::GeneralResourceLocator>();
+    ResourceLocator::Ptr const locator = std::make_shared<tesseract::common::GeneralResourceLocator>();
     EXPECT_TRUE(env->init(urdf_file, srdf_file, locator));
   }
 };
@@ -137,9 +137,9 @@ TEST_F(SimpleCollisionTest, spheres)  // NOLINT
 
   EXPECT_TRUE(ipopt.GetReturnStatus() == 0);
 
-  tesseract_common::TrajArray inputs(1, 2);
+  tesseract::common::TrajArray inputs(1, 2);
   inputs << -0.75, 0.75;
-  Eigen::Map<tesseract_common::TrajArray> const results(x.data(), 1, 2);
+  Eigen::Map<tesseract::common::TrajArray> const results(x.data(), 1, 2);
 
   bool found = checkTrajectory(collisions,
                                *manager,

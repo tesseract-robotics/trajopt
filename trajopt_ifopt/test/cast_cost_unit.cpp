@@ -69,7 +69,7 @@ public:
   {
     const std::filesystem::path urdf_file(std::string(TRAJOPT_DATA_DIR) + "/boxbot.urdf");
     const std::filesystem::path srdf_file(std::string(TRAJOPT_DATA_DIR) + "/boxbot.srdf");
-    const ResourceLocator::Ptr locator = std::make_shared<tesseract_common::GeneralResourceLocator>();
+    const ResourceLocator::Ptr locator = std::make_shared<tesseract::common::GeneralResourceLocator>();
     EXPECT_TRUE(env->init(urdf_file, srdf_file, locator));
 
     gLogLevel = trajopt_common::LevelError;
@@ -133,7 +133,7 @@ TEST_F(CastTest, boxes)  // NOLINT
   const double margin_coeff = 1;
   const double margin = 0.02;
   trajopt_common::TrajOptCollisionConfig trajopt_collision_config(margin, margin_coeff);
-  trajopt_collision_config.collision_check_config.type = tesseract_collision::CollisionEvaluatorType::LVS_CONTINUOUS;
+  trajopt_collision_config.collision_check_config.type = tesseract::collision::CollisionEvaluatorType::LVS_CONTINUOUS;
   trajopt_collision_config.collision_margin_buffer = 0.05;
 
   // 4) Add constraints
@@ -185,12 +185,12 @@ TEST_F(CastTest, boxes)  // NOLINT
 
   EXPECT_TRUE(ipopt.GetReturnStatus() == 0);
 
-  tesseract_common::TrajArray inputs(3, 2);
+  tesseract::common::TrajArray inputs(3, 2);
   inputs << -1.9, 0, 0, 1.9, 1.9, 3.8;
-  const Eigen::Map<tesseract_common::TrajArray> results(x.data(), 3, 2);
+  const Eigen::Map<tesseract::common::TrajArray> results(x.data(), 3, 2);
 
-  tesseract_collision::CollisionCheckConfig config;
-  config.type = tesseract_collision::CollisionEvaluatorType::CONTINUOUS;
+  tesseract::collision::CollisionCheckConfig config;
+  config.type = tesseract::collision::CollisionEvaluatorType::CONTINUOUS;
   bool found = checkTrajectory(collisions, *manager, *state_solver, manip->getJointNames(), inputs, config);
 
   EXPECT_TRUE(found);

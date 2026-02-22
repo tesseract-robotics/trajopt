@@ -49,8 +49,8 @@ public:
    * @brief Constructor for the callback
    * @param plotter Plotter used to plot the joint state
    */
-  JointStatePlottingCallback(std::shared_ptr<tesseract_visualization::Visualization> plotter,
-                             std::unique_ptr<tesseract_scene_graph::StateSolver> state_solver);
+  JointStatePlottingCallback(std::shared_ptr<tesseract::visualization::Visualization> plotter,
+                             std::unique_ptr<tesseract::scene_graph::StateSolver> state_solver);
 
   /**
    * @brief Plot the joint_position variables as a tesseract trajectory
@@ -74,8 +74,8 @@ public:
 
 protected:
   std::vector<std::shared_ptr<const trajopt_ifopt::Var>> joint_positions_;
-  std::shared_ptr<tesseract_visualization::Visualization> plotter_;
-  std::unique_ptr<tesseract_scene_graph::StateSolver> state_solver_;
+  std::shared_ptr<tesseract::visualization::Visualization> plotter_;
+  std::unique_ptr<tesseract::scene_graph::StateSolver> state_solver_;
 };
 }  // namespace trajopt_sqp
 

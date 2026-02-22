@@ -26,7 +26,7 @@
 
 using namespace trajopt_sqp;
 
-WaitForInputCallback::WaitForInputCallback(std::shared_ptr<tesseract_visualization::Visualization> plotter)
+WaitForInputCallback::WaitForInputCallback(std::shared_ptr<tesseract::visualization::Visualization> plotter)
   : plotter_(std::move(plotter))
 {
 }

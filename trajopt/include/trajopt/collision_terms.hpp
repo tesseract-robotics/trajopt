@@ -18,8 +18,8 @@
 
 namespace trajopt
 {
-using ContactResultMapConstPtr = std::shared_ptr<const tesseract_collision::ContactResultMap>;
-using ContactResultVectorWrapper = std::vector<std::reference_wrapper<const tesseract_collision::ContactResult>>;
+using ContactResultMapConstPtr = std::shared_ptr<const tesseract::collision::ContactResultMap>;
+using ContactResultVectorWrapper = std::vector<std::reference_wrapper<const tesseract::collision::ContactResult>>;
 using ContactResultVectorConstPtr = std::shared_ptr<const ContactResultVectorWrapper>;
 
 /**
@@ -84,8 +84,8 @@ struct CollisionEvaluator
   using ConstPtr = std::shared_ptr<const CollisionEvaluator>;
 
   // NOLINTNEXTLINE
-  CollisionEvaluator(std::shared_ptr<const tesseract_kinematics::JointGroup> manip,
-                     std::shared_ptr<const tesseract_environment::Environment> env,
+  CollisionEvaluator(std::shared_ptr<const tesseract::kinematics::JointGroup> manip,
+                     std::shared_ptr<const tesseract::environment::Environment> env,
                      bool dynamic_environment = false);
   virtual ~CollisionEvaluator() = default;
   CollisionEvaluator(const CollisionEvaluator&) = default;
@@ -116,14 +116,14 @@ struct CollisionEvaluator
    * @param x Optimizer variables
    * @param dist_results Contact results map
    */
-  virtual void CalcCollisions(const DblVec& x, tesseract_collision::ContactResultMap& dist_results) = 0;
+  virtual void CalcCollisions(const DblVec& x, tesseract::collision::ContactResultMap& dist_results) = 0;
 
   /**
    * @brief Plot the collision evaluator results
    * @param plotter Plotter
    * @param x Optimizer variables
    */
-  virtual void Plot(const std::shared_ptr<tesseract_visualization::Visualization>& plotter, const DblVec& x) = 0;
+  virtual void Plot(const std::shared_ptr<tesseract::visualization::Visualization>& plotter, const DblVec& x) = 0;
 
   /**
    * @brief Get the specific optimizer variables associated with this evaluator.
@@ -155,7 +155,7 @@ struct CollisionEvaluator
    * @return The gradient results
    */
   GradientResults GetGradient(const Eigen::VectorXd& dofvals,
-                              const tesseract_collision::ContactResult& contact_result,
+                              const tesseract::collision::ContactResult& contact_result,
                               double margin,
                               double coeff,
                               bool isTimestep1);
@@ -168,7 +168,7 @@ struct CollisionEvaluator
    * @return The gradient results
    */
   GradientResults GetGradient(const Eigen::VectorXd& dofvals,
-                              const tesseract_collision::ContactResult& contact_result,
+                              const tesseract::collision::ContactResult& contact_result,
                               bool isTimestep1);
 
   /**
@@ -182,7 +182,7 @@ struct CollisionEvaluator
    */
   GradientResults GetGradient(const Eigen::VectorXd& dofvals0,
                               const Eigen::VectorXd& dofvals1,
-                              const tesseract_collision::ContactResult& contact_result,
+                              const tesseract::collision::ContactResult& contact_result,
                               double margin,
                               double coeff,
                               bool isTimestep1);
@@ -196,14 +196,14 @@ struct CollisionEvaluator
    */
   GradientResults GetGradient(const Eigen::VectorXd& dofvals0,
                               const Eigen::VectorXd& dofvals1,
-                              const tesseract_collision::ContactResult& contact_result,
+                              const tesseract::collision::ContactResult& contact_result,
                               bool isTimestep1);
 
   /**
    * @brief Get the collision margin information.
    * @return Collision margin information
    */
-  const tesseract_common::CollisionMarginData& getCollisionMarginData() const;
+  const tesseract::common::CollisionMarginData& getCollisionMarginData() const;
 
   /**
    * @brief Get the collision coefficient information.
@@ -216,29 +216,30 @@ struct CollisionEvaluator
   Cache<std::size_t, std::pair<ContactResultMapConstPtr, ContactResultVectorConstPtr>> m_cache{ 2 };
 
 protected:
-  std::shared_ptr<const tesseract_kinematics::JointGroup> manip_;
-  std::shared_ptr<const tesseract_environment::Environment> env_;
+  std::shared_ptr<const tesseract::kinematics::JointGroup> manip_;
+  std::shared_ptr<const tesseract::environment::Environment> env_;
   std::vector<std::string> env_active_link_names_;
   std::vector<std::string> manip_active_link_names_;
   std::vector<std::string> diff_active_link_names_;
-  tesseract_common::CollisionMarginData margin_data_;
+  tesseract::common::CollisionMarginData margin_data_;
   trajopt_common::CollisionCoeffData coeff_data_;
   double margin_buffer_{ 0.0 };
-  tesseract_collision::CollisionCheckConfig collision_check_config_;
+  tesseract::collision::CollisionCheckConfig collision_check_config_;
 
   sco::VarVector vars0_;
   sco::VarVector vars1_;
   bool vars0_fixed_{ false };
   bool vars1_fixed_{ false };
   CollisionExpressionEvaluatorType evaluator_type_{ CollisionExpressionEvaluatorType::START_FREE_END_FREE };
-  std::function<void(tesseract_common::TransformMap& transforms, const Eigen::Ref<const Eigen::VectorXd>& joint_values)>
+  std::function<void(tesseract::common::TransformMap& transforms,
+                     const Eigen::Ref<const Eigen::VectorXd>& joint_values)>
       get_state_fn_;
   bool dynamic_environment_{ false };
 
   std::pair<ContactResultMapConstPtr, ContactResultVectorConstPtr> GetContactResultCached(const DblVec& x);
 
-  static thread_local tesseract_common::TransformMap transforms_cache0;  // NOLINT
-  static thread_local tesseract_common::TransformMap transforms_cache1;  // NOLINT
+  static thread_local tesseract::common::TransformMap transforms_cache0;  // NOLINT
+  static thread_local tesseract::common::TransformMap transforms_cache1;  // NOLINT
 
   void CollisionsToDistanceExpressions(sco::AffExprVector& exprs,
                                        std::vector<double>& exprs_margin,
@@ -302,7 +303,7 @@ protected:
    * @param contact_results Contact results vector to process.
    * @param margin The contact margin
    */
-  void removeInvalidContactResults(tesseract_collision::ContactResultVector& contact_results, double margin) const;
+  void removeInvalidContactResults(tesseract::collision::ContactResultVector& contact_results, double margin) const;
 
 private:
   CollisionEvaluator() = default;
@@ -318,8 +319,8 @@ public:
   using Ptr = std::shared_ptr<SingleTimestepCollisionEvaluator>;
   using ConstPtr = std::shared_ptr<const SingleTimestepCollisionEvaluator>;
 
-  SingleTimestepCollisionEvaluator(std::shared_ptr<const tesseract_kinematics::JointGroup> manip,
-                                   std::shared_ptr<const tesseract_environment::Environment> env,
+  SingleTimestepCollisionEvaluator(std::shared_ptr<const tesseract::kinematics::JointGroup> manip,
+                                   std::shared_ptr<const tesseract::environment::Environment> env,
                                    const trajopt_common::TrajOptCollisionConfig& collision_config,
                                    sco::VarVector vars,
                                    CollisionExpressionEvaluatorType type,
@@ -335,19 +336,19 @@ public:
                            sco::AffExprVector& exprs,
                            std::vector<double>& exprs_margin,
                            std::vector<double>& exprs_coeff) override;
-  void CalcCollisions(const DblVec& x, tesseract_collision::ContactResultMap& dist_results) override;
+  void CalcCollisions(const DblVec& x, tesseract::collision::ContactResultMap& dist_results) override;
   /**
    * @brief Given joint names and values calculate the collision results for this evaluator
    * @param dof_vals Joint values set prior to collision checking
    * @param dist_results Contact Results Map
    */
   void CalcCollisions(const Eigen::Ref<const Eigen::VectorXd>& dof_vals,
-                      tesseract_collision::ContactResultMap& dist_results);
-  void Plot(const std::shared_ptr<tesseract_visualization::Visualization>& plotter, const DblVec& x) override;
+                      tesseract::collision::ContactResultMap& dist_results);
+  void Plot(const std::shared_ptr<tesseract::visualization::Visualization>& plotter, const DblVec& x) override;
   sco::VarVector GetVars() override { return vars0_; }
 
 private:
-  std::shared_ptr<tesseract_collision::DiscreteContactManager> contact_manager_;
+  std::shared_ptr<tesseract::collision::DiscreteContactManager> contact_manager_;
   std::function<void(const DblVec&, sco::AffExprVector&, std::vector<double>&, std::vector<double>&)> fn_;
 };
 
@@ -361,8 +362,8 @@ public:
   using Ptr = std::shared_ptr<CastCollisionEvaluator>;
   using ConstPtr = std::shared_ptr<const CastCollisionEvaluator>;
 
-  CastCollisionEvaluator(std::shared_ptr<const tesseract_kinematics::JointGroup> manip,
-                         std::shared_ptr<const tesseract_environment::Environment> env,
+  CastCollisionEvaluator(std::shared_ptr<const tesseract::kinematics::JointGroup> manip,
+                         std::shared_ptr<const tesseract::environment::Environment> env,
                          const trajopt_common::TrajOptCollisionConfig& collision_config,
                          sco::VarVector vars0,
                          sco::VarVector vars1,
@@ -371,7 +372,7 @@ public:
                            sco::AffExprVector& exprs,
                            std::vector<double>& exprs_margin,
                            std::vector<double>& exprs_coeff) override;
-  void CalcCollisions(const DblVec& x, tesseract_collision::ContactResultMap& dist_results) override;
+  void CalcCollisions(const DblVec& x, tesseract::collision::ContactResultMap& dist_results) override;
   /**
    * @brief Given joint names and values calculate the collision results for this evaluator
    * @param dof_vals0 Joint values for state0
@@ -380,12 +381,12 @@ public:
    */
   void CalcCollisions(const Eigen::Ref<const Eigen::VectorXd>& dof_vals0,
                       const Eigen::Ref<const Eigen::VectorXd>& dof_vals1,
-                      tesseract_collision::ContactResultMap& dist_results);
-  void Plot(const std::shared_ptr<tesseract_visualization::Visualization>& plotter, const DblVec& x) override;
+                      tesseract::collision::ContactResultMap& dist_results);
+  void Plot(const std::shared_ptr<tesseract::visualization::Visualization>& plotter, const DblVec& x) override;
   sco::VarVector GetVars() override;
 
 private:
-  std::shared_ptr<tesseract_collision::ContinuousContactManager> contact_manager_;
+  std::shared_ptr<tesseract::collision::ContinuousContactManager> contact_manager_;
   std::function<void(const DblVec&, sco::AffExprVector&, std::vector<double>&, std::vector<double>&)> fn_;
 };
 
@@ -399,8 +400,8 @@ public:
   using Ptr = std::shared_ptr<DiscreteCollisionEvaluator>;
   using ConstPtr = std::shared_ptr<const DiscreteCollisionEvaluator>;
 
-  DiscreteCollisionEvaluator(std::shared_ptr<const tesseract_kinematics::JointGroup> manip,
-                             std::shared_ptr<const tesseract_environment::Environment> env,
+  DiscreteCollisionEvaluator(std::shared_ptr<const tesseract::kinematics::JointGroup> manip,
+                             std::shared_ptr<const tesseract::environment::Environment> env,
                              const trajopt_common::TrajOptCollisionConfig& collision_config,
                              sco::VarVector vars0,
                              sco::VarVector vars1,
@@ -409,7 +410,7 @@ public:
                            sco::AffExprVector& exprs,
                            std::vector<double>& exprs_margin,
                            std::vector<double>& exprs_coeff) override;
-  void CalcCollisions(const DblVec& x, tesseract_collision::ContactResultMap& dist_results) override;
+  void CalcCollisions(const DblVec& x, tesseract::collision::ContactResultMap& dist_results) override;
   /**
    * @brief Given joint names and values calculate the collision results for this evaluator
    * @param dof_vals0 Joint values for state0
@@ -418,12 +419,12 @@ public:
    */
   void CalcCollisions(const Eigen::Ref<const Eigen::VectorXd>& dof_vals0,
                       const Eigen::Ref<const Eigen::VectorXd>& dof_vals1,
-                      tesseract_collision::ContactResultMap& dist_results);
-  void Plot(const std::shared_ptr<tesseract_visualization::Visualization>& plotter, const DblVec& x) override;
+                      tesseract::collision::ContactResultMap& dist_results);
+  void Plot(const std::shared_ptr<tesseract::visualization::Visualization>& plotter, const DblVec& x) override;
   sco::VarVector GetVars() override;
 
 private:
-  std::shared_ptr<tesseract_collision::DiscreteContactManager> contact_manager_;
+  std::shared_ptr<tesseract::collision::DiscreteContactManager> contact_manager_;
   std::function<void(const DblVec&, sco::AffExprVector&, std::vector<double>&, std::vector<double>&)> fn_;
 };
 
@@ -431,14 +432,14 @@ class CollisionCost : public sco::Cost, public Plotter
 {
 public:
   /* constructor for single timestep */
-  CollisionCost(std::shared_ptr<const tesseract_kinematics::JointGroup> manip,
-                std::shared_ptr<const tesseract_environment::Environment> env,
+  CollisionCost(std::shared_ptr<const tesseract::kinematics::JointGroup> manip,
+                std::shared_ptr<const tesseract::environment::Environment> env,
                 const trajopt_common::TrajOptCollisionConfig& collision_config,
                 sco::VarVector vars,
                 CollisionExpressionEvaluatorType type);
   /* constructor for discrete continuous and cast continuous cost */
-  CollisionCost(std::shared_ptr<const tesseract_kinematics::JointGroup> manip,
-                std::shared_ptr<const tesseract_environment::Environment> env,
+  CollisionCost(std::shared_ptr<const tesseract::kinematics::JointGroup> manip,
+                std::shared_ptr<const tesseract::environment::Environment> env,
                 const trajopt_common::TrajOptCollisionConfig& collision_config,
                 sco::VarVector vars0,
                 sco::VarVector vars1,
@@ -446,7 +447,7 @@ public:
                 bool discrete);
   sco::ConvexObjective::Ptr convex(const DblVec& x, sco::Model* model) override;
   double value(const DblVec&) override;
-  void Plot(const std::shared_ptr<tesseract_visualization::Visualization>& plotter, const DblVec& x) override;
+  void Plot(const std::shared_ptr<tesseract::visualization::Visualization>& plotter, const DblVec& x) override;
   sco::VarVector getVars() override { return m_calc->GetVars(); }
 
 private:
@@ -457,14 +458,14 @@ class CollisionConstraint : public sco::IneqConstraint
 {
 public:
   /* constructor for single timestep */
-  CollisionConstraint(std::shared_ptr<const tesseract_kinematics::JointGroup> manip,
-                      std::shared_ptr<const tesseract_environment::Environment> env,
+  CollisionConstraint(std::shared_ptr<const tesseract::kinematics::JointGroup> manip,
+                      std::shared_ptr<const tesseract::environment::Environment> env,
                       const trajopt_common::TrajOptCollisionConfig& collision_config,
                       sco::VarVector vars,
                       CollisionExpressionEvaluatorType type);
   /* constructor for discrete continuous and cast continuous cost */
-  CollisionConstraint(std::shared_ptr<const tesseract_kinematics::JointGroup> manip,
-                      std::shared_ptr<const tesseract_environment::Environment> env,
+  CollisionConstraint(std::shared_ptr<const tesseract::kinematics::JointGroup> manip,
+                      std::shared_ptr<const tesseract::environment::Environment> env,
                       const trajopt_common::TrajOptCollisionConfig& collision_config,
                       sco::VarVector vars0,
                       sco::VarVector vars1,

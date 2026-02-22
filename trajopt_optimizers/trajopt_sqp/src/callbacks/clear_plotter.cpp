@@ -27,7 +27,7 @@
 
 using namespace trajopt_sqp;
 
-ClearPlotterCallback::ClearPlotterCallback(std::shared_ptr<tesseract_visualization::Visualization> plotter)
+ClearPlotterCallback::ClearPlotterCallback(std::shared_ptr<tesseract::visualization::Visualization> plotter)
   : plotter_(std::move(plotter))
 {
 }

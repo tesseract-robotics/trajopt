@@ -70,14 +70,14 @@ std::size_t cantorHash(int shape_id, int subshape_id)
   return static_cast<std::size_t>(1 / 2.0 * (shape_id + subshape_id) * (shape_id + subshape_id + 1) + subshape_id);
 }
 
-void removeInvalidContactResults(tesseract_collision::ContactResultVector& contact_results,
+void removeInvalidContactResults(tesseract::collision::ContactResultVector& contact_results,
                                  double margin,
                                  double margin_buffer,
                                  bool var0_fixed,
                                  bool var1_fixed)
 {
   auto end =
-      std::remove_if(contact_results.begin(), contact_results.end(), [=](const tesseract_collision::ContactResult& r) {
+      std::remove_if(contact_results.begin(), contact_results.end(), [=](const tesseract::collision::ContactResult& r) {
         /** @todo Is this correct? (Levi)*/
         if ((r.distance > (margin + margin_buffer)))
           return true;
@@ -87,23 +87,23 @@ void removeInvalidContactResults(tesseract_collision::ContactResultVector& conta
 
         if (var0_fixed)
         {
-          if (r.cc_type[0] != tesseract_collision::ContinuousCollisionType::CCType_None &&
-              r.cc_type[0] != tesseract_collision::ContinuousCollisionType::CCType_Time0)
+          if (r.cc_type[0] != tesseract::collision::ContinuousCollisionType::CCType_None &&
+              r.cc_type[0] != tesseract::collision::ContinuousCollisionType::CCType_Time0)
             return false;
 
-          if (r.cc_type[1] != tesseract_collision::ContinuousCollisionType::CCType_None &&
-              r.cc_type[1] != tesseract_collision::ContinuousCollisionType::CCType_Time0)
+          if (r.cc_type[1] != tesseract::collision::ContinuousCollisionType::CCType_None &&
+              r.cc_type[1] != tesseract::collision::ContinuousCollisionType::CCType_Time0)
             return false;
         }
 
         if (var1_fixed)
         {
-          if (r.cc_type[0] != tesseract_collision::ContinuousCollisionType::CCType_None &&
-              r.cc_type[0] != tesseract_collision::ContinuousCollisionType::CCType_Time1)
+          if (r.cc_type[0] != tesseract::collision::ContinuousCollisionType::CCType_None &&
+              r.cc_type[0] != tesseract::collision::ContinuousCollisionType::CCType_Time1)
             return false;
 
-          if (r.cc_type[1] != tesseract_collision::ContinuousCollisionType::CCType_None &&
-              r.cc_type[1] != tesseract_collision::ContinuousCollisionType::CCType_Time1)
+          if (r.cc_type[1] != tesseract::collision::ContinuousCollisionType::CCType_None &&
+              r.cc_type[1] != tesseract::collision::ContinuousCollisionType::CCType_Time1)
             return false;
         }
 
@@ -116,8 +116,8 @@ void removeInvalidContactResults(tesseract_collision::ContactResultVector& conta
 void calcGradient(GradientResults& results,
                   std::size_t i,
                   const Eigen::VectorXd& dofvals,
-                  const tesseract_collision::ContactResult& contact_result,
-                  const tesseract_kinematics::JointGroup& manip,
+                  const tesseract::collision::ContactResult& contact_result,
+                  const tesseract::kinematics::JointGroup& manip,
                   bool isTimestep1)
 {
   LinkGradientResults& link_gradient = (isTimestep1) ? results.cc_gradients[i] : results.gradients[i];
@@ -132,12 +132,12 @@ void calcGradient(GradientResults& results,
   // point to the new ref point.
   link_gradient.scale = 1;
   Eigen::Isometry3d link_transform = contact_result.transform[i];
-  if (contact_result.cc_type[i] != tesseract_collision::ContinuousCollisionType::CCType_None)
+  if (contact_result.cc_type[i] != tesseract::collision::ContinuousCollisionType::CCType_None)
   {
     assert(contact_result.cc_time[i] > 0.0 ||
-           tesseract_common::almostEqualRelativeAndAbs(contact_result.cc_time[i], 0.0));
+           tesseract::common::almostEqualRelativeAndAbs(contact_result.cc_time[i], 0.0));
     assert(contact_result.cc_time[i] < 1.0 ||
-           tesseract_common::almostEqualRelativeAndAbs(contact_result.cc_time[i], 1.0));
+           tesseract::common::almostEqualRelativeAndAbs(contact_result.cc_time[i], 1.0));
     link_gradient.scale = (isTimestep1) ? contact_result.cc_time[i] : (1 - contact_result.cc_time[i]);
     link_gradient.cc_type = contact_result.cc_type[i];
     link_transform = (isTimestep1) ? contact_result.cc_transform[i] : contact_result.transform[i];
@@ -148,7 +148,7 @@ void calcGradient(GradientResults& results,
      */
   }
   // Since the link transform is known then do not call calcJacobian with link point
-  tesseract_common::jacobianChangeRefPoint(jac, link_transform.linear() * contact_result.nearest_points_local[i]);
+  tesseract::common::jacobianChangeRefPoint(jac, link_transform.linear() * contact_result.nearest_points_local[i]);
 
   link_gradient.translation_vector = contact_result.normal;
   if (i == 0)
@@ -174,10 +174,10 @@ void calcGradient(GradientResults& results,
 
 void getGradient(GradientResults& results,
                  const Eigen::VectorXd& dofvals,
-                 const tesseract_collision::ContactResult& contact_result,
+                 const tesseract::collision::ContactResult& contact_result,
                  double margin,
                  double margin_buffer,
-                 const tesseract_kinematics::JointGroup& manip)
+                 const tesseract::kinematics::JointGroup& manip)
 {
   results.error = (margin - contact_result.distance);
   results.error_with_buffer = (margin + margin_buffer - contact_result.distance);
@@ -192,10 +192,10 @@ void getGradient(GradientResults& results,
 void getGradient(GradientResults& results,
                  const Eigen::VectorXd& dofvals0,
                  const Eigen::VectorXd& dofvals1,
-                 const tesseract_collision::ContactResult& contact_result,
+                 const tesseract::collision::ContactResult& contact_result,
                  double margin,
                  double margin_buffer,
-                 const tesseract_kinematics::JointGroup& manip)
+                 const tesseract::kinematics::JointGroup& manip)
 {
   results.error = (margin - contact_result.distance);
   results.error_with_buffer = (margin + margin_buffer - contact_result.distance);
@@ -205,9 +205,9 @@ void getGradient(GradientResults& results,
   {
     if (manip.isActiveLinkName(contact_result.link_names[i]))
     {
-      if (contact_result.cc_type[i] == tesseract_collision::ContinuousCollisionType::CCType_Time0)
+      if (contact_result.cc_type[i] == tesseract::collision::ContinuousCollisionType::CCType_Time0)
         dofvalst = dofvals0;
-      else if (contact_result.cc_type[i] == tesseract_collision::ContinuousCollisionType::CCType_Time1)
+      else if (contact_result.cc_type[i] == tesseract::collision::ContinuousCollisionType::CCType_Time1)
         dofvalst = dofvals1;
       else
         dofvalst = dofvals0 + (dofvals1 - dofvals0) * contact_result.cc_time[i];
@@ -220,7 +220,7 @@ void getGradient(GradientResults& results,
   // DebugPrintInfo(res, results.gradients[0], results.gradients[1], dofvals, &res == &(dist_results.front()));
 }
 
-void debugPrintInfo(const tesseract_collision::ContactResult& res,
+void debugPrintInfo(const tesseract::collision::ContactResult& res,
                     const Eigen::VectorXd& dist_grad_A,
                     const Eigen::VectorXd& dist_grad_B,
                     const Eigen::VectorXd& dof_vals,

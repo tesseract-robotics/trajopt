@@ -23,13 +23,13 @@ TRAJOPT_IGNORE_WARNINGS_POP
 using namespace trajopt;
 using namespace std;
 using namespace trajopt_common;
-using namespace tesseract_environment;
-using namespace tesseract_kinematics;
-using namespace tesseract_collision;
-using namespace tesseract_visualization;
-using namespace tesseract_scene_graph;
-using namespace tesseract_geometry;
-using namespace tesseract_common;
+using namespace tesseract::environment;
+using namespace tesseract::kinematics;
+using namespace tesseract::collision;
+using namespace tesseract::visualization;
+using namespace tesseract::scene_graph;
+using namespace tesseract::geometry;
+using namespace tesseract::common;
 
 /** @brief Benchmark trajopt simple collision solve */
 static void BM_TRAJOPT_SIMPLE_COLLISION_SOLVE(benchmark::State& state,
@@ -105,7 +105,7 @@ int main(int argc, char** argv)  // NOLINT(bugprone-exception-escape)
     std::filesystem::path urdf_file(std::string(TRAJOPT_DATA_DIR) + "/spherebot.urdf");
     std::filesystem::path srdf_file(std::string(TRAJOPT_DATA_DIR) + "/spherebot.srdf");
 
-    ResourceLocator::Ptr locator = std::make_shared<tesseract_common::GeneralResourceLocator>();
+    ResourceLocator::Ptr locator = std::make_shared<tesseract::common::GeneralResourceLocator>();
     auto env = std::make_shared<Environment>();
     env->init(urdf_file, srdf_file, locator);
 
@@ -141,7 +141,7 @@ int main(int argc, char** argv)  // NOLINT(bugprone-exception-escape)
     std::filesystem::path urdf_file(std::string(TRAJOPT_DATA_DIR) + "/arm_around_table.urdf");
     std::filesystem::path srdf_file(std::string(TRAJOPT_DATA_DIR) + "/pr2.srdf");
 
-    ResourceLocator::Ptr locator = std::make_shared<tesseract_common::GeneralResourceLocator>();
+    ResourceLocator::Ptr locator = std::make_shared<tesseract::common::GeneralResourceLocator>();
     auto env = std::make_shared<Environment>();
     env->init(urdf_file, srdf_file, locator);
 

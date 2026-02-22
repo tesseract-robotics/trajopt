@@ -33,7 +33,7 @@ TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace trajopt_ifopt
 {
-InverseKinematicsInfo::InverseKinematicsInfo(std::shared_ptr<const tesseract_kinematics::KinematicGroup> manip,
+InverseKinematicsInfo::InverseKinematicsInfo(std::shared_ptr<const tesseract::kinematics::KinematicGroup> manip,
                                              std::string working_frame,
                                              std::string tcp_frame,
                                              const Eigen::Isometry3d& tcp_offset)  // NOLINT(modernize-pass-by-value)
@@ -71,12 +71,12 @@ InverseKinematicsConstraint::InverseKinematicsConstraint(
 Eigen::VectorXd InverseKinematicsConstraint::getValues() const
 {
   // Get joint position using IK and the seed variable
-  tesseract_kinematics::KinGroupIKInputs inputs;
+  tesseract::kinematics::KinGroupIKInputs inputs;
   inputs.emplace_back(target_pose_, kinematic_info_->working_frame, kinematic_info_->tcp_frame);
 
   auto joint_vals = constraint_var_->value();
   auto seed_values = seed_var_->value();
-  const tesseract_kinematics::IKSolutions target_joint_position =
+  const tesseract::kinematics::IKSolutions target_joint_position =
       kinematic_info_->manip->calcInvKin(inputs, seed_values);
   assert(!target_joint_position.empty());
 

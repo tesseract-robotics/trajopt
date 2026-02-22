@@ -31,9 +31,9 @@ TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace trajopt_ifopt
 {
-tesseract_common::TrajArray toTrajArray(const std::vector<std::shared_ptr<const trajopt_ifopt::Var>>& joint_positions)
+tesseract::common::TrajArray toTrajArray(const std::vector<std::shared_ptr<const trajopt_ifopt::Var>>& joint_positions)
 {
-  tesseract_common::TrajArray traj_array;
+  tesseract::common::TrajArray traj_array;
   if (!joint_positions.empty())
     traj_array.resize(static_cast<Eigen::Index>(joint_positions.size()), joint_positions.front()->size());
   for (Eigen::Index i = 0; i < traj_array.rows(); i++)
@@ -41,10 +41,10 @@ tesseract_common::TrajArray toTrajArray(const std::vector<std::shared_ptr<const 
   return traj_array;
 }
 
-tesseract_common::JointTrajectory
+tesseract::common::JointTrajectory
 toJointTrajectory(const std::vector<std::shared_ptr<const trajopt_ifopt::Var>>& joint_positions)
 {
-  tesseract_common::JointTrajectory joint_trajectory;
+  tesseract::common::JointTrajectory joint_trajectory;
 
   if (!joint_positions.empty())
     joint_trajectory.reserve(joint_positions.size());

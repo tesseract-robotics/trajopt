@@ -55,7 +55,7 @@ const bool DEBUG = false;
 class CartPositionOptimization : public testing::TestWithParam<const char*>
 {
 public:
-  tesseract_environment::Environment::Ptr env;
+  tesseract::environment::Environment::Ptr env;
 
   void SetUp() override
   {
@@ -67,14 +67,14 @@ public:
     // 1)  Load Robot
     const std::filesystem::path urdf_file(std::string(TRAJOPT_DATA_DIR) + "/arm_around_table.urdf");
     const std::filesystem::path srdf_file(std::string(TRAJOPT_DATA_DIR) + "/pr2.srdf");
-    const tesseract_common::ResourceLocator::Ptr locator = std::make_shared<tesseract_common::GeneralResourceLocator>();
-    env = std::make_shared<tesseract_environment::Environment>();
+    const auto locator = std::make_shared<tesseract::common::GeneralResourceLocator>();
+    env = std::make_shared<tesseract::environment::Environment>();
     env->init(urdf_file, srdf_file, locator);
   }
 };
 
 template <typename T>
-void runCartPositionOptimization(const tesseract_environment::Environment::Ptr& env)
+void runCartPositionOptimization(const tesseract::environment::Environment::Ptr& env)
 {
   auto qp_solver = std::make_shared<trajopt_sqp::OSQPEigenSolver>();
   trajopt_sqp::TrustRegionSQPSolver solver(qp_solver);
@@ -87,8 +87,8 @@ void runCartPositionOptimization(const tesseract_environment::Environment::Ptr& 
   qp_solver->solver_->settings()->setRelativeTolerance(1e-6);
 
   // Extract necessary kinematic information
-  const tesseract_kinematics::JointGroup::ConstPtr manip = env->getJointGroup("right_arm");
-  const tesseract_common::KinematicLimits limits = manip->getLimits();
+  const tesseract::kinematics::JointGroup::ConstPtr manip = env->getJointGroup("right_arm");
+  const tesseract::common::KinematicLimits limits = manip->getLimits();
   const std::vector<trajopt_ifopt::Bounds> bounds = trajopt_ifopt::toBounds(limits.joint_limits);
 
   // Get target position

@@ -44,13 +44,12 @@ TRAJOPT_IGNORE_WARNINGS_POP
 #include <trajopt_ifopt/utils/ifopt_utils.h>
 
 using namespace trajopt_ifopt;
-using namespace std;
-using namespace tesseract_environment;
-using namespace tesseract_kinematics;
-using namespace tesseract_collision;
-using namespace tesseract_scene_graph;
-using namespace tesseract_geometry;
-using namespace tesseract_common;
+using namespace tesseract::environment;
+using namespace tesseract::kinematics;
+using namespace tesseract::collision;
+using namespace tesseract::scene_graph;
+using namespace tesseract::geometry;
+using namespace tesseract::common;
 
 class InverseKinematicsConstraintUnit : public testing::TestWithParam<const char*>
 {
@@ -58,7 +57,7 @@ public:
   Environment::Ptr env = std::make_shared<Environment>();
   std::shared_ptr<Problem> nlp;
 
-  tesseract_kinematics::KinematicGroup::ConstPtr kin_group;
+  KinematicGroup::ConstPtr kin_group;
   InverseKinematicsInfo::Ptr kinematic_info;
   InverseKinematicsConstraint::Ptr constraint;
   std::vector<Bounds> joint_bounds;
@@ -70,7 +69,7 @@ public:
     // Initialize Tesseract
     const std::filesystem::path urdf_file(std::string(TRAJOPT_DATA_DIR) + "/arm_around_table.urdf");
     const std::filesystem::path srdf_file(std::string(TRAJOPT_DATA_DIR) + "/pr2.srdf");
-    const ResourceLocator::Ptr locator = std::make_shared<tesseract_common::GeneralResourceLocator>();
+    const ResourceLocator::Ptr locator = std::make_shared<tesseract::common::GeneralResourceLocator>();
     const bool status = env->init(urdf_file, srdf_file, locator);
     EXPECT_TRUE(status);
 

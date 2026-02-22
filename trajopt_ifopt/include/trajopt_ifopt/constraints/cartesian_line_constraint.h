@@ -51,7 +51,7 @@ struct CartLineInfo
 
   CartLineInfo() = default;
   CartLineInfo(
-      std::shared_ptr<const tesseract_kinematics::JointGroup> manip,
+      std::shared_ptr<const tesseract::kinematics::JointGroup> manip,
       std::string source_frame,
       std::string target_frame,
       const Eigen::Isometry3d& target_frame_offset1,
@@ -60,7 +60,7 @@ struct CartLineInfo
       const Eigen::VectorXi& indices = Eigen::Matrix<int, 1, 6>(std::vector<int>({ 0, 1, 2, 3, 4, 5 }).data()));
 
   /** @brief The joint group */
-  std::shared_ptr<const tesseract_kinematics::JointGroup> manip;
+  std::shared_ptr<const tesseract::kinematics::JointGroup> manip;
 
   /** @brief Link which should reach desired pos */
   std::string source_frame;
@@ -99,7 +99,7 @@ public:
   using ErrorDiffFunctionType = std::function<Eigen::VectorXd(const Eigen::VectorXd&,
                                                               const Eigen::Isometry3d&,
                                                               const Eigen::Isometry3d&,
-                                                              tesseract_common::TransformMap&)>;
+                                                              tesseract::common::TransformMap&)>;
 
   CartLineConstraint(CartLineInfo info,
                      std::shared_ptr<const Var> position_var,
@@ -194,7 +194,7 @@ private:
   /** @brief The error function to calculate the error difference used for jacobian calculations */
   ErrorDiffFunctionType error_diff_function_{ nullptr };
 
-  static thread_local tesseract_common::TransformMap transforms_cache_;  // NOLINT
+  static thread_local tesseract::common::TransformMap transforms_cache_;  // NOLINT
 };
 }  // namespace trajopt_ifopt
 #endif

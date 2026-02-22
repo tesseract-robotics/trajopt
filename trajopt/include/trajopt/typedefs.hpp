@@ -35,33 +35,33 @@ public:
   Plotter(Plotter&&) = default;
   Plotter& operator=(Plotter&&) = default;
 
-  virtual void Plot(const std::shared_ptr<tesseract_visualization::Visualization>& plotter, const DblVec& x) = 0;
+  virtual void Plot(const std::shared_ptr<tesseract::visualization::Visualization>& plotter, const DblVec& x) = 0;
 };
 
 /**  @brief Adds plotting to the VectorOfVector class in trajopt_sco */
 class TrajOptVectorOfVector : public sco::VectorOfVector
 {
 public:
-  virtual void Plot(const std::shared_ptr<tesseract_visualization::Visualization>& /*plotter*/,
+  virtual void Plot(const std::shared_ptr<tesseract::visualization::Visualization>& /*plotter*/,
                     const Eigen::VectorXd& /*dof_vals*/)
   {
   }
 
 protected:
-  static thread_local tesseract_common::TransformMap transforms_cache;  // NOLINT
+  static thread_local tesseract::common::TransformMap transforms_cache;  // NOLINT
 };
 
 /**  @brief Adds plotting to the MatrixOfVector class in trajopt_sco */
 class TrajOptMatrixOfVector : public sco::MatrixOfVector
 {
 public:
-  virtual void Plot(const std::shared_ptr<tesseract_visualization::Visualization>& /*plotter*/,
+  virtual void Plot(const std::shared_ptr<tesseract::visualization::Visualization>& /*plotter*/,
                     const Eigen::VectorXd& /*dof_vals*/)
   {
   }
 
 protected:
-  static thread_local tesseract_common::TransformMap transforms_cache;  // NOLINT
+  static thread_local tesseract::common::TransformMap transforms_cache;  // NOLINT
 };
 
 /**  @brief Adds plotting to the CostFromErrFunc class in trajopt_sco */
@@ -89,7 +89,7 @@ public:
   {
   }
 
-  void Plot(const std::shared_ptr<tesseract_visualization::Visualization>& plotter, const DblVec& x) override
+  void Plot(const std::shared_ptr<tesseract::visualization::Visualization>& plotter, const DblVec& x) override
   {
     // If error function has a inherited from TrajOptVectorOfVector, call its Plot function
     if (auto* plt = dynamic_cast<TrajOptVectorOfVector*>(f_.get()))
@@ -125,7 +125,7 @@ public:
   {
   }
 
-  void Plot(const std::shared_ptr<tesseract_visualization::Visualization>& plotter, const DblVec& x) override
+  void Plot(const std::shared_ptr<tesseract::visualization::Visualization>& plotter, const DblVec& x) override
   {
     // If error function has a inherited from TrajOptVectorOfVector, call its Plot function
     if (auto* plt = dynamic_cast<TrajOptVectorOfVector*>(f_.get()))
