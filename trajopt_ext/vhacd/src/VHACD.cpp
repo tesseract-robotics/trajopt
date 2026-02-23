@@ -155,7 +155,7 @@ inline int32_t FindMinimumElement(const float* const d, float* const m, const in
 }
 #endif
 
-//#define OCL_SOURCE_FROM_FILE
+// #define OCL_SOURCE_FROM_FILE
 #ifndef OCL_SOURCE_FROM_FILE
 const char* oclProgramSource = "\
 __kernel void ComputePartialVolumes(__global short4 * voxels,                    \
@@ -769,7 +769,7 @@ inline double ComputeConcavity(const double volume, const double volumeCH, const
   return fabs(volumeCH - volume) / volume0;
 }
 
-//#define DEBUG_TEMP
+// #define DEBUG_TEMP
 void VHACD::ComputeBestClippingPlane(const PrimitiveSet* inputPSet,
                                      const double volume,
                                      const SArray<Plane>& planes,

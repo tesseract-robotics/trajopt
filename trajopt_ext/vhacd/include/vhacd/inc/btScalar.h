@@ -48,7 +48,7 @@ inline int32_t btGetVersion() { return BT_BULLET_VERSION; }
 #define ATTRIBUTE_ALIGNED64(a) a
 #define ATTRIBUTE_ALIGNED128(a) a
 #else
-//#define BT_HAS_ALIGNED_ALLOCATOR
+// #define BT_HAS_ALIGNED_ALLOCATOR
 #pragma warning(disable : 4324)  // disable padding warning
 //			#pragma warning(disable:4530) // Disable the exception disable but used in MSCV Stl warning.
 //			#pragma warning(disable:4996) //Turn off warnings about deprecated C routines
@@ -175,9 +175,9 @@ inline int32_t btGetVersion() { return BT_BULLET_VERSION; }
 
 #define SIMD_FORCE_INLINE inline
 ///@todo: check out alignment methods for other platforms/compilers
-///#define ATTRIBUTE_ALIGNED16(a) a __attribute__ ((aligned (16)))
-///#define ATTRIBUTE_ALIGNED64(a) a __attribute__ ((aligned (64)))
-///#define ATTRIBUTE_ALIGNED128(a) a __attribute__ ((aligned (128)))
+/// #define ATTRIBUTE_ALIGNED16(a) a __attribute__ ((aligned (16)))
+/// #define ATTRIBUTE_ALIGNED64(a) a __attribute__ ((aligned (64)))
+/// #define ATTRIBUTE_ALIGNED128(a) a __attribute__ ((aligned (128)))
 #define ATTRIBUTE_ALIGNED16(a) a
 #define ATTRIBUTE_ALIGNED64(a) a
 #define ATTRIBUTE_ALIGNED128(a) a
@@ -349,7 +349,7 @@ SIMD_FORCE_INLINE btScalar btDegrees(btScalar x) { return x * SIMD_DEGS_PER_RAD;
   typedef struct name##__                                                                                              \
   {                                                                                                                    \
     int32_t unused;                                                                                                    \
-  } * name
+  }* name
 
 #ifndef btFsel
 SIMD_FORCE_INLINE btScalar btFsel(btScalar a, btScalar b, btScalar c) { return a >= 0 ? b : c; }

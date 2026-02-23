@@ -306,7 +306,7 @@ inline void ComputeAlignedPoint(const T* const points,
                                 const uint32_t idx,
                                 const Vec3<double>& barycenter,
                                 const double (&rot)[3][3],
-                                Vec3<double>& pt){};
+                                Vec3<double>& pt) {};
 template <>
 inline void ComputeAlignedPoint<float>(const float* const points,
                                        const uint32_t idx,
