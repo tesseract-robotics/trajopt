@@ -11,14 +11,14 @@ on:
 
 jobs:
   clang_format:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v6
 
       - name: Run clang format
         run: |
           sudo apt update
-          sudo apt install -y git clang-format-12
+          sudo apt install -y git clang-format-18
           if [ $? -ge 1 ]; then return 1; fi
           ./.run-clang-format
           if [ $? -ge 1 ]; then return 1; fi
