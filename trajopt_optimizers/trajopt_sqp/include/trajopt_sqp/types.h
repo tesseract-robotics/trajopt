@@ -224,6 +224,13 @@ enum class SQPStatus : std::uint8_t
   kStoppedByCallback      /**< Stopped because callback returned false */
 };
 
+static const std::array<std::string, 7> SQPStatus_strings = {
+  "SQP_RUNNING",    "SQP_CONVERGED", "SQP_ITERATION_LIMIT",    "SQP_PENALTY_ITERATION_LIMIT",
+  "SQP_TIME_LIMIT", "SQP_FAILED",    "SQP_STOPPED_BY_CALLBACK"
+};
+
+inline std::string statusToString(SQPStatus status) { return SQPStatus_strings[static_cast<std::size_t>(status)]; }
+
 }  // namespace trajopt_sqp
 
 #endif
