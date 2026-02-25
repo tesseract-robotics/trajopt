@@ -26,6 +26,8 @@
 #include <trajopt_ifopt/costs/squared_cost.h>
 #include <trajopt_ifopt/costs/absolute_cost.h>
 #include <trajopt_ifopt/core/problem.h>
+#include <trajopt_ifopt/core/composite.h>
+#include <console_bridge/console.h>
 #include <iostream>
 
 namespace trajopt_sqp
@@ -50,20 +52,21 @@ void IfoptQPProblem::addCostSet(std::shared_ptr<trajopt_ifopt::ConstraintSet> co
   if (constraint_set->isDynamic())
     throw std::runtime_error("IfoptQPProblem, dynamic cost sets are not supported");
 
+  // Save raw constraint for Hessian/gradient computation (SquaredCost wraps it
+  // but doesn't expose the raw Jacobian needed for the Gauss-Newton Hessian)
+  constraint_set->linkWithVariables(nlp_->getOptVariables());
+  cost_constraints_.push_back(constraint_set);
+
   switch (penalty_type)
   {
     case CostPenaltyType::kSquared:
     {
-      // Must link the variables to the constraint since that happens in AddConstraintSet
-      constraint_set->linkWithVariables(nlp_->getOptVariables());
       auto cost = std::make_shared<trajopt_ifopt::SquaredCost>(constraint_set);
       nlp_->addCostSet(std::move(cost));
       break;
     }
     case CostPenaltyType::kAbsolute:
     {
-      // Must link the variables to the constraint since that happens in AddConstraintSet
-      constraint_set->linkWithVariables(nlp_->getOptVariables());
       auto cost = std::make_shared<trajopt_ifopt::AbsoluteCost>(constraint_set);
       nlp_->addCostSet(std::move(cost));
       break;
@@ -164,68 +167,122 @@ void IfoptQPProblem::convexify()
 void IfoptQPProblem::updateHessian()
 {
   ////////////////////////////////////////////////////////
-  // Set the Hessian (empty for now)
+  // Gauss-Newton Hessian: H = sum_i( J_i^T * diag(w_i) * J_i )
+  //
+  // Each cost is a SquaredCost wrapping a raw ConstraintSet.  The true
+  // Hessian of sum(w * e^2) is 2 * J^T W J + second-order terms.
+  // Gauss-Newton drops the second-order terms: H_GN = 2 * J^T W J.
+  //
+  // OSQPEigenSolver::updateHessianMatrix multiplies by 2 (because OSQP
+  // uses 0.5 * x^T P x), so we store J^T W J here (without the factor 2).
   ////////////////////////////////////////////////////////
   hessian_.resize(num_qp_vars_, num_qp_vars_);
-  /**
-   * @note See CostFromFunc::convex in modeling_utils.cpp.
-   * This should be multiplied by 0.5 when implemented
-   * hessian_ = 0.5 * nlp_->GetHessianOfCosts();
-   */
+  hessian_.setZero();
+
+  if (cost_constraints_.empty())
+    return;
+
+  // Accumulate H = sum( J_i^T * diag(w_i) * J_i ) over all cost constraints
+  trajopt_ifopt::Jacobian H_nlp(num_nlp_vars_, num_nlp_vars_);
+
+  bool first = true;
+  for (const auto& c : cost_constraints_)
+  {
+    const trajopt_ifopt::Jacobian J = c->getJacobian();        // m_i × n
+    const Eigen::VectorXd w = c->getCoefficients();            // m_i weights
+
+    if (J.nonZeros() == 0)
+      continue;
+
+    // Jw = diag(sqrt(w)) * J — so Jw^T * Jw = J^T * diag(w) * J
+    trajopt_ifopt::Jacobian Jw = J;
+    for (Eigen::Index r = 0; r < Jw.outerSize(); ++r)
+    {
+      const double sw = std::sqrt(std::abs(w[r]));
+      for (trajopt_ifopt::Jacobian::InnerIterator it(Jw, static_cast<int>(r)); it; ++it)
+        it.valueRef() *= sw;
+    }
+
+    // Evaluate product into row-major temp (Eigen requires matching storage order for +=)
+    trajopt_ifopt::Jacobian JtWJ = Jw.transpose() * Jw;
+    if (first)
+    {
+      H_nlp = JtWJ;
+      first = false;
+    }
+    else
+    {
+      H_nlp += JtWJ;
+    }
+  }
+
+  if (first)
+    return;  // no cost terms contributed
+
+  H_nlp.makeCompressed();
+
+  // Place H_nlp into top-left block of hessian_ via triplets (safe for full
+  // num_qp_vars_ × num_qp_vars_ size — slack variable rows/cols stay zero)
+  using T = Eigen::Triplet<double>;
+  std::vector<T> triplets;
+  triplets.reserve(static_cast<std::size_t>(H_nlp.nonZeros()));
+  for (Eigen::Index k = 0; k < H_nlp.outerSize(); ++k)
+  {
+    for (trajopt_ifopt::Jacobian::InnerIterator it(H_nlp, k); it; ++it)
+    {
+      // Keep entry but zero small values to preserve sparsity pattern (OSQP warm-start stability)
+      triplets.emplace_back(it.row(), it.col(), std::abs(it.value()) >= 1e-7 ? it.value() : 0.0);
+    }
+  }
+  hessian_.setFromTriplets(triplets.begin(), triplets.end());
+  hessian_.makeCompressed();
 }
 
 void IfoptQPProblem::updateGradient()
 {
   ////////////////////////////////////////////////////////
-  // Set the gradient of the NLP costs
+  // QP gradient for OSQP's objective:  0.5 * x^T P x + q^T x
+  //
+  // The Gauss-Newton model around x0 is:
+  //   f(x) ≈ f(x0) + g^T(x-x0) + 0.5*(x-x0)^T H (x-x0)
+  //        = 0.5 * x^T H x + (g - H*x0)^T x + const
+  //
+  // where g = 2 * J^T * W * e  (the NLP cost gradient at x0)
+  //       H = 2 * J^T * W * J  (we store J^T W J; OSQP multiplies by 2)
+  //
+  // So the QP gradient q = g - H*x0  (NOT just g — the Hessian correction
+  // ensures the minimum is near x0 + Newton step, not near x=0).
+  //
+  // Since OSQP multiplies P by 0.5, our H is the half-Hessian.  The gradient
+  // correction uses hessian_ (= J^T W J) multiplied by 2 to match g's scale:
+  //   q = 2 * J^T W e  -  2 * (J^T W J) * x0
   ////////////////////////////////////////////////////////
   gradient_ = Eigen::VectorXd::Zero(num_qp_vars_);
-  const trajopt_ifopt::Jacobian cost_jac = nlp_->getJacobianOfCosts();
-  /**
-   * @note See CostFromFunc::convex in modeling_utils.cpp. Once Hessian has been implemented
-   *
-   * if (!full_hessian_) // Does not contain bilinear terms, eg. x1 * x2, only x1^2 and x2^2
-   * {
-   *   double val;
-   *   Eigen::VectorXd grad, hess;
-   *   calcGradAndDiagHess(*f_, x_eigen, epsilon_, val, grad, hess);
-   *   quad = a + b*x + c*x^2
-   *   a = val - grad.dot(x_eigen) + .5 * x_eigen.dot(hess.cwiseProduct(x_eigen));
-   *   b = grad - hess.cwiseProduct(x_eigen)
-   *   c = 0.5 * hess
-   * }
-   * else // contains bilinear terms
-   * {
-   *   double val;
-   *   Eigen::VectorXd grad;
-   *   Eigen::MatrixXd hess;
-   *   calcGradHess(f_, x_eigen, epsilon_, val, grad, hess);
-   *
-   *   Eigen::MatrixXd pos_hess = Eigen::MatrixXd::Zero(x_eigen.size(), x_eigen.size());
-   *   Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> es(hess);
-   *   Eigen::VectorXd eigvals = es.eigenvalues();
-   *   Eigen::MatrixXd eigvecs = es.eigenvectors();
-   *   for (long int i = 0, end = x_eigen.size(); i != end; ++i)
-   *   {  // tricky --- eigen size() is signed
-   *     if (eigvals(i) > 0)
-   *       pos_hess += eigvals(i) * eigvecs.col(i) * eigvecs.col(i).transpose();
-   *   }
-   *   quad = a + b*x + c*x^2 +
-   *   a = val - grad.dot(x_eigen) + .5 * x_eigen.dot(pos_hess * x_eigen);
-   *   b = grad - pos_hess * x_eigen
-   *   for (long int i = 0, end = x_eigen.size(); i != end; ++i)
-   *   {  // tricky --- eigen size() is signed
-   *     c(i,i) = (pos_hess(i, i) / 2);
-   *     for (long int j = i + 1; j != end; ++j)
-   *     {  // tricky --- eigen size() is signed
-   *       c(i, j) = pos_hess(i, j);
-   *     }
-   *   }
-   * }
-   */
 
-  if (cost_jac.nonZeros() > 0)
-    gradient_.topRows(num_nlp_vars_) = cost_jac.toDense().transpose();
+  for (const auto& c : cost_constraints_)
+  {
+    const trajopt_ifopt::Jacobian J = c->getJacobian();   // m × n
+    const Eigen::VectorXd w = c->getCoefficients();       // m weights
+
+    if (J.nonZeros() == 0)
+      continue;
+
+    // Compute bound errors: e_i = value_i - target_i
+    Eigen::VectorXd errors(c->getRows());
+    trajopt_ifopt::calcBoundsErrors(errors, c->getValues(), c->getBounds());
+
+    // g += 2 * J^T * diag(w) * e
+    Eigen::VectorXd we = (w.array() * errors.array()).matrix();  // w .* e
+    gradient_.head(num_nlp_vars_) += 2.0 * (J.transpose() * we);
+  }
+
+  // Hessian correction: q = g - 2 * H * x0
+  // (hessian_ stores J^T W J = half-Hessian, so multiply by 2)
+  if (hessian_.nonZeros() > 0)
+  {
+    const Eigen::VectorXd x0 = nlp_->getVariableValues().head(num_nlp_vars_);
+    gradient_.head(num_nlp_vars_) -= 2.0 * (hessian_.block(0, 0, num_nlp_vars_, num_nlp_vars_) * x0);
+  }
 
   ////////////////////////////////////////////////////////
   // Set the gradient of the constraint slack variables
