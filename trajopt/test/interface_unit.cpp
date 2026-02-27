@@ -2,10 +2,10 @@
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <ctime>
 #include <gtest/gtest.h>
-#include <tesseract_common/types.h>
-#include <tesseract_environment/core/environment.h>
-#include <tesseract_environment/ofkt/ofkt_state_solver.h>
-#include <tesseract_environment/core/utils.h>
+#include <tesseract/common/types.h>
+#include <tesseract/environment/core/environment.h>
+#include <tesseract/environment/ofkt/ofkt_state_solver.h>
+#include <tesseract/environment/core/utils.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt/common.hpp>

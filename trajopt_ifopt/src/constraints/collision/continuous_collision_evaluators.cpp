@@ -26,10 +26,10 @@
 #include <trajopt_common/collision_utils.h>
 
 TRAJOPT_IGNORE_WARNINGS_PUSH
-#include <tesseract_collision/core/discrete_contact_manager.h>
-#include <tesseract_collision/core/continuous_contact_manager.h>
-#include <tesseract_kinematics/core/joint_group.h>
-#include <tesseract_environment/environment.h>
+#include <tesseract/collision/discrete_contact_manager.h>
+#include <tesseract/collision/continuous_contact_manager.h>
+#include <tesseract/kinematics/joint_group.h>
+#include <tesseract/environment/environment.h>
 #include <console_bridge/console.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 

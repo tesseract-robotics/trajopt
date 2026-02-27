@@ -27,7 +27,7 @@
 #include <trajopt_ifopt/variable_sets/var.h>
 
 TRAJOPT_IGNORE_WARNINGS_PUSH
-#include <tesseract_kinematics/core/kinematic_group.h>
+#include <tesseract/kinematics/kinematic_group.h>
 #include <console_bridge/console.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 

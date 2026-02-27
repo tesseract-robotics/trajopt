@@ -4,11 +4,11 @@
 #include <memory>
 #include <Eigen/Core>
 
-#include <tesseract_collision/core/fwd.h>
-#include <tesseract_collision/core/types.h>
-#include <tesseract_kinematics/core/fwd.h>
-#include <tesseract_environment/fwd.h>
-#include <tesseract_visualization/fwd.h>
+#include <tesseract/collision/fwd.h>
+#include <tesseract/collision/types.h>
+#include <tesseract/kinematics/fwd.h>
+#include <tesseract/environment/fwd.h>
+#include <tesseract/visualization/fwd.h>
 
 #include <trajopt_common/collision_types.h>
 #include <trajopt_sco/sco_common.hpp>

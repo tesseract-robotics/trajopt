@@ -28,8 +28,8 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <yaml-cpp/yaml.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
-#include <tesseract_common/yaml_extensions.h>
-#include <tesseract_collision/core/yaml_extensions.h>
+#include <tesseract/common/yaml_extensions.h>
+#include <tesseract/collision/yaml_extensions.h>
 #include <trajopt_common/yaml_extensions.h>
 
 #include <trajopt_common/collision_types.h>

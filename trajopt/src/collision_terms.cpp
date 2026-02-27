@@ -1,15 +1,15 @@
 #include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <boost/functional/hash.hpp>
-#include <tesseract_environment/environment.h>
-#include <tesseract_environment/utils.h>
-#include <tesseract_kinematics/core/joint_group.h>
-#include <tesseract_kinematics/core/utils.h>
-#include <tesseract_collision/core/discrete_contact_manager.h>
-#include <tesseract_collision/core/continuous_contact_manager.h>
-#include <tesseract_visualization/visualization.h>
-#include <tesseract_visualization/markers/arrow_marker.h>
-#include <tesseract_visualization/markers/contact_results_marker.h>
+#include <tesseract/environment/environment.h>
+#include <tesseract/environment/utils.h>
+#include <tesseract/kinematics/joint_group.h>
+#include <tesseract/kinematics/utils.h>
+#include <tesseract/collision/discrete_contact_manager.h>
+#include <tesseract/collision/continuous_contact_manager.h>
+#include <tesseract/visualization/visualization.h>
+#include <tesseract/visualization/markers/arrow_marker.h>
+#include <tesseract/visualization/markers/contact_results_marker.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt/collision_terms.hpp>
@@ -239,7 +239,7 @@ GradientResults CollisionEvaluator::GetGradient(const Eigen::VectorXd& dofvals,
 
 //      Eigen::MatrixXd jac_test;
 //      jac_test.resize(6, manip_->numJoints());
-//      tesseract_kinematics::numericalJacobian(jac_test, *manip_, dofvals, contact_result.link_names[i],
+//      tesseract::kinematics::numericalJacobian(jac_test, *manip_, dofvals, contact_result.link_names[i],
 //      contact_result.nearest_points_local[i]); bool check = jac.isApprox(jac_test, 1e-3); assert(check == true);
 #endif
 
@@ -944,7 +944,7 @@ void DiscreteCollisionEvaluator::Plot(const std::shared_ptr<tesseract::visualiza
 
       // Eigen::MatrixXd jac_test;
       // jac_test.resize(6, manip_->numJoints());
-      // tesseract_kinematics::numericalJacobian(jac_test, *manip_, dofvals0, res.link_names[0],
+      // tesseract::kinematics::numericalJacobian(jac_test, *manip_, dofvals0, res.link_names[0],
       // res.nearest_points_local[0]); bool check = jac.isApprox(jac_test, 1e-3); assert(check == true);
 
       const Eigen::VectorXd dist_grad = -res.normal.transpose() * jac.topRows(3);
@@ -964,7 +964,7 @@ void DiscreteCollisionEvaluator::Plot(const std::shared_ptr<tesseract::visualiza
 
       // Eigen::MatrixXd jac_test;
       // jac_test.resize(6, manip_->numJoints());
-      // tesseract_kinematics::numericalJacobian(jac_test, *manip_, dofvals0, res.link_names[1],
+      // tesseract::kinematics::numericalJacobian(jac_test, *manip_, dofvals0, res.link_names[1],
       // res.nearest_points_local[1]); bool check = jac.isApprox(jac_test, 1e-3); assert(check == true);
 
       const Eigen::VectorXd dist_grad = res.normal.transpose() * jac.topRows(3);
@@ -1199,7 +1199,7 @@ void CastCollisionEvaluator::Plot(const std::shared_ptr<tesseract::visualization
 
       // Eigen::MatrixXd jac_test;
       // jac_test.resize(6, manip_->numJoints());
-      // tesseract_kinematics::numericalJacobian(jac_test, world_to_base_, *manip_, dofvals, itA->link_name,
+      // tesseract::kinematics::numericalJacobian(jac_test, world_to_base_, *manip_, dofvals, itA->link_name,
       // res.nearest_points_local[0]); bool check = jac.isApprox(jac_test, 1e-3); assert(check == true);
 
       const Eigen::VectorXd dist_grad = -res.normal.transpose() * jac.topRows(3);
@@ -1218,7 +1218,7 @@ void CastCollisionEvaluator::Plot(const std::shared_ptr<tesseract::visualization
 
       // Eigen::MatrixXd jac_test;
       // jac_test.resize(6, manip_->numJoints());
-      // tesseract_kinematics::numericalJacobian(jac_test, world_to_base_, *manip_, dofvals, itB->link_name,
+      // tesseract::kinematics::numericalJacobian(jac_test, world_to_base_, *manip_, dofvals, itB->link_name,
       // res.nearest_points_local[1]); bool check = jac.isApprox(jac_test, 1e-3); assert(check == true)
 
       const Eigen::VectorXd dist_grad = res.normal.transpose() * jac.topRows(3);

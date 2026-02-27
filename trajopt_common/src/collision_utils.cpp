@@ -25,8 +25,8 @@
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <boost/functional/hash.hpp>
 #include <console_bridge/console.h>
-#include <tesseract_kinematics/core/joint_group.h>
-#include <tesseract_kinematics/core/utils.h>
+#include <tesseract/kinematics/joint_group.h>
+#include <tesseract/kinematics/utils.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt_common/collision_utils.h>
@@ -166,7 +166,7 @@ void calcGradient(GradientResults& results,
 
   //  Eigen::MatrixXd jac_test;
   //  jac_test.resize(6, manip->numJoints());
-  //  tesseract_kinematics::numericalJacobian(jac_test, world_to_base, *manip, dofvals, it->link_name,
+  //  tesseract::kinematics::numericalJacobian(jac_test, world_to_base, *manip, dofvals, it->link_name,
   //  contact_result.nearest_points_local[i]); bool check = link_gradient.jacobian.isApprox(jac_test.topRows(3), 1e-3);
   //  assert(check == true);
   // #endif

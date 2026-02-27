@@ -4,9 +4,9 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <json/value.h>
 #include <thread>
 TRAJOPT_IGNORE_WARNINGS_POP
-#include <tesseract_environment/environment.h>
-#include <tesseract_common/resource_locator.h>
-#include <tesseract_urdf/urdf_parser.h>
+#include <tesseract/environment/environment.h>
+#include <tesseract/common/resource_locator.h>
+#include <tesseract/urdf/urdf_parser.h>
 
 #include <trajopt/collision_terms.hpp>
 #include <trajopt/plot_callback.hpp>

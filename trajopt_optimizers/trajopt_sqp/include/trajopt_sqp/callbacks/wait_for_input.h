@@ -26,7 +26,7 @@
 
 #include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
-#include <tesseract_visualization/fwd.h>
+#include <tesseract/visualization/fwd.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt_sqp/sqp_callback.h>

@@ -14,9 +14,7 @@ find_package(Boost REQUIRED)
 find_package(console_bridge REQUIRED)
 find_package(trajopt_sco REQUIRED)
 find_package(trajopt_common REQUIRED)
-find_package(tesseract_common REQUIRED)
-find_package(tesseract_environment REQUIRED)
-find_package(tesseract_visualization REQUIRED)
+find_package(tesseract REQUIRED COMPONENTS common environment visualization)
 if(NOT TARGET JsonCpp::JsonCpp)
   find_package(jsoncpp REQUIRED)
 elseif(NOT TARGET jsoncpp_lib)
@@ -45,9 +43,9 @@ target_link_libraries(
   ${PROJECT_NAME}
   PUBLIC trajopt::trajopt_sco
          trajopt::trajopt_common
-         tesseract::tesseract_common
-         tesseract::tesseract_environment
-         tesseract::tesseract_visualization
+         tesseract::common
+         tesseract::environment
+         tesseract::visualization
          console_bridge::console_bridge
          Boost::boost
          Eigen3::Eigen

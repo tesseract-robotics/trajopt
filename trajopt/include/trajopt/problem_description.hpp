@@ -4,10 +4,10 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <type_traits>
 TRAJOPT_IGNORE_WARNINGS_POP
 
-#include <tesseract_environment/fwd.h>
-#include <tesseract_kinematics/core/fwd.h>
-#include <tesseract_visualization/fwd.h>
-#include <tesseract_collision/core/types.h>
+#include <tesseract/environment/fwd.h>
+#include <tesseract/kinematics/fwd.h>
+#include <tesseract/visualization/fwd.h>
+#include <tesseract/collision/types.h>
 
 #include <trajopt/typedefs.hpp>
 #include <trajopt_common/collision_types.h>

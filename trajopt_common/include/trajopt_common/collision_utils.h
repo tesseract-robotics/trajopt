@@ -27,8 +27,8 @@
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <Eigen/Eigen>
 #include <array>
-#include <tesseract_collision/core/types.h>
-#include <tesseract_kinematics/core/fwd.h>
+#include <tesseract/collision/types.h>
+#include <tesseract/kinematics/fwd.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace trajopt_common

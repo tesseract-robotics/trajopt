@@ -26,8 +26,8 @@
 
 #include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
-#include <tesseract_visualization/fwd.h>
-#include <tesseract_state_solver/fwd.h>
+#include <tesseract/visualization/fwd.h>
+#include <tesseract/state_solver/fwd.h>
 #include <trajopt_ifopt/fwd.h>
 #include <vector>
 TRAJOPT_IGNORE_WARNINGS_POP

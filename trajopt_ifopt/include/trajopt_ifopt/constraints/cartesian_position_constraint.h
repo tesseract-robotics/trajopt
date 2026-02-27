@@ -31,8 +31,8 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt_ifopt/core/constraint_set.h>
-#include <tesseract_common/eigen_types.h>
-#include <tesseract_kinematics/core/fwd.h>
+#include <tesseract/common/eigen_types.h>
+#include <tesseract/kinematics/fwd.h>
 
 namespace trajopt_ifopt
 {

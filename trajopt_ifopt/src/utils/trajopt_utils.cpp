@@ -26,7 +26,7 @@
 #include <trajopt_ifopt/variable_sets/var.h>
 
 TRAJOPT_IGNORE_WARNINGS_PUSH
-#include <tesseract_common/joint_state.h>
+#include <tesseract/common/joint_state.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace trajopt_ifopt

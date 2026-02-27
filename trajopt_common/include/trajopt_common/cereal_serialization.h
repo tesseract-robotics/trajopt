@@ -3,7 +3,7 @@
 
 #include <trajopt_common/collision_types.h>
 
-#include <tesseract_collision/core/cereal_serialization.h>
+#include <tesseract/collision/cereal_serialization.h>
 
 #include <cereal/cereal.hpp>
 #include <cereal/types/unordered_map.hpp>

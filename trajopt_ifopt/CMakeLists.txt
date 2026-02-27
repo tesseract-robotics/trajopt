@@ -12,7 +12,7 @@ endif()
 find_package(trajopt_common REQUIRED)
 find_package(console_bridge REQUIRED)
 find_package(Eigen3 REQUIRED)
-find_package(tesseract_environment REQUIRED)
+find_package(tesseract REQUIRED COMPONENTS environment)
 find_package(Boost REQUIRED)
 
 # Load variable for clang tidy args, compiler options and cxx version
@@ -58,7 +58,7 @@ target_link_libraries(
   ${PROJECT_NAME}
   PUBLIC console_bridge::console_bridge
          trajopt::trajopt_common
-         tesseract::tesseract_environment
+         tesseract::environment
          Eigen3::Eigen
          Boost::boost)
 target_compile_options(${PROJECT_NAME} PRIVATE ${TRAJOPT_COMPILE_OPTIONS_PRIVATE})
@@ -80,7 +80,7 @@ configure_package(
     trajopt_common
     console_bridge
     Eigen3
-    tesseract_environment
+    "tesseract COMPONENTS environment"
     Boost)
 
 # Mark cpp header files for installation

@@ -14,8 +14,7 @@ find_package(OsqpEigen REQUIRED)
 find_package(trajopt_ifopt REQUIRED)
 find_package(trajopt_common REQUIRED)
 find_package(ros_industrial_cmake_boilerplate REQUIRED)
-find_package(tesseract_common REQUIRED)
-find_package(tesseract_visualization REQUIRED)
+find_package(tesseract REQUIRED COMPONENTS common visualization)
 
 # Load variable for clang tidy args, compiler options and cxx version
 trajopt_variables()
@@ -54,8 +53,8 @@ target_link_libraries(
   ${PROJECT_NAME}_callbacks
   PUBLIC trajopt::trajopt_ifopt
          trajopt::trajopt_common
-         tesseract::tesseract_visualization
-         tesseract::tesseract_common
+         tesseract::visualization
+         tesseract::common
          console_bridge::console_bridge
          osqp::osqp)
 target_compile_options(${PROJECT_NAME}_callbacks PRIVATE ${TRAJOPT_COMPILE_OPTIONS_PRIVATE})
@@ -76,8 +75,7 @@ configure_package(
     OsqpEigen
     trajopt_ifopt
     trajopt_common
-    tesseract_common
-    tesseract_visualization)
+    "tesseract COMPONENTS common visualization")
 
 # Mark cpp header files for installation
 install(
