@@ -17,12 +17,34 @@ TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace sco
 {
+
 const bool SUPER_DEBUG_MODE = false;
+
+std::string toString(OptStatus status)
+{
+  switch (status)
+  {
+    case OptStatus::OPT_CONVERGED:
+      return "OPT_CONVERGED";
+    case OptStatus::OPT_SCO_ITERATION_LIMIT:
+      return "OPT_SCO_ITERATION_LIMIT";
+    case OptStatus::OPT_PENALTY_ITERATION_LIMIT:
+      return "OPT_PENALTY_ITERATION_LIMIT";
+    case OptStatus::OPT_TIME_LIMIT:
+      return "OPT_TIME_LIMIT";
+    case OptStatus::OPT_FAILED:
+      return "OPT_FAILED";
+    case OptStatus::INVALID:
+      return "INVALID";
+    default:
+      return "OPT_STATUS_UNKNOWN";
+  }
+}
 
 std::ostream& operator<<(std::ostream& o, const OptResults& r)
 {
   o << "Optimization results:" << '\n'
-    << "status: " << statusToString(r.status) << '\n'
+    << "status: " << toString(r.status) << '\n'
     << "cost values: " << trajopt_common::Str(r.cost_vals) << '\n'
     << "constraint violations: " << trajopt_common::Str(r.cnt_viols) << '\n'
     << "n func evals: " << r.n_func_evals << '\n'

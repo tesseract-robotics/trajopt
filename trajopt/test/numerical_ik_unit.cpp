@@ -106,7 +106,7 @@ void runTest(const Environment::Ptr& env, const Visualization::Ptr& /*plotter*/,
   const sco::OptStatus status = opt->optimize();
   stopwatch.stop();
   CONSOLE_BRIDGE_logError("Test took %f seconds.", stopwatch.elapsedSeconds());
-  CONSOLE_BRIDGE_logDebug("Status: %s", sco::statusToString(status).c_str());
+  CONSOLE_BRIDGE_logDebug("Status: %s", sco::toString(status).c_str());
   Eigen::Isometry3d final_pose = prob->GetKin()->calcFwdKin(toVectorXd(opt->x())).at("l_gripper_tool_frame");
   final_pose = change_base * final_pose;
 

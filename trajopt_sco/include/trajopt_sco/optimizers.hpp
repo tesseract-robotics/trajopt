@@ -15,6 +15,13 @@ TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace sco
 {
+
+/**
+ * @brief Status codes reported by the solver.
+ *
+ * These values describe why an optimization run is still in progress, terminated
+ * successfully, or stopped early due to limits/errors.
+ */
 enum OptStatus : std::uint8_t
 {
   OPT_CONVERGED,
@@ -24,10 +31,12 @@ enum OptStatus : std::uint8_t
   OPT_FAILED,
   INVALID
 };
-static const std::array<std::string, 6> OptStatus_strings = {
-  "OPT_CONVERGED", "OPT_SCO_ITERATION_LIMIT", "OPT_PENALTY_ITERATION_LIMIT", "OPT_TIME_LIMIT", "OPT_FAILED", "INVALID"
-};
-inline std::string statusToString(OptStatus status) { return OptStatus_strings[status]; }
+
+/**
+ * @brief Return a string representation of the OptStatus.
+ */
+std::string toString(OptStatus status);
+
 struct OptResults
 {
   DblVec x;  // solution estimate
