@@ -116,4 +116,27 @@ void SQPResults::print() const
   std::cout << "overall_iteration: " << overall_iteration << '\n';
 }
 
+std::string toString(SQPStatus status)
+{
+  switch (status)
+  {
+    case SQPStatus::kRunning:
+      return "SQP_RUNNING";
+    case SQPStatus::kConverged:
+      return "SQP_CONVERGED";
+    case SQPStatus::kIterationLimit:
+      return "SQP_ITERATION_LIMIT";
+    case SQPStatus::kPenaltyIterationLimit:
+      return "SQP_PENALTY_ITERATION_LIMIT";
+    case SQPStatus::kTimeLimit:
+      return "SQP_TIME_LIMIT";
+    case SQPStatus::kQPSolveFailed:
+      return "SQP_FAILED";
+    case SQPStatus::kStoppedByCallback:
+      return "SQP_STOPPED_BY_CALLBACK";
+    default:
+      return "SQP_STATUS_UNKNOWN";
+  }
+}
+
 }  // namespace trajopt_sqp

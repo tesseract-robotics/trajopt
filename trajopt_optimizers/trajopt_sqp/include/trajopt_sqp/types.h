@@ -208,9 +208,9 @@ struct SQPResults
 };
 
 /**
- * @brief Status codes reported by the SQP solver.
+ * @brief Status codes reported by the solver.
  *
- * These values describe why an SQP run is still in progress, terminated
+ * These values describe why an optimization run is still in progress, terminated
  * successfully, or stopped early due to limits/errors.
  */
 enum class SQPStatus : std::uint8_t
@@ -223,6 +223,11 @@ enum class SQPStatus : std::uint8_t
   kQPSolveFailed,         /**< QP solve failed (solver error / no solution returned) */
   kStoppedByCallback      /**< Stopped because callback returned false */
 };
+
+/**
+ * @brief Return a string representation of the SQPStatus.
+ */
+std::string toString(SQPStatus status);
 
 }  // namespace trajopt_sqp
 
