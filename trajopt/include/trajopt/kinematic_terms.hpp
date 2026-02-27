@@ -3,8 +3,8 @@
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <Eigen/Geometry>
 #include <functional>
-#include <tesseract_kinematics/core/fwd.h>
-#include <tesseract_visualization/fwd.h>
+#include <tesseract/kinematics/fwd.h>
+#include <tesseract/visualization/fwd.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt/typedefs.hpp>

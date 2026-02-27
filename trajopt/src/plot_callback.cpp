@@ -1,11 +1,11 @@
 #include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <functional>
-#include <tesseract_common/joint_state.h>
-#include <tesseract_state_solver/state_solver.h>
-#include <tesseract_kinematics/core/joint_group.h>
-#include <tesseract_environment/environment.h>
-#include <tesseract_visualization/visualization.h>
+#include <tesseract/common/joint_state.h>
+#include <tesseract/state_solver/state_solver.h>
+#include <tesseract/kinematics/joint_group.h>
+#include <tesseract/environment/environment.h>
+#include <tesseract/visualization/visualization.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt_sco/optimizers.hpp>

@@ -27,12 +27,12 @@
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <gtest/gtest.h>
 #include <iostream>
-#include <tesseract_kinematics/core/joint_group.h>
-#include <tesseract_scene_graph/scene_state.h>
-#include <tesseract_environment/environment.h>
-#include <tesseract_environment/utils.h>
-#include <tesseract_common/resource_locator.h>
-#include <tesseract_common/types.h>
+#include <tesseract/kinematics/joint_group.h>
+#include <tesseract/scene_graph/scene_state.h>
+#include <tesseract/environment/environment.h>
+#include <tesseract/environment/utils.h>
+#include <tesseract/common/resource_locator.h>
+#include <tesseract/common/types.h>
 #include <console_bridge/console.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 

@@ -28,9 +28,9 @@
 #include <trajopt_ifopt/variable_sets/var.h>
 #include <trajopt_ifopt/utils/trajopt_utils.h>
 
-#include <tesseract_common/joint_state.h>
-#include <tesseract_visualization/visualization.h>
-#include <tesseract_state_solver/state_solver.h>
+#include <tesseract/common/joint_state.h>
+#include <tesseract/visualization/visualization.h>
+#include <tesseract/state_solver/state_solver.h>
 
 using namespace trajopt_sqp;
 

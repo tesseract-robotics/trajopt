@@ -40,7 +40,7 @@ macro(add_gtest test_name test_file)
   target_link_libraries(
     ${test_name}
     ${PROJECT_NAME}
-    tesseract::tesseract_environment
+    tesseract::environment
     GTest::GTest
     GTest::Main
     ${Boost_SYSTEM_LIBRARY}

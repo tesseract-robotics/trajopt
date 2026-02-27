@@ -26,12 +26,12 @@
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <ctime>
 #include <gtest/gtest.h>
-#include <tesseract_common/resource_locator.h>
-#include <tesseract_collision/core/discrete_contact_manager.h>
-#include <tesseract_kinematics/core/joint_group.h>
-#include <tesseract_state_solver/state_solver.h>
-#include <tesseract_environment/environment.h>
-#include <tesseract_environment/utils.h>
+#include <tesseract/common/resource_locator.h>
+#include <tesseract/collision/discrete_contact_manager.h>
+#include <tesseract/kinematics/joint_group.h>
+#include <tesseract/state_solver/state_solver.h>
+#include <tesseract/environment/environment.h>
+#include <tesseract/environment/utils.h>
 #include <trajopt_common/collision_types.h>
 #include <console_bridge/console.h>
 TRAJOPT_IGNORE_WARNINGS_POP
@@ -49,12 +49,12 @@ TRAJOPT_IGNORE_WARNINGS_POP
 #include <trajopt_ifopt/costs/squared_cost.h>
 
 using namespace trajopt_ifopt;
-using namespace tesseract_environment;
-using namespace tesseract_kinematics;
-using namespace tesseract_collision;
-using namespace tesseract_scene_graph;
-using namespace tesseract_geometry;
-using namespace tesseract_common;
+using namespace tesseract::environment;
+using namespace tesseract::kinematics;
+using namespace tesseract::collision;
+using namespace tesseract::scene_graph;
+using namespace tesseract::geometry;
+using namespace tesseract::common;
 
 class SimpleCollisionTest : public testing::TestWithParam<const char*>
 {
@@ -82,7 +82,7 @@ TEST_F(SimpleCollisionTest, spheres)  // NOLINT
   std::vector<ContactResultMap> collisions;
   auto state_solver = env->getStateSolver();
   DiscreteContactManager::Ptr const manager = env->getDiscreteContactManager();
-  const tesseract_kinematics::JointGroup::ConstPtr manip = env->getJointGroup("manipulator");
+  const tesseract::kinematics::JointGroup::ConstPtr manip = env->getJointGroup("manipulator");
   const std::vector<Bounds> bounds = toBounds(manip->getLimits().joint_limits);
 
   manager->setActiveCollisionObjects(manip->getActiveLinkNames());

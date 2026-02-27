@@ -3,8 +3,8 @@
 #include <functional>
 #include <memory>
 
-#include <tesseract_visualization/fwd.h>
-#include <tesseract_state_solver/fwd.h>
+#include <tesseract/visualization/fwd.h>
+#include <tesseract/state_solver/fwd.h>
 
 namespace sco
 {

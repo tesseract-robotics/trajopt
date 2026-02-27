@@ -23,7 +23,7 @@
  */
 
 #include <trajopt_sqp/types.h>
-#include <tesseract_common/utils.h>
+#include <tesseract/common/utils.h>
 
 #include <iostream>
 

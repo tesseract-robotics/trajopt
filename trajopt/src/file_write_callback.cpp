@@ -18,8 +18,8 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <functional>
 #include <fstream>
 #include <console_bridge/console.h>
-#include <tesseract_kinematics/core/joint_group.h>
-#include <tesseract_environment/environment.h>
+#include <tesseract/kinematics/joint_group.h>
+#include <tesseract/environment/environment.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt/file_write_callback.hpp>

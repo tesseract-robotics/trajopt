@@ -21,9 +21,9 @@ TRAJOPT_IGNORE_WARNINGS_POP
 #include <trajopt_common/logging.hpp>
 #include <trajopt_common/vector_ops.hpp>
 
-#include <tesseract_kinematics/core/joint_group.h>
-#include <tesseract_environment/environment.h>
-#include <tesseract_visualization/visualization.h>
+#include <tesseract/kinematics/joint_group.h>
+#include <tesseract/environment/environment.h>
+#include <tesseract/visualization/visualization.h>
 
 namespace
 {

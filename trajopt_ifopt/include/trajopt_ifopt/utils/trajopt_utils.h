@@ -27,8 +27,8 @@
 #include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <memory>
-#include <tesseract_common/eigen_types.h>
-#include <tesseract_common/fwd.h>
+#include <tesseract/common/eigen_types.h>
+#include <tesseract/common/fwd.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace trajopt_ifopt
@@ -43,7 +43,7 @@ class Var;
 tesseract::common::TrajArray toTrajArray(const std::vector<std::shared_ptr<const Var>>& joint_positions);
 
 /**
- * @brief Converts a vector of trajopt variables into tesseract_common JointTrajectory
+ * @brief Converts a vector of trajopt variables into tesseract::common::JointTrajectory
  * @param joint_positions Vector of joint positions. Must be in order and all the same length
  * @return JointTrajectory
  */

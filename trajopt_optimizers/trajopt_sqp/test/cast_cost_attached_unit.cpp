@@ -28,21 +28,21 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <gtest/gtest.h>
 #include <console_bridge/console.h>
 #include <OsqpEigen/OsqpEigen.h>
-#include <tesseract_common/types.h>
-#include <tesseract_common/resource_locator.h>
-#include <tesseract_common/allowed_collision_matrix.h>
-#include <tesseract_collision/core/continuous_contact_manager.h>
-#include <tesseract_kinematics/core/joint_group.h>
-#include <tesseract_state_solver/state_solver.h>
-#include <tesseract_scene_graph/link.h>
-#include <tesseract_scene_graph/joint.h>
-#include <tesseract_environment/environment.h>
-#include <tesseract_environment/utils.h>
-#include <tesseract_environment/commands/add_link_command.h>
-#include <tesseract_environment/commands/modify_allowed_collisions_command.h>
-#include <tesseract_environment/commands/change_link_collision_enabled_command.h>
-#include <tesseract_geometry/impl/box.h>
-#include <tesseract_geometry/impl/octree.h>
+#include <tesseract/common/types.h>
+#include <tesseract/common/resource_locator.h>
+#include <tesseract/common/allowed_collision_matrix.h>
+#include <tesseract/collision/continuous_contact_manager.h>
+#include <tesseract/kinematics/joint_group.h>
+#include <tesseract/state_solver/state_solver.h>
+#include <tesseract/scene_graph/link.h>
+#include <tesseract/scene_graph/joint.h>
+#include <tesseract/environment/environment.h>
+#include <tesseract/environment/utils.h>
+#include <tesseract/environment/commands/add_link_command.h>
+#include <tesseract/environment/commands/modify_allowed_collisions_command.h>
+#include <tesseract/environment/commands/change_link_collision_enabled_command.h>
+#include <tesseract/geometry/impl/box.h>
+#include <tesseract/geometry/impl/octree.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt_common/collision_types.h>

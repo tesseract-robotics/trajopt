@@ -25,11 +25,11 @@
 
 #include <trajopt_ifopt/constraints/cartesian_position_constraint.h>
 
-#include <tesseract_scene_graph/link.h>
+#include <tesseract/scene_graph/link.h>
 
-#include <tesseract_visualization/visualization.h>
-#include <tesseract_visualization/markers/arrow_marker.h>
-#include <tesseract_visualization/markers/axis_marker.h>
+#include <tesseract/visualization/visualization.h>
+#include <tesseract/visualization/markers/arrow_marker.h>
+#include <tesseract/visualization/markers/axis_marker.h>
 
 using namespace trajopt_sqp;
 

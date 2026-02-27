@@ -17,9 +17,7 @@
   <depend>osqp_eigen</depend>
   <depend>trajopt_ifopt</depend>
   <depend>trajopt_common</depend>
-  <depend>tesseract_common</depend>
-  <depend>tesseract_state_solver</depend>
-  <depend>tesseract_visualization</depend>
+  <depend>tesseract</depend>
 
   <test_depend>gtest</test_depend>
   <test_depend>trajopt</test_depend>

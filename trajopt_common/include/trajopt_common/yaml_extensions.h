@@ -31,8 +31,8 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt_common/collision_types.h>
-#include <tesseract_collision/core/yaml_extensions.h>
-#include <tesseract_common/yaml_extensions.h>
+#include <tesseract/collision/yaml_extensions.h>
+#include <tesseract/common/yaml_extensions.h>
 
 namespace YAML
 {

@@ -30,11 +30,11 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <memory>
 #include <functional>
 
-#include <tesseract_collision/core/fwd.h>
-#include <tesseract_kinematics/core/fwd.h>
-#include <tesseract_environment/fwd.h>
-#include <tesseract_common/eigen_types.h>
-#include <tesseract_common/collision_margin_data.h>
+#include <tesseract/collision/fwd.h>
+#include <tesseract/kinematics/fwd.h>
+#include <tesseract/environment/fwd.h>
+#include <tesseract/common/eigen_types.h>
+#include <tesseract/common/collision_margin_data.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt_common/collision_types.h>

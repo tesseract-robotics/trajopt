@@ -27,7 +27,7 @@
 
 #include <trajopt_ifopt/constraints/collision/discrete_collision_constraint.h>
 
-#include <tesseract_visualization/visualization.h>
+#include <tesseract/visualization/visualization.h>
 
 using namespace trajopt_sqp;
 

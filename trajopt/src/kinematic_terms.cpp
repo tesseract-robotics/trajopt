@@ -4,13 +4,13 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <Eigen/Core>
 #include <boost/format.hpp>
 #include <iostream>
-#include <tesseract_common/eigen_types.h>
-#include <tesseract_kinematics/core/joint_group.h>
-#include <tesseract_kinematics/core/utils.h>
-#include <tesseract_scene_graph/link.h>
-#include <tesseract_visualization/visualization.h>
-#include <tesseract_visualization/markers/axis_marker.h>
-#include <tesseract_visualization/markers/arrow_marker.h>
+#include <tesseract/common/eigen_types.h>
+#include <tesseract/kinematics/joint_group.h>
+#include <tesseract/kinematics/utils.h>
+#include <tesseract/scene_graph/link.h>
+#include <tesseract/visualization/visualization.h>
+#include <tesseract/visualization/markers/axis_marker.h>
+#include <tesseract/visualization/markers/arrow_marker.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt/kinematic_terms.hpp>

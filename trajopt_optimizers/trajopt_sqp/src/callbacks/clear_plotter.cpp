@@ -23,7 +23,7 @@
  * limitations under the License.
  */
 #include <trajopt_sqp/callbacks/clear_plotter.h>
-#include <tesseract_visualization/visualization.h>
+#include <tesseract/visualization/visualization.h>
 
 using namespace trajopt_sqp;
 

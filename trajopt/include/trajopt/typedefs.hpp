@@ -3,14 +3,14 @@
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <Eigen/Core>
 #include <vector>
-#include <tesseract_visualization/fwd.h>
+#include <tesseract/visualization/fwd.h>
 #include <unordered_map>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt_sco/modeling.hpp>
 #include <trajopt_sco/modeling_utils.hpp>
 #include <trajopt_common/basic_array.hpp>
-#include <tesseract_common/eigen_types.h>
+#include <tesseract/common/eigen_types.h>
 
 namespace trajopt
 {

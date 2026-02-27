@@ -2,12 +2,12 @@
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <ctime>
 #include <gtest/gtest.h>
-#include <tesseract_common/types.h>
-#include <tesseract_common/resource_locator.h>
-#include <tesseract_kinematics/core/joint_group.h>
-#include <tesseract_scene_graph/scene_state.h>
-#include <tesseract_environment/environment.h>
-#include <tesseract_environment/utils.h>
+#include <tesseract/common/types.h>
+#include <tesseract/common/resource_locator.h>
+#include <tesseract/kinematics/joint_group.h>
+#include <tesseract/scene_graph/scene_state.h>
+#include <tesseract/environment/environment.h>
+#include <tesseract/environment/utils.h>
 #include <console_bridge/console.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
@@ -107,7 +107,7 @@ TEST_F(KinematicCostsTest, CartPoseJacCalculator)  // NOLINT
 //  j["l_elbow_flex_joint"] = -0.15;
 //  env->setState(j);
 //  auto world_to_base = env->getCurrentState()->link_transforms.at(kin->getBaseLinkName());
-//  auto adjacency_map = std::make_shared<tesseract_environment::AdjacencyMap>(
+//  auto adjacency_map = std::make_shared<tesseract::environment::AdjacencyMap>(
 //      env->getSceneGraph(), kin->getActiveLinkNames(), env->getCurrentState()->link_transforms);
 
 //  std::string link = "r_gripper_tool_frame";

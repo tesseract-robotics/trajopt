@@ -13,9 +13,7 @@ endif()
 
 find_package(Eigen3 REQUIRED)
 find_package(Boost COMPONENTS program_options REQUIRED)
-find_package(tesseract_common REQUIRED)
-find_package(tesseract_collision COMPONENTS core REQUIRED)
-find_package(tesseract_kinematics COMPONENTS core REQUIRED)
+find_package(tesseract REQUIRED COMPONENTS common collision kinematics)
 
 # Load variable for clang tidy args, compiler options and cxx version
 trajopt_variables()
@@ -33,9 +31,9 @@ target_link_libraries(
   ${PROJECT_NAME}
   PUBLIC Eigen3::Eigen
          Boost::program_options
-         tesseract::tesseract_common
-         tesseract::tesseract_collision_core
-         tesseract::tesseract_kinematics_core)
+         tesseract::common
+         tesseract::collision
+         tesseract::kinematics)
 target_compile_options(${PROJECT_NAME} PRIVATE ${TRAJOPT_COMPILE_OPTIONS_PRIVATE})
 target_compile_options(${PROJECT_NAME} PUBLIC ${TRAJOPT_COMPILE_OPTIONS_PUBLIC})
 target_compile_definitions(${PROJECT_NAME} PUBLIC ${TRAJOPT_COMPILE_DEFINITIONS}
@@ -48,11 +46,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC "$<BUILD_INTERFACE:${CMAKE_CUR
 configure_package(
   NAMESPACE trajopt
   TARGETS ${PROJECT_NAME}
-  DEPENDENCIES
-    Eigen3
-    tesseract_common
-    "tesseract_collision COMPONENTS core"
-    "tesseract_kinematics COMPONENTS core"
+  DEPENDENCIES Eigen3 "tesseract COMPONENTS common collision kinematics"
   CFG_EXTRAS cmake/trajopt_macros.cmake)
 
 # Mark cpp header files for installation

@@ -15,8 +15,7 @@
   <build_depend>ros_industrial_cmake_boilerplate</build_depend>
   <depend>eigen</depend>
   <depend>libconsole-bridge-dev</depend>
-  <depend>tesseract_collision</depend>
-  <depend>tesseract_environment</depend>
+  <depend>tesseract</depend>
   <depend>trajopt_common</depend>
   <depend>boost</depend>
 

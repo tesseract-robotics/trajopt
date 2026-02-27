@@ -28,12 +28,12 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <gtest/gtest.h>
 #include <console_bridge/console.h>
 #include <OsqpEigen/OsqpEigen.h>
-#include <tesseract_common/resource_locator.h>
-#include <tesseract_collision/core/continuous_contact_manager.h>
-#include <tesseract_kinematics/core/joint_group.h>
-#include <tesseract_state_solver/state_solver.h>
-#include <tesseract_environment/environment.h>
-#include <tesseract_environment/utils.h>
+#include <tesseract/common/resource_locator.h>
+#include <tesseract/collision/continuous_contact_manager.h>
+#include <tesseract/kinematics/joint_group.h>
+#include <tesseract/state_solver/state_solver.h>
+#include <tesseract/environment/environment.h>
+#include <tesseract/environment/utils.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt_common/collision_types.h>

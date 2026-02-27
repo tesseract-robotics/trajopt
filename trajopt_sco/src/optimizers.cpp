@@ -13,7 +13,7 @@ TRAJOPT_IGNORE_WARNINGS_POP
 #include <trajopt_sco/solver_interface.hpp>
 #include <trajopt_common/logging.hpp>
 #include <trajopt_common/stl_to_string.hpp>
-#include <tesseract_common/utils.h>
+#include <tesseract/common/utils.h>
 
 namespace sco
 {

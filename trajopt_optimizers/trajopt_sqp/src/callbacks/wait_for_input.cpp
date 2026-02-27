@@ -22,7 +22,7 @@
  * limitations under the License.
  */
 #include <trajopt_sqp/callbacks/wait_for_input.h>
-#include <tesseract_visualization/visualization.h>
+#include <tesseract/visualization/visualization.h>
 
 using namespace trajopt_sqp;
 
