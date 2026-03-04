@@ -88,7 +88,9 @@ struct ThreeWaypointProblem
   std::shared_ptr<trajopt_ifopt::NodesVariables> variables;
   std::vector<std::shared_ptr<const trajopt_ifopt::Var>> vars;
 
-  ThreeWaypointProblem(Eigen::Index n_joints, const Eigen::VectorXd& pos0, const Eigen::VectorXd& pos1,
+  ThreeWaypointProblem(Eigen::Index n_joints,
+                       const Eigen::VectorXd& pos0,
+                       const Eigen::VectorXd& pos1,
                        const Eigen::VectorXd& pos2)
   {
     std::vector<std::unique_ptr<trajopt_ifopt::Node>> nodes;
@@ -195,8 +197,8 @@ template <typename T>
 void runHessianMultipleCostsTest()
 {
   const Eigen::Index nj = 2;
-  ThreeWaypointProblem prob(nj, Eigen::VectorXd::Zero(nj), Eigen::VectorXd::Ones(nj) * 5.0,
-                            Eigen::VectorXd::Ones(nj) * 10.0);
+  ThreeWaypointProblem prob(
+      nj, Eigen::VectorXd::Zero(nj), Eigen::VectorXd::Ones(nj) * 5.0, Eigen::VectorXd::Ones(nj) * 10.0);
 
   // Velocity-only problem
   auto qp_vel = std::make_shared<T>(prob.variables);
@@ -210,8 +212,7 @@ void runHessianMultipleCostsTest()
   // Acceleration-only problem
   auto qp_accel = std::make_shared<T>(prob.variables);
   const Eigen::VectorXd accel_target = Eigen::VectorXd::Zero(nj);
-  auto accel_cost =
-      std::make_shared<trajopt_ifopt::JointAccelConstraint>(accel_target, prob.vars, coeffs, "accel");
+  auto accel_cost = std::make_shared<trajopt_ifopt::JointAccelConstraint>(accel_target, prob.vars, coeffs, "accel");
   qp_accel->addCostSet(accel_cost, trajopt_sqp::CostPenaltyType::kSquared);
   qp_accel->setup();
   qp_accel->convexify();
@@ -219,8 +220,7 @@ void runHessianMultipleCostsTest()
   // Combined problem
   auto qp_both = std::make_shared<T>(prob.variables);
   auto vel_cost2 = std::make_shared<trajopt_ifopt::JointVelConstraint>(vel_target, prob.vars, coeffs, "vel");
-  auto accel_cost2 =
-      std::make_shared<trajopt_ifopt::JointAccelConstraint>(accel_target, prob.vars, coeffs, "accel");
+  auto accel_cost2 = std::make_shared<trajopt_ifopt::JointAccelConstraint>(accel_target, prob.vars, coeffs, "accel");
   qp_both->addCostSet(vel_cost2, trajopt_sqp::CostPenaltyType::kSquared);
   qp_both->addCostSet(accel_cost2, trajopt_sqp::CostPenaltyType::kSquared);
   qp_both->setup();
@@ -242,7 +242,8 @@ template <typename T>
 void runGradientCorrectionTest()
 {
   const Eigen::Index nj = 2;
-  Eigen::VectorXd pos0(nj), pos1(nj);
+  Eigen::VectorXd pos0(nj);
+  Eigen::VectorXd pos1(nj);
   pos0 << 0.0, 0.0;
   pos1 << 3.0, 5.0;
 
@@ -335,7 +336,8 @@ template <typename T>
 void runHessianSymmetricPSDTest()
 {
   const Eigen::Index nj = 3;
-  Eigen::VectorXd pos0(nj), pos1(nj);
+  Eigen::VectorXd pos0(nj);
+  Eigen::VectorXd pos1(nj);
   pos0 << 1.0, 2.0, 3.0;
   pos1 << 4.0, 1.0, 7.0;
 
@@ -376,10 +378,7 @@ TEST_F(HessianGradientTest, hessian_single_cost_ifopt_problem)
 {
   runHessianSingleCostTest<trajopt_sqp::IfoptQPProblem>();
 }
-TEST_F(HessianGradientTest, hessian_weighted_ifopt_problem)
-{
-  runHessianWeightedTest<trajopt_sqp::IfoptQPProblem>();
-}
+TEST_F(HessianGradientTest, hessian_weighted_ifopt_problem) { runHessianWeightedTest<trajopt_sqp::IfoptQPProblem>(); }
 TEST_F(HessianGradientTest, hessian_multiple_costs_ifopt_problem)
 {
   runHessianMultipleCostsTest<trajopt_sqp::IfoptQPProblem>();
@@ -392,10 +391,7 @@ TEST_F(HessianGradientTest, sparsity_preservation_ifopt_problem)
 {
   runSparsityPreservationTest<trajopt_sqp::IfoptQPProblem>();
 }
-TEST_F(HessianGradientTest, empty_costs_ifopt_problem)
-{
-  runEmptyCostsTest<trajopt_sqp::IfoptQPProblem>();
-}
+TEST_F(HessianGradientTest, empty_costs_ifopt_problem) { runEmptyCostsTest<trajopt_sqp::IfoptQPProblem>(); }
 TEST_F(HessianGradientTest, hessian_symmetric_psd_ifopt_problem)
 {
   runHessianSymmetricPSDTest<trajopt_sqp::IfoptQPProblem>();
@@ -425,10 +421,7 @@ TEST_F(HessianGradientTest, sparsity_preservation_trajopt_problem)
 {
   runSparsityPreservationTest<trajopt_sqp::TrajOptQPProblem>();
 }
-TEST_F(HessianGradientTest, empty_costs_trajopt_problem)
-{
-  runEmptyCostsTest<trajopt_sqp::TrajOptQPProblem>();
-}
+TEST_F(HessianGradientTest, empty_costs_trajopt_problem) { runEmptyCostsTest<trajopt_sqp::TrajOptQPProblem>(); }
 TEST_F(HessianGradientTest, hessian_symmetric_psd_trajopt_problem)
 {
   runHessianSymmetricPSDTest<trajopt_sqp::TrajOptQPProblem>();
@@ -441,7 +434,8 @@ TEST_F(HessianGradientTest, hessian_symmetric_psd_trajopt_problem)
 TEST_F(HessianGradientTest, cross_implementation_agreement)
 {
   const Eigen::Index nj = 3;
-  Eigen::VectorXd pos0(nj), pos1(nj);
+  Eigen::VectorXd pos0(nj);
+  Eigen::VectorXd pos1(nj);
   pos0 << 1.0, -2.0, 0.5;
   pos1 << 4.0, 1.0, -3.0;
 
@@ -475,15 +469,13 @@ TEST_F(HessianGradientTest, cross_implementation_agreement)
 
   for (Eigen::Index r = 0; r < n; ++r)
     for (Eigen::Index c = 0; c < n; ++c)
-      EXPECT_NEAR(H_ifopt(r, c), H_trajopt(r, c), 1e-8)
-          << "Hessian mismatch at (" << r << "," << c << ")";
+      EXPECT_NEAR(H_ifopt(r, c), H_trajopt(r, c), 1e-8) << "Hessian mismatch at (" << r << "," << c << ")";
 
   // NLP gradients should match
   const auto& g_ifopt = qp_ifopt->getGradient();
   const auto& g_trajopt = qp_trajopt->getGradient();
   for (Eigen::Index i = 0; i < n; ++i)
-    EXPECT_NEAR(g_ifopt[i], g_trajopt[i], 1e-8)
-        << "Gradient mismatch at index " << i;
+    EXPECT_NEAR(g_ifopt[i], g_trajopt[i], 1e-8) << "Gradient mismatch at index " << i;
 }
 
 int main(int argc, char** argv)

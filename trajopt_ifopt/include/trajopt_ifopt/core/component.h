@@ -29,6 +29,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #ifndef TRAJOPT_IFOPT_CORE_DYNAMIC_COMPONENT_H
 #define TRAJOPT_IFOPT_CORE_DYNAMIC_COMPONENT_H
+#include <cstdint>
 #include <memory>
 #include <string>
 #include <vector>
@@ -194,7 +195,7 @@ public:
    * @li kStackRows: constraints semantics (rows are concatenated)
    * @li kSumToScalar: costs semantics (all terms accumulate into a single scalar row)
    */
-  enum class Mode
+  enum class Mode : std::uint8_t
   {
     kStackRows,
     kSumToScalar

@@ -188,8 +188,8 @@ void IfoptQPProblem::updateHessian()
   bool first = true;
   for (const auto& c : cost_constraints_)
   {
-    const trajopt_ifopt::Jacobian J = c->getJacobian();        // m_i × n
-    const Eigen::VectorXd w = c->getCoefficients();            // m_i weights
+    const trajopt_ifopt::Jacobian J = c->getJacobian();  // m_i × n
+    const Eigen::VectorXd w = c->getCoefficients();      // m_i weights
 
     if (J.nonZeros() == 0)
       continue;
@@ -261,8 +261,8 @@ void IfoptQPProblem::updateGradient()
 
   for (const auto& c : cost_constraints_)
   {
-    const trajopt_ifopt::Jacobian J = c->getJacobian();   // m × n
-    const Eigen::VectorXd w = c->getCoefficients();       // m weights
+    const trajopt_ifopt::Jacobian J = c->getJacobian();  // m × n
+    const Eigen::VectorXd w = c->getCoefficients();      // m weights
 
     if (J.nonZeros() == 0)
       continue;
