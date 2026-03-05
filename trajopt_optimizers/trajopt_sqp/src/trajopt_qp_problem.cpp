@@ -838,7 +838,7 @@ void TrajOptQPProblem::Implementation::convexify()
   cvp.bounds_upper.tail(cvp.n_slack_vars).setConstant(double(INFINITY));
 
   ////////////////////////////////////////////////////////
-  // Set the Hessian (empty for now)
+  // Initialize Hessian — populated below from squared cost terms
   ////////////////////////////////////////////////////////
   cvp.hessian.resize(cvp.num_qp_vars, cvp.num_qp_vars);
   cvp.hessian.setZero();

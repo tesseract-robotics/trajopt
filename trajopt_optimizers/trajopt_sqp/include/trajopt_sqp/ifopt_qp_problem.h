@@ -25,6 +25,7 @@
 #define TRAJOPT_SQP_IFOPT_QP_PROBLEM_H_
 
 #include <memory>
+#include <vector>
 #include <trajopt_sqp/types.h>
 #include <trajopt_sqp/qp_problem.h>
 #include <trajopt_ifopt/fwd.h>
@@ -113,6 +114,9 @@ protected:
   trajopt_ifopt::Jacobian hessian_;
   Eigen::VectorXd gradient_;
   Eigen::VectorXd cost_constant_;
+
+  /** @brief Raw constraint sets underlying each SquaredCost, saved for Hessian/gradient computation */
+  std::vector<std::shared_ptr<trajopt_ifopt::ConstraintSet>> cost_constraints_;
 
   trajopt_ifopt::Jacobian constraint_matrix_;
   Eigen::VectorXd bounds_lower_;
