@@ -81,33 +81,27 @@ struct MinimalProblem
 };
 
 /**
- * @brief Helper: create a 3-waypoint, n-joint problem
+ * @brief Helper: create an N-waypoint, n-joint problem from a vector of positions
+ *
+ * JointAccelConstraint requires a minimum of 4 waypoints (3-point central difference stencil).
  */
-struct ThreeWaypointProblem
+struct MultiWaypointProblem
 {
   std::shared_ptr<trajopt_ifopt::NodesVariables> variables;
   std::vector<std::shared_ptr<const trajopt_ifopt::Var>> vars;
 
-  ThreeWaypointProblem(Eigen::Index n_joints,
-                       const Eigen::VectorXd& pos0,
-                       const Eigen::VectorXd& pos1,
-                       const Eigen::VectorXd& pos2)
+  MultiWaypointProblem(Eigen::Index n_joints, const std::vector<Eigen::VectorXd>& positions)
   {
     std::vector<std::unique_ptr<trajopt_ifopt::Node>> nodes;
     const std::vector<std::string> joint_names(static_cast<std::size_t>(n_joints), "j");
     const std::vector<trajopt_ifopt::Bounds> bounds(static_cast<std::size_t>(n_joints), trajopt_ifopt::NoBound);
 
-    auto node0 = std::make_unique<trajopt_ifopt::Node>("wp_0");
-    vars.push_back(node0->addVar("position", joint_names, pos0, bounds));
-    nodes.push_back(std::move(node0));
-
-    auto node1 = std::make_unique<trajopt_ifopt::Node>("wp_1");
-    vars.push_back(node1->addVar("position", joint_names, pos1, bounds));
-    nodes.push_back(std::move(node1));
-
-    auto node2 = std::make_unique<trajopt_ifopt::Node>("wp_2");
-    vars.push_back(node2->addVar("position", joint_names, pos2, bounds));
-    nodes.push_back(std::move(node2));
+    for (std::size_t i = 0; i < positions.size(); ++i)
+    {
+      auto node = std::make_unique<trajopt_ifopt::Node>("wp_" + std::to_string(i));
+      vars.push_back(node->addVar("position", joint_names, positions[i], bounds));
+      nodes.push_back(std::move(node));
+    }
 
     variables = std::make_shared<trajopt_ifopt::NodesVariables>("joint_trajectory", std::move(nodes));
   }
@@ -197,8 +191,13 @@ template <typename T>
 void runHessianMultipleCostsTest()
 {
   const Eigen::Index nj = 2;
-  ThreeWaypointProblem prob(
-      nj, Eigen::VectorXd::Zero(nj), Eigen::VectorXd::Ones(nj) * 5.0, Eigen::VectorXd::Ones(nj) * 10.0);
+  // JointAccelConstraint requires >= 4 waypoints for its 3-point central difference stencil.
+  // Use distinct per-joint values so each DOF has different velocity/acceleration profiles.
+  MultiWaypointProblem prob(nj,
+                            { (Eigen::VectorXd(nj) << 0.0, 0.0).finished(),
+                              (Eigen::VectorXd(nj) << 3.0, 1.0).finished(),
+                              (Eigen::VectorXd(nj) << 7.0, 8.0).finished(),
+                              (Eigen::VectorXd(nj) << 10.0, 5.0).finished() });
 
   // Velocity-only problem
   auto qp_vel = std::make_shared<T>(prob.variables);
