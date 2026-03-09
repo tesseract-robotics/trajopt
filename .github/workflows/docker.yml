@@ -42,7 +42,7 @@ jobs:
 
       - name: Extract Docker meta-information
         id: meta
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@v6
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           flavor: |
