@@ -1,4 +1,4 @@
-find_package(GTest REQUIRED)
+find_gtest()
 
 # TrajOpt Common YAML Unit tests
 add_executable(${PROJECT_NAME}_yaml_unit trajopt_common_yaml_conversions_tests.cpp)
