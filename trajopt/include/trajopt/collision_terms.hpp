@@ -238,10 +238,11 @@ protected:
 
   std::pair<ContactResultMapConstPtr, ContactResultVectorConstPtr> GetContactResultCached(const DblVec& x);
 
-  static thread_local tesseract::common::TransformMap transforms_cache0;         // NOLINT
-  static thread_local tesseract::common::TransformMap transforms_cache1;         // NOLINT
-  static thread_local tesseract::common::TransformMap transforms_cache0_update;  // NOLINT
-  static thread_local tesseract::common::TransformMap transforms_cache1_update;  // NOLINT
+  tesseract::common::TransformMap transforms_cache0_;
+  tesseract::common::TransformMap transforms_cache1_;
+  tesseract::common::TransformMap transforms_diff_update_;
+  tesseract::common::TransformMap transforms_cache0_update_;
+  tesseract::common::TransformMap transforms_cache1_update_;
 
   void CollisionsToDistanceExpressions(sco::AffExprVector& exprs,
                                        std::vector<double>& exprs_margin,

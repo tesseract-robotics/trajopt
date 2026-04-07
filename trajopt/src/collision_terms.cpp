@@ -200,11 +200,6 @@ void DebugPrintInfo(const tesseract::collision::ContactResult& res,
 
 }  // namespace
 
-thread_local tesseract::common::TransformMap CollisionEvaluator::transforms_cache0;         // NOLINT
-thread_local tesseract::common::TransformMap CollisionEvaluator::transforms_cache1;         // NOLINT
-thread_local tesseract::common::TransformMap CollisionEvaluator::transforms_cache0_update;  // NOLINT
-thread_local tesseract::common::TransformMap CollisionEvaluator::transforms_cache1_update;  // NOLINT
-
 GradientResults CollisionEvaluator::GetGradient(const Eigen::VectorXd& dofvals,
                                                 const tesseract::collision::ContactResult& contact_result,
                                                 double margin,
@@ -660,18 +655,16 @@ void SingleTimestepCollisionEvaluator::CalcCollisions(const DblVec& x,
 void SingleTimestepCollisionEvaluator::CalcCollisions(const Eigen::Ref<const Eigen::VectorXd>& dof_vals,
                                                       tesseract::collision::ContactResultMap& dist_results)
 {
-  transforms_cache0.clear();
-  transforms_cache0_update.clear();
-  get_state_fn_(transforms_cache0, dof_vals);
+  get_state_fn_(transforms_cache0_, dof_vals);
 
   // If not empty then there are links that are not part of the kinematics object that can move (dynamic environment)
   for (const auto& link_name : diff_active_link_names_)
-    transforms_cache0_update[link_name] = transforms_cache0[link_name];
+    transforms_cache0_update_[link_name] = transforms_cache0_[link_name];
 
   for (const auto& link_name : manip_active_link_names_)
-    transforms_cache0_update[link_name] = transforms_cache0[link_name];
+    transforms_cache0_update_[link_name] = transforms_cache0_[link_name];
 
-  contact_manager_->setCollisionObjectsTransform(transforms_cache0_update);
+  contact_manager_->setCollisionObjectsTransform(transforms_cache0_update_);
 
   contact_manager_->contactTest(dist_results, collision_check_config_.contact_request);
 
@@ -837,18 +830,15 @@ void DiscreteCollisionEvaluator::CalcCollisions(const Eigen::Ref<const Eigen::Ve
   // the longest valid segment length.
   const double dist = (dof_vals1 - dof_vals0).norm();
 
-  transforms_cache0.clear();
-  transforms_cache0_update.clear();
-
   // If not empty then there are links that are not part of the kinematics object that can move (dynamic environment)
   if (!diff_active_link_names_.empty())
   {
-    get_state_fn_(transforms_cache0, dof_vals0);
+    get_state_fn_(transforms_cache0_, dof_vals0);
 
     for (const auto& link_name : diff_active_link_names_)
-      transforms_cache0_update[link_name] = transforms_cache0[link_name];
+      transforms_diff_update_[link_name] = transforms_cache0_[link_name];
 
-    contact_manager_->setCollisionObjectsTransform(transforms_cache0_update);
+    contact_manager_->setCollisionObjectsTransform(transforms_diff_update_);
   }
 
   long cnt = 2;
@@ -889,10 +879,6 @@ void DiscreteCollisionEvaluator::CalcCollisions(const Eigen::Ref<const Eigen::Ve
 #endif
   };
 
-  // Clear caches after diff block so inner loop only contains manip entries
-  transforms_cache0.clear();
-  transforms_cache0_update.clear();
-
   // Perform casted collision checking for sub trajectory and store results in contacts_vector
   const tesseract::common::TrajArray::Index last_state_idx{ subtraj.rows() - 1 };
   const double dt = 1.0 / double(last_state_idx);
@@ -900,12 +886,12 @@ void DiscreteCollisionEvaluator::CalcCollisions(const Eigen::Ref<const Eigen::Ve
   tesseract::collision::ContactResultMap contacts{ dist_results };
   for (int i = 0; i < subtraj.rows(); ++i)
   {
-    get_state_fn_(transforms_cache0, subtraj.row(i));
+    get_state_fn_(transforms_cache0_, subtraj.row(i));
 
     for (const auto& link_name : manip_active_link_names_)
-      transforms_cache0_update[link_name] = transforms_cache0[link_name];
+      transforms_cache0_update_[link_name] = transforms_cache0_[link_name];
 
-    contact_manager_->setCollisionObjectsTransform(transforms_cache0_update);
+    contact_manager_->setCollisionObjectsTransform(transforms_cache0_update_);
 
     contact_manager_->contactTest(contacts, collision_check_config_.contact_request);
 
@@ -935,11 +921,8 @@ void DiscreteCollisionEvaluator::Plot(const std::shared_ptr<tesseract::visualiza
   const Eigen::VectorXd dofvals0 = sco::getVec(x, vars0_);
   const Eigen::VectorXd dofvals1 = sco::getVec(x, vars1_);
 
-  transforms_cache0.clear();
-  transforms_cache1.clear();
-
-  manip_->calcFwdKin(transforms_cache0, dofvals0);
-  manip_->calcFwdKin(transforms_cache1, dofvals1);
+  manip_->calcFwdKin(transforms_cache0_, dofvals0);
+  manip_->calcFwdKin(transforms_cache1_, dofvals1);
 
   tesseract::collision::ContactResultVector dist_results_copy(dist_results.size());
   Eigen::VectorXd collision_margins(dist_results.size());
@@ -1095,20 +1078,15 @@ void CastCollisionEvaluator::CalcCollisions(const Eigen::Ref<const Eigen::Vector
   // the longest valid segment length.
   const double dist = (dof_vals1 - dof_vals0).norm();
 
-  transforms_cache0.clear();
-  transforms_cache1.clear();
-  transforms_cache0_update.clear();
-  transforms_cache1_update.clear();
-
   // If not empty then there are links that are not part of the kinematics object that can move (dynamic environment)
   if (!diff_active_link_names_.empty())
   {
-    get_state_fn_(transforms_cache0, dof_vals0);
+    get_state_fn_(transforms_cache0_, dof_vals0);
 
     for (const auto& link_name : diff_active_link_names_)
-      transforms_cache0_update[link_name] = transforms_cache0[link_name];
+      transforms_diff_update_[link_name] = transforms_cache0_[link_name];
 
-    contact_manager_->setCollisionObjectsTransform(transforms_cache0_update);
+    contact_manager_->setCollisionObjectsTransform(transforms_diff_update_);
   }
 
   // Define Filter
@@ -1137,12 +1115,6 @@ void CastCollisionEvaluator::CalcCollisions(const Eigen::Ref<const Eigen::Vector
 #endif
   };
 
-  // Clear caches after diff block so inner loops only contain manip entries
-  transforms_cache0.clear();
-  transforms_cache1.clear();
-  transforms_cache0_update.clear();
-  transforms_cache1_update.clear();
-
   if (dist > collision_check_config_.longest_valid_segment_length)
   {
     // Calculate the number state to interpolate
@@ -1160,16 +1132,16 @@ void CastCollisionEvaluator::CalcCollisions(const Eigen::Ref<const Eigen::Vector
     const double dt = 1.0 / double(last_state_idx);
     for (int i = 0; i < subtraj.rows() - 1; ++i)
     {
-      manip_->calcFwdKin(transforms_cache0, subtraj.row(i));
-      manip_->calcFwdKin(transforms_cache1, subtraj.row(i + 1));
+      manip_->calcFwdKin(transforms_cache0_, subtraj.row(i));
+      manip_->calcFwdKin(transforms_cache1_, subtraj.row(i + 1));
 
       for (const auto& link_name : manip_active_link_names_)
       {
-        transforms_cache0_update[link_name] = transforms_cache0[link_name];
-        transforms_cache1_update[link_name] = transforms_cache1[link_name];
+        transforms_cache0_update_[link_name] = transforms_cache0_[link_name];
+        transforms_cache1_update_[link_name] = transforms_cache1_[link_name];
       }
 
-      contact_manager_->setCollisionObjectsTransform(transforms_cache0_update, transforms_cache1_update);
+      contact_manager_->setCollisionObjectsTransform(transforms_cache0_update_, transforms_cache1_update_);
 
       contact_manager_->contactTest(contacts, collision_check_config_.contact_request);
 
@@ -1183,16 +1155,16 @@ void CastCollisionEvaluator::CalcCollisions(const Eigen::Ref<const Eigen::Vector
   }
   else
   {
-    manip_->calcFwdKin(transforms_cache0, dof_vals0);
-    manip_->calcFwdKin(transforms_cache1, dof_vals1);
+    manip_->calcFwdKin(transforms_cache0_, dof_vals0);
+    manip_->calcFwdKin(transforms_cache1_, dof_vals1);
 
     for (const auto& link_name : manip_active_link_names_)
     {
-      transforms_cache0_update[link_name] = transforms_cache0[link_name];
-      transforms_cache1_update[link_name] = transforms_cache1[link_name];
+      transforms_cache0_update_[link_name] = transforms_cache0_[link_name];
+      transforms_cache1_update_[link_name] = transforms_cache1_[link_name];
     }
 
-    contact_manager_->setCollisionObjectsTransform(transforms_cache0_update, transforms_cache1_update);
+    contact_manager_->setCollisionObjectsTransform(transforms_cache0_update_, transforms_cache1_update_);
 
     contact_manager_->contactTest(dist_results, collision_check_config_.contact_request);
 
