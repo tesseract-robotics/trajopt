@@ -120,7 +120,6 @@ DynamicCartPoseErrCalculator::DynamicCartPoseErrCalculator(
 
 VectorXd DynamicCartPoseErrCalculator::operator()(const VectorXd& dof_vals) const
 {
-  transforms_cache.clear();
   manip_->calcFwdKin(transforms_cache, dof_vals);
   const Isometry3d source_tf = transforms_cache[source_frame_] * source_frame_offset_;
   const Isometry3d target_tf = transforms_cache[target_frame_] * target_frame_offset_;
@@ -176,7 +175,6 @@ DynamicCartPoseJacCalculator::DynamicCartPoseJacCalculator(
 MatrixXd DynamicCartPoseJacCalculator::operator()(const VectorXd& dof_vals) const
 {
   // Duplicated from calcForwardNumJac in trajopt_sco/src/num_diff.cpp, but with ignoring tolerances
-  transforms_cache.clear();
   manip_->calcFwdKin(transforms_cache, dof_vals);
   const Isometry3d source_tf = transforms_cache[source_frame_] * source_frame_offset_;
   const Isometry3d target_tf = transforms_cache[target_frame_] * target_frame_offset_;
@@ -278,7 +276,6 @@ CartPoseErrCalculator::CartPoseErrCalculator(
 
 VectorXd CartPoseErrCalculator::operator()(const VectorXd& dof_vals) const
 {
-  transforms_cache.clear();
   manip_->calcFwdKin(transforms_cache, dof_vals);
   const Isometry3d source_tf = transforms_cache[source_frame_] * source_frame_offset_;
   const Isometry3d target_tf = transforms_cache[target_frame_] * target_frame_offset_;
@@ -371,7 +368,6 @@ CartPoseJacCalculator::CartPoseJacCalculator(
 
 MatrixXd CartPoseJacCalculator::operator()(const VectorXd& dof_vals) const
 {
-  transforms_cache.clear();
   manip_->calcFwdKin(transforms_cache, dof_vals);
   const Isometry3d source_tf = transforms_cache[source_frame_] * source_frame_offset_;
   const Isometry3d target_tf = transforms_cache[target_frame_] * target_frame_offset_;
@@ -435,8 +431,6 @@ CartVelErrCalculator::CartVelErrCalculator(std::shared_ptr<const tesseract::kine
 VectorXd CartVelErrCalculator::operator()(const VectorXd& dof_vals) const
 {
   auto n_dof = static_cast<int>(manip_->numJoints());
-
-  transforms_cache.clear();
 
   manip_->calcFwdKin(transforms_cache, dof_vals.topRows(n_dof));
   Isometry3d pose0 = transforms_cache[link_] * tcp_;
