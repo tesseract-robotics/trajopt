@@ -481,7 +481,7 @@ void CollisionEvaluator::CalcDistExpressionsStartFree(const DblVec& x,
   for (std::size_t i = 0; i < exprs0.size(); ++i)
   {
     exprs[i] = sco::AffExpr(dist_results[i].get().distance);
-    sco::exprInc(exprs[i], exprs0[i]);
+    sco::exprInc(exprs[i], std::move(exprs0[i]));
     exprs[i] = sco::cleanupAff(exprs[i]);
   }
 }
@@ -502,7 +502,7 @@ void CollisionEvaluator::CalcDistExpressionsEndFree(const DblVec& x,
   for (std::size_t i = 0; i < exprs1.size(); ++i)
   {
     exprs[i] = sco::AffExpr(dist_results[i].get().distance);
-    sco::exprInc(exprs[i], exprs1[i]);
+    sco::exprInc(exprs[i], std::move(exprs1[i]));
     exprs[i] = sco::cleanupAff(exprs[i]);
   }
 }
@@ -531,8 +531,8 @@ void CollisionEvaluator::CalcDistExpressionsBothFree(const DblVec& x,
   for (std::size_t i = 0; i < exprs0.size(); ++i)
   {
     exprs[i] = sco::AffExpr(dist_results[i].get().distance);
-    sco::exprInc(exprs[i], exprs0[i]);
-    sco::exprInc(exprs[i], exprs1[i]);
+    sco::exprInc(exprs[i], std::move(exprs0[i]));
+    sco::exprInc(exprs[i], std::move(exprs1[i]));
     exprs[i] = sco::cleanupAff(exprs[i]);
   }
 }
