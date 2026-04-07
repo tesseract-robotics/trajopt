@@ -455,17 +455,13 @@ CollisionEvaluator::GetContactResultCached(const DblVec& x)
 
   LOG_DEBUG("not using cached collision check\n")
 
-  /**
-   * We tried different combinations of how to store the dist_map and also passing in a sub_dist_map to CalcCollisions,
-   * using member variable and thread_local. Just making the dist_map thread_local and making a copy for sub_dist_result
-   * in CalcCollisions had the most significant impact on peformance and memory.
-   */
-  TRAJOPT_THREAD_LOCAL tesseract::collision::ContactResultMap dist_map;
-  dist_map.clear();
+  // A per-call local moved into make_shared avoids the deep copy that the
+  // previous thread_local approach required on every cache miss.
+  tesseract::collision::ContactResultMap dist_map;
 
   CalcCollisions(x, dist_map);
 
-  auto dist_map_ptr = std::make_shared<tesseract::collision::ContactResultMap>(dist_map);
+  auto dist_map_ptr = std::make_shared<tesseract::collision::ContactResultMap>(std::move(dist_map));
   auto dist_vec_ptr = std::make_shared<ContactResultVectorWrapper>();
   dist_map_ptr->flattenWrapperResults(*dist_vec_ptr);
 
