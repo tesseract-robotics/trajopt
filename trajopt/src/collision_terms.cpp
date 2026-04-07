@@ -390,7 +390,9 @@ void CollisionEvaluator::CollisionsToDistanceExpressions(sco::AffExprVector& exp
 CollisionEvaluator::CollisionEvaluator(tesseract::kinematics::JointGroup::ConstPtr manip,
                                        tesseract::environment::Environment::ConstPtr env,
                                        bool dynamic_environment)
-  : manip_(std::move(manip)), env_(std::move(env)), dynamic_environment_(dynamic_environment)
+  : manip_(std::make_shared<tesseract::kinematics::JointGroup>(*manip))
+  , env_(std::move(env))
+  , dynamic_environment_(dynamic_environment)
 {
   manip_active_link_names_ = manip_->getActiveLinkNames();
 
