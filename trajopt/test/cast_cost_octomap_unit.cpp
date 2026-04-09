@@ -122,6 +122,8 @@ void runTest(const Environment::Ptr& env, const Visualization::Ptr& plotter, boo
   const tesseract::scene_graph::StateSolver::UPtr state_solver = prob->GetEnv()->getStateSolver();
   const ContinuousContactManager::Ptr manager = prob->GetEnv()->getContinuousContactManager();
 
+  CONSOLE_BRIDGE_logDebug("CastOctomapTest using continuous manager: %s", manager->getName().c_str());
+
   manager->setActiveCollisionObjects(prob->GetKin()->getActiveLinkNames());
   manager->setDefaultCollisionMargin(0);
 
