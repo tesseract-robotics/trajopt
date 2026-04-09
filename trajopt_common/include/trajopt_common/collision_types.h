@@ -293,7 +293,7 @@ struct GradientResultsSet
   GradientResultsSet(std::size_t reserve) { results.reserve(reserve); }
 
   /** @brief The map key from contact results map */
-  std::pair<std::string, std::string> key;
+  tesseract::common::LinkIdPair key;
 
   /** @brief For the link pair this is the subshap pair key */
   std::pair<std::size_t, std::size_t> shape_key;
