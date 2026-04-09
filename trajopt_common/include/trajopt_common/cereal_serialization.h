@@ -13,11 +13,39 @@
 namespace trajopt_common
 {
 template <class Archive>
-void serialize(Archive& ar, CollisionCoeffData& obj)
+void save(Archive& ar, const CollisionCoeffData& obj)
 {
   ar(cereal::make_nvp("default_collision_coeff", obj.default_collision_coeff_));
-  ar(cereal::make_nvp("lookup_table", obj.lookup_table_));
-  ar(cereal::make_nvp("zero_coeff", obj.zero_coeff_));
+
+  // Serialize as string-based format for backwards compatibility
+  std::unordered_map<tesseract::common::LinkNamesPair, double> compat;
+  for (const auto& [key, entry] : obj.lookup_table_)
+    compat[tesseract::common::LinkNamesPair{ entry.name1, entry.name2 }] = entry.coeff;
+  ar(cereal::make_nvp("lookup_table", compat));
+
+  std::set<tesseract::common::LinkNamesPair> zero_compat;
+  for (const auto& id_pair : obj.zero_coeff_)
+  {
+    auto it = obj.lookup_table_.find(id_pair);
+    if (it != obj.lookup_table_.end())
+      zero_compat.insert(tesseract::common::LinkNamesPair{ it->second.name1, it->second.name2 });
+  }
+  ar(cereal::make_nvp("zero_coeff", zero_compat));
+}
+
+template <class Archive>
+void load(Archive& ar, CollisionCoeffData& obj)
+{
+  ar(cereal::make_nvp("default_collision_coeff", obj.default_collision_coeff_));
+
+  std::unordered_map<tesseract::common::LinkNamesPair, double> compat;
+  ar(cereal::make_nvp("lookup_table", compat));
+  for (const auto& [names, coeff] : compat)
+    obj.setCollisionCoeff(names.first, names.second, coeff);
+
+  // zero_coeff_ is rebuilt by setCollisionCoeff, so just consume the archive field
+  std::set<tesseract::common::LinkNamesPair> zero_compat;
+  ar(cereal::make_nvp("zero_coeff", zero_compat));
 }
 
 template <class Archive>
