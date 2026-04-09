@@ -28,6 +28,8 @@ add_gtest(${PROJECT_NAME}_cast_cost_unit cast_cost_unit.cpp)
 add_gtest(${PROJECT_NAME}_cast_cost_world_unit cast_cost_world_unit.cpp)
 add_gtest(${PROJECT_NAME}_cast_cost_attached_unit cast_cost_attached_unit.cpp)
 add_gtest(${PROJECT_NAME}_cast_cost_octomap_unit cast_cost_octomap_unit.cpp)
+add_gtest(${PROJECT_NAME}_cast_cost_octomap_arm_unit cast_cost_octomap_arm_unit.cpp)
+add_gtest(${PROJECT_NAME}_cast_constraint_octomap_unit cast_constraint_octomap_unit.cpp)
 add_gtest(${PROJECT_NAME}_simple_collision_unit simple_collision_unit.cpp)
 add_gtest(${PROJECT_NAME}_cart_position_optimization_unit cart_position_optimization_unit.cpp)
 
