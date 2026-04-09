@@ -166,17 +166,10 @@ TEST(TrajoptCommonYAMLTestFixture, CollisionCoeffDataGetterMethodsUnit)  // NOLI
   const auto& zero_pairs = d.getPairsWithZeroCoeff();
   EXPECT_EQ(zero_pairs.size(), 1U);
 
-  // Verify that the zero coefficient pair is in the zero_pairs set
-  bool found_zero_pair = false;
-  for (const auto& pair : zero_pairs)
-  {
-    if ((pair.first == "link3" && pair.second == "link4") || (pair.first == "link4" && pair.second == "link3"))
-    {
-      found_zero_pair = true;
-      break;
-    }
-  }
-  EXPECT_TRUE(found_zero_pair);
+  // Verify that the zero coefficient pair is in the zero_pairs set via hasZeroCoeff
+  EXPECT_TRUE(d.hasZeroCoeff("link3", "link4"));
+  EXPECT_TRUE(d.hasZeroCoeff("link4", "link3"));
+  EXPECT_FALSE(d.hasZeroCoeff("link1", "link2"));
 }
 
 TEST(TrajoptCommonYAMLTestFixture, CollisionCoeffDataRoundTripUnit)  // NOLINT

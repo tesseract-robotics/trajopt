@@ -166,10 +166,9 @@ void SingleTimestepCollisionEvaluator::calcCollisionsHelper(const Eigen::Ref<con
 
   // Don't include contacts at the fixed state
   // Don't include contacts with zero coeffs
-  const auto& zero_coeff_pairs = coeff_data_.getPairsWithZeroCoeff();
-  auto filter = [this, &zero_coeff_pairs](tesseract::collision::ContactResultMap::PairType& pair) {
+  auto filter = [this](tesseract::collision::ContactResultMap::PairType& pair) {
     // Remove pairs with zero coeffs
-    if (zero_coeff_pairs.find(pair.first) != zero_coeff_pairs.end())
+    if (coeff_data_.hasZeroCoeff(pair.first.first, pair.first.second))
     {
       pair.second.clear();
       return;

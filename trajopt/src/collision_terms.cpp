@@ -668,10 +668,9 @@ void SingleTimestepCollisionEvaluator::CalcCollisions(const Eigen::Ref<const Eig
 
   contact_manager_->contactTest(dist_results, collision_check_config_.contact_request);
 
-  const auto& zero_coeff_pairs = coeff_data_.getPairsWithZeroCoeff();
-  auto filter = [this, &zero_coeff_pairs](tesseract::collision::ContactResultMap::PairType& pair) {
+  auto filter = [this](tesseract::collision::ContactResultMap::PairType& pair) {
     // Remove pairs with zero coeffs
-    if (zero_coeff_pairs.find(pair.first) != zero_coeff_pairs.end())
+    if (coeff_data_.hasZeroCoeff(pair.first.first, pair.first.second))
     {
       pair.second.clear();
       return;
@@ -854,10 +853,9 @@ void DiscreteCollisionEvaluator::CalcCollisions(const Eigen::Ref<const Eigen::Ve
     subtraj.col(i) = Eigen::VectorXd::LinSpaced(cnt, dof_vals0(i), dof_vals1(i));
 
   // Define Filter
-  const auto& zero_coeff_pairs = coeff_data_.getPairsWithZeroCoeff();
-  auto filter = [this, &zero_coeff_pairs](tesseract::collision::ContactResultMap::PairType& pair) {
+  auto filter = [this](tesseract::collision::ContactResultMap::PairType& pair) {
     // Remove pairs with zero coeffs
-    if (zero_coeff_pairs.find(pair.first) != zero_coeff_pairs.end())
+    if (coeff_data_.hasZeroCoeff(pair.first.first, pair.first.second))
     {
       pair.second.clear();
       return;
@@ -1090,10 +1088,9 @@ void CastCollisionEvaluator::CalcCollisions(const Eigen::Ref<const Eigen::Vector
   }
 
   // Define Filter
-  const auto& zero_coeff_pairs = coeff_data_.getPairsWithZeroCoeff();
-  auto filter = [this, &zero_coeff_pairs](tesseract::collision::ContactResultMap::PairType& pair) {
+  auto filter = [this](tesseract::collision::ContactResultMap::PairType& pair) {
     // Remove pairs with zero coeffs
-    if (zero_coeff_pairs.find(pair.first) != zero_coeff_pairs.end())
+    if (coeff_data_.hasZeroCoeff(pair.first.first, pair.first.second))
     {
       pair.second.clear();
       return;

@@ -187,11 +187,10 @@ void LVSContinuousCollisionEvaluator::calcCollisionsHelper(tesseract::collision:
   // Create filter
   // Don't include contacts at the fixed state
   // Don't include contacts with zero coeffs
-  const auto& zero_coeff_pairs = coeff_data_.getPairsWithZeroCoeff();
   auto filter =
-      [this, &zero_coeff_pairs, vars0_fixed, vars1_fixed](tesseract::collision::ContactResultMap::PairType& pair) {
+      [this, vars0_fixed, vars1_fixed](tesseract::collision::ContactResultMap::PairType& pair) {
         // Remove pairs with zero coeffs
-        if (zero_coeff_pairs.find(pair.first) != zero_coeff_pairs.end())
+        if (coeff_data_.hasZeroCoeff(pair.first.first, pair.first.second))
         {
           pair.second.clear();
           return;
@@ -416,11 +415,10 @@ void LVSDiscreteCollisionEvaluator::calcCollisionsHelper(tesseract::collision::C
   // Create filter
   // Don't include contacts at the fixed state
   // Don't include contacts with zero coeffs
-  const auto& zero_coeff_pairs = coeff_data_.getPairsWithZeroCoeff();
   auto filter =
-      [this, &zero_coeff_pairs, vars0_fixed, vars1_fixed](tesseract::collision::ContactResultMap::PairType& pair) {
+      [this, vars0_fixed, vars1_fixed](tesseract::collision::ContactResultMap::PairType& pair) {
         // Remove pairs with zero coeffs
-        if (zero_coeff_pairs.find(pair.first) != zero_coeff_pairs.end())
+        if (coeff_data_.hasZeroCoeff(pair.first.first, pair.first.second))
         {
           pair.second.clear();
           return;
