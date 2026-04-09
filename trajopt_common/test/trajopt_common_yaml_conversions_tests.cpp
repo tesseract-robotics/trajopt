@@ -218,6 +218,54 @@ TEST(TrajoptCommonYAMLTestFixture, TrajOptCollisionConfigRoundTripUnit)  // NOLI
   EXPECT_EQ(c_out.max_num_cnt, c_in.max_num_cnt);
 }
 
+// ======================== Three-tier overload tests ========================
+
+TEST(TrajoptCommonYAMLTestFixture, CollisionCoeffDataThreeTierOverloadsUnit)  // NOLINT
+{
+  using namespace tesseract::common;
+
+  trajopt_common::CollisionCoeffData data(1.0);
+  data.setCollisionCoeff("link_a", "link_b", 2.5);
+  data.setCollisionCoeff("link_c", "link_d", 0.0);
+
+  // Tier 3 (string)
+  EXPECT_NEAR(data.getCollisionCoeff("link_a", "link_b"), 2.5, 1e-12);
+  EXPECT_NEAR(data.getCollisionCoeff("link_b", "link_a"), 2.5, 1e-12);  // order invariant
+  EXPECT_NEAR(data.getCollisionCoeff("link_c", "link_d"), 0.0, 1e-12);
+  EXPECT_NEAR(data.getCollisionCoeff("unknown", "pair"), 1.0, 1e-12);  // default
+
+  // Tier 1 (LinkId)
+  const LinkId id_a = LinkId::fromName("link_a");
+  const LinkId id_b = LinkId::fromName("link_b");
+  const LinkId id_c = LinkId::fromName("link_c");
+  const LinkId id_d = LinkId::fromName("link_d");
+  EXPECT_NEAR(data.getCollisionCoeff(id_a, id_b), 2.5, 1e-12);
+  EXPECT_NEAR(data.getCollisionCoeff(id_b, id_a), 2.5, 1e-12);
+  EXPECT_NEAR(data.getCollisionCoeff(id_c, id_d), 0.0, 1e-12);
+  EXPECT_NEAR(data.getCollisionCoeff(LinkId::fromName("unknown"), LinkId::fromName("pair")), 1.0, 1e-12);
+
+  // hasZeroCoeff
+  EXPECT_TRUE(data.hasZeroCoeff(id_c, id_d));
+  EXPECT_TRUE(data.hasZeroCoeff(id_d, id_c));
+  EXPECT_FALSE(data.hasZeroCoeff(id_a, id_b));
+  EXPECT_TRUE(data.hasZeroCoeff("link_c", "link_d"));
+  EXPECT_FALSE(data.hasZeroCoeff("link_a", "link_b"));
+
+  // Pair data entry values preserve names
+  const auto& pair_data = data.getCollisionCoeffPairData();
+  EXPECT_EQ(pair_data.size(), 2U);
+  const auto it = pair_data.find(LinkIdPair::make(id_a, id_b));
+  ASSERT_NE(it, pair_data.end());
+  EXPECT_FALSE(it->second.name1.empty());
+  EXPECT_FALSE(it->second.name2.empty());
+  EXPECT_NEAR(it->second.coeff, 2.5, 1e-12);
+
+  // Zero coeff set uses LinkIdPair
+  const auto& zero_pairs = data.getPairsWithZeroCoeff();
+  EXPECT_EQ(zero_pairs.size(), 1U);
+  EXPECT_TRUE(zero_pairs.count(LinkIdPair::make(id_c, id_d)) == 1);
+}
+
 int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
