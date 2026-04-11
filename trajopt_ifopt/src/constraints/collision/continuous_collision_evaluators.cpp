@@ -56,18 +56,18 @@ LVSContinuousCollisionEvaluator::LVSContinuousCollisionEvaluator(
 
   single_timestep_ = (collision_check_config_.type == tesseract::collision::CollisionEvaluatorType::CONTINUOUS);
 
-  for (const auto& name : manip_->getActiveLinkNames())
-    manip_active_link_names_.insert(tesseract::common::LinkId::fromName(name));
+  for (const auto& id : manip_->getActiveLinkIds())
+    manip_active_link_names_.insert(id);
 
   // If the environment is not expected to change, then the cloned state solver may be used each time.
   if (dynamic_environment_)
   {
     get_state_fn_ = [&](tesseract::common::LinkIdTransformMap& transforms,
                         const Eigen::Ref<const Eigen::VectorXd>& joint_values) {
-      env_->getLinkTransforms(transforms, manip_->getJointNames(), joint_values);
+      env_->getLinkTransforms(transforms, manip_->getJointIds(), joint_values);
     };
-    for (const auto& name : env_->getActiveLinkNames())
-      env_active_link_names_.insert(tesseract::common::LinkId::fromName(name));
+    for (const auto& id : env_->getActiveLinkIds())
+      env_active_link_names_.insert(id);
 
     for (const auto& id : env_active_link_names_)
       if (manip_active_link_names_.find(id) == manip_active_link_names_.end())
@@ -83,7 +83,7 @@ LVSContinuousCollisionEvaluator::LVSContinuousCollisionEvaluator(
   }
 
   contact_manager_ = env_->getContinuousContactManager();
-  contact_manager_->setActiveCollisionObjects(manip_->getActiveLinkNames());
+  contact_manager_->setActiveCollisionObjects(manip_->getActiveLinkIds());
   contact_manager_->applyContactManagerConfig(collision_config.contact_manager_config);
   // Must make a copy after applying the config but before we increment the margin data
   margin_data_ = contact_manager_->getCollisionMarginData();
@@ -228,7 +228,7 @@ void LVSContinuousCollisionEvaluator::calcCollisionsHelper(tesseract::collision:
       if (!contacts.empty())
       {
         dist_results.addInterpolatedCollisionResults(
-            contacts, i, last_state_idx, manip_->getActiveLinkNames(), dt, false, filter);
+            contacts, i, last_state_idx, manip_active_link_names_, dt, false, filter);
       }
       contacts.clear();
     }
@@ -288,18 +288,18 @@ LVSDiscreteCollisionEvaluator::LVSDiscreteCollisionEvaluator(
   if (collision_check_config_.type != tesseract::collision::CollisionEvaluatorType::LVS_DISCRETE)
     throw std::runtime_error("LVSDiscreteCollisionEvaluator, should be configured with LVS_DISCRETE");
 
-  for (const auto& name : manip_->getActiveLinkNames())
-    manip_active_link_names_.insert(tesseract::common::LinkId::fromName(name));
+  for (const auto& id : manip_->getActiveLinkIds())
+    manip_active_link_names_.insert(id);
 
   // If the environment is not expected to change, then the cloned state solver may be used each time.
   if (dynamic_environment_)
   {
     get_state_fn_ = [&](tesseract::common::LinkIdTransformMap& transforms,
                         const Eigen::Ref<const Eigen::VectorXd>& joint_values) {
-      env_->getLinkTransforms(transforms, manip_->getJointNames(), joint_values);
+      env_->getLinkTransforms(transforms, manip_->getJointIds(), joint_values);
     };
-    for (const auto& name : env_->getActiveLinkNames())
-      env_active_link_names_.insert(tesseract::common::LinkId::fromName(name));
+    for (const auto& id : env_->getActiveLinkIds())
+      env_active_link_names_.insert(id);
 
     for (const auto& id : env_active_link_names_)
       if (manip_active_link_names_.find(id) == manip_active_link_names_.end())
@@ -315,7 +315,7 @@ LVSDiscreteCollisionEvaluator::LVSDiscreteCollisionEvaluator(
   }
 
   contact_manager_ = env_->getDiscreteContactManager();
-  contact_manager_->setActiveCollisionObjects(manip_->getActiveLinkNames());
+  contact_manager_->setActiveCollisionObjects(manip_->getActiveLinkIds());
   contact_manager_->applyContactManagerConfig(collision_config.contact_manager_config);
   // Must make a copy after applying the config but before we increment the margin data
   margin_data_ = contact_manager_->getCollisionMarginData();
@@ -459,7 +459,7 @@ void LVSDiscreteCollisionEvaluator::calcCollisionsHelper(tesseract::collision::C
     if (!contacts.empty())
     {
       dist_results.addInterpolatedCollisionResults(
-          contacts, i, last_state_idx, manip_->getActiveLinkNames(), dt, true, filter);
+          contacts, i, last_state_idx, manip_active_link_names_, dt, true, filter);
     }
     contacts.clear();
   }
