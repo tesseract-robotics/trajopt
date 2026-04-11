@@ -125,7 +125,7 @@ void calcGradient(GradientResults& results,
 
   // Calculate Jacobian
   /** @todo update calcJacobian to have out param overload */
-  Eigen::MatrixXd jac = manip.calcJacobian(dofvals, contact_result.link_names[i]);
+  Eigen::MatrixXd jac = manip.calcJacobian(dofvals, contact_result.link_ids[i]);
 
   // Need to change the base and ref point of the jacobian.
   // When changing ref point you must provide a vector from the current ref
@@ -183,7 +183,7 @@ void getGradient(GradientResults& results,
   results.error_with_buffer = (margin + margin_buffer - contact_result.distance);
   for (std::size_t i = 0; i < 2; ++i)
   {
-    if (manip.isActiveLinkName(contact_result.link_names[i]))
+    if (manip.isActiveLinkId(contact_result.link_ids[i]))
       calcGradient(results, i, dofvals, contact_result, manip, false);
   }
   // DebugPrintInfo(res, results.gradients[0], results.gradients[1], dofvals, &res == &(dist_results.front()));
@@ -203,7 +203,7 @@ void getGradient(GradientResults& results,
   Eigen::VectorXd dofvalst = Eigen::VectorXd::Zero(dofvals0.size());
   for (std::size_t i = 0; i < 2; ++i)
   {
-    if (manip.isActiveLinkName(contact_result.link_names[i]))
+    if (manip.isActiveLinkId(contact_result.link_ids[i]))
     {
       if (contact_result.cc_type[i] == tesseract::collision::ContinuousCollisionType::CCType_Time0)
         dofvalst = dofvals0;
@@ -294,8 +294,8 @@ void debugPrintInfo(const tesseract::collision::ContactResult& res,
   std::printf("DistanceResult| %30s | %30s | %6.3f | %6.3f, %6.3f, %6.3f | "
               "%6.3f, %6.3f, %6.3f | %6.3f, %6.3f, %6.3f | %6.3f, "
               "%6.3f, %6.3f | %6.3f, %6.3f, %6.3f | %10.3f %10.3f |",
-              res.link_names[0].c_str(),
-              res.link_names[1].c_str(),
+              res.link_ids[0].name().c_str(),
+              res.link_ids[1].name().c_str(),
               res.distance,
               res.normal(0),
               res.normal(1),

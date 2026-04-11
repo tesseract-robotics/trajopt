@@ -17,7 +17,7 @@ using ErrorFunctionType = std::function<Eigen::VectorXd(const Eigen::Isometry3d&
 using ErrorDiffFunctionType = std::function<Eigen::VectorXd(const Eigen::VectorXd&,
                                                             const Eigen::Isometry3d&,
                                                             const Eigen::Isometry3d&,
-                                                            tesseract::common::TransformMap&)>;
+                                                            tesseract::common::LinkIdTransformMap&)>;
 
 /**
  * @brief Used to calculate the error for CartPoseTermInfo

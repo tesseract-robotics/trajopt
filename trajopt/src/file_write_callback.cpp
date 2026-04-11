@@ -54,7 +54,7 @@ void WriteFile(const std::shared_ptr<std::ofstream>& file,
     }
 
     // Calc cartesian pose
-    const tesseract::common::TransformMap state = manip->calcFwdKin(joint_angles);
+    const tesseract::common::LinkIdTransformMap state = manip->calcFwdKin(joint_angles);
 
     for (const auto& it : state)
     {
@@ -66,7 +66,7 @@ void WriteFile(const std::shared_ptr<std::ofstream>& file,
       rot_vec(3) = q.z();
 
       // Write cartesian pose to file
-      *file << it.first << ": ";
+      *file << it.first.value << ": ";
       Eigen::VectorXd pose_vec = tesseract::common::concat(it.second.translation(), rot_vec);
       for (auto i = 0; i < pose_vec.size(); i++)
       {

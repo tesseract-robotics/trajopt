@@ -21,9 +21,12 @@ TRAJOPT_IGNORE_WARNINGS_POP
 #include <trajopt_common/logging.hpp>
 #include <trajopt_common/vector_ops.hpp>
 
+#include <tesseract/common/types.h>
 #include <tesseract/kinematics/joint_group.h>
 #include <tesseract/environment/environment.h>
 #include <tesseract/visualization/visualization.h>
+
+using tesseract::common::JointId;
 
 namespace
 {
@@ -320,8 +323,8 @@ void generateInitTraj(TrajArray& init_traj, const ProblemConstructionInfo& pci)
     int i = 0;
     for (const auto& joint : pci.kin->getJointNames())
     {
-      assert(state.joints.find(joint) != state.joints.end());
-      start_pos[i] = state.joints[joint];
+      assert(state.joints.find(JointId::fromName(joint)) != state.joints.end());
+      start_pos[i] = state.joints[JointId::fromName(joint)];
       ++i;
     }
 
@@ -334,8 +337,8 @@ void generateInitTraj(TrajArray& init_traj, const ProblemConstructionInfo& pci)
     int i = 0;
     for (const auto& joint : pci.kin->getJointNames())
     {
-      assert(state.joints.find(joint) != state.joints.end());
-      start_pos[i] = state.joints[joint];
+      assert(state.joints.find(JointId::fromName(joint)) != state.joints.end());
+      start_pos[i] = state.joints[JointId::fromName(joint)];
       ++i;
     }
 

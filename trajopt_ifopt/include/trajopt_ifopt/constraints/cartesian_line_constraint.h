@@ -99,7 +99,7 @@ public:
   using ErrorDiffFunctionType = std::function<Eigen::VectorXd(const Eigen::VectorXd&,
                                                               const Eigen::Isometry3d&,
                                                               const Eigen::Isometry3d&,
-                                                              tesseract::common::TransformMap&)>;
+                                                              tesseract::common::LinkIdTransformMap&)>;
 
   CartLineConstraint(CartLineInfo info,
                      std::shared_ptr<const Var> position_var,
@@ -194,7 +194,7 @@ private:
   /** @brief The error function to calculate the error difference used for jacobian calculations */
   ErrorDiffFunctionType error_diff_function_{ nullptr };
 
-  static thread_local tesseract::common::TransformMap transforms_cache_;  // NOLINT
+  static thread_local tesseract::common::LinkIdTransformMap transforms_cache_;  // NOLINT
 };
 }  // namespace trajopt_ifopt
 #endif

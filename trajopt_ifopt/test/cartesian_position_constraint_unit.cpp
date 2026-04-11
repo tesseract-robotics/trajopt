@@ -101,7 +101,7 @@ TEST_F(CartesianPositionConstraintUnit, GetValue)  // NOLINT
 
   // Run FK to get target pose
   Eigen::VectorXd joint_position = Eigen::VectorXd::Ones(n_dof);
-  const Eigen::Isometry3d target_pose = kin_group->calcFwdKin(joint_position).at("r_gripper_tool_frame");
+  const Eigen::Isometry3d target_pose = kin_group->calcFwdKin(joint_position).at(tesseract::common::LinkId::fromName("r_gripper_tool_frame"));
   constraint->setTargetPose(target_pose);
 
   // Set the joints to the joint position that should satisfy it
@@ -152,7 +152,7 @@ TEST_F(CartesianPositionConstraintUnit, FillJacobian)  // NOLINT
 
   // Run FK to get target pose
   const Eigen::VectorXd joint_position = Eigen::VectorXd::Ones(n_dof);
-  const Eigen::Isometry3d target_pose = kin_group->calcFwdKin(joint_position).at("r_gripper_tool_frame");
+  const Eigen::Isometry3d target_pose = kin_group->calcFwdKin(joint_position).at(tesseract::common::LinkId::fromName("r_gripper_tool_frame"));
   constraint->setTargetPose(target_pose);
 
   // Modify one joint at a time

@@ -48,36 +48,34 @@ SingleTimestepCollisionEvaluator::SingleTimestepCollisionEvaluator(
   if (collision_check_config_.type != tesseract::collision::CollisionEvaluatorType::DISCRETE)
     throw std::runtime_error("SingleTimestepCollisionEvaluator, should be configured with DISCRETE");
 
-  manip_active_link_names_ = manip_->getActiveLinkNames();
+  for (const auto& name : manip_->getActiveLinkNames())
+    manip_active_link_names_.insert(tesseract::common::LinkId::fromName(name));
 
   // If the environment is not expected to change, then the cloned state solver may be used each time.
   if (dynamic_environment_)
   {
-    get_state_fn_ = [&](tesseract::common::TransformMap& transforms,
+    get_state_fn_ = [&](tesseract::common::LinkIdTransformMap& transforms,
                         const Eigen::Ref<const Eigen::VectorXd>& joint_values) {
       env_->getLinkTransforms(transforms, manip_->getJointNames(), joint_values);
     };
-    env_active_link_names_ = env_->getActiveLinkNames();
+    for (const auto& name : env_->getActiveLinkNames())
+      env_active_link_names_.insert(tesseract::common::LinkId::fromName(name));
 
-    std::sort(manip_active_link_names_.begin(), manip_active_link_names_.end());
-    std::sort(env_active_link_names_.begin(), env_active_link_names_.end());
-    std::set_difference(env_active_link_names_.begin(),
-                        env_active_link_names_.end(),
-                        manip_active_link_names_.begin(),
-                        manip_active_link_names_.end(),
-                        std::inserter(diff_active_link_names_, diff_active_link_names_.begin()));
+    for (const auto& id : env_active_link_names_)
+      if (manip_active_link_names_.find(id) == manip_active_link_names_.end())
+        diff_active_link_names_.insert(id);
   }
   else
   {
-    get_state_fn_ = [&](tesseract::common::TransformMap& transforms,
+    get_state_fn_ = [&](tesseract::common::LinkIdTransformMap& transforms,
                         const Eigen::Ref<const Eigen::VectorXd>& joint_values) {
-      manip_->calcFwdKin(transforms, joint_values);
+      transforms = manip_->calcFwdKin(joint_values);
     };
-    env_active_link_names_ = manip_->getActiveLinkNames();
+    env_active_link_names_ = manip_active_link_names_;
   }
 
   contact_manager_ = env_->getDiscreteContactManager();
-  contact_manager_->setActiveCollisionObjects(manip_active_link_names_);
+  contact_manager_->setActiveCollisionObjects(manip_->getActiveLinkNames());
   contact_manager_->applyContactManagerConfig(collision_config.contact_manager_config);
   // Must make a copy after applying the config but before we increment the margin data
   margin_data_ = contact_manager_->getCollisionMarginData();
@@ -150,17 +148,12 @@ void SingleTimestepCollisionEvaluator::calcCollisions(trajopt_common::CollisionC
 void SingleTimestepCollisionEvaluator::calcCollisionsHelper(const Eigen::Ref<const Eigen::VectorXd>& dof_vals,
                                                             tesseract::collision::ContactResultMap& dist_results)
 {
-  TRAJOPT_THREAD_LOCAL tesseract::common::TransformMap state;
+  TRAJOPT_THREAD_LOCAL tesseract::common::LinkIdTransformMap state;
   state.clear();
 
   get_state_fn_(state, dof_vals);
 
-  // If not empty then there are links that are not part of the kinematics object that can move (dynamic environment)
-  for (const auto& link_name : diff_active_link_names_)
-    contact_manager_->setCollisionObjectsTransform(link_name, state[link_name]);
-
-  for (const auto& link_name : manip_active_link_names_)
-    contact_manager_->setCollisionObjectsTransform(link_name, state[link_name]);
+  contact_manager_->setCollisionObjectsTransform(state);
 
   contact_manager_->contactTest(dist_results, collision_check_config_.contact_request);
 
@@ -191,7 +184,7 @@ SingleTimestepCollisionEvaluator::getGradient(const Eigen::VectorXd& dofvals,
                                               const tesseract::collision::ContactResult& contact_result)
 {
   // Contains the contact distance threshold and coefficient for the given link pair
-  const double margin = margin_data_.getCollisionMargin(contact_result.link_names[0], contact_result.link_names[1]);
+  const double margin = margin_data_.getCollisionMargin(contact_result.link_ids[0], contact_result.link_ids[1]);
   trajopt_common::GradientResults results;
   trajopt_common::getGradient(results, dofvals, contact_result, margin, margin_buffer_, *manip_);
   return results;
