@@ -39,7 +39,7 @@ TRAJOPT_IGNORE_WARNINGS_POP
 namespace trajopt_common
 {
 using GetStateFn =
-    std::function<tesseract::common::TransformMap(const Eigen::Ref<const Eigen::VectorXd>& joint_values)>;
+    std::function<tesseract::common::LinkIdTransformMap(const Eigen::Ref<const Eigen::VectorXd>& joint_values)>;
 
 class CollisionCoeffData;
 

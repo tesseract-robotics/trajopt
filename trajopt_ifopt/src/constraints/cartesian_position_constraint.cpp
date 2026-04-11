@@ -40,7 +40,7 @@ TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace trajopt_ifopt
 {
-thread_local tesseract::common::TransformMap CartPosConstraint::transforms_cache_;  // NOLINT
+thread_local tesseract::common::LinkIdTransformMap CartPosConstraint::transforms_cache_;  // NOLINT
 
 CartPosConstraint::CartPosConstraint(std::shared_ptr<const Var> position_var,
                                      const Eigen::VectorXd& coeffs,  // NOLINT(modernize-pass-by-value)
@@ -154,9 +154,9 @@ CartPosConstraint::CartPosConstraint(std::shared_ptr<const Var> position_var,
       error_diff_function_ = [this](const Eigen::VectorXd& vals,
                                     const Eigen::Isometry3d& target_tf,
                                     const Eigen::Isometry3d& source_tf,
-                                    tesseract::common::TransformMap& transforms_cache) -> Eigen::VectorXd {
+                                    tesseract::common::LinkIdTransformMap& transforms_cache) -> Eigen::VectorXd {
         manip_->calcFwdKin(transforms_cache, vals);
-        const Eigen::Isometry3d perturbed_target_tf = transforms_cache[target_frame_] * target_frame_offset_;
+        const Eigen::Isometry3d perturbed_target_tf = transforms_cache[tesseract::common::LinkId::fromName(target_frame_)] * target_frame_offset_;
         Eigen::VectorXd error_diff =
             tesseract::common::calcJacobianTransformErrorDiff(source_tf, target_tf, perturbed_target_tf);
 
@@ -187,9 +187,9 @@ CartPosConstraint::CartPosConstraint(std::shared_ptr<const Var> position_var,
       error_diff_function_ = [this](const Eigen::VectorXd& vals,
                                     const Eigen::Isometry3d& target_tf,
                                     const Eigen::Isometry3d& source_tf,
-                                    tesseract::common::TransformMap& transforms_cache) -> Eigen::VectorXd {
+                                    tesseract::common::LinkIdTransformMap& transforms_cache) -> Eigen::VectorXd {
         manip_->calcFwdKin(transforms_cache, vals);
-        const Eigen::Isometry3d perturbed_source_tf = transforms_cache[source_frame_] * source_frame_offset_;
+        const Eigen::Isometry3d perturbed_source_tf = transforms_cache[tesseract::common::LinkId::fromName(source_frame_)] * source_frame_offset_;
         Eigen::VectorXd error_diff =
             tesseract::common::calcJacobianTransformErrorDiff(target_tf, source_tf, perturbed_source_tf);
 
@@ -219,11 +219,11 @@ CartPosConstraint::CartPosConstraint(std::shared_ptr<const Var> position_var,
       error_diff_function_ = [this](const Eigen::VectorXd& vals,
                                     const Eigen::Isometry3d& target_tf,
                                     const Eigen::Isometry3d& source_tf,
-                                    tesseract::common::TransformMap& transforms_cache) -> Eigen::VectorXd {
+                                    tesseract::common::LinkIdTransformMap& transforms_cache) -> Eigen::VectorXd {
         /** @todo This is different from legacy kinematic_terms */
         manip_->calcFwdKin(transforms_cache, vals);
-        const Eigen::Isometry3d perturbed_source_tf = transforms_cache[source_frame_] * source_frame_offset_;
-        const Eigen::Isometry3d perturbed_target_tf = transforms_cache[target_frame_] * target_frame_offset_;
+        const Eigen::Isometry3d perturbed_source_tf = transforms_cache[tesseract::common::LinkId::fromName(source_frame_)] * source_frame_offset_;
+        const Eigen::Isometry3d perturbed_target_tf = transforms_cache[tesseract::common::LinkId::fromName(target_frame_)] * target_frame_offset_;
         Eigen::VectorXd error_diff = tesseract::common::calcJacobianTransformErrorDiff(
             target_tf, perturbed_target_tf, source_tf, perturbed_source_tf);
 
@@ -264,8 +264,8 @@ Eigen::VectorXd CartPosConstraint::calcValues(const Eigen::Ref<const Eigen::Vect
 {
   transforms_cache_.clear();
   manip_->calcFwdKin(transforms_cache_, joint_vals);
-  const Eigen::Isometry3d source_tf = transforms_cache_[source_frame_] * source_frame_offset_;
-  const Eigen::Isometry3d target_tf = transforms_cache_[target_frame_] * target_frame_offset_;
+  const Eigen::Isometry3d source_tf = transforms_cache_[tesseract::common::LinkId::fromName(source_frame_)] * source_frame_offset_;
+  const Eigen::Isometry3d target_tf = transforms_cache_[tesseract::common::LinkId::fromName(target_frame_)] * target_frame_offset_;
 
   const Eigen::VectorXd err = error_function_(target_tf, source_tf);
 
@@ -283,8 +283,8 @@ void CartPosConstraint::calcJacobianBlock(Jacobian& jac_block,
 {
   transforms_cache_.clear();
   manip_->calcFwdKin(transforms_cache_, joint_vals);
-  const Eigen::Isometry3d source_tf = transforms_cache_[source_frame_] * source_frame_offset_;
-  const Eigen::Isometry3d target_tf = transforms_cache_[target_frame_] * target_frame_offset_;
+  const Eigen::Isometry3d source_tf = transforms_cache_[tesseract::common::LinkId::fromName(source_frame_)] * source_frame_offset_;
+  const Eigen::Isometry3d target_tf = transforms_cache_[tesseract::common::LinkId::fromName(target_frame_)] * target_frame_offset_;
 
   constexpr double eps{ 1e-5 };
   if (use_numeric_differentiation || type_ == Type::kBothActive)
@@ -334,7 +334,7 @@ void CartPosConstraint::calcJacobianBlock(Jacobian& jac_block,
     if (type_ == Type::kTargetActive)
     {
       jac0 = manip_->calcJacobian(joint_vals, target_frame_, target_frame_offset_.translation());
-      tesseract::common::jacobianChangeBase(jac0, (transforms_cache_[source_frame_] * source_frame_offset_).inverse());
+      tesseract::common::jacobianChangeBase(jac0, (transforms_cache_[tesseract::common::LinkId::fromName(source_frame_)] * source_frame_offset_).inverse());
 
       for (int c = 0; c < jac0.cols(); ++c)
       {
@@ -347,7 +347,7 @@ void CartPosConstraint::calcJacobianBlock(Jacobian& jac_block,
     else
     {
       jac0 = manip_->calcJacobian(joint_vals, source_frame_, source_frame_offset_.translation());
-      tesseract::common::jacobianChangeBase(jac0, (transforms_cache_[target_frame_] * target_frame_offset_).inverse());
+      tesseract::common::jacobianChangeBase(jac0, (transforms_cache_[tesseract::common::LinkId::fromName(target_frame_)] * target_frame_offset_).inverse());
 
       for (int c = 0; c < jac0.cols(); ++c)
       {
@@ -395,7 +395,7 @@ Eigen::Isometry3d CartPosConstraint::getCurrentPose() const
   transforms_cache_.clear();
   manip_->calcFwdKin(transforms_cache_, position_var_->value());
 
-  return transforms_cache_[source_frame_] * source_frame_offset_;
+  return transforms_cache_[tesseract::common::LinkId::fromName(source_frame_)] * source_frame_offset_;
 }
 
 }  // namespace trajopt_ifopt

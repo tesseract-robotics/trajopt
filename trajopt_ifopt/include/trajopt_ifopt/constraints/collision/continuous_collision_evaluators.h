@@ -42,7 +42,7 @@ TRAJOPT_IGNORE_WARNINGS_POP
 namespace trajopt_ifopt
 {
 using GetStateFn =
-    std::function<void(tesseract::common::TransformMap&, const Eigen::Ref<const Eigen::VectorXd>& joint_values)>;
+    std::function<void(tesseract::common::LinkIdTransformMap&, const Eigen::Ref<const Eigen::VectorXd>& joint_values)>;
 
 /**
  * @brief This collision evaluator operates on two states and checks for collision between the two states using a
@@ -117,8 +117,8 @@ public:
   virtual const tesseract::kinematics::JointGroup& getJointGroup() const = 0;
 
 protected:
-  static thread_local tesseract::common::TransformMap transforms_cache0;  // NOLINT
-  static thread_local tesseract::common::TransformMap transforms_cache1;  // NOLINT
+  static thread_local tesseract::common::LinkIdTransformMap transforms_cache0;  // NOLINT
+  static thread_local tesseract::common::LinkIdTransformMap transforms_cache1;  // NOLINT
 };
 
 /**
@@ -166,9 +166,9 @@ private:
   double margin_buffer_{ 0.0 };
   tesseract::collision::CollisionCheckConfig collision_check_config_;
   bool single_timestep_{ false };
-  std::vector<std::string> env_active_link_names_;
-  std::vector<std::string> manip_active_link_names_;
-  std::vector<std::string> diff_active_link_names_;
+  std::unordered_set<tesseract::common::LinkId, tesseract::common::LinkId::Hash> env_active_link_names_;
+  std::unordered_set<tesseract::common::LinkId, tesseract::common::LinkId::Hash> manip_active_link_names_;
+  std::unordered_set<tesseract::common::LinkId, tesseract::common::LinkId::Hash> diff_active_link_names_;
   GetStateFn get_state_fn_;
   bool dynamic_environment_;
   std::shared_ptr<tesseract::collision::ContinuousContactManager> contact_manager_;
@@ -228,9 +228,9 @@ private:
   trajopt_common::CollisionCoeffData coeff_data_;
   double margin_buffer_{ 0.0 };
   tesseract::collision::CollisionCheckConfig collision_check_config_;
-  std::vector<std::string> env_active_link_names_;
-  std::vector<std::string> manip_active_link_names_;
-  std::vector<std::string> diff_active_link_names_;
+  std::unordered_set<tesseract::common::LinkId, tesseract::common::LinkId::Hash> env_active_link_names_;
+  std::unordered_set<tesseract::common::LinkId, tesseract::common::LinkId::Hash> manip_active_link_names_;
+  std::unordered_set<tesseract::common::LinkId, tesseract::common::LinkId::Hash> diff_active_link_names_;
   GetStateFn get_state_fn_;
   bool dynamic_environment_;
   std::shared_ptr<tesseract::collision::DiscreteContactManager> contact_manager_;
