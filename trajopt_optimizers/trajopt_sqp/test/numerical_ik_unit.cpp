@@ -121,7 +121,7 @@ void runNumericalIKTest(const Environment::Ptr& env)
   ss << cur_position;
   CONSOLE_BRIDGE_logDebug("Initial Vars: %s", ss.str().c_str());
 
-  Eigen::Isometry3d initial_pose = manip->calcFwdKin(cur_position).at("l_gripper_tool_frame");
+  Eigen::Isometry3d initial_pose = manip->calcFwdKin(cur_position).at(tesseract::common::LinkId::fromName("l_gripper_tool_frame"));
 
   ss = std::stringstream();
   ss << initial_pose.translation().transpose();
@@ -151,7 +151,7 @@ void runNumericalIKTest(const Environment::Ptr& env)
 
   EXPECT_TRUE(solver.getStatus() == trajopt_sqp::SQPStatus::kConverged);
 
-  Eigen::Isometry3d final_pose = manip->calcFwdKin(x).at("l_gripper_tool_frame");
+  Eigen::Isometry3d final_pose = manip->calcFwdKin(x).at(tesseract::common::LinkId::fromName("l_gripper_tool_frame"));
 
   for (auto i = 0; i < 4; ++i)
   {
@@ -223,7 +223,7 @@ void runNumericalIKWithToleranceTest(const Environment::Ptr& env)
   ss << cur_position;
   CONSOLE_BRIDGE_logDebug("Initial Vars: %s", ss.str().c_str());
 
-  Eigen::Isometry3d initial_pose = manip->calcFwdKin(cur_position).at("l_gripper_tool_frame");
+  Eigen::Isometry3d initial_pose = manip->calcFwdKin(cur_position).at(tesseract::common::LinkId::fromName("l_gripper_tool_frame"));
 
   ss = std::stringstream();
   ss << initial_pose.translation().transpose();
@@ -253,7 +253,7 @@ void runNumericalIKWithToleranceTest(const Environment::Ptr& env)
 
   EXPECT_TRUE(solver.getStatus() == trajopt_sqp::SQPStatus::kConverged);
 
-  Eigen::Isometry3d final_pose = manip->calcFwdKin(x).at("l_gripper_tool_frame");
+  Eigen::Isometry3d final_pose = manip->calcFwdKin(x).at(tesseract::common::LinkId::fromName("l_gripper_tool_frame"));
 
   // Check translation
   EXPECT_LE(std::abs(final_pose(0, 3) - target_pose(0, 3)), 0.01001);
