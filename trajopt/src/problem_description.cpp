@@ -983,8 +983,7 @@ void CartVelTermInfo::fromJson(ProblemConstructionInfo& pci, const Json::Value& 
   FAIL_IF_FALSE((last_step > 0) && (last_step <= pci.basic_info.n_steps - 1));
 
   json_marshal::childFromJson(params, link, "link");
-  const std::vector<std::string>& link_names = pci.kin->getActiveLinkNames();
-  if (std::find(link_names.begin(), link_names.end(), link) == link_names.end())
+  if (!pci.kin->isActiveLinkName(link))
   {
     PRINT_AND_THROW(boost::format("invalid link name: %s") % link);
   }
