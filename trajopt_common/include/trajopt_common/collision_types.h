@@ -108,7 +108,7 @@ public:
    * @return Coefficient
    */
   /** @brief Tier 1 — LinkId overload (hot-path) */
-  double getCollisionCoeff(tesseract::common::LinkId id1, tesseract::common::LinkId id2) const;
+  double getCollisionCoeff(const tesseract::common::LinkId& id1, const tesseract::common::LinkId& id2) const;
 
   /** @brief Tier 3 — string overload */
   double getCollisionCoeff(const std::string& obj1, const std::string& obj2) const;
@@ -118,7 +118,7 @@ public:
    * @return True if the pair has zero coefficient
    */
   /** @brief Tier 1 — LinkId overload (hot-path) */
-  bool hasZeroCoeff(tesseract::common::LinkId id1, tesseract::common::LinkId id2) const;
+  bool hasZeroCoeff(const tesseract::common::LinkId& id1, const tesseract::common::LinkId& id2) const;
 
   /** @brief Tier 3 — string overload */
   bool hasZeroCoeff(const std::string& obj1, const std::string& obj2) const;
