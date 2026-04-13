@@ -89,20 +89,20 @@ ExpectedContactSummary logAndSummarizeContacts(const std::vector<ContactResultMa
 
     for (const auto& contact : flattened_results)
     {
-      CONSOLE_BRIDGE_logError(
-          "%s step=%zu pair=(%s,%s) distance=%.9f penetration=%s cc_time=(%.6f,%.6f) shape=(%d,%d) subshape=(%d,%d)",
-          test_name.c_str(),
-          step,
-          contact.link_ids[0].name().c_str(),
-          contact.link_ids[1].name().c_str(),
-          contact.distance,
-          (contact.distance <= 0.0) ? "true" : "false",
-          contact.cc_time[0],
-          contact.cc_time[1],
-          contact.shape_id[0],
-          contact.shape_id[1],
-          contact.subshape_id[0],
-          contact.subshape_id[1]);
+      CONSOLE_BRIDGE_logError("%s step=%zu pair=(%s,%s) distance=%.9f penetration=%s cc_time=(%.6f,%.6f) shape=(%d,%d) "
+                              "subshape=(%d,%d)",
+                              test_name.c_str(),
+                              step,
+                              contact.link_ids[0].name().c_str(),
+                              contact.link_ids[1].name().c_str(),
+                              contact.distance,
+                              (contact.distance <= 0.0) ? "true" : "false",
+                              contact.cc_time[0],
+                              contact.cc_time[1],
+                              contact.shape_id[0],
+                              contact.shape_id[1],
+                              contact.subshape_id[0],
+                              contact.subshape_id[1]);
 
       if (isExpectedPair(contact, expected_link_name_1, expected_link_name_2))
       {
@@ -184,8 +184,8 @@ protected:
 
     Joint new_joint("base_link-octomap_attached");
     new_joint.type = JointType::FIXED;
-    new_joint.parent_link_name = "base_link";
-    new_joint.child_link_name = "octomap_attached";
+    new_joint.parent_link_id = LinkId::fromName("base_link");
+    new_joint.child_link_id = LinkId::fromName("octomap_attached");
 
     env_->applyCommand(std::make_shared<AddLinkCommand>(new_link, new_joint));
   }
@@ -213,8 +213,7 @@ void runConstraintTest(const Environment::Ptr& env,
 {
   CONSOLE_BRIDGE_logDebug("CastConstraintOctomapTest, boxes");
 
-  const Json::Value root =
-      readJsonFile(std::string(TRAJOPT_DATA_DIR) + "/config/" + config_filename);
+  const Json::Value root = readJsonFile(std::string(TRAJOPT_DATA_DIR) + "/config/" + config_filename);
 
   std::unordered_map<std::string, double> ipos;
   ipos["boxbot_x_joint"] = -1.9;
@@ -240,11 +239,11 @@ void runConstraintTest(const Environment::Ptr& env,
       collisions, *manager, *state_solver, prob->GetKin()->getJointNames(), prob->GetInitTraj(), config);
 
   EXPECT_TRUE(found);
-    const ExpectedContactSummary initial_summary =
+  const ExpectedContactSummary initial_summary =
       logAndSummarizeContacts(collisions, test_name, "octomap_attached", expected_link_name);
-    EXPECT_TRUE(initial_summary.found_pair);
-    EXPECT_GT(initial_summary.pair_contact_count, 0);
-    EXPECT_LT(initial_summary.min_distance, 0.11);
+  EXPECT_TRUE(initial_summary.found_pair);
+  EXPECT_GT(initial_summary.pair_contact_count, 0);
+  EXPECT_LT(initial_summary.min_distance, 0.11);
   CONSOLE_BRIDGE_logDebug((found) ? ("Initial trajectory is in collision") : ("Initial trajectory is collision free"));
 
   sco::BasicTrustRegionSQP::Ptr opt;
@@ -287,7 +286,7 @@ void runConstraintTest(const Environment::Ptr& env,
 TEST_F(CastConstraintOctomapTest, boxes)
 {
   runConstraintTest(
-  env_, plotter_, false, "CastConstraintOctomapTest.boxes", "boxbot_link", "box_cast_constraint_test.json", true);
+      env_, plotter_, false, "CastConstraintOctomapTest.boxes", "boxbot_link", "box_cast_constraint_test.json", true);
 }
 
 TEST_F(CastConstraintOctomapTest, boxes_multi_threaded)
