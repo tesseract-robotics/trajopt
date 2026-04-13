@@ -46,8 +46,8 @@ CartPosConstraint::CartPosConstraint(std::shared_ptr<const Var> position_var,
                                      const Eigen::VectorXd& coeffs,  // NOLINT(modernize-pass-by-value)
                                      const std::vector<Bounds>& bounds,
                                      std::shared_ptr<const tesseract::kinematics::JointGroup> manip,
-                                     std::string source_frame,
-                                     std::string target_frame,
+                                     tesseract::common::LinkId source_frame,
+                                     tesseract::common::LinkId target_frame,
                                      const Eigen::Isometry3d& source_frame_offset,  // NOLINT(modernize-pass-by-value)
                                      const Eigen::Isometry3d& target_frame_offset,  // NOLINT(modernize-pass-by-value)
                                      std::string name,
@@ -56,8 +56,8 @@ CartPosConstraint::CartPosConstraint(std::shared_ptr<const Var> position_var,
   , position_var_(std::move(position_var))
   , range_bound_handling_(range_bound_handling)
   , manip_(std::move(manip))
-  , source_frame_id_(tesseract::common::LinkId::fromName(source_frame))
-  , target_frame_id_(tesseract::common::LinkId::fromName(target_frame))
+  , source_frame_id_(std::move(source_frame))
+  , target_frame_id_(std::move(target_frame))
   , source_frame_offset_(source_frame_offset)
   , target_frame_offset_(target_frame_offset)
 {
@@ -65,11 +65,11 @@ CartPosConstraint::CartPosConstraint(std::shared_ptr<const Var> position_var,
   n_dof_ = manip_->numJoints();
   assert(n_dof_ > 0);
 
-  if (!manip_->hasLinkName(source_frame))
-    throw std::runtime_error("Source Link name '" + source_frame + "' provided does not exist.");
+  if (!manip_->hasLinkName(source_frame_id_.name()))
+    throw std::runtime_error("Source Link name '" + source_frame_id_.name() + "' provided does not exist.");
 
-  if (!manip_->hasLinkName(target_frame))
-    throw std::runtime_error("Target Link name '" + target_frame + "' provided does not exist.");
+  if (!manip_->hasLinkName(target_frame_id_.name()))
+    throw std::runtime_error("Target Link name '" + target_frame_id_.name() + "' provided does not exist.");
 
   if (bounds.size() != 6)
     throw std::runtime_error("The number of bounds should be six.");
@@ -241,8 +241,8 @@ CartPosConstraint::CartPosConstraint(std::shared_ptr<const Var> position_var,
 
 CartPosConstraint::CartPosConstraint(std::shared_ptr<const Var> position_var,
                                      std::shared_ptr<const tesseract::kinematics::JointGroup> manip,
-                                     std::string source_frame,
-                                     std::string target_frame,
+                                     tesseract::common::LinkId source_frame,
+                                     tesseract::common::LinkId target_frame,
                                      const Eigen::Isometry3d& source_frame_offset,
                                      const Eigen::Isometry3d& target_frame_offset,
                                      std::string name,
