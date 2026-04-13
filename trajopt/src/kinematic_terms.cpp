@@ -73,16 +73,16 @@ Eigen::VectorXd applyTolerances(const Eigen::VectorXd& error,
 
 DynamicCartPoseErrCalculator::DynamicCartPoseErrCalculator(
     std::shared_ptr<const tesseract::kinematics::JointGroup> manip,
-    std::string source_frame,
-    std::string target_frame,
+    tesseract::common::LinkId source_frame_id,
+    tesseract::common::LinkId target_frame_id,
     const Eigen::Isometry3d& source_frame_offset,  // NOLINT(modernize-pass-by-value)
     const Eigen::Isometry3d& target_frame_offset,  // NOLINT(modernize-pass-by-value)
     const Eigen::VectorXi& indices,                // NOLINT(modernize-pass-by-value)
     const Eigen::VectorXd& lower_tolerance,        // NOLINT(modernize-pass-by-value)
     const Eigen::VectorXd& upper_tolerance)        // NOLINT(modernize-pass-by-value)
   : manip_(std::move(manip))
-  , source_frame_(std::move(source_frame))
-  , target_frame_(std::move(target_frame))
+  , source_frame_id_(std::move(source_frame_id))
+  , target_frame_id_(std::move(target_frame_id))
   , source_frame_offset_(source_frame_offset)
   , target_frame_offset_(target_frame_offset)
   , indices_(indices)
@@ -118,11 +118,31 @@ DynamicCartPoseErrCalculator::DynamicCartPoseErrCalculator(
   }
 }
 
+DynamicCartPoseErrCalculator::DynamicCartPoseErrCalculator(
+    std::shared_ptr<const tesseract::kinematics::JointGroup> manip,
+    std::string source_frame,
+    std::string target_frame,
+    const Eigen::Isometry3d& source_frame_offset,
+    const Eigen::Isometry3d& target_frame_offset,
+    const Eigen::VectorXi& indices,
+    const Eigen::VectorXd& lower_tolerance,
+    const Eigen::VectorXd& upper_tolerance)
+  : DynamicCartPoseErrCalculator(std::move(manip),
+                                 tesseract::common::LinkId::fromName(source_frame),
+                                 tesseract::common::LinkId::fromName(target_frame),
+                                 source_frame_offset,
+                                 target_frame_offset,
+                                 indices,
+                                 lower_tolerance,
+                                 upper_tolerance)
+{
+}
+
 VectorXd DynamicCartPoseErrCalculator::operator()(const VectorXd& dof_vals) const
 {
   manip_->calcFwdKin(transforms_cache, dof_vals);
-  const Isometry3d source_tf = transforms_cache[tesseract::common::LinkId::fromName(source_frame_)] * source_frame_offset_;
-  const Isometry3d target_tf = transforms_cache[tesseract::common::LinkId::fromName(target_frame_)] * target_frame_offset_;
+  const Isometry3d source_tf = transforms_cache[source_frame_id_] * source_frame_offset_;
+  const Isometry3d target_tf = transforms_cache[target_frame_id_] * target_frame_offset_;
 
   VectorXd err = error_function(target_tf, source_tf);
 
@@ -137,8 +157,8 @@ void DynamicCartPoseErrCalculator::Plot(const std::shared_ptr<tesseract::visuali
                                         const VectorXd& dof_vals)
 {
   tesseract::common::LinkIdTransformMap state = manip_->calcFwdKin(dof_vals);
-  Eigen::Isometry3d source_tf = state[tesseract::common::LinkId::fromName(source_frame_)] * source_frame_offset_;
-  Eigen::Isometry3d target_tf = state[tesseract::common::LinkId::fromName(target_frame_)] * target_frame_offset_;
+  Eigen::Isometry3d source_tf = state[source_frame_id_] * source_frame_offset_;
+  Eigen::Isometry3d target_tf = state[target_frame_id_] * target_frame_offset_;
 
   tesseract::visualization::AxisMarker m1(source_tf);
   m1.setScale(Eigen::Vector3d::Constant(0.05));
@@ -156,15 +176,15 @@ void DynamicCartPoseErrCalculator::Plot(const std::shared_ptr<tesseract::visuali
 
 DynamicCartPoseJacCalculator::DynamicCartPoseJacCalculator(
     std::shared_ptr<const tesseract::kinematics::JointGroup> manip,
-    std::string source_frame,
-    std::string target_frame,
+    tesseract::common::LinkId source_frame_id,
+    tesseract::common::LinkId target_frame_id,
     const Eigen::Isometry3d& source_frame_offset,  // NOLINT(modernize-pass-by-value)
     const Eigen::Isometry3d& target_frame_offset,  // NOLINT(modernize-pass-by-value)
     const Eigen::VectorXi& indices)                // NOLINT(modernize-pass-by-value)
   : manip_(std::move(manip))
-  , source_frame_(std::move(source_frame))
+  , source_frame_id_(std::move(source_frame_id))
   , source_frame_offset_(source_frame_offset)
-  , target_frame_(std::move(target_frame))
+  , target_frame_id_(std::move(target_frame_id))
   , target_frame_offset_(target_frame_offset)
   , indices_(indices)
   , epsilon_(DEFAULT_EPSILON)
@@ -172,12 +192,28 @@ DynamicCartPoseJacCalculator::DynamicCartPoseJacCalculator(
   assert(indices_.size() <= 6);
 }
 
+DynamicCartPoseJacCalculator::DynamicCartPoseJacCalculator(
+    std::shared_ptr<const tesseract::kinematics::JointGroup> manip,
+    std::string source_frame,
+    std::string target_frame,
+    const Eigen::Isometry3d& source_frame_offset,
+    const Eigen::Isometry3d& target_frame_offset,
+    const Eigen::VectorXi& indices)
+  : DynamicCartPoseJacCalculator(std::move(manip),
+                                 tesseract::common::LinkId::fromName(source_frame),
+                                 tesseract::common::LinkId::fromName(target_frame),
+                                 source_frame_offset,
+                                 target_frame_offset,
+                                 indices)
+{
+}
+
 MatrixXd DynamicCartPoseJacCalculator::operator()(const VectorXd& dof_vals) const
 {
   // Duplicated from calcForwardNumJac in trajopt_sco/src/num_diff.cpp, but with ignoring tolerances
   manip_->calcFwdKin(transforms_cache, dof_vals);
-  const Isometry3d source_tf = transforms_cache[tesseract::common::LinkId::fromName(source_frame_)] * source_frame_offset_;
-  const Isometry3d target_tf = transforms_cache[tesseract::common::LinkId::fromName(target_frame_)] * target_frame_offset_;
+  const Isometry3d source_tf = transforms_cache[source_frame_id_] * source_frame_offset_;
+  const Isometry3d target_tf = transforms_cache[target_frame_id_] * target_frame_offset_;
 
   Eigen::MatrixXd jac0(indices_.size(), dof_vals.size());
   Eigen::VectorXd dof_vals_pert = dof_vals;
@@ -185,8 +221,8 @@ MatrixXd DynamicCartPoseJacCalculator::operator()(const VectorXd& dof_vals) cons
   {
     dof_vals_pert(i) = dof_vals(i) + epsilon_;
     manip_->calcFwdKin(transforms_cache, dof_vals_pert);
-    const Isometry3d source_tf_pert = transforms_cache[tesseract::common::LinkId::fromName(source_frame_)] * source_frame_offset_;
-    const Isometry3d target_tf_pert = transforms_cache[tesseract::common::LinkId::fromName(target_frame_)] * target_frame_offset_;
+    const Isometry3d source_tf_pert = transforms_cache[source_frame_id_] * source_frame_offset_;
+    const Isometry3d target_tf_pert = transforms_cache[target_frame_id_] * target_frame_offset_;
     VectorXd error_diff =
         tesseract::common::calcJacobianTransformErrorDiff(target_tf, target_tf_pert, source_tf, source_tf_pert);
 
@@ -203,22 +239,22 @@ MatrixXd DynamicCartPoseJacCalculator::operator()(const VectorXd& dof_vals) cons
 
 CartPoseErrCalculator::CartPoseErrCalculator(
     std::shared_ptr<const tesseract::kinematics::JointGroup> manip,
-    std::string source_frame,
-    std::string target_frame,
+    tesseract::common::LinkId source_frame_id,
+    tesseract::common::LinkId target_frame_id,
     const Eigen::Isometry3d& source_frame_offset,  // NOLINT(modernize-pass-by-value)
     const Eigen::Isometry3d& target_frame_offset,  // NOLINT(modernize-pass-by-value)
     const Eigen::VectorXi& indices,                // NOLINT(modernize-pass-by-value)
     const VectorXd& lower_tolerance,               // NOLINT(modernize-pass-by-value)
     const VectorXd& upper_tolerance)               // NOLINT(modernize-pass-by-value)
   : manip_(std::move(manip))
-  , source_frame_(std::move(source_frame))
-  , target_frame_(std::move(target_frame))
+  , source_frame_id_(std::move(source_frame_id))
+  , target_frame_id_(std::move(target_frame_id))
   , source_frame_offset_(source_frame_offset)
   , target_frame_offset_(target_frame_offset)
   , indices_(indices)
 {
   assert(indices_.size() <= 6);
-  is_target_active_ = manip_->isActiveLinkName(target_frame_);
+  is_target_active_ = manip_->isActiveLinkId(target_frame_id_);
 
   if (lower_tolerance.size() != upper_tolerance.size())
   {
@@ -274,11 +310,30 @@ CartPoseErrCalculator::CartPoseErrCalculator(
   }
 }
 
+CartPoseErrCalculator::CartPoseErrCalculator(std::shared_ptr<const tesseract::kinematics::JointGroup> manip,
+                                             std::string source_frame,
+                                             std::string target_frame,
+                                             const Eigen::Isometry3d& source_frame_offset,
+                                             const Eigen::Isometry3d& target_frame_offset,
+                                             const Eigen::VectorXi& indices,
+                                             const VectorXd& lower_tolerance,
+                                             const VectorXd& upper_tolerance)
+  : CartPoseErrCalculator(std::move(manip),
+                          tesseract::common::LinkId::fromName(source_frame),
+                          tesseract::common::LinkId::fromName(target_frame),
+                          source_frame_offset,
+                          target_frame_offset,
+                          indices,
+                          lower_tolerance,
+                          upper_tolerance)
+{
+}
+
 VectorXd CartPoseErrCalculator::operator()(const VectorXd& dof_vals) const
 {
   manip_->calcFwdKin(transforms_cache, dof_vals);
-  const Isometry3d source_tf = transforms_cache[tesseract::common::LinkId::fromName(source_frame_)] * source_frame_offset_;
-  const Isometry3d target_tf = transforms_cache[tesseract::common::LinkId::fromName(target_frame_)] * target_frame_offset_;
+  const Isometry3d source_tf = transforms_cache[source_frame_id_] * source_frame_offset_;
+  const Isometry3d target_tf = transforms_cache[target_frame_id_] * target_frame_offset_;
 
   VectorXd err = error_function_(target_tf, source_tf);
 
@@ -293,8 +348,8 @@ void CartPoseErrCalculator::Plot(const std::shared_ptr<tesseract::visualization:
                                  const VectorXd& dof_vals)
 {
   tesseract::common::LinkIdTransformMap state = manip_->calcFwdKin(dof_vals);
-  Eigen::Isometry3d source_tf = state[tesseract::common::LinkId::fromName(source_frame_)] * source_frame_offset_;
-  Eigen::Isometry3d target_tf = state[tesseract::common::LinkId::fromName(target_frame_)] * target_frame_offset_;
+  Eigen::Isometry3d source_tf = state[source_frame_id_] * source_frame_offset_;
+  Eigen::Isometry3d target_tf = state[target_frame_id_] * target_frame_offset_;
 
   tesseract::visualization::AxisMarker m1(source_tf);
   m1.setScale(Eigen::Vector3d::Constant(0.05));
@@ -312,17 +367,17 @@ void CartPoseErrCalculator::Plot(const std::shared_ptr<tesseract::visualization:
 
 CartPoseJacCalculator::CartPoseJacCalculator(
     std::shared_ptr<const tesseract::kinematics::JointGroup> manip,
-    std::string source_frame,
-    std::string target_frame,
+    tesseract::common::LinkId source_frame_id,
+    tesseract::common::LinkId target_frame_id,
     const Eigen::Isometry3d& source_frame_offset,  // NOLINT(modernize-pass-by-value)
     const Eigen::Isometry3d& target_frame_offset,  // NOLINT(modernize-pass-by-value)
     const Eigen::VectorXi& indices)                // NOLINT(modernize-pass-by-value)
   : manip_(std::move(manip))
-  , source_frame_(std::move(source_frame))
+  , source_frame_id_(std::move(source_frame_id))
   , source_frame_offset_(source_frame_offset)
-  , target_frame_(std::move(target_frame))
+  , target_frame_id_(std::move(target_frame_id))
   , target_frame_offset_(target_frame_offset)
-  , is_target_active_(manip_->isActiveLinkName(target_frame_))
+  , is_target_active_(manip_->isActiveLinkId(target_frame_id_))
   , indices_(indices)
   , epsilon_(DEFAULT_EPSILON)
 {
@@ -335,8 +390,7 @@ CartPoseJacCalculator::CartPoseJacCalculator(
                                   const Eigen::Isometry3d& source_tf,
                                   tesseract::common::LinkIdTransformMap& state_cache) -> VectorXd {
       manip_->calcFwdKin(state_cache, vals);
-      const Isometry3d perturbed_target_tf =
-          state_cache[tesseract::common::LinkId::fromName(target_frame_)] * target_frame_offset_;
+      const Isometry3d perturbed_target_tf = state_cache[target_frame_id_] * target_frame_offset_;
       VectorXd error_diff =
           tesseract::common::calcJacobianTransformErrorDiff(source_tf, target_tf, perturbed_target_tf);
 
@@ -354,8 +408,7 @@ CartPoseJacCalculator::CartPoseJacCalculator(
                                   const Eigen::Isometry3d& source_tf,
                                   tesseract::common::LinkIdTransformMap& state_cache) -> VectorXd {
       manip_->calcFwdKin(state_cache, vals);
-      const Isometry3d perturbed_source_tf =
-          state_cache[tesseract::common::LinkId::fromName(source_frame_)] * source_frame_offset_;
+      const Isometry3d perturbed_source_tf = state_cache[source_frame_id_] * source_frame_offset_;
       VectorXd error_diff =
           tesseract::common::calcJacobianTransformErrorDiff(target_tf, source_tf, perturbed_source_tf);
 
@@ -368,11 +421,26 @@ CartPoseJacCalculator::CartPoseJacCalculator(
   }
 }
 
+CartPoseJacCalculator::CartPoseJacCalculator(std::shared_ptr<const tesseract::kinematics::JointGroup> manip,
+                                             std::string source_frame,
+                                             std::string target_frame,
+                                             const Eigen::Isometry3d& source_frame_offset,
+                                             const Eigen::Isometry3d& target_frame_offset,
+                                             const Eigen::VectorXi& indices)
+  : CartPoseJacCalculator(std::move(manip),
+                          tesseract::common::LinkId::fromName(source_frame),
+                          tesseract::common::LinkId::fromName(target_frame),
+                          source_frame_offset,
+                          target_frame_offset,
+                          indices)
+{
+}
+
 MatrixXd CartPoseJacCalculator::operator()(const VectorXd& dof_vals) const
 {
   manip_->calcFwdKin(transforms_cache, dof_vals);
-  const Isometry3d source_tf = transforms_cache[tesseract::common::LinkId::fromName(source_frame_)] * source_frame_offset_;
-  const Isometry3d target_tf = transforms_cache[tesseract::common::LinkId::fromName(target_frame_)] * target_frame_offset_;
+  const Isometry3d source_tf = transforms_cache[source_frame_id_] * source_frame_offset_;
+  const Isometry3d target_tf = transforms_cache[target_frame_id_] * target_frame_offset_;
 
   Eigen::MatrixXd jac0(indices_.size(), dof_vals.size());
   Eigen::VectorXd dof_vals_pert = dof_vals;
@@ -391,7 +459,7 @@ CartVelJacCalculator::CartVelJacCalculator(std::shared_ptr<const tesseract::kine
                                            std::string link,
                                            double limit,
                                            const Eigen::Isometry3d& tcp)  // NOLINT(modernize-pass-by-value)
-  : manip_(std::move(manip)), limit_(limit), link_(std::move(link)), tcp_(tcp)
+  : manip_(std::move(manip)), limit_(limit), link_id_(tesseract::common::LinkId::fromName(link)), tcp_(tcp)
 {
 }
 
@@ -404,15 +472,16 @@ MatrixXd CartVelJacCalculator::operator()(const VectorXd& dof_vals) const
   jac0.resize(6, manip_->numJoints());
   jac1.resize(6, manip_->numJoints());
 
+  const auto& link_name = link_id_.name();
   if (tcp_.translation().isZero())
   {
-    jac0 = manip_->calcJacobian(dof_vals.topRows(n_dof), manip_->getBaseLinkName(), link_);
-    jac1 = manip_->calcJacobian(dof_vals.bottomRows(n_dof), manip_->getBaseLinkName(), link_);
+    jac0 = manip_->calcJacobian(dof_vals.topRows(n_dof), manip_->getBaseLinkName(), link_name);
+    jac1 = manip_->calcJacobian(dof_vals.bottomRows(n_dof), manip_->getBaseLinkName(), link_name);
   }
   else
   {
-    jac0 = manip_->calcJacobian(dof_vals.topRows(n_dof), manip_->getBaseLinkName(), link_, tcp_.translation());
-    jac1 = manip_->calcJacobian(dof_vals.bottomRows(n_dof), manip_->getBaseLinkName(), link_, tcp_.translation());
+    jac0 = manip_->calcJacobian(dof_vals.topRows(n_dof), manip_->getBaseLinkName(), link_name, tcp_.translation());
+    jac1 = manip_->calcJacobian(dof_vals.bottomRows(n_dof), manip_->getBaseLinkName(), link_name, tcp_.translation());
   }
 
   out.block(0, 0, 3, n_dof) = -jac0.topRows(3);
@@ -426,7 +495,7 @@ CartVelErrCalculator::CartVelErrCalculator(std::shared_ptr<const tesseract::kine
                                            std::string link,
                                            double limit,
                                            const Eigen::Isometry3d& tcp)  // NOLINT(modernize-pass-by-value)
-  : manip_(std::move(manip)), link_(std::move(link)), limit_(limit), tcp_(tcp)
+  : manip_(std::move(manip)), link_id_(tesseract::common::LinkId::fromName(link)), limit_(limit), tcp_(tcp)
 {
 }
 
@@ -435,10 +504,10 @@ VectorXd CartVelErrCalculator::operator()(const VectorXd& dof_vals) const
   auto n_dof = static_cast<int>(manip_->numJoints());
 
   manip_->calcFwdKin(transforms_cache, dof_vals.topRows(n_dof));
-  Isometry3d pose0 = transforms_cache[tesseract::common::LinkId::fromName(link_)] * tcp_;
+  Isometry3d pose0 = transforms_cache[link_id_] * tcp_;
 
   manip_->calcFwdKin(transforms_cache, dof_vals.bottomRows(n_dof));
-  Isometry3d pose1 = transforms_cache[tesseract::common::LinkId::fromName(link_)] * tcp_;
+  Isometry3d pose1 = transforms_cache[link_id_] * tcp_;
 
   VectorXd out(6);
   out.topRows(3) = (pose1.translation() - pose0.translation() - Vector3d(limit_, limit_, limit_));
@@ -608,7 +677,7 @@ MatrixXd TimeCostJacCalculator::operator()(const VectorXd& var_vals) const
 VectorXd AvoidSingularityErrCalculator::operator()(const VectorXd& var_vals) const
 {
   // Calculate the SVD of the jacobian at this joint state
-  const MatrixXd jacobian = fwd_kin_->calcJacobian(var_vals, link_name_);
+  const MatrixXd jacobian = fwd_kin_->calcJacobian(var_vals, link_id_);
   const Eigen::JacobiSVD<MatrixXd> svd(jacobian, Eigen::ComputeThinU | Eigen::ComputeThinV);
 
   // Get the U and V vectors for the smallest singular value
@@ -633,7 +702,7 @@ MatrixXd AvoidSingularityJacCalculator::jacobianPartialDerivative(const VectorXd
   const double eps = eps_;
   joints(jntIdx) += eps;
 
-  const MatrixXd jacobian_increment = fwd_kin_->calcJacobian(joints, link_name_);
+  const MatrixXd jacobian_increment = fwd_kin_->calcJacobian(joints, link_id_);
   return (jacobian_increment - jacobian) / eps;
 }
 
@@ -643,7 +712,7 @@ MatrixXd AvoidSingularityJacCalculator::operator()(const VectorXd& var_vals) con
   cost_jacobian.resize(1, var_vals.size());
 
   // Calculate the SVD of the jacobian at this joint state
-  const MatrixXd jacobian = fwd_kin_->calcJacobian(var_vals, link_name_);
+  const MatrixXd jacobian = fwd_kin_->calcJacobian(var_vals, link_id_);
   const Eigen::JacobiSVD<MatrixXd> svd(jacobian, Eigen::ComputeThinU | Eigen::ComputeThinV);
 
   // Get the U and V vectors for the smallest singular value
