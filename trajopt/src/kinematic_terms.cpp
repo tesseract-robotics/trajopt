@@ -456,10 +456,18 @@ MatrixXd CartPoseJacCalculator::operator()(const VectorXd& dof_vals) const
 }
 
 CartVelJacCalculator::CartVelJacCalculator(std::shared_ptr<const tesseract::kinematics::JointGroup> manip,
-                                           std::string link,
+                                           tesseract::common::LinkId link_id,
                                            double limit,
                                            const Eigen::Isometry3d& tcp)  // NOLINT(modernize-pass-by-value)
-  : manip_(std::move(manip)), limit_(limit), link_id_(tesseract::common::LinkId::fromName(link)), tcp_(tcp)
+  : manip_(std::move(manip)), limit_(limit), link_id_(std::move(link_id)), tcp_(tcp)
+{
+}
+
+CartVelJacCalculator::CartVelJacCalculator(std::shared_ptr<const tesseract::kinematics::JointGroup> manip,
+                                           std::string link,
+                                           double limit,
+                                           const Eigen::Isometry3d& tcp)
+  : CartVelJacCalculator(std::move(manip), tesseract::common::LinkId::fromName(link), limit, tcp)
 {
 }
 
@@ -492,10 +500,18 @@ MatrixXd CartVelJacCalculator::operator()(const VectorXd& dof_vals) const
 }
 
 CartVelErrCalculator::CartVelErrCalculator(std::shared_ptr<const tesseract::kinematics::JointGroup> manip,
-                                           std::string link,
+                                           tesseract::common::LinkId link_id,
                                            double limit,
                                            const Eigen::Isometry3d& tcp)  // NOLINT(modernize-pass-by-value)
-  : manip_(std::move(manip)), link_id_(tesseract::common::LinkId::fromName(link)), limit_(limit), tcp_(tcp)
+  : manip_(std::move(manip)), link_id_(std::move(link_id)), limit_(limit), tcp_(tcp)
+{
+}
+
+CartVelErrCalculator::CartVelErrCalculator(std::shared_ptr<const tesseract::kinematics::JointGroup> manip,
+                                           std::string link,
+                                           double limit,
+                                           const Eigen::Isometry3d& tcp)
+  : CartVelErrCalculator(std::move(manip), tesseract::common::LinkId::fromName(link), limit, tcp)
 {
 }
 
