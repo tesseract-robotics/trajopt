@@ -76,12 +76,18 @@ void CollisionCoeffData::setCollisionCoeff(const std::string& obj1, const std::s
     zero_coeff_.erase(key);
 }
 
-double CollisionCoeffData::getCollisionCoeff(const tesseract::common::LinkId& id1, const tesseract::common::LinkId& id2) const
+double CollisionCoeffData::getCollisionCoeff(const tesseract::common::LinkIdPair& pair) const
 {
-  const auto it = lookup_table_.find(tesseract::common::LinkIdPair::make(id1, id2));
+  const auto it = lookup_table_.find(pair);
   if (it != lookup_table_.end())
     return it->second.coeff;
   return default_collision_coeff_;
+}
+
+double CollisionCoeffData::getCollisionCoeff(const tesseract::common::LinkId& id1,
+                                             const tesseract::common::LinkId& id2) const
+{
+  return getCollisionCoeff(tesseract::common::LinkIdPair::make(id1, id2));
 }
 
 double CollisionCoeffData::getCollisionCoeff(const std::string& obj1, const std::string& obj2) const
@@ -89,9 +95,15 @@ double CollisionCoeffData::getCollisionCoeff(const std::string& obj1, const std:
   return getCollisionCoeff(tesseract::common::LinkId::fromName(obj1), tesseract::common::LinkId::fromName(obj2));
 }
 
-bool CollisionCoeffData::hasZeroCoeff(const tesseract::common::LinkId& id1, const tesseract::common::LinkId& id2) const
+bool CollisionCoeffData::hasZeroCoeff(const tesseract::common::LinkIdPair& pair) const
 {
-  return zero_coeff_.count(tesseract::common::LinkIdPair::make(id1, id2)) != 0;
+  return zero_coeff_.count(pair) != 0;
+}
+
+bool CollisionCoeffData::hasZeroCoeff(const tesseract::common::LinkId& id1,
+                                      const tesseract::common::LinkId& id2) const
+{
+  return hasZeroCoeff(tesseract::common::LinkIdPair::make(id1, id2));
 }
 
 bool CollisionCoeffData::hasZeroCoeff(const std::string& obj1, const std::string& obj2) const
