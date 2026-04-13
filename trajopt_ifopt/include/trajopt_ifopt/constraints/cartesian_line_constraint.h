@@ -33,6 +33,7 @@ TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt_ifopt/core/constraint_set.h>
 #include <tesseract/common/eigen_types.h>
+#include <tesseract/common/types.h>
 #include <tesseract/kinematics/fwd.h>
 
 namespace trajopt_ifopt
@@ -67,6 +68,12 @@ struct CartLineInfo
 
   /** @brief The target frame that should be reached by the source */
   std::string target_frame;
+
+  /** @brief Cached LinkId for source_frame, computed once in constructor */
+  tesseract::common::LinkId source_frame_id;
+
+  /** @brief Cached LinkId for target_frame, computed once in constructor */
+  tesseract::common::LinkId target_frame_id;
 
   /** @brief Static transform applied to the source_frame location */
   Eigen::Isometry3d source_frame_offset;

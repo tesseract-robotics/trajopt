@@ -157,10 +157,10 @@ private:
   std::shared_ptr<const tesseract::kinematics::JointGroup> manip_;
 
   /** @brief Link which should reach desired pos */
-  std::string source_frame_;
+  tesseract::common::LinkId source_frame_id_;
 
   /** @brief The target frame that should be reached by the source */
-  std::string target_frame_;
+  tesseract::common::LinkId target_frame_id_;
 
   /** @brief Static transform applied to the source_frame location */
   Eigen::Isometry3d source_frame_offset_;
