@@ -99,8 +99,8 @@ public:
     // passes through the octree with multiple arm links.
     Joint new_joint("base_link-octomap_attached");
     new_joint.type = JointType::FIXED;
-    new_joint.parent_link_name = "base_link";
-    new_joint.child_link_name = "octomap_attached";
+    new_joint.parent_link_id = LinkId::fromName("base_link");
+    new_joint.child_link_id = LinkId::fromName("octomap_attached");
     new_joint.parent_to_joint_origin_transform = Eigen::Isometry3d::Identity();
     new_joint.parent_to_joint_origin_transform.translation() = Eigen::Vector3d(0.5, -0.3, 0.8);
 
@@ -189,9 +189,8 @@ TEST_F(CastOctomapArmTest, continuous_detection_gap)  // NOLINT
   bool bullet_found = checkTrajectory(bullet_collisions, *bullet_mgr, *state_solver, joint_names, init_traj, config);
   int bullet_octree = countLinkContacts(bullet_collisions, "octomap_attached");
 
-  CONSOLE_BRIDGE_logError("Bullet continuous: collision=%s, octree contacts=%d",
-                          bullet_found ? "YES" : "NO",
-                          bullet_octree);
+  CONSOLE_BRIDGE_logError(
+      "Bullet continuous: collision=%s, octree contacts=%d", bullet_found ? "YES" : "NO", bullet_octree);
   logContacts(bullet_collisions, "bullet", "octomap_attached");
 
   // --- Check with Coal continuous ---
@@ -204,17 +203,16 @@ TEST_F(CastOctomapArmTest, continuous_detection_gap)  // NOLINT
   bool coal_found = checkTrajectory(coal_collisions, *coal_mgr, *state_solver, joint_names, init_traj, config);
   int coal_octree = countLinkContacts(coal_collisions, "octomap_attached");
 
-  CONSOLE_BRIDGE_logError("Coal continuous:   collision=%s, octree contacts=%d",
-                          coal_found ? "YES" : "NO",
-                          coal_octree);
+  CONSOLE_BRIDGE_logError(
+      "Coal continuous:   collision=%s, octree contacts=%d", coal_found ? "YES" : "NO", coal_octree);
   logContacts(coal_collisions, "coal", "octomap_attached");
 
   // --- Per-step comparison ---
   const size_t max_steps = std::max(bullet_collisions.size(), coal_collisions.size());
   for (size_t step = 0; step < max_steps; ++step)
   {
-    int b_count = (step < bullet_collisions.size()) ? countLinkContacts({ bullet_collisions[step] }, "octomap_attached")
-                                                    : 0;
+    int b_count =
+        (step < bullet_collisions.size()) ? countLinkContacts({ bullet_collisions[step] }, "octomap_attached") : 0;
     int c_count =
         (step < coal_collisions.size()) ? countLinkContacts({ coal_collisions[step] }, "octomap_attached") : 0;
     if (b_count > 0 || c_count > 0)
@@ -234,9 +232,8 @@ TEST_F(CastOctomapArmTest, continuous_detection_gap)  // NOLINT
   bool disc_found = checkTrajectory(disc_collisions, *disc_mgr, *state_solver, joint_names, init_traj, disc_config);
   int disc_octree = countLinkContacts(disc_collisions, "octomap_attached");
 
-  CONSOLE_BRIDGE_logError("Discrete (Bullet): collision=%s, octree contacts=%d",
-                          disc_found ? "YES" : "NO",
-                          disc_octree);
+  CONSOLE_BRIDGE_logError(
+      "Discrete (Bullet): collision=%s, octree contacts=%d", disc_found ? "YES" : "NO", disc_octree);
 
   // Both continuous backends should detect octree collisions on this trajectory
   EXPECT_TRUE(bullet_found) << "Bullet continuous should detect collision";
@@ -335,11 +332,8 @@ static OptResult optimizeAndVerify(Environment::Ptr env, const std::string& mana
         if (r.link_ids[0].name() == "octomap_attached" || r.link_ids[1].name() == "octomap_attached")
           min_dist = std::min(min_dist, r.distance);
 
-  CONSOLE_BRIDGE_logError("%s: cost=%.1f, octree contacts=%d, min dist=%.4f",
-                          manager_name.c_str(),
-                          final_cost,
-                          disc_octree,
-                          min_dist);
+  CONSOLE_BRIDGE_logError(
+      "%s: cost=%.1f, octree contacts=%d, min dist=%.4f", manager_name.c_str(), final_cost, disc_octree, min_dist);
   if (disc_octree > 0)
     logContacts(disc_collisions, manager_name, "octomap_attached");
 
@@ -369,18 +363,18 @@ TEST_F(CastOctomapArmTest, optimization_discrete_verify)  // NOLINT
                           coal.min_octree_distance);
 
   // Coal should produce no more octree contacts than Bullet
-  EXPECT_LE(coal.disc_octree_contacts, bullet.disc_octree_contacts + 2)
-      << "Coal produced significantly more octree contacts than Bullet";
+  EXPECT_LE(coal.disc_octree_contacts, bullet.disc_octree_contacts + 2) << "Coal produced significantly more octree "
+                                                                           "contacts than Bullet";
 
   // Coal's deepest penetration should not be much worse than Bullet's
-  EXPECT_GE(coal.min_octree_distance, bullet.min_octree_distance - 0.01)
-      << "Coal penetrates octree significantly deeper than Bullet";
+  EXPECT_GE(coal.min_octree_distance, bullet.min_octree_distance - 0.01) << "Coal penetrates octree significantly "
+                                                                            "deeper than Bullet";
 
   // Coal's final cost should be in the same ballpark as Bullet's
   if (bullet.cost > 0)
   {
-    EXPECT_LT(coal.cost, bullet.cost * 2.0)
-        << "Coal's optimization cost is much higher than Bullet's, suggesting weaker gradients";
+    EXPECT_LT(coal.cost, bullet.cost * 2.0) << "Coal's optimization cost is much higher than Bullet's, suggesting "
+                                               "weaker gradients";
   }
 }
 

@@ -99,8 +99,8 @@ public:
 
     Joint new_joint("box_world-base_link");
     new_joint.type = JointType::FIXED;
-    new_joint.parent_link_name = "base_link";
-    new_joint.child_link_name = "box_world";
+    new_joint.parent_link_id = LinkId::fromName("base_link");
+    new_joint.child_link_id = LinkId::fromName("box_world");
 
     env->applyCommand(std::make_shared<AddLinkCommand>(new_link, new_joint));
 
