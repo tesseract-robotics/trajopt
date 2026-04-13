@@ -260,6 +260,11 @@ struct CartVelJacCalculator : TrajOptMatrixOfVector
   tesseract::common::LinkId link_id_;
   Eigen::Isometry3d tcp_;
   CartVelJacCalculator(std::shared_ptr<const tesseract::kinematics::JointGroup> manip,
+                       tesseract::common::LinkId link_id,
+                       double limit,
+                       const Eigen::Isometry3d& tcp = Eigen::Isometry3d::Identity());
+
+  CartVelJacCalculator(std::shared_ptr<const tesseract::kinematics::JointGroup> manip,
                        std::string link,
                        double limit,
                        const Eigen::Isometry3d& tcp = Eigen::Isometry3d::Identity());
@@ -278,6 +283,11 @@ struct CartVelErrCalculator : TrajOptVectorOfVector
   tesseract::common::LinkId link_id_;
   double limit_;
   Eigen::Isometry3d tcp_;
+  CartVelErrCalculator(std::shared_ptr<const tesseract::kinematics::JointGroup> manip,
+                       tesseract::common::LinkId link_id,
+                       double limit,
+                       const Eigen::Isometry3d& tcp = Eigen::Isometry3d::Identity());
+
   CartVelErrCalculator(std::shared_ptr<const tesseract::kinematics::JointGroup> manip,
                        std::string link,
                        double limit,
@@ -365,9 +375,15 @@ struct AvoidSingularityErrCalculator : TrajOptVectorOfVector
    * equal to zero */
   double lambda_;
   AvoidSingularityErrCalculator(std::shared_ptr<const tesseract::kinematics::JointGroup> fwd_kin,
+                                tesseract::common::LinkId link_id,
+                                double lambda = 1.0e-3)
+    : fwd_kin_(std::move(fwd_kin)), link_id_(std::move(link_id)), lambda_(lambda)
+  {
+  }
+  AvoidSingularityErrCalculator(std::shared_ptr<const tesseract::kinematics::JointGroup> fwd_kin,
                                 std::string link_name,
                                 double lambda = 1.0e-3)
-    : fwd_kin_(std::move(fwd_kin)), link_id_(tesseract::common::LinkId::fromName(link_name)), lambda_(lambda)
+    : AvoidSingularityErrCalculator(std::move(fwd_kin), tesseract::common::LinkId::fromName(link_name), lambda)
   {
   }
   Eigen::VectorXd operator()(const Eigen::VectorXd& var_vals) const override;
@@ -387,10 +403,17 @@ struct AvoidSingularityJacCalculator : TrajOptMatrixOfVector
    * robot jacobian */
   double eps_;
   AvoidSingularityJacCalculator(std::shared_ptr<const tesseract::kinematics::JointGroup> fwd_kin,
+                                tesseract::common::LinkId link_id,
+                                double lambda = 1.0e-3,
+                                double eps = 1.0e-6)
+    : fwd_kin_(std::move(fwd_kin)), link_id_(std::move(link_id)), lambda_(lambda), eps_(eps)
+  {
+  }
+  AvoidSingularityJacCalculator(std::shared_ptr<const tesseract::kinematics::JointGroup> fwd_kin,
                                 std::string link_name,
                                 double lambda = 1.0e-3,
                                 double eps = 1.0e-6)
-    : fwd_kin_(std::move(fwd_kin)), link_id_(tesseract::common::LinkId::fromName(link_name)), lambda_(lambda), eps_(eps)
+    : AvoidSingularityJacCalculator(std::move(fwd_kin), tesseract::common::LinkId::fromName(link_name), lambda, eps)
   {
   }
   /** @brief Helper function for numerically calculating the partial derivative of the jacobian */
@@ -409,9 +432,20 @@ struct AvoidSingularitySubsetErrCalculator : AvoidSingularityErrCalculator
   std::shared_ptr<const tesseract::kinematics::JointGroup> superset_kin_;
   AvoidSingularitySubsetErrCalculator(std::shared_ptr<const tesseract::kinematics::JointGroup> subset_kin,
                                       std::shared_ptr<const tesseract::kinematics::JointGroup> superset_kin,
+                                      tesseract::common::LinkId link_id,
+                                      double lambda = 1.0e-3)
+    : AvoidSingularityErrCalculator(std::move(subset_kin), std::move(link_id), lambda)
+    , superset_kin_(std::move(superset_kin))
+  {
+  }
+  AvoidSingularitySubsetErrCalculator(std::shared_ptr<const tesseract::kinematics::JointGroup> subset_kin,
+                                      std::shared_ptr<const tesseract::kinematics::JointGroup> superset_kin,
                                       const std::string& link_name,
                                       double lambda = 1.0e-3)
-    : AvoidSingularityErrCalculator(std::move(subset_kin), link_name, lambda), superset_kin_(std::move(superset_kin))
+    : AvoidSingularitySubsetErrCalculator(std::move(subset_kin),
+                                          std::move(superset_kin),
+                                          tesseract::common::LinkId::fromName(link_name),
+                                          lambda)
   {
   }
   Eigen::VectorXd operator()(const Eigen::VectorXd& var_vals) const override;
@@ -423,11 +457,23 @@ struct AvoidSingularitySubsetJacCalculator : AvoidSingularityJacCalculator
   std::shared_ptr<const tesseract::kinematics::JointGroup> superset_kin_;
   AvoidSingularitySubsetJacCalculator(std::shared_ptr<const tesseract::kinematics::JointGroup> subset_kin,
                                       std::shared_ptr<const tesseract::kinematics::JointGroup> superset_kin,
+                                      tesseract::common::LinkId link_id,
+                                      double lambda = 1.0e-3,
+                                      double eps = 1.0e-6)
+    : AvoidSingularityJacCalculator(std::move(subset_kin), std::move(link_id), lambda, eps)
+    , superset_kin_(std::move(superset_kin))
+  {
+  }
+  AvoidSingularitySubsetJacCalculator(std::shared_ptr<const tesseract::kinematics::JointGroup> subset_kin,
+                                      std::shared_ptr<const tesseract::kinematics::JointGroup> superset_kin,
                                       const std::string& link_name,
                                       double lambda = 1.0e-3,
                                       double eps = 1.0e-6)
-    : AvoidSingularityJacCalculator(std::move(subset_kin), link_name, lambda, eps)
-    , superset_kin_(std::move(superset_kin))
+    : AvoidSingularitySubsetJacCalculator(std::move(subset_kin),
+                                          std::move(superset_kin),
+                                          tesseract::common::LinkId::fromName(link_name),
+                                          lambda,
+                                          eps)
   {
   }
   Eigen::MatrixXd operator()(const Eigen::VectorXd& var_vals) const override;
