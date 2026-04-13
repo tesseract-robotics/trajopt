@@ -202,9 +202,9 @@ int DiscreteCollisionConstraintD::update()
   for (const auto& pair : collision_data_->contact_results_map)
   {
     const double margin =
-        collision_evaluator_->getCollisionMarginData().getCollisionMargin(pair.first.first, pair.first.second);
+        collision_evaluator_->getCollisionMarginData().getCollisionMargin(pair.first);
     const double coeff =
-        collision_evaluator_->getCollisionCoeffData().getCollisionCoeff(pair.first.first, pair.first.second);
+        collision_evaluator_->getCollisionCoeffData().getCollisionCoeff(pair.first);
     for (const auto& contact_results : pair.second)
     {
       coeffs_(i) = coeff;

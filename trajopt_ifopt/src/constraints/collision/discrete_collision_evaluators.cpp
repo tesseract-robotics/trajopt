@@ -108,7 +108,7 @@ void SingleTimestepCollisionEvaluator::calcCollisions(trajopt_common::CollisionC
       continue;
 
     ShapeGrsMap shape_grs;
-    const double coeff = coeff_data_.getCollisionCoeff(pair.first.first, pair.first.second);
+    const double coeff = coeff_data_.getCollisionCoeff(pair.first);
 
     for (const auto& dist_result : pair.second)
     {
@@ -161,14 +161,14 @@ void SingleTimestepCollisionEvaluator::calcCollisionsHelper(const Eigen::Ref<con
   // Don't include contacts with zero coeffs
   auto filter = [this](tesseract::collision::ContactResultMap::PairType& pair) {
     // Remove pairs with zero coeffs
-    if (coeff_data_.hasZeroCoeff(pair.first.first, pair.first.second))
+    if (coeff_data_.hasZeroCoeff(pair.first))
     {
       pair.second.clear();
       return;
     }
 
     // Contains the contact distance threshold and coefficient for the given link pair
-    const double margin = margin_data_.getCollisionMargin(pair.first.first, pair.first.second);
+    const double margin = margin_data_.getCollisionMargin(pair.first);
     auto end = std::remove_if(
         pair.second.begin(), pair.second.end(), [&margin, this](const tesseract::collision::ContactResult& r) {
           return (r.distance > (margin + margin_buffer_));

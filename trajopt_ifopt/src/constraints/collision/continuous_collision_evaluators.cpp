@@ -116,7 +116,7 @@ void LVSContinuousCollisionEvaluator::calcCollisionData(trajopt_common::Collisio
     using ShapeGrsMap = std::map<ShapeKey, trajopt_common::GradientResultsSet>;
     ShapeGrsMap shape_grs;
 
-    const double coeff = coeff_data_.getCollisionCoeff(pair.first.first, pair.first.second);
+    const double coeff = coeff_data_.getCollisionCoeff(pair.first);
     const auto& results = pair.second;
 
     for (const tesseract::collision::ContactResult& dist_result : results)
@@ -188,14 +188,14 @@ void LVSContinuousCollisionEvaluator::calcCollisionsHelper(tesseract::collision:
   auto filter =
       [this, vars0_fixed, vars1_fixed](tesseract::collision::ContactResultMap::PairType& pair) {
         // Remove pairs with zero coeffs
-        if (coeff_data_.hasZeroCoeff(pair.first.first, pair.first.second))
+        if (coeff_data_.hasZeroCoeff(pair.first))
         {
           pair.second.clear();
           return;
         }
 
         // Contains the contact distance threshold and coefficient for the given link pair
-        const double margin = margin_data_.getCollisionMargin(pair.first.first, pair.first.second);
+        const double margin = margin_data_.getCollisionMargin(pair.first);
         trajopt_common::removeInvalidContactResults(pair.second, margin, margin_buffer_, vars0_fixed, vars1_fixed);
       };
 
@@ -348,7 +348,7 @@ void LVSDiscreteCollisionEvaluator::calcCollisionData(trajopt_common::CollisionC
     using ShapeGrsMap = std::map<ShapeKey, trajopt_common::GradientResultsSet>;
     ShapeGrsMap shape_grs;
 
-    const double coeff = coeff_data_.getCollisionCoeff(pair.first.first, pair.first.second);
+    const double coeff = coeff_data_.getCollisionCoeff(pair.first);
     const auto& results = pair.second;
 
     for (const tesseract::collision::ContactResult& dist_result : results)
@@ -413,14 +413,14 @@ void LVSDiscreteCollisionEvaluator::calcCollisionsHelper(tesseract::collision::C
   auto filter =
       [this, vars0_fixed, vars1_fixed](tesseract::collision::ContactResultMap::PairType& pair) {
         // Remove pairs with zero coeffs
-        if (coeff_data_.hasZeroCoeff(pair.first.first, pair.first.second))
+        if (coeff_data_.hasZeroCoeff(pair.first))
         {
           pair.second.clear();
           return;
         }
 
         // Contains the contact distance threshold and coefficient for the given link pair
-        const double margin = margin_data_.getCollisionMargin(pair.first.first, pair.first.second);
+        const double margin = margin_data_.getCollisionMargin(pair.first);
 
         // Don't include contacts at the fixed state
         trajopt_common::removeInvalidContactResults(pair.second, margin, margin_buffer_, vars0_fixed, vars1_fixed);
