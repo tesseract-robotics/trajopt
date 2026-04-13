@@ -480,16 +480,15 @@ MatrixXd CartVelJacCalculator::operator()(const VectorXd& dof_vals) const
   jac0.resize(6, manip_->numJoints());
   jac1.resize(6, manip_->numJoints());
 
-  const auto& link_name = link_id_.name();
   if (tcp_.translation().isZero())
   {
-    jac0 = manip_->calcJacobian(dof_vals.topRows(n_dof), manip_->getBaseLinkName(), link_name);
-    jac1 = manip_->calcJacobian(dof_vals.bottomRows(n_dof), manip_->getBaseLinkName(), link_name);
+    jac0 = manip_->calcJacobian(dof_vals.topRows(n_dof), link_id_);
+    jac1 = manip_->calcJacobian(dof_vals.bottomRows(n_dof), link_id_);
   }
   else
   {
-    jac0 = manip_->calcJacobian(dof_vals.topRows(n_dof), manip_->getBaseLinkName(), link_name, tcp_.translation());
-    jac1 = manip_->calcJacobian(dof_vals.bottomRows(n_dof), manip_->getBaseLinkName(), link_name, tcp_.translation());
+    jac0 = manip_->calcJacobian(dof_vals.topRows(n_dof), link_id_, tcp_.translation());
+    jac1 = manip_->calcJacobian(dof_vals.bottomRows(n_dof), link_id_, tcp_.translation());
   }
 
   out.block(0, 0, 3, n_dof) = -jac0.topRows(3);
