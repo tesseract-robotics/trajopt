@@ -111,7 +111,7 @@ void runNumericalIKTest(const Environment::Ptr& env)
   target_pose.translation() = Eigen::Vector3d(0.4, 0, 0.8);
 
   auto cnt = std::make_shared<trajopt_ifopt::CartPosConstraint>(
-      var, manip, "l_gripper_tool_frame", "base_footprint", Eigen::Isometry3d::Identity(), target_pose);
+      var, manip, tesseract::common::LinkId::fromName("l_gripper_tool_frame"), tesseract::common::LinkId::fromName("base_footprint"), Eigen::Isometry3d::Identity(), target_pose);
   qp_problem->addConstraintSet(cnt);
 
   qp_problem->setup();
@@ -210,8 +210,8 @@ void runNumericalIKWithToleranceTest(const Environment::Ptr& env)
                                                                 cart_coeffs,
                                                                 cart_bounds,
                                                                 manip,
-                                                                "l_gripper_tool_frame",
-                                                                "base_footprint",
+                                                                tesseract::common::LinkId::fromName("l_gripper_tool_frame"),
+                                                                tesseract::common::LinkId::fromName("base_footprint"),
                                                                 Eigen::Isometry3d::Identity(),
                                                                 target_pose);
   qp_problem->addConstraintSet(cnt);
