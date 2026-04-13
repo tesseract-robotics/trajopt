@@ -28,6 +28,7 @@
 
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <tesseract/kinematics/kinematic_group.h>
+#include <tesseract/common/types.h>
 #include <console_bridge/console.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
@@ -72,7 +73,9 @@ Eigen::VectorXd InverseKinematicsConstraint::getValues() const
 {
   // Get joint position using IK and the seed variable
   tesseract::kinematics::KinGroupIKInputs inputs;
-  inputs.emplace_back(target_pose_, kinematic_info_->working_frame, kinematic_info_->tcp_frame);
+  inputs.emplace_back(target_pose_,
+                      tesseract::common::LinkId::fromName(kinematic_info_->working_frame),
+                      tesseract::common::LinkId::fromName(kinematic_info_->tcp_frame));
 
   auto joint_vals = constraint_var_->value();
   auto seed_values = seed_var_->value();
