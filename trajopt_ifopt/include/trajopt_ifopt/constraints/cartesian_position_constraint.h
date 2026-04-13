@@ -32,6 +32,7 @@ TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt_ifopt/core/constraint_set.h>
 #include <tesseract/common/eigen_types.h>
+#include <tesseract/common/types.h>
 #include <tesseract/kinematics/fwd.h>
 
 namespace trajopt_ifopt
@@ -53,8 +54,8 @@ public:
 
   CartPosConstraint(std::shared_ptr<const Var> position_var,
                     std::shared_ptr<const tesseract::kinematics::JointGroup> manip,
-                    std::string source_frame,
-                    std::string target_frame,
+                    tesseract::common::LinkId source_frame,
+                    tesseract::common::LinkId target_frame,
                     const Eigen::Isometry3d& source_frame_offset = Eigen::Isometry3d::Identity(),
                     const Eigen::Isometry3d& target_frame_offset = Eigen::Isometry3d::Identity(),
                     std::string name = "CartPos",
@@ -64,8 +65,8 @@ public:
                     const Eigen::VectorXd& coeffs,
                     const std::vector<Bounds>& bounds,
                     std::shared_ptr<const tesseract::kinematics::JointGroup> manip,
-                    std::string source_frame,
-                    std::string target_frame,
+                    tesseract::common::LinkId source_frame,
+                    tesseract::common::LinkId target_frame,
                     const Eigen::Isometry3d& source_frame_offset = Eigen::Isometry3d::Identity(),
                     const Eigen::Isometry3d& target_frame_offset = Eigen::Isometry3d::Identity(),
                     std::string name = "CartPos",
