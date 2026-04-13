@@ -48,19 +48,8 @@ void save(Archive& ar, const CollisionCoeffData& obj);
 template <class Archive>
 void load(Archive& ar, CollisionCoeffData& obj);
 
-/** @brief Value stored in each coefficient pair entry — names for serialization/display, coeff for computation. */
-struct CoeffEntry
-{
-  std::string name1;
-  std::string name2;
-  double coeff{ 1 };
-
-  bool operator==(const CoeffEntry& other) const;
-  bool operator!=(const CoeffEntry& other) const;
-};
-
 using PairsCollisionCoeffData =
-    std::unordered_map<tesseract::common::LinkIdPair, CoeffEntry, tesseract::common::LinkIdPair::Hash>;
+    std::unordered_map<tesseract::common::LinkIdPair, double, tesseract::common::LinkIdPair::Hash>;
 
 /** @brief Stores information about how the margins allowed between collision objects */
 class CollisionCoeffData

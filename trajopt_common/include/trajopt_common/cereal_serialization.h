@@ -19,16 +19,15 @@ void save(Archive& ar, const CollisionCoeffData& obj)
 
   // Serialize as string-based format for backwards compatibility
   std::map<std::pair<std::string, std::string>, double> compat;
-  for (const auto& [key, entry] : obj.lookup_table_)
-    compat[{ entry.name1, entry.name2 }] = entry.coeff;
+  for (const auto& [key, coeff] : obj.lookup_table_)
+    compat[{ key.first.name(), key.second.name() }] = coeff;
   ar(cereal::make_nvp("lookup_table", compat));
 
   std::set<std::pair<std::string, std::string>> zero_compat;
   for (const auto& id_pair : obj.zero_coeff_)
   {
-    auto it = obj.lookup_table_.find(id_pair);
-    if (it != obj.lookup_table_.end())
-      zero_compat.insert({ it->second.name1, it->second.name2 });
+    if (obj.lookup_table_.count(id_pair) > 0)
+      zero_compat.insert({ id_pair.first.name(), id_pair.second.name() });
   }
   ar(cereal::make_nvp("zero_coeff", zero_compat));
 }
