@@ -53,8 +53,8 @@ struct CartLineInfo
   CartLineInfo() = default;
   CartLineInfo(
       std::shared_ptr<const tesseract::kinematics::JointGroup> manip,
-      std::string source_frame,
-      std::string target_frame,
+      const std::string& source_frame,
+      const std::string& target_frame,
       const Eigen::Isometry3d& target_frame_offset1,
       const Eigen::Isometry3d& target_frame_offset2,
       const Eigen::Isometry3d& source_frame_offset = Eigen::Isometry3d::Identity(),
@@ -64,15 +64,9 @@ struct CartLineInfo
   std::shared_ptr<const tesseract::kinematics::JointGroup> manip;
 
   /** @brief Link which should reach desired pos */
-  std::string source_frame;
-
-  /** @brief The target frame that should be reached by the source */
-  std::string target_frame;
-
-  /** @brief Cached LinkId for source_frame, computed once in constructor */
   tesseract::common::LinkId source_frame_id;
 
-  /** @brief Cached LinkId for target_frame, computed once in constructor */
+  /** @brief The target frame that should be reached by the source */
   tesseract::common::LinkId target_frame_id;
 
   /** @brief Static transform applied to the source_frame location */
