@@ -26,15 +26,6 @@
 
 namespace trajopt_common
 {
-bool CoeffEntry::operator==(const CoeffEntry& other) const
-{
-  return name1 == other.name1 && name2 == other.name2 &&
-         tesseract::common::almostEqualRelativeAndAbs(
-             coeff, other.coeff, static_cast<double>(std::numeric_limits<float>::epsilon()));
-}
-
-bool CoeffEntry::operator!=(const CoeffEntry& other) const { return !operator==(other); }
-
 CollisionCoeffData::CollisionCoeffData(double default_collision_coeff)
   : default_collision_coeff_(default_collision_coeff)
 {
@@ -54,21 +45,19 @@ void CollisionCoeffData::setCollisionCoeff(const std::string& obj1, const std::s
 
   const LinkIdPair key = LinkIdPair::make(LinkId::fromName(obj1), LinkId::fromName(obj2));
 
-  // Canonical name ordering: match the id ordering
-  const bool swap = (LinkId::fromName(obj1).value > LinkId::fromName(obj2).value);
-  const std::string& canonical_first = swap ? obj2 : obj1;
-  const std::string& canonical_second = swap ? obj1 : obj2;
-
   // Hash collision check
   auto it = lookup_table_.find(key);
   if (it != lookup_table_.end())
   {
-    if (it->second.name1 != canonical_first || it->second.name2 != canonical_second)
-      throw std::runtime_error("CollisionCoeffData: hash collision detected between pair (" + it->second.name1 + ", " +
-                               it->second.name2 + ") and (" + canonical_first + ", " + canonical_second + ")");
+    bool names_match = (it->first.first.name() == key.first.name() && it->first.second.name() == key.second.name()) ||
+                       (it->first.first.name() == key.second.name() && it->first.second.name() == key.first.name());
+    if (!names_match)
+      throw std::runtime_error("CollisionCoeffData: hash collision detected between pair (" + it->first.first.name() +
+                               ", " + it->first.second.name() + ") and (" + key.first.name() + ", " +
+                               key.second.name() + ")");
   }
 
-  lookup_table_.insert_or_assign(key, CoeffEntry{ canonical_first, canonical_second, collision_coeff });
+  lookup_table_.insert_or_assign(key, collision_coeff);
 
   if (tesseract::common::almostEqualRelativeAndAbs(collision_coeff, 0.0))
     zero_coeff_.insert(key);
@@ -80,7 +69,7 @@ double CollisionCoeffData::getCollisionCoeff(const tesseract::common::LinkIdPair
 {
   const auto it = lookup_table_.find(pair);
   if (it != lookup_table_.end())
-    return it->second.coeff;
+    return it->second;
   return default_collision_coeff_;
 }
 
@@ -100,8 +89,7 @@ bool CollisionCoeffData::hasZeroCoeff(const tesseract::common::LinkIdPair& pair)
   return zero_coeff_.count(pair) != 0;
 }
 
-bool CollisionCoeffData::hasZeroCoeff(const tesseract::common::LinkId& id1,
-                                      const tesseract::common::LinkId& id2) const
+bool CollisionCoeffData::hasZeroCoeff(const tesseract::common::LinkId& id1, const tesseract::common::LinkId& id2) const
 {
   return hasZeroCoeff(tesseract::common::LinkIdPair::make(id1, id2));
 }
@@ -131,11 +119,10 @@ bool CollisionCoeffData::operator==(const CollisionCoeffData& rhs) const
   equal &= (lookup_table_.size() == rhs.lookup_table_.size());
   if (equal)
   {
-    for (const auto& [key, entry] : lookup_table_)
+    for (const auto& [key, coeff] : lookup_table_)
     {
       auto it = rhs.lookup_table_.find(key);
-      if (it == rhs.lookup_table_.end() ||
-          !tesseract::common::almostEqualRelativeAndAbs(entry.coeff, it->second.coeff, max_diff))
+      if (it == rhs.lookup_table_.end() || !tesseract::common::almostEqualRelativeAndAbs(coeff, it->second, max_diff))
       {
         equal = false;
         break;
