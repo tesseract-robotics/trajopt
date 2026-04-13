@@ -669,14 +669,14 @@ void SingleTimestepCollisionEvaluator::CalcCollisions(const Eigen::Ref<const Eig
 
   auto filter = [this](tesseract::collision::ContactResultMap::PairType& pair) {
     // Remove pairs with zero coeffs
-    if (coeff_data_.hasZeroCoeff(pair.first.first, pair.first.second))
+    if (coeff_data_.hasZeroCoeff(pair.first))
     {
       pair.second.clear();
       return;
     }
 
     // Contains the contact distance threshold and coefficient for the given link pair
-    const double margin = margin_data_.getCollisionMargin(pair.first.first, pair.first.second);
+    const double margin = margin_data_.getCollisionMargin(pair.first);
 
     auto end = std::remove_if(
         pair.second.begin(), pair.second.end(), [margin, this](const tesseract::collision::ContactResult& r) {
@@ -716,7 +716,7 @@ void SingleTimestepCollisionEvaluator::Plot(const std::shared_ptr<tesseract::vis
 
     if (manip_->isActiveLinkId(res.link_ids[0]))
     {
-      Eigen::MatrixXd jac = manip_->calcJacobian(dofvals, res.link_ids[0].name(), res.nearest_points[0]);
+      Eigen::MatrixXd jac = manip_->calcJacobian(dofvals, res.link_ids[0], res.nearest_points[0]);
 
       const Eigen::VectorXd dist_grad = -res.normal.transpose() * jac.topRows(3);
 
@@ -855,14 +855,14 @@ void DiscreteCollisionEvaluator::CalcCollisions(const Eigen::Ref<const Eigen::Ve
   // Define Filter
   auto filter = [this](tesseract::collision::ContactResultMap::PairType& pair) {
     // Remove pairs with zero coeffs
-    if (coeff_data_.hasZeroCoeff(pair.first.first, pair.first.second))
+    if (coeff_data_.hasZeroCoeff(pair.first))
     {
       pair.second.clear();
       return;
     }
 
     // Contains the contact distance threshold and coefficient for the given link pair
-    const double margin = margin_data_.getCollisionMargin(pair.first.first, pair.first.second);
+    const double margin = margin_data_.getCollisionMargin(pair.first);
 
     // Don't include contacts at the fixed state
 #ifndef NDEBUG
@@ -934,7 +934,7 @@ void DiscreteCollisionEvaluator::Plot(const std::shared_ptr<tesseract::visualiza
 
     if (manip_->isActiveLinkId(res.link_ids[0]))
     {
-      Eigen::MatrixXd jac = manip_->calcJacobian(dofvals0, res.link_ids[0].name(), res.nearest_points_local[0]);
+      Eigen::MatrixXd jac = manip_->calcJacobian(dofvals0, res.link_ids[0], res.nearest_points_local[0]);
 
       // Eigen::MatrixXd jac_test;
       // jac_test.resize(6, manip_->numJoints());
@@ -955,7 +955,7 @@ void DiscreteCollisionEvaluator::Plot(const std::shared_ptr<tesseract::visualiza
     if (manip_->isActiveLinkId(res.link_ids[1]))
     {
       // Calculate Jacobian
-      Eigen::MatrixXd jac = manip_->calcJacobian(dofvals0, res.link_ids[1].name(), res.nearest_points_local[1]);
+      Eigen::MatrixXd jac = manip_->calcJacobian(dofvals0, res.link_ids[1], res.nearest_points_local[1]);
 
       // Eigen::MatrixXd jac_test;
       // jac_test.resize(6, manip_->numJoints());
@@ -1092,14 +1092,14 @@ void CastCollisionEvaluator::CalcCollisions(const Eigen::Ref<const Eigen::Vector
   // Define Filter
   auto filter = [this](tesseract::collision::ContactResultMap::PairType& pair) {
     // Remove pairs with zero coeffs
-    if (coeff_data_.hasZeroCoeff(pair.first.first, pair.first.second))
+    if (coeff_data_.hasZeroCoeff(pair.first))
     {
       pair.second.clear();
       return;
     }
 
     // Contains the contact distance threshold and coefficient for the given link pair
-    const double margin = margin_data_.getCollisionMargin(pair.first.first, pair.first.second);
+    const double margin = margin_data_.getCollisionMargin(pair.first);
 
     // Don't include contacts at the fixed state
 #ifndef NDEBUG
@@ -1189,7 +1189,7 @@ void CastCollisionEvaluator::Plot(const std::shared_ptr<tesseract::visualization
 
     if (manip_->isActiveLinkId(res.link_ids[0]))
     {
-      Eigen::MatrixXd jac = manip_->calcJacobian(dofvals, res.link_ids[0].name(), res.nearest_points_local[0]);
+      Eigen::MatrixXd jac = manip_->calcJacobian(dofvals, res.link_ids[0], res.nearest_points_local[0]);
 
       // Eigen::MatrixXd jac_test;
       // jac_test.resize(6, manip_->numJoints());
@@ -1209,7 +1209,7 @@ void CastCollisionEvaluator::Plot(const std::shared_ptr<tesseract::visualization
     if (manip_->isActiveLinkId(res.link_ids[1]))
     {
       // Calculate Jacobian
-      Eigen::MatrixXd jac = manip_->calcJacobian(dofvals, res.link_ids[1].name(), res.nearest_points_local[1]);
+      Eigen::MatrixXd jac = manip_->calcJacobian(dofvals, res.link_ids[1], res.nearest_points_local[1]);
 
       // Eigen::MatrixXd jac_test;
       // jac_test.resize(6, manip_->numJoints());
