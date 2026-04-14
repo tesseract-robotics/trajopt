@@ -65,16 +65,6 @@ struct DynamicCartPoseErrCalculator : public TrajOptVectorOfVector
       const Eigen::VectorXd& lower_tolerance = {},
       const Eigen::VectorXd& upper_tolerance = {});
 
-  DynamicCartPoseErrCalculator(
-      std::shared_ptr<const tesseract::kinematics::JointGroup> manip,
-      std::string source_frame,
-      std::string target_frame,
-      const Eigen::Isometry3d& source_frame_offset = Eigen::Isometry3d::Identity(),
-      const Eigen::Isometry3d& target_frame_offset = Eigen::Isometry3d::Identity(),
-      const Eigen::VectorXi& indices = Eigen::Matrix<int, 1, 6>(std::vector<int>({ 0, 1, 2, 3, 4, 5 }).data()),
-      const Eigen::VectorXd& lower_tolerance = {},
-      const Eigen::VectorXd& upper_tolerance = {});
-
   void Plot(const std::shared_ptr<tesseract::visualization::Visualization>& plotter,
             const Eigen::VectorXd& dof_vals) override;
 
@@ -116,14 +106,6 @@ struct DynamicCartPoseJacCalculator : TrajOptMatrixOfVector
       std::shared_ptr<const tesseract::kinematics::JointGroup> manip,
       tesseract::common::LinkId source_frame_id,
       tesseract::common::LinkId target_frame_id,
-      const Eigen::Isometry3d& source_frame_offset = Eigen::Isometry3d::Identity(),
-      const Eigen::Isometry3d& target_frame_offset = Eigen::Isometry3d::Identity(),
-      const Eigen::VectorXi& indices = Eigen::Matrix<int, 1, 6>(std::vector<int>({ 0, 1, 2, 3, 4, 5 }).data()));
-
-  DynamicCartPoseJacCalculator(
-      std::shared_ptr<const tesseract::kinematics::JointGroup> manip,
-      std::string source_frame,
-      std::string target_frame,
       const Eigen::Isometry3d& source_frame_offset = Eigen::Isometry3d::Identity(),
       const Eigen::Isometry3d& target_frame_offset = Eigen::Isometry3d::Identity(),
       const Eigen::VectorXi& indices = Eigen::Matrix<int, 1, 6>(std::vector<int>({ 0, 1, 2, 3, 4, 5 }).data()));
@@ -171,16 +153,6 @@ struct CartPoseErrCalculator : public TrajOptVectorOfVector
       std::shared_ptr<const tesseract::kinematics::JointGroup> manip,
       tesseract::common::LinkId source_frame_id,
       tesseract::common::LinkId target_frame_id,
-      const Eigen::Isometry3d& source_frame_offset = Eigen::Isometry3d::Identity(),
-      const Eigen::Isometry3d& target_frame_offset = Eigen::Isometry3d::Identity(),
-      const Eigen::VectorXi& indices = Eigen::Matrix<int, 1, 6>(std::vector<int>({ 0, 1, 2, 3, 4, 5 }).data()),
-      const Eigen::VectorXd& lower_tolerance = {},
-      const Eigen::VectorXd& upper_tolerance = {});
-
-  CartPoseErrCalculator(
-      std::shared_ptr<const tesseract::kinematics::JointGroup> manip,
-      std::string source_frame,
-      std::string target_frame,
       const Eigen::Isometry3d& source_frame_offset = Eigen::Isometry3d::Identity(),
       const Eigen::Isometry3d& target_frame_offset = Eigen::Isometry3d::Identity(),
       const Eigen::VectorXi& indices = Eigen::Matrix<int, 1, 6>(std::vector<int>({ 0, 1, 2, 3, 4, 5 }).data()),
@@ -237,14 +209,6 @@ struct CartPoseJacCalculator : TrajOptMatrixOfVector
       const Eigen::Isometry3d& target_frame_offset = Eigen::Isometry3d::Identity(),
       const Eigen::VectorXi& indices = Eigen::Matrix<int, 1, 6>(std::vector<int>({ 0, 1, 2, 3, 4, 5 }).data()));
 
-  CartPoseJacCalculator(
-      std::shared_ptr<const tesseract::kinematics::JointGroup> manip,
-      std::string source_frame,
-      std::string target_frame,
-      const Eigen::Isometry3d& source_frame_offset = Eigen::Isometry3d::Identity(),
-      const Eigen::Isometry3d& target_frame_offset = Eigen::Isometry3d::Identity(),
-      const Eigen::VectorXi& indices = Eigen::Matrix<int, 1, 6>(std::vector<int>({ 0, 1, 2, 3, 4, 5 }).data()));
-
   Eigen::MatrixXd operator()(const Eigen::VectorXd& dof_vals) const override;
 };
 
@@ -264,11 +228,6 @@ struct CartVelJacCalculator : TrajOptMatrixOfVector
                        double limit,
                        const Eigen::Isometry3d& tcp = Eigen::Isometry3d::Identity());
 
-  CartVelJacCalculator(std::shared_ptr<const tesseract::kinematics::JointGroup> manip,
-                       std::string link,
-                       double limit,
-                       const Eigen::Isometry3d& tcp = Eigen::Isometry3d::Identity());
-
   Eigen::MatrixXd operator()(const Eigen::VectorXd& dof_vals) const override;
 };
 
@@ -285,11 +244,6 @@ struct CartVelErrCalculator : TrajOptVectorOfVector
   Eigen::Isometry3d tcp_;
   CartVelErrCalculator(std::shared_ptr<const tesseract::kinematics::JointGroup> manip,
                        tesseract::common::LinkId link_id,
-                       double limit,
-                       const Eigen::Isometry3d& tcp = Eigen::Isometry3d::Identity());
-
-  CartVelErrCalculator(std::shared_ptr<const tesseract::kinematics::JointGroup> manip,
-                       std::string link,
                        double limit,
                        const Eigen::Isometry3d& tcp = Eigen::Isometry3d::Identity());
 
@@ -380,12 +334,6 @@ struct AvoidSingularityErrCalculator : TrajOptVectorOfVector
     : fwd_kin_(std::move(fwd_kin)), link_id_(std::move(link_id)), lambda_(lambda)
   {
   }
-  AvoidSingularityErrCalculator(std::shared_ptr<const tesseract::kinematics::JointGroup> fwd_kin,
-                                std::string link_name,
-                                double lambda = 1.0e-3)
-    : AvoidSingularityErrCalculator(std::move(fwd_kin), tesseract::common::LinkId::fromName(link_name), lambda)
-  {
-  }
   Eigen::VectorXd operator()(const Eigen::VectorXd& var_vals) const override;
 };
 
@@ -407,13 +355,6 @@ struct AvoidSingularityJacCalculator : TrajOptMatrixOfVector
                                 double lambda = 1.0e-3,
                                 double eps = 1.0e-6)
     : fwd_kin_(std::move(fwd_kin)), link_id_(std::move(link_id)), lambda_(lambda), eps_(eps)
-  {
-  }
-  AvoidSingularityJacCalculator(std::shared_ptr<const tesseract::kinematics::JointGroup> fwd_kin,
-                                std::string link_name,
-                                double lambda = 1.0e-3,
-                                double eps = 1.0e-6)
-    : AvoidSingularityJacCalculator(std::move(fwd_kin), tesseract::common::LinkId::fromName(link_name), lambda, eps)
   {
   }
   /** @brief Helper function for numerically calculating the partial derivative of the jacobian */
@@ -438,16 +379,6 @@ struct AvoidSingularitySubsetErrCalculator : AvoidSingularityErrCalculator
     , superset_kin_(std::move(superset_kin))
   {
   }
-  AvoidSingularitySubsetErrCalculator(std::shared_ptr<const tesseract::kinematics::JointGroup> subset_kin,
-                                      std::shared_ptr<const tesseract::kinematics::JointGroup> superset_kin,
-                                      const std::string& link_name,
-                                      double lambda = 1.0e-3)
-    : AvoidSingularitySubsetErrCalculator(std::move(subset_kin),
-                                          std::move(superset_kin),
-                                          tesseract::common::LinkId::fromName(link_name),
-                                          lambda)
-  {
-  }
   Eigen::VectorXd operator()(const Eigen::VectorXd& var_vals) const override;
 };
 
@@ -462,18 +393,6 @@ struct AvoidSingularitySubsetJacCalculator : AvoidSingularityJacCalculator
                                       double eps = 1.0e-6)
     : AvoidSingularityJacCalculator(std::move(subset_kin), std::move(link_id), lambda, eps)
     , superset_kin_(std::move(superset_kin))
-  {
-  }
-  AvoidSingularitySubsetJacCalculator(std::shared_ptr<const tesseract::kinematics::JointGroup> subset_kin,
-                                      std::shared_ptr<const tesseract::kinematics::JointGroup> superset_kin,
-                                      const std::string& link_name,
-                                      double lambda = 1.0e-3,
-                                      double eps = 1.0e-6)
-    : AvoidSingularitySubsetJacCalculator(std::move(subset_kin),
-                                          std::move(superset_kin),
-                                          tesseract::common::LinkId::fromName(link_name),
-                                          lambda,
-                                          eps)
   {
   }
   Eigen::MatrixXd operator()(const Eigen::VectorXd& var_vals) const override;

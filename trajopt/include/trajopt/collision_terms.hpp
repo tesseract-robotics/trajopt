@@ -84,7 +84,7 @@ struct CollisionEvaluator
   using ConstPtr = std::shared_ptr<const CollisionEvaluator>;
 
   // NOLINTNEXTLINE
-  CollisionEvaluator(std::shared_ptr<const tesseract::kinematics::JointGroup> manip,
+  CollisionEvaluator(const std::shared_ptr<const tesseract::kinematics::JointGroup>& manip,
                      std::shared_ptr<const tesseract::environment::Environment> env,
                      bool dynamic_environment = false);
   virtual ~CollisionEvaluator() = default;

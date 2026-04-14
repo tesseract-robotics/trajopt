@@ -1899,7 +1899,7 @@ void AvoidSingularityTermInfo::hatch(TrajOptProb& prob)
   sco::MatrixOfVector::Ptr dfdx;
 
   // Check if the subset kinematics are specified and its joint set is a subset of the problem's joint set
-  if (subset_kin_ && isSuperset(subset_kin_->getJointNames(), kin->getJointNames()))
+  if (subset_kin_ && isSuperset(subset_kin_->getJointIds(), kin->getJointIds()))
   {
     f = std::make_shared<AvoidSingularitySubsetErrCalculator>(subset_kin_, kin, link_id, lambda);
     dfdx = std::make_shared<AvoidSingularitySubsetJacCalculator>(subset_kin_, kin, link_id, lambda);

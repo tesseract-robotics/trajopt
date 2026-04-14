@@ -64,10 +64,10 @@ CartPosConstraint::CartPosConstraint(std::shared_ptr<const Var> position_var,
   n_dof_ = manip_->numJoints();
   assert(n_dof_ > 0);
 
-  if (!manip_->hasLinkName(source_frame_id_.name()))
+  if (!manip_->hasLinkId(source_frame_id_))
     throw std::runtime_error("Source Link name '" + source_frame_id_.name() + "' provided does not exist.");
 
-  if (!manip_->hasLinkName(target_frame_id_.name()))
+  if (!manip_->hasLinkId(target_frame_id_))
     throw std::runtime_error("Target Link name '" + target_frame_id_.name() + "' provided does not exist.");
 
   if (bounds.size() != 6)
@@ -332,8 +332,9 @@ void CartPosConstraint::calcJacobianBlock(Jacobian& jac_block,
     Eigen::MatrixXd jac0;
     if (type_ == Type::kTargetActive)
     {
-      jac0 = manip_->calcJacobian(joint_vals, target_frame_id_.name(), target_frame_offset_.translation());
-      tesseract::common::jacobianChangeBase(jac0, (transforms_cache_[source_frame_id_] * source_frame_offset_).inverse());
+      jac0 = manip_->calcJacobian(joint_vals, target_frame_id_, target_frame_offset_.translation());
+      tesseract::common::jacobianChangeBase(jac0,
+                                            (transforms_cache_[source_frame_id_] * source_frame_offset_).inverse());
 
       for (int c = 0; c < jac0.cols(); ++c)
       {
@@ -345,8 +346,9 @@ void CartPosConstraint::calcJacobianBlock(Jacobian& jac_block,
     }
     else
     {
-      jac0 = manip_->calcJacobian(joint_vals, source_frame_id_.name(), source_frame_offset_.translation());
-      tesseract::common::jacobianChangeBase(jac0, (transforms_cache_[target_frame_id_] * target_frame_offset_).inverse());
+      jac0 = manip_->calcJacobian(joint_vals, source_frame_id_, source_frame_offset_.translation());
+      tesseract::common::jacobianChangeBase(jac0,
+                                            (transforms_cache_[target_frame_id_] * target_frame_offset_).inverse());
 
       for (int c = 0; c < jac0.cols(); ++c)
       {
