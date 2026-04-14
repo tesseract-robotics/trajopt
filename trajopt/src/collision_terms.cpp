@@ -298,8 +298,7 @@ GradientResults CollisionEvaluator::GetGradient(const Eigen::VectorXd& dofvals0,
       tesseract::common::jacobianChangeRefPoint(jac, link_transform.linear() * contact_result.nearest_points_local[i]);
 
 #ifndef NDEBUG
-      const Eigen::Isometry3d test_link_transform =
-          manip_->calcFwdKin(dofvalst).at(contact_result.link_ids[i]);
+      const Eigen::Isometry3d test_link_transform = manip_->calcFwdKin(dofvalst).at(contact_result.link_ids[i]);
       assert(test_link_transform.isApprox(link_transform, 0.0001));
 
       Eigen::MatrixXd jac_test;
@@ -383,7 +382,7 @@ void CollisionEvaluator::CollisionsToDistanceExpressions(sco::AffExprVector& exp
   }
 }
 
-CollisionEvaluator::CollisionEvaluator(tesseract::kinematics::JointGroup::ConstPtr manip,
+CollisionEvaluator::CollisionEvaluator(const tesseract::kinematics::JointGroup::ConstPtr& manip,
                                        tesseract::environment::Environment::ConstPtr env,
                                        bool dynamic_environment)
   : manip_(std::make_shared<tesseract::kinematics::JointGroup>(*manip))
@@ -720,8 +719,7 @@ void SingleTimestepCollisionEvaluator::Plot(const std::shared_ptr<tesseract::vis
 
       const Eigen::VectorXd dist_grad = -res.normal.transpose() * jac.topRows(3);
 
-      const Eigen::Isometry3d pose2 =
-          manip_->calcFwdKin(dofvals + dist_grad).at(res.link_ids[0]);
+      const Eigen::Isometry3d pose2 = manip_->calcFwdKin(dofvals + dist_grad).at(res.link_ids[0]);
 
       tesseract::visualization::ArrowMarker am(res.nearest_points[0], pose2 * res.nearest_points[0]);
       am.material = std::make_shared<tesseract::scene_graph::Material>("collision_error_material");
@@ -943,8 +941,7 @@ void DiscreteCollisionEvaluator::Plot(const std::shared_ptr<tesseract::visualiza
 
       const Eigen::VectorXd dist_grad = -res.normal.transpose() * jac.topRows(3);
 
-      const Eigen::Isometry3d pose2 =
-          manip_->calcFwdKin(dofvals0 + dist_grad).at(res.link_ids[0]);
+      const Eigen::Isometry3d pose2 = manip_->calcFwdKin(dofvals0 + dist_grad).at(res.link_ids[0]);
 
       tesseract::visualization::ArrowMarker am(res.nearest_points[0], pose2 * res.nearest_points_local[0]);
       am.material = std::make_shared<tesseract::scene_graph::Material>("collision_error_material");
@@ -964,8 +961,7 @@ void DiscreteCollisionEvaluator::Plot(const std::shared_ptr<tesseract::visualiza
 
       const Eigen::VectorXd dist_grad = res.normal.transpose() * jac.topRows(3);
 
-      const Eigen::Isometry3d pose2 =
-          manip_->calcFwdKin(dofvals0 + dist_grad).at(res.link_ids[1]);
+      const Eigen::Isometry3d pose2 = manip_->calcFwdKin(dofvals0 + dist_grad).at(res.link_ids[1]);
 
       tesseract::visualization::ArrowMarker am(res.nearest_points[1], pose2 * res.nearest_points_local[1]);
       am.material = std::make_shared<tesseract::scene_graph::Material>("collision_error_material");
@@ -1135,7 +1131,8 @@ void CastCollisionEvaluator::CalcCollisions(const Eigen::Ref<const Eigen::Vector
       transforms_cache1_ = manip_->calcFwdKin(subtraj.row(i + 1));
 
       for (const auto& link_id : manip_active_link_names_)
-        contact_manager_->setCollisionObjectsTransform(link_id, transforms_cache0_[link_id], transforms_cache1_[link_id]);
+        contact_manager_->setCollisionObjectsTransform(
+            link_id, transforms_cache0_[link_id], transforms_cache1_[link_id]);
 
       contact_manager_->contactTest(contacts, collision_check_config_.contact_request);
 
@@ -1198,8 +1195,7 @@ void CastCollisionEvaluator::Plot(const std::shared_ptr<tesseract::visualization
 
       const Eigen::VectorXd dist_grad = -res.normal.transpose() * jac.topRows(3);
 
-      const Eigen::Isometry3d pose2 =
-          manip_->calcFwdKin(dofvals + dist_grad).at(res.link_ids[0]);
+      const Eigen::Isometry3d pose2 = manip_->calcFwdKin(dofvals + dist_grad).at(res.link_ids[0]);
       tesseract::visualization::ArrowMarker am(res.nearest_points[0], pose2 * res.nearest_points_local[0]);
       am.material = std::make_shared<tesseract::scene_graph::Material>("collision_error_material");
       am.material->color << 1, 1, 1, 1;
@@ -1217,8 +1213,7 @@ void CastCollisionEvaluator::Plot(const std::shared_ptr<tesseract::visualization
       // res.nearest_points_local[1]); bool check = jac.isApprox(jac_test, 1e-3); assert(check == true)
 
       const Eigen::VectorXd dist_grad = res.normal.transpose() * jac.topRows(3);
-      const Eigen::Isometry3d pose2 =
-          manip_->calcFwdKin(dofvals + dist_grad).at(res.link_ids[1]);
+      const Eigen::Isometry3d pose2 = manip_->calcFwdKin(dofvals + dist_grad).at(res.link_ids[1]);
       tesseract::visualization::ArrowMarker am(res.nearest_points[1], pose2 * res.nearest_points_local[1]);
       am.material = std::make_shared<tesseract::scene_graph::Material>("collision_error_material");
       am.material->color << 1, 1, 1, 1;

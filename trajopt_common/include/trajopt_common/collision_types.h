@@ -77,8 +77,27 @@ public:
 
   /**
    * @brief Set the coefficient for a given contact pair
+   */
+  void setCollisionCoeff(const tesseract::common::LinkIdPair& pair, double collision_coeff);
+
+  /**
+   * @brief Set the coefficient for a given contact pair
    *
-   * The order of the object names does not matter, that is handled internal to
+   * The order of the object ids does not matter, that is handled internal to
+   * the class.
+   *
+   * @param obj1 The first object id. Order doesn't matter
+   * @param obj2 The Second object id. Order doesn't matter
+   * @param collision_coeff Coefficient
+   */
+  void setCollisionCoeff(const tesseract::common::LinkId& obj1,
+                         const tesseract::common::LinkId& obj2,
+                         double collision_coeff);
+
+  /**
+   * @brief Set the coefficient for a given contact pair
+   *
+   * The order of the object ids does not matter, that is handled internal to
    * the class.
    *
    * @param obj1 The first object name. Order doesn't matter

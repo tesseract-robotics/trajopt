@@ -53,8 +53,8 @@ struct CartLineInfo
   CartLineInfo() = default;
   CartLineInfo(
       std::shared_ptr<const tesseract::kinematics::JointGroup> manip,
-      const std::string& source_frame,
-      const std::string& target_frame,
+      tesseract::common::LinkId source_frame,
+      tesseract::common::LinkId target_frame,
       const Eigen::Isometry3d& target_frame_offset1,
       const Eigen::Isometry3d& target_frame_offset2,
       const Eigen::Isometry3d& source_frame_offset = Eigen::Isometry3d::Identity(),
