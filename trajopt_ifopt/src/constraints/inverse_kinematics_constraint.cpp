@@ -36,16 +36,16 @@ TRAJOPT_IGNORE_WARNINGS_POP
 namespace trajopt_ifopt
 {
 InverseKinematicsInfo::InverseKinematicsInfo(std::shared_ptr<const tesseract::kinematics::KinematicGroup> manip,
-                                             std::string working_frame,
-                                             std::string tcp_frame,
+                                             tesseract::common::LinkId working_frame,
+                                             tesseract::common::LinkId tcp_frame,
                                              const Eigen::Isometry3d& tcp_offset)  // NOLINT(modernize-pass-by-value)
   : manip(std::move(manip))
   , working_frame(std::move(working_frame))
   , tcp_frame(std::move(tcp_frame))
   , tcp_offset(tcp_offset)
 {
-  if (!this->manip->hasLinkName(this->tcp_frame))
-    throw std::runtime_error("Link name '" + this->tcp_frame + "' provided does not exist.");
+  if (!this->manip->hasLinkId(this->tcp_frame))
+    throw std::runtime_error("Link name '" + this->tcp_frame.name() + "' provided does not exist.");
 }
 
 InverseKinematicsConstraint::InverseKinematicsConstraint(
@@ -74,9 +74,7 @@ Eigen::VectorXd InverseKinematicsConstraint::getValues() const
 {
   // Get joint position using IK and the seed variable
   tesseract::kinematics::KinGroupIKInputs inputs;
-  inputs.emplace_back(target_pose_,
-                      tesseract::common::LinkId::fromName(kinematic_info_->working_frame),
-                      tesseract::common::LinkId::fromName(kinematic_info_->tcp_frame));
+  inputs.emplace_back(target_pose_, kinematic_info_->working_frame, kinematic_info_->tcp_frame);
 
   auto joint_vals = constraint_var_->value();
   auto seed_values = seed_var_->value();

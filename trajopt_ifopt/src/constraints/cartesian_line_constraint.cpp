@@ -42,25 +42,25 @@ TRAJOPT_IGNORE_WARNINGS_POP
 namespace trajopt_ifopt
 {
 CartLineInfo::CartLineInfo(std::shared_ptr<const tesseract::kinematics::JointGroup> manip,
-                           const std::string& source_frame,
-                           const std::string& target_frame,
+                           tesseract::common::LinkId source_frame,
+                           tesseract::common::LinkId target_frame,
                            const Eigen::Isometry3d& target_frame_offset1,  // NOLINT(modernize-pass-by-value)
                            const Eigen::Isometry3d& target_frame_offset2,  // NOLINT(modernize-pass-by-value)
                            const Eigen::Isometry3d& source_frame_offset,   // NOLINT(modernize-pass-by-value)
                            const Eigen::VectorXi& indices)                 // NOLINT(modernize-pass-by-value)
   : manip(std::move(manip))
-  , source_frame_id(tesseract::common::LinkId::fromName(source_frame))
-  , target_frame_id(tesseract::common::LinkId::fromName(target_frame))
+  , source_frame_id(std::move(source_frame))
+  , target_frame_id(std::move(target_frame))
   , source_frame_offset(source_frame_offset)
   , target_frame_offset1(target_frame_offset1)
   , target_frame_offset2(target_frame_offset2)
   , indices(indices)
 {
   if (!this->manip->hasLinkId(source_frame_id))
-    throw std::runtime_error("CartLineInfo: Source Link name '" + source_frame + "' provided does not exist.");
+    throw std::runtime_error("CartLineInfo: Source Link name '" + source_frame.name() + "' provided does not exist.");
 
   if (!this->manip->hasLinkId(target_frame_id))
-    throw std::runtime_error("CartLineInfo: Target Link name '" + target_frame + "' provided does not exist.");
+    throw std::runtime_error("CartLineInfo: Target Link name '" + target_frame.name() + "' provided does not exist.");
 
   if (this->target_frame_offset1.isApprox(target_frame_offset2))
     throw std::runtime_error("CartLineInfo: The start and end point are the same!");

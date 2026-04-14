@@ -39,31 +39,39 @@ void CollisionCoeffData::setDefaultCollisionCoeff(double default_collision_coeff
 
 double CollisionCoeffData::getDefaultCollisionCoeff() const { return default_collision_coeff_; }
 
-void CollisionCoeffData::setCollisionCoeff(const std::string& obj1, const std::string& obj2, double collision_coeff)
+void CollisionCoeffData::setCollisionCoeff(const tesseract::common::LinkIdPair& pair, double collision_coeff)
 {
-  using tesseract::common::LinkId;
-  using tesseract::common::LinkIdPair;
-
-  const LinkIdPair key = LinkIdPair::make(LinkId::fromName(obj1), LinkId::fromName(obj2));
-
   // Hash collision check
-  auto it = lookup_table_.find(key);
+  auto it = lookup_table_.find(pair);
   if (it != lookup_table_.end())
   {
-    bool names_match = (it->first.first.name() == key.first.name() && it->first.second.name() == key.second.name()) ||
-                       (it->first.first.name() == key.second.name() && it->first.second.name() == key.first.name());
+    bool names_match = (it->first.first.name() == pair.first.name() && it->first.second.name() == pair.second.name()) ||
+                       (it->first.first.name() == pair.second.name() && it->first.second.name() == pair.first.name());
     if (!names_match)
       throw std::runtime_error("CollisionCoeffData: hash collision detected between pair (" + it->first.first.name() +
-                               ", " + it->first.second.name() + ") and (" + key.first.name() + ", " +
-                               key.second.name() + ")");
+                               ", " + it->first.second.name() + ") and (" + pair.first.name() + ", " +
+                               pair.second.name() + ")");
   }
 
-  lookup_table_.insert_or_assign(key, collision_coeff);
+  lookup_table_.insert_or_assign(pair, collision_coeff);
 
   if (tesseract::common::almostEqualRelativeAndAbs(collision_coeff, 0.0))
-    zero_coeff_.insert(key);
+    zero_coeff_.insert(pair);
   else
-    zero_coeff_.erase(key);
+    zero_coeff_.erase(pair);
+}
+
+void CollisionCoeffData::setCollisionCoeff(const tesseract::common::LinkId& obj1,
+                                           const tesseract::common::LinkId& obj2,
+                                           double collision_coeff)
+{
+  setCollisionCoeff(tesseract::common::LinkIdPair::make(obj1, obj2), collision_coeff);
+}
+
+void CollisionCoeffData::setCollisionCoeff(const std::string& obj1, const std::string& obj2, double collision_coeff)
+{
+  setCollisionCoeff(
+      tesseract::common::LinkId::fromName(obj1), tesseract::common::LinkId::fromName(obj2), collision_coeff);
 }
 
 double CollisionCoeffData::getCollisionCoeff(const tesseract::common::LinkIdPair& pair) const

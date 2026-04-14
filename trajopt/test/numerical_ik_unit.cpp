@@ -94,8 +94,9 @@ void runTest(const Environment::Ptr& env, const Visualization::Ptr& /*plotter*/,
   std::stringstream ss;
   ss << toVectorXd(opt->x()).transpose();
   CONSOLE_BRIDGE_logDebug("Initial Vars: %s", ss.str().c_str());
-  const Eigen::Isometry3d change_base = prob->GetEnv()->getLinkTransform(prob->GetKin()->getBaseLinkName());
-  Eigen::Isometry3d initial_pose = prob->GetKin()->calcFwdKin(toVectorXd(opt->x())).at(LinkId::fromName("l_gripper_tool_frame"));
+  const Eigen::Isometry3d change_base = prob->GetEnv()->getLinkTransform(prob->GetKin()->getBaseLinkId());
+  Eigen::Isometry3d initial_pose =
+      prob->GetKin()->calcFwdKin(toVectorXd(opt->x())).at(LinkId::fromName("l_gripper_tool_frame"));
   initial_pose = change_base * initial_pose;
 
   ss = std::stringstream();
@@ -107,7 +108,8 @@ void runTest(const Environment::Ptr& env, const Visualization::Ptr& /*plotter*/,
   stopwatch.stop();
   CONSOLE_BRIDGE_logError("Test took %f seconds.", stopwatch.elapsedSeconds());
   CONSOLE_BRIDGE_logDebug("Status: %s", sco::toString(status).c_str());
-  Eigen::Isometry3d final_pose = prob->GetKin()->calcFwdKin(toVectorXd(opt->x())).at(LinkId::fromName("l_gripper_tool_frame"));
+  Eigen::Isometry3d final_pose =
+      prob->GetKin()->calcFwdKin(toVectorXd(opt->x())).at(LinkId::fromName("l_gripper_tool_frame"));
   final_pose = change_base * final_pose;
 
   Eigen::Isometry3d goal;
