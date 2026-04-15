@@ -31,16 +31,16 @@ struct DynamicCartPoseErrCalculator : public TrajOptVectorOfVector
   /** @brief Manipulator kinematics object */
   std::shared_ptr<const tesseract::kinematics::JointGroup> manip_;
 
-  /** @brief The link to track relative to target_frame_id_*/
-  tesseract::common::LinkId source_frame_id_;
+  /** @brief The link to track relative to target_frame_ */
+  tesseract::common::LinkId source_frame_;
 
-  /** @brief The target frame to track relative to source_frame_id_ */
-  tesseract::common::LinkId target_frame_id_;
+  /** @brief The target frame to track relative to source_frame_ */
+  tesseract::common::LinkId target_frame_;
 
-  /** @brief The offset transform to apply to source_frame_id_ location */
+  /** @brief The offset transform to apply to source_frame_ location */
   Eigen::Isometry3d source_frame_offset_;
 
-  /** @brief A offset transform to be applied to target_frame_id_ location */
+  /** @brief A offset transform to be applied to target_frame_ location */
   Eigen::Isometry3d target_frame_offset_;
 
   /** @brief Error function for calculating the error in the position given the source and target positions
@@ -57,8 +57,8 @@ struct DynamicCartPoseErrCalculator : public TrajOptVectorOfVector
 
   DynamicCartPoseErrCalculator(
       std::shared_ptr<const tesseract::kinematics::JointGroup> manip,
-      tesseract::common::LinkId source_frame_id,
-      tesseract::common::LinkId target_frame_id,
+      tesseract::common::LinkId source_frame,
+      tesseract::common::LinkId target_frame,
       const Eigen::Isometry3d& source_frame_offset = Eigen::Isometry3d::Identity(),
       const Eigen::Isometry3d& target_frame_offset = Eigen::Isometry3d::Identity(),
       const Eigen::VectorXi& indices = Eigen::Matrix<int, 1, 6>(std::vector<int>({ 0, 1, 2, 3, 4, 5 }).data()),
@@ -79,16 +79,16 @@ struct DynamicCartPoseJacCalculator : TrajOptMatrixOfVector
   /** @brief Manipulator kinematics object */
   std::shared_ptr<const tesseract::kinematics::JointGroup> manip_;
 
-  /** @brief The link to track relative to target_frame_id_*/
-  tesseract::common::LinkId source_frame_id_;
+  /** @brief The link to track relative to target_frame_ */
+  tesseract::common::LinkId source_frame_;
 
-  /** @brief The offset transform to apply to source_frame_id_ location */
+  /** @brief The offset transform to apply to source_frame_ location */
   Eigen::Isometry3d source_frame_offset_;
 
-  /** @brief The target frame to track relative to source_frame_id_ */
-  tesseract::common::LinkId target_frame_id_;
+  /** @brief The target frame to track relative to source_frame_ */
+  tesseract::common::LinkId target_frame_;
 
-  /** @brief A offset transform to be applied to target_frame_id_ location */
+  /** @brief A offset transform to be applied to target_frame_ location */
   Eigen::Isometry3d target_frame_offset_;
 
   /**
@@ -104,8 +104,8 @@ struct DynamicCartPoseJacCalculator : TrajOptMatrixOfVector
 
   DynamicCartPoseJacCalculator(
       std::shared_ptr<const tesseract::kinematics::JointGroup> manip,
-      tesseract::common::LinkId source_frame_id,
-      tesseract::common::LinkId target_frame_id,
+      tesseract::common::LinkId source_frame,
+      tesseract::common::LinkId target_frame,
       const Eigen::Isometry3d& source_frame_offset = Eigen::Isometry3d::Identity(),
       const Eigen::Isometry3d& target_frame_offset = Eigen::Isometry3d::Identity(),
       const Eigen::VectorXi& indices = Eigen::Matrix<int, 1, 6>(std::vector<int>({ 0, 1, 2, 3, 4, 5 }).data()));
@@ -122,16 +122,16 @@ struct CartPoseErrCalculator : public TrajOptVectorOfVector
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   std::shared_ptr<const tesseract::kinematics::JointGroup> manip_;
 
-  /** @brief The link to track relative to target_frame_id_*/
-  tesseract::common::LinkId source_frame_id_;
+  /** @brief The link to track relative to target_frame_ */
+  tesseract::common::LinkId source_frame_;
 
-  /** @brief The offset transform to apply to source_frame_id_ location */
+  /** @brief The offset transform to apply to source_frame_ location */
   Eigen::Isometry3d source_frame_offset_;
 
-  /** @brief The target link to track relative to source_frame_id_ */
-  tesseract::common::LinkId target_frame_id_;
+  /** @brief The target link to track relative to source_frame_ */
+  tesseract::common::LinkId target_frame_;
 
-  /** @brief A offset transform to be applied to target_frame_id_ location */
+  /** @brief A offset transform to be applied to target_frame_ location */
   Eigen::Isometry3d target_frame_offset_;
 
   /** @brief indicates which link is active */
@@ -151,8 +151,8 @@ struct CartPoseErrCalculator : public TrajOptVectorOfVector
 
   CartPoseErrCalculator(
       std::shared_ptr<const tesseract::kinematics::JointGroup> manip,
-      tesseract::common::LinkId source_frame_id,
-      tesseract::common::LinkId target_frame_id,
+      tesseract::common::LinkId source_frame,
+      tesseract::common::LinkId target_frame,
       const Eigen::Isometry3d& source_frame_offset = Eigen::Isometry3d::Identity(),
       const Eigen::Isometry3d& target_frame_offset = Eigen::Isometry3d::Identity(),
       const Eigen::VectorXi& indices = Eigen::Matrix<int, 1, 6>(std::vector<int>({ 0, 1, 2, 3, 4, 5 }).data()),
@@ -172,16 +172,16 @@ struct CartPoseJacCalculator : TrajOptMatrixOfVector
 
   std::shared_ptr<const tesseract::kinematics::JointGroup> manip_;
 
-  /** @brief The link to track relative to target_frame_id_*/
-  tesseract::common::LinkId source_frame_id_;
+  /** @brief The link to track relative to target_frame_ */
+  tesseract::common::LinkId source_frame_;
 
-  /** @brief The offset transform to apply to source_frame_id_ location */
+  /** @brief The offset transform to apply to source_frame_ location */
   Eigen::Isometry3d source_frame_offset_;
 
-  /** @brief The target link to track relative to source_frame_id_ */
-  tesseract::common::LinkId target_frame_id_;
+  /** @brief The target link to track relative to source_frame_ */
+  tesseract::common::LinkId target_frame_;
 
-  /** @brief A offset transform to be applied to target_frame_id_ location */
+  /** @brief A offset transform to be applied to target_frame_ location */
   Eigen::Isometry3d target_frame_offset_;
 
   /** @brief indicates which link is active */
@@ -203,8 +203,8 @@ struct CartPoseJacCalculator : TrajOptMatrixOfVector
 
   CartPoseJacCalculator(
       std::shared_ptr<const tesseract::kinematics::JointGroup> manip,
-      tesseract::common::LinkId source_frame_id,
-      tesseract::common::LinkId target_frame_id,
+      tesseract::common::LinkId source_frame,
+      tesseract::common::LinkId target_frame,
       const Eigen::Isometry3d& source_frame_offset = Eigen::Isometry3d::Identity(),
       const Eigen::Isometry3d& target_frame_offset = Eigen::Isometry3d::Identity(),
       const Eigen::VectorXi& indices = Eigen::Matrix<int, 1, 6>(std::vector<int>({ 0, 1, 2, 3, 4, 5 }).data()));

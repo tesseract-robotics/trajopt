@@ -218,9 +218,9 @@ struct CollisionEvaluator
 protected:
   std::shared_ptr<const tesseract::kinematics::JointGroup> manip_;
   std::shared_ptr<const tesseract::environment::Environment> env_;
-  std::unordered_set<tesseract::common::LinkId, tesseract::common::LinkId::Hash> env_active_link_names_;
-  std::unordered_set<tesseract::common::LinkId, tesseract::common::LinkId::Hash> manip_active_link_names_;
-  std::unordered_set<tesseract::common::LinkId, tesseract::common::LinkId::Hash> diff_active_link_names_;
+  std::unordered_set<tesseract::common::LinkId, tesseract::common::LinkId::Hash> env_active_link_ids_;
+  std::unordered_set<tesseract::common::LinkId, tesseract::common::LinkId::Hash> manip_active_link_ids_;
+  std::unordered_set<tesseract::common::LinkId, tesseract::common::LinkId::Hash> diff_active_link_ids_;
   tesseract::common::CollisionMarginData margin_data_;
   trajopt_common::CollisionCoeffData coeff_data_;
   double margin_buffer_{ 0.0 };
