@@ -390,7 +390,7 @@ CollisionEvaluator::CollisionEvaluator(const tesseract::kinematics::JointGroup::
   , dynamic_environment_(dynamic_environment)
 {
   for (const auto& id : manip_->getActiveLinkIds())
-    manip_active_link_names_.insert(id);
+    manip_active_link_ids_.insert(id);
 
   // If the environment is not expected to change, then the cloned state solver may be used each time.
   if (dynamic_environment_)
@@ -400,11 +400,11 @@ CollisionEvaluator::CollisionEvaluator(const tesseract::kinematics::JointGroup::
       env_->getLinkTransforms(transforms, manip_->getJointIds(), joint_values);
     };
     for (const auto& id : env_->getActiveLinkIds())
-      env_active_link_names_.insert(id);
+      env_active_link_ids_.insert(id);
 
-    for (const auto& id : env_active_link_names_)
-      if (manip_active_link_names_.find(id) == manip_active_link_names_.end())
-        diff_active_link_names_.insert(id);
+    for (const auto& id : env_active_link_ids_)
+      if (manip_active_link_ids_.find(id) == manip_active_link_ids_.end())
+        diff_active_link_ids_.insert(id);
   }
   else
   {
@@ -412,7 +412,7 @@ CollisionEvaluator::CollisionEvaluator(const tesseract::kinematics::JointGroup::
                         const Eigen::Ref<const Eigen::VectorXd>& joint_values) {
       transforms = manip_->calcFwdKin(joint_values);
     };
-    env_active_link_names_ = manip_active_link_names_;
+    env_active_link_ids_ = manip_active_link_ids_;
   }
 }
 
@@ -656,10 +656,10 @@ void SingleTimestepCollisionEvaluator::CalcCollisions(const Eigen::Ref<const Eig
   get_state_fn_(transforms_cache0_, dof_vals);
 
   // If not empty then there are links that are not part of the kinematics object that can move (dynamic environment)
-  for (const auto& link_id : diff_active_link_names_)
+  for (const auto& link_id : diff_active_link_ids_)
     transforms_cache0_update_[link_id] = transforms_cache0_[link_id];
 
-  for (const auto& link_id : manip_active_link_names_)
+  for (const auto& link_id : manip_active_link_ids_)
     transforms_cache0_update_[link_id] = transforms_cache0_[link_id];
 
   contact_manager_->setCollisionObjectsTransform(transforms_cache0_update_);
@@ -828,11 +828,11 @@ void DiscreteCollisionEvaluator::CalcCollisions(const Eigen::Ref<const Eigen::Ve
   const double dist = (dof_vals1 - dof_vals0).norm();
 
   // If not empty then there are links that are not part of the kinematics object that can move (dynamic environment)
-  if (!diff_active_link_names_.empty())
+  if (!diff_active_link_ids_.empty())
   {
     get_state_fn_(transforms_cache0_, dof_vals0);
 
-    for (const auto& link_id : diff_active_link_names_)
+    for (const auto& link_id : diff_active_link_ids_)
       transforms_diff_update_[link_id] = transforms_cache0_[link_id];
 
     contact_manager_->setCollisionObjectsTransform(transforms_diff_update_);
@@ -884,7 +884,7 @@ void DiscreteCollisionEvaluator::CalcCollisions(const Eigen::Ref<const Eigen::Ve
   {
     get_state_fn_(transforms_cache0_, subtraj.row(i));
 
-    for (const auto& link_id : manip_active_link_names_)
+    for (const auto& link_id : manip_active_link_ids_)
       transforms_cache0_update_[link_id] = transforms_cache0_[link_id];
 
     contact_manager_->setCollisionObjectsTransform(transforms_cache0_update_);
@@ -894,7 +894,7 @@ void DiscreteCollisionEvaluator::CalcCollisions(const Eigen::Ref<const Eigen::Ve
     if (!contacts.empty())
     {
       dist_results.addInterpolatedCollisionResults(
-          contacts, i, last_state_idx, manip_active_link_names_, dt, true, filter);
+          contacts, i, last_state_idx, manip_active_link_ids_, dt, true, filter);
     }
     contacts.clear();
   }
@@ -1075,11 +1075,11 @@ void CastCollisionEvaluator::CalcCollisions(const Eigen::Ref<const Eigen::Vector
   const double dist = (dof_vals1 - dof_vals0).norm();
 
   // If not empty then there are links that are not part of the kinematics object that can move (dynamic environment)
-  if (!diff_active_link_names_.empty())
+  if (!diff_active_link_ids_.empty())
   {
     get_state_fn_(transforms_cache0_, dof_vals0);
 
-    for (const auto& link_id : diff_active_link_names_)
+    for (const auto& link_id : diff_active_link_ids_)
       transforms_diff_update_[link_id] = transforms_cache0_[link_id];
 
     contact_manager_->setCollisionObjectsTransform(transforms_diff_update_);
@@ -1130,7 +1130,7 @@ void CastCollisionEvaluator::CalcCollisions(const Eigen::Ref<const Eigen::Vector
       transforms_cache0_ = manip_->calcFwdKin(subtraj.row(i));
       transforms_cache1_ = manip_->calcFwdKin(subtraj.row(i + 1));
 
-      for (const auto& link_id : manip_active_link_names_)
+      for (const auto& link_id : manip_active_link_ids_)
         contact_manager_->setCollisionObjectsTransform(
             link_id, transforms_cache0_[link_id], transforms_cache1_[link_id]);
 
@@ -1139,7 +1139,7 @@ void CastCollisionEvaluator::CalcCollisions(const Eigen::Ref<const Eigen::Vector
       if (!contacts.empty())
       {
         dist_results.addInterpolatedCollisionResults(
-            contacts, i, last_state_idx, manip_active_link_names_, dt, false, filter);
+            contacts, i, last_state_idx, manip_active_link_ids_, dt, false, filter);
       }
       contacts.clear();
     }
@@ -1149,7 +1149,7 @@ void CastCollisionEvaluator::CalcCollisions(const Eigen::Ref<const Eigen::Vector
     transforms_cache0_ = manip_->calcFwdKin(dof_vals0);
     transforms_cache1_ = manip_->calcFwdKin(dof_vals1);
 
-    for (const auto& link_id : manip_active_link_names_)
+    for (const auto& link_id : manip_active_link_ids_)
       contact_manager_->setCollisionObjectsTransform(link_id, transforms_cache0_[link_id], transforms_cache1_[link_id]);
 
     contact_manager_->contactTest(dist_results, collision_check_config_.contact_request);

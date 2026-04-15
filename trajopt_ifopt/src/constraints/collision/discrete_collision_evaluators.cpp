@@ -49,7 +49,7 @@ SingleTimestepCollisionEvaluator::SingleTimestepCollisionEvaluator(
     throw std::runtime_error("SingleTimestepCollisionEvaluator, should be configured with DISCRETE");
 
   for (const auto& id : manip_->getActiveLinkIds())
-    manip_active_link_names_.insert(id);
+    manip_active_link_ids_.insert(id);
 
   // If the environment is not expected to change, then the cloned state solver may be used each time.
   if (dynamic_environment_)
@@ -59,11 +59,11 @@ SingleTimestepCollisionEvaluator::SingleTimestepCollisionEvaluator(
       env_->getLinkTransforms(transforms, manip_->getJointIds(), joint_values);
     };
     for (const auto& id : env_->getActiveLinkIds())
-      env_active_link_names_.insert(id);
+      env_active_link_ids_.insert(id);
 
-    for (const auto& id : env_active_link_names_)
-      if (manip_active_link_names_.find(id) == manip_active_link_names_.end())
-        diff_active_link_names_.insert(id);
+    for (const auto& id : env_active_link_ids_)
+      if (manip_active_link_ids_.find(id) == manip_active_link_ids_.end())
+        diff_active_link_ids_.insert(id);
   }
   else
   {
@@ -71,7 +71,7 @@ SingleTimestepCollisionEvaluator::SingleTimestepCollisionEvaluator(
                         const Eigen::Ref<const Eigen::VectorXd>& joint_values) {
       transforms = manip_->calcFwdKin(joint_values);
     };
-    env_active_link_names_ = manip_active_link_names_;
+    env_active_link_ids_ = manip_active_link_ids_;
   }
 
   contact_manager_ = env_->getDiscreteContactManager();
