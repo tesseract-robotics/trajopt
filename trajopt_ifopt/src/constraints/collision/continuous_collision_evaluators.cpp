@@ -57,7 +57,7 @@ LVSContinuousCollisionEvaluator::LVSContinuousCollisionEvaluator(
   single_timestep_ = (collision_check_config_.type == tesseract::collision::CollisionEvaluatorType::CONTINUOUS);
 
   for (const auto& id : manip_->getActiveLinkIds())
-    manip_active_link_names_.insert(id);
+    manip_active_link_ids_.insert(id);
 
   // If the environment is not expected to change, then the cloned state solver may be used each time.
   if (dynamic_environment_)
@@ -67,11 +67,11 @@ LVSContinuousCollisionEvaluator::LVSContinuousCollisionEvaluator(
       env_->getLinkTransforms(transforms, manip_->getJointIds(), joint_values);
     };
     for (const auto& id : env_->getActiveLinkIds())
-      env_active_link_names_.insert(id);
+      env_active_link_ids_.insert(id);
 
-    for (const auto& id : env_active_link_names_)
-      if (manip_active_link_names_.find(id) == manip_active_link_names_.end())
-        diff_active_link_names_.insert(id);
+    for (const auto& id : env_active_link_ids_)
+      if (manip_active_link_ids_.find(id) == manip_active_link_ids_.end())
+        diff_active_link_ids_.insert(id);
   }
   else
   {
@@ -79,7 +79,7 @@ LVSContinuousCollisionEvaluator::LVSContinuousCollisionEvaluator(
                         const Eigen::Ref<const Eigen::VectorXd>& joint_values) {
       transforms = manip_->calcFwdKin(joint_values);
     };
-    env_active_link_names_ = manip_active_link_names_;
+    env_active_link_ids_ = manip_active_link_ids_;
   }
 
   contact_manager_ = env_->getContinuousContactManager();
@@ -175,29 +175,28 @@ void LVSContinuousCollisionEvaluator::calcCollisionsHelper(tesseract::collision:
   transforms_cache1.clear();
 
   // If not empty then there are links that are not part of the kinematics object that can move (dynamic environment)
-  if (!diff_active_link_names_.empty())
+  if (!diff_active_link_ids_.empty())
   {
     get_state_fn_(transforms_cache0, dof_vals0);
-    for (const auto& link_id : diff_active_link_names_)
+    for (const auto& link_id : diff_active_link_ids_)
       contact_manager_->setCollisionObjectsTransform(link_id, transforms_cache0[link_id]);
   }
 
   // Create filter
   // Don't include contacts at the fixed state
   // Don't include contacts with zero coeffs
-  auto filter =
-      [this, vars0_fixed, vars1_fixed](tesseract::collision::ContactResultMap::PairType& pair) {
-        // Remove pairs with zero coeffs
-        if (coeff_data_.hasZeroCoeff(pair.first))
-        {
-          pair.second.clear();
-          return;
-        }
+  auto filter = [this, vars0_fixed, vars1_fixed](tesseract::collision::ContactResultMap::PairType& pair) {
+    // Remove pairs with zero coeffs
+    if (coeff_data_.hasZeroCoeff(pair.first))
+    {
+      pair.second.clear();
+      return;
+    }
 
-        // Contains the contact distance threshold and coefficient for the given link pair
-        const double margin = margin_data_.getCollisionMargin(pair.first);
-        trajopt_common::removeInvalidContactResults(pair.second, margin, margin_buffer_, vars0_fixed, vars1_fixed);
-      };
+    // Contains the contact distance threshold and coefficient for the given link pair
+    const double margin = margin_data_.getCollisionMargin(pair.first);
+    trajopt_common::removeInvalidContactResults(pair.second, margin, margin_buffer_, vars0_fixed, vars1_fixed);
+  };
 
   if (!single_timestep_ && dist > collision_check_config_.longest_valid_segment_length)
   {
@@ -220,15 +219,14 @@ void LVSContinuousCollisionEvaluator::calcCollisionsHelper(tesseract::collision:
       get_state_fn_(transforms_cache0, subtraj.row(i));
       get_state_fn_(transforms_cache1, subtraj.row(i + 1));
 
-      for (const auto& link_id : manip_active_link_names_)
-        contact_manager_->setCollisionObjectsTransform(
-            link_id, transforms_cache0[link_id], transforms_cache1[link_id]);
+      for (const auto& link_id : manip_active_link_ids_)
+        contact_manager_->setCollisionObjectsTransform(link_id, transforms_cache0[link_id], transforms_cache1[link_id]);
 
       contact_manager_->contactTest(contacts, collision_check_config_.contact_request);
       if (!contacts.empty())
       {
         dist_results.addInterpolatedCollisionResults(
-            contacts, i, last_state_idx, manip_active_link_names_, dt, false, filter);
+            contacts, i, last_state_idx, manip_active_link_ids_, dt, false, filter);
       }
       contacts.clear();
     }
@@ -237,9 +235,8 @@ void LVSContinuousCollisionEvaluator::calcCollisionsHelper(tesseract::collision:
   {
     get_state_fn_(transforms_cache0, dof_vals0);
     get_state_fn_(transforms_cache1, dof_vals1);
-    for (const auto& link_id : manip_active_link_names_)
-      contact_manager_->setCollisionObjectsTransform(
-          link_id, transforms_cache0[link_id], transforms_cache1[link_id]);
+    for (const auto& link_id : manip_active_link_ids_)
+      contact_manager_->setCollisionObjectsTransform(link_id, transforms_cache0[link_id], transforms_cache1[link_id]);
 
     contact_manager_->contactTest(dist_results, collision_check_config_.contact_request);
 
@@ -289,7 +286,7 @@ LVSDiscreteCollisionEvaluator::LVSDiscreteCollisionEvaluator(
     throw std::runtime_error("LVSDiscreteCollisionEvaluator, should be configured with LVS_DISCRETE");
 
   for (const auto& id : manip_->getActiveLinkIds())
-    manip_active_link_names_.insert(id);
+    manip_active_link_ids_.insert(id);
 
   // If the environment is not expected to change, then the cloned state solver may be used each time.
   if (dynamic_environment_)
@@ -299,11 +296,11 @@ LVSDiscreteCollisionEvaluator::LVSDiscreteCollisionEvaluator(
       env_->getLinkTransforms(transforms, manip_->getJointIds(), joint_values);
     };
     for (const auto& id : env_->getActiveLinkIds())
-      env_active_link_names_.insert(id);
+      env_active_link_ids_.insert(id);
 
-    for (const auto& id : env_active_link_names_)
-      if (manip_active_link_names_.find(id) == manip_active_link_names_.end())
-        diff_active_link_names_.insert(id);
+    for (const auto& id : env_active_link_ids_)
+      if (manip_active_link_ids_.find(id) == manip_active_link_ids_.end())
+        diff_active_link_ids_.insert(id);
   }
   else
   {
@@ -311,7 +308,7 @@ LVSDiscreteCollisionEvaluator::LVSDiscreteCollisionEvaluator(
                         const Eigen::Ref<const Eigen::VectorXd>& joint_values) {
       transforms = manip_->calcFwdKin(joint_values);
     };
-    env_active_link_names_ = manip_active_link_names_;
+    env_active_link_ids_ = manip_active_link_ids_;
   }
 
   contact_manager_ = env_->getDiscreteContactManager();
@@ -401,7 +398,7 @@ void LVSDiscreteCollisionEvaluator::calcCollisionsHelper(tesseract::collision::C
   transforms_cache0.clear();
 
   // If not empty then there are links that are not part of the kinematics object that can move (dynamic environment)
-  if (!diff_active_link_names_.empty())
+  if (!diff_active_link_ids_.empty())
   {
     get_state_fn_(transforms_cache0, dof_vals0);
     contact_manager_->setCollisionObjectsTransform(transforms_cache0);
@@ -410,21 +407,20 @@ void LVSDiscreteCollisionEvaluator::calcCollisionsHelper(tesseract::collision::C
   // Create filter
   // Don't include contacts at the fixed state
   // Don't include contacts with zero coeffs
-  auto filter =
-      [this, vars0_fixed, vars1_fixed](tesseract::collision::ContactResultMap::PairType& pair) {
-        // Remove pairs with zero coeffs
-        if (coeff_data_.hasZeroCoeff(pair.first))
-        {
-          pair.second.clear();
-          return;
-        }
+  auto filter = [this, vars0_fixed, vars1_fixed](tesseract::collision::ContactResultMap::PairType& pair) {
+    // Remove pairs with zero coeffs
+    if (coeff_data_.hasZeroCoeff(pair.first))
+    {
+      pair.second.clear();
+      return;
+    }
 
-        // Contains the contact distance threshold and coefficient for the given link pair
-        const double margin = margin_data_.getCollisionMargin(pair.first);
+    // Contains the contact distance threshold and coefficient for the given link pair
+    const double margin = margin_data_.getCollisionMargin(pair.first);
 
-        // Don't include contacts at the fixed state
-        trajopt_common::removeInvalidContactResults(pair.second, margin, margin_buffer_, vars0_fixed, vars1_fixed);
-      };
+    // Don't include contacts at the fixed state
+    trajopt_common::removeInvalidContactResults(pair.second, margin, margin_buffer_, vars0_fixed, vars1_fixed);
+  };
 
   // The first step is to see if the distance between two states is larger than the longest valid segment. If larger
   // the collision checking is broken up into multiple casted collision checks such that each check is less then
@@ -459,7 +455,7 @@ void LVSDiscreteCollisionEvaluator::calcCollisionsHelper(tesseract::collision::C
     if (!contacts.empty())
     {
       dist_results.addInterpolatedCollisionResults(
-          contacts, i, last_state_idx, manip_active_link_names_, dt, true, filter);
+          contacts, i, last_state_idx, manip_active_link_ids_, dt, true, filter);
     }
     contacts.clear();
   }
