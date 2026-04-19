@@ -89,7 +89,7 @@ public:
     nlp = std::make_shared<Problem>(variables);
 
     // 4) Add constraints
-    constraint = std::make_shared<CartPosConstraint>(var0, kin_group, tesseract::common::LinkId::fromName("r_gripper_tool_frame"), tesseract::common::LinkId::fromName("base_footprint"));
+    constraint = std::make_shared<CartPosConstraint>(var0, kin_group, "r_gripper_tool_frame", "base_footprint");
     nlp->addConstraintSet(constraint);
   }
 };
@@ -101,7 +101,7 @@ TEST_F(CartesianPositionConstraintUnit, GetValue)  // NOLINT
 
   // Run FK to get target pose
   Eigen::VectorXd joint_position = Eigen::VectorXd::Ones(n_dof);
-  const Eigen::Isometry3d target_pose = kin_group->calcFwdKin(joint_position).at(tesseract::common::LinkId::fromName("r_gripper_tool_frame"));
+  const Eigen::Isometry3d target_pose = kin_group->calcFwdKin(joint_position).at("r_gripper_tool_frame");
   constraint->setTargetPose(target_pose);
 
   // Set the joints to the joint position that should satisfy it
@@ -152,7 +152,7 @@ TEST_F(CartesianPositionConstraintUnit, FillJacobian)  // NOLINT
 
   // Run FK to get target pose
   const Eigen::VectorXd joint_position = Eigen::VectorXd::Ones(n_dof);
-  const Eigen::Isometry3d target_pose = kin_group->calcFwdKin(joint_position).at(tesseract::common::LinkId::fromName("r_gripper_tool_frame"));
+  const Eigen::Isometry3d target_pose = kin_group->calcFwdKin(joint_position).at("r_gripper_tool_frame");
   constraint->setTargetPose(target_pose);
 
   // Modify one joint at a time
@@ -198,7 +198,7 @@ TEST_F(CartesianPositionConstraintUnit, GetSetBounds)  // NOLINT
     const Eigen::VectorXd pos = Eigen::VectorXd::Ones(kin_group->numJoints());
     auto var0 = node->addVar("position", kin_group->getJointNames(), pos, bounds_vec);
 
-    auto constraint_2 = std::make_shared<CartPosConstraint>(var0, kin_group, tesseract::common::LinkId::fromName("r_gripper_tool_frame"), tesseract::common::LinkId::fromName("base_footprint"));
+    auto constraint_2 = std::make_shared<CartPosConstraint>(var0, kin_group, "r_gripper_tool_frame", "base_footprint");
 
     const Eigen::VectorXd coeffs = 10 * Eigen::VectorXd::Ones(6);
     const Bounds bounds(-0.1234, 0.5678);
@@ -208,8 +208,8 @@ TEST_F(CartesianPositionConstraintUnit, GetSetBounds)  // NOLINT
                                                             coeffs,
                                                             bounds_vec,
                                                             kin_group,
-                                                            tesseract::common::LinkId::fromName("r_gripper_tool_frame"),
-                                                            tesseract::common::LinkId::fromName("base_footprint"),
+                                                            "r_gripper_tool_frame",
+                                                            "base_footprint",
                                                             Eigen::Isometry3d::Identity(),
                                                             Eigen::Isometry3d::Identity(),
                                                             "test",

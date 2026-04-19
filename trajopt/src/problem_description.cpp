@@ -725,8 +725,8 @@ void DynamicCartPoseTermInfo::fromJson(ProblemConstructionInfo& pci, const Json:
   target_frame_offset.linear() = target_q.matrix();
   target_frame_offset.translation() = target_frame_offset_xyz;
 
-  source_frame = LinkId::fromName(source_frame_name);
-  target_frame = LinkId::fromName(target_frame_name);
+  source_frame = LinkId(source_frame_name);
+  target_frame = LinkId(target_frame_name);
 
   if (!pci.kin->hasLinkId(source_frame))
   {
@@ -871,8 +871,8 @@ void CartPoseTermInfo::fromJson(ProblemConstructionInfo& pci, const Json::Value&
   target_frame_offset.linear() = target_q.matrix();
   target_frame_offset.translation() = target_frame_offset_xyz;
 
-  source_frame = LinkId::fromName(source_frame_name);
-  target_frame = LinkId::fromName(target_frame_name);
+  source_frame = LinkId(source_frame_name);
+  target_frame = LinkId(target_frame_name);
 
   if (!pci.kin->hasLinkId(source_frame))
   {
@@ -999,7 +999,7 @@ void CartVelTermInfo::fromJson(ProblemConstructionInfo& pci, const Json::Value& 
 
   std::string link;
   json_marshal::childFromJson(params, link, "link");
-  link_id = LinkId::fromName(link);
+  link_id = LinkId(link);
   if (!pci.kin->isActiveLinkId(link_id))
   {
     PRINT_AND_THROW(boost::format("invalid link name: %s") % link);
