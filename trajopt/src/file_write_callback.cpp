@@ -66,7 +66,7 @@ void WriteFile(const std::shared_ptr<std::ofstream>& file,
       rot_vec(3) = q.z();
 
       // Write cartesian pose to file
-      *file << it.first.value() << ": ";
+      *file << it.first.name() << ": ";
       Eigen::VectorXd pose_vec = tesseract::common::concat(it.second.translation(), rot_vec);
       for (auto i = 0; i < pose_vec.size(); i++)
       {

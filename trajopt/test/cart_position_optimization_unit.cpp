@@ -97,7 +97,7 @@ TEST(CartPositionOptimizationTrajoptSCO, cart_position_optimization_trajopt_sco)
   pci.init_info.data = zero.transpose();
 
   auto joint_target = start_pos;
-  auto target_pose = manip->calcFwdKin(joint_target).at(LinkId::fromName("r_gripper_tool_frame"));
+  auto target_pose = manip->calcFwdKin(joint_target).at("r_gripper_tool_frame");
 
   if (DEBUG)
     std::cout << "target_pose:\n" << target_pose.matrix() << '\n';
@@ -107,8 +107,8 @@ TEST(CartPositionOptimizationTrajoptSCO, cart_position_optimization_trajopt_sco)
     pose->term_type = TermType::TT_CNT;
     pose->name = "waypoint_cart_0";
     pose->timestep = 0;
-    pose->source_frame = LinkId::fromName("r_gripper_tool_frame");
-    pose->target_frame = LinkId::fromName("base_footprint");
+    pose->source_frame = LinkId("r_gripper_tool_frame");
+    pose->target_frame = LinkId("base_footprint");
     pose->target_frame_offset = target_pose;
     pose->pos_coeffs = Eigen::Vector3d(1, 1, 1);
     pose->rot_coeffs = Eigen::Vector3d(1, 1, 1);
@@ -127,7 +127,7 @@ TEST(CartPositionOptimizationTrajoptSCO, cart_position_optimization_trajopt_sco)
 
   tesseract::common::TrajArray traj = getTraj(opt.x(), prob->GetVars());
 
-  auto optimized_pose = manip->calcFwdKin(traj.row(0)).at(LinkId::fromName("r_gripper_tool_frame"));
+  auto optimized_pose = manip->calcFwdKin(traj.row(0)).at("r_gripper_tool_frame");
   EXPECT_TRUE(target_pose.translation().isApprox(optimized_pose.translation(), 1e-4));
   const Eigen::Quaterniond target_q(target_pose.rotation());
   const Eigen::Quaterniond optimized_q(optimized_pose.rotation());

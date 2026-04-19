@@ -184,8 +184,8 @@ protected:
 
     Joint new_joint("base_link-octomap_attached");
     new_joint.type = JointType::FIXED;
-    new_joint.parent_link_id = LinkId::fromName("base_link");
-    new_joint.child_link_id = LinkId::fromName("octomap_attached");
+    new_joint.parent_link_id = LinkId("base_link");
+    new_joint.child_link_id = LinkId("octomap_attached");
 
     env_->applyCommand(std::make_shared<AddLinkCommand>(new_link, new_joint));
   }
