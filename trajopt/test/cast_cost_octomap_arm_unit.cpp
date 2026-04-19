@@ -99,8 +99,8 @@ public:
     // passes through the octree with multiple arm links.
     Joint new_joint("base_link-octomap_attached");
     new_joint.type = JointType::FIXED;
-    new_joint.parent_link_id = LinkId::fromName("base_link");
-    new_joint.child_link_id = LinkId::fromName("octomap_attached");
+    new_joint.parent_link_id = LinkId("base_link");
+    new_joint.child_link_id = LinkId("octomap_attached");
     new_joint.parent_to_joint_origin_transform = Eigen::Isometry3d::Identity();
     new_joint.parent_to_joint_origin_transform.translation() = Eigen::Vector3d(0.5, -0.3, 0.8);
 
@@ -329,7 +329,7 @@ static OptResult optimizeAndVerify(Environment::Ptr env, const std::string& mana
   for (const auto& step : disc_collisions)
     for (const auto& pair : step)
       for (const auto& r : pair.second)
-        if (r.link_ids[0].name() == "octomap_attached" || r.link_ids[1].name() == "octomap_attached")
+        if (r.link_ids[0]== "octomap_attached" || r.link_ids[1]== "octomap_attached")
           min_dist = std::min(min_dist, r.distance);
 
   CONSOLE_BRIDGE_logError(

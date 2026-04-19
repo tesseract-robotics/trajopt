@@ -98,7 +98,7 @@ void runCartPositionOptimization(const tesseract::environment::Environment::Ptr&
     std::cout << "Joint Limits:\n" << manip->getLimits().joint_limits.transpose() << '\n';
 
   const Eigen::VectorXd joint_target = start_pos;
-  Eigen::Isometry3d target_pose = manip->calcFwdKin(joint_target).at(tesseract::common::LinkId::fromName("r_gripper_tool_frame"));
+  Eigen::Isometry3d target_pose = manip->calcFwdKin(joint_target).at("r_gripper_tool_frame");
 
   // 3) Add Variables
   std::vector<std::unique_ptr<trajopt_ifopt::Node>> nodes;
@@ -119,7 +119,7 @@ void runCartPositionOptimization(const tesseract::environment::Environment::Ptr&
   for (const auto& var : vars)
   {
     auto cnt = std::make_shared<trajopt_ifopt::CartPosConstraint>(
-        var, manip, tesseract::common::LinkId::fromName("r_gripper_tool_frame"), tesseract::common::LinkId::fromName("base_footprint"), Eigen::Isometry3d::Identity(), target_pose);
+        var, manip, "r_gripper_tool_frame", "base_footprint", Eigen::Isometry3d::Identity(), target_pose);
     qp_problem->addConstraintSet(cnt);
   }
 
@@ -130,7 +130,7 @@ void runCartPositionOptimization(const tesseract::environment::Environment::Ptr&
   solver.solve(qp_problem);
   Eigen::VectorXd x = qp_problem->getVariableValues();
 
-  auto optimized_pose = manip->calcFwdKin(x).at(tesseract::common::LinkId::fromName("r_gripper_tool_frame"));
+  auto optimized_pose = manip->calcFwdKin(x).at("r_gripper_tool_frame");
   EXPECT_TRUE(target_pose.translation().isApprox(optimized_pose.translation(), 1e-4));
   const Eigen::Quaterniond target_q(target_pose.rotation());
   const Eigen::Quaterniond optimized_q(optimized_pose.rotation());

@@ -65,7 +65,7 @@ public:
 
     // Add constraints
     const Eigen::VectorXd joint_position = Eigen::VectorXd::Ones(n_dof);
-    source_tf = manip->calcFwdKin(joint_position).at(tesseract::common::LinkId::fromName("r_gripper_tool_frame"));
+    source_tf = manip->calcFwdKin(joint_position).at("r_gripper_tool_frame");
 
     line_start_pose = source_tf;
     line_start_pose.translation() = line_start_pose.translation() + Eigen::Vector3d(-0.5, 0.0, 0.0);
@@ -83,8 +83,8 @@ TEST_F(CartesianLineConstraintUnit, GetValue)  // NOLINT
     Eigen::VectorXd joint_position = Eigen::VectorXd::Ones(n_dof);
 
     info = CartLineInfo(manip,
-                        tesseract::common::LinkId::fromName("r_gripper_tool_frame"),
-                        tesseract::common::LinkId::fromName("base_link"),
+                        "r_gripper_tool_frame",
+                        "base_link",
                         line_start_pose,
                         line_end_pose);
     const Eigen::VectorXd coeff = Eigen::VectorXd::Ones(info.indices.rows());
@@ -121,8 +121,8 @@ TEST_F(CartesianLineConstraintUnit, GetValue)  // NOLINT
     end_pose_mod.translation() = end_pose_mod.translation() + Eigen::Vector3d(0.0, 0.3, 0.4);
 
     info = CartLineInfo(manip,
-                        tesseract::common::LinkId::fromName("r_gripper_tool_frame"),
-                        tesseract::common::LinkId::fromName("base_link"),
+                        "r_gripper_tool_frame",
+                        "base_link",
                         start_pose_mod,
                         end_pose_mod);
     const Eigen::VectorXd coeff = Eigen::VectorXd::Ones(info.indices.rows());
@@ -142,15 +142,15 @@ TEST_F(CartesianLineConstraintUnit, FillJacobian)  // NOLINT
   // Run FK to get target pose
   const Eigen::VectorXd joint_position = Eigen::VectorXd::Ones(n_dof);
   Eigen::Isometry3d source_tf =
-      manip->calcFwdKin(joint_position).at(tesseract::common::LinkId::fromName("r_gripper_tool_frame"));
+      manip->calcFwdKin(joint_position).at("r_gripper_tool_frame");
 
   // Set the line endpoints st the target pose is on the line
   const Eigen::Isometry3d start_pose_mod = source_tf.translate(Eigen::Vector3d(-1.0, 0, 0));
   const Eigen::Isometry3d end_pose_mod = source_tf.translate(Eigen::Vector3d(1.0, 0, 0));
 
   info = CartLineInfo(manip,
-                      tesseract::common::LinkId::fromName("r_gripper_tool_frame"),
-                      tesseract::common::LinkId::fromName("base_link"),
+                      "r_gripper_tool_frame",
+                      "base_link",
                       start_pose_mod,
                       end_pose_mod);
   const Eigen::VectorXd coeff = Eigen::VectorXd::Ones(info.indices.rows());
@@ -192,8 +192,8 @@ TEST_F(CartesianLineConstraintUnit, GetSetBounds)  // NOLINT
 
   // Check that setting bounds works
   info = CartLineInfo(manip,
-                      tesseract::common::LinkId::fromName("r_gripper_tool_frame"),
-                      tesseract::common::LinkId::fromName("base_link"),
+                      "r_gripper_tool_frame",
+                      "base_link",
                       line_start_pose,
                       line_end_pose);
   const Eigen::VectorXd coeff = Eigen::VectorXd::Ones(info.indices.rows());
