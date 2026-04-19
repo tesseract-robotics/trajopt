@@ -52,16 +52,16 @@ struct convert<trajopt_common::CollisionCoeffData>
     if (!pair_data.empty())
     {
       Node pair_coeff_data_node(YAML::NodeType::Sequence);
-      for (const auto& [key, coeff] : pair_data)
+      for (const auto& [key, entry] : pair_data)
       {
         Node key_node(NodeType::Sequence);
-        key_node.push_back(key.first.name());
-        key_node.push_back(key.second.name());
+        key_node.push_back(entry.name1);
+        key_node.push_back(entry.name2);
 
         // tell yaml-cpp "emit this sequence in [a, b] inline style"
         key_node.SetStyle(YAML::EmitterStyle::Flow);
 
-        pair_coeff_data_node[key_node] = coeff;
+        pair_coeff_data_node[key_node] = entry.coeff;
       }
       node["pair_coeff_data"] = pair_coeff_data_node;
     }
