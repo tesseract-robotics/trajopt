@@ -29,7 +29,6 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <array>
 #include <memory>
 #include <functional>
-#include <string>
 #include <unordered_set>
 #include <tesseract/collision/types.h>
 #include <tesseract/common/types.h>
@@ -48,8 +47,16 @@ void save(Archive& ar, const CollisionCoeffData& obj);
 template <class Archive>
 void load(Archive& ar, CollisionCoeffData& obj);
 
+/** @brief Value stored in each coefficient-pair entry — names for serialization/display, coefficient for lookups. */
+struct PairCoeffEntry
+{
+  std::string name1;
+  std::string name2;
+  double coeff{ 0 };
+};
+
 using PairsCollisionCoeffData =
-    std::unordered_map<tesseract::common::LinkIdPair, double, tesseract::common::LinkIdPair::Hash>;
+    std::unordered_map<tesseract::common::LinkIdPair, PairCoeffEntry, tesseract::common::LinkIdPair::Hash>;
 
 /** @brief Stores information about how the margins allowed between collision objects */
 class CollisionCoeffData
@@ -77,11 +84,6 @@ public:
 
   /**
    * @brief Set the coefficient for a given contact pair
-   */
-  void setCollisionCoeff(const tesseract::common::LinkIdPair& pair, double collision_coeff);
-
-  /**
-   * @brief Set the coefficient for a given contact pair
    *
    * The order of the object ids does not matter, that is handled internal to
    * the class.
@@ -95,16 +97,14 @@ public:
                          double collision_coeff);
 
   /**
-   * @brief Set the coefficient for a given contact pair
+   * @brief Get the pairs collision coefficient
    *
-   * The order of the object ids does not matter, that is handled internal to
-   * the class.
+   * If a collision coeff for the request pair does not exist it returns the default collision coeff
    *
-   * @param obj1 The first object name. Order doesn't matter
-   * @param obj2 The Second object name. Order doesn't matter
-   * @param collision_coeff Coefficient
+   * @param pair The object pair
+   * @return Coefficient
    */
-  void setCollisionCoeff(const std::string& obj1, const std::string& obj2, double collision_coeff);
+  double getCollisionCoeff(const tesseract::common::LinkIdPair& pair) const;
 
   /**
    * @brief Get the pairs collision coefficient
@@ -115,27 +115,19 @@ public:
    * @param obj2 The second object name
    * @return Coefficient
    */
-  /** @brief Tier 1 — LinkIdPair overload (primary implementation) */
-  double getCollisionCoeff(const tesseract::common::LinkIdPair& pair) const;
-
-  /** @brief Tier 2 — LinkId overload, delegates to LinkIdPair overload */
   double getCollisionCoeff(const tesseract::common::LinkId& id1, const tesseract::common::LinkId& id2) const;
-
-  /** @brief Tier 3 — string overload */
-  double getCollisionCoeff(const std::string& obj1, const std::string& obj2) const;
 
   /**
    * @brief Check if a pair has zero coefficient
    * @return True if the pair has zero coefficient
    */
-  /** @brief Tier 1 — LinkIdPair overload (primary implementation) */
   bool hasZeroCoeff(const tesseract::common::LinkIdPair& pair) const;
 
-  /** @brief Tier 2 — LinkId overload, delegates to LinkIdPair overload */
+  /**
+   * @brief Check if a pair has zero coefficient
+   * @return True if the pair has zero coefficient
+   */
   bool hasZeroCoeff(const tesseract::common::LinkId& id1, const tesseract::common::LinkId& id2) const;
-
-  /** @brief Tier 3 — string overload */
-  bool hasZeroCoeff(const std::string& obj1, const std::string& obj2) const;
 
   /**
    * @brief Get all collision coefficient pair data
