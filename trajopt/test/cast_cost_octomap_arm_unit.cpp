@@ -62,8 +62,8 @@ public:
 
     gLogLevel = trajopt_common::LevelError;
 
-    // Create a 0.4m octree at resolution 0.2m (2^3 = 8 voxels).
-    // Coarse resolution keeps collision checking fast while still exercising the octree code path.
+    // 0.4m octree at resolution 0.2m (2^3 = 8 voxels). Coarse resolution keeps collision
+    // checking fast while still exercising the octree code path.
     octomap::Pointcloud point_cloud;
     const double delta = 0.2;
     const double half_size = 0.2;
@@ -95,8 +95,8 @@ public:
     new_link.collision.push_back(collision);
 
     // Place the octree where the arm sweeps through during the arm_around_table motion.
-    // At (0.5, -0.3, 0.8) relative to base_link, the initial straight-line trajectory
-    // passes through the octree with multiple arm links.
+    // At (0.5, -0.3, 0.8) relative to base_link, the initial trajectory passes through the
+    // octree with multiple arm links — both Bullet and Coal detect many octree contacts here.
     Joint new_joint("base_link-octomap_attached");
     new_joint.type = JointType::FIXED;
     new_joint.parent_link_id = LinkId("base_link");
@@ -255,127 +255,136 @@ struct OptResult
 {
   sco::OptStatus status;
   double cost;
-  int disc_octree_contacts;
-  double min_octree_distance;
+  bool final_collision_free;
 };
 
-/**
- * @brief Run trajopt optimization with the given continuous backend and verify with discrete check.
- *
- * Uses a small number of iterations to keep runtime reasonable (~20s per iteration with octrees).
- * The goal is not to find a collision-free trajectory but to verify both backends make comparable
- * optimization progress.
- */
-static OptResult optimizeAndVerify(Environment::Ptr env, const std::string& manager_name)
+/** @brief Build a fresh boxbot environment with an octree obstacle for optimizer comparison. */
+static Environment::Ptr buildBoxbotOctreeEnv()
 {
-  EXPECT_TRUE(env->setActiveContinuousContactManager(manager_name));
+  auto env = std::make_shared<Environment>();
+  const std::filesystem::path urdf_file(std::string(TRAJOPT_DATA_DIR) + "/boxbot_world.urdf");
+  const std::filesystem::path srdf_file(std::string(TRAJOPT_DATA_DIR) + "/boxbot.srdf");
+  const ResourceLocator::Ptr locator = std::make_shared<tesseract::common::GeneralResourceLocator>();
+  EXPECT_TRUE(env->init(urdf_file, srdf_file, locator));
 
-  const Json::Value root = readJsonFile(std::string(TRAJOPT_DATA_DIR) + "/config/arm_around_table.json");
+  octomap::Pointcloud point_cloud;
+  const double delta = 0.05;
+  auto length = static_cast<int>(1 / delta);
+  for (int x = 0; x < length; ++x)
+    for (int y = 0; y < length; ++y)
+      for (int z = 0; z < length; ++z)
+        point_cloud.push_back(-0.5F + static_cast<float>(x * delta),
+                              -0.5F + static_cast<float>(y * delta),
+                              -0.5F + static_cast<float>(z * delta));
 
-  std::unordered_map<std::string, double> ipos;
-  ipos["torso_lift_joint"] = 0;
-  ipos["r_shoulder_pan_joint"] = -1.832;
-  ipos["r_shoulder_lift_joint"] = -0.332;
-  ipos["r_upper_arm_roll_joint"] = -1.011;
-  ipos["r_elbow_flex_joint"] = -1.437;
-  ipos["r_forearm_roll_joint"] = -1.1;
-  ipos["r_wrist_flex_joint"] = -1.926;
-  ipos["r_wrist_roll_joint"] = 3.074;
-  env->setState(ipos);
+  const std::shared_ptr<octomap::OcTree> octree = std::make_shared<octomap::OcTree>(2 * delta);
+  octree->insertPointCloud(point_cloud, octomap::point3d(0, 0, 0));
 
-  ProblemConstructionInfo pci(env);
-  pci.fromJson(root);
-  pci.basic_info.convex_solver = sco::ModelType::OSQP;
-  const TrajOptProb::Ptr prob = ConstructProblem(pci);
-  EXPECT_TRUE(!!prob);
-  if (!prob)
-    return { sco::INVALID, 0.0, -1, 0.0 };
+  const Octree::Ptr coll_octree = std::make_shared<Octree>(octree, OctreeSubType::BOX);
+  auto vis_box = std::make_shared<Box>(1.0, 1.0, 1.0);
 
-  const std::vector<std::string>& joint_names = prob->GetKin()->getJointNames();
-  const std::vector<std::string>& active_links = prob->GetKin()->getActiveLinkNames();
-  const tesseract::scene_graph::StateSolver::UPtr state_solver = prob->GetEnv()->getStateSolver();
+  auto visual = std::make_shared<Visual>();
+  visual->geometry = vis_box;
+  visual->origin = Eigen::Isometry3d::Identity();
 
-  auto opt = std::make_shared<sco::BasicTrustRegionSQP>(prob);
-  // Few iterations keep runtime manageable (~20s/iter with octree collision checking).
-  // Enough for the optimizer to show avoidance progress if the backend provides gradients.
-  opt->getParameters().max_iter = 3;
-  opt->getParameters().max_merit_coeff_increases = 1;
-  opt->initialize(trajToDblVec(prob->GetInitTraj()));
-  const double t_start = GetClock();
-  opt->optimize();
-  CONSOLE_BRIDGE_logError("%s optimization: %.1fs, status=%d",
-                          manager_name.c_str(),
-                          (GetClock() - t_start) / 1000.0,
-                          static_cast<int>(opt->results().status));
+  auto collision = std::make_shared<Collision>();
+  collision->geometry = coll_octree;
+  collision->origin = Eigen::Isometry3d::Identity();
 
-  const double final_cost = opt->results().total_cost;
-  TrajArray final_traj = getTraj(opt->x(), prob->GetVars());
+  Link new_link("octomap_attached");
+  new_link.visual.push_back(visual);
+  new_link.collision.push_back(collision);
 
-  // Verify final trajectory with discrete Bullet (independent ground truth)
-  const DiscreteContactManager::Ptr disc_mgr = prob->GetEnv()->getDiscreteContactManager();
-  disc_mgr->setActiveCollisionObjects(active_links);
-  disc_mgr->setDefaultCollisionMargin(0);
+  Joint new_joint("base_link-octomap_attached");
+  new_joint.type = JointType::FIXED;
+  new_joint.parent_link_id = LinkId("base_link");
+  new_joint.child_link_id = LinkId("octomap_attached");
 
-  tesseract::collision::CollisionCheckConfig disc_config;
-  disc_config.type = tesseract::collision::CollisionEvaluatorType::LVS_DISCRETE;
-  disc_config.longest_valid_segment_length = 0.02;
-
-  std::vector<ContactResultMap> disc_collisions;
-  checkTrajectory(disc_collisions, *disc_mgr, *state_solver, joint_names, final_traj, disc_config);
-  int disc_octree = countLinkContacts(disc_collisions, "octomap_attached");
-
-  // Find the minimum (most-penetrating) distance among octree contacts
-  double min_dist = 0.0;
-  for (const auto& step : disc_collisions)
-    for (const auto& pair : step)
-      for (const auto& r : pair.second)
-        if (r.link_ids[0]== "octomap_attached" || r.link_ids[1]== "octomap_attached")
-          min_dist = std::min(min_dist, r.distance);
-
-  CONSOLE_BRIDGE_logError(
-      "%s: cost=%.1f, octree contacts=%d, min dist=%.4f", manager_name.c_str(), final_cost, disc_octree, min_dist);
-  if (disc_octree > 0)
-    logContacts(disc_collisions, manager_name, "octomap_attached");
-
-  return { opt->results().status, final_cost, disc_octree, min_dist };
+  env->applyCommand(std::make_shared<AddLinkCommand>(new_link, new_joint));
+  return env;
 }
 
 /**
- * @brief Verify Coal produces equivalent optimization results to Bullet on octree scenarios.
+ * @brief Optimize the box_cast_test problem with the named continuous backend.
  *
- * Both backends run a few optimizer iterations on the same arm-around-table problem with an octree
- * obstacle. The test asserts Coal is no worse than Bullet: similar cost, similar or fewer residual
- * octree contacts, and no deeper penetration. Neither backend is expected to fully solve this
- * problem in so few iterations.
+ * Returns the optimizer status, final cost, and whether the final trajectory is collision-free.
  */
-TEST_F(CastOctomapArmTest, optimization_discrete_verify)  // NOLINT
+static OptResult optimizeBoxbotOctree(const std::string& manager_name)
 {
-  auto bullet = optimizeAndVerify(env_, "BulletCastBVHManager");
-  auto coal = optimizeAndVerify(env_, "CoalCastBVHManager");
+  const Environment::Ptr env = buildBoxbotOctreeEnv();
+  EXPECT_TRUE(env->setActiveContinuousContactManager(manager_name));
 
-  CONSOLE_BRIDGE_logError("Summary: Bullet cost=%.1f octree=%d min_dist=%.4f, "
-                          "Coal cost=%.1f octree=%d min_dist=%.4f",
+  std::unordered_map<std::string, double> ipos;
+  ipos["boxbot_x_joint"] = -1.9;
+  ipos["boxbot_y_joint"] = 0;
+  env->setState(ipos);
+
+  const Json::Value root = readJsonFile(std::string(TRAJOPT_DATA_DIR) + "/config/box_cast_test.json");
+  const TrajOptProb::Ptr prob = ConstructProblem(root, env);
+  EXPECT_TRUE(!!prob);
+  if (!prob)
+    return { sco::INVALID, 0.0, false };
+
+  const tesseract::scene_graph::StateSolver::UPtr state_solver = prob->GetEnv()->getStateSolver();
+  const ContinuousContactManager::Ptr manager = prob->GetEnv()->getContinuousContactManager();
+  manager->setActiveCollisionObjects(prob->GetKin()->getActiveLinkNames());
+  manager->setDefaultCollisionMargin(0);
+
+  auto opt = std::make_shared<sco::BasicTrustRegionSQP>(prob);
+  opt->initialize(trajToDblVec(prob->GetInitTraj()));
+  const double t_start = GetClock();
+  const sco::OptStatus status = opt->optimize();
+  CONSOLE_BRIDGE_logError("%s optimization: %.1fs, status=%d",
+                          manager_name.c_str(),
+                          (GetClock() - t_start) / 1000.0,
+                          static_cast<int>(status));
+
+  tesseract::collision::CollisionCheckConfig config;
+  config.type = tesseract::collision::CollisionEvaluatorType::CONTINUOUS;
+  std::vector<ContactResultMap> collisions;
+  const bool in_collision = checkTrajectory(
+      collisions, *manager, *state_solver, prob->GetKin()->getJointNames(), getTraj(opt->x(), prob->GetVars()), config);
+
+  return { status, opt->results().total_cost, !in_collision };
+}
+
+/**
+ * @brief Verify Coal matches Bullet on octree-based continuous collision optimization.
+ *
+ * Runs the boxbot `box_cast_test` problem twice — once with Bullet's cast BVH manager, once with
+ * Coal's — and asserts both backends drive the SQP to a collision-free trajectory with comparable
+ * cost. This exercises the full optimizer loop (convexification, QP solve, line search) with
+ * octree-generated gradients from each backend.
+ *
+ * Uses the simpler boxbot scene rather than the arm scene of `continuous_detection_gap` because
+ * the PR2 arm deeply penetrates the large octree on its initial trajectory, producing too many
+ * simultaneous contact normals for OSQP to resolve on the first convex subproblem — the arm
+ * scene exercises detection (see `continuous_detection_gap`) but cannot exercise optimization
+ * without a separate scene.
+ */
+TEST(CastOctomapOptimization, bullet_vs_coal)  // NOLINT
+{
+  const OptResult bullet = optimizeBoxbotOctree("BulletCastBVHManager");
+  const OptResult coal = optimizeBoxbotOctree("CoalCastBVHManager");
+
+  CONSOLE_BRIDGE_logError("Summary: Bullet status=%d cost=%.3f free=%d, Coal status=%d cost=%.3f free=%d",
+                          static_cast<int>(bullet.status),
                           bullet.cost,
-                          bullet.disc_octree_contacts,
-                          bullet.min_octree_distance,
+                          bullet.final_collision_free ? 1 : 0,
+                          static_cast<int>(coal.status),
                           coal.cost,
-                          coal.disc_octree_contacts,
-                          coal.min_octree_distance);
+                          coal.final_collision_free ? 1 : 0);
 
-  // Coal should produce no more octree contacts than Bullet
-  EXPECT_LE(coal.disc_octree_contacts, bullet.disc_octree_contacts + 2) << "Coal produced significantly more octree "
-                                                                           "contacts than Bullet";
+  EXPECT_EQ(bullet.status, sco::OptStatus::OPT_CONVERGED) << "Bullet baseline should converge";
+  EXPECT_EQ(coal.status, sco::OptStatus::OPT_CONVERGED) << "Coal should converge like Bullet";
+  EXPECT_TRUE(bullet.final_collision_free) << "Bullet baseline should produce a collision-free trajectory";
+  EXPECT_TRUE(coal.final_collision_free) << "Coal should produce a collision-free trajectory like Bullet";
 
-  // Coal's deepest penetration should not be much worse than Bullet's
-  EXPECT_GE(coal.min_octree_distance, bullet.min_octree_distance - 0.01) << "Coal penetrates octree significantly "
-                                                                            "deeper than Bullet";
-
-  // Coal's final cost should be in the same ballpark as Bullet's
-  if (bullet.cost > 0)
-  {
-    EXPECT_LT(coal.cost, bullet.cost * 2.0) << "Coal's optimization cost is much higher than Bullet's, suggesting "
-                                               "weaker gradients";
-  }
+  // Both backends solve the same QP on the same scene to convergence, so the converged cost
+  // (dominated by joint_vel, not collision) should match tightly. A 1% band absorbs minor
+  // numerical differences in contact normals without masking real regressions.
+  EXPECT_NEAR(coal.cost, bullet.cost, 0.01 * std::abs(bullet.cost)) << "Coal's final cost diverges from Bullet's, "
+                                                                       "suggesting gradient-quality regression";
 }
 
 int main(int argc, char** argv)
