@@ -51,7 +51,7 @@ struct convert<trajopt_common::CollisionCoeffData>
     const auto& pair_data = rhs.getCollisionCoeffPairData();
     if (!pair_data.empty())
     {
-      Node pair_coeff_data_node(YAML::NodeType::Sequence);
+      Node pair_coeff_data_node(YAML::NodeType::Map);
       for (const auto& [key, entry] : pair_data)
       {
         Node key_node(NodeType::Sequence);
