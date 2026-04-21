@@ -89,7 +89,7 @@ void runTest(const Environment::Ptr& env, bool use_multi_threaded)
   const tesseract::scene_graph::StateSolver::UPtr state_solver = prob->GetEnv()->getStateSolver();
   const ContinuousContactManager::Ptr manager = prob->GetEnv()->getContinuousContactManager();
 
-  manager->setActiveCollisionObjects(prob->GetKin()->getActiveLinkNames());
+  manager->setActiveCollisionObjects(prob->GetKin()->getActiveLinkIds());
   manager->setDefaultCollisionMargin(0);
 
   tesseract::collision::CollisionCheckConfig config;

@@ -55,8 +55,7 @@ struct PairCoeffEntry
   double coeff{ 0 };
 };
 
-using PairsCollisionCoeffData =
-    std::unordered_map<tesseract::common::LinkIdPair, PairCoeffEntry, tesseract::common::LinkIdPair::Hash>;
+using PairsCollisionCoeffData = std::unordered_map<tesseract::common::LinkIdPair, PairCoeffEntry>;
 
 /** @brief Stores information about how the margins allowed between collision objects */
 class CollisionCoeffData
@@ -139,8 +138,7 @@ public:
    * @brief Get the pairs with zero coeff
    * @return A set of LinkIdPairs with zero coeff
    */
-  const std::unordered_set<tesseract::common::LinkIdPair, tesseract::common::LinkIdPair::Hash>&
-  getPairsWithZeroCoeff() const;
+  const std::unordered_set<tesseract::common::LinkIdPair>& getPairsWithZeroCoeff() const;
 
   bool operator==(const CollisionCoeffData& rhs) const;
   bool operator!=(const CollisionCoeffData& rhs) const;
@@ -153,7 +151,7 @@ private:
   PairsCollisionCoeffData lookup_table_;
 
   /// Pairs containing zero coeff
-  std::unordered_set<tesseract::common::LinkIdPair, tesseract::common::LinkIdPair::Hash> zero_coeff_;
+  std::unordered_set<tesseract::common::LinkIdPair> zero_coeff_;
 
   template <class Archive>
   friend void ::trajopt_common::save(Archive& ar, const CollisionCoeffData& obj);

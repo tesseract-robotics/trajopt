@@ -129,7 +129,7 @@ void runLinkWithGeomTest(const Environment::Ptr& env, const Visualization::Ptr& 
   const tesseract::scene_graph::StateSolver::UPtr state_solver = prob->GetEnv()->getStateSolver();
   const ContinuousContactManager::Ptr manager = prob->GetEnv()->getContinuousContactManager();
 
-  manager->setActiveCollisionObjects(prob->GetKin()->getActiveLinkNames());
+  manager->setActiveCollisionObjects(prob->GetKin()->getActiveLinkIds());
   manager->setDefaultCollisionMargin(0);
 
   tesseract::collision::CollisionCheckConfig config;
@@ -189,7 +189,7 @@ void runLinkWithoutGeomTest(const Environment::Ptr& env, const Visualization::Pt
   const tesseract::scene_graph::StateSolver::UPtr state_solver = prob->GetEnv()->getStateSolver();
   const ContinuousContactManager::Ptr manager = prob->GetEnv()->getContinuousContactManager();
 
-  manager->setActiveCollisionObjects(prob->GetKin()->getActiveLinkNames());
+  manager->setActiveCollisionObjects(prob->GetKin()->getActiveLinkIds());
   manager->setDefaultCollisionMargin(0);
 
   tesseract::collision::CollisionCheckConfig config;
