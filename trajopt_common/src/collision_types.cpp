@@ -48,8 +48,7 @@ void CollisionCoeffData::setCollisionCoeff(const tesseract::common::LinkId& obj1
   auto [it, inserted] = lookup_table_.try_emplace(pair);
   if (!inserted)
   {
-    tesseract::common::checkPairHashCollision(
-        "CollisionCoeffData", name1, name2, it->second.name1, it->second.name2);
+    tesseract::common::checkPairHashCollision("CollisionCoeffData", name1, name2, it->second.name1, it->second.name2);
     it->second.coeff = collision_coeff;
   }
   else
@@ -89,8 +88,7 @@ bool CollisionCoeffData::hasZeroCoeff(const tesseract::common::LinkId& id1, cons
 
 const PairsCollisionCoeffData& CollisionCoeffData::getCollisionCoeffPairData() const { return lookup_table_; }
 
-const std::unordered_set<tesseract::common::LinkIdPair, tesseract::common::LinkIdPair::Hash>&
-CollisionCoeffData::getPairsWithZeroCoeff() const
+const std::unordered_set<tesseract::common::LinkIdPair>& CollisionCoeffData::getPairsWithZeroCoeff() const
 {
   return zero_coeff_;
 }

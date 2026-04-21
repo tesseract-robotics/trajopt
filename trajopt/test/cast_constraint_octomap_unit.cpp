@@ -230,7 +230,7 @@ void runConstraintTest(const Environment::Ptr& env,
 
   CONSOLE_BRIDGE_logError("CastConstraintOctomapTest using continuous manager: %s", manager->getName().c_str());
 
-  manager->setActiveCollisionObjects(prob->GetKin()->getActiveLinkNames());
+  manager->setActiveCollisionObjects(prob->GetKin()->getActiveLinkIds());
   manager->setDefaultCollisionMargin(0);
 
   tesseract::collision::CollisionCheckConfig config;

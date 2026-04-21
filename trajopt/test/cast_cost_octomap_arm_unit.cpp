@@ -166,8 +166,8 @@ TEST_F(CastOctomapArmTest, continuous_detection_gap)  // NOLINT
   const TrajOptProb::Ptr prob = ConstructProblem(pci);
   ASSERT_TRUE(!!prob);
 
-  const std::vector<std::string>& joint_names = prob->GetKin()->getJointNames();
-  const std::vector<std::string>& active_links = prob->GetKin()->getActiveLinkNames();
+  const std::vector<tesseract::common::JointId>& joint_ids = prob->GetKin()->getJointIds();
+  const std::vector<tesseract::common::LinkId>& active_links = prob->GetKin()->getActiveLinkIds();
   const TrajArray& init_traj = prob->GetInitTraj();
   const tesseract::scene_graph::StateSolver::UPtr state_solver = prob->GetEnv()->getStateSolver();
 
@@ -186,7 +186,7 @@ TEST_F(CastOctomapArmTest, continuous_detection_gap)  // NOLINT
   bullet_mgr->setDefaultCollisionMargin(0);
 
   std::vector<ContactResultMap> bullet_collisions;
-  bool bullet_found = checkTrajectory(bullet_collisions, *bullet_mgr, *state_solver, joint_names, init_traj, config);
+  bool bullet_found = checkTrajectory(bullet_collisions, *bullet_mgr, *state_solver, joint_ids, init_traj, config);
   int bullet_octree = countLinkContacts(bullet_collisions, "octomap_attached");
 
   CONSOLE_BRIDGE_logError(
@@ -200,7 +200,7 @@ TEST_F(CastOctomapArmTest, continuous_detection_gap)  // NOLINT
   coal_mgr->setDefaultCollisionMargin(0);
 
   std::vector<ContactResultMap> coal_collisions;
-  bool coal_found = checkTrajectory(coal_collisions, *coal_mgr, *state_solver, joint_names, init_traj, config);
+  bool coal_found = checkTrajectory(coal_collisions, *coal_mgr, *state_solver, joint_ids, init_traj, config);
   int coal_octree = countLinkContacts(coal_collisions, "octomap_attached");
 
   CONSOLE_BRIDGE_logError(
@@ -229,7 +229,7 @@ TEST_F(CastOctomapArmTest, continuous_detection_gap)  // NOLINT
   disc_config.longest_valid_segment_length = 0.02;
 
   std::vector<ContactResultMap> disc_collisions;
-  bool disc_found = checkTrajectory(disc_collisions, *disc_mgr, *state_solver, joint_names, init_traj, disc_config);
+  bool disc_found = checkTrajectory(disc_collisions, *disc_mgr, *state_solver, joint_ids, init_traj, disc_config);
   int disc_octree = countLinkContacts(disc_collisions, "octomap_attached");
 
   CONSOLE_BRIDGE_logError(
@@ -327,7 +327,7 @@ static OptResult optimizeBoxbotOctree(const std::string& manager_name)
 
   const tesseract::scene_graph::StateSolver::UPtr state_solver = prob->GetEnv()->getStateSolver();
   const ContinuousContactManager::Ptr manager = prob->GetEnv()->getContinuousContactManager();
-  manager->setActiveCollisionObjects(prob->GetKin()->getActiveLinkNames());
+  manager->setActiveCollisionObjects(prob->GetKin()->getActiveLinkIds());
   manager->setDefaultCollisionMargin(0);
 
   auto opt = std::make_shared<sco::BasicTrustRegionSQP>(prob);
