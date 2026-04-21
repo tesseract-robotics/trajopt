@@ -218,9 +218,9 @@ struct CollisionEvaluator
 protected:
   std::shared_ptr<const tesseract::kinematics::JointGroup> manip_;
   std::shared_ptr<const tesseract::environment::Environment> env_;
-  std::unordered_set<tesseract::common::LinkId, tesseract::common::LinkId::Hash> env_active_link_ids_;
-  std::unordered_set<tesseract::common::LinkId, tesseract::common::LinkId::Hash> manip_active_link_ids_;
-  std::unordered_set<tesseract::common::LinkId, tesseract::common::LinkId::Hash> diff_active_link_ids_;
+  std::unordered_set<tesseract::common::LinkId> env_active_link_ids_;
+  std::unordered_set<tesseract::common::LinkId> manip_active_link_ids_;
+  std::unordered_set<tesseract::common::LinkId> diff_active_link_ids_;
   tesseract::common::CollisionMarginData margin_data_;
   trajopt_common::CollisionCoeffData coeff_data_;
   double margin_buffer_{ 0.0 };
@@ -322,7 +322,7 @@ public:
   using Ptr = std::shared_ptr<SingleTimestepCollisionEvaluator>;
   using ConstPtr = std::shared_ptr<const SingleTimestepCollisionEvaluator>;
 
-  SingleTimestepCollisionEvaluator(std::shared_ptr<const tesseract::kinematics::JointGroup> manip,
+  SingleTimestepCollisionEvaluator(const std::shared_ptr<const tesseract::kinematics::JointGroup>& manip,
                                    std::shared_ptr<const tesseract::environment::Environment> env,
                                    const trajopt_common::TrajOptCollisionConfig& collision_config,
                                    sco::VarVector vars,
@@ -365,7 +365,7 @@ public:
   using Ptr = std::shared_ptr<CastCollisionEvaluator>;
   using ConstPtr = std::shared_ptr<const CastCollisionEvaluator>;
 
-  CastCollisionEvaluator(std::shared_ptr<const tesseract::kinematics::JointGroup> manip,
+  CastCollisionEvaluator(const std::shared_ptr<const tesseract::kinematics::JointGroup>& manip,
                          std::shared_ptr<const tesseract::environment::Environment> env,
                          const trajopt_common::TrajOptCollisionConfig& collision_config,
                          sco::VarVector vars0,
@@ -403,7 +403,7 @@ public:
   using Ptr = std::shared_ptr<DiscreteCollisionEvaluator>;
   using ConstPtr = std::shared_ptr<const DiscreteCollisionEvaluator>;
 
-  DiscreteCollisionEvaluator(std::shared_ptr<const tesseract::kinematics::JointGroup> manip,
+  DiscreteCollisionEvaluator(const std::shared_ptr<const tesseract::kinematics::JointGroup>& manip,
                              std::shared_ptr<const tesseract::environment::Environment> env,
                              const trajopt_common::TrajOptCollisionConfig& collision_config,
                              sco::VarVector vars0,
@@ -435,13 +435,13 @@ class CollisionCost : public sco::Cost, public Plotter
 {
 public:
   /* constructor for single timestep */
-  CollisionCost(std::shared_ptr<const tesseract::kinematics::JointGroup> manip,
+  CollisionCost(const std::shared_ptr<const tesseract::kinematics::JointGroup>& manip,
                 std::shared_ptr<const tesseract::environment::Environment> env,
                 const trajopt_common::TrajOptCollisionConfig& collision_config,
                 sco::VarVector vars,
                 CollisionExpressionEvaluatorType type);
   /* constructor for discrete continuous and cast continuous cost */
-  CollisionCost(std::shared_ptr<const tesseract::kinematics::JointGroup> manip,
+  CollisionCost(const std::shared_ptr<const tesseract::kinematics::JointGroup>& manip,
                 std::shared_ptr<const tesseract::environment::Environment> env,
                 const trajopt_common::TrajOptCollisionConfig& collision_config,
                 sco::VarVector vars0,
@@ -461,13 +461,13 @@ class CollisionConstraint : public sco::IneqConstraint
 {
 public:
   /* constructor for single timestep */
-  CollisionConstraint(std::shared_ptr<const tesseract::kinematics::JointGroup> manip,
+  CollisionConstraint(const std::shared_ptr<const tesseract::kinematics::JointGroup>& manip,
                       std::shared_ptr<const tesseract::environment::Environment> env,
                       const trajopt_common::TrajOptCollisionConfig& collision_config,
                       sco::VarVector vars,
                       CollisionExpressionEvaluatorType type);
   /* constructor for discrete continuous and cast continuous cost */
-  CollisionConstraint(std::shared_ptr<const tesseract::kinematics::JointGroup> manip,
+  CollisionConstraint(const std::shared_ptr<const tesseract::kinematics::JointGroup>& manip,
                       std::shared_ptr<const tesseract::environment::Environment> env,
                       const trajopt_common::TrajOptCollisionConfig& collision_config,
                       sco::VarVector vars0,

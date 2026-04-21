@@ -148,7 +148,7 @@ void runCastAttachedLinkWithGeomTest(const Environment::Ptr& env, bool fixed_siz
   const JointGroup::ConstPtr manip = env->getJointGroup("manipulator");
   const std::vector<trajopt_ifopt::Bounds> bounds = trajopt_ifopt::toBounds(manip->getLimits().joint_limits);
 
-  manager->setActiveCollisionObjects(manip->getActiveLinkNames());
+  manager->setActiveCollisionObjects(manip->getActiveLinkIds());
   manager->setDefaultCollisionMargin(0);
 
   // 3) Add Variables
@@ -288,7 +288,7 @@ void runCastAttachedLinkWithoutGeomTest(const Environment::Ptr& env, bool fixed_
   const JointGroup::ConstPtr manip = env->getJointGroup("manipulator");
   const std::vector<trajopt_ifopt::Bounds> bounds = trajopt_ifopt::toBounds(manip->getLimits().joint_limits);
 
-  manager->setActiveCollisionObjects(manip->getActiveLinkNames());
+  manager->setActiveCollisionObjects(manip->getActiveLinkIds());
   manager->setDefaultCollisionMargin(0);
 
   // 3) Add Variables

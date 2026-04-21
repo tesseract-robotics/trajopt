@@ -166,9 +166,9 @@ private:
   double margin_buffer_{ 0.0 };
   tesseract::collision::CollisionCheckConfig collision_check_config_;
   bool single_timestep_{ false };
-  std::unordered_set<tesseract::common::LinkId, tesseract::common::LinkId::Hash> env_active_link_ids_;
-  std::unordered_set<tesseract::common::LinkId, tesseract::common::LinkId::Hash> manip_active_link_ids_;
-  std::unordered_set<tesseract::common::LinkId, tesseract::common::LinkId::Hash> diff_active_link_ids_;
+  std::unordered_set<tesseract::common::LinkId> env_active_link_ids_;
+  std::unordered_set<tesseract::common::LinkId> manip_active_link_ids_;
+  std::unordered_set<tesseract::common::LinkId> diff_active_link_ids_;
   GetStateFn get_state_fn_;
   bool dynamic_environment_;
   std::shared_ptr<tesseract::collision::ContinuousContactManager> contact_manager_;
@@ -228,9 +228,9 @@ private:
   trajopt_common::CollisionCoeffData coeff_data_;
   double margin_buffer_{ 0.0 };
   tesseract::collision::CollisionCheckConfig collision_check_config_;
-  std::unordered_set<tesseract::common::LinkId, tesseract::common::LinkId::Hash> env_active_link_ids_;
-  std::unordered_set<tesseract::common::LinkId, tesseract::common::LinkId::Hash> manip_active_link_ids_;
-  std::unordered_set<tesseract::common::LinkId, tesseract::common::LinkId::Hash> diff_active_link_ids_;
+  std::unordered_set<tesseract::common::LinkId> env_active_link_ids_;
+  std::unordered_set<tesseract::common::LinkId> manip_active_link_ids_;
+  std::unordered_set<tesseract::common::LinkId> diff_active_link_ids_;
   GetStateFn get_state_fn_;
   bool dynamic_environment_;
   std::shared_ptr<tesseract::collision::DiscreteContactManager> contact_manager_;

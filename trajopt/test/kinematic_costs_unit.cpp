@@ -110,7 +110,7 @@ TEST_F(KinematicCostsTest, CartPoseJacCalculator)  // NOLINT
 //  env->setState(j);
 //  auto world_to_base = env->getCurrentState()->link_transforms.at(kin->getBaseLinkId());
 //  auto adjacency_map = std::make_shared<tesseract::environment::AdjacencyMap>(
-//      env->getSceneGraph(), kin->getActiveLinkNames(), env->getCurrentState()->link_transforms);
+//      env->getSceneGraph(), kin->getActiveLinkIds(), env->getCurrentState()->link_transforms);
 
 //  std::string link = "r_gripper_tool_frame";
 //  std::string target = "l_gripper_tool_frame";

@@ -513,9 +513,12 @@ void CollisionEvaluator::CalcDistExpressionsBothFree(const DblVec& x,
   const ContactResultVectorConstPtr dist_vec = GetContactResultVectorCached(x);
   const ContactResultVectorWrapper& dist_results = *dist_vec;
 
-  sco::AffExprVector exprs0, exprs1;
-  std::vector<double> exprs_margin0, exprs_margin1;
-  std::vector<double> exprs_coeff0, exprs_coeff1;
+  sco::AffExprVector exprs0;
+  sco::AffExprVector exprs1;
+  std::vector<double> exprs_margin0;
+  std::vector<double> exprs_margin1;
+  std::vector<double> exprs_coeff0;
+  std::vector<double> exprs_coeff1;
   CollisionsToDistanceExpressions(exprs0, exprs_margin0, exprs_coeff0, dist_results, vars0_, x, false);
   CollisionsToDistanceExpressions(exprs1, exprs_margin1, exprs_coeff1, dist_results, vars1_, x, true);
 
@@ -598,13 +601,13 @@ void CollisionEvaluator::removeInvalidContactResults(tesseract::collision::Conta
 }
 
 SingleTimestepCollisionEvaluator::SingleTimestepCollisionEvaluator(
-    std::shared_ptr<const tesseract::kinematics::JointGroup> manip,
+    const std::shared_ptr<const tesseract::kinematics::JointGroup>& manip,
     std::shared_ptr<const tesseract::environment::Environment> env,
     const trajopt_common::TrajOptCollisionConfig& collision_config,
     sco::VarVector vars,
     CollisionExpressionEvaluatorType type,
     bool dynamic_environment)
-  : CollisionEvaluator(std::move(manip), std::move(env), dynamic_environment)
+  : CollisionEvaluator(manip, std::move(env), dynamic_environment)
 {
   collision_check_config_ = collision_config.collision_check_config;
   if (collision_check_config_.type != tesseract::collision::CollisionEvaluatorType::DISCRETE)
@@ -732,19 +735,21 @@ void SingleTimestepCollisionEvaluator::Plot(const std::shared_ptr<tesseract::vis
     return margin_data_.getCollisionMargin(link1, link2);
   };
 
-  const tesseract::visualization::ContactResultsMarker cm(manip_->getActiveLinkNames(), dist_results_copy, margin_fn);
+  const tesseract::visualization::ContactResultsMarker cm(
+      tesseract::common::toNames(manip_->getActiveLinkIds()), dist_results_copy, margin_fn);
   plotter->plotMarker(cm);
 }
 
 ////////////////////////////////////////
 
-DiscreteCollisionEvaluator::DiscreteCollisionEvaluator(std::shared_ptr<const tesseract::kinematics::JointGroup> manip,
-                                                       std::shared_ptr<const tesseract::environment::Environment> env,
-                                                       const trajopt_common::TrajOptCollisionConfig& collision_config,
-                                                       sco::VarVector vars0,
-                                                       sco::VarVector vars1,
-                                                       CollisionExpressionEvaluatorType type)
-  : CollisionEvaluator(std::move(manip), std::move(env))
+DiscreteCollisionEvaluator::DiscreteCollisionEvaluator(
+    const std::shared_ptr<const tesseract::kinematics::JointGroup>& manip,
+    std::shared_ptr<const tesseract::environment::Environment> env,
+    const trajopt_common::TrajOptCollisionConfig& collision_config,
+    sco::VarVector vars0,
+    sco::VarVector vars1,
+    CollisionExpressionEvaluatorType type)
+  : CollisionEvaluator(manip, std::move(env))
 {
   collision_check_config_ = collision_config.collision_check_config;
   if (collision_check_config_.type != tesseract::collision::CollisionEvaluatorType::LVS_DISCRETE)
@@ -974,7 +979,8 @@ void DiscreteCollisionEvaluator::Plot(const std::shared_ptr<tesseract::visualiza
     return margin_data_.getCollisionMargin(link1, link2);
   };
 
-  const tesseract::visualization::ContactResultsMarker cm(manip_->getActiveLinkNames(), dist_results_copy, margin_fn);
+  const tesseract::visualization::ContactResultsMarker cm(
+      tesseract::common::toNames(manip_->getActiveLinkIds()), dist_results_copy, margin_fn);
   plotter->plotMarker(cm);
 }
 
@@ -982,13 +988,13 @@ sco::VarVector DiscreteCollisionEvaluator::GetVars() { return trajopt_common::co
 
 ////////////////////////////////////////
 
-CastCollisionEvaluator::CastCollisionEvaluator(std::shared_ptr<const tesseract::kinematics::JointGroup> manip,
+CastCollisionEvaluator::CastCollisionEvaluator(const std::shared_ptr<const tesseract::kinematics::JointGroup>& manip,
                                                std::shared_ptr<const tesseract::environment::Environment> env,
                                                const trajopt_common::TrajOptCollisionConfig& collision_config,
                                                sco::VarVector vars0,
                                                sco::VarVector vars1,
                                                CollisionExpressionEvaluatorType type)
-  : CollisionEvaluator(std::move(manip), std::move(env))
+  : CollisionEvaluator(manip, std::move(env))
 {
   collision_check_config_ = collision_config.collision_check_config;
   if (collision_check_config_.type != tesseract::collision::CollisionEvaluatorType::CONTINUOUS &&
@@ -1225,7 +1231,8 @@ void CastCollisionEvaluator::Plot(const std::shared_ptr<tesseract::visualization
     return margin_data_.getCollisionMargin(link1, link2);
   };
 
-  const tesseract::visualization::ContactResultsMarker cm(manip_->getActiveLinkNames(), dist_results_copy, margin_fn);
+  const tesseract::visualization::ContactResultsMarker cm(
+      tesseract::common::toNames(manip_->getActiveLinkIds()), dist_results_copy, margin_fn);
   plotter->plotMarker(cm);
 }
 
@@ -1233,7 +1240,7 @@ sco::VarVector CastCollisionEvaluator::GetVars() { return trajopt_common::concat
 
 //////////////////////////////////////////
 
-CollisionCost::CollisionCost(std::shared_ptr<const tesseract::kinematics::JointGroup> manip,
+CollisionCost::CollisionCost(const std::shared_ptr<const tesseract::kinematics::JointGroup>& manip,
                              std::shared_ptr<const tesseract::environment::Environment> env,
                              const trajopt_common::TrajOptCollisionConfig& collision_config,
                              sco::VarVector vars,
@@ -1241,10 +1248,10 @@ CollisionCost::CollisionCost(std::shared_ptr<const tesseract::kinematics::JointG
   : Cost("collision")
 {
   m_calc = std::make_shared<SingleTimestepCollisionEvaluator>(
-      std::move(manip), std::move(env), collision_config, std::move(vars), type);
+      manip, std::move(env), collision_config, std::move(vars), type);
 }
 
-CollisionCost::CollisionCost(std::shared_ptr<const tesseract::kinematics::JointGroup> manip,
+CollisionCost::CollisionCost(const std::shared_ptr<const tesseract::kinematics::JointGroup>& manip,
                              std::shared_ptr<const tesseract::environment::Environment> env,
                              const trajopt_common::TrajOptCollisionConfig& collision_config,
                              sco::VarVector vars0,
@@ -1256,13 +1263,13 @@ CollisionCost::CollisionCost(std::shared_ptr<const tesseract::kinematics::JointG
   {
     name_ = "discrete_continuous_collision";
     m_calc = std::make_shared<DiscreteCollisionEvaluator>(
-        std::move(manip), std::move(env), collision_config, std::move(vars0), std::move(vars1), type);
+        manip, std::move(env), collision_config, std::move(vars0), std::move(vars1), type);
   }
   else
   {
     name_ = "cast_continuous_collision";
     m_calc = std::make_shared<CastCollisionEvaluator>(
-        std::move(manip), std::move(env), collision_config, std::move(vars0), std::move(vars1), type);
+        manip, std::move(env), collision_config, std::move(vars0), std::move(vars1), type);
   }
 }
 
@@ -1318,7 +1325,7 @@ void CollisionCost::Plot(const std::shared_ptr<tesseract::visualization::Visuali
 }
 // ALMOST EXACTLY COPIED FROM CollisionCost
 
-CollisionConstraint::CollisionConstraint(std::shared_ptr<const tesseract::kinematics::JointGroup> manip,
+CollisionConstraint::CollisionConstraint(const std::shared_ptr<const tesseract::kinematics::JointGroup>& manip,
                                          std::shared_ptr<const tesseract::environment::Environment> env,
                                          const trajopt_common::TrajOptCollisionConfig& collision_config,
                                          sco::VarVector vars,
@@ -1326,10 +1333,10 @@ CollisionConstraint::CollisionConstraint(std::shared_ptr<const tesseract::kinema
 {
   name_ = "collision";
   m_calc = std::make_shared<SingleTimestepCollisionEvaluator>(
-      std::move(manip), std::move(env), collision_config, std::move(vars), type);
+      manip, std::move(env), collision_config, std::move(vars), type);
 }
 
-CollisionConstraint::CollisionConstraint(std::shared_ptr<const tesseract::kinematics::JointGroup> manip,
+CollisionConstraint::CollisionConstraint(const std::shared_ptr<const tesseract::kinematics::JointGroup>& manip,
                                          std::shared_ptr<const tesseract::environment::Environment> env,
                                          const trajopt_common::TrajOptCollisionConfig& collision_config,
                                          sco::VarVector vars0,
@@ -1341,13 +1348,13 @@ CollisionConstraint::CollisionConstraint(std::shared_ptr<const tesseract::kinema
   {
     name_ = "discrete_continuous_collision";
     m_calc = std::make_shared<DiscreteCollisionEvaluator>(
-        std::move(manip), std::move(env), collision_config, std::move(vars0), std::move(vars1), type);
+        manip, std::move(env), collision_config, std::move(vars0), std::move(vars1), type);
   }
   else
   {
     name_ = "cast_continuous_collision";
     m_calc = std::make_shared<CastCollisionEvaluator>(
-        std::move(manip), std::move(env), collision_config, std::move(vars0), std::move(vars1), type);
+        manip, std::move(env), collision_config, std::move(vars0), std::move(vars1), type);
   }
 }
 

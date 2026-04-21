@@ -104,7 +104,7 @@ void runPlanningTest(const Environment::Ptr& env)
   const JointGroup::ConstPtr manip = env->getJointGroup("right_arm");
   const std::vector<trajopt_ifopt::Bounds> bounds = trajopt_ifopt::toBounds(manip->getLimits().joint_limits);
 
-  manager->setActiveCollisionObjects(manip->getActiveLinkNames());
+  manager->setActiveCollisionObjects(manip->getActiveLinkIds());
   manager->setDefaultCollisionMargin(0);
 
   // Initial trajectory

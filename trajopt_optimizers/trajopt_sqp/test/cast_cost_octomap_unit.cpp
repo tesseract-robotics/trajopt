@@ -138,7 +138,7 @@ void runCastOctomapTest(const Environment::Ptr& env, bool fixed_size)
   const JointGroup::ConstPtr manip = env->getJointGroup("manipulator");
   const std::vector<trajopt_ifopt::Bounds> bounds = trajopt_ifopt::toBounds(manip->getLimits().joint_limits);
 
-  manager->setActiveCollisionObjects(manip->getActiveLinkNames());
+  manager->setActiveCollisionObjects(manip->getActiveLinkIds());
   manager->setDefaultCollisionMargin(0);
 
   // 3) Add Variables
