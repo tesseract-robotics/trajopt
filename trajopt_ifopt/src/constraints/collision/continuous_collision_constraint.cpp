@@ -310,10 +310,8 @@ int ContinuousCollisionConstraintD::update()
   for (const auto& key : sorted_keys_)
   {
     const auto& results = collision_data_->contact_results_map.at(key);
-    const double margin =
-        collision_evaluator_->getCollisionMarginData().getCollisionMargin(key);
-    const double coeff =
-        collision_evaluator_->getCollisionCoeffData().getCollisionCoeff(key);
+    const double margin = collision_evaluator_->getCollisionMarginData().getCollisionMargin(key);
+    const double coeff = collision_evaluator_->getCollisionCoeffData().getCollisionCoeff(key);
     for (const auto& contact_results : results)
     {
       coeffs_(i) = coeff;
