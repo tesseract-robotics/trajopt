@@ -81,7 +81,7 @@ public:
     kinematic_info = std::make_shared<InverseKinematicsInfo>(kin_group,
                                                              "base_footprint",
                                                              tesseract::common::LinkId("r_gripper_tool_"
-                                                                                                 "frame"));
+                                                                                       "frame"));
 
     auto pos = Eigen::VectorXd::Ones(kin_group->numJoints());
     std::vector<std::unique_ptr<Node>> nodes;
@@ -106,8 +106,7 @@ TEST_F(InverseKinematicsConstraintUnit, GetValue)  // NOLINT
 
   // Run FK to get target pose
   Eigen::VectorXd joint_position_single = Eigen::VectorXd::Zero(kin_group->numJoints());
-  auto target_pose =
-      kin_group->calcFwdKin(joint_position_single).at("r_gripper_tool_frame");
+  auto target_pose = kin_group->calcFwdKin(joint_position_single).at("r_gripper_tool_frame");
   constraint->setTargetPose(target_pose);
 
   // Set the joints to that joint position
