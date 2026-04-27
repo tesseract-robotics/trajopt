@@ -27,7 +27,7 @@ jobs:
     - name: vcs import
       run: >
         vcs import --input "${{ github.workspace }}/workspace/src/trajopt/.github/workflows/windows_dependencies.repos" workspace/src/
-    - uses: conda-incubator/setup-miniconda@v3
+    - uses: conda-incubator/setup-miniconda@v4
       with:
         channel-priority: strict
         environment-file: workspace/src/trajopt/.github/workflows/conda/environment.yml       
@@ -61,7 +61,7 @@ jobs:
     - name: vcs import
       run: >
         vcs import --input "${{ github.workspace }}/workspace/src/trajopt/.github/workflows/windows_dependencies.repos" workspace/src/
-    - uses: conda-incubator/setup-miniconda@v3
+    - uses: conda-incubator/setup-miniconda@v4
       with:
         channel-priority: strict
         environment-file: workspace/src/trajopt/.github/workflows/conda/environment.yml
