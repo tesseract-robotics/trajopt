@@ -21,9 +21,13 @@ TRAJOPT_IGNORE_WARNINGS_POP
 #include <trajopt_common/logging.hpp>
 #include <trajopt_common/vector_ops.hpp>
 
+#include <tesseract/common/types.h>
 #include <tesseract/kinematics/joint_group.h>
 #include <tesseract/environment/environment.h>
 #include <tesseract/visualization/visualization.h>
+
+using tesseract::common::JointId;
+using tesseract::common::LinkId;
 
 namespace
 {
@@ -318,10 +322,10 @@ void generateInitTraj(TrajArray& init_traj, const ProblemConstructionInfo& pci)
     tesseract::scene_graph::SceneState state = pci.env->getState();
     Eigen::VectorXd start_pos(pci.kin->numJoints());
     int i = 0;
-    for (const auto& joint : pci.kin->getJointNames())
+    for (const auto& jid : pci.kin->getJointIds())
     {
-      assert(state.joints.find(joint) != state.joints.end());
-      start_pos[i] = state.joints[joint];
+      assert(state.joints.find(jid) != state.joints.end());
+      start_pos[i] = state.joints[jid];
       ++i;
     }
 
@@ -332,10 +336,10 @@ void generateInitTraj(TrajArray& init_traj, const ProblemConstructionInfo& pci)
     tesseract::scene_graph::SceneState state = pci.env->getState();
     Eigen::VectorXd start_pos(pci.kin->numJoints());
     int i = 0;
-    for (const auto& joint : pci.kin->getJointNames())
+    for (const auto& jid : pci.kin->getJointIds())
     {
-      assert(state.joints.find(joint) != state.joints.end());
-      start_pos[i] = state.joints[joint];
+      assert(state.joints.find(jid) != state.joints.end());
+      start_pos[i] = state.joints[jid];
       ++i;
     }
 
@@ -555,11 +559,13 @@ TrajOptProb::TrajOptProb(int n_steps, const ProblemConstructionInfo& pci)
 {
   const Eigen::MatrixX2d& limits = m_kin->getLimits().joint_limits;
   auto n_dof = m_kin->numJoints();
-  Eigen::VectorXd lower, upper;
+  Eigen::VectorXd lower;
+  Eigen::VectorXd upper;
   lower = limits.col(0);
   upper = limits.col(1);
 
-  DblVec vlower, vupper;
+  DblVec vlower;
+  DblVec vupper;
   if (pci.basic_info.use_time)
   {
     vlower.reserve((lower.size() + 1) * n_steps);
@@ -694,8 +700,10 @@ void DynamicCartPoseTermInfo::fromJson(ProblemConstructionInfo& pci, const Json:
   json_marshal::childFromJson(params, timestep, "timestep", pci.basic_info.n_steps - 1);
   json_marshal::childFromJson(params, pos_coeffs, "pos_coeffs", Eigen::Vector3d(1, 1, 1));
   json_marshal::childFromJson(params, rot_coeffs, "rot_coeffs", Eigen::Vector3d(1, 1, 1));
-  json_marshal::childFromJson(params, source_frame, "source_frame");
-  json_marshal::childFromJson(params, target_frame, "target_frame");
+  std::string source_frame_name;
+  std::string target_frame_name;
+  json_marshal::childFromJson(params, source_frame_name, "source_frame");
+  json_marshal::childFromJson(params, target_frame_name, "target_frame");
   json_marshal::childFromJson(params, source_frame_offset_xyz, "source_frame_offset_xyz", Eigen::Vector3d(0, 0, 0));
   json_marshal::childFromJson(
       params, source_frame_offset_wxyz, "source_frame_offset_wxyz", Eigen::Vector4d(1, 0, 0, 0));
@@ -717,23 +725,26 @@ void DynamicCartPoseTermInfo::fromJson(ProblemConstructionInfo& pci, const Json:
   target_frame_offset.linear() = target_q.matrix();
   target_frame_offset.translation() = target_frame_offset_xyz;
 
-  if (!pci.kin->hasLinkName(source_frame))
+  source_frame = LinkId(source_frame_name);
+  target_frame = LinkId(target_frame_name);
+
+  if (!pci.kin->hasLinkId(source_frame))
   {
-    PRINT_AND_THROW(boost::format("invalid source frame: %s") % source_frame);
+    PRINT_AND_THROW(boost::format("invalid source frame: %s") % source_frame_name);
   }
 
-  if (!pci.kin->hasLinkName(target_frame))
+  if (!pci.kin->hasLinkId(target_frame))
   {
-    PRINT_AND_THROW(boost::format("invalid target frame: %s") % target_frame);
+    PRINT_AND_THROW(boost::format("invalid target frame: %s") % target_frame_name);
   }
 
-  const bool source_active = pci.kin->isActiveLinkName(source_frame);
-  const bool target_active = pci.kin->isActiveLinkName(target_frame);
+  const bool source_active = pci.kin->isActiveLinkId(source_frame);
+  const bool target_active = pci.kin->isActiveLinkId(target_frame);
 
   if (!(source_active && target_active))
   {
-    PRINT_AND_THROW(boost::format("source '%s' and target '%s' are not both active links") % source_frame %
-                    target_frame);
+    PRINT_AND_THROW(boost::format("source '%s' and target '%s' are not both active links") % source_frame_name %
+                    target_frame_name);
   }
 
   const char* all_fields[] = { "timestep",
@@ -835,8 +846,10 @@ void CartPoseTermInfo::fromJson(ProblemConstructionInfo& pci, const Json::Value&
   json_marshal::childFromJson(params, timestep, "timestep", pci.basic_info.n_steps - 1);
   json_marshal::childFromJson(params, pos_coeffs, "pos_coeffs", Eigen::Vector3d(1, 1, 1));
   json_marshal::childFromJson(params, rot_coeffs, "rot_coeffs", Eigen::Vector3d(1, 1, 1));
-  json_marshal::childFromJson(params, source_frame, "source_frame");
-  json_marshal::childFromJson(params, target_frame, "target_frame");
+  std::string source_frame_name;
+  std::string target_frame_name;
+  json_marshal::childFromJson(params, source_frame_name, "source_frame");
+  json_marshal::childFromJson(params, target_frame_name, "target_frame");
   json_marshal::childFromJson(params, source_frame_offset_xyz, "source_frame_offset_xyz", Eigen::Vector3d(0, 0, 0));
   json_marshal::childFromJson(
       params, source_frame_offset_wxyz, "source_frame_offset_wxyz", Eigen::Vector4d(1, 0, 0, 0));
@@ -858,26 +871,31 @@ void CartPoseTermInfo::fromJson(ProblemConstructionInfo& pci, const Json::Value&
   target_frame_offset.linear() = target_q.matrix();
   target_frame_offset.translation() = target_frame_offset_xyz;
 
-  if (!pci.kin->hasLinkName(source_frame))
+  source_frame = LinkId(source_frame_name);
+  target_frame = LinkId(target_frame_name);
+
+  if (!pci.kin->hasLinkId(source_frame))
   {
-    PRINT_AND_THROW(boost::format("invalid source frame: %s") % source_frame);
+    PRINT_AND_THROW(boost::format("invalid source frame: %s") % source_frame_name);
   }
 
-  if (!pci.kin->hasLinkName(target_frame))
+  if (!pci.kin->hasLinkId(target_frame))
   {
-    PRINT_AND_THROW(boost::format("invalid target frame: %s") % target_frame);
+    PRINT_AND_THROW(boost::format("invalid target frame: %s") % target_frame_name);
   }
 
-  const bool source_active = pci.kin->isActiveLinkName(source_frame);
-  const bool target_active = pci.kin->isActiveLinkName(target_frame);
+  const bool source_active = pci.kin->isActiveLinkId(source_frame);
+  const bool target_active = pci.kin->isActiveLinkId(target_frame);
   if (source_active && target_active)
   {
-    PRINT_AND_THROW(boost::format("source '%s' and target '%s' are both active") % source_frame % target_frame);
+    PRINT_AND_THROW(boost::format("source '%s' and target '%s' are both active") % source_frame_name %
+                    target_frame_name);
   }
 
   if (!source_active && !target_active)
   {
-    PRINT_AND_THROW(boost::format("source '%s' and target '%s' are both static") % source_frame % target_frame);
+    PRINT_AND_THROW(boost::format("source '%s' and target '%s' are both static") % source_frame_name %
+                    target_frame_name);
   }
 
   const char* all_fields[] = { "timestep",
@@ -979,9 +997,10 @@ void CartVelTermInfo::fromJson(ProblemConstructionInfo& pci, const Json::Value& 
   FAIL_IF_FALSE((first_step >= 0) && (first_step <= pci.basic_info.n_steps - 1) && (first_step < last_step));
   FAIL_IF_FALSE((last_step > 0) && (last_step <= pci.basic_info.n_steps - 1));
 
+  std::string link;
   json_marshal::childFromJson(params, link, "link");
-  const std::vector<std::string>& link_names = pci.kin->getActiveLinkNames();
-  if (std::find(link_names.begin(), link_names.end(), link) == link_names.end())
+  link_id = LinkId(link);
+  if (!pci.kin->isActiveLinkId(link_id))
   {
     PRINT_AND_THROW(boost::format("invalid link name: %s") % link);
   }
@@ -1006,8 +1025,8 @@ void CartVelTermInfo::hatch(TrajOptProb& prob)
   {
     for (int iStep = first_step; iStep <= last_step; ++iStep)
     {
-      auto f = std::make_shared<CartVelErrCalculator>(prob.GetKin(), link, max_displacement);
-      auto dfdx = std::make_shared<CartVelJacCalculator>(prob.GetKin(), link, max_displacement);
+      auto f = std::make_shared<CartVelErrCalculator>(prob.GetKin(), link_id, max_displacement);
+      auto dfdx = std::make_shared<CartVelJacCalculator>(prob.GetKin(), link_id, max_displacement);
       prob.addCost(std::make_shared<TrajOptCostFromErrFunc>(
           f,
           dfdx,
@@ -1021,8 +1040,8 @@ void CartVelTermInfo::hatch(TrajOptProb& prob)
   {
     for (int iStep = first_step; iStep <= last_step; ++iStep)
     {
-      auto f = std::make_shared<CartVelErrCalculator>(prob.GetKin(), link, max_displacement);
-      auto dfdx = std::make_shared<CartVelJacCalculator>(prob.GetKin(), link, max_displacement);
+      auto f = std::make_shared<CartVelErrCalculator>(prob.GetKin(), link_id, max_displacement);
+      auto dfdx = std::make_shared<CartVelJacCalculator>(prob.GetKin(), link_id, max_displacement);
       prob.addConstraint(std::make_shared<TrajOptConstraintFromErrFunc>(
           f,
           dfdx,
@@ -1670,12 +1689,14 @@ void CollisionTermInfo::fromJson(ProblemConstructionInfo& pci, const Json::Value
       json_marshal::childFromJson(*it, pair_coeffs, "coeffs");
       json_marshal::childFromJson(*it, pair_dist_pen, "dist_pen");
 
+      const auto link_id = tesseract::common::LinkId(link);
       for (const auto& p : pair)
       {
-        config.contact_manager_config.pair_margin_data.setCollisionMargin(link, p, pair_dist_pen);
+        const auto p_id = tesseract::common::LinkId(p);
+        config.contact_manager_config.pair_margin_data.setCollisionMargin(link_id, p_id, pair_dist_pen);
         config.contact_manager_config.pair_margin_override_type =
             tesseract::collision::CollisionMarginPairOverrideType::MODIFY;
-        config.collision_coeff_data.setCollisionCoeff(link, p, pair_coeffs);
+        config.collision_coeff_data.setCollisionCoeff(link_id, p_id, pair_coeffs);
       }
     }
   }
@@ -1886,16 +1907,16 @@ void AvoidSingularityTermInfo::hatch(TrajOptProb& prob)
   sco::MatrixOfVector::Ptr dfdx;
 
   // Check if the subset kinematics are specified and its joint set is a subset of the problem's joint set
-  if (subset_kin_ && isSuperset(subset_kin_->getJointNames(), kin->getJointNames()))
+  if (subset_kin_ && isSuperset(subset_kin_->getJointIds(), kin->getJointIds()))
   {
-    f = std::make_shared<AvoidSingularitySubsetErrCalculator>(subset_kin_, kin, link, lambda);
-    dfdx = std::make_shared<AvoidSingularitySubsetJacCalculator>(subset_kin_, kin, link, lambda);
+    f = std::make_shared<AvoidSingularitySubsetErrCalculator>(subset_kin_, kin, link_id, lambda);
+    dfdx = std::make_shared<AvoidSingularitySubsetJacCalculator>(subset_kin_, kin, link_id, lambda);
   }
   else
   {
     // Otherwise create a singularity cost and jacobian calculator with the problem's full set of joints
-    f = std::make_shared<AvoidSingularityErrCalculator>(kin, link, lambda);
-    dfdx = std::make_shared<AvoidSingularityJacCalculator>(kin, link, lambda);
+    f = std::make_shared<AvoidSingularityErrCalculator>(kin, link_id, lambda);
+    dfdx = std::make_shared<AvoidSingularityJacCalculator>(kin, link_id, lambda);
   }
 
   auto n_dof = static_cast<int>(kin->numJoints());

@@ -84,15 +84,17 @@ TEST_F(KinematicCostsTest, CartPoseJacCalculator)  // NOLINT
 
   const std::string source_frame = env_->getRootLinkName();
   const std::string target_frame = "r_gripper_tool_frame";
-  const Eigen::Isometry3d source_frame_offset = env_->getState().link_transforms.at(target_frame);
+  const Eigen::Isometry3d source_frame_offset = env_->getState().link_transforms.at(LinkId(target_frame));
   const Eigen::Isometry3d target_frame_offset =
       Eigen::Isometry3d::Identity() * Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitZ());
 
   Eigen::VectorXd values(7);
   values << -1.1, 1.2, -3.3, -1.4, 5.5, -1.6, 7.7;
 
-  const CartPoseErrCalculator f(kin, source_frame, target_frame, source_frame_offset, target_frame_offset);
-  const CartPoseJacCalculator dfdx(kin, source_frame, target_frame, source_frame_offset, target_frame_offset);
+  const CartPoseErrCalculator f(
+      kin, LinkId(source_frame), LinkId(target_frame), source_frame_offset, target_frame_offset);
+  const CartPoseJacCalculator dfdx(
+      kin, LinkId(source_frame), LinkId(target_frame), source_frame_offset, target_frame_offset);
   checkJacobian(f, dfdx, values, 1.0e-5);
 }
 
@@ -106,9 +108,9 @@ TEST_F(KinematicCostsTest, CartPoseJacCalculator)  // NOLINT
 //  std::unordered_map<std::string, double> j;
 //  j["l_elbow_flex_joint"] = -0.15;
 //  env->setState(j);
-//  auto world_to_base = env->getCurrentState()->link_transforms.at(kin->getBaseLinkName());
+//  auto world_to_base = env->getCurrentState()->link_transforms.at(kin->getBaseLinkId());
 //  auto adjacency_map = std::make_shared<tesseract::environment::AdjacencyMap>(
-//      env->getSceneGraph(), kin->getActiveLinkNames(), env->getCurrentState()->link_transforms);
+//      env->getSceneGraph(), kin->getActiveLinkIds(), env->getCurrentState()->link_transforms);
 
 //  std::string link = "r_gripper_tool_frame";
 //  std::string target = "l_gripper_tool_frame";

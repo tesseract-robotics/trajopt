@@ -3,6 +3,7 @@
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <Eigen/Geometry>
 #include <functional>
+#include <tesseract/common/types.h>
 #include <tesseract/kinematics/fwd.h>
 #include <tesseract/visualization/fwd.h>
 TRAJOPT_IGNORE_WARNINGS_POP
@@ -17,7 +18,7 @@ using ErrorFunctionType = std::function<Eigen::VectorXd(const Eigen::Isometry3d&
 using ErrorDiffFunctionType = std::function<Eigen::VectorXd(const Eigen::VectorXd&,
                                                             const Eigen::Isometry3d&,
                                                             const Eigen::Isometry3d&,
-                                                            tesseract::common::TransformMap&)>;
+                                                            tesseract::common::LinkIdTransformMap&)>;
 
 /**
  * @brief Used to calculate the error for CartPoseTermInfo
@@ -30,11 +31,11 @@ struct DynamicCartPoseErrCalculator : public TrajOptVectorOfVector
   /** @brief Manipulator kinematics object */
   std::shared_ptr<const tesseract::kinematics::JointGroup> manip_;
 
-  /** @brief The name of the link to track relative to target_frame_*/
-  std::string source_frame_;
+  /** @brief The link to track relative to target_frame_ */
+  tesseract::common::LinkId source_frame_;
 
-  /** @brief The name of the target frame to track relative to source_frame_ */
-  std::string target_frame_;
+  /** @brief The target frame to track relative to source_frame_ */
+  tesseract::common::LinkId target_frame_;
 
   /** @brief The offset transform to apply to source_frame_ location */
   Eigen::Isometry3d source_frame_offset_;
@@ -56,8 +57,8 @@ struct DynamicCartPoseErrCalculator : public TrajOptVectorOfVector
 
   DynamicCartPoseErrCalculator(
       std::shared_ptr<const tesseract::kinematics::JointGroup> manip,
-      std::string source_frame,
-      std::string target_frame,
+      tesseract::common::LinkId source_frame,
+      tesseract::common::LinkId target_frame,
       const Eigen::Isometry3d& source_frame_offset = Eigen::Isometry3d::Identity(),
       const Eigen::Isometry3d& target_frame_offset = Eigen::Isometry3d::Identity(),
       const Eigen::VectorXi& indices = Eigen::Matrix<int, 1, 6>(std::vector<int>({ 0, 1, 2, 3, 4, 5 }).data()),
@@ -78,14 +79,14 @@ struct DynamicCartPoseJacCalculator : TrajOptMatrixOfVector
   /** @brief Manipulator kinematics object */
   std::shared_ptr<const tesseract::kinematics::JointGroup> manip_;
 
-  /** @brief The name of the link to track relative to target_frame_*/
-  std::string source_frame_;
+  /** @brief The link to track relative to target_frame_ */
+  tesseract::common::LinkId source_frame_;
 
   /** @brief The offset transform to apply to source_frame_ location */
   Eigen::Isometry3d source_frame_offset_;
 
-  /** @brief The name of the target frame to track relative to source_frame_ */
-  std::string target_frame_;
+  /** @brief The target frame to track relative to source_frame_ */
+  tesseract::common::LinkId target_frame_;
 
   /** @brief A offset transform to be applied to target_frame_ location */
   Eigen::Isometry3d target_frame_offset_;
@@ -103,8 +104,8 @@ struct DynamicCartPoseJacCalculator : TrajOptMatrixOfVector
 
   DynamicCartPoseJacCalculator(
       std::shared_ptr<const tesseract::kinematics::JointGroup> manip,
-      std::string source_frame,
-      std::string target_frame,
+      tesseract::common::LinkId source_frame,
+      tesseract::common::LinkId target_frame,
       const Eigen::Isometry3d& source_frame_offset = Eigen::Isometry3d::Identity(),
       const Eigen::Isometry3d& target_frame_offset = Eigen::Isometry3d::Identity(),
       const Eigen::VectorXi& indices = Eigen::Matrix<int, 1, 6>(std::vector<int>({ 0, 1, 2, 3, 4, 5 }).data()));
@@ -121,14 +122,14 @@ struct CartPoseErrCalculator : public TrajOptVectorOfVector
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   std::shared_ptr<const tesseract::kinematics::JointGroup> manip_;
 
-  /** @brief The name of the link to track relative to target_frame_*/
-  std::string source_frame_;
+  /** @brief The link to track relative to target_frame_ */
+  tesseract::common::LinkId source_frame_;
 
   /** @brief The offset transform to apply to source_frame_ location */
   Eigen::Isometry3d source_frame_offset_;
 
-  /** @brief The name of the target link to track relative to source_frame_ */
-  std::string target_frame_;
+  /** @brief The target link to track relative to source_frame_ */
+  tesseract::common::LinkId target_frame_;
 
   /** @brief A offset transform to be applied to target_frame_ location */
   Eigen::Isometry3d target_frame_offset_;
@@ -150,8 +151,8 @@ struct CartPoseErrCalculator : public TrajOptVectorOfVector
 
   CartPoseErrCalculator(
       std::shared_ptr<const tesseract::kinematics::JointGroup> manip,
-      std::string source_frame,
-      std::string target_frame,
+      tesseract::common::LinkId source_frame,
+      tesseract::common::LinkId target_frame,
       const Eigen::Isometry3d& source_frame_offset = Eigen::Isometry3d::Identity(),
       const Eigen::Isometry3d& target_frame_offset = Eigen::Isometry3d::Identity(),
       const Eigen::VectorXi& indices = Eigen::Matrix<int, 1, 6>(std::vector<int>({ 0, 1, 2, 3, 4, 5 }).data()),
@@ -171,14 +172,14 @@ struct CartPoseJacCalculator : TrajOptMatrixOfVector
 
   std::shared_ptr<const tesseract::kinematics::JointGroup> manip_;
 
-  /** @brief The name of the link to track relative to target_frame_*/
-  std::string source_frame_;
+  /** @brief The link to track relative to target_frame_ */
+  tesseract::common::LinkId source_frame_;
 
   /** @brief The offset transform to apply to source_frame_ location */
   Eigen::Isometry3d source_frame_offset_;
 
-  /** @brief The name of the target link to track relative to source_frame_ */
-  std::string target_frame_;
+  /** @brief The target link to track relative to source_frame_ */
+  tesseract::common::LinkId target_frame_;
 
   /** @brief A offset transform to be applied to target_frame_ location */
   Eigen::Isometry3d target_frame_offset_;
@@ -202,8 +203,8 @@ struct CartPoseJacCalculator : TrajOptMatrixOfVector
 
   CartPoseJacCalculator(
       std::shared_ptr<const tesseract::kinematics::JointGroup> manip,
-      std::string source_frame,
-      std::string target_frame,
+      tesseract::common::LinkId source_frame,
+      tesseract::common::LinkId target_frame,
       const Eigen::Isometry3d& source_frame_offset = Eigen::Isometry3d::Identity(),
       const Eigen::Isometry3d& target_frame_offset = Eigen::Isometry3d::Identity(),
       const Eigen::VectorXi& indices = Eigen::Matrix<int, 1, 6>(std::vector<int>({ 0, 1, 2, 3, 4, 5 }).data()));
@@ -220,10 +221,10 @@ struct CartVelJacCalculator : TrajOptMatrixOfVector
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   std::shared_ptr<const tesseract::kinematics::JointGroup> manip_;
   double limit_;
-  std::string link_;
+  tesseract::common::LinkId link_id_;
   Eigen::Isometry3d tcp_;
   CartVelJacCalculator(std::shared_ptr<const tesseract::kinematics::JointGroup> manip,
-                       std::string link,
+                       tesseract::common::LinkId link_id,
                        double limit,
                        const Eigen::Isometry3d& tcp = Eigen::Isometry3d::Identity());
 
@@ -238,11 +239,11 @@ struct CartVelErrCalculator : TrajOptVectorOfVector
 {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   std::shared_ptr<const tesseract::kinematics::JointGroup> manip_;
-  std::string link_;
+  tesseract::common::LinkId link_id_;
   double limit_;
   Eigen::Isometry3d tcp_;
   CartVelErrCalculator(std::shared_ptr<const tesseract::kinematics::JointGroup> manip,
-                       std::string link,
+                       tesseract::common::LinkId link_id,
                        double limit,
                        const Eigen::Isometry3d& tcp = Eigen::Isometry3d::Identity());
 
@@ -322,16 +323,15 @@ struct AvoidSingularityErrCalculator : TrajOptVectorOfVector
 {
   /** @brief Forward kinematics (and robot jacobian) calculator */
   std::shared_ptr<const tesseract::kinematics::JointGroup> fwd_kin_;
-  /** @brief The name of the robot link for which to calculate the robot jacobian (required because of kinematic trees)
-   */
-  std::string link_name_;
+  /** @brief The robot link for which to calculate the robot jacobian (required because of kinematic trees) */
+  tesseract::common::LinkId link_id_;
   /** @brief Damping factor to prevent the cost from becoming infinite when the smallest singular value is very close or
    * equal to zero */
   double lambda_;
   AvoidSingularityErrCalculator(std::shared_ptr<const tesseract::kinematics::JointGroup> fwd_kin,
-                                std::string link_name,
+                                tesseract::common::LinkId link_id,
                                 double lambda = 1.0e-3)
-    : fwd_kin_(std::move(fwd_kin)), link_name_(std::move(link_name)), lambda_(lambda)
+    : fwd_kin_(std::move(fwd_kin)), link_id_(std::move(link_id)), lambda_(lambda)
   {
   }
   Eigen::VectorXd operator()(const Eigen::VectorXd& var_vals) const override;
@@ -342,9 +342,8 @@ struct AvoidSingularityJacCalculator : TrajOptMatrixOfVector
 {
   /** @brief Forward kinematics (and robot jacobian) calculator */
   std::shared_ptr<const tesseract::kinematics::JointGroup> fwd_kin_;
-  /** @brief The name of the robot link for which to calculate the robot jacobian (required because of kinematic trees)
-   */
-  std::string link_name_;
+  /** @brief The robot link for which to calculate the robot jacobian (required because of kinematic trees) */
+  tesseract::common::LinkId link_id_;
   /** @brief Damping factor to prevent the cost from becoming infinite when the smallest singular value is very close or
    * equal to zero */
   double lambda_;
@@ -352,10 +351,10 @@ struct AvoidSingularityJacCalculator : TrajOptMatrixOfVector
    * robot jacobian */
   double eps_;
   AvoidSingularityJacCalculator(std::shared_ptr<const tesseract::kinematics::JointGroup> fwd_kin,
-                                std::string link_name,
+                                tesseract::common::LinkId link_id,
                                 double lambda = 1.0e-3,
                                 double eps = 1.0e-6)
-    : fwd_kin_(std::move(fwd_kin)), link_name_(std::move(link_name)), lambda_(lambda), eps_(eps)
+    : fwd_kin_(std::move(fwd_kin)), link_id_(std::move(link_id)), lambda_(lambda), eps_(eps)
   {
   }
   /** @brief Helper function for numerically calculating the partial derivative of the jacobian */
@@ -374,9 +373,9 @@ struct AvoidSingularitySubsetErrCalculator : AvoidSingularityErrCalculator
   std::shared_ptr<const tesseract::kinematics::JointGroup> superset_kin_;
   AvoidSingularitySubsetErrCalculator(std::shared_ptr<const tesseract::kinematics::JointGroup> subset_kin,
                                       std::shared_ptr<const tesseract::kinematics::JointGroup> superset_kin,
-                                      std::string link_name,
+                                      tesseract::common::LinkId link_id,
                                       double lambda = 1.0e-3)
-    : AvoidSingularityErrCalculator(std::move(subset_kin), std::move(link_name), lambda)
+    : AvoidSingularityErrCalculator(std::move(subset_kin), std::move(link_id), lambda)
     , superset_kin_(std::move(superset_kin))
   {
   }
@@ -389,10 +388,10 @@ struct AvoidSingularitySubsetJacCalculator : AvoidSingularityJacCalculator
   std::shared_ptr<const tesseract::kinematics::JointGroup> superset_kin_;
   AvoidSingularitySubsetJacCalculator(std::shared_ptr<const tesseract::kinematics::JointGroup> subset_kin,
                                       std::shared_ptr<const tesseract::kinematics::JointGroup> superset_kin,
-                                      std::string link_name,
+                                      tesseract::common::LinkId link_id,
                                       double lambda = 1.0e-3,
                                       double eps = 1.0e-6)
-    : AvoidSingularityJacCalculator(std::move(subset_kin), std::move(link_name), lambda, eps)
+    : AvoidSingularityJacCalculator(std::move(subset_kin), std::move(link_id), lambda, eps)
     , superset_kin_(std::move(superset_kin))
   {
   }

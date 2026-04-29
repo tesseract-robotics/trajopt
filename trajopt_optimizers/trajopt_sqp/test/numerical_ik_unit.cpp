@@ -90,7 +90,7 @@ void runNumericalIKTest(const Environment::Ptr& env)
   const JointGroup::ConstPtr manip = env->getJointGroup("left_arm");
   const std::vector<trajopt_ifopt::Bounds> bounds = trajopt_ifopt::toBounds(manip->getLimits().joint_limits);
 
-  manager->setActiveCollisionObjects(manip->getActiveLinkNames());
+  manager->setActiveCollisionObjects(manip->getActiveLinkIds());
   manager->setDefaultCollisionMargin(0);
 
   // 3) Add Variables
@@ -178,7 +178,7 @@ void runNumericalIKWithToleranceTest(const Environment::Ptr& env)
   const JointGroup::ConstPtr manip = env->getJointGroup("left_arm");
   const std::vector<trajopt_ifopt::Bounds> bounds = trajopt_ifopt::toBounds(manip->getLimits().joint_limits);
 
-  manager->setActiveCollisionObjects(manip->getActiveLinkNames());
+  manager->setActiveCollisionObjects(manip->getActiveLinkIds());
   manager->setDefaultCollisionMargin(0);
 
   // 3) Add Variables

@@ -94,7 +94,7 @@ void runTest(const Environment::Ptr& env, const Visualization::Ptr& /*plotter*/,
   std::stringstream ss;
   ss << toVectorXd(opt->x()).transpose();
   CONSOLE_BRIDGE_logDebug("Initial Vars: %s", ss.str().c_str());
-  const Eigen::Isometry3d change_base = prob->GetEnv()->getLinkTransform(prob->GetKin()->getBaseLinkName());
+  const Eigen::Isometry3d change_base = prob->GetEnv()->getLinkTransform(prob->GetKin()->getBaseLinkId());
   Eigen::Isometry3d initial_pose = prob->GetKin()->calcFwdKin(toVectorXd(opt->x())).at("l_gripper_tool_frame");
   initial_pose = change_base * initial_pose;
 

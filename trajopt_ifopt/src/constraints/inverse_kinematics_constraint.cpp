@@ -28,22 +28,23 @@
 
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <tesseract/kinematics/kinematic_group.h>
+#include <tesseract/common/types.h>
 #include <console_bridge/console.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace trajopt_ifopt
 {
 InverseKinematicsInfo::InverseKinematicsInfo(std::shared_ptr<const tesseract::kinematics::KinematicGroup> manip,
-                                             std::string working_frame,
-                                             std::string tcp_frame,
+                                             tesseract::common::LinkId working_frame,
+                                             tesseract::common::LinkId tcp_frame,
                                              const Eigen::Isometry3d& tcp_offset)  // NOLINT(modernize-pass-by-value)
   : manip(std::move(manip))
   , working_frame(std::move(working_frame))
   , tcp_frame(std::move(tcp_frame))
   , tcp_offset(tcp_offset)
 {
-  if (!this->manip->hasLinkName(this->tcp_frame))
-    throw std::runtime_error("Link name '" + this->tcp_frame + "' provided does not exist.");
+  if (!this->manip->hasLinkId(this->tcp_frame))
+    throw std::runtime_error("Link name '" + this->tcp_frame.name() + "' provided does not exist.");
 }
 
 InverseKinematicsConstraint::InverseKinematicsConstraint(
