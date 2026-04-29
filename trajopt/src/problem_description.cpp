@@ -1689,12 +1689,14 @@ void CollisionTermInfo::fromJson(ProblemConstructionInfo& pci, const Json::Value
       json_marshal::childFromJson(*it, pair_coeffs, "coeffs");
       json_marshal::childFromJson(*it, pair_dist_pen, "dist_pen");
 
+      const auto link_id = tesseract::common::LinkId(link);
       for (const auto& p : pair)
       {
-        config.contact_manager_config.pair_margin_data.setCollisionMargin(link, p, pair_dist_pen);
+        const auto p_id = tesseract::common::LinkId(p);
+        config.contact_manager_config.pair_margin_data.setCollisionMargin(link_id, p_id, pair_dist_pen);
         config.contact_manager_config.pair_margin_override_type =
             tesseract::collision::CollisionMarginPairOverrideType::MODIFY;
-        config.collision_coeff_data.setCollisionCoeff(link, p, pair_coeffs);
+        config.collision_coeff_data.setCollisionCoeff(link_id, p_id, pair_coeffs);
       }
     }
   }

@@ -72,9 +72,9 @@ public:
     for (int x = 0; x < length; ++x)
       for (int y = 0; y < length; ++y)
         for (int z = 0; z < length; ++z)
-          point_cloud.push_back(static_cast<float>(-half_size + (x + 0.5) * delta),
-                                static_cast<float>(-half_size + (y + 0.5) * delta),
-                                static_cast<float>(-half_size + (z + 0.5) * delta));
+          point_cloud.push_back(static_cast<float>(-half_size + ((x + 0.5) * delta)),
+                                static_cast<float>(-half_size + ((y + 0.5) * delta)),
+                                static_cast<float>(-half_size + ((z + 0.5) * delta)));
 
     const std::shared_ptr<octomap::OcTree> octree = std::make_shared<octomap::OcTree>(delta);
     octree->insertPointCloud(point_cloud, octomap::point3d(0, 0, 0));
@@ -99,8 +99,8 @@ public:
     // octree with multiple arm links — both Bullet and Coal detect many octree contacts here.
     Joint new_joint("base_link-octomap_attached");
     new_joint.type = JointType::FIXED;
-    new_joint.parent_link_id = LinkId("base_link");
-    new_joint.child_link_id = LinkId("octomap_attached");
+    new_joint.parent_link_id = "base_link";
+    new_joint.child_link_id = "octomap_attached";
     new_joint.parent_to_joint_origin_transform = Eigen::Isometry3d::Identity();
     new_joint.parent_to_joint_origin_transform.translation() = Eigen::Vector3d(0.5, -0.3, 0.8);
 
@@ -297,8 +297,8 @@ static Environment::Ptr buildBoxbotOctreeEnv()
 
   Joint new_joint("base_link-octomap_attached");
   new_joint.type = JointType::FIXED;
-  new_joint.parent_link_id = LinkId("base_link");
-  new_joint.child_link_id = LinkId("octomap_attached");
+  new_joint.parent_link_id = "base_link";
+  new_joint.child_link_id = "octomap_attached";
 
   env->applyCommand(std::make_shared<AddLinkCommand>(new_link, new_joint));
   return env;
