@@ -41,7 +41,7 @@ void load(Archive& ar, CollisionCoeffData& obj)
   std::map<std::pair<std::string, std::string>, double> compat;
   ar(cereal::make_nvp("lookup_table", compat));
   for (const auto& [names, coeff] : compat)
-    obj.setCollisionCoeff(names.first, names.second, coeff);
+    obj.setCollisionCoeff(tesseract::common::LinkId(names.first), tesseract::common::LinkId(names.second), coeff);
 
   // zero_coeff_ is rebuilt by setCollisionCoeff, so just consume the archive field
   std::set<std::pair<std::string, std::string>> zero_compat;

@@ -107,8 +107,8 @@ TEST(CartPositionOptimizationTrajoptSCO, cart_position_optimization_trajopt_sco)
     pose->term_type = TermType::TT_CNT;
     pose->name = "waypoint_cart_0";
     pose->timestep = 0;
-    pose->source_frame = LinkId("r_gripper_tool_frame");
-    pose->target_frame = LinkId("base_footprint");
+    pose->source_frame = "r_gripper_tool_frame";
+    pose->target_frame = "base_footprint";
     pose->target_frame_offset = target_pose;
     pose->pos_coeffs = Eigen::Vector3d(1, 1, 1);
     pose->rot_coeffs = Eigen::Vector3d(1, 1, 1);

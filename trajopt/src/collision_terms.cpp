@@ -731,12 +731,12 @@ void SingleTimestepCollisionEvaluator::Plot(const std::shared_ptr<tesseract::vis
     }
   }
 
-  auto margin_fn = [this](const std::string& link1, const std::string& link2) {
+  auto margin_fn = [this](const tesseract::common::LinkId& link1, const tesseract::common::LinkId& link2) {
     return margin_data_.getCollisionMargin(link1, link2);
   };
 
   const tesseract::visualization::ContactResultsMarker cm(
-      tesseract::common::toNames(manip_->getActiveLinkIds()), dist_results_copy, margin_fn);
+      manip_->getActiveLinkIds(), dist_results_copy, margin_fn);
   plotter->plotMarker(cm);
 }
 
@@ -975,12 +975,12 @@ void DiscreteCollisionEvaluator::Plot(const std::shared_ptr<tesseract::visualiza
     }
   }
 
-  auto margin_fn = [this](const std::string& link1, const std::string& link2) {
+  auto margin_fn = [this](const tesseract::common::LinkId& link1, const tesseract::common::LinkId& link2) {
     return margin_data_.getCollisionMargin(link1, link2);
   };
 
   const tesseract::visualization::ContactResultsMarker cm(
-      tesseract::common::toNames(manip_->getActiveLinkIds()), dist_results_copy, margin_fn);
+      manip_->getActiveLinkIds(), dist_results_copy, margin_fn);
   plotter->plotMarker(cm);
 }
 
@@ -1227,12 +1227,11 @@ void CastCollisionEvaluator::Plot(const std::shared_ptr<tesseract::visualization
     }
   }
 
-  auto margin_fn = [this](const std::string& link1, const std::string& link2) {
+  auto margin_fn = [this](const tesseract::common::LinkId& link1, const tesseract::common::LinkId& link2) {
     return margin_data_.getCollisionMargin(link1, link2);
   };
 
-  const tesseract::visualization::ContactResultsMarker cm(
-      tesseract::common::toNames(manip_->getActiveLinkIds()), dist_results_copy, margin_fn);
+  const tesseract::visualization::ContactResultsMarker cm(manip_->getActiveLinkIds(), dist_results_copy, margin_fn);
   plotter->plotMarker(cm);
 }
 

@@ -78,10 +78,7 @@ public:
     n_dof = kin_group->numJoints();
     joint_bounds = toBounds(kin_group->getLimits().joint_limits);
 
-    kinematic_info = std::make_shared<InverseKinematicsInfo>(kin_group,
-                                                             "base_footprint",
-                                                             tesseract::common::LinkId("r_gripper_tool_"
-                                                                                       "frame"));
+    kinematic_info = std::make_shared<InverseKinematicsInfo>(kin_group, "base_footprint", "r_gripper_tool_frame");
 
     auto pos = Eigen::VectorXd::Ones(kin_group->numJoints());
     std::vector<std::unique_ptr<Node>> nodes;
