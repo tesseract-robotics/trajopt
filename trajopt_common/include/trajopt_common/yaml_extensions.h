@@ -85,7 +85,9 @@ struct convert<trajopt_common::CollisionCoeffData>
         if (!key_node.IsSequence() || key_node.size() != 2)
           return false;
 
-        rhs.setCollisionCoeff(key_node[0].as<std::string>(), key_node[1].as<std::string>(), it->second.as<double>());
+        rhs.setCollisionCoeff(tesseract::common::LinkId(key_node[0].as<std::string>()),
+                              tesseract::common::LinkId(key_node[1].as<std::string>()),
+                              it->second.as<double>());
       }
     }
 
