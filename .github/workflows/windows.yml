@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - master
+      - 'dev**'
   pull_request:
     paths:
       - 'trajopt**'
@@ -25,24 +26,18 @@ jobs:
       with:
         path: target_ws/src
 
-    - name: Setup cmake
-      uses: jwlawson/actions-setup-cmake@v2
-      with:
-        cmake-version: '3.28.x'
-
     - name: vcpkg build
       uses: johnwason/vcpkg-action@v7
       with:
         pkgs: >-
          fcl bullet3[multithreading,double-precision,rtti] octomap console-bridge eigen3 yaml-cpp boost-stacktrace
          benchmark tinyxml2 assimp orocos-kdl pcl lapack-reference boost-dll boost-filesystem boost-filesystem 
-         boost-format
+         boost-format cereal
          boost-serialization boost-program-options boost-graph urdfdom ccd[double-precision] gtest jsoncpp
         triplet: x64-windows-release
         extra-args: --clean-after-build
         token: ${{ github.token }}
         cache-key: ci-${{ matrix.os }}
-        github-binarycache: true
 
     - name: configure-msvc
       uses: ilammy/msvc-dev-cmd@v1
