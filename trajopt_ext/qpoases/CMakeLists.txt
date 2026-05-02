@@ -9,7 +9,7 @@ find_package(qpOASES QUIET)
 if(NOT qpOASES_FOUND AND NOT TRAJOPT_QPOASES_DISABLED)
   message(WARNING "No valid qpOASES version found. Cloning into build directory")
 
-  if (MSVC)
+  if(MSVC)
     set(QPOASES_BUILD_SHARED_LIBS OFF CACHE BOOL "Build qpOASES shared libs")
   else()
     set(QPOASES_BUILD_SHARED_LIBS ON CACHE BOOL "Build qpOASES shared libs")
