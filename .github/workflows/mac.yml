@@ -108,6 +108,13 @@ jobs:
           -DOpenMP_C_LIB_NAMES=libomp -DOpenMP_C_FLAGS="-Xpreprocessor -fopenmp" \
           -DOpenMP_libomp_LIBRARY=${{ matrix.config.homebrew_root }}/opt/libomp/lib/libomp.dylib \
           -Dtcmalloc_minimal_LIBRARY=${{ github.workspace }}/vcpkg/installed/${{ matrix.config.vcpkg_triplet }}/lib/libtcmalloc_minimal.dylib
-        run-tests-args: --merge-install --packages-ignore tesseract_examples trajopt_ifopt trajopt_sqp vhacd tesseract_python    
-
+        run-tests-args: --merge-install --packages-ignore tesseract_examples trajopt_ifopt trajopt_sqp vhacd tesseract_python
+    
+    - name: collect logs
+      if: failure()
+      uses: actions/upload-artifact@v7
+      with:
+        name: ci-win-logs-${{ matrix.config.name }}
+        path: ./**/*.log
+        retention-days: 7
     
