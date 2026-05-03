@@ -114,7 +114,7 @@ jobs:
       if: failure()
       uses: actions/upload-artifact@v7
       with:
-        name: ci-win-logs-${{ matrix.config.name }}
+        name: ci-mac-logs-${{ matrix.config.runner }}-${{ matrix.config.arch }}-${{ matrix.config.vcpkg_triplet }}
         path: ./**/*.log
         retention-days: 7
     
