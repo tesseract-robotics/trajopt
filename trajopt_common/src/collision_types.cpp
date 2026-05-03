@@ -23,6 +23,7 @@
 
 #include <trajopt_common/collision_types.h>
 #include <tesseract/common/utils.h>
+#include <cassert>
 
 namespace trajopt_common
 {
