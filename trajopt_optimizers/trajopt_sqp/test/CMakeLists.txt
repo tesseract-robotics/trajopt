@@ -11,7 +11,7 @@ macro(add_gtest test_name test_file)
   target_link_libraries(
     ${test_name}
     ${PROJECT_NAME}
-    console_bridge
+    console_bridge::console_bridge
     trajopt::trajopt_ifopt
     trajopt::trajopt_common
     GTest::GTest

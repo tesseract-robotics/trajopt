@@ -29,6 +29,7 @@
 #include <trajopt_ifopt/core/composite.h>
 #include <console_bridge/console.h>
 #include <iostream>
+#include <cassert>
 
 namespace trajopt_sqp
 {
