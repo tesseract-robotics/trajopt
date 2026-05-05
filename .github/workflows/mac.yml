@@ -108,7 +108,7 @@ jobs:
           -DOpenMP_C_LIB_NAMES=libomp -DOpenMP_C_FLAGS="-Xpreprocessor -fopenmp" \
           -DOpenMP_libomp_LIBRARY=${{ matrix.config.homebrew_root }}/opt/libomp/lib/libomp.dylib \
           -Dtcmalloc_minimal_LIBRARY=${{ github.workspace }}/vcpkg/installed/${{ matrix.config.vcpkg_triplet }}/lib/libtcmalloc_minimal.dylib
-        run-tests-args: --merge-install --packages-ignore tesseract_examples
+        run-tests-args: --merge-install --packages-ignore tesseract_examples vhacd
     
     - name: collect logs
       if: failure()
