@@ -24,6 +24,8 @@
 #include <trajopt_ifopt/constraints/collision/weighted_average_methods.h>
 #include <trajopt_common/collision_types.h>
 
+#include <cassert>
+
 namespace trajopt_ifopt
 {
 Eigen::VectorXd getWeightedAvgGradientT0(const trajopt_common::GradientResultsSet& grad_results_set,

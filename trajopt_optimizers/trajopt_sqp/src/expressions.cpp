@@ -1,4 +1,5 @@
 #include <trajopt_sqp/expressions.h>
+#include <cassert>
 
 namespace trajopt_sqp
 {

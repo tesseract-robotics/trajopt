@@ -27,6 +27,7 @@
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <trajopt_common/collision_types.h>
 #include <trajopt_common/collision_utils.h>
+#include <cassert>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt_ifopt/constraints/collision/continuous_collision_constraint.h>

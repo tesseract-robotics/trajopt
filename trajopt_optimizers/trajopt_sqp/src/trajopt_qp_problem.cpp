@@ -8,6 +8,7 @@
 
 #include <utility>
 #include <iostream>
+#include <cassert>
 
 /**
  * In the previous version of trajopt it handled hinge cost and absolute costs differently.

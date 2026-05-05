@@ -34,6 +34,7 @@
 
 #include <console_bridge/console.h>
 #include <chrono>
+#include <cassert>
 
 namespace trajopt_sqp
 {

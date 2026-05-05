@@ -31,6 +31,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <trajopt_common/collision_utils.h>
 
 #include <iostream>
+#include <cassert>
 
 namespace trajopt_ifopt
 {

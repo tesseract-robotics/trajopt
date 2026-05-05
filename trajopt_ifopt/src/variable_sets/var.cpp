@@ -22,6 +22,8 @@
 #include <trajopt_ifopt/utils/ifopt_utils.h>
 #include <console_bridge/console.h>
 
+#include <cassert>
+
 namespace trajopt_ifopt
 {
 Var::Var(Eigen::Index index, std::string name, double value, Bounds bounds, Node* parent)

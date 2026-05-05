@@ -32,6 +32,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <trajopt_ifopt/variable_sets/node.h>
 #include <trajopt_common/collision_utils.h>
 
+#include <cassert>
+
 namespace trajopt_ifopt
 {
 NodesVariables::NodesVariables(std::string name, std::vector<std::unique_ptr<Node>> nodes)

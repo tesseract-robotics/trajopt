@@ -11,6 +11,7 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <unordered_map>
 #include <utility>
 #include <vector>
+#include <cassert>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace trajopt_common
