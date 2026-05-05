@@ -28,6 +28,8 @@
 #include <trajopt_ifopt/core/problem.h>
 #include <trajopt_ifopt/utils/ifopt_utils.h>
 
+#include <cassert>
+
 namespace trajopt_ifopt
 {
 std::vector<Bounds> toBounds(const Eigen::Ref<const Eigen::MatrixX2d>& limits)

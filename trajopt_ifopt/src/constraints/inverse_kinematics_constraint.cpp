@@ -29,6 +29,7 @@
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <tesseract/kinematics/kinematic_group.h>
 #include <console_bridge/console.h>
+#include <cassert>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace trajopt_ifopt

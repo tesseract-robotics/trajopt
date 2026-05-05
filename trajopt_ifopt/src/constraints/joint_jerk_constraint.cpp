@@ -28,6 +28,7 @@
 
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <console_bridge/console.h>
+#include <cassert>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace trajopt_ifopt
