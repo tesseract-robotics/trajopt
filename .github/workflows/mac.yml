@@ -96,7 +96,7 @@ jobs:
         target-path: target_ws/src
         target-args: >-
           --merge-install
-          --packages-ignore tesseract_examples trajopt_ifopt trajopt_sqp vhacd tesseract_python
+          --packages-ignore tesseract_examples vhacd tesseract_python
           --cmake-args -G "Ninja" -DVCPKG_TARGET_TRIPLET=${{ matrix.config.vcpkg_triplet }} 
           -DCMAKE_BUILD_TYPE=Release -DTESSERACT_ENABLE_TESTING=ON \
           -DTESSERACT_ENABLE_BENCHMARKING=OFF -DTESSERACT_ENABLE_RUN_BENCHMARKING=OFF \
