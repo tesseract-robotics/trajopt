@@ -88,21 +88,6 @@ void AddVarArray(sco::OptProb& prob, int rows, int cols, const std::string& name
   AddVarArrays(prob, rows, colss, prefixes, arrs);
 }
 
-bool isSuperset(const std::vector<std::string>& subset, const std::vector<std::string>& superset)
-{
-  for (const std::string& s : subset)
-  {
-    if (std::find(superset.begin(), superset.end(), s) == superset.end())
-    {
-      return false;
-    }
-  }
-
-  // All subset strings were found in the superset
-  // Check that the superset is bigger than the subset
-  return superset.size() > subset.size();
-}
-
 bool updateFromSubset(const std::vector<std::string>& superset_names,
                       const Eigen::VectorXd& superset_vals,
                       const std::vector<std::string>& subset_names,

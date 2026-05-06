@@ -33,6 +33,7 @@ TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt_ifopt/core/constraint_set.h>
 #include <tesseract/common/eigen_types.h>
+#include <tesseract/common/types.h>
 #include <tesseract/kinematics/fwd.h>
 
 namespace trajopt_ifopt
@@ -52,8 +53,8 @@ struct CartLineInfo
   CartLineInfo() = default;
   CartLineInfo(
       std::shared_ptr<const tesseract::kinematics::JointGroup> manip,
-      std::string source_frame,
-      std::string target_frame,
+      tesseract::common::LinkId source_frame,
+      tesseract::common::LinkId target_frame,
       const Eigen::Isometry3d& target_frame_offset1,
       const Eigen::Isometry3d& target_frame_offset2,
       const Eigen::Isometry3d& source_frame_offset = Eigen::Isometry3d::Identity(),
@@ -63,10 +64,10 @@ struct CartLineInfo
   std::shared_ptr<const tesseract::kinematics::JointGroup> manip;
 
   /** @brief Link which should reach desired pos */
-  std::string source_frame;
+  tesseract::common::LinkId source_frame;
 
   /** @brief The target frame that should be reached by the source */
-  std::string target_frame;
+  tesseract::common::LinkId target_frame;
 
   /** @brief Static transform applied to the source_frame location */
   Eigen::Isometry3d source_frame_offset;
@@ -99,7 +100,7 @@ public:
   using ErrorDiffFunctionType = std::function<Eigen::VectorXd(const Eigen::VectorXd&,
                                                               const Eigen::Isometry3d&,
                                                               const Eigen::Isometry3d&,
-                                                              tesseract::common::TransformMap&)>;
+                                                              tesseract::common::LinkIdTransformMap&)>;
 
   CartLineConstraint(CartLineInfo info,
                      std::shared_ptr<const Var> position_var,
@@ -194,7 +195,7 @@ private:
   /** @brief The error function to calculate the error difference used for jacobian calculations */
   ErrorDiffFunctionType error_diff_function_{ nullptr };
 
-  static thread_local tesseract::common::TransformMap transforms_cache_;  // NOLINT
+  static thread_local tesseract::common::LinkIdTransformMap transforms_cache_;  // NOLINT
 };
 }  // namespace trajopt_ifopt
 #endif

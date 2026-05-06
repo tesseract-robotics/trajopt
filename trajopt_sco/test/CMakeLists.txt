@@ -20,7 +20,7 @@ if(osqp_FOUND)
 endif()
 target_compile_options(${PROJECT_NAME}-test PRIVATE ${TRAJOPT_COMPILE_OPTIONS_PRIVATE}
                                                     ${TRAJOPT_COMPILE_OPTIONS_PUBLIC})
-target_compile_definitions(${PROJECT_NAME}-test PRIVATE ${TRAJOPT_COMPILE_DEFINITIONS}
+target_compile_definitions(${PROJECT_NAME}-test PRIVATE ${TRAJOPT_COMPILE_DEFINITIONS_PUBLIC}
                                                         TRAJOPT_IFOPT_DIR="${CMAKE_SOURCE_DIR}")
 target_cxx_version(${PROJECT_NAME}-test PRIVATE VERSION ${TRAJOPT_CXX_VERSION})
 target_clang_tidy(${PROJECT_NAME}-test ENABLE ${TRAJOPT_ENABLE_CLANG_TIDY})

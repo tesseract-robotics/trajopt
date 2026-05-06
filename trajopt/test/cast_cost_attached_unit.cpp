@@ -77,8 +77,8 @@ public:
 
     Joint box_attached_joint("boxbot_link-box_attached");
     box_attached_joint.type = JointType::FIXED;
-    box_attached_joint.parent_link_name = "boxbot_link";
-    box_attached_joint.child_link_name = "box_attached";
+    box_attached_joint.parent_link_id = "boxbot_link";
+    box_attached_joint.child_link_id = "box_attached";
     box_attached_joint.parent_to_joint_origin_transform.translation() = Eigen::Vector3d(0.5, -0.5, 0);
 
     tesseract::common::AllowedCollisionMatrix modify_acm;
@@ -94,8 +94,8 @@ public:
 
     Joint box_attached2_joint("no_geom_link-box_attached2");
     box_attached2_joint.type = JointType::FIXED;
-    box_attached2_joint.parent_link_name = "no_geom_link";
-    box_attached2_joint.child_link_name = "box_attached2";
+    box_attached2_joint.parent_link_id = "no_geom_link";
+    box_attached2_joint.child_link_id = "box_attached2";
     box_attached2_joint.parent_to_joint_origin_transform.translation() = Eigen::Vector3d(0, 0, 0);
 
     tesseract::common::AllowedCollisionMatrix modify_acm2;
@@ -129,7 +129,7 @@ void runLinkWithGeomTest(const Environment::Ptr& env, const Visualization::Ptr& 
   const tesseract::scene_graph::StateSolver::UPtr state_solver = prob->GetEnv()->getStateSolver();
   const ContinuousContactManager::Ptr manager = prob->GetEnv()->getContinuousContactManager();
 
-  manager->setActiveCollisionObjects(prob->GetKin()->getActiveLinkNames());
+  manager->setActiveCollisionObjects(prob->GetKin()->getActiveLinkIds());
   manager->setDefaultCollisionMargin(0);
 
   tesseract::collision::CollisionCheckConfig config;
@@ -189,7 +189,7 @@ void runLinkWithoutGeomTest(const Environment::Ptr& env, const Visualization::Pt
   const tesseract::scene_graph::StateSolver::UPtr state_solver = prob->GetEnv()->getStateSolver();
   const ContinuousContactManager::Ptr manager = prob->GetEnv()->getContinuousContactManager();
 
-  manager->setActiveCollisionObjects(prob->GetKin()->getActiveLinkNames());
+  manager->setActiveCollisionObjects(prob->GetKin()->getActiveLinkIds());
   manager->setDefaultCollisionMargin(0);
 
   tesseract::collision::CollisionCheckConfig config;

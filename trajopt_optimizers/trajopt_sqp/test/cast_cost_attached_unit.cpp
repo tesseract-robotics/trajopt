@@ -102,8 +102,8 @@ public:
 
     Joint box_attached_joint("boxbot_link-box_attached");
     box_attached_joint.type = JointType::FIXED;
-    box_attached_joint.parent_link_name = "boxbot_link";
-    box_attached_joint.child_link_name = "box_attached";
+    box_attached_joint.parent_link_id = "boxbot_link";
+    box_attached_joint.child_link_id = "box_attached";
     box_attached_joint.parent_to_joint_origin_transform.translation() = Eigen::Vector3d(0.5, -0.5, 0);
 
     tesseract::common::AllowedCollisionMatrix modify_acm;
@@ -119,8 +119,8 @@ public:
 
     Joint box_attached2_joint("no_geom_link-box_attached2");
     box_attached2_joint.type = JointType::FIXED;
-    box_attached2_joint.parent_link_name = "no_geom_link";
-    box_attached2_joint.child_link_name = "box_attached2";
+    box_attached2_joint.parent_link_id = "no_geom_link";
+    box_attached2_joint.child_link_id = "box_attached2";
     box_attached2_joint.parent_to_joint_origin_transform.translation() = Eigen::Vector3d(0, 0, 0);
 
     tesseract::common::AllowedCollisionMatrix modify_acm2;
@@ -148,7 +148,7 @@ void runCastAttachedLinkWithGeomTest(const Environment::Ptr& env, bool fixed_siz
   const JointGroup::ConstPtr manip = env->getJointGroup("manipulator");
   const std::vector<trajopt_ifopt::Bounds> bounds = trajopt_ifopt::toBounds(manip->getLimits().joint_limits);
 
-  manager->setActiveCollisionObjects(manip->getActiveLinkNames());
+  manager->setActiveCollisionObjects(manip->getActiveLinkIds());
   manager->setDefaultCollisionMargin(0);
 
   // 3) Add Variables
@@ -288,7 +288,7 @@ void runCastAttachedLinkWithoutGeomTest(const Environment::Ptr& env, bool fixed_
   const JointGroup::ConstPtr manip = env->getJointGroup("manipulator");
   const std::vector<trajopt_ifopt::Bounds> bounds = trajopt_ifopt::toBounds(manip->getLimits().joint_limits);
 
-  manager->setActiveCollisionObjects(manip->getActiveLinkNames());
+  manager->setActiveCollisionObjects(manip->getActiveLinkIds());
   manager->setDefaultCollisionMargin(0);
 
   // 3) Add Variables

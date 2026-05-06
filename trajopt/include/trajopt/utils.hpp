@@ -1,6 +1,7 @@
 #pragma once
 #include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
+#include <algorithm>
 #include <Eigen/Geometry>
 TRAJOPT_IGNORE_WARNINGS_POP
 
@@ -14,7 +15,7 @@ Extract trajectory array from solution vector x using indices in array vars
 TrajArray getTraj(const DblVec& x, const VarArray& vars);
 TrajArray getTraj(const DblVec& x, const AffArray& arr);
 
-inline DblVec trajToDblVec(const TrajArray& x) { return { x.data(), x.data() + x.rows() * x.cols() }; }
+inline DblVec trajToDblVec(const TrajArray& x) { return { x.data(), x.data() + (x.rows() * x.cols()) }; }
 
 template <typename T>
 std::vector<T> singleton(const T& x)
@@ -36,7 +37,19 @@ void AddVarArray(sco::OptProb& prob, int rows, int cols, const std::string& name
  * @param superset
  * @return
  */
-bool isSuperset(const std::vector<std::string>& subset, const std::vector<std::string>& superset);
+template <typename T>
+bool isSuperset(const std::vector<T>& subset, const std::vector<T>& superset)
+{
+  for (const T& s : subset)
+  {
+    if (std::find(superset.begin(), superset.end(), s) == superset.end())
+      return false;
+  }
+
+  // All subset elements were found in the superset.
+  // Check that the superset is bigger than the subset.
+  return superset.size() > subset.size();
+}
 
 /**
  * @brief Updates a superset of joint values with those from a subset of joint values

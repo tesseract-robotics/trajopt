@@ -32,6 +32,7 @@ TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt_ifopt/core/constraint_set.h>
 #include <tesseract/common/eigen_types.h>
+#include <tesseract/common/types.h>
 #include <tesseract/kinematics/fwd.h>
 
 namespace trajopt_ifopt
@@ -49,12 +50,12 @@ public:
   using ErrorDiffFunctionType = std::function<Eigen::VectorXd(const Eigen::VectorXd&,
                                                               const Eigen::Isometry3d&,
                                                               const Eigen::Isometry3d&,
-                                                              tesseract::common::TransformMap&)>;
+                                                              tesseract::common::LinkIdTransformMap&)>;
 
   CartPosConstraint(std::shared_ptr<const Var> position_var,
                     std::shared_ptr<const tesseract::kinematics::JointGroup> manip,
-                    std::string source_frame,
-                    std::string target_frame,
+                    tesseract::common::LinkId source_frame,
+                    tesseract::common::LinkId target_frame,
                     const Eigen::Isometry3d& source_frame_offset = Eigen::Isometry3d::Identity(),
                     const Eigen::Isometry3d& target_frame_offset = Eigen::Isometry3d::Identity(),
                     std::string name = "CartPos",
@@ -64,8 +65,8 @@ public:
                     const Eigen::VectorXd& coeffs,
                     const std::vector<Bounds>& bounds,
                     std::shared_ptr<const tesseract::kinematics::JointGroup> manip,
-                    std::string source_frame,
-                    std::string target_frame,
+                    tesseract::common::LinkId source_frame,
+                    tesseract::common::LinkId target_frame,
                     const Eigen::Isometry3d& source_frame_offset = Eigen::Isometry3d::Identity(),
                     const Eigen::Isometry3d& target_frame_offset = Eigen::Isometry3d::Identity(),
                     std::string name = "CartPos",
@@ -157,10 +158,10 @@ private:
   std::shared_ptr<const tesseract::kinematics::JointGroup> manip_;
 
   /** @brief Link which should reach desired pos */
-  std::string source_frame_;
+  tesseract::common::LinkId source_frame_;
 
   /** @brief The target frame that should be reached by the source */
-  std::string target_frame_;
+  tesseract::common::LinkId target_frame_;
 
   /** @brief Static transform applied to the source_frame location */
   Eigen::Isometry3d source_frame_offset_;
@@ -185,7 +186,7 @@ private:
   /** @brief The error function to calculate the error difference used for jacobian calculations */
   ErrorDiffFunctionType error_diff_function_{ nullptr };
 
-  static thread_local tesseract::common::TransformMap transforms_cache_;  // NOLINT
+  static thread_local tesseract::common::LinkIdTransformMap transforms_cache_;  // NOLINT
 };
 }  // namespace trajopt_ifopt
 #endif
