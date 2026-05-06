@@ -1,29 +1,40 @@
-package:
+context:
     name: trajopt
     version: "0.1.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
 
 source:
     path: ../../workspace
 
 requirements:
     build:
-      - {{ compiler('c') }}
-      - {{ compiler('cxx') }}
+      - ${{ compiler('c') }}
+      - ${{ compiler('cxx') }}
       - benchmark
       - gtest
       - gmock
       - cmake
-      - ninja # [win]
-      - make # [linux]
+      - if: win
+        then:
+          - ninja
+      - if: unix
+        then:
+          - make
       - pkg-config
+      - swig
       - colcon-common-extensions 
       - lcov
-      - {{ cdt('mesa-libgl-devel') }}    # [linux]
-      - {{ cdt('mesa-dri-drivers') }}    # [linux]
-      - git
+      - if: linux
+        then:
+          - ${{ cdt('mesa-libgl-devel') }}
+          - ${{ cdt('mesa-dri-drivers') }}
     host:
-      - boost-cpp 
-      - eigen 
+      - libboost-devel
+      - cereal
+      - eigen-abi-devel
       - tinyxml2
       - console_bridge
       - assimp
@@ -40,14 +51,18 @@ requirements:
       - jsoncpp
       - yaml-cpp
       - bullet-cpp
-      - xorg-libx11    # [unix]
-      - xorg-libxext   # [unix]
       - blas
       - osqp
+      - osqp-eigen
       - qpoases
+      - if: unix
+        then:
+          - xorg-libx11
+          - xorg-libxext
     run:
-      - boost-cpp
-      - eigen 
+      - libboost-devel
+      - cereal
+      - eigen
       - tinyxml2
       - console_bridge
       - assimp
@@ -63,16 +78,18 @@ requirements:
       - taskflow 
       - yaml-cpp
       - bullet-cpp
-      - xorg-libx11    # [unix]
-      - xorg-libxext   # [unix]
       - blas
       - osqp
+      - osqp-eigen
       - qpoases
+      - if: unix
+        then:
+          - xorg-libx11
+          - xorg-libxext
 
 build:
-  skip: true # [py<37]
   number: 0
 
 about:
-  home: https://github.com/ros-industrial-consortium/trajopt
-  summary: Trajopt motion planner
+  homepage: https://github.com/ros-industrial-consortium/trajopt
+  summary: Trajopt robot path planner

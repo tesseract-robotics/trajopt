@@ -2,5 +2,5 @@ name: tesseract-build
 channels:
   - conda-forge
 dependencies:
-  - boa
   - conda-smithy
+  - rattler-build

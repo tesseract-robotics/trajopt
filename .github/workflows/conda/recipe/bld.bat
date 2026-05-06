@@ -1,9 +1,7 @@
-set CXXFLAGS=%CXXFLAGS% -DEIGEN_DONT_ALIGN=1 -DEIGEN_DONT_VECTORIZE=1
-set CXXFLAGS=%CXXFLAGS% /std:c++17
 
 colcon build --merge-install --install-base="%PREFIX%\opt\tesseract_robotics" ^
-   --event-handlers console_cohesion+ desktop_notification- status- terminal_title- ^
-   --packages-ignore gtest osqp osqp_eigen tesseract_examples trajopt_ifopt trajopt_sqp ^
+   --event-handlers console_direct+ desktop_notification- status- terminal_title- ^
+   --packages-ignore gtest osqp osqp_eigen tesseract_examples ^
    --cmake-args -GNinja -DCMAKE_BUILD_TYPE=Release ^
    -DCMAKE_CXX_FLAGS_RELWITHDEBINFO:STRING="/MD /O2 /Ob0 /Zi /DNDEBUG" ^
    -DCMAKE_RELWITHDEBINFO_POSTFIX="" ^
@@ -16,7 +14,7 @@ colcon build --merge-install --install-base="%PREFIX%\opt\tesseract_robotics" ^
    -DTESSERACT_ENABLE_CODE_COVERAGE=OFF ^
    -DPYTHON_EXECUTABLE="%PREFIX%\python.exe" ^
    -DTESSERACT_ENABLE_EXAMPLES=OFF ^
-   -DTESSERACT_BUILD_TRAJOPT_IFOPT=OFF ^
+   -DTESSERACT_BUILD_TRAJOPT_IFOPT=ON ^
    -DTESSERACT_ENABLE_TESTING=OFF ^
    -DTRAJOPT_ENABLE_TESTING=ON ^
    -DTRAJOPT_ENABLE_BENCHMARKING=ON ^
@@ -28,7 +26,7 @@ set TESSERACT_RESOURCE_PATH=%PREFIX%\opt\tesseract_robotics\share
 
 colcon test --event-handlers console_direct+ desktop_notification- status- terminal_title- ^
    --return-code-on-test-failure ^
-   --packages-ignore gtest osqp osqp_eigen tesseract_examples trajopt_ifopt trajopt_sqp tesseract_common ^
+   --packages-ignore gtest osqp osqp_eigen tesseract_examples tesseract_common ^
    tesseract_collision tesseract_environment tesseract_geometry tesseract_kinematics tesseract_scene_graph ^
    tesseract_srdf tesseract_state_solver tesseract_support tesseract_urdf tesseract_visualization ^
    --merge-install --install-base="%PREFIX%\opt\tesseract_robotics"

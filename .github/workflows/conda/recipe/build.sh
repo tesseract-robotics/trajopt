@@ -1,10 +1,10 @@
 set -e
 
-ln -s $BUILD_PREFIX/bin/x86_64-conda-linux-gnu-gcc $BUILD_PREFIX/bin/gcc
+# ln -s $BUILD_PREFIX/bin/x86_64-conda-linux-gnu-gcc $BUILD_PREFIX/bin/gcc
 
 colcon build --merge-install --install-base="$PREFIX/opt/tesseract_robotics" \
-   --event-handlers console_cohesion+  \
-   --packages-ignore gtest osqp osqp_eigen tesseract_examples trajopt_ifopt trajopt_sqp \
+   --event-handlers console_direct+  \
+   --packages-ignore gtest osqp osqp_eigen tesseract_examples \
    --cmake-args -DCMAKE_BUILD_TYPE=Release \
    -DBUILD_SHARED_LIBS=ON \
    -DBUILD_IPOPT=OFF \
@@ -13,9 +13,9 @@ colcon build --merge-install --install-base="$PREFIX/opt/tesseract_robotics" \
    -DTESSERACT_ENABLE_CLANG_TIDY=OFF \
    -DTESSERACT_ENABLE_CODE_COVERAGE=OFF \
    -DTESSERACT_ENABLE_EXAMPLES=OFF \
-   -DTESSERACT_BUILD_TRAJOPT_IFOPT=OFF \
+   -DTESSERACT_BUILD_TRAJOPT_IFOPT=ON \
    -DSETUPTOOLS_DEB_LAYOUT=OFF \
-   -DTESSERACT_ENABLE_TESTING=ON \
+   -DTESSERACT_ENABLE_TESTING=OFF \
    -DTRAJOPT_ENABLE_TESTING=ON \
    -DTRAJOPT_ENABLE_BENCHMARKING=ON \
    -DTRAJOPT_ENABLE_RUN_BENCHMARKING=OFF
@@ -24,7 +24,7 @@ export TESSERACT_RESOURCE_PATH="$PREFIX/opt/tesseract_robotics/share"
 
 colcon test --event-handlers console_direct+  \
    --return-code-on-test-failure \
-   --packages-ignore gtest osqp osqp_eigen tesseract_examples trajopt_ifopt trajopt_sqp tesseract_common \
+   --packages-ignore gtest osqp osqp_eigen tesseract \
    --merge-install --install-base="$PREFIX/opt/tesseract_robotics" 
 
 
