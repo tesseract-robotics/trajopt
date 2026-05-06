@@ -30,10 +30,11 @@ jobs:
     - uses: conda-incubator/setup-miniconda@v3
       with:
         channel-priority: strict
-        environment-file: workspace/src/trajopt/.github/workflows/conda/environment.yml       
-        use-mamba: true
+        environment-file: workspace/src/trajopt/.github/workflows/conda/environment.yml
         auto-update-conda: true
         activate-environment: tesseract-build
+        channels: conda-forge
+        conda-remove-defaults: "true"
     - name: build and test
       run: |
         conda info
@@ -64,9 +65,10 @@ jobs:
       with:
         channel-priority: strict
         environment-file: workspace/src/trajopt/.github/workflows/conda/environment.yml
-        use-mamba: true
         auto-update-conda: true
         activate-environment: tesseract-build
+        channels: conda-forge
+        conda-remove-defaults: "true"
     - name: build and test
       run: |
         conda info
