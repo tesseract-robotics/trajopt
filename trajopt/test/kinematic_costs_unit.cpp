@@ -374,6 +374,40 @@ TEST_F(KinematicCostsTest, DynamicCartPoseJacCalculator_TolerancedAcrossEdge)  /
   checkJacobian(f, dfdx, values, 1.0e-5);
 }
 
+// All four CartPose calculator constructors validate the (lower, upper) tolerance pair at
+// construction time so the FD-Jacobian hot path doesn't pay for a per-call check. An inverted
+// band (lower > upper on any component) must throw rather than producing a silent non-zero
+// result inside what looks like the dead-band.
+TEST_F(KinematicCostsTest, CartPoseCalculators_InvertedToleranceBandThrows)  // NOLINT
+{
+  const tesseract::kinematics::JointGroup::ConstPtr kin = env_->getJointGroup("right_arm");
+  const std::string source_frame = env_->getRootLinkName();
+  const std::string target_frame = "r_gripper_tool_frame";
+  const Eigen::Isometry3d source_frame_offset = Eigen::Isometry3d::Identity();
+  const Eigen::Isometry3d target_frame_offset = Eigen::Isometry3d::Identity();
+  const Eigen::VectorXi indices = (Eigen::VectorXi(6) << 0, 1, 2, 3, 4, 5).finished();
+
+  Eigen::VectorXd lower(6);
+  Eigen::VectorXd upper(6);
+  lower << 0.0, 0.0, 0.0, 0.5, 0.0, 0.0;   // rx lower = 0.5
+  upper << 0.0, 0.0, 0.0, -0.5, 0.0, 0.0;  // rx upper = -0.5  → inverted
+
+  EXPECT_THROW(
+      CartPoseErrCalculator(kin, source_frame, target_frame, source_frame_offset, target_frame_offset, indices, lower,
+                            upper),
+      std::runtime_error);
+  EXPECT_THROW(
+      CartPoseJacCalculator(kin, source_frame, target_frame, source_frame_offset, target_frame_offset, indices, lower,
+                            upper),
+      std::runtime_error);
+  EXPECT_THROW(DynamicCartPoseErrCalculator(kin, source_frame, target_frame, source_frame_offset, target_frame_offset,
+                                            indices, lower, upper),
+               std::runtime_error);
+  EXPECT_THROW(DynamicCartPoseJacCalculator(kin, source_frame, target_frame, source_frame_offset, target_frame_offset,
+                                            indices, lower, upper),
+               std::runtime_error);
+}
+
 ////////////////////////////////////////////////////////////////////
 
 int main(int argc, char** argv)

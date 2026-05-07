@@ -34,6 +34,28 @@ using Eigen::VectorXd;
 
 namespace trajopt
 {
+namespace
+{
+// Validate a (lower, upper) tolerance pair at construction time so the per-call FD-Jacobian path
+// in tesseract::common::applyTolerances can stay free of these checks.
+void validateTolerances(const char* who, const Eigen::VectorXd& lower, const Eigen::VectorXd& upper)
+{
+  if (lower.size() != upper.size())
+  {
+    std::stringstream ss;
+    ss << who << ": Mismatched tolerance sizes. lower: " << lower.size() << ", upper: " << upper.size();
+    throw std::runtime_error(ss.str());
+  }
+  if (lower.size() != 0 && (lower.array() > upper.array()).any())
+  {
+    std::stringstream ss;
+    ss << who << ": Inverted tolerance band — lower > upper at one or more indices. lower: ["
+       << lower.transpose() << "], upper: [" << upper.transpose() << "]";
+    throw std::runtime_error(ss.str());
+  }
+}
+}  // namespace
+
 DynamicCartPoseErrCalculator::DynamicCartPoseErrCalculator(
     std::shared_ptr<const tesseract::kinematics::JointGroup> manip,
     std::string source_frame,
@@ -52,13 +74,7 @@ DynamicCartPoseErrCalculator::DynamicCartPoseErrCalculator(
 {
   assert(indices_.size() <= 6);
 
-  if (lower_tolerance.size() != upper_tolerance.size())
-  {
-    std::stringstream error_ss;
-    error_ss << "DynamicCartPoseErrCalculator: Mismatched tolerance sizes. lower: " << lower_tolerance.size()
-             << ", upper: " << upper_tolerance.size();
-    throw std::runtime_error(error_ss.str());
-  }
+  validateTolerances("DynamicCartPoseErrCalculator", lower_tolerance, upper_tolerance);
 
   // Check to see if the waypoint is toleranced and set the error function accordingly
   if ((lower_tolerance.size() == 0 && upper_tolerance.size() == 0) ||
@@ -136,13 +152,7 @@ DynamicCartPoseJacCalculator::DynamicCartPoseJacCalculator(
 {
   assert(indices_.size() <= 6);
 
-  if (lower_tolerance_.size() != upper_tolerance_.size())
-  {
-    std::stringstream error_ss;
-    error_ss << "DynamicCartPoseJacCalculator: Mismatched tolerance sizes. lower: " << lower_tolerance_.size()
-             << ", upper: " << upper_tolerance_.size();
-    throw std::runtime_error(error_ss.str());
-  }
+  validateTolerances("DynamicCartPoseJacCalculator", lower_tolerance_, upper_tolerance_);
 }
 
 MatrixXd DynamicCartPoseJacCalculator::operator()(const VectorXd& dof_vals) const
@@ -193,13 +203,7 @@ CartPoseErrCalculator::CartPoseErrCalculator(
   assert(indices_.size() <= 6);
   is_target_active_ = manip_->isActiveLinkName(target_frame_);
 
-  if (lower_tolerance.size() != upper_tolerance.size())
-  {
-    std::stringstream error_ss;
-    error_ss << "CartPoseErrCalculator: Mismatched tolerance sizes. lower: " << lower_tolerance.size()
-             << ", upper: " << upper_tolerance.size();
-    throw std::runtime_error(error_ss.str());
-  }
+  validateTolerances("CartPoseErrCalculator", lower_tolerance, upper_tolerance);
 
   // Check to see if the waypoint is toleranced and set the error function accordingly
   if ((lower_tolerance.size() == 0 && upper_tolerance.size() == 0) ||
@@ -301,13 +305,7 @@ CartPoseJacCalculator::CartPoseJacCalculator(
 {
   assert(indices_.size() <= 6);
 
-  if (lower_tolerance_.size() != upper_tolerance_.size())
-  {
-    std::stringstream error_ss;
-    error_ss << "CartPoseJacCalculator: Mismatched tolerance sizes. lower: " << lower_tolerance_.size()
-             << ", upper: " << upper_tolerance_.size();
-    throw std::runtime_error(error_ss.str());
-  }
+  validateTolerances("CartPoseJacCalculator", lower_tolerance_, upper_tolerance_);
 
   if (is_target_active_)
   {
