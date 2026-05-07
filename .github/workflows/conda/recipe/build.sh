@@ -4,7 +4,7 @@ set -e
 
 colcon build --merge-install --install-base="$PREFIX/opt/tesseract_robotics" \
    --event-handlers console_direct+  \
-   --packages-ignore gtest osqp osqp_eigen tesseract_examples \
+   --packages-ignore gtest osqp osqp_eigen tesseract_examples vhacd \
    --cmake-args -DCMAKE_BUILD_TYPE=Release \
    -DBUILD_SHARED_LIBS=ON \
    -DBUILD_IPOPT=OFF \
@@ -24,7 +24,7 @@ export TESSERACT_RESOURCE_PATH="$PREFIX/opt/tesseract_robotics/share"
 
 colcon test --event-handlers console_direct+  \
    --return-code-on-test-failure \
-   --packages-ignore gtest osqp osqp_eigen tesseract \
+   --packages-ignore gtest osqp osqp_eigen tesseract vhacd \
    --merge-install --install-base="$PREFIX/opt/tesseract_robotics" 
 
 
