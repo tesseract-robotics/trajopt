@@ -5,6 +5,7 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <boost/format.hpp>
 #include <iostream>
 #include <tesseract/common/eigen_types.h>
+#include <tesseract/common/utils.h>
 #include <tesseract/kinematics/joint_group.h>
 #include <tesseract/kinematics/utils.h>
 #include <tesseract/scene_graph/link.h>
@@ -33,43 +34,27 @@ using Eigen::VectorXd;
 
 namespace trajopt
 {
-// Function to apply tolerances to error values
-Eigen::VectorXd applyTolerances(const Eigen::VectorXd& error,
-                                const Eigen::VectorXd& lower_tolerance,
-                                const Eigen::VectorXd& upper_tolerance)
+namespace
 {
-  Eigen::VectorXd resultant(error.size());
-
-  if (error.size() > lower_tolerance.size() || error.size() > upper_tolerance.size())
+// Validate a (lower, upper) tolerance pair at construction time so the per-call FD-Jacobian path
+// in tesseract::common::applyTolerances can stay free of these checks.
+void validateTolerances(const char* who, const Eigen::VectorXd& lower, const Eigen::VectorXd& upper)
+{
+  if (lower.size() != upper.size())
   {
-    std::stringstream error_ss;
-    error_ss << "applyTolerances: error vector size greater than tolerance vector size: ";
-    error_ss << lower_tolerance.size() << ", upper: " << upper_tolerance.size() << ", error: " << error.size();
-    throw std::runtime_error(error_ss.str());
+    std::stringstream ss;
+    ss << who << ": Mismatched tolerance sizes. lower: " << lower.size() << ", upper: " << upper.size();
+    throw std::runtime_error(ss.str());
   }
-
-  // Iterate through each element
-  for (int i = 0; i < error.size(); ++i)
+  if (lower.size() != 0 && (lower.array() > upper.array()).any())
   {
-    // If error is within tolerances, set resultant to 0
-    if (error(i) >= lower_tolerance(i) && error(i) <= upper_tolerance(i))
-    {
-      resultant(i) = 0.0;
-    }
-    // If error is below lower tolerance, set resultant to error - lower_tolerance
-    else if (error(i) < lower_tolerance(i))
-    {
-      resultant(i) = error(i) - lower_tolerance(i);
-    }
-    // If error is above upper tolerance, set resultant to error - upper_tolerance
-    else if (error(i) > upper_tolerance(i))
-    {
-      resultant(i) = error(i) - upper_tolerance(i);
-    }
+    std::stringstream ss;
+    ss << who << ": Inverted tolerance band — lower > upper at one or more indices. lower: ["
+       << lower.transpose() << "], upper: [" << upper.transpose() << "]";
+    throw std::runtime_error(ss.str());
   }
-
-  return resultant;
 }
+}  // namespace
 
 DynamicCartPoseErrCalculator::DynamicCartPoseErrCalculator(
     std::shared_ptr<const tesseract::kinematics::JointGroup> manip,
@@ -89,13 +74,7 @@ DynamicCartPoseErrCalculator::DynamicCartPoseErrCalculator(
 {
   assert(indices_.size() <= 6);
 
-  if (lower_tolerance.size() != upper_tolerance.size())
-  {
-    std::stringstream error_ss;
-    error_ss << "CartPoseErrCalculator: Mismatched tolerance sizes. lower: " << lower_tolerance.size()
-             << ", upper: " << upper_tolerance.size();
-    throw std::runtime_error(error_ss.str());
-  }
+  validateTolerances("DynamicCartPoseErrCalculator", lower_tolerance, upper_tolerance);
 
   // Check to see if the waypoint is toleranced and set the error function accordingly
   if ((lower_tolerance.size() == 0 && upper_tolerance.size() == 0) ||
@@ -109,11 +88,9 @@ DynamicCartPoseErrCalculator::DynamicCartPoseErrCalculator(
   {
     error_function = [lower_tolerance, upper_tolerance](const Eigen::Isometry3d& target_tf,
                                                         const Eigen::Isometry3d& source_tf) -> Eigen::VectorXd {
-      // Calculate the error using tesseract::common::calcTransformError or equivalent
-      const VectorXd err = tesseract::common::calcTransformError(target_tf, source_tf);
-
-      // Apply tolerances
-      return applyTolerances(err, lower_tolerance, upper_tolerance);
+      VectorXd err = tesseract::common::calcTransformError(target_tf, source_tf);
+      tesseract::common::applyTolerances(err, lower_tolerance, upper_tolerance);
+      return err;
     };
   }
 }
@@ -160,7 +137,9 @@ DynamicCartPoseJacCalculator::DynamicCartPoseJacCalculator(
     std::string target_frame,
     const Eigen::Isometry3d& source_frame_offset,  // NOLINT(modernize-pass-by-value)
     const Eigen::Isometry3d& target_frame_offset,  // NOLINT(modernize-pass-by-value)
-    const Eigen::VectorXi& indices)                // NOLINT(modernize-pass-by-value)
+    const Eigen::VectorXi& indices,                // NOLINT(modernize-pass-by-value)
+    const Eigen::VectorXd& lower_tolerance,        // NOLINT(modernize-pass-by-value)
+    const Eigen::VectorXd& upper_tolerance)        // NOLINT(modernize-pass-by-value)
   : manip_(std::move(manip))
   , source_frame_(std::move(source_frame))
   , source_frame_offset_(source_frame_offset)
@@ -168,13 +147,17 @@ DynamicCartPoseJacCalculator::DynamicCartPoseJacCalculator(
   , target_frame_offset_(target_frame_offset)
   , indices_(indices)
   , epsilon_(DEFAULT_EPSILON)
+  , lower_tolerance_(lower_tolerance)
+  , upper_tolerance_(upper_tolerance)
 {
   assert(indices_.size() <= 6);
+
+  validateTolerances("DynamicCartPoseJacCalculator", lower_tolerance_, upper_tolerance_);
 }
 
 MatrixXd DynamicCartPoseJacCalculator::operator()(const VectorXd& dof_vals) const
 {
-  // Duplicated from calcForwardNumJac in trajopt_sco/src/num_diff.cpp, but with ignoring tolerances
+  // Finite-difference jacobian of the (optionally toleranced) Cartesian error.
   manip_->calcFwdKin(transforms_cache, dof_vals);
   const Isometry3d source_tf = transforms_cache[source_frame_] * source_frame_offset_;
   const Isometry3d target_tf = transforms_cache[target_frame_] * target_frame_offset_;
@@ -187,8 +170,8 @@ MatrixXd DynamicCartPoseJacCalculator::operator()(const VectorXd& dof_vals) cons
     manip_->calcFwdKin(transforms_cache, dof_vals_pert);
     const Isometry3d source_tf_pert = transforms_cache[source_frame_] * source_frame_offset_;
     const Isometry3d target_tf_pert = transforms_cache[target_frame_] * target_frame_offset_;
-    VectorXd error_diff =
-        tesseract::common::calcJacobianTransformErrorDiff(target_tf, target_tf_pert, source_tf, source_tf_pert);
+    VectorXd error_diff = tesseract::common::calcJacobianTransformErrorDiff(
+        target_tf, target_tf_pert, source_tf, source_tf_pert, lower_tolerance_, upper_tolerance_);
 
     VectorXd reduced_error_diff(indices_.size());
     for (int i = 0; i < indices_.size(); ++i)
@@ -220,13 +203,7 @@ CartPoseErrCalculator::CartPoseErrCalculator(
   assert(indices_.size() <= 6);
   is_target_active_ = manip_->isActiveLinkName(target_frame_);
 
-  if (lower_tolerance.size() != upper_tolerance.size())
-  {
-    std::stringstream error_ss;
-    error_ss << "CartPoseErrCalculator: Mismatched tolerance sizes. lower: " << lower_tolerance.size()
-             << ", upper: " << upper_tolerance.size();
-    throw std::runtime_error(error_ss.str());
-  }
+  validateTolerances("CartPoseErrCalculator", lower_tolerance, upper_tolerance);
 
   // Check to see if the waypoint is toleranced and set the error function accordingly
   if ((lower_tolerance.size() == 0 && upper_tolerance.size() == 0) ||
@@ -253,22 +230,18 @@ CartPoseErrCalculator::CartPoseErrCalculator(
     {
       error_function_ = [lower_tolerance, upper_tolerance](const Eigen::Isometry3d& target_tf,
                                                            const Eigen::Isometry3d& source_tf) -> Eigen::VectorXd {
-        // Calculate the error using tesseract::common::calcTransformError or equivalent
-        const VectorXd err = tesseract::common::calcTransformError(source_tf, target_tf);
-
-        // Apply tolerances
-        return applyTolerances(err, lower_tolerance, upper_tolerance);
+        VectorXd err = tesseract::common::calcTransformError(source_tf, target_tf);
+        tesseract::common::applyTolerances(err, lower_tolerance, upper_tolerance);
+        return err;
       };
     }
     else
     {
       error_function_ = [lower_tolerance, upper_tolerance](const Eigen::Isometry3d& target_tf,
                                                            const Eigen::Isometry3d& source_tf) -> Eigen::VectorXd {
-        // Calculate the error using tesseract::common::calcTransformError or equivalent
-        const VectorXd err = tesseract::common::calcTransformError(target_tf, source_tf);
-
-        // Apply tolerances
-        return applyTolerances(err, lower_tolerance, upper_tolerance);
+        VectorXd err = tesseract::common::calcTransformError(target_tf, source_tf);
+        tesseract::common::applyTolerances(err, lower_tolerance, upper_tolerance);
+        return err;
       };
     }
   }
@@ -316,7 +289,9 @@ CartPoseJacCalculator::CartPoseJacCalculator(
     std::string target_frame,
     const Eigen::Isometry3d& source_frame_offset,  // NOLINT(modernize-pass-by-value)
     const Eigen::Isometry3d& target_frame_offset,  // NOLINT(modernize-pass-by-value)
-    const Eigen::VectorXi& indices)                // NOLINT(modernize-pass-by-value)
+    const Eigen::VectorXi& indices,                // NOLINT(modernize-pass-by-value)
+    const Eigen::VectorXd& lower_tolerance,        // NOLINT(modernize-pass-by-value)
+    const Eigen::VectorXd& upper_tolerance)        // NOLINT(modernize-pass-by-value)
   : manip_(std::move(manip))
   , source_frame_(std::move(source_frame))
   , source_frame_offset_(source_frame_offset)
@@ -325,8 +300,12 @@ CartPoseJacCalculator::CartPoseJacCalculator(
   , is_target_active_(manip_->isActiveLinkName(target_frame_))
   , indices_(indices)
   , epsilon_(DEFAULT_EPSILON)
+  , lower_tolerance_(lower_tolerance)
+  , upper_tolerance_(upper_tolerance)
 {
   assert(indices_.size() <= 6);
+
+  validateTolerances("CartPoseJacCalculator", lower_tolerance_, upper_tolerance_);
 
   if (is_target_active_)
   {
@@ -336,8 +315,8 @@ CartPoseJacCalculator::CartPoseJacCalculator(
                                   tesseract::common::TransformMap& state_cache) -> VectorXd {
       manip_->calcFwdKin(state_cache, vals);
       const Isometry3d perturbed_target_tf = state_cache[target_frame_] * target_frame_offset_;
-      VectorXd error_diff =
-          tesseract::common::calcJacobianTransformErrorDiff(source_tf, target_tf, perturbed_target_tf);
+      VectorXd error_diff = tesseract::common::calcJacobianTransformErrorDiff(
+          source_tf, target_tf, perturbed_target_tf, lower_tolerance_, upper_tolerance_);
 
       VectorXd reduced_error_diff(indices_.size());
       for (int i = 0; i < indices_.size(); ++i)
@@ -354,8 +333,8 @@ CartPoseJacCalculator::CartPoseJacCalculator(
                                   tesseract::common::TransformMap& state_cache) -> VectorXd {
       manip_->calcFwdKin(state_cache, vals);
       const Isometry3d perturbed_source_tf = state_cache[source_frame_] * source_frame_offset_;
-      VectorXd error_diff =
-          tesseract::common::calcJacobianTransformErrorDiff(target_tf, source_tf, perturbed_source_tf);
+      VectorXd error_diff = tesseract::common::calcJacobianTransformErrorDiff(
+          target_tf, source_tf, perturbed_source_tf, lower_tolerance_, upper_tolerance_);
 
       VectorXd reduced_error_diff(indices_.size());
       for (int i = 0; i < indices_.size(); ++i)
@@ -368,6 +347,7 @@ CartPoseJacCalculator::CartPoseJacCalculator(
 
 MatrixXd CartPoseJacCalculator::operator()(const VectorXd& dof_vals) const
 {
+  // Finite-difference jacobian of the (optionally toleranced) Cartesian error.
   manip_->calcFwdKin(transforms_cache, dof_vals);
   const Isometry3d source_tf = transforms_cache[source_frame_] * source_frame_offset_;
   const Isometry3d target_tf = transforms_cache[target_frame_] * target_frame_offset_;
