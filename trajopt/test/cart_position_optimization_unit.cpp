@@ -143,18 +143,33 @@ TEST(CartPositionOptimizationTrajoptSCO, cart_position_optimization_trajopt_sco)
 
 // ---------------------------------------------------------------------------
 // Helper: build ABB IRB2400 environment (shared by both discriminator tests).
+// Uses output references + ASSERT_* so a misconfigured resource locator or a
+// failed Environment::init() produces a clean gtest failure instead of a
+// null-pointer segfault.
 // ---------------------------------------------------------------------------
-static std::pair<std::shared_ptr<Environment>, tesseract::kinematics::JointGroup::ConstPtr> buildAbbIrb2400Env()
+static void buildAbbIrb2400Env(std::shared_ptr<Environment>& env_out,
+                               tesseract::kinematics::JointGroup::ConstPtr& manip_out)
 {
   const ResourceLocator::Ptr locator = std::make_shared<tesseract::common::GeneralResourceLocator>();
-  const std::filesystem::path urdf_path =
-      locator->locateResource("package://tesseract/support/urdf/abb_irb2400.urdf")->getFilePath();
-  const std::filesystem::path srdf_path =
-      locator->locateResource("package://tesseract/support/urdf/abb_irb2400.srdf")->getFilePath();
+
+  const auto urdf_resource = locator->locateResource("package://tesseract/support/urdf/abb_irb2400.urdf");
+  ASSERT_NE(urdf_resource, nullptr) << "Failed to locate abb_irb2400.urdf -- is TESSERACT_RESOURCE_PATH set?";
+  const auto srdf_resource = locator->locateResource("package://tesseract/support/urdf/abb_irb2400.srdf");
+  ASSERT_NE(srdf_resource, nullptr) << "Failed to locate abb_irb2400.srdf -- is TESSERACT_RESOURCE_PATH set?";
+
+  // NOTE: explicit std::filesystem::path conversion is required so init() resolves to the
+  // file-path overload rather than the urdf-string overload.
+  const std::filesystem::path urdf_path = urdf_resource->getFilePath();
+  const std::filesystem::path srdf_path = srdf_resource->getFilePath();
+
   auto env = std::make_shared<Environment>();
-  env->init(urdf_path, srdf_path, locator);
+  ASSERT_TRUE(env->init(urdf_path, srdf_path, locator)) << "Environment::init() failed for abb_irb2400";
+
   auto manip = env->getJointGroup("manipulator");
-  return { env, manip };
+  ASSERT_NE(manip, nullptr) << "JointGroup 'manipulator' not found in abb_irb2400";
+
+  env_out = std::move(env);
+  manip_out = std::move(manip);
 }
 
 // ---------------------------------------------------------------------------
@@ -199,8 +214,9 @@ TEST(CartPositionOptimizationTrajoptSCO, cart_position_seed_outside_band_snaps_t
   console_bridge::setLogLevel(console_bridge::LogLevel::CONSOLE_BRIDGE_LOG_NONE);
   trajopt_common::gLogLevel = trajopt_common::LevelError;
 
-  auto [env, manip] = buildAbbIrb2400Env();
-  ASSERT_NE(manip, nullptr);
+  std::shared_ptr<Environment> env;
+  tesseract::kinematics::JointGroup::ConstPtr manip;
+  ASSERT_NO_FATAL_FAILURE(buildAbbIrb2400Env(env, manip));
   ASSERT_EQ(manip->numJoints(), 6U);
 
   Eigen::VectorXd start_pos(6);
@@ -345,8 +361,9 @@ TEST(CartPositionOptimizationTrajoptSCO, cart_position_seed_inside_band_uses_ban
   console_bridge::setLogLevel(console_bridge::LogLevel::CONSOLE_BRIDGE_LOG_NONE);
   trajopt_common::gLogLevel = trajopt_common::LevelError;
 
-  auto [env, manip] = buildAbbIrb2400Env();
-  ASSERT_NE(manip, nullptr);
+  std::shared_ptr<Environment> env;
+  tesseract::kinematics::JointGroup::ConstPtr manip;
+  ASSERT_NO_FATAL_FAILURE(buildAbbIrb2400Env(env, manip));
   ASSERT_EQ(manip->numJoints(), 6U);
 
   Eigen::VectorXd start_pos(6);
