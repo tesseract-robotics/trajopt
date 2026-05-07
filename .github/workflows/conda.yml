@@ -27,7 +27,7 @@ jobs:
     - name: vcs import
       run: >
         vcs import --input "${{ github.workspace }}/workspace/src/trajopt/.github/workflows/windows_dependencies.repos" workspace/src/
-    - uses: conda-incubator/setup-miniconda@v3
+    - uses: conda-incubator/setup-miniconda@v4
       with:
         channel-priority: strict
         environment-file: workspace/src/trajopt/.github/workflows/conda/environment.yml
@@ -61,7 +61,7 @@ jobs:
     - name: vcs import
       run: >
         vcs import --input "${{ github.workspace }}/workspace/src/trajopt/.github/workflows/windows_dependencies.repos" workspace/src/
-    - uses: conda-incubator/setup-miniconda@v3
+    - uses: conda-incubator/setup-miniconda@v4
       with:
         channel-priority: strict
         environment-file: workspace/src/trajopt/.github/workflows/conda/environment.yml
@@ -80,7 +80,7 @@ jobs:
         
         rattler-build build -m .ci_support/linux_64_.yaml --recipe recipe/recipe.yaml
   conda-mac:
-    runs-on: macos-15-intel
+    runs-on: macos-15
     defaults:
       run:
         shell: bash -el {0}
@@ -94,7 +94,7 @@ jobs:
     - name: vcs import
       run: >
         vcs import --input "${{ github.workspace }}/workspace/src/trajopt/.github/workflows/windows_dependencies.repos" workspace/src/
-    - uses: conda-incubator/setup-miniconda@v3
+    - uses: conda-incubator/setup-miniconda@v4
       with:
         channel-priority: strict
         environment-file: workspace/src/trajopt/.github/workflows/conda/environment.yml
@@ -110,5 +110,5 @@ jobs:
         cd conda
         conda-smithy regenerate --no-check-uptodate
         
-        rattler-build build -m .ci_support/osx_64_.yaml  --recipe recipe/recipe.yaml
+        rattler-build build -m .ci_support/osx_arm64_.yaml  --recipe recipe/recipe.yaml
 
