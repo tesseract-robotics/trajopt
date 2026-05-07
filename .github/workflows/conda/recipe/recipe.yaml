@@ -17,12 +17,7 @@ requirements:
       - gtest
       - gmock
       - cmake
-      - if: win
-        then:
-          - ninja
-      - if: unix
-        then:
-          - make
+      - ninja
       - pkg-config
       - swig
       - colcon-common-extensions 
