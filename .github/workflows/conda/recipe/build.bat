@@ -1,7 +1,7 @@
 
 colcon build --merge-install --install-base="%PREFIX%\opt\tesseract_robotics" ^
    --event-handlers console_direct+ desktop_notification- status- terminal_title- ^
-   --packages-ignore gtest osqp osqp_eigen tesseract_examples ^
+   --packages-ignore gtest osqp osqp_eigen tesseract_examples vhacd ^
    --cmake-args -GNinja -DCMAKE_BUILD_TYPE=Release ^
    -DCMAKE_CXX_FLAGS_RELWITHDEBINFO:STRING="/MD /O2 /Ob0 /Zi /DNDEBUG" ^
    -DCMAKE_RELWITHDEBINFO_POSTFIX="" ^
@@ -26,9 +26,7 @@ set TESSERACT_RESOURCE_PATH=%PREFIX%\opt\tesseract_robotics\share
 
 colcon test --event-handlers console_direct+ desktop_notification- status- terminal_title- ^
    --return-code-on-test-failure ^
-   --packages-ignore gtest osqp osqp_eigen tesseract_examples tesseract_common ^
-   tesseract_collision tesseract_environment tesseract_geometry tesseract_kinematics tesseract_scene_graph ^
-   tesseract_srdf tesseract_state_solver tesseract_support tesseract_urdf tesseract_visualization ^
+   --packages-ignore gtest osqp osqp_eigen tesseract vhacd boost_plugin_loader opw_kinematics qpoases ^
    --merge-install --install-base="%PREFIX%\opt\tesseract_robotics"
 
 if %errorlevel% neq 0 exit /b %errorlevel%
