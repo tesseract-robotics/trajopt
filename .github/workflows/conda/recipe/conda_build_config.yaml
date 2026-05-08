@@ -1,0 +1,4 @@
+libboost_devel:
+- '1.88'
+eigen_abi_devel:
+- '5.0.1'
