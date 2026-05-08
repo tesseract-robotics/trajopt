@@ -88,7 +88,9 @@ tests:
       - if: unix
         then:
           - opt/tesseract_robotics/include/trajopt/fwd.hpp
-          - opt/tesseract_robotics/lib/libtrajopt.so
+          - if: osx
+            then: opt/tesseract_robotics/lib/libtrajopt.dylib
+            else: opt/tesseract_robotics/lib/libtrajopt.so
         else:
           - opt\\tesseract_robotics\\include\\trajopt\\fwd.hpp
           - opt\\tesseract_robotics\\lib\\trajopt.dll
