@@ -3,13 +3,13 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <ctime>
 #include <sstream>
 #include <gtest/gtest.h>
-#include <tesseract_common/types.h>
-#include <tesseract_common/stopwatch.h>
-#include <tesseract_common/resource_locator.h>
-#include <tesseract_kinematics/core/joint_group.h>
-#include <tesseract_environment/environment.h>
-#include <tesseract_environment/utils.h>
-#include <tesseract_visualization/visualization.h>
+#include <tesseract/common/types.h>
+#include <tesseract/common/stopwatch.h>
+#include <tesseract/common/resource_locator.h>
+#include <tesseract/kinematics/joint_group.h>
+#include <tesseract/environment/environment.h>
+#include <tesseract/environment/utils.h>
+#include <tesseract/visualization/visualization.h>
 #include <console_bridge/console.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
@@ -26,12 +26,12 @@ TRAJOPT_IGNORE_WARNINGS_POP
 using namespace trajopt;
 using namespace std;
 using namespace trajopt_common;
-using namespace tesseract_environment;
-using namespace tesseract_collision;
-using namespace tesseract_kinematics;
-using namespace tesseract_visualization;
-using namespace tesseract_scene_graph;
-using namespace tesseract_common;
+using namespace tesseract::environment;
+using namespace tesseract::collision;
+using namespace tesseract::kinematics;
+using namespace tesseract::visualization;
+using namespace tesseract::scene_graph;
+using namespace tesseract::common;
 
 class NumericalIKTest : public testing::TestWithParam<const char*>
 {
@@ -43,7 +43,7 @@ public:
     const std::filesystem::path urdf_file(std::string(TRAJOPT_DATA_DIR) + "/arm_around_table.urdf");
     const std::filesystem::path srdf_file(std::string(TRAJOPT_DATA_DIR) + "/pr2.srdf");
 
-    const ResourceLocator::Ptr locator = std::make_shared<tesseract_common::GeneralResourceLocator>();
+    const ResourceLocator::Ptr locator = std::make_shared<tesseract::common::GeneralResourceLocator>();
     EXPECT_TRUE(env_->init(urdf_file, srdf_file, locator));
 
     // Create plotting tool
@@ -101,12 +101,12 @@ void runTest(const Environment::Ptr& env, const Visualization::Ptr& /*plotter*/,
   ss = std::stringstream();
   ss << initial_pose.translation().transpose();
   CONSOLE_BRIDGE_logDebug("Initial Position: %s", ss.str().c_str());
-  tesseract_common::Stopwatch stopwatch;
+  tesseract::common::Stopwatch stopwatch;
   stopwatch.start();
   const sco::OptStatus status = opt->optimize();
   stopwatch.stop();
   CONSOLE_BRIDGE_logError("Test took %f seconds.", stopwatch.elapsedSeconds());
-  CONSOLE_BRIDGE_logDebug("Status: %s", sco::statusToString(status).c_str());
+  CONSOLE_BRIDGE_logDebug("Status: %s", sco::toString(status).c_str());
   Eigen::Isometry3d final_pose = prob->GetKin()->calcFwdKin(toVectorXd(opt->x())).at("l_gripper_tool_frame");
   final_pose = change_base * final_pose;
 

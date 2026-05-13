@@ -2,6 +2,24 @@
 Changelog for package osqp_eigen
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.34.4 (2026-02-18)
+-------------------
+* Change name of OsqpEigen Ext package, as it collided with OsqpEigen proper
+* Add nodes variable set (`#438 <https://github.com/tesseract-robotics/trajopt/issues/438>`_)
+* Contributors: Levi Armstrong, Roelof Oomen
+
+0.33.0 (2025-10-28)
+-------------------
+* Update to osqp_eigen 0.11.0
+* Contributors: Levi Armstrong
+
+0.32.0 (2025-09-10)
+-------------------
+* Update OSQP dependency to v1.0.0 and OSQPEigen to v0.10.3 (`#474 <https://github.com/tesseract-robotics/trajopt/issues/474>`_)
+* Fix disable external cmake variable names
+* Add ability to disable packages in external build via cmake
+* Contributors: Levi Armstrong, Roelof Oomen
+
 0.31.0 (2025-07-06)
 -------------------
 

@@ -4,8 +4,6 @@
  *
  * @author Matthew Powelson
  * @date May 18, 2020
- * @version TODO
- * @bug No known bugs
  *
  * @copyright Copyright (c) 2020, Southwest Research Institute
  *
@@ -27,16 +25,16 @@
 
 #include <trajopt_ifopt/constraints/cartesian_position_constraint.h>
 
-#include <tesseract_scene_graph/link.h>
+#include <tesseract/scene_graph/link.h>
 
-#include <tesseract_visualization/visualization.h>
-#include <tesseract_visualization/markers/arrow_marker.h>
-#include <tesseract_visualization/markers/axis_marker.h>
+#include <tesseract/visualization/visualization.h>
+#include <tesseract/visualization/markers/arrow_marker.h>
+#include <tesseract/visualization/markers/axis_marker.h>
 
 using namespace trajopt_sqp;
 
 CartesianErrorPlottingCallback::CartesianErrorPlottingCallback(
-    std::shared_ptr<tesseract_visualization::Visualization> plotter)
+    std::shared_ptr<tesseract::visualization::Visualization> plotter)
   : plotter_(std::move(plotter))
 {
 }
@@ -45,21 +43,21 @@ void CartesianErrorPlottingCallback::plot(const QPProblem& /*problem*/)
 {
   for (const auto& cnt : cart_position_cnts_)
   {
-    Eigen::Isometry3d current_pose = cnt->GetCurrentPose();
-    Eigen::Isometry3d target_pose = cnt->GetTargetPose();
+    Eigen::Isometry3d current_pose = cnt->getCurrentPose();
+    Eigen::Isometry3d target_pose = cnt->getTargetPose();
 
     if (plotter_)
     {
-      tesseract_visualization::AxisMarker m1(current_pose);
+      tesseract::visualization::AxisMarker m1(current_pose);
       m1.setScale(Eigen::Vector3d::Constant(0.05));
       plotter_->plotMarker(m1);
 
-      tesseract_visualization::AxisMarker m2(target_pose);
+      tesseract::visualization::AxisMarker m2(target_pose);
       m2.setScale(Eigen::Vector3d::Constant(0.05));
       plotter_->plotMarker(m2);
 
-      tesseract_visualization::ArrowMarker m3(current_pose.translation(), target_pose.translation());
-      m3.material = std::make_shared<tesseract_scene_graph::Material>("cart_pose_error_material");
+      tesseract::visualization::ArrowMarker m3(current_pose.translation(), target_pose.translation());
+      m3.material = std::make_shared<tesseract::scene_graph::Material>("cart_pose_error_material");
       m3.material->color << 1, 0, 1, 1;
       plotter_->plotMarker(m3);
     }

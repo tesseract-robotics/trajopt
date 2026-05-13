@@ -4,8 +4,6 @@
  *
  * @author Matthew Powelson
  * @date May 18, 2020
- * @version TODO
- * @bug No known bugs
  *
  * @copyright Copyright (c) 2020, Southwest Research Institute
  *
@@ -24,13 +22,17 @@
  * limitations under the License.
  */
 #include <trajopt_sqp/osqp_eigen_solver.h>
+#include <trajopt_sqp/qp_problem.h>
 
 #include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <OsqpEigen/OsqpEigen.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
-const bool OSQP_COMPARE_DEBUG_MODE = false;
+namespace
+{
+constexpr bool OSQP_COMPARE_DEBUG_MODE = false;
+}
 
 namespace trajopt_sqp
 {
@@ -63,10 +65,12 @@ bool OSQPEigenSolver::init(Eigen::Index num_vars, Eigen::Index num_cnts)
   // Set the solver size
   num_cnts_ = num_cnts;
   num_vars_ = num_vars;
+  x0_.setZero(num_vars_);
+  y0_.setZero(num_cnts_);
   solver_->data()->setNumberOfVariables(static_cast<int>(num_vars_));
   solver_->data()->setNumberOfConstraints(static_cast<int>(num_cnts_));
 
-  solver_status_ = QPSolverStatus::INITIALIZED;
+  solver_status_ = QPSolverStatus::kInitialized;
 
   return true;
 }
@@ -77,6 +81,15 @@ bool OSQPEigenSolver::clear()
   solver_->clearSolver();
   solver_->data()->clearHessianMatrix();
   solver_->data()->clearLinearConstraintsMatrix();
+
+  num_vars_ = 0;
+  num_cnts_ = 0;
+  x0_.resize(0);
+  y0_.resize(0);
+  gradient_.resize(0);
+  bounds_lower_.resize(0);
+  bounds_upper_.resize(0);
+  solver_status_ = QPSolverStatus::kUninitialized;
   return true;
 }
 
@@ -84,11 +97,21 @@ bool OSQPEigenSolver::solve()
 {
   // In order to call initSolver, everything must have already been set, so we call it right before solving
   if (!solver_->isInitialized())  // NOLINT
-    solver_->initSolver();
+  {
+    if (!solver_->initSolver())
+    {
+      solver_status_ = QPSolverStatus::kFailed;
+      return false;
+    }
 
+    // Apply stored warm start if the setting is enabled
+    if (solver_->settings()->getSettings()->warm_starting == 1)
+      solver_->setWarmStart(x0_, y0_);
+  }
+
+  const Eigen::IOFormat format(8);
   if (OSQP_COMPARE_DEBUG_MODE)
   {
-    const Eigen::IOFormat format(5);
     const auto* osqp_data = solver_->data()->getData();
     std::cout << "OSQP Number of Variables:" << osqp_data->n << '\n';
     std::cout << "OSQP Number of Constraints:" << osqp_data->m << '\n';
@@ -105,6 +128,10 @@ bool OSQPEigenSolver::solve()
     std::cout << "         i:" << P_i_vec.transpose().format(format) << '\n';
     std::cout << "         x:" << P_x_vec.transpose().format(format) << '\n';
 
+    // Eigen::SparseMatrix<OSQPFloat> P_dense;
+    // OsqpEigen::SparseMatrixHelper::osqpSparseMatrixToEigenSparseMatrix<OSQPFloat>(osqp_data->P, P_dense);
+    // std::cout << "         d:\n" << P_dense.toDense().format(format) << '\n';
+
     Eigen::Map<Eigen::VectorXd> q_vec(osqp_data->q, osqp_data->n);
     std::cout << "OSQP Gradient: " << q_vec.transpose().format(format) << '\n';
 
@@ -119,12 +146,14 @@ bool OSQPEigenSolver::solve()
     std::cout << "         i:" << A_i_vec.transpose().format(format) << '\n';
     std::cout << "         x:" << A_x_vec.transpose().format(format) << '\n';
 
+    // Eigen::SparseMatrix<OSQPFloat> A_dense;
+    // OsqpEigen::SparseMatrixHelper::osqpSparseMatrixToEigenSparseMatrix<OSQPFloat>(osqp_data->A, A_dense);
+    // std::cout << "         d:\n" << A_dense.toDense().format(format) << '\n';
+
     Eigen::Map<Eigen::Matrix<OSQPFloat, Eigen::Dynamic, 1>> l_vec(osqp_data->l, osqp_data->m);
     Eigen::Map<Eigen::Matrix<OSQPFloat, Eigen::Dynamic, 1>> u_vec(osqp_data->u, osqp_data->m);
     std::cout << "OSQP Lower Bounds: " << l_vec.transpose().format(format) << '\n';
     std::cout << "OSQP Upper Bounds: " << u_vec.transpose().format(format) << '\n';
-
-    std::cout << "OSQP Variable Names: " << '\n';
   }
 
   /** @todo Need to check if this is what we want in the new version */
@@ -138,7 +167,6 @@ bool OSQPEigenSolver::solve()
   {
     if (OSQP_COMPARE_DEBUG_MODE)
     {
-      const Eigen::IOFormat format(5);
       std::cout << "OSQP Solution: " << solver_->getSolution().transpose().format(format) << '\n';
     }
     return true;
@@ -183,37 +211,26 @@ bool OSQPEigenSolver::solve()
     }
   }
 
-  solver_status_ = QPSolverStatus::QP_ERROR;
+  solver_status_ = QPSolverStatus::kFailed;
   return false;
 }
 
-Eigen::VectorXd OSQPEigenSolver::getSolution()
-{
-  Eigen::VectorXd solution = solver_->getSolution();
-  return solution;
-}
+Eigen::VectorXd OSQPEigenSolver::getSolution() { return solver_->getSolution(); }
 
-bool OSQPEigenSolver::updateHessianMatrix(const SparseMatrix& hessian)
+bool OSQPEigenSolver::updateHessianMatrix(const trajopt_ifopt::Jacobian& hessian)
 {
-  // Clean up values close to 0
   // Also multiply by 2 because OSQP is multiplying by (1/2) for the objective fuction
-  const SparseMatrix cleaned = 2.0 * hessian.pruned(1e-7, 1);  // Any value < 1e-7 will be removed
-
+  auto h2 = 2.0 * hessian; /** @todo This should be handled already by who is calling this function */
   if (solver_->isInitialized())
-  {
-    const bool success = solver_->updateHessianMatrix(cleaned);
-    return success;
-  }
+    return solver_->updateHessianMatrix(h2.eval());
 
   solver_->data()->clearHessianMatrix();
-  const bool success = solver_->data()->setHessianMatrix(cleaned);
-
-  return success;
+  return solver_->data()->setHessianMatrix(h2.eval());
 }
 
 bool OSQPEigenSolver::updateGradient(const Eigen::Ref<const Eigen::VectorXd>& gradient)
 {
-  gradient_ = gradient;
+  gradient_ = (gradient.array().abs() < 1e-7).select(0.0, gradient.array());
 
   if (solver_->isInitialized())
     return solver_->updateGradient(gradient_);
@@ -242,27 +259,70 @@ bool OSQPEigenSolver::updateBounds(const Eigen::Ref<const Eigen::VectorXd>& lowe
   if (solver_->isInitialized())
     return solver_->updateBounds(bounds_lower_, bounds_upper_);
 
-  bool success = solver_->data()->setLowerBound(bounds_lower_);
-  success &= solver_->data()->setUpperBound(bounds_upper_);
-  return success;
+  return solver_->data()->setBounds(bounds_lower_, bounds_upper_);
 }
 
-bool OSQPEigenSolver::updateLinearConstraintsMatrix(const SparseMatrix& linearConstraintsMatrix)
+bool OSQPEigenSolver::updateLinearConstraintsMatrix(const trajopt_ifopt::Jacobian& linearConstraintsMatrix)
 {
   assert(num_cnts_ == linearConstraintsMatrix.rows());
   assert(num_vars_ == linearConstraintsMatrix.cols());
 
-  solver_->data()->clearLinearConstraintsMatrix();
-  const SparseMatrix cleaned = linearConstraintsMatrix.pruned(1e-7, 1);  // Any value < 1e-7 will be removed
-
   if (solver_->isInitialized())
+    return solver_->updateLinearConstraintsMatrix(linearConstraintsMatrix);
+
+  solver_->data()->clearLinearConstraintsMatrix();
+  return solver_->data()->setLinearConstraintsMatrix(linearConstraintsMatrix);
+}
+
+bool OSQPEigenSolver::setWarmStart(const QPProblem& qp_problem)
+{
+  if (solver_->settings()->getSettings()->warm_starting != 1)
+    return true;
+
+  // Initialize primal variables with NLP variables followed by slack variables
+  const Eigen::Index num_nlp_vars = qp_problem.getNumNLPVars();
+  const Eigen::Index num_slacks = num_vars_ - num_nlp_vars;
+  x0_.setZero(num_vars_);
+
+  // Extract NLP variable values from the problem
+  const Eigen::VectorXd nlp_vars = qp_problem.getVariableValues();
+  assert(nlp_vars.size() == num_nlp_vars);
+
+  // Set the primal NLP variables
+  x0_.head(num_nlp_vars) = nlp_vars;
+
+  // If there are slack variables, compute them from constraint violations
+  if (num_slacks > 0)
   {
-    const bool success = solver_->updateLinearConstraintsMatrix(cleaned);
-    return success;
+    // Evaluate constraint violations at current NLP variables
+    const Eigen::VectorXd violations = qp_problem.evaluateConvexConstraintViolations(nlp_vars);
+
+    // Get the constraint matrix (row-major)
+    const trajopt_ifopt::Jacobian& constraint_matrix = qp_problem.getConstraintMatrix();
+
+    for (Eigen::Index k = 0; k < violations.size(); ++k)
+    {
+      for (trajopt_ifopt::Jacobian::InnerIterator it(constraint_matrix, k); it; ++it)
+      {
+        const Eigen::Index col_idx = it.col();
+        const double coeff = it.value();
+
+        // Slack variables start at index num_nlp_vars
+        if (col_idx >= num_nlp_vars && std::abs(coeff) > 1e-14)
+        {
+          // Slack is computed as: slack = violation / coefficient
+          double slack = violations(k) / coeff;
+          // Enforce non-negativity constraint on slack variables
+          x0_(col_idx) = std::max(0.0, slack);
+        }
+      }
+    }
   }
 
-  const bool success = solver_->data()->setLinearConstraintsMatrix(cleaned);
-  return success;
+  // Initialize dual variables to zero
+  y0_.setZero(num_cnts_);
+
+  return true;
 }
 
 }  // namespace trajopt_sqp

@@ -2,9 +2,9 @@ cmake_minimum_required(VERSION 3.5.0)
 find_package(ros_industrial_cmake_boilerplate REQUIRED)
 
 extract_package_metadata(pkg)
-project(OsqpEigen VERSION ${pkg_extracted_version} LANGUAGES CXX)
+project(OsqpEigen_Ext VERSION ${pkg_extracted_version} LANGUAGES CXX)
 
-set(TRAJOPT_OSQPEIGEN_VERSION "0.10.3")
+set(TRAJOPT_OSQPEIGEN_VERSION "0.11.0")
 # Remove patch version for find_package
 string(
   REGEX
@@ -37,10 +37,11 @@ if(NOT ${OsqpEigen_FOUND} AND NOT TRAJOPT_OSQP_DISABLED)
     BINARY_DIR ${CMAKE_BINARY_DIR}-build
     CMAKE_ARGS ${ssh_auth_sock_env}
     CMAKE_CACHE_ARGS
-      -DCMAKE_INSTALL_PREFIX:STRING=${CMAKE_INSTALL_PREFIX}
       -DCMAKE_BUILD_TYPE:STRING=Release
+      -DCMAKE_INSTALL_PREFIX:STRING=${CMAKE_INSTALL_PREFIX}
       -DCMAKE_TOOLCHAIN_FILE:STRING=${CMAKE_TOOLCHAIN_FILE}
-      -DVCPKG_TARGET_TRIPLET:STRING=${VCPKG_TARGET_TRIPLET})
+      -DVCPKG_TARGET_TRIPLET:STRING=${VCPKG_TARGET_TRIPLET}
+      -DOSQP_EIGEN_DEBUG_OUTPUT=OFF)
 
   if(TRAJOPT_PACKAGE)
     find_package(ros_industrial_cmake_boilerplate REQUIRED)

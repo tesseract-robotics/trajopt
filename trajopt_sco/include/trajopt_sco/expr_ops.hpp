@@ -27,10 +27,18 @@ inline void exprInc(AffExpr& a, const AffExpr& b)
   a.coeffs.insert(a.coeffs.end(), b.coeffs.begin(), b.coeffs.end());
   a.vars.insert(a.vars.end(), b.vars.begin(), b.vars.end());
 }
+// NOLINTNEXTLINE(cppcoreguidelines-rvalue-reference-param-not-moved): members are moved via make_move_iterator
+inline void exprInc(AffExpr& a, AffExpr&& b)
+{
+  a.constant += b.constant;
+  a.coeffs.insert(a.coeffs.end(), std::make_move_iterator(b.coeffs.begin()), std::make_move_iterator(b.coeffs.end()));
+  a.vars.insert(a.vars.end(), std::make_move_iterator(b.vars.begin()), std::make_move_iterator(b.vars.end()));
+}
 inline void exprInc(AffExpr& a, const Var& b) { exprInc(a, AffExpr(b)); }
 inline void exprInc(QuadExpr& a, double b) { exprInc(a.affexpr, b); }
 inline void exprInc(QuadExpr& a, const Var& b) { exprInc(a.affexpr, AffExpr(b)); }
 inline void exprInc(QuadExpr& a, const AffExpr& b) { exprInc(a.affexpr, b); }
+inline void exprInc(QuadExpr& a, AffExpr&& b) { exprInc(a.affexpr, std::move(b)); }
 inline void exprInc(QuadExpr& a, const QuadExpr& b)
 {
   exprInc(a.affexpr, b.affexpr);
@@ -38,22 +46,31 @@ inline void exprInc(QuadExpr& a, const QuadExpr& b)
   a.vars1.insert(a.vars1.end(), b.vars1.begin(), b.vars1.end());
   a.vars2.insert(a.vars2.end(), b.vars2.begin(), b.vars2.end());
 }
+// NOLINTNEXTLINE(cppcoreguidelines-rvalue-reference-param-not-moved): members are moved via make_move_iterator
+inline void exprInc(QuadExpr& a, QuadExpr&& b)
+{
+  exprInc(a.affexpr, std::move(b.affexpr));
+  a.coeffs.insert(a.coeffs.end(), std::make_move_iterator(b.coeffs.begin()), std::make_move_iterator(b.coeffs.end()));
+  a.vars1.insert(a.vars1.end(), std::make_move_iterator(b.vars1.begin()), std::make_move_iterator(b.vars1.end()));
+  a.vars2.insert(a.vars2.end(), std::make_move_iterator(b.vars2.begin()), std::make_move_iterator(b.vars2.end()));
+}
 
 // subtraction
 inline void exprDec(AffExpr& a, double b) { a.constant -= b; }
 inline void exprDec(AffExpr& a, AffExpr b)
 {
   exprScale(b, -1);
-  exprInc(a, b);
+  exprInc(a, std::move(b));
 }
 inline void exprDec(AffExpr& a, const Var& b) { exprDec(a, AffExpr(b)); }
 inline void exprDec(QuadExpr& a, double b) { exprDec(a.affexpr, b); }
 inline void exprDec(QuadExpr& a, const Var& b) { exprDec(a.affexpr, b); }
 inline void exprDec(QuadExpr& a, const AffExpr& b) { exprDec(a.affexpr, b); }
+inline void exprDec(QuadExpr& a, AffExpr&& b) { exprDec(a.affexpr, std::move(b)); }
 inline void exprDec(QuadExpr& a, QuadExpr b)
 {
   exprScale(b, -1);
-  exprInc(a, b);
+  exprInc(a, std::move(b));
 }
 
 /////////////////////

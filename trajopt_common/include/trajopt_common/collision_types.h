@@ -5,7 +5,6 @@
  * @author Levi Armstrong
  * @author Matthew Powelson
  * @date Nov 24, 2020
- * @version TODO
  *
  * @par License
  * Software License Agreement (Apache License)
@@ -30,18 +29,25 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <array>
 #include <memory>
 #include <functional>
-#include <tesseract_collision/core/types.h>
-#include <tesseract_common/types.h>
-#include <tesseract_common/eigen_types.h>
+#include <tesseract/collision/types.h>
+#include <tesseract/common/types.h>
+#include <tesseract/common/eigen_types.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace trajopt_common
 {
-using GetStateFn = std::function<tesseract_common::TransformMap(const Eigen::Ref<const Eigen::VectorXd>& joint_values)>;
+using GetStateFn =
+    std::function<tesseract::common::TransformMap(const Eigen::Ref<const Eigen::VectorXd>& joint_values)>;
+
+class CollisionCoeffData;
+
+template <class Archive>
+void serialize(Archive& ar, CollisionCoeffData& obj);
 
 /** @brief Stores information about how the margins allowed between collision objects */
-struct CollisionCoeffData
+class CollisionCoeffData
 {
+public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
   using Ptr = std::shared_ptr<CollisionCoeffData>;
@@ -89,28 +95,29 @@ struct CollisionCoeffData
    * @brief Get all collision coefficient pair data
    * @return A reference to the lookup table containing all pair-specific coefficients
    */
-  const std::unordered_map<tesseract_common::LinkNamesPair, double>& getCollisionCoeffPairData() const;
+  const std::unordered_map<tesseract::common::LinkNamesPair, double>& getCollisionCoeffPairData() const;
 
   /**
    * @brief Get the pairs with zero coeff
    * @return A vector of pairs with zero coeff
    */
-  const std::set<tesseract_common::LinkNamesPair>& getPairsWithZeroCoeff() const;
+  const std::set<tesseract::common::LinkNamesPair>& getPairsWithZeroCoeff() const;
+
+  bool operator==(const CollisionCoeffData& rhs) const;
+  bool operator!=(const CollisionCoeffData& rhs) const;
 
 private:
   /// Stores the collision coefficient used if no pair-specific one is set
   double default_collision_coeff_{ 1 };
 
   /// A map of link pair names to contact distance
-  std::unordered_map<tesseract_common::LinkNamesPair, double> lookup_table_;
+  std::unordered_map<tesseract::common::LinkNamesPair, double> lookup_table_;
 
   /// Pairs containing zero coeff
-  std::set<tesseract_common::LinkNamesPair> zero_coeff_;
+  std::set<tesseract::common::LinkNamesPair> zero_coeff_;
 
-  friend class boost::serialization::access;
-  friend struct tesseract_common::Serialization;
   template <class Archive>
-  void serialize(Archive&, const unsigned int);  // NOLINT
+  friend void ::trajopt_common::serialize(Archive& ar, CollisionCoeffData& obj);
 };
 
 /**
@@ -125,20 +132,20 @@ struct TrajOptCollisionConfig
   TrajOptCollisionConfig(
       double margin,
       double coeff,
-      tesseract_collision::ContactRequest request = tesseract_collision::ContactRequest(),
-      tesseract_collision::CollisionEvaluatorType type = tesseract_collision::CollisionEvaluatorType::DISCRETE,
+      tesseract::collision::ContactRequest request = tesseract::collision::ContactRequest(),
+      tesseract::collision::CollisionEvaluatorType type = tesseract::collision::CollisionEvaluatorType::DISCRETE,
       double longest_valid_segment_length = 0.005,
-      tesseract_collision::CollisionCheckProgramType check_program_mode =
-          tesseract_collision::CollisionCheckProgramType::ALL);
+      tesseract::collision::CollisionCheckProgramType check_program_mode =
+          tesseract::collision::CollisionCheckProgramType::ALL);
 
   /** @brief If true, a collision will be added to the problem. Default: true*/
   bool enabled = true;
 
   /** @brief The contact manager config */
-  tesseract_collision::ContactManagerConfig contact_manager_config;
+  tesseract::collision::ContactManagerConfig contact_manager_config;
 
   /** @brief The contact check config */
-  tesseract_collision::CollisionCheckConfig collision_check_config;
+  tesseract::collision::CollisionCheckConfig collision_check_config;
 
   /** @brief The collision coeff/weight */
   CollisionCoeffData collision_coeff_data;
@@ -154,11 +161,8 @@ struct TrajOptCollisionConfig
    */
   int max_num_cnt{ 3 };
 
-protected:
-  friend class boost::serialization::access;
-  friend struct tesseract_common::Serialization;
-  template <class Archive>
-  void serialize(Archive&, const unsigned int);  // NOLINT
+  bool operator==(const TrajOptCollisionConfig& rhs) const;
+  bool operator!=(const TrajOptCollisionConfig& rhs) const;
 };
 
 /** @brief A data structure to contain a links gradient results */
@@ -180,7 +184,10 @@ struct LinkGradientResults
   double scale{ 1.0 };
 
   /** @brief The continuous collision type */
-  tesseract_collision::ContinuousCollisionType cc_type{ tesseract_collision::ContinuousCollisionType::CCType_None };
+  tesseract::collision::ContinuousCollisionType cc_type{ tesseract::collision::ContinuousCollisionType::CCType_None };
+
+  // Reset to default settings
+  void clear();
 };
 
 /** @brief A data structure to contain a link pair gradient results */
@@ -204,6 +211,9 @@ struct GradientResults
 
   /** @brief The error (margin + margin_buffer - dist_result.distance) */
   double error_with_buffer{ 0 };
+
+  // Reset to default settings
+  void clear();
 };
 
 struct LinkMaxError
@@ -278,7 +288,7 @@ struct GradientResultsSet
    * @brief This updates max error data
    * @param gradient_result The gradient results to add
    */
-  void add(const GradientResults& gradient_result);
+  void add(GradientResults gradient_result);
 
   /** @brief Get the max error including T0 and T1 */
   double getMaxError() const;
@@ -305,13 +315,10 @@ struct CollisionCacheData
   using Ptr = std::shared_ptr<CollisionCacheData>;
   using ConstPtr = std::shared_ptr<const CollisionCacheData>;
 
-  tesseract_collision::ContactResultMap contact_results_map;
+  tesseract::collision::ContactResultMap contact_results_map;
   std::vector<GradientResultsSet> gradient_results_sets;
 };
 
 }  // namespace trajopt_common
-
-BOOST_CLASS_EXPORT_KEY(trajopt_common::CollisionCoeffData)
-BOOST_CLASS_EXPORT_KEY(trajopt_common::TrajOptCollisionConfig)
 
 #endif  // TRAJOPT_COMMON_COLLISION_TYPES_H

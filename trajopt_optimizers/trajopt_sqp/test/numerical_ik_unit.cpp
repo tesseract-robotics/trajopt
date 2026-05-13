@@ -5,8 +5,6 @@
  * @author Levi Armstrong
  * @author Matthew Powelson
  * @date May 18, 2020
- * @version TODO
- * @bug No known bugs
  *
  * @copyright Copyright (c) 2020, Southwest Research Institute
  *
@@ -31,21 +29,24 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <gtest/gtest.h>
 #include <console_bridge/console.h>
 #include <OsqpEigen/OsqpEigen.h>
-#include <tesseract_common/types.h>
-#include <tesseract_common/stopwatch.h>
-#include <tesseract_common/resource_locator.h>
-#include <tesseract_collision/core/continuous_contact_manager.h>
-#include <tesseract_kinematics/core/joint_group.h>
-#include <tesseract_state_solver/state_solver.h>
-#include <tesseract_environment/environment.h>
-#include <tesseract_environment/utils.h>
+#include <tesseract/common/types.h>
+#include <tesseract/common/stopwatch.h>
+#include <tesseract/common/resource_locator.h>
+#include <tesseract/collision/continuous_contact_manager.h>
+#include <tesseract/kinematics/joint_group.h>
+#include <tesseract/state_solver/state_solver.h>
+#include <tesseract/environment/environment.h>
+#include <tesseract/environment/utils.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
-#include <trajopt_ifopt/variable_sets/joint_position_variable.h>
+#include <trajopt_ifopt/variable_sets/nodes_variables.h>
+#include <trajopt_ifopt/variable_sets/node.h>
+#include <trajopt_ifopt/variable_sets/var.h>
 #include <trajopt_ifopt/constraints/collision/continuous_collision_constraint.h>
 #include <trajopt_ifopt/constraints/collision/continuous_collision_evaluators.h>
 #include <trajopt_ifopt/constraints/cartesian_position_constraint.h>
 #include <trajopt_ifopt/costs/squared_cost.h>
+#include <trajopt_ifopt/utils/ifopt_utils.h>
 
 #include <trajopt_sqp/ifopt_qp_problem.h>
 #include <trajopt_sqp/trajopt_qp_problem.h>
@@ -53,11 +54,11 @@ TRAJOPT_IGNORE_WARNINGS_POP
 #include <trajopt_sqp/osqp_eigen_solver.h>
 
 using namespace trajopt_ifopt;
-using namespace tesseract_environment;
-using namespace tesseract_collision;
-using namespace tesseract_kinematics;
-using namespace tesseract_scene_graph;
-using namespace tesseract_common;
+using namespace tesseract::environment;
+using namespace tesseract::collision;
+using namespace tesseract::kinematics;
+using namespace tesseract::scene_graph;
+using namespace tesseract::common;
 
 class NumericalIKTest : public testing::TestWithParam<const char*>
 {
@@ -69,7 +70,7 @@ public:
     const std::filesystem::path urdf_file(std::string(TRAJOPT_DATA_DIR) + "/arm_around_table.urdf");
     const std::filesystem::path srdf_file(std::string(TRAJOPT_DATA_DIR) + "/pr2.srdf");
 
-    const ResourceLocator::Ptr locator = std::make_shared<tesseract_common::GeneralResourceLocator>();
+    const ResourceLocator::Ptr locator = std::make_shared<GeneralResourceLocator>();
     EXPECT_TRUE(env->init(urdf_file, srdf_file, locator));
 
     // Create plotting tool
@@ -81,30 +82,36 @@ public:
   }
 };
 
-void runNumericalIKTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const Environment::Ptr& env)
+template <typename T>
+void runNumericalIKTest(const Environment::Ptr& env)
 {
-  const tesseract_scene_graph::StateSolver::Ptr state_solver = env->getStateSolver();
+  const StateSolver::Ptr state_solver = env->getStateSolver();
   const ContinuousContactManager::Ptr manager = env->getContinuousContactManager();
-  const tesseract_kinematics::JointGroup::ConstPtr manip = env->getJointGroup("left_arm");
+  const JointGroup::ConstPtr manip = env->getJointGroup("left_arm");
+  const std::vector<trajopt_ifopt::Bounds> bounds = trajopt_ifopt::toBounds(manip->getLimits().joint_limits);
 
   manager->setActiveCollisionObjects(manip->getActiveLinkNames());
   manager->setDefaultCollisionMargin(0);
 
   // 3) Add Variables
+  std::vector<std::unique_ptr<trajopt_ifopt::Node>> nodes;
+  auto node = std::make_unique<trajopt_ifopt::Node>("Joint_Position_0");
   Eigen::VectorXd cur_position(7);  // env->getCurrentJointValues(forward_kinematics->getJointNames());
   cur_position << 0, 0, 0, -0.001, 0, -0.001, 0;
-  auto var = std::make_shared<trajopt_ifopt::JointPosition>(
-      cur_position, manip->getJointNames(), manip->getLimits(), "Joint_Position_0");
-  qp_problem->addVariableSet(var);
+  auto var = node->addVar("position", manip->getJointNames(), cur_position, bounds);
+  nodes.push_back(std::move(node));
+  auto variables = std::make_shared<trajopt_ifopt::NodesVariables>("joint_trajectory", std::move(nodes));
+
+  // 2) Create problem
+  auto qp_problem = std::make_shared<T>(variables);
 
   // 4) Add constraints
   Eigen::Isometry3d target_pose = Eigen::Isometry3d::Identity();
   target_pose.linear() = Eigen::Quaterniond(0, 0, 1, 0).toRotationMatrix();
   target_pose.translation() = Eigen::Vector3d(0.4, 0, 0.8);
 
-  const CartPosInfo cart_info(
-      manip, "l_gripper_tool_frame", "base_footprint", Eigen::Isometry3d::Identity(), target_pose);
-  auto cnt = std::make_shared<trajopt_ifopt::CartPosConstraint>(cart_info, var);
+  auto cnt = std::make_shared<trajopt_ifopt::CartPosConstraint>(
+      var, manip, "l_gripper_tool_frame", "base_footprint", Eigen::Isometry3d::Identity(), target_pose);
   qp_problem->addConstraintSet(cnt);
 
   qp_problem->setup();
@@ -134,7 +141,7 @@ void runNumericalIKTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const Env
   // 6) solve
   solver.verbose = false;
 
-  tesseract_common::Stopwatch stopwatch;
+  Stopwatch stopwatch;
   stopwatch.start();
   solver.solve(qp_problem);
   stopwatch.stop();
@@ -142,7 +149,7 @@ void runNumericalIKTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const Env
 
   const Eigen::VectorXd x = qp_problem->getVariableValues();
 
-  EXPECT_TRUE(solver.getStatus() == trajopt_sqp::SQPStatus::NLP_CONVERGED);
+  EXPECT_TRUE(solver.getStatus() == trajopt_sqp::SQPStatus::kConverged);
 
   Eigen::Isometry3d final_pose = manip->calcFwdKin(x).at("l_gripper_tool_frame");
 
@@ -163,18 +170,130 @@ void runNumericalIKTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const Env
   CONSOLE_BRIDGE_logDebug("Final Vars: ", ss.str().c_str());
 }
 
+template <typename T>
+void runNumericalIKWithToleranceTest(const Environment::Ptr& env)
+{
+  const StateSolver::Ptr state_solver = env->getStateSolver();
+  const ContinuousContactManager::Ptr manager = env->getContinuousContactManager();
+  const JointGroup::ConstPtr manip = env->getJointGroup("left_arm");
+  const std::vector<trajopt_ifopt::Bounds> bounds = trajopt_ifopt::toBounds(manip->getLimits().joint_limits);
+
+  manager->setActiveCollisionObjects(manip->getActiveLinkNames());
+  manager->setDefaultCollisionMargin(0);
+
+  // 3) Add Variables
+  std::vector<std::unique_ptr<trajopt_ifopt::Node>> nodes;
+  auto node = std::make_unique<trajopt_ifopt::Node>("Joint_Position_0");
+  Eigen::VectorXd cur_position(7);  // env->getCurrentJointValues(forward_kinematics->getJointNames());
+  cur_position << 0, 0, 0, -0.001, 0, -0.001, 0;
+  auto var = node->addVar("position", manip->getJointNames(), cur_position, bounds);
+  nodes.push_back(std::move(node));
+  auto variables = std::make_shared<trajopt_ifopt::NodesVariables>("joint_trajectory", std::move(nodes));
+
+  // 2) Create problem
+  auto qp_problem = std::make_shared<T>(variables);
+
+  // 4) Add constraints
+  Eigen::Isometry3d target_pose = Eigen::Isometry3d::Identity();
+  target_pose.linear() = Eigen::Quaterniond(0, 0, 1, 0).toRotationMatrix();
+  target_pose.translation() = Eigen::Vector3d(0.4, 0, 0.8);
+
+  Eigen::VectorXd cart_coeffs = Eigen::VectorXd::Ones(6);
+  std::vector<Bounds> cart_bounds(6, trajopt_ifopt::BoundZero);
+  cart_bounds[0].setLower(-0.01);
+  cart_bounds[1].setLower(-0.01);
+  cart_bounds[2].setLower(-0.01);
+  cart_bounds[0].setUpper(0.01);
+  cart_bounds[1].setUpper(0.01);
+  cart_bounds[2].setUpper(0.01);
+  auto cnt = std::make_shared<trajopt_ifopt::CartPosConstraint>(var,
+                                                                cart_coeffs,
+                                                                cart_bounds,
+                                                                manip,
+                                                                "l_gripper_tool_frame",
+                                                                "base_footprint",
+                                                                Eigen::Isometry3d::Identity(),
+                                                                target_pose);
+  qp_problem->addConstraintSet(cnt);
+
+  qp_problem->setup();
+  qp_problem->print();
+
+  std::stringstream ss;
+  ss << cur_position;
+  CONSOLE_BRIDGE_logDebug("Initial Vars: %s", ss.str().c_str());
+
+  Eigen::Isometry3d initial_pose = manip->calcFwdKin(cur_position).at("l_gripper_tool_frame");
+
+  ss = std::stringstream();
+  ss << initial_pose.translation().transpose();
+  CONSOLE_BRIDGE_logDebug("Initial Position: %s", ss.str().c_str());
+
+  // 5) Setup solver
+  auto qp_solver = std::make_shared<trajopt_sqp::OSQPEigenSolver>();
+  trajopt_sqp::TrustRegionSQPSolver solver(qp_solver);
+  qp_solver->solver_->settings()->setVerbosity(true);
+  qp_solver->solver_->settings()->setWarmStart(true);
+  qp_solver->solver_->settings()->setPolish(true);
+  qp_solver->solver_->settings()->setAdaptiveRho(true);
+  qp_solver->solver_->settings()->setMaxIteration(8192);
+  qp_solver->solver_->settings()->setAbsoluteTolerance(1e-4);
+  qp_solver->solver_->settings()->setRelativeTolerance(1e-6);
+
+  // 6) solve
+  solver.verbose = true;
+
+  Stopwatch stopwatch;
+  stopwatch.start();
+  solver.solve(qp_problem);
+  stopwatch.stop();
+  CONSOLE_BRIDGE_logError("Test took %f seconds.", stopwatch.elapsedSeconds());
+
+  const Eigen::VectorXd x = qp_problem->getVariableValues();
+
+  EXPECT_TRUE(solver.getStatus() == trajopt_sqp::SQPStatus::kConverged);
+
+  Eigen::Isometry3d final_pose = manip->calcFwdKin(x).at("l_gripper_tool_frame");
+
+  // Check translation
+  EXPECT_LE(std::abs(final_pose(0, 3) - target_pose(0, 3)), 0.01001);
+  EXPECT_LE(std::abs(final_pose(1, 3) - target_pose(1, 3)), 0.01001);
+  EXPECT_LE(std::abs(final_pose(2, 3) - target_pose(2, 3)), 0.01001);
+
+  // Check rotation
+  for (auto i = 0; i < 3; ++i)
+  {
+    for (auto j = 0; j < 3; ++j)
+    {
+      EXPECT_NEAR(target_pose(i, j), final_pose(i, j), 1e-3);
+    }
+  }
+
+  ss = std::stringstream();
+  ss << final_pose.translation().transpose();
+  CONSOLE_BRIDGE_logDebug("Final Position: %s", ss.str().c_str());
+
+  ss = std::stringstream();
+  ss << x;
+  CONSOLE_BRIDGE_logDebug("Final Vars: ", ss.str().c_str());
+}
+
+TEST_F(NumericalIKTest, numerical_ik_with_tol_trajopt_problem)  // NOLINT
+{
+  CONSOLE_BRIDGE_logDebug("PlanningTest, numerical_ik_with_tol_trajopt_problem");
+  runNumericalIKWithToleranceTest<trajopt_sqp::TrajOptQPProblem>(env);
+}
+
 TEST_F(NumericalIKTest, numerical_ik_ifopt_problem)  // NOLINT
 {
   CONSOLE_BRIDGE_logDebug("PlanningTest, numerical_ik_ifopt_problem");
-  auto qp_problem = std::make_shared<trajopt_sqp::IfoptQPProblem>();
-  runNumericalIKTest(qp_problem, env);
+  runNumericalIKTest<trajopt_sqp::IfoptQPProblem>(env);
 }
 
 TEST_F(NumericalIKTest, numerical_ik_trajopt_problem)  // NOLINT
 {
   CONSOLE_BRIDGE_logDebug("PlanningTest, numerical_ik_trajopt_problem");
-  auto qp_problem = std::make_shared<trajopt_sqp::TrajOptQPProblem>();
-  runNumericalIKTest(qp_problem, env);
+  runNumericalIKTest<trajopt_sqp::TrajOptQPProblem>(env);
 }
 
 int main(int argc, char** argv)

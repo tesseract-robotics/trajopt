@@ -5,7 +5,6 @@
  * @author Levi Armstrong
  * @author Matthew Powelson
  * @date Nov 24, 2020
- * @version TODO
  *
  * @par License
  * Software License Agreement (Apache License)
@@ -25,6 +24,8 @@
 #include <trajopt_ifopt/constraints/collision/weighted_average_methods.h>
 #include <trajopt_common/collision_types.h>
 
+#include <cassert>
+
 namespace trajopt_ifopt
 {
 Eigen::VectorXd getWeightedAvgGradientT0(const trajopt_common::GradientResultsSet& grad_results_set,
@@ -43,7 +44,7 @@ Eigen::VectorXd getWeightedAvgGradientT0(const trajopt_common::GradientResultsSe
     for (std::size_t i = 0; i < 2; ++i)
     {
       if (grad.gradients[i].has_gradient &&
-          (grad.gradients[i].cc_type != tesseract_collision::ContinuousCollisionType::CCType_Time1))
+          (grad.gradients[i].cc_type != tesseract::collision::ContinuousCollisionType::CCType_Time1))
       {
         if (grad_results_set.max_error[i].error_with_buffer[0] > 0)
         {
@@ -51,7 +52,7 @@ Eigen::VectorXd getWeightedAvgGradientT0(const trajopt_common::GradientResultsSe
           const double w = (std::max(grad.error_with_buffer, 0.0) / max_error_with_buffer);
           assert(!(w < 0));
           total_weight += w;
-          grad_vec += w * (grad.gradients[i].scale * grad.gradients[i].gradient);
+          grad_vec.noalias() += w * (grad.gradients[i].scale * grad.gradients[i].gradient);
           ++cnt;
         }
       }
@@ -62,7 +63,8 @@ Eigen::VectorXd getWeightedAvgGradientT0(const trajopt_common::GradientResultsSe
     return grad_vec;
 
   assert(total_weight > 0);
-  return (1.0 / total_weight) * grad_results_set.coeff * grad_vec;
+  const double scale = 1 / total_weight;
+  return scale * grad_vec;
 }
 
 Eigen::VectorXd getWeightedAvgGradientT1(const trajopt_common::GradientResultsSet& grad_results_set,
@@ -81,7 +83,7 @@ Eigen::VectorXd getWeightedAvgGradientT1(const trajopt_common::GradientResultsSe
     for (std::size_t i = 0; i < 2; ++i)
     {
       if (grad.cc_gradients[i].has_gradient &&
-          (grad.cc_gradients[i].cc_type != tesseract_collision::ContinuousCollisionType::CCType_Time0))
+          (grad.cc_gradients[i].cc_type != tesseract::collision::ContinuousCollisionType::CCType_Time0))
       {
         if (grad_results_set.max_error[i].error_with_buffer[1] > 0)
         {
@@ -89,7 +91,7 @@ Eigen::VectorXd getWeightedAvgGradientT1(const trajopt_common::GradientResultsSe
           const double w = (std::max(grad.error_with_buffer, 0.0) / max_error_with_buffer);
           assert(!(w < 0));
           total_weight += w;
-          grad_vec += w * (grad.cc_gradients[i].scale * grad.cc_gradients[i].gradient);
+          grad_vec.noalias() += w * (grad.cc_gradients[i].scale * grad.cc_gradients[i].gradient);
           ++cnt;
         }
       }
@@ -100,6 +102,7 @@ Eigen::VectorXd getWeightedAvgGradientT1(const trajopt_common::GradientResultsSe
     return grad_vec;
 
   assert(total_weight > 0);
-  return (1.0 / total_weight) * grad_results_set.coeff * grad_vec;
+  const double scale = 1 / total_weight;
+  return scale * grad_vec;
 }
 }  // namespace trajopt_ifopt

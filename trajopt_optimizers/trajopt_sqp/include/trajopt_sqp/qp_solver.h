@@ -4,7 +4,6 @@
  *
  * @author Matthew Powelson
  * @date May 18, 2020
- * @version TODO
  * @bug This is not being used currently. The OSQPEigen solver interface needs to be cleaned up such that this base
  * class can be used in trust_region_sqp_solver.h
  *
@@ -28,15 +27,34 @@
 #define TRAJOPT_SQP_INCLUDE_QP_SOLVER_H_
 
 #include <memory>
-#include <trajopt_sqp/eigen_types.h>
+#include <trajopt_ifopt/core/eigen_types.h>
 
 namespace trajopt_sqp
 {
+// Forward declaration
+class QPProblem;
+
+/**
+ * @brief Status codes describing the lifecycle/result of the QP solver.
+ *
+ * These values are intended for high-level SQP/trust-region logic to track whether the
+ * underlying QP solver is ready to be used, and whether the most recent solve was successful.
+ */
 enum class QPSolverStatus : std::uint8_t
 {
-  UNITIALIZED,
-  INITIALIZED,
-  QP_ERROR
+  /** @brief Solver has not been initialized (e.g., no problem data has been provided yet). */
+  kUninitialized,
+
+  /** @brief Solver has been initialized and is ready to solve QP instances. */
+  kInitialized,
+
+  /**
+   * @brief The QP solver reported a failure on initialization or on the most recent solve.
+   *
+   * Typical reasons include infeasibility, numerical issues, invalid problem data, or the solver
+   * failing to reach a solution under its configured settings/limits.
+   */
+  kFailed
 };
 
 /**
@@ -90,7 +108,7 @@ public:
    * @param hessian The QP hessian. Should be n_vars x n_vars
    * @return true if successful
    */
-  virtual bool updateHessianMatrix(const SparseMatrix& hessian) = 0;
+  virtual bool updateHessianMatrix(const trajopt_ifopt::Jacobian& hessian) = 0;
 
   /**
    * @brief Updates the cost gradient
@@ -127,7 +145,19 @@ public:
    * @param linearConstraintsMatrix Input constraint matrix
    * @return true if successful
    */
-  virtual bool updateLinearConstraintsMatrix(const SparseMatrix& linearConstraintsMatrix) = 0;
+  virtual bool updateLinearConstraintsMatrix(const trajopt_ifopt::Jacobian& linearConstraintsMatrix) = 0;
+
+  /**
+   * @brief Provides an explicit primal/dual warm start to the solver from the QP problem.
+   *
+   * This method computes initial primal and dual values based on the current NLP iterate
+   * and approximate constraint violations from the QP problem. It automatically calculates
+   * slack variable values using the constraint matrix structure.
+   *
+   * @param qp_problem        The QP problem containing variables, constraints, and violations.
+   * @return true if successful.
+   */
+  virtual bool setWarmStart(const QPProblem& qp_problem) = 0;
 
   /**
    * @brief Returns the solver status

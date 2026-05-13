@@ -1,8 +1,9 @@
 #ifndef TRAJOPT_SQP_TRAJOPT_QP_PROBLEM_H
 #define TRAJOPT_SQP_TRAJOPT_QP_PROBLEM_H
 
-#include <memory>
 #include <trajopt_sqp/qp_problem.h>
+
+#include <memory>
 
 namespace trajopt_sqp
 {
@@ -13,18 +14,16 @@ public:
   using Ptr = std::shared_ptr<TrajOptQPProblem>;
   using ConstPtr = std::shared_ptr<const TrajOptQPProblem>;
 
-  TrajOptQPProblem();
+  TrajOptQPProblem(std::shared_ptr<trajopt_ifopt::Variables> variables);
   ~TrajOptQPProblem() override;
   TrajOptQPProblem(const TrajOptQPProblem&) = delete;
   TrajOptQPProblem& operator=(const TrajOptQPProblem&) = delete;
   TrajOptQPProblem(TrajOptQPProblem&&) = default;
   TrajOptQPProblem& operator=(TrajOptQPProblem&&) = default;
 
-  void addVariableSet(std::shared_ptr<ifopt::VariableSet> variable_set) override;
+  void addConstraintSet(std::shared_ptr<trajopt_ifopt::ConstraintSet> constraint_set) override;
 
-  void addConstraintSet(std::shared_ptr<ifopt::ConstraintSet> constraint_set) override;
-
-  void addCostSet(std::shared_ptr<ifopt::ConstraintSet> constraint_set, CostPenaltyType penalty_type) override;
+  void addCostSet(std::shared_ptr<trajopt_ifopt::ConstraintSet> constraint_set, CostPenaltyType penalty_type) override;
 
   void setup() override;
 
@@ -34,29 +33,23 @@ public:
 
   void convexify() override;
 
-  double evaluateTotalConvexCost(const Eigen::Ref<const Eigen::VectorXd>& var_vals) override;
+  double evaluateTotalConvexCost(const Eigen::Ref<const Eigen::VectorXd>& var_vals) const override;
 
-  Eigen::VectorXd evaluateConvexCosts(const Eigen::Ref<const Eigen::VectorXd>& var_vals) override;
+  Eigen::VectorXd evaluateConvexCosts(const Eigen::Ref<const Eigen::VectorXd>& var_vals) const override;
 
-  double evaluateTotalExactCost(const Eigen::Ref<const Eigen::VectorXd>& var_vals) override;
+  double getTotalExactCost() const override;
 
-  Eigen::VectorXd evaluateExactCosts(const Eigen::Ref<const Eigen::VectorXd>& var_vals) override;
+  Eigen::VectorXd getExactCosts() const override;
 
-  Eigen::VectorXd getExactCosts() override;
+  Eigen::VectorXd evaluateConvexConstraintViolations(const Eigen::Ref<const Eigen::VectorXd>& var_vals) const override;
 
-  Eigen::VectorXd evaluateConvexConstraintViolations(const Eigen::Ref<const Eigen::VectorXd>& var_vals) override;
-
-  Eigen::VectorXd evaluateExactConstraintViolations(const Eigen::Ref<const Eigen::VectorXd>& var_vals) override;
-
-  Eigen::VectorXd getExactConstraintViolations() override;
+  Eigen::VectorXd getExactConstraintViolations() const override;
 
   void scaleBoxSize(double& scale) override;
 
   void setBoxSize(const Eigen::Ref<const Eigen::VectorXd>& box_size) override;
 
   void setConstraintMeritCoeff(const Eigen::Ref<const Eigen::VectorXd>& merit_coeff) override;
-
-  Eigen::VectorXd getBoxSize() const override;
 
   void print() const override;
 
@@ -69,15 +62,15 @@ public:
   const std::vector<std::string>& getNLPConstraintNames() const override;
   const std::vector<std::string>& getNLPCostNames() const override;
 
-  Eigen::Ref<const Eigen::VectorXd> getBoxSize() override;
-  Eigen::Ref<const Eigen::VectorXd> getConstraintMeritCoeff() override;
+  const Eigen::VectorXd& getBoxSize() const override;
+  const Eigen::VectorXd& getConstraintMeritCoeff() const override;
 
-  Eigen::Ref<const SparseMatrix> getHessian() override;
-  Eigen::Ref<const Eigen::VectorXd> getGradient() override;
+  const trajopt_ifopt::Jacobian& getHessian() const override;
+  const Eigen::VectorXd& getGradient() const override;
 
-  Eigen::Ref<const SparseMatrix> getConstraintMatrix() override;
-  Eigen::Ref<const Eigen::VectorXd> getBoundsLower() override;
-  Eigen::Ref<const Eigen::VectorXd> getBoundsUpper() override;
+  const trajopt_ifopt::Jacobian& getConstraintMatrix() const override;
+  const Eigen::VectorXd& getBoundsLower() const override;
+  const Eigen::VectorXd& getBoundsUpper() const override;
 
 private:
   struct Implementation;

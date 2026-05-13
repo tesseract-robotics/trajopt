@@ -5,7 +5,6 @@
  * @author Levi Armstrong
  * @author Matthew Powelson
  * @date Nov 24, 2020
- * @version TODO
  *
  * @par License
  * Software License Agreement (Apache License)
@@ -23,12 +22,8 @@
  */
 
 #include <trajopt_common/collision_types.h>
-#include <tesseract_collision/core/serialization.h>
-#if (BOOST_VERSION >= 107400) && (BOOST_VERSION < 107500)
-#include <boost/serialization/library_version_type.hpp>
-#endif
-#include <boost/serialization/unordered_map.hpp>
-#include <boost/serialization/set.hpp>
+#include <tesseract/common/utils.h>
+#include <cassert>
 
 namespace trajopt_common
 {
@@ -46,10 +41,11 @@ double CollisionCoeffData::getDefaultCollisionCoeff() const { return default_col
 
 void CollisionCoeffData::setCollisionCoeff(const std::string& obj1, const std::string& obj2, double collision_coeff)
 {
-  auto key = tesseract_common::makeOrderedLinkPair(obj1, obj2);
-  lookup_table_[key] = collision_coeff;
+  TRAJOPT_THREAD_LOCAL tesseract::common::LinkNamesPair key;
+  tesseract::common::makeOrderedLinkPair(key, obj1, obj2);
+  lookup_table_.insert_or_assign(key, collision_coeff);
 
-  if (tesseract_common::almostEqualRelativeAndAbs(collision_coeff, 0.0))
+  if (tesseract::common::almostEqualRelativeAndAbs(collision_coeff, 0.0))
     zero_coeff_.insert(key);
   else
     zero_coeff_.erase(key);
@@ -57,7 +53,8 @@ void CollisionCoeffData::setCollisionCoeff(const std::string& obj1, const std::s
 
 double CollisionCoeffData::getCollisionCoeff(const std::string& obj1, const std::string& obj2) const
 {
-  auto key = tesseract_common::makeOrderedLinkPair(obj1, obj2);
+  TRAJOPT_THREAD_LOCAL tesseract::common::LinkNamesPair key;
+  tesseract::common::makeOrderedLinkPair(key, obj1, obj2);
   const auto it = lookup_table_.find(key);
 
   if (it != lookup_table_.end())
@@ -66,46 +63,63 @@ double CollisionCoeffData::getCollisionCoeff(const std::string& obj1, const std:
   return default_collision_coeff_;
 }
 
-const std::unordered_map<tesseract_common::LinkNamesPair, double>& CollisionCoeffData::getCollisionCoeffPairData() const
+const std::unordered_map<tesseract::common::LinkNamesPair, double>&
+CollisionCoeffData::getCollisionCoeffPairData() const
 {
   return lookup_table_;
 }
 
-const std::set<tesseract_common::LinkNamesPair>& CollisionCoeffData::getPairsWithZeroCoeff() const
+const std::set<tesseract::common::LinkNamesPair>& CollisionCoeffData::getPairsWithZeroCoeff() const
 {
   return zero_coeff_;
 }
 
-template <class Archive>
-void CollisionCoeffData::serialize(Archive& ar, const unsigned int /*version*/)
+bool CollisionCoeffData::operator==(const CollisionCoeffData& rhs) const
 {
-  ar& BOOST_SERIALIZATION_NVP(default_collision_coeff_);
-  ar& BOOST_SERIALIZATION_NVP(lookup_table_);
-  ar& BOOST_SERIALIZATION_NVP(zero_coeff_);
+  static constexpr auto max_diff = static_cast<double>(std::numeric_limits<float>::epsilon());
+
+  static const auto value_eq = [](double v1, double v2) {
+    return tesseract::common::almostEqualRelativeAndAbs(v1, v2, max_diff);
+  };
+
+  bool equal = true;
+  equal &=
+      tesseract::common::almostEqualRelativeAndAbs(default_collision_coeff_, rhs.default_collision_coeff_, max_diff);
+  equal &= tesseract::common::isIdenticalMap<std::unordered_map<tesseract::common::LinkNamesPair, double>, double>(
+      lookup_table_, rhs.lookup_table_, value_eq);
+  equal &= (zero_coeff_ == rhs.zero_coeff_);
+  return equal;
 }
+
+bool CollisionCoeffData::operator!=(const CollisionCoeffData& rhs) const { return !operator==(rhs); }
 
 TrajOptCollisionConfig::TrajOptCollisionConfig(double margin,
                                                double coeff,
-                                               tesseract_collision::ContactRequest request,
-                                               tesseract_collision::CollisionEvaluatorType type,
+                                               tesseract::collision::ContactRequest request,
+                                               tesseract::collision::CollisionEvaluatorType type,
                                                double longest_valid_segment_length,
-                                               tesseract_collision::CollisionCheckProgramType check_program_mode)
+                                               tesseract::collision::CollisionCheckProgramType check_program_mode)
   : contact_manager_config(margin)
   , collision_check_config(std::move(request), type, longest_valid_segment_length, check_program_mode)
   , collision_coeff_data(coeff)
 {
 }
 
-template <class Archive>
-void TrajOptCollisionConfig::serialize(Archive& ar, const unsigned int /*version*/)
+bool TrajOptCollisionConfig::operator==(const TrajOptCollisionConfig& rhs) const
 {
-  ar& BOOST_SERIALIZATION_NVP(enabled);
-  ar& BOOST_SERIALIZATION_NVP(contact_manager_config);
-  ar& BOOST_SERIALIZATION_NVP(collision_check_config);
-  ar& BOOST_SERIALIZATION_NVP(collision_coeff_data);
-  ar& BOOST_SERIALIZATION_NVP(collision_margin_buffer);
-  ar& BOOST_SERIALIZATION_NVP(max_num_cnt);
+  static auto max_diff = static_cast<double>(std::numeric_limits<float>::epsilon());
+
+  bool equal = true;
+  equal &= (enabled == rhs.enabled);
+  equal &= (contact_manager_config == rhs.contact_manager_config);
+  equal &= (collision_check_config == rhs.collision_check_config);
+  equal &= (collision_coeff_data == rhs.collision_coeff_data);
+  equal &= tesseract::common::almostEqualRelativeAndAbs(collision_margin_buffer, rhs.collision_margin_buffer, max_diff);
+  equal &= (max_num_cnt == rhs.max_num_cnt);
+  return equal;
 }
+
+bool TrajOptCollisionConfig::operator!=(const TrajOptCollisionConfig& rhs) const { return !operator==(rhs); }
 
 double LinkMaxError::getMaxError() const
 {
@@ -119,6 +133,23 @@ double LinkMaxError::getMaxError() const
     return error[1];
 
   throw std::runtime_error("Invalid LinkMaxError");
+}
+
+void LinkGradientResults::clear()
+{
+  has_gradient = false;
+  scale = 1.0;
+  cc_type = tesseract::collision::ContinuousCollisionType::CCType_None;
+}
+
+void GradientResults::clear()
+{
+  error = 0;
+  error_with_buffer = 0;
+  gradients[0].clear();
+  gradients[1].clear();
+  cc_gradients[0].clear();
+  cc_gradients[1].clear();
 }
 
 double LinkMaxError::getMaxErrorWithBuffer() const
@@ -135,41 +166,34 @@ double LinkMaxError::getMaxErrorWithBuffer() const
   throw std::runtime_error("Invalid LinkMaxError");
 }
 
-void GradientResultsSet::add(const GradientResults& gradient_result)
+void GradientResultsSet::add(GradientResults gradient_result)
 {
-  // Update max error for LinkA and LinkB excluding values at T1
   for (std::size_t i = 0; i < 2; ++i)
   {
-    if (gradient_result.gradients[i].has_gradient &&
-        gradient_result.gradients[i].cc_type != tesseract_collision::ContinuousCollisionType::CCType_Time1)
+    const auto& g = gradient_result.gradients[i];
+    if (!g.has_gradient)
+      continue;
+
+    // Update max error for LinkA and LinkB excluding values at T1
+    if (g.cc_type != tesseract::collision::ContinuousCollisionType::CCType_Time1)
     {
       max_error[i].has_error[0] = true;
-
-      if (gradient_result.error > max_error[i].error[0])
-        max_error[i].error[0] = gradient_result.error;
-
-      if (gradient_result.error_with_buffer > max_error[i].error_with_buffer[0])
-        max_error[i].error_with_buffer[0] = gradient_result.error_with_buffer;
+      max_error[i].error[0] = std::max(max_error[i].error[0], gradient_result.error);
+      max_error[i].error_with_buffer[0] =
+          std::max(max_error[i].error_with_buffer[0], gradient_result.error_with_buffer);
     }
-  }
 
-  // Update max error for LinkA and LinkB excluding values at T0
-  for (std::size_t i = 0; i < 2; ++i)
-  {
-    if (gradient_result.gradients[i].has_gradient &&
-        gradient_result.gradients[i].cc_type != tesseract_collision::ContinuousCollisionType::CCType_Time0)
+    // Update max error for LinkA and LinkB excluding values at T0
+    if (g.cc_type != tesseract::collision::ContinuousCollisionType::CCType_Time0)
     {
       max_error[i].has_error[1] = true;
-
-      if (gradient_result.error > max_error[i].error[1])
-        max_error[i].error[1] = gradient_result.error;
-
-      if (gradient_result.error_with_buffer > max_error[i].error_with_buffer[1])
-        max_error[i].error_with_buffer[1] = gradient_result.error_with_buffer;
+      max_error[i].error[1] = std::max(max_error[i].error[1], gradient_result.error);
+      max_error[i].error_with_buffer[1] =
+          std::max(max_error[i].error_with_buffer[1], gradient_result.error_with_buffer);
     }
   }
 
-  results.push_back(gradient_result);
+  results.emplace_back(std::move(gradient_result));
 }
 
 double GradientResultsSet::getMaxError() const
@@ -305,9 +329,3 @@ double GradientResultsSet::getMaxErrorWithBufferT1() const
 }
 
 }  // namespace trajopt_common
-
-#include <tesseract_common/serialization.h>
-TESSERACT_SERIALIZE_ARCHIVES_INSTANTIATE(trajopt_common::CollisionCoeffData)
-BOOST_CLASS_EXPORT_IMPLEMENT(trajopt_common::CollisionCoeffData)
-TESSERACT_SERIALIZE_ARCHIVES_INSTANTIATE(trajopt_common::TrajOptCollisionConfig)
-BOOST_CLASS_EXPORT_IMPLEMENT(trajopt_common::TrajOptCollisionConfig)

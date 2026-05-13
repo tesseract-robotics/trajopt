@@ -5,8 +5,6 @@
  * @author Levi Armstrong
  * @author Matthew Powelson
  * @date May 18, 2020
- * @version TODO
- * @bug No known bugs
  *
  * @copyright Copyright (c) 2020, Southwest Research Institute
  *
@@ -29,15 +27,18 @@
 #include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <Eigen/Eigen>
-#include <ifopt/constraint_set.h>
 TRAJOPT_IGNORE_WARNINGS_POP
+
+#include <trajopt_ifopt/core/constraint_set.h>
+#include <trajopt_common/collision_types.h>
+#include <trajopt_common/cache.h>
 
 namespace trajopt_ifopt
 {
-class JointPosition;
+class Var;
 class ContinuousCollisionEvaluator;
 
-class ContinuousCollisionNumericalConstraint : public ifopt::ConstraintSet
+class ContinuousCollisionNumericalConstraint : public ConstraintSet
 {
 public:
   using Ptr = std::shared_ptr<ContinuousCollisionNumericalConstraint>;
@@ -53,12 +54,14 @@ public:
    * @param name
    */
   ContinuousCollisionNumericalConstraint(std::shared_ptr<ContinuousCollisionEvaluator> collision_evaluator,
-                                         std::array<std::shared_ptr<const JointPosition>, 2> position_vars,
+                                         std::array<std::shared_ptr<const Var>, 2> position_vars,
                                          bool vars0_fixed,
                                          bool vars1_fixed,
                                          int max_num_cnt = 1,
                                          bool fixed_sparsity = false,
-                                         const std::string& name = "LVSCollision");
+                                         std::string name = "LVSCollision");
+
+  int update() override;
 
   /**
    * @brief Returns the values associated with the constraint.
@@ -71,44 +74,44 @@ public:
    * it is important to not set the collision margin buffer to zero.
    * @return The constraint values not the violations
    */
-  Eigen::VectorXd GetValues() const override;
+  Eigen::VectorXd getValues() const override;
+
+  /** @copydoc Differentiable::getCoefficients */
+  Eigen::VectorXd getCoefficients() const override;
 
   /**
    * @brief  Returns the "bounds" of this constraint. How these are enforced is up to the solver
    * @return Returns the "bounds" of this constraint
    */
-  std::vector<ifopt::Bounds> GetBounds() const override;
-  /**
-   * @brief Fills the jacobian block associated with the given var_set.
-   * @param var_set Name of the var_set to which the jac_block is associated
-   * @param jac_block Block of the overall jacobian associated with these constraints and the var_set variable
-   */
-  void FillJacobianBlock(std::string var_set, Jacobian& jac_block) const override;
+  std::vector<Bounds> getBounds() const override;
+
+  /** @brief Get the jacobian */
+  Jacobian getJacobian() const override;
 
   /**
    * @brief Sets the bounds on the collision distance
    * @param bounds New bounds that will be set. Should be size 1
    */
-  void SetBounds(const std::vector<ifopt::Bounds>& bounds);
+  void setBounds(const std::vector<Bounds>& bounds);
 
   /**
    * @brief Get the collision evaluator. This exposed for plotter callbacks
    * @return The collision evaluator
    */
-  std::shared_ptr<ContinuousCollisionEvaluator> GetCollisionEvaluator() const;
+  std::shared_ptr<ContinuousCollisionEvaluator> getCollisionEvaluator() const;
 
 private:
   /** @brief The number of joints in a single JointPosition */
   long n_dof_;
 
-  /** @brief Bounds on the constraint value. Default: std::vector<Bounds>(1, ifopt::BoundSmallerZero) */
-  std::vector<ifopt::Bounds> bounds_;
+  /** @brief The constraint coefficients */
+  Eigen::VectorXd coeffs_;
 
-  /**
-   * @brief Pointers to the vars used by this constraint.
-   * Do not access them directly. Instead use this->GetVariables()->GetComponent(position_var->GetName())->GetValues()
-   */
-  std::array<std::shared_ptr<const JointPosition>, 2> position_vars_;
+  /** @brief Bounds on the constraint value. Default: std::vector<Bounds>(1, ifopt::BoundSmallerZero) */
+  std::vector<Bounds> bounds_;
+
+  /** @brief Pointers to the vars used by this constraint. */
+  std::array<std::shared_ptr<const Var>, 2> position_vars_;
 
   bool vars0_fixed_{ false };
   bool vars1_fixed_{ false };
@@ -117,6 +120,8 @@ private:
   std::vector<Eigen::Triplet<double>> triplet_list_;
 
   std::shared_ptr<ContinuousCollisionEvaluator> collision_evaluator_;
+  trajopt_common::Cache<std::size_t, trajopt_common::CollisionCacheData> collision_data_cache_{ 3 };
+  std::shared_ptr<trajopt_common::CollisionCacheData> collision_data_;
 };
 }  // namespace trajopt_ifopt
 #endif  // TRAJOPT_IFOPT_CONTINUOUS_COLLISION_NUMERICAL_CONSTRAINT_H

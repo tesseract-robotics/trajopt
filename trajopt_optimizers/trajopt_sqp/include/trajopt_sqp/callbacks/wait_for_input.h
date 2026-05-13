@@ -4,8 +4,6 @@
  *
  * @author Matthew Powelson
  * @date May 18, 2020
- * @version TODO
- * @bug No known bugs
  *
  * @copyright Copyright (c) 2020, Southwest Research Institute
  *
@@ -28,7 +26,7 @@
 
 #include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
-#include <tesseract_visualization/fwd.h>
+#include <tesseract/visualization/fwd.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt_sqp/sqp_callback.h>
@@ -45,12 +43,12 @@ public:
   using Ptr = std::shared_ptr<WaitForInputCallback>;
   using ConstPtr = std::shared_ptr<const WaitForInputCallback>;
 
-  WaitForInputCallback(std::shared_ptr<tesseract_visualization::Visualization> plotter);
+  WaitForInputCallback(std::shared_ptr<tesseract::visualization::Visualization> plotter);
 
   bool execute(const QPProblem& problem, const SQPResults& sqp_results) override;
 
 protected:
-  std::shared_ptr<tesseract_visualization::Visualization> plotter_;
+  std::shared_ptr<tesseract::visualization::Visualization> plotter_;
 };
 }  // namespace trajopt_sqp
 

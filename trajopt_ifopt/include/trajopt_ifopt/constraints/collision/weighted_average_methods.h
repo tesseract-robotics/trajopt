@@ -5,7 +5,6 @@
  * @author Levi Armstrong
  * @author Matthew Powelson
  * @date Nov 24, 2020
- * @version TODO
  *
  * @par License
  * Software License Agreement (Apache License)

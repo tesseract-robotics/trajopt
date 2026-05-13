@@ -44,13 +44,13 @@ typedef unsigned long long int32_t uint64_t;
 
 // The definition of USE_X86_64_ASM is moved into the build system. You can enable it manually by commenting out the
 // following lines
-//#if (defined(__GNUC__) && defined(__x86_64__) && !defined(__ICL))  // || (defined(__ICL) && defined(_M_X64))   bug in
+// #if (defined(__GNUC__) && defined(__x86_64__) && !defined(__ICL))  // || (defined(__ICL) && defined(_M_X64))   bug in
 // Intel compiler, disable inline assembly
 //	#define USE_X86_64_ASM
-//#endif
+// #endif
 
-//#define DEBUG_CONVEX_HULL
-//#define SHOW_ITERATIONS
+// #define DEBUG_CONVEX_HULL
+// #define SHOW_ITERATIONS
 
 #if defined(DEBUG_CONVEX_HULL) || defined(SHOW_ITERATIONS)
 #include <stdio.h>

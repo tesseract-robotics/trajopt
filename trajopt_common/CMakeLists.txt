@@ -12,11 +12,8 @@ if(WIN32)
 endif()
 
 find_package(Eigen3 REQUIRED)
-find_package(Boost COMPONENTS program_options serialization REQUIRED)
-find_package(ros_industrial_cmake_boilerplate REQUIRED)
-find_package(tesseract_common REQUIRED)
-find_package(tesseract_collision COMPONENTS core REQUIRED)
-find_package(tesseract_kinematics COMPONENTS core REQUIRED)
+find_package(Boost COMPONENTS program_options REQUIRED)
+find_package(tesseract REQUIRED COMPONENTS common collision kinematics)
 
 # Load variable for clang tidy args, compiler options and cxx version
 trajopt_variables()
@@ -34,10 +31,9 @@ target_link_libraries(
   ${PROJECT_NAME}
   PUBLIC Eigen3::Eigen
          Boost::program_options
-         Boost::serialization
-         tesseract::tesseract_common
-         tesseract::tesseract_collision_core
-         tesseract::tesseract_kinematics_core)
+         tesseract::common
+         tesseract::collision
+         tesseract::kinematics)
 target_compile_options(${PROJECT_NAME} PRIVATE ${TRAJOPT_COMPILE_OPTIONS_PRIVATE})
 target_compile_options(${PROJECT_NAME} PUBLIC ${TRAJOPT_COMPILE_OPTIONS_PUBLIC})
 target_compile_definitions(${PROJECT_NAME} PUBLIC ${TRAJOPT_COMPILE_DEFINITIONS}
@@ -47,7 +43,11 @@ target_clang_tidy(${PROJECT_NAME} ENABLE ${TRAJOPT_ENABLE_CLANG_TIDY})
 target_include_directories(${PROJECT_NAME} PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
                                                   "$<INSTALL_INTERFACE:include>")
 
-configure_package(NAMESPACE trajopt TARGETS ${PROJECT_NAME})
+configure_package(
+  NAMESPACE trajopt
+  TARGETS ${PROJECT_NAME}
+  DEPENDENCIES Eigen3 "tesseract COMPONENTS common collision kinematics"
+  CFG_EXTRAS cmake/trajopt_macros.cmake)
 
 # Mark cpp header files for installation
 install(
@@ -78,6 +78,6 @@ if(TRAJOPT_PACKAGE)
     LICENSE_FILE ""
     README_FILE ${CMAKE_CURRENT_LIST_DIR}/../README.md
     PACKAGE_PREFIX ${TRAJOPT_PACKAGE_PREFIX}
-    LINUX_DEPENDS "libeigen3-dev" "libboost-program-options-dev" "libboost-serialization-dev"
-    WINDOWS_DEPENDS "Eigen3" "boost-program-options" "boost_serialization")
+    LINUX_DEPENDS "libeigen3-dev" "libboost-program-options-dev"
+    WINDOWS_DEPENDS "Eigen3" "boost-program-options")
 endif()

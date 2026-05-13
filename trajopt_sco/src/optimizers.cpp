@@ -13,15 +13,38 @@ TRAJOPT_IGNORE_WARNINGS_POP
 #include <trajopt_sco/solver_interface.hpp>
 #include <trajopt_common/logging.hpp>
 #include <trajopt_common/stl_to_string.hpp>
+#include <tesseract/common/utils.h>
 
 namespace sco
 {
+
 const bool SUPER_DEBUG_MODE = false;
+
+std::string toString(OptStatus status)
+{
+  switch (status)
+  {
+    case OptStatus::OPT_CONVERGED:
+      return "OPT_CONVERGED";
+    case OptStatus::OPT_SCO_ITERATION_LIMIT:
+      return "OPT_SCO_ITERATION_LIMIT";
+    case OptStatus::OPT_PENALTY_ITERATION_LIMIT:
+      return "OPT_PENALTY_ITERATION_LIMIT";
+    case OptStatus::OPT_TIME_LIMIT:
+      return "OPT_TIME_LIMIT";
+    case OptStatus::OPT_FAILED:
+      return "OPT_FAILED";
+    case OptStatus::INVALID:
+      return "INVALID";
+    default:
+      return "OPT_STATUS_UNKNOWN";
+  }
+}
 
 std::ostream& operator<<(std::ostream& o, const OptResults& r)
 {
   o << "Optimization results:" << '\n'
-    << "status: " << statusToString(r.status) << '\n'
+    << "status: " << toString(r.status) << '\n'
     << "cost values: " << trajopt_common::Str(r.cost_vals) << '\n'
     << "constraint violations: " << trajopt_common::Str(r.cnt_viols) << '\n'
     << "n func evals: " << r.n_func_evals << '\n'
@@ -56,6 +79,40 @@ std::vector<ConvexObjective::Ptr> cntsToCosts(const std::vector<ConvexConstraint
   return out;
 }
 }  // namespace
+
+bool BasicTrustRegionSQPParameters::operator==(const BasicTrustRegionSQPParameters& rhs) const
+{
+  static auto max_diff = static_cast<double>(std::numeric_limits<float>::epsilon());
+
+  bool equal = true;
+  equal &= tesseract::common::almostEqualRelativeAndAbs(improve_ratio_threshold, rhs.improve_ratio_threshold, max_diff);
+  equal &= tesseract::common::almostEqualRelativeAndAbs(min_trust_box_size, rhs.min_trust_box_size, max_diff);
+  equal &= tesseract::common::almostEqualRelativeAndAbs(min_approx_improve, rhs.min_approx_improve, max_diff);
+  equal &= tesseract::common::almostEqualRelativeAndAbs(min_approx_improve_frac, rhs.min_approx_improve_frac, max_diff);
+  equal &= (max_iter == rhs.max_iter);
+  equal &= tesseract::common::almostEqualRelativeAndAbs(trust_shrink_ratio, rhs.trust_shrink_ratio, max_diff);
+  equal &= tesseract::common::almostEqualRelativeAndAbs(trust_expand_ratio, rhs.trust_expand_ratio, max_diff);
+  equal &= tesseract::common::almostEqualRelativeAndAbs(cnt_tolerance, rhs.cnt_tolerance, max_diff);
+  equal &=
+      tesseract::common::almostEqualRelativeAndAbs(max_merit_coeff_increases, rhs.max_merit_coeff_increases, max_diff);
+  equal &= (max_qp_solver_failures == rhs.max_qp_solver_failures);
+  equal &= tesseract::common::almostEqualRelativeAndAbs(
+      merit_coeff_increase_ratio, rhs.merit_coeff_increase_ratio, max_diff);
+  equal &= tesseract::common::almostEqualRelativeAndAbs(max_time, rhs.max_time, max_diff);
+  equal &=
+      tesseract::common::almostEqualRelativeAndAbs(initial_merit_error_coeff, rhs.initial_merit_error_coeff, max_diff);
+  equal &= (inflate_constraints_individually == rhs.inflate_constraints_individually);
+  equal &= tesseract::common::almostEqualRelativeAndAbs(trust_box_size, rhs.trust_box_size, max_diff);
+  equal &= (log_results == rhs.log_results);
+  equal &= (log_dir == rhs.log_dir);
+  equal &= (num_threads == rhs.num_threads);
+  return equal;
+}
+
+bool BasicTrustRegionSQPParameters::operator!=(const BasicTrustRegionSQPParameters& rhs) const
+{
+  return !operator==(rhs);
+}
 
 void Optimizer::addCallback(const Callback& cb) { callbacks_.push_back(cb); }
 void Optimizer::callCallbacks()
@@ -889,18 +946,19 @@ OptStatus BasicTrustRegionSQP::optimize()
         {
           if (results_.cnt_viols[idx] > param_.cnt_tolerance)
           {
-            LOG_INFO("Not all constraints are satisfied. Increasing constraint penalties for %s", CSTR(cnt_names[idx]));
+            LOG_DEBUG("Not all constraints are satisfied. Increasing constraint penalties for %s",
+                      CSTR(cnt_names[idx]));
             merit_error_coeffs[idx] *= param_.merit_coeff_increase_ratio;
           }
         }
       }
       else
       {
-        LOG_INFO("Not all constraints are satisfied. Increasing constraint penalties uniformly");
+        LOG_DEBUG("Not all constraints are satisfied. Increasing constraint penalties uniformly");
         for (auto& merit_error_coeff : merit_error_coeffs)
           merit_error_coeff *= param_.merit_coeff_increase_ratio;
       }
-      LOG_INFO("New merit_error_coeffs: %s", CSTR(merit_error_coeffs));
+      LOG_DEBUG("New merit_error_coeffs: %s", CSTR(merit_error_coeffs));
       param_.trust_box_size = fmax(param_.trust_box_size, param_.min_trust_box_size / param_.trust_shrink_ratio * 1.5);
     }
   } /* merit adjustment loop */

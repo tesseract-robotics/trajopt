@@ -14,28 +14,13 @@ find_package(Boost REQUIRED)
 find_package(console_bridge REQUIRED)
 find_package(trajopt_sco REQUIRED)
 find_package(trajopt_common REQUIRED)
-find_package(tesseract_common REQUIRED)
-find_package(tesseract_environment REQUIRED)
-find_package(tesseract_visualization REQUIRED)
+find_package(tesseract REQUIRED COMPONENTS common environment visualization)
 if(NOT TARGET JsonCpp::JsonCpp)
   find_package(jsoncpp REQUIRED)
 elseif(NOT TARGET jsoncpp_lib)
   add_library(jsoncpp_lib ALIAS JsonCpp::JsonCpp)
 endif()
 find_package(ros_industrial_cmake_boilerplate REQUIRED)
-
-if(NOT TARGET console_bridge::console_bridge)
-  add_library(console_bridge::console_bridge INTERFACE IMPORTED)
-  set_target_properties(console_bridge::console_bridge PROPERTIES INTERFACE_INCLUDE_DIRECTORIES
-                                                                  ${console_bridge_INCLUDE_DIRS})
-  set_target_properties(console_bridge::console_bridge PROPERTIES INTERFACE_LINK_LIBRARIES ${console_bridge_LIBRARIES})
-else()
-  get_target_property(CHECK_INCLUDE_DIRECTORIES console_bridge::console_bridge INTERFACE_INCLUDE_DIRECTORIES)
-  if(NOT ${CHECK_INCLUDE_DIRECTORIES})
-    set_target_properties(console_bridge::console_bridge PROPERTIES INTERFACE_INCLUDE_DIRECTORIES
-                                                                    ${console_bridge_INCLUDE_DIRS})
-  endif()
-endif()
 
 # Load variable for clang tidy args, compiler options and cxx version
 trajopt_variables()
@@ -58,9 +43,9 @@ target_link_libraries(
   ${PROJECT_NAME}
   PUBLIC trajopt::trajopt_sco
          trajopt::trajopt_common
-         tesseract::tesseract_common
-         tesseract::tesseract_environment
-         tesseract::tesseract_visualization
+         tesseract::common
+         tesseract::environment
+         tesseract::visualization
          console_bridge::console_bridge
          Boost::boost
          Eigen3::Eigen

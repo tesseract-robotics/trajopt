@@ -4,8 +4,6 @@
  *
  * @author Matthew Powelson
  * @date May 18, 2020
- * @version TODO
- * @bug No known bugs
  *
  * @copyright Copyright (c) 2020, Southwest Research Institute
  *
@@ -40,6 +38,8 @@ class Solver;
 
 namespace trajopt_sqp
 {
+class QPProblem;
+
 /**
  * @brief An Interface to the OSQPEigen QP Solver
  */
@@ -66,7 +66,7 @@ public:
 
   Eigen::VectorXd getSolution() override;
 
-  bool updateHessianMatrix(const SparseMatrix& hessian) override;
+  bool updateHessianMatrix(const trajopt_ifopt::Jacobian& hessian) override;
 
   bool updateGradient(const Eigen::Ref<const Eigen::VectorXd>& gradient) override;
 
@@ -77,7 +77,9 @@ public:
   bool updateBounds(const Eigen::Ref<const Eigen::VectorXd>& lowerBound,
                     const Eigen::Ref<const Eigen::VectorXd>& upperBound) override;
 
-  bool updateLinearConstraintsMatrix(const SparseMatrix& linearConstraintsMatrix) override;
+  bool updateLinearConstraintsMatrix(const trajopt_ifopt::Jacobian& linearConstraintsMatrix) override;
+
+  bool setWarmStart(const QPProblem& qp_problem) override;
 
   QPSolverStatus getSolverStatus() const override { return solver_status_; }
 
@@ -86,13 +88,15 @@ public:
 private:
   // Depending on what they decide to do with this issue, these could be dropped
   // https://github.com/robotology/osqp-eigen/issues/17
+  Eigen::VectorXd x0_;
+  Eigen::VectorXd y0_;
   Eigen::VectorXd bounds_lower_;
   Eigen::VectorXd bounds_upper_;
   Eigen::VectorXd gradient_;
   Eigen::Index num_vars_{ 0 };
   Eigen::Index num_cnts_{ 0 };
 
-  QPSolverStatus solver_status_{ QPSolverStatus::UNITIALIZED };
+  QPSolverStatus solver_status_{ QPSolverStatus::kUninitialized };
 };
 
 }  // namespace trajopt_sqp

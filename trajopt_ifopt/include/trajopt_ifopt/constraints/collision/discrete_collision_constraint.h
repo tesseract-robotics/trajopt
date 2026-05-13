@@ -5,8 +5,6 @@
  * @author Levi Armstrong
  * @author Matthew Powelson
  * @date May 18, 2020
- * @version TODO
- * @bug No known bugs
  *
  * @copyright Copyright (c) 2020, Southwest Research Institute
  *
@@ -30,25 +28,32 @@
 #include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <Eigen/Core>
-#include <ifopt/constraint_set.h>
+#include <mutex>
 TRAJOPT_IGNORE_WARNINGS_POP
+
+#include <trajopt_ifopt/core/constraint_set.h>
+#include <trajopt_common/fwd.h>
+#include <trajopt_common/collision_types.h>
+#include <trajopt_common/cache.h>
 
 namespace trajopt_ifopt
 {
-class JointPosition;
+class Var;
 class DiscreteCollisionEvaluator;
 
-class DiscreteCollisionConstraint : public ifopt::ConstraintSet
+class DiscreteCollisionConstraint : public ConstraintSet
 {
 public:
   using Ptr = std::shared_ptr<DiscreteCollisionConstraint>;
   using ConstPtr = std::shared_ptr<const DiscreteCollisionConstraint>;
 
   DiscreteCollisionConstraint(std::shared_ptr<DiscreteCollisionEvaluator> collision_evaluator,
-                              std::shared_ptr<const JointPosition> position_var,
+                              std::shared_ptr<const Var> position_var,
                               int max_num_cnt = 1,
                               bool fixed_sparsity = false,
-                              const std::string& name = "DiscreteCollisionV3");
+                              std::string name = "DiscreteCollision");
+
+  int update() override;
 
   /**
    * @brief Returns the values associated with the constraint.
@@ -61,59 +66,126 @@ public:
    * it is important to not set the collision margin buffer to zero.
    * @return The constraint values not the violations
    */
-  Eigen::VectorXd GetValues() const override;
+  Eigen::VectorXd getValues() const override;
+
+  /** @copydoc Differentiable::getCoefficients */
+  Eigen::VectorXd getCoefficients() const override;
 
   /**
    * @brief  Returns the "bounds" of this constraint. How these are enforced is up to the solver
    * @return Returns the "bounds" of this constraint
    */
-  std::vector<ifopt::Bounds> GetBounds() const override;
+  std::vector<Bounds> getBounds() const override;
 
-  /**
-   * @brief Fills the jacobian block associated with the given var_set.
-   * @param var_set Name of the var_set to which the jac_block is associated
-   * @param jac_block Block of the overall jacobian associated with these constraints and the var_set variable
-   */
-  void FillJacobianBlock(std::string var_set, Jacobian& jac_block) const override;
-
-  /** @brief Calculates the values associated with the constraint */
-  Eigen::VectorXd CalcValues(const Eigen::Ref<const Eigen::VectorXd>& joint_vals) const;
+  /** @brief Get the jacobian */
+  Jacobian getJacobian() const override;
 
   /**
    * @brief Sets the bounds on the collision distance
    * @param bounds New bounds that will be set. Should be size 1
    */
-  void SetBounds(const std::vector<ifopt::Bounds>& bounds);
-
-  /**
-   * @brief Fills the jacobian block associated with the constraint
-   * @param jac_block Block of the overall jacobian associated with these constraints
-   */
-  void CalcJacobianBlock(const Eigen::Ref<const Eigen::VectorXd>& joint_vals, Jacobian& jac_block) const;
+  void setBounds(const std::vector<Bounds>& bounds);
 
   /**
    * @brief Get the collision evaluator. This exposed for plotter callbacks
    * @return The collision evaluator
    */
-  std::shared_ptr<DiscreteCollisionEvaluator> GetCollisionEvaluator() const;
+  std::shared_ptr<DiscreteCollisionEvaluator> getCollisionEvaluator() const;
 
 private:
   /** @brief The number of joints in a single JointPosition */
-  long n_dof_;
+  long n_dof_{ 0 };
+
+  /** @brief The constraint coefficients */
+  Eigen::VectorXd coeffs_;
 
   /** @brief Bounds on the constraint value. Default: std::vector<Bounds>(1, ifopt::BoundSmallerZero) */
-  std::vector<ifopt::Bounds> bounds_;
+  std::vector<Bounds> bounds_;
 
-  /**
-   * @brief Pointers to the vars used by this constraint.
-   * Do not access them directly. Instead use this->GetVariables()->GetComponent(position_var->GetName())->GetValues()
-   */
-  std::shared_ptr<const JointPosition> position_var_;
-
-  /** @brief Used to initialize jacobian because snopt sparsity cannot change */
-  std::vector<Eigen::Triplet<double>> triplet_list_;
+  /** @brief Pointers to the vars used by this constraint. */
+  std::shared_ptr<const Var> position_var_;
 
   std::shared_ptr<DiscreteCollisionEvaluator> collision_evaluator_;
+  trajopt_common::Cache<std::size_t, trajopt_common::CollisionCacheData> collision_data_cache_{ 3 };
+  std::shared_ptr<trajopt_common::CollisionCacheData> collision_data_;
+
+  /** @brief Used to initialize jacobian because snopt sparsity cannot change */
+  bool fixed_sparsity_{ false };
+  mutable std::once_flag init_flag_;
+  mutable std::vector<Eigen::Triplet<double>> triplet_list_;
+
+  void init() const;
 };
+
+class DiscreteCollisionConstraintD : public ConstraintSet
+{
+public:
+  using Ptr = std::shared_ptr<DiscreteCollisionConstraint>;
+  using ConstPtr = std::shared_ptr<const DiscreteCollisionConstraint>;
+
+  DiscreteCollisionConstraintD(std::shared_ptr<DiscreteCollisionEvaluator> collision_evaluator,
+                               std::shared_ptr<const Var> position_var,
+                               std::string name = "DiscreteCollision");
+
+  int update() override;
+
+  /**
+   * @brief Returns the values associated with the constraint.
+   * @warning Make sure that the values returns are not just the violation but the constraint values.
+   * Remember the values are the constant in the quadratic function, so if you only return the
+   * violation then if it is not violating the constraint this would be zero which means it
+   * will always appear to be on the constraint boundary which will cause issue when solving.
+   * If it is not voliating the constraint then return the max negative number.
+   * If no contacts are found return the negative of the collision margin buffer. This is why
+   * it is important to not set the collision margin buffer to zero.
+   * @return The constraint values not the violations
+   */
+  Eigen::VectorXd getValues() const override;
+
+  /** @copydoc Differentiable::getCoefficients */
+  Eigen::VectorXd getCoefficients() const override;
+
+  /**
+   * @brief  Returns the "bounds" of this constraint. How these are enforced is up to the solver
+   * @return Returns the "bounds" of this constraint
+   */
+  std::vector<Bounds> getBounds() const override;
+
+  /** @brief Get the jacobian */
+  Jacobian getJacobian() const override;
+
+  /**
+   * @brief Sets the bounds on the collision distance
+   * @param bounds New bounds that will be set. Should be size 1
+   */
+  void setBounds(const std::vector<Bounds>& bounds);
+
+  /**
+   * @brief Get the collision evaluator. This exposed for plotter callbacks
+   * @return The collision evaluator
+   */
+  std::shared_ptr<DiscreteCollisionEvaluator> getCollisionEvaluator() const;
+
+private:
+  /** @brief The number of joints in a single JointPosition */
+  long n_dof_{ 0 };
+
+  /** @brief The constraint coefficients */
+  Eigen::VectorXd coeffs_;
+
+  /** @brief Bounds on the constraint value. Default: std::vector<Bounds>(1, ifopt::BoundSmallerZero) */
+  std::vector<Bounds> bounds_;
+
+  /** @brief Used to store the values computed */
+  Eigen::VectorXd values_;
+
+  /** @brief Pointers to the vars used by this constraint. */
+  std::shared_ptr<const Var> position_var_;
+
+  std::shared_ptr<DiscreteCollisionEvaluator> collision_evaluator_;
+  trajopt_common::Cache<std::size_t, trajopt_common::CollisionCacheData> collision_data_cache_{ 3 };
+  std::shared_ptr<const trajopt_common::CollisionCacheData> collision_data_;
+};
+
 }  // namespace trajopt_ifopt
 #endif

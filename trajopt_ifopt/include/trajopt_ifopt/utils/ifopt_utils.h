@@ -4,8 +4,6 @@
  *
  * @author Matthew Powelson
  * @date May 18, 2020
- * @version TODO
- * @bug No known bugs
  *
  * @copyright Copyright (c) 2020, Southwest Research Institute
  *
@@ -26,66 +24,21 @@
 #ifndef TRAJOPT_IFOPT_IFOPT_UTILS_H
 #define TRAJOPT_IFOPT_IFOPT_UTILS_H
 
-#include <trajopt_common/macros.h>
-TRAJOPT_IGNORE_WARNINGS_PUSH
-#include <Eigen/Eigen>
-TRAJOPT_IGNORE_WARNINGS_POP
-
-namespace ifopt
-{
-class Problem;
-class ConstraintSet;
-class Component;
-struct Bounds;
-using Jacobian = Eigen::SparseMatrix<double, Eigen::RowMajor>;
-using VectorXd = Eigen::VectorXd;
-}  // namespace ifopt
+#include <trajopt_ifopt/core/eigen_types.h>
 
 namespace trajopt_ifopt
 {
-bool isFinite(double value);
-
-/**
- * @brief Check if bounds are equality where upper and lower are finite and equal
- * @param bounds The bounds to check
- * @return True if equality bounds, otherwise false
- */
-bool isBoundsEquality(const ifopt::Bounds& bounds);
-
-/**
- * @brief Check if bounds are [finite, ifopt::inf]
- * @param bounds The bounds to check
- * @return True if bounds are [finite, ifopt::inf], otherwise false
- */
-bool isBoundsGreaterFinite(const ifopt::Bounds& bounds);
-
-/**
- * @brief Check if bounds are [-ifopt::inf, finite]
- * @param bounds The bounds to check
- * @return True if bounds are [-ifopt::inf, finite], otherwise false
- */
-bool isBoundsSmallerFinite(const ifopt::Bounds& bounds);
-
-/**
- * @brief Check if bounds are [finite, ifopt::inf] or [-ifopt::inf, finite]
- * @param bounds The bounds to check
- * @return True if bounds are [finite, ifopt::inf] or [-ifopt::inf, finite], otherwise false
- */
-bool isBoundsInEquality(const ifopt::Bounds& bounds);
-
-/**
- * @brief Check if bounds are [finite, finite]
- * @param bounds The bounds to check
- * @return True if bounds are [finite, finite], otherwise false
- */
-bool isBoundsFiniteFinite(const ifopt::Bounds& bounds);
+class Bounds;
+class Variables;
+class ConstraintSet;
+class Problem;
 
 /**
  * @brief Converts a MatrixX2d (e.g. from forward_kinematics->getLimits()) to a vector of ifopt Bounds
  * @param limits MatrixX2d of bounds. Column 0 will be lower bound. Column 1 will be upper bound
  * @return Vector of ifopt::Bounds
  */
-std::vector<ifopt::Bounds> toBounds(const Eigen::Ref<const Eigen::MatrixX2d>& limits);
+std::vector<Bounds> toBounds(const Eigen::Ref<const Eigen::MatrixX2d>& limits);
 
 /**
  * @brief Converts 2 VectorXd to a vector of ifopt Bounds
@@ -93,8 +46,8 @@ std::vector<ifopt::Bounds> toBounds(const Eigen::Ref<const Eigen::MatrixX2d>& li
  * @param upper_limits Upper limits
  * @return  Vector of ifopt::Bounds
  */
-std::vector<ifopt::Bounds> toBounds(const Eigen::Ref<const Eigen::VectorXd>& lower_limits,
-                                    const Eigen::Ref<const Eigen::VectorXd>& upper_limits);
+std::vector<Bounds> toBounds(const Eigen::Ref<const Eigen::VectorXd>& lower_limits,
+                             const Eigen::Ref<const Eigen::VectorXd>& upper_limits);
 
 /**
  * @brief Interpolates between two Eigen::VectorXds
@@ -113,26 +66,28 @@ std::vector<Eigen::VectorXd> interpolate(const Eigen::Ref<const Eigen::VectorXd>
  * @param bounds Bounds on that vector
  * @return Output vector. If input is outside a bound, force it to the boundary
  */
-Eigen::VectorXd getClosestValidPoint(const Eigen::Ref<const Eigen::VectorXd>& input,
-                                     const std::vector<ifopt::Bounds>& bounds);
+Eigen::VectorXd getClosestValidPoint(const Eigen::Ref<const Eigen::VectorXd>& input, const std::vector<Bounds>& bounds);
 
 /**
  * @brief Calculate errors of the bounds
+ * @param out The error given the bounds, if within the bounds it will be zero
  * @param input The input values
  * @param bounds The bounds
- * @return The error given the bounds, if within the bounds it will be zero
  */
-Eigen::VectorXd calcBoundsErrors(const Eigen::Ref<const Eigen::VectorXd>& input,
-                                 const std::vector<ifopt::Bounds>& bounds);
+void calcBoundsErrors(Eigen::Ref<Eigen::VectorXd> out,
+                      const Eigen::Ref<const Eigen::VectorXd>& input,
+                      const std::vector<Bounds>& bounds);
 
 /**
  * @brief The absolute value of the Bounds Errors
+ * @param out The absolute errors given the bounds, if within the bounds it will be zero
  * @param input The input values
  * @param bounds The bounds
  * @return The absolute errors given the bounds, if within the bounds it will be zero
  */
-Eigen::VectorXd calcBoundsViolations(const Eigen::Ref<const Eigen::VectorXd>& input,
-                                     const std::vector<ifopt::Bounds>& bounds);
+void calcBoundsViolations(Eigen::Ref<Eigen::VectorXd> out,
+                          const Eigen::Ref<const Eigen::VectorXd>& input,
+                          const std::vector<Bounds>& bounds);
 
 /**
  * @brief Calculate the numerical cost gradient at the provided values
@@ -141,7 +96,7 @@ Eigen::VectorXd calcBoundsViolations(const Eigen::Ref<const Eigen::VectorXd>& in
  * @param epsilon The epsilon to leverage for perturbing the values
  * @return The numerical cost gradient
  */
-ifopt::VectorXd calcNumericalCostGradient(const double* x, ifopt::Problem& nlp, double epsilon = 1e-8);
+Eigen::VectorXd calcNumericalCostGradient(const double* x, Problem& nlp, double epsilon = 1e-8);
 
 /**
  * @brief Calculate the numerical constraint gradient at the provided values
@@ -150,7 +105,7 @@ ifopt::VectorXd calcNumericalCostGradient(const double* x, ifopt::Problem& nlp, 
  * @param epsilon The epsilon to leverage for perturbing the values
  * @return The numerical constraint gradient
  */
-ifopt::Jacobian calcNumericalConstraintGradient(const double* x, ifopt::Problem& nlp, double epsilon = 1e-8);
+Jacobian calcNumericalConstraintGradient(const double* x, Problem& nlp, double epsilon = 1e-8);
 
 /**
  * @brief Calculate the numerical constraint gradient at the provided values
@@ -161,9 +116,7 @@ ifopt::Jacobian calcNumericalConstraintGradient(const double* x, ifopt::Problem&
  * @param epsilon The epsilon to leverage for perturbing the values
  * @return The numerical constraint gradient
  */
-ifopt::Jacobian calcNumericalConstraintGradient(ifopt::Component& variables,
-                                                ifopt::ConstraintSet& constraint_set,
-                                                double epsilon = 1e-8);
+Jacobian calcNumericalConstraintGradient(Variables& variables, ConstraintSet& constraint_set, double epsilon = 1e-8);
 
 }  // namespace trajopt_ifopt
 #endif

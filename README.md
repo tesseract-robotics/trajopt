@@ -2,10 +2,10 @@
 
 Platform             | CI Status
 ---------------------|:---------
-Linux (Unstable)        | [![Build Status](https://github.com/tesseract-robotics/trajopt/workflows/Unstabel/badge.svg)](https://github.com/tesseract-robotics/trajopt/actions)
-Linux (Stable)        | [![Build Status](https://github.com/tesseract-robotics/trajopt/workflows/Ubuntu/badge.svg)](https://github.com/tesseract-robotics/trajopt/actions)
-Linux (Conda)       | [![Build Status](https://github.com/tesseract-robotics/trajopt/workflows/Conda/badge.svg)](https://github.com/tesseract-robotics/trajopt/actions)
-Linux (Mac OSX)       | [![Build Status](https://github.com/tesseract-robotics/trajopt/workflows/Mac%20OSX/badge.svg)](https://github.com/tesseract-robotics/trajopt/actions)
+Linux (Unstable)     | [![Build Status](https://github.com/tesseract-robotics/trajopt/actions/workflows/unstable.yml/badge.svg)](https://github.com/tesseract-robotics/trajopt/actions/workflows/unstable.yml)
+Linux (Stable)       | [![Build Status](https://github.com/tesseract-robotics/trajopt/workflows/Ubuntu/badge.svg)](https://github.com/tesseract-robotics/trajopt/actions)
+Linux (Conda)        | [![Build Status](https://github.com/tesseract-robotics/trajopt/workflows/Conda/badge.svg)](https://github.com/tesseract-robotics/trajopt/actions)
+Linux (Mac OSX)      | [![Build Status](https://github.com/tesseract-robotics/trajopt/workflows/Mac%20OSX/badge.svg)](https://github.com/tesseract-robotics/trajopt/actions)
 Windows              | [![Build Status](https://github.com/tesseract-robotics/trajopt/workflows/Windows/badge.svg)](https://github.com/tesseract-robotics/trajopt/actions)
 Lint  (Clang-Format) | [![Build Status](https://github.com/tesseract-robotics/trajopt/workflows/Clang-Format/badge.svg)](https://github.com/tesseract-robotics/trajopt/actions)
 Lint  (CMake-Format) | [![Build Status](https://github.com/tesseract-robotics/trajopt/workflows/CMake-Format/badge.svg)](https://github.com/tesseract-robotics/trajopt/actions)

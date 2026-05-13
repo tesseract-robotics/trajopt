@@ -4,8 +4,6 @@
  *
  * @author Matthew Powelson
  * @date May 18, 2020
- * @version TODO
- * @bug No known bugs
  *
  * @copyright Copyright (c) 2020, Southwest Research Institute
  *
@@ -25,11 +23,43 @@
  */
 
 #include <trajopt_sqp/types.h>
+#include <tesseract/common/utils.h>
 
 #include <iostream>
 
 namespace trajopt_sqp
 {
+bool SQPParameters::operator==(const SQPParameters& rhs) const
+{
+  static auto max_diff = static_cast<double>(std::numeric_limits<float>::epsilon());
+
+  bool equal = true;
+  equal &= tesseract::common::almostEqualRelativeAndAbs(improve_ratio_threshold, rhs.improve_ratio_threshold, max_diff);
+  equal &= tesseract::common::almostEqualRelativeAndAbs(min_trust_box_size, rhs.min_trust_box_size, max_diff);
+  equal &= tesseract::common::almostEqualRelativeAndAbs(min_approx_improve, rhs.min_approx_improve, max_diff);
+  equal &= tesseract::common::almostEqualRelativeAndAbs(min_approx_improve_frac, rhs.min_approx_improve_frac, max_diff);
+  equal &= (max_iterations == rhs.max_iterations);
+  equal &= tesseract::common::almostEqualRelativeAndAbs(trust_shrink_ratio, rhs.trust_shrink_ratio, max_diff);
+  equal &= tesseract::common::almostEqualRelativeAndAbs(trust_expand_ratio, rhs.trust_expand_ratio, max_diff);
+  equal &= tesseract::common::almostEqualRelativeAndAbs(cnt_tolerance, rhs.cnt_tolerance, max_diff);
+  equal &=
+      tesseract::common::almostEqualRelativeAndAbs(max_merit_coeff_increases, rhs.max_merit_coeff_increases, max_diff);
+  equal &= (max_qp_solver_failures == rhs.max_qp_solver_failures);
+  equal &= tesseract::common::almostEqualRelativeAndAbs(
+      merit_coeff_increase_ratio, rhs.merit_coeff_increase_ratio, max_diff);
+  equal &= tesseract::common::almostEqualRelativeAndAbs(max_time, rhs.max_time, max_diff);
+  equal &=
+      tesseract::common::almostEqualRelativeAndAbs(initial_merit_error_coeff, rhs.initial_merit_error_coeff, max_diff);
+  equal &= (inflate_constraints_individually == rhs.inflate_constraints_individually);
+  equal &= tesseract::common::almostEqualRelativeAndAbs(initial_trust_box_size, rhs.initial_trust_box_size, max_diff);
+  equal &= (log_results == rhs.log_results);
+  equal &= (log_dir == rhs.log_dir);
+  // equal &= (num_threads == rhs.num_threads);
+  return equal;
+}
+
+bool SQPParameters::operator!=(const SQPParameters& rhs) const { return !operator==(rhs); }
+
 SQPResults::SQPResults(Eigen::Index num_vars, Eigen::Index num_cnts, Eigen::Index num_costs)
 {
   best_constraint_violations = Eigen::VectorXd::Zero(num_cnts);
@@ -84,6 +114,29 @@ void SQPResults::print() const
   std::cout << "convexify_iteration: " << convexify_iteration << '\n';
   std::cout << "trust_region_iteration: " << trust_region_iteration << '\n';
   std::cout << "overall_iteration: " << overall_iteration << '\n';
+}
+
+std::string toString(SQPStatus status)
+{
+  switch (status)
+  {
+    case SQPStatus::kRunning:
+      return "SQP_RUNNING";
+    case SQPStatus::kConverged:
+      return "SQP_CONVERGED";
+    case SQPStatus::kIterationLimit:
+      return "SQP_ITERATION_LIMIT";
+    case SQPStatus::kPenaltyIterationLimit:
+      return "SQP_PENALTY_ITERATION_LIMIT";
+    case SQPStatus::kTimeLimit:
+      return "SQP_TIME_LIMIT";
+    case SQPStatus::kQPSolveFailed:
+      return "SQP_FAILED";
+    case SQPStatus::kStoppedByCallback:
+      return "SQP_STOPPED_BY_CALLBACK";
+    default:
+      return "SQP_STATUS_UNKNOWN";
+  }
 }
 
 }  // namespace trajopt_sqp

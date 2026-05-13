@@ -2,14 +2,14 @@
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <ctime>
 #include <gtest/gtest.h>
-#include <tesseract_common/types.h>
-#include <tesseract_common/resource_locator.h>
-#include <tesseract_state_solver/state_solver.h>
-#include <tesseract_collision/core/continuous_contact_manager.h>
-#include <tesseract_kinematics/core/joint_group.h>
-#include <tesseract_environment/environment.h>
-#include <tesseract_environment/utils.h>
-#include <tesseract_visualization/visualization.h>
+#include <tesseract/common/types.h>
+#include <tesseract/common/resource_locator.h>
+#include <tesseract/state_solver/state_solver.h>
+#include <tesseract/collision/continuous_contact_manager.h>
+#include <tesseract/kinematics/joint_group.h>
+#include <tesseract/environment/environment.h>
+#include <tesseract/environment/utils.h>
+#include <tesseract/visualization/visualization.h>
 #include <console_bridge/console.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
@@ -27,12 +27,12 @@ TRAJOPT_IGNORE_WARNINGS_POP
 using namespace trajopt;
 using namespace std;
 using namespace trajopt_common;
-using namespace tesseract_environment;
-using namespace tesseract_collision;
-using namespace tesseract_kinematics;
-using namespace tesseract_visualization;
-using namespace tesseract_scene_graph;
-using namespace tesseract_common;
+using namespace tesseract::environment;
+using namespace tesseract::collision;
+using namespace tesseract::kinematics;
+using namespace tesseract::visualization;
+using namespace tesseract::scene_graph;
+using namespace tesseract::common;
 
 static const double LONGEST_VALID_SEGMENT_LENGTH = 0.05;
 
@@ -46,7 +46,7 @@ public:
     const std::filesystem::path urdf_file(std::string(TRAJOPT_DATA_DIR) + "/arm_around_table.urdf");
     const std::filesystem::path srdf_file(std::string(TRAJOPT_DATA_DIR) + "/pr2.srdf");
 
-    const ResourceLocator::Ptr locator = std::make_shared<tesseract_common::GeneralResourceLocator>();
+    const ResourceLocator::Ptr locator = std::make_shared<tesseract::common::GeneralResourceLocator>();
     EXPECT_TRUE(env_->init(urdf_file, srdf_file, locator));
 
     // Create plotting tool
@@ -86,14 +86,14 @@ void runTest(const Environment::Ptr& env, bool use_multi_threaded)
   ASSERT_TRUE(!!prob);
 
   std::vector<ContactResultMap> collisions;
-  const tesseract_scene_graph::StateSolver::UPtr state_solver = prob->GetEnv()->getStateSolver();
+  const tesseract::scene_graph::StateSolver::UPtr state_solver = prob->GetEnv()->getStateSolver();
   const ContinuousContactManager::Ptr manager = prob->GetEnv()->getContinuousContactManager();
 
   manager->setActiveCollisionObjects(prob->GetKin()->getActiveLinkNames());
   manager->setDefaultCollisionMargin(0);
 
-  tesseract_collision::CollisionCheckConfig config;
-  config.type = tesseract_collision::CollisionEvaluatorType::CONTINUOUS;
+  tesseract::collision::CollisionCheckConfig config;
+  config.type = tesseract::collision::CollisionEvaluatorType::CONTINUOUS;
   config.longest_valid_segment_length = LONGEST_VALID_SEGMENT_LENGTH;
   bool found = checkTrajectory(
       collisions, *manager, *state_solver, prob->GetKin()->getJointNames(), prob->GetInitTraj(), config);

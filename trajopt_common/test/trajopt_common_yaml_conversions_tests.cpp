@@ -4,8 +4,6 @@
  *
  * @author Tyler Marr
  * @date August 8, 2025
- * @version TODO
- * @bug No known bugs
  *
  * @copyright Copyright (c) 2025, Tyler Marr, Confinity Robotics
  *
@@ -24,14 +22,14 @@
  * limitations under the License.
  */
 
-#include <tesseract_common/macros.h>
-TESSERACT_COMMON_IGNORE_WARNINGS_PUSH
+#include <trajopt_common/macros.h>
+TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <gtest/gtest.h>
 #include <yaml-cpp/yaml.h>
-TESSERACT_COMMON_IGNORE_WARNINGS_POP
+TRAJOPT_IGNORE_WARNINGS_POP
 
-#include <tesseract_common/yaml_extensions.h>
-#include <tesseract_collision/core/yaml_extensions.h>
+#include <tesseract/common/yaml_extensions.h>
+#include <tesseract/collision/yaml_extensions.h>
 #include <trajopt_common/yaml_extensions.h>
 
 #include <trajopt_common/collision_types.h>

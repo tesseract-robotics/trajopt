@@ -6,8 +6,6 @@
  * @author Levi Armstrong
  * @author Matthew Powelson
  * @date May 18, 2020
- * @version TODO
- * @bug No known bugs
  *
  * @copyright Copyright (c) 2020, Southwest Research Institute
  *
@@ -29,13 +27,12 @@
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <gtest/gtest.h>
 #include <iostream>
-#include <tesseract_kinematics/core/joint_group.h>
-#include <tesseract_scene_graph/scene_state.h>
-#include <tesseract_environment/environment.h>
-#include <tesseract_environment/utils.h>
-#include <tesseract_common/resource_locator.h>
-#include <tesseract_common/types.h>
-#include <tesseract_common/macros.h>
+#include <tesseract/kinematics/joint_group.h>
+#include <tesseract/scene_graph/scene_state.h>
+#include <tesseract/environment/environment.h>
+#include <tesseract/environment/utils.h>
+#include <tesseract/common/resource_locator.h>
+#include <tesseract/common/types.h>
 #include <console_bridge/console.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
@@ -46,9 +43,9 @@ TRAJOPT_IGNORE_WARNINGS_POP
 #include <trajopt_common/logging.hpp>
 
 using namespace trajopt;
-using namespace tesseract_environment;
-using namespace tesseract_scene_graph;
-using namespace tesseract_common;
+using namespace tesseract::environment;
+using namespace tesseract::scene_graph;
+using namespace tesseract::common;
 
 const bool DEBUG = true;
 
@@ -70,12 +67,12 @@ TEST(CartPositionOptimizationTrajoptSCO, cart_position_optimization_trajopt_sco)
   // 1)  Load Robot
   const std::filesystem::path urdf_file(std::string(TRAJOPT_DATA_DIR) + "/arm_around_table.urdf");
   const std::filesystem::path srdf_file(std::string(TRAJOPT_DATA_DIR) + "/pr2.srdf");
-  const ResourceLocator::Ptr locator = std::make_shared<tesseract_common::GeneralResourceLocator>();
+  const ResourceLocator::Ptr locator = std::make_shared<tesseract::common::GeneralResourceLocator>();
   auto env = std::make_shared<Environment>();
   env->init(urdf_file, srdf_file, locator);
 
   // Extract necessary kinematic information
-  const tesseract_kinematics::JointGroup::ConstPtr manip = env->getJointGroup("right_arm");
+  const tesseract::kinematics::JointGroup::ConstPtr manip = env->getJointGroup("right_arm");
 
   ProblemConstructionInfo pci(env);
 
@@ -95,7 +92,7 @@ TEST(CartPositionOptimizationTrajoptSCO, cart_position_optimization_trajopt_sco)
     std::cout << "Joint Limits:\n" << manip->getLimits().joint_limits.transpose() << '\n';
 
   pci.init_info.type = InitInfo::GIVEN_TRAJ;
-  pci.init_info.data = tesseract_common::TrajArray(1, pci.kin->numJoints());
+  pci.init_info.data = tesseract::common::TrajArray(1, pci.kin->numJoints());
   auto zero = Eigen::VectorXd::Zero(7);
   pci.init_info.data = zero.transpose();
 
@@ -128,7 +125,7 @@ TEST(CartPositionOptimizationTrajoptSCO, cart_position_optimization_trajopt_sco)
   opt.initialize(trajToDblVec(prob->GetInitTraj()));
   opt.optimize();
 
-  tesseract_common::TrajArray traj = getTraj(opt.x(), prob->GetVars());
+  tesseract::common::TrajArray traj = getTraj(opt.x(), prob->GetVars());
 
   auto optimized_pose = manip->calcFwdKin(traj.row(0)).at("r_gripper_tool_frame");
   EXPECT_TRUE(target_pose.translation().isApprox(optimized_pose.translation(), 1e-4));

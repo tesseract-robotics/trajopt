@@ -17,23 +17,24 @@ jobs:
       run:
         shell: powershell
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v6
       with:
        path: workspace/src/trajopt
     - name: install-depends
       shell: cmd
       run: |
-        python -m pip install vcstool -q
+        python -m pip install vcs2l setuptools -q
     - name: vcs import
       run: >
         vcs import --input "${{ github.workspace }}/workspace/src/trajopt/.github/workflows/windows_dependencies.repos" workspace/src/
-    - uses: conda-incubator/setup-miniconda@v3
+    - uses: conda-incubator/setup-miniconda@v4
       with:
         channel-priority: strict
-        environment-file: workspace/src/trajopt/.github/workflows/conda/environment.yml       
-        use-mamba: true
+        environment-file: workspace/src/trajopt/.github/workflows/conda/environment.yml
         auto-update-conda: true
         activate-environment: tesseract-build
+        channels: conda-forge
+        conda-remove-defaults: "true"
     - name: build and test
       run: |
         conda info
@@ -41,10 +42,9 @@ jobs:
         mkdir conda
         xcopy /E workspace\src\trajopt\.github\workflows\conda conda
         cd conda
-        New-Item -Name conda-forge.yml -ItemType File
-        conda smithy regenerate
+        conda-smithy regenerate
         
-        conda mambabuild -m .ci_support/win_64_.yaml --build-only .
+        rattler-build build -m .ci_support/win_64_.yaml --recipe recipe/recipe.yaml
 
   conda-linux:
     runs-on: ubuntu-latest
@@ -52,22 +52,23 @@ jobs:
       run:
         shell: bash -el {0}
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v6
       with:
         path: workspace/src/trajopt
     - name: install-depends
       run: |
-        python -m pip install vcstool -q
+        python -m pip install vcs2l setuptools -q
     - name: vcs import
       run: >
         vcs import --input "${{ github.workspace }}/workspace/src/trajopt/.github/workflows/windows_dependencies.repos" workspace/src/
-    - uses: conda-incubator/setup-miniconda@v3
+    - uses: conda-incubator/setup-miniconda@v4
       with:
         channel-priority: strict
         environment-file: workspace/src/trajopt/.github/workflows/conda/environment.yml
-        use-mamba: true
         auto-update-conda: true
         activate-environment: tesseract-build
+        channels: conda-forge
+        conda-remove-defaults: "true"
     - name: build and test
       run: |
         conda info
@@ -75,8 +76,39 @@ jobs:
 
         cp -r workspace/src/trajopt/.github/workflows/conda ./conda
         cd conda
-        touch conda-forge.yml
-        conda smithy regenerate
+        conda-smithy regenerate
         
-        conda mambabuild -m .ci_support/linux_64_.yaml --build-only .
+        rattler-build build -m .ci_support/linux_64_.yaml --recipe recipe/recipe.yaml
+  conda-mac:
+    runs-on: macos-15
+    defaults:
+      run:
+        shell: bash -el {0}
+    steps:
+    - uses: actions/checkout@v6
+      with:
+        path: workspace/src/trajopt
+    - name: install-depends
+      run: |
+        python -m pip install vcs2l -q
+    - name: vcs import
+      run: >
+        vcs import --input "${{ github.workspace }}/workspace/src/trajopt/.github/workflows/windows_dependencies.repos" workspace/src/
+    - uses: conda-incubator/setup-miniconda@v4
+      with:
+        channel-priority: strict
+        environment-file: workspace/src/trajopt/.github/workflows/conda/environment.yml
+        activate-environment: tesseract-build
+        channels: conda-forge
+        conda-remove-defaults: "true"
+    - name: build and test
+      run: |
+        conda info
+        conda list
+        
+        cp -r workspace/src/trajopt/.github/workflows/conda ./conda
+        cd conda
+        conda-smithy regenerate --no-check-uptodate
+        
+        rattler-build build -m .ci_support/osx_arm64_.yaml  --recipe recipe/recipe.yaml
 

@@ -266,6 +266,9 @@ JointVelEqCost::JointVelEqCost(VarArray vars,
   , first_step_(first_step)
   , last_step_(last_step)
 {
+  if (((last_step_ - 1) - first_step_) < 0)
+    throw std::runtime_error("JointVelEqCost, trajectory is too short!");
+
   for (int i = first_step_; i <= last_step_ - 1; ++i)
   {
     for (int j = 0; j < vars_.cols(); ++j)
@@ -313,6 +316,9 @@ JointVelIneqCost::JointVelIneqCost(VarArray vars,
   , first_step_(first_step)
   , last_step_(last_step)
 {
+  if (((last_step_ - 1) - first_step_) < 0)
+    throw std::runtime_error("JointVelIneqCost, trajectory is too short!");
+
   for (int i = first_step_; i <= last_step_ - 1; ++i)
   {
     for (int j = 0; j < vars_.cols(); ++j)
@@ -379,6 +385,9 @@ JointVelEqConstraint::JointVelEqConstraint(VarArray vars,
   , first_step_(first_step)
   , last_step_(last_step)
 {
+  if (((last_step_ - 1) - first_step_) < 0)
+    throw std::runtime_error("JointVelEqConstraint, trajectory is too short!");
+
   for (int i = first_step_; i <= last_step_ - 1; ++i)
   {
     for (int j = 0; j < vars_.cols(); ++j)
@@ -430,6 +439,9 @@ JointVelIneqConstraint::JointVelIneqConstraint(VarArray vars,
   , first_step_(first_step)
   , last_step_(last_step)
 {
+  if (((last_step_ - 1) - first_step_) < 0)
+    throw std::runtime_error("JointVelIneqConstraint, trajectory is too short!");
+
   for (int i = first_step_; i <= last_step_ - 1; ++i)
   {
     for (int j = 0; j < vars_.cols(); ++j)
@@ -499,6 +511,9 @@ JointAccEqCost::JointAccEqCost(VarArray vars,
   , first_step_(first_step)
   , last_step_(last_step)
 {
+  if (((last_step_ - 2) - first_step_) < 0)
+    throw std::runtime_error("JointAccEqCost, trajectory is too short!");
+
   for (int i = first_step_; i <= last_step_ - 2; ++i)
   {
     for (int j = 0; j < vars_.cols(); ++j)
@@ -549,6 +564,9 @@ JointAccIneqCost::JointAccIneqCost(VarArray vars,
   , first_step_(first_step)
   , last_step_(last_step)
 {
+  if (((last_step_ - 2) - first_step_) < 0)
+    throw std::runtime_error("JointAccIneqCost, trajectory is too short!");
+
   for (int i = first_step_; i <= last_step_ - 2; ++i)
   {
     for (int j = 0; j < vars_.cols(); ++j)
@@ -616,6 +634,9 @@ JointAccEqConstraint::JointAccEqConstraint(VarArray vars,
   , first_step_(first_step)
   , last_step_(last_step)
 {
+  if (((last_step_ - 2) - first_step_) < 0)
+    throw std::runtime_error("JointAccEqConstraint, trajectory is too short!");
+
   for (int i = first_step_; i <= last_step_ - 2; ++i)
   {
     for (int j = 0; j < vars_.cols(); ++j)
@@ -670,6 +691,9 @@ JointAccIneqConstraint::JointAccIneqConstraint(VarArray vars,
   , first_step_(first_step)
   , last_step_(last_step)
 {
+  if (((last_step_ - 2) - first_step_) < 0)
+    throw std::runtime_error("JointAccIneqConstraint, trajectory is too short!");
+
   // Form upper limit expr = - (upper_tol-(vel-targ))
   for (int i = first_step_; i <= last_step_ - 2; ++i)
   {
@@ -741,16 +765,19 @@ JointJerkEqCost::JointJerkEqCost(VarArray vars,
   , first_step_(first_step)
   , last_step_(last_step)
 {
-  for (int i = first_step_; i <= last_step_ - 4; ++i)
+  if (((last_step_ - 3) - first_step_) < 0)
+    throw std::runtime_error("JointJerkEqCost, trajectory is too short!");
+
+  for (int i = first_step_; i <= last_step_ - 3; ++i)
   {
     for (int j = 0; j < vars_.cols(); ++j)
     {
+      // jerk = -x1 + 3*x2 - 3*x3 + x4
       sco::AffExpr jerk;
-      sco::exprInc(jerk, sco::exprMult(vars_(i, j), -1.0 / 2.0));
-      sco::exprInc(jerk, sco::exprMult(vars_(i + 1, j), 1.0));
-      sco::exprInc(jerk, sco::exprMult(vars_(i + 2, j), 0.0));
-      sco::exprInc(jerk, sco::exprMult(vars_(i + 3, j), -1.0));
-      sco::exprInc(jerk, sco::exprMult(vars_(i + 4, j), 1.0 / 2.0));
+      sco::exprInc(jerk, sco::exprMult(vars_(i, j), -1.0));
+      sco::exprInc(jerk, sco::exprMult(vars_(i + 1, j), 3.0));
+      sco::exprInc(jerk, sco::exprMult(vars_(i + 2, j), -3.0));
+      sco::exprInc(jerk, sco::exprMult(vars_(i + 3, j), 1.0));
 
       sco::exprDec(jerk, targets_[j]);
       // expr_ = coeff * jerk^2
@@ -793,30 +820,33 @@ JointJerkIneqCost::JointJerkIneqCost(VarArray vars,
   , first_step_(first_step)
   , last_step_(last_step)
 {
-  for (int i = first_step_; i <= last_step_ - 4; ++i)
+  if (((last_step_ - 3) - first_step_) < 0)
+    throw std::runtime_error("JointJerkIneqCost, trajectory is too short!");
+
+  for (int i = first_step_; i <= last_step_ - 3; ++i)
   {
     for (int j = 0; j < vars_.cols(); ++j)
     {
+      // jerk = -x1 + 3*x2 - 3*x3 + x4
       sco::AffExpr jerk;
       sco::AffExpr expr;
       sco::AffExpr expr_neg;
-      sco::exprInc(jerk, sco::exprMult(vars_(i, j), -1.0 / 2.0));
-      sco::exprInc(jerk, sco::exprMult(vars_(i + 1, j), 1.0));
-      sco::exprInc(jerk, sco::exprMult(vars_(i + 2, j), 0.0));
-      sco::exprInc(jerk, sco::exprMult(vars_(i + 3, j), -1.0));
-      sco::exprInc(jerk, sco::exprMult(vars_(i + 4, j), 1.0 / 2.0));
+      sco::exprInc(jerk, sco::exprMult(vars_(i, j), -1.0));
+      sco::exprInc(jerk, sco::exprMult(vars_(i + 1, j), 3.0));
+      sco::exprInc(jerk, sco::exprMult(vars_(i + 2, j), -3.0));
+      sco::exprInc(jerk, sco::exprMult(vars_(i + 3, j), 1.0));
       sco::exprDec(jerk, targets_[j]);
 
       // Form upper limit expr = - (upper_tol-(jerk-targ))
       sco::exprInc(expr, upper_tols_[j]);  // expr_ = upper_tol
-      sco::exprDec(expr, jerk);            // expr = upper_tol_- (vel - targets_)
-      sco::exprScale(expr, -coeffs_[j]);   // expr = - (upper_tol_- (vel - targets_)) * coeffs_
+      sco::exprDec(expr, jerk);            // expr = upper_tol_- (jerk - targets_)
+      sco::exprScale(expr, -coeffs_[j]);   // expr = - (upper_tol_- (jerk - targets_)) * coeffs_
       expr_vec_.push_back(expr);
 
-      // Form lower limit expr = (lower_tol-(acc-targ))
+      // Form lower limit expr = (lower_tol-(jerk-targ))
       sco::exprInc(expr_neg, lower_tols_[j]);  // expr_ = lower_tol_
-      sco::exprDec(expr_neg, jerk);            // expr = lower_tol_- (vel - targets_)
-      sco::exprScale(expr_neg, coeffs_[j]);    // expr = (lower_tol_- (vel - targets_)) * coeffs_
+      sco::exprDec(expr_neg, jerk);            // expr = lower_tol_- (jerk - targets_)
+      sco::exprScale(expr_neg, coeffs_[j]);    // expr = (lower_tol_- (jerk - targets_)) * coeffs_
       expr_vec_.push_back(expr_neg);
     }
   }
@@ -862,16 +892,19 @@ JointJerkEqConstraint::JointJerkEqConstraint(VarArray vars,
   , first_step_(first_step)
   , last_step_(last_step)
 {
-  for (int i = first_step_; i <= last_step_ - 4; ++i)
+  if (((last_step_ - 3) - first_step_) < 0)
+    throw std::runtime_error("JointJerkEqConstraint, trajectory is too short!");
+
+  for (int i = first_step_; i <= last_step_ - 3; ++i)
   {
     for (int j = 0; j < vars_.cols(); ++j)
     {
+      // jerk = -x1 + 3*x2 - 3*x3 + x4
       sco::AffExpr jerk;
-      sco::exprInc(jerk, sco::exprMult(vars_(i, j), -1.0 / 2.0));
-      sco::exprInc(jerk, sco::exprMult(vars_(i + 1, j), 1.0));
-      sco::exprInc(jerk, sco::exprMult(vars_(i + 2, j), 0.0));
-      sco::exprInc(jerk, sco::exprMult(vars_(i + 3, j), -1.0));
-      sco::exprInc(jerk, sco::exprMult(vars_(i + 4, j), 1.0 / 2.0));
+      sco::exprInc(jerk, sco::exprMult(vars_(i, j), -1.0));
+      sco::exprInc(jerk, sco::exprMult(vars_(i + 1, j), 3.0));
+      sco::exprInc(jerk, sco::exprMult(vars_(i + 2, j), -3.0));
+      sco::exprInc(jerk, sco::exprMult(vars_(i + 3, j), 1.0));
 
       sco::exprDec(jerk, targets_[j]);  // offset to center about 0
       // expr_ = coeff * jerk - Not squared b/c QuadExpr cnt not yet supported (TODO)
@@ -918,30 +951,33 @@ JointJerkIneqConstraint::JointJerkIneqConstraint(VarArray vars,
   , first_step_(first_step)
   , last_step_(last_step)
 {
-  for (int i = first_step_; i <= last_step_ - 4; ++i)
+  if (((last_step_ - 3) - first_step_) < 0)
+    throw std::runtime_error("JointJerkIneqConstraint, trajectory is too short!");
+
+  for (int i = first_step_; i <= last_step_ - 3; ++i)
   {
     for (int j = 0; j < vars_.cols(); ++j)
     {
+      // jerk = -x1 + 3*x2 - 3*x3 + x4
       sco::AffExpr jerk;
       sco::AffExpr expr;
       sco::AffExpr expr_neg;
-      sco::exprInc(jerk, sco::exprMult(vars_(i, j), -1.0 / 2.0));
-      sco::exprInc(jerk, sco::exprMult(vars_(i + 1, j), 1.0));
-      sco::exprInc(jerk, sco::exprMult(vars_(i + 2, j), 0.0));
-      sco::exprInc(jerk, sco::exprMult(vars_(i + 3, j), -1.0));
-      sco::exprInc(jerk, sco::exprMult(vars_(i + 4, j), 1.0 / 2.0));
+      sco::exprInc(jerk, sco::exprMult(vars_(i, j), -1.0));
+      sco::exprInc(jerk, sco::exprMult(vars_(i + 1, j), 3.0));
+      sco::exprInc(jerk, sco::exprMult(vars_(i + 2, j), -3.0));
+      sco::exprInc(jerk, sco::exprMult(vars_(i + 3, j), 1.0));
       sco::exprDec(jerk, targets_[j]);  // offset to center about 0
 
-      // Form upper limit expr = - (upper_tol-(vel-targ))
+      // Form upper limit expr = - (upper_tol-(jerk-targ))
       sco::exprInc(expr, upper_tols_[j]);  // expr_ = upper_tol
-      sco::exprDec(expr, jerk);            // expr = upper_tol_- (vel - targets_)
-      sco::exprScale(expr, -coeffs_[j]);   // expr = - (upper_tol_- (vel - targets_)) * coeffs_
+      sco::exprDec(expr, jerk);            // expr = upper_tol_- (jerk - targets_)
+      sco::exprScale(expr, -coeffs_[j]);   // expr = - (upper_tol_- (jerk - targets_)) * coeffs_
       expr_vec_.push_back(expr);
 
-      // Form upper limit expr = - (upper_tol-(vel-targ))
+      // Form lower limit expr = (lower_tol-(jerk-targ))
       sco::exprInc(expr_neg, lower_tols_[j]);  // expr_ = lower_tol_
-      sco::exprDec(expr_neg, jerk);            // expr = lower_tol_- (vel - targets_)
-      sco::exprScale(expr_neg, coeffs_[j]);    // expr = (lower_tol_- (vel - targets_)) * coeffs_
+      sco::exprDec(expr_neg, jerk);            // expr = lower_tol_- (jerk - targets_)
+      sco::exprScale(expr_neg, coeffs_[j]);    // expr = (lower_tol_- (jerk - targets_)) * coeffs_
       expr_vec_.push_back(expr_neg);
     }
   }
@@ -951,10 +987,11 @@ DblVec JointJerkIneqConstraint::value(const DblVec& xvec)
 {
   // Convert vector from optimization to trajectory
   Eigen::MatrixXd traj = getTraj(xvec, vars_);
-  // Takes diff b/n the subsequent rows to get velocity
-  Eigen::MatrixXd acc = diffAxis0(diffAxis0(traj.block(first_step_, 0, last_step_ - first_step_ + 1, traj.cols())));
+  // Takes diff b/n the subsequent rows to get jerk
+  Eigen::MatrixXd jerk =
+      diffAxis0(diffAxis0(diffAxis0(traj.block(first_step_, 0, last_step_ - first_step_ + 1, traj.cols()))));
   // Subtract targets_ to center about 0 and then subtract from tolerance
-  Eigen::MatrixXd diff0 = (acc.rowwise() - targets_.transpose());
+  Eigen::MatrixXd diff0 = (jerk.rowwise() - targets_.transpose());
   const Eigen::MatrixXd diff1 = (diff0.rowwise() - upper_tols_.transpose()) * coeffs_.asDiagonal();
   const Eigen::MatrixXd diff2 = ((diff0 * -1).rowwise() + lower_tols_.transpose()) * coeffs_.asDiagonal();
   // Applies hinge, multiplies it by a diagonal matrix of coefficients, sums each corresponding value, and converts to

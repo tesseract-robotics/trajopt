@@ -4,8 +4,6 @@
  *
  * @author Matthew Powelson
  * @date May 18, 2020
- * @version TODO
- * @bug No known bugs
  *
  * @copyright Copyright (c) 2020, Southwest Research Institute
  *
@@ -27,42 +25,51 @@
 #include <trajopt_ifopt/utils/ifopt_utils.h>
 #include <trajopt_ifopt/costs/squared_cost.h>
 #include <trajopt_ifopt/costs/absolute_cost.h>
-#include <ifopt/problem.h>
+#include <trajopt_ifopt/core/problem.h>
+#include <trajopt_ifopt/core/composite.h>
+#include <console_bridge/console.h>
 #include <iostream>
+#include <cassert>
 
 namespace trajopt_sqp
 {
-IfoptQPProblem::IfoptQPProblem() : nlp_(std::make_shared<ifopt::Problem>()) {}
-IfoptQPProblem::IfoptQPProblem(std::shared_ptr<ifopt::Problem> nlp) : nlp_(std::move(nlp)) {}
-
-void IfoptQPProblem::addVariableSet(std::shared_ptr<ifopt::VariableSet> variable_set)
+IfoptQPProblem::IfoptQPProblem(std::shared_ptr<trajopt_ifopt::Variables> variables)
+  : nlp_(std::make_shared<trajopt_ifopt::Problem>(std::move(variables)))
 {
-  nlp_->AddVariableSet(variable_set);
+}
+IfoptQPProblem::IfoptQPProblem(std::shared_ptr<trajopt_ifopt::Problem> nlp) : nlp_(std::move(nlp)) {}
+
+void IfoptQPProblem::addConstraintSet(std::shared_ptr<trajopt_ifopt::ConstraintSet> constraint_set)
+{
+  if (constraint_set->isDynamic())
+    throw std::runtime_error("IfoptQPProblem, dynamic constraint sets are not supported");
+
+  nlp_->addConstraintSet(std::move(constraint_set));
 }
 
-void IfoptQPProblem::addConstraintSet(std::shared_ptr<ifopt::ConstraintSet> constraint_set)
+void IfoptQPProblem::addCostSet(std::shared_ptr<trajopt_ifopt::ConstraintSet> constraint_set,
+                                CostPenaltyType penalty_type)
 {
-  nlp_->AddConstraintSet(constraint_set);
-}
+  if (constraint_set->isDynamic())
+    throw std::runtime_error("IfoptQPProblem, dynamic cost sets are not supported");
 
-void IfoptQPProblem::addCostSet(std::shared_ptr<ifopt::ConstraintSet> constraint_set, CostPenaltyType penalty_type)
-{
+  // Save raw constraint for Hessian/gradient computation (SquaredCost wraps it
+  // but doesn't expose the raw Jacobian needed for the Gauss-Newton Hessian)
+  constraint_set->linkWithVariables(nlp_->getOptVariables());
+  cost_constraints_.push_back(constraint_set);
+
   switch (penalty_type)
   {
-    case CostPenaltyType::SQUARED:
+    case CostPenaltyType::kSquared:
     {
-      // Must link the variables to the constraint since that happens in AddConstraintSet
-      constraint_set->LinkWithVariables(nlp_->GetOptVariables());
       auto cost = std::make_shared<trajopt_ifopt::SquaredCost>(constraint_set);
-      nlp_->AddCostSet(cost);
+      nlp_->addCostSet(std::move(cost));
       break;
     }
-    case CostPenaltyType::ABSOLUTE:
+    case CostPenaltyType::kAbsolute:
     {
-      // Must link the variables to the constraint since that happens in AddConstraintSet
-      constraint_set->LinkWithVariables(nlp_->GetOptVariables());
       auto cost = std::make_shared<trajopt_ifopt::AbsoluteCost>(constraint_set);
-      nlp_->AddCostSet(cost);
+      nlp_->addCostSet(std::move(cost));
       break;
     }
     default:
@@ -72,59 +79,60 @@ void IfoptQPProblem::addCostSet(std::shared_ptr<ifopt::ConstraintSet> constraint
 
 void IfoptQPProblem::setup()
 {
-  num_nlp_vars_ = nlp_->GetNumberOfOptimizationVariables();
-  num_nlp_cnts_ = nlp_->GetNumberOfConstraints();
-  num_nlp_costs_ = nlp_->GetCosts().GetRows();
+  auto start_variables = nlp_->getVariableValues();
+  nlp_->setVariables(start_variables.data());
+
+  num_nlp_vars_ = nlp_->getNumberOfOptimizationVariables();
+  num_nlp_cnts_ = nlp_->getNumberOfConstraints();
+  num_nlp_costs_ = nlp_->getCosts().getRows();
   cost_constant_ = Eigen::VectorXd::Zero(1);
 
   num_qp_vars_ = num_nlp_vars_;
   num_qp_cnts_ = num_nlp_cnts_ + num_nlp_vars_;
   box_size_ = Eigen::VectorXd::Constant(num_nlp_vars_, 1e-1);
   constraint_merit_coeff_ = Eigen::VectorXd::Constant(num_nlp_cnts_, 10);
+  constraint_types_.resize(static_cast<std::size_t>(num_nlp_cnts_));
 
   // Get NLP Cost and Constraint Names for Debug Print
-  for (const auto& cnt : nlp_->GetConstraints().GetComponents())
+  for (const auto& cnt : nlp_->getConstraints().getComponents())
   {
-    for (Eigen::Index j = 0; j < cnt->GetRows(); j++)
-      constraint_names_.push_back(cnt->GetName() + "_" + std::to_string(j));
+    for (Eigen::Index j = 0; j < cnt->getRows(); j++)
+      constraint_names_.push_back(cnt->getName() + "_" + std::to_string(j));
   }
 
-  for (const auto& cost : nlp_->GetCosts().GetComponents())
+  for (const auto& cost : nlp_->getCosts().getComponents())
   {
-    for (Eigen::Index j = 0; j < cost->GetRows(); j++)
-      cost_names_.push_back(cost->GetName() + "_" + std::to_string(j));
+    for (Eigen::Index j = 0; j < cost->getRows(); j++)
+      cost_names_.push_back(cost->getName() + "_" + std::to_string(j));
   }
 
   // Get bounds
   Eigen::VectorXd nlp_bounds_l(num_nlp_cnts_);
   Eigen::VectorXd nlp_bounds_u(num_nlp_cnts_);
   // Convert constraint bounds to VectorXd
-  std::vector<ifopt::Bounds> cnt_bounds = nlp_->GetBoundsOnConstraints();
+  std::vector<trajopt_ifopt::Bounds> cnt_bounds = nlp_->getBoundsOnConstraints();
   for (Eigen::Index i = 0; i < num_nlp_cnts_; i++)
   {
-    nlp_bounds_l[i] = cnt_bounds[static_cast<std::size_t>(i)].lower_;
-    nlp_bounds_u[i] = cnt_bounds[static_cast<std::size_t>(i)].upper_;
-  }
+    const auto& b = cnt_bounds[static_cast<std::size_t>(i)];
+    nlp_bounds_l[i] = b.getLower();
+    nlp_bounds_u[i] = b.getUpper();
 
-  // Detect constraint type
-  Eigen::VectorXd nlp_bounds_diff = nlp_bounds_u - nlp_bounds_l;
-  constraint_types_.resize(static_cast<std::size_t>(num_nlp_cnts_));
-  for (std::size_t i = 0; i < static_cast<std::size_t>(nlp_bounds_diff.size()); i++)
-  {
-    if (std::abs(nlp_bounds_diff[static_cast<Eigen::Index>(i)]) < 1e-3)
+    constraint_types_[static_cast<std::size_t>(i)] = b.getType();
+    if (b.getType() == trajopt_ifopt::BoundsType::kEquality)
     {
-      constraint_types_[i] = ConstraintType::EQ;
       // Add 2 slack variables for L1 loss
       num_qp_vars_ += 2;
       num_qp_cnts_ += 2;
     }
-    else
+    else if (b.getType() == trajopt_ifopt::BoundsType::kLowerBound ||
+             b.getType() == trajopt_ifopt::BoundsType::kUpperBound)
     {
-      constraint_types_[i] = ConstraintType::INEQ;
       // Add 1 slack variable for hinge loss
       num_qp_vars_ += 1;
       num_qp_cnts_ += 1;
     }
+    else
+      throw std::runtime_error("Unsupport bounds type!");
   }
 
   // Initialize the constraint bounds
@@ -132,8 +140,8 @@ void IfoptQPProblem::setup()
   bounds_upper_ = Eigen::VectorXd::Constant(num_qp_cnts_, double(INFINITY));
 }
 
-void IfoptQPProblem::setVariables(const double* x) { nlp_->SetVariables(x); }
-Eigen::VectorXd IfoptQPProblem::getVariableValues() const { return nlp_->GetVariableValues(); }
+void IfoptQPProblem::setVariables(const double* x) { nlp_->setVariables(x); }
+Eigen::VectorXd IfoptQPProblem::getVariableValues() const { return nlp_->getVariableValues(); }
 
 void IfoptQPProblem::convexify()
 {
@@ -160,68 +168,122 @@ void IfoptQPProblem::convexify()
 void IfoptQPProblem::updateHessian()
 {
   ////////////////////////////////////////////////////////
-  // Set the Hessian (empty for now)
+  // Gauss-Newton Hessian: H = sum_i( J_i^T * diag(w_i) * J_i )
+  //
+  // Each cost is a SquaredCost wrapping a raw ConstraintSet.  The true
+  // Hessian of sum(w * e^2) is 2 * J^T W J + second-order terms.
+  // Gauss-Newton drops the second-order terms: H_GN = 2 * J^T W J.
+  //
+  // OSQPEigenSolver::updateHessianMatrix multiplies by 2 (because OSQP
+  // uses 0.5 * x^T P x), so we store J^T W J here (without the factor 2).
   ////////////////////////////////////////////////////////
   hessian_.resize(num_qp_vars_, num_qp_vars_);
-  /**
-   * @note See CostFromFunc::convex in modeling_utils.cpp.
-   * This should be multiplied by 0.5 when implemented
-   * hessian_ = 0.5 * nlp_->GetHessianOfCosts();
-   */
+  hessian_.setZero();
+
+  if (cost_constraints_.empty())
+    return;
+
+  // Accumulate H = sum( J_i^T * diag(w_i) * J_i ) over all cost constraints
+  trajopt_ifopt::Jacobian H_nlp(num_nlp_vars_, num_nlp_vars_);
+
+  bool first = true;
+  for (const auto& c : cost_constraints_)
+  {
+    const trajopt_ifopt::Jacobian J = c->getJacobian();  // m_i × n
+    const Eigen::VectorXd w = c->getCoefficients();      // m_i weights
+
+    if (J.nonZeros() == 0)
+      continue;
+
+    // Jw = diag(sqrt(w)) * J — so Jw^T * Jw = J^T * diag(w) * J
+    trajopt_ifopt::Jacobian Jw = J;
+    for (Eigen::Index r = 0; r < Jw.outerSize(); ++r)
+    {
+      const double sw = std::sqrt(std::abs(w[r]));
+      for (trajopt_ifopt::Jacobian::InnerIterator it(Jw, static_cast<int>(r)); it; ++it)
+        it.valueRef() *= sw;
+    }
+
+    // Evaluate product into row-major temp (Eigen requires matching storage order for +=)
+    trajopt_ifopt::Jacobian JtWJ = Jw.transpose() * Jw;
+    if (first)
+    {
+      H_nlp = JtWJ;
+      first = false;
+    }
+    else
+    {
+      H_nlp += JtWJ;
+    }
+  }
+
+  if (first)
+    return;  // no cost terms contributed
+
+  H_nlp.makeCompressed();
+
+  // Place H_nlp into top-left block of hessian_ via triplets (safe for full
+  // num_qp_vars_ × num_qp_vars_ size — slack variable rows/cols stay zero)
+  using T = Eigen::Triplet<double>;
+  std::vector<T> triplets;
+  triplets.reserve(static_cast<std::size_t>(H_nlp.nonZeros()));
+  for (Eigen::Index k = 0; k < H_nlp.outerSize(); ++k)
+  {
+    for (trajopt_ifopt::Jacobian::InnerIterator it(H_nlp, k); it; ++it)
+    {
+      // Keep entry but zero small values to preserve sparsity pattern (OSQP warm-start stability)
+      triplets.emplace_back(it.row(), it.col(), std::abs(it.value()) >= 1e-7 ? it.value() : 0.0);
+    }
+  }
+  hessian_.setFromTriplets(triplets.begin(), triplets.end());
+  hessian_.makeCompressed();
 }
 
 void IfoptQPProblem::updateGradient()
 {
   ////////////////////////////////////////////////////////
-  // Set the gradient of the NLP costs
+  // QP gradient for OSQP's objective:  0.5 * x^T P x + q^T x
+  //
+  // The Gauss-Newton model around x0 is:
+  //   f(x) ≈ f(x0) + g^T(x-x0) + 0.5*(x-x0)^T H (x-x0)
+  //        = 0.5 * x^T H x + (g - H*x0)^T x + const
+  //
+  // where g = 2 * J^T * W * e  (the NLP cost gradient at x0)
+  //       H = 2 * J^T * W * J  (we store J^T W J; OSQP multiplies by 2)
+  //
+  // So the QP gradient q = g - H*x0  (NOT just g — the Hessian correction
+  // ensures the minimum is near x0 + Newton step, not near x=0).
+  //
+  // Since OSQP multiplies P by 0.5, our H is the half-Hessian.  The gradient
+  // correction uses hessian_ (= J^T W J) multiplied by 2 to match g's scale:
+  //   q = 2 * J^T W e  -  2 * (J^T W J) * x0
   ////////////////////////////////////////////////////////
   gradient_ = Eigen::VectorXd::Zero(num_qp_vars_);
-  const SparseMatrix cost_jac = nlp_->GetJacobianOfCosts();
-  /**
-   * @note See CostFromFunc::convex in modeling_utils.cpp. Once Hessian has been implemented
-   *
-   * if (!full_hessian_) // Does not contain bilinear terms, eg. x1 * x2, only x1^2 and x2^2
-   * {
-   *   double val;
-   *   Eigen::VectorXd grad, hess;
-   *   calcGradAndDiagHess(*f_, x_eigen, epsilon_, val, grad, hess);
-   *   quad = a + b*x + c*x^2
-   *   a = val - grad.dot(x_eigen) + .5 * x_eigen.dot(hess.cwiseProduct(x_eigen));
-   *   b = grad - hess.cwiseProduct(x_eigen)
-   *   c = 0.5 * hess
-   * }
-   * else // contains bilinear terms
-   * {
-   *   double val;
-   *   Eigen::VectorXd grad;
-   *   Eigen::MatrixXd hess;
-   *   calcGradHess(f_, x_eigen, epsilon_, val, grad, hess);
-   *
-   *   Eigen::MatrixXd pos_hess = Eigen::MatrixXd::Zero(x_eigen.size(), x_eigen.size());
-   *   Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> es(hess);
-   *   Eigen::VectorXd eigvals = es.eigenvalues();
-   *   Eigen::MatrixXd eigvecs = es.eigenvectors();
-   *   for (long int i = 0, end = x_eigen.size(); i != end; ++i)
-   *   {  // tricky --- eigen size() is signed
-   *     if (eigvals(i) > 0)
-   *       pos_hess += eigvals(i) * eigvecs.col(i) * eigvecs.col(i).transpose();
-   *   }
-   *   quad = a + b*x + c*x^2 +
-   *   a = val - grad.dot(x_eigen) + .5 * x_eigen.dot(pos_hess * x_eigen);
-   *   b = grad - pos_hess * x_eigen
-   *   for (long int i = 0, end = x_eigen.size(); i != end; ++i)
-   *   {  // tricky --- eigen size() is signed
-   *     c(i,i) = (pos_hess(i, i) / 2);
-   *     for (long int j = i + 1; j != end; ++j)
-   *     {  // tricky --- eigen size() is signed
-   *       c(i, j) = pos_hess(i, j);
-   *     }
-   *   }
-   * }
-   */
 
-  if (cost_jac.nonZeros() > 0)
-    gradient_.topRows(num_nlp_vars_) = cost_jac.toDense().transpose();
+  for (const auto& c : cost_constraints_)
+  {
+    const trajopt_ifopt::Jacobian J = c->getJacobian();  // m × n
+    const Eigen::VectorXd w = c->getCoefficients();      // m weights
+
+    if (J.nonZeros() == 0)
+      continue;
+
+    // Compute bound errors: e_i = value_i - target_i
+    Eigen::VectorXd errors(c->getRows());
+    trajopt_ifopt::calcBoundsErrors(errors, c->getValues(), c->getBounds());
+
+    // g += 2 * J^T * diag(w) * e
+    Eigen::VectorXd we = (w.array() * errors.array()).matrix();  // w .* e
+    gradient_.head(num_nlp_vars_) += 2.0 * (J.transpose() * we);
+  }
+
+  // Hessian correction: q = g - 2 * H * x0
+  // (hessian_ stores J^T W J = half-Hessian, so multiply by 2)
+  if (hessian_.nonZeros() > 0)
+  {
+    const Eigen::VectorXd x0 = nlp_->getVariableValues().head(num_nlp_vars_);
+    gradient_.head(num_nlp_vars_) -= 2.0 * (hessian_.block(0, 0, num_nlp_vars_, num_nlp_vars_) * x0);
+  }
 
   ////////////////////////////////////////////////////////
   // Set the gradient of the constraint slack variables
@@ -230,25 +292,29 @@ void IfoptQPProblem::updateGradient()
     Eigen::Index current_var_index = num_nlp_vars_;
     for (Eigen::Index i = 0; i < num_nlp_cnts_; i++)
     {
-      if (constraint_types_[static_cast<std::size_t>(i)] == ConstraintType::EQ)
+      const auto bounds_type = constraint_types_[static_cast<std::size_t>(i)];
+      if (bounds_type == trajopt_ifopt::BoundsType::kEquality)
       {
         gradient_[current_var_index] = constraint_merit_coeff_[i];
         gradient_[current_var_index + 1] = constraint_merit_coeff_[i];
 
         current_var_index += 2;
       }
-      else
+      else if (bounds_type == trajopt_ifopt::BoundsType::kLowerBound ||
+               bounds_type == trajopt_ifopt::BoundsType::kUpperBound)
       {
         gradient_[current_var_index] = constraint_merit_coeff_[i];
         current_var_index++;
       }
+      else
+        throw std::runtime_error("Unsupported bounds type!");
     }
   }
 }
 
 void IfoptQPProblem::linearizeConstraints()
 {
-  const SparseMatrix jac = nlp_->GetJacobianOfConstraints();
+  const trajopt_ifopt::Jacobian jac = nlp_->getJacobianOfConstraints();
 
   // Create triplet list of nonzero constraints
   using T = Eigen::Triplet<double>;
@@ -258,9 +324,13 @@ void IfoptQPProblem::linearizeConstraints()
   // Add jacobian to triplet list
   for (int k = 0; k < jac.outerSize(); ++k)  // NOLINT
   {
-    for (SparseMatrix::InnerIterator it(jac, k); it; ++it)
+    for (trajopt_ifopt::Jacobian::InnerIterator it(jac, k); it; ++it)
     {
-      tripletList.emplace_back(it.row(), it.col(), it.value());
+      // Originally it pruned these but it changes sparsity so we now set to zero
+      if (std::abs(it.value()) < 1e-7)
+        tripletList.emplace_back(it.row(), it.col(), 0.0);
+      else
+        tripletList.emplace_back(it.row(), it.col(), it.value());
     }
   }
 
@@ -268,17 +338,25 @@ void IfoptQPProblem::linearizeConstraints()
   Eigen::Index current_column_index = num_nlp_vars_;
   for (Eigen::Index i = 0; i < num_nlp_cnts_; i++)
   {
-    if (constraint_types_[static_cast<std::size_t>(i)] == ConstraintType::EQ)
+    const auto bounds_type = constraint_types_[static_cast<std::size_t>(i)];
+    if (bounds_type == trajopt_ifopt::BoundsType::kEquality)
     {
       tripletList.emplace_back(i, current_column_index, 1);
       tripletList.emplace_back(i, current_column_index + 1, -1);
       current_column_index += 2;
     }
-    else
+    else if (bounds_type == trajopt_ifopt::BoundsType::kLowerBound)
+    {
+      tripletList.emplace_back(i, current_column_index, 1);
+      current_column_index++;
+    }
+    else if (bounds_type == trajopt_ifopt::BoundsType::kUpperBound)
     {
       tripletList.emplace_back(i, current_column_index, -1);
       current_column_index++;
     }
+    else
+      throw std::runtime_error("Unsupported bounds type!");
   }
 
   // Add a diagonal matrix for the variable limits (including slack variables since the merit coeff is only applied in
@@ -298,8 +376,8 @@ void IfoptQPProblem::updateCostsConstantExpression()
     return;
 
   // Get values about which we will linearize
-  Eigen::VectorXd x_initial = nlp_->GetVariableValues().head(num_nlp_vars_);
-  const Eigen::VectorXd cost_initial_value = nlp_->GetCosts().GetValues();
+  Eigen::VectorXd x_initial = nlp_->getVariableValues().head(num_nlp_vars_);
+  const Eigen::VectorXd cost_initial_value = nlp_->getCosts().getValues();
 
   // In the case of a QP problem the costs and constraints are represented as
   // quadratic functions is f(x) = a + b * x + c * x^2.
@@ -316,10 +394,9 @@ void IfoptQPProblem::updateCostsConstantExpression()
 
   // The block excludes the slack variables
   /** @todo I am not sure this is correct because the gradient_ is not each individual cost function gradient */
-  const Eigen::VectorXd result_quad =
-      x_initial.transpose() * hessian_.block(0, 0, num_nlp_vars_, num_nlp_vars_) * x_initial;
-  const Eigen::VectorXd result_lin = x_initial.transpose() * gradient_.block(0, 0, num_nlp_vars_, num_nlp_costs_);
-  cost_constant_ = cost_initial_value - result_quad - result_lin;
+  const double result_quad = x_initial.transpose() * hessian_.block(0, 0, num_nlp_vars_, num_nlp_vars_) * x_initial;
+  const double result_lin = x_initial.dot(gradient_.head(num_nlp_vars_));
+  cost_constant_ = cost_initial_value.array() - result_quad - result_lin;
 }
 
 void IfoptQPProblem::updateConstraintsConstantExpression()
@@ -328,8 +405,8 @@ void IfoptQPProblem::updateConstraintsConstantExpression()
     return;
 
   // Get values about which we will linearize
-  const Eigen::VectorXd x_initial = nlp_->GetVariableValues().head(num_nlp_vars_);
-  const Eigen::VectorXd cnt_initial_value = nlp_->GetConstraints().GetValues();
+  const Eigen::VectorXd x_initial = nlp_->getVariableValues().head(num_nlp_vars_);
+  const Eigen::VectorXd cnt_initial_value = nlp_->getConstraints().getValues();
 
   // In the case of a QP problem the costs and constraints are represented as
   // quadratic functions is f(x) = a + b * x + c * x^2.
@@ -346,7 +423,7 @@ void IfoptQPProblem::updateConstraintsConstantExpression()
   //       to calculate the merit of the solve.
 
   // The block excludes the slack variables
-  const SparseMatrix jac = constraint_matrix_.block(0, 0, num_nlp_cnts_, num_nlp_vars_);
+  const trajopt_ifopt::Jacobian jac = constraint_matrix_.block(0, 0, num_nlp_cnts_, num_nlp_vars_);
   constraint_constant_ = (cnt_initial_value - jac * x_initial);
 }
 
@@ -359,11 +436,11 @@ void IfoptQPProblem::updateNLPConstraintBounds()
   Eigen::VectorXd cnt_bound_upper(num_nlp_cnts_);
 
   // Convert constraint bounds to VectorXd
-  std::vector<ifopt::Bounds> cnt_bounds = nlp_->GetBoundsOnConstraints();
+  std::vector<trajopt_ifopt::Bounds> cnt_bounds = nlp_->getBoundsOnConstraints();
   for (Eigen::Index i = 0; i < num_nlp_cnts_; i++)
   {
-    cnt_bound_lower[i] = cnt_bounds[static_cast<std::size_t>(i)].lower_;
-    cnt_bound_upper[i] = cnt_bounds[static_cast<std::size_t>(i)].upper_;
+    cnt_bound_lower[i] = cnt_bounds[static_cast<std::size_t>(i)].getLower();
+    cnt_bound_upper[i] = cnt_bounds[static_cast<std::size_t>(i)].getUpper();
   }
 
   const Eigen::VectorXd linearized_cnt_lower = cnt_bound_lower - constraint_constant_;
@@ -377,17 +454,17 @@ void IfoptQPProblem::updateNLPConstraintBounds()
 void IfoptQPProblem::updateNLPVariableBounds()
 {
   // This is equivalent to BasicTrustRegionSQP::setTrustBoxConstraints
-  const Eigen::VectorXd x_initial = nlp_->GetVariableValues();
+  const Eigen::VectorXd x_initial = nlp_->getVariableValues();
 
   // Set the variable limits once
-  const std::vector<ifopt::Bounds> var_bounds = nlp_->GetBoundsOnOptimizationVariables();
+  const std::vector<trajopt_ifopt::Bounds> var_bounds = nlp_->getBoundsOnOptimizationVariables();
   Eigen::VectorXd var_bounds_lower(num_nlp_vars_);
   Eigen::VectorXd var_bounds_upper(num_nlp_vars_);
   for (Eigen::Index i = 0; i < num_nlp_vars_; i++)
   {
     const auto& bounds = var_bounds[static_cast<std::size_t>(i)];
-    var_bounds_lower[i] = bounds.lower_;
-    var_bounds_upper[i] = bounds.upper_;
+    var_bounds_lower[i] = bounds.getLower();
+    var_bounds_upper[i] = bounds.getUpper();
   }
 
   // Calculate box constraints, while limiting to variable bounds and maintaining the trust region size
@@ -404,7 +481,8 @@ void IfoptQPProblem::updateSlackVariableBounds()
   Eigen::Index current_cnt_index = num_nlp_cnts_ + num_nlp_vars_;
   for (Eigen::Index i = 0; i < num_nlp_cnts_; i++)
   {
-    if (constraint_types_[static_cast<std::size_t>(i)] == ConstraintType::EQ)
+    const auto bounds_type = constraint_types_[static_cast<std::size_t>(i)];
+    if (bounds_type == trajopt_ifopt::BoundsType::kEquality)
     {
       bounds_lower_[current_cnt_index] = 0;
       bounds_upper_[current_cnt_index] = double(INFINITY);
@@ -413,66 +491,64 @@ void IfoptQPProblem::updateSlackVariableBounds()
 
       current_cnt_index += 2;
     }
-    else
+    else if (bounds_type == trajopt_ifopt::BoundsType::kLowerBound ||
+             bounds_type == trajopt_ifopt::BoundsType::kUpperBound)
     {
       bounds_lower_[current_cnt_index] = 0;
       bounds_upper_[current_cnt_index] = double(INFINITY);
 
       current_cnt_index++;
     }
+    else
+      throw std::runtime_error("Unsupported bounds type!");
   }
 }
 
-double IfoptQPProblem::evaluateTotalConvexCost(const Eigen::Ref<const Eigen::VectorXd>& var_vals)
+double IfoptQPProblem::evaluateTotalConvexCost(const Eigen::Ref<const Eigen::VectorXd>& var_vals) const
 {
   return evaluateConvexCosts(var_vals).sum();
 }
 
-Eigen::VectorXd IfoptQPProblem::evaluateConvexCosts(const Eigen::Ref<const Eigen::VectorXd>& var_vals)
+Eigen::VectorXd IfoptQPProblem::evaluateConvexCosts(const Eigen::Ref<const Eigen::VectorXd>& var_vals) const
 {
   if (num_nlp_costs_ == 0)
     return {};
 
   auto var_block = var_vals.head(num_nlp_vars_);
-  const Eigen::VectorXd result_quad =
-      var_block.transpose() * hessian_.block(0, 0, num_nlp_vars_, num_nlp_vars_) * var_block;
-  const Eigen::VectorXd result_lin = var_block.transpose() * gradient_.block(0, 0, num_nlp_vars_, num_nlp_costs_);
-  return cost_constant_ + result_lin + result_quad;
+  const double result_quad = var_block.transpose() * hessian_.block(0, 0, num_nlp_vars_, num_nlp_vars_) * var_block;
+  const double result_lin = var_block.dot(gradient_.head(num_nlp_vars_));
+  return cost_constant_.array() + result_lin + result_quad;
 }
 
-double IfoptQPProblem::evaluateTotalExactCost(const Eigen::Ref<const Eigen::VectorXd>& var_vals)
-{
-  return nlp_->EvaluateCostFunction(var_vals.data());
-}
+double IfoptQPProblem::getTotalExactCost() const { return nlp_->evaluateCostFunction(); }
 
-Eigen::VectorXd IfoptQPProblem::evaluateExactCosts(const Eigen::Ref<const Eigen::VectorXd>& var_vals)
+Eigen::VectorXd IfoptQPProblem::getExactCosts() const
 {
-  if (!nlp_->HasCostTerms())
+  if (!nlp_->hasCostTerms())
     return {};
 
-  nlp_->SetVariables(var_vals.data());
-  return nlp_->GetCosts().GetValues();
+  return nlp_->getCosts().getValues();
 }
 
-Eigen::VectorXd IfoptQPProblem::getExactCosts() { return evaluateExactCosts(nlp_->GetOptVariables()->GetValues()); }
-
-Eigen::VectorXd IfoptQPProblem::evaluateConvexConstraintViolations(const Eigen::Ref<const Eigen::VectorXd>& var_vals)
+Eigen::VectorXd
+IfoptQPProblem::evaluateConvexConstraintViolations(const Eigen::Ref<const Eigen::VectorXd>& var_vals) const
 {
   const Eigen::VectorXd result_lin =
       constraint_matrix_.block(0, 0, num_nlp_cnts_, num_nlp_vars_) * var_vals.head(num_nlp_vars_);  // NOLINT
   const Eigen::VectorXd constraint_value = constraint_constant_ + result_lin;
-  return trajopt_ifopt::calcBoundsViolations(constraint_value, nlp_->GetBoundsOnConstraints());
+
+  Eigen::VectorXd violations(constraint_value.rows());
+  trajopt_ifopt::calcBoundsViolations(violations, constraint_value, nlp_->getBoundsOnConstraints());
+  return violations;
 }
 
-Eigen::VectorXd IfoptQPProblem::evaluateExactConstraintViolations(const Eigen::Ref<const Eigen::VectorXd>& var_vals)
+Eigen::VectorXd IfoptQPProblem::getExactConstraintViolations() const
 {
-  const Eigen::VectorXd cnt_vals = nlp_->EvaluateConstraints(var_vals.data());
-  return trajopt_ifopt::calcBoundsViolations(cnt_vals, nlp_->GetBoundsOnConstraints());
-}
+  const Eigen::VectorXd cnt_vals = nlp_->evaluateConstraints();
 
-Eigen::VectorXd IfoptQPProblem::getExactConstraintViolations()
-{
-  return evaluateExactConstraintViolations(nlp_->GetOptVariables()->GetValues());  // NOLINT
+  Eigen::VectorXd violations(cnt_vals.rows());
+  trajopt_ifopt::calcBoundsViolations(violations, cnt_vals, nlp_->getBoundsOnConstraints());
+  return violations;
 }
 
 void IfoptQPProblem::scaleBoxSize(double& scale)
@@ -493,8 +569,6 @@ void IfoptQPProblem::setConstraintMeritCoeff(const Eigen::Ref<const Eigen::Vecto
   assert(merit_coeff.size() == num_nlp_cnts_);
   constraint_merit_coeff_ = merit_coeff;
 }
-
-Eigen::VectorXd IfoptQPProblem::getBoxSize() const { return box_size_; }
 
 void IfoptQPProblem::print() const
 {
@@ -517,6 +591,6 @@ void IfoptQPProblem::print() const
   std::cout << "Constraint Matrix:\n" << constraint_matrix_.toDense().format(format) << '\n';
   std::cout << "bounds_lower: " << bounds_lower_.transpose().format(format) << '\n';
   std::cout << "bounds_upper: " << bounds_upper_.transpose().format(format) << '\n';
-  std::cout << "NLP values: " << nlp_->GetVariableValues().transpose().format(format) << '\n';
+  std::cout << "NLP values: " << nlp_->getVariableValues().transpose().format(format) << '\n';
 }
 }  // namespace trajopt_sqp

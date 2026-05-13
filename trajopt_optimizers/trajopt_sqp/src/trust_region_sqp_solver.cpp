@@ -9,8 +9,6 @@
  *
  * @author Matthew Powelson
  * @date May 18, 2020
- * @version TODO
- * @bug No known bugs
  *
  * @copyright Copyright (c) 2020, Southwest Research Institute
  *
@@ -28,6 +26,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include <trajopt_ifopt/core/eigen_types.h>
 #include <trajopt_sqp/trust_region_sqp_solver.h>
 #include <trajopt_sqp/qp_problem.h>
 #include <trajopt_sqp/qp_solver.h>
@@ -35,6 +34,7 @@
 
 #include <console_bridge/console.h>
 #include <chrono>
+#include <cassert>
 
 namespace trajopt_sqp
 {
@@ -86,7 +86,7 @@ const SQPResults& TrustRegionSQPSolver::getResults() { return results_; }
 
 void TrustRegionSQPSolver::solve(const QPProblem::Ptr& qp_problem)
 {
-  status_ = SQPStatus::RUNNING;
+  status_ = SQPStatus::kRunning;
 
   // Start time
   using Clock = std::chrono::steady_clock;
@@ -107,15 +107,15 @@ void TrustRegionSQPSolver::solve(const QPProblem::Ptr& qp_problem)
       const double elapsed_time = std::chrono::duration<double, std::milli>(Clock::now() - start_time).count() / 1000.0;
       if (elapsed_time > params.max_time)
       {
-        CONSOLE_BRIDGE_logInform("Elapsed time %f has exceeded max time %f", elapsed_time, params.max_time);
-        status_ = SQPStatus::OPT_TIME_LIMIT;
+        CONSOLE_BRIDGE_logDebug("Elapsed time %f has exceeded max time %f", elapsed_time, params.max_time);
+        status_ = SQPStatus::kTimeLimit;
         break;
       }
 
       if (results_.overall_iteration >= params.max_iterations)
       {
-        CONSOLE_BRIDGE_logInform("Iteration limit");
-        status_ = SQPStatus::ITERATION_LIMIT;
+        CONSOLE_BRIDGE_logDebug("Iteration limit");
+        status_ = SQPStatus::kIterationLimit;
         break;
       }
 
@@ -126,16 +126,16 @@ void TrustRegionSQPSolver::solve(const QPProblem::Ptr& qp_problem)
     // Check if constraints are satisfied
     if (verifySQPSolverConvergence())
     {
-      status_ = SQPStatus::NLP_CONVERGED;
+      status_ = SQPStatus::kConverged;
       break;
     }
 
     // If status is iteration limit or time limit we need to exit penalty iteration loop
-    if (status_ == SQPStatus::ITERATION_LIMIT || status_ == SQPStatus::OPT_TIME_LIMIT)
+    if (status_ == SQPStatus::kIterationLimit || status_ == SQPStatus::kTimeLimit)
       break;
 
     // Set status to running
-    status_ = SQPStatus::RUNNING;
+    status_ = SQPStatus::kRunning;
 
     // ---------------------------
     // Constraints are not satisfied!
@@ -145,10 +145,10 @@ void TrustRegionSQPSolver::solve(const QPProblem::Ptr& qp_problem)
   }  // Penalty adjustment loop
 
   // If status is still set to running the penalty iteration limit was reached
-  if (status_ == SQPStatus::RUNNING)
+  if (status_ == SQPStatus::kRunning)
   {
-    status_ = SQPStatus::PENALTY_ITERATION_LIMIT;
-    CONSOLE_BRIDGE_logInform("Penalty iteration limit, optimization couldn't satisfy all constraints");
+    status_ = SQPStatus::kPenaltyIterationLimit;
+    CONSOLE_BRIDGE_logDebug("Penalty iteration limit, optimization couldn't satisfy all constraints");
   }
 
   // Final Cleanup
@@ -163,13 +163,13 @@ bool TrustRegionSQPSolver::verifySQPSolverConvergence()
   // Check if constraints are satisfied
   if (results_.best_constraint_violations.size() == 0)
   {
-    CONSOLE_BRIDGE_logInform("Optimization has converged and there are no constraints");
+    CONSOLE_BRIDGE_logDebug("Optimization has converged and there are no constraints");
     return true;
   }
 
   if (results_.best_constraint_violations.maxCoeff() < params.cnt_tolerance)
   {
-    CONSOLE_BRIDGE_logInform("woo-hoo! constraints are satisfied (to tolerance %.2e)", params.cnt_tolerance);
+    CONSOLE_BRIDGE_logDebug("woo-hoo! constraints are satisfied (to tolerance %.2e)", params.cnt_tolerance);
     return true;
   }
 
@@ -185,14 +185,14 @@ void TrustRegionSQPSolver::adjustPenalty()
     {
       if (results_.best_constraint_violations[idx] > params.cnt_tolerance)
       {
-        CONSOLE_BRIDGE_logInform("Not all constraints are satisfied. Increasing constraint penalties for %d", idx);
+        CONSOLE_BRIDGE_logDebug("Not all constraints are satisfied. Increasing constraint penalties for %d", idx);
         results_.merit_error_coeffs[idx] *= params.merit_coeff_increase_ratio;
       }
     }
   }
   else
   {
-    CONSOLE_BRIDGE_logInform("Not all constraints are satisfied. Increasing constraint penalties uniformly");
+    CONSOLE_BRIDGE_logDebug("Not all constraints are satisfied. Increasing constraint penalties uniformly");
     results_.merit_error_coeffs *= params.merit_coeff_increase_ratio;
   }
   setBoxSize(fmax(results_.box_size[0], params.min_trust_box_size / params.trust_shrink_ratio * 1.5));
@@ -202,30 +202,58 @@ void TrustRegionSQPSolver::adjustPenalty()
 bool TrustRegionSQPSolver::stepSQPSolver()
 {
   results_.convexify_iteration++;
+
+  const auto prev_nv = qp_problem->getNumQPVars();
+  const auto prev_nc = qp_problem->getNumQPConstraints();
+
   qp_problem->convexify();
 
-  // TODO: Look into not clearing and reinitializing the workspace each iteration. It should be as simple as
-  // removing this
-  qp_solver->clear();
+  const auto nv = qp_problem->getNumQPVars();
+  const auto nc = qp_problem->getNumQPConstraints();
 
-  // Convexify the costs and constraints around their current values
-  qp_solver->init(qp_problem->getNumQPVars(), qp_problem->getNumQPConstraints());
-  qp_solver->updateHessianMatrix(qp_problem->getHessian());
-  qp_solver->updateGradient(qp_problem->getGradient());
-  qp_solver->updateLinearConstraintsMatrix(qp_problem->getConstraintMatrix());
-  qp_solver->updateBounds(qp_problem->getBoundsLower(), qp_problem->getBoundsUpper());
+  const bool first_time = qp_solver->getSolverStatus() == QPSolverStatus::kUninitialized;
+  const bool dims_changed = (nv != prev_nv || nc != prev_nc);
+
+  if (first_time || dims_changed)
+  {
+    qp_solver->clear();
+    qp_solver->init(nv, nc);
+    qp_solver->updateHessianMatrix(qp_problem->getHessian());
+    qp_solver->updateGradient(qp_problem->getGradient());
+    qp_solver->updateLinearConstraintsMatrix(qp_problem->getConstraintMatrix());
+    qp_solver->updateBounds(qp_problem->getBoundsLower(), qp_problem->getBoundsUpper());
+    qp_solver->setWarmStart(*qp_problem);
+  }
+  else
+  {
+    // try update-in-place
+    if (!qp_solver->updateHessianMatrix(qp_problem->getHessian()) ||
+        !qp_solver->updateGradient(qp_problem->getGradient()) ||
+        !qp_solver->updateLinearConstraintsMatrix(qp_problem->getConstraintMatrix()) ||
+        !qp_solver->updateBounds(qp_problem->getBoundsLower(), qp_problem->getBoundsUpper()))
+    {
+      // pattern likely changed; fall back to full rebuild
+      qp_solver->clear();
+      qp_solver->init(nv, nc);
+      qp_solver->updateHessianMatrix(qp_problem->getHessian());
+      qp_solver->updateGradient(qp_problem->getGradient());
+      qp_solver->updateLinearConstraintsMatrix(qp_problem->getConstraintMatrix());
+      qp_solver->updateBounds(qp_problem->getBoundsLower(), qp_problem->getBoundsUpper());
+      qp_solver->setWarmStart(*qp_problem);
+    }
+  }
 
   // Trust region loop
   runTrustRegionLoop();
 
   // Check if the NLP has converged
-  if (status_ == SQPStatus::NLP_CONVERGED)
+  if (status_ == SQPStatus::kConverged)
     return true;
 
   if (results_.box_size.maxCoeff() < params.min_trust_box_size)
   {
-    CONSOLE_BRIDGE_logInform("Converged because trust region is tiny");
-    status_ = SQPStatus::NLP_CONVERGED;
+    CONSOLE_BRIDGE_logDebug("Converged because trust region is tiny");
+    status_ = SQPStatus::kConverged;
     return true;
   }
   return false;
@@ -246,7 +274,10 @@ void TrustRegionSQPSolver::runTrustRegionLoop()
     // Solve the current QP problem
     status_ = solveQPProblem();
 
-    if (status_ != SQPStatus::RUNNING)
+    if (status_ == SQPStatus::kStoppedByCallback)
+      return;  // Respect callbacks and exit gracefully
+
+    if (status_ != SQPStatus::kRunning)
     {
       qp_solver_failures++;
       CONSOLE_BRIDGE_logWarn("Convex solver failed (%d/%d)!", qp_solver_failures, params.max_qp_solver_failures);
@@ -289,16 +320,17 @@ void TrustRegionSQPSolver::runTrustRegionLoop()
       CONSOLE_BRIDGE_logDebug("Converged because improvement was small (%.3e < %.3e)",
                               results_.approx_merit_improve,
                               params.min_approx_improve);
-      status_ = SQPStatus::NLP_CONVERGED;
+      status_ = SQPStatus::kConverged;
       return;
     }
 
-    if (results_.approx_merit_improve / results_.best_exact_merit < params.min_approx_improve_frac)
+    const double denom = std::max(std::abs(results_.best_exact_merit), 1e-12);
+    const double approx_frac = results_.approx_merit_improve / denom;
+    if (approx_frac < params.min_approx_improve_frac)
     {
-      CONSOLE_BRIDGE_logDebug("Converged because improvement ratio was small (%.3e < %.3e)",
-                              results_.approx_merit_improve / results_.best_exact_merit,
-                              params.min_approx_improve_frac);
-      status_ = SQPStatus::NLP_CONVERGED;
+      CONSOLE_BRIDGE_logDebug(
+          "Converged because improvement ratio was small (%.3e < %.3e)", approx_frac, params.min_approx_improve_frac);
+      status_ = SQPStatus::kConverged;
       return;
     }
 
@@ -363,16 +395,20 @@ SQPStatus TrustRegionSQPSolver::solveQPProblem()
     results_.approx_merit_improve = results_.best_exact_merit - results_.new_approx_merit;
 
     // Evaluate exact costs (expensive)
-    results_.new_costs = qp_problem->evaluateExactCosts(results_.new_var_vals);
+    results_.new_costs = qp_problem->getExactCosts();
 
     // Evaluate exact constraint violations (expensive)
-    results_.new_constraint_violations = qp_problem->evaluateExactConstraintViolations(results_.new_var_vals);
+    results_.new_constraint_violations = qp_problem->getExactConstraintViolations();
 
     // Calculate exact NLP merits (expensive) - TODO: Look into caching for qp_solver->Convexify()
     results_.new_exact_merit =
         results_.new_costs.sum() + results_.new_constraint_violations.dot(results_.merit_error_coeffs);
     results_.exact_merit_improve = results_.best_exact_merit - results_.new_exact_merit;
-    results_.merit_improve_ratio = results_.exact_merit_improve / results_.approx_merit_improve;
+    // results_.merit_improve_ratio = results_.exact_merit_improve / results_.approx_merit_improve;
+    if (std::abs(results_.approx_merit_improve) < 1e-12)
+      results_.merit_improve_ratio = 0.0;  // or 1.0, or whatever convention you want
+    else
+      results_.merit_improve_ratio = results_.exact_merit_improve / results_.approx_merit_improve;
 
     // The variable are changed to the new values to calculated data but must be set
     // to best var vals because the new values may not improve the merit which is determined later.
@@ -390,16 +426,16 @@ SQPStatus TrustRegionSQPSolver::solveQPProblem()
     qp_problem->setVariables(results_.best_var_vals.data());
 
     CONSOLE_BRIDGE_logError("Solver Failure");
-    return SQPStatus::QP_SOLVER_ERROR;
+    return SQPStatus::kQPSolveFailed;
   }
 
   // Check if any callbacks returned false
   if (!succeed)
   {
-    return SQPStatus::CALLBACK_STOPPED;
+    return SQPStatus::kStoppedByCallback;
   }
 
-  return SQPStatus::RUNNING;
+  return SQPStatus::kRunning;
 }
 
 bool TrustRegionSQPSolver::callCallbacks()

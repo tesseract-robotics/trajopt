@@ -5,8 +5,6 @@
  * @author Levi Armstrong
  * @author Matthew Powelson
  * @date May 18, 2020
- * @version TODO
- * @bug No known bugs
  *
  * @copyright Copyright (c) 2020, Southwest Research Institute
  *
@@ -31,13 +29,13 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <gtest/gtest.h>
 #include <console_bridge/console.h>
 #include <OsqpEigen/OsqpEigen.h>
-#include <tesseract_common/types.h>
-#include <tesseract_common/resource_locator.h>
-#include <tesseract_collision/core/continuous_contact_manager.h>
-#include <tesseract_kinematics/core/joint_group.h>
-#include <tesseract_state_solver/state_solver.h>
-#include <tesseract_environment/environment.h>
-#include <tesseract_environment/utils.h>
+#include <tesseract/common/types.h>
+#include <tesseract/common/resource_locator.h>
+#include <tesseract/collision/continuous_contact_manager.h>
+#include <tesseract/kinematics/joint_group.h>
+#include <tesseract/state_solver/state_solver.h>
+#include <tesseract/environment/environment.h>
+#include <tesseract/environment/utils.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt_common/collision_types.h>
@@ -46,8 +44,11 @@ TRAJOPT_IGNORE_WARNINGS_POP
 #include <trajopt_ifopt/constraints/collision/continuous_collision_evaluators.h>
 #include <trajopt_ifopt/constraints/joint_position_constraint.h>
 #include <trajopt_ifopt/constraints/joint_velocity_constraint.h>
-#include <trajopt_ifopt/variable_sets/joint_position_variable.h>
+#include <trajopt_ifopt/variable_sets/nodes_variables.h>
+#include <trajopt_ifopt/variable_sets/node.h>
+#include <trajopt_ifopt/variable_sets/var.h>
 #include <trajopt_ifopt/costs/squared_cost.h>
+#include <trajopt_ifopt/utils/ifopt_utils.h>
 
 #include <trajopt_sqp/ifopt_qp_problem.h>
 #include <trajopt_sqp/trajopt_qp_problem.h>
@@ -55,11 +56,11 @@ TRAJOPT_IGNORE_WARNINGS_POP
 #include <trajopt_sqp/osqp_eigen_solver.h>
 
 using namespace trajopt_ifopt;
-using namespace tesseract_environment;
-using namespace tesseract_collision;
-using namespace tesseract_kinematics;
-using namespace tesseract_scene_graph;
-using namespace tesseract_common;
+using namespace tesseract::environment;
+using namespace tesseract::collision;
+using namespace tesseract::kinematics;
+using namespace tesseract::scene_graph;
+using namespace tesseract::common;
 
 class PlanningTest : public testing::TestWithParam<const char*>
 {
@@ -71,7 +72,7 @@ public:
     const std::filesystem::path urdf_file(std::string(TRAJOPT_DATA_DIR) + "/arm_around_table.urdf");
     const std::filesystem::path srdf_file(std::string(TRAJOPT_DATA_DIR) + "/pr2.srdf");
 
-    const ResourceLocator::Ptr locator = std::make_shared<tesseract_common::GeneralResourceLocator>();
+    const ResourceLocator::Ptr locator = std::make_shared<GeneralResourceLocator>();
     EXPECT_TRUE(env->init(urdf_file, srdf_file, locator));
 
     // Create plotting tool
@@ -83,7 +84,8 @@ public:
   }
 };
 
-void runPlanningTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const Environment::Ptr& env)
+template <typename T>
+void runPlanningTest(const Environment::Ptr& env)
 {
   std::unordered_map<std::string, double> ipos;
   ipos["torso_lift_joint"] = 0;
@@ -97,15 +99,16 @@ void runPlanningTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const Enviro
   env->setState(ipos);
 
   std::vector<ContactResultMap> collisions;
-  const tesseract_scene_graph::StateSolver::Ptr state_solver = env->getStateSolver();
+  const StateSolver::Ptr state_solver = env->getStateSolver();
   const ContinuousContactManager::Ptr manager = env->getContinuousContactManager();
-  const tesseract_kinematics::JointGroup::ConstPtr manip = env->getJointGroup("right_arm");
+  const JointGroup::ConstPtr manip = env->getJointGroup("right_arm");
+  const std::vector<trajopt_ifopt::Bounds> bounds = trajopt_ifopt::toBounds(manip->getLimits().joint_limits);
 
   manager->setActiveCollisionObjects(manip->getActiveLinkNames());
   manager->setDefaultCollisionMargin(0);
 
   // Initial trajectory
-  tesseract_common::TrajArray trajectory(6, 7);
+  TrajArray trajectory(6, 7);
   trajectory.row(0) << -1.832, -0.332, -1.011, -1.437, -1.1, -1.926, 3.074;
   trajectory.row(1) << -1.411, 0.028, -0.764, -1.463, -1.525, -1.698, 3.055;
   trajectory.row(2) << -0.99, 0.388, -0.517, -1.489, -1.949, -1.289, 3.036;
@@ -114,51 +117,54 @@ void runPlanningTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const Enviro
   trajectory.row(5) << 0.062, 1.287, 0.1, -1.554, -3.011, -0.268, 2.988;
 
   // Add Variables
-  std::vector<trajopt_ifopt::JointPosition::ConstPtr> vars;
+  std::vector<std::unique_ptr<trajopt_ifopt::Node>> nodes;
+  std::vector<std::shared_ptr<const trajopt_ifopt::Var>> vars;
   for (Eigen::Index i = 0; i < 6; ++i)
   {
-    auto var = std::make_shared<trajopt_ifopt::JointPosition>(
-        trajectory.row(i), manip->getJointNames(), "Joint_Position_" + std::to_string(i));
+    auto node = std::make_unique<trajopt_ifopt::Node>("Joint_Position_" + std::to_string(i));
+    auto var = node->addVar("position", manip->getJointNames(), trajectory.row(i), bounds);
     vars.push_back(var);
-    qp_problem->addVariableSet(var);
+    nodes.push_back(std::move(node));
   }
+  auto variables = std::make_shared<trajopt_ifopt::NodesVariables>("joint_trajectory", std::move(nodes));
+
+  // 2) Create problem
+  auto qp_problem = std::make_shared<T>(variables);
 
   const double margin_coeff = 20;
   const double margin = 0.025;
   trajopt_common::TrajOptCollisionConfig trajopt_collision_config(margin, margin_coeff);
-  trajopt_collision_config.collision_check_config.type = tesseract_collision::CollisionEvaluatorType::CONTINUOUS;
-  trajopt_collision_config.collision_margin_buffer = 0.02;
+  trajopt_collision_config.collision_check_config.type = tesseract::collision::CollisionEvaluatorType::LVS_CONTINUOUS;
+  trajopt_collision_config.collision_check_config.longest_valid_segment_length = 0.02;
+  trajopt_collision_config.collision_margin_buffer = 0.5;
 
   // Add costs
   {
     const Eigen::VectorXd coeffs = Eigen::VectorXd::Constant(1, 1);
     auto cnt = std::make_shared<JointVelConstraint>(Eigen::VectorXd::Zero(7), vars, coeffs);
-    qp_problem->addCostSet(cnt, trajopt_sqp::CostPenaltyType::SQUARED);
+    qp_problem->addCostSet(cnt, trajopt_sqp::CostPenaltyType::kSquared);
   }
 
   // Add constraints
   {  // Fix start position
-    const std::vector<JointPosition::ConstPtr> fixed_vars = { vars[0] };
     const Eigen::VectorXd coeffs = Eigen::VectorXd::Constant(manip->numJoints(), 5);
-    auto cnt = std::make_shared<JointPosConstraint>(trajectory.row(0), fixed_vars, coeffs);
+    auto cnt = std::make_shared<JointPosConstraint>(trajectory.row(0), vars[0], coeffs);
     qp_problem->addConstraintSet(cnt);
   }
 
   {  // Fix end position
-    const std::vector<trajopt_ifopt::JointPosition::ConstPtr> fixed_vars = { vars[5] };
     const Eigen::VectorXd coeffs = Eigen::VectorXd::Constant(manip->numJoints(), 5);
-    auto cnt = std::make_shared<trajopt_ifopt::JointPosConstraint>(trajectory.row(5), fixed_vars, coeffs);
+    auto cnt = std::make_shared<trajopt_ifopt::JointPosConstraint>(trajectory.row(5), vars[5], coeffs);
     qp_problem->addConstraintSet(cnt);
   }
 
-  auto collision_cache = std::make_shared<trajopt_ifopt::CollisionCache>(100);
   std::array<bool, 2> vars_fixed{ false, false };
-  for (std::size_t i = 1; i < (vars.size() - 1); ++i)
+  for (std::size_t i = 1; i < vars.size(); ++i)
   {
-    auto collision_evaluator = std::make_shared<trajopt_ifopt::LVSContinuousCollisionEvaluator>(
-        collision_cache, manip, env, trajopt_collision_config);
+    auto collision_evaluator =
+        std::make_shared<trajopt_ifopt::LVSContinuousCollisionEvaluator>(manip, env, trajopt_collision_config);
 
-    const std::array<JointPosition::ConstPtr, 2> position_vars{ vars[i - 1], vars[i] };
+    const std::array<std::shared_ptr<const trajopt_ifopt::Var>, 2> position_vars{ vars[i - 1], vars[i] };
 
     if (i == 1)
       vars_fixed = { true, false };
@@ -167,19 +173,19 @@ void runPlanningTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const Enviro
     else
       vars_fixed = { false, false };
 
-    auto cnt = std::make_shared<trajopt_ifopt::ContinuousCollisionConstraint>(
-        collision_evaluator, position_vars, vars_fixed[0], vars_fixed[1], 5);
+    auto cnt = std::make_shared<trajopt_ifopt::ContinuousCollisionConstraintD>(
+        collision_evaluator, position_vars, vars_fixed[0], vars_fixed[1]);
 
-    qp_problem->addCostSet(cnt, trajopt_sqp::CostPenaltyType::HINGE);
+    qp_problem->addCostSet(cnt, trajopt_sqp::CostPenaltyType::kHinge);
   }
 
   qp_problem->setup();
-  qp_problem->print();
+  // qp_problem->print();
 
   // Setup solver
   auto qp_solver = std::make_shared<trajopt_sqp::OSQPEigenSolver>();
   trajopt_sqp::TrustRegionSQPSolver solver(qp_solver);
-  qp_solver->solver_->settings()->setVerbosity(true);
+  qp_solver->solver_->settings()->setVerbosity(false);
   qp_solver->solver_->settings()->setWarmStart(true);
   qp_solver->solver_->settings()->setPolish(true);
   qp_solver->solver_->settings()->setAdaptiveRho(false);
@@ -188,17 +194,17 @@ void runPlanningTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const Enviro
   qp_solver->solver_->settings()->setRelativeTolerance(1e-6);
 
   // 6) solve
-  solver.verbose = true;
+  solver.verbose = false;
   solver.solve(qp_problem);
   Eigen::VectorXd x = qp_problem->getVariableValues();
   std::cout << x.transpose() << '\n';
 
-  EXPECT_TRUE(solver.getStatus() == trajopt_sqp::SQPStatus::NLP_CONVERGED);
+  EXPECT_TRUE(solver.getStatus() == trajopt_sqp::SQPStatus::kConverged);
 
-  const Eigen::Map<tesseract_common::TrajArray> results(x.data(), 6, 7);
+  const Eigen::Map<TrajArray> results(x.data(), 6, 7);
 
-  tesseract_collision::CollisionCheckConfig config;
-  config.type = tesseract_collision::CollisionEvaluatorType::CONTINUOUS;
+  tesseract::collision::CollisionCheckConfig config;
+  config.type = tesseract::collision::CollisionEvaluatorType::CONTINUOUS;
   bool found = checkTrajectory(collisions, *manager, *state_solver, manip->getJointNames(), trajectory, config);
 
   EXPECT_TRUE(found);
@@ -215,15 +221,13 @@ void runPlanningTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const Enviro
 // TEST_F(PlanningTest, arm_around_table_ifopt_problem)  // NOLINT
 //{
 //  CONSOLE_BRIDGE_logDebug("PlanningTest, arm_around_table");
-//  auto qp_problem = std::make_shared<trajopt_sqp::IfoptQPProblem>();
-//  runPlanningTest(qp_problem, env);
+//  runPlanningTest<trajopt_sqp::IfoptQPProblem>(env);
 //}
 
 TEST_F(PlanningTest, arm_around_table_trajopt_problem)  // NOLINT
 {
   CONSOLE_BRIDGE_logDebug("PlanningTest, arm_around_table");
-  auto qp_problem = std::make_shared<trajopt_sqp::TrajOptQPProblem>();
-  runPlanningTest(qp_problem, env);
+  runPlanningTest<trajopt_sqp::TrajOptQPProblem>(env);
 }
 
 int main(int argc, char** argv)

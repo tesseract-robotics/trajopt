@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - master
+      - 'dev**'
   pull_request:
   schedule:
     - cron: '0 5 * * *'
@@ -31,7 +32,7 @@ jobs:
         TZ: Etc/UTC
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           path: target_ws/src
 
@@ -53,12 +54,10 @@ jobs:
           apt install -y clang-tidy-17 libomp-17-dev
 
       - name: Build and Tests
-        uses: tesseract-robotics/colcon-action@v11
+        uses: tesseract-robotics/colcon-action@v14
         with:
           before-script: source /opt/tesseract/install/setup.bash
           ccache-prefix: ${{ matrix.distro }}
-          vcs-file: dependencies_unstable.repos
-          run-tests: false
           rosdep-install-args: -iry --skip-keys=libomp-dev
           upstream-args: --cmake-args -DCMAKE_BUILD_TYPE=Release
           target-path: target_ws/src

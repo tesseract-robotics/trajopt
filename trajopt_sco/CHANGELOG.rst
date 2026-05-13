@@ -2,6 +2,28 @@
 Changelog for package trajopt_sco
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.34.4 (2026-02-18)
+-------------------
+* Reduce memory allocations with sqp affine and quad expressions
+* Do not use BPMPD with arm or if processor is unknown
+* Reduce memory allocation in trajopt_ifopt and trajopt_sqp
+* Copilot review changes (`#504 <https://github.com/tesseract-robotics/trajopt/issues/504>`_)
+* Add dynamic constraint support
+* Add nodes variable set (`#438 <https://github.com/tesseract-robotics/trajopt/issues/438>`_)
+* Switch to using Cereal for serialization
+* Contributors: Levi Armstrong, Roelof Oomen
+
+0.33.0 (2025-10-28)
+-------------------
+
+0.32.0 (2025-09-10)
+-------------------
+* Make OSQP max_iter a integer
+* Update OSQP dependency to v1.0.0 and OSQPEigen to v0.10.3 (`#474 <https://github.com/tesseract-robotics/trajopt/issues/474>`_)
+* Fix bounds problem (`#472 <https://github.com/tesseract-robotics/trajopt/issues/472>`_)
+  * Also ensure the trust box does not shrink when a variable is close to a bound
+* Contributors: Levi Armstrong, Roelof Oomen
+
 0.31.0 (2025-07-06)
 -------------------
 

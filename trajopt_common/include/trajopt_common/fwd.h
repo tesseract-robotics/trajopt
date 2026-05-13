@@ -3,7 +3,7 @@
 
 namespace trajopt_common
 {
-struct CollisionCoeffData;
+class CollisionCoeffData;
 struct TrajOptCollisionConfig;
 struct LinkGradientResults;  // NOLINT
 struct GradientResults;      // NOLINT

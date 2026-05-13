@@ -4,8 +4,6 @@
  *
  * @author Matthew Powelson
  * @date May 18, 2020
- * @version TODO
- * @bug No known bugs
  *
  * @copyright Copyright (c) 2020, Southwest Research Institute
  *
@@ -27,7 +25,7 @@
 
 namespace trajopt_ifopt
 {
-SparseMatrix calcForwardNumJac(const ErrorCalculator& f, const Eigen::Ref<const Eigen::VectorXd>& x, double epsilon)
+Jacobian calcForwardNumJac(const ErrorCalculator& f, const Eigen::Ref<const Eigen::VectorXd>& x, double epsilon)
 {
   const Eigen::VectorXd y = f(x);
   Eigen::MatrixXd out(y.size(), x.size());

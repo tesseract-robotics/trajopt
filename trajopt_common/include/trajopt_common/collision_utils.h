@@ -5,7 +5,6 @@
  * @author Levi Armstrong
  * @author Matthew Powelson
  * @date Nov 24, 2020
- * @version TODO
  *
  * @par License
  * Software License Agreement (Apache License)
@@ -28,8 +27,8 @@
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <Eigen/Eigen>
 #include <array>
-#include <tesseract_collision/core/types.h>
-#include <tesseract_kinematics/core/fwd.h>
+#include <tesseract/collision/types.h>
+#include <tesseract/kinematics/fwd.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace trajopt_common
@@ -53,7 +52,7 @@ std::size_t cantorHash(int shape_id, int subshape_id);
  * @param var0_fixed Indicates if the var0 is a fixed state
  * @param var1_fixed Indicates if the var1 is a fixed state
  */
-void removeInvalidContactResults(tesseract_collision::ContactResultVector& contact_results,
+void removeInvalidContactResults(tesseract::collision::ContactResultVector& contact_results,
                                  double margin,
                                  double margin_buffer,
                                  bool var0_fixed,
@@ -67,11 +66,12 @@ void removeInvalidContactResults(tesseract_collision::ContactResultVector& conta
  * @param isTimestep1 Indicates if this is the second timestep when computing gradient for continuous collision
  * @return The gradient results
  */
-GradientResults getGradient(const Eigen::VectorXd& dofvals,
-                            const tesseract_collision::ContactResult& contact_result,
-                            double margin,
-                            double margin_buffer,
-                            const tesseract_kinematics::JointGroup& manip);
+void getGradient(GradientResults& results,
+                 const Eigen::VectorXd& dofvals,
+                 const tesseract::collision::ContactResult& contact_result,
+                 double margin,
+                 double margin_buffer,
+                 const tesseract::kinematics::JointGroup& manip);
 
 /**
  * @brief Extracts the gradient information based on the contact results
@@ -81,12 +81,13 @@ GradientResults getGradient(const Eigen::VectorXd& dofvals,
  * @param isTimestep1 Indicates if this is the second timestep when computing gradient for continuous collision
  * @return The gradient results
  */
-GradientResults getGradient(const Eigen::VectorXd& dofvals0,
-                            const Eigen::VectorXd& dofvals1,
-                            const tesseract_collision::ContactResult& contact_result,
-                            double margin,
-                            double margin_buffer,
-                            const tesseract_kinematics::JointGroup& manip);
+void getGradient(GradientResults& results,
+                 const Eigen::VectorXd& dofvals0,
+                 const Eigen::VectorXd& dofvals1,
+                 const tesseract::collision::ContactResult& contact_result,
+                 double margin,
+                 double margin_buffer,
+                 const tesseract::kinematics::JointGroup& manip);
 
 /**
  * @brief Print debug gradient information
@@ -96,7 +97,7 @@ GradientResults getGradient(const Eigen::VectorXd& dofvals0,
  * @param dof_vals The joint values
  * @param header If true, header is printed
  */
-void debugPrintInfo(const tesseract_collision::ContactResult& res,
+void debugPrintInfo(const tesseract::collision::ContactResult& res,
                     const Eigen::VectorXd& dist_grad_A,
                     const Eigen::VectorXd& dist_grad_B,
                     const Eigen::VectorXd& dof_vals,

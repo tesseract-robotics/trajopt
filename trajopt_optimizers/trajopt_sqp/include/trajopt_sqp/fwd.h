@@ -6,7 +6,6 @@
 namespace trajopt_sqp
 {
 // types.h
-enum class ConstraintType : std::uint8_t;
 enum class CostPenaltyType : std::uint8_t;
 enum class SQPStatus : std::uint8_t;
 struct SQPParameters;

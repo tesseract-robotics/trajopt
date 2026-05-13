@@ -5,8 +5,6 @@
  * @author Levi Armstrong
  * @author Matthew Powelson
  * @date May 18, 2020
- * @version TODO
- * @bug No known bugs
  *
  * @copyright Copyright (c) 2020, Southwest Research Institute
  *
@@ -30,66 +28,17 @@
 #include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <Eigen/Eigen>
-#include <ifopt/constraint_set.h>
-#include <tesseract_common/eigen_types.h>
-#include <tesseract_kinematics/core/fwd.h>
 TRAJOPT_IGNORE_WARNINGS_POP
+
+#include <trajopt_ifopt/core/constraint_set.h>
+#include <tesseract/common/eigen_types.h>
+#include <tesseract/kinematics/fwd.h>
 
 namespace trajopt_ifopt
 {
-class JointPosition;
+class Var;
 
-/** @brief Contains Cartesian pose constraint information */
-struct CartPosInfo
-{
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-
-  using Ptr = std::shared_ptr<CartPosInfo>;
-  using ConstPtr = std::shared_ptr<const CartPosInfo>;
-
-  enum class Type : std::uint8_t
-  {
-    TARGET_ACTIVE,
-    SOURCE_ACTIVE,
-    BOTH_ACTIVE
-  };
-
-  CartPosInfo() = default;
-  CartPosInfo(std::shared_ptr<const tesseract_kinematics::JointGroup> manip,
-              std::string source_frame,
-              std::string target_frame,
-              const Eigen::Isometry3d& source_frame_offset = Eigen::Isometry3d::Identity(),
-              const Eigen::Isometry3d& target_frame_offset = Eigen::Isometry3d::Identity(),
-              const Eigen::VectorXi& indices = Eigen::Matrix<int, 1, 6>(std::vector<int>({ 0, 1, 2, 3, 4, 5 }).data()));
-
-  /** @brief The joint group */
-  std::shared_ptr<const tesseract_kinematics::JointGroup> manip;
-
-  /** @brief Link which should reach desired pos */
-  std::string source_frame;
-
-  /** @brief The target frame that should be reached by the source */
-  std::string target_frame;
-
-  /** @brief Static transform applied to the source_frame location */
-  Eigen::Isometry3d source_frame_offset;
-
-  /** @brief Static transform applied to the target_frame location */
-  Eigen::Isometry3d target_frame_offset;
-
-  /** @brief indicates which link is active */
-  Type type{ Type::TARGET_ACTIVE };
-
-  /**
-   * @brief This is a vector of indices to be returned Default: {0, 1, 2, 3, 4, 5}
-   *
-   * If you only care about x, y and z error, this is {0, 1, 2}
-   * If you only care about rotation error around x, y and z, this is {3, 4, 5}
-   */
-  Eigen::VectorXi indices;
-};
-
-class CartPosConstraint : public ifopt::ConstraintSet
+class CartPosConstraint : public ConstraintSet
 {
 public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -100,16 +49,29 @@ public:
   using ErrorDiffFunctionType = std::function<Eigen::VectorXd(const Eigen::VectorXd&,
                                                               const Eigen::Isometry3d&,
                                                               const Eigen::Isometry3d&,
-                                                              tesseract_common::TransformMap&)>;
+                                                              tesseract::common::TransformMap&)>;
 
-  CartPosConstraint(const CartPosInfo& info,
-                    std::shared_ptr<const JointPosition> position_var,
-                    const std::string& name = "CartPos");
+  CartPosConstraint(std::shared_ptr<const Var> position_var,
+                    std::shared_ptr<const tesseract::kinematics::JointGroup> manip,
+                    std::string source_frame,
+                    std::string target_frame,
+                    const Eigen::Isometry3d& source_frame_offset = Eigen::Isometry3d::Identity(),
+                    const Eigen::Isometry3d& target_frame_offset = Eigen::Isometry3d::Identity(),
+                    std::string name = "CartPos",
+                    RangeBoundHandling range_bound_handling = RangeBoundHandling::kSplitToTwoInequalities);
 
-  CartPosConstraint(CartPosInfo info,
-                    std::shared_ptr<const JointPosition> position_var,
+  CartPosConstraint(std::shared_ptr<const Var> position_var,
                     const Eigen::VectorXd& coeffs,
-                    const std::string& name = "CartPos");
+                    const std::vector<Bounds>& bounds,
+                    std::shared_ptr<const tesseract::kinematics::JointGroup> manip,
+                    std::string source_frame,
+                    std::string target_frame,
+                    const Eigen::Isometry3d& source_frame_offset = Eigen::Isometry3d::Identity(),
+                    const Eigen::Isometry3d& target_frame_offset = Eigen::Isometry3d::Identity(),
+                    std::string name = "CartPos",
+                    RangeBoundHandling range_bound_handling = RangeBoundHandling::kSplitToTwoInequalities);
+
+  int update() override { return rows_; }
 
   /**
    * @brief CalcValues Calculates the values associated with the constraint
@@ -117,58 +79,49 @@ public:
    * @return Error of FK solution from target, size 6. The first 3 terms are associated with position and the last 3 are
    * associated with orientation.
    */
-  Eigen::VectorXd CalcValues(const Eigen::Ref<const Eigen::VectorXd>& joint_vals) const;
+  Eigen::VectorXd calcValues(const Eigen::Ref<const Eigen::VectorXd>& joint_vals) const;
   /**
    * @brief Returns the values associated with the constraint. In this case that is the concatenated joint values
    * associated with each of the joint positions should be n_dof_ * n_vars_ long
    * @return
    */
-  Eigen::VectorXd GetValues() const override;
+  Eigen::VectorXd getValues() const override;
+
+  /** @copydoc Differentiable::getCoefficients */
+  Eigen::VectorXd getCoefficients() const override;
 
   /**
    * @brief  Returns the "bounds" of this constraint. How these are enforced is up to the solver
    * @return Returns the "bounds" of this constraint
    */
-  std::vector<ifopt::Bounds> GetBounds() const override;
-
-  void SetBounds(const std::vector<ifopt::Bounds>& bounds);
+  std::vector<Bounds> getBounds() const override;
 
   /**
    * @brief Fills the jacobian block associated with the constraint
    * @param jac_block Block of the overall jacobian associated with these constraints
    */
-  void CalcJacobianBlock(const Eigen::Ref<const Eigen::VectorXd>& joint_vals, Jacobian& jac_block) const;
-  /**
-   * @brief Fills the jacobian block associated with the given var_set.
-   * @param var_set Name of the var_set to which the jac_block is associated
-   * @param jac_block Block of the overall jacobian associated with these constraints and the var_set variable
-   */
-  void FillJacobianBlock(std::string var_set, Jacobian& jac_block) const override;
+  void calcJacobianBlock(Jacobian& jac_block, const Eigen::Ref<const Eigen::VectorXd>& joint_vals) const;
 
-  /**
-   * @brief Gets the Cartesian Pose info used to create this constraint
-   * @return The Cartesian Pose info used to create this constraint
-   */
-  const CartPosInfo& GetInfo() const;
-  CartPosInfo& GetInfo();
+  /** @brief Get the jacobian */
+  Jacobian getJacobian() const override;
 
   /**
    * @brief Set the target pose
    * @param pose
    */
-  void SetTargetPose(const Eigen::Isometry3d& target_frame_offset);
+  void setTargetPose(const Eigen::Isometry3d& target_frame_offset);
 
   /**
    * @brief Returns the target pose for the constraint
    * @return The target pose for the constraint
    */
-  Eigen::Isometry3d GetTargetPose() const;
+  Eigen::Isometry3d getTargetPose() const;
 
   /**
    * @brief Returns the current TCP pose in world frame given the input kinematic info and the current variable values
    * @return The current TCP pose given the input kinematic info and the current variable values
    */
-  Eigen::Isometry3d GetCurrentPose() const;
+  Eigen::Isometry3d getCurrentPose() const;
 
   /** @brief If true, numeric differentiation will be used. Default: true
    *
@@ -178,6 +131,13 @@ public:
   bool use_numeric_differentiation{ true };
 
 private:
+  enum class Type : std::uint8_t
+  {
+    kTargetActive,
+    kSourceActive,
+    kBothActive
+  };
+
   /** @brief The number of joints in a single JointPosition */
   long n_dof_;
 
@@ -185,16 +145,39 @@ private:
   Eigen::VectorXd coeffs_;
 
   /** @brief Bounds on the positions of each joint */
-  std::vector<ifopt::Bounds> bounds_;
+  std::vector<Bounds> bounds_;
+
+  /** @brief Pointers to the vars used by this constraint. */
+  std::shared_ptr<const Var> position_var_;
+
+  /** @brief Policy for representing range bounds when building the constraint rows. */
+  RangeBoundHandling range_bound_handling_{ RangeBoundHandling::kSplitToTwoInequalities };
+
+  /** @brief The joint group */
+  std::shared_ptr<const tesseract::kinematics::JointGroup> manip_;
+
+  /** @brief Link which should reach desired pos */
+  std::string source_frame_;
+
+  /** @brief The target frame that should be reached by the source */
+  std::string target_frame_;
+
+  /** @brief Static transform applied to the source_frame location */
+  Eigen::Isometry3d source_frame_offset_;
+
+  /** @brief Static transform applied to the target_frame location */
+  Eigen::Isometry3d target_frame_offset_;
+
+  /** @brief indicates which link is active */
+  Type type_{ Type::kTargetActive };
 
   /**
-   * @brief Pointers to the vars used by this constraint.
-   * Do not access them directly. Instead use this->GetVariables()->GetComponent(position_var->GetName())->GetValues()
+   * @brief This is a vector of indices to be returned Default: {0, 1, 2, 3, 4, 5}
+   *
+   * If you only care about x, y and z error, this is {0, 1, 2}
+   * If you only care about rotation error around x, y and z, this is {3, 4, 5}
    */
-  std::shared_ptr<const JointPosition> position_var_;
-
-  /** @brief The kinematic information used when calculating error */
-  CartPosInfo info_;
+  Eigen::VectorXi indices_;
 
   /** @brief Error function for calculating the error in the position given the source and target positions */
   ErrorFunctionType error_function_{ nullptr };
@@ -202,7 +185,7 @@ private:
   /** @brief The error function to calculate the error difference used for jacobian calculations */
   ErrorDiffFunctionType error_diff_function_{ nullptr };
 
-  static thread_local tesseract_common::TransformMap transforms_cache;  // NOLINT
+  static thread_local tesseract::common::TransformMap transforms_cache_;  // NOLINT
 };
 }  // namespace trajopt_ifopt
 #endif

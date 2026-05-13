@@ -4,8 +4,6 @@
  *
  * @author Matthew Powelson
  * @date May 18, 2020
- * @version TODO
- * @bug No known bugs
  *
  * @copyright Copyright (c) 2020, Southwest Research Institute
  *
@@ -28,7 +26,7 @@
 
 #include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
-#include <tesseract_visualization/fwd.h>
+#include <tesseract/visualization/fwd.h>
 #include <trajopt_ifopt/fwd.h>
 #include <vector>
 TRAJOPT_IGNORE_WARNINGS_POP
@@ -51,7 +49,7 @@ public:
    * @brief Callback constructor
    * @param plotter Plotter used to plot the error
    */
-  CartesianErrorPlottingCallback(std::shared_ptr<tesseract_visualization::Visualization> plotter);
+  CartesianErrorPlottingCallback(std::shared_ptr<tesseract::visualization::Visualization> plotter);
 
   /**
    * @brief Plots the error
@@ -75,7 +73,7 @@ public:
 
 protected:
   std::vector<std::shared_ptr<const trajopt_ifopt::CartPosConstraint>> cart_position_cnts_;
-  std::shared_ptr<tesseract_visualization::Visualization> plotter_;
+  std::shared_ptr<tesseract::visualization::Visualization> plotter_;
 };
 }  // namespace trajopt_sqp
 

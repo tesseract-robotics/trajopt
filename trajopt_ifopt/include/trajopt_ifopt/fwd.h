@@ -16,10 +16,27 @@
 #ifndef TRAJOPT_IFOPT_FWD_H
 #define TRAJOPT_IFOPT_FWD_H
 
+#include <cstdint>
+
 namespace trajopt_ifopt
 {
-// joint_position_variable.h
-class JointPosition;
+// Core
+enum class BoundsType : std::uint8_t;
+enum class RangeBoundHandling : std::uint8_t;
+class Bounds;
+class Component;
+class Variables;
+class Differentiable;
+class CompositeVariables;
+class CompositeDifferentiable;
+class ConstraintSet;
+class CostTerm;
+class Problem;
+
+// variable_sets
+class NodesVariables;
+class Node;
+class Var;
 
 // cartesian_line_constraint.h
 struct CartLineInfo;

@@ -4,8 +4,6 @@
  *
  * @author Matthew Powelson
  * @date May 18, 2020
- * @version TODO
- * @bug No known bugs
  *
  * @copyright Copyright (c) 2020, Southwest Research Institute
  *
@@ -28,24 +26,27 @@
 
 #include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
-#include <ifopt/constraint_set.h>
 #include <Eigen/Core>
 TRAJOPT_IGNORE_WARNINGS_POP
 
+#include <trajopt_ifopt/core/constraint_set.h>
+
 namespace trajopt_ifopt
 {
-class JointPosition;
+class Var;
 
 /**
  * @brief This creates a joint velocity constraint and allows bounds to be set on a joint position
  *
  * Joint velocity is calculated as v = th_1 - th_0
  */
-class JointVelConstraint : public ifopt::ConstraintSet
+class JointVelConstraint : public ConstraintSet
 {
 public:
   using Ptr = std::shared_ptr<JointVelConstraint>;
   using ConstPtr = std::shared_ptr<const JointVelConstraint>;
+
+  int update() override { return rows_; }
 
   /**
    * @brief Constructs a velocity constraint from these variables, setting the bounds to the target
@@ -56,9 +57,9 @@ public:
    * @param name Name of the constraint
    */
   JointVelConstraint(const Eigen::VectorXd& targets,
-                     const std::vector<std::shared_ptr<const JointPosition>>& position_vars,
+                     const std::vector<std::shared_ptr<const Var>>& position_vars,
                      const Eigen::VectorXd& coeffs,
-                     const std::string& name = "JointVel");
+                     std::string name = "JointVel");
 
   /**
    * @brief Constructs a velocity constraint from these variables, setting the bounds to those passed in.
@@ -68,33 +69,33 @@ public:
    * @param coeffs The joint coefficients to use as weights. If size of 1 then the values is replicated for each joint.
    * @param name Name of the constraint
    */
-  JointVelConstraint(const std::vector<ifopt::Bounds>& bounds,
-                     const std::vector<std::shared_ptr<const JointPosition>>& position_vars,
+  JointVelConstraint(const std::vector<Bounds>& bounds,
+                     const std::vector<std::shared_ptr<const Var>>& position_vars,
                      const Eigen::VectorXd& coeffs,
-                     const std::string& name = "JointVel");
+                     std::string name = "JointVel");
 
   /**
    * @brief Returns the values associated with the constraint. In this case that is the approximate joint velocity.
    * @return Returns jointVelocity. Length is n_dof_ * (n_vars - 1)
    */
-  Eigen::VectorXd GetValues() const override;
+  Eigen::VectorXd getValues() const override;
+
+  /** @copydoc Differentiable::getCoefficients */
+  Eigen::VectorXd getCoefficients() const override;
 
   /**
    * @brief  Returns the "bounds" of this constraint. How these are enforced is up to the solver
    * @return Returns the "bounds" of this constraint
    */
-  std::vector<ifopt::Bounds> GetBounds() const override;
+  std::vector<Bounds> getBounds() const override;
 
-  /**
-   * @brief Fills the jacobian block associated with the given var_set.
-   * @param var_set Name of the var_set to which the jac_block is associated
-   * @param jac_block Block of the overall jacobian associated with these constraints and the var_set variable
-   */
-  void FillJacobianBlock(std::string var_set, Jacobian& jac_block) const override;
+  /** @brief Get the jacobian */
+  Jacobian getJacobian() const override;
 
 private:
   /** @brief The number of joints in a single JointPosition */
   long n_dof_;
+
   /** @brief The number of JointPositions passed in */
   long n_vars_;
 
@@ -102,13 +103,10 @@ private:
   Eigen::VectorXd coeffs_;
 
   /** @brief Bounds on the velocities of each joint */
-  std::vector<ifopt::Bounds> bounds_;
+  std::vector<Bounds> bounds_;
 
-  /** @brief Pointers to the vars used by this constraint.
-   *
-   * Do not access them directly. Instead use this->GetVariables()->GetComponent(position_var->GetName())->GetValues()*/
-  std::vector<std::shared_ptr<const JointPosition>> position_vars_;
-  std::unordered_map<std::string, Eigen::Index> index_map_;
+  /** @brief Pointers to the vars used by this constraint. */
+  std::vector<std::shared_ptr<const Var>> position_vars_;
 };
 }  // namespace trajopt_ifopt
 #endif

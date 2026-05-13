@@ -2,6 +2,30 @@
 Changelog for package trajopt
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.34.4 (2026-02-18)
+-------------------
+* Fix trajopt joint term unit tests
+* Reduce memory allocation in trajopt_ifopt and trajopt_sqp
+* Fix bug with missing throw on exceptions
+* Simplify trajopt_ifopt by removing use of CompositeDifferentiable
+* Remove unused PCL dependencies
+* Check trajectory size in joint velocity, acceleration and jerk constraints and costs
+* Add dynamic constraint support
+* Fix jerk smoothing: correct loop bounds and formula inconsistency (`#499 <https://github.com/tesseract-robotics/trajopt/issues/499>`_)
+* Cleanup doxygen file headers
+* Remove old console bridge cmake target logic
+* Contributors: Copilot, Levi Armstrong, Roelof Oomen
+
+0.33.0 (2025-10-28)
+-------------------
+
+0.32.0 (2025-09-10)
+-------------------
+* Make message debug instead of info
+* Fix benchmarks (`#471 <https://github.com/tesseract-robotics/trajopt/issues/471>`_)
+* improve memory allocations (`#468 <https://github.com/tesseract-robotics/trajopt/issues/468>`_)
+* Contributors: Levi Armstrong, Roelof Oomen
+
 0.31.0 (2025-07-06)
 -------------------
 

@@ -5,8 +5,6 @@
  * @author Levi Armstrong
  * @author Matthew Powelson
  * @date May 18, 2020
- * @version TODO
- * @bug No known bugs
  *
  * @copyright Copyright (c) 2020, Southwest Research Institute
  *
@@ -29,8 +27,6 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <gtest/gtest.h>
 #include <iostream>
 #include <OsqpEigen/OsqpEigen.h>
-#include <ifopt/problem.h>
-#include <ifopt/ipopt_solver.h>
 #include <console_bridge/console.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
@@ -40,7 +36,9 @@ TRAJOPT_IGNORE_WARNINGS_POP
 #include <trajopt_sqp/trust_region_sqp_solver.h>
 #include <trajopt_sqp/osqp_eigen_solver.h>
 #include <trajopt_ifopt/constraints/joint_position_constraint.h>
-#include <trajopt_ifopt/variable_sets/joint_position_variable.h>
+#include <trajopt_ifopt/variable_sets/nodes_variables.h>
+#include <trajopt_ifopt/variable_sets/node.h>
+#include <trajopt_ifopt/variable_sets/var.h>
 
 const bool DEBUG = false;
 
@@ -56,7 +54,8 @@ public:
   }
 };
 
-void runJointPositionOptimizationTest(const trajopt_sqp::QPProblem::Ptr& qp_problem)
+template <typename T>
+void runJointPositionOptimizationTest()
 {
   auto qp_solver = std::make_shared<trajopt_sqp::OSQPEigenSolver>();
   trajopt_sqp::TrustRegionSQPSolver solver(qp_solver);
@@ -68,32 +67,33 @@ void runJointPositionOptimizationTest(const trajopt_sqp::QPProblem::Ptr& qp_prob
   qp_solver->solver_->settings()->setAbsoluteTolerance(1e-4);
   qp_solver->solver_->settings()->setRelativeTolerance(1e-6);
 
-  // 2) Add Variables
-  std::vector<trajopt_ifopt::JointPosition::ConstPtr> vars;
+  // 1) Add Variables
+  std::vector<std::unique_ptr<trajopt_ifopt::Node>> nodes;
+  std::vector<std::shared_ptr<const trajopt_ifopt::Var>> vars;
   for (int ind = 0; ind < 2; ind++)
   {
+    auto node = std::make_unique<trajopt_ifopt::Node>("Joint_Position_" + std::to_string(ind));
     auto pos = Eigen::VectorXd::Zero(7);
     const std::vector<std::string> joint_names(7, "name");
-    auto var =
-        std::make_shared<trajopt_ifopt::JointPosition>(pos, joint_names, "Joint_Position_" + std::to_string(ind));
-    vars.push_back(var);
-    qp_problem->addVariableSet(var);
+    const std::vector<trajopt_ifopt::Bounds> bounds(7, trajopt_ifopt::NoBound);
+    vars.push_back(node->addVar("position", joint_names, pos, bounds));
+    nodes.push_back(std::move(node));
   }
+  auto variables = std::make_shared<trajopt_ifopt::NodesVariables>("joint_trajectory", std::move(nodes));
+
+  // 2) Create problem
+  auto qp_problem = std::make_shared<T>(variables);
 
   // 3) Add constraints
   const Eigen::VectorXd start_pos = Eigen::VectorXd::Zero(7);
-  std::vector<trajopt_ifopt::JointPosition::ConstPtr> start;
-  start.push_back(vars.front());
-
   const Eigen::VectorXd coeffs = Eigen::VectorXd::Constant(7, 1);
   auto start_constraint =
-      std::make_shared<trajopt_ifopt::JointPosConstraint>(start_pos, start, coeffs, "StartPosition");
+      std::make_shared<trajopt_ifopt::JointPosConstraint>(start_pos, vars.front(), coeffs, "StartPosition");
   qp_problem->addConstraintSet(start_constraint);
 
   const Eigen::VectorXd end_pos = Eigen::VectorXd::Ones(7);
-  std::vector<trajopt_ifopt::JointPosition::ConstPtr> end;
-  end.push_back(vars.back());
-  auto end_constraint = std::make_shared<trajopt_ifopt::JointPosConstraint>(end_pos, end, coeffs, "EndPosition");
+  auto end_constraint =
+      std::make_shared<trajopt_ifopt::JointPosConstraint>(end_pos, vars.back(), coeffs, "EndPosition");
   qp_problem->addConstraintSet(end_constraint);
 
   qp_problem->setup();
@@ -113,70 +113,12 @@ void runJointPositionOptimizationTest(const trajopt_sqp::QPProblem::Ptr& qp_prob
 }
 
 /**
- * @brief Applies a joint position constraint and solves the problem with IPOPT
- */
-TEST_F(JointPositionOptimization, joint_position_optimization_ipopt)  // NOLINT
-{
-  // 1) create Problem
-  ifopt::Problem nlp_ipopt;
-
-  // 2) Add Variables
-  std::vector<trajopt_ifopt::JointPosition::ConstPtr> vars;
-  for (int ind = 0; ind < 2; ind++)
-  {
-    auto pos = Eigen::VectorXd::Zero(7);
-    const std::vector<std::string> joint_names(7, "name");
-    auto var =
-        std::make_shared<trajopt_ifopt::JointPosition>(pos, joint_names, "Joint_Position_" + std::to_string(ind));
-    vars.push_back(var);
-    nlp_ipopt.AddVariableSet(var);
-  }
-
-  // 3) Add constraints
-  const Eigen::VectorXd start_pos = Eigen::VectorXd::Zero(7);
-  std::vector<trajopt_ifopt::JointPosition::ConstPtr> start;
-  start.push_back(vars.front());
-
-  const Eigen::VectorXd coeffs = Eigen::VectorXd::Constant(7, 1);
-  auto start_constraint =
-      std::make_shared<trajopt_ifopt::JointPosConstraint>(start_pos, start, coeffs, "StartPosition");
-  nlp_ipopt.AddConstraintSet(start_constraint);
-
-  const Eigen::VectorXd end_pos = Eigen::VectorXd::Ones(7);
-  std::vector<trajopt_ifopt::JointPosition::ConstPtr> end;
-  end.push_back(vars.back());
-  auto end_constraint = std::make_shared<trajopt_ifopt::JointPosConstraint>(end_pos, end, coeffs, "EndPosition");
-  nlp_ipopt.AddConstraintSet(end_constraint);
-
-  ifopt::IpoptSolver solver;
-  solver.SetOption("derivative_test", "first-order");
-  solver.SetOption("linear_solver", "mumps");
-  //  ipopt.SetOption("jacobian_approximation", "finite-difference-values");
-  solver.SetOption("jacobian_approximation", "exact");
-  solver.SetOption("print_level", 5);
-
-  // solve
-  solver.Solve(nlp_ipopt);
-  Eigen::VectorXd x = nlp_ipopt.GetOptVariables()->GetValues();
-  for (Eigen::Index i = 0; i < 7; i++)
-    EXPECT_NEAR(x[i], 0.0, 1e-5);
-  for (Eigen::Index i = 7; i < 14; i++)
-    EXPECT_NEAR(x[i], 1.0, 1e-5);
-  if (DEBUG)
-  {
-    std::cout << x.transpose() << '\n';
-    nlp_ipopt.PrintCurrent();
-  }
-}
-
-/**
  * @brief Applies a joint position constraint and solves the ifopt problem with trajopt_sqp
  */
 TEST_F(JointPositionOptimization, joint_position_optimization_ifopt_problem)  // NOLINT
 {
   CONSOLE_BRIDGE_logDebug("JointPositionOptimization, joint_position_optimization_ifopt_problem");
-  auto qp_problem = std::make_shared<trajopt_sqp::IfoptQPProblem>();
-  runJointPositionOptimizationTest(qp_problem);
+  runJointPositionOptimizationTest<trajopt_sqp::IfoptQPProblem>();
 }
 
 /**
@@ -185,8 +127,7 @@ TEST_F(JointPositionOptimization, joint_position_optimization_ifopt_problem)  //
 TEST_F(JointPositionOptimization, joint_position_optimization_trajopt_problem)  // NOLINT
 {
   CONSOLE_BRIDGE_logDebug("JointPositionOptimization, joint_position_optimization_trajopt_problem");
-  auto qp_problem = std::make_shared<trajopt_sqp::TrajOptQPProblem>();
-  runJointPositionOptimizationTest(qp_problem);
+  runJointPositionOptimizationTest<trajopt_sqp::TrajOptQPProblem>();
 }
 
 ////////////////////////////////////////////////////////////////////

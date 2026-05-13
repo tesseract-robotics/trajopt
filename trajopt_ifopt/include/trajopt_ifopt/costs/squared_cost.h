@@ -4,8 +4,6 @@
  *
  * @author Matthew Powelson
  * @date May 18, 2020
- * @version TODO
- * @bug No known bugs
  *
  * @copyright Copyright (c) 2020, Southwest Research Institute
  *
@@ -28,10 +26,10 @@
 
 #include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
-#include <ifopt/cost_term.h>
-
 #include <Eigen/Eigen>
 TRAJOPT_IGNORE_WARNINGS_POP
+
+#include <trajopt_ifopt/core/cost_term.h>
 
 namespace trajopt_ifopt
 {
@@ -71,7 +69,7 @@ namespace trajopt_ifopt
  *     dcost(x)/dx = 2 * error.transpose() * W * J(x)
  *
  */
-class SquaredCost : public ifopt::CostTerm
+class SquaredCost : public CostTerm
 {
 public:
   using Ptr = std::shared_ptr<SquaredCost>;
@@ -81,27 +79,35 @@ public:
    * @brief Constructs a CostTerm that converts a constraint into a cost with a sum squared error
    * @param constraint Input constraint to be converted to a cost
    */
-  SquaredCost(const ifopt::ConstraintSet::Ptr& constraint);
+  SquaredCost(const ConstraintSet::Ptr& constraint);
   /**
    * @brief Constructs a CostTerm that converts a constraint into a cost with a weighted sum squared error
    * @param constraint Input constraint to be converted to a cost
    * @param weights Weights applied to the constraints. Length should be n_constraints
    */
-  SquaredCost(ifopt::ConstraintSet::Ptr constraint, const Eigen::Ref<const Eigen::VectorXd>& weights);
+  SquaredCost(ConstraintSet::Ptr constraint, const Eigen::Ref<const Eigen::VectorXd>& weights);
 
-  double GetCost() const override;
+  int update() override;
 
-  void FillJacobianBlock(std::string var_set, Jacobian& jac_block) const override;
+  double getCost() const override;
+
+  Eigen::VectorXd getCoefficients() const override;
+
+  /** @brief Get the jacobian */
+  Jacobian getJacobian() const override;
 
 private:
   /** @brief Constraint being converted to a cost */
-  std::shared_ptr<const ConstraintSet> constraint_;
+  std::shared_ptr<ConstraintSet> constraint_;
 
   /** @brief Size of the input constraint */
   long n_constraints_;
 
   /** @brief Vector of weights. Default: Eigen::VectorXd::Ones(n_constraints) */
   Eigen::VectorXd weights_;
+
+  /** @brief Scratch buffer reused across getCost()/getJacobian() calls to avoid per-call allocations. */
+  mutable Eigen::VectorXd scratch_error_;
 };
 
 }  // namespace trajopt_ifopt

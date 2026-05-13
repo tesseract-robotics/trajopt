@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <package format="3">
   <name>trajopt_ifopt</name>
-  <version>0.31.0</version>
+  <version>0.34.4</version>
   <description>The trajopt_ifopt package</description>
   <maintainer email="levi.armstrong@swri.org">Levi Armstrong</maintainer>
   <license>Apache 2.0</license>
@@ -14,10 +14,8 @@
 
   <build_depend>ros_industrial_cmake_boilerplate</build_depend>
   <depend>eigen</depend>
-  <depend>ifopt</depend>
   <depend>libconsole-bridge-dev</depend>
-  <depend>tesseract_collision</depend>
-  <depend>tesseract_environment</depend>
+  <depend>tesseract</depend>
   <depend>trajopt_common</depend>
   <depend>boost</depend>
 

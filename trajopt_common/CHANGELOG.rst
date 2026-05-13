@@ -2,6 +2,28 @@
 Changelog for package trajopt_utils
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.34.4 (2026-02-18)
+-------------------
+* Do not add compiler option -mno-avx for arm or if processor is unknown
+* Update cache to also be a pool of object to retrieve unused objects (`#530 <https://github.com/tesseract-robotics/trajopt/issues/530>`_)
+* Reduce memory allocation in trajopt_ifopt and trajopt_sqp
+* Reduce allocations
+* Minor optimizations in the weighted average methods
+* Cleanup doxygen file headers
+* Remove old console bridge cmake target logic
+* Switch to using Cereal for serialization
+* Contributors: Levi Armstrong, Roelof Oomen
+
+0.33.0 (2025-10-28)
+-------------------
+
+0.32.0 (2025-09-10)
+-------------------
+* Fix benchmarks (`#471 <https://github.com/tesseract-robotics/trajopt/issues/471>`_)
+* Add yaml conversions and related tests (`#469 <https://github.com/tesseract-robotics/trajopt/issues/469>`_)
+* Remove PairHash (replaced by implicit std::hash in tesseract_common)
+* Contributors: Roelof Oomen, Tyler Marr
+
 0.31.0 (2025-07-06)
 -------------------
 * Make sure serialized objects have friend struct tesseract_common::Serialization

@@ -5,7 +5,6 @@
  * @author Levi Armstrong
  * @author Matthew Powelson
  * @date Nov 24, 2020
- * @version TODO
  *
  * @par License
  * Software License Agreement (Apache License)
@@ -27,44 +26,42 @@
 #include <trajopt_common/collision_utils.h>
 
 TRAJOPT_IGNORE_WARNINGS_PUSH
-#include <tesseract_collision/core/discrete_contact_manager.h>
-#include <tesseract_collision/core/continuous_contact_manager.h>
-#include <tesseract_kinematics/core/joint_group.h>
-#include <tesseract_environment/environment.h>
+#include <tesseract/collision/discrete_contact_manager.h>
+#include <tesseract/collision/continuous_contact_manager.h>
+#include <tesseract/kinematics/joint_group.h>
+#include <tesseract/environment/environment.h>
 #include <console_bridge/console.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace trajopt_ifopt
 {
-thread_local tesseract_common::TransformMap ContinuousCollisionEvaluator::transforms_cache0;  // NOLINT
-thread_local tesseract_common::TransformMap ContinuousCollisionEvaluator::transforms_cache1;  // NOLINT
+thread_local tesseract::common::TransformMap ContinuousCollisionEvaluator::transforms_cache0;  // NOLINT
+thread_local tesseract::common::TransformMap ContinuousCollisionEvaluator::transforms_cache1;  // NOLINT
 
 LVSContinuousCollisionEvaluator::LVSContinuousCollisionEvaluator(
-    std::shared_ptr<CollisionCache> collision_cache,
-    std::shared_ptr<const tesseract_kinematics::JointGroup> manip,
-    std::shared_ptr<const tesseract_environment::Environment> env,
+    std::shared_ptr<const tesseract::kinematics::JointGroup> manip,
+    std::shared_ptr<const tesseract::environment::Environment> env,
     const trajopt_common::TrajOptCollisionConfig& collision_config,
     bool dynamic_environment)
-  : collision_cache_(std::move(collision_cache))
-  , manip_(std::move(manip))
+  : manip_(std::move(manip))
   , env_(std::move(env))
   , collision_check_config_(collision_config.collision_check_config)
   , dynamic_environment_(dynamic_environment)
 {
-  if (collision_check_config_.type != tesseract_collision::CollisionEvaluatorType::CONTINUOUS &&
-      collision_check_config_.type != tesseract_collision::CollisionEvaluatorType::LVS_CONTINUOUS)
+  if (collision_check_config_.type != tesseract::collision::CollisionEvaluatorType::CONTINUOUS &&
+      collision_check_config_.type != tesseract::collision::CollisionEvaluatorType::LVS_CONTINUOUS)
   {
     throw std::runtime_error("LVSContinuousCollisionEvaluator, should be configured with CONTINUOUS or LVS_CONTINUOUS");
   }
 
-  single_timestep_ = (collision_check_config_.type == tesseract_collision::CollisionEvaluatorType::CONTINUOUS);
+  single_timestep_ = (collision_check_config_.type == tesseract::collision::CollisionEvaluatorType::CONTINUOUS);
 
   manip_active_link_names_ = manip_->getActiveLinkNames();
 
   // If the environment is not expected to change, then the cloned state solver may be used each time.
   if (dynamic_environment_)
   {
-    get_state_fn_ = [&](tesseract_common::TransformMap& transforms,
+    get_state_fn_ = [&](tesseract::common::TransformMap& transforms,
                         const Eigen::Ref<const Eigen::VectorXd>& joint_values) {
       env_->getLinkTransforms(transforms, manip_->getJointNames(), joint_values);
     };
@@ -80,7 +77,7 @@ LVSContinuousCollisionEvaluator::LVSContinuousCollisionEvaluator(
   }
   else
   {
-    get_state_fn_ = [&](tesseract_common::TransformMap& transforms,
+    get_state_fn_ = [&](tesseract::common::TransformMap& transforms,
                         const Eigen::Ref<const Eigen::VectorXd>& joint_values) {
       manip_->calcFwdKin(transforms, joint_values);
     };
@@ -99,95 +96,73 @@ LVSContinuousCollisionEvaluator::LVSContinuousCollisionEvaluator(
   contact_manager_->incrementCollisionMargin(margin_buffer_);
 }
 
-std::shared_ptr<const trajopt_common::CollisionCacheData>
-LVSContinuousCollisionEvaluator::CalcCollisionData(const Eigen::Ref<const Eigen::VectorXd>& dof_vals0,
-                                                   const Eigen::Ref<const Eigen::VectorXd>& dof_vals1,
-                                                   bool vars0_fixed,
-                                                   bool vars1_fixed,
-                                                   std::size_t bounds_size)
+void LVSContinuousCollisionEvaluator::calcCollisionData(trajopt_common::CollisionCacheData& collision_data,
+                                                        const Eigen::Ref<const Eigen::VectorXd>& dof_vals0,
+                                                        const Eigen::Ref<const Eigen::VectorXd>& dof_vals1,
+                                                        bool vars0_fixed,
+                                                        bool vars1_fixed,
+                                                        std::size_t max_allowed)
 {
-  const std::size_t key = trajopt_common::getHash(this, dof_vals0, dof_vals1);
-  auto* it = collision_cache_->get(key);
-  if (it != nullptr)
-  {
-    CONSOLE_BRIDGE_logDebug("Using cached collision check");
-    return *it;
-  }
+  collision_data.contact_results_map.clear();
+  collision_data.gradient_results_sets.clear();
+  calcCollisionsHelper(collision_data.contact_results_map, dof_vals0, dof_vals1, vars0_fixed, vars1_fixed);
 
-  auto data = std::make_shared<trajopt_common::CollisionCacheData>();
-  CalcCollisionsHelper(data->contact_results_map, dof_vals0, dof_vals1, vars0_fixed, vars1_fixed);
+  // If max allowed is not set gradient data is computed
+  if (max_allowed <= 0)
+    return;
 
-  for (const auto& pair : data->contact_results_map)
+  collision_data.gradient_results_sets.reserve(static_cast<std::size_t>(collision_data.contact_results_map.count()));
+  for (const auto& pair : collision_data.contact_results_map)
   {
-    using ShapeGrsType = std::map<std::pair<std::size_t, std::size_t>, trajopt_common::GradientResultsSet>;
-    ShapeGrsType shape_grs;
+    using ShapeKey = std::pair<std::size_t, std::size_t>;
+    using ShapeGrsMap = std::map<ShapeKey, trajopt_common::GradientResultsSet>;
+    ShapeGrsMap shape_grs;
+
     const double coeff = coeff_data_.getCollisionCoeff(pair.first.first, pair.first.second);
-    for (const tesseract_collision::ContactResult& dist_result : pair.second)
+    const auto& results = pair.second;
+
+    for (const tesseract::collision::ContactResult& dist_result : results)
     {
       const std::size_t shape_hash0 = trajopt_common::cantorHash(dist_result.shape_id[0], dist_result.subshape_id[0]);
       const std::size_t shape_hash1 = trajopt_common::cantorHash(dist_result.shape_id[1], dist_result.subshape_id[1]);
-      auto shape_key = std::make_pair(shape_hash0, shape_hash1);
-      auto it = shape_grs.find(shape_key);
-      if (it == shape_grs.end())
+      ShapeKey shape_key{ shape_hash0, shape_hash1 };
+
+      auto [it_shape, inserted] = shape_grs.try_emplace(shape_key);
+      auto& grs = it_shape->second;
+
+      if (inserted)
       {
-        trajopt_common::GradientResultsSet grs;
         grs.key = pair.first;
         grs.shape_key = shape_key;
         grs.coeff = coeff;
         grs.is_continuous = true;
-        grs.results.reserve(pair.second.size());
-        grs.add(CalcGradientData(dof_vals0, dof_vals1, dist_result));
-        shape_grs[shape_key] = grs;
+        grs.results.reserve(results.size());
       }
-      else
-      {
-        it->second.add(CalcGradientData(dof_vals0, dof_vals1, dist_result));
-      }
+
+      grs.add(calcGradientData(dof_vals0, dof_vals1, dist_result));
     }
 
-    // This is not as efficient as it could be. Need to update Tesseract to store per subhshape key
-    const std::size_t new_size = data->gradient_results_sets.size() + shape_grs.size();
-    data->gradient_results_sets.reserve(new_size);
-
-    std::transform(shape_grs.begin(),
-                   shape_grs.end(),
-                   std::back_inserter(data->gradient_results_sets),
-                   std::bind(&ShapeGrsType::value_type::second, std::placeholders::_1));  // NOLINT
+    for (auto& kv : shape_grs)
+      collision_data.gradient_results_sets.emplace_back(std::move(kv.second));
   }
 
-  if (data->gradient_results_sets.size() > bounds_size)
+  if (collision_data.gradient_results_sets.size() > max_allowed)
   {
-    if (!vars0_fixed && !vars1_fixed)
-    {
-      std::sort(data->gradient_results_sets.begin(),
-                data->gradient_results_sets.end(),
-                [](const trajopt_common::GradientResultsSet& a, const trajopt_common::GradientResultsSet& b) {
-                  return a.getMaxErrorWithBuffer() > b.getMaxErrorWithBuffer();
-                });
-    }
-    else if (!vars0_fixed)
-    {
-      std::sort(data->gradient_results_sets.begin(),
-                data->gradient_results_sets.end(),
-                [](const trajopt_common::GradientResultsSet& a, const trajopt_common::GradientResultsSet& b) {
-                  return a.getMaxErrorWithBufferT0() > b.getMaxErrorWithBufferT0();
-                });
-    }
-    else
-    {
-      std::sort(data->gradient_results_sets.begin(),
-                data->gradient_results_sets.end(),
-                [](const trajopt_common::GradientResultsSet& a, const trajopt_common::GradientResultsSet& b) {
-                  return a.getMaxErrorWithBufferT1() > b.getMaxErrorWithBufferT1();
-                });
-    }
-  }
+    auto cmp = [vars0_fixed, vars1_fixed](const trajopt_common::GradientResultsSet& a,
+                                          const trajopt_common::GradientResultsSet& b) {
+      if (!vars0_fixed && !vars1_fixed)
+        return a.getMaxErrorWithBuffer() > b.getMaxErrorWithBuffer();
+      if (!vars0_fixed)
+        return a.getMaxErrorWithBufferT0() > b.getMaxErrorWithBufferT0();
+      return a.getMaxErrorWithBufferT1() > b.getMaxErrorWithBufferT1();
+    };
 
-  collision_cache_->put(key, data);
-  return data;
+    std::sort(collision_data.gradient_results_sets.begin(), collision_data.gradient_results_sets.end(), cmp);
+    // (Optional future tweak: partial_sort + erase to keep only top bounds_size)
+  }
 }
 
-void LVSContinuousCollisionEvaluator::CalcCollisionsHelper(tesseract_collision::ContactResultMap& dist_results,
+void LVSContinuousCollisionEvaluator::calcCollisionsHelper(tesseract::collision::ContactResultMap& dist_results,
                                                            const Eigen::Ref<const Eigen::VectorXd>& dof_vals0,
                                                            const Eigen::Ref<const Eigen::VectorXd>& dof_vals1,
                                                            bool vars0_fixed,
@@ -214,7 +189,7 @@ void LVSContinuousCollisionEvaluator::CalcCollisionsHelper(tesseract_collision::
   // Don't include contacts with zero coeffs
   const auto& zero_coeff_pairs = coeff_data_.getPairsWithZeroCoeff();
   auto filter =
-      [this, &zero_coeff_pairs, vars0_fixed, vars1_fixed](tesseract_collision::ContactResultMap::PairType& pair) {
+      [this, &zero_coeff_pairs, vars0_fixed, vars1_fixed](tesseract::collision::ContactResultMap::PairType& pair) {
         // Remove pairs with zero coeffs
         if (zero_coeff_pairs.find(pair.first) != zero_coeff_pairs.end())
         {
@@ -233,12 +208,14 @@ void LVSContinuousCollisionEvaluator::CalcCollisionsHelper(tesseract_collision::
     const long cnt = static_cast<long>(std::ceil(dist / collision_check_config_.longest_valid_segment_length)) + 1;
 
     // Create interpolated trajectory between two states that satisfies the longest valid segment length.
-    tesseract_common::TrajArray subtraj(cnt, dof_vals0.size());
+    tesseract::common::TrajArray subtraj(cnt, dof_vals0.size());
     for (long i = 0; i < dof_vals0.size(); ++i)
       subtraj.col(i) = Eigen::VectorXd::LinSpaced(cnt, dof_vals0(i), dof_vals1(i));
 
-    // Perform casted collision checking for sub trajectory and store results in contacts_vector
-    tesseract_collision::ContactResultMap contacts{ dist_results };
+    /** @note thread_local did not make a difference here */
+    tesseract::collision::ContactResultMap contacts;
+
+    // Perform collision checking for sub trajectory and store results in contacts_vector
     const int last_state_idx{ static_cast<int>(subtraj.rows()) - 1 };
     const double dt = 1.0 / double(last_state_idx);
     for (int i = 0; i < subtraj.rows() - 1; ++i)
@@ -274,42 +251,44 @@ void LVSContinuousCollisionEvaluator::CalcCollisionsHelper(tesseract_collision::
 }
 
 trajopt_common::GradientResults
-LVSContinuousCollisionEvaluator::CalcGradientData(const Eigen::Ref<const Eigen::VectorXd>& dof_vals0,
+LVSContinuousCollisionEvaluator::calcGradientData(const Eigen::Ref<const Eigen::VectorXd>& dof_vals0,
                                                   const Eigen::Ref<const Eigen::VectorXd>& dof_vals1,
-                                                  const tesseract_collision::ContactResult& contact_results)
+                                                  const tesseract::collision::ContactResult& contact_results)
 {
   // Contains the contact distance threshold and coefficient for the given link pair
   const double margin = margin_data_.getCollisionMargin(contact_results.link_names[0], contact_results.link_names[1]);
-  return trajopt_common::getGradient(dof_vals0, dof_vals1, contact_results, margin, margin_buffer_, *manip_);
+  trajopt_common::GradientResults results;
+  trajopt_common::getGradient(results, dof_vals0, dof_vals1, contact_results, margin, margin_buffer_, *manip_);
+  return results;
 }
 
-double LVSContinuousCollisionEvaluator::GetCollisionMarginBuffer() const { return margin_buffer_; }
+double LVSContinuousCollisionEvaluator::getCollisionMarginBuffer() const { return margin_buffer_; }
 
-const tesseract_common::CollisionMarginData& LVSContinuousCollisionEvaluator::GetCollisionMarginData() const
+const tesseract::common::CollisionMarginData& LVSContinuousCollisionEvaluator::getCollisionMarginData() const
 {
   return margin_data_;
 }
 
-const trajopt_common::CollisionCoeffData& LVSContinuousCollisionEvaluator::GetCollisionCoeffData() const
+const trajopt_common::CollisionCoeffData& LVSContinuousCollisionEvaluator::getCollisionCoeffData() const
 {
   return coeff_data_;
 }
 
+const tesseract::kinematics::JointGroup& LVSContinuousCollisionEvaluator::getJointGroup() const { return *manip_; }
+
 //////////////////////////////////////////
 
 LVSDiscreteCollisionEvaluator::LVSDiscreteCollisionEvaluator(
-    std::shared_ptr<CollisionCache> collision_cache,
-    std::shared_ptr<const tesseract_kinematics::JointGroup> manip,
-    std::shared_ptr<const tesseract_environment::Environment> env,
+    std::shared_ptr<const tesseract::kinematics::JointGroup> manip,
+    std::shared_ptr<const tesseract::environment::Environment> env,
     const trajopt_common::TrajOptCollisionConfig& collision_config,
     bool dynamic_environment)
-  : collision_cache_(std::move(collision_cache))
-  , manip_(std::move(manip))
+  : manip_(std::move(manip))
   , env_(std::move(env))
   , collision_check_config_(collision_config.collision_check_config)
   , dynamic_environment_(dynamic_environment)
 {
-  if (collision_check_config_.type != tesseract_collision::CollisionEvaluatorType::LVS_DISCRETE)
+  if (collision_check_config_.type != tesseract::collision::CollisionEvaluatorType::LVS_DISCRETE)
     throw std::runtime_error("LVSDiscreteCollisionEvaluator, should be configured with LVS_DISCRETE");
 
   manip_active_link_names_ = manip_->getActiveLinkNames();
@@ -317,7 +296,7 @@ LVSDiscreteCollisionEvaluator::LVSDiscreteCollisionEvaluator(
   // If the environment is not expected to change, then the cloned state solver may be used each time.
   if (dynamic_environment_)
   {
-    get_state_fn_ = [&](tesseract_common::TransformMap& transforms,
+    get_state_fn_ = [&](tesseract::common::TransformMap& transforms,
                         const Eigen::Ref<const Eigen::VectorXd>& joint_values) {
       env_->getLinkTransforms(transforms, manip_->getJointNames(), joint_values);
     };
@@ -333,7 +312,7 @@ LVSDiscreteCollisionEvaluator::LVSDiscreteCollisionEvaluator(
   }
   else
   {
-    get_state_fn_ = [&](tesseract_common::TransformMap& transforms,
+    get_state_fn_ = [&](tesseract::common::TransformMap& transforms,
                         const Eigen::Ref<const Eigen::VectorXd>& joint_values) {
       manip_->calcFwdKin(transforms, joint_values);
     };
@@ -352,94 +331,73 @@ LVSDiscreteCollisionEvaluator::LVSDiscreteCollisionEvaluator(
   contact_manager_->incrementCollisionMargin(margin_buffer_);
 }
 
-std::shared_ptr<const trajopt_common::CollisionCacheData>
-LVSDiscreteCollisionEvaluator::CalcCollisionData(const Eigen::Ref<const Eigen::VectorXd>& dof_vals0,
-                                                 const Eigen::Ref<const Eigen::VectorXd>& dof_vals1,
-                                                 bool vars0_fixed,
-                                                 bool vars1_fixed,
-                                                 std::size_t bounds_size)
+void LVSDiscreteCollisionEvaluator::calcCollisionData(trajopt_common::CollisionCacheData& collision_data,
+                                                      const Eigen::Ref<const Eigen::VectorXd>& dof_vals0,
+                                                      const Eigen::Ref<const Eigen::VectorXd>& dof_vals1,
+                                                      bool vars0_fixed,
+                                                      bool vars1_fixed,
+                                                      std::size_t max_allowed)
 {
-  const std::size_t key = trajopt_common::getHash(this, dof_vals0, dof_vals1);
-  auto* it = collision_cache_->get(key);
-  if (it != nullptr)
-  {
-    CONSOLE_BRIDGE_logDebug("Using cached collision check");
-    return *it;
-  }
+  collision_data.contact_results_map.clear();
+  collision_data.gradient_results_sets.clear();
+  calcCollisionsHelper(collision_data.contact_results_map, dof_vals0, dof_vals1, vars0_fixed, vars1_fixed);
 
-  auto data = std::make_shared<trajopt_common::CollisionCacheData>();
-  CalcCollisionsHelper(data->contact_results_map, dof_vals0, dof_vals1, vars0_fixed, vars1_fixed);
-  for (const auto& pair : data->contact_results_map)
+  // If max allowed is not set gradient data is computed
+  if (max_allowed <= 0)
+    return;
+
+  collision_data.gradient_results_sets.reserve(static_cast<std::size_t>(collision_data.contact_results_map.count()));
+  for (const auto& pair : collision_data.contact_results_map)
   {
-    using ShapeGrsType = std::map<std::pair<std::size_t, std::size_t>, trajopt_common::GradientResultsSet>;
-    ShapeGrsType shape_grs;
+    using ShapeKey = std::pair<std::size_t, std::size_t>;
+    using ShapeGrsMap = std::map<ShapeKey, trajopt_common::GradientResultsSet>;
+    ShapeGrsMap shape_grs;
+
     const double coeff = coeff_data_.getCollisionCoeff(pair.first.first, pair.first.second);
-    for (const tesseract_collision::ContactResult& dist_result : pair.second)
+    const auto& results = pair.second;
+
+    for (const tesseract::collision::ContactResult& dist_result : results)
     {
       const std::size_t shape_hash0 = trajopt_common::cantorHash(dist_result.shape_id[0], dist_result.subshape_id[0]);
       const std::size_t shape_hash1 = trajopt_common::cantorHash(dist_result.shape_id[1], dist_result.subshape_id[1]);
-      auto shape_key = std::make_pair(shape_hash0, shape_hash1);
-      auto it = shape_grs.find(shape_key);
-      if (it == shape_grs.end())
+      ShapeKey shape_key{ shape_hash0, shape_hash1 };
+
+      auto [it_shape, inserted] = shape_grs.try_emplace(shape_key);
+      auto& grs = it_shape->second;
+
+      if (inserted)
       {
-        trajopt_common::GradientResultsSet grs;
         grs.key = pair.first;
         grs.shape_key = shape_key;
         grs.coeff = coeff;
         grs.is_continuous = true;
-        grs.results.reserve(pair.second.size());
-        grs.add(CalcGradientData(dof_vals0, dof_vals1, dist_result));
-        shape_grs[shape_key] = grs;
+        grs.results.reserve(results.size());
       }
-      else
-      {
-        it->second.add(CalcGradientData(dof_vals0, dof_vals1, dist_result));
-      }
+
+      grs.add(calcGradientData(dof_vals0, dof_vals1, dist_result));
     }
 
-    // This is not as efficient as it could be. Need to update Tesseract to store per subhshape key
-    const std::size_t new_size = data->gradient_results_sets.size() + shape_grs.size();
-    data->gradient_results_sets.reserve(new_size);
-
-    std::transform(shape_grs.begin(),
-                   shape_grs.end(),
-                   std::back_inserter(data->gradient_results_sets),
-                   std::bind(&ShapeGrsType::value_type::second, std::placeholders::_1));  // NOLINT
+    for (auto& kv : shape_grs)
+      collision_data.gradient_results_sets.emplace_back(std::move(kv.second));
   }
 
-  if (data->gradient_results_sets.size() > bounds_size)
+  if (collision_data.gradient_results_sets.size() > max_allowed)
   {
-    if (!vars0_fixed && !vars1_fixed)
-    {
-      std::sort(data->gradient_results_sets.begin(),
-                data->gradient_results_sets.end(),
-                [](const trajopt_common::GradientResultsSet& a, const trajopt_common::GradientResultsSet& b) {
-                  return a.getMaxErrorWithBuffer() > b.getMaxErrorWithBuffer();
-                });
-    }
-    else if (!vars0_fixed)
-    {
-      std::sort(data->gradient_results_sets.begin(),
-                data->gradient_results_sets.end(),
-                [](const trajopt_common::GradientResultsSet& a, const trajopt_common::GradientResultsSet& b) {
-                  return a.getMaxErrorWithBufferT0() > b.getMaxErrorWithBufferT0();
-                });
-    }
-    else
-    {
-      std::sort(data->gradient_results_sets.begin(),
-                data->gradient_results_sets.end(),
-                [](const trajopt_common::GradientResultsSet& a, const trajopt_common::GradientResultsSet& b) {
-                  return a.getMaxErrorWithBufferT1() > b.getMaxErrorWithBufferT1();
-                });
-    }
-  }
+    auto cmp = [vars0_fixed, vars1_fixed](const trajopt_common::GradientResultsSet& a,
+                                          const trajopt_common::GradientResultsSet& b) {
+      if (!vars0_fixed && !vars1_fixed)
+        return a.getMaxErrorWithBuffer() > b.getMaxErrorWithBuffer();
+      if (!vars0_fixed)
+        return a.getMaxErrorWithBufferT0() > b.getMaxErrorWithBufferT0();
+      return a.getMaxErrorWithBufferT1() > b.getMaxErrorWithBufferT1();
+    };
 
-  collision_cache_->put(key, data);
-  return data;
+    std::sort(collision_data.gradient_results_sets.begin(), collision_data.gradient_results_sets.end(), cmp);
+    // Same optional partial_sort+erase idea as above.
+  }
 }
 
-void LVSDiscreteCollisionEvaluator::CalcCollisionsHelper(tesseract_collision::ContactResultMap& dist_results,
+void LVSDiscreteCollisionEvaluator::calcCollisionsHelper(tesseract::collision::ContactResultMap& dist_results,
                                                          const Eigen::Ref<const Eigen::VectorXd>& dof_vals0,
                                                          const Eigen::Ref<const Eigen::VectorXd>& dof_vals1,
                                                          bool vars0_fixed,
@@ -460,7 +418,7 @@ void LVSDiscreteCollisionEvaluator::CalcCollisionsHelper(tesseract_collision::Co
   // Don't include contacts with zero coeffs
   const auto& zero_coeff_pairs = coeff_data_.getPairsWithZeroCoeff();
   auto filter =
-      [this, &zero_coeff_pairs, vars0_fixed, vars1_fixed](tesseract_collision::ContactResultMap::PairType& pair) {
+      [this, &zero_coeff_pairs, vars0_fixed, vars1_fixed](tesseract::collision::ContactResultMap::PairType& pair) {
         // Remove pairs with zero coeffs
         if (zero_coeff_pairs.find(pair.first) != zero_coeff_pairs.end())
         {
@@ -487,12 +445,14 @@ void LVSDiscreteCollisionEvaluator::CalcCollisionsHelper(tesseract_collision::Co
   }
 
   // Create interpolated trajectory between two states that satisfies the longest valid segment length.
-  tesseract_common::TrajArray subtraj(cnt, dof_vals0.size());
+  tesseract::common::TrajArray subtraj(cnt, dof_vals0.size());
   for (long i = 0; i < dof_vals0.size(); ++i)
     subtraj.col(i) = Eigen::VectorXd::LinSpaced(cnt, dof_vals0(i), dof_vals1(i));
 
+  /** @note thread_local had little impact */
+  tesseract::collision::ContactResultMap contacts;
+
   // Perform casted collision checking for sub trajectory and store results in contacts_vector
-  tesseract_collision::ContactResultMap contacts{ dist_results };
   const int last_state_idx{ static_cast<int>(subtraj.rows()) - 1 };
   const double dt = 1.0 / double(last_state_idx);
   for (int i = 0; i < subtraj.rows(); ++i)
@@ -514,25 +474,29 @@ void LVSDiscreteCollisionEvaluator::CalcCollisionsHelper(tesseract_collision::Co
 }
 
 trajopt_common::GradientResults
-LVSDiscreteCollisionEvaluator::CalcGradientData(const Eigen::Ref<const Eigen::VectorXd>& dof_vals0,
+LVSDiscreteCollisionEvaluator::calcGradientData(const Eigen::Ref<const Eigen::VectorXd>& dof_vals0,
                                                 const Eigen::Ref<const Eigen::VectorXd>& dof_vals1,
-                                                const tesseract_collision::ContactResult& contact_results)
+                                                const tesseract::collision::ContactResult& contact_results)
 {
   // Contains the contact distance threshold and coefficient for the given link pair
   const double margin = margin_data_.getCollisionMargin(contact_results.link_names[0], contact_results.link_names[1]);
-  return trajopt_common::getGradient(dof_vals0, dof_vals1, contact_results, margin, margin_buffer_, *manip_);
+  trajopt_common::GradientResults results;
+  trajopt_common::getGradient(results, dof_vals0, dof_vals1, contact_results, margin, margin_buffer_, *manip_);
+  return results;
 }
 
-double LVSDiscreteCollisionEvaluator::GetCollisionMarginBuffer() const { return margin_buffer_; }
+double LVSDiscreteCollisionEvaluator::getCollisionMarginBuffer() const { return margin_buffer_; }
 
-const tesseract_common::CollisionMarginData& LVSDiscreteCollisionEvaluator::GetCollisionMarginData() const
+const tesseract::common::CollisionMarginData& LVSDiscreteCollisionEvaluator::getCollisionMarginData() const
 {
   return margin_data_;
 }
 
-const trajopt_common::CollisionCoeffData& LVSDiscreteCollisionEvaluator::GetCollisionCoeffData() const
+const trajopt_common::CollisionCoeffData& LVSDiscreteCollisionEvaluator::getCollisionCoeffData() const
 {
   return coeff_data_;
 }
+
+const tesseract::kinematics::JointGroup& LVSDiscreteCollisionEvaluator::getJointGroup() const { return *manip_; }
 
 }  // namespace trajopt_ifopt

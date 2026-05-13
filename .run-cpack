@@ -25,9 +25,10 @@ declare -a StringArray=("osqp" "osqp_eigen" "qpoases" "trajopt_common" "vhacd" "
 # Iterate the packages using for loop
 for val in ${StringArray[@]}; do
   if [ -d "$build_dir/$val" ] && [ -f "$build_dir/$val/CPackConfig.cmake" ]; then
-    cd $build_dir/$val
+    pushd $build_dir/$val
     cpack --config CPackConfig.cmake
     cp ./*.$artifact_ext $artifact_dir
     cp ./*.tar.xz $artifact_dir
+    popd
   fi
 done

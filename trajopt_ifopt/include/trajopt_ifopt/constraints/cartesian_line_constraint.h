@@ -6,8 +6,6 @@
  * @author Matthew Powelson
  * @author Colin Lewis
  * @date December 27, 2020
- * @version TODO
- * @bug No known bugs
  *
  * @copyright Copyright (c) 2020, Southwest Research Institute
  *
@@ -31,14 +29,15 @@
 #include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <Eigen/Geometry>
-#include <ifopt/constraint_set.h>
-#include <tesseract_common/eigen_types.h>
-#include <tesseract_kinematics/core/fwd.h>
 TRAJOPT_IGNORE_WARNINGS_POP
+
+#include <trajopt_ifopt/core/constraint_set.h>
+#include <tesseract/common/eigen_types.h>
+#include <tesseract/kinematics/fwd.h>
 
 namespace trajopt_ifopt
 {
-class JointPosition;
+class Var;
 
 /**
  * @brief Contains kinematic information for the cartesian position cost; include cart point .h & remove?
@@ -52,7 +51,7 @@ struct CartLineInfo
 
   CartLineInfo() = default;
   CartLineInfo(
-      std::shared_ptr<const tesseract_kinematics::JointGroup> manip,
+      std::shared_ptr<const tesseract::kinematics::JointGroup> manip,
       std::string source_frame,
       std::string target_frame,
       const Eigen::Isometry3d& target_frame_offset1,
@@ -61,7 +60,7 @@ struct CartLineInfo
       const Eigen::VectorXi& indices = Eigen::Matrix<int, 1, 6>(std::vector<int>({ 0, 1, 2, 3, 4, 5 }).data()));
 
   /** @brief The joint group */
-  std::shared_ptr<const tesseract_kinematics::JointGroup> manip;
+  std::shared_ptr<const tesseract::kinematics::JointGroup> manip;
 
   /** @brief Link which should reach desired pos */
   std::string source_frame;
@@ -90,7 +89,7 @@ struct CartLineInfo
 /**
  * @brief The CartLineConstraint class
  */
-class CartLineConstraint : public ifopt::ConstraintSet
+class CartLineConstraint : public ConstraintSet
 {
 public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -100,12 +99,14 @@ public:
   using ErrorDiffFunctionType = std::function<Eigen::VectorXd(const Eigen::VectorXd&,
                                                               const Eigen::Isometry3d&,
                                                               const Eigen::Isometry3d&,
-                                                              tesseract_common::TransformMap&)>;
+                                                              tesseract::common::TransformMap&)>;
 
   CartLineConstraint(CartLineInfo info,
-                     std::shared_ptr<const JointPosition> position_var,
+                     std::shared_ptr<const Var> position_var,
                      const Eigen::VectorXd& coeffs,
-                     const std::string& name = "CartLine");
+                     std::string name = "CartLine");
+
+  int update() override { return rows_; }
 
   /**
    * @brief CalcValues Calculates the values associated with the constraint
@@ -113,45 +114,45 @@ public:
    * @return Error of FK solution from target, size 6. The first 3 terms are associated with position and are currently
    * the only values honored for the linear model
    * */
-  Eigen::VectorXd CalcValues(const Eigen::Ref<const Eigen::VectorXd>& joint_vals) const;
+  Eigen::VectorXd calcValues(const Eigen::Ref<const Eigen::VectorXd>& joint_vals) const;
   /**
    * @brief Returns the values associated with the constraint. In this case it should be the
    * joint values placed along the line should be n_dof_ * n_vars_ long
    * @return
    */
-  Eigen::VectorXd GetValues() const override;
+  Eigen::VectorXd getValues() const override;
+
+  /** @copydoc Differentiable::getCoefficients */
+  Eigen::VectorXd getCoefficients() const override;
 
   /**
    * @brief  Returns the "bounds" of this constraint. How these are enforced is up to the solver
    * @return Returns the "bounds" of this constraint
    */
-  std::vector<ifopt::Bounds> GetBounds() const override;
+  std::vector<Bounds> getBounds() const override;
 
-  void SetBounds(const std::vector<ifopt::Bounds>& bounds);
+  void setBounds(const std::vector<Bounds>& bounds);
 
   /**
    * @brief Fills the jacobian block associated with the constraint
    * @param jac_block Block of the overall jacobian associated with these constraints
    */
-  void CalcJacobianBlock(const Eigen::Ref<const Eigen::VectorXd>& joint_vals, Jacobian& jac_block) const;
-  /**
-   * @brief Fills the jacobian block associated with the given var_set.
-   * @param var_set Name of the var_set to which the jac_block is associated
-   * @param jac_block Block of the overall jacobian associated with these constraints and the var_set variable
-   */
-  void FillJacobianBlock(std::string var_set, Jacobian& jac_block) const override;
+  void calcJacobianBlock(Jacobian& jac_block, const Eigen::Ref<const Eigen::VectorXd>& joint_vals) const;
+
+  /** @brief Get the jacobian */
+  Jacobian getJacobian() const override;
 
   /**
    * @brief Get the two poses defining the line
    * @return A std::pair of poses
    */
-  std::pair<Eigen::Isometry3d, Eigen::Isometry3d> GetLine() const;
+  std::pair<Eigen::Isometry3d, Eigen::Isometry3d> getLine() const;
 
   /**
    * @brief Gets the kinematic info used to create this constraint
    * @return The kinematic info used to create this constraint
    */
-  const CartLineInfo& GetInfo() const;
+  const CartLineInfo& getInfo() const;
 
   /** @brief If true, numeric differentiation will be used. Default: true
    *
@@ -170,7 +171,7 @@ public:
    * @param target_tf2 The location of the end of the line
    * @return The nearest point on the line to the source_tf
    */
-  Eigen::Isometry3d GetLinePoint(const Eigen::Isometry3d& source_tf,
+  Eigen::Isometry3d getLinePoint(const Eigen::Isometry3d& source_tf,
                                  const Eigen::Isometry3d& target_tf1,
                                  const Eigen::Isometry3d& target_tf2) const;
 
@@ -182,13 +183,10 @@ private:
   Eigen::VectorXd coeffs_;
 
   /** @brief Bounds on the positions of each joint */
-  std::vector<ifopt::Bounds> bounds_;
+  std::vector<Bounds> bounds_;
 
-  /** @brief Pointers to the vars used by this constraint.
-   *
-   * Do not access them directly. Instead use this->GetVariables()->GetComponent(position_var->GetName())->GetValues()
-   */
-  std::shared_ptr<const JointPosition> position_var_;
+  /** @brief Pointers to the vars used by this constraint. */
+  std::shared_ptr<const Var> position_var_;
 
   /** @brief The cartesian line information used when calculating error */
   CartLineInfo info_;
@@ -196,7 +194,7 @@ private:
   /** @brief The error function to calculate the error difference used for jacobian calculations */
   ErrorDiffFunctionType error_diff_function_{ nullptr };
 
-  static thread_local tesseract_common::TransformMap transforms_cache;  // NOLINT
+  static thread_local tesseract::common::TransformMap transforms_cache_;  // NOLINT
 };
 }  // namespace trajopt_ifopt
 #endif

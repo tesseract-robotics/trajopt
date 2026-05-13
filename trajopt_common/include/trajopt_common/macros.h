@@ -45,6 +45,12 @@
 
 #define UNUSED(x) (void)(x)
 
+#ifdef TRAJOPT_DISABLE_THREAD_LOCAL
+#  define TRAJOPT_THREAD_LOCAL
+#else
+#  define TRAJOPT_THREAD_LOCAL thread_local
+#endif
+
 // Generic helper definitions for shared library support
 #if defined _WIN32 || defined __CYGWIN__
 #define TRAJOPT_HELPER_DLL_IMPORT __declspec(dllimport)

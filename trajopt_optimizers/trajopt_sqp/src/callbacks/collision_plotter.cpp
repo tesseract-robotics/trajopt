@@ -4,7 +4,6 @@
  *
  * @author Matthew Powelson
  * @date May 18, 2020
- * @version TODO
  * @bug This has not been implemented
  *
  * @copyright Copyright (c) 2020, Southwest Research Institute
@@ -28,11 +27,11 @@
 
 #include <trajopt_ifopt/constraints/collision/discrete_collision_constraint.h>
 
-#include <tesseract_visualization/visualization.h>
+#include <tesseract/visualization/visualization.h>
 
 using namespace trajopt_sqp;
 
-CollisionPlottingCallback::CollisionPlottingCallback(std::shared_ptr<tesseract_visualization::Visualization> plotter)
+CollisionPlottingCallback::CollisionPlottingCallback(std::shared_ptr<tesseract::visualization::Visualization> plotter)
   : plotter_(std::move(plotter))
 {
 }

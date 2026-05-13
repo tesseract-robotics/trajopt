@@ -5,8 +5,6 @@
  *
  * @author Matthew Powelson
  * @date May 18, 2020
- * @version TODO
- * @bug No known bugs
  *
  * @copyright Copyright (c) 2020, Southwest Research Institute
  *
@@ -25,11 +23,11 @@
  * limitations under the License.
  */
 #include <trajopt_sqp/callbacks/clear_plotter.h>
-#include <tesseract_visualization/visualization.h>
+#include <tesseract/visualization/visualization.h>
 
 using namespace trajopt_sqp;
 
-ClearPlotterCallback::ClearPlotterCallback(std::shared_ptr<tesseract_visualization::Visualization> plotter)
+ClearPlotterCallback::ClearPlotterCallback(std::shared_ptr<tesseract::visualization::Visualization> plotter)
   : plotter_(std::move(plotter))
 {
 }

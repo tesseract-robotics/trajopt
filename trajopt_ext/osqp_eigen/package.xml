@@ -1,11 +1,12 @@
 <?xml version="1.0"?>
 <package format="2">
   <name>osqp_eigen</name>
-  <version>0.31.0</version>
+  <version>0.34.4</version>
   <description>Downloads and builds the OSQPEigen Library</description>
   <maintainer email="levi.armstrong@swri.org">Levi Armstrong</maintainer>
   <license>LGPL</license>
 
+  <depend>osqp-eigen</depend>
   <build_depend>osqp</build_depend>
   <build_depend>ros_industrial_cmake_boilerplate</build_depend>
 

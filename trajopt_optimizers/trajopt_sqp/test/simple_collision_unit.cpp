@@ -5,8 +5,6 @@
  * @author Levi Armstrong
  * @author Matthew Powelson
  * @date May 18, 2020
- * @version TODO
- * @bug No known bugs
  *
  * @copyright Copyright (c) 2020, Southwest Research Institute
  *
@@ -30,27 +28,28 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <gtest/gtest.h>
 #include <console_bridge/console.h>
 #include <OsqpEigen/OsqpEigen.h>
-#include <tesseract_common/stopwatch.h>
-#include <tesseract_common/resource_locator.h>
-#include <tesseract_collision/core/discrete_contact_manager.h>
-#include <tesseract_kinematics/core/joint_group.h>
-#include <tesseract_state_solver/state_solver.h>
-#include <tesseract_environment/environment.h>
-#include <tesseract_environment/utils.h>
-#include <ifopt/problem.h>
-#include <ifopt/constraint_set.h>
+#include <tesseract/common/stopwatch.h>
+#include <tesseract/common/resource_locator.h>
+#include <tesseract/collision/discrete_contact_manager.h>
+#include <tesseract/kinematics/joint_group.h>
+#include <tesseract/state_solver/state_solver.h>
+#include <tesseract/environment/environment.h>
+#include <tesseract/environment/utils.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt_common/collision_types.h>
 
 #include <trajopt_ifopt/utils/numeric_differentiation.h>
+#include <trajopt_ifopt/utils/ifopt_utils.h>
 #include <trajopt_ifopt/constraints/collision/continuous_collision_constraint.h>
 #include <trajopt_ifopt/constraints/collision/continuous_collision_evaluators.h>
 #include <trajopt_ifopt/constraints/collision/discrete_collision_constraint.h>
 #include <trajopt_ifopt/constraints/collision/discrete_collision_evaluators.h>
 #include <trajopt_ifopt/constraints/joint_position_constraint.h>
 #include <trajopt_ifopt/costs/squared_cost.h>
-#include <trajopt_ifopt/variable_sets/joint_position_variable.h>
+#include <trajopt_ifopt/variable_sets/nodes_variables.h>
+#include <trajopt_ifopt/variable_sets/node.h>
+#include <trajopt_ifopt/variable_sets/var.h>
 
 #include <trajopt_sqp/ifopt_qp_problem.h>
 #include <trajopt_sqp/trajopt_qp_problem.h>
@@ -58,147 +57,12 @@ TRAJOPT_IGNORE_WARNINGS_POP
 #include <trajopt_sqp/osqp_eigen_solver.h>
 
 using namespace trajopt_ifopt;
-using namespace tesseract_environment;
-using namespace tesseract_kinematics;
-using namespace tesseract_collision;
-using namespace tesseract_scene_graph;
-using namespace tesseract_geometry;
-using namespace tesseract_common;
-
-class SimpleCollisionConstraintIfopt : public ifopt::ConstraintSet
-{
-public:
-  SimpleCollisionConstraintIfopt(DiscreteCollisionEvaluator::Ptr collision_evaluator,
-                                 JointPosition::ConstPtr position_var,
-                                 const std::string& name = "SimpleCollisionConstraint")
-    : ifopt::ConstraintSet(3, name)
-    , position_var_(std::move(position_var))
-    , collision_evaluator_(std::move(collision_evaluator))
-  {
-    // Set n_dof_ for convenience
-    n_dof_ = position_var_->GetRows();
-    assert(n_dof_ > 0);
-
-    bounds_ = std::vector<ifopt::Bounds>(3, ifopt::BoundSmallerZero);
-  }
-
-  Eigen::VectorXd GetValues() const final
-  {
-    // Get current joint values
-    const Eigen::VectorXd joint_vals = this->GetVariables()->GetComponent(position_var_->GetName())->GetValues();
-
-    return CalcValues(joint_vals);
-  }
-
-  // Set the limits on the constraint values
-  std::vector<ifopt::Bounds> GetBounds() const final { return bounds_; }
-
-  void FillJacobianBlock(std::string var_set, Jacobian& jac_block) const final
-  {
-    // Only modify the jacobian if this constraint uses var_set
-    if (var_set != position_var_->GetName())  // NOLINT
-      return;
-
-    // Get current joint values
-    const VectorXd joint_vals = this->GetVariables()->GetComponent(position_var_->GetName())->GetValues();
-
-    CalcJacobianBlock(joint_vals, jac_block);  // NOLINT
-  }
-
-  Eigen::VectorXd CalcValues(const Eigen::Ref<const Eigen::VectorXd>& joint_vals) const
-  {
-    Eigen::VectorXd err = Eigen::VectorXd::Zero(3);
-
-    // Check the collisions
-    const trajopt_common::CollisionCacheData::ConstPtr cdata =
-        collision_evaluator_->CalcCollisions(joint_vals, bounds_.size());
-
-    if (cdata->contact_results_map.empty())
-      return err;
-
-    Eigen::Index i{ 0 };
-    const auto& margin_data = collision_evaluator_->GetCollisionMarginData();
-    const auto& coeff_data = collision_evaluator_->GetCollisionCoeffData();
-    for (const auto& pair : cdata->contact_results_map)
-    {
-      for (const auto& dist_result : pair.second)
-      {
-        const double dist = margin_data.getCollisionMargin(dist_result.link_names[0], dist_result.link_names[1]);
-        const double coeff = coeff_data.getCollisionCoeff(dist_result.link_names[0], dist_result.link_names[1]);
-        err[i++] += std::max<double>(((dist - dist_result.distance) * coeff), 0.);
-      }
-    }
-
-    return err;
-  }
-
-  void SetBounds(const std::vector<ifopt::Bounds>& bounds)
-  {
-    assert(bounds.size() == 3);
-    bounds_ = bounds;
-  }
-
-  void CalcJacobianBlock(const Eigen::Ref<const Eigen::VectorXd>& joint_vals, Jacobian& jac_block) const
-  {
-    // Reserve enough room in the sparse matrix
-    jac_block.reserve(n_dof_ * 3);
-
-    // Calculate collisions
-    const trajopt_common::CollisionCacheData::ConstPtr cdata =
-        collision_evaluator_->CalcCollisions(joint_vals, bounds_.size());
-
-    // Get gradients for all contacts
-    /** @todo Use the cdata gradient results */
-    std::vector<trajopt_common::GradientResults> grad_results;
-    for (const auto& pair : cdata->contact_results_map)
-    {
-      for (const auto& dist_result : pair.second)
-      {
-        const trajopt_common::GradientResults result = collision_evaluator_->GetGradient(joint_vals, dist_result);
-        grad_results.push_back(result);
-      }
-    }
-
-    for (std::size_t i = 0; i < grad_results.size(); ++i)
-    {
-      if (grad_results[i].gradients[0].has_gradient)
-      {
-        // This does work but could be faster
-        for (int j = 0; j < n_dof_; j++)
-        {
-          // Collision is 1 x n_dof
-          jac_block.coeffRef(static_cast<Eigen::Index>(i), j) = -1.0 * grad_results[i].gradients[0].gradient[j];
-        }
-      }
-      else if (grad_results[i].gradients[1].has_gradient)
-      {
-        // This does work but could be faster
-        for (int j = 0; j < n_dof_; j++)
-        {
-          // Collision is 1 x n_dof
-          jac_block.coeffRef(static_cast<Eigen::Index>(i), j) = -1.0 * grad_results[i].gradients[1].gradient[j];
-        }
-      }
-    }
-  }
-
-  DiscreteCollisionEvaluator::Ptr GetCollisionEvaluator() const { return collision_evaluator_; }
-
-private:
-  /** @brief The number of joints in a single JointPosition */
-  long n_dof_;
-
-  /** @brief Bounds on the constraint value. Default: std::vector<Bounds>(1, ifopt::BoundSmallerZero) */
-  std::vector<ifopt::Bounds> bounds_;
-
-  /**
-   * @brief Pointers to the vars used by this constraint.
-   * Do not access them directly. Instead use this->GetVariables()->GetComponent(position_var->GetName())->GetValues()
-   */
-  JointPosition::ConstPtr position_var_;
-
-  DiscreteCollisionEvaluator::Ptr collision_evaluator_;
-};
+using namespace tesseract::environment;
+using namespace tesseract::kinematics;
+using namespace tesseract::collision;
+using namespace tesseract::scene_graph;
+using namespace tesseract::geometry;
+using namespace tesseract::common;
 
 class SimpleCollisionTest : public testing::TestWithParam<const char*>
 {
@@ -209,12 +73,13 @@ public:
   {
     const std::filesystem::path urdf_file(std::string(TRAJOPT_DATA_DIR) + "/spherebot.urdf");
     const std::filesystem::path srdf_file(std::string(TRAJOPT_DATA_DIR) + "/spherebot.srdf");
-    const ResourceLocator::Ptr locator = std::make_shared<tesseract_common::GeneralResourceLocator>();
+    const ResourceLocator::Ptr locator = std::make_shared<GeneralResourceLocator>();
     EXPECT_TRUE(env->init(urdf_file, srdf_file, locator));
   }
 };
 
-void runSimpleCollisionTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const Environment::Ptr& env)
+template <typename T>
+void runSimpleCollisionTest(const Environment::Ptr& env)
 {
   std::unordered_map<std::string, double> ipos;
   ipos["spherebot_x_joint"] = -0.75;
@@ -224,9 +89,10 @@ void runSimpleCollisionTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const
   //  plotter_->plotScene();
 
   std::vector<ContactResultMap> collisions;
-  const tesseract_scene_graph::StateSolver::Ptr state_solver = env->getStateSolver();
+  const StateSolver::Ptr state_solver = env->getStateSolver();
   const DiscreteContactManager::Ptr manager = env->getDiscreteContactManager();
-  const tesseract_kinematics::JointGroup::ConstPtr manip = env->getJointGroup("manipulator");
+  const JointGroup::ConstPtr manip = env->getJointGroup("manipulator");
+  const std::vector<Bounds> bounds = toBounds(manip->getLimits().joint_limits);
 
   manager->setActiveCollisionObjects(manip->getActiveLinkNames());
   manager->setDefaultCollisionMargin(0);
@@ -234,49 +100,48 @@ void runSimpleCollisionTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const
   collisions.clear();
 
   // 3) Add Variables
-  std::vector<trajopt_ifopt::JointPosition::ConstPtr> vars;
+  std::vector<std::unique_ptr<Node>> nodes;
+  std::vector<std::shared_ptr<const Var>> vars;
   std::vector<Eigen::VectorXd> positions;
   {
+    auto node = std::make_unique<Node>("Joint_Position_0");
     Eigen::VectorXd pos(2);
     pos << -0.75, 0.75;
     positions.push_back(pos);
-    auto var = std::make_shared<trajopt_ifopt::JointPosition>(pos, manip->getJointNames(), "Joint_Position_0");
+    auto var = node->addVar("position", manip->getJointNames(), pos, bounds);
     vars.push_back(var);
-    qp_problem->addVariableSet(var);
+    nodes.push_back(std::move(node));
   }
+  auto variables = std::make_shared<trajopt_ifopt::NodesVariables>("joint_trajectory", std::move(nodes));
+
+  // 2) Create problem
+  auto qp_problem = std::make_shared<T>(variables);
 
   // Step 3: Setup collision
   trajopt_common::TrajOptCollisionConfig trajopt_collision_cnt_config(0.2, 1);
-  trajopt_collision_cnt_config.collision_margin_buffer = 0.05;
+  trajopt_collision_cnt_config.collision_margin_buffer = 0.5;
+  trajopt_collision_cnt_config.collision_check_config.longest_valid_segment_length = 0.05;
 
-  auto collision_cnt_cache = std::make_shared<trajopt_ifopt::CollisionCache>(100);
-  const trajopt_ifopt::DiscreteCollisionEvaluator::Ptr collision_cnt_evaluator =
-      std::make_shared<trajopt_ifopt::SingleTimestepCollisionEvaluator>(
-          collision_cnt_cache, manip, env, trajopt_collision_cnt_config);
-  auto collision_cnt = std::make_shared<SimpleCollisionConstraintIfopt>(collision_cnt_evaluator, vars[0]);
+  const DiscreteCollisionEvaluator::Ptr collision_cnt_evaluator =
+      std::make_shared<SingleTimestepCollisionEvaluator>(manip, env, trajopt_collision_cnt_config);
+  auto collision_cnt = std::make_shared<DiscreteCollisionConstraintD>(collision_cnt_evaluator, vars[0]);
   qp_problem->addConstraintSet(collision_cnt);
 
-  trajopt_common::TrajOptCollisionConfig trajopt_collision_cost_config(0.3, 1);
-  trajopt_collision_cost_config.collision_margin_buffer = 0.05;
+  trajopt_common::TrajOptCollisionConfig trajopt_collision_cost_config(0.3, 10);
+  trajopt_collision_cost_config.collision_margin_buffer = 0.5;
+  trajopt_collision_cost_config.collision_check_config.longest_valid_segment_length = 0.05;
 
-  auto collision_cost_cache = std::make_shared<trajopt_ifopt::CollisionCache>(100);
-  const trajopt_ifopt::DiscreteCollisionEvaluator::Ptr collision_cost_evaluator =
-      std::make_shared<trajopt_ifopt::SingleTimestepCollisionEvaluator>(
-          collision_cost_cache, manip, env, trajopt_collision_cost_config);
-  auto collision_cost = std::make_shared<SimpleCollisionConstraintIfopt>(collision_cost_evaluator, vars[0]);
-  qp_problem->addCostSet(collision_cost, trajopt_sqp::CostPenaltyType::HINGE);
+  const DiscreteCollisionEvaluator::Ptr collision_cost_evaluator =
+      std::make_shared<SingleTimestepCollisionEvaluator>(manip, env, trajopt_collision_cost_config);
+  auto collision_cost = std::make_shared<DiscreteCollisionConstraintD>(collision_cost_evaluator, vars[0]);
+  qp_problem->addCostSet(collision_cost, trajopt_sqp::CostPenaltyType::kHinge);
 
   const Eigen::VectorXd coeffs = Eigen::VectorXd::Constant(2, 1);
-  auto jp_cost = std::make_shared<trajopt_ifopt::JointPosConstraint>(Eigen::Vector2d(0, 0), vars, coeffs);
-  qp_problem->addCostSet(jp_cost, trajopt_sqp::CostPenaltyType::SQUARED);
+  auto jp_cost = std::make_shared<JointPosConstraint>(Eigen::Vector2d(0, 0), vars[0], coeffs);
+  qp_problem->addCostSet(jp_cost, trajopt_sqp::CostPenaltyType::kSquared);
 
   qp_problem->setup();
   qp_problem->print();
-
-  auto error_calculator = [&](const Eigen::Ref<const Eigen::VectorXd>& x) { return collision_cnt->CalcValues(x); };
-  const trajopt_ifopt::SparseMatrix num_jac_block =
-      trajopt_ifopt::calcForwardNumJac(error_calculator, positions[0], 1e-4);
-  std::cout << "Numerical Jacobian: \n" << num_jac_block << '\n';
 
   // 5) choose solver and options
   auto qp_solver = std::make_shared<trajopt_sqp::OSQPEigenSolver>();
@@ -292,7 +157,7 @@ void runSimpleCollisionTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const
   // 6) solve
   solver.verbose = false;
 
-  tesseract_common::Stopwatch stopwatch;
+  Stopwatch stopwatch;
   stopwatch.start();
   solver.solve(qp_problem);
   stopwatch.stop();
@@ -302,9 +167,9 @@ void runSimpleCollisionTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const
 
   std::cout << x.transpose() << '\n';
 
-  tesseract_common::TrajArray inputs(1, 2);
+  TrajArray inputs(1, 2);
   inputs << -0.75, 0.75;
-  const Eigen::Map<tesseract_common::TrajArray> results(x.data(), 1, 2);
+  const Eigen::Map<TrajArray> results(x.data(), 1, 2);
 
   bool found = checkTrajectory(collisions,
                                *manager,
@@ -331,8 +196,7 @@ void runSimpleCollisionTest(const trajopt_sqp::QPProblem::Ptr& qp_problem, const
 // TEST_F(SimpleCollisionTest, spheres_ifopt_problem)  // NOLINT
 //{
 //  CONSOLE_BRIDGE_logDebug("SimpleCollisionTest, spheres_ifopt_problem");
-//  auto qp_problem = std::make_shared<trajopt_sqp::IfoptQPProblem>();
-//  runSimpleCollisionTest(qp_problem, env);
+//  runSimpleCollisionTest<trajopt_sqp::IfoptQPProblem>(env);
 //}
 
 TEST_F(SimpleCollisionTest, spheres_trajopt_problem)  // NOLINT
@@ -344,8 +208,7 @@ TEST_F(SimpleCollisionTest, spheres_trajopt_problem)  // NOLINT
    * Constraints use violation versus cost uses the error.
    */
   CONSOLE_BRIDGE_logDebug("SimpleCollisionTest, spheres_trajopt_problem");
-  auto qp_problem = std::make_shared<trajopt_sqp::TrajOptQPProblem>();
-  runSimpleCollisionTest(qp_problem, env);  // NOLINT
+  runSimpleCollisionTest<trajopt_sqp::TrajOptQPProblem>(env);  // NOLINT
 }
 
 int main(int argc, char** argv)

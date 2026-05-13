@@ -4,8 +4,6 @@
  *
  * @author Matthew Powelson
  * @date May 18, 2020
- * @version TODO
- * @bug No known bugs
  *
  * @copyright Copyright (c) 2020, Southwest Research Institute
  *
@@ -28,8 +26,8 @@
 
 #include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
-#include <tesseract_visualization/fwd.h>
-#include <tesseract_state_solver/fwd.h>
+#include <tesseract/visualization/fwd.h>
+#include <tesseract/state_solver/fwd.h>
 #include <trajopt_ifopt/fwd.h>
 #include <vector>
 TRAJOPT_IGNORE_WARNINGS_POP
@@ -51,8 +49,8 @@ public:
    * @brief Constructor for the callback
    * @param plotter Plotter used to plot the joint state
    */
-  JointStatePlottingCallback(std::shared_ptr<tesseract_visualization::Visualization> plotter,
-                             std::unique_ptr<tesseract_scene_graph::StateSolver> state_solver);
+  JointStatePlottingCallback(std::shared_ptr<tesseract::visualization::Visualization> plotter,
+                             std::unique_ptr<tesseract::scene_graph::StateSolver> state_solver);
 
   /**
    * @brief Plot the joint_position variables as a tesseract trajectory
@@ -64,20 +62,20 @@ public:
    * @brief Add a variable set to be plotted
    * @param joint_position JointPosition variable to be plotted. They should all be the same size
    */
-  void addVariableSet(const std::shared_ptr<const trajopt_ifopt::JointPosition>& joint_position);
+  void addVariableSet(const std::shared_ptr<const trajopt_ifopt::Var>& joint_position);
 
   /**
    * @brief Adds multiple variable sets to be plotted
    * @param joint_positions JointPosition variables to be plotted. They should all be the same size
    */
-  void addVariableSet(const std::vector<std::shared_ptr<const trajopt_ifopt::JointPosition>>& joint_positions);
+  void addVariableSet(const std::vector<std::shared_ptr<const trajopt_ifopt::Var>>& joint_positions);
 
   bool execute(const QPProblem& problem, const SQPResults& sqp_results) override;
 
 protected:
-  std::vector<std::shared_ptr<const trajopt_ifopt::JointPosition>> joint_positions_;
-  std::shared_ptr<tesseract_visualization::Visualization> plotter_;
-  std::unique_ptr<tesseract_scene_graph::StateSolver> state_solver_;
+  std::vector<std::shared_ptr<const trajopt_ifopt::Var>> joint_positions_;
+  std::shared_ptr<tesseract::visualization::Visualization> plotter_;
+  std::unique_ptr<tesseract::scene_graph::StateSolver> state_solver_;
 };
 }  // namespace trajopt_sqp
 

@@ -4,8 +4,6 @@
  *
  * @author Levi Armstrong
  * @date May 20, 20201
- * @version TODO
- * @bug No known bugs
  *
  * @copyright Copyright (c) 2021, Southwest Research Institute
  *
@@ -32,55 +30,64 @@ TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace trajopt_ifopt
 {
-AbsoluteCost::AbsoluteCost(const ifopt::ConstraintSet::Ptr& constraint)
-  : AbsoluteCost(constraint, Eigen::VectorXd::Ones(constraint->GetRows()))
+AbsoluteCost::AbsoluteCost(const ConstraintSet::Ptr& constraint)
+  : AbsoluteCost(constraint, Eigen::VectorXd::Ones(constraint->getRows()))
 {
 }
 
-AbsoluteCost::AbsoluteCost(ifopt::ConstraintSet::Ptr constraint, const Eigen::Ref<const Eigen::VectorXd>& weights)
-  : CostTerm(constraint->GetName() + "_absolute_cost")
+AbsoluteCost::AbsoluteCost(ConstraintSet::Ptr constraint, const Eigen::Ref<const Eigen::VectorXd>& weights)
+  : CostTerm(constraint->getName() + "_absolute_cost")
   , constraint_(std::move(constraint))
-  , n_constraints_(constraint_->GetRows())
+  , n_constraints_(constraint_->getRows())
   , weights_(weights.cwiseAbs())  // must be positive
 {
+  non_zeros_ = weights.size();
 }
 
-double AbsoluteCost::GetCost() const
+int AbsoluteCost::update()
+{
+  constraint_->update();
+  return rows_;
+}
+
+double AbsoluteCost::getCost() const
 {
   // This takes the absolute value of the errors
-  const Eigen::VectorXd error = calcBoundsViolations(constraint_->GetValues(), constraint_->GetBounds());
-  const double cost = weights_.transpose() * error;
-  return cost;
+  scratch_error_.resize(constraint_->getRows());
+  calcBoundsViolations(scratch_error_, constraint_->getValues(), constraint_->getBounds());
+  return weights_.dot(scratch_error_);
 }
 
-void AbsoluteCost::FillJacobianBlock(std::string var_set, Jacobian& jac_block) const
+Eigen::VectorXd AbsoluteCost::getCoefficients() const { return constraint_->getCoefficients(); }
+
+Jacobian AbsoluteCost::getJacobian() const
 {
-  // Get a Jacobian block the size necessary for the constraint
-  Jacobian cnt_jac_block;
-  int var_size = 0;
-  for (const auto& vars : GetVariables()->GetComponents())
+  // Get the Jacobian block from the underlying constraint
+  Jacobian cnt_jac_block = constraint_->getJacobian();
+
+  // Compute signed coefficients: coeff_i = weights_[i] * sign(error_i)
+  scratch_error_.resize(constraint_->getRows());
+  calcBoundsErrors(scratch_error_, constraint_->getValues(), constraint_->getBounds());
+
+  Eigen::VectorXd coeff(n_constraints_);
+  for (Eigen::Index i = 0; i < scratch_error_.size(); ++i)
   {
-    if (vars->GetName() == var_set)  // NOLINT
-      var_size = vars->GetRows();
+    const double e = scratch_error_[i];
+    if (std::abs(e) < 1e-12)
+      coeff[i] = 0.0;  // subgradient at 0
+    else if (e > 0.0)
+      coeff[i] = weights_[i];
+    else
+      coeff[i] = -weights_[i];
   }
 
-  if (var_size == 0)  // NOLINT
-    throw std::runtime_error("Unable to find var_set.");
+  // Gradient row: 1 x var_size
+  // CostTerm reports rows_ = 1, so the Jacobian must be a single row.
+  // (dense row vector = coeff^T * J)
+  const Eigen::RowVectorXd grad = coeff.transpose() * cnt_jac_block;
 
-  cnt_jac_block.resize(constraint_->GetRows(), var_size);  // NOLINT
-
-  // Get the Jacobian Block from the constraint
-  constraint_->FillJacobianBlock(var_set, cnt_jac_block);
-
-  // Apply the chain rule. See doxygen for this class
-  // There are two w's that cancel out resulting in w_error / error.abs().
-  // This breaks down if the weights are not positive but the constructor takes the absolute
-  // value of the weights to avoid this issue.
-  const Eigen::ArrayXd error = calcBoundsErrors(constraint_->GetValues(), constraint_->GetBounds());
-  const Eigen::ArrayXd w_error = error * weights_.array();
-  const Eigen::VectorXd coeff = w_error / error.abs();
-
-  jac_block = coeff.sparseView().eval() * cnt_jac_block;  // NOLINT
+  // Convert to sparse and return
+  return grad.sparseView();
 }
 
 }  // namespace trajopt_ifopt

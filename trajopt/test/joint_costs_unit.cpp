@@ -2,12 +2,12 @@
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <ctime>
 #include <gtest/gtest.h>
-#include <tesseract_common/types.h>
-#include <tesseract_common/resource_locator.h>
-#include <tesseract_kinematics/core/joint_group.h>
-#include <tesseract_environment/environment.h>
-#include <tesseract_environment/utils.h>
-#include <tesseract_visualization/visualization.h>
+#include <tesseract/common/types.h>
+#include <tesseract/common/resource_locator.h>
+#include <tesseract/kinematics/joint_group.h>
+#include <tesseract/environment/environment.h>
+#include <tesseract/environment/utils.h>
+#include <tesseract/visualization/visualization.h>
 #include <console_bridge/console.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
@@ -24,12 +24,12 @@ TRAJOPT_IGNORE_WARNINGS_POP
 using namespace trajopt;
 using namespace std;
 using namespace trajopt_common;
-using namespace tesseract_environment;
-using namespace tesseract_collision;
-using namespace tesseract_kinematics;
-using namespace tesseract_visualization;
-using namespace tesseract_scene_graph;
-using namespace tesseract_common;
+using namespace tesseract::environment;
+using namespace tesseract::collision;
+using namespace tesseract::kinematics;
+using namespace tesseract::visualization;
+using namespace tesseract::scene_graph;
+using namespace tesseract::common;
 
 static const bool plotting = false; /**< Enable plotting */
 
@@ -44,7 +44,7 @@ public:
     const std::filesystem::path urdf_file(std::string(TRAJOPT_DATA_DIR) + "/arm_around_table.urdf");
     const std::filesystem::path srdf_file(std::string(TRAJOPT_DATA_DIR) + "/pr2.srdf");
 
-    const ResourceLocator::Ptr locator = std::make_shared<tesseract_common::GeneralResourceLocator>();
+    const ResourceLocator::Ptr locator = std::make_shared<tesseract::common::GeneralResourceLocator>();
     EXPECT_TRUE(env_->init(urdf_file, srdf_file, locator));
 
     gLogLevel = trajopt_common::LevelError;
@@ -864,6 +864,74 @@ TEST_F(CostsTest, inequality_jointAcc)  // NOLINT
       accel = output(i, j) - 2 * output(i + 1, j) + output(i + 2, j);
       EXPECT_TRUE(accel < upper_tol + cnt_tol);
       EXPECT_TRUE(accel > lower_tol - cnt_tol);
+    }
+  }
+}
+
+////////////////////////////////////////////////////////////////////
+
+/**
+ * @brief Test that verifies velocity, acceleration, and jerk finite difference formulas
+ * are correct 1st, 2nd, and 3rd derivatives
+ *
+ * Uses a cubic polynomial trajectory where derivatives have known analytical values:
+ * - Position: x(t) = t^3
+ * - Velocity: v(t) = 3*t^2
+ * - Acceleration: a(t) = 6*t
+ * - Jerk: j(t) = 6 (constant)
+ */
+TEST_F(CostsTest, finite_difference_derivatives)  // NOLINT
+{
+  const int steps = 10;
+  const double dt = 0.1;
+
+  Eigen::MatrixXd traj(steps, 7);
+  for (int i = 0; i < steps; ++i)
+  {
+    const double t = i * dt;
+    traj.row(i).setConstant(t * t * t);  // x(t)=t^3 for all 7 dof
+  }
+
+  const double rel_tol = 1e-12;  // these can be very tight now
+  const double abs_tol = 1e-12;
+
+  // Velocity: forward difference / dt
+  // exact for x=t^3: ((t+dt)^3 - t^3)/dt = 3t^2 + 3t dt + dt^2
+  for (int i = 0; i < steps - 1; ++i)
+  {
+    const double t = i * dt;
+    const double expected_v = (3.0 * t * t) + (3.0 * t * dt) + (dt * dt);
+
+    for (int j = 0; j < 7; ++j)
+    {
+      const double computed_v = (traj(i + 1, j) - traj(i, j)) / dt;
+      EXPECT_NEAR(computed_v, expected_v, abs_tol + rel_tol * std::abs(expected_v));
+    }
+  }
+
+  // Acceleration: second forward difference / dt^2
+  // exact for x=t^3: (x[i+2] - 2x[i+1] + x[i]) / dt^2 = 6t + 6dt, where t=i*dt
+  for (int i = 0; i < steps - 2; ++i)
+  {
+    const double t = i * dt;
+    const double expected_a = (6.0 * t) + (6.0 * dt);
+
+    for (int j = 0; j < 7; ++j)
+    {
+      const double computed_a = (traj(i + 2, j) - (2.0 * traj(i + 1, j)) + traj(i, j)) / (dt * dt);
+      EXPECT_NEAR(computed_a, expected_a, abs_tol + rel_tol * std::abs(expected_a));
+    }
+  }
+
+  // Jerk: third forward difference / dt^3
+  // exact for x=t^3: (x[i+3] - 3x[i+2] + 3x[i+1] - x[i]) / dt^3 = 6
+  for (int i = 0; i < steps - 3; ++i)
+  {
+    for (int j = 0; j < 7; ++j)
+    {
+      const double computed_j =
+          (traj(i + 3, j) - 3.0 * traj(i + 2, j) + 3.0 * traj(i + 1, j) - traj(i, j)) / (dt * dt * dt);
+      EXPECT_NEAR(computed_j, 6.0, abs_tol);
     }
   }
 }

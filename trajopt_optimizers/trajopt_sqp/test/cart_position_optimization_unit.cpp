@@ -6,8 +6,6 @@
  * @author Levi Armstrong
  * @author Matthew Powelson
  * @date May 18, 2020
- * @version TODO
- * @bug No known bugs
  *
  * @copyright Copyright (c) 2020, Southwest Research Institute
  *
@@ -32,13 +30,10 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 
 #include <OsqpEigen/OsqpEigen.h>
 
-#include <ifopt/problem.h>
-#include <ifopt/ipopt_solver.h>
-
-#include <tesseract_common/resource_locator.h>
-#include <tesseract_common/types.h>
-#include <tesseract_kinematics/core/joint_group.h>
-#include <tesseract_environment/environment.h>
+#include <tesseract/common/resource_locator.h>
+#include <tesseract/common/types.h>
+#include <tesseract/kinematics/joint_group.h>
+#include <tesseract/environment/environment.h>
 #include <console_bridge/console.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
@@ -48,16 +43,19 @@ TRAJOPT_IGNORE_WARNINGS_POP
 #include <trajopt_sqp/osqp_eigen_solver.h>
 
 #include <trajopt_ifopt/constraints/cartesian_position_constraint.h>
-#include <trajopt_ifopt/variable_sets/joint_position_variable.h>
+#include <trajopt_ifopt/variable_sets/nodes_variables.h>
+#include <trajopt_ifopt/variable_sets/node.h>
+#include <trajopt_ifopt/variable_sets/var.h>
 #include <trajopt_ifopt/costs/squared_cost.h>
 #include <trajopt_ifopt/utils/trajopt_utils.h>
+#include <trajopt_ifopt/utils/ifopt_utils.h>
 
 const bool DEBUG = false;
 
 class CartPositionOptimization : public testing::TestWithParam<const char*>
 {
 public:
-  tesseract_environment::Environment::Ptr env;
+  tesseract::environment::Environment::Ptr env;
 
   void SetUp() override
   {
@@ -69,14 +67,14 @@ public:
     // 1)  Load Robot
     const std::filesystem::path urdf_file(std::string(TRAJOPT_DATA_DIR) + "/arm_around_table.urdf");
     const std::filesystem::path srdf_file(std::string(TRAJOPT_DATA_DIR) + "/pr2.srdf");
-    const tesseract_common::ResourceLocator::Ptr locator = std::make_shared<tesseract_common::GeneralResourceLocator>();
-    env = std::make_shared<tesseract_environment::Environment>();
+    const auto locator = std::make_shared<tesseract::common::GeneralResourceLocator>();
+    env = std::make_shared<tesseract::environment::Environment>();
     env->init(urdf_file, srdf_file, locator);
   }
 };
 
-void runCartPositionOptimization(const trajopt_sqp::QPProblem::Ptr& qp_problem,
-                                 const tesseract_environment::Environment::Ptr& env)
+template <typename T>
+void runCartPositionOptimization(const tesseract::environment::Environment::Ptr& env)
 {
   auto qp_solver = std::make_shared<trajopt_sqp::OSQPEigenSolver>();
   trajopt_sqp::TrustRegionSQPSolver solver(qp_solver);
@@ -89,7 +87,9 @@ void runCartPositionOptimization(const trajopt_sqp::QPProblem::Ptr& qp_problem,
   qp_solver->solver_->settings()->setRelativeTolerance(1e-6);
 
   // Extract necessary kinematic information
-  const tesseract_kinematics::JointGroup::ConstPtr manip = env->getJointGroup("right_arm");
+  const tesseract::kinematics::JointGroup::ConstPtr manip = env->getJointGroup("right_arm");
+  const tesseract::common::KinematicLimits limits = manip->getLimits();
+  const std::vector<trajopt_ifopt::Bounds> bounds = trajopt_ifopt::toBounds(limits.joint_limits);
 
   // Get target position
   Eigen::VectorXd start_pos(manip->numJoints());
@@ -101,22 +101,25 @@ void runCartPositionOptimization(const trajopt_sqp::QPProblem::Ptr& qp_problem,
   Eigen::Isometry3d target_pose = manip->calcFwdKin(joint_target).at("r_gripper_tool_frame");
 
   // 3) Add Variables
-  std::vector<trajopt_ifopt::JointPosition::ConstPtr> vars;
+  std::vector<std::unique_ptr<trajopt_ifopt::Node>> nodes;
+  std::vector<std::shared_ptr<const trajopt_ifopt::Var>> vars;
   for (int ind = 0; ind < 1; ind++)
   {
+    auto node = std::make_unique<trajopt_ifopt::Node>("Joint_Position_" + std::to_string(ind));
     auto zero = Eigen::VectorXd::Zero(7);
-    auto var = std::make_shared<trajopt_ifopt::JointPosition>(
-        zero, manip->getJointNames(), "Joint_Position_" + std::to_string(ind));
-    vars.push_back(var);
-    qp_problem->addVariableSet(var);
+    vars.push_back(node->addVar("position", manip->getJointNames(), zero, bounds));
+    nodes.push_back(std::move(node));
   }
+  auto variables = std::make_shared<trajopt_ifopt::NodesVariables>("joint_trajectory", std::move(nodes));
+
+  // 2) Create problem
+  auto qp_problem = std::make_shared<T>(variables);
 
   // 4) Add constraints
   for (const auto& var : vars)
   {
-    const trajopt_ifopt::CartPosInfo cart_info(
-        manip, "r_gripper_tool_frame", "base_footprint", Eigen::Isometry3d::Identity(), target_pose);
-    auto cnt = std::make_shared<trajopt_ifopt::CartPosConstraint>(cart_info, var);
+    auto cnt = std::make_shared<trajopt_ifopt::CartPosConstraint>(
+        var, manip, "r_gripper_tool_frame", "base_footprint", Eigen::Isometry3d::Identity(), target_pose);
     qp_problem->addConstraintSet(cnt);
   }
 
@@ -141,17 +144,23 @@ void runCartPositionOptimization(const trajopt_sqp::QPProblem::Ptr& qp_problem,
 }
 
 /** @brief Applies a cartesian position constraint and solves the ifopt problem with trajopt_sqp */
-TEST_F(CartPositionOptimization, cart_position_optimization_trajopt_problem)  // NOLINT
+TEST_F(CartPositionOptimization, cart_position_optimization_ifopt_problem)  // NOLINT
 {
   CONSOLE_BRIDGE_logDebug("CartPositionOptimization, cart_position_optimization_trajopt_problem");
-  auto qp_problem = std::make_shared<trajopt_sqp::IfoptQPProblem>();
-  runCartPositionOptimization(qp_problem, env);
+  runCartPositionOptimization<trajopt_sqp::IfoptQPProblem>(env);
 }
 
 /** @brief Applies a cartesian position constraint and solves the ifopt problem with trajopt_sqp */
-TEST_F(CartPositionOptimization, cart_position_optimization_ifopt_problem)  // NOLINT
+TEST_F(CartPositionOptimization, cart_position_optimization_trajopt_problem)  // NOLINT
 {
   CONSOLE_BRIDGE_logDebug("CartPositionOptimization, cart_position_optimization_ifopt_problem");
-  auto qp_problem = std::make_shared<trajopt_sqp::TrajOptQPProblem>();
-  runCartPositionOptimization(qp_problem, env);
+  runCartPositionOptimization<trajopt_sqp::TrajOptQPProblem>(env);
+}
+
+int main(int argc, char** argv)
+{
+  testing::InitGoogleTest(&argc, argv);
+
+  //  pnh.param("plotting", plotting, false);
+  return RUN_ALL_TESTS();
 }

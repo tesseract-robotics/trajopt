@@ -10,26 +10,11 @@ if(WIN32)
 endif()
 
 find_package(console_bridge REQUIRED)
-find_package(ifopt REQUIRED)
 find_package(OsqpEigen REQUIRED)
 find_package(trajopt_ifopt REQUIRED)
 find_package(trajopt_common REQUIRED)
 find_package(ros_industrial_cmake_boilerplate REQUIRED)
-find_package(tesseract_common REQUIRED)
-find_package(tesseract_visualization REQUIRED)
-
-if(NOT TARGET console_bridge::console_bridge)
-  add_library(console_bridge::console_bridge INTERFACE IMPORTED)
-  set_target_properties(console_bridge::console_bridge PROPERTIES INTERFACE_INCLUDE_DIRECTORIES
-                                                                  ${console_bridge_INCLUDE_DIRS})
-  set_target_properties(console_bridge::console_bridge PROPERTIES INTERFACE_LINK_LIBRARIES ${console_bridge_LIBRARIES})
-else()
-  get_target_property(CHECK_INCLUDE_DIRECTORIES console_bridge::console_bridge INTERFACE_INCLUDE_DIRECTORIES)
-  if(NOT ${CHECK_INCLUDE_DIRECTORIES})
-    set_target_properties(console_bridge::console_bridge PROPERTIES INTERFACE_INCLUDE_DIRECTORIES
-                                                                    ${console_bridge_INCLUDE_DIRS})
-  endif()
-endif()
+find_package(tesseract REQUIRED COMPONENTS common visualization)
 
 # Load variable for clang tidy args, compiler options and cxx version
 trajopt_variables()
@@ -46,12 +31,7 @@ add_library(
   src/trajopt_qp_problem.cpp
   src/expressions.cpp
   src/types.cpp)
-target_link_libraries(
-  ${PROJECT_NAME}
-  PUBLIC console_bridge::console_bridge
-         trajopt::trajopt_ifopt
-         ifopt::ifopt_core
-         OsqpEigen::OsqpEigen)
+target_link_libraries(${PROJECT_NAME} PUBLIC console_bridge::console_bridge trajopt::trajopt_ifopt OsqpEigen::OsqpEigen)
 target_include_directories(${PROJECT_NAME} PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
                                                   $<INSTALL_INTERFACE:include>)
 target_compile_options(${PROJECT_NAME} PRIVATE ${TRAJOPT_COMPILE_OPTIONS_PRIVATE})
@@ -73,8 +53,8 @@ target_link_libraries(
   ${PROJECT_NAME}_callbacks
   PUBLIC trajopt::trajopt_ifopt
          trajopt::trajopt_common
-         tesseract::tesseract_visualization
-         tesseract::tesseract_common
+         tesseract::visualization
+         tesseract::common
          console_bridge::console_bridge
          osqp::osqp)
 target_compile_options(${PROJECT_NAME}_callbacks PRIVATE ${TRAJOPT_COMPILE_OPTIONS_PRIVATE})
@@ -87,7 +67,15 @@ target_cxx_version(${PROJECT_NAME}_callbacks PUBLIC VERSION ${TRAJOPT_CXX_VERSIO
 # Install ##
 # ######################################################################################################################
 
-configure_package(NAMESPACE trajopt TARGETS ${PROJECT_NAME} ${PROJECT_NAME}_callbacks)
+configure_package(
+  NAMESPACE trajopt
+  TARGETS ${PROJECT_NAME} ${PROJECT_NAME}_callbacks
+  DEPENDENCIES
+    console_bridge
+    OsqpEigen
+    trajopt_ifopt
+    trajopt_common
+    "tesseract COMPONENTS common visualization")
 
 # Mark cpp header files for installation
 install(
@@ -122,7 +110,6 @@ if(TRAJOPT_PACKAGE)
       "libeigen3-dev"
       "libboost-dev"
       "libconsole-bridge-dev"
-      "ifopt"
       "${TRAJOPT_PACKAGE_PREFIX}osqpeigen"
       "${TRAJOPT_PACKAGE_PREFIX}trajopt-ifopt"
       "${TRAJOPT_PACKAGE_PREFIX}trajopt-common"
@@ -132,7 +119,6 @@ if(TRAJOPT_PACKAGE)
       "Eigen3"
       "boost"
       "console-bridge"
-      "ifopt"
       "${TRAJOPT_PACKAGE_PREFIX}osqpeigen"
       "${TRAJOPT_PACKAGE_PREFIX}trajopt-ifopt"
       "${TRAJOPT_PACKAGE_PREFIX}trajopt-common"

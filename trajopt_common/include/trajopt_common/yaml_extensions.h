@@ -4,8 +4,6 @@
  *
  * @author Tyler Marr
  * @date August 8, 2025
- * @version TODO
- * @bug No known bugs
  *
  * @copyright Copyright (c) 2025, Tyler Marr, Confinity Robotics
  *
@@ -27,14 +25,14 @@
 #ifndef TRAJOPT_COMMON_YAML_EXTENSIONS_H
 #define TRAJOPT_COMMON_YAML_EXTENSIONS_H
 
-#include <tesseract_common/macros.h>
-TESSERACT_COMMON_IGNORE_WARNINGS_PUSH
+#include <trajopt_common/macros.h>
+TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <yaml-cpp/yaml.h>
-TESSERACT_COMMON_IGNORE_WARNINGS_POP
+TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt_common/collision_types.h>
-#include <tesseract_collision/core/yaml_extensions.h>
-#include <tesseract_common/yaml_extensions.h>
+#include <tesseract/collision/yaml_extensions.h>
+#include <tesseract/common/yaml_extensions.h>
 
 namespace YAML
 {
@@ -119,9 +117,9 @@ struct convert<trajopt_common::TrajOptCollisionConfig>
     if (const YAML::Node& n = node["enabled"])
       rhs.enabled = n.as<bool>();
     if (const YAML::Node& n = node["contact_manager_config"])
-      rhs.contact_manager_config = n.as<tesseract_collision::ContactManagerConfig>();
+      rhs.contact_manager_config = n.as<tesseract::collision::ContactManagerConfig>();
     if (const YAML::Node& n = node["collision_check_config"])
-      rhs.collision_check_config = n.as<tesseract_collision::CollisionCheckConfig>();
+      rhs.collision_check_config = n.as<tesseract::collision::CollisionCheckConfig>();
     if (const YAML::Node& n = node["collision_coeff_data"])
       rhs.collision_coeff_data = n.as<trajopt_common::CollisionCoeffData>();
 

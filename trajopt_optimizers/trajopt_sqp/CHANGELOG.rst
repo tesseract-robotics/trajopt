@@ -2,6 +2,67 @@
 Changelog for package trajopt_sqp
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.34.4 (2026-02-18)
+-------------------
+* Add warm start functionality to QPSolver
+* Fix bugs and performance issues
+* Update ifopt trust region solver to attempt inplace update of qp solver
+* Avoid prune in ifopt code because it changes sparsity
+* Disable ifopt warmstart
+* Reduce memory allocations with sqp affine and quad expressions
+* Update trajopt_ifopt cartesian pose constraint to align with legacy version
+* Contributors: Levi Armstrong
+
+0.34.2 (2026-02-03)
+-------------------
+* Remove CompositeVariables to simplify trajopt_ifopt codebase
+* Add back collision data caching to trajopt ifopt
+* Reduce memory allocation in trajopt_ifopt and trajopt_sqp
+* Update Problem and QP Problem interface
+* Verify bounds are correct based on penalty type in debug
+* Update enum in trajopt_ifopt and trajopt_sqp to follow google style guide
+* Add range bound support to cartesian position constraint
+* Fix size bug in ifopt qp problem
+* Add back cvp.gradient.setZero()
+* Consolidate TrajOptQPProblem convexify
+* Simplify TrajOptQPProblem convexify
+* Add ComponentInfoType
+* Consolidate slack variables selection into confexify method
+* Add getNonZeros to trajopt_ifopt Differentiable interface
+* Rename trajopt qp problem member variables
+* Optimize trajopt ifopt qp problem (`#511 <https://github.com/tesseract-robotics/trajopt/issues/511>`_)
+* Cleanup variable names in trajopt qp problem
+* Consolidate cost and constraint info containers
+* Consolidate everything into the convexify function
+* Simplification by consolidation of similar components
+* Simplify trajopt_ifopt by removing use of CompositeDifferentiable
+* Remove unused PCL dependencies
+* Add dynamic constraint support
+* Remove dependency on Ifopt repository
+* Separate static from dynamic variables in qp problem
+* Update so there is only a single merit coeff per constraint set like the original trajopt
+* Optimize expressions
+* Minor update to trust region sqp solver
+* Minor update to osqp eigen solver
+* Cache bounds during setup
+* Optimize trajopt qp problem class
+* Add nodes variable set (`#438 <https://github.com/tesseract-robotics/trajopt/issues/438>`_)
+* Cleanup doxygen file headers
+* Remove old console bridge cmake target logic
+* Switch to using Cereal for serialization
+* Contributors: Levi Armstrong, Roelof Oomen
+
+0.33.0 (2025-10-28)
+-------------------
+
+0.32.0 (2025-09-10)
+-------------------
+* Update OSQP dependency to v1.0.0 and OSQPEigen to v0.10.3 (`#474 <https://github.com/tesseract-robotics/trajopt/issues/474>`_)
+* Fix bounds problem (`#472 <https://github.com/tesseract-robotics/trajopt/issues/472>`_)
+  * Also ensure the trust box does not shrink when a variable is close to a bound
+* Fix benchmarks (`#471 <https://github.com/tesseract-robotics/trajopt/issues/471>`_)
+* Contributors: Roelof Oomen
+
 0.31.0 (2025-07-06)
 -------------------
 

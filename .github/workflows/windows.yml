@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - master
+      - 'dev**'
   pull_request:
     paths:
       - 'trajopt**'
@@ -21,28 +22,22 @@ jobs:
       matrix:
         os: [windows-2022]
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v6
       with:
         path: target_ws/src
 
-    - name: Setup cmake
-      uses: jwlawson/actions-setup-cmake@v2
-      with:
-        cmake-version: '3.28.x'
-
     - name: vcpkg build
-      uses: johnwason/vcpkg-action@v6
+      uses: johnwason/vcpkg-action@v8
       with:
         pkgs: >-
          fcl bullet3[multithreading,double-precision,rtti] octomap console-bridge eigen3 yaml-cpp boost-stacktrace
          benchmark tinyxml2 assimp orocos-kdl pcl lapack-reference boost-dll boost-filesystem boost-filesystem 
-         boost-format
+         boost-format cereal
          boost-serialization boost-program-options boost-graph urdfdom ccd[double-precision] gtest jsoncpp
         triplet: x64-windows-release
         extra-args: --clean-after-build
         token: ${{ github.token }}
         cache-key: ci-${{ matrix.os }}
-        github-binarycache: true
 
     - name: configure-msvc
       uses: ilammy/msvc-dev-cmd@v1
@@ -56,11 +51,10 @@ jobs:
         echo "CMAKE_PREFIX_PATH=$GITHUB_WORKSPACE\vcpkg\installed\x64-windows-release" >> "$GITHUB_ENV"
 
     - name: Build and Tests
-      uses: tesseract-robotics/colcon-action@v11
+      uses: tesseract-robotics/colcon-action@v14
       with:
         ccache-prefix: ${{ matrix.distro }}
         vcs-file: .github/workflows/windows_dependencies.repos
         upstream-args: --cmake-args -G "Ninja" -DVCPKG_TARGET_TRIPLET=x64-windows-release -DCMAKE_BUILD_TYPE=Release -DBUILD_IPOPT=OFF -DBUILD_SNOPT=OFF
         target-path: target_ws/src
-        target-args: --packages-ignore trajopt_ifopt trajopt_sqp --cmake-args -G "Ninja" -DVCPKG_TARGET_TRIPLET=x64-windows-release -DCMAKE_BUILD_TYPE=Release -DTRAJOPT_ENABLE_TESTING=ON -DTRAJOPT_ENABLE_BENCHMARKING=ON -DTRAJOPT_ENABLE_RUN_BENCHMARKING=OFF
-        run-tests-args: --packages-ignore trajopt_ifopt trajopt_sqp
+        target-args:  --cmake-args -G "Ninja" -DVCPKG_TARGET_TRIPLET=x64-windows-release -DCMAKE_BUILD_TYPE=Release -DTRAJOPT_ENABLE_TESTING=ON -DTRAJOPT_ENABLE_BENCHMARKING=ON -DTRAJOPT_ENABLE_RUN_BENCHMARKING=OFF

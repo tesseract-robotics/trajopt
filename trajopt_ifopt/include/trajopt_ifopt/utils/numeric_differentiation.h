@@ -4,8 +4,6 @@
  *
  * @author Matthew Powelson
  * @date May 18, 2020
- * @version TODO
- * @bug No known bugs
  *
  * @copyright Copyright (c) 2020, Southwest Research Institute
  *
@@ -29,14 +27,14 @@
 #include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <Eigen/Eigen>
-#include <ifopt/cost_term.h>
 TRAJOPT_IGNORE_WARNINGS_POP
+
+#include <trajopt_ifopt/core/composite.h>
 
 namespace trajopt_ifopt
 {
-using SparseMatrix = Eigen::SparseMatrix<double, Eigen::RowMajor>;
 using ErrorCalculator = std::function<Eigen::VectorXd(const Eigen::Ref<const Eigen::VectorXd>&)>;
-using JacobianCalculator = std::function<SparseMatrix(const Eigen::Ref<const Eigen::VectorXd>&)>;
+using JacobianCalculator = std::function<Jacobian(const Eigen::Ref<const Eigen::VectorXd>&)>;
 
 /**
  * @brief Calculates the jacobian of the given error calculator using forward numeric differentiation
@@ -45,7 +43,7 @@ using JacobianCalculator = std::function<SparseMatrix(const Eigen::Ref<const Eig
  * @param epsilon Amount x is perturbed
  * @return The resulting jacobian. If f(x) = y, jac.size = [y.size(), x.size()]
  */
-SparseMatrix calcForwardNumJac(const ErrorCalculator& f, const Eigen::Ref<const Eigen::VectorXd>& x, double epsilon);
+Jacobian calcForwardNumJac(const ErrorCalculator& f, const Eigen::Ref<const Eigen::VectorXd>& x, double epsilon);
 
 // inline std::vector<SparseMatrix> calcForwardNumHessian(const JacobianCalculator& f, const Eigen::Ref<const
 // Eigen::VectorXd>& x, double epsilon)

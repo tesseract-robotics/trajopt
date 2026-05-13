@@ -4,7 +4,6 @@
  *
  * @author Matthew Powelson
  * @date May 18, 2020
- * @version TODO
  * @bug This has not been implemented
  *
  * @copyright Copyright (c) 2020, Southwest Research Institute
@@ -28,7 +27,7 @@
 
 #include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
-#include <tesseract_visualization/fwd.h>
+#include <tesseract/visualization/fwd.h>
 #include <trajopt_ifopt/fwd.h>
 #include <vector>
 TRAJOPT_IGNORE_WARNINGS_POP
@@ -43,7 +42,7 @@ public:
   using Ptr = std::shared_ptr<CollisionPlottingCallback>;
   using ConstPtr = std::shared_ptr<const CollisionPlottingCallback>;
 
-  CollisionPlottingCallback(std::shared_ptr<tesseract_visualization::Visualization> plotter);
+  CollisionPlottingCallback(std::shared_ptr<tesseract::visualization::Visualization> plotter);
 
   void plot(const QPProblem& problem);
 
@@ -56,7 +55,7 @@ public:
 
 protected:
   std::vector<std::shared_ptr<const trajopt_ifopt::DiscreteCollisionConstraint>> collision_constraints_;
-  std::shared_ptr<tesseract_visualization::Visualization> plotter_;
+  std::shared_ptr<tesseract::visualization::Visualization> plotter_;
 };
 }  // namespace trajopt_sqp
 
