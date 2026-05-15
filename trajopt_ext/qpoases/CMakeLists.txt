@@ -20,8 +20,8 @@ if(NOT qpOASES_FOUND AND NOT TRAJOPT_QPOASES_DISABLED)
   # If set, forward SSH_AUTH_SOCK to ExternalProject_Add to help ssh key agents
   if(DEFINED ENV{SSH_AUTH_SOCK})
     message(STATUS "SSH_AUTH_SOCK is set, forwarding it to ExternalProject_Add")
-    set(ssh_auth_sock_env "-DENV{SSH_AUTH_SOCK}=$ENV{SSH_AUTH_SOCK}")    
-  else()   
+    set(ssh_auth_sock_env "-DENV{SSH_AUTH_SOCK}=$ENV{SSH_AUTH_SOCK}")
+  else()
     set(ssh_auth_sock_env "")
   endif()
 
