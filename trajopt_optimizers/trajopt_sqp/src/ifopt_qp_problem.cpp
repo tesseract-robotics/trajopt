@@ -467,11 +467,13 @@ void IfoptQPProblem::updateNLPVariableBounds()
     var_bounds_upper[i] = bounds.getUpper();
   }
 
-  // Calculate box constraints, while limiting to variable bounds and maintaining the trust region size
-  const Eigen::VectorXd var_bounds_lower_final =
-      (x_initial.cwiseMin(var_bounds_upper - box_size_) - box_size_).cwiseMax(var_bounds_lower);
-  const Eigen::VectorXd var_bounds_upper_final =
-      (x_initial.cwiseMax(var_bounds_lower + box_size_) + box_size_).cwiseMin(var_bounds_upper);
+  // Calculate box constraints, clamped to variable bounds. The iterate is first clamped into
+  // [lb, ub] so the box stays non-empty when x has drifted outside its bounds (failed step, bad
+  // warm-start); for x inside [lb, ub] this is a no-op and the box is the standard strict-shrink
+  // trust region.
+  const Eigen::VectorXd x_clamped = x_initial.cwiseMin(var_bounds_upper).cwiseMax(var_bounds_lower);
+  const Eigen::VectorXd var_bounds_lower_final = (x_clamped - box_size_).cwiseMax(var_bounds_lower);
+  const Eigen::VectorXd var_bounds_upper_final = (x_clamped + box_size_).cwiseMin(var_bounds_upper);
   bounds_lower_.block(num_nlp_cnts_, 0, var_bounds_lower_final.size(), 1) = var_bounds_lower_final;
   bounds_upper_.block(num_nlp_cnts_, 0, var_bounds_upper_final.size(), 1) = var_bounds_upper_final;
 }

@@ -47,6 +47,31 @@ While you can sometimes rewrite formulations so “scale constraints” and “s
 - **Use coefficients/weights** on the **slack penalty** to represent priority/importance of the soft constraint.
 
 
+## Trust-Box Construction Near Variable Bounds
+
+The trust region in `TrajOptQPProblem` is an $L_\infty$ box on the NLP step, $|p_i| \le \Delta_i$. The QP solver sees it as variable bounds on $x_i + p_i$, intersected with the user-provided bounds $[l_i, u_i]$. Two awkward situations can arise at that intersection:
+
+1. The iterate $x_i$ sits at or near a bound, so the naive box $[x_i - \Delta_i, x_i + \Delta_i]$ extends past the bound on one side.
+2. The iterate has drifted outside $[l_i, u_i]$ — after a step rejection, a bad warm-start, or in the recovery regime of a failed solve.
+
+`TrajOptQPProblem::Implementation::updateNLPVariableBounds` handles both with one rule: **clamp $x_i$ into $[l_i, u_i]$, then strict-shrink the trust box against the bounds.**
+
+$$x_i^{\text{eff}} \;=\; \mathrm{clamp}(x_i,\, l_i,\, u_i), \qquad \text{box}_i \;=\; [\,\max(x_i^{\text{eff}} - \Delta_i,\, l_i),\; \min(x_i^{\text{eff}} + \Delta_i,\, u_i)\,].$$
+
+For $x_i$ strictly inside $[l_i, u_i]$ the clamp is a no-op and the box is the standard trust region — $\|p\|_\infty \le \Delta$ is preserved, which is the contract the rest of the SQP machinery relies on (the merit-improve ratio $\rho$ is only meaningful for steps within the radius the model was expanded for). As $x$ approaches a bound the box width shrinks monotonically:
+
+| $x$ position relative to upper bound $u$ | Box width |
+|---|---|
+| $x \le u - \Delta$ | $2\Delta$ (centered) |
+| $u - \Delta < x < u$ | $\Delta + (u - x)$ (linear ramp from $2\Delta$ down to $\Delta$) |
+| $x = u$ | $\Delta$ |
+| $x > u$ | $\Delta$ (constant; $x^{\text{eff}} = u$) |
+
+Past the bound the trust-region invariant is unavoidably violated — any step pulling the iterate back through the bound has magnitude $\ge |x - u|$ — but the QP box itself stays well-formed (non-empty, non-inverted), so the QP solver does not error out.
+
+The earlier "slide always" policy instead kept the full $2\Delta$ width by sliding the box inside $[l, u]$. That preserved the bug-fix property but let the QP step exceed $\Delta$ on the side facing the interior whenever a bound was active, even with the iterate strictly inside its bounds (within a trust-radius of the bound) — breaking $\|p\|_\infty \le \Delta$ in the regime where the SQP merit-improve machinery needs it most. The clamp-then-shrink design keeps the bug-fix property and restores the trust-region invariant for in-bounds iterates.
+
+
 ## Currently Supported Constraints
 * Joint Position
 * Joint Velocity
