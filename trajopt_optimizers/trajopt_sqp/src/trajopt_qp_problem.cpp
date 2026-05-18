@@ -6,6 +6,7 @@
 #include <trajopt_sqp/expressions.h>
 #include <trajopt_sqp/types.h>
 
+#include <algorithm>
 #include <utility>
 #include <iostream>
 #include <cassert>
@@ -1098,16 +1099,19 @@ void TrajOptQPProblem::Implementation::updateNLPVariableBounds(const Eigen::Ref<
   auto lower = cvp.bounds_lower.segment(idx, cvp.n_nlp_vars);
   auto upper = cvp.bounds_upper.segment(idx, cvp.n_nlp_vars);
 
-  // Assumes x, var_bounds_lower/upper are size n (or you use matching segments)
+  // Calculate box constraints, clamped to variable bounds. The iterate is first
+  // clamped into [lb, ub] so the box stays non-empty when x has drifted outside
+  // its bounds (failed step, bad warm-start); for x inside [lb, ub] this is a
+  // no-op and the box is the standard strict-shrink trust region.
   for (Eigen::Index i = 0; i < cvp.n_nlp_vars; ++i)
   {
-    const double xi = nlp_values[i];
     const double bi = box_size[i];
     const double lb = var_bounds_lower[i];
     const double ub = var_bounds_upper[i];
+    const double xi = std::clamp(nlp_values[i], lb, ub);
 
-    lower[i] = std::max(lb, std::min(xi, ub - bi) - bi);
-    upper[i] = std::min(ub, std::max(xi, lb + bi) + bi);
+    lower[i] = std::max(xi - bi, lb);
+    upper[i] = std::min(xi + bi, ub);
   }
 }
 
