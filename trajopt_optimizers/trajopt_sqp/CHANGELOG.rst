@@ -2,8 +2,8 @@
 Changelog for package trajopt_sqp
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.35.0 (2026-05-28)
+-------------------
 * Add trajopt_ifopt support for Windows and Mac (`#559 <https://github.com/tesseract-robotics/trajopt/issues/559>`_)
 * Update test CMakeLists to use find_gtest from RICB
 * Implement Gauss-Newton Hessian for IfoptQPProblem (`#545 <https://github.com/tesseract-robotics/trajopt/issues/545>`_)

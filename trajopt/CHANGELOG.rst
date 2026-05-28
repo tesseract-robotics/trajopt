@@ -2,8 +2,8 @@
 Changelog for package trajopt
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.35.0 (2026-05-28)
+-------------------
 * Fix toleranced Cartesian waypoints (`#560 <https://github.com/tesseract-robotics/trajopt/issues/560>`_)
 * Add rvalue overloads for exprInc/exprDec to avoid Var copies
   exprInc(AffExpr&, const AffExpr&) copies the vars vector, bumping atomic refcounts on every shared_ptr<VarRep>. Add rvalue-reference overloads that use make_move_iterator to transfer elements instead.

@@ -2,8 +2,8 @@
 Changelog for package trajopt_utils
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.35.0 (2026-05-28)
+-------------------
 * Update conda build (`#561 <https://github.com/tesseract-robotics/trajopt/issues/561>`_)
 * Add trajopt_ifopt support for Windows and Mac (`#559 <https://github.com/tesseract-robotics/trajopt/issues/559>`_)
 * Update Mac build (`#557 <https://github.com/tesseract-robotics/trajopt/issues/557>`_)
