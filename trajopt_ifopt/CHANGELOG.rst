@@ -2,6 +2,16 @@
 Changelog for package trajopt_ifopt
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Add trajopt_ifopt support for Windows and Mac (`#559 <https://github.com/tesseract-robotics/trajopt/issues/559>`_)
+* Update test CMakeLists to use find_gtest from RICB
+* Implement Gauss-Newton Hessian for IfoptQPProblem (`#545 <https://github.com/tesseract-robotics/trajopt/issues/545>`_)
+* Tesseract single cmake project consolidation
+* Update to clang-format-18
+* Update to tesseract nested namespaces
+* Contributors: Jelle Feringa, John Wason, Levi Armstrong, Roelof Oomen
+
 0.34.4 (2026-02-18)
 -------------------
 * Avoid computing number of vars in composite

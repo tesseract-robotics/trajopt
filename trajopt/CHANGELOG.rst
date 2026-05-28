@@ -2,6 +2,29 @@
 Changelog for package trajopt
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Fix toleranced Cartesian waypoints (`#560 <https://github.com/tesseract-robotics/trajopt/issues/560>`_)
+* Add rvalue overloads for exprInc/exprDec to avoid Var copies
+  exprInc(AffExpr&, const AffExpr&) copies the vars vector, bumping atomic refcounts on every shared_ptr<VarRep>. Add rvalue-reference overloads that use make_move_iterator to transfer elements instead.
+  Also add std::move at call sites in CalcDistExpressions*Free where local exprs0/exprs1 vectors were passed as lvalues despite being discarded immediately after.
+* Use persistent FK transform caches instead of clearing per call
+  Convert the static thread_local TransformMap caches to instance members and stop clearing them before each FK call. operator[] overwrites existing entries in-place, so clearing only adds deallocation overhead from destroying every hash node and reallocation overhead from rebuilding them.
+  Add transforms_diff_update\_ to separate diff-block (dynamic environment) entries from manip-block entries, avoiding the need to clear between the two phases.
+* Move ContactResultMap into cache instead of deep copying
+  Replace the thread_local + clear + deep copy pattern with a per-call local moved into make_shared. The previous approach cleared the map each call, repopulated it via CalcCollisions, then deep-copied the entire Rb_tree into a shared_ptr, copying every node, string key, and ContactResult vector. std::move transfers the tree root pointer in O(1), eliminating copying and clearing.
+* Clone JointGroup per CollisionEvaluator to eliminate mutex contention
+  Each evaluator now clones the JointGroup instead of sharing it, giving each OMP thread its own KDLStateSolver with its own mutex and KDL tree. Concurrent FK and Jacobian calls no longer serialize on a single lock.
+  Also fixes a latent data race: calcJacobianHelper calls JntToJac, which invokes Joint::pose() and mutates its internal caching state, without holding the mutex that protects calculateTransforms.
+* Remove unnecessary TransformMap::clear() in kinematic calculators
+  calcFwdKin overwrites all entries via operator[] (KDL) insert_or_assign (OFKT, see https://github.com/tesseract-robotics/tesseract/pull/1271), so clearing the static thread_local transforms_cache before each call only adds allocation overhead from destroying and recreating every hash node.
+* Batch update the contact manager's object transforms
+* Update test CMakeLists to use find_gtest from RICB
+* Tesseract single cmake project consolidation
+* Add SQPStatus toString method (`#544 <https://github.com/tesseract-robotics/trajopt/issues/544>`_)
+* Update to tesseract nested namespaces
+* Contributors: Levi Armstrong, Roelof Oomen
+
 0.34.4 (2026-02-18)
 -------------------
 * Fix trajopt joint term unit tests

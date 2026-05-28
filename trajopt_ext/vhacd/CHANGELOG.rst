@@ -2,6 +2,11 @@
 Changelog for package vhacd
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Update to clang-format-18
+* Contributors: Levi Armstrong
+
 0.34.4 (2026-02-18)
 -------------------
 

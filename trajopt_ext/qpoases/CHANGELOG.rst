@@ -2,6 +2,12 @@
 Changelog for package qpoases
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Forward SSH_AUTH_SOCK to ExternalProject_Add (`#563 <https://github.com/tesseract-robotics/trajopt/issues/563>`_)
+* Windows Build Fixes (`#556 <https://github.com/tesseract-robotics/trajopt/issues/556>`_)
+* Contributors: Doug Smith, John Wason
+
 0.34.4 (2026-02-18)
 -------------------
 
