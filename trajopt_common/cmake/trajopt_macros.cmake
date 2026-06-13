@@ -75,7 +75,7 @@ macro(trajopt_variables)
              "unknown")
         set(TRAJOPT_COMPILE_OPTIONS_PUBLIC -mno-avx)
       endif()
-    elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    elseif(CMAKE_CXX_COMPILER_ID MATCHES ".*Clang.*")
       set(TRAJOPT_COMPILE_OPTIONS_PRIVATE
           -Wall
           -Wextra
@@ -111,7 +111,7 @@ macro(trajopt_variables)
              "unknown")
         set(TRAJOPT_COMPILE_OPTIONS_PUBLIC -mno-avx)
       endif()
-    elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    elseif(CMAKE_CXX_COMPILER_ID MATCHES ".*Clang.*")
       set(TRAJOPT_COMPILE_OPTIONS_PRIVATE
           -Werror=all
           -Werror=extra
