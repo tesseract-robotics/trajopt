@@ -2,6 +2,18 @@
 Changelog for package trajopt_sco
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.35.0 (2026-05-28)
+-------------------
+* Add rvalue overloads for exprInc/exprDec to avoid Var copies
+  exprInc(AffExpr&, const AffExpr&) copies the vars vector, bumping atomic refcounts on every shared_ptr<VarRep>. Add rvalue-reference overloads that use make_move_iterator to transfer elements instead.
+  Also add std::move at call sites in CalcDistExpressions*Free where local exprs0/exprs1 vectors were passed as lvalues despite being discarded immediately after.
+* Update test CMakeLists to use find_gtest from RICB
+* Tesseract single cmake project consolidation
+* Add SQPStatus toString method (`#544 <https://github.com/tesseract-robotics/trajopt/issues/544>`_)
+* Update to clang-format-18
+* Update to tesseract nested namespaces
+* Contributors: Levi Armstrong, Roelof Oomen
+
 0.34.4 (2026-02-18)
 -------------------
 * Reduce memory allocations with sqp affine and quad expressions

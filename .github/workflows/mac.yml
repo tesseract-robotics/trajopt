@@ -45,10 +45,10 @@ jobs:
             homebrew_root: /opt/homebrew
     runs-on: ${{ matrix.config.runner }}
     steps:
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
       with:
         path: target_ws/src
-    - uses: actions/setup-python@v6
+    - uses: actions/setup-python@v7
       id: setup-python
       with:
         python-version: '3.12'

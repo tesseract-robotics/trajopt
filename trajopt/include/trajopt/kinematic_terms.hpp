@@ -102,13 +102,20 @@ struct DynamicCartPoseJacCalculator : TrajOptMatrixOfVector
   /** @brief perturbation amount for calculating Jacobian */
   double epsilon_;
 
+  /** @brief Optional per-component tolerance band, forwarded to calcJacobianTransformErrorDiff so the FD jacobian
+   * agrees with the toleranced error inside the band. Empty means no tolerances applied. */
+  Eigen::VectorXd lower_tolerance_;
+  Eigen::VectorXd upper_tolerance_;
+
   DynamicCartPoseJacCalculator(
       std::shared_ptr<const tesseract::kinematics::JointGroup> manip,
       tesseract::common::LinkId source_frame,
       tesseract::common::LinkId target_frame,
       const Eigen::Isometry3d& source_frame_offset = Eigen::Isometry3d::Identity(),
       const Eigen::Isometry3d& target_frame_offset = Eigen::Isometry3d::Identity(),
-      const Eigen::VectorXi& indices = Eigen::Matrix<int, 1, 6>(std::vector<int>({ 0, 1, 2, 3, 4, 5 }).data()));
+      const Eigen::VectorXi& indices = Eigen::Matrix<int, 1, 6>(std::vector<int>({ 0, 1, 2, 3, 4, 5 }).data()),
+      const Eigen::VectorXd& lower_tolerance = {},
+      const Eigen::VectorXd& upper_tolerance = {});
 
   Eigen::MatrixXd operator()(const Eigen::VectorXd& dof_vals) const override;
 };
@@ -201,13 +208,20 @@ struct CartPoseJacCalculator : TrajOptMatrixOfVector
   /** @brief perturbation amount for calculating Jacobian */
   double epsilon_;
 
+  /** @brief Optional per-component tolerance band, forwarded to calcJacobianTransformErrorDiff. Empty means no
+   * tolerances applied. */
+  Eigen::VectorXd lower_tolerance_;
+  Eigen::VectorXd upper_tolerance_;
+
   CartPoseJacCalculator(
       std::shared_ptr<const tesseract::kinematics::JointGroup> manip,
       tesseract::common::LinkId source_frame,
       tesseract::common::LinkId target_frame,
       const Eigen::Isometry3d& source_frame_offset = Eigen::Isometry3d::Identity(),
       const Eigen::Isometry3d& target_frame_offset = Eigen::Isometry3d::Identity(),
-      const Eigen::VectorXi& indices = Eigen::Matrix<int, 1, 6>(std::vector<int>({ 0, 1, 2, 3, 4, 5 }).data()));
+      const Eigen::VectorXi& indices = Eigen::Matrix<int, 1, 6>(std::vector<int>({ 0, 1, 2, 3, 4, 5 }).data()),
+      const Eigen::VectorXd& lower_tolerance = {},
+      const Eigen::VectorXd& upper_tolerance = {});
 
   Eigen::MatrixXd operator()(const Eigen::VectorXd& dof_vals) const override;
 };

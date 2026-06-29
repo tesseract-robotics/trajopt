@@ -1,6 +1,7 @@
 #include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <boost/format.hpp>
+#include <algorithm>
 #include <cmath>
 #include <chrono>
 #include <cstdio>
@@ -155,11 +156,15 @@ void BasicTrustRegionSQP::setTrustBoxConstraints(const DblVec& x)
   const DblVec& ub = prob_->getUpperBounds();
   DblVec lbtrust(x.size());
   DblVec ubtrust(x.size());
+  // Calculate box constraints, clamped to variable bounds. The iterate is first clamped into
+  // [lb, ub] so the box stays non-empty when x has drifted outside its bounds (failed step, bad
+  // warm-start); for x inside [lb, ub] this is a no-op and the box is the standard strict-shrink
+  // trust region.
   for (std::size_t i = 0; i < x.size(); ++i)
   {
-    // Calculate box constraints, while limiting to variable bounds and maintaining the trust region size
-    lbtrust[i] = fmax(fmin(x[i], ub[i] - param_.trust_box_size) - param_.trust_box_size, lb[i]);
-    ubtrust[i] = fmin(fmax(x[i], lb[i] + param_.trust_box_size) + param_.trust_box_size, ub[i]);
+    const double xi = std::clamp(x[i], lb[i], ub[i]);
+    lbtrust[i] = std::max(xi - param_.trust_box_size, lb[i]);
+    ubtrust[i] = std::min(xi + param_.trust_box_size, ub[i]);
   }
   model_->setVarBounds(vars, lbtrust, ubtrust);
 }

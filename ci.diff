@@ -1,0 +1,49 @@
+diff --git a/trajopt/src/kinematic_terms.cpp b/trajopt/src/kinematic_terms.cpp
+index 0834c40..dd20e24 100644
+--- a/trajopt/src/kinematic_terms.cpp
++++ b/trajopt/src/kinematic_terms.cpp
+@@ -49,8 +49,8 @@ void validateTolerances(const char* who, const Eigen::VectorXd& lower, const Eig
+   if (lower.size() != 0 && (lower.array() > upper.array()).any())
+   {
+     std::stringstream ss;
+-    ss << who << ": Inverted tolerance band — lower > upper at one or more indices. lower: ["
+-       << lower.transpose() << "], upper: [" << upper.transpose() << "]";
++    ss << who << ": Inverted tolerance band — lower > upper at one or more indices. lower: [" << lower.transpose()
++       << "], upper: [" << upper.transpose() << "]";
+     throw std::runtime_error(ss.str());
+   }
+ }
+diff --git a/trajopt/test/kinematic_costs_unit.cpp b/trajopt/test/kinematic_costs_unit.cpp
+index de04096..a9cdb5e 100644
+--- a/trajopt/test/kinematic_costs_unit.cpp
++++ b/trajopt/test/kinematic_costs_unit.cpp
+@@ -392,19 +392,17 @@ TEST_F(KinematicCostsTest, CartPoseCalculators_InvertedToleranceBandThrows)  //
+   lower << 0.0, 0.0, 0.0, 0.5, 0.0, 0.0;   // rx lower = 0.5
+   upper << 0.0, 0.0, 0.0, -0.5, 0.0, 0.0;  // rx upper = -0.5  → inverted
+ 
+-  EXPECT_THROW(
+-      CartPoseErrCalculator(kin, source_frame, target_frame, source_frame_offset, target_frame_offset, indices, lower,
+-                            upper),
+-      std::runtime_error);
+-  EXPECT_THROW(
+-      CartPoseJacCalculator(kin, source_frame, target_frame, source_frame_offset, target_frame_offset, indices, lower,
+-                            upper),
+-      std::runtime_error);
+-  EXPECT_THROW(DynamicCartPoseErrCalculator(kin, source_frame, target_frame, source_frame_offset, target_frame_offset,
+-                                            indices, lower, upper),
++  EXPECT_THROW(CartPoseErrCalculator(
++                   kin, source_frame, target_frame, source_frame_offset, target_frame_offset, indices, lower, upper),
+                std::runtime_error);
+-  EXPECT_THROW(DynamicCartPoseJacCalculator(kin, source_frame, target_frame, source_frame_offset, target_frame_offset,
+-                                            indices, lower, upper),
++  EXPECT_THROW(CartPoseJacCalculator(
++                   kin, source_frame, target_frame, source_frame_offset, target_frame_offset, indices, lower, upper),
++               std::runtime_error);
++  EXPECT_THROW(DynamicCartPoseErrCalculator(
++                   kin, source_frame, target_frame, source_frame_offset, target_frame_offset, indices, lower, upper),
++               std::runtime_error);
++  EXPECT_THROW(DynamicCartPoseJacCalculator(
++                   kin, source_frame, target_frame, source_frame_offset, target_frame_offset, indices, lower, upper),
+                std::runtime_error);
+ }
+ 
