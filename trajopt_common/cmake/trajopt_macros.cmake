@@ -61,22 +61,7 @@ macro(trajopt_variables)
           -Wconversion
           -Wsign-conversion
           -Wno-sign-compare)
-      execute_process(COMMAND uname -p OUTPUT_VARIABLE CMAKE_SYSTEM_NAME2)
-      if(NOT
-         CMAKE_SYSTEM_NAME2
-         MATCHES
-         "aarch64"
-         AND NOT
-             CMAKE_SYSTEM_NAME2
-             MATCHES
-             "armv7l"
-         AND NOT
-             CMAKE_SYSTEM_NAME2
-             MATCHES
-             "unknown")
-        set(TRAJOPT_COMPILE_OPTIONS_PUBLIC -mno-avx)
-      endif()
-    elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    elseif(CMAKE_CXX_COMPILER_ID MATCHES ".*Clang.*")
       set(TRAJOPT_COMPILE_OPTIONS_PRIVATE
           -Wall
           -Wextra
@@ -97,22 +82,7 @@ macro(trajopt_variables)
           -Werror=conversion
           -Werror=sign-conversion
           -Wno-sign-compare)
-      execute_process(COMMAND uname -p OUTPUT_VARIABLE CMAKE_SYSTEM_NAME2)
-      if(NOT
-         CMAKE_SYSTEM_NAME2
-         MATCHES
-         "aarch64"
-         AND NOT
-             CMAKE_SYSTEM_NAME2
-             MATCHES
-             "armv7l"
-         AND NOT
-             CMAKE_SYSTEM_NAME2
-             MATCHES
-             "unknown")
-        set(TRAJOPT_COMPILE_OPTIONS_PUBLIC -mno-avx)
-      endif()
-    elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    elseif(CMAKE_CXX_COMPILER_ID MATCHES ".*Clang.*")
       set(TRAJOPT_COMPILE_OPTIONS_PRIVATE
           -Werror=all
           -Werror=extra

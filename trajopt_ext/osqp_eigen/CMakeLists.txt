@@ -21,12 +21,21 @@ if(NOT ${OsqpEigen_FOUND} AND NOT TRAJOPT_OSQP_DISABLED)
 
   include(ExternalProject)
 
+  # If set, forward SSH_AUTH_SOCK to ExternalProject_Add to help ssh key agents
+  if(DEFINED ENV{SSH_AUTH_SOCK})
+    message(STATUS "SSH_AUTH_SOCK is set, forwarding it to ExternalProject_Add")
+    set(ssh_auth_sock_env "-DENV{SSH_AUTH_SOCK}=$ENV{SSH_AUTH_SOCK}")
+  else()
+    set(ssh_auth_sock_env "")
+  endif()
+
   ExternalProject_Add(
     ${PROJECT_NAME}
     GIT_REPOSITORY https://github.com/robotology/osqp-eigen
     GIT_TAG v${TRAJOPT_OSQPEIGEN_VERSION}
     SOURCE_DIR ${CMAKE_BINARY_DIR}-src
     BINARY_DIR ${CMAKE_BINARY_DIR}-build
+    CMAKE_ARGS ${ssh_auth_sock_env}
     CMAKE_CACHE_ARGS
       -DCMAKE_BUILD_TYPE:STRING=Release
       -DCMAKE_INSTALL_PREFIX:STRING=${CMAKE_INSTALL_PREFIX}
