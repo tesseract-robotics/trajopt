@@ -2,6 +2,16 @@
 Changelog for package trajopt_utils
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.35.0 (2026-05-28)
+-------------------
+* Update conda build (`#561 <https://github.com/tesseract-robotics/trajopt/issues/561>`_)
+* Add trajopt_ifopt support for Windows and Mac (`#559 <https://github.com/tesseract-robotics/trajopt/issues/559>`_)
+* Update Mac build (`#557 <https://github.com/tesseract-robotics/trajopt/issues/557>`_)
+* Update test CMakeLists to use find_gtest from RICB
+* Tesseract single cmake project consolidation
+* Update to tesseract nested namespaces
+* Contributors: John Wason, Levi Armstrong, Roelof Oomen
+
 0.34.4 (2026-02-18)
 -------------------
 * Do not add compiler option -mno-avx for arm or if processor is unknown

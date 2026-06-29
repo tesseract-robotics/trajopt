@@ -2,6 +2,11 @@
 Changelog for package osqp
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.35.0 (2026-05-28)
+-------------------
+* Forward SSH_AUTH_SOCK to ExternalProject_Add (`#563 <https://github.com/tesseract-robotics/trajopt/issues/563>`_)
+* Contributors: Doug Smith
+
 0.34.4 (2026-02-18)
 -------------------
 
