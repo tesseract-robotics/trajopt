@@ -51,17 +51,17 @@ struct convert<trajopt_common::CollisionCoeffData>
     const auto& pair_data = rhs.getCollisionCoeffPairData();
     if (!pair_data.empty())
     {
-      Node pair_coeff_data_node(YAML::NodeType::Sequence);
-      for (const auto& pair : pair_data)
+      Node pair_coeff_data_node(YAML::NodeType::Map);
+      for (const auto& [key, entry] : pair_data)
       {
         Node key_node(NodeType::Sequence);
-        key_node.push_back(pair.first.first);
-        key_node.push_back(pair.first.second);
+        key_node.push_back(entry.name1);
+        key_node.push_back(entry.name2);
 
-        // tell yaml-cpp “emit this sequence in [a, b] inline style”
+        // tell yaml-cpp "emit this sequence in [a, b] inline style"
         key_node.SetStyle(YAML::EmitterStyle::Flow);
 
-        pair_coeff_data_node[key_node] = pair.second;
+        pair_coeff_data_node[key_node] = entry.coeff;
       }
       node["pair_coeff_data"] = pair_coeff_data_node;
     }
@@ -85,7 +85,9 @@ struct convert<trajopt_common::CollisionCoeffData>
         if (!key_node.IsSequence() || key_node.size() != 2)
           return false;
 
-        rhs.setCollisionCoeff(key_node[0].as<std::string>(), key_node[1].as<std::string>(), it->second.as<double>());
+        rhs.setCollisionCoeff(tesseract::common::LinkId(key_node[0].as<std::string>()),
+                              tesseract::common::LinkId(key_node[1].as<std::string>()),
+                              it->second.as<double>());
       }
     }
 

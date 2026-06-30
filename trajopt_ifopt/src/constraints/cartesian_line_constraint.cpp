@@ -42,8 +42,8 @@ TRAJOPT_IGNORE_WARNINGS_POP
 namespace trajopt_ifopt
 {
 CartLineInfo::CartLineInfo(std::shared_ptr<const tesseract::kinematics::JointGroup> manip,
-                           std::string source_frame,
-                           std::string target_frame,
+                           tesseract::common::LinkId source_frame,
+                           tesseract::common::LinkId target_frame,
                            const Eigen::Isometry3d& target_frame_offset1,  // NOLINT(modernize-pass-by-value)
                            const Eigen::Isometry3d& target_frame_offset2,  // NOLINT(modernize-pass-by-value)
                            const Eigen::Isometry3d& source_frame_offset,   // NOLINT(modernize-pass-by-value)
@@ -56,11 +56,11 @@ CartLineInfo::CartLineInfo(std::shared_ptr<const tesseract::kinematics::JointGro
   , target_frame_offset2(target_frame_offset2)
   , indices(indices)
 {
-  if (!this->manip->hasLinkName(this->source_frame))
-    throw std::runtime_error("CartLineInfo: Source Link name '" + this->source_frame + "' provided does not exist.");
+  if (!this->manip->hasLinkId(source_frame))
+    throw std::runtime_error("CartLineInfo: Source Link name '" + source_frame.name() + "' provided does not exist.");
 
-  if (!this->manip->hasLinkName(this->target_frame))
-    throw std::runtime_error("CartLineInfo: Target Link name '" + this->target_frame + "' provided does not exist.");
+  if (!this->manip->hasLinkId(target_frame))
+    throw std::runtime_error("CartLineInfo: Target Link name '" + target_frame.name() + "' provided does not exist.");
 
   if (this->target_frame_offset1.isApprox(target_frame_offset2))
     throw std::runtime_error("CartLineInfo: The start and end point are the same!");
@@ -72,7 +72,7 @@ CartLineInfo::CartLineInfo(std::shared_ptr<const tesseract::kinematics::JointGro
     throw std::runtime_error("CartLineInfo: The indices list length is zero.");
 }
 
-thread_local tesseract::common::TransformMap CartLineConstraint::transforms_cache_;  // NOLINT
+thread_local tesseract::common::LinkIdTransformMap CartLineConstraint::transforms_cache_;  // NOLINT
 
 CartLineConstraint::CartLineConstraint(CartLineInfo info,
                                        std::shared_ptr<const Var> position_var,
@@ -96,7 +96,7 @@ CartLineConstraint::CartLineConstraint(CartLineInfo info,
   error_diff_function_ = [this](const Eigen::VectorXd& vals,
                                 const Eigen::Isometry3d& target_tf,
                                 const Eigen::Isometry3d& source_tf,
-                                tesseract::common::TransformMap& transforms_cache) -> Eigen::VectorXd {
+                                tesseract::common::LinkIdTransformMap& transforms_cache) -> Eigen::VectorXd {
     info_.manip->calcFwdKin(transforms_cache, vals);
     const Eigen::Isometry3d perturbed_source_tf = transforms_cache[info_.source_frame] * info_.source_frame_offset;
     const Eigen::Isometry3d target_tf1 = transforms_cache[info_.target_frame] * info_.target_frame_offset1;

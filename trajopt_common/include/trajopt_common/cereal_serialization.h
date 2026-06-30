@@ -6,18 +6,46 @@
 #include <tesseract/collision/cereal_serialization.h>
 
 #include <cereal/cereal.hpp>
-#include <cereal/types/unordered_map.hpp>
+#include <cereal/types/map.hpp>
 #include <cereal/types/set.hpp>
 #include <cereal/types/utility.hpp>
 
 namespace trajopt_common
 {
 template <class Archive>
-void serialize(Archive& ar, CollisionCoeffData& obj)
+void save(Archive& ar, const CollisionCoeffData& obj)
 {
   ar(cereal::make_nvp("default_collision_coeff", obj.default_collision_coeff_));
-  ar(cereal::make_nvp("lookup_table", obj.lookup_table_));
-  ar(cereal::make_nvp("zero_coeff", obj.zero_coeff_));
+
+  // Serialize as string-based format for backwards compatibility
+  std::map<std::pair<std::string, std::string>, double> compat;
+  for (const auto& [key, entry] : obj.lookup_table_)
+    compat[{ entry.name1, entry.name2 }] = entry.coeff;
+  ar(cereal::make_nvp("lookup_table", compat));
+
+  std::set<std::pair<std::string, std::string>> zero_compat;
+  for (const auto& id_pair : obj.zero_coeff_)
+  {
+    auto it = obj.lookup_table_.find(id_pair);
+    if (it != obj.lookup_table_.end())
+      zero_compat.insert({ it->second.name1, it->second.name2 });
+  }
+  ar(cereal::make_nvp("zero_coeff", zero_compat));
+}
+
+template <class Archive>
+void load(Archive& ar, CollisionCoeffData& obj)
+{
+  ar(cereal::make_nvp("default_collision_coeff", obj.default_collision_coeff_));
+
+  std::map<std::pair<std::string, std::string>, double> compat;
+  ar(cereal::make_nvp("lookup_table", compat));
+  for (const auto& [names, coeff] : compat)
+    obj.setCollisionCoeff(tesseract::common::LinkId(names.first), tesseract::common::LinkId(names.second), coeff);
+
+  // zero_coeff_ is rebuilt by setCollisionCoeff, so just consume the archive field
+  std::set<std::pair<std::string, std::string>> zero_compat;
+  ar(cereal::make_nvp("zero_coeff", zero_compat));
 }
 
 template <class Archive>

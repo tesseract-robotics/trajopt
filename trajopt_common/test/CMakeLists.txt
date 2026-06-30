@@ -5,7 +5,7 @@ add_executable(${PROJECT_NAME}_yaml_unit trajopt_common_yaml_conversions_tests.c
 target_link_libraries(${PROJECT_NAME}_yaml_unit PRIVATE GTest::GTest GTest::Main ${PROJECT_NAME})
 target_compile_options(${PROJECT_NAME}_yaml_unit PRIVATE ${TRAJOPT_COMPILE_OPTIONS_PRIVATE}
                                                          ${TRAJOPT_COMPILE_OPTIONS_PUBLIC})
-target_compile_definitions(${PROJECT_NAME}_yaml_unit PRIVATE ${TRAJOPT_COMPILE_DEFINITIONS})
+target_compile_definitions(${PROJECT_NAME}_yaml_unit PRIVATE ${TRAJOPT_COMPILE_DEFINITIONS_PUBLIC})
 target_clang_tidy(${PROJECT_NAME}_yaml_unit ENABLE ${TRAJOPT_ENABLE_CLANG_TIDY})
 target_cxx_version(${PROJECT_NAME}_yaml_unit PRIVATE VERSION ${TRAJOPT_CXX_VERSION})
 target_code_coverage(
@@ -23,7 +23,7 @@ add_executable(${PROJECT_NAME}_cache_unit trajopt_common_cache_tests.cpp)
 target_link_libraries(${PROJECT_NAME}_cache_unit PRIVATE GTest::GTest GTest::Main ${PROJECT_NAME})
 target_compile_options(${PROJECT_NAME}_cache_unit PRIVATE ${TRAJOPT_COMPILE_OPTIONS_PRIVATE}
                                                           ${TRAJOPT_COMPILE_OPTIONS_PUBLIC})
-target_compile_definitions(${PROJECT_NAME}_cache_unit PRIVATE ${TRAJOPT_COMPILE_DEFINITIONS})
+target_compile_definitions(${PROJECT_NAME}_cache_unit PRIVATE ${TRAJOPT_COMPILE_DEFINITIONS_PUBLIC})
 target_clang_tidy(${PROJECT_NAME}_cache_unit ENABLE ${TRAJOPT_ENABLE_CLANG_TIDY})
 target_cxx_version(${PROJECT_NAME}_cache_unit PRIVATE VERSION ${TRAJOPT_CXX_VERSION})
 target_code_coverage(

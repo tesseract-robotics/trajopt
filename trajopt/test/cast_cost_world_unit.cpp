@@ -77,8 +77,8 @@ public:
 
     Joint new_joint("box_world-base_link");
     new_joint.type = JointType::FIXED;
-    new_joint.parent_link_name = "base_link";
-    new_joint.child_link_name = "box_world";
+    new_joint.parent_link_id = "base_link";
+    new_joint.child_link_id = "box_world";
 
     env_->applyCommand(std::make_shared<AddLinkCommand>(new_link, new_joint));
 
@@ -106,7 +106,7 @@ void runTest(const Environment::Ptr& env, const Visualization::Ptr& plotter, boo
   const tesseract::scene_graph::StateSolver::UPtr state_solver = prob->GetEnv()->getStateSolver();
   const ContinuousContactManager::Ptr manager = prob->GetEnv()->getContinuousContactManager();
 
-  manager->setActiveCollisionObjects(prob->GetKin()->getActiveLinkNames());
+  manager->setActiveCollisionObjects(prob->GetKin()->getActiveLinkIds());
   manager->setDefaultCollisionMargin(0);
 
   tesseract::collision::CollisionCheckConfig config;

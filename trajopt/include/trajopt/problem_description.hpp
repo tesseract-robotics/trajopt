@@ -8,6 +8,7 @@ TRAJOPT_IGNORE_WARNINGS_POP
 #include <tesseract/kinematics/fwd.h>
 #include <tesseract/visualization/fwd.h>
 #include <tesseract/collision/types.h>
+#include <tesseract/common/types.h>
 
 #include <trajopt/typedefs.hpp>
 #include <trajopt_common/collision_types.h>
@@ -318,9 +319,9 @@ struct DynamicCartPoseTermInfo : public TermInfo
   /** @brief Coefficients for position and rotation */
   Eigen::Vector3d pos_coeffs, rot_coeffs;
   /** @brief Link which should reach desired pos */
-  std::string source_frame;
+  tesseract::common::LinkId source_frame;
   /** @brief The link relative to which the target_tcp is defined */
-  std::string target_frame;
+  tesseract::common::LinkId target_frame;
   /** @brief Static transform applied to the link_ location */
   Eigen::Isometry3d source_frame_offset;
   /** @brief A Static transform to be applied to target_ location */
@@ -358,9 +359,9 @@ struct CartPoseTermInfo : public TermInfo
   Eigen::Vector3d pos_coeffs, rot_coeffs;
 
   /** @brief Link which should reach desired pos */
-  std::string source_frame;
+  tesseract::common::LinkId source_frame;
   /** @brief The link relative to which the target_tcp is defined */
-  std::string target_frame;
+  tesseract::common::LinkId target_frame;
   /** @brief Static transform applied to the link_ location */
   Eigen::Isometry3d source_frame_offset;
   /** @brief A Static transform to be applied to target_ location */
@@ -396,7 +397,7 @@ struct CartVelTermInfo : public TermInfo
   /** @brief Timesteps over which to apply term */
   int first_step{ -1 }, last_step{ -1 };
   /** @brief Link to which the term is applied */
-  std::string link;
+  tesseract::common::LinkId link_id;
   double max_displacement{ 0 };
   /** @brief Used to add term to pci from json */
   void fromJson(ProblemConstructionInfo& pci, const Json::Value& v) override;
@@ -642,7 +643,7 @@ struct AvoidSingularityTermInfo : public TermInfo
    * singular value approaches zero */
   double lambda{ 0.1 };
   /** @brief The robot link with which to calculate the robot jacobian (required because of kinematic trees) */
-  std::string link;
+  tesseract::common::LinkId link_id;
   int first_step{ -1 };
   int last_step{ -1 };
   DblVec coeffs;

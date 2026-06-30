@@ -104,7 +104,7 @@ void runPlanningTest(const Environment::Ptr& env)
   const JointGroup::ConstPtr manip = env->getJointGroup("right_arm");
   const std::vector<trajopt_ifopt::Bounds> bounds = trajopt_ifopt::toBounds(manip->getLimits().joint_limits);
 
-  manager->setActiveCollisionObjects(manip->getActiveLinkNames());
+  manager->setActiveCollisionObjects(manip->getActiveLinkIds());
   manager->setDefaultCollisionMargin(0);
 
   // Initial trajectory
@@ -188,8 +188,8 @@ void runPlanningTest(const Environment::Ptr& env)
   qp_solver->solver_->settings()->setVerbosity(false);
   qp_solver->solver_->settings()->setWarmStart(true);
   qp_solver->solver_->settings()->setPolish(true);
-  qp_solver->solver_->settings()->setAdaptiveRho(false);
-  qp_solver->solver_->settings()->setMaxIteration(8192);
+  qp_solver->solver_->settings()->setAdaptiveRho(true);
+  qp_solver->solver_->settings()->setMaxIteration(32768);
   qp_solver->solver_->settings()->setAbsoluteTolerance(1e-4);
   qp_solver->solver_->settings()->setRelativeTolerance(1e-6);
 

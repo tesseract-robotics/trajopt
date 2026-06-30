@@ -117,8 +117,8 @@ public:
 
     Joint new_joint("base_link-octomap_attached");
     new_joint.type = JointType::FIXED;
-    new_joint.parent_link_name = "base_link";
-    new_joint.child_link_name = "octomap_attached";
+    new_joint.parent_link_id = "base_link";
+    new_joint.child_link_id = "octomap_attached";
 
     env->applyCommand(std::make_shared<AddLinkCommand>(new_link, new_joint));
   }
@@ -138,7 +138,7 @@ void runCastOctomapTest(const Environment::Ptr& env, bool fixed_size)
   const JointGroup::ConstPtr manip = env->getJointGroup("manipulator");
   const std::vector<trajopt_ifopt::Bounds> bounds = trajopt_ifopt::toBounds(manip->getLimits().joint_limits);
 
-  manager->setActiveCollisionObjects(manip->getActiveLinkNames());
+  manager->setActiveCollisionObjects(manip->getActiveLinkIds());
   manager->setDefaultCollisionMargin(0);
 
   // 3) Add Variables

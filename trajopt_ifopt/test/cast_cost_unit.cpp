@@ -91,7 +91,7 @@ TEST_F(CastTest, boxes)  // NOLINT
   const tesseract::kinematics::JointGroup::ConstPtr manip = env->getJointGroup("manipulator");
   const std::vector<Bounds> bounds = toBounds(manip->getLimits().joint_limits);
 
-  manager->setActiveCollisionObjects(manip->getActiveLinkNames());
+  manager->setActiveCollisionObjects(manip->getActiveLinkIds());
   manager->setDefaultCollisionMargin(0);
 
   collisions.clear();

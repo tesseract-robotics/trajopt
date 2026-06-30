@@ -166,17 +166,10 @@ TEST(TrajoptCommonYAMLTestFixture, CollisionCoeffDataGetterMethodsUnit)  // NOLI
   const auto& zero_pairs = d.getPairsWithZeroCoeff();
   EXPECT_EQ(zero_pairs.size(), 1U);
 
-  // Verify that the zero coefficient pair is in the zero_pairs set
-  bool found_zero_pair = false;
-  for (const auto& pair : zero_pairs)
-  {
-    if ((pair.first == "link3" && pair.second == "link4") || (pair.first == "link4" && pair.second == "link3"))
-    {
-      found_zero_pair = true;
-      break;
-    }
-  }
-  EXPECT_TRUE(found_zero_pair);
+  // Verify that the zero coefficient pair is in the zero_pairs set via hasZeroCoeff
+  EXPECT_TRUE(d.hasZeroCoeff("link3", "link4"));
+  EXPECT_TRUE(d.hasZeroCoeff("link4", "link3"));
+  EXPECT_FALSE(d.hasZeroCoeff("link1", "link2"));
 }
 
 TEST(TrajoptCommonYAMLTestFixture, CollisionCoeffDataRoundTripUnit)  // NOLINT
@@ -223,6 +216,54 @@ TEST(TrajoptCommonYAMLTestFixture, TrajOptCollisionConfigRoundTripUnit)  // NOLI
   EXPECT_NEAR(c_out.collision_coeff_data.getCollisionCoeff("l0", "l1"), 0.0, 1e-12);
   EXPECT_NEAR(c_out.collision_margin_buffer, c_in.collision_margin_buffer, 1e-12);
   EXPECT_EQ(c_out.max_num_cnt, c_in.max_num_cnt);
+}
+
+// ======================== Three-tier overload tests ========================
+
+TEST(TrajoptCommonYAMLTestFixture, CollisionCoeffDataThreeTierOverloadsUnit)  // NOLINT
+{
+  using namespace tesseract::common;
+
+  trajopt_common::CollisionCoeffData data(1.0);
+  data.setCollisionCoeff("link_a", "link_b", 2.5);
+  data.setCollisionCoeff("link_c", "link_d", 0.0);
+
+  // Tier 3 (string)
+  EXPECT_NEAR(data.getCollisionCoeff("link_a", "link_b"), 2.5, 1e-12);
+  EXPECT_NEAR(data.getCollisionCoeff("link_b", "link_a"), 2.5, 1e-12);  // order invariant
+  EXPECT_NEAR(data.getCollisionCoeff("link_c", "link_d"), 0.0, 1e-12);
+  EXPECT_NEAR(data.getCollisionCoeff("unknown", "pair"), 1.0, 1e-12);  // default
+
+  // Tier 1 (LinkId)
+  const LinkId id_a = LinkId("link_a");
+  const LinkId id_b = LinkId("link_b");
+  const LinkId id_c = LinkId("link_c");
+  const LinkId id_d = LinkId("link_d");
+  EXPECT_NEAR(data.getCollisionCoeff(id_a, id_b), 2.5, 1e-12);
+  EXPECT_NEAR(data.getCollisionCoeff(id_b, id_a), 2.5, 1e-12);
+  EXPECT_NEAR(data.getCollisionCoeff(id_c, id_d), 0.0, 1e-12);
+  EXPECT_NEAR(data.getCollisionCoeff("unknown", "pair"), 1.0, 1e-12);
+
+  // hasZeroCoeff
+  EXPECT_TRUE(data.hasZeroCoeff(id_c, id_d));
+  EXPECT_TRUE(data.hasZeroCoeff(id_d, id_c));
+  EXPECT_FALSE(data.hasZeroCoeff(id_a, id_b));
+  EXPECT_TRUE(data.hasZeroCoeff("link_c", "link_d"));
+  EXPECT_FALSE(data.hasZeroCoeff("link_a", "link_b"));
+
+  // Pair data entry values preserve names
+  const auto& pair_data = data.getCollisionCoeffPairData();
+  EXPECT_EQ(pair_data.size(), 2U);
+  const auto it = pair_data.find(LinkIdPair(id_a, id_b));
+  ASSERT_NE(it, pair_data.end());
+  EXPECT_FALSE(it->second.name1.empty());
+  EXPECT_FALSE(it->second.name2.empty());
+  EXPECT_NEAR(it->second.coeff, 2.5, 1e-12);
+
+  // Zero coeff set uses LinkIdPair
+  const auto& zero_pairs = data.getPairsWithZeroCoeff();
+  EXPECT_EQ(zero_pairs.size(), 1U);
+  EXPECT_TRUE(zero_pairs.count(LinkIdPair(id_c, id_d)) == 1);
 }
 
 int main(int argc, char** argv)

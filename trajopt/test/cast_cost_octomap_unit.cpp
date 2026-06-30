@@ -95,8 +95,8 @@ public:
 
     Joint new_joint("base_link-octomap_attached");
     new_joint.type = JointType::FIXED;
-    new_joint.parent_link_name = "base_link";
-    new_joint.child_link_name = "octomap_attached";
+    new_joint.parent_link_id = "base_link";
+    new_joint.child_link_id = "octomap_attached";
 
     env_->applyCommand(std::make_shared<AddLinkCommand>(new_link, new_joint));
   }
@@ -122,7 +122,9 @@ void runTest(const Environment::Ptr& env, const Visualization::Ptr& plotter, boo
   const tesseract::scene_graph::StateSolver::UPtr state_solver = prob->GetEnv()->getStateSolver();
   const ContinuousContactManager::Ptr manager = prob->GetEnv()->getContinuousContactManager();
 
-  manager->setActiveCollisionObjects(prob->GetKin()->getActiveLinkNames());
+  CONSOLE_BRIDGE_logDebug("CastOctomapTest using continuous manager: %s", manager->getName().c_str());
+
+  manager->setActiveCollisionObjects(prob->GetKin()->getActiveLinkIds());
   manager->setDefaultCollisionMargin(0);
 
   tesseract::collision::CollisionCheckConfig config;

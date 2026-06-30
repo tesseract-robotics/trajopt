@@ -3,7 +3,7 @@ find_gtest()
 macro(add_gtest test_name test_file)
   add_executable(${test_name} ${test_file})
   target_compile_options(${test_name} PRIVATE ${TRAJOPT_COMPILE_OPTIONS_PRIVATE} ${TRAJOPT_COMPILE_OPTIONS_PUBLIC})
-  target_compile_definitions(${test_name} PRIVATE ${TRAJOPT_COMPILE_DEFINITIONS})
+  target_compile_definitions(${test_name} PRIVATE ${TRAJOPT_COMPILE_DEFINITIONS_PUBLIC})
   target_cxx_version(${test_name} PRIVATE VERSION ${TRAJOPT_CXX_VERSION})
   target_clang_tidy(${test_name} ENABLE ${TRAJOPT_ENABLE_CLANG_TIDY})
   target_link_libraries(
@@ -28,6 +28,8 @@ add_gtest(${PROJECT_NAME}_cast_cost_unit cast_cost_unit.cpp)
 add_gtest(${PROJECT_NAME}_cast_cost_world_unit cast_cost_world_unit.cpp)
 add_gtest(${PROJECT_NAME}_cast_cost_attached_unit cast_cost_attached_unit.cpp)
 add_gtest(${PROJECT_NAME}_cast_cost_octomap_unit cast_cost_octomap_unit.cpp)
+add_gtest(${PROJECT_NAME}_cast_cost_octomap_arm_unit cast_cost_octomap_arm_unit.cpp)
+add_gtest(${PROJECT_NAME}_cast_constraint_octomap_unit cast_constraint_octomap_unit.cpp)
 add_gtest(${PROJECT_NAME}_simple_collision_unit simple_collision_unit.cpp)
 add_gtest(${PROJECT_NAME}_cart_position_optimization_unit cart_position_optimization_unit.cpp)
 
@@ -37,7 +39,7 @@ add_gtest(${PROJECT_NAME}_cart_position_optimization_unit cart_position_optimiza
 # target_compile_options(${PROJECT_NAME}_cart_position_optimization_trajopt_sco_unit PRIVATE
 # ${TRAJOPT_COMPILE_OPTIONS_PRIVATE} ${TRAJOPT_COMPILE_OPTIONS_PUBLIC})
 # target_compile_definitions(${PROJECT_NAME}_cart_position_optimization_trajopt_sco_unit PRIVATE
-# ${TRAJOPT_COMPILE_DEFINITIONS} TRAJOPT_IFOPT_DIR="${CMAKE_SOURCE_DIR}")
+# ${TRAJOPT_COMPILE_DEFINITIONS_PUBLIC} TRAJOPT_IFOPT_DIR="${CMAKE_SOURCE_DIR}")
 # target_cxx_version(${PROJECT_NAME}_cart_position_optimization_trajopt_sco_unit PRIVATE VERSION ${TRAJOPT_CXX_VERSION})
 # target_clang_tidy(${PROJECT_NAME}_cart_position_optimization_trajopt_sco_unit ENABLE ${TRAJOPT_ENABLE_CLANG_TIDY})
 # target_link_libraries( ${PROJECT_NAME}_cart_position_optimization_trajopt_sco_unit ${PROJECT_NAME} console_bridge

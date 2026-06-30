@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<robot name="boxbot" xmlns:xacro="http://ros.org/wiki/xacro" tesseract:make_convex="true">
+  <link name="base_link"/>
+  <link name="boxbot_linkX"/>
+  <link name="boxbot_linkY"/>
+  <link name="boxbot_link">
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <cylinder length="0.5" radius="0.1"/>
+      </geometry>
+    </visual>
+    <collision>
+      <geometry>
+        <cylinder length="0.5" radius="0.1"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="boxbot_x_joint" type="prismatic">
+    <origin rpy="0 0 0" xyz="0 0 0"/>
+    <parent link="base_link"/>
+    <child link="boxbot_linkX"/>
+    <axis xyz="1 0 0"/>
+    <limit effort="0" lower="-20.0" upper="20.0" velocity="2.0"/>
+  </joint>
+  <joint name="boxbot_y_joint" type="prismatic">
+    <origin rpy="0 0 0" xyz="0 0 0"/>
+    <parent link="boxbot_linkX"/>
+    <child link="boxbot_linkY"/>
+    <axis xyz="0 1 0"/>
+    <limit effort="0" lower="-20.0" upper="20.0" velocity="2.0"/>
+  </joint>
+  <joint name="boxbot_joint" type="fixed">
+    <origin rpy="0 0 0" xyz="0 0 0"/>
+    <parent link="boxbot_linkY"/>
+    <child link="boxbot_link"/>
+  </joint>
+</robot>
