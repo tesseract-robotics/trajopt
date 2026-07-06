@@ -45,18 +45,9 @@ void CollisionCoeffData::setCollisionCoeff(const tesseract::common::LinkId& obj1
 {
   const tesseract::common::LinkIdPair pair(obj1, obj2);
 
-  auto [it, inserted] = lookup_table_.try_emplace(pair);
-  if (inserted)
-  {
-    // Fat, hybrid-equality LinkIdPair keys already keep colliding pairs distinct in
-    // lookup_table_, so there is no hash-collision case left to check here (see Task 4/6).
-    auto [name1, name2] = tesseract::common::orderedPairNames(obj1, obj2);
-    it->second = PairCoeffEntry{ std::move(name1), std::move(name2), collision_coeff };
-  }
-  else
-  {
-    it->second.coeff = collision_coeff;
-  }
+  // Fat, hybrid-equality LinkIdPair keys already keep colliding pairs distinct in
+  // lookup_table_, so there is no hash-collision case left to check here (see Task 4/6).
+  lookup_table_[pair].coeff = collision_coeff;
 
   if (tesseract::common::almostEqualRelativeAndAbs(collision_coeff, 0.0))
     zero_coeff_.insert(pair);

@@ -256,8 +256,8 @@ TEST(TrajoptCommonYAMLTestFixture, CollisionCoeffDataThreeTierOverloadsUnit)  //
   EXPECT_EQ(pair_data.size(), 2U);
   const auto it = pair_data.find(LinkIdPair(id_a, id_b));
   ASSERT_NE(it, pair_data.end());
-  EXPECT_FALSE(it->second.name1.empty());
-  EXPECT_FALSE(it->second.name2.empty());
+  EXPECT_FALSE(it->first.first().name().empty());
+  EXPECT_FALSE(it->first.second().name().empty());
   EXPECT_NEAR(it->second.coeff, 2.5, 1e-12);
 
   // Zero coeff set uses LinkIdPair

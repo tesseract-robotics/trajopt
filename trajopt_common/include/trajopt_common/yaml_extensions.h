@@ -55,8 +55,8 @@ struct convert<trajopt_common::CollisionCoeffData>
       for (const auto& [key, entry] : pair_data)
       {
         Node key_node(NodeType::Sequence);
-        key_node.push_back(entry.name1);
-        key_node.push_back(entry.name2);
+        key_node.push_back(key.first().name());
+        key_node.push_back(key.second().name());
 
         // tell yaml-cpp "emit this sequence in [a, b] inline style"
         key_node.SetStyle(YAML::EmitterStyle::Flow);

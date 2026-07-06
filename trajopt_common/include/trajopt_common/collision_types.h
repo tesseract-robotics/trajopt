@@ -47,11 +47,9 @@ void save(Archive& ar, const CollisionCoeffData& obj);
 template <class Archive>
 void load(Archive& ar, CollisionCoeffData& obj);
 
-/** @brief Value stored in each coefficient-pair entry — names for serialization/display, coefficient for lookups. */
+/** @brief Value stored in each coefficient-pair entry. The pair key carries the names. */
 struct PairCoeffEntry
 {
-  std::string name1;
-  std::string name2;
   double coeff{ 0 };
 };
 
