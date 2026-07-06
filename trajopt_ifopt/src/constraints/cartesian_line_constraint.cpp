@@ -56,11 +56,11 @@ CartLineInfo::CartLineInfo(std::shared_ptr<const tesseract::kinematics::JointGro
   , target_frame_offset2(target_frame_offset2)
   , indices(indices)
 {
-  if (!this->manip->hasLinkId(source_frame))
-    throw std::runtime_error("CartLineInfo: Source Link name '" + source_frame.name() + "' provided does not exist.");
+  if (!this->manip->hasLinkId(this->source_frame))
+    throw std::runtime_error("CartLineInfo: Source Link name '" + this->source_frame.name() + "' provided does not exist.");
 
-  if (!this->manip->hasLinkId(target_frame))
-    throw std::runtime_error("CartLineInfo: Target Link name '" + target_frame.name() + "' provided does not exist.");
+  if (!this->manip->hasLinkId(this->target_frame))
+    throw std::runtime_error("CartLineInfo: Target Link name '" + this->target_frame.name() + "' provided does not exist.");
 
   if (this->target_frame_offset1.isApprox(target_frame_offset2))
     throw std::runtime_error("CartLineInfo: The start and end point are the same!");
