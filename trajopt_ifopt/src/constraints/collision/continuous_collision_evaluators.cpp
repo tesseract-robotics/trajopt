@@ -117,6 +117,7 @@ void LVSContinuousCollisionEvaluator::calcCollisionData(trajopt_common::Collisio
     ShapeGrsMap shape_grs;
 
     const double coeff = coeff_data_.getCollisionCoeff(pair.first);
+    const double margin = margin_data_.getCollisionMargin(pair.first);
     const auto& results = pair.second;
 
     for (const tesseract::collision::ContactResult& dist_result : results)
@@ -137,7 +138,9 @@ void LVSContinuousCollisionEvaluator::calcCollisionData(trajopt_common::Collisio
         grs.results.reserve(results.size());
       }
 
-      grs.add(calcGradientData(dof_vals0, dof_vals1, dist_result));
+      trajopt_common::GradientResults grad;
+      trajopt_common::getGradient(grad, dof_vals0, dof_vals1, dist_result, margin, margin_buffer_, *manip_);
+      grs.add(std::move(grad));
     }
 
     for (auto& kv : shape_grs)
@@ -244,18 +247,6 @@ void LVSContinuousCollisionEvaluator::calcCollisionsHelper(tesseract::collision:
   }
 }
 
-trajopt_common::GradientResults
-LVSContinuousCollisionEvaluator::calcGradientData(const Eigen::Ref<const Eigen::VectorXd>& dof_vals0,
-                                                  const Eigen::Ref<const Eigen::VectorXd>& dof_vals1,
-                                                  const tesseract::collision::ContactResult& contact_results)
-{
-  // Contains the contact distance threshold and coefficient for the given link pair
-  const double margin = margin_data_.getCollisionMargin(contact_results.link_ids[0], contact_results.link_ids[1]);
-  trajopt_common::GradientResults results;
-  trajopt_common::getGradient(results, dof_vals0, dof_vals1, contact_results, margin, margin_buffer_, *manip_);
-  return results;
-}
-
 double LVSContinuousCollisionEvaluator::getCollisionMarginBuffer() const { return margin_buffer_; }
 
 const tesseract::common::CollisionMarginData& LVSContinuousCollisionEvaluator::getCollisionMarginData() const
@@ -346,6 +337,7 @@ void LVSDiscreteCollisionEvaluator::calcCollisionData(trajopt_common::CollisionC
     ShapeGrsMap shape_grs;
 
     const double coeff = coeff_data_.getCollisionCoeff(pair.first);
+    const double margin = margin_data_.getCollisionMargin(pair.first);
     const auto& results = pair.second;
 
     for (const tesseract::collision::ContactResult& dist_result : results)
@@ -366,7 +358,9 @@ void LVSDiscreteCollisionEvaluator::calcCollisionData(trajopt_common::CollisionC
         grs.results.reserve(results.size());
       }
 
-      grs.add(calcGradientData(dof_vals0, dof_vals1, dist_result));
+      trajopt_common::GradientResults grad;
+      trajopt_common::getGradient(grad, dof_vals0, dof_vals1, dist_result, margin, margin_buffer_, *manip_);
+      grs.add(std::move(grad));
     }
 
     for (auto& kv : shape_grs)
@@ -459,18 +453,6 @@ void LVSDiscreteCollisionEvaluator::calcCollisionsHelper(tesseract::collision::C
     }
     contacts.clear();
   }
-}
-
-trajopt_common::GradientResults
-LVSDiscreteCollisionEvaluator::calcGradientData(const Eigen::Ref<const Eigen::VectorXd>& dof_vals0,
-                                                const Eigen::Ref<const Eigen::VectorXd>& dof_vals1,
-                                                const tesseract::collision::ContactResult& contact_results)
-{
-  // Contains the contact distance threshold and coefficient for the given link pair
-  const double margin = margin_data_.getCollisionMargin(contact_results.link_ids[0], contact_results.link_ids[1]);
-  trajopt_common::GradientResults results;
-  trajopt_common::getGradient(results, dof_vals0, dof_vals1, contact_results, margin, margin_buffer_, *manip_);
-  return results;
 }
 
 double LVSDiscreteCollisionEvaluator::getCollisionMarginBuffer() const { return margin_buffer_; }

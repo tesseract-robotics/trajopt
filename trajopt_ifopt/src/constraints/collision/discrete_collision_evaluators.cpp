@@ -109,6 +109,7 @@ void SingleTimestepCollisionEvaluator::calcCollisions(trajopt_common::CollisionC
 
     ShapeGrsMap shape_grs;
     const double coeff = coeff_data_.getCollisionCoeff(pair.first);
+    const double margin = margin_data_.getCollisionMargin(pair.first);
 
     for (const auto& dist_result : pair.second)
     {
@@ -127,7 +128,9 @@ void SingleTimestepCollisionEvaluator::calcCollisions(trajopt_common::CollisionC
         grs.results.reserve(pair.second.size());
       }
 
-      grs.add(getGradient(dof_vals, dist_result));
+      trajopt_common::GradientResults grad;
+      trajopt_common::getGradient(grad, dof_vals, dist_result, margin, margin_buffer_, *manip_);
+      grs.add(std::move(grad));
     }
 
     // Move results out instead of copying
@@ -177,17 +180,6 @@ void SingleTimestepCollisionEvaluator::calcCollisionsHelper(const Eigen::Ref<con
   };
 
   dist_results.filter(filter);
-}
-
-trajopt_common::GradientResults
-SingleTimestepCollisionEvaluator::getGradient(const Eigen::VectorXd& dofvals,
-                                              const tesseract::collision::ContactResult& contact_result)
-{
-  // Contains the contact distance threshold and coefficient for the given link pair
-  const double margin = margin_data_.getCollisionMargin(contact_result.link_ids[0], contact_result.link_ids[1]);
-  trajopt_common::GradientResults results;
-  trajopt_common::getGradient(results, dofvals, contact_result, margin, margin_buffer_, *manip_);
-  return results;
 }
 
 double SingleTimestepCollisionEvaluator::getCollisionMarginBuffer() const { return margin_buffer_; }
