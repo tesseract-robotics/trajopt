@@ -79,20 +79,6 @@ public:
                                  std::size_t max_allowed) = 0;
 
   /**
-   * @brief Extracts the gradient information based on the contact results for the transition between dof_vals0 and
-   * dof_vals1
-   * @param dof_vals0 Joint values for start state
-   * @param dof_vals1 Joint values for end state
-   * @param contact_results The contact results for transition between dof_vals0 and dof_vals1 to compute the gradient
-   * data
-   * @return The gradient results
-   */
-  virtual trajopt_common::GradientResults
-  calcGradientData(const Eigen::Ref<const Eigen::VectorXd>& dof_vals0,
-                   const Eigen::Ref<const Eigen::VectorXd>& dof_vals1,
-                   const tesseract::collision::ContactResult& contact_results) = 0;
-
-  /**
    * @brief Get the collision margin buffer
    * @return The collision margin buffer
    */
@@ -144,11 +130,6 @@ public:
                          bool vars0_fixed,
                          bool vars1_fixed,
                          std::size_t max_allowed) override final;
-
-  trajopt_common::GradientResults
-  calcGradientData(const Eigen::Ref<const Eigen::VectorXd>& dof_vals0,
-                   const Eigen::Ref<const Eigen::VectorXd>& dof_vals1,
-                   const tesseract::collision::ContactResult& contact_results) override final;
 
   double getCollisionMarginBuffer() const override final;
 
@@ -207,11 +188,6 @@ public:
                          bool vars0_fixed,
                          bool vars1_fixed,
                          std::size_t max_allowed) override final;
-
-  trajopt_common::GradientResults
-  calcGradientData(const Eigen::Ref<const Eigen::VectorXd>& dof_vals0,
-                   const Eigen::Ref<const Eigen::VectorXd>& dof_vals1,
-                   const tesseract::collision::ContactResult& contact_results) override final;
 
   double getCollisionMarginBuffer() const override final;
 

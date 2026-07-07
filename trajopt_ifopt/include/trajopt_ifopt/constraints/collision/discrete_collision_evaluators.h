@@ -95,16 +95,6 @@ public:
    * @return The joint group
    */
   virtual const tesseract::kinematics::JointGroup& getJointGroup() const = 0;
-
-  /**
-   * @brief Extracts the gradient information based on the contact results
-   * @param dofvals The joint values
-   * @param contact_result The contact results to compute the gradient
-   * @param isTimestep1 Indicates if this is the second timestep when computing gradient for continuous collision
-   * @return The gradient results
-   */
-  virtual trajopt_common::GradientResults getGradient(const Eigen::VectorXd& dofvals,
-                                                      const tesseract::collision::ContactResult& contact_result) = 0;
 };
 
 /**
@@ -127,9 +117,6 @@ public:
   void calcCollisions(trajopt_common::CollisionCacheData& collision_data,
                       const Eigen::Ref<const Eigen::VectorXd>& dof_vals,
                       std::size_t max_allowed) override final;
-
-  trajopt_common::GradientResults getGradient(const Eigen::VectorXd& dofvals,
-                                              const tesseract::collision::ContactResult& contact_result) override;
 
   double getCollisionMarginBuffer() const override final;
 
