@@ -323,18 +323,6 @@ GradientResults CollisionEvaluator::GetGradient(const Eigen::VectorXd& dofvals0,
   return results;
 }
 
-GradientResults CollisionEvaluator::GetGradient(const Eigen::VectorXd& dofvals0,
-                                                const Eigen::VectorXd& dofvals1,
-                                                const tesseract::collision::ContactResult& contact_result,
-                                                bool isTimestep1)
-{
-  // Contains the contact distance threshold and coefficient for the given link pair
-  const tesseract::common::LinkIdPair pair(contact_result.link_ids[0], contact_result.link_ids[1]);
-  const double margin = margin_data_.getCollisionMargin(pair);
-  const double coeff = coeff_data_.getCollisionCoeff(pair);
-  return GetGradient(dofvals0, dofvals1, contact_result, margin, coeff, isTimestep1);
-}
-
 const tesseract::common::CollisionMarginData& CollisionEvaluator::getCollisionMarginData() const
 {
   return margin_data_;

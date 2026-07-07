@@ -173,7 +173,8 @@ struct CollisionEvaluator
 
   /**
    * @brief Extracts the gradient information based on the contact results
-   * @param dofvals The joint values
+   * @param dofvals0 The joint values at the first timestep
+   * @param dofvals1 The joint values at the second timestep
    * @param contact_result The contact results to compute the gradient
    * @param margin The link pair the contact margin.
    * @param coeff The link pair the coefficient/weight.
@@ -185,18 +186,6 @@ struct CollisionEvaluator
                               const tesseract::collision::ContactResult& contact_result,
                               double margin,
                               double coeff,
-                              bool isTimestep1);
-
-  /**
-   * @brief Extracts the gradient information based on the contact results
-   * @param dofvals The joint values
-   * @param contact_result The contact results to compute the gradient
-   * @param isTimestep1 Indicates if this is the second timestep when computing gradient for continuous collision
-   * @return The gradient results
-   */
-  GradientResults GetGradient(const Eigen::VectorXd& dofvals0,
-                              const Eigen::VectorXd& dofvals1,
-                              const tesseract::collision::ContactResult& contact_result,
                               bool isTimestep1);
 
   /**
