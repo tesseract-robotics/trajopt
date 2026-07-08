@@ -2,6 +2,7 @@
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <ctime>
 #include <gtest/gtest.h>
+#include <tesseract/common/eigen_types.h>
 #include <tesseract/common/types.h>
 #include <tesseract/common/resource_locator.h>
 #include <tesseract/kinematics/joint_group.h>
@@ -112,7 +113,7 @@ TEST_F(KinematicCostsTest, CartPoseJacCalculator_TolerancedInsideBand)  // NOLIN
   Eigen::VectorXd values(7);
   values << -1.1, 1.2, -3.3, -1.4, 5.5, -1.6, 7.7;
 
-  const tesseract::common::TransformMap state_cache = kin->calcFwdKin(values);
+  const tesseract::common::LinkIdTransformMap state_cache = kin->calcFwdKin(values);
   const Eigen::Isometry3d& source_frame_offset = state_cache.at(target_frame);
   const Eigen::Isometry3d target_frame_offset =
       Eigen::Isometry3d::Identity() * Eigen::AngleAxisd(0.1, Eigen::Vector3d::UnitX());
@@ -157,7 +158,7 @@ TEST_F(KinematicCostsTest, CartPoseJacCalculator_TolerancedOutsideBand)  // NOLI
   Eigen::VectorXd values(7);
   values << -1.1, 1.2, -3.3, -1.4, 5.5, -1.6, 7.7;
 
-  const tesseract::common::TransformMap state_cache = kin->calcFwdKin(values);
+  const tesseract::common::LinkIdTransformMap state_cache = kin->calcFwdKin(values);
   const Eigen::Isometry3d& source_frame_offset = state_cache.at(target_frame);
   // 0.8 rad rx offset, well outside the ±0.52 band.
   const Eigen::Isometry3d target_frame_offset =
@@ -195,7 +196,7 @@ TEST_F(KinematicCostsTest, CartPoseJacCalculator_TolerancedAcrossEdge)  // NOLIN
   Eigen::VectorXd values(7);
   values << -1.1, 1.2, -3.3, -1.4, 5.5, -1.6, 7.7;
 
-  const tesseract::common::TransformMap state_cache = kin->calcFwdKin(values);
+  const tesseract::common::LinkIdTransformMap state_cache = kin->calcFwdKin(values);
   const Eigen::Isometry3d& source_frame_offset = state_cache.at(target_frame);
   // 0.51 rad rx — just inside the band, so any non-trivial perturbation around the edge straddles it.
   const Eigen::Isometry3d target_frame_offset =
@@ -241,7 +242,7 @@ TEST_F(KinematicCostsTest, DynamicCartPoseJacCalculator_TolerancedInsideBand)  /
   Eigen::VectorXd values(7);
   values << -1.1, 1.2, -3.3, -1.4, 5.5, -1.6, 7.7;
 
-  const tesseract::common::TransformMap state_cache = kin->calcFwdKin(values);
+  const tesseract::common::LinkIdTransformMap state_cache = kin->calcFwdKin(values);
   const Eigen::Isometry3d source_frame_offset = Eigen::Isometry3d::Identity();
   // Pick a target_frame_offset such that the seed pose error has rx inside ±0.52 (e.g. 0.1 rad). Concretely: compute
   // current_target_in_source = source_tf.inverse() * target_tf at the seed, then target_frame_offset =
@@ -296,7 +297,7 @@ TEST_F(KinematicCostsTest, DynamicCartPoseJacCalculator_TolerancedOutsideBand)  
   Eigen::VectorXd values(7);
   values << -1.1, 1.2, -3.3, -1.4, 5.5, -1.6, 7.7;
 
-  const tesseract::common::TransformMap state_cache = kin->calcFwdKin(values);
+  const tesseract::common::LinkIdTransformMap state_cache = kin->calcFwdKin(values);
   const Eigen::Isometry3d source_frame_offset = Eigen::Isometry3d::Identity();
   // 0.8 rad rx offset, well outside the ±0.52 band. Same construction as InsideBand but with a larger angle.
   // current_target_in_source = source_tf^-1 * target_tf at the seed.
@@ -341,7 +342,7 @@ TEST_F(KinematicCostsTest, DynamicCartPoseJacCalculator_TolerancedAcrossEdge)  /
   Eigen::VectorXd values(7);
   values << -1.1, 1.2, -3.3, -1.4, 5.5, -1.6, 7.7;
 
-  const tesseract::common::TransformMap state_cache = kin->calcFwdKin(values);
+  const tesseract::common::LinkIdTransformMap state_cache = kin->calcFwdKin(values);
   const Eigen::Isometry3d source_frame_offset = Eigen::Isometry3d::Identity();
   // 0.51 rad rx — just inside the band, so any non-trivial perturbation straddles the edge. Same pattern as
   // InsideBand but with a larger angle close to the band boundary.
