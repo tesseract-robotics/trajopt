@@ -10,10 +10,10 @@ TEST(CollisionCoeffDataUnit, CollidingPairsCoexist)  // NOLINT
   trajopt_common::CollisionCoeffData data(/*default_collision_coeff=*/1.0);
   data.setCollisionCoeff(a, x, 5.0);
   data.setCollisionCoeff(b, x, 0.0);  // 0 → also lands in zero_coeff_; previously threw
-  EXPECT_DOUBLE_EQ(data.getCollisionCoeff(tesseract::common::LinkIdPair(a, x)), 5.0);
-  EXPECT_DOUBLE_EQ(data.getCollisionCoeff(tesseract::common::LinkIdPair(b, x)), 0.0);
-  EXPECT_FALSE(data.hasZeroCoeff(tesseract::common::LinkIdPair(a, x)));
-  EXPECT_TRUE(data.hasZeroCoeff(tesseract::common::LinkIdPair(b, x)));
+  EXPECT_DOUBLE_EQ(data.getCollisionCoeff({ a, x }), 5.0);
+  EXPECT_DOUBLE_EQ(data.getCollisionCoeff({ b, x }), 0.0);
+  EXPECT_FALSE(data.hasZeroCoeff({ a, x }));
+  EXPECT_TRUE(data.hasZeroCoeff({ b, x }));
 }
 
 int main(int argc, char** argv)

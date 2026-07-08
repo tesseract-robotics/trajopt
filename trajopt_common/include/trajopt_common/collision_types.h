@@ -104,27 +104,10 @@ public:
   double getCollisionCoeff(const tesseract::common::LinkIdPair& pair) const;
 
   /**
-   * @brief Get the pairs collision coefficient
-   *
-   * If a collision coeff for the request pair does not exist it returns the default collision coeff
-   *
-   * @param obj1 The first object name
-   * @param obj2 The second object name
-   * @return Coefficient
-   */
-  double getCollisionCoeff(const tesseract::common::LinkId& id1, const tesseract::common::LinkId& id2) const;
-
-  /**
    * @brief Check if a pair has zero coefficient
    * @return True if the pair has zero coefficient
    */
   bool hasZeroCoeff(const tesseract::common::LinkIdPair& pair) const;
-
-  /**
-   * @brief Check if a pair has zero coefficient
-   * @return True if the pair has zero coefficient
-   */
-  bool hasZeroCoeff(const tesseract::common::LinkId& id1, const tesseract::common::LinkId& id2) const;
 
   /**
    * @brief Get all collision coefficient pair data

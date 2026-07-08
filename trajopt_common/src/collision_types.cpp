@@ -45,8 +45,6 @@ void CollisionCoeffData::setCollisionCoeff(const tesseract::common::LinkId& obj1
 {
   const tesseract::common::LinkIdPair pair(obj1, obj2);
 
-  // Fat, hybrid-equality LinkIdPair keys already keep colliding pairs distinct in
-  // lookup_table_, so there is no hash-collision case left to check here (see Task 4/6).
   lookup_table_[pair].coeff = collision_coeff;
 
   if (tesseract::common::almostEqualRelativeAndAbs(collision_coeff, 0.0))
@@ -63,20 +61,9 @@ double CollisionCoeffData::getCollisionCoeff(const tesseract::common::LinkIdPair
   return default_collision_coeff_;
 }
 
-double CollisionCoeffData::getCollisionCoeff(const tesseract::common::LinkId& id1,
-                                             const tesseract::common::LinkId& id2) const
-{
-  return getCollisionCoeff(tesseract::common::LinkIdPair(id1, id2));
-}
-
 bool CollisionCoeffData::hasZeroCoeff(const tesseract::common::LinkIdPair& pair) const
 {
   return zero_coeff_.count(pair) != 0;
-}
-
-bool CollisionCoeffData::hasZeroCoeff(const tesseract::common::LinkId& id1, const tesseract::common::LinkId& id2) const
-{
-  return hasZeroCoeff(tesseract::common::LinkIdPair(id1, id2));
 }
 
 const PairsCollisionCoeffData& CollisionCoeffData::getCollisionCoeffPairData() const { return lookup_table_; }
