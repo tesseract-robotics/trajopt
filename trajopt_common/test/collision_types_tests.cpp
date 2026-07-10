@@ -1,11 +1,12 @@
 #include <gtest/gtest.h>
 #include <trajopt_common/collision_types.h>
 #include <tesseract/common/types.h>
+#include "name_id_testing.h"
 
 TEST(CollisionCoeffDataUnit, CollidingPairsCoexist)  // NOLINT
 {
-  const auto a = tesseract::common::LinkId::createWithValueForTesting(42, "collide_a");
-  const auto b = tesseract::common::LinkId::createWithValueForTesting(42, "collide_b");
+  const auto a = tesseract::common::NameIdTestAccess::create<tesseract::common::LinkId>(42, "collide_a");
+  const auto b = tesseract::common::NameIdTestAccess::create<tesseract::common::LinkId>(42, "collide_b");
   const tesseract::common::LinkId x("link_x");
   trajopt_common::CollisionCoeffData data(/*default_collision_coeff=*/1.0);
   data.setCollisionCoeff(a, x, 5.0);
