@@ -2,7 +2,9 @@
 
 #include <functional>
 #include <memory>
+#include <vector>
 
+#include <tesseract/common/fwd.h>
 #include <tesseract/visualization/fwd.h>
 #include <tesseract/state_solver/fwd.h>
 
@@ -28,12 +30,12 @@ PlotCallback(const std::shared_ptr<tesseract::visualization::Visualization>& plo
  * @brief Returns a callback suitable for an optimizer but does not require the problem
  * @param plotter
  * @param state_solver
- * @param joint_name
+ * @param joint_ids
  * @return
  */
 std::function<void(sco::OptProb*, sco::OptResults&)>
 PlotProbCallback(const std::shared_ptr<tesseract::visualization::Visualization>& plotter,
                  const tesseract::scene_graph::StateSolver& state_solver,
-                 const std::vector<std::string>& joint_names);
+                 const std::vector<tesseract::common::JointId>& joint_ids);
 
 }  // namespace trajopt
