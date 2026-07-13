@@ -647,7 +647,7 @@ VectorXd AvoidSingularitySubsetErrCalculator::operator()(const VectorXd& var_val
   UNUSED(var_vals);
   // Get the subset of the input variable values
   VectorXd subset_var_vals(fwd_kin_->numJoints());
-  assert(getSubset(superset_kin_->getJointNames(), var_vals, fwd_kin_->getJointNames(), subset_var_vals) == true);
+  assert(getSubset(superset_kin_->getJointIds(), var_vals, fwd_kin_->getJointIds(), subset_var_vals) == true);
 
   // Return the cost using the base class
   return AvoidSingularityErrCalculator::operator()(subset_var_vals);
@@ -658,7 +658,7 @@ MatrixXd AvoidSingularitySubsetJacCalculator::operator()(const VectorXd& var_val
   UNUSED(var_vals);
   // Calculate the gradient using the subset kinematics
   VectorXd subset_var_vals(fwd_kin_->numJoints());
-  assert(getSubset(superset_kin_->getJointNames(), var_vals, fwd_kin_->getJointNames(), subset_var_vals) == true);
+  assert(getSubset(superset_kin_->getJointIds(), var_vals, fwd_kin_->getJointIds(), subset_var_vals) == true);
   MatrixXd subset_jac = AvoidSingularityJacCalculator::operator()(subset_var_vals);
 
   // Create an all-zero gradient that is the size of the superset joints
@@ -668,7 +668,7 @@ MatrixXd AvoidSingularitySubsetJacCalculator::operator()(const VectorXd& var_val
   // Update the all-zero superset gradient with the values from the subset gradient
   VectorXd tmp(superset_kin_->numJoints());
   assert(updateFromSubset(
-             superset_kin_->getJointNames(), superset_jac.row(0), fwd_kin_->getJointNames(), subset_jac.row(0), tmp) ==
+             superset_kin_->getJointIds(), superset_jac.row(0), fwd_kin_->getJointIds(), subset_jac.row(0), tmp) ==
          true);
 
   // Create the output gradient
