@@ -343,7 +343,7 @@ static OptResult optimizeBoxbotOctree(const std::string& manager_name)
   config.type = tesseract::collision::CollisionEvaluatorType::CONTINUOUS;
   std::vector<ContactResultMap> collisions;
   const bool in_collision = checkTrajectory(
-      collisions, *manager, *state_solver, prob->GetKin()->getJointNames(), getTraj(opt->x(), prob->GetVars()), config);
+      collisions, *manager, *state_solver, prob->GetKin()->getJointIds(), getTraj(opt->x(), prob->GetVars()), config);
 
   return { status, opt->results().total_cost, !in_collision };
 }

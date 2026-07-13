@@ -98,7 +98,8 @@ void runNumericalIKTest(const Environment::Ptr& env)
   auto node = std::make_unique<trajopt_ifopt::Node>("Joint_Position_0");
   Eigen::VectorXd cur_position(7);  // env->getCurrentJointValues(forward_kinematics->getJointNames());
   cur_position << 0, 0, 0, -0.001, 0, -0.001, 0;
-  auto var = node->addVar("position", manip->getJointNames(), cur_position, bounds);
+  const std::vector<std::string> joint_names = tesseract::common::toNames(manip->getJointIds());
+  auto var = node->addVar("position", joint_names, cur_position, bounds);
   nodes.push_back(std::move(node));
   auto variables = std::make_shared<trajopt_ifopt::NodesVariables>("joint_trajectory", std::move(nodes));
 
@@ -186,7 +187,8 @@ void runNumericalIKWithToleranceTest(const Environment::Ptr& env)
   auto node = std::make_unique<trajopt_ifopt::Node>("Joint_Position_0");
   Eigen::VectorXd cur_position(7);  // env->getCurrentJointValues(forward_kinematics->getJointNames());
   cur_position << 0, 0, 0, -0.001, 0, -0.001, 0;
-  auto var = node->addVar("position", manip->getJointNames(), cur_position, bounds);
+  const std::vector<std::string> joint_names = tesseract::common::toNames(manip->getJointIds());
+  auto var = node->addVar("position", joint_names, cur_position, bounds);
   nodes.push_back(std::move(node));
   auto variables = std::make_shared<trajopt_ifopt::NodesVariables>("joint_trajectory", std::move(nodes));
 

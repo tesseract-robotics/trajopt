@@ -134,8 +134,8 @@ void runLinkWithGeomTest(const Environment::Ptr& env, const Visualization::Ptr& 
 
   tesseract::collision::CollisionCheckConfig config;
   config.type = tesseract::collision::CollisionEvaluatorType::CONTINUOUS;
-  bool found = checkTrajectory(
-      collisions, *manager, *state_solver, prob->GetKin()->getJointNames(), prob->GetInitTraj(), config);
+  bool found =
+      checkTrajectory(collisions, *manager, *state_solver, prob->GetKin()->getJointIds(), prob->GetInitTraj(), config);
 
   EXPECT_TRUE(found);
   CONSOLE_BRIDGE_logDebug((found) ? ("Initial trajectory is in collision") : ("Initial trajectory is collision free"));
@@ -161,7 +161,7 @@ void runLinkWithGeomTest(const Environment::Ptr& env, const Visualization::Ptr& 
 
   collisions.clear();
   found = checkTrajectory(
-      collisions, *manager, *state_solver, prob->GetKin()->getJointNames(), getTraj(opt->x(), prob->GetVars()), config);
+      collisions, *manager, *state_solver, prob->GetKin()->getJointIds(), getTraj(opt->x(), prob->GetVars()), config);
 
   EXPECT_FALSE(found);
   CONSOLE_BRIDGE_logDebug((found) ? ("Final trajectory is in collision") : ("Final trajectory is collision free"));
@@ -194,8 +194,8 @@ void runLinkWithoutGeomTest(const Environment::Ptr& env, const Visualization::Pt
 
   tesseract::collision::CollisionCheckConfig config;
   config.type = tesseract::collision::CollisionEvaluatorType::CONTINUOUS;
-  bool found = checkTrajectory(
-      collisions, *manager, *state_solver, prob->GetKin()->getJointNames(), prob->GetInitTraj(), config);
+  bool found =
+      checkTrajectory(collisions, *manager, *state_solver, prob->GetKin()->getJointIds(), prob->GetInitTraj(), config);
 
   EXPECT_TRUE(found);
   CONSOLE_BRIDGE_logDebug((found) ? ("Initial trajectory is in collision") : ("Initial trajectory is collision free"));
@@ -221,7 +221,7 @@ void runLinkWithoutGeomTest(const Environment::Ptr& env, const Visualization::Pt
 
   collisions.clear();
   found = checkTrajectory(
-      collisions, *manager, *state_solver, prob->GetKin()->getJointNames(), getTraj(opt->x(), prob->GetVars()), config);
+      collisions, *manager, *state_solver, prob->GetKin()->getJointIds(), getTraj(opt->x(), prob->GetVars()), config);
 
   EXPECT_FALSE(found);
   CONSOLE_BRIDGE_logDebug((found) ? ("Final trajectory is in collision") : ("Final trajectory is collision free"));

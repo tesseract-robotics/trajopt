@@ -30,6 +30,7 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <OsqpEigen/OsqpEigen.h>
 #include <tesseract/common/stopwatch.h>
 #include <tesseract/common/resource_locator.h>
+#include <tesseract/common/types.h>
 #include <tesseract/collision/discrete_contact_manager.h>
 #include <tesseract/kinematics/joint_group.h>
 #include <tesseract/state_solver/state_solver.h>
@@ -108,7 +109,8 @@ void runSimpleCollisionTest(const Environment::Ptr& env)
     Eigen::VectorXd pos(2);
     pos << -0.75, 0.75;
     positions.push_back(pos);
-    auto var = node->addVar("position", manip->getJointNames(), pos, bounds);
+    const std::vector<std::string> joint_names = tesseract::common::toNames(manip->getJointIds());
+    auto var = node->addVar("position", joint_names, pos, bounds);
     vars.push_back(var);
     nodes.push_back(std::move(node));
   }
@@ -174,7 +176,7 @@ void runSimpleCollisionTest(const Environment::Ptr& env)
   bool found = checkTrajectory(collisions,
                                *manager,
                                *state_solver,
-                               manip->getJointNames(),
+                               manip->getJointIds(),
                                inputs,
                                trajopt_collision_cnt_config.collision_check_config);
 
@@ -185,7 +187,7 @@ void runSimpleCollisionTest(const Environment::Ptr& env)
   found = checkTrajectory(collisions,
                           *manager,
                           *state_solver,
-                          manip->getJointNames(),
+                          manip->getJointIds(),
                           results,
                           trajopt_collision_cnt_config.collision_check_config);
 

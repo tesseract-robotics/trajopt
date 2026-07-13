@@ -65,7 +65,7 @@ TEST_F(InterfaceTest, initial_trajectory_cpp_interface)
   pci.kin = env_->getFwdKinematics(pci.basic_info.manip);
 
   // Populate Init Info
-  Eigen::VectorXd start_pos = pci.env->getCurrentJointValues(pci.kin->getJointNames());
+  Eigen::VectorXd start_pos = pci.env->getCurrentJointValues(pci.kin->getJointIds());
   pci.init_info.type = InitInfo::STATIONARY;
 
   auto jv = std::make_shared<JointPosTermInfo>();
@@ -113,7 +113,7 @@ TEST_F(InterfaceTest, initial_trajectory_time_cpp_interface)
   pci.kin = env_->getFwdKinematics(pci.basic_info.manip);
 
   // Populate Init Info
-  Eigen::VectorXd start_pos = pci.env->getCurrentJointValues(pci.kin->getJointNames());
+  Eigen::VectorXd start_pos = pci.env->getCurrentJointValues(pci.kin->getJointIds());
   pci.init_info.type = InitInfo::JOINT_INTERPOLATED;
   pci.init_info.data = Eigen::VectorXd::Constant(7, 1, end);
   pci.init_info.dt = dt;

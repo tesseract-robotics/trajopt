@@ -119,10 +119,11 @@ void runPlanningTest(const Environment::Ptr& env)
   // Add Variables
   std::vector<std::unique_ptr<trajopt_ifopt::Node>> nodes;
   std::vector<std::shared_ptr<const trajopt_ifopt::Var>> vars;
+  const std::vector<std::string> joint_names = tesseract::common::toNames(manip->getJointIds());
   for (Eigen::Index i = 0; i < 6; ++i)
   {
     auto node = std::make_unique<trajopt_ifopt::Node>("Joint_Position_" + std::to_string(i));
-    auto var = node->addVar("position", manip->getJointNames(), trajectory.row(i), bounds);
+    auto var = node->addVar("position", joint_names, trajectory.row(i), bounds);
     vars.push_back(var);
     nodes.push_back(std::move(node));
   }
@@ -205,13 +206,13 @@ void runPlanningTest(const Environment::Ptr& env)
 
   tesseract::collision::CollisionCheckConfig config;
   config.type = tesseract::collision::CollisionEvaluatorType::CONTINUOUS;
-  bool found = checkTrajectory(collisions, *manager, *state_solver, manip->getJointNames(), trajectory, config);
+  bool found = checkTrajectory(collisions, *manager, *state_solver, manip->getJointIds(), trajectory, config);
 
   EXPECT_TRUE(found);
   CONSOLE_BRIDGE_logWarn((found) ? ("Initial trajectory is in collision") : ("Initial trajectory is collision free"));
 
   collisions.clear();
-  found = checkTrajectory(collisions, *manager, *state_solver, manip->getJointNames(), results, config);
+  found = checkTrajectory(collisions, *manager, *state_solver, manip->getJointIds(), results, config);
 
   EXPECT_FALSE(found);
   CONSOLE_BRIDGE_logWarn((found) ? ("Final trajectory is in collision") : ("Final trajectory is collision free"));

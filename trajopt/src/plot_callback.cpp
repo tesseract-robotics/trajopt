@@ -19,7 +19,7 @@ namespace trajopt
 {
 void PlotCosts(const std::shared_ptr<tesseract::visualization::Visualization>& plotter,
                const tesseract::scene_graph::StateSolver& state_solver,
-               const std::vector<std::string>& joint_names,
+               const std::vector<tesseract::common::JointId>& joint_ids,
                const std::vector<sco::Cost::Ptr>& costs,
                const std::vector<sco::Constraint::Ptr>& cnts,
                const VarArray& vars,
@@ -46,7 +46,7 @@ void PlotCosts(const std::shared_ptr<tesseract::visualization::Visualization>& p
   auto traj = getTraj(results.x, vars);
   tesseract::common::JointTrajectory joint_trajectory;
   for (long i = 0; i < traj.rows(); ++i)
-    joint_trajectory.states.emplace_back(joint_names, traj.row(i));
+    joint_trajectory.states.emplace_back(joint_ids, traj.row(i));
 
   plotter->plotTrajectory(joint_trajectory, state_solver);
   plotter->waitForInput();
@@ -59,7 +59,7 @@ sco::Optimizer::Callback PlotCallback(const std::shared_ptr<tesseract::visualiza
     auto state_solver = trajopt_prob.GetEnv()->getStateSolver();
     PlotCosts(plotter,
               *state_solver,
-              trajopt_prob.GetKin()->getJointNames(),
+              trajopt_prob.GetKin()->getJointIds(),
               std::ref(trajopt_prob.getCosts()),
               trajopt_prob.getConstraints(),
               std::ref(trajopt_prob.GetVars()),
