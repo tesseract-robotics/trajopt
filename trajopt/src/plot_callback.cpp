@@ -69,7 +69,7 @@ sco::Optimizer::Callback PlotCallback(const std::shared_ptr<tesseract::visualiza
 
 void PlotProb(const std::shared_ptr<tesseract::visualization::Visualization>& plotter,
               const tesseract::scene_graph::StateSolver& state_solver,
-              const std::vector<std::string>& joint_names,
+              const std::vector<tesseract::common::JointId>& joint_ids,
               sco::OptProb* prob,
               const sco::OptResults& results)
 {
@@ -94,13 +94,13 @@ void PlotProb(const std::shared_ptr<tesseract::visualization::Visualization>& pl
   // This probably is/should be a utility somewhere
   VarArray var_array;
   var_array.m_data = var_vec;
-  var_array.m_nCol = static_cast<int>(joint_names.size());
+  var_array.m_nCol = static_cast<int>(joint_ids.size());
   var_array.m_nRow = static_cast<int>(var_vec.size()) / var_array.cols();
 
   auto traj = getTraj(results.x, var_array);
   tesseract::common::JointTrajectory joint_trajectory;
   for (long i = 0; i < traj.rows(); ++i)
-    joint_trajectory.states.emplace_back(joint_names, traj.row(i));
+    joint_trajectory.states.emplace_back(joint_ids, traj.row(i));
 
   plotter->plotTrajectory(joint_trajectory, state_solver);
   plotter->waitForInput();
@@ -108,10 +108,10 @@ void PlotProb(const std::shared_ptr<tesseract::visualization::Visualization>& pl
 
 sco::Optimizer::Callback PlotProbCallback(const std::shared_ptr<tesseract::visualization::Visualization>& plotter,
                                           const tesseract::scene_graph::StateSolver& state_solver,
-                                          const std::vector<std::string>& joint_names)
+                                          const std::vector<tesseract::common::JointId>& joint_ids)
 {
-  return [plotter, &state_solver, &joint_names](sco::OptProb* opt_problem, sco::OptResults& opt_results) {
-    PlotProb(plotter, state_solver, joint_names, opt_problem, opt_results);
+  return [plotter, &state_solver, &joint_ids](sco::OptProb* opt_problem, sco::OptResults& opt_results) {
+    PlotProb(plotter, state_solver, joint_ids, opt_problem, opt_results);
   };
 }
 
