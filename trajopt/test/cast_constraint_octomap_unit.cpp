@@ -235,8 +235,8 @@ void runConstraintTest(const Environment::Ptr& env,
 
   tesseract::collision::CollisionCheckConfig config;
   config.type = tesseract::collision::CollisionEvaluatorType::CONTINUOUS;
-  bool found = checkTrajectory(
-      collisions, *manager, *state_solver, prob->GetKin()->getJointNames(), prob->GetInitTraj(), config);
+  bool found =
+      checkTrajectory(collisions, *manager, *state_solver, prob->GetKin()->getJointIds(), prob->GetInitTraj(), config);
 
   EXPECT_TRUE(found);
   const ExpectedContactSummary initial_summary =
@@ -269,7 +269,7 @@ void runConstraintTest(const Environment::Ptr& env,
 
   collisions.clear();
   found = checkTrajectory(
-      collisions, *manager, *state_solver, prob->GetKin()->getJointNames(), getTraj(opt->x(), prob->GetVars()), config);
+      collisions, *manager, *state_solver, prob->GetKin()->getJointIds(), getTraj(opt->x(), prob->GetVars()), config);
 
   const std::string final_test_name = test_name + "_final";
   const ExpectedContactSummary final_summary =

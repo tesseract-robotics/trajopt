@@ -80,7 +80,7 @@ TEST_F(CostsTest, equality_jointPos)  // NOLINT
   pci.kin = env_->getJointGroup(pci.basic_info.manip);
 
   // Populate Init Info
-  Eigen::VectorXd start_pos = pci.env->getCurrentJointValues(pci.kin->getJointNames());
+  Eigen::VectorXd start_pos = pci.env->getCurrentJointValues(pci.kin->getJointIds());
   pci.init_info.type = InitInfo::STATIONARY;
   pci.init_info.data = start_pos.transpose().replicate(pci.basic_info.n_steps, 1);
 
@@ -172,7 +172,7 @@ TEST_F(CostsTest, inequality_jointPos)  // NOLINT
   pci.kin = env_->getJointGroup(pci.basic_info.manip);
 
   // Populate Init Info
-  Eigen::VectorXd start_pos = pci.env->getCurrentJointValues(pci.kin->getJointNames());
+  Eigen::VectorXd start_pos = pci.env->getCurrentJointValues(pci.kin->getJointIds());
   pci.init_info.type = InitInfo::STATIONARY;
   pci.init_info.data = start_pos.transpose().replicate(pci.basic_info.n_steps, 1);
 
@@ -282,7 +282,7 @@ TEST_F(CostsTest, equality_jointVel)  // NOLINT
   pci.kin = env_->getJointGroup(pci.basic_info.manip);
 
   // Populate Init Info
-  Eigen::VectorXd start_pos = pci.env->getCurrentJointValues(pci.kin->getJointNames());
+  Eigen::VectorXd start_pos = pci.env->getCurrentJointValues(pci.kin->getJointIds());
   pci.init_info.type = InitInfo::STATIONARY;
   pci.init_info.data = start_pos.transpose().replicate(pci.basic_info.n_steps, 1);
 
@@ -374,7 +374,7 @@ TEST_F(CostsTest, inequality_jointVel)  // NOLINT
   pci.kin = env_->getJointGroup(pci.basic_info.manip);
 
   // Populate Init Info
-  Eigen::VectorXd start_pos = pci.env->getCurrentJointValues(pci.kin->getJointNames());
+  Eigen::VectorXd start_pos = pci.env->getCurrentJointValues(pci.kin->getJointIds());
   pci.init_info.type = InitInfo::STATIONARY;
   pci.init_info.data = start_pos.transpose().replicate(pci.basic_info.n_steps, 1);
 
@@ -695,7 +695,7 @@ TEST_F(CostsTest, equality_jointAcc)  // NOLINT
   pci.kin = env_->getJointGroup(pci.basic_info.manip);
 
   // Populate Init Info
-  Eigen::VectorXd start_pos = pci.env->getCurrentJointValues(pci.kin->getJointNames());
+  Eigen::VectorXd start_pos = pci.env->getCurrentJointValues(pci.kin->getJointIds());
   pci.init_info.type = InitInfo::STATIONARY;
   pci.init_info.data = start_pos.transpose().replicate(pci.basic_info.n_steps, 1);
 
@@ -789,7 +789,7 @@ TEST_F(CostsTest, inequality_jointAcc)  // NOLINT
   pci.kin = env_->getJointGroup(pci.basic_info.manip);
 
   // Populate Init Info
-  Eigen::VectorXd start_pos = pci.env->getCurrentJointValues(pci.kin->getJointNames());
+  Eigen::VectorXd start_pos = pci.env->getCurrentJointValues(pci.kin->getJointIds());
   pci.init_info.type = InitInfo::STATIONARY;
   pci.init_info.data = start_pos.transpose().replicate(pci.basic_info.n_steps, 1);
 

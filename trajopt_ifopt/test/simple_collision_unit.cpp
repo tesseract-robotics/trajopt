@@ -32,6 +32,7 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <tesseract/state_solver/state_solver.h>
 #include <tesseract/environment/environment.h>
 #include <tesseract/environment/utils.h>
+#include <tesseract/common/types.h>
 #include <trajopt_common/collision_types.h>
 #include <console_bridge/console.h>
 TRAJOPT_IGNORE_WARNINGS_POP
@@ -102,7 +103,8 @@ TEST_F(SimpleCollisionTest, spheres)  // NOLINT
     Eigen::VectorXd pos(2);
     pos << -0.75, 0.75;
     positions.push_back(pos);
-    vars.push_back(nodes.back()->addVar("position", manip->getJointNames(), pos, bounds));
+    const std::vector<std::string> joint_names = tesseract::common::toNames(manip->getJointIds());
+    vars.push_back(nodes.back()->addVar("position", joint_names, pos, bounds));
   }
   nlp.addVariableSet(std::make_shared<NodesVariables>("joint_trajectory", std::move(nodes)));
 
@@ -144,7 +146,7 @@ TEST_F(SimpleCollisionTest, spheres)  // NOLINT
   bool found = checkTrajectory(collisions,
                                *manager,
                                *state_solver,
-                               manip->getJointNames(),
+                               manip->getJointIds(),
                                inputs,
                                trajopt_collision_config.collision_check_config);
 
@@ -155,7 +157,7 @@ TEST_F(SimpleCollisionTest, spheres)  // NOLINT
   found = checkTrajectory(collisions,
                           *manager,
                           *state_solver,
-                          manip->getJointNames(),
+                          manip->getJointIds(),
                           results,
                           trajopt_collision_config.collision_check_config);
 

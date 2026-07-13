@@ -33,6 +33,7 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <tesseract/state_solver/state_solver.h>
 #include <tesseract/environment/environment.h>
 #include <tesseract/environment/utils.h>
+#include <tesseract/common/types.h>
 #include <trajopt_common/collision_types.h>
 #include <trajopt_common/config.hpp>
 #include <trajopt_common/eigen_conversions.hpp>
@@ -99,12 +100,13 @@ void runContinuousGradientTest(const Environment::Ptr& env, double coeff)
   std::vector<std::unique_ptr<Node>> nodes;
   std::vector<std::shared_ptr<const Var>> vars;
   std::vector<Eigen::VectorXd> positions;
+  const std::vector<std::string> joint_names = tesseract::common::toNames(manip->getJointIds());
   {
     nodes.push_back(std::make_unique<Node>("Joint_Position_0"));
     Eigen::VectorXd pos(2);
     pos << -1.9, 0;
     positions.push_back(pos);
-    vars.push_back(nodes.back()->addVar("position", manip->getJointNames(), pos, bounds));
+    vars.push_back(nodes.back()->addVar("position", joint_names, pos, bounds));
   }
 
   {
@@ -112,7 +114,7 @@ void runContinuousGradientTest(const Environment::Ptr& env, double coeff)
     Eigen::VectorXd pos(2);
     pos << 0, 1.9;
     positions.push_back(pos);
-    vars.push_back(nodes.back()->addVar("position", manip->getJointNames(), pos, bounds));
+    vars.push_back(nodes.back()->addVar("position", joint_names, pos, bounds));
   }
 
   {
@@ -120,7 +122,7 @@ void runContinuousGradientTest(const Environment::Ptr& env, double coeff)
     Eigen::VectorXd pos(2);
     pos << 1.9, 3.8;
     positions.push_back(pos);
-    vars.push_back(nodes.back()->addVar("position", manip->getJointNames(), pos, bounds));
+    vars.push_back(nodes.back()->addVar("position", joint_names, pos, bounds));
   }
   auto variables = std::make_shared<NodesVariables>("joint_trajectory", std::move(nodes));
 

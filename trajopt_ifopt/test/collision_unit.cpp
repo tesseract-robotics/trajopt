@@ -31,6 +31,7 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <tesseract/kinematics/joint_group.h>
 #include <tesseract/environment/environment.h>
 #include <tesseract/environment/utils.h>
+#include <tesseract/common/types.h>
 #include <trajopt_common/collision_types.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
@@ -77,7 +78,8 @@ public:
     Eigen::VectorXd pos(2);
     pos << -1.9, 0;
     auto node = std::make_unique<Node>("Joint_Position_0");
-    auto var0 = node->addVar("position", kin->getJointNames(), pos, bounds);
+    const std::vector<std::string> joint_names = tesseract::common::toNames(kin->getJointIds());
+    auto var0 = node->addVar("position", joint_names, pos, bounds);
 
     std::vector<std::unique_ptr<Node>> nodes;
     nodes.push_back(std::move(node));
