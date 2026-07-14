@@ -50,7 +50,7 @@ toJointTrajectory(const std::vector<std::shared_ptr<const trajopt_ifopt::Var>>& 
     joint_trajectory.reserve(joint_positions.size());
 
   for (const auto& jp : joint_positions)
-    joint_trajectory.states.emplace_back(jp->name(), jp->value());
+    joint_trajectory.states.emplace_back(tesseract::common::toIds<tesseract::common::JointId>(jp->name()), jp->value());
 
   return joint_trajectory;
 }
