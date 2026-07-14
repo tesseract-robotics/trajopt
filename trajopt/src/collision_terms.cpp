@@ -350,10 +350,15 @@ void CollisionEvaluator::CollisionsToDistanceExpressions(sco::AffExprVector& exp
   exprs.reserve(dist_results.size());
   exprs_margin.reserve(dist_results.size());
   exprs_coeff.reserve(dist_results.size());
+  tesseract::common::LinkIdPair pair;
   for (const auto& res : dist_results)
   {
     sco::AffExpr dist(0);
-    GradientResults grad = GetGradient(dofvals, res.get(), isTimestep1);
+    const tesseract::collision::ContactResult& contact_result = res.get();
+    pair.assign(contact_result.link_ids[0], contact_result.link_ids[1]);
+    const double margin = margin_data_.getCollisionMargin(pair);
+    const double coeff = coeff_data_.getCollisionCoeff(pair);
+    GradientResults grad = GetGradient(dofvals, contact_result, margin, coeff, isTimestep1);
     for (const auto& g : grad.gradients)
     {
       if (g.has_gradient)
@@ -725,8 +730,7 @@ void SingleTimestepCollisionEvaluator::Plot(const std::shared_ptr<tesseract::vis
     return margin_data_.getCollisionMargin(link1, link2);
   };
 
-  const tesseract::visualization::ContactResultsMarker cm(
-      manip_->getActiveLinkIds(), dist_results_copy, margin_fn);
+  const tesseract::visualization::ContactResultsMarker cm(manip_->getActiveLinkIds(), dist_results_copy, margin_fn);
   plotter->plotMarker(cm);
 }
 
@@ -969,8 +973,7 @@ void DiscreteCollisionEvaluator::Plot(const std::shared_ptr<tesseract::visualiza
     return margin_data_.getCollisionMargin(link1, link2);
   };
 
-  const tesseract::visualization::ContactResultsMarker cm(
-      manip_->getActiveLinkIds(), dist_results_copy, margin_fn);
+  const tesseract::visualization::ContactResultsMarker cm(manip_->getActiveLinkIds(), dist_results_copy, margin_fn);
   plotter->plotMarker(cm);
 }
 
@@ -1293,14 +1296,14 @@ double CollisionCost::value(const sco::DblVec& x)
   auto dist_vec = m_calc->GetContactResultVectorCached(x);
   const ContactResultVectorWrapper& dist_results = *dist_vec;
 
+  const auto& margin_data = m_calc->getCollisionMarginData();
+  const auto& coeff_data = m_calc->getCollisionCoeffData();
+  tesseract::common::LinkIdPair pair;
   double out = 0;
   for (std::size_t i = 0; i < dists.size(); ++i)
   {
     const tesseract::collision::ContactResult& res = dist_results[i].get();
-    // Contains the contact distance threshold and coefficient for the given link pair
-    const auto& margin_data = m_calc->getCollisionMarginData();
-    const auto& coeff_data = m_calc->getCollisionCoeffData();
-    const tesseract::common::LinkIdPair pair(res.link_ids[0], res.link_ids[1]);
+    pair.assign(res.link_ids[0], res.link_ids[1]);
     const double margin = margin_data.getCollisionMargin(pair);
     const double coeff = coeff_data.getCollisionCoeff(pair);
     // The margin_buffer is not leverage here because we want the actual error
@@ -1379,14 +1382,14 @@ DblVec CollisionConstraint::value(const sco::DblVec& x)
   auto dist_vec = m_calc->GetContactResultVectorCached(x);
   const ContactResultVectorWrapper& dist_results = *dist_vec;
 
+  const auto& margin_data = m_calc->getCollisionMarginData();
+  const auto& coeff_data = m_calc->getCollisionCoeffData();
+  tesseract::common::LinkIdPair pair;
   DblVec out(dists.size());
   for (std::size_t i = 0; i < dists.size(); ++i)
   {
     const tesseract::collision::ContactResult& res = dist_results[i].get();
-    // Contains the contact distance threshold and coefficient for the given link pair
-    const auto& margin_data = m_calc->getCollisionMarginData();
-    const auto& coeff_data = m_calc->getCollisionCoeffData();
-    const tesseract::common::LinkIdPair pair(res.link_ids[0], res.link_ids[1]);
+    pair.assign(res.link_ids[0], res.link_ids[1]);
     const double margin = margin_data.getCollisionMargin(pair);
     const double coeff = coeff_data.getCollisionCoeff(pair);
     // The margin_buffer is not leverage here because we want the actual error
