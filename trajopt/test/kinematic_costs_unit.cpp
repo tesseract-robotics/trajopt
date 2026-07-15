@@ -372,8 +372,8 @@ TEST_F(KinematicCostsTest, DynamicCartPoseJacCalculator_TolerancedAcrossEdge)  /
   // numerical and analytical values are O(1e-10~12) (the function is identically zero on a band neighbourhood, so
   // both quantities are essentially noise). Using 1e-5 epsilon keeps the FD secant well inside the band while
   // avoiding noise-dominated comparisons. This epsilon is sufficient to catch a naive row-zeroing shortcut.
-  // NOTE: stash-reverting calcJacobianTransformErrorDiff tolerance handling SHOULD cause this test to fail —
-  // the band-edge sub-gradient is the discriminating case.
+  // Without the tolerance handling in calcJacobianTransformErrorDiff this test fails — the band-edge
+  // sub-gradient is the discriminating case.
   checkJacobian(f, dfdx, values, 1.0e-5);
 }
 
