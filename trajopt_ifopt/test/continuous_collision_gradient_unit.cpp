@@ -31,6 +31,7 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <tesseract/collision/continuous_contact_manager.h>
 #include <tesseract/kinematics/joint_group.h>
 #include <tesseract/state_solver/state_solver.h>
+#include <tesseract/scene_graph/scene_state.h>
 #include <tesseract/environment/environment.h>
 #include <tesseract/environment/utils.h>
 #include <tesseract/common/types.h>
@@ -80,7 +81,7 @@ public:
 
 void runContinuousGradientTest(const Environment::Ptr& env, double coeff)
 {
-  std::unordered_map<std::string, double> ipos;
+  SceneState::JointValues ipos;
   ipos["spherebot_x_joint"] = -1.9;
   ipos["spherebot_y_joint"] = 0;
   env->setState(ipos);

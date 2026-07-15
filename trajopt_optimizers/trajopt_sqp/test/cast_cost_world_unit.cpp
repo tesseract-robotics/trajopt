@@ -35,6 +35,7 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <tesseract/state_solver/state_solver.h>
 #include <tesseract/scene_graph/link.h>
 #include <tesseract/scene_graph/joint.h>
+#include <tesseract/scene_graph/scene_state.h>
 #include <tesseract/environment/environment.h>
 #include <tesseract/environment/utils.h>
 #include <tesseract/environment/commands/add_link_command.h>
@@ -111,7 +112,7 @@ public:
 template <typename T>
 void runCastWorldTest(const Environment::Ptr& env, bool fixed_size)
 {
-  std::unordered_map<std::string, double> ipos;
+  SceneState::JointValues ipos;
   ipos["boxbot_x_joint"] = -1.9;
   ipos["boxbot_y_joint"] = 0;
   env->setState(ipos);

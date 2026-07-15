@@ -34,6 +34,7 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <tesseract/collision/continuous_contact_manager.h>
 #include <tesseract/kinematics/joint_group.h>
 #include <tesseract/state_solver/state_solver.h>
+#include <tesseract/scene_graph/scene_state.h>
 #include <tesseract/environment/environment.h>
 #include <tesseract/environment/utils.h>
 TRAJOPT_IGNORE_WARNINGS_POP
@@ -78,7 +79,7 @@ public:
     // Create plotting tool
     //    plotter_.reset(new tesseract_ros::ROSBasicPlotting(env_));
 
-    std::unordered_map<std::string, double> ipos;
+    SceneState::JointValues ipos;
     ipos["torso_lift_joint"] = 0.0;
     env->setState(ipos);
   }
@@ -87,7 +88,7 @@ public:
 template <typename T>
 void runPlanningTest(const Environment::Ptr& env)
 {
-  std::unordered_map<std::string, double> ipos;
+  SceneState::JointValues ipos;
   ipos["torso_lift_joint"] = 0;
   ipos["r_shoulder_pan_joint"] = -1.832;
   ipos["r_shoulder_lift_joint"] = -0.332;

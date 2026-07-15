@@ -30,6 +30,7 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <tesseract/collision/discrete_contact_manager.h>
 #include <tesseract/kinematics/joint_group.h>
 #include <tesseract/state_solver/state_solver.h>
+#include <tesseract/scene_graph/scene_state.h>
 #include <tesseract/environment/environment.h>
 #include <tesseract/environment/utils.h>
 #include <tesseract/common/types.h>
@@ -75,7 +76,7 @@ TEST_F(SimpleCollisionTest, spheres)  // NOLINT
 {
   CONSOLE_BRIDGE_logDebug("SimpleCollisionTest, spheres");
 
-  std::unordered_map<std::string, double> ipos;
+  SceneState::JointValues ipos;
   ipos["spherebot_x_joint"] = -0.75;
   ipos["spherebot_y_joint"] = 0.75;
   env->setState(ipos);

@@ -18,6 +18,7 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <functional>
 #include <fstream>
 #include <console_bridge/console.h>
+#include <tesseract/common/types.h>
 #include <tesseract/kinematics/joint_group.h>
 #include <tesseract/environment/environment.h>
 TRAJOPT_IGNORE_WARNINGS_POP
@@ -102,7 +103,7 @@ std::function<void(sco::OptProb*, sco::OptResults&)> WriteCallback(std::shared_p
   }
 
   // Write joint names
-  std::vector<std::string> joint_names = prob->GetEnv()->getActiveJointNames();
+  std::vector<std::string> joint_names = tesseract::common::toNames(prob->GetEnv()->getActiveJointIds());
   for (std::size_t i = 0; i < joint_names.size(); i++)
   {
     if (i != 0)

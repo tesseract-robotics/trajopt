@@ -11,6 +11,7 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <tesseract/kinematics/joint_group.h>
 #include <tesseract/scene_graph/link.h>
 #include <tesseract/scene_graph/joint.h>
+#include <tesseract/scene_graph/scene_state.h>
 #include <tesseract/state_solver/state_solver.h>
 #include <tesseract/environment/environment.h>
 #include <tesseract/environment/commands.h>
@@ -56,7 +57,7 @@ public:
     const ResourceLocator::Ptr locator = std::make_shared<tesseract::common::GeneralResourceLocator>();
     EXPECT_TRUE(env_->init(urdf_file, srdf_file, locator));
 
-    std::unordered_map<std::string, double> ipos;
+    SceneState::JointValues ipos;
     ipos["torso_lift_joint"] = 0.0;
     env_->setState(ipos);
 
@@ -148,7 +149,7 @@ TEST_F(CastOctomapArmTest, continuous_detection_gap)  // NOLINT
 {
   const Json::Value root = readJsonFile(std::string(TRAJOPT_DATA_DIR) + "/config/arm_around_table.json");
 
-  std::unordered_map<std::string, double> ipos;
+  SceneState::JointValues ipos;
   ipos["torso_lift_joint"] = 0;
   ipos["r_shoulder_pan_joint"] = -1.832;
   ipos["r_shoulder_lift_joint"] = -0.332;
@@ -314,7 +315,7 @@ static OptResult optimizeBoxbotOctree(const std::string& manager_name)
   const Environment::Ptr env = buildBoxbotOctreeEnv();
   EXPECT_TRUE(env->setActiveContinuousContactManager(manager_name));
 
-  std::unordered_map<std::string, double> ipos;
+  SceneState::JointValues ipos;
   ipos["boxbot_x_joint"] = -1.9;
   ipos["boxbot_y_joint"] = 0;
   env->setState(ipos);

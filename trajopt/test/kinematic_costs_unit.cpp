@@ -83,7 +83,7 @@ TEST_F(KinematicCostsTest, CartPoseJacCalculator)  // NOLINT
 
   const tesseract::kinematics::JointGroup::ConstPtr kin = env_->getJointGroup("right_arm");
 
-  const std::string source_frame = env_->getRootLinkName();
+  const LinkId source_frame = env_->getRootLinkId();
   const std::string target_frame = "r_gripper_tool_frame";
   const Eigen::Isometry3d source_frame_offset = env_->getState().link_transforms.at(LinkId(target_frame));
   const Eigen::Isometry3d target_frame_offset =
@@ -105,7 +105,7 @@ TEST_F(KinematicCostsTest, CartPoseJacCalculator_TolerancedInsideBand)  // NOLIN
 
   const tesseract::kinematics::JointGroup::ConstPtr kin = env_->getJointGroup("right_arm");
 
-  const std::string source_frame = env_->getRootLinkName();
+  const LinkId source_frame = env_->getRootLinkId();
   const std::string target_frame = "r_gripper_tool_frame";
 
   // Seed configuration. We then construct target_frame_offset so that the pose error at this seed is +0.1 rad about
@@ -152,7 +152,7 @@ TEST_F(KinematicCostsTest, CartPoseJacCalculator_TolerancedOutsideBand)  // NOLI
 
   const tesseract::kinematics::JointGroup::ConstPtr kin = env_->getJointGroup("right_arm");
 
-  const std::string source_frame = env_->getRootLinkName();
+  const LinkId source_frame = env_->getRootLinkId();
   const std::string target_frame = "r_gripper_tool_frame";
 
   Eigen::VectorXd values(7);
@@ -190,7 +190,7 @@ TEST_F(KinematicCostsTest, CartPoseJacCalculator_TolerancedAcrossEdge)  // NOLIN
 
   const tesseract::kinematics::JointGroup::ConstPtr kin = env_->getJointGroup("right_arm");
 
-  const std::string source_frame = env_->getRootLinkName();
+  const LinkId source_frame = env_->getRootLinkId();
   const std::string target_frame = "r_gripper_tool_frame";
 
   Eigen::VectorXd values(7);
@@ -384,7 +384,7 @@ TEST_F(KinematicCostsTest, DynamicCartPoseJacCalculator_TolerancedAcrossEdge)  /
 TEST_F(KinematicCostsTest, CartPoseCalculators_InvertedToleranceBandThrows)  // NOLINT
 {
   const tesseract::kinematics::JointGroup::ConstPtr kin = env_->getJointGroup("right_arm");
-  const std::string source_frame = env_->getRootLinkName();
+  const LinkId source_frame = env_->getRootLinkId();
   const std::string target_frame = "r_gripper_tool_frame";
   const Eigen::Isometry3d source_frame_offset = Eigen::Isometry3d::Identity();
   const Eigen::Isometry3d target_frame_offset = Eigen::Isometry3d::Identity();
