@@ -10,6 +10,7 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <tesseract/kinematics/joint_group.h>
 #include <tesseract/scene_graph/link.h>
 #include <tesseract/scene_graph/joint.h>
+#include <tesseract/scene_graph/scene_state.h>
 #include <tesseract/state_solver/state_solver.h>
 #include <tesseract/environment/environment.h>
 #include <tesseract/environment/commands.h>
@@ -108,7 +109,7 @@ void runTest(const Environment::Ptr& env, const Visualization::Ptr& plotter, boo
 
   const Json::Value root = readJsonFile(std::string(TRAJOPT_DATA_DIR) + "/config/box_cast_test.json");
 
-  std::unordered_map<std::string, double> ipos;
+  SceneState::JointValues ipos;
   ipos["boxbot_x_joint"] = -1.9;
   ipos["boxbot_y_joint"] = 0;
   env->setState(ipos);

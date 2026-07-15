@@ -6,6 +6,7 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <tesseract/common/resource_locator.h>
 #include <tesseract/scene_graph/link.h>
 #include <tesseract/scene_graph/joint.h>
+#include <tesseract/scene_graph/scene_state.h>
 #include <tesseract/state_solver/state_solver.h>
 #include <tesseract/kinematics/joint_group.h>
 #include <tesseract/collision/continuous_contact_manager.h>
@@ -115,7 +116,7 @@ void runLinkWithGeomTest(const Environment::Ptr& env, const Visualization::Ptr& 
 
   const Json::Value root = readJsonFile(std::string(TRAJOPT_DATA_DIR) + "/config/box_cast_test.json");
 
-  std::unordered_map<std::string, double> ipos;
+  SceneState::JointValues ipos;
   ipos["boxbot_x_joint"] = -1.9;
   ipos["boxbot_y_joint"] = 0;
   env->setState(ipos);
@@ -175,7 +176,7 @@ void runLinkWithoutGeomTest(const Environment::Ptr& env, const Visualization::Pt
 
   const Json::Value root = readJsonFile(std::string(TRAJOPT_DATA_DIR) + "/config/box_cast_test.json");
 
-  std::unordered_map<std::string, double> ipos;
+  SceneState::JointValues ipos;
   ipos["boxbot_x_joint"] = -1.9;
   ipos["boxbot_y_joint"] = 0;
   env->setState(ipos);
