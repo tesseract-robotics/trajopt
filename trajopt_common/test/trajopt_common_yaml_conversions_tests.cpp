@@ -235,10 +235,10 @@ TEST(TrajoptCommonYAMLTestFixture, CollisionCoeffDataThreeTierOverloadsUnit)  //
   EXPECT_NEAR(data.getCollisionCoeff({ "unknown", "pair" }), 1.0, 1e-12);  // default
 
   // Tier 1 (LinkId)
-  const LinkId id_a = LinkId("link_a");
-  const LinkId id_b = LinkId("link_b");
-  const LinkId id_c = LinkId("link_c");
-  const LinkId id_d = LinkId("link_d");
+  const LinkId id_a = "link_a";
+  const LinkId id_b = "link_b";
+  const LinkId id_c = "link_c";
+  const LinkId id_d = "link_d";
   EXPECT_NEAR(data.getCollisionCoeff({ id_a, id_b }), 2.5, 1e-12);
   EXPECT_NEAR(data.getCollisionCoeff({ id_b, id_a }), 2.5, 1e-12);
   EXPECT_NEAR(data.getCollisionCoeff({ id_c, id_d }), 0.0, 1e-12);
