@@ -1265,9 +1265,6 @@ sco::ConvexObjective::Ptr CollisionCost::convex(const sco::DblVec& x, sco::Model
   assert(exprs.size() == exprs_margin.size());
   assert(exprs.size() == exprs_coeff.size());
 
-  auto dist_results = m_calc->GetContactResultVectorCached(x);
-  UNUSED(dist_results);
-
   for (std::size_t i = 0; i < exprs.size(); ++i)
   {
     const sco::AffExpr viol = sco::exprSub(sco::AffExpr(exprs_margin[i]), exprs[i]);
@@ -1350,9 +1347,6 @@ sco::ConvexConstraints::Ptr CollisionConstraint::convex(const sco::DblVec& x, sc
   m_calc->CalcDistExpressions(x, exprs, exprs_margin, exprs_coeff);
   assert(exprs.size() == exprs_margin.size());
   assert(exprs.size() == exprs_coeff.size());
-
-  auto dist_results = m_calc->GetContactResultVectorCached(x);
-  UNUSED(dist_results);
 
   for (std::size_t i = 0; i < exprs.size(); ++i)
   {
