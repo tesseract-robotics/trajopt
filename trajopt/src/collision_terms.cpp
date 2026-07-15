@@ -702,14 +702,10 @@ void SingleTimestepCollisionEvaluator::Plot(const std::shared_ptr<tesseract::vis
   const Eigen::VectorXd dofvals = sco::getVec(x, vars0_);
 
   tesseract::collision::ContactResultVector dist_results_copy(dist_results.size());
-  Eigen::VectorXd collision_margins(dist_results.size());
   for (auto i = 0U; i < dist_results.size(); ++i)
   {
     const tesseract::collision::ContactResult& res = dist_results[i].get();
     dist_results_copy[i] = res;
-
-    // Contains the contact distance threshold for the given link pair
-    collision_margins[i] = margin_data_.getCollisionMargin(res.link_ids[0], res.link_ids[1]);
 
     if (manip_->isActiveLinkId(res.link_ids[0]))
     {
@@ -920,14 +916,10 @@ void DiscreteCollisionEvaluator::Plot(const std::shared_ptr<tesseract::visualiza
   transforms_cache1_ = manip_->calcFwdKin(dofvals1);
 
   tesseract::collision::ContactResultVector dist_results_copy(dist_results.size());
-  Eigen::VectorXd collision_margins(dist_results.size());
   for (auto i = 0U; i < dist_results.size(); ++i)
   {
     const tesseract::collision::ContactResult& res = dist_results[i].get();
     dist_results_copy[i] = res;
-
-    // Contains the contact distance threshold for the given link pair
-    collision_margins[i] = margin_data_.getCollisionMargin(res.link_ids[0], res.link_ids[1]);
 
     if (manip_->isActiveLinkId(res.link_ids[0]))
     {
@@ -1174,14 +1166,10 @@ void CastCollisionEvaluator::Plot(const std::shared_ptr<tesseract::visualization
   const Eigen::VectorXd dofvals = sco::getVec(x, vars0_);
 
   tesseract::collision::ContactResultVector dist_results_copy(dist_results.size());
-  Eigen::VectorXd collision_margins(dist_results.size());
   for (auto i = 0U; i < dist_results.size(); ++i)
   {
     const tesseract::collision::ContactResult& res = dist_results[i].get();
     dist_results_copy[i] = res;
-
-    // Contains the contact distance threshold and coefficient for the given link pair
-    collision_margins[i] = margin_data_.getCollisionMargin(res.link_ids[0], res.link_ids[1]);
 
     if (manip_->isActiveLinkId(res.link_ids[0]))
     {
