@@ -25,6 +25,7 @@
 
 #include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
+#include <algorithm>
 #include <trajopt_common/collision_types.h>
 #include <trajopt_common/collision_utils.h>
 #include <cassert>
@@ -198,12 +199,25 @@ int DiscreteCollisionConstraintD::update()
   coeffs_.resize(rows_);
   values_.resize(rows_);
 
-  Eigen::Index i{ 0 };
+  // Iterate in deterministic key order so the QP constraint row layout is
+  // independent of unordered_map bucket ordering (which varies with insertion
+  // order, i.e. the broadphase traversal order of the collision backend).
+  sorted_keys_.clear();
+  sorted_keys_.reserve(collision_data_->contact_results_map.size());
   for (const auto& pair : collision_data_->contact_results_map)
   {
-    const double margin = collision_evaluator_->getCollisionMarginData().getCollisionMargin(pair.first);
-    const double coeff = collision_evaluator_->getCollisionCoeffData().getCollisionCoeff(pair.first);
-    for (const auto& contact_results : pair.second)
+    if (!pair.second.empty())
+      sorted_keys_.push_back(pair.first);
+  }
+  std::sort(sorted_keys_.begin(), sorted_keys_.end());
+
+  Eigen::Index i{ 0 };
+  for (const auto& key : sorted_keys_)
+  {
+    const auto& results = collision_data_->contact_results_map.at(key);
+    const double margin = collision_evaluator_->getCollisionMarginData().getCollisionMargin(key);
+    const double coeff = collision_evaluator_->getCollisionCoeffData().getCollisionCoeff(key);
+    for (const auto& contact_results : results)
     {
       coeffs_(i) = coeff;
       values_(i++) = margin - contact_results.distance;
@@ -232,11 +246,13 @@ Jacobian DiscreteCollisionConstraintD::getJacobian() const
 
   auto jp = position_var_->value();
 
+  // Iterate in the same deterministic key order established by update().
   trajopt_common::GradientResults result;
   Eigen::Index i{ 0 };
-  for (const auto& pair : collision_data_->contact_results_map)
+  for (const auto& key : sorted_keys_)
   {
-    for (const auto& contact_results : pair.second)
+    const auto& results = collision_data_->contact_results_map.at(key);
+    for (const auto& contact_results : results)
     {
       result.clear();
       trajopt_common::getGradient(result, jp, contact_results, 0, 0, collision_evaluator_->getJointGroup());
