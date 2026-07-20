@@ -94,13 +94,6 @@ struct CollisionEvaluator
   CollisionEvaluator& operator=(CollisionEvaluator&&) = default;
 
   /**
-   * @brief This function calls GetCollisionsCached and stores the distances in a vector
-   * @param x Optimizer variables
-   * @param dists Returned distance values
-   */
-  virtual void CalcDists(const DblVec& x, DblVec& dists);
-
-  /**
    * @brief Convert the contact information into an affine expression
    * @param x Optimizer variables
    * @param exprs Returned affine expression representation of the contact information
