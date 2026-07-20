@@ -190,6 +190,9 @@ void runPlanningTest(const Environment::Ptr& env)
   qp_solver->solver_->settings()->setVerbosity(false);
   qp_solver->solver_->settings()->setWarmStart(true);
   qp_solver->solver_->settings()->setPolish(true);
+  // This problem needs the raised iteration cap to converge: with OSQP's default 8192 the inner QP solves
+  // terminate early and the SQP settles on a trajectory that still reports a collision. Adaptive rho is not
+  // required for correctness but converges in noticeably fewer iterations here.
   qp_solver->solver_->settings()->setAdaptiveRho(true);
   qp_solver->solver_->settings()->setMaxIteration(32768);
   qp_solver->solver_->settings()->setAbsoluteTolerance(1e-4);
