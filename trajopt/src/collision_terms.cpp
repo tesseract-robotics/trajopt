@@ -29,14 +29,6 @@ namespace trajopt
 {
 namespace
 {
-void CollisionsToDistances(const ContactResultVectorWrapper& dist_results, DblVec& dists)
-{
-  dists.clear();
-  dists.reserve(dist_results.size());
-  for (const auto& dist_result : dist_results)
-    dists.push_back(dist_result.get().distance);
-}
-
 void DebugPrintInfoHeader(Eigen::Index dof)
 {
   std::printf("\n");
@@ -409,12 +401,6 @@ CollisionEvaluator::CollisionEvaluator(const tesseract::kinematics::JointGroup::
     };
     env_active_link_ids_ = manip_active_link_ids_;
   }
-}
-
-void CollisionEvaluator::CalcDists(const DblVec& x, DblVec& dists)
-{
-  const ContactResultVectorConstPtr dist_results = GetContactResultVectorCached(x);
-  CollisionsToDistances(*dist_results, dists);
 }
 
 inline std::size_t hash(const DblVec& x) { return boost::hash_range(x.begin(), x.end()); }
@@ -1275,9 +1261,6 @@ sco::ConvexObjective::Ptr CollisionCost::convex(const sco::DblVec& x, sco::Model
 
 double CollisionCost::value(const sco::DblVec& x)
 {
-  DblVec dists;
-  m_calc->CalcDists(x, dists);
-
   auto dist_vec = m_calc->GetContactResultVectorCached(x);
   const ContactResultVectorWrapper& dist_results = *dist_vec;
 
@@ -1285,14 +1268,14 @@ double CollisionCost::value(const sco::DblVec& x)
   const auto& coeff_data = m_calc->getCollisionCoeffData();
   tesseract::common::LinkIdPair pair;
   double out = 0;
-  for (std::size_t i = 0; i < dists.size(); ++i)
+  for (const auto& dist_result : dist_results)
   {
-    const tesseract::collision::ContactResult& res = dist_results[i].get();
+    const tesseract::collision::ContactResult& res = dist_result.get();
     pair.assign(res.link_ids[0], res.link_ids[1]);
     const double margin = margin_data.getCollisionMargin(pair);
     const double coeff = coeff_data.getCollisionCoeff(pair);
     // The margin_buffer is not leverage here because we want the actual error
-    out += sco::pospart(margin - dists[i]) * coeff;
+    out += sco::pospart(margin - res.distance) * coeff;
   }
   return out;
 }
@@ -1358,24 +1341,21 @@ sco::ConvexConstraints::Ptr CollisionConstraint::convex(const sco::DblVec& x, sc
 
 DblVec CollisionConstraint::value(const sco::DblVec& x)
 {
-  DblVec dists;
-  m_calc->CalcDists(x, dists);
-
   auto dist_vec = m_calc->GetContactResultVectorCached(x);
   const ContactResultVectorWrapper& dist_results = *dist_vec;
 
   const auto& margin_data = m_calc->getCollisionMarginData();
   const auto& coeff_data = m_calc->getCollisionCoeffData();
   tesseract::common::LinkIdPair pair;
-  DblVec out(dists.size());
-  for (std::size_t i = 0; i < dists.size(); ++i)
+  DblVec out(dist_results.size());
+  for (std::size_t i = 0; i < dist_results.size(); ++i)
   {
     const tesseract::collision::ContactResult& res = dist_results[i].get();
     pair.assign(res.link_ids[0], res.link_ids[1]);
     const double margin = margin_data.getCollisionMargin(pair);
     const double coeff = coeff_data.getCollisionCoeff(pair);
     // The margin_buffer is not leverage here because we want the actual error
-    out[i] = sco::pospart(margin - dists[i]) * coeff;
+    out[i] = sco::pospart(margin - res.distance) * coeff;
   }
   return out;
 }
