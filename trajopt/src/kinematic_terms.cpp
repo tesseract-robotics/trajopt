@@ -286,7 +286,7 @@ void CartPoseErrCalculator::Plot(const std::shared_ptr<tesseract::visualization:
 CartPoseJacCalculator::CartPoseJacCalculator(
     std::shared_ptr<const tesseract::kinematics::JointGroup> manip,
     tesseract::common::LinkId source_frame,
-    tesseract::common::LinkId target_frame_id,
+    tesseract::common::LinkId target_frame,
     const Eigen::Isometry3d& source_frame_offset,  // NOLINT(modernize-pass-by-value)
     const Eigen::Isometry3d& target_frame_offset,  // NOLINT(modernize-pass-by-value)
     const Eigen::VectorXi& indices,                // NOLINT(modernize-pass-by-value)
@@ -295,7 +295,7 @@ CartPoseJacCalculator::CartPoseJacCalculator(
   : manip_(std::move(manip))
   , source_frame_(std::move(source_frame))
   , source_frame_offset_(source_frame_offset)
-  , target_frame_(std::move(target_frame_id))
+  , target_frame_(std::move(target_frame))
   , target_frame_offset_(target_frame_offset)
   , is_target_active_(manip_->isActiveLinkId(target_frame_))
   , indices_(indices)
