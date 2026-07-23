@@ -30,9 +30,11 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <OsqpEigen/OsqpEigen.h>
 #include <tesseract/common/stopwatch.h>
 #include <tesseract/common/resource_locator.h>
+#include <tesseract/common/types.h>
 #include <tesseract/collision/discrete_contact_manager.h>
 #include <tesseract/kinematics/joint_group.h>
 #include <tesseract/state_solver/state_solver.h>
+#include <tesseract/scene_graph/scene_state.h>
 #include <tesseract/environment/environment.h>
 #include <tesseract/environment/utils.h>
 TRAJOPT_IGNORE_WARNINGS_POP
@@ -81,7 +83,7 @@ public:
 template <typename T>
 void runSimpleCollisionTest(const Environment::Ptr& env)
 {
-  std::unordered_map<std::string, double> ipos;
+  SceneState::JointValues ipos;
   ipos["spherebot_x_joint"] = -0.75;
   ipos["spherebot_y_joint"] = 0.75;
   env->setState(ipos);
@@ -94,7 +96,7 @@ void runSimpleCollisionTest(const Environment::Ptr& env)
   const JointGroup::ConstPtr manip = env->getJointGroup("manipulator");
   const std::vector<Bounds> bounds = toBounds(manip->getLimits().joint_limits);
 
-  manager->setActiveCollisionObjects(manip->getActiveLinkNames());
+  manager->setActiveCollisionObjects(manip->getActiveLinkIds());
   manager->setDefaultCollisionMargin(0);
 
   collisions.clear();
@@ -108,7 +110,8 @@ void runSimpleCollisionTest(const Environment::Ptr& env)
     Eigen::VectorXd pos(2);
     pos << -0.75, 0.75;
     positions.push_back(pos);
-    auto var = node->addVar("position", manip->getJointNames(), pos, bounds);
+    const std::vector<std::string> joint_names = tesseract::common::toNames(manip->getJointIds());
+    auto var = node->addVar("position", joint_names, pos, bounds);
     vars.push_back(var);
     nodes.push_back(std::move(node));
   }
@@ -174,7 +177,7 @@ void runSimpleCollisionTest(const Environment::Ptr& env)
   bool found = checkTrajectory(collisions,
                                *manager,
                                *state_solver,
-                               manip->getJointNames(),
+                               manip->getJointIds(),
                                inputs,
                                trajopt_collision_cnt_config.collision_check_config);
 
@@ -185,7 +188,7 @@ void runSimpleCollisionTest(const Environment::Ptr& env)
   found = checkTrajectory(collisions,
                           *manager,
                           *state_solver,
-                          manip->getJointNames(),
+                          manip->getJointIds(),
                           results,
                           trajopt_collision_cnt_config.collision_check_config);
 

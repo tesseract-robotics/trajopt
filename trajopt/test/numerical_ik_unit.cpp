@@ -7,6 +7,7 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <tesseract/common/stopwatch.h>
 #include <tesseract/common/resource_locator.h>
 #include <tesseract/kinematics/joint_group.h>
+#include <tesseract/scene_graph/scene_state.h>
 #include <tesseract/environment/environment.h>
 #include <tesseract/environment/utils.h>
 #include <tesseract/visualization/visualization.h>
@@ -49,7 +50,7 @@ public:
     // Create plotting tool
     //    plotter_.reset(new tesseract_ros::ROSBasicPlotting(env_));
 
-    std::unordered_map<std::string, double> ipos;
+    SceneState::JointValues ipos;
     ipos["torso_lift_joint"] = 0.0;
     env_->setState(ipos);
 
@@ -94,7 +95,7 @@ void runTest(const Environment::Ptr& env, const Visualization::Ptr& /*plotter*/,
   std::stringstream ss;
   ss << toVectorXd(opt->x()).transpose();
   CONSOLE_BRIDGE_logDebug("Initial Vars: %s", ss.str().c_str());
-  const Eigen::Isometry3d change_base = prob->GetEnv()->getLinkTransform(prob->GetKin()->getBaseLinkName());
+  const Eigen::Isometry3d change_base = prob->GetEnv()->getLinkTransform(prob->GetKin()->getBaseLinkId());
   Eigen::Isometry3d initial_pose = prob->GetKin()->calcFwdKin(toVectorXd(opt->x())).at("l_gripper_tool_frame");
   initial_pose = change_base * initial_pose;
 

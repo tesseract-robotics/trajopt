@@ -81,7 +81,8 @@ public:
     const std::vector<Bounds> bounds(static_cast<std::size_t>(n_dof), NoBound);
     auto pos = Eigen::VectorXd::Ones(n_dof);
     auto node = std::make_unique<Node>("Joint_Position_0");
-    auto var0 = node->addVar("position", kin_group->getJointNames(), pos, bounds);
+    const std::vector<std::string> joint_names = tesseract::common::toNames(kin_group->getJointIds());
+    auto var0 = node->addVar("position", joint_names, pos, bounds);
 
     std::vector<std::unique_ptr<Node>> nodes;
     nodes.push_back(std::move(node));
@@ -196,7 +197,8 @@ TEST_F(CartesianPositionConstraintUnit, GetSetBounds)  // NOLINT
     std::vector<Bounds> bounds_vec(static_cast<std::size_t>(n_dof), NoBound);
     auto node = std::make_unique<Node>("Joint_Position_0");
     const Eigen::VectorXd pos = Eigen::VectorXd::Ones(kin_group->numJoints());
-    auto var0 = node->addVar("position", kin_group->getJointNames(), pos, bounds_vec);
+    const std::vector<std::string> joint_names = tesseract::common::toNames(kin_group->getJointIds());
+    auto var0 = node->addVar("position", joint_names, pos, bounds_vec);
 
     auto constraint_2 = std::make_shared<CartPosConstraint>(var0, kin_group, "r_gripper_tool_frame", "base_footprint");
 

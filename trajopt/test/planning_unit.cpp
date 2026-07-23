@@ -7,6 +7,7 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <tesseract/state_solver/state_solver.h>
 #include <tesseract/collision/continuous_contact_manager.h>
 #include <tesseract/kinematics/joint_group.h>
+#include <tesseract/scene_graph/scene_state.h>
 #include <tesseract/environment/environment.h>
 #include <tesseract/environment/utils.h>
 #include <tesseract/visualization/visualization.h>
@@ -52,7 +53,7 @@ public:
     // Create plotting tool
     //    plotter_.reset(new tesseract_ros::ROSBasicPlotting(env_));
 
-    std::unordered_map<std::string, double> ipos;
+    SceneState::JointValues ipos;
     ipos["torso_lift_joint"] = 0.0;
     env_->setState(ipos);
 
@@ -66,7 +67,7 @@ void runTest(const Environment::Ptr& env, bool use_multi_threaded)
 
   const Json::Value root = readJsonFile(std::string(TRAJOPT_DATA_DIR) + "/config/arm_around_table.json");
 
-  std::unordered_map<std::string, double> ipos;
+  SceneState::JointValues ipos;
   ipos["torso_lift_joint"] = 0;
   ipos["r_shoulder_pan_joint"] = -1.832;
   ipos["r_shoulder_lift_joint"] = -0.332;
@@ -89,14 +90,14 @@ void runTest(const Environment::Ptr& env, bool use_multi_threaded)
   const tesseract::scene_graph::StateSolver::UPtr state_solver = prob->GetEnv()->getStateSolver();
   const ContinuousContactManager::Ptr manager = prob->GetEnv()->getContinuousContactManager();
 
-  manager->setActiveCollisionObjects(prob->GetKin()->getActiveLinkNames());
+  manager->setActiveCollisionObjects(prob->GetKin()->getActiveLinkIds());
   manager->setDefaultCollisionMargin(0);
 
   tesseract::collision::CollisionCheckConfig config;
   config.type = tesseract::collision::CollisionEvaluatorType::CONTINUOUS;
   config.longest_valid_segment_length = LONGEST_VALID_SEGMENT_LENGTH;
-  bool found = checkTrajectory(
-      collisions, *manager, *state_solver, prob->GetKin()->getJointNames(), prob->GetInitTraj(), config);
+  bool found =
+      checkTrajectory(collisions, *manager, *state_solver, prob->GetKin()->getJointIds(), prob->GetInitTraj(), config);
 
   EXPECT_TRUE(found);
   CONSOLE_BRIDGE_logDebug((found) ? ("Initial trajectory is in collision") : ("Initial trajectory is collision free"));
@@ -142,7 +143,7 @@ void runTest(const Environment::Ptr& env, bool use_multi_threaded)
 
   collisions.clear();
   found = checkTrajectory(
-      collisions, *manager, *state_solver, prob->GetKin()->getJointNames(), getTraj(opt->x(), prob->GetVars()), config);
+      collisions, *manager, *state_solver, prob->GetKin()->getJointIds(), getTraj(opt->x(), prob->GetVars()), config);
 
   EXPECT_FALSE(found);
   CONSOLE_BRIDGE_logDebug((found) ? ("Final trajectory is in collision") : ("Final trajectory is collision free"));

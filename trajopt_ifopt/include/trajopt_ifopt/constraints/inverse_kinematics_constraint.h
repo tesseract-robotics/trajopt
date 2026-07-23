@@ -30,6 +30,7 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt_ifopt/core/constraint_set.h>
+#include <tesseract/common/types.h>
 #include <tesseract/kinematics/fwd.h>
 
 namespace trajopt_ifopt
@@ -48,17 +49,17 @@ struct InverseKinematicsInfo
 
   InverseKinematicsInfo() = default;
   InverseKinematicsInfo(std::shared_ptr<const tesseract::kinematics::KinematicGroup> manip,
-                        std::string working_frame,
-                        std::string tcp_frame,
+                        tesseract::common::LinkId working_frame,
+                        tesseract::common::LinkId tcp_frame,
                         const Eigen::Isometry3d& tcp_offset = Eigen::Isometry3d::Identity());
 
   std::shared_ptr<const tesseract::kinematics::KinematicGroup> manip;
 
   /** @brief Not currently respected */
-  std::string working_frame;
+  tesseract::common::LinkId working_frame;
 
   /** @brief Not currently respected */
-  std::string tcp_frame;
+  tesseract::common::LinkId tcp_frame;
 
   /** @brief Not currently respected */
   Eigen::Isometry3d tcp_offset;

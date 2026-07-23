@@ -34,6 +34,7 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <tesseract/collision/continuous_contact_manager.h>
 #include <tesseract/kinematics/joint_group.h>
 #include <tesseract/state_solver/state_solver.h>
+#include <tesseract/scene_graph/scene_state.h>
 #include <tesseract/environment/environment.h>
 #include <tesseract/environment/utils.h>
 TRAJOPT_IGNORE_WARNINGS_POP
@@ -78,7 +79,7 @@ public:
     // Create plotting tool
     //    plotter_.reset(new tesseract_ros::ROSBasicPlotting(env_));
 
-    std::unordered_map<std::string, double> ipos;
+    SceneState::JointValues ipos;
     ipos["torso_lift_joint"] = 0.0;
     env->setState(ipos);
   }
@@ -87,7 +88,7 @@ public:
 template <typename T>
 void runPlanningTest(const Environment::Ptr& env)
 {
-  std::unordered_map<std::string, double> ipos;
+  SceneState::JointValues ipos;
   ipos["torso_lift_joint"] = 0;
   ipos["r_shoulder_pan_joint"] = -1.832;
   ipos["r_shoulder_lift_joint"] = -0.332;
@@ -104,7 +105,7 @@ void runPlanningTest(const Environment::Ptr& env)
   const JointGroup::ConstPtr manip = env->getJointGroup("right_arm");
   const std::vector<trajopt_ifopt::Bounds> bounds = trajopt_ifopt::toBounds(manip->getLimits().joint_limits);
 
-  manager->setActiveCollisionObjects(manip->getActiveLinkNames());
+  manager->setActiveCollisionObjects(manip->getActiveLinkIds());
   manager->setDefaultCollisionMargin(0);
 
   // Initial trajectory
@@ -119,10 +120,11 @@ void runPlanningTest(const Environment::Ptr& env)
   // Add Variables
   std::vector<std::unique_ptr<trajopt_ifopt::Node>> nodes;
   std::vector<std::shared_ptr<const trajopt_ifopt::Var>> vars;
+  const std::vector<std::string> joint_names = tesseract::common::toNames(manip->getJointIds());
   for (Eigen::Index i = 0; i < 6; ++i)
   {
     auto node = std::make_unique<trajopt_ifopt::Node>("Joint_Position_" + std::to_string(i));
-    auto var = node->addVar("position", manip->getJointNames(), trajectory.row(i), bounds);
+    auto var = node->addVar("position", joint_names, trajectory.row(i), bounds);
     vars.push_back(var);
     nodes.push_back(std::move(node));
   }
@@ -188,8 +190,11 @@ void runPlanningTest(const Environment::Ptr& env)
   qp_solver->solver_->settings()->setVerbosity(false);
   qp_solver->solver_->settings()->setWarmStart(true);
   qp_solver->solver_->settings()->setPolish(true);
-  qp_solver->solver_->settings()->setAdaptiveRho(false);
-  qp_solver->solver_->settings()->setMaxIteration(8192);
+  // This problem needs the raised iteration cap to converge: with OSQP's default 8192 the inner QP solves
+  // terminate early and the SQP settles on a trajectory that still reports a collision. Adaptive rho is not
+  // required for correctness but converges in noticeably fewer iterations here.
+  qp_solver->solver_->settings()->setAdaptiveRho(true);
+  qp_solver->solver_->settings()->setMaxIteration(32768);
   qp_solver->solver_->settings()->setAbsoluteTolerance(1e-4);
   qp_solver->solver_->settings()->setRelativeTolerance(1e-6);
 
@@ -205,13 +210,13 @@ void runPlanningTest(const Environment::Ptr& env)
 
   tesseract::collision::CollisionCheckConfig config;
   config.type = tesseract::collision::CollisionEvaluatorType::CONTINUOUS;
-  bool found = checkTrajectory(collisions, *manager, *state_solver, manip->getJointNames(), trajectory, config);
+  bool found = checkTrajectory(collisions, *manager, *state_solver, manip->getJointIds(), trajectory, config);
 
   EXPECT_TRUE(found);
   CONSOLE_BRIDGE_logWarn((found) ? ("Initial trajectory is in collision") : ("Initial trajectory is collision free"));
 
   collisions.clear();
-  found = checkTrajectory(collisions, *manager, *state_solver, manip->getJointNames(), results, config);
+  found = checkTrajectory(collisions, *manager, *state_solver, manip->getJointIds(), results, config);
 
   EXPECT_FALSE(found);
   CONSOLE_BRIDGE_logWarn((found) ? ("Final trajectory is in collision") : ("Final trajectory is collision free"));

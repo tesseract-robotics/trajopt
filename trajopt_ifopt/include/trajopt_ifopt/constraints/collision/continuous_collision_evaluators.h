@@ -42,7 +42,7 @@ TRAJOPT_IGNORE_WARNINGS_POP
 namespace trajopt_ifopt
 {
 using GetStateFn =
-    std::function<void(tesseract::common::TransformMap&, const Eigen::Ref<const Eigen::VectorXd>& joint_values)>;
+    std::function<void(tesseract::common::LinkIdTransformMap&, const Eigen::Ref<const Eigen::VectorXd>& joint_values)>;
 
 /**
  * @brief This collision evaluator operates on two states and checks for collision between the two states using a
@@ -79,20 +79,6 @@ public:
                                  std::size_t max_allowed) = 0;
 
   /**
-   * @brief Extracts the gradient information based on the contact results for the transition between dof_vals0 and
-   * dof_vals1
-   * @param dof_vals0 Joint values for start state
-   * @param dof_vals1 Joint values for end state
-   * @param contact_results The contact results for transition between dof_vals0 and dof_vals1 to compute the gradient
-   * data
-   * @return The gradient results
-   */
-  virtual trajopt_common::GradientResults
-  calcGradientData(const Eigen::Ref<const Eigen::VectorXd>& dof_vals0,
-                   const Eigen::Ref<const Eigen::VectorXd>& dof_vals1,
-                   const tesseract::collision::ContactResult& contact_results) = 0;
-
-  /**
    * @brief Get the collision margin buffer
    * @return The collision margin buffer
    */
@@ -117,8 +103,8 @@ public:
   virtual const tesseract::kinematics::JointGroup& getJointGroup() const = 0;
 
 protected:
-  static thread_local tesseract::common::TransformMap transforms_cache0;  // NOLINT
-  static thread_local tesseract::common::TransformMap transforms_cache1;  // NOLINT
+  static thread_local tesseract::common::LinkIdTransformMap transforms_cache0;  // NOLINT
+  static thread_local tesseract::common::LinkIdTransformMap transforms_cache1;  // NOLINT
 };
 
 /**
@@ -145,11 +131,6 @@ public:
                          bool vars1_fixed,
                          std::size_t max_allowed) override final;
 
-  trajopt_common::GradientResults
-  calcGradientData(const Eigen::Ref<const Eigen::VectorXd>& dof_vals0,
-                   const Eigen::Ref<const Eigen::VectorXd>& dof_vals1,
-                   const tesseract::collision::ContactResult& contact_results) override final;
-
   double getCollisionMarginBuffer() const override final;
 
   const tesseract::common::CollisionMarginData& getCollisionMarginData() const override final;
@@ -166,9 +147,9 @@ private:
   double margin_buffer_{ 0.0 };
   tesseract::collision::CollisionCheckConfig collision_check_config_;
   bool single_timestep_{ false };
-  std::vector<std::string> env_active_link_names_;
-  std::vector<std::string> manip_active_link_names_;
-  std::vector<std::string> diff_active_link_names_;
+  std::unordered_set<tesseract::common::LinkId> env_active_link_ids_;
+  std::unordered_set<tesseract::common::LinkId> manip_active_link_ids_;
+  std::unordered_set<tesseract::common::LinkId> diff_active_link_ids_;
   GetStateFn get_state_fn_;
   bool dynamic_environment_;
   std::shared_ptr<tesseract::collision::ContinuousContactManager> contact_manager_;
@@ -208,11 +189,6 @@ public:
                          bool vars1_fixed,
                          std::size_t max_allowed) override final;
 
-  trajopt_common::GradientResults
-  calcGradientData(const Eigen::Ref<const Eigen::VectorXd>& dof_vals0,
-                   const Eigen::Ref<const Eigen::VectorXd>& dof_vals1,
-                   const tesseract::collision::ContactResult& contact_results) override final;
-
   double getCollisionMarginBuffer() const override final;
 
   const tesseract::common::CollisionMarginData& getCollisionMarginData() const override final;
@@ -228,9 +204,9 @@ private:
   trajopt_common::CollisionCoeffData coeff_data_;
   double margin_buffer_{ 0.0 };
   tesseract::collision::CollisionCheckConfig collision_check_config_;
-  std::vector<std::string> env_active_link_names_;
-  std::vector<std::string> manip_active_link_names_;
-  std::vector<std::string> diff_active_link_names_;
+  std::unordered_set<tesseract::common::LinkId> env_active_link_ids_;
+  std::unordered_set<tesseract::common::LinkId> manip_active_link_ids_;
+  std::unordered_set<tesseract::common::LinkId> diff_active_link_ids_;
   GetStateFn get_state_fn_;
   bool dynamic_environment_;
   std::shared_ptr<tesseract::collision::DiscreteContactManager> contact_manager_;

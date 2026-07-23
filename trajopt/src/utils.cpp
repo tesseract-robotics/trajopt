@@ -88,58 +88,43 @@ void AddVarArray(sco::OptProb& prob, int rows, int cols, const std::string& name
   AddVarArrays(prob, rows, colss, prefixes, arrs);
 }
 
-bool isSuperset(const std::vector<std::string>& subset, const std::vector<std::string>& superset)
-{
-  for (const std::string& s : subset)
-  {
-    if (std::find(superset.begin(), superset.end(), s) == superset.end())
-    {
-      return false;
-    }
-  }
-
-  // All subset strings were found in the superset
-  // Check that the superset is bigger than the subset
-  return superset.size() > subset.size();
-}
-
-bool updateFromSubset(const std::vector<std::string>& superset_names,
+bool updateFromSubset(const std::vector<tesseract::common::JointId>& superset_ids,
                       const Eigen::VectorXd& superset_vals,
-                      const std::vector<std::string>& subset_names,
+                      const std::vector<tesseract::common::JointId>& subset_ids,
                       const Eigen::VectorXd& subset_vals,
                       Eigen::Ref<Eigen::VectorXd> new_superset_vals)
 {
   new_superset_vals = superset_vals;
-  for (std::size_t i = 0; i < subset_names.size(); ++i)
+  for (std::size_t i = 0; i < subset_ids.size(); ++i)
   {
-    const std::string& joint = subset_names[i];
-    auto it = std::find(superset_names.begin(), superset_names.end(), joint);
-    if (it == superset_names.end())
+    const tesseract::common::JointId& joint = subset_ids[i];
+    auto it = std::find(superset_ids.begin(), superset_ids.end(), joint);
+    if (it == superset_ids.end())
     {
-      std::cout << "Failed to find joint '" << joint << "' in superset joint names";
+      std::cout << "Failed to find joint '" << joint << "' in superset joint ids";
       return false;
     }
-    auto idx = std::distance(superset_names.begin(), it);
+    auto idx = std::distance(superset_ids.begin(), it);
     new_superset_vals[idx] = subset_vals[static_cast<Eigen::Index>(i)];
   }
 
   return true;
 }
 
-bool getSubset(const std::vector<std::string>& superset_names,
+bool getSubset(const std::vector<tesseract::common::JointId>& superset_ids,
                const Eigen::VectorXd& superset_vals,
-               const std::vector<std::string>& subset_names,
+               const std::vector<tesseract::common::JointId>& subset_ids,
                Eigen::Ref<Eigen::VectorXd> subset_vals)
 {
-  Eigen::VectorXd out(subset_names.size());
-  for (Eigen::Index i = 0; i < static_cast<Eigen::Index>(subset_names.size()); ++i)
+  Eigen::VectorXd out(subset_ids.size());
+  for (Eigen::Index i = 0; i < static_cast<Eigen::Index>(subset_ids.size()); ++i)
   {
-    const std::string& name = subset_names[static_cast<std::size_t>(i)];
+    const tesseract::common::JointId& id = subset_ids[static_cast<std::size_t>(i)];
 
-    auto it = std::find(superset_names.begin(), superset_names.end(), name);
-    if (it != superset_names.end())
+    auto it = std::find(superset_ids.begin(), superset_ids.end(), id);
+    if (it != superset_ids.end())
     {
-      auto idx = std::distance(superset_names.begin(), it);
+      auto idx = std::distance(superset_ids.begin(), it);
       out[i] = superset_vals[idx];
     }
     else

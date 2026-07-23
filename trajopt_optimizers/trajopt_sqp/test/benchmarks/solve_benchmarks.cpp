@@ -5,8 +5,10 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <OsqpEigen/Solver.hpp>
 TRAJOPT_IGNORE_WARNINGS_POP
 
+#include <tesseract/scene_graph/scene_state.h>
 #include <tesseract/environment/environment.h>
 #include <tesseract/common/resource_locator.h>
+#include <tesseract/common/types.h>
 #include <tesseract/kinematics/joint_group.h>
 #include <tesseract/urdf/urdf_parser.h>
 
@@ -50,11 +52,12 @@ static void BM_TRAJOPT_IFOPT_SIMPLE_COLLISION_SOLVE(benchmark::State& state, con
     std::vector<std::unique_ptr<Node>> nodes;
     std::vector<std::shared_ptr<const Var>> vars;
     std::vector<Eigen::VectorXd> positions;
+    const std::vector<std::string> joint_names = tesseract::common::toNames(manip->getJointIds());
     {
       Eigen::VectorXd pos(2);
       pos << -0.75, 0.75;
       nodes.push_back(std::make_unique<Node>("Joint_Position_0"));
-      vars.push_back(nodes.back()->addVar("position", manip->getJointNames(), pos, bounds));
+      vars.push_back(nodes.back()->addVar("position", joint_names, pos, bounds));
     }
     auto variables = std::make_shared<trajopt_ifopt::NodesVariables>("joint_trajectory", std::move(nodes));
 
@@ -123,10 +126,11 @@ static void BM_TRAJOPT_IFOPT_PLANNING_SOLVE(benchmark::State& state, const Envir
     // Add Variables
     std::vector<std::unique_ptr<Node>> nodes;
     std::vector<std::shared_ptr<const Var>> vars;
+    const std::vector<std::string> joint_names = tesseract::common::toNames(manip->getJointIds());
     for (Eigen::Index i = 0; i < 6; ++i)
     {
       nodes.push_back(std::make_unique<Node>("Joint_Position_" + std::to_string(i)));
-      vars.push_back(nodes.back()->addVar("position", manip->getJointNames(), trajectory.row(i), bounds));
+      vars.push_back(nodes.back()->addVar("position", joint_names, trajectory.row(i), bounds));
     }
     auto variables = std::make_shared<trajopt_ifopt::NodesVariables>("joint_trajectory", std::move(nodes));
 
@@ -213,7 +217,7 @@ int main(int argc, char** argv)
     auto env = std::make_shared<Environment>();
     env->init(urdf_file, srdf_file, locator);
 
-    std::unordered_map<std::string, double> ipos;
+    SceneState::JointValues ipos;
     ipos["spherebot_x_joint"] = -0.75;
     ipos["spherebot_y_joint"] = 0.75;
     env->setState(ipos);
@@ -236,7 +240,7 @@ int main(int argc, char** argv)
     auto env = std::make_shared<Environment>();
     env->init(urdf_file, srdf_file, locator);
 
-    std::unordered_map<std::string, double> ipos;
+    SceneState::JointValues ipos;
     ipos["torso_lift_joint"] = 0.0;
     ipos["r_shoulder_pan_joint"] = -1.832;
     ipos["r_shoulder_lift_joint"] = -0.332;

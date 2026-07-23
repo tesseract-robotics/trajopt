@@ -4,8 +4,9 @@ contact_manager_plugins:
   search_libraries:
     - tesseract_collision_bullet_factories
     - tesseract_collision_fcl_factories
+    - tesseract_collision_coal_coal_factories
   discrete_plugins:
-    default: BulletDiscreteBVHManager
+    default: CoalDiscreteBVHManager
     plugins:
       BulletDiscreteBVHManager:
         class: BulletDiscreteBVHManagerFactory
@@ -21,8 +22,12 @@ contact_manager_plugins:
           max_collision_algorithm_pool_size: 100
       FCLDiscreteBVHManager:
         class: FCLDiscreteBVHManagerFactory
+      CoalDiscreteBVHManager:
+        class: CoalDiscreteBVHManagerFactory
+        config:
+          gjk_guess_threshold: 0.005
   continuous_plugins:
-    default: BulletCastBVHManager
+    default: CoalCastBVHManager
     plugins:
       BulletCastBVHManager:
         class: BulletCastBVHManagerFactory
@@ -36,3 +41,7 @@ contact_manager_plugins:
           share_pool_allocators: false
           max_persistent_manifold_pool_size: 100
           max_collision_algorithm_pool_size: 100
+      CoalCastBVHManager:
+        class: CoalCastBVHManagerFactory
+        config:
+          gjk_guess_threshold: 0.005

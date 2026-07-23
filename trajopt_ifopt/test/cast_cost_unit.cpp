@@ -31,8 +31,10 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <tesseract/collision/continuous_contact_manager.h>
 #include <tesseract/kinematics/joint_group.h>
 #include <tesseract/state_solver/state_solver.h>
+#include <tesseract/scene_graph/scene_state.h>
 #include <tesseract/environment/environment.h>
 #include <tesseract/environment/utils.h>
+#include <tesseract/common/types.h>
 #include <trajopt_common/collision_types.h>
 #include <trajopt_common/config.hpp>
 #include <trajopt_common/eigen_conversions.hpp>
@@ -80,7 +82,7 @@ TEST_F(CastTest, boxes)  // NOLINT
 {
   CONSOLE_BRIDGE_logDebug("CastTest, boxes");
 
-  std::unordered_map<std::string, double> ipos;
+  SceneState::JointValues ipos;
   ipos["boxbot_x_joint"] = -1.9;
   ipos["boxbot_y_joint"] = 0;
   env->setState(ipos);
@@ -91,7 +93,7 @@ TEST_F(CastTest, boxes)  // NOLINT
   const tesseract::kinematics::JointGroup::ConstPtr manip = env->getJointGroup("manipulator");
   const std::vector<Bounds> bounds = toBounds(manip->getLimits().joint_limits);
 
-  manager->setActiveCollisionObjects(manip->getActiveLinkNames());
+  manager->setActiveCollisionObjects(manip->getActiveLinkIds());
   manager->setDefaultCollisionMargin(0);
 
   collisions.clear();
@@ -103,12 +105,13 @@ TEST_F(CastTest, boxes)  // NOLINT
   std::vector<std::unique_ptr<Node>> nodes;
   std::vector<std::shared_ptr<const Var>> vars;
   std::vector<Eigen::VectorXd> positions;
+  const std::vector<std::string> joint_names = tesseract::common::toNames(manip->getJointIds());
   {
     nodes.push_back(std::make_unique<Node>("Joint_Position_0"));
     Eigen::VectorXd pos(2);
     pos << -1.9, 0;
     positions.push_back(pos);
-    vars.push_back(nodes.back()->addVar("position", manip->getJointNames(), pos, bounds));
+    vars.push_back(nodes.back()->addVar("position", joint_names, pos, bounds));
   }
 
   {
@@ -116,7 +119,7 @@ TEST_F(CastTest, boxes)  // NOLINT
     Eigen::VectorXd pos(2);
     pos << 0, 1.9;
     positions.push_back(pos);
-    vars.push_back(nodes.back()->addVar("position", manip->getJointNames(), pos, bounds));
+    vars.push_back(nodes.back()->addVar("position", joint_names, pos, bounds));
   }
 
   {
@@ -124,7 +127,7 @@ TEST_F(CastTest, boxes)  // NOLINT
     Eigen::VectorXd pos(2);
     pos << 1.9, 3.8;
     positions.push_back(pos);
-    vars.push_back(nodes.back()->addVar("position", manip->getJointNames(), pos, bounds));
+    vars.push_back(nodes.back()->addVar("position", joint_names, pos, bounds));
   }
 
   nlp.addVariableSet(std::make_shared<NodesVariables>("joint_trajectory", std::move(nodes)));
@@ -191,13 +194,13 @@ TEST_F(CastTest, boxes)  // NOLINT
 
   tesseract::collision::CollisionCheckConfig config;
   config.type = tesseract::collision::CollisionEvaluatorType::CONTINUOUS;
-  bool found = checkTrajectory(collisions, *manager, *state_solver, manip->getJointNames(), inputs, config);
+  bool found = checkTrajectory(collisions, *manager, *state_solver, manip->getJointIds(), inputs, config);
 
   EXPECT_TRUE(found);
   CONSOLE_BRIDGE_logWarn((found) ? ("Initial trajectory is in collision") : ("Initial trajectory is collision free"));
 
   collisions.clear();
-  found = checkTrajectory(collisions, *manager, *state_solver, manip->getJointNames(), results, config);
+  found = checkTrajectory(collisions, *manager, *state_solver, manip->getJointIds(), results, config);
 
   EXPECT_FALSE(found);
   CONSOLE_BRIDGE_logWarn((found) ? ("Final trajectory is in collision") : ("Final trajectory is collision free"));

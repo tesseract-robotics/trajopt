@@ -18,6 +18,7 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <functional>
 #include <fstream>
 #include <console_bridge/console.h>
+#include <tesseract/common/types.h>
 #include <tesseract/kinematics/joint_group.h>
 #include <tesseract/environment/environment.h>
 TRAJOPT_IGNORE_WARNINGS_POP
@@ -54,7 +55,7 @@ void WriteFile(const std::shared_ptr<std::ofstream>& file,
     }
 
     // Calc cartesian pose
-    const tesseract::common::TransformMap state = manip->calcFwdKin(joint_angles);
+    const tesseract::common::LinkIdTransformMap state = manip->calcFwdKin(joint_angles);
 
     for (const auto& it : state)
     {
@@ -66,7 +67,7 @@ void WriteFile(const std::shared_ptr<std::ofstream>& file,
       rot_vec(3) = q.z();
 
       // Write cartesian pose to file
-      *file << it.first << ": ";
+      *file << it.first.name() << ": ";
       Eigen::VectorXd pose_vec = tesseract::common::concat(it.second.translation(), rot_vec);
       for (auto i = 0; i < pose_vec.size(); i++)
       {
@@ -102,7 +103,7 @@ std::function<void(sco::OptProb*, sco::OptResults&)> WriteCallback(std::shared_p
   }
 
   // Write joint names
-  std::vector<std::string> joint_names = prob->GetEnv()->getActiveJointNames();
+  std::vector<std::string> joint_names = tesseract::common::toNames(prob->GetEnv()->getActiveJointIds());
   for (std::size_t i = 0; i < joint_names.size(); i++)
   {
     if (i != 0)
