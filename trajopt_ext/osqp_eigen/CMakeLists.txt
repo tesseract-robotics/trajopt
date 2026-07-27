@@ -4,7 +4,7 @@ find_package(ros_industrial_cmake_boilerplate REQUIRED)
 extract_package_metadata(pkg)
 project(OsqpEigen_Ext VERSION ${pkg_extracted_version} LANGUAGES CXX)
 
-set(TRAJOPT_OSQPEIGEN_VERSION "0.11.0")
+set(TRAJOPT_OSQPEIGEN_VERSION "0.11.2")
 # Remove patch version for find_package
 string(
   REGEX
