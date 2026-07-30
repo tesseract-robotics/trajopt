@@ -77,7 +77,7 @@ LVSContinuousCollisionEvaluator::LVSContinuousCollisionEvaluator(
   {
     get_state_fn_ = [&](tesseract::common::LinkIdTransformMap& transforms,
                         const Eigen::Ref<const Eigen::VectorXd>& joint_values) {
-      transforms = manip_->calcFwdKin(joint_values);
+      manip_->calcFwdKin(transforms, joint_values);
     };
     env_active_link_ids_ = manip_active_link_ids_;
   }
@@ -297,7 +297,7 @@ LVSDiscreteCollisionEvaluator::LVSDiscreteCollisionEvaluator(
   {
     get_state_fn_ = [&](tesseract::common::LinkIdTransformMap& transforms,
                         const Eigen::Ref<const Eigen::VectorXd>& joint_values) {
-      transforms = manip_->calcFwdKin(joint_values);
+      manip_->calcFwdKin(transforms, joint_values);
     };
     env_active_link_ids_ = manip_active_link_ids_;
   }
@@ -395,7 +395,8 @@ void LVSDiscreteCollisionEvaluator::calcCollisionsHelper(tesseract::collision::C
   if (!diff_active_link_ids_.empty())
   {
     get_state_fn_(transforms_cache0, dof_vals0);
-    contact_manager_->setCollisionObjectsTransform(transforms_cache0);
+    for (const auto& link_id : diff_active_link_ids_)
+      contact_manager_->setCollisionObjectsTransform(link_id, transforms_cache0[link_id]);
   }
 
   // Create filter
@@ -442,7 +443,8 @@ void LVSDiscreteCollisionEvaluator::calcCollisionsHelper(tesseract::collision::C
   {
     get_state_fn_(transforms_cache0, subtraj.row(i));
 
-    contact_manager_->setCollisionObjectsTransform(transforms_cache0);
+    for (const auto& link_id : manip_active_link_ids_)
+      contact_manager_->setCollisionObjectsTransform(link_id, transforms_cache0[link_id]);
 
     contact_manager_->contactTest(contacts, collision_check_config_.contact_request);
 

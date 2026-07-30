@@ -69,7 +69,7 @@ SingleTimestepCollisionEvaluator::SingleTimestepCollisionEvaluator(
   {
     get_state_fn_ = [&](tesseract::common::LinkIdTransformMap& transforms,
                         const Eigen::Ref<const Eigen::VectorXd>& joint_values) {
-      transforms = manip_->calcFwdKin(joint_values);
+      manip_->calcFwdKin(transforms, joint_values);
     };
     env_active_link_ids_ = manip_active_link_ids_;
   }
@@ -156,7 +156,12 @@ void SingleTimestepCollisionEvaluator::calcCollisionsHelper(const Eigen::Ref<con
 
   get_state_fn_(state, dof_vals);
 
-  contact_manager_->setCollisionObjectsTransform(state);
+  // If not empty then there are links that are not part of the kinematics object that can move (dynamic environment)
+  for (const auto& link_id : diff_active_link_ids_)
+    contact_manager_->setCollisionObjectsTransform(link_id, state[link_id]);
+
+  for (const auto& link_id : manip_active_link_ids_)
+    contact_manager_->setCollisionObjectsTransform(link_id, state[link_id]);
 
   contact_manager_->contactTest(dist_results, collision_check_config_.contact_request);
 

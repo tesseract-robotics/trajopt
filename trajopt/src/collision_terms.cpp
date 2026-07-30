@@ -315,6 +315,18 @@ GradientResults CollisionEvaluator::GetGradient(const Eigen::VectorXd& dofvals0,
   return results;
 }
 
+GradientResults CollisionEvaluator::GetGradient(const Eigen::VectorXd& dofvals0,
+                                                const Eigen::VectorXd& dofvals1,
+                                                const tesseract::collision::ContactResult& contact_result,
+                                                bool isTimestep1)
+{
+  // Contains the contact distance threshold and coefficient for the given link pair
+  const tesseract::common::LinkIdPair pair(contact_result.link_ids[0], contact_result.link_ids[1]);
+  const double margin = margin_data_.getCollisionMargin(pair);
+  const double coeff = coeff_data_.getCollisionCoeff(pair);
+  return GetGradient(dofvals0, dofvals1, contact_result, margin, coeff, isTimestep1);
+}
+
 const tesseract::common::CollisionMarginData& CollisionEvaluator::getCollisionMarginData() const
 {
   return margin_data_;
@@ -397,7 +409,7 @@ CollisionEvaluator::CollisionEvaluator(const tesseract::kinematics::JointGroup::
   {
     get_state_fn_ = [&](tesseract::common::LinkIdTransformMap& transforms,
                         const Eigen::Ref<const Eigen::VectorXd>& joint_values) {
-      transforms = manip_->calcFwdKin(joint_values);
+      manip_->calcFwdKin(transforms, joint_values);
     };
     env_active_link_ids_ = manip_active_link_ids_;
   }
@@ -898,8 +910,8 @@ void DiscreteCollisionEvaluator::Plot(const std::shared_ptr<tesseract::visualiza
   const Eigen::VectorXd dofvals0 = sco::getVec(x, vars0_);
   const Eigen::VectorXd dofvals1 = sco::getVec(x, vars1_);
 
-  transforms_cache0_ = manip_->calcFwdKin(dofvals0);
-  transforms_cache1_ = manip_->calcFwdKin(dofvals1);
+  manip_->calcFwdKin(transforms_cache0_, dofvals0);
+  manip_->calcFwdKin(transforms_cache1_, dofvals1);
 
   tesseract::collision::ContactResultVector dist_results_copy(dist_results.size());
   for (auto i = 0U; i < dist_results.size(); ++i)
@@ -1104,12 +1116,16 @@ void CastCollisionEvaluator::CalcCollisions(const Eigen::Ref<const Eigen::Vector
     const double dt = 1.0 / double(last_state_idx);
     for (int i = 0; i < subtraj.rows() - 1; ++i)
     {
-      transforms_cache0_ = manip_->calcFwdKin(subtraj.row(i));
-      transforms_cache1_ = manip_->calcFwdKin(subtraj.row(i + 1));
+      manip_->calcFwdKin(transforms_cache0_, subtraj.row(i));
+      manip_->calcFwdKin(transforms_cache1_, subtraj.row(i + 1));
 
       for (const auto& link_id : manip_active_link_ids_)
-        contact_manager_->setCollisionObjectsTransform(
-            link_id, transforms_cache0_[link_id], transforms_cache1_[link_id]);
+      {
+        transforms_cache0_update_[link_id] = transforms_cache0_[link_id];
+        transforms_cache1_update_[link_id] = transforms_cache1_[link_id];
+      }
+
+      contact_manager_->setCollisionObjectsTransform(transforms_cache0_update_, transforms_cache1_update_);
 
       contact_manager_->contactTest(contacts, collision_check_config_.contact_request);
 
@@ -1123,11 +1139,16 @@ void CastCollisionEvaluator::CalcCollisions(const Eigen::Ref<const Eigen::Vector
   }
   else
   {
-    transforms_cache0_ = manip_->calcFwdKin(dof_vals0);
-    transforms_cache1_ = manip_->calcFwdKin(dof_vals1);
+    manip_->calcFwdKin(transforms_cache0_, dof_vals0);
+    manip_->calcFwdKin(transforms_cache1_, dof_vals1);
 
     for (const auto& link_id : manip_active_link_ids_)
-      contact_manager_->setCollisionObjectsTransform(link_id, transforms_cache0_[link_id], transforms_cache1_[link_id]);
+    {
+      transforms_cache0_update_[link_id] = transforms_cache0_[link_id];
+      transforms_cache1_update_[link_id] = transforms_cache1_[link_id];
+    }
+
+    contact_manager_->setCollisionObjectsTransform(transforms_cache0_update_, transforms_cache1_update_);
 
     contact_manager_->contactTest(dist_results, collision_check_config_.contact_request);
 
