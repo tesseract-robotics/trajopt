@@ -85,17 +85,15 @@ TEST_F(KinematicCostsTest, CartPoseJacCalculator)  // NOLINT
 
   const LinkId source_frame = env_->getRootLinkId();
   const std::string target_frame = "r_gripper_tool_frame";
-  const Eigen::Isometry3d source_frame_offset = env_->getState().link_transforms.at(LinkId(target_frame));
+  const Eigen::Isometry3d source_frame_offset = env_->getState().link_transforms.at(target_frame);
   const Eigen::Isometry3d target_frame_offset =
       Eigen::Isometry3d::Identity() * Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitZ());
 
   Eigen::VectorXd values(7);
   values << -1.1, 1.2, -3.3, -1.4, 5.5, -1.6, 7.7;
 
-  const CartPoseErrCalculator f(
-      kin, LinkId(source_frame), LinkId(target_frame), source_frame_offset, target_frame_offset);
-  const CartPoseJacCalculator dfdx(
-      kin, LinkId(source_frame), LinkId(target_frame), source_frame_offset, target_frame_offset);
+  const CartPoseErrCalculator f(kin, source_frame, target_frame, source_frame_offset, target_frame_offset);
+  const CartPoseJacCalculator dfdx(kin, source_frame, target_frame, source_frame_offset, target_frame_offset);
   checkJacobian(f, dfdx, values, 1.0e-5);
 }
 

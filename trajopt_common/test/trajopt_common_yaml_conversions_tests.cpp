@@ -218,9 +218,7 @@ TEST(TrajoptCommonYAMLTestFixture, TrajOptCollisionConfigRoundTripUnit)  // NOLI
   EXPECT_EQ(c_out.max_num_cnt, c_in.max_num_cnt);
 }
 
-// ======================== Three-tier overload tests ========================
-
-TEST(TrajoptCommonYAMLTestFixture, CollisionCoeffDataThreeTierOverloadsUnit)  // NOLINT
+TEST(TrajoptCommonYAMLTestFixture, CollisionCoeffDataLinkIdPairLookupUnit)  // NOLINT
 {
   using namespace tesseract::common;
 
@@ -228,13 +226,13 @@ TEST(TrajoptCommonYAMLTestFixture, CollisionCoeffDataThreeTierOverloadsUnit)  //
   data.setCollisionCoeff("link_a", "link_b", 2.5);
   data.setCollisionCoeff("link_c", "link_d", 0.0);
 
-  // Tier 3 (string)
+  // Lookup by link name
   EXPECT_NEAR(data.getCollisionCoeff({ "link_a", "link_b" }), 2.5, 1e-12);
   EXPECT_NEAR(data.getCollisionCoeff({ "link_b", "link_a" }), 2.5, 1e-12);  // order invariant
   EXPECT_NEAR(data.getCollisionCoeff({ "link_c", "link_d" }), 0.0, 1e-12);
   EXPECT_NEAR(data.getCollisionCoeff({ "unknown", "pair" }), 1.0, 1e-12);  // default
 
-  // Tier 1 (LinkId)
+  // Lookup by LinkId
   const LinkId id_a = "link_a";
   const LinkId id_b = "link_b";
   const LinkId id_c = "link_c";
@@ -242,7 +240,6 @@ TEST(TrajoptCommonYAMLTestFixture, CollisionCoeffDataThreeTierOverloadsUnit)  //
   EXPECT_NEAR(data.getCollisionCoeff({ id_a, id_b }), 2.5, 1e-12);
   EXPECT_NEAR(data.getCollisionCoeff({ id_b, id_a }), 2.5, 1e-12);
   EXPECT_NEAR(data.getCollisionCoeff({ id_c, id_d }), 0.0, 1e-12);
-  EXPECT_NEAR(data.getCollisionCoeff({ "unknown", "pair" }), 1.0, 1e-12);
 
   // hasZeroCoeff
   EXPECT_TRUE(data.hasZeroCoeff({ id_c, id_d }));
@@ -251,7 +248,7 @@ TEST(TrajoptCommonYAMLTestFixture, CollisionCoeffDataThreeTierOverloadsUnit)  //
   EXPECT_TRUE(data.hasZeroCoeff({ "link_c", "link_d" }));
   EXPECT_FALSE(data.hasZeroCoeff({ "link_a", "link_b" }));
 
-  // Pair data entry values preserve names
+  // The pair key retains the link names
   const auto& pair_data = data.getCollisionCoeffPairData();
   EXPECT_EQ(pair_data.size(), 2U);
   const auto it = pair_data.find({ id_a, id_b });

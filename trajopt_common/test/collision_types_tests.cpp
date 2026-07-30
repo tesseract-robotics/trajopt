@@ -10,7 +10,7 @@ TEST(CollisionCoeffDataUnit, CollidingPairsCoexist)  // NOLINT
   const tesseract::common::LinkId x("link_x");
   trajopt_common::CollisionCoeffData data(/*default_collision_coeff=*/1.0);
   data.setCollisionCoeff(a, x, 5.0);
-  data.setCollisionCoeff(b, x, 0.0);  // 0 → also lands in zero_coeff_; previously threw
+  data.setCollisionCoeff(b, x, 0.0);  // 0 also lands in zero_coeff_
   EXPECT_DOUBLE_EQ(data.getCollisionCoeff({ a, x }), 5.0);
   EXPECT_DOUBLE_EQ(data.getCollisionCoeff({ b, x }), 0.0);
   EXPECT_FALSE(data.hasZeroCoeff({ a, x }));
