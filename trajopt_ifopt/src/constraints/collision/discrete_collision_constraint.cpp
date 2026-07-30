@@ -260,20 +260,17 @@ Jacobian DiscreteCollisionConstraintD::getJacobian() const
       assert(result.gradients[0].has_gradient || result.gradients[1].has_gradient);
       if (result.gradients[0].has_gradient && result.gradients[1].has_gradient)
       {
-        // This does work but could be faster
         for (int j = 0; j < n_dof_; j++)
           jac.insertBack(i, position_var_->getIndex() + j) =
               -1.0 * (result.gradients[0].gradient[j] + result.gradients[1].gradient[j]);
       }
       else if (result.gradients[0].has_gradient)
       {
-        // This does work but could be faster
         for (int j = 0; j < n_dof_; j++)
           jac.insertBack(i, position_var_->getIndex() + j) = -1.0 * result.gradients[0].gradient[j];
       }
       else if (result.gradients[1].has_gradient)
       {
-        // This does work but could be faster
         for (int j = 0; j < n_dof_; j++)
           jac.insertBack(i, position_var_->getIndex() + j) = -1.0 * result.gradients[1].gradient[j];
       }

@@ -236,7 +236,6 @@ void CartLineConstraint::calcJacobianBlock(Jacobian& jac_block,
     // TODO: Make this more efficient. This does not work.
     //    Jacobian jac_block = jac0.sparseView();
 
-    // This does work but could be faster
     for (int i = 0; i < 6; i++)
     {
       jac_block.startVec(i);

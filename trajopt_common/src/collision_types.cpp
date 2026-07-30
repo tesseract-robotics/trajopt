@@ -77,26 +77,15 @@ bool CollisionCoeffData::operator==(const CollisionCoeffData& rhs) const
 {
   static constexpr auto max_diff = static_cast<double>(std::numeric_limits<float>::epsilon());
 
+  static const auto value_eq = [](const PairCoeffEntry& v1, const PairCoeffEntry& v2) {
+    return tesseract::common::almostEqualRelativeAndAbs(v1.coeff, v2.coeff, max_diff);
+  };
+
   bool equal = true;
   equal &=
       tesseract::common::almostEqualRelativeAndAbs(default_collision_coeff_, rhs.default_collision_coeff_, max_diff);
-
-  // Compare lookup tables by size and per-entry coefficient
-  equal &= (lookup_table_.size() == rhs.lookup_table_.size());
-  if (equal)
-  {
-    for (const auto& [key, entry] : lookup_table_)
-    {
-      auto it = rhs.lookup_table_.find(key);
-      if (it == rhs.lookup_table_.end() ||
-          !tesseract::common::almostEqualRelativeAndAbs(entry.coeff, it->second.coeff, max_diff))
-      {
-        equal = false;
-        break;
-      }
-    }
-  }
-
+  equal &= tesseract::common::isIdenticalMap<std::unordered_map<tesseract::common::LinkIdPair, PairCoeffEntry>,
+                                             PairCoeffEntry>(lookup_table_, rhs.lookup_table_, value_eq);
   equal &= (zero_coeff_ == rhs.zero_coeff_);
   return equal;
 }

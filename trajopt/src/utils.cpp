@@ -1,5 +1,6 @@
 #include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
+#include <algorithm>
 #include <Eigen/Geometry>
 #include <boost/format.hpp>
 TRAJOPT_IGNORE_WARNINGS_POP
@@ -86,6 +87,22 @@ void AddVarArray(sco::OptProb& prob, int rows, int cols, const std::string& name
   const std::vector<std::string> prefixes(1, name_prefix);
   const std::vector<int> colss(1, cols);
   AddVarArrays(prob, rows, colss, prefixes, arrs);
+}
+
+bool isSuperset(const std::vector<tesseract::common::JointId>& subset,
+                const std::vector<tesseract::common::JointId>& superset)
+{
+  for (const tesseract::common::JointId& s : subset)
+  {
+    if (std::find(superset.begin(), superset.end(), s) == superset.end())
+    {
+      return false;
+    }
+  }
+
+  // All subset ids were found in the superset
+  // Check that the superset is bigger than the subset
+  return superset.size() > subset.size();
 }
 
 bool updateFromSubset(const std::vector<tesseract::common::JointId>& superset_ids,
