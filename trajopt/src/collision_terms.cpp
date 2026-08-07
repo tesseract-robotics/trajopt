@@ -245,8 +245,10 @@ GradientResults CollisionEvaluator::GetGradient(const Eigen::VectorXd& dofvals,
                                                 const tesseract::collision::ContactResult& contact_result,
                                                 bool isTimestep1)
 {
-  // Contains the contact distance threshold and coefficient for the given link pair
-  const tesseract::common::LinkIdPair pair(contact_result.link_ids[0], contact_result.link_ids[1]);
+  // Contains the contact distance threshold and coefficient for the given link pair. Reusing a
+  // long-lived pair keeps the per-contact lookup allocation-free.
+  TRAJOPT_THREAD_LOCAL tesseract::common::LinkIdPair pair;
+  pair.assign(contact_result.link_ids[0], contact_result.link_ids[1]);
   const double margin = margin_data_.getCollisionMargin(pair);
   const double coeff = coeff_data_.getCollisionCoeff(pair);
   return GetGradient(dofvals, contact_result, margin, coeff, isTimestep1);
@@ -320,8 +322,10 @@ GradientResults CollisionEvaluator::GetGradient(const Eigen::VectorXd& dofvals0,
                                                 const tesseract::collision::ContactResult& contact_result,
                                                 bool isTimestep1)
 {
-  // Contains the contact distance threshold and coefficient for the given link pair
-  const tesseract::common::LinkIdPair pair(contact_result.link_ids[0], contact_result.link_ids[1]);
+  // Contains the contact distance threshold and coefficient for the given link pair. Reusing a
+  // long-lived pair keeps the per-contact lookup allocation-free.
+  TRAJOPT_THREAD_LOCAL tesseract::common::LinkIdPair pair;
+  pair.assign(contact_result.link_ids[0], contact_result.link_ids[1]);
   const double margin = margin_data_.getCollisionMargin(pair);
   const double coeff = coeff_data_.getCollisionCoeff(pair);
   return GetGradient(dofvals0, dofvals1, contact_result, margin, coeff, isTimestep1);
