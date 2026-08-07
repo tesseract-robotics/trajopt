@@ -39,37 +39,41 @@ void CollisionCoeffData::setDefaultCollisionCoeff(double default_collision_coeff
 
 double CollisionCoeffData::getDefaultCollisionCoeff() const { return default_collision_coeff_; }
 
-void CollisionCoeffData::setCollisionCoeff(const std::string& obj1, const std::string& obj2, double collision_coeff)
+void CollisionCoeffData::setCollisionCoeff(const tesseract::common::LinkId& obj1,
+                                           const tesseract::common::LinkId& obj2,
+                                           double collision_coeff)
 {
-  TRAJOPT_THREAD_LOCAL tesseract::common::LinkNamesPair key;
-  tesseract::common::makeOrderedLinkPair(key, obj1, obj2);
-  lookup_table_.insert_or_assign(key, collision_coeff);
-
-  if (tesseract::common::almostEqualRelativeAndAbs(collision_coeff, 0.0))
-    zero_coeff_.insert(key);
-  else
-    zero_coeff_.erase(key);
+  TRAJOPT_THREAD_LOCAL tesseract::common::LinkIdPair pair;
+  pair.assign(obj1, obj2);
+  setCollisionCoeff(pair, collision_coeff);
 }
 
-double CollisionCoeffData::getCollisionCoeff(const std::string& obj1, const std::string& obj2) const
+void CollisionCoeffData::setCollisionCoeff(const tesseract::common::LinkIdPair& pair, double collision_coeff)
 {
-  TRAJOPT_THREAD_LOCAL tesseract::common::LinkNamesPair key;
-  tesseract::common::makeOrderedLinkPair(key, obj1, obj2);
-  const auto it = lookup_table_.find(key);
+  lookup_table_.insert_or_assign(pair, collision_coeff);
 
+  if (tesseract::common::almostEqualRelativeAndAbs(collision_coeff, 0.0))
+    zero_coeff_.insert(pair);
+  else
+    zero_coeff_.erase(pair);
+}
+
+double CollisionCoeffData::getCollisionCoeff(const tesseract::common::LinkIdPair& pair) const
+{
+  const auto it = lookup_table_.find(pair);
   if (it != lookup_table_.end())
     return it->second;
-
   return default_collision_coeff_;
 }
 
-const std::unordered_map<tesseract::common::LinkNamesPair, double>&
-CollisionCoeffData::getCollisionCoeffPairData() const
+bool CollisionCoeffData::hasZeroCoeff(const tesseract::common::LinkIdPair& pair) const
 {
-  return lookup_table_;
+  return zero_coeff_.count(pair) != 0;
 }
 
-const std::set<tesseract::common::LinkNamesPair>& CollisionCoeffData::getPairsWithZeroCoeff() const
+const PairsCollisionCoeffData& CollisionCoeffData::getCollisionCoeffPairData() const { return lookup_table_; }
+
+const std::unordered_set<tesseract::common::LinkIdPair>& CollisionCoeffData::getPairsWithZeroCoeff() const
 {
   return zero_coeff_;
 }
@@ -85,7 +89,7 @@ bool CollisionCoeffData::operator==(const CollisionCoeffData& rhs) const
   bool equal = true;
   equal &=
       tesseract::common::almostEqualRelativeAndAbs(default_collision_coeff_, rhs.default_collision_coeff_, max_diff);
-  equal &= tesseract::common::isIdenticalMap<std::unordered_map<tesseract::common::LinkNamesPair, double>, double>(
+  equal &= tesseract::common::isIdenticalMap<std::unordered_map<tesseract::common::LinkIdPair, double>, double>(
       lookup_table_, rhs.lookup_table_, value_eq);
   equal &= (zero_coeff_ == rhs.zero_coeff_);
   return equal;

@@ -103,11 +103,12 @@ void runCartPositionOptimization(const tesseract::environment::Environment::Ptr&
   // 3) Add Variables
   std::vector<std::unique_ptr<trajopt_ifopt::Node>> nodes;
   std::vector<std::shared_ptr<const trajopt_ifopt::Var>> vars;
+  const std::vector<std::string> joint_names = tesseract::common::toNames(manip->getJointIds());
   for (int ind = 0; ind < 1; ind++)
   {
     auto node = std::make_unique<trajopt_ifopt::Node>("Joint_Position_" + std::to_string(ind));
     auto zero = Eigen::VectorXd::Zero(7);
-    vars.push_back(node->addVar("position", manip->getJointNames(), zero, bounds));
+    vars.push_back(node->addVar("position", joint_names, zero, bounds));
     nodes.push_back(std::move(node));
   }
   auto variables = std::make_shared<trajopt_ifopt::NodesVariables>("joint_trajectory", std::move(nodes));

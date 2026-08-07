@@ -48,7 +48,7 @@ public:
   }
 
 protected:
-  static thread_local tesseract::common::TransformMap transforms_cache;  // NOLINT
+  static thread_local tesseract::common::LinkIdTransformMap transforms_cache;  // NOLINT
 };
 
 /**  @brief Adds plotting to the MatrixOfVector class in trajopt_sco */
@@ -61,7 +61,7 @@ public:
   }
 
 protected:
-  static thread_local tesseract::common::TransformMap transforms_cache;  // NOLINT
+  static thread_local tesseract::common::LinkIdTransformMap transforms_cache;  // NOLINT
 };
 
 /**  @brief Adds plotting to the CostFromErrFunc class in trajopt_sco */
