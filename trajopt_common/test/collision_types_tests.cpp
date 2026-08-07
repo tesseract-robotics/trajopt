@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 #include <trajopt_common/collision_types.h>
 #include <tesseract/common/types.h>
-#include "name_id_testing.h"
+#include <tesseract/common/test_suite/name_id_testing.h>
 
 TEST(CollisionCoeffDataUnit, CollidingPairsCoexist)  // NOLINT
 {

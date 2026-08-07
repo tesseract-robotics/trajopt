@@ -1,4 +1,5 @@
 find_gtest()
+find_package(tesseract REQUIRED COMPONENTS common_test_suite)
 
 # TrajOpt Common YAML Unit tests
 add_executable(${PROJECT_NAME}_yaml_unit trajopt_common_yaml_conversions_tests.cpp)
@@ -38,7 +39,12 @@ add_dependencies(run_tests ${PROJECT_NAME}_cache_unit)
 
 # TrajOpt Common Collision Types Unit tests
 add_executable(${PROJECT_NAME}_collision_types_unit collision_types_tests.cpp)
-target_link_libraries(${PROJECT_NAME}_collision_types_unit PRIVATE GTest::GTest GTest::Main ${PROJECT_NAME})
+target_link_libraries(
+  ${PROJECT_NAME}_collision_types_unit
+  PRIVATE GTest::GTest
+          GTest::Main
+          ${PROJECT_NAME}
+          tesseract::common_test_suite)
 target_compile_options(${PROJECT_NAME}_collision_types_unit PRIVATE ${TRAJOPT_COMPILE_OPTIONS_PRIVATE}
                                                                     ${TRAJOPT_COMPILE_OPTIONS_PUBLIC})
 target_compile_definitions(${PROJECT_NAME}_collision_types_unit PRIVATE ${TRAJOPT_COMPILE_DEFINITIONS_PUBLIC})
