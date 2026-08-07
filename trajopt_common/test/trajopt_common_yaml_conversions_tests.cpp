@@ -255,7 +255,7 @@ TEST(TrajoptCommonYAMLTestFixture, CollisionCoeffDataLinkIdPairLookupUnit)  // N
   ASSERT_NE(it, pair_data.end());
   EXPECT_FALSE(it->first.first().name().empty());
   EXPECT_FALSE(it->first.second().name().empty());
-  EXPECT_NEAR(it->second.coeff, 2.5, 1e-12);
+  EXPECT_NEAR(it->second, 2.5, 1e-12);
 
   // Zero coeff set uses LinkIdPair
   const auto& zero_pairs = data.getPairsWithZeroCoeff();

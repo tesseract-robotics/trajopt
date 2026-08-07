@@ -43,17 +43,9 @@ using GetStateFn =
 class CollisionCoeffData;
 
 template <class Archive>
-void save(Archive& ar, const CollisionCoeffData& obj);
-template <class Archive>
-void load(Archive& ar, CollisionCoeffData& obj);
+void serialize(Archive& ar, CollisionCoeffData& obj);
 
-/** @brief Value stored in each coefficient-pair entry. The pair key carries the names. */
-struct PairCoeffEntry
-{
-  double coeff{ 0 };
-};
-
-using PairsCollisionCoeffData = std::unordered_map<tesseract::common::LinkIdPair, PairCoeffEntry>;
+using PairsCollisionCoeffData = std::unordered_map<tesseract::common::LinkIdPair, double>;
 
 /** @brief Stores information about how the margins allowed between collision objects */
 class CollisionCoeffData
@@ -92,6 +84,14 @@ public:
   void setCollisionCoeff(const tesseract::common::LinkId& obj1,
                          const tesseract::common::LinkId& obj2,
                          double collision_coeff);
+
+  /**
+   * @brief Set the coefficient for a given contact pair
+   *
+   * @param pair The object pair, already in canonical order
+   * @param collision_coeff Coefficient
+   */
+  void setCollisionCoeff(const tesseract::common::LinkIdPair& pair, double collision_coeff);
 
   /**
    * @brief Get the pairs collision coefficient
@@ -135,9 +135,7 @@ private:
   std::unordered_set<tesseract::common::LinkIdPair> zero_coeff_;
 
   template <class Archive>
-  friend void ::trajopt_common::save(Archive& ar, const CollisionCoeffData& obj);
-  template <class Archive>
-  friend void ::trajopt_common::load(Archive& ar, CollisionCoeffData& obj);
+  friend void ::trajopt_common::serialize(Archive& ar, CollisionCoeffData& obj);
 };
 
 /**
