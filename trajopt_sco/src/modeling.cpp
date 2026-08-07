@@ -265,7 +265,7 @@ DblVec OptProb::getClosestFeasiblePoint(const DblVec& x, const double& delta)
   {
     // Force it a tiny bit inside the bounds
     y[i] = fmax(lower_bounds_[i] + delta, x[i]);
-    y[i] = fmin(upper_bounds_[i] - delta, x[i]);
+    y[i] = fmin(upper_bounds_[i] - delta, y[i]);
   }
   return y;
 }
