@@ -101,7 +101,7 @@ These costs convert any constraint into a cost
 
 ## Trajopt_optimizers
 Additionally, the SQP solver has been rewritten. Currently it provides the SQP routine with interfaces to these QP solvers
-*  [OSQPEigen](https://github.com/robotology/osqp-eigen/tree/master/include/OsqpEigen)
+*  [OSQPEigen](https://github.com/gbionics/osqp-eigen/tree/master/include/OsqpEigen)
 
 Therefore the solvers that will work in this new framework are
 *  [IPOPT](https://github.com/coin-or/Ipopt)
