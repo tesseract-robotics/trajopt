@@ -1,7 +1,11 @@
 find_gtest()
 
 set(SCO_TEST_SOURCE unit.cpp solver-utils-unit.cpp)
-if(HAVE_GUROBI OR HAVE_qpOASES)
+# These are parameterized over availableSolvers(), so they need at least one solver to be present
+if(GUROBI_FOUND
+   OR osqp_FOUND
+   OR qpOASES_FOUND
+   OR HAVE_BPMPD)
   list(
     APPEND
     SCO_TEST_SOURCE
