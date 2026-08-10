@@ -1,6 +1,6 @@
 find_gtest()
 
-set(SCO_TEST_SOURCE unit.cpp solver-utils-unit.cpp)
+set(SCO_TEST_SOURCE unit.cpp modeling-unit.cpp solver-utils-unit.cpp)
 # These are parameterized over availableSolvers(), so they need at least one solver to be present
 if(GUROBI_FOUND
    OR osqp_FOUND

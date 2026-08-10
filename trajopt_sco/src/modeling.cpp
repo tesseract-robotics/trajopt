@@ -1,5 +1,6 @@
 #include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
+#include <algorithm>
 #include <boost/format.hpp>
 #include <cstdio>
 #include <sstream>
@@ -263,9 +264,10 @@ DblVec OptProb::getClosestFeasiblePoint(const DblVec& x, const double& delta)
   DblVec y(x.size());
   for (std::size_t i = 0; i < x.size(); i++)
   {
-    // Force it a tiny bit inside the bounds
-    y[i] = fmax(lower_bounds_[i] + delta, x[i]);
-    y[i] = fmin(upper_bounds_[i] - delta, y[i]);
+    // Force it a tiny bit inside the bounds. Bounds narrower than 2 * delta have no room for that, so the inset is
+    // capped at half their width, which places the point at their midpoint instead of outside them.
+    const double inset = std::min(delta, (upper_bounds_[i] - lower_bounds_[i]) / 2);
+    y[i] = std::min(std::max(x[i], lower_bounds_[i] + inset), upper_bounds_[i] - inset);
   }
   return y;
 }

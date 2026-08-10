@@ -235,9 +235,9 @@ public:
   DblVec getCentralFeasiblePoint(const DblVec& x);
   /**
    * @brief Pushes the input vector within joint limits by some amount in a repeatable fashion
-   * @param x Input vector. If it is already within joint limits, it will not be changed
+   * @param x Input vector. Values further than delta inside the joint limits are not changed
    * @param delta (Default = 1e-3) Amount that it is pushed within the joint limits. Pushing it exactly onto a limit can
-   * cause numerical problems
+   * cause numerical problems. Limits narrower than 2 * delta leave no room for this, and yield their midpoint
    * @return The input vector x with values modified to be within the joint limits
    */
   DblVec getClosestFeasiblePoint(const DblVec& x, const double& delta = 1e-3);
