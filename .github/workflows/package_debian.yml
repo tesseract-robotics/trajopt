@@ -86,11 +86,11 @@ jobs:
             cp ./*.tar.xz $GITHUB_WORKSPACE/artifacts
           fi
 
-      - name: Package osqp_eigen
+      - name: Package osqp_eigen_ext
         shell: bash
         run: |
-          if [ -d $GITHUB_WORKSPACE/target_ws/build/osqp_eigen ]; then
-            cd $GITHUB_WORKSPACE/target_ws/build/osqp_eigen
+          if [ -d $GITHUB_WORKSPACE/target_ws/build/osqp_eigen_ext ]; then
+            cd $GITHUB_WORKSPACE/target_ws/build/osqp_eigen_ext
             cpack --config CPackConfig.cmake
             cp ./*.deb $GITHUB_WORKSPACE/artifacts
             cp ./*.tar.xz $GITHUB_WORKSPACE/artifacts
