@@ -31,7 +31,7 @@ if(NOT ${OsqpEigen_FOUND} AND NOT TRAJOPT_OSQP_DISABLED)
 
   ExternalProject_Add(
     ${PROJECT_NAME}
-    GIT_REPOSITORY https://github.com/robotology/osqp-eigen
+    GIT_REPOSITORY https://github.com/gbionics/osqp-eigen
     GIT_TAG v${TRAJOPT_OSQPEIGEN_VERSION}
     SOURCE_DIR ${CMAKE_BINARY_DIR}-src
     BINARY_DIR ${CMAKE_BINARY_DIR}-build
