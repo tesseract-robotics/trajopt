@@ -1,8 +1,8 @@
 #include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
-#include <cstdio>
 #include <gtest/gtest.h>
 #include <iostream>
+#include <string>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt_sco/expr_ops.hpp>
@@ -36,9 +36,7 @@ TEST_P(SolverInterface, setup_problem)  // NOLINT
   VarVector vars;
   for (int i = 0; i < 3; ++i)
   {
-    char namebuf[5];
-    sprintf(namebuf, "v%i", i);
-    vars.push_back(solver->addVar(namebuf));
+    vars.push_back(solver->addVar("v" + std::to_string(i)));
   }
   solver->update();
 
@@ -79,15 +77,11 @@ TEST_P(SolverInterface, DISABLED_ExprMult_test1)  // NOLINT // QuadExpr not PSD
   VarVector vars;
   for (int i = 0; i < 3; ++i)
   {
-    char namebuf[5];
-    sprintf(namebuf, "v%i", i);
-    vars.push_back(solver->addVar(namebuf));
+    vars.push_back(solver->addVar("v" + std::to_string(i)));
   }
   for (int i = 3; i < 6; ++i)
   {
-    char namebuf[5];
-    sprintf(namebuf, "v%i", i);
-    vars.push_back(solver->addVar(namebuf));
+    vars.push_back(solver->addVar("v" + std::to_string(i)));
   }
   solver->update();
 
@@ -236,14 +230,4 @@ TEST_P(SolverInterface, ExprMult_test3)  // NOLINT
   EXPECT_NEAR(aff12.value(soln), answer, 1e-6);
 }
 
-auto getAvailableSolvers = []() {
-  std::vector<ModelType> solvers = availableSolvers();
-  auto it = std::find(solvers.begin(), solvers.end(), ModelType::OSQP);
-  if (it != solvers.end())
-  {
-    solvers.erase(it);
-  };
-  return solvers;
-};
-
-INSTANTIATE_TEST_CASE_P(AllSolvers, SolverInterface, testing::ValuesIn(getAvailableSolvers()));
+INSTANTIATE_TEST_CASE_P(AllSolvers, SolverInterface, testing::ValuesIn(availableSolvers()));
