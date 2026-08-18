@@ -1,0 +1,44 @@
+{
+  "basic_info" : {
+    "n_steps" : 3,
+    "manip" : "manipulator",
+    "fixed_timesteps" : [0]
+  },
+  "costs" : [
+  {
+    "type" : "joint_vel",
+    "name" : "jvel0",
+    "params": {
+      "coeffs" : [1],
+      "targets" : [0, 0]
+    }
+  }
+  ],
+  "constraints" : [
+  {
+    "type" : "collision",
+    "name" : "collision_cnt",
+    "params" : {
+      "coeffs" : 10,
+      "dist_pen" : 0.02,
+      "evaluator_type" : 4,
+      "fixed_steps": [0, 2],
+      "longest_valid_segment_length" : 0.05
+    }
+  },
+  {
+    "type" : "joint_pos",
+    "name" : "joint",
+    "params" : {
+       "coeffs" : [1, 1],
+       "targets" : [1.9, 3.8],
+       "first_step": 2,
+       "last_step": 2
+    }
+  }
+  ],
+  "init_info" : {
+    "type" : "given_traj",
+    "data" : [[-1.9, 0], [0,1.9], [1.9,3.8]   ]
+  }
+}

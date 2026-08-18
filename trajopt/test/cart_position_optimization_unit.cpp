@@ -207,7 +207,7 @@ static void buildAbbIrb2400Env(std::shared_ptr<Environment>& env_out,
 //            2*20*|c+0.4| = 10 -> c ~= -0.15.
 //            |opt[5] - (-0.4)| ~= 0.25 > 0.15 -> assertion fails.
 //
-// Stash-revert failure (observed): opt joint_6 ~= -0.15, gap ~= 0.25 > 0.15.
+// Pre-fix: opt joint_6 ~= -0.15, gap ~= 0.25 > 0.15 -> this assertion fails.
 // ---------------------------------------------------------------------------
 TEST(CartPositionOptimizationTrajoptSCO, cart_position_seed_outside_band_snaps_to_edge)  // NOLINT
 {
@@ -354,7 +354,7 @@ TEST(CartPositionOptimizationTrajoptSCO, cart_position_seed_outside_band_snaps_t
 //     Post-fix: no resistance -> joint_6 moves to 0.3.
 //     Pre-fix: non-zero Jac (ratio 10 >> 1) blocks motion -> joint_6 ~= 0.
 //
-// Stash-revert failure (observed): opt joint_6 = 0 -> |opt[5] - 0.3| = 0.3.
+// Pre-fix: opt joint_6 = 0 -> |opt[5] - 0.3| = 0.3 -> this assertion fails.
 // ---------------------------------------------------------------------------
 TEST(CartPositionOptimizationTrajoptSCO, cart_position_seed_inside_band_uses_band_freedom)  // NOLINT
 {

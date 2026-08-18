@@ -81,11 +81,12 @@ public:
     kinematic_info = std::make_shared<InverseKinematicsInfo>(kin_group, "base_footprint", "r_gripper_tool_frame");
 
     auto pos = Eigen::VectorXd::Ones(kin_group->numJoints());
+    const std::vector<std::string> joint_names = tesseract::common::toNames(kin_group->getJointIds());
     std::vector<std::unique_ptr<Node>> nodes;
     nodes.push_back(std::make_unique<Node>("Joint_Position_0"));
-    auto var0 = nodes.back()->addVar("position", kin_group->getJointNames(), pos, joint_bounds);
+    auto var0 = nodes.back()->addVar("position", joint_names, pos, joint_bounds);
     nodes.push_back(std::make_unique<Node>("Joint_Position_1"));
-    auto var1 = nodes.back()->addVar("position", kin_group->getJointNames(), pos, joint_bounds);
+    auto var1 = nodes.back()->addVar("position", joint_names, pos, joint_bounds);
 
     auto variables = std::make_shared<NodesVariables>("joint_trajectory", std::move(nodes));
     nlp = std::make_shared<Problem>(variables);
@@ -146,11 +147,12 @@ TEST_F(InverseKinematicsConstraintUnit, GetSetBounds)  // NOLINT
   // Check that setting bounds works
   {
     const Eigen::VectorXd pos = Eigen::VectorXd::Ones(n_dof);
+    const std::vector<std::string> joint_names = tesseract::common::toNames(kin_group->getJointIds());
     std::vector<std::unique_ptr<Node>> nodes;
     nodes.push_back(std::make_unique<Node>("Joint_Position_0"));
-    auto var0 = nodes.back()->addVar("position", kin_group->getJointNames(), pos, joint_bounds);
+    auto var0 = nodes.back()->addVar("position", joint_names, pos, joint_bounds);
     nodes.push_back(std::make_unique<Node>("Joint_Position_1"));
-    auto var1 = nodes.back()->addVar("position", kin_group->getJointNames(), pos, joint_bounds);
+    auto var1 = nodes.back()->addVar("position", joint_names, pos, joint_bounds);
 
     auto target_pose = Eigen::Isometry3d::Identity();
     auto constraint_2 = std::make_shared<InverseKinematicsConstraint>(target_pose, kinematic_info, var0, var1);

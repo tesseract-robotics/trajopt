@@ -40,14 +40,14 @@ TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace trajopt_ifopt
 {
-thread_local tesseract::common::TransformMap CartPosConstraint::transforms_cache_;  // NOLINT
+thread_local tesseract::common::LinkIdTransformMap CartPosConstraint::transforms_cache_;  // NOLINT
 
 CartPosConstraint::CartPosConstraint(std::shared_ptr<const Var> position_var,
                                      const Eigen::VectorXd& coeffs,  // NOLINT(modernize-pass-by-value)
                                      const std::vector<Bounds>& bounds,
                                      std::shared_ptr<const tesseract::kinematics::JointGroup> manip,
-                                     std::string source_frame,
-                                     std::string target_frame,
+                                     tesseract::common::LinkId source_frame,
+                                     tesseract::common::LinkId target_frame,
                                      const Eigen::Isometry3d& source_frame_offset,  // NOLINT(modernize-pass-by-value)
                                      const Eigen::Isometry3d& target_frame_offset,  // NOLINT(modernize-pass-by-value)
                                      std::string name,
@@ -65,11 +65,11 @@ CartPosConstraint::CartPosConstraint(std::shared_ptr<const Var> position_var,
   n_dof_ = manip_->numJoints();
   assert(n_dof_ > 0);
 
-  if (!manip_->hasLinkName(source_frame_))
-    throw std::runtime_error("Source Link name '" + source_frame_ + "' provided does not exist.");
+  if (!manip_->hasLinkId(source_frame_))
+    throw std::runtime_error("Source Link name '" + source_frame_.name() + "' provided does not exist.");
 
-  if (!manip_->hasLinkName(target_frame_))
-    throw std::runtime_error("Target Link name '" + target_frame_ + "' provided does not exist.");
+  if (!manip_->hasLinkId(target_frame_))
+    throw std::runtime_error("Target Link name '" + target_frame_.name() + "' provided does not exist.");
 
   if (bounds.size() != 6)
     throw std::runtime_error("The number of bounds should be six.");
@@ -77,8 +77,8 @@ CartPosConstraint::CartPosConstraint(std::shared_ptr<const Var> position_var,
   if (coeffs.rows() != 6)
     throw std::runtime_error("The number of coeffs should be six.");
 
-  const bool target_active = manip_->isActiveLinkName(target_frame_);
-  const bool source_active = manip_->isActiveLinkName(source_frame_);
+  const bool target_active = manip_->isActiveLinkId(target_frame_);
+  const bool source_active = manip_->isActiveLinkId(source_frame_);
   if (target_active && source_active)
     type_ = Type::kBothActive;
   else if (target_active)
@@ -154,7 +154,7 @@ CartPosConstraint::CartPosConstraint(std::shared_ptr<const Var> position_var,
       error_diff_function_ = [this](const Eigen::VectorXd& vals,
                                     const Eigen::Isometry3d& target_tf,
                                     const Eigen::Isometry3d& source_tf,
-                                    tesseract::common::TransformMap& transforms_cache) -> Eigen::VectorXd {
+                                    tesseract::common::LinkIdTransformMap& transforms_cache) -> Eigen::VectorXd {
         manip_->calcFwdKin(transforms_cache, vals);
         const Eigen::Isometry3d perturbed_target_tf = transforms_cache[target_frame_] * target_frame_offset_;
         Eigen::VectorXd error_diff =
@@ -187,7 +187,7 @@ CartPosConstraint::CartPosConstraint(std::shared_ptr<const Var> position_var,
       error_diff_function_ = [this](const Eigen::VectorXd& vals,
                                     const Eigen::Isometry3d& target_tf,
                                     const Eigen::Isometry3d& source_tf,
-                                    tesseract::common::TransformMap& transforms_cache) -> Eigen::VectorXd {
+                                    tesseract::common::LinkIdTransformMap& transforms_cache) -> Eigen::VectorXd {
         manip_->calcFwdKin(transforms_cache, vals);
         const Eigen::Isometry3d perturbed_source_tf = transforms_cache[source_frame_] * source_frame_offset_;
         Eigen::VectorXd error_diff =
@@ -219,7 +219,7 @@ CartPosConstraint::CartPosConstraint(std::shared_ptr<const Var> position_var,
       error_diff_function_ = [this](const Eigen::VectorXd& vals,
                                     const Eigen::Isometry3d& target_tf,
                                     const Eigen::Isometry3d& source_tf,
-                                    tesseract::common::TransformMap& transforms_cache) -> Eigen::VectorXd {
+                                    tesseract::common::LinkIdTransformMap& transforms_cache) -> Eigen::VectorXd {
         /** @todo This is different from legacy kinematic_terms */
         manip_->calcFwdKin(transforms_cache, vals);
         const Eigen::Isometry3d perturbed_source_tf = transforms_cache[source_frame_] * source_frame_offset_;
@@ -241,8 +241,8 @@ CartPosConstraint::CartPosConstraint(std::shared_ptr<const Var> position_var,
 
 CartPosConstraint::CartPosConstraint(std::shared_ptr<const Var> position_var,
                                      std::shared_ptr<const tesseract::kinematics::JointGroup> manip,
-                                     std::string source_frame,
-                                     std::string target_frame,
+                                     tesseract::common::LinkId source_frame,
+                                     tesseract::common::LinkId target_frame,
                                      const Eigen::Isometry3d& source_frame_offset,
                                      const Eigen::Isometry3d& target_frame_offset,
                                      std::string name,

@@ -58,7 +58,8 @@ public:
     std::vector<Bounds> bounds(static_cast<std::size_t>(manip->numJoints()), NoBound);
     auto node = std::make_unique<Node>("Joint_Position_0");
     auto pos = Eigen::VectorXd::Ones(n_dof);
-    var = node->addVar("position", manip->getJointNames(), pos, bounds);
+    const std::vector<std::string> joint_names = tesseract::common::toNames(manip->getJointIds());
+    var = node->addVar("position", joint_names, pos, bounds);
     std::vector<std::unique_ptr<Node>> nodes;
     nodes.push_back(std::move(node));
     variables = std::make_shared<NodesVariables>("joint_trajectory", std::move(nodes));

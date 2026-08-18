@@ -3,6 +3,7 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <ctime>
 #include <gtest/gtest.h>
 #include <tesseract/common/types.h>
+#include <tesseract/scene_graph/scene_state.h>
 #include <tesseract/environment/core/environment.h>
 #include <tesseract/environment/ofkt/ofkt_state_solver.h>
 #include <tesseract/environment/core/utils.h>
@@ -65,7 +66,7 @@ TEST_F(InterfaceTest, initial_trajectory_cpp_interface)
   pci.kin = env_->getFwdKinematics(pci.basic_info.manip);
 
   // Populate Init Info
-  Eigen::VectorXd start_pos = pci.env->getCurrentJointValues(pci.kin->getJointNames());
+  Eigen::VectorXd start_pos = pci.env->getCurrentJointValues(pci.kin->getJointIds());
   pci.init_info.type = InitInfo::STATIONARY;
 
   auto jv = std::make_shared<JointPosTermInfo>();
@@ -113,7 +114,7 @@ TEST_F(InterfaceTest, initial_trajectory_time_cpp_interface)
   pci.kin = env_->getFwdKinematics(pci.basic_info.manip);
 
   // Populate Init Info
-  Eigen::VectorXd start_pos = pci.env->getCurrentJointValues(pci.kin->getJointNames());
+  Eigen::VectorXd start_pos = pci.env->getCurrentJointValues(pci.kin->getJointIds());
   pci.init_info.type = InitInfo::JOINT_INTERPOLATED;
   pci.init_info.data = Eigen::VectorXd::Constant(7, 1, end);
   pci.init_info.dt = dt;
@@ -162,7 +163,7 @@ TEST_F(InterfaceTest, initial_trajectory_json_interface)
 
   Json::Value root = readJsonFile(std::string(TRAJOPT_DATA_DIR) + "/config/arm_around_table.json");
 
-  std::unordered_map<std::string, double> ipos;
+  SceneState::JointValues ipos;
   ipos["torso_lift_joint"] = 0;
   ipos["r_shoulder_pan_joint"] = 0;
   ipos["r_shoulder_lift_joint"] = 0;
@@ -197,7 +198,7 @@ TEST_F(InterfaceTest, initial_trajectory_time_json_interface)
 
   Json::Value root = readJsonFile(std::string(TRAJOPT_DATA_DIR) + "/config/arm_around_table.json");
 
-  std::unordered_map<std::string, double> ipos;
+  SceneState::JointValues ipos;
   ipos["torso_lift_joint"] = 0;
   ipos["r_shoulder_pan_joint"] = 0;
   ipos["r_shoulder_lift_joint"] = 0;

@@ -209,6 +209,10 @@ private:
   std::shared_ptr<ContinuousCollisionEvaluator> collision_evaluator_;
   trajopt_common::Cache<std::size_t, trajopt_common::CollisionCacheData> collision_data_cache_{ 3 };
   std::shared_ptr<trajopt_common::CollisionCacheData> collision_data_;
+
+  /** @brief Sorted contact pair keys for deterministic QP row ordering.
+   *  Built by update(), reused by getJacobian() so both iterate identically. */
+  std::vector<tesseract::collision::ContactResultMap::KeyType> sorted_keys_;
 };
 }  // namespace trajopt_ifopt
 
