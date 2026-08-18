@@ -31,8 +31,10 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <tesseract/collision/discrete_contact_manager.h>
 #include <tesseract/kinematics/joint_group.h>
 #include <tesseract/state_solver/state_solver.h>
+#include <tesseract/scene_graph/scene_state.h>
 #include <tesseract/environment/environment.h>
 #include <tesseract/environment/utils.h>
+#include <tesseract/common/types.h>
 #include <trajopt_common/collision_types.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
@@ -74,7 +76,7 @@ public:
 
 void runDiscreteGradientTest(const Environment::Ptr& env, double coeff)
 {
-  std::unordered_map<std::string, double> ipos;
+  SceneState::JointValues ipos;
   ipos["spherebot_x_joint"] = -0.75;
   ipos["spherebot_y_joint"] = 0.75;
   env->setState(ipos);
@@ -85,7 +87,7 @@ void runDiscreteGradientTest(const Environment::Ptr& env, double coeff)
   const JointGroup::ConstPtr manip = env->getJointGroup("manipulator");
   const std::vector<Bounds> bounds = toBounds(manip->getLimits().joint_limits);
 
-  manager->setActiveCollisionObjects(manip->getActiveLinkNames());
+  manager->setActiveCollisionObjects(manip->getActiveLinkIds());
   manager->setDefaultCollisionMargin(0);
 
   collisions.clear();
@@ -99,7 +101,8 @@ void runDiscreteGradientTest(const Environment::Ptr& env, double coeff)
     Eigen::VectorXd pos(2);
     pos << -0.75, 0.75;
     positions.push_back(pos);
-    vars.push_back(nodes.back()->addVar("position", manip->getJointNames(), pos, bounds));
+    const std::vector<std::string> joint_names = tesseract::common::toNames(manip->getJointIds());
+    vars.push_back(nodes.back()->addVar("position", joint_names, pos, bounds));
   }
   auto variables = std::make_shared<NodesVariables>("joint_trajectory", std::move(nodes));
 

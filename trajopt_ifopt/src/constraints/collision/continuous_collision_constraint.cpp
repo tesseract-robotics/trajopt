@@ -25,6 +25,7 @@
 
 #include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
+#include <algorithm>
 #include <trajopt_common/collision_types.h>
 #include <trajopt_common/collision_utils.h>
 #include <cassert>
@@ -294,14 +295,25 @@ int ContinuousCollisionConstraintD::update()
   coeffs_.resize(rows_);
   values_.resize(rows_);
 
-  Eigen::Index i{ 0 };
+  // Iterate in deterministic key order so the QP constraint row layout is
+  // independent of unordered_map bucket ordering (which varies with insertion
+  // order, i.e. the broadphase traversal order of the collision backend).
+  sorted_keys_.clear();
+  sorted_keys_.reserve(collision_data_->contact_results_map.size());
   for (const auto& pair : collision_data_->contact_results_map)
   {
-    const double margin =
-        collision_evaluator_->getCollisionMarginData().getCollisionMargin(pair.first.first, pair.first.second);
-    const double coeff =
-        collision_evaluator_->getCollisionCoeffData().getCollisionCoeff(pair.first.first, pair.first.second);
-    for (const auto& contact_results : pair.second)
+    if (!pair.second.empty())
+      sorted_keys_.push_back(pair.first);
+  }
+  std::sort(sorted_keys_.begin(), sorted_keys_.end());
+
+  Eigen::Index i{ 0 };
+  for (const auto& key : sorted_keys_)
+  {
+    const auto& results = collision_data_->contact_results_map.at(key);
+    const double margin = collision_evaluator_->getCollisionMarginData().getCollisionMargin(key);
+    const double coeff = collision_evaluator_->getCollisionCoeffData().getCollisionCoeff(key);
+    for (const auto& contact_results : results)
     {
       coeffs_(i) = coeff;
       values_(i++) = margin - contact_results.distance;
@@ -329,11 +341,13 @@ Jacobian ContinuousCollisionConstraintD::getJacobian() const
   auto jp0 = position_vars_[0]->value();
   auto jp1 = position_vars_[1]->value();
 
+  // Iterate in the same deterministic key order established by update().
   trajopt_common::GradientResults result;
   Eigen::Index i{ 0 };
-  for (const auto& pair : collision_data_->contact_results_map)
+  for (const auto& key : sorted_keys_)
   {
-    for (const auto& contact_results : pair.second)
+    const auto& results = collision_data_->contact_results_map.at(key);
+    for (const auto& contact_results : results)
     {
       result.clear();
       trajopt_common::getGradient(result, jp0, jp1, contact_results, 0, 0, collision_evaluator_->getJointGroup());
@@ -349,7 +363,6 @@ Jacobian ContinuousCollisionConstraintD::getJacobian() const
           const auto& lgr0 = result.gradients[0];
           const auto& lgr1 = result.gradients[1];
 
-          // This does work but could be faster
           for (int j = 0; j < n_dof_; j++)
             jac.insertBack(i, offset + j) = -1.0 * ((lgr0.scale * lgr0.gradient[j]) + (lgr1.scale * lgr1.gradient[j]));
         }
@@ -357,7 +370,6 @@ Jacobian ContinuousCollisionConstraintD::getJacobian() const
         {
           const auto& lgr = result.gradients[0];
 
-          // This does work but could be faster
           for (int j = 0; j < n_dof_; j++)
             jac.insertBack(i, offset + j) = -1.0 * lgr.scale * lgr.gradient[j];
         }
@@ -365,7 +377,6 @@ Jacobian ContinuousCollisionConstraintD::getJacobian() const
         {
           const auto& lgr = result.gradients[1];
 
-          // This does work but could be faster
           for (int j = 0; j < n_dof_; j++)
             jac.insertBack(i, offset + j) = -1.0 * lgr.scale * lgr.gradient[j];
         }
@@ -379,7 +390,6 @@ Jacobian ContinuousCollisionConstraintD::getJacobian() const
           const auto& lgr0 = result.cc_gradients[0];
           const auto& lgr1 = result.cc_gradients[1];
 
-          // This does work but could be faster
           for (int j = 0; j < n_dof_; j++)
             jac.insertBack(i, offset + j) = -1.0 * ((lgr0.scale * lgr0.gradient[j]) + (lgr1.scale * lgr1.gradient[j]));
         }
@@ -387,7 +397,6 @@ Jacobian ContinuousCollisionConstraintD::getJacobian() const
         {
           const auto& lgr = result.cc_gradients[0];
 
-          // This does work but could be faster
           for (int j = 0; j < n_dof_; j++)
             jac.insertBack(i, offset + j) = -1.0 * lgr.scale * lgr.gradient[j];
         }
@@ -395,7 +404,6 @@ Jacobian ContinuousCollisionConstraintD::getJacobian() const
         {
           const auto& lgr = result.cc_gradients[1];
 
-          // This does work but could be faster
           for (int j = 0; j < n_dof_; j++)
             jac.insertBack(i, offset + j) = -1.0 * lgr.scale * lgr.gradient[j];
         }

@@ -6,6 +6,7 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <tesseract/common/resource_locator.h>
 #include <tesseract/scene_graph/link.h>
 #include <tesseract/scene_graph/joint.h>
+#include <tesseract/scene_graph/scene_state.h>
 #include <tesseract/state_solver/state_solver.h>
 #include <tesseract/kinematics/joint_group.h>
 #include <tesseract/collision/continuous_contact_manager.h>
@@ -77,8 +78,8 @@ public:
 
     Joint box_attached_joint("boxbot_link-box_attached");
     box_attached_joint.type = JointType::FIXED;
-    box_attached_joint.parent_link_name = "boxbot_link";
-    box_attached_joint.child_link_name = "box_attached";
+    box_attached_joint.parent_link_id = "boxbot_link";
+    box_attached_joint.child_link_id = "box_attached";
     box_attached_joint.parent_to_joint_origin_transform.translation() = Eigen::Vector3d(0.5, -0.5, 0);
 
     tesseract::common::AllowedCollisionMatrix modify_acm;
@@ -94,8 +95,8 @@ public:
 
     Joint box_attached2_joint("no_geom_link-box_attached2");
     box_attached2_joint.type = JointType::FIXED;
-    box_attached2_joint.parent_link_name = "no_geom_link";
-    box_attached2_joint.child_link_name = "box_attached2";
+    box_attached2_joint.parent_link_id = "no_geom_link";
+    box_attached2_joint.child_link_id = "box_attached2";
     box_attached2_joint.parent_to_joint_origin_transform.translation() = Eigen::Vector3d(0, 0, 0);
 
     tesseract::common::AllowedCollisionMatrix modify_acm2;
@@ -115,7 +116,7 @@ void runLinkWithGeomTest(const Environment::Ptr& env, const Visualization::Ptr& 
 
   const Json::Value root = readJsonFile(std::string(TRAJOPT_DATA_DIR) + "/config/box_cast_test.json");
 
-  std::unordered_map<std::string, double> ipos;
+  SceneState::JointValues ipos;
   ipos["boxbot_x_joint"] = -1.9;
   ipos["boxbot_y_joint"] = 0;
   env->setState(ipos);
@@ -129,13 +130,13 @@ void runLinkWithGeomTest(const Environment::Ptr& env, const Visualization::Ptr& 
   const tesseract::scene_graph::StateSolver::UPtr state_solver = prob->GetEnv()->getStateSolver();
   const ContinuousContactManager::Ptr manager = prob->GetEnv()->getContinuousContactManager();
 
-  manager->setActiveCollisionObjects(prob->GetKin()->getActiveLinkNames());
+  manager->setActiveCollisionObjects(prob->GetKin()->getActiveLinkIds());
   manager->setDefaultCollisionMargin(0);
 
   tesseract::collision::CollisionCheckConfig config;
   config.type = tesseract::collision::CollisionEvaluatorType::CONTINUOUS;
-  bool found = checkTrajectory(
-      collisions, *manager, *state_solver, prob->GetKin()->getJointNames(), prob->GetInitTraj(), config);
+  bool found =
+      checkTrajectory(collisions, *manager, *state_solver, prob->GetKin()->getJointIds(), prob->GetInitTraj(), config);
 
   EXPECT_TRUE(found);
   CONSOLE_BRIDGE_logDebug((found) ? ("Initial trajectory is in collision") : ("Initial trajectory is collision free"));
@@ -161,7 +162,7 @@ void runLinkWithGeomTest(const Environment::Ptr& env, const Visualization::Ptr& 
 
   collisions.clear();
   found = checkTrajectory(
-      collisions, *manager, *state_solver, prob->GetKin()->getJointNames(), getTraj(opt->x(), prob->GetVars()), config);
+      collisions, *manager, *state_solver, prob->GetKin()->getJointIds(), getTraj(opt->x(), prob->GetVars()), config);
 
   EXPECT_FALSE(found);
   CONSOLE_BRIDGE_logDebug((found) ? ("Final trajectory is in collision") : ("Final trajectory is collision free"));
@@ -175,7 +176,7 @@ void runLinkWithoutGeomTest(const Environment::Ptr& env, const Visualization::Pt
 
   const Json::Value root = readJsonFile(std::string(TRAJOPT_DATA_DIR) + "/config/box_cast_test.json");
 
-  std::unordered_map<std::string, double> ipos;
+  SceneState::JointValues ipos;
   ipos["boxbot_x_joint"] = -1.9;
   ipos["boxbot_y_joint"] = 0;
   env->setState(ipos);
@@ -189,13 +190,13 @@ void runLinkWithoutGeomTest(const Environment::Ptr& env, const Visualization::Pt
   const tesseract::scene_graph::StateSolver::UPtr state_solver = prob->GetEnv()->getStateSolver();
   const ContinuousContactManager::Ptr manager = prob->GetEnv()->getContinuousContactManager();
 
-  manager->setActiveCollisionObjects(prob->GetKin()->getActiveLinkNames());
+  manager->setActiveCollisionObjects(prob->GetKin()->getActiveLinkIds());
   manager->setDefaultCollisionMargin(0);
 
   tesseract::collision::CollisionCheckConfig config;
   config.type = tesseract::collision::CollisionEvaluatorType::CONTINUOUS;
-  bool found = checkTrajectory(
-      collisions, *manager, *state_solver, prob->GetKin()->getJointNames(), prob->GetInitTraj(), config);
+  bool found =
+      checkTrajectory(collisions, *manager, *state_solver, prob->GetKin()->getJointIds(), prob->GetInitTraj(), config);
 
   EXPECT_TRUE(found);
   CONSOLE_BRIDGE_logDebug((found) ? ("Initial trajectory is in collision") : ("Initial trajectory is collision free"));
@@ -221,7 +222,7 @@ void runLinkWithoutGeomTest(const Environment::Ptr& env, const Visualization::Pt
 
   collisions.clear();
   found = checkTrajectory(
-      collisions, *manager, *state_solver, prob->GetKin()->getJointNames(), getTraj(opt->x(), prob->GetVars()), config);
+      collisions, *manager, *state_solver, prob->GetKin()->getJointIds(), getTraj(opt->x(), prob->GetVars()), config);
 
   EXPECT_FALSE(found);
   CONSOLE_BRIDGE_logDebug((found) ? ("Final trajectory is in collision") : ("Final trajectory is collision free"));

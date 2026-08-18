@@ -36,6 +36,7 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <tesseract/state_solver/state_solver.h>
 #include <tesseract/scene_graph/link.h>
 #include <tesseract/scene_graph/joint.h>
+#include <tesseract/scene_graph/scene_state.h>
 #include <tesseract/environment/environment.h>
 #include <tesseract/environment/utils.h>
 #include <tesseract/environment/commands/add_link_command.h>
@@ -102,8 +103,8 @@ public:
 
     Joint box_attached_joint("boxbot_link-box_attached");
     box_attached_joint.type = JointType::FIXED;
-    box_attached_joint.parent_link_name = "boxbot_link";
-    box_attached_joint.child_link_name = "box_attached";
+    box_attached_joint.parent_link_id = "boxbot_link";
+    box_attached_joint.child_link_id = "box_attached";
     box_attached_joint.parent_to_joint_origin_transform.translation() = Eigen::Vector3d(0.5, -0.5, 0);
 
     tesseract::common::AllowedCollisionMatrix modify_acm;
@@ -119,8 +120,8 @@ public:
 
     Joint box_attached2_joint("no_geom_link-box_attached2");
     box_attached2_joint.type = JointType::FIXED;
-    box_attached2_joint.parent_link_name = "no_geom_link";
-    box_attached2_joint.child_link_name = "box_attached2";
+    box_attached2_joint.parent_link_id = "no_geom_link";
+    box_attached2_joint.child_link_id = "box_attached2";
     box_attached2_joint.parent_to_joint_origin_transform.translation() = Eigen::Vector3d(0, 0, 0);
 
     tesseract::common::AllowedCollisionMatrix modify_acm2;
@@ -137,7 +138,7 @@ void runCastAttachedLinkWithGeomTest(const Environment::Ptr& env, bool fixed_siz
 {
   env->applyCommand(std::make_shared<ChangeLinkCollisionEnabledCommand>("box_attached", true));
 
-  std::unordered_map<std::string, double> ipos;
+  SceneState::JointValues ipos;
   ipos["boxbot_x_joint"] = -1.9;
   ipos["boxbot_y_joint"] = 0;
   env->setState(ipos);
@@ -148,19 +149,20 @@ void runCastAttachedLinkWithGeomTest(const Environment::Ptr& env, bool fixed_siz
   const JointGroup::ConstPtr manip = env->getJointGroup("manipulator");
   const std::vector<trajopt_ifopt::Bounds> bounds = trajopt_ifopt::toBounds(manip->getLimits().joint_limits);
 
-  manager->setActiveCollisionObjects(manip->getActiveLinkNames());
+  manager->setActiveCollisionObjects(manip->getActiveLinkIds());
   manager->setDefaultCollisionMargin(0);
 
   // 3) Add Variables
   std::vector<std::unique_ptr<trajopt_ifopt::Node>> nodes;
   std::vector<std::shared_ptr<const trajopt_ifopt::Var>> vars;
   std::vector<Eigen::VectorXd> positions;
+  const std::vector<std::string> joint_names = tesseract::common::toNames(manip->getJointIds());
   {
     nodes.push_back(std::make_unique<trajopt_ifopt::Node>("Joint_Position_0"));
     Eigen::VectorXd pos(2);
     pos << -1.9, 0;
     positions.push_back(pos);
-    vars.push_back(nodes.back()->addVar("position", manip->getJointNames(), pos, bounds));
+    vars.push_back(nodes.back()->addVar("position", joint_names, pos, bounds));
   }
 
   {
@@ -168,7 +170,7 @@ void runCastAttachedLinkWithGeomTest(const Environment::Ptr& env, bool fixed_siz
     Eigen::VectorXd pos(2);
     pos << 0, 1.9;
     positions.push_back(pos);
-    vars.push_back(nodes.back()->addVar("position", manip->getJointNames(), pos, bounds));
+    vars.push_back(nodes.back()->addVar("position", joint_names, pos, bounds));
   }
 
   {
@@ -176,7 +178,7 @@ void runCastAttachedLinkWithGeomTest(const Environment::Ptr& env, bool fixed_siz
     Eigen::VectorXd pos(2);
     pos << 1.9, 3.8;
     positions.push_back(pos);
-    vars.push_back(nodes.back()->addVar("position", manip->getJointNames(), pos, bounds));
+    vars.push_back(nodes.back()->addVar("position", joint_names, pos, bounds));
   }
   auto variables = std::make_shared<trajopt_ifopt::NodesVariables>("joint_trajectory", std::move(nodes));
 
@@ -260,13 +262,13 @@ void runCastAttachedLinkWithGeomTest(const Environment::Ptr& env, bool fixed_siz
 
   tesseract::collision::CollisionCheckConfig config;
   config.type = tesseract::collision::CollisionEvaluatorType::CONTINUOUS;
-  bool found = checkTrajectory(collisions, *manager, *state_solver, manip->getJointNames(), inputs, config);
+  bool found = checkTrajectory(collisions, *manager, *state_solver, manip->getJointIds(), inputs, config);
 
   EXPECT_TRUE(found);
   CONSOLE_BRIDGE_logWarn((found) ? ("Initial trajectory is in collision") : ("Initial trajectory is collision free"));
 
   collisions.clear();
-  found = checkTrajectory(collisions, *manager, *state_solver, manip->getJointNames(), results, config);
+  found = checkTrajectory(collisions, *manager, *state_solver, manip->getJointIds(), results, config);
 
   EXPECT_FALSE(found);
   CONSOLE_BRIDGE_logWarn((found) ? ("Final trajectory is in collision") : ("Final trajectory is collision free"));
@@ -277,7 +279,7 @@ void runCastAttachedLinkWithoutGeomTest(const Environment::Ptr& env, bool fixed_
 {
   env->applyCommand(std::make_shared<ChangeLinkCollisionEnabledCommand>("box_attached2", true));
 
-  std::unordered_map<std::string, double> ipos;
+  SceneState::JointValues ipos;
   ipos["boxbot_x_joint"] = -1.9;
   ipos["boxbot_y_joint"] = 0;
   env->setState(ipos);
@@ -288,19 +290,20 @@ void runCastAttachedLinkWithoutGeomTest(const Environment::Ptr& env, bool fixed_
   const JointGroup::ConstPtr manip = env->getJointGroup("manipulator");
   const std::vector<trajopt_ifopt::Bounds> bounds = trajopt_ifopt::toBounds(manip->getLimits().joint_limits);
 
-  manager->setActiveCollisionObjects(manip->getActiveLinkNames());
+  manager->setActiveCollisionObjects(manip->getActiveLinkIds());
   manager->setDefaultCollisionMargin(0);
 
   // 3) Add Variables
   std::vector<std::unique_ptr<trajopt_ifopt::Node>> nodes;
   std::vector<std::shared_ptr<const trajopt_ifopt::Var>> vars;
   std::vector<Eigen::VectorXd> positions;
+  const std::vector<std::string> joint_names = tesseract::common::toNames(manip->getJointIds());
   {
     nodes.push_back(std::make_unique<trajopt_ifopt::Node>("Joint_Position_0"));
     Eigen::VectorXd pos(2);
     pos << -1.9, 0;
     positions.push_back(pos);
-    vars.push_back(nodes.back()->addVar("position", manip->getJointNames(), pos, bounds));
+    vars.push_back(nodes.back()->addVar("position", joint_names, pos, bounds));
   }
 
   {
@@ -308,7 +311,7 @@ void runCastAttachedLinkWithoutGeomTest(const Environment::Ptr& env, bool fixed_
     Eigen::VectorXd pos(2);
     pos << 0, 1.9;
     positions.push_back(pos);
-    vars.push_back(nodes.back()->addVar("position", manip->getJointNames(), pos, bounds));
+    vars.push_back(nodes.back()->addVar("position", joint_names, pos, bounds));
   }
 
   {
@@ -316,7 +319,7 @@ void runCastAttachedLinkWithoutGeomTest(const Environment::Ptr& env, bool fixed_
     Eigen::VectorXd pos(2);
     pos << 1.9, 3.8;
     positions.push_back(pos);
-    vars.push_back(nodes.back()->addVar("position", manip->getJointNames(), pos, bounds));
+    vars.push_back(nodes.back()->addVar("position", joint_names, pos, bounds));
   }
   auto variables = std::make_shared<trajopt_ifopt::NodesVariables>("joint_trajectory", std::move(nodes));
 
@@ -396,13 +399,13 @@ void runCastAttachedLinkWithoutGeomTest(const Environment::Ptr& env, bool fixed_
 
   tesseract::collision::CollisionCheckConfig config;
   config.type = tesseract::collision::CollisionEvaluatorType::CONTINUOUS;
-  bool found = checkTrajectory(collisions, *manager, *state_solver, manip->getJointNames(), inputs, config);
+  bool found = checkTrajectory(collisions, *manager, *state_solver, manip->getJointIds(), inputs, config);
 
   EXPECT_TRUE(found);
   CONSOLE_BRIDGE_logWarn((found) ? ("Initial trajectory is in collision") : ("Initial trajectory is collision free"));
 
   collisions.clear();
-  found = checkTrajectory(collisions, *manager, *state_solver, manip->getJointNames(), results, config);
+  found = checkTrajectory(collisions, *manager, *state_solver, manip->getJointIds(), results, config);
 
   EXPECT_FALSE(found);
   CONSOLE_BRIDGE_logWarn((found) ? ("Final trajectory is in collision") : ("Final trajectory is collision free"));
