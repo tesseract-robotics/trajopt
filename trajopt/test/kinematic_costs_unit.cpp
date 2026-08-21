@@ -75,6 +75,7 @@ void checkJacobian(const sco::VectorOfVector& f,
     CONSOLE_BRIDGE_logError("Analytical:\n %s", toString(analytical).c_str());
   }
 }
+
 }  // namespace
 
 TEST_F(KinematicCostsTest, CartPoseJacCalculator)  // NOLINT
@@ -405,6 +406,59 @@ TEST_F(KinematicCostsTest, CartPoseCalculators_InvertedToleranceBandThrows)  // 
   EXPECT_THROW(DynamicCartPoseJacCalculator(
                    kin, source_frame, target_frame, source_frame_offset, target_frame_offset, indices, lower, upper),
                std::runtime_error);
+}
+
+TEST_F(KinematicCostsTest, TransformsCacheDoesNotAccumulateAcrossEnvironments)  // NOLINT
+{
+  CONSOLE_BRIDGE_logDebug("KinematicCostsTest, TransformsCacheDoesNotAccumulateAcrossEnvironments");
+
+  // The FK transform cache is a static thread_local shared by every calculator on the thread. Each operator() must
+  // clear it before populating, or it retains the union of every link set the thread has served. Two scene graphs are
+  // required to see this: two groups over one scene graph write identical key sets.
+  auto small_env = std::make_shared<Environment>();
+  {
+    const std::filesystem::path urdf_file(std::string(TRAJOPT_DATA_DIR) + "/boxbot.urdf");
+    const std::filesystem::path srdf_file(std::string(TRAJOPT_DATA_DIR) + "/boxbot.srdf");
+    const ResourceLocator::Ptr locator = std::make_shared<tesseract::common::GeneralResourceLocator>();
+    ASSERT_TRUE(small_env->init(urdf_file, srdf_file, locator));
+  }
+
+  const tesseract::kinematics::JointGroup::ConstPtr large_kin = env_->getJointGroup("right_arm");
+  const tesseract::kinematics::JointGroup::ConstPtr small_kin = small_env->getJointGroup("manipulator");
+  ASSERT_GT(large_kin->getLinkIds().size(), small_kin->getLinkIds().size());
+  ASSERT_GT(small_kin->numJoints(), 0);
+
+  // error_diff_function_ is handed the very map operator() just populated, which makes the cache observable without
+  // naming the protected static - a symbol the library does not export on Windows.
+  std::size_t large_observed{ 0 };
+  const std::string large_target_frame = "r_gripper_tool_frame";
+  CartPoseJacCalculator large_jac(large_kin, env_->getRootLinkId(), large_target_frame);
+  large_jac.error_diff_function_ = [&large_observed](const Eigen::VectorXd& /*dof_vals*/,
+                                                     const Eigen::Isometry3d& /*target_tf*/,
+                                                     const Eigen::Isometry3d& /*source_tf*/,
+                                                     tesseract::common::LinkIdTransformMap& state_cache) {
+    large_observed = state_cache.size();
+    return Eigen::VectorXd::Zero(6);
+  };
+
+  std::size_t small_observed{ 0 };
+  const std::string small_target_frame = "boxbot_link";
+  CartPoseJacCalculator small_jac(small_kin, small_env->getRootLinkId(), small_target_frame);
+  small_jac.error_diff_function_ = [&small_observed](const Eigen::VectorXd& /*dof_vals*/,
+                                                     const Eigen::Isometry3d& /*target_tf*/,
+                                                     const Eigen::Isometry3d& /*source_tf*/,
+                                                     tesseract::common::LinkIdTransformMap& state_cache) {
+    small_observed = state_cache.size();
+    return Eigen::VectorXd::Zero(6);
+  };
+
+  large_jac(Eigen::VectorXd::Zero(large_kin->numJoints()));
+  small_jac(Eigen::VectorXd::Zero(small_kin->numJoints()));
+
+  // calcFwdKin assigns every link of its group, so each call sees exactly its own group. The first assertion is what
+  // makes the second discriminating: the cache really did hold the larger set a moment earlier.
+  EXPECT_EQ(large_observed, large_kin->getLinkIds().size());
+  EXPECT_EQ(small_observed, small_kin->getLinkIds().size());
 }
 
 ////////////////////////////////////////////////////////////////////
