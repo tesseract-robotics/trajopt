@@ -48,6 +48,12 @@ public:
   }
 
 protected:
+  /**
+   * @brief Scratch map for forward kinematics results, shared by every calculator on the thread.
+   *
+   * It lives for the life of the thread, so a user that does not clear it before populating retains the union of
+   * every link set the thread has served. Clear it before each call that fills it.
+   */
   static thread_local tesseract::common::LinkIdTransformMap transforms_cache;  // NOLINT
 };
 
@@ -61,6 +67,12 @@ public:
   }
 
 protected:
+  /**
+   * @brief Scratch map for forward kinematics results, shared by every calculator on the thread.
+   *
+   * It lives for the life of the thread, so a user that does not clear it before populating retains the union of
+   * every link set the thread has served. Clear it before each call that fills it.
+   */
   static thread_local tesseract::common::LinkIdTransformMap transforms_cache;  // NOLINT
 };
 
