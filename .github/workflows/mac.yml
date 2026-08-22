@@ -69,7 +69,6 @@ jobs:
         extra-args: --clean-after-build --overlay-triplets=${{ github.workspace }}/target_ws/src/.github/workflows/vcpkg_triplets
         token: ${{ github.token }}
         cache-key: osx-${{ matrix.config.arch }}-vcpkg
-        revision: master
         github-binarycache: true
     - name: pip3
       run: |
