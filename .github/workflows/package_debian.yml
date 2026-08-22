@@ -8,6 +8,11 @@ on:
   # allow manually starting this workflow
   workflow_dispatch:
 
+# Supersede in-progress pull-request runs; queue everything else so two runs on one ref never race.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   get-tag:
     # Pre-job to fetch the latest tag
