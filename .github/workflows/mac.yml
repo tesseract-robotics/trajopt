@@ -6,10 +6,6 @@ on:
       - master
       - 'dev**'
   pull_request:
-    paths:
-      - 'trajopt**'
-      - '.github/workflows/mac.yml'
-      - '**.repos'
   schedule:
     - cron: '0 5 * * *'
   release:
