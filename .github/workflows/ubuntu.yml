@@ -49,7 +49,6 @@ jobs:
     container:
       image: ghcr.io/tesseract-robotics/tesseract:${{ matrix.distro }}-${{ needs.get-tag.outputs.major }}.${{ needs.get-tag.outputs.minor }}
       env:
-        CCACHE_DIR: "$GITHUB_WORKSPACE/${{ matrix.distro }}/.ccache"
         DEBIAN_FRONTEND: noninteractive
         TZ: Etc/UTC
 
@@ -60,10 +59,10 @@ jobs:
           path: target_ws/src
 
       - name: Build and Tests
-        uses: tesseract-robotics/colcon-action@v14
+        uses: tesseract-robotics/colcon-action@v15
         with:
           before-script: source /opt/tesseract/install/setup.bash
-          ccache-prefix: ${{ matrix.distro }}
+          ccache-prefix: ubuntu-${{ matrix.distro }}
           upstream-args: --cmake-args -DCMAKE_BUILD_TYPE=Release
           target-path: target_ws/src
           target-args: --cmake-args -DCMAKE_BUILD_TYPE=Debug -DTRAJOPT_ENABLE_TESTING=ON -DTRAJOPT_ENABLE_BENCHMARKING=ON -DTRAJOPT_ENABLE_RUN_BENCHMARKING=OFF
