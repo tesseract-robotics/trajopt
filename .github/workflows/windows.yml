@@ -6,10 +6,6 @@ on:
       - master
       - 'dev**'
   pull_request:
-    paths:
-      - 'trajopt**'
-      - '.github/workflows/windows.yml'
-      - '.github/workflows/windows_dependencies.repos'
   schedule:
     - cron: '0 5 * * *'
 
