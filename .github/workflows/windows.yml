@@ -13,6 +13,11 @@ on:
   schedule:
     - cron: '0 5 * * *'
 
+# Supersede in-progress pull-request runs; queue everything else so two runs on one ref never race.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   ci:
     name: ${{ matrix.os }}

@@ -10,6 +10,11 @@ on:
     types:
       - released
 
+# Supersede in-progress pull-request runs; queue everything else so two runs on one ref never race.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   conda-win:
     runs-on: windows-2022
