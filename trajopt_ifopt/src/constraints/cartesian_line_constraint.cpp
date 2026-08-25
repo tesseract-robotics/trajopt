@@ -191,15 +191,6 @@ void CartLineConstraint::calcJacobianBlock(Jacobian& jac_block,
   }
   else
   {
-    // Reserve enough room in the sparse matrix
-    info_.manip->calcFwdKin(transforms_cache_, joint_vals);
-    const Eigen::Isometry3d source_tf = transforms_cache_.at(info_.source_frame) * info_.source_frame_offset;
-    const Eigen::Isometry3d target_tf1 = transforms_cache_.at(info_.target_frame) * info_.target_frame_offset1;
-    const Eigen::Isometry3d target_tf2 = transforms_cache_.at(info_.target_frame) * info_.target_frame_offset2;
-
-    // For Jacobian Calc, we need the inverse of the nearest point, D, to new Pose, C, on the constraint line AB
-    const Eigen::Isometry3d target_tf = getLinePoint(source_tf, target_tf1, target_tf2);
-
     Eigen::MatrixXd jac0 =
         info_.manip->calcJacobian(joint_vals, info_.source_frame, info_.source_frame_offset.translation());
     tesseract::common::jacobianChangeBase(jac0, target_tf.inverse());

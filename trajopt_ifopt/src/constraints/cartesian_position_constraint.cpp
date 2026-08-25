@@ -329,12 +329,11 @@ void CartPosConstraint::calcJacobianBlock(Jacobian& jac_block,
     // that is required to be modified per the paper.
 
     // Calculate the jacobian
-    manip_->calcFwdKin(transforms_cache_, joint_vals);
     Eigen::MatrixXd jac0;
     if (type_ == Type::kTargetActive)
     {
       jac0 = manip_->calcJacobian(joint_vals, target_frame_, target_frame_offset_.translation());
-      tesseract::common::jacobianChangeBase(jac0, (transforms_cache_.at(source_frame_) * source_frame_offset_).inverse());
+      tesseract::common::jacobianChangeBase(jac0, source_tf.inverse());
 
       for (int c = 0; c < jac0.cols(); ++c)
       {
@@ -347,7 +346,7 @@ void CartPosConstraint::calcJacobianBlock(Jacobian& jac_block,
     else
     {
       jac0 = manip_->calcJacobian(joint_vals, source_frame_, source_frame_offset_.translation());
-      tesseract::common::jacobianChangeBase(jac0, (transforms_cache_.at(target_frame_) * target_frame_offset_).inverse());
+      tesseract::common::jacobianChangeBase(jac0, target_tf.inverse());
 
       for (int c = 0; c < jac0.cols(); ++c)
       {
