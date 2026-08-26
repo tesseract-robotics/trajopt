@@ -9,6 +9,10 @@
 #include <algorithm>
 #include <utility>
 #include <iostream>
+#include "qp_trace.h"
+#include <atomic>
+#include "qp_trace.h"
+#include <atomic>
 #include <cassert>
 
 /**
@@ -723,6 +727,58 @@ void TrajOptQPProblem::Implementation::convexify()
 
   // Update if dynamic constraints are present
   update();
+
+  // Optional trace (see qp_trace.h): enumerate the NLP term sets exactly once per process, on the
+  // first convexify. kind=cost -> added via addCostSet (bucket=objective: squared, objective-only,
+  // no rows/slacks; bucket=hinge/abs: costified constraints that add QP rows + slack variables).
+  // kind=cnt -> added via addConstraintSet (bucket=merit, adds QP rows + slack variables).
+  if (qp_trace::dir() != nullptr)
+  {
+    static std::atomic<bool> terms_dumped{ false };
+    if (!terms_dumped.exchange(true))
+    {
+      if (std::FILE* f = qp_trace::open("qp_trace"))
+      {
+        const std::size_t n_hinge = hinge_costs.size() + dyn_hinge_costs.size();
+        for (const auto& term : objective_terms)
+          std::fprintf(f, "TERM kind=cost name=%s rows=%lld bucket=objective\n", term->getName().c_str(),
+                       static_cast<long long>(term->getRows()));
+        for (std::size_t i = 0; i < penalty_constraints.size(); ++i)
+          std::fprintf(f, "TERM kind=cost name=%s rows=%lld bucket=%s\n", penalty_constraints[i]->getName().c_str(),
+                       static_cast<long long>(penalty_constraints[i]->getRows()), (i < n_hinge) ? "hinge" : "abs");
+        for (const auto& term : merit_constraints)
+          std::fprintf(f, "TERM kind=cnt name=%s rows=%lld bucket=merit\n", term->getName().c_str(),
+                       static_cast<long long>(term->getRows()));
+        std::fclose(f);
+      }
+    }
+  }
+
+  // Optional trace (see qp_trace.h): enumerate the NLP term sets exactly once per process, on the
+  // first convexify. kind=cost -> added via addCostSet (bucket=objective: squared, objective-only,
+  // no rows/slacks; bucket=hinge/abs: costified constraints that add QP rows + slack variables).
+  // kind=cnt -> added via addConstraintSet (bucket=merit, adds QP rows + slack variables).
+  if (qp_trace::dir() != nullptr)
+  {
+    static std::atomic<bool> terms_dumped{ false };
+    if (!terms_dumped.exchange(true))
+    {
+      if (std::FILE* f = qp_trace::open("qp_trace"))
+      {
+        const std::size_t n_hinge = hinge_costs.size() + dyn_hinge_costs.size();
+        for (const auto& term : objective_terms)
+          std::fprintf(f, "TERM kind=cost name=%s rows=%lld bucket=objective\n", term->getName().c_str(),
+                       static_cast<long long>(term->getRows()));
+        for (std::size_t i = 0; i < penalty_constraints.size(); ++i)
+          std::fprintf(f, "TERM kind=cost name=%s rows=%lld bucket=%s\n", penalty_constraints[i]->getName().c_str(),
+                       static_cast<long long>(penalty_constraints[i]->getRows()), (i < n_hinge) ? "hinge" : "abs");
+        for (const auto& term : merit_constraints)
+          std::fprintf(f, "TERM kind=cnt name=%s rows=%lld bucket=merit\n", term->getName().c_str(),
+                       static_cast<long long>(term->getRows()));
+        std::fclose(f);
+      }
+    }
+  }
 
   // Get current variable values
   const Eigen::VectorXd x_initial = variables->getValues();

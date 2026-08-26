@@ -34,6 +34,10 @@
 
 #include <console_bridge/console.h>
 #include <chrono>
+#include <atomic>
+#include "qp_trace.h"
+#include <atomic>
+#include "qp_trace.h"
 #include <cassert>
 
 namespace trajopt_sqp
@@ -223,6 +227,124 @@ bool TrustRegionSQPSolver::stepSQPSolver()
     qp_solver->updateLinearConstraintsMatrix(qp_problem->getConstraintMatrix());
     qp_solver->updateBounds(qp_problem->getBoundsLower(), qp_problem->getBoundsUpper());
     qp_solver->setWarmStart(*qp_problem);
+  }
+
+  // Optional trace (see qp_trace.h): digests of the convexified QP exactly as handed to the QP
+  // solver, for the first TRAJOPT_TRACE_MAX_QPS convexify sweeps of the process. Read-only.
+  if (qp_trace::dir() != nullptr)
+  {
+    static std::atomic<int> convexify_counter{ 0 };
+    const int idx = convexify_counter.fetch_add(1);
+    if (idx < qp_trace::maxQps())
+    {
+      if (std::FILE* f = qp_trace::open("qp_trace"))
+      {
+        const trajopt_ifopt::Jacobian& P = qp_problem->getHessian();
+        const Eigen::VectorXd& q = qp_problem->getGradient();
+        const trajopt_ifopt::Jacobian& A = qp_problem->getConstraintMatrix();
+        const Eigen::VectorXd& l = qp_problem->getBoundsLower();
+        const Eigen::VectorXd& u = qp_problem->getBoundsUpper();
+        const Eigen::VectorXd& box = qp_problem->getBoxSize();
+
+        const char* p_fmt = nullptr;
+        std::uint64_t p_val = 0, p_inner = 0, p_outer = 0;
+        qp_trace::hashSparse(P, p_fmt, p_val, p_inner, p_outer);
+        const char* a_fmt = nullptr;
+        std::uint64_t a_val = 0, a_inner = 0, a_outer = 0;
+        qp_trace::hashSparse(A, a_fmt, a_val, a_inner, a_outer);
+
+        std::fprintf(f,
+                     "CONVEXIFY#%d dims nv=%lld nc=%lld P_nnz=%lld A_nnz=%lld first_time=%d dims_changed=%d "
+                     "penalty_iter=%d convex_iter=%d overall_iter=%d\n",
+                     idx, static_cast<long long>(nv), static_cast<long long>(nc),
+                     static_cast<long long>(P.nonZeros()), static_cast<long long>(A.nonZeros()),
+                     first_time ? 1 : 0, dims_changed ? 1 : 0, results_.penalty_iteration,
+                     results_.convexify_iteration, results_.overall_iteration);
+        std::fprintf(f, "CONVEXIFY#%d P fmt=%s val=%016llx inner=%016llx outer=%016llx\n", idx, p_fmt,
+                     static_cast<unsigned long long>(p_val), static_cast<unsigned long long>(p_inner),
+                     static_cast<unsigned long long>(p_outer));
+        std::fprintf(f, "CONVEXIFY#%d q hash=%016llx n=%lld\n", idx,
+                     static_cast<unsigned long long>(
+                         qp_trace::fnv1a64(q.data(), sizeof(double) * static_cast<std::size_t>(q.size()))),
+                     static_cast<long long>(q.size()));
+        std::fprintf(f, "CONVEXIFY#%d A fmt=%s val=%016llx inner=%016llx outer=%016llx\n", idx, a_fmt,
+                     static_cast<unsigned long long>(a_val), static_cast<unsigned long long>(a_inner),
+                     static_cast<unsigned long long>(a_outer));
+        std::fprintf(f, "CONVEXIFY#%d l hash=%016llx m=%lld\n", idx,
+                     static_cast<unsigned long long>(
+                         qp_trace::fnv1a64(l.data(), sizeof(double) * static_cast<std::size_t>(l.size()))),
+                     static_cast<long long>(l.size()));
+        std::fprintf(f, "CONVEXIFY#%d u hash=%016llx m=%lld\n", idx,
+                     static_cast<unsigned long long>(
+                         qp_trace::fnv1a64(u.data(), sizeof(double) * static_cast<std::size_t>(u.size()))),
+                     static_cast<long long>(u.size()));
+        std::fprintf(f, "CONVEXIFY#%d box hash=%016llx box[0]=%.17g merit_coeff[0]=%.17g\n", idx,
+                     static_cast<unsigned long long>(
+                         qp_trace::fnv1a64(box.data(), sizeof(double) * static_cast<std::size_t>(box.size()))),
+                     box.size() > 0 ? box[0] : -1.0,
+                     results_.merit_error_coeffs.size() > 0 ? results_.merit_error_coeffs[0] : -1.0);
+        std::fclose(f);
+      }
+    }
+  }
+
+  // Optional trace (see qp_trace.h): digests of the convexified QP exactly as handed to the QP
+  // solver, for the first TRAJOPT_TRACE_MAX_QPS convexify sweeps of the process. Read-only.
+  if (qp_trace::dir() != nullptr)
+  {
+    static std::atomic<int> convexify_counter{ 0 };
+    const int idx = convexify_counter.fetch_add(1);
+    if (idx < qp_trace::maxQps())
+    {
+      if (std::FILE* f = qp_trace::open("qp_trace"))
+      {
+        const trajopt_ifopt::Jacobian& P = qp_problem->getHessian();
+        const Eigen::VectorXd& q = qp_problem->getGradient();
+        const trajopt_ifopt::Jacobian& A = qp_problem->getConstraintMatrix();
+        const Eigen::VectorXd& l = qp_problem->getBoundsLower();
+        const Eigen::VectorXd& u = qp_problem->getBoundsUpper();
+        const Eigen::VectorXd& box = qp_problem->getBoxSize();
+
+        const char* p_fmt = nullptr;
+        std::uint64_t p_val = 0, p_inner = 0, p_outer = 0;
+        qp_trace::hashSparse(P, p_fmt, p_val, p_inner, p_outer);
+        const char* a_fmt = nullptr;
+        std::uint64_t a_val = 0, a_inner = 0, a_outer = 0;
+        qp_trace::hashSparse(A, a_fmt, a_val, a_inner, a_outer);
+
+        std::fprintf(f,
+                     "CONVEXIFY#%d dims nv=%lld nc=%lld P_nnz=%lld A_nnz=%lld first_time=%d dims_changed=%d "
+                     "penalty_iter=%d convex_iter=%d overall_iter=%d\n",
+                     idx, static_cast<long long>(nv), static_cast<long long>(nc),
+                     static_cast<long long>(P.nonZeros()), static_cast<long long>(A.nonZeros()),
+                     first_time ? 1 : 0, dims_changed ? 1 : 0, results_.penalty_iteration,
+                     results_.convexify_iteration, results_.overall_iteration);
+        std::fprintf(f, "CONVEXIFY#%d P fmt=%s val=%016llx inner=%016llx outer=%016llx\n", idx, p_fmt,
+                     static_cast<unsigned long long>(p_val), static_cast<unsigned long long>(p_inner),
+                     static_cast<unsigned long long>(p_outer));
+        std::fprintf(f, "CONVEXIFY#%d q hash=%016llx n=%lld\n", idx,
+                     static_cast<unsigned long long>(
+                         qp_trace::fnv1a64(q.data(), sizeof(double) * static_cast<std::size_t>(q.size()))),
+                     static_cast<long long>(q.size()));
+        std::fprintf(f, "CONVEXIFY#%d A fmt=%s val=%016llx inner=%016llx outer=%016llx\n", idx, a_fmt,
+                     static_cast<unsigned long long>(a_val), static_cast<unsigned long long>(a_inner),
+                     static_cast<unsigned long long>(a_outer));
+        std::fprintf(f, "CONVEXIFY#%d l hash=%016llx m=%lld\n", idx,
+                     static_cast<unsigned long long>(
+                         qp_trace::fnv1a64(l.data(), sizeof(double) * static_cast<std::size_t>(l.size()))),
+                     static_cast<long long>(l.size()));
+        std::fprintf(f, "CONVEXIFY#%d u hash=%016llx m=%lld\n", idx,
+                     static_cast<unsigned long long>(
+                         qp_trace::fnv1a64(u.data(), sizeof(double) * static_cast<std::size_t>(u.size()))),
+                     static_cast<long long>(u.size()));
+        std::fprintf(f, "CONVEXIFY#%d box hash=%016llx box[0]=%.17g merit_coeff[0]=%.17g\n", idx,
+                     static_cast<unsigned long long>(
+                         qp_trace::fnv1a64(box.data(), sizeof(double) * static_cast<std::size_t>(box.size()))),
+                     box.size() > 0 ? box[0] : -1.0,
+                     results_.merit_error_coeffs.size() > 0 ? results_.merit_error_coeffs[0] : -1.0);
+        std::fclose(f);
+      }
+    }
   }
   else
   {

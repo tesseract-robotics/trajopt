@@ -39,6 +39,20 @@ TRAJOPT_IGNORE_WARNINGS_POP
 #include <trajopt_ifopt/variable_sets/var.h>
 
 #include <trajopt_ifopt/utils/numeric_differentiation.h>
+#include <atomic>
+#include <cstdio>
+#include <cstdlib>
+#include <iomanip>
+#include <sstream>
+#include <string>
+#include <unistd.h>
+#include <atomic>
+#include <cstdio>
+#include <cstdlib>
+#include <iomanip>
+#include <sstream>
+#include <string>
+#include <unistd.h>
 
 namespace trajopt_ifopt
 {
@@ -225,6 +239,90 @@ int DiscreteCollisionConstraintD::update()
   }
 
   assert(rows_ == i);
+
+  // Optional trace of the constraint rows (content AND order) built by this update, appended to
+  // <TRAJOPT_TRACE_DIR>/collision_rows_<pid>.txt for the first TRAJOPT_TRACE_MAX_ROW_EVENTS updates
+  // (default 400). Disabled when TRAJOPT_TRACE_DIR is unset; the gate is evaluated once per
+  // process, so the disabled cost is one static-bool check. Read-only: no behaviour change.
+  {
+    static const char* const trace_dir = [] {
+      const char* v = std::getenv("TRAJOPT_TRACE_DIR");
+      return (v != nullptr && v[0] != '\0') ? v : nullptr;
+    }();
+    if (trace_dir != nullptr)
+    {
+      static const int max_events = [] {
+        const char* v = std::getenv("TRAJOPT_TRACE_MAX_ROW_EVENTS");
+        return (v != nullptr) ? std::atoi(v) : 400;
+      }();
+      static std::atomic<int> event_counter{ 0 };
+      static std::FILE* const trace_file = std::fopen(
+          (std::string(trace_dir) + "/collision_rows_" + std::to_string(::getpid()) + ".txt").c_str(), "a");
+      const int event = event_counter.fetch_add(1);
+      if (trace_file != nullptr && event <= max_events)
+      {
+        if (event < max_events)
+        {
+          // One string per event so concurrent updates cannot interleave lines.
+          std::ostringstream ss;
+          ss << "U " << event << " obj=" << static_cast<const void*>(this) << " n=" << rows_ << "\n";
+          ss << std::fixed << std::setprecision(6);
+          // Same container, same traversal as the row-building loop above => identical row order.
+          for (const auto& pair : collision_data_->contact_results_map)
+            for (const auto& contact_results : pair.second)
+              ss << "  " << pair.first.first << "|" << pair.first.second << " d=" << contact_results.distance << "\n";
+          std::fputs(ss.str().c_str(), trace_file);
+        }
+        else
+        {
+          std::fputs("TRUNCATED\n", trace_file);
+        }
+        std::fflush(trace_file);
+      }
+    }
+  }
+
+  // Optional trace of the constraint rows (content AND order) built by this update, appended to
+  // <TRAJOPT_TRACE_DIR>/collision_rows_<pid>.txt for the first TRAJOPT_TRACE_MAX_ROW_EVENTS updates
+  // (default 400). Disabled when TRAJOPT_TRACE_DIR is unset; the gate is evaluated once per
+  // process, so the disabled cost is one static-bool check. Read-only: no behaviour change.
+  {
+    static const char* const trace_dir = [] {
+      const char* v = std::getenv("TRAJOPT_TRACE_DIR");
+      return (v != nullptr && v[0] != '\0') ? v : nullptr;
+    }();
+    if (trace_dir != nullptr)
+    {
+      static const int max_events = [] {
+        const char* v = std::getenv("TRAJOPT_TRACE_MAX_ROW_EVENTS");
+        return (v != nullptr) ? std::atoi(v) : 400;
+      }();
+      static std::atomic<int> event_counter{ 0 };
+      static std::FILE* const trace_file = std::fopen(
+          (std::string(trace_dir) + "/collision_rows_" + std::to_string(::getpid()) + ".txt").c_str(), "a");
+      const int event = event_counter.fetch_add(1);
+      if (trace_file != nullptr && event <= max_events)
+      {
+        if (event < max_events)
+        {
+          // One string per event so concurrent updates cannot interleave lines.
+          std::ostringstream ss;
+          ss << "U " << event << " obj=" << static_cast<const void*>(this) << " n=" << rows_ << "\n";
+          ss << std::fixed << std::setprecision(6);
+          // Same container, same traversal as the row-building loop above => identical row order.
+          for (const auto& pair : collision_data_->contact_results_map)
+            for (const auto& contact_results : pair.second)
+              ss << "  " << pair.first.first << "|" << pair.first.second << " d=" << contact_results.distance << "\n";
+          std::fputs(ss.str().c_str(), trace_file);
+        }
+        else
+        {
+          std::fputs("TRUNCATED\n", trace_file);
+        }
+        std::fflush(trace_file);
+      }
+    }
+  }
 
   return rows_;
 }
