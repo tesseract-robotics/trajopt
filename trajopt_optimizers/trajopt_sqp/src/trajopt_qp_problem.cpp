@@ -741,13 +741,20 @@ void TrajOptQPProblem::Implementation::convexify()
       {
         const std::size_t n_hinge = hinge_costs.size() + dyn_hinge_costs.size();
         for (const auto& term : objective_terms)
-          std::fprintf(f, "TERM kind=cost name=%s rows=%lld bucket=objective\n", term->getName().c_str(),
+          std::fprintf(f,
+                       "TERM kind=cost name=%s rows=%lld bucket=objective\n",
+                       term->getName().c_str(),
                        static_cast<long long>(term->getRows()));
         for (std::size_t i = 0; i < penalty_constraints.size(); ++i)
-          std::fprintf(f, "TERM kind=cost name=%s rows=%lld bucket=%s\n", penalty_constraints[i]->getName().c_str(),
-                       static_cast<long long>(penalty_constraints[i]->getRows()), (i < n_hinge) ? "hinge" : "abs");
+          std::fprintf(f,
+                       "TERM kind=cost name=%s rows=%lld bucket=%s\n",
+                       penalty_constraints[i]->getName().c_str(),
+                       static_cast<long long>(penalty_constraints[i]->getRows()),
+                       (i < n_hinge) ? "hinge" : "abs");
         for (const auto& term : merit_constraints)
-          std::fprintf(f, "TERM kind=cnt name=%s rows=%lld bucket=merit\n", term->getName().c_str(),
+          std::fprintf(f,
+                       "TERM kind=cnt name=%s rows=%lld bucket=merit\n",
+                       term->getName().c_str(),
                        static_cast<long long>(term->getRows()));
         std::fclose(f);
       }
@@ -767,13 +774,20 @@ void TrajOptQPProblem::Implementation::convexify()
       {
         const std::size_t n_hinge = hinge_costs.size() + dyn_hinge_costs.size();
         for (const auto& term : objective_terms)
-          std::fprintf(f, "TERM kind=cost name=%s rows=%lld bucket=objective\n", term->getName().c_str(),
+          std::fprintf(f,
+                       "TERM kind=cost name=%s rows=%lld bucket=objective\n",
+                       term->getName().c_str(),
                        static_cast<long long>(term->getRows()));
         for (std::size_t i = 0; i < penalty_constraints.size(); ++i)
-          std::fprintf(f, "TERM kind=cost name=%s rows=%lld bucket=%s\n", penalty_constraints[i]->getName().c_str(),
-                       static_cast<long long>(penalty_constraints[i]->getRows()), (i < n_hinge) ? "hinge" : "abs");
+          std::fprintf(f,
+                       "TERM kind=cost name=%s rows=%lld bucket=%s\n",
+                       penalty_constraints[i]->getName().c_str(),
+                       static_cast<long long>(penalty_constraints[i]->getRows()),
+                       (i < n_hinge) ? "hinge" : "abs");
         for (const auto& term : merit_constraints)
-          std::fprintf(f, "TERM kind=cnt name=%s rows=%lld bucket=merit\n", term->getName().c_str(),
+          std::fprintf(f,
+                       "TERM kind=cnt name=%s rows=%lld bucket=merit\n",
+                       term->getName().c_str(),
                        static_cast<long long>(term->getRows()));
         std::fclose(f);
       }

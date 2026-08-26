@@ -256,8 +256,8 @@ int DiscreteCollisionConstraintD::update()
         return (v != nullptr) ? std::atoi(v) : 400;
       }();
       static std::atomic<int> event_counter{ 0 };
-      static std::FILE* const trace_file = std::fopen(
-          (std::string(trace_dir) + "/collision_rows_" + std::to_string(::getpid()) + ".txt").c_str(), "a");
+      static std::FILE* const trace_file =
+          std::fopen((std::string(trace_dir) + "/collision_rows_" + std::to_string(::getpid()) + ".txt").c_str(), "a");
       const int event = event_counter.fetch_add(1);
       if (trace_file != nullptr && event <= max_events)
       {
@@ -298,8 +298,8 @@ int DiscreteCollisionConstraintD::update()
         return (v != nullptr) ? std::atoi(v) : 400;
       }();
       static std::atomic<int> event_counter{ 0 };
-      static std::FILE* const trace_file = std::fopen(
-          (std::string(trace_dir) + "/collision_rows_" + std::to_string(::getpid()) + ".txt").c_str(), "a");
+      static std::FILE* const trace_file =
+          std::fopen((std::string(trace_dir) + "/collision_rows_" + std::to_string(::getpid()) + ".txt").c_str(), "a");
       const int event = event_counter.fetch_add(1);
       if (trace_file != nullptr && event <= max_events)
       {

@@ -256,29 +256,51 @@ bool TrustRegionSQPSolver::stepSQPSolver()
         std::fprintf(f,
                      "CONVEXIFY#%d dims nv=%lld nc=%lld P_nnz=%lld A_nnz=%lld first_time=%d dims_changed=%d "
                      "penalty_iter=%d convex_iter=%d overall_iter=%d\n",
-                     idx, static_cast<long long>(nv), static_cast<long long>(nc),
-                     static_cast<long long>(P.nonZeros()), static_cast<long long>(A.nonZeros()),
-                     first_time ? 1 : 0, dims_changed ? 1 : 0, results_.penalty_iteration,
-                     results_.convexify_iteration, results_.overall_iteration);
-        std::fprintf(f, "CONVEXIFY#%d P fmt=%s val=%016llx inner=%016llx outer=%016llx\n", idx, p_fmt,
-                     static_cast<unsigned long long>(p_val), static_cast<unsigned long long>(p_inner),
+                     idx,
+                     static_cast<long long>(nv),
+                     static_cast<long long>(nc),
+                     static_cast<long long>(P.nonZeros()),
+                     static_cast<long long>(A.nonZeros()),
+                     first_time ? 1 : 0,
+                     dims_changed ? 1 : 0,
+                     results_.penalty_iteration,
+                     results_.convexify_iteration,
+                     results_.overall_iteration);
+        std::fprintf(f,
+                     "CONVEXIFY#%d P fmt=%s val=%016llx inner=%016llx outer=%016llx\n",
+                     idx,
+                     p_fmt,
+                     static_cast<unsigned long long>(p_val),
+                     static_cast<unsigned long long>(p_inner),
                      static_cast<unsigned long long>(p_outer));
-        std::fprintf(f, "CONVEXIFY#%d q hash=%016llx n=%lld\n", idx,
+        std::fprintf(f,
+                     "CONVEXIFY#%d q hash=%016llx n=%lld\n",
+                     idx,
                      static_cast<unsigned long long>(
                          qp_trace::fnv1a64(q.data(), sizeof(double) * static_cast<std::size_t>(q.size()))),
                      static_cast<long long>(q.size()));
-        std::fprintf(f, "CONVEXIFY#%d A fmt=%s val=%016llx inner=%016llx outer=%016llx\n", idx, a_fmt,
-                     static_cast<unsigned long long>(a_val), static_cast<unsigned long long>(a_inner),
+        std::fprintf(f,
+                     "CONVEXIFY#%d A fmt=%s val=%016llx inner=%016llx outer=%016llx\n",
+                     idx,
+                     a_fmt,
+                     static_cast<unsigned long long>(a_val),
+                     static_cast<unsigned long long>(a_inner),
                      static_cast<unsigned long long>(a_outer));
-        std::fprintf(f, "CONVEXIFY#%d l hash=%016llx m=%lld\n", idx,
+        std::fprintf(f,
+                     "CONVEXIFY#%d l hash=%016llx m=%lld\n",
+                     idx,
                      static_cast<unsigned long long>(
                          qp_trace::fnv1a64(l.data(), sizeof(double) * static_cast<std::size_t>(l.size()))),
                      static_cast<long long>(l.size()));
-        std::fprintf(f, "CONVEXIFY#%d u hash=%016llx m=%lld\n", idx,
+        std::fprintf(f,
+                     "CONVEXIFY#%d u hash=%016llx m=%lld\n",
+                     idx,
                      static_cast<unsigned long long>(
                          qp_trace::fnv1a64(u.data(), sizeof(double) * static_cast<std::size_t>(u.size()))),
                      static_cast<long long>(u.size()));
-        std::fprintf(f, "CONVEXIFY#%d box hash=%016llx box[0]=%.17g merit_coeff[0]=%.17g\n", idx,
+        std::fprintf(f,
+                     "CONVEXIFY#%d box hash=%016llx box[0]=%.17g merit_coeff[0]=%.17g\n",
+                     idx,
                      static_cast<unsigned long long>(
                          qp_trace::fnv1a64(box.data(), sizeof(double) * static_cast<std::size_t>(box.size()))),
                      box.size() > 0 ? box[0] : -1.0,
@@ -315,29 +337,51 @@ bool TrustRegionSQPSolver::stepSQPSolver()
         std::fprintf(f,
                      "CONVEXIFY#%d dims nv=%lld nc=%lld P_nnz=%lld A_nnz=%lld first_time=%d dims_changed=%d "
                      "penalty_iter=%d convex_iter=%d overall_iter=%d\n",
-                     idx, static_cast<long long>(nv), static_cast<long long>(nc),
-                     static_cast<long long>(P.nonZeros()), static_cast<long long>(A.nonZeros()),
-                     first_time ? 1 : 0, dims_changed ? 1 : 0, results_.penalty_iteration,
-                     results_.convexify_iteration, results_.overall_iteration);
-        std::fprintf(f, "CONVEXIFY#%d P fmt=%s val=%016llx inner=%016llx outer=%016llx\n", idx, p_fmt,
-                     static_cast<unsigned long long>(p_val), static_cast<unsigned long long>(p_inner),
+                     idx,
+                     static_cast<long long>(nv),
+                     static_cast<long long>(nc),
+                     static_cast<long long>(P.nonZeros()),
+                     static_cast<long long>(A.nonZeros()),
+                     first_time ? 1 : 0,
+                     dims_changed ? 1 : 0,
+                     results_.penalty_iteration,
+                     results_.convexify_iteration,
+                     results_.overall_iteration);
+        std::fprintf(f,
+                     "CONVEXIFY#%d P fmt=%s val=%016llx inner=%016llx outer=%016llx\n",
+                     idx,
+                     p_fmt,
+                     static_cast<unsigned long long>(p_val),
+                     static_cast<unsigned long long>(p_inner),
                      static_cast<unsigned long long>(p_outer));
-        std::fprintf(f, "CONVEXIFY#%d q hash=%016llx n=%lld\n", idx,
+        std::fprintf(f,
+                     "CONVEXIFY#%d q hash=%016llx n=%lld\n",
+                     idx,
                      static_cast<unsigned long long>(
                          qp_trace::fnv1a64(q.data(), sizeof(double) * static_cast<std::size_t>(q.size()))),
                      static_cast<long long>(q.size()));
-        std::fprintf(f, "CONVEXIFY#%d A fmt=%s val=%016llx inner=%016llx outer=%016llx\n", idx, a_fmt,
-                     static_cast<unsigned long long>(a_val), static_cast<unsigned long long>(a_inner),
+        std::fprintf(f,
+                     "CONVEXIFY#%d A fmt=%s val=%016llx inner=%016llx outer=%016llx\n",
+                     idx,
+                     a_fmt,
+                     static_cast<unsigned long long>(a_val),
+                     static_cast<unsigned long long>(a_inner),
                      static_cast<unsigned long long>(a_outer));
-        std::fprintf(f, "CONVEXIFY#%d l hash=%016llx m=%lld\n", idx,
+        std::fprintf(f,
+                     "CONVEXIFY#%d l hash=%016llx m=%lld\n",
+                     idx,
                      static_cast<unsigned long long>(
                          qp_trace::fnv1a64(l.data(), sizeof(double) * static_cast<std::size_t>(l.size()))),
                      static_cast<long long>(l.size()));
-        std::fprintf(f, "CONVEXIFY#%d u hash=%016llx m=%lld\n", idx,
+        std::fprintf(f,
+                     "CONVEXIFY#%d u hash=%016llx m=%lld\n",
+                     idx,
                      static_cast<unsigned long long>(
                          qp_trace::fnv1a64(u.data(), sizeof(double) * static_cast<std::size_t>(u.size()))),
                      static_cast<long long>(u.size()));
-        std::fprintf(f, "CONVEXIFY#%d box hash=%016llx box[0]=%.17g merit_coeff[0]=%.17g\n", idx,
+        std::fprintf(f,
+                     "CONVEXIFY#%d box hash=%016llx box[0]=%.17g merit_coeff[0]=%.17g\n",
+                     idx,
                      static_cast<unsigned long long>(
                          qp_trace::fnv1a64(box.data(), sizeof(double) * static_cast<std::size_t>(box.size()))),
                      box.size() > 0 ? box[0] : -1.0,
