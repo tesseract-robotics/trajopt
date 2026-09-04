@@ -74,6 +74,9 @@ SingleTimestepCollisionEvaluator::SingleTimestepCollisionEvaluator(
     env_active_link_ids_ = manip_active_link_ids_;
   }
 
+  all_active_link_ids_ = manip_active_link_ids_;
+  all_active_link_ids_.insert(diff_active_link_ids_.begin(), diff_active_link_ids_.end());
+
   contact_manager_ = env_->getDiscreteContactManager();
   contact_manager_->setActiveCollisionObjects(manip_->getActiveLinkIds());
   contact_manager_->applyContactManagerConfig(collision_config.contact_manager_config);
@@ -156,12 +159,7 @@ void SingleTimestepCollisionEvaluator::calcCollisionsHelper(const Eigen::Ref<con
 
   get_state_fn_(state, dof_vals);
 
-  // If not empty then there are links that are not part of the kinematics object that can move (dynamic environment)
-  for (const auto& link_id : diff_active_link_ids_)
-    contact_manager_->setCollisionObjectsTransform(link_id, state[link_id]);
-
-  for (const auto& link_id : manip_active_link_ids_)
-    contact_manager_->setCollisionObjectsTransform(link_id, state[link_id]);
+  contact_manager_->setCollisionObjectsTransform(all_active_link_ids_, state);
 
   contact_manager_->contactTest(dist_results, collision_check_config_.contact_request);
 
