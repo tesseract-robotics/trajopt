@@ -136,6 +136,8 @@ private:
   std::unordered_set<tesseract::common::LinkId> env_active_link_ids_;
   std::unordered_set<tesseract::common::LinkId> manip_active_link_ids_;
   std::unordered_set<tesseract::common::LinkId> diff_active_link_ids_;
+  /** @brief The union of manip_active_link_ids_ and diff_active_link_ids_; filled in the constructor, never mutated */
+  std::unordered_set<tesseract::common::LinkId> all_active_link_ids_;
   GetStateFn get_state_fn_;
   bool dynamic_environment_;
   std::shared_ptr<tesseract::collision::DiscreteContactManager> contact_manager_;

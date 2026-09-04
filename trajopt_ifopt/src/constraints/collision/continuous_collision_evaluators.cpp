@@ -181,8 +181,7 @@ void LVSContinuousCollisionEvaluator::calcCollisionsHelper(tesseract::collision:
   if (!diff_active_link_ids_.empty())
   {
     get_state_fn_(transforms_cache0, dof_vals0);
-    for (const auto& link_id : diff_active_link_ids_)
-      contact_manager_->setCollisionObjectsTransform(link_id, transforms_cache0.at(link_id));
+    contact_manager_->setCollisionObjectsTransform(diff_active_link_ids_, transforms_cache0);
   }
 
   // Create filter
@@ -225,9 +224,7 @@ void LVSContinuousCollisionEvaluator::calcCollisionsHelper(tesseract::collision:
       get_state_fn_(transforms_cache0, subtraj.row(i));
       get_state_fn_(transforms_cache1, subtraj.row(i + 1));
 
-      for (const auto& link_id : manip_active_link_ids_)
-        contact_manager_->setCollisionObjectsTransform(
-            link_id, transforms_cache0.at(link_id), transforms_cache1.at(link_id));
+      contact_manager_->setCollisionObjectsTransform(manip_active_link_ids_, transforms_cache0, transforms_cache1);
 
       contact_manager_->contactTest(contacts, collision_check_config_.contact_request);
       if (!contacts.empty())
@@ -242,9 +239,7 @@ void LVSContinuousCollisionEvaluator::calcCollisionsHelper(tesseract::collision:
   {
     get_state_fn_(transforms_cache0, dof_vals0);
     get_state_fn_(transforms_cache1, dof_vals1);
-    for (const auto& link_id : manip_active_link_ids_)
-      contact_manager_->setCollisionObjectsTransform(
-          link_id, transforms_cache0.at(link_id), transforms_cache1.at(link_id));
+    contact_manager_->setCollisionObjectsTransform(manip_active_link_ids_, transforms_cache0, transforms_cache1);
 
     contact_manager_->contactTest(dist_results, collision_check_config_.contact_request);
 
@@ -400,8 +395,7 @@ void LVSDiscreteCollisionEvaluator::calcCollisionsHelper(tesseract::collision::C
   if (!diff_active_link_ids_.empty())
   {
     get_state_fn_(transforms_cache0, dof_vals0);
-    for (const auto& link_id : diff_active_link_ids_)
-      contact_manager_->setCollisionObjectsTransform(link_id, transforms_cache0.at(link_id));
+    contact_manager_->setCollisionObjectsTransform(diff_active_link_ids_, transforms_cache0);
   }
 
   // Create filter
@@ -448,8 +442,7 @@ void LVSDiscreteCollisionEvaluator::calcCollisionsHelper(tesseract::collision::C
   {
     get_state_fn_(transforms_cache0, subtraj.row(i));
 
-    for (const auto& link_id : manip_active_link_ids_)
-      contact_manager_->setCollisionObjectsTransform(link_id, transforms_cache0.at(link_id));
+    contact_manager_->setCollisionObjectsTransform(manip_active_link_ids_, transforms_cache0);
 
     contact_manager_->contactTest(contacts, collision_check_config_.contact_request);
 
