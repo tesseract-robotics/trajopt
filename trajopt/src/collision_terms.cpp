@@ -417,6 +417,9 @@ CollisionEvaluator::CollisionEvaluator(const tesseract::kinematics::JointGroup::
     };
     env_active_link_ids_ = manip_active_link_ids_;
   }
+
+  all_active_link_ids_ = manip_active_link_ids_;
+  all_active_link_ids_.insert(diff_active_link_ids_.begin(), diff_active_link_ids_.end());
 }
 
 inline std::size_t hash(const DblVec& x) { return boost::hash_range(x.begin(), x.end()); }
@@ -655,14 +658,7 @@ void SingleTimestepCollisionEvaluator::CalcCollisions(const Eigen::Ref<const Eig
 {
   get_state_fn_(transforms_cache0_, dof_vals);
 
-  // If not empty then there are links that are not part of the kinematics object that can move (dynamic environment)
-  for (const auto& link_id : diff_active_link_ids_)
-    transforms_cache0_update_[link_id] = transforms_cache0_[link_id];
-
-  for (const auto& link_id : manip_active_link_ids_)
-    transforms_cache0_update_[link_id] = transforms_cache0_[link_id];
-
-  contact_manager_->setCollisionObjectsTransform(transforms_cache0_update_);
+  contact_manager_->setCollisionObjectsTransform(all_active_link_ids_, transforms_cache0_);
 
   contact_manager_->contactTest(dist_results, collision_check_config_.contact_request);
 
@@ -829,10 +825,7 @@ void DiscreteCollisionEvaluator::CalcCollisions(const Eigen::Ref<const Eigen::Ve
   {
     get_state_fn_(transforms_cache0_, dof_vals0);
 
-    for (const auto& link_id : diff_active_link_ids_)
-      transforms_diff_update_[link_id] = transforms_cache0_[link_id];
-
-    contact_manager_->setCollisionObjectsTransform(transforms_diff_update_);
+    contact_manager_->setCollisionObjectsTransform(diff_active_link_ids_, transforms_cache0_);
   }
 
   long cnt = 2;
@@ -881,10 +874,7 @@ void DiscreteCollisionEvaluator::CalcCollisions(const Eigen::Ref<const Eigen::Ve
   {
     get_state_fn_(transforms_cache0_, subtraj.row(i));
 
-    for (const auto& link_id : manip_active_link_ids_)
-      transforms_cache0_update_[link_id] = transforms_cache0_[link_id];
-
-    contact_manager_->setCollisionObjectsTransform(transforms_cache0_update_);
+    contact_manager_->setCollisionObjectsTransform(manip_active_link_ids_, transforms_cache0_);
 
     contact_manager_->contactTest(contacts, collision_check_config_.contact_request);
 
@@ -1072,10 +1062,7 @@ void CastCollisionEvaluator::CalcCollisions(const Eigen::Ref<const Eigen::Vector
   {
     get_state_fn_(transforms_cache0_, dof_vals0);
 
-    for (const auto& link_id : diff_active_link_ids_)
-      transforms_diff_update_[link_id] = transforms_cache0_[link_id];
-
-    contact_manager_->setCollisionObjectsTransform(transforms_diff_update_);
+    contact_manager_->setCollisionObjectsTransform(diff_active_link_ids_, transforms_cache0_);
   }
 
   // Define Filter
@@ -1126,13 +1113,7 @@ void CastCollisionEvaluator::CalcCollisions(const Eigen::Ref<const Eigen::Vector
       manip_->calcFwdKin(transforms_cache0_, subtraj.row(i));
       manip_->calcFwdKin(transforms_cache1_, subtraj.row(i + 1));
 
-      for (const auto& link_id : manip_active_link_ids_)
-      {
-        transforms_cache0_update_[link_id] = transforms_cache0_[link_id];
-        transforms_cache1_update_[link_id] = transforms_cache1_[link_id];
-      }
-
-      contact_manager_->setCollisionObjectsTransform(transforms_cache0_update_, transforms_cache1_update_);
+      contact_manager_->setCollisionObjectsTransform(manip_active_link_ids_, transforms_cache0_, transforms_cache1_);
 
       contact_manager_->contactTest(contacts, collision_check_config_.contact_request);
 
@@ -1149,13 +1130,7 @@ void CastCollisionEvaluator::CalcCollisions(const Eigen::Ref<const Eigen::Vector
     manip_->calcFwdKin(transforms_cache0_, dof_vals0);
     manip_->calcFwdKin(transforms_cache1_, dof_vals1);
 
-    for (const auto& link_id : manip_active_link_ids_)
-    {
-      transforms_cache0_update_[link_id] = transforms_cache0_[link_id];
-      transforms_cache1_update_[link_id] = transforms_cache1_[link_id];
-    }
-
-    contact_manager_->setCollisionObjectsTransform(transforms_cache0_update_, transforms_cache1_update_);
+    contact_manager_->setCollisionObjectsTransform(manip_active_link_ids_, transforms_cache0_, transforms_cache1_);
 
     contact_manager_->contactTest(dist_results, collision_check_config_.contact_request);
 

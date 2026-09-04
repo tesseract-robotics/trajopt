@@ -216,6 +216,8 @@ protected:
   std::unordered_set<tesseract::common::LinkId> env_active_link_ids_;
   std::unordered_set<tesseract::common::LinkId> manip_active_link_ids_;
   std::unordered_set<tesseract::common::LinkId> diff_active_link_ids_;
+  /** @brief The union of manip_active_link_ids_ and diff_active_link_ids_; filled in the constructor, never mutated */
+  std::unordered_set<tesseract::common::LinkId> all_active_link_ids_;
   tesseract::common::CollisionMarginData margin_data_;
   trajopt_common::CollisionCoeffData coeff_data_;
   double margin_buffer_{ 0.0 };
@@ -235,9 +237,6 @@ protected:
 
   tesseract::common::LinkIdTransformMap transforms_cache0_;
   tesseract::common::LinkIdTransformMap transforms_cache1_;
-  tesseract::common::LinkIdTransformMap transforms_diff_update_;
-  tesseract::common::LinkIdTransformMap transforms_cache0_update_;
-  tesseract::common::LinkIdTransformMap transforms_cache1_update_;
 
   void CollisionsToDistanceExpressions(sco::AffExprVector& exprs,
                                        std::vector<double>& exprs_margin,
