@@ -1116,8 +1116,11 @@ void CastCollisionEvaluator::CalcCollisions(const Eigen::Ref<const Eigen::Vector
     // Perform casted collision checking for sub trajectory and store results in contacts_vector
     /** @todo require this to be passed in to reduce memory allocations */
     tesseract::collision::ContactResultMap contacts{ dist_results };
-    const tesseract::common::TrajArray::Index last_state_idx{ subtraj.rows() - 1 };
-    const double dt = 1.0 / double(last_state_idx);
+    // n sub-states give n - 1 casts, so the cast marking the segment end is one below the count.
+    // The count keeps the time normalisation: cast i spans [i * dt, (i + 1) * dt].
+    const tesseract::common::TrajArray::Index cast_count{ subtraj.rows() - 1 };
+    const tesseract::common::TrajArray::Index last_cast_idx{ cast_count - 1 };
+    const double dt = 1.0 / double(cast_count);
     for (int i = 0; i < subtraj.rows() - 1; ++i)
     {
       manip_->calcFwdKin(transforms_cache0_, subtraj.row(i));
@@ -1136,7 +1139,7 @@ void CastCollisionEvaluator::CalcCollisions(const Eigen::Ref<const Eigen::Vector
       if (!contacts.empty())
       {
         dist_results.addInterpolatedCollisionResults(
-            contacts, i, last_state_idx, manip_active_link_ids_, dt, false, filter);
+            contacts, i, last_cast_idx, manip_active_link_ids_, dt, false, filter);
       }
       contacts.clear();
     }
