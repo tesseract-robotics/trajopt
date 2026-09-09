@@ -215,8 +215,11 @@ void LVSContinuousCollisionEvaluator::calcCollisionsHelper(tesseract::collision:
     tesseract::collision::ContactResultMap contacts;
 
     // Perform collision checking for sub trajectory and store results in contacts_vector
-    const int last_state_idx{ static_cast<int>(subtraj.rows()) - 1 };
-    const double dt = 1.0 / double(last_state_idx);
+    // n sub-states give n - 1 casts, so the cast marking the segment end is one below the count.
+    // The count keeps the time normalisation: cast i spans [i * dt, (i + 1) * dt].
+    const int cast_count{ static_cast<int>(subtraj.rows()) - 1 };
+    const int last_cast_idx{ cast_count - 1 };
+    const double dt = 1.0 / double(cast_count);
     for (int i = 0; i < subtraj.rows() - 1; ++i)
     {
       get_state_fn_(transforms_cache0, subtraj.row(i));
@@ -230,7 +233,7 @@ void LVSContinuousCollisionEvaluator::calcCollisionsHelper(tesseract::collision:
       if (!contacts.empty())
       {
         dist_results.addInterpolatedCollisionResults(
-            contacts, i, last_state_idx, manip_active_link_ids_, dt, false, filter);
+            contacts, i, last_cast_idx, manip_active_link_ids_, dt, false, filter);
       }
       contacts.clear();
     }
