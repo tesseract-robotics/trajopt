@@ -168,6 +168,51 @@ TEST_F(CastCollisionEvaluatorTest, SubdividedSegmentEndIsFilteredWhenEndFixed)  
                              << counts.str();
 }
 
+// CONTINUOUS casts a segment once whatever longest_valid_segment_length says; sub-stepping it is
+// what LVS_CONTINUOUS is for. The segment is about seven configured lengths long, so a sub-stepped
+// check reports a contact for every sub-cast within the contact distance where a single cast
+// reports one per pair.
+TEST_F(CastCollisionEvaluatorTest, ContinuousCastsSegmentOnce)  // NOLINT
+{
+  auto manip = env->getJointGroup("manipulator");
+
+  trajopt_common::TrajOptCollisionConfig config(0.02, 1);
+  config.collision_check_config.type = CollisionEvaluatorType::CONTINUOUS;
+  config.collision_check_config.longest_valid_segment_length = 0.05;
+  config.collision_margin_buffer = 0.05;
+  CastCollisionEvaluator continuous(
+      manip, env, config, sco::VarVector{}, sco::VarVector{}, CollisionExpressionEvaluatorType::START_FREE_END_FREE);
+
+  // The same length under LVS_CONTINUOUS sub-steps the segment
+  config.collision_check_config.type = CollisionEvaluatorType::LVS_CONTINUOUS;
+  CastCollisionEvaluator sub_stepped(
+      manip, env, config, sco::VarVector{}, sco::VarVector{}, CollisionExpressionEvaluatorType::START_FREE_END_FREE);
+
+  // An LVS_CONTINUOUS check whose segment is shorter than the configured length is a single cast
+  config.collision_check_config.longest_valid_segment_length = 1.0;
+  CastCollisionEvaluator single_cast(
+      manip, env, config, sco::VarVector{}, sco::VarVector{}, CollisionExpressionEvaluatorType::START_FREE_END_FREE);
+
+  Eigen::VectorXd dof_vals0(2);
+  dof_vals0 << -0.75, 0.75;
+  Eigen::VectorXd dof_vals1(2);
+  dof_vals1 << -0.5, 0.5;
+
+  ContactResultMap continuous_results;
+  continuous.CalcCollisions(dof_vals0, dof_vals1, continuous_results);
+  ContactResultMap sub_stepped_results;
+  sub_stepped.CalcCollisions(dof_vals0, dof_vals1, sub_stepped_results);
+  ContactResultMap single_cast_results;
+  single_cast.CalcCollisions(dof_vals0, dof_vals1, single_cast_results);
+
+  ASSERT_FALSE(single_cast_results.empty());
+  // Sub-stepping must change the result on this segment, or the comparison below cannot tell a
+  // sub-stepped check from a single cast
+  ASSERT_GT(sub_stepped_results.count(), single_cast_results.count());
+  EXPECT_EQ(continuous_results.count(), single_cast_results.count());
+  EXPECT_TRUE(continuous_results == single_cast_results);
+}
+
 int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);

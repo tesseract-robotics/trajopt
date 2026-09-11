@@ -1,6 +1,5 @@
 #include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
-#include <limits>
 #include <boost/algorithm/string.hpp>
 #include <json/json.h>
 #include <console_bridge/console.h>
@@ -1739,9 +1738,6 @@ void CollisionTermInfo::hatch(TrajOptProb& prob)
   {
     if (config.collision_check_config.type != tesseract::collision::CollisionEvaluatorType::DISCRETE)
     {
-      auto lvs = (config.collision_check_config.type == tesseract::collision::CollisionEvaluatorType::CONTINUOUS) ?
-                     std::numeric_limits<double>::max() :
-                     config.collision_check_config.longest_valid_segment_length;
       bool discrete_continuous =
           (config.collision_check_config.type == tesseract::collision::CollisionEvaluatorType::LVS_DISCRETE);
       for (int i = first_step; i < last_step; ++i)
@@ -1799,9 +1795,6 @@ void CollisionTermInfo::hatch(TrajOptProb& prob)
   {  // ALMOST COPIED
     if (config.collision_check_config.type != tesseract::collision::CollisionEvaluatorType::DISCRETE)
     {
-      auto lvs = (config.collision_check_config.type == tesseract::collision::CollisionEvaluatorType::CONTINUOUS) ?
-                     std::numeric_limits<double>::max() :
-                     config.collision_check_config.longest_valid_segment_length;
       bool discrete_continuous =
           (config.collision_check_config.type == tesseract::collision::CollisionEvaluatorType::LVS_DISCRETE);
       for (int i = first_step; i < last_step; ++i)
