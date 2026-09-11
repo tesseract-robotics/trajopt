@@ -1,0 +1,53 @@
+<?xml version="1.0" ?>
+<!-- A three-joint revolute arm whose sphere tip sweeps past a sphere obstacle fixed to its base -->
+<robot name="sphere_arm" xmlns:tesseract="http://github.com/tesseract-robotics/tesseract" tesseract:make_convex="true">
+  <link name="base_link"/>
+  <link name="link1"/>
+  <link name="link2"/>
+  <link name="link3"/>
+  <link name="tip">
+    <collision>
+      <geometry>
+        <sphere radius="0.03"/>
+      </geometry>
+    </collision>
+  </link>
+  <link name="obstacle">
+    <collision>
+      <geometry>
+        <sphere radius="0.1"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="j1" type="revolute">
+    <parent link="base_link"/>
+    <child link="link1"/>
+    <origin xyz="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-3.1" upper="3.1" effort="1" velocity="1"/>
+  </joint>
+  <joint name="j2" type="revolute">
+    <parent link="link1"/>
+    <child link="link2"/>
+    <origin xyz="0.4 0 0"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-3.1" upper="3.1" effort="1" velocity="1"/>
+  </joint>
+  <joint name="j3" type="revolute">
+    <parent link="link2"/>
+    <child link="link3"/>
+    <origin xyz="0.4 0 0"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-3.1" upper="3.1" effort="1" velocity="1"/>
+  </joint>
+  <joint name="jt" type="fixed">
+    <parent link="link3"/>
+    <child link="tip"/>
+    <origin xyz="0.3 0 0"/>
+  </joint>
+  <joint name="jo" type="fixed">
+    <parent link="base_link"/>
+    <child link="obstacle"/>
+    <origin xyz="0.7 0.3 0.2"/>
+  </joint>
+</robot>
