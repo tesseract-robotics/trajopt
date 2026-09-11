@@ -169,9 +169,8 @@ void LVSContinuousCollisionEvaluator::calcCollisionsHelper(tesseract::collision:
                                                            bool vars0_fixed,
                                                            bool vars1_fixed)
 {
-  // The first step is to see if the distance between two states is larger than the longest valid segment. If larger
-  // the collision checking is broken up into multiple casted collision checks such that each check is less then
-  // the longest valid segment length.
+  // Under LVS_CONTINUOUS a segment longer than the longest valid segment length is split into casts of at most that
+  // length. CONTINUOUS casts the segment once.
   const double dist = (dof_vals1 - dof_vals0).norm();
 
   transforms_cache0.clear();

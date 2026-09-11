@@ -161,6 +161,46 @@ TEST_F(ContinuousCollisionEvaluatorTest, LVSDiscreteSegmentEndIsTime1)  // NOLIN
                              << counts.str();
 }
 
+// CONTINUOUS casts a segment once whatever longest_valid_segment_length says; sub-stepping it is
+// what LVS_CONTINUOUS is for. The segment is about seven configured lengths long, so a sub-stepped
+// check reports a contact for every sub-cast within the contact distance where a single cast
+// reports one per pair.
+TEST_F(ContinuousCollisionEvaluatorTest, ContinuousCastsSegmentOnce)  // NOLINT
+{
+  auto manip = env->getJointGroup("manipulator");
+  LVSContinuousCollisionEvaluator continuous(manip, env, makeConfig(CollisionEvaluatorType::CONTINUOUS));
+
+  // The same length under LVS_CONTINUOUS sub-steps the segment
+  LVSContinuousCollisionEvaluator sub_stepped(manip, env, makeConfig(CollisionEvaluatorType::LVS_CONTINUOUS));
+
+  // An LVS_CONTINUOUS check whose segment is shorter than the configured length is a single cast
+  trajopt_common::TrajOptCollisionConfig single_cast_config = makeConfig(CollisionEvaluatorType::LVS_CONTINUOUS);
+  single_cast_config.collision_check_config.longest_valid_segment_length = 1.0;
+  LVSContinuousCollisionEvaluator single_cast(manip, env, single_cast_config);
+
+  Eigen::VectorXd dof_vals0(2);
+  dof_vals0 << -0.75, 0.75;
+  Eigen::VectorXd dof_vals1(2);
+  dof_vals1 << -0.5, 0.5;
+
+  trajopt_common::CollisionCacheData continuous_data;
+  continuous.calcCollisionData(continuous_data, dof_vals0, dof_vals1, false, false, 1000);
+  trajopt_common::CollisionCacheData sub_stepped_data;
+  sub_stepped.calcCollisionData(sub_stepped_data, dof_vals0, dof_vals1, false, false, 1000);
+  trajopt_common::CollisionCacheData single_cast_data;
+  single_cast.calcCollisionData(single_cast_data, dof_vals0, dof_vals1, false, false, 1000);
+
+  const ContactResultMap& continuous_results = continuous_data.contact_results_map;
+  const ContactResultMap& sub_stepped_results = sub_stepped_data.contact_results_map;
+  const ContactResultMap& single_cast_results = single_cast_data.contact_results_map;
+  ASSERT_FALSE(single_cast_results.empty());
+  // Sub-stepping must change the result on this segment, or the comparison below cannot tell a
+  // sub-stepped check from a single cast
+  ASSERT_GT(sub_stepped_results.count(), single_cast_results.count());
+  EXPECT_EQ(continuous_results.count(), single_cast_results.count());
+  EXPECT_TRUE(continuous_results == single_cast_results);
+}
+
 int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
