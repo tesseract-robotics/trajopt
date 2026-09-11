@@ -29,6 +29,7 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <console_bridge/console.h>
 #include <tesseract/kinematics/joint_group.h>
 #include <tesseract/kinematics/utils.h>
+#include <utility>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt_common/collision_utils.h>
@@ -145,50 +146,98 @@ IntervalWeights intervalWeights(double cc_time, const ContactInterval& interval)
   };
 }
 
-void calcGradient(GradientResults& results,
-                  std::size_t i,
-                  const Eigen::VectorXd& dofvals,
-                  const tesseract::collision::ContactResult& contact_result,
-                  const tesseract::kinematics::JointGroup& manip,
-                  bool isTimestep1)
+Eigen::VectorXd intervalState(const tesseract::collision::ContactResult& contact_result,
+                              std::size_t i,
+                              const Eigen::VectorXd& dofvals0,
+                              const Eigen::VectorXd& dofvals1,
+                              double s)
 {
-  LinkGradientResults& link_gradient = (isTimestep1) ? results.cc_gradients[i] : results.gradients[i];
-  link_gradient.has_gradient = true;
+  if (contact_result.cc_type[i] == tesseract::collision::ContinuousCollisionType::CCType_Time0 || s <= 0.0)
+    return dofvals0;
 
-  // Calculate Jacobian
+  if (contact_result.cc_type[i] == tesseract::collision::ContinuousCollisionType::CCType_Time1 || s >= 1.0)
+    return dofvals1;
+
+  return dofvals0 + (dofvals1 - dofvals0) * s;
+}
+
+namespace
+{
+/**
+ * @brief The translational jacobian of a contact's reference point on one of its links
+ * @param link_transform The pose of @p contact_result.link_ids[i] at @p dofvals. The reference point is rotated by it,
+ * so it must belong to the configuration the jacobian is evaluated at; a pose the contact happens to carry for some
+ * other configuration rotates the offset into the wrong frame.
+ */
+Eigen::MatrixXd contactJacobian(const tesseract::kinematics::JointGroup& manip,
+                                const Eigen::VectorXd& dofvals,
+                                const Eigen::Isometry3d& link_transform,
+                                const tesseract::collision::ContactResult& contact_result,
+                                std::size_t i)
+{
   /** @todo update calcJacobian to have out param overload */
   Eigen::MatrixXd jac = manip.calcJacobian(dofvals, contact_result.link_ids[i]);
 
   // Need to change the base and ref point of the jacobian.
   // When changing ref point you must provide a vector from the current ref
-  // point to the new ref point.
+  // point to the new ref point. Since the link transform is known then do not call calcJacobian with link point.
+  tesseract::common::jacobianChangeRefPoint(jac, link_transform.linear() * contact_result.nearest_points_local[i]);
+  return jac.topRows(3);
+}
+
+/**
+ * @brief Fill one timestep's gradient of one of a contact's links from its contact jacobian
+ * @param time_weight The timestep's weight, applied only to a typed contact
+ */
+void setLinkGradient(LinkGradientResults& link_gradient,
+                     Eigen::MatrixXd jacobian,
+                     double time_weight,
+                     const tesseract::collision::ContactResult& contact_result,
+                     std::size_t i)
+{
+  link_gradient.has_gradient = true;
   link_gradient.scale = 1;
-  Eigen::Isometry3d link_transform = contact_result.transform[i];
+  // Gated on cc_type rather than cc_time, unlike trajopt's two-state GetGradient, which gates on a
+  // non-negative cc_time instead. The two agree on every contact the checks produce, because the
+  // backends' cast results and addInterpolatedCollisionResults both type every active link.
   if (contact_result.cc_type[i] != tesseract::collision::ContinuousCollisionType::CCType_None)
   {
     assert(contact_result.cc_time[i] > 0.0 ||
            tesseract::common::almostEqualRelativeAndAbs(contact_result.cc_time[i], 0.0));
     assert(contact_result.cc_time[i] < 1.0 ||
            tesseract::common::almostEqualRelativeAndAbs(contact_result.cc_time[i], 1.0));
-    link_gradient.scale = (isTimestep1) ? contact_result.cc_time[i] : (1 - contact_result.cc_time[i]);
+    link_gradient.scale = time_weight;
     link_gradient.cc_type = contact_result.cc_type[i];
-    link_transform = (isTimestep1) ? contact_result.cc_transform[i] : contact_result.transform[i];
-    /**
-     * @todo Look at decoupling this from the cc_transforms so we only have one gradient for timestep0 and timestep1
-     * This will simplify a lot of the data structures if you have a single gradient where you only the scale is
-     * different
-     */
   }
-  // Since the link transform is known then do not call calcJacobian with link point
-  tesseract::common::jacobianChangeRefPoint(jac, link_transform.linear() * contact_result.nearest_points_local[i]);
 
   link_gradient.translation_vector = contact_result.normal;
   if (i == 0)
     link_gradient.translation_vector *= -1.0;
 
-  link_gradient.jacobian = jac.topRows(3);
-  link_gradient.gradient.resize(jac.cols());
+  link_gradient.jacobian = std::move(jacobian);
+  link_gradient.gradient.resize(link_gradient.jacobian.cols());
   link_gradient.gradient.noalias() = link_gradient.jacobian.transpose() * link_gradient.translation_vector;
+}
+}  // namespace
+
+/**
+ * @brief Compute one link's gradient contribution for a contact
+ * @param link_transform The pose of @p contact_result.link_ids[i] at @p dofvals. The reference point
+ * is rotated by it, so it must belong to the configuration the jacobian is evaluated at; a pose the
+ * contact happens to carry for some other configuration rotates the offset into the wrong frame.
+ */
+void calcGradient(GradientResults& results,
+                  std::size_t i,
+                  const Eigen::VectorXd& dofvals,
+                  const Eigen::Isometry3d& link_transform,
+                  const tesseract::collision::ContactResult& contact_result,
+                  const tesseract::kinematics::JointGroup& manip)
+{
+  setLinkGradient(results.gradients[i],
+                  contactJacobian(manip, dofvals, link_transform, contact_result, i),
+                  1 - contact_result.cc_time[i],
+                  contact_result,
+                  i);
 
   // #ifndef NDEBUG // This is good for checking discrete evaluators
   //   Eigen::Isometry3d test_link_transform = manip->calcFwdKin(dofvals, it->link_name);
@@ -215,8 +264,10 @@ void getGradient(GradientResults& results,
   results.error_with_buffer = (margin + margin_buffer - contact_result.distance);
   for (std::size_t i = 0; i < 2; ++i)
   {
+    // A discrete contact stores the pose of the state it was found at, which is the state the
+    // jacobian is evaluated at, so no forward kinematics is needed here.
     if (manip.isActiveLinkId(contact_result.link_ids[i]))
-      calcGradient(results, i, dofvals, contact_result, manip, false);
+      calcGradient(results, i, dofvals, contact_result.transform[i], contact_result, manip);
   }
   // DebugPrintInfo(res, results.gradients[0], results.gradients[1], dofvals, &res == &(dist_results.front()));
 }
@@ -227,26 +278,71 @@ void getGradient(GradientResults& results,
                  const tesseract::collision::ContactResult& contact_result,
                  double margin,
                  double margin_buffer,
-                 const tesseract::kinematics::JointGroup& manip)
+                 const tesseract::kinematics::JointGroup& manip,
+                 long cast_count)
 {
   results.error = (margin - contact_result.distance);
   results.error_with_buffer = (margin + margin_buffer - contact_result.distance);
 
-  Eigen::VectorXd dofvalst = Eigen::VectorXd::Zero(dofvals0.size());
+  // Reused across both links and both interval ends so the map keeps its nodes; calcFwdKin overwrites every entry of
+  // the group, so nothing carries over between calls.
+  tesseract::common::LinkIdTransformMap link_transforms;
+  /**
+   * @todo Look at decoupling this from the cc_transforms so we only have one gradient for timestep0 and timestep1
+   * This will simplify a lot of the data structures if you have a single gradient where you only the scale is
+   * different
+   */
   for (std::size_t i = 0; i < 2; ++i)
   {
-    if (manip.isActiveLinkId(contact_result.link_ids[i]))
-    {
-      if (contact_result.cc_type[i] == tesseract::collision::ContinuousCollisionType::CCType_Time0)
-        dofvalst = dofvals0;
-      else if (contact_result.cc_type[i] == tesseract::collision::ContinuousCollisionType::CCType_Time1)
-        dofvalst = dofvals1;
-      else
-        dofvalst = dofvals0 + (dofvals1 - dofvals0) * contact_result.cc_time[i];
+    if (!manip.isActiveLinkId(contact_result.link_ids[i]))
+      continue;
 
-      calcGradient(results, i, dofvalst, contact_result, manip, false);
-      calcGradient(results, i, dofvalst, contact_result, manip, true);
+    const tesseract::collision::ContinuousCollisionType cc_type = contact_result.cc_type[i];
+    const bool pinned = cc_type == tesseract::collision::ContinuousCollisionType::CCType_Time0 ||
+                        cc_type == tesseract::collision::ContinuousCollisionType::CCType_Time1;
+    const double cc_time = contact_result.cc_time[i];
+    auto jacobianAt = [&](double s) {
+      const Eigen::VectorXd dofvals = intervalState(contact_result, i, dofvals0, dofvals1, s);
+      manip.calcFwdKin(link_transforms, dofvals);
+      return contactJacobian(manip, dofvals, link_transforms.at(contact_result.link_ids[i]), contact_result, i);
+    };
+
+    // A link the check gave no interval is linearised at the segment start for both halves rather than extrapolated
+    // outside the segment: both halves come from one state, so there is no separate endpoint per timestep.
+    if (!pinned && cc_time < 0.0)
+    {
+      Eigen::MatrixXd jacobian = jacobianAt(0.0);
+      setLinkGradient(results.gradients[i], jacobian, 1 - cc_time, contact_result, i);
+      setLinkGradient(results.cc_gradients[i], std::move(jacobian), cc_time, contact_result, i);
+      continue;
     }
+
+    // The link's contact point moves with it at both ends of the interval it was found in, so each timestep's gradient
+    // blends the contact jacobians at those two states. A link pinned to a segment endpoint is a point in time there,
+    // weighted by its own time.
+    const ContactInterval interval =
+        pinned ? ContactInterval{ cc_time, cc_time } : contactInterval(cc_time, cast_count);
+    const IntervalWeights w = intervalWeights(cc_time, interval);
+
+    // An end neither timestep weights is not evaluated, except that a timestep weighting neither end takes the
+    // interval start's
+    Eigen::MatrixXd at_start;
+    Eigen::MatrixXd at_end;
+    if (w.start_a > 0.0 || w.end_a > 0.0 || w.start_b == 0.0 || w.end_b == 0.0)
+      at_start = jacobianAt(interval.start);
+    if (w.start_b > 0.0 || w.end_b > 0.0)
+      at_end = jacobianAt(interval.end);
+
+    setLinkGradient(results.gradients[i],
+                    blendIntervalEnds(at_start, w.start_a, at_end, w.start_b),
+                    w.start_a + w.start_b,
+                    contact_result,
+                    i);
+    setLinkGradient(results.cc_gradients[i],
+                    blendIntervalEnds(at_start, w.end_a, at_end, w.end_b),
+                    w.end_a + w.end_b,
+                    contact_result,
+                    i);
   }
 
   // DebugPrintInfo(res, results.gradients[0], results.gradients[1], dofvals, &res == &(dist_results.front()));
