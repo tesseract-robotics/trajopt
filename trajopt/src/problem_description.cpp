@@ -1671,7 +1671,6 @@ void CollisionTermInfo::fromJson(ProblemConstructionInfo& pci, const Json::Value
   FAIL_IF_FALSE(contact_type < 3);
   auto contact_request_type = static_cast<tesseract::collision::ContactTestType>(contact_type);
 
-  int n_terms = last_step - first_step + 1;
   double coeffs{ 20 };
   double dist_pen{ 0.0 };
   json_marshal::childFromJson(params, coeffs, "coeffs");
