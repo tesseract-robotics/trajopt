@@ -1,4 +1,5 @@
 #pragma once
+#include <array>
 #include <cstdint>
 #include <vector>
 #include <memory>
@@ -195,6 +196,15 @@ struct CollisionEvaluator
                               bool isTimestep1);
 
   /**
+   * @brief The number of equal casts this evaluator's check splits the segment from @p dofvals0 to @p dofvals1 into
+   * @details The two-state gradients place each contact in the cast it was found in from this count, so an evaluator
+   * whose check casts must return the count its check uses. The default suits a check at interpolated states.
+   * @return The cast count, or 0 when the segment is checked at interpolated states rather than cast
+   */
+  virtual long GetCastCount(const Eigen::Ref<const Eigen::VectorXd>& dofvals0,
+                            const Eigen::Ref<const Eigen::VectorXd>& dofvals1) const;
+
+  /**
    * @brief Get the collision margin information.
    * @return Collision margin information
    */
@@ -235,9 +245,22 @@ protected:
 
   std::pair<ContactResultMapConstPtr, ContactResultVectorConstPtr> GetContactResultCached(const DblVec& x);
 
+  /** @brief Scratch for the link transforms a gradient linearises about. Reused across calls so
+   * the map retains its nodes; get_state_fn_ overwrites the entry of every link its state source
+   * currently holds, which covers every link a gradient reads. It does not erase, so a link the
+   * environment later drops leaves a pose behind - harmless, since a dropped link yields no contact
+   * and so is never read, but it is why entries here must not be trusted as a scene inventory.
+   * Distinct from transforms_cache0_/transforms_cache1_ on purpose: those hold the poses of the
+   * last collision check, which on a contact-cache hit belong to a different state. */
+  tesseract::common::LinkIdTransformMap transforms_gradient_;
   tesseract::common::LinkIdTransformMap transforms_cache0_;
   tesseract::common::LinkIdTransformMap transforms_cache1_;
 
+  /**
+   * @brief Build one distance expression per contact found by a check at the state @p x gives @p vars
+   * @details The gradient rotates each contact's reference points by the contact's stored link poses, so those must be
+   * the poses at that state, as a check at that state stores them.
+   */
   void CollisionsToDistanceExpressions(sco::AffExprVector& exprs,
                                        std::vector<double>& exprs_margin,
                                        std::vector<double>& exprs_coeff,
@@ -245,6 +268,22 @@ protected:
                                        const sco::VarVector& vars,
                                        const DblVec& x,
                                        bool isTimestep1);
+
+  /**
+   * @brief Build one distance expression per contact for a segment with interpolated contacts, in either or both
+   * states' variables
+   *
+   * Each contact's gradient is evaluated at the states the check found it between (see GetCastCount). When both
+   * states' expressions are wanted, each of those states is evaluated once and serves both.
+   * @param exprs0 Expressions built in vars0_, or nullptr when they are not wanted
+   * @param exprs1 Expressions built in vars1_, or nullptr when they are not wanted
+   */
+  void CollisionsToDistanceExpressionsTwoState(sco::AffExprVector* exprs0,
+                                               sco::AffExprVector* exprs1,
+                                               std::vector<double>& exprs_margin,
+                                               std::vector<double>& exprs_coeff,
+                                               const ContactResultVectorWrapper& dist_results,
+                                               const DblVec& x);
 
   /**
    * @brief Calculate the distance expressions when the start is free but the end is fixed
@@ -303,6 +342,79 @@ protected:
   void removeInvalidContactResults(tesseract::collision::ContactResultVector& contact_results, double margin) const;
 
 private:
+  /**
+   * @brief Extracts the gradient information based on the contact results, given the poses of the contact's links at
+   * @p dofvals
+   * @param dofvals The joint values
+   * @param link_poses The poses of the contact's two links at @p dofvals, in the order of the contact's link ids. Only
+   * an active link's pose is read.
+   * @param contact_result The contact results to compute the gradient
+   * @param margin The link pair the contact margin.
+   * @param coeff The link pair the coefficient/weight.
+   * @param isTimestep1 Indicates if this is the second timestep when computing gradient for continuous collision
+   * @return The gradient results
+   */
+  GradientResults GetGradient(const Eigen::VectorXd& dofvals,
+                              const std::array<Eigen::Isometry3d, 2>& link_poses,
+                              const tesseract::collision::ContactResult& contact_result,
+                              double margin,
+                              double coeff,
+                              bool isTimestep1);
+
+  /**
+   * @brief Gradient of one of a contact's links with respect to the joints, at a given state
+   * @param dofvalst The configuration the jacobian and the reference-point rotation are taken at
+   * @param link_transforms Scratch space the call overwrites with the poses at @p dofvalst; must
+   * outlive the call
+   * @param i Which of the contact's two links; the contact normal points away from link 0, so the
+   * sign of the returned gradient follows from it
+   */
+  Eigen::VectorXd CalcLinkGradient(const Eigen::VectorXd& dofvalst,
+                                   tesseract::common::LinkIdTransformMap& link_transforms,
+                                   const tesseract::collision::ContactResult& contact_result,
+                                   std::size_t i);
+
+  /**
+   * @brief One of a contact's links' gradient for either or both timesteps of a segment
+   * @details A timed link's contact point is modelled as moving with the link at both ends of the interval the check
+   * found it in, so each timestep's gradient is the weighted mean of the gradients at those two states and its scale
+   * is the total weight (see trajopt_common::intervalWeights). A link pinned to a segment endpoint is a point in time
+   * there. A link the check gave no interval carries full weight at the state it is linearised at.
+   * @param link_transforms Scratch space the call overwrites with the poses at each state it evaluates
+   * @param i Which of the contact's two links
+   * @param cast_count The number of equal casts the check split the segment into, or 0 when it checked interpolated
+   * states
+   * @param start The segment start's result, or nullptr when it is not wanted
+   * @param end The segment end's result, or nullptr when it is not wanted
+   */
+  void CalcLinkGradientTwoState(const Eigen::VectorXd& dofvals0,
+                                const Eigen::VectorXd& dofvals1,
+                                tesseract::common::LinkIdTransformMap& link_transforms,
+                                const tesseract::collision::ContactResult& contact_result,
+                                std::size_t i,
+                                long cast_count,
+                                LinkGradientResults* start,
+                                LinkGradientResults* end);
+
+  /**
+   * @brief Gradient for a contact between two states, for either or both timesteps
+   * @details Both timesteps blend the gradients at the same two ends of a link's contact interval, differing only in
+   * weights, so when both are wanted each end is evaluated once and serves both.
+   * @param link_transforms Scratch space the call overwrites with the poses at each state it evaluates; nothing
+   * carries over between calls, and the map must outlive the call
+   * @param cast_count The number of equal casts the check split the segment into, or 0 when it checked interpolated
+   * states; see trajopt_common::contactInterval
+   * @param start The segment start's results, or nullptr when they are not wanted
+   * @param end The segment end's results, or nullptr when they are not wanted
+   */
+  void CalcGradientTwoState(const Eigen::VectorXd& dofvals0,
+                            const Eigen::VectorXd& dofvals1,
+                            tesseract::common::LinkIdTransformMap& link_transforms,
+                            const tesseract::collision::ContactResult& contact_result,
+                            long cast_count,
+                            GradientResults* start,
+                            GradientResults* end);
+
   CollisionEvaluator() = default;
 };
 
@@ -382,6 +494,8 @@ public:
                       tesseract::collision::ContactResultMap& dist_results);
   void Plot(const std::shared_ptr<tesseract::visualization::Visualization>& plotter, const DblVec& x) override;
   sco::VarVector GetVars() override;
+  long GetCastCount(const Eigen::Ref<const Eigen::VectorXd>& dofvals0,
+                    const Eigen::Ref<const Eigen::VectorXd>& dofvals1) const override;
 
 private:
   std::shared_ptr<tesseract::collision::ContinuousContactManager> contact_manager_;
