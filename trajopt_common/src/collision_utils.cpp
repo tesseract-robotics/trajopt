@@ -23,7 +23,9 @@
 
 #include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
+#include <algorithm>
 #include <boost/functional/hash.hpp>
+#include <cmath>
 #include <console_bridge/console.h>
 #include <tesseract/kinematics/joint_group.h>
 #include <tesseract/kinematics/utils.h>
@@ -111,6 +113,36 @@ void removeInvalidContactResults(tesseract::collision::ContactResultVector& cont
       });
 
   contact_results.erase(end, contact_results.end());
+}
+
+long castCount(const tesseract::collision::CollisionCheckConfig& config, double segment_length)
+{
+  // Negated rather than written as <=, so a length that is not a number is cast once instead of reaching the
+  // float-to-integer conversion below
+  if (config.type != tesseract::collision::CollisionEvaluatorType::LVS_CONTINUOUS ||
+      !(config.longest_valid_segment_length > 0.0) || !(segment_length > config.longest_valid_segment_length))
+    return 1;
+
+  return static_cast<long>(std::ceil(segment_length / config.longest_valid_segment_length));
+}
+
+ContactInterval contactInterval(double cc_time, long cast_count)
+{
+  if (cast_count <= 0)
+    return { cc_time, cc_time };
+
+  const auto count = static_cast<double>(cast_count);
+  const long index = std::clamp(static_cast<long>(std::floor(cc_time * count)), 0L, cast_count - 1);
+  return { static_cast<double>(index) / count, static_cast<double>(index + 1) / count };
+}
+
+IntervalWeights intervalWeights(double cc_time, const ContactInterval& interval)
+{
+  const double width = interval.end - interval.start;
+  const double tau = (width > 0.0) ? std::clamp((cc_time - interval.start) / width, 0.0, 1.0) : 0.0;
+  return {
+    (1.0 - tau) * (1.0 - interval.start), tau * (1.0 - interval.end), (1.0 - tau) * interval.start, tau * interval.end
+  };
 }
 
 void calcGradient(GradientResults& results,
