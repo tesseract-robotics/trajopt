@@ -1052,9 +1052,8 @@ void CastCollisionEvaluator::CalcCollisions(const Eigen::Ref<const Eigen::Vector
                                             tesseract::collision::ContactResultMap& dist_results)
 {
   assert(dist_results.empty());
-  // The first step is to see if the distance between two states is larger than the longest valid segment. If larger
-  // the collision checking is broken up into multiple casted collision checks such that each check is less then
-  // the longest valid segment length.
+  // Under LVS_CONTINUOUS a segment longer than the longest valid segment length is split into casts of at most that
+  // length. CONTINUOUS casts the segment once.
   const double dist = (dof_vals1 - dof_vals0).norm();
 
   // If not empty then there are links that are not part of the kinematics object that can move (dynamic environment)
@@ -1090,7 +1089,8 @@ void CastCollisionEvaluator::CalcCollisions(const Eigen::Ref<const Eigen::Vector
 #endif
   };
 
-  if (dist > collision_check_config_.longest_valid_segment_length)
+  if (collision_check_config_.type == tesseract::collision::CollisionEvaluatorType::LVS_CONTINUOUS &&
+      dist > collision_check_config_.longest_valid_segment_length)
   {
     // Calculate the number state to interpolate
     auto cnt = static_cast<long>(std::ceil(dist / collision_check_config_.longest_valid_segment_length)) + 1;

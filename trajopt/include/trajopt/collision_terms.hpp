@@ -350,8 +350,9 @@ private:
 };
 
 /**
- * @brief This collision evaluator operates on two states and checks for collision between the two states using a
- * casted collision objects between to intermediate interpolated states.
+ * @brief This collision evaluator operates on two states and checks for collision between them using casted
+ * collision objects. Under LVS_CONTINUOUS the segment is interpolated so that no cast is longer than the longest
+ * valid segment length; under CONTINUOUS it is cast once.
  */
 struct CastCollisionEvaluator : public CollisionEvaluator
 {
