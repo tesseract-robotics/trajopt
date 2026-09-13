@@ -368,11 +368,16 @@ private:
    * outlive the call
    * @param i Which of the contact's two links; the contact normal points away from link 0, so the
    * sign of the returned gradient follows from it
+   * @param on_link Whether the contact's witness point lies on the link at @p dofvalst, in which case
+   * the contact's stored world point locates it. The stored local point does not: it is the mean of the
+   * two support points, and for a contact pinned to a cast end it belongs to the frame of the pose the
+   * contact carries, which is the start of the cast whichever end it is pinned to.
    */
   Eigen::VectorXd CalcLinkGradient(const Eigen::VectorXd& dofvalst,
                                    tesseract::common::LinkIdTransformMap& link_transforms,
                                    const tesseract::collision::ContactResult& contact_result,
-                                   std::size_t i);
+                                   std::size_t i,
+                                   bool on_link);
 
   /**
    * @brief One of a contact's links' gradient for either or both timesteps of a segment
