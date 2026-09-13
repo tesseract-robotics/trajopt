@@ -31,6 +31,9 @@ add_gtest(${PROJECT_NAME}_cast_cost_attached_unit cast_cost_attached_unit.cpp)
 add_gtest(${PROJECT_NAME}_cast_cost_octomap_unit cast_cost_octomap_unit.cpp)
 add_gtest(${PROJECT_NAME}_cast_constraint_octomap_unit cast_constraint_octomap_unit.cpp)
 add_gtest(${PROJECT_NAME}_simple_collision_unit simple_collision_unit.cpp)
+add_gtest(${PROJECT_NAME}_cast_gradient_frame_unit cast_gradient_frame_unit.cpp)
+add_gtest(${PROJECT_NAME}_cast_expression_frame_unit cast_expression_frame_unit.cpp)
+add_gtest(${PROJECT_NAME}_discrete_expression_frame_unit discrete_expression_frame_unit.cpp)
 add_gtest(${PROJECT_NAME}_cart_position_optimization_unit cart_position_optimization_unit.cpp)
 
 # This is for comparison and should be moved to trajopt

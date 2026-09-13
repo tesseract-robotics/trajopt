@@ -58,6 +58,91 @@ void removeInvalidContactResults(tesseract::collision::ContactResultVector& cont
                                  bool var0_fixed,
                                  bool var1_fixed);
 
+/** @brief The part of a segment a contact was found in, as fractions of the segment from its start */
+struct ContactInterval
+{
+  double start{ 0.0 };
+  double end{ 1.0 };
+};
+
+/**
+ * @brief How one link's gradient splits between the two ends of its contact interval
+ * @details The link's contact point is modelled as the fixed blend, at the contact's fraction of the interval, of the
+ * point the link carries at the interval's two end states. start_a and start_b are the weights the segment start's
+ * gradient gives the jacobians at the interval's start and end states; end_a and end_b are those of the segment end's.
+ * The start weights sum to 1 - cc_time and the end weights to cc_time when cc_time lies in the interval.
+ */
+struct IntervalWeights
+{
+  double start_a{ 0.0 };
+  double start_b{ 0.0 };
+  double end_a{ 0.0 };
+  double end_b{ 0.0 };
+  /**
+   * @brief Whether an end of the interval is the contact's own time
+   * @details The check found the contact with the link at that time, so its witness point lies on the link there and
+   * nowhere else along the interval. Judged on the contact's position within the interval rather than on the times
+   * themselves, since the contact time and the interval ends are derived from the cast count by different arithmetic and
+   * an end carrying the contact's time need not equal it to the last bit. A time lying outside the interval is at
+   * neither end, however near the weights' clamp places it.
+   */
+  bool start_at_contact{ false };
+  bool end_at_contact{ false };
+};
+
+/**
+ * @brief The number of equal casts a continuous check splits a segment into
+ * @return ceil(segment_length / longest_valid_segment_length) under LVS_CONTINUOUS when the segment is longer than the
+ * longest valid segment length, otherwise 1; also 1 when the longest valid segment length is not positive
+ */
+long castCount(const tesseract::collision::CollisionCheckConfig& config, double segment_length);
+
+/**
+ * @brief The cast of a segment a contact at @p cc_time was found in
+ * @param cc_time The contact time as a fraction of the segment
+ * @param cast_count The number of equal casts the segment was checked with, or 0 for a check at interpolated states,
+ * where a contact is a point in time
+ * @return The cast holding @p cc_time, or [cc_time, cc_time] when @p cast_count is 0. A time on the boundary of two
+ * casts may be placed in either; both give the same gradient, the contact then sitting at the state they share.
+ */
+ContactInterval contactInterval(double cc_time, long cast_count);
+
+/**
+ * @brief Split one link's gradient between the ends of its contact interval
+ * @param cc_time The contact time as a fraction of the segment. A time outside @p interval is placed at its nearest
+ * end.
+ */
+IntervalWeights intervalWeights(double cc_time, const ContactInterval& interval);
+
+/**
+ * @brief The configuration at fraction @p s of the segment, as one of a contact's timed links sees it
+ * @details A link pinned to a segment endpoint is at that endpoint whatever @p s is. The segment ends are returned as
+ * given rather than interpolated to, so a contact at an end is linearised at exactly that end's state.
+ * @param i Which of the contact's two links
+ */
+Eigen::VectorXd intervalState(const tesseract::collision::ContactResult& contact_result,
+                              std::size_t i,
+                              const Eigen::VectorXd& dofvals0,
+                              const Eigen::VectorXd& dofvals1,
+                              double s);
+
+/**
+ * @brief The weighted mean of a value at the two ends of a contact interval
+ * @details An end with zero weight is ignored, so it may be left unevaluated: the start's value is returned when the
+ * end's weight is zero, and the end's when the start's is.
+ */
+template <typename T>
+T blendIntervalEnds(const T& at_start, double w_start, const T& at_end, double w_end)
+{
+  if (w_end == 0.0)
+    return at_start;
+
+  if (w_start == 0.0)
+    return at_end;
+
+  return ((w_start * at_start) + (w_end * at_end)) / (w_start + w_end);
+}
+
 /**
  * @brief Extracts the gradient information based on the contact results
  * @param dofvals The joint values
@@ -74,12 +159,19 @@ void getGradient(GradientResults& results,
                  const tesseract::kinematics::JointGroup& manip);
 
 /**
- * @brief Extracts the gradient information based on the contact results
- * @param dofvals The joint values
+ * @brief Extracts the gradient information for a contact found between two states
+ * @details Each active link's contact point is modelled as moving with the link at both ends of the interval the check
+ * found the contact in, so each timestep's gradient is the weighted mean of the contact jacobians at those two states
+ * and its scale is the total weight (see intervalWeights). A link pinned to a segment endpoint is a point in time at
+ * that endpoint. A link the check gave no interval is linearised at @p dofvals0 for both timesteps.
+ * @param dofvals0 The joint values at the segment start
+ * @param dofvals1 The joint values at the segment end
  * @param contact_result The contact results to compute the gradient
- * @param data Data associated with the link pair the contact results associated with.
- * @param isTimestep1 Indicates if this is the second timestep when computing gradient for continuous collision
- * @return The gradient results
+ * @param margin The contact margin
+ * @param margin_buffer The contact margin buffer
+ * @param manip The joint group the joint values belong to
+ * @param cast_count The number of equal casts the check split the segment into, or 0 when it checked interpolated
+ * states instead; see contactInterval
  */
 void getGradient(GradientResults& results,
                  const Eigen::VectorXd& dofvals0,
@@ -87,7 +179,8 @@ void getGradient(GradientResults& results,
                  const tesseract::collision::ContactResult& contact_result,
                  double margin,
                  double margin_buffer,
-                 const tesseract::kinematics::JointGroup& manip);
+                 const tesseract::kinematics::JointGroup& manip,
+                 long cast_count);
 
 /**
  * @brief Print debug gradient information
