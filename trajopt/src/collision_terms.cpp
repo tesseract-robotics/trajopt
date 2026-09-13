@@ -274,17 +274,30 @@ GradientResults CollisionEvaluator::GetGradient(const Eigen::VectorXd& dofvals,
     {
       results.gradients[i].has_gradient = true;
 
-      // The reference point offset must be rotated by the pose at the configuration the Jacobian is
-      // evaluated at.
-      Eigen::MatrixXd jac = manip_->calcJacobian(dofvals, contact_result.link_ids[i]);
-      tesseract::common::jacobianChangeRefPoint(jac, link_poses[i].linear() * contact_result.nearest_points_local[i]);
-
+      // One state carries the whole segment here, so the contact's interval is the segment and its
+      // weights reduce to 1 - cc_time and cc_time. An untimed contact takes the full weight.
       results.gradients[i].scale = 1;
+      bool on_link = false;
       if (contact_result.cc_type[i] != tesseract::collision::ContinuousCollisionType::CCType_None)
       {
         assert(contact_result.cc_time[i] >= 0.0 && contact_result.cc_time[i] <= 1.0);
-        results.gradients[i].scale = (isTimestep1) ? contact_result.cc_time[i] : (1 - contact_result.cc_time[i]);
+        const trajopt_common::IntervalWeights w =
+            trajopt_common::intervalWeights(contact_result.cc_time[i], { 0.0, 1.0 });
+        results.gradients[i].scale = isTimestep1 ? w.end_a + w.end_b : w.start_a + w.start_b;
+        on_link = isTimestep1 ? w.end_at_contact : w.start_at_contact;
       }
+
+      // The reference point offset must be rotated by the pose at the configuration the Jacobian is
+      // evaluated at, except where the contact's own time names that configuration and the contact
+      // locates the witness in the world itself.
+      Eigen::MatrixXd jac = manip_->calcJacobian(dofvals, contact_result.link_ids[i]);
+      Eigen::Vector3d offset;
+      if (on_link)
+        offset = contact_result.nearest_points[i] - link_poses[i].translation();
+      else
+        offset = link_poses[i].linear() * contact_result.nearest_points_local[i];
+
+      tesseract::common::jacobianChangeRefPoint(jac, offset);
 
       results.gradients[i].gradient = ((i == 0) ? -1.0 : 1.0) * contact_result.normal.transpose() * jac.topRows(3);
     }
@@ -330,15 +343,27 @@ GradientResults CollisionEvaluator::GetGradient(const Eigen::VectorXd& dofvals0,
 Eigen::VectorXd CollisionEvaluator::CalcLinkGradient(const Eigen::VectorXd& dofvalst,
                                                      tesseract::common::LinkIdTransformMap& link_transforms,
                                                      const tesseract::collision::ContactResult& contact_result,
-                                                     std::size_t i)
+                                                     std::size_t i,
+                                                     bool on_link)
 {
   // The reference point offset must be rotated by the pose at the configuration the jacobian is
   // evaluated at. The contact's stored transforms need not be that configuration (a link the check
   // gave no interval is linearised at a segment endpoint).
   Eigen::MatrixXd jac = manip_->calcJacobian(dofvalst, contact_result.link_ids[i]);
   get_state_fn_(link_transforms, dofvalst);
-  tesseract::common::jacobianChangeRefPoint(
-      jac, link_transforms.at(contact_result.link_ids[i]).linear() * contact_result.nearest_points_local[i]);
+  const Eigen::Isometry3d& link_transform = link_transforms.at(contact_result.link_ids[i]);
+
+  // A witness on the link at this configuration is already located in the world by the contact, so the
+  // offset follows from this pose's origin. The stored local point names a different point there: it is
+  // the mean of the two support points, and for a contact pinned to a cast end it is expressed in the
+  // frame of the pose the contact carries, which is the start of the cast either way.
+  Eigen::Vector3d offset;
+  if (on_link)
+    offset = contact_result.nearest_points[i] - link_transform.translation();
+  else
+    offset = link_transform.linear() * contact_result.nearest_points_local[i];
+
+  tesseract::common::jacobianChangeRefPoint(jac, offset);
 
   return ((i == 0) ? -1.0 : 1.0) * contact_result.normal.transpose() * jac.topRows(3);
 }
@@ -368,14 +393,16 @@ void CollisionEvaluator::CalcLinkGradientTwoState(const Eigen::VectorXd& dofvals
                       CalcLinkGradient(untimedLinearisationState(contact_result, i, dofvals0, dofvals1, false),
                                        link_transforms,
                                        contact_result,
-                                       i));
+                                       i,
+                                       false));
     if (end != nullptr)
       setLinkGradient(*end,
                       1.0,
                       CalcLinkGradient(untimedLinearisationState(contact_result, i, dofvals0, dofvals1, true),
                                        link_transforms,
                                        contact_result,
-                                       i));
+                                       i,
+                                       false));
     return;
   }
 
@@ -400,12 +427,14 @@ void CollisionEvaluator::CalcLinkGradientTwoState(const Eigen::VectorXd& dofvals
     at_a = CalcLinkGradient(trajopt_common::intervalState(contact_result, i, dofvals0, dofvals1, interval.start),
                             link_transforms,
                             contact_result,
-                            i);
+                            i,
+                            w.start_at_contact);
   if (wants_b)
     at_b = CalcLinkGradient(trajopt_common::intervalState(contact_result, i, dofvals0, dofvals1, interval.end),
                             link_transforms,
                             contact_result,
-                            i);
+                            i,
+                            w.end_at_contact);
 
   if (start != nullptr)
     setLinkGradient(*start, w.start_a + w.start_b, trajopt_common::blendIntervalEnds(at_a, w.start_a, at_b, w.start_b));
