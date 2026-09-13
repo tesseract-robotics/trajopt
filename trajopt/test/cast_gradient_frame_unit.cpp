@@ -152,6 +152,7 @@ public:
     cr.cc_type[0] = ContinuousCollisionType::CCType_Between;
     cr.normal = Eigen::Vector3d(0.0, 0.0, 1.0);
     cr.distance = -0.01;
+    cr.nearest_points[0] = cr.transform[0] * cr.nearest_points_local[0];
     return cr;
   }
 
@@ -269,7 +270,9 @@ TEST_F(CastGradientFrameTest, SingleCastTwoStateGradientIsTheSingleStateGradient
 TEST_F(CastGradientFrameTest, PointInTimeTwoStateGradientAtInterpolatedState)  // NOLINT
 {
   evaluator_->cast_count = 0;
-  const ContactResult cr = makeContact(lerp(q0_, q1_, kSubStart), lerp(q0_, q1_, kSubEnd), kCcTime);
+  // A check at interpolated states reports the pose of the state it ran at, which is the state the
+  // contact time names; only the cast pose is of some other interval here.
+  const ContactResult cr = makeContact(lerp(q0_, q1_, kCcTime), lerp(q0_, q1_, kSubEnd), kCcTime);
 
   const GradientResults at_start = evaluator_->GetGradient(q0_, q1_, cr, 0.025, 20.0, false);
   const GradientResults at_end = evaluator_->GetGradient(q0_, q1_, cr, 0.025, 20.0, true);

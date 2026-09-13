@@ -136,9 +136,53 @@ TEST(ContactIntervalTest, WeightsSumToTheTimeWeights)  // NOLINT
   }
 }
 
+// An interval end carrying the contact's own time is marked, whether the contact sits there exactly
+// or a rounding of the cast count away, and an end the contact lies strictly inside of is not
+TEST(ContactIntervalTest, WeightsMarkTheEndCarryingTheContactTime)  // NOLINT
+{
+  const IntervalWeights inside = intervalWeights(0.45, { 0.4, 0.6 });
+  EXPECT_FALSE(inside.start_at_contact);
+  EXPECT_FALSE(inside.end_at_contact);
+
+  const IntervalWeights at_start = intervalWeights(0.4, { 0.4, 0.6 });
+  EXPECT_TRUE(at_start.start_at_contact);
+  EXPECT_FALSE(at_start.end_at_contact);
+
+  const IntervalWeights at_end = intervalWeights(0.6, { 0.4, 0.6 });
+  EXPECT_FALSE(at_end.start_at_contact);
+  EXPECT_TRUE(at_end.end_at_contact);
+
+  // A contact time and an interval end are derived from the cast count by different arithmetic, so an
+  // end carrying the contact's time can miss it by a rounding. Landing below the end drops the contact
+  // into the preceding interval, where the end it carries is that interval's own end.
+  const double below_end = 5.0 * (1.0 / 49.0);
+  ASSERT_NE(below_end, 5.0 / 49.0);
+  const IntervalWeights at_rounded_end = intervalWeights(below_end, contactInterval(below_end, 49));
+  EXPECT_TRUE(at_rounded_end.end_at_contact);
+  EXPECT_FALSE(at_rounded_end.start_at_contact);
+
+  // Rounding the other way keeps the contact in the interval its time starts, a hair before the start
+  const double below_start = 9.0 * (1.0 / 49.0);
+  ASSERT_NE(below_start, 9.0 / 49.0);
+  const IntervalWeights at_rounded_start = intervalWeights(below_start, contactInterval(below_start, 49));
+  EXPECT_TRUE(at_rounded_start.start_at_contact);
+  EXPECT_FALSE(at_rounded_start.end_at_contact);
+
+  // A point in time is at its own single state
+  EXPECT_TRUE(intervalWeights(0.3, { 0.3, 0.3 }).start_at_contact);
+}
+
 // A time outside its interval is placed at the interval's nearest end rather than extrapolated
 TEST(ContactIntervalTest, WeightsClampATimeOutsideItsInterval)  // NOLINT
 {
   expectWeights(intervalWeights(0.35, { 0.4, 0.6 }), 0.6, 0.0, 0.4, 0.0);
   expectWeights(intervalWeights(0.65, { 0.4, 0.6 }), 0.0, 0.4, 0.0, 0.6);
+
+  // The clamp places the weights, it does not put the witness point on the link at that end
+  for (const double t : { 0.35, 0.65 })
+  {
+    const IntervalWeights w = intervalWeights(t, { 0.4, 0.6 });
+    EXPECT_FALSE(w.start_at_contact) << "t = " << t;
+    EXPECT_FALSE(w.end_at_contact) << "t = " << t;
+  }
 }

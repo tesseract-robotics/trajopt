@@ -78,6 +78,16 @@ struct IntervalWeights
   double start_b{ 0.0 };
   double end_a{ 0.0 };
   double end_b{ 0.0 };
+  /**
+   * @brief Whether an end of the interval is the contact's own time
+   * @details The check found the contact with the link at that time, so its witness point lies on the link there and
+   * nowhere else along the interval. Judged on the contact's position within the interval rather than on the times
+   * themselves, since the contact time and the interval ends are derived from the cast count by different arithmetic and
+   * an end carrying the contact's time need not equal it to the last bit. A time lying outside the interval is at
+   * neither end, however near the weights' clamp places it.
+   */
+  bool start_at_contact{ false };
+  bool end_at_contact{ false };
 };
 
 /**

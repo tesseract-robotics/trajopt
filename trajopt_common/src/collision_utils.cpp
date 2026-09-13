@@ -140,10 +140,16 @@ ContactInterval contactInterval(double cc_time, long cast_count)
 IntervalWeights intervalWeights(double cc_time, const ContactInterval& interval)
 {
   const double width = interval.end - interval.start;
-  const double tau = (width > 0.0) ? std::clamp((cc_time - interval.start) / width, 0.0, 1.0) : 0.0;
-  return {
-    (1.0 - tau) * (1.0 - interval.start), tau * (1.0 - interval.end), (1.0 - tau) * interval.start, tau * interval.end
-  };
+  // A fraction of the interval rather than of the segment, so the comparison holds at any cast count. A zero width is
+  // a point in time, which sits at its start.
+  const double raw = (width > 0.0) ? (cc_time - interval.start) / width : 0.0;
+  const double tau = std::clamp(raw, 0.0, 1.0);
+
+  // Judged on the unclamped position: a time the caller placed outside the interval is at neither end, however near
+  // the clamp puts it.
+  constexpr double at_end_tau = 1e-9;
+  return { (1.0 - tau) * (1.0 - interval.start), tau * (1.0 - interval.end), (1.0 - tau) * interval.start,
+           tau * interval.end,  std::abs(raw) <= at_end_tau,                 std::abs(raw - 1.0) <= at_end_tau };
 }
 
 Eigen::VectorXd intervalState(const tesseract::collision::ContactResult& contact_result,
@@ -168,12 +174,17 @@ namespace
  * @param link_transform The pose of @p contact_result.link_ids[i] at @p dofvals. The reference point is rotated by it,
  * so it must belong to the configuration the jacobian is evaluated at; a pose the contact happens to carry for some
  * other configuration rotates the offset into the wrong frame.
+ * @param on_link Whether the contact's witness point lies on the link at @p dofvals, which holds at the contact's own
+ * time and nowhere else. The offset then follows from the witness the contact reports in world coordinates, the only
+ * reading that is exact there: the stored local point is the mean of the two support points, and for a contact pinned
+ * to an interval end it is expressed in the frame of the pose the contact carries rather than in this one.
  */
 Eigen::MatrixXd contactJacobian(const tesseract::kinematics::JointGroup& manip,
                                 const Eigen::VectorXd& dofvals,
                                 const Eigen::Isometry3d& link_transform,
                                 const tesseract::collision::ContactResult& contact_result,
-                                std::size_t i)
+                                std::size_t i,
+                                bool on_link)
 {
   /** @todo update calcJacobian to have out param overload */
   Eigen::MatrixXd jac = manip.calcJacobian(dofvals, contact_result.link_ids[i]);
@@ -181,7 +192,13 @@ Eigen::MatrixXd contactJacobian(const tesseract::kinematics::JointGroup& manip,
   // Need to change the base and ref point of the jacobian.
   // When changing ref point you must provide a vector from the current ref
   // point to the new ref point. Since the link transform is known then do not call calcJacobian with link point.
-  tesseract::common::jacobianChangeRefPoint(jac, link_transform.linear() * contact_result.nearest_points_local[i]);
+  Eigen::Vector3d offset;
+  if (on_link)
+    offset = contact_result.nearest_points[i] - link_transform.translation();
+  else
+    offset = link_transform.linear() * contact_result.nearest_points_local[i];
+
+  tesseract::common::jacobianChangeRefPoint(jac, offset);
   return jac.topRows(3);
 }
 
@@ -234,7 +251,7 @@ void calcGradient(GradientResults& results,
                   const tesseract::kinematics::JointGroup& manip)
 {
   setLinkGradient(results.gradients[i],
-                  contactJacobian(manip, dofvals, link_transform, contact_result, i),
+                  contactJacobian(manip, dofvals, link_transform, contact_result, i, false),
                   1 - contact_result.cc_time[i],
                   contact_result,
                   i);
@@ -265,7 +282,8 @@ void getGradient(GradientResults& results,
   for (std::size_t i = 0; i < 2; ++i)
   {
     // A discrete contact stores the pose of the state it was found at, which is the state the
-    // jacobian is evaluated at, so no forward kinematics is needed here.
+    // jacobian is evaluated at, so no forward kinematics is needed here and both readings of the
+    // witness point agree.
     if (manip.isActiveLinkId(contact_result.link_ids[i]))
       calcGradient(results, i, dofvals, contact_result.transform[i], contact_result, manip);
   }
@@ -301,17 +319,18 @@ void getGradient(GradientResults& results,
     const bool pinned = cc_type == tesseract::collision::ContinuousCollisionType::CCType_Time0 ||
                         cc_type == tesseract::collision::ContinuousCollisionType::CCType_Time1;
     const double cc_time = contact_result.cc_time[i];
-    auto jacobianAt = [&](double s) {
+    auto jacobianAt = [&](double s, bool on_link) {
       const Eigen::VectorXd dofvals = intervalState(contact_result, i, dofvals0, dofvals1, s);
       manip.calcFwdKin(link_transforms, dofvals);
-      return contactJacobian(manip, dofvals, link_transforms.at(contact_result.link_ids[i]), contact_result, i);
+      return contactJacobian(
+          manip, dofvals, link_transforms.at(contact_result.link_ids[i]), contact_result, i, on_link);
     };
 
     // A link the check gave no interval is linearised at the segment start for both halves rather than extrapolated
     // outside the segment: both halves come from one state, so there is no separate endpoint per timestep.
     if (!pinned && cc_time < 0.0)
     {
-      Eigen::MatrixXd jacobian = jacobianAt(0.0);
+      Eigen::MatrixXd jacobian = jacobianAt(0.0, false);
       setLinkGradient(results.gradients[i], jacobian, 1 - cc_time, contact_result, i);
       setLinkGradient(results.cc_gradients[i], std::move(jacobian), cc_time, contact_result, i);
       continue;
@@ -329,9 +348,9 @@ void getGradient(GradientResults& results,
     Eigen::MatrixXd at_start;
     Eigen::MatrixXd at_end;
     if (w.start_a > 0.0 || w.end_a > 0.0 || w.start_b == 0.0 || w.end_b == 0.0)
-      at_start = jacobianAt(interval.start);
+      at_start = jacobianAt(interval.start, w.start_at_contact);
     if (w.start_b > 0.0 || w.end_b > 0.0)
-      at_end = jacobianAt(interval.end);
+      at_end = jacobianAt(interval.end, w.end_at_contact);
 
     setLinkGradient(results.gradients[i],
                     blendIntervalEnds(at_start, w.start_a, at_end, w.start_b),

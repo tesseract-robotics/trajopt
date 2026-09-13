@@ -158,14 +158,27 @@ public:
         continue;
       }
       const Eigen::Vector3d signed_normal = ((i == 0) ? -1.0 : 1.0) * cr.normal;
+      const double start = static_cast<double>(*cast) / count;
+      const double end = static_cast<double>(*cast + 1) / count;
+
+      // A contact whose time names an end of its cast was found with the link at that end, so the
+      // witness it reports in world coordinates lies on the link there. Away from its own time the
+      // witness lies inside the volume the link sweeps, on neither end's surface, and the stored local
+      // point stands in for it as a fixed point of the link. The end that does not carry the contact's
+      // time carries no weight, so one point serves both.
+      Eigen::Vector3d local_point = cr.nearest_points_local[i];
+      if (const double s = tesseract::common::almostEqualRelativeAndAbs(cr.cc_time[i], start) ? start : end;
+          tesseract::common::almostEqualRelativeAndAbs(cr.cc_time[i], s))
+        local_point = manip.calcFwdKin(lerp(q0, q1, s)).at(cr.link_ids[i]).inverse() * cr.nearest_points[i];
+
       const auto [d0, d1] = intervalDerivatives(manip,
                                                 cr.link_ids[i],
-                                                cr.nearest_points_local[i],
+                                                local_point,
                                                 signed_normal,
                                                 q0,
                                                 q1,
-                                                static_cast<double>(*cast) / count,
-                                                static_cast<double>(*cast + 1) / count,
+                                                start,
+                                                end,
                                                 cr.cc_time[i]);
       expected.head(n) += d0;
       expected.tail(n) += d1;
