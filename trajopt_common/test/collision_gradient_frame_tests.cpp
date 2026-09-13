@@ -30,6 +30,7 @@ constexpr double kSubEnd = 0.6;
 constexpr double kCcTime = 0.45;
 constexpr double kMargin = 0.025;
 constexpr double kMarginBuffer = 20.0;
+const Eigen::Vector3d kWitnessLocal(0.06, -0.04, 0.03);
 
 Eigen::VectorXd segmentStart() { return (Eigen::VectorXd(7) << -1.1, 1.2, -1.5, -1.4, -1.1, -1.3, 0.2).finished(); }
 Eigen::VectorXd segmentEnd() { return (Eigen::VectorXd(7) << -0.3, 0.7, -0.9, -0.8, -0.4, -0.7, 0.9).finished(); }
@@ -114,7 +115,7 @@ public:
     ContactResult cr;
     cr.link_ids[0] = link_;
     cr.link_ids[1] = env_->getRootLinkId();
-    cr.nearest_points_local[0] = Eigen::Vector3d(0.06, -0.04, 0.03);
+    cr.nearest_points_local[0] = kWitnessLocal;
     cr.nearest_points_local[1] = Eigen::Vector3d::Zero();
     cr.transform[0] = manip_->calcFwdKin(pose_source).at(link_);
     cr.cc_transform[0] = manip_->calcFwdKin(cc_pose_source).at(link_);
@@ -124,6 +125,27 @@ public:
     cr.cc_type[1] = cc_type;
     cr.normal = Eigen::Vector3d(0.0, 0.0, 1.0);
     cr.distance = -0.01;
+    cr.nearest_points[0] = cr.transform[0] * cr.nearest_points_local[0];
+    return cr;
+  }
+
+  /**
+   * @brief A contact a check pinned to one endpoint of the segment
+   * @details Its witness lies on the link at @p witness_state, since that is where the check found
+   * it. Both backends guarantee only that transform maps the stored local point to the reported
+   * witness, and transform is the start of the cast whichever endpoint the contact is pinned to, so
+   * the stored local point is that world point taken back through transform rather than the witness's
+   * own local coordinates.
+   */
+  ContactResult makePinnedContact(const Eigen::VectorXd& pose_source,
+                                  const Eigen::VectorXd& cc_pose_source,
+                                  double cc_time,
+                                  ContinuousCollisionType cc_type,
+                                  const Eigen::VectorXd& witness_state) const
+  {
+    ContactResult cr = makeContact(pose_source, cc_pose_source, cc_time, cc_type);
+    cr.nearest_points[0] = manip_->calcFwdKin(witness_state).at(link_) * kWitnessLocal;
+    cr.nearest_points_local[0] = cr.transform[0].inverse() * cr.nearest_points[0];
     return cr;
   }
 
@@ -131,9 +153,17 @@ public:
    * numerical derivative of the witness point's world position there, contracted with the normal. */
   Eigen::VectorXd referenceGradient(const ContactResult& cr, const Eigen::VectorXd& q_jac, std::size_t i = 0) const
   {
+    return referenceGradientAt(cr, q_jac, cr.nearest_points_local[i], i);
+  }
+
+  /** @brief The reference gradient for a witness whose coordinates on the link are @p local_point */
+  Eigen::VectorXd referenceGradientAt(const ContactResult& cr,
+                                      const Eigen::VectorXd& q_jac,
+                                      const Eigen::Vector3d& local_point,
+                                      std::size_t i = 0) const
+  {
     Eigen::MatrixXd num_jac(6, manip_->numJoints());
-    numericalJacobian(
-        num_jac, Eigen::Isometry3d::Identity(), *manip_, q_jac, cr.link_ids[i], cr.nearest_points_local[i]);
+    numericalJacobian(num_jac, Eigen::Isometry3d::Identity(), *manip_, q_jac, cr.link_ids[i], local_point);
     return ((i == 0) ? -1.0 : 1.0) * cr.normal.transpose() * num_jac.topRows(3);
   }
 
@@ -264,8 +294,8 @@ TEST_F(CollisionGradientFrameTest, UntimedContactLinearisesAtSegmentStart)  // N
 // the far endpoint - and all the weight falls on that endpoint's timestep
 TEST_F(CollisionGradientFrameTest, EndpointContactGradientsUseTheEndpointState)  // NOLINT
 {
-  const ContactResult at_t0 = makeContact(q0_, q1_, 0.0, ContinuousCollisionType::CCType_Time0);
-  const ContactResult at_t1 = makeContact(q0_, q1_, 1.0, ContinuousCollisionType::CCType_Time1);
+  const ContactResult at_t0 = makePinnedContact(q0_, q1_, 0.0, ContinuousCollisionType::CCType_Time0, q0_);
+  const ContactResult at_t1 = makePinnedContact(q0_, q1_, 1.0, ContinuousCollisionType::CCType_Time1, q1_);
 
   trajopt_common::GradientResults t0;
   trajopt_common::GradientResults t1;
@@ -274,10 +304,10 @@ TEST_F(CollisionGradientFrameTest, EndpointContactGradientsUseTheEndpointState) 
 
   ASSERT_TRUE(t0.gradients[0].has_gradient);
   ASSERT_TRUE(t1.gradients[0].has_gradient);
-  expectMatchesReference(t0.gradients[0].gradient, at_t0, q0_);
-  expectMatchesReference(t0.cc_gradients[0].gradient, at_t0, q0_);
-  expectMatchesReference(t1.gradients[0].gradient, at_t1, q1_);
-  expectMatchesReference(t1.cc_gradients[0].gradient, at_t1, q1_);
+  expectMatches(t0.gradients[0].gradient, referenceGradientAt(at_t0, q0_, kWitnessLocal));
+  expectMatches(t0.cc_gradients[0].gradient, referenceGradientAt(at_t0, q0_, kWitnessLocal));
+  expectMatches(t1.gradients[0].gradient, referenceGradientAt(at_t1, q1_, kWitnessLocal));
+  expectMatches(t1.cc_gradients[0].gradient, referenceGradientAt(at_t1, q1_, kWitnessLocal));
   EXPECT_NEAR(t0.gradients[0].scale, 1.0, 1e-12);
   EXPECT_NEAR(t0.cc_gradients[0].scale, 0.0, 1e-12);
   EXPECT_NEAR(t1.gradients[0].scale, 0.0, 1e-12);
@@ -294,6 +324,7 @@ TEST_F(CollisionGradientFrameTest, ContactBetweenTwoActiveLinksBlendsBothOverThe
   cr.nearest_points_local[1] = Eigen::Vector3d(-0.02, 0.05, 0.01);
   cr.transform[1] = manip_->calcFwdKin(lerp(q0_, q1_, kSubStart)).at(second_link_);
   cr.cc_transform[1] = manip_->calcFwdKin(lerp(q0_, q1_, kSubEnd)).at(second_link_);
+  cr.nearest_points[1] = cr.transform[1] * cr.nearest_points_local[1];
 
   trajopt_common::GradientResults results;
   trajopt_common::getGradient(results, q0_, q1_, cr, kMargin, kMarginBuffer, *manip_, kCastCount);
@@ -321,6 +352,7 @@ TEST_F(CollisionGradientFrameTest, ContactBetweenTwoActiveLinksWithDistinctTimes
   cr.nearest_points_local[1] = Eigen::Vector3d(-0.02, 0.05, 0.01);
   cr.transform[1] = manip_->calcFwdKin(lerp(q0_, q1_, kOtherSubStart)).at(second_link_);
   cr.cc_transform[1] = manip_->calcFwdKin(lerp(q0_, q1_, kOtherSubEnd)).at(second_link_);
+  cr.nearest_points[1] = cr.transform[1] * cr.nearest_points_local[1];
   cr.cc_time[1] = kOtherCcTime;
 
   trajopt_common::GradientResults results;
