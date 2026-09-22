@@ -62,6 +62,19 @@
 
 namespace trajopt_sqp
 {
+namespace
+{
+/**
+ * @brief Sum @p values times their row weights @p w, leaving out rows of weight exactly 0.
+ * @details A row of weight 0 is disabled, so it adds nothing even when its value is infinite.
+ */
+template <typename Values>
+double weightedSum(const Eigen::ArrayBase<Values>& values, const Eigen::Ref<const Eigen::VectorXd>& w)
+{
+  return (w.array() != 0.0).select(values * w.array(), 0.0).sum();
+}
+}  // namespace
+
 enum class ComponentInfoType : std::uint8_t
 {
   kObjectiveSquared = 0,
@@ -131,7 +144,9 @@ struct ConvexProblem
 
 Eigen::VectorXd ConvexProblem::evaluateConvexCosts(const Eigen::Ref<const Eigen::VectorXd>& var_vals) const
 {
-  /** @note The legacy trajop appears to use all variables include slack for convex cost evaluation */
+  /** @note Penalty rows are evaluated on the slack-free linear model: at a QP solution each row's slack
+   *  absorbs its violation, so including the slack columns would report zero. The result depends only on
+   *  the NLP-variable block of var_vals. */
   const auto total_cost = static_cast<Eigen::Index>(objective_term_infos.size() + penalty_constraint_infos.size());
 
   if (total_cost == 0)
@@ -173,7 +188,8 @@ Eigen::VectorXd ConvexProblem::evaluateConvexCosts(const Eigen::Ref<const Eigen:
       continue;
     }
 
-    auto jac = constraint_matrix.middleRows(row_offset, c_info.rows);
+    // NOLINTNEXTLINE
+    auto jac = constraint_matrix.middleRows(row_offset, c_info.rows).leftCols(n_nlp_vars);
     auto constant = constraint_constant.segment(row_offset, c_info.rows);
 
     // Ensure scratch buffers big enough (no allocation after first growth)
@@ -186,14 +202,14 @@ Eigen::VectorXd ConvexProblem::evaluateConvexCosts(const Eigen::Ref<const Eigen:
     auto err = scratch_err.head(c_info.rows);
 
     // scratch_val = constant + jac * var_vals
-    val = constant;                   // copy into scratch (but no alloc)
-    val.noalias() += jac * var_vals;  // mat-vec into existing memory
+    val = constant;                    // copy into scratch (but no alloc)
+    val.noalias() += jac * var_block;  // mat-vec into existing memory
 
     // compute violations in-place
     trajopt_ifopt::calcBoundsViolations(err, val, c_info.bounds);
 
-    costs(cost_idx++) = err.sum();
     assert(!(err.array() < -1e-8).any());
+    costs(cost_idx++) = weightedSum(err.array(), c_info.coeffs);
     row_offset += c_info.rows;
   }
 
@@ -1000,7 +1016,7 @@ Eigen::VectorXd TrajOptQPProblem::Implementation::getExactCosts() const
     auto err = scratch_err.head(c->getRows());
 
     trajopt_ifopt::calcBoundsViolations(err, c->getValues(), c->getBounds());
-    g(cost_idx++) = (err.array().square() * c->getCoefficients().array()).sum();
+    g(cost_idx++) = weightedSum(err.array().square(), c->getCoefficients());
   }
 
   for (const auto& c : penalty_constraints)
@@ -1016,7 +1032,7 @@ Eigen::VectorXd TrajOptQPProblem::Implementation::getExactCosts() const
     auto err = scratch_err.head(c->getRows());
 
     trajopt_ifopt::calcBoundsViolations(err, c->getValues(), c->getBounds());
-    g(cost_idx++) = err.sum();
+    g(cost_idx++) = weightedSum(err.array(), c->getCoefficients());
   }
 
   return g;

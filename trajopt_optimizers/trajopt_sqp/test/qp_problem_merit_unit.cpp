@@ -17,6 +17,8 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt_sqp/trajopt_qp_problem.h>
+#include <trajopt_sqp/osqp_eigen_solver.h>
+#include <trajopt_sqp/trust_region_sqp_solver.h>
 #include <trajopt_sqp/types.h>
 #include <trajopt_ifopt/core/bounds.h>
 #include <trajopt_ifopt/core/constraint_set.h>
@@ -208,4 +210,110 @@ TEST(QPProblemMerit, ConvexifyRefreshesFixedSizeSetWeights)  // NOLINT
   qp->convexify();
   // Weights at x_new: hinge (1.5, 1.2), constraint (2.0, 1.4).
   expectVectorNear(qp->getGradient().tail(6), toVectorXd({ 1.5, 1.2, 20.0, 20.0, 14.0, 14.0 }));
+}
+
+// Hinge rows are violated above 0; each row's violation is scaled by its weight.
+TEST(QPProblemMerit, ExactHingeCostIsWeighted)  // NOLINT
+{
+  const TestVariables t = makeVariables({ toVectorXd({ 0.5, -0.3, 0.8 }) });
+  auto qp = std::make_shared<trajopt_sqp::TrajOptQPProblem>(t.variables);
+  qp->addCostSet(
+      std::make_shared<LinearTestSet>(
+          t.vars[0], "hinge", trajopt_ifopt::BoundSmallerZero, constantWeights(toVectorXd({ 2.0, 3.0, 4.0 }))),
+      trajopt_sqp::CostPenaltyType::kHinge);
+  qp->setup();
+  const Eigen::VectorXd costs = qp->getExactCosts();
+  ASSERT_EQ(costs.size(), 1);
+  EXPECT_NEAR(costs(0), 4.2, 1e-12);  // 2 * 0.5 + 3 * 0 + 4 * 0.8
+}
+
+// A cost row of weight 0 is disabled, so an infinite violation on it adds nothing instead of NaN.
+TEST(QPProblemMerit, ZeroWeightCostRowWithInfiniteViolationAddsNothing)  // NOLINT
+{
+  const TestVariables t = makeVariables({ toVectorXd({ std::numeric_limits<double>::infinity(), -0.3, 0.8 }) });
+  auto qp = std::make_shared<trajopt_sqp::TrajOptQPProblem>(t.variables);
+  qp->addCostSet(
+      std::make_shared<LinearTestSet>(
+          t.vars[0], "hinge", trajopt_ifopt::BoundSmallerZero, constantWeights(toVectorXd({ 0.0, 3.0, 4.0 }))),
+      trajopt_sqp::CostPenaltyType::kHinge);
+  qp->addCostSet(
+      std::make_shared<LinearTestSet>(
+          t.vars[0], "squared", trajopt_ifopt::Bounds(0.0, 0.0), constantWeights(toVectorXd({ 0.0, 3.0, 4.0 }))),
+      trajopt_sqp::CostPenaltyType::kSquared);
+  qp->setup();
+  const Eigen::VectorXd costs = qp->getExactCosts();
+  ASSERT_EQ(costs.size(), 2);
+  EXPECT_NEAR(costs(0), 2.83, 1e-12);  // 3 * 0.09 + 4 * 0.64
+  EXPECT_NEAR(costs(1), 3.2, 1e-12);   // 4 * 0.8
+}
+
+// The convex hinge cost is the weighted violation of the linearized rows, whatever the slack values.
+TEST(QPProblemMerit, ConvexHingeCostIgnoresSlackValues)  // NOLINT
+{
+  const TestVariables t = makeVariables({ toVectorXd({ 0.5, -0.3, 0.8 }) });
+  auto qp = std::make_shared<trajopt_sqp::TrajOptQPProblem>(t.variables);
+  qp->addCostSet(
+      std::make_shared<LinearTestSet>(
+          t.vars[0], "hinge", trajopt_ifopt::BoundSmallerZero, constantWeights(toVectorXd({ 2.0, 3.0, 4.0 }))),
+      trajopt_sqp::CostPenaltyType::kHinge);
+  qp->setup();
+  qp->convexify();
+  ASSERT_EQ(qp->getNumQPVars(), 6);  // three NLP variables, one slack per hinge row
+
+  Eigen::VectorXd qp_vals = Eigen::VectorXd::Zero(6);
+  qp_vals.head(3) = toVectorXd({ 0.5, -0.3, 0.8 });
+  EXPECT_NEAR(qp->evaluateConvexCosts(qp_vals)(0), 4.2, 1e-12);
+
+  // Slacks at the values a QP solution gives them, absorbing every violation.
+  qp_vals.tail(3) = toVectorXd({ 0.5, 0.0, 0.8 });
+  EXPECT_NEAR(qp->evaluateConvexCosts(qp_vals)(0), 4.2, 1e-12);
+
+  // Away from the linearization point.
+  qp_vals.head(3) = toVectorXd({ 0.2, 0.1, 1.0 });
+  EXPECT_NEAR(qp->evaluateConvexCosts(qp_vals)(0), 4.7, 1e-12);  // 2 * 0.2 + 3 * 0.1 + 4 * 1.0
+}
+
+// Absolute-cost rows are penalized in both directions, weighted, and slack-free in the model.
+TEST(QPProblemMerit, AbsoluteCostIsWeightedAndIgnoresSlackValues)  // NOLINT
+{
+  const TestVariables t = makeVariables({ toVectorXd({ 0.5, -0.3 }) });
+  auto qp = std::make_shared<trajopt_sqp::TrajOptQPProblem>(t.variables);
+  qp->addCostSet(std::make_shared<LinearTestSet>(
+                     t.vars[0], "absolute", trajopt_ifopt::Bounds(0.0, 0.0), constantWeights(toVectorXd({ 2.0, 3.0 }))),
+                 trajopt_sqp::CostPenaltyType::kAbsolute);
+  qp->setup();
+  qp->convexify();
+  EXPECT_NEAR(qp->getExactCosts()(0), 1.9, 1e-12);  // 2 * 0.5 + 3 * 0.3
+
+  ASSERT_EQ(qp->getNumQPVars(), 6);  // two NLP variables, a (+, -) slack pair per row
+  Eigen::VectorXd qp_vals = Eigen::VectorXd::Zero(6);
+  qp_vals.head(2) = toVectorXd({ 0.5, -0.3 });
+  qp_vals.tail(4) = toVectorXd({ 0.0, 0.5, 0.3, 0.0 });  // the slacks that zero each row at a QP solution
+  EXPECT_NEAR(qp->evaluateConvexCosts(qp_vals)(0), 1.9, 1e-12);
+}
+
+// Every residual here is linear in x, so the convex model equals the exact merit everywhere and the
+// trust-region ratio of any step is 1.
+TEST(QPProblemMerit, LinearProblemStepHasUnitImproveRatio)  // NOLINT
+{
+  const TestVariables t =
+      makeVariables({ toVectorXd({ 0.5, 0.8 }), toVectorXd({ 0.4, -0.6 }), toVectorXd({ 0.3, -0.1 }) });
+  auto qp = std::make_shared<trajopt_sqp::TrajOptQPProblem>(t.variables);
+  qp->addCostSet(std::make_shared<LinearTestSet>(
+                     t.vars[0], "hinge", trajopt_ifopt::BoundSmallerZero, constantWeights(toVectorXd({ 2.0, 3.0 }))),
+                 trajopt_sqp::CostPenaltyType::kHinge);
+  qp->addConstraintSet(std::make_shared<LinearTestSet>(
+      t.vars[1], "equality", trajopt_ifopt::Bounds(0.0, 0.0), constantWeights(toVectorXd({ 4.0, 5.0 }))));
+  qp->addCostSet(std::make_shared<LinearTestSet>(
+                     t.vars[2], "squared", trajopt_ifopt::Bounds(0.0, 0.0), constantWeights(toVectorXd({ 1.0, 1.0 }))),
+                 trajopt_sqp::CostPenaltyType::kSquared);
+  qp->setup();
+
+  trajopt_sqp::TrustRegionSQPSolver solver(std::make_shared<trajopt_sqp::OSQPEigenSolver>());
+  solver.init(qp);
+  solver.stepSQPSolver();
+
+  const trajopt_sqp::SQPResults& results = solver.getResults();
+  EXPECT_GT(results.approx_merit_improve, 0.0);
+  EXPECT_NEAR(results.merit_improve_ratio, 1.0, 1e-9);
 }
