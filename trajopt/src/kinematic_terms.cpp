@@ -594,9 +594,8 @@ VectorXd AvoidSingularityErrCalculator::operator()(const VectorXd& var_vals) con
 {
   // Calculate the SVD of the jacobian at this joint state
   const MatrixXd jacobian = fwd_kin_->calcJacobian(var_vals, link_id_);
-  const Eigen::JacobiSVD<MatrixXd> svd(jacobian, Eigen::ComputeThinU | Eigen::ComputeThinV);
+  const Eigen::JacobiSVD<MatrixXd> svd(jacobian);
 
-  // Get the U and V vectors for the smallest singular value
   const double smallest_sv = svd.singularValues().tail(1)(0);
   const double cost = 1.0 / (smallest_sv + lambda_);
 
