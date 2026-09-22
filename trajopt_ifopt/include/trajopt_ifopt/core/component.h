@@ -260,15 +260,19 @@ public:
 
   /**
    * @brief Return the coefficient vector for this component.
-   *    * These coefficients scale this component’s contribution to the optimization
+   *
+   * These coefficients scale this component’s contribution to the optimization
    * problem.
-   *    * - For *soft/hinge-style* components (e.g., TrajOpt-style penalties), the
+   *
+   * - For *soft/hinge-style* components (e.g., TrajOpt-style penalties), the
    *   coefficient(s) should be interpreted as weights applied to the *objective*
    *   term(s) (e.g., the cost on the hinge/slack variables), not as a scaling of
    *   the underlying constraint Jacobian/residual.
-   * - The returned vector length and ordering are component-defined (e.g., one
-   *   weight per term/row/time-step/etc.).
-   *    * @return Coefficient vector (component-defined length/order).
+   * - The returned vector holds exactly one weight per row, in row order, so a
+   *   component with no rows returns an empty vector. Every weight is finite and
+   *   non-negative.
+   *
+   * @return Coefficient vector, one finite, non-negative entry per row.
    */
   virtual Eigen::VectorXd getCoefficients() const = 0;
 

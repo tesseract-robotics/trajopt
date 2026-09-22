@@ -49,10 +49,11 @@ public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
   SimpleTestConstraint(std::shared_ptr<const trajopt_ifopt::Var> position_var,
-                       std::string name = "SimpleTestConstraint")
+                       std::string name = "SimpleTestConstraint",
+                       double coeff = 1)
     : ConstraintSet(std::move(name), 1), position_var_(std::move(position_var))
   {
-    coeffs_ = Eigen::VectorXd::Constant(1, 1);
+    coeffs_ = Eigen::VectorXd::Constant(1, coeff);
     bounds_ = std::vector<trajopt_ifopt::Bounds>(1, trajopt_ifopt::BoundZero);
   }
 
@@ -256,6 +257,26 @@ TEST(CostWrapperUnit, WeightedAbsoluteCost)  // NOLINT
       (weights(0) * (std::pow(x, 2) + (4 * x) + 3) / std::abs(std::pow(x, 2) + (4 * x) + 3)) * ((2 * x) + 4);
   EXPECT_NEAR(exact_jac(0, 0), jac, 1e-6);
   EXPECT_NEAR(numerical_jac(0, 0), jac, 1e-6);
+}
+
+// A cost wrapper is one row, so it reports one unit weight whatever its wrapped constraint's coefficients are;
+// the weights given to its constructor are already in getCost().
+TEST(CostWrapperUnit, WrapperCoefficientsAreOnePerRow)  // NOLINT
+{
+  std::vector<std::unique_ptr<trajopt_ifopt::Node>> nodes;
+  auto node = std::make_unique<trajopt_ifopt::Node>("Node");
+  std::shared_ptr<const trajopt_ifopt::Var> var =
+      node->addVar("position", { "x" }, Eigen::VectorXd::Constant(1, -4), { trajopt_ifopt::NoBound });
+  nodes.push_back(std::move(node));
+  auto variables = std::make_shared<trajopt_ifopt::NodesVariables>("joint-trajectory", std::move(nodes));
+
+  auto cnt = std::make_shared<SimpleTestConstraint>(var, "SimpleTestConstraint", 3.0);
+  cnt->linkWithVariables(variables);
+  const trajopt_ifopt::SquaredCost squared(cnt, Eigen::VectorXd::Constant(1, 2.0));
+  const trajopt_ifopt::AbsoluteCost absolute(cnt, Eigen::VectorXd::Constant(1, 2.0));
+
+  EXPECT_TRUE(squared.getCoefficients().isApprox(Eigen::VectorXd::Ones(1)));
+  EXPECT_TRUE(absolute.getCoefficients().isApprox(Eigen::VectorXd::Ones(1)));
 }
 
 int main(int argc, char** argv)
