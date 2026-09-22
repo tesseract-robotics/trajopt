@@ -745,6 +745,10 @@ void TrajOptQPProblem::Implementation::convexify()
   {
     const auto& info = cvp.constraint_term_infos[i].get();
     const auto& cnt = constraint_terms[i];
+
+    // Every merit set owns one merit-coefficient slot, including a set that currently has no rows.
+    const double merit_coeff =
+        (info.type == ComponentInfoType::kMeritConstraint) ? constraint_merit_coeff(merit_constraint_index++) : 1;
     if (info.rows == 0)
       continue;
 
@@ -768,8 +772,6 @@ void TrajOptQPProblem::Implementation::convexify()
     cc = cnt->getValues();
     cc.noalias() -= jac * x_initial;
 
-    const double merit_coeff =
-        (info.type == ComponentInfoType::kMeritConstraint) ? constraint_merit_coeff(merit_constraint_index++) : 1;
     for (Eigen::Index k = 0; k < jac.outerSize(); ++k)
     {
       for (trajopt_ifopt::Jacobian::InnerIterator it(jac, k); it; ++it)
