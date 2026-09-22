@@ -54,8 +54,6 @@ LVSContinuousCollisionEvaluator::LVSContinuousCollisionEvaluator(
     throw std::runtime_error("LVSContinuousCollisionEvaluator, should be configured with CONTINUOUS or LVS_CONTINUOUS");
   }
 
-  single_timestep_ = (collision_check_config_.type == tesseract::collision::CollisionEvaluatorType::CONTINUOUS);
-
   for (const auto& id : manip_->getActiveLinkIds())
     manip_active_link_ids_.insert(id);
 
@@ -103,7 +101,8 @@ void LVSContinuousCollisionEvaluator::calcCollisionData(trajopt_common::Collisio
 {
   collision_data.contact_results_map.clear();
   collision_data.gradient_results_sets.clear();
-  calcCollisionsHelper(collision_data.contact_results_map, dof_vals0, dof_vals1, vars0_fixed, vars1_fixed);
+  const long cast_count = getCastCount(dof_vals0, dof_vals1);
+  calcCollisionsHelper(collision_data.contact_results_map, dof_vals0, dof_vals1, vars0_fixed, vars1_fixed, cast_count);
 
   // If max allowed is not set gradient data is computed
   if (max_allowed <= 0)
@@ -139,7 +138,7 @@ void LVSContinuousCollisionEvaluator::calcCollisionData(trajopt_common::Collisio
       }
 
       trajopt_common::GradientResults grad;
-      trajopt_common::getGradient(grad, dof_vals0, dof_vals1, dist_result, margin, margin_buffer_, *manip_);
+      trajopt_common::getGradient(grad, dof_vals0, dof_vals1, dist_result, margin, margin_buffer_, *manip_, cast_count);
       grs.add(std::move(grad));
     }
 
@@ -167,12 +166,9 @@ void LVSContinuousCollisionEvaluator::calcCollisionsHelper(tesseract::collision:
                                                            const Eigen::Ref<const Eigen::VectorXd>& dof_vals0,
                                                            const Eigen::Ref<const Eigen::VectorXd>& dof_vals1,
                                                            bool vars0_fixed,
-                                                           bool vars1_fixed)
+                                                           bool vars1_fixed,
+                                                           long cast_count)
 {
-  // Under LVS_CONTINUOUS a segment longer than the longest valid segment length is split into casts of at most that
-  // length. CONTINUOUS casts the segment once.
-  const double dist = (dof_vals1 - dof_vals0).norm();
-
   transforms_cache0.clear();
   transforms_cache1.clear();
 
@@ -199,10 +195,12 @@ void LVSContinuousCollisionEvaluator::calcCollisionsHelper(tesseract::collision:
     trajopt_common::removeInvalidContactResults(pair.second, margin, margin_buffer_, vars0_fixed, vars1_fixed);
   };
 
-  if (!single_timestep_ && dist > collision_check_config_.longest_valid_segment_length)
+  // Under LVS_CONTINUOUS a segment longer than the longest valid segment length is split into casts of at most that
+  // length; CONTINUOUS casts the segment once. The count comes from getCastCount, which the gradients also use.
+  if (cast_count > 1)
   {
-    // Calculate the number state to interpolate
-    const long cnt = static_cast<long>(std::ceil(dist / collision_check_config_.longest_valid_segment_length)) + 1;
+    // n casts need n + 1 states
+    const long cnt = cast_count + 1;
 
     // Create interpolated trajectory between two states that satisfies the longest valid segment length.
     tesseract::common::TrajArray subtraj(cnt, dof_vals0.size());
@@ -212,11 +210,9 @@ void LVSContinuousCollisionEvaluator::calcCollisionsHelper(tesseract::collision:
     /** @note thread_local did not make a difference here */
     tesseract::collision::ContactResultMap contacts;
 
-    // Perform collision checking for sub trajectory and store results in contacts_vector
-    // n sub-states give n - 1 casts, so the cast marking the segment end is one below the count.
-    // The count keeps the time normalisation: cast i spans [i * dt, (i + 1) * dt].
-    const int cast_count{ static_cast<int>(subtraj.rows()) - 1 };
-    const int last_cast_idx{ cast_count - 1 };
+    // Perform collision checking for sub trajectory and store results in contacts_vector.
+    // The cast marking the segment end is one below the count; cast i spans [i * dt, (i + 1) * dt].
+    const long last_cast_idx{ cast_count - 1 };
     const double dt = 1.0 / double(cast_count);
     for (int i = 0; i < subtraj.rows() - 1; ++i)
     {
@@ -244,6 +240,12 @@ void LVSContinuousCollisionEvaluator::calcCollisionsHelper(tesseract::collision:
 
     dist_results.filter(filter);
   }
+}
+
+long LVSContinuousCollisionEvaluator::getCastCount(const Eigen::Ref<const Eigen::VectorXd>& dof_vals0,
+                                                   const Eigen::Ref<const Eigen::VectorXd>& dof_vals1) const
+{
+  return trajopt_common::castCount(collision_check_config_, (dof_vals1 - dof_vals0).norm());
 }
 
 double LVSContinuousCollisionEvaluator::getCollisionMarginBuffer() const { return margin_buffer_; }
@@ -322,6 +324,7 @@ void LVSDiscreteCollisionEvaluator::calcCollisionData(trajopt_common::CollisionC
 {
   collision_data.contact_results_map.clear();
   collision_data.gradient_results_sets.clear();
+  const long cast_count = getCastCount(dof_vals0, dof_vals1);
   calcCollisionsHelper(collision_data.contact_results_map, dof_vals0, dof_vals1, vars0_fixed, vars1_fixed);
 
   // If max allowed is not set gradient data is computed
@@ -358,7 +361,7 @@ void LVSDiscreteCollisionEvaluator::calcCollisionData(trajopt_common::CollisionC
       }
 
       trajopt_common::GradientResults grad;
-      trajopt_common::getGradient(grad, dof_vals0, dof_vals1, dist_result, margin, margin_buffer_, *manip_);
+      trajopt_common::getGradient(grad, dof_vals0, dof_vals1, dist_result, margin, margin_buffer_, *manip_, cast_count);
       grs.add(std::move(grad));
     }
 
@@ -452,6 +455,12 @@ void LVSDiscreteCollisionEvaluator::calcCollisionsHelper(tesseract::collision::C
     }
     contacts.clear();
   }
+}
+
+long LVSDiscreteCollisionEvaluator::getCastCount(const Eigen::Ref<const Eigen::VectorXd>& /*dof_vals0*/,
+                                                 const Eigen::Ref<const Eigen::VectorXd>& /*dof_vals1*/) const
+{
+  return 0;
 }
 
 double LVSDiscreteCollisionEvaluator::getCollisionMarginBuffer() const { return margin_buffer_; }
