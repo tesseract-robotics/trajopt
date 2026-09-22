@@ -64,7 +64,8 @@ public:
    * @brief Evaluated the cost of the convexified function (ie using the stored gradient and hessian) at var_vals
    * @note This will be relatively computationally expensive, as we will have to loop through all the cost components in
    * the problem and calculate their values manually.
-   * @param var_vals Point at which the convex cost is calculated. Should be size num_qp_vars
+   * @param var_vals Point at which the convex cost is calculated, size num_qp_vars. Only its NLP-variable block
+   * is read: a hinge or absolute cost reports its weighted violation on the linearized rows, whatever the slacks.
    * @return Cost associated with each cost term in the problem (for debugging)
    */
   virtual Eigen::VectorXd evaluateConvexCosts(const Eigen::Ref<const Eigen::VectorXd>& var_vals) const = 0;
