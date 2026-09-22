@@ -76,6 +76,7 @@ struct ComponentInfo
   ComponentInfoType type{ ComponentInfoType::kUnknown };
   Eigen::Index rows{ 0 };
   Eigen::Index non_zeros{ 0 };
+  /** @brief Per-row weights read at the most recent convexify(); filled for penalty and merit rows only */
   Eigen::VectorXd coeffs;
   std::vector<trajopt_ifopt::Bounds> bounds;
 };
@@ -505,7 +506,6 @@ void TrajOptQPProblem::Implementation::update()
     auto& info = cvp.objective_term_infos[i];
     info.rows = cost->getRows();
     info.non_zeros = cost->getNonZeros();
-    info.coeffs = cost->getCoefficients();
     info.bounds = cost->getBounds();
 
     cvp.n_objective_terms += info.rows;
@@ -528,7 +528,6 @@ void TrajOptQPProblem::Implementation::update()
 
     info.rows = cost->getRows();
     info.non_zeros = cost->getNonZeros();
-    info.coeffs = cost->getCoefficients();
     info.bounds = cost->getBounds();
 
     cvp.n_penalty_constraints += info.rows;
@@ -548,7 +547,6 @@ void TrajOptQPProblem::Implementation::update()
 
     info.rows = cnt->getRows();
     info.non_zeros = cnt->getNonZeros();
-    info.coeffs = cnt->getCoefficients();
     info.bounds = cnt->getBounds();
 
     cvp.n_merit_constraints += info.rows;
@@ -743,7 +741,7 @@ void TrajOptQPProblem::Implementation::convexify()
   Eigen::Index merit_constraint_index{ 0 };
   for (std::size_t i = 0; i < constraint_terms.size(); ++i)
   {
-    const auto& info = cvp.constraint_term_infos[i].get();
+    auto& info = cvp.constraint_term_infos[i].get();
     const auto& cnt = constraint_terms[i];
 
     // Every merit set owns one merit-coefficient slot, including a set that currently has no rows.
@@ -751,6 +749,9 @@ void TrajOptQPProblem::Implementation::convexify()
         (info.type == ComponentInfoType::kMeritConstraint) ? constraint_merit_coeff(merit_constraint_index++) : 1;
     if (info.rows == 0)
       continue;
+
+    // Weights are read at the linearization point, so the model agrees with the exact merit there.
+    info.coeffs = cnt->getCoefficients();
 
     // Linearize Constraints
     const trajopt_ifopt::Jacobian jac = cnt->getJacobian();
