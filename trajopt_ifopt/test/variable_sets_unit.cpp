@@ -25,11 +25,49 @@
 #include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <ctime>
+#include <limits>
 #include <gtest/gtest.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 #include <trajopt_ifopt/variable_sets/nodes_variables.h>
 #include <trajopt_ifopt/variable_sets/node.h>
 #include <trajopt_ifopt/variable_sets/var.h>
+#include <tesseract/common/logging.h>
+
+namespace
+{
+// Count tesseract warnings logged for its lifetime and restore the prior log level and remove its
+// handler on destruction (including on an exception), so a failure never leaks logger state into the
+// next test. Non-copyable/movable: its registered handler captures its own address.
+class WarningCaptureGuard
+{
+public:
+  WarningCaptureGuard()
+    : previous_level_(tesseract::common::getLogger()->level())
+    , handler_id_(tesseract::common::addLogRecordHandler([this](const tesseract::common::LogRecord& record) {
+      if (record.level == spdlog::level::warn)
+        ++warning_count_;
+    }))
+  {
+    tesseract::common::getLogger()->set_level(spdlog::level::warn);
+  }
+  WarningCaptureGuard(const WarningCaptureGuard&) = delete;
+  WarningCaptureGuard& operator=(const WarningCaptureGuard&) = delete;
+  WarningCaptureGuard(WarningCaptureGuard&&) = delete;
+  WarningCaptureGuard& operator=(WarningCaptureGuard&&) = delete;
+  ~WarningCaptureGuard()
+  {
+    tesseract::common::removeLogRecordHandler(handler_id_);
+    tesseract::common::getLogger()->set_level(previous_level_);
+  }
+
+  int warningCount() const { return warning_count_; }
+
+private:
+  spdlog::level::level_enum previous_level_;
+  int warning_count_{ 0 };
+  tesseract::common::LogRecordHandlerId handler_id_;
+};
+}  // namespace
 
 // -----------------------
 // Var tests
@@ -71,6 +109,56 @@ TEST(VarUnit, VectorVarConstructionAndAccess)
 
   EXPECT_EQ(v.getIdentifier(), "position");
   EXPECT_EQ(v.name(), names);
+}
+
+TEST(VarUnit, ScalarInfiniteValueUnderNoBoundLogsNoWarning)
+{
+  WarningCaptureGuard warnings;
+
+  trajopt_ifopt::Var v(0, "scalar", std::numeric_limits<double>::infinity(), trajopt_ifopt::NoBound);
+
+  EXPECT_DOUBLE_EQ(v.value()(0), std::numeric_limits<double>::infinity());
+  EXPECT_EQ(warnings.warningCount(), 0);
+}
+
+TEST(VarUnit, ScalarOutOfBoundsValueIsClampedAndLogsWarning)
+{
+  WarningCaptureGuard warnings;
+
+  trajopt_ifopt::Var v(0, "scalar", 2.0, trajopt_ifopt::Bounds(-1, 1));
+
+  EXPECT_DOUBLE_EQ(v.value()(0), 1.0);
+  EXPECT_EQ(warnings.warningCount(), 1);
+}
+
+TEST(VarUnit, VectorInfiniteValueUnderNoBoundLogsNoWarning)
+{
+  Eigen::VectorXd x(1);
+  x << std::numeric_limits<double>::infinity();
+  const std::vector<std::string> names{ "a" };
+  const std::vector<trajopt_ifopt::Bounds> bounds(1, trajopt_ifopt::NoBound);
+
+  WarningCaptureGuard warnings;
+
+  trajopt_ifopt::Var v(0, "vector", names, x, bounds);
+
+  EXPECT_DOUBLE_EQ(v.value()(0), std::numeric_limits<double>::infinity());
+  EXPECT_EQ(warnings.warningCount(), 0);
+}
+
+TEST(VarUnit, VectorOutOfBoundsValueIsClampedAndLogsWarning)
+{
+  Eigen::VectorXd x(1);
+  x << 2.0;
+  const std::vector<std::string> names{ "a" };
+  const std::vector<trajopt_ifopt::Bounds> bounds(1, trajopt_ifopt::Bounds(-1, 1));
+
+  WarningCaptureGuard warnings;
+
+  trajopt_ifopt::Var v(0, "vector", names, x, bounds);
+
+  EXPECT_DOUBLE_EQ(v.value()(0), 1.0);
+  EXPECT_EQ(warnings.warningCount(), 1);
 }
 
 // -----------------------
