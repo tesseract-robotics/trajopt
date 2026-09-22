@@ -58,7 +58,7 @@ double SquaredCost::getCost() const
   return (weights_.array() * scratch_error_.array().square()).sum();
 }
 
-Eigen::VectorXd SquaredCost::getCoefficients() const { return constraint_->getCoefficients(); }
+Eigen::VectorXd SquaredCost::getCoefficients() const { return Eigen::VectorXd::Ones(rows_); }
 
 Jacobian SquaredCost::getJacobian() const
 {

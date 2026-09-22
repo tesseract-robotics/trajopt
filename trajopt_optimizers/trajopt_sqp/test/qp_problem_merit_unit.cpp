@@ -157,7 +157,7 @@ CoeffFn constantWeights(Eigen::VectorXd weights)
 }
 
 /** @brief Weights 1 + |x_i|, so they change whenever the iterate moves. */
-[[maybe_unused]] Eigen::VectorXd growingWeights(const Eigen::VectorXd& x) { return (1.0 + x.array().abs()).matrix(); }
+Eigen::VectorXd growingWeights(const Eigen::VectorXd& x) { return (1.0 + x.array().abs()).matrix(); }
 
 void expectVectorNear(const Eigen::Ref<const Eigen::VectorXd>& actual,
                       const Eigen::VectorXd& expected,
@@ -185,4 +185,27 @@ TEST(QPProblemMerit, EmptySetKeepsItsMeritCoefficientSlot)  // NOLINT
   const Eigen::VectorXd& gradient = qp->getGradient();
   ASSERT_EQ(gradient.size(), 6);
   expectVectorNear(gradient.tail(4), toVectorXd({ 200.0, 200.0, 300.0, 300.0 }));
+}
+
+// Weights that a fixed-size set rewrites in update() reach the QP at the next convexify(), for merit
+// constraints and for penalty costs alike.
+TEST(QPProblemMerit, ConvexifyRefreshesFixedSizeSetWeights)  // NOLINT
+{
+  const TestVariables t = makeVariables({ toVectorXd({ 0.5, -0.2 }), toVectorXd({ 0.3, 0.6 }) });
+  auto qp = std::make_shared<trajopt_sqp::TrajOptQPProblem>(t.variables);
+  qp->addCostSet(std::make_shared<LinearTestSet>(t.vars[1], "hinge", trajopt_ifopt::BoundSmallerZero, growingWeights),
+                 trajopt_sqp::CostPenaltyType::kHinge);
+  qp->addConstraintSet(
+      std::make_shared<LinearTestSet>(t.vars[0], "linear", trajopt_ifopt::Bounds(0.0, 0.0), growingWeights));
+  qp->setup();
+  qp->convexify();
+  // Slacks: one per hinge row, charged its weight, then a (+, -) pair per equality row, charged the default
+  // merit coefficient 10 times its weight. Weights 1 + |x|: hinge (1.3, 1.6), constraint (1.5, 1.2).
+  expectVectorNear(qp->getGradient().tail(6), toVectorXd({ 1.3, 1.6, 15.0, 15.0, 12.0, 12.0 }));
+
+  const Eigen::VectorXd x_new = toVectorXd({ 1.0, 0.4, -0.5, 0.2 });
+  qp->setVariables(x_new.data());
+  qp->convexify();
+  // Weights at x_new: hinge (1.5, 1.2), constraint (2.0, 1.4).
+  expectVectorNear(qp->getGradient().tail(6), toVectorXd({ 1.5, 1.2, 20.0, 20.0, 14.0, 14.0 }));
 }
