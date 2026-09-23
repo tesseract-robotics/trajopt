@@ -77,6 +77,9 @@ CartPosConstraint::CartPosConstraint(std::shared_ptr<const Var> position_var,
   if (coeffs.rows() != 6)
     throw std::runtime_error("The number of coeffs should be six.");
 
+  if (!coeffs.allFinite() || (coeffs.array() < 0).any())
+    throw std::runtime_error("The coeffs must be finite and non-negative.");
+
   const bool target_active = manip_->isActiveLinkId(target_frame_);
   const bool source_active = manip_->isActiveLinkId(source_frame_);
   if (target_active && source_active)

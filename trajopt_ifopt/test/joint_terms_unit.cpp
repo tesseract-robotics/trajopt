@@ -25,6 +25,7 @@
 #include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <ctime>
+#include <limits>
 #include <gtest/gtest.h>
 #include <console_bridge/console.h>
 TRAJOPT_IGNORE_WARNINGS_POP
@@ -558,6 +559,52 @@ TEST(JointTermsUnit, JointJerkConstraintMinimumUnit)  // NOLINT
   }
 }
 ////////////////////////////////////////////////////////////////////
+
+/** @brief Joint constraints reject coefficients that are not finite and positive */
+TEST(JointTermsUnit, JointConstraintsRejectInvalidCoeffs)  // NOLINT
+{
+  std::vector<std::unique_ptr<Node>> nodes;
+  std::vector<std::shared_ptr<const Var>> position_vars;
+  for (int i = 0; i < 6; ++i)
+  {
+    auto node = std::make_unique<Node>();
+    position_vars.push_back(node->addVar(
+        "test_var_" + std::to_string(i), { "x", "y" }, Eigen::VectorXd::Zero(2), std::vector<Bounds>(2, NoBound)));
+    nodes.push_back(std::move(node));
+  }
+
+  const Eigen::VectorXd targets = Eigen::VectorXd::Zero(2);
+  const std::vector<Bounds> bounds(2, Bounds(-1, 1));
+  for (const double bad :
+       { -1.0, 0.0, std::numeric_limits<double>::infinity(), std::numeric_limits<double>::quiet_NaN() })
+  {
+    Eigen::VectorXd coeffs = Eigen::VectorXd::Ones(2);
+    coeffs(1) = bad;
+    EXPECT_THROW(std::make_shared<JointPosConstraint>(targets, position_vars[0], coeffs), std::runtime_error);
+    EXPECT_THROW(std::make_shared<JointPosConstraint>(bounds, position_vars[0], coeffs), std::runtime_error);
+    EXPECT_THROW(std::make_shared<JointVelConstraint>(targets, position_vars, coeffs), std::runtime_error);
+    EXPECT_THROW(std::make_shared<JointAccelConstraint>(targets, position_vars, coeffs), std::runtime_error);
+    EXPECT_THROW(std::make_shared<JointJerkConstraint>(targets, position_vars, coeffs), std::runtime_error);
+  }
+}
+
+/** @brief Splitting a range bound gives both rows their joint's coefficient, broadcast or per joint */
+TEST(JointTermsUnit, JointPosConstraintSplitKeepsJointCoeffs)  // NOLINT
+{
+  auto node = std::make_unique<Node>();
+  auto var = node->addVar("state", { "a", "b", "c" }, Eigen::VectorXd::Zero(3), std::vector<Bounds>(3, NoBound));
+  const std::vector<Bounds> bounds{ Bounds(-1, 1), Bounds(0, 0), Bounds(-2, 2) };
+
+  const JointPosConstraint broadcast(bounds, var, Eigen::VectorXd::Constant(1, 5.0));
+  ASSERT_EQ(broadcast.getRows(), 5);
+  EXPECT_TRUE(broadcast.getCoefficients().isApprox(Eigen::VectorXd::Constant(5, 5.0)));
+
+  const JointPosConstraint per_joint(bounds, var, Eigen::Vector3d(1, 2, 3));
+  Eigen::VectorXd expected(5);
+  expected << 1, 1, 2, 3, 3;
+  ASSERT_EQ(per_joint.getRows(), 5);
+  EXPECT_TRUE(per_joint.getCoefficients().isApprox(expected));
+}
 
 int main(int argc, char** argv)
 {

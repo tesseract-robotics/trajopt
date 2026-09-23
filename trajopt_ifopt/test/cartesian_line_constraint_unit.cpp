@@ -1,6 +1,7 @@
 ﻿#include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <ctime>
+#include <limits>
 #include <gtest/gtest.h>
 #include <boost/filesystem.hpp>
 #include <console_bridge/console.h>
@@ -197,6 +198,18 @@ TEST_F(CartesianLineConstraintUnit, GetSetBounds)  // NOLINT
 }
 
 ////////////////////////////////////////////////////////////////////
+
+/** @brief Coefficients must be finite and non-negative */
+TEST_F(CartesianLineConstraintUnit, RejectsInvalidCoeffs)  // NOLINT
+{
+  info = CartLineInfo(manip, "r_gripper_tool_frame", "base_link", line_start_pose, line_end_pose);
+  for (const double bad : { -1.0, std::numeric_limits<double>::infinity(), std::numeric_limits<double>::quiet_NaN() })
+  {
+    Eigen::VectorXd coeffs = Eigen::VectorXd::Ones(info.indices.rows());
+    coeffs(0) = bad;
+    EXPECT_THROW(std::make_shared<CartLineConstraint>(info, var, coeffs), std::runtime_error);
+  }
+}
 
 int main(int argc, char** argv)
 {
