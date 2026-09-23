@@ -47,6 +47,28 @@ While you can sometimes rewrite formulations so “scale constraints” and “s
 - **Use coefficients/weights** on the **slack penalty** to represent priority/importance of the soft constraint.
 
 
+## Merit Weighting in trajopt_sqp
+
+`TrustRegionSQPSolver` is an ℓ1-penalty SQP. With per-row weights $w_i$ from `getCoefficients()` and a
+merit coefficient $\mu_s$ per constraint set, its merit is
+
+$$\phi(x) = \sum_{\text{squared}} w_i r_i(x)^2 + \sum_{\text{hinge, abs}} w_i \lvert r_i(x)\rvert^+ + \sum_s \mu_s \sum_{i \in s} w_i \lvert c_i(x)\rvert^+$$
+
+The QP minimizes the same expression with every residual linearized at the current iterate $x_k$. Slack
+variables carry the $\lvert\cdot\rvert^+$ terms, penalized by $\mu_s w_i$ (or $w_i$ for costs). The
+trust-region ratio $\rho = (\phi(x_k) - \phi(x^+)) / (\phi(x_k) - m(x^+))$ compares the two, so both sides
+use the same weights. `TrajOptQPProblem` re-reads the weights at every `convexify()`, which makes the model
+exact at $x_k$ even when a constraint's weights follow the iterate (collision coefficients do).
+
+Constraint violations are reported twice (`ConstraintViolations`). `weighted` feeds the merit. `raw` sums a
+constraint set's row violations, each in its row's own units, and that sum is what `cnt_tolerance` and the
+penalty increase test. It is not a per-row tolerance. A row whose weight is exactly `0` is disabled: the QP
+does not penalize it, so it is left out of `raw` and `weighted` as well. `getCoefficients()` must return one
+finite, non-negative weight per row.
+
+`IfoptQPProblem` does not follow the slack-penalty rule above: it applies no per-row weights to constraints,
+in the QP or the merit, so its two views are equal.
+
 ## Trust-Box Construction Near Variable Bounds
 
 The trust region in `TrajOptQPProblem` is an $L_\infty$ box on the NLP step, $|p_i| \le \Delta_i$. The QP solver sees it as variable bounds on $x_i + p_i$, intersected with the user-provided bounds $[l_i, u_i]$. Two awkward situations can arise at that intersection:

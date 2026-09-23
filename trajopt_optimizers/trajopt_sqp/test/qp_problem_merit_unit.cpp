@@ -17,6 +17,7 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt_sqp/trajopt_qp_problem.h>
+#include <trajopt_sqp/ifopt_qp_problem.h>
 #include <trajopt_sqp/osqp_eigen_solver.h>
 #include <trajopt_sqp/trust_region_sqp_solver.h>
 #include <trajopt_sqp/types.h>
@@ -308,6 +309,7 @@ TEST(QPProblemMerit, LinearProblemStepHasUnitImproveRatio)  // NOLINT
                      t.vars[2], "squared", trajopt_ifopt::Bounds(0.0, 0.0), constantWeights(toVectorXd({ 1.0, 1.0 }))),
                  trajopt_sqp::CostPenaltyType::kSquared);
   qp->setup();
+  const Eigen::VectorXd x0 = qp->getVariableValues();
 
   trajopt_sqp::TrustRegionSQPSolver solver(std::make_shared<trajopt_sqp::OSQPEigenSolver>());
   solver.init(qp);
@@ -316,4 +318,132 @@ TEST(QPProblemMerit, LinearProblemStepHasUnitImproveRatio)  // NOLINT
   const trajopt_sqp::SQPResults& results = solver.getResults();
   EXPECT_GT(results.approx_merit_improve, 0.0);
   EXPECT_NEAR(results.merit_improve_ratio, 1.0, 1e-9);
+  // The step is accepted, and the best iterate carries the weighted violations of its own point.
+  ASSERT_FALSE(results.best_var_vals.isApprox(x0));
+  expectVectorNear(results.best_constraint_violations.weighted, qp->getExactConstraintViolations().weighted);
+}
+
+// One entry per merit set: raw sums the row violations, weighted sums each times its row weight.
+TEST(QPProblemMerit, ExactViolationsAreSummedPerSetAndWeighted)  // NOLINT
+{
+  const TestVariables t = makeVariables({ toVectorXd({ 0.5, -0.3, 0.8 }), toVectorXd({ 0.1, -0.4 }) });
+  auto qp = std::make_shared<trajopt_sqp::TrajOptQPProblem>(t.variables);
+  qp->addConstraintSet(std::make_shared<LinearTestSet>(
+      t.vars[0], "a", trajopt_ifopt::Bounds(0.0, 0.0), constantWeights(toVectorXd({ 2.0, 3.0, 4.0 }))));
+  qp->addConstraintSet(std::make_shared<LinearTestSet>(
+      t.vars[1], "b", trajopt_ifopt::Bounds(0.0, 0.0), constantWeights(toVectorXd({ 5.0, 6.0 }))));
+  qp->setup();
+
+  const trajopt_sqp::ConstraintViolations cv = qp->getExactConstraintViolations();
+  expectVectorNear(cv.raw, toVectorXd({ 1.6, 0.5 }));
+  expectVectorNear(cv.weighted, toVectorXd({ 5.1, 2.9 }));  // 0.5*2 + 0.3*3 + 0.8*4, 0.1*5 + 0.4*6
+}
+
+// After convexify() at a point, the convex model reproduces the exact violations there, including weights
+// that follow the iterate.
+TEST(QPProblemMerit, ConvexViolationsMatchExactAtConvexifyPoint)  // NOLINT
+{
+  const TestVariables t = makeVariables({ toVectorXd({ 0.5, -0.3, 0.8 }), toVectorXd({ 0.1, -0.4 }) });
+  auto qp = std::make_shared<trajopt_sqp::TrajOptQPProblem>(t.variables);
+  qp->addConstraintSet(
+      std::make_shared<LinearTestSet>(t.vars[0], "a", trajopt_ifopt::Bounds(0.0, 0.0), growingWeights));
+  qp->addConstraintSet(std::make_shared<LinearTestSet>(
+      t.vars[1], "b", trajopt_ifopt::Bounds(0.0, 0.0), constantWeights(toVectorXd({ 5.0, 6.0 }))));
+  qp->setup();
+  qp->convexify();
+
+  const Eigen::VectorXd x_new = toVectorXd({ 1.0, 0.2, -0.5, 0.1, -0.4 });
+  qp->setVariables(x_new.data());
+  qp->convexify();
+
+  const trajopt_sqp::ConstraintViolations exact = qp->getExactConstraintViolations();
+  Eigen::VectorXd qp_vals = Eigen::VectorXd::Zero(qp->getNumQPVars());
+  qp_vals.head(5) = x_new;
+  const trajopt_sqp::ConstraintViolations convex = qp->evaluateConvexConstraintViolations(qp_vals);
+
+  // Set a at x_new: weights (2.0, 1.2, 1.5), so 1.0*2.0 + 0.2*1.2 + 0.5*1.5.
+  expectVectorNear(exact.raw, toVectorXd({ 1.7, 0.5 }));
+  expectVectorNear(exact.weighted, toVectorXd({ 2.99, 2.9 }));
+  expectVectorNear(convex.raw, exact.raw);
+  expectVectorNear(convex.weighted, exact.weighted);
+}
+
+// A row of weight 0 is disabled: it leaves the feasibility metric and contributes nothing to the merit.
+TEST(QPProblemMerit, ZeroWeightRowLeavesTheFeasibilityMetric)  // NOLINT
+{
+  const TestVariables t = makeVariables({ toVectorXd({ 0.5, -0.3, 0.8 }) });
+  auto qp = std::make_shared<trajopt_sqp::TrajOptQPProblem>(t.variables);
+  qp->addConstraintSet(std::make_shared<LinearTestSet>(
+      t.vars[0], "a", trajopt_ifopt::Bounds(0.0, 0.0), constantWeights(toVectorXd({ 0.0, 3.0, 4.0 }))));
+  qp->setup();
+  qp->convexify();
+
+  const trajopt_sqp::ConstraintViolations exact = qp->getExactConstraintViolations();
+  expectVectorNear(exact.raw, toVectorXd({ 1.1 }));
+  expectVectorNear(exact.weighted, toVectorXd({ 4.1 }));
+
+  Eigen::VectorXd qp_vals = Eigen::VectorXd::Zero(qp->getNumQPVars());
+  qp_vals.head(3) = toVectorXd({ 0.5, -0.3, 0.8 });
+  const trajopt_sqp::ConstraintViolations convex = qp->evaluateConvexConstraintViolations(qp_vals);
+  expectVectorNear(convex.raw, toVectorXd({ 1.1 }));
+  expectVectorNear(convex.weighted, toVectorXd({ 4.1 }));
+}
+
+// A disabled row's violation is excluded before summing, not multiplied by its zero weight, so an infinite
+// violation on that row cannot turn the feasibility metric or the merit into NaN.
+TEST(QPProblemMerit, ZeroWeightRowWithInfiniteViolationStaysFinite)  // NOLINT
+{
+  const TestVariables t = makeVariables({ toVectorXd({ std::numeric_limits<double>::infinity(), -0.3, 0.8 }) });
+  auto qp = std::make_shared<trajopt_sqp::TrajOptQPProblem>(t.variables);
+  qp->addConstraintSet(std::make_shared<LinearTestSet>(
+      t.vars[0], "a", trajopt_ifopt::Bounds(0.0, 0.0), constantWeights(toVectorXd({ 0.0, 3.0, 4.0 }))));
+  qp->setup();
+
+  const trajopt_sqp::ConstraintViolations exact = qp->getExactConstraintViolations();
+  expectVectorNear(exact.raw, toVectorXd({ 1.1 }));
+  expectVectorNear(exact.weighted, toVectorXd({ 4.1 }));
+}
+
+// IfoptQPProblem applies no per-row constraint weights, in the QP or the merit, so both views are equal.
+TEST(QPProblemMerit, IfoptViolationsAreUnweighted)  // NOLINT
+{
+  const TestVariables t = makeVariables({ toVectorXd({ 0.5, -0.3, 0.8 }) });
+  auto qp = std::make_shared<trajopt_sqp::IfoptQPProblem>(t.variables);
+  qp->addConstraintSet(std::make_shared<LinearTestSet>(
+      t.vars[0], "a", trajopt_ifopt::Bounds(0.0, 0.0), constantWeights(toVectorXd({ 2.0, 3.0, 4.0 }))));
+  qp->setup();
+  qp->convexify();
+
+  const trajopt_sqp::ConstraintViolations exact = qp->getExactConstraintViolations();
+  expectVectorNear(exact.raw, toVectorXd({ 0.5, 0.3, 0.8 }));
+  expectVectorNear(exact.weighted, exact.raw);
+
+  Eigen::VectorXd qp_vals = Eigen::VectorXd::Zero(qp->getNumQPVars());
+  qp_vals.head(3) = toVectorXd({ 0.5, -0.3, 0.8 });
+  const trajopt_sqp::ConstraintViolations convex = qp->evaluateConvexConstraintViolations(qp_vals);
+  expectVectorNear(convex.raw, exact.raw);
+  expectVectorNear(convex.weighted, exact.raw);
+}
+
+// The solver's merit charges each set's merit coefficient against its weighted violation, and keeps the raw
+// violation for the feasibility test.
+TEST(QPProblemMerit, SeedMeritWeightsConstraintViolations)  // NOLINT
+{
+  const TestVariables t = makeVariables({ toVectorXd({ 0.5, -0.3, 0.8 }), toVectorXd({ 0.5, 0.8 }) });
+  auto qp = std::make_shared<trajopt_sqp::TrajOptQPProblem>(t.variables);
+  qp->addConstraintSet(std::make_shared<LinearTestSet>(
+      t.vars[0], "a", trajopt_ifopt::Bounds(0.0, 0.0), constantWeights(toVectorXd({ 2.0, 3.0, 4.0 }))));
+  qp->addCostSet(std::make_shared<LinearTestSet>(
+                     t.vars[1], "hinge", trajopt_ifopt::BoundSmallerZero, constantWeights(toVectorXd({ 2.0, 3.0 }))),
+                 trajopt_sqp::CostPenaltyType::kHinge);
+  qp->setup();
+
+  trajopt_sqp::TrustRegionSQPSolver solver(std::make_shared<trajopt_sqp::OSQPEigenSolver>());
+  solver.init(qp);
+
+  const trajopt_sqp::SQPResults& results = solver.getResults();
+  expectVectorNear(results.best_constraint_violations.raw, toVectorXd({ 1.6 }));
+  expectVectorNear(results.best_constraint_violations.weighted, toVectorXd({ 5.1 }));
+  // Hinge cost 2*0.5 + 3*0.8 = 3.4, plus the initial merit coefficient times the weighted violation.
+  EXPECT_NEAR(results.best_exact_merit, 3.4 + (solver.params.initial_merit_error_coeff * 5.1), 1e-12);
 }

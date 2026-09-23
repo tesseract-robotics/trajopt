@@ -52,10 +52,8 @@ bool TrustRegionSQPSolver::init(QPProblem::Ptr qp_prob)
   results_.merit_error_coeffs =
       Eigen::VectorXd::Constant(qp_problem->getNumNLPConstraints(), params.initial_merit_error_coeff);
 
-  // Evaluate exact constraint violations (expensive)
   results_.best_costs = qp_problem->getExactCosts();
 
-  // Evaluate exact constraint violations (expensive)
   results_.best_constraint_violations = qp_problem->getExactConstraintViolations();
 
   setBoxSize(params.initial_trust_box_size);
@@ -75,7 +73,7 @@ void TrustRegionSQPSolver::constraintMeritCoeffChanged()
 
   // Recalculate the best exact merit because merit coeffs may have changed
   results_.best_exact_merit =
-      results_.best_costs.sum() + results_.best_constraint_violations.dot(results_.merit_error_coeffs);
+      results_.best_costs.sum() + results_.best_constraint_violations.weighted.dot(results_.merit_error_coeffs);
 }
 
 void TrustRegionSQPSolver::registerCallback(const SQPCallback::Ptr& callback) { callbacks_.push_back(callback); }
@@ -161,13 +159,13 @@ void TrustRegionSQPSolver::solve(const QPProblem::Ptr& qp_problem)
 bool TrustRegionSQPSolver::verifySQPSolverConvergence()
 {
   // Check if constraints are satisfied
-  if (results_.best_constraint_violations.size() == 0)
+  if (results_.best_constraint_violations.raw.size() == 0)
   {
     CONSOLE_BRIDGE_logDebug("Optimization has converged and there are no constraints");
     return true;
   }
 
-  if (results_.best_constraint_violations.maxCoeff() < params.cnt_tolerance)
+  if (results_.best_constraint_violations.raw.maxCoeff() < params.cnt_tolerance)
   {
     CONSOLE_BRIDGE_logDebug("woo-hoo! constraints are satisfied (to tolerance %.2e)", params.cnt_tolerance);
     return true;
@@ -180,10 +178,10 @@ void TrustRegionSQPSolver::adjustPenalty()
 {
   if (params.inflate_constraints_individually)
   {
-    assert(results_.best_constraint_violations.size() == results_.merit_error_coeffs.size());
-    for (Eigen::Index idx = 0; idx < results_.best_constraint_violations.size(); idx++)
+    assert(results_.best_constraint_violations.raw.size() == results_.merit_error_coeffs.size());
+    for (Eigen::Index idx = 0; idx < results_.best_constraint_violations.raw.size(); idx++)
     {
-      if (results_.best_constraint_violations[idx] > params.cnt_tolerance)
+      if (results_.best_constraint_violations.raw[idx] > params.cnt_tolerance)
       {
         CONSOLE_BRIDGE_logDebug("Not all constraints are satisfied. Increasing constraint penalties for %d", idx);
         results_.merit_error_coeffs[idx] *= params.merit_coeff_increase_ratio;
@@ -389,8 +387,8 @@ SQPStatus TrustRegionSQPSolver::solveQPProblem()
     results_.new_approx_costs = qp_problem->evaluateConvexCosts(results_.new_var_vals);
 
     // Convexified merit
-    results_.new_approx_merit =
-        results_.new_approx_costs.sum() + results_.new_approx_constraint_violations.dot(results_.merit_error_coeffs);
+    results_.new_approx_merit = results_.new_approx_costs.sum() +
+                                results_.new_approx_constraint_violations.weighted.dot(results_.merit_error_coeffs);
 
     results_.approx_merit_improve = results_.best_exact_merit - results_.new_approx_merit;
 
@@ -402,7 +400,7 @@ SQPStatus TrustRegionSQPSolver::solveQPProblem()
 
     // Calculate exact NLP merits (expensive) - TODO: Look into caching for qp_solver->Convexify()
     results_.new_exact_merit =
-        results_.new_costs.sum() + results_.new_constraint_violations.dot(results_.merit_error_coeffs);
+        results_.new_costs.sum() + results_.new_constraint_violations.weighted.dot(results_.merit_error_coeffs);
     results_.exact_merit_improve = results_.best_exact_merit - results_.new_exact_merit;
     // results_.merit_improve_ratio = results_.exact_merit_improve / results_.approx_merit_improve;
     if (std::abs(results_.approx_merit_improve) < 1e-12)
@@ -525,50 +523,54 @@ void TrustRegionSQPSolver::printStepInfo() const
 
   // Individual Constraints
   // If we want to print the names we will have to add a getConstraints function to IFOPT
-  if (results_.new_constraint_violations.size() != 0)
+  if (results_.new_constraint_violations.raw.size() != 0)
   {
     std::printf("| %s | CONSTRAINTS\n", std::string(88, '-').c_str());
     const std::vector<std::string>& constraint_names = qp_problem->getNLPConstraintNames();
     // Loop over constraints
     for (Eigen::Index cnt_number = 0; cnt_number < static_cast<Eigen::Index>(constraint_names.size()); ++cnt_number)
     {
-      const double approx_improve =
-          results_.best_constraint_violations[cnt_number] - results_.new_approx_constraint_violations[cnt_number];
-      const double exact_improve =
-          results_.best_constraint_violations[cnt_number] - results_.new_constraint_violations[cnt_number];
+      // Each column is a merit contribution: the merit coefficient times a weighted violation.
+      const double mu = results_.merit_error_coeffs[cnt_number];
+      const double best = results_.best_constraint_violations.weighted[cnt_number];
+      const double new_exact = results_.new_constraint_violations.weighted[cnt_number];
+      const double new_approx = results_.new_approx_constraint_violations.weighted[cnt_number];
+      const double approx_improve = best - new_approx;
+      const double exact_improve = best - new_exact;
       if (fabs(approx_improve) > 1e-8)
         std::printf("| %10.3e | %10.3e | %10.3e | %10.3e | %10.3e | %10.3e | %10.3e | %-15s\n",
-                    results_.merit_error_coeffs[cnt_number],
-                    results_.merit_error_coeffs[cnt_number] * results_.best_constraint_violations[cnt_number],
-                    results_.merit_error_coeffs[cnt_number] * results_.new_constraint_violations[cnt_number],
-                    results_.merit_error_coeffs[cnt_number] * results_.new_approx_constraint_violations[cnt_number],
-                    results_.merit_error_coeffs[cnt_number] * approx_improve,
-                    results_.merit_error_coeffs[cnt_number] * exact_improve,
+                    mu,
+                    mu * best,
+                    mu * new_exact,
+                    mu * new_approx,
+                    mu * approx_improve,
+                    mu * exact_improve,
                     exact_improve / approx_improve,
                     constraint_names[static_cast<std::size_t>(cnt_number)].c_str());
       else
         std::printf("| %10.3e | %10.3e | %10.3e | %10.3e | %10.3e | %10.3e | %10s | %-15s \n",
-                    results_.merit_error_coeffs[cnt_number],
-                    results_.merit_error_coeffs[cnt_number] * results_.best_constraint_violations[cnt_number],
-                    results_.merit_error_coeffs[cnt_number] * results_.new_constraint_violations[cnt_number],
-                    results_.merit_error_coeffs[cnt_number] * results_.new_approx_constraint_violations[cnt_number],
-                    results_.merit_error_coeffs[cnt_number] * approx_improve,
-                    results_.merit_error_coeffs[cnt_number] * exact_improve,
+                    mu,
+                    mu * best,
+                    mu * new_exact,
+                    mu * new_approx,
+                    mu * approx_improve,
+                    mu * exact_improve,
                     "  ------  ",
                     constraint_names[static_cast<std::size_t>(cnt_number)].c_str());
     }
   }
 
   // Constraint
+  const Eigen::VectorXd& new_violations = results_.new_constraint_violations.raw;
   const std::string constraints_satisfied =
-      (results_.new_constraint_violations.maxCoeff() < params.cnt_tolerance) ? "True" : "False";
+      (new_violations.size() == 0 || new_violations.maxCoeff() < params.cnt_tolerance) ? "True" : "False";
   std::printf("| %s |\n", std::string(88, '=').c_str());
   std::printf("| %10s | %10.3e | %10.3e | %10.3e | %10s | %10s | %10s | SUM CONSTRAINTS (WITHOUT MERIT), Satisfied "
               "(%s)\n",
               "----------",
-              results_.best_constraint_violations.sum(),
-              results_.new_constraint_violations.sum(),
-              results_.new_approx_constraint_violations.sum(),
+              results_.best_constraint_violations.raw.sum(),
+              results_.new_constraint_violations.raw.sum(),
+              results_.new_approx_constraint_violations.raw.sum(),
               "----------",
               "----------",
               "----------",
