@@ -62,10 +62,11 @@ bool SQPParameters::operator!=(const SQPParameters& rhs) const { return !operato
 
 SQPResults::SQPResults(Eigen::Index num_vars, Eigen::Index num_cnts, Eigen::Index num_costs)
 {
-  best_constraint_violations = Eigen::VectorXd::Zero(num_cnts);
-  new_constraint_violations = Eigen::VectorXd::Zero(num_cnts);
-  best_approx_constraint_violations = Eigen::VectorXd::Zero(num_cnts);
-  new_approx_constraint_violations = Eigen::VectorXd::Zero(num_cnts);
+  const ConstraintViolations zero_violations{ Eigen::VectorXd::Zero(num_cnts), Eigen::VectorXd::Zero(num_cnts) };
+  best_constraint_violations = zero_violations;
+  new_constraint_violations = zero_violations;
+  best_approx_constraint_violations = zero_violations;
+  new_approx_constraint_violations = zero_violations;
 
   best_costs = Eigen::VectorXd::Zero(num_costs);
   new_costs = Eigen::VectorXd::Zero(num_costs);
@@ -98,12 +99,20 @@ void SQPResults::print() const
   std::cout << "box_size: " << box_size.transpose().format(format) << '\n';
   std::cout << "merit_error_coeffs: " << merit_error_coeffs.transpose().format(format) << '\n';
 
-  std::cout << "best_constraint_violations: " << best_constraint_violations.transpose().format(format) << '\n';
-  std::cout << "new_constraint_violations: " << new_constraint_violations.transpose().format(format) << '\n';
-  std::cout << "best_approx_constraint_violations: " << best_approx_constraint_violations.transpose().format(format)
+  std::cout << "best_constraint_violations.raw: " << best_constraint_violations.raw.transpose().format(format) << '\n';
+  std::cout << "best_constraint_violations.weighted: " << best_constraint_violations.weighted.transpose().format(format)
             << '\n';
-  std::cout << "new_approx_constraint_violations: " << new_approx_constraint_violations.transpose().format(format)
+  std::cout << "new_constraint_violations.raw: " << new_constraint_violations.raw.transpose().format(format) << '\n';
+  std::cout << "new_constraint_violations.weighted: " << new_constraint_violations.weighted.transpose().format(format)
             << '\n';
+  std::cout << "best_approx_constraint_violations.raw: "
+            << best_approx_constraint_violations.raw.transpose().format(format) << '\n';
+  std::cout << "best_approx_constraint_violations.weighted: "
+            << best_approx_constraint_violations.weighted.transpose().format(format) << '\n';
+  std::cout << "new_approx_constraint_violations.raw: "
+            << new_approx_constraint_violations.raw.transpose().format(format) << '\n';
+  std::cout << "new_approx_constraint_violations.weighted: "
+            << new_approx_constraint_violations.weighted.transpose().format(format) << '\n';
 
   std::cout << "best_costs: " << best_costs.transpose().format(format) << '\n';
   std::cout << "new_costs: " << new_costs.transpose().format(format) << '\n';
