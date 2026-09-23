@@ -38,6 +38,17 @@
 
 namespace trajopt_sqp
 {
+namespace
+{
+/** @brief Evaluate the merit: the summed costs plus each merit unit's weighted violation times its coefficient. */
+double meritValue(const Eigen::VectorXd& costs,
+                  const ConstraintViolations& violations,
+                  const Eigen::VectorXd& merit_error_coeffs)
+{
+  return costs.sum() + violations.weighted.dot(merit_error_coeffs);
+}
+}  // namespace
+
 const bool SUPER_DEBUG_MODE = false;
 
 TrustRegionSQPSolver::TrustRegionSQPSolver(QPSolver::Ptr qp_solver) : qp_solver(std::move(qp_solver)) {}
@@ -73,7 +84,7 @@ void TrustRegionSQPSolver::constraintMeritCoeffChanged()
 
   // Recalculate the best exact merit because merit coeffs may have changed
   results_.best_exact_merit =
-      results_.best_costs.sum() + results_.best_constraint_violations.weighted.dot(results_.merit_error_coeffs);
+      meritValue(results_.best_costs, results_.best_constraint_violations, results_.merit_error_coeffs);
 }
 
 void TrustRegionSQPSolver::registerCallback(const SQPCallback::Ptr& callback) { callbacks_.push_back(callback); }
@@ -387,8 +398,8 @@ SQPStatus TrustRegionSQPSolver::solveQPProblem()
     results_.new_approx_costs = qp_problem->evaluateConvexCosts(results_.new_var_vals);
 
     // Convexified merit
-    results_.new_approx_merit = results_.new_approx_costs.sum() +
-                                results_.new_approx_constraint_violations.weighted.dot(results_.merit_error_coeffs);
+    results_.new_approx_merit =
+        meritValue(results_.new_approx_costs, results_.new_approx_constraint_violations, results_.merit_error_coeffs);
 
     results_.approx_merit_improve = results_.best_exact_merit - results_.new_approx_merit;
 
@@ -400,7 +411,7 @@ SQPStatus TrustRegionSQPSolver::solveQPProblem()
 
     // Calculate exact NLP merits (expensive) - TODO: Look into caching for qp_solver->Convexify()
     results_.new_exact_merit =
-        results_.new_costs.sum() + results_.new_constraint_violations.weighted.dot(results_.merit_error_coeffs);
+        meritValue(results_.new_costs, results_.new_constraint_violations, results_.merit_error_coeffs);
     results_.exact_merit_improve = results_.best_exact_merit - results_.new_exact_merit;
     // results_.merit_improve_ratio = results_.exact_merit_improve / results_.approx_merit_improve;
     if (std::abs(results_.approx_merit_improve) < 1e-12)

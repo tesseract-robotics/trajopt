@@ -153,6 +153,37 @@ struct ConvexProblem
 
   Eigen::VectorXd evaluateConvexCosts(const Eigen::Ref<const Eigen::VectorXd>& var_vals) const;
 
+  /**
+   * @brief Evaluate the bounds violations of the slack-free linear model's rows [row_offset, row_offset + c_info.rows).
+   * @return A view into scratch_err, valid until the next call
+   */
+  Eigen::Ref<const Eigen::VectorXd> linearizedViolations(const Eigen::Ref<const Eigen::VectorXd>& var_block,
+                                                         Eigen::Index row_offset,
+                                                         const ComponentInfo& c_info) const
+  {
+    auto jac = constraint_matrix.middleRows(row_offset, c_info.rows).leftCols(n_nlp_vars);
+    auto constant = constraint_constant.segment(row_offset, c_info.rows);
+
+    // Ensure scratch buffers big enough (no allocation after first growth)
+    if (scratch_val.size() < c_info.rows)
+      scratch_val.resize(c_info.rows);
+    if (scratch_err.size() < c_info.rows)
+      scratch_err.resize(c_info.rows);
+
+    auto val = scratch_val.head(c_info.rows);
+    auto err = scratch_err.head(c_info.rows);
+
+    // scratch_val = constant + jac * var_block
+    val = constant;                    // copy into scratch (but no alloc)
+    val.noalias() += jac * var_block;  // mat-vec into existing memory
+
+    // compute violations in-place
+    trajopt_ifopt::calcBoundsViolations(err, val, c_info.bounds);
+
+    assert(!(err.array() < -1e-8).any());
+    return err;
+  }
+
   ConstraintViolations evaluateConvexConstraintViolations(const Eigen::Ref<const Eigen::VectorXd>& var_vals) const;
 };
 
@@ -202,27 +233,7 @@ Eigen::VectorXd ConvexProblem::evaluateConvexCosts(const Eigen::Ref<const Eigen:
       continue;
     }
 
-    // NOLINTNEXTLINE
-    auto jac = constraint_matrix.middleRows(row_offset, c_info.rows).leftCols(n_nlp_vars);
-    auto constant = constraint_constant.segment(row_offset, c_info.rows);
-
-    // Ensure scratch buffers big enough (no allocation after first growth)
-    if (scratch_val.size() < c_info.rows)
-      scratch_val.resize(c_info.rows);
-    if (scratch_err.size() < c_info.rows)
-      scratch_err.resize(c_info.rows);
-
-    auto val = scratch_val.head(c_info.rows);
-    auto err = scratch_err.head(c_info.rows);
-
-    // scratch_val = constant + jac * var_vals
-    val = constant;                    // copy into scratch (but no alloc)
-    val.noalias() += jac * var_block;  // mat-vec into existing memory
-
-    // compute violations in-place
-    trajopt_ifopt::calcBoundsViolations(err, val, c_info.bounds);
-
-    assert(!(err.array() < -1e-8).any());
+    const auto err = linearizedViolations(var_block, row_offset, c_info);
     costs(cost_idx++) = weightedSum(err.array(), c_info.coeffs);
     row_offset += c_info.rows;
   }
@@ -248,27 +259,7 @@ ConvexProblem::evaluateConvexConstraintViolations(const Eigen::Ref<const Eigen::
       continue;
     }
 
-    // NOLINTNEXTLINE
-    auto jac = constraint_matrix.middleRows(row_index, c_info.rows).leftCols(n_nlp_vars);
-    auto constant = constraint_constant.middleRows(row_index, c_info.rows);
-
-    // Ensure scratch buffers big enough (no allocation after first growth)
-    if (scratch_val.size() < c_info.rows)
-      scratch_val.resize(c_info.rows);
-    if (scratch_err.size() < c_info.rows)
-      scratch_err.resize(c_info.rows);
-
-    auto val = scratch_val.head(c_info.rows);
-    auto err = scratch_err.head(c_info.rows);
-
-    // scratch_val = constant + jac * var_vals
-    val = constant;                    // copy into scratch (but no alloc)
-    val.noalias() += jac * var_block;  // mat-vec into existing memory
-
-    // compute violations in-place
-    trajopt_ifopt::calcBoundsViolations(err, val, c_info.bounds);
-
-    reduceSetViolation(result, cnt_idx++, err, c_info.coeffs);
+    reduceSetViolation(result, cnt_idx++, linearizedViolations(var_block, row_index, c_info), c_info.coeffs);
     row_index += c_info.rows;
   }
 
