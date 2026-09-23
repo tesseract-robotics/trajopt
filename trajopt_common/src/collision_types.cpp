@@ -24,17 +24,29 @@
 #include <trajopt_common/collision_types.h>
 #include <tesseract/common/utils.h>
 #include <cassert>
+#include <cmath>
+#include <stdexcept>
 
 namespace trajopt_common
 {
+namespace
+{
+double checkCollisionCoeff(double collision_coeff)
+{
+  if (!std::isfinite(collision_coeff) || collision_coeff < 0)
+    throw std::runtime_error("CollisionCoeffData, collision coefficient must be finite and non-negative.");
+  return collision_coeff;
+}
+}  // namespace
+
 CollisionCoeffData::CollisionCoeffData(double default_collision_coeff)
-  : default_collision_coeff_(default_collision_coeff)
+  : default_collision_coeff_(checkCollisionCoeff(default_collision_coeff))
 {
 }
 
 void CollisionCoeffData::setDefaultCollisionCoeff(double default_collision_coeff)
 {
-  default_collision_coeff_ = default_collision_coeff;
+  default_collision_coeff_ = checkCollisionCoeff(default_collision_coeff);
 }
 
 double CollisionCoeffData::getDefaultCollisionCoeff() const { return default_collision_coeff_; }
@@ -50,7 +62,7 @@ void CollisionCoeffData::setCollisionCoeff(const tesseract::common::LinkId& obj1
 
 void CollisionCoeffData::setCollisionCoeff(const tesseract::common::LinkIdPair& pair, double collision_coeff)
 {
-  lookup_table_.insert_or_assign(pair, collision_coeff);
+  lookup_table_.insert_or_assign(pair, checkCollisionCoeff(collision_coeff));
 
   if (tesseract::common::almostEqualRelativeAndAbs(collision_coeff, 0.0))
     zero_coeff_.insert(pair);

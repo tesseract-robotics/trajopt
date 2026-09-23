@@ -59,8 +59,8 @@ JointVelConstraint::JointVelConstraint(const Eigen::VectorXd& targets,
   // Each segment contributes 2 * n_dof_ nonzeros (− and +)
   non_zeros_ = 2 * (n_vars_ - 1) * n_dof_;
 
-  if (!(coeffs.array() > 0).all())
-    throw std::runtime_error("JointVelConstraint, coeff must be greater than zero.");
+  if (!coeffs.allFinite() || !(coeffs.array() > 0).all())
+    throw std::runtime_error("JointVelConstraint, coeff must be finite and greater than zero.");
 
   if (coeffs.rows() == 0)
     coeffs_ = Eigen::VectorXd::Constant(n_dof_ * (n_vars_ - 1), 5);

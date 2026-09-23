@@ -47,8 +47,8 @@ JointPosConstraint::JointPosConstraint(const Eigen::VectorXd& target,
   // Set the n_dof and n_vars for convenience
   assert(n_dof_ > 0);
 
-  if (!(coeffs_.array() > 0).all())
-    throw std::runtime_error("JointPosConstraint, coeff must be greater than zero.");
+  if (!coeffs_.allFinite() || !(coeffs_.array() > 0).all())
+    throw std::runtime_error("JointPosConstraint, coeff must be finite and greater than zero.");
 
   if (coeffs_.rows() == 1)
     coeffs_ = Eigen::VectorXd::Constant(n_dof_, coeffs(0));
@@ -92,8 +92,8 @@ JointPosConstraint::JointPosConstraint(const std::vector<Bounds>& bounds,
 
   assert(n_dof_ > 0);
 
-  if (!(coeffs_.array() > 0).all())
-    throw std::runtime_error("JointPosConstraint, coeff must be greater than zero.");
+  if (!coeffs_.allFinite() || !(coeffs_.array() > 0).all())
+    throw std::runtime_error("JointPosConstraint, coeff must be finite and greater than zero.");
 
   if (coeffs_.rows() == 0)
     coeffs_ = Eigen::VectorXd::Ones(n_dof_);
@@ -126,14 +126,14 @@ JointPosConstraint::JointPosConstraint(const std::vector<Bounds>& bounds,
         bounds_.emplace_back(-double(INFINITY), b.getUpper());
         split_indices.push_back(indices_[i]);
         split_indices.push_back(indices_[i]);
-        split_coeffs.emplace_back(coeffs[static_cast<Eigen::Index>(i)]);
-        split_coeffs.emplace_back(coeffs[static_cast<Eigen::Index>(i)]);
+        split_coeffs.emplace_back(coeffs_[static_cast<Eigen::Index>(i)]);
+        split_coeffs.emplace_back(coeffs_[static_cast<Eigen::Index>(i)]);
       }
       else
       {
         bounds_.push_back(b);
         split_indices.push_back(indices_[i]);
-        split_coeffs.emplace_back(coeffs[static_cast<Eigen::Index>(i)]);
+        split_coeffs.emplace_back(coeffs_[static_cast<Eigen::Index>(i)]);
       }
     }
 

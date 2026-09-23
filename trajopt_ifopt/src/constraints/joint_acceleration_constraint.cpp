@@ -59,8 +59,8 @@ JointAccelConstraint::JointAccelConstraint(const Eigen::VectorXd& targets,
   // Each timestep contributes 3 nonzeros per DOF
   non_zeros_ = 3 * n_dof_ * n_vars_;
 
-  if (!(coeffs.array() > 0).all())
-    throw std::runtime_error("JointAccelConstraint, coeff must be greater than zero.");
+  if (!coeffs.allFinite() || !(coeffs.array() > 0).all())
+    throw std::runtime_error("JointAccelConstraint, coeff must be finite and greater than zero.");
 
   if (coeffs.rows() == 0)
     coeffs_ = Eigen::VectorXd::Ones(n_dof_ * n_vars_);
