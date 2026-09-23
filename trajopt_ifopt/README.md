@@ -1,86 +1,73 @@
 # trajopt_ifopt
 
-This package provides robotics costs and constraints for use with the ifopt optimization framework. Each term is written as a constraint that can then be converted into a cost.
+This package provides robotics costs and constraints, built on an in-tree core derived from [ifopt](https://github.com/ethz-adrl/ifopt) (`trajopt_ifopt/core`), and solved by `trajopt_sqp`. Each term is written as a constraint that can then be converted into a cost.
 
 ## Why Weights Usually Apply to Slack Penalties (Not Constraint Rows)
 
-In the trajopt_ifopt “soft constraint via slack variables” pattern, we keep the **constraint function** in its natural units and introduce a **slack** `s >= 0` to allow controlled violation:
+A soft constraint keeps its **constraint function** in natural units and allows controlled violation through a **slack** `s >= 0`:
 
 - Original constraint (example): `g(x) <= 0`
-- Softened with slack: `g(x) <= s`, `s >= 0`
-- Add a penalty on `s` to the objective (hinge / L1 / L2 style): `min w * phi(s)`
+- Softened with slack: `g(x) <= s`, `s >= 0` (an equality needs two slacks)
+- Penalize `s` in the objective: `w * s` for a hinge or absolute cost, `mu * w * s` for a constraint (ℓ1 penalty)
 
-With this structure, it’s typically preferred to apply the coefficient `w` to the **slack penalty** (objective side) rather than scaling the **constraint value** and **Jacobian** (constraint row).
+The weight `w` scales the **slack penalty**, not the **constraint value** and **Jacobian** (the QP row).
 
 ### Key reasons
 
 #### 1) Clean separation of “constraint definition” vs “priority”
-- `g(x)` represents geometry/physics (meters, radians, etc.).
-- `w` represents how much you care about violating it.
+`g(x)` represents geometry or physics (meters, radians); `w` represents how much violating it matters. Keeping `g(x)` unscaled lets you tune priorities without changing what the constraint means.
 
-Keeping `g(x)` unscaled makes it easier to reason about correctness and tune priorities without changing the constraint’s numerical meaning.
-
-#### 2) Better numerical conditioning and solver behavior
-Scaling the constraint residual/Jacobian (i.e., scaling QP row(s)) changes the conditioning of the constraint matrix and the primal/dual balance in the KKT system. This can lead to:
-- worse conditioning,
-- unstable step sizes,
-- slower or less reliable convergence.
-
-Weighting the slack penalty primarily changes objective terms, which many SQP/QP solvers handle more robustly than heavily scaled constraint rows.
+#### 2) Conditioning depends on the QP solver
+The two placements give the same penalty but different QPs. Interior-point and active-set solvers (the original TrajOpt used Gurobi) are much less sensitive to row scaling than first-order methods. ADMM solvers such as OSQP are sensitive to it:
+- OSQP's Ruiz equilibration rescales the constraint rows and the NLP variables, but not a slack: the slack's column holds only its own row and its `s >= 0` bound, so the formulation fixes its scale.
+- With the weight on the slack, a row's coupling in OSQP is set by its Jacobian, independent of its weight. With the weight in the row, as in `trajopt_sco`, heavier rows are coupled more strongly.
+- ADMM tends to converge faster when the rows active at the QP solution are strongly coupled and the inactive ones weakly, so on OSQP this placement can cost iterations compared with `trajopt_sco`.
 
 #### 3) Slack variables remain interpretable
-If you keep `g(x)` in natural units, then the slack `s` directly represents “amount of violation” in those same units. This makes it easier to:
-- interpret results,
-- set bounds on `s`,
-- initialize slack values consistently across constraints.
+With `g(x)` in natural units, the slack is the amount of violation in those units. Scaling rows by `w` puts slacks in weighted units.
 
-If you scale constraint rows by `w`, slack effectively becomes “weighted units,” which is harder to interpret and tune.
-
-#### 4) Avoids fighting feasibility/scaling logic inside solvers
-Many solvers apply their own internal scaling, feasibility handling, and merit function logic. Manually scaling constraint rows for “importance” can interact poorly with these mechanisms. Applying weights in the slack penalty tends to be more predictable.
+#### 4) Weights can change without changing the constraint
+The constraint and its Jacobian do not depend on the weight, so a weight can follow the iterate (collision coefficients change with the contact pairs found). A weight of exactly `0` disables a row cleanly instead of leaving an all-zero row.
 
 #### 5) Equivalent in theory, not in practice
-While you can sometimes rewrite formulations so “scale constraints” and “scale penalties” appear similar on paper, real SQP/QP implementations include regularization, trust regions, merit functions, and adaptive updates that make these choices behave differently numerically.
+For `w >= 0` both placements give the same ℓ1 penalty (`w * |g|⁺ = |w * g|⁺`) and the same merit. Two things differ: the QP the solver sees (reason 2), and the tolerance. Here `cnt_tolerance` applies to violations in the constraint's own units; `trajopt_sco` applies it to weighted violations, so a small weight loosens it there.
 
 ### Practical rule of thumb
-- **Scale constraints/Jacobians** only to normalize units / improve conditioning (e.g., meters vs millimeters).
-- **Use coefficients/weights** on the **slack penalty** to represent priority/importance of the soft constraint.
-
+- **Scale constraints/Jacobians** only to normalize units or improve conditioning (e.g., meters vs millimeters).
+- **Use weights** on the **slack penalty** to express priority.
 
 ## Merit Weighting in trajopt_sqp
 
-`TrustRegionSQPSolver` is an ℓ1-penalty SQP. With per-row weights $w_i$ from `getCoefficients()` and a
-merit coefficient $\mu_s$ per constraint set, its merit is
+`TrustRegionSQPSolver` is an ℓ1-penalty SQP. For row $i$, let $c_i(x)$ be its value, $[l_i, u_i]$ its bounds and $w_i$ its weight from `getCoefficients()`. Its violation is
 
-$$\phi(x) = \sum_{\text{squared}} w_i r_i(x)^2 + \sum_{\text{hinge, abs}} w_i \lvert r_i(x)\rvert^+ + \sum_s \mu_s \sum_{i \in s} w_i \lvert c_i(x)\rvert^+$$
+$$v_i(x) = \max(l_i - c_i(x),\, 0) + \max(c_i(x) - u_i,\, 0)$$
 
-The QP minimizes the same expression with every residual linearized at the current iterate $x_k$. Slack
-variables carry the $\lvert\cdot\rvert^+$ terms, penalized by $\mu_s w_i$ (or $w_i$ for costs). The
-trust-region ratio $\rho = (\phi(x_k) - \phi(x^+)) / (\phi(x_k) - m(x^+))$ compares the two, so both sides
-use the same weights. `TrajOptQPProblem` re-reads the weights at every `convexify()`, which makes the model
-exact at $x_k$ even when a constraint's weights follow the iterate (collision coefficients do).
+which is $\lvert c_i(x) - l_i\rvert$ for an equality row and a hinge for a one-sided one. A squared cost row has target $t_i = l_i = u_i$. With $\mu_s$ the merit coefficient of constraint set $s$, the merit is
 
-Constraint violations are reported twice (`ConstraintViolations`). `weighted` feeds the merit. `raw` sums a
-constraint set's row violations, each in its row's own units, and that sum is what `cnt_tolerance` and the
-penalty increase test. It is not a per-row tolerance. A row whose weight is exactly `0` is disabled: the QP
-does not penalize it, so it is left out of `raw` and `weighted` as well. `getCoefficients()` must return one
-finite, non-negative weight per row.
+$$\phi(x) = \sum_{\text{squared}} w_i \big(c_i(x) - t_i\big)^2 + \sum_{\text{hinge, abs}} w_i v_i(x) + \sum_s \mu_s \sum_{i \in s} w_i v_i(x)$$
 
-`IfoptQPProblem` does not follow the slack-penalty rule above: it applies no per-row weights to constraints,
-in the QP or the merit, so its two views are equal.
+The QP model $m$ is the same expression with each row linearized at the iterate $x_k$; slacks carry the $v_i$ terms at cost $\mu_s w_i$ ($w_i$ for costs). The trust-region ratio $\rho = (\phi(x_k) - \phi(x^+)) / (\phi(x_k) - m(x^+))$ compares merit and model, so both must use the same weights. `TrajOptQPProblem` re-reads the weights at every `convexify()`, so the model stays exact at $x_k$ when weights follow the iterate (collision coefficients do).
+
+Violations are reported per constraint set in two forms (`ConstraintViolations`):
+- `weighted` sums $w_i v_i$ and feeds the merit.
+- `raw` sums $v_i$, in the rows' own units, and is compared with `cnt_tolerance`. The solve is feasible once every set's `raw` is below it; otherwise the $\mu_s$ of each set above it is multiplied by `merit_coeff_increase_ratio`, or every $\mu_s$ if `inflate_constraints_individually` is off. Being a sum, it is not a per-row tolerance; `trajopt_sco` applies the same test to its weighted sums.
+
+A row whose weight is exactly `0` is disabled: the QP does not penalize it, and it is left out of both sums.
+
+`IfoptQPProblem` applies no per-row weights to constraints, in the QP or the merit, so its two forms are equal.
 
 ## Trust-Box Construction Near Variable Bounds
 
-The trust region in `TrajOptQPProblem` is an $L_\infty$ box on the NLP step, $|p_i| \le \Delta_i$. The QP solver sees it as variable bounds on $x_i + p_i$, intersected with the user-provided bounds $[l_i, u_i]$. Two awkward situations can arise at that intersection:
+The trust region in `TrajOptQPProblem` is an $L_\infty$ box on the NLP step, $|p_i| \le \Delta_i$, which the QP sees as bounds on $x_i + p_i$ intersected with the variable bounds $[l_i, u_i]$. Two cases need care:
 
-1. The iterate $x_i$ sits at or near a bound, so the naive box $[x_i - \Delta_i, x_i + \Delta_i]$ extends past the bound on one side.
-2. The iterate has drifted outside $[l_i, u_i]$ — after a step rejection, a bad warm-start, or in the recovery regime of a failed solve.
+1. $x_i$ is at or near a bound, so $[x_i - \Delta_i, x_i + \Delta_i]$ extends past it.
+2. $x_i$ is outside $[l_i, u_i]$, after a step rejection, a bad warm start, or a failed solve.
 
-`TrajOptQPProblem::Implementation::updateNLPVariableBounds` handles both with one rule: **clamp $x_i$ into $[l_i, u_i]$, then strict-shrink the trust box against the bounds.**
+`TrajOptQPProblem::Implementation::updateNLPVariableBounds` handles both with one rule: **clamp $x_i$ into $[l_i, u_i]$, then shrink the box to fit within the bounds.**
 
 $$x_i^{\text{eff}} \;=\; \mathrm{clamp}(x_i,\, l_i,\, u_i), \qquad \text{box}_i \;=\; [\,\max(x_i^{\text{eff}} - \Delta_i,\, l_i),\; \min(x_i^{\text{eff}} + \Delta_i,\, u_i)\,].$$
 
-For $x_i$ strictly inside $[l_i, u_i]$ the clamp is a no-op and the box is the standard trust region — $\|p\|_\infty \le \Delta$ is preserved, which is the contract the rest of the SQP machinery relies on (the merit-improve ratio $\rho$ is only meaningful for steps within the radius the model was expanded for). As $x$ approaches a bound the box width shrinks monotonically:
+For $x_i$ strictly inside its bounds the clamp is a no-op and $\|p\|_\infty \le \Delta$ holds, which the ratio $\rho$ relies on: it is only meaningful for steps within the radius the model was built for. Near a bound the box width shrinks monotonically:
 
 | $x$ position relative to upper bound $u$ | Box width |
 |---|---|
@@ -89,63 +76,49 @@ For $x_i$ strictly inside $[l_i, u_i]$ the clamp is a no-op and the box is the s
 | $x = u$ | $\Delta$ |
 | $x > u$ | $\Delta$ (constant; $x^{\text{eff}} = u$) |
 
-Past the bound the trust-region invariant is unavoidably violated — any step pulling the iterate back through the bound has magnitude $\ge |x - u|$ — but the QP box itself stays well-formed (non-empty, non-inverted), so the QP solver does not error out.
-
-The earlier "slide always" policy instead kept the full $2\Delta$ width by sliding the box inside $[l, u]$. That preserved the bug-fix property but let the QP step exceed $\Delta$ on the side facing the interior whenever a bound was active, even with the iterate strictly inside its bounds (within a trust-radius of the bound) — breaking $\|p\|_\infty \le \Delta$ in the regime where the SQP merit-improve machinery needs it most. The clamp-then-shrink design keeps the bug-fix property and restores the trust-region invariant for in-bounds iterates.
-
+Past the bound $\|p\|_\infty \le \Delta$ cannot hold, since any step back through the bound has magnitude $\ge |x - u|$, but the box stays non-empty, so the QP solver does not error out.
 
 ## Currently Supported Constraints
 * Joint Position
 * Joint Velocity
+* Joint Acceleration
 * Joint Jerk
-* Cartesian Position(FK)
+* Cartesian Position (FK)
+* Cartesian Line
 * Inverse Kinematics
-* Collision
-  * Fixed Size
-    * single timestep evaluator
-    * longest valid segment discrete evaluator
-    * longest valid segment continuous evaluator
-  * Dynamic Size
-    * single timestep evaluator
-    * longest valid segment discrete evaluator
-    * longest valid segment continuous evaluator
-    
-### Adding New Constraints
-*  The process of filling out the jacobian can be confusing because you are only responsible for filling out your portion and do not need to worry about it position in the full jacobian matrix.
+* Collision, in fixed-size and dynamic-size forms, with these evaluators:
+  * single timestep
+  * longest valid segment, discrete
+  * longest valid segment, continuous
+* Numerical-Jacobian variants of the discrete and continuous collision constraints
 
+### Adding New Constraints
+* Fill in only your own block of the Jacobian; its placement in the full Jacobian is handled for you.
+* `getCoefficients()` returns exactly one finite, non-negative weight per row, in row order; `0` disables the row. Validate weights where they are set, as the in-tree constraints do.
 
 ## Currently Supported Costs
-These costs convert any constraint into a cost
+Any constraint set can be used as a cost:
 
-*  Squared Cost
-*  Absolute Cost
+* `TrajOptQPProblem::addCostSet` takes a `CostPenaltyType`: squared, absolute, or hinge.
+* The `SquaredCost` and `AbsoluteCost` wrappers turn a constraint set into a `CostTerm` for a `trajopt_ifopt::Problem`.
 
-
-## Trajopt_optimizers
-Additionally, the SQP solver has been rewritten. Currently it provides the SQP routine with interfaces to these QP solvers
-*  [OSQPEigen](https://github.com/gbionics/osqp-eigen/tree/master/include/OsqpEigen)
-
-Therefore the solvers that will work in this new framework are
-*  [IPOPT](https://github.com/coin-or/Ipopt)
-*  [SNOPT](http://www.sbsi-sol-optimize.com/asp/sol_product_snopt.htm)
-*  Trajopt_sqp
+## Solver
+`trajopt_sqp` (in `trajopt_optimizers`) solves these problems with OSQP through [OsqpEigen](https://github.com/gbionics/osqp-eigen/tree/master/include/OsqpEigen). It is the only NLP solver: the ifopt dependency, and with it the IPOPT and SNOPT interfaces, was removed.
 
 ## TODO
 
-- [ ] Collision - Add other collision evaluators
-- [ ] Collision Callback - Collision is the only one that is missing
-- [ ] Print debug info - trajopt_sco prints a bunch of debugging information that developers have become accustomed to. Some of this has been added to trajopt_sqp, but some like the cost associated with individual convex costs, will require some work to implement
-
+- [ ] Collision plotting callback (`CollisionPlottingCallback::plot` is a stub)
 
 ### Additional Solvers
 
+- [ ] [IPOPT](https://github.com/coin-or/Ipopt)
+- [ ] [SNOPT](http://www.sbsi-sol-optimize.com/asp/sol_product_snopt.htm)
 - [ ] [OptimLib](https://github.com/kthohr/optim)
-- [ ] Gurobi interface - We should try SNOPT first, but an interface to Gurobi might be nice.
+- [ ] Gurobi QP interface for `trajopt_sqp`
 - [ ] [Pagmo2](https://github.com/esa/pagmo2) - "A C++ scientific library for massively parallel optimization"
 - [ ] [NOMAD](https://sourceforge.net/projects/nomad-bb-opt/) - LGPL Derivative free
 - [ ] [Others](http://plato.asu.edu/sub/nlores.html)
 
-
-### IFOPT Improvements
-- [ ] [Add Hessian to IFOPT](https://github.com/ethz-adrl/ifopt/issues/41)
-- [ ] Add caching to functions like Problem::EvaluateCostFunction
+### Core Improvements
+- [ ] Add Hessians to the core (upstream request: [ethz-adrl/ifopt#41](https://github.com/ethz-adrl/ifopt/issues/41))
+- [ ] Add caching to functions like `Problem::evaluateCostFunction`
