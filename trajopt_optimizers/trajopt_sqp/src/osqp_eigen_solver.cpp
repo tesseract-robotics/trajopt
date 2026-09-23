@@ -295,7 +295,7 @@ bool OSQPEigenSolver::setWarmStart(const QPProblem& qp_problem)
   if (num_slacks > 0)
   {
     // Evaluate constraint violations at current NLP variables
-    const Eigen::VectorXd violations = qp_problem.evaluateConvexConstraintViolations(nlp_vars);
+    const Eigen::VectorXd violations = qp_problem.evaluateConvexConstraintViolations(nlp_vars).raw;
 
     // Get the constraint matrix (row-major)
     const trajopt_ifopt::Jacobian& constraint_matrix = qp_problem.getConstraintMatrix();

@@ -41,9 +41,10 @@ public:
 
   Eigen::VectorXd getExactCosts() const override;
 
-  Eigen::VectorXd evaluateConvexConstraintViolations(const Eigen::Ref<const Eigen::VectorXd>& var_vals) const override;
+  ConstraintViolations
+  evaluateConvexConstraintViolations(const Eigen::Ref<const Eigen::VectorXd>& var_vals) const override;
 
-  Eigen::VectorXd getExactConstraintViolations() const override;
+  ConstraintViolations getExactConstraintViolations() const override;
 
   void scaleBoxSize(double& scale) override;
 

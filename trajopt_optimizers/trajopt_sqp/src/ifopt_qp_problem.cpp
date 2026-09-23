@@ -29,6 +29,7 @@
 #include <trajopt_ifopt/core/composite.h>
 #include <iostream>
 #include <cassert>
+#include <utility>
 
 namespace trajopt_sqp
 {
@@ -531,7 +532,7 @@ Eigen::VectorXd IfoptQPProblem::getExactCosts() const
   return nlp_->getCosts().getValues();
 }
 
-Eigen::VectorXd
+ConstraintViolations
 IfoptQPProblem::evaluateConvexConstraintViolations(const Eigen::Ref<const Eigen::VectorXd>& var_vals) const
 {
   const Eigen::VectorXd result_lin =
@@ -540,16 +541,18 @@ IfoptQPProblem::evaluateConvexConstraintViolations(const Eigen::Ref<const Eigen:
 
   Eigen::VectorXd violations(constraint_value.rows());
   trajopt_ifopt::calcBoundsViolations(violations, constraint_value, nlp_->getBoundsOnConstraints());
-  return violations;
+  // IfoptQPProblem applies no per-row constraint weights, in the QP or the merit, so both forms are equal.
+  return { violations, std::move(violations) };
 }
 
-Eigen::VectorXd IfoptQPProblem::getExactConstraintViolations() const
+ConstraintViolations IfoptQPProblem::getExactConstraintViolations() const
 {
   const Eigen::VectorXd cnt_vals = nlp_->evaluateConstraints();
 
   Eigen::VectorXd violations(cnt_vals.rows());
   trajopt_ifopt::calcBoundsViolations(violations, cnt_vals, nlp_->getBoundsOnConstraints());
-  return violations;
+  // IfoptQPProblem applies no per-row constraint weights, in the QP or the merit, so both forms are equal.
+  return { violations, std::move(violations) };
 }
 
 void IfoptQPProblem::scaleBoxSize(double& scale)
