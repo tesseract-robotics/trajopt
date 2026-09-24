@@ -232,10 +232,13 @@ public:
     OSQP,
     QPOASES,
     BPMPD,
+    PIQP,
     AUTO_SOLVER
   };
 
-  static inline const std::vector<std::string> MODEL_NAMES_{ "GUROBI", "OSQP", "QPOASES", "BPMPD", "AUTO_SOLVER" };
+  static inline const std::vector<std::string> MODEL_NAMES_{
+    "GUROBI", "OSQP", "QPOASES", "BPMPD", "PIQP", "AUTO_SOLVER"
+  };
 
   ModelType();
   ModelType(const ModelType::Value& v);
