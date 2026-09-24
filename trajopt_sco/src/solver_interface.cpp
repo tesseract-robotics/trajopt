@@ -271,6 +271,9 @@ std::vector<ModelType> availableSolvers()
 #ifdef HAVE_QPOASES
   has_solver[ModelType::QPOASES] = true;
 #endif
+#ifdef TRAJOPT_SCO_HAS_PIQP
+  has_solver[ModelType::PIQP] = true;
+#endif
   std::size_t n_available_solvers = 0;
   for (auto i = 0; i < ModelType::AUTO_SOLVER; ++i)
     if (has_solver[static_cast<std::size_t>(i)])
@@ -298,6 +301,9 @@ Model::Ptr createModel(ModelType model_type, const ModelConfig::ConstPtr& model_
 #endif
 #ifdef HAVE_QPOASES
   extern Model::Ptr createqpOASESModel();
+#endif
+#ifdef TRAJOPT_SCO_HAS_PIQP
+  extern Model::Ptr createPIQPModel(const ModelConfig::ConstPtr& config);
 #endif
 
   const char* solver_env = getenv("TRAJOPT_CONVEX_SOLVER");
@@ -339,6 +345,10 @@ Model::Ptr createModel(ModelType model_type, const ModelConfig::ConstPtr& model_
   if (solver == ModelType::QPOASES)
     PRINT_AND_THROW("you don't have qpOASES support on this platform");
 #endif
+#ifndef TRAJOPT_SCO_HAS_PIQP
+  if (solver == ModelType::PIQP)
+    PRINT_AND_THROW("you didn't build with PIQP support");
+#endif
 
 #ifdef HAVE_GUROBI
   if (solver == ModelType::GUROBI)
@@ -355,6 +365,10 @@ Model::Ptr createModel(ModelType model_type, const ModelConfig::ConstPtr& model_
 #ifdef HAVE_QPOASES
   if (solver == ModelType::QPOASES)
     return createqpOASESModel();
+#endif
+#ifdef TRAJOPT_SCO_HAS_PIQP
+  if (solver == ModelType::PIQP)
+    return createPIQPModel(model_config);
 #endif
   std::stringstream solver_instatiation_error;
   solver_instatiation_error << "Failed to create solver: unknown solver " << solver << '\n';

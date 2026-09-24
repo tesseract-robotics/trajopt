@@ -5,6 +5,7 @@ set(SCO_TEST_SOURCE unit.cpp modeling-unit.cpp solver-utils-unit.cpp)
 if(GUROBI_FOUND
    OR osqp_FOUND
    OR qpOASES_FOUND
+   OR piqp_FOUND
    OR HAVE_BPMPD)
   list(
     APPEND
@@ -14,6 +15,9 @@ if(GUROBI_FOUND
 endif()
 if(osqp_FOUND)
   list(APPEND SCO_TEST_SOURCE osqp-interface-unit.cpp)
+endif()
+if(piqp_FOUND)
+  list(APPEND SCO_TEST_SOURCE piqp-model-unit.cpp)
 endif()
 
 add_executable(${PROJECT_NAME}-test ${SCO_TEST_SOURCE})
