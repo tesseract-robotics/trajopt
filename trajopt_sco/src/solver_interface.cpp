@@ -11,8 +11,6 @@ TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace sco
 {
-const std::vector<std::string> ModelType::MODEL_NAMES_ = { "GUROBI", "BPMPD", "OSQP", "QPOASES", "AUTO_SOLVER" };
-
 void vars2inds(const VarVector& vars, SizeTVec& inds)
 {
   inds = SizeTVec(vars.size());
@@ -214,7 +212,7 @@ std::ostream& operator<<(std::ostream& o, const QuadExpr& e)
 std::ostream& operator<<(std::ostream& os, const ModelType& cs)
 {
   auto cs_ivalue_ = static_cast<std::size_t>(cs.value_);
-  if (cs_ivalue_ > ModelType::MODEL_NAMES_.size())
+  if (cs_ivalue_ >= ModelType::MODEL_NAMES_.size())
   {
     std::stringstream conversion_error;
     conversion_error << "Error converting ModelType to string - " << "enum value is " << cs_ivalue_ << '\n';
