@@ -169,6 +169,7 @@ bool OSQPEigenSolver::solve()
     {
       std::cout << "OSQP Solution: " << solver_->getSolution().transpose().format(format) << '\n';
     }
+    solver_status_ = QPSolverStatus::kInitialized;
     return true;
   }
 
