@@ -21,5 +21,8 @@ else()
   find_dependency(Boost)
 endif()
 find_dependency(OpenMP)
+if(@TRAJOPT_SCO_HAS_PIQP@)
+  find_dependency(piqp)
+endif()
 
 include("${CMAKE_CURRENT_LIST_DIR}/@PROJECT_NAME@-targets.cmake")

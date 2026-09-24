@@ -52,7 +52,7 @@ const bool DEBUG = true;
 
 // This is example is made to pair with cart_position_example.cpp. This is the same motion planning problem in the
 // trajopt_sco framework
-TEST(CartPositionOptimizationTrajoptSCO, cart_position_optimization_trajopt_sco)  // NOLINT
+static void runCartPositionOptimization(sco::ModelType convex_solver)
 {
   if (DEBUG)  // NOLINT
   {
@@ -117,7 +117,7 @@ TEST(CartPositionOptimizationTrajoptSCO, cart_position_optimization_trajopt_sco)
     pci.cnt_infos.push_back(pose);
   }
 
-  pci.basic_info.convex_solver = sco::ModelType::OSQP;
+  pci.basic_info.convex_solver = convex_solver;
 
   auto prob = ConstructProblem(pci);
 
@@ -140,6 +140,18 @@ TEST(CartPositionOptimizationTrajoptSCO, cart_position_optimization_trajopt_sco)
     std::cout << "Results: " << traj << '\n';
   }
 }
+
+TEST(CartPositionOptimizationTrajoptSCO, cart_position_optimization_trajopt_sco)  // NOLINT
+{
+  runCartPositionOptimization(sco::ModelType::OSQP);
+}
+
+#ifdef TRAJOPT_SCO_HAS_PIQP
+TEST(CartPositionOptimizationTrajoptSCO, cart_position_optimization_trajopt_sco_piqp)  // NOLINT
+{
+  runCartPositionOptimization(sco::ModelType::PIQP);
+}
+#endif
 
 // ---------------------------------------------------------------------------
 // Helper: build ABB IRB2400 environment (shared by both discriminator tests).

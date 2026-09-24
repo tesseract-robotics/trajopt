@@ -33,11 +33,10 @@ TEST(SolverInterface, simplify2)  // NOLINT
 
 TEST(SolverInterface, ModelTypeNames)  // NOLINT
 {
-  const std::vector<std::pair<ModelType::Value, std::string>> expected = { { ModelType::GUROBI, "GUROBI" },
-                                                                           { ModelType::OSQP, "OSQP" },
-                                                                           { ModelType::QPOASES, "QPOASES" },
-                                                                           { ModelType::BPMPD, "BPMPD" },
-                                                                           { ModelType::AUTO_SOLVER, "AUTO_SOLVER" } };
+  const std::vector<std::pair<ModelType::Value, std::string>> expected = {
+    { ModelType::GUROBI, "GUROBI" }, { ModelType::OSQP, "OSQP" }, { ModelType::QPOASES, "QPOASES" },
+    { ModelType::BPMPD, "BPMPD" },   { ModelType::PIQP, "PIQP" }, { ModelType::AUTO_SOLVER, "AUTO_SOLVER" }
+  };
   ASSERT_EQ(ModelType::MODEL_NAMES_.size(), expected.size());
   for (const auto& [value, name] : expected)
   {
