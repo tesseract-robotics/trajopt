@@ -25,6 +25,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <tesseract/common/logging.h>
 #include <vector>
 
 namespace trajopt_sqp
@@ -119,6 +120,15 @@ bool PIQPSolver::solve()
     (lower == upper ? eq_rows : ineq_rows).push_back(r);
   }
 
+  // PIQP does not detect crossed variable bounds and runs to its iteration limit; bound rows with disjoint ranges on
+  // one variable make the QP infeasible
+  if ((x_lower.array() > x_upper.array()).any())
+  {
+    TESSERACT_LOG_DEBUG("PIQP not called: bound rows on one variable have disjoint ranges");
+    solver_status_ = QPSolverStatus::kFailed;
+    return false;
+  }
+
   const SparseMatrix eq_matrix = selectRows(constraint_matrix_, eq_rows);
   const SparseMatrix ineq_matrix = selectRows(constraint_matrix_, ineq_rows);
   const Eigen::VectorXd eq_values = bounds_lower_(eq_rows);
@@ -129,11 +139,18 @@ bool PIQPSolver::solve()
   solver_.settings().verbose = settings.verbose || verbosity > 0;
   solver_.setup(hessian_, gradient_, eq_matrix, eq_values, ineq_matrix, ineq_lower, ineq_upper, x_lower, x_upper);
 
-  if (solver_.solve() == piqp::Status::PIQP_SOLVED)
+  const piqp::Status status = solver_.solve();
+  if (status == piqp::Status::PIQP_SOLVED)
   {
     solver_status_ = QPSolverStatus::kInitialized;
     return true;
   }
+
+  // PIQP reports rejected settings, such as a KKT solver the sparse backend lacks, only on stderr
+  if (status == piqp::Status::PIQP_UNSOLVED || status == piqp::Status::PIQP_INVALID_SETTINGS)
+    TESSERACT_LOG_ERROR("PIQP setup failed with status {} (kkt_solver {})",
+                        piqp::status_to_string(status),
+                        piqp::kkt_solver_to_string(solver_.settings().kkt_solver));
 
   solver_status_ = QPSolverStatus::kFailed;
   return false;
