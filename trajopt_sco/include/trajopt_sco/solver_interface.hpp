@@ -235,7 +235,7 @@ public:
     AUTO_SOLVER
   };
 
-  static const std::vector<std::string> MODEL_NAMES_;
+  static inline const std::vector<std::string> MODEL_NAMES_{ "GUROBI", "OSQP", "QPOASES", "BPMPD", "AUTO_SOLVER" };
 
   ModelType();
   ModelType(const ModelType::Value& v);
