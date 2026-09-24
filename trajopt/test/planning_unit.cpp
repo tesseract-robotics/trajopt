@@ -60,7 +60,7 @@ public:
   }
 };
 
-void runTest(const Environment::Ptr& env, bool use_multi_threaded)
+void runTest(const Environment::Ptr& env, bool use_multi_threaded, sco::ModelType convex_solver = sco::ModelType::OSQP)
 {
   TESSERACT_LOG_DEBUG("PlanningTest, arm_around_table");
 
@@ -81,7 +81,7 @@ void runTest(const Environment::Ptr& env, bool use_multi_threaded)
 
   ProblemConstructionInfo pci(env);
   pci.fromJson(root);
-  pci.basic_info.convex_solver = sco::ModelType::OSQP;
+  pci.basic_info.convex_solver = convex_solver;
   const TrajOptProb::Ptr prob = ConstructProblem(pci);
   ASSERT_TRUE(!!prob);
 
@@ -158,6 +158,13 @@ TEST_F(PlanningTest, arm_around_table_multi_threaded)  // NOLINT
 {
   runTest(env_, true);
 }
+
+#ifdef TRAJOPT_SCO_HAS_PIQP
+TEST_F(PlanningTest, arm_around_table_multi_threaded_piqp)  // NOLINT
+{
+  runTest(env_, true, sco::ModelType::PIQP);
+}
+#endif
 
 int main(int argc, char** argv)
 {

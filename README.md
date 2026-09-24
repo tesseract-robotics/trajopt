@@ -30,12 +30,12 @@ At the moment, the following solvers are supported:
 - `BPMPD` (interior point method, free for non-commercial use only)
 - `Gurobi` (simplex and interior point/parallel barrier, license required)
 - `OSQP` (ADMM, BSD2 license) default
+- `PIQP` (proximal interior point method, BSD2 license)
 - `qpOASES` (active set, LGPL 2.1 license)
 
-The `BPMPD` library is bundled in the distribution, and `OSQP` and `qpOASES` are pulled automatically from their source distribution when needed. `Gurobi` needs to be installed in the system.
+The `BPMPD` library is bundled in the distribution, and `OSQP` and `qpOASES` are pulled automatically from their source distribution when needed. `PIQP` is used when it is found at build time. `Gurobi` needs to be installed in the system.
 To compile with `Gurobi` support, a `GUROBI_HOME` variable needs to be defined.
-Once `trajopts` is compiled with support for a specific solver, you can select it by properly setting the `TRAJOPT_CONVEX_SOLVER` environment variable. Possible values are `GUROBI`, `BPMPD`, `OSQP`, `QPOASES`, `AUTO_SOLVER`.
-The selection to `AUTO_SOLVER` is the default and automatically picks the best between the available solvers.
+A problem selects its solver through `convex_solver`. `AUTO_SOLVER` is the default: it uses the solver named by the `TRAJOPT_CONVEX_SOLVER` environment variable if set, and otherwise the first available of `GUROBI`, `OSQP`, `QPOASES`, `BPMPD`, `PIQP`. Possible values of both are `GUROBI`, `OSQP`, `QPOASES`, `BPMPD`, `PIQP`, `AUTO_SOLVER`.
 
 ## TrajOpt Examples
 If you're new to TrajOpt, a great place to start is [tesseract_ros_examples](https://github.com/ros-industrial-consortium/tesseract_ros2/tree/master/tesseract_ros_examples). This contains a number of examples to get you started.
