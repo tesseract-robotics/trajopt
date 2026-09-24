@@ -143,6 +143,17 @@ TEST(PIQPSolverUnit, IntersectingBoundRows)  // NOLINT
   EXPECT_NEAR(x[0], 1.0, kTol);
 }
 
+TEST(PIQPSolverUnit, DisjointBoundRowsFail)  // NOLINT
+{
+  // x0 >= 2 and x0 <= 1 on the same variable
+  PIQPSolver solver;
+  const auto A = makeMatrix(2, 1, { { 0, 0, -1.0 }, { 1, 0, 1.0 } });
+  Eigen::VectorXd x;
+  EXPECT_FALSE(solveQP(
+      solver, Eigen::Matrix<double, 1, 1>::Zero(), A, Eigen::Vector2d(-kInf, -kInf), Eigen::Vector2d(-2.0, 1.0), x));
+  EXPECT_EQ(solver.getSolverStatus(), QPSolverStatus::kFailed);
+}
+
 TEST(PIQPSolverUnit, ResolveAfterBoundsChange)  // NOLINT
 {
   PIQPSolver solver;
@@ -170,4 +181,16 @@ TEST(PIQPSolverUnit, InfeasibleProblemFails)  // NOLINT
   solver.updateBounds(Eigen::Vector2d(-kInf, -kInf), Eigen::Vector2d(kInf, 1.0));
   ASSERT_TRUE(solver.solve());
   EXPECT_EQ(solver.getSolverStatus(), QPSolverStatus::kInitialized);
+}
+
+TEST(PIQPSolverUnit, DenseKKTSolverFails)  // NOLINT
+{
+  // The sparse backend rejects PIQP's own default KKT solver at setup
+  PIQPSolver solver;
+  solver.settings.kkt_solver = piqp::KKTSolver::dense_cholesky;
+  const auto A = makeMatrix(1, 2, { { 0, 0, 1.0 }, { 0, 1, 1.0 } });
+  Eigen::VectorXd x;
+  EXPECT_FALSE(solveQP(
+      solver, Eigen::Vector2d::Zero(), A, Eigen::Matrix<double, 1, 1>(2.0), Eigen::Matrix<double, 1, 1>(2.0), x));
+  EXPECT_EQ(solver.getSolverStatus(), QPSolverStatus::kFailed);
 }
