@@ -11,21 +11,32 @@ endif()
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/")
 
+set(SOLVER_HEADER_EXCLUDES)
 find_package(GUROBI QUIET)
 find_package(osqp QUIET)
 if(osqp_FOUND)
   set(TRAJOPT_SCO_HAS_OSQP ON)
 else()
   set(TRAJOPT_SCO_HAS_OSQP OFF)
+  list(
+    APPEND
+    SOLVER_HEADER_EXCLUDES
+    PATTERN
+    "osqp_interface.hpp"
+    EXCLUDE)
 endif()
 find_package(piqp QUIET)
 if(piqp_FOUND)
   set(TRAJOPT_SCO_HAS_PIQP ON)
-  set(PIQP_HEADER_EXCLUDE)
   message(STATUS "PIQP found: building sco::PIQPModel")
 else()
   set(TRAJOPT_SCO_HAS_PIQP OFF)
-  set(PIQP_HEADER_EXCLUDE PATTERN "piqp_interface.hpp" EXCLUDE)
+  list(
+    APPEND
+    SOLVER_HEADER_EXCLUDES
+    PATTERN
+    "piqp_interface.hpp"
+    EXCLUDE)
   message(STATUS "PIQP not found: sco::PIQPModel is not built")
 endif()
 find_package(Eigen3 REQUIRED)
@@ -171,7 +182,7 @@ install(
   FILES_MATCHING
   PATTERN "*.h"
   PATTERN "*.hpp"
-  PATTERN ".svn" EXCLUDE ${PIQP_HEADER_EXCLUDE})
+  PATTERN ".svn" EXCLUDE ${SOLVER_HEADER_EXCLUDES})
 
 install(FILES cmake/FindGUROBI.cmake cmake/FindqpOASES.cmake DESTINATION lib/cmake/${PROJECT_NAME})
 
