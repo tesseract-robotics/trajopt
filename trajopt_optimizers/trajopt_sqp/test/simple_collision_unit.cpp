@@ -57,6 +57,9 @@ TRAJOPT_IGNORE_WARNINGS_POP
 #include <trajopt_sqp/trajopt_qp_problem.h>
 #include <trajopt_sqp/trust_region_sqp_solver.h>
 #include <trajopt_sqp/osqp_eigen_solver.h>
+#ifdef TRAJOPT_SQP_HAS_PIQP
+#include <trajopt_sqp/piqp_solver.h>
+#endif
 
 using namespace trajopt_ifopt;
 using namespace tesseract::environment;
@@ -80,8 +83,21 @@ public:
   }
 };
 
+trajopt_sqp::QPSolver::Ptr makeOSQPSolver()
+{
+  auto qp_solver = std::make_shared<trajopt_sqp::OSQPEigenSolver>();
+  qp_solver->solver_->settings()->setVerbosity(false);
+  qp_solver->solver_->settings()->setWarmStart(true);
+  qp_solver->solver_->settings()->setPolish(true);
+  qp_solver->solver_->settings()->setAdaptiveRho(false);
+  qp_solver->solver_->settings()->setMaxIteration(8192);
+  qp_solver->solver_->settings()->setAbsoluteTolerance(1e-4);
+  qp_solver->solver_->settings()->setRelativeTolerance(1e-6);
+  return qp_solver;
+}
+
 template <typename T>
-void runSimpleCollisionTest(const Environment::Ptr& env)
+void runSimpleCollisionTest(const Environment::Ptr& env, const trajopt_sqp::QPSolver::Ptr& qp_solver)
 {
   SceneState::JointValues ipos;
   ipos["spherebot_x_joint"] = -0.75;
@@ -146,16 +162,8 @@ void runSimpleCollisionTest(const Environment::Ptr& env)
   qp_problem->setup();
   qp_problem->print();
 
-  // 5) choose solver and options
-  auto qp_solver = std::make_shared<trajopt_sqp::OSQPEigenSolver>();
+  // 5) choose solver
   trajopt_sqp::TrustRegionSQPSolver solver(qp_solver);
-  qp_solver->solver_->settings()->setVerbosity(false);
-  qp_solver->solver_->settings()->setWarmStart(true);
-  qp_solver->solver_->settings()->setPolish(true);
-  qp_solver->solver_->settings()->setAdaptiveRho(false);
-  qp_solver->solver_->settings()->setMaxIteration(8192);
-  qp_solver->solver_->settings()->setAbsoluteTolerance(1e-4);
-  qp_solver->solver_->settings()->setRelativeTolerance(1e-6);
 
   // 6) solve
   solver.verbose = false;
@@ -199,7 +207,7 @@ void runSimpleCollisionTest(const Environment::Ptr& env)
 // TEST_F(SimpleCollisionTest, spheres_ifopt_problem)  // NOLINT
 //{
 //  CONSOLE_BRIDGE_logDebug("SimpleCollisionTest, spheres_ifopt_problem");
-//  runSimpleCollisionTest<trajopt_sqp::IfoptQPProblem>(env);
+//  runSimpleCollisionTest<trajopt_sqp::IfoptQPProblem>(env, makeOSQPSolver());
 //}
 
 TEST_F(SimpleCollisionTest, spheres_trajopt_problem)  // NOLINT
@@ -211,8 +219,15 @@ TEST_F(SimpleCollisionTest, spheres_trajopt_problem)  // NOLINT
    * Constraints use violation versus cost uses the error.
    */
   CONSOLE_BRIDGE_logDebug("SimpleCollisionTest, spheres_trajopt_problem");
-  runSimpleCollisionTest<trajopt_sqp::TrajOptQPProblem>(env);  // NOLINT
+  runSimpleCollisionTest<trajopt_sqp::TrajOptQPProblem>(env, makeOSQPSolver());  // NOLINT
 }
+
+#ifdef TRAJOPT_SQP_HAS_PIQP
+TEST_F(SimpleCollisionTest, spheres_trajopt_problem_piqp)  // NOLINT
+{
+  runSimpleCollisionTest<trajopt_sqp::TrajOptQPProblem>(env, std::make_shared<trajopt_sqp::PIQPSolver>());  // NOLINT
+}
+#endif
 
 int main(int argc, char** argv)
 {

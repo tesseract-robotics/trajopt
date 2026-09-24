@@ -39,3 +39,6 @@ add_gtest(${PROJECT_NAME}_cart_position_optimization_unit cart_position_optimiza
 add_gtest(${PROJECT_NAME}_hessian_gradient_unit hessian_gradient_unit.cpp)
 add_gtest(${PROJECT_NAME}_qp_problem_merit_unit qp_problem_merit_unit.cpp)
 add_gtest(${PROJECT_NAME}_trust_box_floor_unit trust_box_floor_unit.cpp)
+if(piqp_FOUND)
+  add_gtest(${PROJECT_NAME}_piqp_solver_unit piqp_solver_unit.cpp)
+endif()

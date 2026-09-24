@@ -15,6 +15,16 @@ find_package(trajopt_ifopt REQUIRED)
 find_package(trajopt_common REQUIRED)
 find_package(ros_industrial_cmake_boilerplate REQUIRED)
 find_package(tesseract REQUIRED COMPONENTS common visualization)
+find_package(piqp QUIET)
+if(piqp_FOUND)
+  message(STATUS "PIQP found: building trajopt_sqp::PIQPSolver")
+  set(PIQP_DEPENDENCY piqp)
+  set(PIQP_HEADER_EXCLUDE)
+else()
+  message(STATUS "PIQP not found: trajopt_sqp::PIQPSolver is not built")
+  set(PIQP_DEPENDENCY)
+  set(PIQP_HEADER_EXCLUDE PATTERN "piqp_solver.h" EXCLUDE)
+endif()
 
 # Load variable for clang tidy args, compiler options and cxx version
 trajopt_variables()
@@ -32,6 +42,11 @@ add_library(
   src/expressions.cpp
   src/types.cpp)
 target_link_libraries(${PROJECT_NAME} PUBLIC console_bridge::console_bridge trajopt::trajopt_ifopt OsqpEigen::OsqpEigen)
+if(piqp_FOUND)
+  target_sources(${PROJECT_NAME} PRIVATE src/piqp_solver.cpp)
+  target_link_libraries(${PROJECT_NAME} PUBLIC piqp::piqp)
+  target_compile_definitions(${PROJECT_NAME} PUBLIC TRAJOPT_SQP_HAS_PIQP)
+endif()
 target_include_directories(${PROJECT_NAME} PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
                                                   $<INSTALL_INTERFACE:include>)
 target_compile_options(${PROJECT_NAME} PRIVATE ${TRAJOPT_COMPILE_OPTIONS_PRIVATE})
@@ -77,7 +92,8 @@ configure_package(
     OsqpEigen
     trajopt_ifopt
     trajopt_common
-    "tesseract COMPONENTS common visualization")
+    "tesseract COMPONENTS common visualization"
+    ${PIQP_DEPENDENCY})
 
 # Mark cpp header files for installation
 install(
@@ -86,7 +102,7 @@ install(
   FILES_MATCHING
   PATTERN "*.h"
   PATTERN "*.hpp"
-  PATTERN ".svn" EXCLUDE)
+  PATTERN ".svn" EXCLUDE ${PIQP_HEADER_EXCLUDE})
 
 # ######################################################################################################################
 # Testing ##
@@ -103,6 +119,9 @@ if(TRAJOPT_ENABLE_BENCHMARKING)
 endif()
 
 if(TRAJOPT_PACKAGE)
+  if(piqp_FOUND)
+    set(PIQP_PACKAGE_DEPENDENCY "${TRAJOPT_PACKAGE_PREFIX}piqp")
+  endif()
   cpack(
     VERSION ${pkg_extracted_version} MAINTAINER <https://github.com/tesseract-robotics/trajopt>
     VENDOR "ROS-Industrial"
@@ -117,6 +136,7 @@ if(TRAJOPT_PACKAGE)
       "${TRAJOPT_PACKAGE_PREFIX}trajopt-common"
       "${TESSERACT_PACKAGE_PREFIX}tesseract-common"
       "${TESSERACT_PACKAGE_PREFIX}tesseract-visualization"
+      ${PIQP_PACKAGE_DEPENDENCY}
     WINDOWS_DEPENDS
       "Eigen3"
       "boost"
@@ -125,5 +145,6 @@ if(TRAJOPT_PACKAGE)
       "${TRAJOPT_PACKAGE_PREFIX}trajopt-ifopt"
       "${TRAJOPT_PACKAGE_PREFIX}trajopt-common"
       "${TESSERACT_PACKAGE_PREFIX}tesseract-common"
-      "${TESSERACT_PACKAGE_PREFIX}tesseract-visualization")
+      "${TESSERACT_PACKAGE_PREFIX}tesseract-visualization"
+      ${PIQP_PACKAGE_DEPENDENCY})
 endif()
