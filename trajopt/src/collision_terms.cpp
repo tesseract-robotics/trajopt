@@ -552,7 +552,7 @@ void CollisionEvaluator::CalcDistExpressionsSingleTimeStep(const DblVec& x,
   for (std::size_t i = 0; i < exprs.size(); ++i)
   {
     sco::exprInc(exprs[i], dist_results[i].get().distance);
-    sco::cleanupAff(exprs[i]);
+    exprs[i] = sco::cleanupAff(exprs[i]);
   }
 }
 
