@@ -41,6 +41,9 @@ TRAJOPT_IGNORE_WARNINGS_POP
 #include <trajopt_sqp/trajopt_qp_problem.h>
 #include <trajopt_sqp/trust_region_sqp_solver.h>
 #include <trajopt_sqp/osqp_eigen_solver.h>
+#ifdef TRAJOPT_SQP_HAS_PIQP
+#include <trajopt_sqp/piqp_solver.h>
+#endif
 
 #include <trajopt_ifopt/constraints/cartesian_position_constraint.h>
 #include <trajopt_ifopt/variable_sets/nodes_variables.h>
@@ -73,11 +76,9 @@ public:
   }
 };
 
-template <typename T>
-void runCartPositionOptimization(const tesseract::environment::Environment::Ptr& env)
+trajopt_sqp::QPSolver::Ptr makeOSQPSolver()
 {
   auto qp_solver = std::make_shared<trajopt_sqp::OSQPEigenSolver>();
-  trajopt_sqp::TrustRegionSQPSolver solver(qp_solver);
   qp_solver->solver_->settings()->setVerbosity(DEBUG);
   qp_solver->solver_->settings()->setWarmStart(true);
   qp_solver->solver_->settings()->setPolish(true);
@@ -85,6 +86,14 @@ void runCartPositionOptimization(const tesseract::environment::Environment::Ptr&
   qp_solver->solver_->settings()->setMaxIteration(8192);
   qp_solver->solver_->settings()->setAbsoluteTolerance(1e-4);
   qp_solver->solver_->settings()->setRelativeTolerance(1e-6);
+  return qp_solver;
+}
+
+template <typename T>
+void runCartPositionOptimization(const tesseract::environment::Environment::Ptr& env,
+                                 const trajopt_sqp::QPSolver::Ptr& qp_solver)
+{
+  trajopt_sqp::TrustRegionSQPSolver solver(qp_solver);
 
   // Extract necessary kinematic information
   const tesseract::kinematics::JointGroup::ConstPtr manip = env->getJointGroup("right_arm");
@@ -148,15 +157,23 @@ void runCartPositionOptimization(const tesseract::environment::Environment::Ptr&
 TEST_F(CartPositionOptimization, cart_position_optimization_ifopt_problem)  // NOLINT
 {
   CONSOLE_BRIDGE_logDebug("CartPositionOptimization, cart_position_optimization_trajopt_problem");
-  runCartPositionOptimization<trajopt_sqp::IfoptQPProblem>(env);
+  runCartPositionOptimization<trajopt_sqp::IfoptQPProblem>(env, makeOSQPSolver());
 }
 
 /** @brief Applies a cartesian position constraint and solves the ifopt problem with trajopt_sqp */
 TEST_F(CartPositionOptimization, cart_position_optimization_trajopt_problem)  // NOLINT
 {
   CONSOLE_BRIDGE_logDebug("CartPositionOptimization, cart_position_optimization_ifopt_problem");
-  runCartPositionOptimization<trajopt_sqp::TrajOptQPProblem>(env);
+  runCartPositionOptimization<trajopt_sqp::TrajOptQPProblem>(env, makeOSQPSolver());
 }
+
+#ifdef TRAJOPT_SQP_HAS_PIQP
+/** @brief Applies a cartesian position constraint and solves the trajopt problem with trajopt_sqp on PIQP */
+TEST_F(CartPositionOptimization, cart_position_optimization_trajopt_problem_piqp)  // NOLINT
+{
+  runCartPositionOptimization<trajopt_sqp::TrajOptQPProblem>(env, std::make_shared<trajopt_sqp::PIQPSolver>());
+}
+#endif
 
 int main(int argc, char** argv)
 {

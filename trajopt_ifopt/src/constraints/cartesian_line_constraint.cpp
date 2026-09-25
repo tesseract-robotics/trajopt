@@ -95,6 +95,9 @@ CartLineConstraint::CartLineConstraint(CartLineInfo info,
   if (coeffs_.rows() != info_.indices.rows())
     throw std::runtime_error("The number of coeffs does not match the number of constraints.");
 
+  if (!coeffs_.allFinite() || (coeffs_.array() < 0).any())
+    throw std::runtime_error("The coeffs must be finite and non-negative.");
+
   error_diff_function_ = [this](const Eigen::VectorXd& vals,
                                 const Eigen::Isometry3d& target_tf,
                                 const Eigen::Isometry3d& source_tf,

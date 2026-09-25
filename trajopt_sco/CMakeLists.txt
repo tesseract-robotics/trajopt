@@ -11,8 +11,34 @@ endif()
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/")
 
+set(SOLVER_HEADER_EXCLUDES)
 find_package(GUROBI QUIET)
 find_package(osqp QUIET)
+if(osqp_FOUND)
+  set(TRAJOPT_SCO_HAS_OSQP ON)
+else()
+  set(TRAJOPT_SCO_HAS_OSQP OFF)
+  list(
+    APPEND
+    SOLVER_HEADER_EXCLUDES
+    PATTERN
+    "osqp_interface.hpp"
+    EXCLUDE)
+endif()
+find_package(piqp QUIET)
+if(piqp_FOUND)
+  set(TRAJOPT_SCO_HAS_PIQP ON)
+  message(STATUS "PIQP found: building sco::PIQPModel")
+else()
+  set(TRAJOPT_SCO_HAS_PIQP OFF)
+  list(
+    APPEND
+    SOLVER_HEADER_EXCLUDES
+    PATTERN
+    "piqp_interface.hpp"
+    EXCLUDE)
+  message(STATUS "PIQP not found: sco::PIQPModel is not built")
+endif()
 find_package(Eigen3 REQUIRED)
 find_package(trajopt_common REQUIRED)
 if(NOT TARGET JsonCpp::JsonCpp)
@@ -99,6 +125,10 @@ if(qpOASES_FOUND AND TRAJOPT_BUILD_qpOASES)
   list(APPEND SCO_SOURCE_FILES src/qpoases_interface.cpp)
 endif()
 
+if(piqp_FOUND)
+  list(APPEND SCO_SOURCE_FILES src/piqp_interface.cpp)
+endif()
+
 add_library(${PROJECT_NAME} ${SCO_SOURCE_FILES})
 if(GUROBI_FOUND)
   target_link_libraries(${PROJECT_NAME} PRIVATE ${GUROBI_LIBRARIES})
@@ -113,13 +143,17 @@ if(HAVE_BPMPD)
                                                      HAVE_BPMPD=ON)
 endif()
 if(osqp_FOUND)
-  target_link_libraries(${PROJECT_NAME} PRIVATE osqp::osqp)
+  target_link_libraries(${PROJECT_NAME} PUBLIC osqp::osqp)
   target_compile_definitions(${PROJECT_NAME} PRIVATE HAVE_OSQP=ON)
 endif()
 if(qpOASES_FOUND AND TRAJOPT_BUILD_qpOASES)
   target_link_libraries(${PROJECT_NAME} PRIVATE ${qpOASES_LIBRARIES})
   target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE ${qpOASES_INCLUDE_DIRS})
   target_compile_definitions(${PROJECT_NAME} PRIVATE HAVE_QPOASES=ON)
+endif()
+if(piqp_FOUND)
+  target_link_libraries(${PROJECT_NAME} PUBLIC piqp::piqp)
+  target_compile_definitions(${PROJECT_NAME} PUBLIC TRAJOPT_SCO_HAS_PIQP)
 endif()
 
 target_link_libraries(
@@ -148,7 +182,7 @@ install(
   FILES_MATCHING
   PATTERN "*.h"
   PATTERN "*.hpp"
-  PATTERN ".svn" EXCLUDE)
+  PATTERN ".svn" EXCLUDE ${SOLVER_HEADER_EXCLUDES})
 
 install(FILES cmake/FindGUROBI.cmake cmake/FindqpOASES.cmake DESTINATION lib/cmake/${PROJECT_NAME})
 
@@ -190,6 +224,11 @@ if(TRAJOPT_PACKAGE)
 
   if(qpOASES_FOUND AND TRAJOPT_BUILD_qpOASES)
     # TODO
+  endif()
+
+  if(piqp_FOUND)
+    list(APPEND LINUX_DEPENDS "${TRAJOPT_PACKAGE_PREFIX}piqp")
+    list(APPEND WINDOWS_DEPENDS "${TRAJOPT_PACKAGE_PREFIX}piqp")
   endif()
 
   cpack(

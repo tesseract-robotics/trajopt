@@ -232,6 +232,7 @@ public:
     OSQP,
     QPOASES,
     BPMPD,
+    PIQP,
     AUTO_SOLVER
   };
 

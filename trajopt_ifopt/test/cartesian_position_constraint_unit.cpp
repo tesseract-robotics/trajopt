@@ -25,6 +25,7 @@
 #include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <ctime>
+#include <limits>
 #include <gtest/gtest.h>
 #include <console_bridge/console.h>
 #include <tesseract/common/resource_locator.h>
@@ -228,6 +229,27 @@ TEST_F(CartesianPositionConstraintUnit, GetSetBounds)  // NOLINT
 }
 
 ////////////////////////////////////////////////////////////////////
+
+/** @brief Coefficients must be finite and non-negative */
+TEST_F(CartesianPositionConstraintUnit, RejectsInvalidCoeffs)  // NOLINT
+{
+  auto node = std::make_unique<Node>("Joint_Position_0");
+  const std::vector<std::string> joint_names = tesseract::common::toNames(kin_group->getJointIds());
+  auto var0 = node->addVar("position",
+                           joint_names,
+                           Eigen::VectorXd::Ones(n_dof),
+                           std::vector<Bounds>(static_cast<std::size_t>(n_dof), NoBound));
+
+  for (const double bad : { -1.0, std::numeric_limits<double>::infinity(), std::numeric_limits<double>::quiet_NaN() })
+  {
+    Eigen::VectorXd coeffs = Eigen::VectorXd::Ones(6);
+    coeffs(2) = bad;
+    EXPECT_THROW(
+        std::make_shared<CartPosConstraint>(
+            var0, coeffs, std::vector<Bounds>(6, BoundZero), kin_group, "r_gripper_tool_frame", "base_footprint"),
+        std::runtime_error);
+  }
+}
 
 int main(int argc, char** argv)
 {

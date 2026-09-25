@@ -59,8 +59,8 @@ JointJerkConstraint::JointJerkConstraint(const Eigen::VectorXd& targets,
   // Each timestep depends on 4 positions → 4 nonzeros per DOF
   non_zeros_ = 4 * n_dof_ * n_vars_;
 
-  if (!(coeffs.array() > 0).all())
-    throw std::runtime_error("JointJerkConstraint, coeff must be greater than zero.");
+  if (!coeffs.allFinite() || !(coeffs.array() > 0).all())
+    throw std::runtime_error("JointJerkConstraint, coeff must be finite and greater than zero.");
 
   if (coeffs.rows() == 0)
     coeffs_ = Eigen::VectorXd::Ones(n_dof_ * n_vars_);
