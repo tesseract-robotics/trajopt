@@ -11,7 +11,7 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <tesseract/environment/environment.h>
 #include <tesseract/environment/utils.h>
 #include <tesseract/visualization/visualization.h>
-#include <console_bridge/console.h>
+#include <tesseract/common/logging.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt/plot_callback.hpp>
@@ -21,7 +21,6 @@ TRAJOPT_IGNORE_WARNINGS_POP
 #include <trajopt_common/clock.hpp>
 #include <trajopt_common/config.hpp>
 #include <trajopt_common/eigen_conversions.hpp>
-#include <trajopt_common/logging.hpp>
 #include <trajopt_common/stl_to_string.hpp>
 #include "trajopt_test_utils.hpp"
 
@@ -57,13 +56,13 @@ public:
     ipos["torso_lift_joint"] = 0.0;
     env_->setState(ipos);
 
-    gLogLevel = trajopt_common::LevelError;
+    tesseract::common::getLogger()->set_level(spdlog::level::err);
   }
 };
 
 void runTest(const Environment::Ptr& env, bool use_multi_threaded)
 {
-  CONSOLE_BRIDGE_logDebug("PlanningTest, arm_around_table");
+  TESSERACT_LOG_DEBUG("PlanningTest, arm_around_table");
 
   const Json::Value root = readJsonFile(std::string(TRAJOPT_DATA_DIR) + "/config/arm_around_table.json");
 
@@ -100,7 +99,8 @@ void runTest(const Environment::Ptr& env, bool use_multi_threaded)
       checkTrajectory(collisions, *manager, *state_solver, prob->GetKin()->getJointIds(), prob->GetInitTraj(), config);
 
   EXPECT_TRUE(found);
-  CONSOLE_BRIDGE_logDebug((found) ? ("Initial trajectory is in collision") : ("Initial trajectory is collision free"));
+  TESSERACT_LOG_DEBUG("{}",
+                      (found) ? ("Initial trajectory is in collision") : ("Initial trajectory is collision free"));
 
   sco::BasicTrustRegionSQP::Ptr opt;
   if (use_multi_threaded)
@@ -113,7 +113,7 @@ void runTest(const Environment::Ptr& env, bool use_multi_threaded)
     opt = std::make_shared<sco::BasicTrustRegionSQP>(prob);
   }
 
-  CONSOLE_BRIDGE_logDebug("DOF: %d", prob->GetNumDOF());
+  TESSERACT_LOG_DEBUG("DOF: {}", prob->GetNumDOF());
   //  if (plotting)
   //  {
   //    opt.addCallback(PlotCallback(*prob, plotter_));
@@ -123,7 +123,7 @@ void runTest(const Environment::Ptr& env, bool use_multi_threaded)
   const double tStart = GetClock();
   const sco::OptStatus status = opt->optimize();
   EXPECT_TRUE(status == sco::OptStatus::OPT_CONVERGED);
-  CONSOLE_BRIDGE_logDebug("planning time: %.3f", GetClock() - tStart);
+  TESSERACT_LOG_DEBUG("planning time: {:.3f}", GetClock() - tStart);
 
   double d = 0;
   TrajArray traj = getTraj(opt->x(), prob->GetVars());
@@ -134,7 +134,7 @@ void runTest(const Environment::Ptr& env, bool use_multi_threaded)
       d += std::abs(traj(i, j) - traj(i - 1, j));
     }
   }
-  CONSOLE_BRIDGE_logDebug("trajectory norm: %.3f", d);
+  TESSERACT_LOG_DEBUG("trajectory norm: {:.3f}", d);
 
   //  if (plotting)
   //  {
@@ -146,7 +146,7 @@ void runTest(const Environment::Ptr& env, bool use_multi_threaded)
       collisions, *manager, *state_solver, prob->GetKin()->getJointIds(), getTraj(opt->x(), prob->GetVars()), config);
 
   EXPECT_FALSE(found);
-  CONSOLE_BRIDGE_logDebug((found) ? ("Final trajectory is in collision") : ("Final trajectory is collision free"));
+  TESSERACT_LOG_DEBUG("{}", (found) ? ("Final trajectory is in collision") : ("Final trajectory is collision free"));
 }
 
 TEST_F(PlanningTest, arm_around_table)  // NOLINT

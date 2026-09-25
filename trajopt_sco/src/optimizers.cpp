@@ -12,7 +12,7 @@ TRAJOPT_IGNORE_WARNINGS_POP
 #include <trajopt_sco/optimizers.hpp>
 #include <trajopt_sco/sco_common.hpp>
 #include <trajopt_sco/solver_interface.hpp>
-#include <trajopt_common/logging.hpp>
+#include <tesseract/common/logging.h>
 #include <trajopt_common/stl_to_string.hpp>
 #include <tesseract/common/utils.h>
 
@@ -395,13 +395,13 @@ void BasicTrustRegionSQPResults::update(const OptResults& prev_opt_results,
   // the Model
   new_x = DblVec(model_var_vals.begin(), model_var_vals.begin() + static_cast<long int>(prev_opt_results.x.size()));
 
-  if (trajopt_common::GetLogLevel() >= trajopt_common::LevelDebug)
+  if (tesseract::common::getLogger()->should_log(spdlog::level::debug))
   {
     const DblVec cnt_costs1 = parent_.evaluateModelCosts(cnt_cost_models, model_var_vals);
     DblVec cnt_costs2 = model_cnt_viols;
     for (unsigned i = 0; i < cnt_costs2.size(); ++i)
       cnt_costs2[i] *= merit_error_coeffs[i];
-    LOG_DEBUG("SHOULD BE ALMOST THE SAME: %s ?= %s", CSTR(cnt_costs1), CSTR(cnt_costs2));
+    TESSERACT_LOG_DEBUG("SHOULD BE ALMOST THE SAME: {} ?= {}", CSTR(cnt_costs1), CSTR(cnt_costs2));
     // not exactly the same because cnt_costs1 is based on aux variables,
     // but they might not be at EXACTLY the right value
   }
@@ -418,9 +418,9 @@ void BasicTrustRegionSQPResults::update(const OptResults& prev_opt_results,
   exact_merit_improve = old_merit - new_merit;
   merit_improve_ratio = exact_merit_improve / approx_merit_improve;
 
-  if (trajopt_common::GetLogLevel() >= trajopt_common::LevelInfo)
+  if (tesseract::common::getLogger()->should_log(spdlog::level::info))
   {
-    LOG_INFO(" ");
+    TESSERACT_LOG_INFO(" ");
     print();
   }
 }
@@ -709,7 +709,7 @@ OptStatus BasicTrustRegionSQP::optimize()
   std::FILE* log_vars_stream = nullptr;
   std::FILE* log_costs_stream = nullptr;
   std::FILE* log_constraints_stream = nullptr;
-  if (param_.log_results || trajopt_common::GetLogLevel() >= trajopt_common::LevelDebug)
+  if (param_.log_results || tesseract::common::getLogger()->should_log(spdlog::level::debug))
   {
     log_solver_stream = std::fopen((param_.log_dir + "/trajopt_solver.log").c_str(), "w");
     log_vars_stream = std::fopen((param_.log_dir + "/trajopt_vars.log").c_str(), "w");
@@ -739,22 +739,22 @@ OptStatus BasicTrustRegionSQP::optimize()
       const double elapsed_time = std::chrono::duration<double, std::milli>(Clock::now() - start_time).count() / 1000.0;
       if (elapsed_time > param_.max_time)
       {
-        LOG_INFO("Elapsed time %f has exceeded max time %f", elapsed_time, param_.max_time);
+        TESSERACT_LOG_INFO("Elapsed time {} has exceeded max time {}", elapsed_time, param_.max_time);
         retval = OPT_TIME_LIMIT;
 
         if (results_.cnt_viols.empty() || vecMax(results_.cnt_viols) < param_.cnt_tolerance)
         {
           retval = OPT_CONVERGED;
           if (!results_.cnt_viols.empty())
-            LOG_INFO("woo-hoo! constraints are satisfied (to tolerance %.2e)", param_.cnt_tolerance);
+            TESSERACT_LOG_INFO("woo-hoo! constraints are satisfied (to tolerance {:.2e})", param_.cnt_tolerance);
         }
 
         goto cleanup;
       }
       callCallbacks();
 
-      LOG_DEBUG("current iterate: %s", CSTR(results_.x));
-      LOG_INFO("iteration %i", iter);
+      TESSERACT_LOG_DEBUG("current iterate: {}", CSTR(results_.x));
+      TESSERACT_LOG_INFO("iteration {}", iter);
 
       // speedup: if you just evaluated the cost when doing the line search, use
       // that
@@ -798,15 +798,6 @@ OptStatus BasicTrustRegionSQP::optimize()
       //    objective = cleanupExpr(objective);
       model_->setObjective(objective);
 
-      //    if (logging::filter() >= IPI_LEVEL_DEBUG) {
-      //      DblVec model_cost_vals;
-      //      for (ConvexObjectivePtr& cost : cost_models) {
-      //        model_cost_vals.push_back(cost->value(x));
-      //      }
-      //      LOG_DEBUG("model costs %s should equalcosts  %s",
-      //      printer(model_cost_vals), printer(cost_vals));
-      //    }
-
       int qp_solver_failures = 0;
       while (param_.trust_box_size >= param_.min_trust_box_size)
       {
@@ -816,13 +807,13 @@ OptStatus BasicTrustRegionSQP::optimize()
         ++results_.n_qp_solves;
         if (status != CVX_SOLVED)
         {
-          LOG_WARN("convex solver failed! set TRAJOPT_LOG_THRESH=DEBUG to see "
-                   "solver output. Saving model to /tmp/fail.lp");
+          TESSERACT_LOG_WARN("Convex solver failed. Enable debug logging to see solver output. Saving model to "
+                             "/tmp/fail.lp");
           model_->writeToFile("/tmp/fail.lp");
           if (qp_solver_failures < (param_.max_qp_solver_failures - 1))
           {
             adjustTrustRegion(param_.trust_shrink_ratio);
-            LOG_INFO("shrunk trust region. new box size: %.4f", param_.trust_box_size);
+            TESSERACT_LOG_INFO("shrunk trust region. new box size: {:.4f}", param_.trust_box_size);
             qp_solver_failures++;
             continue;
           }
@@ -831,12 +822,12 @@ OptStatus BasicTrustRegionSQP::optimize()
           {
             // convex solver failed and this is the last attempt so setting the trust region to the minimum.
             setTrustRegionSize(param_.min_trust_box_size);
-            LOG_INFO("shrunk trust region. new box size: %.4f", param_.trust_box_size);
+            TESSERACT_LOG_INFO("shrunk trust region. new box size: {:.4f}", param_.trust_box_size);
             qp_solver_failures++;
             continue;
           }
 
-          LOG_ERROR("The convex solver failed you one too many times.");
+          TESSERACT_LOG_ERROR("The convex solver failed you one too many times.");
           retval = OPT_FAILED;
           goto cleanup;
         }
@@ -855,7 +846,7 @@ OptStatus BasicTrustRegionSQP::optimize()
           iteration_results.printRaw();
         }
 
-        if (param_.log_results || trajopt_common::GetLogLevel() >= trajopt_common::LevelDebug)
+        if (param_.log_results || tesseract::common::getLogger()->should_log(spdlog::level::debug))
         {
           if (log_solver_stream != nullptr)
             iteration_results.writeSolver(log_solver_stream, results_.n_func_evals == 1);
@@ -874,25 +865,25 @@ OptStatus BasicTrustRegionSQP::optimize()
 
         if (iteration_results.approx_merit_improve < -1e-5)
         {
-          LOG_WARN("approximate merit function got worse (%.3e). "
-                   "(convexification is probably wrong to zeroth order)",
-                   iteration_results.approx_merit_improve);
+          TESSERACT_LOG_WARN("approximate merit function got worse ({:.3e}). "
+                             "(convexification is probably wrong to zeroth order)",
+                             iteration_results.approx_merit_improve);
         }
 
         if (iteration_results.approx_merit_improve < param_.min_approx_improve)
         {
-          LOG_INFO("converged because improvement was small (%.3e < %.3e)",
-                   iteration_results.approx_merit_improve,
-                   param_.min_approx_improve);
+          TESSERACT_LOG_INFO("converged because improvement was small ({:.3e} < {:.3e})",
+                             iteration_results.approx_merit_improve,
+                             param_.min_approx_improve);
           retval = OPT_CONVERGED;
           goto penaltyadjustment;
         }
 
         if (iteration_results.approx_merit_improve / iteration_results.old_merit < param_.min_approx_improve_frac)
         {
-          LOG_INFO("converged because improvement ratio was small (%.3e < %.3e)",
-                   iteration_results.approx_merit_improve / iteration_results.old_merit,
-                   param_.min_approx_improve_frac);
+          TESSERACT_LOG_INFO("converged because improvement ratio was small ({:.3e} < {:.3e})",
+                             iteration_results.approx_merit_improve / iteration_results.old_merit,
+                             param_.min_approx_improve_frac);
           retval = OPT_CONVERGED;
           goto penaltyadjustment;
         }
@@ -900,7 +891,7 @@ OptStatus BasicTrustRegionSQP::optimize()
                  iteration_results.merit_improve_ratio < param_.improve_ratio_threshold)
         {
           adjustTrustRegion(param_.trust_shrink_ratio);
-          LOG_INFO("shrunk trust region. new box size: %.4f", param_.trust_box_size);
+          TESSERACT_LOG_INFO("shrunk trust region. new box size: {:.4f}", param_.trust_box_size);
         }
         else
         {
@@ -908,27 +899,27 @@ OptStatus BasicTrustRegionSQP::optimize()
           results_.cost_vals = iteration_results.new_cost_vals;
           results_.cnt_viols = iteration_results.new_cnt_viols;
           adjustTrustRegion(param_.trust_expand_ratio);
-          LOG_INFO("expanded trust region. new box size: %.4f", param_.trust_box_size);
+          TESSERACT_LOG_INFO("expanded trust region. new box size: {:.4f}", param_.trust_box_size);
           break;
         }
       }
 
       if (param_.trust_box_size < param_.min_trust_box_size)
       {
-        LOG_INFO("converged because trust region is tiny");
+        TESSERACT_LOG_INFO("converged because trust region is tiny");
         retval = OPT_CONVERGED;
         goto penaltyadjustment;
       }
       else if (iter >= param_.max_iter)
       {
-        LOG_INFO("iteration limit");
+        TESSERACT_LOG_INFO("iteration limit");
         retval = OPT_SCO_ITERATION_LIMIT;
 
         if (results_.cnt_viols.empty() || vecMax(results_.cnt_viols) < param_.cnt_tolerance)
         {
           retval = OPT_CONVERGED;
           if (!results_.cnt_viols.empty())
-            LOG_INFO("woo-hoo! constraints are satisfied (to tolerance %.2e)", param_.cnt_tolerance);
+            TESSERACT_LOG_INFO("woo-hoo! constraints are satisfied (to tolerance {:.2e})", param_.cnt_tolerance);
         }
 
         goto cleanup;
@@ -939,7 +930,7 @@ OptStatus BasicTrustRegionSQP::optimize()
     if (results_.cnt_viols.empty() || vecMax(results_.cnt_viols) < param_.cnt_tolerance)
     {
       if (!results_.cnt_viols.empty())
-        LOG_INFO("woo-hoo! constraints are satisfied (to tolerance %.2e)", param_.cnt_tolerance);
+        TESSERACT_LOG_INFO("woo-hoo! constraints are satisfied (to tolerance {:.2e})", param_.cnt_tolerance);
       goto cleanup;  // NOLINT
     }
     else
@@ -951,34 +942,34 @@ OptStatus BasicTrustRegionSQP::optimize()
         {
           if (results_.cnt_viols[idx] > param_.cnt_tolerance)
           {
-            LOG_DEBUG("Not all constraints are satisfied. Increasing constraint penalties for %s",
-                      CSTR(cnt_names[idx]));
+            TESSERACT_LOG_DEBUG("Not all constraints are satisfied. Increasing constraint penalties for {}",
+                                CSTR(cnt_names[idx]));
             merit_error_coeffs[idx] *= param_.merit_coeff_increase_ratio;
           }
         }
       }
       else
       {
-        LOG_DEBUG("Not all constraints are satisfied. Increasing constraint penalties uniformly");
+        TESSERACT_LOG_DEBUG("Not all constraints are satisfied. Increasing constraint penalties uniformly");
         for (auto& merit_error_coeff : merit_error_coeffs)
           merit_error_coeff *= param_.merit_coeff_increase_ratio;
       }
-      LOG_DEBUG("New merit_error_coeffs: %s", CSTR(merit_error_coeffs));
+      TESSERACT_LOG_DEBUG("New merit_error_coeffs: {}", CSTR(merit_error_coeffs));
       param_.trust_box_size = fmax(param_.trust_box_size, param_.min_trust_box_size / param_.trust_shrink_ratio * 1.5);
     }
   } /* merit adjustment loop */
   retval = OPT_PENALTY_ITERATION_LIMIT;
-  LOG_INFO("optimization couldn't satisfy all constraints");
+  TESSERACT_LOG_INFO("optimization couldn't satisfy all constraints");
 
 cleanup:
   assert(retval != INVALID && "should never happen");
   results_.status = retval;
   results_.total_cost = vecSum(results_.cost_vals);
-  LOG_INFO("\n==================\n%s==================", CSTR(results_));
+  TESSERACT_LOG_INFO("\n==================\n{}==================", CSTR(results_));
   callCallbacks();
 
   // NOLINTBEGIN(clang-analyzer-core.NonNullParamChecker)
-  if (param_.log_results || trajopt_common::GetLogLevel() >= trajopt_common::LevelDebug)
+  if (param_.log_results || tesseract::common::getLogger()->should_log(spdlog::level::debug))
   {
     std::fclose(log_solver_stream);
     std::fclose(log_vars_stream);

@@ -9,7 +9,6 @@ if(WIN32)
   set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 endif()
 
-find_package(console_bridge REQUIRED)
 find_package(OsqpEigen REQUIRED)
 find_package(trajopt_ifopt REQUIRED)
 find_package(trajopt_common REQUIRED)
@@ -31,7 +30,7 @@ add_library(
   src/trajopt_qp_problem.cpp
   src/expressions.cpp
   src/types.cpp)
-target_link_libraries(${PROJECT_NAME} PUBLIC console_bridge::console_bridge trajopt::trajopt_ifopt OsqpEigen::OsqpEigen)
+target_link_libraries(${PROJECT_NAME} PUBLIC trajopt::trajopt_ifopt tesseract::common OsqpEigen::OsqpEigen)
 target_include_directories(${PROJECT_NAME} PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
                                                   $<INSTALL_INTERFACE:include>)
 target_compile_options(${PROJECT_NAME} PRIVATE ${TRAJOPT_COMPILE_OPTIONS_PRIVATE})
@@ -56,7 +55,6 @@ target_link_libraries(
          trajopt::trajopt_common
          tesseract::visualization
          tesseract::common
-         console_bridge::console_bridge
          osqp::osqp)
 target_compile_options(${PROJECT_NAME}_callbacks PRIVATE ${TRAJOPT_COMPILE_OPTIONS_PRIVATE})
 target_compile_options(${PROJECT_NAME}_callbacks PUBLIC ${TRAJOPT_COMPILE_OPTIONS_PUBLIC})
@@ -73,7 +71,6 @@ configure_package(
   NAMESPACE trajopt
   TARGETS ${PROJECT_NAME} ${PROJECT_NAME}_callbacks
   DEPENDENCIES
-    console_bridge
     OsqpEigen
     trajopt_ifopt
     trajopt_common
@@ -111,7 +108,7 @@ if(TRAJOPT_PACKAGE)
     LINUX_DEPENDS
       "libeigen3-dev"
       "libboost-dev"
-      "libconsole-bridge-dev"
+      "libspdlog-dev"
       "${TRAJOPT_PACKAGE_PREFIX}osqpeigen"
       "${TRAJOPT_PACKAGE_PREFIX}trajopt-ifopt"
       "${TRAJOPT_PACKAGE_PREFIX}trajopt-common"
@@ -120,7 +117,7 @@ if(TRAJOPT_PACKAGE)
     WINDOWS_DEPENDS
       "Eigen3"
       "boost"
-      "console-bridge"
+      "spdlog"
       "${TRAJOPT_PACKAGE_PREFIX}osqpeigen"
       "${TRAJOPT_PACKAGE_PREFIX}trajopt-ifopt"
       "${TRAJOPT_PACKAGE_PREFIX}trajopt-common"

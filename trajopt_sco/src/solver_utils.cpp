@@ -5,7 +5,6 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt_sco/solver_utils.hpp>
-#include <trajopt_common/logging.hpp>
 
 namespace sco
 {

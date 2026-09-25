@@ -7,7 +7,6 @@ TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt_sco/qpoases_interface.hpp>
 #include <trajopt_sco/solver_utils.hpp>
-#include <trajopt_common/logging.hpp>
 #include <trajopt_common/stl_to_string.hpp>
 
 using namespace qpOASES;

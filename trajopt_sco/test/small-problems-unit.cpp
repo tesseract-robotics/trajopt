@@ -11,7 +11,7 @@ TRAJOPT_IGNORE_WARNINGS_POP
 #include <trajopt_sco/optimizers.hpp>
 #include <trajopt_sco/sco_common.hpp>
 #include <trajopt_sco/solver_interface.hpp>
-#include <trajopt_common/logging.hpp>
+#include <tesseract/common/logging.h>
 #include <trajopt_common/stl_to_string.hpp>
 
 using namespace trajopt_common;
@@ -40,7 +40,7 @@ void setupProblem(OptProb::Ptr& probptr, std::size_t nvars, ModelType convex_sol
 void expectAllNear(const DblVec& x, const DblVec& y, double abstol)
 {
   EXPECT_EQ(x.size(), y.size());
-  LOG_INFO("checking %s ?= %s", CSTR(x), CSTR(y));
+  TESSERACT_LOG_INFO("checking {} ?= {}", CSTR(x), CSTR(y));
   for (std::size_t i = 0; i < x.size(); ++i)
     EXPECT_NEAR(x[i], y[i], abstol);
 }

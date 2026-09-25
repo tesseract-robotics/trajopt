@@ -19,7 +19,7 @@ TRAJOPT_IGNORE_WARNINGS_POP
 #include <trajopt_sco/modeling_utils.hpp>
 #include <trajopt_sco/sco_common.hpp>
 #include <trajopt_common/eigen_conversions.hpp>
-#include <trajopt_common/logging.hpp>
+#include <tesseract/common/logging.h>
 #include <trajopt_common/stl_to_string.hpp>
 #include <trajopt_common/collision_types.h>
 #include <trajopt_common/collision_utils.h>
@@ -442,11 +442,11 @@ CollisionEvaluator::GetContactResultCached(const DblVec& x)
   auto* it = m_cache.get(key);
   if (it != nullptr)
   {
-    LOG_DEBUG("using cached collision check\n")
+    TESSERACT_LOG_DEBUG("using cached collision check\n");
     return *it;
   }
 
-  LOG_DEBUG("not using cached collision check\n")
+  TESSERACT_LOG_DEBUG("not using cached collision check\n");
 
   // A per-call local moved into make_shared avoids the deep copy that the
   // previous thread_local approach required on every cache miss.

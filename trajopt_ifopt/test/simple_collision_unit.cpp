@@ -35,7 +35,7 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <tesseract/environment/utils.h>
 #include <tesseract/common/types.h>
 #include <trajopt_common/collision_types.h>
-#include <console_bridge/console.h>
+#include <tesseract/common/logging.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt_ifopt/utils/numeric_differentiation.h>
@@ -74,7 +74,7 @@ public:
 
 TEST_F(SimpleCollisionTest, spheres)  // NOLINT
 {
-  CONSOLE_BRIDGE_logDebug("SimpleCollisionTest, spheres");
+  TESSERACT_LOG_DEBUG("SimpleCollisionTest, spheres");
 
   SceneState::JointValues ipos;
   ipos["spherebot_x_joint"] = -0.75;
@@ -152,7 +152,7 @@ TEST_F(SimpleCollisionTest, spheres)  // NOLINT
                                trajopt_collision_config.collision_check_config);
 
   EXPECT_TRUE(found);
-  CONSOLE_BRIDGE_logWarn((found) ? ("Initial trajectory is in collision") : ("Initial trajectory is collision free"));
+  TESSERACT_LOG_WARN("{}", (found) ? ("Initial trajectory is in collision") : ("Initial trajectory is collision free"));
 
   collisions.clear();
   found = checkTrajectory(collisions,
@@ -163,7 +163,7 @@ TEST_F(SimpleCollisionTest, spheres)  // NOLINT
                           trajopt_collision_config.collision_check_config);
 
   EXPECT_FALSE(found);
-  CONSOLE_BRIDGE_logWarn((found) ? ("Final trajectory is in collision") : ("Final trajectory is collision free"));
+  TESSERACT_LOG_WARN("{}", (found) ? ("Final trajectory is in collision") : ("Final trajectory is collision free"));
 }
 
 int main(int argc, char** argv)

@@ -27,7 +27,7 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <ctime>
 #include <memory>
 #include <gtest/gtest.h>
-#include <console_bridge/console.h>
+#include <tesseract/common/logging.h>
 #include <OsqpEigen/OsqpEigen.h>
 #include <tesseract/common/types.h>
 #include <tesseract/common/resource_locator.h>
@@ -213,25 +213,24 @@ void runPlanningTest(const Environment::Ptr& env)
   bool found = checkTrajectory(collisions, *manager, *state_solver, manip->getJointIds(), trajectory, config);
 
   EXPECT_TRUE(found);
-  CONSOLE_BRIDGE_logWarn((found) ? ("Initial trajectory is in collision") : ("Initial trajectory is collision free"));
+  TESSERACT_LOG_WARN("{}", (found) ? ("Initial trajectory is in collision") : ("Initial trajectory is collision free"));
 
   collisions.clear();
   found = checkTrajectory(collisions, *manager, *state_solver, manip->getJointIds(), results, config);
 
   EXPECT_FALSE(found);
-  CONSOLE_BRIDGE_logWarn((found) ? ("Final trajectory is in collision") : ("Final trajectory is collision free"));
+  TESSERACT_LOG_WARN("{}", (found) ? ("Final trajectory is in collision") : ("Final trajectory is collision free"));
 }
 
 // TrajOpt Ifopt Problem does not work because it does not support Hinge Costs
 // TEST_F(PlanningTest, arm_around_table_ifopt_problem)  // NOLINT
 //{
-//  CONSOLE_BRIDGE_logDebug("PlanningTest, arm_around_table");
 //  runPlanningTest<trajopt_sqp::IfoptQPProblem>(env);
 //}
 
 TEST_F(PlanningTest, arm_around_table_trajopt_problem)  // NOLINT
 {
-  CONSOLE_BRIDGE_logDebug("PlanningTest, arm_around_table");
+  TESSERACT_LOG_DEBUG("PlanningTest, arm_around_table");
   runPlanningTest<trajopt_sqp::TrajOptQPProblem>(env);
 }
 

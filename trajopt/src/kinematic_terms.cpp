@@ -20,7 +20,6 @@ TRAJOPT_IGNORE_WARNINGS_POP
 #include <trajopt_sco/modeling_utils.hpp>
 #include <trajopt_common/eigen_conversions.hpp>
 #include <trajopt_common/eigen_slicing.hpp>
-#include <trajopt_common/logging.hpp>
 #include <trajopt_common/stl_to_string.hpp>
 #include <trajopt_common/utils.hpp>
 

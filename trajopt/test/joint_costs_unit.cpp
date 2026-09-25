@@ -8,7 +8,7 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <tesseract/environment/environment.h>
 #include <tesseract/environment/utils.h>
 #include <tesseract/visualization/visualization.h>
-#include <console_bridge/console.h>
+#include <tesseract/common/logging.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt/plot_callback.hpp>
@@ -18,7 +18,6 @@ TRAJOPT_IGNORE_WARNINGS_POP
 #include <trajopt_common/clock.hpp>
 #include <trajopt_common/config.hpp>
 #include <trajopt_common/eigen_conversions.hpp>
-#include <trajopt_common/logging.hpp>
 #include <trajopt_common/stl_to_string.hpp>
 
 using namespace trajopt;
@@ -47,7 +46,7 @@ public:
     const ResourceLocator::Ptr locator = std::make_shared<tesseract::common::GeneralResourceLocator>();
     EXPECT_TRUE(env_->init(urdf_file, srdf_file, locator));
 
-    gLogLevel = trajopt_common::LevelError;
+    tesseract::common::getLogger()->set_level(spdlog::level::err);
   }
 };
 
@@ -62,7 +61,7 @@ public:
  */
 TEST_F(CostsTest, equality_jointPos)  // NOLINT
 {
-  CONSOLE_BRIDGE_logDebug("CostsTest, equality_jointPos");
+  TESSERACT_LOG_DEBUG("CostsTest, equality_jointPos");
 
   const double cnt_targ = 0.0;
   const double cost_targ = -0.1;
@@ -137,7 +136,7 @@ TEST_F(CostsTest, equality_jointPos)  // NOLINT
       EXPECT_NEAR(pos, cost_targ, cost_tol);
     }
   }
-  CONSOLE_BRIDGE_logDebug("planning time: %.3f", GetClock() - tStart);
+  TESSERACT_LOG_DEBUG("planning time: {:.3f}", GetClock() - tStart);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -151,7 +150,7 @@ TEST_F(CostsTest, equality_jointPos)  // NOLINT
  */
 TEST_F(CostsTest, inequality_jointPos)  // NOLINT
 {
-  CONSOLE_BRIDGE_logDebug("CostsTest, inequality_cnt_jointPos");
+  TESSERACT_LOG_DEBUG("CostsTest, inequality_cnt_jointPos");
 
   const double lower_tol = -0.1;
   const double upper_tol = 0.2;
@@ -224,7 +223,7 @@ TEST_F(CostsTest, inequality_jointPos)  // NOLINT
   const double tStart = GetClock();
 
   opt.optimize();
-  CONSOLE_BRIDGE_logDebug("planning time: %.3f", GetClock() - tStart);
+  TESSERACT_LOG_DEBUG("planning time: {:.3f}", GetClock() - tStart);
 
   TrajArray output = getTraj(opt.x(), prob->GetVars());
   std::cout << "Trajectory: \n" << output << "\n";
@@ -263,7 +262,7 @@ TEST_F(CostsTest, inequality_jointPos)  // NOLINT
  */
 TEST_F(CostsTest, equality_jointVel)  // NOLINT
 {
-  CONSOLE_BRIDGE_logDebug("CostsTest, equality_jointVel");
+  TESSERACT_LOG_DEBUG("CostsTest, equality_jointVel");
 
   const double cnt_targ = 0.0;
   const double cost_targ = 0.1;
@@ -339,7 +338,7 @@ TEST_F(CostsTest, equality_jointVel)  // NOLINT
       EXPECT_NEAR(velocity, cost_targ, cost_tol);
     }
   }
-  CONSOLE_BRIDGE_logDebug("planning time: %.3f", GetClock() - tStart);
+  TESSERACT_LOG_DEBUG("planning time: {:.3f}", GetClock() - tStart);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -353,7 +352,7 @@ TEST_F(CostsTest, equality_jointVel)  // NOLINT
  */
 TEST_F(CostsTest, inequality_jointVel)  // NOLINT
 {
-  CONSOLE_BRIDGE_logDebug("CostsTest, inequality_cnt_jointVel");
+  TESSERACT_LOG_DEBUG("CostsTest, inequality_cnt_jointVel");
 
   const double lower_tol = -0.1;
   const double upper_tol = 0.2;
@@ -426,7 +425,7 @@ TEST_F(CostsTest, inequality_jointVel)  // NOLINT
   const double tStart = GetClock();
 
   opt.optimize();
-  CONSOLE_BRIDGE_logDebug("planning time: %.3f", GetClock() - tStart);
+  TESSERACT_LOG_DEBUG("planning time: {:.3f}", GetClock() - tStart);
 
   TrajArray output = getTraj(opt.x(), prob->GetVars());
   std::cout << "Trajectory: \n" << output << "\n";
@@ -464,7 +463,7 @@ TEST_F(CostsTest, inequality_jointVel)  // NOLINT
  */
 TEST_F(CostsTest, equality_jointVel_time)  // NOLINT
 {
-  CONSOLE_BRIDGE_logDebug("CostsTest, equality_jointVel_time");
+  TESSERACT_LOG_DEBUG("CostsTest, equality_jointVel_time");
 
   const double cnt_targ = 0.0;
   const double cost_targ = 0.1;
@@ -547,7 +546,7 @@ TEST_F(CostsTest, equality_jointVel_time)  // NOLINT
       EXPECT_NEAR(velocity, cost_targ, cost_tol);
     }
   }
-  CONSOLE_BRIDGE_logDebug("planning time: %.3f", GetClock() - tStart);
+  TESSERACT_LOG_DEBUG("planning time: {:.3f}", GetClock() - tStart);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -561,7 +560,7 @@ TEST_F(CostsTest, equality_jointVel_time)  // NOLINT
  */
 TEST_F(CostsTest, inequality_jointVel_time)  // NOLINT
 {
-  CONSOLE_BRIDGE_logDebug("CostsTest, inequality_cnt_jointVel_time");
+  TESSERACT_LOG_DEBUG("CostsTest, inequality_cnt_jointVel_time");
 
   const double lower_tol = -0.1;
   const double upper_tol = 0.2;
@@ -637,7 +636,7 @@ TEST_F(CostsTest, inequality_jointVel_time)  // NOLINT
   const double tStart = GetClock();
 
   opt.optimize();
-  CONSOLE_BRIDGE_logDebug("planning time: %.3f", GetClock() - tStart);
+  TESSERACT_LOG_DEBUG("planning time: {:.3f}", GetClock() - tStart);
 
   TrajArray output = getTraj(opt.x(), prob->GetVars());
   std::cout << "Trajectory: \n" << output << "\n";
@@ -676,7 +675,7 @@ TEST_F(CostsTest, inequality_jointVel_time)  // NOLINT
  */
 TEST_F(CostsTest, equality_jointAcc)  // NOLINT
 {
-  CONSOLE_BRIDGE_logDebug("CostsTest, equality_jointAcc");
+  TESSERACT_LOG_DEBUG("CostsTest, equality_jointAcc");
 
   const double cnt_targ = 0.0;
   const double cost_targ = 0.1;
@@ -753,7 +752,7 @@ TEST_F(CostsTest, equality_jointAcc)  // NOLINT
       EXPECT_NEAR(accel, cost_targ, cost_tol);
     }
   }
-  CONSOLE_BRIDGE_logDebug("planning time: %.3f", GetClock() - tStart);
+  TESSERACT_LOG_DEBUG("planning time: {:.3f}", GetClock() - tStart);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -767,7 +766,7 @@ TEST_F(CostsTest, equality_jointAcc)  // NOLINT
  */
 TEST_F(CostsTest, inequality_jointAcc)  // NOLINT
 {
-  CONSOLE_BRIDGE_logDebug("CostsTest, inequality_cnt_jointVel");
+  TESSERACT_LOG_DEBUG("CostsTest, inequality_cnt_jointVel");
 
   const double lower_tol = -0.1;
   const double upper_tol = 0.2;
@@ -841,7 +840,7 @@ TEST_F(CostsTest, inequality_jointAcc)  // NOLINT
   const double tStart = GetClock();
 
   opt.optimize();
-  CONSOLE_BRIDGE_logDebug("planning time: %.3f", GetClock() - tStart);
+  TESSERACT_LOG_DEBUG("planning time: {:.3f}", GetClock() - tStart);
 
   TrajArray output = getTraj(opt.x(), prob->GetVars());
   std::cout << "Trajectory: \n" << output << "\n";

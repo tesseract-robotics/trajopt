@@ -16,7 +16,7 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <tesseract/geometry/impl/box.h>
 #include <tesseract/geometry/impl/octree.h>
 #include <tesseract/visualization/visualization.h>
-#include <console_bridge/console.h>
+#include <tesseract/common/logging.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt/collision_terms.hpp>
@@ -26,7 +26,6 @@ TRAJOPT_IGNORE_WARNINGS_POP
 #include <trajopt_sco/optimizers.hpp>
 #include <trajopt_common/config.hpp>
 #include <trajopt_common/eigen_conversions.hpp>
-#include <trajopt_common/logging.hpp>
 #include <trajopt_common/stl_to_string.hpp>
 #include "trajopt_test_utils.hpp"
 
@@ -57,7 +56,7 @@ public:
     const ResourceLocator::Ptr locator = std::make_shared<tesseract::common::GeneralResourceLocator>();
     EXPECT_TRUE(env_->init(urdf_file, srdf_file, locator));
 
-    gLogLevel = trajopt_common::LevelError;
+    tesseract::common::getLogger()->set_level(spdlog::level::err);
 
     // Create plotting tool
     //    plotter_.reset(new tesseract_ros::ROSBasicPlotting(env_));
@@ -110,7 +109,7 @@ public:
 
 void runLinkWithGeomTest(const Environment::Ptr& env, const Visualization::Ptr& plotter, bool use_multi_threaded)
 {
-  CONSOLE_BRIDGE_logDebug("CastAttachedTest, LinkWithGeom");
+  TESSERACT_LOG_DEBUG("CastAttachedTest, LinkWithGeom");
 
   env->applyCommand(std::make_shared<ChangeLinkCollisionEnabledCommand>("box_attached", true));
 
@@ -139,7 +138,8 @@ void runLinkWithGeomTest(const Environment::Ptr& env, const Visualization::Ptr& 
       checkTrajectory(collisions, *manager, *state_solver, prob->GetKin()->getJointIds(), prob->GetInitTraj(), config);
 
   EXPECT_TRUE(found);
-  CONSOLE_BRIDGE_logDebug((found) ? ("Initial trajectory is in collision") : ("Initial trajectory is collision free"));
+  TESSERACT_LOG_DEBUG("{}",
+                      (found) ? ("Initial trajectory is in collision") : ("Initial trajectory is collision free"));
 
   sco::BasicTrustRegionSQP::Ptr opt;
   if (use_multi_threaded)
@@ -165,12 +165,12 @@ void runLinkWithGeomTest(const Environment::Ptr& env, const Visualization::Ptr& 
       collisions, *manager, *state_solver, prob->GetKin()->getJointIds(), getTraj(opt->x(), prob->GetVars()), config);
 
   EXPECT_FALSE(found);
-  CONSOLE_BRIDGE_logDebug((found) ? ("Final trajectory is in collision") : ("Final trajectory is collision free"));
+  TESSERACT_LOG_DEBUG("{}", (found) ? ("Final trajectory is in collision") : ("Final trajectory is collision free"));
 }
 
 void runLinkWithoutGeomTest(const Environment::Ptr& env, const Visualization::Ptr& plotter, bool use_multi_threaded)
 {
-  CONSOLE_BRIDGE_logDebug("CastAttachedTest, LinkWithGeom");
+  TESSERACT_LOG_DEBUG("CastAttachedTest, LinkWithGeom");
 
   env->applyCommand(std::make_shared<ChangeLinkCollisionEnabledCommand>("box_attached2", true));
 
@@ -199,7 +199,8 @@ void runLinkWithoutGeomTest(const Environment::Ptr& env, const Visualization::Pt
       checkTrajectory(collisions, *manager, *state_solver, prob->GetKin()->getJointIds(), prob->GetInitTraj(), config);
 
   EXPECT_TRUE(found);
-  CONSOLE_BRIDGE_logDebug((found) ? ("Initial trajectory is in collision") : ("Initial trajectory is collision free"));
+  TESSERACT_LOG_DEBUG("{}",
+                      (found) ? ("Initial trajectory is in collision") : ("Initial trajectory is collision free"));
 
   sco::BasicTrustRegionSQP::Ptr opt;
   if (use_multi_threaded)
@@ -225,7 +226,7 @@ void runLinkWithoutGeomTest(const Environment::Ptr& env, const Visualization::Pt
       collisions, *manager, *state_solver, prob->GetKin()->getJointIds(), getTraj(opt->x(), prob->GetVars()), config);
 
   EXPECT_FALSE(found);
-  CONSOLE_BRIDGE_logDebug((found) ? ("Final trajectory is in collision") : ("Final trajectory is collision free"));
+  TESSERACT_LOG_DEBUG("{}", (found) ? ("Final trajectory is in collision") : ("Final trajectory is collision free"));
 }
 
 TEST_F(CastAttachedTest, LinkWithGeom)  // NOLINT

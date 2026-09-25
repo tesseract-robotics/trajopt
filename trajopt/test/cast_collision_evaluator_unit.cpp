@@ -14,7 +14,7 @@ TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt/collision_terms.hpp>
 #include <trajopt_common/collision_types.h>
-#include <trajopt_common/logging.hpp>
+#include <tesseract/common/logging.h>
 
 using namespace trajopt;
 using namespace tesseract::collision;
@@ -98,7 +98,7 @@ public:
         std::make_shared<tesseract::common::GeneralResourceLocator>();
     ASSERT_TRUE(env->init(urdf_file, srdf_file, locator));
 
-    trajopt_common::gLogLevel = trajopt_common::LevelError;
+    tesseract::common::getLogger()->set_level(spdlog::level::err);
   }
 };
 

@@ -27,7 +27,7 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <gtest/gtest.h>
 #include <iostream>
 #include <OsqpEigen/OsqpEigen.h>
-#include <console_bridge/console.h>
+#include <tesseract/common/logging.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt_sqp/ifopt_qp_problem.h>
@@ -50,9 +50,9 @@ public:
   void SetUp() override
   {
     if (DEBUG)
-      console_bridge::setLogLevel(console_bridge::LogLevel::CONSOLE_BRIDGE_LOG_DEBUG);
+      tesseract::common::getLogger()->set_level(spdlog::level::debug);
     else
-      console_bridge::setLogLevel(console_bridge::LogLevel::CONSOLE_BRIDGE_LOG_NONE);
+      tesseract::common::getLogger()->set_level(spdlog::level::off);
   }
 };
 
@@ -133,13 +133,13 @@ void runAccelerationConstraintOptimizationTest()
 /** @brief Joint position constraints with a squared acceleration cost in between. Optimized using trajopt_sqp */
 TEST_F(AccelerationConstraintOptimization, acceleration_constraint_optimization_ifopt_problem)  // NOLINT
 {
-  CONSOLE_BRIDGE_logDebug("AccelerationConstraintOptimization, acceleration_constraint_optimization_ifopt_problem");
+  TESSERACT_LOG_DEBUG("AccelerationConstraintOptimization, acceleration_constraint_optimization_ifopt_problem");
   runAccelerationConstraintOptimizationTest<trajopt_sqp::IfoptQPProblem>();
 }
 
 TEST_F(AccelerationConstraintOptimization, acceleration_constraint_optimization_trajopt_problem)  // NOLINT
 {
-  CONSOLE_BRIDGE_logDebug("AccelerationConstraintOptimization, acceleration_constraint_optimization_trajopt_problem");
+  TESSERACT_LOG_DEBUG("AccelerationConstraintOptimization, acceleration_constraint_optimization_trajopt_problem");
   runAccelerationConstraintOptimizationTest<trajopt_sqp::TrajOptQPProblem>();
 }
 

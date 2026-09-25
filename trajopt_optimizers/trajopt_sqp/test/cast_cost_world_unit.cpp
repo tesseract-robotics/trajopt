@@ -26,7 +26,7 @@
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <ctime>
 #include <gtest/gtest.h>
-#include <console_bridge/console.h>
+#include <tesseract/common/logging.h>
 #include <OsqpEigen/OsqpEigen.h>
 #include <tesseract/common/types.h>
 #include <tesseract/common/resource_locator.h>
@@ -239,24 +239,24 @@ void runCastWorldTest(const Environment::Ptr& env, bool fixed_size)
   bool found = checkTrajectory(collisions, *manager, *state_solver, manip->getJointIds(), inputs, config);
 
   EXPECT_TRUE(found);
-  CONSOLE_BRIDGE_logWarn((found) ? ("Initial trajectory is in collision") : ("Initial trajectory is collision free"));
+  TESSERACT_LOG_WARN("{}", (found) ? ("Initial trajectory is in collision") : ("Initial trajectory is collision free"));
 
   collisions.clear();
   found = checkTrajectory(collisions, *manager, *state_solver, manip->getJointIds(), results, config);
 
   EXPECT_FALSE(found);
-  CONSOLE_BRIDGE_logWarn((found) ? ("Final trajectory is in collision") : ("Final trajectory is collision free"));
+  TESSERACT_LOG_WARN("{}", (found) ? ("Final trajectory is in collision") : ("Final trajectory is collision free"));
 }
 
 TEST_F(CastWorldTest, boxesIfoptProblem)  // NOLINT
 {
-  CONSOLE_BRIDGE_logDebug("CastWorldTest, boxesIfoptProblem");
+  TESSERACT_LOG_DEBUG("CastWorldTest, boxesIfoptProblem");
   runCastWorldTest<trajopt_sqp::IfoptQPProblem>(env, true);
 }
 
 TEST_F(CastWorldTest, boxesTrajOptProblem)  // NOLINT
 {
-  CONSOLE_BRIDGE_logDebug("CastWorldTest, boxesTrajOptProblem");
+  TESSERACT_LOG_DEBUG("CastWorldTest, boxesTrajOptProblem");
   runCastWorldTest<trajopt_sqp::TrajOptQPProblem>(env, false);  // NOLINT
 }
 

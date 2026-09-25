@@ -29,7 +29,7 @@
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <tesseract/kinematics/kinematic_group.h>
 #include <tesseract/common/types.h>
-#include <console_bridge/console.h>
+#include <tesseract/common/logging.h>
 #include <cassert>
 TRAJOPT_IGNORE_WARNINGS_POP
 
@@ -64,7 +64,7 @@ InverseKinematicsConstraint::InverseKinematicsConstraint(
   n_dof_ = constraint_var_->size();
   assert(n_dof_ > 0);
   if (constraint_var_->size() != kinematic_info_->manip->numJoints())
-    CONSOLE_BRIDGE_logError("Inverse kinematics has a different number of joints than the given variable set");
+    TESSERACT_LOG_ERROR("Inverse kinematics has a different number of joints than the given variable set");
 
   non_zeros_ = n_dof_;
   bounds_ = std::vector<Bounds>(static_cast<std::size_t>(n_dof_), BoundZero);
@@ -106,7 +106,7 @@ std::vector<Bounds> InverseKinematicsConstraint::getBounds() const { return boun
 void InverseKinematicsConstraint::setBounds(const std::vector<Bounds>& bounds)
 {
   if (bounds.size() != static_cast<std::size_t>(n_dof_))
-    CONSOLE_BRIDGE_logError("Bounds is incorrect size. It is %d when it should be %d", bounds.size(), n_dof_);
+    TESSERACT_LOG_ERROR("Bounds is incorrect size. It is {} when it should be {}", bounds.size(), n_dof_);
 
   bounds_ = bounds;
 }

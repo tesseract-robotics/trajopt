@@ -26,7 +26,7 @@
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <ctime>
 #include <gtest/gtest.h>
-#include <console_bridge/console.h>
+#include <tesseract/common/logging.h>
 #include <tesseract/common/resource_locator.h>
 #include <tesseract/collision/continuous_contact_manager.h>
 #include <tesseract/kinematics/joint_group.h>
@@ -38,7 +38,6 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <trajopt_common/collision_types.h>
 #include <trajopt_common/config.hpp>
 #include <trajopt_common/eigen_conversions.hpp>
-#include <trajopt_common/logging.hpp>
 #include <trajopt_common/stl_to_string.hpp>
 TRAJOPT_IGNORE_WARNINGS_POP
 
@@ -75,7 +74,7 @@ public:
     const ResourceLocator::Ptr locator = std::make_shared<tesseract::common::GeneralResourceLocator>();
     EXPECT_TRUE(env->init(urdf_file, srdf_file, locator));
 
-    gLogLevel = trajopt_common::LevelError;
+    tesseract::common::getLogger()->set_level(spdlog::level::err);
   }
 };
 
@@ -155,7 +154,7 @@ void runContinuousGradientTest(const Environment::Ptr& env, double coeff)
 
 TEST_F(ContinuousCollisionGradientTest, ContinuousCollisionGradientTest)  // NOLINT
 {
-  CONSOLE_BRIDGE_logDebug("ContinuousCollisionGradientTest, ContinuousCollisionGradientTest");
+  TESSERACT_LOG_DEBUG("ContinuousCollisionGradientTest, ContinuousCollisionGradientTest");
   runContinuousGradientTest(env, 1);
   runContinuousGradientTest(env, 10);
 }

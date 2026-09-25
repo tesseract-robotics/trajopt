@@ -24,10 +24,6 @@
 #include <trajopt_ifopt/costs/squared_cost.h>
 #include <trajopt_ifopt/utils/ifopt_utils.h>
 
-TRAJOPT_IGNORE_WARNINGS_PUSH
-#include <console_bridge/console.h>
-TRAJOPT_IGNORE_WARNINGS_POP
-
 namespace trajopt_ifopt
 {
 SquaredCost::SquaredCost(const ConstraintSet::Ptr& constraint)

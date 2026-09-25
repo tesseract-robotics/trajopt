@@ -16,6 +16,7 @@
   <depend>libjsoncpp-dev</depend>
   <depend>osqp</depend>
   <depend>qpoases</depend>
+  <depend>tesseract</depend>
   <depend>trajopt_common</depend>
   <depend>boost</depend>
 

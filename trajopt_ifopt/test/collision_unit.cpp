@@ -26,7 +26,7 @@
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <ctime>
 #include <gtest/gtest.h>
-#include <console_bridge/console.h>
+#include <tesseract/common/logging.h>
 #include <tesseract/common/resource_locator.h>
 #include <tesseract/kinematics/joint_group.h>
 #include <tesseract/environment/environment.h>
@@ -96,7 +96,7 @@ public:
  */
 TEST_F(CollisionUnit, GetValueFillJacobian)  // NOLINT
 {
-  CONSOLE_BRIDGE_logDebug("CollisionUnit, GetValueFillJacobian");
+  TESSERACT_LOG_DEBUG("CollisionUnit, GetValueFillJacobian");
 
   // Not in collision. Outside buffer
   {
@@ -163,7 +163,7 @@ TEST_F(CollisionUnit, GetValueFillJacobian)  // NOLINT
  */
 TEST_F(CollisionUnit, GetSetBounds)  // NOLINT
 {
-  CONSOLE_BRIDGE_logDebug("CollisionUnit, GetSetBounds");
+  TESSERACT_LOG_DEBUG("CollisionUnit, GetSetBounds");
 
   // Check that setting bounds works
   {

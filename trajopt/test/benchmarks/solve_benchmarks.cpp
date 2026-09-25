@@ -16,7 +16,7 @@ TRAJOPT_IGNORE_WARNINGS_POP
 #include <trajopt_sco/optimizers.hpp>
 #include <trajopt_common/config.hpp>
 #include <trajopt_common/eigen_conversions.hpp>
-#include <trajopt_common/logging.hpp>
+#include <tesseract/common/logging.h>
 #include <trajopt_common/stl_to_string.hpp>
 
 #include "../test/trajopt_test_utils.hpp"
@@ -96,7 +96,7 @@ static void BM_TRAJOPT_MULTI_THREADED_PLANNING_SOLVE(benchmark::State& state,
 
 int main(int argc, char** argv)  // NOLINT(bugprone-exception-escape)
 {
-  gLogLevel = trajopt_common::LevelError;
+  tesseract::common::getLogger()->set_level(spdlog::level::err);
 
   //////////////////////////////////////
   // Simple Collision Solve

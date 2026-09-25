@@ -10,9 +10,8 @@ if(WIN32)
 endif()
 
 find_package(trajopt_common REQUIRED)
-find_package(console_bridge REQUIRED)
 find_package(Eigen3 REQUIRED)
-find_package(tesseract REQUIRED COMPONENTS environment)
+find_package(tesseract REQUIRED COMPONENTS common environment)
 find_package(Boost REQUIRED)
 
 # Load variable for clang tidy args, compiler options and cxx version
@@ -56,8 +55,8 @@ set(TRAJOPT_IFOPT_SOURCE_FILES
 add_library(${PROJECT_NAME} ${TRAJOPT_IFOPT_SOURCE_FILES})
 target_link_libraries(
   ${PROJECT_NAME}
-  PUBLIC console_bridge::console_bridge
-         trajopt::trajopt_common
+  PUBLIC trajopt::trajopt_common
+         tesseract::common
          tesseract::environment
          Eigen3::Eigen
          Boost::boost)
@@ -79,9 +78,8 @@ configure_package(
   TARGETS ${PROJECT_NAME}
   DEPENDENCIES
     trajopt_common
-    console_bridge
     Eigen3
-    "tesseract COMPONENTS environment"
+    "tesseract COMPONENTS common environment"
     Boost)
 
 # Mark cpp header files for installation
@@ -113,13 +111,13 @@ if(TRAJOPT_PACKAGE)
     LINUX_DEPENDS
       "libeigen3-dev"
       "libboost-dev"
-      "libconsole-bridge-dev"
+      "libspdlog-dev"
       "${TRAJOPT_PACKAGE_PREFIX}trajopt-common"
       "${TESSERACT_PACKAGE_PREFIX}tesseract-environment"
     WINDOWS_DEPENDS
       "Eigen3"
       "boost"
-      "console-bridge"
+      "spdlog"
       "${TRAJOPT_PACKAGE_PREFIX}trajopt-common"
       "${TESSERACT_PACKAGE_PREFIX}tesseract-environment")
 endif()

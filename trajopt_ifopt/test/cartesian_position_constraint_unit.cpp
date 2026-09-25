@@ -26,7 +26,7 @@
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <ctime>
 #include <gtest/gtest.h>
-#include <console_bridge/console.h>
+#include <tesseract/common/logging.h>
 #include <tesseract/common/resource_locator.h>
 #include <tesseract/kinematics/joint_group.h>
 #include <tesseract/environment/environment.h>
@@ -98,7 +98,7 @@ public:
 /** @brief Checks that the GetValue function is correct */
 TEST_F(CartesianPositionConstraintUnit, GetValue)  // NOLINT
 {
-  CONSOLE_BRIDGE_logDebug("CartesianPositionConstraintUnit, GetValue");
+  TESSERACT_LOG_DEBUG("CartesianPositionConstraintUnit, GetValue");
 
   // Run FK to get target pose
   Eigen::VectorXd joint_position = Eigen::VectorXd::Ones(n_dof);
@@ -149,7 +149,7 @@ TEST_F(CartesianPositionConstraintUnit, GetValue)  // NOLINT
 /** @brief Checks that the FillJacobian function is correct */
 TEST_F(CartesianPositionConstraintUnit, FillJacobian)  // NOLINT
 {
-  CONSOLE_BRIDGE_logDebug("CartesianPositionConstraintUnit, FillJacobian");
+  TESSERACT_LOG_DEBUG("CartesianPositionConstraintUnit, FillJacobian");
 
   // Run FK to get target pose
   const Eigen::VectorXd joint_position = Eigen::VectorXd::Ones(n_dof);
@@ -190,7 +190,7 @@ TEST_F(CartesianPositionConstraintUnit, FillJacobian)  // NOLINT
  */
 TEST_F(CartesianPositionConstraintUnit, GetSetBounds)  // NOLINT
 {
-  CONSOLE_BRIDGE_logDebug("CartesianPositionConstraintUnit, GetSetBounds");
+  TESSERACT_LOG_DEBUG("CartesianPositionConstraintUnit, GetSetBounds");
 
   // Check that setting bounds works
   {

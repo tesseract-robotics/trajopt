@@ -27,7 +27,7 @@
 #include <trajopt_ifopt/variable_sets/var.h>
 
 TRAJOPT_IGNORE_WARNINGS_PUSH
-#include <console_bridge/console.h>
+#include <tesseract/common/logging.h>
 #include <cassert>
 TRAJOPT_IGNORE_WARNINGS_POP
 
@@ -49,7 +49,7 @@ JointAccelConstraint::JointAccelConstraint(const Eigen::VectorXd& targets,
   for (const auto& position_var : position_vars_)
   {
     if (targets.size() != position_var->size())
-      CONSOLE_BRIDGE_logError("Targets size does not align with variables provided");
+      TESSERACT_LOG_ERROR("Targets size does not align with variables provided");
   }
 
   // Set n_dof and n_vars

@@ -26,7 +26,7 @@
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <ctime>
 #include <gtest/gtest.h>
-#include <console_bridge/console.h>
+#include <tesseract/common/logging.h>
 #include <tesseract/common/resource_locator.h>
 #include <tesseract/collision/discrete_contact_manager.h>
 #include <tesseract/kinematics/joint_group.h>
@@ -127,7 +127,7 @@ void runDiscreteGradientTest(const Environment::Ptr& env, double coeff)
 
 TEST_F(DiscreteCollisionGradientTest, DiscreteCollisionGradientTest)  // NOLINT
 {
-  CONSOLE_BRIDGE_logDebug("DiscreteCollisionGradientTest, DiscreteCollisionGradientTest");
+  TESSERACT_LOG_DEBUG("DiscreteCollisionGradientTest, DiscreteCollisionGradientTest");
   runDiscreteGradientTest(env, 1);
   runDiscreteGradientTest(env, 10);
 }

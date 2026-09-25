@@ -6,7 +6,7 @@ extern "C" {
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt_sco/gurobi_interface.hpp>
-#include <trajopt_common/logging.hpp>
+#include <tesseract/common/logging.h>
 #include <trajopt_common/stl_to_string.hpp>
 
 namespace sco
@@ -68,7 +68,7 @@ GurobiModel::GurobiModel()
   if (!gEnv)
   {
     GRBloadenv(&gEnv, nullptr);
-    if (trajopt_common::GetLogLevel() < trajopt_common::LevelDebug)
+    if (!tesseract::common::getLogger()->should_log(spdlog::level::debug))
     {
       ENSURE_SUCCESS(GRBsetintparam(gEnv, "OutputFlag", 0));
     }
@@ -96,7 +96,7 @@ Var GurobiModel::addVar(const std::string& name, double lb, double ub)
 Cnt GurobiModel::addEqCnt(const AffExpr& expr, const std::string& name)
 {
   const std::scoped_lock lock(m_mutex);
-  LOG_TRACE("adding eq constraint: %s = 0", CSTR(expr));
+  TESSERACT_LOG_TRACE("adding eq constraint: {} = 0", CSTR(expr));
   IntVec inds;
   vars2inds(expr.vars, inds);
   DblVec vals = expr.coeffs;
@@ -114,7 +114,7 @@ Cnt GurobiModel::addEqCnt(const AffExpr& expr, const std::string& name)
 Cnt GurobiModel::addIneqCnt(const AffExpr& expr, const std::string& name)
 {
   const std::scoped_lock lock(m_mutex);
-  LOG_TRACE("adding ineq: %s <= 0", CSTR(expr));
+  TESSERACT_LOG_TRACE("adding ineq: {} <= 0", CSTR(expr));
   IntVec inds;
   vars2inds(expr.vars, inds);
   DblVec vals = expr.coeffs;
@@ -232,7 +232,7 @@ CvxOptStatus GurobiModel::optimize()
   {
     double objval;
     GRBgetdblattr(m_model, GRB_DBL_ATTR_OBJVAL, &objval);
-    LOG_DEBUG("solver objective value: %.3e", objval);
+    TESSERACT_LOG_DEBUG("solver objective value: {:.3e}", objval);
     return CVX_SOLVED;
   }
   else if (status == GRB_INFEASIBLE)
