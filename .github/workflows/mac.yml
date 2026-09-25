@@ -21,7 +21,7 @@ env:
   VCPKG_PKGS: >- 
     boost-dll boost-program-options boost-stacktrace
     boost-serialization boost-filesystem boost-format
-    tinyxml2 console-bridge assimp
+    tinyxml2 spdlog assimp
     urdfdom octomap orocos-kdl pcl
     gtest benchmark flann jsoncpp
     yaml-cpp eigen3

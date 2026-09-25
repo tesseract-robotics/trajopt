@@ -27,7 +27,6 @@
 #include <trajopt_ifopt/costs/absolute_cost.h>
 #include <trajopt_ifopt/core/problem.h>
 #include <trajopt_ifopt/core/composite.h>
-#include <console_bridge/console.h>
 #include <iostream>
 #include <cassert>
 

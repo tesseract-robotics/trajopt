@@ -15,6 +15,7 @@ find_package(GUROBI QUIET)
 find_package(osqp QUIET)
 find_package(Eigen3 REQUIRED)
 find_package(trajopt_common REQUIRED)
+find_package(tesseract REQUIRED COMPONENTS common)
 if(NOT TARGET JsonCpp::JsonCpp)
   find_package(jsoncpp REQUIRED)
 elseif(NOT TARGET jsoncpp_lib)
@@ -125,6 +126,7 @@ endif()
 target_link_libraries(
   ${PROJECT_NAME}
   PUBLIC trajopt::trajopt_common
+         tesseract::common
          Boost::boost
          Eigen3::Eigen
          ${CMAKE_DL_LIBS}

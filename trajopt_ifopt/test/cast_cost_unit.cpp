@@ -26,7 +26,7 @@
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <ctime>
 #include <gtest/gtest.h>
-#include <console_bridge/console.h>
+#include <tesseract/common/logging.h>
 #include <tesseract/common/resource_locator.h>
 #include <tesseract/collision/continuous_contact_manager.h>
 #include <tesseract/kinematics/joint_group.h>
@@ -38,7 +38,6 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <trajopt_common/collision_types.h>
 #include <trajopt_common/config.hpp>
 #include <trajopt_common/eigen_conversions.hpp>
-#include <trajopt_common/logging.hpp>
 #include <trajopt_common/stl_to_string.hpp>
 TRAJOPT_IGNORE_WARNINGS_POP
 
@@ -74,13 +73,13 @@ public:
     const ResourceLocator::Ptr locator = std::make_shared<tesseract::common::GeneralResourceLocator>();
     EXPECT_TRUE(env->init(urdf_file, srdf_file, locator));
 
-    gLogLevel = trajopt_common::LevelError;
+    tesseract::common::getLogger()->set_level(spdlog::level::err);
   }
 };
 
 TEST_F(CastTest, boxes)  // NOLINT
 {
-  CONSOLE_BRIDGE_logDebug("CastTest, boxes");
+  TESSERACT_LOG_DEBUG("CastTest, boxes");
 
   SceneState::JointValues ipos;
   ipos["boxbot_x_joint"] = -1.9;
@@ -197,13 +196,13 @@ TEST_F(CastTest, boxes)  // NOLINT
   bool found = checkTrajectory(collisions, *manager, *state_solver, manip->getJointIds(), inputs, config);
 
   EXPECT_TRUE(found);
-  CONSOLE_BRIDGE_logWarn((found) ? ("Initial trajectory is in collision") : ("Initial trajectory is collision free"));
+  TESSERACT_LOG_WARN("{}", (found) ? ("Initial trajectory is in collision") : ("Initial trajectory is collision free"));
 
   collisions.clear();
   found = checkTrajectory(collisions, *manager, *state_solver, manip->getJointIds(), results, config);
 
   EXPECT_FALSE(found);
-  CONSOLE_BRIDGE_logWarn((found) ? ("Final trajectory is in collision") : ("Final trajectory is collision free"));
+  TESSERACT_LOG_WARN("{}", (found) ? ("Final trajectory is in collision") : ("Final trajectory is collision free"));
 }
 
 int main(int argc, char** argv)

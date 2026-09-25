@@ -27,7 +27,7 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <ctime>
 #include <sstream>
 #include <gtest/gtest.h>
-#include <console_bridge/console.h>
+#include <tesseract/common/logging.h>
 #include <OsqpEigen/OsqpEigen.h>
 #include <tesseract/common/types.h>
 #include <tesseract/common/stopwatch.h>
@@ -121,13 +121,13 @@ void runNumericalIKTest(const Environment::Ptr& env)
 
   std::stringstream ss;
   ss << cur_position;
-  CONSOLE_BRIDGE_logDebug("Initial Vars: %s", ss.str().c_str());
+  TESSERACT_LOG_DEBUG("Initial Vars: {}", ss.str());
 
   Eigen::Isometry3d initial_pose = manip->calcFwdKin(cur_position).at("l_gripper_tool_frame");
 
   ss = std::stringstream();
   ss << initial_pose.translation().transpose();
-  CONSOLE_BRIDGE_logDebug("Initial Position: %s", ss.str().c_str());
+  TESSERACT_LOG_DEBUG("Initial Position: {}", ss.str());
 
   // 5) Setup solver
   auto qp_solver = std::make_shared<trajopt_sqp::OSQPEigenSolver>();
@@ -147,7 +147,7 @@ void runNumericalIKTest(const Environment::Ptr& env)
   stopwatch.start();
   solver.solve(qp_problem);
   stopwatch.stop();
-  CONSOLE_BRIDGE_logError("Test took %f seconds.", stopwatch.elapsedSeconds());
+  TESSERACT_LOG_ERROR("Test took {} seconds.", stopwatch.elapsedSeconds());
 
   const Eigen::VectorXd x = qp_problem->getVariableValues();
 
@@ -165,11 +165,11 @@ void runNumericalIKTest(const Environment::Ptr& env)
 
   ss = std::stringstream();
   ss << final_pose.translation().transpose();
-  CONSOLE_BRIDGE_logDebug("Final Position: %s", ss.str().c_str());
+  TESSERACT_LOG_DEBUG("Final Position: {}", ss.str());
 
   ss = std::stringstream();
   ss << x;
-  CONSOLE_BRIDGE_logDebug("Final Vars: ", ss.str().c_str());
+  TESSERACT_LOG_DEBUG("Final Vars: {}", ss.str());
 }
 
 template <typename T>
@@ -224,13 +224,13 @@ void runNumericalIKWithToleranceTest(const Environment::Ptr& env)
 
   std::stringstream ss;
   ss << cur_position;
-  CONSOLE_BRIDGE_logDebug("Initial Vars: %s", ss.str().c_str());
+  TESSERACT_LOG_DEBUG("Initial Vars: {}", ss.str());
 
   Eigen::Isometry3d initial_pose = manip->calcFwdKin(cur_position).at("l_gripper_tool_frame");
 
   ss = std::stringstream();
   ss << initial_pose.translation().transpose();
-  CONSOLE_BRIDGE_logDebug("Initial Position: %s", ss.str().c_str());
+  TESSERACT_LOG_DEBUG("Initial Position: {}", ss.str());
 
   // 5) Setup solver
   auto qp_solver = std::make_shared<trajopt_sqp::OSQPEigenSolver>();
@@ -250,7 +250,7 @@ void runNumericalIKWithToleranceTest(const Environment::Ptr& env)
   stopwatch.start();
   solver.solve(qp_problem);
   stopwatch.stop();
-  CONSOLE_BRIDGE_logError("Test took %f seconds.", stopwatch.elapsedSeconds());
+  TESSERACT_LOG_ERROR("Test took {} seconds.", stopwatch.elapsedSeconds());
 
   const Eigen::VectorXd x = qp_problem->getVariableValues();
 
@@ -274,28 +274,28 @@ void runNumericalIKWithToleranceTest(const Environment::Ptr& env)
 
   ss = std::stringstream();
   ss << final_pose.translation().transpose();
-  CONSOLE_BRIDGE_logDebug("Final Position: %s", ss.str().c_str());
+  TESSERACT_LOG_DEBUG("Final Position: {}", ss.str());
 
   ss = std::stringstream();
   ss << x;
-  CONSOLE_BRIDGE_logDebug("Final Vars: ", ss.str().c_str());
+  TESSERACT_LOG_DEBUG("Final Vars: {}", ss.str());
 }
 
 TEST_F(NumericalIKTest, numerical_ik_with_tol_trajopt_problem)  // NOLINT
 {
-  CONSOLE_BRIDGE_logDebug("PlanningTest, numerical_ik_with_tol_trajopt_problem");
+  TESSERACT_LOG_DEBUG("PlanningTest, numerical_ik_with_tol_trajopt_problem");
   runNumericalIKWithToleranceTest<trajopt_sqp::TrajOptQPProblem>(env);
 }
 
 TEST_F(NumericalIKTest, numerical_ik_ifopt_problem)  // NOLINT
 {
-  CONSOLE_BRIDGE_logDebug("PlanningTest, numerical_ik_ifopt_problem");
+  TESSERACT_LOG_DEBUG("PlanningTest, numerical_ik_ifopt_problem");
   runNumericalIKTest<trajopt_sqp::IfoptQPProblem>(env);
 }
 
 TEST_F(NumericalIKTest, numerical_ik_trajopt_problem)  // NOLINT
 {
-  CONSOLE_BRIDGE_logDebug("PlanningTest, numerical_ik_trajopt_problem");
+  TESSERACT_LOG_DEBUG("PlanningTest, numerical_ik_trajopt_problem");
   runNumericalIKTest<trajopt_sqp::TrajOptQPProblem>(env);
 }
 

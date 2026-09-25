@@ -20,7 +20,7 @@
  */
 #include <trajopt_ifopt/variable_sets/var.h>
 #include <trajopt_ifopt/utils/ifopt_utils.h>
-#include <console_bridge/console.h>
+#include <tesseract/common/logging.h>
 
 #include <cassert>
 
@@ -38,8 +38,8 @@ Var::Var(Eigen::Index index, std::string name, double value, Bounds bounds, Node
 
   if (!values_.isApprox(Eigen::VectorXd::Constant(1, value), 1e-10))
   {
-    CONSOLE_BRIDGE_logWarn("The initial values are not within the provided bounds. Adjusting to be within the "
-                           "bounds.");
+    TESSERACT_LOG_WARN("The initial values are not within the provided bounds. Adjusting to be within the "
+                       "bounds.");
   }
 }
 
@@ -66,8 +66,8 @@ Var::Var(Eigen::Index index,
 
   if (!values_.isApprox(values, 1e-10))
   {
-    CONSOLE_BRIDGE_logWarn("The initial values are not within the provided bounds. Adjusting to be within the "
-                           "bounds.");
+    TESSERACT_LOG_WARN("The initial values are not within the provided bounds. Adjusting to be within the "
+                       "bounds.");
   }
 }
 

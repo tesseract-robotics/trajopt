@@ -26,7 +26,7 @@
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <ctime>
 #include <gtest/gtest.h>
-#include <console_bridge/console.h>
+#include <tesseract/common/logging.h>
 #include <tesseract/common/resource_locator.h>
 #include <tesseract/kinematics/kinematic_group.h>
 #include <tesseract/environment/environment.h>
@@ -100,7 +100,7 @@ public:
 
 TEST_F(InverseKinematicsConstraintUnit, GetValue)  // NOLINT
 {
-  CONSOLE_BRIDGE_logDebug("InverseKinematicsConstraintUnit, GetValue");
+  TESSERACT_LOG_DEBUG("InverseKinematicsConstraintUnit, GetValue");
 
   // Run FK to get target pose
   Eigen::VectorXd joint_position_single = Eigen::VectorXd::Zero(kin_group->numJoints());
@@ -142,7 +142,7 @@ TEST_F(InverseKinematicsConstraintUnit, GetValue)  // NOLINT
  */
 TEST_F(InverseKinematicsConstraintUnit, GetSetBounds)  // NOLINT
 {
-  CONSOLE_BRIDGE_logDebug("InverseKinematicsConstraintUnit, GetSetBounds");
+  TESSERACT_LOG_DEBUG("InverseKinematicsConstraintUnit, GetSetBounds");
 
   // Check that setting bounds works
   {

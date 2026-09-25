@@ -24,7 +24,6 @@
 #include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <boost/functional/hash.hpp>
-#include <console_bridge/console.h>
 #include <tesseract/kinematics/joint_group.h>
 #include <tesseract/kinematics/utils.h>
 TRAJOPT_IGNORE_WARNINGS_POP

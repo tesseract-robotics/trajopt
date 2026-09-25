@@ -13,7 +13,6 @@
   <buildtool_depend>cmake</buildtool_depend>
 
   <build_depend>ros_industrial_cmake_boilerplate</build_depend>
-  <depend>libconsole-bridge-dev</depend>
   <depend>osqp_eigen_ext</depend>
   <depend>trajopt_ifopt</depend>
   <depend>trajopt_common</depend>

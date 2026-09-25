@@ -7,7 +7,7 @@ TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt_sco/expr_ops.hpp>
 #include <trajopt_sco/solver_interface.hpp>
-#include <trajopt_common/logging.hpp>
+#include <tesseract/common/logging.h>
 #include <trajopt_common/stl_to_string.hpp>
 
 using namespace sco;
@@ -52,8 +52,8 @@ TEST_P(SolverInterface, setup_problem)  // NOLINT
   const QuadExpr affsquared = exprSquare(aff);
   solver->setObjective(affsquared);
   solver->update();
-  LOG_INFO("objective: %s", CSTR(affsquared));
-  LOG_INFO("please manually check that /tmp/solver-interface-test.lp matches this");
+  TESSERACT_LOG_INFO("objective: {}", CSTR(affsquared));
+  TESSERACT_LOG_INFO("please manually check that /tmp/solver-interface-test.lp matches this");
   solver->writeToFile("/tmp/solver-interface-test.lp");
 
   solver->optimize();
@@ -108,8 +108,8 @@ TEST_P(SolverInterface, DISABLED_ExprMult_test1)  // NOLINT // QuadExpr not PSD
   const QuadExpr aff12 = exprMult(aff1, aff2);
   solver->setObjective(aff12);
   solver->update();
-  LOG_INFO("objective: %s", CSTR(aff12));
-  LOG_INFO("please manually check that /tmp/solver-interface-test.lp matches this");
+  TESSERACT_LOG_INFO("objective: {}", CSTR(aff12));
+  TESSERACT_LOG_INFO("please manually check that /tmp/solver-interface-test.lp matches this");
   solver->writeToFile("/tmp/solver-interface-test.lp");
 
   solver->optimize();
@@ -161,8 +161,8 @@ TEST_P(SolverInterface, ExprMult_test2)  // NOLINT
   const QuadExpr aff12 = exprMult(aff1, aff2);
   solver->setObjective(aff12);
   solver->update();
-  LOG_INFO("objective: %s", CSTR(aff12));
-  LOG_INFO("please manually check that /tmp/solver-interface-test.lp matches this");
+  TESSERACT_LOG_INFO("objective: {}", CSTR(aff12));
+  TESSERACT_LOG_INFO("please manually check that /tmp/solver-interface-test.lp matches this");
   solver->writeToFile("/tmp/solver-interface-test.lp");
 
   solver->optimize();
@@ -213,8 +213,8 @@ TEST_P(SolverInterface, ExprMult_test3)  // NOLINT
   const QuadExpr aff12 = exprMult(aff1, aff2);
   solver->setObjective(aff12);
   solver->update();
-  LOG_INFO("objective: %s", CSTR(aff12));
-  LOG_INFO("please manually check that /tmp/solver-interface-test.lp matches this");
+  TESSERACT_LOG_INFO("objective: {}", CSTR(aff12));
+  TESSERACT_LOG_INFO("please manually check that /tmp/solver-interface-test.lp matches this");
   solver->writeToFile("/tmp/solver-interface-test.lp");
 
   solver->optimize();

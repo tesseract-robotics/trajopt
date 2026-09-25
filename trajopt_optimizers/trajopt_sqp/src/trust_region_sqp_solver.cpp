@@ -32,7 +32,7 @@
 #include <trajopt_sqp/qp_solver.h>
 #include <trajopt_sqp/sqp_callback.h>
 
-#include <console_bridge/console.h>
+#include <tesseract/common/logging.h>
 #include <chrono>
 #include <cassert>
 
@@ -107,14 +107,14 @@ void TrustRegionSQPSolver::solve(const QPProblem::Ptr& qp_problem)
       const double elapsed_time = std::chrono::duration<double, std::milli>(Clock::now() - start_time).count() / 1000.0;
       if (elapsed_time > params.max_time)
       {
-        CONSOLE_BRIDGE_logDebug("Elapsed time %f has exceeded max time %f", elapsed_time, params.max_time);
+        TESSERACT_LOG_DEBUG("Elapsed time {} has exceeded max time {}", elapsed_time, params.max_time);
         status_ = SQPStatus::kTimeLimit;
         break;
       }
 
       if (results_.overall_iteration >= params.max_iterations)
       {
-        CONSOLE_BRIDGE_logDebug("Iteration limit");
+        TESSERACT_LOG_DEBUG("Iteration limit");
         status_ = SQPStatus::kIterationLimit;
         break;
       }
@@ -148,7 +148,7 @@ void TrustRegionSQPSolver::solve(const QPProblem::Ptr& qp_problem)
   if (status_ == SQPStatus::kRunning)
   {
     status_ = SQPStatus::kPenaltyIterationLimit;
-    CONSOLE_BRIDGE_logDebug("Penalty iteration limit, optimization couldn't satisfy all constraints");
+    TESSERACT_LOG_DEBUG("Penalty iteration limit, optimization couldn't satisfy all constraints");
   }
 
   // Final Cleanup
@@ -163,13 +163,13 @@ bool TrustRegionSQPSolver::verifySQPSolverConvergence()
   // Check if constraints are satisfied
   if (results_.best_constraint_violations.size() == 0)
   {
-    CONSOLE_BRIDGE_logDebug("Optimization has converged and there are no constraints");
+    TESSERACT_LOG_DEBUG("Optimization has converged and there are no constraints");
     return true;
   }
 
   if (results_.best_constraint_violations.maxCoeff() < params.cnt_tolerance)
   {
-    CONSOLE_BRIDGE_logDebug("woo-hoo! constraints are satisfied (to tolerance %.2e)", params.cnt_tolerance);
+    TESSERACT_LOG_DEBUG("woo-hoo! constraints are satisfied (to tolerance {:.2e})", params.cnt_tolerance);
     return true;
   }
 
@@ -185,14 +185,14 @@ void TrustRegionSQPSolver::adjustPenalty()
     {
       if (results_.best_constraint_violations[idx] > params.cnt_tolerance)
       {
-        CONSOLE_BRIDGE_logDebug("Not all constraints are satisfied. Increasing constraint penalties for %d", idx);
+        TESSERACT_LOG_DEBUG("Not all constraints are satisfied. Increasing constraint penalties for {}", idx);
         results_.merit_error_coeffs[idx] *= params.merit_coeff_increase_ratio;
       }
     }
   }
   else
   {
-    CONSOLE_BRIDGE_logDebug("Not all constraints are satisfied. Increasing constraint penalties uniformly");
+    TESSERACT_LOG_DEBUG("Not all constraints are satisfied. Increasing constraint penalties uniformly");
     results_.merit_error_coeffs *= params.merit_coeff_increase_ratio;
   }
   setBoxSize(fmax(results_.box_size[0], params.min_trust_box_size / params.trust_shrink_ratio * 1.5));
@@ -252,7 +252,7 @@ bool TrustRegionSQPSolver::stepSQPSolver()
 
   if (results_.box_size.maxCoeff() < params.min_trust_box_size)
   {
-    CONSOLE_BRIDGE_logDebug("Converged because trust region is tiny");
+    TESSERACT_LOG_DEBUG("Converged because trust region is tiny");
     status_ = SQPStatus::kConverged;
     return true;
   }
@@ -280,7 +280,7 @@ void TrustRegionSQPSolver::runTrustRegionLoop()
     if (status_ != SQPStatus::kRunning)
     {
       qp_solver_failures++;
-      CONSOLE_BRIDGE_logWarn("Convex solver failed (%d/%d)!", qp_solver_failures, params.max_qp_solver_failures);
+      TESSERACT_LOG_WARN("Convex solver failed ({}/{})!", qp_solver_failures, params.max_qp_solver_failures);
 
       if (qp_solver_failures < params.max_qp_solver_failures)
       {
@@ -288,7 +288,7 @@ void TrustRegionSQPSolver::runTrustRegionLoop()
         qp_solver->updateBounds(qp_problem->getBoundsLower(), qp_problem->getBoundsUpper());
         results_.box_size = qp_problem->getBoxSize();
 
-        CONSOLE_BRIDGE_logDebug("Shrunk trust region. New box size: %.4f", results_.box_size[0]);
+        TESSERACT_LOG_DEBUG("Shrunk trust region. New box size: {:.4f}", results_.box_size[0]);
         continue;
       }
 
@@ -299,27 +299,27 @@ void TrustRegionSQPSolver::runTrustRegionLoop()
         qp_solver->updateBounds(qp_problem->getBoundsLower(), qp_problem->getBoundsUpper());
         results_.box_size = qp_problem->getBoxSize();
 
-        CONSOLE_BRIDGE_logDebug("Shrunk trust region to minimum. New box size: %.4f", results_.box_size[0]);
+        TESSERACT_LOG_DEBUG("Shrunk trust region to minimum. New box size: {:.4f}", results_.box_size[0]);
         continue;
       }
 
-      CONSOLE_BRIDGE_logError("The convex solver failed you one too many times.");
+      TESSERACT_LOG_ERROR("The convex solver failed you one too many times.");
       return;
     }
 
     // Check if the entire NLP Converged
     if (results_.approx_merit_improve < -1e-5)
     {
-      CONSOLE_BRIDGE_logWarn("Approximate merit function got worse (%.3e). (convexification is probably wrong to "
-                             "zeroth order)",
-                             results_.approx_merit_improve);
+      TESSERACT_LOG_WARN("Approximate merit function got worse ({:.3e}). (convexification is probably wrong to "
+                         "zeroth order)",
+                         results_.approx_merit_improve);
     }
 
     if (results_.approx_merit_improve < params.min_approx_improve)
     {
-      CONSOLE_BRIDGE_logDebug("Converged because improvement was small (%.3e < %.3e)",
-                              results_.approx_merit_improve,
-                              params.min_approx_improve);
+      TESSERACT_LOG_DEBUG("Converged because improvement was small ({:.3e} < {:.3e})",
+                          results_.approx_merit_improve,
+                          params.min_approx_improve);
       status_ = SQPStatus::kConverged;
       return;
     }
@@ -328,8 +328,9 @@ void TrustRegionSQPSolver::runTrustRegionLoop()
     const double approx_frac = results_.approx_merit_improve / denom;
     if (approx_frac < params.min_approx_improve_frac)
     {
-      CONSOLE_BRIDGE_logDebug(
-          "Converged because improvement ratio was small (%.3e < %.3e)", approx_frac, params.min_approx_improve_frac);
+      TESSERACT_LOG_DEBUG("Converged because improvement ratio was small ({:.3e} < {:.3e})",
+                          approx_frac,
+                          params.min_approx_improve_frac);
       status_ = SQPStatus::kConverged;
       return;
     }
@@ -342,7 +343,7 @@ void TrustRegionSQPSolver::runTrustRegionLoop()
       qp_solver->updateBounds(qp_problem->getBoundsLower(), qp_problem->getBoundsUpper());
       results_.box_size = qp_problem->getBoxSize();
 
-      CONSOLE_BRIDGE_logDebug("Shrunk trust region. new box size: %.4f", results_.box_size[0]);
+      TESSERACT_LOG_DEBUG("Shrunk trust region. new box size: {:.4f}", results_.box_size[0]);
     }
     else
     {
@@ -364,7 +365,7 @@ void TrustRegionSQPSolver::runTrustRegionLoop()
       qp_problem->scaleBoxSize(params.trust_expand_ratio);
       qp_solver->updateBounds(qp_problem->getBoundsLower(), qp_problem->getBoundsUpper());
       results_.box_size = qp_problem->getBoxSize();
-      CONSOLE_BRIDGE_logDebug("Expanded trust region. new box size: %.4f", results_.box_size[0]);
+      TESSERACT_LOG_DEBUG("Expanded trust region. new box size: {:.4f}", results_.box_size[0]);
       return;
     }
   }  // Trust region loop
@@ -425,7 +426,7 @@ SQPStatus TrustRegionSQPSolver::solveQPProblem()
   {
     qp_problem->setVariables(results_.best_var_vals.data());
 
-    CONSOLE_BRIDGE_logError("Solver Failure");
+    TESSERACT_LOG_ERROR("Solver Failure");
     return SQPStatus::kQPSolveFailed;
   }
 

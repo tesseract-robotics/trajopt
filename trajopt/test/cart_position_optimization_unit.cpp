@@ -34,14 +34,13 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <tesseract/common/resource_locator.h>
 #include <tesseract/common/types.h>
 #include <tesseract/common/utils.h>
-#include <console_bridge/console.h>
+#include <tesseract/common/logging.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt/plot_callback.hpp>
 #include <trajopt/utils.hpp>
 #include <trajopt/problem_description.hpp>
 #include <trajopt_common/config.hpp>
-#include <trajopt_common/logging.hpp>
 
 using namespace trajopt;
 using namespace tesseract::environment;
@@ -56,13 +55,11 @@ TEST(CartPositionOptimizationTrajoptSCO, cart_position_optimization_trajopt_sco)
 {
   if (DEBUG)  // NOLINT
   {
-    console_bridge::setLogLevel(console_bridge::LogLevel::CONSOLE_BRIDGE_LOG_DEBUG);
-    trajopt_common::gLogLevel = trajopt_common::LevelInfo;
+    tesseract::common::getLogger()->set_level(spdlog::level::info);
   }
   else
   {
-    console_bridge::setLogLevel(console_bridge::LogLevel::CONSOLE_BRIDGE_LOG_NONE);
-    trajopt_common::gLogLevel = trajopt_common::LevelError;
+    tesseract::common::getLogger()->set_level(spdlog::level::err);
   }
 
   // 1)  Load Robot
@@ -211,8 +208,7 @@ static void buildAbbIrb2400Env(std::shared_ptr<Environment>& env_out,
 // ---------------------------------------------------------------------------
 TEST(CartPositionOptimizationTrajoptSCO, cart_position_seed_outside_band_snaps_to_edge)  // NOLINT
 {
-  console_bridge::setLogLevel(console_bridge::LogLevel::CONSOLE_BRIDGE_LOG_NONE);
-  trajopt_common::gLogLevel = trajopt_common::LevelError;
+  tesseract::common::getLogger()->set_level(spdlog::level::err);
 
   std::shared_ptr<Environment> env;
   tesseract::kinematics::JointGroup::ConstPtr manip;
@@ -358,8 +354,7 @@ TEST(CartPositionOptimizationTrajoptSCO, cart_position_seed_outside_band_snaps_t
 // ---------------------------------------------------------------------------
 TEST(CartPositionOptimizationTrajoptSCO, cart_position_seed_inside_band_uses_band_freedom)  // NOLINT
 {
-  console_bridge::setLogLevel(console_bridge::LogLevel::CONSOLE_BRIDGE_LOG_NONE);
-  trajopt_common::gLogLevel = trajopt_common::LevelError;
+  tesseract::common::getLogger()->set_level(spdlog::level::err);
 
   std::shared_ptr<Environment> env;
   tesseract::kinematics::JointGroup::ConstPtr manip;

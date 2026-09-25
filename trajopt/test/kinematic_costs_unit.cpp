@@ -9,7 +9,7 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <tesseract/scene_graph/scene_state.h>
 #include <tesseract/environment/environment.h>
 #include <tesseract/environment/utils.h>
-#include <console_bridge/console.h>
+#include <tesseract/common/logging.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt/plot_callback.hpp>
@@ -17,7 +17,6 @@ TRAJOPT_IGNORE_WARNINGS_POP
 #include <trajopt_sco/optimizers.hpp>
 #include <trajopt_common/config.hpp>
 #include <trajopt_common/eigen_conversions.hpp>
-#include <trajopt_common/logging.hpp>
 #include <trajopt_common/stl_to_string.hpp>
 
 #include <trajopt/kinematic_terms.hpp>
@@ -46,7 +45,7 @@ public:
     const ResourceLocator::Ptr locator = std::make_shared<tesseract::common::GeneralResourceLocator>();
     EXPECT_TRUE(env_->init(urdf_file, srdf_file, locator));
 
-    gLogLevel = trajopt_common::LevelError;
+    tesseract::common::getLogger()->set_level(spdlog::level::err);
   }
 };
 
@@ -71,8 +70,8 @@ void checkJacobian(const sco::VectorOfVector& f,
   EXPECT_TRUE(pass);
   if (!pass)
   {
-    CONSOLE_BRIDGE_logError("Numerical:\n %s", toString(numerical).c_str());
-    CONSOLE_BRIDGE_logError("Analytical:\n %s", toString(analytical).c_str());
+    TESSERACT_LOG_ERROR("Numerical:\n {}", toString(numerical));
+    TESSERACT_LOG_ERROR("Analytical:\n {}", toString(analytical));
   }
 }
 
@@ -80,7 +79,7 @@ void checkJacobian(const sco::VectorOfVector& f,
 
 TEST_F(KinematicCostsTest, CartPoseJacCalculator)  // NOLINT
 {
-  CONSOLE_BRIDGE_logDebug("KinematicCostsTest, CartPoseJacCalculator");
+  TESSERACT_LOG_DEBUG("KinematicCostsTest, CartPoseJacCalculator");
 
   const tesseract::kinematics::JointGroup::ConstPtr kin = env_->getJointGroup("right_arm");
 
@@ -100,7 +99,7 @@ TEST_F(KinematicCostsTest, CartPoseJacCalculator)  // NOLINT
 
 TEST_F(KinematicCostsTest, CartPoseJacCalculator_TolerancedInsideBand)  // NOLINT
 {
-  CONSOLE_BRIDGE_logDebug("KinematicCostsTest, CartPoseJacCalculator_TolerancedInsideBand");
+  TESSERACT_LOG_DEBUG("KinematicCostsTest, CartPoseJacCalculator_TolerancedInsideBand");
 
   const tesseract::kinematics::JointGroup::ConstPtr kin = env_->getJointGroup("right_arm");
 
@@ -147,7 +146,7 @@ TEST_F(KinematicCostsTest, CartPoseJacCalculator_TolerancedInsideBand)  // NOLIN
 
 TEST_F(KinematicCostsTest, CartPoseJacCalculator_TolerancedOutsideBand)  // NOLINT
 {
-  CONSOLE_BRIDGE_logDebug("KinematicCostsTest, CartPoseJacCalculator_TolerancedOutsideBand");
+  TESSERACT_LOG_DEBUG("KinematicCostsTest, CartPoseJacCalculator_TolerancedOutsideBand");
 
   const tesseract::kinematics::JointGroup::ConstPtr kin = env_->getJointGroup("right_arm");
 
@@ -185,7 +184,7 @@ TEST_F(KinematicCostsTest, CartPoseJacCalculator_TolerancedOutsideBand)  // NOLI
 
 TEST_F(KinematicCostsTest, CartPoseJacCalculator_TolerancedAcrossEdge)  // NOLINT
 {
-  CONSOLE_BRIDGE_logDebug("KinematicCostsTest, CartPoseJacCalculator_TolerancedAcrossEdge");
+  TESSERACT_LOG_DEBUG("KinematicCostsTest, CartPoseJacCalculator_TolerancedAcrossEdge");
 
   const tesseract::kinematics::JointGroup::ConstPtr kin = env_->getJointGroup("right_arm");
 
@@ -229,7 +228,7 @@ TEST_F(KinematicCostsTest, CartPoseJacCalculator_TolerancedAcrossEdge)  // NOLIN
 
 TEST_F(KinematicCostsTest, DynamicCartPoseJacCalculator_TolerancedInsideBand)  // NOLINT
 {
-  CONSOLE_BRIDGE_logDebug("KinematicCostsTest, DynamicCartPoseJacCalculator_TolerancedInsideBand");
+  TESSERACT_LOG_DEBUG("KinematicCostsTest, DynamicCartPoseJacCalculator_TolerancedInsideBand");
 
   const tesseract::kinematics::JointGroup::ConstPtr kin = env_->getJointGroup("right_arm");
 
@@ -286,7 +285,7 @@ TEST_F(KinematicCostsTest, DynamicCartPoseJacCalculator_TolerancedInsideBand)  /
 
 TEST_F(KinematicCostsTest, DynamicCartPoseJacCalculator_TolerancedOutsideBand)  // NOLINT
 {
-  CONSOLE_BRIDGE_logDebug("KinematicCostsTest, DynamicCartPoseJacCalculator_TolerancedOutsideBand");
+  TESSERACT_LOG_DEBUG("KinematicCostsTest, DynamicCartPoseJacCalculator_TolerancedOutsideBand");
 
   const tesseract::kinematics::JointGroup::ConstPtr kin = env_->getJointGroup("right_arm");
 
@@ -331,7 +330,7 @@ TEST_F(KinematicCostsTest, DynamicCartPoseJacCalculator_TolerancedOutsideBand)  
 
 TEST_F(KinematicCostsTest, DynamicCartPoseJacCalculator_TolerancedAcrossEdge)  // NOLINT
 {
-  CONSOLE_BRIDGE_logDebug("KinematicCostsTest, DynamicCartPoseJacCalculator_TolerancedAcrossEdge");
+  TESSERACT_LOG_DEBUG("KinematicCostsTest, DynamicCartPoseJacCalculator_TolerancedAcrossEdge");
 
   const tesseract::kinematics::JointGroup::ConstPtr kin = env_->getJointGroup("right_arm");
 
@@ -410,7 +409,7 @@ TEST_F(KinematicCostsTest, CartPoseCalculators_InvertedToleranceBandThrows)  // 
 
 TEST_F(KinematicCostsTest, TransformsCacheDoesNotAccumulateAcrossEnvironments)  // NOLINT
 {
-  CONSOLE_BRIDGE_logDebug("KinematicCostsTest, TransformsCacheDoesNotAccumulateAcrossEnvironments");
+  TESSERACT_LOG_DEBUG("KinematicCostsTest, TransformsCacheDoesNotAccumulateAcrossEnvironments");
 
   // The FK transform cache is a static thread_local shared by every calculator on the thread. Each operator() must
   // clear it before populating, or it retains the union of every link set the thread has served. Two scene graphs are

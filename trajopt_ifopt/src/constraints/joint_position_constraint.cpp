@@ -27,7 +27,7 @@
 #include <trajopt_ifopt/variable_sets/var.h>
 
 TRAJOPT_IGNORE_WARNINGS_PUSH
-#include <console_bridge/console.h>
+#include <tesseract/common/logging.h>
 #include <cassert>
 TRAJOPT_IGNORE_WARNINGS_POP
 
@@ -58,7 +58,7 @@ JointPosConstraint::JointPosConstraint(const Eigen::VectorXd& target,
 
   // Check and make sure the targets size aligns with the vars passed in
   if (target.size() != position_var->size())
-    CONSOLE_BRIDGE_logError("Targets size does not align with variables provided");
+    TESSERACT_LOG_ERROR("Targets size does not align with variables provided");
 
   // Set the bounds to the input targets
   std::vector<Bounds> bounds(static_cast<std::size_t>(rows_));
@@ -104,7 +104,7 @@ JointPosConstraint::JointPosConstraint(const std::vector<Bounds>& bounds,
 
   // Check and make sure the targets size aligns with the vars passed in
   if (static_cast<long>(bounds_.size()) != position_var_->size())
-    CONSOLE_BRIDGE_logError("Bounds size does not align with variables provided");
+    TESSERACT_LOG_ERROR("Bounds size does not align with variables provided");
 
   indices_.reserve(static_cast<std::size_t>(n_dof_));
   for (int i = 0; i < n_dof_; i++)

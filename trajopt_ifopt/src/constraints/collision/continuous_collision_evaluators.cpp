@@ -30,7 +30,6 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <tesseract/collision/continuous_contact_manager.h>
 #include <tesseract/kinematics/joint_group.h>
 #include <tesseract/environment/environment.h>
-#include <console_bridge/console.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace trajopt_ifopt

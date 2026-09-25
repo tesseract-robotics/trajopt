@@ -2,7 +2,7 @@
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <boost/algorithm/string.hpp>
 #include <json/json.h>
-#include <console_bridge/console.h>
+#include <tesseract/common/logging.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt/json_marshal.hpp>
@@ -17,7 +17,6 @@ TRAJOPT_IGNORE_WARNINGS_POP
 #include <trajopt_sco/expr_ops.hpp>
 #include <trajopt_common/eigen_conversions.hpp>
 #include <trajopt_common/eigen_slicing.hpp>
-#include <trajopt_common/logging.hpp>
 #include <trajopt_common/vector_ops.hpp>
 
 #include <tesseract/common/types.h>
@@ -83,7 +82,7 @@ void checkParameterSize(trajopt::DblVec& parameter,
   if (apply_first && parameter.size() == 1)
   {
     parameter = trajopt::DblVec(expected_size, parameter[0]);
-    CONSOLE_BRIDGE_logDebug("1 %s given. Applying to all %i joints", name.c_str(), expected_size);
+    TESSERACT_LOG_DEBUG("1 {} given. Applying to all {} joints", name, expected_size);
   }
   else if (parameter.size() != expected_size)
   {
@@ -172,7 +171,7 @@ void ProblemConstructionInfo::readCosts(const Json::Value& v)
     bool use_time{ false };
     json_marshal::childFromJson(it, type, "type");
     json_marshal::childFromJson(it, use_time, "use_time", false);
-    LOG_DEBUG("reading term: %s", type.c_str());
+    TESSERACT_LOG_DEBUG("reading term: {}", type);
     const TermInfo::Ptr term = TermInfo::fromName(type);
 
     if (!term)
@@ -202,7 +201,7 @@ void ProblemConstructionInfo::readConstraints(const Json::Value& v)
     bool use_time{ false };
     json_marshal::childFromJson(it, type, "type");
     json_marshal::childFromJson(it, use_time, "use_time", false);
-    LOG_DEBUG("reading term: %s", type.c_str());
+    TESSERACT_LOG_DEBUG("reading term: {}", type);
     const TermInfo::Ptr term = TermInfo::fromName(type);
 
     if (!term)
@@ -420,8 +419,7 @@ TrajOptProb::Ptr ConstructProblem(const ProblemConstructionInfo& pci)
   for (const TermInfo::Ptr& cost : pci.cost_infos)
   {
     if (static_cast<bool>(cost->term_type & TermType::TT_CNT))
-      CONSOLE_BRIDGE_logWarn("%s is listed as a type TermType::TT_CNT but was added to cost_infos",
-                             (cost->name).c_str());
+      TESSERACT_LOG_WARN("{} is listed as a type TermType::TT_CNT but was added to cost_infos", cost->name);
     if (!static_cast<bool>(cost->getSupportedTypes() & TermType::TT_COST))
       PRINT_AND_THROW(boost::format("%s is only a constraint, but you listed it as a cost") % cost->name);
     if (static_cast<bool>(cost->term_type & TermType::TT_USE_TIME))
@@ -434,8 +432,7 @@ TrajOptProb::Ptr ConstructProblem(const ProblemConstructionInfo& pci)
   for (const TermInfo::Ptr& cnt : pci.cnt_infos)
   {
     if (static_cast<bool>(cnt->term_type & TermType::TT_COST))
-      CONSOLE_BRIDGE_logWarn("%s is listed as a type TermType::TT_COST but was added to cnt_infos",
-                             (cnt->name).c_str());
+      TESSERACT_LOG_WARN("{} is listed as a type TermType::TT_COST but was added to cnt_infos", cnt->name);
     if (!static_cast<bool>(cnt->getSupportedTypes() & TermType::TT_CNT))
       PRINT_AND_THROW(boost::format("%s is only a cost, but you listed it as a constraint") % cnt->name);
     if (static_cast<bool>(cnt->term_type & TermType::TT_USE_TIME))
@@ -675,7 +672,7 @@ void UserDefinedTermInfo::hatch(TrajOptProb& prob)
   }
   else
   {
-    CONSOLE_BRIDGE_logWarn("UserDefinedTermInfo does not have a valid term_type defined. No cost/constraint applied");
+    TESSERACT_LOG_WARN("UserDefinedTermInfo does not have a valid term_type defined. No cost/constraint applied");
   }
 }
 
@@ -790,7 +787,7 @@ void DynamicCartPoseTermInfo::hatch(TrajOptProb& prob)
 
   if (static_cast<bool>(term_type & TermType::TT_USE_TIME))
   {
-    CONSOLE_BRIDGE_logError("Use time version of this term has not been defined.");
+    TESSERACT_LOG_ERROR("Use time version of this term has not been defined.");
   }
   else
   {
@@ -825,8 +822,8 @@ void DynamicCartPoseTermInfo::hatch(TrajOptProb& prob)
     }
     else
     {
-      CONSOLE_BRIDGE_logWarn("DynamicCartPoseTermInfo does not have a valid term_type defined. No cost/constraint "
-                             "applied");
+      TESSERACT_LOG_WARN("DynamicCartPoseTermInfo does not have a valid term_type defined. No cost/constraint "
+                         "applied");
     }
   }
 }
@@ -947,11 +944,11 @@ void CartPoseTermInfo::hatch(TrajOptProb& prob)
 
   if (term_type == (TermType::TT_COST | TermType::TT_USE_TIME))
   {
-    CONSOLE_BRIDGE_logError("Use time version of this term has not been defined.");
+    TESSERACT_LOG_ERROR("Use time version of this term has not been defined.");
   }
   else if (term_type == (TermType::TT_CNT | TermType::TT_USE_TIME))
   {
-    CONSOLE_BRIDGE_logError("Use time version of this term has not been defined.");
+    TESSERACT_LOG_ERROR("Use time version of this term has not been defined.");
   }
   else if (static_cast<bool>(term_type & TermType::TT_COST) && static_cast<bool>(~(term_type | ~TermType::TT_USE_TIME)))
   {
@@ -999,7 +996,7 @@ void CartPoseTermInfo::hatch(TrajOptProb& prob)
   }
   else
   {
-    CONSOLE_BRIDGE_logWarn("CartPoseTermInfo does not have a valid term_type defined. No cost/constraint applied");
+    TESSERACT_LOG_WARN("CartPoseTermInfo does not have a valid term_type defined. No cost/constraint applied");
   }
 }
 
@@ -1032,11 +1029,11 @@ void CartVelTermInfo::hatch(TrajOptProb& prob)
 
   if (term_type == (TermType::TT_COST | TermType::TT_USE_TIME))
   {
-    CONSOLE_BRIDGE_logError("Use time version of this term has not been defined.");
+    TESSERACT_LOG_ERROR("Use time version of this term has not been defined.");
   }
   else if (term_type == (TermType::TT_CNT | TermType::TT_USE_TIME))
   {
-    CONSOLE_BRIDGE_logError("Use time version of this term has not been defined.");
+    TESSERACT_LOG_ERROR("Use time version of this term has not been defined.");
   }
   else if (static_cast<bool>(term_type & TermType::TT_COST) && static_cast<bool>(~(term_type | ~TermType::TT_USE_TIME)))
   {
@@ -1070,7 +1067,7 @@ void CartVelTermInfo::hatch(TrajOptProb& prob)
   }
   else
   {
-    CONSOLE_BRIDGE_logWarn("CartVelTermInfo does not have a valid term_type defined. No cost/constraint applied");
+    TESSERACT_LOG_WARN("CartVelTermInfo does not have a valid term_type defined. No cost/constraint applied");
   }
 }
 
@@ -1119,7 +1116,7 @@ void JointPosTermInfo::hatch(TrajOptProb& prob)
     const int tmp = first_step;
     first_step = last_step;
     last_step = tmp;
-    CONSOLE_BRIDGE_logWarn("Last time step for JointPosTerm comes before first step. Reversing them.");
+    TESSERACT_LOG_WARN("Last time step for JointPosTerm comes before first step. Reversing them.");
   }
   if (last_step == -1)  // last_step not set
     last_step = first_step;
@@ -1140,7 +1137,7 @@ void JointPosTermInfo::hatch(TrajOptProb& prob)
   const trajopt::VarArray vars = prob.GetVars();
   trajopt::VarArray joint_vars = vars.block(0, 0, vars.rows(), static_cast<int>(n_dof));
   if (prob.GetHasTime())
-    CONSOLE_BRIDGE_logInform("JointPosTermInfo does not differ based on setting of TermType::TT_USE_TIME");
+    TESSERACT_LOG_INFO("JointPosTermInfo does not differ based on setting of TermType::TT_USE_TIME");
 
   if (static_cast<bool>(term_type & TermType::TT_COST))
   {
@@ -1189,7 +1186,7 @@ void JointPosTermInfo::hatch(TrajOptProb& prob)
   }
   else
   {
-    CONSOLE_BRIDGE_logWarn("JointPosTermInfo does not have a valid term_type defined. No cost/constraint applied");
+    TESSERACT_LOG_WARN("JointPosTermInfo does not have a valid term_type defined. No cost/constraint applied");
   }
 }
 
@@ -1238,7 +1235,7 @@ void JointVelTermInfo::hatch(TrajOptProb& prob)
     const int tmp = first_step;
     first_step = last_step;
     last_step = tmp;
-    CONSOLE_BRIDGE_logWarn("Last time step for JointVelTerm comes before first step. Reversing them.");
+    TESSERACT_LOG_WARN("Last time step for JointVelTerm comes before first step. Reversing them.");
   }
 
   // Check if parameters are the correct size.
@@ -1385,7 +1382,7 @@ void JointVelTermInfo::hatch(TrajOptProb& prob)
   }
   else
   {
-    CONSOLE_BRIDGE_logWarn("JointVelTermInfo does not have a valid term_type defined. No cost/constraint applied");
+    TESSERACT_LOG_WARN("JointVelTermInfo does not have a valid term_type defined. No cost/constraint applied");
   }
 }
 
@@ -1435,7 +1432,7 @@ void JointAccTermInfo::hatch(TrajOptProb& prob)
     const int tmp = first_step;
     first_step = last_step;
     last_step = tmp;
-    CONSOLE_BRIDGE_logWarn("Last time step for JointAccTerm comes before first step. Reversing them.");
+    TESSERACT_LOG_WARN("Last time step for JointAccTerm comes before first step. Reversing them.");
   }
 
   // Check if parameters are the correct size.
@@ -1456,11 +1453,11 @@ void JointAccTermInfo::hatch(TrajOptProb& prob)
 
   if (term_type == (TermType::TT_COST | TermType::TT_USE_TIME))
   {
-    CONSOLE_BRIDGE_logError("Use time version of this term has not been defined.");
+    TESSERACT_LOG_ERROR("Use time version of this term has not been defined.");
   }
   else if (term_type == (TermType::TT_CNT | TermType::TT_USE_TIME))
   {
-    CONSOLE_BRIDGE_logError("Use time version of this term has not been defined.");
+    TESSERACT_LOG_ERROR("Use time version of this term has not been defined.");
   }
   else if (static_cast<bool>(term_type & TermType::TT_COST) && static_cast<bool>(~(term_type | ~TermType::TT_USE_TIME)))
   {
@@ -1506,7 +1503,7 @@ void JointAccTermInfo::hatch(TrajOptProb& prob)
   }
   else
   {
-    CONSOLE_BRIDGE_logWarn("JointAccTermInfo does not have a valid term_type defined. No cost/constraint applied");
+    TESSERACT_LOG_WARN("JointAccTermInfo does not have a valid term_type defined. No cost/constraint applied");
   }
 }
 
@@ -1557,7 +1554,7 @@ void JointJerkTermInfo::hatch(TrajOptProb& prob)
     const int tmp = first_step;
     first_step = last_step;
     last_step = tmp;
-    CONSOLE_BRIDGE_logWarn("Last time step for JointJerkTerm comes before first step. Reversing them.");
+    TESSERACT_LOG_WARN("Last time step for JointJerkTerm comes before first step. Reversing them.");
   }
 
   // Check if parameters are the correct size.
@@ -1578,11 +1575,11 @@ void JointJerkTermInfo::hatch(TrajOptProb& prob)
 
   if (term_type == (TermType::TT_COST | TermType::TT_USE_TIME))
   {
-    CONSOLE_BRIDGE_logError("Use time version of this term has not been defined.");
+    TESSERACT_LOG_ERROR("Use time version of this term has not been defined.");
   }
   else if (term_type == (TermType::TT_CNT | TermType::TT_USE_TIME))
   {
-    CONSOLE_BRIDGE_logError("Use time version of this term has not been defined.");
+    TESSERACT_LOG_ERROR("Use time version of this term has not been defined.");
   }
   else if (static_cast<bool>(term_type & TermType::TT_COST) && static_cast<bool>(~(term_type | ~TermType::TT_USE_TIME)))
   {
@@ -1628,7 +1625,7 @@ void JointJerkTermInfo::hatch(TrajOptProb& prob)
   }
   else
   {
-    CONSOLE_BRIDGE_logWarn("JointJerkTermInfo does not have a valid term_type defined. No cost/constraint applied");
+    TESSERACT_LOG_WARN("JointJerkTermInfo does not have a valid term_type defined. No cost/constraint applied");
   }
 }
 
@@ -1906,7 +1903,7 @@ void TotalTimeTermInfo::hatch(TrajOptProb& prob)
 
 void AvoidSingularityTermInfo::fromJson(ProblemConstructionInfo&, const Json::Value&)
 {
-  CONSOLE_BRIDGE_logWarn("Not implemented yet");
+  TESSERACT_LOG_WARN("Not implemented yet");
   assert(false);
 }
 
@@ -1947,7 +1944,7 @@ void AvoidSingularityTermInfo::hatch(TrajOptProb& prob)
     }
     else
     {
-      CONSOLE_BRIDGE_logWarn("Avoid singularity does not have a valid term_type defined. No cost/constraint applied");
+      TESSERACT_LOG_WARN("Avoid singularity does not have a valid term_type defined. No cost/constraint applied");
     }
   }
 }

@@ -19,7 +19,7 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <tesseract/geometry/impl/box.h>
 #include <tesseract/geometry/impl/octree.h>
 #include <tesseract/visualization/visualization.h>
-#include <console_bridge/console.h>
+#include <tesseract/common/logging.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt/collision_terms.hpp>
@@ -29,7 +29,6 @@ TRAJOPT_IGNORE_WARNINGS_POP
 #include <trajopt_sco/optimizers.hpp>
 #include <trajopt_common/config.hpp>
 #include <trajopt_common/eigen_conversions.hpp>
-#include <trajopt_common/logging.hpp>
 #include <trajopt_common/stl_to_string.hpp>
 #include "trajopt_test_utils.hpp"
 
@@ -90,20 +89,21 @@ ExpectedContactSummary logAndSummarizeContacts(const std::vector<ContactResultMa
 
     for (const auto& contact : flattened_results)
     {
-      CONSOLE_BRIDGE_logError("%s step=%zu pair=(%s,%s) distance=%.9f penetration=%s cc_time=(%.6f,%.6f) shape=(%d,%d) "
-                              "subshape=(%d,%d)",
-                              test_name.c_str(),
-                              step,
-                              contact.link_ids[0].name().c_str(),
-                              contact.link_ids[1].name().c_str(),
-                              contact.distance,
-                              (contact.distance <= 0.0) ? "true" : "false",
-                              contact.cc_time[0],
-                              contact.cc_time[1],
-                              contact.shape_id[0],
-                              contact.shape_id[1],
-                              contact.subshape_id[0],
-                              contact.subshape_id[1]);
+      TESSERACT_LOG_ERROR("{} step={} pair=({},{}) distance={:.9f} penetration={} cc_time=({:.6f},{:.6f}) "
+                          "shape=({},{}) "
+                          "subshape=({},{})",
+                          test_name.c_str(),
+                          step,
+                          contact.link_ids[0].name().c_str(),
+                          contact.link_ids[1].name().c_str(),
+                          contact.distance,
+                          (contact.distance <= 0.0) ? "true" : "false",
+                          contact.cc_time[0],
+                          contact.cc_time[1],
+                          contact.shape_id[0],
+                          contact.shape_id[1],
+                          contact.subshape_id[0],
+                          contact.subshape_id[1]);
 
       if (isExpectedPair(contact, expected_link_name_1, expected_link_name_2))
       {
@@ -116,20 +116,17 @@ ExpectedContactSummary logAndSummarizeContacts(const std::vector<ContactResultMa
 
   if (summary.found_pair)
   {
-    CONSOLE_BRIDGE_logError("%s expected_pair=(%s,%s) contacts=%zu min_distance=%.9f penetration=%s",
-                            test_name.c_str(),
-                            expected_link_name_1.c_str(),
-                            expected_link_name_2.c_str(),
-                            summary.pair_contact_count,
-                            summary.min_distance,
-                            (summary.min_distance <= 0.0) ? "true" : "false");
+    TESSERACT_LOG_ERROR("{} expected_pair=({},{}) contacts={} min_distance={:.9f} penetration={}",
+                        test_name,
+                        expected_link_name_1,
+                        expected_link_name_2,
+                        summary.pair_contact_count,
+                        summary.min_distance,
+                        (summary.min_distance <= 0.0) ? "true" : "false");
   }
   else
   {
-    CONSOLE_BRIDGE_logError("%s expected_pair=(%s,%s) contacts=0",
-                            test_name.c_str(),
-                            expected_link_name_1.c_str(),
-                            expected_link_name_2.c_str());
+    TESSERACT_LOG_ERROR("{} expected_pair=({},{}) contacts=0", test_name, expected_link_name_1, expected_link_name_2);
   }
 
   return summary;
@@ -152,7 +149,7 @@ protected:
     const ResourceLocator::Ptr locator = std::make_shared<tesseract::common::GeneralResourceLocator>();
     EXPECT_TRUE(env_->init(urdf_file, srdf_file, locator));
 
-    gLogLevel = trajopt_common::LevelError;
+    tesseract::common::getLogger()->set_level(spdlog::level::err);
 
     octomap::Pointcloud point_cloud;
     const double delta = 0.05;
@@ -212,7 +209,7 @@ void runConstraintTest(const Environment::Ptr& env,
                        const std::string& config_filename,
                        bool expect_final_collision_free)
 {
-  CONSOLE_BRIDGE_logDebug("CastConstraintOctomapTest, boxes");
+  TESSERACT_LOG_DEBUG("CastConstraintOctomapTest, boxes");
 
   const Json::Value root = readJsonFile(std::string(TRAJOPT_DATA_DIR) + "/config/" + config_filename);
 
@@ -229,7 +226,7 @@ void runConstraintTest(const Environment::Ptr& env,
   const tesseract::scene_graph::StateSolver::UPtr state_solver = prob->GetEnv()->getStateSolver();
   const ContinuousContactManager::Ptr manager = prob->GetEnv()->getContinuousContactManager();
 
-  CONSOLE_BRIDGE_logError("CastConstraintOctomapTest using continuous manager: %s", manager->getName().c_str());
+  TESSERACT_LOG_ERROR("CastConstraintOctomapTest using continuous manager: {}", manager->getName());
 
   manager->setActiveCollisionObjects(prob->GetKin()->getActiveLinkIds());
   manager->setDefaultCollisionMargin(0);
@@ -245,7 +242,8 @@ void runConstraintTest(const Environment::Ptr& env,
   EXPECT_TRUE(initial_summary.found_pair);
   EXPECT_GT(initial_summary.pair_contact_count, 0);
   EXPECT_LT(initial_summary.min_distance, 0.11);
-  CONSOLE_BRIDGE_logDebug((found) ? ("Initial trajectory is in collision") : ("Initial trajectory is collision free"));
+  TESSERACT_LOG_DEBUG("{}",
+                      (found) ? ("Initial trajectory is in collision") : ("Initial trajectory is collision free"));
 
   sco::BasicTrustRegionSQP::Ptr opt;
   if (use_multi_threaded)
@@ -263,7 +261,7 @@ void runConstraintTest(const Environment::Ptr& env,
   opt->initialize(trajToDblVec(prob->GetInitTraj()));
   opt->optimize();
 
-  CONSOLE_BRIDGE_logError("%s optimizer_status=%s", test_name.c_str(), sco::toString(opt->results().status).c_str());
+  TESSERACT_LOG_ERROR("{} optimizer_status={}", test_name, sco::toString(opt->results().status));
 
   if (plotting)
     plotter->clear();
@@ -281,7 +279,7 @@ void runConstraintTest(const Environment::Ptr& env,
     EXPECT_FALSE(found);
     EXPECT_FALSE(final_summary.found_pair);
   }
-  CONSOLE_BRIDGE_logDebug((found) ? ("Final trajectory is in collision") : ("Final trajectory is collision free"));
+  TESSERACT_LOG_DEBUG("{}", (found) ? ("Final trajectory is in collision") : ("Final trajectory is collision free"));
 }
 
 TEST_F(CastConstraintOctomapTest, boxes)

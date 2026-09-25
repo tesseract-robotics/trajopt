@@ -35,7 +35,6 @@
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <tesseract/kinematics/joint_group.h>
 #include <tesseract/common/utils.h>
-#include <console_bridge/console.h>
 #include <cassert>
 TRAJOPT_IGNORE_WARNINGS_POP
 

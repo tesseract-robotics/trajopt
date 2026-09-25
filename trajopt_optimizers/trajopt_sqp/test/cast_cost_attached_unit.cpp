@@ -26,7 +26,7 @@
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <ctime>
 #include <gtest/gtest.h>
-#include <console_bridge/console.h>
+#include <tesseract/common/logging.h>
 #include <OsqpEigen/OsqpEigen.h>
 #include <tesseract/common/types.h>
 #include <tesseract/common/resource_locator.h>
@@ -265,13 +265,13 @@ void runCastAttachedLinkWithGeomTest(const Environment::Ptr& env, bool fixed_siz
   bool found = checkTrajectory(collisions, *manager, *state_solver, manip->getJointIds(), inputs, config);
 
   EXPECT_TRUE(found);
-  CONSOLE_BRIDGE_logWarn((found) ? ("Initial trajectory is in collision") : ("Initial trajectory is collision free"));
+  TESSERACT_LOG_WARN("{}", (found) ? ("Initial trajectory is in collision") : ("Initial trajectory is collision free"));
 
   collisions.clear();
   found = checkTrajectory(collisions, *manager, *state_solver, manip->getJointIds(), results, config);
 
   EXPECT_FALSE(found);
-  CONSOLE_BRIDGE_logWarn((found) ? ("Final trajectory is in collision") : ("Final trajectory is collision free"));
+  TESSERACT_LOG_WARN("{}", (found) ? ("Final trajectory is in collision") : ("Final trajectory is collision free"));
 }
 
 template <typename T>
@@ -402,36 +402,36 @@ void runCastAttachedLinkWithoutGeomTest(const Environment::Ptr& env, bool fixed_
   bool found = checkTrajectory(collisions, *manager, *state_solver, manip->getJointIds(), inputs, config);
 
   EXPECT_TRUE(found);
-  CONSOLE_BRIDGE_logWarn((found) ? ("Initial trajectory is in collision") : ("Initial trajectory is collision free"));
+  TESSERACT_LOG_WARN("{}", (found) ? ("Initial trajectory is in collision") : ("Initial trajectory is collision free"));
 
   collisions.clear();
   found = checkTrajectory(collisions, *manager, *state_solver, manip->getJointIds(), results, config);
 
   EXPECT_FALSE(found);
-  CONSOLE_BRIDGE_logWarn((found) ? ("Final trajectory is in collision") : ("Final trajectory is collision free"));
+  TESSERACT_LOG_WARN("{}", (found) ? ("Final trajectory is in collision") : ("Final trajectory is collision free"));
 }
 
 TEST_F(CastAttachedTest, LinkWithGeomIfoptProblem)  // NOLINT
 {
-  CONSOLE_BRIDGE_logDebug("CastAttachedTest, LinkWithGeomIfoptProblem");
+  TESSERACT_LOG_DEBUG("CastAttachedTest, LinkWithGeomIfoptProblem");
   runCastAttachedLinkWithGeomTest<trajopt_sqp::IfoptQPProblem>(env, true);
 }
 
 TEST_F(CastAttachedTest, LinkWithGeomTrajOptProblem)  // NOLINT
 {
-  CONSOLE_BRIDGE_logDebug("CastAttachedTest, LinkWithGeomTrajOptProblem");
+  TESSERACT_LOG_DEBUG("CastAttachedTest, LinkWithGeomTrajOptProblem");
   runCastAttachedLinkWithGeomTest<trajopt_sqp::TrajOptQPProblem>(env, false);
 }
 
 TEST_F(CastAttachedTest, LinkWithoutGeomIfoptProblem)  // NOLINT
 {
-  CONSOLE_BRIDGE_logDebug("CastAttachedTest, LinkWithoutGeomIfoptProblem");
+  TESSERACT_LOG_DEBUG("CastAttachedTest, LinkWithoutGeomIfoptProblem");
   runCastAttachedLinkWithoutGeomTest<trajopt_sqp::IfoptQPProblem>(env, true);
 }
 
 TEST_F(CastAttachedTest, LinkWithoutGeomTrajOptProblem)  // NOLINT
 {
-  CONSOLE_BRIDGE_logDebug("CastAttachedTest, LinkWithoutGeomTrajOptProblem");
+  TESSERACT_LOG_DEBUG("CastAttachedTest, LinkWithoutGeomTrajOptProblem");
   runCastAttachedLinkWithoutGeomTest<trajopt_sqp::TrajOptQPProblem>(env, false);  // NOLINT
 }
 

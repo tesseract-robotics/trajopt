@@ -28,7 +28,7 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 
 #include <OsqpEigen/OsqpEigen.h>
 
-#include <console_bridge/console.h>
+#include <tesseract/common/logging.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt_sqp/ifopt_qp_problem.h>
@@ -51,9 +51,9 @@ public:
   void SetUp() override
   {
     if (DEBUG)
-      console_bridge::setLogLevel(console_bridge::LogLevel::CONSOLE_BRIDGE_LOG_DEBUG);
+      tesseract::common::getLogger()->set_level(spdlog::level::debug);
     else
-      console_bridge::setLogLevel(console_bridge::LogLevel::CONSOLE_BRIDGE_LOG_NONE);
+      tesseract::common::getLogger()->set_level(spdlog::level::off);
   }
 };
 
@@ -138,13 +138,13 @@ void runJerkConstraintOptimizationTest()
 /** @brief Joint position constraints with a squared jerk cost in between. Optimized using trajopt_sqp */
 TEST_F(JerkConstraintOptimization, jerk_constraint_optimization_ifopt_problem)  // NOLINT
 {
-  CONSOLE_BRIDGE_logDebug("JerkConstraintOptimization, jerk_constraint_optimization_ifopt_problem");
+  TESSERACT_LOG_DEBUG("JerkConstraintOptimization, jerk_constraint_optimization_ifopt_problem");
   runJerkConstraintOptimizationTest<trajopt_sqp::IfoptQPProblem>();
 }
 
 TEST_F(JerkConstraintOptimization, jerk_constraint_optimization_trajopt_problem)  // NOLINT
 {
-  CONSOLE_BRIDGE_logDebug("JerkConstraintOptimization, jerk_constraint_optimization_trajopt_problem");
+  TESSERACT_LOG_DEBUG("JerkConstraintOptimization, jerk_constraint_optimization_trajopt_problem");
   runJerkConstraintOptimizationTest<trajopt_sqp::TrajOptQPProblem>();
 }
 

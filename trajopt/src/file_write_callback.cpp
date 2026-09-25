@@ -17,7 +17,7 @@ limitations under the License.
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <functional>
 #include <fstream>
-#include <console_bridge/console.h>
+#include <tesseract/common/logging.h>
 #include <tesseract/common/types.h>
 #include <tesseract/kinematics/joint_group.h>
 #include <tesseract/environment/environment.h>
@@ -99,7 +99,7 @@ std::function<void(sco::OptProb*, sco::OptResults&)> WriteCallback(std::shared_p
 {
   if (!file->good())
   {
-    CONSOLE_BRIDGE_logWarn("ofstream passed to create callback not in 'good' state");
+    TESSERACT_LOG_WARN("ofstream passed to create callback not in 'good' state");
   }
 
   // Write joint names

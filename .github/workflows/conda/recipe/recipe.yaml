@@ -31,7 +31,6 @@ requirements:
       - cereal
       - eigen-abi-devel
       - tinyxml2
-      - console_bridge
       - assimp
       - urdfdom
       - fcl
@@ -58,7 +57,6 @@ requirements:
       - cereal
       - eigen
       - tinyxml2
-      - console_bridge
       - assimp
       - urdfdom
       - fcl

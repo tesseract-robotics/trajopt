@@ -4,14 +4,13 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <Eigen/SparseCore>
 #include <fstream>
 #include <csignal>
-#include <console_bridge/console.h>
+#include <tesseract/common/logging.h>
 #include <osqp.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt_sco/sco_common.hpp>
 #include <trajopt_sco/osqp_interface.hpp>
 #include <trajopt_sco/solver_utils.hpp>
-#include <trajopt_common/logging.hpp>
 #include <trajopt_common/stl_to_string.hpp>
 
 template <typename T>
@@ -316,19 +315,19 @@ void OSQPModel::createOrUpdateSolver()
   if (allow_update && (osqp_update_data_vec(osqp_workspace_, q_.data(), l_.data(), u_.data()) != 0))
   {
     allow_update = false;
-    LOG_WARN("OSQP updating bounds and linear costs failed.");
+    TESSERACT_LOG_WARN("OSQP updating bounds and linear costs failed.");
   }
   if (allow_update &&
       (osqp_update_data_mat(osqp_workspace_, P_->x, OSQP_NULL, P_->nzmax, A_->x, OSQP_NULL, A_->nzmax) != 0))
   {
     allow_update = false;
-    LOG_WARN("OSQP updating P and A matrices failed.");
+    TESSERACT_LOG_WARN("OSQP updating P and A matrices failed.");
   }
 
   // If setup is not required then return
   if (allow_update)
   {
-    LOG_DEBUG("OSQP updated (warm start = %lli).", config_.settings.warm_starting);
+    TESSERACT_LOG_DEBUG("OSQP updated (warm start = {}).", config_.settings.warm_starting);
     return;
   }
 
@@ -341,7 +340,7 @@ void OSQPModel::createOrUpdateSolver()
     {
       /** @todo this is not correct because constraints are dynamic size so these cannot be reused between
        * convexification. Only the trajectory optimization variables could be reused. **/
-      LOG_DEBUG("OSQP explicit warm start (warm_starting = %lli).", config_.settings.warm_starting);
+      TESSERACT_LOG_DEBUG("OSQP explicit warm start (warm_starting = {}).", config_.settings.warm_starting);
       // Store previous solution
       prev_x = DblVec(osqp_workspace_->solution->x, osqp_workspace_->solution->x + n_);
       prev_y = DblVec(osqp_workspace_->solution->y, osqp_workspace_->solution->y + m_);
@@ -364,7 +363,7 @@ void OSQPModel::createOrUpdateSolver()
     // Warm start recreated workspace with previous solution
     if (osqp_warm_start(osqp_workspace_, prev_x.data(), prev_y.data()) != 0)
     {
-      LOG_WARN("OSQP warm start failed.");
+      TESSERACT_LOG_WARN("OSQP warm start failed.");
     }
   }
 }
@@ -521,44 +520,44 @@ CvxOptStatus OSQPModel::optimize()
       std::cout << "OSQP Solution: " << solution_vec.transpose().format(format) << '\n';
     }
 
-    if (trajopt_common::GetLogLevel() >= trajopt_common::LevelDebug)
+    if (tesseract::common::getLogger()->should_log(spdlog::level::debug))
     {
       switch (status)
       {
         case OSQP_SOLVED:
           break;
         case OSQP_SOLVED_INACCURATE:
-          LOG_WARN("OSQP solved inaccurate");
+          TESSERACT_LOG_WARN("OSQP solved inaccurate");
           break;
         case OSQP_PRIMAL_INFEASIBLE:
-          LOG_WARN("OSQP primal infeasible");
+          TESSERACT_LOG_WARN("OSQP primal infeasible");
           break;
         case OSQP_PRIMAL_INFEASIBLE_INACCURATE:
-          LOG_WARN("OSQP primal infeasible inaccurate");
+          TESSERACT_LOG_WARN("OSQP primal infeasible inaccurate");
           break;
         case OSQP_DUAL_INFEASIBLE:
-          LOG_WARN("OSQP dual infeasible");
+          TESSERACT_LOG_WARN("OSQP dual infeasible");
           break;
         case OSQP_DUAL_INFEASIBLE_INACCURATE:
-          LOG_WARN("OSQP dual infeasible inaccurate");
+          TESSERACT_LOG_WARN("OSQP dual infeasible inaccurate");
           break;
         case OSQP_MAX_ITER_REACHED:
-          LOG_WARN("OSQP max iterations reached");
+          TESSERACT_LOG_WARN("OSQP max iterations reached");
           break;
         case OSQP_TIME_LIMIT_REACHED:
-          LOG_WARN("OSQP time limit reached");
+          TESSERACT_LOG_WARN("OSQP time limit reached");
           break;
         case OSQP_NON_CVX:
-          LOG_WARN("OSQP non-convex problem");
+          TESSERACT_LOG_WARN("OSQP non-convex problem");
           break;
         case OSQP_SIGINT:
-          LOG_WARN("OSQP interrupted by signal");
+          TESSERACT_LOG_WARN("OSQP interrupted by signal");
           break;
         case OSQP_UNSOLVED:
-          LOG_WARN("OSQP unsolved");
+          TESSERACT_LOG_WARN("OSQP unsolved");
           break;
         default:
-          LOG_ERROR("OSQP unknown status: %i", status);
+          TESSERACT_LOG_ERROR("OSQP unknown status: {}", status);
       }
     }
 
@@ -575,40 +574,40 @@ CvxOptStatus OSQPModel::optimize()
     case OSQP_NO_ERROR:
       break;
     case OSQP_DATA_VALIDATION_ERROR:
-      LOG_ERROR("OSQP Data Validation Error");
+      TESSERACT_LOG_ERROR("OSQP Data Validation Error");
       break;
     case OSQP_SETTINGS_VALIDATION_ERROR:
-      LOG_ERROR("OSQP Settings Validation Error");
+      TESSERACT_LOG_ERROR("OSQP Settings Validation Error");
       break;
     case OSQP_LINSYS_SOLVER_INIT_ERROR:
-      LOG_ERROR("OSQP Linear System Solver Initialization Error");
+      TESSERACT_LOG_ERROR("OSQP Linear System Solver Initialization Error");
       break;
     case OSQP_NONCVX_ERROR:
-      LOG_ERROR("OSQP Non Convex Error");
+      TESSERACT_LOG_ERROR("OSQP Non Convex Error");
       break;
     case OSQP_MEM_ALLOC_ERROR:
-      LOG_ERROR("OSQP Memory Allocation Error");
+      TESSERACT_LOG_ERROR("OSQP Memory Allocation Error");
       break;
     case OSQP_WORKSPACE_NOT_INIT_ERROR:
-      LOG_ERROR("OSQP Workspace Not Initialized Error");
+      TESSERACT_LOG_ERROR("OSQP Workspace Not Initialized Error");
       break;
     case OSQP_ALGEBRA_LOAD_ERROR:
-      LOG_ERROR("OSQP Algebra Load Error");
+      TESSERACT_LOG_ERROR("OSQP Algebra Load Error");
       break;
     case OSQP_FOPEN_ERROR:
-      LOG_ERROR("OSQP File Open Error");
+      TESSERACT_LOG_ERROR("OSQP File Open Error");
       break;
     case OSQP_CODEGEN_DEFINES_ERROR:
-      LOG_ERROR("OSQP Codegen Defines Error");
+      TESSERACT_LOG_ERROR("OSQP Codegen Defines Error");
       break;
     case OSQP_DATA_NOT_INITIALIZED:
-      LOG_ERROR("OSQP Data Not Initialized Error");
+      TESSERACT_LOG_ERROR("OSQP Data Not Initialized Error");
       break;
     case OSQP_FUNC_NOT_IMPLEMENTED:
-      LOG_ERROR("OSQP Function Not Implemented Error");
+      TESSERACT_LOG_ERROR("OSQP Function Not Implemented Error");
       break;
     default:
-      LOG_ERROR("OSQP Unknown Error: %lld", retcode);
+      TESSERACT_LOG_ERROR("OSQP Unknown Error: {}", retcode);
   }
 
   return CVX_FAILED;

@@ -9,7 +9,7 @@ TRAJOPT_IGNORE_WARNINGS_POP
 #include <trajopt_sco/expr_ops.hpp>
 #include <trajopt_sco/modeling.hpp>
 #include <trajopt_sco/sco_common.hpp>
-#include <trajopt_common/logging.hpp>
+#include <tesseract/common/logging.h>
 
 namespace sco
 {
@@ -260,7 +260,7 @@ DblVec OptProb::getCentralFeasiblePoint(const DblVec& x)
 
 DblVec OptProb::getClosestFeasiblePoint(const DblVec& x, const double& delta)
 {
-  LOG_DEBUG("getClosestFeasiblePoint");
+  TESSERACT_LOG_DEBUG("getClosestFeasiblePoint");
   DblVec y(x.size());
   for (std::size_t i = 0; i < x.size(); i++)
   {
@@ -274,7 +274,7 @@ DblVec OptProb::getClosestFeasiblePoint(const DblVec& x, const double& delta)
 
 DblVec OptProb::getClosestFeasiblePointQP(const DblVec& x)
 {
-  LOG_DEBUG("getClosestFeasiblePoint using a QP");
+  TESSERACT_LOG_DEBUG("getClosestFeasiblePoint using a QP");
   assert(vars_.size() == x.size());
   QuadExpr obj;
   for (unsigned i = 0; i < x.size(); ++i)

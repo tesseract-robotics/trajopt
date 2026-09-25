@@ -13,7 +13,7 @@ TRAJOPT_IGNORE_WARNINGS_POP
 #include <trajopt/plot_callback.hpp>
 #include <trajopt/problem_description.hpp>
 #include <trajopt_sco/optimizers.hpp>
-#include <trajopt_common/logging.hpp>
+#include <tesseract/common/logging.h>
 
 using namespace trajopt;
 using namespace std;
@@ -39,7 +39,7 @@ public:
     ResourceLocator::Ptr locator = std::make_shared<tesseract::common::GeneralResourceLocator>();
     EXPECT_TRUE(env_->init(urdf_file, srdf_file, locator));
 
-    gLogLevel = trajopt_common::LevelError;
+    tesseract::common::getLogger()->set_level(spdlog::level::err);
   }
 };
 
@@ -50,7 +50,7 @@ public:
  */
 TEST_F(InterfaceTest, initial_trajectory_cpp_interface)
 {
-  CONSOLE_BRIDGE_logDebug("InterfaceTest, initial_trajectory_cpp_interface");
+  TESSERACT_LOG_DEBUG("InterfaceTest, initial_trajectory_cpp_interface");
 
   const int steps = 13;
 
@@ -96,7 +96,7 @@ TEST_F(InterfaceTest, initial_trajectory_cpp_interface)
  */
 TEST_F(InterfaceTest, initial_trajectory_time_cpp_interface)
 {
-  CONSOLE_BRIDGE_logDebug("InterfaceTest, initial_trajectory_time_cpp_interface");
+  TESSERACT_LOG_DEBUG("InterfaceTest, initial_trajectory_time_cpp_interface");
 
   const int steps = 13;
   const double dt = 0.12341234;
@@ -156,7 +156,7 @@ TEST_F(InterfaceTest, initial_trajectory_time_cpp_interface)
  */
 TEST_F(InterfaceTest, initial_trajectory_json_interface)
 {
-  CONSOLE_BRIDGE_logDebug("InterfaceTest, initial_trajectory_json_interface");
+  TESSERACT_LOG_DEBUG("InterfaceTest, initial_trajectory_json_interface");
 
   // These must match the json file or the test will fail!!
   const int steps = 10;
@@ -190,7 +190,7 @@ TEST_F(InterfaceTest, initial_trajectory_json_interface)
  */
 TEST_F(InterfaceTest, initial_trajectory_time_json_interface)
 {
-  CONSOLE_BRIDGE_logDebug("InterfaceTest, initial_trajectory_time_json_interface");
+  TESSERACT_LOG_DEBUG("InterfaceTest, initial_trajectory_time_json_interface");
 
   // These must match the json file or the test will fail!!
   const int steps = 10;
@@ -236,7 +236,7 @@ TEST_F(InterfaceTest, initial_trajectory_time_json_interface)
  */
 TEST_F(InterfaceTest, bitmask_test)
 {
-  CONSOLE_BRIDGE_logDebug("InterfaceTest, bitmask_test");
+  TESSERACT_LOG_DEBUG("InterfaceTest, bitmask_test");
 
   // Define all of the cases to test
   std::vector<int> types{ (TT_CNT), (TT_COST), (TT_CNT | TT_USE_TIME), (TT_COST | TT_USE_TIME) };

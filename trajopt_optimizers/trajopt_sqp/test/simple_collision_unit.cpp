@@ -26,7 +26,7 @@
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <ctime>
 #include <gtest/gtest.h>
-#include <console_bridge/console.h>
+#include <tesseract/common/logging.h>
 #include <OsqpEigen/OsqpEigen.h>
 #include <tesseract/common/stopwatch.h>
 #include <tesseract/common/resource_locator.h>
@@ -164,7 +164,7 @@ void runSimpleCollisionTest(const Environment::Ptr& env)
   stopwatch.start();
   solver.solve(qp_problem);
   stopwatch.stop();
-  CONSOLE_BRIDGE_logError("Test took %f seconds.", stopwatch.elapsedSeconds());
+  TESSERACT_LOG_ERROR("Test took {} seconds.", stopwatch.elapsedSeconds());
 
   Eigen::VectorXd x = qp_problem->getVariableValues();
 
@@ -182,7 +182,7 @@ void runSimpleCollisionTest(const Environment::Ptr& env)
                                trajopt_collision_cnt_config.collision_check_config);
 
   EXPECT_TRUE(found);
-  CONSOLE_BRIDGE_logWarn((found) ? ("Initial trajectory is in collision") : ("Initial trajectory is collision free"));
+  TESSERACT_LOG_WARN("{}", (found) ? ("Initial trajectory is in collision") : ("Initial trajectory is collision free"));
 
   collisions.clear();
   found = checkTrajectory(collisions,
@@ -193,12 +193,11 @@ void runSimpleCollisionTest(const Environment::Ptr& env)
                           trajopt_collision_cnt_config.collision_check_config);
 
   EXPECT_FALSE(found);
-  CONSOLE_BRIDGE_logWarn((found) ? ("Final trajectory is in collision") : ("Final trajectory is collision free"));
+  TESSERACT_LOG_WARN("{}", (found) ? ("Final trajectory is in collision") : ("Final trajectory is collision free"));
 }
 
 // TEST_F(SimpleCollisionTest, spheres_ifopt_problem)  // NOLINT
 //{
-//  CONSOLE_BRIDGE_logDebug("SimpleCollisionTest, spheres_ifopt_problem");
 //  runSimpleCollisionTest<trajopt_sqp::IfoptQPProblem>(env);
 //}
 
@@ -210,7 +209,7 @@ TEST_F(SimpleCollisionTest, spheres_trajopt_problem)  // NOLINT
    * is something different in how we calculate the merit for constraints compared to costs.
    * Constraints use violation versus cost uses the error.
    */
-  CONSOLE_BRIDGE_logDebug("SimpleCollisionTest, spheres_trajopt_problem");
+  TESSERACT_LOG_DEBUG("SimpleCollisionTest, spheres_trajopt_problem");
   runSimpleCollisionTest<trajopt_sqp::TrajOptQPProblem>(env);  // NOLINT
 }
 

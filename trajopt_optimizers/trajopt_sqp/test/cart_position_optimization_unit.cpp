@@ -34,7 +34,7 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <tesseract/common/types.h>
 #include <tesseract/kinematics/joint_group.h>
 #include <tesseract/environment/environment.h>
-#include <console_bridge/console.h>
+#include <tesseract/common/logging.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt_sqp/ifopt_qp_problem.h>
@@ -60,9 +60,9 @@ public:
   void SetUp() override
   {
     if (DEBUG)
-      console_bridge::setLogLevel(console_bridge::LogLevel::CONSOLE_BRIDGE_LOG_DEBUG);
+      tesseract::common::getLogger()->set_level(spdlog::level::debug);
     else
-      console_bridge::setLogLevel(console_bridge::LogLevel::CONSOLE_BRIDGE_LOG_NONE);
+      tesseract::common::getLogger()->set_level(spdlog::level::off);
 
     // 1)  Load Robot
     const std::filesystem::path urdf_file(std::string(TRAJOPT_DATA_DIR) + "/arm_around_table.urdf");
@@ -147,14 +147,14 @@ void runCartPositionOptimization(const tesseract::environment::Environment::Ptr&
 /** @brief Applies a cartesian position constraint and solves the ifopt problem with trajopt_sqp */
 TEST_F(CartPositionOptimization, cart_position_optimization_ifopt_problem)  // NOLINT
 {
-  CONSOLE_BRIDGE_logDebug("CartPositionOptimization, cart_position_optimization_trajopt_problem");
+  TESSERACT_LOG_DEBUG("CartPositionOptimization, cart_position_optimization_trajopt_problem");
   runCartPositionOptimization<trajopt_sqp::IfoptQPProblem>(env);
 }
 
 /** @brief Applies a cartesian position constraint and solves the ifopt problem with trajopt_sqp */
 TEST_F(CartPositionOptimization, cart_position_optimization_trajopt_problem)  // NOLINT
 {
-  CONSOLE_BRIDGE_logDebug("CartPositionOptimization, cart_position_optimization_ifopt_problem");
+  TESSERACT_LOG_DEBUG("CartPositionOptimization, cart_position_optimization_ifopt_problem");
   runCartPositionOptimization<trajopt_sqp::TrajOptQPProblem>(env);
 }
 

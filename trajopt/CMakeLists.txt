@@ -11,7 +11,6 @@ endif()
 
 find_package(Eigen3 REQUIRED)
 find_package(Boost REQUIRED)
-find_package(console_bridge REQUIRED)
 find_package(trajopt_sco REQUIRED)
 find_package(trajopt_common REQUIRED)
 find_package(tesseract REQUIRED COMPONENTS common environment visualization)
@@ -46,7 +45,6 @@ target_link_libraries(
          tesseract::common
          tesseract::environment
          tesseract::visualization
-         console_bridge::console_bridge
          Boost::boost
          Eigen3::Eigen
          jsoncpp_lib)
@@ -90,7 +88,6 @@ if(TRAJOPT_PACKAGE)
     LINUX_DEPENDS
       "libeigen3-dev"
       "libboost-dev"
-      "libconsole-bridge-dev"
       "libjsoncpp-dev"
       "${TRAJOPT_PACKAGE_PREFIX}trajopt-sco"
       "${TRAJOPT_PACKAGE_PREFIX}trajopt-common"
@@ -99,7 +96,6 @@ if(TRAJOPT_PACKAGE)
     WINDOWS_DEPENDS
       "Eigen3"
       "boost"
-      "console-bridge"
       "jsoncpp"
       "${TRAJOPT_PACKAGE_PREFIX}trajopt-sco"
       "${TRAJOPT_PACKAGE_PREFIX}trajopt-common"

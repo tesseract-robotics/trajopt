@@ -11,7 +11,7 @@ TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <tesseract/environment/environment.h>
 #include <tesseract/environment/utils.h>
 #include <tesseract/visualization/visualization.h>
-#include <console_bridge/console.h>
+#include <tesseract/common/logging.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt/plot_callback.hpp>
@@ -20,7 +20,6 @@ TRAJOPT_IGNORE_WARNINGS_POP
 #include <trajopt_common/clock.hpp>
 #include <trajopt_common/config.hpp>
 #include <trajopt_common/eigen_conversions.hpp>
-#include <trajopt_common/logging.hpp>
 #include <trajopt_common/stl_to_string.hpp>
 #include "trajopt_test_utils.hpp"
 
@@ -53,14 +52,12 @@ public:
     SceneState::JointValues ipos;
     ipos["torso_lift_joint"] = 0.0;
     env_->setState(ipos);
-
-    // gLogLevel = trajopt_common::LevelDebug;
   }
 };
 
 void runTest(const Environment::Ptr& env, const Visualization::Ptr& /*plotter*/, bool use_multi_threaded)
 {
-  CONSOLE_BRIDGE_logDebug("NumericalIKTest, numerical_ik1");
+  TESSERACT_LOG_DEBUG("NumericalIKTest, numerical_ik1");
 
   const Json::Value root = readJsonFile(std::string(TRAJOPT_DATA_DIR) + "/config/numerical_ik1.json");
 
@@ -88,26 +85,26 @@ void runTest(const Environment::Ptr& env, const Visualization::Ptr& /*plotter*/,
   //    opt.addCallback(PlotCallback(*prob, plotter));
   //  }
 
-  CONSOLE_BRIDGE_logDebug("DOF: %d", prob->GetNumDOF());
+  TESSERACT_LOG_DEBUG("DOF: {}", prob->GetNumDOF());
   opt->initialize(DblVec(static_cast<std::size_t>(prob->GetNumDOF()), 0));
   const double tStart = GetClock();
-  CONSOLE_BRIDGE_logDebug("Size: %d", opt->x().size());
+  TESSERACT_LOG_DEBUG("Size: {}", opt->x().size());
   std::stringstream ss;
   ss << toVectorXd(opt->x()).transpose();
-  CONSOLE_BRIDGE_logDebug("Initial Vars: %s", ss.str().c_str());
+  TESSERACT_LOG_DEBUG("Initial Vars: {}", ss.str());
   const Eigen::Isometry3d change_base = prob->GetEnv()->getLinkTransform(prob->GetKin()->getBaseLinkId());
   Eigen::Isometry3d initial_pose = prob->GetKin()->calcFwdKin(toVectorXd(opt->x())).at("l_gripper_tool_frame");
   initial_pose = change_base * initial_pose;
 
   ss = std::stringstream();
   ss << initial_pose.translation().transpose();
-  CONSOLE_BRIDGE_logDebug("Initial Position: %s", ss.str().c_str());
+  TESSERACT_LOG_DEBUG("Initial Position: {}", ss.str());
   tesseract::common::Stopwatch stopwatch;
   stopwatch.start();
   const sco::OptStatus status = opt->optimize();
   stopwatch.stop();
-  CONSOLE_BRIDGE_logError("Test took %f seconds.", stopwatch.elapsedSeconds());
-  CONSOLE_BRIDGE_logDebug("Status: %s", sco::toString(status).c_str());
+  TESSERACT_LOG_ERROR("Test took {} seconds.", stopwatch.elapsedSeconds());
+  TESSERACT_LOG_DEBUG("Status: {}", sco::toString(status));
   Eigen::Isometry3d final_pose = prob->GetKin()->calcFwdKin(toVectorXd(opt->x())).at("l_gripper_tool_frame");
   final_pose = change_base * final_pose;
 
@@ -126,13 +123,13 @@ void runTest(const Environment::Ptr& env, const Visualization::Ptr& /*plotter*/,
 
   ss = std::stringstream();
   ss << final_pose.translation().transpose();
-  CONSOLE_BRIDGE_logDebug("Final Position: %s", ss.str().c_str());
+  TESSERACT_LOG_DEBUG("Final Position: {}", ss.str());
 
   ss = std::stringstream();
   ss << toVectorXd(opt->x()).transpose();
-  CONSOLE_BRIDGE_logDebug("Final Vars: ", ss.str().c_str());
+  TESSERACT_LOG_DEBUG("Final Vars: {}", ss.str());
 
-  CONSOLE_BRIDGE_logDebug("planning time: %.3f", GetClock() - tStart);
+  TESSERACT_LOG_DEBUG("planning time: {:.3f}", GetClock() - tStart);
 }
 
 TEST_F(NumericalIKTest, numerical_ik1)  // NOLINT

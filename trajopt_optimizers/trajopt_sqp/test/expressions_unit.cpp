@@ -25,14 +25,14 @@
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <gtest/gtest.h>
 #include <trajopt_sqp/expressions.h>
-#include <console_bridge/console.h>
+#include <tesseract/common/logging.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 using trajopt_sqp::AffExprs;
 using trajopt_sqp::QuadExprs;
 
 TEST(ExpressionsTest, AffExprs)  // NOLINT
 {
-  CONSOLE_BRIDGE_logDebug("ExpressionsTest, AffExprs");
+  TESSERACT_LOG_DEBUG("ExpressionsTest, AffExprs");
   // f = (x(0) - x(1))^2
   Eigen::Vector2d x(5, 1);
   Eigen::VectorXd e(1);
@@ -51,7 +51,7 @@ TEST(ExpressionsTest, AffExprs)  // NOLINT
 
 TEST(ExpressionsTest, AffExprsWithWeights)  // NOLINT
 {
-  CONSOLE_BRIDGE_logDebug("ExpressionsTest, AffExprsWithWeights");
+  TESSERACT_LOG_DEBUG("ExpressionsTest, AffExprsWithWeights");
   // f = (x(0) - x(1))^2
   // weight = 5
   const double w = 5;
@@ -75,7 +75,7 @@ TEST(ExpressionsTest, AffExprsWithWeights)  // NOLINT
 
 TEST(ExpressionsTest, QuadExprs)  // NOLINT
 {
-  CONSOLE_BRIDGE_logDebug("ExpressionsTest, QuadExprs");
+  TESSERACT_LOG_DEBUG("ExpressionsTest, QuadExprs");
   // f = (x(0) - x(1))^2
   Eigen::Vector2d x(5, 1);
   Eigen::VectorXd e(1);
@@ -106,7 +106,7 @@ TEST(ExpressionsTest, QuadExprs)  // NOLINT
 
 TEST(ExpressionsTest, squareAffExprs1)  // NOLINT
 {
-  CONSOLE_BRIDGE_logDebug("ExpressionsTest, QuadExprs");
+  TESSERACT_LOG_DEBUG("ExpressionsTest, QuadExprs");
   // This should produce the same results as the QuadExprs unit test
 
   // f = (x(0) - x(1))
@@ -156,7 +156,7 @@ TEST(ExpressionsTest, squareAffExprs1)  // NOLINT
 
 TEST(ExpressionsTest, squareAffExprs2)  // NOLINT
 {
-  CONSOLE_BRIDGE_logDebug("ExpressionsTest, squareAffExprs");
+  TESSERACT_LOG_DEBUG("ExpressionsTest, squareAffExprs");
   // f = 5 - (x(0) - x(1))
   Eigen::Vector2d x(5, 1);
   Eigen::VectorXd e(1);

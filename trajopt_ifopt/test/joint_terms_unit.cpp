@@ -26,7 +26,7 @@
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <ctime>
 #include <gtest/gtest.h>
-#include <console_bridge/console.h>
+#include <tesseract/common/logging.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 #include <trajopt_ifopt/constraints/joint_position_constraint.h>
 #include <trajopt_ifopt/constraints/joint_velocity_constraint.h>
@@ -43,7 +43,7 @@ using namespace std;
 /** @brief Tests the Joint Position Constraint */
 TEST(JointTermsUnit, JointPosConstraintUnit)  // NOLINT
 {
-  CONSOLE_BRIDGE_logDebug("JointTermsUnit, JointPosConstraintUnit");
+  TESSERACT_LOG_DEBUG("JointTermsUnit, JointPosConstraintUnit");
 
   const std::vector<std::string> joint_names(10, "name");
   Eigen::VectorXd init_vals(10);
@@ -96,7 +96,7 @@ TEST(JointTermsUnit, JointPosConstraintUnit)  // NOLINT
 /** @brief Tests the Joint Velocity Constraint */
 TEST(JointTermsUnit, JointVelConstraintUnit)  // NOLINT
 {
-  CONSOLE_BRIDGE_logDebug("JointTermsUnit, JointVelConstraintUnit");
+  TESSERACT_LOG_DEBUG("JointTermsUnit, JointVelConstraintUnit");
 
   // y = x^3 + 5*x^2 + 2*x + 1
   auto f = [](double x) { return ((x * x * x) + (5 * x * x) + (2 * x) + 1); };
@@ -165,7 +165,7 @@ TEST(JointTermsUnit, JointVelConstraintUnit)  // NOLINT
 /** @brief Tests the Joint Velocity Constraint */
 TEST(JointTermsUnit, JointVelConstraintMinimumUnit)  // NOLINT
 {
-  CONSOLE_BRIDGE_logDebug("JointTermsUnit, JointVelConstraintMinimumUnit");
+  TESSERACT_LOG_DEBUG("JointTermsUnit, JointVelConstraintMinimumUnit");
 
   // y = x^3 + 5*x^2 + 2*x + 1
   auto f = [](double x) { return ((x * x * x) + (5 * x * x) + (2 * x) + 1); };
@@ -236,7 +236,7 @@ TEST(JointTermsUnit, JointVelConstraintMinimumUnit)  // NOLINT
 /** @brief Tests the Joint Acceleration Constraint */
 TEST(JointTermsUnit, JointAccelConstraintUnit)  // NOLINT
 {
-  CONSOLE_BRIDGE_logDebug("JointTermsUnit, JointVelConstraintUnit");
+  TESSERACT_LOG_DEBUG("JointTermsUnit, JointVelConstraintUnit");
 
   // y = x^3 + 5*x^2 + 2*x + 1
   auto f = [](double x) { return ((x * x * x) + (5 * x * x) + (2 * x) + 1); };
@@ -317,7 +317,7 @@ TEST(JointTermsUnit, JointAccelConstraintUnit)  // NOLINT
 /** @brief Tests the Joint Acceleration Constraint */
 TEST(JointTermsUnit, JointAccelConstraintMinimumUnit)  // NOLINT
 {
-  CONSOLE_BRIDGE_logDebug("JointTermsUnit, JointAccelConstraintMinimumUnit");
+  TESSERACT_LOG_DEBUG("JointTermsUnit, JointAccelConstraintMinimumUnit");
 
   // y = x^3 + 5*x^2 + 2*x + 1
   auto f = [](double x) { return ((x * x * x) + (5 * x * x) + (2 * x) + 1); };
@@ -398,7 +398,7 @@ TEST(JointTermsUnit, JointAccelConstraintMinimumUnit)  // NOLINT
 /** @brief Tests the Joint Jerk Constraint */
 TEST(JointTermsUnit, JointJerkConstraintUnit)  // NOLINT
 {
-  CONSOLE_BRIDGE_logDebug("JointTermsUnit, JointJerkConstraintUnit");
+  TESSERACT_LOG_DEBUG("JointTermsUnit, JointJerkConstraintUnit");
 
   // y = x^3 + 5*x^2 + 2*x + 1
   auto f = [](double x) { return ((x * x * x) + (5 * x * x) + (2 * x) + 1); };
@@ -480,7 +480,7 @@ TEST(JointTermsUnit, JointJerkConstraintUnit)  // NOLINT
 /** @brief Tests the Joint Jerk Constraint */
 TEST(JointTermsUnit, JointJerkConstraintMinimumUnit)  // NOLINT
 {
-  CONSOLE_BRIDGE_logDebug("JointTermsUnit, JointJerkConstraintMinimumUnit");
+  TESSERACT_LOG_DEBUG("JointTermsUnit, JointJerkConstraintMinimumUnit");
 
   // y = x^3 + 5*x^2 + 2*x + 1
   auto f = [](double x) { return ((x * x * x) + (5 * x * x) + (2 * x) + 1); };

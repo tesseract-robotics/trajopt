@@ -30,14 +30,14 @@ TRAJOPT_IGNORE_WARNINGS_POP
 #include <trajopt_ifopt/core/bounds.h>
 #include <trajopt_ifopt/utils/ifopt_utils.h>
 #include <trajopt_common/utils.hpp>
-#include <console_bridge/console.h>
+#include <tesseract/common/logging.h>
 
 using namespace trajopt_ifopt;
 using namespace std;
 
 TEST(UtilsUnit, toBoundsMatrixX2d)  // NOLINT
 {
-  CONSOLE_BRIDGE_logDebug("UtilsUnit, toBoundsMatrixX2d");
+  TESSERACT_LOG_DEBUG("UtilsUnit, toBoundsMatrixX2d");
 
   Eigen::MatrixX2d input_bounds(5, 2);
   input_bounds << -1, 1, -2, 2, -3, 3, -4, 4, -5, 5;
@@ -56,7 +56,7 @@ TEST(UtilsUnit, toBoundsMatrixX2d)  // NOLINT
 
 TEST(UtilsUnit, toBoundsVectorXd)  // NOLINT
 {
-  CONSOLE_BRIDGE_logDebug("UtilsUnit, toBoundsVectorXd");
+  TESSERACT_LOG_DEBUG("UtilsUnit, toBoundsVectorXd");
 
   Eigen::VectorXd lower_bounds(5);
   Eigen::VectorXd upper_bounds(5);
@@ -77,7 +77,7 @@ TEST(UtilsUnit, toBoundsVectorXd)  // NOLINT
 
 TEST(UtilsUnit, interpolate)  // NOLINT
 {
-  CONSOLE_BRIDGE_logDebug("UtilsUnit, interpolate");
+  TESSERACT_LOG_DEBUG("UtilsUnit, interpolate");
 
   const Eigen::VectorXd start = Eigen::VectorXd::Zero(10);
   const Eigen::VectorXd end = Eigen::VectorXd::Ones(10);

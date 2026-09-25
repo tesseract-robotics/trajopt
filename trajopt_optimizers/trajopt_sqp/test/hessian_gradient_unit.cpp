@@ -28,7 +28,7 @@
 #include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <gtest/gtest.h>
-#include <console_bridge/console.h>
+#include <tesseract/common/logging.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 
 #include <trajopt_sqp/ifopt_qp_problem.h>
@@ -48,9 +48,9 @@ public:
   void SetUp() override
   {
     if (DEBUG)
-      console_bridge::setLogLevel(console_bridge::LogLevel::CONSOLE_BRIDGE_LOG_DEBUG);
+      tesseract::common::getLogger()->set_level(spdlog::level::debug);
     else
-      console_bridge::setLogLevel(console_bridge::LogLevel::CONSOLE_BRIDGE_LOG_NONE);
+      tesseract::common::getLogger()->set_level(spdlog::level::off);
   }
 };
 
