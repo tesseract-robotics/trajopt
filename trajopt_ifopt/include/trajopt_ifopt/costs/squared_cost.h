@@ -91,6 +91,7 @@ public:
 
   double getCost() const override;
 
+  /** @brief Return a unit weight for this cost's single row; its row weights are already applied in getCost(). */
   Eigen::VectorXd getCoefficients() const override;
 
   /** @brief Get the jacobian */

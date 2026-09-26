@@ -25,11 +25,49 @@
 #include <trajopt_common/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <ctime>
+#include <limits>
 #include <gtest/gtest.h>
 TRAJOPT_IGNORE_WARNINGS_POP
 #include <trajopt_ifopt/variable_sets/nodes_variables.h>
 #include <trajopt_ifopt/variable_sets/node.h>
 #include <trajopt_ifopt/variable_sets/var.h>
+
+namespace
+{
+// Count console_bridge warnings logged for its lifetime and restore the prior handler and log
+// level on destruction (including on an exception), so a failure never leaks console_bridge global
+// state into the next test. Non-copyable/movable: it registers its own address with console_bridge.
+class WarningCaptureGuard : public console_bridge::OutputHandler
+{
+public:
+  WarningCaptureGuard() : previous_level_(console_bridge::getLogLevel())
+  {
+    console_bridge::setLogLevel(console_bridge::CONSOLE_BRIDGE_LOG_WARN);
+    console_bridge::useOutputHandler(this);
+  }
+  WarningCaptureGuard(const WarningCaptureGuard&) = delete;
+  WarningCaptureGuard& operator=(const WarningCaptureGuard&) = delete;
+  WarningCaptureGuard(WarningCaptureGuard&&) = delete;
+  WarningCaptureGuard& operator=(WarningCaptureGuard&&) = delete;
+  ~WarningCaptureGuard() override
+  {
+    console_bridge::restorePreviousOutputHandler();
+    console_bridge::setLogLevel(previous_level_);
+  }
+
+  void log(const std::string& /*text*/, console_bridge::LogLevel level, const char* /*filename*/, int /*line*/) override
+  {
+    if (level == console_bridge::CONSOLE_BRIDGE_LOG_WARN)
+      ++warning_count_;
+  }
+
+  int warningCount() const { return warning_count_; }
+
+private:
+  console_bridge::LogLevel previous_level_;
+  int warning_count_{ 0 };
+};
+}  // namespace
 
 // -----------------------
 // Var tests
@@ -71,6 +109,56 @@ TEST(VarUnit, VectorVarConstructionAndAccess)
 
   EXPECT_EQ(v.getIdentifier(), "position");
   EXPECT_EQ(v.name(), names);
+}
+
+TEST(VarUnit, ScalarInfiniteValueUnderNoBoundLogsNoWarning)
+{
+  WarningCaptureGuard warnings;
+
+  trajopt_ifopt::Var v(0, "scalar", std::numeric_limits<double>::infinity(), trajopt_ifopt::NoBound);
+
+  EXPECT_DOUBLE_EQ(v.value()(0), std::numeric_limits<double>::infinity());
+  EXPECT_EQ(warnings.warningCount(), 0);
+}
+
+TEST(VarUnit, ScalarOutOfBoundsValueIsClampedAndLogsWarning)
+{
+  WarningCaptureGuard warnings;
+
+  trajopt_ifopt::Var v(0, "scalar", 2.0, trajopt_ifopt::Bounds(-1, 1));
+
+  EXPECT_DOUBLE_EQ(v.value()(0), 1.0);
+  EXPECT_EQ(warnings.warningCount(), 1);
+}
+
+TEST(VarUnit, VectorInfiniteValueUnderNoBoundLogsNoWarning)
+{
+  Eigen::VectorXd x(1);
+  x << std::numeric_limits<double>::infinity();
+  const std::vector<std::string> names{ "a" };
+  const std::vector<trajopt_ifopt::Bounds> bounds(1, trajopt_ifopt::NoBound);
+
+  WarningCaptureGuard warnings;
+
+  trajopt_ifopt::Var v(0, "vector", names, x, bounds);
+
+  EXPECT_DOUBLE_EQ(v.value()(0), std::numeric_limits<double>::infinity());
+  EXPECT_EQ(warnings.warningCount(), 0);
+}
+
+TEST(VarUnit, VectorOutOfBoundsValueIsClampedAndLogsWarning)
+{
+  Eigen::VectorXd x(1);
+  x << 2.0;
+  const std::vector<std::string> names{ "a" };
+  const std::vector<trajopt_ifopt::Bounds> bounds(1, trajopt_ifopt::Bounds(-1, 1));
+
+  WarningCaptureGuard warnings;
+
+  trajopt_ifopt::Var v(0, "vector", names, x, bounds);
+
+  EXPECT_DOUBLE_EQ(v.value()(0), 1.0);
+  EXPECT_EQ(warnings.warningCount(), 1);
 }
 
 // -----------------------

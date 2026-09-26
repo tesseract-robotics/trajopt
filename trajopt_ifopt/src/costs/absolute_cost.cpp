@@ -54,7 +54,7 @@ double AbsoluteCost::getCost() const
   return weights_.dot(scratch_error_);
 }
 
-Eigen::VectorXd AbsoluteCost::getCoefficients() const { return constraint_->getCoefficients(); }
+Eigen::VectorXd AbsoluteCost::getCoefficients() const { return Eigen::VectorXd::Ones(rows_); }
 
 Jacobian AbsoluteCost::getJacobian() const
 {

@@ -36,7 +36,8 @@ Var::Var(Eigen::Index index, std::string name, double value, Bounds bounds, Node
 {
   values_ = trajopt_ifopt::getClosestValidPoint(Eigen::VectorXd::Constant(1, value), bounds_);
 
-  if (!values_.isApprox(Eigen::VectorXd::Constant(1, value), 1e-10))
+  // Clamping leaves in-bound values unchanged, so a difference means a value was clamped or is NaN.
+  if (values_(0) != value)
   {
     TESSERACT_LOG_WARN("The initial values are not within the provided bounds. Adjusting to be within the "
                        "bounds.");
@@ -64,7 +65,8 @@ Var::Var(Eigen::Index index,
 
   values_ = trajopt_ifopt::getClosestValidPoint(values, bounds_);
 
-  if (!values_.isApprox(values, 1e-10))
+  // Clamping leaves in-bound values unchanged, so a difference means a value was clamped or is NaN.
+  if (values_ != values)
   {
     TESSERACT_LOG_WARN("The initial values are not within the provided bounds. Adjusting to be within the "
                        "bounds.");

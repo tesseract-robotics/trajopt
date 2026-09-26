@@ -4,6 +4,7 @@
 #include <memory>
 #include <trajopt_ifopt/core/eigen_types.h>
 #include <trajopt_ifopt/fwd.h>
+#include <trajopt_sqp/types.h>
 
 namespace trajopt_sqp
 {
@@ -64,7 +65,8 @@ public:
    * @brief Evaluated the cost of the convexified function (ie using the stored gradient and hessian) at var_vals
    * @note This will be relatively computationally expensive, as we will have to loop through all the cost components in
    * the problem and calculate their values manually.
-   * @param var_vals Point at which the convex cost is calculated. Should be size num_qp_vars
+   * @param var_vals Point at which the convex cost is calculated, size num_qp_vars. Only its NLP-variable block
+   * is read: a hinge or absolute cost reports its weighted violation on the linearized rows, whatever the slacks.
    * @return Cost associated with each cost term in the problem (for debugging)
    */
   virtual Eigen::VectorXd evaluateConvexCosts(const Eigen::Ref<const Eigen::VectorXd>& var_vals) const = 0;
@@ -83,19 +85,19 @@ public:
   virtual Eigen::VectorXd getExactCosts() const = 0;
 
   /**
-   * @brief Evaluated the costraint violation of the convexified function (ie using the stored constraint matrix) at
-   * var_vals
-   * @param var_vals
-   * @return
+   * @brief Evaluate the constraint violations of the convexified problem (the stored constraint matrix) at var_vals.
+   * @details Only the NLP-variable block of var_vals is read. Rows are weighted by the weights read at the last
+   * convexify(), so at the convexify point the result equals getExactConstraintViolations().
+   * @param var_vals Point at which the violations are evaluated, size num_qp_vars.
    */
-  virtual Eigen::VectorXd
+  virtual ConstraintViolations
   evaluateConvexConstraintViolations(const Eigen::Ref<const Eigen::VectorXd>& var_vals) const = 0;
 
   /**
-   * @brief get the current NLP constraint violations. Values > 0 are violations
-   * @return Vector of constraint violations. Values > 0 are violations
+   * @brief Get the NLP constraint violations at the current variable values, weighted by the live per-row weights.
+   * @details Each component's getCoefficients() must hold exactly one finite, non-negative weight per row.
    */
-  virtual Eigen::VectorXd getExactConstraintViolations() const = 0;
+  virtual ConstraintViolations getExactConstraintViolations() const = 0;
   /**
    * @brief Uniformly scales the box size  (box_size_ = box_size_ * scale)
    * @param scale Value by which the box size is scaled

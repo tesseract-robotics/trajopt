@@ -40,11 +40,6 @@ namespace trajopt_common
 using GetStateFn =
     std::function<tesseract::common::LinkIdTransformMap(const Eigen::Ref<const Eigen::VectorXd>& joint_values)>;
 
-class CollisionCoeffData;
-
-template <class Archive>
-void serialize(Archive& ar, CollisionCoeffData& obj);
-
 using PairsCollisionCoeffData = std::unordered_map<tesseract::common::LinkIdPair, double>;
 
 /** @brief Stores information about how the margins allowed between collision objects */
@@ -57,11 +52,13 @@ public:
   using ConstPtr = std::shared_ptr<const CollisionCoeffData>;
 
   CollisionCoeffData() = default;
+  /** @throws std::runtime_error if @p default_collision_coeff is negative or not finite */
   CollisionCoeffData(double default_collision_coeff);
 
   /**
    * @brief Set the default collision coefficient
    * @param default_collision_coeff The default collision coefficient used when no pair-specific coefficient is set
+   * @throws std::runtime_error if @p default_collision_coeff is negative or not finite
    */
   void setDefaultCollisionCoeff(double default_collision_coeff);
 
@@ -80,6 +77,7 @@ public:
    * @param obj1 The first object id. Order doesn't matter
    * @param obj2 The Second object id. Order doesn't matter
    * @param collision_coeff Coefficient
+   * @throws std::runtime_error if @p collision_coeff is negative or not finite
    */
   void setCollisionCoeff(const tesseract::common::LinkId& obj1,
                          const tesseract::common::LinkId& obj2,
@@ -90,6 +88,7 @@ public:
    *
    * @param pair The object pair, already in canonical order
    * @param collision_coeff Coefficient
+   * @throws std::runtime_error if @p collision_coeff is negative or not finite
    */
   void setCollisionCoeff(const tesseract::common::LinkIdPair& pair, double collision_coeff);
 
@@ -133,9 +132,6 @@ private:
 
   /// Pairs containing zero coeff
   std::unordered_set<tesseract::common::LinkIdPair> zero_coeff_;
-
-  template <class Archive>
-  friend void ::trajopt_common::serialize(Archive& ar, CollisionCoeffData& obj);
 };
 
 /**

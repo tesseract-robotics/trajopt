@@ -94,6 +94,20 @@ enum class CostPenaltyType : std::uint8_t
 };
 
 /**
+ * @brief Constraint violations in the two forms the SQP solver consumes, one entry per merit unit.
+ * @details @c raw sums a merit unit's row violations, each in its row's own units, excluding rows whose weight is
+ * exactly 0; that sum is the feasibility metric compared against SQPParameters::cnt_tolerance. @c weighted sums each
+ * row's violation times its weight; the merit function charges it as @c weighted.dot(merit_error_coeffs). A merit
+ * unit is a constraint set for TrajOptQPProblem and a constraint row for IfoptQPProblem. IfoptQPProblem applies no
+ * per-row weights, so its two forms are equal. Entries are non-negative; 0 means satisfied.
+ */
+struct ConstraintViolations
+{
+  Eigen::VectorXd raw;
+  Eigen::VectorXd weighted;
+};
+
+/**
  * @brief This struct defines parameters for the SQP optimization. The optimization should not change this struct
  */
 struct SQPParameters
@@ -174,15 +188,15 @@ struct SQPResults
   /** @brief Coefficients used to weight the constraint violations */
   Eigen::VectorXd merit_error_coeffs;
 
-  /** @brief Vector of the constraint violations. Positive is a violation */
-  Eigen::VectorXd best_constraint_violations;
-  /** @brief Vector of the constraint violations. Positive is a violation */
-  Eigen::VectorXd new_constraint_violations;
+  /** @brief Exact constraint violations at best_var_vals */
+  ConstraintViolations best_constraint_violations;
+  /** @brief Exact constraint violations at new_var_vals */
+  ConstraintViolations new_constraint_violations;
 
-  /** @brief Vector of the convexified constraint violations. Positive is a violation */
-  Eigen::VectorXd best_approx_constraint_violations;
-  /** @brief Vector of the convexified constraint violations. Positive is a violation */
-  Eigen::VectorXd new_approx_constraint_violations;
+  /** @brief Convexified constraint violations at best_var_vals */
+  ConstraintViolations best_approx_constraint_violations;
+  /** @brief Convexified constraint violations at new_var_vals */
+  ConstraintViolations new_approx_constraint_violations;
 
   /** @brief Vector of the constraint violations. Positive is a violation */
   Eigen::VectorXd best_costs;
